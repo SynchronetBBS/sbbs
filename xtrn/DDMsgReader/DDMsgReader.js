@@ -66,6 +66,9 @@
  *                              configured text strings.
  * 2022-12-12 Eric Oulashin     Fix for "assignment to undeclared variable" error in GetMsgSubBrdLine();
  *                              appeared when changing to a different message area from the reader
+ * 2012-12-13 Eric Oulashin     Version 1.58
+ *                              When writing QUOTES.TXT, quote lines are now wrapped if the user's
+ *                              external editor configuration is configured to do so.
  */
 
 "use strict";
@@ -170,8 +173,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.57.1";
-var READER_DATE = "2022-12-12";
+var READER_VERSION = "1.58";
+var READER_DATE = "2022-12-13";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -9749,21 +9752,31 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		var quoteFile = null;
 		if (this.CanQuote())
 		{
+			// Get the user's setting for whether or not to wrap quote lines (and how long) from
+			// their external editor settings
+			var wrapQuoteLines = false;
+			var quoteLineWrapLen = console.screen_columns - 1;
+			if (typeof(user.editor) === "string" && xtrn_area.editor.hasOwnProperty(user.editor))
+			{
+				if ((xtrn_area.editor[user.editor].settings & XTRN_QUOTEWRAP) == XTRN_QUOTEWRAP)
+					wrapQuoteLines = true;
+				// TODO: Determine the quote line wrap width (it can be defined in SCFG in the editor settings)
+				//quoteLineWrapLen
+			}
+			// Write the message text to the quotes file
 			quoteFile = new File(system.node_dir + "QUOTES.TXT");
 			if (quoteFile.open("w"))
 			{
 				var msgNum = (typeof(pMsgIdx) === "number" ? pMsgIdx+1 : null);
+				var msgText = "";
 				if (typeof(pMsgText) == "string")
-				{
-					//quoteFile.write(word_wrap(pMsgText, 80/*79*/));
-					quoteFile.write(pMsgText);
-				}
+					msgText = pMsgText;
 				else
-				{
-					var msgText = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
-					//quoteFile.write(word_wrap(msgText, 80/*79*/));
-					quoteFile.write(msgText);
-				}
+					msgText = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
+				if (wrapQuoteLines)
+					msgText = word_wrap(msgText, quoteLineWrapLen, msgText.length, false);
+				quoteFile.write(msgText);
+
 				quoteFile.close();
 				// Let the user quote in the reply
 				replyMode |= WM_QUOTE;

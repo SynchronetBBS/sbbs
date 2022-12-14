@@ -21,6 +21,10 @@
  * 2022-12-01 Eric Oulashin     Version 1.82
  *                              Added some safety checks when reading the configuration file
  *                              (that section of code was refactored recently).
+ * 2022-12-13 Eric Oulashin     Version 1.83
+ *                              Quote lines that are wider than the user's terminal width are
+ *                              now wrapped to the user's terminal width to ensure all the
+ *                              quoe lines are entirely available to be quoted.
  */
 
 "use strict";
@@ -118,8 +122,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.82";
-var EDITOR_VER_DATE = "2022-12-01";
+var EDITOR_VERSION = "1.83 Beta";
+var EDITOR_VER_DATE = "2022-12-13";
 
 
 // Program variables
@@ -953,7 +957,7 @@ function readQuoteOrMessageFile()
 			{
 				textLine = inputFile.readln(2048);
 				// Only use textLine if it's actually a string.
-				if (typeof(textLine) == "string")
+				if (typeof(textLine) === "string")
 				{
 					textLine = strip_ctrl(textLine);
 					// If the line has only whitespace and/or > characters,
@@ -961,7 +965,22 @@ function readQuoteOrMessageFile()
 					// gQuoteLines.
 					if (/^[\s>]+$/.test(textLine))
 						textLine = "";
-					gQuoteLines.push(textLine);
+					// If the quote line length is within the user's terminal width, then add it as-is.
+					if (textLine.length <= console.screen_columns-1)
+						gQuoteLines.push(textLine);
+					else
+					{
+						// Word-wrap the quote line to ensure the quote lines are no wider than the user's
+						// terminal width (minus 1 character)
+						var wrappedLine = word_wrap(textLine, console.screen_columns-1, textLine.length, false);
+						var wrappedLines = wrappedLine.split("\n");
+						// If splitting results in an empty line at the end of the array (due to a newline at the
+						// end of the last line), then remove that line. Then add the wrapped lines to the quote lines.
+						if (wrappedLines.length > 0 && wrappedLines[wrappedLines.length-1].length == 0)
+							wrappedLines.splice(-1);
+						for (var i = 0; i < wrappedLines.length; ++i)
+							gQuoteLines.push(wrappedLines[i]);
+					}
 				}
 			}
 		}
