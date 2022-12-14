@@ -20103,32 +20103,44 @@ function getExternalEditorQuoteWrapCfgFromSCFG(pEditorCode)
 	if (!xtrn_area.editor.hasOwnProperty(editorCode))
 		return retObj;
 
-	if ((xtrn_area.editor[editorCode].settings & XTRN_QUOTEWRAP) == XTRN_QUOTEWRAP)
+	// Set up a cache so that we don't have to keep repeatedly parsing the Synchronet
+	// config every time the user replies to a message
+	if (typeof(getExternalEditorQuoteWrapCfgFromSCFG.cache) === "undefined")
+		getExternalEditorQuoteWrapCfgFromSCFG.cache = {};
+	// If we haven't looked up the quote wrap cols setting yet, then do so; otherwise, use the
+	// cached setting.
+	if (!getExternalEditorQuoteWrapCfgFromSCFG.cache.hasOwnProperty(editorCode))
 	{
-		retObj.quoteWrapEnabled = true;
-		retObj.quoteWrapCols = console.screen_columns - 1;
-
-		// See exportcfg.js for an example of using cnflib.js
-		// TODO: If running Synchronet 3.20, then there will be an easier way to get the quotewrap
-		// columns, from the .ini configuration
-		var cnflib = load({}, "cnflib.js");
-		var xtrnCnf = cnflib.read("xtrn.cnf");
-		if (typeof(xtrnCnf) === "object")
+		if ((xtrn_area.editor[editorCode].settings & XTRN_QUOTEWRAP) == XTRN_QUOTEWRAP)
 		{
-			for (var i = 0; i < xtrnCnf.xedit.length; ++i)
+			retObj.quoteWrapEnabled = true;
+			retObj.quoteWrapCols = console.screen_columns - 1;
+
+			// See exportcfg.js for an example of using cnflib.js
+			// TODO: If running Synchronet 3.20, then there will be an easier way to get the quotewrap
+			// columns, from the .ini configuration
+			var cnflib = load({}, "cnflib.js");
+			var xtrnCnf = cnflib.read("xtrn.cnf");
+			if (typeof(xtrnCnf) === "object")
 			{
-				if (xtrnCnf.xedit[i].code.toLowerCase() == editorCode)
+				for (var i = 0; i < xtrnCnf.xedit.length; ++i)
 				{
-					if (xtrnCnf.xedit[i].hasOwnProperty("quotewrap_cols"))
+					if (xtrnCnf.xedit[i].code.toLowerCase() == editorCode)
 					{
-						if (xtrnCnf.xedit[i].quotewrap_cols > 0)
-							retObj.quoteWrapCols = xtrnCnf.xedit[i].quotewrap_cols;
+						if (xtrnCnf.xedit[i].hasOwnProperty("quotewrap_cols"))
+						{
+							if (xtrnCnf.xedit[i].quotewrap_cols > 0)
+								retObj.quoteWrapCols = xtrnCnf.xedit[i].quotewrap_cols;
+						}
+						break;
 					}
-					break;
 				}
 			}
 		}
+		getExternalEditorQuoteWrapCfgFromSCFG.cache[editorCode] = retObj;
 	}
+	else
+		retObj = getExternalEditorQuoteWrapCfgFromSCFG.cache[editorCode];
 
 	return retObj;
 }
