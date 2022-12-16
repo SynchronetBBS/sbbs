@@ -24,7 +24,7 @@
  * 2022-12-13 Eric Oulashin     Version 1.83
  *                              Quote lines that are wider than the user's terminal width are
  *                              now wrapped to the user's terminal width to ensure all the
- *                              quoe lines are entirely available to be quoted.
+ *                              quote lines are entirely available to be quoted.
  */
 
 "use strict";
