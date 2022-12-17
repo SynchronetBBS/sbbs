@@ -25,7 +25,9 @@
 
 int mqtt_init(struct mqtt* mqtt, scfg_t* cfg, const char* host, const char* server)
 {
-	if(cfg != NULL && !cfg->mqtt.enabled)
+	if(mqtt == NULL || cfg == NULL)
+		return MQTT_FAILURE;
+	if(!cfg->mqtt.enabled)
 		return MQTT_SUCCESS;
 	if(mqtt != NULL) {
 		memset(mqtt, 0, sizeof(*mqtt));
@@ -79,10 +81,12 @@ char* mqtt_topic(struct mqtt* mqtt, enum topic_depth depth, char* str, size_t si
 
 static int mqtt_sub(struct mqtt* mqtt, const char* topic)
 {
-	if(mqtt != NULL && mqtt->cfg != NULL && !mqtt->cfg->mqtt.enabled)
+	if(mqtt == NULL || mqtt->cfg == NULL)
+		return MQTT_FAILURE;
+	if(!mqtt->cfg->mqtt.enabled)
 		return MQTT_SUCCESS;
 #ifdef USE_MOSQUITTO
-	if(mqtt != NULL && mqtt->handle != NULL && topic != NULL) {
+	if(mqtt->handle != NULL && topic != NULL) {
 		return mosquitto_subscribe(mqtt->handle, /* mid: */NULL, topic, mqtt->cfg->mqtt.subscribe_qos);
 	}
 #endif
@@ -106,10 +110,14 @@ int mqtt_subscribe(struct mqtt* mqtt, enum topic_depth depth, char* str, size_t 
 
 int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char* str)
 {
-	if(mqtt != NULL && mqtt->cfg != NULL && !mqtt->cfg->mqtt.enabled)
+	if(mqtt == NULL || mqtt->cfg == NULL)
+		return MQTT_FAILURE;
+	if(!mqtt->cfg->mqtt.enabled)
+		return MQTT_SUCCESS;
+	if(level > mqtt->cfg->mqtt.log_level)
 		return MQTT_SUCCESS;
 #ifdef USE_MOSQUITTO
-	if(mqtt != NULL && mqtt->handle != NULL && str != NULL) {
+	if(mqtt->handle != NULL && str != NULL) {
 		char sub[128];
 		mqtt_topic(mqtt, depth, sub, sizeof(sub), "log/%d", level);
 		char lvl[32];
@@ -142,7 +150,9 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 
 int mqtt_pub_strval(struct mqtt* mqtt, enum topic_depth depth, const char* key, const char* str)
 {
-	if(mqtt != NULL && mqtt->cfg != NULL && !mqtt->cfg->mqtt.enabled)
+	if(mqtt == NULL || mqtt->cfg == NULL)
+		return MQTT_FAILURE;
+	if(!mqtt->cfg->mqtt.enabled)
 		return MQTT_SUCCESS;
 #ifdef USE_MOSQUITTO
 	if(mqtt != NULL && mqtt->handle != NULL) {
@@ -163,7 +173,9 @@ int mqtt_pub_strval(struct mqtt* mqtt, enum topic_depth depth, const char* key, 
 
 int mqtt_pub_uintval(struct mqtt* mqtt, enum topic_depth depth, const char* key, ulong value)
 {
-	if(mqtt != NULL && mqtt->cfg != NULL && !mqtt->cfg->mqtt.enabled)
+	if(mqtt == NULL || mqtt->cfg == NULL)
+		return MQTT_FAILURE;
+	if(!mqtt->cfg->mqtt.enabled)
 		return MQTT_SUCCESS;
 #ifdef USE_MOSQUITTO
 	if(mqtt != NULL && mqtt->handle != NULL) {
@@ -186,7 +198,9 @@ int mqtt_pub_uintval(struct mqtt* mqtt, enum topic_depth depth, const char* key,
 
 int mqtt_pub_message(struct mqtt* mqtt, enum topic_depth depth, const char* key, const void* buf, size_t len)
 {
-	if(mqtt != NULL && mqtt->cfg != NULL && !mqtt->cfg->mqtt.enabled)
+	if(mqtt == NULL || mqtt->cfg == NULL)
+		return MQTT_FAILURE;
+	if(!mqtt->cfg->mqtt.enabled)
 		return MQTT_SUCCESS;
 #ifdef USE_MOSQUITTO
 	if(mqtt != NULL && mqtt->handle != NULL) {
@@ -219,10 +233,14 @@ char* mqtt_libver(char* str, size_t size)
 
 int mqtt_open(struct mqtt* mqtt)
 {
+	char client_id[256];
+	if(mqtt == NULL)
+		return MQTT_FAILURE;
 	if(mqtt->handle != NULL) // already open
 		return MQTT_FAILURE;
+	SAFEPRINTF(client_id, "sbbs-%s", mqtt->host);
 #ifdef USE_MOSQUITTO
-	mqtt->handle = mosquitto_new(/* id: */NULL, /* clean_session: */true, /* obj: */NULL);
+	mqtt->handle = mosquitto_new(client_id, /* clean_session: */true, /* obj: */NULL);
 	return mqtt->handle == NULL ? MQTT_FAILURE : MQTT_SUCCESS;
 #else
 	return MQTT_FAILURE;
@@ -241,7 +259,7 @@ void mqtt_close(struct mqtt* mqtt)
 
 int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 {
-	if(mqtt->handle == NULL)
+	if(mqtt == NULL || mqtt->handle == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
 
 #ifdef USE_MOSQUITTO
@@ -265,7 +283,7 @@ int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 
 int mqtt_disconnect(struct mqtt* mqtt)
 {
-	if(mqtt->handle == NULL)
+	if(mqtt == NULL || mqtt->handle == NULL)
 		return MQTT_FAILURE;
 
 #ifdef USE_MOSQUITTO
@@ -277,7 +295,7 @@ int mqtt_disconnect(struct mqtt* mqtt)
 
 int mqtt_thread_start(struct mqtt* mqtt)
 {
-	if(mqtt->handle == NULL)
+	if(mqtt == NULL || mqtt->handle == NULL)
 		return MQTT_FAILURE;
 
 #ifdef USE_MOSQUITTO
@@ -289,7 +307,7 @@ int mqtt_thread_start(struct mqtt* mqtt)
 
 int mqtt_thread_stop(struct mqtt* mqtt)
 {
-	if(mqtt->handle == NULL)
+	if(mqtt == NULL || mqtt->handle == NULL)
 		return MQTT_FAILURE;
 
 #ifdef USE_MOSQUITTO

@@ -373,6 +373,7 @@ struct mqtt_cfg {
 	int			publish_qos;
 	int			subscribe_qos;
 	int			protocol_version;
+	int			log_level;
 };
 
 typedef struct 

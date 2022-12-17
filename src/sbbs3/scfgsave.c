@@ -208,16 +208,17 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 	}
 
 	{
-		const char* name = "mqtt";
-		iniSetBool(&ini, name, "enabled", cfg->mqtt.enabled, NULL);
-		iniSetString(&ini, name, "broker_addr", cfg->mqtt.broker_addr, NULL);
-		iniSetUInt16(&ini, name, "broker_port", cfg->mqtt.broker_port, NULL);
-		iniSetInteger(&ini, name, "protocol_version", cfg->mqtt.protocol_version, NULL);
-		iniSetInteger(&ini, name, "keepalive", cfg->mqtt.keepalive, NULL);
-		iniSetInteger(&ini, name, "publish_qos", cfg->mqtt.publish_qos, NULL);
-		iniSetInteger(&ini, name, "subscribe_qos", cfg->mqtt.subscribe_qos, NULL);
-		iniSetString(&ini, name, "username", cfg->mqtt.username, NULL);
-		iniSetString(&ini, name, "password", cfg->mqtt.password, NULL);
+		const char* name = "MQTT";
+		iniSetBool(&ini, name, "Enabled", cfg->mqtt.enabled, NULL);
+		iniSetString(&ini, name, "Broker_addr", cfg->mqtt.broker_addr, NULL);
+		iniSetUInt16(&ini, name, "Broker_port", cfg->mqtt.broker_port, NULL);
+		iniSetInteger(&ini, name, "Protocol_version", cfg->mqtt.protocol_version, NULL);
+		iniSetInteger(&ini, name, "Keepalive", cfg->mqtt.keepalive, NULL);
+		iniSetInteger(&ini, name, "Publish_QOS", cfg->mqtt.publish_qos, NULL);
+		iniSetInteger(&ini, name, "Subscribe_QOS", cfg->mqtt.subscribe_qos, NULL);
+		iniSetString(&ini, name, "Username", cfg->mqtt.username, NULL);
+		iniSetString(&ini, name, "Password", cfg->mqtt.password, NULL);
+		iniSetLogLevel(&ini, name , "LogLevel", cfg->mqtt.log_level, NULL);
 	}
 
 	{
