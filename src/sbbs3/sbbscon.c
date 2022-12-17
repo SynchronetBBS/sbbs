@@ -361,9 +361,18 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 #ifdef MOSQUITTO_LOG
 static void mqtt_log_msg(struct mosquitto* moq, void* cbdata, int level, const char* str)
 {
-	char msg[1024];
-	SAFEPRINTF2(msg, "MQTT log_msg(%x): %s", level, str);
-	log_puts(LOG_DEBUG, msg);
+	static FILE* fp;
+
+	if(fp == NULL) {
+		char path[MAX_PATH + 1];
+		SAFEPRINTF(path, "%smqtt.log", scfg.logs_dir);
+		fp = fopen(path, "a");
+		if(fp == NULL)
+			lprintf(LOG_ERR, "Error %d opening %s", errno, path);
+	}
+	time_t now = time(NULL);
+	char tmp[32];
+	fprintf(fp, "%.24s %x %s\n", ctime_r(&now, tmp), level, str);
 }
 #endif
 
