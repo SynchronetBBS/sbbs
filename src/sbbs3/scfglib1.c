@@ -208,10 +208,11 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->mqtt.password, iniGetString(section, NULL, "password", "", value));
 	SAFECOPY(cfg->mqtt.broker_addr, iniGetString(section, NULL, "broker_addr", "127.0.0.1", value));
 	cfg->mqtt.broker_port = iniGetUInt16(section, NULL, "broker_port", IPPORT_MQTT);
-	cfg->mqtt.keepalive = iniGetInteger(section, NULL, "keepalive", 10);
+	cfg->mqtt.keepalive = iniGetInteger(section, NULL, "keepalive", 5 * 60); // 5 minutes
 	cfg->mqtt.publish_qos = iniGetInteger(section, NULL, "publish_qos", 0);
 	cfg->mqtt.subscribe_qos = iniGetInteger(section, NULL, "subscribe_qos", 2);
 	cfg->mqtt.protocol_version = iniGetInteger(section, NULL, "protocol_version", 5);
+	cfg->mqtt.log_level = iniGetLogLevel(section, NULL, "LogLevel", LOG_INFO);
 
 	/***********/
 	/* Modules */
