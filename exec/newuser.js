@@ -145,6 +145,7 @@ function send_newuser_welcome_msg(fname)
 		subject: "Welcome to " + system.name + "!" 
 	};
 
+	msgtxt = msgtxt.replace(/@(\w+)@/, function (code) { return bbs.atcode(code); });
 	var result = msgbase.save_msg(hdr, msgtxt);
 	if(!result)
 		log(LOG_ERR, "!ERROR " + msgbase.error + " saving mail message");

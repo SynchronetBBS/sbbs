@@ -1,12 +1,13 @@
                          SlyEdit message editor
-                              Version 1.82
-                        Release date: 2022-12-01
+                              Version 1.83
+                        Release date: 2022-12-14
 
                                   by
 
                              Eric Oulashin
                      Sysop of Digital Distortion BBS
-                 BBS internet address: digdist.bbsindex.com
+               BBS internet address: digitaldistortionbbs.com
+			         Alternate: digdist.synchro.net
                      Email: eric.oulashin@gmail.com
 
 
@@ -144,7 +145,7 @@ ICE parameter for IceEdit emulation:
     ¦ ¦Native (32-bit) Executable      No                                ¦
     ¦ ¦Use Shell to Execute            No                                ¦
     ¦ ¦Record Terminal Width           Yes                               ¦
-    ¦ ¦Word-wrap Quoted Text           Yes, for 80 columns               ¦
+    ¦ ¦Word-wrap Quoted Text           Yes, for terminal width           ¦
     ¦ ¦Automatically Quoted Text       All                               ¦
     ¦ ¦Editor Information Files        QuickBBS MSGINF/MSGTMP            ¦
     ¦ ¦Expand Line Feeds to CRLF       Yes                               ¦
@@ -917,6 +918,14 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.83     2022-12-13   Quote lines that are wider than the user's terminal width
+                      are now wrapped to the user's terminal width to ensure
+					  all the quote lines are entirely available to be quoted.
+1.82     2022-12-01   Bug fix: Added some safety checks when reading the
+                      configuration file
+1.81     2022-11-26   Refactored the way the configuration file is read. Also,
+                      the color configuration files now can just specify
+					  attribute characters, without the control character.
 1.80     2022-07-04   Added the ability to change/set the text color (using the
                       CTRL-K hotkey).  If desired, changing the text color can
                       be disabled if, and the colors can be saved as ANSI
