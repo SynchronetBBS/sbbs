@@ -1815,7 +1815,7 @@ int main(int argc, char** argv)
 				lprintf(LOG_INFO, "MQTT connecting to broker %s:%u", scfg.mqtt.broker_addr, scfg.mqtt.broker_port);
 				result = mqtt_connect(&bbs_startup.mqtt, /* bind_address: */NULL);
 				if(result == MQTT_SUCCESS) {
-					lprintf(LOG_INFO, "MQTT broker-connect (%s:d) successful", scfg.mqtt.broker_addr, scfg.mqtt.broker_port);
+					lprintf(LOG_INFO, "MQTT broker-connect (%s:%d) successful", scfg.mqtt.broker_addr, scfg.mqtt.broker_port);
 				} else {
 					lprintf(LOG_ERR, "MQTT broker-connect (%s:%d) failure: %d", scfg.mqtt.broker_addr, scfg.mqtt.broker_port, result);
 					mqtt_close(&bbs_startup.mqtt);
@@ -1842,12 +1842,15 @@ int main(int argc, char** argv)
 	mqtt_pub_uintval(&ftp_startup.mqtt, TOPIC_SERVER, p, ftp_startup.max_clients);
 	mqtt_pub_uintval(&web_startup.mqtt, TOPIC_SERVER, p, web_startup.max_clients);
 	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "version", sbbscon_ver());
+	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "status", "online");
 
 #ifdef USE_MOSQUITTO
 	if(bbs_startup.mqtt.handle != NULL) {
 #ifdef MOSQUITTO_LOG
 		mosquitto_log_callback_set(bbs_startup.mqtt.handle, mqtt_log_msg);
 #endif
+		p = "disconnected";
+		mosquitto_will_set(bbs_startup.mqtt.handle, "status", strlen(p), p, /* QOS: */2, /* retain: */true);
 		mosquitto_disconnect_callback_set(bbs_startup.mqtt.handle, mqtt_disconnected);
 		mosquitto_message_callback_set(bbs_startup.mqtt.handle, mqtt_message_received);
 		for(int i = bbs_startup.first_node; i <= bbs_startup.last_node; i++) {
@@ -2319,7 +2322,10 @@ int main(int argc, char** argv)
 	/* erase the prompt */
 	printf("\r%*s\r",prompt_len,"");
 
+	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "status", "offline");
+	mqtt_disconnect(&bbs_startup.mqtt);
 	mqtt_thread_stop(&bbs_startup.mqtt);
+	mqtt_close(&bbs_startup.mqtt);
 
 	return(0);
 }
