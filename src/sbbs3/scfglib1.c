@@ -208,11 +208,18 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->mqtt.password, iniGetString(section, NULL, "password", "", value));
 	SAFECOPY(cfg->mqtt.broker_addr, iniGetString(section, NULL, "broker_addr", "127.0.0.1", value));
 	cfg->mqtt.broker_port = iniGetUInt16(section, NULL, "broker_port", IPPORT_MQTT);
-	cfg->mqtt.keepalive = iniGetInteger(section, NULL, "keepalive", 5 * 60); // 5 minutes
-	cfg->mqtt.publish_qos = iniGetInteger(section, NULL, "publish_qos", 0);
-	cfg->mqtt.subscribe_qos = iniGetInteger(section, NULL, "subscribe_qos", 2);
-	cfg->mqtt.protocol_version = iniGetInteger(section, NULL, "protocol_version", 5);
+	cfg->mqtt.keepalive = iniGetIntInRange(section, NULL, "keepalive", 5, 60, INT_MAX); // seconds
+	cfg->mqtt.publish_qos = iniGetIntInRange(section, NULL, "publish_qos", 0, 0, 2);
+	cfg->mqtt.subscribe_qos = iniGetIntInRange(section, NULL, "subscribe_qos", 0, 2, 2);
+	cfg->mqtt.protocol_version = iniGetIntInRange(section, NULL, "protocol_version", 3, 5, 5);
 	cfg->mqtt.log_level = iniGetLogLevel(section, NULL, "LogLevel", LOG_INFO);
+	cfg->mqtt.tls.mode = iniGetIntInRange(section, NULL, "tls_mode", MQTT_TLS_DISABLED, MQTT_TLS_DISABLED, MQTT_TLS_PSK);
+	SAFECOPY(cfg->mqtt.tls.cafile, iniGetString(section, NULL, "tls_cafile", "", value));
+	SAFECOPY(cfg->mqtt.tls.certfile, iniGetString(section, NULL, "tls_certfile", "", value));
+	SAFECOPY(cfg->mqtt.tls.keyfile, iniGetString(section, NULL, "tls_keyfile", "", value));
+	SAFECOPY(cfg->mqtt.tls.keypass, iniGetString(section, NULL, "tls_keypass", "", value));
+	SAFECOPY(cfg->mqtt.tls.psk, iniGetString(section, NULL, "tls_psk", "", value));
+	SAFECOPY(cfg->mqtt.tls.identity, iniGetString(section, NULL, "tls_identity", "", value));
 
 	/***********/
 	/* Modules */

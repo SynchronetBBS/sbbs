@@ -374,6 +374,19 @@ struct mqtt_cfg {
 	int			subscribe_qos;
 	int			protocol_version;
 	int			log_level;
+	struct {
+		enum {
+			MQTT_TLS_DISABLED,
+			MQTT_TLS_CERT,
+			MQTT_TLS_PSK
+		} mode;
+		char	cafile[256];
+		char	certfile[256];
+		char	keyfile[256];
+		char	keypass[256];
+		char	psk[256];
+		char	identity[256];
+	} tls;
 };
 
 typedef struct 
