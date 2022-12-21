@@ -219,6 +219,14 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 		iniSetString(&ini, name, "Username", cfg->mqtt.username, NULL);
 		iniSetString(&ini, name, "Password", cfg->mqtt.password, NULL);
 		iniSetLogLevel(&ini, name , "LogLevel", cfg->mqtt.log_level, NULL);
+		// TLS
+		iniSetInteger(&ini, name, "TLS_mode", cfg->mqtt.tls.mode, NULL);
+		iniSetString(&ini, name, "TLS_cafile", cfg->mqtt.tls.cafile, NULL);
+		iniSetString(&ini, name, "TLS_certfile", cfg->mqtt.tls.certfile, NULL);
+		iniSetString(&ini, name, "TLS_keyfile", cfg->mqtt.tls.keyfile, NULL);
+		iniSetString(&ini, name, "TLS_keypass", cfg->mqtt.tls.keypass, NULL);
+		iniSetString(&ini, name, "TLS_psk", cfg->mqtt.tls.psk, NULL);
+		iniSetString(&ini, name, "TLS_identity", cfg->mqtt.tls.identity, NULL);
 	}
 
 	{
