@@ -466,7 +466,7 @@ int main(int argc, char **argv)
 			"\n"
 			"    Nodes                : Add, delete, or configure nodes\n"
 			"    System               : System-wide configuration options\n"
-			"    Networks             : Message networking configuration\n"
+			"    Networks             : Networking configuration\n"
 			"    File Areas           : File area configuration\n"
 			"    File Options         : File area options\n"
 			"    Chat Features        : Chat actions, sections, pagers, and robots\n"
@@ -505,19 +505,7 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 2:
-				if(!load_main_cfg(&cfg, error, sizeof(error))) {
-					SAFEPRINTF(errormsg,"ERROR: %s",error);
-					uifc.msg(errormsg);
-					break;
-				}
-				if(!load_msgs_cfg(&cfg, error, sizeof(error))) {
-					SAFEPRINTF(errormsg,"ERROR: %s",error);
-					uifc.msg(errormsg);
-					break;
-				}
 				net_cfg();
-				free_msgs_cfg(&cfg);
-				free_main_cfg(&cfg);
 				break;
 			case 3:
 				if(!load_main_cfg(&cfg, error, sizeof(error))) {
