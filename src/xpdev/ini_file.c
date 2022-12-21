@@ -1691,6 +1691,23 @@ int iniGetInteger(str_list_t list, const char* section, const char* key, int def
 	return(parseInteger(vp));
 }
 
+int iniGetIntInRange(str_list_t list, const char* section, const char* key, int min, int deflt, int max)
+{
+	char*	vp=NULL;
+	int		result;
+
+	get_value(list, section, key, NULL, &vp, /* literals_supported: */FALSE);
+
+	if(vp==NULL || *vp==0)	/* blank value or missing key */
+		return deflt;
+
+	result = parseInteger(vp);
+	if(result < min || result > max)
+		return deflt;
+	return result;
+}
+
+
 uint iniGetUInteger(str_list_t list, const char* section, const char* key, uint deflt)
 {
 	char*	vp=NULL;
