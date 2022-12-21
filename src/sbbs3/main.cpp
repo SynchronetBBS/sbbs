@@ -2481,10 +2481,12 @@ void output_thread(void* arg)
 					sem_post(startup->node_spysem[sbbs->cfg.node_num-1]);
 			}
 			/* Spy on the user remotely */
-			int result = mqtt_pub_message(&startup->mqtt, TOPIC_BBS, spy_topic, buf+bufbot, i);
-			if(result != MQTT_SUCCESS)
-				lprintf(LOG_WARNING, "%s ERROR %d (%d) publishing node output (%u bytes): %s"
-					,node, result, errno, i, spy_topic);
+			if(sbbs->cfg.mqtt.enabled) {
+				int result = mqtt_pub_message(&startup->mqtt, TOPIC_BBS, spy_topic, buf+bufbot, i);
+				if(result != MQTT_SUCCESS)
+					lprintf(LOG_WARNING, "%s ERROR %d (%d) publishing node output (%u bytes): %s"
+						,node, result, errno, i, spy_topic);
+			}
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
 				(void)sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
 #ifdef __unix__
