@@ -14188,7 +14188,7 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 	 * TODO: Downloads are broken when RIP is enabled...
 	 *       This should certainly be fixed someday.
 	 */
-	if (rip.enabled == false) {
+	if (rip.enabled == false || rip_suspended) {
 		return blen;
 	}
 
@@ -14525,13 +14525,11 @@ suspend_rip(bool suspend)
 	if (suspend) {
 		if (rip.enabled) {
 			rip_suspended = true;
-			rip.enabled = false;
 		}
 	}
 	else {
-		if (rip_suspended) {
+		if (rip.enabled) {
 			rip_suspended = false;
-			rip.enabled = true;
 		}
 	}
 }
@@ -14587,7 +14585,7 @@ rip_getch(void)
 		}
 		return ch;
 	}
-	if (rip.enabled == false) {
+	if (rip.enabled == false || rip_suspended) {
 		ch = getch();
 		if(ch==0 || ch==0xe0)
 			ch |= getch() << 8;
