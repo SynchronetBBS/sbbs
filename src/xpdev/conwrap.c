@@ -132,8 +132,8 @@ int kbhit(void)
 			return 0;
 	}
 
-    if(!beensetup)
-    	_termios_setup();
+	if(!beensetup)
+		_termios_setup();
 
 	/* set up select() args */
 	FD_ZERO(&inp);
