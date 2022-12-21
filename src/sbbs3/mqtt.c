@@ -240,7 +240,7 @@ int mqtt_open(struct mqtt* mqtt)
 		return MQTT_FAILURE;
 	SAFEPRINTF(client_id, "sbbs-%s", mqtt->host);
 #ifdef USE_MOSQUITTO
-	mqtt->handle = mosquitto_new(client_id, /* clean_session: */true, /* obj: */NULL);
+	mqtt->handle = mosquitto_new(client_id, /* clean_session: */true, /* userdata: */mqtt);
 	return mqtt->handle == NULL ? MQTT_FAILURE : MQTT_SUCCESS;
 #else
 	return MQTT_FAILURE;
@@ -257,6 +257,14 @@ void mqtt_close(struct mqtt* mqtt)
 #endif
 }
 
+static int pw_callback(char* buf, int size, int rwflag, void* userdata)
+{
+	struct mqtt* mqtt = (struct mqtt*)userdata;
+
+	strncpy(buf, mqtt->cfg->mqtt.tls.keypass, size);
+	return strlen(mqtt->cfg->mqtt.tls.keypass);
+}
+
 int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 {
 	if(mqtt == NULL || mqtt->handle == NULL || mqtt->cfg == NULL)
@@ -271,6 +279,31 @@ int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 		password = NULL;
 	mosquitto_int_option(mqtt->handle, MOSQ_OPT_PROTOCOL_VERSION, mqtt->cfg->mqtt.protocol_version);
 	mosquitto_username_pw_set(mqtt->handle, username, password);
+	if(mqtt->cfg->mqtt.tls.mode == MQTT_TLS_CERT) {
+		char* certfile = NULL;
+		char* keyfile = NULL;
+		if(mqtt->cfg->mqtt.tls.certfile[0] && mqtt->cfg->mqtt.tls.keyfile[0]) {
+			certfile = mqtt->cfg->mqtt.tls.certfile;
+			keyfile = mqtt->cfg->mqtt.tls.keyfile;
+		}
+		int result = mosquitto_tls_set(mqtt->handle,
+			mqtt->cfg->mqtt.tls.cafile,
+			NULL, // capath
+			certfile,
+			keyfile,
+			pw_callback);
+		if(result != MOSQ_ERR_SUCCESS)
+			return result;
+	}
+	else if(mqtt->cfg->mqtt.tls.mode == MQTT_TLS_PSK) {
+		int result = mosquitto_tls_psk_set(mqtt->handle,
+			mqtt->cfg->mqtt.tls.psk,
+			mqtt->cfg->mqtt.tls.identity,
+			NULL // ciphers (default)
+			);
+		if(result != MOSQ_ERR_SUCCESS)
+			return result;
+	}
 	return mosquitto_connect_bind(mqtt->handle,
 		mqtt->cfg->mqtt.broker_addr,
 		mqtt->cfg->mqtt.broker_port,
