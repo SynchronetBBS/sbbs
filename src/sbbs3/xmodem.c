@@ -631,7 +631,7 @@ void xmodem_init(xmodem_t* xm, void* cbdata, long* mode
 	xm->block_size=XMODEM_MAX_BLOCK_SIZE;
 	xm->max_block_size=XMODEM_MAX_BLOCK_SIZE;
 	xm->max_errors=9;
-	xm->g_delay=1;
+	xm->g_delay=0;
 
 	xm->cbdata=cbdata;
 	xm->mode=mode;
