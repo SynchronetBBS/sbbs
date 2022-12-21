@@ -91,21 +91,22 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 	}
 	pthread_mutex_unlock(&nodefile_mutex);
 
-	snprintf(str, sizeof(str), "%u\t%u\t%u\t%u\t%x\t%u\t%u\t%u"
-		,node->status
-		,node->action
-		,node->useron
-		,node->connection
-		,node->misc
-		,node->aux
-		,node->extaux
-		,node->errors
-		);
-	SAFEPRINTF(topic, "node%u/status", number + 1);
-	int result = mqtt_pub_strval(&startup->mqtt, TOPIC_BBS, topic, str);
-	if(result != MQTT_SUCCESS)
-		lprintf(LOG_WARNING, "ERROR %d (%d) publishing node status: %s", result, errno, topic);
-
+	if(cfg.mqtt.enabled) {
+		snprintf(str, sizeof(str), "%u\t%u\t%u\t%u\t%x\t%u\t%u\t%u"
+			,node->status
+			,node->action
+			,node->useron
+			,node->connection
+			,node->misc
+			,node->aux
+			,node->extaux
+			,node->errors
+			);
+		SAFEPRINTF(topic, "node%u/status", number + 1);
+		int result = mqtt_pub_strval(&startup->mqtt, TOPIC_BBS, topic, str);
+		if(result != MQTT_SUCCESS)
+			lprintf(LOG_WARNING, "ERROR %d (%d) publishing node status: %s", result, errno, topic);
+	}
 	if(wr!=sizeof(node_t)) {
 		errno=wrerr;
 		errormsg(WHERE,ERR_WRITE,"nodefile",number+1);
