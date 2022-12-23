@@ -1388,7 +1388,7 @@ int main(int argc, char** argv)
 			FD_SET(sock, &fds);
 			struct timeval tv = { 0, 0 };
 			if(now - lastrx >= rx_delay && select(/* ignored: */0, &fds, NULL, NULL, &tv) == 1) {
-				dprintf("select returned 1");
+				dprintf("select returned 1 at %llu", now);
 				int rd = recv(sock, buf, rx_buflen, /* flags: */0);
 				dprintf("recv returned %d", rd);
 				if(rd <= 0) {
@@ -1413,7 +1413,7 @@ int main(int argc, char** argv)
 				lastrx = now;
 			}
 			if(WaitForSingleObject(hangup_event, 0) == WAIT_OBJECT_0) {
-				dprintf("hangup_event signaled");
+				dprintf("hangup_event signaled at %llu", now);
 				disconnect(&modem);
 				vdd_writestr(&wrslot, response(&modem, NO_CARRIER));
 			}
@@ -1480,7 +1480,7 @@ int main(int argc, char** argv)
 				} else {
 					if(now - lasttx > guard_time(&modem)) {
 						modem.esc_count = count_esc(&modem, buf, rd);
-						dprintf("New esc count = %d", modem.esc_count);
+						dprintf("New esc count = %d at %llu", modem.esc_count, now);
 					}
 				}
 				size_t len = rd;
@@ -1498,7 +1498,7 @@ int main(int argc, char** argv)
 				else if(cfg.debug)
 					dprintf("TX: %d bytes", wr);
 			} else { // Command mode
-				dprintf("RX command: '%.*s'\n", rd, buf);
+				dprintf("RX command: '%.*s' at %llu\n", rd, buf, now);
 				if(!modem.echo_off)
 					vdd_write(&wrslot, buf, rd);
 				char* response = atmodem_parse(&modem, buf, rd);
@@ -1552,6 +1552,10 @@ int main(int argc, char** argv)
 		printf("rx_delay: %lld\n", rx_delay);
 		printf("rx_buflen: %ld\n", rx_buflen);
 		printf("largest recv: %d\n", largest_recv);
+		printf("lasttx: %llu\n", lasttx);
+		printf("lastrx: %llu\n", lastrx);
+		printf("lastring: %llu\n", lastring);
+		printf("timer: %llu\n", xp_timer64());
 	}
 	return retval;
 }
