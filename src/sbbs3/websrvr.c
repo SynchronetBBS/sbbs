@@ -551,7 +551,7 @@ static int lprintf(int level, const char *fmt, ...)
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
 		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
-		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -1863,7 +1863,7 @@ static void badlogin(SOCKET sock, const char* prot, const char* user, const char
 	SAFEPRINTF(reason,"%s LOGIN", prot);
 	count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
-		hacklog(&scfg, reason, user, passwd, host, addr);
+		hacklog(&scfg, &startup->mqtt, reason, user, passwd, host, addr);
 #ifdef _WIN32
 		if(startup->sound.hack[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
@@ -3680,7 +3680,7 @@ static BOOL check_request(http_session_t * session)
 			send_error(session,__LINE__,"400 Bad Request");
 			SAFEPRINTF2(str, "Request for '%s' is outside of web root: %s", path, root_dir);
 			lprintf(LOG_NOTICE,"%04d %s [%s] !ERROR %s", session->socket, session->client.protocol, session->host_ip, str);
-			hacklog(&scfg, session->client.protocol, session->username, str, session->client.host, &session->addr);
+			hacklog(&scfg, &startup->mqtt, session->client.protocol, session->username, str, session->client.host, &session->addr);
 #ifdef _WIN32
 			if(startup->sound.hack[0] && !sound_muted(&scfg))
 				PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);

@@ -143,7 +143,7 @@ static int lprintf(int level, const char *fmt, ...)
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
 		SAFEPRINTF2(errmsg, "%s  %s", server_abbrev, sbuf);
-		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -1723,7 +1723,7 @@ static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, union xp
 		PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-	return hacklog(&scfg, prot, user, text, host, addr);
+	return hacklog(&scfg, &startup->mqtt, prot, user, text, host, addr);
 }
 
 /****************************************************************************/

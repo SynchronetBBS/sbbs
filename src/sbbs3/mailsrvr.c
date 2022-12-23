@@ -192,7 +192,7 @@ static int lprintf(int level, const char *fmt, ...)
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
 		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
-		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name,errmsg), stats.errors++;
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name,errmsg), stats.errors++;
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -978,7 +978,7 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* prot, const ch
 		SAFEPRINTF(reason,"%s LOGIN", prot);
 		count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
 		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
-			hacklog(&scfg, reason, user, passwd, host, addr);
+			hacklog(&scfg, &startup->mqtt, reason, user, passwd, host, addr);
 #ifdef _WIN32
 			if(startup->sound.hack[0] && !sound_muted(&scfg)) 
 				PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
@@ -1913,7 +1913,7 @@ static BOOL chk_email_addr(SOCKET socket, const char* prot, char* p, char* host_
 	lprintf(LOG_NOTICE,"%04d %s [%s] !BLOCKED %s e-mail address: %s"
 		,socket, prot, host_ip, source, addr);
 	SAFEPRINTF2(tmp,"Blocked %s e-mail address: %s", source, addr);
-	spamlog(&scfg, (char*)prot, "REFUSED", tmp, host_name, host_ip, to, from);
+	spamlog(&scfg, &startup->mqtt, (char*)prot, "REFUSED", tmp, host_name, host_ip, to, from);
 
 	return(FALSE);
 }
@@ -3109,7 +3109,7 @@ static void smtp_thread(void* arg)
 				,socket, client.protocol, dnsbl_ip, dnsbl, host_name, inet_ntoa(dnsbl_result));
 			if(startup->options&MAIL_OPT_DNSBL_REFUSE) {
 				SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-				spamlog(&scfg, (char*)client.protocol, "SESSION REFUSED", str, host_name, dnsbl_ip, NULL, NULL);
+				spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "SESSION REFUSED", str, host_name, dnsbl_ip, NULL, NULL);
 				sockprintf(socket,client.protocol,session
 					,"550 Mail from %s refused due to listing at %s"
 					,dnsbl_ip, dnsbl);
@@ -3235,7 +3235,7 @@ static void smtp_thread(void* arg)
 					lprintf(LOG_NOTICE,"%04d %s %s !FILTERING TWIT-LISTED SENDER: '%s' <%s> (%lu total)"
 						,socket, client.protocol, client_id, sender, sender_addr, ++stats.msgs_refused);
 					SAFEPRINTF2(tmp,"Twit-listed sender: '%s' <%s>", sender, sender_addr);
-					spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
+					spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
 					sockprintf(socket,client.protocol,session, "554 Sender not allowed.");
 					continue;
 				}
@@ -3509,7 +3509,7 @@ static void smtp_thread(void* arg)
 										,socket, client.protocol, client_id, p, reverse_path, ++stats.msgs_refused);
 									SAFEPRINTF2(tmp,"Blocked subject (%s) from: %s"
 										,p, reverse_path);
-									spamlog(&scfg, (char*)client.protocol, "REFUSED"
+									spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "REFUSED"
 										,tmp, host_name, host_ip, rcpt_addr, reverse_path);
 									errmsg="554 Subject not allowed.";
 									smb_error=SMB_FAILURE;
@@ -3612,7 +3612,7 @@ static void smtp_thread(void* arg)
 					}
 					if(startup->dnsbl_hdr[0] || startup->dnsbl_tag[0]) {
 						SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-						spamlog(&scfg, (char*)client.protocol, "TAGGED", str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
+						spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "TAGGED", str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 					}
 				}
 				if(dnsbl_recvhdr)			/* DNSBL-listed IP found in Received header? */
@@ -3801,7 +3801,7 @@ static void smtp_thread(void* arg)
 								);
 							lprintf(LOG_NOTICE,"%04d %s %s Message from %s %s", socket, client.protocol, client_id, sender_info, str);
 							if(!is_spam) {
-								spamlog(&scfg, (char*)client.protocol, "IGNORED"
+								spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "IGNORED"
 									,str, host_name, host_ip, rcpt_addr, reverse_path);
 								is_spam=TRUE;
 							}
@@ -3846,7 +3846,7 @@ static void smtp_thread(void* arg)
 							SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 							lprintf(LOG_NOTICE,"%04d %s %s !IGNORED MAIL from %s to <%s> from server: %s (%lu total)"
 								,socket, client.protocol, client_id, sender_info, rcpt_addr, str, ++stats.msgs_ignored);
-							spamlog(&scfg, (char*)client.protocol, "IGNORED"
+							spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "IGNORED"
 								,str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 						}
 						/* pretend we received it */
@@ -4505,7 +4505,7 @@ static void smtp_thread(void* arg)
 					lprintf(LOG_NOTICE,"%04d %s %s !MAXIMUM RECIPIENTS (%d) REACHED"
 						,socket, client.protocol, client_id, startup->max_recipients);
 					SAFEPRINTF(tmp,"Maximum recipient count (%d)",startup->max_recipients);
-					spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp
+					spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "REFUSED", tmp
 						,host_name, host_ip, rcpt_addr, reverse_path);
 					sockprintf(socket,client.protocol,session, "452 Too many recipients");
 					stats.msgs_refused++;
@@ -4527,7 +4527,7 @@ static void smtp_thread(void* arg)
 					,socket, client.protocol, client_id, scfg.level_emailperday[relay_user.level], relay_user.number, relay_user.alias);
 				SAFEPRINTF2(tmp,"Maximum emails per day (%u) for %s"
 					,scfg.level_emailperday[relay_user.level], relay_user.alias);
-				spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp
+				spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "REFUSED", tmp
 					,host_name, host_ip, rcpt_addr, reverse_path);
 				sockprintf(socket,client.protocol,session, "452 Too many emails today");
 				stats.msgs_refused++;
@@ -4548,7 +4548,7 @@ static void smtp_thread(void* arg)
 						filter_ip(&scfg, client.protocol, reason, host_name, host_ip, reverse_path, spam_block);
 						strcat(tmp," and BLOCKED");
 					}
-					spamlog(&scfg, (char*)client.protocol, tmp, "Attempted recipient in SPAM BAIT list"
+					spamlog(&scfg, &startup->mqtt, (char*)client.protocol, tmp, "Attempted recipient in SPAM BAIT list"
 						,host_name, host_ip, rcpt_addr, reverse_path);
 					dnsbl_result.s_addr=0;
 				}
@@ -4569,7 +4569,7 @@ static void smtp_thread(void* arg)
 				lprintf(LOG_NOTICE,"%04d %s %s !REFUSED MAIL from blacklisted server (%lu total)"
 					,socket, client.protocol, client_id, ++stats.sessions_refused);
 				SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-				spamlog(&scfg, (char*)client.protocol, "REFUSED", str, host_name, host_ip, rcpt_addr, reverse_path);
+				spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "REFUSED", str, host_name, host_ip, rcpt_addr, reverse_path);
 				sockprintf(socket,client.protocol,session
 					,"550 Mail from %s refused due to listing at %s"
 					,host_ip, dnsbl);
@@ -4663,7 +4663,7 @@ static void smtp_thread(void* arg)
 						lprintf(LOG_WARNING,"%04d %s %s !ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 							,socket, client.protocol, client_id, reverse_path, host_ip, p);
 						SAFEPRINTF(tmp,"Relay attempt to: %s", p);
-						spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
+						spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
 						if(startup->options&MAIL_OPT_ALLOW_RELAY)
 							sockprintf(socket,client.protocol,session, "553 Relaying through this server "
 							"requires authentication.  "

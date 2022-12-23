@@ -1258,7 +1258,7 @@ js_spamlog(JSContext *cx, uintN argc, jsval *arglist)
 			from=p;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
-	ret=spamlog(sys->cfg,prot,action,reason,host,ip_addr,to,from);
+	ret=spamlog(sys->cfg,/* mqtt: */NULL,prot,action,reason,host,ip_addr,to,from);
 	free(prot);
 	free(action);
 	free(reason);
@@ -1325,7 +1325,7 @@ js_hacklog(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 	rc=JS_SUSPENDREQUEST(cx);
-	ret=hacklog(sys->cfg,prot,user,text,host,&addr);
+	ret=hacklog(sys->cfg,/* MQTT: */NULL,prot,user,text,host,&addr);
 	free(prot);
 	free(user);
 	free(text);
