@@ -110,7 +110,6 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 
 # Must add new additions to MONO_OBJS too!
 CON_OBJS	= $(MTOBJODIR)/sbbscon$(OFILE) \
-			$(MTOBJODIR)/sbbs_status$(OFILE) \
 			$(MTOBJODIR)/sbbs_ini$(OFILE)
 
 # Must add new additions to MONO_OBJS too!
