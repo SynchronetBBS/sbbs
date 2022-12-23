@@ -1246,11 +1246,11 @@ extern "C" {
 	DLLEXPORT int		notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
 
 	/* logfile.cpp */
-	DLLEXPORT int		errorlog(scfg_t* cfg, int level, const char* host, const char* text);
+	DLLEXPORT int		errorlog(scfg_t* cfg, struct mqtt*, int level, const char* host, const char* text);
 
-	DLLEXPORT BOOL		hacklog(scfg_t* cfg, const char* prot, const char* user, const char* text
+	DLLEXPORT BOOL		hacklog(scfg_t* cfg, struct mqtt*, const char* prot, const char* user, const char* text
 										,const char* host, union xp_sockaddr* addr);
-	DLLEXPORT BOOL		spamlog(scfg_t* cfg, char* prot, char* action, char* reason
+	DLLEXPORT BOOL		spamlog(scfg_t* cfg, struct mqtt*, char* prot, char* action, char* reason
 										,char* host, char* ip_addr, char* to, char* from);
 
 	/* data.cpp */
