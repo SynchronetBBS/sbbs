@@ -113,7 +113,7 @@ extern "C" BOOL spamlog(scfg_t* cfg, struct mqtt* mqtt, char* prot, char* action
 	if(mqtt != NULL) {
 		char str[1024];
 		if(reason == NULL)
-			reason= "";
+			reason = (char*)"";
 		snprintf(str, sizeof(str), "%s\t%s\t%s\t%s\t%s\t%s\t%s", prot, action, host, ip_addr, from, to_user, reason);
 		mqtt_pub_strval(mqtt, TOPIC_HOST, "spam", str);
 	}
