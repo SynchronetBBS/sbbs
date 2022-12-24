@@ -875,10 +875,12 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		else
 			p2 = p1;
 	}
-	p3=strrchr(p1,'/');
-	if(p3!=NULL) {
-		*p3=0;
-		SAFECOPY(bbs->ghost_program,p3+1);
+	if (bbs->conn_type == CONN_TYPE_MBBS_GHOST) {
+		p3=strrchr(p1,'/');
+		if(p3!=NULL) {
+			*p3=0;
+			SAFECOPY(bbs->ghost_program,p3+1);
+		}
 	}
 	SAFECOPY(bbs->name,p1);
 	p2=strrchr(p2,':');
