@@ -1812,6 +1812,11 @@ int main(int argc, char** argv)
 			if(result != MQTT_SUCCESS) {
 				lprintf(LOG_ERR, "MQTT open failure: %d", result);
 			} else {
+				char topic[128];
+				p = "disconnected";
+				mosquitto_will_set(bbs_startup.mqtt.handle
+					,mqtt_topic(&bbs_startup.mqtt, TOPIC_HOST, topic, sizeof(topic), "status")
+					,strlen(p), p, /* QOS: */2, /* retain: */true);
 				lprintf(LOG_INFO, "MQTT connecting to broker %s:%u", scfg.mqtt.broker_addr, scfg.mqtt.broker_port);
 				result = mqtt_connect(&bbs_startup.mqtt, /* bind_address: */NULL);
 				if(result == MQTT_SUCCESS) {
@@ -1842,15 +1847,18 @@ int main(int argc, char** argv)
 	mqtt_pub_uintval(&ftp_startup.mqtt, TOPIC_SERVER, p, ftp_startup.max_clients);
 	mqtt_pub_uintval(&web_startup.mqtt, TOPIC_SERVER, p, web_startup.max_clients);
 	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "version", sbbscon_ver());
-	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "status", "online");
+	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "status", "initializing");
 
 #ifdef USE_MOSQUITTO
 	if(bbs_startup.mqtt.handle != NULL) {
 #ifdef MOSQUITTO_LOG
 		mosquitto_log_callback_set(bbs_startup.mqtt.handle, mqtt_log_msg);
 #endif
-		p = "disconnected";
-		mosquitto_will_set(bbs_startup.mqtt.handle, "status", strlen(p), p, /* QOS: */2, /* retain: */true);
+		mqtt_pub_noval(&bbs_startup.mqtt, TOPIC_HOST, "error_count");
+		mqtt_pub_noval(&bbs_startup.mqtt, TOPIC_HOST, "thread_count");
+		mqtt_pub_noval(&bbs_startup.mqtt, TOPIC_HOST, "socket_count");
+		mqtt_pub_noval(&bbs_startup.mqtt, TOPIC_HOST, "client_count");
+		mqtt_pub_noval(&bbs_startup.mqtt, TOPIC_HOST, "served");
 		mosquitto_disconnect_callback_set(bbs_startup.mqtt.handle, mqtt_disconnected);
 		mosquitto_message_callback_set(bbs_startup.mqtt.handle, mqtt_message_received);
 		for(int i = bbs_startup.first_node; i <= bbs_startup.last_node; i++) {
@@ -2011,6 +2019,7 @@ int main(int argc, char** argv)
 	if(run_web)
 		_beginthread((void(*)(void*))web_server,0,&web_startup);
 
+	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "status", "online");
 #ifdef __unix__
 	uid_t uid = getuid();
     if(uid != 0 && !capabilities_set)  { /*  are we running as a normal user?  */
@@ -2317,6 +2326,7 @@ int main(int argc, char** argv)
 		}
 	}
 
+	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "status", "terminating");
 	terminate();
 
 	/* erase the prompt */
