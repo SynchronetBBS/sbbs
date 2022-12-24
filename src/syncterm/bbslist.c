@@ -2652,25 +2652,23 @@ struct bbslist *show_bbslist(char *current, int connected)
                         oldopt=-1;
                         break;
                     case 4:         /* File Locations */
-			{
-				get_syncterm_filename(personal_list, sizeof(personal_list), SYNCTERM_PATH_LIST, FALSE);
-				get_syncterm_filename(setting_file, sizeof(setting_file), SYNCTERM_PATH_INI, FALSE);
-				get_syncterm_filename(default_download, sizeof(default_download), SYNCTERM_DEFAULT_TRANSFER_PATH, FALSE);
-				get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_CACHE, FALSE);
-				asprintf(&p, "`SyncTERM File Locations`\n\n"
-				    "~ Global Dialing Directory (Read-Only) ~\n"
-				    "        %s\n\n"
-				    "~ Personal Dialing Directory ~\n"
-				    "        %s\n\n"
-				    "~ Configuration File ~\n"
-				    "        %s\n\n"
-				    "~ Default download Directory ~\n"
-				    "        %s\n\n"
-				    "~ Cache Directory ~\n"
-				    "        %s\n\n", shared_list, personal_list, setting_file, default_download, cache_path);
-				uifc.showbuf(WIN_MID | WIN_SAV | WIN_HLP, 0, 0, 60, 21, "File Locations", p, NULL, NULL);
-				break;
-			}
+			get_syncterm_filename(personal_list, sizeof(personal_list), SYNCTERM_PATH_LIST, FALSE);
+			get_syncterm_filename(setting_file, sizeof(setting_file), SYNCTERM_PATH_INI, FALSE);
+			get_syncterm_filename(default_download, sizeof(default_download), SYNCTERM_DEFAULT_TRANSFER_PATH, FALSE);
+			get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_CACHE, FALSE);
+			asprintf(&p, "`SyncTERM File Locations`\n\n"
+			    "~ Global Dialing Directory (Read-Only) ~\n"
+			    "        %s\n\n"
+			    "~ Personal Dialing Directory ~\n"
+			    "        %s\n\n"
+			    "~ Configuration File ~\n"
+			    "        %s\n\n"
+			    "~ Default download Directory ~\n"
+			    "        %s\n\n"
+			    "~ Cache Directory ~\n"
+			    "        %s\n\n", shared_list, personal_list, setting_file, default_download, cache_path);
+			uifc.showbuf(WIN_MID | WIN_SAV | WIN_HLP, 0, 0, 60, 21, "File Locations", p, NULL, NULL);
+			break;
                 }
             }
         }
