@@ -606,10 +606,12 @@ void conn_binary_mode_on(void)
 {
 	if(conn_api.binary_mode_on)
 		conn_api.binary_mode_on();
+	conn_api.binary_mode = true;
 }
 
 void conn_binary_mode_off(void)
 {
 	if(conn_api.binary_mode_off)
 		conn_api.binary_mode_off();
+	conn_api.binary_mode = false;
 }

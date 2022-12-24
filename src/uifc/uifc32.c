@@ -2779,6 +2779,9 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
 	if(mode&WIN_DYN && mode&WIN_NODRAW)
 		is_redraw=0;
 
+	last_menu_cur=curp;
+	last_menu_bar=barp;
+
 	vmem_gettext(1,1,api->scrn_width,api->scrn_len,tmp_buffer);
 
 	if(!is_redraw) {

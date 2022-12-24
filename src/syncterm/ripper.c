@@ -9797,7 +9797,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	pthread_mutex_unlock(&vstatlock);
 	// Initialize it...
 	clrscr();
-	get_term_win_size(&term.width, &term.height, &term.nostatus);
+	get_term_win_size(&term.width, &term.height, NULL, NULL, &term.nostatus);
 	term.width = cols;
 	cterm = cterm_init(rows + (term.nostatus ? 0 : -1), cols, oldcterm.x, oldcterm.y, oldcterm.backlines, oldcterm.backwidth, oldcterm.scrollback, oldcterm.emulation);
 	cterm->apc_handler = oldcterm.apc_handler;
@@ -14188,7 +14188,7 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 	 * TODO: Downloads are broken when RIP is enabled...
 	 *       This should certainly be fixed someday.
 	 */
-	if (rip.enabled == false) {
+	if (rip.enabled == false || rip_suspended) {
 		return blen;
 	}
 
@@ -14525,13 +14525,11 @@ suspend_rip(bool suspend)
 	if (suspend) {
 		if (rip.enabled) {
 			rip_suspended = true;
-			rip.enabled = false;
 		}
 	}
 	else {
-		if (rip_suspended) {
+		if (rip.enabled) {
 			rip_suspended = false;
-			rip.enabled = true;
 		}
 	}
 }
@@ -14587,7 +14585,7 @@ rip_getch(void)
 		}
 		return ch;
 	}
-	if (rip.enabled == false) {
+	if (rip.enabled == false || rip_suspended) {
 		ch = getch();
 		if(ch==0 || ch==0xe0)
 			ch |= getch() << 8;
