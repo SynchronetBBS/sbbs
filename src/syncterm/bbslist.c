@@ -2175,18 +2175,24 @@ struct bbslist *show_bbslist(char *current, int connected)
                     ,"Current Screen Mode"
                     ,"Font Management"
                     ,"Program Settings"
+                    ,"File Locations"
                     ,NULL
                 };
     char    *connected_settings_menu[]= {
                      "Default Connection Settings"
                     ,"Font Management"
                     ,"Program Settings"
+                    ,"File Locations"
                     ,NULL
                 };
     int     at_settings=0;
     struct mouse_event mevent;
     struct bbslist defaults;
-    char    shared_list[MAX_PATH+1];
+    char shared_list[MAX_PATH+1];
+    char personal_list[MAX_PATH+1];
+    char setting_file[MAX_PATH+1];
+    char default_download[MAX_PATH+1];
+    char cache_path[MAX_PATH+1];
     char list_title[30];
     int redraw = 0;
 
@@ -2545,6 +2551,8 @@ struct bbslist *show_bbslist(char *current, int connected)
                                 "        Configure additional font files\n\n"
                                 "~ Program Settings ~\n"
                                 "        Modify hardware and screen/video settings\n\n"
+                                "~ File Locations ~\n"
+                                "        Display location for config and directory files\n\n"
                                 "~ " ALT_KEY_NAMEP "-B ~\n"
                                 "        View scrollback of last session\n";
                 if(oldopt != -2)
@@ -2643,6 +2651,26 @@ struct bbslist *show_bbslist(char *current, int connected)
                         load_bbslist(list, BBSLIST_SIZE, &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, list[opt]?strdup(list[opt]->name):NULL);
                         oldopt=-1;
                         break;
+                    case 4:         /* File Locations */
+			{
+				get_syncterm_filename(personal_list, sizeof(personal_list), SYNCTERM_PATH_LIST, FALSE);
+				get_syncterm_filename(setting_file, sizeof(setting_file), SYNCTERM_PATH_INI, FALSE);
+				get_syncterm_filename(default_download, sizeof(default_download), SYNCTERM_DEFAULT_TRANSFER_PATH, FALSE);
+				get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_CACHE, FALSE);
+				asprintf(&p, "`SyncTERM File Locations`\n\n"
+				    "~ Global Dialing Directory (Read-Only) ~\n"
+				    "        %s\n\n"
+				    "~ Personal Dialing Directory ~\n"
+				    "        %s\n\n"
+				    "~ Configuration File ~\n"
+				    "        %s\n\n"
+				    "~ Default download Directory ~\n"
+				    "        %s\n\n"
+				    "~ Cache Directory ~\n"
+				    "        %s\n\n", shared_list, personal_list, setting_file, default_download, cache_path);
+				uifc.showbuf(WIN_MID | WIN_SAV | WIN_HLP, 0, 0, 60, 21, "File Locations", p, NULL, NULL);
+				break;
+			}
                 }
             }
         }
