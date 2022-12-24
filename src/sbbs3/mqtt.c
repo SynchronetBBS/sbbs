@@ -148,6 +148,30 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 	return MQTT_FAILURE;
 }
 
+int mqtt_pub_noval(struct mqtt* mqtt, enum topic_depth depth, const char* key)
+{
+	if(mqtt == NULL || mqtt->cfg == NULL)
+		return MQTT_FAILURE;
+	if(!mqtt->cfg->mqtt.enabled)
+		return MQTT_SUCCESS;
+#ifdef USE_MOSQUITTO
+	if(mqtt != NULL && mqtt->handle != NULL) {
+		char sub[128];
+		mqtt_topic(mqtt, depth, sub, sizeof(sub), "%s", key);
+		return mosquitto_publish_v5(mqtt->handle,
+			/* mid: */NULL,
+			/* topic: */sub,
+			/* payloadlen */0,
+			/* payload */NULL,
+			/* qos */mqtt->cfg->mqtt.publish_qos,
+			/* retain */true,
+			/* properties */NULL);
+	}
+#endif
+	return MQTT_FAILURE;
+}
+
+
 int mqtt_pub_strval(struct mqtt* mqtt, enum topic_depth depth, const char* key, const char* str)
 {
 	if(mqtt == NULL || mqtt->cfg == NULL)

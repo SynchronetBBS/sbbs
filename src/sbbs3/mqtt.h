@@ -62,6 +62,7 @@ DLLEXPORT char* mqtt_libver(char* str, size_t size);
 DLLEXPORT char* mqtt_topic(struct mqtt*, enum topic_depth, char* str, size_t size, const char* fmt, ...);
 DLLEXPORT int mqtt_subscribe(struct mqtt*, enum topic_depth, char* str, size_t size, const char* fmt, ...);
 DLLEXPORT int mqtt_lputs(struct mqtt*, enum topic_depth, int level, const char* str);
+DLLEXPORT int mqtt_pub_noval(struct mqtt*, enum topic_depth, const char* key);
 DLLEXPORT int mqtt_pub_strval(struct mqtt*, enum topic_depth, const char* key, const char* str);
 DLLEXPORT int mqtt_pub_uintval(struct mqtt*, enum topic_depth, const char* key, ulong value);
 DLLEXPORT int mqtt_pub_message(struct mqtt*, enum topic_depth, const char* key, const void* buf, size_t len);
