@@ -1199,6 +1199,9 @@ int main(int argc, char **argv, char** env)
 	FILE*	fp;
 	char	ini_fname[MAX_PATH + 1];
 	str_list_t ini = NULL;
+#ifdef __unix__
+	struct sigaction sa = {0};
+#endif
 
 	confp=stdout;
 	errfp=stderr;
@@ -1491,12 +1494,10 @@ int main(int argc, char **argv, char** env)
 #if defined(_WIN32)
 	SetConsoleCtrlHandler(ControlHandler, TRUE /* Add */);
 #elif defined(__unix__)
-	signal(SIGQUIT,break_handler);
-	siginterrupt(SIGQUIT, 1);
-	signal(SIGINT,break_handler);
-	siginterrupt(SIGINT, 1);
-	signal(SIGTERM,break_handler);
-	siginterrupt(SIGTERM, 1);
+	sa.sa_handler = break_handler;
+	sigaction(SIGQUIT, &sa, NULL);
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
 
 	signal(SIGHUP,recycle_handler);
 
