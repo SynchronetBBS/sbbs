@@ -442,8 +442,10 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 			hold_update=TRUE;
 			display_current_path(api, cfile);
 			api->lbclr=api->lclr|(api->bclr<<4);
-			api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_IMM|WIN_REDRAW,1,3,listwidth,&dircur,&dirbar,NULL,dir_list);
-			api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_IMM|WIN_REDRAW,1+listwidth+1,3,listwidth,&filecur,&filebar,NULL,file_list);
+			if (currfield != DIR_LIST)
+				api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_IMM|WIN_REDRAW,1,3,listwidth,&dircur,&dirbar,NULL,dir_list);
+			if (currfield != FILE_LIST)
+				api->list(WIN_NOBRDR|WIN_FIXEDHEIGHT|WIN_IMM|WIN_REDRAW,1+listwidth+1,3,listwidth,&filecur,&filebar,NULL,file_list);
 			api->lbclr=lbclr;
 			lastfield=currfield;
 			fieldmove=0;
