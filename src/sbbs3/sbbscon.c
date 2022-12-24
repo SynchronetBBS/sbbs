@@ -1812,11 +1812,6 @@ int main(int argc, char** argv)
 			if(result != MQTT_SUCCESS) {
 				lprintf(LOG_ERR, "MQTT open failure: %d", result);
 			} else {
-				char topic[128];
-				p = "disconnected";
-				mosquitto_will_set(bbs_startup.mqtt.handle
-					,mqtt_topic(&bbs_startup.mqtt, TOPIC_HOST, topic, sizeof(topic), "status")
-					,strlen(p), p, /* QOS: */2, /* retain: */true);
 				lprintf(LOG_INFO, "MQTT connecting to broker %s:%u", scfg.mqtt.broker_addr, scfg.mqtt.broker_port);
 				result = mqtt_connect(&bbs_startup.mqtt, /* bind_address: */NULL);
 				if(result == MQTT_SUCCESS) {
