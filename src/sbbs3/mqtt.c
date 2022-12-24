@@ -295,6 +295,7 @@ int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 		return MQTT_FAILURE;
 
 #ifdef USE_MOSQUITTO
+	char topic[128];
 	char* username = mqtt->cfg->mqtt.username;
 	char* password = mqtt->cfg->mqtt.password;
 	if(*username == '\0')
@@ -303,6 +304,10 @@ int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 		password = NULL;
 	mosquitto_int_option(mqtt->handle, MOSQ_OPT_PROTOCOL_VERSION, mqtt->cfg->mqtt.protocol_version);
 	mosquitto_username_pw_set(mqtt->handle, username, password);
+	const char* value = "disconnected";
+	mosquitto_will_set(mqtt->handle
+		,mqtt_topic(mqtt, TOPIC_HOST, topic, sizeof(topic), "status")
+		,strlen(value), value, /* QOS: */2, /* retain: */true);
 	if(mqtt->cfg->mqtt.tls.mode == MQTT_TLS_CERT) {
 		char* certfile = NULL;
 		char* keyfile = NULL;
@@ -368,7 +373,7 @@ int mqtt_thread_stop(struct mqtt* mqtt)
 		return MQTT_FAILURE;
 
 #ifdef USE_MOSQUITTO
-	return mosquitto_loop_stop(mqtt->handle, /* force: */true);
+	return mosquitto_loop_stop(mqtt->handle, /* force: */false);
 #else
 	return MQTT_FAILURE;
 #endif
