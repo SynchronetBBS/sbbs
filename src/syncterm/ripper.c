@@ -12606,7 +12606,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							}
 							strcat(cache_path, &args[9]);
-							if (strchr(cache_path, '.') == NULL)
+							if (strchr(&args[9], '.') == NULL)
 								strcat(cache_path, ".ICN");
 							fexistcase(cache_path);
 							icn = fopen(cache_path, "rb");
