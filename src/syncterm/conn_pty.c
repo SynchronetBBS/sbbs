@@ -391,7 +391,7 @@ int pty_connect(struct bbslist *bbs)
 	struct winsize ws;
 	struct termios ts;
 	char	*termcap;
-	int	cols, rows;
+	int	cols, rows, pixelc, pixelr;
 	int cp;
 
 	ts.c_iflag = TTYDEF_IFLAG;
@@ -401,9 +401,11 @@ int pty_connect(struct bbslist *bbs)
 	memcpy(ts.c_cc,ttydefchars,sizeof(ts.c_cc));
 	cfsetspeed(&ts, 115200);
 
-	get_term_win_size(&cols, &rows, &bbs->nostatus);
+	get_term_win_size(&cols, &rows, &pixelc, &pixelr, &bbs->nostatus);
 	ws.ws_col = cols;
 	ws.ws_row = rows;
+	ws.ws_xpixel = pixelc;
+	ws.ws_ypixel = pixelr;
 
 	cp = getcodepage();
 	child_pid = forkpty(&master, NULL, &ts, &ws);

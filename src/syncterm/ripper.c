@@ -9797,7 +9797,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	pthread_mutex_unlock(&vstatlock);
 	// Initialize it...
 	clrscr();
-	get_term_win_size(&term.width, &term.height, &term.nostatus);
+	get_term_win_size(&term.width, &term.height, NULL, NULL, &term.nostatus);
 	term.width = cols;
 	cterm = cterm_init(rows + (term.nostatus ? 0 : -1), cols, oldcterm.x, oldcterm.y, oldcterm.backlines, oldcterm.backwidth, oldcterm.scrollback, oldcterm.emulation);
 	cterm->apc_handler = oldcterm.apc_handler;

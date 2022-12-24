@@ -8,7 +8,7 @@
 #include "syncterm.h"
 
 void
-get_term_win_size(int *width, int *height, int *nostatus)
+get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostatus)
 {
 	struct	text_info txtinfo;
 	int vmode = find_vmode(fake_mode);
@@ -39,6 +39,19 @@ get_term_win_size(int *width, int *height, int *nostatus)
 		*height=24;
 		*nostatus=1;
 	}
+
+	if (vmode == -1) {
+		if (pixelw)
+			*pixelw = *width * 8;
+		if (pixelh)
+			*pixelh = *height * 16;
+	}
+	else {
+		if (pixelw)
+			*pixelw = *width * vparams[vmode].charwidth;
+		if (pixelh)
+			*pixelh = *height * vparams[vmode].charheight;
+	}
 }
 
 int drawwin(void)
@@ -53,7 +66,7 @@ int drawwin(void)
 
 	strcpy(str,"         ");
 
-	get_term_win_size(&term.width, &term.height, &term.nostatus);
+	get_term_win_size(&term.width, &term.height, NULL, NULL, &term.nostatus);
 
 	if (settings.left_just)
 		term.x = 2;
