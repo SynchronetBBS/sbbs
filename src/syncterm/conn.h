@@ -36,6 +36,7 @@ struct conn_api {
 	int (*close)(void);
 	void (*binary_mode_on)(void);
 	void (*binary_mode_off)(void);
+	bool binary_mode;
 	void *(*rx_parse_cb)(const void* inbuf, size_t inlen, size_t *olen);
 	void *(*tx_parse_cb)(const void* inbuf, size_t inlen, size_t *olen);
 	int log_level;
