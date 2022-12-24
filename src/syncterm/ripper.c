@@ -9851,6 +9851,7 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 	long dxt = 2*b2*x, dyt = -2*a2*y;
 	long d2xt = 2*b2, d2yt = 2*a2;
 	int fy;
+	bool inv = ea < sa;
 	bool skip = false;
 
 	double angle;
@@ -9873,7 +9874,7 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 					}
 				}
 				if (rip.borders) {
-					if (sa <= qangle && ea >= qangle)
+					if ((sa <= qangle && ea >= qangle) || (inv && ea <= qangle && sa >= qangle))
 						set_pixel(xc-x, yc-y, colour);
 				}
 			}
@@ -9886,18 +9887,18 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 				}
 				if (rip.borders) {
 					// Top-right quadrant.
-					if (sa <= angle && ea >= angle)
+					if ((sa <= angle && ea >= angle) || (inv && ea <= qangle && sa >= qangle))
 						set_pixel(xc+x, yc-y, colour);
 					// Bottom-left quadrant.
 					qangle = 180 + angle;
-					if (sa <= qangle && ea >= qangle)
+					if ((sa <= qangle && ea >= qangle) || (inv && ea <= qangle && sa >= qangle))
 						set_pixel(xc-x, yc+y, colour);
 				}
 			}
 			// Bottom-right quadrant
 			qangle = 360 - angle;
 			if (rip.borders) {
-				if (sa <= qangle && ea >= qangle)
+				if ((sa <= qangle && ea >= qangle) || (inv && ea <= qangle && sa >= qangle))
 					set_pixel(xc+x, yc+y, colour);
 			}
 		}
@@ -11141,15 +11142,14 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if (x2 == 0 && y2 == 0)
 								break;
-							if (arg2 < arg1)
-								arg2 += 360;
 							fg = map_rip_color(rip.color) | 0x40000000;
+
 							ex = roundl((x2 * y2) / (sqrt(y2 * y2 + x2 * x2 * pow((tan(arg1 * (M_PI / 180.0))), 2))));
-							if (arg1 > 90 && arg1 < 270)
+							if ((arg1 % 360) > 90 && (arg1 % 360) < 270)
 								ex = 0 - ex;
 							ex += x1;
 							ey = roundl((x2*y2*tan(arg1 * (M_PI / 180.0)))/(sqrt(y2*y2+x2*x2*pow((tan(arg1 * (M_PI / 180.0))), 2))));
-							if (arg1 > 90 && arg1 < 270)
+							if ((arg1 % 360) > 90 && (arg1 % 360) < 270)
 								ey = 0 - ey;
 							ey = y1 - ey;
 							//ex = x1 + (x2 * cos(arg1 * (M_PI / 180.0)));
@@ -11158,11 +11158,11 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							full_ellipse(x1, y1, arg1, arg2, x2, y2, false, fg);
 
 							ex = round((x2*y2)/(sqrt(y2*y2+x2*x2*pow((tan(arg2 * (M_PI / 180.0))), 2))));
-							if (arg2 > 90 && arg2 < 270)
+							if ((arg2 % 360) > 90 && (arg2 % 360) < 270)
 								ex = 0 - ex;
 							ex += x1;
 							ey = roundl((x2*y2*tan(arg2 * (M_PI / 180.0)))/(sqrt(y2*y2+x2*x2*pow((tan(arg2 * (M_PI / 180.0))), 2))));
-							if (arg2 > 90 && arg2 < 270)
+							if ((arg2 % 360) > 90 && (arg2 % 360) < 270)
 								ey = 0 - ey;
 							ey = y1 - ey;
 							//ex = x1 + (x2 * cos(arg2 * (M_PI / 180.0)));
@@ -13918,7 +13918,6 @@ do_skypix(char *buf, size_t len)
 				strcpy(rip.bbs->dldir, dldir);
 				free(dldir);
 			}
-else fprintf(stderr, "sargs = %p, argv[1] = %ld\n", sarg, argv[1]);
 			break;
 		case 17:	// Set display mode...
 			printf("TODO: SkyPix Set Display Mode (%ld)\n", argv[0]);
