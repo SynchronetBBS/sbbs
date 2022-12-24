@@ -63,7 +63,7 @@ void get_cterm_size(int* cols, int* rows, int ns)
 		*rows = cterm->height;
 	}
 	else {
-		get_term_win_size(cols, rows, &ns);
+		get_term_win_size(cols, rows, NULL, NULL, &ns);
 	}
 }
 

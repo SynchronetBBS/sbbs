@@ -277,7 +277,7 @@ int ssh_connect(struct bbslist *bbs)
 	term = get_emulation_str(get_emulation(bbs));
 	status=cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_TERMINAL, term, strlen(term));
 
-	get_term_win_size(&cols, &rows, &bbs->nostatus);
+	get_term_win_size(&cols, &rows, NULL, NULL, &bbs->nostatus);
 
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);
