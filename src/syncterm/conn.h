@@ -5,6 +5,8 @@
 #ifndef _CONN_H_
 #define _CONN_H_
 
+#include <stdbool.h>
+
 #include "sockwrap.h"
 #include "threadwrap.h"
 
