@@ -2158,6 +2158,22 @@ int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz)
 	return 1;
 }
 
+int get_cache_fn_subdir(struct bbslist *bbs, char *fn, size_t fnsz, const char *subdir)
+{
+	int ret;
+
+	ret = get_cache_fn_base(bbs, fn, fnsz);
+	if (ret == 0)
+		return ret;
+	strcat(fn, subdir);
+	backslash(fn);
+	if (!isdir(fn))
+		mkpath(fn);
+	if (!isdir(fn))
+		return 0;
+	return 1;
+}
+
 static int clean_path(char *fn, size_t fnsz)
 {
 	char *fp;
@@ -2203,7 +2219,7 @@ static void apc_handler(char *strbuf, size_t slen, void *apcd)
 		if (!clean_path(fn, sizeof(fn)))
 			return;
 		p++;
-		sz = (slen - (p-strbuf)) * 3 / 4 + 1;
+		sz = (slen - (p-strbuf)) * 3 + 3 / 4 + 1;
 		buf = malloc(sz);
 		if (!buf)
 			return;
