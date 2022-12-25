@@ -326,8 +326,9 @@ int conn_send(const void *vbuffer, size_t buflen, unsigned int timeout)
 
 	pthread_mutex_lock(&(conn_outbuf.mutex));
 	found=conn_buf_wait_free(&conn_outbuf, obuflen, timeout);
-	if(found)
-		found=conn_buf_put(&conn_outbuf, buffer, found);
+	if(found) {
+		found=conn_buf_put(&conn_outbuf, expanded, found);
+	}
 	pthread_mutex_unlock(&(conn_outbuf.mutex));
 
 	if (conn_api.tx_parse_cb != NULL) {
