@@ -2223,7 +2223,7 @@ static void apc_handler(char *strbuf, size_t slen, void *apcd)
 		buf = malloc(sz);
 		if (!buf)
 			return;
-		rc = b64_decode(buf, sz, p, slen);
+		rc = b64_decode(buf, sz, p, slen - (p - strbuf));
 		if (rc < 0) {
 			free(buf);
 			return;
