@@ -12475,7 +12475,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if (strchr(&args[6], '\\'))
 								break;
-							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+							if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "RIP"))
 								break;
 							strcat(cache_path, &args[6]);
 							fexistcase(cache_path);
@@ -12596,7 +12596,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 *        parameters, should be set to "10".
 							 */
 							handled = true;
-							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+							if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "RIP"))
 								break;
 							GET_XY();
 							arg1 = parse_mega(&args[4], 2);
@@ -13142,7 +13142,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (rip.clipboard == NULL)
 								break;
-							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+							if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "RIP"))
 								break;
 							strcat(cache_path, &args[1]);
 							icn = fopen(cache_path, "wb");
@@ -13280,7 +13280,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if (arg3 < 0 || arg3 == 0 || arg3 == 5)
 								break;
-							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+							if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "RIP"))
 								break;
 							size_t cpln = strlen(cache_path);
 							if (arg1 == 0) {	// Download (from BBS)
@@ -13907,7 +13907,7 @@ do_skypix(char *buf, size_t len)
 					p = sarg;
 				else
 					p++;
-				if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+				if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "SkyPix"))
 					break;
 				char *dldir = strdup(rip.bbs->dldir);
 				strcpy(rip.bbs->dldir, cache_path);
