@@ -17327,8 +17327,12 @@ function read_str(timeout, regex)
 
 	while (dk.console.waitkey(timeout)) {
 		ch = dk.console.getkey();
-		if (ch == '\r')
+		if (ch == '\x1b' || ch.length > 1)
 			break;
+		if (regex !== undefined) {
+			if (ch == '\r')
+				break;
+		}
 
 		ret += ch;
 		if (regex !== undefined) {
@@ -17452,8 +17456,9 @@ function upload_if_newer(fname)
 		return false;
 	while (dk.console.waitkey(0))
 		dk.console.getkey();
+	dk.console.print('\r\x1b[K  Checking '+fname);
 	dk.console.print('\r!|1F030000'+fname+'\r\n');
-	stat = read_str(10000, /[01]\.[0-9]+\.[0-9]{2}\/[0-9]{2}\/[0-9]{2}\.[0-9]{2}:[0-9]{2}:[0-9]{2}\r\n/);
+	stat = read_str(10000, /[01]\.[0-9]+\.[0-9]{2}\/[0-9]{2}\/[0-9]{2}\.[0-9]{2}:[0-9]{2}:[0-9]{2}/);
 	if (stat == '')
 		return false;
 	if (stat == '0') {
@@ -17489,6 +17494,7 @@ function upload_if_newer(fname)
 		}
 	}
 	if (!need_file) {
+		dk.console.print('\r\x1b[K');
 		return true;
 	}
 	ret = upload(fname);
