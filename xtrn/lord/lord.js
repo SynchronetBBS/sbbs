@@ -4674,16 +4674,19 @@ function lrdfile(fname, more)
 	curlinenum = 1;
 }
 
-function lrdrip(fname)
+function lrdrip(fname, update)
 {
 	var ln;
 	var mc = morechk;
 
+	if (update === undefined)
+		update = true;
 	if (ripindex[fname] === undefined) {
 		morechk = mc;
 		return;
 	}
-	lastrip = fname;
+	if (update)
+		lastrip = fname;
 	ripfile.position = ripindex[fname];
 
 	morechk = false;
@@ -5722,6 +5725,8 @@ function warriors_on_now(inhello)
 			mail_to(on[i].Record, '`0  '+player.name+' `2has entered the realm.');
 		}
 	}
+	if (rip)
+		more_nomail();
 }
 
 function show_log()
@@ -9869,7 +9874,7 @@ function flirt_with_violet()
 	}
 	if (player.seen_violet) {
 		if (rip) {
-			lrdrip('BUSY');
+			lrdrip('BUSY', false);
 		}
 		else {
 			sln('');
@@ -15234,6 +15239,8 @@ inner:
 	sclrscr();
 	menu();
 	do {
+		if (rip && lastrip != 'FOREST')
+			lrdrip('FOREST');
 		prompt();
 		command_prompt();
 		ch = getkey().toUpperCase();
@@ -16334,9 +16341,13 @@ function list_players()
 {
 	var f = gamedir('temp'+player.Record);
 
+	if (rip)
+		lrdrip('W1');
 	sln('');
 	generate_rankings(f, true, true, false);
 	display_file(f, true, true);
+	if (rip)
+		getkey();
 	file_remove(f);
 }
 
@@ -16794,6 +16805,12 @@ function create_other_places() {
 	return ret;
 }
 
+function check_rip(name)
+{
+	if (rip && lastrip != name)
+		lrdrip(name);
+}
+
 function main()
 {
 	var quit = false;
@@ -16905,6 +16922,7 @@ function main()
 
 	menu();
 	do {
+		check_rip('MAIN');
 		foreground(5);
 		check_mail();
 		prompt();
