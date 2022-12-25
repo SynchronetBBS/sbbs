@@ -17372,6 +17372,8 @@ function syncterm_upload(fname)
 	var buf = "\x1b_SyncTERM:C;S;RIP/"+fname+";"+f.read()+"\x1b\\";
 	f.close();
 	dk.console.print(buf);
+	while (dk.console.waitkey(0))
+		dk.console.getkey();
 	return true;
 }
 
@@ -17528,6 +17530,8 @@ function start() {
 			sln('  Cache invalid, disabling RIP.');
 		else
 			sln('  RIP Enabled.');
+		while (dk.console.waitkey(0))
+			dk.console.getkey();
 	}
 
 	// Should this allow a global file?
