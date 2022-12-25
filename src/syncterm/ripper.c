@@ -12508,8 +12508,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									if (stat(cache_path, &st))
 										conn_send("0\r\n", 2, 1000);
 									else {
-										localtime_r(&st.st_atime, &tm);
-										strftime(dstr, sizeof(dstr), "%m/%d/&y.%H:%M:%S", &tm);
+										localtime_r(&st.st_mtime, &tm);
+										strftime(dstr, sizeof(dstr), "%m/%d/%y.%H:%M:%S", &tm);
 										sprintf(str, "1.%" PRIdOFF ".%s\r\n", st.st_size, dstr);
 										conn_send(str, strlen(str), 1000);
 									}
@@ -12518,8 +12518,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									if (stat(cache_path, &st))
 										conn_send("0\r\n", 2, 1000);
 									else {
-										localtime_r(&st.st_atime, &tm);
-										strftime(dstr, sizeof(dstr), "%m/%d/&y.%H:%M:%S", &tm);
+										localtime_r(&st.st_mtime, &tm);
+										strftime(dstr, sizeof(dstr), "%m/%d/%y.%H:%M:%S", &tm);
 										sprintf(str, "1.%s.%" PRIdOFF ".%s\r\n", &args[6], st.st_size, dstr);
 										conn_send(str, strlen(str), 1000);
 									}
