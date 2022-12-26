@@ -604,7 +604,6 @@ static void setup_surfaces_locked(void)
 	aspect_correct(&idealmw, &idealmh, cvstat.aspect_width, cvstat.aspect_height);
 	idealw = cvstat.winwidth;
 	idealh = cvstat.winheight;
-	aspect_fix(&idealw, &idealh, cvstat.aspect_width, cvstat.aspect_height);
 	internal_scaling = window_can_scale_internally(idealw, idealh);
 	sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, internal_scaling ? "0" : "2");
 
@@ -1149,12 +1148,14 @@ void sdl_video_event_thread(void *data)
 										dst.x = (cvstat.winwidth - dst.w) / 2;
 										dst.y = (cvstat.winheight - dst.h) / 2;
 									}
-									sdl.RenderCopy(renderer, texture, &src, &dst);
+									if (sdl.RenderCopy(renderer, texture, &src, &dst))
+										fprintf(stderr, "RenderCopy() failed! (%s)\n", sdl.GetError());
 								}
 								bitmap_drv_free_rect(list);
 							}
 							sdl.RenderPresent(renderer);
 						}
+						
 						pthread_mutex_unlock(&win_mutex);
 						break;
 					case SDL_USEREVENT_SETNAME:

@@ -41,10 +41,10 @@ aspect_fix(int *x, int *y, int aspect_width, int aspect_height)
 	bestx = lround((double)*y * aspect_width / aspect_height);
 	besty = lround((double)*x * aspect_height / aspect_width);
 
-	if (bestx < *x && bestx > 0)
-		*x = bestx;
-	else
+	if (bestx < *x && besty > 0)
 		*y = besty;
+	else
+		*x = bestx;
 }
 
 /*
