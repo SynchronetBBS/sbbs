@@ -454,8 +454,9 @@ int sdl_init(int mode)
 	return(-1);
 }
 
-void sdl_setwinsize_locked(int w, int h)
+static void internal_setwinsize(int w, int h)
 {
+	pthread_mutex_lock(&vstatlock);
 	if (w > 16384)
 		w = 16384;
 	if (h > 16384)
@@ -467,13 +468,13 @@ void sdl_setwinsize_locked(int w, int h)
 	cvstat.winwidth = vstat.winwidth = w;
 	cvstat.winheight = vstat.winheight = h;
 	internal_scaling = window_can_scale_internally(cvstat.winwidth, cvstat.winheight);
+	setup_surfaces_locked();
+	pthread_mutex_unlock(&vstatlock);
 }
 
 void sdl_setwinsize(int w, int h)
 {
-	pthread_mutex_lock(&vstatlock);
-	sdl_setwinsize_locked(w, h);
-	pthread_mutex_unlock(&vstatlock);
+	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE, w, h);
 }
 
 void sdl_setwinposition(int x, int y)
@@ -1039,10 +1040,7 @@ void sdl_video_event_thread(void *data)
 							break;
 						}
 						pthread_mutex_unlock(&sdl_mode_mutex);
-						pthread_mutex_lock(&vstatlock);
-						sdl_setwinsize_locked(ev.window.data1, ev.window.data2);
-						setup_surfaces_locked();
-						pthread_mutex_unlock(&vstatlock);
+						internal_setwinsize(ev.window.data1, ev.window.data2);
 						break;
 					case SDL_WINDOWEVENT_EXPOSED:
 						bitmap_drv_request_pixels();
@@ -1198,10 +1196,7 @@ void sdl_video_event_thread(void *data)
 						sdl_mode = false;
 						pthread_mutex_unlock(&sdl_mode_mutex);
 
-						pthread_mutex_lock(&vstatlock);
-						sdl_setwinsize(ev.user.data1 - NULL, ev.user.data2 - NULL);
-						setup_surfaces_locked();
-						pthread_mutex_unlock(&vstatlock);
+						internal_setwinsize(ev.user.data1 - NULL, ev.user.data2 - NULL);
 						sdl_ufunc_retval=0;
 						sem_post(&sdl_ufunc_ret);
 						break;
