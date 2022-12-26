@@ -1812,6 +1812,9 @@ int main(int argc, char** argv)
 			if(result != MQTT_SUCCESS) {
 				lprintf(LOG_ERR, "MQTT open failure: %d", result);
 			} else {
+				result = mqtt_thread_start(&bbs_startup.mqtt);
+				if(result != MQTT_SUCCESS)
+					lprintf(LOG_ERR, "Error %d starting pub/sub thread", result);
 				lprintf(LOG_INFO, "MQTT connecting to broker %s:%u", scfg.mqtt.broker_addr, scfg.mqtt.broker_port);
 				result = mqtt_connect(&bbs_startup.mqtt, /* bind_address: */NULL);
 				if(result == MQTT_SUCCESS) {
@@ -1957,11 +1960,6 @@ int main(int argc, char** argv)
     signal(SIGPIPE, SIG_IGN);       /* Ignore "Broken Pipe" signal (Also used for broken socket etc.) */
     signal(SIGALRM, SIG_IGN);       /* Ignore "Alarm" signal */
 	_beginthread((void(*)(void*))handle_sigs,0,NULL);
-	if(bbs_startup.mqtt.handle != NULL) {
-		int result = mqtt_thread_start(&bbs_startup.mqtt);
-		if(result != MQTT_SUCCESS)
-			lprintf(LOG_ERR, "Error %d starting pub/sub thread", result);
-	}
     if(!capabilities_set) { /* capabilities were NOT set, fallback to original handling of thread options */
 		if(new_uid_name[0]!=0) {        /*  check the user arg, if we have uid 0 */
 			/* Can't recycle servers (re-bind ports) as non-root user */
