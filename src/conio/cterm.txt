@@ -239,6 +239,29 @@ ESC _	Application Program String (APS)
 	Begins a string consisting of the characters 0x08 - 0x0d and
 	0x20-0x7e, terminated by a String Terminator (ST)
 	The string is currently ignored.
+	
+	SyncTERM implements the following APS commands:
+
+	APS SyncTERM:C;S;Ps1;Ps2 ST (Store file)
+		Where Ps1 is a filename and Ps2 is the base64 encoded
+		contents of the file.  The named file is stored in the
+		cache directory for the current connection.
+
+	APS SyncTERM:C;L ST (List Files)
+		List files in cache.  SyncTERM responds with
+		an APS string with lines separated by newlines.  The
+		first line is always "SyncTERM:C;L\n" and for each
+		matching file, a line in the form
+		<Filename> TAB <MD5 sum> LF is sent
+		(ie: "coolfont.fnt\t595f44fec1e92a71d3e9e77456ba80d1\n")
+
+		And additional argument can be specified as a glob(3)
+		pattern (defaults to "*") in APS SyncTERM:C;L;Ps ST.
+
+	APS SyncTERM:C;SetFont;Pn;Ps
+		Where Pn is a font slot number (max 255) and Ps is a
+		filename in the cache.  This sets font slot Pn to use
+		the specified font file.
 
 ESC c	Reset to Initial State (RIS)
 	Resets all the terminal settings, clears the screen, and homes
