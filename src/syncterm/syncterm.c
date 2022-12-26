@@ -1518,10 +1518,6 @@ int main(int argc, char **argv)
 						case 'C':
 							ciolib_mode=CIOLIB_MODE_CURSES;
 							break;
-						case 0:
-							printf("NOTICE: The -i option is depreciated, use -if instead\r\n");
-							SLEEP(2000);
-							/* Fall-through */
 						case 'F':
 							ciolib_mode=CIOLIB_MODE_CURSES_IBM;
 							break;
