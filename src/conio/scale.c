@@ -48,6 +48,26 @@ aspect_fix(int *x, int *y, int aspect_width, int aspect_height)
 }
 
 /*
+ * Corrects width/height to have the specified aspect ratio
+ */
+void
+aspect_fix_low(int *x, int *y, int aspect_width, int aspect_height)
+{
+	int bestx, besty;
+
+	// Nothing we can do here...
+	if (aspect_width == 0 || aspect_height == 0)
+		return;
+	bestx = lround((double)*y * aspect_width / aspect_height);
+	besty = lround((double)*x * aspect_height / aspect_width);
+
+	if (bestx < *x && bestx > 0)
+		*x = bestx;
+	else
+		*y = besty;
+}
+
+/*
  * Given a width/height of a source image, adjust it to match the current aspect
  * ratio.  Will not reduce either number
  */
