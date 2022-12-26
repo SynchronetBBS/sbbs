@@ -15203,11 +15203,17 @@ inner:
 				lrdfile('FOREST');
 			foreground(2);
 			sln('');
-			lln('  `2(`0L`2)ook for something to kill       (`0H`2)ealer\'s Hut');
-			lw('  `2(`0R`2)eturn to town                   ');
+			if (!rip) {
+				lln('  `2(`0L`2)ook for something to kill');
+				lln('  (`0H`2)ealer\'s Hut');
+				lln('  `2(`0R`2)eturn to town');
+			}
+			else {
+				lln('  `2(`0L`2)ook for something to kill       (`0H`2)ealer\'s Hut');
+				lw('  `2(`0R`2)eturn to town                 ');
+			}
 			if (player.horse) {
-				lw('`2(`0T`2)ake ');
-				sln('Horse To DarkCloak Tavern');
+				lln('  `2(`0T`2)ake Horse To DarkCloak Tavern');
 			}
 			else {
 				sln('');
