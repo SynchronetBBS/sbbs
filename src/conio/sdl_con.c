@@ -254,11 +254,16 @@ static int sdl_user_func_ret(int func, ...)
 	/* Drain the swamp */
 	while(1) {
 		switch(func) {
+			case SDL_USEREVENT_SETVIDMODE:
+				ev.user.data1 = NULL + va_arg(argptr, int);
+				ev.user.data2 = NULL + va_arg(argptr, int);
+				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)!=1)
+					YIELD();
+				break;
 			case SDL_USEREVENT_GETWINPOS:
 				ev.user.data1 = va_arg(argptr, void *);
 				ev.user.data2 = va_arg(argptr, void *);
 				// Fallthrough
-			case SDL_USEREVENT_SETVIDMODE:
 			case SDL_USEREVENT_INIT:
 			case SDL_USEREVENT_QUIT:
 				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)!=1)
@@ -356,6 +361,7 @@ internal_scaling_factors(int winwidth, int winheight, int *x, int *y)
 static int sdl_init_mode(int mode)
 {
 	int oldcols;
+	int scaling = 1;
 
 	if (mode != CIOLIB_MODE_CUSTOM) {
 		pthread_mutex_lock(&vstatlock);
@@ -372,9 +378,13 @@ static int sdl_init_mode(int mode)
 	pthread_mutex_lock(&vstatlock);
 	oldcols = cvstat.cols;
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
-	vstat.winwidth = lround((double)cvstat.winwidth / cvstat.scrnwidth * vstat.scrnwidth);
-	vstat.winheight = lround((double)cvstat.winheight / cvstat.scrnheight * vstat.scrnheight);
-	aspect_correct(&vstat.winwidth, &cvstat.winheight, cvstat.aspect_width, cvstat.aspect_height);
+	if (cvstat.scrnwidth > 0) {
+		for (scaling = 1; (scaling + 1) * cvstat.scrnwidth < cvstat.winwidth; scaling++)
+			;
+	}
+	vstat.winwidth = vstat.scrnwidth * scaling;
+	vstat.winheight = vstat.scrnheight * scaling;
+	aspect_fix(&vstat.winwidth, &vstat.winheight, vstat.aspect_width, vstat.aspect_height);
 	if (oldcols != vstat.cols) {
 		if (oldcols == 0) {
 			if (ciolib_initial_window_width > 0)
@@ -403,7 +413,7 @@ static int sdl_init_mode(int mode)
 	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&blinker_lock);
 
-	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE);
+	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE, cvstat.winwidth, cvstat.winheight);
 
 	return(0);
 }
@@ -1190,6 +1200,8 @@ void sdl_video_event_thread(void *data)
 						break;
 					case SDL_USEREVENT_SETVIDMODE:
 						pthread_mutex_lock(&vstatlock);
+						cvstat.winwidth = ev.user.data1 - NULL;
+						cvstat.winheight = ev.user.data2 - NULL;
 						setup_surfaces_locked();
 						pthread_mutex_unlock(&vstatlock);
 						sdl_ufunc_retval=0;
