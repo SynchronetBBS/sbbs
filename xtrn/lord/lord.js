@@ -15203,7 +15203,7 @@ inner:
 				lrdfile('FOREST');
 			foreground(2);
 			sln('');
-			if (!rip) {
+			if (rip) {
 				lln('  `2(`0L`2)ook for something to kill');
 				lln('  (`0H`2)ealer\'s Hut');
 				lln('  `2(`0R`2)eturn to town');
