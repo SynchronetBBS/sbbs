@@ -149,6 +149,7 @@ static char armors[13][20] = {
 	, "Sheet Metal"        // 11
 	, "PolyCarbon"
 };                             // 12
+
 static void
 term_gotoxy(int x, int y)
 {
@@ -157,6 +158,7 @@ term_gotoxy(int x, int y)
 	sprintf(ansistr, "\x1b[%d;%dH", y, x);
 	cterm_write(cterm, ansistr, strlen(ansistr), NULL, 0, NULL);
 }
+
 static void
 term_clearscreen(void)
 {
@@ -164,6 +166,7 @@ term_clearscreen(void)
 }
 
 const int term_colours[8] = {0, 4, 2, 6, 1, 5, 3, 7};
+
 static void
 term_setattr(int attr)
 {
@@ -209,6 +212,7 @@ term_setattr(int attr)
 	str[strlen(str) - 1] = 'm';
 	cterm_write(cterm, str, strlen(str), NULL, 0, NULL);
 }
+
 static void
 readInPix(char codeCh, int ooii_mode)
 {
@@ -260,27 +264,30 @@ readInPix(char codeCh, int ooii_mode)
 			break;
 	}
 
-	if ((codeCh >= 'A') && (codeCh <= 'E'))
-		cterm_write(cterm,
-		    ooii_cmenus[ooii_mode - 1][fptr],
-		    strlen((char*)ooii_cmenus[ooii_mode - 1][fptr]) - 1,
-		    NULL,
-		    0,
-		    NULL);
-	else if ((codeCh >= 'F') && (codeCh <= 'K'))
-		cterm_write(cterm,
-		    ooii_bmenus[ooii_mode - 1][fptr],
-		    strlen((char*)ooii_bmenus[ooii_mode - 1][fptr]) - 1,
-		    NULL,
-		    0,
-		    NULL);
-	else if (codeCh == '0')
-		cterm_write(cterm,
-		    ooii_logon[ooii_mode - 1][fptr],
-		    strlen((char*)ooii_logon[ooii_mode - 1][fptr]) - 1,
-		    NULL,
-		    0,
-		    NULL);
+	if ((codeCh >= 'A') && (codeCh <= 'E')) {
+		cterm_write(cterm
+		    , ooii_cmenus[ooii_mode - 1][fptr]
+		    , strlen((char*)ooii_cmenus[ooii_mode - 1][fptr]) - 1
+		    , NULL
+		    , 0
+		    , NULL);
+	}
+	else if ((codeCh >= 'F') && (codeCh <= 'K')) {
+		cterm_write(cterm
+		    , ooii_bmenus[ooii_mode - 1][fptr]
+		    , strlen((char*)ooii_bmenus[ooii_mode - 1][fptr]) - 1
+		    , NULL
+		    , 0
+		    , NULL);
+	}
+	else if (codeCh == '0') {
+		cterm_write(cterm
+		    , ooii_logon[ooii_mode - 1][fptr]
+		    , strlen((char*)ooii_logon[ooii_mode - 1][fptr]) - 1
+		    , NULL
+		    , 0
+		    , NULL);
+	}
 
         /*
          * We don't overwrite the status line, so we don't need to redraw it
@@ -289,6 +296,7 @@ readInPix(char codeCh, int ooii_mode)
 
 	return;
 }
+
 static int
 readInText(unsigned char*codeStr)
 {
@@ -297,75 +305,76 @@ readInText(unsigned char*codeStr)
 	switch ((char)codeStr[0]) {
 		case '1':
 			term_setattr(BROWN);
-			cterm_write(cterm,
-			    "You mosey on over to the bar and take a seat on a scuffed barstool.  The\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
-			cterm_write(cterm,
-			    "slighty deformed keeper grunts, \"Woth ja leeke?\"  A galacticom on the top\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
-			cterm_write(cterm,
-			    "shelf behind him translates his jumble into \"What would you like?\"  You\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
-			cterm_write(cterm,
-			    "start to wonder what ever happened to the old standard human language.\r\n\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "You mosey on over to the bar and take a seat on a scuffed barstool.  The\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
+			cterm_write(cterm
+			    , "slighty deformed keeper grunts, \"Woth ja leeke?\"  A galacticom on the top\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
+			cterm_write(cterm
+			    , "shelf behind him translates his jumble into \"What would you like?\"  You\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
+			cterm_write(cterm
+			    , "start to wonder what ever happened to the old standard human language.\r\n\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 			term_setattr(LIGHTGREEN);
 			cterm_write(cterm, "\"Give me the House Special,\" you smirk.\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(GREEN);
-			cterm_write(cterm,
-			    "The bartender stares at you with one eye and then drools in agreement.  He\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
-			cterm_write(cterm,
-			    "vanishes from behind the bar and pops back up a few seconds later.  He\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
-			cterm_write(cterm,
-			    "slides you the mysterious drink as he begins to chuckle.  White smoke\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
-			cterm_write(cterm,
-			    "slithers from the bubbling green slime over onto the bar counter.\r\n\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "The bartender stares at you with one eye and then drools in agreement.  He\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
+			cterm_write(cterm
+			    , "vanishes from behind the bar and pops back up a few seconds later.  He\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
+			cterm_write(cterm
+			    , "slides you the mysterious drink as he begins to chuckle.  White smoke\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
+			cterm_write(cterm
+			    , "slithers from the bubbling green slime over onto the bar counter.\r\n\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 			term_setattr(LIGHTGREEN);
-			cterm_write(cterm,
-			    "\"What do I owe you?\" you inquire to the barman.  He promptly responds\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
-			cterm_write(cterm,
-			    "with that same smirk on his face, \"Youkla telph me.\"\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "\"What do I owe you?\" you inquire to the barman.  He promptly responds\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
+			cterm_write(cterm
+			    , "with that same smirk on his face, \"Youkla telph me.\"\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 			break;
 	}
 
 	return codeStr - origCodeStr;
 }
+
 static void
 getBlock(unsigned char**codeStr, char*menuBlock)
 {
@@ -377,6 +386,7 @@ getBlock(unsigned char**codeStr, char*menuBlock)
 		*menuBlock = 0;
 	}
 }
+
 static void
 strljust(char*buf, size_t len, char pad)
 {
@@ -387,6 +397,7 @@ strljust(char*buf, size_t len, char pad)
 		buf[len] = 0;
 	}
 }
+
 static void
 strrjust(char*buf, size_t len, char pad)
 {
@@ -397,6 +408,7 @@ strrjust(char*buf, size_t len, char pad)
 		memset(buf, pad, len - buflen);
 	}
 }
+
 static int
 readSmallMenu(unsigned char*codeStr)
 {
@@ -525,18 +537,18 @@ readSmallMenu(unsigned char*codeStr)
 			codeStr++;
 
 			term_setattr(YELLOW);
-			cterm_write(cterm,
-			    "You are now in the Games Room, a delightful place to leisurely relax from\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
-			cterm_write(cterm,
-			    "the everyday hack n' slash.   A small bar is located on the south wall.\r\n\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "You are now in the Games Room, a delightful place to leisurely relax from\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
+			cterm_write(cterm
+			    , "the everyday hack n' slash.   A small bar is located on the south wall.\r\n\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 
 			term_setattr(WHITE);
 			getBlock(&codeStr, menuBlock);
@@ -1138,8 +1150,9 @@ readSmallMenu(unsigned char*codeStr)
 
 	return codeStr - origCodeStr;
 }
+
 static void
-checkStamp(int xx, int yy, char stampStr[20])              // used w/ incomingCheck
+checkStamp(int xx, int yy, char stampStr[20]) // used w/ incomingCheck
 {
 	term_gotoxy(xx + 1, yy + 1);
 	term_setattr(LIGHTCYAN);
@@ -1148,6 +1161,7 @@ checkStamp(int xx, int yy, char stampStr[20])              // used w/ incomingCh
 	cterm_write(cterm, "é", -1, NULL, 0, NULL);
 	return;
 }
+
 static int
 incomingCheckStatus(unsigned char*codeStr)
 {
@@ -1172,12 +1186,12 @@ incomingCheckStatus(unsigned char*codeStr)
 	term_gotoxy(34, 3);
 	cterm_write(cterm, " ³", -1, NULL, 0, NULL);
 	term_gotoxy(1, 4);
-	cterm_write(cterm,
-	    "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ",
-	    -1,
-	    NULL,
-	    0,
-	    NULL);
+	cterm_write(cterm
+	    , "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ"
+	    , -1
+	    , NULL
+	    , 0
+	    , NULL);
 
 	checkStamp(0, 4, "Location  ");
 	checkStamp(27, 4, "Strength   ");
@@ -1190,12 +1204,12 @@ incomingCheckStatus(unsigned char*codeStr)
 	checkStamp(54, 6, "Bravery       ");
 
 	term_gotoxy(1, 8);
-	cterm_write(cterm,
-	    "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ",
-	    -1,
-	    NULL,
-	    0,
-	    NULL);
+	cterm_write(cterm
+	    , "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ"
+	    , -1
+	    , NULL
+	    , 0
+	    , NULL);
 
 	checkStamp(0, 8, "Crystals  ");
 	checkStamp(27, 8, "Disease    ");
@@ -1206,53 +1220,54 @@ incomingCheckStatus(unsigned char*codeStr)
 
 	term_gotoxy(1, 11);
 	term_setattr(who);
-	cterm_write(cterm,
-	    "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ",
-	    -1,
-	    NULL,
-	    0,
-	    NULL);
+	cterm_write(cterm
+	    , "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ"
+	    , -1
+	    , NULL
+	    , 0
+	    , NULL);
 
 	checkStamp(0, 11, "Weapon    ");
 	checkStamp(0, 12, "Weapon    ");
 
 	term_gotoxy(1, 14);
 	term_setattr(who);
-	cterm_write(cterm,
-	    "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ",
-	    -1,
-	    NULL,
-	    0,
-	    NULL);
+	cterm_write(cterm
+	    , "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ"
+	    , -1
+	    , NULL
+	    , 0
+	    , NULL);
 
 	checkStamp(0, 14, "Armor     ");
 	checkStamp(0, 15, "Outfit    ");
 
 	term_gotoxy(1, 17);
 	term_setattr(who);
-	cterm_write(cterm,
-	    "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ",
-	    -1,
-	    NULL,
-	    0,
-	    NULL);
+	cterm_write(cterm
+	    , "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ"
+	    , -1
+	    , NULL
+	    , 0
+	    , NULL);
 
 	for (zz = 1; zz < 4; zz++)
 		checkStamp(0, 16 + zz, "Equipment ");
 
 	term_gotoxy(1, 21);
 	term_setattr(who);
-	cterm_write(cterm,
-	    "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ",
-	    -1,
-	    NULL,
-	    0,
-	    NULL);
+	cterm_write(cterm
+	    , "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ"
+	    , -1
+	    , NULL
+	    , 0
+	    , NULL);
 
 	term_gotoxy(1, 23);
 
 	return codeStr - origCodeStr;
 }
+
 char*
 scanChar(unsigned char s, int where, int miniTrik)
 {
@@ -1369,6 +1384,7 @@ scanChar(unsigned char s, int where, int miniTrik)
 
 	return "??";
 }
+
 static void
 setScanCol(char s)
 {
@@ -1449,6 +1465,7 @@ setScanCol(char s)
 
 	return;
 }
+
 static int
 incomingMapScanner(unsigned char*codeStr)
 {
@@ -1467,12 +1484,12 @@ incomingMapScanner(unsigned char*codeStr)
 			term_clearscreen();
 			term_gotoxy(1, 1);
 			term_setattr(1);
-			cterm_write(cterm,
-			    "\r\nÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "\r\nÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 			cterm_write(cterm, "³ ", -1, NULL, 0, NULL);
 			term_setattr(5);
 			cterm_write(cterm, "ÖÄ", -1, NULL, 0, NULL);
@@ -1481,22 +1498,22 @@ incomingMapScanner(unsigned char*codeStr)
 			term_setattr(5);
 			cterm_write(cterm, "Ä·", -1, NULL, 0, NULL);
 			term_setattr(13);
-			cterm_write(cterm,
-			    "     Compass      Sector Monitor     System Monitor           ",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "     Compass      Sector Monitor     System Monitor           "
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 			term_setattr(1);
 			cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "³ ", -1, NULL, 0, NULL);
 			term_setattr(5);
-			cterm_write(cterm,
-			    "Ç          ¶     ~~~~~~~      ~~~~~~~~~~~~~~     ~~~~~~~~~~~~~~           ",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "Ç          ¶     ~~~~~~~      ~~~~~~~~~~~~~~     ~~~~~~~~~~~~~~           "
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 			term_setattr(1);
 			cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "³ ", -1, NULL, 0, NULL);
@@ -1534,41 +1551,41 @@ incomingMapScanner(unsigned char*codeStr)
 			cterm_write(cterm, "[:            ", -1, NULL, 0, NULL);
 			term_setattr(1);
 			cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
-			cterm_write(cterm,
-			    "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 			break;
 
 		case 'T':
 			term_gotoxy(1, 9);
 			term_setattr(1);
-			cterm_write(cterm,
-			    "ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
-			cterm_write(cterm,
-			    "³                                                                           ³\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
-			cterm_write(cterm,
-			    "³                                                                           ³\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
-			cterm_write(cterm,
-			    "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
+			cterm_write(cterm
+			    , "³                                                                           ³\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
+			cterm_write(cterm
+			    , "³                                                                           ³\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
+			cterm_write(cterm
+			    , "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n"
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 			break;
 
 		case 'M':
@@ -1802,174 +1819,189 @@ incomingMapScanner(unsigned char*codeStr)
 			getBlock(&codeStr, menuBlock);
 			zz = atoi(menuBlock);
 			term_gotoxy(3, 10);
-			cterm_write(cterm,
-			    "                                                                          ",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "                                                                          "
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 			term_gotoxy(3, 11);
-			cterm_write(cterm,
-			    "                                                                          ",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "                                                                          "
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 			term_gotoxy(3, 10);
 
 			term_setattr(11);
 
 			switch (zz) {
 				case 2:
-					cterm_write(cterm,
-					    "Crumbling walls of ancient cities scatter the plains, and smoke lazily",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "Crumbling walls of ancient cities scatter the plains, and smoke lazily"
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					term_gotoxy(3, 11);
-					cterm_write(cterm,
-					    "rises from the destructed relics of the past.",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "rises from the destructed relics of the past."
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					break;
 
 				case 3:
-					cterm_write(cterm,
-					    "Coldness creeps upon you like death in this vast range of empty desert.",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "Coldness creeps upon you like death in this vast range of empty desert."
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					term_gotoxy(3, 11);
-					cterm_write(cterm,
-					    "Harsh winds rip sand against your body like tiny shards of glass.",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "Harsh winds rip sand against your body like tiny shards of glass."
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					break;
 
 				case 4:
-					cterm_write(cterm,
-					    "The black muck from the swamp slithers between your toes as you make your",
-					    -1,
-					    NULL,
-					    0,
+					cterm_write(cterm
+					    ,
+					    "The black muck from the swamp slithers between your toes as you make your"
+					    ,
+					    -1
+					    ,
+					    NULL
+					    ,
+					    0
+					    ,
 					    NULL);
 					term_gotoxy(3, 11);
 					cterm_write(cterm, "way through the bubbling slime.", -1, NULL, 0, NULL);
 					break;
 
 				case 5:
-					cterm_write(cterm,
-					    "High upon the scorched mountains, small blackening caves can be seen.",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "High upon the scorched mountains, small blackening caves can be seen."
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					term_gotoxy(3, 11);
-					cterm_write(cterm,
-					    "Possibly lurking within, horrible creatures wait for your trespassing.",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "Possibly lurking within, horrible creatures wait for your trespassing."
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					break;
 
 				case 6:
-					cterm_write(cterm,
-					    "A mist glides along the flat terrain and summons you forward.",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "A mist glides along the flat terrain and summons you forward."
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					break;
 
 				case 7:
 					;
-					break;    // pits
+					break; // pits
 
 				case 8:
-					cterm_write(cterm,
-					    "A small hole in the ground leads down into a realm of darkness.",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "A small hole in the ground leads down into a realm of darkness."
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					break;
 
 				case 9:
-					cterm_write(cterm,
-					    "From the pre-war years, an Airforce Base lies half buried from nuclear",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "From the pre-war years, an Airforce Base lies half buried from nuclear"
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					term_gotoxy(3, 11);
 					cterm_write(cterm, "ash and metallic scraps.", -1, NULL, 0, NULL);
 					break;
 
 				case 10:
-					cterm_write(cterm,
-					    "A disabled missile silo remains intact from heavy bombing in this area.",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "A disabled missile silo remains intact from heavy bombing in this area."
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					break;
 
 				case 11:
-					cterm_write(cterm,
-					    "In an effortless HeXonium attempt to clean the wastelands, radiation dumps",
-					    -1,
-					    NULL,
-					    0,
+					cterm_write(cterm
+					    ,
+					    "In an effortless HeXonium attempt to clean the wastelands, radiation dumps"
+					    ,
+					    -1
+					    ,
+					    NULL
+					    ,
+					    0
+					    ,
 					    NULL);
 					term_gotoxy(3, 11);
-					cterm_write(cterm,
-					    "lay wretched with oozing radioactive substances forming.",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "lay wretched with oozing radioactive substances forming."
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					break;
 
 				case 12:
-					cterm_write(cterm,
-					    "This unmarked road is littered with dead shrubs and rotting vegatation.",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "This unmarked road is littered with dead shrubs and rotting vegatation."
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					break;
 
 				case 13:
-					cterm_write(cterm,
-					    "Darkness swirls around the infamous and towering Hydrite Prison.",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "Darkness swirls around the infamous and towering Hydrite Prison."
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					break;
 
 				case 14:
-					cterm_write(cterm,
-					    "As you look up, you notice a small hole that leads upwards.",
-					    -1,
-					    NULL,
-					    0,
-					    NULL);
+					cterm_write(cterm
+					    , "As you look up, you notice a small hole that leads upwards."
+					    , -1
+					    , NULL
+					    , 0
+					    , NULL);
 					break;
 
 				case 15:
-					cterm_write(cterm,
-					    "You cautiously wade through the black murky water of this shallow stream.",
-					    -1,
-					    NULL,
-					    0,
+					cterm_write(cterm
+					    ,
+					    "You cautiously wade through the black murky water of this shallow stream."
+					    ,
+					    -1
+					    ,
+					    NULL
+					    ,
+					    0
+					    ,
 					    NULL);
 					break;
 			}
@@ -1978,19 +2010,19 @@ incomingMapScanner(unsigned char*codeStr)
 		case 'P':
 			codeStr++;
 			term_gotoxy(3, 10);
-			cterm_write(cterm,
-			    "                                                                          ",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "                                                                          "
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 			term_gotoxy(3, 11);
-			cterm_write(cterm,
-			    "                                                                          ",
-			    -1,
-			    NULL,
-			    0,
-			    NULL);
+			cterm_write(cterm
+			    , "                                                                          "
+			    , -1
+			    , NULL
+			    , 0
+			    , NULL);
 			term_gotoxy(3, 10);
 			term_setattr(11);
 			cterm_write(cterm, "20 foot pit!", -1, NULL, 0, NULL);
@@ -1999,6 +2031,7 @@ incomingMapScanner(unsigned char*codeStr)
 
 	return codeStr - origCodeStr;
 }
+
 /* TODO: Sound support */
 static int
 incomingSoundVoc(unsigned char*codeStr)
@@ -2148,6 +2181,7 @@ incomingSoundVoc(unsigned char*codeStr)
 	}
 	return codeStr - origCodeStr;
 }
+
 bool
 handle_ooii_code(unsigned char*codeStr, int*ooii_mode, unsigned char*retbuf, size_t retsize)
 {

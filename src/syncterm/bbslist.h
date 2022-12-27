@@ -14,7 +14,7 @@
 #include "ini_file.h"
 
 #if defined(_WIN32)
- #include <malloc.h>    /* alloca() on Win32 */
+ #include <malloc.h> /* alloca() on Win32 */
 #endif
 
 #include <cterm.h>

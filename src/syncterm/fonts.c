@@ -12,6 +12,7 @@
 #include "syncterm.h"
 #include "uifc.h"
 #include "uifcinit.h"
+
 void
 free_font_files(struct font_files*ff)
 {
@@ -27,6 +28,7 @@ free_font_files(struct font_files*ff)
 	}
 	free(ff);
 }
+
 void
 save_font_files(struct font_files*fonts)
 {
@@ -83,6 +85,7 @@ save_font_files(struct font_files*fonts)
 }
 
 struct font_files*
+
 read_font_files(int*count)
 {
 	FILE             *inifile;
@@ -125,6 +128,7 @@ read_font_files(int*count)
 	strListFree(&fonts);
 	return ret;
 }
+
 void
 load_font_files(void)
 {
@@ -196,6 +200,7 @@ load_font_files(void)
 	setfont(default_font, false, 0);
 	font_names[i] = "";
 }
+
 int
 find_font_id(char*name)
 {
@@ -212,6 +217,7 @@ find_font_id(char*name)
 	}
 	return ret;
 }
+
 void
 font_management(void)
 {
@@ -248,14 +254,14 @@ font_management(void)
 			opts[0][0] = 0;
 			opt[0] = opts[0];
 		}
-		i = uifc.list(WIN_SAV | WIN_INS | WIN_INSACT | WIN_DEL | WIN_XTR | WIN_ACT,
-		        0,
-		        0,
-		        0,
-		        &cur,
-		        &bar,
-		        "Font Management",
-		        opt);
+		i = uifc.list(WIN_SAV | WIN_INS | WIN_INSACT | WIN_DEL | WIN_XTR | WIN_ACT
+		        , 0
+		        , 0
+		        , 0
+		        , &cur
+		        , &bar
+		        , "Font Management"
+		        , opt);
 		if (i == -1) {
 			check_exit(false);
 			save_font_files(fonts);
@@ -273,8 +279,8 @@ font_management(void)
 					FREE_AND_NULL(fonts[cur].path8x8);
 					FREE_AND_NULL(fonts[cur].path8x14);
 					FREE_AND_NULL(fonts[cur].path8x16);
-					memmove(&(fonts[cur]), &(fonts[cur + 1]),
-					    sizeof(struct font_files) * (count - cur));
+					memmove(&(fonts[cur]), &(fonts[cur + 1])
+					    , sizeof(struct font_files) * (count - cur));
 					count--;
 				}
 				break;
@@ -313,14 +319,14 @@ font_management(void)
 			sprintf(opts[2], "8x14  %.50s", fonts[cur].path8x14 ? fonts[cur].path8x14 : "<undefined>");
 			sprintf(opts[3], "8x16  %.50s", fonts[cur].path8x16 ? fonts[cur].path8x16 : "<undefined>");
 			opts[4][0] = 0;
-			i = uifc.list(WIN_SAV | WIN_ACT | WIN_INS | WIN_INSACT | WIN_DEL | WIN_RHT | WIN_BOT,
-			        0,
-			        0,
-			        0,
-			        &fcur,
-			        &fbar,
-			        "Font Details",
-			        opt);
+			i = uifc.list(WIN_SAV | WIN_ACT | WIN_INS | WIN_INSACT | WIN_DEL | WIN_RHT | WIN_BOT
+			        , 0
+			        , 0
+			        , 0
+			        , &fcur
+			        , &fbar
+			        , "Font Details"
+			        , opt);
 			if (i == -1) {
 				check_exit(false);
 				break;

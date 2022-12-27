@@ -15,6 +15,7 @@
 #include "threadwrap.h"
 #include "uifcinit.h"
 #include "window.h"
+
 int
 telnets_connect(struct bbslist*bbs)
 {

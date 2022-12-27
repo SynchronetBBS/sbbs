@@ -4,7 +4,7 @@
 #ifdef _WIN32
  #include <stdlib.h>
 #else
- #include <unistd.h>            /* _exit() */
+ #include <unistd.h> /* _exit() */
 #endif
 #include <xp_dl.h>
 
@@ -13,6 +13,7 @@
 int crypt_loaded = 0;
 
 #ifdef WITHOUT_CRYPTLIB
+
 int
 init_crypt()
 {
@@ -26,6 +27,7 @@ exit_crypt()
 #else
 
 struct crypt_funcs cl;
+
 int
 init_crypt(void)
 {

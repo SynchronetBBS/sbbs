@@ -23,6 +23,7 @@ int      orig_vidflags;
 int      orig_x;
 int      orig_y;
 uint32_t orig_palette[16];
+
 int
 init_uifc(bool scrn, bool bottom)
 {
@@ -84,6 +85,7 @@ init_uifc(bool scrn, bool bottom)
 
 	return 0;
 }
+
 void
 uifcbail(void)
 {
@@ -96,6 +98,7 @@ uifcbail(void)
 	}
 	uifc_initialized = 0;
 }
+
 void
 uifcmsg(char*msg, char*helpbuf)
 {
@@ -124,6 +127,7 @@ uifcmsg(char*msg, char*helpbuf)
 		freescreen(savscrn);
 	}
 }
+
 void
 uifcinput(char*title, int len, char*msg, int mode, char*helpbuf)
 {
@@ -152,6 +156,7 @@ uifcinput(char*title, int len, char*msg, int mode, char*helpbuf)
 		freescreen(savscrn);
 	}
 }
+
 int
 confirm(char*msg, char*helpbuf)
 {

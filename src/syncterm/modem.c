@@ -15,6 +15,7 @@
 #include "uifcinit.h"
 
 static COM_HANDLE com = COM_HANDLE_INVALID;
+
 void
 modem_input_thread(void*args)
 {

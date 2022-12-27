@@ -40,7 +40,7 @@
  #define CEOF CTRL('d')
 #endif
 #ifndef CEOL
- #define CEOL 0xff                              /* XXX avoid _POSIX_VDISABLE */
+ #define CEOL 0xff /* XXX avoid _POSIX_VDISABLE */
 #endif
 #ifndef CERASE
  #define CERASE 0177
@@ -61,7 +61,7 @@
  #define CMIN 1
 #endif
 #ifndef CQUIT
- #define CQUIT 034                              /* FS, ^\ */
+ #define CQUIT 034 /* FS, ^\ */
 #endif
 #ifndef CSUSP
  #define CSUSP CTRL('z')
@@ -145,6 +145,7 @@ static cc_t ttydefchars[NCCS] = {
 extern int default_font;
 
 #ifdef NEEDS_CFMAKERAW
+
 void
 cfmakeraw(struct termios*t)
 {
@@ -158,6 +159,7 @@ cfmakeraw(struct termios*t)
 #endif
 
 #ifdef NEEDS_FORKPTY
+
 static int
 login_tty(int fd)
 {
@@ -173,6 +175,7 @@ login_tty(int fd)
 }
 
  #ifdef NEEDS_DAEMON
+
 /*
  * **************************************************************************
  * Daemonizes the process
@@ -209,6 +212,7 @@ daemon(int nochdir, int noclose)
 }
 
  #endif /* ifdef NEEDS_DAEMON */
+
 static int
 openpty(int*amaster, int*aslave, char*name, struct termios*termp, struct winsize*winp)
 {
@@ -258,6 +262,7 @@ openpty(int*amaster, int*aslave, char*name, struct termios*termp, struct winsize
 	errno = ENOENT; /* out of ptys */
 	return -1;
 }
+
 static int
 forkpty(int*amaster, char*name, struct termios*termp, struct winsize*winp)
 {
@@ -294,6 +299,7 @@ static int status;
 #ifdef __BORLANDC__
  #pragma argsused
 #endif
+
 void
 pty_input_thread(void*args)
 {
@@ -344,6 +350,7 @@ pty_input_thread(void*args)
 #ifdef __BORLANDC__
  #pragma argsused
 #endif
+
 void
 pty_output_thread(void*args)
 {
@@ -399,6 +406,7 @@ pty_output_thread(void*args)
 	}
 	conn_api.output_thread_running = 2;
 }
+
 int
 pty_connect(struct bbslist*bbs)
 {
@@ -451,7 +459,8 @@ pty_connect(struct bbslist*bbs)
 			        ":sc=\\E[s:se=\\E[m:sf=\\E[S:so=\\E[0;1;7m:sr=\\E[T:st=\\E[H"
 			        ":ta=^I:up=\\E[A:ve=\\E[?25h:vi=\\E[?25l:vs=\\E[?25h:"
 			        ,
-			        ws.ws_col,
+			        ws.ws_col
+			        ,
 			        ws.ws_row
 			        ,
 			        cio_api.options
@@ -500,6 +509,7 @@ pty_connect(struct bbslist*bbs)
 
 	return 0;
 }
+
 int
 pty_close(void)
 {

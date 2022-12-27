@@ -7,6 +7,7 @@
 #include "syncterm.h"
 #include "term.h"
 #include "uifcinit.h"
+
 void
 get_term_win_size(int*width, int*height, int*pixelw, int*pixelh, int*nostatus)
 {

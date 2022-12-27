@@ -48,12 +48,12 @@
 
 struct conn_api    conn_api;
 char              *conn_types_enum[] = {
-	"Unknown", "RLogin", "RLoginReversed", "Telnet", "Raw", "SSH", "SSHNA", "Modem", "Serial", "NoRTS", "Shell",
-	"MBBSGhost", "TelnetS", NULL
+	"Unknown", "RLogin", "RLoginReversed", "Telnet", "Raw", "SSH", "SSHNA", "Modem", "Serial", "NoRTS", "Shell"
+	, "MBBSGhost", "TelnetS", NULL
 };
 char              *conn_types[] = {
-	"Unknown", "RLogin", "RLogin Reversed", "Telnet", "Raw", "SSH", "SSH (no auth)", "Modem", "Serial",
-	"3-wire (No RTS)", "Shell", "MBBS GHost", "TelnetS", NULL
+	"Unknown", "RLogin", "RLogin Reversed", "Telnet", "Raw", "SSH", "SSH (no auth)", "Modem", "Serial"
+	, "3-wire (No RTS)", "Shell", "MBBS GHost", "TelnetS", NULL
 };
 short unsigned int conn_ports[] = {0, 513, 513, 23, 0, 22, 22, 0, 0, 0, 65535, 992, 0};
 
@@ -62,6 +62,7 @@ struct conn_buffer conn_outbuf;
 
 /* Buffer functions */
 struct conn_buffer*
+
 create_conn_buf(struct conn_buffer*buf, size_t size)
 {
 	buf->buf = (unsigned char*)malloc(size);
@@ -88,6 +89,7 @@ create_conn_buf(struct conn_buffer*buf, size_t size)
 	}
 	return buf;
 }
+
 void
 destroy_conn_buf(struct conn_buffer*buf)
 {
@@ -95,11 +97,13 @@ destroy_conn_buf(struct conn_buffer*buf)
 		FREE_AND_NULL(buf->buf);
 		while (pthread_mutex_destroy(&(buf->mutex)))
 			;
-		while (sem_destroy(&(buf->in_sem)));
+		while (sem_destroy(&(buf->in_sem)))
+			;
 		while (sem_destroy(&(buf->out_sem)))
 			;
 	}
 }
+
 /*
  * The mutex should always be locked by the caller
  * for the rest of the buffer functions
@@ -114,11 +118,13 @@ conn_buf_bytes(struct conn_buffer*buf)
 		return buf->buftop - buf->bufbot;
 	return buf->bufsize - buf->bufbot + buf->buftop;
 }
+
 size_t
 conn_buf_free(struct conn_buffer*buf)
 {
 	return buf->bufsize - conn_buf_bytes(buf);
 }
+
 /*
  * Copies up to outlen bytes from the buffer into outbuf,
  * leaving them in the buffer.  Returns the number of bytes
@@ -145,6 +151,7 @@ conn_buf_peek(struct conn_buffer*buf, void*voutbuf, size_t outlen)
 
 	return copy_bytes;
 }
+
 /*
  * Copies up to outlen bytes from the buffer into outbuf,
  * removing them from the buffer.  Returns the number of
@@ -169,6 +176,7 @@ conn_buf_get(struct conn_buffer*buf, void*voutbuf, size_t outlen)
 	}
 	return ret;
 }
+
 /*
  * Places up to outlen bytes from outbuf into the buffer
  * returns the number of bytes written into the buffer
@@ -199,6 +207,7 @@ conn_buf_put(struct conn_buffer*buf, const void*voutbuf, size_t outlen)
 	}
 	return write_bytes;
 }
+
 /*
  * Waits up to timeout milliseconds for bcount bytes to be available/free
  * in the buffer.
@@ -261,6 +270,7 @@ conn_buf_wait_cond(struct conn_buffer*buf, size_t bcount, unsigned long timeout,
 		pthread_mutex_unlock(&(buf->mutex));
 	}
 }
+
 /*
  * Connection functions
  */
@@ -271,6 +281,7 @@ conn_connected(void)
 		return true;
 	return false;
 }
+
 int
 conn_recv_upto(void*vbuffer, size_t buflen, unsigned timeout)
 {
@@ -304,6 +315,7 @@ conn_recv_upto(void*vbuffer, size_t buflen, unsigned timeout)
 
 	return found;
 }
+
 int
 conn_send_raw(const void*vbuffer, size_t buflen, unsigned int timeout)
 {
@@ -317,6 +329,7 @@ conn_send_raw(const void*vbuffer, size_t buflen, unsigned int timeout)
 	pthread_mutex_unlock(&(conn_outbuf.mutex));
 	return found;
 }
+
 int
 conn_send(const void*vbuffer, size_t buflen, unsigned int timeout)
 {
@@ -344,6 +357,7 @@ conn_send(const void*vbuffer, size_t buflen, unsigned int timeout)
 
 	return found;
 }
+
 int
 conn_connect(struct bbslist*bbs)
 {
@@ -422,6 +436,7 @@ conn_connect(struct bbslist*bbs)
 	}
 	return conn_api.terminate;
 }
+
 size_t
 conn_data_waiting(void)
 {
@@ -432,6 +447,7 @@ conn_data_waiting(void)
 	pthread_mutex_unlock(&(conn_inbuf.mutex));
 	return found;
 }
+
 int
 conn_close(void)
 {
@@ -453,6 +469,7 @@ enum failure_reason {
 	,
 	FAILURE_DISCONNECTED
 };
+
 int
 conn_socket_connect(struct bbslist*bbs)
 {
@@ -613,6 +630,7 @@ connected:
 		closesocket(sock);
 	return INVALID_SOCKET;
 }
+
 void
 conn_binary_mode_on(void)
 {
@@ -620,6 +638,7 @@ conn_binary_mode_on(void)
 		conn_api.binary_mode_on();
 	conn_api.binary_mode = true;
 }
+
 void
 conn_binary_mode_off(void)
 {
