@@ -44,4 +44,4 @@ extern const unsigned char ooii_snd_welcome[33685];
 extern const unsigned char ooii_snd_yahoo[14119];
 extern const unsigned char ooii_snd_zip[15375];
 
-#endif
+#endif // ifndef _OOII_SOUNDS_H_
