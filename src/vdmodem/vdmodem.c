@@ -41,7 +41,7 @@
 #include "git_hash.h"
 
 #define TITLE "Synchronet Virtual DOS Modem for Windows"
-#define VERSION "0.2"
+#define VERSION "0.3"
 
 bool external_socket;
 union xp_sockaddr addr;
@@ -1387,8 +1387,14 @@ int main(int argc, char** argv)
 			fd_set fds = {0};
 			FD_SET(sock, &fds);
 			struct timeval tv = { 0, 0 };
-			if(now - lastrx >= rx_delay && select(/* ignored: */0, &fds, NULL, NULL, &tv) == 1) {
-				dprintf("select returned 1 at %llu", now);
+			result = select(/* ignored: */0, &fds, NULL, NULL, &tv);
+			if(result != 0) {
+				if(result == SOCKET_ERROR)
+					dprintf("select returned SOCKET_ERROR (%d) at %llu", WSAGetLastError(), now);
+				else
+					dprintf("select returned %d at %llu", result, now);
+			}
+			if(now - lastrx >= rx_delay &&  result == 1) {
 				int rd = recv(sock, buf, rx_buflen, /* flags: */0);
 				dprintf("recv returned %d", rd);
 				if(rd <= 0) {
@@ -1556,6 +1562,12 @@ int main(int argc, char** argv)
 		printf("lastrx: %llu\n", lastrx);
 		printf("lastring: %llu\n", lastring);
 		printf("timer: %llu\n", xp_timer64());
+	} else {
+		if(cfg.client_file[0])
+			remove(cfg.client_file);
+		remove("DOSXTRN.ENV");
+		remove("DOSXTRN.RET");
+		remove("DOSXTRN.ERR");
 	}
 	return retval;
 }
