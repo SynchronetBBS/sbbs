@@ -99,28 +99,28 @@ enum rip_write_modes {
 };
 
 struct builtin_rip_variable {
-	const char* const name;
+	const char * const name;
 
-	char            * (*func)(const char*var, const void* const data);
+	char             * (*func)(const char *var, const void * const data);
 
-	const void* const data;
+	const void * const data;
 };
 
-static char              *pending = NULL;
-static size_t             pending_len = 0;
-static size_t             pending_size = 0;
+static char               *pending = NULL;
+static size_t              pending_len = 0;
+static size_t              pending_size = 0;
 
-static BYTE              *moredata = NULL;
-static size_t             moredata_len = 0;
-static size_t             moredata_size = 0;
+static BYTE               *moredata = NULL;
+static size_t              moredata_len = 0;
+static size_t              moredata_size = 0;
 
-static uint8_t           *ripbuf = NULL;
-static size_t             ripbuf_size = 0;
-static size_t             ripbuf_pos = 0;
-static size_t             ripbufpos = 0;
-static bool               rip_suspended = false;
+static uint8_t            *ripbuf = NULL;
+static size_t              ripbuf_size = 0;
+static size_t              ripbuf_pos = 0;
+static size_t              ripbufpos = 0;
+static bool                rip_suspended = false;
 
-static struct mouse_field*rip_pressed = NULL;
+static struct mouse_field *rip_pressed = NULL;
 
 struct rip_button_style {
 	enum {
@@ -175,12 +175,12 @@ struct rip_button_style {
 		int x1, y1, x2, y2;
 	} box;
 
-	char                   *icon;
-	char                   *label;
-	char                   *command;
-	int                     bflags;
-	uint8_t                 hotkey;
-	struct rip_button_style*next;
+	char                    *icon;
+	char                    *label;
+	char                    *command;
+	int                      bflags;
+	uint8_t                  hotkey;
+	struct rip_button_style *next;
 };
 
 #define BUTTON_FLAG1_CLIPBOARD (1 << 0)
@@ -211,9 +211,9 @@ struct hot_mouse {
 		int x1, y1, x2, y2;
 	} box;
 
-	bool invertable;
-	bool resetafter;
-	char*command;
+	bool  invertable;
+	bool  resetafter;
+	char *command;
 };
 
 enum mouse_field_type {
@@ -226,16 +226,16 @@ struct mouse_field {
 	enum mouse_field_type type;
 
 	union {
-		struct rip_button_style*button;
-		struct hot_mouse       *hot;
+		struct rip_button_style *button;
+		struct hot_mouse        *hot;
 	} data;
 };
 
 struct popup_option {
-	char*resp;
-	char*text;
-	int  width;
-	char hk;
+	char *resp;
+	char *text;
+	int   width;
+	char  hk;
 };
 
 static struct {
@@ -6992,7 +6992,7 @@ struct metric {
 	unsigned drop; // Scan lines from TOC to lowermost pixel
 };
 
-static const struct               metric font_metrics[11][10] = {
+static const struct                metric font_metrics[11][10] = {
 #if 0 // These are from the doc and are wrong
         // This one is certainly wrong since we use a different font.
 	{
@@ -7286,7 +7286,7 @@ static const struct               metric font_metrics[11][10] = {
 #endif /* if 0 */
 };
 
-static const unsigned char* const rip_fonts[] = {
+static const unsigned char * const rip_fonts[] = {
 	Triplex
 	, Small
 	, Sans
@@ -7298,43 +7298,43 @@ static const unsigned char* const rip_fonts[] = {
 	, European
 	, Bold
 };
-static int next_char(const char*buf, size_t*pos);
-static int parse_mega(const char*buf, int fieldwidth);
-static char *parse_string(const char*buf);
-static void buffer_rip(const BYTE*buf, unsigned len);
-static void buffer_data(const BYTE*buf, unsigned len);
-static void do_rip_command(int level, int sublevel, int cmd, const char*args);
-static void do_rip_string(const char*buf, size_t len);
-static bool handle_rip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigned maxlen
+static int next_char(const char *buf, size_t *pos);
+static int parse_mega(const char *buf, int fieldwidth);
+static char *parse_string(const char *buf);
+static void buffer_rip(const BYTE *buf, unsigned len);
+static void buffer_data(const BYTE *buf, unsigned len);
+static void do_rip_command(int level, int sublevel, int cmd, const char *args);
+static void do_rip_string(const char *buf, size_t len);
+static bool handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, unsigned maxlen
     , enum rip_state ns);
-static void unrip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigned maxlen);
-static void write_text(const char*str);
-static char *rv_version(const char* const var, const void* const data);
-static char *rv_date(const char* const var, const void* const data);
-static char *rv_time(const char* const var, const void* const data);
-static char *rv_sound(const char* const var, const void* const data);
-static char *rv_mouse(const char* const var, const void* const data);
-static char *rv_reset(const char* const var, const void* const data);
-static char *rv_save(const char* const var, const void* const data);
-static char *rv_restore(const char* const var, const void* const data);
-static char *rv_erase(const char* const var, const void* const data);
-static char *rv_mouse_kill(const char* const var, const void* const data);
-static char *rv_disable(const char* const var, const void* const data);
-static char *rv_termstat(const char* const var, const void* const data);
-static char *rv_termset(const char* const var, const void* const data);
-static char *rv_hotkey(const char* const var, const void* const data);
-static char *rv_exploit(const char* const var, const void* const data);
-static char *rv_paste(const char* const var, const void* const data);
+static void unrip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, unsigned maxlen);
+static void write_text(const char *str);
+static char *rv_version(const char * const var, const void * const data);
+static char *rv_date(const char * const var, const void * const data);
+static char *rv_time(const char * const var, const void * const data);
+static char *rv_sound(const char * const var, const void * const data);
+static char *rv_mouse(const char * const var, const void * const data);
+static char *rv_reset(const char * const var, const void * const data);
+static char *rv_save(const char * const var, const void * const data);
+static char *rv_restore(const char * const var, const void * const data);
+static char *rv_erase(const char * const var, const void * const data);
+static char *rv_mouse_kill(const char * const var, const void * const data);
+static char *rv_disable(const char * const var, const void * const data);
+static char *rv_termstat(const char * const var, const void * const data);
+static char *rv_termset(const char * const var, const void * const data);
+static char *rv_hotkey(const char * const var, const void * const data);
+static char *rv_exploit(const char * const var, const void * const data);
+static char *rv_paste(const char * const var, const void * const data);
 static void kill_mouse_fields(void);
 static void kill_saved_mouse_fields(void);
-static void copy_mouse_fields(struct mouse_field*from, struct mouse_field**to);
+static void copy_mouse_fields(struct mouse_field *from, struct mouse_field **to);
 static void shadow_palette(void);
 static void normal_palette(void);
 static void draw_line(int x1, int y1, int x2, int y2);
-static void reinit_screen(uint8_t*font, int fontx, int fonty);
+static void reinit_screen(uint8_t *font, int fontx, int fonty);
 static bool no_viewport(void);
 
-static const char*ripver[] = {"", "RIPSCRIP015410", "RIPSCRIP030001"};
+static const char *ripver[] = {"", "RIPSCRIP015410", "RIPSCRIP030001"};
 
 #define RIP_MOUSE_EVENT_NONE 0
 #define RIP_MOUSE_EVENT_TEXT 1
@@ -7470,26 +7470,26 @@ set_ega_palette(void)
 }
 
 static int
-bicmp(const void*str, const void*vd)
+bicmp(const void *str, const void *vd)
 {
-	int  ret;
-	char*tmpstr = strdup(str);
-	char*openparen = strchr(tmpstr, '(');
+	int   ret;
+	char *tmpstr = strdup(str);
+	char *openparen = strchr(tmpstr, '(');
 
 	if (openparen != NULL)
 		*openparen = '\0';
 
-	const struct builtin_rip_variable*vardef = vd;
+	const struct builtin_rip_variable *vardef = vd;
 
 	ret = strcmp(tmpstr, vardef->name);
 	free(tmpstr);
 	return ret;
 }
 
-static char*
-get_text_variable(const char* const var)
+static char *
+get_text_variable(const char * const var)
 {
-	struct builtin_rip_variable*vardef;
+	struct builtin_rip_variable *vardef;
 
 	if (var[0] == '>') {
 		puts("TODO: Local RIP playback");
@@ -7503,14 +7503,14 @@ get_text_variable(const char* const var)
 	return vardef->func(var, vardef->data);
 }
 
-static char*
-rv_version(const char* const var, const void* const data)
+static char *
+rv_version(const char * const var, const void * const data)
 {
 	return strdup(ripver[rip.version]);
 }
 
-static char*
-rv_date(const char* const var, const void* const data)
+static char *
+rv_date(const char * const var, const void * const data)
 {
 	time_t    now;
 	struct tm nlt;
@@ -7596,8 +7596,8 @@ rv_date(const char* const var, const void* const data)
 	return NULL;
 }
 
-static char*
-rv_time(const char* const var, const void* const data)
+static char *
+rv_time(const char * const var, const void * const data)
 {
 	time_t    now;
 	struct tm nlt;
@@ -7641,8 +7641,8 @@ rv_time(const char* const var, const void* const data)
 	return NULL;
 }
 
-static char*
-rv_sound(const char* const var, const void* const data)
+static char *
+rv_sound(const char * const var, const void * const data)
 {
 	int i;
 
@@ -7692,8 +7692,8 @@ rv_sound(const char* const var, const void* const data)
 	return NULL;
 }
 
-static char*
-rv_mouse(const char* const var, const void* const data)
+static char *
+rv_mouse(const char * const var, const void * const data)
 {
 	char str[128];
 	int  fwidth = 4;
@@ -7782,8 +7782,8 @@ map_rip_color(int color)
 	return col;
 }
 
-static char*
-rv_reset(const char* const var, const void* const data)
+static char *
+rv_reset(const char * const var, const void * const data)
 {
 	int oldhold = hold_update;
 
@@ -7823,7 +7823,7 @@ rv_reset(const char* const var, const void* const data)
 	rip.text_disabled = false;
 	rip.ansi_state = ANSI_STATE_NONE;
 	_setcursortype(rip.curstype);
-	reinit_screen((uint8_t*)conio_fontdata[0].eight_by_eight, 8, 8);
+	reinit_screen((uint8_t *)conio_fontdata[0].eight_by_eight, 8, 8);
 	memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
 	set_ega_palette();
 	cterm->left_margin = 1;
@@ -7844,8 +7844,8 @@ rv_reset(const char* const var, const void* const data)
 	return NULL;
 }
 
-static char*
-rv_save(const char* const var, const void* const data)
+static char *
+rv_save(const char * const var, const void * const data)
 {
 	if (strcmp(var, "SMF") == 0) {
                 // Save mouse fields...
@@ -7857,8 +7857,8 @@ rv_save(const char* const var, const void* const data)
 	return NULL;
 }
 
-static char*
-rv_restore(const char* const var, const void* const data)
+static char *
+rv_restore(const char * const var, const void * const data)
 {
 	if (strcmp(var, "RMF") == 0) {
                 // Restore mouse fields...
@@ -7992,8 +7992,8 @@ rip_setpixel(int x, int y, int color)
 	setpixel(map_rip_x(x), map_rip_y(y), map_rip_color(color));
 }
 
-static char*
-rv_erase(const char* const var, const void* const data)
+static char *
+rv_erase(const char * const var, const void * const data)
 {
 	int x, y;
 
@@ -8015,29 +8015,29 @@ rv_erase(const char* const var, const void* const data)
 	return NULL;
 }
 
-static char*
-rv_mouse_kill(const char* const var, const void* const data)
+static char *
+rv_mouse_kill(const char * const var, const void * const data)
 {
 	kill_mouse_fields();
 	return NULL;
 }
 
-static char*
-rv_disable(const char* const var, const void* const data)
+static char *
+rv_disable(const char * const var, const void * const data)
 {
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
 
-static char*
-rv_termstat(const char* const var, const void* const data)
+static char *
+rv_termstat(const char * const var, const void * const data)
 {
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
 
-static char*
-rv_termset(const char* const var, const void* const data)
+static char *
+rv_termset(const char * const var, const void * const data)
 {
 	struct text_info ti;
 	char             str[128];
@@ -8113,9 +8113,9 @@ rv_termset(const char* const var, const void* const data)
 			}
 			break;
 		case 'S': {
-			void*font;
-			int  width;
-			int  height;
+			void *font;
+			int   width;
+			int   height;
 
 			pthread_mutex_lock(&vstatlock);
 			font = vstat.forced_font;
@@ -8150,22 +8150,22 @@ rv_termset(const char* const var, const void* const data)
 	return NULL;
 }
 
-static char*
-rv_hotkey(const char* const var, const void* const data)
+static char *
+rv_hotkey(const char * const var, const void * const data)
 {
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
 
-static char*
-rv_exploit(const char* const var, const void* const data)
+static char *
+rv_exploit(const char * const var, const void * const data)
 {
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
 
-static char*
-rv_paste(const char* const var, const void* const data)
+static char *
+rv_paste(const char * const var, const void * const data)
 {
 	if (rip.clipboard) {
 		setpixels(rip.clipx
@@ -8188,7 +8188,7 @@ no_viewport(void)
 }
 
 static int
-parse_mega(const char*buf, int fieldwidth)
+parse_mega(const char *buf, int fieldwidth)
 {
 	int i;
 	int ret = 0;
@@ -8216,8 +8216,8 @@ parse_mega(const char*buf, int fieldwidth)
 	return ret;
 }
 
-static char*
-parse_string(const char*buf)
+static char *
+parse_string(const char *buf)
 {
 	size_t inpos = 0;
 	char  *p;
@@ -8233,7 +8233,7 @@ parse_string(const char*buf)
 }
 
 static void
-buffer_rip(const BYTE*buf, unsigned len)
+buffer_rip(const BYTE *buf, unsigned len)
 {
 	size_t new_size;
 	char  *p;
@@ -8256,7 +8256,7 @@ buffer_rip(const BYTE*buf, unsigned len)
 }
 
 static void
-buffer_data(const BYTE*buf, unsigned len)
+buffer_data(const BYTE *buf, unsigned len)
 {
 	size_t new_size;
 	BYTE  *p;
@@ -8279,7 +8279,7 @@ buffer_data(const BYTE*buf, unsigned len)
 }
 
 static int
-next_char(const char*buf, size_t*pos)
+next_char(const char *buf, size_t *pos)
 {
 	while (buf[*pos] == '\\') {
 		(*pos)++;
@@ -8346,7 +8346,7 @@ pixel2color(uint32_t pix)
 static void
 draw_pixel(int x, int y)
 {
-	struct ciolib_pixels*pix;
+	struct ciolib_pixels *pix;
 
 	if ((x < 0) || (x > (rip.viewport.ex - rip.viewport.sx)))
 		return;
@@ -8413,7 +8413,7 @@ char_width_raw(char ch)
 		if (uch < fchar)
 			return 0;
 		chnum = uch - rip_fonts[rip.font.num - 1][0x84];
-		nchars = *((uint16_t*)&rip_fonts[rip.font.num - 1][0x81]);
+		nchars = *((uint16_t *)&rip_fonts[rip.font.num - 1][0x81]);
 		if (uch - fchar >= nchars)
 			return 0;
 		return rip_fonts[rip.font.num - 1][0x90 + nchars * 2 + chnum];
@@ -8437,14 +8437,14 @@ char_width(char ch)
 }
 
 static void
-char_top_base(char ch, int*top, int*bottom)
+char_top_base(char ch, int *top, int *bottom)
 {
-	int     fontoffset;
-	uint8_t*this_font;
-	int     y;
+	int      fontoffset;
+	uint8_t *this_font;
+	int      y;
 
 	if (rip.font.num == 0) {
-		this_font = (uint8_t*)conio_fontdata[0].eight_by_eight;
+		this_font = (uint8_t *)conio_fontdata[0].eight_by_eight;
 		fontoffset = ('A') * 8;
 		*top = -1;
 		*bottom = -1;
@@ -8464,14 +8464,14 @@ char_top_base(char ch, int*top, int*bottom)
 }
 
 static void
-char_top_bottom(char ch, int*top, int*bottom)
+char_top_bottom(char ch, int *top, int *bottom)
 {
-	int     fontoffset;
-	uint8_t*this_font;
-	int     y;
+	int      fontoffset;
+	uint8_t *this_font;
+	int      y;
 
 	if (rip.font.num == 0) {
-		this_font = (uint8_t*)conio_fontdata[0].eight_by_eight;
+		this_font = (uint8_t *)conio_fontdata[0].eight_by_eight;
 		fontoffset = ((uint8_t)ch) * 8;
 		*top = -1;
 		*bottom = -1;
@@ -8538,7 +8538,7 @@ write_char(char ch)
 			return;
 
                 // Bitmap 8x8 font
-		this_font = (uint8_t*)conio_fontdata[0].eight_by_eight;
+		this_font = (uint8_t *)conio_fontdata[0].eight_by_eight;
 		fontoffset = (uch) * 8;
 
 		for (y = 0; y < 8; y++) {
@@ -8570,11 +8570,11 @@ write_char(char ch)
 		if (uch < fchar)
 			return;
 		chnum = uch - fchar;
-		nchars = *(uint16_t*)(&rip_fonts[rip.font.num - 1][0x81]);
+		nchars = *(uint16_t *)(&rip_fonts[rip.font.num - 1][0x81]);
 		if (chnum >= nchars)
 			return;
-		fontoffset = 0x80 + *((uint16_t*)(&rip_fonts[rip.font.num - 1][0x85]));
-		fontoffset += *((uint16_t*)(&rip_fonts[rip.font.num - 1][0x90 + chnum * 2]));
+		fontoffset = 0x80 + *((uint16_t *)(&rip_fonts[rip.font.num - 1][0x85]));
+		fontoffset += *((uint16_t *)(&rip_fonts[rip.font.num - 1][0x90 + chnum * 2]));
 		mult = stroke_mults[rip.font.size];
 		div = stroke_divs[rip.font.size];
 
@@ -8658,9 +8658,9 @@ write_char(char ch)
 }
 
 static void
-write_text(const char*str)
+write_text(const char *str)
 {
-	const char*p;
+	const char *p;
 
 	if (str == NULL)
 		return;
@@ -8696,12 +8696,12 @@ write_text(const char*str)
 static void
 draw_line(int x1, int y1, int x2, int y2)
 {
-	int*minc, *mins, *mino, *mind;
-	int*maxc, *maxs, *maxe, *maxo, *maxd;
-	int x, y;
-	int swap = 0;
-	int dx = abs(x2 - x1);
-	int dy = abs(y2 - y1);
+	int *minc, *mins, *mino, *mind;
+	int *maxc, *maxs, *maxe, *maxo, *maxd;
+	int  x, y;
+	int  swap = 0;
+	int  dx = abs(x2 - x1);
+	int  dy = abs(y2 - y1);
 
         // Swap endpoints
 	if (y2 < y1)
@@ -8810,13 +8810,13 @@ draw_line(int x1, int y1, int x2, int y2)
 static void
 set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width)
 {
-	int*minc, *mins, *mino, *mind;
-	int*maxc, *maxs, *maxe, *maxo, *maxd;
-	int x, y;
-	int swap = 0;
-	int lx, ly;
-	int dx = abs(x2 - x1);
-	int dy = abs(y2 - y1);
+	int *minc, *mins, *mino, *mind;
+	int *maxc, *maxs, *maxe, *maxo, *maxd;
+	int  x, y;
+	int  swap = 0;
+	int  lx, ly;
+	int  dx = abs(x2 - x1);
+	int  dy = abs(y2 - y1);
 
         // Swap endpoints
 	if (y2 < y1)
@@ -8888,7 +8888,7 @@ set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width
 				lx = map_rip_x(x);
 				ly = map_rip_y(y);
 
-				struct ciolib_pixels*pixels = getpixels(lx, ly, lx, ly, false);
+				struct ciolib_pixels *pixels = getpixels(lx, ly, lx, ly, false);
 
 				set_pixel(x, y, pixels->pixels[0] | 0x40000000);
 				freepixels(pixels);
@@ -8930,7 +8930,7 @@ set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width
 }
 
 void
-chisel_inset(int height, int*xinset, int*yinset)
+chisel_inset(int height, int *xinset, int *yinset)
 {
 	if (height < 12) {
 		*xinset = 1;
@@ -8979,12 +8979,12 @@ chisel_inset(int height, int*xinset, int*yinset)
 static void
 invert_rect(int x1, int y1, int x2, int y2)
 {
-	uint32_t             palette[16];
-	struct ciolib_pixels*pix;
-	uint32_t             col;
-	size_t               pixel;
-	int                  x, y, i;
-	struct text_info     ti;
+	uint32_t              palette[16];
+	struct ciolib_pixels *pix;
+	uint32_t              col;
+	size_t                pixel;
+	int                   x, y, i;
+	struct text_info      ti;
 
 	gettextinfo(&ti);
 	get_modepalette(palette);
@@ -9046,11 +9046,11 @@ invert_rect(int x1, int y1, int x2, int y2)
 static void
 do_fill(bool overwrite)
 {
-	struct ciolib_pixels*pix;
-	int                  x, y;
-	int                  pixel;
-	bool                 fill = false;
-	bool                 in_line = false;
+	struct ciolib_pixels *pix;
+	int                   x, y;
+	int                   pixel;
+	bool                  fill = false;
+	bool                  in_line = false;
 
 	pix = getpixels(0, 0, rip.x_max - 1, rip.y_max - 1, false);
 	FREE_AND_NULL(pix->pixelsb);
@@ -9199,7 +9199,7 @@ do_fill(bool overwrite)
  * TODO: Not sure why I need to subtract one from x2/y2 here...
  */
 static void
-draw_button(struct rip_button_style*but, bool inverted)
+draw_button(struct rip_button_style *but, bool inverted)
 {
 	int      width, height;
 	int      ox, oy;
@@ -9485,12 +9485,12 @@ draw_button(struct rip_button_style*but, bool inverted)
 }
 
 static void
-add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, char*text)
+add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, char *text)
 {
-	struct rip_button_style*but;
-	struct mouse_field     *mf;
-	char                   *label;
-	char                   *p;
+	struct rip_button_style *but;
+	struct mouse_field      *mf;
+	char                    *label;
+	char                    *p;
 
 	but = malloc(sizeof(struct rip_button_style));
 	memcpy(but, &rip.bstyle, offsetof(struct rip_button_style, box));
@@ -9564,11 +9564,11 @@ add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, char*text)
 }
 
 static void
-append_str(uint8_t**resp, size_t*size, size_t*pos, const char*str)
+append_str(uint8_t **resp, size_t *size, size_t *pos, const char *str)
 {
-	size_t  slen;
-	size_t  newsize;
-	uint8_t*newresp;
+	size_t   slen;
+	size_t   newsize;
+	uint8_t *newresp;
 
 	if (str == NULL)
 		return;
@@ -9592,33 +9592,33 @@ append_str(uint8_t**resp, size_t*size, size_t*pos, const char*str)
 	(*pos) += slen;
 }
 
-static char*
-do_popup(const char* const str)
+static char *
+do_popup(const char * const str)
 {
-	struct popup_option *popt;
-	size_t               opts;
-	char                *question;
-	char                *soo; // Start Of Opts
-	char                *p, *p2, *p3, *p4;
-	int                  i, j;
-	int                  x, y, x1, y1, x2, y2, width, height, maxwidth;
-	bool                 must_answer = false;
-	uint32_t             black;
-	uint32_t             white;
-	uint32_t             dark;
-	uint32_t             light;
-	int                  oc, ox, oy;
-	int                  ch;
-	struct mouse_event   mevent;
-	size_t               curr;
-	int                  ret;
-	struct ciolib_pixels*pix;
+	struct popup_option  *popt;
+	size_t                opts;
+	char                 *question;
+	char                 *soo;  // Start Of Opts
+	char                 *p, *p2, *p3, *p4;
+	int                   i, j;
+	int                   x, y, x1, y1, x2, y2, width, height, maxwidth;
+	bool                  must_answer = false;
+	uint32_t              black;
+	uint32_t              white;
+	uint32_t              dark;
+	uint32_t              light;
+	int                   oc, ox, oy;
+	int                   ch;
+	struct mouse_event    mevent;
+	size_t                curr;
+	int                   ret;
+	struct ciolib_pixels *pix;
 
 	black = map_rip_color(0);
 	white = map_rip_color(15);
 	dark = map_rip_color(8);
 	light = map_rip_color(7);
-	p = (char*)str;
+	p = (char *)str;
 	if (str[0] == '*') {
 		must_answer = true;
 		p++;
@@ -9859,10 +9859,10 @@ do_popup(const char* const str)
 }
 
 static void
-handle_command_str(const char*incmd)
+handle_command_str(const char *incmd)
 {
-	const char*p, *p2, *p3, *p4;
-	char       str[2];
+	const char *p, *p2, *p3, *p4;
+	char        str[2];
 
 	if (incmd == NULL)
 		return;
@@ -9885,9 +9885,9 @@ handle_command_str(const char*incmd)
 			if (p2 != NULL) {
 				p3 = strndup(p + 1, p2 - p - 1);
 				p4 = get_text_variable(p3);
-				free((void*)p3);
+				free((void *)p3);
 				append_str(&ripbuf, &ripbuf_size, &ripbuf_pos, p4);
-				free((void*)p4);
+				free((void *)p4);
 				p = p2;
 			}
 		}
@@ -9896,11 +9896,11 @@ handle_command_str(const char*incmd)
 			if (p2) {
 				p3 = strndup(p + 2, p2 - p - 2);
 				p4 = do_popup(p3);
-				free((void*)p3);
+				free((void *)p3);
 
                                 // Hell yeah we're recursing!  WOOT!
 				handle_command_str(p4);
-				free((void*)p4);
+				free((void *)p4);
 				p = p2 + 1;
 			}
 		}
@@ -9928,7 +9928,7 @@ handle_command_str(const char*incmd)
 static void
 kill_saved_mouse_fields(void)
 {
-	struct mouse_field*field;
+	struct mouse_field *field;
 
 	while (rip.saved_mfields) {
 		field = rip.saved_mfields;
@@ -9951,11 +9951,11 @@ kill_saved_mouse_fields(void)
 }
 
 static void
-copy_mouse_fields(struct mouse_field*from, struct mouse_field**to)
+copy_mouse_fields(struct mouse_field *from, struct mouse_field **to)
 {
-	struct mouse_field *new_field;
-	struct mouse_field *src;
-	struct mouse_field**dst;
+	struct mouse_field  *new_field;
+	struct mouse_field  *src;
+	struct mouse_field **dst;
 
 	for (src = from, dst = to; src; src = src->next, dst = &((*dst)->next)) {
 		new_field = malloc(sizeof(struct mouse_field));
@@ -9989,7 +9989,7 @@ copy_mouse_fields(struct mouse_field*from, struct mouse_field**to)
 static void
 kill_mouse_fields(void)
 {
-	struct mouse_field*field;
+	struct mouse_field *field;
 
 	while (rip.mfields) {
 		field = rip.mfields;
@@ -10033,15 +10033,15 @@ kill_mouse_fields(void)
 
 // TODO: this currently doesn't seem to work (shocker!)
 static void
-reinit_screen(uint8_t*font, int fx, int fy)
+reinit_screen(uint8_t *font, int fx, int fy)
 {
         // TODO: Mystery rows in 8x8 mode...
-	struct ciolib_pixels*pix = getpixels(0, 0, rip.x_max - 1, rip.y_max - 1, false);
-	struct cterminal     oldcterm = *cterm;
-	int                  old_hold = hold_update;
-	int                  cols = 80;
-	int                  rows = 43;
-	void                *nvmem;
+	struct ciolib_pixels *pix = getpixels(0, 0, rip.x_max - 1, rip.y_max - 1, false);
+	struct cterminal      oldcterm = *cterm;
+	int                   old_hold = hold_update;
+	int                   cols = 80;
+	int                   rows = 43;
+	void                 *nvmem;
 
 	hold_update = 0;
 	cterm->logfile = NULL;
@@ -10234,16 +10234,16 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 }
 
 struct saved_point {
-	int                x;
-	int                y;
-	int                oy;
-	struct saved_point*next;
+	int                 x;
+	int                 y;
+	int                 oy;
+	struct saved_point *next;
 };
 
 static void
-bff_push(struct saved_point**stack, int x, int y, int oy)
+bff_push(struct saved_point **stack, int x, int y, int oy)
 {
-	struct saved_point*new = malloc(sizeof(*new));
+	struct saved_point *new = malloc(sizeof(*new));
 
 	if (new) {
 		new->x = x;
@@ -10265,25 +10265,25 @@ bff_push(struct saved_point**stack, int x, int y, int oy)
  *    (see fiero.rip)
  */
 static void
-broken_flood_fill(struct ciolib_pixels*pix
-    , int                              x
-    , int                              y
-    , uint32_t                         edge
-    , uint32_t                         fillfg
-    , uint32_t                         fillbg
-    , bool                             iszero
-    , int                              oy
-    , struct saved_point             **orig_stack)
+broken_flood_fill(struct ciolib_pixels *pix
+    , int                               x
+    , int                               y
+    , uint32_t                          edge
+    , uint32_t                          fillfg
+    , uint32_t                          fillbg
+    , bool                              iszero
+    , int                               oy
+    , struct saved_point              **orig_stack)
 {
-	bool                nextline = false;
-	bool                prevline = false;
-	int                 foff;
-	int                 noff;
-	int                 poff;
-	int                 vx, vy;
-	struct saved_point**stack = orig_stack;
-	struct saved_point *new_stack = NULL;
-	struct saved_point *this = NULL;
+	bool                 nextline = false;
+	bool                 prevline = false;
+	int                  foff;
+	int                  noff;
+	int                  poff;
+	int                  vx, vy;
+	struct saved_point **stack = orig_stack;
+	struct saved_point  *new_stack = NULL;
+	struct saved_point  *this = NULL;
 
 	if (stack == NULL)
 		stack = &new_stack;
@@ -10391,7 +10391,7 @@ broken_flood_fill(struct ciolib_pixels*pix
 #if 0
 
 static void
-flood_fill(struct ciolib_pixels*pix, int x1, int y1, uint32_t edge, uint32_t fillfg, uint32_t fillbg)
+flood_fill(struct ciolib_pixels *pix, int x1, int y1, uint32_t edge, uint32_t fillfg, uint32_t fillbg)
 {
 	if ((x1 < 0) || (y1 < 0))
 		return;
@@ -10452,10 +10452,10 @@ struct point {
 static void
 rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int cnt, uint32_t fg)
 {
-	int x, y;
-	int step;
-	int i, j;
-	int*targets = malloc((cnt + 2) * 2 * sizeof(*targets));
+	int  x, y;
+	int  step;
+	int  i, j;
+	int *targets = malloc((cnt + 2) * 2 * sizeof(*targets));
 
 	i = 0;
 	targets[i++] = x1;
@@ -10489,7 +10489,7 @@ rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int c
 }
 
 static void
-rip_poly_bezier(const char*args, bool filled, bool closed)
+rip_poly_bezier(const char *args, bool filled, bool closed)
 {
 	int      num = parse_mega(&args[0], 2);
 	int      count = parse_mega(&args[2], 2);
@@ -10562,7 +10562,7 @@ rip_poly_bezier(const char*args, bool filled, bool closed)
 #define ADJUST_LIMIT(name, var) if (var < min ## name) min ## name = var; if (var > max ## name) max ## name = var;
 
 static void
-do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
+do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 {
 	int      x1, y1, x2, y2;
 	int      arg1, arg2, arg3, arg4;
@@ -10609,7 +10609,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 						{
 							handled = true;
 
-							char*p = strchr(args, '$');
+							char *p = strchr(args, '$');
 
 							if (p) {
 								*p = 0;
@@ -10901,7 +10901,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 								arg2 = vstat.scrnheight - 1;
 							pthread_mutex_unlock(&vstatlock);
 
-							struct ciolib_pixels*pix = getpixels(rip.viewport.sx
+							struct ciolib_pixels *pix = getpixels(rip.viewport.sx
 							        , rip.viewport.sy
 							        , rip.viewport.ex
 							        , arg2
@@ -11579,7 +11579,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							    / maxheight;
 
                                                         // Step 4, set the text window
-							void*fnt;
+							void *fnt;
 							if ((maxwidth == 16) && (maxheight == 14)) {
 								fnt = ripfnt16x14;
 							}
@@ -11939,7 +11939,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							if (no_viewport())
 								break;
 							arg1 = parse_mega(&args[0], 2);
-							struct point*argv = malloc(sizeof(struct point) * arg1);
+							struct point *argv = malloc(sizeof(struct point) * arg1);
 							x1 = rip.x_dim - 1;
 							y1 = rip.x_dim - 1;
 							x2 = 0;
@@ -12261,7 +12261,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							pthread_mutex_unlock(&vstatlock);
 							switch (arg2) {
 								case 0:
-									reinit_screen((uint8_t*)conio_fontdata[0].eight_by_eight
+									reinit_screen((uint8_t *)conio_fontdata[0].eight_by_eight
 									    ,
 									    8
 									    ,
@@ -12271,7 +12271,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 									reinit_screen(ripfnt7x8, 7, 8);
 									break;
 								case 2:
-									reinit_screen((uint8_t*)conio_fontdata[0].eight_by_fourteen
+									reinit_screen((uint8_t *)conio_fontdata[0].eight_by_fourteen
 									    ,
 									    8
 									    ,
@@ -13746,9 +13746,9 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							fexistcase(cache_path);
 							icn = fopen(cache_path, "rb");
 							if (icn != NULL) {
-								struct ciolib_pixels*pix =
+								struct ciolib_pixels *pix =
 								    malloc(sizeof(struct ciolib_pixels));
-								uint16_t             tmp;
+								uint16_t              tmp;
 								if (fread(&tmp, sizeof(tmp), 1, icn) != 1) {
 									free(pix);
 									fclose(icn);
@@ -13778,16 +13778,17 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 									fclose(icn);
 									break;
 								}
-								size_t  row = pix->width / 8 + (pix->width & 7 ? 1 : 0);
-								uint8_t*planes = malloc(4 * row);
+								size_t   row = pix->width / 8
+								    + (pix->width & 7 ? 1 : 0);
+								uint8_t *planes = malloc(4 * row);
 								if (planes == NULL) {
 									free(pix->pixels);
 									free(pix);
 									fclose(icn);
 									break;
 								}
-								int      i, j, co;
-								uint32_t*op = pix->pixels;
+								int       i, j, co;
+								uint32_t *op = pix->pixels;
 								for (i = 0; i < pix->height; i++) {
 									if (fread(planes, row, 4, icn) != 4) {
 										free(planes);
@@ -13938,7 +13939,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							arg2 = parse_mega(&args[11], 1);
 							if ((arg2 < 0) || (arg2 > 1))
 								break;
-							struct mouse_field*mf = malloc(sizeof(struct mouse_field));
+							struct mouse_field *mf = malloc(sizeof(struct mouse_field));
 							if (mf) {
 								mf->data.hot = malloc(sizeof(struct hot_mouse));
 								if (mf->data.hot == NULL) {
@@ -14038,7 +14039,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 									case 3: // AND
 									case 4: // NOT
 									{
-										struct ciolib_pixels*pix = getpixels(x1 + rip.viewport.sx
+										struct ciolib_pixels *pix = getpixels(x1 + rip.viewport.sx
 										        ,
 										        y1 + rip.viewport.sy
 										        ,
@@ -14546,16 +14547,16 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 									unlink(cache_path);
 									break;
 								}
-								size_t  row = rip.clipboard->width / 8
+								size_t   row = rip.clipboard->width / 8
 								    + (rip.clipboard->width & 7 ? 1 : 0);
-								uint8_t*planes = malloc(4 * row);
+								uint8_t *planes = malloc(4 * row);
 								if (planes == NULL) {
 									fclose(icn);
 									unlink(cache_path);
 									break;
 								}
-								int      i, j, co;
-								uint32_t*op = rip.clipboard->pixels;
+								int       i, j, co;
+								uint32_t *op = rip.clipboard->pixels;
 								for (i = 0; i < rip.clipboard->height; i++) {
 									co = pixel2color(*op);
 									memset(planes, 0, 4 * row);
@@ -14714,9 +14715,9 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 								break;
 							size_t cpln = strlen(cache_path);
 							if (arg1 == 0) { // Download (from BBS)
-								char*dldir = strdup(rip.bbs->dldir);
+								char *dldir = strdup(rip.bbs->dldir);
 								strcpy(rip.bbs->dldir, cache_path);
-								char*p = strstr(&args[8], "<>");
+								char *p = strstr(&args[8], "<>");
 								if (p == NULL) {
 									strcpy(rip.bbs->dldir, dldir);
 									free(dldir);
@@ -14772,9 +14773,9 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 								suspend_rip(false);
 							}
 							else { // Upload (to BBS)
-								char*uldir = strdup(rip.bbs->uldir);
+								char *uldir = strdup(rip.bbs->uldir);
 								strcpy(rip.bbs->uldir, cache_path);
-								char*p = strstr(&args[8], "<>");
+								char *p = strstr(&args[8], "<>");
 								if (p == NULL) {
 									strcpy(rip.bbs->uldir, uldir);
 									free(uldir);
@@ -14790,7 +14791,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 								    , &args[8]
 								    , sizeof(cache_path) - cpln);
 								fexistcase(cache_path);
-								FILE*fp = fopen(cache_path, "rb");
+								FILE *fp = fopen(cache_path, "rb");
 								if (fp == NULL) {
 									strcpy(rip.bbs->uldir, uldir);
 									free(uldir);
@@ -14861,7 +14862,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 }
 
 static void
-do_rip_string(const char*buf, size_t len)
+do_rip_string(const char *buf, size_t len)
 {
 	enum do_states rs = NEED_BANG; // Reset state...
 	enum do_states ds = NEED_BANG;
@@ -14950,17 +14951,17 @@ do_rip_string(const char*buf, size_t len)
 	}
 }
 
-struct FontHeader*amiga_font;
-bool              doubled = false;
+struct FontHeader *amiga_font;
+bool               doubled = false;
 
-static int        amiga_x;
-static int        amiga_y;
+static int         amiga_x;
+static int         amiga_y;
 
 static void
 draw_glyph(uint8_t ch)
 {
 	int              i, j;
-	uint8_t         *fd = (uint8_t*)amiga_font;
+	uint8_t         *fd = (uint8_t *)amiga_font;
 	uint16_t         bitoff;
 	uint16_t         width;
 	uint8_t         *pd;
@@ -14991,7 +14992,7 @@ draw_glyph(uint8_t ch)
 		}
 
                 // Bitmap 8x8 font
-		this_font = (uint8_t*)conio_fontdata[0].eight_by_eight;
+		this_font = (uint8_t *)conio_fontdata[0].eight_by_eight;
 		fontoffset = ((uint8_t)ch) * 8;
 
 		for (i = 0; i < 8; i++) {
@@ -15022,7 +15023,7 @@ draw_glyph(uint8_t ch)
                         // TODO: Scroll/Whatever...
 			amiga_y += (amiga_font->height << doubled);
 			if ((vmode >= 0) && (amiga_y >= vparams[vmode].charheight * vparams[vmode].rows)) {
-				struct ciolib_pixels*pix = getpixels(0
+				struct ciolib_pixels *pix = getpixels(0
 				        , amiga_font->height << doubled
 				        , vparams[vmode].charwidth * vparams[vmode].cols - 1
 				        , vparams[vmode].charheight * vparams[vmode].rows - 1
@@ -15048,16 +15049,17 @@ draw_glyph(uint8_t ch)
 			return;
 		if (ch > amiga_font->last)
 			return;
-		bitoff = htons(*(uint16_t*)(&fd[off + amiga_font->charlocOffset + (ch - amiga_font->first) * 4]));
-		width = htons(*(uint16_t*)(&fd[off + amiga_font->charlocOffset + (ch - amiga_font->first) * 4 + 2]));
+		bitoff = htons(*(uint16_t *)(&fd[off + amiga_font->charlocOffset + (ch - amiga_font->first) * 4]));
+		width = htons(*(uint16_t *)(&fd[off + amiga_font->charlocOffset + (ch - amiga_font->first) * 4 + 2]));
 		if (amiga_font->fontSpaceOffset == 0)
 			fs = amiga_font->xsize;
 		else
-			fs = htons(*(uint16_t*)(&fd[off + amiga_font->fontSpaceOffset + (ch - amiga_font->first) * 2]));
+			fs =
+			    htons(*(uint16_t *)(&fd[off + amiga_font->fontSpaceOffset + (ch - amiga_font->first) * 2]));
 		if (amiga_font->kernOffset == 0)
 			fk = 0;
 		else
-			fk = htons(*(uint16_t*)(&fd[off + amiga_font->kernOffset + (ch - amiga_font->first) * 2]));
+			fk = htons(*(uint16_t *)(&fd[off + amiga_font->kernOffset + (ch - amiga_font->first) * 2]));
 		voff = (amiga_font->height - amiga_font->baseline - 1) << doubled;
 		for (i = 0; i < amiga_font->height; i++) {
 			pd = &fd[off + amiga_font->dataOffset + i * amiga_font->modulo];
@@ -15097,7 +15099,7 @@ draw_glyph(uint8_t ch)
 				amiga_y += (amiga_font->height << doubled);
 
 				if (amiga_y >= vparams[vmode].charheight * vparams[vmode].rows) {
-					struct ciolib_pixels*pix =
+					struct ciolib_pixels *pix =
 					    getpixels(0
 					        , amiga_font->height << doubled
 					        , vparams[vmode].charwidth * vparams[vmode].cols - 1
@@ -15130,7 +15132,7 @@ draw_glyph(uint8_t ch)
 }
 
 static void
-amiga_cputs(char*str)
+amiga_cputs(char *str)
 {
 	struct text_info ti;
 
@@ -15153,7 +15155,7 @@ amiga_cputs(char*str)
 static bool skypix = false;
 
 static void
-do_skypix(char*buf, size_t len)
+do_skypix(char *buf, size_t len)
 {
 	size_t           argc = 0;
 	char            *p = &buf[1];
@@ -15295,7 +15297,7 @@ do_skypix(char*buf, size_t len)
 				printf("TODO: Unable to allocate %" PRIdOFF " bytes for font %s.\n", flen, sarg);
 				break;
 			}
-			struct FontList*fnt = malloc(flen);
+			struct FontList *fnt = malloc(flen);
 			if (fnt == NULL) {
 				printf("TODO: Unable to allocate %" PRIdOFF " bytes for font %s.\n", flen, sarg);
 				break;
@@ -15450,7 +15452,7 @@ do_skypix(char*buf, size_t len)
 					p++;
 				if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "SkyPix"))
 					break;
-				char*dldir = strdup(rip.bbs->dldir);
+				char *dldir = strdup(rip.bbs->dldir);
 				strcpy(rip.bbs->dldir, cache_path);
 				strcat(cache_path, p);
 				suspend_rip(true);
@@ -15506,7 +15508,7 @@ do_skypix(char*buf, size_t len)
 
 // TODO: We need to actually pass all the ANSI back first...
 static bool
-handle_rip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigned maxlen, enum rip_state ns)
+handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, unsigned maxlen, enum rip_state ns)
 {
 	size_t           remainder;
 	size_t           remove;
@@ -15585,7 +15587,7 @@ handle_rip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigne
 }
 
 static void
-unrip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigned maxlen)
+unrip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, unsigned maxlen)
 {
 	size_t insert = pending_len;
 	size_t remainder;
@@ -15618,16 +15620,16 @@ unrip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigned max
 }
 
 static int
-pendingcmp(const char*str, const BYTE*buf)
+pendingcmp(const char *str, const BYTE *buf)
 {
-	bool       up = true;
-	const char*p = pending;
-	size_t     poff = 0;
+	bool        up = true;
+	const char *p = pending;
+	size_t      poff = 0;
 
 	while (*str) {
 		if (up) {
 			if (poff >= pending_len) {
-				p = (const char*)buf;
+				p = (const char *)buf;
 				up = false;
 			}
 		}
@@ -15645,7 +15647,7 @@ pendingcmp(const char*str, const BYTE*buf)
  * new size.
  */
 size_t
-ansi_only(BYTE*buf, unsigned count)
+ansi_only(BYTE *buf, unsigned count)
 {
 	BYTE    *out = buf;
 	unsigned i;
@@ -15728,7 +15730,7 @@ ansi_only(BYTE*buf, unsigned count)
 
 // This may end up stuffing up to three bytes into the buffer...
 size_t
-parse_rip(BYTE*origbuf, unsigned blen, unsigned maxlen)
+parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 {
 	unsigned pos = 0;
 	size_t   rip_start = maxlen + 1;
@@ -16025,7 +16027,7 @@ parse_rip(BYTE*origbuf, unsigned blen, unsigned maxlen)
 }
 
 void
-init_rip(struct bbslist*bbs)
+init_rip(struct bbslist *bbs)
 {
 	FREE_AND_NULL(rip.xmap);
 	FREE_AND_NULL(rip.ymap);
@@ -16102,7 +16104,7 @@ rip_kbhit(void)
 }
 
 static void
-handle_mouse_button(struct rip_button_style*but)
+handle_mouse_button(struct rip_button_style *but)
 {
 	if (but->flags.radiogroup)
 		puts("TODO: Handle radio group");
@@ -16133,7 +16135,7 @@ rip_getch(void)
 
 	hold_update = false;
 
-	struct mouse_field*pressed;
+	struct mouse_field *pressed;
 
 	if (ripbuf) {
 		ch = ripbuf[ripbufpos++];

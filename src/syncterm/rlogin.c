@@ -16,7 +16,7 @@ SOCKET rlogin_sock = INVALID_SOCKET;
 #endif
 
 void
-rlogin_input_thread(void*args)
+rlogin_input_thread(void *args)
 {
 	int    rd = 0;
 	int    buffered;
@@ -46,7 +46,7 @@ rlogin_input_thread(void*args)
 #endif
 
 void
-rlogin_output_thread(void*args)
+rlogin_output_thread(void *args)
 {
 	int wr;
 	int ret;
@@ -81,10 +81,10 @@ rlogin_output_thread(void*args)
 }
 
 int
-rlogin_connect(struct bbslist*bbs)
+rlogin_connect(struct bbslist *bbs)
 {
-	char*ruser;
-	char*passwd;
+	char *ruser;
+	char *passwd;
 
 	if (!bbs->hidepopups)
 		init_uifc(true, true);
@@ -106,13 +106,13 @@ rlogin_connect(struct bbslist*bbs)
 		destroy_conn_buf(&conn_inbuf);
 		return -1;
 	}
-	if (!(conn_api.rd_buf = (unsigned char*)malloc(BUFFER_SIZE))) {
+	if (!(conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
 		return -1;
 	}
 	conn_api.rd_buf_size = BUFFER_SIZE;
-	if (!(conn_api.wr_buf = (unsigned char*)malloc(BUFFER_SIZE))) {
+	if (!(conn_api.wr_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
 		FREE_AND_NULL(conn_api.rd_buf);
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);

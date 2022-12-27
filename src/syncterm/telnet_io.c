@@ -20,18 +20,18 @@
 
 #define TELNET_TERM_MAXLEN 40
 
-uint        telnet_cmdlen = 0;
-uchar       telnet_cmd[64];
-char        terminal[TELNET_TERM_MAXLEN + 1];
-uchar       telnet_local_option[0x100];
-uchar       telnet_remote_option[0x100];
+uint         telnet_cmdlen = 0;
+uchar        telnet_cmd[64];
+char         terminal[TELNET_TERM_MAXLEN + 1];
+uchar        telnet_local_option[0x100];
+uchar        telnet_remote_option[0x100];
 
-extern char*log_levels[];
-extern FILE*log_fp;
-int         telnet_log_level;
+extern char *log_levels[];
+extern FILE *log_fp;
+int          telnet_log_level;
 
 static int
-lprintf(int level, const char*fmt, ...)
+lprintf(int level, const char *fmt, ...)
 {
 	char    sbuf[1024];
 	va_list argptr;
@@ -47,7 +47,7 @@ lprintf(int level, const char*fmt, ...)
 }
 
 void
-putcom(char*buf, size_t len)
+putcom(char *buf, size_t len)
 {
 	conn_send_raw(buf, len, 10000);
 	return;
@@ -88,23 +88,23 @@ request_telnet_opt(uchar cmd, uchar opt)
 	send_telnet_cmd(cmd, opt);
 }
 
-BYTE*
-telnet_interpret(BYTE*inbuf, size_t inlen, BYTE*outbuf, size_t*outlen)
+BYTE *
+telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 {
-	BYTE command;
-	BYTE option;
-	BYTE*first_cr = NULL;
-	BYTE*first_int = NULL;
-	int  i;
+	BYTE  command;
+	BYTE  option;
+	BYTE *first_cr = NULL;
+	BYTE *first_int = NULL;
+	int   i;
 
 	if (inlen < 1) {
 		*outlen = 0;
 		return inbuf; /* no length? No interpretation */
 	}
 
-	first_int = (BYTE*)memchr(inbuf, TELNET_IAC, inlen);
+	first_int = (BYTE *)memchr(inbuf, TELNET_IAC, inlen);
 	if (telnet_remote_option[TELNET_BINARY_TX] != TELNET_WILL) {
-		first_cr = (BYTE*)memchr(inbuf, '\r', inlen);
+		first_cr = (BYTE *)memchr(inbuf, '\r', inlen);
 		if (first_cr) {
 			if ((first_int == NULL) || (first_cr < first_int))
 				first_int = first_cr;
@@ -157,9 +157,9 @@ telnet_interpret(BYTE*inbuf, size_t inlen, BYTE*outbuf, size_t*outlen)
 				    && (telnet_cmd[telnet_cmdlen - 2] == TELNET_IAC)) {
                                         /* sub-option terminated */
 					if ((option == TELNET_TERM_TYPE) && (telnet_cmd[3] == TELNET_TERM_SEND)) {
-						char       buf[32];
-						const char*emu = get_emulation_str(conn_api.emulation);
-						int        len = sprintf(buf, "%c%c%c%c%s%c%c"
+						char        buf[32];
+						const char *emu = get_emulation_str(conn_api.emulation);
+						int         len = sprintf(buf, "%c%c%c%c%s%c%c"
 						        , TELNET_IAC, TELNET_SB
 						        , TELNET_TERM_TYPE, TELNET_TERM_IS
 						        , emu
@@ -215,7 +215,7 @@ telnet_interpret(BYTE*inbuf, size_t inlen, BYTE*outbuf, size_t*outlen)
 						buf[8] = TELNET_SE;
 						lprintf(LOG_INFO, "TX: Window Size is %u x %u"
 						    , cols, rows);
-						putcom((char*)buf, 9);
+						putcom((char *)buf, 9);
 					}
 				}
 				else { /* WILL/WONT (remote options) */

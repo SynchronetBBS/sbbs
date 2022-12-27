@@ -43,8 +43,8 @@ static char ansi_replybuf[2048];
  #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-struct terminal  term;
-struct cterminal*cterm;
+struct terminal   term;
+struct cterminal *cterm;
 
 #define TRANSFER_WIN_WIDTH 66
 #define TRANSFER_WIN_HEIGHT 18
@@ -54,7 +54,7 @@ static struct text_info trans_ti;
 static struct text_info log_ti;
 
 void
-get_cterm_size(int*cols, int*rows, int ns)
+get_cterm_size(int *cols, int *rows, int ns)
 {
 	*cols = 80;
 	*rows = 24;
@@ -86,7 +86,7 @@ struct mouse_state {
 };
 
 void
-setup_mouse_events(struct mouse_state*ms)
+setup_mouse_events(struct mouse_state *ms)
 {
 	ciomouse_setevents(0);
 	if (ms) {
@@ -165,20 +165,20 @@ setup_mouse_events(struct mouse_state*ms)
 #endif
 
 void
-mousedrag(struct vmem_cell*scrollback)
+mousedrag(struct vmem_cell *scrollback)
 {
-	int                  key;
-	struct mouse_event   mevent;
-	struct vmem_cell    *screen;
-	unsigned char       *tscreen;
-	struct vmem_cell    *sbuffer;
-	int                  sbufsize;
-	int                  pos, startpos, endpos, lines;
-	int                  outpos;
-	char                *copybuf = NULL;
-	char                *newcopybuf;
-	int                  lastchar;
-	struct ciolib_screen*savscrn;
+	int                   key;
+	struct mouse_event    mevent;
+	struct vmem_cell     *screen;
+	unsigned char        *tscreen;
+	struct vmem_cell     *sbuffer;
+	int                   sbufsize;
+	int                   pos, startpos, endpos, lines;
+	int                   outpos;
+	char                 *copybuf = NULL;
+	char                 *newcopybuf;
+	int                   lastchar;
+	struct ciolib_screen *savscrn;
 
 	sbufsize = term.width * sizeof(*screen) * term.height;
 	screen = malloc(sbufsize);
@@ -239,11 +239,11 @@ mousedrag(struct vmem_cell*scrollback)
 						outpos = 0;
 						lastchar = 0;
 						for (pos = startpos; pos <= endpos; pos++) {
-							size_t  outlen;
-							uint8_t*utf8str;
+							size_t   outlen;
+							uint8_t *utf8str;
 
 							utf8str = cp_to_utf8(conio_fontdata[screen[pos].font].cp
-							        , (char*)&screen[pos].ch
+							        , (char *)&screen[pos].ch
 							        , 1
 							        , &outlen);
 							if (utf8str == NULL)
@@ -294,7 +294,7 @@ cleanup:
 }
 
 void
-update_status(struct bbslist*bbs, int speed, int ooii_mode)
+update_status(struct bbslist *bbs, int speed, int ooii_mode)
 {
 	char nbuf[LIST_NAME_MAX + 10 + 11 + 1]; /*
                                                  * Room for "Name (Logging) (115300)" and terminator
@@ -446,7 +446,7 @@ update_status(struct bbslist*bbs, int speed, int ooii_mode)
 #if defined(_WIN32) && defined(_DEBUG) && defined(DUMP)
 
 void
-dump(BYTE*buf, int len)
+dump(BYTE *buf, int len)
 {
 	char   str[128];
 	int    i, j;
@@ -467,8 +467,8 @@ dump(BYTE*buf, int len)
 int log_level = LOG_INFO;
 
 struct zmodem_cbdata {
-	zmodem_t      *zm;
-	struct bbslist*bbs;
+	zmodem_t       *zm;
+	struct bbslist *bbs;
 };
 
 enum {
@@ -477,13 +477,13 @@ enum {
 } zmodem_mode;
 
 static BOOL
-zmodem_check_abort(void*vp)
+zmodem_check_abort(void *vp)
 {
-	struct zmodem_cbdata*zcb = (struct zmodem_cbdata*)vp;
-	zmodem_t            *zm = zcb->zm;
-	static time_t        last_check = 0;
-	time_t               now = time(NULL);
-	int                  key;
+	struct zmodem_cbdata *zcb = (struct zmodem_cbdata *)vp;
+	zmodem_t             *zm = zcb->zm;
+	static time_t         last_check = 0;
+	time_t                now = time(NULL);
+	int                   key;
 
 	if (zm == NULL)
 		return true;
@@ -520,15 +520,15 @@ zmodem_check_abort(void*vp)
 	return zm->cancelled;
 }
 
-extern FILE*log_fp;
-extern char*log_levels[];
+extern FILE *log_fp;
+extern char *log_levels[];
 
 #if defined(__BORLANDC__)
  #pragma argsused
 #endif
 
 static int
-lputs(void*cbdata, int level, const char*str)
+lputs(void *cbdata, int level, const char *str)
 {
 	char msg[512];
 	int  chars;
@@ -584,7 +584,7 @@ lputs(void*cbdata, int level, const char*str)
 }
 
 static int
-lprintf(int level, const char*fmt, ...)
+lprintf(int level, const char *fmt, ...)
 {
 	char    sbuf[1024];
 	va_list argptr;
@@ -601,18 +601,18 @@ lprintf(int level, const char*fmt, ...)
 #endif
 
 void
-zmodem_progress(void*cbdata, int64_t current_pos)
+zmodem_progress(void *cbdata, int64_t current_pos)
 {
-	char                 orig[128];
-	unsigned             cps;
-	int                  l;
-	time_t               t;
-	time_t               now;
-	static time_t        last_progress = 0;
-	int                  old_hold = hold_update;
-	struct zmodem_cbdata*zcb = (struct zmodem_cbdata*)cbdata;
-	zmodem_t            *zm = zcb->zm;
-	bool                 growing = false;
+	char                  orig[128];
+	unsigned              cps;
+	int                   l;
+	time_t                t;
+	time_t                now;
+	static time_t         last_progress = 0;
+	int                   old_hold = hold_update;
+	struct zmodem_cbdata *zcb = (struct zmodem_cbdata *)cbdata;
+	zmodem_t             *zm = zcb->zm;
+	bool                  growing = false;
 
 	now = time(NULL);
 	if (current_pos > zm->current_file_size)
@@ -698,7 +698,7 @@ unsigned char transfer_buffer[BUFFER_SIZE / 2];
 unsigned      transfer_buf_len = 0;
 
 static void
-flush_send(void*unused)
+flush_send(void *unused)
 {
 	int sent;
 
@@ -713,7 +713,7 @@ flush_send(void*unused)
 }
 
 static int
-send_byte(void*unused, uchar ch, unsigned timeout /* seconds */)
+send_byte(void *unused, uchar ch, unsigned timeout /* seconds */)
 {
 	transfer_buffer[transfer_buf_len++] = ch;
 	if (transfer_buf_len == sizeof(transfer_buffer))
@@ -743,7 +743,7 @@ recv_bytes(unsigned timeout /* Milliseconds */)
 }
 
 static int
-recv_byte(void*unused, unsigned timeout /* seconds */)
+recv_byte(void *unused, unsigned timeout /* seconds */)
 {
 	BYTE ch;
 
@@ -764,7 +764,7 @@ recv_byte(void*unused, unsigned timeout /* seconds */)
 #endif
 
 BOOL
-data_waiting(void*unused, unsigned timeout /* seconds */)
+data_waiting(void *unused, unsigned timeout /* seconds */)
 {
 	bool ret;
 
@@ -784,7 +784,7 @@ count_data_waiting(void)
 }
 
 void
-draw_transfer_window(char*title)
+draw_transfer_window(char *title)
 {
 	char outline[TRANSFER_WIN_WIDTH * 2];
 	char shadow[TRANSFER_WIN_WIDTH * 2]; /* Assumes that width*2 > height * 2 */
@@ -904,19 +904,19 @@ erase_transfer_window(void)
 	_setcursortype(_NORMALCURSOR);
 }
 
-void ascii_upload(FILE*fp);
-void raw_upload(FILE*fp);
+void ascii_upload(FILE *fp);
+void raw_upload(FILE *fp);
 
 void
-begin_upload(struct bbslist*bbs, bool autozm, int lastch)
+begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 {
-	char                 str[MAX_PATH * 2 + 1];
-	char                 path[MAX_PATH + 1];
-	int                  result;
-	int                  i;
-	FILE                *fp;
-	struct file_pick     fpick;
-	char                *opts[7] = {
+	char                  str[MAX_PATH * 2 + 1];
+	char                  path[MAX_PATH + 1];
+	int                   result;
+	int                   i;
+	FILE                 *fp;
+	struct file_pick      fpick;
+	char                 *opts[7] = {
 		"ZMODEM"
 		, "YMODEM"
 		, "XMODEM-1K"
@@ -925,8 +925,8 @@ begin_upload(struct bbslist*bbs, bool autozm, int lastch)
 		, "Raw"
 		, ""
 	};
-	struct  text_info    txtinfo;
-	struct ciolib_screen*savscrn;
+	struct  text_info     txtinfo;
+	struct ciolib_screen *savscrn;
 
 	if (safe_mode)
 		return;
@@ -1013,11 +1013,11 @@ begin_upload(struct bbslist*bbs, bool autozm, int lastch)
 }
 
 void
-begin_download(struct bbslist*bbs)
+begin_download(struct bbslist *bbs)
 {
-	char                 path[MAX_PATH + 1];
-	int                  i;
-	char                *opts[6] = {
+	char                  path[MAX_PATH + 1];
+	int                   i;
+	char                 *opts[6] = {
 		"ZMODEM"
 		, "YMODEM-g"
 		, "YMODEM"
@@ -1025,9 +1025,9 @@ begin_download(struct bbslist*bbs)
 		, "XMODEM-CHKSUM"
 		, ""
 	};
-	struct  text_info    txtinfo;
-	int                  old_hold = hold_update;
-	struct ciolib_screen*savscrn;
+	struct  text_info     txtinfo;
+	int                   old_hold = hold_update;
+	struct ciolib_screen *savscrn;
 
 	if (safe_mode)
 		return;
@@ -1080,7 +1080,7 @@ begin_download(struct bbslist*bbs)
 #endif
 
 static BOOL
-is_connected(void*unused)
+is_connected(void *unused)
 {
 	if (recv_byte_buffer_len)
 		return true;
@@ -1088,7 +1088,7 @@ is_connected(void*unused)
 }
 
 void
-raw_upload(FILE*fp)
+raw_upload(FILE *fp)
 {
 	char buf[1024];
 	int  r;
@@ -1114,13 +1114,13 @@ raw_upload(FILE*fp)
 }
 
 void
-ascii_upload(FILE*fp)
+ascii_upload(FILE *fp)
 {
-	char linebuf[1024 + 2]; /* One extra for terminator, one extra for added CR */
-	char*p;
-	char ch[2];
-	int  inch;
-	bool lastwascr = false;
+	char  linebuf[1024 + 2];  /* One extra for terminator, one extra for added CR */
+	char *p;
+	char  ch[2];
+	int   inch;
+	bool  lastwascr = false;
 
 	ch[1] = 0;
 	while (!feof(fp)) {
@@ -1180,7 +1180,7 @@ transfer_complete(bool success, bool was_binary)
 }
 
 void
-zmodem_upload(struct bbslist*bbs, FILE*fp, char*path)
+zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 {
 	bool                 success;
 	zmodem_t             zm;
@@ -1224,23 +1224,23 @@ zmodem_upload(struct bbslist*bbs, FILE*fp, char*path)
 }
 
 BOOL
-zmodem_duplicate_callback(void*cbdata, void*zm_void)
+zmodem_duplicate_callback(void *cbdata, void *zm_void)
 {
-	struct  text_info    txtinfo;
-	struct ciolib_screen*savscrn;
-	bool                 ret = false;
-	int                  i;
-	char                *opts[4] = {
+	struct  text_info     txtinfo;
+	struct ciolib_screen *savscrn;
+	bool                  ret = false;
+	int                   i;
+	char                 *opts[4] = {
 		"Overwrite"
 		, "Choose New Name"
 		, "Cancel Download"
 		, NULL
 	};
-	struct zmodem_cbdata*cb = (struct zmodem_cbdata*)cbdata;
-	zmodem_t            *zm = (zmodem_t*)zm_void;
-	char                 fpath[MAX_PATH * 2 + 2];
-	bool                 loop = true;
-	int                  old_hold = hold_update;
+	struct zmodem_cbdata *cb = (struct zmodem_cbdata *)cbdata;
+	zmodem_t             *zm = (zmodem_t *)zm_void;
+	char                  fpath[MAX_PATH * 2 + 2];
+	bool                  loop = true;
+	int                   old_hold = hold_update;
 
 	gettextinfo(&txtinfo);
 	savscrn = savescreen();
@@ -1295,7 +1295,7 @@ zmodem_duplicate_callback(void*cbdata, void*zm_void)
 }
 
 void
-zmodem_download(struct bbslist*bbs)
+zmodem_download(struct bbslist *bbs)
 {
 	zmodem_t             zm;
 	int                  files_received;
@@ -1342,9 +1342,9 @@ uchar block[1024]; /* Block buffer                                      */
 ulong block_num;   /* Block number                                      */
 
 static BOOL
-xmodem_check_abort(void*vp)
+xmodem_check_abort(void *vp)
 {
-	xmodem_t     *xm = (xmodem_t*)vp;
+	xmodem_t     *xm = (xmodem_t *)vp;
 	static time_t last_check = 0;
 	time_t        now = time(NULL);
 	int           key;
@@ -1404,7 +1404,7 @@ num_blocks(unsigned curr_block, uint64_t offset, uint64_t len, unsigned block_si
 #endif
 
 void
-xmodem_progress(void*cbdata, unsigned block_num, int64_t offset, int64_t fsize, time_t start)
+xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize, time_t start)
 {
 	uint64_t      total_blocks;
 	unsigned      cps;
@@ -1414,7 +1414,7 @@ xmodem_progress(void*cbdata, unsigned block_num, int64_t offset, int64_t fsize, 
 	time_t        now;
 	static time_t last_progress;
 	int           old_hold = hold_update;
-	xmodem_t     *xm = (xmodem_t*)cbdata;
+	xmodem_t     *xm = (xmodem_t *)cbdata;
 
 	now = time(NULL);
 	if ((now - last_progress > 0) || (offset >= fsize)) {
@@ -1524,34 +1524,34 @@ xmodem_progress(void*cbdata, unsigned block_num, int64_t offset, int64_t fsize, 
 }
 
 static int
-recv_g(void*cbdata, unsigned timeout)
+recv_g(void *cbdata, unsigned timeout)
 {
-	xmodem_t*xm = (xmodem_t*)cbdata;
+	xmodem_t *xm = (xmodem_t *)cbdata;
 
 	xm->recv_byte = recv_byte;
 	return 'G';
 }
 
 static int
-recv_c(void*cbdata, unsigned timeout)
+recv_c(void *cbdata, unsigned timeout)
 {
-	xmodem_t*xm = (xmodem_t*)cbdata;
+	xmodem_t *xm = (xmodem_t *)cbdata;
 
 	xm->recv_byte = recv_byte;
 	return 'C';
 }
 
 static int
-recv_nak(void*cbdata, unsigned timeout)
+recv_nak(void *cbdata, unsigned timeout)
 {
-	xmodem_t*xm = (xmodem_t*)cbdata;
+	xmodem_t *xm = (xmodem_t *)cbdata;
 
 	xm->recv_byte = recv_byte;
 	return NAK;
 }
 
 void
-xmodem_upload(struct bbslist*bbs, FILE*fp, char*path, long mode, int lastch)
+xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 {
 	bool     success;
 	xmodem_t xm;
@@ -1636,21 +1636,21 @@ xmodem_upload(struct bbslist*bbs, FILE*fp, char*path, long mode, int lastch)
 }
 
 bool
-xmodem_duplicate(xmodem_t*xm, struct bbslist*bbs, char*path, size_t pathsize, char*fname)
+xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t pathsize, char *fname)
 {
-	struct  text_info    txtinfo;
-	struct ciolib_screen*savscrn;
-	bool                 ret = false;
-	int                  i;
-	char                *opts[4] = {
+	struct  text_info     txtinfo;
+	struct ciolib_screen *savscrn;
+	bool                  ret = false;
+	int                   i;
+	char                 *opts[4] = {
 		"Overwrite"
 		, "Choose New Name"
 		, "Cancel Download"
 		, NULL
 	};
-	char                 newfname[MAX_PATH + 1];
-	bool                 loop = true;
-	int                  old_hold = hold_update;
+	char                  newfname[MAX_PATH + 1];
+	bool                  loop = true;
+	int                   old_hold = hold_update;
 
 	gettextinfo(&txtinfo);
 	savscrn = savescreen();
@@ -1708,7 +1708,7 @@ xmodem_duplicate(xmodem_t*xm, struct bbslist*bbs, char*path, size_t pathsize, ch
 }
 
 void
-xmodem_download(struct bbslist*bbs, long mode, char*path)
+xmodem_download(struct bbslist *bbs, long mode, char *path)
 {
 	xmodem_t xm;
 
@@ -1837,7 +1837,7 @@ xmodem_download(struct bbslist*bbs, long mode, char*path)
 				extra_pass = false;
 				file_bytes = total_bytes = 0;
 				total_files = 0;
-				i = sscanf(((char*)block) + strlen((char*)block) + 1
+				i = sscanf(((char *)block) + strlen((char *)block) + 1
 				        , "%" PRId64 " %lo %lo %lo %d %" PRId64
 				        ,
 				        &file_bytes  /* file size (decimal) */
@@ -1854,8 +1854,8 @@ xmodem_download(struct bbslist*bbs, long mode, char*path)
 				        );
 				ftime = tmpftime;
 				lprintf(LOG_DEBUG, "YMODEM header (%u fields): %s", i
-				    , block + strlen((char*)block) + 1);
-				SAFECOPY(fname, ((char*)block));
+				    , block + strlen((char *)block) + 1);
+				SAFECOPY(fname, ((char *)block));
 
 				if (!file_bytes)
 					file_bytes = 0x7fffffff;
@@ -2037,11 +2037,11 @@ end:
 
 /* End of X/Y-MODEM stuff */
 void
-music_control(struct bbslist*bbs)
+music_control(struct bbslist *bbs)
 {
-	struct  text_info    txtinfo;
-	struct ciolib_screen*savscrn;
-	int                  i;
+	struct  text_info     txtinfo;
+	struct ciolib_screen *savscrn;
+	int                   i;
 
 	gettextinfo(&txtinfo);
 	savscrn = savescreen();
@@ -2063,11 +2063,11 @@ music_control(struct bbslist*bbs)
 }
 
 void
-font_control(struct bbslist*bbs, struct cterminal*cterm)
+font_control(struct bbslist *bbs, struct cterminal *cterm)
 {
-	struct ciolib_screen*savscrn;
-	struct  text_info    txtinfo;
-	int                  i, j, k;
+	struct ciolib_screen *savscrn;
+	struct  text_info     txtinfo;
+	int                   i, j, k;
 
 	if (safe_mode)
 		return;
@@ -2124,12 +2124,12 @@ font_control(struct bbslist*bbs, struct cterminal*cterm)
 }
 
 void
-capture_control(struct bbslist*bbs)
+capture_control(struct bbslist *bbs)
 {
-	struct ciolib_screen*savscrn;
-	char                *cap;
-	struct  text_info    txtinfo;
-	int                  i, j;
+	struct ciolib_screen *savscrn;
+	char                 *cap;
+	struct  text_info     txtinfo;
+	int                   i, j;
 
 	if (safe_mode)
 		return;
@@ -2139,7 +2139,7 @@ capture_control(struct bbslist*bbs)
 	setfont(0, false, 2);
 	setfont(0, false, 3);
 	setfont(0, false, 4);
-	cap = (char*)alloca(cterm->height * cterm->width * 2);
+	cap = (char *)alloca(cterm->height * cterm->width * 2);
 	gettext(cterm->x, cterm->y, cterm->x + cterm->width - 1, cterm->y + cterm->height - 1, cap);
 
 	init_uifc(false, false);
@@ -2170,7 +2170,7 @@ capture_control(struct bbslist*bbs)
 
 			if ((j != -1) && (fpick.files >= 1)) {
 				if (i >= 2) {
-					FILE*fp = fopen(fpick.selected[0], "wb");
+					FILE *fp = fopen(fpick.selected[0], "wb");
 
 					if (fp == NULL) {
 						char err[256];
@@ -2251,7 +2251,7 @@ capture_control(struct bbslist*bbs)
 	}
 	else {
 		if (cterm->log & CTERM_LOG_PAUSED) {
-			char*opts[3] = {
+			char *opts[3] = {
 				"Unpause"
 				, "Close"
 			};
@@ -2275,7 +2275,7 @@ capture_control(struct bbslist*bbs)
 			}
 		}
 		else {
-			char*opts[3] = {
+			char *opts[3] = {
 				"Pause"
 				, "Close"
 			};
@@ -2308,15 +2308,15 @@ capture_control(struct bbslist*bbs)
 
 #define WRITE_OUTBUF() \
 	if (outbuf_size > 0) { \
-		cterm_write(cterm, outbuf, outbuf_size, (char*)ansi_replybuf, sizeof(ansi_replybuf), &speed); \
+		cterm_write(cterm, outbuf, outbuf_size, (char *)ansi_replybuf, sizeof(ansi_replybuf), &speed); \
 		outbuf_size = 0; \
 		if (ansi_replybuf[0]) \
-		conn_send(ansi_replybuf, strlen((char*)ansi_replybuf), 0); \
+		conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0); \
 		updated = true; \
 	}
 
 int
-get_cache_fn_base(struct bbslist*bbs, char*fn, size_t fnsz)
+get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz)
 {
 	get_syncterm_filename(fn, fnsz, SYNCTERM_PATH_CACHE, false);
 	backslash(fn);
@@ -2330,7 +2330,7 @@ get_cache_fn_base(struct bbslist*bbs, char*fn, size_t fnsz)
 }
 
 int
-get_cache_fn_subdir(struct bbslist*bbs, char*fn, size_t fnsz, const char*subdir)
+get_cache_fn_subdir(struct bbslist *bbs, char *fn, size_t fnsz, const char *subdir)
 {
 	int ret;
 
@@ -2347,9 +2347,9 @@ get_cache_fn_subdir(struct bbslist*bbs, char*fn, size_t fnsz, const char*subdir)
 }
 
 static int
-clean_path(char*fn, size_t fnsz)
+clean_path(char *fn, size_t fnsz)
 {
-	char*fp;
+	char *fp;
 
 	fp = _fullpath(NULL, fn, fnsz);
 	if ((fp == NULL) || strcmp(fp, fn)) {
@@ -2361,24 +2361,24 @@ clean_path(char*fn, size_t fnsz)
 }
 
 static void
-apc_handler(char*strbuf, size_t slen, void*apcd)
+apc_handler(char *strbuf, size_t slen, void *apcd)
 {
-	char           fn[MAX_PATH + 1];
-	char           fn_root[MAX_PATH + 1];
-	FILE          *f;
-	int            rc;
-	size_t         sz;
-	char          *p;
-	char          *buf;
-	struct bbslist*bbs = apcd;
-	glob_t         gl;
-	int            i;
-	MD5            ctx;
-	BYTE           digest[MD5_DIGEST_SIZE];
-	unsigned long  slot;
+	char            fn[MAX_PATH + 1];
+	char            fn_root[MAX_PATH + 1];
+	FILE           *f;
+	int             rc;
+	size_t          sz;
+	char           *p;
+	char           *buf;
+	struct bbslist *bbs = apcd;
+	glob_t          gl;
+	int             i;
+	MD5             ctx;
+	BYTE            digest[MD5_DIGEST_SIZE];
+	unsigned long   slot;
 
 	if (ansi_replybuf[0])
-		conn_send(ansi_replybuf, strlen((char*)ansi_replybuf), 0);
+		conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0);
 	ansi_replybuf[0] = 0;
 	if (get_cache_fn_base(bbs, fn_root, sizeof(fn_root)) == 0)
 		return;
@@ -2523,9 +2523,9 @@ apc_handler(char*strbuf, size_t slen, void*apcd)
 }
 
 void
-mouse_state_change(int type, int action, void*pms)
+mouse_state_change(int type, int action, void *pms)
 {
-	struct mouse_state*ms = (struct mouse_state*)pms;
+	struct mouse_state *ms = (struct mouse_state *)pms;
 
 	if (ms->mode == MM_RIP)
 		return;
@@ -2553,9 +2553,9 @@ mouse_state_change(int type, int action, void*pms)
 }
 
 int
-mouse_state_query(int type, void*pms)
+mouse_state_query(int type, void *pms)
 {
-	struct mouse_state*ms = (struct mouse_state*)pms;
+	struct mouse_state *ms = (struct mouse_state *)pms;
 
 	if (type == MS_SGR_SET)
 		return ms->flags & MS_FLAGS_SGR;
@@ -2576,7 +2576,7 @@ my_ffs(int mask)
 }
 
 static int
-fill_mevent(char*buf, size_t bufsz, struct mouse_event*me, struct mouse_state*ms)
+fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state *ms)
 {
 	int  button;
 	int  x = me->startx - cterm->x + 1;
@@ -2646,16 +2646,16 @@ fill_mevent(char*buf, size_t bufsz, struct mouse_event*me, struct mouse_state*ms
 void
 do_paste(void)
 {
-	uint8_t*p;
-	uint8_t*p2;
-	int     oldfont;
+	uint8_t *p;
+	uint8_t *p2;
+	int      oldfont;
 
-	p = (unsigned char*)getcliptext();
+	p = (unsigned char *)getcliptext();
 	if (p != NULL) {
 		p2 = p;
 		oldfont = getfont(1);
 		setfont(cterm->altfont[0], false, 1);
-		p = (unsigned char*)utf8_to_cp(getcodepage(), p, '\x00', strlen((char*)p), NULL);
+		p = (unsigned char *)utf8_to_cp(getcodepage(), p, '\x00', strlen((char *)p), NULL);
 		setfont(oldfont, false, 1);
 		free(p2);
 		if (p != NULL) {
@@ -2675,39 +2675,45 @@ do_paste(void)
 }
 
 bool
-doterm(struct bbslist*bbs)
+doterm(struct bbslist *bbs)
 {
-	unsigned char    ch[2];
-	char             mouse_buf[64];
-	unsigned char    outbuf[OUTBUF_SIZE];
-	size_t           outbuf_size = 0;
-	int              key;
-	int              i, j;
-	struct vmem_cell*vc;
-	BYTE             zrqinit[] = {ZDLE, ZHEX, '0', '0', 0};   /* for Zmodem auto-downloads */
-	BYTE             zrinit[] = {ZDLE, ZHEX, '0', '1', 0};    /* for Zmodem auto-uploads */
-	BYTE             zrqbuf[sizeof(zrqinit)];
-	int              inch;
-	long double      nextchar = 0;
-	long double      lastchar = 0;
-	long double      thischar = 0;
-	int              speed;
-	int              oldmc;
-	int              updated = false;
-	bool             sleep;
-	size_t           remain;
-	struct text_info txtinfo;
+	unsigned char     ch[2];
+	char              mouse_buf[64];
+	unsigned char     outbuf[OUTBUF_SIZE];
+	size_t            outbuf_size = 0;
+	int               key;
+	int               i, j;
+	struct vmem_cell *vc;
+	BYTE              zrqinit[] = {ZDLE, ZHEX, '0', '0', 0};  /* for Zmodem auto-downloads */
+	BYTE              zrinit[] = {ZDLE, ZHEX, '0', '1', 0};   /* for Zmodem auto-uploads */
+	BYTE              zrqbuf[sizeof(zrqinit)];
+	int               inch;
+	long double       nextchar = 0;
+	long double       lastchar = 0;
+	long double       thischar = 0;
+	int               speed;
+	int               oldmc;
+	int               updated = false;
+	bool              sleep;
+	size_t            remain;
+	struct text_info  txtinfo;
 
 #ifndef WITHOUT_OOII
-	BYTE             ooii_buf[256];
-	BYTE             ooii_init1[] =
+	BYTE              ooii_buf[256];
+	BYTE              ooii_init1[] =
 	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";            /*
+                                                                                                                                                                                                                                                                                                                          *
+                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           * for
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           *
+                                                                                                                                                                                                                                                                                                                          *
+                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           * OOII
+                                                                                                                                                                                                                                                                                                                          *
+                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           * auto-enable
@@ -2716,10 +2722,16 @@ doterm(struct bbslist*bbs)
 	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\x1b[0m\x1b[2J\r\n\r\n\x1b[0;1;30mHX Force retinal scan in progress ... \x1b[0;0;30m"; /*
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           *
+                                                                                                                                                                                                                                                                                                                          *
+                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           * for
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           *
+                                                                                                                                                                                                                                                                                                                          *
+                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           * OOII
+                                                                                                                                                                                                                                                                                                                          *
+                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           * auto-enable
@@ -2859,7 +2871,7 @@ doterm(struct bbslist*bbs)
 								speedwatch = 0;
 								break;
 						}
-						j = strlen((char*)zrqbuf);
+						j = strlen((char *)zrqbuf);
 						if ((inch == zrqinit[j]) || (inch == zrinit[j])) {
 							zrqbuf[j] = inch;
 							zrqbuf[++j] = 0;
@@ -2869,7 +2881,7 @@ doterm(struct bbslist*bbs)
                                                                  * length */
 								WRITE_OUTBUF();
 								suspend_rip(true);
-								if (!strcmp((char*)zrqbuf, (char*)zrqinit))
+								if (!strcmp((char *)zrqbuf, (char *)zrqinit))
 									zmodem_download(bbs);
 								else
 									begin_upload(bbs, true, inch);
@@ -2892,7 +2904,7 @@ doterm(struct bbslist*bbs)
 								}
 							}
 							else { /* Already have the start of the sequence */
-								j = strlen((char*)ooii_buf);
+								j = strlen((char *)ooii_buf);
 								if (j + 1 >= sizeof(ooii_buf))
 									j--;
 								ooii_buf[j++] = inch;
@@ -2900,27 +2912,27 @@ doterm(struct bbslist*bbs)
 								if (inch == '|') {
 									WRITE_OUTBUF();
 									if (handle_ooii_code(ooii_buf, &ooii_mode
-									    , (unsigned char*)ansi_replybuf
+									    , (unsigned char *)ansi_replybuf
 									    , sizeof(ansi_replybuf))) {
 										ooii_mode = 0;
 										xptone_close();
 									}
 									if (ansi_replybuf[0])
 										conn_send(ansi_replybuf
-										    , strlen((char*)ansi_replybuf), 0);
+										    , strlen((char *)ansi_replybuf), 0);
 									ooii_buf[0] = 0;
 								}
 								continue;
 							}
 						}
 						else {
-							j = strlen((char*)ooii_buf);
+							j = strlen((char *)ooii_buf);
 							if (inch == ooii_init1[j]) {
 								ooii_buf[j++] = inch;
 								ooii_buf[j] = 0;
 								if (ooii_init1[j] == 0) {
-									if (strcmp((char*)ooii_buf
-									    , (char*)ooii_init1) == 0) {
+									if (strcmp((char *)ooii_buf
+									    , (char *)ooii_init1) == 0) {
 										ooii_mode = 1;
 										xptone_open();
 									}
@@ -2931,8 +2943,8 @@ doterm(struct bbslist*bbs)
 								ooii_buf[j++] = inch;
 								ooii_buf[j] = 0;
 								if (ooii_init2[j] == 0) {
-									if (strcmp((char*)ooii_buf
-									    , (char*)ooii_init2) == 0) {
+									if (strcmp((char *)ooii_buf
+									    , (char *)ooii_init2) == 0) {
 										ooii_mode = 2;
 										xptone_open();
 									}
@@ -3060,8 +3072,8 @@ doterm(struct bbslist*bbs)
 					break;
 				case 0x1200: /* ALT-E */
 				{
-					char                 title[LIST_NAME_MAX + 13];
-					struct ciolib_screen*savscrn;
+					char                  title[LIST_NAME_MAX + 13];
+					struct ciolib_screen *savscrn;
 					savscrn = savescreen();
 					setfont(0, false, 1);
 					setfont(0, false, 2);
@@ -3157,7 +3169,7 @@ doterm(struct bbslist*bbs)
                                 // Fallthrough
 				case 0x2300: /* Alt-H - Hangup */
 				{
-					struct ciolib_screen*savscrn;
+					struct ciolib_screen *savscrn;
 					savscrn = savescreen();
 					setfont(0, false, 1);
 					setfont(0, false, 2);
@@ -3257,8 +3269,8 @@ doterm(struct bbslist*bbs)
 						case 13:
 #endif
 						{
-							struct ciolib_screen*savscrn;
-							char                 title[LIST_NAME_MAX + 13];
+							struct ciolib_screen *savscrn;
+							char                  title[LIST_NAME_MAX + 13];
 
 							savscrn = savescreen();
 							setfont(0, false, 1);

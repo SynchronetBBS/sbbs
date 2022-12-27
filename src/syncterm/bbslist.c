@@ -43,139 +43,139 @@ static struct sort_order_info sort_order[] = {
 		"Entry Name"
 		, SORT_ORDER_STRING
 		, offsetof(struct bbslist, name)
-		, sizeof(((struct bbslist*)NULL)->name)
+		, sizeof(((struct bbslist *)NULL)->name)
 	}
 	, {
 		"Date Added"
 		, SORT_ORDER_REVERSED
 		, offsetof(struct bbslist, added)
-		, sizeof(((struct bbslist*)NULL)->added)
+		, sizeof(((struct bbslist *)NULL)->added)
 	}
 	, {
 		"Date Last Connected"
 		, SORT_ORDER_REVERSED
 		, offsetof(struct bbslist, connected)
-		, sizeof(((struct bbslist*)NULL)->connected)
+		, sizeof(((struct bbslist *)NULL)->connected)
 	}
 	, {
 		"Total Calls"
 		, SORT_ORDER_REVERSED
 		, offsetof(struct bbslist, calls)
-		, sizeof(((struct bbslist*)NULL)->calls)
+		, sizeof(((struct bbslist *)NULL)->calls)
 	}
 	, {
 		"Dialing List"
 		, 0
 		, offsetof(struct bbslist, type)
-		, sizeof(((struct bbslist*)NULL)->type)
+		, sizeof(((struct bbslist *)NULL)->type)
 	}
 	, {
 		"Address"
 		, SORT_ORDER_STRING
 		, offsetof(struct bbslist, addr)
-		, sizeof(((struct bbslist*)NULL)->addr)
+		, sizeof(((struct bbslist *)NULL)->addr)
 	}
 	, {
 		"Port"
 		, 0
 		, offsetof(struct bbslist, port)
-		, sizeof(((struct bbslist*)NULL)->port)
+		, sizeof(((struct bbslist *)NULL)->port)
 	}
 	, {
 		"Username"
 		, SORT_ORDER_STRING
 		, offsetof(struct bbslist, user)
-		, sizeof(((struct bbslist*)NULL)->user)
+		, sizeof(((struct bbslist *)NULL)->user)
 	}
 	, {
 		"Password"
 		, SORT_ORDER_STRING
 		, offsetof(struct bbslist, password)
-		, sizeof(((struct bbslist*)NULL)->password)
+		, sizeof(((struct bbslist *)NULL)->password)
 	}
 	, {
 		"System Password"
 		, SORT_ORDER_STRING
 		, offsetof(struct bbslist, syspass)
-		, sizeof(((struct bbslist*)NULL)->syspass)
+		, sizeof(((struct bbslist *)NULL)->syspass)
 	}
 	, {
 		"Connection Type"
 		, 0
 		, offsetof(struct bbslist, conn_type)
-		, sizeof(((struct bbslist*)NULL)->conn_type)
+		, sizeof(((struct bbslist *)NULL)->conn_type)
 	}
 	, {
 		"Screen Mode"
 		, 0
 		, offsetof(struct bbslist, screen_mode)
-		, sizeof(((struct bbslist*)NULL)->screen_mode)
+		, sizeof(((struct bbslist *)NULL)->screen_mode)
 	}
 	, {
 		"Status Line Visibility"
 		, 0
 		, offsetof(struct bbslist, nostatus)
-		, sizeof(((struct bbslist*)NULL)->nostatus)
+		, sizeof(((struct bbslist *)NULL)->nostatus)
 	}
 	, {
 		"Download Directory"
 		, SORT_ORDER_STRING
 		, offsetof(struct bbslist, dldir)
-		, sizeof(((struct bbslist*)NULL)->dldir)
+		, sizeof(((struct bbslist *)NULL)->dldir)
 	}
 	, {
 		"Upload Directory"
 		, SORT_ORDER_STRING
 		, offsetof(struct bbslist, uldir)
-		, sizeof(((struct bbslist*)NULL)->uldir)
+		, sizeof(((struct bbslist *)NULL)->uldir)
 	}
 	, {
 		"Log File"
 		, SORT_ORDER_STRING
 		, offsetof(struct bbslist, logfile)
-		, sizeof(((struct bbslist*)NULL)->logfile)
+		, sizeof(((struct bbslist *)NULL)->logfile)
 	}
 	, {
 		"Transfer Log Level"
 		, 0
 		, offsetof(struct bbslist, xfer_loglevel)
-		, sizeof(((struct bbslist*)NULL)->xfer_loglevel)
+		, sizeof(((struct bbslist *)NULL)->xfer_loglevel)
 	}
 	, {
 		"BPS Rate"
 		, 0
 		, offsetof(struct bbslist, bpsrate)
-		, sizeof(((struct bbslist*)NULL)->bpsrate)
+		, sizeof(((struct bbslist *)NULL)->bpsrate)
 	}
 	, {
 		"ANSI Music"
 		, 0
 		, offsetof(struct bbslist, music)
-		, sizeof(((struct bbslist*)NULL)->music)
+		, sizeof(((struct bbslist *)NULL)->music)
 	}
 	, {
 		"Address Family"
 		, 0
 		, offsetof(struct bbslist, address_family)
-		, sizeof(((struct bbslist*)NULL)->address_family)
+		, sizeof(((struct bbslist *)NULL)->address_family)
 	}
 	, {
 		"Font"
 		, SORT_ORDER_STRING
 		, offsetof(struct bbslist, font)
-		, sizeof(((struct bbslist*)NULL)->font)
+		, sizeof(((struct bbslist *)NULL)->font)
 	}
 	, {
 		"Hide Popups"
 		, 0
 		, offsetof(struct bbslist, hidepopups)
-		, sizeof(((struct bbslist*)NULL)->hidepopups)
+		, sizeof(((struct bbslist *)NULL)->hidepopups)
 	}
 	, {
 		"RIP"
 		, 0
 		, offsetof(struct bbslist, rip)
-		, sizeof(((struct bbslist*)NULL)->rip)
+		, sizeof(((struct bbslist *)NULL)->rip)
 	}
 	, {
 		NULL
@@ -237,22 +237,22 @@ char                          music_helpbuf[] = "`ANSI Music Setup`\n\n"
     "SyncTERM has now defined a third ANSI music sequence which *IS* legal\n"
     "according to the ANSI spec.  Specifically ESC[|.";
 
-static char*address_families[] = {"PerDNS", "IPv4", "IPv6", NULL};
-static char*address_family_names[] = {"As per DNS", "IPv4 only", "IPv6 only", NULL};
+static char *address_families[] = {"PerDNS", "IPv4", "IPv6", NULL};
+static char *address_family_names[] = {"As per DNS", "IPv4 only", "IPv6 only", NULL};
 
-static char*address_family_help = "`Address Family`\n\n"
+static char *address_family_help = "`Address Family`\n\n"
     "Select the address family to resolve\n\n"
     "`As per DNS`..: Uses what is in the DNS system\n"
     "`IPv4 only`...: Only uses IPv4 addresses.\n"
     "`IPv6 only`...: Only uses IPv6 addresses.\n";
 
-static char*address_help =
+static char *address_help =
     "`Address`, `Phone Number`, `Serial Port`, or `Command`\n\n"
     "Enter the hostname, IP address, phone number, or serial port device of\n"
     "the system to connect to. Example: `nix.synchro.net`\n\n"
     "In the case of the Shell type, enter the command to run.\n"
     "Shell types are only functional under *nix\n";
-static char*conn_type_help = "`Connection Type`\n\n"
+static char *conn_type_help = "`Connection Type`\n\n"
     "Select the type of connection you wish to make:\n\n"
     "`RLogin`...........: Auto-login with RLogin protocol\n"
     "`RLogin Reversed`..: RLogin using reversed username/password parameters\n"
@@ -265,9 +265,9 @@ static char*conn_type_help = "`Connection Type`\n\n"
     "`Shell`............: Connect to a local PTY (*nix only)\n"
     "`MBBS GHost`.......: Communicate using the Major BBS 'GHost' protocol\n";
 
-static char*YesNo[3] = {"Yes", "No", ""};
+static char *YesNo[3] = {"Yes", "No", ""};
 
-ini_style_t ini_style = {
+ini_style_t  ini_style = {
         /* key_len */
 	15
 	, /* key_prefix */ "\t"
@@ -483,14 +483,14 @@ is_sorting(int chk)
 }
 
 int
-intbufcmp(const void*a, const void*b, size_t size)
+intbufcmp(const void *a, const void *b, size_t size)
 {
 #ifdef __BIG_ENDIAN__
 	return memcmp(a, b, size);
 #else
-	int                 i;
-	const unsigned char*ac = (const unsigned char*)a;
-	const unsigned char*bc = (const unsigned char*)b;
+	int                  i;
+	const unsigned char *ac = (const unsigned char *)a;
+	const unsigned char *bc = (const unsigned char *)b;
 
 	for (i = size - 1; i >= 0; i--) {
 		if (ac[i] != bc[i])
@@ -501,14 +501,14 @@ intbufcmp(const void*a, const void*b, size_t size)
 }
 
 int
-listcmp(const void*aptr, const void*bptr)
+listcmp(const void *aptr, const void *bptr)
 {
-	const char*a = *(void**)(aptr);
-	const char*b = *(void**)(bptr);
-	int        i;
-	int        item;
-	int        reverse;
-	int        ret = 0;
+	const char *a = *(void **)(aptr);
+	const char *b = *(void **)(bptr);
+	int         i;
+	int         item;
+	int         reverse;
+	int         ret = 0;
 
 	for (i = 0; i < sizeof(sort_order) / sizeof(struct sort_order_info); i++) {
 		item = abs(sortorder[i]);
@@ -537,11 +537,11 @@ listcmp(const void*aptr, const void*bptr)
 }
 
 void
-sort_list(struct bbslist**list, int*listcount, int*cur, int*bar, char*current)
+sort_list(struct bbslist **list, int *listcount, int *cur, int *bar, char *current)
 {
 	int i;
 
-	qsort(list, *listcount, sizeof(struct bbslist*), listcmp);
+	qsort(list, *listcount, sizeof(struct bbslist *), listcmp);
 	if (cur && current) {
 		for (i = 0; i < *listcount; i++) {
 			if (strcmp(list[i]->name, current) == 0) {
@@ -589,16 +589,16 @@ write_sortorder(void)
 }
 
 void
-edit_sorting(struct bbslist**list, int*listcount, int*ocur, int*obar, char*current)
+edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, char *current)
 {
-	char opt[sizeof(sort_order) / sizeof(struct sort_order_info)][80];
-	char*opts[sizeof(sort_order) / sizeof(struct sort_order_info) + 1];
-	char sopt[sizeof(sort_order) / sizeof(struct sort_order_info)][80];
-	char*sopts[sizeof(sort_order) / sizeof(struct sort_order_info) + 1];
-	int  curr = 0, bar = 0;
-	int  scurr = 0, sbar = 0;
-	int  ret, sret;
-	int  i, j;
+	char  opt[sizeof(sort_order) / sizeof(struct sort_order_info)][80];
+	char *opts[sizeof(sort_order) / sizeof(struct sort_order_info) + 1];
+	char  sopt[sizeof(sort_order) / sizeof(struct sort_order_info)][80];
+	char *sopts[sizeof(sort_order) / sizeof(struct sort_order_info) + 1];
+	int   curr = 0, bar = 0;
+	int   scurr = 0, sbar = 0;
+	int   ret, sret;
+	int   i, j;
 
 	for (i = 0; i < sizeof(sort_order) / sizeof(struct sort_order_info); i++)
 		opts[i] = opt[i];
@@ -692,7 +692,7 @@ edit_sorting(struct bbslist**list, int*listcount, int*ocur, int*obar, char*curre
 }
 
 void
-free_list(struct bbslist**list, int listcount)
+free_list(struct bbslist **list, int listcount)
 {
 	int i;
 
@@ -701,7 +701,7 @@ free_list(struct bbslist**list, int listcount)
 }
 
 void
-read_item(str_list_t listfile, struct bbslist*entry, char*bbsname, int id, int type)
+read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int type)
 {
 	char       home[MAX_PATH + 1];
 	str_list_t section;
@@ -765,7 +765,7 @@ read_item(str_list_t listfile, struct bbslist*entry, char*bbsname, int id, int t
  * entry
  */
 int
-list_name_check(struct bbslist**list, char*bbsname, int*pos, int useronly)
+list_name_check(struct bbslist **list, char *bbsname, int *pos, int useronly)
 {
 	int i;
 
@@ -799,7 +799,7 @@ list_name_check(struct bbslist**list, char*bbsname, int*pos, int useronly)
  * first BBS read goes into list[i]
  */
 void
-read_list(char*listpath, struct bbslist**list, struct bbslist*defaults, int*i, int type)
+read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type)
 {
 	FILE      *listfile;
 	char      *bbsname;
@@ -814,7 +814,7 @@ read_list(char*listpath, struct bbslist**list, struct bbslist*defaults, int*i, i
 		bbses = iniGetSectionList(inilines, NULL);
 		while ((bbsname = strListRemove(&bbses, 0)) != NULL) {
 			if (!list_name_check(list, bbsname, NULL, false)) {
-				if ((list[*i] = (struct bbslist*)malloc(sizeof(struct bbslist))) == NULL) {
+				if ((list[*i] = (struct bbslist *)malloc(sizeof(struct bbslist))) == NULL) {
 					free(bbsname);
 					break;
 				}
@@ -835,12 +835,12 @@ read_list(char*listpath, struct bbslist**list, struct bbslist*defaults, int*i, i
          * This isn't necessary (NULL is a sufficient)
          * Add terminator
          */
-	list[*i] = (struct bbslist*)"";
+	list[*i] = (struct bbslist *)"";
 #endif
 }
 
 static void
-fc_str(char*str, int fc)
+fc_str(char *str, int fc)
 {
 	sprintf(str, "Flow Control      %s", fc_names[fc_to_enum(fc)]);
 }
@@ -850,7 +850,7 @@ fc_str(char*str, int fc)
  * Format must contain only a single '%s'.
  */
 void
-printf_trunc(char*dst, size_t dstsz, char*fmt, char*path)
+printf_trunc(char *dst, size_t dstsz, char *fmt, char *path)
 {
 	char  *mangled;
 	size_t fmt_len = strlen(fmt) - 2;
@@ -877,13 +877,13 @@ printf_trunc(char*dst, size_t dstsz, char*fmt, char*path)
 }
 
 void
-configure_log(struct bbslist*item, const char*itemname, str_list_t inifile, int*changed)
+configure_log(struct bbslist *item, const char *itemname, str_list_t inifile, int *changed)
 {
-	char opt[4][69];
-	char*opts[(sizeof(opt) / sizeof(opt[0])) + 1];
-	int  o;
-	int  i;
-	int  copt = 0;
+	char  opt[4][69];
+	char *opts[(sizeof(opt) / sizeof(opt[0])) + 1];
+	int   o;
+	int   i;
+	int   copt = 0;
 
 	for (o = 0; o < sizeof(opt) / sizeof(opt[0]); o++)
 		opts[o] = opt[o];
@@ -982,7 +982,7 @@ configure_log(struct bbslist*item, const char*itemname, str_list_t inifile, int*
 }
 
 static int
-get_rip_version(int oldver, int*changed)
+get_rip_version(int oldver, int *changed)
 {
 	int cur = oldver;
 
@@ -1003,7 +1003,7 @@ get_rip_version(int oldver, int*changed)
 }
 
 int
-edit_list(struct bbslist**list, struct bbslist*item, char*listpath, int isdefault)
+edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault)
 {
 	char       opt[19][69]; /* 21=Holds number of menu items, 80=Number of columns */
 	char      *opts[(sizeof(opt) / sizeof(opt[0])) + 1];
@@ -1610,7 +1610,7 @@ edit_list(struct bbslist**list, struct bbslist*item, char*listpath, int isdefaul
 }
 
 void
-add_bbs(char*listpath, struct bbslist*bbs)
+add_bbs(char *listpath, struct bbslist *bbs)
 {
 	FILE      *listfile;
 	str_list_t inifile;
@@ -1662,7 +1662,7 @@ add_bbs(char*listpath, struct bbslist*bbs)
 }
 
 void
-del_bbs(char*listpath, struct bbslist*bbs)
+del_bbs(char *listpath, struct bbslist *bbs)
 {
 	FILE      *listfile;
 	str_list_t inifile;
@@ -1687,15 +1687,15 @@ del_bbs(char*listpath, struct bbslist*bbs)
  * used to redraw the entire menu set if the custom mode is current
  * and is changed.
  */
-static int             *glob_sopt;
-static int             *glob_sbar;
-static char           **glob_settings_menu;
+static int              *glob_sopt;
+static int              *glob_sbar;
+static char            **glob_settings_menu;
 
-static int             *glob_listcount;
-static int             *glob_opt;
-static int             *glob_bar;
-static char            *glob_list_title;
-static struct bbslist***glob_list;
+static int              *glob_listcount;
+static int              *glob_opt;
+static int              *glob_bar;
+static char             *glob_list_title;
+static struct bbslist ***glob_list;
 
 /*
  * This uses the above variables and therefore *must* be called from
@@ -1704,7 +1704,7 @@ static struct bbslist***glob_list;
  * If show_bbslist() is not on the stack, this will do insane things.
  */
 static void
-custom_mode_adjusted(int*cur, char**opt)
+custom_mode_adjusted(int *cur, char **opt)
 {
 	struct text_info ti;
 	int              cvmode;
@@ -1740,7 +1740,7 @@ custom_mode_adjusted(int*cur, char**opt)
 	    | WIN_ACT | WIN_INSACT | WIN_DELACT | WIN_SAV | WIN_ESC
 	    | WIN_T2B | WIN_INS | WIN_DEL | WIN_EDIT | WIN_EXTKEYS | WIN_DYN
 	    | WIN_SEL | WIN_INACT
-	    , 0, 0, 0, glob_opt, glob_bar, glob_list_title, (char**)*glob_list);
+	    , 0, 0, 0, glob_opt, glob_bar, glob_list_title, (char **)*glob_list);
 
         // Draw settings menu
 	uifc.list(WIN_T2B | WIN_RHT | WIN_EXTKEYS | WIN_DYN | WIN_ACT | WIN_INACT
@@ -1944,7 +1944,7 @@ change_settings(int connected)
 				sprintf(str, "%d", settings.backlines);
 				if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Scrollback Lines", str, 9
 				    , K_NUMBER | K_EDIT) != -1) {
-					struct vmem_cell*tmpscroll;
+					struct vmem_cell *tmpscroll;
 
 					j = atoi(str);
 					if (j < 1) {
@@ -2286,17 +2286,17 @@ write_ini:
 }
 
 void
-load_bbslist(struct bbslist**list
-    , size_t                 listsize
-    , struct bbslist        *defaults
-    , char                  *listpath
-    , size_t                 listpathsize
-    , char                  *shared_list
-    , size_t                 shared_listsize
-    , int                   *listcount
-    , int                   *cur
-    , int                   *bar
-    , char                  *current)
+load_bbslist(struct bbslist **list
+    , size_t                  listsize
+    , struct bbslist         *defaults
+    , char                   *listpath
+    , size_t                  listpathsize
+    , char                   *shared_list
+    , size_t                  shared_listsize
+    , int                    *listcount
+    , int                    *cur
+    , int                    *bar
+    , char                   *current)
 {
 	free_list(&list[0], *listcount);
 	*listcount = 0;
@@ -2318,13 +2318,13 @@ load_bbslist(struct bbslist**list
  * Note that any time it's drawn, it's inactive...
  */
 static void
-draw_comment(struct bbslist*list)
+draw_comment(struct bbslist *list)
 {
-	int  lpad;
-	int  rpad;
-	int  clen;
-	int  remain;
-	char*comment;
+	int   lpad;
+	int   rpad;
+	int   clen;
+	int   remain;
+	char *comment;
 
 	if (list == NULL)
 		comment = "";
@@ -2354,7 +2354,7 @@ draw_comment(struct bbslist*list)
  * TODO: ESC in edit box doesn't exit program... good or bad?
  */
 static bool
-edit_comment(struct bbslist*list, char*listpath)
+edit_comment(struct bbslist *list, char *listpath)
 {
 	FILE      *listfile;
 	str_list_t inifile = NULL;
@@ -2434,11 +2434,11 @@ done:
  * Displays the BBS list and allows edits to user BBS list
  * Mode is one of BBSLIST_SELECT or BBSLIST_EDIT
  */
-struct bbslist*
+struct bbslist *
 
-show_bbslist(char*current, int connected)
+show_bbslist(char *current, int connected)
 {
-#define BBSLIST_SIZE ((MAX_OPTS + 1) * sizeof(struct bbslist*))
+#define BBSLIST_SIZE ((MAX_OPTS + 1) * sizeof(struct bbslist *))
 	struct  bbslist     **list;
 	int                   i, j;
 	static int            opt = 0, bar = 0;
@@ -2545,7 +2545,7 @@ show_bbslist(char*current, int connected)
 						sprintf(title
 						    , "%s - %s (%d calls / Last: %s"
 						    , syncterm_version
-						    , (char*)(list[opt])
+						    , (char *)(list[opt])
 						    , list[opt]->calls
 						    , list[opt]->connected ? ctime(&list[opt]->connected) : "Never\n");
 						p = strrchr(title, '\n');
@@ -2572,7 +2572,7 @@ show_bbslist(char*current, int connected)
 				        , &opt
 				        , &bar
 				        , list_title
-				        , (char**)list);
+				        , (char **)list);
 				redraw = 0;
 				if (val == listcount)
 					val = listcount | MSK_INS;
@@ -2588,7 +2588,7 @@ show_bbslist(char*current, int connected)
 					    , &opt
 					    , &bar
 					    , list_title
-					    , (char**)list);
+					    , (char **)list);
 					val = opt | MSK_EDIT;
 				}
 				draw_comment(list[opt]);
@@ -2606,7 +2606,7 @@ show_bbslist(char*current, int connected)
 							    , &opt
 							    , &bar
 							    , list_title
-							    , (char**)list);
+							    , (char **)list);
 							edit_sorting(list
 							    , &listcount
 							    , &opt
@@ -2652,7 +2652,7 @@ show_bbslist(char*current, int connected)
 								    ,
 								    list_title
 								    ,
-								    (char**)list);
+								    (char **)list);
 								if (edit_comment(list[opt], settings.list_path)) {
 									redraw = 1;
 									break;
@@ -2680,7 +2680,7 @@ show_bbslist(char*current, int connected)
 							    , &opt
 							    , &bar
 							    , list_title
-							    , (char**)list);
+							    , (char **)list);
 							at_settings = !at_settings;
 							break;
 						case -6: /* CTRL-D */
@@ -2714,7 +2714,7 @@ show_bbslist(char*current, int connected)
 								    ,
 								    list_title
 								    ,
-								    (char**)list);
+								    (char **)list);
 								uifc.input(WIN_MID | WIN_SAV
 								    , 0
 								    , 0
@@ -2788,7 +2788,7 @@ show_bbslist(char*current, int connected)
 							listcount++;
 							list[listcount] = list[listcount - 1];
 							list[listcount
-							    - 1] = (struct bbslist*)malloc(sizeof(struct bbslist));
+							    - 1] = (struct bbslist *)malloc(sizeof(struct bbslist));
 							memcpy(list[listcount - 1], &defaults, sizeof(struct bbslist));
 							list[listcount - 1]->id = listcount - 1;
 							strcpy(list[listcount - 1]->name, tmp);
@@ -3020,7 +3020,7 @@ show_bbslist(char*current, int connected)
 							    | WIN_ACT | WIN_INSACT | WIN_DELACT | WIN_SAV | WIN_ESC
 							    | WIN_INS | WIN_DEL | WIN_EDIT | WIN_EXTKEYS | WIN_DYN
 							    | WIN_SEL | WIN_INACT | WIN_FIXEDHEIGHT
-							    , 0, 0, 0, &opt, &bar, list_title, (char**)list);
+							    , 0, 0, 0, &opt, &bar, list_title, (char **)list);
 							draw_comment(list[opt]);
 						}
 						break;
@@ -3034,7 +3034,7 @@ show_bbslist(char*current, int connected)
 							    | WIN_ACT | WIN_INSACT | WIN_DELACT | WIN_SAV | WIN_ESC
 							    | WIN_INS | WIN_DEL | WIN_EDIT | WIN_EXTKEYS | WIN_DYN
 							    | WIN_SEL | WIN_INACT | WIN_FIXEDHEIGHT
-							    , 0, 0, 0, &opt, &bar, list_title, (char**)list);
+							    , 0, 0, 0, &opt, &bar, list_title, (char **)list);
 							if (!edit_comment(list[opt], settings.list_path))
 								break;
 						}
@@ -3093,7 +3093,7 @@ show_bbslist(char*current, int connected)
 							    | WIN_ACT | WIN_INSACT | WIN_DELACT | WIN_SAV | WIN_ESC
 							    | WIN_INS | WIN_DEL | WIN_EDIT | WIN_EXTKEYS | WIN_DYN
 							    | WIN_SEL | WIN_INACT | WIN_FIXEDHEIGHT | WIN_NODRAW
-							    , 0, 0, 0, &opt, &bar, list_title, (char**)list);
+							    , 0, 0, 0, &opt, &bar, list_title, (char **)list);
 							draw_comment(list[opt]);
 						}
 						else if (check_exit(false)) {
@@ -3175,7 +3175,7 @@ show_bbslist(char*current, int connected)
 }
 
 cterm_emulation_t
-get_emulation(struct bbslist*bbs)
+get_emulation(struct bbslist *bbs)
 {
 	if (bbs == NULL)
 		return CTERM_EMULATION_ANSI_BBS;
@@ -3193,7 +3193,7 @@ get_emulation(struct bbslist*bbs)
 	}
 }
 
-const char*
+const char *
 get_emulation_str(cterm_emulation_t emu)
 {
 	switch (emu) {
@@ -3208,7 +3208,7 @@ get_emulation_str(cterm_emulation_t emu)
 }
 
 void
-get_term_size(struct bbslist*bbs, int*cols, int*rows)
+get_term_size(struct bbslist *bbs, int *cols, int *rows)
 {
 	int cmode = find_vmode(screen_to_ciolib(bbs->screen_mode));
 

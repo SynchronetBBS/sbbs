@@ -100,10 +100,10 @@ uifcbail(void)
 }
 
 void
-uifcmsg(char*msg, char*helpbuf)
+uifcmsg(char *msg, char *helpbuf)
 {
-	int                  i;
-	struct ciolib_screen*savscrn;
+	int                   i;
+	struct ciolib_screen *savscrn;
 
 	i = uifc_initialized;
 	if (!i)
@@ -129,10 +129,10 @@ uifcmsg(char*msg, char*helpbuf)
 }
 
 void
-uifcinput(char*title, int len, char*msg, int mode, char*helpbuf)
+uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
 {
-	int                  i;
-	struct ciolib_screen*savscrn;
+	int                   i;
+	struct ciolib_screen *savscrn;
 
 	i = uifc_initialized;
 	if (!i)
@@ -158,17 +158,17 @@ uifcinput(char*title, int len, char*msg, int mode, char*helpbuf)
 }
 
 int
-confirm(char*msg, char*helpbuf)
+confirm(char *msg, char *helpbuf)
 {
-	int                  i;
-	struct ciolib_screen*savscrn;
-	char                *options[] = {
+	int                   i;
+	struct ciolib_screen *savscrn;
+	char                 *options[] = {
 		"Yes"
 		, "No"
 		, ""
 	};
-	int                  ret = true;
-	int                  copt = 0;
+	int                   ret = true;
+	int                   copt = 0;
 
 	i = uifc_initialized;
 	if (!i)

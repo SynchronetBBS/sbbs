@@ -17,7 +17,7 @@
 #include "window.h"
 
 int
-telnets_connect(struct bbslist*bbs)
+telnets_connect(struct bbslist *bbs)
 {
 	int off = 1;
 	int status;
@@ -63,7 +63,7 @@ telnets_connect(struct bbslist*bbs)
 	}
 
         /* we need to disable Nagle on the socket. */
-	setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char*)&off, sizeof(off));
+	setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off));
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
@@ -119,9 +119,9 @@ telnets_connect(struct bbslist*bbs)
 
 	create_conn_buf(&conn_inbuf, BUFFER_SIZE);
 	create_conn_buf(&conn_outbuf, BUFFER_SIZE);
-	conn_api.rd_buf = (unsigned char*)malloc(BUFFER_SIZE);
+	conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE);
 	conn_api.rd_buf_size = BUFFER_SIZE;
-	conn_api.wr_buf = (unsigned char*)malloc(BUFFER_SIZE);
+	conn_api.wr_buf = (unsigned char *)malloc(BUFFER_SIZE);
 	conn_api.wr_buf_size = BUFFER_SIZE;
 	conn_api.rx_parse_cb = telnet_rx_parse_cb;
 	conn_api.tx_parse_cb = telnet_tx_parse_cb;

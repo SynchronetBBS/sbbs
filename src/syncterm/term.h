@@ -20,17 +20,17 @@ struct terminal {
 
 #define XMODEM_128B (1 << 10) /* Use 128 byte block size (ick!) */
 
-extern struct terminal  term;
-extern struct cterminal*cterm;
-extern int              log_level;
-void zmodem_upload(struct bbslist*bbs, FILE*fp, char*path);
-void xmodem_upload(struct bbslist*bbs, FILE*fp, char*path, long mode, int lastch);
-void xmodem_download(struct bbslist*bbs, long mode, char*path);
-void zmodem_download(struct bbslist*bbs);
-bool doterm(struct bbslist*);
-void mousedrag(struct vmem_cell*scrollback);
-void get_cterm_size(int*cols, int*rows, int ns);
-int get_cache_fn_base(struct bbslist*bbs, char*fn, size_t fnsz);
-int get_cache_fn_subdir(struct bbslist*bbs, char*fn, size_t fnsz, const char*subdir);
+extern struct terminal   term;
+extern struct cterminal *cterm;
+extern int               log_level;
+void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path);
+void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch);
+void xmodem_download(struct bbslist *bbs, long mode, char *path);
+void zmodem_download(struct bbslist *bbs);
+bool doterm(struct bbslist *);
+void mousedrag(struct vmem_cell *scrollback);
+void get_cterm_size(int *cols, int *rows, int ns);
+int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz);
+int get_cache_fn_subdir(struct bbslist *bbs, char *fn, size_t fnsz, const char *subdir);
 
 #endif // ifndef _TERM_H_

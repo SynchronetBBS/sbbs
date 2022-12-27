@@ -9,7 +9,7 @@
 #include "uifcinit.h"
 
 void
-get_term_win_size(int*width, int*height, int*pixelw, int*pixelh, int*nostatus)
+get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostatus)
 {
 	struct  text_info txtinfo;
 	int               vmode = find_vmode(fake_mode);
@@ -76,7 +76,7 @@ drawwin(void)
 	else
 		term.x = (txtinfo.screenwidth - term.width) / 2 + 2;
 	term.y = (txtinfo.screenheight - term.height) / 2 + 2;
-	if ((winbuf = (char*)alloca(txtinfo.screenheight * txtinfo.screenwidth * 2)) == NULL) {
+	if ((winbuf = (char *)alloca(txtinfo.screenheight * txtinfo.screenwidth * 2)) == NULL) {
 		uifcmsg("Cannot allocate memory for terminal buffer", "`Memory error`\n\n"
 		    "Either your system is dangerously low on resources or your\n"
 		    "window is farking huge!");

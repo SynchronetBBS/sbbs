@@ -33,15 +33,15 @@ enum {
 };
 
 struct conn_api {
-	int               (*connect)(struct bbslist*bbs);
+	int               (*connect)(struct bbslist *bbs);
 	int               (*close)(void);
 	void              (*binary_mode_on)(void);
 	void              (*binary_mode_off)(void);
 
 	bool              binary_mode;
 
-	void            * (*rx_parse_cb)(const void*inbuf, size_t inlen, size_t*olen);
-	void            * (*tx_parse_cb)(const void*inbuf, size_t inlen, size_t*olen);
+	void            * (*rx_parse_cb)(const void *inbuf, size_t inlen, size_t *olen);
+	void            * (*tx_parse_cb)(const void *inbuf, size_t inlen, size_t *olen);
 
 	int               log_level;
 	int               type;
@@ -70,10 +70,10 @@ struct conn_buffer {
 /*
  * Functions for stuff using connections
  */
-int conn_recv_upto(void*buffer, size_t buflen, unsigned int timeout);
-int conn_send(const void*buffer, size_t buflen, unsigned int timeout);
-int conn_send_raw(const void*buffer, size_t buflen, unsigned int timeout);
-int conn_connect(struct bbslist*bbs);
+int conn_recv_upto(void *buffer, size_t buflen, unsigned int timeout);
+int conn_send(const void *buffer, size_t buflen, unsigned int timeout);
+int conn_send_raw(const void *buffer, size_t buflen, unsigned int timeout);
+int conn_connect(struct bbslist *bbs);
 int conn_close(void);
 bool conn_connected(void);
 size_t conn_data_waiting(void);
@@ -90,16 +90,16 @@ extern struct conn_buffer conn_inbuf;
 extern struct conn_buffer conn_outbuf;
 extern struct conn_api    conn_api;
 
-struct conn_buffer *create_conn_buf(struct conn_buffer*buf, size_t size);
-void destroy_conn_buf(struct conn_buffer*buf);
-size_t conn_buf_bytes(struct conn_buffer*buf);
-size_t conn_buf_peek(struct conn_buffer*buf, void*voutbuf, size_t outlen);
-size_t conn_buf_get(struct conn_buffer*buf, void*outbuf, size_t outlen);
-size_t conn_buf_put(struct conn_buffer*buf, const void*outbuf, size_t outlen);
-size_t conn_buf_wait_cond(struct conn_buffer*buf, size_t bcount, unsigned long timeout, int do_free);
+struct conn_buffer *create_conn_buf(struct conn_buffer *buf, size_t size);
+void destroy_conn_buf(struct conn_buffer *buf);
+size_t conn_buf_bytes(struct conn_buffer *buf);
+size_t conn_buf_peek(struct conn_buffer *buf, void *voutbuf, size_t outlen);
+size_t conn_buf_get(struct conn_buffer *buf, void *outbuf, size_t outlen);
+size_t conn_buf_put(struct conn_buffer *buf, const void *outbuf, size_t outlen);
+size_t conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long timeout, int do_free);
 
 #define conn_buf_wait_bytes(buf, count, timeout) conn_buf_wait_cond(buf, count, timeout, 0)
 #define conn_buf_wait_free(buf, count, timeout) conn_buf_wait_cond(buf, count, timeout, 1)
-int conn_socket_connect(struct bbslist*bbs);
+int conn_socket_connect(struct bbslist *bbs);
 
 #endif // ifndef _CONN_H_

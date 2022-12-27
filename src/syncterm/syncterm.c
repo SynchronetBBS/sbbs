@@ -19,7 +19,7 @@
  #include <shlobj.h>
  #ifndef REFKNOWNFOLDERID
 typedef GUID KNOWNFOLDERID;
-  #define REFKNOWNFOLDERID const KNOWNFOLDERID*
+  #define REFKNOWNFOLDERID const KNOWNFOLDERID *
 
 // Not shared
 static const KNOWNFOLDERID FOLDERID_Downloads = {
@@ -76,7 +76,7 @@ enum {
 #include "uifcinit.h"
 #include "window.h"
 
-char*syncterm_version = "SyncTERM 1.2b"
+char *syncterm_version = "SyncTERM 1.2b"
 
 // #define ALPHA
 #ifdef _DEBUG
@@ -84,7 +84,7 @@ char*syncterm_version = "SyncTERM 1.2b"
 #endif
 ;
 
-char*usage =
+char *usage =
     "\nusage: syncterm [options] [URL]"
     "\n\noptions:\n\n"
     "-4  =  Only resolve IPv4 addresses\n"
@@ -736,7 +736,7 @@ static const struct {
 	,
 };
 
-char*output_types[] = {
+char *output_types[] = {
 	"Autodetect"
 #ifdef __unix__
 	" (X11, SDL, Curses)"
@@ -762,7 +762,7 @@ char*output_types[] = {
 #endif
 	, NULL
 };
-int  output_map[] = {
+int   output_map[] = {
 	CIOLIB_MODE_AUTO
 #ifdef __unix__
 	, CIOLIB_MODE_CURSES
@@ -783,7 +783,7 @@ int  output_map[] = {
 #endif
 	, 0
 };
-char*output_descrs[] = {
+char *output_descrs[] = {
 	"Autodetect"
 	, "Curses"
 	, "Curses on cp437 Device"
@@ -797,7 +797,7 @@ char*output_descrs[] = {
 	, NULL
 };
 
-char*output_enum[] = {
+char *output_enum[] = {
 	"Autodetect"
 	, "Curses"
 	, "Curses437"
@@ -826,13 +826,13 @@ check_exit(bool force)
 }
 
 void
-parse_url(char*url, struct bbslist*bbs, int dflt_conn_type, int force_defaults)
+parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults)
 {
-	char            *p1, *p2, *p3;
+	char             *p1, *p2, *p3;
 
-#define BBSLIST_SIZE ((MAX_OPTS + 1) * sizeof(struct bbslist*))
-	struct  bbslist**list;
-	int              listcount = 0, i;
+#define BBSLIST_SIZE ((MAX_OPTS + 1) * sizeof(struct bbslist *))
+	struct  bbslist **list;
+	int               listcount = 0, i;
 
 	bbs->id = -1;
 	bbs->added = time(NULL);
@@ -949,8 +949,8 @@ parse_url(char*url, struct bbslist*bbs, int dflt_conn_type, int force_defaults)
 
 #if defined(__APPLE__) && defined(__MACH__)
 
-static char*
-get_new_OSX_filename(char*fn, int fnlen, int type, int shared)
+static char *
+get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 {
 	FSRef ref;
 
@@ -961,7 +961,7 @@ get_new_OSX_filename(char*fn, int fnlen, int type, int shared)
 			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kPreferencesFolderType, kCreateFolder
 			    , &ref) != noErr)
 				return NULL;
-			if (FSRefMakePath(&ref, (unsigned char*)fn, fnlen) != noErr)
+			if (FSRefMakePath(&ref, (unsigned char *)fn, fnlen) != noErr)
 				return NULL;
 			backslash(fn);
 			strncat(fn, "SyncTERM", fnlen - strlen(fn) - 1);
@@ -977,7 +977,7 @@ get_new_OSX_filename(char*fn, int fnlen, int type, int shared)
 			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kDownloadsFolderType, kCreateFolder
 			    , &ref) != noErr)
 				return NULL;
-			if (FSRefMakePath(&ref, (unsigned char*)fn, fnlen) != noErr)
+			if (FSRefMakePath(&ref, (unsigned char *)fn, fnlen) != noErr)
 				return NULL;
 			backslash(fn);
 			if (!isdir(fn)) {
@@ -989,7 +989,7 @@ get_new_OSX_filename(char*fn, int fnlen, int type, int shared)
 			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kCachedDataFolderType, kCreateFolder
 			    , &ref) != noErr)
 				return NULL;
-			if (FSRefMakePath(&ref, (unsigned char*)fn, fnlen) != noErr)
+			if (FSRefMakePath(&ref, (unsigned char *)fn, fnlen) != noErr)
 				return NULL;
 			backslash(fn);
 			return fn;
@@ -1008,8 +1008,8 @@ get_new_OSX_filename(char*fn, int fnlen, int type, int shared)
 
 #endif /* if defined(__APPLE__) && defined(__MACH__) */
 
-char*
-get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
+char *
+get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 {
 	char oldlst[MAX_PATH + 1];
 
@@ -1026,7 +1026,7 @@ get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 	char             *home;
 	static dll_handle shell32 = NULL;
 	bool              we_got_this = false;
-	static HRESULT(__stdcall * GKFP) (REFKNOWNFOLDERID rfid, DWORD dwFlags, HANDLE hToken, PWSTR*ppszPath) = NULL;
+	static HRESULT(__stdcall * GKFP) (REFKNOWNFOLDERID rfid, DWORD dwFlags, HANDLE hToken, PWSTR *ppszPath) = NULL;
 	const char       *shell32dll[] = {"Shell32", NULL};
 
 	static dll_handle ole32 = NULL;
@@ -1168,7 +1168,7 @@ get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 	}
 #else /* ifdef _WIN32 */
         /* UNIX */
-	char*home = getenv("HOME");
+	char *home = getenv("HOME");
 
 	if (!shared) {
 		if (((home == NULL) || (strlen(home) > MAX_PATH - 32))) { /* $HOME just too damn big */
@@ -1262,7 +1262,7 @@ get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 	if (get_new_OSX_filename(fn, fnlen, type, shared) != NULL) {
 		if (fexist(oldlst)) {
 			if (!isdir(oldlst)) {
-				char*lastslash = strrchr(oldlst, '/');
+				char *lastslash = strrchr(oldlst, '/');
 
 				rename(oldlst, fn);
 				if (lastslash) {
@@ -1282,7 +1282,7 @@ get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 }
 
 void
-load_settings(struct syncterm_settings*set)
+load_settings(struct syncterm_settings *set)
 {
 	FILE      *inifile;
 	char       inipath[MAX_PATH + 1];
@@ -1343,7 +1343,7 @@ load_settings(struct syncterm_settings*set)
 }
 
 int
-main(int argc, char**argv)
+main(int argc, char **argv)
 {
 	struct bbslist   *bbs = NULL;
 	bool              bbs_alloc = false;
@@ -1752,7 +1752,7 @@ main(int argc, char**argv)
 
         /* Auto-connect URL */
 	if (url[0]) {
-		if ((bbs = (struct bbslist*)malloc(sizeof(struct bbslist))) == NULL) {
+		if ((bbs = (struct bbslist *)malloc(sizeof(struct bbslist))) == NULL) {
 			uifcmsg("Unable to allocate memory", "The system was unable to allocate memory.");
 			return 1;
 		}
@@ -1876,7 +1876,7 @@ main(int argc, char**argv)
 			if ((bbs != NULL) && (bbs->id == -1)) {
 				if (!safe_mode) {
 					if (settings.prompt_save) {
-						char*YesNo[3] = {"Yes", "No", ""};
+						char *YesNo[3] = {"Yes", "No", ""};
 
                                                 /* Started from the command-line with a URL */
 						init_uifc(true, true);

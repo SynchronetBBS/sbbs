@@ -32,8 +32,8 @@ int
 init_crypt(void)
 {
  #ifndef STATIC_CRYPTLIB
-	dll_handle cryptlib;
-	const char*libnames[] = {"cl", "cl34", "cl33", "cl32", NULL};
+	dll_handle  cryptlib;
+	const char *libnames[] = {"cl", "cl34", "cl33", "cl32", NULL};
  #endif
 
 	if (crypt_loaded)

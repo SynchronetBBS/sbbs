@@ -267,7 +267,7 @@ readInPix(char codeCh, int ooii_mode)
 	if ((codeCh >= 'A') && (codeCh <= 'E')) {
 		cterm_write(cterm
 		    , ooii_cmenus[ooii_mode - 1][fptr]
-		    , strlen((char*)ooii_cmenus[ooii_mode - 1][fptr]) - 1
+		    , strlen((char *)ooii_cmenus[ooii_mode - 1][fptr]) - 1
 		    , NULL
 		    , 0
 		    , NULL);
@@ -275,7 +275,7 @@ readInPix(char codeCh, int ooii_mode)
 	else if ((codeCh >= 'F') && (codeCh <= 'K')) {
 		cterm_write(cterm
 		    , ooii_bmenus[ooii_mode - 1][fptr]
-		    , strlen((char*)ooii_bmenus[ooii_mode - 1][fptr]) - 1
+		    , strlen((char *)ooii_bmenus[ooii_mode - 1][fptr]) - 1
 		    , NULL
 		    , 0
 		    , NULL);
@@ -283,7 +283,7 @@ readInPix(char codeCh, int ooii_mode)
 	else if (codeCh == '0') {
 		cterm_write(cterm
 		    , ooii_logon[ooii_mode - 1][fptr]
-		    , strlen((char*)ooii_logon[ooii_mode - 1][fptr]) - 1
+		    , strlen((char *)ooii_logon[ooii_mode - 1][fptr]) - 1
 		    , NULL
 		    , 0
 		    , NULL);
@@ -298,9 +298,9 @@ readInPix(char codeCh, int ooii_mode)
 }
 
 static int
-readInText(unsigned char*codeStr)
+readInText(unsigned char *codeStr)
 {
-	unsigned char*origCodeStr = codeStr;
+	unsigned char *origCodeStr = codeStr;
 
 	switch ((char)codeStr[0]) {
 		case '1':
@@ -376,7 +376,7 @@ readInText(unsigned char*codeStr)
 }
 
 static void
-getBlock(unsigned char**codeStr, char*menuBlock)
+getBlock(unsigned char **codeStr, char *menuBlock)
 {
 	menuBlock[0] = 0;
 	if (**codeStr == '_')
@@ -388,7 +388,7 @@ getBlock(unsigned char**codeStr, char*menuBlock)
 }
 
 static void
-strljust(char*buf, size_t len, char pad)
+strljust(char *buf, size_t len, char pad)
 {
 	size_t buflen = strlen(buf);
 
@@ -399,7 +399,7 @@ strljust(char*buf, size_t len, char pad)
 }
 
 static void
-strrjust(char*buf, size_t len, char pad)
+strrjust(char *buf, size_t len, char pad)
 {
 	size_t buflen = strlen(buf);
 
@@ -410,26 +410,26 @@ strrjust(char*buf, size_t len, char pad)
 }
 
 static int
-readSmallMenu(unsigned char*codeStr)
+readSmallMenu(unsigned char *codeStr)
 {
 #define MultA 2
 #define MultE 3
 #define MultS 3
 #define MultW 2
 
-	long          aPrice[5] = {0, 4500, 14500, 29000, 42500};
-	long          ePrice[13] = {0, 50, 200, 300, 500, 800, 1000, 1500, 1750, 2000, 3000, 5000, 15000};
-	long          sPrice[3] = {0, 4500, 13500};
-	long          wPrice[15] = {
+	long           aPrice[5] = {0, 4500, 14500, 29000, 42500};
+	long           ePrice[13] = {0, 50, 200, 300, 500, 800, 1000, 1500, 1750, 2000, 3000, 5000, 15000};
+	long           sPrice[3] = {0, 4500, 13500};
+	long           wPrice[15] = {
 		0, 700, 4250, 9500, 18000, 32500, 55750, 0, 7500, 12000, 19250, 30500, 41000, 64750, 0
 	};
 
-	char          tempBlock[255];
-	char          menuBlock[255];
-	int           yy;
-	int           zz;
-	unsigned char*origCodeStr = codeStr;
-	char          buf[266];
+	char           tempBlock[255];
+	char           menuBlock[255];
+	int            yy;
+	int            zz;
+	unsigned char *origCodeStr = codeStr;
+	char           buf[266];
 
 	switch ((char)codeStr[0]) {
 		case 'a':
@@ -1163,11 +1163,11 @@ checkStamp(int xx, int yy, char stampStr[20]) // used w/ incomingCheck
 }
 
 static int
-incomingCheckStatus(unsigned char*codeStr)
+incomingCheckStatus(unsigned char *codeStr)
 {
-	int           who, zz;
-	char          menuBlock[255];
-	unsigned char*origCodeStr = codeStr;
+	int            who, zz;
+	char           menuBlock[255];
+	unsigned char *origCodeStr = codeStr;
 
 	term_clearscreen();
 	term_gotoxy(1, 1);
@@ -1268,7 +1268,7 @@ incomingCheckStatus(unsigned char*codeStr)
 	return codeStr - origCodeStr;
 }
 
-char*
+char *
 scanChar(unsigned char s, int where, int miniTrik)
 {
 	if (!miniTrik) {
@@ -1339,8 +1339,8 @@ scanChar(unsigned char s, int where, int miniTrik)
 		case 29:
 			return "@@ ";
 		case 30: {
-			time_t    timer = time(NULL);
-			struct tm*tblock = localtime(&timer);
+			time_t     timer = time(NULL);
+			struct tm *tblock = localtime(&timer);
 
 			switch (tblock->tm_wday) {
                                 // 0 : no storms on Sunday!
@@ -1467,15 +1467,15 @@ setScanCol(char s)
 }
 
 static int
-incomingMapScanner(unsigned char*codeStr)
+incomingMapScanner(unsigned char *codeStr)
 {
-	int           zz, scanPtr, yy;
-	unsigned char scanVals[10]; // ScanVals  : ARRAY[1..9] OF BYTE;
-	char          scan[30];
-	char          menuBlock[255];
-	unsigned char*origCodeStr = codeStr;
-	int           where;
-	int           miniTrik;
+	int            zz, scanPtr, yy;
+	unsigned char  scanVals[10];  // ScanVals  : ARRAY[1..9] OF BYTE;
+	char           scan[30];
+	char           menuBlock[255];
+	unsigned char *origCodeStr = codeStr;
+	int            where;
+	int            miniTrik;
 
 	codeStr++;
 
@@ -1645,8 +1645,8 @@ incomingMapScanner(unsigned char*codeStr)
 
 				if (scanVals[zz] == 30) {
                                         /* TODO: timer/tblock were not declared... */
-					time_t    timer = time(NULL);
-					struct tm*tblock = localtime(&timer);
+					time_t     timer = time(NULL);
+					struct tm *tblock = localtime(&timer);
 
 					term_setattr(stormColors[tblock->tm_wday]);
 				}
@@ -2034,9 +2034,9 @@ incomingMapScanner(unsigned char*codeStr)
 
 /* TODO: Sound support */
 static int
-incomingSoundVoc(unsigned char*codeStr)
+incomingSoundVoc(unsigned char *codeStr)
 {
-	unsigned char*origCodeStr = codeStr;
+	unsigned char *origCodeStr = codeStr;
 
 	codeStr++;
 	switch (*codeStr) {
@@ -2183,7 +2183,7 @@ incomingSoundVoc(unsigned char*codeStr)
 }
 
 bool
-handle_ooii_code(unsigned char*codeStr, int*ooii_mode, unsigned char*retbuf, size_t retsize)
+handle_ooii_code(unsigned char *codeStr, int *ooii_mode, unsigned char *retbuf, size_t retsize)
 {
 	bool quit = false;
 	char menuBlock[255];
@@ -2238,8 +2238,8 @@ handle_ooii_code(unsigned char*codeStr, int*ooii_mode, unsigned char*retbuf, siz
 						if (zz < 1)
 							zz = 1;
 						*ooii_mode = zz + 1;
-						if (strlen((char*)retbuf) + 3 < retsize)
-							sprintf((char*)retbuf, "\xaf%d|", zz);
+						if (strlen((char *)retbuf) + 3 < retsize)
+							sprintf((char *)retbuf, "\xaf%d|", zz);
 					}
 					break;
 			}

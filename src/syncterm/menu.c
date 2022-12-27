@@ -18,14 +18,14 @@
 void
 viewscroll(void)
 {
-	int                  top;
-	int                  key;
-	int                  i;
-	struct vmem_cell    *scrollback;
-	struct  text_info    txtinfo;
-	int                  x, y;
-	struct mouse_event   mevent;
-	struct ciolib_screen*savscrn;
+	int                   top;
+	int                   key;
+	int                   i;
+	struct vmem_cell     *scrollback;
+	struct  text_info     txtinfo;
+	int                   x, y;
+	struct mouse_event    mevent;
+	struct ciolib_screen *savscrn;
 
 	x = wherex();
 	y = wherey();
@@ -143,9 +143,9 @@ viewscroll(void)
 }
 
 int
-syncmenu(struct bbslist*bbs, int*speed)
+syncmenu(struct bbslist *bbs, int *speed)
 {
-	char                *opts[] = {
+	char                 *opts[] = {
 		"Scrollback ("ALT_KEY_NAMEP "-B)"
 		, "Disconnect (Ctrl-Q)"
 		, "Send Login ("ALT_KEY_NAMEP "-L)"
@@ -164,11 +164,11 @@ syncmenu(struct bbslist*bbs, int*speed)
 		, "Edit Dialing Directory ("ALT_KEY_NAMEP "-E)"
 		, ""
 	};
-	int                  opt = 0;
-	int                  i, j;
-	struct  text_info    txtinfo;
-	struct ciolib_screen*savscrn;
-	int                  ret;
+	int                   opt = 0;
+	int                   i, j;
+	struct  text_info     txtinfo;
+	struct ciolib_screen *savscrn;
+	int                   ret;
 
 	gettextinfo(&txtinfo);
 	savscrn = savescreen();

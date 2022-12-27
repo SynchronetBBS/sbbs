@@ -17,7 +17,7 @@
 static COM_HANDLE com = COM_HANDLE_INVALID;
 
 void
-modem_input_thread(void*args)
+modem_input_thread(void *args)
 {
 	int    rd;
 	int    buffered;
@@ -31,7 +31,7 @@ modem_input_thread(void*args)
 			monitor_dsr = false;
 	}
 	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
-		rd = comReadBuf(com, (char*)conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
+		rd = comReadBuf(com, (char *)conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
 		buffered = 0;
 		while (buffered < rd) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
@@ -54,7 +54,7 @@ modem_input_thread(void*args)
 }
 
 void
-modem_output_thread(void*args)
+modem_output_thread(void *args)
 {
 	int  wr;
 	int  ret;
@@ -97,7 +97,7 @@ modem_output_thread(void*args)
 }
 
 int
-modem_response(char*str, size_t maxlen, int timeout)
+modem_response(char *str, size_t maxlen, int timeout)
 {
 	char   ch;
 	size_t len = 0;
@@ -119,7 +119,7 @@ modem_response(char*str, size_t maxlen, int timeout)
 			return -1;
 		if (len >= maxlen)
 			return -1;
-		if (!comReadByte(com, (unsigned char*)&ch)) {
+		if (!comReadByte(com, (unsigned char *)&ch)) {
 			YIELD();
 			continue;
 		}
@@ -138,7 +138,7 @@ modem_response(char*str, size_t maxlen, int timeout)
 }
 
 int
-modem_connect(struct bbslist*bbs)
+modem_connect(struct bbslist *bbs)
 {
 	int  ret;
 	char respbuf[1024];
@@ -306,14 +306,14 @@ modem_connect(struct bbslist*bbs)
 		destroy_conn_buf(&conn_inbuf);
 		return -1;
 	}
-	if (!(conn_api.rd_buf = (unsigned char*)malloc(BUFFER_SIZE))) {
+	if (!(conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
 		conn_api.close();
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
 		return -1;
 	}
 	conn_api.rd_buf_size = BUFFER_SIZE;
-	if (!(conn_api.wr_buf = (unsigned char*)malloc(BUFFER_SIZE))) {
+	if (!(conn_api.wr_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
 		conn_api.close();
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
@@ -323,8 +323,8 @@ modem_connect(struct bbslist*bbs)
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
 	if (bbs->conn_type == CONN_TYPE_SERIAL) {
-		_beginthread(modem_output_thread, 0, (void*)-1);
-		_beginthread(modem_input_thread, 0, (void*)-1);
+		_beginthread(modem_output_thread, 0, (void *)-1);
+		_beginthread(modem_input_thread, 0, (void *)-1);
 	}
 	else {
 		_beginthread(modem_output_thread, 0, NULL);
