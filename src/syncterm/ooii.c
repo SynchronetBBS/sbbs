@@ -21,134 +21,134 @@ static unsigned char stormColors[7] = {7, 12, 8, 15, 14, 13, 1};
 
 static char          diseases[11][14] = // #,str length
 {
-	"None"                          // 0
-	, "Pneumonia"                   // 1
-	, "Malaria"                     // 2
-	, "Yellow Fever"                // 3
-	, "Hydrocism"                   // 4
-	, "Staph"                       // 5
-	, "Rabies"                      // 6
-	, "Polio"                       // 7
-	, "Black Plague"                // 8
-	, "Delyria"                     // 9
-	, "Poison"
+	"None",                         // 0
+	"Pneumonia",                    // 1
+	"Malaria",                      // 2
+	"Yellow Fever",                 // 3
+	"Hydrocism",                    // 4
+	"Staph",                        // 5
+	"Rabies",                       // 6
+	"Polio",                        // 7
+	"Black Plague",                 // 8
+	"Delyria",                      // 9
+	"Poison"
 };                                      // 10
 
 
 static char weapons[27][20] = {
-	"ú"                // 0
-	, "Steel Chain"    // 1
-	, "Salanger"       // 2
-	, "Natase"         // 3
-	, "TransAxe"       // 4 {  Power Pack   }
-	, "Electric Sword" // 5 { Power Pack   }
-	, "Tevix-Bahn"     // 6     { Cirze Supply }
-	, "Xendrix"        // 7 { NOT FOR SALE!  Infinex }
-	, "Trilasm"        // 8 { ZZETs        }
-	, "Exavator"       // 9 { ZZETs        }
-	, "Raxhaven"       // 10        { Power Pack   }
-	, "SanPlizer"      // 11        { Power Pack   }
-	, "Devastator"     // 12        { Cirze Supply }
-	, "Z-Tempest"      // 13        { Cirze Supply }
-	, "Herculean"      // 14        { NOT FOR SALE!  Infinex }
-	, "Trignet"        // 15        { NOT FOR SALE!  Firenet }
-	, "Extinguisher"   // 16
-	, "Shovel"         // 17
-	, "Nail Gun"       // 18
-	, "Jack Knife"     // 19
-	, "Metal Shears"   // 20
-	, "Wall Hook"      // 21
-	, "Hoist"          // 22
-	, "Propeller"      // 23
-	, "Pickaxe"        // 24
-	, "Sledge Hammer"  // 25
-	, "Hydra-Jack"
-};                         // 26
+	"ú",              // 0
+	"Steel Chain",    // 1
+	"Salanger",       // 2
+	"Natase",         // 3
+	"TransAxe",       // 4 {  Power Pack   }
+	"Electric Sword", // 5 { Power Pack   }
+	"Tevix-Bahn",     // 6     { Cirze Supply }
+	"Xendrix",        // 7 { NOT FOR SALE!  Infinex }
+	"Trilasm",        // 8 { ZZETs        }
+	"Exavator",       // 9 { ZZETs        }
+	"Raxhaven",       // 10        { Power Pack   }
+	"SanPlizer",      // 11        { Power Pack   }
+	"Devastator",     // 12        { Cirze Supply }
+	"Z-Tempest",      // 13        { Cirze Supply }
+	"Herculean",      // 14        { NOT FOR SALE!  Infinex }
+	"Trignet",        // 15        { NOT FOR SALE!  Firenet }
+	"Extinguisher",   // 16
+	"Shovel",         // 17
+	"Nail Gun",       // 18
+	"Jack Knife",     // 19
+	"Metal Shears",   // 20
+	"Wall Hook",      // 21
+	"Hoist",          // 22
+	"Propeller",      // 23
+	"Pickaxe",        // 24
+	"Sledge Hammer",  // 25
+	"Hydra-Jack"
+};                        // 26
 
 
 static char ammos[6][20] = {
-	"ú"              // 0
-	, "ZZETs"        // 1   {  (Trilasm/Exavator) }
-	, "Power Pack"   // 2   {  (SanPlizer/RaxHaven/E-Sword/)        }
-	, "Cirze Supply" // 3   {  (Z-Tempest/Devastator/Tevix-Bahn)    }
-	, "Infinex"      // 4   {  NOT FOR SALE!! (Herculean/Xendrix)   }
-	, "Firenet"
-};                       // 5   {  NOT FOR SALE!! (Trignet)             }
+	"ú",            // 0
+	"ZZETs",        // 1   {  (Trilasm/Exavator) }
+	"Power Pack",   // 2   {  (SanPlizer/RaxHaven/E-Sword/)        }
+	"Cirze Supply", // 3   {  (Z-Tempest/Devastator/Tevix-Bahn)    }
+	"Infinex",      // 4   {  NOT FOR SALE!! (Herculean/Xendrix)   }
+	"Firenet"
+};                      // 5   {  NOT FOR SALE!! (Trignet)             }
 
 
 static char equips[46][20] = {
-	"ú"                // 0
-	, "Rations"        // 1
-	, "Hemp Rope"      // 2
-	, "Silencer"       // 3
-	, "Transmitter"    // 4
-	, "Summoner"       // 5
-	, "MedPack"        // 6
-	, "Thumpers"       // 7
-	, "Galacticom"     // 8
-	, "Gasmask"        // 9
-	, "Duroplast"      // 10
-	, "Aerial Scan"    // 11
-	, "VacPack"        // 12
-	, "Telegrasp"      // 13        { NOT FOR SALE! }
-	, "Red Key"        // 14        { NOT FOR SALE! }
-	, "Blue Key"       // 15        { NOT FOR SALE! }
-	, "Green Key"      // 16        { NOT FOR SALE! }
-	, "Techkit"        // 17        { NOT FOR SALE! }
-	, "Rusted Wire"    // 18        { NOT FOR SALE! }{Arming Device}
-	, "Clay Package"   // 19        { NOT FOR SALE! }{Plutonium}
-	, "Alarm Clock"    // 20        { NOT FOR SALE! }{Timer}
-	, "Broken Keypad"  // 21        { NOT FOR SALE! }{Keypad}
-	, "Code Key"       // 22        { NOT FOR SALE! }{Entry Into AFBase}
-	, "Alien Device"   // 23        { NOT FOR SALE! }{Entry Into SpaceShip}
-	, "Trikorder"      // 24        { NOT FOR SALE! }
-	, "Remote Control" // 25        { NOT FOR SALE! }
-	, "Human Skull"    // 26        { NOT FOR SALE! }
-	, "Floppy Disk"    // 27        { NOT FOR SALE! }{Entry to Computer Silo}
-	, "Alien Skull"    // 28        { NOT FOR SALE! }
-	, "Hydrite Egg"    // 29        { NOT FOR SALE! }
-	, "Lazer Key"      // 30        { NOT FOR SALE! }{Entry thru AFB doorways }
-	, "Landmine"       // 31        { For Sale Only In AirForce Base}
-	, "Zimmer"         // 32        { For Sale Only In AirForce Base}
-	, "Re-Bar Scrap"   // 33
-	, "Door Hinge"     // 34
-	, "Broken Wrench"  // 35
-	, "Steel Coupling" // 36
-	, "Pipe Fitting"   // 37
-	, "Rotted Cabling" // 38
-	, "Pipe Die"       // 39
-	, "Chrome Pipe"    // 40
-	, "Gate Valve"     // 41
-	, "Butane Tank"    // 42
-	, "Drill Bit"      // 43
-	, "I-Bar Clamp"    // 44
-	, "Copper Tubing"
-};                         // 45
+	"ú",              // 0
+	"Rations",        // 1
+	"Hemp Rope",      // 2
+	"Silencer",       // 3
+	"Transmitter",    // 4
+	"Summoner",       // 5
+	"MedPack",        // 6
+	"Thumpers",       // 7
+	"Galacticom",     // 8
+	"Gasmask",        // 9
+	"Duroplast",      // 10
+	"Aerial Scan",    // 11
+	"VacPack",        // 12
+	"Telegrasp",      // 13        { NOT FOR SALE! }
+	"Red Key",        // 14        { NOT FOR SALE! }
+	"Blue Key",       // 15        { NOT FOR SALE! }
+	"Green Key",      // 16        { NOT FOR SALE! }
+	"Techkit",        // 17        { NOT FOR SALE! }
+	"Rusted Wire",    // 18        { NOT FOR SALE! }{Arming Device}
+	"Clay Package",   // 19        { NOT FOR SALE! }{Plutonium}
+	"Alarm Clock",    // 20        { NOT FOR SALE! }{Timer}
+	"Broken Keypad",  // 21        { NOT FOR SALE! }{Keypad}
+	"Code Key",       // 22        { NOT FOR SALE! }{Entry Into AFBase}
+	"Alien Device",   // 23        { NOT FOR SALE! }{Entry Into SpaceShip}
+	"Trikorder",      // 24        { NOT FOR SALE! }
+	"Remote Control", // 25        { NOT FOR SALE! }
+	"Human Skull",    // 26        { NOT FOR SALE! }
+	"Floppy Disk",    // 27        { NOT FOR SALE! }{Entry to Computer Silo}
+	"Alien Skull",    // 28        { NOT FOR SALE! }
+	"Hydrite Egg",    // 29        { NOT FOR SALE! }
+	"Lazer Key",      // 30        { NOT FOR SALE! }{Entry thru AFB doorways }
+	"Landmine",       // 31        { For Sale Only In AirForce Base}
+	"Zimmer",         // 32        { For Sale Only In AirForce Base}
+	"Re-Bar Scrap",   // 33
+	"Door Hinge",     // 34
+	"Broken Wrench",  // 35
+	"Steel Coupling", // 36
+	"Pipe Fitting",   // 37
+	"Rotted Cabling", // 38
+	"Pipe Die",       // 39
+	"Chrome Pipe",    // 40
+	"Gate Valve",     // 41
+	"Butane Tank",    // 42
+	"Drill Bit",      // 43
+	"I-Bar Clamp",    // 44
+	"Copper Tubing"
+};                        // 45
 
 
 static char suits[4][20] = {
-	"ú"                    // 0
-	, "Environmental Suit" // 1
-	, "Combat Suit"        // 2
-	, "Anti-G Suit"
-};                             // 3
+	"ú",                  // 0
+	"Environmental Suit", // 1
+	"Combat Suit",        // 2
+	"Anti-G Suit"
+};                            // 3
 
 
 static char armors[13][20] = {
-	"ú"                    // 0
-	, "Leather"            // 1
-	, "HeXonium"           // 2
-	, "Laser Vest"         // 3
-	, "Shezvarin"          // 4
-	, "Reflecto"           // 5
-	, "Mudrane Sheathing"  // 6
-	, "Breonesin Sheeting" // 7
-	, "Barbed Wire"        // 8
-	, "Asbestos Pads"      // 9
-	, "Cuprid Vest"        // 10
-	, "Sheet Metal"        // 11
-	, "PolyCarbon"
-};                             // 12
+	"ú",                  // 0
+	"Leather",            // 1
+	"HeXonium",           // 2
+	"Laser Vest",         // 3
+	"Shezvarin",          // 4
+	"Reflecto",           // 5
+	"Mudrane Sheathing",  // 6
+	"Breonesin Sheeting", // 7
+	"Barbed Wire",        // 8
+	"Asbestos Pads",      // 9
+	"Cuprid Vest",        // 10
+	"Sheet Metal",        // 11
+	"PolyCarbon"
+};                            // 12
 
 static void
 term_gotoxy(int x, int y)
@@ -265,28 +265,28 @@ readInPix(char codeCh, int ooii_mode)
 	}
 
 	if ((codeCh >= 'A') && (codeCh <= 'E')) {
-		cterm_write(cterm
-		    , ooii_cmenus[ooii_mode - 1][fptr]
-		    , strlen((char *)ooii_cmenus[ooii_mode - 1][fptr]) - 1
-		    , NULL
-		    , 0
-		    , NULL);
+		cterm_write(cterm,
+		    ooii_cmenus[ooii_mode - 1][fptr],
+		    strlen((char *)ooii_cmenus[ooii_mode - 1][fptr]) - 1,
+		    NULL,
+		    0,
+		    NULL);
 	}
 	else if ((codeCh >= 'F') && (codeCh <= 'K')) {
-		cterm_write(cterm
-		    , ooii_bmenus[ooii_mode - 1][fptr]
-		    , strlen((char *)ooii_bmenus[ooii_mode - 1][fptr]) - 1
-		    , NULL
-		    , 0
-		    , NULL);
+		cterm_write(cterm,
+		    ooii_bmenus[ooii_mode - 1][fptr],
+		    strlen((char *)ooii_bmenus[ooii_mode - 1][fptr]) - 1,
+		    NULL,
+		    0,
+		    NULL);
 	}
 	else if (codeCh == '0') {
-		cterm_write(cterm
-		    , ooii_logon[ooii_mode - 1][fptr]
-		    , strlen((char *)ooii_logon[ooii_mode - 1][fptr]) - 1
-		    , NULL
-		    , 0
-		    , NULL);
+		cterm_write(cterm,
+		    ooii_logon[ooii_mode - 1][fptr],
+		    strlen((char *)ooii_logon[ooii_mode - 1][fptr]) - 1,
+		    NULL,
+		    0,
+		    NULL);
 	}
 
         /*
@@ -305,70 +305,70 @@ readInText(unsigned char *codeStr)
 	switch ((char)codeStr[0]) {
 		case '1':
 			term_setattr(BROWN);
-			cterm_write(cterm
-			    , "You mosey on over to the bar and take a seat on a scuffed barstool.  The\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
-			cterm_write(cterm
-			    , "slighty deformed keeper grunts, \"Woth ja leeke?\"  A galacticom on the top\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
-			cterm_write(cterm
-			    , "shelf behind him translates his jumble into \"What would you like?\"  You\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
-			cterm_write(cterm
-			    , "start to wonder what ever happened to the old standard human language.\r\n\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "You mosey on over to the bar and take a seat on a scuffed barstool.  The\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
+			cterm_write(cterm,
+			    "slighty deformed keeper grunts, \"Woth ja leeke?\"  A galacticom on the top\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
+			cterm_write(cterm,
+			    "shelf behind him translates his jumble into \"What would you like?\"  You\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
+			cterm_write(cterm,
+			    "start to wonder what ever happened to the old standard human language.\r\n\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 			term_setattr(LIGHTGREEN);
 			cterm_write(cterm, "\"Give me the House Special,\" you smirk.\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(GREEN);
-			cterm_write(cterm
-			    , "The bartender stares at you with one eye and then drools in agreement.  He\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
-			cterm_write(cterm
-			    , "vanishes from behind the bar and pops back up a few seconds later.  He\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
-			cterm_write(cterm
-			    , "slides you the mysterious drink as he begins to chuckle.  White smoke\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
-			cterm_write(cterm
-			    , "slithers from the bubbling green slime over onto the bar counter.\r\n\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "The bartender stares at you with one eye and then drools in agreement.  He\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
+			cterm_write(cterm,
+			    "vanishes from behind the bar and pops back up a few seconds later.  He\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
+			cterm_write(cterm,
+			    "slides you the mysterious drink as he begins to chuckle.  White smoke\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
+			cterm_write(cterm,
+			    "slithers from the bubbling green slime over onto the bar counter.\r\n\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 			term_setattr(LIGHTGREEN);
-			cterm_write(cterm
-			    , "\"What do I owe you?\" you inquire to the barman.  He promptly responds\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
-			cterm_write(cterm
-			    , "with that same smirk on his face, \"Youkla telph me.\"\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "\"What do I owe you?\" you inquire to the barman.  He promptly responds\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
+			cterm_write(cterm,
+			    "with that same smirk on his face, \"Youkla telph me.\"\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 			break;
 	}
 
@@ -537,18 +537,18 @@ readSmallMenu(unsigned char *codeStr)
 			codeStr++;
 
 			term_setattr(YELLOW);
-			cterm_write(cterm
-			    , "You are now in the Games Room, a delightful place to leisurely relax from\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
-			cterm_write(cterm
-			    , "the everyday hack n' slash.   A small bar is located on the south wall.\r\n\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "You are now in the Games Room, a delightful place to leisurely relax from\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
+			cterm_write(cterm,
+			    "the everyday hack n' slash.   A small bar is located on the south wall.\r\n\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 
 			term_setattr(WHITE);
 			getBlock(&codeStr, menuBlock);
@@ -1186,12 +1186,12 @@ incomingCheckStatus(unsigned char *codeStr)
 	term_gotoxy(34, 3);
 	cterm_write(cterm, " ³", -1, NULL, 0, NULL);
 	term_gotoxy(1, 4);
-	cterm_write(cterm
-	    , "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ"
-	    , -1
-	    , NULL
-	    , 0
-	    , NULL);
+	cterm_write(cterm,
+	    "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ",
+	    -1,
+	    NULL,
+	    0,
+	    NULL);
 
 	checkStamp(0, 4, "Location  ");
 	checkStamp(27, 4, "Strength   ");
@@ -1204,12 +1204,12 @@ incomingCheckStatus(unsigned char *codeStr)
 	checkStamp(54, 6, "Bravery       ");
 
 	term_gotoxy(1, 8);
-	cterm_write(cterm
-	    , "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ"
-	    , -1
-	    , NULL
-	    , 0
-	    , NULL);
+	cterm_write(cterm,
+	    "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ",
+	    -1,
+	    NULL,
+	    0,
+	    NULL);
 
 	checkStamp(0, 8, "Crystals  ");
 	checkStamp(27, 8, "Disease    ");
@@ -1220,48 +1220,48 @@ incomingCheckStatus(unsigned char *codeStr)
 
 	term_gotoxy(1, 11);
 	term_setattr(who);
-	cterm_write(cterm
-	    , "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ"
-	    , -1
-	    , NULL
-	    , 0
-	    , NULL);
+	cterm_write(cterm,
+	    "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ",
+	    -1,
+	    NULL,
+	    0,
+	    NULL);
 
 	checkStamp(0, 11, "Weapon    ");
 	checkStamp(0, 12, "Weapon    ");
 
 	term_gotoxy(1, 14);
 	term_setattr(who);
-	cterm_write(cterm
-	    , "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ"
-	    , -1
-	    , NULL
-	    , 0
-	    , NULL);
+	cterm_write(cterm,
+	    "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ",
+	    -1,
+	    NULL,
+	    0,
+	    NULL);
 
 	checkStamp(0, 14, "Armor     ");
 	checkStamp(0, 15, "Outfit    ");
 
 	term_gotoxy(1, 17);
 	term_setattr(who);
-	cterm_write(cterm
-	    , "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ"
-	    , -1
-	    , NULL
-	    , 0
-	    , NULL);
+	cterm_write(cterm,
+	    "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ",
+	    -1,
+	    NULL,
+	    0,
+	    NULL);
 
 	for (zz = 1; zz < 4; zz++)
 		checkStamp(0, 16 + zz, "Equipment ");
 
 	term_gotoxy(1, 21);
 	term_setattr(who);
-	cterm_write(cterm
-	    , "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ"
-	    , -1
-	    , NULL
-	    , 0
-	    , NULL);
+	cterm_write(cterm,
+	    "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ",
+	    -1,
+	    NULL,
+	    0,
+	    NULL);
 
 	term_gotoxy(1, 23);
 
@@ -1470,7 +1470,7 @@ static int
 incomingMapScanner(unsigned char *codeStr)
 {
 	int            zz, scanPtr, yy;
-	unsigned char  scanVals[10];  // ScanVals  : ARRAY[1..9] OF BYTE;
+	unsigned char  scanVals[10];      // ScanVals  : ARRAY[1..9] OF BYTE;
 	char           scan[30];
 	char           menuBlock[255];
 	unsigned char *origCodeStr = codeStr;
@@ -1484,12 +1484,12 @@ incomingMapScanner(unsigned char *codeStr)
 			term_clearscreen();
 			term_gotoxy(1, 1);
 			term_setattr(1);
-			cterm_write(cterm
-			    , "\r\nÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "\r\nÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 			cterm_write(cterm, "³ ", -1, NULL, 0, NULL);
 			term_setattr(5);
 			cterm_write(cterm, "ÖÄ", -1, NULL, 0, NULL);
@@ -1498,22 +1498,22 @@ incomingMapScanner(unsigned char *codeStr)
 			term_setattr(5);
 			cterm_write(cterm, "Ä·", -1, NULL, 0, NULL);
 			term_setattr(13);
-			cterm_write(cterm
-			    , "     Compass      Sector Monitor     System Monitor           "
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "     Compass      Sector Monitor     System Monitor           ",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 			term_setattr(1);
 			cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "³ ", -1, NULL, 0, NULL);
 			term_setattr(5);
-			cterm_write(cterm
-			    , "Ç          ¶     ~~~~~~~      ~~~~~~~~~~~~~~     ~~~~~~~~~~~~~~           "
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "Ç          ¶     ~~~~~~~      ~~~~~~~~~~~~~~     ~~~~~~~~~~~~~~           ",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 			term_setattr(1);
 			cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "³ ", -1, NULL, 0, NULL);
@@ -1551,41 +1551,41 @@ incomingMapScanner(unsigned char *codeStr)
 			cterm_write(cterm, "[:            ", -1, NULL, 0, NULL);
 			term_setattr(1);
 			cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
-			cterm_write(cterm
-			    , "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 			break;
 
 		case 'T':
 			term_gotoxy(1, 9);
 			term_setattr(1);
-			cterm_write(cterm
-			    , "ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
-			cterm_write(cterm
-			    , "³                                                                           ³\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
-			cterm_write(cterm
-			    , "³                                                                           ³\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
-			cterm_write(cterm
-			    , "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n"
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
+			cterm_write(cterm,
+			    "³                                                                           ³\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
+			cterm_write(cterm,
+			    "³                                                                           ³\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
+			cterm_write(cterm,
+			    "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 			break;
 
 		case 'M':
@@ -1819,95 +1819,90 @@ incomingMapScanner(unsigned char *codeStr)
 			getBlock(&codeStr, menuBlock);
 			zz = atoi(menuBlock);
 			term_gotoxy(3, 10);
-			cterm_write(cterm
-			    , "                                                                          "
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "                                                                          ",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 			term_gotoxy(3, 11);
-			cterm_write(cterm
-			    , "                                                                          "
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "                                                                          ",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 			term_gotoxy(3, 10);
 
 			term_setattr(11);
 
 			switch (zz) {
 				case 2:
-					cterm_write(cterm
-					    , "Crumbling walls of ancient cities scatter the plains, and smoke lazily"
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "Crumbling walls of ancient cities scatter the plains, and smoke lazily",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					term_gotoxy(3, 11);
-					cterm_write(cterm
-					    , "rises from the destructed relics of the past."
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "rises from the destructed relics of the past.",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					break;
 
 				case 3:
-					cterm_write(cterm
-					    , "Coldness creeps upon you like death in this vast range of empty desert."
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "Coldness creeps upon you like death in this vast range of empty desert.",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					term_gotoxy(3, 11);
-					cterm_write(cterm
-					    , "Harsh winds rip sand against your body like tiny shards of glass."
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "Harsh winds rip sand against your body like tiny shards of glass.",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					break;
 
 				case 4:
-					cterm_write(cterm
-					    ,
-					    "The black muck from the swamp slithers between your toes as you make your"
-					    ,
-					    -1
-					    ,
-					    NULL
-					    ,
-					    0
-					    ,
+					cterm_write(cterm,
+					    "The black muck from the swamp slithers between your toes as you make your",
+					    -1,
+					    NULL,
+					    0,
 					    NULL);
 					term_gotoxy(3, 11);
 					cterm_write(cterm, "way through the bubbling slime.", -1, NULL, 0, NULL);
 					break;
 
 				case 5:
-					cterm_write(cterm
-					    , "High upon the scorched mountains, small blackening caves can be seen."
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "High upon the scorched mountains, small blackening caves can be seen.",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					term_gotoxy(3, 11);
-					cterm_write(cterm
-					    , "Possibly lurking within, horrible creatures wait for your trespassing."
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "Possibly lurking within, horrible creatures wait for your trespassing.",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					break;
 
 				case 6:
-					cterm_write(cterm
-					    , "A mist glides along the flat terrain and summons you forward."
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "A mist glides along the flat terrain and summons you forward.",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					break;
 
 				case 7:
@@ -1915,93 +1910,83 @@ incomingMapScanner(unsigned char *codeStr)
 					break; // pits
 
 				case 8:
-					cterm_write(cterm
-					    , "A small hole in the ground leads down into a realm of darkness."
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "A small hole in the ground leads down into a realm of darkness.",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					break;
 
 				case 9:
-					cterm_write(cterm
-					    , "From the pre-war years, an Airforce Base lies half buried from nuclear"
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "From the pre-war years, an Airforce Base lies half buried from nuclear",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					term_gotoxy(3, 11);
 					cterm_write(cterm, "ash and metallic scraps.", -1, NULL, 0, NULL);
 					break;
 
 				case 10:
-					cterm_write(cterm
-					    , "A disabled missile silo remains intact from heavy bombing in this area."
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "A disabled missile silo remains intact from heavy bombing in this area.",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					break;
 
 				case 11:
-					cterm_write(cterm
-					    ,
-					    "In an effortless HeXonium attempt to clean the wastelands, radiation dumps"
-					    ,
-					    -1
-					    ,
-					    NULL
-					    ,
-					    0
-					    ,
+					cterm_write(cterm,
+					    "In an effortless HeXonium attempt to clean the wastelands, radiation dumps",
+					    -1,
+					    NULL,
+					    0,
 					    NULL);
 					term_gotoxy(3, 11);
-					cterm_write(cterm
-					    , "lay wretched with oozing radioactive substances forming."
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "lay wretched with oozing radioactive substances forming.",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					break;
 
 				case 12:
-					cterm_write(cterm
-					    , "This unmarked road is littered with dead shrubs and rotting vegatation."
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "This unmarked road is littered with dead shrubs and rotting vegatation.",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					break;
 
 				case 13:
-					cterm_write(cterm
-					    , "Darkness swirls around the infamous and towering Hydrite Prison."
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "Darkness swirls around the infamous and towering Hydrite Prison.",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					break;
 
 				case 14:
-					cterm_write(cterm
-					    , "As you look up, you notice a small hole that leads upwards."
-					    , -1
-					    , NULL
-					    , 0
-					    , NULL);
+					cterm_write(cterm,
+					    "As you look up, you notice a small hole that leads upwards.",
+					    -1,
+					    NULL,
+					    0,
+					    NULL);
 					break;
 
 				case 15:
-					cterm_write(cterm
-					    ,
-					    "You cautiously wade through the black murky water of this shallow stream."
-					    ,
-					    -1
-					    ,
-					    NULL
-					    ,
-					    0
-					    ,
+					cterm_write(cterm,
+					    "You cautiously wade through the black murky water of this shallow stream.",
+					    -1,
+					    NULL,
+					    0,
 					    NULL);
 					break;
 			}
@@ -2010,19 +1995,19 @@ incomingMapScanner(unsigned char *codeStr)
 		case 'P':
 			codeStr++;
 			term_gotoxy(3, 10);
-			cterm_write(cterm
-			    , "                                                                          "
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "                                                                          ",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 			term_gotoxy(3, 11);
-			cterm_write(cterm
-			    , "                                                                          "
-			    , -1
-			    , NULL
-			    , 0
-			    , NULL);
+			cterm_write(cterm,
+			    "                                                                          ",
+			    -1,
+			    NULL,
+			    0,
+			    NULL);
 			term_gotoxy(3, 10);
 			term_setattr(11);
 			cterm_write(cterm, "20 foot pit!", -1, NULL, 0, NULL);

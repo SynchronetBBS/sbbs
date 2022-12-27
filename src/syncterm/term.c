@@ -219,15 +219,15 @@ mousedrag(struct vmem_cell *scrollback)
 							if (((sbuffer[pos].legacy_attr & 0x70) >> 4)
 							    == (sbuffer[pos].legacy_attr & 0x0F))
 								sbuffer[pos].legacy_attr |= 0x08;
-							attr2palette(sbuffer[pos].legacy_attr
-							    , &sbuffer[pos].fg
-							    , &sbuffer[pos].bg);
+							attr2palette(sbuffer[pos].legacy_attr,
+							    &sbuffer[pos].fg,
+							    &sbuffer[pos].bg);
 						}
-						vmem_puttext(term.x - 1
-						    , term.y - 1
-						    , term.x + term.width - 2
-						    , term.y + term.height - 2
-						    , sbuffer);
+						vmem_puttext(term.x - 1,
+						    term.y - 1,
+						    term.x + term.width - 2,
+						    term.y + term.height - 2,
+						    sbuffer);
 						break;
 					default:
 						lines = abs(mevent.endy - mevent.starty) + 1;
@@ -242,10 +242,11 @@ mousedrag(struct vmem_cell *scrollback)
 							size_t   outlen;
 							uint8_t *utf8str;
 
-							utf8str = cp_to_utf8(conio_fontdata[screen[pos].font].cp
-							        , (char *)&screen[pos].ch
-							        , 1
-							        , &outlen);
+							utf8str =
+							    cp_to_utf8(conio_fontdata[screen[pos].font].cp,
+							        (char *)&screen[pos].ch,
+							        1,
+							        &outlen);
 							if (utf8str == NULL)
 								continue;
 							memcpy(copybuf + outpos, utf8str, outlen);
@@ -263,20 +264,20 @@ mousedrag(struct vmem_cell *scrollback)
 						}
 						copybuf[outpos] = 0;
 						copytext(copybuf, strlen(copybuf));
-						vmem_puttext(term.x - 1
-						    , term.y - 1
-						    , term.x + term.width - 2
-						    , term.y + term.height - 2
-						    , screen);
+						vmem_puttext(term.x - 1,
+						    term.y - 1,
+						    term.x + term.width - 2,
+						    term.y + term.height - 2,
+						    screen);
 						goto cleanup;
 				}
 				break;
 			default:
-				vmem_puttext(term.x - 1
-				    , term.y - 1
-				    , term.x + term.width - 2
-				    , term.y + term.height - 2
-				    , screen);
+				vmem_puttext(term.x - 1,
+				    term.y - 1,
+				    term.x + term.width - 2,
+				    term.y + term.height - 2,
+				    screen);
 				ungetch(key);
 				goto cleanup;
 		}
@@ -383,52 +384,45 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode)
 		case CIOLIB_MODE_CURSES_IBM:
 		case CIOLIB_MODE_ANSI:
 			if (timeon > 359999) {
-				cprintf(" %-29.29s %c %-6.6s %c Connected: Too Long %c CTRL-S for menu "
-				    , nbuf
-				    , sep
-				    , conn_types[bbs->conn_type]
-				    , sep
-				    , sep);
+				cprintf(" %-29.29s %c %-6.6s %c Connected: Too Long %c CTRL-S for menu ",
+				    nbuf,
+				    sep,
+				    conn_types[bbs->conn_type],
+				    sep,
+				    sep);
 			}
 			else {
-				cprintf(" %-29.29s %c %-6.6s %c Connected: %02d:%02d:%02d %c CTRL-S for menu "
-				    , nbuf
-				    , sep
-				    , conn_types[bbs->conn_type]
-				    , sep
-				    , timeon / 3600
-				    , (timeon / 60) % 60
-				    , timeon % 60
-				    , sep);
+				cprintf(" %-29.29s %c %-6.6s %c Connected: %02d:%02d:%02d %c CTRL-S for menu ",
+				    nbuf,
+				    sep,
+				    conn_types[bbs->conn_type],
+				    sep,
+				    timeon / 3600,
+				    (timeon / 60) % 60,
+				    timeon % 60,
+				    sep);
 			}
 			break;
 		default:
 			if (timeon > 359999) {
-				cprintf(" %-30.30s %c %-6.6s %c Connected: Too Long %c "ALT_KEY_NAME3CH "-Z for menu "
-				    , nbuf
-				    , sep
-				    , conn_types[bbs->conn_type]
-				    , sep
-				    , sep);
+				cprintf(" %-30.30s %c %-6.6s %c Connected: Too Long %c "ALT_KEY_NAME3CH "-Z for menu ",
+				    nbuf,
+				    sep,
+				    conn_types[bbs->conn_type],
+				    sep,
+				    sep);
 			}
 			else {
-				cprintf(" %-30.30s %c %-6.6s %c Connected: %02d:%02d:%02d %c "ALT_KEY_NAME3CH "-Z for menu "
-				    ,
-				    nbuf
-				    ,
-				    sep
-				    ,
-				    conn_types[bbs->conn_type]
-				    ,
-				    sep
-				    ,
-				    timeon / 3600
-				    ,
-				    (timeon / 60) % 60
-				    ,
-				    timeon % 60
-				    ,
-				    sep);
+				cprintf(
+					" %-30.30s %c %-6.6s %c Connected: %02d:%02d:%02d %c "ALT_KEY_NAME3CH "-Z for menu ",
+					nbuf,
+					sep,
+					conn_types[bbs->conn_type],
+					sep,
+					timeon / 3600,
+					(timeon / 60) % 60,
+					timeon % 60,
+					sep);
 			}
 			break; /*    1+29     +3    +6    +3    +11        +3+3+2        +3    +6    +4  +5 */
 	}
@@ -620,10 +614,10 @@ zmodem_progress(void *cbdata, int64_t current_pos)
 	if ((now != last_progress) || ((current_pos >= zm->current_file_size) && (growing == false))) {
 		zmodem_check_abort(cbdata);
 		hold_update = true;
-		window(((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + 2
-		    , ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 1
-		    , ((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + TRANSFER_WIN_WIDTH - 2
-		    , ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 5);
+		window(((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + 2,
+		    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 1,
+		    ((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + TRANSFER_WIN_WIDTH - 2,
+		    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 5);
 		gotoxy(1, 1);
 		textattr(LIGHTCYAN | (BLUE << 4));
 		t = now - zm->transfer_start_time;
@@ -636,16 +630,16 @@ zmodem_progress(void *cbdata, int64_t current_pos)
 		l = (zm->current_file_size - current_pos) / cps; /* remaining transfer est time */
 		if (l < 0)
 			l = 0;
-		cprintf("File (%u of %u): %-.*s"
-		    , zm->current_file_num, zm->total_files, TRANSFER_WIN_WIDTH - 20, zm->current_file_name);
+		cprintf("File (%u of %u): %-.*s",
+		    zm->current_file_num, zm->total_files, TRANSFER_WIN_WIDTH - 20, zm->current_file_name);
 		clreol();
 		cputs("\r\n");
 		if (zm->transfer_start_pos)
 			sprintf(orig, "From: %" PRId64 "  ", zm->transfer_start_pos);
 		else
 			orig[0] = 0;
-		cprintf("%sByte: %" PRId64 " of %" PRId64 " (%" PRId64 " KB)"
-		    , orig, current_pos, zm->current_file_size, zm->current_file_size / 1024);
+		cprintf("%sByte: %" PRId64 " of %" PRId64 " (%" PRId64 " KB)",
+		    orig, current_pos, zm->current_file_size, zm->current_file_size / 1024);
 		clreol();
 		cputs("\r\n");
 		cprintf("Time: %lu:%02lu  ETA: %lu:%02lu  Block: %u/CRC-%u  %u cps"
@@ -671,18 +665,18 @@ zmodem_progress(void *cbdata, int64_t current_pos)
 			l = 60;
 		}
 		else {
-			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH / 2 - 5, ""
-			    , (long)(((float)current_pos / (float)zm->current_file_size) * 100.0));
+			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH / 2 - 5, "",
+			    (long)(((float)current_pos / (float)zm->current_file_size) * 100.0));
 			l = (long)(60 * ((float)current_pos / (float)zm->current_file_size));
 		}
-		cprintf("[%*.*s%*s]", l, l
-		    , "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
+		cprintf("[%*.*s%*s]", l, l,
 		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-		    , (int)(60 - l), "");
+		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1",
+		    (int)(60 - l), "");
 		last_progress = now;
 		hold_update = false;
 		gotoxy(wherex(), wherey());
@@ -826,11 +820,11 @@ draw_transfer_window(char *title)
 	}
 	outline[0] = (char)0xc8;
 	outline[sizeof(outline) - 2] = (char)0xbc;
-	puttext(left
-	    , top + TRANSFER_WIN_HEIGHT - 1
-	    , left + TRANSFER_WIN_WIDTH - 1
-	    , top + TRANSFER_WIN_HEIGHT - 1
-	    , outline);
+	puttext(left,
+	    top + TRANSFER_WIN_HEIGHT - 1,
+	    left + TRANSFER_WIN_WIDTH - 1,
+	    top + TRANSFER_WIN_HEIGHT - 1,
+	    outline);
 	outline[0] = (char)0xba;
 	outline[sizeof(outline) - 2] = (char)0xba;
 	for (i = 2; i < sizeof(outline) - 2; i += 2)
@@ -856,30 +850,30 @@ draw_transfer_window(char *title)
 
         /* Shadow */
 	if (uifc.bclr == BLUE) {
-		gettext(left + TRANSFER_WIN_WIDTH
-		    , top + 1
-		    , left + TRANSFER_WIN_WIDTH + 1
-		    , top + (TRANSFER_WIN_HEIGHT - 1)
-		    , shadow);
+		gettext(left + TRANSFER_WIN_WIDTH,
+		    top + 1,
+		    left + TRANSFER_WIN_WIDTH + 1,
+		    top + (TRANSFER_WIN_HEIGHT - 1),
+		    shadow);
 		for (i = 1; i < sizeof(shadow); i += 2)
 			shadow[i] = DARKGRAY;
-		puttext(left + TRANSFER_WIN_WIDTH
-		    , top + 1
-		    , left + TRANSFER_WIN_WIDTH + 1
-		    , top + (TRANSFER_WIN_HEIGHT - 1)
-		    , shadow);
-		gettext(left + 2
-		    , top + TRANSFER_WIN_HEIGHT
-		    , left + TRANSFER_WIN_WIDTH + 1
-		    , top + TRANSFER_WIN_HEIGHT
-		    , shadow);
+		puttext(left + TRANSFER_WIN_WIDTH,
+		    top + 1,
+		    left + TRANSFER_WIN_WIDTH + 1,
+		    top + (TRANSFER_WIN_HEIGHT - 1),
+		    shadow);
+		gettext(left + 2,
+		    top + TRANSFER_WIN_HEIGHT,
+		    left + TRANSFER_WIN_WIDTH + 1,
+		    top + TRANSFER_WIN_HEIGHT,
+		    shadow);
 		for (i = 1; i < sizeof(shadow); i += 2)
 			shadow[i] = DARKGRAY;
-		puttext(left + 2
-		    , top + TRANSFER_WIN_HEIGHT
-		    , left + TRANSFER_WIN_WIDTH + 1
-		    , top + TRANSFER_WIN_HEIGHT
-		    , shadow);
+		puttext(left + 2,
+		    top + TRANSFER_WIN_HEIGHT,
+		    left + TRANSFER_WIN_WIDTH + 1,
+		    top + TRANSFER_WIN_HEIGHT,
+		    shadow);
 	}
 
 	window(left + 2, top + 7, left + TRANSFER_WIN_WIDTH - 3, top + TRANSFER_WIN_HEIGHT - 2);
@@ -893,17 +887,16 @@ draw_transfer_window(char *title)
 void
 erase_transfer_window(void)
 {
-	vmem_puttext(((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2)
-	    , ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2)
-	    , ((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + TRANSFER_WIN_WIDTH + 1
-	    , ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + TRANSFER_WIN_HEIGHT
-	    , winbuf);
+	vmem_puttext(((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2),
+	    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2),
+	    ((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + TRANSFER_WIN_WIDTH + 1,
+	    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + TRANSFER_WIN_HEIGHT,
+	    winbuf);
 	window(trans_ti.winleft, trans_ti.wintop, trans_ti.winright, trans_ti.winbottom);
 	gotoxy(trans_ti.curx, trans_ti.cury);
 	textattr(trans_ti.attribute);
 	_setcursortype(_NORMALCURSOR);
 }
-
 void ascii_upload(FILE *fp);
 void raw_upload(FILE *fp);
 
@@ -917,13 +910,13 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 	FILE                 *fp;
 	struct file_pick      fpick;
 	char                 *opts[7] = {
-		"ZMODEM"
-		, "YMODEM"
-		, "XMODEM-1K"
-		, "XMODEM-128"
-		, "ASCII"
-		, "Raw"
-		, ""
+		"ZMODEM",
+		"YMODEM",
+		"XMODEM-1K",
+		"XMODEM-128",
+		"ASCII",
+		"Raw",
+		""
 	};
 	struct  text_info     txtinfo;
 	struct ciolib_screen *savscrn;
@@ -1018,12 +1011,12 @@ begin_download(struct bbslist *bbs)
 	char                  path[MAX_PATH + 1];
 	int                   i;
 	char                 *opts[6] = {
-		"ZMODEM"
-		, "YMODEM-g"
-		, "YMODEM"
-		, "XMODEM-CRC"
-		, "XMODEM-CHKSUM"
-		, ""
+		"ZMODEM",
+		"YMODEM-g",
+		"YMODEM",
+		"XMODEM-CRC",
+		"XMODEM-CHKSUM",
+		""
 	};
 	struct  text_info     txtinfo;
 	int                   old_hold = hold_update;
@@ -1116,7 +1109,7 @@ raw_upload(FILE *fp)
 void
 ascii_upload(FILE *fp)
 {
-	char  linebuf[1024 + 2];  /* One extra for terminator, one extra for added CR */
+	char  linebuf[1024 + 2]; /* One extra for terminator, one extra for added CR */
 	char *p;
 	char  ch[2];
 	int   inch;
@@ -1197,25 +1190,27 @@ zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 	if (!was_binary)
 		conn_binary_mode_on();
 	transfer_buf_len = 0;
-	zmodem_init(&zm
-	    , /* cbdata */ &cbdata
-	    , lputs, zmodem_progress
-	    , send_byte, recv_byte
-	    , is_connected
-	    , zmodem_check_abort
-	    , data_waiting
-	    , flush_send);
+	zmodem_init(&zm,
+
+            /* cbdata */ &cbdata,
+	    lputs, zmodem_progress,
+	    send_byte, recv_byte,
+	    is_connected,
+	    zmodem_check_abort,
+	    data_waiting,
+	    flush_send);
 	zm.log_level = &log_level;
 
 	zm.current_file_num = zm.total_files = 1; /* ToDo: support multi-file/batch uploads */
 
 	fsize = filelength(fileno(fp));
 
-	lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via ZMODEM"
-	    , path, fsize / 1024);
+	lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via ZMODEM",
+	    path, fsize / 1024);
 
-	if ((success = zmodem_send_file(&zm, path, fp
-	    , /* ZRQINIT? */ true, /* start_time */ NULL, /* sent_bytes */ NULL)) == true)
+	if ((success = zmodem_send_file(&zm, path, fp,
+
+            /* ZRQINIT? */ true, /* start_time */ NULL, /* sent_bytes */ NULL)) == true)
 		zmodem_get_zfin(&zm);
 
 	fclose(fp);
@@ -1231,10 +1226,10 @@ zmodem_duplicate_callback(void *cbdata, void *zm_void)
 	bool                  ret = false;
 	int                   i;
 	char                 *opts[4] = {
-		"Overwrite"
-		, "Choose New Name"
-		, "Cancel Download"
-		, NULL
+		"Overwrite",
+		"Choose New Name",
+		"Cancel Download",
+		NULL
 	};
 	struct zmodem_cbdata *cb = (struct zmodem_cbdata *)cbdata;
 	zmodem_t             *zm = (zmodem_t *)zm_void;
@@ -1272,8 +1267,8 @@ zmodem_duplicate_callback(void *cbdata, void *zm_void)
 			case 1: /* Choose new name */
 				uifc.changes = 0;
 				uifc.helpbuf = "Duplicate Filename... enter new name";
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "New Filename: ", zm->current_file_name
-				    , sizeof(zm->current_file_name) - 1, K_EDIT) == -1) {
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "New Filename: ", zm->current_file_name,
+				    sizeof(zm->current_file_name) - 1, K_EDIT) == -1) {
 					loop = true;
 				}
 				else {
@@ -1314,14 +1309,15 @@ zmodem_download(struct bbslist *bbs)
 	cbdata.zm = &zm;
 	cbdata.bbs = bbs;
 	transfer_buf_len = 0;
-	zmodem_init(&zm
-	    , /* cbdata */ &cbdata
-	    , lputs, zmodem_progress
-	    , send_byte, recv_byte
-	    , is_connected
-	    , zmodem_check_abort
-	    , data_waiting
-	    , flush_send);
+	zmodem_init(&zm,
+
+            /* cbdata */ &cbdata,
+	    lputs, zmodem_progress,
+	    send_byte, recv_byte,
+	    is_connected,
+	    zmodem_check_abort,
+	    data_waiting,
+	    flush_send);
 	zm.log_level = &log_level;
 
 	zm.duplicate_filename = zmodem_duplicate_callback;
@@ -1382,11 +1378,11 @@ xmodem_check_abort(void *vp)
 	return xm->cancelled;
 }
 
-/*
- * **************************************************************************
- * Returns the number of blocks required to send len bytes
- ***************************************************************************
- */
+/****************************************************************************/
+
+/* Returns the number of blocks required to send len bytes                                      */
+
+/****************************************************************************/
 uint64_t
 num_blocks(unsigned curr_block, uint64_t offset, uint64_t len, unsigned block_size)
 {
@@ -1421,10 +1417,10 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 		xmodem_check_abort(cbdata);
 
 		hold_update = true;
-		window(((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + 2
-		    , ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 1
-		    , ((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + TRANSFER_WIN_WIDTH - 2
-		    , ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 5);
+		window(((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + 2,
+		    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 1,
+		    ((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + TRANSFER_WIN_WIDTH - 2,
+		    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 5);
 		gotoxy(1, 1);
 		textattr(LIGHTCYAN | (BLUE << 4));
 		t = now - start;
@@ -1438,82 +1434,82 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 			l = 0;
 		if ((*(xm->mode)) & SEND) {
 			total_blocks = num_blocks(block_num, offset, fsize, xm->block_size);
-			cprintf("Block (%lu%s): %u/%" PRId64 "  Byte: %" PRId64
-			    , xm->block_size % 1024L ? xm->block_size : xm->block_size / 1024L
-			    , xm->block_size % 1024L ? "" : "K"
-			    , block_num
-			    , total_blocks
-			    , offset);
+			cprintf("Block (%lu%s): %u/%" PRId64 "  Byte: %" PRId64,
+			    xm->block_size % 1024L ? xm->block_size : xm->block_size / 1024L,
+			    xm->block_size % 1024L ? "" : "K",
+			    block_num,
+			    total_blocks,
+			    offset);
 			clreol();
 			cputs("\r\n");
-			cprintf("Time: %lu:%02lu/%" PRIu64 ":%02" PRIu64 "  %u cps"
-			    , (ulong)(t / 60L)
-			    , (ulong)(t % 60L)
-			    , (ulong)(l / 60L)
-			    , (ulong)(l % 60L)
-			    , cps);
+			cprintf("Time: %lu:%02lu/%" PRIu64 ":%02" PRIu64 "  %u cps",
+			    (ulong)(t / 60L),
+			    (ulong)(t % 60L),
+			    (ulong)(l / 60L),
+			    (ulong)(l % 60L),
+			    cps);
 			clreol();
 			cputs("\r\n");
-			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH / 2 - 5, ""
-			    , fsize ? (long)(((float)offset / (float)fsize) * 100.0) : 100);
+			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH / 2 - 5, "",
+			    fsize ? (long)(((float)offset / (float)fsize) * 100.0) : 100);
 			i = fsize ? (((float)offset / (float)fsize) * 60.0) : 60;
 			if (i < 0)
 				i = 0;
 			else if (i > 60)
 				i = 60;
-			cprintf("[%*.*s%*s]", i, i
-			    , "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
+			cprintf("[%*.*s%*s]", i, i,
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-			    , 60 - i, "");
+			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1",
+			    60 - i, "");
 		}
 		else if ((*(xm->mode)) & YMODEM) {
-			cprintf("Block (%lu%s): %lu  Byte: %" PRId64
-			    , xm->block_size % 1024L ? xm->block_size : xm->block_size / 1024L
-			    , xm->block_size % 1024L ? "" : "K"
-			    , block_num
-			    , offset);
+			cprintf("Block (%lu%s): %lu  Byte: %" PRId64,
+			    xm->block_size % 1024L ? xm->block_size : xm->block_size / 1024L,
+			    xm->block_size % 1024L ? "" : "K",
+			    block_num,
+			    offset);
 			clreol();
 			cputs("\r\n");
-			cprintf("Time: %lu:%02lu/%lu:%02lu  %u cps"
-			    , (ulong)(t / 60L)
-			    , (ulong)(t % 60L)
-			    , (ulong)(l / 60L)
-			    , (ulong)(l % 60L)
-			    , cps);
+			cprintf("Time: %lu:%02lu/%lu:%02lu  %u cps",
+			    (ulong)(t / 60L),
+			    (ulong)(t % 60L),
+			    (ulong)(l / 60L),
+			    (ulong)(l % 60L),
+			    cps);
 			clreol();
 			cputs("\r\n");
-			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH / 2 - 5, ""
-			    , fsize ? (long)(((float)offset / (float)fsize) * 100.0) : 100);
+			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH / 2 - 5, "",
+			    fsize ? (long)(((float)offset / (float)fsize) * 100.0) : 100);
 			i = fsize ? (long)(((float)offset / (float)fsize) * 60.0) : 60;
 			if (i < 0)
 				i = 0;
 			else if (i > 60)
 				i = 60;
-			cprintf("[%*.*s%*s]", i, i
-			    , "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
+			cprintf("[%*.*s%*s]", i, i,
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
-			    , 60 - i, "");
+			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1",
+			    60 - i, "");
 		}
 		else { /* XModem receive */
-			cprintf("Block (%lu%s): %lu  Byte: %" PRId64
-			    , xm->block_size % 1024L ? xm->block_size : xm->block_size / 1024L
-			    , xm->block_size % 1024L ? "" : "K"
-			    , block_num
-			    , offset);
+			cprintf("Block (%lu%s): %lu  Byte: %" PRId64,
+			    xm->block_size % 1024L ? xm->block_size : xm->block_size / 1024L,
+			    xm->block_size % 1024L ? "" : "K",
+			    block_num,
+			    offset);
 			clreol();
 			cputs("\r\n");
-			cprintf("Time: %lu:%02lu  %u cps"
-			    , (ulong)(t / 60L)
-			    , (ulong)(t % 60L)
-			    , cps);
+			cprintf("Time: %lu:%02lu  %u cps",
+			    (ulong)(t / 60L),
+			    (ulong)(t % 60L),
+			    cps);
 			clreol();
 		}
 		last_progress = now;
@@ -1561,16 +1557,17 @@ xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 	if (!was_binary)
 		conn_binary_mode_on();
 
-	xmodem_init(&xm
-	    , /* cbdata */ &xm
-	    , &mode
-	    , lputs
-	    , xmodem_progress
-	    , send_byte
-	    , recv_byte
-	    , is_connected
-	    , xmodem_check_abort
-	    , flush_send);
+	xmodem_init(&xm,
+
+            /* cbdata */ &xm,
+	    &mode,
+	    lputs,
+	    xmodem_progress,
+	    send_byte,
+	    recv_byte,
+	    is_connected,
+	    xmodem_check_abort,
+	    flush_send);
 	xm.log_level = &log_level;
 	if (!data_waiting(&xm, 0)) {
 		switch (lastch) {
@@ -1598,16 +1595,16 @@ xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 			draw_transfer_window("XMODEM-g Upload");
 		else
 			draw_transfer_window("XMODEM Upload");
-		lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via XMODEM%s"
-		    , path, fsize / 1024, (mode & GMODE) ? "-g" : "");
+		lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via XMODEM%s",
+		    path, fsize / 1024, (mode & GMODE) ? "-g" : "");
 	}
 	else if (mode & YMODEM) {
 		if (mode & GMODE)
 			draw_transfer_window("YMODEM-g Upload");
 		else
 			draw_transfer_window("YMODEM Upload");
-		lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via YMODEM%s"
-		    , path, fsize / 1024, (mode & GMODE) ? "-g" : "");
+		lprintf(LOG_INFO, "Sending %s (%" PRId64 " KB) via YMODEM%s",
+		    path, fsize / 1024, (mode & GMODE) ? "-g" : "");
 	}
 	else {
 		fclose(fp);
@@ -1616,8 +1613,9 @@ xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 		return;
 	}
 
-	if ((success = xmodem_send_file(&xm, path, fp
-	    , /* start_time */ NULL, /* sent_bytes */ NULL)) == true) {
+	if ((success = xmodem_send_file(&xm, path, fp,
+
+            /* start_time */ NULL, /* sent_bytes */ NULL)) == true) {
 		if (mode & YMODEM) {
 			if (xmodem_get_mode(&xm)) {
 				lprintf(LOG_INFO, "Sending YMODEM termination block");
@@ -1643,10 +1641,10 @@ xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t pathsize,
 	bool                  ret = false;
 	int                   i;
 	char                 *opts[4] = {
-		"Overwrite"
-		, "Choose New Name"
-		, "Cancel Download"
-		, NULL
+		"Overwrite",
+		"Choose New Name",
+		"Cancel Download",
+		NULL
 	};
 	char                  newfname[MAX_PATH + 1];
 	bool                  loop = true;
@@ -1683,8 +1681,8 @@ xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t pathsize,
 				uifc.changes = 0;
 				uifc.helpbuf = "Duplicate Filename... enter new name";
 				SAFECOPY(newfname, getfname(fname));
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "New Filename: ", newfname
-				    , sizeof(newfname) - 1, K_EDIT) == -1) {
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "New Filename: ", newfname,
+				    sizeof(newfname) - 1, K_EDIT) == -1) {
 					loop = true;
 				}
 				else {
@@ -1754,16 +1752,17 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 
 	if (!was_binary)
 		conn_binary_mode_on();
-	xmodem_init(&xm
-	    , /* cbdata */ &xm
-	    , &mode
-	    , lputs
-	    , xmodem_progress
-	    , send_byte
-	    , recv_byte
-	    , is_connected
-	    , xmodem_check_abort
-	    , flush_send);
+	xmodem_init(&xm,
+
+            /* cbdata */ &xm,
+	    &mode,
+	    lputs,
+	    xmodem_progress,
+	    send_byte,
+	    recv_byte,
+	    is_connected,
+	    xmodem_check_abort,
+	    flush_send);
 	xm.log_level = &log_level;
 	while (is_connected(NULL)) {
 		if (mode & XMODEM) {
@@ -1787,14 +1786,14 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 				}
 				if (extra_pass) {
                                         // This is a hack for sz  0.12.21rc
-					lprintf(LOG_INFO
-					    , "No YMODEM header block after transfer, assuming end of batch");
+					lprintf(LOG_INFO,
+					    "No YMODEM header block after transfer, assuming end of batch");
 					goto end;
 				}
 				if ((i == NOINP) && (mode & GMODE)) { /* Timeout */
 					mode &= ~GMODE;
-					lprintf(LOG_WARNING, "Falling back to %s"
-					    , (mode & CRC) ? "CRC-16" : "Checksum");
+					lprintf(LOG_WARNING, "Falling back to %s",
+					    (mode & CRC) ? "CRC-16" : "Checksum");
 				}
 				if (i == NOT_YMODEM) {
 					lprintf(LOG_WARNING, "Falling back to XMODEM%s", (mode & GMODE) ? "-g" : "");
@@ -1802,8 +1801,8 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 					mode |= XMODEM | CRC;
 					erase_transfer_window();
 					hold_update = 0;
-					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "XMODEM Filename", fname, sizeof(fname)
-					    , 0) == -1) {
+					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "XMODEM Filename", fname, sizeof(fname),
+					    0) == -1) {
 						xmodem_cancel(&xm);
 						goto end;
 					}
@@ -1837,8 +1836,8 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 				extra_pass = false;
 				file_bytes = total_bytes = 0;
 				total_files = 0;
-				i = sscanf(((char *)block) + strlen((char *)block) + 1
-				        , "%" PRId64 " %lo %lo %lo %d %" PRId64
+				i = sscanf(((char *)block) + strlen((char *)block) + 1,
+				        "%" PRId64 " %lo %lo %lo %d %" PRId64
 				        ,
 				        &file_bytes  /* file size (decimal) */
 				        ,
@@ -1853,8 +1852,8 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 				        &total_bytes /* remaining bytes to be sent */
 				        );
 				ftime = tmpftime;
-				lprintf(LOG_DEBUG, "YMODEM header (%u fields): %s", i
-				    , block + strlen((char *)block) + 1);
+				lprintf(LOG_DEBUG, "YMODEM header (%u fields): %s", i,
+				    block + strlen((char *)block) + 1);
 				SAFECOPY(fname, ((char *)block));
 
 				if (!file_bytes)
@@ -1870,10 +1869,10 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 				SAFEPRINTF2(str, "%s/%s", bbs->dldir, getfname(fname));
 				lprintf(LOG_INFO, "File size: %" PRId64 " bytes", file_bytes);
 				if (total_files > 1) {
-					lprintf(LOG_INFO
-					    , "Remaining: %" PRId64 " bytes in %u files"
-					    , total_bytes
-					    , total_files);
+					lprintf(LOG_INFO,
+					    "Remaining: %" PRId64 " bytes in %u files",
+					    total_bytes,
+					    total_files);
 				}
 			}
 		}
@@ -1896,17 +1895,17 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 		}
 
 		if (mode & XMODEM) {
-			lprintf(LOG_INFO, "Receiving %s via %s %s"
-			    , str
-			    , mode & GMODE ? "XMODEM-g" : "XMODEM"
-			    , mode & CRC ? "CRC-16" : "Checksum");
+			lprintf(LOG_INFO, "Receiving %s via %s %s",
+			    str,
+			    mode & GMODE ? "XMODEM-g" : "XMODEM",
+			    mode & CRC ? "CRC-16" : "Checksum");
 		}
 		else {
-			lprintf(LOG_INFO, "Receiving %s (%" PRId64 " KB) via %s %s"
-			    , str
-			    , file_bytes / 1024
-			    , mode & GMODE ? "YMODEM-g" : "YMODEM"
-			    , mode & CRC ? "CRC-16" : "Checksum");
+			lprintf(LOG_INFO, "Receiving %s (%" PRId64 " KB) via %s %s",
+			    str,
+			    file_bytes / 1024,
+			    mode & GMODE ? "YMODEM-g" : "YMODEM",
+			    mode & CRC ? "CRC-16" : "Checksum");
 		}
 
 		startfile = time(NULL);
@@ -1962,16 +1961,16 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 				flush_send(&xm);
 			}
 			if (file_bytes_left <= 0L) { /* No more bytes to receive */
-				lprintf(LOG_WARNING
-				    , "Sender attempted to send more bytes than were specified in header");
+				lprintf(LOG_WARNING,
+				    "Sender attempted to send more bytes than were specified in header");
 				break;
 			}
 			wr = xm.block_size;
 			if (wr > (uint)file_bytes_left)
 				wr = (uint)file_bytes_left;
 			if (fwrite(block, 1, wr, fp) != wr) {
-				lprintf(LOG_ERR, "Error writing %u bytes to file at offset %" PRId64
-				    , wr, (int64_t)ftello(fp));
+				lprintf(LOG_ERR, "Error writing %u bytes to file at offset %" PRId64,
+				    wr, (int64_t)ftello(fp));
 				xmodem_cancel(&xm);
 				goto end;
 			}
@@ -2000,8 +1999,8 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 		if (!t)
 			t = 1;
 		if (success)
-			lprintf(LOG_INFO, "Successful - Time: %lu:%02lu  CPS: %lu"
-			    , (ulong)(t / 60), (ulong)(t % 60), (ulong)(file_bytes / t));
+			lprintf(LOG_INFO, "Successful - Time: %lu:%02lu  CPS: %lu",
+			    (ulong)(t / 60), (ulong)(t % 60), (ulong)(file_bytes / t));
 		else
 			lprintf(LOG_ERR, "File Transfer %s", xm.cancelled ? "Cancelled" : "Failure");
 
@@ -2021,11 +2020,11 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 			extra_pass = true;
 		total_bytes -= file_bytes;
 		if ((total_files > 1) && total_bytes) {
-			lprintf(LOG_INFO, "Remaining - Time: %lu:%02lu  Files: %u  KBytes: %" PRId64
-			    , (total_bytes / cps) / 60
-			    , (total_bytes / cps) % 60
-			    , total_files
-			    , total_bytes / 1024);
+			lprintf(LOG_INFO, "Remaining - Time: %lu:%02lu  Files: %u  KBytes: %" PRId64,
+			    (total_bytes / cps) / 60,
+			    (total_bytes / cps) % 60,
+			    total_files,
+			    total_bytes / 1024);
 		}
 	}
 
@@ -2036,6 +2035,7 @@ end:
 }
 
 /* End of X/Y-MODEM stuff */
+
 void
 music_control(struct bbslist *bbs)
 {
@@ -2085,8 +2085,8 @@ font_control(struct bbslist *bbs, struct cterminal *cterm)
 		case CIOLIB_MODE_CURSES_ASCII:
 		case CIOLIB_MODE_CURSES_IBM:
 		case CIOLIB_MODE_ANSI:
-			uifcmsg("Not supported in this video output mode."
-			    , "Font cannot be changed in the current video output mode");
+			uifcmsg("Not supported in this video output mode.",
+			    "Font cannot be changed in the current video output mode");
 			check_exit(false);
 			break;
 		default:
@@ -2147,11 +2147,11 @@ capture_control(struct bbslist *bbs)
 	if (!cterm->log) {
 		struct file_pick fpick;
 		char            *opts[] = {
-			"ASCII"
-			, "Raw"
-			, "Binary"
-			, "Binary with SAUCE"
-			, ""
+			"ASCII",
+			"Raw",
+			"Binary",
+			"Binary with SAUCE",
+			""
 		};
 
 		i = 0;
@@ -2164,8 +2164,8 @@ capture_control(struct bbslist *bbs)
 		    "Raw is useful for stealing ANSI screens from other systems.\n"
 		    "Don't do that though.  :-)";
 		if (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Capture Type", opts) != -1) {
-			j = filepick(&uifc, "Capture File", &fpick, bbs->dldir, i >= 2 ? "*.bin" : NULL
-			        , UIFC_FP_ALLOWENTRY | UIFC_FP_OVERPROMPT);
+			j = filepick(&uifc, "Capture File", &fpick, bbs->dldir, i >= 2 ? "*.bin" : NULL,
+			        UIFC_FP_ALLOWENTRY | UIFC_FP_OVERPROMPT);
 			check_exit(false);
 
 			if ((j != -1) && (fpick.files >= 1)) {
@@ -2195,16 +2195,16 @@ capture_control(struct bbslist *bbs)
 							memset(sauce.author, ' ', sizeof(sauce.author));
 							memset(sauce.group, ' ', sizeof(sauce.group));
 							if (bbs != NULL) {
-								memcpy(sauce.title, bbs->name
-								    , MIN(strlen(bbs->name), sizeof(sauce.title)));
-								memcpy(sauce.author, bbs->user
-								    , MIN(strlen(bbs->user), sizeof(sauce.author)));
+								memcpy(sauce.title, bbs->name,
+								    MIN(strlen(bbs->name), sizeof(sauce.title)));
+								memcpy(sauce.author, bbs->user,
+								    MIN(strlen(bbs->user), sizeof(sauce.author)));
 							}
 							if ((tm = localtime(&t)) != NULL) { // The null-terminator
                                                                                             // overwrites the first
                                                                                             // byte of filesize
-								sprintf(sauce.date, "%04u%02u%02u"
-								    , 1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday);
+								sprintf(sauce.date, "%04u%02u%02u",
+								    1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday);
 							}
 							sauce.filesize = LE_INT32(ftell(fp)); // LE
 							sauce.datatype = sauce_datatype_bin;
@@ -2252,8 +2252,8 @@ capture_control(struct bbslist *bbs)
 	else {
 		if (cterm->log & CTERM_LOG_PAUSED) {
 			char *opts[3] = {
-				"Unpause"
-				, "Close"
+				"Unpause",
+				"Close"
 			};
 
 			i = 0;
@@ -2276,8 +2276,8 @@ capture_control(struct bbslist *bbs)
 		}
 		else {
 			char *opts[3] = {
-				"Pause"
-				, "Close"
+				"Pause",
+				"Close"
 			};
 
 			i = 0;
@@ -2703,36 +2703,18 @@ doterm(struct bbslist *bbs)
 	BYTE              ooii_init1[] =
 	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";            /*
                                                                                                                                                                                                                                                                                                                           *
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           * for
                                                                                                                                                                                                                                                                                                                           *
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           * OOII
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           * auto-enable
                                                                                                                                                                                                                                                                                                                           */
 	BYTE ooii_init2[] =
 	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\x1b[0m\x1b[2J\r\n\r\n\x1b[0;1;30mHX Force retinal scan in progress ... \x1b[0;0;30m"; /*
                                                                                                                                                                                                                                                                                                                           *
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           * for
                                                                                                                                                                                                                                                                                                                           *
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           * OOII
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          *
-                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           * auto-enable
                                                                                                                                                                                                                                                                                                                           */
@@ -2759,14 +2741,14 @@ doterm(struct bbslist *bbs)
 	}
 	scrollback_lines = 0;
 	scrollback_mode = txtinfo.currmode;
-	cterm = cterm_init(term.height
-	        , term.width
-	        , term.x - 1
-	        , term.y - 1
-	        , settings.backlines
-	        , term.width
-	        , scrollback_buf
-	        , get_emulation(bbs));
+	cterm = cterm_init(term.height,
+	        term.width,
+	        term.x - 1,
+	        term.y - 1,
+	        settings.backlines,
+	        term.width,
+	        scrollback_buf,
+	        get_emulation(bbs));
 	if (!cterm)
 		return false;
 	cterm->apc_handler = apc_handler;
@@ -2794,10 +2776,8 @@ doterm(struct bbslist *bbs)
 		hold_update = true;
 		sleep = true;
 		if (!term.nostatus) {
-			update_status(bbs
-			    ,
-			    (bbs->conn_type == CONN_TYPE_SERIAL || bbs->conn_type == CONN_TYPE_SERIAL_NORTS) ? bbs->bpsrate : speed
-			    ,
+			update_status(bbs,
+			    (bbs->conn_type == CONN_TYPE_SERIAL || bbs->conn_type == CONN_TYPE_SERIAL_NORTS) ? bbs->bpsrate : speed,
 			    ooii_mode);
 		}
 		for (remain = count_data_waiting() /* Hack for connection check */ + (!is_connected(NULL)); remain;
@@ -2815,8 +2795,8 @@ doterm(struct bbslist *bbs)
 							WRITE_OUTBUF();
 							hold_update = oldmc;
 							if (!bbs->hidepopups)
-								uifcmsg("Disconnected"
-								    , "`Disconnected`\n\nRemote host dropped connection");
+								uifcmsg("Disconnected",
+								    "`Disconnected`\n\nRemote host dropped connection");
 							check_exit(false);
 							cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
                                                                                                 * scrollback */
@@ -2911,15 +2891,15 @@ doterm(struct bbslist *bbs)
 								ooii_buf[j] = 0;
 								if (inch == '|') {
 									WRITE_OUTBUF();
-									if (handle_ooii_code(ooii_buf, &ooii_mode
-									    , (unsigned char *)ansi_replybuf
-									    , sizeof(ansi_replybuf))) {
+									if (handle_ooii_code(ooii_buf, &ooii_mode,
+									    (unsigned char *)ansi_replybuf,
+									    sizeof(ansi_replybuf))) {
 										ooii_mode = 0;
 										xptone_close();
 									}
 									if (ansi_replybuf[0])
-										conn_send(ansi_replybuf
-										    , strlen((char *)ansi_replybuf), 0);
+										conn_send(ansi_replybuf,
+										    strlen((char *)ansi_replybuf), 0);
 									ooii_buf[0] = 0;
 								}
 								continue;
@@ -2931,8 +2911,8 @@ doterm(struct bbslist *bbs)
 								ooii_buf[j++] = inch;
 								ooii_buf[j] = 0;
 								if (ooii_init1[j] == 0) {
-									if (strcmp((char *)ooii_buf
-									    , (char *)ooii_init1) == 0) {
+									if (strcmp((char *)ooii_buf,
+									    (char *)ooii_init1) == 0) {
 										ooii_mode = 1;
 										xptone_open();
 									}
@@ -2943,8 +2923,8 @@ doterm(struct bbslist *bbs)
 								ooii_buf[j++] = inch;
 								ooii_buf[j] = 0;
 								if (ooii_init2[j] == 0) {
-									if (strcmp((char *)ooii_buf
-									    , (char *)ooii_init2) == 0) {
+									if (strcmp((char *)ooii_buf,
+									    (char *)ooii_init2) == 0) {
 										ooii_mode = 2;
 										xptone_open();
 									}
@@ -3014,16 +2994,15 @@ doterm(struct bbslist *bbs)
 						case CIOLIB_BUTTON_3_RELEASE:
 						case CIOLIB_MOUSE_MOVE:
 						case CIOLIB_BUTTON_1_CLICK:
-							conn_send(mouse_buf
-							    , fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms)
-							    , 0);
+							conn_send(mouse_buf,
+							    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
 							break;
 						case CIOLIB_BUTTON_4_PRESS:
 						case CIOLIB_BUTTON_5_PRESS:
 							if ((ms.mode != 9) && (ms.mode != 0)) {
-								conn_send(mouse_buf
-								    , fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent
-								    , &ms), 0);
+								conn_send(mouse_buf,
+								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent,
+								    &ms), 0);
 								break;
 							}
 							viewscroll();
@@ -3035,9 +3014,9 @@ doterm(struct bbslist *bbs)
 						case CIOLIB_BUTTON_2_CLICK:
 						case CIOLIB_BUTTON_3_CLICK:
 							if (ms.mode == 9) {
-								conn_send(mouse_buf
-								    , fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent
-								    , &ms), 0);
+								conn_send(mouse_buf,
+								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent,
+								    &ms), 0);
 							}
 							else {
 								do_paste();
@@ -3111,29 +3090,27 @@ doterm(struct bbslist *bbs)
 						if (bbs->conn_type != CONN_TYPE_SSHNA) {
 							if (bbs->user[0]) {
 								conn_send(bbs->user, strlen(bbs->user), 0);
-								conn_send(cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r"
-								    ,
-								    1
-								    ,
-								    0);
+								conn_send(
+									cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
+									1,
+									0);
 								SLEEP(10);
 							}
 						}
 						if (bbs->password[0]) {
 							conn_send(bbs->password, strlen(bbs->password), 0);
-							conn_send(cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r"
-							    ,
-							    1
-							    ,
-							    0);
+							conn_send(
+								cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
+								1,
+								0);
 							SLEEP(10);
 						}
 					}
 					if (bbs->syspass[0]) {
 						conn_send(bbs->syspass, strlen(bbs->syspass), 0);
-						conn_send(cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r"
-						    , 1
-						    , 0);
+						conn_send(cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
+						    1,
+						    0);
 					}
 					key = 0;
 					break;
@@ -3176,8 +3153,8 @@ doterm(struct bbslist *bbs)
 					setfont(0, false, 3);
 					setfont(0, false, 4);
 					if (quitting
-					    || confirm("Disconnect... Are you sure?"
-					    , "Selecting Yes closes the connection\n")) {
+					    || confirm("Disconnect... Are you sure?",
+					    "Selecting Yes closes the connection\n")) {
 						freescreen(savscrn);
 						setup_mouse_events(&ms);
 						cterm_clearscreen(cterm, cterm->attr); /* Clear screen into

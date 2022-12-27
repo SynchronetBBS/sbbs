@@ -59,14 +59,14 @@ send_telnet_cmd(uchar cmd, uchar opt)
 	char buf[16];
 
 	if (cmd < TELNET_WILL) {
-		lprintf(LOG_INFO, "TX: %s"
-		    , telnet_cmd_desc(cmd));
+		lprintf(LOG_INFO, "TX: %s",
+		    telnet_cmd_desc(cmd));
 		sprintf(buf, "%c%c", TELNET_IAC, cmd);
 		putcom(buf, 2);
 	}
 	else {
-		lprintf(LOG_INFO, "TX: %s %s"
-		    , telnet_cmd_desc(cmd), telnet_opt_desc(opt));
+		lprintf(LOG_INFO, "TX: %s %s",
+		    telnet_cmd_desc(cmd), telnet_opt_desc(opt));
 		sprintf(buf, "%c%c%c", TELNET_IAC, cmd, opt);
 		putcom(buf, 3);
 	}
@@ -159,11 +159,11 @@ telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 					if ((option == TELNET_TERM_TYPE) && (telnet_cmd[3] == TELNET_TERM_SEND)) {
 						char        buf[32];
 						const char *emu = get_emulation_str(conn_api.emulation);
-						int         len = sprintf(buf, "%c%c%c%c%s%c%c"
-						        , TELNET_IAC, TELNET_SB
-						        , TELNET_TERM_TYPE, TELNET_TERM_IS
-						        , emu
-						        , TELNET_IAC, TELNET_SE);
+						int         len = sprintf(buf, "%c%c%c%c%s%c%c",
+						        TELNET_IAC, TELNET_SB,
+						        TELNET_TERM_TYPE, TELNET_TERM_IS,
+						        emu,
+						        TELNET_IAC, TELNET_SE);
 
 						lprintf(LOG_INFO, "TX: Terminal Type is %s", emu);
 						putcom(buf, len);
@@ -176,8 +176,8 @@ telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 				telnet_cmdlen = 0;
 			}
 			else if (telnet_cmdlen >= 3) { /* telnet option negotiation */
-				lprintf(LOG_INFO, "RX: %s %s"
-				    , telnet_cmd_desc(command), telnet_opt_desc(option));
+				lprintf(LOG_INFO, "RX: %s %s",
+				    telnet_cmd_desc(command), telnet_opt_desc(option));
 
 				if ((command == TELNET_DO) || (command == TELNET_DONT)) { /* local options */
 					if (telnet_local_option[option] != command) {
@@ -193,8 +193,8 @@ telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 							default:                          /* unsupported local options
                                                                                            */
 								if (command == TELNET_DO) /* NAK */
-									send_telnet_cmd(telnet_opt_nak(command)
-									    , option);
+									send_telnet_cmd(telnet_opt_nak(command),
+									    option);
 								break;
 						}
 					}
@@ -213,8 +213,8 @@ telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 						buf[6] = rows & 0xff;
 						buf[7] = TELNET_IAC;
 						buf[8] = TELNET_SE;
-						lprintf(LOG_INFO, "TX: Window Size is %u x %u"
-						    , cols, rows);
+						lprintf(LOG_INFO, "TX: Window Size is %u x %u",
+						    cols, rows);
 						putcom((char *)buf, 9);
 					}
 				}
@@ -232,8 +232,8 @@ telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 							default:                            /* unsupported remote
                                                                                              * options */
 								if (command == TELNET_WILL) /* NAK */
-									send_telnet_cmd(telnet_opt_nak(command)
-									    , option);
+									send_telnet_cmd(telnet_opt_nak(command),
+									    option);
 								break;
 						}
 					}

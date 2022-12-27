@@ -58,8 +58,8 @@ viewscroll(void)
 			top = 1;
 		if (top > cterm->backpos)
 			top = cterm->backpos;
-		vmem_puttext(term.x - 1, term.y - 1, term.x + term.width - 2, term.y + term.height - 2
-		    , scrollback + (term.width * top));
+		vmem_puttext(term.x - 1, term.y - 1, term.x + term.width - 2, term.y + term.height - 2,
+		    scrollback + (term.width * top));
 		cputs("Scrollback");
 		gotoxy(cterm->width - 9, 1);
 		cputs("Scrollback");
@@ -146,23 +146,23 @@ int
 syncmenu(struct bbslist *bbs, int *speed)
 {
 	char                 *opts[] = {
-		"Scrollback ("ALT_KEY_NAMEP "-B)"
-		, "Disconnect (Ctrl-Q)"
-		, "Send Login ("ALT_KEY_NAMEP "-L)"
-		, "Upload ("ALT_KEY_NAMEP "-U)"
-		, "Download ("ALT_KEY_NAMEP "-D)"
-		, "Change Output Rate (" ALT_KEY_NAMEP "-Up/" ALT_KEY_NAMEP "-Down)"
-		, "Change Log Level"
-		, "Capture Control ("ALT_KEY_NAMEP "-C)"
-		, "ANSI Music Control ("ALT_KEY_NAMEP "-M)"
-		, "Font Setup ("ALT_KEY_NAMEP "-F)"
-		, "Toggle Doorway Mode"
+		"Scrollback ("ALT_KEY_NAMEP "-B)",
+		"Disconnect (Ctrl-Q)",
+		"Send Login ("ALT_KEY_NAMEP "-L)",
+		"Upload ("ALT_KEY_NAMEP "-U)",
+		"Download ("ALT_KEY_NAMEP "-D)",
+		"Change Output Rate (" ALT_KEY_NAMEP "-Up/" ALT_KEY_NAMEP "-Down)",
+		"Change Log Level",
+		"Capture Control ("ALT_KEY_NAMEP "-C)",
+		"ANSI Music Control ("ALT_KEY_NAMEP "-M)",
+		"Font Setup ("ALT_KEY_NAMEP "-F)",
+		"Toggle Doorway Mode"
 #ifndef WITHOUT_OOII
 		, "Toggle Operation Overkill ][ Mode"
 #endif
-		, "Exit ("ALT_KEY_NAMEP "-X)"
-		, "Edit Dialing Directory ("ALT_KEY_NAMEP "-E)"
-		, ""
+		, "Exit ("ALT_KEY_NAMEP "-X)",
+		"Edit Dialing Directory ("ALT_KEY_NAMEP "-E)",
+		""
 	};
 	int                   opt = 0;
 	int                   i, j;
@@ -233,8 +233,8 @@ syncmenu(struct bbslist *bbs, int *speed)
 			case 5: /* Output rate */
 				if ((bbs->conn_type == CONN_TYPE_MODEM) || (bbs->conn_type == CONN_TYPE_SERIAL)
 				    || (bbs->conn_type == CONN_TYPE_SERIAL_NORTS)) {
-					uifcmsg("Not supported for this connection type"
-					    , "Cannot change the display rate for Modem/Serial connections.");
+					uifcmsg("Not supported for this connection type",
+					    "Cannot change the display rate for Modem/Serial connections.");
 				}
 				else if (speed != NULL) {
 					j = get_rate_num(*speed);

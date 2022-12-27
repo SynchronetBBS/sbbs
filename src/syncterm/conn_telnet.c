@@ -21,7 +21,9 @@ extern int telnet_log_level;
 /*****************************************************************************/
 
 // Escapes Telnet IACs in 'inbuf' by doubling the IAC char
+
 // 'result' may point to either inbuf (if there were no IACs) or outbuf
+
 // Returns the final byte count of the result
 
 /*****************************************************************************/
@@ -99,8 +101,8 @@ telnet_tx_parse_cb(const void *buf, size_t len, size_t *olen)
 	void *ret = malloc(len * 2);
 	void *parsed;
 
-	*olen = st_telnet_expand(buf, len, ret, len * 2
-	        , telnet_local_option[TELNET_BINARY_TX] != TELNET_DO, (BYTE **)&parsed);
+	*olen = st_telnet_expand(buf, len, ret, len * 2,
+	        telnet_local_option[TELNET_BINARY_TX] != TELNET_DO, (BYTE **)&parsed);
 
 	if (parsed != ret)
 		memcpy(ret, parsed, *olen);
