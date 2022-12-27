@@ -70,8 +70,13 @@ char* syncterm_version = "SyncTERM 1.2b"
 
 char	*usage =
 		"\nusage: syncterm [options] [URL]"
-        "\n\noptions:\n\n"
-        "-e# =  set escape delay to #msec\n"
+		"\n\noptions:\n\n"
+		"-4  =  Only resolve IPv4 addresses\n"
+		"-6  =  Only resolve IPv6 addresses\n"
+		"-b/path/to/list = specify user BBS list path\n"
+		"-c  =  Hide the status line\n"
+		"-e# =  set escape delay to #msec\n"
+		"-h  =  use SSH mode if URL does not include the scheme\n"
 		"-iX =  set interface mode to X (default=auto) where X is one of:\n"
 		"       S[W|F] = SDL surface mode W for windowed and F for fullscreen\n"
 #ifdef __unix__
@@ -83,17 +88,14 @@ char	*usage =
 		"       W[F] = Win32 native mode, F for fullscreen\n"
 #endif
 		"       A = ANSI mode\n"
-        "-l# =  set screen lines to # (default=auto-detect)\n"
-		"-t  =  use telnet mode if URL does not include the scheme\n"
+		"-l# =  set screen lines to # (default=auto-detect)\n"
+		"-n/path/to/ini = specify a config ini path\n"
+		"-q  =  Quiet mode (Hide various popups such as this during a connect)\n"
 		"-r  =  use rlogin mode if URL does not include the scheme\n"
-		"-h  =  use SSH mode if URL does not include the scheme\n"
-		"-4  =  Only resolve IPv4 addresses\n"
-		"-6  =  Only resolve IPv6 addresses\n"
 		"-s  =  enable \"Safe Mode\" which prevents writing/browsing local files\n"
 		"-T  =  when the ONLY argument, dumps the terminfo entry to stdout and exits\n"
+		"-t  =  use telnet mode if URL does not include the scheme\n"
 		"-v  =  when the ONLY argument, dumps the version info to stdout and exits\n"
-		"-c  =  Hide the status line\n"
-		"-q  =  Quiet mode (Hide various popups such as this during a connect)\n"
 		"\n"
 		"URL format is: [(rlogin|telnet|ssh|raw)://][user[:password]@]domainname[:port]\n"
 		"raw:// URLs MUST include a port.\n"
@@ -119,6 +121,8 @@ FILE* log_fp;
 extern ini_style_t ini_style;
 BOOL quitting=FALSE;
 int fake_mode = -1;
+char *config_override;
+char *list_override;
 
 #ifdef _WINSOCKAPI_
 
@@ -975,6 +979,14 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 {
 	char	oldlst[MAX_PATH+1];
 
+	if (config_override != NULL && type == SYNCTERM_PATH_INI && !shared) {
+		sprintf(fn, "%.*s", fnlen - 1, config_override);
+		return fn;
+	}
+	if (list_override != NULL && type == SYNCTERM_PATH_LIST && !shared) {
+		sprintf(fn, "%.*s", fnlen - 1, list_override);
+		return fn;
+	}
 	memset(fn, 0, fnlen);
 #ifdef _WIN32
 	char	*home;
@@ -1491,10 +1503,6 @@ int main(int argc, char **argv)
 		text_mode=_ORIGMODE;
 
 	for(i=1;i<argc;i++) {
-		if(strcmp(argv[i], "-insert") == 0) {
-			uifc.insert_mode = TRUE;
-			continue;
-		}
         if(argv[i][0]=='-'
 #ifndef __unix__
             || argv[i][0]=='/'
@@ -1506,6 +1514,29 @@ int main(int argc, char **argv)
 					break;
 				case '4':
 					addr_family=ADDRESS_FAMILY_INET;
+					break;
+				case 'B':
+					if (argv[i][2] == 0) {
+						if ((i + 1) < argc)
+							list_override = argv[++i];
+						else
+							goto USAGE;
+					}
+					else
+						list_override = &argv[i][2];
+					break;
+				case 'N':
+					if (argv[i][2] == 0) {
+						if ((i + 1) < argc)
+							config_override = argv[++i];
+						else
+							goto USAGE;
+					}
+					else
+						config_override = &argv[i][2];
+					break;
+				case 'C':
+					default_nostatus=1;
 					break;
                 case 'E':
                     uifc.esc_delay=atoi(argv[i]+2);
@@ -1604,9 +1635,6 @@ int main(int argc, char **argv)
 					break;
 				case 'Q':
 					default_hidepopups=1;
-					break;
-				case 'C':
-					default_nostatus=1;
 					break;
                 default:
 					goto USAGE;
