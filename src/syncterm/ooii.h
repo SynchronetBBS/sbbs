@@ -4,7 +4,6 @@
 #include <stdbool.h>
 
 #define MAX_OOII_MODE 3
-
-bool handle_ooii_code(unsigned char *codeStr, int *ooii_mode, unsigned char *retbuf, size_t retsize);
+bool handle_ooii_code(unsigned char*codeStr, int*ooii_mode, unsigned char*retbuf, size_t retsize);
 
 #endif
