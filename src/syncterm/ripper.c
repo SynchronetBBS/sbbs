@@ -38,62 +38,42 @@
 // TODO: Actually make the graphics viewport work properly
 
 enum rip_state {
-	RIP_STATE_BOL                   // Beginning of the line
-	,
-	RIP_STATE_MOL                   // Middle of the line
-	,
-	RIP_STATE_BANG                  // Got a bang (or CTRL-A or CTRL-B)
+	RIP_STATE_BOL,                   // Beginning of the line
+	RIP_STATE_MOL,                   // Middle of the line
+	RIP_STATE_BANG,                  // Got a bang (or CTRL-A or CTRL-B)
 
         // The following four groups must remain in this order and all must coincide
 
-/*3*/,
-	RIP_STATE_PIPE                  // Got a pipe
-	,
-	RIP_STATE_LEVEL                 // Got a level
-	,
-	RIP_STATE_SUBLEVEL              // Got a sub-level
-	,
-	RIP_STATE_CMD                   // Got a command... parsing parameters
-	,
-	RIP_STATE_ENDED                 // In unspecified text at the end of a command... look for pipes
+/*3*/
+	RIP_STATE_PIPE,                  // Got a pipe
+	RIP_STATE_LEVEL,                 // Got a level
+	RIP_STATE_SUBLEVEL,              // Got a sub-level
+	RIP_STATE_CMD,                   // Got a command... parsing parameters
+	RIP_STATE_ENDED,                 // In unspecified text at the end of a command... look for pipes
 
-/*8*/,
-	RIP_STATE_BACKSLASH_PIPE        // Got a backslash... either an escape or a continue
-	,
-	RIP_STATE_BACKSLASH_LEVEL       // Got a backslash... either an escape or a continue
-	,
-	RIP_STATE_BACKSLASH_SUBLEVEL    // Got a backslash... either an escape or a continue
-	,
-	RIP_STATE_BACKSLASH_CMD         // Got a backslash... either an escape or a continue
-	,
-	RIP_STATE_BACKSLASH_ENDED       // Got a backslash... either an escape or a continue
+/*8*/
+	RIP_STATE_BACKSLASH_PIPE,        // Got a backslash... either an escape or a continue
+	RIP_STATE_BACKSLASH_LEVEL,       // Got a backslash... either an escape or a continue
+	RIP_STATE_BACKSLASH_SUBLEVEL,    // Got a backslash... either an escape or a continue
+	RIP_STATE_BACKSLASH_CMD,         // Got a backslash... either an escape or a continue
+	RIP_STATE_BACKSLASH_ENDED,       // Got a backslash... either an escape or a continue
 
-/*13*/,
-	RIP_STATE_CONT_PIPE             // Got a \ continuation char in pipe state
-	,
-	RIP_STATE_CONT_LEVEL            // Got a \ continuation char in level state
-	,
-	RIP_STATE_CONT_SUBLEVEL         // Got a \ continuation char in sublevel state
-	,
-	RIP_STATE_CONT_CMD              // Got a \ continuation char in cmd state
-	,
-	RIP_STATE_CONT_ENDED            // Got a \ continuation char in ended state
+/*13*/
+	RIP_STATE_CONT_PIPE,             // Got a \ continuation char in pipe state
+	RIP_STATE_CONT_LEVEL,            // Got a \ continuation char in level state
+	RIP_STATE_CONT_SUBLEVEL,         // Got a \ continuation char in sublevel state
+	RIP_STATE_CONT_CMD,              // Got a \ continuation char in cmd state
+	RIP_STATE_CONT_ENDED,            // Got a \ continuation char in ended state
 
         // Back to normal state definitions
 
-/*23*/,
-	RIP_STATE_CR                    // Got a CR
-	,
-	RIP_STATE_ESC                   // Got an ESC
-	,
-	RIP_STATE_CSI                   // Got a CSI
-	,
-	RIP_STATE_CSINUM                // Got a CSI followed by a single digit
-	,
-	RIP_STATE_SKYPIX                // Got a CSI followed numbers and semi-colons
-	,
-	RIP_STATE_SKYPIX_STR            // Got a SkyPix that requires a ! string at end.
-	,
+/*23*/
+	RIP_STATE_CR,                    // Got a CR
+	RIP_STATE_ESC,                   // Got an ESC
+	RIP_STATE_CSI,                   // Got a CSI
+	RIP_STATE_CSINUM,                // Got a CSI followed by a single digit
+	RIP_STATE_SKYPIX,                // Got a CSI followed numbers and semi-colons
+	RIP_STATE_SKYPIX_STR,            // Got a SkyPix that requires a ! string at end.
 	RIP_STATE_FLUSHING              // Magical state
 };
 
@@ -109,14 +89,12 @@ enum ansi_state {
 };
 
 enum rip_line_thickness {
-	RIP_LINE_THICK_THIN = 1
-	,
+	RIP_LINE_THICK_THIN = 1,
 	RIP_LINE_THICK_THICK = 3
 };
 
 enum rip_write_modes {
-	RIP_WRITE_MODE_COPY
-	,
+	RIP_WRITE_MODE_COPY,
 	RIP_WRITE_MODE_XOR
 };
 
@@ -7371,110 +7349,109 @@ struct rip_mouse_event {
 static struct rip_mouse_event            rip_mouse_event;
 
 static const struct builtin_rip_variable builtins[] = {
-	{"ADOW", rv_date, NULL} // Abbreviated Day of Week
-	, {"ALARM", rv_sound, NULL}
-	, {"AMPM", rv_time, NULL}               // Returns AM or PM depending on time
-	, {"APP0", rv_exploit, NULL}
-	, {"APP1", rv_exploit, NULL}
-	, {"APP2", rv_exploit, NULL}
-	, {"APP3", rv_exploit, NULL}
-	, {"APP4", rv_exploit, NULL}
-	, {"APP5", rv_exploit, NULL}
-	, {"APP6", rv_exploit, NULL}
-	, {"APP7", rv_exploit, NULL}
-	, {"APP8", rv_exploit, NULL}
-	, {"APP9", rv_exploit, NULL}
-	, {"BEEP", rv_sound, NULL}              // Beep Sound (ala Ctrl-G)
-	, {"BLIP", rv_sound, NULL}
-	, {"COFF", rv_termset, NULL}
-	, {"COMPAT", rv_termset, NULL}
-	, {"CON", rv_termset, NULL}
-	, {"CURSOR", rv_termstat, NULL}
-	, {"CURX", rv_termstat, NULL}
-	, {"CURY", rv_termstat, NULL}
-	, {"DATE", rv_date, NULL}               // Date in short format MM/DD/YY
-	, {"DATETIME", rv_date, NULL}           // Date and Time
-	, {"DAY", rv_date, NULL}                // Day of Month Number
-	, {"DOW", rv_date, NULL}                // Day of week fully spelled out
-	, {"DOY", rv_date, NULL}                // Day of year
-	, {"DTW", rv_disable, NULL}
-	, {"DWAYOFF", rv_termset, NULL}
-	, {"DWAYON", rv_termset, NULL}
-	, {"EGW", rv_erase, NULL}
-	, {"ETW", rv_erase, NULL}
-	, {"FYEAR", rv_date, NULL}              // 4 digit year
-	, {"HKEYOFF", rv_hotkey, NULL}
-	, {"HKEYON", rv_hotkey, NULL}
-	, {"HOUR", rv_time, NULL}               // Hour (format HH) - normal style
-	, {"M", rv_mouse, NULL}
-	, {"MHOUR", rv_time, NULL}              // Hour (format HH) - military style
-	, {"MIN", rv_time, NULL}                // Minutes
-	, {"MKILL", rv_mouse_kill, NULL}
-	, {"MONTH", rv_date, NULL}              // Month Name
-	, {"MONTHNUM", rv_date, NULL}           // Month Number (1..12)
-	, {"MSTAT", rv_mouse, NULL}
-	, {"MUSIC", rv_sound, NULL}
-	, {"PCB", rv_paste, NULL}
-	, {"PHASER", rv_sound, NULL}
-	, {"RCB", rv_restore, NULL}
-	, {"RESET", rv_reset, NULL}
-	, {"RESTORE", rv_restore, NULL}
-	, {"RESTORE1", rv_restore, NULL}
-	, {"RESTORE2", rv_restore, NULL}
-	, {"RESTORE3", rv_restore, NULL}
-	, {"RESTORE4", rv_restore, NULL}
-	, {"RESTORE5", rv_restore, NULL}
-	, {"RESTORE6", rv_restore, NULL}
-	, {"RESTORE7", rv_restore, NULL}
-	, {"RESTORE8", rv_restore, NULL}
-	, {"RESTORE9", rv_restore, NULL}
-	, {"RESTOREALL", rv_restore, NULL}
-	, {"REVPHASER", rv_sound, NULL}
-	, {"RIPVER", rv_version, NULL} // RIPscrip version
-	, {"RMF", rv_restore, NULL}
-	, {"RTW", rv_restore, NULL}
-	, {"SAVE", rv_save, NULL}
-	, {"SAVE0", rv_save, NULL}
-	, {"SAVE1", rv_save, NULL}
-	, {"SAVE2", rv_save, NULL}
-	, {"SAVE3", rv_save, NULL}
-	, {"SAVE4", rv_save, NULL}
-	, {"SAVE5", rv_save, NULL}
-	, {"SAVE6", rv_save, NULL}
-	, {"SAVE7", rv_save, NULL}
-	, {"SAVE8", rv_save, NULL}
-	, {"SAVE9", rv_save, NULL}
-	, {"SAVEALL", rv_save, NULL}
-	, {"SBAROFF", rv_termset, NULL}
-	, {"SBARON", rv_termset, NULL}
-	, {"SCB", rv_save, NULL}
-	, {"SEC", rv_time, NULL}                // Seconds
-	, {"SMF", rv_save, NULL}
-	, {"STATBAR", rv_termstat, NULL}
-	, {"STW", rv_save, NULL}
-	, {"TABOFF", rv_hotkey, NULL}
-	, {"TABON", rv_hotkey, NULL}
-	, {"TIME", rv_time, NULL}               // Time in standard format 18:09:33
-	, {"TIMEZONE", rv_time, NULL}           // Time Zone or "NONE" if unknown
-	, {"TWFONT", rv_termstat, NULL}
-	, {"TWH", rv_termstat, NULL}
-	, {"TWIN", rv_termstat, NULL}
-	, {"TWW", rv_termstat, NULL}
-	, {"TWX0", rv_termstat, NULL}
-	, {"TWX1", rv_termstat, NULL}
-	, {"TWY0", rv_termstat, NULL}
-	, {"TWY1", rv_termstat, NULL}
-	, {"VT102OFF", rv_termset, NULL}
-	, {"VT102ON", rv_termset, NULL}
-	, {"WDAY", rv_date, NULL}               // Day of Week (0..6)
-	, {"WOY", rv_date, NULL}                // Week of current year 00-53; Sunday=1st Day of Week
-	, {"WOYM", rv_date, NULL}               // Week of current year 00-53; Monday=1st Day of Week
-	, {"X", rv_mouse, NULL}
-	, {"XY", rv_mouse, NULL}
-	, {"XYM", rv_mouse, NULL}
-	, {"Y", rv_mouse, NULL}
-	, {"YEAR", rv_date, NULL}               // 2 digit year
-	,
+	{"ADOW", rv_date, NULL}, // Abbreviated Day of Week
+	{"ALARM", rv_sound, NULL},
+	{"AMPM", rv_time, NULL},               // Returns AM or PM depending on time
+	{"APP0", rv_exploit, NULL},
+	{"APP1", rv_exploit, NULL},
+	{"APP2", rv_exploit, NULL},
+	{"APP3", rv_exploit, NULL},
+	{"APP4", rv_exploit, NULL},
+	{"APP5", rv_exploit, NULL},
+	{"APP6", rv_exploit, NULL},
+	{"APP7", rv_exploit, NULL},
+	{"APP8", rv_exploit, NULL},
+	{"APP9", rv_exploit, NULL},
+	{"BEEP", rv_sound, NULL},              // Beep Sound (ala Ctrl-G)
+	{"BLIP", rv_sound, NULL},
+	{"COFF", rv_termset, NULL},
+	{"COMPAT", rv_termset, NULL},
+	{"CON", rv_termset, NULL},
+	{"CURSOR", rv_termstat, NULL},
+	{"CURX", rv_termstat, NULL},
+	{"CURY", rv_termstat, NULL},
+	{"DATE", rv_date, NULL},               // Date in short format MM/DD/YY
+	{"DATETIME", rv_date, NULL},           // Date and Time
+	{"DAY", rv_date, NULL},                // Day of Month Number
+	{"DOW", rv_date, NULL},                // Day of week fully spelled out
+	{"DOY", rv_date, NULL},                // Day of year
+	{"DTW", rv_disable, NULL},
+	{"DWAYOFF", rv_termset, NULL},
+	{"DWAYON", rv_termset, NULL},
+	{"EGW", rv_erase, NULL},
+	{"ETW", rv_erase, NULL},
+	{"FYEAR", rv_date, NULL},              // 4 digit year
+	{"HKEYOFF", rv_hotkey, NULL},
+	{"HKEYON", rv_hotkey, NULL},
+	{"HOUR", rv_time, NULL},               // Hour (format HH) - normal style
+	{"M", rv_mouse, NULL},
+	{"MHOUR", rv_time, NULL},              // Hour (format HH) - military style
+	{"MIN", rv_time, NULL},                // Minutes
+	{"MKILL", rv_mouse_kill, NULL},
+	{"MONTH", rv_date, NULL},              // Month Name
+	{"MONTHNUM", rv_date, NULL},           // Month Number (1..12)
+	{"MSTAT", rv_mouse, NULL},
+	{"MUSIC", rv_sound, NULL},
+	{"PCB", rv_paste, NULL},
+	{"PHASER", rv_sound, NULL},
+	{"RCB", rv_restore, NULL},
+	{"RESET", rv_reset, NULL},
+	{"RESTORE", rv_restore, NULL},
+	{"RESTORE1", rv_restore, NULL},
+	{"RESTORE2", rv_restore, NULL},
+	{"RESTORE3", rv_restore, NULL},
+	{"RESTORE4", rv_restore, NULL},
+	{"RESTORE5", rv_restore, NULL},
+	{"RESTORE6", rv_restore, NULL},
+	{"RESTORE7", rv_restore, NULL},
+	{"RESTORE8", rv_restore, NULL},
+	{"RESTORE9", rv_restore, NULL},
+	{"RESTOREALL", rv_restore, NULL},
+	{"REVPHASER", rv_sound, NULL},
+	{"RIPVER", rv_version, NULL}, // RIPscrip version
+	{"RMF", rv_restore, NULL},
+	{"RTW", rv_restore, NULL},
+	{"SAVE", rv_save, NULL},
+	{"SAVE0", rv_save, NULL},
+	{"SAVE1", rv_save, NULL},
+	{"SAVE2", rv_save, NULL},
+	{"SAVE3", rv_save, NULL},
+	{"SAVE4", rv_save, NULL},
+	{"SAVE5", rv_save, NULL},
+	{"SAVE6", rv_save, NULL},
+	{"SAVE7", rv_save, NULL},
+	{"SAVE8", rv_save, NULL},
+	{"SAVE9", rv_save, NULL},
+	{"SAVEALL", rv_save, NULL},
+	{"SBAROFF", rv_termset, NULL},
+	{"SBARON", rv_termset, NULL},
+	{"SCB", rv_save, NULL},
+	{"SEC", rv_time, NULL},                // Seconds
+	{"SMF", rv_save, NULL},
+	{"STATBAR", rv_termstat, NULL},
+	{"STW", rv_save, NULL},
+	{"TABOFF", rv_hotkey, NULL},
+	{"TABON", rv_hotkey, NULL},
+	{"TIME", rv_time, NULL},               // Time in standard format 18:09:33
+	{"TIMEZONE", rv_time, NULL},           // Time Zone or "NONE" if unknown
+	{"TWFONT", rv_termstat, NULL},
+	{"TWH", rv_termstat, NULL},
+	{"TWIN", rv_termstat, NULL},
+	{"TWW", rv_termstat, NULL},
+	{"TWX0", rv_termstat, NULL},
+	{"TWX1", rv_termstat, NULL},
+	{"TWY0", rv_termstat, NULL},
+	{"TWY1", rv_termstat, NULL},
+	{"VT102OFF", rv_termset, NULL},
+	{"VT102ON", rv_termset, NULL},
+	{"WDAY", rv_date, NULL},               // Day of Week (0..6)
+	{"WOY", rv_date, NULL},                // Week of current year 00-53; Sunday=1st Day of Week
+	{"WOYM", rv_date, NULL},               // Week of current year 00-53; Monday=1st Day of Week
+	{"X", rv_mouse, NULL},
+	{"XY", rv_mouse, NULL},
+	{"XYM", rv_mouse, NULL},
+	{"Y", rv_mouse, NULL},
+	{"YEAR", rv_date, NULL},               // 2 digit year
 };
 static void
 set_ega_palette(void)
