@@ -2,6 +2,7 @@
  * This code handles Operation Overkill ][ terminal codes
  */
 
+#include <stdbool.h>
 #include <string.h>
 #include <genwrap.h>
 #include <xpbeep.h>
@@ -1541,147 +1542,147 @@ static int incomingSoundVoc(unsigned char *codeStr) {
 	codeStr++;
 	switch(*codeStr) {
 		case '1':
-			xp_play_sample(ooii_snd_welcome, sizeof(ooii_snd_welcome), TRUE);
+			xp_play_sample(ooii_snd_welcome, sizeof(ooii_snd_welcome), true);
 			break;
 		case '3':
-			xp_play_sample(ooii_snd_countdn, sizeof(ooii_snd_countdn), FALSE);
+			xp_play_sample(ooii_snd_countdn, sizeof(ooii_snd_countdn), false);
 			/* Fallthrough */
 		case '2':
-			xp_play_sample(ooii_snd_explode, sizeof(ooii_snd_explode), TRUE);
+			xp_play_sample(ooii_snd_explode, sizeof(ooii_snd_explode), true);
 			break;
 		case '4':
-			xp_play_sample(ooii_snd_clone, sizeof(ooii_snd_clone), TRUE);
+			xp_play_sample(ooii_snd_clone, sizeof(ooii_snd_clone), true);
 			break;
 		case '5':
 			if(xp_random(2))
-				xp_play_sample(ooii_snd_danger1, sizeof(ooii_snd_danger1), TRUE);
+				xp_play_sample(ooii_snd_danger1, sizeof(ooii_snd_danger1), true);
 			else
-				xp_play_sample(ooii_snd_danger2, sizeof(ooii_snd_danger2), TRUE);
+				xp_play_sample(ooii_snd_danger2, sizeof(ooii_snd_danger2), true);
 			break;
 		case '6':
-			xp_play_sample(ooii_snd_steam, sizeof(ooii_snd_steam), TRUE);
+			xp_play_sample(ooii_snd_steam, sizeof(ooii_snd_steam), true);
 			break;
 		case '7':
-			xp_play_sample(ooii_snd_scream1, sizeof(ooii_snd_scream1), TRUE);
+			xp_play_sample(ooii_snd_scream1, sizeof(ooii_snd_scream1), true);
 			break;
 		case '8':
-			xp_play_sample(ooii_snd_watch, sizeof(ooii_snd_watch), TRUE);
+			xp_play_sample(ooii_snd_watch, sizeof(ooii_snd_watch), true);
 			break;
 		case '9':
-			xp_play_sample(ooii_snd_levelup, sizeof(ooii_snd_levelup), TRUE);
+			xp_play_sample(ooii_snd_levelup, sizeof(ooii_snd_levelup), true);
 			break;
 		case 'A':
-			xp_play_sample(ooii_snd_inflame, sizeof(ooii_snd_inflame), TRUE);
+			xp_play_sample(ooii_snd_inflame, sizeof(ooii_snd_inflame), true);
 			break;
 		case 'B':
 			switch(xp_random(3)) {
 				case 0:
-					xp_play_sample(ooii_snd_hit1, sizeof(ooii_snd_hit1), TRUE);
+					xp_play_sample(ooii_snd_hit1, sizeof(ooii_snd_hit1), true);
 					break;
 				case 1:
-					xp_play_sample(ooii_snd_hit2, sizeof(ooii_snd_hit2), TRUE);
+					xp_play_sample(ooii_snd_hit2, sizeof(ooii_snd_hit2), true);
 					break;
 				case 2:
-					xp_play_sample(ooii_snd_hit3, sizeof(ooii_snd_hit3), TRUE);
+					xp_play_sample(ooii_snd_hit3, sizeof(ooii_snd_hit3), true);
 					break;
 			}
 			break;
 		case 'C':
-			xp_play_sample(ooii_snd_timeisup, sizeof(ooii_snd_timeisup), TRUE);
+			xp_play_sample(ooii_snd_timeisup, sizeof(ooii_snd_timeisup), true);
 			break;
 		case 'D':
-			xp_play_sample(ooii_snd_healing, sizeof(ooii_snd_healing), TRUE);
+			xp_play_sample(ooii_snd_healing, sizeof(ooii_snd_healing), true);
 			break;
 		case 'E':
-			xp_play_sample(ooii_snd_lrange2, sizeof(ooii_snd_lrange2), TRUE);
+			xp_play_sample(ooii_snd_lrange2, sizeof(ooii_snd_lrange2), true);
 			break;
 		case 'F':
-			xp_play_sample(ooii_snd_cackle, sizeof(ooii_snd_cackle), TRUE);
+			xp_play_sample(ooii_snd_cackle, sizeof(ooii_snd_cackle), true);
 			break;
 		case 'G':
-			xp_play_sample(ooii_snd_teleport, sizeof(ooii_snd_teleport), TRUE);
+			xp_play_sample(ooii_snd_teleport, sizeof(ooii_snd_teleport), true);
 			break;
 		case 'H':
-			xp_play_sample(ooii_snd_genetics, sizeof(ooii_snd_genetics), TRUE);
+			xp_play_sample(ooii_snd_genetics, sizeof(ooii_snd_genetics), true);
 			break;
 		case 'I':
-			xp_play_sample(ooii_snd_remote, sizeof(ooii_snd_remote), TRUE);
+			xp_play_sample(ooii_snd_remote, sizeof(ooii_snd_remote), true);
 			break;
 		case 'J':
-			xp_play_sample(ooii_snd_afbdoor, sizeof(ooii_snd_afbdoor), TRUE);
+			xp_play_sample(ooii_snd_afbdoor, sizeof(ooii_snd_afbdoor), true);
 			break;
 		case 'K':
-			xp_play_sample(ooii_snd_alarm, sizeof(ooii_snd_alarm), TRUE);
+			xp_play_sample(ooii_snd_alarm, sizeof(ooii_snd_alarm), true);
 			break;
 		case 'L':
-			xp_play_sample(ooii_snd_reverse, sizeof(ooii_snd_reverse), TRUE);
+			xp_play_sample(ooii_snd_reverse, sizeof(ooii_snd_reverse), true);
 			break;
 		case 'M':
-			xp_play_sample(ooii_snd_aerial, sizeof(ooii_snd_aerial), TRUE);
+			xp_play_sample(ooii_snd_aerial, sizeof(ooii_snd_aerial), true);
 			break;
 		case 'N':
-			xp_play_sample(ooii_snd_phaser, sizeof(ooii_snd_phaser), TRUE);
+			xp_play_sample(ooii_snd_phaser, sizeof(ooii_snd_phaser), true);
 			break;
 		case 'O':
 			switch(xp_random(3)) {
 				case 0:
-					xp_play_sample(ooii_snd_miss1, sizeof(ooii_snd_miss1), TRUE);
+					xp_play_sample(ooii_snd_miss1, sizeof(ooii_snd_miss1), true);
 					break;
 				case 1:
-					xp_play_sample(ooii_snd_miss2, sizeof(ooii_snd_miss2), TRUE);
+					xp_play_sample(ooii_snd_miss2, sizeof(ooii_snd_miss2), true);
 					break;
 				case 2:
-					xp_play_sample(ooii_snd_miss3, sizeof(ooii_snd_miss3), TRUE);
+					xp_play_sample(ooii_snd_miss3, sizeof(ooii_snd_miss3), true);
 					break;
 			}
 			break;
 		case 'P':
 			if(xp_random(2))
-				xp_play_sample(ooii_snd_music1, sizeof(ooii_snd_music1), TRUE);
+				xp_play_sample(ooii_snd_music1, sizeof(ooii_snd_music1), true);
 			else
-				xp_play_sample(ooii_snd_music2, sizeof(ooii_snd_music2), TRUE);
+				xp_play_sample(ooii_snd_music2, sizeof(ooii_snd_music2), true);
 			break;
 		case 'Q':
-			xp_play_sample(ooii_snd_device, sizeof(ooii_snd_device), TRUE);
+			xp_play_sample(ooii_snd_device, sizeof(ooii_snd_device), true);
 			break;
 		case 'R':
-			xp_play_sample(ooii_snd_death, sizeof(ooii_snd_death), TRUE);
+			xp_play_sample(ooii_snd_death, sizeof(ooii_snd_death), true);
 			break;
 		case 'S':
-			xp_play_sample(ooii_snd_good, sizeof(ooii_snd_good), TRUE);
+			xp_play_sample(ooii_snd_good, sizeof(ooii_snd_good), true);
 			break;
 		case 'T':
-			xp_play_sample(ooii_snd_yahoo, sizeof(ooii_snd_yahoo), TRUE);
+			xp_play_sample(ooii_snd_yahoo, sizeof(ooii_snd_yahoo), true);
 			break;
 		case 'U':
-			xp_play_sample(ooii_snd_scream2, sizeof(ooii_snd_scream2), TRUE);
+			xp_play_sample(ooii_snd_scream2, sizeof(ooii_snd_scream2), true);
 			break;
 		case 'V':
-			xp_play_sample(ooii_snd_wap, sizeof(ooii_snd_wap), TRUE);
+			xp_play_sample(ooii_snd_wap, sizeof(ooii_snd_wap), true);
 			break;
 		case 'W':
-			xp_play_sample(ooii_snd_zip, sizeof(ooii_snd_zip), TRUE);
+			xp_play_sample(ooii_snd_zip, sizeof(ooii_snd_zip), true);
 			break;
 		case 'X':
-			xp_play_sample(ooii_snd_lrange3, sizeof(ooii_snd_lrange3), TRUE);
+			xp_play_sample(ooii_snd_lrange3, sizeof(ooii_snd_lrange3), true);
 			break;
 		case 'Y':
-			xp_play_sample(ooii_snd_snip, sizeof(ooii_snd_snip), TRUE);
+			xp_play_sample(ooii_snd_snip, sizeof(ooii_snd_snip), true);
 			break;
 		case 'Z':
-			xp_play_sample(ooii_snd_pow, sizeof(ooii_snd_pow), TRUE);
+			xp_play_sample(ooii_snd_pow, sizeof(ooii_snd_pow), true);
 			break;
 		default:
 			/* LRANGE1 is unused */
-			/* xp_play_sample(ooii_snd_lrange1, sizeof(ooii_snd_lrange1), TRUE); */
+			/* xp_play_sample(ooii_snd_lrange1, sizeof(ooii_snd_lrange1), true); */
 			break;
 	}
 	return(codeStr-origCodeStr);
 }
 
-BOOL handle_ooii_code(unsigned char *codeStr, int *ooii_mode, unsigned char *retbuf, size_t retsize)
+bool handle_ooii_code(unsigned char *codeStr, int *ooii_mode, unsigned char *retbuf, size_t retsize)
 {
-	BOOL	quit=FALSE;
+	bool	quit=false;
 	char	menuBlock[255];
 	int		zz;
 
@@ -1717,7 +1718,7 @@ BOOL handle_ooii_code(unsigned char *codeStr, int *ooii_mode, unsigned char *ret
 					codeStr += incomingSoundVoc(codeStr);
 					break;
     			case '\\' :
-					quit=TRUE;
+					quit=true;
 					//quitTerm=1;
 					break;
 				case '?':

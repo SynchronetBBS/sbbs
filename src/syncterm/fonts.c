@@ -43,7 +43,7 @@ void save_font_files(struct font_files *fonts)
 
 	if(safe_mode)
 		return;
-	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
+	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
 	if((inifile=fopen(inipath,"r"))!=NULL) {
 		ini_file=iniReadFile(inifile);
 		fclose(inifile);
@@ -78,7 +78,7 @@ void save_font_files(struct font_files *fonts)
 	else {
 		uifc.helpbuf="There was an error writing the INI file.\nCheck permissions and try again.\n";
 		uifc.msg("Cannot write to the .ini file!");
-		check_exit(FALSE);
+		check_exit(false);
 	}
 
 	strListFree(&fontnames);
@@ -96,7 +96,7 @@ struct font_files *read_font_files(int *count)
 	struct font_files	*tmp;
 
 	*count=0;
-	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
+	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
 	if((inifile=fopen(inipath, "r"))==NULL) {
 		return(ret);
 	}
@@ -202,7 +202,7 @@ void load_font_files(void)
 		}
 	}
 	/* Set default font */
-	setfont(default_font, FALSE, 0);
+	setfont(default_font, false, 0);
 	font_names[i]="";
 }
 
@@ -259,7 +259,7 @@ void font_management(void)
 		}
 		i=uifc.list(WIN_SAV|WIN_INS|WIN_INSACT|WIN_DEL|WIN_XTR|WIN_ACT,0,0,0,&cur,&bar,"Font Management",opt);
 		if(i==-1) {
-			check_exit(FALSE);
+			check_exit(false);
 			save_font_files(fonts);
 			free_font_files(fonts);
 			return;
@@ -284,14 +284,14 @@ void font_management(void)
 				str[0]=0;
 				uifc.helpbuf="Enter the name of the font as you want it to appear in menus.";
 				if(uifc.input(WIN_SAV|WIN_MID,0,0,"Font Name",str,50,0)==-1) {
-					check_exit(FALSE);
+					check_exit(false);
 					break;
 				}
 				count++;
 				tmp=(struct font_files *)realloc(fonts, sizeof(struct font_files)*(count+1));
 				if(tmp==NULL) {
 					uifc.msg("realloc() failure, cannot add font.");
-					check_exit(FALSE);
+					check_exit(false);
 					count--;
 					break;
 				}
@@ -316,7 +316,7 @@ void font_management(void)
 			opts[4][0]=0;
 			i=uifc.list(WIN_SAV|WIN_ACT|WIN_INS|WIN_INSACT|WIN_DEL|WIN_RHT|WIN_BOT,0,0,0,&fcur,&fbar,"Font Details",opt);
 			if(i==-1) {
-				check_exit(FALSE);
+				check_exit(false);
 				break;
 			}
 			switch(i) {
@@ -324,7 +324,7 @@ void font_management(void)
 					SAFECOPY(str,fonts[cur].name);
 					uifc.helpbuf="Enter the name of the font as you want it to appear\nin menus.";
 					if (uifc.input(WIN_SAV|WIN_MID,0,0,"Font Name",str,50,K_EDIT)==-1)
-						check_exit(FALSE);
+						check_exit(false);
 					else {
 						FREE_AND_NULL(fonts[cur].name);
 						fonts[cur].name=strdup(str);
@@ -361,7 +361,7 @@ void font_management(void)
 				if(savbuf==NULL) {
 					uifc.helpbuf="malloc() has failed.  Available Memory is dangerously low.";
 					uifc.msg("malloc() failure.");
-					check_exit(FALSE);
+					check_exit(false);
 					continue;
 				}
 				vmem_gettext(1,2,ti.screenwidth,ti.screenheight-1,savbuf);
@@ -371,7 +371,7 @@ void font_management(void)
 					*(path)=strdup(fpick.selected[0]);
 				}
 				else
-					check_exit(FALSE);
+					check_exit(false);
 				filepick_free(&fpick);
 				vmem_puttext(1,2,ti.screenwidth,ti.screenheight-1,savbuf);
 			}

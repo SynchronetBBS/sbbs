@@ -3,6 +3,7 @@
 #ifndef _SYNCTERM_H_
 #define _SYNCTERM_H_
 
+#include <stdbool.h>
 #include <dirwrap.h>
 
 #include "bbslist.h"
@@ -79,7 +80,7 @@ extern unsigned int   scrollback_lines;
 extern unsigned int  scrollback_mode;
 extern unsigned int  scrollback_cols;
 extern struct syncterm_settings settings;
-extern BOOL quitting;
+extern bool quitting;
 extern int default_font;
 extern char *font_names[];
 extern int safe_mode;
@@ -90,10 +91,10 @@ extern char *output_enum[];
 extern int fake_mode;
 
 void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults);
-char *get_syncterm_filename(char *fn, int fnlen, int type, int shared);
+char *get_syncterm_filename(char *fn, int fnlen, int type, bool shared);
 void load_settings(struct syncterm_settings *set);
 int ciolib_to_screen(int screen);
 int screen_to_ciolib(int ciolib);
-BOOL check_exit(BOOL force);
+bool check_exit(bool force);
 
 #endif

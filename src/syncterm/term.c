@@ -290,8 +290,8 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 
 	oldfont_norm=getfont(1);
 	oldfont_bright=getfont(2);
-	setfont(0, FALSE, 1);
-	setfont(0, FALSE, 2);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
 	switch(getfont(1)) {
 			case 0:
 			case 17:
@@ -324,7 +324,7 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 		timeon=(int)(now - bbs->connected);
 	gettextinfo(&txtinfo);
 	oldscroll=_wscroll;
-	hold_update=TRUE;
+	hold_update=true;
 	textattr(YELLOW|(BLUE<<4));
 	/* Move to status line thinger */
 	window(term.x-1,term.y+term.height-1,term.x+term.width-2,term.y+term.height-1);
@@ -414,11 +414,11 @@ static BOOL zmodem_check_abort(void* vp)
 	int						key;
 
 	if (zm == NULL)
-		return TRUE;
+		return true;
 	if (quitting) {
-		zm->cancelled=TRUE;
-		zm->local_abort=TRUE;
-		return TRUE;
+		zm->cancelled=true;
+		zm->local_abort=true;
+		return true;
 	}
 	if(last_check != now) {
 		last_check=now;
@@ -427,8 +427,8 @@ static BOOL zmodem_check_abort(void* vp)
 				case ESC:
 				case CTRL_C:
 				case CTRL_X:
-					zm->cancelled=TRUE;
-					zm->local_abort=TRUE;
+					zm->cancelled=true;
+					zm->local_abort=true;
 					break;
 				case 0:
 				case 0xe0:
@@ -436,9 +436,9 @@ static BOOL zmodem_check_abort(void* vp)
 					if(key==CIO_KEY_MOUSE)
 						getmouse(NULL);
 					if (key==CIO_KEY_QUIT) {
-						if (check_exit(FALSE)) {
-							zm->cancelled=TRUE;
-							zm->local_abort=TRUE;
+						if (check_exit(false)) {
+							zm->cancelled=true;
+							zm->local_abort=true;
 						}
 					}
 					break;
@@ -460,7 +460,7 @@ static int lputs(void* cbdata, int level, const char* str)
 	int chars;
 	int oldhold=hold_update;
 
-#if defined(_WIN32) && defined(_DEBUG) && FALSE
+#if defined(_WIN32) && defined(_DEBUG) && false
 	sprintf(msg,"SyncTerm: %s\n",str);
 	OutputDebugString(msg);
 #endif
@@ -501,7 +501,7 @@ static int lputs(void* cbdata, int level, const char* str)
 			SAFEPRINTF(msg,"!ERROR: %s\r\n",str);
 			break;
 	}
-	hold_update=FALSE;
+	hold_update=false;
 	chars=cputs(msg);
 	hold_update=oldhold;
 	gettextinfo(&log_ti);
@@ -535,14 +535,14 @@ void zmodem_progress(void* cbdata, int64_t current_pos)
 	int			old_hold=hold_update;
 	struct zmodem_cbdata *zcb=(struct zmodem_cbdata *)cbdata;
 	zmodem_t*	zm=zcb->zm;
-	BOOL		growing=FALSE;
+	bool		growing=false;
 
 	now=time(NULL);
 	if(current_pos > zm->current_file_size)
-		growing=TRUE;
-	if(now != last_progress || (current_pos >= zm->current_file_size && growing==FALSE)) {
+		growing=true;
+	if(now != last_progress || (current_pos >= zm->current_file_size && growing==false)) {
 		zmodem_check_abort(cbdata);
-		hold_update = TRUE;
+		hold_update = true;
 		window(((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)+2
 				, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+1
 				, ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2) + TRANSFER_WIN_WIDTH - 2
@@ -600,7 +600,7 @@ void zmodem_progress(void* cbdata, int64_t current_pos)
 				"\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 				, (int)(60-l), "");
 		last_progress=now;
-		hold_update = FALSE;
+		hold_update = false;
 		gotoxy(wherex(), wherey());
 		hold_update = old_hold;
 	}
@@ -674,10 +674,10 @@ static int recv_byte(void* unused, unsigned timeout /* seconds */)
 #endif
 BOOL data_waiting(void* unused, unsigned timeout /* seconds */)
 {
-	BOOL	ret;
+	bool	ret;
 
 	if(recv_byte_buffer_len)
-		return TRUE;
+		return true;
 	pthread_mutex_lock(&(conn_inbuf.mutex));
 	ret = conn_buf_wait_bytes(&conn_inbuf, 1, timeout*1000)!=0;
 	pthread_mutex_unlock(&(conn_inbuf.mutex));
@@ -697,7 +697,7 @@ void draw_transfer_window(char* title)
 	int		i, top, left, old_hold;
 
 	old_hold = hold_update;
-	hold_update=TRUE;
+	hold_update=true;
 	gettextinfo(&trans_ti);
 	top=(trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2;
 	left=(trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2;
@@ -785,7 +785,7 @@ void draw_transfer_window(char* title)
 	}
 
 	window(left+2, top + 7, left + TRANSFER_WIN_WIDTH - 3, top + TRANSFER_WIN_HEIGHT - 2);
-	hold_update = FALSE;
+	hold_update = false;
 	gotoxy(1,1);
 	hold_update = old_hold;
 	gettextinfo(&log_ti);
@@ -808,7 +808,7 @@ void erase_transfer_window(void) {
 void ascii_upload(FILE *fp);
 void raw_upload(FILE *fp);
 
-void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
+void begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 {
 	char	str[MAX_PATH*2+1];
 	char	path[MAX_PATH+1];
@@ -833,12 +833,12 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 
     gettextinfo(&txtinfo);
     savscrn = savescreen();
-	setfont(0, FALSE, 1);
-	setfont(0, FALSE, 2);
-	setfont(0, FALSE, 3);
-	setfont(0, FALSE, 4);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
 
-	init_uifc(FALSE, FALSE);
+	init_uifc(false, false);
 	if(!isdir(bbs->uldir)) {
 		SAFEPRINTF(str, "Invalid upload directory: %s", bbs->uldir);
 		uifcmsg(str, "An invalid `UploadPath` was specified in the `syncterm.lst` file");
@@ -851,7 +851,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 	result=filepick(&uifc, "Upload", &fpick, bbs->uldir, NULL, UIFC_FP_ALLOWENTRY);
 
 	if(result==-1 || fpick.files<1) {
-		check_exit(FALSE);
+		check_exit(false);
 		filepick_free(&fpick);
 		uifcbail();
 		restorescreen(savscrn);
@@ -932,20 +932,20 @@ void begin_download(struct bbslist *bbs)
 
     gettextinfo(&txtinfo);
     savscrn = savescreen();
-    setfont(0, FALSE, 1);
-    setfont(0, FALSE, 2);
-    setfont(0, FALSE, 3);
-    setfont(0, FALSE, 4);
+    setfont(0, false, 1);
+    setfont(0, false, 2);
+    setfont(0, false, 3);
+    setfont(0, false, 4);
 
-	init_uifc(FALSE, FALSE);
+	init_uifc(false, false);
 
 	i=0;
 	uifc.helpbuf="Select Protocol";
-	hold_update=FALSE;
+	hold_update=false;
 	suspend_rip(true);
 	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Protocol",opts)) {
 		case -1:
-			check_exit(FALSE);
+			check_exit(false);
 			break;
 		case 0:
 			zmodem_download(bbs);
@@ -979,7 +979,7 @@ void begin_download(struct bbslist *bbs)
 static BOOL is_connected(void* unused)
 {
 	if(recv_byte_buffer_len)
-		return TRUE;
+		return true;
 	return(conn_connected());
 }
 
@@ -1013,7 +1013,7 @@ void ascii_upload(FILE *fp)
 	char *p;
 	char ch[2];
 	int  inch;
-	BOOL lastwascr=FALSE;
+	bool lastwascr=false;
 
 	ch[1]=0;
 	while(!feof(fp)) {
@@ -1027,12 +1027,12 @@ void ascii_upload(FILE *fp)
 					*p=0;
 				}
 			}
-			lastwascr=FALSE;
+			lastwascr=false;
 			if (p != NULL)
 				p=strchr(p,0);
 			if(p!=NULL && p>linebuf) {
 				if(*(p-1)=='\r')
-					lastwascr=TRUE;
+					lastwascr=true;
 			}
 			conn_send(linebuf,strlen(linebuf),0);
 		}
@@ -1046,7 +1046,7 @@ void ascii_upload(FILE *fp)
 	fclose(fp);
 }
 
-static void transfer_complete(BOOL success, bool was_binary)
+static void transfer_complete(bool success, bool was_binary)
 {
 	int timeout = success ? settings.xfer_success_keypress_timeout : settings.xfer_failure_keypress_timeout;
 
@@ -1059,7 +1059,7 @@ static void transfer_complete(BOOL success, bool was_binary)
 	while(timeout > 0) {
 		if (kbhit()) {
 			if(getch()==(CIO_KEY_QUIT & 0xff) && (getch()<<8) == (CIO_KEY_QUIT & 0xff00))
-				check_exit(FALSE);
+				check_exit(false);
 			break;
 		}
 		timeout--;
@@ -1071,7 +1071,7 @@ static void transfer_complete(BOOL success, bool was_binary)
 
 void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 {
-	BOOL		success;
+	bool		success;
 	zmodem_t	zm;
 	int64_t		fsize;
 	struct zmodem_cbdata cbdata;
@@ -1104,7 +1104,7 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 		,path,fsize/1024);
 
 	if((success=zmodem_send_file(&zm, path, fp
-		,/* ZRQINIT? */TRUE, /* start_time */NULL, /* sent_bytes */ NULL)) == TRUE)
+		,/* ZRQINIT? */true, /* start_time */NULL, /* sent_bytes */ NULL)) == true)
 		zmodem_get_zfin(&zm);
 
 	fclose(fp);
@@ -1116,7 +1116,7 @@ BOOL zmodem_duplicate_callback(void *cbdata, void *zm_void)
 {
 	struct	text_info txtinfo;
 	struct ciolib_screen *savscrn;
-	BOOL	ret=FALSE;
+	bool	ret=false;
 	int		i;
 	char 	*opts[4]={
 					 "Overwrite"
@@ -1127,47 +1127,47 @@ BOOL zmodem_duplicate_callback(void *cbdata, void *zm_void)
 	struct zmodem_cbdata *cb=(struct zmodem_cbdata *)cbdata;
 	zmodem_t	*zm=(zmodem_t *)zm_void;
 	char		fpath[MAX_PATH*2+2];
-	BOOL		loop=TRUE;
+	bool		loop=true;
 	int			old_hold=hold_update;
 
     gettextinfo(&txtinfo);
     savscrn = savescreen();
-	setfont(0, FALSE, 1);
-	setfont(0, FALSE, 2);
-	setfont(0, FALSE, 3);
-	setfont(0, FALSE, 4);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
 	window(1, 1, txtinfo.screenwidth, txtinfo.screenheight);
-	init_uifc(FALSE, FALSE);
-	hold_update=FALSE;
+	init_uifc(false, false);
+	hold_update=false;
 
 	while(loop) {
-		loop=FALSE;
+		loop=false;
 		i=0;
 		uifc.helpbuf="Duplicate file... choose action\n";
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Duplicate File Name",opts)) {
 			case -1:
-				if (check_exit(FALSE)) {
-					ret=FALSE;
+				if (check_exit(false)) {
+					ret=false;
 					break;
 				}
-				loop=TRUE;
+				loop=true;
 				break;
 			case 0:	/* Overwrite */
 				SAFEPRINTF2(fpath,"%s/%s",cb->bbs->dldir,zm->current_file_name);
 				unlink(fpath);
-				ret=TRUE;
+				ret=true;
 				break;
 			case 1:	/* Choose new name */
 				uifc.changes=0;
 				uifc.helpbuf="Duplicate Filename... enter new name";
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"New Filename: ",zm->current_file_name,sizeof(zm->current_file_name)-1,K_EDIT)==-1) {
-					loop=TRUE;
+					loop=true;
 				}
 				else {
 					if(uifc.changes)
-						ret=TRUE;
+						ret=true;
 					else
-						loop=TRUE;
+						loop=true;
 				}
 				break;
 		}
@@ -1234,11 +1234,11 @@ static BOOL xmodem_check_abort(void* vp)
 	int						key;
 
 	if (xm == NULL)
-		return FALSE;
+		return false;
 
 	if (quitting) {
-		xm->cancelled=TRUE;
-		return TRUE;
+		xm->cancelled=true;
+		return true;
 	}
 
 	if(last_check != now) {
@@ -1248,7 +1248,7 @@ static BOOL xmodem_check_abort(void* vp)
 				case ESC:
 				case CTRL_C:
 				case CTRL_X:
-					xm->cancelled=TRUE;
+					xm->cancelled=true;
 					break;
 				case 0:
 				case 0xe0:
@@ -1256,8 +1256,8 @@ static BOOL xmodem_check_abort(void* vp)
 					if(key==CIO_KEY_MOUSE)
 						getmouse(NULL);
 					if (key==CIO_KEY_QUIT) {
-						if (check_exit(FALSE))
-							xm->cancelled=TRUE;
+						if (check_exit(false))
+							xm->cancelled=true;
 					}
 					break;
 			}
@@ -1298,7 +1298,7 @@ void xmodem_progress(void* cbdata, unsigned block_num, int64_t offset, int64_t f
 	if(now-last_progress>0 || offset >= fsize) {
 		xmodem_check_abort(cbdata);
 
-		hold_update = TRUE;
+		hold_update = true;
 		window(((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2)+2
 				, ((trans_ti.screenheight-TRANSFER_WIN_HEIGHT)/2)+1
 				, ((trans_ti.screenwidth-TRANSFER_WIN_WIDTH)/2) + TRANSFER_WIN_WIDTH - 2
@@ -1393,7 +1393,7 @@ void xmodem_progress(void* cbdata, unsigned block_num, int64_t offset, int64_t f
 			clreol();
 		}
 		last_progress=now;
-		hold_update = FALSE;
+		hold_update = false;
 		gotoxy(wherex(), wherey());
 		hold_update = old_hold;
 	}
@@ -1425,7 +1425,7 @@ static int recv_nak(void *cbdata, unsigned timeout)
 
 void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 {
-	BOOL		success;
+	bool		success;
 	xmodem_t	xm;
 	int64_t		fsize;
 	bool            was_binary = conn_api.binary_mode;
@@ -1489,7 +1489,7 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 	}
 
 	if((success=xmodem_send_file(&xm, path, fp
-		,/* start_time */NULL, /* sent_bytes */ NULL)) == TRUE) {
+		,/* start_time */NULL, /* sent_bytes */ NULL)) == true) {
 		if(mode&YMODEM) {
 
 			if(xmodem_get_mode(&xm)) {
@@ -1510,11 +1510,11 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 	transfer_complete(success, was_binary);
 }
 
-BOOL xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t pathsize, char *fname)
+bool xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t pathsize, char *fname)
 {
 	struct	text_info txtinfo;
 	struct ciolib_screen *savscrn;
-	BOOL	ret=FALSE;
+	bool	ret=false;
 	int		i;
 	char 	*opts[4]={
 					 "Overwrite"
@@ -1523,50 +1523,50 @@ BOOL xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t path
 					,NULL
 				  };
 	char	newfname[MAX_PATH+1];
-	BOOL	loop=TRUE;
+	bool	loop=true;
 	int		old_hold=hold_update;
 
     gettextinfo(&txtinfo);
     savscrn = savescreen();
-	setfont(0, FALSE, 1);
-	setfont(0, FALSE, 2);
-	setfont(0, FALSE, 3);
-	setfont(0, FALSE, 4);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
 	window(1, 1, txtinfo.screenwidth, txtinfo.screenheight);
 
-	init_uifc(FALSE, FALSE);
+	init_uifc(false, false);
 
-	hold_update=FALSE;
+	hold_update=false;
 	while(loop) {
-		loop=FALSE;
+		loop=false;
 		i=0;
 		uifc.helpbuf="Duplicate file... choose action\n";
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Duplicate File Name",opts)) {
 			case -1:
-				if (check_exit(FALSE)) {
-					ret=FALSE;
+				if (check_exit(false)) {
+					ret=false;
 					break;
 				}
-				loop=TRUE;
+				loop=true;
 				break;
 			case 0:	/* Overwrite */
 				unlink(path);
-				ret=TRUE;
+				ret=true;
 				break;
 			case 1:	/* Choose new name */
 				uifc.changes=0;
 				uifc.helpbuf="Duplicate Filename... enter new name";
 				SAFECOPY(newfname, getfname(fname));
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"New Filename: ",newfname,sizeof(newfname)-1,K_EDIT)==-1) {
-					loop=TRUE;
+					loop=true;
 				}
 				else {
 					if(uifc.changes) {
 						sprintf(path,"%s/%s",bbs->dldir,newfname);
-						ret=TRUE;
+						ret=true;
 					}
 					else
-						loop=TRUE;
+						loop=true;
 				}
 				break;
 		}
@@ -1591,7 +1591,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	uint	total_files=0;
 	uint	cps;
 	uint	wr;
-	BOOL	success=FALSE;
+	bool	success=false;
 	long	fmode;
 	long	serial_num=-1;
 	ulong	tmpftime;
@@ -1600,7 +1600,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	FILE*	fp=NULL;
 	time_t	t,startfile,ftime=0;
 	int		old_hold=hold_update;
-	BOOL	extra_pass = FALSE;
+	bool	extra_pass = false;
 	bool            was_binary = conn_api.binary_mode;
 
 	if(safe_mode)
@@ -1703,7 +1703,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 					lprintf(LOG_INFO,"Received YMODEM termination block");
 					goto end;
 				}
-				extra_pass = FALSE;
+				extra_pass = false;
 				file_bytes=total_bytes=0;
 				total_files=0;
 				i=sscanf(((char *)block)+strlen((char *)block)+1,"%"PRId64" %lo %lo %lo %d %"PRId64
@@ -1765,7 +1765,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 				,mode&CRC ? "CRC-16" : "Checksum");
 
 		startfile=time(NULL);
-		success=FALSE;
+		success=false;
 
 		errors=0;
 		block_num=1;
@@ -1785,12 +1785,12 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 
 			if(i!=SUCCESS) {
 				if(i==EOT)	{		/* end of transfer */
-					success=TRUE;
+					success=true;
 					xmodem_put_ack(&xm);
 					break;
 				}
 				if(i==CAN) {		/* Cancel */
-					xm.cancelled=TRUE;
+					xm.cancelled=true;
 					break;
 				}
 				if(mode&GMODE) {
@@ -1868,7 +1868,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 		if((cps=(unsigned)(file_bytes/t))==0)
 			cps=1;
 		if (--total_files <= 0)
-			extra_pass = TRUE;
+			extra_pass = true;
 		total_bytes-=file_bytes;
 		if(total_files>1 && total_bytes)
 			lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %"PRId64
@@ -1895,18 +1895,18 @@ void music_control(struct bbslist *bbs)
 
    	gettextinfo(&txtinfo);
    	savscrn = savescreen();
-	setfont(0, FALSE, 1);
-	setfont(0, FALSE, 2);
-	setfont(0, FALSE, 3);
-	setfont(0, FALSE, 4);
-	init_uifc(FALSE, FALSE);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
+	init_uifc(false, false);
 
 	i=cterm->music_enable;
 	uifc.helpbuf=music_helpbuf;
 	if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"ANSI Music Setup",music_names)!=-1)
 		cterm->music_enable=i;
 	else
-		check_exit(FALSE);
+		check_exit(false);
 	uifcbail();
 	restorescreen(savscrn);
 	freescreen(savscrn);
@@ -1922,11 +1922,11 @@ void font_control(struct bbslist *bbs, struct cterminal *cterm)
 		return;
    	gettextinfo(&txtinfo);
    	savscrn = savescreen();
-	setfont(0, FALSE, 1);
-	setfont(0, FALSE, 2);
-	setfont(0, FALSE, 3);
-	setfont(0, FALSE, 4);
-	init_uifc(FALSE, FALSE);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
+	init_uifc(false, false);
 
 	switch(cio_api.mode) {
 		case CIOLIB_MODE_CONIO:
@@ -1936,7 +1936,7 @@ void font_control(struct bbslist *bbs, struct cterminal *cterm)
 		case CIOLIB_MODE_ANSI:
 			uifcmsg("Not supported in this video output mode."
 				,"Font cannot be changed in the current video output mode");
-			check_exit(FALSE);
+			check_exit(false);
 			break;
 		default:
 			i=j=cterm->altfont[0];
@@ -1950,19 +1950,19 @@ void font_control(struct bbslist *bbs, struct cterminal *cterm)
 				if(k & MSK_INS) {
 					struct file_pick fpick;
 					j=filepick(&uifc, "Load Font From File", &fpick, ".", NULL, 0);
-					check_exit(FALSE);
+					check_exit(false);
 
 					if(j!=-1 && fpick.files>=1)
 						loadfont(fpick.selected[0]);
 					filepick_free(&fpick);
 				}
 				else {
-					setfont(i,FALSE,1);
+					setfont(i,false,1);
 					cterm->altfont[0] = i;
 				}
 			}
 			else
-				check_exit(FALSE);
+				check_exit(false);
 		break;
 	}
 	uifcbail();
@@ -1981,14 +1981,14 @@ void capture_control(struct bbslist *bbs)
 		return;
    	gettextinfo(&txtinfo);
    	savscrn = savescreen();
-	setfont(0, FALSE, 1);
-	setfont(0, FALSE, 2);
-	setfont(0, FALSE, 3);
-	setfont(0, FALSE, 4);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
 	cap=(char *)alloca(cterm->height*cterm->width*2);
 	gettext(cterm->x, cterm->y, cterm->x+cterm->width-1, cterm->y+cterm->height-1, cap);
 
-	init_uifc(FALSE, FALSE);
+	init_uifc(false, false);
 
 	if(!cterm->log) {
 		struct file_pick fpick;
@@ -2012,7 +2012,7 @@ void capture_control(struct bbslist *bbs)
 		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Type",opts)!=-1) {
 			j=filepick(&uifc, "Capture File", &fpick, bbs->dldir, i >= 2 ? "*.bin" : NULL
 				, UIFC_FP_ALLOWENTRY|UIFC_FP_OVERPROMPT);
-			check_exit(FALSE);
+			check_exit(false);
 
 			if(j!=-1 && fpick.files>=1) {
 				if(i >= 2) {
@@ -2079,7 +2079,7 @@ void capture_control(struct bbslist *bbs)
 			filepick_free(&fpick);
 		}
 		else
-			check_exit(FALSE);
+			check_exit(false);
 	}
 	else {
 		if(cterm->log & CTERM_LOG_PAUSED) {
@@ -2094,7 +2094,7 @@ void capture_control(struct bbslist *bbs)
 			if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Control",opts)!=-1) {
 				switch(i) {
 					case -1:
-						check_exit(FALSE);
+						check_exit(false);
 						break;
 					case 0:
 						cterm->log=cterm->log & CTERM_LOG_MASK;
@@ -2117,7 +2117,7 @@ void capture_control(struct bbslist *bbs)
 			if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Capture Control",opts)!=-1) {
 				switch(i) {
 					case -1:
-						check_exit(FALSE);
+						check_exit(false);
 						break;
 					case 0:
 						cterm->log |= CTERM_LOG_PAUSED;
@@ -2142,12 +2142,12 @@ void capture_control(struct bbslist *bbs)
 		outbuf_size=0; \
 		if(ansi_replybuf[0]) \
 			conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0); \
-		updated=TRUE; \
+		updated=true; \
 	}
 
 int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz)
 {
-	get_syncterm_filename(fn, fnsz, SYNCTERM_PATH_CACHE, FALSE);
+	get_syncterm_filename(fn, fnsz, SYNCTERM_PATH_CACHE, false);
 	backslash(fn);
 	strcat(fn, bbs->name);
 	backslash(fn);
@@ -2479,9 +2479,9 @@ do_paste(void)
 	if(p!=NULL) {
 		p2 = p;
 		oldfont = getfont(1);
-		setfont(cterm->altfont[0], FALSE, 1);
+		setfont(cterm->altfont[0], false, 1);
 		p = (unsigned char *)utf8_to_cp(getcodepage(), p, '\x00', strlen((char *)p), NULL);
-		setfont(oldfont, FALSE, 1);
+		setfont(oldfont, false, 1);
 		free(p2);
 		if (p != NULL) {
 			for(p2=p; *p2; p2++) {
@@ -2498,7 +2498,7 @@ do_paste(void)
 	}
 }
 
-BOOL doterm(struct bbslist *bbs)
+bool doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
 	char mouse_buf[64];
@@ -2516,8 +2516,8 @@ BOOL doterm(struct bbslist *bbs)
 	long double thischar=0;
 	int	speed;
 	int	oldmc;
-	int	updated=FALSE;
-	BOOL	sleep;
+	int	updated=false;
+	bool	sleep;
 	size_t	remain;
 	struct text_info txtinfo;
 #ifndef WITHOUT_OOII
@@ -2548,7 +2548,7 @@ BOOL doterm(struct bbslist *bbs)
 	scrollback_mode=txtinfo.currmode;
 	cterm=cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,term.width,scrollback_buf, get_emulation(bbs));
 	if(!cterm) {
-		return FALSE;
+		return false;
 	}
 	cterm->apc_handler = apc_handler;
 	cterm->apc_handler_data = bbs;
@@ -2572,8 +2572,8 @@ BOOL doterm(struct bbslist *bbs)
 		ms.mode = MM_RIP;
 	setup_mouse_events(&ms);
 	for(;!quitting;) {
-		hold_update=TRUE;
-		sleep=TRUE;
+		hold_update=true;
+		sleep=true;
 		if(!term.nostatus)
 			update_status(bbs, (bbs->conn_type == CONN_TYPE_SERIAL || bbs->conn_type == CONN_TYPE_SERIAL_NORTS)?bbs->bpsrate:speed, ooii_mode);
 		for(remain=count_data_waiting() /* Hack for connection check */ + (!is_connected(NULL)); remain; remain--) {
@@ -2592,14 +2592,14 @@ BOOL doterm(struct bbslist *bbs)
 							if (!bbs->hidepopups) {
 								uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
 							}
-							check_exit(FALSE);
+							check_exit(false);
 							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
 							cterm_end(cterm, 0);
 							cterm=NULL;
 							conn_close();
 							hidemouse();
-							return(FALSE);
+							return(false);
 						}
 						break;
 					default:
@@ -2655,7 +2655,7 @@ BOOL doterm(struct bbslist *bbs)
 								if(!strcmp((char *)zrqbuf, (char *)zrqinit))
 									zmodem_download(bbs);
 								else
-									begin_upload(bbs, TRUE, inch);
+									begin_upload(bbs, true, inch);
 								setup_mouse_events(&ms);
 								suspend_rip(false);
 								zrqbuf[0]=0;
@@ -2728,13 +2728,13 @@ BOOL doterm(struct bbslist *bbs)
 			}
 			else {
 				if (speed)
-					sleep=FALSE;
+					sleep=false;
 				break;
 			}
 		}
 		WRITE_OUTBUF();
 		if(updated) {
-			hold_update=FALSE;
+			hold_update=false;
 			gotoxy(wherex(), wherey());
 		}
 		hold_update=oldmc;
@@ -2743,7 +2743,7 @@ BOOL doterm(struct bbslist *bbs)
 		while(quitting || rip_kbhit()) {
 			struct mouse_event mevent;
 
-			updated=TRUE;
+			updated=true;
 			gotoxy(wherex(), wherey());
 			if (quitting)
 				key = CIO_KEY_QUIT;
@@ -2830,11 +2830,11 @@ BOOL doterm(struct bbslist *bbs)
 						char title[LIST_NAME_MAX + 13];
 						struct ciolib_screen *savscrn;
 						savscrn = savescreen();
-						setfont(0, FALSE, 1);
-						setfont(0, FALSE, 2);
-						setfont(0, FALSE, 3);
-						setfont(0, FALSE, 4);
-						show_bbslist(bbs->name, TRUE);
+						setfont(0, false, 1);
+						setfont(0, false, 2);
+						setfont(0, false, 3);
+						setfont(0, false, 4);
+						show_bbslist(bbs->name, true);
 						sprintf(title, "SyncTERM - %s\n", bbs->name);
 						settitle(title);
 						uifcbail();
@@ -2886,7 +2886,7 @@ BOOL doterm(struct bbslist *bbs)
 					key = 0;
 					break;
 				case 0x1600:	/* ALT-U - Upload */
-					begin_upload(bbs, FALSE, inch);
+					begin_upload(bbs, false, inch);
 					setup_mouse_events(&ms);
 					showmouse();
 					key = 0;
@@ -2905,17 +2905,17 @@ BOOL doterm(struct bbslist *bbs)
 					/* FALLTHROUGH for curses/ansi modes */
 				case 0x2d00:	/* Alt-X - Exit */
 				case CIO_KEY_QUIT:
-					if(!check_exit(TRUE))
+					if(!check_exit(true))
 						break;
 					// Fallthrough
 				case 0x2300:	/* Alt-H - Hangup */
 					{
 						struct ciolib_screen *savscrn;
 						savscrn = savescreen();
-						setfont(0, FALSE, 1);
-						setfont(0, FALSE, 2);
-						setfont(0, FALSE, 3);
-						setfont(0, FALSE, 4);
+						setfont(0, false, 1);
+						setfont(0, false, 2);
+						setfont(0, false, 3);
+						setfont(0, false, 4);
 						if(quitting || confirm("Disconnect... Are you sure?", "Selecting Yes closes the connection\n")) {
 							freescreen(savscrn);
 							setup_mouse_events(&ms);
@@ -2957,9 +2957,9 @@ BOOL doterm(struct bbslist *bbs)
 							conn_close();
 							hidemouse();
 							hold_update=oldmc;
-							return(FALSE);
+							return(false);
 						case 3:
-							begin_upload(bbs, FALSE, inch);
+							begin_upload(bbs, false, inch);
 							break;
 						case 4:
 							begin_download(bbs);
@@ -2998,7 +2998,7 @@ BOOL doterm(struct bbslist *bbs)
 							conn_close();
 							hidemouse();
 							hold_update=oldmc;
-							return(TRUE);
+							return(true);
 #ifdef WITHOUT_OOII
 						case 12:
 #else
@@ -3009,11 +3009,11 @@ BOOL doterm(struct bbslist *bbs)
 								char title[LIST_NAME_MAX + 13];
 
 								savscrn = savescreen();
-								setfont(0, FALSE, 1);
-								setfont(0, FALSE, 2);
-								setfont(0, FALSE, 3);
-								setfont(0, FALSE, 4);
-								show_bbslist(bbs->name, TRUE);
+								setfont(0, false, 1);
+								setfont(0, false, 2);
+								setfont(0, false, 3);
+								setfont(0, false, 4);
+								show_bbslist(bbs->name, true);
 								sprintf(title, "SyncTERM - %s\n", bbs->name);
 								settitle(title);
 								restorescreen(savscrn);
@@ -3383,5 +3383,5 @@ BOOL doterm(struct bbslist *bbs)
 	hidemouse();
 	hold_update=oldmc;
  */
-	return(FALSE);
+	return(false);
 }
