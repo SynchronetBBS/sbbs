@@ -7349,9 +7349,9 @@ struct rip_mouse_event {
 static struct rip_mouse_event            rip_mouse_event;
 
 static const struct builtin_rip_variable builtins[] = {
-	{"ADOW", rv_date, NULL} // Abbreviated Day of Week
+	{"ADOW", rv_date, NULL}   // Abbreviated Day of Week
 	, {"ALARM", rv_sound, NULL}
-	, {"AMPM", rv_time, NULL}              // Returns AM or PM depending on time
+	, {"AMPM", rv_time, NULL} // Returns AM or PM depending on time
 	, {"APP0", rv_exploit, NULL}
 	, {"APP1", rv_exploit, NULL}
 	, {"APP2", rv_exploit, NULL}
@@ -7362,7 +7362,7 @@ static const struct builtin_rip_variable builtins[] = {
 	, {"APP7", rv_exploit, NULL}
 	, {"APP8", rv_exploit, NULL}
 	, {"APP9", rv_exploit, NULL}
-	, {"BEEP", rv_sound, NULL}             // Beep Sound (ala Ctrl-G)
+	, {"BEEP", rv_sound, NULL} // Beep Sound (ala Ctrl-G)
 	, {"BLIP", rv_sound, NULL}
 	, {"COFF", rv_termset, NULL}
 	, {"COMPAT", rv_termset, NULL}
@@ -7370,26 +7370,26 @@ static const struct builtin_rip_variable builtins[] = {
 	, {"CURSOR", rv_termstat, NULL}
 	, {"CURX", rv_termstat, NULL}
 	, {"CURY", rv_termstat, NULL}
-	, {"DATE", rv_date, NULL}              // Date in short format MM/DD/YY
-	, {"DATETIME", rv_date, NULL}          // Date and Time
-	, {"DAY", rv_date, NULL}               // Day of Month Number
-	, {"DOW", rv_date, NULL}               // Day of week fully spelled out
-	, {"DOY", rv_date, NULL}               // Day of year
+	, {"DATE", rv_date, NULL}     // Date in short format MM/DD/YY
+	, {"DATETIME", rv_date, NULL} // Date and Time
+	, {"DAY", rv_date, NULL}      // Day of Month Number
+	, {"DOW", rv_date, NULL}      // Day of week fully spelled out
+	, {"DOY", rv_date, NULL}      // Day of year
 	, {"DTW", rv_disable, NULL}
 	, {"DWAYOFF", rv_termset, NULL}
 	, {"DWAYON", rv_termset, NULL}
 	, {"EGW", rv_erase, NULL}
 	, {"ETW", rv_erase, NULL}
-	, {"FYEAR", rv_date, NULL}             // 4 digit year
+	, {"FYEAR", rv_date, NULL}    // 4 digit year
 	, {"HKEYOFF", rv_hotkey, NULL}
 	, {"HKEYON", rv_hotkey, NULL}
-	, {"HOUR", rv_time, NULL}              // Hour (format HH) - normal style
+	, {"HOUR", rv_time, NULL}     // Hour (format HH) - normal style
 	, {"M", rv_mouse, NULL}
-	, {"MHOUR", rv_time, NULL}             // Hour (format HH) - military style
-	, {"MIN", rv_time, NULL}               // Minutes
+	, {"MHOUR", rv_time, NULL}    // Hour (format HH) - military style
+	, {"MIN", rv_time, NULL}      // Minutes
 	, {"MKILL", rv_mouse_kill, NULL}
-	, {"MONTH", rv_date, NULL}             // Month Name
-	, {"MONTHNUM", rv_date, NULL}          // Month Number (1..12)
+	, {"MONTH", rv_date, NULL}    // Month Name
+	, {"MONTHNUM", rv_date, NULL} // Month Number (1..12)
 	, {"MSTAT", rv_mouse, NULL}
 	, {"MUSIC", rv_sound, NULL}
 	, {"PCB", rv_paste, NULL}
@@ -7426,14 +7426,14 @@ static const struct builtin_rip_variable builtins[] = {
 	, {"SBAROFF", rv_termset, NULL}
 	, {"SBARON", rv_termset, NULL}
 	, {"SCB", rv_save, NULL}
-	, {"SEC", rv_time, NULL}               // Seconds
+	, {"SEC", rv_time, NULL} // Seconds
 	, {"SMF", rv_save, NULL}
 	, {"STATBAR", rv_termstat, NULL}
 	, {"STW", rv_save, NULL}
 	, {"TABOFF", rv_hotkey, NULL}
 	, {"TABON", rv_hotkey, NULL}
-	, {"TIME", rv_time, NULL}              // Time in standard format 18:09:33
-	, {"TIMEZONE", rv_time, NULL}          // Time Zone or "NONE" if unknown
+	, {"TIME", rv_time, NULL}     // Time in standard format 18:09:33
+	, {"TIMEZONE", rv_time, NULL} // Time Zone or "NONE" if unknown
 	, {"TWFONT", rv_termstat, NULL}
 	, {"TWH", rv_termstat, NULL}
 	, {"TWIN", rv_termstat, NULL}
@@ -7444,14 +7444,14 @@ static const struct builtin_rip_variable builtins[] = {
 	, {"TWY1", rv_termstat, NULL}
 	, {"VT102OFF", rv_termset, NULL}
 	, {"VT102ON", rv_termset, NULL}
-	, {"WDAY", rv_date, NULL}              // Day of Week (0..6)
-	, {"WOY", rv_date, NULL}               // Week of current year 00-53; Sunday=1st Day of Week
-	, {"WOYM", rv_date, NULL}              // Week of current year 00-53; Monday=1st Day of Week
+	, {"WDAY", rv_date, NULL} // Day of Week (0..6)
+	, {"WOY", rv_date, NULL}  // Week of current year 00-53; Sunday=1st Day of Week
+	, {"WOYM", rv_date, NULL} // Week of current year 00-53; Monday=1st Day of Week
 	, {"X", rv_mouse, NULL}
 	, {"XY", rv_mouse, NULL}
 	, {"XYM", rv_mouse, NULL}
 	, {"Y", rv_mouse, NULL}
-	, {"YEAR", rv_date, NULL}              // 2 digit year
+	, {"YEAR", rv_date, NULL} // 2 digit year
 	,
 };
 
@@ -8550,8 +8550,8 @@ write_char(char ch)
                                                         // draw_pixel(rip.x + (x * rip.font.size) + xs, rip.y + (y *
                                                         // rip.font.size)+ ys);
 							set_pixel(rip.x + (x * rip.font.size) + xs
-							    , rip.y + (y * rip.font.size) + ys,
-							    map_rip_color(rip.color));
+							    , rip.y + (y * rip.font.size) + ys
+							    , map_rip_color(rip.color));
 						}
 					}
 				}
@@ -11287,7 +11287,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          *      Command            Description of Command
                                                          *
                                                          *
-                                                         * 
+                                                         *
                                                          * ----------------------------------------------------------------
                                                          *      RIP_FONT_STYLE     font style (character set, direction,
                                                          * size)
@@ -13420,7 +13420,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          * follows:
                                                          *
                                                          *
-                                                         * 
+                                                         *
                                                          * variable-identifier[,field-width]:[?question-text?][default-value]
                                                          *
                                                          * There are several different segments in this parameter as you
@@ -13694,7 +13694,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          *   Mode   Description
                                                          *                                         Logical
                                                          *
-                                                         * 
+                                                         *
                                                          * ------------------------------------------------------------------
                                                          *    00    Paste the image on-screen normally
                                                          *                   (COPY)
@@ -13977,7 +13977,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          *   Mode   Description
                                                          *                                          Logical
                                                          *
-                                                         * 
+                                                         *
                                                          * -------------------------------------------------------------------
                                                          *    00    Paste the image on-screen normally
                                                          *                   (COPY)
@@ -14226,7 +14226,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                            *
                                                            *   Justify   Description
                                                            *
-                                                           * 
+                                                           *
                                                            * ------------------------------------------------------------------
                                                            *     0       Don't right/left justify.  Left-justify only
                                                            *     1       Perform right/left margin justification of this
@@ -14332,7 +14332,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          *   Effect Type   X0 Modifier   Y0 Modifier   X1 Modifier   Y1
                                                          * Modifier
                                                          *
-                                                         * 
+                                                         *
                                                          * -------------------------------------------------------------------
                                                          *   Bevel         -bevel size   -bevel size   +bevel size
                                                          *   +bevel size
@@ -14465,7 +14465,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          *
                                                          *   Parameter Example       Description of the Text Parameter
                                                          *
-                                                         * 
+                                                         *
                                                          * -------------------------------------------------------------------
                                                          *   icon<>label<>host_cmd   Specify all three blocks
                                                          *     <>label<>host_cmd     2 blocks specified; no icon
@@ -15030,8 +15030,8 @@ draw_glyph(uint8_t ch)
 
 				if (pix) {
 					setpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1
-					    , (vparams[vmode].charheight - 1) * vparams[vmode].rows - 1, 0, 0, pix,
-					    NULL);
+					    , (vparams[vmode].charheight - 1) * vparams[vmode].rows - 1, 0, 0, pix
+					    , NULL);
 					freepixels(pix);
 					amiga_y -= (amiga_font->height << doubled);
 					for (int ypos = (vparams[vmode].charheight - 1) * vparams[vmode].rows;

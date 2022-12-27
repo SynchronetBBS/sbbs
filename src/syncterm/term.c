@@ -903,6 +903,7 @@ erase_transfer_window(void)
 	textattr(trans_ti.attribute);
 	_setcursortype(_NORMALCURSOR);
 }
+
 void ascii_upload(FILE*fp);
 void raw_upload(FILE*fp);
 
@@ -2702,18 +2703,24 @@ doterm(struct bbslist*bbs)
 	BYTE             ooii_init1[] =
 	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";            /*
                                                                                                                                                                                                                                                                                                                           *
+                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           * for
                                                                                                                                                                                                                                                                                                                           *
+                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           * OOII
+                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           * auto-enable
                                                                                                                                                                                                                                                                                                                           */
 	BYTE ooii_init2[] =
 	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\x1b[0m\x1b[2J\r\n\r\n\x1b[0;1;30mHX Force retinal scan in progress ... \x1b[0;0;30m"; /*
                                                                                                                                                                                                                                                                                                                           *
+                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           * for
                                                                                                                                                                                                                                                                                                                           *
+                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           * OOII
+                                                                                                                                                                                                                                                                                                                          *
                                                                                                                                                                                                                                                                                                                           *
                                                                                                                                                                                                                                                                                                                           * auto-enable
                                                                                                                                                                                                                                                                                                                           */
@@ -2996,8 +3003,8 @@ doterm(struct bbslist*bbs)
 						case CIOLIB_MOUSE_MOVE:
 						case CIOLIB_BUTTON_1_CLICK:
 							conn_send(mouse_buf
-							    , fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms),
-							    0);
+							    , fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms)
+							    , 0);
 							break;
 						case CIOLIB_BUTTON_4_PRESS:
 						case CIOLIB_BUTTON_5_PRESS:
