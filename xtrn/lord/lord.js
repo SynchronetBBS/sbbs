@@ -20,12 +20,14 @@ delete dk.console.remote_screen;
 require("recordfile.js", "RecordFile");
 require('recorddefs.js', 'Player_Def');
 
-var ver = '5.01 JS';
+var ver = '5.02 JS';
 var pfile;
 var psock;
 var statefile;
 var txtfile;
 var txtindex = {};
+var ripfile;
+var ripindex = {};
 var player;
 var which_castle = random(5) + 1;
 var state;
@@ -34,6 +36,9 @@ var curcolnum = 1;
 var morechk = true;
 var cleanup_files = [];
 var whitelist = [];
+var rip = false;
+var lastrip = '';
+var syncterm_cache;
 
 var trainer_stats = [
 	{
@@ -2009,6 +2014,10 @@ function getkeyw()
 			}
 			else {
 				sln('(*** GOD STRIKES YOU UNCONSCIOUS (OUT OF BBS TIME!) ***)');
+				if (rip) {
+					lrdrip('EXIT');
+					getkey();
+				}
 			}
 			player.on_now = false;
 			player.put();
@@ -2021,6 +2030,10 @@ function getkeyw()
 			sln('  you have obviously fallen asleep.  Please come back sometime when');
 			sln('  you feel like actually playing.');
 			sln('');
+			if (rip) {
+				lrdrip('EXIT');
+				getkey();
+			}
 			if (player !== undefined) {
 				player.on_now = false;
 				player.put();
@@ -2075,7 +2088,10 @@ function more_nomail()
 	var oa = dk.console.attr.value;
 
 	curlinenum = 1;
-	lw('  `2<`0MORE`2>');
+	if (rip)
+		lw('<CLICK>');
+	else
+		lw('  `2<`0MORE`2>');
 	getkey();
 	if (!dk.user.ansi_supported || settings.use_fancy_more === false) {
 		sln('');
@@ -2284,6 +2300,7 @@ function check_mail()
 	var resp;
 	var m;
 	var len;
+	var lr = lastrip;
 
 	if (pfile !== undefined) {
 		fmutex(mf+'.tmp');
@@ -2295,12 +2312,22 @@ function check_mail()
 		if (file_exists(mf)) {
 			file_rename(mf, mf+'.tmp');
 			rfmutex(mf);
+			if (rip) {
+				if (lr != 'W1' && lr != 'W5' && lr != 'W3' && lr != 'W4')
+					lrdrip('W4');
+			}
 			foreground(15);
 			sln('  ** YOU ARE STOPPED BY A MESSENGER WITH THE FOLLOWING NEWS: **');
 			sln('');
+			if (rip)
+				getkey();
 			show_lord_file(mf+'.tmp', true, true);
 			file_remove(mf+'.tmp');
 			sln('');
+			if (rip) {
+				if (lr != 'W1' && lr != 'W5' && lr != 'W3' && lr != 'W4')
+					lrdrip(lr);
+			}
 		}
 		else {
 			rfmutex(mf);
@@ -2310,9 +2337,15 @@ function check_mail()
 	else {
 		if (mail_check()) {
 			psock.writeln('GetMail '+player.Record);
+			if (rip) {
+				if (lr != 'W1' && lr != 'W5' && lr != 'W3' && lr != 'W4')
+					lrdrip('W4');
+			}
 			foreground(15);
 			sln('  ** YOU ARE STOPPED BY A MESSENGER WITH THE FOLLOWING NEWS: **');
 			sln('');
+			if (rip)
+				getkey();
 			resp = psock.readln();
 			m = resp.match(/^Mail ([0-9]+)$/);
 			if (m !== null) {
@@ -2322,6 +2355,10 @@ function check_mail()
 					throw new Error('Out of sync with server after GetMail');
 				}
 				show_lord_buffer(resp, true, true);
+			}
+			if (rip) {
+				if (lr != 'W1' && lr != 'W5' && lr != 'W3' && lr != 'W4')
+					lrdrip(lr);
 			}
 		}
 	}
@@ -2336,7 +2373,10 @@ function more()
 	curlinenum = 1;
 	player.put();
 	check_mail();
-	lw('  `2<`0MORE`2>');
+	if (rip)
+		lw('<CLICK>');
+	else
+		lw('  `2<`0MORE`2>');
 	getkey();
 	if (!dk.user.ansi_supported || settings.use_fancy_more === false) {
 		sln('');
@@ -2403,7 +2443,10 @@ function tournament_over()
 	sln('');
 	sln('  Now taking you back to the BBS..');
 	sln('');
-	lln('  `2<`0MORE`2>');
+	if (rip)
+		lw('<CLICK>');
+	else
+		lln('  `2<`0MORE`2>');
 	getkey();
 	if (psock !== undefined) {
 		psock.writeln('NewHero '+a[0].name);
@@ -3295,6 +3338,8 @@ function show_looks(op)
 
 function dead_screen(op)
 {
+	if (rip)
+		lrdrip('DEAD');
 	sln('');
 	lln('  `4You have been killed by '+op.name+'`2.');
 	sln('');
@@ -3354,7 +3399,10 @@ function tournament_check()
 		foreground(10);
 		sln('  Congratulations! You have won the tournament!');
 		sln('');
-		lln('  `2<`0MORE`2>');
+		if (rip)
+			lw('<CLICK>');
+		else
+			lln('  `2<`0MORE`2>');
 		getkey();
 		player.on_now = false;
 		player.put();
@@ -3369,7 +3417,10 @@ function tournament_check()
 		lln('  You have completed the tournament, but '+op.name);
 		lln('  got there first.');
 		sln('');
-		lln('  `2<`0MORE`2>');
+		if (rip)
+			lw('<CLICK>');
+		else
+			lln('  `2<`0MORE`2>');
 		getkey();
 		player.on_now = false;
 		player.put();
@@ -3565,6 +3616,10 @@ function on_battle(op, first, action) {
 			more_nomail();
 			dead_screen(op);
 			sln('');
+			if (rip) {
+				lrdrip('EXIT');
+				getkey();
+			}
 		}
 	}
 
@@ -3617,16 +3672,19 @@ outer:
 		}
 		lln('  `2Your Hitpoints:`0 '+pretty_int(player.hp));
 		lln('  `0'+op.name+'`2\'s Hitpoints:`0 '+pretty_int(op.hp));
-		sln('');
-		lln('  `2(`0A`2)ttack Your Enemy');
-		if (cantaunt) {
-			lln('  `2(`0Y`2)ell Something To Your Enemy');
+		if (!rip) {
+			sln('');
+			lln('  `2(`0A`2)ttack Your Enemy');
+			if (cantaunt) {
+				lln('  `2(`0Y`2)ell Something To Your Enemy');
+			}
+			lln('  `2(`0R`2)un For Your Life');
 		}
-		lln('  `2(`0R`2)un For Your Life');
 		sln('');
 		lw('  `2Your Command ?  :`0 ');
 		ch = getkey().toUpperCase();
-		sln(ch);
+		if (!rip)
+			sln(ch);
 		if (!ob_get_message(op)) {
 			switch(ch) {
 				case 'A':
@@ -3727,6 +3785,7 @@ function lw(str, ext)
 	var oop;
 	var snip = '';
 	var lwch;
+	var lr;
 
 	function answer_mail(to) {
 		var op = player_get(to);
@@ -4438,6 +4497,8 @@ function lw(str, ext)
 								to = parseInt(str.substr(2), 10);
 								oop = player_get(to);
 								if (oop.on_now) {
+									if (rip)
+										lrdrip('ONLINE');
 									sclrscr();
 									sln('');
 									sln('');
@@ -4462,7 +4523,7 @@ function lw(str, ext)
 												throw new Error('Out of sync with server after DoneOnlineBattle');
 											}
 										}
-										ob_cleanup();
+										ob_cleanup(lr);
 										break;
 									}
 									sln('');
@@ -4480,7 +4541,7 @@ function lw(str, ext)
 										ob_send_resp(oop, 'A');
 										on_battle(oop, false);
 									}
-									ob_cleanup();
+									ob_cleanup(lr);
 									if (player.hp < 1 || player.dead) {
 										player.hp = 0;
 										player.dead = true;
@@ -4552,6 +4613,8 @@ function lw(str, ext)
 function quit_msg()
 {
 	sclrscr();
+	if (rip)
+		lrdrip('W1');
 	sln('');
 	switch (random(5)) {
 		case 0:
@@ -4569,6 +4632,11 @@ function quit_msg()
 		case 4:
 			lln('`2  Your very soul aches as you wake up from your favorite dream.');
 			return;
+	}
+	sln('');
+	if (rip) {
+		lrdrip('EXIT');
+		getkey();
 	}
 }
 
@@ -4606,8 +4674,41 @@ function lrdfile(fname, more)
 	curlinenum = 1;
 }
 
+function lrdrip(fname, update)
+{
+	var ln;
+	var mc = morechk;
+
+	if (update === undefined)
+		update = true;
+	if (ripindex[fname] === undefined) {
+		morechk = mc;
+		return;
+	}
+	if (update)
+		lastrip = fname;
+	ripfile.position = ripindex[fname];
+
+	morechk = false;
+
+	while(true) {
+		ln = ripfile.readln(65535);
+		if (ln === null) {
+			break;
+		}
+		if (ln.search(/^@#/) === 0) {
+			break;
+		}
+		lln(ln);
+	}
+	morechk = mc;
+	curlinenum = 1;
+}
+
 function instructions()
 {
+	if (rip)
+		lrdrip('W1');
 	lrdfile('HINTS', true);
 	more_nomail();
 	sln('');
@@ -4753,6 +4854,8 @@ function choose_profession(dh_tavern)
 		foreground(10);
 		sln('');
 		sln('');
+		if (dh_tavern && rip)
+			lrdrip('W1');
 		switch (ch) {
 			case 'K':
 				sln('  Now that you\'ve grown up, you have decided to study the ways of the');
@@ -5622,6 +5725,8 @@ function warriors_on_now(inhello)
 			mail_to(on[i].Record, '`0  '+player.name+' `2has entered the realm.');
 		}
 	}
+	if (rip)
+		more_nomail();
 }
 
 function show_log()
@@ -5673,6 +5778,8 @@ function show_log()
 	}
 
 	do {
+		if (rip)
+			lrdrip('W2');
 		sclrscr();
 		sln('');
 		sln('');
@@ -5680,12 +5787,16 @@ function show_log()
 		do {
 			sln('');
 			foreground(2);
-			lw('`2  (`5C`2)ontinue   (`5T`2)odays happenings again  (`5Y`2)esterdays `0[`5C`0] : ');
+			if (rip)
+				lw('  Make a choice : ');
+			else
+				lw('`2  (`5C`2)ontinue   (`5T`2)odays happenings again  (`5Y`2)esterdays `0[`5C`0] : ');
 			ch = getkey().toUpperCase();
 			if ('TY'.indexOf(ch) === -1) {
 				ch = 'C';
 			}
-			sw(ch);
+			if (!rip)
+				sw(ch);
 			if (ch === 'T') {
 				break;
 			}
@@ -5713,6 +5824,8 @@ function show_stats()
 
 	sclrscr();
 	sln('');
+	if (rip)
+		lrdrip('W1');
 	lln('`%  ' + player.name + '`2\'s Stats...');
 	lln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
 	lln('  `2Experience   : `0'+pretty_int(player.exp));
@@ -5838,6 +5951,8 @@ function hello()
 		}
 	}
 
+	if (rip)
+		lrdrip('W1');
 	sln('');
 	// NOTE: Likely wrap checks... not needed.
 	if (player.bank < 0) {
@@ -6123,6 +6238,8 @@ function load_player(create)
 	if (player === undefined || player.real_name !== dk.user.full_name || !player.Yours) {
 		if (create) {
 			sclrscr();
+			if (rip)
+				lrdrip('W5');
 			sln('');
 			sln('');
 			foreground(15);
@@ -6230,6 +6347,27 @@ function build_txt_index()
 	}
 }
 
+function build_rip_index()
+{
+	var l;
+
+	ripfile = new File(game_or_exec('lordrip.lrd'));
+	if (!ripfile.open('r')) {
+		sln('Unable to open '+ripfile.name+'!');
+		exit(1);
+	}
+
+	while (true) {
+		l = ripfile.readln();
+		if (l === null) {
+			break;
+		}
+		if (l.substr(0,2) === '@#') {
+			ripindex[l.substr(2)] = ripfile.position;
+		}
+	}
+}
+
 function command_prompt()
 {
 	// Subtract 30 seconds from time remaining.
@@ -6246,6 +6384,8 @@ function get_a_room()
 
 	sln('');
 	sln('');
+	if (rip)
+		lrdrip('W5');
 	foreground(2);
 	sln('  The bartender approaches you at the mention of a room.');
 	foreground(5);
@@ -6303,6 +6443,10 @@ function get_a_room()
 	sln('');
 	player.on_now = false;
 	player.put();
+	if (rip) {
+		lrdrip('EXIT');
+		getkey();
+	}
 	exit(0);
 
 	return true;
@@ -6697,11 +6841,13 @@ function battle_prompt(op)
 	lln('  `2Your Hitpoints : `0'+pretty_int(player.hp));
 	lln('  `2'+op.name+'`2\'s Hitpoints : `0'+pretty_int(op.hp));
 	sln('');
-	lln('  `2(`5A`2)ttack');
-	lln('  (`5S`2)tats');
-	lln('  (`5R`2)un');
-	if (player.fairy_lore !== undefined && player.fairy_lore) {
-		lln('  `2(`5H`2)eal');
+	if (!rip) {
+		lln('  `2(`5A`2)ttack');
+		lln('  (`5S`2)tats');
+		lln('  (`5R`2)un');
+		if (player.fairy_lore !== undefined && player.fairy_lore) {
+			lln('  `2(`5H`2)eal');
+		}
 	}
 	if (player.levelw > 0 || player.levelm > 0 || player.levelt > 0) {
 		sln('');
@@ -7122,11 +7268,18 @@ function use_mystical_skill(op, pfight)
 	sln('');
 
 	lw('  `5You Have `%'+(player.levelm)+'`5 Use Points.  Choose.  [`#Nothing`5] : ');
+	if (rip)
+		lrdrip('MSKILL');
 	ch = getkey().toUpperCase();
 	if (valid.indexOf(ch) === -1) {
 		ch = 'Nothing';
 	}
-	sln(ch);
+	if (!rip)
+		sln(ch);
+	if (rip && lastrip == 'FORFIGHT')
+		lrdrip('FORUP');
+	else if (rip)
+		lrdrip(lastrip);
 	if (ch === 'P') {
 		if (player.levelm < 1) {
 			too_tired();
@@ -7250,7 +7403,8 @@ function battle(op, pfight, cant_run)
 		if (ch === '\r') {
 			ch = 'A';
 		}
-		sw(ch);
+		if (!rip)
+			sw(ch);
 		switch(ch) {
 			case 'Q':
 				sln('');
@@ -7367,7 +7521,10 @@ function battle(op, pfight, cant_run)
 function online_battle(op)
 {
 	var action;
+	var lr = lastrip;
 
+	if (rip)
+		lrdrip('ONLINE');
 	lln('`c  `%                           ** ONLINE BATTLE **');
 	lln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
 	if (psock === undefined) {
@@ -7376,7 +7533,7 @@ function online_battle(op)
 			sln('  Sorry!  That user is currently already in battle.  Try again later.');
 			sln('');
 			more_nomail();
-			ob_cleanup();
+			ob_cleanup(lr);
 			return;
 		}
 		fmutex(gamedir('fight'+player.Record+'.rec'));
@@ -7392,7 +7549,7 @@ function online_battle(op)
 		sln('  You decide you are really not ready for battle anyway.');
 		sln('');
 		more_nomail();
-		ob_cleanup();
+		ob_cleanup(lr);
 		return;
 	}
 	sln('');
@@ -7400,7 +7557,7 @@ function online_battle(op)
 		lln('  `2You call out, but `0'+op.name+'`2 hides from you. ');
 		sln('');
 		more_nomail();
-		ob_cleanup();
+		ob_cleanup(lr);
 		return;
 	}
 	player.pvp_fights -= 1;
@@ -7412,7 +7569,7 @@ function online_battle(op)
 	else {
 		on_battle(op, false, action);
 	}
-	ob_cleanup();
+	ob_cleanup(lr);
 }
 
 function custom_saying()
@@ -7648,6 +7805,8 @@ function attack_player(op, inn)
 			return;
 		}
 	}
+	if (rip)
+		lrdrip('BATTLE');
 	mail = ' \n  `%YOU HAVE BEEN ATTACKED!\n`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-`2\n  `0'+player.name+'`2 has attacked you!';
 	player.pvp_fights -= 1;
 	sln('');
@@ -7688,6 +7847,10 @@ function attack_player(op, inn)
 		}
 		dead_screen(op);
 		bad_say(op, '`.  `0'+op.name+' `2has killed `5'+player.name+' `2in self defence!');
+		if (rip) {
+			lrdrip('EXIT')
+			getkey();
+		}
 		sln('');
 		return;
 	}
@@ -7806,6 +7969,8 @@ function attack_player(op, inn)
 	}
 
 	player.light_shield = false;
+	if (rip) // TODO: This is supposed to be conditional on death_inn...?
+		lrdrip('WAR');
 }
 
 function attack_in_inn()
@@ -7816,6 +7981,8 @@ function attack_in_inn()
 	var op;
 	var pronoun;
 
+	if (rip)
+		lrdrip('WARINN');
 	generate_rankings(gamedir('temp'+player.Record), true, true, true);
 	sclrscr();
 	display_file(gamedir('temp'+player.Record), true, true);
@@ -7826,10 +7993,12 @@ function attack_in_inn()
 		foreground(5);
 		sln('  "What next, kid?"');
 		sln('');
-		foreground(2);
-		lln('  `2(`5L`2)ist Warriors in the Inn');
-		lln('  `2(`5S`2)laughter Warriors in the Inn');
-		lln('  `2(`5R`2)eturn to Bar');
+		if (!rip) {
+			foreground(2);
+			lln('  `2(`5L`2)ist Warriors in the Inn');
+			lln('  `2(`5S`2)laughter Warriors in the Inn');
+			lln('  `2(`5R`2)eturn to Bar');
+		}
 		command_prompt();
 		ch = getkey().toUpperCase();
 		sln(ch);
@@ -7877,6 +8046,8 @@ function attack_in_inn()
 					sln('  A child could beat that wimp!  Attack someone else!');
 					break;
 				}
+				if (rip)
+					lrdrip('W5');
 				if (op.sex === 'M') {
 					lln('  You enter '+op.name+'`2s room...He is sleeping.');
 					lln('  You notice he has a dangerous looking '+op.weapon+' `2by his bed..');
@@ -7895,6 +8066,8 @@ function attack_in_inn()
 				}
 				sln(ch);
 				if (ch === 'N') {
+					if (rip)
+						lrdrip('WARINN');
 					break;
 				}
 				sln('');
@@ -7945,27 +8118,39 @@ function talk_with_bartender()
 
 	function menu() {
 		if (player.level > 11) {
-			lrdfile(player.sex === 'M' ? 'BT1' : 'BT1F');
+			if (rip)
+				lrdrip(player.sex === 'M' ? 'BT1' : 'BT1F');
+			else
+				lrdfile(player.sex === 'M' ? 'BT1' : 'BT1F');
 		}
 		if (player.level < 12) {
-			lrdfile(player.sex === 'M' ? 'BT' : 'BTF');
+			if (rip)
+				lrdrip(player.sex === 'M' ? 'BT' : 'BTF');
+			else
+				lrdfile(player.sex === 'M' ? 'BT' : 'BTF');
 		}
 	}
 
-	sln('');
-	sln('');
-	foreground(2);
-	sln('  You find the bartender and ask if he will talk');
-	sln('  privately with you.');
-	sln('');
-
-	if (player.level === 1) {
-		foreground(5);
-		sln('  "I don\'t recall ever hearing the name');
-		lln('  `0'+player.name+'`5 before!  Get outta my face!"');
-		foreground(2);
-		sln('');
+	if (rip && player.level == 1) {
+		lrdrip('BARMAD');
 		return;
+	}
+	if (!rip) {
+		sln('');
+		sln('');
+		foreground(2);
+		sln('  You find the bartender and ask if he will talk');
+		sln('  privately with you.');
+		sln('');
+
+		if (player.level === 1) {
+			foreground(5);
+			sln('  "I don\'t recall ever hearing the name');
+			lln('  `0'+player.name+'`5 before!  Get outta my face!"');
+			foreground(2);
+			sln('');
+			return;
+		}
 	}
 
 	menu();
@@ -8051,6 +8236,8 @@ function talk_with_bartender()
 				}
 				player.gem -= i * 2;
 				foreground(2);
+				if (rip)
+					lrdrip('ELIXER');
 				sln('');
 				switch (i) {
 					case 1:
@@ -8072,8 +8259,13 @@ function talk_with_bartender()
 						ch = 'keg \'o brew';
 				}
 				foreground(2);
-				sln('  The bartender retrieves a '+ch+' from the back room.');
-				sln('  Before you drink it, what do you wish for?');
+				if (!rip) {
+					sln('  The bartender retrieves a '+ch+' from the back room.');
+					sln('  Before you drink it, what do you wish for?');
+				}
+				else {
+					sln('  The bartender retrieves a steaming tankard. ');
+				}
 				sln('');
 				lln('  `2(`0H`2)it Points');
 				lln('  `2(`%S`2)trength');
@@ -8103,6 +8295,10 @@ function talk_with_bartender()
 						add_str(i);
 						break;
 				}
+				if (rip) {
+					getkey();
+					menu();
+				}
 				break;
 			case 'C':
 				sln('');
@@ -8127,6 +8323,8 @@ function talk_with_bartender()
 					sln('');
 					sln('  "Hey!  You stupid fool! You don\'t have that much gold!"');
 					sln('');
+					if (rip)
+						menu();
 					break;
 				}
 				player.gold -= 500 * player.level;
@@ -8264,10 +8462,14 @@ function converse(darkhorse)
 	var resp;
 	var m;
 
+	if (rip)
+		lrdrip('BARTALK');
 	init_bar(darkhorse);
 	sclrscr();
-	lln('  `%Conversation at the Bar`#');
-	lln('`l');
+	if (!rip) {
+		lln('  `%Conversation at the Bar`#');
+		lln('`l');
+	}
 	if (psock !== undefined) {
 		psock.writeln('GetConversation '+(darkhorse ? 'darkbar' : 'bar'));
 		resp = psock.readln();
@@ -8300,13 +8502,18 @@ function converse(darkhorse)
 		f.close();
 		rfmutex(f.name);
 	}
-	sln('');
-	lw('  `2(`5C`2)ontinue  (`5A`2)dd to Conversation `0[`5C`0] : ');
+	if (!rip) {
+		sln('');
+		lw('  `2(`5C`2)ontinue  (`5A`2)dd to Conversation `0[`5C`0] : ');
+	}
 	ch = getkey().toUpperCase();
 	if (ch !== 'A') {
 		ch = 'C';
 	}
-	sln(ch);
+	if (rip)
+		sln('');
+	else
+		sln(ch);
 	if (ch === 'A') {
 		sln('');
 		foreground(2);
@@ -8753,7 +8960,10 @@ function single_seth()
 		return;
 	}
 	sln('');
-	lrdfile('SETH');
+	if (rip)
+		lrdrip('SETH')
+	else
+		lrdfile('SETH');
 	do {
 		sln('');
 		lw('  `0`2Your choice?  (`0? for menu`2) : ');
@@ -8761,7 +8971,8 @@ function single_seth()
 		if (ch === '\r') {
 			ch = 'R';
 		}
-		sln(ch);
+		if (!rip)
+			sln(ch);
 		sln('');
 		switch (ch) {
 			case 'N':
@@ -8771,7 +8982,10 @@ function single_seth()
 				break;
 			case '?':
 				sln('');
-				lrdfile('SETH');
+				if (rip)
+					lrdrip('SETH');
+				else
+					lrdfile('SETH');
 				break;
 			case 'W':
 				wink();
@@ -8824,6 +9038,8 @@ function single_seth()
 				break;
 		}
 	} while((!done) && (!player.seen_violet));
+	if (rip)
+		lrdrip('HER~SETH');
 	sln('');
 }
 
@@ -9023,22 +9239,28 @@ function talk_to_bard()
 	var op;
 
 	function menu() {
-		lrdfile(player.sex === 'M' ? 'BARD' : 'BARDF');
+		if (rip)
+			lrdrip(player.sex === 'M' ? 'HIS~SETH' : 'HER~SETH');
+		else
+			lrdfile(player.sex === 'M' ? 'BARD' : 'BARDF');
 	}
 
 	get_state(false);
 	menu();
 	do {
-		sln('');
-		if (state.married_to_seth === player.Record) {
-			lln('  `2Seth Able looks at you lovingly. (`0? for menu`2)');
-		}
-		else {
-			lln('  `2Seth Able looks at you expectantly.  (`0? for menu`2)');
+		if (!rip) {
+			sln('');
+			if (state.married_to_seth === player.Record) {
+				lln('  `2Seth Able looks at you lovingly. (`0? for menu`2)');
+			}
+			else {
+				lln('  `2Seth Able looks at you expectantly.  (`0? for menu`2)');
+			}
 		}
 		command_prompt();
 		ch = getkey().toUpperCase();
-		sln(ch);
+		if (!rip)
+			sln(ch);
 		switch (ch) {
 			case '?':
 				menu();
@@ -9242,6 +9464,8 @@ function single_violet()
 			sln('');
 		}
 		else {
+			if (rip)
+				lrdrip('W1');
 			state.married_to_violet = player.Record;
 			put_state();
 			lln('`c                        `%** THE BLESSED DAY ARRIVES **`0');
@@ -9271,6 +9495,8 @@ function single_violet()
 			sln('  it\'d be moving to quickly to get married again.');
 			return;
 		}
+		if (rip)
+			lrdrip('W1');
 		sln('');
 		lln('  `2You take Violet\'s hand and squeeze it gently.  `0"My sweet Violet.');
 		sln('  will you make me the happiest man alive?  Will you marry me?"');
@@ -9510,7 +9736,10 @@ function single_violet()
 	}
 
 	sln('');
-	lrdfile('VIOLET');
+	if (rip)
+		lrdrip('VIOLET');
+	else
+		lrdfile('VIOLET');
 	do {
 		sln('');
 		lw('  `0`2Your choice?  (`0? for menu`2) : ');
@@ -9518,12 +9747,16 @@ function single_violet()
 		if (ch === '\r') {
 			ch = 'R';
 		}
-		sln(ch);
+		if (!rip)
+			sln(ch);
 		sln('');
 		switch(ch) {
 			case '?':
 				sln('');
-				lrdfile('VIOLET');
+				if (rip)
+					lrdrip('VIOLET');
+				else
+					lrdfile('VIOLET');
 				break;
 			case 'N':
 			case 'R':
@@ -9585,20 +9818,27 @@ function flirt_with_violet()
 	var op;
 
 	if (player.sex === 'F') {
+		if (rip)
+			lrdrip('W1');
 		sln('');
 		sln('');
 		sln('  You would rather flirt with Seth Able.');
-		return;
+		return true;
 	}
 	get_state(false);
 	if (state.married_to_violet > -1) {
+		if (rip)
+			lrdrip('W1');
 		if (player.seen_violet) {
 			sln('');
 			sln('');
 			lln('  `2You are still shaking from your last encounter with `4Grizelda`2!');
 			sln('');
-			more();
-			return;
+			if (rip)
+				getkey();
+			else
+				more();
+			return true;
 		}
 		else {
 			sln('');
@@ -9625,18 +9865,27 @@ function flirt_with_violet()
 			}
 			sln('');
 			player.seen_violet = true;
-			more();
-			return;
+			if (rip)
+				getkey();
+			else
+				more();
+			return true;
 		}
 	}
 	if (player.seen_violet) {
-		sln('');
-		sln('');
-		sln('  You feel you had better not go too fast, maybe tomorrow.');
-		sln('');
-		return;
+		if (rip) {
+			lrdrip('BUSY', false);
+		}
+		else {
+			sln('');
+			sln('');
+			sln('  You feel you had better not go too fast, maybe tomorrow.');
+			sln('');
+		}
+		return false;
 	}
 	single_violet();
+	return true;
 }
 
 function red_dragon_inn()
@@ -9644,11 +9893,22 @@ function red_dragon_inn()
 	var ch;
 	var ret = 0;
 	var done = false;
+	var just_arrived = true;
 
 	function menu()
 	{
 		if (!player.expert) {
-			lrdfile(player.sex === 'M' ? 'RDI' : 'RDIF');	// TODO: RDI is ANSI, RDIF is lordtext!
+			if (rip) {
+				lrdrip('RDI');	// TODO: RDI is ANSI, RDIF is lordtext!
+				if (just_arrived) {
+					lrdrip(player.sex === 'M' ? 'HIS~INN' : 'HER~INN');
+					just_arrived = false;
+					getkey();
+				}
+				lrdrip(player.sex === 'M' ? 'HIS~MENU' : 'HER~MENU');
+			}
+			else
+				lrdfile(player.sex === 'M' ? 'RDI' : 'RDIF');	// TODO: RDI is ANSI, RDIF is lordtext!
 		}
 	}
 
@@ -9661,12 +9921,15 @@ function red_dragon_inn()
 	do {
 		check_mail();
 		foreground(5);
-		sln('');
-		lln('  The Red Dragon Inn   `8(? for menu)');
-		sln('  (C,D,F,T,G,V,H,M,R)');
-		command_prompt();
+		if (!rip) {
+			sln('');
+			lln('  The Red Dragon Inn   `8(? for menu)');
+			sln('  (C,D,F,T,G,V,H,M,R)');
+			command_prompt();
+		}
 		ch = getkey().toUpperCase();
-		sln(ch);
+		if (!rip)
+			sln(ch);
 		switch (ch) {
 			case 'R':
 			case 'Q':
@@ -9679,15 +9942,25 @@ function red_dragon_inn()
 			case 'V':
 			case 'Y':
 				show_stats();
+				if (rip)
+					menu();
 				break;
 			case 'W':
+				if (rip)
+					lrdrip('W3');
 				compose_mail();
+				if (rip)
+					menu();
 				break;
 			case 'G':
+				if (rip)
+					lrdrip('W5');
 				if (get_a_room()) {
 					ret = -1;
 					done = true;
 				}
+				if (rip)
+					menu();
 				break;
 			case 'D':
 				show_log();
@@ -9695,21 +9968,42 @@ function red_dragon_inn()
 				break;
 			case 'T':
 				talk_with_bartender();
+				if (rip && player.level == 1) {
+					getkey();
+					menu();
+				}
 				if (player.dead) {
 					done = true;
 				}
 				break;
 			case 'C':
 				converse(false);
+				if (rip)
+					menu();
 				break;
 			case 'H':
 				talk_to_bard();
+				if (rip)
+					menu();
 				break;
 			case 'M':
+				if (rip)
+					lrdrip('W5');
 				announce();
+				if (rip)
+					menu();
 				break;
 			case 'F':
-				flirt_with_violet();
+				if (flirt_with_violet() && rip)
+					menu();
+				break;
+			case '1':
+				if (rip)
+					lrdrip('LEGS');
+				break;
+			case '2':
+				if (rip)
+					lrdrip('GUITAR');
 				break;
 		}
 	} while (!done);
@@ -9753,7 +10047,10 @@ function king_arthurs()
 
 		lln('`c  `%King Arthurs Weapons');
 		foreground(2);
-		sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+		if (rip)
+			sln('-=-=-=-=-=-=-=-=-=-=-=-=-');
+		else
+			sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
 		sln('');
 		if (player.weapon_num === 0) {
 			lln('  `2"`0What the...?!!`2" the stout man shouts. `2"`0You don\'t have');
@@ -9781,7 +10078,8 @@ function king_arthurs()
 		if (ich !== 'Y') {
 			ich = 'N';
 		}
-		sln(ich);
+		if (!rip)
+			sln(ich);
 		if (ich !== 'Y') {
 			sln('');
 			lln('  `2"`0You don\'t want to sell?!  Fine!  I don\'t want your stinken\' weapon!`2"');
@@ -9836,7 +10134,8 @@ function king_arthurs()
 		sclrscr();
 		if (!player.expert) {
 			sclrscr();
-			lrdfile('BUYWEP');
+			if (!rip)
+				lrdfile('BUYWEP');
 			display_weapons();
 		}
 		sln('');
@@ -9857,7 +10156,10 @@ function king_arthurs()
 			foreground(15);
 			sln('  King Arthurs Weapons');
 			foreground(2);
-			sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+			if (rip)
+				sln('-=-=-=-=-=-=-=-=-=-=-=-=-');
+			else
+				sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
 			sln('');
 			lln('  `2"`0Hmmm I will sell you my FAVORITE `%'+neww.name+'`0 for `%'+pretty_int(neww.price)+' `0gold!`2"');
 			sln('');
@@ -9870,7 +10172,8 @@ function king_arthurs()
 			if (ich !== 'Y') {
 				ich = 'N';
 			}
-			sln(ich);
+			if (!rip)
+				sln(ich);
 			if (ich === 'N') {
 				sln('');
 				lln('  `2"`0Fine..You will come back...`2" the man grunts.');
@@ -9921,16 +10224,23 @@ function king_arthurs()
 
 	function menu() {
 		if (!player.expert) {
-			lrdfile('ARTHUR');
+			if (rip)
+				lrdrip('BUYWEP');
+			else
+				lrdfile('ARTHUR');
 		}
 	}
 
 	function prompt() {
-		sln('');
-		lln('  `2Current weapon: `0'+player.weapon);
-		lln('  `5King Arthur\'s Weapons `8(B,S,Y,R)  (? for menu)');
+		if (!rip) {
+			sln('');
+			lln('  `2Current weapon: `0'+player.weapon);
+			lln('  `5King Arthur\'s Weapons `8(B,S,Y,R)  (? for menu)');
+		}
 	}
 
+	if (rip)
+		lrdrip('ARTHUR');
 	sclrscr();
 	menu();
 
@@ -9938,21 +10248,35 @@ function king_arthurs()
 		prompt();
 		command_prompt();
 		ch = getkey().toUpperCase();
-		sln(ch);
+		if (!rip)
+			sln(ch);
 		switch (ch) {
 			case 'L':
-				sclrscr();
-				lrdfile('BUYWEP');
+				if (rip)
+					lrdrip('ARTHUR3');
+				else {
+					sclrscr();
+					lrdfile('BUYWEP');
+				}
 				display_weapons();
 				break;
 			case 'Y':
 				show_stats();
+				menu();
 				break;
 			case 'S':
+				if (rip)
+					lrdrip('ARTHUR3');
 				sell_weapon();
+				if (rip)
+					lrdrip('BUYWEP');
 				break;
 			case 'B':
+				if (rip)
+					lrdrip('ARTHUR3');
 				buy_weapon();
+				if (rip)
+					lrdrip('BUYWEP');
 				break;
 			case 'R':
 			case 'Q':
@@ -9962,7 +10286,10 @@ function king_arthurs()
 			// DIFF ' ' would cycle, but not call prompt()...
 			case '?':
 				if (player.expert) {
-					lrdfile('ARTHUR');
+					if (rip)
+						lrdfile('ARTHUR');
+					else
+						lrdfile('ARTHUR');
 				}
 				menu();
 				break;
@@ -10024,8 +10351,10 @@ function abduls_armour()
 		var ich;
 
 		if (!player.expert) {
-			sclrscr();
-			lrdfile('BUYARM');
+			if (!rip) {
+				sclrscr();
+				lrdfile('BUYARM');
+			}
 			background(0);
 			display_armour();
 		}
@@ -10047,7 +10376,10 @@ function abduls_armour()
 			foreground(15);
 			sln('  Abduls Armour Shop');
 			foreground(2);
-			sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+			if (rip)
+				sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+			else
+				sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
 			sln('');
 			lln('  "`0Hmmm I will sell you a nice `%'+newa.name+'`0 for `%'+pretty_int(newa.price)+'`0.');
 			lln('   Agreed, friend?`2"');
@@ -10062,7 +10394,8 @@ function abduls_armour()
 			if (ich !== 'Y') {
 				ich = 'N';
 			}
-			sln(ich);
+			if (!rip)
+				sln(ich);
 			sln('');
 			if (ich === 'N') {
 				lln('`2  "`0Ok!  No rush!`2" the girl smiles.');
@@ -10106,7 +10439,10 @@ function abduls_armour()
 		foreground(15);
 		sln('  Abduls Armour Shop');
 		foreground(2);
-		sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+		if (rip)
+			sln('-=-=-=-=-=-=-=-=-=-=-=-');
+		else
+			sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
 		sln('');
 		if (player.arm_num === 0) {
 			lln('  `2"`0You silly kidder!!`2" Paula laughs, "`0You don\'t have');
@@ -10136,10 +10472,15 @@ function abduls_armour()
 		if (ich !== 'Y') {
 			ich = 'N';
 		}
-		sln(ich);
+		if (!rip)
+			sln(ich);
 		if (ich === 'N') {
 			sln('');
 			lln('  `2"`0Thats ok.  Your armour probably has sentimental value to you.`2"');
+			if (rip)
+				getkey();
+			if (rip)
+				lrdrip('BUYARM');
 			return;
 		}
 		sln('');
@@ -10161,35 +10502,57 @@ function abduls_armour()
 
 	function menu() {
 		sclrscr();
-		if (!player.expert) {
-			lrdfile('ABDUL');
+		if (rip)
+			lrdrip('BUYARM')
+		else {
+			if (!player.expert) {
+				lrdfile('ABDUL');
+			}
 		}
 	}
 
+	if (rip)
+		lrdrip('ABDUL');
 	menu();
 
 	do {
-		sln('');
-		lln('  `2Current armour: `0'+player.arm);
-		lln('  `5Abduls Armour `8(B,S,Y,R)  (? for menu)');
+		if (!rip) {
+			sln('');
+			lln('  `2Current armour: `0'+player.arm);
+			lln('  `5Abduls Armour `8(B,S,Y,R)  (? for menu)');
+		}
 		command_prompt();
 		ch = getkey().toUpperCase();
-		sln(ch);
+		if (!rip)
+			sln(ch);
 		switch(ch) {
 			case 'L':
 				sclrscr();
-				lrdfile('BUYARM');
+				if (rip)
+					lrdrip('BUYARM');
+				else
+					lrdfile('BUYARM');
 				display_armour();
 				break;
 			case 'V':
 			case 'Y':
 				show_stats();
+				if (rip)
+					menu();
 				break;
 			case 'S':
+				if (rip)
+					lrdrip('ABDUL3');
 				sell_armour();
+				if (rip)
+					menu();
 				break;
 			case 'B':
+				if (rip)
+					lrdrip('ABDUL3');
 				buy_armour();
+				if (rip)
+					menu();
 				break;
 			case 'R':
 			case 'Q':
@@ -10198,7 +10561,10 @@ function abduls_armour()
 				break;
 			case '?':
 				if (player.expert) {
-					lrdfile('ABDUL');
+					if (rip)
+						lrdrip('ABDUL');
+					else
+						lrdfile('ABDUL');
 				}
 				menu();
 				break;
@@ -10437,8 +10803,10 @@ function healers()
 		sclrscr();
 		sln('');
 		sln('');
-		lln('  `%Healers`#');
-		sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+		if (!rip) {
+			lln('  `%Healers`#');
+			sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+		}
 		foreground(2);
 		sln('');
 		// DIFF: was just =
@@ -10451,13 +10819,23 @@ function healers()
 			// DIFF: Was >, not >=
 			if (player.gold >= (need * 5 * player.level)) {
 				player.hp += need;
-				lln(' `0 '+pretty_int(need)+'`2 hit points are healed and you feel much better.');
+				if (rip) {
+					lln(' `0 '+pretty_int(need)+'`2 hit points are healed and');
+					lln('  you feel much better.');
+				}
+				else
+					lln(' `0 '+pretty_int(need)+'`2 hit points are healed and you feel much better.');
 				player.gold -= (need * 5 * player.level);
 				ret = true;
 			}
 			else if (afford < need) {
 				player.hp += afford;
-				sln('  '+pretty_int(afford)+' hit points are healed and you feel much better.');
+				if (rip) {
+					sln('  '+pretty_int(afford)+' hit points are healed and');
+					sln('  you feel much better.');
+				}
+				else
+					sln('  '+pretty_int(afford)+' hit points are healed and you feel much better.');
 				player.gold -= afford * 5 * player.level;
 			}
 		}
@@ -10472,8 +10850,10 @@ function healers()
 		sclrscr();
 		sln('');
 		sln('');
-		lln('  `%Healers`#');
-		lln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+		if (rip) {
+			lln('  `%Healers`#');
+			lln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+		}
 		sln('');
 		lw('  `2HitPoints: (`0'+pretty_int(player.hp)+' `2of `0'+pretty_int(player.hp_max)+'`2)');
 		lln('  `2Gold: `0'+pretty_int(player.gold));
@@ -10512,15 +10892,24 @@ function healers()
 
 	function menu() {
 		sclrscr();
-		lrdfile('HEAL');
+		if (rip)
+			lrdrip('HEAL');
+		else
+			lrdfile('HEAL');
 		// DIFF: Was just ===
 		if (player.hp >= player.hp_max) {
-			sln('');
-			sln('');
-			foreground(15);
-			lln('  `%Healers`#');
-			sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
-			lln('  `4`0"You look fine to us!"`2 the healers tell you.');
+			if (rip) {
+				lln('  `4`0"You look fine to us!"`2 the');
+				sln('  healers tell you.');
+			}
+			else {
+				sln('');
+				sln('');
+				foreground(15);
+				lln('  `%Healers`#');
+				sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+				lln('  `4`0"You look fine to us!"`2 the healers tell you.');
+			}
 			sln('');
 			more();
 			return true;
@@ -10535,13 +10924,17 @@ function healers()
 	do {
 		sln('');
 		lln('  `3`2HitPoints: (`0'+pretty_int(player.hp)+' `2of`0 '+pretty_int(player.hp_max)+'`2)');
+		if (rip)
+			sln('');
 		lln('  `2Gold: `0'+pretty_int(player.gold));
 		lln('  `2(it costs `%'+pretty_int(5 * player.level)+'`2 to heal 1 hitpoint)');
 		sln('');
-		lln('  `5The Healers`2   (H,C,R)  (`0? for menu`2)');
+		if (!rip)
+			lln('  `5The Healers`2   (H,C,R)  (`0? for menu`2)');
 		command_prompt();
 		ch = getkey().toUpperCase();
-		sln(ch);
+		if (!rip)
+			sln(ch);
 		switch(ch) {
 			case '1':
 				sln('');
@@ -10721,7 +11114,10 @@ function blackjack()
 			var wi;
 
 			dk.console.gotoxy(4, 19);
-			lw('`2<`0MORE`2>');
+			if (rip)
+				lw('<CLICK>');
+			else
+				lw('`2<`0MORE`2>');
 			getkey();
 			for (wi = 0; wi < 6; wi += 1) {
 				sw('\b');
@@ -11692,6 +12088,8 @@ function fight_dragon(cant_run) {
 	sln('');
 	lln('  `2The Red Dragon approaches.');
 	sln('');
+	if (rip)
+		lrdrip('FORFIGHT');
 	battle(dragon, false, cant_run);
 	foreground(2);
 	if (player.dead) {
@@ -11701,6 +12099,8 @@ function fight_dragon(cant_run) {
 		player.put();
 		sln('');
 		sclrscr();
+		if (rip)
+			lrdrip('W1');
 		sln('');
 		sln('');
 		sln('  The Dragon pauses to look at you, then snorts in a Dragon laugh, and');
@@ -11715,6 +12115,11 @@ function fight_dragon(cant_run) {
 		sln('  You have defeated The Red Dragon!');
 		sln('');
 		more();
+		if (rip) {
+			lrdrip('3DRAGON');
+			getkey();
+			lrdrip('W1');
+		}
 		sclrscr();
 		sln('');
 		sln('');
@@ -11815,12 +12220,41 @@ function forest()
 	var over = false;
 	var enemy;
 
+	function event_header(draw) {
+		if (draw && rip)
+			lrdrip('W1');
+		sln('');
+		sln('');
+		foreground(15);
+		sln('  Event In The Forest');
+		if (rip)
+			lln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+		else
+			lln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+		foreground(2);
+	}
+
 	function darkhorse_tavern() {
 		var dch;
 		var games_played = 0;
 
 		function menu() {
-			lrdfile('CLOAK');
+			if (rip) {
+				lrdrip('CLOAK');
+				foreground(2);
+				sln('  A blazing fire warms your heart');
+				sln('  as well as your body in this fragrant');
+				sln('  roadhouse.  Many a weary traveler');
+				sln('  has had the fortune to find this cozy');
+				sln('  hostel, to escape the harsh reality');
+				sln('  of the dense forest for a few moments.');
+				sln('  You notice someone has etched ');
+				sln('  something in the table you are sitting');
+				sln('  at.');
+
+			}
+			else
+				lrdfile('CLOAK');
 		}
 
 		function gamble() {
@@ -11866,6 +12300,8 @@ function forest()
 					sln('  (You wonder if it had anything to do with your making a joke out');
 					sln('  of the word honor)');
 					sln('');
+					if (rip)
+						getkey();
 				}
 				return;
 			}
@@ -12066,6 +12502,8 @@ function forest()
 					break;
 			}
 			sln('');
+			if (rip)
+				getkey();
 		}
 
 		function chance() {
@@ -12078,7 +12516,10 @@ function forest()
 			var class_strs = ['Nobody', '`0Warrior', '`#Mystical Skills User`0', '`9Thief`0'];
 
 			function cmenu() {
-				lrdfile('CHANCE');
+				if (rip)
+					lrdrip('CHANCE');
+				else
+					lrdfile('CHANCE');
 			}
 
 			cmenu();
@@ -12092,12 +12533,16 @@ function forest()
 				sln(ich);
 				sln('');
 				if (ich === 'L') {
+					if (rip)
+						lrdrip('W1');
 					lln('  `0"I know many things about many people.  Who is your enemy?"`2');
 					pl = find_player();
 					if (pl === -1) {
 						lln('');
 						lln('  `0"I don\'t know anyone with a name even close to that."`2');
 						sln('');
+						if (rip)
+							getkey();
 						cmenu();
 					}
 					else if (pl === player.Record) {
@@ -12112,6 +12557,10 @@ function forest()
 						lln('  `0"Yes..I know '+him+'.  '+he+' is a favorite customer of mine!"');
 						lln('  `2Chance laughs heartily.');
 						lln('');
+						if (rip) {
+							getkey();
+							cmenu();
+						}
 					}
 					else {
 						op = player_get(pl);
@@ -12138,6 +12587,10 @@ function forest()
 							if (ich !== 'Y') {
 								lln('  `0"No problem!  I know how it is these days."');
 								sln('');
+								if (rip) {
+									getkey();
+									cmenu();
+								}
 							}
 							else {
 								player.gem -= 2;
@@ -12210,6 +12663,10 @@ function forest()
 								}
 								sln('');
 								more_nomail();
+								if (rip) {
+									getkey();
+									cmenu();
+								}
 							}
 						}
 					}
@@ -12219,10 +12676,14 @@ function forest()
 				}
 				// DIFF: The 'S' key was not in here, but it was in the menu.
 				else if (ich === 'C' || ich === 'S') {
-					lln('  `0"Tired of what you do?  I know how it is.  To figure out what you');
-					lln('  REALLY want to do in your life, think about your childhood."`2 ');
-					sln('');
-					lln('  `0"Remember.  You NEVER forget what you learn in ANY profession."`2');
+					if (rip)
+						lrdrip('MEMORY');
+					else {
+						lln('  `0"Tired of what you do?  I know how it is.  To figure out what you');
+						lln('  REALLY want to do in your life, think about your childhood."`2 ');
+						sln('');
+						lln('  `0"Remember.  You NEVER forget what you learn in ANY profession."`2');
+					}
 					player.clss = choose_profession(true);
 					sln('');
 					cmenu();
@@ -12266,7 +12727,10 @@ function forest()
 			var op;
 			var l;
 
-			lrdfile('OLDMAN');
+			if (rip)
+				lrdrip('OLDMAN');
+			else
+				lrdfile('OLDMAN');
 			do {
 				sln('');
 				lw(' `2 Your command? (`0? `2for menu)  [`0R`2] : ');
@@ -12278,20 +12742,33 @@ function forest()
 				sln('');
 				switch (ich) {
 					case '?':
-						lrdfile('OLDMAN');
+						if (rip)
+							lrdrip('OLDMAN');
+						else
+							lrdfile('OLDMAN');
 						break;
 					case 'V':
+						if (rip)
+							lrdrip('W1');
 						lln('  `0"Who would you like to know more about?"`2');
 						pl = find_player();
 						if (pl === -1) {
 							sln('');
 							lln('  `0"I don\'t know anyone with a name even close to that."`2');
 							sln('');
+							if (rip) {
+								getkey();
+								lrdrip('OLDMAN');
+							}
 						}
 						else if (pl === player.Record) {
 							lln('  `0"Why, Id hope you know what you\'ve said about yourself.."`2,');
 							sln('  the old man cackles.');
 							lln('');
+							if (rip) {
+								getkey();
+								lrdrip('OLDMAN');
+							}
 						}
 						else {
 							op = player_get(pl);
@@ -12369,43 +12846,64 @@ function forest()
 
 		menu();
 		do {
-			sln('');
-			lln('  `0DarkCloak Tavern `2(C,E,T,V,D,G,W,R) (? for menu)');
+			if (!rip) {
+				sln('');
+				lln('  `0DarkCloak Tavern `2(C,E,T,V,D,G,W,R) (? for menu)');
+			}
 			sln('');
 			lw('  `2Your command? : ');
 			dch = getkey().toUpperCase();
 			if ('\rQ'.indexOf(dch) !== -1) {
 				dch = 'R';
 			}
-			sln(dch);
+			if (!rip)
+				sln(dch);
 			switch(dch) {
 				case 'D':
 					show_log();
+					if (rip)
+						menu();
 					break;
 				case 'Y':
 					show_stats();
+					if (rip)
+						menu();
 					break;
 				case 'G':
+					if (rip)
+						lrdrip('GAMBLE');
 					gamble();
+					if (rip)
+						menu();
 					break;
 				case 'T':
 					chance();
+					if (rip)
+						menu();
 					break;
 				case 'W':
 					old_man();
+					if (rip)
+						menu();
 					break;
 				case 'C':
 					converse(true);
+					if (rip)
+						menu();
 					break;
 				case '?':
 					menu();
 					break;
 				case 'E':
+					if (rip)
+						lrdrip('W1');
 					rank_lays(gamedir('temp'+player.Record));
 					display_file(gamedir('temp'+player.Record), true, true);
 					sln('');
 					file_remove(gamedir('temp'+player.Record));
 					more_nomail();
+					if (rip)
+						menu();
 					break;
 			}
 		} while (dch !== 'R');
@@ -13402,12 +13900,7 @@ function forest()
 		var ich;
 		var guilty;
 
-		sln('');
-		sln('');
-		foreground(15);
-		sln('  Event In The Forest');
-		lln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
-		foreground(2);
+		event_header(true);
 		sln('  While trekking through the forest, you come to the hidden castle of');
 		sln('  The Black Knights.  You are immediately greeted by a score of men in shiny');
 		sln('  black armour.');
@@ -13448,16 +13941,20 @@ function forest()
 		sclrscr();
 		sln('');
 		sln('');
+		if (rip)
+			lrdrip('DKSKILL1');
 		sln('                            ** THE TEST **');
 		sln('');
 		lln('  `2You ignore the shrieks of pain, the suffering of this dungeon\'s occupants.');
 		sln('  You are shown a man kneeling over a stained chopping block.');
 		sln('');
 		lln('  `0"This man is accused of a crime.  Is he innocent or guilty?"');
-		sln('');
-		lln('  `2(`01`2) Decapitate Him');
-		lln('  (`02`2) Release Him');
-		sln('');
+		if (!rip) {
+			sln('');
+			lln('  `2(`01`2) Decapitate Him');
+			lln('  (`02`2) Release Him');
+			sln('');
+		}
 		command_prompt();
 		ich = getkey().toUpperCase();
 		if (ich !== '2') {
@@ -13468,6 +13965,8 @@ function forest()
 		guilty = !!(random(2) === 1);
 		sln('');
 		if (ich === '1') {
+			if (rip)
+				lrdrip('DKSKILL2');
 			lln('  `2You take the axe and bring it down as hard as you can.  After');
 			sln('  a sickening (but satisfying) crunch the deed is done.');
 			sln('');
@@ -13538,18 +14037,23 @@ function forest()
 		var guesses = 0;
 		var guess;
 
-		sln('');
-		sln('');
-		foreground(15);
-		sln('  Event In The Forest');
-		lln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+		if (rip)
+			lrdrip('WIZHOME');
+		event_header(false);
 		foreground(2);
-		sln('  While trekking through the forest, you come upon a small hut.');
+		if (rip) {
+			sln('  While trekking through the forest, you come upon');
+			sln('  a small hut.');
+		}
+		else
+			sln('  While trekking through the forest, you come upon a small hut.');
 		sln('');
-		lln('  `2(`0K`2)nock On The Door');
-		lln('  (`0B`2)ang On The Door');
-		lln('  (`0L`2)eave It Be');
-		sln('');
+		if (!rip) {
+			lln('  `2(`0K`2)nock On The Door');
+			lln('  (`0B`2)ang On The Door');
+			lln('  (`0L`2)eave It Be');
+			sln('');
+		}
 		command_prompt();
 		ich = getkey().toUpperCase();
 		if ('LB'.indexOf(ich) === -1) {
@@ -13576,6 +14080,8 @@ function forest()
 			more();
 			return;
 		}
+		if (rip)
+			lrdrip('WIZARD');
 		lln('`2  You are about to leave, when you hear a voice from above:');
 		if (player.sex === 'M') {
 			lln('  `0"Watcha doin\' down there Sonny?!" `2 You look up and see a wizened');
@@ -13652,23 +14158,43 @@ function forest()
 
 	function thief_level() {
 		var ich;
-		sln('');
-		sln('');
-		foreground(15);
-		sln('  Event In The Forest');
-		lln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
-		foreground(2);
+
+		if (rip)
+			lrdrip('TSKILLS1');
+		event_header(false);
 
 		if (player.skillt > 39) {
-			lln('`1`2  You are carefully moving through the forest, making absolutely no noise');
-			sln('  when your sensitive ears pick up a twig breaking.  You circle around');
-			lln('  towards the noise, and find it\'s not an animal, but The Master Thieves!');
+			if (rip) {
+				lln('`1`2  You are carefully moving through the');
+				lln('  forest, making absolutely no noise when');
+				lln('  your sensitive ears pick up a twig');
+				lln('  breaking.  You circle around towards the');
+				lln('  noise, and find it\'s not an animal, but');
+				lln('  The Master Thieves!');
+			}
+			else {
+				lln('`1`2  You are carefully moving through the forest, making absolutely no noise');
+				sln('  when your sensitive ears pick up a twig breaking.  You circle around');
+				lln('  towards the noise, and find it\'s not an animal, but The Master Thieves!');
+			}
 			sln('');
-			lln('  As they pass under a tree you are in, you call out. `0"Ahh... Master');
-			lln('  Thieves!  Do you think it would be possible to make even MORE noise?!"`2');
-			sln('');
-			sln('  The group is very embarrassed, but they overcome it to chew the fat with');
-			sln('  you.');
+			if (rip) {
+				lln('  As they pass under a tree you are in,');
+				lln('  you call out. `0"Ahh... Master Thieves!');
+				lln('  Do you think it would be possible to ');
+				lln('  make even MORE noise?!"`2');
+				sln('');
+				lln('  The group is very embarrassed, but they');
+				lln('  overcome it to chew the fat with');
+				lln('  you.');
+			}
+			else {
+				lln('  As they pass under a tree you are in, you call out. `0"Ahh... Master');
+				lln('  Thieves!  Do you think it would be possible to make even MORE noise?!"`2');
+				sln('');
+				sln('  The group is very embarrassed, but they overcome it to chew the fat with');
+				sln('  you.');
+			}
 			sln('');
 			lln('  `%EXTRA THIEVING USE FOR TODAY!');
 			lln('');
@@ -13677,29 +14203,58 @@ function forest()
 			return;
 		}
 
-		lln('`2  You are innocently skipping through the forest, when you suddenly');
-		sln('  notice you are surrounded by a group of rogues!');
+		if (rip) {
+			lln('`2  You are innocently skipping through');
+			lln('  the forest, when you suddenly notice you');
+			lln('  are surrounded by a group of rogues!');
+		}
+		else {
+			lln('`2  You are innocently skipping through the forest, when you suddenly');
+			sln('  notice you are surrounded by a group of rogues!');
+		}
 		sln('');
 
 		if (player.skillt < 20) {
-			lln('  `0"Greetings, `%'+player.name+'`0.  We are members of the Master Thieves');
-			sln('   Guild.  We know you are struggling to learn our ways.  We will');
-			sln('   give you a lesson, for the price of one Gem."');
+			if (rip)
+			{
+				lln('  `0"Greetings, `%'+player.name+'`0.  We ');
+				lln('  are members of the Master Thieves Guild.');
+				lln('  We know you are struggling to learn our');
+				lln('  ways.  We will give you a lesson, for');
+				lln('  the price of one Gem."');
+			}
+			else {
+				lln('  `0"Greetings, `%'+player.name+'`0.  We are members of the Master Thieves');
+				sln('   Guild.  We know you are struggling to learn our ways.  We will');
+				sln('   give you a lesson, for the price of one Gem."');
+			}
 		}
 		else {
-			lln('  `0"Greetings, `%'+player.name+'`0.  We are proud that you have mastered');
-			lln('   the skills.  But, we will continue to teach you anyway..For  ');
-			lln('   the usual price!" `2The scarred man laughs gleefully.');
+			if (rip) {
+				lln('  `0"Greetings, `%'+player.name+'`0.  We');
+				lln('  are proud that you have mastered the ');
+				lln('  skills.  But, we will continue to teach');
+				lln('  you anyway..For the usual price!"');
+				lln('  `2The scarred man laughs gleefully.');
+			}
+			else {
+				lln('  `0"Greetings, `%'+player.name+'`0.  We are proud that you have mastered');
+				lln('   the skills.  But, we will continue to teach you anyway..For  ');
+				lln('   the usual price!" `2The scarred man laughs gleefully.');
+			}
 		}
 
 		while (true) {
 			sln('');
-			lln('  `2(`0G`2)ive Them A Hard Earned Gem');
-			lln('  `2(`0S`2)pit In Their Faces');
-			lln('  `2(`0M`2)umble Apologies And Run');
-			sln('');
+			if (!rip) {
+				lln('  `2(`0G`2)ive Them A Hard Earned Gem');
+				lln('  `2(`0S`2)pit In Their Faces');
+				lln('  `2(`0M`2)umble Apologies And Run');
+				sln('');
+			}
 			command_prompt();
 			ich = getkey().toUpperCase();
+			if (!rip);
 			sln(ich);
 			if (ich === 'M') {
 				sln('');
@@ -13710,7 +14265,13 @@ function forest()
 			}
 			if (ich === 'S') {
 				sln('');
-				lln('  `2You hawk a good sized piece of phlegm into the leader\'s face.');
+				if (rip) {
+					lln('  `2You hawk a good sized piece of phlegm');
+					lln('  into the leader\'s face.');
+				}
+				else {
+					lln('  `2You hawk a good sized piece of phlegm into the leader\'s face.');
+				}
 				sln('');
 				more_nomail();
 				if (player.sex === 'F') {
@@ -13728,18 +14289,41 @@ function forest()
 				if (player.gem < 1) {
 					sln('');
 					sln('');
-					lln('  `2You fumble through your pockets and find you don\'t posses a Gem.  You');
-					sln('  don\'t think it would be wise to try to pull one over on the Master');
-					sln('  Thieves\' Guild.  You have a reputation to worry about!');
+					if (rip) {
+						lln('  `2You fumble through your pockets and');
+						lln('  find you don\'t posses a Gem.  You ');
+						sln('  don\'t think it would be wise to try');
+						sln('  to pull one over on the Master Thieves\'');
+						sln('  Guild.  You have a reputation to worry');
+						sln('  about!');
+					}
+					else {
+						lln('  `2You fumble through your pockets and find you don\'t posses a Gem.  You');
+						sln('  don\'t think it would be wise to try to pull one over on the Master');
+						sln('  Thieves\' Guild.  You have a reputation to worry about!');
+					}
 					sln('');
 					more_nomail();
 				}
 				else {
 					player.gem -= 1;
 					sln('');
-					sln('  You nonchalantly flip them a sparkling Gem.  The Thieves look impressed.');
+					if (rip) {
+						sln('  You nonchalantly flip them a ');
+						sln('  sparkling Gem.  The Thieves look');
+						sln('  impressed.');
+					}
+					else {
+						sln('  You nonchalantly flip them a sparkling Gem.  The Thieves look impressed.');
+					}
 					sln('');
-					lln('  `0"Nice rock.  Alright...True to our word, we will instruct you."`2');
+					if (rip) {
+						lln('  `0"Nice rock.  Alright...True to our');
+						lln('  word, we will instruct you."`2');
+					}
+					else {
+						lln('  `0"Nice rock.  Alright...True to our word, we will instruct you."`2');
+					}
 					sln('');
 					more();
 					raise_class();
@@ -13894,6 +14478,8 @@ function forest()
 			// TODO: Allow JS events...
 			switch(random(15+(player.horse ? 1 : 0))) {
 				case 0:
+					if (rip)
+						lrdrip('W5');
 					lln('`c  `%Event In The Forest`0');
 					lln('`l');
 					sln('');
@@ -13933,6 +14519,8 @@ function forest()
 					more_nomail();
 					break;
 				case 1:
+					if (rip)
+						lrdrip('W5');
 					lln('`c  `%Event In The Forest`0');
 					lln('`l');
 					sln('');
@@ -14049,6 +14637,8 @@ function forest()
 					 * taken 1 charm. Doing that kinda throws off the balance of the game,
 					 * since a player could get very very pretty and never have a chance
 					 * of getting ugly. Randomizing it helps that a bit. */
+					if (rip)
+						lrdrip('W1');
 					tmp = random(2) + 1;
 					if (random(3) === 1) {
 						if (!settings.new_ugly_stick) {
@@ -14184,6 +14774,8 @@ inner:
 					sclrscr();
 					break;
 				case 9:
+					if (rip)
+						lrdrip('W1');
 					lrdfile('FAIRY');
 					more();
 					sclrscr();
@@ -14356,12 +14948,16 @@ inner:
 					break;
 				case 10:
 					if (settings.olivia === true) {
+						if (rip)
+							lrdrip('W1');
 						lrdfile('CREEPY');
 						ich = getkey();
 						olivia();
 					}
 					break;
 				case 11:
+					if (rip)
+						lrdrip('W1');
 					rescue_the_princess();
 					break;
 				case 12:
@@ -14456,6 +15052,8 @@ inner:
 		}
 		enemy = load_monster(mnum);
 		player.forest_fights -= 1;
+		if (rip && lastrip != 'FORFIGHT')
+			lrdrip('FORFIGHT');
 		sln('');
 		sln('');
 		lln('  `2**`%FIGHT`2**');
@@ -14474,6 +15072,10 @@ inner:
 			sln('');
 			dead_screen(enemy);
 			sln('');
+			if (rip) {
+				lrdrip('EXIT');
+				getkey();
+			}
 			exit(0);
 		}
 		if (enemy.hp < 1) {
@@ -14509,11 +15111,15 @@ inner:
 			more();
 			tournament_check();
 		}
+		if (rip && lastrip != 'FORFIGHT')
+			lrdrip('FORFIGHT');
 	}
 
 	function forest_special() {
 		var g;
 
+		if (rip)
+			lrdrip('W1');
 		lln('`c`%                        ** WIERD EVENT **');
 		lln('`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
 		lln('  `0You are heading into the forest, when you hear the voice of');
@@ -14539,7 +15145,10 @@ inner:
 
 	function attack_dragon() {
 		function dragon_screen() {
-			lrdfile('LAIRANS');
+			if (rip)
+				lrdrip('2DRAGON');
+			else
+				lrdfile('LAIRANS');
 		}
 
 		if (player.seen_dragon) {
@@ -14559,7 +15168,8 @@ inner:
 				ch = getkey().toUpperCase();
 				sw(ch);
 			} while ('?AR'.indexOf(ch) === -1);
-			sln(ch);
+			if (!rip)
+				sln(ch);
 			switch(ch) {
 				case '?':
 					dragon_screen();
@@ -14568,6 +15178,8 @@ inner:
 					fight_dragon(false);
 					break;
 				case 'R':
+					if (rip)
+						lrdrip('W1');
 					sln('');
 					foreground(2);
 					sln('  You decide it would be wise to depart from this wicked place.');
@@ -14578,19 +15190,30 @@ inner:
 		} while(!player.seen_dragon);
 	}
 
-	function menu() {
-		if (player.weird) {
+	function menu(special) {
+		if (special === undefined)
+			special = true;
+		if (special && player.weird) {
 			forest_special();
 		}
 		if (!player.expert) {
-			lrdfile('FOREST');
+			if (rip)
+				lrdrip('FOREST');
+			else
+				lrdfile('FOREST');
 			foreground(2);
 			sln('');
-			lln('  `2(`0L`2)ook for something to kill       (`0H`2)ealer\'s Hut');
-			lw('  `2(`0R`2)eturn to town                   ');
+			if (rip) {
+				lln('  `2(`0L`2)ook for something to kill');
+				lln('  (`0H`2)ealer\'s Hut');
+				lln('  `2(`0R`2)eturn to town');
+			}
+			else {
+				lln('  `2(`0L`2)ook for something to kill       (`0H`2)ealer\'s Hut');
+				lw('  `2(`0R`2)eturn to town                 ');
+			}
 			if (player.horse) {
-				lw('`2(`0T`2)ake ');
-				sln('Horse To DarkCloak Tavern');
+				lln('  `2(`0T`2)ake Horse To DarkCloak Tavern');
 			}
 			else {
 				sln('');
@@ -14601,25 +15224,33 @@ inner:
 	function prompt() {
 		sln('');
 		lw('  `2HitPoints: (`0'+pretty_int(player.hp)+'`2 of `0'+pretty_int(player.hp_max)+'`2)');
+		if (rip)
+			sln('');
 		lw('  Fights: `0'+pretty_int(player.forest_fights)+'`2 Gold: `0'+pretty_int(player.gold));
+		if (rip)
+			sln('');
 		lw('  `2Gems: `0'+pretty_int(player.gem));
 		sln('');
-		lw('  `5The Forest');
-		foreground(2);
-		sw('   (L,H,R,');
-		if (player.horse) {
-			sw('T,');
+		if (!rip) {
+			lw('  `5The Forest');
+			foreground(2);
+			sw('   (L,H,R,');
+			if (player.horse) {
+				sw('T,');
+			}
+			sln('Q)  (? for menu)');
 		}
-		sln('Q)  (? for menu)');
 	}
 
 	sclrscr();
 	menu();
 	do {
+		if (rip && lastrip != 'FOREST')
+			lrdrip('FOREST');
 		prompt();
 		command_prompt();
 		ch = getkey().toUpperCase();
-		if (ch !== 'J') {
+		if (!rip && ch !== 'J') {
 			sln(ch);
 		}
 		switch(ch) {
@@ -14645,6 +15276,30 @@ inner:
 			// DIFF: Removed explicit space handling...
 			case 'V':
 				show_stats();
+				break;
+			case '1':
+				if (rip) {
+					sln('');
+					sln('');
+					sln('  The vulture eyes you warily.');
+					sln('');
+				}
+				break;
+			case '2':
+				if (rip) {
+					sln('');
+					sln('');
+					sln('  Nice trunk.');
+					sln('');
+				}
+				break;
+			case '3':
+				if (rip) {
+					sln('');
+					sln('');
+					sln('  Trying to get back to your roots?');
+					sln('');
+				}
 				break;
 			case 'L':
 				if (player.forest_fights < 1) {
@@ -14709,10 +15364,15 @@ inner:
 				break;
 			case 'H':
 				healers();
+				if (rip)
+					menu(false);
 				break;
 			case '?':
 				if (player.expert) {
-					lrdfile('FOREST');
+					if (rip)
+						lrdrip('FOREST');
+					else
+						lrdfile('FOREST');
 				}
 				menu();
 				break;
@@ -14914,6 +15574,8 @@ function turgons()
 	function ask(trainer) {
 		var mc = morechk;
 
+		if (rip)
+			lrdrip('W1');
 		sclrscr();
 		sln('');
 		lln('  `%Questioning Your Master`2');
@@ -14985,49 +15647,103 @@ function turgons()
 		var son;
 		var mline;
 
-		sclrscr();
+		if (rip)
+			lrdrip('TURGON2');
+		else
+			sclrscr();
 		sln('');
 		sln('');
 		lln('  `%Fighting Your Master');
 		foreground(2);
-		sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+		if (rip)
+			sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+		else
+			sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
 		foreground(10);
 		if (player.seen_master) {
 			son = (player.sex === 'M' ? 'son' : 'daughter');
-			sln('  "I would like to battle again, but it is too late my '+son+'."');
-			lln('  `2'+trainer.name+' tells you.  You figure you will try again');
+			if (rip) {
+				sln('  "I would like to battle again, but it');
+				sln('  is too late my '+son+'."');
+				lln('  `2'+trainer.name+' tells');
+				sln('  you.  You figure you will try again');
+			}
+			else {
+				sln('  "I would like to battle again, but it is too late my '+son+'."');
+				lln('  `2'+trainer.name+' tells you.  You figure you will try again');
+			}
 			sln('  tomorrow.');
 			sln('');
 			more_nomail();
 			return;
 		}
 		if (player.exp < trainer.need) {
-			sln('  You are escorted down the hallway and into the battle arena.');
+			if (rip) {
+				sln('  You are escorted down the hallway and ');
+				sln('  into the battle arena.');
+			}
+			else {
+				sln('  You are escorted down the hallway and into the battle arena.');
+			}
 			sln('');
 			foreground(10);
 			sln('  THE BATTLE BEGINS!');
 			sln('');
 			more_nomail();
-			lln('  `2You raise your `0'+player.weapon+' `2to strike!  You wonder why everyone');
+			if (rip) {
+				lln('  `2You raise your `0'+player.weapon+' `2to');
+				sln('  strike!  You wonder why everyone');
+			}
+			else {
+				lln('  `2You raise your `0'+player.weapon+' `2to strike!  You wonder why everyone');
+			}
 			sln('  is looking at you with grins on their faces...');
 			sln('');
 			more_nomail();
 			sln('  Your weapon is gone!  You are holding air!');
 			sln('');
 			more_nomail();
-			sln('  Your Master is holding it!  The entire crowd is laughing at you!');
+			if (rip) {
+				sln('  Your Master is holding it!  The entire');
+				sln('  crowd is laughing at you!');
+			}
+			else {
+				sln('  Your Master is holding it!  The entire crowd is laughing at you!');
+			}
 			sln('');
-			sln('  You meekly accept the fact that you are not ready for your testing.');
+			if (rip) {
+				sln('  You meekly accept the fact that you');
+				sln('  are not ready for your testing.');
+			}
+			else {
+				sln('  You meekly accept the fact that you are not ready for your testing.');
+			}
 			sln('');
 			more_nomail();
 			player.seen_master = true;
 			return;
 		}
-		lln('`2  You enter the fighting arena, ready with your `0'+player.weapon +'`2.');
+		if (rip) {
+			lln('`2  You enter the fighting arena, ready with');
+			lln('  your `0'+player.weapon +'`2.');
+		}
+		else {
+			lln('`2  You enter the fighting arena, ready with your `0'+player.weapon +'`2.');
+		}
 		sln('');
-		sln('  When your name is called, you move to the proper position and take a');
+		if (rip) {
+			sln('  When your name is called, you move');
+			sln('  to the proper position and take a');
+		}
+		else {
+			sln('  When your name is called, you move to the proper position and take a');
+		}
 		sln('  fighting stance against your master.');
 		player.seen_master = true;
+		if (rip) {
+			sln('');
+			getkey();
+		}
 		sln('');
 		sln('');
 		lln('  `2**`%MASTER FIGHT`2**');
@@ -15089,7 +15805,10 @@ function turgons()
 
 	function menu() {
 		sclrscr();
-		lrdfile('TURGON');
+		if (rip)
+			lrdrip('TURGON');
+		else
+			lrdfile('TURGON');
 	}
 
 	function prompt() {
@@ -15112,7 +15831,8 @@ function turgons()
 			more();
 			return true;
 		}
-		lln('`2  (Q,A,V,R)  (`0? for menu`2)');
+		if (!rip)
+			lln('`2  (Q,A,V,R)  (`0? for menu`2)');
 		return false;
 	}
 
@@ -15124,27 +15844,36 @@ function turgons()
 
 		command_prompt();
 		ch = getkey().toUpperCase();
-		sln(ch);
+		if (!rip)
+			sln(ch);
 		switch(ch) {
 			case 'Q':
 				ask(trainer);
+				if (rip)
+					menu();
 				break;
 			case 'R':
 			case '\r':
 				break;
 			case 'A':
 				attack_master(trainer);
+				if (rip)
+					menu();
 				break;
 			case '?':
 				menu();
 				break;
 			// DIFF: Removed space which just skipped prompt.
 			case 'V':
+				if (rip)
+					lrdrip('W1');
 				rank_king(gamedir('temp'+player.Record));
 				show_lord_file(gamedir('temp'+player.Record), false, false);
 				file_remove(gamedir('temp'+player.Record));
 				sln('');
 				more_nomail();
+				if (rip)
+					menu();
 				foreground(2);
 				break;
 		}
@@ -15162,14 +15891,20 @@ function ye_old_bank()
 
 	function menu() {
 		sclrscr();
-		lrdfile('BANK');
+		if (rip)
+			lrdrip('BANK');
+		else
+			lrdfile('BANK');
 	}
 
 	function prompt() {
 		sln('');
 		lw('  `2Gold In Hand: `0'+pretty_int(player.gold));
+		if (rip)
+			sln('');
 		lln('  `2Gold In Bank: `0'+pretty_int(player.bank));
-		lln('  `5The Bank `8(W,D,R,T,Q)  (? for menu)');
+		if (!rip)
+			lln('  `5The Bank `8(W,D,R,T,Q)  (? for menu)');
 	}
 
 	menu();
@@ -15177,14 +15912,22 @@ function ye_old_bank()
 	do {
 		command_prompt();
 		ch = getkey().toUpperCase();
-		sln(ch);
+		if (!rip)
+			sln(ch);
 		switch(ch) {
 			case 'W':
-				lln('`c  `%Ye Olde Bank`#');
-				sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
-				lln('  `2Gold In Hand: `0'+pretty_int(player.gold)+'  `2Gold In Bank: `0'+pretty_int(player.bank));
-				sln('');
-				lln('  `2"How much gold would you like to withdraw?" `0(1 for ALL of it)');
+				if (rip) {
+					sln('');
+					lln('  `2"How much gold would you like to');
+					lln('  withdraw?" `0(1 for ALL of it)');
+				}
+				else {
+					lln('`c  `%Ye Olde Bank`#');
+					sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+					lln('  `2Gold In Hand: `0'+pretty_int(player.gold)+'  `2Gold In Bank: `0'+pretty_int(player.bank));
+					sln('');
+					lln('  `2"How much gold would you like to withdraw?" `0(1 for ALL of it)');
+				}
 				sln('');
 				lw('  `0AMOUNT : ');
 				amt = parseInt(dk.console.getstr({len:11, integer:true}), 10);
@@ -15216,13 +15959,21 @@ function ye_old_bank()
 					player.bank -= amt;
 					player.gold += amt;
 				}
+				if (rip)
+					prompt();
 				break;
 			case 'D':
-				lln('`c  `%Ye Olde Bank`#');
-				sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
-				lln('  `2Gold In Hand: `0'+pretty_int(player.gold)+'   `2Gold In Bank: `0'+pretty_int(player.bank));
-				sln('');
-				lln('  `2"How much gold would you like to deposit?" `0(1 for ALL of it)');
+				if (rip) {
+					lln('  `2"How much gold would you like to');
+					lln('  deposit?" `0(1 for ALL of it)');
+				}
+				else {
+					lln('`c  `%Ye Olde Bank`#');
+					sln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+					lln('  `2Gold In Hand: `0'+pretty_int(player.gold)+'   `2Gold In Bank: `0'+pretty_int(player.bank));
+					sln('');
+					lln('  `2"How much gold would you like to deposit?" `0(1 for ALL of it)');
+				}
 				sln('');
 				lw('  `0AMOUNT: ');
 				amt = parseInt(dk.console.getstr({len:11, integer:true}), 10);
@@ -15259,6 +16010,8 @@ function ye_old_bank()
 					player.gold -= amt;
 					player.bank += amt;
 				}
+				if (rip)
+					prompt();
 				break;
 			case 'T':
 				if (settings.transfers_on) {
@@ -15267,12 +16020,22 @@ function ye_old_bank()
 						sln('');
 						break;
 					}
-					lln('`c  `%Ye Olde Bank`#');
-					lln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+					if (!rip) {
+						lln('`c  `%Ye Olde Bank`#');
+						lln('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
+					}
 					lw('  `2Gold In Hand: `0'+pretty_int(player.gold));
+					if (rip)
+						sln('');
 					lln('  `2Gold In Bank: `0'+pretty_int(player.bank));
 					foreground(2);
-					sln('  "How much gold would you like to transfer?"');
+					if (rip) {
+						sln('  "How much gold would you like to');
+						sln('  transfer?"');
+					}
+					else {
+						sln('  "How much gold would you like to transfer?"');
+					}
 					lw('  `0AMOUNT : ');
 					amt = parseInt(dk.console.getstr({len:11, integer:true}), 10);
 					if (isNaN(amt)) {
@@ -15293,7 +16056,15 @@ function ye_old_bank()
 					}
 					else if(amt > settings.transfer_amount) {
 						sln('');
-						sln('  "Our messenger will not carry more than '+pretty_int(settings.transfer_amount)+' gold pieces at a time!"');
+						if (rip) {
+							sln('  "Our messenger will not carry more');
+							sln('  than '+pretty_int(settings.transfer_amount)+' gold');
+							sln('  pieces at a time!"');
+						}
+						else {
+							sln('  "Our messenger will not carry more than '+pretty_int(settings.transfer_amount)+' gold pieces at a time!"');
+						}
+							
 					}
 					else {
 						sln('');
@@ -15438,6 +16209,8 @@ function conjugality_list()
 	var phrase = ['hitched with','attached to','in love with','a love slave to',
 	    'smitten with love for','in matrimony with','in marital bliss with','wedded to'];
 
+	if (rip)
+		lrdrip('W1');
 	lln('`c                     `%** CONJUGALITY LIST **');
 	lln('                    `2-=-=-=-=-=-=-=-=-=-=-=-=-');
 	player.put();
@@ -15477,6 +16250,8 @@ function show_game_stats()
 	var tmp;
 
 	get_state(false);
+	if (rip)
+		lrdrip('W1');
 	lln('`c                     `%** GAME STATISTICS '+ver+' **');
 	sln('');
 	lln(' `2 This game has been running for `%'+pretty_int(state.days)+'`2 days.');
@@ -15572,9 +16347,13 @@ function list_players()
 {
 	var f = gamedir('temp'+player.Record);
 
+	if (rip)
+		lrdrip('W1');
 	sln('');
 	generate_rankings(f, true, true, false);
 	display_file(f, true, true);
+	if (rip)
+		getkey();
 	file_remove(f);
 }
 
@@ -15604,19 +16383,25 @@ function slaughter_others()
 
 	sclrscr();
 	if (!player.expert) {
-		lrdfile('WAR');
+		if (rip)
+			lrdrip('WAR');
+		else
+			lrdfile('WAR');
 	}
 	do {
-		sln('');
-		foreground(5);
-		sln('  Slaughter Other Players');
-		foreground(2);
-		sln('');
-		sln('  (S,L,E,W,R)  (? for menu)');
+		if (!rip) {
+			sln('');
+			foreground(5);
+			sln('  Slaughter Other Players');
+			foreground(2);
+			sln('');
+			sln('  (S,L,E,W,R)  (? for menu)');
+		}
 		check_mail();
 		command_prompt();
 		ch = getkey().toUpperCase();
-		sln(ch);
+		if (!rip)
+			sln(ch);
 		switch(ch) {
 			case 'L':
 				generate_rankings(gamedir('temp'+player.Record), false, true, false);
@@ -15628,7 +16413,10 @@ function slaughter_others()
 			case '\r':
 				return;
 			case '?':
-				lrdfile('WAR');
+				if (rip)
+					lrdrip('WAR');
+				else
+					lrdfile('WAR');
 				break;
 			case 'V':
 				show_stats();
@@ -15691,6 +16479,10 @@ function slaughter_others()
 							rfmutex(out.name);
 						}
 						player.put();
+						if (rip) {
+							lrdrip('W5');
+							lw('`1`2');
+						}
 						lw('  `2You hunt around for `0'+enemy.name+'`2...');
 						if (enemy.sex === 'M') {
 							sln('YOU FIND HIM!');
@@ -15710,6 +16502,7 @@ function slaughter_others()
 						sln(ch);
 						foreground(2);
 						if (ch === 'Y') {
+							lrdrip('BATTLE');
 							attack_player(enemy, false);
 						}
 						if (player.dead) {
@@ -16018,6 +16811,12 @@ function create_other_places() {
 	return ret;
 }
 
+function check_rip(name)
+{
+	if (rip && lastrip != name)
+		lrdrip(name);
+}
+
 function main()
 {
 	var quit = false;
@@ -16029,6 +16828,8 @@ function main()
 
 	function goodbye() {
 		sclrscr();
+		if (rip)
+			lrdrip('W1');
 		sln('');
 		sln('');
 		lln('  `%Quitting To The Fields...');
@@ -16038,18 +16839,29 @@ function main()
 		player.on_now = false;
 		player.put();
 		generate_rankings(gamedir('scores.lrd'), true)
+		if (rip) {
+			getkey();
+			lrdrip('EXIT');
+			getkey();
+		}
 		exit(0);
 	}
 
 	function do_quit() {
 		sln('');
 		sln('');
-		lw('`2  Quit game?  [`0Y`2] : ');
+		if (rip)
+			lw('  Quitting Game...');
+		else
+			lw('`2  Quit game?  [`0Y`2] : ');
 		ch = getkey().toUpperCase();
 		if (ch !== 'N') {
 			ch = 'Y';
 		}
-		sln(ch);
+		if (rip)
+			sln('');
+		else
+			sln(ch);
 		if (ch === 'Y') {
 			return true;
 		}
@@ -16057,13 +16869,15 @@ function main()
 	}
 
 	function prompt() {
-		sln('');
-		foreground(5);
-		sln('  The Town Square');
-		foreground(8);
-		sln('  (? for menu)');
-		sln('  (F,S,K,A,H,V,I,T,Y,L,W,D,C,O,X,M,P,Q)');
-		command_prompt();
+		if (!rip) {
+			sln('');
+			foreground(5);
+			sln('  The Town Square');
+			foreground(8);
+			sln('  (? for menu)');
+			sln('  (F,S,K,A,H,V,I,T,Y,L,W,D,C,O,X,M,P,Q)');
+			command_prompt();
+		}
 	}
 
 	function menu() {
@@ -16077,7 +16891,10 @@ function main()
 			player.exp = 0;
 		}
 		if (!player.expert) {
-			lrdfile('MAIN');
+			if (rip)
+				lrdrip('MAIN');
+			else
+				lrdfile('MAIN');
 		}
 	}
 
@@ -16111,11 +16928,13 @@ function main()
 
 	menu();
 	do {
+		check_rip('MAIN');
 		foreground(5);
 		check_mail();
 		prompt();
 		ch = getkey().toUpperCase();
-		sln(ch);
+		if (!rip)
+			sln(ch);
 		switch(ch) {
 			case 'V':
 				show_stats();
@@ -16151,6 +16970,8 @@ function main()
 				if (player.dead) {
 					quit = true;
 				}
+				if (rip)
+					menu();
 				sln('');
 				break;
 			case 'A':
@@ -16160,13 +16981,21 @@ function main()
 				break;
 			case 'T':
 				turgons();
+				if (rip)
+					menu();
 				sln('');
 				break;
 			case 'W':
+				if (rip)
+					lrdrip('W3');
 				compose_mail();
+				if (rip)
+					menu();
 				break;
 			case 'L':
 				list_players();
+				if (rip)
+					menu();
 				break;
 			case 'O':
 				foreground(10);
@@ -16178,6 +17007,8 @@ function main()
 					sln('');
 				}
 				else {
+					if (rip)
+						lrdrip('W1');
 					other_places_menu();
 				}
 				check_mail();
@@ -16241,6 +17072,8 @@ function main()
 				} while(ch !== 'Q');
 				sln('');
 				sln('');
+				if (rip)
+					menu();
 				break;
 			case 'F':
 				forest();
@@ -16248,10 +17081,14 @@ function main()
 					quit = true;
 				}
 				sln('');
+				if (rip)
+					menu();
 				break;
 			case 'H':
 				healers();
 				sln('');
+				if (rip)
+					menu();
 				break;
 			case 'I':
 				red_dragon_inn();
@@ -16263,31 +17100,44 @@ function main()
 				menu();
 				sln('');
 				break;
-			case '2':	// TODO: RIP (Hah!)
+			case '2':
+				rip = !rip;
+				menu();
 				break;
 			case 'M':
 				announce();
 				break;
 			case 'P':
+				if (rip)
+					lrdrip('W1');
 				warriors_on_now(false);
+				if (rip)
+					menu();
 				sln('');
 				break;
 			case '1':
 				show_game_stats();
 				sln('');
+				if (rip)
+					menu();
 				break;
 			case 'C':
 				conjugality_list();
 				sln('');
+				if (rip)
+					menu();
 				break;
-			case '3':	// TODO
+			case '3':	// TODO (ansi)
 				sln('');
 				break;
-			case '4':	// TODO
+			case '4':	// TODO (time left)
 				sln('');
 				break;
 			case 'X':
-				player.expert = !player.expert;
+				if (rip)
+					player.expert = false;
+				else
+					player.expert = !player.expert;
 				sln('');
 				sln('');
 				if (player.expert) {
@@ -16298,8 +17148,10 @@ function main()
 				}
 				break;
 			case 'Q':
-				if (!do_quit()) {
-					break;
+				if (!rip) {
+					if (!do_quit()) {
+						break;
+					}
 				}
 				goodbye();	// goodbye() exits...
 				sln('');
@@ -16310,6 +17162,8 @@ function main()
 			case 'Y':
 				ye_old_bank();
 				sln('');
+				if (rip)
+					menu();
 				break;
 			default:
 				sln('');
@@ -16335,11 +17189,13 @@ function intro_menu()
 	var ch;
 
 	do {
-		sln('');
-		lln('                         `2(`0E`2)nter the realm of the Dragon');
-		lln('                         `2(`0I`2)nstructions');
-		lln('                         `2(`0L`2)ist Warriors');
-		lln('                         `2(`0Q`2)uit back to BBS');
+		if (!rip) {
+			sln('');
+			lln('                         `2(`0E`2)nter the realm of the Dragon');
+			lln('                         `2(`0I`2)nstructions');
+			lln('                         `2(`0L`2)ist Warriors');
+			lln('                         `2(`0Q`2)uit back to BBS');
+		}
 		do {
 			sln('');
 			lw('                         `2Your choice, warrior? [`0E`2]: `%');
@@ -16386,11 +17242,17 @@ function intro_menu()
 				quit_msg();
 				break;
 			case 'S':
+				if (rip)
+					lrdrip('W1');
 				lln('`c  `2You have pressed the `0S`2 key.  `0S`2 is for story.');
 				sln('');
 				more_nomail();
 				lrdfile('STORY', true);
 				more_nomail();
+				if (rip) {
+					sln('');
+					lrdrip('LOGON');
+				}
 				sln('');
 				break;
 			case 'L':
@@ -16402,14 +17264,23 @@ function intro_menu()
 				else {
 					generate_rankings(gamedir('tempn'+dk.connection.node), true, true, false);
 					sclrscr();
+					if (rip)
+						lrdrip('W1');
 					display_file(gamedir('tempn'+dk.connection.node),true,true);
 					file_remove(gamedir('tempn'+dk.connection.node));
+					if (rip) {
+						sln('');
+						getkey();
+						lrdrip('LOGON');
+					}
 					sln('');
 					sln('');
 				}
 				break;
 			case 'I':
 				instructions();
+				if (rip)
+					lrdrip('LOGON');
 				break;
 		}
 	} while	('E\rQ'.indexOf(ch) === -1);
@@ -16455,11 +17326,243 @@ function check_gameover()
 	}
 }
 
+function read_str(timeout, regex)
+{
+	var ret = '';
+	var ch;
+
+	while (dk.console.waitkey(timeout)) {
+		ch = dk.console.getkey();
+		if (ch == '\x1b' || ch.length > 1)
+			break;
+		if (regex !== undefined) {
+			if (ch == '\r')
+				break;
+		}
+
+		ret += ch;
+		if (regex !== undefined) {
+			if (ret.search(regex) !== -1)
+				break;
+		}
+	}
+	return ret;
+}
+
+function read_apc(timeout)
+{
+	var ret = '';
+	var ch;
+	var state = 0;
+
+	while(dk.console.waitkey(timeout)) {
+		ch = dk.console.getkey();
+		switch(state) {
+			case 0:
+				if (ch == '\x1b') {
+					state++;
+					break;
+				}
+				break;
+			case 1:
+				if (ch == '_') {
+					state++;
+					break;
+				}
+				state = 0;
+				break;
+			case 2:
+				if (ch == '\x1b') {
+					state++;
+					break;
+				}
+				ret += ch;
+				break;
+			case 3:
+				if (ch == '\\') {
+					return ret;
+				}
+				return undefined;
+		}
+	}
+	return undefined;
+}
+
+function syncterm_upload(fname)
+{
+	var path = js.exec_dir + '/' + fname;
+
+	// Read file
+	var f = new File(path);
+	if (!f.open("rb", true))
+		return false;
+	f.base64 = true;
+	var buf = "\x1b_SyncTERM:C;S;RIP/"+fname+";"+f.read()+"\x1b\\";
+	f.close();
+	dk.console.print(buf);
+	while (dk.console.waitkey(0))
+		dk.console.getkey();
+	return true;
+}
+
+function ymodem_upload(fname)
+{
+	var path = js.exec_dir + '/' + fname;
+
+	if (dk.system.mode !== 'sbbs')
+		return false;
+	dk.console.print('\r!|9\x1b06020000'+fname+'<>\r\n');
+	var ret = bbs.send_file(path, 'G', 'LORD Icon', false);
+	while (dk.console.waitkey(0))
+		dk.console.getkey();
+	return ret;
+}
+
+function supports_syncterm_cache()
+{
+	var stat;
+
+	dk.console.print('\x1b_SyncTERM:C;L;test\x1b\\');
+	stat = read_apc(10000);
+	if (stat != undefined)
+		return true;
+	return false;
+}
+
+function upload(fname)
+{
+	var ret;
+
+	dk.console.print('\r\x1b[K  Updating '+fname);
+	if (syncterm_cache === undefined)
+		syncterm_cache = supports_syncterm_cache();
+	if (syncterm_cache)
+		ret = syncterm_upload(fname);
+	else
+		ret = ymodem_upload(fname);
+	if (ret)
+		dk.console.print('\r\x1b[K');
+	else
+		dk.console.print('\r\x1b[K  Update of '+fname+' FAILED!');
+	return ret;
+}
+
+function upload_if_newer(fname)
+{
+	var stat;
+	var need_file = false;
+	var path = js.exec_dir + '/' + fname;
+	var fdate = new Date();
+	var rdate = new Date();
+	var m;
+	var yr;
+	var ret;
+
+	if (!file_exists(path))
+		return false;
+	while (dk.console.waitkey(0))
+		dk.console.getkey();
+	dk.console.print('\r\x1b[K  Checking '+fname);
+	dk.console.print('\r!|1F030000'+fname+'\r\n');
+	stat = read_str(10000, /[01]\.[0-9]+\.[0-9]{2}\/[0-9]{2}\/[0-9]{2}\.[0-9]{2}:[0-9]{2}:[0-9]{2}/);
+	if (stat == '')
+		return false;
+	if (stat == '0') {
+		need_file = true;
+	}
+	else {
+		// 1.20345.01/02/93.03:04:30
+		m = stat.match(/^1\.([0-9]+)\.([0-9]{2})\/([0-9]{2})\/([0-9]{2})\.([0-9]{2}):([0-9]{2}):([0-9]{2})$/);
+		if (m === null) {
+			need_file = true;
+		}
+		else {
+			if (parseInt(m[1], 10) != file_size(path)) {
+				need_file = true;
+			}
+			else {
+				fdate.setTime(file_date(path));
+				rdate.setUTCMilliseconds(0);
+				rdate.setUTCSeconds(parseInt(m[7], 10));
+				rdate.setUTCMinutes(parseInt(m[6], 10));
+				rdate.setUTCHours(parseInt(m[5], 10));
+				rdate.setUTCDate(1);
+				yr = parseInt(m[4], 10) + 1900;
+				if (yr < new Date().getUTCFullYear() - 50)
+					yr += 100;
+				rdate.setUTCFullYear(yr);
+				rdate.setUTCDate(parseInt(m[3], 10));
+				rdate.setUTCMonth(parseInt(m[2], 10));
+				if (rdate < fdate) {
+					need_file = true;
+				}
+			}
+		}
+	}
+	if (!need_file) {
+		dk.console.print('\r\x1b[K');
+		return true;
+	}
+	ret = upload(fname);
+	return ret;
+}
+
 function start() {
 	var igm = {};
 	var out;
+	var i;
+	var icons = [
+		'LORDFRM1.ICN',
+		'LORDFRM2.ICN',
+		'LORDFRM3.ICN',
+		'LORDFRST.ICN',
+		'LORDTWN1.ICN',
+		'LORDTWN2.ICN',
+		'LORDTWN3.ICN',
+		'LORDWIZ2.ICN',
+		'LORDWNDO.ICN',
+		'LORDTURG.ICN',
+		'LORDDEAD.ICN',
+		'LORDDARK.ICN',
+		'LORDNEWW.ICN',
+		'LORDINN1.ICN',
+		'LORDTHEF.ICN',
+		'LORDDRAG.ICN',
+		'LORDARMR.ICN',
+		'LORDBANK.ICN',
+		'LORDHEAL.ICN',
+		'LORDLRG.ICN',
+		'LORDSCRL.ICN',
+		'LORDBART.ICN',
+		'LORDKING.ICN',
+		'LORDTAV.ICN',
+		'LORDINN2.ICN',
+		'LORDINT1.ICN',
+		'LORDINT2.ICN',
+		'LORDHEAD.ICN'
+	];
 
 	build_txt_index();
+	build_rip_index();
+
+	dk.console.print("\x1b[!\x1b[6n");
+	if (read_str(10000, /RIPSCRIP[0-9]{6}/).indexOf('RIPSCRIP') != -1) {
+		rip = true;
+		sln('');
+		// Upload icon files as needed...
+		foreground(2);
+		sln('  RIP support detected, checking RIP icon cache...');
+		for (i = 0; rip && i < icons.length; i++) {
+			if (!upload_if_newer(icons[i]))
+				rip = false;
+		}
+		if (!rip)
+			sln('  Cache invalid, disabling RIP.');
+		else
+			sln('  RIP Enabled.');
+		while (dk.console.waitkey(0))
+			dk.console.getkey();
+	}
 
 	// Should this allow a global file?
 	if (file_exists(gamedir('hello.lrd'))) {
@@ -16468,54 +17571,69 @@ function start() {
 
 	sclrscr();
 
-	switch (random(10)) {
-		case 0:
-			lrdfile('INTRO1');
-			break;
-		case 1:
-			lrdfile('DRAG');
-			break;
-		case 2:
-			lrdfile('INTRO2');
-			break;
-		case 3:
-			lrdfile('DRAGON3');
-			break;
-		case 4:
-			lrdfile('SM-LORD');
-			break;
-		case 5:
-			lrdfile('LORD');
-			break;
-		case 6:
-			lrdfile('FOOT');
-			break;
-		case 7:
-			lrdfile('DEMON');
-			break;
-		case 8:
-			lrdfile('LONGINTRO');
-			break;
-		case 9:
-			lrdfile('ACCESSD');
-			break;
+	if (rip) {
+		lrdrip('INTRO');
+	}
+	else {
+		switch (random(10)) {
+			case 0:
+				lrdfile('INTRO1');
+				break;
+			case 1:
+				lrdfile('DRAG');
+				break;
+			case 2:
+				lrdfile('INTRO2');
+				break;
+			case 3:
+				lrdfile('DRAGON3');
+				break;
+			case 4:
+				lrdfile('SM-LORD');
+				break;
+			case 5:
+				lrdfile('LORD');
+				break;
+			case 6:
+				lrdfile('FOOT');
+				break;
+			case 7:
+				lrdfile('DEMON');
+				break;
+			case 8:
+				lrdfile('LONGINTRO');
+				break;
+			case 9:
+				lrdfile('ACCESSD');
+				break;
+		}
 	}
 	getkey();
 	sclrscr();
-	sln('');
-	sln('');
-	lln(center('`0L`2egend `0O`2f The `0R`2ed `0D`2ragon'));
-	sln('');
+	if (rip) {
+		lrdrip("LOGON");
+	}
+	else {
+		sln('');
+		sln('');
+		lln(center('`0L`2egend `0O`2f The `0R`2ed `0D`2ragon'));
+		sln('');
+	}
 	get_state(false);
-	lln(center('`2The current game has been running `0'+state.days+'`2 days.'));
-	lln(center('`2Players are deleted after `0'+settings.delete_days+'`2 days of inactivity.'));
-
-	show_alone();
+	if (!rip) {
+		lln(center('`2The current game has been running `0'+state.days+'`2 days.'));
+		lln(center('`2Players are deleted after `0'+settings.delete_days+'`2 days of inactivity.'));
+		show_alone();
+	}
 
 	if (intro_menu() === 'Q') {
 		if (player !== undefined) {
 			player.on_now = false;
 			player.put();
+		}
+		if (rip) {
+			lrdrip('EXIT');
+			getkey();
 		}
 		exit(0);
 	}
@@ -16523,6 +17641,8 @@ function start() {
 	check_gameover();
 	load_player(true);
 	// TODO: LOCKOUT.DAT support
+	if (player !== undefined && rip)
+		player.expert = false;
 
 	js.on_exit('if (player !== undefined) { player.on_now = false; player.put(); } while(cleanup_files.length) file_remove(cleanup_files.shift()); if (psock !== undefined) psock.close();');
 

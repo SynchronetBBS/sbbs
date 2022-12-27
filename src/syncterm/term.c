@@ -63,7 +63,7 @@ void get_cterm_size(int* cols, int* rows, int ns)
 		*rows = cterm->height;
 	}
 	else {
-		get_term_win_size(cols, rows, &ns);
+		get_term_win_size(cols, rows, NULL, NULL, &ns);
 	}
 }
 
@@ -1046,11 +1046,12 @@ void ascii_upload(FILE *fp)
 	fclose(fp);
 }
 
-static void transfer_complete(BOOL success)
+static void transfer_complete(BOOL success, bool was_binary)
 {
 	int timeout = success ? settings.xfer_success_keypress_timeout : settings.xfer_failure_keypress_timeout;
 
-	conn_binary_mode_off();
+	if (!was_binary)
+		conn_binary_mode_off();
 	if(log_fp!=NULL)
 		fflush(log_fp);
 	/* TODO: Make this pretty (countdown timer) and don't delay a second between keyboard polls */
@@ -1074,6 +1075,7 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 	zmodem_t	zm;
 	int64_t		fsize;
 	struct zmodem_cbdata cbdata;
+	bool            was_binary = conn_api.binary_mode;
 
 	draw_transfer_window("ZMODEM Upload");
 
@@ -1081,7 +1083,8 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 
 	cbdata.zm=&zm;
 	cbdata.bbs=bbs;
-	conn_binary_mode_on();
+	if (!was_binary)
+		conn_binary_mode_on();
 	transfer_buf_len=0;
 	zmodem_init(&zm
 		,/* cbdata */&cbdata
@@ -1106,7 +1109,7 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 
 	fclose(fp);
 
-	transfer_complete(success);
+	transfer_complete(success, was_binary);
 }
 
 BOOL zmodem_duplicate_callback(void *cbdata, void *zm_void)
@@ -1184,6 +1187,7 @@ void zmodem_download(struct bbslist *bbs)
 	int			files_received;
 	uint64_t	bytes_received;
 	struct zmodem_cbdata cbdata;
+	bool            was_binary = conn_api.binary_mode;
 
 	if(safe_mode)
 		return;
@@ -1191,7 +1195,8 @@ void zmodem_download(struct bbslist *bbs)
 
 	zmodem_mode=ZMODEM_MODE_RECV;
 
-	conn_binary_mode_on();
+	if (!was_binary)
+		conn_binary_mode_on();
 	cbdata.zm=&zm;
 	cbdata.bbs=bbs;
 	transfer_buf_len=0;
@@ -1212,7 +1217,7 @@ void zmodem_download(struct bbslist *bbs)
 	if(files_received>1)
 		lprintf(LOG_INFO,"Received %u files (%"PRId64" bytes) successfully", files_received, bytes_received);
 
-	transfer_complete(files_received);
+	transfer_complete(files_received, was_binary);
 }
 /* End of Zmodem Stuff */
 
@@ -1423,8 +1428,10 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 	BOOL		success;
 	xmodem_t	xm;
 	int64_t		fsize;
+	bool            was_binary = conn_api.binary_mode;
 
-	conn_binary_mode_on();
+	if (!was_binary)
+		conn_binary_mode_on();
 
 	xmodem_init(&xm
 		,/* cbdata */&xm
@@ -1476,7 +1483,8 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 	}
 	else {
 		fclose(fp);
-		conn_binary_mode_off();
+		if (!was_binary)
+			conn_binary_mode_off();
 		return;
 	}
 
@@ -1499,7 +1507,7 @@ void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int las
 
 	fclose(fp);
 
-	transfer_complete(success);
+	transfer_complete(success, was_binary);
 }
 
 BOOL xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t pathsize, char *fname)
@@ -1593,6 +1601,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	time_t	t,startfile,ftime=0;
 	int		old_hold=hold_update;
 	BOOL	extra_pass = FALSE;
+	bool            was_binary = conn_api.binary_mode;
 
 	if(safe_mode)
 		return;
@@ -1611,7 +1620,8 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 	else
 		return;
 
-	conn_binary_mode_on();
+	if (!was_binary)
+		conn_binary_mode_on();
 	xmodem_init(&xm
 		,/* cbdata */&xm
 		,&mode
@@ -1872,7 +1882,7 @@ void xmodem_download(struct bbslist *bbs, long mode, char *path)
 end:
 	if(fp)
 		fclose(fp);
-	transfer_complete(success);
+	transfer_complete(success, was_binary);
 }
 
 /* End of X/Y-MODEM stuff */
@@ -2148,6 +2158,22 @@ int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz)
 	return 1;
 }
 
+int get_cache_fn_subdir(struct bbslist *bbs, char *fn, size_t fnsz, const char *subdir)
+{
+	int ret;
+
+	ret = get_cache_fn_base(bbs, fn, fnsz);
+	if (ret == 0)
+		return ret;
+	strcat(fn, subdir);
+	backslash(fn);
+	if (!isdir(fn))
+		mkpath(fn);
+	if (!isdir(fn))
+		return 0;
+	return 1;
+}
+
 static int clean_path(char *fn, size_t fnsz)
 {
 	char *fp;
@@ -2193,11 +2219,11 @@ static void apc_handler(char *strbuf, size_t slen, void *apcd)
 		if (!clean_path(fn, sizeof(fn)))
 			return;
 		p++;
-		sz = (slen - (p-strbuf)) * 3 / 4 + 1;
+		sz = (slen - (p-strbuf)) * 3 + 3 / 4 + 1;
 		buf = malloc(sz);
 		if (!buf)
 			return;
-		rc = b64_decode(buf, sz, p, slen);
+		rc = b64_decode(buf, sz, p, slen - (p - strbuf));
 		if (rc < 0) {
 			free(buf);
 			return;

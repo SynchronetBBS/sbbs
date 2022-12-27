@@ -9797,7 +9797,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	pthread_mutex_unlock(&vstatlock);
 	// Initialize it...
 	clrscr();
-	get_term_win_size(&term.width, &term.height, &term.nostatus);
+	get_term_win_size(&term.width, &term.height, NULL, NULL, &term.nostatus);
 	term.width = cols;
 	cterm = cterm_init(rows + (term.nostatus ? 0 : -1), cols, oldcterm.x, oldcterm.y, oldcterm.backlines, oldcterm.backwidth, oldcterm.scrollback, oldcterm.emulation);
 	cterm->apc_handler = oldcterm.apc_handler;
@@ -9851,6 +9851,7 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 	long dxt = 2*b2*x, dyt = -2*a2*y;
 	long d2xt = 2*b2, d2yt = 2*a2;
 	int fy;
+	bool inv = ea < sa;
 	bool skip = false;
 
 	double angle;
@@ -9873,7 +9874,7 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 					}
 				}
 				if (rip.borders) {
-					if (sa <= qangle && ea >= qangle)
+					if ((sa <= qangle && ea >= qangle) || (inv && ea <= qangle && sa >= qangle))
 						set_pixel(xc-x, yc-y, colour);
 				}
 			}
@@ -9886,18 +9887,18 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 				}
 				if (rip.borders) {
 					// Top-right quadrant.
-					if (sa <= angle && ea >= angle)
+					if ((sa <= angle && ea >= angle) || (inv && ea <= qangle && sa >= qangle))
 						set_pixel(xc+x, yc-y, colour);
 					// Bottom-left quadrant.
 					qangle = 180 + angle;
-					if (sa <= qangle && ea >= qangle)
+					if ((sa <= qangle && ea >= qangle) || (inv && ea <= qangle && sa >= qangle))
 						set_pixel(xc-x, yc+y, colour);
 				}
 			}
 			// Bottom-right quadrant
 			qangle = 360 - angle;
 			if (rip.borders) {
-				if (sa <= qangle && ea >= qangle)
+				if ((sa <= qangle && ea >= qangle) || (inv && ea <= qangle && sa >= qangle))
 					set_pixel(xc+x, yc+y, colour);
 			}
 		}
@@ -11141,15 +11142,14 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if (x2 == 0 && y2 == 0)
 								break;
-							if (arg2 < arg1)
-								arg2 += 360;
 							fg = map_rip_color(rip.color) | 0x40000000;
+
 							ex = roundl((x2 * y2) / (sqrt(y2 * y2 + x2 * x2 * pow((tan(arg1 * (M_PI / 180.0))), 2))));
-							if (arg1 > 90 && arg1 < 270)
+							if ((arg1 % 360) > 90 && (arg1 % 360) < 270)
 								ex = 0 - ex;
 							ex += x1;
 							ey = roundl((x2*y2*tan(arg1 * (M_PI / 180.0)))/(sqrt(y2*y2+x2*x2*pow((tan(arg1 * (M_PI / 180.0))), 2))));
-							if (arg1 > 90 && arg1 < 270)
+							if ((arg1 % 360) > 90 && (arg1 % 360) < 270)
 								ey = 0 - ey;
 							ey = y1 - ey;
 							//ex = x1 + (x2 * cos(arg1 * (M_PI / 180.0)));
@@ -11158,11 +11158,11 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							full_ellipse(x1, y1, arg1, arg2, x2, y2, false, fg);
 
 							ex = round((x2*y2)/(sqrt(y2*y2+x2*x2*pow((tan(arg2 * (M_PI / 180.0))), 2))));
-							if (arg2 > 90 && arg2 < 270)
+							if ((arg2 % 360) > 90 && (arg2 % 360) < 270)
 								ex = 0 - ex;
 							ex += x1;
 							ey = roundl((x2*y2*tan(arg2 * (M_PI / 180.0)))/(sqrt(y2*y2+x2*x2*pow((tan(arg2 * (M_PI / 180.0))), 2))));
-							if (arg2 > 90 && arg2 < 270)
+							if ((arg2 % 360) > 90 && (arg2 % 360) < 270)
 								ey = 0 - ey;
 							ey = y1 - ey;
 							//ex = x1 + (x2 * cos(arg2 * (M_PI / 180.0)));
@@ -12475,7 +12475,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if (strchr(&args[6], '\\'))
 								break;
-							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+							if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "RIP"))
 								break;
 							strcat(cache_path, &args[6]);
 							fexistcase(cache_path);
@@ -12508,8 +12508,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									if (stat(cache_path, &st))
 										conn_send("0\r\n", 2, 1000);
 									else {
-										localtime_r(&st.st_atime, &tm);
-										strftime(dstr, sizeof(dstr), "%m/%d/&y.%H:%M:%S", &tm);
+										localtime_r(&st.st_mtime, &tm);
+										strftime(dstr, sizeof(dstr), "%m/%d/%y.%H:%M:%S", &tm);
 										sprintf(str, "1.%" PRIdOFF ".%s\r\n", st.st_size, dstr);
 										conn_send(str, strlen(str), 1000);
 									}
@@ -12518,8 +12518,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									if (stat(cache_path, &st))
 										conn_send("0\r\n", 2, 1000);
 									else {
-										localtime_r(&st.st_atime, &tm);
-										strftime(dstr, sizeof(dstr), "%m/%d/&y.%H:%M:%S", &tm);
+										localtime_r(&st.st_mtime, &tm);
+										strftime(dstr, sizeof(dstr), "%m/%d/%y.%H:%M:%S", &tm);
 										sprintf(str, "1.%s.%" PRIdOFF ".%s\r\n", &args[6], st.st_size, dstr);
 										conn_send(str, strlen(str), 1000);
 									}
@@ -12596,7 +12596,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 *        parameters, should be set to "10".
 							 */
 							handled = true;
-							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+							if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "RIP"))
 								break;
 							GET_XY();
 							arg1 = parse_mega(&args[4], 2);
@@ -12606,7 +12606,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							}
 							strcat(cache_path, &args[9]);
-							if (strchr(cache_path, '.') == NULL)
+							if (strchr(&args[9], '.') == NULL)
 								strcat(cache_path, ".ICN");
 							fexistcase(cache_path);
 							icn = fopen(cache_path, "rb");
@@ -13142,7 +13142,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (rip.clipboard == NULL)
 								break;
-							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+							if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "RIP"))
 								break;
 							strcat(cache_path, &args[1]);
 							icn = fopen(cache_path, "wb");
@@ -13280,7 +13280,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if (arg3 < 0 || arg3 == 0 || arg3 == 5)
 								break;
-							if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+							if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "RIP"))
 								break;
 							size_t cpln = strlen(cache_path);
 							if (arg1 == 0) {	// Download (from BBS)
@@ -13907,7 +13907,7 @@ do_skypix(char *buf, size_t len)
 					p = sarg;
 				else
 					p++;
-				if (!get_cache_fn_base(rip.bbs, cache_path, sizeof(cache_path)))
+				if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "SkyPix"))
 					break;
 				char *dldir = strdup(rip.bbs->dldir);
 				strcpy(rip.bbs->dldir, cache_path);
@@ -13918,7 +13918,6 @@ do_skypix(char *buf, size_t len)
 				strcpy(rip.bbs->dldir, dldir);
 				free(dldir);
 			}
-else fprintf(stderr, "sargs = %p, argv[1] = %ld\n", sarg, argv[1]);
 			break;
 		case 17:	// Set display mode...
 			printf("TODO: SkyPix Set Display Mode (%ld)\n", argv[0]);
@@ -14188,7 +14187,7 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 	 * TODO: Downloads are broken when RIP is enabled...
 	 *       This should certainly be fixed someday.
 	 */
-	if (rip.enabled == false) {
+	if (rip.enabled == false || rip_suspended) {
 		return blen;
 	}
 
@@ -14525,13 +14524,11 @@ suspend_rip(bool suspend)
 	if (suspend) {
 		if (rip.enabled) {
 			rip_suspended = true;
-			rip.enabled = false;
 		}
 	}
 	else {
-		if (rip_suspended) {
+		if (rip.enabled) {
 			rip_suspended = false;
-			rip.enabled = true;
 		}
 	}
 }
@@ -14587,7 +14584,7 @@ rip_getch(void)
 		}
 		return ch;
 	}
-	if (rip.enabled == false) {
+	if (rip.enabled == false || rip_suspended) {
 		ch = getch();
 		if(ch==0 || ch==0xe0)
 			ch |= getch() << 8;
