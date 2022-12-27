@@ -34,6 +34,7 @@ static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0x
 #include <xp_dl.h>	/* xp_dlopen() and friends */
 #endif
 
+#include <stdbool.h>
 #include <gen_defs.h>
 #include <stdlib.h>
 #include <ciolib.h>
@@ -119,7 +120,7 @@ unsigned int  scrollback_cols=80;
 int	safe_mode=0;
 FILE* log_fp;
 extern ini_style_t ini_style;
-BOOL quitting=FALSE;
+bool quitting=false;
 int fake_mode = -1;
 char *config_override;
 char *list_override;
@@ -128,25 +129,25 @@ char *list_override;
 
 static WSADATA WSAData;
 #define SOCKLIB_DESC WSAData.szDescription
-static BOOL WSAInitialized=FALSE;
+static bool WSAInitialized=false;
 
-static BOOL winsock_startup(void)
+static bool winsock_startup(void)
 {
 	int		status;             /* Status Code */
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
 		fprintf(stderr,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
-		WSAInitialized=TRUE;
-		return (TRUE);
+		WSAInitialized=true;
+		return (true);
 	}
 
     fprintf(stderr,"!WinSock startup ERROR %d", status);
-	return (FALSE);
+	return (false);
 }
 
 #else /* No WINSOCK */
 
-#define winsock_startup()	(TRUE)
+#define winsock_startup()	(true)
 #define SOCKLIB_DESC NULL
 
 #endif
@@ -789,17 +790,17 @@ char *output_enum[]={
 	,"SDLFullscreen"
 ,NULL};
 
-BOOL check_exit(BOOL force)
+bool check_exit(bool force)
 {
 	if (force || (uifc.exit_flags & UIFC_XF_QUIT)) {
 		if (settings.confirm_close) {
 			if (!confirm("Are you sure you want to exit?",NULL))
 				return false;
 		}
-		quitting=TRUE;
-		return TRUE;
+		quitting=false;
+		return true;
 	}
-	return FALSE;
+	return false;
 }
 
 void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults)
@@ -975,7 +976,7 @@ static char *get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 }
 #endif
 
-char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
+char *get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 {
 	char	oldlst[MAX_PATH+1];
 
@@ -991,7 +992,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 #ifdef _WIN32
 	char	*home;
 	static	dll_handle	shell32=NULL;
-	BOOL	we_got_this=FALSE;
+	bool	we_got_this=false;
 	static HRESULT(__stdcall *GKFP)(REFKNOWNFOLDERID rfid, DWORD dwFlags, HANDLE hToken, PWSTR *ppszPath)=NULL;
 	const char *shell32dll[]={"Shell32", NULL};
 
@@ -1030,30 +1031,30 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 				case SYNCTERM_PATH_LIST:
 					if(shared) {
 						if(GKFP(&FOLDERID_ProgramData, KF_FLAG_CREATE, NULL, &path)==S_OK) {
-							we_got_this=TRUE;
+							we_got_this=true;
 						}
 					}
 					else {
 						if(GKFP(&FOLDERID_RoamingAppData, KF_FLAG_CREATE, NULL, &path)==S_OK) {
-							we_got_this=TRUE;
+							we_got_this=true;
 						}
 					}
 					break;
 				case SYNCTERM_DEFAULT_TRANSFER_PATH:
 					if(shared) {
 						if(GKFP(&FOLDERID_PublicDownloads, KF_FLAG_CREATE, NULL, &path)==S_OK) {
-							we_got_this=TRUE;
+							we_got_this=true;
 						}
 					}
 					else {
 						if(GKFP(&FOLDERID_Downloads, KF_FLAG_CREATE, NULL, &path)==S_OK) {
-							we_got_this=TRUE;
+							we_got_this=true;
 						}
 					}
 					break;
 				case SYNCTERM_PATH_CACHE:
 					if(GKFP(&FOLDERID_InternetCache, KF_FLAG_CREATE, NULL, &path)==S_OK) {
-						we_got_this=TRUE;
+						we_got_this=true;
 					}
 					break;
 			}
@@ -1061,11 +1062,11 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 				// Convert unicode to string using snprintf()
 				if (type == SYNCTERM_DEFAULT_TRANSFER_PATH || type == SYNCTERM_PATH_CACHE) {
 					if(snprintf(fn, fnlen, "%S", path) >= fnlen)
-						we_got_this=FALSE;
+						we_got_this=false;
 				}
 				else {
 					if(snprintf(fn, fnlen, "%S\\SyncTERM", path) >= fnlen)
-						we_got_this=FALSE;
+						we_got_this=false;
 				}
 				CTMF(path);
 			}
@@ -1259,10 +1260,10 @@ void load_settings(struct syncterm_settings *set)
 	str_list_t	sortby;
 	char	*order;
 
-	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
+	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
 	inifile=fopen(inipath,"r");
-	set->confirm_close=iniReadBool(inifile,"SyncTERM","ConfirmClose",FALSE);
-	set->prompt_save=iniReadBool(inifile,"SyncTERM","PromptSave",TRUE);
+	set->confirm_close=iniReadBool(inifile,"SyncTERM","ConfirmClose",false);
+	set->prompt_save=iniReadBool(inifile,"SyncTERM","PromptSave",true);
 	set->startup_mode=iniReadEnum(inifile,"SyncTERM","VideoMode",screen_modes_enum,SCREEN_MODE_CURRENT);
 	set->startup_mode=iniReadEnum(inifile,"SyncTERM","ScreenMode",screen_modes_enum,set->startup_mode);
 	set->output_mode=iniReadEnum(inifile,"SyncTERM","OutputMode",output_enum,CIOLIB_MODE_AUTO);
@@ -1274,14 +1275,14 @@ void load_settings(struct syncterm_settings *set)
 	set->custom_fontheight = iniReadInteger(inifile, "SyncTERM", "CustomFontHeight", 16);
 	set->custom_aw = iniReadInteger(inifile, "SyncTERM", "CustomAspectWidth", 4);
 	set->custom_ah = iniReadInteger(inifile, "SyncTERM", "CustomAspectHeight", 3);
-	get_syncterm_filename(set->list_path, sizeof(set->list_path), SYNCTERM_PATH_LIST, FALSE);
+	get_syncterm_filename(set->list_path, sizeof(set->list_path), SYNCTERM_PATH_LIST, false);
 	iniReadString(inifile, "SyncTERM", "ListPath", set->list_path, set->list_path);
 	set->scaling_factor=iniReadInteger(inifile,"SyncTERM","ScalingFactor",0);
 	set->window_width=iniReadInteger(inifile,"SyncTERM","WindowWidth",0);
 	set->window_height=iniReadInteger(inifile,"SyncTERM","WindowHeight",0);
-	set->blocky=iniReadBool(inifile,"SyncTERM","BlockyScaling",TRUE);
+	set->blocky=iniReadBool(inifile,"SyncTERM","BlockyScaling",true);
 	// TODO: Add this to the UI somewhere.
-	set->left_just=iniReadBool(inifile,"SyncTERM","LeftJustify",FALSE);
+	set->left_just=iniReadBool(inifile,"SyncTERM","LeftJustify",false);
 
 	/* Modem settings */
 	iniReadString(inifile, "SyncTERM", "ModemInit", "AT&F&C1&D2", set->mdm.init_string);
@@ -1306,7 +1307,7 @@ void load_settings(struct syncterm_settings *set)
 int main(int argc, char **argv)
 {
 	struct bbslist *bbs=NULL;
-	BOOL bbs_alloc=FALSE;
+	bool bbs_alloc=false;
 	struct	text_info txtinfo;
 	char	str[MAX_PATH+1];
 	char	drive[MAX_PATH+1];
@@ -1322,7 +1323,7 @@ int main(int argc, char **argv)
 	char	*inpath=NULL;
 	int		conn_type=CONN_TYPE_TELNET;
 	int		text_mode;
-	BOOL	override_conn=FALSE;
+	bool	override_conn=false;
 	int		addr_family=PF_UNSPEC;
 	char	*last_bbs=NULL;
 	char	*p, *lp;
@@ -1620,15 +1621,15 @@ int main(int argc, char **argv)
 #endif
 				case 'R':
 					conn_type=CONN_TYPE_RLOGIN;
-					override_conn=TRUE;
+					override_conn=true;
 					break;
 				case 'H':
 					conn_type=CONN_TYPE_SSH;
-					override_conn=TRUE;
+					override_conn=true;
 					break;
 				case 'T':
 					conn_type=CONN_TYPE_TELNET;
-					override_conn=TRUE;
+					override_conn=true;
 					break;
 				case 'S':
 					safe_mode=1;
@@ -1653,7 +1654,7 @@ int main(int argc, char **argv)
 		cio_api.options |= CONIO_OPT_BLOCKY_SCALING;
 	else
 		cio_api.options &= ~CONIO_OPT_BLOCKY_SCALING;
-	ciolib_reaper=FALSE;
+	ciolib_reaper=false;
 	seticon(syncterm_icon.pixel_data,syncterm_icon.width);
 	textmode(text_mode);
 	if (settings.scaling_factor)
@@ -1681,7 +1682,7 @@ int main(int argc, char **argv)
 
 #if 0
 #ifdef ALPHA
-	init_uifc(TRUE, TRUE);
+	init_uifc(true, true);
 	uifc.showbuf(WIN_SAV|WIN_MID|WIN_HLP, 0, 0, 76, uifc.scrn_len - 2, "WARNING: ALPHA VERSION", 
 	     "This is an ~`ALPHA`~ version\n"
 	     "\n"
@@ -1709,10 +1710,10 @@ int main(int argc, char **argv)
 			uifcmsg("Unable to allocate memory","The system was unable to allocate memory.");
 			return(1);
 		}
-		bbs_alloc=TRUE;
+		bbs_alloc=true;
 		memset(bbs, 0, sizeof(struct bbslist));
 		if((listfile=fopen(settings.list_path,"r"))==NULL)
-			parse_url(url, bbs, conn_type, TRUE);
+			parse_url(url, bbs, conn_type, true);
 		else {
 			str_list_t	inilines;
 			inilines=iniReadFile(listfile);
@@ -1723,7 +1724,7 @@ int main(int argc, char **argv)
 					bbs->port=conn_ports[conn_type];
 				bbs->conn_type=conn_type;
 			}
-			parse_url(url, bbs, conn_type, FALSE);
+			parse_url(url, bbs, conn_type, false);
 			strListFree(&inilines);
 		}
 		if(addr_family != ADDRESS_FAMILY_UNSPEC)
@@ -1737,7 +1738,7 @@ int main(int argc, char **argv)
 
 
 	load_font_files();
-	while((!quitting) && (bbs!=NULL || (bbs=show_bbslist(last_bbs, FALSE))!=NULL)) {
+	while((!quitting) && (bbs!=NULL || (bbs=show_bbslist(last_bbs, false))!=NULL)) {
 		if (default_hidepopups >= 0)
 			bbs->hidepopups = default_hidepopups;
 		if (default_nostatus >= 0)
@@ -1749,15 +1750,15 @@ int main(int argc, char **argv)
 			fake_mode = screen_to_ciolib(bbs->screen_mode);
 		textmode(screen_to_ciolib(bbs->screen_mode));
 		if (!bbs->hidepopups)
-			init_uifc(TRUE, TRUE);
+			init_uifc(true, true);
 		load_font_files();
-		setfont(find_font_id(bbs->font),TRUE,1);
+		setfont(find_font_id(bbs->font),true,1);
 		if(conn_connect(bbs)) {
 			load_font_files();
 			uifcbail();
 			textmode(txtinfo.currmode);
 			fake_mode = -1;
-			init_uifc(TRUE, TRUE);
+			init_uifc(true, true);
 			settitle("SyncTERM");
 		} else {
 			/* ToDo: Update the entry with new lastconnected */
@@ -1772,7 +1773,7 @@ int main(int argc, char **argv)
 				if((listfile=fopen(settings.list_path,"r"))!=NULL) {
 					inifile=iniReadFile(listfile);
 					fclose(listfile);
-					iniSetDateTime(&inifile,bbs->name,"LastConnected",TRUE,bbs->connected,&ini_style);
+					iniSetDateTime(&inifile,bbs->name,"LastConnected",true,bbs->connected,&ini_style);
 					iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,&ini_style);
 					if((listfile=fopen(settings.list_path,"w"))!=NULL) {
 						iniWriteFile(listfile,inifile);
@@ -1802,9 +1803,9 @@ int main(int argc, char **argv)
 				FREE_AND_NULL(conio_fontdata[i].desc);
 			}
 			load_font_files();
-			setfont(find_font_id(bbs->font),TRUE,1);
+			setfont(find_font_id(bbs->font),true,1);
 			if(doterm(bbs))
-				quitting=TRUE;
+				quitting=true;
 			fake_mode = -1;
 			setvideoflags(0);
 
@@ -1824,12 +1825,12 @@ int main(int argc, char **argv)
 					if(settings.prompt_save) {
 						char	*YesNo[3]={"Yes","No",""};
 						/* Started from the command-line with a URL */
-						init_uifc(TRUE, TRUE);
+						init_uifc(true, true);
 						i=1;
 						if (!bbs->hidepopups) {
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Save this directory entry?",YesNo)) {
 								case 0:	/* Yes */
-									edit_list(NULL, bbs,settings.list_path,FALSE);
+									edit_list(NULL, bbs,settings.list_path,false);
 									add_bbs(settings.list_path,bbs);
 									last_bbs=strdup(bbs->name);
 									break;
@@ -1841,7 +1842,7 @@ int main(int argc, char **argv)
 				}
 			}
 			if (bbs_alloc) {
-				bbs_alloc=FALSE;
+				bbs_alloc=false;
 				free(bbs);
 			}
 			bbs=NULL;
@@ -1850,7 +1851,7 @@ int main(int argc, char **argv)
 		else
 			last_bbs=strdup(bbs->name);
 		if (bbs_alloc) {
-			bbs_alloc=FALSE;
+			bbs_alloc=false;
 			free(bbs);
 		}
 		bbs=NULL;
@@ -1879,7 +1880,7 @@ int main(int argc, char **argv)
 			FILE	*inifile;
 			str_list_t	inicontents;
 
-			get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
+			get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
 			if((inifile=fopen(inipath,"r"))!=NULL) {
 				inicontents=iniReadFile(inifile);
 				fclose(inifile);

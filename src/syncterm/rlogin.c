@@ -82,7 +82,7 @@ int rlogin_connect(struct bbslist *bbs)
 	char	*passwd;
 
 	if (!bbs->hidepopups)
-		init_uifc(TRUE, TRUE);
+		init_uifc(true, true);
 
 	ruser=bbs->user;
 	passwd=bbs->password;

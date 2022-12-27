@@ -5,6 +5,7 @@
 #ifndef _TERM_H_
 #define _TERM_H_
 
+#include <stdbool.h>
 #include "bbslist.h"
 #include "ciolib.h"
 
@@ -26,7 +27,7 @@ void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path);
 void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch);
 void xmodem_download(struct bbslist *bbs, long mode, char *path);
 void zmodem_download(struct bbslist *bbs);
-BOOL doterm(struct bbslist *);
+bool doterm(struct bbslist *);
 void mousedrag(struct vmem_cell *scrollback);
 void get_cterm_size(int *cols, int *rows, int ns);
 int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz);

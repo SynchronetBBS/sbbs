@@ -255,11 +255,11 @@ size_t conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long 
  * Connection functions
  */
 
-BOOL conn_connected(void)
+bool conn_connected(void)
 {
 	if(conn_api.input_thread_running == 1 && conn_api.output_thread_running == 1)
-		return(TRUE);
-	return(FALSE);
+		return(true);
+	return(false);
 }
 
 int conn_recv_upto(void *vbuffer, size_t buflen, unsigned timeout)
@@ -544,7 +544,7 @@ connected:
 		nonblock=0;
 		ioctlsocket(sock, FIONBIO, &nonblock);
 		if (!socket_recvdone(sock, 0)) {
-			int keepalives = TRUE;
+			int keepalives = true;
 			setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepalives, sizeof(keepalives));
 
 			if (!bbs->hidepopups) {

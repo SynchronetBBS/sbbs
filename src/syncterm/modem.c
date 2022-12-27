@@ -2,6 +2,7 @@
 
 /* $Id: modem.c,v 1.32 2020/06/27 08:27:39 deuce Exp $ */
 
+#include <stdbool.h>
 #include <stdlib.h>
 
 #include "comio.h"
@@ -22,13 +23,13 @@ void modem_input_thread(void *args)
     int     rd;
     int buffered;
     size_t  buffer;
-    BOOL    monitor_dsr=TRUE;
+    bool    monitor_dsr=true;
 
     SetThreadName("Modem Input");
     conn_api.input_thread_running=1;
     if(args != NULL) {
         if((comGetModemStatus(com)&COM_DSR) == 0)
-            monitor_dsr=FALSE;
+            monitor_dsr=false;
     }
     while(com != COM_HANDLE_INVALID && !conn_api.terminate) {
         rd=comReadBuf(com, (char *)conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
@@ -58,13 +59,13 @@ void modem_output_thread(void *args)
     int     wr;
     int     ret;
     int sent;
-    BOOL    monitor_dsr=TRUE;
+    bool    monitor_dsr=true;
 
     SetThreadName("Modem Output");
     conn_api.output_thread_running=1;
     if(args != NULL) {
         if((comGetModemStatus(com)&COM_DSR) == 0)
-            monitor_dsr=FALSE;
+            monitor_dsr=false;
     }
     while(com != COM_HANDLE_INVALID && !conn_api.terminate) {
         pthread_mutex_lock(&(conn_outbuf.mutex));
@@ -140,7 +141,7 @@ int modem_connect(struct bbslist *bbs)
     char    respbuf[1024];
 
     if (!bbs->hidepopups)
-        init_uifc(TRUE, TRUE);
+        init_uifc(true, true);
 
     if(bbs->conn_type == CONN_TYPE_SERIAL || bbs->conn_type == CONN_TYPE_SERIAL_NORTS) {
         if((com=comOpen(bbs->addr)) == COM_HANDLE_INVALID) {

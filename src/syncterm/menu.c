@@ -37,10 +37,10 @@ void viewscroll(void)
 	memcpy(scrollback,cterm->scrollback,term.width*sizeof(*scrollback)*settings.backlines);
 	vmem_gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,scrollback+(cterm->backpos)*cterm->width);
 	savscrn = savescreen();
-	setfont(0, FALSE, 1);
-	setfont(0, FALSE, 2);
-	setfont(0, FALSE, 3);
-	setfont(0, FALSE, 4);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
 	drawwin();
 	top=cterm->backpos;
 	set_modepalette(palettes[COLOUR_PALETTE]);
@@ -64,7 +64,7 @@ void viewscroll(void)
 			case 0:
 				switch(key|getch()<<8) {
 					case CIO_KEY_QUIT:
-						check_exit(TRUE);
+						check_exit(true);
 						break;
 					case CIO_KEY_MOUSE:
 						getmouse(&mevent);
@@ -95,14 +95,14 @@ void viewscroll(void)
 						top+=term.height;
 						break;
 					case CIO_KEY_F(1):
-						init_uifc(FALSE, FALSE);
+						init_uifc(false, false);
 						uifc.helpbuf=	"`Scrollback Buffer`\n\n"
 										"~ J ~ or ~ Up Arrow ~   Scrolls up one line\n"
 										"~ K ~ or ~ Down Arrow ~ Scrolls down one line\n"
 										"~ H ~ or ~ Page Up ~    Scrolls up one screen\n"
 										"~ L ~ or ~ Page Down ~  Scrolls down one screen\n";
 						uifc.showhelp();
-						check_exit(FALSE);
+						check_exit(false);
 						uifcbail();
 						drawwin();
 						break;
@@ -164,10 +164,10 @@ int syncmenu(struct bbslist *bbs, int *speed)
 
     gettextinfo(&txtinfo);
     savscrn = savescreen();
-	setfont(0, FALSE, 1);
-	setfont(0, FALSE, 2);
-	setfont(0, FALSE, 3);
-	setfont(0, FALSE, 4);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
 
 	if(cio_api.mode!=CIOLIB_MODE_CURSES
 			&& cio_api.mode!=CIOLIB_MODE_CURSES_IBM
@@ -176,7 +176,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 	}
 
 	for(ret=0;(!ret) && (!quitting);) {
-		init_uifc(FALSE, !(bbs->nostatus));
+		init_uifc(false, !(bbs->nostatus));
 		uifc.helpbuf=	"`Online Menu`\n\n"
 						"`Scrollback`     Allows to you to view the scrollback buffer\n"
 						"`Disconnect`     Disconnects the current connection\n"
@@ -199,7 +199,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&opt,NULL,"SyncTERM Online Menu",opts);
 		switch(i) {
 			case -1:	/* Cancel */
-				check_exit(FALSE);
+				check_exit(false);
 				ret=1;
 				break;
 			case 0:		/* Scrollback */
@@ -236,7 +236,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 							"In general, you will only use this option for ANSI animations.";
 					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,NULL,"Output Rate",rate_names);
 					if (i==-1)
-						check_exit(FALSE);
+						check_exit(false);
 					if(i>=0)
 						*speed = rates[i];
 				}
@@ -250,7 +250,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						"it will be displayed.";
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,NULL,"Log Level",log_levels);
 				if (i==-1)
-					check_exit(FALSE);
+					check_exit(false);
 				if(i>=0)
 					log_level = j;
 				ret=6;

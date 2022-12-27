@@ -73,7 +73,7 @@ int conn_send(const void *buffer, size_t buflen, unsigned int timeout);
 int conn_send_raw(const void *buffer, size_t buflen, unsigned int timeout);
 int conn_connect(struct bbslist *bbs);
 int conn_close(void);
-BOOL conn_connected(void);
+bool conn_connected(void);
 size_t conn_data_waiting(void);
 void conn_binary_mode_on(void);
 void conn_binary_mode_off(void);

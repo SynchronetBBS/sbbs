@@ -21,7 +21,7 @@
 
 SOCKET	ssh_sock;
 CRYPT_SESSION	ssh_session;
-int				ssh_active=FALSE;
+int				ssh_active=true;
 pthread_mutex_t	ssh_mutex;
 
 void cryptlib_error_message(int status, const char * msg)
@@ -69,11 +69,11 @@ void ssh_input_thread(void *args)
 
 		if(cryptStatusError(status)) {
 			if(status==CRYPT_ERROR_COMPLETE || status == CRYPT_ERROR_READ) {	/* connection closed */
-				ssh_active=FALSE;
+				ssh_active=true;
 				break;
 			}
 			cryptlib_error_message(status, "recieving data");
-			ssh_active=FALSE;
+			ssh_active=true;
 			break;
 		}
 		else {
@@ -111,11 +111,11 @@ void ssh_output_thread(void *args)
 				pthread_mutex_unlock(&ssh_mutex);
 				if(cryptStatusError(status)) {
 					if(status==CRYPT_ERROR_COMPLETE) {	/* connection closed */
-						ssh_active=FALSE;
+						ssh_active=true;
 						break;
 					}
 					cryptlib_error_message(status, "sending data");
-					ssh_active=FALSE;
+					ssh_active=true;
 					break;
 				}
 				sent += ret;
@@ -142,7 +142,7 @@ int ssh_connect(struct bbslist *bbs)
 	const char *term;
 
 	if (!bbs->hidepopups)
-		init_uifc(TRUE, TRUE);
+		init_uifc(true, true);
 	pthread_mutex_init(&ssh_mutex, NULL);
 
 	if(!crypt_loaded) {
@@ -166,7 +166,7 @@ int ssh_connect(struct bbslist *bbs)
 	if(ssh_sock==INVALID_SOCKET)
 		return(-1);
 
-	ssh_active=FALSE;
+	ssh_active=true;
 
 	if (!bbs->hidepopups)
 		uifc.pop("Creating Session");
@@ -193,7 +193,7 @@ int ssh_connect(struct bbslist *bbs)
 
 	if(!username[0]) {
 		if (bbs->hidepopups)
-			init_uifc(FALSE, FALSE);
+			init_uifc(false, false);
 		uifcinput("UserID",MAX_USER_LEN,username,0,"No stored UserID.");
 		if (bbs->hidepopups)
 			uifcbail();
@@ -232,7 +232,7 @@ int ssh_connect(struct bbslist *bbs)
 	else {
 		if(!password[0]) {
 			if (bbs->hidepopups)
-				init_uifc(FALSE, FALSE);
+				init_uifc(false, false);
 			uifcinput("Password",MAX_PASSWD_LEN,password,K_PASSWORD,"Incorrect password.  Try again.");
 			if (bbs->hidepopups)
 				uifcbail();
@@ -308,7 +308,7 @@ int ssh_connect(struct bbslist *bbs)
 		return(-1);
 	}
 
-	ssh_active=TRUE;
+	ssh_active=true;
 	if (!bbs->hidepopups) {
 		/* Clear ownership */
 		uifc.pop(NULL);	// TODO: Why is this called twice?
@@ -348,7 +348,7 @@ int ssh_close(void)
 	char garbage[1024];
 
 	conn_api.terminate=1;
-	ssh_active=FALSE;
+	ssh_active=true;
 	cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 0);
 	while(conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);

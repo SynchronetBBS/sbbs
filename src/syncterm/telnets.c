@@ -25,7 +25,7 @@ int telnets_connect(struct bbslist *bbs)
 	int status;
 
 	if (!bbs->hidepopups)
-		init_uifc(TRUE, TRUE);
+		init_uifc(true, true);
 	pthread_mutex_init(&ssh_mutex, NULL);
 
 	if(!crypt_loaded) {
@@ -49,7 +49,7 @@ int telnets_connect(struct bbslist *bbs)
 	if(ssh_sock==INVALID_SOCKET)
 		return(-1);
 
-	ssh_active=FALSE;
+	ssh_active=false;
 
 	if (!bbs->hidepopups)
 		uifc.pop("Creating Session");
@@ -101,7 +101,7 @@ int telnets_connect(struct bbslist *bbs)
 		return(-1);
 	}
 
-	ssh_active=TRUE;
+	ssh_active=true;
 	if (!bbs->hidepopups) {
 		/* Clear ownership */
 		uifc.pop(NULL);	// TODO: Why is this called twice?

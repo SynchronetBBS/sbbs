@@ -25,7 +25,7 @@ extern int	telnet_log_level;
 // 'result' may point to either inbuf (if there were no IACs) or outbuf
 // Returns the final byte count of the result
 /*****************************************************************************/
-size_t st_telnet_expand(const uchar* inbuf, size_t inlen, uchar* outbuf, size_t outlen, BOOL expand_cr, uchar** result)
+static size_t st_telnet_expand(const uchar* inbuf, size_t inlen, uchar* outbuf, size_t outlen, bool expand_cr, uchar** result)
 {
 	static bool last_was_lf = false;
 	BYTE* first_iac = (BYTE*)memchr(inbuf, TELNET_IAC, inlen);
@@ -108,7 +108,7 @@ void *telnet_tx_parse_cb(const void *buf, size_t len, size_t *olen)
 int telnet_connect(struct bbslist *bbs)
 {
 	if (!bbs->hidepopups)
-		init_uifc(TRUE, TRUE);
+		init_uifc(true, true);
 
 	telnet_log_level = bbs->telnet_loglevel;
 

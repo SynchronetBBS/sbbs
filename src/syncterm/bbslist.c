@@ -309,15 +309,15 @@ void viewofflinescroll(void)
     textmode(scrollback_mode);
     switch(ciolib_to_screen(scrollback_mode)) {
         case SCREEN_MODE_C64:
-            setfont(33,TRUE,1);
+            setfont(33,true,1);
             break;
         case SCREEN_MODE_C128_40:
         case SCREEN_MODE_C128_80:
-            setfont(35,TRUE,1);
+            setfont(35,true,1);
             break;
         case SCREEN_MODE_ATARI:
         case SCREEN_MODE_ATARI_XEP80:
-            setfont(36,TRUE,1);
+            setfont(36,true,1);
             break;
     }
     /* Set up a shadow palette */
@@ -325,10 +325,10 @@ void viewofflinescroll(void)
         for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
             setpalette(i + 16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
     }
-    setfont(0, FALSE, 1);
-    setfont(0, FALSE, 2);
-    setfont(0, FALSE, 3);
-    setfont(0, FALSE, 4);
+    setfont(0, false, 1);
+    setfont(0, false, 2);
+    setfont(0, false, 3);
+    setfont(0, false, 4);
     drawwin();
     set_modepalette(palettes[COLOUR_PALETTE]);
     top=scrollback_lines;
@@ -358,7 +358,7 @@ void viewofflinescroll(void)
             case 0:
                 switch(key|getch()<<8) {
                     case CIO_KEY_QUIT:
-                        check_exit(TRUE);
+                        check_exit(true);
                         if (quitting)
                             i=1;
                         break;
@@ -389,7 +389,7 @@ void viewofflinescroll(void)
                         top+=sbtxtinfo.screenheight;
                         break;
                     case CIO_KEY_F(1):
-                        init_uifc(FALSE, FALSE);
+                        init_uifc(false, false);
                         uifc.helpbuf=   "`Scrollback Buffer`\n\n"
                                         "~ J ~ or ~ Up Arrow ~   Scrolls up one line\n"
                                         "~ K ~ or ~ Down Arrow ~ Scrolls down one line\n"
@@ -424,7 +424,7 @@ void viewofflinescroll(void)
     }
 
     textmode(txtinfo.currmode);
-    init_uifc(TRUE,TRUE);
+    init_uifc(true, true);
     return;
 }
 
@@ -533,7 +533,7 @@ void write_sortorder(void)
         strListPush(&sortorders, str);
     }
 
-    get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
+    get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
     if((inifile=fopen(inipath,"r"))!=NULL) {
         inicontents=iniReadFile(inifile);
         fclose(inifile);
@@ -590,7 +590,7 @@ void edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, c
                     ,0,0,0,&curr,&bar,"Sort Order",opts);
         if(ret==-1) {
             if (uifc.exit_flags & UIFC_XF_QUIT) {
-                if (!check_exit(FALSE))
+                if (!check_exit(false))
                     continue;
             }
             break;
@@ -606,7 +606,7 @@ void edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, c
             if(j==0) {
                 uifc.helpbuf=   "All sort orders are present in the list.";
                 uifc.msg("No more sort orders.");
-                if(check_exit(FALSE))
+                if(check_exit(false))
                     break;
             }
             else {
@@ -629,7 +629,7 @@ void edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, c
                     }
                 }
                 else {
-                    if(check_exit(FALSE))
+                    if(check_exit(false))
                         break;
                 }
             }
@@ -661,7 +661,7 @@ void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id
     char        home[MAX_PATH+1];
     str_list_t  section;
 
-    get_syncterm_filename(home, sizeof(home), SYNCTERM_DEFAULT_TRANSFER_PATH, FALSE);
+    get_syncterm_filename(home, sizeof(home), SYNCTERM_DEFAULT_TRANSFER_PATH, false);
     if(bbsname != NULL) {
 #if 0
         switch(type) {
@@ -687,18 +687,18 @@ void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id
     iniGetString(section,NULL,"UserName","",entry->user);
     iniGetString(section,NULL,"Password","",entry->password);
     iniGetString(section,NULL,"SystemPassword","",entry->syspass);
-    if(iniGetBool(section,NULL,"BeDumb",FALSE)) /* Legacy */
+    if(iniGetBool(section,NULL,"BeDumb",false)) /* Legacy */
         entry->conn_type=CONN_TYPE_RAW;
     entry->screen_mode=iniGetEnum(section,NULL,"ScreenMode",screen_modes_enum,SCREEN_MODE_CURRENT);
-    entry->nostatus=iniGetBool(section,NULL,"NoStatus",FALSE);
-    entry->hidepopups=iniGetBool(section,NULL,"HidePopups",FALSE);
+    entry->nostatus=iniGetBool(section,NULL,"NoStatus",false);
+    entry->hidepopups=iniGetBool(section,NULL,"HidePopups",false);
     entry->rip=iniGetEnum(section,NULL,"RIP",rip_versions,RIP_VERSION_NONE);
     iniGetString(section,NULL,"DownloadPath",home,entry->dldir);
     iniGetString(section,NULL,"UploadPath",home,entry->uldir);
 
     /* Log Stuff */
     iniGetString(section,NULL,"LogFile","",entry->logfile);
-    entry->append_logfile=iniGetBool(section,NULL,"AppendLogFile",TRUE);
+    entry->append_logfile=iniGetBool(section,NULL,"AppendLogFile",true);
     entry->xfer_loglevel=iniGetEnum(section,NULL,"TransferLogLevel",log_levels,LOG_INFO);
     entry->telnet_loglevel=iniGetEnum(section,NULL,"TelnetLogLevel",log_levels,LOG_INFO);
 
@@ -766,7 +766,7 @@ void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, 
             read_item(inilines,defaults,NULL,-1,type);
         bbses=iniGetSectionList(inilines,NULL);
         while((bbsname=strListRemove(&bbses,0))!=NULL) {
-            if(!list_name_check(list, bbsname, NULL, FALSE)) {
+            if(!list_name_check(list, bbsname, NULL, false)) {
                 if((list[*i]=(struct bbslist *)malloc(sizeof(struct bbslist)))==NULL) {
                     free(bbsname);
                     break;
@@ -867,7 +867,7 @@ void configure_log(struct bbslist *item, const char *itemname, str_list_t inifil
 					*changed = 1;
 				}
 				else
-					check_exit(FALSE);
+					check_exit(false);
 				break;
 			case 1:
 				uifc.helpbuf=	"`File Transfer Log Level`\n\n"
@@ -878,7 +878,7 @@ void configure_log(struct bbslist *item, const char *itemname, str_list_t inifil
 				switch(uifc.list(WIN_SAV|WIN_BOT|WIN_RHT, 0, 0, 0, &(item->xfer_loglevel), NULL, "File Transfer Log Level", log_level_desc)) {
 					case -1:
 						item->xfer_loglevel = i;
-						check_exit(FALSE);
+						check_exit(false);
 						break;
 					default:
 						if (item->xfer_loglevel != i) {
@@ -896,7 +896,7 @@ void configure_log(struct bbslist *item, const char *itemname, str_list_t inifil
 				switch(uifc.list(WIN_SAV|WIN_BOT|WIN_RHT, 0, 0, 0, &(item->telnet_loglevel), NULL, "Telnet Command Log Level", log_level_desc)) {
 					case -1:
 						item->telnet_loglevel = i;
-						check_exit(FALSE);
+						check_exit(false);
 						break;
 					default:
 						if (item->telnet_loglevel != i) {
@@ -925,7 +925,7 @@ get_rip_version(int oldver, int *changed)
 	    "works in any screen mode.";
 	switch(uifc.list(WIN_SAV,0,0,0,&cur,NULL,"RIP Mode",rip_versions)) {
 		case -1:
-			check_exit(FALSE);
+			check_exit(false);
 			break;
 		case RIP_VERSION_NONE:
 		case RIP_VERSION_1:
@@ -957,7 +957,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                         "must be copied into your personal directory.\n";
         i=0;
         if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Copy from system directory?",YesNo)!=0) {
-            check_exit(FALSE);
+            check_exit(false);
             return(0);
         }
         item->type=USER_BBSLIST;
@@ -1110,15 +1110,15 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
             i++;    /* no port number */
         switch(i) {
             case -1:
-                check_exit(FALSE);
+                check_exit(false);
                 if((!isdefault) && (itemname!=NULL) && (itemname[0]==0)) {
                     uifc.helpbuf=   "`Cancel Save`\n\n"
                                     "This entry has no name and can therefore not be saved.\n"
                                     "Selecting `No` will return to editing mode.\n";
                     i=0;
                     if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Cancel Save?",YesNo)!=0) {
-                        quitting=FALSE;
-                        check_exit(FALSE);
+                        quitting=false;
+                        check_exit(false);
                         break;
                     }
                     strListFree(&inifile);
@@ -1138,22 +1138,22 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                                     "Enter the name of the entry as it is to appear in the directory.";
                     strcpy(tmp,itemname);
                     uifc.input(WIN_MID|WIN_SAV,0,0,"Name",tmp,LIST_NAME_MAX,K_EDIT);
-                    check_exit(FALSE);
+                    check_exit(false);
                     if(quitting)
                         break;
-                    if(stricmp(tmp,itemname) && list_name_check(list, tmp, NULL, FALSE)) {
+                    if(stricmp(tmp,itemname) && list_name_check(list, tmp, NULL, false)) {
                         uifc.helpbuf=   "`Entry Name Already Exists`\n\n"
                                         "An entry with that name already exists in the directory.\n"
                                         "Please choose a unique name.\n";
                         uifc.msg("Entry Name Already Exists!");
-                        check_exit(FALSE);
+                        check_exit(false);
                     }
                     else {
                         if(tmp[0]==0) {
                             uifc.helpbuf=   "`Can Not Use and Empty Name`\n\n"
                                             "Entry names can not be empty.  Please enter an entry name.\n";
                             uifc.msg("Can not use an empty name");
-                            check_exit(FALSE);
+                            check_exit(false);
                         }
                         else {
                             iniRenameSection(&inifile,itemname,tmp);
@@ -1171,7 +1171,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                     :item->conn_type==CONN_TYPE_SHELL ? "Command"
                     : "Address"
                     ,item->addr,LIST_ADDR_MAX,K_EDIT);
-                check_exit(FALSE);
+                check_exit(false);
                 iniSetString(&inifile,itemname,"Address",item->addr,&ini_style);
                 break;
             case 3:
@@ -1183,7 +1183,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                     j = i;
                     switch (uifc.list(WIN_SAV, 0, 0, 0, &j, NULL, "Flow Control", fc_names)) {
                         case -1:
-                            check_exit(FALSE);
+                            check_exit(false);
                             break;
                         default:
                             item->flow_control = fc_from_enum(j);
@@ -1202,7 +1202,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                                     "Telnet is generally port 23, RLogin is generally 513 and SSH is\n"
                                     "generally 22\n";
                     uifc.input(WIN_MID|WIN_SAV,0,0,"TCP Port",str,5,K_EDIT|K_NUMBER);
-                    check_exit(FALSE);
+                    check_exit(false);
                     j=atoi(str);
                     if(j<1 || j>65535)
                         j=conn_ports[item->conn_type];
@@ -1225,7 +1225,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 					"For SSH, this must be the SSH user name.";
 		}
                 uifc.input(WIN_MID|WIN_SAV,0,0,"Username",item->user,MAX_USER_LEN,K_EDIT);
-                check_exit(FALSE);
+                check_exit(false);
                 iniSetString(&inifile,itemname,"UserName",item->user,&ini_style);
                 break;
             case 5:
@@ -1239,7 +1239,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 					"For SSH, this must be the SSH password if it exists.\n";
 		}
                 uifc.input(WIN_MID|WIN_SAV,0,0,"Password",item->password,MAX_PASSWD_LEN,K_EDIT);
-                check_exit(FALSE);
+                check_exit(false);
                 iniSetString(&inifile,itemname,"Password",item->password,&ini_style);
                 break;
             case 6:
@@ -1255,7 +1255,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 					"scripting.";
 		}
                 uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",item->syspass,MAX_SYSPASS_LEN,K_EDIT);
-                check_exit(FALSE);
+                check_exit(false);
                 iniSetString(&inifile,itemname,"SystemPassword",item->syspass,&ini_style);
                 break;
             case 2:
@@ -1264,7 +1264,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                 uifc.helpbuf=conn_type_help;
                 switch(uifc.list(WIN_SAV,0,0,0,&(item->conn_type),NULL,"Connection Type",&(conn_types[1]))) {
                     case -1:
-                        check_exit(FALSE);
+                        check_exit(false);
                         item->conn_type=i;
                         break;
                     default:
@@ -1305,7 +1305,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                 j = i;
                 switch(uifc.list(WIN_SAV,0,0,0,&(item->screen_mode),&j,"Screen Mode",screen_modes)) {
                     case -1:
-                        check_exit(FALSE);
+                        check_exit(false);
                         item->screen_mode=i;
                         break;
                     default:
@@ -1362,7 +1362,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                 if(uifc.input(WIN_MID|WIN_SAV,0,0,"Download Path",item->dldir,MAX_PATH,K_EDIT)>=0)
                     iniSetString(&inifile,itemname,"DownloadPath",item->dldir,&ini_style);
                 else
-                    check_exit(FALSE);
+                    check_exit(false);
                 break;
             case 10:
                 uifc.helpbuf=   "`Upload Path`\n\n"
@@ -1370,7 +1370,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                 if(uifc.input(WIN_MID|WIN_SAV,0,0,"Upload Path",item->uldir,MAX_PATH,K_EDIT)>=0)
                     iniSetString(&inifile,itemname,"UploadPath",item->uldir,&ini_style);
                 else
-                    check_exit(FALSE);
+                    check_exit(false);
                 break;
             case 11:
 		configure_log(item, itemname, inifile, &changed);
@@ -1386,7 +1386,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                 i=get_rate_num(item->bpsrate);
                 switch(uifc.list(WIN_SAV,0,0,0,&i,NULL,"Comm Rate (BPS)",rate_names)) {
                     case -1:
-                        check_exit(FALSE);
+                        check_exit(false);
                         break;
                     default:
                         item->bpsrate=rates[i];
@@ -1402,7 +1402,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                     changed=1;
                 }
                 else
-                    check_exit(FALSE);
+                    check_exit(false);
                 break;
             case 14:
                 uifc.helpbuf=address_family_help;
@@ -1413,7 +1413,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                     changed=1;
                 }
                 else
-                    check_exit(FALSE);
+                    check_exit(false);
                 break;
             case 15:
                 uifc.helpbuf=   "`Font`\n\n"
@@ -1423,7 +1423,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
                 i=j=find_font_id(item->font);
                 switch(uifc.list(WIN_SAV,0,0,0,&i,&j,"Font",font_names)) {
                     case -1:
-                        check_exit(FALSE);
+                        check_exit(false);
                         break;
                     default:
                     if(i!=find_font_id(item->font)) {
@@ -1473,8 +1473,8 @@ void add_bbs(char *listpath, struct bbslist *bbs)
      */
     iniSetString(&inifile,bbs->name,"Address",bbs->addr,&ini_style);
     iniSetShortInt(&inifile,bbs->name,"Port",bbs->port,&ini_style);
-    iniSetDateTime(&inifile,bbs->name,"Added",/* include time */TRUE,time(NULL),&ini_style);
-    iniSetDateTime(&inifile,bbs->name,"LastConnected",/* include time */TRUE,bbs->connected,&ini_style);
+    iniSetDateTime(&inifile,bbs->name,"Added",/* include time */true,time(NULL),&ini_style);
+    iniSetDateTime(&inifile,bbs->name,"LastConnected",/* include time */true,bbs->connected,&ini_style);
     iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,&ini_style);
     iniSetString(&inifile,bbs->name,"UserName",bbs->user,&ini_style);
     iniSetString(&inifile,bbs->name,"Password",bbs->password,&ini_style);
@@ -1574,7 +1574,7 @@ custom_mode_adjusted(int *cur, char **opt)
         vparams[cvmode].aspect_height = settings.custom_ah;
         textmode(ti.currmode);
     }
-    init_uifc(TRUE, TRUE);
+    init_uifc(true, true);
 
     // Draw BBS List
     uifc.list((*glob_listcount<MAX_OPTS?WIN_XTR:0)
@@ -1601,7 +1601,7 @@ void change_settings(int connected)
     char    str[64];
     int cur=0;
 
-    get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
+    get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
     if((inifile=fopen(inipath,"r"))!=NULL) {
         inicontents=iniReadFile(inifile);
         fclose(inifile);
@@ -1667,7 +1667,7 @@ void change_settings(int connected)
 	}
         switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&cur,NULL,"Program Settings",opt)) {
             case -1:
-                check_exit(FALSE);
+                check_exit(false);
                 goto write_ini;
             case 0:
                 settings.confirm_close=!settings.confirm_close;
@@ -1684,7 +1684,7 @@ void change_settings(int connected)
 		i = sizeof(screen_modes)/sizeof(screen_modes[0]);
                 switch(i=uifc.list(WIN_SAV,0,0,0,&j,&i,"Startup Screen Mode",screen_modes)) {
                     case -1:
-                        check_exit(FALSE);
+                        check_exit(false);
                         continue;
                     default:
                         settings.startup_mode=j;
@@ -1750,7 +1750,7 @@ void change_settings(int connected)
                                 ;
                 switch(i=uifc.list(WIN_SAV,0,0,0,&j,NULL,"Video Output Mode",output_types)) {
                     case -1:
-                        check_exit(FALSE);
+                        check_exit(false);
                         continue;
                     default:
                         settings.output_mode=output_map[j];
@@ -1770,7 +1770,7 @@ void change_settings(int connected)
                     if(j<1) {
                         uifc.helpbuf=   "There must be at least one line in the scrollback buffer.";
                         uifc.msg("Cannot set lines to less than one.");
-                        check_exit(FALSE);
+                        check_exit(false);
                     }
                     else {
                         tmpscroll=realloc(scrollback_buf,80*sizeof(*scrollback_buf)*j);
@@ -1779,7 +1779,7 @@ void change_settings(int connected)
                             uifc.helpbuf="The selected scrollback size is too large.\n"
                                          "Please reduce the number of lines.";
                             uifc.msg("Cannot allocate space for scrollback.");
-                            check_exit(FALSE);
+                            check_exit(false);
                         }
                         else {
                             if(scrollback_lines > (unsigned)j)
@@ -1790,7 +1790,7 @@ void change_settings(int connected)
                     }
                 }
                 else
-                    check_exit(FALSE);
+                    check_exit(false);
                 break;
             case 5:
                 uifc.helpbuf=   "`Modem/Comm Device`\n\n"
@@ -1801,7 +1801,7 @@ void change_settings(int connected)
                 if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem/Comm Device",settings.mdm.device_name,INI_MAX_VALUE_LEN,K_EDIT)>=0)
                     iniSetString(&inicontents,"SyncTERM","ModemDevice",settings.mdm.device_name,&ini_style);
                 else
-                    check_exit(FALSE);
+                    check_exit(false);
                 break;
             case 6:
                 uifc.helpbuf=   "`Modem/Comm Rate`\n\n"
@@ -1816,7 +1816,7 @@ void change_settings(int connected)
                     iniSetLongInt(&inicontents,"SyncTERM","ModemComRate",settings.mdm.com_rate,&ini_style);
                 }
                 else
-                    check_exit(FALSE);
+                    check_exit(false);
                 break;
 
             case 7:
@@ -1842,7 +1842,7 @@ void change_settings(int connected)
                 if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Init String",settings.mdm.init_string,INI_MAX_VALUE_LEN-1,K_EDIT)>=0)
                     iniSetString(&inicontents,"SyncTERM","ModemInit",settings.mdm.init_string,&ini_style);
                 else
-                    check_exit(FALSE);
+                    check_exit(false);
                 break;
             case 8:
                 uifc.helpbuf=   "`Modem Dial String`\n\n"
@@ -1851,7 +1851,7 @@ void change_settings(int connected)
                 if(uifc.input(WIN_MID|WIN_SAV,0,0,"Modem Dial String",settings.mdm.dial_string,INI_MAX_VALUE_LEN-1,K_EDIT)>=0)
                     iniSetString(&inicontents,"SyncTERM","ModemDial",settings.mdm.dial_string,&ini_style);
                 else
-                    check_exit(FALSE);
+                    check_exit(false);
                 break;
             case 9:
                 uifc.helpbuf=   "`List Path`\n\n"
@@ -1859,7 +1859,7 @@ void change_settings(int connected)
                 if(uifc.input(WIN_MID|WIN_SAV,0,0,"List Path",settings.list_path,MAX_PATH,K_EDIT)>=0)
                     iniSetString(&inicontents,"SyncTERM","ListPath",settings.list_path,&ini_style);
                 else
-                    check_exit(FALSE);
+                    check_exit(false);
                 break;
             case 10:
                 uifc.helpbuf=   "`TERM For Shell`\n\n"
@@ -1868,7 +1868,7 @@ void change_settings(int connected)
                 if(uifc.input(WIN_MID|WIN_SAV,0,0,"TERM",settings.TERM,LIST_NAME_MAX,K_EDIT)>=0)
                     iniSetString(&inicontents,"SyncTERM","TERM",settings.TERM,&ini_style);
                 else
-                    check_exit(FALSE);
+                    check_exit(false);
                 break;
             case 11:
 		settings.blocky = !settings.blocky;
@@ -1897,7 +1897,7 @@ void change_settings(int connected)
                     subopts[5] = NULL;
                     switch (uifc.list(WIN_SAV,0,0,0,&j,NULL,"Video Output Mode",subopts)) {
                         case -1:
-                            check_exit(FALSE);
+                            check_exit(false);
                             k = 1;
                             break;
                         case 0:
@@ -1908,7 +1908,7 @@ void change_settings(int connected)
                                 l = atoi(str);
                                 if (l < 14 || l > 255) {
                                     uifc.msg("Rows must be between 14 and 255.");
-                                    check_exit(FALSE);
+                                    check_exit(false);
                                 }
                                 else {
                                     settings.custom_rows = l;
@@ -1926,7 +1926,7 @@ void change_settings(int connected)
                                 l = atoi(str);
                                 if (l < 40 || l > 255) {
                                     uifc.msg("Columns must be between 40 and 255.");
-                                    check_exit(FALSE);
+                                    check_exit(false);
                                 }
                                 else {
                                     settings.custom_cols = l;
@@ -1955,7 +1955,7 @@ void change_settings(int connected)
                             }
                             switch (uifc.list(WIN_SAV, 0, 0, 0, &l, NULL, "Font Size", &subopts[6])) {
                                 case -1:
-                                    check_exit(FALSE);
+                                    check_exit(false);
                                     break;
                                 case 0:
                                     settings.custom_fontheight = 8;
@@ -1982,7 +1982,7 @@ void change_settings(int connected)
                                 l = atoi(str);
                                 if (l <= 0) {
                                     uifc.msg("Aspec Ratio Width must be greater than zero");
-                                    check_exit(FALSE);
+                                    check_exit(false);
                                 }
                                 else {
                                     settings.custom_aw = l;
@@ -1999,7 +1999,7 @@ void change_settings(int connected)
                                 l = atoi(str);
                                 if (l <= 0) {
                                     uifc.msg("Aspec Ratio Height must be greater than zero");
-                                    check_exit(FALSE);
+                                    check_exit(false);
                                 }
                                 else {
                                     settings.custom_ah = l;
@@ -2205,10 +2205,10 @@ struct bbslist *show_bbslist(char *current, int connected)
     glob_list_title = list_title;
     glob_list = &list;
 
-    if(init_uifc(connected?FALSE:TRUE, TRUE))
+    if(init_uifc(connected ? false : true, true))
         return(NULL);
 
-    get_syncterm_filename(shared_list, sizeof(shared_list), SYNCTERM_PATH_LIST, TRUE);
+    get_syncterm_filename(shared_list, sizeof(shared_list), SYNCTERM_PATH_LIST, true);
     list = malloc(BBSLIST_SIZE);
     if (list == NULL)
         return (NULL);
@@ -2352,7 +2352,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                                 uifc.input(WIN_MID|WIN_SAV,0,0,"Address",addy,LIST_ADDR_MAX,0);
                                 memcpy(&retlist, &defaults, sizeof(defaults));
                                 if(uifc.changes) {
-                                    parse_url(addy,&retlist,defaults.conn_type,FALSE);
+                                    parse_url(addy,&retlist,defaults.conn_type,false);
                                     free_list(&list[0],listcount);
                                     free(list);
                                     return(&retlist);
@@ -2361,7 +2361,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                             break;
                         case -1:        /* ESC */
                             if(!connected)
-                                if (!check_exit(TRUE))
+                                if (!check_exit(true))
                                     continue;
                             free_list(&list[0],listcount);
                             free(list);
@@ -2378,7 +2378,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                                                 "The total combined size of loaded entries is currently the highest\n"
                                                 "supported size.  You must delete entries before adding more.";
                                 uifc.msg("Max List size reached!");
-                                check_exit(FALSE);
+                                check_exit(false);
                                 break;
                             }
                             if(safe_mode) {
@@ -2386,7 +2386,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                                                 "SyncTERM is currently running in safe mode.  This means you cannot add to the\n"
                                                 "directory.";
                                 uifc.msg("Cannot edit list in safe mode");
-                                check_exit(FALSE);
+                                check_exit(false);
                                 break;
                             }
                             tmp[0]=0;
@@ -2394,17 +2394,17 @@ struct bbslist *show_bbslist(char *current, int connected)
                             uifc.helpbuf=   "`Name`\n\n"
                                             "Enter the name of the entry as it is to appear in the directory.";
                             if(uifc.input(WIN_MID|WIN_SAV,0,0,"Name",tmp,LIST_NAME_MAX,K_EDIT)==-1) {
-                                if (check_exit(FALSE))
+                                if (check_exit(false))
                                     break;
                             }
                             if(!uifc.changes)
                                 break;
-                            if(list_name_check(list, tmp, NULL, FALSE)) {
+                            if(list_name_check(list, tmp, NULL, false)) {
                                 uifc.helpbuf=   "`Entry Name Already Exists`\n\n"
                                                 "An entry with that name already exists in the directory.\n"
                                                 "Please choose a unique name.\n";
                                 uifc.msg("Entry Name Already Exists!");
-                                check_exit(FALSE);
+                                check_exit(false);
                                 break;
                             }
                             listcount++;
@@ -2433,7 +2433,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                                 uifc.changes=1;
                             }
                             else {
-                                if (check_exit(FALSE))
+                                if (check_exit(false))
                                     break;
                             }
 
@@ -2447,7 +2447,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                                     :list[listcount-1]->conn_type==CONN_TYPE_SHELL ? "Command"
                                     :"Address"
                                     ,list[listcount-1]->addr,LIST_ADDR_MAX,K_EDIT);
-                                check_exit(FALSE);
+                                check_exit(false);
                             }
                             if(quitting || !uifc.changes) {
                                 FREE_AND_NULL(list[listcount-1]);
@@ -2475,7 +2475,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                                                 "Reach over to your fridge, grab a cold one...\n"
                                                 "Watch the seagulls in their dance...\n";
                                 uifc.msg("It's gone, calm down man!");
-                                check_exit(FALSE);
+                                check_exit(false);
                                 break;
                             }
                             if(safe_mode) {
@@ -2483,14 +2483,14 @@ struct bbslist *show_bbslist(char *current, int connected)
                                                 "SyncTERM is currently running in safe mode.  This means you cannot remove from the\n"
                                                 "directory.";
                                 uifc.msg("Cannot edit list in safe mode");
-                                check_exit(FALSE);
+                                check_exit(false);
                                 break;
                             }
                             if(list[opt]->type==SYSTEM_BBSLIST) {
                                 uifc.helpbuf=   "`Cannot delete from system list`\n\n"
                                                 "This entry was loaded from the system-wide list and cannot be deleted.";
                                 uifc.msg("Cannot delete system list entries");
-                                check_exit(FALSE);
+                                check_exit(false);
                                 break;
                             }
                             sprintf(str,"Delete %s?",list[opt]->name);
@@ -2507,10 +2507,10 @@ struct bbslist *show_bbslist(char *current, int connected)
                                                 "SyncTERM is currently running in safe mode.  This means you cannot edit the\n"
                                                 "directory.";
                                 uifc.msg("Cannot edit list in safe mode");
-                                check_exit(FALSE);
+                                check_exit(false);
                                 break;
                             }
-                            if(edit_list(list, list[opt],settings.list_path,FALSE)) {
+                            if(edit_list(list, list[opt],settings.list_path,false)) {
                                 load_bbslist(list, BBSLIST_SIZE, &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, strdup(list[opt]->name));
                                 oldopt=-1;
                             }
@@ -2524,9 +2524,9 @@ struct bbslist *show_bbslist(char *current, int connected)
                                             "SyncTERM is currently running in safe mode.  This means you cannot edit the\n"
                                             "directory.";
                             uifc.msg("Cannot edit list in safe mode");
-                            check_exit(FALSE);
+                            check_exit(false);
                         }
-                        else if(edit_list(list, list[opt],settings.list_path,FALSE)) {
+                        else if(edit_list(list, list[opt],settings.list_path,false)) {
                             load_bbslist(list, BBSLIST_SIZE, &defaults, settings.list_path, sizeof(settings.list_path), shared_list, sizeof(shared_list), &listcount, &opt, &bar, strdup(list[opt]->name));
                             oldopt=-1;
                         }
@@ -2597,13 +2597,13 @@ struct bbslist *show_bbslist(char *current, int connected)
                         break;
                     case -1:        /* ESC */
                         if (!connected)
-                            if (!check_exit(TRUE))
+                            if (!check_exit(true))
                                 continue;
                         free_list(&list[0],listcount);
                         free(list);
                         return(NULL);
                     case 0:         /* Edit default connection settings */
-                        edit_list(NULL, &defaults,settings.list_path,TRUE);
+                        edit_list(NULL, &defaults,settings.list_path,true);
                         break;
                     case 1: {       /* Screen Mode */
                             struct text_info ti;
@@ -2622,7 +2622,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                                 i++;
                                 uifcbail();
                                 textmode(screen_to_ciolib(i));
-                                init_uifc(TRUE, TRUE);
+                                init_uifc(true, true);
                 		uifc.list_height = listcount + 5;
                 		if (uifc.list_height > (uifc.scrn_len - 4))
 					uifc.list_height = uifc.scrn_len - 4;
@@ -2633,7 +2633,7 @@ struct bbslist *show_bbslist(char *current, int connected)
                                     ,0,0,0,&opt,&bar,list_title,(char **)list);
                                 draw_comment(list[opt]);
                             }
-                            else if (check_exit(FALSE)) {
+                            else if (check_exit(false)) {
                                 free_list(&list[0],listcount);
                                 free(list);
                                 return(NULL);
@@ -2652,10 +2652,10 @@ struct bbslist *show_bbslist(char *current, int connected)
                         oldopt=-1;
                         break;
                     case 4:         /* File Locations */
-			get_syncterm_filename(personal_list, sizeof(personal_list), SYNCTERM_PATH_LIST, FALSE);
-			get_syncterm_filename(setting_file, sizeof(setting_file), SYNCTERM_PATH_INI, FALSE);
-			get_syncterm_filename(default_download, sizeof(default_download), SYNCTERM_DEFAULT_TRANSFER_PATH, FALSE);
-			get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_CACHE, FALSE);
+			get_syncterm_filename(personal_list, sizeof(personal_list), SYNCTERM_PATH_LIST, false);
+			get_syncterm_filename(setting_file, sizeof(setting_file), SYNCTERM_PATH_INI, false);
+			get_syncterm_filename(default_download, sizeof(default_download), SYNCTERM_DEFAULT_TRANSFER_PATH, false);
+			get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_CACHE, false);
 			asprintf(&p, "`SyncTERM File Locations`\n\n"
 			    "~ Global Dialing Directory (Read-Only) ~\n"
 			    "        %s\n\n"

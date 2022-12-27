@@ -7944,10 +7944,10 @@ rv_termset(const char * const var, const void * const data)
 		case 'D':
 			switch(var[5]) {
 				case 'F':
-					cterm->doorway_mode = FALSE;
+					cterm->doorway_mode = false;
 					return NULL;
 				case 'N':
-					cterm->doorway_mode = TRUE;
+					cterm->doorway_mode = true;
 					return NULL;
 			}
 			break;
@@ -7964,12 +7964,12 @@ rv_termset(const char * const var, const void * const data)
 			switch(var[5]) {
 				case 'F':
 					gettextinfo(&ti);
-					term.nostatus = TRUE;
+					term.nostatus = true;
 					reinit_screen(font, width, height);
 					return NULL;
 				case 'N':
 					gettextinfo(&ti);
-					term.nostatus = FALSE;
+					term.nostatus = false;
 					reinit_screen(font, width, height);
 					return NULL;
 			}
@@ -10652,7 +10652,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 * half the full height.  The ellipse is drawn according to the current
 							 * line thickness, but the current line pattern has no effect.
 							 */
-							handled = TRUE;
+							handled = true;
 							GET_XY();
 							arg1 = parse_mega(&args[4], 2);
 							arg2 = parse_mega(&args[6], 2);
@@ -11132,7 +11132,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							 * current drawing color and line thickness.  The Line Pattern feature
 							 * does not apply to this command.
 							 */
-							handled = TRUE;
+							handled = true;
 							GET_XY();
 							arg1 = parse_mega(&args[4], 2);
 							arg2 = parse_mega(&args[6], 2);

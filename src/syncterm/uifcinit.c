@@ -26,7 +26,7 @@ int orig_y;
 uint32_t orig_palette[16];
 
 int
-init_uifc(BOOL scrn, BOOL bottom) {
+init_uifc(bool scrn, bool bottom) {
 	int	i;
 	struct	text_info txtinfo;
 	char	top[80];
@@ -105,15 +105,15 @@ void uifcmsg(char *msg, char *helpbuf)
 	i=uifc_initialized;
 	if(!i)
 		savscrn = savescreen();
-	setfont(0, FALSE, 1);
-	setfont(0, FALSE, 2);
-	setfont(0, FALSE, 3);
-	setfont(0, FALSE, 4);
-	init_uifc(FALSE, FALSE);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
+	init_uifc(false, false);
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;
 		uifc.msg(msg);
-		check_exit(FALSE);
+		check_exit(false);
 	}
 	else
 		fprintf(stderr,"%s\n",msg);
@@ -132,15 +132,15 @@ void uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
 	i=uifc_initialized;
 	if(!i)
 		savscrn = savescreen();
-	setfont(0, FALSE, 1);
-	setfont(0, FALSE, 2);
-	setfont(0, FALSE, 3);
-	setfont(0, FALSE, 4);
-	init_uifc(FALSE, FALSE);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
+	init_uifc(false, false);
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;
 		uifc.input(WIN_MID|WIN_SAV, 0, 0, title, msg, len, mode);
-		check_exit(FALSE);
+		check_exit(false);
 	}
 	else
 		fprintf(stderr,"%s\n",msg);
@@ -159,22 +159,22 @@ int confirm(char *msg, char *helpbuf)
 				 "Yes"
 				,"No"
 				,"" };
-	int		ret=TRUE;
+	int		ret=true;
 	int		copt=0;
 
 	i=uifc_initialized;
 	if(!i)
 		savscrn = savescreen();
-	setfont(0, FALSE, 1);
-	setfont(0, FALSE, 2);
-	setfont(0, FALSE, 3);
-	setfont(0, FALSE, 4);
-	init_uifc(FALSE, FALSE);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
+	init_uifc(false, false);
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;
 		if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&copt,NULL,msg,options)!=0) {
-			check_exit(FALSE);
-			ret=FALSE;
+			check_exit(false);
+			ret=false;
 		}
 	}
 	if(!i) {
