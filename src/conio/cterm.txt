@@ -239,6 +239,29 @@ ESC _	Application Program String (APS)
 	Begins a string consisting of the characters 0x08 - 0x0d and
 	0x20-0x7e, terminated by a String Terminator (ST)
 	The string is currently ignored.
+	
+	SyncTERM implements the following APS commands:
+
+	APS SyncTERM:C;S;Ps1;Ps2 ST (Store file)
+		Where Ps1 is a filename and Ps2 is the base64 encoded
+		contents of the file.  The named file is stored in the
+		cache directory for the current connection.
+
+	APS SyncTERM:C;L ST (List Files)
+		List files in cache.  SyncTERM responds with
+		an APS string with lines separated by newlines.  The
+		first line is always "SyncTERM:C;L\n" and for each
+		matching file, a line in the form
+		<Filename> TAB <MD5 sum> LF is sent
+		(ie: "coolfont.fnt\t595f44fec1e92a71d3e9e77456ba80d1\n")
+
+		And additional argument can be specified as a glob(3)
+		pattern (defaults to "*") in APS SyncTERM:C;L;Ps ST.
+
+	APS SyncTERM:C;SetFont;Pn;Ps
+		Where Pn is a font slot number (max 255) and Ps is a
+		filename in the cache.  This sets font slot Pn to use
+		the specified font file.
 
 ESC c	Reset to Initial State (RIS)
 	Resets all the terminal settings, clears the screen, and homes
@@ -1281,3 +1304,69 @@ heard it, ALWAYS follow it with an 0x0f 0x0e is the shift lock character which
 *will* cause people with anything but an ANSI-BBS terminal (ie: *nix users
 using the bundled telnet app) to have their screen messed up.  0x0f "undoes"
 the 0x0e.
+
+Sequences sent by SyncTERM
+The following keys in SyncTERM result in the specified sequence being
+sent to the remote.  This is not part of CTerm, but are documented here
+for people who want to maintain compatibility.
+
+Left Arrow    "\033[D"
+Right Arrow   "\033[C"
+Up Arrow      "\033[A"
+Down Arrow    "\033[B"
+Home          "\033[H"
+End           "\033[K"
+Select        "\033[K" (Same as End due to termcap weirdness)
+Delete        "\x7f"
+Page Down     "\033[U"
+Page Up       "\033[V"
+F1            "\033[11~"
+F2            "\033[12~"
+F3            "\033[13~"
+F4            "\033[14~"
+F5            "\033[15~"
+F6            "\033[17~" (Note the jump from 15 to 17 here)
+F7            "\033[18~"
+F8            "\033[19~"
+F9            "\033[20~"
+F10           "\033[21~"
+F11           "\033[23~" (Note the jump from 21 to 23 here)
+F12           "\033[24~"
+Shift + F1    "\033[11;2~"
+Shift + F2    "\033[12;2~"
+Shift + F3    "\033[13;2~"
+Shift + F4    "\033[14;2~"
+Shift + F5    "\033[15;2~"
+Shift + F6    "\033[17;2~"
+Shift + F7    "\033[18;2~"
+Shift + F8    "\033[19;2~"
+Shift + F9    "\033[20;2~"
+Shift + F10   "\033[21;2~"
+Shift + F11   "\033[23;2~"
+Shift + F12   "\033[24;2~"
+Alt + F1      "\033[11;3~"
+Alt + F2      "\033[12;3~"
+Alt + F3      "\033[13;3~"
+Alt + F4      "\033[14;3~"
+Alt + F5      "\033[15;3~"
+Alt + F6      "\033[17;3~"
+Alt + F7      "\033[18;3~"
+Alt + F8      "\033[19;3~"
+Alt + F9      "\033[20;3~"
+Alt + F10     "\033[21;3~"
+Alt + F11     "\033[23;3~"
+Alt + F12     "\033[24;3~"
+Control + F1  "\033[11;5~"
+Control + F2  "\033[12;5~"
+Control + F3  "\033[13;5~"
+Control + F4  "\033[14;5~"
+Control + F5  "\033[15;5~"
+Control + F6  "\033[17;5~"
+Control + F7  "\033[18;5~"
+Control + F8  "\033[19;5~"
+Control + F9  "\033[20;5~"
+Control + F10 "\033[21;5~"
+Control + F11 "\033[23;5~"
+Control + F12 "\033[24;5~"
+Insert        "\033[@"
+Back Tab      "\033[Z"

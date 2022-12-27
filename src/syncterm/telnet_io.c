@@ -95,7 +95,7 @@ BYTE* telnet_interpret(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *outlen)
 		return(inbuf);	/* no length? No interpretation */
 	}
 
-    first_int=(BYTE*)memchr(inbuf, TELNET_IAC, inlen);
+	first_int=(BYTE*)memchr(inbuf, TELNET_IAC, inlen);
 	if(telnet_remote_option[TELNET_BINARY_TX]!=TELNET_WILL) {
 		first_cr=(BYTE*)memchr(inbuf, '\r', inlen);
 		if(first_cr) {
@@ -104,23 +104,23 @@ BYTE* telnet_interpret(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *outlen)
 		}
 	}
 
-    if(telnet_cmdlen==0 && first_int==NULL) {
-        *outlen=inlen;
-        return(inbuf);	/* no interpretation needed */
-    }
+	if(telnet_cmdlen==0 && first_int==NULL) {
+		*outlen=inlen;
+		return(inbuf);	/* no interpretation needed */
+	}
 
-    if(telnet_cmdlen==0 /* If we haven't returned and telnet_cmdlen==0 then first_int is not NULL */  ) {
-   		*outlen=first_int-inbuf;
-	    memcpy(outbuf, inbuf, *outlen);
-    } else
-    	*outlen=0;
+	if(telnet_cmdlen==0 /* If we haven't returned and telnet_cmdlen==0 then first_int is not NULL */  ) {
+		*outlen=first_int-inbuf;
+		memcpy(outbuf, inbuf, *outlen);
+	} else
+		*outlen=0;
 
-    for(i=*outlen;i<inlen;i++) {
+	for(i=*outlen;i<inlen;i++) {
 		if(telnet_remote_option[TELNET_BINARY_TX]!=TELNET_WILL) {
 			if(telnet_cmdlen==1 && telnet_cmd[0]=='\r') {
-            	outbuf[(*outlen)++]='\r';
+				outbuf[(*outlen)++]='\r';
 				if(inbuf[i]!=0 && inbuf[i]!=TELNET_IAC)
-	            	outbuf[(*outlen)++]=inbuf[i];
+					outbuf[(*outlen)++]=inbuf[i];
 				telnet_cmdlen=0;
 				if(inbuf[i]!=TELNET_IAC)
 					continue;
@@ -131,12 +131,12 @@ BYTE* telnet_interpret(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *outlen)
 			}
 		}
 
-        if(inbuf[i]==TELNET_IAC && telnet_cmdlen==1) { /* escaped 255 */
-            telnet_cmdlen=0;
-            outbuf[(*outlen)++]=TELNET_IAC;
-            continue;
-        }
-        if(inbuf[i]==TELNET_IAC || telnet_cmdlen) {
+		if(inbuf[i]==TELNET_IAC && telnet_cmdlen==1) { /* escaped 255 */
+			telnet_cmdlen=0;
+			outbuf[(*outlen)++]=TELNET_IAC;
+			continue;
+		}
+		if(inbuf[i]==TELNET_IAC || telnet_cmdlen) {
 
 			if(telnet_cmdlen<sizeof(telnet_cmd))
 				telnet_cmd[telnet_cmdlen++]=inbuf[i];
@@ -163,10 +163,10 @@ BYTE* telnet_interpret(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *outlen)
 					telnet_cmdlen=0;
 				}
 			}
-            else if(telnet_cmdlen==2 && inbuf[i]<TELNET_WILL) {
-                telnet_cmdlen=0;
-            }
-            else if(telnet_cmdlen>=3) {	/* telnet option negotiation */
+			else if(telnet_cmdlen==2 && inbuf[i]<TELNET_WILL) {
+				telnet_cmdlen=0;
+			}
+			else if(telnet_cmdlen>=3) {	/* telnet option negotiation */
 
 				lprintf(LOG_INFO,"RX: %s %s"
 					,telnet_cmd_desc(command),telnet_opt_desc(option));
@@ -236,4 +236,3 @@ BYTE* telnet_interpret(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *outlen)
     }
     return(outbuf);
 }
-

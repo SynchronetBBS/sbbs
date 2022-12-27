@@ -1671,7 +1671,7 @@ CIOLIBEXPORT struct ciolib_screen * ciolib_savescreen(void)
 	}
 
 	if (vmode != -1) {
-		ret->pixels = ciolib_getpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1, vparams[vmode].charheight * vparams[vmode].rows - 1, TRUE);
+		ret->pixels = ciolib_getpixels(0, 0, vparams[vmode].xres - 1, vparams[vmode].yres - 1, FALSE);
 	}
 	ciolib_vmem_gettext(1, 1, ret->text_info.screenwidth, ret->text_info.screenheight, ret->vmem);
 	ret->fg_colour = ciolib_fg;

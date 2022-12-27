@@ -1759,6 +1759,8 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 					if (!*p)
 						continue;
 					cterm->sx_repeat = strtoul(p, &p, 10);
+					if (cterm->sx_repeat > 0x7fff)
+						cterm->sx_repeat = 0x7fff;
 					break;
 				case '#':	// Colour Introducer
 					p++;

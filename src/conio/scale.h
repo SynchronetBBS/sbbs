@@ -19,3 +19,4 @@ struct graphics_buffer * do_scale(struct rectlist* rect, int xscale, int yscale,
 void aspect_correct(int *x, int *y, int aspect_width, int aspect_height);
 void aspect_reverse(int *x, int *y, int scrnwidth, int scrnheight, int aspect_width, int aspect_height);
 void aspect_fix(int *x, int *y, int aspect_width, int aspect_height);
+void aspect_fix_low(int *x, int *y, int aspect_width, int aspect_height);
