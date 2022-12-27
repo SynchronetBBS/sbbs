@@ -43,7 +43,7 @@ static const KNOWNFOLDERID FOLDERID_ProgramData = {
  #ifndef KF_FLAG_CREATE
   #define KF_FLAG_CREATE 0x00008000
  #endif
- #include <xp_dl.h>     /* xp_dlopen() and friends */
+ #include <xp_dl.h> /* xp_dlopen() and friends */
 #endif /* ifdef _WIN32 */
 
 #include <ciolib.h>
@@ -145,6 +145,7 @@ char                    *list_override;
 static WSADATA WSAData;
  #define SOCKLIB_DESC WSAData.szDescription
 static bool    WSAInitialized = false;
+
 static bool
 winsock_startup(void)
 {
@@ -809,6 +810,7 @@ char*output_enum[] = {
 	, "SDLFullscreen"
 	, NULL
 };
+
 bool
 check_exit(bool force)
 {
@@ -822,6 +824,7 @@ check_exit(bool force)
 	}
 	return false;
 }
+
 void
 parse_url(char*url, struct bbslist*bbs, int dflt_conn_type, int force_defaults)
 {
@@ -945,6 +948,7 @@ parse_url(char*url, struct bbslist*bbs, int dflt_conn_type, int force_defaults)
 }
 
 #if defined(__APPLE__) && defined(__MACH__)
+
 static char*
 get_new_OSX_filename(char*fn, int fnlen, int type, int shared)
 {
@@ -954,8 +958,8 @@ get_new_OSX_filename(char*fn, int fnlen, int type, int shared)
 	switch (type) {
 		case SYNCTERM_PATH_INI:
 		case SYNCTERM_PATH_LIST:
-			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kPreferencesFolderType, kCreateFolder,
-			    &ref) != noErr)
+			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kPreferencesFolderType, kCreateFolder
+			    , &ref) != noErr)
 				return NULL;
 			if (FSRefMakePath(&ref, (unsigned char*)fn, fnlen) != noErr)
 				return NULL;
@@ -970,8 +974,8 @@ get_new_OSX_filename(char*fn, int fnlen, int type, int shared)
 
 		case SYNCTERM_DEFAULT_TRANSFER_PATH:
                         /* I'd love to use the "right" setting here, but don't know how */
-			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kDownloadsFolderType, kCreateFolder,
-			    &ref) != noErr)
+			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kDownloadsFolderType, kCreateFolder
+			    , &ref) != noErr)
 				return NULL;
 			if (FSRefMakePath(&ref, (unsigned char*)fn, fnlen) != noErr)
 				return NULL;
@@ -982,8 +986,8 @@ get_new_OSX_filename(char*fn, int fnlen, int type, int shared)
 			}
 			return fn;
 		case SYNCTERM_PATH_CACHE:
-			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kCachedDataFolderType, kCreateFolder,
-			    &ref) != noErr)
+			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kCachedDataFolderType, kCreateFolder
+			    , &ref) != noErr)
 				return NULL;
 			if (FSRefMakePath(&ref, (unsigned char*)fn, fnlen) != noErr)
 				return NULL;
@@ -1003,6 +1007,7 @@ get_new_OSX_filename(char*fn, int fnlen, int type, int shared)
 }
 
 #endif /* if defined(__APPLE__) && defined(__MACH__) */
+
 char*
 get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 {
@@ -1064,8 +1069,8 @@ get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 					break;
 				case SYNCTERM_DEFAULT_TRANSFER_PATH:
 					if (shared) {
-						if (GKFP(&FOLDERID_PublicDownloads, KF_FLAG_CREATE, NULL,
-						    &path) == S_OK)
+						if (GKFP(&FOLDERID_PublicDownloads, KF_FLAG_CREATE, NULL
+						    , &path) == S_OK)
 							we_got_this = true;
 					}
 					else {
@@ -1095,8 +1100,8 @@ get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 	if (!we_got_this) {
  #ifdef CSIDL_FLAG_CREATE
 		if (type == SYNCTERM_DEFAULT_TRANSFER_PATH) {
-			switch (SHGetFolderPath(NULL, CSIDL_PERSONAL | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT,
-			    fn)) {
+			switch (SHGetFolderPath(NULL, CSIDL_PERSONAL | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT
+			    , fn)) {
 				case E_FAIL:
 				case E_INVALIDARG:
 					getcwd(fn, fnlen);
@@ -1111,8 +1116,8 @@ get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 				MKDIR(fn);
 			return fn;
 		}
-		switch (SHGetFolderPath(NULL, (shared ? CSIDL_COMMON_APPDATA : CSIDL_APPDATA) | CSIDL_FLAG_CREATE, NULL,
-		    SHGFP_TYPE_CURRENT, fn)) {
+		switch (SHGetFolderPath(NULL, (shared ? CSIDL_COMMON_APPDATA : CSIDL_APPDATA) | CSIDL_FLAG_CREATE, NULL
+		    , SHGFP_TYPE_CURRENT, fn)) {
 			case E_FAIL:
 			case E_INVALIDARG:
 				strcpy(fn, ".");
@@ -1122,7 +1127,7 @@ get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 				strcat(fn, "SyncTERM");
 				break;
 		}
- #else  /* ifdef CSIDL_FLAG_CREATE */
+ #else /* ifdef CSIDL_FLAG_CREATE */
 		getcwd(fn, fnlen);
 		backslash(fn);
  #endif /* ifdef CSIDL_FLAG_CREATE */
@@ -1161,7 +1166,7 @@ get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 			}
 			break;
 	}
-#else  /* ifdef _WIN32 */
+#else /* ifdef _WIN32 */
         /* UNIX */
 	char*home = getenv("HOME");
 
@@ -1191,6 +1196,7 @@ get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 					if (MKDIR(fn))
 						fn[0] = 0;
 
+
 				if (type == SYNCTERM_PATH_CACHE) {
 					strcat(fn, "cache");
 					backslash(fn);
@@ -1207,6 +1213,7 @@ get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 				if (!isdir(fn))
 					if (MKDIR(fn))
 						fn[0] = 0;
+
 
 				strcat(fn, "cache");
 				backslash(fn);
@@ -1273,6 +1280,7 @@ get_syncterm_filename(char*fn, int fnlen, int type, bool shared)
 #endif /* !Win32 */
 	return fn;
 }
+
 void
 load_settings(struct syncterm_settings*set)
 {
@@ -1290,14 +1298,14 @@ load_settings(struct syncterm_settings*set)
 	set->startup_mode = iniReadEnum(inifile, "SyncTERM", "ScreenMode", screen_modes_enum, set->startup_mode);
 	set->output_mode = iniReadEnum(inifile, "SyncTERM", "OutputMode", output_enum, CIOLIB_MODE_AUTO);
 	set->backlines = iniReadInteger(inifile, "SyncTERM", "ScrollBackLines", 2000);
-	set->xfer_success_keypress_timeout = iniReadInteger(inifile,
-	        "SyncTERM",
-	        "TransferSuccessKeypressTimeout",
-                /* seconds: */ 0);
-	set->xfer_failure_keypress_timeout = iniReadInteger(inifile,
-	        "SyncTERM",
-	        "TransferFailureKeypressTimeout",
-                /* seconds: */ 60);
+	set->xfer_success_keypress_timeout = iniReadInteger(inifile
+	        , "SyncTERM"
+	        , "TransferSuccessKeypressTimeout"
+	        , /* seconds: */ 0);
+	set->xfer_failure_keypress_timeout = iniReadInteger(inifile
+	        , "SyncTERM"
+	        , "TransferFailureKeypressTimeout"
+	        , /* seconds: */ 60);
 	set->custom_cols = iniReadInteger(inifile, "SyncTERM", "CustomCols", 80);
 	set->custom_rows = iniReadInteger(inifile, "SyncTERM", "CustomRows", 25);
 	set->custom_fontheight = iniReadInteger(inifile, "SyncTERM", "CustomFontHeight", 16);
@@ -1333,6 +1341,7 @@ load_settings(struct syncterm_settings*set)
 	if (inifile)
 		fclose(inifile);
 }
+
 int
 main(int argc, char**argv)
 {
@@ -1369,7 +1378,7 @@ main(int argc, char**argv)
             // smgtb=\\E[%i%p1%d;%p2%dr,
             // shift/ctrl/alt Fx as extra keys?
             // Booleans:
-	    "\tam,bce,da,ndscr,\n"                              // sam is a printer capability
+	    "\tam,bce,da,ndscr,\n" // sam is a printer capability
             // Numeric:
 	    "\tit#8,colors#8,pairs#64,\n"
 
@@ -1813,12 +1822,12 @@ main(int argc, char**argv)
 				if ((listfile = fopen(settings.list_path, "r")) != NULL) {
 					inifile = iniReadFile(listfile);
 					fclose(listfile);
-					iniSetDateTime(&inifile,
-					    bbs->name,
-					    "LastConnected",
-					    true,
-					    bbs->connected,
-					    &ini_style);
+					iniSetDateTime(&inifile
+					    , bbs->name
+					    , "LastConnected"
+					    , true
+					    , bbs->connected
+					    , &ini_style);
 					iniSetInteger(&inifile, bbs->name, "TotalCalls", bbs->calls, &ini_style);
 					if ((listfile = fopen(settings.list_path, "w")) != NULL) {
 						iniWriteFile(listfile, inifile);
@@ -1873,8 +1882,8 @@ main(int argc, char**argv)
 						init_uifc(true, true);
 						i = 1;
 						if (!bbs->hidepopups) {
-							switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL,
-							    "Save this directory entry?", YesNo)) {
+							switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL
+							    , "Save this directory entry?", YesNo)) {
 								case 0: /* Yes */
 									edit_list(NULL, bbs, settings.list_path, false);
 									add_bbs(settings.list_path, bbs);
@@ -1998,6 +2007,7 @@ USAGE:
 	textattr(LIGHTGRAY);
 	return 0;
 }
+
 int
 screen_to_ciolib(int screen)
 {
@@ -2059,6 +2069,7 @@ screen_to_ciolib(int screen)
 	gettextinfo(&ti);
 	return ti.currmode;
 }
+
 int
 ciolib_to_screen(int ciolib)
 {

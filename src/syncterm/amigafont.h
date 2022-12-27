@@ -48,7 +48,7 @@ struct FontList {
 #endif
 
 #if defined(PRAGMA_PACK)
- #pragma pack(push,1)                           /* Disk image structures must be packed */
+ #pragma pack(push,1) /* Disk image structures must be packed */
 #endif
 
 struct _PACK FontHeader {
@@ -70,7 +70,7 @@ struct _PACK FontHeader {
 };
 
 #if defined(PRAGMA_PACK)
- #pragma pack(pop)              /* original packing */
+ #pragma pack(pop) /* original packing */
 #endif
 
 #endif // ifndef AMIGAFONT_H

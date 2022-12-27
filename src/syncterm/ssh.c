@@ -20,6 +20,7 @@ SOCKET          ssh_sock;
 CRYPT_SESSION   ssh_session;
 int             ssh_active = true;
 pthread_mutex_t ssh_mutex;
+
 void
 cryptlib_error_message(int status, const char*msg)
 {

@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 
 #if defined(_MSC_VER)
- #define _USE_MATH_DEFINES        // for C
+ #define _USE_MATH_DEFINES // for C
 #endif
 #include <bitmap_con.h>
 #include <ciolib.h>
@@ -38,43 +38,43 @@
 // TODO: Actually make the graphics viewport work properly
 
 enum rip_state {
-	RIP_STATE_BOL,                   // Beginning of the line
-	RIP_STATE_MOL,                   // Middle of the line
-	RIP_STATE_BANG,                  // Got a bang (or CTRL-A or CTRL-B)
+	RIP_STATE_BOL,  // Beginning of the line
+	RIP_STATE_MOL,  // Middle of the line
+	RIP_STATE_BANG, // Got a bang (or CTRL-A or CTRL-B)
 
         // The following four groups must remain in this order and all must coincide
 
 /*3*/
-	RIP_STATE_PIPE,                  // Got a pipe
-	RIP_STATE_LEVEL,                 // Got a level
-	RIP_STATE_SUBLEVEL,              // Got a sub-level
-	RIP_STATE_CMD,                   // Got a command... parsing parameters
-	RIP_STATE_ENDED,                 // In unspecified text at the end of a command... look for pipes
+	RIP_STATE_PIPE,               // Got a pipe
+	RIP_STATE_LEVEL,              // Got a level
+	RIP_STATE_SUBLEVEL,           // Got a sub-level
+	RIP_STATE_CMD,                // Got a command... parsing parameters
+	RIP_STATE_ENDED,              // In unspecified text at the end of a command... look for pipes
 
 /*8*/
-	RIP_STATE_BACKSLASH_PIPE,        // Got a backslash... either an escape or a continue
-	RIP_STATE_BACKSLASH_LEVEL,       // Got a backslash... either an escape or a continue
-	RIP_STATE_BACKSLASH_SUBLEVEL,    // Got a backslash... either an escape or a continue
-	RIP_STATE_BACKSLASH_CMD,         // Got a backslash... either an escape or a continue
-	RIP_STATE_BACKSLASH_ENDED,       // Got a backslash... either an escape or a continue
+	RIP_STATE_BACKSLASH_PIPE,     // Got a backslash... either an escape or a continue
+	RIP_STATE_BACKSLASH_LEVEL,    // Got a backslash... either an escape or a continue
+	RIP_STATE_BACKSLASH_SUBLEVEL, // Got a backslash... either an escape or a continue
+	RIP_STATE_BACKSLASH_CMD,      // Got a backslash... either an escape or a continue
+	RIP_STATE_BACKSLASH_ENDED,    // Got a backslash... either an escape or a continue
 
 /*13*/
-	RIP_STATE_CONT_PIPE,             // Got a \ continuation char in pipe state
-	RIP_STATE_CONT_LEVEL,            // Got a \ continuation char in level state
-	RIP_STATE_CONT_SUBLEVEL,         // Got a \ continuation char in sublevel state
-	RIP_STATE_CONT_CMD,              // Got a \ continuation char in cmd state
-	RIP_STATE_CONT_ENDED,            // Got a \ continuation char in ended state
+	RIP_STATE_CONT_PIPE,          // Got a \ continuation char in pipe state
+	RIP_STATE_CONT_LEVEL,         // Got a \ continuation char in level state
+	RIP_STATE_CONT_SUBLEVEL,      // Got a \ continuation char in sublevel state
+	RIP_STATE_CONT_CMD,           // Got a \ continuation char in cmd state
+	RIP_STATE_CONT_ENDED,         // Got a \ continuation char in ended state
 
         // Back to normal state definitions
 
 /*23*/
-	RIP_STATE_CR,                    // Got a CR
-	RIP_STATE_ESC,                   // Got an ESC
-	RIP_STATE_CSI,                   // Got a CSI
-	RIP_STATE_CSINUM,                // Got a CSI followed by a single digit
-	RIP_STATE_SKYPIX,                // Got a CSI followed numbers and semi-colons
-	RIP_STATE_SKYPIX_STR,            // Got a SkyPix that requires a ! string at end.
-	RIP_STATE_FLUSHING              // Magical state
+	RIP_STATE_CR,         // Got a CR
+	RIP_STATE_ESC,        // Got an ESC
+	RIP_STATE_CSI,        // Got a CSI
+	RIP_STATE_CSINUM,     // Got a CSI followed by a single digit
+	RIP_STATE_SKYPIX,     // Got a CSI followed numbers and semi-colons
+	RIP_STATE_SKYPIX_STR, // Got a SkyPix that requires a ! string at end.
+	RIP_STATE_FLUSHING    // Magical state
 };
 
 enum ansi_state {
@@ -338,19 +338,19 @@ static const uint16_t      rip_line_patterns[4] = {
 };
 
 static const uint8_t       rip_fill_patterns[12][8] = {
-	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00} // Background fill
-	, {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}      // Forground fill
-	, {0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00}      // Line fill
-	, {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}      // Light slash fill
-	, {0xe0, 0xc1, 0x83, 0x07, 0x0e, 0x1c, 0x38, 0x70}      // Normal Slash fill
-	, {0xf0, 0x78, 0x3c, 0x1e, 0x0f, 0x87, 0xc3, 0xe1}      // Normal Backslash fill
+	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}   // Background fill
+	, {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff} // Forground fill
+	, {0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00} // Line fill
+	, {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80} // Light slash fill
+	, {0xe0, 0xc1, 0x83, 0x07, 0x0e, 0x1c, 0x38, 0x70} // Normal Slash fill
+	, {0xf0, 0x78, 0x3c, 0x1e, 0x0f, 0x87, 0xc3, 0xe1} // Normal Backslash fill
 	, // {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01},  // Light Backslash fill (as expected)
-	{0xa5, 0xd2, 0x69, 0xb4, 0x5a, 0x2d, 0x96, 0x4b} // Light Backshash fill (as documented)
-	, {0xff, 0x88, 0x88, 0x88, 0xff, 0x88, 0x88, 0x88}      // Light Hatch fill
-	, {0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81}      // Heavy Cross Hatch fill
-	, {0xcc, 0x33, 0xcc, 0x33, 0xcc, 0x33, 0xcc, 0x33}      // Interleaving Line fill
-	, {0x80, 0x00, 0x08, 0x00, 0x80, 0x00, 0x08, 0x00}      // Widely Spaced Dot fill
-	, {0x88, 0x00, 0x22, 0x00, 0x88, 0x00, 0x22, 0x00}      // Closely Spaced Dot fill
+	{0xa5, 0xd2, 0x69, 0xb4, 0x5a, 0x2d, 0x96, 0x4b}   // Light Backshash fill (as documented)
+	, {0xff, 0x88, 0x88, 0x88, 0xff, 0x88, 0x88, 0x88} // Light Hatch fill
+	, {0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81} // Heavy Cross Hatch fill
+	, {0xcc, 0x33, 0xcc, 0x33, 0xcc, 0x33, 0xcc, 0x33} // Interleaving Line fill
+	, {0x80, 0x00, 0x08, 0x00, 0x80, 0x00, 0x08, 0x00} // Widely Spaced Dot fill
+	, {0x88, 0x00, 0x22, 0x00, 0x88, 0x00, 0x22, 0x00} // Closely Spaced Dot fill
 	,
 };
 
@@ -365,7 +365,7 @@ static const uint16_t      ega_palette[64][3] = {
 	, {0xaaaa, 0xaaaa, 0xaaaa}
 	, {0, 0, 0x5555}
 	, {0, 0, 0xffff}
-	, {0, 0xaaaa, 0x5555}           // 10
+	, {0, 0xaaaa, 0x5555} // 10
 	, {0, 0xaaaa, 0xffff}
 	, {0xaaaa, 0, 0x5555}
 	, {0xaaaa, 0, 0xffff}
@@ -375,7 +375,7 @@ static const uint16_t      ega_palette[64][3] = {
 	, {0, 0x5555, 0xaaaa}
 	, {0, 0xffff, 0}
 	, {0, 0xffff, 0xaaaa}
-	, {0xaaaa, 0x5555, 0}           // 20
+	, {0xaaaa, 0x5555, 0} // 20
 	, {0xaaaa, 0x5555, 0xaaaa}
 	, {0xaaaa, 0xffff, 0}
 	, {0xaaaa, 0xffff, 0xaaaa}
@@ -385,7 +385,7 @@ static const uint16_t      ega_palette[64][3] = {
 	, {0, 0xffff, 0xffff}
 	, {0xaaaa, 0x5555, 0x5555}
 	, {0xaaaa, 0x5555, 0xffff}
-	, {0xaaaa, 0xffff, 0x5555}      // 30
+	, {0xaaaa, 0xffff, 0x5555} // 30
 	, {0xaaaa, 0xffff, 0xffff}
 	, {0x5555, 0, 0}
 	, {0x5555, 0, 0xaaaa}
@@ -395,7 +395,7 @@ static const uint16_t      ega_palette[64][3] = {
 	, {0xffff, 0, 0xaaaa}
 	, {0xffff, 0xaaaa, 0}
 	, {0xffff, 0xaaaa, 0xaaaa}
-	, {0x5555, 0, 0x5555}           // 40
+	, {0x5555, 0, 0x5555} // 40
 	, {0x5555, 0, 0xffff}
 	, {0x5555, 0xaaaa, 0x5555}
 	, {0x5555, 0xaaaa, 0xffff}
@@ -405,7 +405,7 @@ static const uint16_t      ega_palette[64][3] = {
 	, {0xffff, 0xaaaa, 0xffff}
 	, {0x5555, 0x5555, 0}
 	, {0x5555, 0x5555, 0xaaaa}
-	, {0x5555, 0xffff, 0}           // 50
+	, {0x5555, 0xffff, 0} // 50
 	, {0x5555, 0xffff, 0xaaaa}
 	, {0xffff, 0x5555, 0}
 	, {0xffff, 0x5555, 0xaaaa}
@@ -415,7 +415,7 @@ static const uint16_t      ega_palette[64][3] = {
 	, {0x5555, 0x5555, 0xffff}
 	, {0x5555, 0xffff, 0x5555}
 	, {0x5555, 0xffff, 0xffff}
-	, {0xffff, 0x5555, 0x5555}      // 60
+	, {0xffff, 0x5555, 0x5555} // 60
 	, {0xffff, 0x5555, 0xffff}
 	, {0xffff, 0xffff, 0x5555}
 	, {0xffff, 0xffff, 0xffff}
@@ -482,8 +482,8 @@ static uint32_t            ega_colours[16] = {
 
 static unsigned char       ripfnt7x8[2048] = /* binary data included from 7x8 */
 {
-	0, 0, 0, 0, 0, 0, 0, 0, 124, 130, 170, 130, 186, 146, 130, 124, 124, 254, 214, 254, 198, 238, 254, 124, 68, 238,
-	254
+	0, 0, 0, 0, 0, 0, 0, 0, 124, 130, 170, 130, 186, 146, 130, 124, 124, 254, 214, 254, 198, 238, 254, 124, 68, 238
+	, 254
 	, 254, 124, 56, 16, 0, 16, 56, 124, 254, 124, 56, 16, 0, 56, 56, 146, 254, 214, 16, 56, 0, 16, 56, 124
 	, 254, 124, 16, 56, 0, 0, 0, 48, 120, 120, 48, 0, 0, 254, 254, 238, 198, 198, 238, 254, 254, 0, 56, 68
 	, 68, 68, 56, 0, 0, 254, 198, 186, 186, 186, 198, 254, 254, 14, 6, 26, 120, 204, 204, 204, 120, 120
@@ -571,8 +571,8 @@ static unsigned char       ripfnt7x8[2048] = /* binary data included from 7x8 */
 };
 unsigned char              ripfnt7x14[3584] = /* binary data included from 7x14 */
 {
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 126, 195, 129, 129, 165, 165, 129, 129, 189, 189, 153, 129, 195, 126,
-	126, 255, 255, 255
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 126, 195, 129, 129, 165, 165, 129, 129, 189, 189, 153, 129, 195, 126
+	, 126, 255, 255, 255
 	, 219, 219, 255, 255, 195, 195, 231, 255, 255, 126, 0, 68, 238, 238, 254, 254, 254, 124, 124, 56, 56
 	, 16, 0, 0, 16, 56, 56, 124, 124, 254, 254, 124, 124, 56, 56, 16, 0, 0, 0, 60, 126, 24, 90, 219, 255
 	, 219, 90, 24, 60, 60, 0, 0, 0, 24, 60, 60, 126, 126, 255, 255, 126, 24, 60, 60, 0, 0, 0, 0, 0, 0, 60, 126
@@ -625,8 +625,8 @@ unsigned char              ripfnt7x14[3584] = /* binary data included from 7x14 
 	, 0, 0, 195, 195, 195, 231, 126, 60, 24, 24, 24, 24, 24, 0, 0, 0, 254, 254, 6, 14, 28, 56, 112, 224
 	, 192, 254, 254, 0, 0, 0, 60, 60, 48, 48, 48, 48, 48, 48, 48, 60, 60, 0, 0, 0, 192, 224, 96, 112, 48, 56
 	, 24, 28, 12, 14, 6, 0, 0, 0, 60, 60, 12, 12, 12, 12, 12, 12, 12, 60, 60, 0, 0, 0, 0, 16, 56, 124, 238, 198
-	, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 0, 56, 56, 48, 16, 8, 0, 0, 0, 0, 0, 0, 0,
-	0
+	, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 0, 56, 56, 48, 16, 8, 0, 0, 0, 0, 0, 0, 0
+	, 0
 	, 0, 0, 0, 0, 124, 126, 6, 126, 254, 198, 254, 118, 0, 0, 0, 192, 192, 192, 252, 254, 198, 198, 198
 	, 198, 254, 220, 0, 0, 0, 0, 0, 0, 124, 254, 198, 192, 192, 198, 254, 124, 0, 0, 0, 6, 6, 6, 126, 254, 198
 	, 198, 198, 198, 254, 118, 0, 0, 0, 0, 0, 0, 124, 254, 198, 254, 254, 192, 254, 126, 0, 0, 0, 30, 62, 48
@@ -718,8 +718,8 @@ unsigned char              ripfnt7x14[3584] = /* binary data included from 7x14 
 };
 unsigned char              ripfnt16x14[7168] = /* binary data included from 16x14 */
 {
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 252, 112, 14, 224, 7,
-	192, 3, 204, 51, 204, 51, 192, 3, 192, 3, 207, 243, 199, 227, 195
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 252, 112, 14, 224, 7
+	, 192, 3, 204, 51, 204, 51, 192, 3, 192, 3, 207, 243, 199, 227, 195
 	, 195, 224, 7, 112, 14, 63, 252, 63, 252, 127, 254, 255, 255, 255, 255, 243, 207, 243, 207, 255, 255
 	, 255, 255, 240, 15, 248, 31, 252, 63, 255, 255, 127, 254, 63, 252, 0, 0, 48, 48, 120, 120, 252, 252
 	, 255, 252, 255, 252, 127, 248, 63, 240, 31, 224, 15, 192, 7, 128, 3, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 128, 7
@@ -760,13 +760,13 @@ unsigned char              ripfnt16x14[7168] = /* binary data included from 16x1
 	, 63, 240, 0, 56, 96, 24, 112, 56, 63, 240, 7, 128, 7, 128, 0, 0, 0, 0, 0, 56, 48, 112, 120, 224, 49, 192
 	, 3, 128, 7, 0, 14, 0, 28, 48, 56, 120, 112, 48, 96, 0, 0, 0, 0, 0, 0, 0, 15, 192, 28, 224, 28, 224, 15
 	, 192, 31, 0, 59, 12, 113, 152, 224, 240, 240, 224, 127, 248, 63, 12, 0, 0, 0, 0, 0, 0, 7, 0, 7, 128, 1
-	, 128, 3, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 1, 128, 3, 0, 7, 0, 6, 0, 14, 0, 14,
-	0
+	, 128, 3, 0, 14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 1, 128, 3, 0, 7, 0, 6, 0, 14, 0, 14
+	, 0
 	, 14, 0, 6, 0, 7, 0, 3, 0, 1, 128, 0, 192, 0, 0, 12, 0, 6, 0, 3, 0, 3, 128, 1, 128, 1, 192, 1, 192, 1, 192, 1
 	, 128, 3, 128, 3, 0, 6, 0, 12, 0, 0, 0, 0, 0, 0, 0, 96, 48, 48, 96, 24, 192, 13, 128, 255, 248, 255, 248, 13
 	, 128, 24, 192, 48, 96, 96, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 128, 3, 128, 3, 128, 63, 248, 63, 248, 3
-	, 128, 3, 128, 3, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 15, 128, 3, 128, 3,
-	128
+	, 128, 3, 128, 3, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 15, 128, 3, 128, 3
+	, 128
 	, 7, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 252, 63, 252, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 15, 128, 15, 128, 7, 0, 0, 0, 0, 0, 0, 0, 0, 24, 0, 56, 0
 	, 112, 0, 224, 1, 192, 3, 128, 7, 0, 14, 0, 28, 0, 56, 0, 48, 0, 0, 0, 0, 0, 0, 0, 15, 192, 63, 240, 120, 120
@@ -820,10 +820,10 @@ unsigned char              ripfnt16x14[7168] = /* binary data included from 16x1
 	, 0, 14, 0, 14, 0, 14, 0, 15, 192, 0, 0, 0, 0, 0, 0, 112, 0, 120, 0, 60, 0, 30, 0, 15, 0, 7, 128, 3, 192, 1
 	, 224, 0, 240, 0, 120, 0, 56, 0, 0, 0, 0, 0, 0, 7, 224, 0, 224, 0, 224, 0, 224, 0, 224, 0, 224, 0, 224, 0
 	, 224, 0, 224, 0, 224, 7, 224, 0, 0, 0, 0, 0, 0, 1, 0, 7, 192, 31, 240, 124, 124, 48, 24, 0, 0, 0, 0, 0, 0, 0
-	, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255,
-	255
-	, 255, 0, 0, 3, 128, 7, 128, 7, 0, 3, 0, 1, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0
+	, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255
+	, 255
+	, 255, 0, 0, 3, 128, 7, 128, 7, 0, 3, 0, 1, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0, 0
 	, 0, 63, 192, 63, 240, 0, 120, 31, 248, 63, 248, 112, 120, 63, 248, 31, 184, 0, 0, 0, 0, 0, 0, 112, 0
 	, 112, 0, 112, 0, 119, 192, 127, 240, 120, 120, 112, 56, 112, 56, 120, 120, 127, 240, 119, 192, 0, 0, 0
 	, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 192, 63, 240, 120, 56, 112, 0, 112, 0, 120, 56, 63, 240, 15, 192, 0, 0, 0
@@ -900,8 +900,8 @@ unsigned char              ripfnt16x14[7168] = /* binary data included from 16x1
 	, 112, 0, 0, 0, 0, 0, 0, 0, 0, 7, 192, 15, 240, 28, 56, 28, 56, 28, 120, 15, 248, 7, 216, 0, 0, 31, 248, 31
 	, 248, 0, 0, 0, 0, 0, 0, 0, 0, 3, 192, 15, 240, 28, 56, 28, 56, 15, 240, 3, 192, 0, 0, 0, 0, 31, 248, 31, 248
 	, 0, 0, 0, 0, 0, 0, 3, 128, 3, 128, 0, 0, 3, 128, 7, 128, 15, 0, 60, 0, 120, 56, 120, 120, 63, 240, 15
-	, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 248, 63, 248, 56, 0, 56, 0, 56, 0, 56, 0, 0, 0, 0, 0, 0, 0,
-	0
+	, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 248, 63, 248, 56, 0, 56, 0, 56, 0, 56, 0, 0, 0, 0, 0, 0, 0
+	, 0
 	, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 240, 63, 240, 0, 112, 0, 112, 0, 112, 0, 112, 0, 0, 0, 0, 0, 0, 0, 0, 56, 24
 	, 24, 56, 24, 112, 60, 224, 1, 192, 3, 128, 7, 0, 14, 124, 28, 198, 56, 28, 112, 112, 96, 254, 0, 0, 0, 0
 	, 56, 24, 24, 56, 24, 112, 60, 224, 1, 192, 3, 140, 7, 28, 14, 60, 28, 108, 56, 254, 112, 12, 96, 12, 0
@@ -951,8 +951,8 @@ unsigned char              ripfnt16x14[7168] = /* binary data included from 16x1
 	, 14, 56, 14, 56, 14, 56, 14, 56, 14, 56, 14, 56, 14, 56, 14, 56, 14, 56, 14, 56, 14, 56, 14, 56, 255
 	, 255, 255, 255, 14, 56, 14, 56, 14, 56, 14, 56, 14, 56, 14, 56, 1, 192, 1, 192, 1, 192, 1, 192, 255, 255
 	, 255, 255, 1, 192, 1, 192, 255, 255, 255, 255, 1, 192, 1, 192, 1, 192, 1, 192, 1, 192, 1, 192, 1, 192, 1
-	, 192, 1, 192, 1, 192, 255, 192, 255, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0
+	, 192, 1, 192, 1, 192, 255, 192, 255, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0
 	, 1, 255, 1, 255, 1, 192, 1, 192, 1, 192, 1, 192, 1, 192, 1, 192, 255, 255, 255, 255, 255, 255, 255
 	, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
 	, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
@@ -985,10 +985,10 @@ unsigned char              ripfnt16x14[7168] = /* binary data included from 16x1
 	, 192, 3, 192, 3, 192, 227, 192, 227, 192, 247, 192, 127, 128, 30, 0, 0, 0, 0, 0, 3, 0, 7, 128, 3, 0, 0, 0
 	, 127, 248, 127, 248, 0, 0, 3, 0, 7, 128, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 14, 24, 27, 48, 49, 224, 0, 0, 14
 	, 24, 27, 48, 49, 224, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 192, 15, 240, 28, 56, 28, 56, 15, 240, 3, 192, 0, 0
-	, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 192, 3, 192, 3, 192, 0, 0, 0, 0, 0,
-	0
-	, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 128, 3, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	254
+	, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 192, 3, 192, 3, 192, 0, 0, 0, 0, 0
+	, 0
+	, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 128, 3, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 254
 	, 0, 254, 0, 224, 0, 224, 0, 224, 0, 224, 124, 224, 28, 224, 14, 224, 7, 224, 3, 224, 1, 224, 0, 224, 0
 	, 0, 29, 224, 31, 240, 30, 120, 28, 56, 28, 56, 28, 56, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15
 	, 224, 28, 112, 0, 224, 3, 128, 15, 0, 31, 240, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -1001,8 +1001,8 @@ static const unsigned char Triplex[16677] = /* binary data included from TRIP.CH
 	, 49, 46, 49, 32, 45, 32, 74, 117, 110, 32, 53, 44, 32, 49, 57, 56, 57, 13, 10, 67, 111, 112, 121, 114
 	, 105, 103, 104, 116, 32, 40, 99, 41, 32, 49, 57, 56, 55, 44, 49, 57, 56, 56, 32, 66, 111, 114, 108, 97
 	, 110, 100, 32, 73, 110, 116, 101, 114, 110, 97, 116, 105, 111, 110, 97, 108, 13, 10, 26, 128, 0, 84
-	, 82, 73, 80, 165, 64, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0
+	, 82, 73, 80, 165, 64, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0
 	, 43, 223, 0, 0, 32, 173, 2, 0, 24, 0, 249, 0, 0, 0, 0, 0, 0, 0, 4, 0, 60, 0, 96, 0, 116, 0, 222, 0, 28, 1
 	, 164, 1, 208, 1, 4, 2, 56, 2, 120, 2, 148, 2, 190, 2, 206, 2, 238, 2, 254, 2, 90, 3, 132, 3, 244, 3, 126, 4
 	, 166, 4, 6, 5, 136, 5, 206, 5, 86, 6, 216, 6, 20, 7, 92, 7, 102, 7, 130, 7, 140, 7, 234, 7, 86, 8, 138, 8, 8
@@ -1798,8 +1798,8 @@ static const unsigned char Small[5131] = /* binary data included from LITT.CHR *
 	, 49, 46, 49, 32, 45, 32, 74, 117, 110, 32, 53, 44, 32, 49, 57, 56, 57, 13, 10, 67, 111, 112, 121, 114
 	, 105, 103, 104, 116, 32, 40, 99, 41, 32, 49, 57, 56, 55, 44, 49, 57, 56, 56, 32, 66, 111, 114, 108, 97
 	, 110, 100, 32, 73, 110, 116, 101, 114, 110, 97, 116, 105, 111, 110, 97, 108, 13, 10, 26, 128, 0, 76
-	, 73, 84, 84, 139, 19, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0
+	, 73, 84, 84, 139, 19, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0
 	, 43, 223, 0, 0, 32, 173, 2, 0, 7, 0, 254, 0, 0, 0, 0, 0, 0, 0, 4, 0, 16, 0, 20, 0, 42, 0, 74, 0, 102, 0, 148
 	, 0, 158, 0, 170, 0, 182, 0, 202, 0, 214, 0, 236, 0, 244, 0, 2, 1, 10, 1, 32, 1, 48, 1, 66, 1, 102, 1, 114
 	, 1, 138, 1, 162, 1, 176, 1, 214, 1, 240, 1, 8, 2, 36, 2, 46, 2, 58, 2, 68, 2, 88, 2, 118, 2, 136, 2, 170
@@ -1818,16 +1818,16 @@ static const unsigned char Small[5131] = /* binary data included from LITT.CHR *
 	, 122, 14, 146, 14, 158, 14, 174, 14, 192, 14, 218, 14, 240, 14, 4, 15, 42, 15, 72, 15, 100, 15, 130, 15
 	, 168, 15, 194, 15, 214, 15, 230, 15, 246, 15, 6, 16, 20, 16, 34, 16, 48, 16, 62, 16, 90, 16, 110, 16
 	, 132, 16, 146, 16, 160, 16, 174, 16, 188, 16, 204, 16, 6, 2, 5, 6, 6, 7, 6, 4, 5, 5, 6, 6, 6, 6, 4, 6, 6, 6, 6
-	, 6, 6, 6, 6, 6, 6, 6, 5, 5, 6, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-	6, 6
-	, 6, 5, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 5, 6, 6, 5, 6, 6, 5, 6, 6, 6, 6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 6, 3, 6, 6,
-	6, 6
-	, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 6, 6, 6, 9, 10, 6, 6, 6, 6, 6, 6, 6, 6, 6, 8, 7, 8, 7, 6, 4, 6, 6, 6,
-	6, 6
-	, 6, 6, 6, 6, 7, 7, 2, 6, 6, 9, 8, 9, 1, 4, 4, 6, 6, 4, 6, 6, 6, 6, 6, 4, 0, 2, 4, 4, 2, 6, 4, 2, 4, 4, 4, 6, 6,
-	4, 6
-	, 6, 4, 4, 4, 4, 4, 2, 2, 4, 6, 4, 4, 2, 4, 4, 2, 4, 4, 7, 5, 5, 7, 6, 7, 6, 7, 6, 6, 6, 5, 8, 6, 5, 6, 6, 6, 6,
-	6, 5
+	, 6, 6, 6, 6, 6, 6, 6, 5, 5, 6, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6
+	, 6, 6
+	, 6, 5, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 5, 6, 6, 5, 6, 6, 5, 6, 6, 6, 6, 6, 6, 6, 5, 6, 6, 6, 6, 6, 6, 6, 3, 6, 6
+	, 6, 6
+	, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 6, 6, 6, 9, 10, 6, 6, 6, 6, 6, 6, 6, 6, 6, 8, 7, 8, 7, 6, 4, 6, 6, 6
+	, 6, 6
+	, 6, 6, 6, 6, 7, 7, 2, 6, 6, 9, 8, 9, 1, 4, 4, 6, 6, 4, 6, 6, 6, 6, 6, 4, 0, 2, 4, 4, 2, 6, 4, 2, 4, 4, 4, 6, 6
+	, 4, 6
+	, 6, 4, 4, 4, 4, 4, 2, 2, 4, 6, 4, 4, 2, 4, 4, 2, 4, 4, 7, 5, 5, 7, 6, 7, 6, 7, 6, 6, 6, 5, 8, 6, 5, 6, 6, 6, 6
+	, 6, 5
 	, 5, 5, 5, 5, 3, 3, 6, 6, 4, 4, 134, 0, 0, 0, 128, 2, 128, 135, 128, 1, 128, 128, 130, 0, 0, 0, 133, 0, 0, 0
 	, 129, 0, 129, 134, 131, 6, 131, 128, 128, 4, 131, 132, 132, 132, 128, 2, 132, 130, 134, 0, 0, 0, 128, 1
 	, 129, 128, 131, 128, 132, 129, 132, 130, 131, 131, 129, 131, 128, 132, 128, 133, 129, 134, 131, 134
@@ -2027,10 +2027,10 @@ static const unsigned char Sans[13596] = /* binary data included from SANS.CHR *
 	, 49, 46, 49, 32, 45, 32, 74, 117, 110, 32, 53, 44, 32, 49, 57, 56, 57, 13, 10, 67, 111, 112, 121, 114
 	, 105, 103, 104, 116, 32, 40, 99, 41, 32, 49, 57, 56, 55, 44, 49, 57, 56, 56, 32, 66, 111, 114, 108, 97
 	, 110, 100, 32, 73, 110, 116, 101, 114, 110, 97, 116, 105, 111, 110, 97, 108, 13, 10, 26, 128, 0, 83
-	, 65, 78, 83, 156, 52, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0
-	, 43, 254, 0, 0, 1, 10, 3, 0, 25, 0, 249, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0
+	, 65, 78, 83, 156, 52, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0
+	, 43, 254, 0, 0, 1, 10, 3, 0, 25, 0, 249, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0, 0
 	, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 8, 0, 12, 0, 16, 0, 20, 0, 24, 0, 28, 0, 32, 0, 36, 0, 40, 0, 44, 0
 	, 48, 0, 52, 0, 56, 0, 60, 0, 64, 0, 68, 0, 112, 0, 142, 0, 162, 0, 2, 1, 64, 1, 200, 1, 220, 1, 12, 2, 60, 2
 	, 124, 2, 152, 2, 194, 2, 208, 2, 240, 2, 0, 3, 78, 3, 100, 3, 158, 3, 236, 3, 2, 4, 82, 4, 196, 4, 214, 4
@@ -2050,8 +2050,8 @@ static const unsigned char Sans[13596] = /* binary data included from SANS.CHR *
 	, 41, 86, 41, 98, 41, 114, 41, 128, 41, 138, 41, 216, 41, 34, 42, 76, 42, 118, 42, 192, 42, 6, 43, 62
 	, 43, 86, 43, 120, 43, 150, 43, 224, 43, 22, 44, 62, 44, 166, 44, 4, 45, 94, 45, 176, 45, 48, 46, 134
 	, 46, 178, 46, 228, 46, 10, 47, 48, 47, 84, 47, 120, 47, 158, 47, 196, 47, 14, 48, 110, 48, 178, 48
-	, 212, 48, 242, 48, 14, 49, 60, 49, 100, 49, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0
+	, 212, 48, 242, 48, 14, 49, 60, 49, 100, 49, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0
 	, 0, 0, 0, 0, 0, 0, 0, 0, 16, 8, 16, 20, 18, 23, 24, 7, 13, 13, 15, 22, 22, 22, 10, 24, 22, 22, 22, 22, 22
 	, 22, 22, 22, 22, 22, 8, 8, 21, 22, 21, 18, 26, 21, 18, 20, 19, 17, 17, 20, 19, 6, 15, 19, 17, 21, 19, 21
 	, 18, 21, 18, 19, 18, 19, 21, 27, 19, 20, 19, 12, 24, 12, 18, 22, 7, 18, 18, 17, 18, 17, 13, 18, 17, 8, 8
@@ -2675,8 +2675,8 @@ static const unsigned char Gothic[18063] = /* binary data included from GOTH.CHR
 	, 49, 46, 49, 32, 45, 32, 74, 117, 110, 32, 53, 44, 32, 49, 57, 56, 57, 13, 10, 67, 111, 112, 121, 114
 	, 105, 103, 104, 116, 32, 40, 99, 41, 32, 49, 57, 56, 55, 44, 49, 57, 56, 56, 32, 66, 111, 114, 108, 97
 	, 110, 100, 32, 73, 110, 116, 101, 114, 110, 97, 116, 105, 111, 110, 97, 108, 13, 10, 26, 128, 0, 71
-	, 79, 84, 72, 15, 70, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0
+	, 79, 84, 72, 15, 70, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0
 	, 43, 223, 0, 0, 32, 173, 2, 0, 25, 0, 249, 0, 0, 0, 0, 0, 0, 0, 4, 0, 58, 0, 94, 0, 114, 0, 224, 0, 30, 1
 	, 134, 1, 162, 1, 214, 1, 10, 2, 62, 2, 90, 2, 118, 2, 134, 2, 156, 2, 172, 2, 236, 2, 26, 3, 100, 3, 186, 3
 	, 250, 3, 70, 4, 160, 4, 222, 4, 64, 5, 156, 5, 196, 5, 242, 5, 252, 5, 24, 6, 34, 6, 124, 6, 232, 6, 74, 7
@@ -3548,8 +3548,8 @@ static const unsigned char Script[10987] = /* binary data included from SCRI.CHR
 	, 49, 46, 49, 32, 45, 32, 74, 117, 110, 32, 53, 44, 32, 49, 57, 56, 57, 13, 10, 67, 111, 112, 121, 114
 	, 105, 103, 104, 116, 32, 40, 99, 41, 32, 49, 57, 56, 55, 44, 49, 57, 56, 56, 32, 66, 111, 114, 108, 97
 	, 110, 100, 32, 73, 110, 116, 101, 114, 110, 97, 116, 105, 111, 110, 97, 108, 13, 10, 26, 128, 0, 83
-	, 67, 82, 73, 107, 42, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0
+	, 67, 82, 73, 107, 42, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0
 	, 43, 223, 0, 0, 32, 173, 2, 0, 25, 0, 244, 0, 0, 0, 0, 0, 0, 0, 4, 0, 30, 0, 50, 0, 70, 0, 148, 0, 210, 0, 62
 	, 1, 80, 1, 120, 1, 160, 1, 176, 1, 188, 1, 206, 1, 214, 1, 228, 1, 236, 1, 18, 2, 32, 2, 64, 2, 98, 2
 	, 110, 2, 148, 2, 198, 2, 208, 2, 14, 3, 64, 3, 88, 3, 116, 3, 126, 3, 138, 3, 148, 3, 214, 3, 66, 4, 108, 4
@@ -4071,8 +4071,8 @@ static const unsigned char Simplex[8437] = /* binary data included from SIMP.CHR
 	, 49, 46, 49, 32, 45, 32, 74, 117, 110, 32, 53, 44, 32, 49, 57, 56, 57, 13, 10, 67, 111, 112, 121, 114
 	, 105, 103, 104, 116, 32, 40, 99, 41, 32, 49, 57, 56, 55, 44, 49, 57, 56, 56, 32, 66, 111, 114, 108, 97
 	, 110, 100, 32, 73, 110, 116, 101, 114, 110, 97, 116, 105, 111, 110, 97, 108, 13, 10, 26, 128, 0, 83
-	, 73, 77, 80, 117, 32, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0
+	, 73, 77, 80, 117, 32, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0
 	, 43, 223, 0, 0, 32, 173, 2, 0, 28, 0, 249, 0, 0, 0, 0, 0, 0, 0, 4, 0, 22, 0, 58, 0, 78, 0, 158, 0, 220, 0, 60
 	, 1, 78, 1, 118, 1, 158, 1, 174, 1, 186, 1, 206, 1, 214, 1, 228, 1, 236, 1, 18, 2, 32, 2, 64, 2, 98, 2
 	, 110, 2, 148, 2, 198, 2, 208, 2, 14, 3, 64, 3, 88, 3, 118, 3, 128, 3, 140, 3, 150, 3, 192, 3, 44, 4, 58, 4
@@ -4466,8 +4466,8 @@ static const unsigned char TriplexScript[17355] = /* binary data included from T
 	, 49, 46, 49, 32, 45, 32, 65, 117, 103, 32, 51, 44, 32, 49, 57, 56, 57, 13, 10, 67, 111, 112, 121, 114
 	, 105, 103, 104, 116, 32, 40, 99, 41, 32, 49, 57, 56, 55, 44, 49, 57, 56, 56, 32, 66, 111, 114, 108, 97
 	, 110, 100, 32, 73, 110, 116, 101, 114, 110, 97, 116, 105, 111, 110, 97, 108, 13, 10, 26, 128, 0, 84
-	, 83, 67, 82, 75, 67, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0
+	, 83, 67, 82, 75, 67, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0
 	, 43, 223, 0, 0, 32, 173, 2, 0, 24, 0, 249, 2, 3, 0, 0, 0, 0, 0, 4, 0, 66, 0, 104, 0, 126, 0, 226, 0, 34, 1
 	, 172, 1, 194, 1, 0, 2, 62, 2, 128, 2, 158, 2, 202, 2, 220, 2, 254, 2, 16, 3, 128, 3, 156, 3, 252, 3, 118, 4
 	, 144, 4, 234, 4, 98, 5, 162, 5, 76, 6, 196, 6, 2, 7, 74, 7, 86, 7, 116, 7, 128, 7, 240, 7, 94, 8, 152, 8, 24
@@ -5296,8 +5296,8 @@ static const unsigned char Complex[12083] = /* binary data included from LCOM.CH
 	, 49, 46, 49, 32, 45, 32, 74, 117, 110, 32, 53, 44, 32, 49, 57, 56, 57, 13, 10, 67, 111, 112, 121, 114
 	, 105, 103, 104, 116, 32, 40, 99, 41, 32, 49, 57, 56, 55, 44, 49, 57, 56, 56, 32, 66, 111, 114, 108, 97
 	, 110, 100, 32, 73, 110, 116, 101, 114, 110, 97, 116, 105, 111, 110, 97, 108, 13, 10, 26, 128, 0, 76
-	, 67, 79, 77, 179, 46, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0
+	, 67, 79, 77, 179, 46, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0
 	, 43, 223, 0, 0, 32, 173, 2, 0, 28, 0, 249, 0, 0, 0, 0, 0, 0, 0, 4, 0, 32, 0, 52, 0, 72, 0, 152, 0, 214, 0, 54
 	, 1, 66, 1, 106, 1, 146, 1, 162, 1, 174, 1, 192, 1, 200, 1, 214, 1, 230, 1, 50, 2, 70, 2, 156, 2, 244, 2
 	, 8, 3, 74, 3, 168, 3, 222, 3, 78, 4, 172, 4, 196, 4, 224, 4, 234, 4, 246, 4, 0, 5, 62, 5, 170, 5, 198, 5
@@ -5871,8 +5871,8 @@ static const unsigned char European[8439] = /* binary data included from EURO.CH
 	, 49, 46, 49, 32, 45, 32, 77, 97, 121, 32, 49, 55, 44, 32, 49, 57, 56, 57, 13, 10, 67, 111, 112, 121
 	, 114, 105, 103, 104, 116, 32, 40, 99, 41, 32, 49, 57, 56, 55, 44, 49, 57, 56, 56, 32, 66, 111, 114, 108
 	, 97, 110, 100, 32, 73, 110, 116, 101, 114, 110, 97, 116, 105, 111, 110, 97, 108, 13, 10, 26, 128, 0
-	, 69, 85, 82, 79, 119, 32, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0
+	, 69, 85, 82, 79, 119, 32, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0, 0
 	, 43, 223, 0, 0, 32, 173, 2, 0, 45, 0, 246, 0, 0, 0, 0, 0, 0, 0, 4, 0, 22, 0, 54, 0, 74, 0, 118, 0, 164, 0
 	, 212, 0, 230, 0, 250, 0, 14, 1, 42, 1, 54, 1, 70, 1, 78, 1, 92, 1, 100, 1, 138, 1, 148, 1, 180, 1, 214, 1
 	, 226, 1, 254, 1, 34, 2, 44, 2, 92, 2, 128, 2, 152, 2, 180, 2, 190, 2, 202, 2, 212, 2, 252, 2, 52, 3, 66, 3
@@ -6266,8 +6266,8 @@ static const unsigned char Bold[14670] = /* binary data included from BOLD.CHR *
 	, 49, 46, 49, 32, 45, 32, 74, 117, 110, 32, 53, 44, 32, 49, 57, 56, 57, 13, 10, 67, 111, 112, 121, 114
 	, 105, 103, 104, 116, 32, 40, 99, 41, 32, 49, 57, 56, 55, 44, 49, 57, 56, 56, 32, 66, 111, 114, 108, 97
 	, 110, 100, 32, 73, 110, 116, 101, 114, 110, 97, 116, 105, 111, 110, 97, 108, 13, 10, 26, 128, 0, 66
-	, 79, 76, 68, 206, 56, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0
+	, 79, 76, 68, 206, 56, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	, 0
 	, 43, 224, 0, 0, 32, 176, 2, 0, 53, 0, 249, 0, 0, 0, 0, 0, 0, 0, 4, 0, 32, 0, 58, 0, 130, 0, 236, 0, 62, 1
 	, 188, 1, 202, 1, 254, 1, 44, 2, 86, 2, 116, 2, 132, 2, 146, 2, 160, 2, 174, 2, 18, 3, 46, 3, 118, 3, 230, 3
 	, 10, 4, 94, 4, 194, 4, 214, 4, 90, 5, 200, 5, 226, 5, 254, 5, 12, 6, 38, 6, 52, 6, 124, 6, 232, 6, 6, 7, 88
@@ -7139,7 +7139,7 @@ static const struct               metric font_metrics[11][10] = {
 		, {59, 89, 179, 200}
 		, {79, 199, 239, 267}
 	},
-#else  /* if 0 */
+#else /* if 0 */
         // These are from the EXE and there's still weirdness (such as size 7 in small)
 	{
 		{0x00, 0x02, 0x06, 0x07}
@@ -7305,8 +7305,8 @@ static void buffer_rip(const BYTE*buf, unsigned len);
 static void buffer_data(const BYTE*buf, unsigned len);
 static void do_rip_command(int level, int sublevel, int cmd, const char*args);
 static void do_rip_string(const char*buf, size_t len);
-static bool handle_rip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigned maxlen,
-    enum rip_state ns);
+static bool handle_rip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigned maxlen
+    , enum rip_state ns);
 static void unrip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigned maxlen);
 static void write_text(const char*str);
 static char *rv_version(const char* const var, const void* const data);
@@ -7349,110 +7349,112 @@ struct rip_mouse_event {
 static struct rip_mouse_event            rip_mouse_event;
 
 static const struct builtin_rip_variable builtins[] = {
-	{"ADOW", rv_date, NULL}, // Abbreviated Day of Week
-	{"ALARM", rv_sound, NULL},
-	{"AMPM", rv_time, NULL},               // Returns AM or PM depending on time
-	{"APP0", rv_exploit, NULL},
-	{"APP1", rv_exploit, NULL},
-	{"APP2", rv_exploit, NULL},
-	{"APP3", rv_exploit, NULL},
-	{"APP4", rv_exploit, NULL},
-	{"APP5", rv_exploit, NULL},
-	{"APP6", rv_exploit, NULL},
-	{"APP7", rv_exploit, NULL},
-	{"APP8", rv_exploit, NULL},
-	{"APP9", rv_exploit, NULL},
-	{"BEEP", rv_sound, NULL},              // Beep Sound (ala Ctrl-G)
-	{"BLIP", rv_sound, NULL},
-	{"COFF", rv_termset, NULL},
-	{"COMPAT", rv_termset, NULL},
-	{"CON", rv_termset, NULL},
-	{"CURSOR", rv_termstat, NULL},
-	{"CURX", rv_termstat, NULL},
-	{"CURY", rv_termstat, NULL},
-	{"DATE", rv_date, NULL},               // Date in short format MM/DD/YY
-	{"DATETIME", rv_date, NULL},           // Date and Time
-	{"DAY", rv_date, NULL},                // Day of Month Number
-	{"DOW", rv_date, NULL},                // Day of week fully spelled out
-	{"DOY", rv_date, NULL},                // Day of year
-	{"DTW", rv_disable, NULL},
-	{"DWAYOFF", rv_termset, NULL},
-	{"DWAYON", rv_termset, NULL},
-	{"EGW", rv_erase, NULL},
-	{"ETW", rv_erase, NULL},
-	{"FYEAR", rv_date, NULL},              // 4 digit year
-	{"HKEYOFF", rv_hotkey, NULL},
-	{"HKEYON", rv_hotkey, NULL},
-	{"HOUR", rv_time, NULL},               // Hour (format HH) - normal style
-	{"M", rv_mouse, NULL},
-	{"MHOUR", rv_time, NULL},              // Hour (format HH) - military style
-	{"MIN", rv_time, NULL},                // Minutes
-	{"MKILL", rv_mouse_kill, NULL},
-	{"MONTH", rv_date, NULL},              // Month Name
-	{"MONTHNUM", rv_date, NULL},           // Month Number (1..12)
-	{"MSTAT", rv_mouse, NULL},
-	{"MUSIC", rv_sound, NULL},
-	{"PCB", rv_paste, NULL},
-	{"PHASER", rv_sound, NULL},
-	{"RCB", rv_restore, NULL},
-	{"RESET", rv_reset, NULL},
-	{"RESTORE", rv_restore, NULL},
-	{"RESTORE1", rv_restore, NULL},
-	{"RESTORE2", rv_restore, NULL},
-	{"RESTORE3", rv_restore, NULL},
-	{"RESTORE4", rv_restore, NULL},
-	{"RESTORE5", rv_restore, NULL},
-	{"RESTORE6", rv_restore, NULL},
-	{"RESTORE7", rv_restore, NULL},
-	{"RESTORE8", rv_restore, NULL},
-	{"RESTORE9", rv_restore, NULL},
-	{"RESTOREALL", rv_restore, NULL},
-	{"REVPHASER", rv_sound, NULL},
-	{"RIPVER", rv_version, NULL}, // RIPscrip version
-	{"RMF", rv_restore, NULL},
-	{"RTW", rv_restore, NULL},
-	{"SAVE", rv_save, NULL},
-	{"SAVE0", rv_save, NULL},
-	{"SAVE1", rv_save, NULL},
-	{"SAVE2", rv_save, NULL},
-	{"SAVE3", rv_save, NULL},
-	{"SAVE4", rv_save, NULL},
-	{"SAVE5", rv_save, NULL},
-	{"SAVE6", rv_save, NULL},
-	{"SAVE7", rv_save, NULL},
-	{"SAVE8", rv_save, NULL},
-	{"SAVE9", rv_save, NULL},
-	{"SAVEALL", rv_save, NULL},
-	{"SBAROFF", rv_termset, NULL},
-	{"SBARON", rv_termset, NULL},
-	{"SCB", rv_save, NULL},
-	{"SEC", rv_time, NULL},                // Seconds
-	{"SMF", rv_save, NULL},
-	{"STATBAR", rv_termstat, NULL},
-	{"STW", rv_save, NULL},
-	{"TABOFF", rv_hotkey, NULL},
-	{"TABON", rv_hotkey, NULL},
-	{"TIME", rv_time, NULL},               // Time in standard format 18:09:33
-	{"TIMEZONE", rv_time, NULL},           // Time Zone or "NONE" if unknown
-	{"TWFONT", rv_termstat, NULL},
-	{"TWH", rv_termstat, NULL},
-	{"TWIN", rv_termstat, NULL},
-	{"TWW", rv_termstat, NULL},
-	{"TWX0", rv_termstat, NULL},
-	{"TWX1", rv_termstat, NULL},
-	{"TWY0", rv_termstat, NULL},
-	{"TWY1", rv_termstat, NULL},
-	{"VT102OFF", rv_termset, NULL},
-	{"VT102ON", rv_termset, NULL},
-	{"WDAY", rv_date, NULL},               // Day of Week (0..6)
-	{"WOY", rv_date, NULL},                // Week of current year 00-53; Sunday=1st Day of Week
-	{"WOYM", rv_date, NULL},               // Week of current year 00-53; Monday=1st Day of Week
-	{"X", rv_mouse, NULL},
-	{"XY", rv_mouse, NULL},
-	{"XYM", rv_mouse, NULL},
-	{"Y", rv_mouse, NULL},
-	{"YEAR", rv_date, NULL},               // 2 digit year
+	{"ADOW", rv_date, NULL} // Abbreviated Day of Week
+	, {"ALARM", rv_sound, NULL}
+	, {"AMPM", rv_time, NULL}              // Returns AM or PM depending on time
+	, {"APP0", rv_exploit, NULL}
+	, {"APP1", rv_exploit, NULL}
+	, {"APP2", rv_exploit, NULL}
+	, {"APP3", rv_exploit, NULL}
+	, {"APP4", rv_exploit, NULL}
+	, {"APP5", rv_exploit, NULL}
+	, {"APP6", rv_exploit, NULL}
+	, {"APP7", rv_exploit, NULL}
+	, {"APP8", rv_exploit, NULL}
+	, {"APP9", rv_exploit, NULL}
+	, {"BEEP", rv_sound, NULL}             // Beep Sound (ala Ctrl-G)
+	, {"BLIP", rv_sound, NULL}
+	, {"COFF", rv_termset, NULL}
+	, {"COMPAT", rv_termset, NULL}
+	, {"CON", rv_termset, NULL}
+	, {"CURSOR", rv_termstat, NULL}
+	, {"CURX", rv_termstat, NULL}
+	, {"CURY", rv_termstat, NULL}
+	, {"DATE", rv_date, NULL}              // Date in short format MM/DD/YY
+	, {"DATETIME", rv_date, NULL}          // Date and Time
+	, {"DAY", rv_date, NULL}               // Day of Month Number
+	, {"DOW", rv_date, NULL}               // Day of week fully spelled out
+	, {"DOY", rv_date, NULL}               // Day of year
+	, {"DTW", rv_disable, NULL}
+	, {"DWAYOFF", rv_termset, NULL}
+	, {"DWAYON", rv_termset, NULL}
+	, {"EGW", rv_erase, NULL}
+	, {"ETW", rv_erase, NULL}
+	, {"FYEAR", rv_date, NULL}             // 4 digit year
+	, {"HKEYOFF", rv_hotkey, NULL}
+	, {"HKEYON", rv_hotkey, NULL}
+	, {"HOUR", rv_time, NULL}              // Hour (format HH) - normal style
+	, {"M", rv_mouse, NULL}
+	, {"MHOUR", rv_time, NULL}             // Hour (format HH) - military style
+	, {"MIN", rv_time, NULL}               // Minutes
+	, {"MKILL", rv_mouse_kill, NULL}
+	, {"MONTH", rv_date, NULL}             // Month Name
+	, {"MONTHNUM", rv_date, NULL}          // Month Number (1..12)
+	, {"MSTAT", rv_mouse, NULL}
+	, {"MUSIC", rv_sound, NULL}
+	, {"PCB", rv_paste, NULL}
+	, {"PHASER", rv_sound, NULL}
+	, {"RCB", rv_restore, NULL}
+	, {"RESET", rv_reset, NULL}
+	, {"RESTORE", rv_restore, NULL}
+	, {"RESTORE1", rv_restore, NULL}
+	, {"RESTORE2", rv_restore, NULL}
+	, {"RESTORE3", rv_restore, NULL}
+	, {"RESTORE4", rv_restore, NULL}
+	, {"RESTORE5", rv_restore, NULL}
+	, {"RESTORE6", rv_restore, NULL}
+	, {"RESTORE7", rv_restore, NULL}
+	, {"RESTORE8", rv_restore, NULL}
+	, {"RESTORE9", rv_restore, NULL}
+	, {"RESTOREALL", rv_restore, NULL}
+	, {"REVPHASER", rv_sound, NULL}
+	, {"RIPVER", rv_version, NULL} // RIPscrip version
+	, {"RMF", rv_restore, NULL}
+	, {"RTW", rv_restore, NULL}
+	, {"SAVE", rv_save, NULL}
+	, {"SAVE0", rv_save, NULL}
+	, {"SAVE1", rv_save, NULL}
+	, {"SAVE2", rv_save, NULL}
+	, {"SAVE3", rv_save, NULL}
+	, {"SAVE4", rv_save, NULL}
+	, {"SAVE5", rv_save, NULL}
+	, {"SAVE6", rv_save, NULL}
+	, {"SAVE7", rv_save, NULL}
+	, {"SAVE8", rv_save, NULL}
+	, {"SAVE9", rv_save, NULL}
+	, {"SAVEALL", rv_save, NULL}
+	, {"SBAROFF", rv_termset, NULL}
+	, {"SBARON", rv_termset, NULL}
+	, {"SCB", rv_save, NULL}
+	, {"SEC", rv_time, NULL}               // Seconds
+	, {"SMF", rv_save, NULL}
+	, {"STATBAR", rv_termstat, NULL}
+	, {"STW", rv_save, NULL}
+	, {"TABOFF", rv_hotkey, NULL}
+	, {"TABON", rv_hotkey, NULL}
+	, {"TIME", rv_time, NULL}              // Time in standard format 18:09:33
+	, {"TIMEZONE", rv_time, NULL}          // Time Zone or "NONE" if unknown
+	, {"TWFONT", rv_termstat, NULL}
+	, {"TWH", rv_termstat, NULL}
+	, {"TWIN", rv_termstat, NULL}
+	, {"TWW", rv_termstat, NULL}
+	, {"TWX0", rv_termstat, NULL}
+	, {"TWX1", rv_termstat, NULL}
+	, {"TWY0", rv_termstat, NULL}
+	, {"TWY1", rv_termstat, NULL}
+	, {"VT102OFF", rv_termset, NULL}
+	, {"VT102ON", rv_termset, NULL}
+	, {"WDAY", rv_date, NULL}              // Day of Week (0..6)
+	, {"WOY", rv_date, NULL}               // Week of current year 00-53; Sunday=1st Day of Week
+	, {"WOYM", rv_date, NULL}              // Week of current year 00-53; Monday=1st Day of Week
+	, {"X", rv_mouse, NULL}
+	, {"XY", rv_mouse, NULL}
+	, {"XYM", rv_mouse, NULL}
+	, {"Y", rv_mouse, NULL}
+	, {"YEAR", rv_date, NULL}              // 2 digit year
+	,
 };
+
 static void
 set_ega_palette(void)
 {
@@ -7462,10 +7464,11 @@ set_ega_palette(void)
 	for (i = 0; i < 16; i++) {
 		attr2palette(i, &fg, NULL);
 		ega_colours[i] = fg;
-		setpalette(fg, ega_palette[curr_ega_palette[i]][0], ega_palette[curr_ega_palette[i]][1],
-		    ega_palette[curr_ega_palette[i]][2]);
+		setpalette(fg, ega_palette[curr_ega_palette[i]][0], ega_palette[curr_ega_palette[i]][1]
+		    , ega_palette[curr_ega_palette[i]][2]);
 	}
 }
+
 static int
 bicmp(const void*str, const void*vd)
 {
@@ -7482,6 +7485,7 @@ bicmp(const void*str, const void*vd)
 	free(tmpstr);
 	return ret;
 }
+
 static char*
 get_text_variable(const char* const var)
 {
@@ -7498,11 +7502,13 @@ get_text_variable(const char* const var)
 	}
 	return vardef->func(var, vardef->data);
 }
+
 static char*
 rv_version(const char* const var, const void* const data)
 {
 	return strdup(ripver[rip.version]);
 }
+
 static char*
 rv_date(const char* const var, const void* const data)
 {
@@ -7520,12 +7526,12 @@ rv_date(const char* const var, const void* const data)
 						case 'T':
 							switch (var[4]) {
 								case 0:
-									snprintf(str,
-									    sizeof(str),
-									    "%02d/%02d/%02d",
-									    nlt.tm_mon + 1,
-									    nlt.tm_mday,
-									    nlt.tm_year % 100);
+									snprintf(str
+									    , sizeof(str)
+									    , "%02d/%02d/%02d"
+									    , nlt.tm_mon + 1
+									    , nlt.tm_mday
+									    , nlt.tm_year % 100);
 									return strdup(str);
 								case 'T':
 									ctime_r(&now, str);
@@ -7589,6 +7595,7 @@ rv_date(const char* const var, const void* const data)
 	printf("TODO: Unhandled date variable $%s$\n", var);
 	return NULL;
 }
+
 static char*
 rv_time(const char* const var, const void* const data)
 {
@@ -7622,8 +7629,8 @@ rv_time(const char* const var, const void* const data)
 		case 'T':
 			switch (var[4]) {
 				case 0:
-					snprintf(str, sizeof(str), "%02d:%02d:%02d", nlt.tm_hour, nlt.tm_min,
-					    nlt.tm_sec);
+					snprintf(str, sizeof(str), "%02d:%02d:%02d", nlt.tm_hour, nlt.tm_min
+					    , nlt.tm_sec);
 					return strdup(str);
 				case 'Z':
 					strftime(str, sizeof(str), "%Z", &nlt);
@@ -7633,6 +7640,7 @@ rv_time(const char* const var, const void* const data)
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
+
 static char*
 rv_sound(const char* const var, const void* const data)
 {
@@ -7683,6 +7691,7 @@ rv_sound(const char* const var, const void* const data)
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
+
 static char*
 rv_mouse(const char* const var, const void* const data)
 {
@@ -7707,25 +7716,25 @@ rv_mouse(const char* const var, const void* const data)
 				case 'Y':
 					switch (var[2]) {
 						case 0:
-							snprintf(str,
-							    sizeof(str),
-							    "%0*x:%0*x",
-							    fwidth,
-							    rip_mouse_event.x,
-							    fwidth,
-							    rip_mouse_event.y);
+							snprintf(str
+							    , sizeof(str)
+							    , "%0*x:%0*x"
+							    , fwidth
+							    , rip_mouse_event.x
+							    , fwidth
+							    , rip_mouse_event.y);
 							return strdup(str);
 						case 'M':
-							snprintf(str,
-							    sizeof(str),
-							    "%0*x:%0*x:%d%d%d",
-							    fwidth,
-							    rip_mouse_event.x,
-							    fwidth,
-							    rip_mouse_event.y,
-							    rip_mouse_event.buttons & 1,
-							    rip_mouse_event.buttons >> 1 & 1,
-							    rip_mouse_event.buttons >> 2 & 1);
+							snprintf(str
+							    , sizeof(str)
+							    , "%0*x:%0*x:%d%d%d"
+							    , fwidth
+							    , rip_mouse_event.x
+							    , fwidth
+							    , rip_mouse_event.y
+							    , rip_mouse_event.buttons & 1
+							    , rip_mouse_event.buttons >> 1 & 1
+							    , rip_mouse_event.buttons >> 2 & 1);
 							return strdup(str);
 					}
 					break;
@@ -7737,12 +7746,12 @@ rv_mouse(const char* const var, const void* const data)
 		case 'M':
 			switch (var[1]) {
 				case 0:
-					snprintf(str,
-					    sizeof(str),
-					    "%d%d%d",
-					    rip_mouse_event.buttons & 1,
-					    rip_mouse_event.buttons >> 1 & 1,
-					    rip_mouse_event.buttons >> 2 & 1);
+					snprintf(str
+					    , sizeof(str)
+					    , "%d%d%d"
+					    , rip_mouse_event.buttons & 1
+					    , rip_mouse_event.buttons >> 1 & 1
+					    , rip_mouse_event.buttons >> 2 & 1);
 					return strdup(str);
 				case 'S':
 					return strdup("YES");
@@ -7752,6 +7761,7 @@ rv_mouse(const char* const var, const void* const data)
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
+
 static uint32_t
 map_rip_color(int color)
 {
@@ -7771,6 +7781,7 @@ map_rip_color(int color)
 	}
 	return col;
 }
+
 static char*
 rv_reset(const char* const var, const void* const data)
 {
@@ -7832,6 +7843,7 @@ rv_reset(const char* const var, const void* const data)
 	hold_update = oldhold;
 	return NULL;
 }
+
 static char*
 rv_save(const char* const var, const void* const data)
 {
@@ -7844,6 +7856,7 @@ rv_save(const char* const var, const void* const data)
 	printf("TODO: Save RIP Variables (%s)\n", var);
 	return NULL;
 }
+
 static char*
 rv_restore(const char* const var, const void* const data)
 {
@@ -7856,6 +7869,7 @@ rv_restore(const char* const var, const void* const data)
 	printf("TODO: Restore RIP Variables (%s)\n", var);
 	return NULL;
 }
+
 static int
 unmap_rip_x(int x)
 {
@@ -7877,6 +7891,7 @@ unmap_rip_x(int x)
 		x = rip.x_dim - 1;
 	return rip.xunmap[x];
 }
+
 static int
 unmap_rip_y(int y)
 {
@@ -7898,6 +7913,7 @@ unmap_rip_y(int y)
 		y = rip.y_dim - 1;
 	return rip.yunmap[y];
 }
+
 static int
 map_rip_x(int x)
 {
@@ -7930,6 +7946,7 @@ map_rip_x(int x)
 		x = rip.x_dim;
 	return rip.xmap[x];
 }
+
 static int
 map_rip_y(int y)
 {
@@ -7962,16 +7979,19 @@ map_rip_y(int y)
 		y = rip.y_dim;
 	return rip.ymap[y];
 }
+
 static void
 scale_setpixel(int x, int y, uint32_t color)
 {
 	setpixel(map_rip_x(x), map_rip_y(y), color);
 }
+
 static void
 rip_setpixel(int x, int y, int color)
 {
 	setpixel(map_rip_x(x), map_rip_y(y), map_rip_color(color));
 }
+
 static char*
 rv_erase(const char* const var, const void* const data)
 {
@@ -7994,24 +8014,28 @@ rv_erase(const char* const var, const void* const data)
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
+
 static char*
 rv_mouse_kill(const char* const var, const void* const data)
 {
 	kill_mouse_fields();
 	return NULL;
 }
+
 static char*
 rv_disable(const char* const var, const void* const data)
 {
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
+
 static char*
 rv_termstat(const char* const var, const void* const data)
 {
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
+
 static char*
 rv_termset(const char* const var, const void* const data)
 {
@@ -8125,38 +8149,44 @@ rv_termset(const char* const var, const void* const data)
 	printf("TODO: rv_termset(%s)\n", var);
 	return NULL;
 }
+
 static char*
 rv_hotkey(const char* const var, const void* const data)
 {
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
+
 static char*
 rv_exploit(const char* const var, const void* const data)
 {
 	printf("TODO: RIP Variables (%s)\n", var);
 	return NULL;
 }
+
 static char*
 rv_paste(const char* const var, const void* const data)
 {
-	if (rip.clipboard)
-		setpixels(rip.clipx,
-		    rip.clipy,
-		    rip.clipx + rip.clipboard->width - 1,
-		    rip.clipy + rip.clipboard->height - 1,
-		    0,
-		    0,
-		    rip.clipboard,
-		    NULL);
+	if (rip.clipboard) {
+		setpixels(rip.clipx
+		    , rip.clipy
+		    , rip.clipx + rip.clipboard->width - 1
+		    , rip.clipy + rip.clipboard->height - 1
+		    , 0
+		    , 0
+		    , rip.clipboard
+		    , NULL);
+	}
 	return NULL;
 }
+
 static bool
 no_viewport(void)
 {
 	return rip.viewport.sx == 0 && rip.viewport.sy == 0
 	       && rip.viewport.ex == 0 && rip.viewport.ey == 0;
 }
+
 static int
 parse_mega(const char*buf, int fieldwidth)
 {
@@ -8185,6 +8215,7 @@ parse_mega(const char*buf, int fieldwidth)
 	}
 	return ret;
 }
+
 static char*
 parse_string(const char*buf)
 {
@@ -8200,6 +8231,7 @@ parse_string(const char*buf)
 	*p = 0;
 	return ret;
 }
+
 static void
 buffer_rip(const BYTE*buf, unsigned len)
 {
@@ -8222,6 +8254,7 @@ buffer_rip(const BYTE*buf, unsigned len)
 	pending_len += len;
 	pending[pending_len] = 0;
 }
+
 static void
 buffer_data(const BYTE*buf, unsigned len)
 {
@@ -8244,6 +8277,7 @@ buffer_data(const BYTE*buf, unsigned len)
 	moredata_len += len;
 	moredata[moredata_len] = 0;
 }
+
 static int
 next_char(const char*buf, size_t*pos)
 {
@@ -8287,6 +8321,7 @@ enum do_states {
 	,
 	ARGUMENTS
 };
+
 static uint32_t
 pixel2color(uint32_t pix)
 {
@@ -8307,6 +8342,7 @@ pixel2color(uint32_t pix)
 	}
 	return i;
 }
+
 static void
 draw_pixel(int x, int y)
 {
@@ -8326,6 +8362,7 @@ draw_pixel(int x, int y)
 		rip_setpixel(rip.viewport.sx + x, rip.viewport.sy + y, rip.color);
 	}
 }
+
 // TODO: Should should only be used by things that use the write mode.
 static void
 set_pixel(int x, int y, uint32_t fg)
@@ -8336,6 +8373,7 @@ set_pixel(int x, int y, uint32_t fg)
 		return;
 	scale_setpixel(rip.viewport.sx + x, rip.viewport.sy + y, fg);
 }
+
 static void
 native_fill_pixel(int x, int y)
 {
@@ -8344,6 +8382,7 @@ native_fill_pixel(int x, int y)
 	else
 		setpixel(x, y, map_rip_color(0));
 }
+
 static void
 fill_pixel(int x, int y)
 {
@@ -8357,6 +8396,7 @@ fill_pixel(int x, int y)
 	y = map_rip_y(y);
 	native_fill_pixel(x, y);
 }
+
 static int
 char_width_raw(char ch)
 {
@@ -8379,6 +8419,7 @@ char_width_raw(char ch)
 		return rip_fonts[rip.font.num - 1][0x90 + nchars * 2 + chnum];
 	}
 }
+
 static int
 char_width(char ch)
 {
@@ -8394,6 +8435,7 @@ char_width(char ch)
 		return char_width_raw(ch) * mult / div;
 	}
 }
+
 static void
 char_top_base(char ch, int*top, int*bottom)
 {
@@ -8420,6 +8462,7 @@ char_top_base(char ch, int*top, int*bottom)
 		*bottom = (int)font_metrics[rip.font.num][rip.font.size - 1].base;
 	}
 }
+
 static void
 char_top_bottom(char ch, int*top, int*bottom)
 {
@@ -8452,6 +8495,7 @@ char_top_bottom(char ch, int*top, int*bottom)
 		}
 	}
 }
+
 static int
 font_height()
 {
@@ -8462,6 +8506,7 @@ font_height()
 		return 8 * rip.font.size;
 	return (((char)rip_fonts[rip.font.num - 1][0x88]) - ((char)rip_fonts[rip.font.num - 1][0x8a])) * mult / div;
 }
+
 static void
 write_char(char ch)
 {
@@ -8504,8 +8549,9 @@ write_char(char ch)
                                                         // NOTE: Bitmap fonts don't use write mode...
                                                         // draw_pixel(rip.x + (x * rip.font.size) + xs, rip.y + (y *
                                                         // rip.font.size)+ ys);
-							set_pixel(rip.x + (x * rip.font.size) + xs,
-							    rip.y + (y * rip.font.size) + ys, map_rip_color(rip.color));
+							set_pixel(rip.x + (x * rip.font.size) + xs
+							    , rip.y + (y * rip.font.size) + ys,
+							    map_rip_color(rip.color));
 						}
 					}
 				}
@@ -8610,6 +8656,7 @@ write_char(char ch)
 		rip.line_pattern = orig_pattern;
 	}
 }
+
 static void
 write_text(const char*str)
 {
@@ -8645,6 +8692,7 @@ write_text(const char*str)
 			write_char(*p);
 	}
 }
+
 static void
 draw_line(int x1, int y1, int x2, int y2)
 {
@@ -8755,6 +8803,7 @@ draw_line(int x1, int y1, int x2, int y2)
 		rip.line_width = 3;
 	}
 }
+
 /*
  * TODO: This is an egregious copy/paste just for the XOR draw mode
  */
@@ -8879,6 +8928,7 @@ set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width
 // }
 	}
 }
+
 void
 chisel_inset(int height, int*xinset, int*yinset)
 {
@@ -8925,6 +8975,7 @@ chisel_inset(int height, int*xinset, int*yinset)
 	*xinset = 13;
 	*yinset = 9;
 }
+
 static void
 invert_rect(int x1, int y1, int x2, int y2)
 {
@@ -8970,6 +9021,7 @@ invert_rect(int x1, int y1, int x2, int y2)
 	setpixels(x1, y1, x2, y2, 0, 0, pix, NULL);
 	freepixels(pix);
 }
+
 /*
  * TODO: This is slow and still broken.  While it's fine for the
  *       pie slices because of their inherent simplicity, it's
@@ -9142,6 +9194,7 @@ do_fill(bool overwrite)
 	}
 	freepixels(pix);
 }
+
 /*
  * TODO: Not sure why I need to subtract one from x2/y2 here...
  */
@@ -9217,20 +9270,20 @@ draw_button(struct rip_button_style*but, bool inverted)
 		for (i = 1; i <= but->bevel_size; i++) {
 			set_line(but->box.x1 - i, but->box.y1 - i, but->box.x2 - 1 + i, but->box.y1 - i, ch, 0xffff, 1);
 			set_line(but->box.x1 - i, but->box.y1 - i, but->box.x1 - i, but->box.y2 - 1 + i, ch, 0xffff, 1);
-			set_line(but->box.x2 - 1 + i,
-			    but->box.y2 - 1 + i,
-			    but->box.x2 - 1 + i,
-			    but->box.y1 - i,
-			    cs,
-			    0xffff,
-			    1);
-			set_line(but->box.x2 - 1 + i,
-			    but->box.y2 - 1 + i,
-			    but->box.x1 - i,
-			    but->box.y2 - 1 + i,
-			    cs,
-			    0xffff,
-			    1);
+			set_line(but->box.x2 - 1 + i
+			    , but->box.y2 - 1 + i
+			    , but->box.x2 - 1 + i
+			    , but->box.y1 - i
+			    , cs
+			    , 0xffff
+			    , 1);
+			set_line(but->box.x2 - 1 + i
+			    , but->box.y2 - 1 + i
+			    , but->box.x1 - i
+			    , but->box.y2 - 1 + i
+			    , cs
+			    , 0xffff
+			    , 1);
 			set_pixel(but->box.x1 - i, but->box.y1 - i, cc);
 			set_pixel(but->box.x2 - 1 + i, but->box.y1 - i, cc);
 			set_pixel(but->box.x1 - i, but->box.y2 - 1 + i, cc);
@@ -9253,75 +9306,75 @@ draw_button(struct rip_button_style*but, bool inverted)
 	}
 	if (but->flags.chisel) {
 		chisel_inset(but->box.y2 - but->box.y1 + 1, &xinset, &yinset);
-		set_line(but->box.x1 + xinset,
-		    but->box.y1 + yinset,
-		    but->box.x2 - xinset - 1,
-		    but->box.y1 + yinset,
-		    cs,
-		    0xffff,
-		    1);
-		set_line(but->box.x1 + xinset,
-		    but->box.y1 + yinset,
-		    but->box.x1 + xinset,
-		    but->box.y2 - yinset - 1,
-		    cs,
-		    0xffff,
-		    1);
+		set_line(but->box.x1 + xinset
+		    , but->box.y1 + yinset
+		    , but->box.x2 - xinset - 1
+		    , but->box.y1 + yinset
+		    , cs
+		    , 0xffff
+		    , 1);
+		set_line(but->box.x1 + xinset
+		    , but->box.y1 + yinset
+		    , but->box.x1 + xinset
+		    , but->box.y2 - yinset - 1
+		    , cs
+		    , 0xffff
+		    , 1);
 
-		set_line(but->box.x1 + xinset + 1,
-		    but->box.y1 + yinset + 1,
-		    but->box.x2 - xinset - 1,
-		    but->box.y1 + yinset + 1,
-		    ch,
-		    0xffff,
-		    1);
-		set_line(but->box.x2 - xinset - 1,
-		    but->box.y1 + yinset + 1,
-		    but->box.x2 - xinset - 1,
-		    but->box.y2 - yinset - 1,
-		    ch,
-		    0xffff,
-		    1);
-		set_line(but->box.x2 - xinset - 1,
-		    but->box.y2 - yinset - 1,
-		    but->box.x1 + xinset + 1,
-		    but->box.y2 - yinset - 1,
-		    ch,
-		    0xffff,
-		    1);
-		set_line(but->box.x1 + xinset + 1,
-		    but->box.y2 - yinset - 1,
-		    but->box.x1 + xinset + 1,
-		    but->box.y1 + yinset + 1,
-		    ch,
-		    0xffff,
-		    1);
+		set_line(but->box.x1 + xinset + 1
+		    , but->box.y1 + yinset + 1
+		    , but->box.x2 - xinset - 1
+		    , but->box.y1 + yinset + 1
+		    , ch
+		    , 0xffff
+		    , 1);
+		set_line(but->box.x2 - xinset - 1
+		    , but->box.y1 + yinset + 1
+		    , but->box.x2 - xinset - 1
+		    , but->box.y2 - yinset - 1
+		    , ch
+		    , 0xffff
+		    , 1);
+		set_line(but->box.x2 - xinset - 1
+		    , but->box.y2 - yinset - 1
+		    , but->box.x1 + xinset + 1
+		    , but->box.y2 - yinset - 1
+		    , ch
+		    , 0xffff
+		    , 1);
+		set_line(but->box.x1 + xinset + 1
+		    , but->box.y2 - yinset - 1
+		    , but->box.x1 + xinset + 1
+		    , but->box.y1 + yinset + 1
+		    , ch
+		    , 0xffff
+		    , 1);
 
-		set_line(but->box.x1 + xinset + 2,
-		    but->box.y2 - 2 - yinset,
-		    but->box.x2 - xinset - 2,
-		    but->box.y2 - 2 - yinset,
-		    cs,
-		    0xffff,
-		    1);
-		set_line(but->box.x2 - xinset - 2,
-		    but->box.y2 - 2 - yinset,
-		    but->box.x2 - xinset - 2,
-		    but->box.y1 + yinset + 2,
-		    cs,
-		    0xffff,
-		    1);
+		set_line(but->box.x1 + xinset + 2
+		    , but->box.y2 - 2 - yinset
+		    , but->box.x2 - xinset - 2
+		    , but->box.y2 - 2 - yinset
+		    , cs
+		    , 0xffff
+		    , 1);
+		set_line(but->box.x2 - xinset - 2
+		    , but->box.y2 - 2 - yinset
+		    , but->box.x2 - xinset - 2
+		    , but->box.y1 + yinset + 2
+		    , cs
+		    , 0xffff
+		    , 1);
 	}
 
         // TODO: Handle icons
 	if (but->flags.autostamp) {
 		if (rip.clipboard)
 			freepixels(rip.clipboard);
-		rip.clipboard = getpixels(but->box.x1 - but->bevel_size,
-		        but->box.y1 - but->bevel_size,
-		        but->box.x2 + but->bevel_size,
-		        but->box.y2 + but->bevel_size,
-		        false);
+		rip.clipboard = getpixels(but->box.x1 - but->bevel_size
+		        , but->box.y1 - but->bevel_size
+		        , but->box.x2 + but->bevel_size
+		        , but->box.y2 + but->bevel_size
+		        , false);
 		rip.bstyle.button = BUTTON_TYPE_CLIPBOARD;
 		rip.bstyle.flags.chisel = false;
 		rip.bstyle.flags.bevel = false;
@@ -9414,13 +9467,13 @@ draw_button(struct rip_button_style*but, bool inverted)
 					    && (toupper(*p) == toupper(but->hotkey))) {
 						char_top_bottom(*p, &x, &y);
 						x = char_width(*p);
-						set_line(rip.x - x,
-						    rip.y + y + 2 + but->flags.dropshadow,
-						    rip.x - 2,
-						    rip.y + y + 2 + but->flags.dropshadow,
-						    ul,
-						    0xffff,
-						    1);
+						set_line(rip.x - x
+						    , rip.y + y + 2 + but->flags.dropshadow
+						    , rip.x - 2
+						    , rip.y + y + 2 + but->flags.dropshadow
+						    , ul
+						    , 0xffff
+						    , 1);
 						ulined = true;
 					}
 				}
@@ -9430,6 +9483,7 @@ draw_button(struct rip_button_style*but, bool inverted)
 		}
 	}
 }
+
 static void
 add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, char*text)
 {
@@ -9508,6 +9562,7 @@ add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, char*text)
 		free(but);
 	}
 }
+
 static void
 append_str(uint8_t**resp, size_t*size, size_t*pos, const char*str)
 {
@@ -9536,6 +9591,7 @@ append_str(uint8_t**resp, size_t*size, size_t*pos, const char*str)
 	memcpy(&(*resp)[*pos], str, slen + 1);
 	(*pos) += slen;
 }
+
 static char*
 do_popup(const char* const str)
 {
@@ -9801,6 +9857,7 @@ do_popup(const char* const str)
 		return NULL;
 	return p;
 }
+
 static void
 handle_command_str(const char*incmd)
 {
@@ -9867,6 +9924,7 @@ handle_command_str(const char*incmd)
 		ripbufpos = 0;
 	}
 }
+
 static void
 kill_saved_mouse_fields(void)
 {
@@ -9891,6 +9949,7 @@ kill_saved_mouse_fields(void)
 		}
 	}
 }
+
 static void
 copy_mouse_fields(struct mouse_field*from, struct mouse_field**to)
 {
@@ -9926,6 +9985,7 @@ copy_mouse_fields(struct mouse_field*from, struct mouse_field**to)
 		*dst = new_field;
 	}
 }
+
 static void
 kill_mouse_fields(void)
 {
@@ -9970,6 +10030,7 @@ kill_mouse_fields(void)
 		}
 	}
 }
+
 // TODO: this currently doesn't seem to work (shocker!)
 static void
 reinit_screen(uint8_t*font, int fx, int fy)
@@ -10027,14 +10088,14 @@ reinit_screen(uint8_t*font, int fx, int fy)
 	clrscr();
 	get_term_win_size(&term.width, &term.height, NULL, NULL, &term.nostatus);
 	term.width = cols;
-	cterm = cterm_init(rows + (term.nostatus ? 0 : -1),
-	        cols,
-	        oldcterm.x,
-	        oldcterm.y,
-	        oldcterm.backlines,
-	        oldcterm.backwidth,
-	        oldcterm.scrollback,
-	        oldcterm.emulation);
+	cterm = cterm_init(rows + (term.nostatus ? 0 : -1)
+	        , cols
+	        , oldcterm.x
+	        , oldcterm.y
+	        , oldcterm.backlines
+	        , oldcterm.backwidth
+	        , oldcterm.scrollback
+	        , oldcterm.emulation);
 	cterm->apc_handler = oldcterm.apc_handler;
 	cterm->apc_handler_data = oldcterm.apc_handler_data;
 	cterm->mouse_state_change = oldcterm.mouse_state_change;
@@ -10068,6 +10129,7 @@ reinit_screen(uint8_t*font, int fx, int fy)
 // There Is No Royal Road to Programs - A Trilogy on Raster Ellipses and Programming Methodology
 #define incx() x++, dxt += d2xt, t += dxt
 #define incy() y--, dyt += d2yt, t += dyt
+
 static void
 full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t colour)
 {
@@ -10143,7 +10205,7 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 			}
 		}
 		skip = false;
-		if ((t + b2 * x <= crit1) /* e(x+1,y-1/2) <= 0 */
+		if ((t + b2 * x <= crit1)       /* e(x+1,y-1/2) <= 0 */
 		    || (t + a2 * y <= crit3)) { /* e(x+1/2,y) <= 0 */
 			incx();
 
@@ -10177,6 +10239,7 @@ struct saved_point {
 	int                oy;
 	struct saved_point*next;
 };
+
 static void
 bff_push(struct saved_point**stack, int x, int y, int oy)
 {
@@ -10190,6 +10253,7 @@ bff_push(struct saved_point**stack, int x, int y, int oy)
 		*stack = new;
 	}
 }
+
 /*
  * The RIPterm flood fill is a raster-based fill with (at least) three bugs...
  * 1) It will not fill through a single pixel hole against the left or
@@ -10201,15 +10265,15 @@ bff_push(struct saved_point**stack, int x, int y, int oy)
  *    (see fiero.rip)
  */
 static void
-broken_flood_fill(struct ciolib_pixels*pix,
-    int                                x,
-    int                                y,
-    uint32_t                           edge,
-    uint32_t                           fillfg,
-    uint32_t                           fillbg,
-    bool                               iszero,
-    int                                oy,
-    struct saved_point               **orig_stack)
+broken_flood_fill(struct ciolib_pixels*pix
+    , int                              x
+    , int                              y
+    , uint32_t                         edge
+    , uint32_t                         fillfg
+    , uint32_t                         fillbg
+    , bool                             iszero
+    , int                              oy
+    , struct saved_point             **orig_stack)
 {
 	bool                nextline = false;
 	bool                prevline = false;
@@ -10325,6 +10389,7 @@ broken_flood_fill(struct ciolib_pixels*pix,
 }
 
 #if 0
+
 static void
 flood_fill(struct ciolib_pixels*pix, int x1, int y1, uint32_t edge, uint32_t fillfg, uint32_t fillbg)
 {
@@ -10383,6 +10448,7 @@ struct point {
 	y2 = parse_mega(&args[6], 2); \
 	if (y2 == -1) \
 	break;
+
 static void
 rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int cnt, uint32_t fg)
 {
@@ -10412,15 +10478,16 @@ rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int c
 	targets[i++] = x4;
 	targets[i++] = y4;
 	for (j = 2; j < i; j += 2)
-		set_line(targets[j - 2],
-		    targets[j - 1],
-		    targets[j],
-		    targets[j + 1],
-		    fg,
-		    rip.line_pattern,
-		    rip.line_width);
+		set_line(targets[j - 2]
+		    , targets[j - 1]
+		    , targets[j]
+		    , targets[j + 1]
+		    , fg
+		    , rip.line_pattern
+		    , rip.line_width);
 	free(targets);
 }
+
 static void
 rip_poly_bezier(const char*args, bool filled, bool closed)
 {
@@ -10493,6 +10560,7 @@ rip_poly_bezier(const char*args, bool filled, bool closed)
 }
 
 #define ADJUST_LIMIT(name, var) if (var < min ## name) min ## name = var; if (var > max ## name) max ## name = var;
+
 static void
 do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 {
@@ -10517,15 +10585,16 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 				case 0:
 					switch (cmd) {
 						case '#': // RIP_NO_MORE !|#
-                                                        /*
-                                                         * This command indicates that RIPscrip commands are complete.
-                                                         *  This
-                                                         * allows the terminal program to activate Mouse Regions, or
-                                                         * respond to
-                                                         * queued up Mouse Clicks without disturbing the natural flow of
-                                                         * the
-                                                         * script transmission.
-                                                         */
+                                                          /*
+                                                           * This command indicates that RIPscrip commands are complete.
+                                                           *  This
+                                                           * allows the terminal program to activate Mouse Regions, or
+                                                           * respond to
+                                                           * queued up Mouse Clicks without disturbing the natural flow
+                                                           * of
+                                                           * the
+                                                           * script transmission.
+                                                           */
 
                                                         /*
                                                          * TODO: It is strongly implied that the terminal
@@ -10714,8 +10783,8 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 								    / vstat.aspect_height);
 							}
 							pthread_mutex_unlock(&vstatlock);
-							full_ellipse(x1, y1, x2, y2, arg1, arg3, false,
-							    map_rip_color(rip.color));
+							full_ellipse(x1, y1, x2, y2, arg1, arg3, false
+							    , map_rip_color(rip.color));
 							break;
 						case 'B': // RIP_BAR !|B <x0> <y0> <x1> <y1>
                                                         /*
@@ -10777,8 +10846,8 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							pthread_mutex_unlock(&vstatlock);
 							if (arg1 == 1)
 								arg3 = 1;
-							full_ellipse(x1, y1, 0, 360, arg1, arg3, false,
-							    map_rip_color(rip.color));
+							full_ellipse(x1, y1, 0, 360, arg1, arg3, false
+							    , map_rip_color(rip.color));
 							break;
 						case 'E': // RIP_ERASE_VIEW !|E
                                                         /* This command clears the Graphics Viewport to the current
@@ -10832,14 +10901,14 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 								arg2 = vstat.scrnheight - 1;
 							pthread_mutex_unlock(&vstatlock);
 
-							struct ciolib_pixels*pix = getpixels(rip.viewport.sx,
-							        rip.viewport.sy,
-							        rip.viewport.ex,
-							        arg2,
-							        false);
+							struct ciolib_pixels*pix = getpixels(rip.viewport.sx
+							        , rip.viewport.sy
+							        , rip.viewport.ex
+							        , arg2
+							        , false);
 
-#if 0                                                           // This slow draw is useful for debugging flood fill
-                                                                // issues...
+#if 0 // This slow draw is useful for debugging flood fill
+                                                        // issues...
 							printf("Flooding %d/%d!\n", x1, y1);
 							uint32_t xx;
 							attr2palette(15, &fg, &xx);
@@ -10860,28 +10929,30 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							fbg = map_rip_color(0);
 							for (i = 0; i < pix->width * pix->height; i++)
 								pix->pixels[i] &= 0x80ffffff;
-							if ((x1 < pix->width) && (y1 < pix->height))
-								broken_flood_fill(pix,
-								    x1,
-								    y1,
-								    fg,
-								    ffg,
-								    fbg,
-								    rip.fill_color == 0,
-								    y1,
-								    NULL);
-							else
+							if ((x1 < pix->width) && (y1 < pix->height)) {
+								broken_flood_fill(pix
+								    , x1
+								    , y1
+								    , fg
+								    , ffg
+								    , fbg
+								    , rip.fill_color == 0
+								    , y1
+								    , NULL);
+							}
+							else {
 								puts("TODO: Flood fill off screen");
+							}
 							for (i = 0; i < pix->width * pix->height; i++)
 								pix->pixels[i] &= 0x80ffffff;
-							setpixels(rip.viewport.sx,
-							    rip.viewport.sy,
-							    rip.viewport.ex,
-							    arg2,
-							    0,
-							    0,
-							    pix,
-							    NULL);
+							setpixels(rip.viewport.sx
+							    , rip.viewport.sy
+							    , rip.viewport.ex
+							    , arg2
+							    , 0
+							    , 0
+							    , pix
+							    , NULL);
 							freepixels(pix);
 							break;
 						case 'H': // RIP_HOME !|H
@@ -10962,13 +11033,13 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							if ((arg3 > 90) && (arg3 < 270))
 								ey = 0 - ey;
 							ey = y1 - ey;
-							set_line(x1,
-							    y1,
-							    x1 + nearbyint(cos(M_PI / 180.0) * arg3) * x2,
-							    y1 + nearbyint(sin(M_PI / 180.0) * arg3) * y2,
-							    fg,
-							    0xffff,
-							    rip.line_width);
+							set_line(x1
+							    , y1
+							    , x1 + nearbyint(cos(M_PI / 180.0) * arg3) * x2
+							    , y1 + nearbyint(sin(M_PI / 180.0) * arg3) * y2
+							    , fg
+							    , 0xffff
+							    , rip.line_width);
 
                                                         // TODO: Lazy lazy fill...
 							do_fill(false);
@@ -11045,8 +11116,8 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							y2 = parse_mega(&args[10], 2);
 							if ((x2 < 0) || (y2 < 0))
 								break;
-							full_ellipse(x1, y1, arg1, arg2, x2, y2, false,
-							    map_rip_color(rip.color));
+							full_ellipse(x1, y1, arg1, arg2, x2, y2, false
+							    , map_rip_color(rip.color));
 							break;
 						case 'P': // RIP_POLYGON !|P <npoints> <x1> <y1> ... <xn> <yn>
                                                         /* This command will draw a multi-sided closed polygon.  The
@@ -11155,8 +11226,8 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          * predefined fill patterns.  They are:
                                                          *
                                                          *     Pattern  Description                 Example       Misc
-                                                         * 
-                                                         *   
+                                                         *
+                                                         *
                                                          * -----------------------------------------------------------------
                                                          *       00     Fill with background color                (color
                                                          * #0)
@@ -11214,9 +11285,10 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          * by the most recent settings of these commands:
                                                          *
                                                          *      Command            Description of Command
+                                                         *
+                                                         *
                                                          * 
-                                                         *   
-                                                         *  ----------------------------------------------------------------
+                                                         * ----------------------------------------------------------------
                                                          *      RIP_FONT_STYLE     font style (character set, direction,
                                                          * size)
                                                          *      RIP_WRITE_MODE     drawing mode (normal or XOR)
@@ -11329,6 +11401,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							break;
 						case 'Z': // RIP_BEZIER !|Z <x1> <y1> <x2> <y2> <x3> <y3> <x4> <y4>
                                                           // <cnt>
+
                                                         /* This command provides customizable curves.  Four control
                                                          * points are
                                                          * used to create the shape of the curve.  The curves beginning
@@ -11398,16 +11471,16 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 								yp[i] = parse_mega(&args[2 + i * 4], 2);
 							}
 							arg1 = parse_mega(&args[16], 2);
-							rip_bezier(xp[0],
-							    yp[0],
-							    xp[1],
-							    yp[1],
-							    xp[2],
-							    yp[2],
-							    xp[3],
-							    yp[3],
-							    arg1,
-							    map_rip_color(rip.color));
+							rip_bezier(xp[0]
+							    , yp[0]
+							    , xp[1]
+							    , yp[1]
+							    , xp[2]
+							    , yp[2]
+							    , xp[3]
+							    , yp[3]
+							    , arg1
+							    , map_rip_color(rip.color));
 							break;
 						case 'a': // RIP_ONE_PALETTE !|a <color> <value>
                                                         /* This command changes one color in the 16-color palette.  The
@@ -11434,10 +11507,10 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 								break;
 							curr_ega_palette[arg1] = arg2;
 							attr2palette(arg1, &fg, NULL);
-							setpalette(fg,
-							    ega_palette[arg2][0],
-							    ega_palette[arg2][1],
-							    ega_palette[arg2][2]);
+							setpalette(fg
+							    , ega_palette[arg2][0]
+							    , ega_palette[arg2][1]
+							    , ega_palette[arg2][2]);
 
                                                         // TODO: Extended palette.
 							if (arg1 < 16)
@@ -11526,9 +11599,9 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 								fnt = ripfnt7x8;
 							}
 							else {
-								printf("Unsupported font size %dx%d\n",
-								    maxwidth,
-								    maxheight);
+								printf("Unsupported font size %dx%d\n"
+								    , maxwidth
+								    , maxheight);
 								fnt = ripfnt7x8;
 								maxwidth = 7;
 								maxheight = 8;
@@ -11633,6 +11706,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							break;
 						case 'i': // RIP_OVAL_PIE_SLICE !|i <x> <y> <st_ang> <e_ang> <radx>
                                                           // <rady>
+
                                                         /* This command draws an  "elliptical pie slice".  It obeys all
                                                          * of the
                                                          * same commands as the Elliptical Arc command described above.
@@ -11782,36 +11856,39 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 						case 'o': // RIP_FILLED_OVAL
 							handled = true;
 							GET_XY();
-							full_ellipse(x1,
-							    y1,
-							    0,
-							    360,
-							    parse_mega(&args[4], 2),
-							    parse_mega(&args[6], 2),
-							    true,
-							    map_rip_color(rip.color));
+							full_ellipse(x1
+							    , y1
+							    , 0
+							    , 360
+							    , parse_mega(&args[4], 2)
+							    , parse_mega(&args[6], 2)
+							    , true
+							    , map_rip_color(rip.color));
 							break;
 						case 'p': // RIP_FILL_POLYGON !|p <npoints> <x1> <y1> ... <xn> <yn>
-                                                        /* This command is identical to RIP_POLYGON, except that the
-                                                         * interior of
-                                                         * the polygon is filled with the current fill color and fill
-                                                         * pattern.
-                                                         * The actual outline of the polygon is drawn using the current
-                                                         * drawing
-                                                         * color, line pattern and thickness.
-                                                         *
-                                                         * NOTE:  You will get unusual effects if the lines of the
-                                                         * polygon
-                                                         *        overlap, creating a polygon with internal "gaps".
-                                                         *  (The rule
-                                                         *        is this: regions that are "inside" the polygon an even
-                                                         * number
-                                                         *        of times due to overlap are NOT filled.)  The interior
-                                                         * fill
-                                                         *        does not utilize Write Mode, but the outline of the
-                                                         * polygon
-                                                         *        does.
-                                                         */
+                                                          /* This command is identical to RIP_POLYGON, except that the
+                                                           * interior of
+                                                           * the polygon is filled with the current fill color and fill
+                                                           * pattern.
+                                                           * The actual outline of the polygon is drawn using the
+                                                           * current
+                                                           * drawing
+                                                           * color, line pattern and thickness.
+                                                           *
+                                                           * NOTE:  You will get unusual effects if the lines of the
+                                                           * polygon
+                                                           *        overlap, creating a polygon with internal "gaps".
+                                                           *  (The rule
+                                                           *        is this: regions that are "inside" the polygon an
+                                                           * even
+                                                           * number
+                                                           *        of times due to overlap are NOT filled.)  The
+                                                           * interior
+                                                           * fill
+                                                           *        does not utilize Write Mode, but the outline of the
+                                                           * polygon
+                                                           *        does.
+                                                           */
 #if 0
 							if (rip.version == RIP_VERSION_3) {
 								handled = true;
@@ -11950,19 +12027,20 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							}
 							if (rip.color != 0) {
 								for (i = 1; i < arg1; i++)
-									draw_line(argv[i - 1].x,
-									    argv[i - 1].y,
-									    argv[i].x,
-									    argv[i].y);
-								draw_line(argv[arg1 - 1].x,
-								    argv[arg1 - 1].y,
-								    argv[0].x,
-								    argv[0].y);
+									draw_line(argv[i - 1].x
+									    , argv[i - 1].y
+									    , argv[i].x
+									    , argv[i].y);
+								draw_line(argv[arg1 - 1].x
+								    , argv[arg1 - 1].y
+								    , argv[0].x
+								    , argv[0].y);
 							}
 							free(argv);
 							break;
 						case 's': // RIP_FILL_PATTERN !|s <c1> <c2> <c3> <c4> <c5> <c6> <c7>
                                                           // <c8> <col>
+
                                                         /* This command allows you to specify a user-defined, custom
                                                          * Fill
                                                          * Pattern.  This pattern supersedes the predefined patterns of
@@ -12036,39 +12114,41 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							rip_poly_bezier(args, false, false);
 							break;
 						case 'v': // RIP_VIEWPORT !|v <x0> <y0> <x1> <y1>
-                                                        /* This command defines the (X,Y) pixel boundaries of the
-                                                         * RIPscrip
-                                                         * graphics window, which will contain all RIPscrip graphics
-                                                         * output.
-                                                         * ASCII/ANSI text will be displayed in the virtual TTY window
-                                                         * defined
-                                                         * by the RIP_TEXT_WINDOW command above.  (x0,y0) defines the
-                                                         * upper-left
-                                                         * corner of the graphics viewport, and (x1,y1) defines the
-                                                         * lower-right
-                                                         * corner (inclusive).  The viewport may be disabled, so
-                                                         * RIPscrip
-                                                         * graphics commands are ignored, by setting all parameters to
-                                                         * zero (0).
-                                                         *
-                                                         * Graphics displayed in the viewport are "truncated" at this
-                                                         * rectangular
-                                                         * border, meaning if a circle would normally extend outside one
-                                                         * of the
-                                                         * borders, it will be chopped, only displaying the portion of
-                                                         * the
-                                                         * circle that is contained inside the viewport boundaries.
-                                                         *
-                                                         * Coordinates are specified based on a 640x350 pixel
-                                                         * resolution, meaning
-                                                         * X can be anywhere from 0 - 639, and Y can be anywhere from 0
-                                                         * - 349.
-                                                         * x0 must be less than x1 and y0 must be less than y1 unless
-                                                         * all
-                                                         * parameters are set to zero, indicating that the graphics
-                                                         * window is
-                                                         * disabled.
-                                                         */
+                                                          /* This command defines the (X,Y) pixel boundaries of the
+                                                           * RIPscrip
+                                                           * graphics window, which will contain all RIPscrip graphics
+                                                           * output.
+                                                           * ASCII/ANSI text will be displayed in the virtual TTY window
+                                                           * defined
+                                                           * by the RIP_TEXT_WINDOW command above.  (x0,y0) defines the
+                                                           * upper-left
+                                                           * corner of the graphics viewport, and (x1,y1) defines the
+                                                           * lower-right
+                                                           * corner (inclusive).  The viewport may be disabled, so
+                                                           * RIPscrip
+                                                           * graphics commands are ignored, by setting all parameters to
+                                                           * zero (0).
+                                                           *
+                                                           * Graphics displayed in the viewport are "truncated" at this
+                                                           * rectangular
+                                                           * border, meaning if a circle would normally extend outside
+                                                           * one
+                                                           * of the
+                                                           * borders, it will be chopped, only displaying the portion of
+                                                           * the
+                                                           * circle that is contained inside the viewport boundaries.
+                                                           *
+                                                           * Coordinates are specified based on a 640x350 pixel
+                                                           * resolution, meaning
+                                                           * X can be anywhere from 0 - 639, and Y can be anywhere from
+                                                           * 0
+                                                           * - 349.
+                                                           * x0 must be less than x1 and y0 must be less than y1 unless
+                                                           * all
+                                                           * parameters are set to zero, indicating that the graphics
+                                                           * window is
+                                                           * disabled.
+                                                           */
 
 							handled = true;
 							GET_XY2();
@@ -12181,19 +12261,21 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							pthread_mutex_unlock(&vstatlock);
 							switch (arg2) {
 								case 0:
-									reinit_screen(
-										(uint8_t*)conio_fontdata[0].eight_by_eight,
-										8,
-										8);
+									reinit_screen((uint8_t*)conio_fontdata[0].eight_by_eight
+									    ,
+									    8
+									    ,
+									    8);
 									break;
 								case 1:
 									reinit_screen(ripfnt7x8, 7, 8);
 									break;
 								case 2:
-									reinit_screen(
-										(uint8_t*)conio_fontdata[0].eight_by_fourteen,
-										8,
-										14);
+									reinit_screen((uint8_t*)conio_fontdata[0].eight_by_fourteen
+									    ,
+									    8
+									    ,
+									    14);
 									break;
 								case 3:
 									reinit_screen(ripfnt7x14, 7, 14);
@@ -12292,8 +12374,8 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          *
                                                          *
                                                          *     Mode     Description
-                                                         * 
-                                                         *   
+                                                         *
+                                                         *
                                                          * ----------------------------------------------------------------
                                                          *      0    Process the query command NOW (upon receipt)
                                                          *      1    Process when mouse clicked in Graphics Window
@@ -12383,6 +12465,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 						case 'B': // RIP_BUTTON_STYLE !|1B <wid> <hgt> <orient> <flags>
                                                           // <bevsize> <dfore> <dback> <bright> <dark> <surface>
                                                           // <grp_no> <flags2> <uline_col> <corner_col> <res>
+
                                                         /* This RIPscrip command is probably one of the most complex in
                                                          * the
                                                          * entire protocol.  It defines how subsequent RIP_BUTTON
@@ -12786,29 +12869,29 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          *
                                                          * char low_char[256] =
                                                          * {
-                                                         * 
-                                                         *   
+                                                         *
+                                                         *
                                                          * 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-                                                         * 
-                                                         *   
+                                                         *
+                                                         *
                                                          * 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-                                                         * 
-                                                         *   
+                                                         *
+                                                         *
                                                          * 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-                                                         * 
-                                                         *   
+                                                         *
+                                                         *
                                                          * 0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,
-                                                         * 
-                                                         *   
+                                                         *
+                                                         *
                                                          * 1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,
-                                                         * 
-                                                         *   
+                                                         *
+                                                         *
                                                          * 0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                                         * 
-                                                         *   
+                                                         *
+                                                         *
                                                          * 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                                         * 
-                                                         *   
+                                                         *
+                                                         *
                                                          * 0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0
                                                          * };
                                                          *
@@ -13250,11 +13333,11 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							GET_XY2();
 							freepixels(rip.clipboard);
 							gettextinfo(&ti);
-							rip.clipboard = getpixels(x1 + rip.viewport.sx,
-							        y1 + rip.viewport.sy,
-							        x2 + rip.viewport.sx,
-							        y2 + rip.viewport.sy,
-							        false);
+							rip.clipboard = getpixels(x1 + rip.viewport.sx
+							        , y1 + rip.viewport.sy
+							        , x2 + rip.viewport.sx
+							        , y2 + rip.viewport.sy
+							        , false);
 							rip.clipx = x1 + rip.viewport.sx;
 							rip.clipy = y1 + rip.viewport.sy;
 							break;
@@ -13336,8 +13419,9 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          * The actual syntax of the Variable Define text parameter is as
                                                          * follows:
                                                          *
+                                                         *
                                                          * 
-                                                         *  variable-identifier[,field-width]:[?question-text?][default-value]
+                                                         * variable-identifier[,field-width]:[?question-text?][default-value]
                                                          *
                                                          * There are several different segments in this parameter as you
                                                          * can
@@ -13383,7 +13467,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          */
 							break;
 						case 'E': // RIP_END_TEXT !|1E
-                                                        // TODO: Pointless end text area thing.
+                                                          // TODO: Pointless end text area thing.
 
                                                         /* This command indicates the end of a formatted text block.
                                                          *  Only one
@@ -13458,8 +13542,8 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 								break;
 							if (strchr(&args[6], '\\'))
 								break;
-							if (!get_cache_fn_subdir(rip.bbs, cache_path,
-							    sizeof(cache_path), "RIP"))
+							if (!get_cache_fn_subdir(rip.bbs, cache_path
+							    , sizeof(cache_path), "RIP"))
 								break;
 							strcat(cache_path, &args[6]);
 							fexistcase(cache_path);
@@ -13485,9 +13569,9 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 										conn_send("0\r\n", 2, 1000);
 									}
 									else {
-										sprintf(str,
-										    "1.%" PRIdOFF "\r\n",
-										    st.st_size);
+										sprintf(str
+										    , "1.%" PRIdOFF "\r\n"
+										    , st.st_size);
 										conn_send(str, strlen(str), 1000);
 									}
 									break;
@@ -13497,14 +13581,14 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 									}
 									else {
 										localtime_r(&st.st_mtime, &tm);
-										strftime(dstr,
-										    sizeof(dstr),
-										    "%m/%d/%y.%H:%M:%S",
-										    &tm);
-										sprintf(str,
-										    "1.%" PRIdOFF ".%s\r\n",
-										    st.st_size,
-										    dstr);
+										strftime(dstr
+										    , sizeof(dstr)
+										    , "%m/%d/%y.%H:%M:%S"
+										    , &tm);
+										sprintf(str
+										    , "1.%" PRIdOFF ".%s\r\n"
+										    , st.st_size
+										    , dstr);
 										conn_send(str, strlen(str), 1000);
 									}
 									break;
@@ -13514,15 +13598,15 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 									}
 									else {
 										localtime_r(&st.st_mtime, &tm);
-										strftime(dstr,
-										    sizeof(dstr),
-										    "%m/%d/%y.%H:%M:%S",
-										    &tm);
-										sprintf(str,
-										    "1.%s.%" PRIdOFF ".%s\r\n",
-										    &args[6],
-										    st.st_size,
-										    dstr);
+										strftime(dstr
+										    , sizeof(dstr)
+										    , "%m/%d/%y.%H:%M:%S"
+										    , &tm);
+										sprintf(str
+										    , "1.%s.%" PRIdOFF ".%s\r\n"
+										    , &args[6]
+										    , st.st_size
+										    , dstr);
 										conn_send(str, strlen(str), 1000);
 									}
 									break;
@@ -13586,6 +13670,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							break;
 						case 'I': // RIP_LOAD_ICON !|1I <x> <y> <mode> <clipboard> <res>
                                                           // <filename>
+
                                                         /* This command instructs the terminal to read an Icon from disk
                                                          * and
                                                          * display it at the given upper-left (x,y) location.  If the
@@ -13608,8 +13693,9 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          *
                                                          *   Mode   Description
                                                          *                                         Logical
+                                                         *
                                                          * 
-                                                         *  ------------------------------------------------------------------
+                                                         * ------------------------------------------------------------------
                                                          *    00    Paste the image on-screen normally
                                                          *                   (COPY)
                                                          *    01    Exclusive-OR  image with the one already on screen
@@ -13644,8 +13730,8 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          *        parameters, should be set to "10".
                                                          */
 							handled = true;
-							if (!get_cache_fn_subdir(rip.bbs, cache_path,
-							    sizeof(cache_path), "RIP"))
+							if (!get_cache_fn_subdir(rip.bbs, cache_path
+							    , sizeof(cache_path), "RIP"))
 								break;
 							GET_XY();
 							arg1 = parse_mega(&args[4], 2);
@@ -13732,14 +13818,14 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 
 									struct text_info ti;
 									gettextinfo(&ti);
-									setpixels(x1 + rip.viewport.sx,
-									    y1 + rip.viewport.sy,
-									    x1 + rip.viewport.sx + pix->width - 1,
-									    y1 + rip.viewport.sy + pix->height - 1,
-									    0,
-									    0,
-									    pix,
-									    NULL);
+									setpixels(x1 + rip.viewport.sx
+									    , y1 + rip.viewport.sy
+									    , x1 + rip.viewport.sx + pix->width - 1
+									    , y1 + rip.viewport.sy + pix->height - 1
+									    , 0
+									    , 0
+									    , pix
+									    , NULL);
 									if (arg2) {
 										freepixels(rip.clipboard);
 										rip.clipboard = pix;
@@ -13890,8 +13976,9 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          *
                                                          *   Mode   Description
                                                          *                                          Logical
+                                                         *
                                                          * 
-                                                         *  -------------------------------------------------------------------
+                                                         * -------------------------------------------------------------------
                                                          *    00    Paste the image on-screen normally
                                                          *                   (COPY)
                                                          *    01    Exclusive-OR  image with the one already on screen
@@ -13930,13 +14017,20 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 									case 0: // Normal (easy!)
 										arg2 = y1 + rip.viewport.sy
 										    + rip.clipboard->height - 1;
-										setpixels(x1 + rip.viewport.sx,
-										    y1 + rip.viewport.sy,
-										    x1 + rip.viewport.sx + rip.clipboard->width - 1,
-										    bline,
-										    0,
-										    0,
-										    rip.clipboard,
+										setpixels(x1 + rip.viewport.sx
+										    ,
+										    y1 + rip.viewport.sy
+										    ,
+										    x1 + rip.viewport.sx + rip.clipboard->width - 1
+										    ,
+										    bline
+										    ,
+										    0
+										    ,
+										    0
+										    ,
+										    rip.clipboard
+										    ,
 										    NULL);
 										break;
 									case 1: // XOR
@@ -13944,12 +14038,15 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 									case 3: // AND
 									case 4: // NOT
 									{
-										struct ciolib_pixels*pix = getpixels(
-											x1 + rip.viewport.sx,
-											y1 + rip.viewport.sy,
-											x1 + rip.viewport.sx + rip.clipboard->width - 1,
-											bline,
-											false);
+										struct ciolib_pixels*pix = getpixels(x1 + rip.viewport.sx
+										        ,
+										        y1 + rip.viewport.sy
+										        ,
+										        x1 + rip.viewport.sx + rip.clipboard->width - 1
+										        ,
+										        bline
+										        ,
+										        false);
 
 										if (pix == NULL)
 											break;
@@ -13961,8 +14058,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 											for (x = 0;
 											    x < rip.clipboard->width;
 											    x++) {
-												arg3 = pixel2color(
-													rip.clipboard->pixels[
+												arg3 = pixel2color(rip.clipboard->pixels[
 														y
 														* rip.
 														clipboard
@@ -14017,10 +14113,11 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 														    0x0F;
 														break;
 												}
-												rip_setpixel(
-													rip.viewport.sx + x1 + x,
-													rip.viewport.sy + y1 + y,
-													arg3);
+												rip_setpixel(rip.viewport.sx + x1 + x
+												    ,
+												    rip.viewport.sy + y1 + y
+												    ,
+												    arg3);
 											}
 										}
 										break;
@@ -14113,57 +14210,63 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							rip.text_region.ypos = 0;
 							break;
 						case 't': // RIP_REGION_TEXT !|1t <justify> <text-string>
-                                                        /* A number of these commands may come sandwiched between the
-                                                         * RIP_BEGIN_TEXT and RIP_END_TEXT commands.  The <text-string>
-                                                         * is
-                                                         * already word-wrapped in such a way that it will fit inside
-                                                         * the
-                                                         * rectangular region based on the current font, font size, and
-                                                         * drawing
-                                                         * color.
-                                                         *
-                                                         * There are two possible settings for the <justify> parameter:
-                                                         *
-                                                         *   Justify   Description
-                                                         * 
-                                                         *  ------------------------------------------------------------------
-                                                         *     0       Don't right/left justify.  Left-justify only
-                                                         *     1       Perform right/left margin justification of this
-                                                         * line of
-                                                         *             text.
-                                                         *
-                                                         * If a text line falls off the bottom of the region, it is
-                                                         * discarded --
-                                                         * the rectangular Text Region does not scroll.
-                                                         *
-                                                         * This command is intended to import some sort of text file
-                                                         * document
-                                                         * directly into a RIPscrip scene and format it nicely to fit
-                                                         * inside a
-                                                         * simple rectangular area.  If the <justify> parameter is set
-                                                         * to a
-                                                         * value of "1" for a given RIP_REGION_TEXT line, then that line
-                                                         * will be
-                                                         * justified to both the left and right margins (the
-                                                         * RIP_BEGIN_TEXT
-                                                         * boundaries).  This is so that the displayed text aligns on
-                                                         * both sides
-                                                         * with the invisible boundaries.  This "justification" is done
-                                                         * by
-                                                         * splitting each RIP_REGION_TEXT line up into chunks of
-                                                         * word-groups,
-                                                         * broken up at their "white-space" locations.  Each spacer is
-                                                         * then
-                                                         * padded by however many pixels are necessary to keep each
-                                                         * spacer
-                                                         * uniformly of approximately equal size.  Only enough spare
-                                                         * pixels are
-                                                         * added to make sure that the right-edge of the text region
-                                                         * alignts
-                                                         * with the right border of the boundary.  The result is a
-                                                         * nicely
-                                                         * formatted text block.
-                                                         */
+                                                          /* A number of these commands may come sandwiched between the
+                                                           * RIP_BEGIN_TEXT and RIP_END_TEXT commands.  The
+                                                           * <text-string>
+                                                           * is
+                                                           * already word-wrapped in such a way that it will fit inside
+                                                           * the
+                                                           * rectangular region based on the current font, font size,
+                                                           * and
+                                                           * drawing
+                                                           * color.
+                                                           *
+                                                           * There are two possible settings for the <justify>
+                                                           * parameter:
+                                                           *
+                                                           *   Justify   Description
+                                                           *
+                                                           * 
+                                                           * ------------------------------------------------------------------
+                                                           *     0       Don't right/left justify.  Left-justify only
+                                                           *     1       Perform right/left margin justification of this
+                                                           * line of
+                                                           *             text.
+                                                           *
+                                                           * If a text line falls off the bottom of the region, it is
+                                                           * discarded --
+                                                           * the rectangular Text Region does not scroll.
+                                                           *
+                                                           * This command is intended to import some sort of text file
+                                                           * document
+                                                           * directly into a RIPscrip scene and format it nicely to fit
+                                                           * inside a
+                                                           * simple rectangular area.  If the <justify> parameter is set
+                                                           * to a
+                                                           * value of "1" for a given RIP_REGION_TEXT line, then that
+                                                           * line
+                                                           * will be
+                                                           * justified to both the left and right margins (the
+                                                           * RIP_BEGIN_TEXT
+                                                           * boundaries).  This is so that the displayed text aligns on
+                                                           * both sides
+                                                           * with the invisible boundaries.  This "justification" is
+                                                           * done
+                                                           * by
+                                                           * splitting each RIP_REGION_TEXT line up into chunks of
+                                                           * word-groups,
+                                                           * broken up at their "white-space" locations.  Each spacer is
+                                                           * then
+                                                           * padded by however many pixels are necessary to keep each
+                                                           * spacer
+                                                           * uniformly of approximately equal size.  Only enough spare
+                                                           * pixels are
+                                                           * added to make sure that the right-edge of the text region
+                                                           * alignts
+                                                           * with the right border of the boundary.  The result is a
+                                                           * nicely
+                                                           * formatted text block.
+                                                           */
 
                                                         // TODO: The things that are justified...
 							handled = true;
@@ -14198,6 +14301,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							break;
 						case 'U': // RIP_BUTTON !|1U <x0> <y0> <x1> <y1> <hotkey> <flags> <res>
                                                           // <text>
+
                                                         /* This command physically creates a new Button using the
                                                          * previously
                                                          * described RIP_BUTTON_STYLE command.  You may have at most 128
@@ -14227,8 +14331,9 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          *
                                                          *   Effect Type   X0 Modifier   Y0 Modifier   X1 Modifier   Y1
                                                          * Modifier
+                                                         *
                                                          * 
-                                                         *  -------------------------------------------------------------------
+                                                         * -------------------------------------------------------------------
                                                          *   Bevel         -bevel size   -bevel size   +bevel size
                                                          *   +bevel size
                                                          *   Recess            -2            -2            +2
@@ -14359,8 +14464,9 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          * Here are examples of the valid combinations of text blocks:
                                                          *
                                                          *   Parameter Example       Description of the Text Parameter
+                                                         *
                                                          * 
-                                                         *  -------------------------------------------------------------------
+                                                         * -------------------------------------------------------------------
                                                          *   icon<>label<>host_cmd   Specify all three blocks
                                                          *     <>label<>host_cmd     2 blocks specified; no icon
                                                          *       icon<>label<>       2 blocks specified; no host
@@ -14422,8 +14528,8 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 							handled = true;
 							if (rip.clipboard == NULL)
 								break;
-							if (!get_cache_fn_subdir(rip.bbs, cache_path,
-							    sizeof(cache_path), "RIP"))
+							if (!get_cache_fn_subdir(rip.bbs, cache_path
+							    , sizeof(cache_path), "RIP"))
 								break;
 							strcat(cache_path, &args[1]);
 							icn = fopen(cache_path, "wb");
@@ -14490,6 +14596,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 					switch (cmd) {
 						case '\x1b': // RIP_ENTER_BLOCK_MODE !|9<escape> <proto> <file_type>
                                                              // <res> [filename] <>
+
                                                         /* This command is used to auto-initiate any desired File
                                                          * Transfer
                                                          * Protocol.  The <filename> parameter is optional on downloads,
@@ -14533,8 +14640,8 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
                                                          *
                                                          *
                                                          *     Value   Description of Block Transfer Contents
-                                                         * 
-                                                         *   
+                                                         *
+                                                         *
                                                          * ---------------------------------------------------------------
                                                          *       0     RIP file sequence (display it)
                                                          *       1     RIP file sequence (store them)
@@ -14602,8 +14709,8 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 								break;
 							if ((arg3 < 0) || (arg3 == 0) || (arg3 == 5))
 								break;
-							if (!get_cache_fn_subdir(rip.bbs, cache_path,
-							    sizeof(cache_path), "RIP"))
+							if (!get_cache_fn_subdir(rip.bbs, cache_path
+							    , sizeof(cache_path), "RIP"))
 								break;
 							size_t cpln = strlen(cache_path);
 							if (arg1 == 0) { // Download (from BBS)
@@ -14621,40 +14728,40 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 									free(dldir);
 									break;
 								}
-								strncpy(&cache_path[cpln],
-								    &args[8],
-								    sizeof(cache_path) - cpln);
+								strncpy(&cache_path[cpln]
+								    , &args[8]
+								    , sizeof(cache_path) - cpln);
 								suspend_rip(true);
 								switch (arg2) {
 									case 0:
-										xmodem_download(rip.bbs,
-										    XMODEM | RECV,
-										    cache_path);
+										xmodem_download(rip.bbs
+										    , XMODEM | RECV
+										    , cache_path);
 										break;
 									case 1:
-										xmodem_download(rip.bbs,
-										    XMODEM | CRC | RECV,
-										    cache_path);
+										xmodem_download(rip.bbs
+										    , XMODEM | CRC | RECV
+										    , cache_path);
 										break;
 									case 2:
-										xmodem_download(rip.bbs,
-										    XMODEM | CRC | RECV,
-										    cache_path);
+										xmodem_download(rip.bbs
+										    , XMODEM | CRC | RECV
+										    , cache_path);
 										break;
 									case 3:
-										xmodem_download(rip.bbs,
-										    XMODEM | GMODE | CRC | RECV,
-										    cache_path);
+										xmodem_download(rip.bbs
+										    , XMODEM | GMODE | CRC | RECV
+										    , cache_path);
 										break;
 									case 5:
-										xmodem_download(rip.bbs,
-										    YMODEM | CRC | RECV,
-										    cache_path);
+										xmodem_download(rip.bbs
+										    , YMODEM | CRC | RECV
+										    , cache_path);
 										break;
 									case 6:
-										xmodem_download(rip.bbs,
-										    YMODEM | GMODE | CRC | RECV,
-										    cache_path);
+										xmodem_download(rip.bbs
+										    , YMODEM | GMODE | CRC | RECV
+										    , cache_path);
 										break;
 									case 7:
 										zmodem_download(rip.bbs);
@@ -14679,9 +14786,9 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 									free(uldir);
 									break;
 								}
-								strncpy(&cache_path[cpln],
-								    &args[8],
-								    sizeof(cache_path) - cpln);
+								strncpy(&cache_path[cpln]
+								    , &args[8]
+								    , sizeof(cache_path) - cpln);
 								fexistcase(cache_path);
 								FILE*fp = fopen(cache_path, "rb");
 								if (fp == NULL) {
@@ -14693,46 +14800,46 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 								suspend_rip(true);
 								switch (arg2) {
 									case 0:
-										xmodem_upload(rip.bbs,
-										    fp,
-										    cache_path,
-										    XMODEM_128B | XMODEM | SEND,
-										    0);
+										xmodem_upload(rip.bbs
+										    , fp
+										    , cache_path
+										    , XMODEM_128B | XMODEM | SEND
+										    , 0);
 										break;
 									case 1:
-										xmodem_upload(rip.bbs,
-										    fp,
-										    cache_path,
-										    XMODEM_128B | XMODEM | CRC | SEND,
-										    0);
+										xmodem_upload(rip.bbs
+										    , fp
+										    , cache_path
+										    , XMODEM_128B | XMODEM | CRC | SEND
+										    , 0);
 										break;
 									case 2:
-										xmodem_upload(rip.bbs,
-										    fp,
-										    cache_path,
-										    XMODEM | CRC | SEND,
-										    0);
+										xmodem_upload(rip.bbs
+										    , fp
+										    , cache_path
+										    , XMODEM | CRC | SEND
+										    , 0);
 										break;
 									case 3:
-										xmodem_upload(rip.bbs,
-										    fp,
-										    cache_path,
-										    XMODEM | GMODE | CRC | SEND,
-										    0);
+										xmodem_upload(rip.bbs
+										    , fp
+										    , cache_path
+										    , XMODEM | GMODE | CRC | SEND
+										    , 0);
 										break;
 									case 5:
-										xmodem_upload(rip.bbs,
-										    fp,
-										    cache_path,
-										    YMODEM | CRC | SEND,
-										    0);
+										xmodem_upload(rip.bbs
+										    , fp
+										    , cache_path
+										    , YMODEM | CRC | SEND
+										    , 0);
 										break;
 									case 6:
-										xmodem_upload(rip.bbs,
-										    fp,
-										    cache_path,
-										    YMODEM | GMODE | CRC | SEND,
-										    0);
+										xmodem_upload(rip.bbs
+										    , fp
+										    , cache_path
+										    , YMODEM | GMODE | CRC | SEND
+										    , 0);
 										break;
 									case 7:
 										zmodem_upload(rip.bbs, fp, cache_path);
@@ -14752,6 +14859,7 @@ do_rip_command(int level, int sublevel, int cmd, const char*rawargs)
 	}
 	free(args);
 }
+
 static void
 do_rip_string(const char*buf, size_t len)
 {
@@ -14847,6 +14955,7 @@ bool              doubled = false;
 
 static int        amiga_x;
 static int        amiga_y;
+
 static void
 draw_glyph(uint8_t ch)
 {
@@ -14913,15 +15022,16 @@ draw_glyph(uint8_t ch)
                         // TODO: Scroll/Whatever...
 			amiga_y += (amiga_font->height << doubled);
 			if ((vmode >= 0) && (amiga_y >= vparams[vmode].charheight * vparams[vmode].rows)) {
-				struct ciolib_pixels*pix = getpixels(0,
-				        amiga_font->height << doubled,
-				        vparams[vmode].charwidth * vparams[vmode].cols - 1,
-				        vparams[vmode].charheight * vparams[vmode].rows - 1,
-				        0);
+				struct ciolib_pixels*pix = getpixels(0
+				        , amiga_font->height << doubled
+				        , vparams[vmode].charwidth * vparams[vmode].cols - 1
+				        , vparams[vmode].charheight * vparams[vmode].rows - 1
+				        , 0);
 
 				if (pix) {
-					setpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1,
-					    (vparams[vmode].charheight - 1) * vparams[vmode].rows - 1, 0, 0, pix, NULL);
+					setpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1
+					    , (vparams[vmode].charheight - 1) * vparams[vmode].rows - 1, 0, 0, pix,
+					    NULL);
 					freepixels(pix);
 					amiga_y -= (amiga_font->height << doubled);
 					for (int ypos = (vparams[vmode].charheight - 1) * vparams[vmode].rows;
@@ -14956,18 +15066,18 @@ draw_glyph(uint8_t ch)
 			for (j = 0; j < width; j++) {
 				if ((*pd) & (1 << (currbit))) {
 					if (doubled) {
-						scale_setpixel(amiga_x + (j * 2),
-						    amiga_y + voff + (i * 2),
-						    cterm->fg_color);
-						scale_setpixel(amiga_x + (j * 2) + 1,
-						    amiga_y + voff + (i * 2),
-						    cterm->fg_color);
-						scale_setpixel(amiga_x + (j * 2),
-						    amiga_y + voff + (i * 2) + 1,
-						    cterm->fg_color);
-						scale_setpixel(amiga_x + (j * 2) + 1,
-						    amiga_y + voff + (i * 2) + 1,
-						    cterm->fg_color);
+						scale_setpixel(amiga_x + (j * 2)
+						    , amiga_y + voff + (i * 2)
+						    , cterm->fg_color);
+						scale_setpixel(amiga_x + (j * 2) + 1
+						    , amiga_y + voff + (i * 2)
+						    , cterm->fg_color);
+						scale_setpixel(amiga_x + (j * 2)
+						    , amiga_y + voff + (i * 2) + 1
+						    , cterm->fg_color);
+						scale_setpixel(amiga_x + (j * 2) + 1
+						    , amiga_y + voff + (i * 2) + 1
+						    , cterm->fg_color);
 					}
 					else {
 						scale_setpixel(amiga_x + j, amiga_y + voff + i, cterm->fg_color);
@@ -14988,21 +15098,21 @@ draw_glyph(uint8_t ch)
 
 				if (amiga_y >= vparams[vmode].charheight * vparams[vmode].rows) {
 					struct ciolib_pixels*pix =
-					    getpixels(0,
-					        amiga_font->height << doubled,
-					        vparams[vmode].charwidth * vparams[vmode].cols - 1,
-					        vparams[vmode].charheight * vparams[vmode].rows - 1,
-					        0);
+					    getpixels(0
+					        , amiga_font->height << doubled
+					        , vparams[vmode].charwidth * vparams[vmode].cols - 1
+					        , vparams[vmode].charheight * vparams[vmode].rows - 1
+					        , 0);
 
 					if (pix) {
-						setpixels(0,
-						    0,
-						    vparams[vmode].charwidth * vparams[vmode].cols - 1,
-						    (vparams[vmode].charheight - 1) * vparams[vmode].rows - 1,
-						    0,
-						    0,
-						    pix,
-						    NULL);
+						setpixels(0
+						    , 0
+						    , vparams[vmode].charwidth * vparams[vmode].cols - 1
+						    , (vparams[vmode].charheight - 1) * vparams[vmode].rows - 1
+						    , 0
+						    , 0
+						    , pix
+						    , NULL);
 						freepixels(pix);
 						amiga_y -= (amiga_font->height << doubled);
 						for (int ypos = (vparams[vmode].charheight - 1) * vparams[vmode].rows;
@@ -15018,6 +15128,7 @@ draw_glyph(uint8_t ch)
 		}
 	}
 }
+
 static void
 amiga_cputs(char*str)
 {
@@ -15029,16 +15140,18 @@ amiga_cputs(char*str)
 
 	while (*str) {
 		draw_glyph(*(str++));
-		if ((vmode != -1) && (amiga_font != NULL))
-			cterm_gotoxy(cterm,
-			    (amiga_x / vparams[vmode].charwidth) + 1,
-			    ((amiga_y
+		if ((vmode != -1) && (amiga_font != NULL)) {
+			cterm_gotoxy(cterm
+			    , (amiga_x / vparams[vmode].charwidth) + 1
+			    , ((amiga_y
 			    + ((amiga_font->height - amiga_font->baseline - 1)
 			        << doubled)) / vparams[vmode].charheight) + 1);
+		}
 	}
 }
 
 static bool skypix = false;
+
 static void
 do_skypix(char*buf, size_t len)
 {
@@ -15120,14 +15233,14 @@ do_skypix(char*buf, size_t len)
 			break;
 		case 7: // Paste
                         // TODO: MINTERM and MASK not currently supported...
-			setpixels(argv[3],
-			    argv[4],
-			    argv[3] + argv[5] - 1,
-			    argv[4] + argv[6] - 1,
-			    argv[1],
-			    argv[2],
-			    rip.clipboard,
-			    NULL);
+			setpixels(argv[3]
+			    , argv[4]
+			    , argv[3] + argv[5] - 1
+			    , argv[4] + argv[6] - 1
+			    , argv[1]
+			    , argv[2]
+			    , rip.clipboard
+			    , NULL);
 			break;
 		case 8: // Move pen
 			rip.x = argv[1];
@@ -15157,8 +15270,8 @@ do_skypix(char*buf, size_t len)
 				if (vmode == -1)
 					break;
 				if (amiga_font != NULL) {
-					cterm_gotoxy(cterm, (amiga_x / vparams[vmode].charwidth) + 1,
-					    ((amiga_y
+					cterm_gotoxy(cterm, (amiga_x / vparams[vmode].charwidth) + 1
+					    , ((amiga_y
 					    + ((amiga_font->height - amiga_font->baseline - 1)
 					        << doubled)) / vparams[vmode].charheight) + 1);
 					free(amiga_font);
@@ -15361,15 +15474,17 @@ do_skypix(char*buf, size_t len)
 			vmode = find_vmode(ti.currmode);
 			if (vmode == -1)
 				break;
-			if (amiga_font)
-				cterm_gotoxy(cterm,
-				    (argv[1] / vparams[vmode].charwidth) + 1,
-				    ((argv[2]
+			if (amiga_font) {
+				cterm_gotoxy(cterm
+				    , (argv[1] / vparams[vmode].charwidth) + 1
+				    , ((argv[2]
 				    + ((amiga_font->height - amiga_font->baseline - 1)
 				        << doubled)) / vparams[vmode].charheight) + 1);
-			else
-				cterm_gotoxy(cterm, (argv[1] / vparams[vmode].charwidth) + 1,
-				    ((argv[2] + 8) / vparams[vmode].charheight) + 1);
+			}
+			else {
+				cterm_gotoxy(cterm, (argv[1] / vparams[vmode].charwidth) + 1
+				    , ((argv[2] + 8) / vparams[vmode].charheight) + 1);
+			}
 			amiga_x = argv[1];
 			amiga_y = argv[2];
 			break;
@@ -15388,6 +15503,7 @@ do_skypix(char*buf, size_t len)
 	}
 	free(argv);
 }
+
 // TODO: We need to actually pass all the ANSI back first...
 static bool
 handle_rip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigned maxlen, enum rip_state ns)
@@ -15467,6 +15583,7 @@ handle_rip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigne
 	pending[0] = 0;
 	return true;
 }
+
 static void
 unrip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigned maxlen)
 {
@@ -15499,6 +15616,7 @@ unrip_line(BYTE*buf, unsigned*blen, unsigned*pos, size_t*rip_start, unsigned max
 	pending_len = 0;
 	pending[0] = 0;
 }
+
 static int
 pendingcmp(const char*str, const BYTE*buf)
 {
@@ -15521,6 +15639,7 @@ pendingcmp(const char*str, const BYTE*buf)
 	}
 	return 0;
 }
+
 /*
  * This strips out everything except valid ANSI and returns the
  * new size.
@@ -15606,6 +15725,7 @@ ansi_only(BYTE*buf, unsigned count)
 	}
 	return out - buf;
 }
+
 // This may end up stuffing up to three bytes into the buffer...
 size_t
 parse_rip(BYTE*origbuf, unsigned blen, unsigned maxlen)
@@ -15903,6 +16023,7 @@ parse_rip(BYTE*origbuf, unsigned blen, unsigned maxlen)
 		return ansi_only(origbuf, blen);
 	return blen;
 }
+
 void
 init_rip(struct bbslist*bbs)
 {
@@ -15955,6 +16076,7 @@ init_rip(struct bbslist*bbs)
 		normal_palette();
 	}
 }
+
 void
 suspend_rip(bool suspend)
 {
@@ -15967,6 +16089,7 @@ suspend_rip(bool suspend)
 			rip_suspended = false;
 	}
 }
+
 int
 rip_kbhit(void)
 {
@@ -15974,8 +16097,10 @@ rip_kbhit(void)
 		if (ripbuf)
 			return 1;
 
+
 	return kbhit();
 }
+
 static void
 handle_mouse_button(struct rip_button_style*but)
 {
@@ -15998,6 +16123,7 @@ handle_mouse_button(struct rip_button_style*but)
 			rv_reset("RESET", NULL);
 	}
 }
+
 int
 rip_getch(void)
 {
@@ -16122,9 +16248,9 @@ rip_getch(void)
 						rip_mouse_event.x = mevent.endx;
 						rip_mouse_event.y = mevent.endy;
 						rip_mouse_event.buttons = mevent.bstate | 1;
-						mousestate(&rip_mouse_event.x,
-						    &rip_mouse_event.y,
-						    &rip_mouse_event.buttons);
+						mousestate(&rip_mouse_event.x
+						    , &rip_mouse_event.y
+						    , &rip_mouse_event.buttons);
 						rip_mouse_event.type = RIP_MOUSE_EVENT_TEXT;
 						handle_command_str(rip.text_click);
 						rip_mouse_event.type = RIP_MOUSE_EVENT_NONE;
@@ -16137,9 +16263,9 @@ rip_getch(void)
 						rip_mouse_event.x = mevent.endx_res;
 						rip_mouse_event.y = mevent.endy_res;
 						rip_mouse_event.buttons = mevent.bstate | 1;
-						mousestate_res(&rip_mouse_event.x,
-						    &rip_mouse_event.y,
-						    &rip_mouse_event.buttons);
+						mousestate_res(&rip_mouse_event.x
+						    , &rip_mouse_event.y
+						    , &rip_mouse_event.buttons);
 						rip_mouse_event.type = RIP_MOUSE_EVENT_GRAPHICS;
 						handle_command_str(rip.graphics_click);
 						rip_mouse_event.type = RIP_MOUSE_EVENT_NONE;
@@ -16165,6 +16291,7 @@ rip_getch(void)
 	hold_update = oldhold;
 	return ch;
 }
+
 static void
 shadow_palette(void)
 {
@@ -16177,6 +16304,7 @@ shadow_palette(void)
 		set_modepalette(palette);
 	}
 }
+
 static void
 normal_palette(void)
 {

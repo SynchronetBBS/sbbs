@@ -29,6 +29,7 @@ uchar       telnet_remote_option[0x100];
 extern char*log_levels[];
 extern FILE*log_fp;
 int         telnet_log_level;
+
 static int
 lprintf(int level, const char*fmt, ...)
 {
@@ -44,12 +45,14 @@ lprintf(int level, const char*fmt, ...)
 	va_end(argptr);
 	return fprintf(log_fp, "Telnet %s %s\n", log_levels[level], sbuf);
 }
+
 void
 putcom(char*buf, size_t len)
 {
 	conn_send_raw(buf, len, 10000);
 	return;
 }
+
 static void
 send_telnet_cmd(uchar cmd, uchar opt)
 {
@@ -68,21 +71,23 @@ send_telnet_cmd(uchar cmd, uchar opt)
 		putcom(buf, 3);
 	}
 }
+
 void
 request_telnet_opt(uchar cmd, uchar opt)
 {
 	if ((cmd == TELNET_DO) || (cmd == TELNET_DONT)) { /* remote option */
 		if (telnet_remote_option[opt] == telnet_opt_ack(cmd))
-			return;  /* already set in this mode, do nothing */
+			return;                           /* already set in this mode, do nothing */
 		telnet_remote_option[opt] = telnet_opt_ack(cmd);
 	}
-	else {                   /* local option */
+	else {                                            /* local option */
 		if (telnet_local_option[opt] == telnet_opt_ack(cmd))
-			return;  /* already set in this mode, do nothing */
+			return;                           /* already set in this mode, do nothing */
 		telnet_local_option[opt] = telnet_opt_ack(cmd);
 	}
 	send_telnet_cmd(cmd, opt);
 }
+
 BYTE*
 telnet_interpret(BYTE*inbuf, size_t inlen, BYTE*outbuf, size_t*outlen)
 {
@@ -188,8 +193,8 @@ telnet_interpret(BYTE*inbuf, size_t inlen, BYTE*outbuf, size_t*outlen)
 							default:                          /* unsupported local options
                                                                                            */
 								if (command == TELNET_DO) /* NAK */
-									send_telnet_cmd(telnet_opt_nak(command),
-									    option);
+									send_telnet_cmd(telnet_opt_nak(command)
+									    , option);
 								break;
 						}
 					}
@@ -213,7 +218,7 @@ telnet_interpret(BYTE*inbuf, size_t inlen, BYTE*outbuf, size_t*outlen)
 						putcom((char*)buf, 9);
 					}
 				}
-				else {   /* WILL/WONT (remote options) */
+				else { /* WILL/WONT (remote options) */
 					if (telnet_remote_option[option] != command) {
 						switch (option) {
 							case TELNET_BINARY_TX:
@@ -227,8 +232,8 @@ telnet_interpret(BYTE*inbuf, size_t inlen, BYTE*outbuf, size_t*outlen)
 							default:                            /* unsupported remote
                                                                                              * options */
 								if (command == TELNET_WILL) /* NAK */
-									send_telnet_cmd(telnet_opt_nak(command),
-									    option);
+									send_telnet_cmd(telnet_opt_nak(command)
+									    , option);
 								break;
 						}
 					}

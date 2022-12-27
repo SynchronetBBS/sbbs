@@ -14,6 +14,7 @@ SOCKET rlogin_sock = INVALID_SOCKET;
 #ifdef __BORLANDC__
  #pragma argsused
 #endif
+
 void
 rlogin_input_thread(void*args)
 {
@@ -43,6 +44,7 @@ rlogin_input_thread(void*args)
 #ifdef __BORLANDC__
  #pragma argsused
 #endif
+
 void
 rlogin_output_thread(void*args)
 {
@@ -158,7 +160,6 @@ rlogin_connect(struct bbslist*bbs)
 			if (strstr(rbuf, "ERROR\r\n"))
 				break;
 
-
                         /* We didn't receive the desired response in time, so bail. */
 			if (idx >= sizeof(rbuf))
 				return -1;
@@ -187,7 +188,6 @@ rlogin_connect(struct bbslist*bbs)
 			if (strstr(rbuf, "OK\r\n"))
 				break;
 
-
                         /* We didn't receive the desired response in time, so bail. */
 			if (idx >= sizeof(rbuf))
 				return -1;
@@ -195,7 +195,6 @@ rlogin_connect(struct bbslist*bbs)
 
 		if (ret < 1)
 			return -1;
-
 	}
 
 	_beginthread(rlogin_output_thread, 0, NULL);

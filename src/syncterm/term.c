@@ -52,6 +52,7 @@ static struct vmem_cell winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT +
                                                                                            * window */
 static struct text_info trans_ti;
 static struct text_info log_ti;
+
 void
 get_cterm_size(int*cols, int*rows, int ns)
 {
@@ -83,6 +84,7 @@ struct mouse_state {
 #define MS_SGR_SET (1006)
 	enum mouse_modes mode;
 };
+
 void
 setup_mouse_events(struct mouse_state*ms)
 {
@@ -161,6 +163,7 @@ setup_mouse_events(struct mouse_state*ms)
 #if defined(__BORLANDC__)
  #pragma argsused
 #endif
+
 void
 mousedrag(struct vmem_cell*scrollback)
 {
@@ -216,15 +219,15 @@ mousedrag(struct vmem_cell*scrollback)
 							if (((sbuffer[pos].legacy_attr & 0x70) >> 4)
 							    == (sbuffer[pos].legacy_attr & 0x0F))
 								sbuffer[pos].legacy_attr |= 0x08;
-							attr2palette(sbuffer[pos].legacy_attr,
-							    &sbuffer[pos].fg,
-							    &sbuffer[pos].bg);
+							attr2palette(sbuffer[pos].legacy_attr
+							    , &sbuffer[pos].fg
+							    , &sbuffer[pos].bg);
 						}
-						vmem_puttext(term.x - 1,
-						    term.y - 1,
-						    term.x + term.width - 2,
-						    term.y + term.height - 2,
-						    sbuffer);
+						vmem_puttext(term.x - 1
+						    , term.y - 1
+						    , term.x + term.width - 2
+						    , term.y + term.height - 2
+						    , sbuffer);
 						break;
 					default:
 						lines = abs(mevent.endy - mevent.starty) + 1;
@@ -239,10 +242,10 @@ mousedrag(struct vmem_cell*scrollback)
 							size_t  outlen;
 							uint8_t*utf8str;
 
-							utf8str = cp_to_utf8(conio_fontdata[screen[pos].font].cp,
-							        (char*)&screen[pos].ch,
-							        1,
-							        &outlen);
+							utf8str = cp_to_utf8(conio_fontdata[screen[pos].font].cp
+							        , (char*)&screen[pos].ch
+							        , 1
+							        , &outlen);
 							if (utf8str == NULL)
 								continue;
 							memcpy(copybuf + outpos, utf8str, outlen);
@@ -260,20 +263,20 @@ mousedrag(struct vmem_cell*scrollback)
 						}
 						copybuf[outpos] = 0;
 						copytext(copybuf, strlen(copybuf));
-						vmem_puttext(term.x - 1,
-						    term.y - 1,
-						    term.x + term.width - 2,
-						    term.y + term.height - 2,
-						    screen);
+						vmem_puttext(term.x - 1
+						    , term.y - 1
+						    , term.x + term.width - 2
+						    , term.y + term.height - 2
+						    , screen);
 						goto cleanup;
 				}
 				break;
 			default:
-				vmem_puttext(term.x - 1,
-				    term.y - 1,
-				    term.x + term.width - 2,
-				    term.y + term.height - 2,
-				    screen);
+				vmem_puttext(term.x - 1
+				    , term.y - 1
+				    , term.x + term.width - 2
+				    , term.y + term.height - 2
+				    , screen);
 				ungetch(key);
 				goto cleanup;
 		}
@@ -289,13 +292,14 @@ cleanup:
 	freescreen(savscrn);
 	return;
 }
+
 void
 update_status(struct bbslist*bbs, int speed, int ooii_mode)
 {
-	char              nbuf[LIST_NAME_MAX + 10 + 11 + 1]; /*
-                                                              * Room for "Name (Logging) (115300)" and terminator
-                                                              * SAFE and Logging should me be possible.
-                                                              */
+	char nbuf[LIST_NAME_MAX + 10 + 11 + 1]; /*
+                                                 * Room for "Name (Logging) (115300)" and terminator
+                                                 * SAFE and Logging should me be possible.
+                                                 */
 	int               oldscroll;
 	int               olddmc = hold_update;
 	struct  text_info txtinfo;
@@ -378,43 +382,54 @@ update_status(struct bbslist*bbs, int speed, int ooii_mode)
 		case CIOLIB_MODE_CURSES:
 		case CIOLIB_MODE_CURSES_IBM:
 		case CIOLIB_MODE_ANSI:
-			if (timeon > 359999)
-				cprintf(" %-29.29s %c %-6.6s %c Connected: Too Long %c CTRL-S for menu ",
-				    nbuf,
-				    sep,
-				    conn_types[bbs->conn_type],
-				    sep,
-				    sep);
-			else
-				cprintf(" %-29.29s %c %-6.6s %c Connected: %02d:%02d:%02d %c CTRL-S for menu ",
-				    nbuf,
-				    sep,
-				    conn_types[bbs->conn_type],
-				    sep,
-				    timeon / 3600,
-				    (timeon / 60) % 60,
-				    timeon % 60,
-				    sep);
+			if (timeon > 359999) {
+				cprintf(" %-29.29s %c %-6.6s %c Connected: Too Long %c CTRL-S for menu "
+				    , nbuf
+				    , sep
+				    , conn_types[bbs->conn_type]
+				    , sep
+				    , sep);
+			}
+			else {
+				cprintf(" %-29.29s %c %-6.6s %c Connected: %02d:%02d:%02d %c CTRL-S for menu "
+				    , nbuf
+				    , sep
+				    , conn_types[bbs->conn_type]
+				    , sep
+				    , timeon / 3600
+				    , (timeon / 60) % 60
+				    , timeon % 60
+				    , sep);
+			}
 			break;
 		default:
-			if (timeon > 359999)
-				cprintf(" %-30.30s %c %-6.6s %c Connected: Too Long %c "ALT_KEY_NAME3CH "-Z for menu ",
-				    nbuf,
-				    sep,
-				    conn_types[bbs->conn_type],
-				    sep,
+			if (timeon > 359999) {
+				cprintf(" %-30.30s %c %-6.6s %c Connected: Too Long %c "ALT_KEY_NAME3CH "-Z for menu "
+				    , nbuf
+				    , sep
+				    , conn_types[bbs->conn_type]
+				    , sep
+				    , sep);
+			}
+			else {
+				cprintf(" %-30.30s %c %-6.6s %c Connected: %02d:%02d:%02d %c "ALT_KEY_NAME3CH "-Z for menu "
+				    ,
+				    nbuf
+				    ,
+				    sep
+				    ,
+				    conn_types[bbs->conn_type]
+				    ,
+				    sep
+				    ,
+				    timeon / 3600
+				    ,
+				    (timeon / 60) % 60
+				    ,
+				    timeon % 60
+				    ,
 				    sep);
-			else
-				cprintf(
-					" %-30.30s %c %-6.6s %c Connected: %02d:%02d:%02d %c "ALT_KEY_NAME3CH "-Z for menu ",
-					nbuf,
-					sep,
-					conn_types[bbs->conn_type],
-					sep,
-					timeon / 3600,
-					(timeon / 60) % 60,
-					timeon % 60,
-					sep);
+			}
 			break; /*    1+29     +3    +6    +3    +11        +3+3+2        +3    +6    +4  +5 */
 	}
 	if (wherex() >= 80)
@@ -429,6 +444,7 @@ update_status(struct bbslist*bbs, int speed, int ooii_mode)
 }
 
 #if defined(_WIN32) && defined(_DEBUG) && defined(DUMP)
+
 void
 dump(BYTE*buf, int len)
 {
@@ -459,6 +475,7 @@ enum {
 	ZMODEM_MODE_SEND,
 	ZMODEM_MODE_RECV
 } zmodem_mode;
+
 static BOOL
 zmodem_check_abort(void*vp)
 {
@@ -509,6 +526,7 @@ extern char*log_levels[];
 #if defined(__BORLANDC__)
  #pragma argsused
 #endif
+
 static int
 lputs(void*cbdata, int level, const char*str)
 {
@@ -564,6 +582,7 @@ lputs(void*cbdata, int level, const char*str)
 
 	return chars;
 }
+
 static int
 lprintf(int level, const char*fmt, ...)
 {
@@ -580,6 +599,7 @@ lprintf(int level, const char*fmt, ...)
 #if defined(__BORLANDC__)
  #pragma argsused
 #endif
+
 void
 zmodem_progress(void*cbdata, int64_t current_pos)
 {
@@ -676,6 +696,7 @@ zmodem_progress(void*cbdata, int64_t current_pos)
 
 unsigned char transfer_buffer[BUFFER_SIZE / 2];
 unsigned      transfer_buf_len = 0;
+
 static void
 flush_send(void*unused)
 {
@@ -690,6 +711,7 @@ flush_send(void*unused)
 		transfer_buf_len = 0;
 	}
 }
+
 static int
 send_byte(void*unused, uchar ch, unsigned timeout /* seconds */)
 {
@@ -705,6 +727,7 @@ send_byte(void*unused, uchar ch, unsigned timeout /* seconds */)
 BYTE     recv_byte_buffer[BUFFER_SIZE];
 unsigned recv_byte_buffer_len = 0;
 unsigned recv_byte_buffer_pos = 0;
+
 static void
 recv_bytes(unsigned timeout /* Milliseconds */)
 {
@@ -718,6 +741,7 @@ recv_bytes(unsigned timeout /* Milliseconds */)
 		}
 	}
 }
+
 static int
 recv_byte(void*unused, unsigned timeout /* seconds */)
 {
@@ -738,6 +762,7 @@ recv_byte(void*unused, unsigned timeout /* seconds */)
 #if defined(__BORLANDC__)
  #pragma argsused
 #endif
+
 BOOL
 data_waiting(void*unused, unsigned timeout /* seconds */)
 {
@@ -750,12 +775,14 @@ data_waiting(void*unused, unsigned timeout /* seconds */)
 	pthread_mutex_unlock(&(conn_inbuf.mutex));
 	return ret;
 }
+
 size_t
 count_data_waiting(void)
 {
 	recv_bytes(0);
 	return recv_byte_buffer_len;
 }
+
 void
 draw_transfer_window(char*title)
 {
@@ -799,17 +826,18 @@ draw_transfer_window(char*title)
 	}
 	outline[0] = (char)0xc8;
 	outline[sizeof(outline) - 2] = (char)0xbc;
-	puttext(left,
-	    top + TRANSFER_WIN_HEIGHT - 1,
-	    left + TRANSFER_WIN_WIDTH - 1,
-	    top + TRANSFER_WIN_HEIGHT - 1,
-	    outline);
+	puttext(left
+	    , top + TRANSFER_WIN_HEIGHT - 1
+	    , left + TRANSFER_WIN_WIDTH - 1
+	    , top + TRANSFER_WIN_HEIGHT - 1
+	    , outline);
 	outline[0] = (char)0xba;
 	outline[sizeof(outline) - 2] = (char)0xba;
 	for (i = 2; i < sizeof(outline) - 2; i += 2)
 		outline[i] = ' ';
 	for (i = 1; i < 6; i++)
 		puttext(left, top + i, left + TRANSFER_WIN_WIDTH - 1, top + i, outline);
+
 /*
  *      for(i=3;i < sizeof(outline) - 2; i+=2) {
  *              outline[i] = LIGHTGRAY | (BLACK << 8);
@@ -817,7 +845,6 @@ draw_transfer_window(char*title)
  */
 	for (i = 7; i < TRANSFER_WIN_HEIGHT - 1; i++)
 		puttext(left, top + i, left + TRANSFER_WIN_WIDTH - 1, top + i, outline);
-
 
         /* Title */
 	gotoxy(left + TRANSFER_WIN_WIDTH - 20, top + i);
@@ -862,6 +889,7 @@ draw_transfer_window(char*title)
 	gettextinfo(&log_ti);
 	_setcursortype(_NOCURSOR);
 }
+
 void
 erase_transfer_window(void)
 {
@@ -877,6 +905,7 @@ erase_transfer_window(void)
 }
 void ascii_upload(FILE*fp);
 void raw_upload(FILE*fp);
+
 void
 begin_upload(struct bbslist*bbs, bool autozm, int lastch)
 {
@@ -981,6 +1010,7 @@ begin_upload(struct bbslist*bbs, bool autozm, int lastch)
 	freescreen(savscrn);
 	gotoxy(txtinfo.curx, txtinfo.cury);
 }
+
 void
 begin_download(struct bbslist*bbs)
 {
@@ -1047,6 +1077,7 @@ begin_download(struct bbslist*bbs)
 #if defined(__BORLANDC__)
  #pragma argsused
 #endif
+
 static BOOL
 is_connected(void*unused)
 {
@@ -1054,6 +1085,7 @@ is_connected(void*unused)
 		return true;
 	return conn_connected();
 }
+
 void
 raw_upload(FILE*fp)
 {
@@ -1079,6 +1111,7 @@ raw_upload(FILE*fp)
 	}
 	fclose(fp);
 }
+
 void
 ascii_upload(FILE*fp)
 {
@@ -1119,6 +1152,7 @@ ascii_upload(FILE*fp)
 	}
 	fclose(fp);
 }
+
 static void
 transfer_complete(bool success, bool was_binary)
 {
@@ -1143,6 +1177,7 @@ transfer_complete(bool success, bool was_binary)
 
 	erase_transfer_window();
 }
+
 void
 zmodem_upload(struct bbslist*bbs, FILE*fp, char*path)
 {
@@ -1186,6 +1221,7 @@ zmodem_upload(struct bbslist*bbs, FILE*fp, char*path)
 
 	transfer_complete(success, was_binary);
 }
+
 BOOL
 zmodem_duplicate_callback(void*cbdata, void*zm_void)
 {
@@ -1235,8 +1271,8 @@ zmodem_duplicate_callback(void*cbdata, void*zm_void)
 			case 1: /* Choose new name */
 				uifc.changes = 0;
 				uifc.helpbuf = "Duplicate Filename... enter new name";
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "New Filename: ", zm->current_file_name,
-				    sizeof(zm->current_file_name) - 1, K_EDIT) == -1) {
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "New Filename: ", zm->current_file_name
+				    , sizeof(zm->current_file_name) - 1, K_EDIT) == -1) {
 					loop = true;
 				}
 				else {
@@ -1256,6 +1292,7 @@ zmodem_duplicate_callback(void*cbdata, void*zm_void)
 	hold_update = old_hold;
 	return ret;
 }
+
 void
 zmodem_download(struct bbslist*bbs)
 {
@@ -1302,6 +1339,7 @@ zmodem_download(struct bbslist*bbs)
 
 uchar block[1024]; /* Block buffer                                      */
 ulong block_num;   /* Block number                                      */
+
 static BOOL
 xmodem_check_abort(void*vp)
 {
@@ -1342,6 +1380,7 @@ xmodem_check_abort(void*vp)
 	}
 	return xm->cancelled;
 }
+
 /*
  * **************************************************************************
  * Returns the number of blocks required to send len bytes
@@ -1362,6 +1401,7 @@ num_blocks(unsigned curr_block, uint64_t offset, uint64_t len, unsigned block_si
 #if defined(__BORLANDC__)
  #pragma argsused
 #endif
+
 void
 xmodem_progress(void*cbdata, unsigned block_num, int64_t offset, int64_t fsize, time_t start)
 {
@@ -1461,7 +1501,7 @@ xmodem_progress(void*cbdata, unsigned block_num, int64_t offset, int64_t fsize, 
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    , 60 - i, "");
 		}
-		else {   /* XModem receive */
+		else { /* XModem receive */
 			cprintf("Block (%lu%s): %lu  Byte: %" PRId64
 			    , xm->block_size % 1024L ? xm->block_size : xm->block_size / 1024L
 			    , xm->block_size % 1024L ? "" : "K"
@@ -1481,6 +1521,7 @@ xmodem_progress(void*cbdata, unsigned block_num, int64_t offset, int64_t fsize, 
 		hold_update = old_hold;
 	}
 }
+
 static int
 recv_g(void*cbdata, unsigned timeout)
 {
@@ -1489,6 +1530,7 @@ recv_g(void*cbdata, unsigned timeout)
 	xm->recv_byte = recv_byte;
 	return 'G';
 }
+
 static int
 recv_c(void*cbdata, unsigned timeout)
 {
@@ -1497,6 +1539,7 @@ recv_c(void*cbdata, unsigned timeout)
 	xm->recv_byte = recv_byte;
 	return 'C';
 }
+
 static int
 recv_nak(void*cbdata, unsigned timeout)
 {
@@ -1505,6 +1548,7 @@ recv_nak(void*cbdata, unsigned timeout)
 	xm->recv_byte = recv_byte;
 	return NAK;
 }
+
 void
 xmodem_upload(struct bbslist*bbs, FILE*fp, char*path, long mode, int lastch)
 {
@@ -1589,6 +1633,7 @@ xmodem_upload(struct bbslist*bbs, FILE*fp, char*path, long mode, int lastch)
 
 	transfer_complete(success, was_binary);
 }
+
 bool
 xmodem_duplicate(xmodem_t*xm, struct bbslist*bbs, char*path, size_t pathsize, char*fname)
 {
@@ -1637,8 +1682,8 @@ xmodem_duplicate(xmodem_t*xm, struct bbslist*bbs, char*path, size_t pathsize, ch
 				uifc.changes = 0;
 				uifc.helpbuf = "Duplicate Filename... enter new name";
 				SAFECOPY(newfname, getfname(fname));
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "New Filename: ", newfname,
-				    sizeof(newfname) - 1, K_EDIT) == -1) {
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "New Filename: ", newfname
+				    , sizeof(newfname) - 1, K_EDIT) == -1) {
 					loop = true;
 				}
 				else {
@@ -1660,6 +1705,7 @@ xmodem_duplicate(xmodem_t*xm, struct bbslist*bbs, char*path, size_t pathsize, ch
 	hold_update = old_hold;
 	return ret;
 }
+
 void
 xmodem_download(struct bbslist*bbs, long mode, char*path)
 {
@@ -1740,8 +1786,8 @@ xmodem_download(struct bbslist*bbs, long mode, char*path)
 				}
 				if (extra_pass) {
                                         // This is a hack for sz  0.12.21rc
-					lprintf(LOG_INFO,
-					    "No YMODEM header block after transfer, assuming end of batch");
+					lprintf(LOG_INFO
+					    , "No YMODEM header block after transfer, assuming end of batch");
 					goto end;
 				}
 				if ((i == NOINP) && (mode & GMODE)) { /* Timeout */
@@ -1755,8 +1801,8 @@ xmodem_download(struct bbslist*bbs, long mode, char*path)
 					mode |= XMODEM | CRC;
 					erase_transfer_window();
 					hold_update = 0;
-					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "XMODEM Filename", fname, sizeof(fname),
-					    0) == -1) {
+					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "XMODEM Filename", fname, sizeof(fname)
+					    , 0) == -1) {
 						xmodem_cancel(&xm);
 						goto end;
 					}
@@ -1790,24 +1836,24 @@ xmodem_download(struct bbslist*bbs, long mode, char*path)
 				extra_pass = false;
 				file_bytes = total_bytes = 0;
 				total_files = 0;
-				i = sscanf(((char*)block) + strlen((char*)block) + 1,
-				        "%" PRId64 " %lo %lo %lo %d %" PRId64
+				i = sscanf(((char*)block) + strlen((char*)block) + 1
+				        , "%" PRId64 " %lo %lo %lo %d %" PRId64
 				        ,
-				        &file_bytes                     /* file size (decimal) */
+				        &file_bytes  /* file size (decimal) */
 				        ,
-				        &tmpftime                       /* file time (octal unix format) */
+				        &tmpftime    /* file time (octal unix format) */
 				        ,
-				        &fmode                          /* file mode (not used) */
+				        &fmode       /* file mode (not used) */
 				        ,
-				        &serial_num                     /* program serial number */
+				        &serial_num  /* program serial number */
 				        ,
-				        &total_files                    /* remaining files to be sent */
+				        &total_files /* remaining files to be sent */
 				        ,
-				        &total_bytes                    /* remaining bytes to be sent */
+				        &total_bytes /* remaining bytes to be sent */
 				        );
 				ftime = tmpftime;
-				lprintf(LOG_DEBUG, "YMODEM header (%u fields): %s", i,
-				    block + strlen((char*)block) + 1);
+				lprintf(LOG_DEBUG, "YMODEM header (%u fields): %s", i
+				    , block + strlen((char*)block) + 1);
 				SAFECOPY(fname, ((char*)block));
 
 				if (!file_bytes)
@@ -1822,11 +1868,12 @@ xmodem_download(struct bbslist*bbs, long mode, char*path)
 
 				SAFEPRINTF2(str, "%s/%s", bbs->dldir, getfname(fname));
 				lprintf(LOG_INFO, "File size: %" PRId64 " bytes", file_bytes);
-				if (total_files > 1)
-					lprintf(LOG_INFO,
-					    "Remaining: %" PRId64 " bytes in %u files",
-					    total_bytes,
-					    total_files);
+				if (total_files > 1) {
+					lprintf(LOG_INFO
+					    , "Remaining: %" PRId64 " bytes in %u files"
+					    , total_bytes
+					    , total_files);
+				}
 			}
 		}
 
@@ -1914,8 +1961,8 @@ xmodem_download(struct bbslist*bbs, long mode, char*path)
 				flush_send(&xm);
 			}
 			if (file_bytes_left <= 0L) { /* No more bytes to receive */
-				lprintf(LOG_WARNING,
-				    "Sender attempted to send more bytes than were specified in header");
+				lprintf(LOG_WARNING
+				    , "Sender attempted to send more bytes than were specified in header");
 				break;
 			}
 			wr = xm.block_size;
@@ -1986,6 +2033,7 @@ end:
 		fclose(fp);
 	transfer_complete(success, was_binary);
 }
+
 /* End of X/Y-MODEM stuff */
 void
 music_control(struct bbslist*bbs)
@@ -2012,6 +2060,7 @@ music_control(struct bbslist*bbs)
 	restorescreen(savscrn);
 	freescreen(savscrn);
 }
+
 void
 font_control(struct bbslist*bbs, struct cterminal*cterm)
 {
@@ -2072,6 +2121,7 @@ font_control(struct bbslist*bbs, struct cterminal*cterm)
 	restorescreen(savscrn);
 	freescreen(savscrn);
 }
+
 void
 capture_control(struct bbslist*bbs)
 {
@@ -2144,16 +2194,17 @@ capture_control(struct bbslist*bbs)
 							memset(sauce.author, ' ', sizeof(sauce.author));
 							memset(sauce.group, ' ', sizeof(sauce.group));
 							if (bbs != NULL) {
-								memcpy(sauce.title, bbs->name,
-								    MIN(strlen(bbs->name), sizeof(sauce.title)));
-								memcpy(sauce.author, bbs->user,
-								    MIN(strlen(bbs->user), sizeof(sauce.author)));
+								memcpy(sauce.title, bbs->name
+								    , MIN(strlen(bbs->name), sizeof(sauce.title)));
+								memcpy(sauce.author, bbs->user
+								    , MIN(strlen(bbs->user), sizeof(sauce.author)));
 							}
-							if ((tm = localtime(&t)) != NULL)     // The null-terminator
-                                                                                              // overwrites the first
-                                                                                              // byte of filesize
+							if ((tm = localtime(&t)) != NULL) { // The null-terminator
+                                                                                            // overwrites the first
+                                                                                            // byte of filesize
 								sprintf(sauce.date, "%04u%02u%02u"
 								    , 1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday);
+							}
 							sauce.filesize = LE_INT32(ftell(fp)); // LE
 							sauce.datatype = sauce_datatype_bin;
 							sauce.filetype = cterm->width / 2;
@@ -2262,6 +2313,7 @@ capture_control(struct bbslist*bbs)
 		conn_send(ansi_replybuf, strlen((char*)ansi_replybuf), 0); \
 		updated = true; \
 	}
+
 int
 get_cache_fn_base(struct bbslist*bbs, char*fn, size_t fnsz)
 {
@@ -2275,6 +2327,7 @@ get_cache_fn_base(struct bbslist*bbs, char*fn, size_t fnsz)
 		return 0;
 	return 1;
 }
+
 int
 get_cache_fn_subdir(struct bbslist*bbs, char*fn, size_t fnsz, const char*subdir)
 {
@@ -2291,6 +2344,7 @@ get_cache_fn_subdir(struct bbslist*bbs, char*fn, size_t fnsz, const char*subdir)
 		return 0;
 	return 1;
 }
+
 static int
 clean_path(char*fn, size_t fnsz)
 {
@@ -2304,6 +2358,7 @@ clean_path(char*fn, size_t fnsz)
 	FREE_AND_NULL(fp);
 	return 1;
 }
+
 static void
 apc_handler(char*strbuf, size_t slen, void*apcd)
 {
@@ -2465,6 +2520,7 @@ apc_handler(char*strbuf, size_t slen, void*apcd)
 		}
 	}
 }
+
 void
 mouse_state_change(int type, int action, void*pms)
 {
@@ -2494,6 +2550,7 @@ mouse_state_change(int type, int action, void*pms)
 		}
 	}
 }
+
 int
 mouse_state_query(int type, void*pms)
 {
@@ -2503,6 +2560,7 @@ mouse_state_query(int type, void*pms)
 		return ms->flags & MS_FLAGS_SGR;
 	return type == ms->mode;
 }
+
 /* Win32 doesn't have ffs()... just use this everywhere. */
 static int
 my_ffs(int mask)
@@ -2515,6 +2573,7 @@ my_ffs(int mask)
 		mask = (unsigned int)mask >> 1;
 	return bit;
 }
+
 static int
 fill_mevent(char*buf, size_t bufsz, struct mouse_event*me, struct mouse_state*ms)
 {
@@ -2582,6 +2641,7 @@ fill_mevent(char*buf, size_t bufsz, struct mouse_event*me, struct mouse_state*ms
 		return ret;
 	}
 }
+
 void
 do_paste(void)
 {
@@ -2612,44 +2672,51 @@ do_paste(void)
 		}
 	}
 }
+
 bool
 doterm(struct bbslist*bbs)
 {
-	unsigned char      ch[2];
-	char               mouse_buf[64];
-	unsigned char      outbuf[OUTBUF_SIZE];
-	size_t             outbuf_size = 0;
-	int                key;
-	int                i, j;
-	struct vmem_cell  *vc;
-	BYTE               zrqinit[] = {ZDLE, ZHEX, '0', '0', 0}; /* for Zmodem auto-downloads */
-	BYTE               zrinit[] = {ZDLE, ZHEX, '0', '1', 0};  /* for Zmodem auto-uploads */
-	BYTE               zrqbuf[sizeof(zrqinit)];
-	int                inch;
-	long double        nextchar = 0;
-	long double        lastchar = 0;
-	long double        thischar = 0;
-	int                speed;
-	int                oldmc;
-	int                updated = false;
-	bool               sleep;
-	size_t             remain;
-	struct text_info   txtinfo;
+	unsigned char    ch[2];
+	char             mouse_buf[64];
+	unsigned char    outbuf[OUTBUF_SIZE];
+	size_t           outbuf_size = 0;
+	int              key;
+	int              i, j;
+	struct vmem_cell*vc;
+	BYTE             zrqinit[] = {ZDLE, ZHEX, '0', '0', 0};   /* for Zmodem auto-downloads */
+	BYTE             zrinit[] = {ZDLE, ZHEX, '0', '1', 0};    /* for Zmodem auto-uploads */
+	BYTE             zrqbuf[sizeof(zrqinit)];
+	int              inch;
+	long double      nextchar = 0;
+	long double      lastchar = 0;
+	long double      thischar = 0;
+	int              speed;
+	int              oldmc;
+	int              updated = false;
+	bool             sleep;
+	size_t           remain;
+	struct text_info txtinfo;
 
 #ifndef WITHOUT_OOII
-	BYTE               ooii_buf[256];
-	BYTE               ooii_init1[] =
-	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";                   /*
-                                                                                                                                                                                                                                                                                                                                 * for
-                                                                                                                                                                                                                                                                                                                                 * OOII
-                                                                                                                                                                                                                                                                                                                                 * auto-enable
-                                                                                                                                                                                                                                                                                                                                 */
-	BYTE               ooii_init2[] =
-	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\x1b[0m\x1b[2J\r\n\r\n\x1b[0;1;30mHX Force retinal scan in progress ... \x1b[0;0;30m";        /*
-                                                                                                                                                                                                                                                                                                                                 * for
-                                                                                                                                                                                                                                                                                                                                 * OOII
-                                                                                                                                                                                                                                                                                                                                 * auto-enable
-                                                                                                                                                                                                                                                                                                                                 */
+	BYTE             ooii_buf[256];
+	BYTE             ooii_init1[] =
+	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";            /*
+                                                                                                                                                                                                                                                                                                                          *
+                                                                                                                                                                                                                                                                                                                          * for
+                                                                                                                                                                                                                                                                                                                          *
+                                                                                                                                                                                                                                                                                                                          * OOII
+                                                                                                                                                                                                                                                                                                                          *
+                                                                                                                                                                                                                                                                                                                          * auto-enable
+                                                                                                                                                                                                                                                                                                                          */
+	BYTE ooii_init2[] =
+	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\x1b[0m\x1b[2J\r\n\r\n\x1b[0;1;30mHX Force retinal scan in progress ... \x1b[0;0;30m"; /*
+                                                                                                                                                                                                                                                                                                                          *
+                                                                                                                                                                                                                                                                                                                          * for
+                                                                                                                                                                                                                                                                                                                          *
+                                                                                                                                                                                                                                                                                                                          * OOII
+                                                                                                                                                                                                                                                                                                                          *
+                                                                                                                                                                                                                                                                                                                          * auto-enable
+                                                                                                                                                                                                                                                                                                                          */
 #endif
 	int                ooii_mode = 0;
 	recv_byte_buffer_len = recv_byte_buffer_pos = 0;
@@ -2673,14 +2740,14 @@ doterm(struct bbslist*bbs)
 	}
 	scrollback_lines = 0;
 	scrollback_mode = txtinfo.currmode;
-	cterm = cterm_init(term.height,
-	        term.width,
-	        term.x - 1,
-	        term.y - 1,
-	        settings.backlines,
-	        term.width,
-	        scrollback_buf,
-	        get_emulation(bbs));
+	cterm = cterm_init(term.height
+	        , term.width
+	        , term.x - 1
+	        , term.y - 1
+	        , settings.backlines
+	        , term.width
+	        , scrollback_buf
+	        , get_emulation(bbs));
 	if (!cterm)
 		return false;
 	cterm->apc_handler = apc_handler;
@@ -2707,10 +2774,13 @@ doterm(struct bbslist*bbs)
 	for (; !quitting;) {
 		hold_update = true;
 		sleep = true;
-		if (!term.nostatus)
-			update_status(bbs,
-			    (bbs->conn_type == CONN_TYPE_SERIAL || bbs->conn_type == CONN_TYPE_SERIAL_NORTS) ? bbs->bpsrate : speed,
+		if (!term.nostatus) {
+			update_status(bbs
+			    ,
+			    (bbs->conn_type == CONN_TYPE_SERIAL || bbs->conn_type == CONN_TYPE_SERIAL_NORTS) ? bbs->bpsrate : speed
+			    ,
 			    ooii_mode);
+		}
 		for (remain = count_data_waiting() /* Hack for connection check */ + (!is_connected(NULL)); remain;
 		    remain--) {
 			if (speed)
@@ -2726,8 +2796,8 @@ doterm(struct bbslist*bbs)
 							WRITE_OUTBUF();
 							hold_update = oldmc;
 							if (!bbs->hidepopups)
-								uifcmsg("Disconnected",
-								    "`Disconnected`\n\nRemote host dropped connection");
+								uifcmsg("Disconnected"
+								    , "`Disconnected`\n\nRemote host dropped connection");
 							check_exit(false);
 							cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
                                                                                                 * scrollback */
@@ -2786,9 +2856,10 @@ doterm(struct bbslist*bbs)
 						if ((inch == zrqinit[j]) || (inch == zrinit[j])) {
 							zrqbuf[j] = inch;
 							zrqbuf[++j] = 0;
-							if (j == sizeof(zrqinit) - 1) { /* Have full sequence (Assumes
-                                                                                         * zrinit and zrqinit are same
-                                                                                         * length */
+							if (j == sizeof(zrqinit) - 1) {
+                                                                /* Have full sequence (Assumes
+                                                                 * zrinit and zrqinit are same
+                                                                 * length */
 								WRITE_OUTBUF();
 								suspend_rip(true);
 								if (!strcmp((char*)zrqbuf, (char*)zrqinit))
@@ -2821,15 +2892,15 @@ doterm(struct bbslist*bbs)
 								ooii_buf[j] = 0;
 								if (inch == '|') {
 									WRITE_OUTBUF();
-									if (handle_ooii_code(ooii_buf, &ooii_mode,
-									    (unsigned char*)ansi_replybuf,
-									    sizeof(ansi_replybuf))) {
+									if (handle_ooii_code(ooii_buf, &ooii_mode
+									    , (unsigned char*)ansi_replybuf
+									    , sizeof(ansi_replybuf))) {
 										ooii_mode = 0;
 										xptone_close();
 									}
 									if (ansi_replybuf[0])
-										conn_send(ansi_replybuf,
-										    strlen((char*)ansi_replybuf), 0);
+										conn_send(ansi_replybuf
+										    , strlen((char*)ansi_replybuf), 0);
 									ooii_buf[0] = 0;
 								}
 								continue;
@@ -2841,8 +2912,8 @@ doterm(struct bbslist*bbs)
 								ooii_buf[j++] = inch;
 								ooii_buf[j] = 0;
 								if (ooii_init1[j] == 0) {
-									if (strcmp((char*)ooii_buf,
-									    (char*)ooii_init1) == 0) {
+									if (strcmp((char*)ooii_buf
+									    , (char*)ooii_init1) == 0) {
 										ooii_mode = 1;
 										xptone_open();
 									}
@@ -2853,8 +2924,8 @@ doterm(struct bbslist*bbs)
 								ooii_buf[j++] = inch;
 								ooii_buf[j] = 0;
 								if (ooii_init2[j] == 0) {
-									if (strcmp((char*)ooii_buf,
-									    (char*)ooii_init2) == 0) {
+									if (strcmp((char*)ooii_buf
+									    , (char*)ooii_init2) == 0) {
 										ooii_mode = 2;
 										xptone_open();
 									}
@@ -2924,15 +2995,16 @@ doterm(struct bbslist*bbs)
 						case CIOLIB_BUTTON_3_RELEASE:
 						case CIOLIB_MOUSE_MOVE:
 						case CIOLIB_BUTTON_1_CLICK:
-							conn_send(mouse_buf,
-							    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
+							conn_send(mouse_buf
+							    , fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms),
+							    0);
 							break;
 						case CIOLIB_BUTTON_4_PRESS:
 						case CIOLIB_BUTTON_5_PRESS:
 							if ((ms.mode != 9) && (ms.mode != 0)) {
-								conn_send(mouse_buf,
-								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent,
-								    &ms), 0);
+								conn_send(mouse_buf
+								    , fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent
+								    , &ms), 0);
 								break;
 							}
 							viewscroll();
@@ -2943,12 +3015,14 @@ doterm(struct bbslist*bbs)
 							break;
 						case CIOLIB_BUTTON_2_CLICK:
 						case CIOLIB_BUTTON_3_CLICK:
-							if (ms.mode == 9)
-								conn_send(mouse_buf,
-								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent,
-								    &ms), 0);
-							else
+							if (ms.mode == 9) {
+								conn_send(mouse_buf
+								    , fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent
+								    , &ms), 0);
+							}
+							else {
 								do_paste();
+							}
 							break;
 					}
 
@@ -3018,27 +3092,29 @@ doterm(struct bbslist*bbs)
 						if (bbs->conn_type != CONN_TYPE_SSHNA) {
 							if (bbs->user[0]) {
 								conn_send(bbs->user, strlen(bbs->user), 0);
-								conn_send(
-									cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
-									1,
-									0);
+								conn_send(cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r"
+								    ,
+								    1
+								    ,
+								    0);
 								SLEEP(10);
 							}
 						}
 						if (bbs->password[0]) {
 							conn_send(bbs->password, strlen(bbs->password), 0);
-							conn_send(
-								cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
-								1,
-								0);
+							conn_send(cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r"
+							    ,
+							    1
+							    ,
+							    0);
 							SLEEP(10);
 						}
 					}
 					if (bbs->syspass[0]) {
 						conn_send(bbs->syspass, strlen(bbs->syspass), 0);
-						conn_send(cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
-						    1,
-						    0);
+						conn_send(cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r"
+						    , 1
+						    , 0);
 					}
 					key = 0;
 					break;
@@ -3081,12 +3157,12 @@ doterm(struct bbslist*bbs)
 					setfont(0, false, 3);
 					setfont(0, false, 4);
 					if (quitting
-					    || confirm("Disconnect... Are you sure?",
-					    "Selecting Yes closes the connection\n")) {
+					    || confirm("Disconnect... Are you sure?"
+					    , "Selecting Yes closes the connection\n")) {
 						freescreen(savscrn);
 						setup_mouse_events(&ms);
-						cterm_clearscreen(cterm, cterm->attr);          /* Clear screen into
-                                                                                                 * scrollback */
+						cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
+                                                                                        * scrollback */
 						scrollback_lines = cterm->backpos;
 						cterm_end(cterm, 0);
 						cterm = NULL;
@@ -3107,7 +3183,8 @@ doterm(struct bbslist*bbs)
 					    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
 					    && (cio_api.mode != CIOLIB_MODE_ANSI))
 						break;
-                                        /* FALLTHROUGH for curses/ansi modes */
+
+                                /* FALLTHROUGH for curses/ansi modes */
 				case 0x2c00: /* ALT-Z */
 					if (bbs->hidepopups)
 						break;

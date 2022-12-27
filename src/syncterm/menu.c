@@ -14,6 +14,7 @@
 #include "term.h"
 #include "uifcinit.h"
 #include "window.h"
+
 void
 viewscroll(void)
 {
@@ -57,8 +58,8 @@ viewscroll(void)
 			top = 1;
 		if (top > cterm->backpos)
 			top = cterm->backpos;
-		vmem_puttext(term.x - 1, term.y - 1, term.x + term.width - 2, term.y + term.height - 2,
-		    scrollback + (term.width * top));
+		vmem_puttext(term.x - 1, term.y - 1, term.x + term.width - 2, term.y + term.height - 2
+		    , scrollback + (term.width * top));
 		cputs("Scrollback");
 		gotoxy(cterm->width - 9, 1);
 		cputs("Scrollback");
@@ -140,6 +141,7 @@ viewscroll(void)
 	freescreen(savscrn);
 	return;
 }
+
 int
 syncmenu(struct bbslist*bbs, int*speed)
 {
