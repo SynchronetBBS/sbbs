@@ -147,7 +147,7 @@ extern int default_font;
 #ifdef NEEDS_CFMAKERAW
 
 void
-cfmakeraw(struct termios*t)
+cfmakeraw(struct termios *t)
 {
 	t->c_iflag &= ~(IMAXBEL | IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
 	t->c_oflag &= ~OPOST;
@@ -214,12 +214,12 @@ daemon(int nochdir, int noclose)
  #endif /* ifdef NEEDS_DAEMON */
 
 static int
-openpty(int*amaster, int*aslave, char*name, struct termios*termp, struct winsize*winp)
+openpty(int *amaster, int *aslave, char *name, struct termios *termp, struct winsize *winp)
 {
-	char         line[] = "/dev/ptyXX";
-	const char  *cp1, *cp2;
-	int          master, slave, ttygid;
-	struct group*gr;
+	char          line[] = "/dev/ptyXX";
+	const char   *cp1, *cp2;
+	int           master, slave, ttygid;
+	struct group *gr;
 
 	if ((gr = getgrnam("tty")) != NULL)
 		ttygid = gr->gr_gid;
@@ -252,7 +252,7 @@ openpty(int*amaster, int*aslave, char*name, struct termios*termp, struct winsize
 						    , TCSAFLUSH, termp);
 					if (winp)
 						(void)ioctl(slave, TIOCSWINSZ
-						    , (char*)winp);
+						    , (char *)winp);
 					return 0;
 				}
 				(void)close(master);
@@ -264,7 +264,7 @@ openpty(int*amaster, int*aslave, char*name, struct termios*termp, struct winsize
 }
 
 static int
-forkpty(int*amaster, char*name, struct termios*termp, struct winsize*winp)
+forkpty(int *amaster, char *name, struct termios *termp, struct winsize *winp)
 {
 	int master, slave, pid;
 
@@ -301,7 +301,7 @@ static int status;
 #endif
 
 void
-pty_input_thread(void*args)
+pty_input_thread(void *args)
 {
 	fd_set rds;
 	int    rd;
@@ -352,7 +352,7 @@ pty_input_thread(void*args)
 #endif
 
 void
-pty_output_thread(void*args)
+pty_output_thread(void *args)
 {
 	fd_set wds;
 	int    wr;
@@ -408,7 +408,7 @@ pty_output_thread(void*args)
 }
 
 int
-pty_connect(struct bbslist*bbs)
+pty_connect(struct bbslist *bbs)
 {
 	struct winsize ws;
 	struct termios ts;
@@ -475,11 +475,11 @@ pty_connect(struct bbslist*bbs)
 			xp_asprintf_free(termcap);
 			setenv("MM_CHARSET", ciolib_cp[cp].name, 1);
 			if (bbs->addr[0]) {
-				execl("/bin/sh", "/bin/sh", "-c", bbs->addr, (char*)0);
+				execl("/bin/sh", "/bin/sh", "-c", bbs->addr, (char *)0);
 			}
 			else {
 				if (getenv("SHELL"))
-					execl(getenv("SHELL"), getenv("SHELL"), (char*)0);
+					execl(getenv("SHELL"), getenv("SHELL"), (char *)0);
 			}
 			exit(1);
 	}
@@ -490,13 +490,13 @@ pty_connect(struct bbslist*bbs)
 		destroy_conn_buf(&conn_inbuf);
 		return -1;
 	}
-	if (!(conn_api.rd_buf = (unsigned char*)malloc(BUFFER_SIZE))) {
+	if (!(conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
 		return -1;
 	}
 	conn_api.rd_buf_size = BUFFER_SIZE;
-	if (!(conn_api.wr_buf = (unsigned char*)malloc(BUFFER_SIZE))) {
+	if (!(conn_api.wr_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
 		free(conn_api.rd_buf);
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);

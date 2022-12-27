@@ -109,10 +109,10 @@ struct bbslist {
 	char               comment[1024];
 };
 
-extern char*music_names[];
-extern char music_helpbuf[];
+extern char *music_names[];
+extern char  music_helpbuf[];
 
-struct bbslist *show_bbslist(char*current, int connected);
+struct bbslist *show_bbslist(char *current, int connected);
 
 extern char       *log_levels[];
 extern char       *rate_names[];
@@ -120,14 +120,14 @@ extern int         rates[];
 extern int         sortorder[];
 extern ini_style_t ini_style;
 extern char       *screen_modes_enum[];
-void read_item(str_list_t listfile, struct bbslist*entry, char*bbsname, int id, int type);
-void read_list(char*listpath, struct bbslist**list, struct bbslist*defaults, int*i, int type);
-void free_list(struct bbslist**list, int listcount);
-void add_bbs(char*listpath, struct bbslist*bbs);
-int edit_list(struct bbslist**list, struct bbslist*item, char*listpath, int isdefault);
+void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int type);
+void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type);
+void free_list(struct bbslist **list, int listcount);
+void add_bbs(char *listpath, struct bbslist *bbs);
+int edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault);
 int get_rate_num(int rate);
-cterm_emulation_t get_emulation(struct bbslist*bbs);
+cterm_emulation_t get_emulation(struct bbslist *bbs);
 const char *get_emulation_str(cterm_emulation_t emu);
-void get_term_size(struct bbslist*bbs, int*cols, int*rows);
+void get_term_size(struct bbslist *bbs, int *cols, int *rows);
 
 #endif // ifndef _BBSLIST_H_

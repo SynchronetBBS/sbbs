@@ -61,11 +61,11 @@ struct conn_buffer conn_inbuf;
 struct conn_buffer conn_outbuf;
 
 /* Buffer functions */
-struct conn_buffer*
+struct conn_buffer *
 
-create_conn_buf(struct conn_buffer*buf, size_t size)
+create_conn_buf(struct conn_buffer *buf, size_t size)
 {
-	buf->buf = (unsigned char*)malloc(size);
+	buf->buf = (unsigned char *)malloc(size);
 	if (buf->buf == NULL)
 		return NULL;
 	buf->bufsize = size;
@@ -91,7 +91,7 @@ create_conn_buf(struct conn_buffer*buf, size_t size)
 }
 
 void
-destroy_conn_buf(struct conn_buffer*buf)
+destroy_conn_buf(struct conn_buffer *buf)
 {
 	if (buf->buf != NULL) {
 		FREE_AND_NULL(buf->buf);
@@ -109,7 +109,7 @@ destroy_conn_buf(struct conn_buffer*buf)
  * for the rest of the buffer functions
  */
 size_t
-conn_buf_bytes(struct conn_buffer*buf)
+conn_buf_bytes(struct conn_buffer *buf)
 {
 	if (buf->isempty)
 		return 0;
@@ -120,7 +120,7 @@ conn_buf_bytes(struct conn_buffer*buf)
 }
 
 size_t
-conn_buf_free(struct conn_buffer*buf)
+conn_buf_free(struct conn_buffer *buf)
 {
 	return buf->bufsize - conn_buf_bytes(buf);
 }
@@ -131,11 +131,11 @@ conn_buf_free(struct conn_buffer*buf)
  * copied out of the buffer
  */
 size_t
-conn_buf_peek(struct conn_buffer*buf, void*voutbuf, size_t outlen)
+conn_buf_peek(struct conn_buffer *buf, void *voutbuf, size_t outlen)
 {
-	unsigned char*outbuf = (unsigned char*)voutbuf;
-	size_t        copy_bytes;
-	size_t        chunk;
+	unsigned char *outbuf = (unsigned char *)voutbuf;
+	size_t         copy_bytes;
+	size_t         chunk;
 
 	copy_bytes = conn_buf_bytes(buf);
 	if (copy_bytes > outlen)
@@ -158,11 +158,11 @@ conn_buf_peek(struct conn_buffer*buf, void*voutbuf, size_t outlen)
  * bytes removed from the buffer.
  */
 size_t
-conn_buf_get(struct conn_buffer*buf, void*voutbuf, size_t outlen)
+conn_buf_get(struct conn_buffer *buf, void *voutbuf, size_t outlen)
 {
-	unsigned char*outbuf = (unsigned char*)voutbuf;
-	size_t        ret;
-	size_t        atstart;
+	unsigned char *outbuf = (unsigned char *)voutbuf;
+	size_t         ret;
+	size_t         atstart;
 
 	atstart = conn_buf_bytes(buf);
 	ret = conn_buf_peek(buf, outbuf, outlen);
@@ -182,11 +182,11 @@ conn_buf_get(struct conn_buffer*buf, void*voutbuf, size_t outlen)
  * returns the number of bytes written into the buffer
  */
 size_t
-conn_buf_put(struct conn_buffer*buf, const void*voutbuf, size_t outlen)
+conn_buf_put(struct conn_buffer *buf, const void *voutbuf, size_t outlen)
 {
-	const unsigned char*outbuf = (unsigned char*)voutbuf;
-	size_t              write_bytes;
-	size_t              chunk;
+	const unsigned char *outbuf = (unsigned char *)voutbuf;
+	size_t               write_bytes;
+	size_t               chunk;
 
 	write_bytes = conn_buf_free(buf);
 	if (write_bytes > outlen)
@@ -213,7 +213,7 @@ conn_buf_put(struct conn_buffer*buf, const void*voutbuf, size_t outlen)
  * in the buffer.
  */
 size_t
-conn_buf_wait_cond(struct conn_buffer*buf, size_t bcount, unsigned long timeout, int do_free)
+conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long timeout, int do_free)
 {
 	long double   now;
 	long double   end;
@@ -222,7 +222,7 @@ conn_buf_wait_cond(struct conn_buffer*buf, size_t bcount, unsigned long timeout,
 	int           retnow = 0;
 	sem_t        *sem;
 
-	size_t        (*cond)(struct conn_buffer*buf);
+	size_t        (*cond)(struct conn_buffer *buf);
 
 	if (do_free) {
 		sem = &(buf->out_sem);
@@ -283,9 +283,9 @@ conn_connected(void)
 }
 
 int
-conn_recv_upto(void*vbuffer, size_t buflen, unsigned timeout)
+conn_recv_upto(void *vbuffer, size_t buflen, unsigned timeout)
 {
-	char  *buffer = (char*)vbuffer;
+	char  *buffer = (char *)vbuffer;
 	size_t found = 0;
 	size_t obuflen;
 	void  *expanded;
@@ -317,10 +317,10 @@ conn_recv_upto(void*vbuffer, size_t buflen, unsigned timeout)
 }
 
 int
-conn_send_raw(const void*vbuffer, size_t buflen, unsigned int timeout)
+conn_send_raw(const void *vbuffer, size_t buflen, unsigned int timeout)
 {
-	const char*buffer = vbuffer;
-	size_t     found;
+	const char *buffer = vbuffer;
+	size_t      found;
 
 	pthread_mutex_lock(&(conn_outbuf.mutex));
 	found = conn_buf_wait_free(&conn_outbuf, buflen, timeout);
@@ -331,18 +331,18 @@ conn_send_raw(const void*vbuffer, size_t buflen, unsigned int timeout)
 }
 
 int
-conn_send(const void*vbuffer, size_t buflen, unsigned int timeout)
+conn_send(const void *vbuffer, size_t buflen, unsigned int timeout)
 {
-	const char*buffer = vbuffer;
-	size_t     found;
-	size_t     obuflen;
-	void      *expanded;
+	const char *buffer = vbuffer;
+	size_t      found;
+	size_t      obuflen;
+	void       *expanded;
 
 	if (conn_api.tx_parse_cb != NULL) {
 		expanded = conn_api.tx_parse_cb(buffer, buflen, &obuflen);
 	}
 	else {
-		expanded = (void*)buffer;
+		expanded = (void *)buffer;
 		obuflen = buflen;
 	}
 
@@ -359,7 +359,7 @@ conn_send(const void*vbuffer, size_t buflen, unsigned int timeout)
 }
 
 int
-conn_connect(struct bbslist*bbs)
+conn_connect(struct bbslist *bbs)
 {
 	char str[64];
 
@@ -457,30 +457,25 @@ conn_close(void)
 }
 
 enum failure_reason {
-	FAILURE_WHAT_FAILURE
-	,
-	FAILURE_RESOLVE
-	,
-	FAILURE_CANT_CREATE
-	,
-	FAILURE_CONNECT_ERROR
-	,
-	FAILURE_ABORTED
-	,
+	FAILURE_WHAT_FAILURE,
+	FAILURE_RESOLVE,
+	FAILURE_CANT_CREATE,
+	FAILURE_CONNECT_ERROR,
+	FAILURE_ABORTED,
 	FAILURE_DISCONNECTED
 };
 
 int
-conn_socket_connect(struct bbslist*bbs)
+conn_socket_connect(struct bbslist *bbs)
 {
-	SOCKET          sock = INVALID_SOCKET;
-	int             nonblock;
-	int             failcode = FAILURE_WHAT_FAILURE;
-	struct addrinfo hints;
-	struct addrinfo*res = NULL;
-	struct addrinfo*cur;
-	char            portnum[6];
-	char            str[LIST_ADDR_MAX + 40];
+	SOCKET           sock = INVALID_SOCKET;
+	int              nonblock;
+	int              failcode = FAILURE_WHAT_FAILURE;
+	struct addrinfo  hints;
+	struct addrinfo *res = NULL;
+	struct addrinfo *cur;
+	char             portnum[6];
+	char             str[LIST_ADDR_MAX + 40];
 
 	if (!bbs->hidepopups)
 		uifc.pop("Looking up host");
@@ -575,7 +570,7 @@ connected:
 		ioctlsocket(sock, FIONBIO, &nonblock);
 		if (!socket_recvdone(sock, 0)) {
 			int keepalives = true;
-			setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepalives, sizeof(keepalives));
+			setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepalives, sizeof(keepalives));
 
 			if (!bbs->hidepopups)
 				uifc.pop(NULL);

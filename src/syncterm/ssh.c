@@ -22,17 +22,17 @@ int             ssh_active = true;
 pthread_mutex_t ssh_mutex;
 
 void
-cryptlib_error_message(int status, const char*msg)
+cryptlib_error_message(int status, const char *msg)
 {
-	char str[64];
-	char str2[64];
-	char*errmsg;
-	int  err_len;
+	char  str[64];
+	char  str2[64];
+	char *errmsg;
+	int   err_len;
 
 	sprintf(str, "Error %d %s\r\n\r\n", status, msg);
 	pthread_mutex_lock(&ssh_mutex);
 	cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, NULL, &err_len);
-	errmsg = (char*)malloc(err_len + strlen(str) + 5);
+	errmsg = (char *)malloc(err_len + strlen(str) + 5);
 	strcpy(errmsg, str);
 	cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, errmsg + strlen(str), &err_len);
 	pthread_mutex_unlock(&ssh_mutex);
@@ -44,7 +44,7 @@ cryptlib_error_message(int status, const char*msg)
 }
 
 void
-ssh_input_thread(void*args)
+ssh_input_thread(void *args)
 {
 	int    status;
 	int    rd;
@@ -89,7 +89,7 @@ ssh_input_thread(void*args)
 }
 
 void
-ssh_output_thread(void*args)
+ssh_output_thread(void *args)
 {
 	int    wr;
 	int    ret;
@@ -134,14 +134,14 @@ ssh_output_thread(void*args)
 }
 
 int
-ssh_connect(struct bbslist*bbs)
+ssh_connect(struct bbslist *bbs)
 {
-	int        off = 1;
-	int        status;
-	char       password[MAX_PASSWD_LEN + 1];
-	char       username[MAX_USER_LEN + 1];
-	int        rows, cols;
-	const char*term;
+	int         off = 1;
+	int         status;
+	char        password[MAX_PASSWD_LEN + 1];
+	char        username[MAX_USER_LEN + 1];
+	int         rows, cols;
+	const char *term;
 
 	if (!bbs->hidepopups)
 		init_uifc(true, true);
@@ -184,7 +184,7 @@ ssh_connect(struct bbslist*bbs)
 	}
 
         /* we need to disable Nagle on the socket. */
-	setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char*)&off, sizeof(off));
+	setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off));
 
 	SAFECOPY(password, bbs->password);
 	SAFECOPY(username, bbs->user);
@@ -332,9 +332,9 @@ ssh_connect(struct bbslist*bbs)
 
 	create_conn_buf(&conn_inbuf, BUFFER_SIZE);
 	create_conn_buf(&conn_outbuf, BUFFER_SIZE);
-	conn_api.rd_buf = (unsigned char*)malloc(BUFFER_SIZE);
+	conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE);
 	conn_api.rd_buf_size = BUFFER_SIZE;
-	conn_api.wr_buf = (unsigned char*)malloc(BUFFER_SIZE);
+	conn_api.wr_buf = (unsigned char *)malloc(BUFFER_SIZE);
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
 	_beginthread(ssh_output_thread, 0, NULL);

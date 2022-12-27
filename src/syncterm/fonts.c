@@ -14,7 +14,7 @@
 #include "uifcinit.h"
 
 void
-free_font_files(struct font_files*ff)
+free_font_files(struct font_files *ff)
 {
 	int i;
 
@@ -30,7 +30,7 @@ free_font_files(struct font_files*ff)
 }
 
 void
-save_font_files(struct font_files*fonts)
+save_font_files(struct font_files *fonts)
 {
 	FILE      *inifile;
 	char       inipath[MAX_PATH + 1];
@@ -84,17 +84,17 @@ save_font_files(struct font_files*fonts)
 	strListFree(&ini_file);
 }
 
-struct font_files*
+struct font_files *
 
-read_font_files(int*count)
+read_font_files(int *count)
 {
-	FILE             *inifile;
-	char              inipath[MAX_PATH + 1];
-	char              fontpath[MAX_PATH + 1];
-	char             *fontid;
-	str_list_t        fonts;
-	struct font_files*ret = NULL;
-	struct font_files*tmp;
+	FILE              *inifile;
+	char               inipath[MAX_PATH + 1];
+	char               fontpath[MAX_PATH + 1];
+	char              *fontid;
+	str_list_t         fonts;
+	struct font_files *ret = NULL;
+	struct font_files *tmp;
 
 	*count = 0;
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
@@ -107,7 +107,7 @@ read_font_files(int*count)
 			continue;
 		}
 		(*count)++;
-		tmp = (struct font_files*)realloc(ret, sizeof(struct font_files) * (*count + 1));
+		tmp = (struct font_files *)realloc(ret, sizeof(struct font_files) * (*count + 1));
 		if (tmp == NULL) {
 			count--;
 			free(fontid);
@@ -132,12 +132,12 @@ read_font_files(int*count)
 void
 load_font_files(void)
 {
-	int               count = 0;
-	int               i;
-	int               nextfont = CONIO_FIRST_FREE_FONT;
-	struct font_files*ff;
-	FILE             *fontfile;
-	char             *fontdata;
+	int                count = 0;
+	int                i;
+	int                nextfont = CONIO_FIRST_FREE_FONT;
+	struct font_files *ff;
+	FILE              *fontfile;
+	char              *fontdata;
 
 	ff = read_font_files(&count);
 	for (i = 0; i < count; i++) {
@@ -155,7 +155,7 @@ load_font_files(void)
 			continue;
 		if (ff[i].path8x8 && ff[i].path8x8[0]) {
 			if ((fontfile = fopen(ff[i].path8x8, "rb")) != NULL) {
-				if ((fontdata = (char*)malloc(2048)) != NULL) {
+				if ((fontdata = (char *)malloc(2048)) != NULL) {
 					if (fread(fontdata, 1, 2048, fontfile) == 2048)
 						conio_fontdata[nextfont].eight_by_eight = fontdata;
 					else
@@ -166,7 +166,7 @@ load_font_files(void)
 		}
 		if (ff[i].path8x14 && ff[i].path8x14[0]) {
 			if ((fontfile = fopen(ff[i].path8x14, "rb")) != NULL) {
-				if ((fontdata = (char*)malloc(3584)) != NULL) {
+				if ((fontdata = (char *)malloc(3584)) != NULL) {
 					if (fread(fontdata, 1, 3584, fontfile) == 3584)
 						conio_fontdata[nextfont].eight_by_fourteen = fontdata;
 					else
@@ -177,7 +177,7 @@ load_font_files(void)
 		}
 		if (ff[i].path8x16 && ff[i].path8x16[0]) {
 			if ((fontfile = fopen(ff[i].path8x16, "rb")) != NULL) {
-				if ((fontdata = (char*)malloc(4096)) != NULL) {
+				if ((fontdata = (char *)malloc(4096)) != NULL) {
 					if (fread(fontdata, 1, 4096, fontfile) == 4096)
 						conio_fontdata[nextfont].eight_by_sixteen = fontdata;
 					else
@@ -202,7 +202,7 @@ load_font_files(void)
 }
 
 int
-find_font_id(char*name)
+find_font_id(char *name)
 {
 	int ret = 0;
 	int i;
@@ -221,17 +221,17 @@ find_font_id(char*name)
 void
 font_management(void)
 {
-	int               i, j;
-	int               cur = 0;
-	int               bar = 0;
-	int               fcur = 0;
-	int               fbar = 0;
-	int               count = 0;
-	struct font_files*fonts;
-	char             *opt[256];
-	char              opts[5][80];
-	struct font_files*tmp;
-	char              str[128];
+	int                i, j;
+	int                cur = 0;
+	int                bar = 0;
+	int                fcur = 0;
+	int                fbar = 0;
+	int                count = 0;
+	struct font_files *fonts;
+	char              *opt[256];
+	char               opts[5][80];
+	struct font_files *tmp;
+	char               str[128];
 
 	fonts = read_font_files(&count);
 	opts[4][0] = 0;
@@ -269,9 +269,9 @@ font_management(void)
 			return;
 		}
 		for (; !quitting;) {
-			char *fontmask;
-			int   show_filepick = 0;
-			char**path;
+			char  *fontmask;
+			int    show_filepick = 0;
+			char **path;
 
 			if (i & MSK_DEL) {
 				if (fonts) {
@@ -293,7 +293,7 @@ font_management(void)
 					break;
 				}
 				count++;
-				tmp = (struct font_files*)realloc(fonts, sizeof(struct font_files) * (count + 1));
+				tmp = (struct font_files *)realloc(fonts, sizeof(struct font_files) * (count + 1));
 				if (tmp == NULL) {
 					uifc.msg("realloc() failure, cannot add font.");
 					check_exit(false);
@@ -364,10 +364,10 @@ font_management(void)
 					break;
 			}
 			if (show_filepick && !safe_mode) {
-				int              result;
-				struct file_pick fpick;
-				struct vmem_cell*savbuf;
-				struct text_info ti;
+				int               result;
+				struct file_pick  fpick;
+				struct vmem_cell *savbuf;
+				struct text_info  ti;
 
 				gettextinfo(&ti);
 				savbuf = alloca((ti.screenheight - 2) * ti.screenwidth * sizeof(*savbuf));
