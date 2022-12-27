@@ -176,8 +176,8 @@ static const struct {
 	unsigned int  bytes_per_pixel; /* 3:RGB, 4:RGBA */
 	unsigned char pixel_data[64 * 64 * 4 + 1];
 } syncterm_icon = {
-	64, 64, 4
-	, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+	64, 64, 4,
+	"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 	"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 	"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 	"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
@@ -744,71 +744,71 @@ char *output_types[] = {
 	" (SDL, Console, ANSI)"
 #endif
 #ifdef __unix__
-	, "Curses"
-	, "Curses on cp437 Device"
-	, "Curses using US-ASCII"
+	, "Curses",
+	"Curses on cp437 Device",
+	"Curses using US-ASCII"
 #endif
 	, "ANSI"
 #if defined(__unix__) && !defined(NO_X)
 	, "X11"
 #endif
 #ifdef _WIN32
-	, "Win32 Console"
-	, "Win32 Console Fullscreen"
+	, "Win32 Console",
+	"Win32 Console Fullscreen"
 #endif
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
-	, "SDL"
-	, "SDL Fullscreen"
+	, "SDL",
+	"SDL Fullscreen"
 #endif
 	, NULL
 };
 int   output_map[] = {
 	CIOLIB_MODE_AUTO
 #ifdef __unix__
-	, CIOLIB_MODE_CURSES
-	, CIOLIB_MODE_CURSES_IBM
-	, CIOLIB_MODE_CURSES_ASCII
+	, CIOLIB_MODE_CURSES,
+	CIOLIB_MODE_CURSES_IBM,
+	CIOLIB_MODE_CURSES_ASCII
 #endif
 	, CIOLIB_MODE_ANSI
 #if defined(__unix__) && !defined(NO_X)
 	, CIOLIB_MODE_X
 #endif
 #ifdef _WIN32
-	, CIOLIB_MODE_CONIO
-	, CIOLIB_MODE_CONIO_FULLSCREEN
+	, CIOLIB_MODE_CONIO,
+	CIOLIB_MODE_CONIO_FULLSCREEN
 #endif
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
-	, CIOLIB_MODE_SDL
-	, CIOLIB_MODE_SDL_FULLSCREEN
+	, CIOLIB_MODE_SDL,
+	CIOLIB_MODE_SDL_FULLSCREEN
 #endif
 	, 0
 };
 char *output_descrs[] = {
-	"Autodetect"
-	, "Curses"
-	, "Curses on cp437 Device"
-	, "Curses using US-ASCII"
-	, "ANSI"
-	, "X11"
-	, "Win32 Console"
-	, "Win32 Console Fullscreen"
-	, "SDL"
-	, "SDL Fullscreen"
-	, NULL
+	"Autodetect",
+	"Curses",
+	"Curses on cp437 Device",
+	"Curses using US-ASCII",
+	"ANSI",
+	"X11",
+	"Win32 Console",
+	"Win32 Console Fullscreen",
+	"SDL",
+	"SDL Fullscreen",
+	NULL
 };
 
 char *output_enum[] = {
-	"Autodetect"
-	, "Curses"
-	, "Curses437"
-	, "CursesAscii"
-	, "ANSI"
-	, "X11"
-	, "WinConsole"
-	, "WinConsoleFullscreen"
-	, "SDL"
-	, "SDLFullscreen"
-	, NULL
+	"Autodetect",
+	"Curses",
+	"Curses437",
+	"CursesAscii",
+	"ANSI",
+	"X11",
+	"WinConsole",
+	"WinConsoleFullscreen",
+	"SDL",
+	"SDLFullscreen",
+	NULL
 };
 
 bool
@@ -958,8 +958,8 @@ get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 	switch (type) {
 		case SYNCTERM_PATH_INI:
 		case SYNCTERM_PATH_LIST:
-			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kPreferencesFolderType, kCreateFolder
-			    , &ref) != noErr)
+			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kPreferencesFolderType, kCreateFolder,
+			    &ref) != noErr)
 				return NULL;
 			if (FSRefMakePath(&ref, (unsigned char *)fn, fnlen) != noErr)
 				return NULL;
@@ -974,8 +974,8 @@ get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 
 		case SYNCTERM_DEFAULT_TRANSFER_PATH:
                         /* I'd love to use the "right" setting here, but don't know how */
-			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kDownloadsFolderType, kCreateFolder
-			    , &ref) != noErr)
+			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kDownloadsFolderType, kCreateFolder,
+			    &ref) != noErr)
 				return NULL;
 			if (FSRefMakePath(&ref, (unsigned char *)fn, fnlen) != noErr)
 				return NULL;
@@ -986,8 +986,8 @@ get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 			}
 			return fn;
 		case SYNCTERM_PATH_CACHE:
-			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kCachedDataFolderType, kCreateFolder
-			    , &ref) != noErr)
+			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kCachedDataFolderType, kCreateFolder,
+			    &ref) != noErr)
 				return NULL;
 			if (FSRefMakePath(&ref, (unsigned char *)fn, fnlen) != noErr)
 				return NULL;
@@ -1069,8 +1069,8 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 					break;
 				case SYNCTERM_DEFAULT_TRANSFER_PATH:
 					if (shared) {
-						if (GKFP(&FOLDERID_PublicDownloads, KF_FLAG_CREATE, NULL
-						    , &path) == S_OK)
+						if (GKFP(&FOLDERID_PublicDownloads, KF_FLAG_CREATE, NULL,
+						    &path) == S_OK)
 							we_got_this = true;
 					}
 					else {
@@ -1100,8 +1100,8 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 	if (!we_got_this) {
  #ifdef CSIDL_FLAG_CREATE
 		if (type == SYNCTERM_DEFAULT_TRANSFER_PATH) {
-			switch (SHGetFolderPath(NULL, CSIDL_PERSONAL | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT
-			    , fn)) {
+			switch (SHGetFolderPath(NULL, CSIDL_PERSONAL | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT,
+			    fn)) {
 				case E_FAIL:
 				case E_INVALIDARG:
 					getcwd(fn, fnlen);
@@ -1116,8 +1116,8 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 				MKDIR(fn);
 			return fn;
 		}
-		switch (SHGetFolderPath(NULL, (shared ? CSIDL_COMMON_APPDATA : CSIDL_APPDATA) | CSIDL_FLAG_CREATE, NULL
-		    , SHGFP_TYPE_CURRENT, fn)) {
+		switch (SHGetFolderPath(NULL, (shared ? CSIDL_COMMON_APPDATA : CSIDL_APPDATA) | CSIDL_FLAG_CREATE, NULL,
+		    SHGFP_TYPE_CURRENT, fn)) {
 			case E_FAIL:
 			case E_INVALIDARG:
 				strcpy(fn, ".");
@@ -1298,14 +1298,16 @@ load_settings(struct syncterm_settings *set)
 	set->startup_mode = iniReadEnum(inifile, "SyncTERM", "ScreenMode", screen_modes_enum, set->startup_mode);
 	set->output_mode = iniReadEnum(inifile, "SyncTERM", "OutputMode", output_enum, CIOLIB_MODE_AUTO);
 	set->backlines = iniReadInteger(inifile, "SyncTERM", "ScrollBackLines", 2000);
-	set->xfer_success_keypress_timeout = iniReadInteger(inifile
-	        , "SyncTERM"
-	        , "TransferSuccessKeypressTimeout"
-	        , /* seconds: */ 0);
-	set->xfer_failure_keypress_timeout = iniReadInteger(inifile
-	        , "SyncTERM"
-	        , "TransferFailureKeypressTimeout"
-	        , /* seconds: */ 60);
+	set->xfer_success_keypress_timeout = iniReadInteger(inifile,
+	        "SyncTERM",
+	        "TransferSuccessKeypressTimeout",
+
+                /* seconds: */ 0);
+	set->xfer_failure_keypress_timeout = iniReadInteger(inifile,
+	        "SyncTERM",
+	        "TransferFailureKeypressTimeout",
+
+                /* seconds: */ 60);
 	set->custom_cols = iniReadInteger(inifile, "SyncTERM", "CustomCols", 80);
 	set->custom_rows = iniReadInteger(inifile, "SyncTERM", "CustomRows", 25);
 	set->custom_fontheight = iniReadInteger(inifile, "SyncTERM", "CustomFontHeight", 16);
@@ -1729,8 +1731,8 @@ main(int argc, char **argv)
 #if 0
  #ifdef ALPHA
 	init_uifc(true, true);
-	uifc.showbuf(WIN_SAV | WIN_MID | WIN_HLP, 0, 0, 76, uifc.scrn_len - 2, "WARNING: ALPHA VERSION"
-	    , "This is an ~`ALPHA`~ version\n"
+	uifc.showbuf(WIN_SAV | WIN_MID | WIN_HLP, 0, 0, 76, uifc.scrn_len - 2, "WARNING: ALPHA VERSION",
+	    "This is an ~`ALPHA`~ version\n"
 	    "\n"
 	    "It has both known and unknown issues and is not believed to be suitable\n"
 	    "for use. By using it, you are agreeing to be free QA to find and report bugs.\n"
@@ -1744,8 +1746,8 @@ main(int argc, char **argv)
 	    "This message will appear every time you start this program.  Please\n"
 	    "consider running the latest release from:\n"
 	    "`https://sourceforge.net/projects/syncterm/files/latest/download`\n"
-	    "if you want a terminal that works."
-	    , NULL, NULL);
+	    "if you want a terminal that works.",
+	    NULL, NULL);
 	uifcbail();
  #endif /* ifdef ALPHA */
 #endif /* if 0 */
@@ -1822,12 +1824,12 @@ main(int argc, char **argv)
 				if ((listfile = fopen(settings.list_path, "r")) != NULL) {
 					inifile = iniReadFile(listfile);
 					fclose(listfile);
-					iniSetDateTime(&inifile
-					    , bbs->name
-					    , "LastConnected"
-					    , true
-					    , bbs->connected
-					    , &ini_style);
+					iniSetDateTime(&inifile,
+					    bbs->name,
+					    "LastConnected",
+					    true,
+					    bbs->connected,
+					    &ini_style);
 					iniSetInteger(&inifile, bbs->name, "TotalCalls", bbs->calls, &ini_style);
 					if ((listfile = fopen(settings.list_path, "w")) != NULL) {
 						iniWriteFile(listfile, inifile);
@@ -1882,8 +1884,8 @@ main(int argc, char **argv)
 						init_uifc(true, true);
 						i = 1;
 						if (!bbs->hidepopups) {
-							switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL
-							    , "Save this directory entry?", YesNo)) {
+							switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL,
+							    "Save this directory entry?", YesNo)) {
 								case 0: /* Yes */
 									edit_list(NULL, bbs, settings.list_path, false);
 									add_bbs(settings.list_path, bbs);

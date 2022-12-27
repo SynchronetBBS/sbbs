@@ -48,12 +48,12 @@
 
 struct conn_api    conn_api;
 char              *conn_types_enum[] = {
-	"Unknown", "RLogin", "RLoginReversed", "Telnet", "Raw", "SSH", "SSHNA", "Modem", "Serial", "NoRTS", "Shell"
-	, "MBBSGhost", "TelnetS", NULL
+	"Unknown", "RLogin", "RLoginReversed", "Telnet", "Raw", "SSH", "SSHNA", "Modem", "Serial", "NoRTS", "Shell",
+	"MBBSGhost", "TelnetS", NULL
 };
 char              *conn_types[] = {
-	"Unknown", "RLogin", "RLogin Reversed", "Telnet", "Raw", "SSH", "SSH (no auth)", "Modem", "Serial"
-	, "3-wire (No RTS)", "Shell", "MBBS GHost", "TelnetS", NULL
+	"Unknown", "RLogin", "RLogin Reversed", "Telnet", "Raw", "SSH", "SSH (no auth)", "Modem", "Serial",
+	"3-wire (No RTS)", "Shell", "MBBS GHost", "TelnetS", NULL
 };
 short unsigned int conn_ports[] = {0, 513, 513, 23, 0, 22, 22, 0, 0, 0, 65535, 992, 0};
 
@@ -457,11 +457,16 @@ conn_close(void)
 }
 
 enum failure_reason {
-	FAILURE_WHAT_FAILURE,
-	FAILURE_RESOLVE,
-	FAILURE_CANT_CREATE,
-	FAILURE_CONNECT_ERROR,
-	FAILURE_ABORTED,
+	FAILURE_WHAT_FAILURE
+	,
+	FAILURE_RESOLVE
+	,
+	FAILURE_CANT_CREATE
+	,
+	FAILURE_CONNECT_ERROR
+	,
+	FAILURE_ABORTED
+	,
 	FAILURE_DISCONNECTED
 };
 
@@ -597,15 +602,15 @@ connected:
 				break;
 			case FAILURE_CANT_CREATE:
 				sprintf(str, "Cannot create socket (%d)!", ERROR_VALUE);
-				uifcmsg(str
-				    , "`Unable to create socket`\n\n"
+				uifcmsg(str,
+				    "`Unable to create socket`\n\n"
 				    "Your system is either dangerously low on resources, or there\n"
 				    "is a problem with your TCP/IP stack.");
 				break;
 			case FAILURE_CONNECT_ERROR:
 				sprintf(str, "Connect error (%d)!", ERROR_VALUE);
-				uifcmsg(str
-				    , "`The connect call returned an error`\n\n"
+				uifcmsg(str,
+				    "`The connect call returned an error`\n\n"
 				    "The call to connect() returned an unexpected error code.");
 				break;
 			case FAILURE_ABORTED:
@@ -614,8 +619,8 @@ connected:
 				break;
 			case FAILURE_DISCONNECTED:
 				sprintf(str, "Connect error (%d)!", ERROR_VALUE);
-				uifcmsg(str
-				    , "`SyncTERM failed to connect`\n\n"
+				uifcmsg(str,
+				    "`SyncTERM failed to connect`\n\n"
 				    "After connect() succeeded, the socket was in a disconnected state.");
 				break;
 		}

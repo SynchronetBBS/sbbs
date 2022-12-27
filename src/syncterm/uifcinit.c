@@ -163,9 +163,9 @@ confirm(char *msg, char *helpbuf)
 	int                   i;
 	struct ciolib_screen *savscrn;
 	char                 *options[] = {
-		"Yes"
-		, "No"
-		, ""
+		"Yes",
+		"No",
+		""
 	};
 	int                   ret = true;
 	int                   copt = 0;

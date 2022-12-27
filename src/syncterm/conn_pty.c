@@ -123,9 +123,9 @@
 #endif
 #if defined(__QNX__) || defined(__solaris__) || defined(__NetBSD__) || defined(__HAIKU__)
 static cc_t ttydefchars[NCCS] = {
-	CEOF, CEOL, CEOL, CERASE, CWERASE, CKILL, CREPRINT
-	, CERASE2, CINTR, CQUIT, CSUSP, CDSUSP, CSTART, CSTOP, CLNEXT
-	, CDISCARD, CMIN, CTIME, CSTATUS
+	CEOF, CEOL, CEOL, CERASE, CWERASE, CKILL, CREPRINT,
+	CERASE2, CINTR, CQUIT, CSUSP, CDSUSP, CSTART, CSTOP, CLNEXT,
+	CDISCARD, CMIN, CTIME, CSTATUS
  #ifndef __solaris__
 	, _POSIX_VDISABLE
  #endif
@@ -176,11 +176,11 @@ login_tty(int fd)
 
  #ifdef NEEDS_DAEMON
 
-/*
- * **************************************************************************
- * Daemonizes the process
- ***************************************************************************
- */
+/****************************************************************************/
+
+/* Daemonizes the process                                                   */
+
+/****************************************************************************/
 int
 daemon(int nochdir, int noclose)
 {
@@ -248,11 +248,11 @@ openpty(int *amaster, int *aslave, char *name, struct termios *termp, struct win
 					if (name)
 						strcpy(name, line);
 					if (termp)
-						(void)tcsetattr(slave
-						    , TCSAFLUSH, termp);
+						(void)tcsetattr(slave,
+						    TCSAFLUSH, termp);
 					if (winp)
-						(void)ioctl(slave, TIOCSWINSZ
-						    , (char *)winp);
+						(void)ioctl(slave, TIOCSWINSZ,
+						    (char *)winp);
 					return 0;
 				}
 				(void)close(master);
@@ -459,8 +459,7 @@ pty_connect(struct bbslist *bbs)
 			        ":sc=\\E[s:se=\\E[m:sf=\\E[S:so=\\E[0;1;7m:sr=\\E[T:st=\\E[H"
 			        ":ta=^I:up=\\E[A:ve=\\E[?25h:vi=\\E[?25l:vs=\\E[?25h:"
 			        ,
-			        ws.ws_col
-			        ,
+			        ws.ws_col,
 			        ws.ws_row
 			        ,
 			        cio_api.options
