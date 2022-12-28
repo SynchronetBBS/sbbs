@@ -186,7 +186,7 @@ struct cterminal {
 	struct ciolib_pixels *sx_pixels;
 	unsigned long		sx_width;		// Width from raster attributes
 	unsigned long		sx_height;		// REMAINING heigh from raster attributes
-	uint8_t				*sx_mask;
+	struct ciolib_mask	*sx_mask;
 	int					sx_orig_cursor;	// Original value of cterm->cursor
 
 	/* APC Handler */

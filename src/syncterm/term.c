@@ -2,6 +2,7 @@
 
 /* $Id: term.c,v 1.387 2020/06/27 00:04:50 deuce Exp $ */
 
+#include <assert.h>
 #include <ciolib.h>
 #include <cterm.h>
 #include <genwrap.h>
@@ -52,6 +53,10 @@ static struct vmem_cell winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT +
                                                                                            * window */
 static struct text_info trans_ti;
 static struct text_info log_ti;
+
+static struct ciolib_pixels *pixmap_buffer;
+static uint8_t pnm_gamma[256];
+bool pnm_gamma_initialized = false;
 
 void
 get_cterm_size(int *cols, int *rows, int ns)
@@ -2360,13 +2365,790 @@ clean_path(char *fn, size_t fnsz)
 	return 1;
 }
 
+// ============ This section taken from pnmgamma.c ============
+/* pnmgamma.c - perform gamma correction on a PNM image
+**
+** Copyright (C) 1991 by Bill Davidson and Jef Poskanzer.
+**
+** Permission to use, copy, modify, and distribute this software and its
+** documentation for any purpose and without fee is hereby granted, provided
+** that the above copyright notice appear in all copies and that both that
+** copyright notice and this permission notice appear in supporting
+** documentation.  This software is provided "as is" without express or
+** implied warranty.
+*/
+
+static void
+buildBt709ToSrgbGamma(void) {
+    uint8_t const maxval = 255;
+    uint8_t const newMaxval = 255;
+    double const gammaSrgb = 2.4;
+/*----------------------------------------------------------------------------
+   Build a gamma table of size maxval+1 for the combination of the
+   inverse of ITU Rec BT.709 and the forward SRGB gamma transfer
+   functions.  I.e. this converts from Rec 709 to SRGB.
+
+   'gammaSrgb' must be 2.4 for true SRGB.
+-----------------------------------------------------------------------------*/
+    double const oneOverGamma709  = 0.45;
+    double const gamma709         = 1.0 / oneOverGamma709;
+    double const oneOverGammaSrgb = 1.0 / gammaSrgb;
+    double const normalizer       = 1.0 / maxval;
+
+    if (pnm_gamma_initialized)
+	return;
+    /* This transfer function is linear for sample values 0
+       .. maxval*.018 and an exponential for larger sample values.
+       The exponential is slightly stretched and translated, though,
+       unlike the popular pure exponential gamma transfer function.
+    */
+
+    uint8_t const linearCutoff709 = (uint8_t) (maxval * 0.018 + 0.5);
+    double const linearCompression709 = 
+        0.018 / (1.099 * pow(0.018, oneOverGamma709) - 0.099);
+
+    double const linearCutoffSrgb = 0.0031308;
+    double const linearExpansionSrgb = 
+        (1.055 * pow(0.0031308, oneOverGammaSrgb) - 0.055) / 0.0031308;
+
+    int i;
+
+    for (i = 0; i <= maxval; ++i) {
+        double const normalized = i * normalizer;
+            /* Xel sample value normalized to 0..1 */
+        double radiance;
+        double srgb;
+
+        if (i < linearCutoff709 / linearCompression709)
+            radiance = normalized * linearCompression709;
+        else
+            radiance = pow((normalized + 0.099) / 1.099, gamma709);
+
+        assert(radiance <= 1.0);
+
+        if (radiance < linearCutoffSrgb * normalizer)
+            srgb = radiance * linearExpansionSrgb;
+        else
+            srgb = 1.055 * pow(normalized, oneOverGammaSrgb) - 0.055;
+
+        assert(srgb <= 1.0);
+
+        pnm_gamma[i] = srgb * newMaxval + 0.5;
+    }
+    pnm_gamma_initialized = true;
+}
+
+
+// ====================== End of section ======================
+
+bool
+is_pbm_whitespace(char c)
+{
+	switch(c) {
+		case ' ':
+		case '\t':
+		case '\r':
+		case '\n':
+			return true;
+	}
+	return false;
+}
+
+bool
+read_pbm_char(FILE *f, off_t *lastpos, char *ch)
+{
+	if (lastpos != NULL) {
+		*lastpos = ftello(f);
+		if (*lastpos == -1)
+			return false;
+	}
+	if (fread(ch, 1, 1, f) != 1)
+		return false;
+	return true;
+}
+
+bool
+skip_pbm_whitespace(FILE *f)
+{
+	char ch;
+	off_t lastpos;
+	bool start = true;
+
+	for (;;) {
+		if (!read_pbm_char(f, &lastpos, &ch)) {
+			return false;
+		}
+		if (start) {
+			if (!is_pbm_whitespace(ch)) {
+				return false;
+			}
+			start = false;
+		}
+		if (ch == '#') {
+			do {
+				if (!read_pbm_char(f, &lastpos, &ch)) {
+					return false;
+				}
+			} while (ch != '\r' && ch != '\n');
+		}
+		if (!is_pbm_whitespace(ch)) {
+			if (fseeko(f, lastpos, SEEK_SET) != 0)
+				return false;
+			return true;
+		}
+	}
+}
+
+uintmax_t
+read_pbm_number(FILE *f)
+{
+	char value[256]; // Should be big enough ;)
+	char *endptr;
+	int i;
+	off_t lastpos;
+
+	for (i = 0; i < sizeof(value) - 1; i++) {
+		if (!read_pbm_char(f, &lastpos, &value[i]))
+			break;
+		if (value[i] < '0' || value[i] > '9') {
+			if (i == 0)
+				return UINTMAX_MAX;
+			value[i] = 0;
+			if (fseeko(f, lastpos, SEEK_SET) != 0)
+				return UINTMAX_MAX;
+			return strtoumax(value, &endptr, 10);
+		}
+	}
+	return UINTMAX_MAX;
+}
+
+static bool
+read_pbm_text_raster(struct ciolib_mask *ret, size_t sz, FILE *f)
+{
+	uintmax_t num;
+	size_t    i;
+	size_t    byte = 0;
+	uint8_t   bit = 7;
+
+	memset(ret->bits, 0, (sz + 7) / 8);
+	for (i = 0; i < sz; i++) {
+		num = read_pbm_number(f);
+		if (num > 1)
+			return false;
+		ret->bits[byte] |= num << bit;
+		if (bit == 0)
+			bit = 7;
+		else
+			bit--;
+	}
+	return true;
+}
+
+static uint32_t scale(uint32_t val, uint8_t max)
+{
+	double d;
+
+	d = val;
+	d /= max;
+	d *= 255;
+	if (d > 255)
+		d = 255;
+	if (d < 0)
+		d = 0;
+	return d;
+}
+
+static bool
+read_ppm_any_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, FILE *f, uintmax_t(*readnum)(FILE *))
+{
+	uintmax_t num;
+	size_t    i;
+	uint32_t  pdata;
+
+	buildBt709ToSrgbGamma();
+	for (i = 0; i < sz; i++) {
+		pdata = 0x80000000;	// RGB value (anything less is palette)
+
+		// Red
+		num = readnum(f);
+		if (num > 255)
+			return false;
+		pdata |= (pnm_gamma[scale(num, max)] << 16);
+
+		// Green
+		num = readnum(f);
+		if (num > 255)
+			return false;
+		pdata |= (pnm_gamma[scale(num, max)] << 8);
+
+		// Blue
+		num = readnum(f);
+		if (num > 255)
+			return false;
+		pdata |= (pnm_gamma[scale(num, max)] << 0);
+		p->pixels[i] = pdata;
+	}
+	return true;
+}
+
+static bool
+read_ppm_text_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, FILE *f)
+{
+	return read_ppm_any_raster(p, sz, max, f, read_pbm_number);
+}
+
+static uintmax_t
+read_pbm_byte(FILE *f)
+{
+	uint8_t b;
+
+	if (fread(&b, 1, 1, f) != 1)
+		return UINTMAX_MAX;
+	return b;
+}
+
+static bool
+read_ppm_raw_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, FILE *f)
+{
+	return read_ppm_any_raster(p, sz, max, f, read_pbm_byte);
+}
+
+static struct ciolib_pixels *
+alloc_ciolib_pixels(uint32_t w, uint32_t h)
+{
+	struct ciolib_pixels *ret;
+	size_t pszo;
+	size_t psz;
+
+	pszo = w * h;
+	if (h != 0 && pszo / h != w)
+		return NULL;
+	psz = pszo * sizeof(uint32_t);
+	if (psz / sizeof(uint32_t) != pszo)
+		return NULL;
+	ret = malloc(sizeof(*ret));
+	if (ret == NULL)
+		return ret;
+	ret->width = w;
+	ret->height = h;
+	ret->pixelsb = NULL;
+	if (psz > 0) {
+		ret->pixels = malloc(psz);
+		if (ret->pixels == NULL) {
+			free(ret);
+			return NULL;
+		}
+	}
+	else {
+		ret->pixels = NULL;
+	}
+	return ret;
+}
+
+static struct ciolib_mask *
+alloc_ciolib_mask(uint32_t w, uint32_t h)
+{
+	struct ciolib_mask *ret;
+	size_t psz;
+
+	psz = w * h;
+	if (h != 0 && psz / h != w)
+		return NULL;
+	ret = malloc(sizeof(*ret));
+	if (ret == NULL)
+		return ret;
+	ret->width = w;
+	ret->height = h;
+	if (psz > 0) {
+		ret->bits = malloc((psz + 7) / 8);
+		if (ret->bits == NULL) {
+			free(ret);
+			return NULL;
+		}
+	}
+	else {
+		ret->bits = NULL;
+	}
+	return ret;
+}
+
+static void *
+read_pbm(const char *fn, bool bitmap)
+{
+	uintmax_t             width;
+	uintmax_t             height;
+	uintmax_t             maxval;
+	uintmax_t             overflow;
+	FILE                 *f = fopen(fn, "rb");
+	struct ciolib_mask   *mret = NULL;
+	struct ciolib_pixels *pret = NULL;
+	size_t                raster_size;
+	size_t                raster_bit_size;
+	char                  magic[2];
+	bool                  b;
+
+	if (f == NULL)
+		goto fail;
+	if (fread(magic, sizeof(magic), 1, f) != 1)
+		goto fail;
+	if (magic[0] != 'P')
+		goto fail;
+	switch (magic[1]) {
+		case '1':
+		case '4':
+			if (!bitmap)
+				goto fail;
+			break;
+		case '3':
+		case '6':
+			if (bitmap)
+				goto fail;
+			break;
+		default:
+			goto fail;
+	}
+
+	if (!skip_pbm_whitespace(f))
+		goto fail;
+
+	assert(UINTMAX_MAX > UINT32_MAX);
+	width = read_pbm_number(f);
+	if (width > UINT32_MAX)
+		goto fail;
+
+	if (!skip_pbm_whitespace(f))
+		goto fail;
+
+	height = read_pbm_number(f);
+	if (height > UINT32_MAX)
+		goto fail;
+
+	// Check for multiplcation overflow
+	overflow = width * height;
+	if (width != 0 && overflow / height != width)
+		goto fail;
+	// Check for type truncation
+	raster_size = overflow;
+	if (raster_size != overflow)
+		goto fail;
+
+	if (magic[1] == '3' || magic[1] == '6') {
+		if (!skip_pbm_whitespace(f))
+			goto fail;
+
+		maxval = read_pbm_number(f);
+		if (maxval == UINTMAX_MAX)
+			goto fail;
+
+		if (maxval > 255)
+			goto fail;
+	}
+
+	if (!skip_pbm_whitespace(f))
+		goto fail;
+
+	switch (magic[1]) {
+		case '1':
+		case '4':
+			raster_bit_size = (raster_size + 7) / 8;
+			mret = alloc_ciolib_mask(width, height);
+			if (mret == NULL)
+				goto fail;
+			if (magic[1] == '1')
+				b = read_pbm_text_raster(mret, raster_size, f);
+			else
+				b = fread(mret->bits, raster_bit_size, 1, f) == 1;
+			if (!b)
+				goto fail;
+			fclose(f);
+			return mret;
+		case '3':
+		case '6':
+			pret = alloc_ciolib_pixels(width, height);
+			if (pret == NULL)
+				goto fail;
+			if (magic[1] == '3')
+				b = read_ppm_text_raster(pret, raster_size, maxval, f);
+			else
+				b = read_ppm_raw_raster(pret, raster_size, maxval, f);
+			if (!b)
+				goto fail;
+			fclose(f);
+			return pret;
+		default:
+			goto fail;
+	}
+
+fail:
+	freemask(mret);
+	freepixels(pret);
+	if (f)
+		fclose(f);
+	return NULL;
+}
+
+static void *
+b64_decode_alloc(const char *strbuf, size_t slen, size_t *outlen)
+{
+	void  *ret;
+	int    ol;
+	size_t sz;
+
+	sz = slen * 3 + 3 / 4 + 1;
+	ret = malloc(sz);
+	if (!ret)
+		return NULL;
+	ol = b64_decode(ret, sz, strbuf, slen);
+	if (ol == -1) {
+		free(ret);
+		return NULL;
+	}
+	if (outlen != NULL)
+		*outlen = ol;
+	return ret;
+}
+
+static void
+draw_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	struct ciolib_mask   *ctmask = NULL;
+	char                 *p;
+	char                 *p2;
+	void                 *mask = NULL;
+	char                 *maskfn = NULL;
+	char                 *ppmfn = NULL;
+	struct ciolib_pixels *ppmp = NULL;
+	unsigned long        *val;
+	unsigned long         sx = 0; // Source X to start at
+	unsigned long         sy = 0; // Source Y to start at
+	unsigned long         sw = 0; // Source width to show
+	unsigned long         sh = 0; // Source height to show
+	unsigned long         dx = 0; // Destination X to start at
+	unsigned long         dy = 0; // Destination Y to start at
+	unsigned long         mx = 0; // Mask X to start at
+	unsigned long         my = 0; // Mask Y to start at
+	unsigned long         mw = 0; // Width of the mask
+	unsigned long         mh = 0; // Height of the mask
+	size_t                mlen = 0;
+
+	for (p = str + 18; p && *p == ';'; p = strchr(p + 1, ';')) {
+		val = NULL;
+		switch (p[1]) {
+			case 'S':
+				switch (p[2]) {
+					case 'X':
+						val = &sx;
+						break;
+					case 'Y':
+						val = &sy;
+						break;
+					case 'W':
+						val = &sw;
+						break;
+					case 'H':
+						val = &sh;
+						break;
+				}
+				break;
+			case 'D':
+				switch (p[2]) {
+					case 'X':
+						val = &dx;
+						break;
+					case 'Y':
+						val = &dy;
+						break;
+				}
+				break;
+			case 'M':
+				if (p[2] == 'X') {
+					val = &mx;
+					break;
+				}
+				if (p[2] == 'Y') {
+					val = &my;
+					break;
+				}
+				if (p[2] == 'W') {
+					val = &mw;
+					break;
+				}
+				if (p[2] == 'H') {
+					val = &mh;
+					break;
+				}
+				if (strncmp(p + 2, "FILE=", 5) == 0) {
+					p2 = strchr(p + 7, ';');
+					if (p2 == NULL)
+						goto done;
+					freemask(ctmask);
+					ctmask = NULL;
+					free(mask);
+					mask = strndup(p + 7, p2 - p - 7);
+					continue; // Avoid val check
+				}
+				else if (strncmp(p + 2, "ASK=", 4) == 0) {
+					p2 = strchr(p + 6, ';');
+					if (p2 == NULL)
+						goto done;
+					FREE_AND_NULL(mask);
+					freemask(ctmask);
+					ctmask = alloc_ciolib_mask(0, 0);
+					ctmask->bits = b64_decode_alloc(p + 6, p2 - p + 5, &mlen);
+					if (ctmask->bits == NULL)
+						goto done;
+					continue; // Avoid val check
+				}
+				break;
+		}
+		if (val == NULL || p[3] != '=')
+			break;
+		*val = strtoul(p + 4, NULL, 10);
+	}
+
+	if (asprintf(&ppmfn, "%s%s", fn, p + 1) == -1)
+		goto done;
+	ppmp = read_pbm(ppmfn, false);
+	if (ppmp == NULL)
+		goto done;
+
+	if (sw == 0)
+		sw = ppmp->width - sx;
+	if (sh == 0)
+		sh = ppmp->height - sy;
+
+	if (ctmask != NULL) {
+		if (mlen < (sw * sh + 7) / 8)
+			goto done;
+		if (mw == 0)
+			mw = sw;
+		if (mh == 0)
+			mh = sh;
+		if (mlen < (mw * mh + 7) / 8)
+			goto done;
+		ctmask->width = mw;
+		ctmask->height = mh;
+	}
+
+	if (mask != NULL) {
+		if (asprintf(&maskfn, "%s%s", fn, mask) < 0)
+			goto done;
+	}
+
+	if (maskfn != NULL) {
+		freemask(ctmask);
+		ctmask = read_pbm(maskfn, true);
+		if (ctmask == NULL)
+			goto done;
+		if (ctmask->width < sw || ctmask->height < sh)
+			goto done;
+	}
+
+	if (ppmp != NULL)
+		setpixels(dx, dy, dx + sw - 1, dy + sh - 1, sx, sy, mx, my, ppmp, ctmask);
+done:
+	free(mask);
+	free(maskfn);
+	freemask(ctmask);
+	free(ppmfn);
+	freepixels(ppmp);
+}
+
+static void
+copy_pixmap(char *str, size_t slen, char *fn, void *apcd)
+{
+	unsigned long  x = 0; // Source X
+	unsigned long  y = 0; // Source Y
+	unsigned long  w = 0; // Source width
+	unsigned long  h = 0; // Source height
+	unsigned long *val;
+	char          *p;
+
+	for (p = str + 15; p && *p == ';'; p = strchr(p + 1, ';')) {
+		val = NULL;
+		switch (p[1]) {
+			case 'X':
+				val = &x;
+				break;
+			case 'Y':
+				val = &y;
+				break;
+			case 'W':
+				val = &w;
+				break;
+			case 'H':
+				val = &h;
+				break;
+		}
+		if (val == NULL || p[2] != '=')
+			return;
+		*val = strtol(p + 3, NULL, 10);
+	}
+
+	freepixels(pixmap_buffer);
+	pixmap_buffer = NULL;
+	if (w == 0 || h == 0) {
+		struct text_info ti;
+		int vmode;
+		gettextinfo(&ti);
+		vmode = find_vmode(ti.currmode);
+		if (vmode == -1)
+			return;
+		if (w == 0)
+			w = vparams[vmode].xres - x;
+		if (h == 0)
+			h = vparams[vmode].yres - y;
+	}
+	pixmap_buffer = getpixels(x, y, x + w - 1, y + h - 1, false);
+}
+
+static void
+paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
+{
+	unsigned long       sx = 0; // Source X
+	unsigned long       sy = 0; // Source Y
+	unsigned long       sw = 0; // Source width
+	unsigned long       sh = 0; // Source height
+	unsigned long       dx = 0; // Destination X
+	unsigned long       dy = 0; // Destination Y
+	unsigned long       mx = 0; // Destination X
+	unsigned long       my = 0; // Destination Y
+	unsigned long       mw = 0; // Width of the mask
+	unsigned long       mh = 0; // Height of the mask
+	unsigned long      *val;
+	void               *mask = NULL;
+	struct ciolib_mask *ctmask;
+	char               *maskfn = NULL;
+	char               *p;
+	char               *p2;
+	size_t              mlen = 0;
+
+	if (pixmap_buffer == NULL)
+		return;
+	for (p = str + 16; p && *p == ';'; p = strchr(p + 1, ';')) {
+		val = NULL;
+		switch (p[1]) {
+			case 'S':
+				switch (p[2]) {
+					case 'X':
+						val = &sx;
+						break;
+					case 'Y':
+						val = &sy;
+						break;
+					case 'W':
+						val = &sw;
+						break;
+					case 'H':
+						val = &sh;
+						break;
+				}
+				break;
+			case 'D':
+				switch (p[2]) {
+					case 'X':
+						val = &dx;
+						break;
+					case 'Y':
+						val = &dy;
+						break;
+				}
+				break;
+			case 'M':
+				if (p[2] == 'X') {
+					val = &mx;
+					break;
+				}
+				if (p[2] == 'Y') {
+					val = &my;
+					break;
+				}
+				if (p[2] == 'W') {
+					val = &mw;
+					break;
+				}
+				if (p[2] == 'H') {
+					val = &mh;
+					break;
+				}
+				if (strncmp(p + 2, "FILE=", 5) == 0) {
+					p2 = strchr(p + 7, ';');
+					if (p2 == NULL)
+						p2 = strchr(p + 6, 0);
+					if (p2 == NULL)
+						goto done;
+					freemask(ctmask);
+					ctmask = NULL;
+					free(mask);
+					mask = strndup(p + 7, p2 - p - 7);
+					continue; // Avoid val check
+				}
+				else if (strncmp(p + 2, "ASK=", 4) == 0) {
+					p2 = strchr(p + 6, ';');
+					if (p2 == NULL)
+						p2 = strchr(p + 6, 0);
+					if (p2 == NULL)
+						goto done;
+					FREE_AND_NULL(mask);
+					freemask(ctmask);
+					ctmask = alloc_ciolib_mask(0, 0);
+					if (ctmask == NULL)
+						goto done;
+					ctmask->bits = b64_decode_alloc(p + 6, p2 - p + 5, &mlen);
+					if (ctmask->bits == NULL)
+						goto done;
+					continue; // Avoid val check
+				}
+				break;
+		}
+		if (val == NULL || p[3] != '=')
+			break;
+		*val = strtoul(p + 4, NULL, 10);
+	}
+
+	if (sw == 0)
+		sw = pixmap_buffer->width - sx;
+	if (sh == 0)
+		sh = pixmap_buffer->height - sy;
+
+	if (ctmask != NULL) {
+		if (mlen < (sw * sh + 7) / 8)
+			goto done;
+		if (mw == 0)
+			mw = sw;
+		if (mh == 0)
+			mh = sh;
+		if (mlen < (mw * mh + 7) / 8)
+			goto done;
+		ctmask->width = mw;
+		ctmask->height = mh;
+	}
+
+	if (mask != NULL) {
+		if (asprintf(&maskfn, "%s%s", fn, mask) < 0)
+			goto done;
+	}
+
+	if (maskfn != NULL) {
+		freemask(ctmask);
+		ctmask = read_pbm(maskfn, true);
+		if (ctmask == NULL)
+			goto done;
+	}
+
+	setpixels(dx, dy, dx + sw - 1, dy + sh - 1, sx, sy, mx, my, pixmap_buffer, ctmask);
+done:
+	free(mask);
+	freemask(ctmask);
+}
+
 static void
 apc_handler(char *strbuf, size_t slen, void *apcd)
 {
 	char            fn[MAX_PATH + 1];
 	char            fn_root[MAX_PATH + 1];
 	FILE           *f;
-	int             rc;
+	size_t          rc;
 	size_t          sz;
 	char           *p;
 	char           *buf;
@@ -2393,15 +3175,9 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 		if (!clean_path(fn, sizeof(fn)))
 			return;
 		p++;
-		sz = (slen - (p - strbuf)) * 3 + 3 / 4 + 1;
-		buf = malloc(sz);
-		if (!buf)
+		buf = b64_decode_alloc(p, slen - (p - strbuf), &rc);
+		if (buf == NULL)
 			return;
-		rc = b64_decode(buf, sz, p, slen - (p - strbuf));
-		if (rc < 0) {
-			free(buf);
-			return;
-		}
 		p = strrchr(fn, '/');
 		if (p) {
 			*p = 0;
@@ -2519,6 +3295,17 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 			}
 			fclose(f);
 		}
+	}
+	else if (strncmp(strbuf, "SyncTERM:C;DrawPPM", 18) == 0) {
+                // Request to draw a 255 max PPM file from cache
+		//SyncTERM:C;DrawPPM;SX=x;SY=y;SW=w;SH=hDX=x;Dy=y;
+		draw_ppm_str_handler(strbuf, slen, fn, apcd);
+	}
+	else if (strncmp(strbuf, "SyncTERM:P;Copy", 15) == 0) {
+		copy_pixmap(strbuf, slen, fn, apcd);
+	}
+	else if (strncmp(strbuf, "SyncTERM:P;Paste", 16) == 0) {
+		paste_pixmap(strbuf, slen, fn, apcd);
 	}
 }
 
@@ -2724,6 +3511,8 @@ doterm(struct bbslist *bbs)
 	struct mouse_state ms = {0};
 	int                speedwatch = 0;
 
+	ciolib_freepixels(pixmap_buffer);
+	pixmap_buffer = NULL;
 	gettextinfo(&txtinfo);
 	if ((bbs->conn_type == CONN_TYPE_SERIAL) || (bbs->conn_type == CONN_TYPE_SERIAL_NORTS))
 		speed = 0;

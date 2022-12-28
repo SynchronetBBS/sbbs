@@ -270,6 +270,12 @@ struct ciolib_pixels {
 	uint32_t	height;
 };
 
+struct ciolib_mask {
+	uint8_t	*bits;
+	uint32_t width;
+	uint32_t height;
+};
+
 struct vmem_cell {
 	uint8_t legacy_attr;
 	uint8_t ch;
@@ -370,7 +376,7 @@ typedef struct {
 	int		(*attr2palette)	(uint8_t attr, uint32_t *fg, uint32_t *bg);
 	int		(*setpixel)	(uint32_t x, uint32_t y, uint32_t colour);
 	struct ciolib_pixels *(*getpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
-	int		(*setpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels, void *mask);
+	int		(*setpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask);
 	int 	(*get_modepalette)(uint32_t[16]);
 	int	(*set_modepalette)(uint32_t[16]);
 	uint32_t	(*map_rgb)(uint16_t r, uint16_t g, uint16_t b);
@@ -459,8 +465,9 @@ CIOLIBEXPORT int ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint1
 CIOLIBEXPORT int ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
 CIOLIBEXPORT int ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 CIOLIBEXPORT struct ciolib_pixels * ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
-CIOLIBEXPORT int ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels, void *mask);
+CIOLIBEXPORT int ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask);
 CIOLIBEXPORT void ciolib_freepixels(struct ciolib_pixels *pixels);
+CIOLIBEXPORT void ciolib_freemask(struct ciolib_mask *mask);
 CIOLIBEXPORT struct ciolib_screen * ciolib_savescreen(void);
 CIOLIBEXPORT void ciolib_freescreen(struct ciolib_screen *);
 CIOLIBEXPORT int ciolib_restorescreen(struct ciolib_screen *scrn);
@@ -544,8 +551,9 @@ CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
 	#define attr2palette(a,b,c)		ciolib_attr2palette(a,b,c)
 	#define setpixel(a,b,c)			ciolib_setpixel(a,b,c)
 	#define getpixels(a,b,c,d, e)		ciolib_getpixels(a,b,c,d, e)
-	#define setpixels(a,b,c,d,e,f,g,h)	ciolib_setpixels(a,b,c,d,e,f,g,h)
+	#define setpixels(a,b,c,d,e,f,g,h,i,j)	ciolib_setpixels(a,b,c,d,e,f,g,h,i,j)
 	#define freepixels(a)			ciolib_freepixels(a)
+	#define freemask(a)			ciolib_freemask(a)
 	#define savescreen()			ciolib_savescreen()
 	#define freescreen(a)			ciolib_freescreen(a)
 	#define restorescreen(a)		ciolib_restorescreen(a)

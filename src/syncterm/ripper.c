@@ -8200,7 +8200,7 @@ rv_paste(const char * const var, const void * const data)
 		    rip.clipx + rip.clipboard->width - 1,
 		    rip.clipy + rip.clipboard->height - 1,
 		    0,
-		    0,
+		    0, 0, 0,
 		    rip.clipboard,
 		    NULL);
 	}
@@ -9044,7 +9044,7 @@ invert_rect(int x1, int y1, int x2, int y2)
 			pixel++;
 		}
 	}
-	setpixels(x1, y1, x2, y2, 0, 0, pix, NULL);
+	setpixels(x1, y1, x2, y2, 0, 0, 0, 0, pix, NULL);
 	freepixels(pix);
 }
 
@@ -9878,7 +9878,7 @@ do_popup(const char * const str)
 	rip.color = oc;
 	rip.x = ox;
 	rip.y = oy;
-	setpixels(x1, y1, x2, y2, 0, 0, pix, NULL);
+	setpixels(x1, y1, x2, y2, 0, 0, 0, 0, pix, NULL);
 	if (ret < 0)
 		return NULL;
 	return p;
@@ -10145,7 +10145,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 
         // This is to force a vmem flush...
 	freepixels(getpixels(0, 0, 1, 1, true));
-	setpixels(0, 0, rip.x_max - 1, rip.y_max - 1, 0, 0, pix, NULL);
+	setpixels(0, 0, rip.x_max - 1, rip.y_max - 1, 0, 0, 0, 0, pix, NULL);
 	setwindow(cterm);
 	hold_update = old_hold;
 	freepixels(pix);
@@ -10977,7 +10977,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							    rip.viewport.ex,
 							    arg2,
 							    0,
-							    0,
+							    0, 0, 0,
 							    pix,
 							    NULL);
 							freepixels(pix);
@@ -13849,7 +13849,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									    x1 + rip.viewport.sx + pix->width - 1,
 									    y1 + rip.viewport.sy + pix->height - 1,
 									    0,
-									    0,
+									    0, 0, 0,
 									    pix,
 									    NULL);
 									if (arg2) {
@@ -14048,7 +14048,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 										    x1 + rip.viewport.sx + rip.clipboard->width - 1,
 										    bline,
 										    0,
-										    0,
+										    0, 0, 0,
 										    rip.clipboard,
 										    NULL);
 										break;
@@ -15045,7 +15045,7 @@ draw_glyph(uint8_t ch)
 
 				if (pix) {
 					setpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1,
-					    (vparams[vmode].charheight - 1) * vparams[vmode].rows - 1, 0, 0, pix, NULL);
+					    (vparams[vmode].charheight - 1) * vparams[vmode].rows - 1, 0, 0, 0, 0, pix, NULL);
 					freepixels(pix);
 					amiga_y -= (amiga_font->height << doubled);
 					for (int ypos = (vparams[vmode].charheight - 1) * vparams[vmode].rows;
@@ -15125,7 +15125,7 @@ draw_glyph(uint8_t ch)
 						    vparams[vmode].charwidth * vparams[vmode].cols - 1,
 						    (vparams[vmode].charheight - 1) * vparams[vmode].rows - 1,
 						    0,
-						    0,
+						    0, 0, 0,
 						    pix,
 						    NULL);
 						freepixels(pix);
@@ -15253,7 +15253,7 @@ do_skypix(char *buf, size_t len)
 			    argv[3] + argv[5] - 1,
 			    argv[4] + argv[6] - 1,
 			    argv[1],
-			    argv[2],
+			    argv[2], 0, 0,
 			    rip.clipboard,
 			    NULL);
 			break;

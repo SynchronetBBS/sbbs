@@ -242,12 +242,12 @@ ESC _	Application Program String (APS)
 	
 	SyncTERM implements the following APS commands:
 
-	APS SyncTERM:C;S;Ps1;Ps2 ST (Store file)
+	APS SyncTERM:C;S Ps1 Ps2 ST (Store file)
 		Where Ps1 is a filename and Ps2 is the base64 encoded
 		contents of the file.  The named file is stored in the
 		cache directory for the current connection.
 
-	APS SyncTERM:C;L ST (List Files)
+	APS SyncTERM:C;L Ps ST (List Files)
 		List files in cache.  SyncTERM responds with
 		an APS string with lines separated by newlines.  The
 		first line is always "SyncTERM:C;L\n" and for each
@@ -258,10 +258,92 @@ ESC _	Application Program String (APS)
 		And additional argument can be specified as a glob(3)
 		pattern (defaults to "*") in APS SyncTERM:C;L;Ps ST.
 
-	APS SyncTERM:C;SetFont;Pn;Ps
+	APS SyncTERM:C;SetFont Pn Ps
 		Where Pn is a font slot number (max 255) and Ps is a
 		filename in the cache.  This sets font slot Pn to use
 		the specified font file.
+
+	APS SyncTERM:C;DrawPPM Ps... Ps2
+		Draws a PPM from the cache directory on the screen.
+		Ps2 is the filename and is required.  Arguments for
+		Ps are optional.  The following options can be included
+		(separated by semi-colons):
+
+		SX=#
+			Sets the left X position in the specified image
+			to copy from.  Default = 0.
+		SY=#
+			Sets the top Y position in the specified image
+			to copy from.  Default = 0.
+		SW=#
+			Sets the width of the portion of the image to
+			copy.  Default = Image width - SX
+		SH=#
+			Sets the height of the portion of the image to
+			copy.  Default = Image height - SH
+		DX=#
+			Sets the X position on the screen to draw the
+			image at.  Default = 0.
+		DY=#
+			Sets the Y position on the screen to draw the
+			image at.  Default = 0.
+		MX=#
+			Sets the X position in the mask to start
+			applying from.  Default = 0.
+		MY=#
+			Sets the Y position in the mask to start
+			applying from.  Default = 0.
+		MW=#
+			Sets the overall width of the mask (not the
+			width to apply).  If MFILE is not specified,
+			and a mask is (ie: using MASK=), this is
+			required.  If MFILE is specified, the width
+			is read from the file.
+		MH=#
+			Sets the overall height of the mask (not the
+			height to apply).  If MFILE is not specified,
+			and a mask is (ie: using MASK=), this is
+			required.  If MFILE is specified, the width
+			is read from the file.
+		MFILE=<filename>
+			Specifies a filename in the cache directory of
+			a PBM file specifying a mask of which pixels
+			to copy.  Any pixel set to black (ie: 1) in the
+			PBM will be drawn from the source image.  Pixels
+			set to white (ie: 0) will be left untouched.
+		MASK=<maskbits>
+			Specifies a base64-encoded bitmap, each set bit
+			will be drawn from the source image, cleared
+			bits will not be drawn.  Requires MW= and MH=
+			to be specified.
+
+		The PPM file may be raw (preferred) or text.  SyncTERM
+		does not support more than 255 values per colour channel
+		and assumes it is correctly using the BT.709 gamma
+		transfer.
+
+	APS SyncTERM:P;Copy Ps...
+		Copies a portion of the screen into an internal buffer
+		for use with the Paste function.  Defaults to copying
+		the entire screen.
+
+		X=#
+			Sets the left X position on the screen to start
+			copying at.  Default = 0.
+		Y=#
+			Sets the top Y position on the screen to start
+			copying at.  Default = 0.
+		W=#
+			Sets the width to copy.
+			Default = Screen width - X.
+		H=#
+			Sets the height to copy.
+			Default = Screen height - X.
+
+	APS SyncTERM:P,Paste Ps...
+		Pastes from the copied buffer.  Supports the same
+		options as the Cache DrawPPM command except for the
+		filename.
 
 ESC c	Reset to Initial State (RIS)
 	Resets all the terminal settings, clears the screen, and homes

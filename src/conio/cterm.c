@@ -1674,8 +1674,9 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 				cterm->sx_pixels->pixelsb = NULL;
 				cterm->sx_pixels->width = ti.screenwidth * vparams[vmode].charwidth;
 				cterm->sx_pixels->height = cterm->sx_iv * 6;
-				cterm->sx_mask = malloc((cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
-				memset(cterm->sx_mask, 0, (cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
+				cterm->sx_mask = malloc(sizeof(struct ciolib_mask));
+				cterm->sx_mask->bits = malloc((cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
+				memset(cterm->sx_mask->bits, 0, (cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
 			}
 			if (cterm->sx_x == cterm->sx_left && cterm->sx_height && cterm->sx_width && cterm->sx_first_pass) {
 				/* Fill in the background of the line */
@@ -1684,7 +1685,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 						for (k = 0; k < cterm->sx_ih; k++) {
 							pos = i * cterm->sx_iv * cterm->sx_pixels->width + j * cterm->sx_pixels->width + cterm->sx_x + k;
 							cterm->sx_pixels->pixels[pos] = cterm->sx_bg;
-							cterm->sx_mask[pos/8] |= (0x80 >> (pos % 8));
+							cterm->sx_mask->bits[pos/8] |= (0x80 >> (pos % 8));
 						}
 					}
 				}
@@ -1696,7 +1697,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 							for (k = 0; k < cterm->sx_ih; k++) {
 								pos = i * cterm->sx_iv * cterm->sx_pixels->width + j * cterm->sx_pixels->width + cterm->sx_x + k;
 								cterm->sx_pixels->pixels[pos] = cterm->sx_fg;
-								cterm->sx_mask[pos/8] |= (0x80 >> (pos % 8));
+								cterm->sx_mask->bits[pos/8] |= (0x80 >> (pos % 8));
 							}
 						}
 					}
@@ -1706,7 +1707,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 								for (k = 0; k < cterm->sx_ih; k++) {
 									pos = i * cterm->sx_iv * cterm->sx_pixels->width + j * cterm->sx_pixels->width + cterm->sx_x + k;
 									cterm->sx_pixels->pixels[pos] = cterm->sx_bg;
-									cterm->sx_mask[pos/8] |= (0x80 >> (pos % 8));
+									cterm->sx_mask->bits[pos/8] |= (0x80 >> (pos % 8));
 								}
 							}
 						}
@@ -1715,7 +1716,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 								for (k = 0; k < cterm->sx_ih; k++) {
 									pos = i * cterm->sx_iv * cterm->sx_pixels->width + j * cterm->sx_pixels->width + cterm->sx_x + k;
 									if (cterm->sx_first_pass)
-										cterm->sx_mask[pos/8] &= ~(0x80 >> (pos % 8));
+										cterm->sx_mask->bits[pos/8] &= ~(0x80 >> (pos % 8));
 								}
 							}
 						}
@@ -1804,7 +1805,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 
 						if (vmode == -1)
 							return;
-						setpixels(cterm->sx_left, cterm->sx_y, cterm->sx_row_max_x, cterm->sx_y + 6 * cterm->sx_iv - 1, cterm->sx_left, 0, cterm->sx_pixels, cterm->sx_mask);
+						setpixels(cterm->sx_left, cterm->sx_y, cterm->sx_row_max_x, cterm->sx_y + 6 * cterm->sx_iv - 1, cterm->sx_left, 0, cterm->sx_left, 0, cterm->sx_pixels, cterm->sx_mask);
 						cterm->sx_row_max_x = 0;
 
 						if ((!(cterm->extattr & CTERM_EXTATTR_SXSCROLL)) && (((cterm->sx_y + 6 * cterm->sx_iv) + 6*cterm->sx_iv - 1) >= (cterm->y + max_row - 1) * vparams[vmode].charheight)) {
@@ -1839,7 +1840,7 @@ all_done:
 	vmode = find_vmode(ti.currmode);
 
 	if (cterm->sx_row_max_x) {
-		setpixels(cterm->sx_left, cterm->sx_y, cterm->sx_row_max_x, cterm->sx_y + 6 * cterm->sx_iv - 1, cterm->sx_left, 0, cterm->sx_pixels, cterm->sx_mask);
+		setpixels(cterm->sx_left, cterm->sx_y, cterm->sx_row_max_x, cterm->sx_y + 6 * cterm->sx_iv - 1, cterm->sx_left, 0, cterm->sx_left, 0, cterm->sx_pixels, cterm->sx_mask);
 	}
 
 	*cterm->hold_update=cterm->sx_hold_update;
@@ -1860,7 +1861,7 @@ all_done:
 			for (j = 0; j < cterm->sx_width*cterm->sx_ih; j++)
 				px.pixels[i*cterm->sx_width*cterm->sx_ih + j] = cterm->sx_bg;
 		}
-		setpixels(cterm->sx_x, cterm->sx_y, cterm->sx_x + cterm->sx_width - 1, cterm->sx_y + cterm->sx_height - 1, 0, 0, &px, NULL);
+		setpixels(cterm->sx_x, cterm->sx_y, cterm->sx_x + cterm->sx_width - 1, cterm->sx_y + cterm->sx_height - 1, 0, 0, 0, 0, &px, NULL);
 		free(px.pixels);
 	}
 
@@ -4398,7 +4399,7 @@ cterm_reset(struct cterminal *cterm)
 
 struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
-	char	*revision="$Revision: 1.314 $";
+	char	*revision="$Revision: 1.315 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;
