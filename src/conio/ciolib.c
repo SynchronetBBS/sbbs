@@ -129,8 +129,9 @@ CIOLIBEXPORT int ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint1
 CIOLIBEXPORT int ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
 CIOLIBEXPORT int ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 CIOLIBEXPORT struct ciolib_pixels * ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
-CIOLIBEXPORT int ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels, void *mask);
+CIOLIBEXPORT int ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask);
 CIOLIBEXPORT void ciolib_freepixels(struct ciolib_pixels *pixels);
+CIOLIBEXPORT void ciolib_freemask(struct ciolib_mask *mask);
 CIOLIBEXPORT struct ciolib_screen * ciolib_savescreen(void);
 CIOLIBEXPORT void ciolib_freescreen(struct ciolib_screen *);
 CIOLIBEXPORT int ciolib_restorescreen(struct ciolib_screen *scrn);
@@ -1630,12 +1631,12 @@ CIOLIBEXPORT struct ciolib_pixels * ciolib_getpixels(uint32_t sx, uint32_t sy, u
 }
 
 /* Returns non-zero on success */
-CIOLIBEXPORT int ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels, void *mask)
+CIOLIBEXPORT int ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask)
 {
 	CIOLIB_INIT();
 
 	if (cio_api.setpixels)
-		return cio_api.setpixels(sx, sy, ex, ey, x_off, y_off, pixels, mask);
+		return cio_api.setpixels(sx, sy, ex, ey, x_off, y_off, mx_off, my_off, pixels, mask);
 	return 0;
 }
 
@@ -1647,6 +1648,15 @@ CIOLIBEXPORT void ciolib_freepixels(struct ciolib_pixels *pixels)
 	FREE_AND_NULL(pixels->pixels);
 	FREE_AND_NULL(pixels->pixelsb);
 	FREE_AND_NULL(pixels);
+}
+
+CIOLIBEXPORT void ciolib_freemask(struct ciolib_mask *mask)
+{
+	if (mask == NULL)
+		return;
+
+	FREE_AND_NULL(mask->bits);
+	FREE_AND_NULL(mask);
 }
 
 /* Returns NULL on failure */
@@ -1713,7 +1723,7 @@ CIOLIBEXPORT int ciolib_restorescreen(struct ciolib_screen *scrn)
 	ciolib_window(scrn->text_info.winleft, scrn->text_info.wintop, scrn->text_info.winright, scrn->text_info.winbottom);
 	vmode = find_vmode(scrn->text_info.currmode);
 	if (vmode != -1 && scrn->pixels != NULL)
-		ciolib_setpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1, vparams[vmode].charheight * vparams[vmode].rows - 1, 0, 0, scrn->pixels, NULL);
+		ciolib_setpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1, vparams[vmode].charheight * vparams[vmode].rows - 1, 0, 0, 0, 0, scrn->pixels, NULL);
 	for (i=0; i<5; i++)
 		ciolib_setfont(scrn->fonts[i], FALSE, i);
 	ciolib_setvideoflags(scrn->flags);

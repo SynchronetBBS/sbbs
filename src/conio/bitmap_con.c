@@ -1388,14 +1388,14 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	return 1;
 }
 
-int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels, void *mask)
+int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask)
 {
 	uint32_t x, y;
 	uint32_t width,height;
-	char *m = mask;
 	int mask_bit;
 	size_t mask_byte;
 	size_t pos;
+	size_t mpos;
 
 	if (pixels == NULL)
 		return 0;
@@ -1411,6 +1411,13 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 
 	if (height + y_off > pixels->height)
 		return 0;
+
+	if (mask != NULL) {
+		if (width + mx_off > mask->width)
+			return 0;
+		if (height + my_off > mask->height)
+			return 0;
+	}
 
 	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&screena.screenlock);
@@ -1440,11 +1447,12 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 			}
 		}
 		else {
+			mpos = mask->width * (y - sy + my_off) + mx_off;
 			for (x = sx; x <= ex; x++) {
-				mask_byte = pos / 8;
-				mask_bit = pos % 8;
+				mask_byte = mpos / 8;
+				mask_bit = mpos % 8;
 				mask_bit = 0x80 >> mask_bit;
-				if (m[mask_byte] & mask_bit) {
+				if (mask->bits[mask_byte] & mask_bit) {
 					screena.screen[PIXEL_OFFSET(screena, x, y)] = pixels->pixels[pos];
 					screena.rect->data[PIXEL_OFFSET(screena, x, y)] = color_value(pixels->pixels[pos]);
 					if (pixels->pixelsb) {
@@ -1457,6 +1465,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 					}
 				}
 				pos++;
+				mpos++;
 			}
 		}
 	}
