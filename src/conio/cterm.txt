@@ -316,17 +316,29 @@ ESC _	Application Program String (APS)
 			will be drawn from the source image, cleared
 			bits will not be drawn.  Requires MW= and MH=
 			to be specified.
+		MBUF
+			Uses the loaded mask buffer.
 
 		The PPM file may be raw (preferred) or text.  SyncTERM
 		does not support more than 255 values per colour channel
 		and assumes it is correctly using the BT.709 gamma
 		transfer.
 
+	APS SyncTERM:C;LoadPPM Ps... Ps0
+		Loads a PPM to a buffer.  Ps0 is the filename
+		B=#
+			Selects the buffer (0 or 1 only) to paste from.
+		
+	APS SyncTERM:C;LoadPBM Ps... Ps0
+		Loads a PBM to a buffer.  Ps0 is the filename
+		
 	APS SyncTERM:P;Copy Ps...
 		Copies a portion of the screen into an internal buffer
 		for use with the Paste function.  Defaults to copying
 		the entire screen.
 
+		B=#
+			Selects the buffer (0 or 1 only) to copy to.
 		X=#
 			Sets the left X position on the screen to start
 			copying at.  Default = 0.
@@ -343,7 +355,9 @@ ESC _	Application Program String (APS)
 	APS SyncTERM:P,Paste Ps...
 		Pastes from the copied buffer.  Supports the same
 		options as the Cache DrawPPM command except for the
-		filename.
+		filename, and adds the B= option.
+		B=#
+			Selects the buffer (0 or 1 only) to paste from.
 
 ESC c	Reset to Initial State (RIS)
 	Resets all the terminal settings, clears the screen, and homes
