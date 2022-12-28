@@ -54,7 +54,8 @@ static struct vmem_cell winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT +
 static struct text_info trans_ti;
 static struct text_info log_ti;
 
-static struct ciolib_pixels *pixmap_buffer;
+static struct ciolib_pixels *pixmap_buffer[2];
+static struct ciolib_mask *mask_buffer;
 static uint8_t pnm_gamma[256];
 bool pnm_gamma_initialized = false;
 
@@ -2830,6 +2831,7 @@ draw_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
 	unsigned long         mw = 0; // Width of the mask
 	unsigned long         mh = 0; // Height of the mask
 	size_t                mlen = 0;
+	bool                  mbuf = false;
 
 	for (p = str + 18; p && *p == ';'; p = strchr(p + 1, ';')) {
 		val = NULL;
@@ -2881,7 +2883,9 @@ draw_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
 					p2 = strchr(p + 7, ';');
 					if (p2 == NULL)
 						goto done;
-					freemask(ctmask);
+					if (!mbuf)
+						freemask(ctmask);
+					mbuf = false;
 					ctmask = NULL;
 					free(mask);
 					mask = strndup(p + 7, p2 - p - 7);
@@ -2892,11 +2896,19 @@ draw_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
 					if (p2 == NULL)
 						goto done;
 					FREE_AND_NULL(mask);
-					freemask(ctmask);
+					if (!mbuf)
+						freemask(ctmask);
+					mbuf = false;
 					ctmask = alloc_ciolib_mask(0, 0);
 					ctmask->bits = b64_decode_alloc(p + 6, p2 - p + 5, &mlen);
 					if (ctmask->bits == NULL)
 						goto done;
+					continue; // Avoid val check
+				}
+				else if (strncmp(p + 2, "BUF", 3) == 0) {
+					freemask(ctmask);
+					ctmask = NULL;
+					mbuf = true;
 					continue; // Avoid val check
 				}
 				break;
@@ -2944,14 +2956,75 @@ draw_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
 			goto done;
 	}
 
+	if (mbuf)
+		ctmask = mask_buffer;
+
 	if (ppmp != NULL)
 		setpixels(dx, dy, dx + sw - 1, dy + sh - 1, sx, sy, mx, my, ppmp, ctmask);
 done:
 	free(mask);
 	free(maskfn);
-	freemask(ctmask);
+	if (!mbuf)
+		freemask(ctmask);
 	free(ppmfn);
 	freepixels(ppmp);
+}
+
+static void
+load_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	char                 *p;
+	char                 *ppmfn = NULL;
+	struct ciolib_pixels *ppmp = NULL;
+	unsigned long         bufnum = 0;
+	unsigned long        *val;
+
+	for (p = str + 18; p && *p == ';'; p = strchr(p + 1, ';')) {
+		val = NULL;
+		switch (p[1]) {
+			case 'B':
+				val = &bufnum;
+				break;
+		}
+		if (val == NULL || p[2] != '=')
+			break;
+		*val = strtoul(p + 3, NULL, 10);
+	}
+
+	if (bufnum >= sizeof(pixmap_buffer) / sizeof(pixmap_buffer[0]))
+		goto done;
+
+	freepixels(pixmap_buffer[bufnum]);
+	pixmap_buffer[bufnum] = NULL;
+
+	if (asprintf(&ppmfn, "%s%s", fn, p + 1) == -1)
+		goto done;
+	ppmp = read_pbm(ppmfn, false);
+	if (ppmp == NULL)
+		goto done;
+	pixmap_buffer[bufnum] = ppmp;
+	free(ppmfn);
+	return;
+
+done:
+	free(ppmfn);
+	freepixels(ppmp);
+}
+
+static void
+load_pbm_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	char               *p;
+	char               *maskfn = NULL;
+
+	p = str + 18;
+	if (asprintf(&maskfn, "%s%s", fn, p + 1) == -1)
+		goto done;
+	freemask(mask_buffer);
+	mask_buffer = read_pbm(maskfn, true);
+
+done:
+	free(maskfn);
 }
 
 static void
@@ -2963,6 +3036,7 @@ copy_pixmap(char *str, size_t slen, char *fn, void *apcd)
 	unsigned long  h = 0; // Source height
 	unsigned long *val;
 	char          *p;
+	unsigned long  bufnum = 0;
 
 	for (p = str + 15; p && *p == ';'; p = strchr(p + 1, ';')) {
 		val = NULL;
@@ -2979,14 +3053,20 @@ copy_pixmap(char *str, size_t slen, char *fn, void *apcd)
 			case 'H':
 				val = &h;
 				break;
+			case 'B':
+				val = &bufnum;
+				break;
 		}
 		if (val == NULL || p[2] != '=')
 			return;
 		*val = strtol(p + 3, NULL, 10);
 	}
 
-	freepixels(pixmap_buffer);
-	pixmap_buffer = NULL;
+	if (bufnum >= sizeof(pixmap_buffer) / sizeof(pixmap_buffer[0]))
+		return;
+
+	freepixels(pixmap_buffer[bufnum]);
+	pixmap_buffer[bufnum] = NULL;
 	if (w == 0 || h == 0) {
 		struct text_info ti;
 		int vmode;
@@ -2999,7 +3079,7 @@ copy_pixmap(char *str, size_t slen, char *fn, void *apcd)
 		if (h == 0)
 			h = vparams[vmode].yres - y;
 	}
-	pixmap_buffer = getpixels(x, y, x + w - 1, y + h - 1, false);
+	pixmap_buffer[bufnum] = getpixels(x, y, x + w - 1, y + h - 1, false);
 }
 
 static void
@@ -3015,6 +3095,7 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 	unsigned long       my = 0; // Destination Y
 	unsigned long       mw = 0; // Width of the mask
 	unsigned long       mh = 0; // Height of the mask
+	unsigned long       bufnum = 0;
 	unsigned long      *val;
 	void               *mask = NULL;
 	struct ciolib_mask *ctmask;
@@ -3022,12 +3103,17 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 	char               *p;
 	char               *p2;
 	size_t              mlen = 0;
+	bool                mbuf;
+	size_t              poff;
 
-	if (pixmap_buffer == NULL)
-		return;
 	for (p = str + 16; p && *p == ';'; p = strchr(p + 1, ';')) {
 		val = NULL;
+		poff = 3;
 		switch (p[1]) {
+			case 'B':
+				val = &bufnum;
+				poff = 2;
+				break;
 			case 'S':
 				switch (p[2]) {
 					case 'X':
@@ -3077,7 +3163,8 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 						p2 = strchr(p + 6, 0);
 					if (p2 == NULL)
 						goto done;
-					freemask(ctmask);
+					if (!mbuf)
+						freemask(ctmask);
 					ctmask = NULL;
 					free(mask);
 					mask = strndup(p + 7, p2 - p - 7);
@@ -3090,7 +3177,8 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 					if (p2 == NULL)
 						goto done;
 					FREE_AND_NULL(mask);
-					freemask(ctmask);
+					if (!mbuf)
+						freemask(ctmask);
 					ctmask = alloc_ciolib_mask(0, 0);
 					if (ctmask == NULL)
 						goto done;
@@ -3099,17 +3187,29 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 						goto done;
 					continue; // Avoid val check
 				}
+				else if (strncmp(p + 2, "BUF", 3) == 0) {
+					freemask(ctmask);
+					ctmask = NULL;
+					mbuf = true;
+					continue; // Avoid val check
+				}
 				break;
 		}
-		if (val == NULL || p[3] != '=')
-			break;
-		*val = strtoul(p + 4, NULL, 10);
+		if (val == NULL || p[poff] != '=')
+			goto done;
+		*val = strtoul(p + poff + 1, NULL, 10);
 	}
 
+	if (bufnum >= sizeof(pixmap_buffer) / sizeof(pixmap_buffer[0]))
+		return;
+
+	if (pixmap_buffer[bufnum] == NULL)
+		return;
+
 	if (sw == 0)
-		sw = pixmap_buffer->width - sx;
+		sw = pixmap_buffer[bufnum]->width - sx;
 	if (sh == 0)
-		sh = pixmap_buffer->height - sy;
+		sh = pixmap_buffer[bufnum]->height - sy;
 
 	if (ctmask != NULL) {
 		if (mlen < (sw * sh + 7) / 8)
@@ -3136,10 +3236,14 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 			goto done;
 	}
 
-	setpixels(dx, dy, dx + sw - 1, dy + sh - 1, sx, sy, mx, my, pixmap_buffer, ctmask);
+	if (mbuf)
+		ctmask = mask_buffer;
+
+	setpixels(dx, dy, dx + sw - 1, dy + sh - 1, sx, sy, mx, my, pixmap_buffer[bufnum], ctmask);
 done:
 	free(mask);
-	freemask(ctmask);
+	if (!mbuf)
+		freemask(ctmask);
 }
 
 static void
@@ -3192,6 +3296,14 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 		fwrite(buf, rc, 1, f);
 		free(buf);
 		fclose(f);
+	}
+	else if (strncmp(strbuf, "SyncTERM:C;LoadPPM", 18) == 0) {
+                // Load PPM into memory buffer
+		load_ppm_str_handler(strbuf, slen, fn, apcd);
+	}
+	else if (strncmp(strbuf, "SyncTERM:C;LoadPBM", 18) == 0) {
+                // Load PPM into memory buffer
+		load_pbm_str_handler(strbuf, slen, fn, apcd);
 	}
 	else if (strncmp(strbuf, "SyncTERM:C;L", 12) == 0) {
                 // Cache list
@@ -3307,6 +3419,10 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 	else if (strncmp(strbuf, "SyncTERM:P;Paste", 16) == 0) {
 		paste_pixmap(strbuf, slen, fn, apcd);
 	}
+
+	// TODO: Copy PPM to memory
+	// TODO: Copy PBM mask to memory
+	// TODO: Multiple (at least two) memory buffers
 }
 
 void
@@ -3511,8 +3627,12 @@ doterm(struct bbslist *bbs)
 	struct mouse_state ms = {0};
 	int                speedwatch = 0;
 
-	ciolib_freepixels(pixmap_buffer);
-	pixmap_buffer = NULL;
+	freepixels(pixmap_buffer[0]);
+	freepixels(pixmap_buffer[1]);
+	pixmap_buffer[0] = NULL;
+	pixmap_buffer[1] = NULL;
+	freemask(mask_buffer);
+	mask_buffer = NULL;
 	gettextinfo(&txtinfo);
 	if ((bbs->conn_type == CONN_TYPE_SERIAL) || (bbs->conn_type == CONN_TYPE_SERIAL_NORTS))
 		speed = 0;

@@ -4399,7 +4399,7 @@ cterm_reset(struct cterminal *cterm)
 
 struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
-	char	*revision="$Revision: 1.315 $";
+	char	*revision="$Revision: 1.316 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;
