@@ -56,8 +56,29 @@ static struct text_info log_ti;
 
 static struct ciolib_pixels *pixmap_buffer[2];
 static struct ciolib_mask *mask_buffer;
-static uint8_t pnm_gamma[256];
-bool pnm_gamma_initialized = false;
+static uint8_t pnm_gamma[256] = {
+	0,  13, 22, 28, 34, 38, 42, 46, 50, 53, 56, 59, 61, 64, 66, 69,
+	71, 73, 75, 77, 79, 81, 83, 85, 86, 88, 90, 92, 93, 95, 96, 98, 
+	99, 101, 102, 104, 105, 106, 108, 109, 110, 112, 113, 114, 115, 
+	117, 118, 119, 120, 121, 122, 124, 125, 126, 127, 128, 129, 130, 
+	131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 
+	144, 145, 146, 147, 148, 148, 149, 150, 151, 152, 153, 154, 155, 
+	155, 156, 157, 158, 159, 159, 160, 161, 162, 163, 163, 164, 165, 
+	166, 167, 167, 168, 169, 170, 170, 171, 172, 173, 173, 174, 175, 
+	175, 176, 177, 178, 178, 179, 180, 180, 181, 182, 182, 183, 184, 
+	185, 185, 186, 187, 187, 188, 189, 189, 190, 190, 191, 192, 192, 
+	193, 194, 194, 195, 196, 196, 197, 197, 198, 199, 199, 200, 200, 
+	201, 202, 202, 203, 203, 204, 205, 205, 206, 206, 207, 208, 208, 
+	209, 209, 210, 210, 211, 212, 212, 213, 213, 214, 214, 215, 215, 
+	216, 216, 217, 218, 218, 219, 219, 220, 220, 221, 221, 222, 222, 
+	223, 223, 224, 224, 225, 226, 226, 227, 227, 228, 228, 229, 229, 
+	230, 230, 231, 231, 232, 232, 233, 233, 234, 234, 235, 235, 236, 
+	236, 237, 237, 238, 238, 238, 239, 239, 240, 240, 241, 241, 242, 
+	242, 243, 243, 244, 244, 245, 245, 246, 246, 246, 247, 247, 248, 
+	248, 249, 249, 250, 250, 251, 251, 251, 252, 252, 253, 253, 254, 
+	254, 255, 255
+};
+uint8_t pnm_gamma_max = 255;
 
 void
 get_cterm_size(int *cols, int *rows, int ns)
@@ -2380,8 +2401,7 @@ clean_path(char *fn, size_t fnsz)
 */
 
 static void
-buildBt709ToSrgbGamma(void) {
-    uint8_t const maxval = 255;
+buildBt709ToSrgbGamma(const uint8_t maxval) {
     uint8_t const newMaxval = 255;
     double const gammaSrgb = 2.4;
 /*----------------------------------------------------------------------------
@@ -2396,7 +2416,7 @@ buildBt709ToSrgbGamma(void) {
     double const oneOverGammaSrgb = 1.0 / gammaSrgb;
     double const normalizer       = 1.0 / maxval;
 
-    if (pnm_gamma_initialized)
+    if (pnm_gamma_max == maxval)
 	return;
     /* This transfer function is linear for sample values 0
        .. maxval*.018 and an exponential for larger sample values.
@@ -2436,7 +2456,7 @@ buildBt709ToSrgbGamma(void) {
 
         pnm_gamma[i] = srgb * newMaxval + 0.5;
     }
-    pnm_gamma_initialized = true;
+    pnm_gamma_max = maxval;
 }
 
 
@@ -2545,20 +2565,6 @@ read_pbm_text_raster(struct ciolib_mask *ret, size_t sz, FILE *f)
 	return true;
 }
 
-static uint32_t scale(uint32_t val, uint8_t max)
-{
-	double d;
-
-	d = val;
-	d /= max;
-	d *= 255;
-	if (d > 255)
-		d = 255;
-	if (d < 0)
-		d = 0;
-	return d;
-}
-
 static bool
 read_ppm_any_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, FILE *f, uintmax_t(*readnum)(FILE *))
 {
@@ -2566,7 +2572,7 @@ read_ppm_any_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, FILE *f, ui
 	size_t    i;
 	uint32_t  pdata;
 
-	buildBt709ToSrgbGamma();
+	buildBt709ToSrgbGamma(max);
 	for (i = 0; i < sz; i++) {
 		pdata = 0x80000000;	// RGB value (anything less is palette)
 
@@ -2574,19 +2580,19 @@ read_ppm_any_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, FILE *f, ui
 		num = readnum(f);
 		if (num > 255)
 			return false;
-		pdata |= (pnm_gamma[scale(num, max)] << 16);
+		pdata |= (pnm_gamma[num] << 16);
 
 		// Green
 		num = readnum(f);
 		if (num > 255)
 			return false;
-		pdata |= (pnm_gamma[scale(num, max)] << 8);
+		pdata |= (pnm_gamma[num] << 8);
 
 		// Blue
 		num = readnum(f);
 		if (num > 255)
 			return false;
-		pdata |= (pnm_gamma[scale(num, max)] << 0);
+		pdata |= (pnm_gamma[num] << 0);
 		p->pixels[i] = pdata;
 	}
 	return true;
