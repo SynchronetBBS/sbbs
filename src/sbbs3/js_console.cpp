@@ -2599,9 +2599,9 @@ static jsSyncMethodSpec js_console_functions[] = {
 		,JSDOCSTR("removes a callback installed by once")
 		,31900
 		},
-	{"flush",		js_flush,			2,	JSTYPE_VOID,	JSDOCSTR("type, id")
+	{"flush",		js_flush,			0,	JSTYPE_VOID,	JSDOCSTR("")
 		,JSDOCSTR("flushes the output buffer")
-		,31900
+		,31902
 		},
 	{0}
 };
