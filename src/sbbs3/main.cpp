@@ -2462,10 +2462,6 @@ void output_thread(void* arg)
 			if(startup->node_spybuf!=NULL
 				&& startup->node_spybuf[sbbs->cfg.node_num-1]!=NULL) {
 				RingBufWrite(startup->node_spybuf[sbbs->cfg.node_num-1],buf+bufbot,i);
-				/* Signal spy output semaphore? */
-				if(startup->node_spysem!=NULL
-					&& startup->node_spysem[sbbs->cfg.node_num-1]!=NULL)
-					sem_post(startup->node_spysem[sbbs->cfg.node_num-1]);
 			}
 			/* Spy on the user remotely */
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
@@ -3894,10 +3890,6 @@ void sbbs_t::spymsg(const char* msg)
 	if(startup->node_spybuf!=NULL
 		&& startup->node_spybuf[cfg.node_num-1]!=NULL) {
 		RingBufWrite(startup->node_spybuf[cfg.node_num-1],(uchar*)str,strlen(str));
-		/* Signal spy output semaphore? */
-		if(startup->node_spysem!=NULL
-			&& startup->node_spysem[sbbs->cfg.node_num-1]!=NULL)
-			sem_post(startup->node_spysem[sbbs->cfg.node_num-1]);
 	}
 
 	if(cfg.node_num && spy_socket[cfg.node_num-1]!=INVALID_SOCKET)

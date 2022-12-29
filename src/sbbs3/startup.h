@@ -101,7 +101,6 @@ typedef struct {
     str_list_t	ssh_interfaces;
     RingBuf** node_spybuf;			/* Spy output buffer (each node)	*/
     RingBuf** node_inbuf;			/* User input buffer (each node)	*/
-    sem_t**	node_spysem;			/* Spy output semaphore (each node)	*/
 
 	void*	cbdata;					/* Private data passed to callbacks */ 
 	void*	event_cbdata;			/* Private data passed to event_lputs callback */
