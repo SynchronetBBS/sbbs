@@ -7203,6 +7203,7 @@ void web_server(void* arg)
 		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"Web Server thread started");
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "max_clients", startup->max_clients);
 
 		while(!terminated && !terminate_server) {
 			YIELD();
