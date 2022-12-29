@@ -3104,7 +3104,7 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 	unsigned long       bufnum = 0;
 	unsigned long      *val;
 	void               *mask = NULL;
-	struct ciolib_mask *ctmask;
+	struct ciolib_mask *ctmask = NULL;
 	char               *maskfn = NULL;
 	char               *p;
 	char               *p2;
