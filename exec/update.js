@@ -87,15 +87,16 @@ function update_birthdates()
 function install_logonlist()
 {
 	var maint_event = "?logonlist -m";
-	var cnflib = load({}, "cnflib.js");
-	var main_cnf = cnflib.read("main.cnf");
-	if(!main_cnf)
-		return "!Failed to read main.cnf";
-	if(main_cnf.sys_daily)
-		return format("System daily event already set to: '%s'", main_cnf.sys_daily);
-	main_cnf.sys_daily = maint_event;
-	if(!cnflib.write("main.cnf", undefined, main_cnf))
-		return "!Failed to write main.cnf";
+	var f = new File(system.ctrl_dir + "main.ini");
+	if(!f.open(f.exists ? 'r+':'w+'))
+		return "!Failed to open " + f.name;
+	var cmd = f.iniGetValue("daily_event", "cmd");
+	if(cmd)
+		return format("System daily event already set to: '%s'", cmd);
+	var result = f.iniSetValue("daily_event", "cmd", maint_event);
+	f.close();
+	if(!result)
+		return "!Failed to write main.ini";
 	return "Successful";
 }
 
@@ -222,3 +223,20 @@ if(!upgraded) {
 	print("No v3.19 file bases found, running " + cmdline);
 	system.exec(cmdline);
 }
+
+print("Checking for v3.20 config files");
+upgraded = true;
+["main.cnf", "msgs.cnf", "file.cnf", "xtrn.cnf", "chat.cnf"].forEach(function(f) {
+	if(file_date(system.ctrl_dir + f) > file_date(system.ctrl_dir + f.replace('.cnf', '.ini')))
+		upgraded = false;
+});
+if(!upgraded)
+	js.exec("upgrade_to_v320.js", {});
+
+print("Checking for v3.20 user base");
+if(!file_exists(system.data_dir + 'user/user.tab')) {
+	var cmdline = system.exec_dir + "upgrade_to_v320";
+	print("No v3.20 user base found, running " + cmdline);
+	system.exec(cmdline);
+}
+

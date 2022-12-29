@@ -901,7 +901,7 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p;
 	JSString*	js_str;
-	int32		offset=0;
+	int32		field=0;
 	int32		usernumber=0;
 	int			len;
 	jsrefcount	rc;
@@ -914,12 +914,12 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return JS_FALSE;
 
-	JS_ValueToInt32(cx,argv[0],&offset);
+	JS_ValueToInt32(cx,argv[0],&field);
 	rc=JS_SUSPENDREQUEST(cx);
-	len=user_rec_len(offset);
+	len=user_field_len(field);
 	JS_RESUMEREQUEST(cx, rc);
-	if(len<0) {
-		JS_ReportError(cx,"Invalid user data offset: %d", offset);
+	if(len < 1) {
+		JS_ReportError(cx,"Invalid user field: %d", field);
 		return(JS_FALSE);
 	}
 
@@ -940,7 +940,7 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(userdatdupe(sys->cfg,usernumber,offset,len,p,FALSE,match_next,NULL,NULL)));
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(finduserstr(sys->cfg, usernumber, field, p, FALSE, match_next, NULL, NULL)));
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
@@ -1258,7 +1258,7 @@ js_spamlog(JSContext *cx, uintN argc, jsval *arglist)
 			from=p;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
-	ret=spamlog(sys->cfg,prot,action,reason,host,ip_addr,to,from);
+	ret=spamlog(sys->cfg,/* mqtt: */NULL,prot,action,reason,host,ip_addr,to,from);
 	free(prot);
 	free(action);
 	free(reason);
@@ -1325,7 +1325,7 @@ js_hacklog(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 	rc=JS_SUSPENDREQUEST(cx);
-	ret=hacklog(sys->cfg,prot,user,text,host,&addr);
+	ret=hacklog(sys->cfg,/* MQTT: */NULL,prot,user,text,host,&addr);
 	free(prot);
 	free(user);
 	free(text);
@@ -1712,46 +1712,8 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 		SAFECOPY(user.ipaddr,client->addr);
 	}
 
-	user.sex=' ';
 	SAFECOPY(user.alias,alias);
-
-	/* statistics */
-	user.firston=user.laston=user.pwmod=time32(NULL);
-
-	/* security */
-	user.level=cfg->new_level;
-	user.flags1=cfg->new_flags1;
-	user.flags2=cfg->new_flags2;
-	user.flags3=cfg->new_flags3;
-	user.flags4=cfg->new_flags4;
-	user.rest=cfg->new_rest;
-	user.exempt=cfg->new_exempt;
-
-	user.cdt=cfg->new_cdt;
-	user.min=cfg->new_min;
-	user.freecdt=cfg->level_freecdtperday[user.level];
-	if(cfg->new_expire)
-		user.expire=user.firston+((long)cfg->new_expire*24L*60L*60L);
-	else
-		user.expire=0;
-
-	/* settings */
-	if(cfg->total_fcomps)
-		SAFECOPY(user.tmpext,cfg->fcomp[0]->ext);
-	else
-		SAFECOPY(user.tmpext,supported_archive_formats[0]);
-
-	user.shell=cfg->new_shell;
-	user.misc=cfg->new_misc|(AUTOTERM|COLOR);
-	user.prot=cfg->new_prot;
-	user.qwk=QWK_DEFAULT;
-
-	for(i=0;i<cfg->total_xedits;i++)
-		if(!stricmp(cfg->xedit[i]->code,cfg->new_xedit) && chk_ar(cfg,cfg->xedit[i]->ar,&user,/* client: */NULL))
-			break;
-	if(i<cfg->total_xedits)
-		user.xedit=i+1;
-
+	newuserdefaults(cfg, &user);
 	i=newuserdat(cfg,&user);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -1772,7 +1734,6 @@ js_del_user(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 	int32		n;
 	user_t		user;
-	char		str[128];
 
 	js_system_private_t* sys;
 	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
@@ -1784,7 +1745,7 @@ js_del_user(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);	/* fail, by default */
 	if(getuserdat(sys->cfg, &user)==0
-		&& putuserrec(sys->cfg,n,U_MISC,8,ultoa(user.misc|DELETED,str,16))==0
+		&& putusermisc(sys->cfg, n, user.misc | DELETED)==0
 		&& putusername(sys->cfg,n,nulstr)==0)
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);	/* success */
 	JS_RESUMEREQUEST(cx, rc);
@@ -2617,7 +2578,7 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRFUNC("compiled_when", sprintf(str,"%s %.5s",__DATE__,__TIME__), str);
 	LAZY_STRING("copyright", COPYRIGHT_NOTICE);
 	LAZY_STRING("js_version", (char *)JS_GetImplementationVersion());
-	LAZY_STRING("os_version", os_version(str));
+	LAZY_STRING("os_version", os_version(str, sizeof(str)));
 
 #ifndef JSDOOR
 	/* fido_addr_list property */

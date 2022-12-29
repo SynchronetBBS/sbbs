@@ -39,7 +39,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	uint	i,j,k,lastsub=INVALID_SUB;
 	uint	blocks;
 	uint	usernum;
-	long	l,size,misc;
+	long	l,size;
 	ulong	n;
 	ulong	ex;
 	ulong	tmsgs = 0;
@@ -52,11 +52,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 	smbmsg_t	msg;
 	str_list_t	headers=NULL;
 	str_list_t	voting=NULL;
-	str_list_t	ip_can=NULL;
-	str_list_t	host_can=NULL;
-	str_list_t	subject_can=NULL;
-	str_list_t	twit_list=NULL;
 	link_list_t user_list={0};
+	msg_filters msg_filters{};
 	const char* AttemptedToUploadREPpacket="Attempted to upload REP packet";
 
 	memset(&msg,0,sizeof(msg));
@@ -167,12 +164,12 @@ bool sbbs_t::unpack_rep(char* repfile)
 		bputs(text[QWKUnpacking]);
 	}
 
-	ip_can=trashcan_list(&cfg,"ip");
-	host_can=trashcan_list(&cfg,"host");
-	subject_can=trashcan_list(&cfg,"subject");
+	msg_filters.ip_can = trashcan_list(&cfg,"ip");
+	msg_filters.host_can = trashcan_list(&cfg,"host");
+	msg_filters.subject_can = trashcan_list(&cfg,"subject");
 
 	SAFEPRINTF(fname,"%stwitlist.cfg",cfg.ctrl_dir);
-	twit_list = findstr_list(fname);
+	msg_filters.twit_list = findstr_list(fname);
 
 	now=time(NULL);
 	for(l=QWK_BLOCK_LEN;l<size;l+=blocks*QWK_BLOCK_LEN) {
@@ -197,7 +194,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		long confnum = atol((char *)block+1);
 		if(blocks<2) {
 			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
-				if(!qwk_voting(&voting, l, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias, confnum)) {
+				if(!qwk_voting(&voting, l, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias, confnum, msg_filters)) {
 					lprintf(LOG_WARNING, "QWK vote failure, offset %ld of %s", l, getfname(msg_fname));
 					errors++;
 				}
@@ -216,9 +213,6 @@ bool sbbs_t::unpack_rep(char* repfile)
 			errors++;
 			continue;
 		}
-
-		if(qwk_msg_filtered(&msg, ip_can, host_can, subject_can))
-			continue;
 
 		if(confnum == 0) {						/* E-mail */
 			if(msg.from == NULL)
@@ -267,10 +261,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 				continue; 
 			}
 
-			getuserrec(&cfg,usernum,U_MISC,8,str);
-			misc=ahtoul(str);
-			if(misc&NETMAIL && cfg.sys_misc&SM_FWDTONET) {
-				getuserrec(&cfg,usernum,U_NETMAIL,LEN_NETMAIL,str);
+			if((getusermisc(&cfg, usernum) & NETMAIL) && (cfg.sys_misc & SM_FWDTONET)) {
+				getuserstr(&cfg, usernum, USER_NETMAIL, str, sizeof(str));
 				qwktonetmail(rep,block,str,0);
 				continue; 
 			}
@@ -323,20 +315,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 			if(qwk_import_msg(rep, block, blocks
 				,/* fromhub: */0, &smb, /* touser: */usernum, &msg, &dupe)) {
 				if(usernum==1) {
-					useron.fbacks++;
+					useron.fbacks = (ushort)adjustuserval(&cfg, useron.number, USER_FBACKS, 1);
 					logon_fbacks++;
-					putuserrec(&cfg,useron.number,U_FBACKS,5
-						,ultoa(useron.fbacks,tmp,10)); 
 				}
 				else {
-					useron.emails++;
+					useron.emails = (ushort)adjustuserval(&cfg, useron.number, USER_EMAILS, 1);
 					logon_emails++;
-					putuserrec(&cfg,useron.number,U_EMAILS,5
-						,ultoa(useron.emails,tmp,10)); 
 				}
-				useron.etoday++;
-				putuserrec(&cfg,useron.number,U_ETODAY,5
-					,ultoa(useron.etoday,tmp,10));
+				useron.etoday = (ushort)adjustuserval(&cfg, useron.number, USER_ETODAY, 1);
 				bprintf(P_REMOTE, text[Emailed],username(&cfg,usernum,tmp),usernum);
 				SAFEPRINTF2(str,"sent QWK e-mail to %s #%d"
 					,username(&cfg,usernum,tmp),usernum);
@@ -441,8 +427,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			}
 #endif
 
-			/* TWIT FILTER */
-			if(qwk_msg_filtered(&msg, /* ip_can: */NULL, /* host_can: */NULL, /* subject_can: */NULL, twit_list))
+
+			if(qwk_msg_filtered(&msg, msg_filters))
 				continue;
 
 			if(n!=lastsub) {
@@ -530,10 +516,10 @@ bool sbbs_t::unpack_rep(char* repfile)
 	iniFreeStringList(headers);
 	iniFreeStringList(voting);
 
-	strListFree(&ip_can);
-	strListFree(&host_can);
-	strListFree(&subject_can);
-	strListFree(&twit_list);
+	strListFree(&msg_filters.ip_can);
+	strListFree(&msg_filters.host_can);
+	strListFree(&msg_filters.subject_can);
+	strListFree(&msg_filters.twit_list);
 	listFree(&user_list);
 
 	if(lastsub!=INVALID_SUB)

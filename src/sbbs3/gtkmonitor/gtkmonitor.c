@@ -153,7 +153,7 @@ void refresh_events(void)
 			gtk_list_store_append(quickstore, &curr);
 			quickslots++;
 		}
-		sprintf(str,"%-2d  SL: %-2d  F1: %s",i,cfg.val_level[i - 1],ltoaf(cfg.val_flags1[i - 1],flags));
+		sprintf(str,"%-2d  SL: %-2d  F1: %s",i,cfg.val_level[i - 1],u32toaf(cfg.val_flags1[i - 1],flags));
 		gtk_list_store_set(quickstore, &curr, 0, str, -1);
 		gtk_tree_model_iter_next(GTK_TREE_MODEL(quickstore), &curr);
 	}

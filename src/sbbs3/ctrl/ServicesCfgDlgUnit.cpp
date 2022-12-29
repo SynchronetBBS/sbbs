@@ -39,7 +39,7 @@ void __fastcall TServicesCfgDlg::FormShow(TObject *Sender)
     /* Populate the Enables tab */
     CheckListBox->Clear();
     FILE* fp;
-    if((fp=iniOpenFile(iniFilename, /* Create: */false)) != NULL) {
+    if((fp=iniOpenFile(iniFilename, /* for_modify: */false)) != NULL) {
         ini=iniReadFile(fp);
         iniCloseFile(fp);
     }
@@ -86,7 +86,7 @@ void __fastcall TServicesCfgDlg::OKButtonClick(TObject *Sender)
 	    MainForm->services_startup.options&=~BBS_OPT_NO_HOST_LOOKUP;
 
     FILE* fp;
-    if((fp=iniOpenFile(iniFilename, /* Create: */true)) != NULL) {
+    if((fp=iniOpenFile(iniFilename, /* for_modify: */true)) != NULL) {
         iniWriteFile(fp, ini);
         iniCloseFile(fp);
     }

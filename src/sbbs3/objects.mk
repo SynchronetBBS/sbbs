@@ -71,6 +71,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/msg_id$(OFILE)\
 			$(MTOBJODIR)/msgdate$(OFILE)\
 			$(MTOBJODIR)/msgtoqwk$(OFILE)\
+			$(MTOBJODIR)/mqtt$(OFILE)\
 			$(MTOBJODIR)/netmail$(OFILE)\
 			$(MTOBJODIR)/newuser$(OFILE)\
 			$(MTOBJODIR)/pack_qwk$(OFILE)\
@@ -109,7 +110,6 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 
 # Must add new additions to MONO_OBJS too!
 CON_OBJS	= $(MTOBJODIR)/sbbscon$(OFILE) \
-			$(MTOBJODIR)/sbbs_status$(OFILE) \
 			$(MTOBJODIR)/sbbs_ini$(OFILE)
 
 # Must add new additions to MONO_OBJS too!
@@ -267,11 +267,6 @@ SLOG_OBJS = \
 			$(OBJODIR)/slog$(OFILE) \
 			$(OBJODIR)/nopen$(OFILE)
 
-ALLUSERS_OBJS = \
-			$(OBJODIR)/allusers$(OFILE) \
-			$(OBJODIR)/str_util$(OFILE) \
-			$(OBJODIR)/ars$(OFILE)
-
 DELFILES_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/delfiles$(OFILE) \
 			$(OBJODIR)/filedat$(OFILE) \
@@ -304,6 +299,11 @@ UPGRADE_TO_V319_OBJS  =	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/getstats$(OFILE) \
 			$(OBJODIR)/upgrade_to_v319$(OFILE)
 
+UPGRADE_TO_V320_OBJS  = $(LOAD_CFG_OBJS) \
+			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/dat_rec$(OFILE) \
+			$(OBJODIR)/getstats$(OFILE) \
+			$(OBJODIR)/upgrade_to_v320$(OFILE)
 LOAD_CFG_OBJS = \
 			$(OBJODIR)/getctrl$(OFILE) \
 			$(OBJODIR)/load_cfg$(OFILE) \

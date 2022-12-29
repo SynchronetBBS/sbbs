@@ -109,19 +109,19 @@ function list(filename, verbose)
 
 function install()
 {
-	var cnflib = load({}, "cnflib.js");
-	var file_cnf = cnflib.read("file.cnf");
-	if(!file_cnf) {
-		alert("Failed to read file.cnf");
+	var f = new File(system.ctrl_dir + "file.ini");
+	if(!f.open(f.exists ? 'r+':'w+')) {
+		alert("Failed to open " + f.name);
 		exit(-1);
 	}
-	file_cnf.fview.push({
+
+	if(!f.iniSetObject("viewer:new", {
 		extension: "*",
 		cmd: '?archive list %f'
-		});
-	if(!cnflib.write("file.cnf", undefined, file_cnf)) {
-		alert("Failed to write file.cnf");
+		})) {
+		alert("Failed to write " + f.name);
 		exit(-1);
 	}
+	f.close();
 	exit(0);
 }

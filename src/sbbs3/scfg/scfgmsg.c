@@ -486,7 +486,7 @@ void msgs_cfg()
 		"constructed from a combination of the prefix and the specified code \n"
 		"suffix for each sub-board.\n"
 		"\n"
-		"Code prefixes may contain up to 8 legal filename characters.\n"
+		"Code prefixes may contain up to 16 legal filename characters.\n"
 		"\n"
 		"Code prefixes should be unique among the message groups on the system.\n"
 		"\n"
@@ -549,7 +549,7 @@ void msgs_cfg()
 			if(uifc.input(WIN_MID|WIN_SAV,0,0, "Group Short Name", short_name, sizeof(short_name)-1 ,K_EDIT)<1)
 				continue;
 
-			char code_prefix[LEN_GSNAME+1];	/* purposely extra-long */
+			char code_prefix[LEN_EXTCODE+1];	/* purposely extra-long */
 			SAFECOPY(code_prefix, short_name);
 			prep_code(code_prefix, NULL);
 			if(strlen(code_prefix) < LEN_CODE)
@@ -834,7 +834,7 @@ void msgs_cfg()
 						"  Standard (RFC3977) NNTP `LIST NEWSGROUPS` output format:\n"
 						"  Newsgroup names and (optional) descriptions, one line per newsgroup."
 					;
-					k = uifc.list(WIN_MID|WIN_ACT,0,0,0,&export_list_type,0
+					k = uifc.list(WIN_MID|WIN_SAV,0,0,0,&export_list_type,0
 						,"Export Area File Format",opt);
 					if(k==-1)
 						break;
@@ -999,7 +999,7 @@ void msgs_cfg()
 						"  Standard (RFC3977) NNTP `LIST NEWSGROUPS` output format:\n"
 						"  Newsgroup names and (optional) descriptions, one line per newsgroup."
 					;
-					k=uifc.list(WIN_MID|WIN_ACT,0,0,0,&import_list_type,0
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&import_list_type,0
 						,"Import Area File Format",opt);
 					if(k < 0)
 						break;

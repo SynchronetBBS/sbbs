@@ -191,9 +191,9 @@ struct.validation_set_t={
 	flags2:		{bytes:UINT32_T,			type:"int"},
 	flags3:		{bytes:UINT32_T,			type:"int"},
 	flags4:		{bytes:UINT32_T,			type:"int"},
-	cdt:		{bytes:UINT32_T,			type:"int"},
-	exempt:		{bytes:UINT32_T,			type:"int"},
-	rest:		{bytes:UINT32_T,			type:"int"},
+	credits:	{bytes:UINT32_T,			type:"int"},
+	exemptions:	{bytes:UINT32_T,			type:"int"},
+	restrictions:	{bytes:UINT32_T,			type:"int"},
 	__PADDING__:{bytes:16}
 };
 
@@ -393,9 +393,10 @@ struct.dir_t={
 	sort:			{bytes:1,				type:"int"},
 	exempt_ars:		{bytes:LEN_ARSTR+1,		type:"str"},
 	max_age:		{bytes:UINT16_T,		type:"int"},
-	upload_pct:		{bytes:UINT16_T,		type:"int"},
-	download_pct:	{bytes:UINT16_T,		type:"int"},
-	__PADDING__:	{bytes:49}
+	upload_credit_pct:	{bytes:UINT16_T,		type:"int"},
+	download_credit_pct:	{bytes:UINT16_T,		type:"int"},
+	area_tag:		{bytes:41,			type:"str"},
+	__PADDING__:	{bytes:8}
 };
 struct.lib_t={
 	description:	{bytes:LEN_GLNAME+1,	type:"str"},
@@ -485,8 +486,8 @@ struct.file={
 	max_batdn:		{bytes:UINT16_T,		type:"int"},
 	max_userxfer:	{bytes:UINT16_T,		type:"int"},
 	__PADDING1__:	{bytes:4},
-	cdt_up_pct:		{bytes:UINT16_T,		type:"int"},
-	cdt_dn_pct:		{bytes:UINT16_T,		type:"int"},
+	upload_credit_pct:	{bytes:UINT16_T,		type:"int"},
+	download_credit_pct:	{bytes:UINT16_T,		type:"int"},
 	__PADDING2__:	{bytes:68},
 	leech_pct:		{bytes:UINT16_T,		type:"int"},
 	leech_sec:		{bytes:UINT16_T,		type:"int"},

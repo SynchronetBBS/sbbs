@@ -95,16 +95,16 @@ BOOL fclose_cstats(FILE* fp)
 
 static void gettotals(str_list_t ini, const char* section, totals_t* stats)
 {
-	stats->logons  = iniGetLongInt(ini, section, strStatsLogons, 0);
-	stats->timeon  = iniGetLongInt(ini, section, strStatsTimeon, 0);
-	stats->uls     = iniGetLongInt(ini, section, strStatsUploads, 0);
+	stats->logons  = iniGetUInteger(ini, section, strStatsLogons, 0);
+	stats->timeon  = iniGetUInteger(ini, section, strStatsTimeon, 0);
+	stats->uls     = iniGetUInteger(ini, section, strStatsUploads, 0);
 	stats->ulb     = iniGetBytes(ini,   section, strStatsUploadBytes, /* unit: */1, 0);
-	stats->dls     = iniGetLongInt(ini, section, strStatsDownloads, 0);
+	stats->dls     = iniGetUInteger(ini, section, strStatsDownloads, 0);
 	stats->dlb     = iniGetBytes(ini,   section, strStatsDownloadBytes, /* unit: */1, 0);
-	stats->posts   = iniGetLongInt(ini, section, strStatsPosts, 0);
-	stats->email   = iniGetLongInt(ini, section, strStatsEmail, 0);
-	stats->fbacks  = iniGetLongInt(ini, section, strStatsFeedback, 0);
-	stats->nusers  = iniGetLongInt(ini, section, strStatsNewUsers, 0);
+	stats->posts   = iniGetUInteger(ini, section, strStatsPosts, 0);
+	stats->email   = iniGetUInteger(ini, section, strStatsEmail, 0);
+	stats->fbacks  = iniGetUInteger(ini, section, strStatsFeedback, 0);
+	stats->nusers  = iniGetUInteger(ini, section, strStatsNewUsers, 0);
 }
 
 /****************************************************************************/
@@ -190,16 +190,16 @@ BOOL getstats(scfg_t* cfg, uint node, stats_t* stats)
 
 static void settotals(str_list_t* ini, const char* section, const totals_t* stats)
 {
-	iniSetLongInt(ini, section, strStatsLogons, stats->logons, /* style: */NULL);
-	iniSetLongInt(ini, section, strStatsTimeon, stats->timeon, /* style: */NULL);
-	iniSetLongInt(ini, section, strStatsUploads, stats->uls, /* style: */NULL);
+	iniSetUInteger(ini, section, strStatsLogons, stats->logons, /* style: */NULL);
+	iniSetUInteger(ini, section, strStatsTimeon, stats->timeon, /* style: */NULL);
+	iniSetUInteger(ini, section, strStatsUploads, stats->uls, /* style: */NULL);
 	iniSetBytes(ini,   section, strStatsUploadBytes, /* unit: */1, stats->ulb, /* style: */NULL);
-	iniSetLongInt(ini, section, strStatsDownloads, stats->dls, /* style: */NULL);
+	iniSetUInteger(ini, section, strStatsDownloads, stats->dls, /* style: */NULL);
 	iniSetBytes(ini,   section, strStatsDownloadBytes, /* unit: */1, stats->dlb, /* style: */NULL);
-	iniSetLongInt(ini, section, strStatsPosts, stats->posts, /* style: */NULL);
-	iniSetLongInt(ini, section, strStatsEmail, stats->email, /* style: */NULL);
-	iniSetLongInt(ini, section, strStatsFeedback, stats->fbacks, /* style: */NULL);
-	iniSetLongInt(ini, section, strStatsNewUsers, stats->nusers, /* style: */NULL);
+	iniSetUInteger(ini, section, strStatsPosts, stats->posts, /* style: */NULL);
+	iniSetUInteger(ini, section, strStatsEmail, stats->email, /* style: */NULL);
+	iniSetUInteger(ini, section, strStatsFeedback, stats->fbacks, /* style: */NULL);
+	iniSetUInteger(ini, section, strStatsNewUsers, stats->nusers, /* style: */NULL);
 }
 
 /****************************************************************************/
@@ -352,7 +352,7 @@ ulong getposts(scfg_t* cfg, uint subnum)
 
 static void inc_xfer_stat_keys(str_list_t* ini, const char* section, ulong files, uint64_t bytes, const char* files_key, const char* bytes_key)
 {
-	iniSetLongInt(ini, section, files_key, iniGetLongInt(*ini, section, files_key, 0) + files, /* style: */NULL);
+	iniSetUInteger(ini, section, files_key, iniGetUInteger(*ini, section, files_key, 0) + files, /* style: */NULL);
 	iniSetBytes(ini, section, bytes_key, /* unit: */1, iniGetBytes(*ini, section, bytes_key, /* unit: */1, 0) + bytes, /* style: */NULL);
 }
 
@@ -403,8 +403,8 @@ static BOOL inc_post_stat(scfg_t* cfg, uint node, uint count)
 	if(fp == NULL)
 		return FALSE;
 	ini = iniReadFile(fp);
-	iniSetLongInt(&ini, strStatsToday, strStatsPosts, iniGetLongInt(ini, strStatsToday, strStatsPosts, 0) + count, /* style: */NULL);
-	iniSetLongInt(&ini, strStatsTotal, strStatsPosts, iniGetLongInt(ini, strStatsTotal, strStatsPosts, 0) + count, /* style: */NULL);
+	iniSetUInteger(&ini, strStatsToday, strStatsPosts, iniGetUInteger(ini, strStatsToday, strStatsPosts, 0) + count, /* style: */NULL);
+	iniSetUInteger(&ini, strStatsTotal, strStatsPosts, iniGetUInteger(ini, strStatsTotal, strStatsPosts, 0) + count, /* style: */NULL);
 	result = iniWriteFile(fp, ini) > 0;
 	fclose_dstats(fp);
 	iniFreeStringList(ini);
@@ -431,8 +431,8 @@ static BOOL inc_email_stat(scfg_t* cfg, uint node, uint count, BOOL feedback)
 	if(fp == NULL)
 		return FALSE;
 	ini = iniReadFile(fp);
-	iniSetLongInt(&ini, strStatsToday, key, iniGetLongInt(ini, strStatsToday, key, 0) + count, /* style: */NULL);
-	iniSetLongInt(&ini, strStatsTotal, key, iniGetLongInt(ini, strStatsTotal, key, 0) + count, /* style: */NULL);
+	iniSetUInteger(&ini, strStatsToday, key, iniGetUInteger(ini, strStatsToday, key, 0) + count, /* style: */NULL);
+	iniSetUInteger(&ini, strStatsTotal, key, iniGetUInteger(ini, strStatsTotal, key, 0) + count, /* style: */NULL);
 	result = iniWriteFile(fp, ini) > 0;
 	fclose_dstats(fp);
 	iniFreeStringList(ini);

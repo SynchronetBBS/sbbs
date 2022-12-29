@@ -43,7 +43,7 @@ char **opt;
 char tmp[256];
 char error[256];
 int  backup_level=5;
-char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code", NULL };
+char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code Suffix", NULL };
 
 /* convenient space-saving global constants */
 const char* nulstr="";
@@ -351,13 +351,13 @@ int main(int argc, char **argv)
 			return EXIT_FAILURE;
 		}
 
-		printf("Reading main.cnf ... ");
+		printf("Reading main.ini ... ");
 		if(!read_main_cfg(&cfg,error,sizeof(error))) {
 			printf("ERROR: %s",error);
 			return EXIT_FAILURE;
 		}
 		printf("\n");
-		printf("Reading msgs.cnf ... ");
+		printf("Reading msgs.ini ... ");
 		if(!read_msgs_cfg(&cfg,error,sizeof(error))) {
 			printf("ERROR: %s",error);
 			return EXIT_FAILURE;
@@ -436,7 +436,7 @@ int main(int argc, char **argv)
 		bail(1);
 	}
 
-	SAFEPRINTF(str,"%smain.cnf",cfg.ctrl_dir);
+	SAFEPRINTF(str,"%smain.ini",cfg.ctrl_dir);
 	if(!fexist(str)) {
 		SAFEPRINTF(errormsg, "Main configuration file (%s) missing!",str);
 		uifc.msg(errormsg);
@@ -466,7 +466,7 @@ int main(int argc, char **argv)
 			"\n"
 			"    Nodes                : Add, delete, or configure nodes\n"
 			"    System               : System-wide configuration options\n"
-			"    Networks             : Message networking configuration\n"
+			"    Networks             : Networking configuration\n"
 			"    File Areas           : File area configuration\n"
 			"    File Options         : File area options\n"
 			"    Chat Features        : Chat actions, sections, pagers, and robots\n"
@@ -505,19 +505,7 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 2:
-				if(!load_main_cfg(&cfg, error, sizeof(error))) {
-					SAFEPRINTF(errormsg,"ERROR: %s",error);
-					uifc.msg(errormsg);
-					break;
-				}
-				if(!load_msgs_cfg(&cfg, error, sizeof(error))) {
-					SAFEPRINTF(errormsg,"ERROR: %s",error);
-					uifc.msg(errormsg);
-					break;
-				}
 				net_cfg();
-				free_msgs_cfg(&cfg);
-				free_main_cfg(&cfg);
 				break;
 			case 3:
 				if(!load_main_cfg(&cfg, error, sizeof(error))) {
@@ -682,7 +670,7 @@ int main(int argc, char **argv)
 
 BOOL load_main_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
-	uifc.pop("Reading main.cnf ...");
+	uifc.pop("Reading main.ini ...");
 	BOOL result = read_main_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
@@ -690,7 +678,7 @@ BOOL load_main_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 
 BOOL load_node_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
-	uifc.pop("Reading node.cnf ...");
+	uifc.pop("Reading node.ini ...");
 	BOOL result = read_node_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
@@ -698,7 +686,7 @@ BOOL load_node_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 
 BOOL load_msgs_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
-	uifc.pop("Reading msgs.cnf ...");
+	uifc.pop("Reading msgs.ini ...");
 	BOOL result = read_msgs_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
@@ -706,7 +694,7 @@ BOOL load_msgs_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 
 BOOL load_file_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
-	uifc.pop("Reading file.cnf ...");
+	uifc.pop("Reading file.ini ...");
 	BOOL result = read_file_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
@@ -714,7 +702,7 @@ BOOL load_file_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 
 BOOL load_chat_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
-	uifc.pop("Reading chat.cnf ...");
+	uifc.pop("Reading chat.ini ...");
 	BOOL result = read_chat_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
@@ -722,7 +710,7 @@ BOOL load_chat_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 
 BOOL load_xtrn_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
-	uifc.pop("Reading xtrn.cnf ...");
+	uifc.pop("Reading xtrn.ini ...");
 	BOOL result = read_xtrn_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
@@ -730,7 +718,7 @@ BOOL load_xtrn_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 
 BOOL save_main_cfg(scfg_t* cfg, int backup_level)
 {
-	uifc.pop("Writing main.cnf ...");
+	uifc.pop("Writing main.ini ...");
 	BOOL result = write_main_cfg(cfg, backup_level);
 	uifc.pop(NULL);
 	return result;
@@ -738,7 +726,7 @@ BOOL save_main_cfg(scfg_t* cfg, int backup_level)
 
 BOOL save_node_cfg(scfg_t* cfg, int backup_level)
 {
-	uifc.pop("Writing node.cnf ...");
+	uifc.pop("Writing node.ini ...");
 	BOOL result = write_node_cfg(cfg, backup_level);
 	uifc.pop(NULL);
 	return result;
@@ -746,7 +734,7 @@ BOOL save_node_cfg(scfg_t* cfg, int backup_level)
 
 BOOL save_msgs_cfg(scfg_t* cfg, int backup_level)
 {
-	uifc.pop("Writing msgs.cnf ...");
+	uifc.pop("Writing msgs.ini ...");
 	BOOL result = write_msgs_cfg(cfg, backup_level);
 	uifc.pop(NULL);
 	return result;
@@ -754,7 +742,7 @@ BOOL save_msgs_cfg(scfg_t* cfg, int backup_level)
 
 BOOL save_file_cfg(scfg_t* cfg, int backup_level)
 {
-	uifc.pop("Writing file.cnf ...");
+	uifc.pop("Writing file.ini ...");
 	BOOL result = write_file_cfg(cfg, backup_level);
 	uifc.pop(NULL);
 	return result;
@@ -762,7 +750,7 @@ BOOL save_file_cfg(scfg_t* cfg, int backup_level)
 
 BOOL save_chat_cfg(scfg_t* cfg, int backup_level)
 {
-	uifc.pop("Writing chat.cnf ...");
+	uifc.pop("Writing chat.ini ...");
 	BOOL result = write_chat_cfg(cfg, backup_level);
 	uifc.pop(NULL);
 	return result;
@@ -770,7 +758,7 @@ BOOL save_chat_cfg(scfg_t* cfg, int backup_level)
 
 BOOL save_xtrn_cfg(scfg_t* cfg, int backup_level)
 {
-	uifc.pop("Writing xtrn.cnf ...");
+	uifc.pop("Writing xtrn.ini ...");
 	BOOL result = write_xtrn_cfg(cfg, backup_level);
 	uifc.pop(NULL);
 	return result;

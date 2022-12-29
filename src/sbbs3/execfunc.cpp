@@ -167,7 +167,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				netmail(csi->str); 
 			}
 			else if((i=finduser(csi->str))!=0 
-				|| (cfg.msg_misc&MM_REALNAME && (i=userdatdupe(0,U_NAME,LEN_NAME,csi->str))!=0))
+				|| (cfg.msg_misc&MM_REALNAME && (i=finduserstr(0, USER_NAME, csi->str))!=0))
 				email(i);
 			csi->logic=!i;
 			return(0);
@@ -194,7 +194,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				netmail(csi->str,NULL,WM_FILE); 
 			}
 			else if((i=finduser(csi->str))!=0
-				|| (cfg.msg_misc&MM_REALNAME && (i=userdatdupe(0,U_NAME,LEN_NAME,csi->str))!=0))
+				|| (cfg.msg_misc&MM_REALNAME && (i=finduserstr(0, USER_NAME, csi->str))!=0))
 				email(i,NULL,NULL,WM_FILE);
 			csi->logic=!i;
 			return(0);

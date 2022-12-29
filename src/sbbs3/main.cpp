@@ -41,7 +41,7 @@
 //---------------------------------------------------------------------------
 
 #define TELNET_SERVER "Synchronet Terminal Server"
-#define STATUS_WFC	"Listening"
+const char* server_abbrev = "term";
 
 #define TIMEOUT_THREAD_WAIT		60			// Seconds (was 15)
 #define IO_THREAD_BUF_SIZE	   	20000		// Bytes
@@ -158,17 +158,19 @@ extern "C" {
 
 static bbs_startup_t* startup=NULL;
 
-static const char* status(const char* str)
+static void set_state(enum server_state state)
 {
-	if(startup!=NULL && startup->status!=NULL)
-		startup->status(startup->cbdata,str);
-	return str;
+	if(startup != NULL && startup->set_state != NULL)
+		startup->set_state(startup->cbdata, state);
 }
 
 static void update_clients()
 {
-	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(startup->cbdata,protected_uint32_value(node_threads_running));
+	if(startup != NULL) {
+		if(startup->clients != NULL)
+			startup->clients(startup->cbdata,protected_uint32_value(node_threads_running));
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "client_count", protected_uint32_value(node_threads_running));
+	}
 }
 
 void client_on(SOCKET sock, client_t* client, BOOL update)
@@ -200,10 +202,12 @@ static void thread_down()
 
 int lputs(int level, const char* str)
 {
+	if(startup != NULL)
+		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, str);
 	if(level <= LOG_ERR) {
 		char errmsg[1024];
-		SAFEPRINTF(errmsg, "term %s", str);
-		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
+		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, str);
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -224,10 +228,13 @@ int eputs(int level, const char *str)
 	if(*str == 0)
 		return 0;
 
+	if(startup != NULL)
+		mqtt_lputs(&startup->mqtt, TOPIC_EVENT, level, str);
+
 	if(level <= LOG_ERR) {
 		char errmsg[1024];
 		SAFEPRINTF(errmsg, "evnt %s", str);
-		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata, level, errmsg);
 	}
@@ -2258,6 +2265,7 @@ void output_thread(void* arg)
 {
 	char		node[128];
 	char		stats[128];
+	char		spy_topic[128];
 	BYTE		buf[IO_THREAD_BUF_SIZE];
 	int			i=0;	// Assignment to silence Valgrind
 	ulong		avail;
@@ -2273,9 +2281,10 @@ void output_thread(void* arg)
 	SetThreadName("sbbs/termOutput");
 	thread_up(TRUE /* setuid */);
 
-	if(sbbs->cfg.node_num)
+	if(sbbs->cfg.node_num) {
 		SAFEPRINTF(node,"Node %d",sbbs->cfg.node_num);
-	else
+		SAFEPRINTF(spy_topic, "node%d/output", sbbs->cfg.node_num);
+	} else
 		SAFECOPY(node,sbbs->client_name);
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG,"%s output thread started",node);
@@ -2464,6 +2473,12 @@ void output_thread(void* arg)
 				RingBufWrite(startup->node_spybuf[sbbs->cfg.node_num-1],buf+bufbot,i);
 			}
 			/* Spy on the user remotely */
+			if(sbbs->cfg.mqtt.enabled) {
+				int result = mqtt_pub_message(&startup->mqtt, TOPIC_BBS, spy_topic, buf+bufbot, i);
+				if(result != MQTT_SUCCESS)
+					lprintf(LOG_WARNING, "%s ERROR %d (%d) publishing node output (%u bytes): %s"
+						,node, result, errno, i, spy_topic);
+			}
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
 				(void)sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
 #ifdef __unix__
@@ -2769,8 +2784,6 @@ void event_thread(void* arg)
 				int userfile = openuserdat(&sbbs->cfg, /* for_modify: */FALSE);
 				for(i=1;i<=j;i++) {
 
-					SAFEPRINTF2(str,"%5u of %-5u",i,j);
-					//status(str);
 					sbbs->useron.number=i;
 					if(fgetuserdat(&sbbs->cfg,&sbbs->useron, userfile) != 0)
 						continue;
@@ -2816,7 +2829,6 @@ void event_thread(void* arg)
 				close(file);
 
 				remove(semfile);
-				//status(STATUS_WFC);
 			}
 			sbbs->useron.number = 0;
 		}
@@ -3802,6 +3814,9 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(usrdirs);
 	FREE_AND_NULL(usrdir);
 
+	FREE_AND_NULL(qwknode);
+	total_qwknodes = 0;
+
 	listFree(&savedlines);
 	listFree(&smb_list);
 	listFree(&mouse_hotspots);
@@ -4382,6 +4397,13 @@ void node_thread(void* arg)
 		fclose(fp);
 	}
 
+	if(sbbs->useron.number) {
+		char topic[128];
+		SAFEPRINTF(topic, "node%u/laston", sbbs->cfg.node_num);
+		SAFEPRINTF2(str, "%u\t%s", sbbs->useron.number, sbbs->useron.alias);
+		mqtt_pub_strval(&startup->mqtt, TOPIC_BBS, topic, str);
+	}
+
 	if(sbbs->sys_status&SS_DAILY) {	// New day, run daily events/maintenance
 		sbbs->daily_maint();
 	}
@@ -4438,8 +4460,6 @@ void node_thread(void* arg)
 		rewind(sbbs->logfile_fp);
 		chsize(fileno(sbbs->logfile_fp), 0);
 	}
-
-	status(STATUS_WFC);
 
 	sbbs->getnodedat(sbbs->cfg.node_num,&node,1);
 	if(node.misc&NODE_DOWN)
@@ -4522,7 +4542,7 @@ void sbbs_t::daily_maint(void)
 
 	if(cfg.user_backup_level) {
 		lputs(LOG_INFO,"DAILY: Backing-up user data...");
-		SAFEPRINTF(str,"%suser/user.dat",cfg.data_dir);
+		SAFEPRINTF(str,"%suser/" USER_DATA_FILENAME, cfg.data_dir);
 		backup(str,cfg.user_backup_level,FALSE);
 		SAFEPRINTF(str,"%suser/name.dat",cfg.data_dir);
 		backup(str,cfg.user_backup_level,FALSE);
@@ -4567,8 +4587,6 @@ void sbbs_t::daily_maint(void)
 	lastusernum=lastuser(&cfg);
 	int userfile=openuserdat(&cfg, /* for_modify: */FALSE);
 	for(usernum=1;usernum<=lastusernum;usernum++) {
-		SAFEPRINTF2(str,"%5u of %-5u",usernum,lastusernum);
-		status(str);
 		user.number = usernum;
 		if((i=fgetuserdat(&cfg, &user, userfile)) != 0) {
 			SAFEPRINTF(str,"user record %u",usernum);
@@ -4577,7 +4595,7 @@ void sbbs_t::daily_maint(void)
 		}
 
 		/***********************************************/
-		/* Fix name (name.dat and user.dat) mismatches */
+		/* Fix name (name.dat and user.tab) mismatches */
 		/***********************************************/
 		username(&cfg,user.number,uname);
 		if(user.misc&DELETED) {
@@ -4625,14 +4643,14 @@ void sbbs_t::daily_maint(void)
 				user.rest|=cfg.expired_rest;
 				user.expire=0;
 			}
-			putuserrec(&cfg,user.number,U_LEVEL,2,ultoa(user.level,str,10));
-			putuserrec(&cfg,user.number,U_FLAGS1,8,ultoa(user.flags1,str,16));
-			putuserrec(&cfg,user.number,U_FLAGS2,8,ultoa(user.flags2,str,16));
-			putuserrec(&cfg,user.number,U_FLAGS3,8,ultoa(user.flags3,str,16));
-			putuserrec(&cfg,user.number,U_FLAGS4,8,ultoa(user.flags4,str,16));
-			putuserrec(&cfg,user.number,U_EXPIRE,8,ultoa((ulong)user.expire,str,16));
-			putuserrec(&cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,str,16));
-			putuserrec(&cfg,user.number,U_REST,8,ultoa(user.rest,str,16));
+			putuserdec32(user.number, USER_LEVEL, user.level);
+			putuserflags(user.number, USER_FLAGS1, user.flags1);
+			putuserflags(user.number, USER_FLAGS2, user.flags2);
+			putuserflags(user.number, USER_FLAGS3, user.flags3);
+			putuserflags(user.number, USER_FLAGS4, user.flags4);
+			putuserdatetime(user.number, USER_EXPIRE, user.expire);
+			putuserflags(user.number, USER_EXEMPT, user.exempt);
+			putuserflags(user.number, USER_REST, user.rest);
 			if(cfg.expire_mod[0]) {
 				useron=user;
 				online=ON_LOCAL;
@@ -4653,7 +4671,7 @@ void sbbs_t::daily_maint(void)
 			lputs(LOG_NOTICE, str);
 			delallmail(user.number, MAIL_ANY);
 			putusername(&cfg,user.number,nulstr);
-			putuserrec(&cfg,user.number,U_MISC,8,ultoa(user.misc|DELETED,str,16));
+			putusermisc(user.number, user.misc | DELETED);
 		}
 	}
 	closeuserdat(userfile);
@@ -4682,7 +4700,6 @@ void sbbs_t::daily_maint(void)
 		online = FALSE;
 		lprintf(result ? LOG_ERR : LOG_INFO, "Daily event: '%s' returned %d", cmd, result);
 	}
-	status(STATUS_WFC);
 	lputs(LOG_INFO, "DAILY: System maintenance ended");
 	sys_status&=~SS_DAILY;
 }
@@ -4764,7 +4781,6 @@ static void cleanup(int code)
 	protected_uint32_destroy(node_threads_running);
 	protected_uint32_destroy(ssh_sessions);
 
-	status("Down");
 	thread_down();
 	if(terminate_server || code)
 		lprintf(LOG_INFO,"Terminal Server thread terminated (%lu clients served)", served);
@@ -4819,6 +4835,8 @@ void bbs_thread(void* arg)
 		return;
 	}
 
+	set_state(SERVER_INIT);
+
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
 		startup->seteuid(TRUE);
@@ -4857,8 +4875,6 @@ void bbs_thread(void* arg)
 	thread_up(FALSE /* setuid */);
 	if(startup->seteuid!=NULL)
 		startup->seteuid(TRUE);
-
-	status("Initializing");
 
 	memset(text, 0, sizeof(text));
     memset(&scfg, 0, sizeof(scfg));
@@ -4915,6 +4931,7 @@ void bbs_thread(void* arg)
 		cleanup(1);
 		return;
 	}
+	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", bbs_ver());
 
 	t=time(NULL);
 	lprintf(LOG_INFO,"Initializing on %.24s with options: %x"
@@ -4936,6 +4953,12 @@ void bbs_thread(void* arg)
 		return;
 	}
 
+	if(scfg.total_shells < 1) {
+		lprintf(LOG_CRIT, "At least one command shell must be configured (e.g. in SCFG->Command Shells)");
+		cleanup(1);
+		return;
+	}
+
 	if((t=checktime())!=0) {   /* Check binary time */
 		lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
 	}
@@ -4952,6 +4975,8 @@ void bbs_thread(void* arg)
         	,startup->last_node, scfg.sys_nodes);
         startup->last_node=scfg.sys_nodes;
     }
+
+	mqtt_pub_uintval(&startup->mqtt, TOPIC_BBS, "node_count", scfg.sys_nodes);
 
 	/* Create missing directories */
 	lprintf(LOG_INFO,"Verifying/creating data directories");
@@ -5158,12 +5183,10 @@ NO_SSH:
 		sbbs->putnodedat(i,&node);
 	}
 
-	status(STATUS_WFC);
-
 	/* Setup recycle/shutdown semaphore file lists */
-	shutdown_semfiles = semfile_list_init(scfg.ctrl_dir,"shutdown", "term");
-	recycle_semfiles = semfile_list_init(scfg.ctrl_dir,"recycle", "term");
-	clear_attempts_semfiles = semfile_list_init(scfg.ctrl_dir,"clear", "term");
+	shutdown_semfiles = semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
+	recycle_semfiles = semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
+	clear_attempts_semfiles = semfile_list_init(scfg.ctrl_dir,"clear", server_abbrev);
 	semfile_list_add(&recycle_semfiles,startup->ini_fname);
 	SAFEPRINTF(str,"%stext.dat",scfg.ctrl_dir);
 	semfile_list_add(&recycle_semfiles,str);
@@ -5197,10 +5220,10 @@ NO_SSH:
 #endif // __unix__ (unix-domain spy sockets)
 
 	/* signal caller that we've started up successfully */
-	if(startup->started!=NULL)
-		startup->started(startup->cbdata);
+	set_state(SERVER_READY);
 
 	lprintf(LOG_INFO,"Terminal Server thread started for nodes %d through %d", first_node, last_node);
+	mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "max_clients", (last_node - first_node) + 1);
 
 	while(!terminate_server) {
 		YIELD();
@@ -5777,6 +5800,8 @@ NO_SSH:
 		served++;
 	}
 
+	set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
+
     // Close all open sockets
     for(i=0;i<MAX_NODES;i++)  {
     	if(node_socket[i]!=INVALID_SOCKET) {
@@ -5893,4 +5918,5 @@ NO_SSH:
 
 	} while(!terminate_server);
 
+	set_state(SERVER_STOPPED);
 }

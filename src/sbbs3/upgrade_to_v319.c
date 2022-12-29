@@ -26,6 +26,7 @@
 #include "dat_file.h"
 #include "datewrap.h"
 #include "filedat.h"
+#include "dat_rec.h"
 
 scfg_t scfg;
 BOOL overwrite_existing_files=TRUE;

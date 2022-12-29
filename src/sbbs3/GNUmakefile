@@ -60,6 +60,15 @@ ifeq ($(os),linux)
   CFLAGS += -DUSE_LINUX_CAPS
   CON_LIBS += -lcap
  endif
+ ifeq ($(shell test -f /usr/include/systemd/sd-daemon.h && echo "yes"),yes)
+  CFLAGS += -DUSE_SYSTEMD
+  CON_LIBS += -lsystemd
+ endif
+endif
+ifeq ($(shell test -f /usr/include/mosquitto.h && echo "yes"),yes)
+ CFLAGS += -DUSE_MOSQUITTO
+ CON_LIBS += -lmosquitto
+ JS_LIBS += -lmosquitto
 endif
 
 include sbbsdefs.mk
@@ -240,11 +249,6 @@ $(SLOG): $(SLOG_OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(SLOG_OBJS) $(XPDEV_LIBS) -lsbbs
 
-# ALLUSERS
-$(ALLUSERS): $(ALLUSERS_OBJS) $(ENCODE_LIB)
-	@echo Linking $@
-	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(ALLUSERS_OBJS) $(XPDEV_LIBS) $(ENCODE_LIBS)
-
 # DELFILES
 $(DELFILES): $(DELFILES_OBJS) $(ENCODE_LIB)
 	@echo Linking $@
@@ -288,3 +292,8 @@ $(FMSGDUMP): $(FMSGDUMP_OBJS) $(OBJODIR) $(EXEODIR)
 $(UPGRADE_TO_V319): $(UPGRADE_TO_V319_OBJS) $(OBJODIR) $(EXEODIR)
 	@echo Linking $@
 	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(UPGRADE_TO_V319_OBJS) $(SMBLIB_LIBS) $(XPDEV_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(FILE_LIBS)
+
+$(UPGRADE_TO_V320): $(UPGRADE_TO_V320_OBJS) $(OBJODIR) $(EXEODIR)
+	@echo Linking $@
+	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(UPGRADE_TO_V320_OBJS) $(SMBLIB_LIBS) $(XPDEV_LIBS) $(ENCODE_LIBS) $(HASH_LIBS)
+

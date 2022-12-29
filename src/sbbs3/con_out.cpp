@@ -561,13 +561,29 @@ bool sbbs_t::update_nodeterm(void)
 
 	char path[MAX_PATH + 1];
 	SAFEPRINTF(path, "%sterminal.ini", cfg.node_dir);
-	FILE* fp = iniOpenFile(path, /* create: */TRUE);
+	FILE* fp = iniOpenFile(path, /* for_modify: */TRUE);
 	bool result = false;
 	if(fp != NULL) {
 		result = iniWriteFile(fp, ini);
 		iniCloseFile(fp);
 	}
 	strListFree(&ini);
+
+	if(cfg.mqtt.enabled) {
+		char str[256];
+		char topic[128];
+		SAFEPRINTF(topic, "node%u/terminal", cfg.node_num);
+		snprintf(str, sizeof(str), "%lu\t%lu\t%s\t%s\t%lx\t%lx\t%lx"
+			,cols
+			,rows
+			,term_type()
+			,term_charset()
+			,term_supports()
+			,mouse_mode
+			,console
+		);
+		mqtt_pub_strval(&startup->mqtt, TOPIC_BBS, topic, str);
+	}
 	return result;
 }
 
@@ -677,8 +693,11 @@ int sbbs_t::outchar(char ch)
 		} else {
 			if(utf8[0] != 0)
 				putcom(utf8);
-			else
+			else {
+				if(ch == '\n' && line_delay)
+					SLEEP(line_delay);
 				outcom(ch);
+			}
 		}
 	}
 	if(outchar_esc == ansiState_none) {

@@ -126,11 +126,11 @@ char *readtext(FILE *stream, char **comment_ret)
 	return(p);
 }
 
-char *format_as_cstr(char *orig)
+char *format_as_cstr(const char *orig)
 {
 	int		len=0;
 	char	*ret=NULL;
-	char	*in;
+	const char *in;
 	char	hex[32];
 	int		outpos=0;
 

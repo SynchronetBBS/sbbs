@@ -21,8 +21,9 @@
 #include "ciolib.h"	// CIO_KEY_*
 #include <stdbool.h>
 
-#define DEFAULT_DIR_OPTIONS (DIR_FCHK|DIR_DUPES|DIR_CDTUL|DIR_CDTDL|DIR_DIZ)
 #define CUT_LIBNUM	USHRT_MAX
+
+void dir_defaults_cfg(dir_t*);
 
 char* file_sort_desc[] = {
 	"Name Ascending (case-insensitive)",
@@ -43,6 +44,85 @@ char* vdir_name_desc[] = {
 	NULL
 };
 
+static char* up_pct_help = 
+	"`Percentage of Credits to Credit Uploader on Upload:`\n"
+	"\n"
+	"This is the percentage of a file's credit value that is given to users\n"
+	"when they upload files. Most often, this value will be set to `100` to\n"
+	"give full credit value (100%) for uploads.\n"
+	"\n"
+	"If you want uploaders to receive no credits upon upload, set this value\n"
+	"to `0`.\n"
+	;
+
+static char* dn_pct_help =
+	"`Percentage of Credits to Credit Uploader on Download:`\n"
+	"\n"
+	"This is the percentage of a file's credit value that is given to users\n"
+	"who upload a file that is later downloaded by another user. This is an\n"
+	"award type system where more popular files will generate more credits\n"
+	"for the uploader.\n"
+	"\n"
+	"If you do not want uploaders to receive credit when files they upload\n"
+	"are later downloaded, set this value to `0`.\n"
+	;
+
+static char* max_age_help =
+	"`Maximum Age of Files:`\n"
+	"\n"
+	"This value is the maximum number of days that files will be kept in\n"
+	"the directory based on the date the file was uploaded or last\n"
+	"downloaded (If the `Purge by Last Download` toggle option is used).\n"
+	"\n"
+	"The Synchronet file base maintenance program (`delfiles`) must be used\n"
+	"to automatically remove files based on age.\n"
+	;
+
+static char* max_files_help =
+	"`Maximum Number of Files:`\n"
+	"\n"
+	"This value is the maximum number of files allowed in this directory.\n"
+	"\n"
+	"The value 0 indicates an unlimited number of files will be allowed."
+	;
+
+static char* file_ext_help =
+	"`File Extensions Allowed:`\n"
+	"\n"
+	"This option allows you to limit the types of files uploaded to this\n"
+	"directory. This is a list of file extensions that are allowed, each\n"
+	"separated by a comma (Example: `ZIP,EXE`). If this option is left\n"
+	"blank, all file extensions will be allowed to be uploaded.\n"
+	;
+
+static char* data_dir_help =
+	"`Data Directory:`\n"
+	"\n"
+	"Use this if you wish to place the data directory for this directory\n"
+	"on another drive or in another directory besides the default setting.\n"
+	;
+
+static char* upload_sem_help =
+	"`Upload Semaphore File:`\n"
+	"\n"
+	"This is a filename that will be used as a semaphore (signal) to your\n"
+	"FidoNet software that new files are ready to be hatched for export.\n"
+	"\n"
+	"`Command line specifiers may be included in the semaphore filename.`\n"
+	SCFG_CMDLINE_SPEC_HELP
+	;
+
+static char* sort_help =
+	"`Sort Value and Direction:`\n"
+	"\n"
+	"This option allows you to determine the sort value and direction for\n"
+	"the display of file listings.\n"
+	"\n"
+	"The dates available for sorting are the file import/upload date/time.\n"
+	"\n"
+	"The natural (and thus fastest) sort order is `Date Ascending`."
+	;
+
 static bool new_dir(unsigned new_dirnum, unsigned libnum)
 {
 	dir_t* new_directory = malloc(sizeof(dir_t));
@@ -50,21 +130,8 @@ static bool new_dir(unsigned new_dirnum, unsigned libnum)
 		errormsg(WHERE, ERR_ALLOC, "directory", sizeof(*new_directory));
 		return false;
 	}
-	memset(new_directory, 0, sizeof(*new_directory));
+	*new_directory = cfg.lib[libnum]->dir_defaults;
 	new_directory->lib = libnum;
-	new_directory->misc = DEFAULT_DIR_OPTIONS;
-	new_directory->up_pct = cfg.cdt_up_pct;
-	new_directory->dn_pct = cfg.cdt_dn_pct;
-
-	/* Use last dir in lib (if exists) as a template for new dirs */
-	for (unsigned u = 0; u < cfg.total_dirs; u++) {
-		if(cfg.dir[u]->lib == libnum) {
-			*new_directory = *cfg.dir[u];
-			new_directory->misc &= ~DIR_TEMPLATE;
-			if(cfg.dir[u]->misc & DIR_TEMPLATE)	/* Use this dir (not last) if marked as template */
-				break;
-		}
-	}
 
 	dir_t** new_dir_list;
 	if ((new_dir_list = (dir_t **)realloc(cfg.dir, sizeof(dir_t *)*(cfg.total_dirs + 1))) == NULL) {
@@ -120,6 +187,9 @@ static bool new_lib(unsigned new_libnum)
 		return false;
 	}
 	memset(new_library, 0, sizeof(*new_library));
+	new_library->dir_defaults.misc = DEFAULT_DIR_OPTIONS;
+	new_library->dir_defaults.up_pct = cfg.cdt_up_pct;
+	new_library->dir_defaults.dn_pct = cfg.cdt_dn_pct;
 
 	lib_t** new_lib_list;
 	if ((new_lib_list = (lib_t **)realloc(cfg.lib, sizeof(lib_t *)*(cfg.total_libs + 1))) == NULL) {
@@ -221,7 +291,7 @@ unsigned dirs_in_lib(unsigned libnum)
 
 void xfer_cfg()
 {
-	static int libs_dflt,libs_bar,dflt;
+	static int libs_dflt,libs_bar,dflt,bar;
 	char str[256], done=0, *p;
 	char tmp_code[MAX_PATH+1];
 	int file,j,k,q;
@@ -252,7 +322,7 @@ void xfer_cfg()
 		"constructed from a combination of the prefix and the specified code\n"
 		"suffix for each directory.\n"
 		"\n"
-		"Code prefixes may contain up to 8 legal filename characters.\n"
+		"Code prefixes may contain up to 16 legal filename characters.\n"
 		"\n"
 		"Code prefixes should be unique among the file libraries on the system.\n"
 		"\n"
@@ -314,7 +384,7 @@ void xfer_cfg()
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Library Short Name",short_name,LEN_GSNAME, K_EDIT)<1)
 				continue;
 
-			char code_prefix[LEN_GSNAME+1];	/* purposely extra-long */
+			char code_prefix[LEN_EXTCODE+1];	/* purposely extra-long */
 			SAFECOPY(code_prefix, short_name);
 			prep_code(code_prefix, NULL);
 			if(strlen(code_prefix) < LEN_CODE)
@@ -429,13 +499,21 @@ void xfer_cfg()
 				,cfg.lib[libnum]->parent_path);
 			sprintf(opt[j++],"%-27.27s%s","Access Requirements"
 				,cfg.lib[libnum]->arstr);
-			sprintf(opt[j++],"%-27.27s%s","Access to Sub-directories"
+			sprintf(opt[j++],"%-27.27s%s","Upload Requirements"
+				,cfg.lib[libnum]->ul_arstr);
+			sprintf(opt[j++],"%-27.27s%s","Download Requirements"
+				,cfg.lib[libnum]->dl_arstr);
+			sprintf(opt[j++],"%-27.27s%s","Operator Requirements"
+				,cfg.lib[libnum]->op_arstr);
+			sprintf(opt[j++],"%-27.27s%s","Exemption Requirements"
+				,cfg.lib[libnum]->ex_arstr);
+			sprintf(opt[j++],"%-27.27s%s","Auto-Add Sub-directories"
 				,cfg.lib[libnum]->parent_path[0] ? (cfg.lib[libnum]->misc&LIB_DIRS ? "Yes":"No") : "N/A");
 			sprintf(opt[j++],"%-27.27s%s","Sort Library By Directory", area_sort_desc[cfg.lib[libnum]->sort]);
 			sprintf(opt[j++],"%-27.27s%s","Virtual Sub-directories", vdir_name_desc[cfg.lib[libnum]->vdir_name]);
-			strcpy(opt[j++],"Clone Options");
 			strcpy(opt[j++],"Export Areas...");
 			strcpy(opt[j++],"Import Areas...");
+			strcpy(opt[j++],"Directory Defaults...");
 			strcpy(opt[j++],"File Directories...");
 			opt[j][0]=0;
 			sprintf(str,"%s Library",cfg.lib[libnum]->sname);
@@ -449,12 +527,12 @@ void xfer_cfg()
 				"The left and right arrow keys may be used to cycle through file\n"
 				"libraries.\n"
 			;
-			uifc_winmode_t wmode = WIN_ACT|WIN_EXTKEYS;
+			uifc_winmode_t wmode = WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
 			if(libnum > 0)
 				wmode |= WIN_LEFTKEY;
 			if(libnum + 1 < cfg.total_libs)
 				wmode |= WIN_RIGHTKEY;
-			switch(uifc.list(wmode,6,4,60,&dflt,0,str,opt)) {
+			switch(uifc.list(wmode,0,0,72,&dflt,&bar,str,opt)) {
 				case -1:
 					done=1;
 					break;
@@ -521,12 +599,28 @@ void xfer_cfg()
 						,cfg.lib[libnum]->parent_path,sizeof(cfg.lib[libnum]->parent_path)-1,K_EDIT);
 					break;
 				case __COUNTER__:
-					sprintf(str,"%s Library",cfg.lib[libnum]->sname);
+					sprintf(str,"%s Library Access",cfg.lib[libnum]->sname);
 					getar(str,cfg.lib[libnum]->arstr);
 					break;
 				case __COUNTER__:
+					sprintf(str,"%s Library Upload",cfg.lib[libnum]->sname);
+					getar(str,cfg.lib[libnum]->ul_arstr);
+					break;
+				case __COUNTER__:
+					sprintf(str,"%s Library Download",cfg.lib[libnum]->sname);
+					getar(str,cfg.lib[libnum]->dl_arstr);
+					break;
+				case __COUNTER__:
+					sprintf(str,"%s Library Operator",cfg.lib[libnum]->sname);
+					getar(str,cfg.lib[libnum]->op_arstr);
+					break;
+				case __COUNTER__:
+					sprintf(str,"%s Library Exemption",cfg.lib[libnum]->sname);
+					getar(str,cfg.lib[libnum]->ex_arstr);
+					break;
+				case __COUNTER__:
 					uifc.helpbuf=
-						"`Access to Sub-directories:`\n"
+						"`Auto-Add Sub-directories:`\n"
 						"\n"
 						"When a Library's parent directory has been defined, sub-directories of\n"
 						"that parent directory may be automatically added as directories of the\n"
@@ -542,7 +636,7 @@ void xfer_cfg()
 						break;
 					}
 					j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
-						,"Allow Access to Sub-directories of Parent Directory"
+						,"Automatically Add Sub-directories of Parent Directory"
 						,uifcYesNoOpts);
 					if(j==0 && (cfg.lib[libnum]->misc&LIB_DIRS) == 0) {
 						cfg.lib[libnum]->misc|=LIB_DIRS;
@@ -585,61 +679,6 @@ void xfer_cfg()
 					if(j >= 0) {
 						cfg.lib[libnum]->vdir_name = j;
 						uifc.changes = TRUE;
-					}
-					break;
-				case __COUNTER__: /* clone options */
-					j=0;
-					uifc.helpbuf=
-						"`Clone Directory Options:`\n"
-						"\n"
-						"If you want to clone the options of the template directory of this\n"
-						"library into all directories of this library, select `Yes`.\n"
-						"\n"
-						"If no directory has been configured as the template directory, then\n"
-						"the `first` directory is used as the template to be cloned.\n"
-						"A directory is marked as the template for the library in its\n"
-						"`Toggle Options` menu.\n"
-						"\n"
-						"The options cloned are upload requirements, download requirements,\n"
-						"operator requirements, exempted user requirements, toggle options,\n"
-						"maximum number of files, allowed file extensions, default file\n"
-						"extension, and sort type.\n"
-					;
-					j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
-						,"Clone Options of Template Directory into All of Library"
-						,uifcYesNoOpts);
-					if(j==0) {
-						dir_t* template = NULL;
-						for(j=0;j<cfg.total_dirs;j++) {
-							if(cfg.dir[j]->lib == libnum && cfg.dir[j]->misc&DIR_TEMPLATE) {
-								template = cfg.dir[j];
-								break;
-							}
-						}
-						for(j=0;j<cfg.total_dirs;j++) {
-							if(cfg.dir[j]->lib != libnum)
-								continue;
-							if(template == NULL)
-								template = cfg.dir[j];
-							else if(cfg.dir[j] != template) {
-								uifc.changes=1;
-								cfg.dir[j]->misc = template->misc;
-								cfg.dir[j]->misc &= ~DIR_TEMPLATE;
-								strcpy(cfg.dir[j]->ul_arstr		, template->ul_arstr);
-								strcpy(cfg.dir[j]->dl_arstr		, template->dl_arstr);
-								strcpy(cfg.dir[j]->op_arstr		, template->op_arstr);
-								strcpy(cfg.dir[j]->ex_arstr		, template->ex_arstr);
-								strcpy(cfg.dir[j]->exts			, template->exts);
-								strcpy(cfg.dir[j]->data_dir		, template->data_dir);
-								strcpy(cfg.dir[j]->upload_sem	, template->upload_sem);
-								cfg.dir[j]->maxfiles			= template->maxfiles;
-								cfg.dir[j]->maxage				= template->maxage;
-								cfg.dir[j]->up_pct				= template->up_pct;
-								cfg.dir[j]->dn_pct				= template->dn_pct;
-								cfg.dir[j]->seqdev				= template->seqdev;
-								cfg.dir[j]->sort				= template->sort;
-							}
-						}
 					}
 					break;
 	#define DIRS_TXT_HELP_TEXT		"`DIRS.TXT` is a plain text file that includes all of the Synchronet\n" \
@@ -809,10 +848,7 @@ void xfer_cfg()
 						truncsp(str);
 						if(!str[0])
 							continue;
-						memset(&tmpdir,0,sizeof(dir_t));
-						tmpdir.misc=DEFAULT_DIR_OPTIONS;
-						tmpdir.up_pct=cfg.cdt_up_pct;
-						tmpdir.dn_pct=cfg.cdt_dn_pct; 
+						tmpdir = cfg.lib[libnum]->dir_defaults;
 
 						p=str;
 						while(*p && *p<=' ') p++;
@@ -988,7 +1024,7 @@ void xfer_cfg()
 								errormsg(WHERE,ERR_ALLOC,"dir",sizeof(dir_t));
 								break;
 							}
-							memset(cfg.dir[j],0,sizeof(dir_t)); 
+							*cfg.dir[j] = cfg.lib[libnum]->dir_defaults;
 							cfg.dir[j]->dirnum = j;
 							added++;
 						} else
@@ -997,10 +1033,6 @@ void xfer_cfg()
 							SAFECOPY(cfg.dir[j]->code_suffix,tmpdir.code_suffix);
 							SAFECOPY(cfg.dir[j]->sname,tmpdir.sname);
 							SAFECOPY(cfg.dir[j]->lname,tmpdir.lname);
-							if(j==cfg.total_dirs) {
-								cfg.dir[j]->up_pct=cfg.cdt_up_pct;
-								cfg.dir[j]->dn_pct=cfg.cdt_dn_pct; 
-							}
 						} else
 							memcpy(cfg.dir[j],&tmpdir,sizeof(dir_t));
 						cfg.dir[j]->lib = libnum;
@@ -1019,6 +1051,10 @@ void xfer_cfg()
 					break;
 
 				case __COUNTER__:
+					dir_defaults_cfg(&cfg.lib[libnum]->dir_defaults);
+					break;
+
+				case __COUNTER__:
 					dir_cfg(libnum);
 					break;
 			}
@@ -1026,9 +1062,550 @@ void xfer_cfg()
 	}
 }
 
+void dir_toggle_options(dir_t* dir)
+{
+	static int dflt,bar;
+	char str[128];
+
+	while(1) {
+		int n=0;
+		sprintf(opt[n++],"%-30.30s%s","Check for File Existence"
+			,dir->misc&DIR_FCHK ? "Yes":"No");
+		strcpy(str,"Slow Media Device");
+		if(dir->seqdev) {
+			sprintf(tmp," #%u",dir->seqdev);
+			strcat(str,tmp);
+		}
+		sprintf(opt[n++],"%-30.30s%s",str
+			,dir->seqdev ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Force Content Ratings"
+			,dir->misc&DIR_RATE ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Upload Date in Listings"
+			,dir->misc&DIR_ULDATE ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Multiple File Numberings"
+			,dir->misc&DIR_MULT ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Search for Duplicates"
+			,dir->misc&DIR_DUPES ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Search for New Files"
+			,dir->misc&DIR_NOSCAN ? "No":"Yes");
+		sprintf(opt[n++],"%-30.30s%s","Search for Auto-ADDFILES"
+			,dir->misc&DIR_NOAUTO ? "No":"Yes");
+		sprintf(opt[n++],"%-30.30s%s","Import FILE_ID.DIZ"
+			,dir->misc&DIR_DIZ ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Free Downloads"
+			,dir->misc&DIR_FREE ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Free Download Time"
+			,dir->misc&DIR_TFREE ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Deduct Upload Time"
+			,dir->misc&DIR_ULTIME ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Credit Uploads"
+			,dir->misc&DIR_CDTUL ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Credit Downloads"
+			,dir->misc&DIR_CDTDL ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Credit with Minutes"
+			,dir->misc&DIR_CDTMIN ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Download Notifications"
+			,dir->misc&DIR_QUIET ? "No":"Yes");
+		sprintf(opt[n++],"%-30.30s%s","Anonymous Uploads"
+			,dir->misc&DIR_ANON ? dir->misc&DIR_AONLY
+			? "Only":"Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Purge by Last Download"
+			,dir->misc&DIR_SINCEDL ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Mark Moved Files as New"
+			,dir->misc&DIR_MOVENEW ? "Yes":"No");
+		sprintf(opt[n++],"%-30.30s%s","Include Transfers In Stats"
+			,dir->misc&DIR_NOSTAT ? "No":"Yes");
+		sprintf(opt[n++],"%-30.30s%s","Calculate/Store Hash of Files"
+			,dir->misc&DIR_NOHASH ? "No":"Yes");
+		sprintf(opt[n++],"%-30.30s%s","Allow File Tagging"
+			,dir->misc&DIR_FILETAGS ? "Yes" : "No");
+		opt[n][0]=0;
+		uifc.helpbuf=
+			"`Directory Toggle Options:`\n"
+			"\n"
+			"This is the toggle options menu for the selected file directory.\n"
+			"\n"
+			"The available options from this menu can all be toggled between two or\n"
+			"more states, such as `Yes` and `No`.\n"
+		;
+		n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,0,&dflt,&bar,"Toggle Options",opt);
+		if(n==-1)
+			break;
+		switch(n) {
+			case 0:
+				n=dir->misc&DIR_FCHK ? 0:1;
+				uifc.helpbuf=
+					"`Check for File Existence When Listing:`\n"
+					"\n"
+					"If you want the actual existence of files to be verified while listing\n"
+					"directories and to have the current file size and modification time\n"
+					"reported when listing files, set this value to `Yes`.\n"
+					"\n"
+					"Directories with files located on CD-ROM or other slow media should have\n"
+					"this option set to `No`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Check for File Existence When Listing",uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_FCHK)) {
+					dir->misc|=DIR_FCHK;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_FCHK)) {
+					dir->misc&=~DIR_FCHK;
+					uifc.changes=1;
+				}
+				break;
+			case 1:
+				n=dir->seqdev ? 0:1;
+				uifc.helpbuf=
+					"`Slow Media Device:`\n"
+					"\n"
+					"If this directory contains files located on CD-ROM or other slow media\n"
+					"device, you should set this option to `Yes`. Each slow media device on\n"
+					"your system should have a unique `Device Number`. If you only have one\n"
+					"slow media device, then this number should be set to `1`.\n"
+					"\n"
+					"`CD-ROM multi-disk changers` are considered `one` device and all the\n"
+					"directories on all the CD-ROMs in each changer should be set to the same\n"
+					"device number.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Slow Media Device"
+					,uifcYesNoOpts);
+				if(n==0) {
+					if(!dir->seqdev) {
+						uifc.changes=1;
+						strcpy(str,"1");
+					}
+					else
+						sprintf(str,"%u",dir->seqdev);
+					uifc.input(WIN_MID|WIN_SAV,0,0
+						,"Device Number"
+						,str,2,K_EDIT|K_UPPER);
+					dir->seqdev=atoi(str);
+				}
+				else if(n==1 && dir->seqdev) {
+					dir->seqdev=0;
+					uifc.changes=1;
+				}
+				break;
+			case 2:
+				n=dir->misc&DIR_RATE ? 0:1;
+				uifc.helpbuf=
+					"`Force Content Ratings in Descriptions:`\n"
+					"\n"
+					"If you would like all uploads to this directory to be prompted for\n"
+					"content rating (G, R, or X), set this value to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Force Content Ratings in Descriptions",uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_RATE)) {
+					dir->misc|=DIR_RATE;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_RATE)) {
+					dir->misc&=~DIR_RATE;
+					uifc.changes=1;
+				}
+				break;
+			case 3:
+				n=dir->misc&DIR_ULDATE ? 0:1;
+				uifc.helpbuf=
+					"`Include Upload Date in File Descriptions:`\n"
+					"\n"
+					"If you wish the upload date of each file in this directory to be\n"
+					"automatically included in the file description, set this option to\n"
+					"`Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Include Upload Date in Descriptions",uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_ULDATE)) {
+					dir->misc|=DIR_ULDATE;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_ULDATE)) {
+					dir->misc&=~DIR_ULDATE;
+					uifc.changes=1;
+				}
+				break;
+			case 4:
+				n=dir->misc&DIR_MULT ? 0:1;
+				uifc.helpbuf=
+					"`Ask for Multiple File Numberings:`\n"
+					"\n"
+					"If you would like uploads to this directory to be prompted for multiple\n"
+					"file (disk) numbers, set this value to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Ask for Multiple File Numberings",uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_MULT)) {
+					dir->misc|=DIR_MULT;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_MULT)) {
+					dir->misc&=~DIR_MULT;
+					uifc.changes=1;
+				}
+				break;
+			case 5:
+				n=dir->misc&DIR_DUPES ? 0:1;
+				uifc.helpbuf=
+					"`Search Directory for Duplicate Filenames:`\n"
+					"\n"
+					"If you would like to have this directory searched for duplicate\n"
+					"filenames when a user attempts to upload a file, set this option to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Search for Duplicate Filenames",uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_DUPES)) {
+					dir->misc|=DIR_DUPES;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_DUPES)) {
+					dir->misc&=~DIR_DUPES;
+					uifc.changes=1;
+				}
+				break;
+			case 6:
+				n=dir->misc&DIR_NOSCAN ? 1:0;
+				uifc.helpbuf=
+					"`Search Directory for New Files:`\n"
+					"\n"
+					"If you would like to have this directory searched for newly uploaded\n"
+					"files when a user scans `All` libraries for new files, set this option to\n"
+					"`Yes`.\n"
+					"\n"
+					"If this directory is located on `CD-ROM` or other read only media\n"
+					"(where uploads are unlikely to occur), it will improve new file scans\n"
+					"if this option is set to `No`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Search for New files",uifcYesNoOpts);
+				if(n==0 && dir->misc&DIR_NOSCAN) {
+					dir->misc&=~DIR_NOSCAN;
+					uifc.changes=1;
+				}
+				else if(n==1 && !(dir->misc&DIR_NOSCAN)) {
+					dir->misc|=DIR_NOSCAN;
+					uifc.changes=1;
+				}
+				break;
+			case 7:
+				n=dir->misc&DIR_NOAUTO ? 1:0;
+				uifc.helpbuf=
+					"`Search Directory for Auto-ADDFILES:`\n"
+					"\n"
+					"If you would like to have this directory searched for a file list to\n"
+					"import automatically when using the `ADDFILES *` (Auto-ADD) feature,\n"
+					"set this option to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Search for Auto-ADDFILES",uifcYesNoOpts);
+				if(n==0 && dir->misc&DIR_NOAUTO) {
+					dir->misc&=~DIR_NOAUTO;
+					uifc.changes=1;
+				}
+				else if(n==1 && !(dir->misc&DIR_NOAUTO)) {
+					dir->misc|=DIR_NOAUTO;
+					uifc.changes=1;
+				}
+				break;
+			case 8:
+				n=dir->misc&DIR_DIZ ? 0:1;
+				uifc.helpbuf=
+					"`Import FILE_ID.DIZ and DESC.SDI Descriptions:`\n"
+					"\n"
+					"If you would like archived descriptions (`FILE_ID.DIZ` and `DESC.SDI`)\n"
+					"of uploaded files to be automatically imported as the extended\n"
+					"description, set this option to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Import FILE_ID.DIZ and DESC.SDI",uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_DIZ)) {
+					dir->misc|=DIR_DIZ;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_DIZ)) {
+					dir->misc&=~DIR_DIZ;
+					uifc.changes=1;
+				}
+				break;
+			case 9:
+				n=dir->misc&DIR_FREE ? 0:1;
+				uifc.helpbuf=
+					"`Downloads are Free:`\n"
+					"\n"
+					"If you would like all downloads from this directory to be free (cost\n"
+					"no credits), set this option to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Downloads are Free",uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_FREE)) {
+					dir->misc|=DIR_FREE;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_FREE)) {
+					dir->misc&=~DIR_FREE;
+					uifc.changes=1;
+				}
+				break;
+			case 10:
+				n=dir->misc&DIR_TFREE ? 0:1;
+				uifc.helpbuf=
+					"`Free Download Time:`\n"
+					"\n"
+					"If you would like all downloads from this directory to not subtract\n"
+					"time from the user, set this option to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Free Download Time",uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_TFREE)) {
+					dir->misc|=DIR_TFREE;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_TFREE)) {
+					dir->misc&=~DIR_TFREE;
+					uifc.changes=1;
+				}
+				break;
+			case 11:
+				n=dir->misc&DIR_ULTIME ? 0:1;
+				uifc.helpbuf=
+					"`Deduct Upload Time:`\n"
+					"\n"
+					"If you would like all uploads to this directory to have the time spent\n"
+					"uploading subtracted from their time online, set this option to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Deduct Upload Time",uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_ULTIME)) {
+					dir->misc|=DIR_ULTIME;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_ULTIME)) {
+					dir->misc&=~DIR_ULTIME;
+					uifc.changes=1;
+				}
+				break;
+			case 12:
+				n=dir->misc&DIR_CDTUL ? 0:1;
+				uifc.helpbuf=
+					"`Give Credit for Uploads:`\n"
+					"\n"
+					"If you want users who upload to this directory to get credit for their\n"
+					"initial upload, set this option to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Give Credit for Uploads",uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_CDTUL)) {
+					dir->misc|=DIR_CDTUL;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_CDTUL)) {
+					dir->misc&=~DIR_CDTUL;
+					uifc.changes=1;
+				}
+				break;
+			case 13:
+				n=dir->misc&DIR_CDTDL ? 0:1;
+				uifc.helpbuf=
+					"`Give Uploader Credit for Downloads:`\n"
+					"\n"
+					"If you want users who upload to this directory to get credit when their\n"
+					"files are downloaded, set this option to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Give Uploader Credit for Downloads",uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_CDTDL)) {
+					dir->misc|=DIR_CDTDL;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_CDTDL)) {
+					dir->misc&=~DIR_CDTDL;
+					uifc.changes=1;
+				}
+				break;
+			case 14:
+				n=dir->misc&DIR_CDTMIN ? 0:1;
+				uifc.helpbuf=
+					"`Credit Uploader with Minutes instead of Credits:`\n"
+					"\n"
+					"If you wish to give the uploader of files to this directory minutes,\n"
+					"instead of credits, set this option to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Credit Uploader with Minutes",uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_CDTMIN)) {
+					dir->misc|=DIR_CDTMIN;
+					uifc.changes=1;
+				}
+				else if(n==1 && dir->misc&DIR_CDTMIN){
+					dir->misc&=~DIR_CDTMIN;
+					uifc.changes=1;
+				}
+				break;
+			case 15:
+				n=dir->misc&DIR_QUIET ? 1:0;
+				uifc.helpbuf=
+					"`Send Download Notifications:`\n"
+					"\n"
+					"If you wish the BBS to send download notification messages to the\n"
+					"uploader of a file to this directory, set this option to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Send Download Notifications",uifcYesNoOpts);
+				if(n==1 && !(dir->misc&DIR_QUIET)) {
+					dir->misc|=DIR_QUIET;
+					uifc.changes=1; 
+				} else if(n==0 && dir->misc&DIR_QUIET){
+					dir->misc&=~DIR_QUIET;
+					uifc.changes=1; 
+				}
+				break;
+			case 16:
+				n=dir->misc&DIR_ANON ? (dir->misc&DIR_AONLY ? 2:0):1;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				strcpy(opt[2],"Only");
+				opt[3][0]=0;
+				uifc.helpbuf=
+					"`Allow Anonymous Uploads:`\n"
+					"\n"
+					"If you want users with the `A` exemption to be able to upload anonymously\n"
+					"to this directory, set this option to `Yes`. If you want all uploads to\n"
+					"this directory to be forced anonymous, set this option to `Only`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Allow Anonymous Uploads",opt);
+				if(n==0 && (dir->misc&(DIR_ANON|DIR_AONLY))
+					!=DIR_ANON) {
+					dir->misc|=DIR_ANON;
+					dir->misc&=~DIR_AONLY;
+					uifc.changes=1;
+				}
+				else if(n==1 && dir->misc&(DIR_ANON|DIR_AONLY)){
+					dir->misc&=~(DIR_ANON|DIR_AONLY);
+					uifc.changes=1;
+				}
+				else if(n==2 && (dir->misc&(DIR_ANON|DIR_AONLY))
+					!=(DIR_ANON|DIR_AONLY)) {
+					dir->misc|=(DIR_ANON|DIR_AONLY);
+					uifc.changes=1;
+				}
+				break;
+			case 17:
+				n=dir->misc&DIR_SINCEDL ? 0:1;
+				uifc.helpbuf=
+					"`Purge Files Based on Date of Last Download:`\n"
+					"\n"
+					"Using the Synchronet file base maintenance utility (`delfiles`), you can\n"
+					"have files removed based on the number of days since last downloaded\n"
+					"rather than the number of days since the file was uploaded (default),\n"
+					"by setting this option to `Yes`.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Purge Files Based on Date of Last Download"
+					,uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_SINCEDL)) {
+					dir->misc|=DIR_SINCEDL;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_SINCEDL)) {
+					dir->misc&=~DIR_SINCEDL;
+					uifc.changes=1;
+				}
+				break;
+			case 18:
+				n=dir->misc&DIR_MOVENEW ? 0:1;
+				uifc.helpbuf=
+					"`Mark Moved Files as New:`\n"
+					"\n"
+					"If this option is set to `Yes`, then all files moved `from` this directory\n"
+					"will have their upload date changed to the current date so the file will\n"
+					"appear in users' new-file scans again.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Mark Moved Files as New"
+					,uifcYesNoOpts);
+				if(n==0 && !(dir->misc&DIR_MOVENEW)) {
+					dir->misc|=DIR_MOVENEW;
+					uifc.changes=1;
+				}
+				else if(n==1 && (dir->misc&DIR_MOVENEW)) {
+					dir->misc&=~DIR_MOVENEW;
+					uifc.changes=1;
+				}
+				break;
+			case 19:
+				n=dir->misc&DIR_NOSTAT ? 1:0;
+				uifc.helpbuf=
+					"`Include Transfers In System Statistics:`\n"
+					"\n"
+					"If this option is set to ~Yes~, then all files uploaded to or downloaded\n"
+					"from this directory will be included in the system's daily and\n"
+					"cumulative statistics.\n"
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Include Transfers In System Statistics"
+					,uifcYesNoOpts);
+				if(n==1 && !(dir->misc&DIR_NOSTAT)) {
+					dir->misc|=DIR_NOSTAT;
+					uifc.changes=1; 
+				} else if(n==0 && dir->misc&DIR_NOSTAT){
+					dir->misc&=~DIR_NOSTAT;
+					uifc.changes=1; 
+				}
+				break;
+			case 20:
+				n=dir->misc&DIR_NOHASH ? 1:0;
+				uifc.helpbuf=
+					"`Calculate/Store Hashes of Files:`\n"
+					"\n"
+					"Set to ~Yes~ to calculate and store the hashes of file contents when\n"
+					"adding files to this file base.\n"
+					"\n"
+					"The hashes (CRC-16, CRC-32, MD5, and SHA-1) are useful for detecting\n"
+					"duplicate files (i.e. and rejecting them) as well as allowing the\n"
+					"confirmation of data integrity for the downloaders of files."
+				;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Calculate/Store Hashes of Files"
+					,uifcYesNoOpts);
+				if(n==0 && dir->misc&DIR_NOHASH) {
+					dir->misc &= ~DIR_NOHASH;
+					uifc.changes=1; 
+				} else if(n==1 && !(dir->misc&DIR_NOHASH)){
+					dir->misc |= DIR_NOHASH;
+					uifc.changes=1; 
+				}
+				break;
+			case 21:
+				n=(dir->misc&DIR_FILETAGS) ? 0:1;
+				uifc.helpbuf=
+					"`Allow Addition of Tags to Files:`\n"
+					"\n"
+				;
+				n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
+					,"Allow Addition of Tags to Files",uifcYesNoOpts);
+				if(n==-1)
+					break;
+				if(!n && !(dir->misc & DIR_FILETAGS)) {
+					uifc.changes = TRUE;
+					dir->misc |= DIR_FILETAGS;
+					break; 
+				}
+				if(n==1 && (dir->misc&DIR_FILETAGS)) {
+					uifc.changes = TRUE;
+					dir->misc &= ~DIR_FILETAGS; 
+				}
+				break;
+		} 
+	}
+}
+
 void dir_cfg(uint libnum)
 {
-	static int dflt,bar,tog_dflt,tog_bar,adv_dflt,opt_dflt;
+	static int dflt,bar,adv_dflt,opt_dflt;
 	char str[128],str2[128],code[128],path[MAX_PATH+1],done=0;
 	char data_dir[MAX_PATH+1];
 	int j,n;
@@ -1082,32 +1659,21 @@ void dir_cfg(uint libnum)
 	while(1) {
 		if(uifc.changes && cfg.lib[libnum]->sort)
 			sort_dirs(libnum);
-		int maxlen = 0;
-		bool template_shown = false;
 		for(i=0,j=0;i<cfg.total_dirs && j<MAX_OPTS;i++) {
 			if(cfg.dir[i]->lib != libnum)
 				continue;
 			char* name = cfg.dir[i]->lname;
-			int name_len = LEN_SLNAME;
 			switch(cfg.lib[libnum]->sort) {
 				case AREA_SORT_SNAME:
 					name = cfg.dir[i]->sname;
-					name_len = LEN_SSNAME;
 					break;
 				case AREA_SORT_CODE:
 					name = cfg.dir[i]->code_suffix;
-					name_len = LEN_CODE;
 					break;
 				default:	/* Defeat stupid GCC warning */
 					break;
 			}
-			sprintf(str, "%-*s %c", name_len, name, (cfg.dir[i]->misc&DIR_TEMPLATE && !template_shown) ? '*' : ' ');
-			if(cfg.dir[i]->misc&DIR_TEMPLATE)
-				template_shown = true;
-			truncsp(str);
-			int len = sprintf(opt[j], "%s", str);
-			if(len > maxlen)
-				maxlen = len;
+			strcpy(opt[j], name);
 			dirnum[j++]=i;
 		}
 		dirnum[j]=cfg.total_dirs;
@@ -1133,7 +1699,7 @@ void dir_cfg(uint libnum)
 			"\n"
 			"To configure a directory, select it with the arrow keys and hit ~ ENTER ~.\n"
 		;
-		i = uifc.list(mode, 0, 0, maxlen=5, &dflt, &bar, str, opt);
+		i = uifc.list(mode, 0, 0, 0, &dflt, &bar, str, opt);
 		if((signed)i==-1)
 			return;
 		int msk = i & MSK_ON;
@@ -1395,11 +1961,7 @@ void dir_cfg(uint libnum)
 						,cfg.dir[i]->path,sizeof(cfg.dir[i]->path)-1,K_EDIT);
 					break;
 				case 10:
-					uifc.helpbuf=
-						"`Maximum Number of Files:`\n"
-						"\n"
-						"This value is the maximum number of files allowed in this directory.\n"
-					;
+					uifc.helpbuf = max_files_help;
 					sprintf(str,"%u",cfg.dir[i]->maxfiles);
 					uifc.input(WIN_L2R|WIN_SAV,0,17,"Maximum Number of Files (0=Unlimited)"
 						,str,5,K_EDIT|K_NUMBER);
@@ -1407,619 +1969,27 @@ void dir_cfg(uint libnum)
 					break;
 				case 11:
 					sprintf(str,"%u",cfg.dir[i]->maxage);
-					uifc.helpbuf=
-						"`Maximum Age of Files:`\n"
-						"\n"
-						"This value is the maximum number of days that files will be kept in\n"
-						"the directory based on the date the file was uploaded or last\n"
-						"downloaded (If the `Purge by Last Download` toggle option is used).\n"
-						"\n"
-						"The Synchronet file base maintenance program (`delfiles`) must be used\n"
-						"to automatically remove files based on age.\n"
-					;
+					uifc.helpbuf = max_age_help;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Age of Files (in days)"
 						,str,5,K_EDIT|K_NUMBER);
 					cfg.dir[i]->maxage=atoi(str);
 					break;
 				case 12:
-	uifc.helpbuf=
-		"`Percentage of Credits to Credit Uploader on Upload:`\n"
-		"\n"
-		"This is the percentage of a file's credit value that is given to users\n"
-		"when they upload files. Most often, this value will be set to `100` to\n"
-		"give full credit value (100%) for uploads.\n"
-		"\n"
-		"If you want uploaders to receive no credits upon upload, set this value\n"
-		"to `0`.\n"
-	;
+					uifc.helpbuf = up_pct_help;
 					uifc.input(WIN_MID|WIN_SAV,0,0
 						,"Percentage of Credits to Credit Uploader on Upload"
 						,ultoa(cfg.dir[i]->up_pct,tmp,10),4,K_EDIT|K_NUMBER);
 					cfg.dir[i]->up_pct=atoi(tmp);
 					break;
 				case 13:
-	uifc.helpbuf=
-		"`Percentage of Credits to Credit Uploader on Download:`\n"
-		"\n"
-		"This is the percentage of a file's credit value that is given to users\n"
-		"who upload a file that is later downloaded by another user. This is an\n"
-		"award type system where more popular files will generate more credits\n"
-		"for the uploader.\n"
-		"\n"
-		"If you do not want uploaders to receive credit when files they upload\n"
-		"are later downloaded, set this value to `0`.\n"
-	;
+					uifc.helpbuf = dn_pct_help;
 					uifc.input(WIN_MID|WIN_SAV,0,0
 						,"Percentage of Credits to Credit Uploader on Download"
 						,ultoa(cfg.dir[i]->dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
 					cfg.dir[i]->dn_pct=atoi(tmp);
 					break;
 				case 14:
-					while(1) {
-						n=0;
-						sprintf(opt[n++],"%-30.30s%s","Check for File Existence"
-							,cfg.dir[i]->misc&DIR_FCHK ? "Yes":"No");
-						strcpy(str,"Slow Media Device");
-						if(cfg.dir[i]->seqdev) {
-							sprintf(tmp," #%u",cfg.dir[i]->seqdev);
-							strcat(str,tmp);
-						}
-						sprintf(opt[n++],"%-30.30s%s",str
-							,cfg.dir[i]->seqdev ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Force Content Ratings"
-							,cfg.dir[i]->misc&DIR_RATE ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Upload Date in Listings"
-							,cfg.dir[i]->misc&DIR_ULDATE ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Multiple File Numberings"
-							,cfg.dir[i]->misc&DIR_MULT ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Search for Duplicates"
-							,cfg.dir[i]->misc&DIR_DUPES ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Search for New Files"
-							,cfg.dir[i]->misc&DIR_NOSCAN ? "No":"Yes");
-						sprintf(opt[n++],"%-30.30s%s","Search for Auto-ADDFILES"
-							,cfg.dir[i]->misc&DIR_NOAUTO ? "No":"Yes");
-						sprintf(opt[n++],"%-30.30s%s","Import FILE_ID.DIZ"
-							,cfg.dir[i]->misc&DIR_DIZ ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Free Downloads"
-							,cfg.dir[i]->misc&DIR_FREE ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Free Download Time"
-							,cfg.dir[i]->misc&DIR_TFREE ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Deduct Upload Time"
-							,cfg.dir[i]->misc&DIR_ULTIME ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Credit Uploads"
-							,cfg.dir[i]->misc&DIR_CDTUL ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Credit Downloads"
-							,cfg.dir[i]->misc&DIR_CDTDL ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Credit with Minutes"
-							,cfg.dir[i]->misc&DIR_CDTMIN ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Download Notifications"
-							,cfg.dir[i]->misc&DIR_QUIET ? "No":"Yes");
-						sprintf(opt[n++],"%-30.30s%s","Anonymous Uploads"
-							,cfg.dir[i]->misc&DIR_ANON ? cfg.dir[i]->misc&DIR_AONLY
-							? "Only":"Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Purge by Last Download"
-							,cfg.dir[i]->misc&DIR_SINCEDL ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Mark Moved Files as New"
-							,cfg.dir[i]->misc&DIR_MOVENEW ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Include Transfers In Stats"
-							,cfg.dir[i]->misc&DIR_NOSTAT ? "No":"Yes");
-						sprintf(opt[n++],"%-30.30s%s","Calculate/Store Hash of Files"
-							,cfg.dir[i]->misc&DIR_NOHASH ? "No":"Yes");
-						sprintf(opt[n++],"%-30.30s%s","Template for New Directories"
-							,cfg.dir[i]->misc&DIR_TEMPLATE ? "Yes" : "No");
-						sprintf(opt[n++],"%-30.30s%s","Allow File Tagging"
-							,cfg.dir[i]->misc&DIR_FILETAGS ? "Yes" : "No");
-						opt[n][0]=0;
-						uifc.helpbuf=
-							"`Directory Toggle Options:`\n"
-							"\n"
-							"This is the toggle options menu for the selected file directory.\n"
-							"\n"
-							"The available options from this menu can all be toggled between two or\n"
-							"more states, such as `Yes` and `No`.\n"
-						;
-						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,0,&tog_dflt
-							,&tog_bar,"Toggle Options",opt);
-						if(n==-1)
-							break;
-						switch(n) {
-							case 0:
-								n=cfg.dir[i]->misc&DIR_FCHK ? 0:1;
-								uifc.helpbuf=
-									"`Check for File Existence When Listing:`\n"
-									"\n"
-									"If you want the actual existence of files to be verified while listing\n"
-									"directories and to have the current file size and modification time\n"
-									"reported when listing files, set this value to `Yes`.\n"
-									"\n"
-									"Directories with files located on CD-ROM or other slow media should have\n"
-									"this option set to `No`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Check for File Existence When Listing",uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_FCHK)) {
-									cfg.dir[i]->misc|=DIR_FCHK;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_FCHK)) {
-									cfg.dir[i]->misc&=~DIR_FCHK;
-									uifc.changes=1;
-								}
-								break;
-							case 1:
-								n=cfg.dir[i]->seqdev ? 0:1;
-								uifc.helpbuf=
-									"`Slow Media Device:`\n"
-									"\n"
-									"If this directory contains files located on CD-ROM or other slow media\n"
-									"device, you should set this option to `Yes`. Each slow media device on\n"
-									"your system should have a unique `Device Number`. If you only have one\n"
-									"slow media device, then this number should be set to `1`.\n"
-									"\n"
-									"`CD-ROM multi-disk changers` are considered `one` device and all the\n"
-									"directories on all the CD-ROMs in each changer should be set to the same\n"
-									"device number.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Slow Media Device"
-									,uifcYesNoOpts);
-								if(n==0) {
-									if(!cfg.dir[i]->seqdev) {
-										uifc.changes=1;
-										strcpy(str,"1");
-									}
-									else
-										sprintf(str,"%u",cfg.dir[i]->seqdev);
-									uifc.input(WIN_MID|WIN_SAV,0,0
-										,"Device Number"
-										,str,2,K_EDIT|K_UPPER);
-									cfg.dir[i]->seqdev=atoi(str);
-								}
-								else if(n==1 && cfg.dir[i]->seqdev) {
-									cfg.dir[i]->seqdev=0;
-									uifc.changes=1;
-								}
-								break;
-							case 2:
-								n=cfg.dir[i]->misc&DIR_RATE ? 0:1;
-								uifc.helpbuf=
-									"`Force Content Ratings in Descriptions:`\n"
-									"\n"
-									"If you would like all uploads to this directory to be prompted for\n"
-									"content rating (G, R, or X), set this value to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Force Content Ratings in Descriptions",uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_RATE)) {
-									cfg.dir[i]->misc|=DIR_RATE;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_RATE)) {
-									cfg.dir[i]->misc&=~DIR_RATE;
-									uifc.changes=1;
-								}
-								break;
-							case 3:
-								n=cfg.dir[i]->misc&DIR_ULDATE ? 0:1;
-								uifc.helpbuf=
-									"`Include Upload Date in File Descriptions:`\n"
-									"\n"
-									"If you wish the upload date of each file in this directory to be\n"
-									"automatically included in the file description, set this option to\n"
-									"`Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Include Upload Date in Descriptions",uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_ULDATE)) {
-									cfg.dir[i]->misc|=DIR_ULDATE;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_ULDATE)) {
-									cfg.dir[i]->misc&=~DIR_ULDATE;
-									uifc.changes=1;
-								}
-								break;
-							case 4:
-								n=cfg.dir[i]->misc&DIR_MULT ? 0:1;
-								uifc.helpbuf=
-									"`Ask for Multiple File Numberings:`\n"
-									"\n"
-									"If you would like uploads to this directory to be prompted for multiple\n"
-									"file (disk) numbers, set this value to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Ask for Multiple File Numberings",uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_MULT)) {
-									cfg.dir[i]->misc|=DIR_MULT;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_MULT)) {
-									cfg.dir[i]->misc&=~DIR_MULT;
-									uifc.changes=1;
-								}
-								break;
-							case 5:
-								n=cfg.dir[i]->misc&DIR_DUPES ? 0:1;
-								uifc.helpbuf=
-									"`Search Directory for Duplicate Filenames:`\n"
-									"\n"
-									"If you would like to have this directory searched for duplicate\n"
-									"filenames when a user attempts to upload a file, set this option to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Search for Duplicate Filenames",uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_DUPES)) {
-									cfg.dir[i]->misc|=DIR_DUPES;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_DUPES)) {
-									cfg.dir[i]->misc&=~DIR_DUPES;
-									uifc.changes=1;
-								}
-								break;
-							case 6:
-								n=cfg.dir[i]->misc&DIR_NOSCAN ? 1:0;
-								uifc.helpbuf=
-									"`Search Directory for New Files:`\n"
-									"\n"
-									"If you would like to have this directory searched for newly uploaded\n"
-									"files when a user scans `All` libraries for new files, set this option to\n"
-									"`Yes`.\n"
-									"\n"
-									"If this directory is located on `CD-ROM` or other read only media\n"
-									"(where uploads are unlikely to occur), it will improve new file scans\n"
-									"if this option is set to `No`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Search for New files",uifcYesNoOpts);
-								if(n==0 && cfg.dir[i]->misc&DIR_NOSCAN) {
-									cfg.dir[i]->misc&=~DIR_NOSCAN;
-									uifc.changes=1;
-								}
-								else if(n==1 && !(cfg.dir[i]->misc&DIR_NOSCAN)) {
-									cfg.dir[i]->misc|=DIR_NOSCAN;
-									uifc.changes=1;
-								}
-								break;
-							case 7:
-								n=cfg.dir[i]->misc&DIR_NOAUTO ? 1:0;
-								uifc.helpbuf=
-									"`Search Directory for Auto-ADDFILES:`\n"
-									"\n"
-									"If you would like to have this directory searched for a file list to\n"
-									"import automatically when using the `ADDFILES *` (Auto-ADD) feature,\n"
-									"set this option to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Search for Auto-ADDFILES",uifcYesNoOpts);
-								if(n==0 && cfg.dir[i]->misc&DIR_NOAUTO) {
-									cfg.dir[i]->misc&=~DIR_NOAUTO;
-									uifc.changes=1;
-								}
-								else if(n==1 && !(cfg.dir[i]->misc&DIR_NOAUTO)) {
-									cfg.dir[i]->misc|=DIR_NOAUTO;
-									uifc.changes=1;
-								}
-								break;
-							case 8:
-								n=cfg.dir[i]->misc&DIR_DIZ ? 0:1;
-								uifc.helpbuf=
-									"`Import FILE_ID.DIZ and DESC.SDI Descriptions:`\n"
-									"\n"
-									"If you would like archived descriptions (`FILE_ID.DIZ` and `DESC.SDI`)\n"
-									"of uploaded files to be automatically imported as the extended\n"
-									"description, set this option to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Import FILE_ID.DIZ and DESC.SDI",uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_DIZ)) {
-									cfg.dir[i]->misc|=DIR_DIZ;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_DIZ)) {
-									cfg.dir[i]->misc&=~DIR_DIZ;
-									uifc.changes=1;
-								}
-								break;
-							case 9:
-								n=cfg.dir[i]->misc&DIR_FREE ? 0:1;
-								uifc.helpbuf=
-									"`Downloads are Free:`\n"
-									"\n"
-									"If you would like all downloads from this directory to be free (cost\n"
-									"no credits), set this option to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Downloads are Free",uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_FREE)) {
-									cfg.dir[i]->misc|=DIR_FREE;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_FREE)) {
-									cfg.dir[i]->misc&=~DIR_FREE;
-									uifc.changes=1;
-								}
-								break;
-							case 10:
-								n=cfg.dir[i]->misc&DIR_TFREE ? 0:1;
-								uifc.helpbuf=
-									"`Free Download Time:`\n"
-									"\n"
-									"If you would like all downloads from this directory to not subtract\n"
-									"time from the user, set this option to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Free Download Time",uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_TFREE)) {
-									cfg.dir[i]->misc|=DIR_TFREE;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_TFREE)) {
-									cfg.dir[i]->misc&=~DIR_TFREE;
-									uifc.changes=1;
-								}
-								break;
-							case 11:
-								n=cfg.dir[i]->misc&DIR_ULTIME ? 0:1;
-								uifc.helpbuf=
-									"`Deduct Upload Time:`\n"
-									"\n"
-									"If you would like all uploads to this directory to have the time spent\n"
-									"uploading subtracted from their time online, set this option to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Deduct Upload Time",uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_ULTIME)) {
-									cfg.dir[i]->misc|=DIR_ULTIME;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_ULTIME)) {
-									cfg.dir[i]->misc&=~DIR_ULTIME;
-									uifc.changes=1;
-								}
-								break;
-							case 12:
-								n=cfg.dir[i]->misc&DIR_CDTUL ? 0:1;
-								uifc.helpbuf=
-									"`Give Credit for Uploads:`\n"
-									"\n"
-									"If you want users who upload to this directory to get credit for their\n"
-									"initial upload, set this option to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Give Credit for Uploads",uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_CDTUL)) {
-									cfg.dir[i]->misc|=DIR_CDTUL;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_CDTUL)) {
-									cfg.dir[i]->misc&=~DIR_CDTUL;
-									uifc.changes=1;
-								}
-								break;
-							case 13:
-								n=cfg.dir[i]->misc&DIR_CDTDL ? 0:1;
-								uifc.helpbuf=
-									"`Give Uploader Credit for Downloads:`\n"
-									"\n"
-									"If you want users who upload to this directory to get credit when their\n"
-									"files are downloaded, set this option to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Give Uploader Credit for Downloads",uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_CDTDL)) {
-									cfg.dir[i]->misc|=DIR_CDTDL;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_CDTDL)) {
-									cfg.dir[i]->misc&=~DIR_CDTDL;
-									uifc.changes=1;
-								}
-								break;
-							case 14:
-								n=cfg.dir[i]->misc&DIR_CDTMIN ? 0:1;
-								uifc.helpbuf=
-									"`Credit Uploader with Minutes instead of Credits:`\n"
-									"\n"
-									"If you wish to give the uploader of files to this directory minutes,\n"
-									"instead of credits, set this option to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Credit Uploader with Minutes",uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_CDTMIN)) {
-									cfg.dir[i]->misc|=DIR_CDTMIN;
-									uifc.changes=1;
-								}
-								else if(n==1 && cfg.dir[i]->misc&DIR_CDTMIN){
-									cfg.dir[i]->misc&=~DIR_CDTMIN;
-									uifc.changes=1;
-								}
-								break;
-							case 15:
-								n=cfg.dir[i]->misc&DIR_QUIET ? 1:0;
-								uifc.helpbuf=
-									"`Send Download Notifications:`\n"
-									"\n"
-									"If you wish the BBS to send download notification messages to the\n"
-									"uploader of a file to this directory, set this option to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Send Download Notifications",uifcYesNoOpts);
-								if(n==1 && !(cfg.dir[i]->misc&DIR_QUIET)) {
-									cfg.dir[i]->misc|=DIR_QUIET;
-									uifc.changes=1; 
-								} else if(n==0 && cfg.dir[i]->misc&DIR_QUIET){
-									cfg.dir[i]->misc&=~DIR_QUIET;
-									uifc.changes=1; 
-								}
-								break;
-
-
-							case 16:
-								n=cfg.dir[i]->misc&DIR_ANON ? (cfg.dir[i]->misc&DIR_AONLY ? 2:0):1;
-								strcpy(opt[0],"Yes");
-								strcpy(opt[1],"No");
-								strcpy(opt[2],"Only");
-								opt[3][0]=0;
-								uifc.helpbuf=
-									"`Allow Anonymous Uploads:`\n"
-									"\n"
-									"If you want users with the `A` exemption to be able to upload anonymously\n"
-									"to this directory, set this option to `Yes`. If you want all uploads to\n"
-									"this directory to be forced anonymous, set this option to `Only`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Allow Anonymous Uploads",opt);
-								if(n==0 && (cfg.dir[i]->misc&(DIR_ANON|DIR_AONLY))
-									!=DIR_ANON) {
-									cfg.dir[i]->misc|=DIR_ANON;
-									cfg.dir[i]->misc&=~DIR_AONLY;
-									uifc.changes=1;
-								}
-								else if(n==1 && cfg.dir[i]->misc&(DIR_ANON|DIR_AONLY)){
-									cfg.dir[i]->misc&=~(DIR_ANON|DIR_AONLY);
-									uifc.changes=1;
-								}
-								else if(n==2 && (cfg.dir[i]->misc&(DIR_ANON|DIR_AONLY))
-									!=(DIR_ANON|DIR_AONLY)) {
-									cfg.dir[i]->misc|=(DIR_ANON|DIR_AONLY);
-									uifc.changes=1;
-								}
-								break;
-							case 17:
-								n=cfg.dir[i]->misc&DIR_SINCEDL ? 0:1;
-								uifc.helpbuf=
-									"`Purge Files Based on Date of Last Download:`\n"
-									"\n"
-									"Using the Synchronet file base maintenance utility (`delfiles`), you can\n"
-									"have files removed based on the number of days since last downloaded\n"
-									"rather than the number of days since the file was uploaded (default),\n"
-									"by setting this option to `Yes`.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Purge Files Based on Date of Last Download"
-									,uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_SINCEDL)) {
-									cfg.dir[i]->misc|=DIR_SINCEDL;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_SINCEDL)) {
-									cfg.dir[i]->misc&=~DIR_SINCEDL;
-									uifc.changes=1;
-								}
-								break;
-							case 18:
-								n=cfg.dir[i]->misc&DIR_MOVENEW ? 0:1;
-								uifc.helpbuf=
-									"`Mark Moved Files as New:`\n"
-									"\n"
-									"If this option is set to `Yes`, then all files moved `from` this directory\n"
-									"will have their upload date changed to the current date so the file will\n"
-									"appear in users' new-file scans again.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Mark Moved Files as New"
-									,uifcYesNoOpts);
-								if(n==0 && !(cfg.dir[i]->misc&DIR_MOVENEW)) {
-									cfg.dir[i]->misc|=DIR_MOVENEW;
-									uifc.changes=1;
-								}
-								else if(n==1 && (cfg.dir[i]->misc&DIR_MOVENEW)) {
-									cfg.dir[i]->misc&=~DIR_MOVENEW;
-									uifc.changes=1;
-								}
-								break;
-							case 19:
-								n=cfg.dir[i]->misc&DIR_NOSTAT ? 1:0;
-								uifc.helpbuf=
-									"`Include Transfers In System Statistics:`\n"
-									"\n"
-									"If this option is set to ~Yes~, then all files uploaded to or downloaded\n"
-									"from this directory will be included in the system's daily and\n"
-									"cumulative statistics.\n"
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Include Transfers In System Statistics"
-									,uifcYesNoOpts);
-								if(n==1 && !(cfg.dir[i]->misc&DIR_NOSTAT)) {
-									cfg.dir[i]->misc|=DIR_NOSTAT;
-									uifc.changes=1; 
-								} else if(n==0 && cfg.dir[i]->misc&DIR_NOSTAT){
-									cfg.dir[i]->misc&=~DIR_NOSTAT;
-									uifc.changes=1; 
-								}
-								break;
-							case 20:
-								n=cfg.dir[i]->misc&DIR_NOHASH ? 1:0;
-								uifc.helpbuf=
-									"`Calculate/Store Hashes of Files:`\n"
-									"\n"
-									"Set to ~Yes~ to calculate and store the hashes of file contents when\n"
-									"adding files to this file base.\n"
-									"\n"
-									"The hashes (CRC-16, CRC-32, MD5, and SHA-1) are useful for detecting\n"
-									"duplicate files (i.e. and rejecting them) as well as allowing the\n"
-									"confirmation of data integrity for the downloaders of files."
-								;
-								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
-									,"Calculate/Store Hashes of Files"
-									,uifcYesNoOpts);
-								if(n==0 && cfg.dir[i]->misc&DIR_NOHASH) {
-									cfg.dir[i]->misc &= ~DIR_NOHASH;
-									uifc.changes=1; 
-								} else if(n==1 && !(cfg.dir[i]->misc&DIR_NOHASH)){
-									cfg.dir[i]->misc |= DIR_NOHASH;
-									uifc.changes=1; 
-								}
-								break;
-							case 21:
-								n=(cfg.dir[i]->misc&DIR_TEMPLATE) ? 0:1;
-								uifc.helpbuf=
-									"`Use this Directory as a Template for New Dirs:`\n"
-									"\n"
-									"If you want this directory's options / settings to be used as the\n"
-									"template for newly-created or cloned directories in this file library,\n"
-									"set this option to `Yes`.\n"
-									"\n"
-									"If multiple directories have this option enabled, only the first will be\n"
-									"used as the template."
-								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Use this Directory as a Template for New Dirs",uifcYesNoOpts);
-								if(n==-1)
-									break;
-								if(!n && !(cfg.dir[i]->misc&DIR_TEMPLATE)) {
-									uifc.changes = TRUE;
-									cfg.dir[i]->misc|=DIR_TEMPLATE;
-									break; 
-								}
-								if(n==1 && cfg.dir[i]->misc&DIR_TEMPLATE) {
-									uifc.changes = TRUE;
-									cfg.dir[i]->misc&=~DIR_TEMPLATE; 
-								}
-								break;
-							case 22:
-								n=(cfg.dir[i]->misc&DIR_FILETAGS) ? 0:1;
-								uifc.helpbuf=
-									"`Allow Addition of Tags to Files:`\n"
-									"\n"
-								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Allow Addition of Tags to Files",uifcYesNoOpts);
-								if(n==-1)
-									break;
-								if(!n && !(cfg.dir[i]->misc & DIR_FILETAGS)) {
-									uifc.changes = TRUE;
-									cfg.dir[i]->misc |= DIR_FILETAGS;
-									break; 
-								}
-								if(n==1 && (cfg.dir[i]->misc&DIR_FILETAGS)) {
-									uifc.changes = TRUE;
-									cfg.dir[i]->misc &= ~DIR_FILETAGS; 
-								}
-								break;
-						} 
-					}
+					dir_toggle_options(cfg.dir[i]);
 					break;
 			case 15:
 				while(1) {
@@ -2049,53 +2019,24 @@ void dir_cfg(uint libnum)
 							break;
 						switch(n) {
 							case 0:
-								uifc.helpbuf=
-									"`File Extensions Allowed:`\n"
-									"\n"
-									"This option allows you to limit the types of files uploaded to this\n"
-									"directory. This is a list of file extensions that are allowed, each\n"
-									"separated by a comma (Example: `ZIP,EXE`). If this option is left\n"
-									"blank, all file extensions will be allowed to be uploaded.\n"
-								;
+								uifc.helpbuf = file_ext_help;
 								uifc.input(WIN_L2R|WIN_SAV,0,17
 									,"File Extensions Allowed"
 									,cfg.dir[i]->exts,sizeof(cfg.dir[i]->exts)-1,K_EDIT);
 								break;
 							case 1:
-								uifc.helpbuf=
-									"`Data Directory:`\n"
-									"\n"
-									"Use this if you wish to place the data directory for this directory\n"
-									"on another drive or in another directory besides the default setting.\n"
-								;
+								uifc.helpbuf = data_dir_help;
 								uifc.input(WIN_MID|WIN_SAV,0,17,"Data"
 									,cfg.dir[i]->data_dir,sizeof(cfg.dir[i]->data_dir)-1,K_EDIT);
 								break;
 							case 2:
-								uifc.helpbuf=
-									"`Upload Semaphore File:`\n"
-									"\n"
-									"This is a filename that will be used as a semaphore (signal) to your\n"
-									"FidoNet software that new files are ready to be hatched for export.\n"
-									"\n"
-									"`Command line specifiers may be included in the semaphore filename.`\n"
-									SCFG_CMDLINE_SPEC_HELP
-								;
+								uifc.helpbuf = upload_sem_help;
 								uifc.input(WIN_MID|WIN_SAV,0,17,"Upload Semaphore"
 									,cfg.dir[i]->upload_sem,sizeof(cfg.dir[i]->upload_sem)-1,K_EDIT);
 								break;
 							case 3:
 								n = cfg.dir[i]->sort;
-								uifc.helpbuf=
-									"`Sort Value and Direction:`\n"
-									"\n"
-									"This option allows you to determine the sort value and direction for\n"
-									"the display of file listings.\n"
-									"\n"
-									"The dates available for sorting are the file import/upload date/time.\n"
-									"\n"
-									"The natural (and thus fastest) sort order is `Date Ascending`."
-								;
+								uifc.helpbuf = sort_help;
 								n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
 									,"Sort Value and Direction", file_sort_desc);
 								if(n >= 0 && cfg.dir[i]->sort != n) {
@@ -2111,5 +2052,140 @@ void dir_cfg(uint libnum)
 				break;
 			} 
 		} 
+	}
+}
+
+void dir_defaults_cfg(dir_t* dir)
+{
+	static int dflt;
+	char str[128];
+
+	while(1) {
+		int n = 0;
+		if(dir->maxfiles)
+			sprintf(str, "%u", dir->maxfiles);
+		else
+			SAFECOPY(str, "Unlimited");
+		sprintf(opt[n++],"%-27.27s%s","Maximum Number of Files"
+			,str);
+		if(dir->maxage)
+			sprintf(str,"Enabled (%u days old)",dir->maxage);
+		else
+			strcpy(str,"Disabled");
+		sprintf(opt[n++],"%-27.27s%s","Purge by Age",str);
+		sprintf(opt[n++],"%-27.27s%u%%","Credit on Upload"
+			,dir->up_pct);
+		sprintf(opt[n++],"%-27.27s%u%%","Credit on Download"
+			,dir->dn_pct);
+		sprintf(opt[n++],"%-27.27s%s","Extensions Allowed"
+			,dir->exts);
+		if(!dir->data_dir[0])
+			sprintf(str,"[%sdirs/]",cfg.data_dir);
+		else
+			strcpy(str, dir->data_dir);
+		sprintf(opt[n++],"%-27.27s%s","Data Directory"
+			,str);
+		sprintf(opt[n++],"%-27.27s%s","Upload Semaphore File"
+			,dir->upload_sem);
+		sprintf(opt[n++],"%-27.27s%s","Sort Value and Direction"
+			,file_sort_desc[dir->sort]);
+		strcpy(opt[n++],"Toggle Options...");
+		strcpy(opt[n++],"Clone Settings");
+		opt[n][0]=0;
+		uifc.helpbuf=
+			"`Directory Default Settings:`\n"
+			"\n"
+			"This menu allows you to configure the default settings for new file\n"
+			"directories created in this file library.\n"
+		;
+		uifc_winmode_t wmode = WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT|WIN_EXTKEYS;
+		switch(uifc.list(wmode,0,0,72,&dflt,0, "Directory Default Settings", opt)) {
+			case -1:
+				return;
+			case 0:
+				uifc.helpbuf = max_files_help;
+				sprintf(str,"%u",dir->maxfiles);
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of Files (0=Unlimited)"
+					,str,5,K_EDIT|K_NUMBER);
+				dir->maxfiles=atoi(str);
+				break;
+			case 1:
+				sprintf(str,"%u",dir->maxage);
+				uifc.helpbuf = max_age_help;
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Age of Files (in days)"
+					,str,5,K_EDIT|K_NUMBER);
+				dir->maxage=atoi(str);
+				break;
+			case 2:
+				uifc.helpbuf = up_pct_help;
+				uifc.input(WIN_MID|WIN_SAV,0,0
+					,"Percentage of Credits to Credit Uploader on Upload"
+					,ultoa(dir->up_pct,tmp,10),4,K_EDIT|K_NUMBER);
+				dir->up_pct=atoi(tmp);
+				break;
+			case 3:
+				uifc.helpbuf = dn_pct_help;
+				uifc.input(WIN_MID|WIN_SAV,0,0
+					,"Percentage of Credits to Credit Uploader on Download"
+					,ultoa(dir->dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
+				dir->dn_pct=atoi(tmp);
+				break;
+			case 4:
+				uifc.helpbuf = file_ext_help;
+				uifc.input(WIN_MID|WIN_SAV,0,17
+					,"File Extensions Allowed"
+					,dir->exts,sizeof(dir->exts)-1,K_EDIT);
+				break;
+			case 5:
+				uifc.helpbuf = data_dir_help;
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Data"
+					,dir->data_dir,sizeof(dir->data_dir)-1,K_EDIT);
+				break;
+			case 6:
+				uifc.helpbuf = upload_sem_help;
+				uifc.input(WIN_MID|WIN_SAV,0,17,"Upload Semaphore"
+					,dir->upload_sem,sizeof(dir->upload_sem)-1,K_EDIT);
+				break;
+			case 7:
+				n = dir->sort;
+				uifc.helpbuf = sort_help;
+				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+					,"Sort Value and Direction", file_sort_desc);
+				if(n >= 0 && dir->sort != n) {
+					dir->sort = n;
+					uifc.changes = TRUE;
+				}
+				break; 
+			case 8:
+				dir_toggle_options(dir);
+				break;
+			case 9: /* clone options */
+				uifc.helpbuf=
+					"`Clone Directory Default Settings:`\n"
+					"\n"
+					"If you want to clone these default directory settings into all\n"
+					"directories of this library, select `Yes`.\n"
+					"\n"
+				;
+				n = uifc.list(WIN_MID|WIN_SAV,0,0,0,NULL,0
+					,"Clone Default Settings into All of Library"
+					,uifcYesNoOpts);
+				if(n==0) {
+					for(uint j=0;j<cfg.total_dirs;j++) {
+						if(cfg.dir[j]->lib != dir->lib)
+							continue;
+						uifc.changes=1;
+						cfg.dir[j]->misc		= dir->misc;
+						cfg.dir[j]->maxfiles	= dir->maxfiles;
+						cfg.dir[j]->maxage		= dir->maxage;
+						cfg.dir[j]->seqdev		= dir->seqdev;
+						cfg.dir[j]->sort		= dir->sort;
+						SAFECOPY(cfg.dir[j]->exts, dir->exts);
+						SAFECOPY(cfg.dir[j]->data_dir, dir->data_dir);
+						SAFECOPY(cfg.dir[j]->upload_sem, dir->upload_sem);
+					}
+				}
+				break;
+		}
 	}
 }

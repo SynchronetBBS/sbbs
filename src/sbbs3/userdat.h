@@ -23,25 +23,35 @@
 #define _USERDAT_H
 
 #include "scfgdefs.h"   /* scfg_t */
-#include "dat_rec.h"	/* getrec/putrec prototypes */
 #include "client.h"		/* client_t */
 #include "link_list.h"
 #include "startup.h"	/* struct login_attempt_settings */
 #include "dllexport.h"
+#include "userfields.h"
+
+#define USER_DATA_FILENAME		"user.tab"
+#define USER_RECORD_LINE_LEN	1000					// includes LF terminator
+#define USER_RECORD_LEN			(USER_RECORD_LINE_LEN - 1)	// does not include LF
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+DLLEXPORT char*	userdat_filename(scfg_t*, char*, size_t);
 DLLEXPORT int	openuserdat(scfg_t*, BOOL for_modify);
-DLLEXPORT int	closeuserdat(int);
-DLLEXPORT int	readuserdat(scfg_t*, unsigned user_number, char* userdat, int infile);
-DLLEXPORT int	parseuserdat(scfg_t*, char* userdat, user_t*);
-DLLEXPORT int	getuserdat(scfg_t*, user_t*); 	/* Fill userdat struct with user data   */
+DLLEXPORT BOOL	seekuserdat(int file, unsigned user_number);
+DLLEXPORT int	closeuserdat(int file);
+DLLEXPORT int	readuserdat(scfg_t*, unsigned user_number, char* userdat, size_t, int file, BOOL leave_locked);
+DLLEXPORT int	parseuserdat(scfg_t*, char* userdat, user_t*, char* fields[]);
+DLLEXPORT int	getuserdat(scfg_t*, user_t*); 	// Fill user_t with user data
 DLLEXPORT int	fgetuserdat(scfg_t*, user_t*, int file);
-DLLEXPORT int	putuserdat(scfg_t*, user_t*);	/* Put userdat struct into user file	*/
-DLLEXPORT int	newuserdat(scfg_t*, user_t*);	/* Create new userdat in user file */
-DLLEXPORT uint	matchuser(scfg_t*, const char *str, BOOL sysop_alias); /* Checks for a username match */
+DLLEXPORT BOOL	format_userdat(scfg_t*, user_t*, char userdat[]);
+DLLEXPORT BOOL	lockuserdat(int file, unsigned user_number);
+DLLEXPORT BOOL	unlockuserdat(int file, unsigned user_number);
+DLLEXPORT int	putuserdat(scfg_t*, user_t*);	// Put user_t into user file
+DLLEXPORT int	newuserdat(scfg_t*, user_t*);	// Create new user in user file
+DLLEXPORT int	newuserdefaults(scfg_t*, user_t*);
+DLLEXPORT uint	matchuser(scfg_t*, const char *str, BOOL sysop_alias); // Checks for a username match
 DLLEXPORT BOOL	matchusername(scfg_t*, const char* name, const char* compare);
 DLLEXPORT char* alias(scfg_t*, const char* name, char* buf);
 DLLEXPORT int	putusername(scfg_t*, int number, const char* name);
@@ -76,19 +86,34 @@ DLLEXPORT char* getnmsg(scfg_t*, int node_num);
 DLLEXPORT int	putnmsg(scfg_t*, int num, char *strin);
 DLLEXPORT int	getnodeclient(scfg_t*, uint number, client_t*, time_t*);
 
-DLLEXPORT uint	userdatdupe(scfg_t*, uint usernumber, uint offset, uint datlen, char *dat
+DLLEXPORT uint	finduserstr(scfg_t*, uint usernumber, enum user_field, const char *str
 					,BOOL del, BOOL next, void (*progress)(void*, int, int), void* cbdata);
 
 DLLEXPORT BOOL	chk_ar(scfg_t*, uchar* str, user_t*, client_t*); /* checks access requirements */
 
-DLLEXPORT char* userbytestr(uint64_t bytes, char* str);
-DLLEXPORT int	getuserrec(scfg_t*, int usernumber, int start, int length, char *str);
-DLLEXPORT int	putuserrec(scfg_t*, int usernumber, int start, int length, const char *str);
-DLLEXPORT uint64_t adjustuserrec(scfg_t*, int usernumber, int start, int64_t adj);
+DLLEXPORT uint32_t getusermisc(scfg_t*, int usernumber);
+DLLEXPORT uint32_t getuserchat(scfg_t*, int usernumber);
+DLLEXPORT uint32_t getuserqwk(scfg_t*, int usernumber);
+DLLEXPORT uint32_t getuserflags(scfg_t*, int usernumber, enum user_field);
+DLLEXPORT uint32_t getuserhex32(scfg_t*, int usernumber, enum user_field);
+DLLEXPORT uint32_t getuserdec32(scfg_t*, int usernumber, enum user_field);
+DLLEXPORT uint64_t getuserdec64(scfg_t*, int usernumber, enum user_field);
+DLLEXPORT char*	getuserstr(scfg_t*, int usernumber, enum user_field, char *str, size_t);
+DLLEXPORT int	putuserstr(scfg_t*, int usernumber, enum user_field, const char *str);
+DLLEXPORT int	putuserdatetime(scfg_t*, int usernumber, enum user_field, time32_t t);
+DLLEXPORT int	putuserflags(scfg_t*, int usernumber, enum user_field, uint32_t flags);
+DLLEXPORT int	putuserhex32(scfg_t*, int usernumber, enum user_field, uint32_t value);
+DLLEXPORT int	putuserdec32(scfg_t*, int usernumber, enum user_field, uint32_t value);
+DLLEXPORT int	putuserdec64(scfg_t*, int usernumber, enum user_field, uint64_t value);
+DLLEXPORT int	putusermisc(scfg_t*, int usernumber, uint32_t value);
+DLLEXPORT int	putuserchat(scfg_t*, int usernumber, uint32_t value);
+DLLEXPORT int	putuserqwk(scfg_t*, int usernumber, uint32_t value);
+DLLEXPORT uint64_t adjustuserval(scfg_t*, int usernumber, enum user_field, int64_t value);
+DLLEXPORT BOOL	writeuserfields(scfg_t*, char* field[], int file);
 DLLEXPORT BOOL	logoutuserdat(scfg_t*, user_t*, time_t now, time_t logontime);
 DLLEXPORT void	resetdailyuserdat(scfg_t*, user_t*, BOOL write);
 DLLEXPORT void	subtract_cdt(scfg_t*, user_t*, uint64_t amt);
-DLLEXPORT int	user_rec_len(int offset);
+DLLEXPORT size_t user_field_len(enum user_field);
 DLLEXPORT BOOL	can_user_access_all_libs(scfg_t*, user_t*, client_t*);
 DLLEXPORT BOOL	can_user_access_all_dirs(scfg_t*, uint libnum, user_t*, client_t*);
 DLLEXPORT BOOL	can_user_access_lib(scfg_t*, uint libnum, user_t*, client_t*);
@@ -140,6 +165,7 @@ DLLEXPORT BOOL	user_adjust_minutes(scfg_t*, user_t*, long amount);
 DLLEXPORT time_t gettimeleft(scfg_t*, user_t*, time_t starttime);
 
 DLLEXPORT BOOL	check_name(scfg_t*, const char* name);
+DLLEXPORT BOOL	check_realname(scfg_t*, const char* name);
 DLLEXPORT BOOL	sysop_available(scfg_t*);
 DLLEXPORT BOOL	set_sysop_availability(scfg_t*, BOOL available);
 DLLEXPORT BOOL	sound_muted(scfg_t*);

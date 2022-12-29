@@ -49,8 +49,8 @@
 /* Constants */
 
 #define FTP_SERVER				"Synchronet FTP Server"
+const char* server_abbrev = "ftp";
 
-#define STATUS_WFC				"Listening"
 #define ANONYMOUS				"anonymous"
 
 #define BBS_VIRTUAL_PATH		"bbs:/""/"	/* this is actually bbs:<slash><slash> */
@@ -124,8 +124,7 @@ BOOL direxist(char *dir)
 
 BOOL dir_op(scfg_t* cfg, user_t* user, client_t* client, uint dirnum)
 {
-	return(user->level>=SYSOP_LEVEL
-		|| (cfg->dir[dirnum]->op_ar[0] && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client)));
+	return is_user_dirop(cfg, dirnum, user, client);
 }
 
 #if defined(__GNUC__)	// Catch printf-format errors with lprintf
@@ -143,11 +142,13 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
-		SAFEPRINTF(errmsg, "ftp  %s", sbuf);
-		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
+		SAFEPRINTF2(errmsg, "%s  %s", server_abbrev, sbuf);
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
+	if(startup != NULL)
+		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, sbuf);
 
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
 		return(0);
@@ -193,16 +194,20 @@ static char* server_host_name(void)
 	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
 }
 
-static void status(char* str)
+static void set_state(enum server_state state)
 {
-	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(startup->cbdata,str);
+	if(startup != NULL && startup->set_state != NULL)
+		startup->set_state(startup->cbdata, state);
 }
 
 static void update_clients(void)
 {
-	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(startup->cbdata,protected_uint32_value(active_clients));
+	if(startup != NULL) {
+		uint32_t count = protected_uint32_value(active_clients);
+		if(startup->clients != NULL)
+			startup->clients(startup->cbdata, count);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "client_count", count);
+	}
 }
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
@@ -222,15 +227,21 @@ static void client_off(SOCKET sock)
 
 static void thread_up(BOOL setuid)
 {
-	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(startup->cbdata,TRUE, setuid);
+	if(startup != NULL) {
+		if(startup->thread_up != NULL)
+			startup->thread_up(startup->cbdata,TRUE, setuid);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "thread_count", protected_uint32_value(thread_count));
+	}
 }
 
 static int32_t thread_down(void)
 {
 	int32_t count = protected_uint32_adjust_fetch(&thread_count,-1);
-	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(startup->cbdata,FALSE, FALSE);
+	if(startup != NULL) {
+		if(startup->thread_up != NULL)
+			startup->thread_up(startup->cbdata,FALSE, FALSE);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "thread_count", count);
+	}
 	return count;
 }
 
@@ -775,11 +786,11 @@ static void send_thread(void* arg)
 						l=0;
 					if(scfg.dir[f.dir]->misc&DIR_CDTMIN && cps) { /* Give min instead of cdt */
 						mod=((ulong)(l*(scfg.dir[f.dir]->dn_pct/100.0))/cps)/60;
-						adjustuserrec(&scfg,uploader.number,U_MIN,mod);
+						adjustuserval(&scfg, uploader.number, USER_MIN, mod);
 						sprintf(tmp,"%lu minute",mod);
 					} else {
 						mod=(ulong)(l*(scfg.dir[f.dir]->dn_pct/100.0));
-						adjustuserrec(&scfg,uploader.number,U_CDT,mod);
+						adjustuserval(&scfg, uploader.number, USER_CDT, mod);
 						u32toac(mod,tmp,',');
 					}
 					if(!(scfg.dir[f.dir]->misc&DIR_QUIET)) {
@@ -1078,10 +1089,10 @@ static void receive_thread(void* arg)
 			user_uploaded(&scfg, xfer.user, (!xfer.append && xfer.filepos==0) ? 1:0, total);
 			if(scfg.dir[f.dir]->up_pct && scfg.dir[f.dir]->misc&DIR_CDTUL) { /* credit for upload */
 				if(scfg.dir[f.dir]->misc&DIR_CDTMIN && cps)    /* Give min instead of cdt */
-					xfer.user->min=(uint32_t)adjustuserrec(&scfg,xfer.user->number,U_MIN
+					xfer.user->min=(uint32_t)adjustuserval(&scfg, xfer.user->number, USER_MIN
 						,((ulong)(total*(scfg.dir[f.dir]->up_pct/100.0))/cps)/60);
 				else
-					xfer.user->cdt=adjustuserrec(&scfg,xfer.user->number,U_CDT
+					xfer.user->cdt=adjustuserval(&scfg, xfer.user->number, USER_CDT
 						,cdt*(uint64_t)(scfg.dir[f.dir]->up_pct/100.0)); 
 			}
 			if(!(scfg.dir[f.dir]->misc&DIR_NOSTAT))
@@ -1712,7 +1723,7 @@ static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, union xp
 		PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-	return hacklog(&scfg, prot, user, text, host, addr);
+	return hacklog(&scfg, &startup->mqtt, prot, user, text, host, addr);
 }
 
 /****************************************************************************/
@@ -1924,6 +1935,8 @@ static BOOL can_upload(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
 		return TRUE;
 	if (dir->dirnum == scfg.upload_dir)
 		return TRUE;
+	if (!chk_ar(&scfg, lib->ul_ar, user, client))
+		return FALSE;
 	if (chk_ar(&scfg, dir->ul_ar,user,client))
 		return TRUE;
 	if ((user->exempt & FLAG('U')))
@@ -1976,7 +1989,7 @@ static BOOL can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, f
 	if (dir->dirnum != scfg.sysop_dir && dir->dirnum != scfg.upload_dir && !chk_ar(&scfg,dir->ar,user,client))
 		return FALSE;
 	if(!dir_op(&scfg,user,client,dir->dirnum) && !(user->exempt&FLAG('U'))) {
-		if(!chk_ar(&scfg,dir->ul_ar,user,client))
+		if(!chk_ar(&scfg,dir->ul_ar,user,client) || !chk_ar(&scfg, lib->ul_ar, user, client))
 			return FALSE;
 	}
 	if (file->from == NULL || stricmp(file->from, user->alias) != 0)
@@ -2001,16 +2014,7 @@ static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, f
 
 static BOOL can_download(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
 {
-	if (user->rest&FLAG('D'))
-		return FALSE;
-	if (!chk_ar(&scfg,lib->ar,user,client))
-		return FALSE;
-	if (!chk_ar(&scfg,dir->ar,user,client))
-		return FALSE;
-	if (!chk_ar(&scfg,dir->dl_ar,user,client))
-		return FALSE;
-	// TODO: Verify credits
-	return TRUE;
+	return can_user_download(&scfg, dir->dirnum, user, client,  /* reason */NULL);
 }
 
 static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file, char *permstr)
@@ -2494,7 +2498,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				lprintf(LOG_INFO,"%04d <%s> identity: %s",sock,user.alias,password);
-				putuserrec(&scfg,user.number,U_NETMAIL,LEN_NETMAIL,password);
+				putuserstr(&scfg, user.number, USER_NETMAIL, password);
 			}
 			else if(user.level>=SYSOP_LEVEL && !stricmp(password,sys_pass)) {
 				if(scfg.sys_misc&SM_R_SYSOP) {
@@ -4325,7 +4329,7 @@ static void ctrl_thread(void* arg)
 				}
 
 				if(!getsize && !getdate && !delecmd
-					&& !chk_ar(&scfg,scfg.dir[dir]->dl_ar,&user,&client)) {
+					&& !can_user_download(&scfg, dir, &user, &client, /* reason */NULL)) {
 					lprintf(LOG_WARNING,"%04d <%s> has insufficient access to download from /%s/%s"
 						,sock,user.alias
 						,scfg.lib[scfg.dir[dir]->lib]->vdir
@@ -4529,7 +4533,8 @@ static void ctrl_thread(void* arg)
 				append=(strnicmp(cmd,"APPE",4)==0);
 			
 				if(!dir_op(&scfg,&user,&client,dir) && !(user.exempt&FLAG('U'))) {
-					if(!chk_ar(&scfg,scfg.dir[dir]->ul_ar,&user,&client)) {
+					if(!chk_ar(&scfg,scfg.dir[dir]->ul_ar,&user,&client)
+						|| !chk_ar(&scfg, scfg.lib[scfg.dir[dir]->lib]->ul_ar, &user, &client)) {
 						lprintf(LOG_WARNING,"%04d <%s> cannot upload to /%s/%s (insufficient access)"
 							,sock,user.alias
 							,scfg.lib[scfg.dir[dir]->lib]->vdir
@@ -4810,8 +4815,6 @@ static void ctrl_thread(void* arg)
 		PlaySound(startup->sound.hangup, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-/*	status(STATUS_WFC); server thread should control status display */
-
 	if(pasv_sock!=INVALID_SOCKET)
 		ftp_close_socket(&pasv_sock,&pasv_sess,__LINE__);
 	if(data_sock!=INVALID_SOCKET)
@@ -4880,7 +4883,6 @@ static void cleanup(int code, int line)
 #endif
 
 	thread_down();
-	status("Down");
 	if(terminate_server || code)
 		lprintf(LOG_INFO,"#### FTP Server thread terminated (%lu clients served)", served);
 	if(startup!=NULL && startup->terminated!=NULL)
@@ -4948,6 +4950,9 @@ void ftp_server(void* arg)
 		fprintf(stderr, "Invalid startup structure!\n");
 		return;
 	}
+	set_state(SERVER_INIT);
+
+	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", ftp_ver());
 
 	uptime=0;
 	served=0;
@@ -4969,8 +4974,6 @@ void ftp_server(void* arg)
 
 		(void)protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);
-
-		status("Initializing");
 
 		memset(&scfg, 0, sizeof(scfg));
 
@@ -5075,11 +5078,9 @@ void ftp_server(void* arg)
 		 */
 		xpms_add_list(ftp_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "FTP Server", ftp_open_socket_cb, startup->seteuid, NULL);
 
-		status(STATUS_WFC);
-
 		/* Setup recycle/shutdown semaphore file lists */
-		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","ftp");
-		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","ftp");
+		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
+		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
 		semfile_list_add(&recycle_semfiles,startup->ini_fname);
 		SAFEPRINTF(path,"%sftpsrvr.rec",scfg.ctrl_dir);	/* legacy */
 		semfile_list_add(&recycle_semfiles,path);
@@ -5089,10 +5090,10 @@ void ftp_server(void* arg)
 		}
 
 		/* signal caller that we've started up successfully */
-		if(startup->started!=NULL)
-    		startup->started(startup->cbdata);
+		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"FTP Server thread started");
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "max_clients", startup->max_clients);
 
 		while(ftp_set!=NULL && !terminate_server) {
 			YIELD();
@@ -5176,6 +5177,8 @@ void ftp_server(void* arg)
 			served++;
 		}
 
+		set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
+
 #if 0 /* def _DEBUG */
 		lprintf(LOG_DEBUG,"0000 terminate_server: %d",terminate_server);
 #endif
@@ -5206,4 +5209,6 @@ void ftp_server(void* arg)
 	} while(!terminate_server);
 
 	protected_uint32_destroy(thread_count);
+
+	set_state(SERVER_STOPPED);
 }

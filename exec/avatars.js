@@ -471,20 +471,17 @@ function install()
 {
 	if(!file_exists(lib.local_library() + "*.bin"))
 		return "No avatars collections (.bin files) found in " + lib.local_library();
-	var cnflib = load({}, "cnflib.js");
-	var xtrn_cnf = cnflib.read("xtrn.cnf");
-	if(!xtrn_cnf)
-		return "Failed to read xtrn.cnf";
+	var f = new File(system.ctrl_dir + "xtrn.ini");
+	if(!f.open(f.exists ? 'r+':'w+'))
+		return "Failed to open " + f.name;
 
-	var changed = false;
-	if(!xtrn_area.prog["avatchoo"]) {
+	var section = "prog:MAIN:AVATCHOO";
+	if(!f.iniGetValue(section, "cmd")) {
 		printf("Adding external program: Avatar Chooser\r\n");
-		xtrn_cnf.xtrn.push( {
-				"sec": 0,
+		f.iniSetObject(section, {
 				"name": "Avatar Chooser",
-				"code": "AVATCHOO",
 				"ars": "",
-				"run_ars": "ANSI & !GUEST & REST ! Q",
+				"execution_ars": "ANSI & !GUEST & REST ! Q",
 				"type": 0,
 				"settings": 1,
 				"event": 3,
@@ -495,13 +492,12 @@ function install()
 				"textra": 0,
 				"max_time": 0
 				});
-		changed = true;
 	}
 
-	if(!xtrn_area.event["avat-in"]) {
+	section = "event:AVAT-IN";
+	if(!f.iniGetValue(section, "cmd")) {
 		printf("Adding timed event: AVAT-IN\r\n");
-		xtrn_cnf.event.push( {
-				"code": "AVAT-IN",
+		f.iniSetObject(section, {
 				"cmd": "?avatars import",
 				"days": 255,
 				"time": 0,
@@ -512,13 +508,12 @@ function install()
 				"mdays": 0,
 				"months": 0
 				});
-		changed = true;
 	}
 
-	if(!xtrn_area.event["avat-out"]) {
+	section = "event:AVAT-OUT";
+	if(!f.iniGetValue(section, "cmd")) {
 		printf("Adding timed event: AVAT-OUT\r\n");
-		xtrn_cnf.event.push( {
-				"code": "AVAT-OUT",
+		f.iniSetObject(section, {
 				"cmd": "?avatars export",
 				"days": 255,
 				"time": 0,
@@ -529,11 +524,8 @@ function install()
 				"mdays": 0,
 				"months": 0
 				});
-		changed = true;
 	}
-
-	if(changed && !cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
-		return "Failed to write xtrn.cnf";
+	f.close();
 
 	var ini = new File(file_cfgname(system.ctrl_dir, "modopts.ini"));
 	if(!ini.open(file_exists(ini.name) ? 'r+':'w+'))

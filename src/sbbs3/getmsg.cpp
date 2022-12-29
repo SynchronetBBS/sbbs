@@ -445,10 +445,10 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 										(void)remove(fpath);
 									logon_dlb+=length;	/* Update stats */
 									logon_dls++;
-									useron.dls=(ushort)adjustuserrec(&cfg,useron.number
-										,U_DLS,1);
-									useron.dlb=adjustuserrec(&cfg,useron.number
-										,U_DLB,length);
+									useron.dls=(ushort)adjustuserval(&cfg, useron.number
+										,USER_DLS,1);
+									useron.dlb=adjustuserval(&cfg, useron.number
+										,USER_DLB, length);
 									bprintf(text[FileNBytesSent]
 										,getfname(fpath),u64toac(length,tmp));
 									SAFEPRINTF(str
