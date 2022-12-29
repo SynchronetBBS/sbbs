@@ -3109,7 +3109,7 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 	char               *p;
 	char               *p2;
 	size_t              mlen = 0;
-	bool                mbuf;
+	bool                mbuf = false;
 	size_t              poff;
 
 	for (p = str + 16; p && *p == ';'; p = strchr(p + 1, ';')) {
