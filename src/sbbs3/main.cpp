@@ -2332,7 +2332,7 @@ void output_thread(void* arg)
 	sbbs->terminate_output_thread = false;
 
 	/* Note: do not terminate when online==FALSE, that is expected for the terminal server output_thread */
-	while(sbbs->client_socket!=INVALID_SOCKET && !terminate_server && !sbbs->terminate_output_thread) {
+	while (sbbs->client_socket != INVALID_SOCKET && !terminate_server && !sbbs->terminate_output_thread) {
 		/*
 		 * I'd like to check the linear buffer against the highwater
 		 * at this point, but it would get too clumsy imho - Deuce
@@ -2344,22 +2344,19 @@ void output_thread(void* arg)
 		 */
 		if(bufbot == buftop) {
 			/* Wait for something to output in the RingBuffer */
-			if((avail=RingBufFull(&sbbs->outbuf))==0) {	/* empty */
-				if (WaitForEvent(sbbs->outbuf.data_event, 1000) != WAIT_OBJECT_0)
-					continue;
-				/* Check for spurious sem post... */
-				if((avail=RingBufFull(&sbbs->outbuf))==0)
-					continue;
-			}
+			if (WaitForEvent(sbbs->outbuf.data_event, 1000) != WAIT_OBJECT_0)
+				continue;
 
 			/* Wait for full buffer or drain timeout */
-			if(sbbs->outbuf.highwater_mark) {
-				if(avail<sbbs->outbuf.highwater_mark) {
-					WaitForEvent(sbbs->outbuf.highwater_event, startup->outbuf_drain_timeout);
-					/* We (potentially) blocked, so get fill level again */
-					avail=RingBufFull(&sbbs->outbuf);
-				}
-			}
+			if(sbbs->outbuf.highwater_mark)
+				WaitForEvent(sbbs->outbuf.highwater_event, startup->outbuf_drain_timeout);
+
+			/* Get fill level */
+			avail = RingBufFull(&sbbs->outbuf);
+
+			// If flushing or terminating, there will be nothing available
+			if (avail == 0)
+				continue;
 
 			/*
 			 * At this point, there's something to send and,
@@ -2367,16 +2364,16 @@ void output_thread(void* arg)
 			 * passed or we've hit highwater.  Read ring buffer
 			 * into linear buffer.
 			 */
-			if(avail>sizeof(buf)) {
+			if (avail > sizeof(buf)) {
 				lprintf(LOG_WARNING,"%s !Insufficient linear output buffer (%lu > %d)"
 					,node, avail, (int)sizeof(buf));
-				avail=sizeof(buf);
+				avail = sizeof(buf);
 			}
-			/* If we know the MSS, use it as the max send() size. */
-			if(avail>mss)
-				avail=mss;
-			buftop=RingBufRead(&sbbs->outbuf, buf, avail);
-			bufbot=0;
+			/* If we know the MSS, use it as the max linear buffer size. */
+			if (avail > mss)
+				avail = mss;
+			buftop = RingBufRead(&sbbs->outbuf, buf, avail);
+			bufbot = 0;
 			if (buftop == 0)
 				continue;
 		}
@@ -3978,6 +3975,11 @@ int sbbs_t::incom(unsigned long timeout)
 {
 	uchar	ch;
 
+	// If we think we may have some input, send all our output
+	if (RingBufFull(&outbuf) != 0) {
+		SetEvent(outbuf.highwater_event);
+		SetEvent(outbuf.data_event);
+	}
 #if 0	/* looping version */
 	while(!RingBufRead(&inbuf, &ch, 1))
 		if(WaitForEvent(inbuf.data_event, timeout) != WAIT_OBJECT_0 || sys_status&SS_ABORT)
