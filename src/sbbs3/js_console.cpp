@@ -2308,6 +2308,24 @@ js_progress(JSContext *cx, uintN argc, jsval *arglist)
     return JS_TRUE;
 }
 
+static JSBool
+js_flush(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return JS_FALSE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	SetEvent(sbbs->outbuf.highwater_event);
+	SetEvent(sbbs->outbuf.data_event);
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	JS_RESUMEREQUEST(cx, rc);
+
+    return JS_TRUE;
+}
+
 static jsSyncMethodSpec js_console_functions[] = {
 	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[mode=<tt>K_NONE</tt>] [,timeout=<tt>0</tt>]")
 	,JSDOCSTR("get a single key with optional <i>timeout</i> in milliseconds (defaults to 0, for no wait).<br>"
@@ -2579,6 +2597,10 @@ static jsSyncMethodSpec js_console_functions[] = {
 		},
 	{"clearOnce",		js_clearOnce,			2,	JSTYPE_VOID,	JSDOCSTR("type, id")
 		,JSDOCSTR("removes a callback installed by once")
+		,31900
+		},
+	{"flush",		js_flush,			2,	JSTYPE_VOID,	JSDOCSTR("type, id")
+		,JSDOCSTR("flushes the output buffer")
 		,31900
 		},
 	{0}
