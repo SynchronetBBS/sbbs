@@ -95,11 +95,9 @@ int RingBufInit( RingBuf* rb, DWORD size
 	rb->pHead=rb->pTail=rb->pStart;
 	rb->pEnd=rb->pStart+size;
     rb->size=size;
-#ifdef RINGBUF_SEM
-	sem_init(&rb->sem,0,0);
-	sem_init(&rb->highwater_sem,0,0);
-#endif
 #ifdef RINGBUF_EVENT
+	rb->data_event=CreateEvent(NULL,TRUE,TRUE,NULL);
+	rb->highwater_event=CreateEvent(NULL,TRUE,TRUE,NULL);
 	rb->empty_event=CreateEvent(NULL,TRUE,TRUE,NULL);
 #endif
 #ifdef RINGBUF_MUTEX
@@ -112,20 +110,19 @@ void RingBufDispose( RingBuf* rb)
 {
     if(rb->pStart!=NULL)
 		os_free(rb->pStart);
-#ifdef RINGBUF_SEM
-	sem_post(&rb->sem);			/* just incase someone's waiting */
-	while(sem_destroy(&rb->sem)==-1 && errno==EBUSY) {
-		SLEEP(1);
-		sem_post(&rb->sem);
-	}
-	while(sem_destroy(&rb->highwater_sem)==-1 && errno==EBUSY) {
-		SLEEP(1);
-		sem_post(&rb->highwater_sem);
-	}
-#endif
 #ifdef RINGBUF_EVENT
+	/*
+	 * TODO: CloseEvent() will fail if there's any waiters...
+	 *       and the old semaphore posted an extra time
+	 *       "just incase"
+	 */
 	if(rb->empty_event!=NULL)
 		CloseEvent(rb->empty_event);
+	if(rb->data_event!=NULL)
+		CloseEvent(rb->data_event);
+	if(rb->highwater_event!=NULL)
+		CloseEvent(rb->highwater_event);
+
 #endif
 #ifdef RINGBUF_MUTEX
 	while(pthread_mutex_destroy(&rb->mutex)==EBUSY)
@@ -206,14 +203,13 @@ DWORD RingBufWrite( RingBuf* rb, const BYTE* src,  DWORD cnt )
     if(rb->pHead > rb->pEnd)
     	rb->pHead = rb->pStart;
 
-#ifdef RINGBUF_SEM
-	sem_post(&rb->sem);
-	if(rb->highwater_mark!=0 && RINGBUF_FILL_LEVEL(rb)>=rb->highwater_mark)
-		sem_post(&rb->highwater_sem);
-#endif
 #ifdef RINGBUF_EVENT
 	if(rb->empty_event!=NULL)
 		ResetEvent(rb->empty_event);
+	if (rb->data_event!=NULL)
+		SetEvent(rb->data_event);
+	if(rb->highwater_event!=NULL && rb->highwater_mark!=0 && RINGBUF_FILL_LEVEL(rb)>=rb->highwater_mark)
+		SetEvent(rb->highwater_event);
 #endif
 
 #ifdef RINGBUF_MUTEX
@@ -265,16 +261,13 @@ DWORD RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
     if(rb->pTail > rb->pEnd)
 		rb->pTail = rb->pStart;
 
-#ifdef RINGBUF_SEM		/* clear/signal semaphores, if appropriate */
-	if(RINGBUF_FILL_LEVEL(rb) == 0)		/* empty */
-		sem_reset(&rb->sem);
-	if(RINGBUF_FILL_LEVEL(rb) < rb->highwater_mark)
-		sem_reset(&rb->highwater_sem);
-#endif
-
 #ifdef RINGBUF_EVENT
-	if(rb->empty_event!=NULL && RINGBUF_FILL_LEVEL(rb)==0)
+	if(rb->empty_event!=NULL && RINGBUF_FILL_LEVEL(rb)==0) {
 		SetEvent(rb->empty_event);
+		ResetEvent(rb->data_event);
+	}
+	if(rb->highwater_event!=NULL && rb->highwater_mark!=0 && RINGBUF_FILL_LEVEL(rb)<rb->highwater_mark)
+		ResetEvent(rb->highwater_event);
 #endif
 
 #ifdef RINGBUF_MUTEX
@@ -331,9 +324,13 @@ void RingBufReInit(RingBuf* rb)
 	pthread_mutex_lock(&rb->mutex);
 #endif
 	rb->pHead = rb->pTail = rb->pStart;
-#ifdef RINGBUF_SEM
-	sem_reset(&rb->sem);
-	sem_reset(&rb->highwater_sem);
+#ifdef RINGBUF_EVENT
+	if(rb->empty_event!=NULL)
+		SetEvent(rb->empty_event);
+	if (rb->data_event!=NULL)
+		ResetEvent(rb->data_event);
+	if(rb->highwater_event!=NULL && rb->highwater_mark!=0 && RINGBUF_FILL_LEVEL(rb)>=rb->highwater_mark)
+		ResetEvent(rb->highwater_event);
 #endif
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_unlock(&rb->mutex);

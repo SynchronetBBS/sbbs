@@ -1027,10 +1027,12 @@ static void drain_outbuf(http_session_t * session)
 	if(session->socket==INVALID_SOCKET)
 		return;
 	/* Force the output thread to go NOW */
-	sem_post(&(session->outbuf.highwater_sem));
+	SetEvent(session->outbuf.highwater_event);
 	/* ToDo: This should probobly timeout eventually... */
-	while(RingBufFull(&session->outbuf) && session->socket!=INVALID_SOCKET)
+	while(RingBufFull(&session->outbuf) && session->socket!=INVALID_SOCKET) {
+		SetEvent(session->outbuf.highwater_event);
 		SLEEP(1);
+	}
 	/* Lock the mutex to ensure data has been sent */
 	while(session->socket!=INVALID_SOCKET && !session->outbuf_write_initialized)
 		SLEEP(1);
@@ -1065,7 +1067,7 @@ static void close_request(http_session_t * session)
 	}
 
 	/* Force the output thread to go NOW */
-	sem_post(&(session->outbuf.highwater_sem));
+	SetEvent(session->outbuf.highwater_event);
 
 	if(session->req.ld!=NULL) {
 		now=time(NULL);
@@ -6397,23 +6399,20 @@ void http_output_thread(void *arg)
 
 		/* Wait for something to output in the RingBuffer */
 		if((avail=RingBufFull(obuf))==0) {	/* empty */
-			if(sem_trywait_block(&obuf->sem,1000))
+			if(WaitForEvent(obuf->data_event, 1000) != WAIT_OBJECT_0)
 				continue;
 			/* Check for spurious sem post... */
 			if((avail=RingBufFull(obuf))==0)
 				continue;
 		}
-		else
-			sem_trywait(&obuf->sem);
 
 		/* Wait for full buffer or drain timeout */
 		if(obuf->highwater_mark) {
 			if(avail<obuf->highwater_mark) {
-				sem_trywait_block(&obuf->highwater_sem,startup->outbuf_drain_timeout);
+				WaitForEvent(obuf->highwater_event, startup->outbuf_drain_timeout);
 				/* We (potentially) blocked, so get fill level again */
 		    	avail=RingBufFull(obuf);
-			} else
-				sem_trywait(&obuf->highwater_sem);
+			}
 		}
 
         /*

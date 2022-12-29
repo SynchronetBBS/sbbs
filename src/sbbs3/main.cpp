@@ -29,6 +29,7 @@
 #include "js_request.h"
 #include "ssl.h"
 #include "ver.h"
+#include "eventwrap.h"
 #include <multisock.h>
 #include <limits.h>		// HOST_NAME_MAX
 
@@ -2117,7 +2118,8 @@ void input_thread(void *arg)
 			sbbs->sys_status|=SS_ABORT;
 			RingBufReInit(&sbbs->inbuf);	/* Purge input buffer */
     		RingBufReInit(&sbbs->outbuf);	/* Purge output buffer */
-			sem_post(&sbbs->inbuf.sem);
+			SetEvent(sbbs->inbuf.data_event);
+			SetEvent(sbbs->inbuf.highwater_event);
 			continue;	// Ignore the entire buffer
 		}
 
@@ -2343,23 +2345,20 @@ void output_thread(void* arg)
 		if(bufbot == buftop) {
 			/* Wait for something to output in the RingBuffer */
 			if((avail=RingBufFull(&sbbs->outbuf))==0) {	/* empty */
-				if(sem_trywait_block(&sbbs->outbuf.sem,1000))
+				if (WaitForEvent(sbbs->outbuf.data_event, 1000) != WAIT_OBJECT_0)
 					continue;
 				/* Check for spurious sem post... */
 				if((avail=RingBufFull(&sbbs->outbuf))==0)
 					continue;
 			}
-			else
-				sem_trywait(&sbbs->outbuf.sem);
 
 			/* Wait for full buffer or drain timeout */
 			if(sbbs->outbuf.highwater_mark) {
 				if(avail<sbbs->outbuf.highwater_mark) {
-					sem_trywait_block(&sbbs->outbuf.highwater_sem,startup->outbuf_drain_timeout);
+					WaitForEvent(sbbs->outbuf.highwater_event, startup->outbuf_drain_timeout);
 					/* We (potentially) blocked, so get fill level again */
 					avail=RingBufFull(&sbbs->outbuf);
-				} else
-					sem_trywait(&sbbs->outbuf.highwater_sem);
+				}
 			}
 
 			/*
@@ -3971,7 +3970,8 @@ void sbbs_t::hangup(void)
 		close_socket(client_socket);
 		client_socket=INVALID_SOCKET;
 	}
-	sem_post(&outbuf.sem);
+	SetEvent(outbuf.data_event);
+	SetEvent(outbuf.highwater_event);
 }
 
 int sbbs_t::incom(unsigned long timeout)
@@ -3980,11 +3980,11 @@ int sbbs_t::incom(unsigned long timeout)
 
 #if 0	/* looping version */
 	while(!RingBufRead(&inbuf, &ch, 1))
-		if(sem_trywait_block(&inbuf.sem,timeout)!=0 || sys_status&SS_ABORT)
+		if(WaitForEvent(inbuf.data_event, timeout) != WAIT_OBJECT_0 || sys_status&SS_ABORT)
 			return(NOINP);
 #else
 	if(!RingBufRead(&inbuf, &ch, 1)) {
-		if(sem_trywait_block(&inbuf.sem,timeout)!=0)
+		if (WaitForEvent(inbuf.data_event, timeout) != WAIT_OBJECT_0)
 			return(NOINP);
 		if(!RingBufRead(&inbuf, &ch, 1))
 			return(NOINP);
@@ -5805,7 +5805,8 @@ NO_SSH:
 	if(events!=NULL)
 		events->terminated=true;
     // Wake-up BBS output thread so it can terminate
-    sem_post(&sbbs->outbuf.sem);
+    SetEvent(sbbs->outbuf.data_event);
+    SetEvent(sbbs->outbuf.highwater_event);
 
     // Wait for all node threads to terminate
 	if(protected_uint32_value(node_threads_running)) {

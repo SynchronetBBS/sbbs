@@ -686,12 +686,9 @@ static void output_thread(void* arg)
         	avail=buftop-bufbot;
 
 		if(!avail) {
-#if !defined(RINGBUF_EVENT)
-			SetEvent(outbuf_empty);
-#endif
-			sem_wait(&outbuf.sem);
+			WaitForEvent(outbuf.data_event, INFINITE);
 			if(outbuf.highwater_mark)
-				sem_trywait_block(&outbuf.highwater_sem,outbuf_drain_timeout);
+				WaitForEvent(outbuf.highwater_event, outbuf_drain_timeout);
 			continue; 
 		}
 
@@ -1960,9 +1957,6 @@ int main(int argc, char **argv)
 #endif
 
 	terminate=TRUE;	/* stop output thread */
-	/* Code disabled.  Why?  ToDo */
-/*	sem_post(outbuf.sem);
-	sem_post(outbuf.highwater_sem); */
 
 	lprintf(LOG_INFO, "Exiting - Error level: %d, flows: %u, select_errors=%u"
 		,retval, flows, select_errors);
