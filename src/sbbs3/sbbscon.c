@@ -1813,15 +1813,18 @@ int main(int argc, char** argv)
 				lprintf(LOG_ERR, "MQTT open failure: %d", result);
 			} else {
 				result = mqtt_thread_start(&bbs_startup.mqtt);
-				if(result != MQTT_SUCCESS)
+				if(result != MQTT_SUCCESS) {
 					lprintf(LOG_ERR, "Error %d starting pub/sub thread", result);
-				lprintf(LOG_INFO, "MQTT connecting to broker %s:%u", scfg.mqtt.broker_addr, scfg.mqtt.broker_port);
-				result = mqtt_connect(&bbs_startup.mqtt, /* bind_address: */NULL);
-				if(result == MQTT_SUCCESS) {
-					lprintf(LOG_INFO, "MQTT broker-connect (%s:%d) successful", scfg.mqtt.broker_addr, scfg.mqtt.broker_port);
-				} else {
-					lprintf(LOG_ERR, "MQTT broker-connect (%s:%d) failure: %d", scfg.mqtt.broker_addr, scfg.mqtt.broker_port, result);
 					mqtt_close(&bbs_startup.mqtt);
+				} else {
+					lprintf(LOG_INFO, "MQTT connecting to broker %s:%u", scfg.mqtt.broker_addr, scfg.mqtt.broker_port);
+					result = mqtt_connect(&bbs_startup.mqtt, /* bind_address: */NULL);
+					if(result == MQTT_SUCCESS) {
+						lprintf(LOG_INFO, "MQTT broker-connect (%s:%d) successful", scfg.mqtt.broker_addr, scfg.mqtt.broker_port);
+					} else {
+						lprintf(LOG_ERR, "MQTT broker-connect (%s:%d) failure: %d", scfg.mqtt.broker_addr, scfg.mqtt.broker_port, result);
+						mqtt_close(&bbs_startup.mqtt);
+					}
 				}
 			}
 		}
@@ -1839,11 +1842,6 @@ int main(int argc, char** argv)
 	services_startup.mqtt = bbs_startup.mqtt;
 	services_startup.mqtt.server = "srvc";
 	mqtt[SERVER_SERVICES] = &services_startup.mqtt;
-	p = "max_clients";
-	mqtt_pub_uintval(&bbs_startup.mqtt, TOPIC_SERVER, p, (bbs_startup.last_node - bbs_startup.first_node) + 1);
-	mqtt_pub_uintval(&mail_startup.mqtt, TOPIC_SERVER, p, mail_startup.max_clients);
-	mqtt_pub_uintval(&ftp_startup.mqtt, TOPIC_SERVER, p, ftp_startup.max_clients);
-	mqtt_pub_uintval(&web_startup.mqtt, TOPIC_SERVER, p, web_startup.max_clients);
 	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "version", sbbscon_ver());
 	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "status", "initializing");
 

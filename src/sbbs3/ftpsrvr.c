@@ -5093,6 +5093,7 @@ void ftp_server(void* arg)
 		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"FTP Server thread started");
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "max_clients", startup->max_clients);
 
 		while(ftp_set!=NULL && !terminate_server) {
 			YIELD();

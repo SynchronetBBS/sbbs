@@ -5229,6 +5229,7 @@ NO_SSH:
 	set_state(SERVER_READY);
 
 	lprintf(LOG_INFO,"Terminal Server thread started for nodes %d through %d", first_node, last_node);
+	mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "max_clients", (last_node - first_node) + 1);
 
 	while(!terminate_server) {
 		YIELD();
