@@ -31,6 +31,7 @@
 #include "ini_file.h"
 #include "git_branch.h"
 #include "git_hash.h"
+#include "eventwrap.h"
 
 #define INI_FILENAME			"sbbsexec.ini"
 #define RINGBUF_SIZE_IN			10000
@@ -287,7 +288,7 @@ unsigned vdd_read(BYTE* p, unsigned count)
 	count=RingBufRead(&rdbuf,p,count);
 	if(count==0) {
 		lputs(LOG_ERR,"!VDD_READ: RingBufRead read 0, waiting");
-		if(sem_trywait_block(&rdbuf.sem, READ_TIMEOUT) != 0)
+		if(WaitforEvent(rdbuf.data_event, READ_TIMEOUT) != WAIT_OBJECT_0)
 			lputs(LOG_ERR,"!VDD_READ: rdbuf sem timeout");
 		count = RingBufRead(&rdbuf,p,count);
 		lputs(LOG_ERR,"!VDD_READ: RingBufRead read 0 (after wait)");

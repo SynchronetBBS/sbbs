@@ -821,7 +821,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					if(!(startup->options&BBS_OPT_NO_TELNET_GA))
 						send_telnet_cmd(TELNET_GA,0);
 				}
-				sem_trywait_block(&inbuf.sem,100);
+				WaitForEvent(inbuf.data, 100);
             } else
 				loop_since_io=0;
         }
