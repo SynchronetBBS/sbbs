@@ -33,6 +33,7 @@ enum {
 	,CON_PROP_LNCNTR
 	,CON_PROP_COLUMN
 	,CON_PROP_LASTLINELEN
+	,CON_PROP_LINE_DELAY
 	,CON_PROP_ATTR
 	,CON_PROP_TOS
 	,CON_PROP_ROW
@@ -96,6 +97,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case CON_PROP_LASTLINELEN:
 			val=sbbs->lastlinelen;
+			break;
+		case CON_PROP_LINE_DELAY:
+			val = sbbs->line_delay;
 			break;
 		case CON_PROP_ATTR:
 			val=sbbs->curatr;
@@ -244,6 +248,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_LASTLINELEN:
 			sbbs->lastlinelen=val;
 			break;
+		case CON_PROP_LINE_DELAY:
+			sbbs->line_delay = val;
+			break;
 		case CON_PROP_ATTR:
 			if(JSVAL_IS_STRING(*vp)) {
 				JSVALUE_TO_MSTRING(cx, *vp, sval, NULL);
@@ -355,6 +362,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{	"current_row"		,CON_PROP_ROW				,CON_PROP_FLAGS ,31800},
 	{	"current_column"	,CON_PROP_COLUMN			,CON_PROP_FLAGS ,315},
 	{	"last_line_length"	,CON_PROP_LASTLINELEN		,CON_PROP_FLAGS	,317},
+	{	"line_delay"		,CON_PROP_LINE_DELAY		,CON_PROP_FLAGS	,320},
 	{	"attributes"		,CON_PROP_ATTR				,CON_PROP_FLAGS	,310},
 	{	"top_of_screen"		,CON_PROP_TOS				,JSPROP_ENUMERATE|JSPROP_READONLY	,310},
 	{	"screen_rows"		,CON_PROP_ROWS				,CON_PROP_FLAGS	,310},
@@ -395,6 +403,7 @@ static const char* con_prop_desc[] = {
 	,"current 0-based row counter"
 	,"current 0-based column counter (used to auto-increment <i>line_counter</i> when screen wraps)"
 	,"length of last line sent to terminal (before a carriage-return or line-wrap)"
+	,"duration of delay (in milliseconds) before each line-feed character is sent to the terminal"
 	,"current display attributes (set with number or string value)"
 	,"set to <i>true</i> if the terminal cursor is already at the top of the screen - <small>READ ONLY</small>"
 	,"number of remote terminal screen rows (in lines)"

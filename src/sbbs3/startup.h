@@ -32,6 +32,7 @@
 	#define LINK_LIST_THREADSAFE
 #endif
 #include "link_list.h"
+#include "mqtt.h"
 
 typedef struct {
 	ulong	max_bytes;		/* max allocated bytes before garbage collection */
@@ -79,6 +80,24 @@ typedef struct {
 
 } global_startup_t;
 
+enum server_type {
+	SERVER_TERM,
+	SERVER_MAIL,
+	SERVER_FTP,
+	SERVER_WEB,
+	SERVER_SERVICES,
+	SERVER_COUNT
+};
+
+// Aproximate systemd service states (see sd_notify)
+enum server_state {
+	SERVER_STOPPED,
+	SERVER_INIT,
+	SERVER_READY,
+	SERVER_RELOADING,
+	SERVER_STOPPING
+};
+
 typedef struct {
 
 	DWORD	size;				/* sizeof(bbs_struct_t) */
@@ -109,8 +128,7 @@ typedef struct {
 	int 	(*lputs)(void*, int , const char*);			/* Log - put string					*/
     int 	(*event_lputs)(void*, int, const char*);	/* Event log - put string			*/
 	void	(*errormsg)(void*, int level, const char* msg);
-	void	(*status)(void*, const char*);
-    void	(*started)(void*);
+	void	(*set_state)(void*, enum server_state);
 	void	(*recycle)(void*);
     void	(*terminated)(void*, int code);
     void	(*clients)(void*, int active);
@@ -146,6 +164,7 @@ typedef struct {
 	struct login_attempt_settings login_attempt;
 	link_list_t* login_attempt_list;
 	uint	max_concurrent_connections;
+	struct mqtt mqtt;
 
 } bbs_startup_t;
 

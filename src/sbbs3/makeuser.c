@@ -177,22 +177,22 @@ int main(int argc, char **argv)
 			case 'F':
 				switch(toupper(argv[i-1][2])) {
 					case '1':
-						user.flags1=aftol(argv[i]);
+						user.flags1=aftou32(argv[i]);
 						break;
 					case '2':
-						user.flags2=aftol(argv[i]);
+						user.flags2=aftou32(argv[i]);
 						break;
 					case '3':
-						user.flags3=aftol(argv[i]);
+						user.flags3=aftou32(argv[i]);
 						break;
 					case '4':
-						user.flags4=aftol(argv[i]);
+						user.flags4=aftou32(argv[i]);
 						break;
 					case 'E':
-						user.exempt=aftol(argv[i]);
+						user.exempt=aftou32(argv[i]);
 						break;
 					case 'R':
-						user.rest=aftol(argv[i]);
+						user.rest=aftou32(argv[i]);
 						break;
 					default:
 						printf("%s",usage);

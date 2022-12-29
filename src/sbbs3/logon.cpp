@@ -33,7 +33,6 @@ bool sbbs_t::logon()
 {
 	char	str[256],c;
 	char 	tmp[512];
-	int 	file;
 	uint	i,j,mailw,mailr;
 	long	kmode;
 	ulong	totallogons;
@@ -297,7 +296,7 @@ bool sbbs_t::logon()
 			}
 			SAFECOPY(useron.pass,str);
 			useron.pwmod=time32(NULL);
-			putuserrec(&cfg,useron.number,U_PWMOD,8,ultoa((ulong)useron.pwmod,str,16));
+			putuserdatetime(useron.number, USER_PWMOD, useron.pwmod);
 			bputs(text[PasswordChanged]);
 			pause(); 
 		}
@@ -336,7 +335,7 @@ bool sbbs_t::logon()
 							|| !strchr(useron.name,' ')
 							|| strchr(useron.name,0xff)
 							|| (cfg.uq&UQ_DUPREAL
-								&& userdatdupe(useron.number,U_NAME,LEN_NAME
+								&& finduserstr(useron.number, USER_NAME
 								,useron.name,0,0)))
 							bputs(text[YouCantUseThatName]);
 						else
@@ -353,7 +352,7 @@ bool sbbs_t::logon()
 						,K_LINE|K_EDIT|K_AUTODEL|kmode)
 						|| strchr(useron.handle,0xff)
 						|| (cfg.uq&UQ_DUPHAND
-							&& userdatdupe(useron.number,U_HANDLE,LEN_HANDLE
+							&& finduserstr(useron.number, USER_HANDLE
 							,useron.handle,0,0))
 						|| trashcan(useron.handle,"name"))
 						bputs(text[YouCantUseThatName]);
@@ -451,13 +450,14 @@ bool sbbs_t::logon()
 		exec_bin(cfg.logon_mod,&main_csi);
 
 	if(thisnode.status!=NODE_QUIET && (!REALSYSOP || cfg.sys_misc&SM_SYSSTAT)) {
+		int file;
 		safe_snprintf(str, sizeof(str), "%slogon.lst",cfg.data_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT|O_APPEND);
 			return(false); 
 		}
-		getuserrec(&cfg,useron.number,U_NOTE,LEN_NOTE,useron.note);
-		getuserrec(&cfg,useron.number,U_LOCATION,LEN_LOCATION,useron.location);
+		getuserstr(&cfg, useron.number, USER_NOTE, useron.note, sizeof(useron.note));
+		getuserstr(&cfg, useron.number, USER_LOCATION, useron.location, sizeof(useron.location));
 		safe_snprintf(str, sizeof(str), text[LastFewCallersFmt],cfg.node_num
 			,totallogons,useron.alias
 			,cfg.sys_misc&SM_LISTLOC ? useron.location : useron.note

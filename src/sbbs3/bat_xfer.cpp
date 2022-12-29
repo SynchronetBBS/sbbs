@@ -577,7 +577,7 @@ void sbbs_t::batch_upload()
 /****************************************************************************/
 void sbbs_t::batch_download(int xfrprot)
 {
-	FILE* fp = batch_list_open(&cfg, useron.number, XFER_BATCH_DOWNLOAD, /* create: */FALSE);
+	FILE* fp = batch_list_open(&cfg, useron.number, XFER_BATCH_DOWNLOAD, /* for_modify: */true);
 	if(fp == NULL)
 		return;
 	str_list_t ini = iniReadFile(fp);
@@ -666,7 +666,7 @@ bool sbbs_t::addtobatdl(file_t* f)
 		bputs(text[R_Download]);
 		return false;
 	}
-	if(!chk_ar(cfg.dir[f->dir]->dl_ar,&useron,&client)) {
+	if(!can_user_download(&cfg, f->dir, &useron, &client, /* reason */NULL)) {
 		bprintf(text[CantAddToQueue],f->name);
 		bputs(text[CantDownloadFromDir]);
 		return false;

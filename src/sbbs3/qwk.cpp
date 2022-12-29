@@ -90,8 +90,7 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 	i=matchuser(cfg,node,FALSE);			/* Check if destination is a node */
 	if(i) {
-		getuserrec(cfg,i,U_REST,8,str);
-		if(ahtoul(str)&FLAG('Q')) {
+		if(getuserflags(cfg, i, USER_REST) & FLAG('Q')) {
 			strncpy(fulladdr,node,maxlen);
 			return(i);
 		}
@@ -115,8 +114,7 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 		i=matchuser(cfg,node,FALSE);			/* Check if next hop is a node */
 		if(i) {
-			getuserrec(cfg,i,U_REST,8,str);
-			if(ahtoul(str)&FLAG('Q')) {
+			if(getuserflags(cfg, i, USER_REST) & FLAG('Q')) {
 				strncpy(fulladdr,inaddr,maxlen);
 				return(i);
 			}
@@ -163,8 +161,7 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 	i=matchuser(cfg,node,FALSE);				/* Check if first hop is a node */
 	if(i) {
-		getuserrec(cfg,i,U_REST,8,str);
-		if(ahtoul(str)&FLAG('Q'))
+		if(getuserflags(cfg, i, USER_REST) & FLAG('Q'))
 			return(i);
 	}
 	fulladdr[0]=0;
@@ -510,7 +507,7 @@ void sbbs_t::qwk_sec()
 						s=uselect(0,0,0,0,0);
 						if(s>=0) {
 							SAFECOPY(useron.tmpext, ext_list[s]);
-							putuserrec(&cfg,useron.number,U_TMPEXT,3,useron.tmpext);
+							putuserstr(useron.number, USER_TMPEXT, useron.tmpext);
 						}
 						strListFree(&ext_list);
 						break;
@@ -565,7 +562,7 @@ void sbbs_t::qwk_sec()
 						useron.qwk^=QWK_UTF8;
 						break;
 				}
-				putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16));
+				putuserqwk(useron.number, useron.qwk);
 			}
 			delfiles(cfg.temp_dir,ALLFILES);
 			clear_hotspots();
@@ -711,7 +708,6 @@ void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 void sbbs_t::qwkcfgline(char *buf,uint subnum)
 {
 	char	str[128];
-	char 	tmp[512];
 	uint 	x,y;
 	long	l;
 	ulong	qwk=useron.qwk;
@@ -909,22 +905,17 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 	}
 
 	if(qwk!=useron.qwk)
-		putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,tmp,16));
+		putuserqwk(useron.number, useron.qwk);
 }
 
 
-int sbbs_t::set_qwk_flag(ulong flag)
+bool sbbs_t::set_qwk_flag(ulong flag)
 {
-	int i;
-	char str[32];
-
 	if(useron.qwk&flag)
-		return 0;
-	if((i=getuserrec(&cfg,useron.number,U_QWK,8,str))!=0)
-		return(i);
-	useron.qwk=ahtoul(str);
+		return true;
+	useron.qwk = getuserqwk(&cfg, useron.number);
 	useron.qwk|=flag;
-	return putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16));
+	return putuserqwk(useron.number, useron.qwk) == 0;
 }
 
 /****************************************************************************/
@@ -966,7 +957,7 @@ uint sbbs_t::resolve_qwkconf(uint n, int hubnum)
 }
 
 bool sbbs_t::qwk_voting(str_list_t* ini, long offset, smb_net_type_t net_type, const char* qnet_id
-	, uint confnum, int hubnum)
+	, uint confnum, msg_filters filters, int hubnum)
 {
 	char* section;
 	char location[128];
@@ -986,7 +977,7 @@ bool sbbs_t::qwk_voting(str_list_t* ini, long offset, smb_net_type_t net_type, c
 		strListFree(&section_list);
 		return false;
 	}
-	result = qwk_vote(*ini, section, net_type, qnet_id, confnum, hubnum);
+	result = qwk_vote(*ini, section, net_type, qnet_id, confnum, filters, hubnum);
 	iniRemoveSection(ini, section);
 	iniRemoveSection(ini, location);
 	strListFree(&section_list);
@@ -998,21 +989,24 @@ void sbbs_t::qwk_handle_remaining_votes(str_list_t* ini, smb_net_type_t net_type
 	str_list_t section_list = iniGetSectionList(*ini, /* prefix: */NULL);
 
 	for(int i=0; section_list != NULL && section_list[i] != NULL; i++) {
+		lprintf(LOG_WARNING, "Remaining QWK VOTING.DAT section: %s", section_list[i]);
+#if 0 // (problematic) Backwards-compatibility hack that shouldn't be necessary any more
 		if(strnicmp(section_list[i], "poll:", 5) == 0
 			|| strnicmp(section_list[i], "vote:", 5) == 0
 			|| strnicmp(section_list[i], "close:", 6) == 0)
 			qwk_vote(*ini, section_list[i], net_type, qnet_id, /* confnum: */0, hubnum);
+#endif
 	}
 	strListFree(&section_list);
 }
 
-bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_type, const char* qnet_id, uint confnum, int hubnum)
+bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_type, const char* qnet_id, uint confnum, msg_filters filters, int hubnum)
 {
 	char* p;
 	int result;
 	smb_t smb;
 	ZERO_VAR(smb);
-	ulong n = iniGetLongInt(ini, section, "Conference", 0);
+	uint n = iniGetUInteger(ini, section, "Conference", 0);
 
 	if(confnum == 0)
 		confnum = n;
@@ -1030,10 +1024,6 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 	}
 	if(cfg.sub[smb.subnum]->misc&SUB_NOVOTING) {
 		errormsg(WHERE, ERR_CHK, "conference number (voting not allowed)", confnum, section);
-		return false;
-	}
-	if((result = smb_open_sub(&cfg, &smb, smb.subnum)) != SMB_SUCCESS) {
-		errormsg(WHERE, ERR_OPEN, smb.file, 0, smb.last_error);
 		return false;
 	}
 
@@ -1085,11 +1075,21 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 	while((p=iniGetString(ini,section, smb_hfieldtype(SENDERORG), NULL, NULL)) != NULL)
 		smb_hfield_str(&msg, SENDERORG, p);
 
+	if(qwk_msg_filtered(&msg, filters)) {
+		smb_freemsgmem(&msg);
+		return false;
+	}
+
+	if((result = smb_open_sub(&cfg, &smb, smb.subnum)) != SMB_SUCCESS) {
+		errormsg(WHERE, ERR_OPEN, smb.file, 0, smb.last_error);
+		return false;
+	}
+
 	if(strnicmp(section, "poll:", 5) == 0) {
 
 		smb_hfield_str(&msg, RFC822MSGID, section + 5);
 		msg.hdr.votes = iniGetShortInt(ini, section, "MaxVotes", 0);
-		ulong results = iniGetLongInt(ini, section, "Results", 0);
+		uint results = iniGetUInteger(ini, section, "Results", 0);
 		msg.hdr.auxattr = (results << POLL_RESULTS_SHIFT) & POLL_RESULTS_MASK;
 		for(int i=0;;i++) {
 			char str[128];
@@ -1157,7 +1157,7 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 	return result == SMB_SUCCESS;
 }
 
-bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_can, str_list_t subject_can, str_list_t twit_list)
+bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, msg_filters filters)
 {
 	uint32_t now = time32(NULL);
 
@@ -1169,7 +1169,7 @@ bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_
 		return true;
 	}
 
-	if(findstr_in_list(msg->from_ip,ip_can)) {
+	if(findstr_in_list(msg->from_ip, filters.ip_can)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked IP: %s"
 			,msg->from
 			,msg->from_ip); 
@@ -1177,21 +1177,21 @@ bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_
 	}
 
 	const char* hostname=getHostNameByAddr(msg->from_host);
-	if(findstr_in_list(hostname,host_can)) {
+	if(findstr_in_list(hostname, filters.host_can)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked hostname: %s"
 			,msg->from
 			,hostname); 
 		return true;
 	}
 
-	if(findstr_in_list(msg->subj,subject_can)) {
+	if(findstr_in_list(msg->subj, filters.subject_can)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to filtered subject: %s"
 			,msg->from
 			,msg->subj); 
 		return true;
 	}
 
-	if(findstr_in_list(msg->from,twit_list) || findstr_in_list(msg->to,twit_list)) {
+	if(findstr_in_list(msg->from, filters.twit_list) || findstr_in_list(msg->to, filters.twit_list)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from '%s' to '%s'"
 			,msg->from
 			,msg->to);
@@ -1202,7 +1202,7 @@ bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_
 		char fidoaddr[64];
 		char str[128];
 		SAFEPRINTF2(str, "%s@%s", msg->from, smb_netaddrstr(&msg->from_net, fidoaddr));
-		if(findstr_in_list(str, twit_list)) {
+		if(findstr_in_list(str, filters.twit_list)) {
 			lprintf(LOG_NOTICE,"!Filtering QWK message from '%s' to '%s'"
 				,str
 				,msg->to);

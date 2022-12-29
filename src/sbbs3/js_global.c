@@ -4409,7 +4409,7 @@ js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 		if(p==NULL) 
 			return(JS_TRUE);
 
-		JS_SET_RVAL(cx, arglist,DOUBLE_TO_JSVAL((double)aftol(p)));
+		JS_SET_RVAL(cx, arglist,DOUBLE_TO_JSVAL((double)aftou32(p)));
 		free(p);
 		return(JS_TRUE);
 	}
@@ -4417,7 +4417,7 @@ js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 	/* number to string */
 	if(JS_ValueToNumber(cx,argv[0],&d)) {
 
-		if((js_str = JS_NewStringCopyZ(cx, ltoaf((long)d,str)))==NULL)
+		if((js_str = JS_NewStringCopyZ(cx, u32toaf((uint32_t)d,str)))==NULL)
 			return(JS_FALSE);
 
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));

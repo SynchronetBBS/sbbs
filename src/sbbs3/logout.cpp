@@ -56,7 +56,7 @@ void sbbs_t::logout()
 	}
 
 	if(useron.rest&FLAG('G')) {
-		putuserrec(&cfg,useron.number,U_NAME,LEN_NAME,nulstr);		
+		putuserstr(useron.number, USER_NAME, nulstr);
 		clearbatdl();
 	}
 
@@ -115,23 +115,23 @@ void sbbs_t::logout()
 			useron.min-=j;
 		else
 			useron.min=0L;
-		putuserrec(&cfg,useron.number,U_MIN,10,ultoa(useron.min,str,10)); 
+		putuserdec32(useron.number, USER_MIN, useron.min); 
 	}
 
 	if(timeleft>0 && starttime-logontime>0) 			/* extra time */
 		useron.textra+=(ushort)((starttime-logontime)/60);
 
-	putuserrec(&cfg,useron.number,U_TEXTRA,5,ultoa(useron.textra,str,10));
-	putuserrec(&cfg,useron.number,U_NS_TIME,8,ultoa((ulong)last_ns_time,str,16));
+	putuserdec32(useron.number, USER_TEXTRA, useron.textra);
+	putuserdatetime(useron.number, USER_NS_TIME, last_ns_time);
 
 	logoutuserdat(&cfg, &useron, now, logontime);
 
 	getusrsubs();
 	getusrdirs();
 	if(usrgrps>0)
-		putuserrec(&cfg,useron.number,U_CURSUB,0,cfg.sub[usrsub[curgrp][cursub[curgrp]]]->code);
+		putuserstr(useron.number, USER_CURSUB, cfg.sub[usrsub[curgrp][cursub[curgrp]]]->code);
 	if(usrlibs>0)
-		putuserrec(&cfg,useron.number,U_CURDIR,0,cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
+		putuserstr(useron.number, USER_CURDIR, cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
 	hhmmtostr(&cfg,&tm,str);
 	SAFECAT(str,"  ");
 	if(sys_status&SS_USERON)

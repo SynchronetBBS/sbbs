@@ -90,8 +90,8 @@ typedef struct {							/* Transfer Directory Info */
 				ul_ar[LEN_ARSTR+1],
 				dl_ar[LEN_ARSTR+1],
 				ex_ar[LEN_ARSTR+1],
-				op_ar[LEN_ARSTR+1],
-				seqdev, 					/* Sequential access device number */
+				op_ar[LEN_ARSTR+1];
+	uint		seqdev, 					/* Sequential access device number */
 				sort;						/* Sort type */
 	uint16_t	maxfiles,					/* Max number of files allowed */
 				maxage, 					/* Max age of files (in days) */
@@ -108,13 +108,22 @@ typedef struct {							/* Transfer Library Information */
 				sname[LEN_GSNAME+1],		/* Short Name - used for prompts */
 				vdir[LEN_GSNAME+1],			/* Virtual Directory name */
 				arstr[LEN_ARSTR+1],			/* Access Requirements */
+				ul_arstr[LEN_ARSTR+1], 		/* Upload Requirements */
+				dl_arstr[LEN_ARSTR+1], 		/* Download Requirements */
+				ex_arstr[LEN_ARSTR+1], 		/* Exemption Requirements (credits) */
+				op_arstr[LEN_ARSTR+1], 		/* Operator Requirements */
 				code_prefix[LEN_CODE+1],	/* Prefix for internal code */
 				parent_path[48];			/* Parent for dir paths */
-	uchar		ar[LEN_ARSTR+1];
+	uchar		ar[LEN_ARSTR+1],
+				ul_ar[LEN_ARSTR+1],
+				dl_ar[LEN_ARSTR+1],
+				ex_ar[LEN_ARSTR+1],
+				op_ar[LEN_ARSTR+1];
 	uint32_t	offline_dir;				/* Offline file directory */
 	uint32_t	misc;						/* Miscellaneous bits */
 	enum area_sort sort;
 	enum vdir_name vdir_name;
+	dir_t dir_defaults;
 
 } lib_t;
 
@@ -354,6 +363,32 @@ typedef struct {
 	char		cmd[LEN_CMD+1];
 } hotkey_t;
 
+struct mqtt_cfg {
+	BOOL		enabled;
+	char		broker_addr[128];
+	uint16_t	broker_port;
+	char		username[256];
+	char		password[256];
+	int			keepalive;
+	int			publish_qos;
+	int			subscribe_qos;
+	int			protocol_version;
+	int			log_level;
+	struct {
+		enum {
+			MQTT_TLS_DISABLED,
+			MQTT_TLS_CERT,
+			MQTT_TLS_PSK
+		} mode;
+		char	cafile[256];
+		char	certfile[256];
+		char	keyfile[256];
+		char	keypass[256];
+		char	psk[256];
+		char	identity[256];
+	} tls;
+};
+
 typedef struct 
 {
 	DWORD			size;				/* sizeof(scfg_t) */
@@ -497,7 +532,7 @@ typedef struct
 	char			new_sif[LEN_SIFNAME+1]; 		/* New User SIF Questionaire */
 	char			new_sof[LEN_SIFNAME+1]; 		/* New User SIF Questionaire output SIF */
 	char			new_genders[41];	/* New User Gender options (default: "MF") */
-	char			new_level;			/* New User Main Level */
+	int				new_level;			/* New User Main Level */
 	uint32_t		new_flags1; 		/* New User Main Flags from set #1*/
 	uint32_t		new_flags2; 		/* New User Main Flags from set #2*/
 	uint32_t		new_flags3; 		/* New User Main Flags from set #3*/
@@ -513,7 +548,7 @@ typedef struct
 	uchar			new_prot;			/* New User Default Download Protocol */
 	uint16_t		new_msgscan_init;	/* Uew User new-scan pointers initialized to msgs this old (in days) */
 	uint16_t		guest_msgscan_init;	/* Guest new-scan pointers initialized to msgs this old (in days) */
-	char 			val_level[10];		/* Validation User Main Level */
+	int 			val_level[10];		/* Validation User Main Level */
 	uint32_t		val_flags1[10]; 	/* Validation User Flags from set #1*/
 	uint32_t		val_flags2[10]; 	/* Validation User Flags from set #2*/
 	uint32_t		val_flags3[10]; 	/* Validation User Flags from set #3*/
@@ -522,7 +557,7 @@ typedef struct
 	uint32_t		val_rest[10];		/* Validation User Restriction Flags */
 	uint32_t		val_cdt[10];		/* Validation User Additional Credits */
 	uint16_t		val_expire[10]; 	/* Validation User Extend Expire #days */
-	uchar			level_expireto[100];
+	int				level_expireto[100];
 	uint16_t		level_timepercall[100], /* Security level settings */
 					level_timeperday[100],
 					level_callsperday[100],
@@ -531,7 +566,7 @@ typedef struct
 					level_emailperday[100];
 	uint64_t		level_freecdtperday[100];
 	int32_t			level_misc[100];
-	char 			expired_level;	/* Expired user's ML */
+	int 			expired_level;	/* Expired user's ML */
 	uint32_t		expired_flags1; /* Flags from set #1 to remove when expired */
 	uint32_t		expired_flags2; /* Flags from set #2 to remove when expired */
 	uint32_t		expired_flags3; /* Flags from set #3 to remove when expired */
@@ -628,6 +663,7 @@ typedef struct
 	int				tls_certificate;
 	time32_t        tls_cert_file_date;
 
+	struct mqtt_cfg mqtt;
 } scfg_t;
 
 #endif /* Don't add anything after this line */

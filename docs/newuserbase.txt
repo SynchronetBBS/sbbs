@@ -1,0 +1,100 @@
+_New User Database Format_
+
+Synchronet v3.20 introduces a new primary user database file format and
+naming:
+
+data/user/user.dat -> user.tab
+
+The secondary user data files (data/user/####.ini) remain as-is.
+
+_Why the change?_
+
+The Synchronet user.dat file format has not changed since the inception of
+Synchronet BBS software back in 1991. Each user's record within the user.dat
+file had a fixed length (834 bytes) at a fixed offset within the file and
+each field (e.g. user name, alias, password) is also at a fixed offset within
+each record, with a fixed maximum length. A portion of each user record
+was reserved with unused or "padding" bytes that have been consumed over
+the years to add new fields or relocate fields to extend their maximum length.
+While this record padding has enabled extensibility over the years, each
+additional field or extended field (e.g. the extension of maximum password
+length from 8 to 40 characters) has incurred special upgrade logic and
+consumed the available padding bytes, leaving little room for adding or
+moving/extending user fields in 2022.
+
+Simply redefining the user.dat record format to use longer/wider fields would
+only serve to reset expectations based on the current predictions of future
+needs which are inevitably flawed. So the fundamental improvement needed
+for future-proofing was the switch from fixed-length to variable-length
+fields.
+
+Variable-length records would make fast random access (i.e. direct-seeking to
+a specific user's record) and record locking (insuring exclusive access,
+e.g. for read/modify/write operations) more difficult. Fixed-length records
+are a good solution for fast random access and locking, so the new user data
+format uses the combination of:
+* Fixed-length records (1000 bytes) at fixed offsets
+* Variable-length fields
+
+This change in format will allow:
+* new fields to be added easily
+* existing fields to be extended (e.g. in maximum string length) easily
+
+What happens when the total length of all variable-length fields exceeds the
+record's fixed length? Dynamic run-time detection of the record length would
+be trivial and upgrading to add padding bytes to each user.tab record if/when
+necessary, without changing the underlying format, is very realistic. The
+current estimate is that 1000-byte records will be sufficient for a long time.
+
+_What are the details of the user.tab format?_
+
+The legacy user.dat was primarily a text file that used the ASCII ETX (0x03)
+character to right-pad fields and records to their fixed lengths. The user.dat
+was fairly easily readable in an ASCII/plain-text viewer/editor, but not
+universally so (e.g. the ASCII ETX characters were not rendered consistently
+between different programs, sometimes a heart glyph, sometimes ^C). Being
+mostly-text allowed the user.dat file to be viewed or even manually-edited
+fairly easily, but the data format was not easily imported into other data
+formats/programs without Synchronet-specific conversion scripts or programs.
+
+The new user.tab format is *entirely* a plain-text file containing ASCII LF
+(0x0a) terminated records of fixed length: 1000 characters. Each user record
+is a line of text.
+
+Each field within each record is separated with an ASCII Horizontal Tab (0x09)
+character, hence the ".tab" file extension. No other control characters (ASCII
+0x00-0x1F) should be present in the file. Other non-ASCII characters are
+currently interpreted as CP437 characters (so-called IBM extended ASCII
+characters, not UTF-8 sequences).
+
+This file format is easily viewed with plain-text viewers/editors or imported
+into other programs (e.g. Microsoft Excel, Google Sheets). It is critical that
+when making a change to the file with any non-Synchronet software, that the
+1000 character line/record lengths (including the LF-terminator) are
+maintained. The ordering of the fields within each record is significant
+(don't insert new fields). Unused/padding bytes at the end of each record are
+filled with ASCII TAB characters.
+
+In addition to the record/field format changes, the content format of some of
+specific user fields has changed as well:
+- Date/time stamps are represented as ISO-8601 strings (e.g. "20221006T1453Z")
+  rather than Unix time_t (seconds since Jan-1-1970 UTC) integer values
+- Security flags, including exemptions and restrictions, are now expressed as
+  a list of alphabetic characters (A-Z) rather than a hexadecimal integer
+- Upload/download byte counts are always stored as an exact count rather than
+  an estimation (e.g. "10.1G") when the number of required digits exceeded 10
+
+_What is the impact of this change?_
+
+Initially, there should be no observable impact with this change: users should
+experience no difference in BBS behavior or performance. Sysops may notice
+that some configurable fields (e.g. internal codes) will now accept longer
+strings than previously allowed and eventually other user-visible strings may
+be extended to allow a greater total number of characters. Many user
+statistical values that were previously limited to 16-bit integers (0-65535)
+and 5 decimal digits will be increased to modern/32-bit ranges of value.
+
+User date/time values that were previously expected to encounter issues in the
+year 2038 (Y2K38, the Epochalypse) or best case, the year 2106, should be
+resolved by storing the date/time values in ISO-8601 format and using 64-bit
+time_t's for internal storage of user data in all Synchronet programs.

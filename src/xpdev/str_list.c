@@ -263,6 +263,20 @@ BOOL strListSwap(const str_list_t list, size_t index1, size_t index2)
 	return(TRUE);
 }
 
+char* strListAnnex(str_list_t* list, const char* str, size_t index)
+{
+	char *ret;
+
+	if(str == NULL)
+		return NULL;
+
+	if(index == STR_LIST_LAST_INDEX)
+		index = strListCount(*list);
+
+	ret = str_list_append(list, (char*)str, index);
+	return ret;
+}
+
 char* strListAppend(str_list_t* list, const char* str, size_t index)
 {
 	char* buf;

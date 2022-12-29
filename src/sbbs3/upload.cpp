@@ -188,10 +188,10 @@ bool sbbs_t::uploadfile(file_t* f)
 	user_uploaded(&cfg, &useron, 1, length);
 	if(cfg.dir[f->dir]->up_pct && cfg.dir[f->dir]->misc&DIR_CDTUL) { /* credit for upload */
 		if(cfg.dir[f->dir]->misc&DIR_CDTMIN && cur_cps)    /* Give min instead of cdt */
-			useron.min=(uint32_t)adjustuserrec(&cfg,useron.number,U_MIN
+			useron.min = (uint32_t)adjustuserval(&cfg, useron.number, USER_MIN
 				,((ulong)(length*(cfg.dir[f->dir]->up_pct/100.0))/cur_cps)/60);
 		else
-			useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT
+			useron.cdt = adjustuserval(&cfg, useron.number, USER_CDT
 				,(int64_t)(f->cost * (cfg.dir[f->dir]->up_pct/100.0))); 
 	}
 
@@ -226,7 +226,7 @@ bool sbbs_t::upload(uint dirnum)
 		return(false);
 	}
 	if(!(useron.exempt&FLAG('U')) && !dir_op(dirnum)) {
-		if(!chk_ar(cfg.dir[dirnum]->ul_ar,&useron,&client)) {
+		if(!chk_ar(cfg.dir[dirnum]->ul_ar,&useron,&client) || !chk_ar(cfg.lib[cfg.dir[dirnum]->lib]->ul_ar,&useron,&client)) {
 			bputs(dirnum==cfg.user_dir ? text[CantUploadToUser] : 
 				dirnum==cfg.sysop_dir ? text[CantUploadToSysop] : text[CantUploadHere]);
 			return(false); 
@@ -382,9 +382,7 @@ bool sbbs_t::upload(uint dirnum)
 					continue; 
 				}
 				getuserdat(&cfg,&user);
-				if((user.rest&(FLAG('T')|FLAG('D')))
-					|| !chk_ar(cfg.lib[cfg.dir[cfg.user_dir]->lib]->ar,&user,/* client: */NULL)
-					|| !chk_ar(cfg.dir[cfg.user_dir]->dl_ar,&user,/* client: */NULL)) {
+				if(!can_user_download(&cfg, cfg.user_dir, &user, /* client: */NULL, /* reason: */NULL)) {
 					bprintf(text[UserWontBeAbleToDl],user.alias); 
 				} else {
 					bprintf(text[UserAddedToDestList],user.alias,usernum);

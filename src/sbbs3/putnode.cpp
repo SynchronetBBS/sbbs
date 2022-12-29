@@ -1,8 +1,4 @@
-/* putnode.cpp */
-
 /* Synchronet node information writing routines */
-
-/* $Id: putnode.cpp,v 1.22 2018/07/26 06:24:57 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -46,6 +30,7 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 {
 	char	str[256],firston[25];
 	char	path[MAX_PATH+1];
+	char	topic[128];
 	int		wr=0;
 	int		wrerr=0;
 	int		attempts;
@@ -106,6 +91,22 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 	}
 	pthread_mutex_unlock(&nodefile_mutex);
 
+	if(cfg.mqtt.enabled) {
+		snprintf(str, sizeof(str), "%u\t%u\t%u\t%u\t%x\t%u\t%u\t%u"
+			,node->status
+			,node->action
+			,node->useron
+			,node->connection
+			,node->misc
+			,node->aux
+			,node->extaux
+			,node->errors
+			);
+		SAFEPRINTF(topic, "node%u/status", number + 1);
+		int result = mqtt_pub_strval(&startup->mqtt, TOPIC_BBS, topic, str);
+		if(result != MQTT_SUCCESS)
+			lprintf(LOG_WARNING, "ERROR %d (%d) publishing node status: %s", result, errno, topic);
+	}
 	if(wr!=sizeof(node_t)) {
 		errno=wrerr;
 		errormsg(WHERE,ERR_WRITE,"nodefile",number+1);

@@ -1,7 +1,4 @@
 /* Synchronet message/menu display routine */
-// vi: tabstop=4
-
-/* $Id: putmsg.cpp,v 1.68 2020/05/11 05:03:47 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -53,6 +38,7 @@
 char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 {
 	uint 	tmpatr;
+	uint	org_line_delay = line_delay;
 	ulong 	orgcon=console;
 	ulong	sys_status_sav=sys_status;
 	enum output_rate output_rate = cur_output_rate;
@@ -80,6 +66,9 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 	/* Restore original settings of Forced Pause On/Off */
 	sys_status&=~(SS_PAUSEOFF|SS_PAUSEON);
 	sys_status|=(sys_status_sav&(SS_PAUSEOFF|SS_PAUSEON));
+
+	line_delay = org_line_delay;
+
 	return(ret);
 }
 
@@ -448,6 +437,23 @@ char sbbs_t::putmsgfrag(const char* buf, long& mode, long org_cols, JSObject* ob
 					l += 6;
 					mode |= P_NOABORT;
 					continue;
+				}
+				if(memcmp(str+l, "@LINEDELAY@", 11) == 0) {
+					l += 11;
+					line_delay = 100;
+					continue;
+				}
+				if(memcmp(str+l, "@LINEDELAY:", 11) == 0) {
+					char* p = str + l + 11;
+					SKIP_DIGIT(p);
+					if(*p == '@') {
+						l += 11;
+						line_delay = atoi(str + l) * 10;
+						while(str[l] != '@')
+							l++;
+						l++;
+						continue;
+					}
 				}
 				bool was_tos = (row == 0);
  				i=show_atcode((char *)str+l, obj);	/* returns 0 if not valid @ code */

@@ -432,7 +432,6 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 {
 	jsval idval;
 	char*		str = NULL;
-	char		tmp[64];
 	uint32		val;
 	ulong		usermisc;
     jsint       tiny;
@@ -470,108 +469,107 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			break;
 		case USER_PROP_ALIAS:
 			SAFECOPY(p->user->alias,str);
-			/* update USER.DAT */
-			putuserrec(scfg,p->user->number,U_ALIAS,LEN_ALIAS,str);
+			/* update user.tab */
+			putuserstr(scfg, p->user->number, USER_ALIAS, str);
 
-			/* update NAME.DAT */
-			getuserrec(scfg,p->user->number,U_MISC,8,tmp);
-			usermisc=ahtoul(tmp);
+			/* update name.dat */
+			usermisc = getusermisc(scfg, p->user->number);
 			if(!(usermisc&DELETED))
 				putusername(scfg,p->user->number,str);
 			break;
 		case USER_PROP_NAME:
 			SAFECOPY(p->user->name,str);
-			putuserrec(scfg,p->user->number,U_NAME,LEN_NAME,str);
+			putuserstr(scfg, p->user->number, USER_NAME, str);
 			break;
 		case USER_PROP_HANDLE:
 			SAFECOPY(p->user->handle,str);
-			putuserrec(scfg,p->user->number,U_HANDLE,LEN_HANDLE,str);
+			putuserstr(scfg, p->user->number, USER_HANDLE, str);
 			break;
 		case USER_PROP_NOTE:		 
 			SAFECOPY(p->user->note,str);
-			putuserrec(scfg,p->user->number,U_NOTE,LEN_NOTE,str);
+			putuserstr(scfg, p->user->number, USER_NOTE, str);
 			break;
 		case USER_PROP_IPADDR:		 
 			SAFECOPY(p->user->ipaddr,str);
-			putuserrec(scfg,p->user->number,U_IPADDR,LEN_IPADDR,str);
+			putuserstr(scfg, p->user->number, USER_IPADDR, str);
 			break;
 		case USER_PROP_COMP:
 			SAFECOPY(p->user->comp,str);
-			putuserrec(scfg,p->user->number,U_COMP,LEN_COMP,str);
+			putuserstr(scfg, p->user->number, USER_HOST, str);
 			break;
 		case USER_PROP_COMMENT:	 
 			SAFECOPY(p->user->comment,str);
-			putuserrec(scfg,p->user->number,U_COMMENT,LEN_COMMENT,str);
+			putuserstr(scfg, p->user->number, USER_COMMENT, str);
 			break;
 		case USER_PROP_NETMAIL:	 
 			SAFECOPY(p->user->netmail,str);
-			putuserrec(scfg,p->user->number,U_NETMAIL,LEN_NETMAIL,str);
+			putuserstr(scfg, p->user->number, USER_NETMAIL, str);
 			break;
 		case USER_PROP_ADDRESS:	 
 			SAFECOPY(p->user->address,str);
-			putuserrec(scfg,p->user->number,U_ADDRESS,LEN_ADDRESS,str);
+			putuserstr(scfg, p->user->number, USER_ADDRESS, str);
 			break;
 		case USER_PROP_LOCATION:	 
 			SAFECOPY(p->user->location,str);
-			putuserrec(scfg,p->user->number,U_LOCATION,LEN_LOCATION,str);
+			putuserstr(scfg, p->user->number, USER_LOCATION, str);
 			break;
 		case USER_PROP_ZIPCODE:	 
 			SAFECOPY(p->user->zipcode,str);
-			putuserrec(scfg,p->user->number,U_ZIPCODE,LEN_ZIPCODE,str);
+			putuserstr(scfg, p->user->number, USER_ZIPCODE, str);
 			break;
 		case USER_PROP_PHONE:  	 
 			SAFECOPY(p->user->phone,str);
-			putuserrec(scfg,p->user->number,U_PHONE,LEN_PHONE,str);
+			putuserstr(scfg, p->user->number, USER_PHONE, str);
 			break;
 		case USER_PROP_BIRTH:  	 
 			SAFECOPY(p->user->birth,str);
-			putuserrec(scfg,p->user->number,U_BIRTH,LEN_BIRTH,str);
+			putuserstr(scfg, p->user->number, USER_BIRTH, str);
 			break;
 		case USER_PROP_BIRTHYEAR:
-			SAFEPRINTF(tmp, "%04u", atoi(str));
-			putuserrec(scfg,p->user->number, U_BIRTH, 4, tmp);
+			if(JS_ValueToECMAUint32(cx, *vp, &val))
+				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(val, getbirthmonth(scfg, p->user->birth), getbirthday(scfg, p->user->birth)));
 			break;
 		case USER_PROP_BIRTHMONTH:
-			SAFEPRINTF(tmp, "%02u", atoi(str));
-			putuserrec(scfg,p->user->number, U_BIRTH + 4, 2, tmp);
+			if(JS_ValueToECMAUint32(cx, *vp, &val))
+				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(p->user->birth), val, getbirthday(scfg, p->user->birth)));
 			break;
 		case USER_PROP_BIRTHDAY:
-			SAFEPRINTF(tmp, "%02u", atoi(str));
-			putuserrec(scfg,p->user->number, U_BIRTH + 6, 2, tmp);
+			if(JS_ValueToECMAUint32(cx, *vp, &val))
+				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(p->user->birth), getbirthmonth(scfg, p->user->birth), val));
 			break;
 		case USER_PROP_MODEM:     
 			SAFECOPY(p->user->modem,str);
-			putuserrec(scfg,p->user->number,U_MODEM,LEN_MODEM,str);
+			putuserstr(scfg, p->user->number, USER_CONNECTION, str);
 			break;
 		case USER_PROP_ROWS:	
 			p->user->rows=atoi(str);
-			putuserrec(scfg,p->user->number,U_ROWS,0,str);	/* base 10 */
+			putuserdec32(scfg, p->user->number, USER_ROWS, p->user->rows);
 			break;
 		case USER_PROP_COLS:	
 			p->user->cols=atoi(str);
-			putuserrec(scfg,p->user->number,U_COLS,0,str);	/* base 10 */
+			putuserdec32(scfg, p->user->number, USER_COLS, p->user->cols);
 			break;
 		case USER_PROP_SEX:		 
 			p->user->sex=toupper(str[0]);
-			putuserrec(scfg,p->user->number,U_SEX,0,strupr(str));	/* single char */
+			putuserstr(scfg, p->user->number, USER_GENDER, strupr(str));	/* single char */
 			break;
 		case USER_PROP_CURSUB:	 
 			SAFECOPY(p->user->cursub,str);
-			putuserrec(scfg,p->user->number,U_CURSUB,0,str);
+			putuserstr(scfg, p->user->number, USER_CURSUB, str);
 			break;
 		case USER_PROP_CURDIR:	 
 			SAFECOPY(p->user->curdir,str);
-			putuserrec(scfg,p->user->number,U_CURDIR,0,str);
+			putuserstr(scfg, p->user->number, USER_CURDIR, str);
 			break;
 		case USER_PROP_CURXTRN:	 
 			SAFECOPY(p->user->curxtrn,str);
-			putuserrec(scfg,p->user->number,U_CURXTRN,0,str);
+			putuserstr(scfg, p->user->number, USER_CURXTRN, str);
 			break;
 		case USER_PROP_XEDIT: 	 
-			putuserrec(scfg,p->user->number,U_XEDIT,0,str);
+			putuserstr(scfg, p->user->number, USER_XEDIT, str);
 			break;
 		case USER_PROP_SHELL: 	 
-			putuserrec(scfg,p->user->number,U_SHELL,0,str);
+			putuserstr(scfg, p->user->number, USER_SHELL, str);
 			break;
 		case USER_PROP_MISC:
 			JS_RESUMEREQUEST(cx, rc);
@@ -579,7 +577,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserrec(scfg,p->user->number,U_MISC,0,ultoa(p->user->misc=val,tmp,16));
+			putusermisc(scfg, p->user->number, p->user->misc = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_QWK:		 
@@ -588,7 +586,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserrec(scfg,p->user->number,U_QWK,0,ultoa(p->user->qwk=val,tmp,16));
+			putuserqwk(scfg, p->user->number, p->user->qwk = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_CHAT:		 
@@ -597,12 +595,12 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserrec(scfg,p->user->number,U_CHAT,0,ultoa(p->user->chat=val,tmp,16));
+			putuserchat(scfg, p->user->number, p->user->chat = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_TMPEXT:	 
 			SAFECOPY(p->user->tmpext,str);
-			putuserrec(scfg,p->user->number,U_TMPEXT,0,str);
+			putuserstr(scfg, p->user->number, USER_TMPEXT, str);
 			break;
 		case USER_PROP_NS_TIME:	 
 			JS_RESUMEREQUEST(cx, rc);
@@ -610,12 +608,12 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserrec(scfg,p->user->number,U_NS_TIME,0,ultoa((ulong)(p->user->ns_time=val),tmp,16));
+			putuserdatetime(scfg, p->user->number, USER_NS_TIME, p->user->ns_time = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_PROT:	
 			p->user->prot=toupper(str[0]);
-			putuserrec(scfg,p->user->number,U_PROT,0,strupr(str)); /* single char */
+			putuserstr(scfg, p->user->number, USER_PROT, strupr(str)); /* single char */
 			break;
 		case USER_PROP_LOGONTIME:	 
 			JS_RESUMEREQUEST(cx, rc);
@@ -623,14 +621,14 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserrec(scfg,p->user->number,U_LOGONTIME,0,ultoa(p->user->logontime=val,tmp,16));
+			putuserdatetime(scfg, p->user->number, USER_LOGONTIME, p->user->logontime = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 			
 		/* security properties*/
 		case USER_PROP_PASS:	
 			SAFECOPY(p->user->pass,str);
-			putuserrec(scfg,p->user->number,U_PASS,LEN_PASS,strupr(str));
+			putuserstr(scfg, p->user->number, USER_PASS, strupr(str));
 			break;
 		case USER_PROP_PWMOD:
 			JS_RESUMEREQUEST(cx, rc);
@@ -638,12 +636,12 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserrec(scfg,p->user->number,U_PWMOD,0,ultoa(p->user->pwmod=val,tmp,16));
+			putuserdatetime(scfg, p->user->number, USER_PWMOD, p->user->pwmod = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_LEVEL: 
 			p->user->level=atoi(str);
-			putuserrec(scfg,p->user->number,U_LEVEL,0,str);
+			putuserdec32(scfg, p->user->number, USER_LEVEL, p->user->level);
 			break;
 		case USER_PROP_FLAGS1:
 			JS_RESUMEREQUEST(cx, rc);
@@ -656,7 +654,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 					return JS_FALSE;
 				}
 			}
-			putuserrec(scfg,p->user->number,U_FLAGS1,0,ultoa(p->user->flags1=val,tmp,16));
+			putuserflags(scfg, p->user->number, USER_FLAGS1, p->user->flags1 = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_FLAGS2:
@@ -670,7 +668,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 					return JS_FALSE;
 				}
 			}
-			putuserrec(scfg,p->user->number,U_FLAGS2,0,ultoa(p->user->flags2=val,tmp,16));
+			putuserflags(scfg, p->user->number, USER_FLAGS2, p->user->flags2 = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_FLAGS3:
@@ -684,7 +682,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 					return JS_FALSE;
 				}
 			}
-			putuserrec(scfg,p->user->number,U_FLAGS3,0,ultoa(p->user->flags3=val,tmp,16));
+			putuserflags(scfg, p->user->number, USER_FLAGS3, p->user->flags3 = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_FLAGS4:
@@ -698,7 +696,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 					return JS_FALSE;
 				}
 			}
-			putuserrec(scfg,p->user->number,U_FLAGS4,0,ultoa(p->user->flags4=val,tmp,16));
+			putuserflags(scfg, p->user->number, USER_FLAGS4, p->user->flags4 = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_EXEMPT:
@@ -712,7 +710,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 					return JS_FALSE;
 				}
 			}
-			putuserrec(scfg,p->user->number,U_EXEMPT,0,ultoa(p->user->exempt=val,tmp,16));
+			putuserflags(scfg, p->user->number, USER_EXEMPT, p->user->exempt = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_REST:	
@@ -726,24 +724,24 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 					return JS_FALSE;
 				}
 			}
-			putuserrec(scfg,p->user->number,U_REST,0,ultoa(p->user->rest=val,tmp,16));
+			putuserflags(scfg, p->user->number, USER_REST, p->user->rest = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_CDT:	
 			p->user->cdt=strtoull(str,NULL,0);
-			putuserrec(scfg,p->user->number,U_CDT,0,str);
+			putuserdec64(scfg, p->user->number, USER_CDT, p->user->cdt);
 			break;
 		case USER_PROP_FREECDT:
 			p->user->freecdt=strtoull(str,NULL,0);
-			putuserrec(scfg,p->user->number,U_FREECDT,0,str);
+			putuserdec64(scfg, p->user->number, USER_FREECDT, p->user->freecdt);
 			break;
 		case USER_PROP_MIN:	
 			p->user->min=strtoul(str,NULL,0);
-			putuserrec(scfg,p->user->number,U_MIN,0,str);
+			putuserdec32(scfg, p->user->number, USER_MIN, p->user->min);
 			break;
 		case USER_PROP_TEXTRA:  
 			p->user->textra=(ushort)strtoul(str,NULL,0);
-			putuserrec(scfg,p->user->number,U_TEXTRA,0,str);
+			putuserdec32(scfg, p->user->number, USER_TEXTRA, p->user->textra);
 			break;
 		case USER_PROP_EXPIRE:  
 			JS_RESUMEREQUEST(cx, rc);
@@ -751,7 +749,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserrec(scfg,p->user->number,U_EXPIRE,0,ultoa(p->user->expire=val,tmp,16));
+			putuserdatetime(scfg,p->user->number, USER_EXPIRE, p->user->expire = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
 
@@ -1367,7 +1365,7 @@ static jsSyncMethodSpec js_user_functions[] = {
 	,31401
 	},
 	{"close",			js_user_close,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("Close the <tt>user.dat</tt> file, if open. The file will be auto-reopened if necessary.")
+	,JSDOCSTR("Close the <tt>user.tab</tt> file, if open. The file will be auto-reopened if necessary.")
 	,31902
 	},
 	{0}

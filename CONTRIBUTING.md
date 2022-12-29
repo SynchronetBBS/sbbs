@@ -30,7 +30,7 @@ Only approved and authenticaed "developers" can create new branches in the `main
 
 ### Commit messages
 * Try to keep the commit title (first line) to 70 characters or less.
-* When a comment is related to an [issue](https://gitlab.synchro.net/main/sbbs/-/issues), use the proper commit message syntax foir automatic issue management as documented [here](https://docs.gitlab.com/ce/user/project/issues/managing_issues.html#closing-issues-automatically).
+* When a comment is related to an [issue](https://gitlab.synchro.net/main/sbbs/-/issues), use the proper commit message syntax for automatic issue management as documented [here](https://docs.gitlab.com/ce/user/project/issues/managing_issues.html#closing-issues-automatically).
 
 ### Other types of contributions
 If you were interested in contributing money, not code, then paypal to rob at synchro dot net.

@@ -57,6 +57,9 @@ DLLEXPORT size_t		strListAppendList(str_list_t*, const str_list_t append_list);
 /* Append a malloc'd formatted string to the end of the list */
 DLLEXPORT char*			strListAppendFormat(str_list_t* list, const char* format, ...);
 
+/* Adds a string (without alloc/duplication) to the end of a string list */
+DLLEXPORT char*			strListAnnex(str_list_t*, const char* str, size_t index);
+
 /* Inserts a string into the list at a specific index */
 /* Pass a pointer to a string list, the string to add (insert) */
 /* The string to add is duplicated (using strdup) and the duplicate is added to the list */

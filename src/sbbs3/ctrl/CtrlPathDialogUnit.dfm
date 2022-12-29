@@ -50,7 +50,7 @@ object CtrlPathDialog: TCtrlPathDialog
     Width = 320
     Height = 24
     TabOrder = 2
-    Text = 'c:\sbbs\ctrl\main.cnf'
+    Text = 'c:\sbbs\ctrl\main.ini'
   end
   object BrowseButton: TButton
     Left = 25
@@ -62,8 +62,8 @@ object CtrlPathDialog: TCtrlPathDialog
     OnClick = BrowseButtonClick
   end
   object OpenDialog: TOpenDialog
-    FileName = 'main.cnf'
-    Filter = 'Synchronet Configuration File|main.cnf'
+    FileName = 'main.ini'
+    Filter = 'Synchronet Configuration File|main.ini'
     Left = 424
     Top = 88
   end

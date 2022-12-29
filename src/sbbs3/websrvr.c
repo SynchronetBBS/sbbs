@@ -71,6 +71,7 @@
 #include "git_hash.h"
 
 static const char*	server_name="Synchronet Web Server";
+static const char*	server_abbrev = "web";
 static const char*	newline="\r\n";
 static const char*	http_scheme="http://";
 static const size_t	http_scheme_len=7;
@@ -549,11 +550,14 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
-		SAFEPRINTF(errmsg, "web  %s", sbuf);
-		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
+		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
+
+	if(startup != NULL)
+		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, sbuf);
 
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
         return(0);
@@ -732,16 +736,20 @@ static char* server_host_name(void)
 	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
 }
 
-static void status(char* str)
+static void set_state(enum server_state state)
 {
-	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(startup->cbdata,str);
+	if(startup != NULL && startup->set_state != NULL)
+		startup->set_state(startup->cbdata, state);
 }
 
 static void update_clients(void)
 {
-	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(startup->cbdata,protected_uint32_value(active_clients));
+	if(startup != NULL) {
+		uint32_t count = protected_uint32_value(active_clients);
+		if(startup->clients!=NULL)
+			startup->clients(startup->cbdata, count);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "client_count", count);
+	}
 }
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
@@ -1795,7 +1803,7 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 	MD5_close(&ctx, digest);
 	MD5_hex(ha2, digest);
 
-	/* Check password as in user.dat */
+	/* Check password as in user base */
 	calculate_digest(session, ha1, ha2, digest);
 	if(thisuser.pass[0]) {	// Zero-length password is "special" (any password will work)
 		if(memcmp(digest, session->req.auth.digest, sizeof(digest))) {
@@ -1857,7 +1865,7 @@ static void badlogin(SOCKET sock, const char* prot, const char* user, const char
 	SAFEPRINTF(reason,"%s LOGIN", prot);
 	count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
-		hacklog(&scfg, reason, user, passwd, host, addr);
+		hacklog(&scfg, &startup->mqtt, reason, user, passwd, host, addr);
 #ifdef _WIN32
 		if(startup->sound.hack[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
@@ -2063,7 +2071,7 @@ static named_string_t** read_ini_list(char* path, char* section, char* desc
 
 	list=iniFreeNamedStringList(list);
 
-	if((fp=iniOpenFile(path, /* create? */FALSE))!=NULL) {
+	if((fp=iniOpenFile(path, /* for_modify: */FALSE))!=NULL) {
 		list=iniReadNamedStringList(fp,section);
 		iniCloseFile(fp);
 		COUNT_LIST_ITEMS(list,i);
@@ -3674,7 +3682,7 @@ static BOOL check_request(http_session_t * session)
 			send_error(session,__LINE__,"400 Bad Request");
 			SAFEPRINTF2(str, "Request for '%s' is outside of web root: %s", path, root_dir);
 			lprintf(LOG_NOTICE,"%04d %s [%s] !ERROR %s", session->socket, session->client.protocol, session->host_ip, str);
-			hacklog(&scfg, session->client.protocol, session->username, str, session->client.host, &session->addr);
+			hacklog(&scfg, &startup->mqtt, session->client.protocol, session->username, str, session->client.host, &session->addr);
 #ifdef _WIN32
 			if(startup->sound.hack[0] && !sound_muted(&scfg))
 				PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
@@ -6823,7 +6831,6 @@ static void cleanup(int code)
 #endif
 
 	thread_down();
-	status("Down");
 	if(terminate_server || code)
 		lprintf(LOG_INFO,"#### Web Server thread terminated (%lu clients served, %lu concurrently)"
 			,served, client_highwater);
@@ -6999,6 +7006,9 @@ void web_server(void* arg)
 		fprintf(stderr, "Invalid startup structure!\n");
 		return;
 	}
+	set_state(SERVER_INIT);
+
+	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", web_ver());
 
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
@@ -7037,8 +7047,6 @@ void web_server(void* arg)
 
 		(void)protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);
-
-		status("Initializing");
 
 		/* Copy html directories */
 		SAFECOPY(root_dir,startup->root_dir);
@@ -7134,7 +7142,7 @@ void web_server(void* arg)
 
 		/* Don't do this for *each* CGI request, just once here during [re]init */
 		iniFileName(cgi_env_ini,sizeof(cgi_env_ini),scfg.ctrl_dir,"cgi_env.ini");
-		if((fp=iniOpenFile(cgi_env_ini,/* create? */FALSE)) != NULL) {
+		if((fp=iniOpenFile(cgi_env_ini,/* for_modify: */FALSE)) != NULL) {
 			cgi_env = iniReadFile(fp);
 			iniCloseFile(fp);
 		}
@@ -7175,8 +7183,8 @@ void web_server(void* arg)
 		}
 
 		/* Setup recycle/shutdown semaphore file lists */
-		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","web");
-		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","web");
+		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
+		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
 		semfile_list_add(&recycle_semfiles,startup->ini_fname);
 		SAFEPRINTF(path,"%swebsrvr.rec",scfg.ctrl_dir);	/* legacy */
 		semfile_list_add(&recycle_semfiles,path);
@@ -7191,11 +7199,10 @@ void web_server(void* arg)
 		}
 
 		/* signal caller that we've started up successfully */
-		if(startup->started!=NULL)
-    		startup->started(startup->cbdata);
+		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"Web Server thread started");
-		status("Listening");
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "max_clients", startup->max_clients);
 
 		while(!terminated && !terminate_server) {
 			YIELD();
@@ -7313,6 +7320,8 @@ void web_server(void* arg)
 			served++;
 		}
 
+		set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
+
 		if(session) {
 			pthread_mutex_unlock(&session->struct_filled);
 			session=NULL;
@@ -7366,4 +7375,5 @@ void web_server(void* arg)
 	} while(!terminate_server);
 
 	protected_uint32_destroy(thread_count);
+	set_state(SERVER_STOPPED);
 }

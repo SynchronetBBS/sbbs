@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "dat_rec.h"
 
 /****************************************************************************/
 /* Lists all users who have access to the current sub.                      */
@@ -1167,8 +1168,8 @@ void sbbs_t::time_bank(void)
 		s=getnum(s);
 		if(s>0) {
 			logline("  ","Minute Bank Deposit");
-			useron.min=(uint32_t)adjustuserrec(&cfg,useron.number,U_MIN,s);
-			useron.ttoday=(ushort)adjustuserrec(&cfg,useron.number,U_TTODAY,s);
+			useron.min = (uint32_t)adjustuserval(&cfg, useron.number, USER_MIN, s);
+			useron.ttoday = (ushort)adjustuserval(&cfg, useron.number, USER_TTODAY, s);
 			sprintf(str,"Minute Adjustment: %u",s*cfg.cdt_min_value);
 			logline("*+",str); 
 		} 
@@ -1196,8 +1197,8 @@ void sbbs_t::time_bank(void)
 		s=getnum(s);
 		if(s>0) {
 			logline("  ","Credit to Minute Conversion");
-			useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,-(s*102400L));
-			useron.min=(uint32_t)adjustuserrec(&cfg,useron.number,U_MIN,s*(int)cfg.cdt_min_value);
+			useron.cdt = adjustuserval(&cfg, useron.number, USER_CDT, -(s*102400L));
+			useron.min = (uint32_t)adjustuserval(&cfg, useron.number, USER_MIN, s*(int)cfg.cdt_min_value);
 			sprintf(str,"Credit Adjustment: %ld",-(s*102400L));
 			logline("$-",str);
 			sprintf(str,"Minute Adjustment: %u",s*cfg.cdt_min_value);
@@ -1219,8 +1220,8 @@ void sbbs_t::change_user(void)
 		return;
 	if((i=finduser(str))==0)
 		return;
-	if(getuserrec(&cfg,i,U_LEVEL,2,str) == 0 && atoi(str)>logon_ml) {
-		if(getuserrec(&cfg,i,U_PASS,LEN_PASS,tmp) == 0) {
+	if(getuserstr(&cfg, i, USER_LEVEL, str, sizeof(str)) != NULL && atoi(str)>logon_ml) {
+		if(getuserstr(&cfg, i, USER_PASS, tmp, sizeof(tmp)) != NULL) {
 			bputs(text[ChUserPwPrompt]);
 			console|=CON_R_ECHOX;
 			getstr(str,8,K_UPPER);
@@ -1230,9 +1231,9 @@ void sbbs_t::change_user(void)
 		}
 	}
 	putmsgptrs();
-	putuserrec(&cfg,useron.number,U_CURSUB,0
+	putuserstr(useron.number, USER_CURSUB
 		,cfg.sub[usrsub[curgrp][cursub[curgrp]]]->code);
-	putuserrec(&cfg,useron.number,U_CURDIR,0
+	putuserstr(useron.number, USER_CURDIR
 		,cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
 	useron.number=i;
 	getuserdat(&cfg,&useron);

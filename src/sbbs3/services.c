@@ -55,6 +55,7 @@
 #define MAX_UDP_BUF_LEN			8192	/* 8K */
 #define DEFAULT_LISTEN_BACKLOG	5
 
+static const char* server_abbrev = "srvc";
 static services_startup_t* startup=NULL;
 static scfg_t	scfg;
 static char*	text[TOTAL_TEXT];
@@ -124,11 +125,14 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
-		SAFEPRINTF(errmsg, "srvc %s", sbuf);
-		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
+		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
+
+	if(startup != NULL)
+		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, sbuf);
 
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
         return(0);
@@ -171,6 +175,12 @@ static BOOL winsock_startup(void)
 static char* server_host_name(void)
 {
 	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
+}
+
+static void set_state(enum server_state state)
+{
+	if(startup != NULL && startup->set_state != NULL)
+		startup->set_state(startup->cbdata, state);
 }
 
 static ulong active_clients(void)
@@ -261,12 +271,6 @@ static int close_socket(SOCKET sock)
 	return(result);
 }
 
-static void status(char* str)
-{
-	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(startup->cbdata,str);
-}
-
 /* Global JavaScript Methods */
 
 static JSBool
@@ -329,7 +333,7 @@ static void badlogin(SOCKET sock, char* prot, char* user, char* passwd, char* ho
 	SAFEPRINTF(reason,"%s LOGIN", prot);
 	count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
-		hacklog(&scfg, reason, user, passwd, host, addr);
+		hacklog(&scfg, &startup->mqtt, reason, user, passwd, host, addr);
 #ifdef _WIN32
 		if(startup->sound.hack[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
@@ -1711,7 +1715,6 @@ static void cleanup(int code)
 	thread_down();
 	if(terminated || code)
 		lprintf(LOG_INFO,"#### Services thread terminated (%lu clients served)",served);
-	status("Down");
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -1854,6 +1857,9 @@ void services_thread(void* arg)
 		fprintf(stderr, "Invalid startup structure!\n");
 		return;
 	}
+	set_state(SERVER_INIT);
+
+	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", services_ver());
 
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
@@ -1873,8 +1879,6 @@ void services_thread(void* arg)
 		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
 
 		thread_up(FALSE /* setuid */);
-
-		status("Initializing");
 
 		memset(&scfg, 0, sizeof(scfg));
 
@@ -2012,8 +2016,6 @@ void services_thread(void* arg)
 			}
 		}
 
-		status("Listening");
-
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","services");
 		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","services");
@@ -2029,8 +2031,7 @@ void services_thread(void* arg)
 		terminated=FALSE;
 
 		/* signal caller that we've started up successfully */
-		if(startup->started!=NULL)
-    		startup->started(startup->cbdata);
+		set_state(SERVER_READY);
 
 		if (need_cert) {
 			if (get_ssl_cert(&scfg, &ssl_estr, &level) == -1) {
@@ -2345,6 +2346,8 @@ void services_thread(void* arg)
 #endif
 			}
 		}
+		set_state(terminated ? SERVER_STOPPING : SERVER_RELOADING);
+
 #ifdef PREFER_POLL
 		FREE_AND_NULL(fds);
 #endif
@@ -2396,4 +2399,6 @@ void services_thread(void* arg)
 		}
 
 	} while(!terminated);
+
+	set_state(SERVER_STOPPED);
 }

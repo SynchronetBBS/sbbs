@@ -144,6 +144,236 @@ uint getsub(void)
 	}
 }
 
+/* These correlate with the LOG_* definitions in syslog.h/gen_defs.h */
+static char* logLevelStringList[]
+	= {"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Informational", "Debugging", NULL};
+
+void mqtt_cfg()
+{
+	static int dflt;
+	struct mqtt_cfg saved_cfg = cfg.mqtt;
+	char str[128];
+	static char* mqttQOS[]
+		= { "0: At most once", "1: At least once", "2: Exactly once", NULL };
+	static char* mqttVersion[]
+		= { "3.1", "3.1.1", "5", NULL };
+	static char* mqttTlsMode[]
+		= { "Off", "Certificate", "Pre-Shared-Key", NULL };
+
+	while(1) {
+		int i=0;
+		sprintf(opt[i++], "%-20s%s", "Enabled", cfg.mqtt.enabled ? "Yes" : "No");
+		sprintf(opt[i++], "%-20s%s", "Broker Address", cfg.mqtt.broker_addr);
+		sprintf(opt[i++], "%-20s%u", "Broker Port", cfg.mqtt.broker_port);
+		sprintf(opt[i++], "%-20s%s", "Username", cfg.mqtt.username);
+		sprintf(opt[i++], "%-20s%s", "Password", cfg.mqtt.password);
+		sprintf(opt[i++], "%-20s%u seconds", "Keep-alive", cfg.mqtt.keepalive);
+		sprintf(opt[i++], "%-20s%s", "Protocol Version", mqttVersion[cfg.mqtt.protocol_version - 3]);
+		sprintf(opt[i++], "%-20s%s", "Publish QOS", mqttQOS[cfg.mqtt.publish_qos]);
+		sprintf(opt[i++], "%-20s%s", "Subscribe QOS", mqttQOS[cfg.mqtt.subscribe_qos]);
+		sprintf(opt[i++], "%-20s%s", "Log Level", logLevelStringList[cfg.mqtt.log_level]);
+		sprintf(opt[i++], "%-20s%s", "TLS (encryption)", mqttTlsMode[cfg.mqtt.tls.mode]);
+		if(cfg.mqtt.tls.mode == MQTT_TLS_CERT) {
+			sprintf(opt[i++], "%-20s%s", "CA Cert", cfg.mqtt.tls.cafile);
+			sprintf(opt[i++], "%-20s%s", "Client Cert", cfg.mqtt.tls.certfile);
+			sprintf(opt[i++], "%-20s%s", "Key File", cfg.mqtt.tls.keyfile);
+			sprintf(opt[i++], "%-20s%s", "Key File Password", cfg.mqtt.tls.keypass);
+		} else if(cfg.mqtt.tls.mode == MQTT_TLS_PSK) {
+			sprintf(opt[i++], "%-20s%s", "Key", cfg.mqtt.tls.psk);
+			sprintf(opt[i++], "%-20s%s", "Identity", cfg.mqtt.tls.identity);
+		}
+		opt[i][0]=0;
+		uifc.helpbuf =
+			"~ Message Queue Telemetry Transport (MQTT) ~\n"
+			"\n"
+			"Synchronet can publish status and log messages to an MQTT Broker\n"
+			"for monitoring by MQTT clients. Synchronet will also subscribe to\n"
+			"topics that may be used to control Synchronet servers and nodes from\n"
+			"MQTT clients.\n"
+			"\n"
+			"For the MQTT Topic Naming and Payload Schemes used by Synchronet, see:\n"
+			"`https://wiki.synchro.net/ref:mqtt`\n"
+			"\n"
+			"Note: An MQTT `Broker` is sometimes referred to as an MQTT `Server`.\n"
+		;
+		i=uifc.list(WIN_ACT|WIN_MID|WIN_SAV|WIN_ESC,0,0,0,&dflt,0
+			,"Message Queue Telemetry Transport",opt);
+		if(i == -1) {
+			uifc.changes = memcmp(&saved_cfg, &cfg.mqtt, sizeof(saved_cfg)) != 0;
+			i=save_changes(WIN_MID|WIN_SAV);
+			if(i == -1)
+				continue;
+			if(i == 0) {
+				save_main_cfg(&cfg, backup_level);
+				refresh_cfg(&cfg);
+			}
+			return;
+		}
+		switch(i) {
+			case 0:
+				cfg.mqtt.enabled = !cfg.mqtt.enabled;
+				break;
+			case 1:
+				uifc.helpbuf =
+					"~ Broker Hostname or IP Address ~\n"
+					"\n"
+					"Enter the DNS name or IP address of the MQTT Broker.\n"
+					;
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Broker Hostname or IP Address"
+					,cfg.mqtt.broker_addr, sizeof(cfg.mqtt.broker_addr) - 1, K_EDIT);
+				break;
+			case 2:
+				uifc.helpbuf =
+					"~ Broker TCP Port Number ~\n"
+					"\n"
+					"Enter the TCP port number (0-65535) used by the MQTT Broker.\n"
+					"\n"
+					"Default: `1883` for unencrypted MQTT, `8883` for encrypted MQTT over TLS"
+					;
+				SAFEPRINTF(str, "%hu", cfg.mqtt.broker_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Broker TCP Port Number"
+					,str, 5, K_EDIT|K_NUMBER) > 0)
+					cfg.mqtt.broker_port = atoi(str);
+				break;
+			case 3:
+				uifc.helpbuf =
+					"~ User name ~\n"
+					"\n"
+					"Enter the user name to use for authenticating with the MQTT Broker.\n"
+					;
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "User name for authentication"
+					,cfg.mqtt.username, sizeof(cfg.mqtt.username) - 1, K_EDIT);
+				break;
+			case 4:
+				uifc.helpbuf =
+					"~ Password ~\n"
+					"\n"
+					"Enter the user password to use for authenticating with the MQTT Broker.\n"
+					;
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Password for authentication"
+					,cfg.mqtt.password, sizeof(cfg.mqtt.password) - 1, K_EDIT);
+				break;
+			case 5:
+				SAFEPRINTF(str, "%u", cfg.mqtt.keepalive);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Seconds to keep inactive connection alive"
+					,str, 5, K_EDIT|K_NUMBER) > 0 && atoi(str) >= 5)
+					cfg.mqtt.keepalive = atoi(str);
+				break;
+			case 6:
+				i = cfg.mqtt.protocol_version - 3;
+				if((i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Protocol Version" ,mqttVersion)) >= 0)
+					cfg.mqtt.protocol_version = 3 + i;
+				break;
+			case 7:
+				i = cfg.mqtt.publish_qos;
+				if((i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Quality of Service for Publishing", mqttQOS)) >= 0)
+					cfg.mqtt.publish_qos = i;
+				break;
+			case 8:
+				i = cfg.mqtt.subscribe_qos;
+				if((i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Quality of Service for Subscriptions", mqttQOS)) >= 0)
+					cfg.mqtt.subscribe_qos = i;
+				break;
+			case 9:
+				uifc.helpbuf =
+					"~ MQTT Log Level ~\n"
+					"\n"
+					"Select the minimum severity of log messages to be published to the MQTT\n"
+					"Broker.\n"
+					"\n"
+					"The default/normal setting is `Informational`.";
+				i = cfg.mqtt.log_level;
+				i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Log Level", logLevelStringList);
+				if(i>=0 && i<=LOG_DEBUG)
+					cfg.mqtt.log_level=i;
+				break;
+			case 10:
+				uifc.helpbuf =
+					"~ Encryption via TLS ~\n"
+					"\n"
+					"MQTT traffic may be encrypted via TLS using either:\n"
+					"\n"
+					"  - `Certificate-based` authentication (mutual-auth optionally supported)\n"
+					"  - `Pre-Shared-Key` authentication\n"
+					"\n"
+					"When TLS is used, the default MQTT port is `8883`.\n"
+					;
+				i = cfg.mqtt.tls.mode;
+				i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Encryption via TLS", mqttTlsMode);
+				if(i >= 0)
+					cfg.mqtt.tls.mode = i;
+				break;
+			case 11:
+				if(cfg.mqtt.tls.mode == MQTT_TLS_CERT) {
+					uifc.helpbuf =
+						"~ CA Certificate File ~\n"
+						"\n"
+						"Path to a file containing the PEM encoded trusted Certificate Authority\n"
+						"(CA) certificate."
+						;
+					uifc.input(WIN_MID|WIN_SAV, 0, 0, "CA Certificate File"
+						,cfg.mqtt.tls.cafile, sizeof(cfg.mqtt.tls.cafile) - 1, K_EDIT);
+				} else {
+					uifc.helpbuf =
+						"~ Pre-Shared-Key ~\n"
+						"\n"
+						"The pre-shared-key in hexadecimal format with no leading '0x'.\n"
+						;
+					uifc.input(WIN_MID|WIN_SAV, 0, 0, "Pre-Shared-Key (in hex)"
+						,cfg.mqtt.tls.psk, sizeof(cfg.mqtt.tls.psk) - 1, K_EDIT);
+				}
+				break;
+			case 12:
+				if(cfg.mqtt.tls.mode == MQTT_TLS_CERT) {
+					uifc.helpbuf =
+						"~ Client Certificate File ~\n"
+						"\n"
+						"Path to file containing the PEM encoded certificate for this client.\n"
+						"\n"
+						"A client certificate and private key file are only needed for brokers\n"
+						"that perform client certificate authentication (mutual authentication)."
+						;
+					uifc.input(WIN_MID|WIN_SAV, 0, 0, "Client Certificate File"
+						,cfg.mqtt.tls.certfile, sizeof(cfg.mqtt.tls.certfile) - 1, K_EDIT);
+				} else {
+					uifc.helpbuf =
+						"~ Client Identity ~\n"
+						"\n"
+						"The identity (e.g. name) of this client.\n"
+						"\n"
+						"May be used as the username depending on the broker settings.\n"
+						;
+					uifc.input(WIN_MID|WIN_SAV, 0, 0, "Client Identity"
+						,cfg.mqtt.tls.identity, sizeof(cfg.mqtt.tls.identity) - 1, K_EDIT);
+				}
+				break;
+			case 13:
+				uifc.helpbuf =
+					"~ Private Key File ~\n"
+					"\n"
+					"Path to a file containing the PEM encoded private key for this client.\n"
+					"\n"
+					"A client certificate and private key file are only needed for brokers\n"
+					"that perform client certificate authentication (mutual authentication)."
+					;
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Private Key File"
+					,cfg.mqtt.tls.keyfile, sizeof(cfg.mqtt.tls.keyfile) - 1, K_EDIT);
+				break;
+			case 14:
+				uifc.helpbuf =
+					"~ Private Key File Password ~\n"
+					"\n"
+					"If the `Private Key File` is encrypted, the password to decrypt it\n"
+					"must be entered here.\n"
+					;
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Private Key File Password"
+					,cfg.mqtt.tls.keypass, sizeof(cfg.mqtt.tls.keypass) - 1, K_EDIT);
+				break;
+
+		}
+	}
+}
+
 void net_cfg()
 {
 	static	int net_dflt,qnet_dflt,fnet_dflt,inet_dflt
@@ -157,6 +387,7 @@ void net_cfg()
 		strcpy(opt[i++],"Internet E-mail");
 		strcpy(opt[i++],"QWK Packet Networks");
 		strcpy(opt[i++],"FidoNet EchoMail and NetMail");
+		strcpy(opt[i++],"MQTT");
 		opt[i][0]=0;
 		uifc.helpbuf=
 			"`Configure Networks:`\n"
@@ -165,6 +396,22 @@ void net_cfg()
 			"technology that you want to configure.\n"
 		;
 		i=uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,0,&net_dflt,0,"Networks",opt);
+		if(i < 0) // ESC
+			break;
+		uifc.changes = 0;
+		if(!load_main_cfg(&cfg, error, sizeof(error))) {
+			uifc.msgf("ERROR: %s", error);
+			break;
+		}
+		if(i == 3) { // MQTT
+			mqtt_cfg();
+			free_main_cfg(&cfg);
+			continue;
+		}
+		if(!load_msgs_cfg(&cfg, error, sizeof(error))) {
+			uifc.msgf("ERROR: %s", error);
+			break;
+		}
 		if(i==1) {	/* QWK net stuff */
 			done=0;
 			while(!done) {
@@ -808,16 +1055,15 @@ void net_cfg()
 			} 
 		}
 
-		else { /* ESC */
-			i=save_changes(WIN_MID|WIN_SAV);
-			if(i==-1)
-				continue;
-			if(!i) {
-				save_msgs_cfg(&cfg,backup_level);
-				refresh_cfg(&cfg);
-			}
-			break;
+		i=save_changes(WIN_MID|WIN_SAV);
+		if(i==-1)
+			continue;
+		if(!i) {
+			save_msgs_cfg(&cfg,backup_level);
+			refresh_cfg(&cfg);
 		}
+		free_msgs_cfg(&cfg);
+		free_main_cfg(&cfg);
 	}
 }
 

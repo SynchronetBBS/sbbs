@@ -66,6 +66,7 @@ sbbs-windows:
     - make
     - cd ../tbd
     - make
+  dependencies: []
   artifacts:
     name: sbbs-win32
     paths:

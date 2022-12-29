@@ -36,8 +36,7 @@ typedef struct {
 	/* Callbacks (NULL if unused) */
 	int 	(*lputs)(void*, int level, const char*);		/* Log - put string */
 	void	(*errormsg)(void*, int level, const char* msg);
-	void	(*status)(void*, const char*);
-    void	(*started)(void*);
+	void	(*set_state)(void*, enum server_state);
 	void	(*recycle)(void*);
     void	(*terminated)(void*, int code);
     void	(*clients)(void*, int active);
@@ -69,6 +68,7 @@ typedef struct {
 	/* Login Attempt parameters */
 	struct login_attempt_settings login_attempt;
 	link_list_t* login_attempt_list;
+	struct mqtt mqtt;
 
 } services_startup_t;
 

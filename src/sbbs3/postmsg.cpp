@@ -149,7 +149,7 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		if(stricmp(touser,"ALL")
 			&& !(cfg.sub[subnum]->misc&(SUB_PNET|SUB_FIDO|SUB_QNET|SUB_INET|SUB_ANON))) {
 			if(cfg.sub[subnum]->misc&SUB_NAME) {
-				if(!userdatdupe(useron.number,U_NAME,LEN_NAME,touser)) {
+				if(!finduserstr(useron.number, USER_NAME, touser)) {
 					bputs(text[UnknownUser]);
 					strListFree(&names);
 					return(false); 
@@ -336,7 +336,7 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		&& stricmp(touser, "All") != 0
 		&& (remsg == NULL || remsg->from_net.type == NET_NONE)) {
 		if(cfg.sub[subnum]->misc&SUB_NAME)
-			i = userdatdupe(0, U_NAME, LEN_NAME, touser);
+			i = finduserstr(0, USER_NAME, touser);
 		else
 			i = matchuser(&cfg, touser, TRUE /* sysop_alias */);
 		if(i > 0 && i != useron.number) {
@@ -505,7 +505,7 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 			if(msg->to_ext != NULL)
 				usernum = atoi(msg->to_ext);
 			else if(smb->subnum != INVALID_SUB && (cfg->sub[smb->subnum]->misc & SUB_NAME))
-				usernum = userdatdupe(cfg, 0, U_NAME, LEN_NAME, msg->to, /* del: */FALSE, /* next: */FALSE, NULL, NULL);
+				usernum = finduserstr(cfg, 0, USER_NAME, msg->to, /* del: */FALSE, /* next: */FALSE, NULL, NULL);
 			else
 				usernum = matchuser(cfg, msg->to, TRUE /* sysop_alias */);
 			if(usernum > 0 && (client == NULL || usernum != (int)client->usernum)) {

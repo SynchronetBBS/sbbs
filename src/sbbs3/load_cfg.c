@@ -40,7 +40,7 @@ char *	readtext(long *line, FILE *stream, long dflt);
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
 /****************************************************************************/
-BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, size_t maxerrlen)
+BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, size_t maxerrlen)
 {
 	int		i;
 	long	line=0L;
@@ -62,7 +62,7 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, 
 		cfg->node_num=1;
 
 	backslash(cfg->ctrl_dir);
-	if(read_main_cfg(cfg, error, maxerrlen)==FALSE)
+	if(read_main_cfg(cfg, error, maxerrlen)==FALSE && req_cfg)
 		return(FALSE);
 
 	if(prep)
@@ -71,7 +71,7 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, 
 
 	SAFECOPY(cfg->node_dir,cfg->node_path[cfg->node_num-1]);
 	prep_dir(cfg->ctrl_dir, cfg->node_dir, sizeof(cfg->node_dir));
-	if(read_node_cfg(cfg, error, maxerrlen)==FALSE && req_node)
+	if(read_node_cfg(cfg, error, maxerrlen)==FALSE && req_cfg)
 		return(FALSE);
 	if(read_msgs_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
@@ -217,21 +217,20 @@ void prep_cfg(scfg_t* cfg)
 				continue;
 			*tp = 0; // Remove trailing slash
 			char* dirname = getfname(p);
+			*tp = PATH_DELIM;
 			int j;
 			for(j = 0; j < cfg->total_dirs; j++) {
 				if(cfg->dir[j]->lib != i)
 					continue;
-				if(stricmp(cfg->dir[j]->lname, dirname) == 0)
+				if(strcmp(cfg->dir[j]->path, p) == 0 || strcmp(cfg->dir[j]->path, dirname) == 0)
 					break;
 			}
 			if(j < cfg->total_dirs)	// duplicate
 				continue;
-			dir_t dir;
-			memset(&dir, 0, sizeof(dir));
+			dir_t dir = cfg->lib[i]->dir_defaults;
 			dir.lib = i;
-			dir.misc = DIR_FILES;
 			SAFECOPY(dir.path, p);
-			backslash(dir.path);
+			*tp = 0; // Remove trailing slash
 			SAFECOPY(dir.lname, dirname);
 			SAFECOPY(dir.sname, dir.lname);
 			char code_suffix[LEN_EXTCODE+1];

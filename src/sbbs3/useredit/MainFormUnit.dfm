@@ -1,16 +1,16 @@
-object Form1: TForm1
-  Left = 440
-  Top = 173
+object MainForm: TMainForm
+  Left = 1081
+  Top = 601
   ActiveControl = ScrollBar
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
   Caption = 'Synchronet User Editor'
-  ClientHeight = 442
-  ClientWidth = 550
+  ClientHeight = 359
+  ClientWidth = 447
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -14
+  Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   Menu = MainMenu
@@ -18,234 +18,238 @@ object Form1: TForm1
   Position = poDefaultPosOnly
   OnClose = FormClose
   OnShow = FormShow
-  PixelsPerInch = 120
-  TextHeight = 16
+  PixelsPerInch = 96
+  TextHeight = 13
   object Panel: TPanel
     Left = 0
     Top = 0
-    Width = 550
-    Height = 442
+    Width = 447
+    Height = 359
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
     object PageControl: TPageControl
       Left = 0
-      Top = 94
-      Width = 550
-      Height = 348
-      ActivePage = MsgFileSettingsTabSheet
+      Top = 81
+      Width = 447
+      Height = 278
+      ActivePage = StatsTabSheet
       Align = alClient
+      TabIndex = 2
       TabOrder = 0
       object PersonalTabSheet: TTabSheet
         Caption = 'Personal'
         object Label2: TLabel
-          Left = 10
-          Top = 10
-          Width = 80
-          Height = 26
+          Left = 8
+          Top = 8
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Real Name'
         end
         object Label1: TLabel
-          Left = 10
-          Top = 39
-          Width = 80
-          Height = 26
+          Left = 8
+          Top = 32
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Computer'
         end
         object NetmailAddress: TLabel
-          Left = 10
-          Top = 69
-          Width = 80
-          Height = 26
+          Left = 8
+          Top = 56
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'NetMail'
         end
         object Label7: TLabel
-          Left = 10
-          Top = 128
-          Width = 80
-          Height = 26
+          Left = 8
+          Top = 104
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Note'
         end
         object HandleLabel: TLabel
-          Left = 364
-          Top = 69
-          Width = 80
-          Height = 26
+          Left = 296
+          Top = 56
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Handle'
         end
         object Label5: TLabel
-          Left = 364
-          Top = 128
-          Width = 80
-          Height = 26
+          Left = 296
+          Top = 104
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Password'
         end
         object Label6: TLabel
-          Left = 364
-          Top = 98
-          Width = 80
-          Height = 26
+          Left = 296
+          Top = 80
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Birthdate'
         end
         object Label8: TLabel
-          Left = 364
-          Top = 39
-          Width = 80
-          Height = 26
+          Left = 296
+          Top = 32
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Connection'
         end
         object Label16: TLabel
-          Left = 364
-          Top = 10
-          Width = 80
-          Height = 26
+          Left = 296
+          Top = 8
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Gender'
         end
         object Label18: TLabel
-          Left = 10
-          Top = 98
-          Width = 80
-          Height = 26
+          Left = 8
+          Top = 80
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Phone'
         end
         object Label24: TLabel
-          Left = 10
-          Top = 158
-          Width = 80
-          Height = 25
+          Left = 8
+          Top = 128
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Comment'
         end
         object NameEdit: TEdit
-          Left = 98
-          Top = 10
-          Width = 248
-          Height = 24
+          Left = 80
+          Top = 8
+          Width = 201
+          Height = 21
           TabOrder = 0
           OnChange = EditChange
         end
         object ComputerEdit: TEdit
-          Left = 98
-          Top = 39
-          Width = 248
-          Height = 24
+          Left = 80
+          Top = 32
+          Width = 201
+          Height = 21
           TabOrder = 1
           OnChange = EditChange
         end
         object NetmailEdit: TEdit
-          Left = 98
-          Top = 69
-          Width = 248
-          Height = 24
+          Left = 80
+          Top = 56
+          Width = 201
+          Height = 21
           TabOrder = 2
           OnChange = EditChange
         end
         object NoteEdit: TEdit
-          Left = 98
-          Top = 128
-          Width = 248
-          Height = 24
+          Left = 80
+          Top = 104
+          Width = 201
+          Height = 21
           TabOrder = 4
           OnChange = EditChange
         end
         object HandleEdit: TEdit
-          Left = 453
-          Top = 69
-          Width = 70
-          Height = 24
+          Left = 368
+          Top = 56
+          Width = 57
+          Height = 21
           TabOrder = 8
           OnChange = EditChange
         end
         object PasswordEdit: TEdit
-          Left = 453
-          Top = 128
-          Width = 70
-          Height = 24
+          Left = 368
+          Top = 104
+          Width = 57
+          Height = 21
           CharCase = ecUpperCase
           PasswordChar = '*'
           TabOrder = 10
           OnChange = EditChange
         end
         object BirthdateEdit: TEdit
-          Left = 453
-          Top = 98
-          Width = 70
-          Height = 24
+          Left = 368
+          Top = 80
+          Width = 57
+          Height = 21
           TabOrder = 9
           OnChange = EditChange
         end
         object ModemEdit: TEdit
-          Left = 453
-          Top = 39
-          Width = 70
-          Height = 24
+          Left = 368
+          Top = 32
+          Width = 57
+          Height = 21
           TabOrder = 7
           OnChange = EditChange
         end
         object SexEdit: TEdit
-          Left = 453
-          Top = 10
-          Width = 21
-          Height = 24
+          Left = 368
+          Top = 8
+          Width = 17
+          Height = 21
           TabOrder = 6
           OnChange = EditChange
         end
         object PhoneEdit: TEdit
-          Left = 98
-          Top = 98
-          Width = 248
-          Height = 24
+          Left = 80
+          Top = 80
+          Width = 201
+          Height = 21
           TabOrder = 3
           OnChange = EditChange
         end
         object CommentEdit: TEdit
-          Left = 98
-          Top = 158
-          Width = 425
-          Height = 24
+          Left = 80
+          Top = 128
+          Width = 345
+          Height = 21
           TabOrder = 5
           OnChange = EditChange
         end
-        object GroupBox9: TGroupBox
-          Left = 89
-          Top = 197
-          Width = 365
-          Height = 90
+        object AddressGroupBox: TGroupBox
+          Left = 72
+          Top = 160
+          Width = 297
+          Height = 73
           Caption = 'Address'
           TabOrder = 11
+          DesignSize = (
+            297
+            73)
           object AddressEdit: TEdit
-            Left = 10
-            Top = 25
-            Width = 247
-            Height = 24
+            Left = 8
+            Top = 20
+            Width = 201
+            Height = 21
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 0
             OnChange = EditChange
           end
           object LocationEdit: TEdit
-            Left = 10
-            Top = 54
-            Width = 247
-            Height = 24
+            Left = 8
+            Top = 44
+            Width = 201
+            Height = 21
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 1
             OnChange = EditChange
           end
           object ZipCodeEdit: TEdit
-            Left = 266
-            Top = 54
-            Width = 90
-            Height = 24
+            Left = 216
+            Top = 44
+            Width = 73
+            Height = 21
             Anchors = [akTop, akRight]
             TabOrder = 2
             OnChange = EditChange
@@ -256,590 +260,632 @@ object Form1: TForm1
         Caption = 'Security'
         ImageIndex = 1
         object Label10: TLabel
-          Left = 10
-          Top = 10
-          Width = 50
-          Height = 26
+          Left = 8
+          Top = 8
+          Width = 41
+          Height = 21
           AutoSize = False
           Caption = 'Level'
         end
         object Label11: TLabel
-          Left = 138
-          Top = 10
-          Width = 70
-          Height = 26
+          Left = 112
+          Top = 8
+          Width = 57
+          Height = 21
           AutoSize = False
           Caption = 'Expiration'
         end
         object Label25: TLabel
-          Left = 10
-          Top = 226
-          Width = 80
-          Height = 26
+          Left = 8
+          Top = 184
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Exemptions'
         end
         object Label26: TLabel
-          Left = 10
-          Top = 256
-          Width = 80
-          Height = 26
+          Left = 8
+          Top = 208
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Restrictions'
         end
         object Label27: TLabel
-          Left = 325
-          Top = 10
-          Width = 80
-          Height = 26
+          Left = 264
+          Top = 8
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Credits'
         end
         object Label28: TLabel
-          Left = 325
-          Top = 69
-          Width = 80
-          Height = 26
+          Left = 264
+          Top = 104
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Minutes'
         end
         object Label29: TLabel
-          Left = 325
-          Top = 39
-          Width = 80
-          Height = 26
+          Left = 264
+          Top = 56
+          Width = 65
+          Height = 21
           AutoSize = False
           Caption = 'Free Credits'
         end
         object LevelEdit: TEdit
-          Left = 59
-          Top = 10
-          Width = 31
-          Height = 24
+          Left = 48
+          Top = 8
+          Width = 25
+          Height = 21
           MaxLength = 2
           TabOrder = 0
           OnChange = EditChange
         end
         object ExpireEdit: TEdit
-          Left = 217
-          Top = 10
-          Width = 70
-          Height = 24
+          Left = 176
+          Top = 8
+          Width = 57
+          Height = 21
           TabOrder = 1
           OnChange = EditChange
         end
         object ExemptionsEdit: TEdit
-          Left = 98
-          Top = 226
-          Width = 248
-          Height = 24
+          Left = 80
+          Top = 184
+          Width = 201
+          Height = 21
           CharCase = ecUpperCase
           TabOrder = 3
           OnChange = EditChange
         end
         object RestrictionsEdit: TEdit
-          Left = 98
-          Top = 256
-          Width = 248
-          Height = 24
+          Left = 80
+          Top = 208
+          Width = 201
+          Height = 21
           CharCase = ecUpperCase
           TabOrder = 4
           OnChange = EditChange
         end
         object CreditsEdit: TEdit
-          Left = 414
-          Top = 10
-          Width = 109
-          Height = 24
+          Left = 336
+          Top = 8
+          Width = 89
+          Height = 21
           CharCase = ecUpperCase
           MaxLength = 26
           TabOrder = 5
           OnChange = EditChange
         end
         object MinutesEdit: TEdit
-          Left = 414
-          Top = 69
-          Width = 109
-          Height = 24
+          Left = 336
+          Top = 104
+          Width = 89
+          Height = 21
           CharCase = ecUpperCase
           MaxLength = 26
           TabOrder = 7
           OnChange = EditChange
         end
         object FreeCreditsEdit: TEdit
-          Left = 414
-          Top = 39
-          Width = 109
-          Height = 24
+          Left = 336
+          Top = 56
+          Width = 89
+          Height = 21
           CharCase = ecUpperCase
           MaxLength = 26
           TabOrder = 6
           OnChange = EditChange
         end
-        object GroupBox8: TGroupBox
-          Left = 10
-          Top = 49
-          Width = 287
-          Height = 159
+        object FlagSetGroupBox: TGroupBox
+          Left = 8
+          Top = 40
+          Width = 233
+          Height = 129
           Caption = 'Flag Sets'
           TabOrder = 2
           object Label12: TLabel
-            Left = 10
-            Top = 30
-            Width = 21
-            Height = 25
+            Left = 8
+            Top = 24
+            Width = 17
+            Height = 21
             AutoSize = False
             Caption = '1'
           end
           object Label13: TLabel
-            Left = 10
-            Top = 59
-            Width = 21
-            Height = 26
+            Left = 8
+            Top = 48
+            Width = 17
+            Height = 21
             AutoSize = False
             Caption = '2'
           end
           object Label14: TLabel
-            Left = 10
-            Top = 89
-            Width = 21
-            Height = 25
+            Left = 8
+            Top = 72
+            Width = 17
+            Height = 21
             AutoSize = False
             Caption = '3'
           end
           object Label15: TLabel
-            Left = 10
-            Top = 118
-            Width = 21
-            Height = 26
+            Left = 8
+            Top = 96
+            Width = 17
+            Height = 21
             AutoSize = False
             Caption = '4'
           end
           object Flags1Edit: TEdit
-            Left = 30
-            Top = 30
-            Width = 247
-            Height = 24
+            Left = 24
+            Top = 24
+            Width = 201
+            Height = 21
             CharCase = ecUpperCase
             TabOrder = 0
             OnChange = EditChange
           end
           object Flags2Edit: TEdit
-            Left = 30
-            Top = 59
-            Width = 247
-            Height = 24
+            Left = 24
+            Top = 48
+            Width = 201
+            Height = 21
             CharCase = ecUpperCase
             TabOrder = 1
             OnChange = EditChange
           end
           object Flags3Edit: TEdit
-            Left = 30
-            Top = 89
-            Width = 247
-            Height = 24
+            Left = 24
+            Top = 72
+            Width = 201
+            Height = 21
             CharCase = ecUpperCase
             TabOrder = 2
             OnChange = EditChange
           end
           object Flags4Edit: TEdit
-            Left = 30
-            Top = 118
-            Width = 247
-            Height = 24
+            Left = 24
+            Top = 96
+            Width = 201
+            Height = 21
             CharCase = ecUpperCase
             TabOrder = 3
             OnChange = EditChange
           end
         end
+        object CreditsStaticText: TStaticText
+          Left = 336
+          Top = 32
+          Width = 89
+          Height = 21
+          AutoSize = False
+          BorderStyle = sbsSunken
+          TabOrder = 8
+        end
+        object FreeCreditsStaticText: TStaticText
+          Left = 336
+          Top = 80
+          Width = 89
+          Height = 21
+          AutoSize = False
+          BorderStyle = sbsSunken
+          TabOrder = 9
+        end
       end
       object StatsTabSheet: TTabSheet
         Caption = 'Statistics'
         ImageIndex = 2
-        object GroupBox1: TGroupBox
-          Left = 187
-          Top = 148
-          Width = 169
-          Height = 149
+        object TimeOnGroupBox: TGroupBox
+          Left = 152
+          Top = 120
+          Width = 137
+          Height = 121
           Caption = 'Time On'
-          TabOrder = 0
+          TabOrder = 4
+          DesignSize = (
+            137
+            121)
           object Label22: TLabel
-            Left = 10
-            Top = 25
-            Width = 74
-            Height = 25
+            Left = 8
+            Top = 20
+            Width = 60
+            Height = 21
             AutoSize = False
             Caption = 'Total'
           end
           object Label23: TLabel
-            Left = 10
-            Top = 54
-            Width = 74
-            Height = 26
+            Left = 8
+            Top = 44
+            Width = 60
+            Height = 21
             AutoSize = False
             Caption = 'Today'
           end
           object Label30: TLabel
-            Left = 10
-            Top = 113
-            Width = 74
-            Height = 26
+            Left = 8
+            Top = 92
+            Width = 60
+            Height = 21
             AutoSize = False
             Caption = 'Extra'
           end
           object Label31: TLabel
-            Left = 10
-            Top = 84
-            Width = 74
-            Height = 26
+            Left = 8
+            Top = 68
+            Width = 60
+            Height = 21
             AutoSize = False
             Caption = 'Last Call'
           end
           object TimeOnEdit: TEdit
-            Left = 89
-            Top = 25
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 20
+            Width = 57
+            Height = 21
             Anchors = [akTop, akRight]
             TabOrder = 0
             OnChange = EditChange
           end
           object TimeOnTodayEdit: TEdit
-            Left = 89
-            Top = 54
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 44
+            Width = 57
+            Height = 21
             Anchors = [akTop, akRight]
             TabOrder = 1
             OnChange = EditChange
           end
           object ExtraTimeEdit: TEdit
-            Left = 89
-            Top = 113
-            Width = 70
-            Height = 24
-            Anchors = [akTop, akRight]
-            TabOrder = 2
-            OnChange = EditChange
-          end
-          object LastCallTimeEdit: TEdit
-            Left = 89
-            Top = 84
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 92
+            Width = 57
+            Height = 21
             Anchors = [akTop, akRight]
             TabOrder = 3
             OnChange = EditChange
           end
+          object LastCallTimeEdit: TEdit
+            Left = 72
+            Top = 68
+            Width = 57
+            Height = 21
+            Anchors = [akTop, akRight]
+            TabOrder = 2
+            OnChange = EditChange
+          end
         end
-        object GroupBox2: TGroupBox
-          Left = 10
-          Top = 108
-          Width = 168
-          Height = 90
+        object LogonsGroupBoxx: TGroupBox
+          Left = 8
+          Top = 88
+          Width = 137
+          Height = 73
           Caption = 'Logons'
           TabOrder = 1
           object Label20: TLabel
-            Left = 10
-            Top = 25
-            Width = 70
-            Height = 25
+            Left = 8
+            Top = 20
+            Width = 57
+            Height = 21
             AutoSize = False
             Caption = 'Total'
           end
           object Label21: TLabel
-            Left = 10
-            Top = 54
-            Width = 70
-            Height = 26
+            Left = 8
+            Top = 44
+            Width = 57
+            Height = 21
             AutoSize = False
             Caption = 'Today'
           end
           object LogonsEdit: TEdit
-            Left = 89
-            Top = 25
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 20
+            Width = 57
+            Height = 21
             TabOrder = 0
             OnChange = EditChange
           end
           object LogonsTodayEdit: TEdit
-            Left = 89
-            Top = 54
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 44
+            Width = 57
+            Height = 21
             TabOrder = 1
             OnChange = EditChange
           end
         end
-        object GroupBox3: TGroupBox
-          Left = 10
-          Top = 10
-          Width = 168
-          Height = 90
+        object DatesGroupBox: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 137
+          Height = 73
           Caption = 'Dates'
-          TabOrder = 2
+          TabOrder = 0
           object Label17: TLabel
-            Left = 10
-            Top = 25
-            Width = 74
-            Height = 25
+            Left = 8
+            Top = 20
+            Width = 60
+            Height = 21
             AutoSize = False
             Caption = 'First on'
           end
           object Label19: TLabel
-            Left = 10
-            Top = 54
-            Width = 74
-            Height = 26
+            Left = 8
+            Top = 44
+            Width = 60
+            Height = 21
             AutoSize = False
             Caption = 'Last on'
           end
           object FirstOnEdit: TEdit
-            Left = 89
-            Top = 25
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 20
+            Width = 57
+            Height = 21
             TabOrder = 0
             OnChange = EditChange
           end
           object LastOnEdit: TEdit
-            Left = 89
-            Top = 54
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 44
+            Width = 57
+            Height = 21
             TabOrder = 1
             OnChange = EditChange
           end
         end
-        object GroupBox4: TGroupBox
-          Left = 10
-          Top = 207
-          Width = 168
-          Height = 90
+        object PostsGroupBox: TGroupBox
+          Left = 8
+          Top = 168
+          Width = 137
+          Height = 73
           Caption = 'Posts'
-          TabOrder = 3
+          TabOrder = 2
           object Label32: TLabel
-            Left = 10
-            Top = 25
-            Width = 70
-            Height = 25
+            Left = 8
+            Top = 20
+            Width = 57
+            Height = 21
             AutoSize = False
             Caption = 'Total'
           end
           object Label33: TLabel
-            Left = 10
-            Top = 54
-            Width = 70
-            Height = 26
+            Left = 8
+            Top = 44
+            Width = 57
+            Height = 21
             AutoSize = False
             Caption = 'Today'
           end
           object PostsTotalEdit: TEdit
-            Left = 89
-            Top = 25
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 20
+            Width = 57
+            Height = 21
             TabOrder = 0
             OnChange = EditChange
           end
           object PostsTodayEdit: TEdit
-            Left = 89
-            Top = 54
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 44
+            Width = 57
+            Height = 21
             TabOrder = 1
             OnChange = EditChange
           end
         end
-        object GroupBox5: TGroupBox
-          Left = 364
-          Top = 177
-          Width = 169
-          Height = 120
+        object EmailGroupBox: TGroupBox
+          Left = 296
+          Top = 144
+          Width = 137
+          Height = 97
           Caption = 'E-mail'
-          TabOrder = 4
+          TabOrder = 6
           object Label34: TLabel
-            Left = 10
-            Top = 25
-            Width = 70
-            Height = 25
+            Left = 8
+            Top = 20
+            Width = 57
+            Height = 21
             AutoSize = False
             Caption = 'Total'
           end
           object Label35: TLabel
-            Left = 10
-            Top = 54
-            Width = 70
-            Height = 26
+            Left = 8
+            Top = 44
+            Width = 57
+            Height = 21
             AutoSize = False
             Caption = 'Today'
           end
           object Label36: TLabel
-            Left = 10
-            Top = 84
-            Width = 70
-            Height = 26
+            Left = 8
+            Top = 68
+            Width = 57
+            Height = 21
             AutoSize = False
             Caption = 'To Sysop'
           end
           object EmailTotalEdit: TEdit
-            Left = 89
-            Top = 25
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 20
+            Width = 57
+            Height = 21
             TabOrder = 0
             OnChange = EditChange
           end
           object EmailTodayEdit: TEdit
-            Left = 89
-            Top = 54
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 44
+            Width = 57
+            Height = 21
             TabOrder = 1
             OnChange = EditChange
           end
           object FeedbackEdit: TEdit
-            Left = 89
-            Top = 84
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 68
+            Width = 57
+            Height = 21
             TabOrder = 2
             OnChange = EditChange
           end
         end
-        object GroupBox6: TGroupBox
-          Left = 187
-          Top = 10
-          Width = 169
-          Height = 90
+        object UploadsGroupBox: TGroupBox
+          Left = 152
+          Top = 8
+          Width = 137
+          Height = 97
           Caption = 'Uploads'
-          TabOrder = 5
+          TabOrder = 3
           object Label37: TLabel
-            Left = 10
-            Top = 25
-            Width = 70
-            Height = 25
+            Left = 8
+            Top = 20
+            Width = 57
+            Height = 21
             AutoSize = False
             Caption = 'Total'
           end
           object Label38: TLabel
-            Left = 10
-            Top = 54
-            Width = 70
-            Height = 26
+            Left = 8
+            Top = 44
+            Width = 57
+            Height = 21
             AutoSize = False
             Caption = 'Bytes'
           end
           object UploadedFilesEdit: TEdit
-            Left = 89
-            Top = 25
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 20
+            Width = 57
+            Height = 21
             TabOrder = 0
             OnChange = EditChange
           end
           object UploadedBytesEdit: TEdit
-            Left = 89
-            Top = 54
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 44
+            Width = 57
+            Height = 21
             TabOrder = 1
             OnChange = EditChange
           end
+          object UploadedBytesStaticText: TStaticText
+            Left = 72
+            Top = 68
+            Width = 58
+            Height = 21
+            AutoSize = False
+            BorderStyle = sbsSunken
+            TabOrder = 2
+          end
         end
-        object GroupBox7: TGroupBox
-          Left = 364
-          Top = 10
-          Width = 169
-          Height = 119
+        object DownloadsGroupBox: TGroupBox
+          Left = 296
+          Top = 8
+          Width = 137
+          Height = 121
           Caption = 'Downloads'
-          TabOrder = 6
+          TabOrder = 5
           object Label39: TLabel
-            Left = 10
-            Top = 25
-            Width = 70
-            Height = 25
+            Left = 8
+            Top = 20
+            Width = 57
+            Height = 21
             AutoSize = False
             Caption = 'Total'
           end
           object Label40: TLabel
-            Left = 10
-            Top = 54
-            Width = 70
-            Height = 26
+            Left = 8
+            Top = 44
+            Width = 57
+            Height = 21
             AutoSize = False
             Caption = 'Bytes'
           end
           object Label42: TLabel
-            Left = 10
-            Top = 84
-            Width = 70
-            Height = 26
+            Left = 8
+            Top = 92
+            Width = 57
+            Height = 21
             AutoSize = False
             Caption = 'Leech'
           end
           object DownloadedFilesEdit: TEdit
-            Left = 89
-            Top = 25
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 20
+            Width = 57
+            Height = 21
             TabOrder = 0
             OnChange = EditChange
           end
           object DownloadedBytesEdit: TEdit
-            Left = 89
-            Top = 54
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 44
+            Width = 57
+            Height = 21
             TabOrder = 1
             OnChange = EditChange
           end
           object LeechEdit: TEdit
-            Left = 89
-            Top = 84
-            Width = 70
-            Height = 24
+            Left = 72
+            Top = 92
+            Width = 57
+            Height = 21
             TabOrder = 2
             OnChange = EditChange
+          end
+          object DownloadedBytesStaticText: TStaticText
+            Left = 72
+            Top = 68
+            Width = 58
+            Height = 21
+            AutoSize = False
+            BorderStyle = sbsSunken
+            TabOrder = 3
           end
         end
       end
       object SettingsTabSheet: TTabSheet
         Caption = 'Settings'
         ImageIndex = 3
-        object GroupBox10: TGroupBox
-          Left = 10
-          Top = 10
-          Width = 257
-          Height = 188
+        object TerminalGroupBox: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 209
+          Height = 153
           Caption = 'Terminal'
           TabOrder = 0
+          DesignSize = (
+            209
+            153)
           object Label3: TLabel
-            Left = 167
-            Top = 148
-            Width = 50
-            Height = 26
+            Left = 136
+            Top = 120
+            Width = 40
+            Height = 21
             AutoSize = False
             Caption = 'Rows'
           end
           object RowsEdit: TEdit
-            Left = 217
-            Top = 148
-            Width = 30
-            Height = 24
+            Left = 176
+            Top = 120
+            Width = 25
+            Height = 21
             MaxLength = 2
             TabOrder = 0
             OnChange = EditChange
           end
           object TerminalCheckListBox: TCheckListBox
-            Left = 10
-            Top = 30
-            Width = 237
-            Height = 109
+            Left = 8
+            Top = 24
+            Width = 193
+            Height = 89
             OnClickCheck = EditChange
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 16
+            ItemHeight = 13
             Items.Strings = (
               'Auto-Detect'
               'Extended ASCII'
@@ -853,21 +899,24 @@ object Form1: TForm1
             TabOrder = 1
           end
         end
-        object GroupBox11: TGroupBox
-          Left = 276
-          Top = 10
-          Width = 257
-          Height = 139
+        object LogonGroupBox: TGroupBox
+          Left = 224
+          Top = 8
+          Width = 209
+          Height = 113
           Caption = 'Logon'
-          TabOrder = 1
+          TabOrder = 2
+          DesignSize = (
+            209
+            113)
           object LogonCheckListBox: TCheckListBox
-            Left = 10
-            Top = 30
-            Width = 237
-            Height = 89
+            Left = 8
+            Top = 24
+            Width = 193
+            Height = 73
             OnClickCheck = EditChange
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 16
+            ItemHeight = 13
             Items.Strings = (
               'Ask for New Message Scan'
               'Ask for Your Message Scan'
@@ -877,21 +926,24 @@ object Form1: TForm1
             TabOrder = 0
           end
         end
-        object GroupBox13: TGroupBox
-          Left = 276
-          Top = 158
-          Width = 257
-          Height = 139
+        object ChatGroupBox: TGroupBox
+          Left = 224
+          Top = 128
+          Width = 209
+          Height = 113
           Caption = 'Chat'
-          TabOrder = 2
+          TabOrder = 3
+          DesignSize = (
+            209
+            113)
           object ChatCheckListBox: TCheckListBox
-            Left = 10
-            Top = 30
-            Width = 237
-            Height = 89
+            Left = 8
+            Top = 24
+            Width = 193
+            Height = 73
             OnClickCheck = EditChange
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 16
+            ItemHeight = 13
             Items.Strings = (
               'Multinode Chat Echo'
               'Multinode Chat Actions'
@@ -901,27 +953,27 @@ object Form1: TForm1
             TabOrder = 0
           end
         end
-        object GroupBox15: TGroupBox
-          Left = 10
-          Top = 207
-          Width = 257
-          Height = 90
+        object CommandShellGroupBox: TGroupBox
+          Left = 8
+          Top = 168
+          Width = 209
+          Height = 73
           Caption = 'Command Shell'
-          TabOrder = 3
+          TabOrder = 1
           object ShellEdit: TEdit
-            Left = 10
-            Top = 30
-            Width = 90
-            Height = 24
+            Left = 8
+            Top = 24
+            Width = 73
+            Height = 21
             CharCase = ecUpperCase
             TabOrder = 0
             OnChange = EditChange
           end
           object ExpertCheckBox: TCheckBox
-            Left = 10
-            Top = 59
-            Width = 198
-            Height = 21
+            Left = 8
+            Top = 48
+            Width = 161
+            Height = 17
             Caption = 'Expert Menu Mode'
             TabOrder = 1
             OnClick = EditChange
@@ -931,75 +983,81 @@ object Form1: TForm1
       object MsgFileSettingsTabSheet: TTabSheet
         Caption = 'Msg/File Settings'
         ImageIndex = 4
-        object GroupBox16: TGroupBox
-          Left = 10
-          Top = 10
-          Width = 257
-          Height = 119
+        object MessageGroupBox: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 209
+          Height = 97
           Caption = 'Message'
           TabOrder = 0
+          DesignSize = (
+            209
+            97)
           object Label41: TLabel
-            Left = 59
-            Top = 79
-            Width = 100
-            Height = 26
+            Left = 48
+            Top = 64
+            Width = 81
+            Height = 21
             AutoSize = False
             Caption = 'External Editor'
           end
           object MessageCheckListBox: TCheckListBox
-            Left = 10
-            Top = 30
-            Width = 237
-            Height = 40
+            Left = 8
+            Top = 24
+            Width = 193
+            Height = 33
             OnClickCheck = EditChange
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 16
+            ItemHeight = 13
             Items.Strings = (
               'Forward Email to NetMail'
               'Clear Screen Between Messages')
             TabOrder = 0
           end
           object EditorEdit: TEdit
-            Left = 158
-            Top = 79
-            Width = 89
-            Height = 24
+            Left = 128
+            Top = 64
+            Width = 73
+            Height = 21
             Anchors = [akLeft, akTop, akRight]
             CharCase = ecUpperCase
             TabOrder = 1
             OnChange = EditChange
           end
         end
-        object GroupBox12: TGroupBox
-          Left = 276
-          Top = 10
-          Width = 257
-          Height = 188
+        object FileGroupBox: TGroupBox
+          Left = 224
+          Top = 8
+          Width = 209
+          Height = 153
           Caption = 'File'
-          TabOrder = 1
+          TabOrder = 2
+          DesignSize = (
+            209
+            153)
           object Label4: TLabel
-            Left = 59
-            Top = 148
-            Width = 149
-            Height = 26
+            Left = 48
+            Top = 120
+            Width = 121
+            Height = 21
             Anchors = [akLeft, akTop, akBottom]
             AutoSize = False
             Caption = 'Temp/QWK File Type'
           end
           object Label9: TLabel
-            Left = 59
-            Top = 108
-            Width = 169
-            Height = 26
+            Left = 48
+            Top = 88
+            Width = 137
+            Height = 21
             Anchors = [akLeft, akTop, akBottom]
             AutoSize = False
             Caption = 'Default Download Protocol'
           end
           object TempFileExtEdit: TEdit
-            Left = 207
-            Top = 148
-            Width = 40
-            Height = 24
+            Left = 168
+            Top = 120
+            Width = 33
+            Height = 21
             Anchors = [akLeft, akTop, akBottom]
             CharCase = ecUpperCase
             MaxLength = 3
@@ -1007,10 +1065,10 @@ object Form1: TForm1
             OnChange = EditChange
           end
           object ProtocolEdit: TEdit
-            Left = 226
-            Top = 108
-            Width = 21
-            Height = 24
+            Left = 184
+            Top = 88
+            Width = 17
+            Height = 21
             Anchors = [akLeft, akTop, akBottom]
             CharCase = ecUpperCase
             MaxLength = 1
@@ -1018,13 +1076,13 @@ object Form1: TForm1
             OnChange = EditChange
           end
           object FileCheckListBox: TCheckListBox
-            Left = 10
-            Top = 30
-            Width = 237
-            Height = 70
+            Left = 8
+            Top = 24
+            Width = 193
+            Height = 57
             OnClickCheck = EditChange
             Anchors = [akLeft, akRight, akBottom]
-            ItemHeight = 16
+            ItemHeight = 13
             Items.Strings = (
               'Auto-New Scan'
               'Extended Descriptions'
@@ -1033,21 +1091,24 @@ object Form1: TForm1
             TabOrder = 2
           end
         end
-        object GroupBox14: TGroupBox
-          Left = 10
-          Top = 138
-          Width = 257
-          Height = 159
+        object QwkGroupBox: TGroupBox
+          Left = 8
+          Top = 112
+          Width = 209
+          Height = 129
           Caption = 'QWK Message Packet'
-          TabOrder = 2
+          TabOrder = 1
+          DesignSize = (
+            209
+            129)
           object QWKCheckListBox: TCheckListBox
-            Left = 10
-            Top = 30
-            Width = 237
-            Height = 109
+            Left = 8
+            Top = 24
+            Width = 193
+            Height = 89
             OnClickCheck = EditChange
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 16
+            ItemHeight = 13
             Items.Strings = (
               'Include New Files List'
               'Include Unread Email'
@@ -1069,10 +1130,10 @@ object Form1: TForm1
         Caption = 'Extended Comment'
         ImageIndex = 5
         object Memo: TMemo
-          Left = 10
-          Top = 10
-          Width = 523
-          Height = 287
+          Left = 8
+          Top = 8
+          Width = 425
+          Height = 233
           ScrollBars = ssBoth
           TabOrder = 0
           OnChange = EditChange
@@ -1081,52 +1142,52 @@ object Form1: TForm1
     end
     object TopPanel: TPanel
       Left = 0
-      Top = 44
-      Width = 550
-      Height = 50
+      Top = 41
+      Width = 447
+      Height = 40
       Align = alTop
       BevelOuter = bvNone
       ParentShowHint = False
       ShowHint = True
       TabOrder = 1
       object NumberLabel: TLabel
-        Left = 354
-        Top = 10
-        Width = 61
-        Height = 26
+        Left = 288
+        Top = 8
+        Width = 49
+        Height = 21
         AutoSize = False
         Caption = 'Number'
       end
       object AliasLabel: TLabel
-        Left = 10
-        Top = 10
-        Width = 40
-        Height = 26
+        Left = 8
+        Top = 8
+        Width = 33
+        Height = 21
         AutoSize = False
         Caption = 'Alias'
       end
       object NumberEdit: TEdit
-        Left = 414
-        Top = 10
-        Width = 50
-        Height = 24
+        Left = 336
+        Top = 8
+        Width = 41
+        Height = 21
         TabOrder = 1
         OnKeyPress = NumberEditKeyPress
       end
       object TotalStaticText: TStaticText
-        Left = 473
-        Top = 10
-        Width = 70
-        Height = 26
+        Left = 384
+        Top = 8
+        Width = 57
+        Height = 21
         AutoSize = False
         BorderStyle = sbsSunken
         TabOrder = 2
       end
       object AliasEdit: TEdit
-        Left = 49
-        Top = 10
-        Width = 198
-        Height = 24
+        Left = 40
+        Top = 8
+        Width = 161
+        Height = 21
         TabOrder = 0
         OnChange = EditChange
       end
@@ -1134,9 +1195,8 @@ object Form1: TForm1
     object ToolBar: TToolBar
       Left = 0
       Top = 0
-      Width = 550
+      Width = 447
       Height = 25
-      ButtonHeight = 24
       EdgeBorders = [ebTop, ebBottom]
       EdgeOuter = esNone
       Flat = True
@@ -1182,7 +1242,7 @@ object Form1: TForm1
         Left = 126
         Top = 0
         Width = 121
-        Height = 24
+        Height = 22
         TabOrder = 0
         OnKeyPress = FindEditKeyPress
       end
@@ -1190,7 +1250,7 @@ object Form1: TForm1
         Left = 247
         Top = 0
         Width = 42
-        Height = 24
+        Height = 22
         Caption = 'Find'
         TabOrder = 2
         OnClick = FindButtonClick
@@ -1199,7 +1259,7 @@ object Form1: TForm1
         Left = 289
         Top = 0
         Width = 42
-        Height = 24
+        Height = 22
         Caption = 'Next'
         TabOrder = 1
         OnClick = FindButtonClick
@@ -1216,7 +1276,7 @@ object Form1: TForm1
         Left = 339
         Top = 0
         Width = 102
-        Height = 24
+        Height = 22
         Color = clMenu
         ReadOnly = True
         TabOrder = 3
@@ -1225,8 +1285,8 @@ object Form1: TForm1
     object ScrollBar: TScrollBar
       Left = 0
       Top = 25
-      Width = 550
-      Height = 19
+      Width = 447
+      Height = 16
       Align = alTop
       LargeChange = 10
       Min = 1
@@ -1314,7 +1374,7 @@ object Form1: TForm1
     Top = 33
     Bitmap = {
       494C01010C000E00040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
-      0000000000003600000028000000400000004000000001002000000000000040
+      0000000000003600000028000000400000004000000001001000000000000020
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -1380,453 +1440,197 @@ object Form1: TForm1
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
+      00000000000000000000000000000000000000000000000000000000FF7FEF3D
+      EF3DEF3DEF3DEF3D0000FF7FFF7F000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000FFFFFF007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B000000
-      0000FFFFFF00FFFFFF0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000FFFFFF00FFFFFF000000000000000000000000000000
-      00000000000000000000BDBDBD00BDBDBD00BDBDBD00BDBDBD00BDBDBD000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00007B7B7B007B7B7B00000000000000000000000000FFFFFF00000000007B7B
-      7B007B7B7B0000000000FFFFFF00000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000FFFFFF00FFFFFF000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF0000000000000000000000
-      0000000000007B7B7B007B7B7B007B7B7B000000000000000000000000000000
-      00007B7B7B007B7B7B00BDBDBD007B7B7B00000000007B7B7B00BDBDBD007B7B
-      7B007B7B7B000000000000000000000000000000000000000000000000007B7B
-      7B00000000000000000000000000000000007B7B7B00FFFFFF00000000000000
-      0000000000007B7B7B0000000000FFFFFF000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000007B7B7B007B7B7B00FFFFFF007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B0000000000FFFFFF00000000000000
-      0000000000007B7B7B007B7B7B007B7B7B00000000000000000000000000BDBD
-      BD00BDBDBD00BDBDBD00BDBDBD007B7B7B00000000007B7B7B00BDBDBD00BDBD
-      BD00BDBDBD00BDBDBD00000000000000000000000000000000007B7B7B00FFFF
-      FF00000000000000000000000000000000007B7B7B00FFFFFF00000000000000
-      000000000000000000007B7B7B00FFFFFF00FFFF0000000000000000000000FF
-      FF00FFFFFF0000FFFF00FFFFFF0000FFFF000000000000000000000000000000
-      0000000000000000000000000000000000007B7B7B007B7B7B007B7B7B000000
-      0000000000000000000000000000FFFFFF007B7B7B00FFFFFF00000000000000
-      0000000000000000000000000000FFFFFF000000000000000000000000007B7B
-      7B007B7B7B007B7B7B00BDBDBD00BDBDBD0000000000BDBDBD00BDBDBD007B7B
-      7B007B7B7B007B7B7B00000000000000000000000000000000007B7B7B00FFFF
-      FF00000000000000000000000000000000007B7B7B00FFFFFF00FFFFFF000000
-      000000000000000000007B7B7B00FFFFFF00FFFF00000000000000FFFF00FFFF
-      FF0000FFFF00FFFFFF0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000007B7B7B007B7B7B00FFFFFF000000
-      000000000000000000007B7B7B007B7B7B007B7B7B0000000000FFFFFF000000
-      000000000000000000007B7B7B007B7B7B00000000000000000000000000BDBD
-      BD00BDBDBD00BDBDBD00BDBDBD00000000000000000000000000BDBDBD00BDBD
-      BD00BDBDBD00BDBDBD00000000000000000000000000000000007B7B7B00FFFF
-      FF000000000000000000000000007B7B7B007B7B7B007B7B7B00FFFFFF000000
-      000000000000000000007B7B7B00FFFFFF00FFFF000000000000FFFFFF0000FF
-      FF00FFFFFF0000FFFF00FFFFFF0000FFFF00FFFFFF0000000000000000000000
-      0000000000000000000000000000000000007B7B7B007B7B7B00FFFFFF000000
-      0000000000000000000000000000FFFFFF00FFFFFF007B7B7B00FFFFFF00FFFF
-      FF00FFFFFF00000000007B7B7B007B7B7B000000000000000000000000007B7B
-      7B007B7B7B007B7B7B007B7B7B000000000000000000000000007B7B7B007B7B
-      7B007B7B7B007B7B7B00000000000000000000000000000000007B7B7B00FFFF
-      FF000000000000000000000000007B7B7B007B7B7B007B7B7B00000000000000
-      000000000000000000007B7B7B00FFFFFF00FFFF00000000000000FFFF00FFFF
-      FF0000FFFF00FFFFFF0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000007B7B7B007B7B7B00FFFFFF000000
-      000000000000000000007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B
-      7B0000000000FFFFFF0000000000FFFFFF00000000000000000000000000BDBD
-      BD00BDBDBD00BDBDBD00BDBDBD00BDBDBD00BDBDBD00BDBDBD00BDBDBD00BDBD
-      BD00BDBDBD00BDBDBD00000000000000000000000000000000007B7B7B000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF007B7B7B0000000000FFFF000000000000FFFFFF0000FF
-      FF00FFFFFF0000FFFF00FFFFFF0000FFFF00FFFFFF0000FFFF00FFFFFF0000FF
-      FF0000000000000000000000FF000000FF007B7B7B007B7B7B00FFFFFF000000
-      000000000000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF007B7B7B00000000007B7B7B007B7B7B000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B007B7B7B000000000000000000FFFF00000000000000FFFF00FFFF
-      FF00000000000000000000000000000000000000000000000000000000000000
-      000000000000000000000000FF000000FF007B7B7B007B7B7B00FFFFFF00FFFF
-      FF007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B
-      7B0000000000000000007B7B7B007B7B7B000000000000000000000000000000
-      000000000000BDBDBD000000000000000000000000000000000000000000BDBD
-      BD00000000000000000000000000000000000000000000000000000000000000
-      00007B7B7B00FFFFFF007B7B7B00FFFFFF0000000000000000007B7B7B00FFFF
-      FF007B7B7B00FFFFFF00000000000000000000000000000000000000000000FF
-      FF00FFFFFF0000FFFF0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000007B7B7B007B7B7B007B7B7B000000
-      0000FFFFFF00FFFFFF007B7B7B00000000000000000000000000000000000000
-      0000000000000000000000000000FFFFFF000000000000000000000000000000
-      000000000000BDBDBD000000000000000000000000000000000000000000BDBD
-      BD00000000000000000000000000000000000000000000000000000000000000
-      00007B7B7B00FFFFFF007B7B7B00FFFFFF0000000000000000007B7B7B00FFFF
-      FF007B7B7B00FFFFFF0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B007B7B7B007B7B7B0000000000000000000000000000000000000000000000
-      000000000000000000007B7B7B007B7B7B000000000000000000000000000000
-      000000000000BDBDBD000000000000000000000000000000000000000000BDBD
-      BD00000000000000000000000000000000000000000000000000000000000000
-      00007B7B7B00FFFFFF007B7B7B0000000000FFFFFF00FFFFFF007B7B7B000000
-      00007B7B7B00FFFFFF0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000007B7B7B007B7B7B000000000000000000000000000000
-      00007B7B7B007B7B7B00BDBDBD00000000000000000000000000BDBDBD007B7B
-      7B007B7B7B000000000000000000000000000000000000000000000000000000
-      00007B7B7B0000000000FFFFFF007B7B7B007B7B7B007B7B7B00000000000000
-      00007B7B7B000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000FFFFFF00FFFFFF000000000000000000000000000000
-      00000000000000000000BDBDBD00BDBDBD00BDBDBD00BDBDBD00BDBDBD000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000007B7B7B0000000000FFFFFF00FFFFFF00FFFFFF00FFFFFF007B7B
-      7B00000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000007B7B7B007B7B7B007B7B7B000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000000000000000007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000007B7B7B007B7B7B007B7B7B000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000FFFF0000000000000000000000
-      000000000000000000000000000000FFFF000000000000000000FFFFFF00FFFF
-      FF00000000000000000000000000000000007B7B7B00FFFFFF00000000000000
-      00000000000000000000FFFFFF007B7B7B000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B
-      7B00FFFFFF000000000000000000000000000000000000FFFF0000FFFF000000
-      00007B7B7B007B7B7B007B7B7B0000FFFF0000FFFF007B7B7B007B7B7B007B7B
-      7B007B7B7B0000FFFF0000FFFF0000000000000000007B7B7B007B7B7B00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF007B7B7B007B7B7B00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF007B7B7B007B7B7B00000000000000000000000000000000000000
-      0000FFFFFF007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF0000000000FFFFFF0000000000FFFFFF0000000000FFFFFF007B7B
-      7B00FFFFFF00000000000000000000000000000000000000000000FFFF000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000FFFF00000000000000000000000000000000007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B007B7B7B0000000000000000000000000000000000000000000000
-      0000FFFFFF0000000000BDBDBD0000000000BDBDBD00000000007B7B7B000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B
-      7B00FFFFFF000000000000000000000000000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00000000007B7B7B0000000000000000000000000000000000000000007B7B
-      7B00FFFFFF000000000000000000000000000000000000000000000000000000
-      00007B7B7B00FFFFFF0000000000000000000000000000000000000000000000
-      0000FFFFFF0000000000BDBDBD00000000007B7B7B00000000007B7B7B000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B
-      7B00FFFFFF000000000000000000000000000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00000000007B7B7B0000000000000000000000000000000000000000007B7B
-      7B00FFFFFF0000000000FFFFFF00FFFFFF0000000000FFFFFF00FFFFFF00FFFF
-      FF007B7B7B00FFFFFF0000000000000000000000000000000000000000000000
-      0000FFFFFF0000000000BDBDBD0000000000BDBDBD00000000007B7B7B000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B
-      7B00FFFFFF000000000000000000000000000000000000000000000000000000
-      0000FFFFFF000000000000000000FFFFFF00000000000000000000000000FFFF
-      FF00000000007B7B7B0000000000000000000000000000000000000000007B7B
-      7B00FFFFFF007B7B7B007B7B7B00000000007B7B7B007B7B7B007B7B7B000000
-      00007B7B7B00FFFFFF0000000000000000000000000000000000000000000000
-      0000FFFFFF0000000000BDBDBD00000000007B7B7B00000000007B7B7B000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B
-      7B00FFFFFF000000000000000000000000000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00000000007B7B7B00000000000000000000000000FFFFFF00FFFFFF007B7B
-      7B00FFFFFF0000000000FFFFFF00FFFFFF00FFFFFF00FFFFFF0000000000FFFF
-      FF007B7B7B00FFFFFF00FFFFFF00FFFFFF000000000000000000000000000000
-      0000FFFFFF0000000000BDBDBD0000000000BDBDBD00000000007B7B7B000000
-      0000000000000000000000000000000000000000000000000000FFFFFF007B7B
-      7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B
-      7B00FFFFFF0000000000FFFFFF000000000000FFFF0000FFFF0000FFFF000000
-      0000FFFFFF0000000000000000000000000000000000FFFFFF0000000000FFFF
-      FF000000000000FFFF0000FFFF00000000007B7B7B007B7B7B007B7B7B007B7B
-      7B00FFFFFF007B7B7B007B7B7B007B7B7B007B7B7B00000000007B7B7B000000
-      00007B7B7B007B7B7B007B7B7B00FFFFFF000000000000000000000000000000
-      0000FFFFFF0000000000BDBDBD00000000007B7B7B00000000007B7B7B000000
-      000000000000000000000000000000000000000000007B7B7B00000000007B7B
-      7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B
-      7B00FFFFFF007B7B7B0000000000000000000000000000FFFF0000FFFF000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF000000000000FFFF0000FFFF0000FFFF00000000007B7B7B007B7B7B007B7B
-      7B00FFFFFF0000000000FFFFFF00FFFFFF0000000000FFFFFF00FFFFFF00FFFF
-      FF007B7B7B007B7B7B007B7B7B007B7B7B000000000000000000000000000000
-      0000FFFFFF0000000000BDBDBD0000000000BDBDBD00000000007B7B7B000000
-      00000000000000000000000000000000000000000000000000007B7B7B007B7B
-      7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B
-      7B007B7B7B000000000000000000000000000000000000000000000000000000
-      0000FFFFFF000000000000000000FFFFFF000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF007B7B7B007B7B7B00000000007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B000000000000000000000000000000000000000000000000000000
-      0000FFFFFF0000000000BDBDBD00000000007B7B7B00000000007B7B7B000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B
-      7B00FFFFFF000000000000000000000000000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF0000000000FFFFFF00FFFFFF000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF0000000000FFFFFF00FFFFFF007B7B7B00FFFFFF00000000007B7B
-      7B00FFFFFF000000000000000000000000000000000000000000000000000000
-      00007B7B7B00000000007B7B7B00000000007B7B7B00000000007B7B7B000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B7B00FFFFFF007B7B
-      7B00FFFFFF00FFFFFF0000000000000000000000000000000000000000000000
-      0000FFFFFF0000000000BDBDBD00FFFFFF0000000000FFFFFF000000000000FF
-      FF00000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF007B7B7B007B7B7B00000000007B7B7B00FFFFFF007B7B7B007B7B
-      7B00FFFFFF00FFFFFF0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000000000007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B00FFFFFF0000000000000000000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF0000000000000000000000000000FF
-      FF0000FFFF000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF00FFFFFF00FFFFFF00FFFFFF007B7B7B007B7B7B00000000007B7B
-      7B007B7B7B00FFFFFF00FFFFFF0000000000000000000000000000000000FFFF
-      FF00BDBDBD00BDBDBD00BDBDBD007B7B7B007B7B7B007B7B7B007B7B7B007B7B
-      7B000000000000000000000000000000000000000000000000007B7B7B00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF007B7B7B00FFFFFF000000000000000000000000000000000000FFFF000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000FFFF0000FFFF00000000000000000000000000000000007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B00FFFFFF00000000000000
-      00007B7B7B007B7B7B00FFFFFF00FFFFFF000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000000000007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B000000000000000000000000000000000000FFFF0000FFFF000000
-      000000000000000000000000000000FFFF0000FFFF0000000000000000000000
-      00000000000000FFFF0000FFFF0000000000000000007B7B7B007B7B7B000000
-      00000000000000000000000000007B7B7B007B7B7B0000000000000000000000
-      0000000000007B7B7B007B7B7B00000000000000000000000000000000000000
-      000000000000000000007B7B7B007B7B7B007B7B7B0000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000007B7B7B00FFFFFF00FFFFFF00FFFFFF007B7B7B00FFFFFF000000
-      00000000000000000000000000000000000000FFFF0000000000000000000000
-      000000000000000000000000000000FFFF000000000000000000000000000000
-      000000000000000000000000000000FFFF007B7B7B0000000000000000000000
-      00000000000000000000000000007B7B7B000000000000000000000000000000
-      00000000000000000000000000007B7B7B000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B00000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000FFFF0000000000000000000000
-      000000000000000000000000000000FFFF000000000000000000FFFFFF00FFFF
-      FF00000000000000000000000000000000007B7B7B00FFFFFF00000000000000
-      00000000000000000000FFFFFF007B7B7B000000000000000000000000000000
-      00000000000000000000000000000000000000000000000000007B7B7B000000
-      00007B7B7B007B7B7B0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B000000000000FFFF0000FFFF000000
-      00007B7B7B007B7B7B007B7B7B0000FFFF0000FFFF007B7B7B007B7B7B007B7B
-      7B007B7B7B0000FFFF0000FFFF0000000000000000007B7B7B007B7B7B00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF007B7B7B007B7B7B00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF007B7B7B007B7B7B00000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000BDBDBD000000
-      0000BDBDBD00BDBDBD0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000007B7B7B007B7B7B00FFFFFF007B7B
-      7B0000000000000000007B7B7B007B7B7B00000000000000000000FFFF000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000FFFF00000000000000000000000000000000007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B007B7B7B0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000BDBDBD00BDBD
-      BD00BDBDBD00BDBDBD0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000007B7B7B007B7B7B00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF007B7B7B007B7B7B000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00000000007B7B7B0000000000000000000000000000000000000000007B7B
-      7B00FFFFFF000000000000000000000000000000000000000000000000000000
-      00007B7B7B00FFFFFF0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      00000000000000000000000000000000000000000000FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00000000007B7B7B0000000000000000000000000000000000000000007B7B
-      7B00FFFFFF000000000000000000000000000000000000000000000000000000
-      00007B7B7B00FFFFFF0000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00000000007B7B7B0000000000000000000000000000000000000000007B7B
-      7B00FFFFFF000000000000000000000000000000000000000000000000000000
-      00007B7B7B00FFFFFF00000000000000000000000000FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF0000000000FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00000000007B7B7B00FFFFFF00000000000000
-      0000000000000000000000000000000000007B7B7B00FFFFFF00000000000000
-      00000000000000000000000000007B7B7B000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF00000000007B7B7B00000000000000000000000000FFFFFF00FFFFFF007B7B
-      7B00FFFFFF000000000000000000000000000000000000000000000000000000
-      00007B7B7B00FFFFFF00FFFFFF00FFFFFF0000000000FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF0000000000FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00000000007B7B7B00FFFFFF0000000000FFFF
-      FF00FFFFFF0000000000FFFFFF00FFFFFF007B7B7B00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF007B7B7B0000FFFF0000FFFF0000FFFF000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF000000000000FFFF0000FFFF00000000007B7B7B007B7B7B007B7B7B007B7B
-      7B00FFFFFF000000000000000000000000000000000000000000000000000000
-      00007B7B7B007B7B7B007B7B7B00FFFFFF0000000000FFFFFF00000000000000
-      0000FFFFFF000000000000000000BDBDBD0000000000FF000000FF000000FF00
-      00000000FF00FF000000FF000000000000007B7B7B00FFFFFF007B7B7B007B7B
-      7B00000000007B7B7B007B7B7B00000000007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B000000000000FFFF0000FFFF000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
-      FF000000000000FFFF0000FFFF0000FFFF00000000007B7B7B007B7B7B007B7B
-      7B00FFFFFF0000000000000000000000000000000000FFFFFF00FFFFFF00FFFF
-      FF007B7B7B007B7B7B007B7B7B007B7B7B0000000000FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF0000000000000000000000
-      FF000000FF000000FF0000000000000000007B7B7B00FFFFFF0000000000FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF0000000000FFFFFF007B7B7B00FFFFFF007B7B
-      7B007B7B7B007B7B7B00FFFFFF00000000000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF000000000000000000000000007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B0000000000000000000000000000000000FFFFFF00000000000000
-      00000000000000000000FFFFFF0000000000FFFFFF00000000000000FF000000
-      FF000000FF000000FF000000FF00000000007B7B7B00FFFFFF007B7B7B007B7B
-      7B007B7B7B007B7B7B00000000007B7B7B00000000007B7B7B007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B00FFFFFF000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF0000000000FFFFFF00FFFFFF000000
-      0000000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF000000000000000000000000007B7B7B00FFFFFF00000000007B7B
-      7B00FFFFFF0000000000000000000000000000000000FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF000000FF000000FF000000
-      FF000000FF000000FF000000FF000000FF007B7B7B00FFFFFF0000000000FFFF
-      FF00FFFFFF0000000000FFFFFF00FFFFFF00FFFFFF007B7B7B007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF0000000000FFFFFF000000000000FF
-      FF00000000000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF000000000000000000000000007B7B7B00FFFFFF007B7B7B007B7B
-      7B00FFFFFF00FFFFFF00000000000000000000000000FFFFFF00000000000000
-      0000FFFFFF000000000000000000000000000000000000000000000000000000
-      FF000000FF000000FF0000000000000000007B7B7B00FFFFFF007B7B7B007B7B
-      7B00000000007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B00000000007B7B
-      7B007B7B7B007B7B7B00FFFFFF00000000000000000000000000000000000000
-      0000FFFFFF00FFFFFF00FFFFFF00FFFFFF0000000000000000000000000000FF
-      FF0000FFFF000000000000000000000000000000000000000000000000007B7B
-      7B00FFFFFF00FFFFFF00FFFFFF00FFFFFF007B7B7B007B7B7B00000000007B7B
-      7B007B7B7B00FFFFFF00FFFFFF000000000000000000FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF0000000000FFFFFF00FFFFFF000000000000000000000000000000
-      FF000000FF000000FF0000000000000000007B7B7B00FFFFFF0000000000FFFF
-      FF00FFFFFF007B7B7B00FFFFFF00000000007B7B7B0000000000000000007B7B
-      7B007B7B7B007B7B7B00FFFFFF0000000000000000000000000000FFFF000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      000000FFFF0000FFFF00000000000000000000000000000000007B7B7B007B7B
-      7B007B7B7B007B7B7B007B7B7B007B7B7B007B7B7B00FFFFFF00000000000000
-      00007B7B7B007B7B7B00FFFFFF00FFFFFF0000000000FFFFFF0000000000BDBD
-      BD00FFFFFF0000000000FFFFFF000000000000000000000000007B7B7B000000
-      FF000000FF000000FF0000000000000000007B7B7B00FFFFFF007B7B7B007B7B
-      7B00000000007B7B7B00FFFFFF007B7B7B0000000000FFFFFF007B7B7B007B7B
-      7B007B7B7B007B7B7B0000000000000000000000000000FFFF0000FFFF000000
-      000000000000000000000000000000FFFF0000FFFF0000000000000000000000
-      00000000000000FFFF0000FFFF0000000000000000007B7B7B007B7B7B000000
-      00000000000000000000000000007B7B7B007B7B7B0000000000000000000000
-      0000000000007B7B7B007B7B7B000000000000000000FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF000000000000000000000000000000FF000000FF000000FF000000
-      FF000000FF000000000000000000000000007B7B7B00FFFFFF00FFFFFF00FFFF
-      FF00FFFFFF007B7B7B007B7B7B00000000007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B0000000000000000000000000000FFFF0000000000000000000000
-      000000000000000000000000000000FFFF000000000000000000000000000000
-      000000000000000000000000000000FFFF007B7B7B0000000000000000000000
-      00000000000000000000000000007B7B7B000000000000000000000000000000
-      00000000000000000000000000007B7B7B000000000000000000000000000000
-      0000000000000000000000000000000000000000000000000000000000000000
-      0000000000000000000000000000000000007B7B7B007B7B7B007B7B7B007B7B
-      7B007B7B7B007B7B7B0000000000000000000000000000000000000000000000
+      0000000000000000000000000000FF7FFF7F000000000000000000000000F75E
+      F75EF75EF75EF75E000000000000000000000000000000000000EF3DEF3D0000
+      00000000FF7F0000EF3DEF3D0000FF7F00000000000000000000000000000000
+      0000000000000000000000000000000000000000FF7FFF7F0000FF7FFF7FFF7F
+      FF7FFF7F0000000000000000EF3DEF3DEF3D0000000000000000EF3DEF3DF75E
+      EF3D0000EF3DF75EEF3DEF3D000000000000000000000000EF3D000000000000
+      0000EF3DFF7F000000000000EF3D0000FF7F0000000000000000000000000000
+      000000000000000000000000000000000000EF3DEF3DFF7FEF3DEF3DEF3DEF3D
+      EF3D0000FF7F000000000000EF3DEF3DEF3D000000000000F75EF75EF75EF75E
+      EF3D0000EF3DF75EF75EF75EF75E0000000000000000EF3DFF7F000000000000
+      0000EF3DFF7F0000000000000000EF3DFF7FFF0300000000E07FFF7FE07FFF7F
+      E07F00000000000000000000000000000000EF3DEF3DEF3D0000000000000000
+      FF7FEF3DFF7F00000000000000000000FF7F000000000000EF3DEF3DEF3DF75E
+      F75E0000F75EF75EEF3DEF3DEF3D0000000000000000EF3DFF7F000000000000
+      0000EF3DFF7FFF7F000000000000EF3DFF7FFF030000E07FFF7FE07FFF7F0000
+      000000000000000000000000000000000000EF3DEF3DFF7F000000000000EF3D
+      EF3DEF3D0000FF7F000000000000EF3DEF3D000000000000F75EF75EF75EF75E
+      000000000000F75EF75EF75EF75E0000000000000000EF3DFF7F000000000000
+      EF3DEF3DEF3DFF7F000000000000EF3DFF7FFF030000FF7FE07FFF7FE07FFF7F
+      E07FFF7F0000000000000000000000000000EF3DEF3DFF7F0000000000000000
+      FF7FFF7FEF3DFF7FFF7FFF7F0000EF3DEF3D000000000000EF3DEF3DEF3DEF3D
+      000000000000EF3DEF3DEF3DEF3D0000000000000000EF3DFF7F000000000000
+      EF3DEF3DEF3D0000000000000000EF3DFF7FFF030000E07FFF7FE07FFF7F0000
+      000000000000000000000000000000000000EF3DEF3DFF7F000000000000EF3D
+      EF3DEF3DEF3DEF3DEF3D0000FF7F0000FF7F000000000000F75EF75EF75EF75E
+      F75EF75EF75EF75EF75EF75EF75E0000000000000000EF3D0000FF7FFF7FFF7F
+      FF7FFF7FFF7FFF7FFF7FFF7FFF7FEF3D0000FF030000FF7FE07FFF7FE07FFF7F
+      E07FFF7FE07FFF7FE07F00000000007C007CEF3DEF3DFF7F00000000FF7FFF7F
+      FF7FFF7FFF7FFF7FFF7FEF3D0000EF3DEF3D0000000000000000000000000000
+      000000000000000000000000000000000000000000000000EF3DEF3DEF3DEF3D
+      EF3DEF3DEF3DEF3DEF3DEF3DEF3D00000000FF030000E07FFF7F000000000000
+      0000000000000000000000000000007C007CEF3DEF3DFF7FFF7FEF3DEF3DEF3D
+      EF3DEF3DEF3DEF3DEF3D00000000EF3DEF3D00000000000000000000F75E0000
+      0000000000000000F75E00000000000000000000000000000000EF3DFF7FEF3D
+      FF7F00000000EF3DFF7FEF3DFF7F00000000000000000000E07FFF7FE07F0000
+      000000000000000000000000000000000000EF3DEF3DEF3D0000FF7FFF7FEF3D
+      00000000000000000000000000000000FF7F00000000000000000000F75E0000
+      0000000000000000F75E00000000000000000000000000000000EF3DFF7FEF3D
+      FF7F00000000EF3DFF7FEF3DFF7F000000000000000000000000000000000000
+      000000000000000000000000000000000000000000000000EF3DEF3DEF3D0000
+      0000000000000000000000000000EF3DEF3D00000000000000000000F75E0000
+      0000000000000000F75E00000000000000000000000000000000EF3DFF7FEF3D
+      0000FF7FFF7FEF3D0000EF3DFF7F000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000EF3DEF3D0000000000000000EF3DEF3DF75E
+      000000000000F75EEF3DEF3D0000000000000000000000000000EF3D0000FF7F
+      EF3DEF3DEF3D00000000EF3D0000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000FF7FFF7F000000000000000000000000F75E
+      F75EF75EF75EF75E0000000000000000000000000000000000000000EF3D0000
+      FF7FFF7FFF7FFF7FEF3D00000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      000000000000000000000000EF3DEF3DEF3D0000000000000000000000000000
+      000000000000000000000000000000000000000000000000000000000000EF3D
+      EF3DEF3DEF3DEF3D000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      000000000000000000000000EF3DEF3DEF3D0000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000E07F000000000000000000000000E07F00000000FF7FFF7F000000000000
+      0000EF3DFF7F0000000000000000FF7FEF3D0000000000000000000000000000
+      000000000000000000000000000000000000000000000000EF3DEF3DEF3DEF3D
+      EF3DEF3DEF3DEF3DEF3DFF7F0000000000000000E07FE07F0000EF3DEF3DEF3D
+      E07FE07FEF3DEF3DEF3DEF3DE07FE07F00000000EF3DEF3DFF7FFF7FFF7FFF7F
+      EF3DEF3DFF7FFF7FFF7FFF7FEF3DEF3D00000000000000000000FF7FEF3DEF3D
+      EF3DEF3DEF3DEF3D00000000000000000000000000000000EF3DFF7F0000FF7F
+      0000FF7F0000FF7FEF3DFF7F00000000000000000000E07F0000000000000000
+      000000000000000000000000E07F0000000000000000EF3DEF3DEF3DEF3DEF3D
+      EF3DEF3DEF3DEF3DEF3DEF3DEF3D000000000000000000000000FF7F0000F75E
+      0000F75E0000EF3D00000000000000000000000000000000EF3DFF7FEF3DFF7F
+      EF3DFF7FEF3DFF7FEF3DFF7F0000000000000000000000000000FF7FFF7FFF7F
+      FF7FFF7FFF7FFF7FFF7F0000EF3D00000000000000000000EF3DFF7F00000000
+      00000000000000000000EF3DFF7F000000000000000000000000FF7F0000F75E
+      0000EF3D0000EF3D00000000000000000000000000000000EF3DFF7FEF3DFF7F
+      EF3DFF7FEF3DFF7FEF3DFF7F0000000000000000000000000000FF7FFF7FFF7F
+      FF7FFF7FFF7FFF7FFF7F0000EF3D00000000000000000000EF3DFF7F0000FF7F
+      FF7F0000FF7FFF7FFF7FEF3DFF7F000000000000000000000000FF7F0000F75E
+      0000F75E0000EF3D00000000000000000000000000000000EF3DFF7FEF3DFF7F
+      EF3DFF7FEF3DFF7FEF3DFF7F0000000000000000000000000000FF7F00000000
+      FF7F000000000000FF7F0000EF3D00000000000000000000EF3DFF7FEF3DEF3D
+      0000EF3DEF3DEF3D0000EF3DFF7F000000000000000000000000FF7F0000F75E
+      0000EF3D0000EF3D00000000000000000000000000000000EF3DFF7FEF3DFF7F
+      EF3DFF7FEF3DFF7FEF3DFF7F0000000000000000000000000000FF7FFF7FFF7F
+      FF7FFF7FFF7FFF7FFF7F0000EF3D000000000000FF7FFF7FEF3DFF7F0000FF7F
+      FF7FFF7FFF7F0000FF7FEF3DFF7FFF7FFF7F0000000000000000FF7F0000F75E
+      0000F75E0000EF3D0000000000000000000000000000FF7FEF3DFF7FEF3DFF7F
+      EF3DFF7FEF3DFF7FEF3DFF7F0000FF7F0000E07FE07FE07F0000FF7F00000000
+      00000000FF7F0000FF7F0000E07FE07F0000EF3DEF3DEF3DEF3DFF7FEF3DEF3D
+      EF3DEF3D0000EF3D0000EF3DEF3DEF3DFF7F0000000000000000FF7F0000F75E
+      0000EF3D0000EF3D000000000000000000000000EF3D0000EF3DFF7FEF3DFF7F
+      EF3DFF7FEF3DFF7FEF3DFF7FEF3D000000000000E07FE07F0000FF7FFF7FFF7F
+      FF7FFF7FFF7FFF7FFF7F0000E07FE07FE07F0000EF3DEF3DEF3DFF7F0000FF7F
+      FF7F0000FF7FFF7FFF7FEF3DEF3DEF3DEF3D0000000000000000FF7F0000F75E
+      0000F75E0000EF3D0000000000000000000000000000EF3DEF3DFF7FEF3DFF7F
+      EF3DFF7FEF3DFF7FEF3DEF3D0000000000000000000000000000FF7F00000000
+      FF7F00000000000000000000000000000000000000000000EF3DFF7FEF3DEF3D
+      0000EF3DEF3DEF3DEF3DEF3D0000000000000000000000000000FF7F0000F75E
+      0000EF3D0000EF3D00000000000000000000000000000000EF3DFF7FEF3DFF7F
+      EF3DFF7FEF3DFF7FEF3DFF7F0000000000000000000000000000FF7FFF7FFF7F
+      FF7F0000FF7FFF7F00000000000000000000000000000000EF3DFF7F0000FF7F
+      FF7FEF3DFF7F0000EF3DFF7F0000000000000000000000000000EF3D0000EF3D
+      0000EF3D0000EF3D00000000000000000000000000000000EF3DFF7FEF3DFF7F
+      EF3DFF7FEF3DFF7FEF3DFF7FFF7F000000000000000000000000FF7F0000F75E
+      FF7F0000FF7F0000E07F0000000000000000000000000000EF3DFF7FEF3DEF3D
+      0000EF3DFF7FEF3DEF3DFF7FFF7F000000000000000000000000000000000000
+      00000000000000000000000000000000000000000000EF3DEF3DEF3DEF3DEF3D
+      EF3DEF3DEF3DEF3DEF3DEF3DFF7F000000000000000000000000FF7FFF7FFF7F
+      FF7F000000000000E07FE07F000000000000000000000000EF3DFF7FFF7FFF7F
+      FF7FEF3DEF3D0000EF3DEF3DFF7FFF7F0000000000000000FF7FF75EF75EF75E
+      EF3DEF3DEF3DEF3DEF3D000000000000000000000000EF3DFF7FFF7FFF7FFF7F
+      FF7FFF7FFF7FFF7FFF7FEF3DFF7F0000000000000000E07F0000000000000000
+      00000000000000000000E07FE07F0000000000000000EF3DEF3DEF3DEF3DEF3D
+      EF3DEF3DFF7F00000000EF3DEF3DFF7FFF7F0000000000000000000000000000
+      00000000000000000000000000000000000000000000EF3DEF3DEF3DEF3DEF3D
+      EF3DEF3DEF3DEF3DEF3DEF3D0000000000000000E07FE07F0000000000000000
+      E07FE07F0000000000000000E07FE07F00000000EF3DEF3D0000000000000000
+      EF3DEF3D0000000000000000EF3DEF3D0000000000000000000000000000EF3D
+      EF3DEF3D000000000000000000000000000000000000000000000000EF3DFF7F
+      FF7FFF7FEF3DFF7F00000000000000000000E07F000000000000000000000000
+      E07F0000000000000000000000000000E07FEF3D000000000000000000000000
+      EF3D0000000000000000000000000000EF3D0000000000000000000000000000
+      00000000000000000000000000000000000000000000000000000000EF3DEF3D
+      EF3DEF3DEF3D0000000000000000000000000000000000000000000000000000
+      0000E07F000000000000000000000000E07F00000000FF7FFF7F000000000000
+      0000EF3DFF7F0000000000000000FF7FEF3D0000000000000000000000000000
+      000000000000EF3D0000EF3DEF3D000000000000000000000000000000000000
+      0000EF3DEF3DEF3DEF3DEF3DEF3DEF3DEF3D0000E07FE07F0000EF3DEF3DEF3D
+      E07FE07FEF3DEF3DEF3DEF3DE07FE07F00000000EF3DEF3DFF7FFF7FFF7FFF7F
+      EF3DEF3DFF7FFF7FFF7FFF7FEF3DEF3D00000000000000000000000000000000
+      000000000000F75E0000F75EF75E000000000000000000000000000000000000
+      0000EF3DEF3DFF7FEF3D00000000EF3DEF3D00000000E07F0000000000000000
+      000000000000000000000000E07F0000000000000000EF3DEF3DEF3DEF3DEF3D
+      EF3DEF3DEF3DEF3DEF3DEF3DEF3D000000000000000000000000000000000000
+      000000000000F75EF75EF75EF75E000000000000000000000000000000000000
+      0000EF3DEF3DFF7FFF7FFF7FFF7FEF3DEF3D0000000000000000FF7FFF7FFF7F
+      FF7FFF7FFF7FFF7FFF7F0000EF3D00000000000000000000EF3DFF7F00000000
+      00000000000000000000EF3DFF7F000000000000000000000000000000000000
+      0000000000000000000000000000000000000000FF7FFF7FFF7FFF7FFF7FFF7F
+      FF7FEF3DEF3DEF3DEF3DEF3DEF3DEF3DEF3D0000000000000000FF7FFF7FFF7F
+      FF7FFF7FFF7FFF7FFF7F0000EF3D00000000000000000000EF3DFF7F00000000
+      00000000000000000000EF3DFF7F000000000000000000000000000000000000
+      000000000000000000000000000000000000EF3DEF3DEF3DEF3DEF3DEF3DEF3D
+      EF3DEF3DEF3DEF3DEF3DEF3DEF3DEF3DEF3D0000000000000000FF7FFF7FFF7F
+      FF7FFF7FFF7FFF7FFF7F0000EF3D00000000000000000000EF3DFF7F00000000
+      00000000000000000000EF3DFF7F000000000000FF7FFF7FFF7FFF7FFF7FFF7F
+      FF7F0000FF7FFF7FFF7FFF7FFF7FFF7F0000EF3DFF7F00000000000000000000
+      0000EF3DFF7F00000000000000000000EF3D0000000000000000FF7FFF7FFF7F
+      FF7FFF7FFF7FFF7FFF7F0000EF3D000000000000FF7FFF7FEF3DFF7F00000000
+      00000000000000000000EF3DFF7FFF7FFF7F0000FF7FFF7FFF7FFF7FFF7FFF7F
+      FF7F0000FF7FFF7FFF7FFF7FFF7FFF7F0000EF3DFF7F0000FF7FFF7F0000FF7F
+      FF7FEF3DFF7FFF7FFF7FFF7FFF7FFF7FEF3DE07FE07FE07F0000FF7FFF7FFF7F
+      FF7FFF7FFF7FFF7FFF7F0000E07FE07F0000EF3DEF3DEF3DEF3DFF7F00000000
+      00000000000000000000EF3DEF3DEF3DFF7F0000FF7F00000000FF7F00000000
+      F75E00001F001F001F00007C1F001F000000EF3DFF7FEF3DEF3D0000EF3DEF3D
+      0000EF3DEF3DEF3DEF3DEF3DEF3DEF3DEF3D0000E07FE07F0000FF7FFF7FFF7F
+      FF7FFF7FFF7FFF7FFF7F0000E07FE07FE07F0000EF3DEF3DEF3DFF7F00000000
+      00000000FF7FFF7FFF7FEF3DEF3DEF3DEF3D0000FF7FFF7FFF7FFF7FFF7FFF7F
+      FF7FFF7F00000000007C007C007C00000000EF3DFF7F0000FF7FFF7FFF7FFF7F
+      0000FF7FEF3DFF7FEF3DEF3DEF3DFF7F00000000000000000000FF7FFF7FFF7F
+      FF7F00000000000000000000000000000000000000000000EF3DFF7F00000000
+      0000EF3DEF3DEF3DEF3DEF3D0000000000000000FF7F0000000000000000FF7F
+      0000FF7F0000007C007C007C007C007C0000EF3DFF7FEF3DEF3DEF3DEF3D0000
+      EF3D0000EF3DEF3DEF3DEF3DEF3DEF3DFF7F0000000000000000FF7FFF7FFF7F
+      FF7F0000FF7FFF7F00000000000000000000000000000000EF3DFF7F00000000
+      0000EF3DFF7F0000EF3DFF7F0000000000000000FF7FFF7FFF7FFF7FFF7FFF7F
+      FF7FFF7F007C007C007C007C007C007C007CEF3DFF7F0000FF7FFF7F0000FF7F
+      FF7FFF7FEF3DEF3DEF3DEF3DEF3DEF3DEF3D0000000000000000FF7FFF7FFF7F
+      FF7F0000FF7F0000E07F0000000000000000000000000000EF3DFF7F00000000
+      0000EF3DFF7FEF3DEF3DFF7FFF7F000000000000FF7F00000000FF7F00000000
+      0000000000000000007C007C007C00000000EF3DFF7FEF3DEF3D0000EF3DEF3D
+      EF3DEF3DEF3D0000EF3DEF3DEF3DFF7F00000000000000000000FF7FFF7FFF7F
+      FF7F000000000000E07FE07F000000000000000000000000EF3DFF7FFF7FFF7F
+      FF7FEF3DEF3D0000EF3DEF3DFF7FFF7F00000000FF7FFF7FFF7FFF7F0000FF7F
+      FF7F000000000000007C007C007C00000000EF3DFF7F0000FF7FFF7FEF3DFF7F
+      0000EF3D00000000EF3DEF3DEF3DFF7F000000000000E07F0000000000000000
+      00000000000000000000E07FE07F0000000000000000EF3DEF3DEF3DEF3DEF3D
+      EF3DEF3DFF7F00000000EF3DEF3DFF7FFF7F0000FF7F0000F75EFF7F0000FF7F
+      000000000000EF3D007C007C007C00000000EF3DFF7FEF3DEF3D0000EF3DFF7F
+      EF3D0000FF7FEF3DEF3DEF3DEF3D000000000000E07FE07F0000000000000000
+      E07FE07F0000000000000000E07FE07F00000000EF3DEF3D0000000000000000
+      EF3DEF3D0000000000000000EF3DEF3D00000000FF7FFF7FFF7FFF7F00000000
+      0000007C007C007C007C007C000000000000EF3DFF7FFF7FFF7FFF7FEF3DEF3D
+      0000EF3DEF3DEF3DEF3DEF3D000000000000E07F000000000000000000000000
+      E07F0000000000000000000000000000E07FEF3D000000000000000000000000
+      EF3D0000000000000000000000000000EF3D0000000000000000000000000000
+      000000000000000000000000000000000000EF3DEF3DEF3DEF3DEF3DEF3D0000
       000000000000000000000000000000000000424D3E000000000000003E000000
       2800000040000000400000000100010000000000000200000000000000000000
       000000000000000000000000FFFFFF0000000000000000000000000000000000

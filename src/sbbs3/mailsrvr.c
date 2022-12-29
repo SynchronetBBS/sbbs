@@ -50,6 +50,7 @@
 
 /* Constants */
 static const char*	server_name="Synchronet Mail Server";
+static const char*	server_abbrev = "mail";
 #define FORWARD			"forward:"
 #define NO_FORWARD		"local:"
 #define NO_SPAM			"#nospam"
@@ -71,8 +72,6 @@ int dns_getmx(char* name, char* mx, char* mx2
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define DNSBL_THROTTLE_VALUE	1000	/* Milliseconds */
 #define SMTP_MAX_BAD_CMDS		9
-
-#define STATUS_WFC	"Listening"
 
 static mail_startup_t* startup=NULL;
 static scfg_t	scfg;
@@ -192,14 +191,17 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
-		SAFEPRINTF(errmsg, "mail %s", sbuf);
-		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name,errmsg), stats.errors++;
+		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name,errmsg), stats.errors++;
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
 
 	if(level <= LOG_CRIT)
 		stats.crit_errors++;
+
+	if(startup != NULL)
+		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, sbuf);
 
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
 		return(0);
@@ -244,10 +246,19 @@ static char* server_host_name(void)
 	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
 }
 
+static void set_state(enum server_state state)
+{
+	if(startup != NULL && startup->set_state != NULL)
+		startup->set_state(startup->cbdata, state);
+}
+
 static void update_clients(void)
 {
-	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(startup->cbdata,protected_uint32_value(active_clients)+active_sendmail);
+	if(startup != NULL) {
+		if(startup->clients != NULL)
+			startup->clients(startup->cbdata,protected_uint32_value(active_clients)+active_sendmail);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "client_count", protected_uint32_value(active_clients));
+	}
 }
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
@@ -267,15 +278,21 @@ static void client_off(SOCKET sock)
 
 static void thread_up(BOOL setuid)
 {
-	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(startup->cbdata,TRUE,setuid);
+	if(startup != NULL) {
+		if(startup->thread_up != NULL)
+			startup->thread_up(startup->cbdata,TRUE,setuid);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "thread_count", protected_uint32_value(thread_count));
+	}
 }
 
 static int32_t thread_down(void)
 {
 	int32_t count = protected_uint32_adjust_fetch(&thread_count,-1);
-	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(startup->cbdata,FALSE,FALSE);
+	if(startup != NULL) {
+		if(startup->thread_up != NULL)
+			startup->thread_up(startup->cbdata,FALSE,FALSE);
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "thread_count", count);
+	}
 	return count;
 }
 
@@ -292,6 +309,8 @@ void mail_open_socket(SOCKET sock, void* cb_protocol)
 		lprintf(LOG_ERR,"%04d %s !ERROR %s", sock, protocol, error);
 
 	stats.sockets++;
+	if(startup != NULL)
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "socket_count", stats.sockets);
 }
 
 void mail_close_socket_cb(SOCKET sock, void* cb_protocol)
@@ -299,6 +318,8 @@ void mail_close_socket_cb(SOCKET sock, void* cb_protocol)
 	if(startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata,FALSE);
 	stats.sockets--;
+	if(startup != NULL)
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "socket_count", stats.sockets);
 }
 
 int mail_close_socket(SOCKET *sock, int *sess)
@@ -317,6 +338,8 @@ int mail_close_socket(SOCKET *sock, int *sess)
 	if(startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata,FALSE);
 	stats.sockets--;
+	if(startup != NULL)
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "socket_count", stats.sockets);
 	if(result!=0) {
 		if(ERROR_VALUE!=ENOTSOCK)
 			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",*sock, ERROR_VALUE);
@@ -329,12 +352,6 @@ int mail_close_socket(SOCKET *sock, int *sess)
 	*sock = -1;
 
 	return(result);
-}
-
-static void status(char* str)
-{
-	if(startup!=NULL && startup->status!=NULL)
-	    startup->status(startup->cbdata,str);
 }
 
 int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...)
@@ -961,7 +978,7 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* prot, const ch
 		SAFEPRINTF(reason,"%s LOGIN", prot);
 		count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
 		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
-			hacklog(&scfg, reason, user, passwd, host, addr);
+			hacklog(&scfg, &startup->mqtt, reason, user, passwd, host, addr);
 #ifdef _WIN32
 			if(startup->sound.hack[0] && !sound_muted(&scfg)) 
 				PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
@@ -1155,9 +1172,6 @@ static void pop3_thread(void* arg)
 	client.usernum = 0;
 	client_on(socket,&client,FALSE /* update */);
 
-	SAFEPRINTF2(str,"%s: %s", client.protocol, host_ip);
-	status(str);
-
 	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &pop3.client_addr)) > 1) {
 		lprintf(LOG_DEBUG,"%04d %s [%s] Throttling suspicious connection (%lu login attempts)"
@@ -1335,8 +1349,8 @@ static void pop3_thread(void* arg)
 			listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, socket, LAST_NODE);
 		}
 
-		putuserrec(&scfg,user.number,U_COMP,LEN_COMP,host_name);
-		putuserrec(&scfg,user.number,U_IPADDR,LEN_IPADDR,host_ip);
+		putuserstr(&scfg, user.number, USER_HOST, host_name);
+		putuserstr(&scfg, user.number, USER_IPADDR, host_ip);
 
 		/* Update client display */
 		client.user=user.alias;
@@ -1346,8 +1360,6 @@ static void pop3_thread(void* arg)
 
 		if(startup->options&MAIL_OPT_DEBUG_POP3)
 			lprintf(LOG_INFO,"%04d %s [%s] %s logged-in %s", socket, client.protocol, host_ip, user.alias, apop ? "via APOP":"");
-		SAFEPRINTF2(str,"%s: %s", client.protocol, user.alias);
-		status(str);
 #ifdef _WIN32
 		if(startup->sound.login[0] && !sound_muted(&scfg)) 
 			PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
@@ -1547,8 +1559,6 @@ static void pop3_thread(void* arg)
 			}
 			activity=TRUE;
 			if(!strnicmp(buf, "RETR ",5) || !strnicmp(buf,"TOP ",4)) {
-				SAFEPRINTF2(str,"%s: %s", client.protocol, user.alias);
-				status(str);
 
 				lines=-1;
 				p=buf+4;
@@ -1738,8 +1748,6 @@ static void pop3_thread(void* arg)
 				,socket, client.protocol, host_ip, inet_addrport(&pop3.client_addr), host_name);
 	}
 
-	status(STATUS_WFC);
-
 	/* Free up resources here */
 	if(mail!=NULL)
 		freemail(mail);
@@ -1905,7 +1913,7 @@ static BOOL chk_email_addr(SOCKET socket, const char* prot, char* p, char* host_
 	lprintf(LOG_NOTICE,"%04d %s [%s] !BLOCKED %s e-mail address: %s"
 		,socket, prot, host_ip, source, addr);
 	SAFEPRINTF2(tmp,"Blocked %s e-mail address: %s", source, addr);
-	spamlog(&scfg, (char*)prot, "REFUSED", tmp, host_name, host_ip, to, from);
+	spamlog(&scfg, &startup->mqtt, (char*)prot, "REFUSED", tmp, host_name, host_ip, to, from);
 
 	return(FALSE);
 }
@@ -1924,7 +1932,7 @@ static BOOL email_addr_is_exempt(const char* addr)
 		return TRUE;
 	p = netmail + 1;
 	*lastchar(p) = '\0';
-	return userdatdupe(&scfg, 0, U_NETMAIL, LEN_NETMAIL, p, /* del */FALSE, /* next */FALSE, NULL, NULL);
+	return finduserstr(&scfg, 0, USER_NETMAIL, p, /* del */FALSE, /* next */FALSE, NULL, NULL);
 }
 
 static void exempt_email_addr(const char* comment
@@ -2770,7 +2778,7 @@ static uint smtp_matchuser(scfg_t *scfg, char *str, BOOL aliases, BOOL datdupe)
 		goto end;
 
 	if(datdupe)
-		usernum=userdatdupe(scfg, 0, U_NAME, LEN_NAME, name, /* del */FALSE, /* next */FALSE, NULL, NULL);
+		usernum=finduserstr(scfg, 0, USER_NAME, name, /* del */FALSE, /* next */FALSE, NULL, NULL);
 	else
 		usernum=matchuser(scfg, name, aliases);
 
@@ -3101,7 +3109,7 @@ static void smtp_thread(void* arg)
 				,socket, client.protocol, dnsbl_ip, dnsbl, host_name, inet_ntoa(dnsbl_result));
 			if(startup->options&MAIL_OPT_DNSBL_REFUSE) {
 				SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-				spamlog(&scfg, (char*)client.protocol, "SESSION REFUSED", str, host_name, dnsbl_ip, NULL, NULL);
+				spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "SESSION REFUSED", str, host_name, dnsbl_ip, NULL, NULL);
 				sockprintf(socket,client.protocol,session
 					,"550 Mail from %s refused due to listing at %s"
 					,dnsbl_ip, dnsbl);
@@ -3172,9 +3180,6 @@ static void smtp_thread(void* arg)
 	client.usernum = 0;
 	client_on(socket,&client,FALSE /* update */);
 
-	SAFEPRINTF(str,"SMTP: %s",host_ip);
-	status(str);
-
 	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &smtp.client_addr)) > 1) {
 		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%lu login attempts)"
@@ -3230,7 +3235,7 @@ static void smtp_thread(void* arg)
 					lprintf(LOG_NOTICE,"%04d %s %s !FILTERING TWIT-LISTED SENDER: '%s' <%s> (%lu total)"
 						,socket, client.protocol, client_id, sender, sender_addr, ++stats.msgs_refused);
 					SAFEPRINTF2(tmp,"Twit-listed sender: '%s' <%s>", sender, sender_addr);
-					spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
+					spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
 					sockprintf(socket,client.protocol,session, "554 Sender not allowed.");
 					continue;
 				}
@@ -3504,7 +3509,7 @@ static void smtp_thread(void* arg)
 										,socket, client.protocol, client_id, p, reverse_path, ++stats.msgs_refused);
 									SAFEPRINTF2(tmp,"Blocked subject (%s) from: %s"
 										,p, reverse_path);
-									spamlog(&scfg, (char*)client.protocol, "REFUSED"
+									spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "REFUSED"
 										,tmp, host_name, host_ip, rcpt_addr, reverse_path);
 									errmsg="554 Subject not allowed.";
 									smb_error=SMB_FAILURE;
@@ -3607,7 +3612,7 @@ static void smtp_thread(void* arg)
 					}
 					if(startup->dnsbl_hdr[0] || startup->dnsbl_tag[0]) {
 						SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-						spamlog(&scfg, (char*)client.protocol, "TAGGED", str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
+						spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "TAGGED", str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 					}
 				}
 				if(dnsbl_recvhdr)			/* DNSBL-listed IP found in Received header? */
@@ -3796,7 +3801,7 @@ static void smtp_thread(void* arg)
 								);
 							lprintf(LOG_NOTICE,"%04d %s %s Message from %s %s", socket, client.protocol, client_id, sender_info, str);
 							if(!is_spam) {
-								spamlog(&scfg, (char*)client.protocol, "IGNORED"
+								spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "IGNORED"
 									,str, host_name, host_ip, rcpt_addr, reverse_path);
 								is_spam=TRUE;
 							}
@@ -3841,7 +3846,7 @@ static void smtp_thread(void* arg)
 							SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 							lprintf(LOG_NOTICE,"%04d %s %s !IGNORED MAIL from %s to <%s> from server: %s (%lu total)"
 								,socket, client.protocol, client_id, sender_info, rcpt_addr, str, ++stats.msgs_ignored);
-							spamlog(&scfg, (char*)client.protocol, "IGNORED"
+							spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "IGNORED"
 								,str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 						}
 						/* pretend we received it */
@@ -4500,7 +4505,7 @@ static void smtp_thread(void* arg)
 					lprintf(LOG_NOTICE,"%04d %s %s !MAXIMUM RECIPIENTS (%d) REACHED"
 						,socket, client.protocol, client_id, startup->max_recipients);
 					SAFEPRINTF(tmp,"Maximum recipient count (%d)",startup->max_recipients);
-					spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp
+					spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "REFUSED", tmp
 						,host_name, host_ip, rcpt_addr, reverse_path);
 					sockprintf(socket,client.protocol,session, "452 Too many recipients");
 					stats.msgs_refused++;
@@ -4522,7 +4527,7 @@ static void smtp_thread(void* arg)
 					,socket, client.protocol, client_id, scfg.level_emailperday[relay_user.level], relay_user.number, relay_user.alias);
 				SAFEPRINTF2(tmp,"Maximum emails per day (%u) for %s"
 					,scfg.level_emailperday[relay_user.level], relay_user.alias);
-				spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp
+				spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "REFUSED", tmp
 					,host_name, host_ip, rcpt_addr, reverse_path);
 				sockprintf(socket,client.protocol,session, "452 Too many emails today");
 				stats.msgs_refused++;
@@ -4543,7 +4548,7 @@ static void smtp_thread(void* arg)
 						filter_ip(&scfg, client.protocol, reason, host_name, host_ip, reverse_path, spam_block);
 						strcat(tmp," and BLOCKED");
 					}
-					spamlog(&scfg, (char*)client.protocol, tmp, "Attempted recipient in SPAM BAIT list"
+					spamlog(&scfg, &startup->mqtt, (char*)client.protocol, tmp, "Attempted recipient in SPAM BAIT list"
 						,host_name, host_ip, rcpt_addr, reverse_path);
 					dnsbl_result.s_addr=0;
 				}
@@ -4564,7 +4569,7 @@ static void smtp_thread(void* arg)
 				lprintf(LOG_NOTICE,"%04d %s %s !REFUSED MAIL from blacklisted server (%lu total)"
 					,socket, client.protocol, client_id, ++stats.sessions_refused);
 				SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-				spamlog(&scfg, (char*)client.protocol, "REFUSED", str, host_name, host_ip, rcpt_addr, reverse_path);
+				spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "REFUSED", str, host_name, host_ip, rcpt_addr, reverse_path);
 				sockprintf(socket,client.protocol,session
 					,"550 Mail from %s refused due to listing at %s"
 					,host_ip, dnsbl);
@@ -4641,7 +4646,7 @@ static void smtp_thread(void* arg)
 					SAFEPRINTF(relay_list,"%srelay.cfg",scfg.ctrl_dir);
 					if(relay_user.number==0 /* not authenticated, search for IP */
 						&& startup->options&MAIL_OPT_SMTP_AUTH_VIA_IP) { 
-						relay_user.number=userdatdupe(&scfg, 0, U_IPADDR, LEN_IPADDR, host_ip, /* del */FALSE, /* next */FALSE, NULL, NULL);
+						relay_user.number=finduserstr(&scfg, 0, USER_IPADDR, host_ip, /* del */FALSE, /* next */FALSE, NULL, NULL);
 						if(relay_user.number) {
 							getuserdat(&scfg,&relay_user);
 							if(relay_user.laston < time(NULL)-(60*60))	/* logon in past hour? */
@@ -4658,7 +4663,7 @@ static void smtp_thread(void* arg)
 						lprintf(LOG_WARNING,"%04d %s %s !ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 							,socket, client.protocol, client_id, reverse_path, host_ip, p);
 						SAFEPRINTF(tmp,"Relay attempt to: %s", p);
-						spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
+						spamlog(&scfg, &startup->mqtt, (char*)client.protocol, "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
 						if(startup->options&MAIL_OPT_ALLOW_RELAY)
 							sockprintf(socket,client.protocol,session, "553 Relaying through this server "
 							"requires authentication.  "
@@ -5036,8 +5041,6 @@ static void smtp_thread(void* arg)
 	if(spy!=NULL)
 		fclose(spy);
 	js_cleanup(js_runtime, js_cx, &js_glob);
-
-	status(STATUS_WFC);
 
 	listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
 	(void)protected_uint32_adjust(&active_clients, -1);
@@ -5618,8 +5621,6 @@ static void sendmail_thread(void* arg)
 
 			lprintf(LOG_INFO,"0000 SEND Message #%u (%u of %u) from %s to %s"
 				,msg.hdr.number, u+1, msgs, sender_info, rcpt_info);
-			SAFEPRINTF2(str,"Sending (%u of %u)", u+1, msgs);
-			status(str);
 #ifdef _WIN32
 			if(startup->outbound_sound[0] && !sound_muted(&scfg)) 
 				PlaySound(startup->outbound_sound, NULL, SND_ASYNC|SND_FILENAME);
@@ -5874,7 +5875,6 @@ static void sendmail_thread(void* arg)
 			if(msg.from_agent==AGENT_PERSON && !(startup->options&MAIL_OPT_NO_AUTO_EXEMPT))
 				exempt_email_addr("SEND Auto-exempting", sender_info, toaddr);
 		}
-		status(STATUS_WFC);
 		/* Free up resources here */
 		if(mail!=NULL)
 			freemail(mail);
@@ -5955,7 +5955,6 @@ static void cleanup(int code)
 		lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 	thread_down();
-	status("Down");
 	if(terminate_server || code) {
 		char str[1024];
 		sprintf(str,"%lu connections served", stats.connections_served);
@@ -6051,6 +6050,10 @@ void mail_server(void* arg)
 		return;
 	}
 
+	set_state(SERVER_INIT);
+
+	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", mail_ver());
+
 	ZERO_VAR(js_server_props);
 	SAFEPRINTF3(js_server_props.version,"%s %s%c",server_name, VERSION, REVISION);
 	js_server_props.version_detail=mail_ver();
@@ -6087,8 +6090,6 @@ void mail_server(void* arg)
 
 		(void)protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);
-
-		status("Initializing");
 
 		memset(&scfg, 0, sizeof(scfg));
 
@@ -6153,7 +6154,7 @@ void mail_server(void* arg)
 		mailproc_list=NULL;
 		mailproc_count=0;
 		iniFileName(mailproc_ini,sizeof(mailproc_ini),scfg.ctrl_dir,"mailproc.ini");
-		if((fp=iniOpenFile(mailproc_ini, /* create? */FALSE))!=NULL) {
+		if((fp=iniOpenFile(mailproc_ini, /* for_modify: */FALSE))!=NULL) {
 			lprintf(LOG_DEBUG,"Reading %s",mailproc_ini);
 			sec_list = iniReadSectionList(fp,/* prefix */NULL);
 			if((mailproc_count=strListCount(sec_list))!=0
@@ -6253,11 +6254,9 @@ void mail_server(void* arg)
 			_beginthread(sendmail_thread, 0, NULL);
 		}
 
-		status(STATUS_WFC);
-
 		/* Setup recycle/shutdown semaphore file lists */
-		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","mail");
-		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","mail");
+		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
+		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
 		semfile_list_add(&recycle_semfiles,startup->ini_fname);
 		SAFEPRINTF(path,"%smailsrvr.rec",scfg.ctrl_dir);	/* legacy */
 		semfile_list_add(&recycle_semfiles,path);
@@ -6271,10 +6270,10 @@ void mail_server(void* arg)
 		savemsg_mutex_created = true;
 
 		/* signal caller that we've started up successfully */
-		if(startup->started!=NULL)
-    		startup->started(startup->cbdata);
+		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"Mail Server thread started");
+		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "max_clients", startup->max_clients);
 
 		while(!terminated && !terminate_server) {
 			YIELD();
@@ -6391,6 +6390,8 @@ void mail_server(void* arg)
 			}
 		}
 
+		set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
+
 		if(protected_uint32_value(active_clients)) {
 			lprintf(LOG_INFO,"Waiting for %d active clients to disconnect..."
 				, protected_uint32_value(active_clients));
@@ -6442,4 +6443,6 @@ void mail_server(void* arg)
 	} while(!terminate_server);
 
 	protected_uint32_destroy(thread_count);
+
+	set_state(SERVER_STOPPED);
 }

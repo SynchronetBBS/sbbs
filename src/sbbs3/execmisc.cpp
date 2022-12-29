@@ -1529,7 +1529,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 			return(0);
 		case CS_TOGGLE_USER_MISC:
 			useron.misc^=*(uint32_t *)csi->ip;
-			putuserrec(&cfg,useron.number,U_MISC,8,ultoa(useron.misc,tmp,16));
+			putusermisc(useron.number, useron.misc);
 			csi->ip+=4;
 			return(0);
 		case CS_COMPARE_USER_MISC:
@@ -1541,7 +1541,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 			return(0);
 		case CS_TOGGLE_USER_CHAT:
 			useron.chat^=*(uint32_t *)csi->ip;
-			putuserrec(&cfg,useron.number,U_CHAT,8,ultoa(useron.chat,tmp,16));
+			putuserchat(useron.number, useron.chat);
 			csi->ip+=4;
 			return(0);
 		case CS_COMPARE_USER_CHAT:
@@ -1553,7 +1553,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 			return(0);
 		case CS_TOGGLE_USER_QWK:
 			useron.qwk^=*(uint32_t *)csi->ip;
-			putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,tmp,16));
+			putuserqwk(useron.number, useron.qwk);
 			csi->ip+=4;
 			return(0);
 		case CS_COMPARE_USER_QWK:

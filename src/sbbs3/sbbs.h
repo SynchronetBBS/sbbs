@@ -559,6 +559,7 @@ public:
 	char 	lbuf[LINE_BUFSIZE+1];/* Temp storage for each line output */
 	int		lbuflen;		/* Number of characters in line buffer */
 	uint	latr=0;			/* Starting attribute of line buffer */
+	uint	line_delay=0;	/* Delay duration (ms) after each line sent */
 	ulong	console;		/* Defines current Console settings */
 	char 	wordwrap[81];	/* Word wrap buffer */
 	time_t	now=0,			/* Used to store current time in Unix format */
@@ -700,7 +701,17 @@ public:
 	uint	getusrdir(uint dirnum);
 	uint	getusrlib(uint dirnum);
 
-	uint	userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
+	bool	putuserstr(int usernumber, enum user_field, const char *str);
+	bool	putuserdatetime(int usernumber, enum user_field, time_t t);
+	bool	putuserflags(int usernumber, enum user_field, uint32_t flags);
+	bool	putuserhex32(int usernumber, enum user_field, uint32_t value);
+	bool	putuserdec32(int usernumber, enum user_field, uint32_t value);
+	bool	putuserdec64(int usernumber, enum user_field, uint64_t value);
+	bool	putusermisc(int usernumber, uint32_t value);
+	bool	putuserchat(int usernumber, uint32_t value);
+	bool	putuserqwk(int usernumber, uint32_t value);
+
+	uint	finduserstr(uint usernumber, enum user_field, const char* str
 				,bool del=false, bool next=false);
 	ulong	gettimeleft(bool handle_out_of_time=true);
 	bool	gettimeleft_inside;
@@ -1122,12 +1133,18 @@ public:
 	void	qwk_success(ulong msgcnt, char bi, char prepack);
 	void	qwksetptr(uint subnum, char *buf, int reset);
 	void	qwkcfgline(char *buf,uint subnum);
-	int		set_qwk_flag(ulong flag);
+	bool	set_qwk_flag(ulong flag);
 	uint	resolve_qwkconf(uint confnum, int hubnum=-1);
-	bool	qwk_vote(str_list_t ini, const char* section, smb_net_type_t, const char* qnet_id, uint confnum, int hubnum);
-	bool	qwk_voting(str_list_t* ini, long offset, smb_net_type_t, const char* qnet_id, uint confnum, int hubnum = -1);
+	struct msg_filters {
+		str_list_t ip_can;
+		str_list_t host_can;
+		str_list_t subject_can;
+		str_list_t twit_list;
+	};
+	bool	qwk_msg_filtered(smbmsg_t* msg, msg_filters);
+	bool	qwk_vote(str_list_t ini, const char* section, smb_net_type_t, const char* qnet_id, uint confnum, msg_filters, int hubnum);
+	bool	qwk_voting(str_list_t* ini, long offset, smb_net_type_t, const char* qnet_id, uint confnum, msg_filters, int hubnum = -1);
 	void	qwk_handle_remaining_votes(str_list_t* ini, smb_net_type_t, const char* qnet_id, int hubnum = -1);
-	bool	qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_can, str_list_t subject_can, str_list_t twit_list=NULL);
 
 	/* pack_qwk.cpp */
 	bool	pack_qwk(char *packet, ulong *msgcnt, bool prepack);
@@ -1229,11 +1246,11 @@ extern "C" {
 	DLLEXPORT int		notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
 
 	/* logfile.cpp */
-	DLLEXPORT int		errorlog(scfg_t* cfg, int level, const char* host, const char* text);
+	DLLEXPORT int		errorlog(scfg_t* cfg, struct mqtt*, int level, const char* host, const char* text);
 
-	DLLEXPORT BOOL		hacklog(scfg_t* cfg, const char* prot, const char* user, const char* text
+	DLLEXPORT BOOL		hacklog(scfg_t* cfg, struct mqtt*, const char* prot, const char* user, const char* text
 										,const char* host, union xp_sockaddr* addr);
-	DLLEXPORT BOOL		spamlog(scfg_t* cfg, char* prot, char* action, char* reason
+	DLLEXPORT BOOL		spamlog(scfg_t* cfg, struct mqtt*, char* prot, char* action, char* reason
 										,char* host, char* ip_addr, char* to, char* from);
 
 	/* data.cpp */

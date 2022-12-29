@@ -906,8 +906,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							center(text[Deleted]);
 							if(!stricmp(cfg.sub[subnum]->misc&SUB_NAME
 								? useron.name : useron.alias, msg.from))
-								useron.posts=(ushort)adjustuserrec(&cfg,useron.number
-									,U_POSTS,-1); 
+								useron.posts=(ushort)adjustuserval(&cfg, useron.number, USER_POSTS, -1);
 						} 
 					}
 					smb_unlocksmbhdr(&smb);
@@ -1039,7 +1038,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					i=atoi(str);
 					if(!i) {
 						if(cfg.sub[subnum]->misc&SUB_NAME)
-							i=userdatdupe(0,U_NAME,LEN_NAME,str);
+							i=finduserstr(0, USER_NAME, str);
 						else
 							i=matchuser(&cfg,str,TRUE /* sysop_alias */); 
 					}
@@ -1211,7 +1210,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							if(noyes(text[AreYouSureQ]))
 								break;
 							purgeuser(cfg.sub[subnum]->misc&SUB_NAME
-								? userdatdupe(0,U_NAME,LEN_NAME,msg.from)
+								? finduserstr(0, USER_NAME, msg.from)
 								: matchuser(&cfg,msg.from,FALSE));
 							break;
 						case 'C':   /* Change message attributes */
@@ -1277,7 +1276,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							break;
 						case 'U':   /* User edit */
 							useredit(cfg.sub[subnum]->misc&SUB_NAME
-								? userdatdupe(0,U_NAME,LEN_NAME,msg.from)
+								? finduserstr(0, USER_NAME, msg.from)
 								: matchuser(&cfg,msg.from,TRUE /* sysop_alias */));
 							break;
 						case 'V':   /* Validate message */

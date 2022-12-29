@@ -13,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -40,6 +28,8 @@
 #include <ctype.h>		/* toupper/tolower */
 #include <limits.h>		/* CHAR_BIT */
 #include <math.h>		/* fmod */
+
+#include "ini_file.h"
 
 #if defined(__unix__)
 	#include <sys/ioctl.h>		/* ioctl() */
@@ -648,11 +638,11 @@ char* _ui64toa(uint64_t val, char* str, int radix)
 /****************************************************************************/
 /* Write the version details of the current operating system into str		*/
 /****************************************************************************/
-char* os_version(char *str)
+char* os_version(char *str, size_t size)
 {
 #if defined(__OS2__) && defined(__BORLANDC__)
 
-	sprintf(str,"OS/2 %u.%u (%u.%u)",_osmajor/10,_osminor/10,_osmajor,_osminor);
+	safe_snprintf(str, size, "OS/2 %u.%u (%u.%u)",_osmajor/10,_osminor/10,_osmajor,_osminor);
 
 #elif defined(_WIN32)
 
@@ -686,7 +676,7 @@ char* os_version(char *str)
 		}
 	}
 
-	sprintf(str,"Windows %sVersion %lu.%lu"
+	safe_snprintf(str, size, "Windows %sVersion %lu.%lu"
 			,winflavor
 			,winver.dwMajorVersion, winver.dwMinorVersion);
 	if(winver.dwBuildNumber)
@@ -695,25 +685,86 @@ char* os_version(char *str)
 		sprintf(str+strlen(str), " %s", winver.szCSDVersion);
 
 #elif defined(__unix__)
+	FILE* fp = fopen("/etc/os-release", "r");
+	if(fp == NULL)
+		fp = fopen("/usr/lib/os-release", "r");
+	if(fp != NULL) {
+		char value[INI_MAX_VALUE_LEN];
+		char* p = iniReadString(fp, NULL, "PRETTY_NAME", "Unix", value);
+		fclose(fp);
+		SKIP_CHAR(p, '"');
+		strncpy(str, p, size);
+		p = lastchar(str);
+		if(*p == '"')
+			*p = '\0';
+	} else {
+		struct utsname unixver;
 
-	struct utsname unixver;
-
-	if(uname(&unixver)<0)
-		sprintf(str,"Unix (uname errno: %d)",errno);
-	else
-		sprintf(str,"%s %s %s"
-			,unixver.sysname	/* e.g. "Linux" */
-			,unixver.release	/* e.g. "2.2.14-5.0" */
-			,unixver.machine	/* e.g. "i586" */
-			);
-
+		if(uname(&unixver) != 0)
+			safe_snprintf(str, size, "Unix (uname errno: %d)",errno);
+		else
+			safe_snprintf(str, size, "%s %s"
+				,unixver.sysname	/* e.g. "Linux" */
+				,unixver.release	/* e.g. "2.2.14-5.0" */
+				);
+	}
 #else	/* DOS */
 
-	sprintf(str,"DOS %u.%02u",_osmajor,_osminor);
+	safe_snprintf(str, size, "DOS %u.%02u",_osmajor,_osminor);
 
 #endif
 
 	return(str);
+}
+
+/****************************************************************************/
+/* Write the CPU architecture according to the Operating System into str	*/
+/****************************************************************************/
+char* os_cpuarch(char *str, size_t size)
+{
+#if defined(_WIN32)
+	SYSTEM_INFO sysinfo;
+
+#if _WIN32_WINNT < 0x0501
+	GetSystemInfo(&sysinfo);
+#else
+	GetNativeSystemInfo(&sysinfo);
+#endif
+	switch(sysinfo.wProcessorArchitecture) {
+		case PROCESSOR_ARCHITECTURE_AMD64:
+			safe_snprintf(str, size, "x64");
+			break;
+		case PROCESSOR_ARCHITECTURE_ARM:
+			safe_snprintf(str, size, "ARM");
+			break;
+#if defined PROCESSOR_ARCHITECTURE_ARM64
+		case PROCESSOR_ARCHITECTURE_ARM64:
+			safe_snprintf(str, size, "ARM64");
+			break;
+#endif
+		case PROCESSOR_ARCHITECTURE_IA64:
+			safe_snprintf(str, size, "IA-64");
+			break;
+		case PROCESSOR_ARCHITECTURE_INTEL:
+			safe_snprintf(str, size, "x86");
+			break;
+		default:
+			safe_snprintf(str, size, "unknown");
+			break;
+	}
+
+#elif defined(__unix__)
+
+	struct utsname unixver;
+
+	if(uname(&unixver) == 0)
+		safe_snprintf(str, size, "%s", unixver.machine);
+	else
+		safe_snprintf(str, size, "unknown");
+
+#endif
+
+	return str;
 }
 
 char* os_cmdshell(void)

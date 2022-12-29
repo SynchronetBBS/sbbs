@@ -1,0 +1,85 @@
+_New Config Files_
+
+Synchronet v3.20 introduces a new primary configuration file format using
+the .ini file syntax. Sysops can upgrade a Synchronet v3.1x configuration to
+v3.20 by running 'jsexec upgrade_to_v320.js' either before (preferably) or
+after upgrading their Synchronet executable binary files to v3.20. 
+
+The existing ctrl/*.cnf files are converted one-to-one to .ini equivalents:
+ctrl/main.cnf -> main.ini
+ctrl/msgs.cnf -> msgs.ini
+ctrl/file.cnf -> file.ini
+ctrl/xtrn.cnf -> xtrn.ini
+ctrl/chat.cnf -> chat.ini
+*/node.cnf -> node.ini
+
+_Are all configurations settings converted?_
+With the exception of a few never-used or no-longer-used configuration fields,
+the .cnf files should be completed represented by the newly created .ini
+files. Once converted, the old .cnf files will no longer be used and may be
+deleted if desired. If you're weary of the upgrade process, keep those old
+.cnf files around so that you can revert to Synchronet v3.1x if needed or
+even re-convert the .cnf files by executing upgrade_to_v320.js again if/when
+any issues in the script have been found and fixed later.
+
+_Why the change?_
+The now-legacy .cnf files were introduced in Synchronet v2.0 back in 1994.
+These .cnf files were designed for fast-loading: structured binary files with
+fixed length records comprised of fixed length fields (configuration
+properties) in a fixed order. Unfortunately, this lack of flexibility means it
+has also been an ongoing-challenge to add new configuration fields or extend
+the size of existing configuration fields. Most records included "padding"
+bytes for future expansion, but the future is now past and most of those bytes
+were consumed with new and expanded configuration fields; we've consumed the
+growth budget of most of the configuration records already. Now it'll be much
+easier to add new configuration fields and extend the size of existing fields
+when desired (e.g. no more 8-character internal code suffix limits!).
+
+Additionally, it has been a challenge to keep track of changes to the stock
+configuration files stored in the Synchronet source code repository. Revision
+control systems (e.g. CVS, Git) can track changes in text files much better
+than changes to binary files. Moving to text-based configuration files
+remedies this change management issue and allows sysops to easily search and
+compare the contents of Synchronet configuration files (e.g. comparing with
+backed-up or stock/original versions of .ini files).
+
+So... text?
+Yes, each .cnf file has now been replaced with an equivalent .ini file
+containing LF or CRLF-terminated lines of ASCII text conforming to the
+Synchronet supported .ini file syntax
+(https://wiki.synchro.net/config:ini_files#syntax).
+
+Interestingly, Synchronet v1 also used text configuration (*.cfg) files for
+the vast majority of its configuration settings, however the format was not as
+flexible as .ini and the large .cfg files were slow to load.
+
+The flexible format of .ini files does mean that they take more compute
+(and time) to parse than fixed-structure (e.g. .cnf) files, but through
+better programming and the power of modern computers, the difference should be
+negligible.
+
+_Manual Edits_
+Although .ini file can be directly edited using pretty much any plain-text
+editor, the primary supported method of manipulating these new configuration
+files is via the Synchronet Configuration Utility (SCFG). Any manually
+added comments (lines beginning with a semicolon) or white-space changes will
+be lost when the file is subsequently edited using SCFG. Unlike other
+Synchronet initialization files (e.g. sbbs.ini), there's been no effort made
+to make these new configuration files particularly easy to read (e.g. optional
+comments, named bits for bit-fields) and no effort made to maintain the exact
+key ordering or formatting used during any manual edits of the files. If a
+sysop chooses to make manual edits, they should either no longer use SCFG or
+be okay with the idea that the files will be completely re-written/formatted
+when subsequently edited with SCFG.
+
+_Why ini?_
+The .ini file format was chosen because this is already a first class data
+file format in Synchronet, supported equally well in the C/C++ code and
+JavaScript. Other structured text formats were considered (e.g. JSON, YAML),
+the pros and cons were weighed, and .ini won.
+
+_Attribution_
+Thanks to mcmlxxix for his cnflib.js load library that made this configuration
+migration (the creation of upgrade_to_v320.js) relatively painless as
+Synchronet v3.20 maintains no knowledge of or ability to parse .cnf files
+directly.

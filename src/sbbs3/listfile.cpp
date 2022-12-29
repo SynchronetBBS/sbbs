@@ -486,7 +486,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, ulong* row, uint total
 			return(3);
 		if(ch=='T') {
 			useron.misc ^= EXTDESC;
-			putuserrec(&cfg, useron.number, U_MISC, 0, ultoa(useron.misc,str,16));
+			putusermisc(useron.number, useron.misc);
 			return 2;
 		}
 		if(ch=='B' || ch=='D') {    /* Flag for batch download */
@@ -949,7 +949,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 				}
 				continue; 
 			}
-			if(!chk_ar(cfg.dir[f->dir]->dl_ar,&useron,&client)) {
+			if(!can_user_download(&cfg, f->dir, &useron, &client, /* reason: */NULL)) {
 				SYNC;
 				bputs(text[CantDownloadFromDir]);
 				mnemonics(text[QuitOrNext]);
