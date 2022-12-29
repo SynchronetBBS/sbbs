@@ -288,7 +288,7 @@ unsigned vdd_read(BYTE* p, unsigned count)
 	count=RingBufRead(&rdbuf,p,count);
 	if(count==0) {
 		lputs(LOG_ERR,"!VDD_READ: RingBufRead read 0, waiting");
-		if(WaitforEvent(rdbuf.data_event, READ_TIMEOUT) != WAIT_OBJECT_0)
+		if(WaitForEvent(rdbuf.data_event, READ_TIMEOUT) != WAIT_OBJECT_0)
 			lputs(LOG_ERR,"!VDD_READ: rdbuf sem timeout");
 		count = RingBufRead(&rdbuf,p,count);
 		lputs(LOG_ERR,"!VDD_READ: RingBufRead read 0 (after wait)");
