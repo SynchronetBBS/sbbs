@@ -50,7 +50,7 @@
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
     <RELEASELIBPATH value="$(BCB)\lib\release"/>
     <LINKER value="ilink32"/>
-    <USERDEFINES value="SBBS;RINGBUF_SEM;RINGBUF_MUTEX;RINGBUF_EVENT;USE_CRYPTLIB;_DEBUG"/>
+    <USERDEFINES value="SBBS;RINGBUF_MUTEX;RINGBUF_EVENT;USE_CRYPTLIB;_DEBUG"/>
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
     <INCLUDEPATH value="..\;..;$(BCB)\Projects;..\..\xpdev;..\..\smblib;..\..\hash;$(BCB)\include;$(BCB)\include\vcl;..\..\..\3rdp\win32.release\cryptlib\include;..\..\comio"/>
@@ -63,7 +63,7 @@
     <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev 
       -I..\..\smblib -I..\..\hash -I$(BCB)\include -I$(BCB)\include\vcl 
       -I..\..\..\3rdp\win32.release\cryptlib\include -I..\..\comio -src_suffix 
-      cpp -DSBBS -DRINGBUF_SEM -DRINGBUF_MUTEX -DUSE_CRYPTLIB -D_DEBUG -boa"/>
+      cpp -DSBBS -DRINGBUF_EVENT -DRINGBUF_MUTEX -DUSE_CRYPTLIB -D_DEBUG -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
       -tW -tWM"/>
     <PFLAGS value="-$Y+ -$W -$O- -$A8 -v -JPHNE -M"/>
@@ -221,11 +221,11 @@ Item0=$(BCB)\source\vcl
 
 [HistoryLists\hlConditionals]
 Count=9
-Item0=SBBS;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB;_DEBUG
-Item1=SBBS;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB
-Item2=SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX;USE_CRYPTLIB
-Item3=SBBS;_DEBUG;RINGBUF_SEM;RINGBUF_MUTEX
-Item4=SBBS;_DEBUG;RINGBUF_SEM
+Item0=SBBS;RINGBUF_EVENT;RINGBUF_MUTEX;USE_CRYPTLIB;_DEBUG
+Item1=SBBS;RINGBUF_EVENT;RINGBUF_MUTEX;USE_CRYPTLIB
+Item2=SBBS;_DEBUG;RINGBUF_EVENT;RINGBUF_MUTEX;USE_CRYPTLIB
+Item3=SBBS;_DEBUG;RINGBUF_EVENT;RINGBUF_MUTEX
+Item4=SBBS;_DEBUG;RINGBUF_EVENT
 Item5=SBBS;_DEBUG
 Item6=SBBS
 Item7=SBBS;SMB_GETMSGTXT;_DEBUG

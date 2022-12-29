@@ -41,9 +41,6 @@
 
 #include "gen_defs.h"
 
-#ifdef RINGBUF_SEM
-	#include "semwrap.h"	/* sem_t */
-#endif
 #ifdef RINGBUF_EVENT
 	#include "eventwrap.h"	/* xpevent_t */
 #endif
@@ -68,13 +65,11 @@ typedef struct {
 	BYTE* 	pTail;			/* next byte to be consumed */
 	BYTE* 	pEnd; 			/* end of the buffer, used for wrap around */
     DWORD	size;
-#ifdef RINGBUF_SEM
-	sem_t	sem;			/* semaphore used to signal data waiting */
-	sem_t	highwater_sem;	/* semaphore used to signal highwater mark reached */
-	DWORD	highwater_mark;
-#endif
 #ifdef RINGBUF_EVENT
 	xpevent_t empty_event;
+	xpevent_t data_event;
+	xpevent_t highwater_event;
+	DWORD	highwater_mark;
 #endif
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_t mutex;	/* mutex used to protect ring buffer pointers */

@@ -80,7 +80,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;i386;RINGBUF_SEM;RINGBUF_MUTEX;NO_SOCKET_SUPPORT;_DEBUG;SBBSEXEC_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;i386;RINGBUF_MUTEX;NO_SOCKET_SUPPORT;_DEBUG;SBBSEXEC_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CallingConvention>StdCall</CallingConvention>
@@ -98,7 +98,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;i386;RINGBUF_SEM;RINGBUF_MUTEX;NO_SOCKET_SUPPORT;NDEBUG;SBBSEXEC_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;i386;RINGBUF_MUTEX;NO_SOCKET_SUPPORT;NDEBUG;SBBSEXEC_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CallingConvention>StdCall</CallingConvention>
