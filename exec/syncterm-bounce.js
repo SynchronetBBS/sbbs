@@ -204,7 +204,6 @@ else {
 
 	// Check that pixel graphics are available
 	w('\x1b[<c');
-	console.flush();
 	if (!pixel_capability()) {
 		console.pause()
 		console.ctrlkey_passthru = opt;
@@ -213,7 +212,6 @@ else {
 
 		// Check for the icons in the cache...
 		w('\x1b_SyncTERM:C;L;SyncTERM.p?m\x1b\\');
-		console.flush();
 		var lst = read_apc();
 		var m = lst.match(/\nSyncTERM.ppm\t([0-9a-f]+)\n/);
 		if (m == null || m[1] !== '69de4f5fe394c1a8221927da0bfe9845') {
@@ -229,7 +227,6 @@ else {
 
 		// Get the screen dimensions
 		w('\x1b[?2;1S');
-		console.flush();
 		var dim = read_dim()
 
 		// Copy current screen...
@@ -240,7 +237,8 @@ else {
 		var remain;
 		var dir = {x:4 * (random(1) ? -1 : 1), y:2 * (random(1) ? -1 : 1)};
 
-		while (console.inkey(0) == '') {
+		while (console.inkey(1) == '') {
+			mswait(10);
 			pos.x += dir.x;
 			pos.y += dir.y;
 			if (pos.x - 4 < 0) {
@@ -263,14 +261,6 @@ else {
 			w('\x1b_SyncTERM:P;Paste;DX='+pos.x+';DY='+pos.y+';MBUF;B=1\x1b\\');
 			// Erase old location
 			w('\x1b_SyncTERM:P;Paste;SX='+(pos.x - 4)+';SY='+(pos.y - 4)+';SW='+(imgdim.width + 8)+';SH='+(imgdim.height + 8)+';DX='+(pos.x - 4)+';DY='+(pos.y - 4)+';MBUF;MY=64\x1b\\');
-			remain = 10; // Minimum wait... will likely be longer though.
-			while (console.output_buffer_level) {
-				console.flush();
-				mswait(1);
-				remain--;
-			}
-			if (remain > 0)
-				mswait(remain);
 		}
 		// Erase final
 		w('\x1b_SyncTERM:P;Paste;SX=' + pos.x + ';SY=' + pos.y + ';SW=' + imgdim.width + ';SH=' + imgdim.height + ';DX=' + pos.x + ';DY=' + pos.y + '\x1b\\');
