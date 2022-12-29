@@ -264,6 +264,7 @@ else {
 			w('\x1b_SyncTERM:P;Paste;SX='+(pos.x - 4)+';SY='+(pos.y - 4)+';SW='+(imgdim.width + 8)+';SH='+(imgdim.height + 8)+';DX='+(pos.x - 4)+';DY='+(pos.y - 4)+';MBUF;MY=64\x1b\\');
 			remain = 10; // Minimum wait... will likely be longer though.
 			while (console.output_buffer_level) {
+				console.flush();
 				mswait(1);
 				remain--;
 			}
