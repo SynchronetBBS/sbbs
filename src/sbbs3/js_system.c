@@ -952,6 +952,40 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
+
+static JSBool
+js_find_login_id(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		p;
+	JSString*	js_str;
+	BOOL		sysop_alias=TRUE;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	js_system_private_t* sys;
+	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
+		return JS_FALSE;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
+		return(JS_TRUE);
+	}
+
+	JSSTRING_TO_ASTRING(cx, js_str, p, (LEN_ALIAS > LEN_NAME) ? LEN_ALIAS+2:LEN_NAME+2, NULL);
+	if(p==NULL) {
+		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
+		return(JS_TRUE);
+	}
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(find_login_id(sys->cfg, p)));
+	JS_RESUMEREQUEST(cx, rc);
+	return(JS_TRUE);
+}
+
 #endif
 
 static JSBool
@@ -2098,6 +2132,10 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("returns name of user that matches alias (if found in <tt>ctrl/alias.cfg</tt>)")
 	,310
 	},		
+	{"find_login_id",	js_find_login_id,	1,	JSTYPE_NUMBER,	JSDOCSTR("user-id")
+	,JSDOCSTR("find a user's login ID (alias, real name, or number), returns matching user record number or 0 if not found")
+	,32000
+	},
 	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("username [,sysop_alias=<tt>true</tt>]")
 	,JSDOCSTR("exact user name matching, returns number of user whose name/alias matches <i>username</i> "
 		" or 0 if not found, matches well-known sysop aliases by default")
