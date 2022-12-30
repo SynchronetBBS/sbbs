@@ -2297,43 +2297,41 @@ void output_thread(void* arg)
 	 * Auto-tune the highwater mark to be the negotiated MSS for the
 	 * socket (when possible)
 	 */
-	if(!sbbs->outbuf.highwater_mark) {
-		socklen_t	sl;
-		sl=sizeof(i);
-		if(!getsockopt(sbbs->client_socket, IPPROTO_TCP, TCP_MAXSEG,
+	socklen_t	sl;
+	sl=sizeof(i);
+	if(!getsockopt(sbbs->client_socket, IPPROTO_TCP, TCP_MAXSEG,
 #ifdef _WIN32
-			(char *)
+		(char *)
 #endif
-			&i, &sl)) {
-			/* Check for sanity... */
-			if(i>100) {
+		&i, &sl)) {
+		/* Check for sanity... */
+		if(i>100) {
 #ifdef _WIN32
 #ifdef TCP_TIMESTAMPS
-				DWORD ts;
-				sl = sizeof(ts);
-				if (!getsockopt(sbbs->client_socket, IPPROTO_TCP, TCP_TIMESTAMPS, (char *)&ts, &sl)) {
-					if (ts)
-						i -= 12;
-				}
+			DWORD ts;
+			sl = sizeof(ts);
+			if (!getsockopt(sbbs->client_socket, IPPROTO_TCP, TCP_TIMESTAMPS, (char *)&ts, &sl)) {
+				if (ts)
+					i -= 12;
+			}
 #endif
 #else
 #if (defined(TCP_INFO) && defined(TCPI_OPT_TIMESTAMPS))
-				struct tcp_info tcpi;
+			struct tcp_info tcpi;
 
-				sl = sizeof(tcpi);
-				if (!getsockopt(sbbs->client_socket, IPPROTO_TCP, TCP_INFO,&tcpi, &sl)) {
-					if (tcpi.tcpi_options & TCPI_OPT_TIMESTAMPS)
-						i -= 12;
-				}
+			sl = sizeof(tcpi);
+			if (!getsockopt(sbbs->client_socket, IPPROTO_TCP, TCP_INFO,&tcpi, &sl)) {
+				if (tcpi.tcpi_options & TCPI_OPT_TIMESTAMPS)
+					i -= 12;
+			}
 #endif
 #endif
-				sbbs->outbuf.highwater_mark=i;
-				lprintf(LOG_DEBUG,"Autotuning outbuf highwater mark to %d based on MSS",i);
-				mss=sbbs->outbuf.highwater_mark;
-				if(mss>IO_THREAD_BUF_SIZE) {
-					mss=IO_THREAD_BUF_SIZE;
-					lprintf(LOG_DEBUG,"MSS (%d) is higher than IO_THREAD_BUF_SIZE (%d)",i,IO_THREAD_BUF_SIZE);
-				}
+			sbbs->outbuf.highwater_mark=i;
+			lprintf(LOG_DEBUG,"Autotuning outbuf highwater mark to %d based on MSS",i);
+			mss=sbbs->outbuf.highwater_mark;
+			if(mss>IO_THREAD_BUF_SIZE) {
+				mss=IO_THREAD_BUF_SIZE;
+				lprintf(LOG_DEBUG,"MSS (%d) is higher than IO_THREAD_BUF_SIZE (%d)",i,IO_THREAD_BUF_SIZE);
 			}
 		}
 	}
