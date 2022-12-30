@@ -89,6 +89,8 @@ DLLEXPORT int	getnodeclient(scfg_t*, uint number, client_t*, time_t*);
 DLLEXPORT uint	finduserstr(scfg_t*, uint usernumber, enum user_field, const char *str
 					,BOOL del, BOOL next, void (*progress)(void*, int, int), void* cbdata);
 
+DLLEXPORT uint	find_login_id(scfg_t*, const char* user_id);
+
 DLLEXPORT BOOL	chk_ar(scfg_t*, uchar* str, user_t*, client_t*); /* checks access requirements */
 
 DLLEXPORT uint32_t getusermisc(scfg_t*, int usernumber);

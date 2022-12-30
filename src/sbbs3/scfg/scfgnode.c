@@ -215,12 +215,6 @@ void node_cfg()
 				done=0;
 				while(!done) {
 					i=0;
-					sprintf(opt[i++],"%-27.27s%s","Allow Login by User Number"
-						,cfg.node_misc&NM_NO_NUM ? "No":"Yes");
-					sprintf(opt[i++],"%-27.27s%s","Allow Login by Real Name"
-						,cfg.node_misc&NM_LOGON_R ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s%s","Always Prompt for Password"
-						,cfg.node_misc&NM_LOGON_P ? "Yes":"No");
 					sprintf(opt[i++],"%-27.27s%s","Allow 8-bit Remote Logins"
 						,cfg.node_misc&NM_7BITONLY ? "No":"Yes");
 					sprintf(opt[i++],"%-27.27s%s","Spinning Pause Prompt"
@@ -243,63 +237,6 @@ void node_cfg()
 							done=1;
 							break;
 						case 0:
-							i=cfg.node_misc&NM_NO_NUM ? 1:0;
-							uifc.helpbuf=
-								"`Allow Login by User Number:`\n"
-								"\n"
-								"If you want users to be able login using their user number at the\n"
-								"login prompt, set this option to `Yes`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-								,"Allow Login by User Number",uifcYesNoOpts);
-							if(i==0 && cfg.node_misc&NM_NO_NUM) {
-								cfg.node_misc&=~NM_NO_NUM;
-								uifc.changes=1; 
-							}
-							else if(i==1 && !(cfg.node_misc&NM_NO_NUM)) {
-								cfg.node_misc|=NM_NO_NUM;
-								uifc.changes=1; 
-							}
-							break;
-						case 1:
-							i=cfg.node_misc&NM_LOGON_R ? 0:1;
-							uifc.helpbuf=
-								"`Allow Login by Real Name:`\n"
-								"\n"
-								"If you want users to be able login using their real name as well as\n"
-								"their alias, set this option to `Yes`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-								,"Allow Login by Real Name",uifcYesNoOpts);
-							if(i==0 && !(cfg.node_misc&NM_LOGON_R)) {
-								cfg.node_misc|=NM_LOGON_R;
-								uifc.changes=1; 
-							}
-							else if(i==1 && (cfg.node_misc&NM_LOGON_R)) {
-								cfg.node_misc&=~NM_LOGON_R;
-								uifc.changes=1; 
-							}
-							break;
-						case 2:
-							i=cfg.node_misc&NM_LOGON_P ? 0:1;
-							uifc.helpbuf=
-								"`Always Prompt for Password:`\n"
-								"\n"
-								"If you want to have attempted logins using an unknown user name still\n"
-								"prompt for a password (i.e. for enhanced security), set this option to `Yes`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-								,"Always Prompt for Password",uifcYesNoOpts);
-							if(i==0 && !(cfg.node_misc&NM_LOGON_P)) {
-								cfg.node_misc|=NM_LOGON_P;
-								uifc.changes=1; 
-							}
-							else if(i==1 && (cfg.node_misc&NM_LOGON_P)) {
-								cfg.node_misc&=~NM_LOGON_P;
-								uifc.changes=1; 
-							}
-							break;
-						case 3:
 							i=cfg.node_misc&NM_7BITONLY ? 0:1;
 							uifc.helpbuf=
 								"`Allow 8-bit Remote Input During Login:`\n"
@@ -319,7 +256,7 @@ void node_cfg()
 								uifc.changes=1; 
 							}
 							break;
-						case 4:
+						case 1:
 							i=cfg.node_misc&NM_NOPAUSESPIN ? 1:0;
 							uifc.helpbuf=
 								"`Spinning Pause Prompt:`\n"
@@ -338,7 +275,7 @@ void node_cfg()
 								uifc.changes=1; 
 							}
 							break;
-						case 5:
+						case 2:
 							i=cfg.node_misc&NM_CLOSENODEDAB ? 1:0;
 							uifc.helpbuf=
 								"`Keep Node File Open:`\n"

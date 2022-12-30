@@ -146,6 +146,21 @@ BOOL matchusername(scfg_t* cfg, const char* name, const char* comp)
 	return *np == '\0' && (*cp == '\0' || *cp == '@');
 }
 
+uint find_login_id(scfg_t* cfg, const char* user_id)
+{
+	int usernum;
+
+	if((cfg->sys_login & LOGIN_USERNUM) && IS_DIGIT(user_id[0]))
+		return atoi(user_id);
+
+	usernum = matchuser(cfg, user_id, /* sysop_alias: */FALSE);
+	if(usernum < 1 && check_realname(cfg, user_id) && (cfg->sys_login & LOGIN_REALNAME))
+		usernum = finduserstr(cfg, 0, USER_NAME, user_id
+			,/* del: */FALSE, /* next: */FALSE
+			,/* Progress_cb: */NULL, /* cbdata: */NULL);
+	return usernum;
+}
+
 /****************************************************************************/
 uint total_users(scfg_t* cfg)
 {

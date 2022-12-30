@@ -1,13 +1,19 @@
 // Convert SBBS v3.1x ctrl/*.cnf to SBBS v3.2 ctrl/*.ini
 
 print("Upgrading Synchronet v3.1x config files to v3.20");
+load('sbbsdefs.js');
 var cnflib = load({}, 'cnflib.js');
+var node_settings;
 
 function upgrade_node(dir)
 {
 	var path = dir + "node.cnf";
 	print(path + " -> node.ini");
 	var cnf = cnflib.read(path);
+	if(!cnf) {
+		alert("Error reading " + path);
+		exit(1);
+	}
 	var ini = new File(dir + "node.ini");
 	ini.ini_section_separator = "";
 	if(!ini.open("w+")) {
@@ -16,11 +22,16 @@ function upgrade_node(dir)
 	}
 	ini.iniSetObject(null, cnf);
 	ini.close();
+	node_settings = cnf.settings;
 }
 
 //---------------------------------------------------------------------------
 print("main.cnf -> main.ini");
 var cnf = cnflib.read("main.cnf");
+if(!cnf) {
+	alert("Error reading main.cnf");
+	exit(1);
+}
 var ini = new File("main.ini");
 ini.ini_section_separator = "";
 if(!ini.open("w+")) {
@@ -89,6 +100,14 @@ for(var i in cnf.node_dir) {
 	upgrade_node(path);
 }
 delete cnf.node_dir;
+cnf.login = 0;
+if(node_settings & NM_LOGON_R)
+	cnf.login |= LOGIN_REALNAME;
+if(node_settings & NM_LOGON_P)
+	cnf.login |= LOGIN_PWPROMPT;
+if(!(node_settings & NM_NO_NUM))
+	cnf.login |= LOGIN_USERNUM;
+
 for(var i in cnf.validation_set)
 	ini.iniSetObject("valset:" + i, cnf.validation_set[i]);
 delete cnf.validation_set;

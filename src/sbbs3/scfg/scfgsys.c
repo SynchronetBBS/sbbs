@@ -63,6 +63,7 @@ static void configure_dst(void)
 void sys_cfg(void)
 {
 	static int sys_dflt,adv_dflt,tog_dflt,new_dflt;
+	static int tog_bar;
 	static int adv_bar;
 	char str[81],done=0;
 	int i,j,k,dflt,bar;
@@ -532,6 +533,10 @@ void sys_cfg(void)
 					i=0;
 					sprintf(opt[i++],"%-33.33s%s","Allow User Aliases"
 						,cfg.uq&UQ_ALIASES ? "Yes" : "No");
+					sprintf(opt[i++],"%-33.33s%s","Allow Login by Real Name"
+						,(!(cfg.uq&UQ_ALIASES) || cfg.sys_login & LOGIN_REALNAME) ? "Yes" : "No");
+					sprintf(opt[i++],"%-33.33s%s","Allow Login by User Number"
+						,(cfg.sys_login & LOGIN_USERNUM) ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Allow Time Banking"
 						,cfg.sys_misc&SM_TIMEBANK ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Allow Credit Conversions"
@@ -540,6 +545,8 @@ void sys_cfg(void)
 						,cfg.sys_misc&SM_R_SYSOP ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Display/Log Passwords Locally"
 						,cfg.sys_misc&SM_ECHO_PW ? "Yes" : "No");
+					sprintf(opt[i++],"%-33.33s%s","Always Prompt for Password"
+						,cfg.sys_login & LOGIN_PWPROMPT ? "Yes":"No");
 					sprintf(opt[i++],"%-33.33s%s","Short Sysop Page"
 						,cfg.sys_misc&SM_SHRTPAGE ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Include Sysop in Statistics"
@@ -567,12 +574,12 @@ void sys_cfg(void)
 						"This is a menu of system related options that can be toggled between\n"
 						"two or more states, such as `Yes` and `No`.\n"
 					;
-					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,41,&tog_dflt,0
+					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,41,&tog_dflt,&tog_bar
 						,"Toggle Options",opt)) {
 						case -1:
 							done=1;
 							break;
-						case 0:
+						case __COUNTER__:
 							i=cfg.uq&UQ_ALIASES ? 0:1;
 							uifc.helpbuf=
 								"`Allow Users to Use Aliases:`\n"
@@ -592,7 +599,41 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 1:
+						case __COUNTER__:
+							if(!(cfg.uq&UQ_ALIASES))
+								break;
+							i = (cfg.sys_login & LOGIN_REALNAME) ? 0:1;
+							uifc.helpbuf=
+								"`Allow Login by Real Name:`\n"
+								"\n"
+								"If you want users to be able login using their real name as well as\n"
+								"their alias, set this option to `Yes`.\n"
+							;
+							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
+								,"Allow Login by Real Name",uifcYesNoOpts);
+							if((i==0 && !(cfg.sys_login & LOGIN_REALNAME))
+								|| (i==1 && (cfg.sys_login & LOGIN_REALNAME))) {
+								cfg.sys_login ^= LOGIN_REALNAME;
+								uifc.changes=1; 
+							}
+							break;
+						case __COUNTER__:
+							i = (cfg.sys_login & LOGIN_USERNUM) ? 0:1;
+							uifc.helpbuf=
+								"`Allow Login by User Number:`\n"
+								"\n"
+								"If you want users to be able login using their user number at the\n"
+								"login prompt, set this option to `Yes`.\n"
+							;
+							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
+								,"Allow Login by User Number",uifcYesNoOpts);
+							if((i==0 && !(cfg.sys_login & LOGIN_USERNUM))
+								|| (i==1 && (cfg.sys_login & LOGIN_USERNUM))) {
+								cfg.sys_login ^= LOGIN_USERNUM;
+								uifc.changes=1; 
+							}
+							break;
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_TIMEBANK ? 0:1;
 							uifc.helpbuf=
 								"`Allow Time Banking:`\n"
@@ -614,7 +655,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 2:
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_NOCDTCVT ? 1:0;
 							uifc.helpbuf=
 								"`Allow Credits to be Converted into Minutes:`\n"
@@ -635,7 +676,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 3:
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_R_SYSOP ? 0:1;
 							uifc.helpbuf=
 								"`Allow Sysop Access:`\n"
@@ -654,7 +695,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 4:
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_ECHO_PW ? 0:1;
 							uifc.helpbuf=
 								"`Display/Log Passwords Locally:`\n"
@@ -675,7 +716,24 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 5:
+						case __COUNTER__:
+							i=cfg.sys_login & LOGIN_PWPROMPT ? 0:1;
+							uifc.helpbuf=
+								"`Always Prompt for Password:`\n"
+								"\n"
+								"If you want to have attempted logins using an unknown user name still\n"
+								"prompt for a password (i.e. for enhanced security), set this option to\n"
+								"`Yes`.\n"
+							;
+							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
+								,"Always Prompt for Password",uifcYesNoOpts);
+							if((i==0 && !(cfg.sys_login & LOGIN_PWPROMPT))
+								|| (i==1 && (cfg.sys_login & LOGIN_PWPROMPT))) {
+								cfg.sys_login ^= LOGIN_PWPROMPT;
+								uifc.changes=1; 
+							}
+							break;
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_SHRTPAGE ? 0:1;
 							uifc.helpbuf=
 								"`Short Sysop Page:`\n"
@@ -694,7 +752,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 6:
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_SYSSTAT ? 0:1;
 							uifc.helpbuf=
 								"`Include Sysop Activity in System Statistics:`\n"
@@ -716,7 +774,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 7:
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_CLOSED ? 0:1;
 							uifc.helpbuf=
 								"`Closed to New Users:`\n"
@@ -734,7 +792,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 8:
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_LISTLOC ? 0:1;
 							uifc.helpbuf=
 								"`User Location in User Lists:`\n"
@@ -755,7 +813,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 9:
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_MILITARY ? 0:1;
 							uifc.helpbuf=
 								"`Military:`\n"
@@ -774,7 +832,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 10:
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_EURODATE ? 0:1;
 							uifc.helpbuf=
 								"`European Date Format:`\n"
@@ -793,7 +851,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 11:
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_TIME_EXP ? 0:1;
 							uifc.helpbuf=
 								"`User Expires When Out-of-time:`\n"
@@ -812,7 +870,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 12:
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_SYSPASSLOGIN ? 0:1;
 							uifc.helpbuf=
 								"`Require System Password for Sysop Login:`\n"
@@ -832,7 +890,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 13:
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_NOSYSINFO ? 1:0;
 							uifc.helpbuf=
 								"`Display System Information During Logon:`\n"
@@ -851,7 +909,7 @@ void sys_cfg(void)
 								uifc.changes=1; 
 							}
 							break;
-						case 14:
+						case __COUNTER__:
 							i=cfg.sys_misc&SM_NONODELIST ? 1:0;
 							uifc.helpbuf=
 								"`Display Active Node List During Logon:`\n"

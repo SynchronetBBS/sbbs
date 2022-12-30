@@ -2423,7 +2423,7 @@ static void ctrl_thread(void* arg)
 			SKIP_WHITESPACE(p);
 			truncsp(p);
 			SAFECOPY(user.alias,p);
-			user.number=matchuser(&scfg,user.alias,FALSE /*sysop_alias*/);
+			user.number = find_login_id(&scfg, user.alias);
 			if(!user.number && (stricmp(user.alias,"anonymous") == 0 || stricmp(user.alias, "ftp") == 0))
 				user.number=matchuser(&scfg,"guest",FALSE);
 			if(user.number && getuserdat(&scfg, &user)==0 && user.pass[0]==0) 
@@ -2439,7 +2439,7 @@ static void ctrl_thread(void* arg)
 			SKIP_WHITESPACE(p);
 
 			SAFECOPY(password,p);
-			user.number=matchuser(&scfg,user.alias,FALSE /*sysop_alias*/);
+			user.number = find_login_id(&scfg, user.alias);
 			if(!user.number) {
 				if(scfg.sys_misc&SM_ECHO_PW)
 					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: '%s' (password: %s)",sock,user.alias,p);

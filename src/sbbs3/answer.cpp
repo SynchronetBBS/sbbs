@@ -91,7 +91,7 @@ bool sbbs_t::answer()
 			truncstr(terminal,"/");
 			useron.number = 0;
 			if(rlogin_name[0])
-				useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
+				useron.number = find_login_id(&cfg, rlogin_name);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
 				SAFEPRINTF(path,"%srlogin.cfg",cfg.ctrl_dir);
@@ -194,9 +194,7 @@ bool sbbs_t::answer()
 			rlogin_name[0] = 0;
 			pthread_mutex_unlock(&ssh_mutex);
 		}
-		useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
-		if(!useron.number && check_realname(&cfg, rlogin_name) && cfg.node_misc & NM_LOGON_R)
-			useron.number = finduserstr(0, USER_NAME, rlogin_name);
+		useron.number = find_login_id(&cfg, rlogin_name);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);
 			for(i=0;i<3 && online;i++) {
@@ -464,7 +462,7 @@ bool sbbs_t::answer()
 	if(!useron.number 
 		&& rlogin_name[0]!=0 
 		&& !(cfg.sys_misc&SM_CLOSED) 
-		&& !matchuser(&cfg, rlogin_name, /* Sysop alias: */FALSE)
+		&& !find_login_id(&cfg, rlogin_name)
 		&& !::trashcan(&cfg, rlogin_name, "name")) {
 		lprintf(LOG_INFO, "%s !UNKNOWN specified username: '%s', starting new user signup", client.protocol,rlogin_name);
 		bprintf("%s: %s\r\n", text[UNKNOWN_USER], rlogin_name);

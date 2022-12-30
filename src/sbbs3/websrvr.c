@@ -1932,7 +1932,7 @@ static BOOL check_ars(http_session_t * session)
 	}
 
 	/* Require a password */
-	i=matchuser(&scfg, session->req.auth.username, FALSE);
+	i = find_login_id(&scfg, session->req.auth.username);
 	if(i==0) {
 		if(session->last_user_num!=0) {
 			if(session->last_user_num>0)
@@ -5510,10 +5510,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	memset(&user,0,sizeof(user));
 
-	if(IS_DIGIT(*username))
-		user.number=atoi(username);
-	else if(*username)
-		user.number=matchuser(&scfg,username,FALSE);
+	user.number = find_login_id(&scfg, username);
 
 	if(getuserdat(&scfg,&user)!=0) {
 		lprintf(LOG_NOTICE,"%04d !USER NOT FOUND: '%s'"

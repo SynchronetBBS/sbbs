@@ -60,6 +60,11 @@ var   SYS_USRVDELM	=(1<<30);	/* Users can see deleted msgs				*/
 var   SYS_SYSVDELM	=(1<<31);	/* Sysops can see deleted msgs				*/
 					    		/********************************************/
 
+								// system.login_settings
+var	LOGIN_USERNUM	=(1<<0);	// Allow logins by user number
+var	LOGIN_REALNAME	=(1<<1);	// Allow logins by user's real name
+var	LOGIN_PWPROMPT	=(1<<2);	// Always display password prompt, even for bad login-id
+
 						    	/********************************************/
     							/* bbs.sys_status							*/
 							    /********************************************/

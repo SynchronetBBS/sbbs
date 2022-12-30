@@ -128,6 +128,7 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 	iniSetString(&ini, ROOT_SECTION, "password", cfg->sys_pass, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "timezone", cfg->sys_timezone, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->sys_misc, NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "login", cfg->sys_login, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "lastnode", cfg->sys_lastnode, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "pwdays", cfg->sys_pwdays, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "deldays", cfg->sys_deldays, NULL);

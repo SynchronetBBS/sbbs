@@ -470,7 +470,8 @@ typedef struct
 	uint16_t		mdm_ansdelay;		/* Modem seconds to delay after answer */
 	uchar			mdm_rings;			/* Rings to wait till answer */
 
-	int32_t 		sys_misc;			/* System Misc Settings */
+	uint32_t		sys_login;			// Login Settings (Bit-flags)
+	uint32_t 		sys_misc;			/* System Misc Settings */
 	char 			sys_pass[41];		/* System Pass Word */
 	char 			sys_name[41];		/* System Name */
 	char 			sys_id[LEN_QWKID+1];/* System ID for QWK Packets */

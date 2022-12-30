@@ -41,6 +41,7 @@ enum {
 	,SYS_PROP_OP_AVAIL
 	,SYS_PROP_ID
 	,SYS_PROP_MISC
+	,SYS_PROP_LOGIN
 	,SYS_PROP_INETADDR
 	,SYS_PROP_LOCATION
 	,SYS_PROP_TIMEZONE
@@ -147,6 +148,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SYS_PROP_MISC:
 			*vp=UINT_TO_JSVAL(cfg->sys_misc);
+			break;
+		case SYS_PROP_LOGIN:
+			*vp=UINT_TO_JSVAL(cfg->sys_login);
 			break;
 		case SYS_PROP_INETADDR:
 			p=cfg->sys_inetaddr;
@@ -372,6 +376,9 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 		case SYS_PROP_MISC:
 			JS_ValueToECMAUint32(cx, *vp, (uint32_t*)&sys->cfg->sys_misc);
 			break;
+		case SYS_PROP_LOGIN:
+			JS_ValueToECMAUint32(cx, *vp, (uint32_t*)&sys->cfg->sys_login);
+			break;
 		case SYS_PROP_OP_AVAIL:
 			if(!set_sysop_availability(sys->cfg, JSVAL_TO_BOOLEAN(*vp))) {
 				JS_ReportError(cx, "%s: Failed to set sysop availability", __FUNCTION__);
@@ -396,6 +403,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 	{	"operator_available",		SYS_PROP_OP_AVAIL,	JSPROP_ENUMERATE,	31801  },
 	{	"qwk_id",					SYS_PROP_ID,		SYSOBJ_FLAGS,		310  },
 	{	"settings",					SYS_PROP_MISC,		JSPROP_ENUMERATE,	310  },
+	{	"login_settings",			SYS_PROP_LOGIN,		JSPROP_ENUMERATE,	32000  },
 	{	"inetaddr",					SYS_PROP_INETADDR,	JSPROP_READONLY,	310  },	/* alias */
 	{	"inet_addr",				SYS_PROP_INETADDR,	SYSOBJ_FLAGS,		311  },
 	{	"location",					SYS_PROP_LOCATION,	SYSOBJ_FLAGS,		310  },
