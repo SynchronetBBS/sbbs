@@ -20240,12 +20240,9 @@ function getExternalEditorQuoteWrapCfgFromSCFG(pEditorCode)
 				var xtrnIniFile = new File(system.ctrl_dir + "xtrn.ini");
 				if (xtrnIniFile.open("r"))
 				{
-					var editorCfg = xtrnIniFile.iniGetObject("editor:" + pEditorCode.toUpperCase());
-					if (typeof(editorCfg) === "object" && editorCfg.hasOwnProperty("quotewrap_cols"))
-					{
-						if (editorCfg.quotewrap_cols > 0)
-							retObj.quoteWrapCols = editorCfg.quotewrap_cols;
-					}
+					var quoteWrapCols = xtrnIniFile.iniGetValue("editor:" + pEditorCode.toUpperCase(), "quotewrap_cols", console.screen_columns - 1);
+					if (quoteWrapCols > 0)
+						retObj.quoteWrapCols = quoteWrapCols;
 					xtrnIniFile.close();
 				}
 			}
