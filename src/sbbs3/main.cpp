@@ -1818,6 +1818,8 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
 {
 	char buf[16];
+	size_t sz;
+	ssize_t result;
 
 	if(telnet_mode&TELNET_MODE_OFF)
 		return;
@@ -1827,15 +1829,20 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
             lprintf(LOG_DEBUG,"sending telnet cmd: %s"
                 ,telnet_cmd_desc(cmd));
 		sprintf(buf,"%c%c",TELNET_IAC,cmd);
-		(void)sendsocket(client_socket, buf, 2);
+		result = sendsocket(client_socket, buf, sz = 2);
 	} else {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
 			lprintf(LOG_DEBUG,"sending telnet cmd: %s %s"
 				,telnet_cmd_desc(cmd)
 				,telnet_opt_desc(opt));
 		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
-		(void)sendsocket(client_socket, buf, 3);
+		result = sendsocket(client_socket, buf, sz = 3);
 	}
+	if(result != sz)
+		lprintf(LOG_ERR, "ERROR sending telnet command (%s): send returned %d instead of %d"
+			,telnet_cmd_desc(cmd)
+			,(int)result
+			,(int)sz);
 }
 
 bool sbbs_t::request_telnet_opt(uchar cmd, uchar opt, unsigned waitforack)
