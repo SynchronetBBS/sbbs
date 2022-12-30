@@ -89,6 +89,10 @@ DLLEXPORT long 			iniReadLongInt(FILE*, const char* section, const char* key
 							,long deflt);
 DLLEXPORT ulong 		iniReadULongInt(FILE*, const char* section, const char* key
 							,ulong deflt);
+DLLEXPORT int64_t		iniReadInt64(FILE*, const char* section, const char* key
+							,int64_t deflt);
+DLLEXPORT uint64_t		iniReadUInt64(FILE*, const char* section, const char* key
+							,uint64_t deflt);
 DLLEXPORT int64_t 		iniReadBytes(FILE*, const char* section, const char* key
 							,uint unit, int64_t deflt);
 DLLEXPORT double 		iniReadDuration(FILE*, const char* section, const char* key
@@ -164,6 +168,10 @@ DLLEXPORT long 			iniGetLongInt(str_list_t, const char* section, const char* key
 							,long deflt);
 DLLEXPORT ulong 		iniGetULongInt(str_list_t, const char* section, const char* key
 							,ulong deflt);
+DLLEXPORT int64_t		iniGetInt64(str_list_t, const char* section, const char* key
+							,int64_t deflt);
+DLLEXPORT uint64_t		iniGetUInt64(str_list_t, const char* section, const char* key
+							,uint64_t deflt);
 DLLEXPORT int64_t 		iniGetBytes(str_list_t, const char* section, const char* key
 							,uint unit, int64_t deflt);
 DLLEXPORT double 		iniGetDuration(str_list_t, const char* section, const char* key
@@ -236,6 +244,8 @@ DLLEXPORT char* 		iniSetBytes(str_list_t*, const char* section, const char* key,
 DLLEXPORT char* 		iniSetDuration(str_list_t*, const char* section, const char* key, double value
 							,ini_style_t*);
 DLLEXPORT char* 		iniSetHexInt(str_list_t*, const char* section, const char* key, uint value
+							,ini_style_t*);
+DLLEXPORT char* 		iniSetHexInt64(str_list_t*, const char* section, const char* key, uint64_t value
 							,ini_style_t*);
 DLLEXPORT char* 		iniSetFloat(str_list_t*, const char* section, const char* key, double value
 							,ini_style_t*);
