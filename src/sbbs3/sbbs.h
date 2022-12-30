@@ -965,7 +965,7 @@ public:
 	int		putnodeext(uint number, char * str);
 
 	/* login.ccp */
-	int		login(const char *user_name, char *pw_prompt, const char* user_pw = NULL, const char* sys_pw = NULL);
+	int		login(const char *user_name, const char *pw_prompt, const char* user_pw = NULL, const char* sys_pw = NULL);
 	void	badlogin(const char* user, const char* passwd, const char* protocol=NULL, xp_sockaddr* addr=NULL, bool delay=true);
 	const char*	parse_login(const char*);
 
