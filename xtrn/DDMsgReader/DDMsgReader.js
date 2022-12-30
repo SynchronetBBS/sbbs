@@ -20233,7 +20233,7 @@ function getExternalEditorQuoteWrapCfgFromSCFG(pEditorCode)
 			retObj.quoteWrapCols = console.screen_columns - 1;
 
 			// For Synchronet 3.20 and newer, read the quote wrap setting from xtrn.ini
-			if (system.version_num >= 31800)
+			if (system.version_num >= 32000)
 			{
 				// The INI section for the editor should be something like [editor:SLYEDICE], and
 				// it should have a quotewrap_cols property
