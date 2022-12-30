@@ -22,7 +22,7 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
-char* sbbs_t::parse_login(char* str)
+const char* sbbs_t::parse_login(const char* str)
 {
 	sys_status &= ~(SS_QWKLOGON|SS_FASTLOGON);
 
@@ -38,35 +38,23 @@ char* sbbs_t::parse_login(char* str)
 	return str;
 }
 
-int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const char* sys_pw)
+int sbbs_t::login(const char *username, char *pw_prompt, const char* user_pw, const char* sys_pw)
 {
 	char	str[128];
 	char 	tmp[512];
 	long	useron_misc=useron.misc;
 
-	useron.number=0;
 	username = parse_login(username);
 
-	if(!(cfg.node_misc&NM_NO_NUM) && IS_DIGIT(username[0])) {
-		useron.number=atoi(username);
+	useron.number = find_login_id(&cfg, username);
+	if(useron.number) {
 		getuserdat(&cfg,&useron);
 		if(useron.number && useron.misc&(DELETED|INACTIVE))
-			useron.number=0; 
+			useron.number=0;
 	}
 
 	if(!useron.number) {
-		useron.number=matchuser(&cfg,username,FALSE);
-		if(!useron.number && check_realname(&cfg, username) && cfg.node_misc & NM_LOGON_R)
-			useron.number = finduserstr(0, USER_NAME, username);
-		if(useron.number) {
-			getuserdat(&cfg,&useron);
-			if(useron.number && useron.misc&(DELETED|INACTIVE))
-				useron.number=0;
-		} 
-	}
-
-	if(!useron.number) {
-		if((cfg.node_misc&NM_LOGON_P) && pw_prompt != NULL) {
+		if((cfg.sys_login & LOGIN_PWPROMPT) && pw_prompt != NULL) {
 			SAFECOPY(useron.alias,username);
 			bputs(pw_prompt);
 			console|=CON_R_ECHOX;
@@ -140,7 +128,7 @@ int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const ch
 	return(LOGIC_TRUE);
 }
 
-void sbbs_t::badlogin(char* user, char* passwd, const char* protocol, xp_sockaddr* addr, bool delay)
+void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol, xp_sockaddr* addr, bool delay)
 {
 	char reason[128];
 	char host_name[128];

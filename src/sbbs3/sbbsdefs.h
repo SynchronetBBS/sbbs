@@ -130,48 +130,53 @@
 #define UQ_COLORTERM	(1L<<20)	/* Ask if new user has color terminal	*/
 #define UQ_DUPNETMAIL	(1L<<21)	/* Don't allow duplicate e-mail address */
 
-									/* Different bits in sys_misc				*/
-#define SM_CLOSED		(1L<<0) 	/* System is clsoed to New Users			*/
-#define SM_SYSSTAT		(1L<<1) 	/* Sysops activity included in statistics	*/
-#define SM_NOSYSINFO	(1L<<2) 	/* Suppress system info display at logon	*/
-#define SM_PWEDIT		(1L<<3) 	/* Allow users to change their passwords	*/
-#define SM_RA_EMU		(1L<<4) 	/* Reverse R/A commands at msg read prompt	*/
-#define SM_ANON_EM		(1L<<5) 	/* Allow anonymous e-mail					*/
-#define SM_LISTLOC		(1L<<6) 	/* Use location of caller in user lists 	*/
-#define SM_WILDCAT		(1L<<7) 	/* Expand Wildcat color codes in messages	*/
-#define SM_PCBOARD		(1L<<8) 	/* Expand PCBoard color codes in messages	*/
-#define SM_WWIV 		(1L<<9) 	/* Expand WWIV color codes in messages		*/
-#define SM_CELERITY		(1L<<10)	/* Expand Celerity color codes in messages	*/
-#define SM_RENEGADE		(1L<<11)	/* Expand Renegade color codes in messages	*/
-#define SM_ECHO_PW		(1L<<12)	/* Echo passwords locally					*/
-#define SM_SYSPASSLOGIN	(1L<<13)	/* Require system password for sysop login	*/
-#define SM_AUTO_DST		(1L<<14)	/* Automatic Daylight Savings Toggle (US)   */
-#define SM_R_SYSOP		(1L<<15)	/* Allow remote sysop logon/commands		*/
-#define SM_QUOTE_EM		(1L<<16)	/* Allow quoting of e-mail					*/
-#define SM_EURODATE		(1L<<17)	/* Europian date format (DD/MM/YY)			*/
-#define SM_MILITARY		(1L<<18)	/* Military time format 					*/
-#define SM_TIMEBANK		(1L<<19)	/* Allow time bank functions				*/
-#define SM_FILE_EM		(1L<<20)	/* Allow file attachments in E-mail 		*/
-#define SM_SHRTPAGE		(1L<<21)	/* Short sysop page 						*/
-#define SM_TIME_EXP		(1L<<22)	/* Set to expired values if out-of-time 	*/
-#define SM_FASTMAIL		(1L<<23)	/* Fast e-mail storage mode 				*/
-#define SM_NONODELIST	(1L<<24)	/* Suppress active node list during logon	*/
-#define SM_UNUSED2		(1L<<25)	/*											*/
-#define SM_FWDTONET		(1L<<26)	/* Allow forwarding of e-mail to netmail	*/
-#define SM_DELREADM		(1L<<27)	/* Delete read mail automatically			*/
-#define SM_NOCDTCVT		(1L<<28)	/* No credit to minute conversions allowed	*/
-#define SM_DELEMAIL		(1L<<29)	/* Physically remove deleted e-mail immed.	*/
-#define SM_USRVDELM		(1L<<30)	/* Users can see deleted msgs				*/
-#define SM_SYSVDELM		(1L<<31)	/* Sysops can see deleted msgs				*/
+								// Different bits in sys_misc				
+#define SM_CLOSED		(1<<0) 	// System is clsoed to New Users			
+#define SM_SYSSTAT		(1<<1) 	// Sysops activity included in statistics	
+#define SM_NOSYSINFO	(1<<2) 	// Suppress system info display at logon	
+#define SM_PWEDIT		(1<<3) 	// Allow users to change their passwords	
+#define SM_RA_EMU		(1<<4) 	// Reverse R/A commands at msg read prompt	
+#define SM_ANON_EM		(1<<5) 	// Allow anonymous e-mail					
+#define SM_LISTLOC		(1<<6) 	// Use location of caller in user lists 	
+#define SM_WILDCAT		(1<<7) 	// Expand Wildcat color codes in messages	
+#define SM_PCBOARD		(1<<8) 	// Expand PCBoard color codes in messages	
+#define SM_WWIV 		(1<<9) 	// Expand WWIV color codes in messages		
+#define SM_CELERITY		(1<<10)	// Expand Celerity color codes in messages	
+#define SM_RENEGADE		(1<<11)	// Expand Renegade color codes in messages	
+#define SM_ECHO_PW		(1<<12)	// Echo passwords locally					
+#define SM_SYSPASSLOGIN	(1<<13)	// Require system password for sysop login	
+#define SM_AUTO_DST		(1<<14)	// Automatic Daylight Savings Toggle (US)   
+#define SM_R_SYSOP		(1<<15)	// Allow remote sysop login/commands		
+#define SM_QUOTE_EM		(1<<16)	// Allow quoting of e-mail					
+#define SM_EURODATE		(1<<17)	// European date format (DD/MM/YY)			
+#define SM_MILITARY		(1<<18)	// Military (24hr) time format 				
+#define SM_TIMEBANK		(1<<19)	// Allow time bank functions				
+#define SM_FILE_EM		(1<<20)	// Allow file attachments in E-mail 		
+#define SM_SHRTPAGE		(1<<21)	// Short sysop page 						
+#define SM_TIME_EXP		(1<<22)	// Set to expired values if out-of-time 	
+#define SM_FASTMAIL		(1<<23)	// Fast e-mail storage mode 				
+#define SM_NONODELIST	(1<<24)	// Suppress active node list during logon	
+#define SM_UNUSED2		(1<<25)
+#define SM_FWDTONET		(1<<26)	// Allow forwarding of e-mail to netmail	
+#define SM_DELREADM		(1<<27)	// Delete read mail automatically			
+#define SM_NOCDTCVT		(1<<28)	// No credit to minute conversions allowed	
+#define SM_DELEMAIL		(1<<29)	// Physically remove deleted e-mail immed.	
+#define SM_USRVDELM		(1<<30)	// Users can see deleted msgs				
+#define SM_SYSVDELM		(1<<31)	// Sysops can see deleted msgs				
 
-									/* Different bits in node_misc				*/
-#define NM_NO_NUM		(1<<8)		/* Don't allow logons by user number        */
-#define NM_LOGON_R		(1<<9)		/* Allow logons by user real name			*/
-#define NM_LOGON_P		(1<<10)		/* Secure logons (always ask for password)	*/
-#define NM_LOWPRIO		(1<<15)		/* Always use low priority input			*/
-#define NM_7BITONLY		(1L<<16)	/* Except 7-bit input only (E71 terminals)	*/
-#define NM_NOPAUSESPIN	(1L<<18)	/* No spinning cursor at pause prompt		*/
-#define NM_CLOSENODEDAB	(1L<<19)	/* Keep node.dab file closed (for Samba)	*/
+								// Bit flags for scfg_t.login
+#define LOGIN_USERNUM	(1<<0)	// Allow logins by user number
+#define LOGIN_REALNAME	(1<<1)	// Allow logins by user's real name
+#define LOGIN_PWPROMPT	(1<<2)	// Always display password prompt, even for bad login-id
+
+								// Different bits in node_misc
+#define NM_NO_NUM		(1<<8)	// Don't allow logins by user number (deprecated)       
+#define NM_LOGON_R		(1<<9)	// Allow logins by user real name (deprecated) 
+#define NM_LOGON_P		(1<<10)	// Secure logins (always ask for password) (deprecated) 	
+#define NM_LOWPRIO		(1<<15)	// Always use low priority input			
+#define NM_7BITONLY		(1<<16)	// Except 7-bit input only (E71 terminals)	
+#define NM_NOPAUSESPIN	(1<<18)	// No spinning cursor at pause prompt		
+#define NM_CLOSENODEDAB	(1<<19)	// Keep node.dab file closed (for Samba)	
 
 									/* Bit values for level_misc[x] 	*/
 #define LEVEL_EXPTOLVL	(1<<0)		/* Expire to level_expireto[x]		*/

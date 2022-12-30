@@ -385,10 +385,8 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 			putmsgptrs(&scfg, &client->user, client->subscan);
 	}
 
-	if(IS_DIGIT(*user))
-		client->user.number=atoi(user);
-	else if(*user)
-		client->user.number=matchuser(&scfg,user,FALSE);
+	if(*user)
+		client->user.number = find_login_id(&scfg, user);
 
 	if(getuserdat(&scfg,&client->user)!=0) {
 		lprintf(LOG_NOTICE,"%04d %s !USER NOT FOUND: '%s'"

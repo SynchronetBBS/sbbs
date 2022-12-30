@@ -965,9 +965,9 @@ public:
 	int		putnodeext(uint number, char * str);
 
 	/* login.ccp */
-	int		login(char *user_name, char *pw_prompt, const char* user_pw = NULL, const char* sys_pw = NULL);
-	void	badlogin(char* user, char* passwd, const char* protocol=NULL, xp_sockaddr* addr=NULL, bool delay=true);
-	char*	parse_login(char*);
+	int		login(const char *user_name, char *pw_prompt, const char* user_pw = NULL, const char* sys_pw = NULL);
+	void	badlogin(const char* user, const char* passwd, const char* protocol=NULL, xp_sockaddr* addr=NULL, bool delay=true);
+	const char*	parse_login(const char*);
 
 	/* answer.cpp */
 	bool	answer(void);

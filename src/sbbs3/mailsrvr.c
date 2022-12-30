@@ -1295,7 +1295,7 @@ static void pop3_thread(void* arg)
 			SKIP_WHITESPACE(p);
 			SAFECOPY(password,p);
 		}
-		user.number=matchuser(&scfg,username,FALSE /*sysop_alias*/);
+		user.number = find_login_id(&scfg, username);
 		if(!user.number) {
 			if(scfg.sys_misc&SM_ECHO_PW)
 				lprintf(LOG_NOTICE,"%04d %s [%s] !UNKNOWN USER: '%s' (password: %s)"
@@ -4190,7 +4190,7 @@ static void smtp_thread(void* arg)
 				SAFECOPY(user_pass,p);
 			}
 
-			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
+			if((relay_user.number = find_login_id(&scfg, user_name))==0) {
 				if(scfg.sys_misc&SM_ECHO_PW)
 					lprintf(LOG_WARNING,"%04d %s %s !UNKNOWN USER: '%s' (password: %s)"
 						,socket, client.protocol, client_id, user_name, user_pass);
@@ -4277,7 +4277,7 @@ static void smtp_thread(void* arg)
 			else
 				p=response;
 			SAFECOPY(user_name,response);
-			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
+			if((relay_user.number = find_login_id(&scfg, user_name))==0) {
 				lprintf(LOG_WARNING,"%04d %s %s !UNKNOWN USER: '%s'"
 					,socket, client.protocol, client_id, user_name);
 				badlogin(socket, session, client.protocol, badauth_rsp, user_name, NULL, host_name, &smtp.client_addr);
