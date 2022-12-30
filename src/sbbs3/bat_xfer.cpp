@@ -258,7 +258,7 @@ BOOL sbbs_t::start_batch_download()
 		file_t f = {{}};
 		BOOL result = FALSE;
 		if(batch_file_get(&cfg, ini, filenames[0], &f)) {
-			result = sendfile(&f, /* prot: */' ', /* autohang: */true);
+			result = sendfile(&f, useron.prot, /* autohang: */true);
 			if(result == TRUE)
 				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, f.name);
 		}
