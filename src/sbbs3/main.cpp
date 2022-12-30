@@ -90,7 +90,7 @@ SOCKET	uspy_socket[MAX_NODES];	  /* UNIX domain spy sockets */
 #endif
 SOCKET	node_socket[MAX_NODES];
 struct xpms_set				*ts_set;
-static	sbbs_t*	sbbs=NULL;
+//static	sbbs_t*	sbbs=NULL;
 static	scfg_t	scfg;
 static	char *	text[TOTAL_TEXT];
 static	scfg_t	node_scfg[MAX_NODES];
@@ -2175,7 +2175,7 @@ void sbbs_t::passthru_socket_activate(bool activate)
 
 		do { // Allow time for the passthru_thread to move any pending socket data to the outbuf
 			SLEEP(100); // Before the node_thread starts sending its own data to the outbuf
-		} while(RingBufFull(&sbbs->outbuf));
+		} while(RingBufFull(&outbuf));
 	}
 	passthru_socket_active = activate;
 }
@@ -3967,10 +3967,10 @@ void sbbs_t::hangup(void)
 		mswait(1000);	/* Give socket output buffer time to flush */
 		client_off(client_socket);
 		if(ssh_mode) {
-			pthread_mutex_lock(&sbbs->ssh_mutex);
+			pthread_mutex_lock(&ssh_mutex);
 			ssh_session_destroy(client_socket, ssh_session, __LINE__);
-			sbbs->ssh_mode = false;
-			pthread_mutex_unlock(&sbbs->ssh_mutex);
+			ssh_mode = false;
+			pthread_mutex_unlock(&ssh_mutex);
 		}
 		close_socket(client_socket);
 		client_socket=INVALID_SOCKET;
@@ -5150,7 +5150,7 @@ void bbs_thread(void* arg)
 NO_SSH:
 #endif
 
-	sbbs = new sbbs_t(0, &server_addr, sizeof(server_addr)
+	sbbs_t* sbbs = new sbbs_t(0, &server_addr, sizeof(server_addr)
 		,"Terminal Server", ts_set->socks[0].sock, &scfg, text, NULL);
 	if(sbbs->init()==false) {
 		lputs(LOG_CRIT,"!BBS initialization failed");
