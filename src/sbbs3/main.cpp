@@ -1839,7 +1839,7 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
 		result = sendsocket(client_socket, buf, sz = 3);
 	}
 	if(result != sz)
-		lprintf(LOG_ERR, "ERROR sending telnet command (%s): send returned %d instead of %d"
+		lprintf(LOG_DEBUG, "ERROR sending telnet command (%s): send returned %d instead of %d"
 			,telnet_cmd_desc(cmd)
 			,result
 			,sz);
