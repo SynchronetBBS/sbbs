@@ -736,6 +736,15 @@ char* iniSetHexInt(str_list_t* list, const char* section, const char* key, uint 
 	return iniSetString(list, section, key, str, style);
 }
 
+char* iniSetHexInt64(str_list_t* list, const char* section, const char* key, uint64_t value
+					,ini_style_t* style)
+{
+	char	str[INI_MAX_VALUE_LEN];
+
+	SAFEPRINTF(str,"0x%" PRIx64, value);
+	return iniSetString(list, section, key, str, style);
+}
+
 char* iniSetFloat(str_list_t* list, const char* section, const char* key, double value
 					,ini_style_t* style)
 {
@@ -1646,6 +1655,22 @@ static ulong parseULongInteger(const char* value)
 	return(strtoul(value,NULL,0));
 }
 
+static int64_t parseInt64(const char* value)
+{
+	if(isTrue(value))
+		return TRUE;
+
+	return strtoll(value,NULL,0);
+}
+
+static uint64_t parseUInt64(const char* value)
+{
+	if(isTrue(value))
+		return TRUE;
+
+	return strtoull(value,NULL,0);
+}
+
 static BOOL parseBool(const char* value)
 {
 	return(INT_TO_BOOL(parseInteger(value)));
@@ -1790,6 +1815,58 @@ ulong iniGetULongInt(str_list_t list, const char* section, const char* key, ulon
 		return(deflt);
 
 	return(parseULongInteger(vp));
+}
+
+int64_t iniReadInt64(FILE* fp, const char* section, const char* key, int64_t deflt)
+{
+	char*	value;
+	char	buf[INI_MAX_VALUE_LEN];
+
+	if((value=read_value(fp,section,key,buf, /* literals_supported: */FALSE))==NULL)
+		return deflt;
+
+	if(*value==0)		/* blank value */
+		return deflt;
+
+	return parseInt64(value);
+}
+
+uint64_t iniReadUInt64(FILE* fp, const char* section, const char* key, uint64_t deflt)
+{
+	char*	value;
+	char	buf[INI_MAX_VALUE_LEN];
+
+	if((value=read_value(fp,section,key,buf, /* literals_supported: */FALSE))==NULL)
+		return deflt;
+
+	if(*value==0)		/* blank value */
+		return deflt;
+
+	return parseUInt64(value);
+}
+
+int64_t iniGetInt64(str_list_t list, const char* section, const char* key, int64_t deflt)
+{
+	char*	vp=NULL;
+
+	get_value(list, section, key, NULL, &vp, /* literals_supported: */FALSE);
+
+	if(vp==NULL || *vp==0)	/* blank value or missing key */
+		return deflt;
+
+	return parseInt64(vp);
+}
+
+uint64_t iniGetUInt64(str_list_t list, const char* section, const char* key, uint64_t deflt)
+{
+	char*	vp=NULL;
+
+	get_value(list, section, key, NULL, &vp, /* literals_supported: */FALSE);
+
+	if(vp==NULL || *vp==0)	/* blank value or missing key */
+		return deflt;
+
+	return parseUInt64(vp);
 }
 
 int64_t iniReadBytes(FILE* fp, const char* section, const char* key, uint unit, int64_t deflt)
