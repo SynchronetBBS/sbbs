@@ -5,6 +5,13 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.59     2022-12-29   For Synchronet above 3.20, now reads the external editor
+                      quote wrap setting from xtrn.ini.  Below version 3.20, the
+                      quote wrap setting is read from xtrn.cnf.
+                      Also, there's a new user setting to toggle whether or not
+                      to use the scrollbar in the scrolling reader. Currently
+                      there is no alternate progress displayed if not using the
+                      scrollbar, but that is planned for a future update.
 1.58     2022-12-14   Now wraps quote lines, if applicable, according to the
                       quote line wrap settings of the user's external editor,
                       if the user uses one
