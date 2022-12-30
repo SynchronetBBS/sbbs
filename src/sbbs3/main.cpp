@@ -1818,8 +1818,8 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
 {
 	char buf[16];
-	size_t sz;
-	ssize_t result;
+	int sz;
+	int result;
 
 	if(telnet_mode&TELNET_MODE_OFF)
 		return;
@@ -1841,8 +1841,8 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
 	if(result != sz)
 		lprintf(LOG_ERR, "ERROR sending telnet command (%s): send returned %d instead of %d"
 			,telnet_cmd_desc(cmd)
-			,(int)result
-			,(int)sz);
+			,result
+			,sz);
 }
 
 bool sbbs_t::request_telnet_opt(uchar cmd, uchar opt, unsigned waitforack)
