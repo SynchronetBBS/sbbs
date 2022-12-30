@@ -162,7 +162,7 @@ bool sbbs_t::answer()
 		}
 	}
 
-	if(!(telnet_mode&TELNET_MODE_OFF)) {
+	if(online && !(telnet_mode&TELNET_MODE_OFF)) {
 		/* Disable Telnet Terminal Echo */
 		request_telnet_opt(TELNET_WILL,TELNET_ECHO);
 		/* Will suppress Go Ahead */
