@@ -2333,13 +2333,11 @@ void output_thread(void* arg)
 			}
 #endif
 #endif
-			lprintf(LOG_DEBUG,"Autotuning outbuf highwater mark to %d based on MSS",i);
-			if(i>IO_THREAD_BUF_SIZE) {
-				lprintf(LOG_DEBUG,"MSS (%d) is higher than IO_THREAD_BUF_SIZE (%d)",i,IO_THREAD_BUF_SIZE);
+			if(i>IO_THREAD_BUF_SIZE)
 				i=IO_THREAD_BUF_SIZE;
-			}
 			sbbs->outbuf.highwater_mark=i;
 			mss=sbbs->outbuf.highwater_mark;
+			lprintf(LOG_DEBUG, "%s outbuf highwater mark tuned to %d based on MSS", node, sbbs->outbuf.highwater_mark);
 		}
 	}
 #endif
