@@ -1036,7 +1036,7 @@ void sbbs_t::maindflts(user_t* user)
 				if(!noyes(text[NewPasswordQ])) {
 					bputs(text[CurrentPassword]);
 					console|=CON_R_ECHOX;
-					ch=(char)getstr(str,LEN_PASS,K_UPPER);
+					getstr(str,LEN_PASS,K_UPPER);
 					console&=~(CON_R_ECHOX|CON_L_ECHOX);
 					if(sys_status&SS_ABORT)
 						break;
