@@ -2364,8 +2364,11 @@ void output_thread(void* arg)
 			avail = RingBufFull(&sbbs->outbuf);
 
 			// If flushing or terminating, there will be nothing available
-			if (avail == 0)
+			if (avail == 0) {
+				// Reset data/highwater events
+				RingBufRead(&sbbs->outbuf, NULL, 0);
 				continue;
+			}
 
 			/*
 			 * At this point, there's something to send and,
