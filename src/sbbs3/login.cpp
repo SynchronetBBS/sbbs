@@ -38,7 +38,7 @@ const char* sbbs_t::parse_login(const char* str)
 	return str;
 }
 
-int sbbs_t::login(const char *username, char *pw_prompt, const char* user_pw, const char* sys_pw)
+int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_pw, const char* sys_pw)
 {
 	char	str[128];
 	char 	tmp[512];
