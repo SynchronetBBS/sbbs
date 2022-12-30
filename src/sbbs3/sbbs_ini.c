@@ -398,13 +398,7 @@ void sbbs_read_ini(
 			=iniGetShortInt(list,section,"LastNode",4);
 
 		bbs->outbuf_highwater_mark
-			=iniGetShortInt(list,section,"OutbufHighwaterMark"
-#ifdef TCP_MAXSEG	/* Auto-tune if possible.  Would this be defined here? */
-			,0
-#else
-			,1024
-#endif
-			);
+			=iniGetShortInt(list,section,"OutbufHighwaterMark" ,1024);
 		bbs->outbuf_drain_timeout
 			=iniGetShortInt(list,section,"OutbufDrainTimeout",10);
 
