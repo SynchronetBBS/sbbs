@@ -1801,7 +1801,35 @@ int main(int argc, char** argv)
 		default:
 			openlog(log_ident,LOG_CONS,LOG_USER);
 	}
-#endif
+
+	if(is_daemon) {
+		lprintf(LOG_INFO,"Running as daemon");
+		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
+			lprintf(LOG_ERR,"!ERROR %d (%s) running as daemon", errno, strerror(errno));
+			is_daemon=FALSE;
+		}
+	}
+	/* Open here to use startup permissions to create the file */
+	pidf=fopen(pid_fname,"w");
+
+	old_uid = getuid();
+	if((pw_entry=getpwnam(new_uid_name))!=0)
+	{
+		new_uid=pw_entry->pw_uid;
+		new_gid=pw_entry->pw_gid;
+	}
+	else  {
+		new_uid=getuid();
+		new_gid=getgid();
+	}
+	old_gid = getgid();
+	if((gr_entry=getgrnam(new_gid_name))!=0)
+		new_gid=gr_entry->gr_gid;
+
+	do_seteuid(TRUE);
+
+#endif // __unix__
+
 	if(scfg.mqtt.enabled) {
 		int result = mqtt_init(&bbs_startup.mqtt, &scfg, host_name, "term");
 		if(result != MQTT_SUCCESS) {
@@ -1868,35 +1896,6 @@ int main(int argc, char** argv)
 		mqtt_subscribe(&services_startup.mqtt, TOPIC_SERVER, str, sizeof(str), "recycle");
 	}
 #endif
-
-#ifdef __unix__
-	if(is_daemon) {
-		lprintf(LOG_INFO,"Running as daemon");
-		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
-			lprintf(LOG_ERR,"!ERROR %d (%s) running as daemon", errno, strerror(errno));
-			is_daemon=FALSE;
-		}
-	}
-	/* Open here to use startup permissions to create the file */
-	pidf=fopen(pid_fname,"w");
-
-	old_uid = getuid();
-	if((pw_entry=getpwnam(new_uid_name))!=0)
-	{
-		new_uid=pw_entry->pw_uid;
-		new_gid=pw_entry->pw_gid;
-	}
-	else  {
-		new_uid=getuid();
-		new_gid=getgid();
-	}
-	old_gid = getgid();
-	if((gr_entry=getgrnam(new_gid_name))!=0)
-		new_gid=gr_entry->gr_gid;
-
-	do_seteuid(TRUE);
-
-#endif // __unix__
 
 #ifdef _THREAD_SUID_BROKEN
 	/* check if we're using NPTL */
