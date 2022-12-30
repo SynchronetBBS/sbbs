@@ -69,6 +69,12 @@
  * 2012-12-14 Eric Oulashin     Version 1.58
  *                              When writing QUOTES.TXT, quote lines are now wrapped if the user's
  *                              external editor configuration is configured to do so.
+ * 2022-12-29 Eric Oulashin     Version 1.59
+ *                              For Synchronet above 3.20, read the external editor quote wrap setting
+ *                              from xtrn.ini.  Below version 3.20, read it from xtrn.cnf.
+ *                              Also, there's a new user setting to toggle whether or not to use the scrollbar
+ *                              in the scrolling reader. Currently there is no alternate progress displayed
+ *                              if not using the scrollbar, but that is planned for a future update.
  */
 
 "use strict";
@@ -173,8 +179,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.58";
-var READER_DATE = "2022-12-14";
+var READER_VERSION = "1.59";
+var READER_DATE = "2022-12-29";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -434,7 +440,7 @@ if (file_exists(backslash(system.exec_dir) + "load/smbdefs.js") && file_exists(b
 
 // User twitlist filename (and settings filename)
 var gUserTwitListFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".DDMsgReader_twitlist";
-//var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".DDMsgReader_Settings";
+var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".DDMsgReader_Settings";
 
 /////////////////////////////////////////////
 // Script execution code
@@ -759,6 +765,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.CanQuote = DigDistMsgReader_CanQuote;
 	this.ReadConfigFile = DigDistMsgReader_ReadConfigFile;
 	this.ReadUserSettingsFile = DigDistMsgReader_ReadUserSettingsFile;
+	this.WriteUserSettingsFile = DigDistMsgReader_WriteUserSettingsFile;
 	// TODO: Is this.DisplaySyncMsgHeader even needed anymore?  Looks like it's not being called.
 	this.DisplaySyncMsgHeader = DigDistMsgReader_DisplaySyncMsgHeader;
 	this.GetMsgHdrFilenameFull = DigDistMsgReader_GetMsgHdrFilenameFull;
@@ -900,9 +907,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// of Synchronet
 	this.showScoresInMsgList = ((console.screen_columns >= 86) && (typeof((new MsgBase("mail")).vote_msg) === "function"));
 	if (this.showScoresInMsgList)
-	{
 		this.SUBJ_LEN -= (this.SCORE_LEN + 1); // + 1 to account for a space
-	}
 
 	// Whether or not the user chose to read a message
 	this.readAMessage = false;
@@ -1062,6 +1067,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// Message list sort option
 	this.msgListSort = MSG_LIST_SORT_DATETIME_RECEIVED;
 
+	// Whether or not to use the scrollbar in the enhanced message reader
+	this.useEnhReaderScrollbar = true;
+
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
 	// before reading the configuration file.
@@ -1074,7 +1082,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.userSettings = {
 		twitList: []
 	};
-	this.ReadUserSettingsFile();
+	this.ReadUserSettingsFile(false);
 	// Set any other values specified by the command-line parameters
 	// Reader start mode - Read or list mode
 	if (scriptArgsIsValid)
@@ -3935,8 +3943,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				else
 				{
 					// There are no selected messages
-					writeWithPause(1, console.screen_rows, "\x01n\x01h\x01yThere are no selected messages.",
-					ERROR_PAUSE_WAIT_MS, "\x01n", true);
+					writeWithPause(1, console.screen_rows, "\x01n\x01h\x01yThere are no selected messages.", ERROR_PAUSE_WAIT_MS, "\x01n", true);
 					// Refresh the help line
 					DisplayHelpLine(this.msgListLightbarModeHelpLine);
 				}
@@ -3968,7 +3975,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		}
 		else if (lastUserInputUpper == this.msgListKeys.userSettings)
 		{
-			var userSettingsRetObj = this.DoUserSettings_Scrollable();
+			var userSettingsRetObj = this.DoUserSettings_Scrollable(function(pReader) { DisplayHelpLine(pReader.msgListLightbarModeHelpLine); });
 			lastUserInputUpper = "";
 			drawMenu = userSettingsRetObj.needWholeScreenRefresh;
 			// In case the user changed their twitlist, re-filter the messages for this sub-board
@@ -4817,11 +4824,13 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		console.gotoxy(1, console.screen_rows);
 	}
 
+	var msgAreaWidth = this.useEnhReaderScrollbar ? this.msgAreaWidth : this.msgAreaWidth + 1;
+
 	// We could word-wrap the message to ensure words aren't split across lines, but
 	// doing so could make some messages look bad (i.e., messages with drawing characters),
 	// and word_wrap also might not handle ANSI or other color/attribute codes..
 	//if (!textHasDrawingChars(messageText))
-	//	messageText = word_wrap(messageText, this.msgAreaWidth);
+	//	messageText = word_wrap(messageText, msgAreaWidth);
 
 	// If the message has ANSI content, then use a Graphic object to help make
 	// the message look good.  Also, remove any ANSI clear screen codes from the
@@ -4830,10 +4839,12 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	if (msgHasANSICodes)
 	{
 		messageText = messageText.replace(/\u001b\[[012]J/gi, "");
-		var graphic = new Graphic(this.msgAreaWidth, this.msgAreaHeight-1);
+		var graphic = new Graphic(msgAreaWidth, this.msgAreaHeight-1);
 		graphic.auto_extend = true;
 		graphic.ANSI = ansiterm.expand_ctrl_a(messageText);
-		graphic.width = this.msgAreaWidth;
+		//graphic.normalize();
+		//graphic.width = msgAreaWidth;
+		//messageText = graphic.MSG.split('\n');
 		messageText = graphic.MSG;
 	}
 
@@ -4855,14 +4866,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	if (topMsgLineIdxForLastPage != 0)
 		fractionToLastPage = topMsgLineIdx / topMsgLineIdxForLastPage;
 
-	// Draw an initial scrollbar on the rightmost column of the message area showing
-	// the fraction of the message shown and what part of the message is currently
-	// being shown.  The scrollbar will be updated minimally in the input loop to
-	// minimize screen redraws.
-	this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+	// If use of the scrollbar is enabled, draw an initial scrollbar on the rightmost
+	// column of the message area showing the fraction of the message shown and what
+	// part of the message is currently being shown.  The scrollbar will be updated
+	// minimally in the input loop to minimize screen redraws.
+	if (this.useEnhReaderScrollbar)
+		this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
 
 	// Input loop (for scrolling the message up & down)
-	var msgLineFormatStr = "%-" + this.msgAreaWidth + "s";
+	var msgLineFormatStr = "%-" + msgAreaWidth + "s";
 	var writeMessage = true;
 	// msgAreaHeight, msgReaderObj, and scrollbarUpdateFunction are for use
 	// with scrollTextLines().
@@ -4885,8 +4897,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		scrollbarInfoObj.numSolidScrollBlocks = numSolidScrollBlocks;
 		var scrollRetObj = scrollTextLines(msgInfo.messageLines, topMsgLineIdx,
 									   this.colors.msgBodyColor, writeMessage,
-									   this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
-									   msgAreaHeight, 1, console.screen_rows,
+									   this.msgAreaLeft, this.msgAreaTop, msgAreaWidth,
+									   msgAreaHeight, 1, console.screen_rows, this.useEnhReaderScrollbar,
 									   msgScrollbarUpdateFn, scrollbarInfoObj);
 		topMsgLineIdx = scrollRetObj.topLineIdx;
 		retObj.lastKeypress = scrollRetObj.lastKeypress;
@@ -4912,7 +4924,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				// so that the calling method will go to the next message/sub-board.
 				// Otherwise (if the message was not deleted), refresh the
 				// last 2 lines of the message on the screen.
-				var msgWasDeleted = this.PromptAndDeleteOrUndeleteMessage(pOffset, promptPos, true, true, this.msgAreaWidth, true);
+				var msgWasDeleted = this.PromptAndDeleteOrUndeleteMessage(pOffset, promptPos, true, true, msgAreaWidth, true);
 				if (msgWasDeleted && !canViewDeletedMsgs())
 				{
 					var msgSearchObj = this.LookForNextOrPriorNonDeletedMsg(pOffset);
@@ -4984,15 +4996,22 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 						// refresh it.
 						//var scrollBarBlock = "\x01n\x01h\x01k" + BLOCK1; // Dim block
 						// Dim block
-						var scrollBarBlock = this.colors.scrollbarBGColor + this.text.scrollbarBGChar;
-						if (solidBlockStartRow + numSolidScrollBlocks - 1 == this.msgAreaBottom)
+						if (this.useEnhReaderScrollbar)
 						{
-							//scrollBarBlock = "\x01w" + BLOCK2; // Bright block
-							// Bright block
-							scrollBarBlock = this.colors.scrollbarScrollBlockColor + this.text.scrollbarScrollBlockChar;
+							var scrollBarBlock = this.colors.scrollbarBGColor + this.text.scrollbarBGChar;
+							if (solidBlockStartRow + numSolidScrollBlocks - 1 == this.msgAreaBottom)
+							{
+								//scrollBarBlock = "\x01w" + BLOCK2; // Bright block
+								// Bright block
+								scrollBarBlock = this.colors.scrollbarScrollBlockColor + this.text.scrollbarScrollBlockChar;
+							}
+							else
+							{
+								// TODO
+							}
+							console.gotoxy(this.msgAreaRight+1, this.msgAreaBottom);
+							console.print(scrollBarBlock);
 						}
-						console.gotoxy(this.msgAreaRight+1, this.msgAreaBottom);
-						console.print(scrollBarBlock);
 						// Refresh the last 2 message lines on the screen, then display
 						// the key help line
 						this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
@@ -5025,8 +5044,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 							this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
 							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 							// Display the scrollbar again, and ensure it's in the correct position
-							solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+							if (this.useEnhReaderScrollbar)
+							{
+								solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+								this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+							}
+							else
+							{
+								// TODO
+							}
 							writeMessage = true; // We want to refresh the message on the screen
 						}
 					}
@@ -5045,8 +5071,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
 				this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 				// Display the scrollbar again, and ensure it's in the correct position
-				solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-				this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+				if (this.useEnhReaderScrollbar)
+				{
+					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+				}
+				else
+				{
+					// TODO
+				}
 				writeMessage = true; // We want to refresh the message on the screen
 				break;
 			case this.enhReaderKeys.reply: // Reply to the message
@@ -5100,8 +5133,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 							this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
 							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 							// Display the scrollbar again to refresh it on the screen
-							solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+							if (this.useEnhReaderScrollbar)
+							{
+								solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+								this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+							}
+							else
+							{
+								// TODO
+							}
 							writeMessage = true; // We want to refresh the message on the screen
 						}
 					}
@@ -5128,8 +5168,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
 					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 					// Display the scrollbar again to refresh it on the screen
-					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					if (this.useEnhReaderScrollbar)
+					{
+						solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					}
+					else
+					{
+						// TODO
+					}
 					writeMessage = true; // We want to refresh the message on the screen
 				}
 				else
@@ -5364,22 +5411,33 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					var extdHdrInfoLines = this.GetExtdMsgHdrInfo(msgHeader, (retObj.lastKeypress == this.enhReaderKeys.showKludgeLines));
 					if (extdHdrInfoLines.length > 0)
 					{
-						// Calculate information for the scrollbar for the kludge lines
-						var infoFractionShown = this.msgAreaHeight / extdHdrInfoLines.length;
-						if (infoFractionShown > 1)
-							infoFractionShown = 1.0;
-						var numInfoSolidScrollBlocks = Math.floor(this.msgAreaHeight * infoFractionShown);
-						if (numInfoSolidScrollBlocks == 0)
-							numInfoSolidScrollBlocks = 1;
-						var numNonSolidInfoScrollBlocks = this.msgAreaHeight - numInfoSolidScrollBlocks;
-						var lastInfoSolidBlockStartRow = this.msgAreaTop;
-						// Display the kludge lines and let the user scroll through them
-						this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
+						if (this.useEnhReaderScrollbar)
+						{
+							// Calculate information for the scrollbar for the kludge lines
+							var infoFractionShown = this.msgAreaHeight / extdHdrInfoLines.length;
+							if (infoFractionShown > 1)
+								infoFractionShown = 1.0;
+							var numInfoSolidScrollBlocks = Math.floor(this.msgAreaHeight * infoFractionShown);
+							if (numInfoSolidScrollBlocks == 0)
+								numInfoSolidScrollBlocks = 1;
+							var numNonSolidInfoScrollBlocks = this.msgAreaHeight - numInfoSolidScrollBlocks;
+							var lastInfoSolidBlockStartRow = this.msgAreaTop;
+							// Display the kludge lines and let the user scroll through them
+							this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
+						}
 						scrollTextLines(extdHdrInfoLines, 0, this.colors["msgBodyColor"], true, this.msgAreaLeft,
-						                this.msgAreaTop, this.msgAreaWidth, msgAreaHeight, 1, console.screen_rows, msgInfoScrollbarUpdateFn);
+						                this.msgAreaTop, msgAreaWidth, msgAreaHeight, 1, console.screen_rows,
+						                this.useEnhReaderScrollbar, msgInfoScrollbarUpdateFn);
 						// Display the scrollbar for the message to refresh it on the screen
-						solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+						if (this.useEnhReaderScrollbar)
+						{
+							solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+						}
+						else
+						{
+							// TODO
+						}
 						writeMessage = true; // We want to refresh the message on the screen
 					}
 					else
@@ -5426,8 +5484,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
 					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 					// Display the scrollbar again to refresh it on the screen
-					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					if (this.useEnhReaderScrollbar)
+					{
+						solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					}
+					else
+					{
+						// TODO
+					}
 					writeMessage = true; // We want to refresh the message on the screen
 				}
 				else
@@ -5498,8 +5563,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
 					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 					// Display the scrollbar again to refresh it on the screen
-					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					if (this.useEnhReaderScrollbar)
+					{
+						solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					}
+					else
+					{
+						// TODO
+					}
 					writeMessage = true; // We want to refresh the message on the screen
 				}
 				else // The user is not a sysop
@@ -5524,8 +5596,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
 				this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 				// Display the scrollbar again to refresh it on the screen
-				solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-				this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+				if (this.useEnhReaderScrollbar)
+				{
+					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+				}
+				else
+				{
+					// TODO
+				}
 				writeMessage = true; // We want to refresh the message on the screen
 				break;
 			case this.enhReaderKeys.vote: // Vote on the message
@@ -5622,21 +5701,35 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					// Display the vote info and let the user scroll through them
 					// (the console height should be enough, but do this just in case)
 					// Calculate information for the scrollbar for the vote info lines
-					var infoFractionShown = this.msgAreaHeight / voteInfo.length;
-					if (infoFractionShown > 1)
-						infoFractionShown = 1.0;
-					var numInfoSolidScrollBlocks = Math.floor(this.msgAreaHeight * infoFractionShown);
-					if (numInfoSolidScrollBlocks == 0)
-						numInfoSolidScrollBlocks = 1;
-					var numNonSolidInfoScrollBlocks = this.msgAreaHeight - numInfoSolidScrollBlocks;
-					var lastInfoSolidBlockStartRow = this.msgAreaTop;
-					// Display the vote info lines and let the user scroll through them
-					this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
-					scrollTextLines(voteInfo, 0, this.colors["msgBodyColor"], true, this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
-					                msgAreaHeight, 1, console.screen_rows, msgInfoScrollbarUpdateFn);
+					if (this.useEnhReaderScrollbar)
+					{
+						var infoFractionShown = this.msgAreaHeight / voteInfo.length;
+						if (infoFractionShown > 1)
+							infoFractionShown = 1.0;
+						var numInfoSolidScrollBlocks = Math.floor(this.msgAreaHeight * infoFractionShown);
+						if (numInfoSolidScrollBlocks == 0)
+							numInfoSolidScrollBlocks = 1;
+						var numNonSolidInfoScrollBlocks = this.msgAreaHeight - numInfoSolidScrollBlocks;
+						var lastInfoSolidBlockStartRow = this.msgAreaTop;
+						// Display the vote info lines and let the user scroll through them
+						this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
+					}
+					else
+					{
+						// TODO
+					}
+					scrollTextLines(voteInfo, 0, this.colors["msgBodyColor"], true, this.msgAreaLeft, this.msgAreaTop, msgAreaWidth,
+					                msgAreaHeight, 1, console.screen_rows, this.useEnhReaderScrollbar, msgInfoScrollbarUpdateFn);
 					// Display the scrollbar for the message to refresh it on the screen
-					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					if (this.useEnhReaderScrollbar)
+					{
+						solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					}
+					else
+					{
+						// TODO
+					}
 					writeMessage = true; // We want to refresh the message on the screen
 				}
 				else
@@ -5753,7 +5846,9 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				*/
 				break;
 			case this.enhReaderKeys.userSettings:
-				var userSettingsRetObj = this.DoUserSettings_Scrollable();
+				// Make a backup copy of the this.useEnhReaderScrollbar setting in case it changes, so we can tell if we need to refresh the scrollbar
+				var oldUseEnhReaderScrollbar = this.useEnhReaderScrollbar;
+				var userSettingsRetObj = this.DoUserSettings_Scrollable(function(pReader) { pReader.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea); });
 				retObj.lastKeypress = "";
 				writeMessage = userSettingsRetObj.needWholeScreenRefresh;
 				// In case the user changed their twitlist, re-filter the messages for this sub-board
@@ -5808,11 +5903,49 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				if (userSettingsRetObj.needWholeScreenRefresh)
 				{
 					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					if (this.useEnhReaderScrollbar)
+						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+					else
+					{
+						// TODO
+					}
 					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 				}
 				else
+				{
+					// If the message scrollbar was toggled, then draw/erase the scrollbar
+					if (this.useEnhReaderScrollbar != oldUseEnhReaderScrollbar)
+					{
+						msgAreaWidth = this.useEnhReaderScrollbar ? this.msgAreaWidth : this.msgAreaWidth + 1;
+						// If the message is ANSI, then re-create the Graphic object to account for the
+						// new width
+						if (msgHasANSICodes)
+						{
+							var graphic = new Graphic(msgAreaWidth, this.msgAreaHeight-1);
+							graphic.auto_extend = true;
+							graphic.ANSI = ansiterm.expand_ctrl_a(messageText);
+							graphic.width = msgAreaWidth;
+							messageText = graphic.MSG;
+						}
+						// Display or erase the scrollbar
+						if (this.useEnhReaderScrollbar)
+						{
+							solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+						}
+						else
+						{
+							// Erase the scrollbar
+							console.attributes = "N";
+							for (var screenY = this.msgAreaTop; screenY <= this.msgAreaBottom; ++screenY)
+							{
+								console.gotoxy(this.msgAreaRight+1, screenY);
+								console.print(" ");
+							}
+						}
+					}
 					this.RefreshMsgAreaRectangle(msgInfo.messageLines, topMsgLineIdx, userSettingsRetObj.optionBoxTopLeftX, userSettingsRetObj.optionBoxTopLeftY, userSettingsRetObj.optionBoxWidth, userSettingsRetObj.optionBoxHeight);
+				}
 				break;
 			case this.enhReaderKeys.quit: // Quit
 				retObj.nextAction = ACTION_QUIT;
@@ -8308,73 +8441,36 @@ function DigDistMsgReader_ReadUserSettingsFile(pOnlyTwitlist)
 		userTwitlistFile.close();
 	}
 
-	/*
 	if (!onlyTwitList)
 	{
 		// Open the user settings file, if it exists
 		var userSettingsFile = new File(gUserSettingsFilename);
 		if (userSettingsFile.open("r"))
 		{
-			var settingsMode = "behavior";
-			var equalsPos = 0;       // Position of a = in the line
-			var commentPos = 0;      // Position of the start of a comment
-			var setting = null;      // A setting name (string)
-			var settingUpper = null; // Upper-case setting name
-			var value = null;        // A value for a setting (string)
-			var valueUpper = null;   // Upper-cased value
-			while (!userSettingsFile.eof)
-			{
-				// Read the next line from the config file.
-				var fileLine = userSettingsFile.readln(2048);
-
-				// fileLine should be a string, but I've seen some cases
-				// where for some reason it isn't.  If it's not a string,
-				// then continue onto the next line.
-				if (typeof(fileLine) != "string")
-					continue;
-
-				// If the line starts with with a semicolon (the comment
-				// character) or is blank, then skip it.
-				if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-					continue;
-
-				// If in the "behavior" section, then set the behavior-related variables.
-				if (fileLine.toUpperCase() == "[BEHAVIOR]")
-				{
-					settingsMode = "behavior";
-					continue;
-				}
-
-				// If the line has a semicolon anywhere in it, then remove
-				// everything from the semicolon onward.
-				commentPos = fileLine.indexOf(";");
-				if (commentPos > -1)
-					fileLine = fileLine.substr(0, commentPos);
-
-				// Look for an equals sign, and if found, separate the line
-				// into the setting name (before the =) and the value (after the
-				// equals sign).
-				equalsPos = fileLine.indexOf("=");
-				if (equalsPos > 0)
-				{
-					// Read the setting & value, and trim leading & trailing spaces.
-					setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-					settingUpper = setting.toUpperCase();
-					value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
-					valueUpper = value.toUpperCase();
-
-					if (settingsMode == "behavior")
-					{
-						if (settingUpper == "SOMETHING")
-							this.userSettings.something = (valueUpper == "TRUE");
-					}
-				}
-			}
+			//var behavior = userSettingsFile.iniGetObject("BEHAVIOR");
+			this.useEnhReaderScrollbar = userSettingsFile.iniGetValue("BEHAVIOR", "useEnhReaderScrollbar", true);
 			userSettingsFile.close();
 		}
 	}
-	*/
 }
+
+// For the DigDistMessageReader class: Writes the user settings file.
+//
+// Return value: Boolean - Whether or not the write succeeded
+function DigDistMsgReader_WriteUserSettingsFile()
+{
+	var writeSucceeded = false;
+	// Open the user settings file, if it exists
+	var userSettingsFile = new File(gUserSettingsFilename);
+	if (userSettingsFile.open(userSettingsFile.exists ? "r+" : "w+"))
+	{
+		userSettingsFile.iniSetValue("BEHAVIOR", "useEnhReaderScrollbar", this.useEnhReaderScrollbar);
+		userSettingsFile.close();
+		writeSucceeded = true;
+	}
+	return writeSucceeded;
+}
+
 // For the DigDistMsgReader class: Lets the user edit an existing message.
 //
 // Parameters:
@@ -13431,6 +13527,11 @@ function DigDistMsgReader_GetGroupNameAndDesc()
 
 // For the DigDistMsgReader class:  Lets the user manage their preferences/settings (scrollable/ANSI user interface).
 //
+// Parameters:
+//  pDrawBottomhelpLineFn: A function to draw the bottom help line (it could be the message list
+//                         help line or reader help line), for refreshing after displaying an error.
+//                         This function must take the reader (this) as a parameter.
+//
 // Return value: An object containing the following properties:
 //               needWholeScreenRefresh: Boolean - Whether or not the whole screen needs to be
 //                                       refreshed (i.e., when the user has edited their twitlist)
@@ -13439,7 +13540,7 @@ function DigDistMsgReader_GetGroupNameAndDesc()
 //               optionBoxWidth: The width of the option box
 //               optionBoxHeight: The height of the option box
 //               userTwitListChanged: Boolean - Whether or not the user's personal twit list changed
-function DigDistMsgReader_DoUserSettings_Scrollable()
+function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 {
 	var retObj = {
 		needWholeScreenRefresh: false,
@@ -13456,9 +13557,10 @@ function DigDistMsgReader_DoUserSettings_Scrollable()
 		return retObj;
 	}
 
-	/*
 	// Save the user's current settings so that we can check them later to see if any
 	// of them changed, in order to determine whether to save the user's settings file.
+	var gOriginalUseEnhScrollbar = this.useEnhReaderScrollbar;
+	/*
 	var originalSettings = {};
 	for (var prop in gUserSettings)
 	{
@@ -13479,7 +13581,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable()
 	optionBox.addInputLoopExitKey(CTRL_U);
 	// Update the bottom help text to be more specific to the user settings box
 	var bottomBorderText = "\x01n\x01h\x01c" + UP_ARROW + "\x01b, \x01c" + DOWN_ARROW + "\x01b, \x01cEnter\x01y=\x01bSelect\x01n\x01c/\x01h\x01btoggle, "
-						  + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";
+	                     + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";
 	// This one contains the page navigation keys..  Don't really need to show those,
 	// since the settings box only has one page right now:
 	/*var bottomBorderText = "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
@@ -13490,13 +13592,13 @@ function DigDistMsgReader_DoUserSettings_Scrollable()
 
 	// Add the options to the option box
 	const checkIdx = 48;
-	//const TAGLINE_OPT_INDEX = optionBox.addTextItem("Taglines                                       [ ]");
-	//if (this.userSettings.twitList.enableTaglines)
-	//	optionBox.chgCharInTextItem(TAGLINE_OPT_INDEX, checkIdx, CHECK_CHAR);
+	const ENH_SCROLLBAR_OPT_INDEX = optionBox.addTextItem("Scrollbar in reader                            [ ]");
+	if (this.useEnhReaderScrollbar)
+		optionBox.chgCharInTextItem(ENH_SCROLLBAR_OPT_INDEX, checkIdx, CHECK_CHAR);
 
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = {};
-	//optionToggles[TAGLINE_OPT_INDEX] = this.userSettings.enableTaglines;
+	optionToggles[ENH_SCROLLBAR_OPT_INDEX] = this.useEnhReaderScrollbar;
 
 	// Other actions
 	var USER_TWITLIST_OPT_INDEX = optionBox.addTextItem("Personal twit list");
@@ -13522,9 +13624,9 @@ function DigDistMsgReader_DoUserSettings_Scrollable()
 				// Toggle the setting for the user in global user setting object.
 				switch (itemIndex)
 				{
-					//case TAGLINE_OPT_INDEX:
-					//	this.userSettings.enableTaglines = !this.userSettings.enableTaglines;
-					//	break;
+					case ENH_SCROLLBAR_OPT_INDEX:
+						this.readerObj.useEnhReaderScrollbar = !this.readerObj.useEnhReaderScrollbar;
+						break;
 					default:
 						break;
 				}
@@ -13560,23 +13662,25 @@ function DigDistMsgReader_DoUserSettings_Scrollable()
 	// If the user changed any of their settings, then save the user settings.
 	// If the save fails, then output an error message.
 	var settingsChanged = false;
+	settingsChanged = (gOriginalUseEnhScrollbar != this.useEnhReaderScrollbar);
 	for (var prop in this.userSettings)
 	{
 		if (this.userSettings.hasOwnProperty(prop))
 		{
 			// TODO
-			//settingsChanged = (originalSettings[prop] != this.userSettings[prop]);
+			//settingsChanged = settingsChanged || (originalSettings[prop] != this.userSettings[prop]);
 			if (settingsChanged)
 				break;
 		}
 	}
 	if (settingsChanged)
 	{
-		// TODO
-		/*
-		if (!WriteUserSettingsFile(this.userSettings))
-			writeMsgOntBtmHelpLineWithPause("\x01n\x01y\x01hFailed to save settings!\x01n", ERRORMSG_PAUSE_MS);
-		*/
+		if (!this.WriteUserSettingsFile())
+		{
+			writeWithPause(1, console.screen_rows, "\x01n\x01y\x01hFailed to save settings!\x01n", ERROR_PAUSE_WAIT_MS, "\x01n", true);
+			// Refresh the help line
+			pDrawBottomhelpLineFn(this);
+		}
 	}
 
 	optionBox.addInputLoopExitKey(CTRL_U);
@@ -13634,6 +13738,16 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 			retObj.needWholeScreenRefresh = true;
 			break;
 	}
+
+	// For future changes, if any settings that apply to the traditional interface:
+	/*
+	if (!WriteUserSettingsFile())
+	{
+		console.print("\x01n\r\n\x01y\x01hFailed to save settings!\x01n");
+		console.crlf();
+		console.pause();
+	}
+	*/
 
 	return retObj;
 }
@@ -15994,6 +16108,8 @@ function userHandleAliasNameMatch(pName)
 //                  lines
 //  pPostWriteCurY: The Y location for the cursor after writing the message
 //                  lines
+// pUseScrollbar: Boolean - Whether or not to display the scrollbar.  If false,
+//                this will display a scroll status line at the bottom instead.
 //  pScrollUpdateFn: A function that the caller can provide for updating the
 //                   scroll position.  This function has one parameter:
 //                   - fractionToLastPage: The fraction of the top index divided
@@ -16004,7 +16120,7 @@ function userHandleAliasNameMatch(pName)
 //               lastKeypress: The last key pressed by the user (a string)
 //               topLineIdx: The new top line index of the text lines, in case of scrolling
 function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTopLeftX, pTopLeftY,
-                         pWidth, pHeight, pPostWriteCurX, pPostWriteCurY, pScrollUpdateFn,
+                         pWidth, pHeight, pPostWriteCurX, pPostWriteCurY, pUseScrollbar, pScrollUpdateFn,
                          pScrollbarInfo)
 {
 	// Variables for the top line index for the last page, scrolling, etc.
@@ -16048,7 +16164,7 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 		{
 			// If the scroll update function parameter is a function, then calculate
 			// the fraction to the last page and call the scroll update function.
-			if (typeof(pScrollUpdateFn) == "function")
+			if (pUseScrollbar && typeof(pScrollUpdateFn) == "function")
 			{
 				if (topLineIdxForLastPage != 0)
 					fractionToLastPage = retObj.topLineIdx / topLineIdxForLastPage;
@@ -20116,23 +20232,41 @@ function getExternalEditorQuoteWrapCfgFromSCFG(pEditorCode)
 			retObj.quoteWrapEnabled = true;
 			retObj.quoteWrapCols = console.screen_columns - 1;
 
-			// See exportcfg.js for an example of using cnflib.js
-			// TODO: If running Synchronet 3.20, then there will be an easier way to get the quotewrap
-			// columns, from the .ini configuration
-			var cnflib = load({}, "cnflib.js");
-			var xtrnCnf = cnflib.read("xtrn.cnf");
-			if (typeof(xtrnCnf) === "object")
+			// For Synchronet 3.20 and newer, read the quote wrap setting from xtrn.ini
+			if (system.version_num >= 31800)
 			{
-				for (var i = 0; i < xtrnCnf.xedit.length; ++i)
+				// The INI section for the editor should be something like [editor:SLYEDICE], and
+				// it should have a quotewrap_cols property
+				var xtrnIniFile = new File(system.ctrl_dir + "xtrn.ini");
+				if (xtrnIniFile.open("r"))
 				{
-					if (xtrnCnf.xedit[i].code.toLowerCase() == editorCode)
+					var editorCfg = xtrnIniFile.iniGetObject("editor:" + pEditorCode.toUpperCase());
+					if (typeof(editorCfg) === "object" && editorCfg.hasOwnProperty("quotewrap_cols"))
 					{
-						if (xtrnCnf.xedit[i].hasOwnProperty("quotewrap_cols"))
+						if (editorCfg.quotewrap_cols > 0)
+							retObj.quoteWrapCols = editorCfg.quotewrap_cols;
+					}
+					xtrnIniFile.close();
+				}
+			}
+			else
+			{
+				// Synchronet below version 3.20: Read the quote wrap setting from xtrn.cnf
+				var cnflib = load({}, "cnflib.js");
+				var xtrnCnf = cnflib.read("xtrn.cnf");
+				if (typeof(xtrnCnf) === "object")
+				{
+					for (var i = 0; i < xtrnCnf.xedit.length; ++i)
+					{
+						if (xtrnCnf.xedit[i].code.toLowerCase() == editorCode)
 						{
-							if (xtrnCnf.xedit[i].quotewrap_cols > 0)
-								retObj.quoteWrapCols = xtrnCnf.xedit[i].quotewrap_cols;
+							if (xtrnCnf.xedit[i].hasOwnProperty("quotewrap_cols"))
+							{
+								if (xtrnCnf.xedit[i].quotewrap_cols > 0)
+									retObj.quoteWrapCols = xtrnCnf.xedit[i].quotewrap_cols;
+							}
+							break;
 						}
-						break;
 					}
 				}
 			}
@@ -20143,6 +20277,27 @@ function getExternalEditorQuoteWrapCfgFromSCFG(pEditorCode)
 		retObj = getExternalEditorQuoteWrapCfgFromSCFG.cache[editorCode];
 
 	return retObj;
+}
+
+// Changes a character in a string, and returns the new string.  If any of the
+// parameters are invalid, then the original string will be returned.
+//
+// Parameters:
+//  pStr: The original string
+//  pCharIndex: The index of the character to replace
+//  pNewText: The new character or text to place at that position in the string
+//
+// Return value: The new string
+function chgCharInStr(pStr, pCharIndex, pNewText)
+{
+   if (typeof(pStr) != "string")
+      return "";
+   if ((pCharIndex < 0) || (pCharIndex >= pStr.length))
+      return pStr;
+   if (typeof(pNewText) != "string")
+      return pStr;
+
+   return (pStr.substr(0, pCharIndex) + pNewText + pStr.substr(pCharIndex+1));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
