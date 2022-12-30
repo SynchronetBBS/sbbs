@@ -649,7 +649,7 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp=UINT_TO_JSVAL(stats.uls);
 			break;
 		case SYSSTAT_PROP_ULB:
-			*vp=DOUBLE_TO_JSVAL((double)stats.ulb); 
+			*vp=DOUBLE_TO_JSVAL((double)stats.ulb);
 			break;
 		case SYSSTAT_PROP_DLS:
 			*vp=UINT_TO_JSVAL(stats.dls);
@@ -679,9 +679,9 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			l=0;
 			rc=JS_SUSPENDREQUEST(cx);
 			for(i=0;i<cfg->total_subs;i++)
-				l+=getposts(cfg,i); 
+				l+=getposts(cfg,i);
 			JS_RESUMEREQUEST(cx, rc);
-			*vp=DOUBLE_TO_JSVAL((double)l); 
+			*vp=DOUBLE_TO_JSVAL((double)l);
 			break;
 		case SYSSTAT_PROP_TOTALFILES:
 			l=0;
@@ -766,7 +766,7 @@ static JSBool js_sysstats_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
-		
+
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
@@ -940,13 +940,13 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToInt32(cx, argv[argnum++], &usernumber);
 	if(JSVAL_IS_BOOLEAN(argv[argnum]))
 		JS_ValueToBoolean(cx, argv[argnum], &match_next);
-	
+
 	JSSTRING_TO_ASTRING(cx, js_str, p, 128, NULL);
 	if(p==NULL) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
 		return(JS_TRUE);
 	}
-	
+
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(finduserstr(sys->cfg, usernumber, field, p, FALSE, match_next, NULL, NULL)));
 	JS_RESUMEREQUEST(cx, rc);
@@ -960,7 +960,6 @@ js_find_login_id(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p;
 	JSString*	js_str;
-	BOOL		sysop_alias=TRUE;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -1547,12 +1546,12 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 	if(node<1)
 		node=1;
 
-	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
+	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL)
 		return(JS_FALSE);
 
 	JSSTRING_TO_MSTRING(cx, js_msg, msg, NULL);
 	HANDLE_PENDING(cx, msg);
-	if(msg==NULL) 
+	if(msg==NULL)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1620,7 +1619,7 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 	if(usernumber<1)
 		usernumber=1;
 
-	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
+	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL)
 		return(JS_FALSE);
 
 	JSSTRING_TO_MSTRING(cx, js_msg, msg, NULL);
@@ -1660,11 +1659,11 @@ js_notify(JSContext *cx, uintN argc, jsval *arglist)
 	if(usernumber<1)
 		usernumber=1;
 
-	if((js_subj=JS_ValueToString(cx, argv[1]))==NULL) 
+	if((js_subj=JS_ValueToString(cx, argv[1]))==NULL)
 		return JS_FALSE;
 
 	if(argc > 2) {
-		if((js_msg=JS_ValueToString(cx, argv[2]))==NULL) 
+		if((js_msg=JS_ValueToString(cx, argv[2]))==NULL)
 			return JS_FALSE;
 
 		JSSTRING_TO_MSTRING(cx, js_msg, msg, NULL);
@@ -1791,7 +1790,7 @@ js_del_user(JSContext *cx, uintN argc, jsval *arglist)
 		&& putusername(sys->cfg,n,nulstr)==0)
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);	/* success */
 	JS_RESUMEREQUEST(cx, rc);
-	
+
 	return(JS_TRUE);
 }
 #endif
@@ -1820,7 +1819,7 @@ js_sys_exec(JSContext *cx, uintN argc, jsval *arglist)
 	free(cmd);
 	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(ret));
-	
+
 	return(JS_TRUE);
 }
 
@@ -2038,7 +2037,7 @@ js_allowed_fname(JSContext *cx, uintN argc, jsval *arglist)
 
 #endif
 
-static JSBool 
+static JSBool
 js_chkpid(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -2063,7 +2062,7 @@ js_chkpid(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-static JSBool 
+static JSBool
 js_killpid(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -2131,7 +2130,7 @@ static jsSyncMethodSpec js_system_functions[] = {
 	{"alias",			js_alias,			1,	JSTYPE_STRING,	JSDOCSTR("alias")
 	,JSDOCSTR("returns name of user that matches alias (if found in <tt>ctrl/alias.cfg</tt>)")
 	,310
-	},		
+	},
 	{"find_login_id",	js_find_login_id,	1,	JSTYPE_NUMBER,	JSDOCSTR("user-id")
 	,JSDOCSTR("find a user's login ID (alias, real name, or number), returns matching user record number or 0 if not found")
 	,32000
@@ -2140,7 +2139,7 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("exact user name matching, returns number of user whose name/alias matches <i>username</i> "
 		" or 0 if not found, matches well-known sysop aliases by default")
 	,310
-	},		
+	},
 	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_NUMBER,	JSDOCSTR("field, data [,usernumber, match_next=<tt>false</tt>]")
 	,JSDOCSTR("search user database for data in a specific field (see <tt>U_*</tt> in <tt>sbbsdefs.js</tt>), "
 		"returns first matching user record number, optional <i>usernumber</i> specifies user record to skip, "
@@ -2151,35 +2150,35 @@ static jsSyncMethodSpec js_system_functions[] = {
 	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("basename, find_string")
 	,JSDOCSTR("search <tt>text/<i>basename</i>.can</tt> for pseudo-regexp")
 	,310
-	},		
+	},
 	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename or array of strings, find_string")
 	,JSDOCSTR("search any trashcan/filter file or array of pattern strings (in <tt>*.can</tt> format) for <i>find_string</i>")
 	,310
-	},		
+	},
 	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	JSDOCSTR("[timezone=<i>local</i>]")
 	,JSDOCSTR("convert time zone integer to string, defaults to system timezone if <i>timezone</i> not specified")
 	,310
-	},		
+	},
 	{"timestr",			js_timestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time=<i>current</i>]")
 	,JSDOCSTR("convert time_t integer into a time string, "
 		"defaults to current time if <i>time</i> not specified")
 	,310
-	},		
+	},
 	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time=<i>current</i>]")
 	,JSDOCSTR("convert time_t integer into a date string (in either <tt>MM/DD/YY</tt> or <tt>DD/MM/YY</tt> format), "
 		"defaults to current date if <i>time</i> not specified. "
 		"If <i>time</i> is a string in the appropriate format, returns the time_t.")
 	,310
-	},		
+	},
 	{"secondstr",		js_secondstr,		0,	JSTYPE_STRING,	JSDOCSTR("seconds")
 	,JSDOCSTR("convert elapsed time in seconds into a string in <tt>hh:mm:ss</tt> format")
 	,310
-	},		
+	},
 #ifndef JSDOOR
 	{"spamlog",			js_spamlog,			6,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, action, reason, host, ip, to, from]")
 	,JSDOCSTR("log a suspected SPAM attempt")
 	,310
-	},		
+	},
 	{"hacklog",			js_hacklog,			5,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, user, text, host, ip, port]")
 	,JSDOCSTR("log a suspected hack attempt")
 	,310
@@ -2196,19 +2195,19 @@ static jsSyncMethodSpec js_system_functions[] = {
 	{"get_node_message",js_get_node_message,0,	JSTYPE_STRING,	JSDOCSTR("node_number")
 	,JSDOCSTR("read any messages waiting for the specified node and return in a single string")
 	,311
-	},		
+	},
 	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("node_number, message_text")
 	,JSDOCSTR("send a node a short text message, delivered immediately")
 	,310
-	},		
+	},
 	{"get_telegram",	js_get_telegram,	1,	JSTYPE_STRING,	JSDOCSTR("user_number")
 	,JSDOCSTR("returns any short text messages waiting for the specified user")
 	,311
-	},		
+	},
 	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number, message_text")
 	,JSDOCSTR("sends a user a short text message, delivered immediately or during next logon")
 	,310
-	},		
+	},
 	{"notify",			js_notify,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number, subject [,message_text]")
 	,JSDOCSTR("notify a user or operator via both email and a short text message about an important event")
 	,31801
@@ -2346,30 +2345,30 @@ static JSBool js_node_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	}
 	JS_RESUMEREQUEST(cx, rc);
 	sys->nodegets++;
-	
+
     switch(tiny) {
 		case NODE_PROP_STATUS:
 			*vp = INT_TO_JSVAL((int)node.status);
 			break;
-		case NODE_PROP_ERRORS:	
+		case NODE_PROP_ERRORS:
 			*vp = INT_TO_JSVAL((int)node.errors);
 			break;
-		case NODE_PROP_ACTION:	
+		case NODE_PROP_ACTION:
 			*vp = INT_TO_JSVAL((int)node.action);
 			break;
-		case NODE_PROP_USERON:	
+		case NODE_PROP_USERON:
 			*vp = INT_TO_JSVAL((int)node.useron);
 			break;
 		case NODE_PROP_CONNECTION:
 			*vp = INT_TO_JSVAL((int)node.connection);
 			break;
-		case NODE_PROP_MISC:		
+		case NODE_PROP_MISC:
 			*vp = INT_TO_JSVAL((int)node.misc);
 			break;
-		case NODE_PROP_AUX:		
+		case NODE_PROP_AUX:
 			*vp = INT_TO_JSVAL((int)node.aux);
 			break;
-		case NODE_PROP_EXTAUX:	
+		case NODE_PROP_EXTAUX:
 			*vp=UINT_TO_JSVAL(node.extaux);
 			break;
 		case NODE_PROP_DIR:
@@ -2418,30 +2417,30 @@ static JSBool js_node_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
 	rc=JS_SUSPENDREQUEST(cx);
-	
+
     switch(tiny) {
 		case NODE_PROP_STATUS:
 			node.status=(BYTE)val;
 			break;
-		case NODE_PROP_ERRORS:	
+		case NODE_PROP_ERRORS:
 			node.errors=(BYTE)val;
 			break;
-		case NODE_PROP_ACTION:	
+		case NODE_PROP_ACTION:
 			node.action=(BYTE)val;
 			break;
-		case NODE_PROP_USERON:	
+		case NODE_PROP_USERON:
 			node.useron=(WORD)val;
 			break;
 		case NODE_PROP_CONNECTION:
 			node.connection=(WORD)val;
 			break;
-		case NODE_PROP_MISC:		
+		case NODE_PROP_MISC:
 			node.misc=(WORD)val;
 			break;
-		case NODE_PROP_AUX:		
+		case NODE_PROP_AUX:
 			node.aux=(WORD)val;
 			break;
-		case NODE_PROP_EXTAUX:	
+		case NODE_PROP_EXTAUX:
 			node.extaux=val;
 			break;
 	}
@@ -2474,7 +2473,7 @@ static JSBool js_node_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
-		
+
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
@@ -2578,7 +2577,7 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
-		
+
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
