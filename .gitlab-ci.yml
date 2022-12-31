@@ -55,17 +55,18 @@ sbbs-windows:
     - cd src/xpdev
     - make
     - cd ../../src/sbbs3
-    - call .\release.bat
+    - .\release.bat
     - cd ctrl
-    - call .\build.bat
+    - .\build.bat
     - cd ../chat
-    - call .\build.bat
+    - .\build.bat
     - cd ../useredit
-    - call .\build.bat
+    - .\build.bat
     - cd ../../../xtrn/sbj
     - make
     - cd ../tbd
     - make
+  dependencies: []
   artifacts:
     name: sbbs-win32
     paths:
