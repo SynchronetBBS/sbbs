@@ -1655,6 +1655,7 @@ static ulong parseULongInteger(const char* value)
 	return(strtoul(value,NULL,0));
 }
 
+#if !defined __BORLANDC__
 static int64_t parseInt64(const char* value)
 {
 	if(isTrue(value))
@@ -1670,6 +1671,7 @@ static uint64_t parseUInt64(const char* value)
 
 	return strtoull(value,NULL,0);
 }
+#endif
 
 static BOOL parseBool(const char* value)
 {
@@ -1817,6 +1819,7 @@ ulong iniGetULongInt(str_list_t list, const char* section, const char* key, ulon
 	return(parseULongInteger(vp));
 }
 
+#if !defined __BORLANDC__
 int64_t iniReadInt64(FILE* fp, const char* section, const char* key, int64_t deflt)
 {
 	char*	value;
@@ -1868,6 +1871,7 @@ uint64_t iniGetUInt64(str_list_t list, const char* section, const char* key, uin
 
 	return parseUInt64(vp);
 }
+#endif
 
 int64_t iniReadBytes(FILE* fp, const char* section, const char* key, uint unit, int64_t deflt)
 {
