@@ -14,3 +14,4 @@ implib -a mailsrvr.lib 	%dllsrc%\mailsrvr.dll
 implib -a ftpsrvr.lib 	%dllsrc%\ftpsrvr.dll
 implib -a websrvr.lib 	%dllsrc%\websrvr.dll
 implib -a services.lib	%dllsrc%\services.dll
+exit /b
