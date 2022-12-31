@@ -1,10 +1,12 @@
 # Synchronet BBS systemd 'unit configuration' file
 #
-# 1. Copy this file to the correct directory
+# 1. Copy or symlink this file to the correct directory
 #    e.g. for Debian/Ubuntu Linux, that would be: /lib/systemd/system
 # 2. If necessary, modify the SBBSCTRL environment variable value to match your install
 # 3. If necessary, modify the User and Group values to match your install
 # 4. If necessary, modify the path in the ExecStart value to match your install
+#    Edits should be made using "systemctl edit sbbs", thus creating the file:
+#    /etc/systemd/system/sbbs.service.d/override.conf
 # 5. Enable the BBS service by running "systemctl enable sbbs"
 # 6. To run the BBS service without rebooting, run "systemctl start sbbs"
 
