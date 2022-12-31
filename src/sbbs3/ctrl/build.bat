@@ -1,4 +1,5 @@
 @echo off
+setlocal
 call makelibs.bat
 bpr2mak sbbsctrl.bpr
 echo.
