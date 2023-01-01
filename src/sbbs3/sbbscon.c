@@ -71,6 +71,7 @@
 BOOL				terminated=FALSE;
 
 enum server_state	server_state[SERVER_COUNT];
+BOOL				server_stopped[SERVER_COUNT];
 struct mqtt*		mqtt[SERVER_COUNT];
 BOOL				run_bbs=FALSE;
 bbs_startup_t		bbs_startup;
@@ -205,6 +206,11 @@ static const char* web_usage  = "Web server settings:\n"
 static bool server_running(enum server_type type)
 {
 	return server_state[type] != SERVER_STOPPED;
+}
+
+static bool server_ready(enum server_type type)
+{
+	return server_state[type] == SERVER_READY;
 }
 
 static bool any_server_running()
@@ -666,6 +672,8 @@ static void set_state(void* cbdata, enum server_state state)
         }
 	}
 #endif
+	if(state == SERVER_STOPPED)
+		server_stopped[server_type] = TRUE;
 }
 
 static void thread_up(void* p, BOOL up, BOOL setuid)
@@ -2022,17 +2030,21 @@ int main(int argc, char** argv)
     else
     {
     	lputs(LOG_INFO,"Waiting for child threads to bind ports...");
-		while(any_server_running()) {
+		while((run_bbs && !(server_ready(SERVER_TERM) || server_stopped[SERVER_TERM]))
+			|| (run_ftp && !(server_ready(SERVER_FTP) || server_stopped[SERVER_FTP]))
+			|| (run_web && !(server_ready(SERVER_WEB) || server_stopped[SERVER_WEB]))
+			|| (run_mail && !(server_ready(SERVER_MAIL) || server_stopped[SERVER_MAIL]))
+			|| (run_services && !(server_ready(SERVER_SERVICES) || server_stopped[SERVER_SERVICES])))  {
 	    	mswait(1000);
-		    if(server_running(SERVER_TERM))
+		    if(run_bbs && !(server_ready(SERVER_TERM) || server_stopped[SERVER_TERM]))
 			    lputs(LOG_INFO,"Waiting for BBS thread");
-		    if(server_running(SERVER_WEB))
+		    if(run_web && !(server_ready(SERVER_WEB) || server_stopped[SERVER_WEB]))
 			    lputs(LOG_INFO,"Waiting for Web thread");
-		    if(server_running(SERVER_FTP))
+		    if(run_ftp && !(server_ready(SERVER_FTP) || server_stopped[SERVER_FTP]))
 			    lputs(LOG_INFO,"Waiting for FTP thread");
-		    if(server_running(SERVER_MAIL))
+		    if(run_mail && !(server_ready(SERVER_MAIL) || server_stopped[SERVER_MAIL]))
 			    lputs(LOG_INFO,"Waiting for Mail thread");
-		    if(server_running(SERVER_SERVICES))
+		    if(run_services && !(server_ready(SERVER_SERVICES) || server_stopped[SERVER_SERVICES]))
 			    lputs(LOG_INFO,"Waiting for Services thread");
 	    }
 
