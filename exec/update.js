@@ -42,7 +42,7 @@ function move_laston_address()
 	if(test)
 		return 0;
 
-	for (i=1; i < last_user; i++) {
+	for (i=1; i <= last_user; i++) {
 		u = new User(i);
 //		print("User: "+i+" Note: "+u.note+" IP: "+u.ip_address);
 		if (u.ip_address.length == 0 && u.note.length > 0) {
@@ -66,7 +66,7 @@ function update_birthdates()
 	if(test)
 		return 0;
 
-	for (i=1; i < last_user; i++) {
+	for (i=1; i <= last_user; i++) {
 		u = new User(i);
 		if (u.birthdate.charAt(2) == '/') {
 			if(!updated)
