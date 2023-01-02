@@ -954,7 +954,7 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 		iniSetHexInt(&section, name, "settings", cfg->event[i]->misc, NULL);
 		iniSetString(&section, name, "startup_dir", cfg->event[i]->dir, NULL);
 		iniSetShortInt(&section, name, "freq", cfg->event[i]->freq, NULL);
-		iniSetShortInt(&section, name, "mdays", cfg->event[i]->mdays, NULL);
+		iniSetHexInt(&section, name, "mdays", cfg->event[i]->mdays, NULL);
 		iniSetShortInt(&section, name, "months", cfg->event[i]->months, NULL);
 		iniSetShortInt(&section, name, "errlevel", cfg->event[i]->errlevel, NULL);
 		strListMerge(&ini, section);
