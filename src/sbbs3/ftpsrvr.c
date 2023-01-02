@@ -142,13 +142,13 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
-		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, sbuf);
+		errorlog(&scfg, (struct startup*)startup, level, startup==NULL ? NULL:startup->host_name, sbuf);
 		SAFEPRINTF2(errmsg, "%s  %s", server_abbrev, sbuf);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
 	if(startup != NULL)
-		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, sbuf);
+		mqtt_lputs((struct startup*)startup, TOPIC_SERVER, level, sbuf);
 
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
 		return(0);
@@ -199,7 +199,7 @@ static void set_state(enum server_state state)
 	if(startup != NULL) {
 		if(startup->set_state != NULL)
 			startup->set_state(startup->cbdata, state);
-		mqtt_server_state(&startup->mqtt, state);
+		mqtt_server_state((struct startup*)startup, state);
 	}
 }
 
@@ -209,7 +209,7 @@ static void update_clients(void)
 		uint32_t count = protected_uint32_value(active_clients);
 		if(startup->clients != NULL)
 			startup->clients(startup->cbdata, count);
-		mqtt_client_count(&startup->mqtt, TOPIC_SERVER, count);
+		mqtt_client_count((struct startup*)startup, TOPIC_SERVER, count);
 	}
 }
 
@@ -233,7 +233,7 @@ static void thread_up(BOOL setuid)
 	if(startup != NULL) {
 		if(startup->thread_up != NULL)
 			startup->thread_up(startup->cbdata,TRUE, setuid);
-		mqtt_thread_count(&startup->mqtt, TOPIC_SERVER, protected_uint32_value(thread_count));
+		mqtt_thread_count((struct startup*)startup, TOPIC_SERVER, protected_uint32_value(thread_count));
 	}
 }
 
@@ -243,7 +243,7 @@ static int32_t thread_down(void)
 	if(startup != NULL) {
 		if(startup->thread_up != NULL)
 			startup->thread_up(startup->cbdata,FALSE, FALSE);
-		mqtt_thread_count(&startup->mqtt, TOPIC_SERVER, count);
+		mqtt_thread_count((struct startup*)startup, TOPIC_SERVER, count);
 	}
 	return count;
 }
@@ -1726,7 +1726,7 @@ static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, union xp
 		PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-	return hacklog(&scfg, &startup->mqtt, prot, user, text, host, addr);
+	return hacklog(&scfg, (struct startup*)startup, prot, user, text, host, addr);
 }
 
 /****************************************************************************/
@@ -4955,7 +4955,7 @@ void ftp_server(void* arg)
 	}
 	set_state(SERVER_INIT);
 
-	mqtt_server_version(&startup->mqtt, ftp_ver());
+	mqtt_server_version((struct startup*)startup, ftp_ver());
 
 	uptime=0;
 	served=0;
@@ -5096,7 +5096,7 @@ void ftp_server(void* arg)
 		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"FTP Server thread started");
-		mqtt_client_max(&startup->mqtt, startup->max_clients);
+		mqtt_client_max((struct startup*)startup, startup->max_clients);
 
 		while(ftp_set!=NULL && !terminate_server) {
 			YIELD();

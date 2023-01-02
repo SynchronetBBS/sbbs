@@ -550,14 +550,14 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
-		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, sbuf);
+		errorlog(&scfg, (struct startup*)startup, level, startup==NULL ? NULL:startup->host_name, sbuf);
 		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
 
 	if(startup != NULL)
-		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, sbuf);
+		mqtt_lputs((struct startup*)startup, TOPIC_SERVER, level, sbuf);
 
     if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
         return(0);
@@ -741,7 +741,7 @@ static void set_state(enum server_state state)
 	if(startup != NULL) {
 		if(startup->set_state != NULL)
 			startup->set_state(startup->cbdata, state);
-		mqtt_server_state(&startup->mqtt, state);
+		mqtt_server_state((struct startup*)startup, state);
 	}
 }
 
@@ -751,7 +751,7 @@ static void update_clients(void)
 		uint32_t count = protected_uint32_value(active_clients);
 		if(startup->clients!=NULL)
 			startup->clients(startup->cbdata, count);
-		mqtt_client_count(&startup->mqtt, TOPIC_SERVER, count);
+		mqtt_client_count((struct startup*)startup, TOPIC_SERVER, count);
 	}
 }
 
@@ -1868,7 +1868,7 @@ static void badlogin(SOCKET sock, const char* prot, const char* user, const char
 	SAFEPRINTF(reason,"%s LOGIN", prot);
 	count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
-		hacklog(&scfg, &startup->mqtt, reason, user, passwd, host, addr);
+		hacklog(&scfg, (struct startup*)startup, reason, user, passwd, host, addr);
 #ifdef _WIN32
 		if(startup->sound.hack[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
@@ -3685,7 +3685,7 @@ static BOOL check_request(http_session_t * session)
 			send_error(session,__LINE__,"400 Bad Request");
 			SAFEPRINTF2(str, "Request for '%s' is outside of web root: %s", path, root_dir);
 			lprintf(LOG_NOTICE,"%04d %s [%s] !ERROR %s", session->socket, session->client.protocol, session->host_ip, str);
-			hacklog(&scfg, &startup->mqtt, session->client.protocol, session->username, str, session->client.host, &session->addr);
+			hacklog(&scfg, (struct startup*)startup, session->client.protocol, session->username, str, session->client.host, &session->addr);
 #ifdef _WIN32
 			if(startup->sound.hack[0] && !sound_muted(&scfg))
 				PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
@@ -7006,7 +7006,7 @@ void web_server(void* arg)
 	}
 	set_state(SERVER_INIT);
 
-	mqtt_server_version(&startup->mqtt, web_ver());
+	mqtt_server_version((struct startup*)startup, web_ver());
 
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
@@ -7200,7 +7200,7 @@ void web_server(void* arg)
 		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"Web Server thread started");
-		mqtt_client_max(&startup->mqtt, startup->max_clients);
+		mqtt_client_max((struct startup*)startup, startup->max_clients);
 
 		while(!terminated && !terminate_server) {
 			YIELD();
