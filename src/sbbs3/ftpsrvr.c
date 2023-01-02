@@ -142,8 +142,8 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, sbuf);
 		SAFEPRINTF2(errmsg, "%s  %s", server_abbrev, sbuf);
-		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -196,8 +196,11 @@ static char* server_host_name(void)
 
 static void set_state(enum server_state state)
 {
-	if(startup != NULL && startup->set_state != NULL)
-		startup->set_state(startup->cbdata, state);
+	if(startup != NULL) {
+		if(startup->set_state != NULL)
+			startup->set_state(startup->cbdata, state);
+		mqtt_server_state(&startup->mqtt, state);
+	}
 }
 
 static void update_clients(void)
@@ -206,7 +209,7 @@ static void update_clients(void)
 		uint32_t count = protected_uint32_value(active_clients);
 		if(startup->clients != NULL)
 			startup->clients(startup->cbdata, count);
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "client_count", count);
+		mqtt_client_count(&startup->mqtt, TOPIC_SERVER, count);
 	}
 }
 
@@ -230,7 +233,7 @@ static void thread_up(BOOL setuid)
 	if(startup != NULL) {
 		if(startup->thread_up != NULL)
 			startup->thread_up(startup->cbdata,TRUE, setuid);
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "thread_count", protected_uint32_value(thread_count));
+		mqtt_thread_count(&startup->mqtt, TOPIC_SERVER, protected_uint32_value(thread_count));
 	}
 }
 
@@ -240,7 +243,7 @@ static int32_t thread_down(void)
 	if(startup != NULL) {
 		if(startup->thread_up != NULL)
 			startup->thread_up(startup->cbdata,FALSE, FALSE);
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "thread_count", count);
+		mqtt_thread_count(&startup->mqtt, TOPIC_SERVER, count);
 	}
 	return count;
 }
@@ -4952,7 +4955,7 @@ void ftp_server(void* arg)
 	}
 	set_state(SERVER_INIT);
 
-	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", ftp_ver());
+	mqtt_server_version(&startup->mqtt, ftp_ver());
 
 	uptime=0;
 	served=0;
@@ -5093,7 +5096,7 @@ void ftp_server(void* arg)
 		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"FTP Server thread started");
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "max_clients", startup->max_clients);
+		mqtt_client_max(&startup->mqtt, startup->max_clients);
 
 		while(ftp_set!=NULL && !terminate_server) {
 			YIELD();

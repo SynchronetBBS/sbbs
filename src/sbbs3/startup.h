@@ -24,6 +24,7 @@
 
 #include <stddef.h>		/* offsetof */
 #include "client.h"
+#include "server.h"
 #include "ringbuf.h"
 #include "semwrap.h"	/* sem_t */
 #include "ini_file.h"	/* INI_MAX_VALUE_LEN */
@@ -80,27 +81,46 @@ typedef struct {
 
 } global_startup_t;
 
-enum server_type {
-	SERVER_TERM,
-	SERVER_MAIL,
-	SERVER_FTP,
-	SERVER_WEB,
-	SERVER_SERVICES,
-	SERVER_COUNT
-};
+// The elements common to all Synchronet server startup structures
+// C++ doesn't support anonymous structs, or I would have just used one here :-(
+#define STARTUP_COMMON_ELEMENTS \
+	int			size; \
+	int			type; \
+    uint32_t	options; \
+	int			log_level; \
+	void*	cbdata; \
+	int 	(*lputs)(void*, int level, const char*); \
+	void	(*errormsg)(void*, int level, const char* msg); \
+	void	(*set_state)(void*, enum server_state); \
+	void	(*recycle)(void*); \
+    void	(*terminated)(void*, int code); \
+    void	(*clients)(void*, int active); \
+    void	(*thread_up)(void*, BOOL up, BOOL setuid); \
+	void	(*socket_open)(void*, BOOL open); \
+    void	(*client_on)(void*, BOOL on, int sock, client_t*, BOOL update); \
+    BOOL	(*seteuid)(BOOL user); \
+	BOOL	(*setuid)(BOOL force); \
+    char    ctrl_dir[INI_MAX_VALUE_LEN]; \
+    char	temp_dir[INI_MAX_VALUE_LEN]; \
+	char	ini_fname[INI_MAX_VALUE_LEN]; \
+	char	host_name[128]; \
+	BOOL	recycle_now; \
+	BOOL	shutdown_now; \
+	int		sem_chk_freq; \
+	uint	bind_retry_count; \
+	uint	bind_retry_delay; \
+	struct startup_sound_settings sound; \
+	struct login_attempt_settings login_attempt; \
+	link_list_t* login_attempt_list; \
+	struct mqtt mqtt;
 
-// Aproximate systemd service states (see sd_notify)
-enum server_state {
-	SERVER_STOPPED,
-	SERVER_INIT,
-	SERVER_READY,
-	SERVER_RELOADING,
-	SERVER_STOPPING
+struct startup {
+	STARTUP_COMMON_ELEMENTS
 };
 
 typedef struct {
 
-	DWORD	size;				/* sizeof(bbs_struct_t) */
+	STARTUP_COMMON_ELEMENTS
     WORD	first_node;
     WORD	last_node;
 	WORD	telnet_port;
@@ -111,60 +131,30 @@ typedef struct {
 	WORD	ssh_connect_timeout;
 	WORD	outbuf_highwater_mark;	/* output block size control */
 	WORD	outbuf_drain_timeout;
-	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
     str_list_t	telnet_interfaces;
-    uint32_t	options;			/* See BBS_OPT definitions */
     str_list_t	rlogin_interfaces;
     str_list_t	ssh_interfaces;
     RingBuf** node_spybuf;			/* Spy output buffer (each node)	*/
     RingBuf** node_inbuf;			/* User input buffer (each node)	*/
 
-	void*	cbdata;					/* Private data passed to callbacks */ 
 	void*	event_cbdata;			/* Private data passed to event_lputs callback */
-
-	/* Callbacks (NULL if unused) */
-	int 	(*lputs)(void*, int , const char*);			/* Log - put string					*/
-    int 	(*event_lputs)(void*, int, const char*);	/* Event log - put string			*/
-	void	(*errormsg)(void*, int level, const char* msg);
-	void	(*set_state)(void*, enum server_state);
-	void	(*recycle)(void*);
-    void	(*terminated)(void*, int code);
-    void	(*clients)(void*, int active);
-    void	(*thread_up)(void*, BOOL up, BOOL setuid);
-	void	(*socket_open)(void*, BOOL open);
-    void	(*client_on)(void*, BOOL on, int sock, client_t*, BOOL update);
-    BOOL	(*seteuid)(BOOL user);	/* Set Unix uid for thread (bind) */
-	BOOL	(*setuid)(BOOL force);
+    int 	(*event_lputs)(void*, int, const char*);
 
 	/* Paths */
-    char    ctrl_dir[INI_MAX_VALUE_LEN];
     char	dosemu_path[INI_MAX_VALUE_LEN];
     char    dosemuconf_path[INI_MAX_VALUE_LEN];
-    char	temp_dir[INI_MAX_VALUE_LEN];
-	char	ini_fname[INI_MAX_VALUE_LEN];
 	char	web_file_vpath_prefix[INI_MAX_VALUE_LEN];
 
 	/* Miscellaneous */
+	uint	max_concurrent_connections;
 	BOOL    usedosemu;
 	char	xtrn_term_ansi[32];		/* external ANSI terminal type (e.g. "ansi-bbs") */
 	char	xtrn_term_dumb[32];		/* external dumb terminal type (e.g. "dumb") */
-	char	host_name[128];
-	BOOL	recycle_now;
-	BOOL	shutdown_now;
-	int		log_level;
-	uint	bind_retry_count;		/* Number of times to retry bind() calls */
-	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 
 	/* JavaScript operating parameters */
 	js_startup_t js;
-
-	struct startup_sound_settings sound;
-	struct login_attempt_settings login_attempt;
-	link_list_t* login_attempt_list;
-	uint	max_concurrent_connections;
-	struct mqtt mqtt;
 
 } bbs_startup_t;
 

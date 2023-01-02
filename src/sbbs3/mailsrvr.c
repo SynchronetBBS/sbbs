@@ -191,8 +191,8 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, sbuf), stats.errors++;
 		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
-		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name,errmsg), stats.errors++;
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -248,8 +248,11 @@ static char* server_host_name(void)
 
 static void set_state(enum server_state state)
 {
-	if(startup != NULL && startup->set_state != NULL)
-		startup->set_state(startup->cbdata, state);
+	if(startup != NULL) {
+		if(startup->set_state != NULL)
+			startup->set_state(startup->cbdata, state);
+		mqtt_server_state(&startup->mqtt, state);
+	}
 }
 
 static void update_clients(void)
@@ -257,7 +260,7 @@ static void update_clients(void)
 	if(startup != NULL) {
 		if(startup->clients != NULL)
 			startup->clients(startup->cbdata,protected_uint32_value(active_clients)+active_sendmail);
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "client_count", protected_uint32_value(active_clients));
+		mqtt_client_count(&startup->mqtt, TOPIC_SERVER, protected_uint32_value(active_clients));
 	}
 }
 
@@ -281,7 +284,7 @@ static void thread_up(BOOL setuid)
 	if(startup != NULL) {
 		if(startup->thread_up != NULL)
 			startup->thread_up(startup->cbdata,TRUE,setuid);
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "thread_count", protected_uint32_value(thread_count));
+		mqtt_thread_count(&startup->mqtt, TOPIC_SERVER, protected_uint32_value(thread_count));
 	}
 }
 
@@ -291,7 +294,7 @@ static int32_t thread_down(void)
 	if(startup != NULL) {
 		if(startup->thread_up != NULL)
 			startup->thread_up(startup->cbdata,FALSE,FALSE);
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "thread_count", count);
+		mqtt_thread_count(&startup->mqtt, TOPIC_SERVER, count);
 	}
 	return count;
 }
@@ -310,7 +313,7 @@ void mail_open_socket(SOCKET sock, void* cb_protocol)
 
 	stats.sockets++;
 	if(startup != NULL)
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "socket_count", stats.sockets);
+		mqtt_socket_count(&startup->mqtt, TOPIC_SERVER, stats.sockets);
 }
 
 void mail_close_socket_cb(SOCKET sock, void* cb_protocol)
@@ -319,7 +322,7 @@ void mail_close_socket_cb(SOCKET sock, void* cb_protocol)
 		startup->socket_open(startup->cbdata,FALSE);
 	stats.sockets--;
 	if(startup != NULL)
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "socket_count", stats.sockets);
+		mqtt_socket_count(&startup->mqtt, TOPIC_SERVER, stats.sockets);
 }
 
 int mail_close_socket(SOCKET *sock, int *sess)
@@ -339,7 +342,7 @@ int mail_close_socket(SOCKET *sock, int *sess)
 		startup->socket_open(startup->cbdata,FALSE);
 	stats.sockets--;
 	if(startup != NULL)
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "socket_count", stats.sockets);
+		mqtt_socket_count(&startup->mqtt, TOPIC_SERVER, stats.sockets);
 	if(result!=0) {
 		if(ERROR_VALUE!=ENOTSOCK)
 			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",*sock, ERROR_VALUE);
@@ -6052,7 +6055,7 @@ void mail_server(void* arg)
 
 	set_state(SERVER_INIT);
 
-	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", mail_ver());
+	mqtt_server_version(&startup->mqtt, mail_ver());
 
 	ZERO_VAR(js_server_props);
 	SAFEPRINTF3(js_server_props.version,"%s %s%c",server_name, VERSION, REVISION);
@@ -6273,7 +6276,7 @@ void mail_server(void* arg)
 		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"Mail Server thread started");
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "max_clients", startup->max_clients);
+		mqtt_client_max(&startup->mqtt, startup->max_clients);
 
 		while(!terminated && !terminate_server) {
 			YIELD();

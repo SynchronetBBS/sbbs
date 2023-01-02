@@ -246,11 +246,11 @@ static void notify_systemd(const char* new_status)
 }
 #endif
 
-static int log_puts(int level, char *str)
+static int log_puts(int level, const char *str)
 {
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
-	char	*p;
+	const char	*p;
 
 #ifdef __unix__
 	if (is_daemon)  {
@@ -291,7 +291,7 @@ static int log_puts(int level, char *str)
     return(prompt_len);
 }
 
-static int lputs(int level, char *str)
+static int lputs(int level, const char *str)
 {
 	if(str != NULL && *str != '\0')
 		mqtt_lputs(&bbs_startup.mqtt, TOPIC_HOST, level, str);
@@ -301,7 +301,6 @@ static int lputs(int level, char *str)
 static void errormsg(void *cbdata, int level, const char *msg)
 {
 	error_count++;
-	mqtt_pub_uintval(&bbs_startup.mqtt, TOPIC_HOST, "error_count", error_count);
 }
 
 static int lprintf(int level, const char *fmt, ...)
@@ -362,31 +361,6 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 		services_startup.recycle_now = true;
 		return;
 	}
-}
-
-#ifdef MOSQUITTO_LOG
-static void mqtt_log_msg(struct mosquitto* moq, void* cbdata, int level, const char* str)
-{
-	static FILE* fp;
-
-	if(fp == NULL) {
-		char path[MAX_PATH + 1];
-		SAFEPRINTF(path, "%smqtt.log", scfg.logs_dir);
-		fp = fopen(path, "a");
-		if(fp == NULL)
-			lprintf(LOG_ERR, "Error %d opening %s", errno, path);
-	}
-	time_t now = time(NULL);
-	char tmp[32];
-	fprintf(fp, "%.24s %x %s\n", ctime_r(&now, tmp), level, str);
-}
-#endif
-
-static void mqtt_disconnected(struct mosquitto* mosq , void* cbdata, int reason)
-{
-	char msg[1024];
-	SAFEPRINTF(msg, "MQTT broker disconnected, reason: %d", reason);
-	log_puts(LOG_INFO, msg);
 }
 #endif // USE_MOSQUITTO
 
@@ -656,13 +630,11 @@ static BOOL winsock_cleanup(void)
 
 static void set_state(void* cbdata, enum server_state state)
 {
-	enum server_type server_type = (enum server_type)cbdata;
+	enum server_type server_type = ((struct startup*)cbdata)->type;
 	server_state[server_type] = state;
 #ifdef USE_SYSTEMD
 	notify_systemd(NULL);
 #endif
-
-	mqtt_pub_uintval(mqtt[server_type], TOPIC_SERVER, "state", state);
 
 #ifdef _THREAD_SUID_BROKEN
 	if(state == SERVER_READY) {
@@ -699,14 +671,14 @@ static void thread_up(void* p, BOOL up, BOOL setuid)
 	    thread_count++;
     else if(thread_count>0)
 		thread_count--;
-	mqtt_pub_uintval(&bbs_startup.mqtt, TOPIC_HOST, "thread_count", thread_count);
+	mqtt_thread_count(&bbs_startup.mqtt, TOPIC_HOST, thread_count);
 	pthread_mutex_unlock(&mutex);
 	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
 
 static void socket_open(void* cbdata, BOOL open)
 {
-	enum server_type server_type = (enum server_type)cbdata;
+	enum server_type server_type = ((struct startup*)cbdata)->type;
    	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
 
@@ -720,36 +692,9 @@ static void socket_open(void* cbdata, BOOL open)
 	    socket_count++;
 	else if(socket_count>0)
     	socket_count--;
-	mqtt_pub_uintval(mqtt[server_type], TOPIC_HOST, "socket_count", socket_count);
+	mqtt_socket_count(mqtt[server_type], TOPIC_HOST, socket_count);
 	pthread_mutex_unlock(&mutex);
 	lputs(LOG_INFO,NULL); /* update displayed stats */
-}
-
-static void pub_client_list()
-{
-	if(bbs_startup.mqtt.handle != NULL) {
-		list_node_t*	node;
-		str_list_t		list = strListInit();
-
-		listLock(&client_list);
-		for(node=client_list.first; node!=NULL; node=node->next) {
-			client_t* client=node->data;
-			strListAppendFormat(&list, "%ld\t%s\t%s\t%s\t%s\t%u\t%lu"
-				,node->tag
-				,client->protocol
-				,client->user
-				,client->addr
-				,client->host
-				,client->port
-				,(ulong)client->time
-				);
-			}
-		listUnlock(&client_list);
-		char buf[1024];
-		strListJoin(list, buf, sizeof(buf), "\n");
-		strListFree(&list);
-		mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "client_list", buf);
-	}
 }
 
 static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
@@ -769,9 +714,9 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
 	} else
 		listRemoveTaggedNode(&client_list, sock, /* free_data: */TRUE);
 
-	pub_client_list();
-	mqtt_pub_uintval(&bbs_startup.mqtt, TOPIC_HOST, "client_count", client_list.count);
-	mqtt_pub_uintval(&bbs_startup.mqtt, TOPIC_HOST, "served", served);
+	mqtt_client_on(&bbs_startup.mqtt, on, sock, client, update);
+	mqtt_client_count(&bbs_startup.mqtt, TOPIC_HOST, client_list.count);
+	mqtt_served_count(&bbs_startup.mqtt, TOPIC_HOST, served);
 
 	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
@@ -1117,7 +1062,7 @@ void recycle(void* cbdata)
 	mail_startup_t* mail=NULL;
 	services_startup_t* services=NULL;
 
-	switch((enum server_type)cbdata) {
+	switch(((struct startup*)cbdata)->type) {
 		case SERVER_TERM:
 			bbs = &bbs_startup;
 			break;
@@ -1340,7 +1285,8 @@ int main(int argc, char** argv)
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
-	bbs_startup.cbdata = (void*)SERVER_TERM;
+	bbs_startup.type = SERVER_TERM;
+	bbs_startup.cbdata = &bbs_startup;
 	bbs_startup.log_level = LOG_DEBUG;
 	bbs_startup.lputs=bbs_lputs;
 	bbs_startup.event_lputs=event_lputs;
@@ -1360,7 +1306,8 @@ int main(int argc, char** argv)
 	/* Initialize FTP startup structure */
     memset(&ftp_startup,0,sizeof(ftp_startup));
     ftp_startup.size=sizeof(ftp_startup);
-	ftp_startup.cbdata = (void*)SERVER_FTP;
+	ftp_startup.type = SERVER_FTP;
+	ftp_startup.cbdata = &ftp_startup;
 	ftp_startup.log_level = LOG_DEBUG;
 	ftp_startup.lputs=ftp_lputs;
 	ftp_startup.errormsg=errormsg;
@@ -1380,7 +1327,8 @@ int main(int argc, char** argv)
 	/* Initialize Web Server startup structure */
     memset(&web_startup,0,sizeof(web_startup));
     web_startup.size=sizeof(web_startup);
-	web_startup.cbdata = (void*)SERVER_WEB;
+	web_startup.type = SERVER_WEB;
+	web_startup.cbdata = &web_startup;
 	web_startup.log_level = LOG_DEBUG;
 	web_startup.lputs=web_lputs;
 	web_startup.errormsg=errormsg;
@@ -1399,7 +1347,8 @@ int main(int argc, char** argv)
 	/* Initialize Mail Server startup structure */
     memset(&mail_startup,0,sizeof(mail_startup));
     mail_startup.size=sizeof(mail_startup);
-	mail_startup.cbdata = (void*)SERVER_MAIL;
+	mail_startup.type = SERVER_MAIL;
+	mail_startup.cbdata = &mail_startup;
 	mail_startup.log_level = LOG_DEBUG;
 	mail_startup.lputs=mail_lputs;
 	mail_startup.errormsg=errormsg;
@@ -1418,7 +1367,8 @@ int main(int argc, char** argv)
 	/* Initialize Services startup structure */
     memset(&services_startup,0,sizeof(services_startup));
     services_startup.size=sizeof(services_startup);
-	services_startup.cbdata = (void*)SERVER_SERVICES;
+	services_startup.type = SERVER_SERVICES;
+	services_startup.cbdata = &services_startup;
 	services_startup.log_level = LOG_DEBUG;
 	services_startup.lputs=services_lputs;
 	services_startup.errormsg=errormsg;
@@ -1838,60 +1788,23 @@ int main(int argc, char** argv)
 
 #endif // __unix__
 
-	if(scfg.mqtt.enabled) {
-		int result = mqtt_init(&bbs_startup.mqtt, &scfg, host_name, "term");
-		if(result != MQTT_SUCCESS) {
-			lprintf(LOG_INFO, "MQTT init failure: %d", result);
-		} else {
-			lprintf(LOG_INFO, "MQTT lib: %s", mqtt_libver(str, sizeof(str)));
-			result = mqtt_open(&bbs_startup.mqtt);
-			if(result != MQTT_SUCCESS) {
-				lprintf(LOG_ERR, "MQTT open failure: %d", result);
-			} else {
-				result = mqtt_thread_start(&bbs_startup.mqtt);
-				if(result != MQTT_SUCCESS) {
-					lprintf(LOG_ERR, "Error %d starting pub/sub thread", result);
-					mqtt_close(&bbs_startup.mqtt);
-				} else {
-					lprintf(LOG_INFO, "MQTT connecting to broker %s:%u", scfg.mqtt.broker_addr, scfg.mqtt.broker_port);
-					result = mqtt_connect(&bbs_startup.mqtt, /* bind_address: */NULL);
-					if(result == MQTT_SUCCESS) {
-						lprintf(LOG_INFO, "MQTT broker-connect (%s:%d) successful", scfg.mqtt.broker_addr, scfg.mqtt.broker_port);
-					} else {
-						lprintf(LOG_ERR, "MQTT broker-connect (%s:%d) failure: %d", scfg.mqtt.broker_addr, scfg.mqtt.broker_port, result);
-						mqtt_close(&bbs_startup.mqtt);
-					}
-				}
-			}
-		}
-	}
+	mqtt_startup(&bbs_startup.mqtt, &scfg, SERVER_TERM, sbbscon_ver(), log_puts, /* shared_client_list: */TRUE);
 	mqtt[SERVER_TERM] = &bbs_startup.mqtt;
 	mail_startup.mqtt = bbs_startup.mqtt;
-	mail_startup.mqtt.server = "mail";
+	mail_startup.mqtt.server_type = SERVER_MAIL;
 	mqtt[SERVER_MAIL] = &mail_startup.mqtt;
 	ftp_startup.mqtt = bbs_startup.mqtt;
-	ftp_startup.mqtt.server = "ftp";
+	ftp_startup.mqtt.server_type = SERVER_FTP;
 	mqtt[SERVER_FTP] = &ftp_startup.mqtt;
 	web_startup.mqtt = bbs_startup.mqtt;
-	web_startup.mqtt.server = "web";
+	web_startup.mqtt.server_type = SERVER_WEB;
 	mqtt[SERVER_WEB] = &web_startup.mqtt;
 	services_startup.mqtt = bbs_startup.mqtt;
-	services_startup.mqtt.server = "srvc";
+	services_startup.mqtt.server_type = SERVER_SERVICES;
 	mqtt[SERVER_SERVICES] = &services_startup.mqtt;
-	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "version", sbbscon_ver());
-	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "status", "initializing");
 
 #ifdef USE_MOSQUITTO
 	if(bbs_startup.mqtt.handle != NULL) {
-#ifdef MOSQUITTO_LOG
-		mosquitto_log_callback_set(bbs_startup.mqtt.handle, mqtt_log_msg);
-#endif
-		mqtt_pub_noval(&bbs_startup.mqtt, TOPIC_HOST, "error_count");
-		mqtt_pub_noval(&bbs_startup.mqtt, TOPIC_HOST, "thread_count");
-		mqtt_pub_noval(&bbs_startup.mqtt, TOPIC_HOST, "socket_count");
-		mqtt_pub_noval(&bbs_startup.mqtt, TOPIC_HOST, "client_count");
-		mqtt_pub_noval(&bbs_startup.mqtt, TOPIC_HOST, "served");
-		mosquitto_disconnect_callback_set(bbs_startup.mqtt.handle, mqtt_disconnected);
 		mosquitto_message_callback_set(bbs_startup.mqtt.handle, mqtt_message_received);
 		for(int i = bbs_startup.first_node; i <= bbs_startup.last_node; i++) {
 			mqtt_subscribe(&bbs_startup.mqtt, TOPIC_BBS, str, sizeof(str), "node%d/input", i);
@@ -2017,7 +1930,8 @@ int main(int argc, char** argv)
 	if(run_web)
 		_beginthread((void(*)(void*))web_server,0,&web_startup);
 
-	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "status", "online");
+	mqtt_online(&bbs_startup.mqtt);
+
 #ifdef __unix__
 	uid_t uid = getuid();
     if(uid != 0 && !capabilities_set)  { /*  are we running as a normal user?  */
@@ -2328,16 +2242,13 @@ int main(int argc, char** argv)
 		}
 	}
 
-	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "status", "terminating");
+	mqtt_terminating(&bbs_startup.mqtt);
 	terminate();
 
 	/* erase the prompt */
 	printf("\r%*s\r",prompt_len,"");
 
-	mqtt_pub_strval(&bbs_startup.mqtt, TOPIC_HOST, "status", "offline");
-	mqtt_disconnect(&bbs_startup.mqtt);
-	mqtt_thread_stop(&bbs_startup.mqtt);
-	mqtt_close(&bbs_startup.mqtt);
+	mqtt_shutdown(&bbs_startup.mqtt);
 
 	return(0);
 }

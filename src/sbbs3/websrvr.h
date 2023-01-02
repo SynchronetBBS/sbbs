@@ -27,71 +27,39 @@
 #include "semwrap.h"			/* sem_t */
 
 typedef struct {
-	size_t		size;				/* sizeof(web_startup_t) */
+
+	STARTUP_COMMON_ELEMENTS
 	uint16_t	max_clients;
 #define WEB_DEFAULT_MAX_CLIENTS			0	/* 0=unlimited */
 	uint16_t	max_inactivity;
 #define WEB_DEFAULT_MAX_INACTIVITY		120	/* seconds */
 	uint16_t	max_cgi_inactivity;
 #define WEB_DEFAULT_MAX_CGI_INACTIVITY	120	/* seconds */
-	uint16_t	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
-    uint32_t	options;
 	uint16_t	port;
 	uint16_t	tls_port;
     str_list_t	interfaces;
     str_list_t	tls_interfaces;
 
-	void*	cbdata;				/* Private data passed to callbacks */ 
-
-	/* Callbacks (NULL if unused) */
-	int 	(*lputs)(void*, int level, const char* msg);
-	void	(*errormsg)(void*, int level, const char* msg);
-	void	(*set_state)(void*, enum server_state);
-	void	(*recycle)(void*);
-    void	(*terminated)(void*, int code);
-    void	(*clients)(void*, int active);
-    void	(*thread_up)(void*, BOOL up, BOOL setuid);
-	void	(*socket_open)(void*, BOOL open);
-    void	(*client_on)(void*, BOOL on, int sock, client_t*, BOOL update);
-    BOOL	(*seteuid)(BOOL user);
-	BOOL	(*setuid)(BOOL);
-
 	/* Paths */
 	char	ssjs_ext[16];							/* Server-Side JavaScript file extension */
 	char**	cgi_ext;								/* CGI Extensions */
 	char	cgi_dir[INI_MAX_VALUE_LEN];				/* relative to root_dir (all files executable) */
-    char    ctrl_dir[INI_MAX_VALUE_LEN];
     char	root_dir[INI_MAX_VALUE_LEN];			/* HTML root directory */
     char	error_dir[INI_MAX_VALUE_LEN];			/* relative to root_dir */
-    char	temp_dir[INI_MAX_VALUE_LEN];
     char**	index_file_name;						/* Index filenames */
 	char	logfile_base[INI_MAX_VALUE_LEN];		/* Logfile base name (date is appended) */
-	char	ini_fname[INI_MAX_VALUE_LEN];
 	char	file_index_script[INI_MAX_VALUE_LEN];
 	char	file_vpath_prefix[INI_MAX_VALUE_LEN];
 	BOOL	file_vpath_for_vhosts;
 
 	/* Misc */
-    char	host_name[128];
-	BOOL	recycle_now;
-	BOOL	shutdown_now;
-	int		log_level;
 	int		tls_error_level;		/* Cap the severity of TLS error log messages */
-	uint	bind_retry_count;		/* Number of times to retry bind() calls */
-	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 	char	default_cgi_content[128];
 	char	default_auth_list[128];
 	uint16_t	outbuf_drain_timeout;
 
-	struct startup_sound_settings sound;
-
 	/* JavaScript operating parameters */
 	js_startup_t js;
-
-	/* Login Attempt parameters */
-	struct login_attempt_settings login_attempt;
-	link_list_t* login_attempt_list;
-	struct mqtt mqtt;
 
 } web_startup_t;
 
