@@ -550,7 +550,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		cfg->event[i]->misc = iniGetInt32(section, NULL, "settings", 0);
 		SAFECOPY(cfg->event[i]->dir, iniGetString(section, NULL, "startup_dir", "", value));
 		cfg->event[i]->freq = iniGetShortInt(section, NULL, "freq", 0);
-		cfg->event[i]->mdays = iniGetShortInt(section, NULL, "mdays", 0);
+		cfg->event[i]->mdays = iniGetUInt32(section, NULL, "mdays", 0);
 		cfg->event[i]->months = iniGetShortInt(section, NULL, "months", 0);
 		cfg->event[i]->errlevel = (uint8_t)iniGetShortInt(section, NULL, "errlevel", LOG_ERR);
 
