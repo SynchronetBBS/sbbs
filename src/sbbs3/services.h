@@ -24,51 +24,14 @@
 
 typedef struct {
 
-	DWORD	size;				/* sizeof(bbs_struct_t) */
+	STARTUP_COMMON_ELEMENTS
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
 	str_list_t		interfaces;
-    DWORD	options;			/* See BBS_OPT definitions */
-	WORD	sem_chk_freq;			/* semaphore file checking frequency (in seconds) */
-
-	void*	cbdata;					/* Private data passed to callbacks */ 
-
-	/* Callbacks (NULL if unused) */
-	int 	(*lputs)(void*, int level, const char*);		/* Log - put string */
-	void	(*errormsg)(void*, int level, const char* msg);
-	void	(*set_state)(void*, enum server_state);
-	void	(*recycle)(void*);
-    void	(*terminated)(void*, int code);
-    void	(*clients)(void*, int active);
-    void	(*thread_up)(void*, BOOL up, BOOL setuid);
-	void	(*socket_open)(void*, BOOL open);
-    void	(*client_on)(void*, BOOL on, int sock, client_t*, BOOL update);
-    BOOL	(*seteuid)(BOOL user);
-	BOOL	(*setuid)(BOOL force);
-
-	/* Paths */
-    char    ctrl_dir[INI_MAX_VALUE_LEN];
-	char    temp_dir[INI_MAX_VALUE_LEN];
-	char	ini_fname[INI_MAX_VALUE_LEN];		// sbbs.ini path/filename
 	char	services_ini[128];	// services.ini filename
-
-	/* Misc */
-    char	host_name[128];
-	BOOL	recycle_now;
-	BOOL	shutdown_now;
-	int		log_level;
-	uint	bind_retry_count;		/* Number of times to retry bind() calls */
-	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
-
-	struct startup_sound_settings sound;
 
 	/* JavaScript operating parameters */
 	js_startup_t js;
-
-	/* Login Attempt parameters */
-	struct login_attempt_settings login_attempt;
-	link_list_t* login_attempt_list;
-	struct mqtt mqtt;
 
 } services_startup_t;
 

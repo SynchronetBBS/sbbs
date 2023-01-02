@@ -171,6 +171,7 @@ static void thread_up(void* p, BOOL up, BOOL setuid)
 	    threads++;
     else if(threads>0)
     	threads--;
+	mqtt_thread_count(&MainForm->bbs_startup.mqtt, TOPIC_HOST, threads);
     ReleaseMutex(mutex);
 }
 
@@ -188,6 +189,7 @@ void socket_open(void* p, BOOL open)
 	    sockets++;
     else if(sockets>0)
     	sockets--;
+	mqtt_socket_count(&MainForm->bbs_startup.mqtt, TOPIC_HOST, sockets);
     ReleaseMutex(mutex);
 }
 
@@ -201,8 +203,10 @@ static void client_add(void* p, BOOL add)
     if(add) {
 	    clients++;
         total_clients++;
+		mqtt_served_count(&MainForm->bbs_startup.mqtt, TOPIC_HOST, total_clients);
     } else if(clients>0)
     	clients--;
+	mqtt_client_count(&MainForm->bbs_startup.mqtt, TOPIC_HOST, clients);
 }
 
 static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
@@ -212,13 +216,15 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
     time_t  t;
 	static  HANDLE mutex;
     TListItem*  Item;
+	
+	mqtt_client_on(&MainForm->bbs_startup.mqtt, on, sock, client, update);
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
 	WaitForSingleObject(mutex,INFINITE);
     WaitForSingleObject(ClientForm->ListMutex,INFINITE);
 
-    /* Search for exising entry for this socket */
+    /* Search for existing entry for this socket */
     for(i=0;i<ClientForm->ListView->Items->Count;i++) {
         if(ClientForm->ListView->Items->Item[i]->Caption.ToIntDef(0)==sock)
             break;
@@ -332,6 +338,7 @@ static void bbs_set_state(void* p, enum server_state state)
 {
 	TelnetForm->Status->Caption = server_state_str(state);
 	
+	mqtt_server_state(&MainForm->bbs_startup.mqtt, state);
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->TelnetStart->Enabled=true;
@@ -429,6 +436,7 @@ static void services_set_state(void* p, enum server_state state)
 {
 	ServicesForm->Status->Caption = server_state_str(state);
 	
+	mqtt_server_state(&MainForm->services_startup.mqtt, state);
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->ServicesStart->Enabled=true;
@@ -495,6 +503,7 @@ static void mail_set_state(void* p, enum server_state state)
 {
 	MailForm->Status->Caption = server_state_str(state);
 	
+	mqtt_server_state(&MainForm->mail_startup.mqtt, state);
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->MailStart->Enabled=true;
@@ -590,6 +599,7 @@ static void ftp_set_state(void* p, enum server_state state)
 {
 	FtpForm->Status->Caption = server_state_str(state);
 	
+	mqtt_server_state(&MainForm->ftp_startup.mqtt, state);
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->FtpStart->Enabled=true;
@@ -658,6 +668,7 @@ static void web_set_state(void* p, enum server_state state)
 {
 	WebForm->Status->Caption = server_state_str(state);
 	
+	mqtt_server_state(&MainForm->web_startup.mqtt, state);
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->WebStart->Enabled=true;
@@ -782,6 +793,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
         
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
+	bbs_startup.type = SERVER_TERM;
     bbs_startup.cbdata=&bbs_log_list;
     bbs_startup.event_cbdata=&event_log_list;    
     bbs_startup.first_node=1;
@@ -802,6 +814,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 
     memset(&mail_startup,0,sizeof(mail_startup));
     mail_startup.size=sizeof(mail_startup);
+	mail_startup.type = SERVER_MAIL;
     mail_startup.cbdata=&mail_log_list;
     mail_startup.smtp_port=IPPORT_SMTP;
     mail_startup.relay_port=IPPORT_SMTP;
@@ -824,6 +837,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 
     memset(&ftp_startup,0,sizeof(ftp_startup));
     ftp_startup.size=sizeof(ftp_startup);
+	ftp_startup.type = SERVER_FTP;
     ftp_startup.cbdata=&ftp_log_list;
     ftp_startup.port=IPPORT_FTP;
 	ftp_startup.lputs=lputs;
@@ -842,6 +856,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 
     memset(&web_startup,0,sizeof(web_startup));
     web_startup.size=sizeof(web_startup);
+	web_startup.type = SERVER_WEB;
     web_startup.cbdata=&web_log_list;
 	web_startup.lputs=lputs;
     web_startup.errormsg=errormsg;
@@ -855,6 +870,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 
     memset(&services_startup,0,sizeof(services_startup));
     services_startup.size=sizeof(services_startup);
+	services_startup.type = SERVER_SERVICES;
     services_startup.cbdata=&services_log_list;
     services_startup.lputs=lputs;
     services_startup.errormsg=errormsg;
@@ -1038,6 +1054,7 @@ BOOL __fastcall TMainForm::servicesServiceEnabled(void)
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 {
+	mqtt_terminating(&bbs_startup.mqtt);
     UpTimer->Enabled=false; /* Stop updating the status bar */
 	StatsTimer->Enabled=false;
 
@@ -1055,19 +1072,25 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
         || (FtpStop->Enabled        && !ftpServiceEnabled())
         || (WebStop->Enabled        && !webServiceEnabled())
     	|| (ServicesStop->Enabled   && !servicesServiceEnabled())) {
-        if(time(NULL)-start>30)
-            break;
+        if(time(NULL)-start>30) {
+			if(Application->MessageBox("Abort wait for servers to terminate?"
+				,"Synchronet Server Still Running", MB_OKCANCEL) == IDOK)
+				break;
+			start = time(NULL);
+		}
         Application->ProcessMessages();
         YIELD();
     }
 	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Closing...";
     Application->ProcessMessages();
+	mqtt_terminating(&bbs_startup.mqtt);
     
 	LogTimer->Enabled=false;
 
 	ServiceStatusTimer->Enabled=false;
 	NodeForm->Timer->Enabled=false;
 	ClientForm->Timer->Enabled=false;
+	mqtt_shutdown(&bbs_startup.mqtt);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
@@ -1947,7 +1970,21 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 		StartupTimer->Interval = 2500;	// Let 'em see the logo for a bit
 		StartupTimer->Enabled = true;
 	} else {
+		if(!bbsServiceEnabled()) {
+			mqtt_startup(&bbs_startup.mqtt, &cfg, SERVER_TERM, ver()
+				,/* lputs: */NULL
+				,/* shared_client_list: */TRUE);
+			ftp_startup.mqtt = bbs_startup.mqtt;
+			ftp_startup.mqtt.server_type = SERVER_FTP;
+			web_startup.mqtt = bbs_startup.mqtt;
+			web_startup.mqtt.server_type = SERVER_WEB;
+			mail_startup.mqtt = bbs_startup.mqtt;
+			mail_startup.mqtt.server_type = SERVER_MAIL;
+			services_startup.mqtt = bbs_startup.mqtt;
+			services_startup.mqtt.server_type = SERVER_SERVICES;
+		}
 		DisplayMainPanels(Sender);
+		mqtt_online(&bbs_startup.mqtt);
 	}
     Initialized=true;
 }

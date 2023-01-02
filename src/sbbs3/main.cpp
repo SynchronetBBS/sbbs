@@ -160,8 +160,11 @@ static bbs_startup_t* startup=NULL;
 
 static void set_state(enum server_state state)
 {
-	if(startup != NULL && startup->set_state != NULL)
-		startup->set_state(startup->cbdata, state);
+	if(startup != NULL) {
+		if(startup->set_state != NULL)
+			startup->set_state(startup->cbdata, state);
+		mqtt_server_state(&startup->mqtt, state);
+	}
 }
 
 static void update_clients()
@@ -169,7 +172,7 @@ static void update_clients()
 	if(startup != NULL) {
 		if(startup->clients != NULL)
 			startup->clients(startup->cbdata,protected_uint32_value(node_threads_running));
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "client_count", protected_uint32_value(node_threads_running));
+		mqtt_client_count(&startup->mqtt, TOPIC_SERVER, protected_uint32_value(node_threads_running));
 	}
 }
 
@@ -206,8 +209,8 @@ int lputs(int level, const char* str)
 		mqtt_lputs(&startup->mqtt, TOPIC_SERVER, level, str);
 	if(level <= LOG_ERR) {
 		char errmsg[1024];
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, str);
 		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, str);
-		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -233,8 +236,8 @@ int eputs(int level, const char *str)
 
 	if(level <= LOG_ERR) {
 		char errmsg[1024];
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, str);
 		SAFEPRINTF(errmsg, "evnt %s", str);
-		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata, level, errmsg);
 	}
@@ -4834,6 +4837,7 @@ void bbs_thread(void* arg)
     }
 
 	if(startup->size!=sizeof(bbs_startup_t)) {	// verify size
+		int sz = sizeof(bbs_startup_t);
 		sbbs_beep(100,500);
 		sbbs_beep(300,500);
 		sbbs_beep(100,500);
@@ -4937,7 +4941,7 @@ void bbs_thread(void* arg)
 		cleanup(1);
 		return;
 	}
-	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", bbs_ver());
+	mqtt_server_version(&startup->mqtt, bbs_ver());
 
 	t=time(NULL);
 	lprintf(LOG_INFO,"Initializing on %.24s with options: %x"
@@ -5229,7 +5233,7 @@ NO_SSH:
 	set_state(SERVER_READY);
 
 	lprintf(LOG_INFO,"Terminal Server thread started for nodes %d through %d", first_node, last_node);
-	mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "max_clients", (last_node - first_node) + 1);
+	mqtt_client_max(&startup->mqtt, (last_node - first_node) + 1);
 
 	while(!terminate_server) {
 		YIELD();

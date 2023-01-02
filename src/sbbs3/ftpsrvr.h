@@ -26,7 +26,7 @@
 
 typedef struct {
 
-	DWORD	size;				/* sizeof(ftp_startup_t) */
+	STARTUP_COMMON_ELEMENTS
 	WORD	port;
 	WORD	max_clients;
 #define FTP_DEFAULT_MAX_CLIENTS		10
@@ -34,7 +34,6 @@ typedef struct {
 #define FTP_DEFAULT_MAX_INACTIVITY	300
 	WORD	qwk_timeout;
 #define FTP_DEFAULT_QWK_TIMEOUT		600
-	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
     str_list_t	interfaces;
@@ -42,47 +41,10 @@ typedef struct {
 	struct in6_addr	pasv_ip6_addr;
 	WORD	pasv_port_low;
 	WORD	pasv_port_high;
-    DWORD	options;			/* See FTP_OPT definitions */
 	int64_t	min_fsize;			/* Minimum file size accepted for upload */
 	int64_t	max_fsize;			/* Maximum file size accepted for upload (0=unlimited) */
-
-	void*	cbdata;				/* Private data passed to callbacks */ 
-
-	/* Callbacks (NULL if unused) */
-	int 	(*lputs)(void*, int level, const char* msg);
-	void	(*errormsg)(void*, int level, const char* msg);
-	void	(*set_state)(void*, enum server_state);
-	void	(*recycle)(void*);
-    void	(*terminated)(void*, int code);
-    void	(*clients)(void*, int active);
-    void	(*thread_up)(void*, BOOL up, BOOL setuid);
-	void	(*socket_open)(void*, BOOL open);
-    void	(*client_on)(void*, BOOL on, int sock, client_t*, BOOL update);
-    BOOL	(*seteuid)(BOOL user);
-    BOOL	(*setuid)(BOOL force);
-
-	/* Paths */
-    char    ctrl_dir[INI_MAX_VALUE_LEN];
-    char	index_file_name[64];
-    char	temp_dir[INI_MAX_VALUE_LEN];
-	char	ini_fname[INI_MAX_VALUE_LEN];
-
-	/* Misc */
-    char	host_name[128];
-	BOOL	recycle_now;
-	BOOL	shutdown_now;
-	int		log_level;
-	uint	bind_retry_count;		/* Number of times to retry bind() calls */
-	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
-
-	struct startup_sound_settings sound;
-
-	/* Login Attempt parameters */
-	struct login_attempt_settings login_attempt;
-	link_list_t* login_attempt_list;
-
 	uint	max_concurrent_connections;
-	struct mqtt mqtt;
+    char	index_file_name[64];
 
 } ftp_startup_t;
 

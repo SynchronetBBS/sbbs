@@ -550,8 +550,8 @@ static int lprintf(int level, const char *fmt, ...)
 
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
+		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, sbuf);
 		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
-		errorlog(&scfg, &startup->mqtt, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -738,8 +738,11 @@ static char* server_host_name(void)
 
 static void set_state(enum server_state state)
 {
-	if(startup != NULL && startup->set_state != NULL)
-		startup->set_state(startup->cbdata, state);
+	if(startup != NULL) {
+		if(startup->set_state != NULL)
+			startup->set_state(startup->cbdata, state);
+		mqtt_server_state(&startup->mqtt, state);
+	}
 }
 
 static void update_clients(void)
@@ -748,7 +751,7 @@ static void update_clients(void)
 		uint32_t count = protected_uint32_value(active_clients);
 		if(startup->clients!=NULL)
 			startup->clients(startup->cbdata, count);
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "client_count", count);
+		mqtt_client_count(&startup->mqtt, TOPIC_SERVER, count);
 	}
 }
 
@@ -7003,7 +7006,7 @@ void web_server(void* arg)
 	}
 	set_state(SERVER_INIT);
 
-	mqtt_pub_strval(&startup->mqtt, TOPIC_SERVER, "version", web_ver());
+	mqtt_server_version(&startup->mqtt, web_ver());
 
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
@@ -7197,7 +7200,7 @@ void web_server(void* arg)
 		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"Web Server thread started");
-		mqtt_pub_uintval(&startup->mqtt, TOPIC_SERVER, "max_clients", startup->max_clients);
+		mqtt_client_max(&startup->mqtt, startup->max_clients);
 
 		while(!terminated && !terminate_server) {
 			YIELD();

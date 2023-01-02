@@ -19,10 +19,13 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef MQTT_H
-#define MQTT_H
+#ifndef MQTT_H_
+#define MQTT_H_
 
 #include "scfgdefs.h"
+#include "client.h"
+#include "server.h"
+#include "link_list.h"
 #include "dllexport.h"
 
 #include <stdarg.h>
@@ -38,8 +41,12 @@
 struct mqtt {
 	mqtt_handle_t handle;
 	scfg_t* cfg;
-	const char* host;
-	const char* server;
+	char* host;
+	enum server_type server_type;
+	ulong error_count;
+	ulong served;
+	link_list_t client_list;
+	BOOL shared_client_list;
 };
 
 enum topic_depth {
@@ -57,7 +64,16 @@ enum topic_depth {
 extern "C" {
 #endif
 
-DLLEXPORT int mqtt_init(struct mqtt*, scfg_t*, const char* host, const char* server);
+DLLEXPORT int mqtt_init(struct mqtt*, scfg_t*, enum server_type);
+DLLEXPORT int mqtt_startup(struct mqtt*, scfg_t*, enum server_type, const char* version
+	,int (*lputs)(int level, const char* str)
+	,BOOL shared_client_list);
+DLLEXPORT int mqtt_online(struct mqtt*);
+DLLEXPORT int mqtt_server_state(struct mqtt*, enum server_state);
+DLLEXPORT int mqtt_server_version(struct mqtt*, const char*);
+DLLEXPORT int mqtt_errormsg(struct mqtt*, int level, const char*);
+DLLEXPORT int mqtt_terminating(struct mqtt*);
+DLLEXPORT void mqtt_shutdown(struct mqtt*);
 DLLEXPORT char* mqtt_libver(char* str, size_t size);
 DLLEXPORT char* mqtt_topic(struct mqtt*, enum topic_depth, char* str, size_t size, const char* fmt, ...);
 DLLEXPORT int mqtt_subscribe(struct mqtt*, enum topic_depth, char* str, size_t size, const char* fmt, ...);
@@ -72,9 +88,15 @@ DLLEXPORT int mqtt_connect(struct mqtt*, const char* bind_address);
 DLLEXPORT int mqtt_disconnect(struct mqtt*);
 DLLEXPORT int mqtt_thread_start(struct mqtt*);
 DLLEXPORT int mqtt_thread_stop(struct mqtt*);
+DLLEXPORT int mqtt_thread_count(struct mqtt*, enum topic_depth, ulong count);
+DLLEXPORT int mqtt_socket_count(struct mqtt*, enum topic_depth, ulong count);
+DLLEXPORT int mqtt_served_count(struct mqtt*, enum topic_depth, ulong count);
+DLLEXPORT int mqtt_client_count(struct mqtt*, enum topic_depth, ulong count);
+DLLEXPORT int mqtt_client_on(struct mqtt*, BOOL on, int sock, client_t* client, BOOL update);
+DLLEXPORT int mqtt_client_max(struct mqtt*, ulong count);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // MQTT_H
+#endif // MQTT_H_

@@ -27,7 +27,7 @@
 
 typedef struct {
 
-	DWORD	size;				/* sizeof(mail_startup_t) */
+	STARTUP_COMMON_ELEMENTS
 	WORD	smtp_port;
 	WORD	pop3_port;
 	WORD	pop3s_port;
@@ -46,37 +46,16 @@ typedef struct {
 #define MAIL_DEFAULT_LINES_PER_YIELD		10
 	WORD	max_recipients;
 #define MAIL_DEFAULT_MAX_RECIPIENTS			100
-	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
     str_list_t   interfaces;
     str_list_t   pop3_interfaces;
-    DWORD	options;			/* See MAIL_OPT definitions */
     DWORD	max_msg_size;		/* Max msg size in bytes (0=unlimited) */
 #define MAIL_DEFAULT_MAX_MSG_SIZE			(20*1024*1024)	/* 20MB */
 	DWORD	max_msgs_waiting;	/* Max msgs in user's inbox (0=unlimited) */
 #define MAIL_DEFAULT_MAX_MSGS_WAITING		100
 	DWORD	connect_timeout;	/* in seconds, for non-blocking connect (0=blocking socket) */
 #define MAIL_DEFAULT_CONNECT_TIMEOUT		30		/* seconds */
-	void*	cbdata;				/* Private data passed to callbacks */ 
-
-	/* Callbacks (NULL if unused) */
-	int 	(*lputs)(void*, int level, const char* msg);
-	void	(*errormsg)(void*, int level, const char* msg);
-	void	(*set_state)(void*, enum server_state);
-	void	(*recycle)(void*);
-    void	(*terminated)(void*, int code);
-    void	(*clients)(void*, int active);
-    void	(*thread_up)(void*, BOOL up, BOOL setuid);
-	void	(*socket_open)(void*, BOOL open);
-    void	(*client_on)(void*, BOOL on, int sock, client_t*, BOOL update);
-    BOOL	(*seteuid)(BOOL user);
-	BOOL	(*setuid)(BOOL force);
-
-	/* Paths */
-    char    ctrl_dir[INI_MAX_VALUE_LEN];
-	char    temp_dir[INI_MAX_VALUE_LEN];
-	char	ini_fname[INI_MAX_VALUE_LEN];
 
 	/* Strings */
     char	dns_server[128];
@@ -88,13 +67,7 @@ typedef struct {
     char	pop3_sound[INI_MAX_VALUE_LEN];
 
 	/* Misc */
-    char	host_name[128];
-	BOOL	recycle_now;
-	BOOL	shutdown_now;
-	int		log_level;
 	int		tls_error_level;		/* Cap the severity of TLS error log messages */
-	uint	bind_retry_count;		/* Number of times to retry bind() calls */
-	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
 
 	/* Relay Server */
     char	relay_server[128];
@@ -105,13 +78,7 @@ typedef struct {
 	/* JavaScript operating parameters */
 	js_startup_t js;
 
-	struct startup_sound_settings sound;
-
-	/* Login Attempt parameters */
-	struct login_attempt_settings login_attempt;
-	link_list_t* login_attempt_list;
 	uint	max_concurrent_connections;
-	struct mqtt mqtt;
 
 } mail_startup_t;
 
