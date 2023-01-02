@@ -420,9 +420,11 @@ static int lprintf(int (*lputs)(int level, const char* str), int level, const ch
 }
 
 #ifdef USE_MOSQUITTO
-static void mqtt_message_received(struct mosquitto* mosq, struct startup* startup, const struct mosquitto_message* msg)
+static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const struct mosquitto_message* msg)
 {
 	char topic[128];
+	struct startup* startup = (struct startup*)cbdata;
+
 //	lprintf(LOG_DEBUG, "MQTT message received (%d bytes) on %s", msg->payloadlen, msg->topic);
 	if(startup->type == SERVER_TERM) {
 		bbs_startup_t* bbs_startup = (bbs_startup_t*)startup;
