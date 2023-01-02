@@ -28,6 +28,8 @@
 #include "link_list.h"
 #include "dllexport.h"
 
+struct startup;
+
 #include <stdarg.h>
 
 #ifdef USE_MOSQUITTO
