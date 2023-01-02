@@ -4837,7 +4837,6 @@ void bbs_thread(void* arg)
     }
 
 	if(startup->size!=sizeof(bbs_startup_t)) {	// verify size
-		int sz = sizeof(bbs_startup_t);
 		sbbs_beep(100,500);
 		sbbs_beep(300,500);
 		sbbs_beep(100,500);
