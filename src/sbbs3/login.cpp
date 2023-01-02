@@ -145,7 +145,7 @@ void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol
 	count=loginFailure(startup->login_attempt_list, addr, protocol, user, passwd);
 	if(user!=NULL && startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		getnameinfo(&addr->addr, addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
-		::hacklog(&cfg, &startup->mqtt, reason, user, passwd, host_name, addr);
+		::hacklog(&cfg, (struct startup*)startup, reason, user, passwd, host_name, addr);
 #ifdef _WIN32
 		if(startup->sound.hack[0] && !sound_muted(&cfg))
 			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);

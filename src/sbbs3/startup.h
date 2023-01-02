@@ -112,7 +112,8 @@ typedef struct {
 	struct startup_sound_settings sound; \
 	struct login_attempt_settings login_attempt; \
 	link_list_t* login_attempt_list; \
-	struct mqtt mqtt;
+	struct mqtt mqtt; \
+	struct startup* startup[SERVER_COUNT];
 
 struct startup {
 	STARTUP_COMMON_ELEMENTS

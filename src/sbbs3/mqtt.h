@@ -42,19 +42,19 @@ struct mqtt {
 	mqtt_handle_t handle;
 	scfg_t* cfg;
 	char* host;
-	enum server_type server_type;
 	ulong error_count;
 	ulong served;
 	link_list_t client_list;
-	BOOL shared_client_list;
+	BOOL shared_instance;
 };
 
 enum topic_depth {
-	TOPIC_ROOT,
-	TOPIC_BBS,
-	TOPIC_HOST,
-	TOPIC_EVENT,
-	TOPIC_SERVER
+	TOPIC_OTHER,
+	TOPIC_ROOT,	// sbbs/*
+	TOPIC_BBS,	// sbbs/BBS-ID/*
+	TOPIC_HOST,	// sbbs/BBS-ID/hostname/*
+	TOPIC_EVENT, // sbbs/BBS-ID/event/*
+	TOPIC_SERVER // sbbs/BBS-ID/server/*
 };
 
 #define MQTT_SUCCESS 0 // Same as MOSQ_ERR_SUCCESS
@@ -64,36 +64,36 @@ enum topic_depth {
 extern "C" {
 #endif
 
-DLLEXPORT int mqtt_init(struct mqtt*, scfg_t*, enum server_type);
-DLLEXPORT int mqtt_startup(struct mqtt*, scfg_t*, enum server_type, const char* version
+DLLEXPORT int mqtt_init(struct startup*, scfg_t*);
+DLLEXPORT int mqtt_startup(struct startup*, scfg_t*, const char* version
 	,int (*lputs)(int level, const char* str)
-	,BOOL shared_client_list);
-DLLEXPORT int mqtt_online(struct mqtt*);
-DLLEXPORT int mqtt_server_state(struct mqtt*, enum server_state);
-DLLEXPORT int mqtt_server_version(struct mqtt*, const char*);
-DLLEXPORT int mqtt_errormsg(struct mqtt*, int level, const char*);
-DLLEXPORT int mqtt_terminating(struct mqtt*);
-DLLEXPORT void mqtt_shutdown(struct mqtt*);
+	,BOOL shared_instance);
+DLLEXPORT int mqtt_online(struct startup*);
+DLLEXPORT int mqtt_server_state(struct startup*, enum server_state);
+DLLEXPORT int mqtt_server_version(struct startup*, const char*);
+DLLEXPORT int mqtt_errormsg(struct startup*, int level, const char*);
+DLLEXPORT int mqtt_terminating(struct startup*);
+DLLEXPORT void mqtt_shutdown(struct startup*);
 DLLEXPORT char* mqtt_libver(char* str, size_t size);
-DLLEXPORT char* mqtt_topic(struct mqtt*, enum topic_depth, char* str, size_t size, const char* fmt, ...);
-DLLEXPORT int mqtt_subscribe(struct mqtt*, enum topic_depth, char* str, size_t size, const char* fmt, ...);
-DLLEXPORT int mqtt_lputs(struct mqtt*, enum topic_depth, int level, const char* str);
-DLLEXPORT int mqtt_pub_noval(struct mqtt*, enum topic_depth, const char* key);
-DLLEXPORT int mqtt_pub_strval(struct mqtt*, enum topic_depth, const char* key, const char* str);
-DLLEXPORT int mqtt_pub_uintval(struct mqtt*, enum topic_depth, const char* key, ulong value);
-DLLEXPORT int mqtt_pub_message(struct mqtt*, enum topic_depth, const char* key, const void* buf, size_t len);
-DLLEXPORT int mqtt_open(struct mqtt*);
-DLLEXPORT void mqtt_close(struct mqtt*);
-DLLEXPORT int mqtt_connect(struct mqtt*, const char* bind_address);
-DLLEXPORT int mqtt_disconnect(struct mqtt*);
-DLLEXPORT int mqtt_thread_start(struct mqtt*);
-DLLEXPORT int mqtt_thread_stop(struct mqtt*);
-DLLEXPORT int mqtt_thread_count(struct mqtt*, enum topic_depth, ulong count);
-DLLEXPORT int mqtt_socket_count(struct mqtt*, enum topic_depth, ulong count);
-DLLEXPORT int mqtt_served_count(struct mqtt*, enum topic_depth, ulong count);
-DLLEXPORT int mqtt_client_count(struct mqtt*, enum topic_depth, ulong count);
-DLLEXPORT int mqtt_client_on(struct mqtt*, BOOL on, int sock, client_t* client, BOOL update);
-DLLEXPORT int mqtt_client_max(struct mqtt*, ulong count);
+DLLEXPORT char* mqtt_topic(struct startup*, enum topic_depth, char* str, size_t size, const char* fmt, ...);
+DLLEXPORT int mqtt_subscribe(struct startup*, enum topic_depth, char* str, size_t size, const char* fmt, ...);
+DLLEXPORT int mqtt_lputs(struct startup*, enum topic_depth, int level, const char* str);
+DLLEXPORT int mqtt_pub_noval(struct startup*, enum topic_depth, const char* key);
+DLLEXPORT int mqtt_pub_strval(struct startup*, enum topic_depth, const char* key, const char* str);
+DLLEXPORT int mqtt_pub_uintval(struct startup*, enum topic_depth, const char* key, ulong value);
+DLLEXPORT int mqtt_pub_message(struct startup*, enum topic_depth, const char* key, const void* buf, size_t len);
+DLLEXPORT int mqtt_open(struct startup*);
+DLLEXPORT void mqtt_close(struct startup*);
+DLLEXPORT int mqtt_connect(struct startup*, const char* bind_address);
+DLLEXPORT int mqtt_disconnect(struct startup*);
+DLLEXPORT int mqtt_thread_start(struct startup*);
+DLLEXPORT int mqtt_thread_stop(struct startup*);
+DLLEXPORT int mqtt_thread_count(struct startup*, enum topic_depth, ulong count);
+DLLEXPORT int mqtt_socket_count(struct startup*, enum topic_depth, ulong count);
+DLLEXPORT int mqtt_served_count(struct startup*, enum topic_depth, ulong count);
+DLLEXPORT int mqtt_client_count(struct startup*, enum topic_depth, ulong count);
+DLLEXPORT int mqtt_client_on(struct startup*, BOOL on, int sock, client_t* client, BOOL update);
+DLLEXPORT int mqtt_client_max(struct startup*, ulong count);
 
 #ifdef __cplusplus
 }

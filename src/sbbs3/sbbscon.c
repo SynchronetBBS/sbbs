@@ -72,7 +72,6 @@ BOOL				terminated=FALSE;
 
 enum server_state	server_state[SERVER_COUNT];
 BOOL				server_stopped[SERVER_COUNT];
-struct mqtt*		mqtt[SERVER_COUNT];
 BOOL				run_bbs=FALSE;
 bbs_startup_t		bbs_startup;
 BOOL				run_ftp=FALSE;
@@ -294,7 +293,7 @@ static int log_puts(int level, const char *str)
 static int lputs(int level, const char *str)
 {
 	if(str != NULL && *str != '\0')
-		mqtt_lputs(&bbs_startup.mqtt, TOPIC_HOST, level, str);
+		mqtt_lputs((struct startup*)&bbs_startup, TOPIC_HOST, level, str);
 	return log_puts(level, str);
 }
 
@@ -323,46 +322,6 @@ static void recycle_all()
 	mail_startup.recycle_now = TRUE;
 	services_startup.recycle_now = TRUE;
 }
-
-#ifdef USE_MOSQUITTO
-static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const struct mosquitto_message* msg)
-{
-	char topic[128];
-	lprintf(LOG_DEBUG, "MQTT message received (%d bytes) on %s", msg->payloadlen, msg->topic);
-	for(int i = bbs_startup.first_node; i <= bbs_startup.last_node; i++) {
-		mqtt_topic(&bbs_startup.mqtt, TOPIC_BBS, topic, sizeof(topic), "node%d/input", i);
-		if(strcmp(msg->topic, topic) != 0)
-			continue;
-		if(bbs_startup.node_inbuf != NULL && bbs_startup.node_inbuf[i - 1] != NULL)
-			RingBufWrite(bbs_startup.node_inbuf[i - 1], msg->payload, msg->payloadlen);
-		return;
-	}
-	if(strcmp(msg->topic, mqtt_topic(&bbs_startup.mqtt, TOPIC_HOST, topic, sizeof(topic), "recycle")) == 0) {
-		recycle_all();
-		return;
-	}
-	if(strcmp(msg->topic, mqtt_topic(&bbs_startup.mqtt, TOPIC_SERVER, topic, sizeof(topic), "recycle")) == 0) {
-		bbs_startup.recycle_now = true;
-		return;
-	}
-	if(strcmp(msg->topic, mqtt_topic(&ftp_startup.mqtt, TOPIC_SERVER, topic, sizeof(topic), "recycle")) == 0) {
-		ftp_startup.recycle_now = true;
-		return;
-	}
-	if(strcmp(msg->topic, mqtt_topic(&web_startup.mqtt, TOPIC_SERVER, topic, sizeof(topic), "recycle")) == 0) {
-		web_startup.recycle_now = true;
-		return;
-	}
-	if(strcmp(msg->topic, mqtt_topic(&mail_startup.mqtt, TOPIC_SERVER, topic, sizeof(topic), "recycle")) == 0) {
-		mail_startup.recycle_now = true;
-		return;
-	}
-	if(strcmp(msg->topic, mqtt_topic(&services_startup.mqtt, TOPIC_SERVER, topic, sizeof(topic), "recycle")) == 0) {
-		services_startup.recycle_now = true;
-		return;
-	}
-}
-#endif // USE_MOSQUITTO
 
 #ifdef __unix__
 static pthread_mutex_t setid_mutex;
@@ -671,7 +630,7 @@ static void thread_up(void* p, BOOL up, BOOL setuid)
 	    thread_count++;
     else if(thread_count>0)
 		thread_count--;
-	mqtt_thread_count(&bbs_startup.mqtt, TOPIC_HOST, thread_count);
+	mqtt_thread_count((struct startup*)&bbs_startup, TOPIC_HOST, thread_count);
 	pthread_mutex_unlock(&mutex);
 	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
@@ -692,7 +651,7 @@ static void socket_open(void* cbdata, BOOL open)
 	    socket_count++;
 	else if(socket_count>0)
     	socket_count--;
-	mqtt_socket_count(mqtt[server_type], TOPIC_HOST, socket_count);
+	mqtt_socket_count(bbs_startup.startup[server_type], TOPIC_HOST, socket_count);
 	pthread_mutex_unlock(&mutex);
 	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
@@ -714,7 +673,7 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
 	} else
 		listRemoveTaggedNode(&client_list, sock, /* free_data: */TRUE);
 
-	mqtt_client_on(&bbs_startup.mqtt, on, sock, client, update);
+	mqtt_client_on((struct startup*)&bbs_startup, on, sock, client, update);
 
 	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
@@ -1786,35 +1745,16 @@ int main(int argc, char** argv)
 
 #endif // __unix__
 
-	mqtt_startup(&bbs_startup.mqtt, &scfg, SERVER_TERM, sbbscon_ver(), log_puts, /* shared_client_list: */TRUE);
-	mqtt[SERVER_TERM] = &bbs_startup.mqtt;
+	bbs_startup.startup[SERVER_TERM] = (struct startup*)&bbs_startup;
+	bbs_startup.startup[SERVER_MAIL] = (struct startup*)&mail_startup;
+	bbs_startup.startup[SERVER_FTP] = (struct startup*)&ftp_startup;
+	bbs_startup.startup[SERVER_WEB] = (struct startup*)&web_startup;
+	bbs_startup.startup[SERVER_SERVICES] = (struct startup*)&services_startup;
+	mqtt_startup((struct startup*)&bbs_startup, &scfg, sbbscon_ver(), log_puts, /* shared_client_list: */TRUE);
 	mail_startup.mqtt = bbs_startup.mqtt;
-	mail_startup.mqtt.server_type = SERVER_MAIL;
-	mqtt[SERVER_MAIL] = &mail_startup.mqtt;
 	ftp_startup.mqtt = bbs_startup.mqtt;
-	ftp_startup.mqtt.server_type = SERVER_FTP;
-	mqtt[SERVER_FTP] = &ftp_startup.mqtt;
 	web_startup.mqtt = bbs_startup.mqtt;
-	web_startup.mqtt.server_type = SERVER_WEB;
-	mqtt[SERVER_WEB] = &web_startup.mqtt;
 	services_startup.mqtt = bbs_startup.mqtt;
-	services_startup.mqtt.server_type = SERVER_SERVICES;
-	mqtt[SERVER_SERVICES] = &services_startup.mqtt;
-
-#ifdef USE_MOSQUITTO
-	if(bbs_startup.mqtt.handle != NULL) {
-		mosquitto_message_callback_set(bbs_startup.mqtt.handle, mqtt_message_received);
-		for(int i = bbs_startup.first_node; i <= bbs_startup.last_node; i++) {
-			mqtt_subscribe(&bbs_startup.mqtt, TOPIC_BBS, str, sizeof(str), "node%d/input", i);
-		}
-		mqtt_subscribe(&bbs_startup.mqtt, TOPIC_HOST, str, sizeof(str), "recycle");
-		mqtt_subscribe(&bbs_startup.mqtt, TOPIC_SERVER, str, sizeof(str), "recycle");
-		mqtt_subscribe(&ftp_startup.mqtt, TOPIC_SERVER, str, sizeof(str), "recycle");
-		mqtt_subscribe(&web_startup.mqtt, TOPIC_SERVER, str, sizeof(str), "recycle");
-		mqtt_subscribe(&mail_startup.mqtt, TOPIC_SERVER, str, sizeof(str), "recycle");
-		mqtt_subscribe(&services_startup.mqtt, TOPIC_SERVER, str, sizeof(str), "recycle");
-	}
-#endif
 
 #ifdef _THREAD_SUID_BROKEN
 	/* check if we're using NPTL */
@@ -1928,7 +1868,7 @@ int main(int argc, char** argv)
 	if(run_web)
 		_beginthread((void(*)(void*))web_server,0,&web_startup);
 
-	mqtt_online(&bbs_startup.mqtt);
+	mqtt_online((struct startup*)&bbs_startup);
 
 #ifdef __unix__
 	uid_t uid = getuid();
@@ -2240,13 +2180,13 @@ int main(int argc, char** argv)
 		}
 	}
 
-	mqtt_terminating(&bbs_startup.mqtt);
+	mqtt_terminating((struct startup*)&bbs_startup);
 	terminate();
 
 	/* erase the prompt */
 	printf("\r%*s\r",prompt_len,"");
 
-	mqtt_shutdown(&bbs_startup.mqtt);
+	mqtt_shutdown((struct startup*)&bbs_startup);
 
 	return(0);
 }

@@ -582,7 +582,7 @@ bool sbbs_t::update_nodeterm(void)
 			,mouse_mode
 			,console
 		);
-		mqtt_pub_strval(&startup->mqtt, TOPIC_BBS, topic, str);
+		mqtt_pub_strval((struct startup*)startup, TOPIC_BBS, topic, str);
 	}
 	return result;
 }
