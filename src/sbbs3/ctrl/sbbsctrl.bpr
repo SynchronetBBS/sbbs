@@ -62,7 +62,7 @@
       -I$(BCB)\include -I$(BCB)\include\vcl 
       -I..\..\..\3rdp\win32.release\cryptlib\include -I..\..\comio -src_suffix 
       cpp -DSBBS -DRINGBUF_EVENT -DRINGBUF_MUTEX -DUSE_CRYPTLIB -D_DEBUG -boa"/>
-    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
+    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b -k -y -v -vi- -c 
       -tW -tWM"/>
     <PFLAGS value="-$Y+ -$W -$O- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
