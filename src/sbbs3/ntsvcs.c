@@ -108,7 +108,7 @@ sbbs_ntsvc_t event ={
 sbbs_ntsvc_t ftp = {
 	NTSVC_NAME_FTP,
 	"Synchronet FTP Server",
-	"Provides support for FTP clients (including web browsers) for file transfers.",
+	"Provides support for FTP and FTPS clients for file transfers.",
 	&ftp_startup,
 	&ftp_startup.options,
 	&ftp_startup.recycle_now,
@@ -122,7 +122,7 @@ sbbs_ntsvc_t ftp = {
 sbbs_ntsvc_t web = {
 	NTSVC_NAME_WEB,
 	"Synchronet Web Server",
-	"Provides support for Web (HTML/HTTP) clients (browsers).",
+	"Provides support for Web (HTTP/HTTPS) clients (e.g. browsers).",
 	&web_startup,
 	&web_startup.options,
 	&web_startup.recycle_now,
@@ -151,7 +151,7 @@ sbbs_ntsvc_t mail = {
 sbbs_ntsvc_t services = {
 	NTSVC_NAME_SERVICES,
 	"Synchronet Services",
-	"Plugin servers (usually in JavaScript) for any TCP/UDP protocol. " \
+	"Plug-in servers (usually in JavaScript) for any TCP/UDP protocol. " \
 		"Stock services include Finger, Gopher, NNTP, and IRC. Edit your ctrl/services.ini " \
 		"file for configuration of individual Synchronet Services.",
 	&services_startup,
@@ -1178,6 +1178,7 @@ int main(int argc, char** argv)
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
+	bbs_startup.type = SERVER_TERM;
 	bbs_startup.cbdata=&bbs;
 	bbs_startup.lputs=svc_lputs;
 	bbs_startup.event_cbdata=&event;
@@ -1191,6 +1192,7 @@ int main(int argc, char** argv)
 
 	/* Initialize FTP startup structure */
     memset(&ftp_startup,0,sizeof(ftp_startup));
+	ftp_startup.type = SERVER_FTP;
 	ftp_startup.cbdata=&ftp;
     ftp_startup.size=sizeof(ftp_startup);
 	ftp_startup.lputs=svc_lputs;
@@ -1203,6 +1205,7 @@ int main(int argc, char** argv)
 
 	/* Initialize Web Server startup structure */
     memset(&web_startup,0,sizeof(web_startup));
+	web_startup.type = SERVER_WEB;
 	web_startup.cbdata=&web;
     web_startup.size=sizeof(web_startup);
 	web_startup.lputs=svc_lputs;
@@ -1215,6 +1218,7 @@ int main(int argc, char** argv)
 
 	/* Initialize Mail Server startup structure */
     memset(&mail_startup,0,sizeof(mail_startup));
+	mail_startup.type = SERVER_MAIL;
 	mail_startup.cbdata=&mail;
     mail_startup.size=sizeof(mail_startup);
 	mail_startup.lputs=svc_lputs;
@@ -1227,6 +1231,7 @@ int main(int argc, char** argv)
 
 	/* Initialize Services startup structure */
     memset(&services_startup,0,sizeof(services_startup));
+	services_startup.type = SERVER_SERVICES;
 	services_startup.cbdata=&services;
     services_startup.size=sizeof(services_startup);
 	services_startup.lputs=svc_lputs;
