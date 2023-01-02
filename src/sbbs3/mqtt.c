@@ -32,8 +32,10 @@ const char* server_type_desc(enum server_type type)
 		case SERVER_WEB:	return "web";
 		case SERVER_MAIL:	return "mail";
 		case SERVER_SERVICES: return "srvc";
+		case SERVER_COUNT:
+		default:
+			return "???";
 	}
-	return "???";
 }
 
 int mqtt_init(struct mqtt* mqtt, scfg_t* cfg, enum server_type type)
