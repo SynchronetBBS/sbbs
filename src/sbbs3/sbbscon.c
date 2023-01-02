@@ -715,8 +715,6 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
 		listRemoveTaggedNode(&client_list, sock, /* free_data: */TRUE);
 
 	mqtt_client_on(&bbs_startup.mqtt, on, sock, client, update);
-	mqtt_client_count(&bbs_startup.mqtt, TOPIC_HOST, client_list.count);
-	mqtt_served_count(&bbs_startup.mqtt, TOPIC_HOST, served);
 
 	lputs(LOG_INFO,NULL); /* update displayed stats */
 }

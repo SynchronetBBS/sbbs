@@ -550,9 +550,10 @@ int mqtt_client_on(struct mqtt* mqtt, BOOL on, int sock, client_t* client, BOOL 
 	strListJoin(list, buf, sizeof(buf), "\n");
 	strListFree(&list);
 
-	mqtt_client_count(mqtt, mqtt->shared_client_list ? TOPIC_HOST : TOPIC_SERVER, mqtt->client_list.count);
-	mqtt_served_count(mqtt, TOPIC_SERVER, mqtt->served);
-	return mqtt_pub_strval(mqtt, mqtt->shared_client_list ?  TOPIC_HOST : TOPIC_SERVER, "client_list", buf);
+	enum topic_depth depth = mqtt->shared_client_list ? TOPIC_HOST : TOPIC_SERVER;
+	mqtt_client_count(mqtt, depth, mqtt->client_list.count);
+	mqtt_served_count(mqtt, depth, mqtt->served);
+	return mqtt_pub_strval(mqtt, depth, "client_list", buf);
 }
 
 int mqtt_served_count(struct mqtt* mqtt, enum topic_depth depth, ulong count)
