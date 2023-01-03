@@ -1745,6 +1745,19 @@ int main(int argc, char** argv)
 
 	do_seteuid(TRUE);
 
+    /* Set up blocked signals */
+	sigemptyset(&sigs);
+	sigaddset(&sigs,SIGINT);
+	sigaddset(&sigs,SIGQUIT);
+	sigaddset(&sigs,SIGABRT);
+	sigaddset(&sigs,SIGTERM);
+	sigaddset(&sigs,SIGHUP);
+	sigaddset(&sigs,SIGALRM);
+	/* sigaddset(&sigs,SIGPIPE); */
+	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
+    signal(SIGPIPE, SIG_IGN);       /* Ignore "Broken Pipe" signal (Also used for broken socket etc.) */
+    signal(SIGALRM, SIG_IGN);       /* Ignore "Alarm" signal */
+
 #endif // __unix__
 
 	bbs_startup.startup[SERVER_TERM] = (struct startup*)&bbs_startup;
@@ -1805,18 +1818,6 @@ int main(int argc, char** argv)
 	}
 #endif /* USE_LINUX_CAPS */
 
-    /* Set up blocked signals */
-	sigemptyset(&sigs);
-	sigaddset(&sigs,SIGINT);
-	sigaddset(&sigs,SIGQUIT);
-	sigaddset(&sigs,SIGABRT);
-	sigaddset(&sigs,SIGTERM);
-	sigaddset(&sigs,SIGHUP);
-	sigaddset(&sigs,SIGALRM);
-	/* sigaddset(&sigs,SIGPIPE); */
-	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
-    signal(SIGPIPE, SIG_IGN);       /* Ignore "Broken Pipe" signal (Also used for broken socket etc.) */
-    signal(SIGALRM, SIG_IGN);       /* Ignore "Alarm" signal */
 	_beginthread((void(*)(void*))handle_sigs,0,NULL);
     if(!capabilities_set) { /* capabilities were NOT set, fallback to original handling of thread options */
 		if(new_uid_name[0]!=0) {        /*  check the user arg, if we have uid 0 */
