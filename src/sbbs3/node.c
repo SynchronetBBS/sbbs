@@ -1,7 +1,4 @@
 /* Synchronet BBS Node control program */
-// vi: tabstop=4
-
-/* $Id: node.c,v 1.34 2020/08/01 22:04:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -51,6 +36,7 @@
 #include "sbbsdefs.h"
 #include "genwrap.h"	/* stricmp */
 #include "filewrap.h"	/* lock/unlock/sopen */
+#include "getctrl.h"
 
 enum {
 	 MODE_LIST
@@ -191,7 +177,8 @@ void putnodedat(int number, node_t node)
 	if(write(nodefile,&node,sizeof(node_t))!=sizeof(node_t)) {
 		unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 		printf("Error writing to nodefile for node %d\n",number+1);
-		return; }
+		return;
+	}
 	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 }
 
@@ -209,7 +196,8 @@ char *unpackchatpass(char *pass, node_t node)
 	bits=2;
 	for(i=2;i<8;i++) {
 		pass[i]=(char)((node.extaux>>bits)&0x1f);
-		bits+=5; }
+		bits+=5;
+	}
 	pass[8]=0;
 	for(i=0;i<8;i++)
 		if(pass[i])
@@ -363,7 +351,9 @@ void printnodedat(int number, node_t node)
 						printf("in multinode chat channel %d",node.aux&0xff);
 						if(node.aux&0x1f00) { /* password */
 							putchar('*');
-							printf(" %s",unpackchatpass(tmp,node)); } }
+							printf(" %s",unpackchatpass(tmp,node));
+						}
+					}
 					else
 						printf("in multinode global chat channel");
 					break;
@@ -398,15 +388,19 @@ void printnodedat(int number, node_t node)
 						hour=12;
 					else
 						hour=(node.aux/60)-12;
-					SAFECOPY(mer,"pm"); }
+					SAFECOPY(mer,"pm");
+				}
 				else {
 					if((node.aux/60)==0)    /* 12 midnite */
 						hour=12;
 					else hour=node.aux/60;
-					SAFECOPY(mer,"am"); }
+					SAFECOPY(mer,"am");
+				}
 				printf(" ETA %02d:%02d %s"
-					,hour,node.aux-((node.aux/60)*60),mer); }
-			break; }
+					,hour,node.aux-((node.aux/60)*60),mer);
+			}
+			break;
+}
 	if(node.misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
 		printf(" (");
 		if(node.misc&NODE_AOFF)
@@ -417,7 +411,8 @@ void printnodedat(int number, node_t node)
 			putchar('M');
 		if(node.misc&NODE_POFF)
 			putchar('P');
-		putchar(')'); }
+		putchar(')');
+	}
 	if(((node.misc
 		&(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN))
 		|| node.status==NODE_QUIET)) {
@@ -440,7 +435,8 @@ void printnodedat(int number, node_t node)
 			putchar('C');
 		if(node.misc&NODE_FCHAT)
 			putchar('F');
-		putchar(']'); }
+		putchar(']');
+	}
 	if(node.errors)
 		printf(" %d error%c",node.errors, node.errors>1 ? 's' : '\0' );
 	printf("\n");
@@ -496,15 +492,17 @@ int main(int argc, char **argv)
 		printf("misc=#      = set misc value\n");
 		printf("aux=#       = set aux value\n");
 		printf("extaux=#    = set extended aux value\n");
-		exit(0); }
+		exit(0);
+	}
 
 	p=getenv("SBBSCTRL");
 	if(p==NULL) {
 		printf("\7\nSBBSCTRL environment variable is not set.\n");
 		printf("This environment variable must be set to your CTRL directory.");
 		printf("\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
-		exit(1); }
-	SAFECOPY(ctrl_dir, p);
+		exit(1);
+	}
+	SAFECOPY(ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
 	if(ctrl_dir[strlen(ctrl_dir)-1]!='\\'
 		&& ctrl_dir[strlen(ctrl_dir)-1]!='/')
 		strcat(ctrl_dir,"/");
@@ -512,7 +510,8 @@ int main(int argc, char **argv)
 	SAFEPRINTF(str,"%snode.dab",ctrl_dir);
 	if((nodefile=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
 		printf("\7\nError %d opening %s.\n",errno,str);
-		exit(1); }
+		exit(1);
+	}
 
 	SAFEPRINTF(str,"%snode.exb",ctrl_dir);
 	nodeexb=sopen(str,O_RDWR|O_BINARY,SH_DENYNO);
@@ -520,7 +519,8 @@ int main(int argc, char **argv)
 	sys_nodes=(int)(filelength(nodefile)/sizeof(node_t));
 	if(!sys_nodes) {
 		printf("%s reflects 0 nodes!\n",str);
-		exit(1); }
+		exit(1);
+	}
 
 	for(i=1;i<argc;i++) {
 		if(isdigit(argv[i][0]))
@@ -556,29 +556,37 @@ int main(int argc, char **argv)
 				onoff=2;
 			else if(!strnicmp(argv[i],"STATUS=",7)) {
 				mode=MODE_STATUS;
-				value=strtoul(argv[i]+7, NULL, 0); }
+				value=strtoul(argv[i]+7, NULL, 0);
+			}
 			else if(!strnicmp(argv[i],"ERRORS=",7)) {
 				mode=MODE_ERRORS;
-				value=strtoul(argv[i]+7, NULL, 0); }
+				value=strtoul(argv[i]+7, NULL, 0);
+			}
 			else if(!strnicmp(argv[i],"USERON=",7)) {
 				mode=MODE_USERON;
-				value=strtoul(argv[i]+7, NULL, 0); }
+				value=strtoul(argv[i]+7, NULL, 0);
+			}
 			else if(!strnicmp(argv[i],"ACTION=",7)) {
 				mode=MODE_ACTION;
-				value=strtoul(argv[i]+7, NULL, 0); }
+				value=strtoul(argv[i]+7, NULL, 0);
+			}
 			else if(!strnicmp(argv[i],"CONN=",5)) {
 				mode=MODE_CONN;
-				value=strtoul(argv[i]+5, NULL, 0); }
+				value=strtoul(argv[i]+5, NULL, 0);
+			}
 			else if(!strnicmp(argv[i],"MISC=",5)) {
 				mode=MODE_MISC;
-				value=strtoul(argv[i]+5, NULL, 0); }
+				value=strtoul(argv[i]+5, NULL, 0);
+			}
 			else if(!strnicmp(argv[i],"AUX=",4)) {
 				mode=MODE_AUX;
-				value=strtoul(argv[i]+4, NULL, 0); }
+				value=strtoul(argv[i]+4, NULL, 0);
+			}
 			else if(!strnicmp(argv[i],"EXTAUX=",7)) {
 				mode=MODE_EXTAUX;
-				value=strtoul(argv[i]+7, NULL, 0); }
+				value=strtoul(argv[i]+7, NULL, 0);
 			}
+		}
 		if(mode!=MODE_LIST)
 			modify=1;
 
@@ -639,14 +647,16 @@ int main(int argc, char **argv)
 								break;
 							case MODE_EXTAUX:
 								node.extaux=value;
-								break; }
+								break;
+						}
 						if(misc) {
 							if(onoff==0)
 								node.misc^=misc;
 							else if(onoff==1)
 								node.misc|=misc;
 							else if(onoff==2)
-								node.misc&=~misc; }
+								node.misc&=~misc;
+						}
 						if(modify)
 							putnodedat(j,node);
 						printnodedat(j,node);
