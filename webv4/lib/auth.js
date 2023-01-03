@@ -5,6 +5,7 @@ function randomString(length) {
 	var str = '';
 	for (var i = 0; i < length; i++) {
 		var rn = Math.floor(Math.random() * chars.length);
+		if (rn >= chars.length) log(LOG_DEBUG, "Impossible number: " + rn);
 		str += chars[rn];
 	}
 	return str;
