@@ -1,7 +1,7 @@
 require('sbbsdefs.js', 'SYS_CLOSED');
 
 function randomString(length) {
-	var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split("");
+	var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split('');
 	var str = '';
 	for (var i = 0; i < length; i++) {
 		var rn = Math.floor(Math.random() * chars.length);
