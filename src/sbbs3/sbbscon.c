@@ -1726,6 +1726,8 @@ int main(int argc, char** argv)
 	}
 	/* Open here to use startup permissions to create the file */
 	pidf=fopen(pid_fname,"w");
+	if(pidf == NULL)
+		lprintf(LOG_ERR, "!ERROR %d (%s) creating/opening %s", errno, strerror(errno), pid_fname);
 
 	old_uid = getuid();
 	if((pw_entry=getpwnam(new_uid_name))!=0)
