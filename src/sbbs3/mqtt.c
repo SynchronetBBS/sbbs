@@ -473,7 +473,7 @@ int mqtt_startup(struct startup* startup, scfg_t* cfg, const char* version
 	int result = MQTT_FAILURE;
 	char str[128];
 
-	if(startup == NULL)
+	if(startup == NULL || startup->mqtt.cfg == NULL)
 		return MQTT_FAILURE;
 
 	if(!cfg->mqtt.enabled)
@@ -586,7 +586,7 @@ int mqtt_client_max(struct startup* startup, ulong count)
 
 int mqtt_client_on(struct startup* startup, BOOL on, int sock, client_t* client, BOOL update)
 {
-	if(startup == NULL)
+	if(startup == NULL || startup->mqtt.cfg == NULL)
 		return MQTT_FAILURE;
 
 	if(!startup->mqtt.cfg->mqtt.enabled)
@@ -642,7 +642,7 @@ int mqtt_terminating(struct startup* startup)
 
 void mqtt_shutdown(struct startup* startup)
 {
-	if(startup != NULL && startup->mqtt.cfg->mqtt.enabled) {
+	if(startup != NULL && startup->mqtt.cfg != NULL && startup->mqtt.cfg->mqtt.enabled) {
 		mqtt_pub_strval(startup, TOPIC_HOST, "status", "offline");
 		mqtt_disconnect(startup);
 		mqtt_thread_stop(startup);
