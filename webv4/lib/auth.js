@@ -4,7 +4,8 @@ function randomString(length) {
 	var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split("");
 	var str = '';
 	for (var i = 0; i < length; i++) {
-		str += chars[Math.floor(Math.random() * chars.length)];
+		var rn = Math.floor(Math.random() * chars.length);
+		str += chars[rn];
 	}
 	return str;
 }
