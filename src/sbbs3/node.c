@@ -448,7 +448,7 @@ void printnodedat(int number, node_t node)
 /****************************/
 int main(int argc, char **argv)
 {
-	char str[256],ctrl_dir[41],*p,debug=0;
+	char str[256],ctrl_dir[41],debug=0;
 	int sys_nodes,node_num=0,onoff=0;
 	int i,j,mode=0,misc;
 	int	modify=0;
@@ -495,13 +495,6 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
-	p=getenv("SBBSCTRL");
-	if(p==NULL) {
-		printf("\7\nSBBSCTRL environment variable is not set.\n");
-		printf("This environment variable must be set to your CTRL directory.");
-		printf("\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
-		exit(1);
-	}
 	SAFECOPY(ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
 	if(ctrl_dir[strlen(ctrl_dir)-1]!='\\'
 		&& ctrl_dir[strlen(ctrl_dir)-1]!='/')
