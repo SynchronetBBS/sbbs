@@ -473,7 +473,7 @@ int mqtt_startup(struct startup* startup, scfg_t* cfg, const char* version
 	int result = MQTT_FAILURE;
 	char str[128];
 
-	if(startup == NULL || startup->mqtt.cfg == NULL)
+	if(startup == NULL || cfg == NULL)
 		return MQTT_FAILURE;
 
 	if(!cfg->mqtt.enabled)
