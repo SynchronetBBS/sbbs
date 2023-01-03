@@ -127,6 +127,7 @@ var win32_dist
 		"3rdp/win32.release/nspr/bin/*.dll",
 		"3rdp/win32.release/cryptlib/bin/*.dll",
 		"3rdp/win32.release/libarchive/bin/*.dll",
+		"3rdp/win32.release/mosquitto/bin/*.dll",
 		"3rdp/win32.release/zlib/bin/*.dll",
 		"s:/sbbs/exec/dosxtrn.exe"
 	];
