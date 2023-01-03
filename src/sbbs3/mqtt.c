@@ -476,29 +476,30 @@ int mqtt_startup(struct startup* startup, scfg_t* cfg, const char* version
 	if(startup == NULL)
 		return MQTT_FAILURE;
 
-	if(cfg->mqtt.enabled) {
-		result = mqtt_init(startup, cfg);
+	if(!cfg->mqtt.enabled)
+		return MQTT_SUCCESS;
+
+	result = mqtt_init(startup, cfg);
+	if(result != MQTT_SUCCESS) {
+		lprintf(lputs, LOG_INFO, "MQTT init failure: %d", result);
+	} else {
+		lprintf(lputs, LOG_INFO, "MQTT lib: %s", mqtt_libver(str, sizeof(str)));
+		result = mqtt_open(startup);
 		if(result != MQTT_SUCCESS) {
-			lprintf(lputs, LOG_INFO, "MQTT init failure: %d", result);
+			lprintf(lputs, LOG_ERR, "MQTT open failure: %d", result);
 		} else {
-			lprintf(lputs, LOG_INFO, "MQTT lib: %s", mqtt_libver(str, sizeof(str)));
-			result = mqtt_open(startup);
+			result = mqtt_thread_start(startup);
 			if(result != MQTT_SUCCESS) {
-				lprintf(lputs, LOG_ERR, "MQTT open failure: %d", result);
+				lprintf(lputs, LOG_ERR, "Error %d starting pub/sub thread", result);
+				mqtt_close(startup);
 			} else {
-				result = mqtt_thread_start(startup);
-				if(result != MQTT_SUCCESS) {
-					lprintf(lputs, LOG_ERR, "Error %d starting pub/sub thread", result);
-					mqtt_close(startup);
+				lprintf(lputs, LOG_INFO, "MQTT connecting to broker %s:%u", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
+				result = mqtt_connect(startup, /* bind_address: */NULL);
+				if(result == MQTT_SUCCESS) {
+					lprintf(lputs, LOG_INFO, "MQTT broker-connect (%s:%d) successful", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
 				} else {
-					lprintf(lputs, LOG_INFO, "MQTT connecting to broker %s:%u", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
-					result = mqtt_connect(startup, /* bind_address: */NULL);
-					if(result == MQTT_SUCCESS) {
-						lprintf(lputs, LOG_INFO, "MQTT broker-connect (%s:%d) successful", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
-					} else {
-						lprintf(lputs, LOG_ERR, "MQTT broker-connect (%s:%d) failure: %d", cfg->mqtt.broker_addr, cfg->mqtt.broker_port, result);
-						mqtt_close(startup);
-					}
+					lprintf(lputs, LOG_ERR, "MQTT broker-connect (%s:%d) failure: %d", cfg->mqtt.broker_addr, cfg->mqtt.broker_port, result);
+					mqtt_close(startup);
 				}
 			}
 		}
@@ -588,6 +589,9 @@ int mqtt_client_on(struct startup* startup, BOOL on, int sock, client_t* client,
 	if(startup == NULL)
 		return MQTT_FAILURE;
 
+	if(!startup->mqtt.cfg->mqtt.enabled)
+		return MQTT_SUCCESS;
+
 	listLock(&startup->mqtt.client_list);
 	if(on) {
 		if(update) {
@@ -638,8 +642,10 @@ int mqtt_terminating(struct startup* startup)
 
 void mqtt_shutdown(struct startup* startup)
 {
-	mqtt_pub_strval(startup, TOPIC_HOST, "status", "offline");
-	mqtt_disconnect(startup);
-	mqtt_thread_stop(startup);
-	mqtt_close(startup);
+	if(startup != NULL && startup->mqtt.cfg->mqtt.enabled) {
+		mqtt_pub_strval(startup, TOPIC_HOST, "status", "offline");
+		mqtt_disconnect(startup);
+		mqtt_thread_stop(startup);
+		mqtt_close(startup);
+	}
 }
