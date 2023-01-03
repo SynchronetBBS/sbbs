@@ -473,7 +473,7 @@ if(netname) {
 var msgs_ini = new File(system.ctrl_dir + "msgs.ini");
 print("Reading Message Area configuration file: " + msgs_ini.name);
 if(!f.open(f.exists ? 'r+':'w+')) {
-	alert("Failed to read msgs.cnf");
+	alert("Failed to read " + msgs_ini.name);
 	exit(1);
 }
 
