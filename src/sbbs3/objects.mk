@@ -150,7 +150,8 @@ BAJA_OBJS = \
 UNBAJA_OBJS = \
 			$(OBJODIR)/unbaja$(OFILE)
 
-NODE_OBJS = $(OBJODIR)/node$(OFILE)
+NODE_OBJS = $(OBJODIR)/node$(OFILE) \
+            $(OBJODIR)/getctrl$(OFILE)
 
 FIXSMB_OBJS = \
 			$(OBJODIR)/fixsmb$(OFILE) \
