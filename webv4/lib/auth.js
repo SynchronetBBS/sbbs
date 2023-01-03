@@ -1,10 +1,12 @@
 require('sbbsdefs.js', 'SYS_CLOSED');
 
 function randomString(length) {
-	var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split("");
+	var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split('');
 	var str = '';
 	for (var i = 0; i < length; i++) {
-		str += chars[Math.floor(Math.random() * chars.length)];
+		var rn = Math.floor(Math.random() * chars.length);
+		if (rn >= chars.length) log(LOG_DEBUG, "Impossible number: " + rn);
+		str += chars[rn];
 	}
 	return str;
 }
