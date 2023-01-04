@@ -133,8 +133,8 @@ static int lputs(int level, const char* str)
 	mqtt_lputs(&mqtt, TOPIC_SERVER, level, str);
 	if(level <= LOG_ERR) {
 		char errmsg[1024];
-		errorlog(&scfg, &mqtt, level, startup == NULL ? NULL : startup->host_name, str);
-		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, str);
+		SAFEPRINTF2(errmsg, "%-4s %s", server_abbrev, str);
+		errorlog(&scfg, &mqtt, level, startup == NULL ? NULL : startup->host_name, errmsg);
 		if(startup != NULL && startup->errormsg != NULL)
 			startup->errormsg(startup->cbdata, level, errmsg);
 	}
