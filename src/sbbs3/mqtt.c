@@ -84,11 +84,20 @@ static char* format_topic(struct mqtt* mqtt, enum server_type type, enum topic_d
 		case TOPIC_BBS:
 			safe_snprintf(str, size, "sbbs/%s/%s", mqtt->cfg->sys_id, sbuf);
 			break;
+		case TOPIC_BBS_LEVEL:
+			safe_snprintf(str, size, "sbbs/%s", mqtt->cfg->sys_id);
+			break;
 		case TOPIC_HOST:
 			safe_snprintf(str, size, "sbbs/%s/%s/%s", mqtt->cfg->sys_id, mqtt->host, sbuf);
 			break;
+		case TOPIC_HOST_LEVEL:
+			safe_snprintf(str, size, "sbbs/%s/%s", mqtt->cfg->sys_id, mqtt->host);
+			break;
 		case TOPIC_SERVER:
 			safe_snprintf(str, size, "sbbs/%s/%s/%s/%s", mqtt->cfg->sys_id, mqtt->host, server_type_desc(type), sbuf);
+			break;
+		case TOPIC_SERVER_LEVEL:
+			safe_snprintf(str, size, "sbbs/%s/%s/%s", mqtt->cfg->sys_id, mqtt->host, server_type_desc(type));
 			break;
 		case TOPIC_EVENT:
 			safe_snprintf(str, size, "sbbs/%s/%s/event/%s", mqtt->cfg->sys_id, mqtt->host, sbuf);
@@ -104,12 +113,14 @@ static char* format_topic(struct mqtt* mqtt, enum server_type type, enum topic_d
 char* mqtt_topic(struct mqtt* mqtt, enum topic_depth depth, char* str, size_t size, const char* fmt, ...)
 {
 	va_list argptr;
-	char sbuf[1024];
+	char sbuf[1024]="";
 
-    va_start(argptr, fmt);
-    vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
-	sbuf[sizeof(sbuf) - 1]=0;
-    va_end(argptr);
+	if(fmt != NULL) {
+		va_start(argptr, fmt);
+		vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
+		sbuf[sizeof(sbuf) - 1]=0;
+		va_end(argptr);
+	}
 
 	return format_topic(mqtt, mqtt->startup->type, depth, str, size, sbuf);
 }
@@ -350,7 +361,7 @@ int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 	char value[128];
 	server_state_str(value, sizeof(value), SERVER_DISCONNECTED);
 	mosquitto_will_set(mqtt->handle
-		,mqtt_topic(mqtt, TOPIC_SERVER, topic, sizeof(topic), "state")
+		,mqtt_topic(mqtt, TOPIC_SERVER_LEVEL, topic, sizeof(topic), NULL)
 		,strlen(value), value, /* QOS: */2, /* retain: */true);
 	if(mqtt->cfg->mqtt.tls.mode == MQTT_TLS_CERT) {
 		char* certfile = NULL;
@@ -446,7 +457,7 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 	if(mqtt->startup->type == SERVER_TERM) {
 		bbs_startup_t* bbs_startup = (bbs_startup_t*)mqtt->startup;
 		for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
-			mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node%d/input", i);
+			mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "nodes/%d/input", i);
 			if(strcmp(msg->topic, topic) != 0)
 				continue;
 			if(bbs_startup->node_inbuf != NULL && bbs_startup->node_inbuf[i - 1] != NULL)
@@ -500,6 +511,8 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 		}
 	}
 	mqtt_server_state(mqtt, SERVER_INIT);
+	mqtt_pub_strval(mqtt, TOPIC_BBS_LEVEL, NULL, mqtt->cfg->sys_name);
+	mqtt_pub_strval(mqtt, TOPIC_HOST_LEVEL, NULL, startup->host_name);
 	mqtt_pub_strval(mqtt, TOPIC_SERVER, "version", version);
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "served", mqtt->served);
 
@@ -510,7 +523,7 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 		bbs_startup_t* bbs_startup = (bbs_startup_t*)startup;
 		char str[128];
 		for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
-			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node%d/input", i);
+			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "nodes/%d/input", i);
 		}
 	}
 	mqtt_pub_noval(mqtt, TOPIC_SERVER, "recycle");
@@ -523,8 +536,33 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 int mqtt_server_state(struct mqtt* mqtt, enum server_state state)
 {
 	char str[128];
-	server_state_str(str, sizeof(str), state);
-	return mqtt_pub_strval(mqtt, TOPIC_SERVER, "state", str);
+
+	if(mqtt == NULL || mqtt->cfg == NULL)
+		return MQTT_FAILURE;
+
+	if(mqtt->cfg->mqtt.verbose) {
+		char tmp[256];
+		char errors[64] = "";
+		if(mqtt->error_count)
+			snprintf(errors, sizeof(errors), "%lu errors", mqtt->error_count);
+		char served[64] = "";
+		if(mqtt->served)
+			snprintf(served, sizeof(served), "%lu served", mqtt->served);
+		char max_clients[64] = "";
+		if(mqtt->max_clients)
+			snprintf(max_clients, sizeof(max_clients), "/%u", mqtt->max_clients);
+		char clients[64] = "";
+		if(mqtt->client_list.count)
+			snprintf(clients, sizeof(clients), "%u%s clients", mqtt->client_list.count, max_clients);
+		snprintf(str, sizeof(str), "%s\t%s\t%s\t%s"
+			,server_state_str(tmp, sizeof(tmp), state)
+			,clients
+			,served
+			,errors);
+	} else
+		server_state_str(str, sizeof(str), state);
+	mqtt->server_state = state;
+	return mqtt_pub_strval(mqtt, TOPIC_SERVER_LEVEL, NULL, str);
 }
 
 int mqtt_errormsg(struct mqtt* mqtt, int level, const char* msg)
@@ -533,11 +571,18 @@ int mqtt_errormsg(struct mqtt* mqtt, int level, const char* msg)
 		return MQTT_FAILURE;
 	++mqtt->error_count;
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "error_count", mqtt->error_count);
+	if(mqtt->cfg->mqtt.verbose)
+		mqtt_server_state(mqtt, mqtt->server_state);
 	return mqtt_pub_strval(mqtt, TOPIC_BBS, "error", msg);
 }
 
 int mqtt_client_max(struct mqtt* mqtt, ulong count)
 {
+	if(mqtt == NULL || mqtt->cfg == NULL)
+		return MQTT_FAILURE;
+	mqtt->max_clients = count;
+	if(mqtt->cfg->mqtt.verbose)
+		mqtt_server_state(mqtt, mqtt->server_state);
 	return mqtt_pub_uintval(mqtt, TOPIC_SERVER, "max_clients", count);
 }
 
@@ -581,9 +626,18 @@ int mqtt_client_on(struct mqtt* mqtt, BOOL on, int sock, client_t* client, BOOL 
 	strListJoin(list, buf, sizeof(buf), "\n");
 	strListFree(&list);
 
-	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "client_count", mqtt->client_list.count);
+	mqtt_client_count(mqtt);
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "served", mqtt->served);
 	return mqtt_pub_strval(mqtt, TOPIC_SERVER, "client_list", buf);
+}
+
+int mqtt_client_count(struct mqtt* mqtt)
+{
+	if(mqtt == NULL || mqtt->cfg == NULL)
+		return MQTT_FAILURE;
+	if(mqtt->cfg->mqtt.verbose)
+		mqtt_server_state(mqtt, mqtt->server_state);
+	return mqtt_pub_uintval(mqtt, TOPIC_SERVER, "client_count", mqtt->client_list.count);
 }
 
 void mqtt_shutdown(struct mqtt* mqtt)

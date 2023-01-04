@@ -365,6 +365,7 @@ typedef struct {
 
 struct mqtt_cfg {
 	BOOL		enabled;
+	BOOL		verbose;
 	char		broker_addr[128];
 	uint16_t	broker_port;
 	char		username[256];

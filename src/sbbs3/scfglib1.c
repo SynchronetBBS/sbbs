@@ -205,6 +205,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*****************/
 	section = iniGetParsedSection(sections, "mqtt", /* cut: */TRUE);
 	cfg->mqtt.enabled = iniGetBool(section, NULL, "enabled", FALSE);
+	cfg->mqtt.verbose = iniGetBool(section, NULL, "verbose", TRUE);
 	SAFECOPY(cfg->mqtt.username, iniGetString(section, NULL, "username", "", value));
 	SAFECOPY(cfg->mqtt.password, iniGetString(section, NULL, "password", "", value));
 	SAFECOPY(cfg->mqtt.broker_addr, iniGetString(section, NULL, "broker_addr", "127.0.0.1", value));
