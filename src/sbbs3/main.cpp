@@ -90,8 +90,8 @@ SOCKET	uspy_socket[MAX_NODES];	  /* UNIX domain spy sockets */
 #endif
 SOCKET	node_socket[MAX_NODES];
 struct xpms_set				*ts_set;
-//static	sbbs_t*	sbbs=NULL;
 static	scfg_t	scfg;
+static	struct mqtt mqtt;
 static	char *	text[TOTAL_TEXT];
 static	scfg_t	node_scfg[MAX_NODES];
 static	char *	node_text[MAX_NODES][TOTAL_TEXT];
@@ -163,7 +163,7 @@ static void set_state(enum server_state state)
 	if(startup != NULL) {
 		if(startup->set_state != NULL)
 			startup->set_state(startup->cbdata, state);
-		mqtt_server_state((struct startup*)startup, state);
+		mqtt_server_state(&mqtt, state);
 	}
 }
 
@@ -172,7 +172,6 @@ static void update_clients()
 	if(startup != NULL) {
 		if(startup->clients != NULL)
 			startup->clients(startup->cbdata,protected_uint32_value(node_threads_running));
-		mqtt_client_count((struct startup*)startup, TOPIC_SERVER, protected_uint32_value(node_threads_running));
 	}
 }
 
@@ -182,6 +181,7 @@ void client_on(SOCKET sock, client_t* client, BOOL update)
 		listAddNodeData(&current_connections, client->addr, strlen(client->addr)+1, sock, LAST_NODE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,TRUE,sock,client,update);
+	mqtt_client_on(&mqtt, TRUE, sock, client, update);
 }
 
 static void client_off(SOCKET sock)
@@ -189,6 +189,7 @@ static void client_off(SOCKET sock)
 	listRemoveTaggedNode(&current_connections, sock, /* free_data */TRUE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
+	mqtt_client_on(&mqtt, FALSE, sock, NULL, FALSE);
 }
 
 static void thread_up(BOOL setuid)
@@ -205,11 +206,10 @@ static void thread_down()
 
 int lputs(int level, const char* str)
 {
-	if(startup != NULL)
-		mqtt_lputs((struct startup*)startup, TOPIC_SERVER, level, str);
+	mqtt_lputs(&mqtt, TOPIC_SERVER, level, str);
 	if(level <= LOG_ERR) {
 		char errmsg[1024];
-		errorlog(&scfg, (struct startup*)startup, level, startup==NULL ? NULL:startup->host_name, str);
+		errorlog(&scfg, &mqtt, level, startup==NULL ? NULL:startup->host_name, str);
 		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, str);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
@@ -231,12 +231,11 @@ int eputs(int level, const char *str)
 	if(*str == 0)
 		return 0;
 
-	if(startup != NULL)
-		mqtt_lputs((struct startup*)startup, TOPIC_EVENT, level, str);
+	mqtt_lputs(&mqtt, TOPIC_EVENT, level, str);
 
 	if(level <= LOG_ERR) {
 		char errmsg[1024];
-		errorlog(&scfg, (struct startup*)startup, level, startup==NULL ? NULL:startup->host_name, str);
+		errorlog(&scfg, &mqtt, level, startup==NULL ? NULL:startup->host_name, str);
 		SAFEPRINTF(errmsg, "evnt %s", str);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata, level, errmsg);
@@ -2483,7 +2482,7 @@ void output_thread(void* arg)
 			}
 			/* Spy on the user remotely */
 			if(sbbs->cfg.mqtt.enabled) {
-				int result = mqtt_pub_message((struct startup*)startup, TOPIC_BBS, spy_topic, buf+bufbot, i);
+				int result = mqtt_pub_message(&mqtt, TOPIC_BBS, spy_topic, buf+bufbot, i);
 				if(result != MQTT_SUCCESS)
 					lprintf(LOG_WARNING, "%s ERROR %d (%d) publishing node output (%u bytes): %s"
 						,node, result, errno, i, spy_topic);
@@ -3272,6 +3271,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 		,sd, global_cfg->node_misc);
 
 	startup = ::startup;	// Convert from global to class member
+	mqtt = &::mqtt;
 
 	memcpy(&cfg, global_cfg, sizeof(cfg));
 	cfg.node_num = node_num;	// Restore the node_num passed to the constructor
@@ -4410,7 +4410,7 @@ void node_thread(void* arg)
 		char topic[128];
 		SAFEPRINTF(topic, "node%u/laston", sbbs->cfg.node_num);
 		SAFEPRINTF2(str, "%u\t%s", sbbs->useron.number, sbbs->useron.alias);
-		mqtt_pub_strval((struct startup*)startup, TOPIC_BBS, topic, str);
+		mqtt_pub_strval(&mqtt, TOPIC_BBS, topic, str);
 	}
 
 	if(sbbs->sys_status&SS_DAILY) {	// New day, run daily events/maintenance
@@ -4793,6 +4793,8 @@ static void cleanup(int code)
 	thread_down();
 	if(terminate_server || code)
 		lprintf(LOG_INFO,"Terminal Server thread terminated (%lu clients served)", served);
+	set_state(SERVER_STOPPED);
+	mqtt_shutdown(&mqtt);
 	if(startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -4940,7 +4942,6 @@ void bbs_thread(void* arg)
 		cleanup(1);
 		return;
 	}
-	mqtt_server_version((struct startup*)startup, bbs_ver());
 
 	t=time(NULL);
 	lprintf(LOG_INFO,"Initializing on %.24s with options: %x"
@@ -4961,6 +4962,8 @@ void bbs_thread(void* arg)
 		cleanup(1);
 		return;
 	}
+
+	mqtt_startup(&mqtt, &scfg, (struct startup*)startup, bbs_ver(), lputs);
 
 	if(scfg.total_shells < 1) {
 		lprintf(LOG_CRIT, "At least one command shell must be configured (e.g. in SCFG->Command Shells)");
@@ -4985,7 +4988,7 @@ void bbs_thread(void* arg)
         startup->last_node=scfg.sys_nodes;
     }
 
-	mqtt_pub_uintval((struct startup*)startup, TOPIC_BBS, "node_count", scfg.sys_nodes);
+	mqtt_pub_uintval(&mqtt, TOPIC_BBS, "node_count", scfg.sys_nodes);
 
 	/* Create missing directories */
 	lprintf(LOG_INFO,"Verifying/creating data directories");
@@ -5232,7 +5235,7 @@ NO_SSH:
 	set_state(SERVER_READY);
 
 	lprintf(LOG_INFO,"Terminal Server thread started for nodes %d through %d", first_node, last_node);
-	mqtt_client_max((struct startup*)startup, (last_node - first_node) + 1);
+	mqtt_client_max(&mqtt, (last_node - first_node) + 1);
 
 	while(!terminate_server) {
 		YIELD();
@@ -5927,5 +5930,4 @@ NO_SSH:
 
 	} while(!terminate_server);
 
-	set_state(SERVER_STOPPED);
 }

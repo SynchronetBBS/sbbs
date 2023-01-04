@@ -78,6 +78,7 @@ const char* server_abbrev = "ftp";
 
 static ftp_startup_t*	startup=NULL;
 static scfg_t	scfg;
+static struct mqtt mqtt;
 static struct xpms_set *ftp_set = NULL;
 static protected_uint32_t active_clients;
 static protected_uint32_t thread_count;
@@ -127,6 +128,28 @@ BOOL dir_op(scfg_t* cfg, user_t* user, client_t* client, uint dirnum)
 	return is_user_dirop(cfg, dirnum, user, client);
 }
 
+static int lputs(int level, const char* str)
+{
+	mqtt_lputs(&mqtt, TOPIC_SERVER, level, str);
+	if(level <= LOG_ERR) {
+		char errmsg[1024];
+		errorlog(&scfg, &mqtt, level, startup == NULL ? NULL : startup->host_name, str);
+		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, str);
+		if(startup != NULL && startup->errormsg != NULL)
+			startup->errormsg(startup->cbdata, level, errmsg);
+	}
+
+	if(startup == NULL || startup->lputs == NULL || str == NULL || level > startup->log_level)
+    	return 0;
+
+#if defined(_WIN32)
+	if(IsBadCodePtr((FARPROC)startup->lputs))
+		return 0;
+#endif
+
+    return startup->lputs(startup->cbdata,level,str);
+}
+
 #if defined(__GNUC__)	// Catch printf-format errors with lprintf
 static int lprintf(int level, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 #endif
@@ -140,25 +163,7 @@ static int lprintf(int level, const char *fmt, ...)
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
 
-	if(level <= LOG_ERR) {
-		char errmsg[sizeof(sbuf)+16];
-		errorlog(&scfg, (struct startup*)startup, level, startup==NULL ? NULL:startup->host_name, sbuf);
-		SAFEPRINTF2(errmsg, "%s  %s", server_abbrev, sbuf);
-		if(startup!=NULL && startup->errormsg!=NULL)
-			startup->errormsg(startup->cbdata,level,errmsg);
-	}
-	if(startup != NULL)
-		mqtt_lputs((struct startup*)startup, TOPIC_SERVER, level, sbuf);
-
-    if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
-		return(0);
-
-#if defined(_WIN32)
-	if(IsBadCodePtr((FARPROC)startup->lputs))
-		return(0);
-#endif
-
-    return startup->lputs(startup->cbdata,level,sbuf);
+    return lputs(level, sbuf);
 }
 
 #ifdef _WINSOCKAPI_
@@ -199,7 +204,7 @@ static void set_state(enum server_state state)
 	if(startup != NULL) {
 		if(startup->set_state != NULL)
 			startup->set_state(startup->cbdata, state);
-		mqtt_server_state((struct startup*)startup, state);
+		mqtt_server_state(&mqtt, state);
 	}
 }
 
@@ -209,7 +214,6 @@ static void update_clients(void)
 		uint32_t count = protected_uint32_value(active_clients);
 		if(startup->clients != NULL)
 			startup->clients(startup->cbdata, count);
-		mqtt_client_count((struct startup*)startup, TOPIC_SERVER, count);
 	}
 }
 
@@ -219,6 +223,7 @@ static void client_on(SOCKET sock, client_t* client, BOOL update)
 		listAddNodeData(&current_connections, client->addr, strlen(client->addr) + 1, sock, LAST_NODE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,TRUE,sock,client,update);
+	mqtt_client_on(&mqtt, TRUE, sock, client, update);
 }
 
 static void client_off(SOCKET sock)
@@ -226,6 +231,7 @@ static void client_off(SOCKET sock)
 	listRemoveTaggedNode(&current_connections, sock, /* free_data */TRUE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
+	mqtt_client_on(&mqtt, FALSE, sock, NULL, FALSE);
 }
 
 static void thread_up(BOOL setuid)
@@ -233,7 +239,6 @@ static void thread_up(BOOL setuid)
 	if(startup != NULL) {
 		if(startup->thread_up != NULL)
 			startup->thread_up(startup->cbdata,TRUE, setuid);
-		mqtt_thread_count((struct startup*)startup, TOPIC_SERVER, protected_uint32_value(thread_count));
 	}
 }
 
@@ -243,7 +248,6 @@ static int32_t thread_down(void)
 	if(startup != NULL) {
 		if(startup->thread_up != NULL)
 			startup->thread_up(startup->cbdata,FALSE, FALSE);
-		mqtt_thread_count((struct startup*)startup, TOPIC_SERVER, count);
 	}
 	return count;
 }
@@ -1726,7 +1730,7 @@ static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, union xp
 		PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-	return hacklog(&scfg, (struct startup*)startup, prot, user, text, host, addr);
+	return hacklog(&scfg, &mqtt, prot, user, text, host, addr);
 }
 
 /****************************************************************************/
@@ -4888,6 +4892,8 @@ static void cleanup(int code, int line)
 	thread_down();
 	if(terminate_server || code)
 		lprintf(LOG_INFO,"#### FTP Server thread terminated (%lu clients served)", served);
+	set_state(SERVER_STOPPED);
+	mqtt_shutdown(&mqtt);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -4955,8 +4961,6 @@ void ftp_server(void* arg)
 	}
 	set_state(SERVER_INIT);
 
-	mqtt_server_version((struct startup*)startup, ftp_ver());
-
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
@@ -5019,6 +5023,8 @@ void ftp_server(void* arg)
 			break;
 		}
 
+		mqtt_startup(&mqtt, &scfg, (struct startup*)startup, ftp_ver(), lputs);
+
 		if((t=checktime())!=0) {   /* Check binary time */
 			lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
 		}
@@ -5064,8 +5070,6 @@ void ftp_server(void* arg)
 
 		update_clients();
 
-		strlwr(scfg.sys_id); /* Use lower-case unix-looking System ID for group name */
-
 		/* open a socket and wait for a client */
 		ftp_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
 		
@@ -5096,7 +5100,7 @@ void ftp_server(void* arg)
 		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"FTP Server thread started");
-		mqtt_client_max((struct startup*)startup, startup->max_clients);
+		mqtt_client_max(&mqtt, startup->max_clients);
 
 		while(ftp_set!=NULL && !terminate_server) {
 			YIELD();
@@ -5212,6 +5216,4 @@ void ftp_server(void* arg)
 	} while(!terminate_server);
 
 	protected_uint32_destroy(thread_count);
-
-	set_state(SERVER_STOPPED);
 }

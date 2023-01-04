@@ -44,7 +44,6 @@
 #include "mailsrvr.h"	/* mail_startup_t, mail_server */
 #include "services.h"	/* services_startup_t, services_thread */
 #include "ver.h"
-#include "mqtt.h"
 
 /* XPDEV headers */
 #include "conwrap.h"	/* kbhit/getch */
@@ -245,7 +244,7 @@ static void notify_systemd(const char* new_status)
 }
 #endif
 
-static int log_puts(int level, const char *str)
+static int lputs(int level, const char *str)
 {
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
@@ -288,13 +287,6 @@ static int log_puts(int level, const char *str)
 	pthread_mutex_unlock(&mutex);
 
     return(prompt_len);
-}
-
-static int lputs(int level, const char *str)
-{
-	if(str != NULL && *str != '\0')
-		mqtt_lputs((struct startup*)&bbs_startup, TOPIC_HOST, level, str);
-	return log_puts(level, str);
 }
 
 static void errormsg(void *cbdata, int level, const char *msg)
@@ -629,14 +621,12 @@ static void thread_up(void* p, BOOL up, BOOL setuid)
 	    thread_count++;
     else if(thread_count>0)
 		thread_count--;
-	mqtt_thread_count((struct startup*)&bbs_startup, TOPIC_HOST, thread_count);
 	pthread_mutex_unlock(&mutex);
 	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
 
-static void socket_open(void* cbdata, BOOL open)
+static void socket_open(void* p, BOOL open)
 {
-	enum server_type server_type = ((struct startup*)cbdata)->type;
    	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
 
@@ -650,7 +640,6 @@ static void socket_open(void* cbdata, BOOL open)
 	    socket_count++;
 	else if(socket_count>0)
     	socket_count--;
-	mqtt_socket_count(bbs_startup.startup[server_type], TOPIC_HOST, socket_count);
 	pthread_mutex_unlock(&mutex);
 	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
@@ -671,8 +660,6 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
 		}
 	} else
 		listRemoveTaggedNode(&client_list, sock, /* free_data: */TRUE);
-
-	mqtt_client_on((struct startup*)&bbs_startup, on, sock, client, update);
 
 	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
@@ -713,7 +700,7 @@ static int bbs_lputs(void* p, int level, const char *str)
 
 	sprintf(logline,"%sterm %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
-	log_puts(level,logline);
+	lputs(level,logline);
 
     return(strlen(logline)+1);
 }
@@ -759,7 +746,7 @@ static int ftp_lputs(void* p, int level, const char *str)
 
 	sprintf(logline,"%sftp  %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
-	log_puts(level,logline);
+	lputs(level,logline);
 
     return(strlen(logline)+1);
 }
@@ -800,7 +787,7 @@ static int mail_lputs(void* p, int level, const char *str)
 
 	sprintf(logline,"%smail %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
-	log_puts(level,logline);
+	lputs(level,logline);
 
     return(strlen(logline)+1);
 }
@@ -841,7 +828,7 @@ static int services_lputs(void* p, int level, const char *str)
 
 	sprintf(logline,"%ssrvc %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
-	log_puts(level,logline);
+	lputs(level,logline);
 
     return(strlen(logline)+1);
 }
@@ -882,7 +869,7 @@ static int event_lputs(void* p, int level, const char *str)
 
 	sprintf(logline,"%sevnt %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
-	log_puts(level,logline);
+	lputs(level,logline);
 
     return(strlen(logline)+1);
 }
@@ -923,7 +910,7 @@ static int web_lputs(void* p, int level, const char *str)
 
 	sprintf(logline,"%sweb  %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
-	log_puts(level,logline);
+	lputs(level,logline);
 
     return(strlen(logline)+1);
 }
@@ -1759,17 +1746,6 @@ int main(int argc, char** argv)
 
 #endif // __unix__
 
-	bbs_startup.startup[SERVER_TERM] = (struct startup*)&bbs_startup;
-	bbs_startup.startup[SERVER_MAIL] = (struct startup*)&mail_startup;
-	bbs_startup.startup[SERVER_FTP] = (struct startup*)&ftp_startup;
-	bbs_startup.startup[SERVER_WEB] = (struct startup*)&web_startup;
-	bbs_startup.startup[SERVER_SERVICES] = (struct startup*)&services_startup;
-	mqtt_startup((struct startup*)&bbs_startup, &scfg, sbbscon_ver(), log_puts, /* shared_client_list: */TRUE);
-	mail_startup.mqtt = bbs_startup.mqtt;
-	ftp_startup.mqtt = bbs_startup.mqtt;
-	web_startup.mqtt = bbs_startup.mqtt;
-	services_startup.mqtt = bbs_startup.mqtt;
-
 #ifdef _THREAD_SUID_BROKEN
 	/* check if we're using NPTL */
 /* Old (2.2) systems don't have this. */
@@ -1869,8 +1845,6 @@ int main(int argc, char** argv)
 		_beginthread((void(*)(void*))services_thread,0,&services_startup);
 	if(run_web)
 		_beginthread((void(*)(void*))web_server,0,&web_startup);
-
-	mqtt_online((struct startup*)&bbs_startup);
 
 #ifdef __unix__
 	uid_t uid = getuid();
@@ -2182,13 +2156,10 @@ int main(int argc, char** argv)
 		}
 	}
 
-	mqtt_terminating((struct startup*)&bbs_startup);
 	terminate();
 
 	/* erase the prompt */
 	printf("\r%*s\r",prompt_len,"");
-
-	mqtt_shutdown((struct startup*)&bbs_startup);
 
 	return(0);
 }

@@ -20,12 +20,13 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "mqtt.h"
 #include "git_branch.h"
 #include "git_hash.h"
 
 const char* log_line_ending = "\r\n";
 
-extern "C" BOOL hacklog(scfg_t* cfg, struct startup* startup, const char* prot, const char* user, const char* text, const char* host, union xp_sockaddr* addr)
+extern "C" BOOL hacklog(scfg_t* cfg, struct mqtt* mqtt, const char* prot, const char* user, const char* text, const char* host, union xp_sockaddr* addr)
 {
 	char	tstr[64];
 	char	fname[MAX_PATH+1];
@@ -54,12 +55,12 @@ extern "C" BOOL hacklog(scfg_t* cfg, struct startup* startup, const char* prot, 
 	fputs(log_line_ending, fp);
 	fcloselog(fp);
 
-	if(startup != NULL) {
+	if(mqtt != NULL) {
 		char str[1024];
 		if(text == NULL)
 			text= "";
 		snprintf(str, sizeof(str), "%s\t%s\t%u\t%s\t%s\t%s", prot, user, inet_addrport(addr), host, ip, text);
-		mqtt_pub_strval(startup, TOPIC_HOST, "hack", str);
+		mqtt_pub_strval(mqtt, TOPIC_HOST, "hack", str);
 	}
 
 	return true;
@@ -67,10 +68,10 @@ extern "C" BOOL hacklog(scfg_t* cfg, struct startup* startup, const char* prot, 
 
 BOOL sbbs_t::hacklog(const char* prot, const char* text)
 {
-	return ::hacklog(&cfg, (struct startup*)startup, prot, useron.alias, text, client_name, &client_addr);
+	return ::hacklog(&cfg, mqtt, prot, useron.alias, text, client_name, &client_addr);
 }
 
-extern "C" BOOL spamlog(scfg_t* cfg, struct startup* startup, char* prot, char* action
+extern "C" BOOL spamlog(scfg_t* cfg, struct mqtt* mqtt, char* prot, char* action
 								,char* reason, char* host, char* ip_addr
 								,char* to, char* from)
 {
@@ -110,18 +111,18 @@ extern "C" BOOL spamlog(scfg_t* cfg, struct startup* startup, char* prot, char* 
 	fputs(log_line_ending, fp);
 	fcloselog(fp);
 
-	if(startup != NULL) {
+	if(mqtt != NULL) {
 		char str[1024];
 		if(reason == NULL)
 			reason = (char*)"";
 		snprintf(str, sizeof(str), "%s\t%s\t%s\t%s\t%s\t%s\t%s", prot, action, host, ip_addr, from, to_user, reason);
-		mqtt_pub_strval(startup, TOPIC_HOST, "spam", str);
+		mqtt_pub_strval(mqtt, TOPIC_HOST, "spam", str);
 	}
 
 	return true;
 }
 
-extern "C" int errorlog(scfg_t* cfg, struct startup* startup, int level, const char* host, const char* text)
+extern "C" int errorlog(scfg_t* cfg, struct mqtt* mqtt, int level, const char* host, const char* text)
 {
 	FILE*	fp;
 	char	buf[128];
@@ -150,7 +151,7 @@ extern "C" int errorlog(scfg_t* cfg, struct startup* startup, int level, const c
 		SAFEPRINTF2(subject, "%s %sERROR occurred", host, level <= LOG_CRIT ? "CRITICAL " : "");
 		notify(cfg, cfg->node_erruser, subject, text);
 	}
-	mqtt_errormsg(startup, level, text);
+	mqtt_errormsg(mqtt, level, text);
 
 	return 0;
 }

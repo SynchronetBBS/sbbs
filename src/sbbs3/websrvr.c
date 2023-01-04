@@ -123,6 +123,7 @@ static js_server_props_t js_server_props;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static str_list_t cgi_env;
+static struct mqtt mqtt;
 
 static named_string_t** mime_types;
 static named_string_t** cgi_handlers;
@@ -535,6 +536,28 @@ time_gm(struct tm *tm)
         return (t < 0 ? (time_t) -1 : t);
 }
 
+static int lputs(int level, const char* str)
+{
+	mqtt_lputs(&mqtt, TOPIC_SERVER, level, str);
+	if(level <= LOG_ERR) {
+		char errmsg[1024];
+		errorlog(&scfg, &mqtt, level, startup == NULL ? NULL : startup->host_name, str);
+		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, str);
+		if(startup != NULL && startup->errormsg != NULL)
+			startup->errormsg(startup->cbdata, level, errmsg);
+	}
+
+	if(startup == NULL || startup->lputs == NULL || str == NULL || level > startup->log_level)
+    	return 0;
+
+#if defined(_WIN32)
+	if(IsBadCodePtr((FARPROC)startup->lputs))
+		return 0;
+#endif
+
+    return startup->lputs(startup->cbdata,level,str);
+}
+
 #if defined(__GNUC__)   // Catch printf-format errors with lprintf
 static int lprintf(int level, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 #endif
@@ -548,26 +571,7 @@ static int lprintf(int level, const char *fmt, ...)
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
 
-	if(level <= LOG_ERR) {
-		char errmsg[sizeof(sbuf)+16];
-		errorlog(&scfg, (struct startup*)startup, level, startup==NULL ? NULL:startup->host_name, sbuf);
-		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
-		if(startup!=NULL && startup->errormsg!=NULL)
-			startup->errormsg(startup->cbdata,level,errmsg);
-	}
-
-	if(startup != NULL)
-		mqtt_lputs((struct startup*)startup, TOPIC_SERVER, level, sbuf);
-
-    if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
-        return(0);
-
-#if defined(_WIN32)
-	if(IsBadCodePtr((FARPROC)startup->lputs))
-		return(0);
-#endif
-
-    return(startup->lputs(startup->cbdata,level,sbuf));
+    return lputs(level, sbuf);
 }
 
 static int writebuf(http_session_t	*session, const char *buf, size_t len)
@@ -741,7 +745,7 @@ static void set_state(enum server_state state)
 	if(startup != NULL) {
 		if(startup->set_state != NULL)
 			startup->set_state(startup->cbdata, state);
-		mqtt_server_state((struct startup*)startup, state);
+		mqtt_server_state(&mqtt, state);
 	}
 }
 
@@ -751,7 +755,6 @@ static void update_clients(void)
 		uint32_t count = protected_uint32_value(active_clients);
 		if(startup->clients!=NULL)
 			startup->clients(startup->cbdata, count);
-		mqtt_client_count((struct startup*)startup, TOPIC_SERVER, count);
 	}
 }
 
@@ -759,12 +762,14 @@ static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,TRUE,sock,client,update);
+	mqtt_client_on(&mqtt, TRUE, sock, client, update);
 }
 
 static void client_off(SOCKET sock)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
+	mqtt_client_on(&mqtt, FALSE, sock, NULL, FALSE);
 }
 
 static void thread_up(BOOL setuid)
@@ -1868,7 +1873,7 @@ static void badlogin(SOCKET sock, const char* prot, const char* user, const char
 	SAFEPRINTF(reason,"%s LOGIN", prot);
 	count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
-		hacklog(&scfg, (struct startup*)startup, reason, user, passwd, host, addr);
+		hacklog(&scfg, &mqtt, reason, user, passwd, host, addr);
 #ifdef _WIN32
 		if(startup->sound.hack[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
@@ -3685,7 +3690,7 @@ static BOOL check_request(http_session_t * session)
 			send_error(session,__LINE__,"400 Bad Request");
 			SAFEPRINTF2(str, "Request for '%s' is outside of web root: %s", path, root_dir);
 			lprintf(LOG_NOTICE,"%04d %s [%s] !ERROR %s", session->socket, session->client.protocol, session->host_ip, str);
-			hacklog(&scfg, (struct startup*)startup, session->client.protocol, session->username, str, session->client.host, &session->addr);
+			hacklog(&scfg, &mqtt, session->client.protocol, session->username, str, session->client.host, &session->addr);
 #ifdef _WIN32
 			if(startup->sound.hack[0] && !sound_muted(&scfg))
 				PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
@@ -6832,6 +6837,8 @@ static void cleanup(int code)
 	if(terminate_server || code)
 		lprintf(LOG_INFO,"#### Web Server thread terminated (%lu clients served, %lu concurrently)"
 			,served, client_highwater);
+	set_state(SERVER_STOPPED);
+	mqtt_shutdown(&mqtt);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -7006,8 +7013,6 @@ void web_server(void* arg)
 	}
 	set_state(SERVER_INIT);
 
-	mqtt_server_version((struct startup*)startup, web_ver());
-
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
 		startup->seteuid(TRUE);
@@ -7099,6 +7104,8 @@ void web_server(void* arg)
 			cleanup(1);
 			return;
 		}
+
+		mqtt_startup(&mqtt, &scfg, (struct startup*)startup, web_ver(), lputs);
 
 		if(startup->temp_dir[0])
 			SAFECOPY(scfg.temp_dir,startup->temp_dir);
@@ -7200,7 +7207,7 @@ void web_server(void* arg)
 		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"Web Server thread started");
-		mqtt_client_max((struct startup*)startup, startup->max_clients);
+		mqtt_client_max(&mqtt, startup->max_clients);
 
 		while(!terminated && !terminate_server) {
 			YIELD();
@@ -7373,5 +7380,4 @@ void web_server(void* arg)
 	} while(!terminate_server);
 
 	protected_uint32_destroy(thread_count);
-	set_state(SERVER_STOPPED);
 }
