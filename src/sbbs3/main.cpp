@@ -4397,19 +4397,24 @@ void node_thread(void* arg)
 	if(login_success)
 		sbbs->logoffstats();	/* Updates both system and node dsts.ini (daily statistics) files */
 
+	time_t now = time(NULL);
 	SAFEPRINTF(str, "%sclient.ini", sbbs->cfg.node_dir);
 	FILE* fp = fopen(str, "at");
 	if(fp != NULL) {
 		fprintf(fp, "user=%u\n", sbbs->useron.number);
 		fprintf(fp, "name=%s\n", sbbs->useron.alias);
-		fprintf(fp, "done=%lu\n", (ulong)time(NULL));
+		fprintf(fp, "done=%lu\n", (ulong)now);
 		fclose(fp);
 	}
 
 	if(sbbs->useron.number) {
 		char topic[128];
+		char tmp[32];
+		long tused = (long)(now - sbbs->logontime);
+		if(tused < 0)
+			tused = 0;
 		SAFEPRINTF(topic, "node%u/laston", sbbs->cfg.node_num);
-		SAFEPRINTF2(str, "%u\t%s", sbbs->useron.number, sbbs->useron.alias);
+		snprintf(str, sizeof(str), "%u\t%s\t%s", sbbs->useron.number, sbbs->useron.alias, sectostr(tused, tmp));
 		mqtt_pub_strval(&mqtt, TOPIC_BBS, topic, str);
 	}
 
