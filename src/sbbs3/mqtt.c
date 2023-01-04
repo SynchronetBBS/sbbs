@@ -550,10 +550,10 @@ int mqtt_server_state(struct mqtt* mqtt, enum server_state state)
 			snprintf(served, sizeof(served), "%lu served", mqtt->served);
 		char max_clients[64] = "";
 		if(mqtt->max_clients)
-			snprintf(max_clients, sizeof(max_clients), "/%u", mqtt->max_clients);
+			snprintf(max_clients, sizeof(max_clients), "/%lu", mqtt->max_clients);
 		char clients[64] = "";
 		if(mqtt->client_list.count)
-			snprintf(clients, sizeof(clients), "%u%s clients", mqtt->client_list.count, max_clients);
+			snprintf(clients, sizeof(clients), "%lu%s clients", mqtt->client_list.count, max_clients);
 		snprintf(str, sizeof(str), "%s\t%s\t%s\t%s"
 			,server_state_str(tmp, sizeof(tmp), state)
 			,clients
