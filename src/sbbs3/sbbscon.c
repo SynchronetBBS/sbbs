@@ -239,7 +239,7 @@ static void notify_systemd(const char* new_status)
 		ready = "RELOADING=1";
 	else if(any_server_with_state(SERVER_STOPPING))
 		ready = "STOPPING=1";
-	else if(any_server_running())
+	else if(any_server_with_state(SERVER_READY))
 		ready = "READY=1";
 	sd_notifyf(/* unset_environment: */0, "%s\nSTATUS=%s", ready, status);
 }
