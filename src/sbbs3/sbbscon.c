@@ -215,7 +215,7 @@ static bool server_ready(enum server_type type)
 static bool any_server_running()
 {
 	for(int i = 0; i < SERVER_COUNT; i++)
-		if(server_state[i] != SERVER_STOPPED)
+		if(server_running(i))
 			return true;
 	return false;
 }
@@ -603,8 +603,7 @@ static void set_state(void* cbdata, enum server_state state)
         }
 	}
 #endif
-	if(state == SERVER_STOPPED)
-		server_stopped[server_type] = TRUE;
+	server_stopped[server_type] = (state == SERVER_STOPPED);
 }
 
 static void thread_up(void* p, BOOL up, BOOL setuid)
