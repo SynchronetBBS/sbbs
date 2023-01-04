@@ -373,7 +373,6 @@ bool sbbs_t::answer()
 		else
 			SAFECOPY(terminal,"DUMB");
 	}
-	update_nodeterm();
 
 	/* AutoLogon via IP or Caller ID here */
 	if(!useron.number && !(sys_status&SS_RLOGIN)
@@ -458,6 +457,8 @@ bool sbbs_t::answer()
 	lprintf(LOG_INFO, "terminal type: %lux%lu %s", cols, rows, terminal);
 	SAFECOPY(client_ipaddr, cid);	/* Over-ride IP address with Caller-ID info */
 	SAFECOPY(useron.comp,client_name);
+
+	update_nodeterm();
 
 	if(!useron.number 
 		&& rlogin_name[0]!=0 
