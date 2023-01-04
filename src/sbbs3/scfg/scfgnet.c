@@ -169,6 +169,7 @@ void mqtt_cfg()
 		sprintf(opt[i++], "%-20s%s", "Password", cfg.mqtt.password);
 		sprintf(opt[i++], "%-20s%u seconds", "Keep-alive", cfg.mqtt.keepalive);
 		sprintf(opt[i++], "%-20s%s", "Protocol Version", mqttVersion[cfg.mqtt.protocol_version - 3]);
+		sprintf(opt[i++], "%-20s%s", "Publish Verbosity", cfg.mqtt.verbose ? "High" : "Low");
 		sprintf(opt[i++], "%-20s%s", "Publish QOS", mqttQOS[cfg.mqtt.publish_qos]);
 		sprintf(opt[i++], "%-20s%s", "Subscribe QOS", mqttQOS[cfg.mqtt.subscribe_qos]);
 		sprintf(opt[i++], "%-20s%s", "Log Level", logLevelStringList[cfg.mqtt.log_level]);
@@ -265,16 +266,19 @@ void mqtt_cfg()
 					cfg.mqtt.protocol_version = 3 + i;
 				break;
 			case 7:
+				cfg.mqtt.verbose = !cfg.mqtt.verbose;
+				break;
+			case 8:
 				i = cfg.mqtt.publish_qos;
 				if((i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Quality of Service for Publishing", mqttQOS)) >= 0)
 					cfg.mqtt.publish_qos = i;
 				break;
-			case 8:
+			case 9:
 				i = cfg.mqtt.subscribe_qos;
 				if((i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Quality of Service for Subscriptions", mqttQOS)) >= 0)
 					cfg.mqtt.subscribe_qos = i;
 				break;
-			case 9:
+			case 10:
 				uifc.helpbuf =
 					"~ MQTT Log Level ~\n"
 					"\n"
@@ -287,7 +291,7 @@ void mqtt_cfg()
 				if(i>=0 && i<=LOG_DEBUG)
 					cfg.mqtt.log_level=i;
 				break;
-			case 10:
+			case 11:
 				uifc.helpbuf =
 					"~ Encryption via TLS ~\n"
 					"\n"
@@ -303,7 +307,7 @@ void mqtt_cfg()
 				if(i >= 0)
 					cfg.mqtt.tls.mode = i;
 				break;
-			case 11:
+			case 12:
 				if(cfg.mqtt.tls.mode == MQTT_TLS_CERT) {
 					uifc.helpbuf =
 						"~ CA Certificate File ~\n"
@@ -323,7 +327,7 @@ void mqtt_cfg()
 						,cfg.mqtt.tls.psk, sizeof(cfg.mqtt.tls.psk) - 1, K_EDIT);
 				}
 				break;
-			case 12:
+			case 13:
 				if(cfg.mqtt.tls.mode == MQTT_TLS_CERT) {
 					uifc.helpbuf =
 						"~ Client Certificate File ~\n"
@@ -347,7 +351,7 @@ void mqtt_cfg()
 						,cfg.mqtt.tls.identity, sizeof(cfg.mqtt.tls.identity) - 1, K_EDIT);
 				}
 				break;
-			case 13:
+			case 14:
 				uifc.helpbuf =
 					"~ Private Key File ~\n"
 					"\n"
@@ -359,7 +363,7 @@ void mqtt_cfg()
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Private Key File"
 					,cfg.mqtt.tls.keyfile, sizeof(cfg.mqtt.tls.keyfile) - 1, K_EDIT);
 				break;
-			case 14:
+			case 15:
 				uifc.helpbuf =
 					"~ Private Key File Password ~\n"
 					"\n"

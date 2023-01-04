@@ -211,6 +211,7 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 	{
 		const char* name = "MQTT";
 		iniSetBool(&ini, name, "Enabled", cfg->mqtt.enabled, NULL);
+		iniSetBool(&ini, name, "Verbose", cfg->mqtt.verbose, NULL);
 		iniSetString(&ini, name, "Broker_addr", cfg->mqtt.broker_addr, NULL);
 		iniSetUInt16(&ini, name, "Broker_port", cfg->mqtt.broker_port, NULL);
 		iniSetInteger(&ini, name, "Protocol_version", cfg->mqtt.protocol_version, NULL);

@@ -43,19 +43,24 @@ struct mqtt {
 	mqtt_handle_t handle;
 	scfg_t* cfg;
 	char* host;
+	ulong max_clients;
 	ulong error_count;
 	ulong served;
 	link_list_t client_list;
 	struct startup* startup;
+	enum server_state server_state;
 };
 
 enum topic_depth {
 	TOPIC_OTHER,
-	TOPIC_ROOT,	// sbbs/*
-	TOPIC_BBS,	// sbbs/BBS-ID/*
-	TOPIC_HOST,	// sbbs/BBS-ID/hostname/*
-	TOPIC_EVENT, // sbbs/BBS-ID/event/*
-	TOPIC_SERVER // sbbs/BBS-ID/server/*
+	TOPIC_ROOT,				// sbbs/*
+	TOPIC_BBS,			// sbbs/BBS-ID/*
+	TOPIC_BBS_LEVEL,	// sbbs/BBS-ID
+	TOPIC_HOST,			// sbbs/BBS-ID/hostname/*
+	TOPIC_HOST_LEVEL,	// sbbs/BBS-DI/hostname
+	TOPIC_EVENT,		// sbbs/BBS-ID/event/*
+	TOPIC_SERVER,		// sbbs/BBS-ID/server/*
+	TOPIC_SERVER_LEVEL, // sbbs/BBS-ID/server
 };
 
 #define MQTT_SUCCESS 0 // Same as MOSQ_ERR_SUCCESS
@@ -89,6 +94,7 @@ DLLEXPORT int mqtt_thread_start(struct mqtt*);
 DLLEXPORT int mqtt_thread_stop(struct mqtt*);
 DLLEXPORT int mqtt_client_on(struct mqtt*, BOOL on, int sock, client_t* client, BOOL update);
 DLLEXPORT int mqtt_client_max(struct mqtt*, ulong count);
+DLLEXPORT int mqtt_client_count(struct mqtt*);
 
 #ifdef __cplusplus
 }
