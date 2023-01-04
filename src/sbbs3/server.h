@@ -37,7 +37,8 @@ enum server_state {
 	SERVER_INIT,
 	SERVER_READY,
 	SERVER_RELOADING,
-	SERVER_STOPPING
+	SERVER_STOPPING,
+	SERVER_DISCONNECTED
 };
 
 #endif /* Don't add anything after this line */

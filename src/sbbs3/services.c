@@ -65,6 +65,7 @@ static ulong	served=0;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static protected_uint32_t threads_pending_start;
+static struct mqtt mqtt;
 
 typedef struct {
 	/* These are sysop-configurable */
@@ -110,6 +111,28 @@ typedef struct {
 static service_t	*service=NULL;
 static unsigned int	services=0;
 
+static int lputs(int level, const char* str)
+{
+	mqtt_lputs(&mqtt, TOPIC_SERVER, level, str);
+	if(level <= LOG_ERR) {
+		char errmsg[1024];
+		errorlog(&scfg, &mqtt, level, startup == NULL ? NULL : startup->host_name, str);
+		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, str);
+		if(startup != NULL && startup->errormsg != NULL)
+			startup->errormsg(startup->cbdata, level, errmsg);
+	}
+
+	if(startup == NULL || startup->lputs == NULL || str == NULL || level > startup->log_level)
+    	return 0;
+
+#if defined(_WIN32)
+	if(IsBadCodePtr((FARPROC)startup->lputs))
+		return 0;
+#endif
+
+    return startup->lputs(startup->cbdata,level,str);
+}
+
 #if defined(__GNUC__)   // Catch printf-format errors with lprintf
 static int lprintf(int level, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 #endif
@@ -123,26 +146,7 @@ static int lprintf(int level, const char *fmt, ...)
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
 
-	if(level <= LOG_ERR) {
-		char errmsg[sizeof(sbuf)+16];
-		errorlog(&scfg, (struct startup*)startup, level, startup==NULL ? NULL:startup->host_name, sbuf);
-		SAFEPRINTF2(errmsg, "%s %s", server_abbrev, sbuf);
-		if(startup!=NULL && startup->errormsg!=NULL)
-			startup->errormsg(startup->cbdata,level,errmsg);
-	}
-
-	if(startup != NULL)
-		mqtt_lputs((struct startup*)startup, TOPIC_SERVER, level, sbuf);
-
-    if(startup==NULL || startup->lputs==NULL || level > startup->log_level)
-        return(0);
-
-#if defined(_WIN32)
-	if(IsBadCodePtr((FARPROC)startup->lputs))
-		return(0);
-#endif
-
-    return(startup->lputs(startup->cbdata,level,sbuf));
+    return lputs(level, sbuf);
 }
 
 #ifdef _WINSOCKAPI_
@@ -182,7 +186,7 @@ static void set_state(enum server_state state)
 	if(startup != NULL) {
 		if(startup->set_state != NULL)
 			startup->set_state(startup->cbdata, state);
-		mqtt_server_state((struct startup*)startup, state);
+		mqtt_server_state(&mqtt, state);
 	}
 }
 
@@ -207,12 +211,14 @@ static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,TRUE,sock,client,update);
+	mqtt_client_on(&mqtt, TRUE, sock, client, update);
 }
 
 static void client_off(SOCKET sock)
 {
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
+	mqtt_client_on(&mqtt, FALSE, sock, NULL, FALSE);
 }
 
 static void thread_up(BOOL setuid)
@@ -336,7 +342,7 @@ static void badlogin(SOCKET sock, char* prot, char* user, char* passwd, char* ho
 	SAFEPRINTF(reason,"%s LOGIN", prot);
 	count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
-		hacklog(&scfg, (struct startup*)startup, reason, user, passwd, host, addr);
+		hacklog(&scfg, &mqtt, reason, user, passwd, host, addr);
 #ifdef _WIN32
 		if(startup->sound.hack[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
@@ -1716,6 +1722,8 @@ static void cleanup(int code)
 	thread_down();
 	if(terminated || code)
 		lprintf(LOG_INFO,"#### Services thread terminated (%lu clients served)",served);
+	set_state(SERVER_STOPPED);
+	mqtt_shutdown(&mqtt);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -1860,8 +1868,6 @@ void services_thread(void* arg)
 	}
 	set_state(SERVER_INIT);
 
-	mqtt_server_version((struct startup*)startup, services_ver());
-
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
 		startup->seteuid(TRUE);
@@ -1921,6 +1927,8 @@ void services_thread(void* arg)
 			cleanup(1);
 			return;
 		}
+
+		mqtt_startup(&mqtt, &scfg, (struct startup*)startup, services_ver(), lputs);
 
 		if(startup->temp_dir[0])
 			SAFECOPY(scfg.temp_dir,startup->temp_dir);
@@ -2400,6 +2408,4 @@ void services_thread(void* arg)
 		}
 
 	} while(!terminated);
-
-	set_state(SERVER_STOPPED);
 }

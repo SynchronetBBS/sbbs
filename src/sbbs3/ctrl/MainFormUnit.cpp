@@ -171,7 +171,6 @@ static void thread_up(void* p, BOOL up, BOOL setuid)
 	    threads++;
     else if(threads>0)
     	threads--;
-	mqtt_thread_count((struct startup*)&MainForm->bbs_startup, TOPIC_HOST, threads);
     ReleaseMutex(mutex);
 }
 
@@ -189,7 +188,6 @@ void socket_open(void* p, BOOL open)
 	    sockets++;
     else if(sockets>0)
     	sockets--;
-	mqtt_socket_count((struct startup*)&MainForm->bbs_startup, TOPIC_HOST, sockets);
     ReleaseMutex(mutex);
 }
 
@@ -203,10 +201,8 @@ static void client_add(void* p, BOOL add)
     if(add) {
 	    clients++;
         total_clients++;
-		mqtt_served_count((struct startup*)&MainForm->bbs_startup, TOPIC_HOST, total_clients);
     } else if(clients>0)
     	clients--;
-	mqtt_client_count((struct startup*)&MainForm->bbs_startup, TOPIC_HOST, clients);
 }
 
 static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
@@ -217,8 +213,6 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
 	static  HANDLE mutex;
     TListItem*  Item;
 	
-	mqtt_client_on((struct startup*)&MainForm->bbs_startup, on, sock, client, update);
-
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
 	WaitForSingleObject(mutex,INFINITE);
@@ -338,7 +332,6 @@ static void bbs_set_state(void* p, enum server_state state)
 {
 	TelnetForm->Status->Caption = server_state_str(state);
 	
-	mqtt_server_state((struct startup*)&MainForm->bbs_startup, state);
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->TelnetStart->Enabled=true;
@@ -436,7 +429,6 @@ static void services_set_state(void* p, enum server_state state)
 {
 	ServicesForm->Status->Caption = server_state_str(state);
 	
-	mqtt_server_state((struct startup*)&MainForm->services_startup, state);
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->ServicesStart->Enabled=true;
@@ -503,7 +495,6 @@ static void mail_set_state(void* p, enum server_state state)
 {
 	MailForm->Status->Caption = server_state_str(state);
 	
-	mqtt_server_state((struct startup*)&MainForm->mail_startup, state);
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->MailStart->Enabled=true;
@@ -599,7 +590,6 @@ static void ftp_set_state(void* p, enum server_state state)
 {
 	FtpForm->Status->Caption = server_state_str(state);
 	
-	mqtt_server_state((struct startup*)&MainForm->ftp_startup, state);
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->FtpStart->Enabled=true;
@@ -668,7 +658,6 @@ static void web_set_state(void* p, enum server_state state)
 {
 	WebForm->Status->Caption = server_state_str(state);
 	
-	mqtt_server_state((struct startup*)&MainForm->web_startup, state);
 	switch(state) {
 		case SERVER_STOPPED:
 			MainForm->WebStart->Enabled=true;
@@ -1054,7 +1043,6 @@ BOOL __fastcall TMainForm::servicesServiceEnabled(void)
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 {
-	mqtt_terminating((struct startup*)&bbs_startup);
     UpTimer->Enabled=false; /* Stop updating the status bar */
 	StatsTimer->Enabled=false;
 
@@ -1083,14 +1071,12 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
     }
 	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Closing...";
     Application->ProcessMessages();
-	mqtt_terminating((struct startup*)&bbs_startup);
     
 	LogTimer->Enabled=false;
 
 	ServiceStatusTimer->Enabled=false;
 	NodeForm->Timer->Enabled=false;
 	ClientForm->Timer->Enabled=false;
-	mqtt_shutdown((struct startup*)&bbs_startup);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
@@ -1970,22 +1956,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 		StartupTimer->Interval = 2500;	// Let 'em see the logo for a bit
 		StartupTimer->Enabled = true;
 	} else {
-		if(!bbsServiceEnabled()) {
-			bbs_startup.startup[SERVER_TERM] = (struct startup*)&bbs_startup;
-			bbs_startup.startup[SERVER_FTP] = (struct startup*)&ftp_startup; 
-			bbs_startup.startup[SERVER_WEB] = (struct startup*)&web_startup;
-			bbs_startup.startup[SERVER_MAIL] = (struct startup*)&mail_startup;
-			bbs_startup.startup[SERVER_SERVICES] = (struct startup*)&services_startup;
-			mqtt_startup((struct startup*)&bbs_startup, &cfg, ver()
-				,/* lputs: */NULL
-				,/* shared_client_list: */TRUE);
-			ftp_startup.mqtt = bbs_startup.mqtt;
-			web_startup.mqtt = bbs_startup.mqtt;
-			mail_startup.mqtt = bbs_startup.mqtt;
-			services_startup.mqtt = bbs_startup.mqtt;
-		}
 		DisplayMainPanels(Sender);
-		mqtt_online((struct startup*)&bbs_startup);
 	}
     Initialized=true;
 }

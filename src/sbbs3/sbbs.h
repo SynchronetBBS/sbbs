@@ -296,6 +296,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "msgdate.h"
 #include "getmail.h"
 #include "msg_id.h"
+#include "mqtt.h"
 
 #if defined(JAVASCRIPT)
 enum js_event_type {
@@ -417,6 +418,7 @@ public:
     bool	passthru_thread_running;
 
 	scfg_t	cfg;
+	struct mqtt* mqtt=NULL;
 
 	enum ansiState {
 		 ansiState_none		// No sequence
@@ -1246,11 +1248,11 @@ extern "C" {
 	DLLEXPORT int		notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
 
 	/* logfile.cpp */
-	DLLEXPORT int		errorlog(scfg_t* cfg, struct startup*, int level, const char* host, const char* text);
+	DLLEXPORT int		errorlog(scfg_t* cfg, struct mqtt*, int level, const char* host, const char* text);
 
-	DLLEXPORT BOOL		hacklog(scfg_t* cfg, struct startup*, const char* prot, const char* user, const char* text
+	DLLEXPORT BOOL		hacklog(scfg_t* cfg, struct mqtt*, const char* prot, const char* user, const char* text
 										,const char* host, union xp_sockaddr* addr);
-	DLLEXPORT BOOL		spamlog(scfg_t* cfg, struct startup*, char* prot, char* action, char* reason
+	DLLEXPORT BOOL		spamlog(scfg_t* cfg, struct mqtt*, char* prot, char* action, char* reason
 										,char* host, char* ip_addr, char* to, char* from);
 
 	/* data.cpp */
