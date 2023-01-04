@@ -104,6 +104,11 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 			);
 		SAFEPRINTF(topic, "node%u/status", number + 1);
 		int result = mqtt_pub_strval(mqtt, TOPIC_BBS, topic, str);
+		if(result == MQTT_SUCCESS) {
+			SAFEPRINTF(topic, "node%u", number + 1);
+			result = mqtt_pub_strval(mqtt, TOPIC_BBS, topic
+				,nodestatus(&cfg, node, str, sizeof(str), number + 1));
+		}
 		if(result != MQTT_SUCCESS)
 			lprintf(LOG_WARNING, "ERROR %d (%d) publishing node status: %s", result, errno, topic);
 	}
