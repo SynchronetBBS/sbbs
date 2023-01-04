@@ -553,6 +553,7 @@ bool sbbs_t::update_nodeterm(void)
 	str_list_t	ini = strListInit();
 	iniSetInteger(&ini, ROOT_SECTION, "cols", cols, NULL);
 	iniSetInteger(&ini, ROOT_SECTION, "rows", rows, NULL);
+	iniSetString(&ini, ROOT_SECTION, "desc", terminal, NULL);
 	iniSetString(&ini, ROOT_SECTION, "type", term_type(), NULL);
 	iniSetString(&ini, ROOT_SECTION, "chars", term_charset(), NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "flags", term_supports(), NULL);
@@ -573,9 +574,10 @@ bool sbbs_t::update_nodeterm(void)
 		char str[256];
 		char topic[128];
 		SAFEPRINTF(topic, "node%u/terminal", cfg.node_num);
-		snprintf(str, sizeof(str), "%lu\t%lu\t%s\t%s\t%lx\t%lx\t%lx"
+		snprintf(str, sizeof(str), "%lu\t%lu\t%s\t%s\t%s\t%lx\t%lx\t%lx"
 			,cols
 			,rows
+			,terminal
 			,term_type()
 			,term_charset()
 			,term_supports()
