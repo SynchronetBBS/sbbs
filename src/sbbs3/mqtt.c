@@ -533,7 +533,7 @@ int mqtt_errormsg(struct mqtt* mqtt, int level, const char* msg)
 		return MQTT_FAILURE;
 	++mqtt->error_count;
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "error_count", mqtt->error_count);
-	return mqtt_pub_strval(mqtt, TOPIC_SERVER, "error", msg);
+	return mqtt_pub_strval(mqtt, TOPIC_BBS, "error", msg);
 }
 
 int mqtt_client_max(struct mqtt* mqtt, ulong count)
