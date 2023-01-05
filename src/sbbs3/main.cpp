@@ -2482,7 +2482,7 @@ void output_thread(void* arg)
 			}
 			/* Spy on the user remotely */
 			if(sbbs->cfg.mqtt.enabled) {
-				int result = mqtt_pub_message(&mqtt, TOPIC_BBS, spy_topic, buf+bufbot, i);
+				int result = mqtt_pub_message(&mqtt, TOPIC_BBS, spy_topic, buf+bufbot, i, /* retain: */false);
 				if(result != MQTT_SUCCESS)
 					lprintf(LOG_WARNING, "%s ERROR %d (%d) publishing node output (%u bytes): %s"
 						,node, result, errno, i, spy_topic);
