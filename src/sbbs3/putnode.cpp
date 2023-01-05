@@ -102,10 +102,10 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 			,node->extaux
 			,node->errors
 			);
-		SAFEPRINTF(topic, "nodes/%u/status", number + 1);
+		SAFEPRINTF(topic, "node/%u/status", number + 1);
 		int result = mqtt_pub_strval(mqtt, TOPIC_BBS, topic, str);
 		if(result == MQTT_SUCCESS && cfg.mqtt.verbose) {
-			SAFEPRINTF(topic, "nodes/%u", number + 1);
+			SAFEPRINTF(topic, "node/%u", number + 1);
 			result = mqtt_pub_strval(mqtt, TOPIC_BBS, topic
 				,nodestatus(&cfg, node, str, sizeof(str), number + 1));
 		}
