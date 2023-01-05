@@ -958,7 +958,7 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-27.27s%s","Editor"
 						,cfg.new_xedit);
 					sprintf(opt[i++],"%-27.27s%s","Command Shell"
-						,cfg.shell[cfg.new_shell]->code);
+						,cfg.new_shell >= cfg.total_shells ? "<invalid>" : cfg.shell[cfg.new_shell]->code);
 					if(cfg.new_prot!=' ')
 						sprintf(str,"%c",cfg.new_prot);
 					else
@@ -1123,7 +1123,7 @@ void sys_cfg(void)
 							for(i=0;i<cfg.total_shells && i<MAX_OPTS;i++)
 								sprintf(opt[i],"%-.*s", LEN_CODE, cfg.shell[i]->code);
 							opt[i][0]=0;
-							i=0;
+							i=cfg.new_shell;
 							uifc.helpbuf=
 								"`New User Command Shell:`\n"
 								"\n"
