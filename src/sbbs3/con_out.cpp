@@ -573,7 +573,7 @@ bool sbbs_t::update_nodeterm(void)
 	if(cfg.mqtt.enabled) {
 		char str[256];
 		char topic[128];
-		SAFEPRINTF(topic, "nodes/%u/terminal", cfg.node_num);
+		SAFEPRINTF(topic, "node/%u/terminal", cfg.node_num);
 		snprintf(str, sizeof(str), "%lu\t%lu\t%s\t%s\t%s\t%lx\t%lx\t%lx"
 			,cols
 			,rows

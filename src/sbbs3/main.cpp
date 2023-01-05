@@ -2292,7 +2292,7 @@ void output_thread(void* arg)
 
 	if(sbbs->cfg.node_num) {
 		SAFEPRINTF(node,"Node %d",sbbs->cfg.node_num);
-		SAFEPRINTF(spy_topic, "nodes/%d/output", sbbs->cfg.node_num);
+		SAFEPRINTF(spy_topic, "node/%d/output", sbbs->cfg.node_num);
 	} else
 		SAFECOPY(node,sbbs->client_name);
 #ifdef _DEBUG
@@ -4413,7 +4413,7 @@ void node_thread(void* arg)
 		long tused = (long)(now - sbbs->logontime);
 		if(tused < 0)
 			tused = 0;
-		SAFEPRINTF(topic, "nodes/%u/laston", sbbs->cfg.node_num);
+		SAFEPRINTF(topic, "node/%u/laston", sbbs->cfg.node_num);
 		snprintf(str, sizeof(str), "%u\t%s\t%s", sbbs->useron.number, sbbs->useron.alias, sectostr(tused, tmp));
 		mqtt_pub_strval(&mqtt, TOPIC_BBS, topic, str);
 	}
@@ -4993,7 +4993,8 @@ void bbs_thread(void* arg)
         startup->last_node=scfg.sys_nodes;
     }
 
-	mqtt_pub_uintval(&mqtt, TOPIC_BBS, "nodes", scfg.sys_nodes);
+	SAFEPRINTF(str, "%u total", scfg.sys_nodes);
+	mqtt_pub_strval(&mqtt, TOPIC_BBS, "node", str);
 
 	/* Create missing directories */
 	lprintf(LOG_INFO,"Verifying/creating data directories");
