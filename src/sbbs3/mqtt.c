@@ -94,10 +94,10 @@ static char* format_topic(struct mqtt* mqtt, enum server_type type, enum topic_d
 			safe_snprintf(str, size, "sbbs/%s/%s", mqtt->cfg->sys_id, mqtt->host);
 			break;
 		case TOPIC_SERVER:
-			safe_snprintf(str, size, "sbbs/%s/%s/%s/%s", mqtt->cfg->sys_id, mqtt->host, server_type_desc(type), sbuf);
+			safe_snprintf(str, size, "sbbs/%s/%s/server/%s/%s", mqtt->cfg->sys_id, mqtt->host, server_type_desc(type), sbuf);
 			break;
 		case TOPIC_SERVER_LEVEL:
-			safe_snprintf(str, size, "sbbs/%s/%s/%s", mqtt->cfg->sys_id, mqtt->host, server_type_desc(type));
+			safe_snprintf(str, size, "sbbs/%s/%s/server/%s", mqtt->cfg->sys_id, mqtt->host, server_type_desc(type));
 			break;
 		case TOPIC_EVENT:
 			safe_snprintf(str, size, "sbbs/%s/%s/event/%s", mqtt->cfg->sys_id, mqtt->host, sbuf);
@@ -457,7 +457,7 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 	if(mqtt->startup->type == SERVER_TERM) {
 		bbs_startup_t* bbs_startup = (bbs_startup_t*)mqtt->startup;
 		for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
-			mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "nodes/%d/input", i);
+			mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/input", i);
 			if(strcmp(msg->topic, topic) != 0)
 				continue;
 			if(bbs_startup->node_inbuf != NULL && bbs_startup->node_inbuf[i - 1] != NULL)
@@ -523,7 +523,7 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 		bbs_startup_t* bbs_startup = (bbs_startup_t*)startup;
 		char str[128];
 		for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
-			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "nodes/%d/input", i);
+			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/input", i);
 		}
 	}
 	mqtt_pub_noval(mqtt, TOPIC_SERVER, "recycle");
