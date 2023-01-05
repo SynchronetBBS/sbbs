@@ -53,14 +53,14 @@ struct mqtt {
 
 enum topic_depth {
 	TOPIC_OTHER,
-	TOPIC_ROOT,				// sbbs/*
-	TOPIC_BBS,			// sbbs/BBS-ID/*
-	TOPIC_BBS_LEVEL,	// sbbs/BBS-ID
-	TOPIC_HOST,			// sbbs/BBS-ID/hostname/*
-	TOPIC_HOST_LEVEL,	// sbbs/BBS-DI/hostname
-	TOPIC_EVENT,		// sbbs/BBS-ID/event/*
-	TOPIC_SERVER,		// sbbs/BBS-ID/server/*
-	TOPIC_SERVER_LEVEL, // sbbs/BBS-ID/server
+	TOPIC_ROOT,			// sbbs/*
+	TOPIC_BBS,			// sbbs/BBSID/*
+	TOPIC_BBS_LEVEL,	// sbbs/BBSID
+	TOPIC_HOST,			// sbbs/BBSID/host/HOSTNAME/*
+	TOPIC_HOST_LEVEL,	// sbbs/BBSID/host/HOSTNAME
+	TOPIC_EVENT,		// sbbs/BBSID/event/*
+	TOPIC_SERVER,		// sbbs/BBSID/server/SERVER/*
+	TOPIC_SERVER_LEVEL, // sbbs/BBSID/server/SERVER
 };
 
 #define MQTT_SUCCESS 0 // Same as MOSQ_ERR_SUCCESS
@@ -85,7 +85,7 @@ DLLEXPORT int mqtt_lputs(struct mqtt*, enum topic_depth, int level, const char* 
 DLLEXPORT int mqtt_pub_noval(struct mqtt*, enum topic_depth, const char* key);
 DLLEXPORT int mqtt_pub_strval(struct mqtt*, enum topic_depth, const char* key, const char* str);
 DLLEXPORT int mqtt_pub_uintval(struct mqtt*, enum topic_depth, const char* key, ulong value);
-DLLEXPORT int mqtt_pub_message(struct mqtt*, enum topic_depth, const char* key, const void* buf, size_t len);
+DLLEXPORT int mqtt_pub_message(struct mqtt*, enum topic_depth, const char* key, const void* buf, size_t len, BOOL retain);
 DLLEXPORT int mqtt_open(struct mqtt*);
 DLLEXPORT void mqtt_close(struct mqtt*);
 DLLEXPORT int mqtt_connect(struct mqtt*, const char* bind_address);

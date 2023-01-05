@@ -174,7 +174,7 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 			/* payloadlen */strlen(str),
 			/* payload */str,
 			/* qos */mqtt->cfg->mqtt.publish_qos,
-			/* retain */false,
+			/* retain */true,
 			/* properties */NULL);
 		mqtt_topic(mqtt, depth, sub, sizeof(sub), "log");
 		mosquitto_property* props = NULL;
@@ -185,7 +185,7 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 			/* payloadlen */strlen(str),
 			/* payload */str,
 			/* qos */mqtt->cfg->mqtt.publish_qos,
-			/* retain */false,
+			/* retain */true,
 			/* properties */props);
 		mosquitto_property_free_all(&props);
 		return result;
@@ -266,7 +266,7 @@ int mqtt_pub_uintval(struct mqtt* mqtt, enum topic_depth depth, const char* key,
 	return MQTT_FAILURE;
 }
 
-int mqtt_pub_message(struct mqtt* mqtt, enum topic_depth depth, const char* key, const void* buf, size_t len)
+int mqtt_pub_message(struct mqtt* mqtt, enum topic_depth depth, const char* key, const void* buf, size_t len, BOOL retain)
 {
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
@@ -282,7 +282,7 @@ int mqtt_pub_message(struct mqtt* mqtt, enum topic_depth depth, const char* key,
 			/* payloadlen */len,
 			/* payload */buf,
 			/* qos */mqtt->cfg->mqtt.publish_qos,
-			/* retain */false,
+			/* retain */retain,
 			/* properties */NULL);
 	}
 #endif
