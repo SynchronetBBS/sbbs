@@ -544,7 +544,7 @@ int mqtt_server_state(struct mqtt* mqtt, enum server_state state)
 		char tmp[256];
 		char errors[64] = "";
 		if(mqtt->error_count)
-			snprintf(errors, sizeof(errors), "%lu errors", mqtt->error_count);
+			snprintf(errors, sizeof(errors), "%lu error%s", mqtt->error_count, mqtt->error_count > 1 ? "s" : "");
 		char served[64] = "";
 		if(mqtt->served)
 			snprintf(served, sizeof(served), "%lu served", mqtt->served);
@@ -567,7 +567,7 @@ int mqtt_server_state(struct mqtt* mqtt, enum server_state state)
 
 int mqtt_errormsg(struct mqtt* mqtt, int level, const char* msg)
 {
-	if(mqtt == NULL)
+	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
 	++mqtt->error_count;
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "error_count", mqtt->error_count);
