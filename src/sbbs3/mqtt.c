@@ -88,19 +88,19 @@ static char* format_topic(struct mqtt* mqtt, enum server_type type, enum topic_d
 			safe_snprintf(str, size, "sbbs/%s", mqtt->cfg->sys_id);
 			break;
 		case TOPIC_HOST:
-			safe_snprintf(str, size, "sbbs/%s/%s/%s", mqtt->cfg->sys_id, mqtt->host, sbuf);
+			safe_snprintf(str, size, "sbbs/%s/host/%s/%s", mqtt->cfg->sys_id, mqtt->host, sbuf);
 			break;
 		case TOPIC_HOST_LEVEL:
-			safe_snprintf(str, size, "sbbs/%s/%s", mqtt->cfg->sys_id, mqtt->host);
+			safe_snprintf(str, size, "sbbs/%s/host/%s", mqtt->cfg->sys_id, mqtt->host);
 			break;
 		case TOPIC_SERVER:
-			safe_snprintf(str, size, "sbbs/%s/%s/server/%s/%s", mqtt->cfg->sys_id, mqtt->host, server_type_desc(type), sbuf);
+			safe_snprintf(str, size, "sbbs/%s/host/%s/server/%s/%s", mqtt->cfg->sys_id, mqtt->host, server_type_desc(type), sbuf);
 			break;
 		case TOPIC_SERVER_LEVEL:
-			safe_snprintf(str, size, "sbbs/%s/%s/server/%s", mqtt->cfg->sys_id, mqtt->host, server_type_desc(type));
+			safe_snprintf(str, size, "sbbs/%s/host/%s/server/%s", mqtt->cfg->sys_id, mqtt->host, server_type_desc(type));
 			break;
 		case TOPIC_EVENT:
-			safe_snprintf(str, size, "sbbs/%s/%s/event/%s", mqtt->cfg->sys_id, mqtt->host, sbuf);
+			safe_snprintf(str, size, "sbbs/%s/host/%s/event/%s", mqtt->cfg->sys_id, mqtt->host, sbuf);
 			break;
 		case TOPIC_OTHER:
 		default:
