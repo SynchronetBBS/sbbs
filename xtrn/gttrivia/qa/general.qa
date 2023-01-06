@@ -27,7 +27,11 @@ Ethiopia
 10
 
 Tennis star Serena Williams won which major tournament while pregnant with her first child?
-The Australian Open
+-- Answer metadata begin
+{
+    "answers": ["Australian Open", "The Australian Open"]
+}
+-- Answer metadata end
 10
 
 In which European city would you find Orly airport?
@@ -143,7 +147,11 @@ Thailand
 10
 
 What is the smallest ocean in the world?
-The Arctic
+-- Answer metadata begin
+{
+    "answers": ["Arctic", "The Arctic"]
+}
+-- Answer metadata end
 10
 
 What color eyes do most humans have?
@@ -155,7 +163,11 @@ Amsterdam
 10
 
 What is the largest type of deer?
-The moose
+-- Answer metadata begin
+{
+    "answers": ["Moose", "The Moose"]
+}
+-- Answer metadata end
 10
 
 Which Disney film features the song "When You Wish Upon a Star"?
@@ -459,7 +471,11 @@ Muhammed Ali
 10
 
 Where did Heineken beer originate?
-The Netherlands
+-- Answer metadata begin
+{
+    "answers": ["Netherlands", "The Netherlands"]
+}
+-- Answer metadata end
 10
 
 Cirque du Soleil started in what country?
@@ -1151,15 +1167,15 @@ What year did Dunkin' Donuts become Dunkin'?
 10
 
 What is Florida's state bird?
-The Northern Mockingbird
+-- Answer metadata begin
+{
+    "answers": ["Northern Mockingbird", "The Northern Mockingbird"]
+}
+-- Answer metadata end
 10
 
 What was Sabrina's cat's name in "Sabrina the Teenage Witch"?
 Salem
-10
-
-What year was the original "Jurassic Park" movie released?
-1993
 10
 
 Which player from the Dallas Mavericks is an investor in Big Blanket Co., the maker of 10-by-10 foot blankets?
@@ -1343,7 +1359,11 @@ How many people tuned into the last episode of "Friends"?
 10
 
 What is Texas' state flower?
-The Bluebonnet
+-- Answer metadata begin
+{
+    "answers": ["Bluebonnet", "The Bluebonnet"]
+}
+-- Answer metadata end
 10
 
 How many floors does the Eiffel Tower have?
@@ -1603,7 +1623,11 @@ What year did the Berlin wall fall?
 10
 
 What is the more popular name for the portrait officially titled "La Gioconda," painted in 1503?
-The Mona Lisa
+-- Answer metadata begin
+{
+    "answers": ["Mona Lisa", "The Mona Lisa"]
+}
+-- Answer metadata end
 10
 
 What element does the chemical symbol Au stand for?
@@ -1652,11 +1676,19 @@ Who is commonly credited with throwing the first brick at Stonewall in 1969, beg
 10
 
 What are the first 22 cards in a tarot deck called?
-The Major Arcana
+-- Answer metadata begin
+{
+    "answers": ["Major Arcana", "The Major Arcana"]
+}
+-- Answer metadata end
 10
 
 What was the name of the possessed hotel in Steven King's novel (and movie) The Shining, based on the real-life Stanley Hotel in Colorado?
-The Overlook Hotel
+-- Answer metadata begin
+{
+    "answers": ["Overlook Hotel", "The Overlook Hotel", "The Overlook", "Overlook"]
+}
+-- Answer metadata end
 10
 
 What is the capital of India?
@@ -1680,7 +1712,11 @@ Elana Ferante
 10
 
 What is the name of the ship that rescued Titanic passengers hours after the ship went down?
-The Carpathia
+-- Answer metadata begin
+{
+    "answers": ["Carpathia", "The Carpathia"]
+}
+-- Answer metadata end
 10
 
 Where is recognized as the location of the hottest temperature ever recorded on Earth, per the World Meteorological Organization?
@@ -1776,7 +1812,11 @@ Dolly Parton
 10
 
 What is the name for the equinox that occurs on March 20th or 21st of each year?
-The Vernal Equinox
+-- Answer metadata begin
+{
+    "answers": ["Vernal Equinox", "The Vernal Equinox"]
+}
+-- Answer metadata end
 10
 
 What's the shortcut for the paste function on most computers?
@@ -1872,7 +1912,11 @@ Six Flags New Jersey
 10
 
 What is the national animal of Scotland?
-The unicorn
+-- Answer metadata begin
+{
+    "answers": ["Unicorn", "The Unicorn"]
+}
+-- Answer metadata end
 10
 
 For how many nights is Hanukkah celebrated?
@@ -2032,7 +2076,11 @@ Martin Luther King Jr
 10
 
 What did Republicans call the platform they hyped in the 1994 Congressional elections?
-The Contract With America
+-- Answer metadata begin
+{
+    "answers": ["Contract With America", "The Contract With America"]
+}
+-- Answer metadata end
 10
 
 What brave-hearted Scottish patriot led soldiers to a defeat of the English at the Battle of Cambuskenneth in 1297?
@@ -2040,7 +2088,11 @@ William Wallace
 10
 
 What nation issued the five-dollar bill found in Abraham Lincoln's pocket when he was shot?
-The Confederate States of America
+-- Answer metadata begin
+{
+    "answers": ["Confederate States of America", "The Confederate States of America"]
+}
+-- Answer metadata end
 10
 
 What political system was gradually dismantled in South Africa, starting in 1989?
@@ -2052,7 +2104,11 @@ El Cid
 10
 
 What field and city name did Amelia Earhart have her first flying lesson at?
-Kinner Field, Long Beach
+-- Answer metadata begin
+{
+    "answers": ["Kinner Field, Long Beach", "Kinner Field"]
+}
+-- Answer metadata end
 20
 
 For safety, bacon can be treated to prevent what disease?
