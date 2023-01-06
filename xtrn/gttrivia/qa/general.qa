@@ -11,16 +11,16 @@ In what year were the first Air Jordan sneakers released?
 10
 
 In a game of bingo, which number is represented by the phrase "two little ducks"?
-22
+-- Answer metadata begin
+{
+    "answers": ["22", "Twenty-two"]
+}
+-- Answer metadata end
 10
 
 According to Greek mythology who was the first woman on earth?
 Pandora
 10
-
-Samuel Tilden, Grover Cleveland, Al Gore and Hillary Clinton share what distinction among U.S. presidential candidates?
-Won the popular vote but lost the electoral college vote
-20
 
 Which African country was formerly known as Abyssinia?
 Ethiopia
@@ -47,7 +47,11 @@ Volcano
 10
 
 Which author wrote the 'Winnie-the-Pooh' books?
-A. A. Milne
+-- Answer metadata begin
+{
+    "answers": ["A. A. Milne", "AA Milne"]
+}
+-- Answer metadata end
 10
 
 Which Dutch artist painted "Girl with a Pearl Earring"?
@@ -63,7 +67,11 @@ Switzerland
 10
 
 Which two U.S. states don't observe Daylight Saving Time?
-Arizona, Hawaii
+-- Answer metadata begin
+{
+    "answers": ["Arizona, Hawaii", "Hawaii, Arizona", "Arizona and Hawaii", "Hawaii and Arizona"]
+}
+-- Answer metadata end
 10
 
 What is the loudest animal on Earth?
@@ -91,7 +99,11 @@ Dakota Building
 10
 
 How many of Snow White's seven dwarfs have names ending in the letter Y?
-Five
+-- Answer metadata begin
+{
+    "answers": ["Five", "5"]
+}
+-- Answer metadata end
 10
 
 "I Know Why the Caged Bird Sings" is the autobiography about the early years of what inspirational African-American writer and poet?
@@ -99,7 +111,7 @@ Maya Angelou
 10
 
 What is the tallest breed of dog in the world?
-The Great Dane
+Great Dane
 10
 
 What is the softest mineral in the world?
@@ -115,7 +127,11 @@ Margaret Thatcher
 10
 
 How many ribs are in a human body?
-24
+-- Answer metadata begin
+{
+    "answers": ["24", "Twenty-four"]
+}
+-- Answer metadata end
 10
 
 What is the world's biggest island?
@@ -159,7 +175,11 @@ Pacific Ocean
 10
 
 When Michael Jordan played for the Chicago Bulls, how many NBA Championships did he win?
-Six
+-- Answer metadata begin
+{
+    "answers": ["Six", "6"]
+}
+-- Answer metadata end
 10
 
 What country won the very first FIFA World Cup in 1930?
@@ -171,7 +191,11 @@ In what year was the first ever Wimbledon Championship held?
 10
 
 What is often seen as the smallest unit of memory?
-Kilobyte
+-- Answer metadata begin
+{
+    "answers": ["Kilobyte", "KB"]
+}
+-- Answer metadata end
 10
 
 Which planet is the hottest in Earth's solar system?
@@ -183,7 +207,11 @@ Brazil
 10
 
 What is the common name for dried plums?
-Prunes
+-- Answer metadata begin
+{
+    "answers": ["Prunes", "Prune"]
+}
+-- Answer metadata end
 10
 
 What does BMW stand for (in English)?
@@ -191,7 +219,11 @@ Bavarian Motor Works
 10
 
 Which two countries share the longest international border?
-Canada, USA
+-- Answer metadata begin
+{
+    "answers": ["Canada, USA", "USA, Canada", "Canada and USA", "USA and canada", "Canada & USA", "USA & Canada"]
+}
+-- Answer metadata end
 10
 
 What is the smallest country in the world?
@@ -199,7 +231,11 @@ Vatican City
 10
 
 Which bone are babies born without?
-Knee cap
+-- Answer metadata begin
+{
+    "answers": ["Kneecap", "Knee Cap"]
+}
+-- Answer metadata end
 10
 
 Which name is rapper Sean Combs better known by?
@@ -211,11 +247,19 @@ Spice Girls
 10
 
 How many hearts does an octopus have?
-Three
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 How many eyes does a bee have?
-Five
+-- Answer metadata begin
+{
+    "answers": ["Five", "5"]
+}
+-- Answer metadata end
 10
 
 What was the name of the rock band formed by Jimmy Page?
@@ -250,8 +294,12 @@ Ludwig Van Beethoven was born in 1770 in which city?
 Berlin
 10
 
-Water as a pH level of around?
-7
+Water as a pH level of approximately what?
+-- Answer metadata begin
+{
+    "answers": ["Seven", "7"]
+}
+-- Answer metadata end
 10
 
 What's the most expensive home in the world?
@@ -263,7 +311,7 @@ An alarm clock
 10
 
 What's the hardest rock?
-A diamond
+Diamond
 10
 
 What is the national dish of Spain?
@@ -291,11 +339,19 @@ Keratin
 10
 
 How many children does Oprah Winfrey have?
-Zero
+-- Answer metadata begin
+{
+    "answers": ["Zero", "0"]
+}
+-- Answer metadata end
 10
 
 Where is the Sea of Tranquility located?
-The moon
+-- Answer metadata begin
+{
+    "answers": ["Moon", "The Moon"]
+}
+-- Answer metadata end
 10
 
 What country has the world's most ancient forest?
@@ -311,10 +367,10 @@ Yellow
 10
 
 Which chess piece can only move diagonally?
-A bishop
+Bishop
 10
 
-When did the Cold War end?
+In what year did the Cold War end?
 1989
 10
 
@@ -395,7 +451,7 @@ Larry
 10
 
 What is a community of ants called?
-A colony
+Colony
 10
 
 Who was said to "float like a butterfly and sting like a bee"?
@@ -411,7 +467,11 @@ Canada
 10
 
 How many signs are there in the Zodiac?
-12
+-- Answer metadata begin
+{
+    "answers": ["Twelve", "12"]
+}
+-- Answer metadata end
 10
 
 What are the two fruit juices in a cosmopolitan?
@@ -419,7 +479,7 @@ Cranberry and lime
 10
 
 What object is said to bring bad luck if it is broken?
-A mirror
+Mirror
 10
 
 Which country did bagels originate from?
@@ -438,7 +498,7 @@ The Candlestick, Lead Pipe, Knife, Revolver, Rope, and what else are the six wea
 Wrench
 10
 
-What city did Starbucks open its first store in 1971?
+In what city did Starbucks open its first store in 1971?
 Seattle
 10
 
@@ -479,7 +539,11 @@ Black
 10
 
 How many red stripes are there on the American flag?
-Seven
+-- Answer metadata begin
+{
+    "answers": ["Seven", "7"]
+}
+-- Answer metadata end
 10
 
 What 3 word phrase is written on Martin Luther King's gravestone?
@@ -587,11 +651,19 @@ Kentucky
 10
 
 What blood type qualifies as a universal donor?
-O negative
+-- Answer metadata begin
+{
+    "answers": ["O negative", "O-", "Type O-", "Type O negative"]
+}
+-- Answer metadata end
 10
 
 What is the most abundant metal in the Earth's crust?
-Aluminium
+-- Answer metadata begin
+{
+    "answers": ["Aluminum", "Aluminium"]
+}
+-- Answer metadata end
 10
 
 What is the most abundant element in the universe?
@@ -642,8 +714,12 @@ Canberra is the capital city of which country?
 Australia
 10
 
-New York City comprises how many boroughs?
-5
+How many boroughs is New York City comprised of?
+-- Answer metadata begin
+{
+    "answers": ["Five", "5"]
+}
+-- Answer metadata end
 10
 
 Which nuts are used to make marzipan?
@@ -707,7 +783,11 @@ Allies and Axis
 10
 
 What number did Derek Jeter wear on his New York Yankees jersey?
-2
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 What vitamin does the sun's ultraviolet rays help the skin produce?
@@ -763,7 +843,7 @@ Amman
 10
 
 What is Harry Potter's Patronus?
-A stag
+Stag
 10
 
 What candy was used to lure E.T. in the 1982 movie "E.T.: The Extra-Terrestrial"?
@@ -911,7 +991,11 @@ Fulgencio Batista
 10
 
 How many sides does the home plate in baseball have?
-5
+-- Answer metadata begin
+{
+    "answers": ["Five", "5"]
+}
+-- Answer metadata end
 10
 
 What color dresses do Chinese women traditionally wear on their wedding day?
@@ -983,7 +1067,11 @@ Spaghetto
 10
 
 By U.S. law, exit signs must be one of what two colors?
-Green or red
+-- Answer metadata begin
+{
+    "answers": ["Green or red", "Red or green", "Green, red", "Red, green", "Green red", "Red green"]
+}
+-- Answer metadata end
 10
 
 Where did the 2000 Summer Olympics take place?
@@ -991,7 +1079,11 @@ Sydney, Australia
 10
 
 Where do U.S. vice presidents live?
-on the grounds of the U.S. Naval Observatory
+-- Answer metadata begin
+{
+    "answers": ["US Naval Observatory", "U.S. Naval Observatory", "Grounds of U.S. Naval Observatory", "Grounds of US Naval Observatory", "US Naval Observatory grounds"]
+}
+-- Answer metadata end
 10
 
 Who was the first American woman in space?
@@ -1003,7 +1095,11 @@ Rydell High
 10
 
 How many pounds are in a ton?
-2000
+-- Answer metadata begin
+{
+    "answers": ["2000", "Two thousand"]
+}
+-- Answer metadata end
 10
 
 What is an eight-sided shape called?
@@ -1011,11 +1107,19 @@ Octagon
 5
 
 Which number does every Major League Baseball player wear on April 15?
-42
+-- Answer metadata begin
+{
+    "answers": ["Forty-two", "42"]
+}
+-- Answer metadata end
 10
 
 What is the maximum number of points someone can achieve on Pac-Man?
-3333360 points
+-- Answer metadata begin
+{
+    "answers": ["3333360", "3333360 points"]
+}
+-- Answer metadata end
 10
 
 What species of fish is Nemo?
@@ -1083,11 +1187,19 @@ Grawp
 10
 
 How many pounds of curly fries does Arby's sell in a year?
-100 million
+-- Answer metadata begin
+{
+    "answers": ["100 million", "100,000,000", "100000000"]
+}
+-- Answer metadata end
 10
 
 How many points does the Star of David have?
-Six
+-- Answer metadata begin
+{
+    "answers": ["Six", "6"]
+}
+-- Answer metadata end
 10
 
 Who won first season of "America's Next Top Model"?
@@ -1131,11 +1243,19 @@ What year was Kodak founded?
 10
 
 What is Taylor Swift's lucky number?
-13
+-- Answer metadata begin
+{
+    "answers": ["Thirteen", "13"]
+}
+-- Answer metadata end
 10
 
 How many Oscars does Jane Fonda have?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 What animal's nickname is "sea cow"?
@@ -1143,7 +1263,11 @@ Manatee
 10
 
 How many Academy Awards did "Titanic" win?
-11
+-- Answer metadata begin
+{
+    "answers": ["Eleven", "11"]
+}
+-- Answer metadata end
 10
 
 Where was the first Olympics held?
@@ -1151,7 +1275,11 @@ Panathenaic Stadium, Greece
 10
 
 What percentage of the Earth's wildlife is found in the ocean?
-94%
+-- Answer metadata begin
+{
+    "answers": ["94%", "94", "Ninety-four"]
+}
+-- Answer metadata end
 10
 
 What U.S. state grows coffee beans?
@@ -1163,7 +1291,11 @@ Starcourt Mall
 10
 
 How often are the Summer Games held?
-Every four years
+-- Answer metadata begin
+{
+    "answers": ["Every four years", "Every 4 years", "4 years", "Four years"]
+}
+-- Answer metadata end
 10
 
 Which Disney princess has a Scottish accent?
@@ -1203,7 +1335,11 @@ Point Barrow, Alaska
 10
 
 How many people tuned into the last episode of "Friends"?
-52.5 million
+-- Answer metadata begin
+{
+    "answers": ["52.5 million", "52,500,000", "52500000"]
+}
+-- Answer metadata end
 10
 
 What is Texas' state flower?
@@ -1211,7 +1347,11 @@ The Bluebonnet
 10
 
 How many floors does the Eiffel Tower have?
-Three
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 What is the name of the world's hottest chili pepper?
@@ -1219,7 +1359,7 @@ Carolina Reaper
 10
 
 What is Starbucks' logo?
-A Siren
+Siren
 10
 
 What is the largest bone in the human body?
@@ -1243,7 +1383,11 @@ What year was "Jaws" released?
 10
 
 In football, how many points does a touchdown have?
-Six
+-- Answer metadata begin
+{
+    "answers": ["Six", "6"]
+}
+-- Answer metadata end
 10
 
 In "Star Wars," who built C-3P0?
@@ -1259,7 +1403,11 @@ Turtle
 10
 
 How many seasons did "The Oprah Winfrey Show" run?
-25
+-- Answer metadata begin
+{
+    "answers": ["Twenty-five", "25"]
+}
+-- Answer metadata end
 10
 
 What year was the first Barbie doll released?
@@ -1267,15 +1415,27 @@ What year was the first Barbie doll released?
 10
 
 How long was the first Thanksgiving?
-Three days
+-- Answer metadata begin
+{
+    "answers": ["Three days", "3 days"]
+}
+-- Answer metadata end
 10
 
 How many planets make up the solar system?
-Eight
+-- Answer metadata begin
+{
+    "answers": ["Eight", "8"]
+}
+-- Answer metadata end
 10
 
 How many colors are in a rainbow?
-Seven
+-- Answer metadata begin
+{
+    "answers": ["Seven", "7"]
+}
+-- Answer metadata end
 10
 
 "The Princess and the Frog" is set in which American city?
@@ -1311,7 +1471,11 @@ Boxing Day
 10
 
 Which three zodiac signs are summer signs?
-Cancer, Leo and Virgo
+-- Answer metadata begin
+{
+    "answers": ["Cancer, Leo, and Virgo", "Cancer, Virgo, and Leo", "Leo, Cancer, and Virgo", "Leo, Virgo, and Cancer", "Virgo, Cancer, and Leo", "Virgo, Leo, and Cancer"]
+}
+-- Answer metadata end
 10
 
 Which month of the year is National Ice Cream Month?
@@ -1343,7 +1507,11 @@ China
 10
 
 How many ghosts show up in "A Christmas Carol"?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 In what city is the world's largest Starbucks?
@@ -1383,11 +1551,19 @@ India
 10
 
 How many folds are in a chef's hat?
-100
+-- Answer metadata begin
+{
+    "answers": ["One hundred", "100"]
+}
+-- Answer metadata end
 10
 
 What are California's state colors?
-Blue and Gold
+-- Answer metadata begin
+{
+    "answers": ["Blue and gold", "Gold and blue", "Blue gold", "Gold blue", "Blue, gold", "Gold, blue"]
+}
+-- Answer metadata end
 10
 
 What is United Kingdom's national Anthem?
@@ -1403,7 +1579,11 @@ Liberia
 10
 
 Who's picture is on the US $50 bill?
-Ulysses Grant
+-- Answer metadata begin
+{
+    "answers": ["Ulysses Grant", "Ulysses S. Grant", "Ulysses S Grant"]
+}
+-- Answer metadata end
 5
 
 Name the tallest nonextinct mammal at birth
@@ -1435,11 +1615,20 @@ Taurus
 10
 
 Who is considered the first female self-made millionaire in the U.S.?
-Madam C.J. Walker
+-- Answer metadata begin
+{
+    "answers": ["Madam C.J. Walker", "Madam CJ Walker"]
+}
+-- Answer metadata end
 10
 
 How many colors were on the original Pride flag, flown at the San Francisco Gay Freedom Day Parade in 1978?
-Eight (the pink and turquoise stripes were dropped by 1979 for production reasons)
+-- Answer metadata begin
+{
+    "answers": ["Eight", "8"],
+	"answerFact": "The pink and turquoise stripes were dropped by 1979 for production reasons"
+}
+-- Answer metadata end
 10
 
 What is the first name of the main female protagonist in Zora Neale Hurston's classic novel Their Eyes Were Watching God?
@@ -1455,7 +1644,11 @@ Mercury
 10
 
 Who is commonly credited with throwing the first brick at Stonewall in 1969, beginning an uprising that became a major turning point for LGBTQ+ rights in the U.S.?
-Marsha P. Johnson
+-- Answer metadata begin
+{
+    "answers": ["Marsha P. Johnson", "Marsha P Johnson"]
+}
+-- Answer metadata end
 10
 
 What are the first 22 cards in a tarot deck called?
@@ -1519,7 +1712,11 @@ A murder
 10
 
 How many feet are in a yard?
-Three
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 How many bones do sharks have?
@@ -1543,7 +1740,7 @@ Singapore (it's an island city-state)
 10
 
 What is the word for the weather event also called a winter hurricane?
-A bomb cyclone
+Bomb cyclone
 10
 
 What was the first country to give women the right to vote?
@@ -1607,7 +1804,11 @@ Iceland
 10
 
 How many colors will you find in a regular bag of M&Ms?
-Six
+-- Answer metadata begin
+{
+    "answers": ["Six", "6"]
+}
+-- Answer metadata end
 10
 
 The Statue of Liberty was a gift to the U.S. from what country?
@@ -1615,11 +1816,19 @@ France
 10
 
 How many wives did Henry VIII have?
-Six
+-- Answer metadata begin
+{
+    "answers": ["Six", "6"]
+}
+-- Answer metadata end
 10
 
 What is the rarest blood type?
-AB negative
+-- Answer metadata begin
+{
+    "answers": ["AB negative", "AB-", "Type AB negative", "Type AB-"]
+}
+-- Answer metadata end
 10
 
 Which famous art movement did Pablo Picasso co-create?
@@ -1631,15 +1840,23 @@ Thomas Jefferson
 10
 
 For up to how long do cicadas live underground before emerging above ground for just a few weeks?
-17 years
+-- Answer metadata begin
+{
+    "answers": ["17 years", "Seventeen years"]
+}
+-- Answer metadata end
 10
 
 What phase does a moon enter into after it's full?
-Waxing Gibbous (if you guessed just the first bit, that works!)
+Waxing Gibbous
 10
 
 Where on the food pyramid do eggplants belong?
-In the fruit section
+-- Answer metadata begin
+{
+    "answers": ["The fruit section", "Fruit section"]
+}
+-- Answer metadata end
 10
 
 What alcoholic beverage is made from juniper berries?
@@ -1659,7 +1876,11 @@ The unicorn
 10
 
 For how many nights is Hanukkah celebrated?
-Eight
+-- Answer metadata begin
+{
+    "answers": ["Eight", "8"]
+}
+-- Answer metadata end
 10
 
 What religious and political organization did Malcolm X join in 1952, helping it to grow exponentially before cutting ties with it in 1964?
@@ -1683,15 +1904,27 @@ In-N-Out Burger
 10
 
 What temperature (in Fahrenheit degrees) does water boil at?
-212
+-- Answer metadata begin
+{
+    "answers": ["212", "Two hundred twelve"]
+}
+-- Answer metadata end
 10
 
 What temperature (in Celsius/Centigrade degrees) does water boil at?
-100
+-- Answer metadata begin
+{
+    "answers": ["100", "One hundred"]
+}
+-- Answer metadata end
 10
 
 Where is Harvard University located?
-Cambridge, Massachusetts
+-- Answer metadata begin
+{
+    "answers": ["Cambridge, Massachusetts", "Cambridge, MA"]
+}
+-- Answer metadata end
 10
 
 Which marine animal species hold hands in their sleep to prevent drifting apart?
@@ -1723,7 +1956,11 @@ Gerald Ford
 10
 
 Who earned infamy for noting: "A billion dollars isn't worth what it used to be"?
-J Paul Getty
+-- Answer metadata begin
+{
+    "answers": ["J Paul Getty", "J. Paul Getty"]
+}
+-- Answer metadata end
 20
 
 What ethnic group was largely responsible for building most of the early railways in the U.S. West?
@@ -1747,7 +1984,7 @@ Tony Dorsett's
 10
 
 What 20th-century conflict was dubbed the "forgotten war" despite 54,246 U.S. deaths?
-The Korean War
+Korean War
 10
 
 What single name is more commonly applied to Holy Roman Emperor Charles the Great?
@@ -1899,7 +2136,11 @@ Amazon
 10
 
 How many faces does a Dodecahedron have?
-12
+-- Answer metadata begin
+{
+    "answers": ["Twelve", "12"]
+}
+-- Answer metadata end
 10
 
 Queen guitarist Brian May is also an expert in what scientific field?
@@ -1911,7 +2152,11 @@ Yellow
 10
 
 How many ghosts chase Pac-Man at the start of each game?
-4
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 What Renaissance artist is buried in Rome's Pantheon?
@@ -1987,7 +2232,11 @@ Lithuania
 10
 
 How many bones do we have in an ear?
-3
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 Who famously crossed the Alps with elephants on the way to war with the Romans?
