@@ -3475,6 +3475,7 @@ static BOOL exec_js_webctrl(http_session_t* session, char *name, char* script, c
 	}
 
 	JS_BEGINREQUEST(session->js_cx);
+	js_add_request_prop(session,"scheme", session->is_tls ? "https" : "http");
 	js_add_request_prop(session,"real_path",session->req.physical_path);
 	js_add_request_prop(session,"virtual_path",session->req.virtual_path);
 	js_add_request_prop(session,"ars",session->req.ars);
