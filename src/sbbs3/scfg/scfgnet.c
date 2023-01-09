@@ -156,7 +156,7 @@ void mqtt_cfg()
 	static char* mqttQOS[]
 		= { "0: At most once", "1: At least once", "2: Exactly once", NULL };
 	static char* mqttVersion[]
-		= { "3.1", "3.1.1", "5", NULL };
+		= { "3.1.0", "3.1.1", "5.0", NULL };
 	static char* mqttTlsMode[]
 		= { "Off", "Certificate", "Pre-Shared-Key", NULL };
 
