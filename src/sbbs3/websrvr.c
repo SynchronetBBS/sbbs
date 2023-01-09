@@ -7293,8 +7293,8 @@ void web_server(void* arg)
 					,client_socket, client_highwater);
 			}
 			if(startup->max_clients && protected_uint32_value(active_clients)>=startup->max_clients) {
-				lprintf(LOG_WARNING,"%04d !MAXIMUM CLIENTS (%d) reached, access denied"
-					,client_socket, startup->max_clients);
+				lprintf(LOG_WARNING,"%04d [%s] !MAXIMUM CLIENTS (%d) reached, access denied"
+					,client_socket, host_ip, startup->max_clients);
 				if (!len_503)
 					len_503 = strlen(error_503);
 				sendsocket(client_socket, error_503, len_503);

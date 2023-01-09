@@ -5160,8 +5160,8 @@ void ftp_server(void* arg)
 			}
 			
 			if(protected_uint32_value(active_clients)>=startup->max_clients) {
-				lprintf(LOG_WARNING,"%04d !MAXIMUM CLIENTS (%d) reached, access denied"
-					,client_socket, startup->max_clients);
+				lprintf(LOG_WARNING,"%04d [%s] !MAXIMUM CLIENTS (%d) reached, access denied"
+					,client_socket, client_ip, startup->max_clients);
 				sockprintf(client_socket,-1,"421 Maximum active clients reached, please try again later.");
 				ftp_close_socket(&client_socket,&none,__LINE__);
 				continue;
