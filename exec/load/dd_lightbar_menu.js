@@ -1725,12 +1725,13 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			if (this.selectedItemIdx > 0)
 			{
 				var oldSelectedItemIdx = this.selectedItemIdx;
+				this.oldTopItemIdx = this.topItemIdx;
 				// If the current item index is not on first current page, then scroll.
 				// Otherwise, draw more efficiently by drawing the current item in
 				// regular colors and the first item in highlighted colors.
 				this.topItemIdx = 0;
 				var numItemsPerPage = this.GetNumItemsPerPage();
-				if (this.selectedItemIdx >= 0 + numItemsPerPage)
+				if (this.oldTopItemIdx > 0)
 				{
 					this.selectedItemIdx = 0;
 					this.Draw(pSelectedItemIndexes, false);
