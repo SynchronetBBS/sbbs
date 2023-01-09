@@ -544,7 +544,6 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				break;
 			case ')':
 			case '}':   /* Search Author forward */
-				strcpy(str,msg.from);
 				for(u=smb.curmsg+1;u<smb.msgs;u++)
 					if(mail[u].from==msg.idx.from)
 						break;
@@ -568,7 +567,6 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				break;
 			case '(':
 			case '{':   /* Search Author backward */
-				strcpy(str,msg.from);
 				if(smb.curmsg > 0) {
 					for(u=smb.curmsg-1;;u--) {
 						if(mail[u].from==msg.idx.from) {
@@ -584,7 +582,6 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				}
 				break;
 			case ']':   /* Search To User forward */
-				strcpy(str,msg.to);
 				for(u=smb.curmsg+1;u<smb.msgs;u++)
 					if(mail[u].to==msg.idx.to)
 						break;
@@ -596,7 +593,6 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				}
 				break;
 			case '[':   /* Search To User backward */
-				strcpy(str,msg.to);
 				if(smb.curmsg > 0) {
 					for(u=smb.curmsg-1;;u--) {
 						if(mail[u].to==msg.idx.to) {
