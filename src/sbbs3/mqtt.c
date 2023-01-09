@@ -23,6 +23,7 @@
 
 #include "mqtt.h"
 #include "startup.h"
+#include "xpdatetime.h"
 
 const char* server_type_desc(enum server_type type)
 {
@@ -164,30 +165,34 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 		return MQTT_SUCCESS;
 #ifdef USE_MOSQUITTO
 	if(mqtt->handle != NULL && str != NULL) {
+		int result;
 		char sub[128];
-		mqtt_topic(mqtt, depth, sub, sizeof(sub), "log/%d", level);
-		char lvl[32];
-		sprintf(lvl, "%d", level);
-		mosquitto_publish_v5(mqtt->handle,
-			/* mid: */NULL,
-			/* topic: */sub,
-			/* payloadlen */strlen(str),
-			/* payload */str,
-			/* qos */mqtt->cfg->mqtt.publish_qos,
-			/* retain */true,
-			/* properties */NULL);
-		mqtt_topic(mqtt, depth, sub, sizeof(sub), "log");
-		mosquitto_property* props = NULL;
-		mosquitto_property_add_string_pair(&props, MQTT_PROP_USER_PROPERTY, "level", lvl);
-		int result = mosquitto_publish_v5(mqtt->handle,
-			/* mid: */NULL,
-			/* topic: */sub,
-			/* payloadlen */strlen(str),
-			/* payload */str,
-			/* qos */mqtt->cfg->mqtt.publish_qos,
-			/* retain */true,
-			/* properties */props);
-		mosquitto_property_free_all(&props);
+		if(mqtt->cfg->mqtt.protocol_version < 5) {
+			mqtt_topic(mqtt, depth, sub, sizeof(sub), "log/%d", level);
+			result = mosquitto_publish_v5(mqtt->handle,
+				/* mid: */NULL,
+				/* topic: */sub,
+				/* payloadlen */strlen(str),
+				/* payload */str,
+				/* qos */mqtt->cfg->mqtt.publish_qos,
+				/* retain */true,
+				/* properties */NULL);
+		} else {
+			mqtt_topic(mqtt, depth, sub, sizeof(sub), "log");
+			char lvl[32];
+			sprintf(lvl, "%d", level);
+			mosquitto_property* props = NULL;
+			mosquitto_property_add_string_pair(&props, MQTT_PROP_USER_PROPERTY, "level", lvl);
+			result = mosquitto_publish_v5(mqtt->handle,
+				/* mid: */NULL,
+				/* topic: */sub,
+				/* payloadlen */strlen(str),
+				/* payload */str,
+				/* qos */mqtt->cfg->mqtt.publish_qos,
+				/* retain */true,
+				/* properties */props);
+			mosquitto_property_free_all(&props);
+		}
 		return result;
 	}
 #endif
@@ -339,7 +344,7 @@ static int pw_callback(char* buf, int size, int rwflag, void* userdata)
 
 static char* server_state_str(char* str, size_t size, enum server_state state)
 {
-	snprintf(str, size, "%u\t%s", state, server_state_desc(state));
+	snprintf(str, size, "%u-%s", state, server_state_desc(state));
 	return str;
 }
 
@@ -536,12 +541,12 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 int mqtt_server_state(struct mqtt* mqtt, enum server_state state)
 {
 	char str[128];
+	char tmp[256];
 
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
 
 	if(mqtt->cfg->mqtt.verbose) {
-		char tmp[256];
 		char errors[64] = "";
 		if(mqtt->error_count)
 			snprintf(errors, sizeof(errors), "%lu error%s", mqtt->error_count, mqtt->error_count > 1 ? "s" : "");
@@ -561,8 +566,17 @@ int mqtt_server_state(struct mqtt* mqtt, enum server_state state)
 			,errors);
 	} else
 		server_state_str(str, sizeof(str), state);
-	mqtt->server_state = state;
-	return mqtt_pub_strval(mqtt, TOPIC_SERVER_LEVEL, NULL, str);
+	int result = mqtt_pub_strval(mqtt, TOPIC_SERVER_LEVEL, NULL, str);
+	if(mqtt->server_state != state) {
+		mqtt->server_state = state;
+		char topic[128];
+		time_t t = time(NULL);
+		snprintf(topic, sizeof(topic), "state/%s", server_state_str(tmp, sizeof(tmp), state));
+		safe_snprintf(str, sizeof(str), "%" PRIu32 "T%06" PRIu32 "%d"
+			,time_to_isoDate(t), time_to_isoTime(t), xpTimeZone_local());
+		result = mqtt_pub_strval(mqtt, TOPIC_SERVER, topic, str);
+	}
+	return result;
 }
 
 int mqtt_errormsg(struct mqtt* mqtt, int level, const char* msg)
