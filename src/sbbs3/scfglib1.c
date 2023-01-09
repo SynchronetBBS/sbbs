@@ -213,7 +213,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->mqtt.keepalive = iniGetIntInRange(section, NULL, "keepalive", 5, 60, INT_MAX); // seconds
 	cfg->mqtt.publish_qos = iniGetIntInRange(section, NULL, "publish_qos", 0, 0, 2);
 	cfg->mqtt.subscribe_qos = iniGetIntInRange(section, NULL, "subscribe_qos", 0, 2, 2);
-	cfg->mqtt.protocol_version = iniGetIntInRange(section, NULL, "protocol_version", 3, 5, 5);
+	cfg->mqtt.protocol_version = iniGetIntInRange(section, NULL, "protocol_version", 3, 4, 5);
 	cfg->mqtt.log_level = iniGetLogLevel(section, NULL, "LogLevel", LOG_INFO);
 	cfg->mqtt.tls.mode = iniGetIntInRange(section, NULL, "tls_mode", MQTT_TLS_DISABLED, MQTT_TLS_DISABLED, MQTT_TLS_PSK);
 	SAFECOPY(cfg->mqtt.tls.cafile, iniGetString(section, NULL, "tls_cafile", "", value));
