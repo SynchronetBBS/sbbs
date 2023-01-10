@@ -13,7 +13,7 @@ In what year were the first Air Jordan sneakers released?
 In a game of bingo, which number is represented by the phrase "two little ducks"?
 -- Answer metadata begin
 {
-    "answers": ["22", "Twenty-two"]
+    "answers": ["Twenty-two", "22"]
 }
 -- Answer metadata end
 10
@@ -1138,20 +1138,16 @@ What is the maximum number of points someone can achieve on Pac-Man?
 -- Answer metadata end
 10
 
-What species of fish is Nemo?
-Clown Fish
-10
-
-In "Harry Potter and the Sorcerer's Stone," what keeps the three-headed dog asleep?
-Enchanted harp
-10
-
 What state is known as the "Badger State"?
 Wisconsin
 10
 
 How Did Leica, the German camera company, get its name?
-Founder Ernest Leitz used the first three letters of his last name combined with the first two letters from "camera."
+-- Answer metadata begin
+{
+    "answers": ["Ernest Leitz and camera", "Ernest Leitz camera", "Ernest Leitz, camera", "Founder Ernest Leitz and camera", "The founder's name Ernest Leitz and camera"]
+}
+-- Answer metadata end
 10
 
 When was Earth Day first celebrated?
@@ -1159,7 +1155,11 @@ When was Earth Day first celebrated?
 10
 
 How many legs does a lobster have?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 10
 
 What year did Dunkin' Donuts become Dunkin'?
@@ -1183,11 +1183,11 @@ Boban Marjanovic
 10
 
 Where were Doritos invented?
-Casa de Fritos at Disneyland
-10
-
-What's the name of Ginny's Pygmy Puff?
-Arnold
+-- Answer metadata begin
+{
+    "answers": ["Casa de Fritos at Disneyland", "Casa de Fritos, Disneyland", "Casa de Fritos Disneyland", "Casa de Fritos"]
+}
+-- Answer metadata end
 10
 
 What president was a licensed bartender?
@@ -1196,10 +1196,6 @@ Abraham Lincoln
 
 What type of race is the Tour de France?
 Bicycle
-10
-
-What is the name of Hagrid's half-brother?
-Grawp
 10
 
 How many pounds of curly fries does Arby's sell in a year?
@@ -1248,10 +1244,6 @@ Purple
 
 What is the Grinch's dog's name?
 Max
-10
-
-What is the name of Boba Fett's ship in "Star Wars"?
-Slave 1
 10
 
 What year was Kodak founded?
@@ -1330,10 +1322,6 @@ What animal has the biggest eyes?
 Giant Squid
 10
 
-What comic series is the CW's "Riverdale" based on?
-Archie
-10
-
 How many reindeer does Santa have?
 Eight
 10
@@ -1379,7 +1367,11 @@ Carolina Reaper
 10
 
 What is Starbucks' logo?
-Siren
+-- Answer metadata begin
+{
+    "answers": ["Siren", "The Siren"]
+}
+-- Answer metadata end
 10
 
 What is the largest bone in the human body?
@@ -1398,20 +1390,12 @@ What are baby rabbits called?
 Kits
 10
 
-What year was "Jaws" released?
-1975
-10
-
 In football, how many points does a touchdown have?
 -- Answer metadata begin
 {
     "answers": ["Six", "6"]
 }
 -- Answer metadata end
-10
-
-In "Star Wars," who built C-3P0?
-Anakin Skywalker
 10
 
 Who painted "Girl with a Pearl Earring"?
@@ -1458,14 +1442,6 @@ How many colors are in a rainbow?
 -- Answer metadata end
 10
 
-"The Princess and the Frog" is set in which American city?
-New Orleans
-10
-
-What is Hermione's Patronus?
-Otter
-10
-
 Who wrote "A Little Princess"?
 Frances Hodgson Burnett
 10
@@ -1476,10 +1452,6 @@ Bill Clinton
 
 Who was the first couple to win "The Amazing Race"?
 Rob Frisbee and Brennan Swain
-10
-
-Who was the first woman ever inducted into the Rock and Roll Hall of Fame?
-Aretha Franklin
 10
 
 Who voiced Ms. Frizzle on the children's television series "Magic School Bus"?
@@ -1502,7 +1474,7 @@ Which month of the year is National Ice Cream Month?
 July
 10
 
-Which astronomer is called out in "Bohemian Rhapsody"?
+Which astronomer is called out in the Queen song "Bohemian Rhapsody"?
 Galileo
 10
 
@@ -1538,10 +1510,6 @@ In what city is the world's largest Starbucks?
 Chicago
 10
 
-Who is the villain in "Peter Pan"?
-Captain Hook
-10
-
 Who was the youngest U.S. president?
 Theodore Roosevelt
 10
@@ -1558,16 +1526,8 @@ Which country gives students the longest summer holiday?
 Italy
 10
 
-What is the school's mascot in "High School Musical"?
-Wild Cats
-10
-
 Where are cricket's ears located?
 On their legs
-10
-
-What country does "The Jungle Book" take place in?
-India
 10
 
 How many folds are in a chef's hat?
@@ -1631,7 +1591,12 @@ What is the more popular name for the portrait officially titled "La Gioconda," 
 10
 
 What element does the chemical symbol Au stand for?
-Gold
+-- Answer metadata begin
+{
+    "answers": ["Gold"],
+    "answerFact": "The symbol Au comes from the Latin word for gold, 'aurum'"
+}
+-- Answer metadata end
 10
 
 What is the sign directly opposite Scorpio in the zodiac?
@@ -1650,7 +1615,7 @@ How many colors were on the original Pride flag, flown at the San Francisco Gay 
 -- Answer metadata begin
 {
     "answers": ["Eight", "8"],
-	"answerFact": "The pink and turquoise stripes were dropped by 1979 for production reasons"
+    "answerFact": "The pink and turquoise stripes were dropped by 1979 for production reasons"
 }
 -- Answer metadata end
 10
@@ -1660,7 +1625,11 @@ Janie
 10
 
 The shooting of whom, in 1914, started World War I?
-Archduke Franz Ferdinand
+-- Answer metadata begin
+{
+    "answers": ["Franz Ferdinand", "Archduke Franz Ferdinand"]
+}
+-- Answer metadata end
 10
 
 What is the smallest planet in our solar system?
@@ -1696,7 +1665,11 @@ New Delhi
 10
 
 Which two states in the U.S. share the most borders with other states?
-Tennessee and Missouri
+-- Answer metadata begin
+{
+    "answers": ["Tennessee and Missouri", "Missouri and Tennessee", "Tennessee, Missouri", "Missouri, Tennessee", "Tennessee Missouri", "Missouri Tennessee"]
+}
+-- Answer metadata end
 10
 
 At a restaurant, you'll see deer meat on the menu under what name?
@@ -1704,7 +1677,12 @@ Venison
 10
 
 What country has the national language with the longest alphabet?
-Cambodia (their national language, Khmer, has 74 characters!)
+-- Answer metadata begin
+{
+    "answers": ["Cambodia"],
+    "answerFact": "Their national language, Khmer, has 74 characters"
+}
+-- Answer metadata end
 10
 
 What is the pseudonym for the author of the best-selling, four-part book series known as the Neapolitan Novels, now an HBO series?
@@ -1728,7 +1706,11 @@ Sense and Sensibility
 10
 
 Which two countries have the longest shared international border?
-Canada and the US
+-- Answer metadata begin
+{
+    "answers": ["Canada and the US", "US and Canada", "The US and Canada", "Canada, US", "US, Canada", "Canada US", "US Canada", "Canada and the United States", "The United States and Canada", "United States and Canada", "Canada and United States"]
+}
+-- Answer metadata end
 10
 
 What city hosted the 2014 Winter Olympics?
@@ -1739,7 +1721,7 @@ What is the human body's largest organ?
 Skin
 10
 
-What year was the first iPhone released?
+In what year was the first iPhone released?
 2007
 10
 
@@ -1756,11 +1738,19 @@ How many feet are in a yard?
 10
 
 How many bones do sharks have?
-0
+-- Answer metadata begin
+{
+    "answers": ["Zero", "0"]
+}
+-- Answer metadata end
 10
 
 What is the deadliest mammal?
-Hippo
+-- Answer metadata begin
+{
+    "answers": ["Hippo", "Hippopotamus"]
+}
+-- Answer metadata end
 10
 
 What is the deadliest insect?
@@ -1772,7 +1762,12 @@ Argentina
 10
 
 What is the capital of Singapore?
-Singapore (it's an island city-state)
+-- Answer metadata begin
+{
+    "answers": ["Singapore"],
+	"answerFact": "Singapore is an island city-state"
+}
+-- Answer metadata end
 10
 
 What is the word for the weather event also called a winter hurricane?
@@ -1820,7 +1815,11 @@ What is the name for the equinox that occurs on March 20th or 21st of each year?
 10
 
 What's the shortcut for the paste function on most computers?
-Ctrl-V
+-- Answer metadata begin
+{
+    "answers": ["Ctrl-V", "Ctrl+V", "Ctrl V"]
+}
+-- Answer metadata end
 10
 
 What river runs through Paris?
@@ -1936,7 +1935,11 @@ Japan
 10
 
 How many keys are on a modern, standard-sized piano?
-88
+-- Answer metadata begin
+{
+    "answers": ["Eighty-Eight", "88"]
+}
+-- Answer metadata end
 10
 
 Area 51 is located in which U.S. state?
@@ -1944,7 +1947,11 @@ Nevada
 10
 
 What U.S. fast food chain is credited with introducing the first drive-through window to the masses?
-In-N-Out Burger
+-- Answer metadata begin
+{
+    "answers": ["In-N-Out Burger", "In-N-Out"]
+}
+-- Answer metadata end
 10
 
 What temperature (in Fahrenheit degrees) does water boil at?
@@ -1988,11 +1995,19 @@ Roulette
 20
 
 Who said: "I'm the president of the United States and I'm not going to eat any more broccoli"?
-George Bush
+-- Answer metadata begin
+{
+    "answers": ["George HW Bush", "George H.W. Bush", "George Herbert Walker Bush", "George Bush Sr", "George Bush Sr.", "George Bush Senior"]
+}
+-- Answer metadata end
 10
 
 What so-called "war" spawned the dueling slogans "Better Dead Than RED" and "Better Red Than Dead" in the 1950s?
-Cold War
+-- Answer metadata begin
+{
+    "answers": ["Cold War", "The Cold War"]
+}
+-- Answer metadata end
 10
 
 What president was shot while walking to California Governor Jerry Brown's office?
@@ -2024,7 +2039,7 @@ What election year saw bumper stickers reading "Wallace, Wallace, Uber Alles"?
 10
 
 In 1983, what Cowboy's 99-yard run from scrimmage put him in the NFL football record book?
-Tony Dorsett's
+Tony Dorsett
 10
 
 What 20th-century conflict was dubbed the "forgotten war" despite 54,246 U.S. deaths?
