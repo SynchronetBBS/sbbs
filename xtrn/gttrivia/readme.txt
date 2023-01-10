@@ -1,6 +1,6 @@
                                Good Time Trivia
-                                 Version 1.02
-                           Release date: 2022-12-08
+                                 Version 1.03
+                           Release date: 2023-01-05
 
                                      by
 
@@ -150,8 +150,33 @@ of the following files and directories:
 
 
 The trivia category files (in the qa directory, with filenames ending in .qa)
-are plain text files and contain questions, their answers, and their number of
-points.  For eqch question in a category file, there are 3 lines:
+are plain text files.
+Optionally, a QA file may have a section of metadata specified in JSON
+(JavaScript Object Notation) format that can contain some information about the
+question category. The information can have the following properties:
+category_name: The name of the category (if different from simple parsing of
+               the filename)
+ARS: Optional - An ARS security string to restrict access to the question set.
+     This overrides any setting for the question set in the [CATEGORY_ARS]
+	 section in gttrivia.ini.
+
+This JSON must be between two lines:
+-- QA metadata begin
+-- QA metadata end
+
+For example, for a test category you might want to restrict to only the sysop:
+-- QA metadata begin
+{
+    "category_name": "Test category (not meant for use)",
+	"ARS": "SYSOP"
+}
+-- QA metadata end
+
+
+
+The questions and answers inside the QA files contain questions, their answers,
+and their number of points.  For eqch question in a category file, the main
+format is 3 lines:
 Question
 Answer
 Number of points
@@ -161,6 +186,40 @@ in one of the files might be as follows (this is a simple example):
 What color is the sky?
 Blue
 5
+
+Alternately, the answer can be specified via JSON (JavaScript Object Notation)
+with multiple acceptable answers, and optionally a fact about the answer. When
+JSON is specified for the answer, there need to be two text lines to specify
+that the answer is JSON:
+-- Answer metadata begin
+-- Answer metadata end
+
+One example where this can be used is to specify an answer that is a number and
+you want to allow both spelling out the number and the number itself. Also, in
+some cases it can be good to specify the spelled-out version first (if it's
+short) since that will be used for the clue. For example:
+
+How many sides does a square have?
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
+5
+
+
+An example of a question specifying an answer with a fact specified:
+Who's picture is on the US $50 bill?
+-- Answer metadata begin
+{
+    "answers": ["Ulysses Grant", "Ulysses S. Grant", "Ulysses S Grant"],
+	"answerFact": "The US capitol building is on the other side of the $50 bill"
+}
+-- Answer metadata end
+5
+
+NOTE: The questions and answers must be specified in exactly either of the two
+above formats, or else the questions and answers will not be read correctly.
 
 Also, there is a script in the qa directory called converter.js.  This is a
 rough script that can be modified to convert a list of trivia questions into
@@ -304,6 +363,8 @@ scoreSoFarText                    "Your score so far" text
 clueHdr                           Header text for clues
 clue                              Clue text
 answerAfterIncorrect              The answer printed after incorrect response
+answerFact                        Fact displayed after an answer (not all
+                                  questions will have one)
 
 [CATEGORY_ARS] section
 ----------------------

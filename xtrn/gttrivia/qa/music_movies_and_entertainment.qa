@@ -1,3 +1,9 @@
+-- QA metadata begin
+{
+    "category_name": "Music, Movies, & Entertainment"
+}
+-- QA metadata end
+
 Amy Winehouse, Jimi Hendrix and Janis Joplin all belong to what unofficial organization?
 The 27 Club
 10
@@ -43,7 +49,11 @@ Christopher
 10
 
 How old was Taylor Swift when she took home her first Album of the Year Grammy?
-20
+-- Answer metadata begin
+{
+    "answers": ["Twenty", "20"]
+}
+-- Answer metadata end
 10
 
 Starchild, Demon, Spaceman (or Space Ace), and Catman are the on-stage personas of what band?
@@ -51,7 +61,11 @@ KISS
 10
 
 How many members does BTS have?
-7
+-- Answer metadata begin
+{
+    "answers": ["Seven", "7"]
+}
+-- Answer metadata end
 10
 
 What was The Beach Boys' first No. 1 single, out of a total of four?
@@ -91,11 +105,20 @@ Alison Krauss
 10
 
 What is the name of Led Zeppelin's fourth studio album, which includes the song "Stairway to Heaven"?
-It's untitled! Although it's most often referred to as Led Zeppelin IV
+-- Answer metadata begin
+{
+    "answers": ["Untitled", "No title", "It's untitled", "It has no title", "It doesn't have a title"],
+	"answerFact": "Although it has no title, it's most often referred to as Led Zeppelin IV"
+}
+-- Answer metadata end
 10
 
 Ariana Grande started her career at age 15 in what Broadway musical?
-13
+-- Answer metadata begin
+{
+    "answers": ["Thirteen", "13"]
+}
+-- Answer metadata end
 10
 
 What movie is the Oscar-nominated song "Journey to the Past" from?
@@ -123,15 +146,31 @@ Paris is Burning
 10
 
 What was the first feature-length animated movie ever released?
-Snow White and the Seven Dwarves
+-- Answer metadata begin
+{
+    "answers": ["Snow White and the Seven Dwarves", "Snow White and the 7 Dwarves"]
+}
+-- Answer metadata end
 10
 
 What character is played perfectly by Jeff Goldblum in Jurassic Park and significantly less perfectly by Goldblum in The Lost World: Jurassic Park?
 Ian Malcolm
 10
 
+What year was the original "Jurassic Park" movie released?
+1993
+10
+
+Who played park owner John Hammond in Jurassic Park?
+Richard Attenborough
+10
+
 What famous real-life Hollywood couple starred in the film adaptation of Who's Afraid of Virginia Woolf?
-Elizabeth Taylor and Richard Burton
+-- Answer metadata begin
+{
+    "answers": ["Elizabeth Taylor and Richard Burton", "Richard Burton and Elizabeth Taylor", "Elizabeth Taylor, Richard Burton", "Richard Burton, Elizabeth Taylor"]
+}
+-- Answer metadata end
 10
 
 What's the name of the dance number performed toward the beginning of Rocky Horror Picture Show?
@@ -143,7 +182,12 @@ Amity Island
 10
 
 What musical group is the movie Dreamgirls purportedly based on?
-Although the movie is a fictional blend of multiple Motown female-led singing groups, it's thought to most draw on the Supremes
+-- Answer metadata begin
+{
+    "answers": ["The Supremes"],
+	"answerFact": "Although the movie is a fictional blend of multiple Motown female-led singing groups, it's thought to most draw on the Supremes"
+}
+-- Answer metadata end
 10
 
 In Titanic, where is Jack Dawson from?
@@ -163,11 +207,20 @@ Clueless
 10
 
 Who is the only Disney princess to have been inspired by a real person?
-Pocahontas - although given Disney's historical inaccuracies, let's go ahead and call this one capital-L Loosely inspired.
+-- Answer metadata begin
+{
+    "answers": ["Pocahontas"],
+	"answerFact": "Given Disney's historical inaccuracies, this one could be loosely inspired"
+}
+-- Answer metadata end
 10
 
-How many suns does the planet Tatooine, Luke's home, have in Star Wars?
-Two
+How many suns does Luke's home planet Tatooine have in Star Wars?
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 What was the first - and still only - horror movie to win the Oscar for Best Picture?
@@ -183,11 +236,19 @@ The Bates Motel
 10
 
 How many times has the movie A Star is Born been remade?
-Four times
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 Why is Ally Sheedy's character in detention in The Breakfast Club?
-She "didn't have anything better to do."
+-- Answer metadata begin
+{
+    "answers": ["Didn't have anything better to do", "She didn't have anything better to do"]
+}
+-- Answer metadata end
 10
 
 Who was the first Black actress to win an Oscar?
@@ -222,10 +283,6 @@ Who played Mrs. Robinson in The Graduate?
 Anne Bancroft
 10
 
-What was the first feature-length animated movie ever released?
-Snow White and the Seven Dwarfs
-10
-
 In The Matrix, does Neo take the blue pill or the red pill?
 Red
 10
@@ -254,10 +311,6 @@ What pop vocal group performs at the wedding in Bridesmaids?
 Wilson Phillips
 10
 
-What real-life on-again off-again Hollywood power couple starred in the film Who's Afraid of Virginia Woolf?
-Elizabeth Taylor and Richard Burton
-10
-
 What American writer/director starred in several iconic European-produced "Spaghetti Westerns"?
 Clint Eastwood
 10
@@ -265,8 +318,6 @@ Clint Eastwood
 Who played Juror Number 8 in 12 Angry Men?
 Henry Fonda
 10
-
-Related: The 100 Best Movies of All Time, Ranked 
 
 The head of what kind of animal is front-and-center in an infamous scene from The Godfather?
 A horse
@@ -280,15 +331,9 @@ What critically panned 1984 country-musical comedy starring Dolly Parton and Syl
 Rhinestone 
 10
 
-Who played park owner John Hammond in Jurassic Park?
-Richard Attenborough
-10
-
 In what 1976 thriller does Robert De Niro famously say "You talkin' to me?"
 Taxi Driver 
 10
-
-Related: 50 Fun Christmas Trivia Questions (with Answers)
 
 What's the name of the anthemic dance near the beginning of The Rocky Horror Picture Show?
 The Time Warp
@@ -322,8 +367,6 @@ Who played Martin Luther King Jr. in the 2014 biopic Selma?
 David Oyelowo
 10
 
-Related: 100+ Best TV Shows on Netflix Right Now 
-
 Who directed Boris Karloff in the classics Frankenstein and Bride of Frankenstein?
 James Whale
 10
@@ -341,7 +384,11 @@ Bill Murray
 10
 
 In Risky Business, what song did Tom Cruise famously lip-sync to in his underwear?
-Old Time Rock and Roll by Bob Seger
+-- Answer metadata begin
+{
+    "answers": ["Old Time Rock and Roll", "Old Time Rock and Roll by Bob Seger"]
+}
+-- Answer metadata end
 10
 
 Who is the only actor to receive an Oscar nomination for acting in a Lord of the Rings movie?
@@ -388,9 +435,6 @@ The stage play Everybody Comes to Rick's was adapted for the screen to become wh
 Casablanca 
 10
 
-Related: 250 Best Trivia Team Names
-
-movie-trivia
 In what 1979 James Bond movie does the famous spy go to outer space?
 Moonraker 
 10
@@ -412,14 +456,12 @@ The Orca
 10
 
 What's the name of Charlie Chaplin's most famous, recurring character?
-"The Tramp"
+The Tramp
 10
 
 Aaron Sorkin won an Oscar for writing what 2010 drama about the creation of Facebook?
 The Social Network 
 10
-
-Related: 101 Disney Trivia Questions and Answers!
 
 Who played iconic femme fatale Phyllis Dietrichson in classic 1946 film noir Double Indemnity?
 Barbara Stanwyck
@@ -448,8 +490,6 @@ Gladiator
 Who played the "Unsinkable" Molly Brown in Titanic?
 Kathy Bates
 10
-
-Related: Grab the Popcorn! These Are the 14 Best Movie Streaming Sites For At-Home Screenings
 
 In the action thriller Speed, why is Annie (Sandra Bullock)'s driver's license suspended?
 She was speeding
@@ -487,8 +527,6 @@ What was Quentin Tarantino's first feature as writer/director?
 Reservoir Dogs 
 10
 
-Related: We Ranked All Batman Movies, Including The Batman
-
 Which Oscar-winning blonde bombshell played James Stewart's love interest Lisa Carol Fremont in Rear Window?
 Grace Kelly
 10
@@ -512,10 +550,6 @@ Robert Zemeckis
 
 Three of Jim Carrey's blockbusters The Mask, Dumb and Dumber and Ace Ventura: Pet Detective were all released in what year?
 1994
-10
-
-How many suns does Luke's home planet of Tatooine have in Star Wars?
-Two
 10
 
 What movie holds the record for most Oscar wins without winning Best Picture (eight wins total)?
@@ -686,10 +720,12 @@ What is the name of Humperdinck's kingdom in The Princess Bride?
 Florin
 10
 
-Related: Best Psychological Thriller Movies of All Time 
-
 How many screenwriting Oscars has Quentin Tarantino won?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 What actress exited the set of apocalyptic comedy This is the End over objections to appearing in a scene that involved cannibalism?
@@ -768,7 +804,6 @@ Keith Moon and John Entwistle of The Who are said to have inspired the name of w
 Led Zeppelin
 10
 
-Golden Simple World Intellectual Property Day Social Media Graphic (3)
 In The Big Lebowski, The Dude can't stand which band?
 The Eagles
 10
@@ -782,7 +817,7 @@ Peter Gabriel
 10
 
 What was Madonna's first top 10 hit?
-"Holiday"
+Holiday
 10
 
 What rock star moonlights as a horror movie writer and director?
@@ -842,14 +877,16 @@ Dionne Warwick
 10
 
 "The Day the Music Died" refers to the tragic deaths of which artists?
-Buddy Holly, Ritchie Valens and The Big Bopper
+-- Answer metadata begin
+{
+    "answers": ["Buddy Holly, Ritchie Valens, and The Big Bopper", "Ritchie Valens, Buddy Holly, and The Big Bopper", "The Big Bopper, Buddy Holly, and Ritchie Valens", "The Big Bopper, Ritchie Valens, and Bdudy Holly"]
+}
+-- Answer metadata end
 10
 
 What singer is known as "The Vocal Bible?"
 Brandy
 10
-
-Related: Best Rock Bands of All Time
 
 Which classical composer was deaf?
 Ludwig van Beethoven
@@ -900,11 +937,11 @@ Galileo
 10
 
 Which Alanis Morissette song contains the phrase "jagged little pill" (the title of her debut album)?
-"You Learn"
+You Learn
 10
 
 Frank Sinatra changed the lyrics of "The Lady is a Tramp" to "The Lady is a" what?
-"Champ"
+Champ
 10
 
 Who was the first lead guitarist of Metallica?
@@ -912,7 +949,11 @@ Dave Mustaine
 10
 
 The Weekndsamples which '80s megahit in "Blinding Lights?"
-Take On Me by A-ha
+-- Answer metadata begin
+{
+    "answers": ["Take On Me by A-Ha", "Take On Me"]
+}
+-- Answer metadata end
 10
 
 Which Super Bowl Halftime Show performer was upstaged by a dancing shark?
@@ -920,7 +961,11 @@ Katy Perry
 10
 
 How many coaches (full and part-time) from The Voice have won Grammys?
-12
+-- Answer metadata begin
+{
+    "answers": ["Twelve", "12"]
+}
+-- Answer metadata end
 10
 
 What does Lady Gaga affectionately call her fans?
@@ -936,7 +981,11 @@ Joe Alwyn
 10
 
 Cardi Bstarred on what reality show?
-Love & Hip Hop
+-- Answer metadata begin
+{
+    "answers": ["Love & Hip Hop", "Love and Hip Hop", "Love & Hip-Hop", "Love and Hip-Hop"]
+}
+-- Answer metadata end
 10
 
 What iconic Nashville club does Garth Brooks call "the beginning and the mecca, the end"?
@@ -944,7 +993,7 @@ Bluebird Cafe
 10
 
 George Harrison wrote what song for Eric Clapton about his sweet tooth?
-"Savoy Truffle"
+Savoy Truffle
 10
 
 What was the first rap single to hit the Billboard Top 40?
@@ -956,7 +1005,11 @@ Slash
 10
 
 Though made most famous by Ike and Tina Turner, "Proud Mary" was first recorded by whom?
-Creedence Clearwater Revival
+-- Answer metadata begin
+{
+    "answers": ["Creedence Clearwater Revival", "CCR"]
+}
+-- Answer metadata end
 10
 
 Who sang the Spongebob Squarepants theme song for the movie?
@@ -968,7 +1021,11 @@ Miranda Lambert
 10
 
 What languages does Shakira speak?
-English, Spanish, Arabic, French, Italian and Portuguese
+-- Answer metadata begin
+{
+    "answers": ["English, Spanish, Arabic, French, Italian, and Portuguese", "English, Arabic, Spanish, French, Italian, and Portuguese", "English, French, Spanish, Arabic, Italian, and Portuguese"]
+}
+-- Answer metadata end
 10
 
 What one hit wonder act is behind "Barbie Girl?"
@@ -996,11 +1053,19 @@ Dee Snider of Twisted Sister
 10
 
 What was the first music video to ever air on MTV?
-Video Killed the Radio Star by The Buggles
+-- Answer metadata begin
+{
+    "answers": ["Video Killed the Radio Star by The Buggles", "Video Killed the Radio Star"]
+}
+-- Answer metadata end
 10
 
 U2 wrote the song "Stuck in a Moment" about what late frontman?
-Michael Hutchence of INXS
+-- Answer metadata begin
+{
+    "answers": ["Michael Hutchence of INXS", "Michael Hutchence", "INXS frontman Michael Hutchence"]
+}
+-- Answer metadata end
 10
 
 Which member of Kiss wore makeup to look like a cat?
@@ -1024,7 +1089,11 @@ Nikki Sixx
 10
 
 The Wu-Tang Clan recommends protecting which body part?
-Your neck
+-- Answer metadata begin
+{
+    "answers": ["Neck", "Your neck"]
+}
+-- Answer metadata end
 10
 
 What legendary pop group got their name from "Brothers Gibb"?
@@ -1048,7 +1117,11 @@ The Marcy Projects
 10
 
 Members of Wilson Phillips are the daughters of which music legends?
-Brian Wilsonof The Beach Boys and John and Michelle Phillips of The Mamas & The Papas
+-- Answer metadata begin
+{
+    "answers": ["Brian Wilsonof The Beach Boys and John and Michelle Phillips of The Mamas & The Papas", "Brian Wilsonof The Beach Boys and John and Michelle Phillips"]
+}
+-- Answer metadata end
 10
 
 John Mayer wrote a song about which law of physics?
@@ -1104,11 +1177,19 @@ Bernie Taupin
 10
 
 Which Backstreet Boys are first cousins?
-Kevin Richardson and Brian Littrell
+-- Answer metadata begin
+{
+    "answers": ["Kevin Richardson and Brian Littrell", "Brian Littrell and Kevin Richardson"]
+}
+-- Answer metadata end
 10
 
 What do Drake, Taylor Swift and The Beatles have in common?
-They all replaced themselves at No. 1 on the Hot 100
+-- Answer metadata begin
+{
+    "answers": ["Replaced themselves at #1 on the Hot 100", "Replaced themselves at No. 1 on the Hot 100"]
+}
+-- Answer metadata end
 10
 
 What artists recorded two of their bestselling albums while they were behind bars?
@@ -1205,4 +1286,4 @@ David Bowie
 
 What character did Michael J. Fox play in 'Back to the Future'?
 Marty McFly
-10
+5
