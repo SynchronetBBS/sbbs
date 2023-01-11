@@ -27,6 +27,7 @@ Date       Author            Description
 							 acceptable answers (as strings).  It can also optionally have an
 							 "answerFact" property, to specify an interesting fact about
 							 the answer.
+							 Fixed a bug in reading local scores and parsing them.
 */
 
 "use strict";
@@ -53,7 +54,7 @@ if (system.version_num < 31500)
 
 // Version information
 var GAME_VERSION = "1.03";
-var GAME_VER_DATE = "2023-01-05";
+var GAME_VER_DATE = "2023-01-10";
 
 // Determine the location of this script (its startup directory).
 // The code for figuring this out is a trick that was created by Deuce,
@@ -1426,16 +1427,24 @@ function showLocalScores()
 		var scoresFile = new File(SCORES_FILENAME);
 		if (scoresFile.open("r"))
 		{
-			var scoreFileArray = scoresFile.readAll();
+			var scoreFileContents = scoresFile.read(scoresFile.length);
 			scoresFile.close();
-			var scoreFileContents = "";
-			for (var i = 0; i < scoreFileArray.length; ++i)
-				scoreFileContents += (scoreFileArray[i] + "\n");
-			var scoresObj = JSON.parse(scoreFileContents);
-			for (var prop in scoresObj)
+			try
 			{
-				sortedScores.push(new UserScoreObj(prop, scoresObj[prop].total_score, scoresObj[prop].last_score,
-				                              scoresObj[prop].last_trivia_category, scoresObj[prop].last_time));
+				var scoresObj = JSON.parse(scoreFileContents);
+				for (var prop in scoresObj)
+				{
+					sortedScores.push(new UserScoreObj(prop, scoresObj[prop].total_score, scoresObj[prop].last_score,
+												  scoresObj[prop].last_trivia_category, scoresObj[prop].last_time));
+				}
+			}
+			catch (error)
+			{
+				log(LOG_ERR, GAME_NAME + " - Parsing local scores: Line " + error.lineNumber + ": " + error);
+				bbs.log_str(GAME_NAME + " - Parsing local scores scores: Line " + error.lineNumber + ": " + error);
+				console.attributes = "N" + gSettings.colors.error;
+				console.print("* Line: " + error.lineNumber + ": " + error);
+				console.crlf();
 			}
 		}
 		// Sort the array: High total score first
