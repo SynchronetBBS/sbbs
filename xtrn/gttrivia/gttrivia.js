@@ -2002,11 +2002,8 @@ function postGTTriviaScoresToSubBoard(pSubCode)
 	{
 		if (scoresFile.open("r"))
 		{
-			var scoreFileArray = scoresFile.readAll();
+			var scoreFileContents = scoresFile.read(scoresFile.length);
 			scoresFile.close();
-			var scoreFileContents = "";
-			for (var i = 0; i < scoreFileArray.length; ++i)
-				scoreFileContents += (scoreFileArray[i] + "\n");
 			try
 			{
 				scoresForThisBBS[BBS_ID].user_scores = JSON.parse(scoreFileContents);
