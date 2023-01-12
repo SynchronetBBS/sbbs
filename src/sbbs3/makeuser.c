@@ -130,9 +130,9 @@ int main(int argc, char **argv)
 	user.freecdt=scfg.level_freecdtperday[user.level];
 
 	if(scfg.total_fcomps)
-		strcpy(user.tmpext,scfg.fcomp[0]->ext);
+		SAFECOPY(user.tmpext,scfg.fcomp[0]->ext);
 	else
-		strcpy(user.tmpext,"ZIP");
+		SAFECOPY(user.tmpext,"ZIP");
 	for(i=0;i<scfg.total_xedits;i++)
 		if(!stricmp(scfg.xedit[i]->code,scfg.new_xedit))
 			break;
