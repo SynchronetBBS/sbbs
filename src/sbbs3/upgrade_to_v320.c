@@ -346,8 +346,8 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 
 	getrec(userdat,U_LEECH,2,str);
 	user->leech=(uchar)ahtoul(str);
-	getrec(userdat,U_CURSUB,sizeof(user->cursub)-1,user->cursub);
-	getrec(userdat,U_CURDIR,sizeof(user->curdir)-1,user->curdir);
+	getrec(userdat,U_CURSUB,16,user->cursub);
+	getrec(userdat,U_CURDIR,16,user->curdir);
 	getrec(userdat,U_CURXTRN,8,user->curxtrn);
 
 	getrec(userdat,U_FREECDT,LEN31x_CDT,str);
@@ -383,7 +383,7 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 
 	getrec(userdat,U_TMPEXT,3,user->tmpext);
 	if((!user->tmpext[0] || !strcmp(user->tmpext,"0")) && cfg->total_fcomps)
-		strcpy(user->tmpext,cfg->fcomp[0]->ext);  /* For v1x to v2x conversion */
+		SAFECOPY(user->tmpext,cfg->fcomp[0]->ext);  /* For v1x to v2x conversion */
 
 	getrec(userdat,U_CHAT,8,str);
 	user->chat=ahtoul(str);
