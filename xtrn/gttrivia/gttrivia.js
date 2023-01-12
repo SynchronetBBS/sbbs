@@ -54,7 +54,7 @@ if (system.version_num < 31500)
 
 // Version information
 var GAME_VERSION = "1.03";
-var GAME_VER_DATE = "2023-01-10";
+var GAME_VER_DATE = "2023-01-11";
 
 // Determine the location of this script (its startup directory).
 // The code for figuring this out is a trick that was created by Deuce,
@@ -334,7 +334,7 @@ function playTrivia()
 	// Load and parse the section filename into questions, answers, and points
 	var QAArray = parseQAFile(qaFilenameInfo[chosenSectionIdx].filename);
 	shuffle(QAArray);
-	console.print("There are " + QAArray.length + " questions in total.");
+	console.print("There are " + add_commas(QAArray.length, 0) + " questions in total.");
 	console.crlf();
 	// Each element in QAArray is an object with the following properties:
 	// question
@@ -2213,6 +2213,17 @@ function readGTTriviaScoresFromSubBoard(pSubCode)
 	                     subBoardInfoStr, scoreUpdateSucceeded));
 
 	return scoreUpdateSucceeded;
+}
+
+function add_commas(val, pad)
+{
+	var s = val.toString();
+	s = s.replace(/([0-9]+)([0-9]{3})$/,"$1,$2");
+	while (s.search(/[0-9]{4}/)!=-1)
+		s = s.replace(/([0-9]+)([0-9]{3}),/g,"$1,$2,");
+	while (s.length < pad)
+		s = " " + s;
+	return(s);
 }
 
 // Parses command-line arguments.  Returns an object with settings/actions specified.
