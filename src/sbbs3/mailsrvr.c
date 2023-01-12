@@ -6337,8 +6337,8 @@ void mail_server(void* arg)
 				}
 
 				if(protected_uint32_value(active_clients)>=startup->max_clients) {
-					lprintf(LOG_WARNING,"%04d %s !MAXIMUM CLIENTS (%u) reached, access denied (%lu total)"
-						,client_socket, servprot, startup->max_clients, ++stats.connections_refused);
+					lprintf(LOG_WARNING,"%04d %s [%s] !MAXIMUM CLIENTS (%u) reached, access denied (%lu total)"
+						,client_socket, servprot, host_ip, startup->max_clients, ++stats.connections_refused);
 					sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum active clients reached");
 					mswait(3000);
 					mail_close_socket(&client_socket, &session);

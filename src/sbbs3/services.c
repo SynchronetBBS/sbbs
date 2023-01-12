@@ -2292,8 +2292,8 @@ void services_thread(void* arg)
 
 					if(service[i].max_clients && protected_uint32_value(service[i].clients) + 1 > service[i].max_clients) {
 						FREE_AND_NULL(udp_buf);
-						lprintf(LOG_WARNING,"%04d %s !MAXIMUM CLIENTS (%u) reached, access denied"
-							,client_socket, service[i].protocol, service[i].max_clients);
+						lprintf(LOG_WARNING,"%04d %s [%s] !MAXIMUM CLIENTS (%u) reached, access denied"
+							,client_socket, service[i].protocol, host_ip, service[i].max_clients);
 						close_socket(client_socket);
 						continue;
 					}
