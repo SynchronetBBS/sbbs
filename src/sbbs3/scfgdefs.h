@@ -239,7 +239,7 @@ typedef struct {							/* Transfer Protocol information */
 } prot_t;
 
 typedef struct {	                        /* Extractable file types */
-	char		ext[4]; 					/* Extension */
+	char		ext[MAX_FILEEXT_LEN+1]; 	/* Extension */
 	char		arstr[LEN_ARSTR+1],			/* Access Requirements */
 				cmd[LEN_CMD+1]; 			/* Command line */
 	uchar		ar[LEN_ARSTR+1];
@@ -247,7 +247,7 @@ typedef struct {	                        /* Extractable file types */
 } fextr_t;
 
 typedef struct {							/* Compressable file types */
-	char		ext[4]; 					/* Extension */
+	char		ext[MAX_FILEEXT_LEN+1]; 	/* Extension */
 	char		arstr[LEN_ARSTR+1],			/* Access Requirements */
 				cmd[LEN_CMD+1]; 			/* Command line */
 	uchar		ar[LEN_ARSTR+1];
@@ -255,7 +255,7 @@ typedef struct {							/* Compressable file types */
 } fcomp_t;
 
 typedef struct {							/* Viewable file types */
-	char		ext[4]; 					/* Extension */
+	char		ext[MAX_FILEEXT_LEN+1]; 	/* Extension */
 	char		arstr[LEN_ARSTR+1],			/* Access Requirements */
 				cmd[LEN_CMD+1]; 			/* Command line */
 	uchar		ar[LEN_ARSTR+1];
@@ -263,7 +263,7 @@ typedef struct {							/* Viewable file types */
 } fview_t;
 
 typedef struct {							/* Testable file types */
-	char		ext[4]; 					/* Extension */
+	char		ext[MAX_FILEEXT_LEN+1]; 	/* Extension */
 	char		arstr[LEN_ARSTR+1],			/* Access requirement */
 				cmd[LEN_CMD+1], 			/* Command line */
 				workstr[41];				/* String to display while working */
@@ -272,7 +272,7 @@ typedef struct {							/* Testable file types */
 } ftest_t;
 
 typedef struct {							/* Download events */
-	char		ext[4];
+	char		ext[MAX_FILEEXT_LEN+1]; 	/* Extension */
 	char		arstr[LEN_ARSTR+1],			/* Access requirement */
 				cmd[LEN_CMD+1], 			/* Command line */
 				workstr[41];				/* String to display while working */
@@ -325,7 +325,7 @@ typedef struct {							/* QWK Network Hub */
 				call[LEN_CMD+1],			/* Call-out command line to execute */
 				pack[LEN_CMD+1],			/* Packing command line */
 				unpack[LEN_CMD+1];			/* Unpacking command line */
-	char		fmt[4]; 					/* Archive format */
+	char		fmt[MAX_FILEEXT_LEN+1]; 	/* Archive format */
 	uint16_t	time,						/* Time to call-out */
 				node,						/* Node to do the call-out */
 				freq,						/* Frequency of call-outs */

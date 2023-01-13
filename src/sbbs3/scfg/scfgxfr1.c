@@ -329,7 +329,7 @@ void xfer_opts()
 			case __COUNTER__: 	/* Viewable file types */
 				while(1) {
 					for(i=0;i<cfg.total_fviews && i<MAX_OPTS;i++)
-						sprintf(opt[i],"%-3.3s  %-40s",cfg.fview[i]->ext,cfg.fview[i]->cmd);
+						sprintf(opt[i],"%-*s %-40s", MAX_FILEEXT_LEN, cfg.fview[i]->ext, cfg.fview[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_fviews<MAX_OPTS)
@@ -465,7 +465,7 @@ void xfer_opts()
 			case __COUNTER__:    /* Testable file types */
 				while(1) {
 					for(i=0;i<cfg.total_ftests && i<MAX_OPTS;i++)
-						sprintf(opt[i],"%-3.3s  %-40s",cfg.ftest[i]->ext,cfg.ftest[i]->cmd);
+						sprintf(opt[i],"%-*s %-40s", MAX_FILEEXT_LEN, cfg.ftest[i]->ext, cfg.ftest[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_ftests<MAX_OPTS)
@@ -599,7 +599,7 @@ void xfer_opts()
 			case __COUNTER__:    /* Download Events */
 				while(1) {
 					for(i=0;i<cfg.total_dlevents && i<MAX_OPTS;i++)
-						sprintf(opt[i],"%-3.3s  %-40s",cfg.dlevent[i]->ext,cfg.dlevent[i]->cmd);
+						sprintf(opt[i],"%-*s %-40s", MAX_FILEEXT_LEN, cfg.dlevent[i]->ext, cfg.dlevent[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_dlevents<MAX_OPTS)
@@ -747,8 +747,8 @@ void xfer_opts()
 			case __COUNTER__:	 /* Extractable file types */
 				while(1) {
 					for(i=0;i<cfg.total_fextrs && i<MAX_OPTS;i++)
-						sprintf(opt[i],"%-3.3s  %-40s"
-							,cfg.fextr[i]->ext,cfg.fextr[i]->cmd);
+						sprintf(opt[i],"%-*s %-40s"
+							,MAX_FILEEXT_LEN, cfg.fextr[i]->ext, cfg.fextr[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;  /* save cause size can change */
 					if(cfg.total_fextrs<MAX_OPTS)
@@ -882,7 +882,7 @@ void xfer_opts()
 			case __COUNTER__:	 /* Compressible file types */
 				while(1) {
 					for(i=0;i<cfg.total_fcomps && i<MAX_OPTS;i++)
-						sprintf(opt[i],"%-3.3s  %-40s",cfg.fcomp[i]->ext,cfg.fcomp[i]->cmd);
+						sprintf(opt[i],"%-*s %-40s",MAX_FILEEXT_LEN, cfg.fcomp[i]->ext, cfg.fcomp[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_fcomps<MAX_OPTS)
