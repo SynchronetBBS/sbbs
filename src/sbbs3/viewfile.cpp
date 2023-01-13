@@ -97,18 +97,13 @@ bool sbbs_t::viewfile(const char* inpath)
 		bputs(text[FileNotFound]);
 		return false; 
 	}
-	char* file_ext = getfext(path);
-	if(file_ext == NULL) {
-		bprintf(text[NonviewableFile], getfname(path));
-		return false;
-	}
 	for(i=0;i<cfg.total_fviews;i++)
-		if(wildmatchi(file_ext + 1, cfg.fview[i]->ext, /* path: */false) && chk_ar(cfg.fview[i]->ar,&useron,&client)) {
+		if(file_type_match(path, cfg.fview[i]->ext) && chk_ar(cfg.fview[i]->ar,&useron,&client)) {
 			SAFECOPY(viewcmd,cfg.fview[i]->cmd);
 			break;
 		}
 	if(i >= cfg.total_fviews) {
-		bprintf(text[NonviewableFile], file_ext);
+		bprintf(text[NonviewableFile], getfname(path));
 		return false;
 	}
 	if((i=external(cmdstr(viewcmd, path, path, NULL), EX_STDIO|EX_SH))!=0) {
