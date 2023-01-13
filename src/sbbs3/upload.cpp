@@ -53,9 +53,8 @@ bool sbbs_t::uploadfile(file_t* f)
 		return false;
 	}
 	f->hdr.when_written.time = (uint32_t)fdate(path);
-	char* fext = getfext(f->name);
 	for(i=0;i<cfg.total_ftests;i++)
-		if(cfg.ftest[i]->ext[0]=='*' || (fext != NULL && stricmp(fext + 1, cfg.ftest[i]->ext) == 0)) {
+		if(file_type_match(f->name, cfg.ftest[i]->ext)) {
 			if(!chk_ar(cfg.ftest[i]->ar,&useron,&client))
 				continue;
 			attr(LIGHTGRAY);
