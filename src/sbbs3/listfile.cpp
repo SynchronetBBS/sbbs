@@ -1019,16 +1019,13 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 						}
 						CRLF; 
 					}
-					const char* file_ext = getfext(f->name);
-					if(file_ext != NULL) {
-						for(j=0; j<cfg.total_dlevents; j++) {
-							if(!stricmp(cfg.dlevent[j]->ext, file_ext + 1)
-								&& chk_ar(cfg.dlevent[j]->ar,&useron,&client)) {
-								bputs(cfg.dlevent[j]->workstr);
-								external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr,NULL)
-									,EX_OUTL);
-								clearline(); 
-							}
+					for(j=0; j<cfg.total_dlevents; j++) {
+						if(file_type_match(f->name, cfg.dlevent[j]->ext)
+							&& chk_ar(cfg.dlevent[j]->ar,&useron,&client)) {
+							bputs(cfg.dlevent[j]->workstr);
+							external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr,NULL)
+								,EX_OUTL);
+							clearline();
 						}
 					}
 					action = NODE_DLNG;

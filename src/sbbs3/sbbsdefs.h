@@ -50,6 +50,7 @@
 #define FNOPEN_BUF_SIZE		(2*1024)
 
 #define MAX_FILENAME_LEN		64
+#define MAX_FILEEXT_LEN			15
 #define ILLEGAL_FILENAME_CHARS	"\\/|<>:\";,%?*"
 #define SAFEST_FILENAME_CHARS	"-._0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
@@ -925,7 +926,7 @@ typedef struct {						/* Users information */
 			phone[LEN_PHONE+1],			/* Phone number xxx-xxx-xxxx format */
 			modem[LEN_MODEM+1],			/* Modem type - 8 chars max */
 			netmail[LEN_NETMAIL+1], 	/* NetMail forwarding address */
-			tmpext[4],					/* QWK Packet extension */
+			tmpext[MAX_FILEEXT_LEN+1],	/* QWK Packet / Temp file type */
 			comment[LEN_COMMENT+1], 	/* Private comment about user */
 			cursub[LEN_EXTCODE+1],		/* Current sub-board internal code */
 			curdir[LEN_EXTCODE+1],		/* Current directory internal code */

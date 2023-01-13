@@ -77,6 +77,7 @@ DLLEXPORT long			extract_files_from_archive(const char* archive, const char* out
 						                           ,bool with_path, bool overwrite, long max_files, str_list_t file_list, char* error, size_t);
 DLLEXPORT int			archive_type(const char* archive, char* str, size_t size);
 extern const char*		supported_archive_formats[];
+DLLEXPORT bool			file_type_match(const char* filename, const char* type);
 
 /* Batch file transfer queues */
 DLLEXPORT char*			batch_list_name(scfg_t* , uint usernumber, enum XFER_TYPE, char* fname, size_t);

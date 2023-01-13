@@ -798,6 +798,13 @@ int archive_type(const char* archive, char* str, size_t size)
 	return result;
 }
 
+bool file_type_match(const char* filename, const char* type)
+{
+	char filespec[MAX_PATH + 1];
+	SAFEPRINTF(filespec, "*.%s", type);
+	return wildmatch(filename, filespec, /* path: */false, /* case-sensitive: */false);
+}
+
 str_list_t directory(const char* path)
 {
 	int			flags = GLOB_MARK;
@@ -1058,13 +1065,8 @@ bool extract_diz(scfg_t* cfg, file_t* f, str_list_t diz_fnames, char* path, size
 		}
 	}
 
-	char* fext = getfext(f->name);
-
-	if(fext == NULL)
-		return false;
-
 	for(i = 0; i < cfg->total_fextrs; i++)
-		if(stricmp(cfg->fextr[i]->ext, fext + 1) == 0 && chk_ar(cfg, cfg->fextr[i]->ar, /* user: */NULL, /* client: */NULL))
+		if(file_type_match(f->name, cfg->fextr[i]->ext) && chk_ar(cfg, cfg->fextr[i]->ar, /* user: */NULL, /* client: */NULL))
 			break;
 	if(i >= cfg->total_fextrs)
 		return false;
