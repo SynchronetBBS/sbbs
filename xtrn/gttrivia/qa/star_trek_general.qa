@@ -246,8 +246,12 @@ What type of fish does Captain Picard keep in his ready room?
 Lionfish
 10
 
-Which of the following characters was trapped in a transporter buffer for 75 years?
-Montgomery Scott
+Which Star Trek character was trapped in a transporter buffer for 75 years?
+-- Answer metadata begin
+{
+    "answers": ["Montgomery Scott", "Scotty"]
+}
+-- Answer metadata end
 10
 
 What is Mr. Chekhov's first name?
@@ -631,7 +635,7 @@ What were the name for the people that inhabited the water world?
 Monean
 10
 
-What was the name of the device used to circumvent the memories of the Voyager crew in the episode 'The Killing Game'
+What was the name of the device used to circumvent the memories of the Voyager crew in the episode 'The Killing Game'?
 Neural Interface
 10
 

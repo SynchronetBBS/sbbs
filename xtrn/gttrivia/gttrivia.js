@@ -27,7 +27,8 @@ Date       Author            Description
 							 acceptable answers (as strings).  It can also optionally have an
 							 "answerFact" property, to specify an interesting fact about
 							 the answer.
-							 Fixed a bug in reading local scores and parsing them.
+							 Fixed a bug in reading local scores and parsing them, which
+							 affected saving local scores and showing local scores.
 */
 
 "use strict";
@@ -54,7 +55,7 @@ if (system.version_num < 31500)
 
 // Version information
 var GAME_VERSION = "1.03";
-var GAME_VER_DATE = "2023-01-11";
+var GAME_VER_DATE = "2023-01-13";
 
 // Determine the location of this script (its startup directory).
 // The code for figuring this out is a trick that was created by Deuce,
@@ -1218,11 +1219,8 @@ function updateScoresFile(pUserCurrentGameScore, pLastSectionName)
 	{
 		if (scoresFile.open("r"))
 		{
-			var scoreFileArray = scoresFile.readAll();
+			var scoreFileContents = scoresFile.read(scoresFile.length);
 			scoresFile.close();
-			var scoreFileContents = "";
-			for (var i = 0; i < scoreFileArray.length; ++i)
-				scoreFileContents += (scoreFileArray[i] + "\n");
 			try
 			{
 				scoresObj = JSON.parse(scoreFileContents);
