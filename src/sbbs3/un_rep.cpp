@@ -85,8 +85,10 @@ bool sbbs_t::unpack_rep(char* repfile)
 		for(k=0;k<cfg.total_fextrs;k++)
 			if(!stricmp(cfg.fextr[k]->ext,useron.tmpext) && chk_ar(cfg.fextr[k]->ar,&useron,&client))
 				break;
-		if(k>=cfg.total_fextrs)
-			k=0;
+		if(k>=cfg.total_fextrs) {
+			lprintf(LOG_WARNING, "No extractable file type matching user's REP packet type: %s", useron.tmpext);
+			return false;
+		}
 		ex=EX_STDOUT;
 		if(online!=ON_REMOTE)
 			ex|=EX_OFFLINE;

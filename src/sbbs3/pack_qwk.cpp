@@ -87,8 +87,10 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
 					&& chk_ar(cfg.fextr[k]->ar,&useron,&client))
 					break;
-			if(k>=cfg.total_fextrs)
-				k=0;
+			if(k>=cfg.total_fextrs) {
+				lprintf(LOG_WARNING, "No extractable file type matching user's QWK packet type: %s", useron.tmpext);
+				return false;
+			}
 			p=cmdstr(cfg.fextr[k]->cmd,str,ALLFILES,NULL);
 			if((i=external(p,ex))==0)
 				preqwk=1; 
