@@ -17,18 +17,20 @@ Date       Author            Description
                              contacted.
 2023-01-03 Eric Oulashin     Version 1.03 beta
                              Started working on allowing Q&A files to have a section of JSON
-							 metadata, and also for its answers to possibly be a section of
-							 JSON containing multiple possible answers. JSON metadata in
-							 a QA file may have the following properties (all optional):
-							 category_name: The name of the category
-							 ARS: An ARS string that can restrict usage of the category
-							 "-- Answer metadata begin"/"-- Answer metadata end" sections
-							 need to have an "answers" property, which is an array of
-							 acceptable answers (as strings).  It can also optionally have an
-							 "answerFact" property, to specify an interesting fact about
-							 the answer.
-							 Fixed a bug in reading local scores and parsing them, which
-							 affected saving local scores and showing local scores.
+                             metadata, and also for its answers to possibly be a section of
+                             JSON containing multiple possible answers. JSON metadata in
+                             a QA file may have the following properties (all optional):
+                             category_name: The name of the category
+                             ARS: An ARS string that can restrict usage of the category
+                             "-- Answer metadata begin"/"-- Answer metadata end" sections
+                             need to have an "answers" property, which is an array of
+                             acceptable answers (as strings).  It can also optionally have an
+                             "answerFact" property, to specify an interesting fact about
+                             the answer.
+                             Fixed a bug in reading local scores and parsing them, which
+                             affected saving local scores and showing local scores.
+2023-01-14 Eric Oulashin     Version 1.03
+                             Releasing this version
 */
 
 "use strict";
@@ -55,7 +57,7 @@ if (system.version_num < 31500)
 
 // Version information
 var GAME_VERSION = "1.03";
-var GAME_VER_DATE = "2023-01-13";
+var GAME_VER_DATE = "2023-01-14";
 
 // Determine the location of this script (its startup directory).
 // The code for figuring this out is a trick that was created by Deuce,
