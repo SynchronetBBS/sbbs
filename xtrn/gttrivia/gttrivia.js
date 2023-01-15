@@ -14,9 +14,24 @@ Date       Author            Description
 2022-12-08 Eric Oulashin     Version 1.02
                              The game can now post scores in (networked) message sub-boards as
                              a backup to using a JSON DB server in case the server can't be
-                             contacted.							 
+                             contacted.
+2023-01-03 Eric Oulashin     Version 1.03 beta
+                             Started working on allowing Q&A files to have a section of JSON
+                             metadata, and also for its answers to possibly be a section of
+                             JSON containing multiple possible answers. JSON metadata in
+                             a QA file may have the following properties (all optional):
+                             category_name: The name of the category
+                             ARS: An ARS string that can restrict usage of the category
+                             "-- Answer metadata begin"/"-- Answer metadata end" sections
+                             need to have an "answers" property, which is an array of
+                             acceptable answers (as strings).  It can also optionally have an
+                             "answerFact" property, to specify an interesting fact about
+                             the answer.
+                             Fixed a bug in reading local scores and parsing them, which
+                             affected saving local scores and showing local scores.
+2023-01-14 Eric Oulashin     Version 1.03
+                             Releasing this version
 */
-
 
 "use strict";
 
@@ -41,8 +56,8 @@ if (system.version_num < 31500)
 }
 
 // Version information
-var GAME_VERSION = "1.02";
-var GAME_VER_DATE = "2022-12-08";
+var GAME_VERSION = "1.03";
+var GAME_VER_DATE = "2023-01-14";
 
 // Determine the location of this script (its startup directory).
 // The code for figuring this out is a trick that was created by Deuce,
@@ -259,7 +274,7 @@ while (continueOn)
 
 
 console.print("\x01n\x01cReturning to \x01y\x01h" + system.name + "\x01n\x01c...\x01n");
-mswait(1000);
+mswait(500);
 // End of script execution.
 
 
@@ -320,15 +335,15 @@ function playTrivia()
 	console.crlf();
 
 	// Load and parse the section filename into questions, answers, and points
-	var QAArray = parseQAFilename(qaFilenameInfo[chosenSectionIdx].filename);
+	var QAArray = parseQAFile(qaFilenameInfo[chosenSectionIdx].filename);
 	shuffle(QAArray);
-	console.print("There are " + QAArray.length + " questions in total.");
+	console.print("There are " + add_commas(QAArray.length, 0) + " questions in total.");
 	console.crlf();
 	// Each element in QAArray is an object with the following properties:
 	// question
 	// answer
 	// numPoints
-	console.print("\x01n\x01gWill ask \x01h" + gSettings.behavior.numQuestionsPerPlay + "\x01n\x01g questions.\x01n");
+	console.print("\x01n\x01gWill ask up to \x01h" + gSettings.behavior.numQuestionsPerPlay + "\x01n\x01g questions.\x01n");
 	console.crlf();
 	console.print("\x01n\x01gYou can answer \x01hQ\x01n\x01g at any time to quit.\x01n");
 	console.crlf();
@@ -368,7 +383,12 @@ function playTrivia()
 				console.print("Clue:");
 				console.crlf();
 				console.attributes = "N" + gSettings.colors.clue;
-				console.print(partiallyHiddenStr(QAArray[i].answer, tryI-1) + "\x01n");
+				var clueAnswer = "";
+				if (typeof(QAArray[i].answer) === "string")
+					clueAnswer = QAArray[i].answer;
+				else if (Array.isArray(QAArray[i].answer))
+					clueAnswer = QAArray[i].answer[0];
+				console.print(partiallyHiddenStr(clueAnswer, tryI-1) + "\x01n");
 				console.crlf();
 			}
 			// Prompt for an answer
@@ -410,8 +430,22 @@ function playTrivia()
 			console.print("The answer was:");
 			console.crlf();
 			console.attributes = "N";
-			printWithWordWrap(answerWhenIncorrectColor, QAArray[i].answer);
+			var theCorrectAnswer = "";
+			if (typeof(QAArray[i].answer) === "string")
+				theCorrectAnswer = QAArray[i].answer;
+			else if (Array.isArray(QAArray[i].answer))
+				theCorrectAnswer = QAArray[i].answer[0];
+			printWithWordWrap(answerWhenIncorrectColor, theCorrectAnswer);
 			console.attributes = "N";
+		}
+		if (QAArray[i].hasOwnProperty("answerFact") && typeof(QAArray[i].answerFact) === "string" && QAArray[i].answerFact.length > 0)
+		{
+			console.crlf();
+			console.attributes = "N" + gSettings.colors.questionHdr;
+			console.print("Fact:");
+			console.crlf();
+			printWithWordWrap(attrCodeStr("N" + gSettings.colors.answerFact), QAArray[i].answerFact, true);
+			console.crlf();
 		}
 
 		// Print the user's score so far
@@ -733,15 +767,75 @@ function getQACategoriesAndFilenames()
 	{
 		// Get the section name - Start by removing the .qa filename extension
 		var filenameExtension = file_getext(QAFilenames[i]);
+		// sectionName is the filename without the extension, but the section name can also be specified by
+		// JSON metadata in the Q&A file
 		var sectionName = file_getname(QAFilenames[i]);
 		var charIdx = sectionName.lastIndexOf(".");
 		if (charIdx > -1)
 			sectionName = sectionName.substring(0, charIdx);
-		// Currently, sectionName is the filename without the extension.
+
+		// Open the file to see if it has a JSON metadata section specifying a section name, etc.
+		// Note: If its metadata has an "ars" setting, then we'll use that instead of
+		// any ARS setting that may be in gttrivia.ini for this section.
+		var sectionARS = null;
+		var QAFile = new File(QAFilenames[i]);
+		if (QAFile.open("r"))
+		{
+			var fileMetadataStr = "";
+			var readingFileMetadata = false;
+			var haveSeenAllFileMetadata = false;
+			while (!QAFile.eof && !haveSeenAllFileMetadata)
+			{
+				var fileLine = QAFile.readln(2048);
+				// I've seen some cases where readln() doesn't return a string
+				if (typeof(fileLine) !== "string")
+					continue;
+				fileLine = fileLine.trim();
+				if (fileLine.length == 0)
+					continue;
+
+				//-- QA metadata begin" and "-- QA metadata end"
+				if (fileLine === "-- QA metadata begin")
+				{
+					fileMetadataStr = "";
+					readingFileMetadata = true;
+					continue;
+				}
+				else if (fileLine === "-- QA metadata end")
+				{
+					readingFileMetadata = false;
+					haveSeenAllFileMetadata = true;
+					continue;
+				}
+				else if (readingFileMetadata)
+					fileMetadataStr += fileLine + " ";
+			}
+			QAFile.close();
+
+			// If we've read all the file metadata lines, then parse it & use the metadata.
+			if (haveSeenAllFileMetadata && fileMetadataStr.length > 0)
+			{
+				try
+				{
+					var fileMetadataObj = JSON.parse(fileMetadataStr);
+					if (typeof(fileMetadataObj) === "object")
+					{
+						if (fileMetadataObj.hasOwnProperty("category_name") && typeof(fileMetadataObj.category_name) === "string")
+							sectionName = fileMetadataObj.category_name;
+						if (fileMetadataObj.hasOwnProperty("ARS") && typeof(fileMetadataObj.ARS) === "string")
+							sectionARS = fileMetadataObj.ARS;
+					}
+				}
+				catch (error) {}
+			}
+		}
+
 		// See if there is an ARS string for this in the configuration, and if so,
 		// only add it if the ARS string passes for the user.
 		var addThisSection = true;
-		if (gSettings.category_ars.hasOwnProperty(sectionName))
+		if (typeof(sectionARS) === "string")
+			addThisSection = bbs.compare_ars(sectionARS);
+		else if (gSettings.category_ars.hasOwnProperty(sectionName))
 			addThisSection = bbs.compare_ars(gSettings.category_ars[sectionName]);
 		// Add this section/category, if allowed
 		if (addThisSection)
@@ -760,13 +854,16 @@ function getQACategoriesAndFilenames()
 	return sectionsAndFilenames;
 }
 
-// Parses a Q&A filename
+// Parses a Q&A file with questions and answers
+//
+// Parameters:
+//  pQAFilenameFullPath: The full path & filename of the trivia Q&A file to read
 //
 // Return value: An array of objects containing the following properties:
 //               question: The trivia question
 //               answer: The answer to the trivia question
 //               numPoints: The number of points to award for the correct answer
-function parseQAFilename(pQAFilenameFullPath)
+function parseQAFile(pQAFilenameFullPath)
 {
 	if (!file_exists(pQAFilenameFullPath))
 		return [];
@@ -777,9 +874,14 @@ function parseQAFilename(pQAFilenameFullPath)
 	var QAFile = new File(pQAFilenameFullPath);
 	if (QAFile.open("r"))
 	{
+		var inFileMetadata = false; // Whether or not we're in the file metadata question (we'll skip all of this for the questions & answers)
 		var theQuestion = "";
 		var theAnswer = "";
 		var theNumPoints = -1;
+		var readingAnswerMetadata = false;
+		var doneReadintAnswerMetadata = false; // For immediately after done reading answer JSON
+		var answerIsJSON = false;
+		var component = "Q"; // Q/A/P for question, answer, points
 		while (!QAFile.eof)
 		{
 			var fileLine = QAFile.readln(2048);
@@ -790,23 +892,69 @@ function parseQAFilename(pQAFilenameFullPath)
 			if (fileLine.length == 0)
 				continue;
 
+			// Skip any file metadata lines (those are read in getQACategoriesAndFilenames())
+			if (fileLine === "-- QA metadata begin")
+			{
+				inFileMetadata = true;
+				continue;
+			}
+			else if (fileLine === "-- QA metadata end")
+			{
+				inFileMetadata = false;
+				continue;
+			}
+			if (inFileMetadata)
+				continue;
+
 			if (theQuestion.length > 0 && theAnswer.length > 0 && theNumPoints > -1)
 			{
-				QA_Array.push(new QA(theQuestion, theAnswer, +theNumPoints));
+				addQAToArray(QA_Array, theQuestion, theAnswer, theNumPoints, answerIsJSON);
 				theQuestion = "";
 				theAnswer = "";
 				theNumPoints = -1;
+				readingAnswerMetadata = false;
+				doneReadintAnswerMetadata = false;
+				answerIsJSON = false;
+				component = "Q";
 			}
 
-			if (theQuestion.length == 0)
+			if (component === "Q")
+			{
 				theQuestion = fileLine;
-			else if (theAnswer.length == 0)
-				theAnswer = fileLine;
-			else if (theNumPoints < 1)
+				component = "A"; // Next, set answer
+			}
+			else if (component === "A")
+			{
+				// Possible JSON for multiple answers
+				if (fileLine === "-- Answer metadata begin")
+				{
+					readingAnswerMetadata = true;
+					answerIsJSON = true;
+					theAnswer = "";
+					continue;
+				}
+				else if (fileLine === "-- Answer metadata end")
+				{
+					readingAnswerMetadata = false;
+					doneReadintAnswerMetadata = true;
+				}
+				if (readingAnswerMetadata)
+					theAnswer += fileLine + " ";
+				else
+				{
+					if (doneReadintAnswerMetadata)
+						doneReadintAnswerMetadata = false;
+					else
+						theAnswer = fileLine;
+					component = "P"; // Next, set points
+				}
+			}
+			else if (component === "P")
 			{
 				theNumPoints = +(fileLine);
 				if (theNumPoints < 1)
 					theNumPoints = 10;
+				component = "Q"; // Next, set question
 			}
 
 			// Older: Each line in the format question,answer,numPoints
@@ -829,18 +977,71 @@ function parseQAFilename(pQAFilenameFullPath)
 		QAFile.close();
 		// Ensure we've added the last question & answer, if there is one
 		if (theQuestion.length > 0 && theAnswer.length > 0 && theNumPoints > -1)
-			QA_Array.push(new QA(theQuestion, theAnswer, +theNumPoints));
+			addQAToArray(QA_Array, theQuestion, theAnswer, theNumPoints, answerIsJSON);
 	}
 	return QA_Array;
 }
 // QA object constructor
-function QA(pQuestion, pAnswer, pNumPoints)
+function QA(pQuestion, pAnswer, pNumPoints, pAnswerFact)
 {
 	this.question = pQuestion;
 	this.answer = pAnswer;
 	this.numPoints = pNumPoints;
 	if (this.numPoints < 1)
 		this.numPoints = 10;
+	if (typeof(pAnswerFact) === "string" && pAnswerFact.length > 0)
+		this.answerFact = pAnswerFact;
+}
+// Helper for parseQAFile(): Adds a question, answer, and # points to the Q&A array
+//
+// Parameters:
+//  QA_Array (INOUT): The array to add the Q/A/Point sets to
+//  theQuestion: The question (string)
+//  theAnswer: The answer (string)
+//  theNumPoints: The number of points to award (number)
+//  answerIsJSON: Boolean - Whether or not theAnswer is in JSON format or not (if JSON, it contains
+//                multiple possible answers)
+function addQAToArray(QA_Array, theQuestion, theAnswer, theNumPoints, answerIsJSON)
+{
+	// If the answer is a JSON object, then there may be multiple acceptable answers specified
+	var addAnswer = true;
+	var answerFact = null;
+	if (answerIsJSON)
+	{
+		try
+		{
+			var answerObj = JSON.parse(theAnswer);
+			if (typeof(answerObj) === "object")
+			{
+				if (answerObj.hasOwnProperty("answers") && Array.isArray(answerObj.answers) && answerObj.answers.length > 0)
+				{
+					// Make sure all answers in the array are non-zero length
+					theAnswer = [];
+					for (var i = 0; i < answerObj.answers.length; ++i)
+					{
+						if (answerObj.answers[i].length > 0)
+							theAnswer.push(answerObj.answers[i]);
+					}
+					// theAnswer is an array
+					addAnswer = (theAnswer.length > 0);
+				}
+				else if (answerObj.hasOwnProperty("answer") && typeof(answerObj.answer) === "string" && answerObj.answer.length > 0)
+					theAnswer = answerObj.answer;
+				else
+					addAnswer = false;
+				if (answerObj.hasOwnProperty("answerFact") && answerObj.answerFact.length > 0)
+					answerFact = answerObj.answerFact;
+			}
+			else
+				addAnswer = false;
+		}
+		catch (error)
+		{
+			addAnswer = false;
+		}
+	}
+	if (addAnswer) // Note: theAnswer is converted to an object if it's JSON
+		QA_Array.push(new QA(theQuestion, theAnswer, +theNumPoints, answerFact));
 }
 
 // Shuffles an array
@@ -871,6 +1072,11 @@ function shuffle(pArray)
 // Match is case-insensitive.  If it's a 1-word answer, then it should match exactly.  Otherwise,
 // a Levenshtein distance is used.
 //
+// Properties:
+//  pAnswer: The answer to the question. This can either be a string (for a single answer) or an array of
+//           strings (if multiple answers are acceptable)
+//  pUserInput: The user's response to the question (string)
+//
 // Return value: An object with the following properties:
 //               userChoseQuit: Boolean: Whether or not the user chose to quit
 //               userInputMatchedAnswer: Boolean: Whether or not the user's answer matches the given answer to the question
@@ -881,14 +1087,13 @@ function checkUserResponse(pAnswer, pUserInput)
 		userInputMatchedAnswer: false
 	};
 
-	if (typeof(pAnswer) !== "string" || typeof(pUserInput) !== "string")
+	// pAnswer should be a string or an array, and pUserInput should be a string
+	if (!(typeof(pAnswer) === "string" || Array.isArray(pAnswer))|| typeof(pUserInput) !== "string")
 		return retObj;
 	if (pUserInput.length == 0)
 		return retObj;
 
-	// Convert both to uppercase for case-insensitive matching
-	var answerUpper = pAnswer.toUpperCase();
-	var userInputUpper = pUserInput.toUpperCase();
+	var userInputUpper = pUserInput.toUpperCase(); // For case-insensitive matching
 	
 	if (userInputUpper == "Q")
 	{
@@ -896,23 +1101,41 @@ function checkUserResponse(pAnswer, pUserInput)
 		return retObj;
 	}
 
-	// If there are spaces in the answer, then do a Levenshtein comparison.  Otherwise,
-	// do an exact match.
-	if (answerUpper.indexOf(" ") > -1)
+	// In case there are multiple acceptable answers, make an array (or copy it) so
+	// we can check the user's response against all acceptable answers
+	var acceptableAnswers = null;
+	if (typeof(pAnswer) === "string")
+		acceptableAnswers = [ pAnswer.toUpperCase() ];
+	else if (Array.isArray(pAnswer))
 	{
-		var levDist = levenshteinDistance(answerUpper, userInputUpper);
-		retObj.userInputMatchedAnswer = (levDist <= MAX_LEVENSHTEIN_DISTANCE);
+		acceptableAnswers = [];
+		for (var i = 0; i < pAnswer.length; ++i)
+			acceptableAnswers.push(pAnswer[i].toUpperCase());
 	}
 	else
+		return retObj; // pAnswer isn't valid here, so just return with a 'false' response
+	// Check the user's response against the acceptable answers
+	for (var i = 0; i < acceptableAnswers.length && !retObj.userInputMatchedAnswer; ++i)
 	{
-		// There are no spaces in the answer.  If the answer is 12 or shorter, use an exact match;
-		// otherwise, use a Levenshtein distance.
-		if (answerUpper.length <= 12)
-			retObj.userInputMatchedAnswer = (userInputUpper == answerUpper);
-		else
+		var answerUpper = acceptableAnswers[i].toUpperCase();
+		// If there are spaces in the answer, then do a Levenshtein comparison.  Otherwise,
+		// do an exact match.
+		if (answerUpper.indexOf(" ") > -1)
 		{
 			var levDist = levenshteinDistance(answerUpper, userInputUpper);
 			retObj.userInputMatchedAnswer = (levDist <= MAX_LEVENSHTEIN_DISTANCE);
+		}
+		else
+		{
+			// There are no spaces in the answer.  If the answer is 12 or shorter, use an exact match;
+			// otherwise, use a Levenshtein distance.
+			if (answerUpper.length <= 12)
+				retObj.userInputMatchedAnswer = (userInputUpper == answerUpper);
+			else
+			{
+				var levDist = levenshteinDistance(answerUpper, userInputUpper);
+				retObj.userInputMatchedAnswer = (levDist <= MAX_LEVENSHTEIN_DISTANCE);
+			}
 		}
 	}
 
@@ -998,11 +1221,8 @@ function updateScoresFile(pUserCurrentGameScore, pLastSectionName)
 	{
 		if (scoresFile.open("r"))
 		{
-			var scoreFileArray = scoresFile.readAll();
+			var scoreFileContents = scoresFile.read(scoresFile.length);
 			scoresFile.close();
-			var scoreFileContents = "";
-			for (var i = 0; i < scoreFileArray.length; ++i)
-				scoreFileContents += (scoreFileArray[i] + "\n");
 			try
 			{
 				scoresObj = JSON.parse(scoreFileContents);
@@ -1207,16 +1427,24 @@ function showLocalScores()
 		var scoresFile = new File(SCORES_FILENAME);
 		if (scoresFile.open("r"))
 		{
-			var scoreFileArray = scoresFile.readAll();
+			var scoreFileContents = scoresFile.read(scoresFile.length);
 			scoresFile.close();
-			var scoreFileContents = "";
-			for (var i = 0; i < scoreFileArray.length; ++i)
-				scoreFileContents += (scoreFileArray[i] + "\n");
-			var scoresObj = JSON.parse(scoreFileContents);
-			for (var prop in scoresObj)
+			try
 			{
-				sortedScores.push(new UserScoreObj(prop, scoresObj[prop].total_score, scoresObj[prop].last_score,
-				                              scoresObj[prop].last_trivia_category, scoresObj[prop].last_time));
+				var scoresObj = JSON.parse(scoreFileContents);
+				for (var prop in scoresObj)
+				{
+					sortedScores.push(new UserScoreObj(prop, scoresObj[prop].total_score, scoresObj[prop].last_score,
+												  scoresObj[prop].last_trivia_category, scoresObj[prop].last_time));
+				}
+			}
+			catch (error)
+			{
+				log(LOG_ERR, GAME_NAME + " - Parsing local scores: Line " + error.lineNumber + ": " + error);
+				bbs.log_str(GAME_NAME + " - Parsing local scores scores: Line " + error.lineNumber + ": " + error);
+				console.attributes = "N" + gSettings.colors.error;
+				console.print("* Line: " + error.lineNumber + ": " + error);
+				console.crlf();
 			}
 		}
 		// Sort the array: High total score first
@@ -1774,11 +2002,8 @@ function postGTTriviaScoresToSubBoard(pSubCode)
 	{
 		if (scoresFile.open("r"))
 		{
-			var scoreFileArray = scoresFile.readAll();
+			var scoreFileContents = scoresFile.read(scoresFile.length);
 			scoresFile.close();
-			var scoreFileContents = "";
-			for (var i = 0; i < scoreFileArray.length; ++i)
-				scoreFileContents += (scoreFileArray[i] + "\n");
 			try
 			{
 				scoresForThisBBS[BBS_ID].user_scores = JSON.parse(scoreFileContents);
@@ -1988,6 +2213,17 @@ function readGTTriviaScoresFromSubBoard(pSubCode)
 	                     subBoardInfoStr, scoreUpdateSucceeded));
 
 	return scoreUpdateSucceeded;
+}
+
+function add_commas(val, pad)
+{
+	var s = val.toString();
+	s = s.replace(/([0-9]+)([0-9]{3})$/,"$1,$2");
+	while (s.search(/[0-9]{4}/)!=-1)
+		s = s.replace(/([0-9]+)([0-9]{3}),/g,"$1,$2,");
+	while (s.length < pad)
+		s = " " + s;
+	return(s);
 }
 
 // Parses command-line arguments.  Returns an object with settings/actions specified.
