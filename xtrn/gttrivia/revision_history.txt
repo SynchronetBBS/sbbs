@@ -4,14 +4,16 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.03     2023-01-05   Question sets (in the .qa files) may now have a section
+1.03     2023-01-14   Question sets (in the .qa files) may now have a section
                       of JSON metadata to specify the name of the category (if
-					  different from simple filename parsing) and optionally
-					  an ARS security string (overrides gttrivia.ini). Also,
-					  answers can be specified as a JSON section to specify
-					  multiple acceptable answers, and optionally a fact about
-					  the answer/question. A new color setting, answerFact,
-					  specifies the color to use to output the answer fact.
+                      different from simple filename parsing) and optionally
+                      an ARS security string (overrides gttrivia.ini). Also,
+                      answers can be specified as a JSON section to specify
+                      multiple acceptable answers, and optionally a fact about
+                      the answer/question. A new color setting, answerFact,
+                      specifies the color to use to output the answer fact.
+                      Also, fixed a bug in score JSON reading when the file
+                      contents are very long.
 1.02     2022-12-08   The game can now post scores in (networked) message sub-
                       boards as a backup to using a JSON DB server in case the
 					  server can't be contacted.
