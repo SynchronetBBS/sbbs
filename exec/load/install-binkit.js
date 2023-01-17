@@ -1,5 +1,3 @@
-// $Id: install-binkit.js,v 1.2 2020/03/26 06:18:33 rswindell Exp $	
-
 // Installs BinkIT (BinkP FidoNet Mailer) timed events and service
 // Enables SBBSecho timed events (FIDOIN and FIDOOUT)
 // Migrated from exec/binkit.js
@@ -10,15 +8,15 @@
 function install_binkit()
 {	
 	require("sbbsdefs.js", 'EVENT_DISABLED');
-	var cnflib = load({}, "cnflib.js");
-	var xtrn_cnf = cnflib.read("xtrn.cnf");
-	if (!xtrn_cnf)
-		return "Failed to read xtrn.cnf";
+	var cfglib = load({}, "cfglib.js");
+	var xtrn_cfg = cfglib.read("xtrn.ini");
+	if (!xtrn_cfg)
+		return "Failed to read xtrn.ini";
 
 	var changed = false;
 	if (!xtrn_area.event["binkout"]) {
 		print("Adding timed event: BINKOUT");
-		xtrn_cnf.event.push( {
+		xtrn_cfg.event.push( {
 				"code": "BINKOUT",
 				"cmd": "?binkit",
 				"days": 255,
@@ -35,7 +33,7 @@ function install_binkit()
 
 	if (!xtrn_area.event["binkpoll"]) {
 		print("Adding timed event: BINKPOLL");
-		xtrn_cnf.event.push( {
+		xtrn_cfg.event.push( {
 				"code": "BINKPOLL",
 				"cmd": "?binkit -p",
 				"days": 255,
@@ -51,18 +49,18 @@ function install_binkit()
 	}
 
 	const timed_events = ["FIDOIN", "FIDOOUT", "BINKOUT", "BINKPOLL"];
-	for(var i in xtrn_cnf.event) {
-		if(timed_events.indexOf(xtrn_cnf.event[i].code) < 0)
+	for(var i in xtrn_cfg.event) {
+		if(timed_events.indexOf(xtrn_cfg.event[i].code) < 0)
 			continue;
-		if (xtrn_cnf.event[i].settings & EVENT_DISABLED) {
-			print("Enabling timed event: " + xtrn_cnf.event[i].code);
-			xtrn_cnf.event[i].settings &= ~EVENT_DISABLED;
+		if (xtrn_cfg.event[i].settings & EVENT_DISABLED) {
+			print("Enabling timed event: " + xtrn_cfg.event[i].code);
+			xtrn_cfg.event[i].settings &= ~EVENT_DISABLED;
 			changed = true;
 		}
 	}
 
-	if (changed && !cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
-		return "Failed to write xtrn.cnf";
+	if (changed && !cfglib.write("xtrn.ini", undefined, xtrn_cfg))
+		return "Failed to write xtrn.ini";
 
 	var ini = new File(file_cfgname(system.ctrl_dir, "sbbsecho.ini"));
 	if (!ini.open(file_exists(ini.name) ? 'r+':'w+'))
