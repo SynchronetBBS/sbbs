@@ -4,7 +4,7 @@ require("acmev2.js", "ACMEv2");
  * File names used...
  */
 var sks_fname = backslash(system.ctrl_dir)+"ssl.cert";
-var maincnf_fname = backslash(system.ctrl_dir)+"main.cnf";
+var main_ini_fname = backslash(system.ctrl_dir)+"main.ini";
 var recycle_sem = backslash(system.ctrl_dir)+"recycle.web";
 var csr_fname = backslash(system.ctrl_dir)+"csr.cert";
 
@@ -14,7 +14,7 @@ var cert;
 var domains = [system.inet_addr];
 var i;
 var ks;
-var maincnf = new File(maincnf_fname);
+var main_ini = new File(main_ini_fname);
 var syspass;
 var f;
 
@@ -34,12 +34,10 @@ function create_dnsnames(names) {
 	return ext;
 }
 
-if (!maincnf.open("rb", true))
-	throw("Unable to open "+maincnf.name);
-maincnf.position = 186; // Indeed.
-syspass = maincnf.read(40);
-syspass = syspass.replace(/\x00/g,'');
-maincnf.close();
+if (!main_ini.open("r", true))
+	throw("Unable to open "+main_ini.name);
+syspass = main_ini.iniGetValue(null, "password");
+main_ini.close();
 
 for (i=0; i<argc; i++) {
 	if (argv[i] == '--domain' && i+1 < argc) {
