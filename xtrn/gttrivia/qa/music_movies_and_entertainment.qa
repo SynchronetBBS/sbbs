@@ -130,7 +130,11 @@ Whitney Houston
 10
 
 How many children are in the Von Trapp family in The Sound of Music?
-Seven
+-- Answer metadata begin
+{
+    "answers": ["Seven", "7"]
+}
+-- Answer metadata end
 10
 
 What is the highest-grossing movie of all time?
@@ -637,7 +641,11 @@ American Sniper
 10
 
 How many Oscars has Meryl Streep won?
-3
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 5
 
 How many Oscars has Meryl Streep been nominated for?
@@ -17337,7 +17345,11 @@ Yesterday
 10
 
 Music: 1960s: This many members were in the group The Dave Clark Five?
-Five
+-- Answer metadata begin
+{
+    "answers": ["Five", "5"]
+}
+-- Answer metadata end
 10
 
 Music: 1960s: This musical about a New York mayor won the Pulitzer Prize in 1960?
@@ -26509,7 +26521,11 @@ Oh girl
 10
 
 Music: 1970s: The number of #1's in 1971?
-Nineteen
+-- Answer metadata begin
+{
+    "answers": ["Nineteen", "19"]
+}
+-- Answer metadata end
 10
 
 Music: 1970s: The Temptations hit #1 in 1972 with this song?
@@ -27653,7 +27669,7 @@ Roachford
 10
 
 Music: 1980s: What artist/band released "Cult Of Personality"?
-Living colour
+Living color
 10
 
 Music: 1980s: What artist/band released "Cum On Feel The Noise"?
@@ -28645,7 +28661,7 @@ Anita baker
 10
 
 Music: 1980s: What artist/band released "Glamour Boys"?
-Living colour
+Living color
 10
 
 Music: 1980s: What artist/band released "Gloria"?
@@ -34753,11 +34769,19 @@ Sweet child o mine
 10
 
 Music: 1980s: How many No. 1 songs did Paula Abdul have in the 1980s?
-Three
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 Music: 1980s: How many No. 1 songs were on Michael Jackson's 'Thriller' album?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 Music: 1980s: In 1982 which group declared they were 'hungry like the wolf'?
@@ -35073,7 +35097,11 @@ Hold
 10
 
 Music: 1980s: Song: ____ More Night - Phil Collins
-One
+-- Answer metadata begin
+{
+    "answers": ["One", "1"]
+}
+-- Answer metadata end
 10
 
 Music: 1980s: Song: ____ Much Time On My Hands - Styx
@@ -35582,7 +35610,11 @@ Venus
 
 Music: 1980s: Song: Band-Aid?
 Do they know it's christmas?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 Music: 1980s: Song: Bangles?
 Manic monday
@@ -36473,7 +36505,11 @@ Electric avenue
 10
 
 Music: 1980s: Song: Edge Of ____(Just Like The White Winged Dove)-S Nicks
-Seventeen
+-- Answer metadata begin
+{
+    "answers": ["Seventeen", "17"]
+}
+-- Answer metadata end
 10
 
 Music: 1980s: Song: Edie Brickell & New Bohemians?
@@ -36957,7 +36993,11 @@ Whitesnake
 10
 
 Music: 1980s: Song: Hey ____- Steely Dan
-Nineteen
+-- Answer metadata begin
+{
+    "answers": ["Nineteen", "19"]
+}
+-- Answer metadata end
 10
 
 Music: 1980s: Song: Higher ____- Steve Winwood
@@ -37994,7 +38034,11 @@ Overkill
 
 Music: 1980s: Song: Men At Work?
 Who can it be now?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 Music: 1980s: Song: Men Without Hats?
 Safety dance
@@ -41866,7 +41910,11 @@ Positive k
 
 Music: 1990s: What artist/band released "I Got A Thang 4 Ya!"?
 Lo-key?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 Music: 1990s: What artist/band released "I Got Id"?
 Pearl jam
@@ -41982,7 +42030,11 @@ Phil Collins
 
 Music: 1990s: What artist/band released "I Wish The Phone Would Ring"?
 Expos?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 Music: 1990s: What artist/band released "I Wish"?
 Skee-lo
@@ -44489,7 +44541,11 @@ Restless heart
 10
 
 Music: 1990s: What artist/band released "When The Lights Go Out"?
-Five
+-- Answer metadata begin
+{
+    "answers": ["Five", "5"]
+}
+-- Answer metadata end
 10
 
 Music: 1990s: What artist/band released "When We Dance"?
@@ -44786,7 +44842,11 @@ Jesse powell
 
 Music: 1990s: What artist/band released "Your Baby Never Looked Good In Blue"?
 Expos?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 Music: 1990s: What artist/band released "Your Body's Callin'"?
 R. kelly
@@ -44889,7 +44949,11 @@ Mmm mmm mmm mmm
 10
 
 Music: 1996 was the year of long-staying hits. How manly No 1s were there?
-Nine
+-- Answer metadata begin
+{
+    "answers": ["Nine", "9"]
+}
+-- Answer metadata end
 10
 
 Music: 2000s: 2002 album released by The Pet Shop Boys?
@@ -45648,7 +45712,7 @@ Music: Alvin & the ____
 Chipmunks
 10
 
-Music: Alvin and the Chipmunks sang about what colour 'People Eater'?
+Music: Alvin and the Chipmunks sang about what color 'People Eater'?
 Purple
 10
 
@@ -46013,7 +46077,7 @@ Crests
 10
 
 Music: Artist/Band: 17 Days (Coleman/Fink/Melvion/Nelson)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: 1979 (Corgan)?
@@ -46705,7 +46769,7 @@ Metallica
 10
 
 Music: Artist/Band: Ausl?nder (Glover/Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Avalon was a No1 hit album for which group?
@@ -47489,7 +47553,7 @@ Dovells
 10
 
 Music: Artist/Band: Broken Hearts (Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Brother (Cantrell)?
@@ -47569,7 +47633,7 @@ Marilyn manson
 10
 
 Music: Artist/Band: Burning of the Midnight Lamp (Hendrix)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Bury Me (Corgan)?
@@ -48209,11 +48273,11 @@ The Russian Five
 10
 
 Music: Artist/Band: Cult of Personality (Calhoun/Glover/Reid/Reid/Skillings)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Cult of Personality (Calhoun/Glover/Reid/Skillings)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Curly MC, F. Gregorian, Angel?
@@ -48405,7 +48469,7 @@ Eagles
 10
 
 Music: Artist/Band: Desperate People (Calhoun/Glover/Reid/Skillings)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Destination Unknown (Bozzio/Bozzio/Cuccurullo)?
@@ -49009,7 +49073,7 @@ Ricky martin
 10
 
 Music: Artist/Band: Elvis Is Dead (Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Emitremmnus (Flea/Frusciante/Kiedis/Smith)?
@@ -49633,7 +49697,7 @@ Red hot chili peppers
 10
 
 Music: Artist/Band: Funny Vibe (Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: FXXXin' in the Bushes (Gallagher)?
@@ -49789,7 +49853,7 @@ Dave Clark 5
 10
 
 Music: Artist/Band: Glamour Boys (Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Glass and the Ghost Children (Corgan)?
@@ -49817,7 +49881,7 @@ Pearl jam
 10
 
 Music: Artist/Band: Go Away (Calhoun/Glover/Reid/Wimbish)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Go Away [#] (Dermer/Estefan)?
@@ -51017,7 +51081,7 @@ Beatles
 10
 
 Music: Artist/Band: I Want to Know (Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: I Want To Tell You?
@@ -52037,7 +52101,7 @@ Matchbox 20
 10
 
 Music: Artist/Band: Leave It Alone (Glover/Reid/Wimbish)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Leave Me Out (Gillies/Johns)?
@@ -52469,7 +52533,7 @@ Dire Straits
 10
 
 Music: Artist/Band: Love Rears Its Ugly Head (Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Love Song ( Manson)?
@@ -52813,11 +52877,11 @@ Inxs
 10
 
 Music: Artist/Band: Memories Can't Wait (Byrne/Harrison)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Memories Can't Wait [live] (Byrne/Harrison)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Memory Remains (Hetfield/Ulrich)?
@@ -52865,7 +52929,7 @@ Rage against the machine
 10
 
 Music: Artist/Band: Middle Man (Glover/Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Middle of the Road (Hynde)?
@@ -52989,7 +53053,7 @@ Dire Straits
 10
 
 Music: Artist/Band: Money Talks (Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Money?
@@ -53401,7 +53465,7 @@ Soundgarden
 10
 
 Music: Artist/Band: Never Satisfied (Glover/Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Never Say Die (Butler/Iommi/Osbourne/Ward)?
@@ -53437,7 +53501,7 @@ James taylor
 10
 
 Music: Artist/Band: New Jack Theme (Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: New Kid in Town (Frey/Henley/Souther)?
@@ -53669,7 +53733,7 @@ Pearl jam
 10
 
 Music: Artist/Band: Nothingness (Calhoun)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Notorious (Lebon/Rhodes/Taylor)?
@@ -53957,7 +54021,7 @@ Santana
 10
 
 Music: Artist/Band: Open Letter (To a Landlord) (Morris/Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Operator (That's Not the Way It Feels) (Croce)?
@@ -54337,7 +54401,7 @@ Pearl jam
 10
 
 Music: Artist/Band: Postman (Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Power and the Passion (Garrett/Hirst/Moginie)?
@@ -54397,7 +54461,7 @@ R.e.m.
 10
 
 Music: Artist/Band: Pride (Calhoun)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Prince Charming (Hetfield/Ulrich)?
@@ -54629,7 +54693,7 @@ Pearl jam
 10
 
 Music: Artist/Band: Release the Pressure (Calhoun/Glover/Reid/Reid/Stewart/Wimbish)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Remember Then - The?
@@ -54957,7 +55021,7 @@ Smashing pumpkins
 10
 
 Music: Artist/Band: Sacred Ground [#] (Calhoun/Glover/Reid/Stewart/Wimbish)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Sad But True (Hetfield/Ulrich)?
@@ -55685,7 +55749,7 @@ Britney spears
 10
 
 Music: Artist/Band: Solace of You (Glover/Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Soldier Boy - The?
@@ -56329,7 +56393,7 @@ Oasis
 10
 
 Music: Artist/Band: Talkin' Loud and Sayin' Nothing (Brown/Byrd)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Tall Trees (Finn/Finn)?
@@ -56809,7 +56873,7 @@ Eagles
 10
 
 Music: Artist/Band: These Are Happy Times [#] (Calhoun/Glover/Reid/Wimbish)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: These Dreams (Chambers/Williams)?
@@ -56941,7 +57005,7 @@ Weezer
 10
 
 Music: Artist/Band: This Little Pig (Calhoun/Glover/Reid/Wimbish)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: This Magic Moment - The?
@@ -57061,11 +57125,11 @@ The pretenders
 10
 
 Music: Artist/Band: Time's Up (Calhoun/Glover/Reid/Reid/Skillings)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Time's Up (Calhoun/Glover/Reid/Skillings)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Times They Are A-Changing (Dylan)?
@@ -57417,7 +57481,7 @@ Fleetwood Mac
 10
 
 Music: Artist/Band: TV News (Calhoun/Glover/Reid/Wimbrish)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Twelve Dreams of Dr. Sardonicus?
@@ -57481,7 +57545,7 @@ Soundgarden
 10
 
 Music: Artist/Band: Type (Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Ugly (Corgan)?
@@ -57637,7 +57701,7 @@ Duran duran
 10
 
 Music: Artist/Band: Visions [#] (Calhoun/Reid/Reid/Wimbish)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Vivire y Morire (Iglesias)?
@@ -58053,7 +58117,7 @@ Rod Stewart
 10
 
 Music: Artist/Band: What's Your Favorite Color? (Theme Song) (Glover/Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Wheels of Confusion (Butler/Iommi/Osbourne/Ward)?
@@ -58217,7 +58281,7 @@ Paul McCartney
 10
 
 Music: Artist/Band: Which Way to America? (Reid)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: While My Guitar Gently Weeps?
@@ -59057,7 +59121,7 @@ Creedence clearwater revival
 10
 
 Music: Artist/Band: WTFF (Betts/Calhoun/Glover/Reid/Wimbish)?
-Living colour
+Living color
 10
 
 Music: Artist/Band: Yakety Yak - The?
@@ -59785,7 +59849,11 @@ Peter fonda
 10
 
 Music: Brit Isle Bands: According to Neds Atomic Dustbin, what does 2 and 2 make?
-Five
+-- Answer metadata begin
+{
+    "answers": ["Five", "5"]
+}
+-- Answer metadata end
 10
 
 Music: Brit Isle Bands: Bush song that is also a hormone?
@@ -59836,7 +59904,7 @@ Music: Brit Isle Bands: This singer got in trouble for ripping the Pope's pictur
 Sinead oconnor
 10
 
-Music: Brit Isle Bands: What colour is Catherine Wheels skin, according to the song?
+Music: Brit Isle Bands: What color is Catherine Wheels skin, according to the song?
 Black metallic
 10
 
@@ -60377,7 +60445,11 @@ Crushed to death by a falling bookcase
 10
 
 Music: Classical: How many symphonies did Beethoven write{Beethoven was born in Bonn, Germany in 1770. He died inVienna, Austria in 1827.}?
-Nine
+-- Answer metadata begin
+{
+    "answers": ["Nine", "9"]
+}
+-- Answer metadata end
 10
 
 Music: Classical: How many symphonies did Chopin write?
@@ -60385,7 +60457,11 @@ None
 10
 
 Music: Classical: How many symphonies did Tchaikovsky write?
-6
+-- Answer metadata begin
+{
+    "answers": ["Six", "6"]
+}
+-- Answer metadata end
 10
 
 Music: Classical: Humoresque was published in 1890 and has remained a favorite. Who wrote it?
@@ -61116,7 +61192,7 @@ Music: Classical: Who employed Josef Haydn?
 Prince Esterhazy
 10
 
-Music: Classical: Who envisioned a work for 2000 performers combining music, poetry, dancing, colours and perfumes?
+Music: Classical: Who envisioned a work for 2000 performers combining music, poetry, dancing, colors and perfumes?
 Scriabin
 10
 
@@ -61908,7 +61984,7 @@ Music: Despite the southern twang in her vocals, in what state was Jewel Kirchne
 Alaska
 10
 
-Music: Dido sang a song about this colour flag?
+Music: Dido sang a song about this color flag?
 White Flag
 10
 
@@ -62032,7 +62108,7 @@ Music: Don't You ____What The Night Can Do? - Steve Winwood
 Know
 10
 
-Music: Donovan's colour of choice in his most successful song?
+Music: Donovan's color of choice in his most successful song?
 Yellow
 10
 
@@ -62180,7 +62256,7 @@ Music: Elvis Costello: What does Ms. Macbeth have that she keeps under her chin?
 Gollywog
 10
 
-Music: Elvis looked forward to the time his moon would stop being this colour?
+Music: Elvis looked forward to the time his moon would stop being this color?
 Blue
 10
 
@@ -62221,7 +62297,11 @@ George nichopoulos
 10
 
 Music: Elvis: Elvis's personal number in numerology, which held great meaning for him?
-8
+-- Answer metadata begin
+{
+    "answers": ["Eight", "8"]
+}
+-- Answer metadata end
 10
 
 Music: Elvis: Listed as official cause of Elvis's death on his original death certificate?
@@ -64133,7 +64213,11 @@ Vince clarke
 10
 
 Music: Erasure: How many members are in Erasure?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 Music: Eric Clapton: Artist/Band: Both Clapton & Steve Winwood were in?
@@ -64485,7 +64569,11 @@ Nbc
 10
 
 Music: Garth Brooks: (1995) Garth has how many kids?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 Music: Garth Brooks: AHBA stands for this?
@@ -64733,7 +64821,11 @@ Sweet Jane
 10
 
 Music: Grateful Dead: The band always always always does this many encores :(?
-One
+-- Answer metadata begin
+{
+    "answers": ["One", "1"]
+}
+-- Answer metadata end
 10
 
 Music: Grateful Dead: This man drove his train while under the influence of an illegal substance?
@@ -65005,7 +65097,11 @@ Van halen
 10
 
 Music: Hold my breath as I wish for death?
-One
+-- Answer metadata begin
+{
+    "answers": ["One", "1"]
+}
+-- Answer metadata end
 10
 
 Music: Hollywood: Name of Brooke Shields' mother?
@@ -65053,7 +65149,11 @@ For life
 10
 
 Music: How many albums does Pantera really have(very tricky)?
-Eight
+-- Answer metadata begin
+{
+    "answers": ["Eight", "8"]
+}
+-- Answer metadata end
 10
 
 Music: How many birthday candles were Cher, Dolly Parton and Sylivester Stallone each obliged to blow out in 1996?
@@ -65061,15 +65161,27 @@ Fifty
 10
 
 Music: How many boys were there in The Pet Shop Boys?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 Music: How many brothers were in the original Jackson family line up?
-Five
+-- Answer metadata begin
+{
+    "answers": ["Five", "5"]
+}
+-- Answer metadata end
 10
 
 Music: How many drum kits did Adam & The Ants use in most of their songs?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 Music: How many Grammy Awards did Lawrence Welk garner during his 50-year career?
@@ -65085,7 +65197,11 @@ Zero
 10
 
 Music: How many grooves are there on each side of a 45 r.p.m. record?
-One
+-- Answer metadata begin
+{
+    "answers": ["One", "1"]
+}
+-- Answer metadata end
 10
 
 Music: How many keys on a standard piano keyboard?
@@ -65093,23 +65209,43 @@ Music: How many keys on a standard piano keyboard?
 10
 
 Music: How many members are in the 'fairfield four'?
-Five
+-- Answer metadata begin
+{
+    "answers": ["Five", "5"]
+}
+-- Answer metadata end
 10
 
 Music: How many members of the Mamas & The Papas were there?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 Music: How many No. 1 songs did The Grateful Dead have?
-0
+-- Answer metadata begin
+{
+    "answers": ["Zero", "0"]
+}
+-- Answer metadata end
 10
 
 Music: How many notes are there in the first two bars of Beethoven's 'Fifth Symphony'?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 Music: How many number 1 singles did Mariah Carey have on her first album?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 Music: How many of Frank Sinatra's collaborators on Duets and Duets II joined him in the studio?
@@ -65117,11 +65253,19 @@ Zero
 10
 
 Music: how many paris symphonies did haydn compose?
-Six
+-- Answer metadata begin
+{
+    "answers": ["Six", "6"]
+}
+-- Answer metadata end
 10
 
 Music: How many people are in the rock group Van Halen?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 Music: How many singles did Bruce Springsteen put atop Billboard charts in the 1980s?
@@ -65129,7 +65273,11 @@ Zero
 10
 
 Music: How many songs are there on Eminems first LP?
-Twenty
+-- Answer metadata begin
+{
+    "answers": ["Twenty", "20"]
+}
+-- Answer metadata end
 10
 
 Music: How many songs from the Beatles' Sgt. Pepper's Lonely Hearts Club Band were released as singles?
@@ -65137,15 +65285,27 @@ Zero
 10
 
 Music: How many strings does a violin have?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 Music: How many strings on a bass guitar?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 Music: How many symphonies did Beethoven compose?
-Nine
+-- Answer metadata begin
+{
+    "answers": ["Nine", "9"]
+}
+-- Answer metadata end
 10
 
 Music: How many times has Tanya Tucker been married?
@@ -65153,23 +65313,43 @@ Zero
 10
 
 Music: How many valves does a French horn have?
-Three
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 Music: How old was Leann Rhimes when she became a country music star?
-Fourteen
+-- Answer metadata begin
+{
+    "answers": ["Fourteen", "14"]
+}
+-- Answer metadata end
 10
 
 Music: How old was Leann Rhimes when she recorded her first album?
-Eleven
+-- Answer metadata begin
+{
+    "answers": ["Eleven", "11"]
+}
+-- Answer metadata end
 10
 
 Music: How old was Ray Charles when he became blind?
-Seven
+-- Answer metadata begin
+{
+    "answers": ["Seven", "7"]
+}
+-- Answer metadata end
 10
 
 Music: How old was Shania Twain when she started singing in bars?
-Eight
+-- Answer metadata begin
+{
+    "answers": ["Eight", "8"]
+}
+-- Answer metadata end
 10
 
 Music: Howdeeee! What country performer once worked as a Minnie Pearl impersonator at Opryland?
@@ -65273,11 +65453,19 @@ Simply
 10
 
 Music: If you own all the KoRn, Limp Bizkit, Eminem & Dr. Dre cd's how many cd's do you own?
-Nine
+-- Answer metadata begin
+{
+    "answers": ["Nine", "9"]
+}
+-- Answer metadata end
 10
 
 Music: If you own most of the KoRn, Limp Bizkit, Eminem & Dr. Dre cd's,you would have at least how many albums?
-Nine
+-- Answer metadata begin
+{
+    "answers": ["Nine", "9"]
+}
+-- Answer metadata end
 10
 
 Music: In 'American pie', who does don mclean refer to as 'the king'?
@@ -65417,7 +65605,11 @@ Gate
 10
 
 Music: In the Frankie Goes to Holleywood hit, how many tribes were there?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 Music: In the mid seventies, which British artist changed personas once again & portrayed the 'Thin White Duke'?
@@ -65820,7 +66012,7 @@ Music: John Coltrane covered this tune from The Sound of Music?
 My favorite things
 10
 
-Music: John Cougar Mellencamp's houses were of this colour?
+Music: John Cougar Mellencamp's houses were of this color?
 Pink
 10
 
@@ -65861,7 +66053,11 @@ A bed-in for peace
 10
 
 Music: John Lennon: Years older Yoko is to John?
-7
+-- Answer metadata begin
+{
+    "answers": ["Seven", "7"]
+}
+-- Answer metadata end
 10
 
 Music: John Paul Jones, Jimmy Page, Robert Plant, ____ ____
@@ -66329,7 +66525,11 @@ Wild world
 10
 
 Music: Lyrics: 'Well, she was just ____ (The Beatles)
-Seventeen
+-- Answer metadata begin
+{
+    "answers": ["Seventeen", "17"]
+}
+-- Answer metadata end
 10
 
 Music: Lyrics: It shakes all over like a jelly fish, i kinda like it, crazy ____ ____ ____ ____ (queen)
@@ -66481,7 +66681,11 @@ Pebbles
 10
 
 Music: Metallica: from Justice, it intros with war sounds?
-One
+-- Answer metadata begin
+{
+    "answers": ["One", "1"]
+}
+-- Answer metadata end
 10
 
 Music: Metallica: Metallica's song about the Jews in Egypt?
@@ -67237,19 +67441,35 @@ Slam
 10
 
 Music: Number of albums Boston currently has?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 Music: Number of Elvis songs that hit #1?
-Eighteen
+-- Answer metadata begin
+{
+    "answers": ["Eighteen", "18"]
+}
+-- Answer metadata end
 10
 
 Music: Number of Halos, or official releases, by Nine Inch Nails (1995)?
-Nine
+-- Answer metadata begin
+{
+    "answers": ["Nine", "9"]
+}
+-- Answer metadata end
 10
 
 Music: Number of weeks My Sharona spent at #1 in 1979?
-6
+-- Answer metadata begin
+{
+    "answers": ["Six", "6"]
+}
+-- Answer metadata end
 10
 
 Music: Occasional actor, & auteur of Nighthawks at the Diner & Big Time?
@@ -67789,7 +68009,11 @@ Boston for the winter
 10
 
 Music: Popstop says Chris Isaak has 2 albums, but he really has this many out?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 Music: Popular Gershwin composition, beginning with a long wail?
@@ -68456,12 +68680,16 @@ Music: Song: crazy little woman in a one man show?
 Pour some sugar on me
 10
 
-Music: Song: Crosby, Stills and Nash's debut album included a song about a girl and the colour of her eyes.?
+Music: Song: Crosby, Stills and Nash's debut album included a song about a girl and the color of her eyes.?
 Sweet Judy Blue Eyes
 10
 
 Music: Song: daddy says she's too young but she's old enough for me?
-Seventeen
+-- Answer metadata begin
+{
+    "answers": ["Seventeen", "17"]
+}
+-- Answer metadata end
 10
 
 Music: Song: darken the city night is a wire steam in the subway earth is afire?
@@ -69337,7 +69565,11 @@ An australians nightmare
 10
 
 Music: Spinal Tap: Nigel's special amp goes up to this number?
-Eleven
+-- Answer metadata begin
+{
+    "answers": ["Eleven", "11"]
+}
+-- Answer metadata end
 10
 
 Music: Spinal Tap: The band got lost in the basement of the theater in this city?
@@ -69469,7 +69701,11 @@ Mother love bone
 10
 
 Music: Terms: . - Abbreviation of (1) tenor and (2) tenuto?
-Ten
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 10
 
 Music: Terms: (1) (Lat.) A canon in the 15th and 16th centuries. (2) (It.) A fugue?
@@ -69536,7 +69772,7 @@ Music: Terms: (1) Note of the scale; (2) Abbreviation of forte?
 F
 10
 
-Music: Terms: (1) The art of writing for an orchestra, band, etc., involving great knowledge of tone colours, range of instruments, technical capacities and combinations of instruments, etc. (2) The scoring of a work, originally intended for another medium, for an orchestra?
+Music: Terms: (1) The art of writing for an orchestra, band, etc., involving great knowledge of tone colors, range of instruments, technical capacities and combinations of instruments, etc. (2) The scoring of a work, originally intended for another medium, for an orchestra?
 Orchestration
 10
 
@@ -69840,7 +70076,7 @@ Music: Terms: (Fr.), humoreske (Ger.) - An instrumental composition of a caprici
 Humoresque
 10
 
-Music: Terms: (Fr.), lclangfarbe (Ger.) - This is the characteristic quality of an instrument's or voice's tone. In basic terms it is the quality which distinguishes a note performed on one instrument compared with the same note sounded on an other instrument or sung by a voice The tone colour of an instrument corresponds with the harmonics of that instrument?
+Music: Terms: (Fr.), lclangfarbe (Ger.) - This is the characteristic quality of an instrument's or voice's tone. In basic terms it is the quality which distinguishes a note performed on one instrument compared with the same note sounded on an other instrument or sung by a voice The tone color of an instrument corresponds with the harmonics of that instrument?
 Timbre
 10
 
@@ -70480,7 +70716,7 @@ Music: Terms: (It.) - A bowing indication for string players to play near the br
 Sul ponticello
 10
 
-Music: Terms: (It.) - A bowing indication to string players to play near or above the fingerboard, producing a 'colourless' tone?
+Music: Terms: (It.) - A bowing indication to string players to play near or above the fingerboard, producing a 'colorless' tone?
 Sul tasto
 10
 
@@ -71660,7 +71896,7 @@ Music: Terms: A sense of pitch which enables a person to identify a note simply 
 Perfect pitch
 10
 
-Music: Terms: A set of notes produced by a vibrating string or air column, determining the difference of tone colours of instruments?
+Music: Terms: A set of notes produced by a vibrating string or air column, determining the difference of tone colors of instruments?
 Harmonic series
 10
 
@@ -72392,7 +72628,7 @@ Music: Terms: Term meaning continue playing an octave higher or lower?
 8va segue
 10
 
-Music: Terms: Term taken from painting (referring to pictures using separate dots of colour) and applied to the music of some 20th century composers (e.g. Webern). This described music of a spare and pointed style emplying use of pizzicato?
+Music: Terms: Term taken from painting (referring to pictures using separate dots of color) and applied to the music of some 20th century composers (e.g. Webern). This described music of a spare and pointed style emplying use of pizzicato?
 Pointillism
 10
 
@@ -72785,7 +73021,11 @@ Eye in the sky
 10
 
 Music: The album 'Thriller' won a record ____ grammy awards
-Eight
+-- Answer metadata begin
+{
+    "answers": ["Eight", "8"]
+}
+-- Answer metadata end
 10
 
 Music: The architect of Bebop who outlived his contemporary C Parker by many decades?
@@ -72829,7 +73069,11 @@ I want to hold your hand
 10
 
 Music: The Beatles: A Beatles song says there are this many days in a week?
-Eight
+-- Answer metadata begin
+{
+    "answers": ["Eight", "8"]
+}
+-- Answer metadata end
 10
 
 Music: The Beatles: A common belief is that John Lennon says 'i buried Paul' at the end of 'strawberry fields forever' on the 'magical mystery tour' album. what did he actually say?
@@ -72921,7 +73165,11 @@ Paul McCartney
 10
 
 Music: The Beatles: How many former Beatles had chart-topping singles from 1973 to 1974?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 Music: The Beatles: I'd rather see you dead, little girl, than to be with...?
@@ -73097,7 +73345,11 @@ Pam
 10
 
 Music: The Beatles: The number of people killed by Maxwell's silver hammer?
-3
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 Music: The Beatles: The only Beatle who fits in this category?
@@ -73244,11 +73496,11 @@ Music: The Caboliers was the name of whose jazzy band?
 Cab calloway
 10
 
-Music: The Checkmates, Ltd. sang about this colour of pearl?
+Music: The Checkmates, Ltd. sang about this color of pearl?
 Black
 10
 
-Music: The Coasters told this colour to run?
+Music: The Coasters told this color to run?
 Red
 10
 
@@ -73616,7 +73868,7 @@ Music: The Specials' now-legendary recording label, as clear as black & white?
 2 tone
 10
 
-Music: The two colours of velvet that have hit #1?
+Music: The two colors of velvet that have hit #1?
 Black and blue
 10
 
@@ -73672,7 +73924,7 @@ Music: Their lead singer scores most Tim Burton movies?
 Oingo boingo
 10
 
-Music: These 2 Prince songs both mention a colour in their title. (use and)?
+Music: These 2 Prince songs both mention a color in their title. (use and)?
 Little red corvette and blue computer
 10
 
@@ -74085,7 +74337,11 @@ Smells like teen spirit
 10
 
 Music: Tori Amos: Age at which Tori changed her name?
-Seventeen
+-- Answer metadata begin
+{
+    "answers": ["Seventeen", "17"]
+}
+-- Answer metadata end
 10
 
 Music: Tori Amos: Tori plays this instrument?
@@ -74101,7 +74357,11 @@ Tito
 10
 
 Music: Toronto band Barenaked Ladies sings a song about being in this grade?
-Nine
+-- Answer metadata begin
+{
+    "answers": ["Nine", "9"]
+}
+-- Answer metadata end
 10
 
 Music: Toy Soldiers?
@@ -74413,7 +74673,11 @@ Sydney
 10
 
 Music: U2's song about a gay man with AIDS coming out to his father?
-One
+-- Answer metadata begin
+{
+    "answers": ["One", "1"]
+}
+-- Answer metadata end
 10
 
 Music: UB40 & Bob Marley sang about what type of wine?
@@ -74960,31 +75224,31 @@ Music: what color of outfits does country western singer Johnny cash wear?
 Black
 10
 
-Music: What colour 'roses' did Aqua sing about?
+Music: What color 'roses' did Aqua sing about?
 Red
 10
 
-Music: What colour car did Natalie Cole sing about in March 88?
+Music: What color car did Natalie Cole sing about in March 88?
 Pink cadillac
 10
 
-Music: What colour Heather was the title of a 1996 hit for Rod Stewart?
+Music: What color Heather was the title of a 1996 hit for Rod Stewart?
 Purple
 10
 
-Music: What colour polka dot bikini was a great party hit?
+Music: What color polka dot bikini was a great party hit?
 Yellow
 10
 
-Music: What colour rain did prince sing about?
+Music: What color rain did prince sing about?
 Purple
 10
 
-Music: what colour shoes was pat boone known for?
+Music: what color shoes was pat boone known for?
 White
 10
 
-Music: What colour was Bombalurina's teeny-weeny polka-dot bikini?
+Music: What color was Bombalurina's teeny-weeny polka-dot bikini?
 Yellow
 10
 
@@ -76953,7 +77217,11 @@ Very
 10
 
 Music: What was the average age of United States soldiers in the Vietnam war?
-Nineteen
+-- Answer metadata begin
+{
+    "answers": ["Nineteen", "19"]
+}
+-- Answer metadata end
 10
 
 Music: What was the Beatles' biggest hit single?
@@ -82566,7 +82834,11 @@ How to steal a million
 
 TV/Film: 1960s: In 1966, Elizabeth Taylor starred in this movie?
 Who's afraid of virginia woolf?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 TV/Film: 1960s: In 1966, Elvis Presley starred in this movie?
 Spinout
@@ -82714,7 +82986,11 @@ Thoroughly modern millie
 
 TV/Film: 1960s: In 1967, Katharine Hepburn starred in this movie?
 Guess who's coming to dinner?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 TV/Film: 1960s: In 1967, Marlon Brando starred in this movie?
 A countess from hong kong
@@ -82906,7 +83182,11 @@ Hail Hero!
 
 TV/Film: 1960s: In 1969, Michael Douglas starred in this movie?
 Where's Jack?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 TV/Film: 1960s: In 1969, Raquel Welch starred in this movie?
 Flareup
@@ -83014,11 +83294,19 @@ A Patch of Blue
 
 TV/Film: 1966 39th Academy Awards: Best Actress In A Leading Role Was won by Elizabeth Taylor For The Movie?
 Who's Afraid Of Virginia Woolf?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 TV/Film: 1966 39th Academy Awards: Best Actress In A Supporting role was won by Sandy Dennis For The Movie?
 Who's afraid Of Virginia Woolf?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 TV/Film: 1966 sci-fi film starring Peter Cushing?
 Daleks: Invasion Earth 2150
@@ -83310,7 +83598,11 @@ Up the sandbox
 
 TV/Film: 1970s: In 1972, Barbra Streisand starred in this movie?
 What's up doc?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 TV/Film: 1970s: In 1972, Dustin Hoffman starred in this movie?
 Straw dogs
@@ -84557,7 +84849,11 @@ Heaven
 10
 
 TV/Film: 1980s: ____ candles?
-Sixteen
+-- Answer metadata begin
+{
+    "answers": ["Sixteen", "16"]
+}
+-- Answer metadata end
 10
 
 TV/Film: 1980s: ____ comfort?
@@ -84677,7 +84973,11 @@ Fright
 10
 
 TV/Film: 1980s: ____ of a kind?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 TV/Film: 1980s: ____ of bounds?
@@ -84837,7 +85137,11 @@ Coming
 10
 
 TV/Film: 1980s: ____ to five?
-Nine
+-- Answer metadata begin
+{
+    "answers": ["Nine", "9"]
+}
+-- Answer metadata end
 10
 
 TV/Film: 1980s: ____ to kill?
@@ -85862,7 +86166,11 @@ Tempest
 
 TV/Film: 1980s: In 1982, Susan Sarandon starred in this movie?
 Who am i this time?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 TV/Film: 1980s: In 1982, Sylvester Stallone starred in this movie?
 First blood
@@ -88384,11 +88692,11 @@ TV/Film: 1980s: The Color of ____?
 Money
 10
 
-TV/Film: 1980s: the colour ____?
+TV/Film: 1980s: the color ____?
 Purple
 10
 
-TV/Film: 1980s: the colour of ____?
+TV/Film: 1980s: the color of ____?
 Money
 10
 
@@ -88870,7 +89178,11 @@ Stella
 
 TV/Film: 1990s: In 1990, Brad Pitt starred in this movie?
 Too young to die?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 TV/Film: 1990s: In 1990, Bruce Willis starred in this movie?
 Die hard 2: die harder
@@ -89118,7 +89430,11 @@ The crossing
 
 TV/Film: 1990s: In 1990, Sandra Bullock starred in this movie?
 Who shot patakango?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 TV/Film: 1990s: In 1990, Sean Connery starred in this movie?
 The hunt for red october
@@ -89822,7 +90138,11 @@ When the party's over
 
 TV/Film: 1990s: In 1992, Sandra Bullock starred in this movie?
 Who do i gotta kill?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 TV/Film: 1990s: In 1992, Sarah Jessica Parker starred in this movie?
 Honeymoon in vegas
@@ -90849,7 +91169,11 @@ Forget paris
 10
 
 TV/Film: 1990s: In 1995, Brad Pitt starred in this movie?
-Seven
+-- Answer metadata begin
+{
+    "answers": ["Seven", "7"]
+}
+-- Answer metadata end
 10
 
 TV/Film: 1990s: In 1995, Bruce Willis starred in this movie?
@@ -92090,7 +92414,11 @@ Fools rush in
 
 TV/Film: 1990s: In 1997, Salma Hayek starred in this movie?
 Who the hell is juliette?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 TV/Film: 1990s: In 1997, Sandra Bullock starred in this movie?
 Speed 2: cruise control
@@ -94633,7 +94961,11 @@ Goldeneye
 10
 
 TV/Film: 1995, This movie was released on November 17 It Takes ____?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 TV/Film: 1995, This movie was released on November 17 The American ____?
@@ -94705,7 +95037,11 @@ Henrietta
 10
 
 TV/Film: 1995, This movie was released on September 22 ____?
-Seven
+-- Answer metadata begin
+{
+    "answers": ["Seven", "7"]
+}
+-- Answer metadata end
 10
 
 TV/Film: 1995, This movie was released on September 22 ____?
@@ -95693,7 +96029,11 @@ America
 10
 
 TV/Film: 1997, This Movie was Released on July 25 Air Force ____?
-One
+-- Answer metadata begin
+{
+    "answers": ["One", "1"]
+}
+-- Answer metadata end
 10
 
 TV/Film: 1997, This Movie was Released on June 13 Speed 2: ____?
@@ -96422,7 +96762,11 @@ Best thing
 
 TV/Film: 2000s: In 2000, this Movie was Released on March 3 What Planet ____?
 Are you from?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 
 TV/Film: 2000s: In 2000, this Movie was Released on March 31 High ____?
 Fidelity
@@ -98381,7 +98725,11 @@ Jaws 19
 10
 
 TV/Film: Back To The Future: Which movie (1,2, or 3) does Marty come face to face with his own son?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 TV/Film: BAD medical school comedy with Steve Gutenberg and Julie Hagerty?
@@ -98393,7 +98741,11 @@ Dallas
 10
 
 TV/Film: Barbra Streisand played Fanny Brice this many times in the movies?
-2
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Barbra streisand starred in the sequel to funny girl what was it called?
@@ -98469,7 +98821,11 @@ Helen Kane
 10
 
 TV/Film: Between 1931 & 1969 Walt Disney collected how many oscars?
-35
+-- Answer metadata begin
+{
+    "answers": ["Thirty-five", "Thirty five", "35"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Beverly Hills 90210: For what popular singer did David play keyboards at a campus function?
@@ -111649,7 +112005,11 @@ Bedrock
 10
 
 TV/Film: Cartoons: Number of completed seasons of the X-Men cartoon series as of 4/94?
-2
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Cartoons: On what T.V. show could Tom Terrific be found?
@@ -112253,7 +112613,11 @@ Regis philbin
 10
 
 TV/Film: David Letterman: Number of jokes Dave told in his nightly NBC monologue?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 TV/Film: David Letterman: This football great slapped Dave in the face?
@@ -112389,7 +112753,11 @@ Thomas magnum
 10
 
 TV/Film: Dick Van Dyke Show: How many Emmy Awards did Dick Van Dyke win for playing Rob Petrie?
-3
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Dick Van Dyke Show: How old was Laura when she married Rob Petrie?
@@ -113093,7 +113461,11 @@ Mouseketeers
 10
 
 TV/Film: Dr Seuss: ____ Apples Up On Top (written under a pseudonym)?
-Ten
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Dr Seuss: _Hop on _____?
@@ -113581,11 +113953,19 @@ Crystal ball
 10
 
 TV/Film: Gilligans Island: How many hours was the ill-fated tour supposed to last?
-3
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Gilligans Island: How many pounds does Lovey's diamond engagement ring weigh?
-One
+-- Answer metadata begin
+{
+    "answers": ["One", "1"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Gilligans Island: The color of the Skipper's shirt?
@@ -113921,11 +114301,19 @@ Aunt
 10
 
 TV/Film: How many 'Southpark' episodes have there been that Kenny didn't get killed?
-One
+-- Answer metadata begin
+{
+    "answers": ["One", "1"]
+}
+-- Answer metadata end
 10
 
 TV/Film: How many children do the Brady's have?
-Six
+-- Answer metadata begin
+{
+    "answers": ["Six", "6"]
+}
+-- Answer metadata end
 10
 
 TV/Film: How many films did Elvis Presley make?
@@ -113933,23 +114321,43 @@ TV/Film: How many films did Elvis Presley make?
 10
 
 TV/Film: How many hubcaps does Steve McQueen's car lose in the famed chase scene from Bullitt?
-Six
+-- Answer metadata begin
+{
+    "answers": ["Six", "6"]
+}
+-- Answer metadata end
 10
 
 TV/Film: How many movies did humphrey bogart and lauren bacall make together?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 TV/Film: How many movies did spencer tracy and katharine Hepburn make together?
-Nine
+-- Answer metadata begin
+{
+    "answers": ["Nine", "9"]
+}
+-- Answer metadata end
 10
 
 TV/Film: How many of the canoeing party survived in Deliverance?
-Three
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 TV/Film: How many Oscars did the film Gigi win?
-Eight
+-- Answer metadata begin
+{
+    "answers": ["Eight", "8"]
+}
+-- Answer metadata end
 10
 
 TV/Film: How many stories did the towering inferno have?
@@ -113957,7 +114365,11 @@ TV/Film: How many stories did the towering inferno have?
 10
 
 TV/Film: How many times was katharine Hepburn nominated for the best actress oscar?
-Eight
+-- Answer metadata begin
+{
+    "answers": ["Eight", "8"]
+}
+-- Answer metadata end
 10
 
 TV/Film: How much money did the 1980 film 9 to 5 earn?
@@ -113989,7 +114401,11 @@ TV/Film: How old was John schneider when he first played as bo duke on the dukes
 10
 
 TV/Film: How old was Sally Field when she starred in Gidget?
-Eighteen
+-- Answer metadata begin
+{
+    "answers": ["Eighteen", "18"]
+}
+-- Answer metadata end
 10
 
 TV/Film: How was Spielberg credited in in the 1994 movie The Flintstones?
@@ -114397,11 +114813,19 @@ Vw beetle
 10
 
 TV/Film: In the film 'hackers', how old was 'zero kool' when he was first arrested?
-Eleven
+-- Answer metadata begin
+{
+    "answers": ["Eleven", "11"]
+}
+-- Answer metadata end
 10
 
 TV/Film: In the film 'hackers', how old was 'zero_kool' when he was first arrested?
-Eleven
+-- Answer metadata begin
+{
+    "answers": ["Eleven", "11"]
+}
+-- Answer metadata end
 10
 
 TV/Film: In the film 'hercules', whose voice is danny devito?
@@ -115105,7 +115529,11 @@ Welcome to Sarajevo
 10
 
 TV/Film: Indiana Jones: how many sHankara stones did indy deliver?
-One
+-- Answer metadata begin
+{
+    "answers": ["One", "1"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Indiana Jones: how was the monkey killed?
@@ -115305,7 +115733,11 @@ Shaken not stirred
 10
 
 TV/Film: James Bond: How many james bond movies did sean connery star in?
-Seven
+-- Answer metadata begin
+{
+    "answers": ["Seven", "7"]
+}
+-- Answer metadata end
 10
 
 TV/Film: James Bond: In Ian Fleming's James Bond series, what does the 00 in 007 stand for?
@@ -115897,7 +116329,11 @@ James bond
 10
 
 TV/Film: Monty Python: How many questions must one answer?
-3
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Monty Python: In the architects sketch, what did John Cleese's character propose instead of a block of flats?
@@ -115933,7 +116369,11 @@ Rabbit
 10
 
 TV/Film: Monty Python: The deformed knight had this many heads?
-3
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Monty Python: The enchanter's name?
@@ -116057,7 +116497,11 @@ The commitments
 10
 
 TV/Film: Movie: around the world in ____ days?
-80
+-- Answer metadata begin
+{
+    "answers": ["Eighty", "80"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Movie: Bela Lugosi had top billing even though he died before filming on this began?
@@ -116297,7 +116741,11 @@ Bricklayers
 10
 
 TV/Film: MTV Features: This many presidents have been interviewed by an MTV correspondent?
-2
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 TV/Film: MTV Features: You could lose your favorite possesions in this MTV game show?
@@ -117141,11 +117589,19 @@ Tom tryon
 10
 
 TV/Film: Number of monolith scenes in the film?
-Four
+-- Answer metadata begin
+{
+    "answers": ["Four", "4"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Number of movies Burton and taylor made together?
-10
+-- Answer metadata begin
+{
+    "answers": ["Ten", "10"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Occupations: Banker (Beverly Hillbillies)?
@@ -117901,7 +118357,11 @@ Swiss cheese
 10
 
 TV/Film: Quantum Leap: How many degrees does Sam have, including one in ancient languages?
-Six
+-- Answer metadata begin
+{
+    "answers": ["Six", "6"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Quantum Leap: In ep. 87, Sam Leaped into this celebrity who counseled Al about his sex life?
@@ -118645,7 +119105,11 @@ Kirk
 10
 
 TV/Film: Star Trek: Data can process this many trillion operations per second?
-60
+-- Answer metadata begin
+{
+    "answers": ["Sixty", "60"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Star Trek: Father of vulcan civilization and hero of spock?
@@ -118725,7 +119189,11 @@ Lawgivers
 10
 
 TV/Film: Star Trek: Level ____ Diagnostic is the most comprehensive type of system diagnostics?
-One
+-- Answer metadata begin
+{
+    "answers": ["One", "1"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Star Trek: Name of Cirroc Lofton's character?
@@ -118884,7 +119352,7 @@ TV/Film: Star Trek: Troi's Inzadi is who?
 Riker
 10
 
-TV/Film: Star Trek: What colour was Mr Spock's blood?
+TV/Film: Star Trek: What color was Mr Spock's blood?
 Green
 10
 
@@ -119581,7 +120049,11 @@ I am shocked and appalled
 10
 
 TV/Film: The Simpsons: In the opening credits, how many cars do the Simpsons have?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 TV/Film: The Simpsons: In which movie was Moe in?
@@ -120401,7 +120873,11 @@ Bob
 10
 
 TV/Film: Twin Peaks: How many seasons did the show last?
-Two
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 TV/Film: Twin Peaks: So who DID kill Laura Palmer?
@@ -121008,7 +121484,7 @@ TV/Film: What color was Bullitt's car?
 Green
 10
 
-TV/Film: What colour was c3 po the robot from Star Wars?
+TV/Film: What color was c3 po the robot from Star Wars?
 Gold
 10
 
@@ -121785,7 +122261,11 @@ Kermit d frog
 10
 
 TV/Film: What is the highest number of best actors won by the same guy?
-2
+-- Answer metadata begin
+{
+    "answers": ["Two", "2"]
+}
+-- Answer metadata end
 10
 
 TV/Film: What is the last name of everybody in the entire town of Rock Ridge in the movie Blazing Saddles?
@@ -122761,7 +123241,11 @@ Babe
 10
 
 TV/Film: What transporter room aboard the enterprise is chief o'brien's favorite?
-Three
+-- Answer metadata begin
+{
+    "answers": ["Three", "3"]
+}
+-- Answer metadata end
 10
 
 TV/Film: What trivia fact about mel blanc (voice of bugs bunny) is most ironic?
@@ -122901,7 +123385,11 @@ Mr. Furious
 10
 
 TV/Film: What was Bluto's grade point average in the film Animal House?
-0
+-- Answer metadata begin
+{
+    "answers": ["Zero", "0"]
+}
+-- Answer metadata end
 10
 
 TV/Film: What was bob dyer's wife's first name?
@@ -122956,7 +123444,7 @@ TV/Film: What was goldfinger's first name?
 Auric
 10
 
-TV/Film: What was james cagney's natural hair colour?
+TV/Film: What was james cagney's natural hair color?
 Red
 10
 
@@ -124008,7 +124496,7 @@ TV/Film: Which classic 1939 Hollywood film derives from Maupassants Boule de Sui
 Stagecoach
 10
 
-TV/Film: Which colourful cat was sought by Inspector Clouseau?
+TV/Film: Which colorful cat was sought by Inspector Clouseau?
 Pink panther
 10
 
