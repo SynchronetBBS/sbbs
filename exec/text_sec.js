@@ -1,5 +1,3 @@
-// $Id: text_sec.js,v 1.9 2020/05/08 17:27:47 rswindell Exp $
-
 // [General] Text File Section ("G-Files")
 // Replacement for Baja TEXT_FILE_SECTION and JS bbs.text_sec() functions
 // Ported from src/sbbs3/text_sec.cpp
@@ -11,10 +9,11 @@ require("nodedefs.js", 'NODE_RTXT');
 require("cga_defs.js", 'LIGHTGRAY');
 require("sbbsdefs.js", 'P_CPM_EOF');
 
-if(!bbs.mods.cnflib)
-	bbs.mods.cnflib = load({}, "cnflib.js");
-
-var file_cnf = bbs.mods.cnflib.read("file.cnf");
+var file_cnf = new File(system.ctrl_dir + "file.ini");
+if(!file_cnf.open(file_cnf.exists ? 'r+':'w+')) {
+	alert("Error opening " + file_cnf.name);
+	exit(0);
+}
 
 function txtsec_data(sec)
 {
@@ -50,9 +49,11 @@ function write_list(sec, list)
 }
 
 var usrsec = [];
-for(var i in file_cnf.txtsec) {
-	if(bbs.compare_ars(file_cnf.txtsec[i].ars))
-		usrsec.push(file_cnf.txtsec[i]);
+var txtsec = file_cnf.iniGetAllObjects("code", "text:");
+file_cnf.close();
+for(var i in txtsec) {
+	if(bbs.compare_ars(txtsec[i].ars))
+		usrsec.push(txtsec[i]);
 }
 if(!usrsec.length) {
 	console.print(bbs.text(NoTextSections));
@@ -131,17 +132,8 @@ while(bbs.online) {
 				var path = console.getstr(path, 128, K_EDIT|K_LINE|K_TRIM);
 				if(!path || console.aborted)
 					break;
-				if(!file_exists(path)) {
-					var default_path = backslash(txtsec_data(usrsec[cursec])) + path;
-					if (!file_exists(default_path)) {
-						console.print(bbs.text(FileNotFound));
-						break;
-					} else {
-						// only change the path if the file was found, otherwise
-						// leave it alone so they can correct it 
-						path = default_path;
-					}
-				}
+				if(!file_exists(path))
+					path = backslash(txtsec_data(usrsec[cursec])) + path;
 				console.printfile(path);
 				console.crlf();
 				console.print(bbs.text(AddTextFileDesc));
@@ -194,25 +186,21 @@ while(bbs.online) {
 						alert("Sorry, you can't read that file");
 						break;
 					}
-					if(!list[cmd].path) {
-						alert("Sorry, that file doesn't exist yet");
-						break;
-					}
-					if(file_size(list[cmd].path) < 1) {
-						alert("Sorry, that file doens't have any content yet");
-						break;
-					}
-					var mode = P_OPENCLOSE | P_CPM_EOF;
+					var mode = P_CPM_EOF;
 					if(list[cmd].mode !== undefined)
 						mode = eval(list[cmd].mode);
 					if(list[cmd].petscii_graphics)
 						console.putbyte(142);
+					if(console.term_supports(USER_RIP))
+						console.write("\x02|*\r\n");
 					if(list[cmd].tail)
 						console.printtail(list[cmd].path, list[cmd].tail, mode);
 					else
 						console.printfile(list[cmd].path, mode);
 					log(LOG_INFO, "read text file: " + list[cmd].path);
 					console.pause();
+					if(console.term_supports(USER_RIP))
+						console.write("\x02|*\r\n");
 				}
 				break;
 		}
