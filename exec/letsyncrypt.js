@@ -6,7 +6,7 @@ require("acmev2.js", "ACMEv2");
 var ks_fname = backslash(system.ctrl_dir)+"letsyncrypt.key";
 var setting_fname = backslash(system.ctrl_dir)+"letsyncrypt.ini";
 var sks_fname = backslash(system.ctrl_dir)+"ssl.cert";
-var maincnf_fname = backslash(system.ctrl_dir)+"main.cnf";
+var main_ini_fname = backslash(system.ctrl_dir)+"main.ini";
 var recycle_sem = backslash(system.ctrl_dir)+"recycle";
 
 function at_least_a_third()
@@ -149,7 +149,7 @@ var i;
 var identifiers = [];
 var ks;
 var key_id;
-var maincnf = new File(maincnf_fname);
+var main_ini = new File(main_ini_fname);
 var new_host = "acme-v02.api.letsencrypt.org";
 var new_domain_hash = '';
 var old_domain_hash;
@@ -239,12 +239,10 @@ if (renew || rekey || revoke || print_tos) {
 	 * 
 	 * TODO: What happens when the system password changes?
 	 */
-	if (!maincnf.open("rb", true))
-		throw("Unable to open "+maincnf.name);
-	maincnf.position = 186; // Indeed.
-	syspass = maincnf.read(40);
-	syspass = syspass.replace(/\x00/g,'');
-	maincnf.close();
+	if (!main_ini.open("r", true))
+		throw("Unable to open "+main_ini.name);
+	syspass = main_ini.iniGetValue(null, "password");
+	main_ini.close();
 
 	/*
 	 * Now open/create the keyset and RSA signing key for
