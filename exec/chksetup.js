@@ -218,6 +218,7 @@ var tests = {
 			return system.name + " is not listed in " + lib.list_fname;
 		var finger_host = "vert.synchro.net";
 		var finger_query = "?bbs:" + system.name;
+		log(LOG_DEBUG, format("Sending finger query (%s) to %s", finger_query, finger_host));
 		var finger_result = load({}, "finger_lib.js").request(finger_host, finger_query);
 		if(typeof finger_result == 'string')
 			return finger_result;
