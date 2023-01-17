@@ -3,7 +3,6 @@ load("sbbsdefs.js");
 load("nodedefs.js");
 load("cga_defs.js"); // For color definitions
 load("file_size.js");
-load("filedir.js");
 load("frame.js");
 load("tree.js");
 load("scrollbar.js");
@@ -144,17 +143,20 @@ var Batch = function(parentFrame) {
 			if(typeof colors[c] != "undefined")
 				self.tree.colors[c] = colors[c];
 		}
-		for(var b in state.batch) {
-			var item = self.tree.addItem(
-				format(
-					"%-13s %7s %s",
-					state.batch[b].name,
-					file_size_str(file_size(state.batch[b].fullPath)),
-					state.batch[b].description
-				)
-			);
-			item.fileItem = state.batch[b];
-		}
+        var fileItems = batchGet();
+        if (fileItems) {
+            fileItems.forEach( function(fileItem) { 
+                var item = self.tree.addItem(
+                    format(
+                        "%-25s %7s %s",
+                        formatFileName(fileItem.name),
+                        file_size_str(fileItem.size),
+                        fileItem.desc ? fileItem.desc : ""
+                    )
+                );
+                item.fileItem = fileItem;
+            });
+        }
 	}
 	buildTree();
 
@@ -162,20 +164,11 @@ var Batch = function(parentFrame) {
 	this.tree.open();
 
 	var sendBatch = function() {
-		var fn = system.temp_dir + format("%04d.dwn", user.number);
-		var f = new File(fn);
-		f.open("w");
-		for(var b in state.batch) {
-			var ifn = ixbFilenameFormat(state.batch[b].name);
-			var ext = ifn.substr(8, 3);
-			f.writeln(truncsp(ext) == "" ? ifn : (ifn.substr(0, 8) + "." + ext));
-		}
-		f.close();
 		console.clear(BG_BLACK|LIGHTGRAY);
-		bbs.batch_add_list(fn);
-		bbs.batch_download();
+        var result =  bbs.batch_download();
 		console.clear(BG_BLACK|LIGHTGRAY);
 		frame.invalidate();
+        return result;
 	}
 
 	this.cycle = function() {
@@ -185,15 +178,17 @@ var Batch = function(parentFrame) {
 	this.getcmd = function(cmd) {
 		switch(cmd.toUpperCase()) {
 			case "D":
-				sendBatch();
+				if (sendBatch()) {
+                    batchClear();
+                    this.close();
+                }
 				break;
 			case "G":
 				this.close();
 				break;
 			case "R":
 				if(typeof this.tree.currentItem.fileItem != "undefined") {
-					var key = md5_calc(this.tree.currentItem.fileItem.fullPath, true);
-					delete state.batch[key];
+                    batchRemove(this.tree.currentItem.fileItem);
 					this.tree.close();
 					buildTree();
 					this.tree.open();
@@ -212,6 +207,7 @@ var Batch = function(parentFrame) {
 		this.frame.delete();
 		state.chooser = chooser;
 		state.browse = browse;
+        chooser.refresh();
 	}
 
 }
@@ -246,21 +242,22 @@ var Details = function(parentFrame, dirFile) {
 	subFrame.center(dirFile.name);
 	subFrame.attr = BG_BLACK|LIGHTGRAY;
 	subFrame.gotoxy(1, 3);
+
 	subFrame.putmsg(
-		"       Size: " + file_size_str(file_size(dirFile.fullPath)) + "\r\n" +
-		"Uploaded by: " + dirFile.uploader + "\r\n" +
-		"Uploaded on: " + strftime("%d/%m/%Y %H:%M") + "\r\n" +
-		"  Downloads: " + dirFile.timesDownloaded + "\r\n" +
-		"    Credits: " + dirFile.credit + "\r\n" +
-		"Description: " + dirFile.description + "\r\n" +
+		"       Size: " + file_size_str(dirFile.size) + "\r\n" +
+		"Uploaded by: " + (dirFile.from ? dirFile.from : "")  + "\r\n" +
+		"Uploaded on: " + system.datestr(dirFile.added) + "\r\n" +
+		"  Downloads: " + (dirFile.times_downloaded ? dirFile.times_downloaded : "") + "\r\n" +
+		"    Credits: " + dirFile.cost + "\r\n" +
+		"Description: " + (dirFile.desc ? dirFile.desc : "") + "\r\n" +
 		"   Extended: "
 	);
-	if(dirFile.extendedDescription == "") {
+	if(dirFile.extdesc == "") {
 		subFrame.gotoxy(14, 9)
 		subFrame.putmsg("Not available.");
 	} else {
 		subFrame.gotoxy(1, 11);
-		subFrame.putmsg(dirFile.extendedDescription);
+		subFrame.putmsg(dirFile.extdesc);
 	}
 
 	frame.open();
@@ -373,6 +370,12 @@ var Chooser = function(parentFrame, list, treeBuilder) {
 		scrollBar.cycle();
 	}
 
+    this.refresh = function() {
+        self.tree.items = [];
+		list.forEach(function(item) { treeBuilder(self.tree, item); });
+		self.tree.open();
+    }
+
 	this.close = function() {
 		this.tree.close();
 		this.frame.close();
@@ -381,28 +384,103 @@ var Chooser = function(parentFrame, list, treeBuilder) {
 
 }
 
+var batchSelected = function(fileItem) {
+    var fn = system.data_dir + format("user/%04d.dnload", user.number);
+    var f = new File(fn);
+    if (f.open("r")) {
+        var filenames = f.iniGetSections();
+        for (var i = 0; i < filenames.length; ++i) {
+            if (filenames[i] === fileItem.name) {
+                var dirCode = f.iniGetValue(fileItem.name, "dir");
+                if (dirCode === fileItem.dirCode)
+                    return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+var batchGet = function() {
+    var fileItems = [];
+    var fn = system.data_dir + format("user/%04d.dnload", user.number);
+    var f = new File(fn);
+    if (!f.open("r"))
+        return;
+
+    var filenames = f.iniGetSections();
+    filenames.forEach( function(filename) {
+        var dirCode = f.iniGetValue(filename, "dir");
+        var fb = new FileBase(dirCode);
+        fb.open();
+        var item = fb.get(filename);
+        item.fullPath = fb.get_path(filename);
+        item.dirCode = dirCode;
+        fileItems.push(item);
+    });
+
+    return fileItems;
+}
+
+var batchAdd = function(fileItem) {
+    var fn = system.data_dir + format("user/%04d.dnload", user.number);
+    var f = new File(fn);
+    f.open(f.exists ? "r+" : "w+");
+    f.iniSetValue(fileItem.name, "dir", fileItem.dirCode);
+    f.close();
+}
+
+var batchRemove = function(fileItem) {
+    var fn = system.data_dir + format("user/%04d.dnload", user.number);
+    var f = new File(fn);
+    f.open(f.exists ? "r+" : "w+");
+    f.iniRemoveSection(fileItem.name);
+    f.close();
+}
+
+var batchClear = function() {
+    file_remove(system.data_dir + format("user/%04d.dnload", user.number));
+}
+
 var batchToggle = function() {
-	var key = md5_calc(state.chooser.tree.currentItem.fileItem.fullPath, true);
-	if(typeof state.batch[key] == "undefined") {
+    if (!batchSelected(state.chooser.tree.currentItem.fileItem)) {
 		state.chooser.tree.currentItem.text = state.chooser.tree.currentItem.text.replace(/^./, "*");
-		state.batch[key] = state.chooser.tree.currentItem.fileItem;
-	} else {
+        batchAdd(state.chooser.tree.currentItem.fileItem);
+    } else {
 		state.chooser.tree.currentItem.text = state.chooser.tree.currentItem.text.replace(/^\*/, " ");
-		delete state.batch[key];
-	}
+        batchRemove(state.chooser.tree.currentItem.fileItem);
+    }
 	state.chooser.tree.refresh();
+}
+
+var formatFileName = function(name, length) {
+    if (length === undefined || length < 5)
+        length = 24;
+    var split = name.split(".");
+    try {
+        var filename = split[0];
+        var extension = split[1];
+        if (extension.length > 3)
+            extension = extension.substring(0, 3);
+        if (filename.length > length - 4)
+            filename = filename.substring(0, length - 4);
+        var result = filename + '.' + extension;
+    } catch(err) {
+        return name;
+    }
+    return result;
 }
 
 var fileChooser = function(code) {
 
 	var treeBuilder = function(tree, item) {
-
 		var str = format(
-			" %-13s%-7s%8s %s",
-			item.name,
-			file_size_str(file_size(item.fullPath)),
-			system.datestr(item.uploadDate),
-			item.description
+			"%c%-25s%-8s%8s %s",
+            batchSelected(item) ? '*' : ' ',
+			formatFileName(item.name),
+            file_size_str(item.size),
+            system.datestr(item.added),
+            item.desc ? item.desc : ""
 		);
 
 		var treeItem = tree.addItem(
@@ -417,11 +495,17 @@ var fileChooser = function(code) {
 		tree.__commands__.SELECT = "I";
 	}
 
-	var fd = new FileDir(file_area.dir[code]);
+	var fd = new FileBase(code);
+    fd.open();
+    var files = fd.get_list("", FileBase.DETAIL.EXTENDED);
+    files.forEach(function(item) {
+        item.fullPath = fd.get_path(item.name);
+        item.dirCode = code;
+    });
 
 	state.chooser = new Chooser(
 		frame,
-		fd.files,
+		files,
 		treeBuilder
 	);
 	state.chooser.open();
@@ -434,7 +518,7 @@ var fileChooser = function(code) {
 	);
 	state.chooser.headerFrame.putmsg(
 		format(
-			" %-13s%-7s%8s %s",
+			" %-25s%-8s%8s %s",
 			"Filename", "Size", "Uploaded", "Description"
 		)
 	);
@@ -531,7 +615,7 @@ var inputHandler = function(userInput) {
 			if(state.browse != BROWSE_BATCH) {
 				ret = true;
 				state.chooser = new Batch(state.chooser.frame);
-			}
+            }
 			break;
 		case "D": // Download
 			if(state.browse == BROWSE_FILES && canDownload()) {
@@ -562,6 +646,7 @@ var inputHandler = function(userInput) {
 			}
 			break;
 		case "T": // Tag a file
+        case " ":
 			if(state.browse == BROWSE_FILES) {
 				ret = true;
 				if(canDownload())
@@ -660,6 +745,7 @@ var init = function() {
 	// chooser.
 	if ((gStartupDirCode != "") && dirCodeIsValid(gStartupDirCode))
 	{
+
 		fileChooser(gStartupDirCode);
 		state.dir = gStartupDirCode;
 		state.lib = file_area.dir[gStartupDirCode].lib_index;
@@ -705,6 +791,8 @@ function dirCodeIsValid(pDirCode) {
 	if (typeof(pDirCode) != "string")
 		return false;
 
+    console.print(gStartupDirCode);
+    console.pause();
 	var dirCodeUpper = pDirCode.toUpperCase();
 	var codeIsValid = false;
 	for (var dirCode in file_area.dir)
