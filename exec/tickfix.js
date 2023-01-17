@@ -37,15 +37,15 @@ if(argv.indexOf("-install") >= 0)
 {
 	print("Installing TickFix");
 	
-	var cnflib = load({}, "cnflib.js");
-	var xtrn_cnf = cnflib.read("xtrn.cnf");
-	if(!xtrn_cnf)
-		js.report_error("Failed to read xtrn.cnf", /* fatal */true);
+	var cfglib = load({}, "cfglib.js");
+	var xtrn_cfg = cfglib.read("xtrn.ini");
+	if(!xtrn_cfg)
+		js.report_error("Failed to read xtrn.ini", /* fatal */true);
 
 	var changed = false;
 	if(!xtrn_area.event["tickfix"]) {
 		print("Adding timed event: TICKFIX");
-		xtrn_cnf.event.push( {
+		xtrn_cfg.event.push( {
 				"code": "TICKFIX",
 				"cmd": "?tickfix",
 				"days": 0,
@@ -59,8 +59,8 @@ if(argv.indexOf("-install") >= 0)
 				});
 		changed = true;
 	}
-	if(changed && !cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
-		js.report_error("Failed to write xtrn.cnf", /* fatal */true);
+	if(changed && !cfglib.write("xtrn.ini", undefined, xtrn_cfg))
+		js.report_error("Failed to write xtrn.ini", /* fatal */true);
 
 	var f = new File(file_cfgname(system.ctrl_dir, "sbbsecho.ini"));
 	file_backup(f.name, backup_level);
