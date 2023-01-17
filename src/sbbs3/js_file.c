@@ -1134,6 +1134,46 @@ js_iniRemoveSection(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_iniRemoveSections(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*	prefix=NULL;
+	private_t*	p;
+	str_list_t	list;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if((p = (private_t*)js_GetClassPrivate(cx, obj, &js_file_class)) == NULL) {
+		return JS_FALSE ;
+	}
+
+	if(p->fp == NULL)
+		return JS_TRUE;
+
+	if(argc && argv[0] != JSVAL_VOID && argv[0] != JSVAL_NULL) {
+		JSVALUE_TO_MSTRING(cx, argv[0], prefix, NULL);
+		HANDLE_PENDING(cx, prefix);
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	if((list = iniReadFile(p->fp)) == NULL) {
+		JS_RESUMEREQUEST(cx, rc);
+		FREE_AND_NULL(prefix);
+		return JS_TRUE;
+	}
+
+	if(iniRemoveSections(&list, prefix))
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(iniWriteFile(p->fp, list)));
+
+	FREE_AND_NULL(prefix);
+	strListFree(&list);
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
 
 static JSBool
 js_iniGetSections(JSContext *cx, uintN argc, jsval *arglist)
@@ -3017,6 +3057,10 @@ static jsSyncMethodSpec js_file_functions[] = {
 	{"iniRemoveSection",js_iniRemoveSection,1,	JSTYPE_BOOLEAN,	JSDOCSTR("section")
 	,JSDOCSTR("remove specified <i>section</i> from <tt>.ini</tt> file.")
 	,314
+	},
+	{"iniRemoveSections",js_iniRemoveSections,1, JSTYPE_BOOLEAN,	JSDOCSTR("[prefix]")
+	,JSDOCSTR("remove all sections from <tt>.ini</tt> file, optionally only sections with the specified section name <i>prefix</i>.")
+	,32000
 	},
 	{"iniReadAll",		js_iniReadAll,		0,	JSTYPE_ARRAY,	JSDOCSTR("")
 	,JSDOCSTR("read entire <tt>.ini</tt> file into an array of string (with <tt>!include</tt>ed files).")
