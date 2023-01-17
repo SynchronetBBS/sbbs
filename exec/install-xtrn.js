@@ -2,7 +2,7 @@
 
 // This script parses a .ini file (default filename is install-xtrn.ini)
 // and installs the external programs defined within into the Synchronet BBS
-// configuration file: ctrl/xtrn.cnf.  The programs defined within this file
+// configuration file: ctrl/xtrn.ini.  The programs defined within this file
 // can by online programs (a.k.a. Doors), editors, or events.
 //
 // This script is intended for use by sysops using JSexec, for example:
@@ -96,7 +96,7 @@
 
 "use strict";
 
-const REVISION = "3.18c";
+const REVISION = "3.20a";
 const ini_fname = "install-xtrn.ini";
 
 load("sbbsdefs.js");
@@ -114,7 +114,7 @@ function aborted()
 	return false;
 }
 
-function install_xtrn_item(cnf, type, name, desc, item, cats)
+function install_xtrn_item(cfg, type, name, desc, item, cats)
 {
 	if (!item.code)
 		return false;
@@ -137,14 +137,14 @@ function install_xtrn_item(cnf, type, name, desc, item, cats)
 		return -1;
 	}
 	
-	if(find_code(cnf[type], item.code) >= 0) {
+	if(find_code(cfg[type], item.code) >= 0) {
 		if(options.auto
 			|| deny(desc + " (" + item.code + ") already exists, continue"))
 			return false;
 	}
 
 	while (!item.code && !aborted()
-		|| (find_code(cnf[type], item.code) >= 0
+		|| (find_code(cfg[type], item.code) >= 0
 			&& print(desc + " Internal Code (" + item.code + ") already exists!")))
 		item.code = js.global.prompt(desc + " Internal code");
 
@@ -166,7 +166,7 @@ function install_xtrn_item(cnf, type, name, desc, item, cats)
 		return false;
 	}
 	
-	if (type == "xtrn") {
+	if (type == "prog") {
 		if (!xtrn_area.sec_list.length)
 			return "No external program sections have been created";
 
@@ -207,9 +207,9 @@ function install_xtrn_item(cnf, type, name, desc, item, cats)
 	} catch(e) {
 		return e;
 	}
-	cnf[type].push(item);
+	cfg[type].push(item);
 	if (options.debug)
-		print(JSON.stringify(cnf[type], null, 4));
+		print(JSON.stringify(cfg[type], null, 4));
 	
 	print(desc + " (" + item.name + ") installed successfully");
 	return true;
@@ -321,10 +321,10 @@ function install(ini_fname)
 	if(subs.length)
 		print("Sub-categories: " + subs.join(", "));
 
-	var cnflib = load({}, "cnflib.js");
-	var xtrn_cnf = cnflib.read(system.ctrl_dir + "xtrn.cnf");
-	if (!xtrn_cnf)
-		return "Failed to read " + system.ctrl_dir + "xtrn.cnf";
+	var cfglib = load({}, "cfglib.js");
+	var xtrn_cfg = cfglib.read(system.ctrl_dir + "xtrn.ini");
+	if (!xtrn_cfg)
+		return "Failed to read " + system.ctrl_dir + "xtrn.ini";
 	
 	var startup_dir = ini_fname.substr(0, Math.max(ini_fname.lastIndexOf("/"), ini_fname.lastIndexOf("\\"), 0));
 	startup_dir = relpath.get(system.ctrl_dir, startup_dir);
@@ -338,9 +338,9 @@ function install(ini_fname)
 		return result;
 
 	const types = {
-		prog:	{ desc: "External Program", 	struct: "xtrn" },
+		prog:	{ desc: "External Program", 	struct: "prog" },
 		event:	{ desc: "External Timed Event", struct: "event" },
-		editor:	{ desc: "External Editor",		struct: "xedit" }
+		editor:	{ desc: "External Editor",		struct: "editor" }
 	};
 	
 	var done = false;
@@ -350,7 +350,7 @@ function install(ini_fname)
 			var item = list[i];
 			if (item.startup_dir === undefined)
 				item.startup_dir = startup_dir;
-			var result = install_xtrn_item(xtrn_cnf, types[t].struct, name, types[t].desc, item, cats);
+			var result = install_xtrn_item(xtrn_cfg, types[t].struct, name, types[t].desc, item, cats);
 			if (typeof result !== 'boolean')
 				return result;
 			if (result === true)
@@ -459,8 +459,8 @@ function install(ini_fname)
 	}
 
 	if (installed) {
-		if (!options.debug && !cnflib.write(system.ctrl_dir + "xtrn.cnf", undefined, xtrn_cnf))
-			return "Failed to write " + system.ctrl_dir + "xtrn.cnf";
+		if (!options.debug && !cfglib.write(system.ctrl_dir + "xtrn.ini", undefined, xtrn_cfg))
+			return "Failed to write " + system.ctrl_dir + "xtrn.ini";
 		print("Installed " + installed + " items from " + ini_fname + " successfully");
 	}
 
