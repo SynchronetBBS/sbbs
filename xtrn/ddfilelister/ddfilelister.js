@@ -52,6 +52,12 @@
  *                              downloaded and date/time last downloaded.  Also, fixed a bug
  *                              where some descriptions were blank in the Frame object because
  *                              of a leading normal attribute (the fix may be a kludge though).
+ * 2023-01-18 Eric Oulashin     Version 2.08
+ *                              When doing a file search in multiple directories, the file
+ *                              library & directory is now shown in the header as the user
+ *                              scrolls through the file list/search results.  Also,
+ *                              used lfexpand() to ensure the extended description has
+ *                              CRLF endings, useful for splitting it into multiple lines properly.
 */
 
 "use strict";
@@ -109,8 +115,8 @@ if (system.version_num < 31900)
 }
 
 // Lister version information
-var LISTER_VERSION = "2.07";
-var LISTER_DATE = "2022-12-02";
+var LISTER_VERSION = "2.08";
+var LISTER_DATE = "2023-01-18";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1985,7 +1991,8 @@ function doFrameInputLoop(pFrame, pScrollbar, pFrameContentStr, pAdditionalQuitK
 // Parameters:
 //  pTextOnly: Only draw the library & directory text (no decoration or other text).
 //             This is optional & defaults to false.
-function displayFileLibAndDirHeader(pTextOnly)
+//  pDirCodeOverride: Optional string: If this is valid, this will be used for the library & directory name
+function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride)
 {
 	var textOnly = (typeof(pTextOnly) === "boolean" ? pTextOnly : false);
 
@@ -2008,7 +2015,7 @@ function displayFileLibAndDirHeader(pTextOnly)
 	var dirCode = "";
 	if (gScriptMode == MODE_LIST_CURDIR)
 		dirCode = bbs.curdir_code;
-	else if (typeof(gFileList.allSameDir) == "boolean" && gFileList.allSameDir && gFileList.length > 0)
+	else if (typeof(gFileList.allSameDir) === "boolean" && gFileList.allSameDir && gFileList.length > 0)
 		dirCode = gFileList[0].dirCode;
 	if (dirCode.length > 0)
 	{
@@ -2016,6 +2023,13 @@ function displayFileLibAndDirHeader(pTextOnly)
 		dirIdx = file_area.dir[dirCode].index;
 		libDesc = file_area.lib_list[libIdx].description;
 		dirDesc =  file_area.dir[dirCode].description;
+	}
+	else if (typeof(pDirCodeOverride) === "string" && file_area.dir.hasOwnProperty(pDirCodeOverride))
+	{
+		libIdx = file_area.dir[pDirCodeOverride].lib_index;
+		dirIdx = file_area.dir[pDirCodeOverride].index;
+		libDesc = file_area.lib_list[libIdx].description;
+		dirDesc =  file_area.dir[pDirCodeOverride].description;
 	}
 	else
 	{
@@ -2161,6 +2175,17 @@ function createFileListMenu(pQuitKeys)
 
 	// Define the menu function for getting an item
 	fileListMenu.GetItem = function(pIdx) {
+		// If doing a file search, then update the header with the file library & directory
+		// name of the currently selected file (instead of displaying "Various"). This seems
+		// like a bit of a hack, but it works.
+		var allSameDir = (typeof(gFileList.allSameDir) === "boolean" ? gFileList.allSameDir : false);
+		if (isDoingFileSearch() && !allSameDir)
+		{
+			var originalCurPos = console.getxy();
+			displayFileLibAndDirHeader(true, gFileList[pIdx].dirCode);
+			console.gotoxy(originalCurPos);
+		}
+
 		var menuItemObj = this.MakeItemWithRetval(pIdx);
 		var filename = shortenFilename(gFileList[pIdx].name, this.filenameLen, true);
 		// FileBase.format_name() could also be called to format the filename for display:
@@ -2177,6 +2202,7 @@ function createFileListMenu(pQuitKeys)
 		                          filename,
 								  getFileSizeStr(gFileList[pIdx].size, this.fileSizeLen),
 		                          desc.substr(0, this.shortDescLen));
+
 		return menuItemObj;
 	}
 
@@ -3419,11 +3445,15 @@ function searchDirWithFilespec(pDirCode, pFilespec)
 	var filebase = new FileBase(pDirCode);
 	if (filebase.open())
 	{
-		var fileList = filebase.get_list(pFilespec, FileBase.DETAIL.NORM, 0, true, gFileSortOrder); // Or EXTENDED
+		var fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
+		var fileList = filebase.get_list(pFilespec, fileDetail, 0, true, gFileSortOrder);
 		retObj.foundFiles = (fileList.length > 0);
 		filebase.close();
 		for (var i = 0; i < fileList.length; ++i)
 		{
+			// Fix line endings in extdesc if necessary
+			if (fileList[i].hasOwnProperty("extdesc") && /\r\n$/.test(fileList[i].extdesc))
+				fileList[i].extdesc = lfexpand(fileList[i].extdesc);
 			fileList[i].dirCode = pDirCode;
 			gFileList.push(fileList[i]);
 		}
@@ -3472,6 +3502,8 @@ function searchDirWithDescUpper(pDirCode, pDescUpper)
 			}
 			if (!fileIsMatch && fileList[i].hasOwnProperty("extdesc"))
 			{
+				// Fix line endings if necessary
+				fileList[i].extdesc = lfexpand(fileList[i].extdesc);
 				var descLines = fileList[i].extdesc.split("\r\n");
 				var fileDesc = strip_ctrl(descLines.join(" ")).toUpperCase();
 				fileIsMatch = (fileDesc.indexOf(pDescUpper) > -1);
@@ -3515,13 +3547,17 @@ function searchDirNewFiles(pDirCode, pSinceTime)
 	var filebase = new FileBase(pDirCode);
 	if (filebase.open())
 	{
-		var fileList = filebase.get_list("*", FileBase.DETAIL.NORM, 0, true, gFileSortOrder);
+		var fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
+		var fileList = filebase.get_list("*", fileDetail, 0, true, gFileSortOrder);
 		filebase.close();
 		for (var i = 0; i < fileList.length; ++i)
 		{
 			if (fileList[i].added >= pSinceTime)
 			{
 				retObj.foundFiles = true;
+				// Fix line endings in extdesc if necessary
+				if (fileList[i].hasOwnProperty("extdesc"))
+					fileList[i].extdesc = lfexpand(fileList[i].extdesc);
 				fileList[i].dirCode = pDirCode;
 				gFileList.push(fileList[i]);
 			}
@@ -3823,4 +3859,10 @@ function refreshScreenMainContent(pUpperLeftX, pUpperLeftY, pWidth, pHeight, pSe
 			displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx, firstRow, lastRow, width);
 		}
 	}
+}
+
+// Returns whether or not the lister is doing a file search
+function isDoingFileSearch()
+{
+	return (gScriptMode == MODE_SEARCH_FILENAME || gScriptMode == MODE_SEARCH_DESCRIPTION || gScriptMode == MODE_NEW_FILE_SEARCH);
 }
