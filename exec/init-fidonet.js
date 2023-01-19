@@ -20,7 +20,7 @@
 
 "use strict";
 
-const REVISION = "2.0;
+const REVISION = "2.0";
 require('sbbsdefs.js', 'SUB_NAME');
 const temp_node = 9999;
 var netname;
@@ -472,7 +472,7 @@ if(netname) {
 
 var msgs_ini = new File(system.ctrl_dir + "msgs.ini");
 print("Reading Message Area configuration file: " + msgs_ini.name);
-if(!f.open(f.exists ? 'r+':'w+')) {
+if(!msgs_ini.open(msgs_ini.exists ? 'r+':'w+')) {
 	alert("Failed to read " + msgs_ini.name);
 	exit(1);
 }

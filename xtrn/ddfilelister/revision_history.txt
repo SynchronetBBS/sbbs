@@ -5,11 +5,14 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.08     2023-01-18   When doing a file search in multiple directories, the
+                      file library & directory is now shown in the header as
+                      the user scrolls through the file list/search results.
+					  Also, improved searching with extended descriptions to
+                      ensure all lines of the description are displayed.
 2.07     2022-12-02   In a file's extended description, added the number of
                       times downloaded and date/time last downloaded.  Also,
-                      fixed a bug where some descriptions were blank in the
-                      extended description box because of a leading normal
-                      attribute.
+                      fixed a bug where some descriptions were blank
 2.06     2022-04-13   When extended file descriptions are enabled, the file date
                       is now shown with the file description on the last line.
 2.05a    2022-03-13   Fix for "fileDesc is not defined" error when displaying
