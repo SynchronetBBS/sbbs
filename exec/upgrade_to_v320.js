@@ -332,7 +332,8 @@ for(var i in cnf.chan) {
 	delete obj.code;
 	obj.actions = cnf.actset[obj.actset].name;
 	delete obj.actset;
-	obj.guru = cnf.guru[obj.guru].code;
+	if(cnf.guru[obj.guru])
+		obj.guru = cnf.guru[obj.guru].code;
 	ini.iniSetObject(key, obj);
 }
 for(var i in cnf.chatact) {
