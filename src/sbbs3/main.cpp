@@ -2774,7 +2774,7 @@ void event_thread(void* arg)
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=FALSE;
 				}
-				if(remove(g.gl_pathv[i]))
+				if(fexist(g.gl_pathv[i]) && remove(g.gl_pathv[i]) != 0)
 					sbbs->errormsg(WHERE, ERR_REMOVE, g.gl_pathv[i], 0);
 				if(remove(semfile))
 					sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
