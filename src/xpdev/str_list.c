@@ -702,7 +702,7 @@ char* strListJoin(const str_list_t list, char* buf, size_t buflen, const char* s
 {
 	size_t		i;
 
-	if(buflen < 1)
+	if(buf == NULL || buflen < 1)
 		return NULL;
 
 	*buf = '\0';
