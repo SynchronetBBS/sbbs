@@ -2173,18 +2173,21 @@ function createFileListMenu(pQuitKeys)
 	// Set up the menu's description width, colors, and format string
 	fileListMenu.SetItemWidthsColorsAndFormatStr();
 
+	fileListMenu.lastFileDirCode = "";
 	// Define the menu function for getting an item
 	fileListMenu.GetItem = function(pIdx) {
+		// In here, 'this' refers to the fileListMenu object
 		// If doing a file search, then update the header with the file library & directory
 		// name of the currently selected file (instead of displaying "Various"). This seems
 		// like a bit of a hack, but it works.
 		var allSameDir = (typeof(gFileList.allSameDir) === "boolean" ? gFileList.allSameDir : false);
-		if (isDoingFileSearch() && !allSameDir)
+		if (isDoingFileSearch() && !allSameDir && gFileList[pIdx].dirCode != this.lastFileDirCode)
 		{
 			var originalCurPos = console.getxy();
 			displayFileLibAndDirHeader(true, gFileList[pIdx].dirCode);
 			console.gotoxy(originalCurPos);
 		}
+		this.lastFileDirCode = gFileList[pIdx].dirCode;
 
 		var menuItemObj = this.MakeItemWithRetval(pIdx);
 		var filename = shortenFilename(gFileList[pIdx].name, this.filenameLen, true);
@@ -2202,7 +2205,6 @@ function createFileListMenu(pQuitKeys)
 		                          filename,
 								  getFileSizeStr(gFileList[pIdx].size, this.fileSizeLen),
 		                          desc.substr(0, this.shortDescLen));
-
 		return menuItemObj;
 	}
 
