@@ -76,7 +76,8 @@ for(var i in cnf) {
 ini.iniSetObject("module", mod);
 
 var newuser = {};
-cnf.newuser_command_shell = cnf.command_shell[cnf.newuser_command_shell].code;
+if(cnf.command_shell[cnf.newuser_command_shell])
+	cnf.newuser_command_shell = cnf.command_shell[cnf.newuser_command_shell].code;
 for(var i in cnf) {
 	if(i.substring(0,8) == "newuser_") {
 		newuser[i.substring(8)] = cnf[i];
