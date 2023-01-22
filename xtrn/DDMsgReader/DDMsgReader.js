@@ -81,7 +81,7 @@
  *                              convertYStyleMCIAttrsToSync (true/false). Requires the updated attr_conv.js
  *                              in sbbs/exec/load.
  * 2023-01-22 Eric Oulashin     Version 1.61
- *                              Fix: When replying to an email with an unknown sender (empty or "All"),
+ *                              Fix: When replying to an email with an unknown sender (empty),
  *                              no longer gives the error "Invalid user field: 0"; also, if the sender is
  *                              unknown, prompts the user for a user name/number/email address to send
  *                              the reply to.
@@ -10088,7 +10088,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		}
 		else
 		{
-			// If the 'from' username is "All" or blank (which can be the case if a guest sent the email), then
+			// If the 'from' username is blank (which can be the case if a guest sent the email), then
 			// ask the user where or to whom they want to send the message
 			if (pMsgHdr.from.length == 0)
 			{
