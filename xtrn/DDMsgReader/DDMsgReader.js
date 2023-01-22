@@ -4750,12 +4750,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	else
 		allowChgMsgArea = (this.subBoardCode != "mail");
 
-	// Hack: If the "from" name in the header is empty (as it might be sometimes), then
-	// set it to "All".  This prevents Synchronet from crashing, and it will also default
-	// the "to" name in the user's reply to "All".
-	if (msgHeader.from.length == 0)
-		msgHeader.from = "All";
-
 	// Get the message text and see if it has any ANSI codes.  Remove any pause
 	// codes it might have.  If it has ANSI codes, then don't use the scrolling
 	// interface so that the ANSI gets displayed properly.
@@ -10036,9 +10030,11 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 	var wasNetMailOrigin = false;
 	if ((typeof(pMsgHdr.from_net_type) != "undefined") && (pMsgHdr.from_net_type != NET_NONE))
 	{
+		if (user.is_sysop) console.print("\x01n\r\nHere 1\r\n\x01p"); // Temporary
 		wasNetMailOrigin = true;
 		if ((typeof(pMsgHdr.from_net_addr) == "string") && (pMsgHdr.from_net_addr.length > 0))
 		{
+			if (user.is_sysop) console.print("\x01n\r\nHere 2\r\n\x01p"); // Temporary
 			couldNotDetermineNetAddr = false;
 			// Build the email address to reply to.  If the original message is
 			// internet email, then simply use the from_net_addr field from the
@@ -10047,6 +10043,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			var emailAddr = "";
 			if (typeof(pMsgHdr.from_net_addr) === "string" && pMsgHdr.from_net_addr.length > 0)
 			{
+				if (user.is_sysop) console.print("\x01n\r\nHere 3\r\n\x01p"); // Temporary
 				if (pMsgHdr.from_net_type == NET_INTERNET)
 					emailAddr = pMsgHdr.from_net_addr;
 				else
@@ -10057,12 +10054,14 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			emailAddr = console.getstr(emailAddr, 60, K_LINE|K_EDIT);
 			if ((typeof(emailAddr) == "string") && (emailAddr.length > 0))
 			{
+				if (user.is_sysop) console.print("\x01n\r\nHere 4\r\n\x01p"); // Temporary
 				replyMode |= WM_NETMAIL;
 				retObj.sendSucceeded = bbs.netmail(emailAddr, replyMode, null, pMsgHdr);
 				console.pause();
 			}
 			else
 			{
+				if (user.is_sysop) console.print("\x01n\r\nHere 5\r\n\x01p"); // Temporary
 				retObj.sendSucceeded = false;
 				console.putmsg(bbs.text(Aborted), P_SAVEATR);
 				console.pause();
@@ -10091,7 +10090,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		{
 			// If the 'from' username is "All" or blank (which can be the case if a guest sent the email), then
 			// ask the user where or to whom they want to send the message
-			if (pMsgHdr.from.length == 0 || pMsgHdr.from.toUpperCase() === "ALL")
+			if (pMsgHdr.from.length == 0)
 			{
 				console.attributes = "NC";
 				console.crlf();
@@ -18727,6 +18726,9 @@ function removeInitialColorFromMsgBody(pMsgBody)
 // name.
 function findUserNumWithName(pName)
 {
+	if (typeof(pName) !== "string" || pName.length == 0)
+		return 0;
+
 	var userNum = system.matchuser(pName);
 	if (userNum == 0)
 	{
