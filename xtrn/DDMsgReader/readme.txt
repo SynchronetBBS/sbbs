@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.59
-                           Release date: 2022-12-29
+                                 Version 1.60
+                           Release date: 2023-01-20
 
                                      by
 
@@ -673,6 +673,11 @@ msgListSort                           How to sort the message list.  This can
                                       fastest, as it does not sort the list;
                                       Written adds time since sorting is
                                       required.
+
+convertYStyleMCIAttrsToSync           Whether or not to convert Y-style MCI
+                                      attribute codes to Synchronet attribute
+                                      codes. Valid values are true and false.
+
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings

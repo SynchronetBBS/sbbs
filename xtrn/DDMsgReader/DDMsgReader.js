@@ -75,6 +75,11 @@
  *                              Also, there's a new user setting to toggle whether or not to use the scrollbar
  *                              in the scrolling reader. Currently there is no alternate progress displayed
  *                              if not using the scrollbar, but that is planned for a future update.
+ * 2023-01-20 Eric Oulashin     Version 1.60
+ *                              DDMsgReader can now optionally convert Y-style MCI attribute codes to
+ *                              to Synchronet attribute codes, with the new configuration setting
+ *                              convertYStyleMCIAttrsToSync (true/false). Requires the updated attr_conv.js
+ *                              in sbbs/exec/load.
  */
 
 "use strict";
@@ -179,8 +184,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.59";
-var READER_DATE = "2022-12-29";
+var READER_VERSION = "1.60";
+var READER_DATE = "2023-01-20";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1066,6 +1071,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 
 	// Message list sort option
 	this.msgListSort = MSG_LIST_SORT_DATETIME_RECEIVED;
+
+	// Whether or not to convert Y-style MCI attribute codes to Synchronet attribute codes
+	this.convertYStyleMCIAttrsToSync = false;
 
 	// Whether or not to use the scrollbar in the enhanced message reader
 	this.useEnhReaderScrollbar = true;
@@ -8222,6 +8230,8 @@ function DigDistMsgReader_ReadConfigFile()
 					if (valueUpper == "WRITTEN")
 						this.msgListSort = MSG_LIST_SORT_DATETIME_WRITTEN;
 				}
+				else if (settingUpper == "CONVERTYSTYLEMCIATTRSTOSYNC")
+					this.convertYStyleMCIAttrsToSync = (valueUpper == "TRUE");
 			}
 		}
 
@@ -12625,6 +12635,9 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	// Convert other BBS color codes to Synchronet attribute codes if the settings
 	// to do so are enabled.
 	msgTextAltered = convertAttrsToSyncPerSysCfg(msgTextAltered, false);
+	// If configured to convert Y-style MCI attribute codes to Synchronet attribute codes, then do so
+	if (this.convertYStyleMCIAttrsToSync)
+		msgTextAltered = YStyleMCIAttrsToSyncAttrs(msgTextAltered);
 
 	// If this is a message with a "By: <name> to <name>" and a date, then
 	// sometimes such a message might have enter characters (ASCII 13), which
