@@ -201,27 +201,8 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 
 int mqtt_pub_noval(struct mqtt* mqtt, enum topic_depth depth, const char* key)
 {
-	if(mqtt == NULL || mqtt->cfg == NULL)
-		return MQTT_FAILURE;
-	if(!mqtt->cfg->mqtt.enabled)
-		return MQTT_SUCCESS;
-#ifdef USE_MOSQUITTO
-	if(mqtt->handle != NULL) {
-		char sub[128];
-		mqtt_topic(mqtt, depth, sub, sizeof(sub), "%s", key);
-		return mosquitto_publish_v5(mqtt->handle,
-			/* mid: */NULL,
-			/* topic: */sub,
-			/* payloadlen */0,
-			/* payload */NULL,
-			/* qos */mqtt->cfg->mqtt.publish_qos,
-			/* retain */true,
-			/* properties */NULL);
-	}
-#endif
-	return MQTT_FAILURE;
+	return mqtt_pub_strval(mqtt, depth, key, NULL);
 }
-
 
 int mqtt_pub_strval(struct mqtt* mqtt, enum topic_depth depth, const char* key, const char* str)
 {
@@ -236,7 +217,7 @@ int mqtt_pub_strval(struct mqtt* mqtt, enum topic_depth depth, const char* key, 
 		return mosquitto_publish_v5(mqtt->handle,
 			/* mid: */NULL,
 			/* topic: */sub,
-			/* payloadlen */strlen(str),
+			/* payloadlen */(str == NULL) ? 0 : strlen(str),
 			/* payload */str,
 			/* qos */mqtt->cfg->mqtt.publish_qos,
 			/* retain */true,
@@ -532,6 +513,8 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 		}
 	}
 	mqtt_pub_noval(mqtt, TOPIC_SERVER, "recycle");
+	mqtt_pub_noval(mqtt, TOPIC_SERVER, "client_list");
+	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "client_count", 0);
 	mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "recycle");
 	mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "recycle");
 
@@ -617,15 +600,19 @@ int mqtt_client_on(struct mqtt* mqtt, BOOL on, int sock, client_t* client, BOOL 
 				memcpy(node->data, client, sizeof(client_t));
 		} else {
 			listAddNodeData(&mqtt->client_list, client, sizeof(client_t), sock, LAST_NODE);
-			mqtt->served++;
 		}
-	} else
+	} else {
 		listRemoveTaggedNode(&mqtt->client_list, sock, /* free_data: */TRUE);
+		mqtt->served++;
+	}
 
+	#define MAX_CLIENT_STRLEN 512
 	str_list_t list = strListInit();
+	size_t client_count = 0;
 	for(list_node_t* node = mqtt->client_list.first; node != NULL; node = node->next) {
+		char str[MAX_CLIENT_STRLEN + 1];
 		client_t* client = node->data;
-		strListAppendFormat(&list, "%ld\t%s\t%s\t%s\t%s\t%u\t%lu"
+		snprintf(str, sizeof(str), "%ld\t%s\t%s\t%s\t%s\t%u\t%lu"
 			,node->tag
 			,client->protocol
 			,client->user
@@ -634,15 +621,23 @@ int mqtt_client_on(struct mqtt* mqtt, BOOL on, int sock, client_t* client, BOOL 
 			,client->port
 			,(ulong)client->time
 			);
-		}
+		strListPush(&list, str);
+		client_count++;
+	}
 	listUnlock(&mqtt->client_list);
-	char buf[1024]; // TODO
-	strListJoin(list, buf, sizeof(buf), "\n");
+	char* buf = NULL;
+	if(client_count > 0) {
+		size_t buflen = client_count * MAX_CLIENT_STRLEN * 2;
+		buf = malloc(buflen);
+		strListJoin(list, buf, buflen, "\n");
+	}
 	strListFree(&list);
 
 	mqtt_client_count(mqtt);
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "served", mqtt->served);
-	return mqtt_pub_strval(mqtt, TOPIC_SERVER, "client_list", buf);
+	int result = mqtt_pub_strval(mqtt, TOPIC_SERVER, "client_list", buf);
+	free(buf);
+	return result;
 }
 
 int mqtt_client_count(struct mqtt* mqtt)

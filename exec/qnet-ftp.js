@@ -1,4 +1,3 @@
-// $Id: qnet-ftp.js,v 1.4 2020/05/22 06:58:34 rswindell Exp $
 //****************************************************************************
 //	  JavaScript module for performing FTP-based QWKnet call-outs
 //    Inspired by exec/qnet-ftp.src
@@ -8,7 +7,7 @@
 // Usage: ?qnet-ftp <hub-id> [address] [password] [port]
 // Example: ?qnet-ftp VERT vert.synchro.net YOURPASS 21
 
-const REVISION = "$Revision: 1.4 $".split(' ')[1];
+const REVISION = "1.5";
 
 require('ftp.js', 'FTP');
 
@@ -30,11 +29,11 @@ var qwk_fname = system.data_dir + qwk;
 
 log(LOG_DEBUG, js.exec_file + " v" + REVISION);
 
-if(file_getcase(qwk_fname)) {
+if(file_size(qwk_fname) > 0) {
 	alert(qwk_fname + " already exists");
 	for(var i = 0; ; i++) {
 		qwk_fname = system.data_dir + hubid + ".qw" + i;
-		if(!file_getcase(qwk_fname))
+		if(file_size(qwk_fname) < 1)
 			break;
 		alert(qwk_fname + " already exists");
 		if(i == 9)
