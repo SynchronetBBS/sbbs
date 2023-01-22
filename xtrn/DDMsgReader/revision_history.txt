@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.60     2023-01-20   DDMsgReader can now optionally convert Y-style MCI
+                      attribute codes to to Synchronet attribute codes, with
+                      the new configuration setting convertYStyleMCIAttrsToSync
+                      (true/false).
 1.59     2022-12-29   For Synchronet above 3.20, now reads the external editor
                       quote wrap setting from xtrn.ini.  Below version 3.20, the
                       quote wrap setting is read from xtrn.cnf.
