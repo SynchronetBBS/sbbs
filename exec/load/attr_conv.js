@@ -1065,7 +1065,7 @@ function ANSIMultiConvertToSyncCodes(pText)
 // Return value: The text with Y-style MCI attribute codes converted to Synchronet attribute codes
 function YStyleMCIAttrsToSyncAttrs(pText)
 {
-	if (/\x19c/.test(pText))
+	if (/\x19[cz]/.test(pText))
 	{
 		return pText.replace(/\x19c0/g,    "\x01n\x01k")  // Normal Black
 		            .replace(/\x19c1/g,    "\x01n\x01r")  // Normal Red
