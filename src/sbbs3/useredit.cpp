@@ -1092,15 +1092,13 @@ void sbbs_t::maindflts(user_t* user)
 						strcat(str,tmp); 
 					}
 				ch=(char)getkeys(str,0);
-				if(ch==quit_key() || sys_status&SS_ABORT) {
+				if(sys_status & SS_ABORT)
+					break;
+				if(ch==quit_key())
 					ch=' ';
-					putuserstr(user->number, USER_PROT, ""); 
-				}
-				else {
-					tmp[0] = ch;
-					tmp[1] = '\0';
-					putuserstr(user->number, USER_PROT, tmp);
-				}
+				tmp[0] = ch;
+				tmp[1] = '\0';
+				putuserstr(user->number, USER_PROT, tmp);
 				if(yesno(text[HangUpAfterXferQ]))
 					user->misc|=AUTOHANG;
 				else
