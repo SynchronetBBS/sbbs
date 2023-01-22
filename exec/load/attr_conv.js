@@ -1057,6 +1057,45 @@ function ANSIMultiConvertToSyncCodes(pText)
 	return updatedText;
 }
 
+// Converts Y-style MCI attribute codes to Synchronet attribute codes
+//
+// Parameters:
+//  pText: A string containing the text to convert
+//
+// Return value: The text with Y-style MCI attribute codes converted to Synchronet attribute codes
+function YStyleMCIAttrsToSyncAttrs(pText)
+{
+	if (/\x19[cz]/.test(pText))
+	{
+		return pText.replace(/\x19c0/g,    "\x01n\x01k")  // Normal Black
+		            .replace(/\x19c1/g,    "\x01n\x01r")  // Normal Red
+		            .replace(/\x19c2/g,    "\x01n\x01g")  // Normal Green
+		            .replace(/\x19c3/g,    "\x01n\x01y")  // Brown
+		            .replace(/\x19c4/g,    "\x01n\x01b")  // Normal Blue
+		            .replace(/\x19c5/g,    "\x01n\x01m")  // Normal Magenta
+		            .replace(/\x19c6/g,    "\x01n\x01c")  // Normal Cyan
+		            .replace(/\x19c7/g,    "\x01n\x01w")  // Normal White
+		            .replace(/\x19c8/g,    "\x01k\x01h")  // High Intensity Black
+		            .replace(/\x19c9/g,    "\x01r\x01h")  // High Intensity Red
+		            .replace(/\x19c[Aa]/g, "\x01g\x01h")  // High Intensity Green
+		            .replace(/\x19c[Bb]/g, "\x01y\x01h")  // Yellow
+		            .replace(/\x19c[Cc]/g, "\x01b\x01h")  // High Intensity Blue
+		            .replace(/\x19c[Dd]/g, "\x01m\x01h")  // High Intensity Magenta
+		            .replace(/\x19c[Ee]/g, "\x01c\x01h")  // High Intensity Cyan
+		            .replace(/\x19c[Ff]/g, "\x01w\x01h")  // High Intensity White
+		            .replace(/\x19z0/g,    "\x010")       // Background Black
+		            .replace(/\x19z1/g,    "\x011")       // Background Red
+		            .replace(/\x19z2/g,    "\x012")       // Background Green
+		            .replace(/\x19z3/g,    "\x013")       // Background Brown
+		            .replace(/\x19z4/g,    "\x014")       // Background Blue
+		            .replace(/\x19z5/g,    "\x015")       // Background Magenta
+		            .replace(/\x19z6/g,    "\x016")       // Background Cyan
+		            .replace(/\x19z7/g,    "\x017");      // Background White
+	}
+	else
+		return pText; // Just return the original string if no "Y" MCI codes found.
+}
+
 // Converts non-Synchronet attribute codes in text to Synchronet attribute
 // codes according to the toggle options in SCFG > Message Options > Extra
 // Attribute Codes
