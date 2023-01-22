@@ -80,6 +80,11 @@
  *                              to Synchronet attribute codes, with the new configuration setting
  *                              convertYStyleMCIAttrsToSync (true/false). Requires the updated attr_conv.js
  *                              in sbbs/exec/load.
+ * 2023-01-22 Eric Oulashin     Version 1.61
+ *                              Fix: When replying to an email with an unknown sender (empty),
+ *                              no longer gives the error "Invalid user field: 0"; also, if the sender is
+ *                              unknown, prompts the user for a user name/number/email address to send
+ *                              the reply to.
  */
 
 "use strict";
@@ -184,8 +189,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.60";
-var READER_DATE = "2023-01-20";
+var READER_VERSION = "1.61";
+var READER_DATE = "2023-01-22";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -404,7 +409,7 @@ if (typeof(MSG_MIMEATTACH) != "undefined")
 // A regular expression to check whether a string is an email address
 var gEmailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 // A regular expression to check whether a string is a FidoNet email address
-var gFTNEmailregex = /^.*@[0-9]+:[0-9]+\/[0-9]+$/;
+var gFTNEmailRegex = /^.*@[0-9]+:[0-9]+\/[0-9]+$/;
 // An array of regular expressions for checking for ANSI codes (globally in a string & ignore case)
 var gANSIRegexes = [ new RegExp(ascii(27) + "\[[0-9]+[mM]", "gi"),
                      new RegExp(ascii(27) + "\[[0-9]+(;[0-9]+)+[mM]", "gi"),
@@ -4744,12 +4749,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		allowChgMsgArea = pAllowChgArea;
 	else
 		allowChgMsgArea = (this.subBoardCode != "mail");
-
-	// Hack: If the "from" name in the header is empty (as it might be sometimes), then
-	// set it to "All".  This prevents Synchronet from crashing, and it will also default
-	// the "to" name in the user's reply to "All".
-	if (msgHeader.from.length == 0)
-		msgHeader.from = "All";
 
 	// Get the message text and see if it has any ANSI codes.  Remove any pause
 	// codes it might have.  If it has ANSI codes, then don't use the scrolling
@@ -10026,16 +10025,17 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		replyMode |= pReplyMode;
 
 	// If the message is a networked message, then try to address the message
-	// to the network address.  Otherwise, try to look up the user to reply
-	// locally.
-	var replyLocally = true;
+	// to the network address.
+	var couldNotDetermineNetAddr = true;
 	var wasNetMailOrigin = false;
 	if ((typeof(pMsgHdr.from_net_type) != "undefined") && (pMsgHdr.from_net_type != NET_NONE))
 	{
+		if (user.is_sysop) console.print("\x01n\r\nHere 1\r\n\x01p"); // Temporary
 		wasNetMailOrigin = true;
 		if ((typeof(pMsgHdr.from_net_addr) == "string") && (pMsgHdr.from_net_addr.length > 0))
 		{
-			replyLocally = false;
+			if (user.is_sysop) console.print("\x01n\r\nHere 2\r\n\x01p"); // Temporary
+			couldNotDetermineNetAddr = false;
 			// Build the email address to reply to.  If the original message is
 			// internet email, then simply use the from_net_addr field from the
 			// message header.  Otherwise (i.e., on a networked sub-board), use
@@ -10043,6 +10043,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			var emailAddr = "";
 			if (typeof(pMsgHdr.from_net_addr) === "string" && pMsgHdr.from_net_addr.length > 0)
 			{
+				if (user.is_sysop) console.print("\x01n\r\nHere 3\r\n\x01p"); // Temporary
 				if (pMsgHdr.from_net_type == NET_INTERNET)
 					emailAddr = pMsgHdr.from_net_addr;
 				else
@@ -10053,21 +10054,25 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			emailAddr = console.getstr(emailAddr, 60, K_LINE|K_EDIT);
 			if ((typeof(emailAddr) == "string") && (emailAddr.length > 0))
 			{
+				if (user.is_sysop) console.print("\x01n\r\nHere 4\r\n\x01p"); // Temporary
 				replyMode |= WM_NETMAIL;
 				retObj.sendSucceeded = bbs.netmail(emailAddr, replyMode, null, pMsgHdr);
 				console.pause();
 			}
 			else
 			{
+				if (user.is_sysop) console.print("\x01n\r\nHere 5\r\n\x01p"); // Temporary
 				retObj.sendSucceeded = false;
 				console.putmsg(bbs.text(Aborted), P_SAVEATR);
 				console.pause();
 			}
 		}
 	}
-	if (replyLocally)
+	// If we could not determine the network mail address, we may need to try to look up the user to
+	// reply locally.
+	if (couldNotDetermineNetAddr)
 	{
-		// Replying to a local user
+		// Most likely replying to a local user
 		replyMode |= WM_EMAIL;
 		// Look up the user number of the "from" user name in the message header
 		var userNumber = findUserNumWithName(pMsgHdr.from); // Used to use system.matchuser(pMsgHdr.from)
@@ -10083,15 +10088,82 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		}
 		else
 		{
-			retObj.sendSucceeded = false;
-			console.crlf();
-			console.print();
-			var errorMsg = "\x01n\x01h\x01yThe recipient (\x01w" + pMsgHdr.from + "\x01y) was not found";
-			if (wasNetMailOrigin)
-				errorMsg += " and no network address was found for this message";
-			errorMsg += "\x01n";
-			console.crlf();
-			console.pause();
+			// If the 'from' username is blank (which can be the case if a guest sent the email), then
+			// ask the user where or to whom they want to send the message
+			if (pMsgHdr.from.length == 0)
+			{
+				console.attributes = "NC";
+				console.crlf();
+				console.print("Sender is unknown. Enter user name/number/email/netmail address\x01h:\x01n");
+				console.crlf();
+				var msgDest = console.getstr(console.screen_columns - 1, K_LINE);
+				if (msgDest != "")
+				{
+					var recipientMatched = true;
+					var sendViaNetmail = false;
+					// See if the user entered a netmail address
+					if (gEmailRegex.test(msgDest) || gFTNEmailRegex.test(msgDest))
+						sendViaNetmail = true;
+					// Check for a valid user number
+					else if (/^[0-9]+/.test(msgDest))
+					{
+						if (system.username(+msgDest) != "")
+							userNumber = +msgDest;
+						else
+							recipientMatched = false;
+					}
+					// Match local user by name/alias
+					else
+					{
+						userNumber = findUserNumWithName(msgDest);
+						if (userNumber <= 0)
+							recipientMatched = false;
+					}
+					// If no recipient was matched, then output an error.  Otherwise, do a reply.
+					if (!recipientMatched)
+					{
+						retObj.sendSucceeded = false;
+						console.crlf();
+						var errorMsg = "\x01n\x01h\x01yThe recipient (\x01w" + msgDest + "\x01y) was not found";
+						if (wasNetMailOrigin)
+							errorMsg += " and no network address was found for this message";
+						errorMsg += "\x01n";
+						console.print(errorMsg);
+						console.crlf();
+						console.pause();
+					}
+					else if (sendViaNetmail)
+					{
+						replyMode |= WM_NETMAIL;
+						retObj.sendSucceeded = bbs.netmail(msgDest, replyMode, null, pMsgHdr);
+						console.pause();
+					}
+					else
+					{
+						console.crlf();
+						retObj.sendSucceeded = bbs.email(userNumber, replyMode, null, null, pMsgHdr);
+						console.pause();
+					}
+				}
+				else
+				{
+					console.attributes = "N";
+					console.print("Canceled");
+					console.crlf();
+				}
+			}
+			else
+			{
+				retObj.sendSucceeded = false;
+				console.crlf();
+				var errorMsg = "\x01n\x01h\x01yThe recipient (\x01w" + pMsgHdr.from + "\x01y) was not found";
+				if (wasNetMailOrigin)
+					errorMsg += " and no network address was found for this message";
+				errorMsg += "\x01n";
+				console.print(errorMsg);
+				console.crlf();
+				console.pause();
+			}
 		}
 	}
 
@@ -14337,7 +14409,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 			// accept it as the message destination.  It could be an Internet
 			// address (someone@somewhere.com), FidoNet address (sysop@1:327/4),
 			// or a QWK address (someone@HOST).
-			// We could specifically use gEmailRegex and gFTNEmailregex to test
+			// We could specifically use gEmailRegex and gFTNEmailRegex to test
 			// msgDest, but just using those would be too restrictive.
 			if (/^.*@.*$/.test(msgDest))
 			{
@@ -18654,13 +18726,34 @@ function removeInitialColorFromMsgBody(pMsgBody)
 // name.
 function findUserNumWithName(pName)
 {
+	if (typeof(pName) !== "string" || pName.length == 0)
+		return 0;
+
 	var userNum = system.matchuser(pName);
 	if (userNum == 0)
-		userNum = system.matchuserdata(U_NAME, pName);
+	{
+		try
+		{
+			userNum = system.matchuserdata(U_NAME, pName);
+		}
+		catch (error) {}
+	}
 	if (userNum == 0)
-		userNum = system.matchuserdata(U_ALIAS, pName);
+	{
+		try
+		{
+			userNum = system.matchuserdata(U_ALIAS, pName);
+		}
+		catch (error) {}
+	}
 	if (userNum == 0)
-		userNum = system.matchuserdata(U_HANDLE, pName);
+	{
+		try
+		{
+			userNum = system.matchuserdata(U_HANDLE, pName);
+		}
+		catch (error) {}
+	}
 	return userNum;
 }
 
