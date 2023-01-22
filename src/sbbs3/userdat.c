@@ -672,7 +672,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		,user->zipcode
 		,user->phone
 		,user->birth
-		,user->sex
+		,user->sex ? user->sex : '?'
 		,user->comment
 		,user->modem
 		,user->misc
@@ -683,7 +683,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		,user->xedit && user->xedit <= cfg->total_xedits ? cfg->xedit[user->xedit - 1]->code : ""
 		,user->shell < cfg->total_shells ? cfg->shell[user->shell]->code : ""
 		,user->tmpext
-		,user->prot
+		,user->prot ? user->prot : ' '
 		,user->cursub
 		,user->curdir
 		,user->curxtrn
