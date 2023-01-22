@@ -34,7 +34,9 @@ for(var c=0; c < options.login_prompts; c++) {
 	bbs.nodesync();
 
 	// Display login prompt
-	var str = "\r\n\1n\1h\1cEnter \1wUser Name";
+	const legacy_login_prompt = "NN: \r";
+	const legacy_password_prompt = "PW: \r";
+	var str = "\1n\1h\1cEnter \1wUser Name";
 	if(!(bbs.node_settings&NM_NO_NUM))
 		str += "\1c or \1wNumber";
 	if(!(system.settings&SYS_CLOSED))
@@ -42,7 +44,9 @@ for(var c=0; c < options.login_prompts; c++) {
 	if(guest)
 		str += "\1c or '\1yGuest\1c'";
 	str += "\r\nLogin: \1w";
-	console.print(word_wrap(str, console.screen_columns-1).trimRight());
+	console.print("\r\n"
+		+ legacy_login_prompt
+		+ word_wrap(str, console.screen_columns-1).trimRight());
 
 	// Get login string
 	var str;
@@ -64,7 +68,7 @@ for(var c=0; c < options.login_prompts; c++) {
 	   continue;
 	}
 	// Continue normal login (prompting for password)
-	if(bbs.login(str, "\1n\1c\1hPW:\b\b\bPassword: \1w")) {
+	if(bbs.login(str, legacy_password_prompt + "\1n\1c\1hPassword: \1w")) {
 		bbs.logon();
 		exit();
 	}
