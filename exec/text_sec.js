@@ -10,7 +10,7 @@ require("cga_defs.js", 'LIGHTGRAY');
 require("sbbsdefs.js", 'P_CPM_EOF');
 
 var file_cnf = new File(system.ctrl_dir + "file.ini");
-if(!file_cnf.open(file_cnf.exists ? 'r+':'w+')) {
+if(!file_cnf.open('r')) {
 	alert("Error opening " + file_cnf.name);
 	exit(0);
 }
@@ -114,7 +114,7 @@ while(bbs.online) {
 						break;
 					i--;
 				}
-				var path;
+				var fname;
 				var files = directory(backslash(txtsec_data(usrsec[cursec])) + "*");
 				for(var f = 0; f < files.length; f++) {
 					var match = false;
@@ -123,24 +123,25 @@ while(bbs.online) {
 							match = true;
 					}
 					if(!match) {
-						path = file_getname(files[f]);
+						fname = file_getname(files[f]);
 						break;
 					}
 				}
 				console.print(format(bbs.text(AddTextFilePath)
 					,system.data_dir, usrsec[cursec].code.toLowerCase()));
-				var path = console.getstr(path, 128, K_EDIT|K_LINE|K_TRIM);
-				if(!path || console.aborted)
+				fname = console.getstr(fname, 128, K_EDIT|K_LINE|K_TRIM);
+				if(!fname || console.aborted)
 					break;
+				var path = fname;
 				if(!file_exists(path))
-					path = backslash(txtsec_data(usrsec[cursec])) + path;
+					path = backslash(txtsec_data(usrsec[cursec])) + fname;
 				console.printfile(path);
 				console.crlf();
 				console.print(bbs.text(AddTextFileDesc));
 				var desc = console.getstr(file_getname(path), 70, K_EDIT|K_LINE|K_TRIM|K_AUTODEL);
 				if(!desc || console.aborted)
 					break;
-				list.splice(i, 0, { name: file_getname(path), desc: desc, path: path });
+				list.splice(i, 0, { name: path, desc: desc });
 				write_list(usrsec[cursec], list);
 				break;
 			}
