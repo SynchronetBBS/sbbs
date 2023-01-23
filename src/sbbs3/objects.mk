@@ -285,9 +285,6 @@ SMBACTIV_OBJS = 	$(LOAD_CFG_OBJS) \
 READSAUCE_OBJS = \
 			$(OBJODIR)/readsauce$(OFILE)
 
-SHOWSTAT_OBJS = \
-			$(OBJODIR)/showstat$(OFILE)
-
 PKTDUMP_OBJS =		$(OBJODIR)/pktdump$(OFILE)
 
 FMSGDUMP_OBJS = 	$(OBJODIR)/fmsgdump$(OFILE)
