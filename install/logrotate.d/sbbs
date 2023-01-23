@@ -1,7 +1,9 @@
 # Synchronet syslog file rotation configuration
 # Assumes rsyslogd is configured to log sbbs syslog output to /var/log/sbbs.log
 # Assumes user/group sbbs:sbbs has been created and is used to run sbbs
-# Copy this file to /etc/logrotate.d/ and edit to suit
+# Symlink or copy this file to /etc/logrotate.d/ and edit to suit
+# File must be owned by root (uid 0) and not be writeable by group/all:
+# -rw-r--r-- 1 root root ... sbbs
 /var/log/sbbs.log {
 	weekly
 	maxsize 1G
