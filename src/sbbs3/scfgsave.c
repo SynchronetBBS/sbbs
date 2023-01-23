@@ -365,7 +365,6 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 
 	/* Message Sub-boards */
 
-	unsigned int subnum = 0;	/* New sub-board numbering (as saved) */
 	for(unsigned grp = 0; grp < cfg->total_grps; grp++) {
 		for(uint i=0; i<cfg->total_subs; i++) {
 			if(cfg->sub[i]->lname[0] == 0
@@ -377,7 +376,6 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			SAFEPRINTF2(name, "sub:%s:%s"
 				,cfg->grp[grp]->sname, cfg->sub[i]->code_suffix);
 			str_list_t section = strListInit();
-			cfg->sub[i]->subnum = subnum++;
 			iniSetString(&section, name, "description", cfg->sub[i]->lname, NULL);
 			iniSetString(&section, name, "name", cfg->sub[i]->sname, NULL);
 			iniSetString(&section, name, "qwk_name", cfg->sub[i]->qwkname, NULL);
@@ -506,17 +504,15 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		strListMerge(&ini, section);
 		free(section);
 		for(uint j=0; j<cfg->qhub[i]->subs; j++) {
-			if(cfg->qhub[i]->sub[j] == NULL)
-				continue;
-			int subnum = cfg->qhub[i]->sub[j]->subnum;
-			if(!is_valid_subnum(cfg, subnum))
+			sub_t* sub = cfg->qhub[i]->sub[j];
+			if(sub == NULL)
 				continue;
 			SAFEPRINTF2(name, "qhubsub:%s:%u", cfg->qhub[i]->id, cfg->qhub[i]->conf[j]);
 			str_list_t section = strListInit();
 			char code[LEN_EXTCODE + 1];
 			SAFEPRINTF2(code,"%s%s"
-				,cfg->grp[cfg->sub[subnum]->grp]->code_prefix
-				,cfg->sub[subnum]->code_suffix);
+				,cfg->grp[sub->grp]->code_prefix
+				,sub->code_suffix);
 			iniSetString(&section, name, "sub", code, NULL);
 			iniSetHexInt(&section, name, "settings", cfg->qhub[i]->mode[j], NULL);
 			strListMerge(&ini, section);
