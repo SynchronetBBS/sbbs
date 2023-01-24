@@ -454,7 +454,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 			,client->socket,client->service->protocol);
 
 	if(client->client!=NULL) {
-		client->client->user=client->user.alias;
+		SAFECOPY(client->client->user, client->user.alias);
 		client->client->usernum = client->user.number;
 		client_on(client->socket,client->client,TRUE /* update */);
 	}
@@ -646,7 +646,7 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	client.size=sizeof(client);
 	client.protocol=service_client->service->protocol;
 	client.time=time32(NULL);
-	client.user=STR_UNKNOWN_USER;
+	SAFECOPY(client.user, STR_UNKNOWN_USER);
 	client.usernum = 0;
 	SAFECOPY(client.host,client.user);
 
@@ -663,7 +663,7 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc>1) {
 		JSVALUE_TO_MSTRING(cx, argv[1], cstr, NULL);
 		HANDLE_PENDING(cx, cstr);
-		client.user=cstr;
+		SAFECOPY(client.user, cstr);
 	}
 
 	if(argc>2)
@@ -702,7 +702,7 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 	memset(&client,0,sizeof(client));
 	client.size=sizeof(client);
 	client.protocol=service_client->service->protocol;
-	client.user=STR_UNKNOWN_USER;
+	SAFECOPY(client.user, STR_UNKNOWN_USER);
 	SAFECOPY(client.host,client.user);
 
 	sock=js_socket(cx,argv[0]);
@@ -717,7 +717,7 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc>1) {
 		JSVALUE_TO_MSTRING(cx, argv[1], cstr, NULL);
-		client.user=cstr;
+		SAFECOPY(client.user, cstr);
 	}
 
 	if(argc>2)
@@ -1123,7 +1123,7 @@ static void js_service_thread(void* arg)
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&service_client.addr);
 	client.protocol=service->protocol;
-	client.user=STR_UNKNOWN_USER;
+	SAFECOPY(client.user, STR_UNKNOWN_USER);
 	client.usernum = 0;
 	service_client.client=&client;
 
@@ -1491,7 +1491,7 @@ static void native_service_thread(void* arg)
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&service_client.addr);
 	client.protocol=service->protocol;
-	client.user=STR_UNKNOWN_USER;
+	SAFECOPY(client.user, STR_UNKNOWN_USER);
 	client.usernum = 0;
 
 #ifdef _WIN32

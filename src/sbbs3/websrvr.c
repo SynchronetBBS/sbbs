@@ -1624,7 +1624,7 @@ void http_logon(http_session_t * session, user_t *usr)
 		session->user.logontime = (time32_t)session->logon_time;
 		putuserdat(&scfg, &session->user);
 	}
-	session->client.user=session->username;
+	SAFECOPY(session->client.user, session->username);
 	session->client.usernum = session->user.number;
 	client_on(session->socket, &session->client, /* update existing client record? */TRUE);
 
@@ -6640,7 +6640,7 @@ void http_session_thread(void* arg)
 	SAFECOPY(session.client.host, host_name);
 	session.client.port=inet_addrport(&session.addr);
 	session.client.time=time32(NULL);
-	session.client.user=session.username;
+	SAFECOPY(session.client.user, session.username);
 	session.client.size=sizeof(session.client);
 	session.client.usernum = 0;
 	client_on(session.socket, &session.client, /* update existing client record? */FALSE);

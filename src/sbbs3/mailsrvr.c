@@ -1170,7 +1170,7 @@ static void pop3_thread(void* arg)
 	SAFECOPY(client.addr,host_ip);
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&pop3.client_addr);
-	client.user=STR_UNKNOWN_USER;
+	SAFECOPY(client.user, STR_UNKNOWN_USER);
 	client.usernum = 0;
 	client_on(socket,&client,FALSE /* update */);
 
@@ -1355,7 +1355,7 @@ static void pop3_thread(void* arg)
 		putuserstr(&scfg, user.number, USER_IPADDR, host_ip);
 
 		/* Update client display */
-		client.user=user.alias;
+		SAFECOPY(client.user, user.alias);
 		client.usernum = user.number;
 		client_on(socket,&client,TRUE /* update */);
 		activity=FALSE;
@@ -3178,7 +3178,7 @@ static void smtp_thread(void* arg)
 	SAFECOPY(client.addr,host_ip);
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&smtp.client_addr);
-	client.user=STR_UNKNOWN_USER;
+	SAFECOPY(client.user, STR_UNKNOWN_USER);
 	client.usernum = 0;
 	client_on(socket,&client,FALSE /* update */);
 
@@ -4231,7 +4231,7 @@ static void smtp_thread(void* arg)
 			}
 
 			/* Update client display */
-			client.user=relay_user.alias;
+			SAFECOPY(client.user, relay_user.alias);
 			client.usernum = relay_user.number;
 			client_on(socket,&client,TRUE /* update */);
 
@@ -4329,7 +4329,7 @@ static void smtp_thread(void* arg)
 			}
 
 			/* Update client display */
-			client.user=relay_user.alias;
+			SAFECOPY(client.user, relay_user.alias);
 			client.usernum = relay_user.number;
 			client_on(socket,&client,TRUE /* update */);
 
@@ -4419,7 +4419,7 @@ static void smtp_thread(void* arg)
 
 			/* Update client display */
 			if(relay_user.number==0) {
-				client.user=reverse_path;
+				SAFECOPY(client.user, reverse_path);
 				client_on(socket,&client,TRUE /* update */);
 			}
 

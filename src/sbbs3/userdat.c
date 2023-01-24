@@ -1696,7 +1696,6 @@ int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* done)
 
 	if(client->size == sizeof(client)) {
 		free((char*)client->protocol);
-		free((char*)client->user);
 	}
 	memset(client, 0, sizeof(*client));
 	client->size = sizeof(client);
@@ -1712,8 +1711,7 @@ int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* done)
 	SAFECOPY(client->host, iniReadString(fp, ROOT_SECTION, "host", "<none>", value));
 	if((p = iniReadString(fp, ROOT_SECTION, "prot", NULL, value)) != NULL)
 		client->protocol = strdup(p);
-	if((p = iniReadString(fp, ROOT_SECTION, "name", NULL, value)) != NULL)
-		client->user = strdup(p);
+	SAFECOPY(client->user, iniReadString(fp, ROOT_SECTION, "name", "<unknown>", value));
 	*done = iniReadInteger(fp, ROOT_SECTION, "done", client->time);
 	fclose(fp);
 	return sock;
