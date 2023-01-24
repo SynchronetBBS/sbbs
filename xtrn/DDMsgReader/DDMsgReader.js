@@ -1936,6 +1936,7 @@ function DigDistMsgReader_SearchMsgScan(pSearchModeStr, pTxtToSearch, pSubCode)
 		//console.print(replaceAtCodesInStr(this.text.msgScanAbortedText));
 		//console.crlf();
 		console.putmsg(this.text.msgScanAbortedText);
+		console.crlf();
 		console.pause();
 	}
 	// Restore this.subBoardCode if necessary
@@ -2326,6 +2327,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 			//console.print(replaceAtCodesInStr(this.text.msgScanAbortedText));
 			//console.crlf();
 			console.putmsg(this.text.msgScanAbortedText);
+			console.crlf();
 			console.pause();
 			return;
 		}
