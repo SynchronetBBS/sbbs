@@ -1,8 +1,4 @@
-/* xpdatetime.c */
-
 /* Cross-platform (and eXtra Precision) date/time functions */
-
-/* $Id: xpdatetime.c,v 1.13 2015/11/25 07:27:07 sbbs Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -386,6 +370,20 @@ char* xpDateTime_to_isoDateTimeStr(xpDateTime_t dt
 		,xpTime_to_isoTimeStr(dt.time, time_sep, precision, time_str, sizeof(time_str))
 		,xpTimeZone_to_isoTimeZoneStr(dt.zone,time_sep,tz_str,sizeof(tz_str)));
 
+	return str;
+}
+
+char* time_to_isoDateTimeStr(time_t t, xpTimeZone_t zone, char* str, size_t maxlen)
+{
+	snprintf(str, maxlen, "%" PRIu32 "T%06" PRIu32 "%d"
+		,time_to_isoDate(t), time_to_isoTime(t), zone);
+	return str;
+}
+
+char* gmtime_to_isoDateTimeStr(time_t t, char* str, size_t maxlen)
+{
+	snprintf(str, maxlen, "%" PRIu32 "T%06" PRIu32 "Z"
+		,gmtime_to_isoDate(t), gmtime_to_isoTime(t));
 	return str;
 }
 

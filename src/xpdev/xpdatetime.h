@@ -138,6 +138,10 @@ DLLEXPORT char* xpDateTime_to_isoDateTimeStr(xpDateTime_t
 						,const char* date_sep, const char* datetime_sep, const char* time_sep
 						,int precision
 						,char* str, size_t maxlen);
+DLLEXPORT char* time_to_isoDateTimeStr(time_t, xpTimeZone_t
+						,char* str, size_t maxlen);
+DLLEXPORT char* gmtime_to_isoDateTimeStr(time_t
+						,char* str, size_t maxlen);
 
 #if defined(__cplusplus)
 }
