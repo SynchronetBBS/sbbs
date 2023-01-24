@@ -46,7 +46,7 @@ bool sbbs_t::logon()
 	if(!useron.number)
 		return(false);
 
-	client.user=useron.alias;
+	SAFECOPY(client.user, useron.alias);
 	client.usernum = useron.number;
 	client_on(client_socket,&client,TRUE /* update */);
 
