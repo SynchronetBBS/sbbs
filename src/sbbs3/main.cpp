@@ -5570,7 +5570,7 @@ NO_SSH:
 		SAFECOPY(client.addr,host_ip);
 		SAFECOPY(client.host,host_name);
 		client.port=inet_addrport(&client_addr);
-		client.user=STR_UNKNOWN_USER;
+		SAFECOPY(client.user, STR_UNKNOWN_USER);
 		client.usernum = 0;
 		client_on(client_socket,&client,FALSE /* update */);
 

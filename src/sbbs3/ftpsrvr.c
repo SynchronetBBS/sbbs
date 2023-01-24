@@ -2267,7 +2267,7 @@ static void ctrl_thread(void* arg)
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&ftp.client_addr);
 	client.protocol="FTP";
-	client.user=STR_UNKNOWN_USER;
+	SAFECOPY(client.user, STR_UNKNOWN_USER);
 	client.usernum = 0;
 	client_on(sock,&client,FALSE /* update */);
 
@@ -2529,11 +2529,10 @@ static void ctrl_thread(void* arg)
 
 			/* Update client display */
 			if(user.pass[0]) {
-				client.user=user.alias;
+				SAFECOPY(client.user, user.alias);
 				loginSuccess(startup->login_attempt_list, &ftp.client_addr);
 			} else {	/* anonymous */
-				sprintf(str,"%s <%.32s>",user.alias,password);
-				client.user=str;
+				SAFEPRINTF2(client.user, "%s <%.32s>", user.alias, password);
 			}
 			client.usernum = user.number;
 			client_on(sock,&client,TRUE /* update */);
