@@ -503,7 +503,8 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "served", mqtt->served);
 
 #ifdef USE_MOSQUITTO
-	mosquitto_message_callback_set(mqtt->handle, mqtt_message_received);
+	if(mqtt->handle != NULL)
+		mosquitto_message_callback_set(mqtt->handle, mqtt_message_received);
 #endif
 	if(mqtt->startup->type == SERVER_TERM) {
 		bbs_startup_t* bbs_startup = (bbs_startup_t*)startup;
