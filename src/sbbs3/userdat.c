@@ -572,8 +572,7 @@ static char* format_datetime(time_t t, char* str, size_t size)
 	if(t == 0)
 		*str = '\0';
 	else
-		safe_snprintf(str, size, "%" PRIu32 "T%06" PRIu32 "Z"
-			,gmtime_to_isoDate(t), gmtime_to_isoTime(t));
+		gmtime_to_isoDateTimeStr(t, str, size);
 	return str;
 }
 
