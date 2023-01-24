@@ -672,9 +672,7 @@ if (gDoDDMR)
 	// Before this script finishes, make sure the terminal attributes are set back
 	// to normal (in case there are any attributes left on, such as background,
 	// blink, etc.)
-	console.print("\x01n");
-	if (console.term_supports(USER_ANSI))
-		console.print("\x01B[0m"); // ESC[0m
+	console.attributes = "N";
 }
 
 // End of script execution.  Functions below:
