@@ -5003,6 +5003,8 @@ void bbs_thread(void* arg)
 	/* Create missing node directories */
 	lprintf(LOG_INFO,"Verifying/creating node directories");
 	for(i=0;i<=scfg.sys_nodes;i++) {
+		char newfn[MAX_PATH + 1];
+		char oldfn[MAX_PATH + 1];
 		if(i) {
 			int err;
 			if((err = md(scfg.node_path[i-1])) != 0) {
@@ -5012,25 +5014,26 @@ void bbs_thread(void* arg)
 			}
 		}
 		// Convert old dsts.dab -> dsts.ini
-		if(!fexist(dstats_fname(&scfg, i, str, sizeof(str)))) {
-			lprintf(LOG_NOTICE, "Auto-upgrading daily statistics data file: %s", str);
+		SAFEPRINTF(oldfn, "%sdsts.dab", i ? scfg.node_path[i-1] : scfg.ctrl_dir);
+		if(fexist(oldfn) && !fexist(dstats_fname(&scfg, i, newfn, sizeof(newfn)))) {
+			lprintf(LOG_NOTICE, "Auto-upgrading daily statistics data file: %s", oldfn);
 			stats_t stats;
 			getstats(&scfg, i, &stats);
 			putstats(&scfg, i, &stats);
 		}
-		if(!fexist(cstats_fname(&scfg, i, str, sizeof(str)))) {
+		SAFEPRINTF(oldfn, "%scsts.dab", i ? scfg.node_path[i-1] : scfg.ctrl_dir);
+		if(fexist(oldfn) && !fexist(cstats_fname(&scfg, i, newfn, sizeof(newfn)))) {
 			ulong record = 0;
-			lprintf(LOG_NOTICE, "Auto-upgrading cumulative statistics log file: %s", str);
+			lprintf(LOG_NOTICE, "Auto-upgrading cumulative statistics log file: %s", oldfn);
 			stats_t stats;
 			FILE* out = fopen_cstats(&scfg, i, /* write: */TRUE);
 			if(out == NULL) {
-				lprintf(LOG_ERR, "!ERROR %d (%s) creating: %s", errno, strerror(errno), str);
+				lprintf(LOG_ERR, "!ERROR %d (%s) creating: %s", errno, strerror(errno), newfn);
 				continue;
 			}
-			SAFEPRINTF(str, "%scsts.dab", i ? scfg.node_path[i-1] : scfg.ctrl_dir);
-			FILE* in = fopen(str, "rb");
+			FILE* in = fopen(oldfn, "rb");
 			if(in == NULL)
-				lprintf(LOG_ERR, "!ERROR %d (%s) creating: %s", errno, strerror(errno), str);
+				lprintf(LOG_ERR, "!ERROR %d (%s) opening: %s", errno, strerror(errno), oldfn);
 			else {
 				ZERO_VAR(stats);
 				while(!feof(in)) {
@@ -5051,7 +5054,7 @@ void bbs_thread(void* arg)
 					record++;
 					if(legacy_stats.logons > 1000
 						|| legacy_stats.timeon > 10000) {
-						lprintf(LOG_WARNING, "Skipped corrupted record #%lu in %s", record, str);
+						lprintf(LOG_WARNING, "Skipped corrupted record #%lu in %s", record, oldfn);
 						continue;
 					}
 					ZERO_VAR(stats);
