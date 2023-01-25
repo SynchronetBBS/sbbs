@@ -1360,7 +1360,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		fprintf(dosemubatfp,"SET PCBDRIVE=%s\r\n",nodedrive);
 		fprintf(dosemubatfp,"SET PCBDIR=\\\r\n");
 
-		char gamedir[MAX_PATH+1];
+		char gamedir[MAX_PATH+1]{};
 		if(startup_dir!=NULL && startup_dir[0]) {
 			SAFECOPY(str, startup_dir);
 			*lastchar(str) = 0;
