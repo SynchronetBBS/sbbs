@@ -290,11 +290,8 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t shell_list = iniGetParsedSectionList(sections, "shell:");
 	cfg->total_shells = (uint16_t)strListCount(shell_list);
 
-	if(cfg->total_shells) {
-		if((cfg->shell=(shell_t **)malloc(sizeof(shell_t *)*cfg->total_shells))==NULL)
-			return allocerr(error, maxerrlen, fname, "shells", sizeof(shell_t *)*cfg->total_shells);
-	} else
-		cfg->shell=NULL;
+	if((cfg->shell=(shell_t **)malloc(sizeof(shell_t *)*cfg->total_shells))==NULL)
+		return allocerr(error, maxerrlen, fname, "shells", sizeof(shell_t *)*cfg->total_shells);
 
 	cfg->new_shell = 0;
 	for(uint i=0; i<cfg->total_shells; i++) {
@@ -369,11 +366,8 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t grp_list = iniGetParsedSectionList(sections, "grp:");
 	cfg->total_grps = (uint16_t)strListCount(grp_list);
 
-	if(cfg->total_grps) {
-		if((cfg->grp=(grp_t **)malloc(sizeof(grp_t *)*cfg->total_grps))==NULL)
-			return allocerr(error, maxerrlen, fname, "groups", sizeof(grp_t *)*cfg->total_grps);
-	} else
-		cfg->grp=NULL;
+	if((cfg->grp=(grp_t **)malloc(sizeof(grp_t *)*cfg->total_grps))==NULL)
+		return allocerr(error, maxerrlen, fname, "groups", sizeof(grp_t *)*cfg->total_grps);
 
 	for(uint i=0; i<cfg->total_grps; i++) {
 
@@ -398,11 +392,8 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t sub_list = iniGetParsedSectionList(sections, "sub:");
 	cfg->total_subs = (uint16_t)strListCount(sub_list);
 
-	if(cfg->total_subs) {
-		if((cfg->sub=(sub_t **)malloc(sizeof(sub_t *)*cfg->total_subs))==NULL)
-			return allocerr(error, maxerrlen, fname, "subs", sizeof(sub_t *)*cfg->total_subs);
-	} else
-		cfg->sub=NULL;
+	if((cfg->sub=(sub_t **)malloc(sizeof(sub_t *)*cfg->total_subs))==NULL)
+		return allocerr(error, maxerrlen, fname, "subs", sizeof(sub_t *)*cfg->total_subs);
 
 	cfg->total_subs = 0;
 	for(uint i=0; sub_list[i] != NULL; i++) {
@@ -483,11 +474,8 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t faddr_list = iniGetStringList(section, NULL, "addr_list", ",", "");
 	cfg->total_faddrs = (uint16_t)strListCount(faddr_list);
 
-	if(cfg->total_faddrs) {
-		if((cfg->faddr=(faddr_t *)malloc(sizeof(faddr_t)*cfg->total_faddrs))==NULL)
-			return allocerr(error, maxerrlen, fname, "fido_addrs", sizeof(faddr_t)*cfg->total_faddrs);
-	} else
-		cfg->faddr=NULL;
+	if((cfg->faddr=(faddr_t *)malloc(sizeof(faddr_t)*cfg->total_faddrs))==NULL)
+		return allocerr(error, maxerrlen, fname, "fido_addrs", sizeof(faddr_t)*cfg->total_faddrs);
 
 	for(uint i=0;i<cfg->total_faddrs;i++)
 		cfg->faddr[i] = smb_atofaddr(NULL, faddr_list[i]);
@@ -511,11 +499,8 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t qhub_list = iniGetParsedSectionList(sections, "qhub:");
 	cfg->total_qhubs = (uint16_t)strListCount(qhub_list);
 
-	if(cfg->total_qhubs) {
-		if((cfg->qhub=(qhub_t **)malloc(sizeof(qhub_t *)*cfg->total_qhubs))==NULL)
-			return allocerr(error, maxerrlen, fname, "qhubs", sizeof(qhub_t*)*cfg->total_qhubs);
-	} else
-		cfg->qhub=NULL;
+	if((cfg->qhub=(qhub_t **)malloc(sizeof(qhub_t *)*cfg->total_qhubs))==NULL)
+		return allocerr(error, maxerrlen, fname, "qhubs", sizeof(qhub_t*)*cfg->total_qhubs);
 
 	cfg->total_qhubs = 0;
 	for(uint i=0; qhub_list[i] != NULL; i++) {

@@ -81,11 +81,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t fextr_list = iniGetParsedSectionList(sections, "extractor:");
 	cfg->total_fextrs = (uint16_t)strListCount(fextr_list);
 
-	if(cfg->total_fextrs) {
-		if((cfg->fextr=(fextr_t **)malloc(sizeof(fextr_t *)*cfg->total_fextrs))==NULL)
-			return allocerr(error, maxerrlen, fname, "fextrs", sizeof(fextr_t*)*cfg->total_fextrs); 
-	} else
-		cfg->fextr=NULL;
+	if((cfg->fextr=(fextr_t **)malloc(sizeof(fextr_t *)*cfg->total_fextrs))==NULL)
+		return allocerr(error, maxerrlen, fname, "fextrs", sizeof(fextr_t*)*cfg->total_fextrs);
 
 	for(uint i=0; i<cfg->total_fextrs; i++) {
 		if((cfg->fextr[i]=(fextr_t *)malloc(sizeof(fextr_t)))==NULL)
@@ -106,11 +103,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t fcomp_list = iniGetParsedSectionList(sections, "compressor:");
 	cfg->total_fcomps = (uint16_t)strListCount(fcomp_list);
 
-	if(cfg->total_fcomps) {
-		if((cfg->fcomp=(fcomp_t **)malloc(sizeof(fcomp_t *)*cfg->total_fcomps))==NULL)
-			return allocerr(error, maxerrlen, fname, "fcomps", sizeof(fcomp_t*)*cfg->total_fcomps); 
-	} else
-		cfg->fcomp=NULL;
+	if((cfg->fcomp=(fcomp_t **)malloc(sizeof(fcomp_t *)*cfg->total_fcomps))==NULL)
+		return allocerr(error, maxerrlen, fname, "fcomps", sizeof(fcomp_t*)*cfg->total_fcomps);
 
 	for(uint i=0; i<cfg->total_fcomps; i++) {
 		if((cfg->fcomp[i]=(fcomp_t *)malloc(sizeof(fcomp_t)))==NULL)
@@ -131,11 +125,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t fview_list = iniGetParsedSectionList(sections, "viewer:");
 	cfg->total_fviews = (uint16_t)strListCount(fview_list);
 
-	if(cfg->total_fviews) {
-		if((cfg->fview=(fview_t **)malloc(sizeof(fview_t *)*cfg->total_fviews))==NULL)
-			return allocerr(error, maxerrlen, fname, "fviews", sizeof(fview_t*)*cfg->total_fviews); 
-	} else
-		cfg->fview=NULL;
+	if((cfg->fview=(fview_t **)malloc(sizeof(fview_t *)*cfg->total_fviews))==NULL)
+		return allocerr(error, maxerrlen, fname, "fviews", sizeof(fview_t*)*cfg->total_fviews);
 
 	for(uint i=0; i<cfg->total_fviews; i++) {
 		if((cfg->fview[i]=(fview_t *)malloc(sizeof(fview_t)))==NULL)
@@ -156,11 +147,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t ftest_list = iniGetParsedSectionList(sections, "tester:");
 	cfg->total_ftests = (uint16_t)strListCount(ftest_list);
 
-	if(cfg->total_ftests) {
-		if((cfg->ftest=(ftest_t **)malloc(sizeof(ftest_t *)*cfg->total_ftests))==NULL)
-			return allocerr(error, maxerrlen, fname, "ftests", sizeof(ftest_t*)*cfg->total_ftests); 
-	} else
-		cfg->ftest=NULL;
+	if((cfg->ftest=(ftest_t **)malloc(sizeof(ftest_t *)*cfg->total_ftests))==NULL)
+		return allocerr(error, maxerrlen, fname, "ftests", sizeof(ftest_t*)*cfg->total_ftests);
 
 	for(uint i=0; i<cfg->total_ftests; i++) {
 		if((cfg->ftest[i]=(ftest_t *)malloc(sizeof(ftest_t)))==NULL)
@@ -182,12 +170,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t dlevent_list = iniGetParsedSectionList(sections, "dlevent:");
 	cfg->total_dlevents = (uint16_t)strListCount(dlevent_list);
 
-	if(cfg->total_dlevents) {
-		if((cfg->dlevent=(dlevent_t **)malloc(sizeof(dlevent_t *)*cfg->total_dlevents))
-			==NULL)
-			return allocerr(error, maxerrlen, fname, "dlevents", sizeof(dlevent_t*)*cfg->total_dlevents); 
-	} else
-		cfg->dlevent=NULL;
+	if((cfg->dlevent=(dlevent_t **)malloc(sizeof(dlevent_t *)*cfg->total_dlevents))==NULL)
+		return allocerr(error, maxerrlen, fname, "dlevents", sizeof(dlevent_t*)*cfg->total_dlevents);
 
 	for(uint i=0; i<cfg->total_dlevents; i++) {
 		if((cfg->dlevent[i]=(dlevent_t *)malloc(sizeof(dlevent_t)))==NULL)
@@ -209,11 +193,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t prot_list = iniGetParsedSectionList(sections, "protocol:");
 	cfg->total_prots = (uint16_t)strListCount(prot_list);
 
-	if(cfg->total_prots) {
-		if((cfg->prot=(prot_t **)malloc(sizeof(prot_t *)*cfg->total_prots))==NULL)
-			return allocerr(error, maxerrlen, fname, "prots", sizeof(prot_t*)*cfg->total_prots); 
-	} else
-		cfg->prot=NULL;
+	if((cfg->prot=(prot_t **)malloc(sizeof(prot_t *)*cfg->total_prots))==NULL)
+		return allocerr(error, maxerrlen, fname, "prots", sizeof(prot_t*)*cfg->total_prots);
 
 	for(uint i=0;i<cfg->total_prots;i++) {
 		if((cfg->prot[i]=(prot_t *)malloc(sizeof(prot_t)))==NULL)
@@ -240,11 +221,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t lib_list = iniGetParsedSectionList(sections, "lib:");
 	cfg->total_libs = (uint16_t)strListCount(lib_list);
 
-	if(cfg->total_libs) {
-		if((cfg->lib=(lib_t **)malloc(sizeof(lib_t *)*cfg->total_libs))==NULL)
-			return allocerr(error, maxerrlen, fname, "libs", sizeof(lib_t *)*cfg->total_libs);
-	} else
-		cfg->lib=NULL;
+	if((cfg->lib=(lib_t **)malloc(sizeof(lib_t *)*cfg->total_libs))==NULL)
+		return allocerr(error, maxerrlen, fname, "libs", sizeof(lib_t *)*cfg->total_libs);
 
 	for(uint i=0; i<cfg->total_libs; i++) {
 		char* name = lib_list[i];
@@ -291,11 +269,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t dir_list = iniGetParsedSectionList(sections, "dir:");
 	cfg->total_dirs = (uint16_t)strListCount(dir_list);
 
-	if(cfg->total_dirs) {
-		if((cfg->dir=(dir_t **)malloc(sizeof(dir_t *)*(cfg->total_dirs+1)))==NULL)
-			return allocerr(error, maxerrlen, fname, "dirs", sizeof(dir_t *)*(cfg->total_dirs+1));
-	} else
-		cfg->dir=NULL;
+	if((cfg->dir=(dir_t **)malloc(sizeof(dir_t *)*(cfg->total_dirs+1)))==NULL)
+		return allocerr(error, maxerrlen, fname, "dirs", sizeof(dir_t *)*(cfg->total_dirs+1));
 
 	cfg->total_dirs = 0;
 	for(uint i=0; dir_list[i] != NULL; i++) {
@@ -362,11 +337,8 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t sec_list = iniGetParsedSectionList(sections, "text:");
 	cfg->total_txtsecs = (uint16_t)strListCount(sec_list);
 
-	if(cfg->total_txtsecs) {
-		if((cfg->txtsec=(txtsec_t **)malloc(sizeof(txtsec_t *)*cfg->total_txtsecs))==NULL)
-			return allocerr(error, maxerrlen, fname, "txtsecs", sizeof(txtsec_t *)*cfg->total_txtsecs); 
-	} else
-		cfg->txtsec=NULL;
+	if((cfg->txtsec=(txtsec_t **)malloc(sizeof(txtsec_t *)*cfg->total_txtsecs))==NULL)
+		return allocerr(error, maxerrlen, fname, "txtsecs", sizeof(txtsec_t *)*cfg->total_txtsecs);
 
 	for(uint i=0; i < cfg->total_txtsecs; i++) {
 		const char* name = sec_list[i];
@@ -416,11 +388,8 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t list = iniGetParsedSectionList(sections, "editor:");
 	cfg->total_xedits = (uint16_t)strListCount(list);
 
-	if(cfg->total_xedits) {
-		if((cfg->xedit=(xedit_t **)malloc(sizeof(xedit_t *)*cfg->total_xedits))==NULL)
-			return allocerr(error, maxerrlen, fname, "xedits", sizeof(xedit_t *)*cfg->total_xedits); 
-	} else
-		cfg->xedit=NULL;
+	if((cfg->xedit=(xedit_t **)malloc(sizeof(xedit_t *)*cfg->total_xedits))==NULL)
+		return allocerr(error, maxerrlen, fname, "xedits", sizeof(xedit_t *)*cfg->total_xedits);
 
 	for(uint i=0; i<cfg->total_xedits; i++) {
 		const char* name = list[i];
@@ -449,12 +418,8 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	list = iniGetParsedSectionList(sections, "sec:");
 	cfg->total_xtrnsecs = (uint16_t)strListCount(list);
 
-	if(cfg->total_xtrnsecs) {
-		if((cfg->xtrnsec=(xtrnsec_t **)malloc(sizeof(xtrnsec_t *)*cfg->total_xtrnsecs))
-			==NULL)
-			return allocerr(error, maxerrlen, fname, "xtrnsecs", sizeof(xtrnsec_t *)*cfg->total_xtrnsecs);
-	} else
-		cfg->xtrnsec=NULL;
+	if((cfg->xtrnsec=(xtrnsec_t **)malloc(sizeof(xtrnsec_t *)*cfg->total_xtrnsecs))==NULL)
+		return allocerr(error, maxerrlen, fname, "xtrnsecs", sizeof(xtrnsec_t *)*cfg->total_xtrnsecs);
 
 	for(uint i=0; i<cfg->total_xtrnsecs; i++) {
 		const char* name = list[i];
@@ -476,11 +441,8 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	list = iniGetParsedSectionList(sections, "prog:");
 	cfg->total_xtrns = (uint16_t)strListCount(list);
 
-	if(cfg->total_xtrns) {
-		if((cfg->xtrn=(xtrn_t **)malloc(sizeof(xtrn_t *)*cfg->total_xtrns))==NULL)
-			return allocerr(error, maxerrlen, fname, "xtrns", sizeof(xtrn_t *)*cfg->total_xtrns);
-	} else
-		cfg->xtrn=NULL;
+	if((cfg->xtrn=(xtrn_t **)malloc(sizeof(xtrn_t *)*cfg->total_xtrns))==NULL)
+		return allocerr(error, maxerrlen, fname, "xtrns", sizeof(xtrn_t *)*cfg->total_xtrns);
 
 	cfg->total_xtrns = 0;
 	for(uint i=0; list[i] != NULL; i++) {
@@ -529,11 +491,8 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	list = iniGetParsedSectionList(sections, "event:");
 	cfg->total_events = (uint16_t)strListCount(list);
 
-	if(cfg->total_events) {
-		if((cfg->event=(event_t **)malloc(sizeof(event_t *)*cfg->total_events))==NULL)
-			return allocerr(error, maxerrlen, fname, "events", sizeof(event_t *)*cfg->total_events);
-	} else
-		cfg->event=NULL;
+	if((cfg->event=(event_t **)malloc(sizeof(event_t *)*cfg->total_events))==NULL)
+		return allocerr(error, maxerrlen, fname, "events", sizeof(event_t *)*cfg->total_events);
 
 	for(uint i=0; i<cfg->total_events; i++) {
 		const char* name = list[i];
@@ -567,11 +526,8 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	list = iniGetParsedSectionList(sections, "native:");
 	cfg->total_natvpgms = (uint16_t)strListCount(list);
 
-	if(cfg->total_natvpgms) {
-		if((cfg->natvpgm=(natvpgm_t **)malloc(sizeof(natvpgm_t *)*cfg->total_natvpgms))==NULL)
-			return allocerr(error, maxerrlen, fname, "natvpgms", sizeof(natvpgm_t *)*cfg->total_natvpgms);
-	} else
-		cfg->natvpgm=NULL;
+	if((cfg->natvpgm=(natvpgm_t **)malloc(sizeof(natvpgm_t *)*cfg->total_natvpgms))==NULL)
+		return allocerr(error, maxerrlen, fname, "natvpgms", sizeof(natvpgm_t *)*cfg->total_natvpgms);
 
 	for(uint i=0; i<cfg->total_natvpgms; i++) {
 		const char* name = list[i];
@@ -589,11 +545,8 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	list = iniGetParsedSectionList(sections, "hotkey:");
 	cfg->total_hotkeys = (uint16_t)strListCount(list);
 
-	if(cfg->total_hotkeys) {
-		if((cfg->hotkey=(hotkey_t **)malloc(sizeof(hotkey_t *)*cfg->total_hotkeys))==NULL)
-			return allocerr(error, maxerrlen, fname, "hotkeys", sizeof(hotkey_t *)*cfg->total_hotkeys);
-	} else
-		cfg->hotkey=NULL;
+	if((cfg->hotkey=(hotkey_t **)malloc(sizeof(hotkey_t *)*cfg->total_hotkeys))==NULL)
+		return allocerr(error, maxerrlen, fname, "hotkeys", sizeof(hotkey_t *)*cfg->total_hotkeys);
 
 	for(uint i=0; i<cfg->total_hotkeys; i++) {
 		const char* section = list[i];
@@ -646,11 +599,8 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t list = iniGetParsedSectionList(sections, "guru:");
 	cfg->total_gurus = (uint16_t)strListCount(list);
 
-	if(cfg->total_gurus) {
-		if((cfg->guru=(guru_t **)malloc(sizeof(guru_t *)*cfg->total_gurus))==NULL)
-			return allocerr(error, maxerrlen, fname, "gurus", sizeof(guru_t *)*cfg->total_gurus);
-	} else
-		cfg->guru=NULL;
+	if((cfg->guru=(guru_t **)malloc(sizeof(guru_t *)*cfg->total_gurus))==NULL)
+		return allocerr(error, maxerrlen, fname, "gurus", sizeof(guru_t *)*cfg->total_gurus);
 
 	for(uint i=0; i<cfg->total_gurus; i++) {
 		const char* name = list[i];
@@ -674,11 +624,8 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	list = iniGetParsedSectionList(sections, "actions:");
 	cfg->total_actsets = (uint16_t)strListCount(list);
 
-	if(cfg->total_actsets) {
-		if((cfg->actset=(actset_t **)malloc(sizeof(actset_t *)*cfg->total_actsets))==NULL)
-			return allocerr(error, maxerrlen, fname, "actsets", sizeof(actset_t *)*cfg->total_actsets);
-	} else
-		cfg->actset=NULL;
+	if((cfg->actset=(actset_t **)malloc(sizeof(actset_t *)*cfg->total_actsets))==NULL)
+		return allocerr(error, maxerrlen, fname, "actsets", sizeof(actset_t *)*cfg->total_actsets);
 
 	cfg->total_chatacts = 0;
 	for(uint i=0; i<cfg->total_actsets; i++) {
@@ -713,11 +660,8 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	list = iniGetParsedSectionList(sections, "chan:");
 	cfg->total_chans = (uint16_t)strListCount(list);
 
-	if(cfg->total_chans) {
-		if((cfg->chan=(chan_t **)malloc(sizeof(chan_t *)*cfg->total_chans))==NULL)
-			return allocerr(error, maxerrlen, fname, "chans", sizeof(chan_t *)*cfg->total_chans);
-	} else
-		cfg->chan=NULL;
+	if((cfg->chan=(chan_t **)malloc(sizeof(chan_t *)*cfg->total_chans))==NULL)
+		return allocerr(error, maxerrlen, fname, "chans", sizeof(chan_t *)*cfg->total_chans);
 
 	for(uint i=0; i<cfg->total_chans; i++) {
 		const char* name = list[i];
@@ -747,11 +691,8 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	list = iniGetParsedSectionList(sections, "pager:");
 	cfg->total_pages = (uint16_t)strListCount(list);
 
-	if(cfg->total_pages) {
-		if((cfg->page=(page_t **)malloc(sizeof(page_t *)*cfg->total_pages))==NULL)
-			return allocerr(error, maxerrlen, fname, "pages", sizeof(page_t *)*cfg->total_pages);
-	} else
-		cfg->page=NULL;
+	if((cfg->page=(page_t **)malloc(sizeof(page_t *)*cfg->total_pages))==NULL)
+		return allocerr(error, maxerrlen, fname, "pages", sizeof(page_t *)*cfg->total_pages);
 
 	for(uint i=0; i<cfg->total_pages; i++) {
 		const char* name = list[i];
