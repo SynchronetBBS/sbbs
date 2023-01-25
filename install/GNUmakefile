@@ -237,8 +237,10 @@ ifdef USE_GLADE
 endif
 	$(INSBIN) $(REPODIR)/src/sbbs3/syncview/$(CCPRE).$(machine).exe.$(BUILDPATH)/syncview $(SBBSDIR)/exec/syncview
 	$(INSBIN) $(REPODIR)/src/sexpots/$(CCPRE).$(machine).exe.$(BUILDPATH)/sexpots $(SBBSDIR)/exec/sexpots
+ifndef SETCAP
 	-chown -R $(SBBSCHOWN) $(SBBSDIR)
 	-chown -h $(SBBSCHOWN) $(SBBSDIR)/exec/*
+endif
 
 $(REPODIR):
 	git clone https://gitlab.com/SynchronetBBS/sbbs.git $(REPODIR) \
