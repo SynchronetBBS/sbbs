@@ -201,8 +201,10 @@
 \****************************************************************************/
 
 #include "xsdk.h"
-#include "conwrap.h"
-#include "threadwrap.h"
+#if defined USE_XPDEV
+	#include "conwrap.h"
+	#include "threadwrap.h"
+#endif
 
 #ifdef _WINSOCKAPI_
 WSADATA WSAData;		// WinSock data
