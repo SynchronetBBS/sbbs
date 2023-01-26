@@ -1,11 +1,10 @@
---- js-1.8.5/js/src/Makefile.in	2023-01-25 18:43:01.101375334 -0800
-+++ js-1.8.5/js/src/Makefile.in	2023-01-25 18:37:27.917346828 -0800
-@@ -652,6 +652,8 @@
- NSPR_STATIC_PATH = $(DIST)/lib
- endif
+--- js-1.8.5/js/src/configure.in.orig	2023-01-25 20:00:45.568773908 -0800
++++ js-1.8.5/js/src/configure.in	2023-01-25 19:59:37.694768104 -0800
+@@ -1700,6 +1700,7 @@
+     if test "$ac_has_werror_return_type" = "yes"; then
+         _WARNINGS_CXXFLAGS="${_WARNINGS_CXXFLAGS} -Werror=return-type"
+     fi
++    _WARNINGS_CXXFLAGS="-w"
  
-+CXXFLAGS += -w
-+
- ifdef MOZ_VTUNE
- CXXFLAGS += -IC:/Program\ Files/Intel/VTune/Analyzer/Include
- EXTRA_DSO_LDOPTS += C:/Program\ Files/Intel/VTune/Analyzer/Lib/VtuneApi.lib
+ else
+     _DEFINES_CXXFLAGS='-DMOZILLA_CLIENT -D_JS_CONFDEFS_H_ $(ACDEFINES)'
