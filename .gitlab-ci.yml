@@ -4,6 +4,8 @@
       - src/**/*
       - 3rdp/**/*
       - ctrl/text.dat
+      - xtrn/**/{GNUm,M}akefile
+      - xtrn/**/*.{c,h,cpp,hpp,mk}
 
 sbbs-linux:
   tags: [Linux]
