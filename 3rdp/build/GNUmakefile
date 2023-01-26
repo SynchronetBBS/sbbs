@@ -76,7 +76,11 @@ $(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/build/js_src_jsnativ
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-disable-warnings.patch
 	-$(QUIET)cd $(JS_SRC)/js-1.8.5/js/src && autoconf-2.13
 	$(QUIET)cd $(JS_SRC)/js-1.8.5/js/src && env $(JS_CONFIGURE_ENV) ./configure $(JS_CONFIGURE_ARGS)
+ifdef VERBOSE
 	$(QUIET)$(MAKE) -C $(JS_SRC)/js-1.8.5/js/src
+else
+	$(QUIET)$(MAKE) -s -C $(JS_SRC)/js-1.8.5/js/src
+endif
 	$(QUIET)$(MAKE) -C $(JS_SRC)/js-1.8.5/js/src install
 
 $(CRYPT_SRC): | $(3RDPSRCDIR)
