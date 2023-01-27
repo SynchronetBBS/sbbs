@@ -663,7 +663,7 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc>1) {
 		JSVALUE_TO_MSTRING(cx, argv[1], cstr, NULL);
 		HANDLE_PENDING(cx, cstr);
-		SAFECOPY(client.user, cstr);
+		XSAFECOPY(client.user, cstr);
 	}
 
 	if(argc>2)
@@ -717,7 +717,7 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc>1) {
 		JSVALUE_TO_MSTRING(cx, argv[1], cstr, NULL);
-		SAFECOPY(client.user, cstr);
+		XSAFECOPY(client.user, cstr);
 	}
 
 	if(argc>2)
