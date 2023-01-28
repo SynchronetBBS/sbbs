@@ -505,9 +505,9 @@ void sbbs_t::backspace(int count)
 /****************************************************************************/
 long sbbs_t::term_supports(long cmp_flags)
 {
-	long flags = ((sys_status&SS_USERON) && !(useron.misc&AUTOTERM)) ? useron.misc : autoterm;
+	long flags = ((sys_status&(SS_USERON|SS_NEWUSER)) && !(useron.misc&AUTOTERM)) ? useron.misc : autoterm;
 
-	if((sys_status&SS_USERON) && (useron.misc&AUTOTERM))
+	if((sys_status&(SS_USERON|SS_NEWUSER)) && (useron.misc&AUTOTERM))
 		flags |= useron.misc & (NO_EXASCII | SWAP_DELETE | COLOR | ICE_COLOR | MOUSE);
 
 	return(cmp_flags ? ((flags&cmp_flags)==cmp_flags) : (flags&TERM_FLAGS));
