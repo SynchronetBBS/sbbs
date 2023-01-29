@@ -1399,8 +1399,10 @@ char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen, int num)
             strcat(str,"A");
         if(node->misc&NODE_LOCK)
             strcat(str,"L");
-        if(node->misc&(NODE_MSGW|NODE_NMSG))
+        if(node->misc&NODE_MSGW)
             strcat(str,"M");
+        if(node->misc&NODE_NMSG)
+            strcat(str,"N");
         if(node->misc&NODE_POFF)
             strcat(str,"P");
         strcat(str,")");
