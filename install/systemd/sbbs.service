@@ -5,10 +5,15 @@
 # 2. If necessary, modify the SBBSCTRL environment variable value to match your install
 # 3. If necessary, modify the User and Group values to match your install
 # 4. If necessary, modify the path in the ExecStart value to match your install
-#    Edits should be made using "systemctl edit sbbs", thus creating the file:
+#    Edits should be made using "sudo systemctl edit sbbs", thus creating the file:
 #    /etc/systemd/system/sbbs.service.d/override.conf
-# 5. Enable the BBS service by running "systemctl enable sbbs"
-# 6. To run the BBS service without rebooting, run "systemctl start sbbs"
+# 5. Enable the BBS service by running "sudo systemctl enable sbbs"
+# 6. To run the BBS service without rebooting, run "sudo systemctl start sbbs"
+#
+# Tips:
+# A. To query the status of the BBS service, run "systemctl status sbbs"
+# B. To browse the log output of the BBS service, run "journalctl -u sbbs"
+# C. To monitor the live log outupt of the BBS service, run "journalctl -f -u sbbs"
 
 [Unit]
 Description=Synchronet BBS
