@@ -1,10 +1,4 @@
-// newuser.js
-
 // New user login module
-
-// $Id: newuser.js,v 1.30 2019/04/28 23:25:44 rswindell Exp $
-
-// @format.tab-size 8, @format.use-tabs true
 
 load("sbbsdefs.js");
 
@@ -63,6 +57,9 @@ function chk_qwk_id(str)
 	if(system.trashcan(str))
 		return(false);
 
+	if(str.toLowerCase() == user.security.password.toLowerCase())
+		return(false);
+
 	return(true);
 }
 
@@ -76,7 +73,8 @@ if(qnet) {
 		printf("This is an invalid QWK ID. Your QWK ID MUST be ");
 		printf("between 2 and 8 characters in\r\n");
 		printf("length, must begin with a letter and contain only valid ");
-		printf("DOS filename characters.\r\n\r\n");
+		printf("DOS filename characters.\r\n");
+		printf("Your QWK ID cannot be the same as your password.\r\n\r\n");
 		printf("\1y\1hYour correct QWK ID (as configured in your ");
 		printf("BBS software) is: ");
 		alias=console.getstr(8,K_UPPER|K_LINE|K_NOEXASC);
@@ -88,7 +86,6 @@ if(qnet) {
 	user.security.exemptions|=UFLAG_L;
 	user.security.exemptions|=UFLAG_T;
 	user.security.exemptions|=UFLAG_D;
-	user.security.exemptions|=UFLAG_M;
 }
 
 if(options.ask_sysop 
