@@ -32,7 +32,7 @@ extern "C" BOOL hacklog(scfg_t* cfg, struct mqtt* mqtt, const char* prot, const 
 	char	fname[MAX_PATH+1];
 	FILE*	fp;
 	char	ip[INET6_ADDRSTRLEN];
-	time32_t now=time32(NULL);
+	time_t	now = time(NULL);
 
 	SAFEPRINTF(fname, "%shack.log", cfg->logs_dir);
 
@@ -43,7 +43,7 @@ extern "C" BOOL hacklog(scfg_t* cfg, struct mqtt* mqtt, const char* prot, const 
 	fprintf(fp,"SUSPECTED %s HACK ATTEMPT for user '%s' on %.24s%sUsing port %u at %s [%s]%s"
 		,prot
 		,user
-		,timestr(cfg,now,tstr)
+		,timestr(cfg, (time32_t)now, tstr)
 		,log_line_ending
 		,inet_addrport(addr)
 		,host
@@ -56,11 +56,13 @@ extern "C" BOOL hacklog(scfg_t* cfg, struct mqtt* mqtt, const char* prot, const 
 	fcloselog(fp);
 
 	if(mqtt != NULL) {
+		char topic[128];
 		char str[1024];
 		if(text == NULL)
 			text= "";
-		snprintf(str, sizeof(str), "%s\t%s\t%u\t%s\t%s\t%s", prot, user, inet_addrport(addr), host, ip, text);
-		mqtt_pub_strval(mqtt, TOPIC_BBS, "hack", str);
+		snprintf(str, sizeof(str), "%s\t%u\t%s\t%s\t%s", user, inet_addrport(addr), host, ip, text);
+		snprintf(topic, sizeof(topic), "hack/%s", prot);
+		mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, now, str);
 	}
 
 	return true;
@@ -79,7 +81,7 @@ extern "C" BOOL spamlog(scfg_t* cfg, struct mqtt* mqtt, char* prot, char* action
 	char	tstr[64];
 	char	fname[MAX_PATH+1];
 	FILE*	fp;
-	time32_t now=time32(NULL);
+	time_t	now = time(NULL);
 
 	SAFEPRINTF(fname, "%sspam.log", cfg->logs_dir);
 
@@ -97,7 +99,7 @@ extern "C" BOOL spamlog(scfg_t* cfg, struct mqtt* mqtt, char* prot, char* action
 	fprintf(fp, "SUSPECTED %s SPAM %s on %.24s%sHost: %s [%s]%sFrom: %.128s %s%s"
 		,prot
 		,action
-		,timestr(cfg,now,tstr)
+		,timestr(cfg, (time32_t)now, tstr)
 		,log_line_ending
 		,host
 		,ip_addr
@@ -113,10 +115,12 @@ extern "C" BOOL spamlog(scfg_t* cfg, struct mqtt* mqtt, char* prot, char* action
 
 	if(mqtt != NULL) {
 		char str[1024];
+		char topic[128];
 		if(reason == NULL)
 			reason = (char*)"";
-		snprintf(str, sizeof(str), "%s\t%s\t%s\t%s\t%s\t%s\t%s", prot, action, host, ip_addr, from, to_user, reason);
-		mqtt_pub_strval(mqtt, TOPIC_BBS, "spam", str);
+		snprintf(str, sizeof(str), "%s\t%s\t%s\t%s\t%s\t%s", prot, host, ip_addr, from, to_user, reason);
+		snprintf(topic, sizeof(topic), "spam/%s", action);
+		mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, now, str);
 	}
 
 	return true;

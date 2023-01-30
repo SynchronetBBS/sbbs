@@ -54,13 +54,14 @@ struct mqtt {
 enum topic_depth {
 	TOPIC_OTHER,
 	TOPIC_ROOT,			// sbbs/*
-	TOPIC_BBS,			// sbbs/BBSID/*
 	TOPIC_BBS_LEVEL,	// sbbs/BBSID
-	TOPIC_HOST,			// sbbs/BBSID/host/HOSTNAME/*
+	TOPIC_BBS,			// sbbs/BBSID/*
+	TOPIC_BBS_ACTION,	// sbbs/BBSID/action/*
 	TOPIC_HOST_LEVEL,	// sbbs/BBSID/host/HOSTNAME
-	TOPIC_EVENT,		// sbbs/BBSID/event/*
-	TOPIC_SERVER,		// sbbs/BBSID/server/SERVER/*
-	TOPIC_SERVER_LEVEL, // sbbs/BBSID/server/SERVER
+	TOPIC_HOST,			// sbbs/BBSID/host/HOSTNAME/*
+	TOPIC_HOST_EVENT,	// sbbs/BBSID/host/HOSTNAME/event/*
+	TOPIC_SERVER_LEVEL, // sbbs/BBSID/host/HOSTNAME/server/SERVER
+	TOPIC_SERVER,		// sbbs/BBSID/host/HOSTNAME/server/SERVER/*
 };
 
 #define MQTT_SUCCESS 0 // Same as MOSQ_ERR_SUCCESS
@@ -86,6 +87,7 @@ DLLEXPORT int mqtt_pub_noval(struct mqtt*, enum topic_depth, const char* key);
 DLLEXPORT int mqtt_pub_strval(struct mqtt*, enum topic_depth, const char* key, const char* str);
 DLLEXPORT int mqtt_pub_uintval(struct mqtt*, enum topic_depth, const char* key, ulong value);
 DLLEXPORT int mqtt_pub_message(struct mqtt*, enum topic_depth, const char* key, const void* buf, size_t len, BOOL retain);
+DLLEXPORT int mqtt_pub_timestamped_msg(struct mqtt*, enum topic_depth, const char* key, time_t, const char* msg);
 DLLEXPORT int mqtt_open(struct mqtt*);
 DLLEXPORT void mqtt_close(struct mqtt*);
 DLLEXPORT int mqtt_connect(struct mqtt*, const char* bind_address);
@@ -95,6 +97,10 @@ DLLEXPORT int mqtt_thread_stop(struct mqtt*);
 DLLEXPORT int mqtt_client_on(struct mqtt*, BOOL on, int sock, client_t* client, BOOL update);
 DLLEXPORT int mqtt_client_max(struct mqtt*, ulong count);
 DLLEXPORT int mqtt_client_count(struct mqtt*);
+DLLEXPORT int mqtt_user_login(struct mqtt*, client_t*);
+DLLEXPORT int mqtt_user_logout(struct mqtt*, client_t*, time_t);
+DLLEXPORT int mqtt_file_upload(struct mqtt*, user_t*, file_t*, off_t size, client_t*);
+DLLEXPORT int mqtt_file_download(struct mqtt*, user_t*, file_t*, off_t size, client_t*);
 
 #ifdef __cplusplus
 }

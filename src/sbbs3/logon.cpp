@@ -431,6 +431,8 @@ bool sbbs_t::logon()
 	getmsgptrs();
 	sys_status|=SS_USERON;          /* moved from further down */
 
+	mqtt_user_login(mqtt, &client);
+
 	if(useron.rest&FLAG('Q')) {
 		safe_snprintf(str, sizeof(str), "(%04u)  %-25s  QWK Network Connection"
 			,useron.number,useron.alias);

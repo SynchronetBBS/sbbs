@@ -153,6 +153,8 @@ void sbbs_t::logout()
 		PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
+	mqtt_user_logout(mqtt, &client, logontime);
+
 	lprintf(LOG_DEBUG, "logout completed");
 }
 

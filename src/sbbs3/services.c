@@ -481,6 +481,8 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
+	mqtt_user_login(&mqtt, client->client);
+
 	return(JS_TRUE);
 }
 
@@ -507,6 +509,8 @@ js_logout(JSContext *cx, uintN argc, jsval *arglist)
 	if(client->service->log_level >= LOG_INFO)
 		lprintf(LOG_INFO,"%04d %s Logging out %s"
 			,client->socket,client->service->protocol,client->user.alias);
+
+	mqtt_user_logout(&mqtt, client->client, client->logintime);
 
 	memset(&client->user,0,sizeof(client->user));
 	JS_RESUMEREQUEST(cx, rc);

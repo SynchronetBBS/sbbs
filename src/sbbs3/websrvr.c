@@ -1623,6 +1623,7 @@ void http_logon(http_session_t * session, user_t *usr)
 		SAFECOPY(session->user.ipaddr, session->host_ip);
 		session->user.logontime = (time32_t)session->logon_time;
 		putuserdat(&scfg, &session->user);
+		mqtt_user_login(&mqtt, &session->client);
 	}
 	SAFECOPY(session->client.user, session->username);
 	session->client.usernum = session->user.number;
@@ -1650,6 +1651,8 @@ void http_logoff(http_session_t* session, SOCKET socket, int line)
 	if(startup->sound.logout[0] && !sound_muted(&scfg))
 		PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
 #endif
+
+	mqtt_user_logout(&mqtt, &session->client, session->logon_time);
 }
 
 BOOL http_checkuser(http_session_t * session)
@@ -6153,8 +6156,10 @@ static void respond(http_session_t * session)
 				e = 1;
 			lprintf(LOG_INFO, "%04d Sent file: %s (%"PRIdOFF" bytes, %ld cps)"
 				,session->socket, session->req.physical_path, snt, (long)(snt / e));
-			if(session->parsed_vpath == PARSED_VPATH_FULL)
+			if(session->parsed_vpath == PARSED_VPATH_FULL) {
 				user_downloaded_file(&scfg, &session->user, &session->client, session->file.dir, session->file.name, snt);
+				mqtt_file_download(&mqtt, &session->user, &session->file, snt, &session->client);
+			}
 		}
 	}
 	session->req.finished=TRUE;
