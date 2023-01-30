@@ -10030,11 +10030,9 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 	var wasNetMailOrigin = false;
 	if ((typeof(pMsgHdr.from_net_type) != "undefined") && (pMsgHdr.from_net_type != NET_NONE))
 	{
-		if (user.is_sysop) console.print("\x01n\r\nHere 1\r\n\x01p"); // Temporary
 		wasNetMailOrigin = true;
 		if ((typeof(pMsgHdr.from_net_addr) == "string") && (pMsgHdr.from_net_addr.length > 0))
 		{
-			if (user.is_sysop) console.print("\x01n\r\nHere 2\r\n\x01p"); // Temporary
 			couldNotDetermineNetAddr = false;
 			// Build the email address to reply to.  If the original message is
 			// internet email, then simply use the from_net_addr field from the
@@ -10043,7 +10041,6 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			var emailAddr = "";
 			if (typeof(pMsgHdr.from_net_addr) === "string" && pMsgHdr.from_net_addr.length > 0)
 			{
-				if (user.is_sysop) console.print("\x01n\r\nHere 3\r\n\x01p"); // Temporary
 				if (pMsgHdr.from_net_type == NET_INTERNET)
 					emailAddr = pMsgHdr.from_net_addr;
 				else
@@ -10054,14 +10051,12 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			emailAddr = console.getstr(emailAddr, 60, K_LINE|K_EDIT);
 			if ((typeof(emailAddr) == "string") && (emailAddr.length > 0))
 			{
-				if (user.is_sysop) console.print("\x01n\r\nHere 4\r\n\x01p"); // Temporary
 				replyMode |= WM_NETMAIL;
 				retObj.sendSucceeded = bbs.netmail(emailAddr, replyMode, null, pMsgHdr);
 				console.pause();
 			}
 			else
 			{
-				if (user.is_sysop) console.print("\x01n\r\nHere 5\r\n\x01p"); // Temporary
 				retObj.sendSucceeded = false;
 				console.putmsg(bbs.text(Aborted), P_SAVEATR);
 				console.pause();
