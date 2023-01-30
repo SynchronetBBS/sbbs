@@ -827,7 +827,8 @@ static void send_thread(void* arg)
 			if(!xfer.tmpfile && !xfer.delfile && !(scfg.dir[f.dir]->misc&DIR_NOSTAT))
 				inc_download_stats(&scfg, 1, (ulong)total);
 
-			mqtt_file_download(&mqtt, xfer.user, &f, total, xfer.client);
+			if(!xfer.tmpfile)
+				mqtt_file_download(&mqtt, xfer.user, &f, total, xfer.client);
 		}
 
 		if(xfer.credits) {
