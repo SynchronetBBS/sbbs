@@ -407,8 +407,10 @@ void printnodedat(int number, node_t node)
 			putchar('A');
 		if(node.misc&NODE_LOCK)
 			putchar('L');
-		if(node.misc&(NODE_MSGW|NODE_NMSG))
+		if(node.misc&NODE_MSGW)
 			putchar('M');
+		if(node.misc&NODE_NMSG)
+			putchar('N');
 		if(node.misc&NODE_POFF)
 			putchar('P');
 		putchar(')');

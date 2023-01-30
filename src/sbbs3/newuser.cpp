@@ -453,6 +453,8 @@ BOOL sbbs_t::newuser()
 		SAFEPRINTF2(str,"%suser/%4.4u.dat",cfg.data_dir,useron.number);
 		create_sif_dat(cfg.new_sif,str); 
 	}
+	sys_status|=SS_NEWUSER;
+
 	if(!(cfg.uq&UQ_NODEF))
 		maindflts(&useron);
 
@@ -492,7 +494,6 @@ BOOL sbbs_t::newuser()
 	user_event(EVENT_NEWUSER);
 	getuserdat(&cfg,&useron);	// In case event(s) modified user data
 	logline("N+","Successful new user logon");
-	sys_status|=SS_NEWUSER;
 
 	return(TRUE);
 }

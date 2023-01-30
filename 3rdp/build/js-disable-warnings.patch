@@ -1,0 +1,11 @@
+--- js-1.8.5/js/src/Makefile.in	2023-01-25 18:43:01.101375334 -0800
++++ js-1.8.5/js/src/Makefile.in	2023-01-25 18:37:27.917346828 -0800
+@@ -652,6 +652,8 @@
+ NSPR_STATIC_PATH = $(DIST)/lib
+ endif
+ 
++CXXFLAGS += -w
++
+ ifdef MOZ_VTUNE
+ CXXFLAGS += -IC:/Program\ Files/Intel/VTune/Analyzer/Include
+ EXTRA_DSO_LDOPTS += C:/Program\ Files/Intel/VTune/Analyzer/Lib/VtuneApi.lib

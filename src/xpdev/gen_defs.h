@@ -430,7 +430,9 @@ typedef struct {
 #define TERMINATE(str)                      str[sizeof(str)-1]=0
 
 /* This is a bound-safe version of strcpy basically - only works with fixed-length arrays */
-#define SAFECOPY(dst,src)                   (strncpy(dst,(src)==NULL?"(null)":(src),sizeof(dst)), TERMINATE(dst))
+#define SAFECOPY(dst,src)                   (strncpy(dst,src,sizeof(dst)), TERMINATE(dst))
+/* Extra-safe SAFECOPY doesn't pass NULL-pointer to strncpy */
+#define XSAFECOPY(dst,src)                  (strncpy(dst,(src)==NULL?"(null)":(src),sizeof(dst)), TERMINATE(dst))
 
 #define SAFECAT(dst, src) do { \
 	if(strlen((char*)(dst)) + strlen((char*)(src)) < sizeof(dst)) { \
