@@ -328,9 +328,15 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	user_posted_msg(&cfg, &useron, 1);
 	bprintf(text[Posted],cfg.grp[cfg.sub[subnum]->grp]->sname
 		,cfg.sub[subnum]->lname);
-	sprintf(str,"posted on %s %s"
-		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
+	sprintf(str,"posted to %s on %s %s"
+		,touser, cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 	logline("P+",str);
+
+	char topic[128];
+	snprintf(topic, sizeof(topic), "post/%s", cfg.sub[subnum]->code);
+	snprintf(str, sizeof(str), "%u\t%s\t%u\t%u\t%s\t%s"
+		,useron.number, useron.alias, useron.ptoday, useron.posts, touser, title);
+	mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, time(NULL), str);
 
 	if(!(msgattr & MSG_ANONYMOUS)
 		&& stricmp(touser, "All") != 0

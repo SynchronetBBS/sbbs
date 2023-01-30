@@ -697,6 +697,10 @@ bool sbbs_t::sysop_page(void)
 			sprintf(str, "%s paged you to chat", useron.alias);
 			notify(&cfg, 1, str, NULL);
 			ftouch(syspage_semfile);
+			char topic[128];
+			SAFEPRINTF(topic, "page/node/%u", cfg.node_num);
+			snprintf(str, sizeof(str), "%u\t%s", useron.number, useron.alias);
+			mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, time(NULL), str);
 		}
 		for(i=0;i<cfg.total_pages;i++)
 			if(chk_ar(cfg.page[i]->ar,&useron,&client))

@@ -820,13 +820,15 @@ static void send_thread(void* arg)
 								,getfname(xfer.filename)
 								,prefix
 								,username,tmp); 
-						putsmsg(&scfg,uploader.number,str); 
+						putsmsg(&scfg,uploader.number,str);
 					}
 				}
 			}
 			if(!xfer.tmpfile && !xfer.delfile && !(scfg.dir[f.dir]->misc&DIR_NOSTAT))
 				inc_download_stats(&scfg, 1, (ulong)total);
-		}	
+
+			mqtt_file_download(&mqtt, xfer.user, &f, total, xfer.client);
+		}
 
 		if(xfer.credits) {
 			user_downloaded(&scfg, xfer.user, 1, total);
@@ -1104,6 +1106,8 @@ static void receive_thread(void* arg)
 			}
 			if(!(scfg.dir[f.dir]->misc&DIR_NOSTAT))
 				inc_upload_stats(&scfg, 1, (ulong)total);
+
+			mqtt_file_upload(&mqtt, xfer.user, &f, total, xfer.client);
 		}
 		/* Send ACK */
 		sockprintf(xfer.ctrl_sock,sess,"226 Upload complete (%lu cps).",cps);
@@ -2561,6 +2565,7 @@ static void ctrl_thread(void* arg)
 			SAFECOPY(user.ipaddr,host_ip);
 			user.logontime=(time32_t)logintime;
 			putuserdat(&scfg, &user);
+			mqtt_user_login(&mqtt, &client);
 
 #ifdef _WIN32
 			if(startup->sound.login[0] && !sound_muted(&scfg)) 
@@ -4808,6 +4813,7 @@ static void ctrl_thread(void* arg)
 		/* Update User Statistics */
 		if(!logoutuserdat(&scfg, &user, time(NULL), logintime))
 			lprintf(LOG_ERR,"%04d <%s> !ERROR in logoutuserdat", sock, user.alias);
+		mqtt_user_logout(&mqtt, &client, logintime);
 		lprintf(LOG_INFO,"%04d <%s> logged off", sock, user.alias);
 #ifdef _WIN32
 		if(startup->sound.logout[0] && !sound_muted(&scfg)) 

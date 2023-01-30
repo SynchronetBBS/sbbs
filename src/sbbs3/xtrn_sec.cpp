@@ -1255,7 +1255,7 @@ const char* sbbs_t::xtrn_dropdir(const xtrn_t* xtrn, char* buf, size_t maxlen)
 /****************************************************************************/
 /* This function handles configured external program execution. 			*/
 /****************************************************************************/
-bool sbbs_t::exec_xtrn(uint xtrnnum)
+bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 {
 	char str[256],path[MAX_PATH+1],dropdir[MAX_PATH+1],name[32],c;
 	uint i;
@@ -1372,7 +1372,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	xtrndat(name,dropdir,cfg.xtrn[xtrnnum]->type,tleft,cfg.xtrn[xtrnnum]->misc);
 	if(!online)
 		return(false);
-	SAFEPRINTF(str, "running external program: %s", cfg.xtrn[xtrnnum]->name);
+	snprintf(str, sizeof(str), "running external %s: %s", cfg.xtrn[xtrnnum]->name, user_event ? "user event" : "program");
 	logline("X-",str);
 	if(cfg.xtrn[xtrnnum]->cmd[0]!='*' && logfile_fp!=NULL) {
 		fclose(logfile_fp);
@@ -1418,6 +1418,12 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	}
 
 	start=time(NULL);
+
+	char topic[128];
+	snprintf(topic, sizeof(topic), "exec/%s", cfg.xtrn[xtrnnum]->code);
+	snprintf(str, sizeof(str), "%u\t%s", useron.number, useron.alias);
+	mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, start, str);
+
 	external(cmdstr(cfg.xtrn[xtrnnum]->cmd, drop_file, startup_dir, NULL, mode)
 		,mode
 		,cfg.xtrn[xtrnnum]->path);
@@ -1487,7 +1493,7 @@ bool sbbs_t::user_event(user_event_t event)
 			|| !chk_ar(cfg.xtrn[i]->run_ar,&useron,&client)
 			|| !chk_ar(cfg.xtrnsec[cfg.xtrn[i]->sec]->ar,&useron,&client))
 			continue;
-		success=exec_xtrn(i); 
+		success=exec_xtrn(i, /* user_event: */true); 
 	}
 
 	return(success);
