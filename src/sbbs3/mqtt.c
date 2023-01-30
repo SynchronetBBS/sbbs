@@ -684,7 +684,7 @@ int mqtt_client_on(struct mqtt* mqtt, BOOL on, int sock, client_t* client, BOOL 
 	return result;
 }
 
-static int mqtt_user_login(struct mqtt* mqtt, client_t* client)
+int mqtt_user_login(struct mqtt* mqtt, client_t* client)
 {
 	char str[128];
 	char topic[128];
@@ -705,7 +705,7 @@ static int mqtt_user_login(struct mqtt* mqtt, client_t* client)
 	return mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, time(NULL), str);
 }
 
-static int mqtt_user_logout(struct mqtt* mqtt, client_t* client, time_t logintime)
+int mqtt_user_logout(struct mqtt* mqtt, client_t* client, time_t logintime)
 {
 	char str[128];
 	char tmp[128];
