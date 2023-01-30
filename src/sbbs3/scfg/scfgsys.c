@@ -63,6 +63,7 @@ static void configure_dst(void)
 void sys_cfg(void)
 {
 	static int sys_dflt,adv_dflt,tog_dflt,new_dflt;
+	static int seclevel_dflt, seclevel_bar;
 	static int tog_bar;
 	static int adv_bar;
 	char str[81],done=0;
@@ -1941,7 +1942,6 @@ void sys_cfg(void)
 				break;
 
 			case 13: /* Security Levels */
-				dflt=bar=0;
 				k=0;
 				while(1) {
 					for(i=0;i<100;i++) {
@@ -1973,7 +1973,7 @@ void sys_cfg(void)
 						"    Free Credits Per Day   Number of free credits awarded per day\n"
 						"    Expire To              Level or validation set to Expire to\n"
 					;
-					i=uifc.list(WIN_RHT|WIN_ACT,0,3,0,&dflt,&bar
+					i=uifc.list(WIN_RHT|WIN_ACT,0,3,0, &seclevel_dflt, &seclevel_bar
 						,"Level   T/D   T/C   C/D   E/D   P/D   L/M   F/D   "
 							"Expire To",opt);
 					if(i==-1)
