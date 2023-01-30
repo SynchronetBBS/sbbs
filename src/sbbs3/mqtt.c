@@ -696,6 +696,7 @@ int mqtt_user_login(struct mqtt* mqtt, client_t* client)
 		return MQTT_SUCCESS;
 
 	snprintf(topic, sizeof(topic), "login/%s", client->protocol);
+	strlwr(topic);
 	snprintf(str, sizeof(str), "%u\t%s\t%s\t%s"
 		,client->usernum
 		,client->user
@@ -721,6 +722,7 @@ int mqtt_user_logout(struct mqtt* mqtt, client_t* client, time_t logintime)
 	if(tused < 0)
 		tused = 0;
 	snprintf(topic, sizeof(topic), "logout/%s", client->protocol);
+	strlwr(topic);
 	snprintf(str, sizeof(str), "%u\t%s\t%s\t%s\t%s"
 		,client->usernum
 		,client->user
