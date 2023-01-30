@@ -449,6 +449,13 @@ BOOL sbbs_t::newuser()
 	}
 	SAFEPRINTF2(str,"Created user record #%u: %s",useron.number,useron.alias);
 	logline(nulstr,str);
+
+	snprintf(str, sizeof(str), "%u\t%s"
+		,useron.number, useron.alias);
+	char topic[128];
+	snprintf(str, sizeof(str), "newuser/%s", client.protocol);
+	mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, answertime, str);
+
 	if(cfg.new_sif[0]) {
 		SAFEPRINTF2(str,"%suser/%4.4u.dat",cfg.data_dir,useron.number);
 		create_sif_dat(cfg.new_sif,str); 

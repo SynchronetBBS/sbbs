@@ -1366,6 +1366,8 @@ static void pop3_thread(void* arg)
 		if(startup->sound.login[0] && !sound_muted(&scfg)) 
 			PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
 #endif
+		mqtt_user_login(&mqtt, &client);
+
 		SAFEPRINTF(smb.file,"%smail",scfg.data_dir);
 		if(smb_islocked(&smb)) {
 			lprintf(LOG_WARNING,"%04d %s <%s> !MAIL BASE LOCKED: %s",socket, client.protocol, user.alias, smb.last_error);
@@ -1737,6 +1739,7 @@ static void pop3_thread(void* arg)
 #endif
 			if(!logoutuserdat(&scfg,&user,time(NULL),client.time))
 				lprintf(LOG_ERR,"%04d %s <%s> !ERROR in logoutuserdat", socket, client.protocol, user.alias);
+			mqtt_user_logout(&mqtt, &client, client.time);
 		}
 
 	} while(0);

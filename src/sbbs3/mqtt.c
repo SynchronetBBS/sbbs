@@ -24,6 +24,7 @@
 #include "mqtt.h"
 #include "startup.h"
 #include "xpdatetime.h"
+#include "date_str.h"
 
 const char* server_type_desc(enum server_type type)
 {
@@ -47,9 +48,24 @@ const char* server_state_desc(enum server_state state)
 		case SERVER_READY: return "ready";
 		case SERVER_RELOADING: return "reloading";
 		case SERVER_STOPPING: return "stopping";
-		case SERVER_DISCONNECTED: return "disconnected";
 		default: return "???";
 	}
+}
+
+const char* log_level_desc(int level)
+{
+	switch(level) {
+		case LOG_DEBUG: return "debug";
+		case LOG_INFO: return "info";
+		case LOG_NOTICE: return "notice";
+		case LOG_WARNING: return "warn";
+		case LOG_ERR: return "error";
+		default:
+			if(level <= LOG_CRIT)
+				return "critical";
+			break;
+	}
+	return "????";
 }
 
 int mqtt_init(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup)
@@ -82,26 +98,29 @@ static char* format_topic(struct mqtt* mqtt, enum server_type type, enum topic_d
 		case TOPIC_ROOT:
 			safe_snprintf(str, size, "sbbs/%s", sbuf);
 			break;
+		case TOPIC_BBS_LEVEL:
+			safe_snprintf(str, size, "sbbs/%s", mqtt->cfg->sys_id);
+			break;
 		case TOPIC_BBS:
 			safe_snprintf(str, size, "sbbs/%s/%s", mqtt->cfg->sys_id, sbuf);
 			break;
-		case TOPIC_BBS_LEVEL:
-			safe_snprintf(str, size, "sbbs/%s", mqtt->cfg->sys_id);
+		case TOPIC_BBS_ACTION:
+			safe_snprintf(str, size, "sbbs/%s/action/%s", mqtt->cfg->sys_id, sbuf);
+			break;
+		case TOPIC_HOST_LEVEL:
+			safe_snprintf(str, size, "sbbs/%s/host/%s", mqtt->cfg->sys_id, mqtt->host);
 			break;
 		case TOPIC_HOST:
 			safe_snprintf(str, size, "sbbs/%s/host/%s/%s", mqtt->cfg->sys_id, mqtt->host, sbuf);
 			break;
-		case TOPIC_HOST_LEVEL:
-			safe_snprintf(str, size, "sbbs/%s/host/%s", mqtt->cfg->sys_id, mqtt->host);
+		case TOPIC_HOST_EVENT:
+			safe_snprintf(str, size, "sbbs/%s/host/%s/event/%s", mqtt->cfg->sys_id, mqtt->host, sbuf);
 			break;
 		case TOPIC_SERVER:
 			safe_snprintf(str, size, "sbbs/%s/host/%s/server/%s/%s", mqtt->cfg->sys_id, mqtt->host, server_type_desc(type), sbuf);
 			break;
 		case TOPIC_SERVER_LEVEL:
 			safe_snprintf(str, size, "sbbs/%s/host/%s/server/%s", mqtt->cfg->sys_id, mqtt->host, server_type_desc(type));
-			break;
-		case TOPIC_EVENT:
-			safe_snprintf(str, size, "sbbs/%s/host/%s/event/%s", mqtt->cfg->sys_id, mqtt->host, sbuf);
 			break;
 		case TOPIC_OTHER:
 		default:
@@ -227,6 +246,20 @@ int mqtt_pub_strval(struct mqtt* mqtt, enum topic_depth depth, const char* key, 
 	return MQTT_FAILURE;
 }
 
+int mqtt_pub_timestamped_msg(struct mqtt* mqtt, enum topic_depth depth, const char* key, time_t t, const char* msg)
+{
+	char timestamp[64];
+	char str[1024];
+
+	if(mqtt == NULL || mqtt->cfg == NULL)
+		return MQTT_FAILURE;
+	if(!mqtt->cfg->mqtt.enabled)
+		return MQTT_SUCCESS;
+	time_to_isoDateTimeStr(t, xpTimeZone_local(), timestamp, sizeof(timestamp));
+	SAFEPRINTF2(str, "%s\t%s", timestamp, msg);
+	return mqtt_pub_strval(mqtt, depth, key, str);
+}
+
 int mqtt_pub_uintval(struct mqtt* mqtt, enum topic_depth depth, const char* key, ulong value)
 {
 	if(mqtt == NULL || mqtt->cfg == NULL)
@@ -323,12 +356,6 @@ static int pw_callback(char* buf, int size, int rwflag, void* userdata)
 	return strlen(mqtt->cfg->mqtt.tls.keypass);
 }
 
-static char* server_state_str(char* str, size_t size, enum server_state state)
-{
-	snprintf(str, size, "%u-%s", state, server_state_desc(state));
-	return str;
-}
-
 int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 {
 	if(mqtt == NULL || mqtt->handle == NULL || mqtt->cfg == NULL)
@@ -345,7 +372,7 @@ int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 	mosquitto_int_option(mqtt->handle, MOSQ_OPT_PROTOCOL_VERSION, mqtt->cfg->mqtt.protocol_version);
 	mosquitto_username_pw_set(mqtt->handle, username, password);
 	char value[128];
-	server_state_str(value, sizeof(value), SERVER_DISCONNECTED);
+	SAFECOPY(value, "DISCONNECTED");
 	mosquitto_will_set(mqtt->handle
 		,mqtt_topic(mqtt, TOPIC_SERVER_LEVEL, topic, sizeof(topic), NULL)
 		,strlen(value), value, /* QOS: */2, /* retain: */true);
@@ -514,8 +541,7 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 		}
 	}
 	mqtt_pub_noval(mqtt, TOPIC_SERVER, "recycle");
-	mqtt_pub_noval(mqtt, TOPIC_SERVER, "client_list");
-	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "client_count", 0);
+	mqtt_pub_noval(mqtt, TOPIC_SERVER, "client");
 	mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "recycle");
 	mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "recycle");
 
@@ -525,7 +551,6 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 int mqtt_server_state(struct mqtt* mqtt, enum server_state state)
 {
 	char str[128];
-	char tmp[256];
 
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
@@ -544,34 +569,35 @@ int mqtt_server_state(struct mqtt* mqtt, enum server_state state)
 		if(mqtt->client_list.count)
 			snprintf(clients, sizeof(clients), "%lu%s clients", mqtt->client_list.count, max_clients);
 		snprintf(str, sizeof(str), "%s\t%s\t%s\t%s"
-			,server_state_str(tmp, sizeof(tmp), state)
+			,server_state_desc(state)
 			,clients
 			,served
 			,errors);
 	} else
-		server_state_str(str, sizeof(str), state);
+		SAFECOPY(str, server_state_desc(state));
 	int result = mqtt_pub_strval(mqtt, TOPIC_SERVER_LEVEL, NULL, str);
 	if(mqtt->server_state != state) {
-		mqtt->server_state = state;
 		char topic[128];
-		time_t t = time(NULL);
-		snprintf(topic, sizeof(topic), "state/%s", server_state_str(tmp, sizeof(tmp), state));
-		safe_snprintf(str, sizeof(str), "%" PRIu32 "T%06" PRIu32 "%d"
-			,time_to_isoDate(t), time_to_isoTime(t), xpTimeZone_local());
-		result = mqtt_pub_strval(mqtt, TOPIC_SERVER, topic, str);
+		snprintf(topic, sizeof(topic), "state/%s", server_state_desc(state));
+		result = mqtt_pub_timestamped_msg(mqtt, TOPIC_SERVER, topic, time(NULL), server_state_desc(mqtt->server_state));
+		mqtt->server_state = state;
 	}
 	return result;
 }
 
 int mqtt_errormsg(struct mqtt* mqtt, int level, const char* msg)
 {
+	char topic[128];
+	time_t t = time(NULL);
+
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
 	++mqtt->error_count;
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "error_count", mqtt->error_count);
 	if(mqtt->cfg->mqtt.verbose)
 		mqtt_server_state(mqtt, mqtt->server_state);
-	return mqtt_pub_strval(mqtt, TOPIC_BBS, "error", msg);
+	snprintf(topic, sizeof(topic), "error/%s", log_level_desc(level));
+	return mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, t, msg);
 }
 
 int mqtt_client_max(struct mqtt* mqtt, ulong count)
@@ -579,13 +605,30 @@ int mqtt_client_max(struct mqtt* mqtt, ulong count)
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
 	mqtt->max_clients = count;
-	if(mqtt->cfg->mqtt.verbose)
-		mqtt_server_state(mqtt, mqtt->server_state);
-	return mqtt_pub_uintval(mqtt, TOPIC_SERVER, "max_clients", count);
+	return mqtt_client_count(mqtt);
+}
+
+static void format_client_info(char* str, size_t size, int sock, client_t* client, time_t t)
+{
+	char timestamp[32];
+	
+	snprintf(str, size, "%s\t%s\t%d\t%s\t%s\t%s\t%hu\t%d"
+		,time_to_isoDateTimeStr(t, xpTimeZone_local(), timestamp, sizeof(timestamp))
+		,client->protocol
+		,client->usernum
+		,client->user
+		,client->addr
+		,client->host
+		,client->port
+		,sock
+		);
 }
 
 int mqtt_client_on(struct mqtt* mqtt, BOOL on, int sock, client_t* client, BOOL update)
 {
+	#define MAX_CLIENT_STRLEN 512
+	char str[MAX_CLIENT_STRLEN + 1];
+
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
 
@@ -597,31 +640,31 @@ int mqtt_client_on(struct mqtt* mqtt, BOOL on, int sock, client_t* client, BOOL 
 		if(update) {
 			list_node_t*	node;
 
-			if((node=listFindTaggedNode(&mqtt->client_list, sock)) != NULL)
+			if((node=listFindTaggedNode(&mqtt->client_list, sock)) != NULL) {
 				memcpy(node->data, client, sizeof(client_t));
+				format_client_info(str, sizeof(str), sock, client, time(NULL));
+				mqtt_pub_strval(mqtt, TOPIC_SERVER, "client/action/update", str);
+			}
 		} else {
 			listAddNodeData(&mqtt->client_list, client, sizeof(client_t), sock, LAST_NODE);
+			format_client_info(str, sizeof(str), sock, client, client->time);
+			mqtt_pub_strval(mqtt, TOPIC_SERVER, "client/action/connect", str);
 		}
 	} else {
-		listRemoveTaggedNode(&mqtt->client_list, sock, /* free_data: */TRUE);
+		client = listRemoveTaggedNode(&mqtt->client_list, sock, /* free_data: */FALSE);
+		if(client != NULL) {
+			format_client_info(str, sizeof(str), sock, client, time(NULL));
+			mqtt_pub_strval(mqtt, TOPIC_SERVER, "client/action/disconnect", str);
+			FREE_AND_NULL(client);
+		}
 		mqtt->served++;
 	}
 
-	#define MAX_CLIENT_STRLEN 512
 	str_list_t list = strListInit();
 	size_t client_count = 0;
 	for(list_node_t* node = mqtt->client_list.first; node != NULL; node = node->next) {
-		char str[MAX_CLIENT_STRLEN + 1];
 		client_t* client = node->data;
-		snprintf(str, sizeof(str), "%ld\t%s\t%s\t%s\t%s\t%u\t%lu"
-			,node->tag
-			,client->protocol
-			,client->user
-			,client->addr
-			,client->host
-			,client->port
-			,(ulong)client->time
-			);
+		format_client_info(str, sizeof(str), node->tag, client, client->time);
 		strListPush(&list, str);
 		client_count++;
 	}
@@ -636,18 +679,72 @@ int mqtt_client_on(struct mqtt* mqtt, BOOL on, int sock, client_t* client, BOOL 
 
 	mqtt_client_count(mqtt);
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "served", mqtt->served);
-	int result = mqtt_pub_strval(mqtt, TOPIC_SERVER, "client_list", buf);
+	int result = mqtt_pub_strval(mqtt, TOPIC_SERVER, "client/list", buf);
 	free(buf);
 	return result;
 }
 
+int mqtt_user_login(struct mqtt* mqtt, client_t* client)
+{
+	char str[128];
+	char topic[128];
+
+	if(mqtt == NULL || mqtt->cfg == NULL || client == NULL)
+		return MQTT_FAILURE;
+
+	if(!mqtt->cfg->mqtt.enabled)
+		return MQTT_SUCCESS;
+
+	snprintf(topic, sizeof(topic), "login/%s", client->protocol);
+	snprintf(str, sizeof(str), "%u\t%s\t%s\t%s"
+		,client->usernum
+		,client->user
+		,client->addr
+		,client->host
+		);
+	return mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, time(NULL), str);
+}
+
+int mqtt_user_logout(struct mqtt* mqtt, client_t* client, time_t logintime)
+{
+	char str[128];
+	char tmp[128];
+	char topic[128];
+
+	if(mqtt == NULL || mqtt->cfg == NULL || client == NULL)
+		return MQTT_FAILURE;
+
+	if(!mqtt->cfg->mqtt.enabled)
+		return MQTT_SUCCESS;
+
+	long tused = (long)(time(NULL) - logintime);
+	if(tused < 0)
+		tused = 0;
+	snprintf(topic, sizeof(topic), "logout/%s", client->protocol);
+	snprintf(str, sizeof(str), "%u\t%s\t%s\t%s\t%s"
+		,client->usernum
+		,client->user
+		,client->addr
+		,client->host
+		,sectostr(tused, tmp)
+		);
+	return mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, time(NULL), str);
+}
+
+
 int mqtt_client_count(struct mqtt* mqtt)
 {
+	char str[128];
+
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
 	if(mqtt->cfg->mqtt.verbose)
 		mqtt_server_state(mqtt, mqtt->server_state);
-	return mqtt_pub_uintval(mqtt, TOPIC_SERVER, "client_count", mqtt->client_list.count);
+	if(mqtt->max_clients)
+		snprintf(str, sizeof(str), "%ld total\t%ld max", mqtt->client_list.count, mqtt->max_clients);
+	else
+		snprintf(str, sizeof(str), "%ld total", mqtt->client_list.count);
+	return mqtt_pub_strval(mqtt, TOPIC_SERVER, "client", str);
 }
 
 void mqtt_shutdown(struct mqtt* mqtt)
@@ -657,4 +754,30 @@ void mqtt_shutdown(struct mqtt* mqtt)
 		mqtt_thread_stop(mqtt);
 		mqtt_close(mqtt);
 	}
+}
+
+static int mqtt_file_xfer(struct mqtt* mqtt, user_t* user, file_t* f, off_t bytes, client_t* client, const char* xfer)
+{
+	if(mqtt == NULL || mqtt->cfg == NULL || user == NULL || f == NULL || client == NULL)
+		return MQTT_FAILURE;
+
+	if(!mqtt->cfg->mqtt.enabled)
+		return MQTT_SUCCESS;
+
+	char str[256];
+	char topic[128];
+	snprintf(topic, sizeof(topic), "%s/%s", xfer, mqtt->cfg->dir[f->dir]->code);
+	snprintf(str, sizeof(str), "%u\t%s\t%u\t%s\t%" PRIdOFF "\t%s"
+		,user->number, user->alias, user->uls, f->name, bytes, client->protocol);
+	return mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, time(NULL), str);
+}
+
+int mqtt_file_upload(struct mqtt* mqtt, user_t* user, file_t* f, off_t bytes, client_t* client)
+{
+	return mqtt_file_xfer(mqtt, user, f, bytes, client, "upload");
+}
+
+int mqtt_file_download(struct mqtt* mqtt, user_t* user, file_t* f, off_t bytes, client_t* client)
+{
+	return mqtt_file_xfer(mqtt, user, f, bytes, client, "download");
 }

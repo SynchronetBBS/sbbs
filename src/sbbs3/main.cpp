@@ -231,7 +231,7 @@ int eputs(int level, const char *str)
 	if(*str == 0)
 		return 0;
 
-	mqtt_lputs(&mqtt, TOPIC_EVENT, level, str);
+	mqtt_lputs(&mqtt, TOPIC_HOST_EVENT, level, str);
 
 	if(level <= LOG_ERR) {
 		char errmsg[1024];
@@ -2612,6 +2612,8 @@ void event_thread(void* arg)
 	SetThreadName("sbbs/events");
 	thread_up(TRUE /* setuid */);
 
+	mqtt_pub_strval(&mqtt, TOPIC_HOST, "event", "thread started");
+
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
 		if((sbbs->js_cx = sbbs->js_init(&sbbs->js_runtime, &sbbs->js_glob, "event")) == NULL) /* This must be done in the context of the events thread */
@@ -3248,10 +3250,11 @@ void event_thread(void* arg)
 
 	sbbs->event_thread_running = false;
 
+	mqtt_pub_strval(&mqtt, TOPIC_HOST, "event", "thread stopped");
+
 	thread_down();
 	sbbs->lprintf(LOG_INFO,"BBS Events thread terminated");
 }
-
 
 //****************************************************************************
 sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const char* name, SOCKET sd,
@@ -4159,8 +4162,6 @@ void sbbs_t::reset_logon_vars(void)
     lbuflen=0;
     timeleft_warn=0;
 	keybufbot=keybuftop=0;
-    logon_uls=logon_ulb=logon_dls=logon_dlb=0;
-    logon_posts=logon_emails=logon_fbacks=0;
     usrgrps=usrlibs=0;
     curgrp=curlib=0;
 	for(i=0;i<cfg.total_libs;i++)
@@ -4405,17 +4406,6 @@ void node_thread(void* arg)
 		fprintf(fp, "name=%s\n", sbbs->useron.alias);
 		fprintf(fp, "done=%lu\n", (ulong)now);
 		fclose(fp);
-	}
-
-	if(sbbs->useron.number) {
-		char topic[128];
-		char tmp[32];
-		long tused = (long)(now - sbbs->logontime);
-		if(tused < 0)
-			tused = 0;
-		SAFEPRINTF(topic, "node/%u/laston", sbbs->cfg.node_num);
-		snprintf(str, sizeof(str), "%u\t%s\t%s", sbbs->useron.number, sbbs->useron.alias, sectostr(tused, tmp));
-		mqtt_pub_strval(&mqtt, TOPIC_BBS, topic, str);
 	}
 
 	if(sbbs->sys_status&SS_DAILY) {	// New day, run daily events/maintenance

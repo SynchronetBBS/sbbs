@@ -576,13 +576,13 @@ public:
 	long 	sys_status; 	/* System Status */
 	subscan_t	*subscan;	/* User sub configuration/scan info */
 
-	int64_t	logon_ulb,		/* Upload Bytes This Call */
-			logon_dlb,		/* Download Bytes This Call */
-			logon_uls,		/* Uploads This Call */
-			logon_dls;		/* Downloads This Call */
-	ulong	logon_posts,	/* Posts This Call */
-			logon_emails,	/* Emails This Call */
-			logon_fbacks;	/* Feedbacks This Call */
+	int64_t	logon_ulb=0,	/* Upload Bytes This Call */
+			logon_dlb=0;	/* Download Bytes This Call */
+	ulong	logon_uls=0,	/* Uploads This Call */
+			logon_dls=0;	/* Downloads This Call */
+	ulong	logon_posts=0,	/* Posts This Call */
+			logon_emails=0,	/* Emails This Call */
+			logon_fbacks=0;	/* Feedbacks This Call */
 	uchar	logon_ml;		/* Security level of the user upon logon */
 
 	uint 	main_cmds;		/* Number of Main Commands this call */
@@ -1105,7 +1105,7 @@ public:
 	int		xtrn_sec(const char* section = "");	/* The external program section  */
 	void	xtrndat(const char* name, const char* dropdir, uchar type, ulong tleft
 				,ulong misc);
-	bool	exec_xtrn(uint xtrnnum);			/* Executes online external program */
+	bool	exec_xtrn(uint xtrnnum, bool user_event = false);	/* Executes online external program */
 	bool	user_event(user_event_t);			/* Executes user event(s) */
 	void	moduserdat(uint xtrnnum);
 	const char* xtrn_dropdir(const xtrn_t*, char* buf, size_t);
