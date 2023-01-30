@@ -63,8 +63,7 @@ int kbincom(sbbs_t* sbbs, unsigned long timeout)
 			if(IS_ALPHA(ch))
 				ch ^= 0x20;	/* Swap upper/lower case */
 		}
-
-		if(term&SWAP_DELETE) {
+		else if(term&SWAP_DELETE) {
 			switch(ch) {
 				case TERM_KEY_DELETE:
 					ch = '\b';
