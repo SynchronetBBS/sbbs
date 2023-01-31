@@ -1623,11 +1623,12 @@ void http_logon(http_session_t * session, user_t *usr)
 		SAFECOPY(session->user.ipaddr, session->host_ip);
 		session->user.logontime = (time32_t)session->logon_time;
 		putuserdat(&scfg, &session->user);
-		mqtt_user_login(&mqtt, &session->client);
 	}
 	SAFECOPY(session->client.user, session->username);
 	session->client.usernum = session->user.number;
 	client_on(session->socket, &session->client, /* update existing client record? */TRUE);
+	if(session->user.number > 0)
+		mqtt_user_login(&mqtt, &session->client);
 
 	session->last_user_num=session->user.number;
 }
