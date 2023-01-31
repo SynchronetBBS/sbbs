@@ -85,6 +85,9 @@
  *                              no longer gives the error "Invalid user field: 0"; also, if the sender is
  *                              unknown, prompts the user for a user name/number/email address to send
  *                              the reply to.
+ * 2023-01-30 Eric Oulashin     Version 1.62
+ *                              (Hopefully) Improved display of ANSI messages which would previously look
+ *                              bad with empty lines evrey other line
  */
 
 "use strict";
@@ -189,8 +192,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.61";
-var READER_DATE = "2023-01-22";
+var READER_VERSION = "1.62";
+var READER_DATE = "2023-01-30";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4846,11 +4849,16 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	if (msgHasANSICodes)
 	{
 		messageText = messageText.replace(/\u001b\[[012]J/gi, "");
-		var graphic = new Graphic(msgAreaWidth, this.msgAreaHeight-1);
+		//var graphic = new Graphic(msgAreaWidth, this.msgAreaHeight-1);
+		// To help ensure ANSI messages look good, it seems the Graphic object should have
+		// its with later set to 1 less than the width used to create it.
+		var graphicWidth = (msgAreaWidth < console.screen_columns ? msgAreaWidth+1 : console.screen_columns);
+		var graphic = new Graphic(graphicWidth, this.msgAreaHeight-1);
+		//var graphic = new Graphic(console.screen_columns, 10);
 		graphic.auto_extend = true;
 		graphic.ANSI = ansiterm.expand_ctrl_a(messageText);
 		//graphic.normalize();
-		//graphic.width = msgAreaWidth;
+		graphic.width = graphicWidth - 1;
 		//messageText = graphic.MSG.split('\n');
 		messageText = graphic.MSG;
 	}
@@ -5928,10 +5936,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 						// new width
 						if (msgHasANSICodes)
 						{
-							var graphic = new Graphic(msgAreaWidth, this.msgAreaHeight-1);
+							//var graphic = new Graphic(msgAreaWidth, this.msgAreaHeight-1);
+							// To help ensure ANSI messages look good, it seems the Graphic object should have
+							// its with later set to 1 less than the width used to create it.
+							var graphicWidth = (msgAreaWidth < console.screen_columns ? msgAreaWidth+1 : console.screen_columns);
+							var graphic = new Graphic(graphicWidth, this.msgAreaHeight-1);
 							graphic.auto_extend = true;
 							graphic.ANSI = ansiterm.expand_ctrl_a(messageText);
-							graphic.width = msgAreaWidth;
+							//graphic.width = msgAreaWidth;
+							graphic.width = graphicWidth - 1;
 							messageText = graphic.MSG;
 						}
 						// Display or erase the scrollbar
@@ -13975,9 +13988,14 @@ function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename)
 			{
 				if (textHasDrawingChars(msgBody))
 				{
-					var graphic = new Graphic(this.msgAreaWidth, this.msgAreaHeight);
+					//var graphic = new Graphic(this.msgAreaWidth, this.msgAreaHeight);
+					// To help ensure ANSI messages look good, it seems the Graphic object should have
+					// its with later set to 1 less than the width used to create it.
+					var graphicWidth = (msgAreaWidth < console.screen_columns ? msgAreaWidth+1 : console.screen_columns);
+					var graphic = new Graphic(graphicWidth, this.msgAreaHeight);
 					graphic.auto_extend = true;
 					graphic.ANSI = ansiterm.expand_ctrl_a(msgBody);
+					graphic.width = graphicWidth - 1;
 					msgBody = syncAttrCodesToANSI(graphic.MSG);
 				}
 				else
@@ -14999,7 +15017,7 @@ function DigDistMsgReader_GetUpvoteAndDownvoteInfo(pMsgHdr)
 //
 // Return value: The poll results, colorized.  If the message is not a
 //               poll message, then an empty string will be returned.
-function DigDistMsgReader_GetMsgBody(pMsgHdr)
+function DigDistMsgReader_GetMsgBody(pMsgHdr, pAsIs)
 {
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (!msgbase.open())
@@ -15139,22 +15157,25 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 		// If the message is UTF8 and the terminal is not UTF8-capable, then convert
 		// the text to cp437.
 		msgBody = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
-		if (pMsgHdr.hasOwnProperty("is_utf8") && pMsgHdr.is_utf8)
+		if (typeof(pAsIs) === "boolean" && !pAsIs)
 		{
-			var userConsoleSupportsUTF8 = false;
-			if (typeof(USER_UTF8) != "undefined")
-				userConsoleSupportsUTF8 = console.term_supports(USER_UTF8);
-			if (!userConsoleSupportsUTF8)
-				msgBody = utf8_cp437(msgBody);
-		}
-		// Remove any initial coloring from the message body, which can color the whole message
-		msgBody = removeInitialColorFromMsgBody(msgBody);
-		// For HTML-formatted messages, convert HTML entities
-		if (pMsgHdr.hasOwnProperty("text_subtype") && pMsgHdr.text_subtype.toLowerCase() == "html")
-		{
-			msgBody = html2asc(msgBody);
-			// Remove excessive blank lines after HTML-translation
-			msgBody = msgBody.replace(/\r\n\r\n\r\n/g, '\r\n\r\n');
+			if (pMsgHdr.hasOwnProperty("is_utf8") && pMsgHdr.is_utf8)
+			{
+				var userConsoleSupportsUTF8 = false;
+				if (typeof(USER_UTF8) != "undefined")
+					userConsoleSupportsUTF8 = console.term_supports(USER_UTF8);
+				if (!userConsoleSupportsUTF8)
+					msgBody = utf8_cp437(msgBody);
+			}
+			// Remove any initial coloring from the message body, which can color the whole message
+			msgBody = removeInitialColorFromMsgBody(msgBody);
+			// For HTML-formatted messages, convert HTML entities
+			if (pMsgHdr.hasOwnProperty("text_subtype") && pMsgHdr.text_subtype.toLowerCase() == "html")
+			{
+				msgBody = html2asc(msgBody);
+				// Remove excessive blank lines after HTML-translation
+				msgBody = msgBody.replace(/\r\n\r\n\r\n/g, '\r\n\r\n');
+			}
 		}
 	}
 	msgbase.close();
