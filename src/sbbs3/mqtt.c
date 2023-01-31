@@ -132,6 +132,7 @@ static char* format_topic(struct mqtt* mqtt, enum server_type type, enum topic_d
 
 char* mqtt_topic(struct mqtt* mqtt, enum topic_depth depth, char* str, size_t size, const char* fmt, ...)
 {
+	char* p;
 	va_list argptr;
 	char sbuf[1024]="";
 
@@ -142,7 +143,9 @@ char* mqtt_topic(struct mqtt* mqtt, enum topic_depth depth, char* str, size_t si
 		va_end(argptr);
 	}
 
-	return format_topic(mqtt, mqtt->startup->type, depth, str, size, sbuf);
+	REPLACE_CHARS(sbuf, ' ', '_', p);
+	format_topic(mqtt, mqtt->startup->type, depth, str, size, sbuf);
+	return str;
 }
 
 static int mqtt_sub(struct mqtt* mqtt, const char* topic)
