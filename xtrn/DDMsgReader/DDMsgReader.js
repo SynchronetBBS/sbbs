@@ -85,6 +85,9 @@
  *                              no longer gives the error "Invalid user field: 0"; also, if the sender is
  *                              unknown, prompts the user for a user name/number/email address to send
  *                              the reply to.
+ * 2023-01-30 Eric Oulashin     Version 1.62
+ *                              (Hopefully) Improved display of ANSI messages which would previously look
+ *                              bad with empty lines evrey other line
  */
 
 "use strict";
@@ -189,8 +192,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.61";
-var READER_DATE = "2023-01-22";
+var READER_VERSION = "1.62";
+var READER_DATE = "2023-01-30";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4846,11 +4849,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	if (msgHasANSICodes)
 	{
 		messageText = messageText.replace(/\u001b\[[012]J/gi, "");
-		var graphic = new Graphic(msgAreaWidth, this.msgAreaHeight-1);
+		//var graphic = new Graphic(msgAreaWidth, this.msgAreaHeight-1);
+		// To help ensure ANSI messages look good, it seems the Graphic object should have
+		// its with later set to 1 less than the width used to create it.
+		var graphicWidth = (msgAreaWidth < console.screen_columns ? msgAreaWidth+1 : console.screen_columns);
+		var graphic = new Graphic(graphicWidth, this.msgAreaHeight-1);
 		graphic.auto_extend = true;
 		graphic.ANSI = ansiterm.expand_ctrl_a(messageText);
 		//graphic.normalize();
-		//graphic.width = msgAreaWidth;
+		graphic.width = graphicWidth - 1;
 		//messageText = graphic.MSG.split('\n');
 		messageText = graphic.MSG;
 	}
@@ -5928,10 +5935,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 						// new width
 						if (msgHasANSICodes)
 						{
-							var graphic = new Graphic(msgAreaWidth, this.msgAreaHeight-1);
+							//var graphic = new Graphic(msgAreaWidth, this.msgAreaHeight-1);
+							// To help ensure ANSI messages look good, it seems the Graphic object should have
+							// its with later set to 1 less than the width used to create it.
+							var graphicWidth = (msgAreaWidth < console.screen_columns ? msgAreaWidth+1 : console.screen_columns);
+							var graphic = new Graphic(graphicWidth, this.msgAreaHeight-1);
 							graphic.auto_extend = true;
 							graphic.ANSI = ansiterm.expand_ctrl_a(messageText);
-							graphic.width = msgAreaWidth;
+							//graphic.width = msgAreaWidth;
+							graphic.width = graphicWidth - 1;
 							messageText = graphic.MSG;
 						}
 						// Display or erase the scrollbar
@@ -13975,9 +13987,14 @@ function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename)
 			{
 				if (textHasDrawingChars(msgBody))
 				{
-					var graphic = new Graphic(this.msgAreaWidth, this.msgAreaHeight);
+					//var graphic = new Graphic(this.msgAreaWidth, this.msgAreaHeight);
+					// To help ensure ANSI messages look good, it seems the Graphic object should have
+					// its with later set to 1 less than the width used to create it.
+					var graphicWidth = (msgAreaWidth < console.screen_columns ? msgAreaWidth+1 : console.screen_columns);
+					var graphic = new Graphic(graphicWidth, this.msgAreaHeight);
 					graphic.auto_extend = true;
 					graphic.ANSI = ansiterm.expand_ctrl_a(msgBody);
+					graphic.width = graphicWidth - 1;
 					msgBody = syncAttrCodesToANSI(graphic.MSG);
 				}
 				else
