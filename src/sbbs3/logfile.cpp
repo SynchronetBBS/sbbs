@@ -62,6 +62,7 @@ extern "C" BOOL hacklog(scfg_t* cfg, struct mqtt* mqtt, const char* prot, const 
 			text= "";
 		snprintf(str, sizeof(str), "%s\t%u\t%s\t%s\t%s", user, inet_addrport(addr), host, ip, text);
 		snprintf(topic, sizeof(topic), "hack/%s", prot);
+		strlwr(topic);
 		mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, now, str);
 	}
 
@@ -120,6 +121,7 @@ extern "C" BOOL spamlog(scfg_t* cfg, struct mqtt* mqtt, char* prot, char* action
 			reason = (char*)"";
 		snprintf(str, sizeof(str), "%s\t%s\t%s\t%s\t%s\t%s", prot, host, ip_addr, from, to_user, reason);
 		snprintf(topic, sizeof(topic), "spam/%s", action);
+		strlwr(topic);
 		mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, now, str);
 	}
 

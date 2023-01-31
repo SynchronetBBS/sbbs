@@ -132,6 +132,7 @@ static char* format_topic(struct mqtt* mqtt, enum server_type type, enum topic_d
 
 char* mqtt_topic(struct mqtt* mqtt, enum topic_depth depth, char* str, size_t size, const char* fmt, ...)
 {
+	char* p;
 	va_list argptr;
 	char sbuf[1024]="";
 
@@ -142,7 +143,9 @@ char* mqtt_topic(struct mqtt* mqtt, enum topic_depth depth, char* str, size_t si
 		va_end(argptr);
 	}
 
-	return format_topic(mqtt, mqtt->startup->type, depth, str, size, sbuf);
+	REPLACE_CHARS(sbuf, ' ', '_', p);
+	format_topic(mqtt, mqtt->startup->type, depth, str, size, sbuf);
+	return str;
 }
 
 static int mqtt_sub(struct mqtt* mqtt, const char* topic)
@@ -696,6 +699,7 @@ int mqtt_user_login(struct mqtt* mqtt, client_t* client)
 		return MQTT_SUCCESS;
 
 	snprintf(topic, sizeof(topic), "login/%s", client->protocol);
+	strlwr(topic);
 	snprintf(str, sizeof(str), "%u\t%s\t%s\t%s"
 		,client->usernum
 		,client->user
@@ -721,6 +725,7 @@ int mqtt_user_logout(struct mqtt* mqtt, client_t* client, time_t logintime)
 	if(tused < 0)
 		tused = 0;
 	snprintf(topic, sizeof(topic), "logout/%s", client->protocol);
+	strlwr(topic);
 	snprintf(str, sizeof(str), "%u\t%s\t%s\t%s\t%s"
 		,client->usernum
 		,client->user
