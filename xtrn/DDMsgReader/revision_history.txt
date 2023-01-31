@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.62     2023-01-30   (Hopefully) Improved display of ANSI messages which would
+                      previously look bad with empty lines evrey other line
 1.61     2023-01-22   Fix: When replying to an email with an unknown sender
                       (empty or "All"), no longer gives the error "Invalid user
                       field: 0"; also, if the sender is unknown, prompts the
