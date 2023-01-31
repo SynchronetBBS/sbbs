@@ -4854,7 +4854,6 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		// its with later set to 1 less than the width used to create it.
 		var graphicWidth = (msgAreaWidth < console.screen_columns ? msgAreaWidth+1 : console.screen_columns);
 		var graphic = new Graphic(graphicWidth, this.msgAreaHeight-1);
-		//var graphic = new Graphic(console.screen_columns, 10);
 		graphic.auto_extend = true;
 		graphic.ANSI = ansiterm.expand_ctrl_a(messageText);
 		//graphic.normalize();
@@ -15017,7 +15016,7 @@ function DigDistMsgReader_GetUpvoteAndDownvoteInfo(pMsgHdr)
 //
 // Return value: The poll results, colorized.  If the message is not a
 //               poll message, then an empty string will be returned.
-function DigDistMsgReader_GetMsgBody(pMsgHdr, pAsIs)
+function DigDistMsgReader_GetMsgBody(pMsgHdr)
 {
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (!msgbase.open())
@@ -15157,25 +15156,22 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr, pAsIs)
 		// If the message is UTF8 and the terminal is not UTF8-capable, then convert
 		// the text to cp437.
 		msgBody = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
-		if (typeof(pAsIs) === "boolean" && !pAsIs)
+		if (pMsgHdr.hasOwnProperty("is_utf8") && pMsgHdr.is_utf8)
 		{
-			if (pMsgHdr.hasOwnProperty("is_utf8") && pMsgHdr.is_utf8)
-			{
-				var userConsoleSupportsUTF8 = false;
-				if (typeof(USER_UTF8) != "undefined")
-					userConsoleSupportsUTF8 = console.term_supports(USER_UTF8);
-				if (!userConsoleSupportsUTF8)
-					msgBody = utf8_cp437(msgBody);
-			}
-			// Remove any initial coloring from the message body, which can color the whole message
-			msgBody = removeInitialColorFromMsgBody(msgBody);
-			// For HTML-formatted messages, convert HTML entities
-			if (pMsgHdr.hasOwnProperty("text_subtype") && pMsgHdr.text_subtype.toLowerCase() == "html")
-			{
-				msgBody = html2asc(msgBody);
-				// Remove excessive blank lines after HTML-translation
-				msgBody = msgBody.replace(/\r\n\r\n\r\n/g, '\r\n\r\n');
-			}
+			var userConsoleSupportsUTF8 = false;
+			if (typeof(USER_UTF8) != "undefined")
+				userConsoleSupportsUTF8 = console.term_supports(USER_UTF8);
+			if (!userConsoleSupportsUTF8)
+				msgBody = utf8_cp437(msgBody);
+		}
+		// Remove any initial coloring from the message body, which can color the whole message
+		msgBody = removeInitialColorFromMsgBody(msgBody);
+		// For HTML-formatted messages, convert HTML entities
+		if (pMsgHdr.hasOwnProperty("text_subtype") && pMsgHdr.text_subtype.toLowerCase() == "html")
+		{
+			msgBody = html2asc(msgBody);
+			// Remove excessive blank lines after HTML-translation
+			msgBody = msgBody.replace(/\r\n\r\n\r\n/g, '\r\n\r\n');
 		}
 	}
 	msgbase.close();
