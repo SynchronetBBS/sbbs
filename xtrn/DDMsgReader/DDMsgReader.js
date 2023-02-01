@@ -88,6 +88,9 @@
  * 2023-01-30 Eric Oulashin     Version 1.62
  *                              (Hopefully) Improved display of ANSI messages which would previously look
  *                              bad with empty lines evrey other line
+ * 2023-02-01 Eric Oulashin     Version 1.63
+ *                              Fix for reading colors from the theme file. Also, the theme file now
+ *                              no longer needs the control character for color codes.
  */
 
 "use strict";
@@ -192,8 +195,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.62";
-var READER_DATE = "2023-01-30";
+var READER_VERSION = "1.63";
+var READER_DATE = "2023-02-01";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -8272,7 +8275,8 @@ function DigDistMsgReader_ReadConfigFile()
 			var commentPos = 0;      // Position of the start of a comment
 			var setting = null;      // A setting name (string)
 			var value = null;        // To store a value for a setting (string)
-			var onlySyncAttrsRegexWholeWord = new RegExp("^(\x01[krgybmcw01234567hinpq,;\.dtl<>\[\]asz])+$", 'i');
+			// A regex for attribute settings - Note that this doesn't contain some of the control codes
+			var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');;
 			while (!themeFile.eof)
 			{
 				// Read the next line from the config file.
@@ -8348,11 +8352,15 @@ function DigDistMsgReader_ReadConfigFile()
 					    (setting == "msgHdrToUserColor") || (setting == "msgHdrSubjColor") ||
 					    (setting == "msgHdrDateColor"))
 					{
-						// Trim leading & trailing spaces from the value when
-						// setting a color.  Also, replace any instances of "\x01"
-						// with the Synchronet attribute control character.
+						// Trim spaces from the color value
+						value = trimSpaces(value, true, true, true);
+						value = value.replace(/\\x01/g, "\x01"); // Replace "\x01" with control character
+						// If the value doesn't have any control characters, then add the control character
+						// before attribute characters
+						if (!/\x01/.test(value))
+							value = attrCodeStr(value);
 						if (onlySyncAttrsRegexWholeWord.test(value))
-							this.colors[setting] = trimSpaces(value, true, false, true).replace(/\\x01/g, "\x01");
+							this.colors[setting] = value;
 					}
 					// Text values
 					else if ((setting == "scrollbarBGChar") ||
@@ -18699,7 +18707,8 @@ function removeInitialColorFromMsgBody(pMsgBody)
 	var msgBodyLines = pMsgBody.split("\r\n", 3);
 	if (msgBodyLines.length == 3)
 	{
-		var onlySyncAttrsRegexWholeWord = new RegExp("^(\x01[krgybmcw01234567hinpq,;\.dtl<>\[\]asz])+$", 'i');
+		// A regex for attribute settings - Note that this doesn't contain some of the control codes
+		var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');;
 		var line1Match = /^  Re: .*/.test(strip_ctrl(msgBodyLines[0]));
 		var line2Match = /^  By: .* on .*/.test(strip_ctrl(msgBodyLines[1]));
 		var line3OnlySyncAttrs = onlySyncAttrsRegexWholeWord.test(msgBodyLines[2]);
@@ -20413,6 +20422,30 @@ function chgCharInStr(pStr, pCharIndex, pNewText)
       return pStr;
 
    return (pStr.substr(0, pCharIndex) + pNewText + pStr.substr(pCharIndex+1));
+}
+
+// Given a string of attribute characters, this function inserts the control code
+// in front of each attribute character and returns the new string.
+//
+// Parameters:
+//  pAttrCodeCharStr: A string of attribute characters (i.e., "YH" for yellow high)
+//
+// Return value: A string with the control character inserted in front of the attribute characters
+function attrCodeStr(pAttrCodeCharStr)
+{
+	if (typeof(pAttrCodeCharStr) !== "string")
+		return "";
+
+	var str = "";
+	// See this page for Synchronet color attribute codes:
+	// http://wiki.synchro.net/custom:ctrl-a_codes
+	for (var i = 0; i < pAttrCodeCharStr.length; ++i)
+	{
+		var currentChar = pAttrCodeCharStr.charAt(i);
+		if (/[krgybmcwKRGYBMCWHhIiEeFfNn01234567]/.test(currentChar))
+			str += "\x01" + currentChar;
+	}
+	return str;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
