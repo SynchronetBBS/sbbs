@@ -1287,9 +1287,9 @@ USAGE:
 						"`Edit User            : `Call up the user editor to edit current user.\n"
 						"`Spy on User          : `Spy on current user.\n"
 						"`Send message to user : `Send on online message to user.\n"
-						"`Chat with user       : `Initiate private split-screen chat wityh user.\n"
+						"`Chat with user       : `Initiate private split-screen chat with user.\n"
 						"`Node Toggles         : `Call up Node Toggles menu to set various toggles\n"
-						 "                       for current node.\n"
+						"                       for current node.\n"
 						"`Clear Errors         : `Clears the error count for node.\n"
 						"`View node log        : `View activity log for current node.\n"
 						"`View crash log       : `View the crash log for current node.";
@@ -1354,6 +1354,8 @@ USAGE:
 		if(j<=cfg.sys_nodes && j>0) {
 			if(!((node.status==NODE_INUSE) && node.useron)) {
 				i=0;
+				strcpy(opt[i++],"Spy on node");
+				strcpy(opt[i++],"Chat with user");
 				strcpy(opt[i++],"Node toggles");
 				strcpy(opt[i++],"Clear Errors");
 				strcpy(opt[i++],"View node log");
@@ -1363,8 +1365,10 @@ USAGE:
 				i=0;
 				uifc.helpbuf="`Node Options\n"
 				             "`------------\n\n"
+							 "`Spy on Node    : `Spy on current node.\n"
+							 "`Chat with user : `Initiate private split-screen chat with user.\n"
 				             "`Node Toggles   : `Call up Node Toggles menu to set various toggles\n"
-				              "                 for current node.\n"
+				             "                 for current node.\n"
 				             "`Clear Errors   : `Clears the error count for node.\n"
 				             "`View node log  : `View activity log for current node.\n"
 				             "`View crash log : `View the crash log for current node.";
@@ -1372,20 +1376,31 @@ USAGE:
 				while(!done) {
 					switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&i,0,"Node Options",opt))  {
 
-						case 0: /* Node Toggles */
+						case 0:	/* Spy */
+							dospy(j,&bbs_startup);
+							break;
+
+						case 1: /* Chat with User */
+						{
+							int result = chat(&cfg,main_dflt,&node,&boxch,NULL);
+							if(result != 0)
+								uifc.msgf("Chat error %d (%s)", result, strerror(errno));
+							break;
+						}
+						case 2: /* Node Toggles */
 							node_toggles(&cfg, j);
 							break;
 
-						case 1:
+						case 3:
 							clearerrors(&cfg, j,&node);
 							break;
 
-						case 2: /* Node log */
+						case 4: /* Node log */
 							sprintf(str,"%snode.log",cfg.node_path[j-1]);
 							view_log(str,"Node Log");
 							break;
 
-						case 3: /* Crash log */
+						case 5: /* Crash log */
 							sprintf(str,"%scrash.log",cfg.node_path[j-1]);
 							view_log(str,"Crash Log");
 							break;
