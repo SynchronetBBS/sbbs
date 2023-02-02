@@ -5322,7 +5322,7 @@ NO_SSH:
 						close_socket(new_socket);
 					}
 					else  {
-						lprintf(LOG_ERR,"!Spy socket %s (%d) connected",uspy_addr.un.sun_path,new_socket);
+						lprintf(LOG_INFO, "Spy socket %s (%d) connected",uspy_addr.un.sun_path,new_socket);
 						uspy_socket[i-1]=new_socket;
 						SAFEPRINTF(str,"Spy connection established to node %d\r\n",i);
 						send(uspy_socket[i-1],str,strlen(str),0);
