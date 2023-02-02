@@ -1200,7 +1200,7 @@ USAGE:
 				uifc.msg("Error reading node data!");
 				continue;
 			}
-			if(node.status >= NODE_LOGON && node.status <= NODE_QUIET && node.useron) {
+			if(node.status >= NODE_LOGON && node.status <= NODE_QUIET) {
 				int result = chat(&cfg,main_dflt,&node,&boxch,NULL);
 				if(result != 0)
 					uifc.msgf("Chat error: %d (%s)", result, strerror(errno));
