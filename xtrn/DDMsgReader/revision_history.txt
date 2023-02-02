@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.63     2023-02-01   Fix for reading colors from the theme file. Also, the
+                      theme file now no longer needs the control character for
+                      color codes.
 1.62     2023-01-30   (Hopefully) Improved display of ANSI messages which would
                       previously look bad with empty lines evrey other line
 1.61     2023-01-22   Fix: When replying to an email with an unknown sender
