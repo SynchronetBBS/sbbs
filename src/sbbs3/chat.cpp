@@ -1262,7 +1262,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 		getnodedat(i,&node,0);
 		if(i==cfg.node_num)
 			continue;
-		if(node.status==NODE_INUSE || (SYSOP && node.status==NODE_QUIET)) {
+		if(node.status==NODE_INUSE || (SYSOP && node.status >= NODE_LOGON && node.status <= NODE_QUIET)) {
 			if(!lastnodemsg)
 				lastnodemsg=i;
 			j++; 

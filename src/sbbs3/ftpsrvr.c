@@ -766,7 +766,12 @@ static void send_thread(void* arg)
 
 		if(xfer.dir>=0) {
 			memset(&f,0,sizeof(f));
-			if(loadfile(&scfg, xfer.dir, xfer.filename, &f, file_detail_normal) == TRUE) {
+			if(!loadfile(&scfg, xfer.dir, getfname(xfer.filename), &f, file_detail_normal)) {
+				lprintf(LOG_ERR, "%04d <%s> DATA downloaded: %s (not found in filebase!)"
+					,xfer.ctrl_sock
+					,xfer.user->alias
+					,xfer.filename);
+			} else {
 				f.hdr.times_downloaded++;
 				f.hdr.last_downloaded = time32(NULL);
 				updatefile(&scfg, &f);
@@ -823,12 +828,11 @@ static void send_thread(void* arg)
 						putsmsg(&scfg,uploader.number,str);
 					}
 				}
+				mqtt_file_download(&mqtt, xfer.user, &f, total, xfer.client);
+				smb_freefilemem(&f);
 			}
 			if(!xfer.tmpfile && !xfer.delfile && !(scfg.dir[f.dir]->misc&DIR_NOSTAT))
 				inc_download_stats(&scfg, 1, (ulong)total);
-
-			if(!xfer.tmpfile)
-				mqtt_file_download(&mqtt, xfer.user, &f, total, xfer.client);
 		}
 
 		if(xfer.credits) {
