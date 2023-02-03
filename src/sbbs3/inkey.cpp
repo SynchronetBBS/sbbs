@@ -22,60 +22,74 @@
 #include "sbbs.h"
 #include "petdefs.h"
 
-int kbincom(sbbs_t* sbbs, unsigned long timeout)
+int sbbs_t::kbincom(unsigned long timeout)
 {
 	int	ch;
 
-	if(sbbs->keybuftop!=sbbs->keybufbot) { 
-		ch=sbbs->keybuf[sbbs->keybufbot++]; 
-		if(sbbs->keybufbot==KEY_BUFSIZE) 
-			sbbs->keybufbot=0;
+	if(keybuftop!=keybufbot) {
+		ch=keybuf[keybufbot++];
+		if(keybufbot==KEY_BUFSIZE)
+			keybufbot=0;
 #if 0
 		char* p = c_escape_char(ch);
 		if(p == NULL)
 			p = (char*)&ch;
 		lprintf(LOG_DEBUG, "kbincom read %02X '%s'", ch, p);
 #endif
-	} else {
-		ch=sbbs->incom(timeout);
-		long term = sbbs->term_supports();
-		if(term&PETSCII) {
-			switch(ch) {
-				case PETSCII_HOME:
-					return TERM_KEY_HOME;
-				case PETSCII_CLEAR:
-					return TERM_KEY_END;
-				case PETSCII_INSERT:
-					return TERM_KEY_INSERT;
-				case PETSCII_DELETE:
-					return '\b';
-				case PETSCII_LEFT:
-					return TERM_KEY_LEFT;
-				case PETSCII_RIGHT:
-					return TERM_KEY_RIGHT;
-				case PETSCII_UP:
-					return TERM_KEY_UP;
-				case PETSCII_DOWN:
-					return TERM_KEY_DOWN;
-			}
-			if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
-				ch = 0x60 | (ch&0x1f);
-			if(IS_ALPHA(ch))
-				ch ^= 0x20;	/* Swap upper/lower case */
+		return ch;
+	}
+	ch = incom(timeout);
+
+	if(ch != NOINP)
+		ch = translate_input(ch);
+	return ch;
+}
+
+int sbbs_t::translate_input(int ch)
+{
+	long term = term_supports();
+	if(term&PETSCII) {
+		switch(ch) {
+			case PETSCII_HOME:
+				return TERM_KEY_HOME;
+			case PETSCII_CLEAR:
+				return TERM_KEY_END;
+			case PETSCII_INSERT:
+				return TERM_KEY_INSERT;
+			case PETSCII_DELETE:
+				return '\b';
+			case PETSCII_LEFT:
+				return TERM_KEY_LEFT;
+			case PETSCII_RIGHT:
+				return TERM_KEY_RIGHT;
+			case PETSCII_UP:
+				return TERM_KEY_UP;
+			case PETSCII_DOWN:
+				return TERM_KEY_DOWN;
 		}
-		else if(term&SWAP_DELETE) {
-			switch(ch) {
-				case TERM_KEY_DELETE:
-					ch = '\b';
-					break;
-				case '\b':
-					ch = TERM_KEY_DELETE;
-					break;
-			}
+		if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
+			ch = 0x60 | (ch&0x1f);
+		if(IS_ALPHA(ch))
+			ch ^= 0x20;	/* Swap upper/lower case */
+	}
+	else if(term&SWAP_DELETE) {
+		switch(ch) {
+			case TERM_KEY_DELETE:
+				ch = '\b';
+				break;
+			case '\b':
+				ch = TERM_KEY_DELETE;
+				break;
 		}
 	}
 
 	return ch;
+}
+
+void sbbs_t::translate_input(char* buf, size_t len)
+{
+	for(size_t i =0; i < len; i++)
+		buf[i] = translate_input(buf[i]);
 }
 
 /****************************************************************************/
@@ -86,7 +100,7 @@ int sbbs_t::inkey(long mode, unsigned long timeout)
 {
 	int	ch=0;
 
-	ch=kbincom(this,timeout);
+	ch=kbincom(timeout);
 
 	if(sys_status&SS_SYSPAGE) 
 		sbbs_beep(400 + sbbs_random(800), ch == NOINP ? 100 : 10);
@@ -295,7 +309,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			hotkey_inside &= ~(1<<ch);
 			return(0); 
 		case ESC:
-			i=kbincom(this, (mode&K_GETSTR) ? 3000:1000);
+			i=kbincom((mode&K_GETSTR) ? 3000:1000);
 			if(i==NOINP)		// timed-out waiting for '['
 				return(ESC);
 			ch=i;
@@ -313,20 +327,20 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			}
 #endif
 			while(i<10 && j<30) {		/* up to 3 seconds */
-				ch=kbincom(this, 100);
+				ch=kbincom(100);
 				if(ch==(NOINP&0xff)) {
 					j++;
 					continue;
 				}
 				if(i == 0 && ch == 'M' && mouse_mode != MOUSE_MODE_OFF) {
 					str[i++] = ch;
-					int button = kbincom(this, 100);
+					int button = kbincom(100);
 					if(button == NOINP) {
 						lprintf(LOG_DEBUG, "Timeout waiting for mouse button value");
 						continue;
 					}
 					str[i++] = button;
-					ch = kbincom(this, 100);
+					ch = kbincom(100);
 					if(ch < '!') {
 						lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
 							, button, ch);
@@ -334,7 +348,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 					}
 					str[i++] = ch;
 					int x = ch - '!';
-					ch = kbincom(this, 100);
+					ch = kbincom(100);
 					if(ch < '!') {
 						lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
 							, button, ch);
@@ -398,7 +412,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 				}
 				if(i == 0 && ch == '<' && mouse_mode != MOUSE_MODE_OFF) {
 					while(i < sizeof(str) - 1) {
-						int byte = kbincom(this, 100);
+						int byte = kbincom(100);
 						if(byte == NOINP) {
 							lprintf(LOG_DEBUG, "Timeout waiting for mouse report character (%d)", i);
 							return 0;
