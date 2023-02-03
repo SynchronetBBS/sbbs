@@ -772,8 +772,8 @@ static int mqtt_file_xfer(struct mqtt* mqtt, user_t* user, file_t* f, off_t byte
 	char str[256];
 	char topic[128];
 	snprintf(topic, sizeof(topic), "%s/%s", xfer, mqtt->cfg->dir[f->dir]->code);
-	snprintf(str, sizeof(str), "%u\t%s\t%u\t%s\t%" PRIdOFF "\t%s"
-		,user->number, user->alias, user->uls, f->name, bytes, client->protocol);
+	snprintf(str, sizeof(str), "%u\t%s\t%s\t%" PRIdOFF "\t%s"
+		,user->number, user->alias, f->name, bytes, client->protocol);
 	return mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, time(NULL), str);
 }
 
