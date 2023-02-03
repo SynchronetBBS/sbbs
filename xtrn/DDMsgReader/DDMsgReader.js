@@ -3282,8 +3282,10 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 				}
 			}
 			// D: Delete a message
-			else if (retvalObj.userInput == "D" || retvalObj.userInput == this.msgListKeys.deleteMessage) // KEY_DEL
+			else if (retvalObj.userInput == "D" || retvalObj.userInput == this.msgListKeys.deleteMessage || retvalObj.userInput == '\x7f' || retvalObj.userInput == '\x08')
 			{
+				if (retvalObj.userInput == '\x08')
+					console.crlf();
 				if (this.CanDelete() || this.CanDeleteLastMsg())
 				{
 					var msgNum = this.PromptForMsgNum({ x: curpos.x, y: curpos.y+1 }, replaceAtCodesInStr(this.text.deleteMsgNumPromptText), false, ERROR_PAUSE_WAIT_MS, false);
@@ -3747,7 +3749,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			}
 		}
 		// DEL key: Delete a message
-		else if (lastUserInputUpper == this.msgListKeys.deleteMessage)
+		else if (lastUserInputUpper == this.msgListKeys.deleteMessage || lastUserInputUpper == '\x7f' || lastUserInputUpper == '\x08')
 		{
 			if (this.CanDelete() || this.CanDeleteLastMsg())
 			{
@@ -4119,7 +4121,11 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 	// Ctrl-A: Select all messages
 	var additionalQuitKeys = "EeqQgGcCsS ?0123456789" + CTRL_A + this.msgListKeys.batchDelete + this.msgListKeys.userSettings;
 	if (this.CanDelete() || this.CanDeleteLastMsg())
+	{
 		additionalQuitKeys += this.msgListKeys.deleteMessage + this.msgListKeys.undeleteMessage.toLowerCase() + this.msgListKeys.undeleteMessage.toUpperCase();
+		additionalQuitKeys += '\x7f'; // Ensure DEL is in there
+		additionalQuitKeys += '\x08'; // Ensure BACKSPACE is in there (can be an alternate for delete)
+	}
 	if (this.CanEdit())
 		additionalQuitKeys += this.msgListKeys.editMsg;
 	msgListMenu.AddAdditionalQuitKeys(additionalQuitKeys);
@@ -4562,7 +4568,12 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pAllowChgSubBoar
 	if (allowChgSubBoard)
 		allowedKeys += "C"; // Change to another message area
 	if (this.CanDelete() || this.CanDeleteLastMsg())
+	{
 		allowedKeys += "D"; // Delete
+		allowedKeys += this.enhReaderKeys.deleteMessage;
+		allowedKeys += '\x7f';
+		allowedKeys += '\x08';
+	}
 	if (this.CanEdit())
 		allowedKeys += "E"; // Edit
 	if (pStart && pEnd)
@@ -4922,6 +4933,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		switch (retObj.lastKeypress)
 		{
 			case this.enhReaderKeys.deleteMessage: // Delete message
+			case '\x7f':
+			case '\x08':
 				var originalCurpos = console.getxy();
 				// The 2nd to last row of the screen is where the user will
 				// be prompted for confirmation to delete the message.
@@ -6196,6 +6209,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 		switch (retObj.lastKeypress)
 		{
 			case this.enhReaderKeys.deleteMessage: // Delete message
+			case '\x7f':
+			case '\x08':
 				console.crlf();
 				// Prompt the user for confirmation to delete the message.
 				// Note: this.PromptAndDeleteOrUndeleteMessage() will check to see if the user
