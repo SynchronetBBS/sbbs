@@ -447,6 +447,9 @@ public:
 	int 	_outcom(uchar ch); 	   // send character, without retry (on buffer flow condition)
 	int		outcom(uchar ch, int max_attempts = OUTCOM_RETRY_ATTEMPTS);		// send character, with retry
 	int 	incom(unsigned long timeout=0);		   // receive character
+	int 	kbincom(unsigned long timeout=0);	   // " " or return keyboard buffer
+	int		translate_input(int ch);
+	void	translate_input(char* buf, size_t);
 
 	void	spymsg(const char *msg);		// send message to active spies
 
