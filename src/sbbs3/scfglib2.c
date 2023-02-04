@@ -70,7 +70,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->leech_pct = iniGetShortInt(ini, ROOT_SECTION, "leech_pct", 0);
 	cfg->leech_sec = iniGetShortInt(ini, ROOT_SECTION, "leech_sec", 0);
 	cfg->file_misc = iniGetInt32(ini, ROOT_SECTION, "settings", 0);
-	cfg->filename_maxlen = iniGetShortInt(ini, ROOT_SECTION, "filename_maxlen", SMB_FILEIDX_NAMELEN);
+	cfg->filename_maxlen = iniGetIntInRange(ini, ROOT_SECTION, "filename_maxlen", 8, SMB_FILEIDX_NAMELEN, UINT16_MAX);
 
 	named_str_list_t** sections = iniParseSections(ini);
 
