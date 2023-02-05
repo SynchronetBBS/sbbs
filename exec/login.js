@@ -34,8 +34,8 @@ for(var c=0; c < options.login_prompts; c++) {
 	bbs.nodesync();
 
 	// Display login prompt
-	const legacy_login_prompt = "NN: \r";
-	const legacy_password_prompt = "PW: \r";
+	const legacy_login_prompt = "NN: \x01[";
+	const legacy_password_prompt = "PW: \x01[";
 	var str = "\1n\1h\1cEnter \1wUser Name";
 	if(!(bbs.node_settings&NM_NO_NUM))
 		str += "\1c or \1wNumber";
