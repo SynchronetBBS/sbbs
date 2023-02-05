@@ -4735,10 +4735,11 @@ static BOOL exec_fastcgi(http_session_t *session)
 	br->role = htons(FCGI_RESPONDER);
 	br->flags = 0;
 	memset(br->reserved, 0, sizeof(br->reserved));
-	if (sendsocket(sock, (void *)msg, msglen) != msglen) {
+	int result = sendsocket(sock, (void *)msg, msglen);
+	if (result != msglen) {
+		lprintf(LOG_ERR, "%04d !ERROR %d sending %d bytes to FastCGI socket (send returned %d)", session->socket, ERROR_VALUE, msglen, result);
 		free(msg);
 		closesocket(sock);
-		lprintf(LOG_WARNING, "%04d Failure to send to FastCGI socket!", session->socket);
 		return FALSE;
 	}
 	if (!fastcgi_send_params(sock, session)) {
