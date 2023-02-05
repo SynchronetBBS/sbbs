@@ -58,7 +58,7 @@ if(argv.indexOf('-?') >= 0 || argv.indexOf('-help') >= 0)
 	writeln("  -fmt=<fmt>      specify format string");
 	writeln("  -hdr            include list header");
 	writeln("  -count          show count of messages only");
-	writeln("  -all_subs	   action for all sub areas")
+	writeln("  -all_subs       action for all sub areas")
 	writeln("  -hide_zero      do not show a line if zero messages are returned")
 	exit(0);
 }
