@@ -30,8 +30,6 @@
  *
  * Add support for multipart/form-data
  *
- * Add support for UNIX-domain sockets for FastCGI
- *
  * Improved Win32 support for POST data... currently will read past Content-Length
  *
  */
@@ -3926,51 +3924,71 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 {
 	int result;
 	char *path = strdup(orig_path);
-	char *port = split_port_part(path);
 	ulong val;
 	SOCKET sock;
-	struct addrinfo	hints,*res,*cur;
 
-	// TODO: UNIX-domain sockets...
 	if (strncmp(path, "unix:", 5) == 0) {
-		lprintf(LOG_ERR, "%04d UNIX-domain FastCGI sockets not supported (yet)", client_sock);
-		free(path);
-		return INVALID_SOCKET;
-	}
+		// UNIX-domain socket
+		struct sockaddr_un addr;
+		socklen_t addr_len;
+		sock = socket(AF_UNIX, SOCK_STREAM, 0);
+		if (sock == INVALID_SOCKET) {
+			lprintf(LOG_ERR, "%04d ERROR creating UNIX domain FastCGI socket", client_sock);
+			free(path);
+			return sock;
+		}
 
-	// TCP Socket
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_ADDRCONFIG;
-	result = getaddrinfo(path, port, &hints, &res);
-	if(result != 0) {
-		lprintf(LOG_ERR, "%04d ERROR resolving FastCGI address %s port %s", client_sock, path, port);
-		free(path);
-		return INVALID_SOCKET;
-	}
-	for(cur=res,result=1; result && cur; cur=cur->ai_next) {
-		sock = socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
-		if (sock == INVALID_SOCKET)
-			continue;
-		val=1;
-		ioctlsocket(sock,FIONBIO,&val);
-		result=connect(sock, cur->ai_addr, cur->ai_addrlen);
+		addr.sun_family = AF_UNIX;
+		SAFECOPY(addr.sun_path, path + 5);
+#ifdef SUN_LEN
+		addr_len = SUN_LEN(&addr);
+#else
+		addr_len = sizeof(addr);
+#endif
+		if(connect(sock, (struct sockaddr*)&addr, addr_len) != 0) {
+			lprintf(LOG_ERR, "%04d ERROR %d connecting to UNIX domain FastCGI socket: %s"
+				,client_sock, ERROR_VALUE, addr.sun_path);
+			closesocket(sock);
+			sock = INVALID_SOCKET;
+		}
+	} else {
+		// TCP Socket
+		char *port = split_port_part(path);
+		struct addrinfo	hints,*res,*cur;
 
-		if (result==SOCKET_ERROR) {
-			if((ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
-				if (socket_writable(sock, 1000 /* TODO: Make configurable! */))
-					result=0;	/* success */
+		memset(&hints, 0, sizeof(hints));
+		hints.ai_socktype = SOCK_STREAM;
+		hints.ai_flags = AI_ADDRCONFIG;
+		result = getaddrinfo(path, port, &hints, &res);
+		if(result != 0) {
+			lprintf(LOG_ERR, "%04d ERROR resolving FastCGI address %s port %s", client_sock, path, port);
+			free(path);
+			return INVALID_SOCKET;
+		}
+		for(cur=res,result=1; result && cur; cur=cur->ai_next) {
+			sock = socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
+			if (sock == INVALID_SOCKET)
+				continue;
+			val=1;
+			ioctlsocket(sock,FIONBIO,&val);
+			result=connect(sock, cur->ai_addr, cur->ai_addrlen);
+
+			if (result==SOCKET_ERROR) {
+				if((ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
+					if (socket_writable(sock, 1000 /* TODO: Make configurable! */))
+						result=0;	/* success */
+					else
+						closesocket(sock);
+				}
 				else
 					closesocket(sock);
 			}
-			else
-				closesocket(sock);
+			if(result==0)
+				break;
 		}
-		if(result==0)
-			break;
-	}
 
-	freeaddrinfo(res);
+		freeaddrinfo(res);
+	}
 	if(sock == INVALID_SOCKET) {
 		lprintf(LOG_ERR, "%04d ERROR unable to make FastCGI connection to %s", client_sock, orig_path);
 		free(path);
