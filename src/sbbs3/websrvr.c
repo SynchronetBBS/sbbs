@@ -39,6 +39,8 @@
 	#include <sys/wait.h>		/* waitpid() */
 	#include <sys/types.h>
 	#include <signal.h>			/* kill() */
+#elif defined(_WIN32) && defined(UDS_SUPPORT)
+	#include <afunix.h>
 #endif
 
 #ifndef JAVASCRIPT
@@ -3928,6 +3930,10 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 	SOCKET sock;
 
 	if (strncmp(path, "unix:", 5) == 0) {
+#if defined(_WIN32) && !defined(UDS_SUPPORT)
+		lprintf(LOG_ERR, "%04d UNIX DOMAIN SOCKETS ARE NOT SUPPORTED in %s", client_sock, __FUNCTION__);
+		return INVALID_SOCKET;
+#else
 		// UNIX-domain socket
 		struct sockaddr_un addr;
 		socklen_t addr_len;
@@ -3951,6 +3957,7 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 			closesocket(sock);
 			sock = INVALID_SOCKET;
 		}
+#endif
 	} else {
 		// TCP Socket
 		char *port = split_port_part(path);
