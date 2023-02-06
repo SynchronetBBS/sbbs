@@ -3929,7 +3929,7 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 	ulong val;
 	SOCKET sock;
 
-	if (strncmp(path, "unix:", 5) == 0) {
+	if (*path == '/' || strncmp(path, "unix:", 5) == 0) {
 #if defined(_WIN32) && !defined(UDS_SUPPORT)
 		lprintf(LOG_ERR, "%04d UNIX DOMAIN SOCKETS ARE NOT SUPPORTED in %s", client_sock, __FUNCTION__);
 		return INVALID_SOCKET;
@@ -3945,7 +3945,10 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 		}
 
 		addr.sun_family = AF_UNIX;
-		SAFECOPY(addr.sun_path, path + 5);
+		if(*path == '/')
+			SAFECOPY(addr.sun_path, path);
+		else
+			SAFECOPY(addr.sun_path, path + 5);
 #ifdef SUN_LEN
 		addr_len = SUN_LEN(&addr);
 #else
