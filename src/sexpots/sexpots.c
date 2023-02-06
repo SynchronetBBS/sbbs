@@ -74,6 +74,7 @@ COM_HANDLE	com_handle=COM_HANDLE_INVALID;
 BOOL	com_handle_passed=FALSE;
 BOOL	com_alreadyconnected=FALSE;
 BOOL	com_hangup=TRUE;
+BOOL	com_debug=FALSE;
 ulong	com_baudrate=0;
 BOOL	com_parity=FALSE;
 BOOL	com_parity_odd=FALSE;
@@ -946,6 +947,8 @@ void input_thread(void* arg)
 			YIELD();
 			continue;
 		}
+		if(com_debug)
+			lprintf(LOG_DEBUG, "Received char from COM port (%s): 0x%02h (%d)", com_dev, ch, ch);
 		if(telnet && ch==TELNET_IAC)
 			sendsocket(sock, &ch, sizeof(ch));	/* escape Telnet IAC char (255) when in telnet mode */
 		sendsocket(sock, &ch, sizeof(ch));
@@ -1403,6 +1406,7 @@ BOOL parse_com_section(const char* section)
 	com_byte_size	= iniGetInteger(ini, section, "ByteSize", com_byte_size);
 	com_stop_bits	= iniGetInteger(ini, section, "StopBits", com_stop_bits);
 	com_hangup	    = iniGetBool(ini, section, "Hangup", com_hangup);
+	com_debug	    = iniGetBool(ini, section, "Debug", com_debug);
 	hangup_attempts = iniGetInteger(ini, section, "HangupAttempts", hangup_attempts);
 	dcd_timeout     = iniGetInteger(ini, section, "DCDTimeout", dcd_timeout);
 	dcd_ignore      = iniGetBool(ini, section, "IgnoreDCD", dcd_ignore);
