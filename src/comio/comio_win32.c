@@ -50,7 +50,7 @@ char* comVersion(char* str, size_t len)
 
 COM_HANDLE comOpen(const char* device)
 {
-	char *dp = device'
+	char *dp = device;
 	COM_HANDLE handle;
 	COMMTIMEOUTS timeouts;
 	DCB	dcb;
