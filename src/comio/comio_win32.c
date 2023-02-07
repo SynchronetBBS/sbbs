@@ -50,11 +50,20 @@ char* comVersion(char* str, size_t len)
 
 COM_HANDLE comOpen(const char* device)
 {
+	char *dp = device'
 	COM_HANDLE handle;
 	COMMTIMEOUTS timeouts;
 	DCB	dcb;
 
-	if((handle=CreateFile(device
+	// https://support.microsoft.com/en-us/topic/howto-specify-serial-ports-larger-than-com9-db9078a5-b7b6-bf00-240f-f749ebfd913e
+	if (device[0] != '\\') {
+		dp = alloca(strlen(device) + 5);
+		if (dp == NULL)
+			return COM_HANDLE_INVALID;
+		sprintf(dp, "\\\\.\\%s", device);
+	}
+
+	if((handle=CreateFile(dp
 		,GENERIC_READ|GENERIC_WRITE 	/* Access */
 		,0								/* Share mode */
 		,NULL							/* Security attributes */
