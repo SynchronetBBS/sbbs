@@ -948,7 +948,7 @@ void input_thread(void* arg)
 			continue;
 		}
 		if(com_debug)
-			lprintf(LOG_DEBUG, "Received char from COM port (%s): 0x%02h (%d)", com_dev, ch, ch);
+			lprintf(LOG_DEBUG, "Received char from COM port (%s): 0x%02x (%d)", com_dev, ch, ch);
 		if(telnet && ch==TELNET_IAC)
 			sendsocket(sock, &ch, sizeof(ch));	/* escape Telnet IAC char (255) when in telnet mode */
 		sendsocket(sock, &ch, sizeof(ch));
