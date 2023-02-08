@@ -935,10 +935,22 @@ SOCKET connect_socket(const char* host, ushort port)
 BOOL call_terminated;
 BOOL input_thread_terminated;
 
+char* chr(BYTE ch, char* str, size_t size)
+{
+	if(ch < ' ')
+		snprintf(str, size, "^%c   (%d)", '@' + ch, ch);
+	else if(ch > '~')
+		snprintf(str, size, "0x%02X (%d)", ch, ch);
+	else
+		snprintf(str, size, "'%c'  (%d)", ch, ch);
+	return str;
+}
+
 /****************************************************************************/
 /****************************************************************************/
 void input_thread(void* arg)
 {
+	char		dbg[32];
 	BYTE		ch;
 
 	lprintf(LOG_DEBUG,"Input thread started");
@@ -948,7 +960,7 @@ void input_thread(void* arg)
 			continue;
 		}
 		if(com_debug)
-			lprintf(LOG_DEBUG, "Received char from COM port (%s): 0x%02x (%d)", com_dev, ch, ch);
+			lprintf(LOG_DEBUG, "Received char from COM port (%s): %s", com_dev, chr(ch, dbg, sizeof(dbg)));
 		if(telnet && ch==TELNET_IAC)
 			sendsocket(sock, &ch, sizeof(ch));	/* escape Telnet IAC char (255) when in telnet mode */
 		sendsocket(sock, &ch, sizeof(ch));
@@ -1227,6 +1239,17 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
     return(outbuf);
 }
 
+void debug_log_com_write(BYTE* buf, int len)
+{
+	int i;
+
+	for(i=0; i < len; ++i) {
+		char dbg[32];
+		BYTE ch = buf[i];
+		lprintf(LOG_DEBUG, "Writing char to COM port (%s): %s", com_dev, chr(ch, dbg, sizeof(dbg)));
+	}
+}
+
 /****************************************************************************/
 /****************************************************************************/
 BOOL handle_call(void)
@@ -1306,8 +1329,11 @@ BOOL handle_call(void)
 		else
 			p=buf;
 
-		if((wr=comWriteBuf(com_handle, p, rd)) != COM_ERROR)
+		if((wr=comWriteBuf(com_handle, p, rd)) != COM_ERROR) {
+			if(com_debug)
+				debug_log_com_write(p, wr);
 			bytes_sent += wr;
+		}
 	}
 
 	call_terminated=TRUE;	/* terminate input_thread() */
