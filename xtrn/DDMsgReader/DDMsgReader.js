@@ -17220,32 +17220,12 @@ function parseLoadableModuleArgs(argv)
 		switch (whichMailbox)
 		{
 			case MAIL_YOUR: // Mail sent to you
-				/*
-				// Temporary
-				if (user.is_sysop)
-				{
-					console.attributes = "N";
-					console.print("Reading your email - userNum: " + userNum + "\r\n");
-					console.pause();
-				}
-				// End Temporary
-				*/
 				argVals.personalemail = true;
 				argVals.usernum = +(argv[1]);
 				if (newMailOnly)
 					argVals.onlynewpersonalemail = true;
 				break;
 			case MAIL_SENT: // Mail you have sent
-				/*
-				// Temporary
-				if (user.is_sysop)
-				{
-					console.attributes = "N";
-					console.print("Reading sent email - userNum: " + userNum + "\r\n");
-					console.pause();
-				}
-				// End Temporary
-				*/
 				argVals.personalemailsent = true;
 				argVals.usernum = +(argv[1]);
 				break;
