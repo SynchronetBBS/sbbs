@@ -102,10 +102,6 @@
 
 // TODO: In the message list, add the ability to search with / similar to my area chooser.
 
-// TODO: Support for reading another user's email (i.e., when deleting a user) - Only for the sysop
-// function parseLoadableModuleArgs - Toward the bottom in MAIL_YOUR and MAIL_SENT
-// Synchronet only seems to pass the current user number as the 2nd command-line argument.
-// See function load_msgs in msglist.js for reading another user's email
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
    option):
