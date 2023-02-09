@@ -17216,7 +17216,6 @@ function parseLoadableModuleArgs(argv)
 		// Start in list mode
 		argVals.startmode = "list"; // "read"
 		// Note: MAIL_ANY won't be passed to this script.
-		//bbs.read_mail(MAIL_YOUR, user.number);
 		switch (whichMailbox)
 		{
 			case MAIL_YOUR: // Mail sent to you
