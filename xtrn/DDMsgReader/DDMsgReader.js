@@ -91,11 +91,21 @@
  * 2023-02-01 Eric Oulashin     Version 1.63
  *                              Fix for reading colors from the theme file. Also, the theme file now
  *                              no longer needs the control character for color codes.
+ * 2023-02-09 Eric Oulashin     Version 1.64
+ *                              When reading personal email (received or sent), now makes use of the
+ *                              loadable module 2nd command-line argument, which specifies the user number.
+ *                              When deleting a user, the sysop might be prompted whether to read that
+ *                              user's email.
  */
 
 "use strict";
 
-// TODO: In the message list, add the ability to search with / similar to my area chooser
+// TODO: In the message list, add the ability to search with / similar to my area chooser.
+
+// TODO: Support for reading another user's email (i.e., when deleting a user) - Only for the sysop
+// function parseLoadableModuleArgs - Toward the bottom in MAIL_YOUR and MAIL_SENT
+// Synchronet only seems to pass the current user number as the 2nd command-line argument.
+// See function load_msgs in msglist.js for reading another user's email
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
    option):
@@ -195,8 +205,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.63";
-var READER_DATE = "2023-02-01";
+var READER_VERSION = "1.64";
+var READER_DATE = "2023-02-09";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1089,10 +1099,18 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
-	// before reading the configuration file.
+	// before reading the configuration file.  Defaults to the current user
+	// number, but can be set by a loadable module command-line argument. Also,
+	// only allow changing it if the current user is a sysop.
+	this.personalMailUserNum = user.number;
 	var scriptArgsIsValid = (typeof(pScriptArgs) == "object");
-	if (scriptArgsIsValid && pScriptArgs.hasOwnProperty("configfilename"))
-		this.cfgFilename = pScriptArgs["configfilename"];
+	if (scriptArgsIsValid)
+	{
+		if (pScriptArgs.hasOwnProperty("configfilename"))
+			this.cfgFilename = pScriptArgs.configfilename;
+		if (pScriptArgs.hasOwnProperty("usernum") && user.is_sysop)
+			this.personalMailUserNum = pScriptArgs.usernum;
+	}
 	// Read the settings from the config file
 	this.cfgFileSuccessfullyRead = false;
 	this.ReadConfigFile();
@@ -1962,7 +1980,6 @@ function DigDistMsgReader_ClearSearchData()
 			delete this.msgSearchHdrs[subCode].indexed;
 			delete this.msgSearchHdrs[subCode];
 		}
-		delete this.msgSearchHdrs;
 		this.msgSearchHdrs = {};
    }
 }
@@ -2200,7 +2217,8 @@ function DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs(pCloseMsgbaseAn
 				//console.print("\x01n" + replaceAtCodesInStr(formattedText) + "\x01n");
 				console.putmsg("\x01n" + formattedText + "\x01n");
 			}
-			this.msgSearchHdrs[this.subBoardCode] = searchMsgbase(this.subBoardCode, this.searchType, this.searchString, this.readingPersonalEmailFromUser);
+			var readingMailUserNum = user.is_sysop ? this.personalMailUserNum : user.number;
+			this.msgSearchHdrs[this.subBoardCode] = searchMsgbase(this.subBoardCode, this.searchType, this.searchString, this.readingPersonalEmailFromUser, null, null, readingMailUserNum);
 		}
 	}
 	else
@@ -9886,6 +9904,8 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 
 	// If quoting is allowed in the sub-board, then write QUOTES.TXT in
 	// the node directory to allow the user to quote the original message.
+	// TODO: Handle things when reading another user's email (for the sysop) - "mail" as a sub-board code might
+	// not work
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
@@ -16613,13 +16633,15 @@ function canDoHighASCIIAndANSI()
 //  pListingPersonalEmailFromUser: Optional boolean - Whether or not we're listing
 //                                 personal email sent by the user.  This defaults
 //                                 to false.
-//  pStartIndex: The starting message index (0-based).  Optional; defaults to 0.
-//  pEndIndex: One past the last message index.  Optional; defaults to the total number
+//  pStartIndex: Optional: The starting message index (0-based).  Defaults to 0.
+//  pEndIndex: Optional: One past the last message index.  Defaults to the total number
 //             of messages.
+//
+//  pUserNum: Optional: The user number (for reading personal email)
 //
 // Return value: An object with the following arrays:
 //               indexed: A 0-based indexed array of message headers
-function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEmailFromUser, pStartIndex, pEndIndex)
+function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEmailFromUser, pStartIndex, pEndIndex, pUserNum)
 {
 	var msgHeaders = {
 		indexed: []
@@ -16662,8 +16684,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 				{
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number, false, false, true, true));
-						return gAllPersonalEmailOptSpecified || msgIsFromUser(pMsgHdr);
-						
+						return gAllPersonalEmailOptSpecified || msgIsFromUser(pMsgHdr, pUserNum);
 					}
 				}
 				else
@@ -16671,7 +16692,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 					// We're reading mail to the user
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number, false, false, true, true));
-						var msgMatchesCriteria = (gAllPersonalEmailOptSpecified || msgIsToUserByNum(pMsgHdr));
+						var msgMatchesCriteria = (gAllPersonalEmailOptSpecified || msgIsToUserByNum(pMsgHdr, pUserNum));
 						// If only new/unread personal email is to be displayed, then check
 						// that the message has not been read.
 						if (gCmdLineArgVals.onlynewpersonalemail)
@@ -16851,10 +16872,12 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 //
 // Parameters:
 //  pMsgHdr: A message header object
+//  pUserNum: Optional - A user number to match with.  If not specified, this will default to
+//            the current logged-in user number.
 //
 // Return value: Boolean - Whether or not the message is to the user and is not
 //               deleted.
-function msgIsToUserByNum(pMsgHdr)
+function msgIsToUserByNum(pMsgHdr, pUserNum)
 {
 	if (typeof(pMsgHdr) != "object")
 		return false;
@@ -16862,13 +16885,17 @@ function msgIsToUserByNum(pMsgHdr)
 	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
 		return false;
 
+	var userNum = user.number;
+	if (user.is_sysop && typeof(pUserNum) === "number" && pUserNum > 0 && pUserNum <= system.lastuser)
+		userNum = pUserNum;
+
 	var msgIsToUser = false;
 	// If an alternate user number was specified on the command line, then use that
 	// user information.  Otherwise, use the current logged-in user.
 	if (gCmdLineArgVals.hasOwnProperty("altUserNum"))
 		msgIsToUser = (pMsgHdr.to_ext == gCmdLineArgVals.altUserNum);
 	else
-		msgIsToUser = (pMsgHdr.to_ext == user.number);
+		msgIsToUser = (pMsgHdr.to_ext == userNum);
 	return msgIsToUser;
 }
 
@@ -16878,16 +16905,20 @@ function msgIsToUserByNum(pMsgHdr)
 //
 // Parameters:
 //  pMsgHdr: A message header object
+//  pUserNum: Optional - A user number to match with.  If not specified, this will default to
+//            the current logged-in user number.
 //
 // Return value: Boolean - Whether or not the message is from the logged-in user
 //               and is not deleted.
-function msgIsFromUser(pMsgHdr)
+function msgIsFromUser(pMsgHdr, pUserNum)
 {
 	if (typeof(pMsgHdr) != "object")
 		return false;
 	// Return false if  the message is marked as deleted
 	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
 		return false;
+
+	var pUserNumIsValid = (typeof(pUserNum) === "number" && pUserNum > 0 && pUserNum <= system.lastuser);
 
 	var isFromUser = false;
 
@@ -16899,7 +16930,7 @@ function msgIsFromUser(pMsgHdr)
 		if (gCmdLineArgVals.hasOwnProperty("altUserNum"))
 			isFromUser = (pMsgHdr.from_ext == gCmdLineArgVals.altUserNum);
 		else
-			isFromUser = (pMsgHdr.from_ext == user.number);
+			isFromUser = (pMsgHdr.from_ext == (pUserNumIsValid && user.is_sysop ? pUserNum : user.number));
 	}
 	else
 	{
@@ -16907,7 +16938,15 @@ function msgIsFromUser(pMsgHdr)
 		if (gCmdLineArgVals.hasOwnProperty("altUserName") && gCmdLineArgVals.hasOwnProperty("altUserAlias"))
 			isFromUser = ((hdrFromUpper == gCmdLineArgVals.altUserAlias.toUpperCase()) || (hdrFromUpper == gCmdLineArgVals.altUserName.toUpperCase()));
 		else
-			isFromUser = ((hdrFromUpper == user.alias.toUpperCase()) || (hdrFromUpper == user.name.toUpperCase()));
+		{
+			if (pUserNumIsValid)
+			{
+				var theUser = new User(pUserNum);
+				isFromUser = ((hdrFromUpper == theUser.alias.toUpperCase()) || (hdrFromUpper == theUser.name.toUpperCase()));
+			}
+			else
+				isFromUser = ((hdrFromUpper == user.alias.toUpperCase()) || (hdrFromUpper == user.name.toUpperCase()));
+		}
 	}
 
 	return isFromUser;
@@ -17181,17 +17220,38 @@ function parseLoadableModuleArgs(argv)
 		// Start in list mode
 		argVals.startmode = "list"; // "read"
 		// Note: MAIL_ANY won't be passed to this script.
+		//bbs.read_mail(MAIL_YOUR, user.number);
 		switch (whichMailbox)
 		{
 			case MAIL_YOUR: // Mail sent to you
+				/*
+				// Temporary
+				if (user.is_sysop)
+				{
+					console.attributes = "N";
+					console.print("Reading your email - userNum: " + userNum + "\r\n");
+					console.pause();
+				}
+				// End Temporary
+				*/
 				argVals.personalemail = true;
-				argVals.usernum = argv[1];
+				argVals.usernum = +(argv[1]);
 				if (newMailOnly)
 					argVals.onlynewpersonalemail = true;
 				break;
 			case MAIL_SENT: // Mail you have sent
+				/*
+				// Temporary
+				if (user.is_sysop)
+				{
+					console.attributes = "N";
+					console.print("Reading sent email - userNum: " + userNum + "\r\n");
+					console.pause();
+				}
+				// End Temporary
+				*/
 				argVals.personalemailsent = true;
-				argVals.usernum = argv[1];
+				argVals.usernum = +(argv[1]);
 				break;
 			case MAIL_ALL:
 				argVals.allpersonalemail = true;
