@@ -379,10 +379,15 @@ function str_cmds(str)
 		}
 		if(word=="UEDIT") {
 			// Prompts for syspass
-			str=str.substr(5);
-			if(str.length)
-				bbs.edit_user(bbs.finduser(get_arg(str, "User Alias")));
-			else
+			str=str.substr(5).trim();
+			if(str.length) {
+				var usernum = parseInt(str, 10);
+				if(isNaN(usernum) || usernum < 1 || usernum > system.lastuser)
+					usernum = bbs.finduser(str);
+				if(usernum < 1)
+					usernum = system.matchuserdata(U_ALIAS, str, /* deleted users? */true);
+				bbs.edit_user(usernum);
+			} else
 				bbs.edit_user();
 			return;
 		}
