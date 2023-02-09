@@ -1093,7 +1093,6 @@ static void receive_thread(void* arg)
 					lprintf(LOG_ERR,"%04d <%s> !DATA ERROR adding file (%s) to database"
 						,xfer.ctrl_sock, xfer.user->alias, f.name);
 			}
-			smb_freefilemem(&f);
 
 			if(scfg.dir[f.dir]->upload_sem[0])
 				ftouch(scfg.dir[f.dir]->upload_sem);
@@ -1113,6 +1112,7 @@ static void receive_thread(void* arg)
 				inc_upload_stats(&scfg, 1, (ulong)total);
 
 			mqtt_file_upload(&mqtt, xfer.user, &f, total, xfer.client);
+			smb_freefilemem(&f);
 		}
 		/* Send ACK */
 		sockprintf(xfer.ctrl_sock,sess,"226 Upload complete (%lu cps).",cps);
