@@ -913,6 +913,7 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	int32		usernumber=0;
 	int			len;
 	jsrefcount	rc;
+	BOOL		match_del=FALSE;
 	BOOL		match_next=FALSE;
 	int 		argnum=2;
 
@@ -936,6 +937,8 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 
+	if(JSVAL_IS_BOOLEAN(argv[argnum]))
+		JS_ValueToBoolean(cx, argv[argnum], &match_del);
 	if(JSVAL_IS_NUMBER(argv[argnum]))
 		JS_ValueToInt32(cx, argv[argnum++], &usernumber);
 	if(JSVAL_IS_BOOLEAN(argv[argnum]))
@@ -948,7 +951,7 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(finduserstr(sys->cfg, usernumber, field, p, FALSE, match_next, NULL, NULL)));
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(finduserstr(sys->cfg, usernumber, field, p, match_del, match_next, NULL, NULL)));
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
@@ -2140,8 +2143,9 @@ static jsSyncMethodSpec js_system_functions[] = {
 		" or 0 if not found, matches well-known sysop aliases by default")
 	,310
 	},
-	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_NUMBER,	JSDOCSTR("field, data [,usernumber, match_next=<tt>false</tt>]")
+	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_NUMBER,	JSDOCSTR("field, data [,match_del=<tt>false</tt>] [,usernumber, match_next=<tt>false</tt>]")
 	,JSDOCSTR("search user database for data in a specific field (see <tt>U_*</tt> in <tt>sbbsdefs.js</tt>), "
+		"if <i>match_del</i> is <tt>true</tt>, deleted user records are searched, "
 		"returns first matching user record number, optional <i>usernumber</i> specifies user record to skip, "
 		"or record at which to begin searching if optional <i>match_next</i> is <tt>true</tt>")
 	,310
@@ -2444,7 +2448,7 @@ static JSBool js_node_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			node.extaux=val;
 			break;
 	}
-	putnodedat(sys->cfg,node_num,&node, /* closeit: */FALSE, sys->nodefile);
+	putnodedat(sys->cfg,node_num,&node, /* closeit: */FALSE, sys->nodefile); // TODO: publish via MQTT
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
