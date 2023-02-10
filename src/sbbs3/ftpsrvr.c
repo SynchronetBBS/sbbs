@@ -764,7 +764,7 @@ static void send_thread(void* arg)
 			,total,dur,cps);
 		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"226 Download complete (%lu cps).",cps);
 
-		if(xfer.dir>=0) {
+		if(xfer.dir>=0 && !xfer.tmpfile) {
 			memset(&f,0,sizeof(f));
 			if(!loadfile(&scfg, xfer.dir, getfname(xfer.filename), &f, file_detail_normal)) {
 				lprintf(LOG_ERR, "%04d <%s> DATA downloaded: %s (not found in filebase!)"
