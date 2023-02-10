@@ -473,6 +473,7 @@ typedef struct
 
 	uint32_t		sys_login;			// Login Settings (Bit-flags)
 	uint32_t 		sys_misc;			/* System Misc Settings */
+	uint32_t		sys_pass_timeout;	// Minutes between required SYSPASS entry
 	char 			sys_pass[41];		/* System Pass Word */
 	char 			sys_name[41];		/* System Name */
 	char 			sys_id[LEN_QWKID+1];/* System ID for QWK Packets */

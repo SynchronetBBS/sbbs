@@ -126,6 +126,7 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 	iniSetString(&ini, ROOT_SECTION, "operator", cfg->sys_op, NULL);
 	iniSetString(&ini, ROOT_SECTION, "guru", cfg->sys_guru, NULL);
 	iniSetString(&ini, ROOT_SECTION, "password", cfg->sys_pass, NULL);
+	iniSetUInt32(&ini, ROOT_SECTION, "password_timeout", cfg->sys_pass_timeout, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "timezone", cfg->sys_timezone, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->sys_misc, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "login", cfg->sys_login, NULL);

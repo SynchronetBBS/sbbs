@@ -101,6 +101,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->sys_name, iniGetString(ini, ROOT_SECTION, "name", "", value));
 	SAFECOPY(cfg->sys_op, iniGetString(ini, ROOT_SECTION, "operator", "", value));
 	SAFECOPY(cfg->sys_pass, iniGetString(ini, ROOT_SECTION, "password", "", value));
+	cfg->sys_pass_timeout = iniGetUInt32(ini, ROOT_SECTION, "password_timeout", 15 /* minutes */);
 	SAFECOPY(cfg->sys_id, iniGetString(ini, ROOT_SECTION, "qwk_id", "", value));
 	SAFECOPY(cfg->sys_guru, iniGetString(ini, ROOT_SECTION, "guru", "", value));
 	SAFECOPY(cfg->sys_location, iniGetString(ini, ROOT_SECTION, "location", "", value));
