@@ -60,25 +60,30 @@ static void configure_dst(void)
 	}
 }
 
-void sys_cfg(void)
+void security_cfg(void)
 {
-	static int sys_dflt,adv_dflt,tog_dflt,new_dflt;
+	char str[128];
+	static int dflt;
+	static int quick_dflt;
+	static int expired_dflt;
 	static int seclevel_dflt, seclevel_bar;
-	static int tog_bar;
-	static int adv_bar;
-	char str[81],done=0;
-	int i,j,k,dflt,bar;
-	char sys_pass[sizeof(cfg.sys_pass)];
-	SAFECOPY(sys_pass, cfg.sys_pass);
+	int i, j, k;
+	BOOL done;
+
 	while(1) {
-		i=0;
-		sprintf(opt[i++],"%-33.33s%s","BBS Name",cfg.sys_name);
-		sprintf(opt[i++],"%-33.33s%s","Location",cfg.sys_location);
-		sprintf(opt[i++],"%-33.33s%s %s","Local Time Zone"
-			,smb_zonestr(cfg.sys_timezone,NULL)
-			,SMB_TZ_HAS_DST(cfg.sys_timezone) && cfg.sys_misc&SM_AUTO_DST ? "(Auto-DST)" : "");
-		sprintf(opt[i++],"%-33.33s%s","Operator",cfg.sys_op);
-		sprintf(opt[i++],"%-33.33s%s","Password","**********");
+		i = 0;
+		sprintf(opt[i++],"%-33.33s%s","System Password", "*******");
+		if(cfg.sys_misc & SM_R_SYSOP) {
+			SAFECOPY(str, "Yes");
+			if(cfg.sys_misc & SM_SYSPASSLOGIN)
+				SAFECAT(str, ", SYSPASS required at login");
+		} else
+			SAFECOPY(str, "No");
+		sprintf(opt[i++],"%-33.33s%s","Allow Sysop Access", str);
+		sprintf(opt[i++],"%-33.33s%s","Allow Login by Real Name"
+			,(!(cfg.uq&UQ_ALIASES) || cfg.sys_login & LOGIN_REALNAME) ? "Yes" : "No");
+		sprintf(opt[i++],"%-33.33s%s","Allow Login by User Number"
+			,(cfg.sys_login & LOGIN_USERNUM) ? "Yes" : "No");
 
 		SAFEPRINTF(str,"%s Password"
 			,cfg.sys_misc&SM_PWEDIT && cfg.sys_pwdays ? "Users Must Change"
@@ -92,27 +97,748 @@ void sys_cfg(void)
 		if(cfg.sys_misc&SM_PWEDIT)
 			sprintf(tmp + strlen(tmp), ", %u chars minimum", cfg.min_pwlen);
 		sprintf(opt[i++],"%-33.33s%s",str,tmp);
+		sprintf(opt[i++],"%-33.33s%s","Always Prompt for Password"
+			,cfg.sys_login & LOGIN_PWPROMPT ? "Yes":"No");
+		sprintf(opt[i++],"%-33.33s%s","Display/Log Passwords Locally"
+			,cfg.sys_misc&SM_ECHO_PW ? "Yes" : "No");
 
 		sprintf(opt[i++],"%-33.33s%u","Days to Preserve Deleted Users"
 			,cfg.sys_deldays);
-		sprintf(opt[i++],"%-33.33s%s","Maximum Days of Inactivity"
+		sprintf(opt[i++],"%-33.33s%s","Maximum Days of User Inactivity"
 			,cfg.sys_autodel ? ultoa(cfg.sys_autodel,tmp,10) : "Unlimited");
-		sprintf(opt[i++],"%-33.33s%s","New User Password",cfg.new_pass);
+		if(cfg.sys_misc&SM_CLOSED)
+			SAFECOPY(str, "No");
+		else {
+			if(*cfg.new_pass)
+				SAFEPRINTF(str, "Yes, PW: %s", cfg.new_pass);
+			else
+				SAFECOPY(str, "Yes");
+		}
+		sprintf(opt[i++],"%-33.33s%s","Open to New Users", str);
+		sprintf(opt[i++],"%-33.33s%s","User Expires When Out-of-time"
+			,cfg.sys_misc&SM_TIME_EXP ? "Yes" : "No");
 
-		strcpy(opt[i++],"Toggle Options...");
-		strcpy(opt[i++],"New User Values...");
-		strcpy(opt[i++],"Advanced Options...");
-		strcpy(opt[i++],"Loadable Modules...");
 		strcpy(opt[i++],"Security Level Values...");
 		strcpy(opt[i++],"Expired Account Values...");
 		strcpy(opt[i++],"Quick-Validation Values...");
+
+		opt[i][0]=0;
+		uifc.helpbuf=
+			"`System Security Options:`\n"
+			"\n"
+			"This menu contains options and sub-menus of options that affect the\n"
+			"security related behavior of the entire BBS.\n"
+		;
+		switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT, 0, 0, 72, &dflt, 0
+			,"Security Options",opt)) {
+			case -1:
+				return;
+			case __COUNTER__:
+				uifc.helpbuf=
+					"`System Password:`\n"
+					"\n"
+					"This is an extra security password required for sysop logon and certain\n"
+					"sysop functions. This password should be something not easily guessed\n"
+					"and should be kept absolutely confidential. This password must be\n"
+					"entered at the Terminal Server `SY:` prompt.\n"
+					"\n"
+					"This system password can also be used to enable sysop access to the\n"
+					"FTP Server by authenticating with a password that combines a sysop's\n"
+					"password with the system password, separated by a colon\n"
+					"(i.e. '`user-pass:system-pass`').\n"
+					"\n"
+					"`Note:` When the `Allow Sysop Access` Toggle Option is set to `No`,\n"
+					"      The system password is effectively disabled."
+				;
+				uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
+				break;
+			case __COUNTER__:
+				i=cfg.sys_misc&SM_R_SYSOP ? 0:1;
+				uifc.helpbuf=
+					"`Allow Sysop Access:`\n"
+					"\n"
+					"Setting this option to `No` will prevent users with sysop security level\n"
+					"from invoking functions that require system-password authentication.\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"Allow Sysop Access",uifcYesNoOpts);
+				if(i == 0) {
+					cfg.sys_misc|=SM_R_SYSOP;
+					i=cfg.sys_misc&SM_SYSPASSLOGIN ? 0:1;
+					uifc.helpbuf=
+						"`Require System Password for Sysop Login:`\n"
+						"\n"
+						"If you want to require the correct system password to be provided during\n"
+						"system operator logins (in addition to the sysop's personal user account\n"
+						"password), set this option to `Yes`.\n"
+					;
+					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+						,"Require System Password for Sysop Login",uifcYesNoOpts);
+					if(i==1)
+						cfg.sys_misc &= ~SM_SYSPASSLOGIN;
+					else if(i==0)
+						cfg.sys_misc |= SM_SYSPASSLOGIN;
+				}
+				else if(i == 1) {
+					cfg.sys_misc &= ~SM_R_SYSOP;
+				}
+				break;
+			case __COUNTER__:
+				if(!(cfg.uq&UQ_ALIASES))
+					break;
+				i = (cfg.sys_login & LOGIN_REALNAME) ? 0:1;
+				uifc.helpbuf=
+					"`Allow Login by Real Name:`\n"
+					"\n"
+					"If you want users to be able login using their real name as well as\n"
+					"their alias, set this option to `Yes`.\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
+					,"Allow Login by Real Name",uifcYesNoOpts);
+				if((i==0 && !(cfg.sys_login & LOGIN_REALNAME))
+					|| (i==1 && (cfg.sys_login & LOGIN_REALNAME))) {
+					cfg.sys_login ^= LOGIN_REALNAME;
+				}
+				break;
+			case __COUNTER__:
+				i = (cfg.sys_login & LOGIN_USERNUM) ? 0:1;
+				uifc.helpbuf=
+					"`Allow Login by User Number:`\n"
+					"\n"
+					"If you want users to be able login using their user number at the\n"
+					"login prompt, set this option to `Yes`.\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
+					,"Allow Login by User Number",uifcYesNoOpts);
+				if((i==0 && !(cfg.sys_login & LOGIN_USERNUM))
+					|| (i==1 && (cfg.sys_login & LOGIN_USERNUM))) {
+					cfg.sys_login ^= LOGIN_USERNUM;
+				}
+				break;
+			case __COUNTER__:
+				i = (cfg.sys_misc&SM_PWEDIT) ? 0 : 1;
+				uifc.helpbuf=
+					"`Allow Users to Change Their Password:`\n"
+					"\n"
+					"If you want the users of your system to have the option of changing\n"
+					"their password to a string of their choice, set this option to `Yes`.\n"
+					"For the highest level of security, set this option to `No.`\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"Allow Users to Change Their Password",uifcYesNoOpts);
+				if(!i && !(cfg.sys_misc&SM_PWEDIT)) {
+					cfg.sys_misc|=SM_PWEDIT;
+				}
+				else if(i==1 && cfg.sys_misc&SM_PWEDIT) {
+					cfg.sys_misc&=~SM_PWEDIT;
+				} else if(i == -1)
+					break;
+
+				if(cfg.sys_misc&SM_PWEDIT) {
+					SAFEPRINTF(tmp, "%u", cfg.min_pwlen);
+					SAFEPRINTF2(str, "Minimum Password Length (between %u and %u)", MIN_PASS_LEN, LEN_PASS);
+					if(uifc.input(WIN_MID|WIN_SAV,0,0, str
+						,tmp, 2, K_NUMBER|K_EDIT) < 1)
+						break;
+					cfg.min_pwlen=atoi(tmp);
+					if(cfg.min_pwlen < MIN_PASS_LEN)
+						cfg.min_pwlen = MIN_PASS_LEN;
+					if(cfg.min_pwlen > LEN_PASS)
+						cfg.min_pwlen = LEN_PASS;
+				}
+				i = cfg.sys_pwdays ? 0 : 1;
+				uifc.helpbuf=
+					"`Force Periodic New Password:`\n"
+					"\n"
+					"If you want your users to be forced to have a new password periodically,\n"
+					"select `Yes`.\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"Force Periodic New Password",uifcYesNoOpts);
+				if(!i) {
+					ultoa(cfg.sys_pwdays,str,10);
+				uifc.helpbuf=
+					"`Maximum Days Between New Passwords:`\n"
+					"\n"
+					"Enter the maximum number of days allowed between password changes.\n"
+					"If a user has not voluntarily changed his or her password in this\n"
+					"many days, he or she will be forced to change their password upon\n"
+					"logon.\n"
+				;
+					uifc.input(WIN_MID,0,0,"Maximum Days Between New Password"
+						,str,5,K_NUMBER|K_EDIT);
+					cfg.sys_pwdays=atoi(str); 
+				}
+				else if(i==1 && cfg.sys_pwdays) {
+					cfg.sys_pwdays=0;
+				}
+				break;
+			case __COUNTER__:
+				i=cfg.sys_login & LOGIN_PWPROMPT ? 0:1;
+				uifc.helpbuf=
+					"`Always Prompt for Password:`\n"
+					"\n"
+					"If you want to have attempted logins using an unknown user name still\n"
+					"prompt for a password (i.e. for enhanced security), set this option to\n"
+					"`Yes`.\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
+					,"Always Prompt for Password",uifcYesNoOpts);
+				if((i==0 && !(cfg.sys_login & LOGIN_PWPROMPT))
+					|| (i==1 && (cfg.sys_login & LOGIN_PWPROMPT))) {
+					cfg.sys_login ^= LOGIN_PWPROMPT;
+				}
+				break;
+			case __COUNTER__:
+				i=cfg.sys_misc&SM_ECHO_PW ? 0:1;
+				uifc.helpbuf=
+					"`Display/Log Passwords Locally:`\n"
+					"\n"
+					"If you want to passwords to be displayed locally and/or logged to disk\n"
+					"(e.g. when there's a failed login attempt), set this option to `Yes`.\n"
+					"\n"
+					"For elevated security, set this option to `No`.\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"Display/Log Passwords Locally",uifcYesNoOpts);
+				if(!i && !(cfg.sys_misc&SM_ECHO_PW)) {
+					cfg.sys_misc|=SM_ECHO_PW;
+				}
+				else if(i==1 && cfg.sys_misc&SM_ECHO_PW) {
+					cfg.sys_misc&=~SM_ECHO_PW;
+				}
+				break;
+			case __COUNTER__:
+				sprintf(str,"%u",cfg.sys_deldays);
+				uifc.helpbuf=
+					"`Days Since Last Logon to Preserve Deleted Users:`\n"
+					"\n"
+					"Deleted user slots can be `undeleted` until the slot is written over\n"
+					"by a new user. If you want deleted user slots to be preserved for period\n"
+					"of time since their last logon, set this value to the number of days to\n"
+					"keep new users from taking over a deleted user's slot.\n"
+				;
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Days Since Last Logon to Preserve Deleted Users"
+					,str,5,K_EDIT|K_NUMBER);
+				cfg.sys_deldays=atoi(str);
+				break;
+			case __COUNTER__:
+				sprintf(str,"%u",cfg.sys_autodel);
+				uifc.helpbuf=
+					"`Maximum Days of User Inactivity Before Auto-Deletion:`\n"
+					"\n"
+					"If you want users that have not logged-on in a certain period of time to\n"
+					"be automatically deleted, set this value to the maximum number of days\n"
+					"of inactivity before the user is deleted. Setting this value to `0`\n"
+					"disables this feature.\n"
+					"\n"
+					"Users with the `P` exemption will not be deleted due to inactivity.\n"
+				;
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Maximum Days of User Inactivity Before Auto-Deletion"
+					,str,5,K_EDIT|K_NUMBER);
+				cfg.sys_autodel=atoi(str);
+				break;
+			case __COUNTER__:
+				i=cfg.sys_misc&SM_CLOSED ? 1:0;
+				uifc.helpbuf=
+					"`Open to New Users:`\n"
+					"\n"
+					"If you want callers to be able to logon as `New`, set this option to Yes`.\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"Open to New Users",uifcYesNoOpts);
+				if(i == 0) {
+					cfg.sys_misc &= ~SM_CLOSED;
+					uifc.helpbuf=
+						"`New User Password:`\n"
+						"\n"
+						"If you want callers to only be able to logon as `New` ~ only ~ if they know\n"
+						"a secret password, enter that password here.  If you prefer any caller\n"
+						"be able to logon as `New`, leave this option blank.\n"
+					;
+					uifc.input(WIN_MID|WIN_SAV,0,0,"New User Password (optional)",cfg.new_pass,sizeof(cfg.new_pass)-1
+						,K_EDIT|K_UPPER);
+				}
+				else if(i == 1) {
+					cfg.sys_misc |= SM_CLOSED;
+				}
+				break;
+			case __COUNTER__:
+				i=cfg.sys_misc&SM_TIME_EXP ? 0:1;
+				uifc.helpbuf=
+					"`User Expires When Out-of-time:`\n"
+					"\n"
+					"If you want users to be set to `Expired User Values` if they run out of\n"
+					"time online, then set this option to `Yes`.\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"User Expires When Out-of-time",uifcYesNoOpts);
+				if(!i && !(cfg.sys_misc&SM_TIME_EXP)) {
+					cfg.sys_misc|=SM_TIME_EXP;
+				}
+				else if(i==1 && cfg.sys_misc&SM_TIME_EXP) {
+					cfg.sys_misc&=~SM_TIME_EXP;
+				}
+				break;
+			case __COUNTER__: /* Security Levels */
+				k=0;
+				while(1) {
+					for(i=0;i<100;i++) {
+						byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
+						sprintf(opt[i],"%-2d    %5d %5d "
+							"%5d %5d %5d %5d %6s %7s %2u",i
+							,cfg.level_timeperday[i],cfg.level_timepercall[i]
+							,cfg.level_callsperday[i],cfg.level_emailperday[i]
+							,cfg.level_postsperday[i],cfg.level_linespermsg[i]
+							,tmp
+							,cfg.level_misc[i]&LEVEL_EXPTOVAL ? "Val Set" : "Level"
+							,cfg.level_misc[i]&(LEVEL_EXPTOVAL|LEVEL_EXPTOLVL) ?
+								cfg.level_expireto[i] : cfg.expired_level); 
+					}
+					opt[i][0]=0;
+					i=0;
+					uifc.helpbuf=
+						"`Security Level Values:`\n"
+						"\n"
+						"This menu allows you to change the security options for every possible\n"
+						"security level from 0 to 99. The available options for each level are:\n"
+						"\n"
+						"    Time Per Day           Maximum online time per day\n"
+						"    Time Per Call          Maximum online time per call (logon)\n"
+						"    Calls Per Day          Maximum number of calls (logons) per day\n"
+						"    Email Per Day          Maximum number of email sent per day\n"
+						"    Posts Per Day          Maximum number of posted messages per day\n"
+						"    Lines Per Message      Maximum number of lines per message\n"
+						"    Free Credits Per Day   Number of free credits awarded per day\n"
+						"    Expire To              Level or validation set to Expire to\n"
+					;
+					i=uifc.list(WIN_RHT|WIN_ACT|WIN_SAV,0,3,0, &seclevel_dflt, &seclevel_bar
+						,"Level   T/D   T/C   C/D   E/D   P/D   L/M   F/D   "
+							"Expire To",opt);
+					if(i==-1)
+						break;
+					while(1) {
+						sprintf(str,"Security Level %d Values",i);
+						j=0;
+						sprintf(opt[j++],"%-22.22s%-5u","Time Per Day"
+							,cfg.level_timeperday[i]);
+						sprintf(opt[j++],"%-22.22s%-5u","Time Per Call"
+							,cfg.level_timepercall[i]);
+						sprintf(opt[j++],"%-22.22s%-5u","Calls Per Day"
+							,cfg.level_callsperday[i]);
+						sprintf(opt[j++],"%-22.22s%-5u","Email Per Day"
+							,cfg.level_emailperday[i]);
+						sprintf(opt[j++],"%-22.22s%-5u","Posts Per Day"
+							,cfg.level_postsperday[i]);
+						sprintf(opt[j++],"%-22.22s%-5u","Lines Per Message"
+							,cfg.level_linespermsg[i]);
+						byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
+						sprintf(opt[j++],"%-22.22s%-6s","Free Credits Per Day"
+							,tmp);
+						sprintf(opt[j++],"%-22.22s%s %u","Expire To"
+							,cfg.level_misc[i]&LEVEL_EXPTOVAL ? "Validation Set"
+								: "Level"
+							,cfg.level_misc[i]&(LEVEL_EXPTOVAL|LEVEL_EXPTOLVL) ?
+								cfg.level_expireto[i] : cfg.expired_level);
+						opt[j][0]=0;
+						uifc_winmode_t wmode = WIN_RHT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < 100)
+							wmode |= WIN_RIGHTKEY;
+						j=uifc.list(wmode,2,1,0,&k,0
+							,str,opt);
+						if(j==-1)
+							break;
+						switch(j) {
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < 100)
+									i++;
+								break;
+							case 0:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Total Time Allowed Per Day (in minutes)"
+									,ultoa(cfg.level_timeperday[i],tmp,10),4
+									,K_NUMBER|K_EDIT);
+								cfg.level_timeperday[i]=atoi(tmp);
+								if(cfg.level_timeperday[i]>1440)
+									cfg.level_timeperday[i]=1440;
+								break;
+							case 1:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Time Allowed Per Call (in minutes)"
+									,ultoa(cfg.level_timepercall[i],tmp,10),4
+									,K_NUMBER|K_EDIT);
+								cfg.level_timepercall[i]=atoi(tmp);
+								if(cfg.level_timepercall[i]>1440)
+									cfg.level_timepercall[i]=1440;
+								break;
+							case 2:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Calls (Logons) Allowed Per Day"
+									,ultoa(cfg.level_callsperday[i],tmp,10),4
+									,K_NUMBER|K_EDIT);
+								cfg.level_callsperday[i]=atoi(tmp);
+								break;
+							case 3:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Email (Sent) Allowed Per Day"
+									,ultoa(cfg.level_emailperday[i],tmp,10),4
+									,K_NUMBER|K_EDIT);
+								cfg.level_emailperday[i]=atoi(tmp);
+								break;
+							case 4:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Posted Messages Allowed Per Day"
+									,ultoa(cfg.level_postsperday[i],tmp,10),4
+									,K_NUMBER|K_EDIT);
+								cfg.level_postsperday[i]=atoi(tmp);
+								break;
+							case 5:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Lines Allowed Per Message (Post/E-mail)"
+									,ultoa(cfg.level_linespermsg[i],tmp,10),5
+									,K_NUMBER|K_EDIT);
+								cfg.level_linespermsg[i]=atoi(tmp);
+								break;
+							case 6:
+								byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
+								if(uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Free Credits Awarded Per Day"
+									,tmp,19
+									,K_EDIT|K_UPPER) > 0)
+									cfg.level_freecdtperday[i] = parse_byte_count(tmp, 1);
+								break;
+							case 7:
+								j=0;
+								sprintf(opt[j++],"Default Expired Level "
+									"(Currently %u)",cfg.expired_level);
+								sprintf(opt[j++],"Specific Level");
+								sprintf(opt[j++],"Quick-Validation Set");
+								opt[j][0]=0;
+								j=0;
+								sprintf(str,"Level %u Expires To",i);
+								j=uifc.list(WIN_SAV,2,1,0,&j,0
+									,str,opt);
+								if(j==-1)
+									break;
+								if(j==0) {
+									cfg.level_misc[i]&=
+										~(LEVEL_EXPTOLVL|LEVEL_EXPTOVAL);
+									break; 
+								}
+								if(j==1) {
+									cfg.level_misc[i]&=~LEVEL_EXPTOVAL;
+									cfg.level_misc[i]|=LEVEL_EXPTOLVL;
+									uifc.input(WIN_MID|WIN_SAV,0,0
+										,"Expired Level"
+										,ultoa(cfg.level_expireto[i],tmp,10),2
+										,K_EDIT|K_NUMBER);
+									cfg.level_expireto[i]=atoi(tmp);
+									break; 
+								}
+								cfg.level_misc[i]&=~LEVEL_EXPTOLVL;
+								cfg.level_misc[i]|=LEVEL_EXPTOVAL;
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Quick-Validation Set to Expire To"
+									,ultoa(cfg.level_expireto[i],tmp,10),1
+									,K_EDIT|K_NUMBER);
+								cfg.level_expireto[i]=atoi(tmp);
+								break;
+						} 
+					} 
+				}
+				break;
+			case __COUNTER__:	/* Expired Account Values */
+				done=0;
+				while(!done) {
+					i=0;
+					sprintf(opt[i++],"%-27.27s%u","Level",cfg.expired_level);
+					sprintf(opt[i++],"%-27.27s%s","Flag Set #1 to Remove"
+						,u32toaf(cfg.expired_flags1,str));
+					sprintf(opt[i++],"%-27.27s%s","Flag Set #2 to Remove"
+						,u32toaf(cfg.expired_flags2,str));
+					sprintf(opt[i++],"%-27.27s%s","Flag Set #3 to Remove"
+						,u32toaf(cfg.expired_flags3,str));
+					sprintf(opt[i++],"%-27.27s%s","Flag Set #4 to Remove"
+						,u32toaf(cfg.expired_flags4,str));
+					sprintf(opt[i++],"%-27.27s%s","Exemptions to Remove"
+						,u32toaf(cfg.expired_exempt,str));
+					sprintf(opt[i++],"%-27.27s%s","Restrictions to Add"
+						,u32toaf(cfg.expired_rest,str));
+					opt[i][0]=0;
+					uifc.helpbuf=
+						"`Expired Account Values:`\n"
+						"\n"
+						"If a user's account expires, the security levels for that account will\n"
+						"be modified according to the settings of this menu. The account's\n"
+						"security level will be set to the value listed on this menu. The `Flags`\n"
+						"and `Exemptions` listed on this menu will be removed from the account\n"
+						"if they are set. The `Restrictions` listed will be added to the account.\n"
+					;
+					switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&expired_dflt,0
+						,"Expired Account Values",opt)) {
+						case -1:
+							done=1;
+							break;
+						case 0:
+							ultoa(cfg.expired_level,str,10);
+							uifc.helpbuf=
+								"`Expired Account Security Level:`\n"
+								"\n"
+								"This is the security level automatically given to expired user accounts.\n"
+							;
+							uifc.input(WIN_SAV|WIN_MID,0,0,"Security Level"
+								,str,2,K_EDIT|K_NUMBER);
+							cfg.expired_level=atoi(str);
+							break;
+						case 1:
+							truncsp(u32toaf(cfg.expired_flags1,str));
+							uifc.helpbuf=
+								"`Expired Security Flags to Remove:`\n"
+								"\n"
+								"These are the security flags automatically removed when a user account\n"
+								"has expired.\n"
+							;
+							uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #1"
+								,str,26,K_EDIT|K_UPPER|K_ALPHA);
+							cfg.expired_flags1=aftou32(str);
+							break;
+						case 2:
+							truncsp(u32toaf(cfg.expired_flags2,str));
+							uifc.helpbuf=
+								"`Expired Security Flags to Remove:`\n"
+								"\n"
+								"These are the security flags automatically removed when a user account\n"
+								"has expired.\n"
+							;
+							uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #2"
+								,str,26,K_EDIT|K_UPPER|K_ALPHA);
+							cfg.expired_flags2=aftou32(str);
+							break;
+						case 3:
+							truncsp(u32toaf(cfg.expired_flags3,str));
+							uifc.helpbuf=
+								"`Expired Security Flags to Remove:`\n"
+								"\n"
+								"These are the security flags automatically removed when a user account\n"
+								"has expired.\n"
+							;
+							uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #3"
+								,str,26,K_EDIT|K_UPPER|K_ALPHA);
+							cfg.expired_flags3=aftou32(str);
+							break;
+						case 4:
+							truncsp(u32toaf(cfg.expired_flags4,str));
+							uifc.helpbuf=
+								"`Expired Security Flags to Remove:`\n"
+								"\n"
+								"These are the security flags automatically removed when a user account\n"
+								"has expired.\n"
+							;
+							uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #4"
+								,str,26,K_EDIT|K_UPPER|K_ALPHA);
+							cfg.expired_flags4=aftou32(str);
+							break;
+						case 5:
+							truncsp(u32toaf(cfg.expired_exempt,str));
+							uifc.helpbuf=
+								"`Expired Exemption Flags to Remove:`\n"
+								"\n"
+								"These are the exemptions that are automatically removed from a user\n"
+								"account if it expires.\n"
+							;
+							uifc.input(WIN_SAV|WIN_MID,0,0,"Exemption Flags",str,26
+								,K_EDIT|K_UPPER|K_ALPHA);
+							cfg.expired_exempt=aftou32(str);
+							break;
+						case 6:
+							truncsp(u32toaf(cfg.expired_rest,str));
+							uifc.helpbuf=
+								"`Expired Restriction Flags to Add:`\n"
+								"\n"
+								"These are the restrictions that are automatically added to a user\n"
+								"account if it expires.\n"
+							;
+							uifc.input(WIN_SAV|WIN_MID,0,0,"Restriction Flags",str,26
+								,K_EDIT|K_UPPER|K_ALPHA);
+							cfg.expired_rest=aftou32(str);
+							break; 
+						} 
+				}
+				break;
+			case __COUNTER__:	/* Quick-Validation Values */
+				k=0;
+				while(1) {
+					for(i=0;i<10;i++)
+						sprintf(opt[i],"%d  SL: %-2d  F1: %s"
+							,i,cfg.val_level[i],u32toaf(cfg.val_flags1[i],str));
+					opt[i][0]=0;
+					i=0;
+					uifc.helpbuf=
+						"`Quick-Validation Values:`\n"
+						"\n"
+						"This is a list of the ten quick-validation sets. These sets are used to\n"
+						"quickly set a user's security values (Level, Flags, Exemptions,\n"
+						"Restrictions, Expiration Date, and Credits) with one key stroke. The\n"
+						"user's expiration date may be extended and additional credits may also\n"
+						"be added using quick-validation sets.\n"
+						"\n"
+						"From within the `User Edit` function, a sysop can use the `V`alidate\n"
+						"User command and select from this quick-validation list to change a\n"
+						"user's security values with very few key-strokes.\n"
+					;
+					i=uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&quick_dflt,0
+						,"Quick-Validation Values",opt);
+					if(i==-1)
+						break;
+					while(1) {
+						j=0;
+						sprintf(opt[j++],"%-22.22s%u","Level",cfg.val_level[i]);
+						sprintf(opt[j++],"%-22.22s%s","Flag Set #1"
+							,u32toaf(cfg.val_flags1[i],tmp));
+						sprintf(opt[j++],"%-22.22s%s","Flag Set #2"
+							,u32toaf(cfg.val_flags2[i],tmp));
+						sprintf(opt[j++],"%-22.22s%s","Flag Set #3"
+							,u32toaf(cfg.val_flags3[i],tmp));
+						sprintf(opt[j++],"%-22.22s%s","Flag Set #4"
+							,u32toaf(cfg.val_flags4[i],tmp));
+						sprintf(opt[j++],"%-22.22s%s","Exemptions"
+							,u32toaf(cfg.val_exempt[i],tmp));
+						sprintf(opt[j++],"%-22.22s%s","Restrictions"
+							,u32toaf(cfg.val_rest[i],tmp));
+						sprintf(opt[j++],"%-22.22s%u days","Extend Expiration"
+							,cfg.val_expire[i]);
+						sprintf(opt[j++],"%-22.22s%u","Additional Credits"
+							,cfg.val_cdt[i]);
+						opt[j][0]=0;
+
+						uifc_winmode_t wmode = WIN_RHT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < 10)
+							wmode |= WIN_RIGHTKEY;
+						SAFEPRINTF(str,"Quick-Validation Set %d",i);
+						j=uifc.list(wmode,2,1,0,&k,0,str,opt);
+						if(j==-1)
+							break;
+						switch(j) {
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < 10)
+									i++;
+								break;
+							case 0:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Level"
+									,ultoa(cfg.val_level[i],tmp,10),2
+									,K_NUMBER|K_EDIT);
+								cfg.val_level[i]=atoi(tmp);
+								break;
+							case 1:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Flag Set #1"
+									,truncsp(u32toaf(cfg.val_flags1[i],tmp)),26
+									,K_UPPER|K_ALPHA|K_EDIT);
+								cfg.val_flags1[i]=aftou32(tmp);
+								break;
+							case 2:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Flag Set #2"
+									,truncsp(u32toaf(cfg.val_flags2[i],tmp)),26
+									,K_UPPER|K_ALPHA|K_EDIT);
+								cfg.val_flags2[i]=aftou32(tmp);
+								break;
+							case 3:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Flag Set #3"
+									,truncsp(u32toaf(cfg.val_flags3[i],tmp)),26
+									,K_UPPER|K_ALPHA|K_EDIT);
+								cfg.val_flags3[i]=aftou32(tmp);
+								break;
+							case 4:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Flag Set #4"
+									,truncsp(u32toaf(cfg.val_flags4[i],tmp)),26
+									,K_UPPER|K_ALPHA|K_EDIT);
+								cfg.val_flags4[i]=aftou32(tmp);
+								break;
+							case 5:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Exemption Flags"
+									,truncsp(u32toaf(cfg.val_exempt[i],tmp)),26
+									,K_UPPER|K_ALPHA|K_EDIT);
+								cfg.val_exempt[i]=aftou32(tmp);
+								break;
+							case 6:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Restriction Flags"
+									,truncsp(u32toaf(cfg.val_rest[i],tmp)),26
+									,K_UPPER|K_ALPHA|K_EDIT);
+								cfg.val_rest[i]=aftou32(tmp);
+								break;
+							case 7:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Days to Extend Expiration"
+									,ultoa(cfg.val_expire[i],tmp,10),4
+									,K_NUMBER|K_EDIT);
+								cfg.val_expire[i]=atoi(tmp);
+								break;
+							case 8:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Additional Credits"
+									,ultoa(cfg.val_cdt[i],tmp,10),10
+									,K_NUMBER|K_EDIT);
+								cfg.val_cdt[i]=atol(tmp);
+								break; 
+						} 
+					} 
+				}
+				break; 
+		}
+	}
+}
+
+void sys_cfg(void)
+{
+	static int sys_dflt,adv_dflt,tog_dflt,new_dflt;
+	static int tog_bar;
+	static int adv_bar;
+	static int mod_dflt, mod_bar;
+	char str[81],done=0;
+	int i,j,k;
+	scfg_t saved_cfg = cfg;
+	char sys_pass[sizeof(cfg.sys_pass)];
+	SAFECOPY(sys_pass, cfg.sys_pass);
+	while(1) {
+		i=0;
+		sprintf(opt[i++],"%-33.33s%s","BBS Name",cfg.sys_name);
+		sprintf(opt[i++],"%-33.33s%s","Location",cfg.sys_location);
+		sprintf(opt[i++],"%-33.33s%s %s","Local Time Zone"
+			,smb_zonestr(cfg.sys_timezone,NULL)
+			,SMB_TZ_HAS_DST(cfg.sys_timezone) && cfg.sys_misc&SM_AUTO_DST ? "(Auto-DST)" : "");
+		sprintf(opt[i++],"%-33.33s%s","Operator",cfg.sys_op);
+
+		strcpy(opt[i++],"Toggle Options...");
+		strcpy(opt[i++],"New User Values...");
+		strcpy(opt[i++],"Security Options...");
+		strcpy(opt[i++],"Advanced Options...");
+		strcpy(opt[i++],"Loadable Modules...");
 		opt[i][0]=0;
 		uifc.helpbuf=
 			"`System Configuration:`\n"
 			"\n"
 			"This menu contains options and sub-menus of options that affect the\n"
-			"entire BBS system and the Synchronet Terminal Server in particular.\n"
+			"entire BBS and the Synchronet Terminal Server in particular.\n"
 		;
+		uifc.changes = memcmp(&saved_cfg, &cfg, sizeof(saved_cfg)) != 0;
 		switch(uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,72,&sys_dflt,0
 			,"System Configuration",opt)) {
 			case -1:
@@ -212,7 +938,6 @@ void sys_cfg(void)
 						,"U.S. Time Zone",opt);
 					if(i==-1)
 						break;
-					uifc.changes=1;
 					switch(i) {
 						case 0:
 							cfg.sys_timezone=AST;
@@ -284,7 +1009,6 @@ void sys_cfg(void)
 					,"None-U.S. Time Zone",opt);
 				if(i==-1)
 					break;
-				uifc.changes=1;
 				switch(i) {
 					case 0:
 						cfg.sys_timezone=MID;
@@ -406,164 +1130,26 @@ void sys_cfg(void)
 				;
 				uifc.input(WIN_MID,0,0,"System Operator",cfg.sys_op,sizeof(cfg.sys_op)-1,K_EDIT);
 				break;
-			case 4:
-				uifc.helpbuf=
-					"`System Password:`\n"
-					"\n"
-					"This is an extra security password required for sysop logon and certain\n"
-					"sysop functions. This password should be something not easily guessed\n"
-					"and should be kept absolutely confidential. This password must be\n"
-					"entered at the Terminal Server `SY:` prompt.\n"
-					"\n"
-					"This system password can also be used to enable sysop access to the\n"
-					"FTP Server by authenticating with a password that combines a sysop's\n"
-					"password with the system password, separated by a colon\n"
-					"(i.e. '`user-pass:system-pass`').\n"
-					"\n"
-					"`Note:` When the `Allow Sysop Access` Toggle Option is set to `No`,\n"
-					"      The system password is effectively disabled."
-				;
-				uifc.input(WIN_MID,0,0,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
-				break;
-			case 5:
-				i = (cfg.sys_misc&SM_PWEDIT) ? 0 : 1;
-				uifc.helpbuf=
-					"`Allow Users to Change Their Password:`\n"
-					"\n"
-					"If you want the users of your system to have the option of changing\n"
-					"their password to a string of their choice, set this option to `Yes`.\n"
-					"For the highest level of security, set this option to `No.`\n"
-				;
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Allow Users to Change Their Password",uifcYesNoOpts);
-				if(!i && !(cfg.sys_misc&SM_PWEDIT)) {
-					cfg.sys_misc|=SM_PWEDIT;
-					uifc.changes=1; 
-				}
-				else if(i==1 && cfg.sys_misc&SM_PWEDIT) {
-					cfg.sys_misc&=~SM_PWEDIT;
-					uifc.changes=1; 
-				} else if(i == -1)
-					break;
-
-				if(cfg.sys_misc&SM_PWEDIT) {
-					SAFEPRINTF(tmp, "%u", cfg.min_pwlen);
-					SAFEPRINTF2(str, "Minimum Password Length (between %u and %u)", MIN_PASS_LEN, LEN_PASS);
-					if(uifc.input(WIN_MID|WIN_SAV,0,0, str
-						,tmp, 2, K_NUMBER|K_EDIT) < 1)
-						break;
-					cfg.min_pwlen=atoi(tmp);
-					if(cfg.min_pwlen < MIN_PASS_LEN)
-						cfg.min_pwlen = MIN_PASS_LEN;
-					if(cfg.min_pwlen > LEN_PASS)
-						cfg.min_pwlen = LEN_PASS;
-				}
-				i = cfg.sys_pwdays ? 0 : 1;
-				uifc.helpbuf=
-					"`Force Periodic New Password:`\n"
-					"\n"
-					"If you want your users to be forced to have a new password periodically,\n"
-					"select `Yes`.\n"
-				;
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Force Periodic New Password",uifcYesNoOpts);
-				if(!i) {
-					ultoa(cfg.sys_pwdays,str,10);
-				uifc.helpbuf=
-					"`Maximum Days Between New Passwords:`\n"
-					"\n"
-					"Enter the maximum number of days allowed between password changes.\n"
-					"If a user has not voluntarily changed his or her password in this\n"
-					"many days, he or she will be forced to change their password upon\n"
-					"logon.\n"
-				;
-					uifc.input(WIN_MID,0,0,"Maximum Days Between New Password"
-						,str,5,K_NUMBER|K_EDIT);
-					cfg.sys_pwdays=atoi(str); 
-				}
-				else if(i==1 && cfg.sys_pwdays) {
-					cfg.sys_pwdays=0;
-					uifc.changes=1; 
-				}
-			
-				break;
-			case 6:
-				sprintf(str,"%u",cfg.sys_deldays);
-				uifc.helpbuf=
-					"`Days Since Last Logon to Preserve Deleted Users:`\n"
-					"\n"
-					"Deleted user slots can be `undeleted` until the slot is written over\n"
-					"by a new user. If you want deleted user slots to be preserved for period\n"
-					"of time since their last logon, set this value to the number of days to\n"
-					"keep new users from taking over a deleted user's slot.\n"
-				;
-				uifc.input(WIN_MID,0,0,"Days Since Last Logon to Preserve Deleted Users"
-					,str,5,K_EDIT|K_NUMBER);
-				cfg.sys_deldays=atoi(str);
-				break;
-			case 7:
-				sprintf(str,"%u",cfg.sys_autodel);
-				uifc.helpbuf=
-					"`Maximum Days of Inactivity Before Auto-Deletion:`\n"
-					"\n"
-					"If you want users that have not logged-on in a certain period of time to\n"
-					"be automatically deleted, set this value to the maximum number of days\n"
-					"of inactivity before the user is deleted. Setting this value to `0`\n"
-					"disables this feature.\n"
-					"\n"
-					"Users with the `P` exemption will not be deleted due to inactivity.\n"
-				;
-				uifc.input(WIN_MID,0,0,"Maximum Days of Inactivity Before Auto-Deletion"
-					,str,5,K_EDIT|K_NUMBER);
-				cfg.sys_autodel=atoi(str);
-				break;
-			case 8:
-				uifc.helpbuf=
-					"`New User Password:`\n"
-					"\n"
-					"If you want callers to only be able to logon as `New` ~ only ~ if they know\n"
-					"a secret password, enter that password here.  If you prefer any caller\n"
-					"be able to logon as `New`, leave this option blank.\n"
-				;
-				uifc.input(WIN_MID,0,0,"New User Password",cfg.new_pass,sizeof(cfg.new_pass)-1
-					,K_EDIT|K_UPPER);
-				break;
-			case 9:    /* Toggle Options */
+			case 4:    /* Toggle Options */
 				done=0;
 				while(!done) {
 					i=0;
 					sprintf(opt[i++],"%-33.33s%s","Allow User Aliases"
 						,cfg.uq&UQ_ALIASES ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","Allow Login by Real Name"
-						,(!(cfg.uq&UQ_ALIASES) || cfg.sys_login & LOGIN_REALNAME) ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","Allow Login by User Number"
-						,(cfg.sys_login & LOGIN_USERNUM) ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Allow Time Banking"
 						,cfg.sys_misc&SM_TIMEBANK ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Allow Credit Conversions"
 						,cfg.sys_misc&SM_NOCDTCVT ? "No" : "Yes");
-					sprintf(opt[i++],"%-33.33s%s","Allow Sysop Access"
-						,cfg.sys_misc&SM_R_SYSOP ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","Display/Log Passwords Locally"
-						,cfg.sys_misc&SM_ECHO_PW ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","Always Prompt for Password"
-						,cfg.sys_login & LOGIN_PWPROMPT ? "Yes":"No");
 					sprintf(opt[i++],"%-33.33s%s","Short Sysop Page"
 						,cfg.sys_misc&SM_SHRTPAGE ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Include Sysop in Statistics"
 						,cfg.sys_misc&SM_SYSSTAT ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","Closed to New Users"
-						,cfg.sys_misc&SM_CLOSED ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Use Location in User Lists"
 						,cfg.sys_misc&SM_LISTLOC ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Military (24 hour) Time Format"
 						,cfg.sys_misc&SM_MILITARY ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","European Date Format (DD/MM/YY)"
 						,cfg.sys_misc&SM_EURODATE ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","User Expires When Out-of-time"
-						,cfg.sys_misc&SM_TIME_EXP ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","Require Sys Pass During Login"
-						,cfg.sys_misc&SM_SYSPASSLOGIN ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Display Sys Info During Logon"
 						,cfg.sys_misc&SM_NOSYSINFO ? "No" : "Yes");
 					sprintf(opt[i++],"%-33.33s%s","Display Node List During Logon"
@@ -580,7 +1166,7 @@ void sys_cfg(void)
 						case -1:
 							done=1;
 							break;
-						case __COUNTER__:
+						case 0:
 							i=cfg.uq&UQ_ALIASES ? 0:1;
 							uifc.helpbuf=
 								"`Allow Users to Use Aliases:`\n"
@@ -593,48 +1179,12 @@ void sys_cfg(void)
 								,"Allow Users to Use Aliases",uifcYesNoOpts);
 							if(!i && !(cfg.uq&UQ_ALIASES)) {
 								cfg.uq|=UQ_ALIASES;
-								uifc.changes=1; 
 							}
 							else if(i==1 && cfg.uq&UQ_ALIASES) {
 								cfg.uq&=~UQ_ALIASES;
-								uifc.changes=1; 
 							}
 							break;
-						case __COUNTER__:
-							if(!(cfg.uq&UQ_ALIASES))
-								break;
-							i = (cfg.sys_login & LOGIN_REALNAME) ? 0:1;
-							uifc.helpbuf=
-								"`Allow Login by Real Name:`\n"
-								"\n"
-								"If you want users to be able login using their real name as well as\n"
-								"their alias, set this option to `Yes`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-								,"Allow Login by Real Name",uifcYesNoOpts);
-							if((i==0 && !(cfg.sys_login & LOGIN_REALNAME))
-								|| (i==1 && (cfg.sys_login & LOGIN_REALNAME))) {
-								cfg.sys_login ^= LOGIN_REALNAME;
-								uifc.changes=1; 
-							}
-							break;
-						case __COUNTER__:
-							i = (cfg.sys_login & LOGIN_USERNUM) ? 0:1;
-							uifc.helpbuf=
-								"`Allow Login by User Number:`\n"
-								"\n"
-								"If you want users to be able login using their user number at the\n"
-								"login prompt, set this option to `Yes`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-								,"Allow Login by User Number",uifcYesNoOpts);
-							if((i==0 && !(cfg.sys_login & LOGIN_USERNUM))
-								|| (i==1 && (cfg.sys_login & LOGIN_USERNUM))) {
-								cfg.sys_login ^= LOGIN_USERNUM;
-								uifc.changes=1; 
-							}
-							break;
-						case __COUNTER__:
+						case 1:
 							i=cfg.sys_misc&SM_TIMEBANK ? 0:1;
 							uifc.helpbuf=
 								"`Allow Time Banking:`\n"
@@ -649,14 +1199,12 @@ void sys_cfg(void)
 								,"Allow Users to Deposit Time in Minute Bank",uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_TIMEBANK)) {
 								cfg.sys_misc|=SM_TIMEBANK;
-								uifc.changes=1; 
 							}
 							else if(i==1 && cfg.sys_misc&SM_TIMEBANK) {
 								cfg.sys_misc&=~SM_TIMEBANK;
-								uifc.changes=1; 
 							}
 							break;
-						case __COUNTER__:
+						case 2:
 							i=cfg.sys_misc&SM_NOCDTCVT ? 1:0;
 							uifc.helpbuf=
 								"`Allow Credits to be Converted into Minutes:`\n"
@@ -670,71 +1218,12 @@ void sys_cfg(void)
 								,uifcYesNoOpts);
 							if(!i && cfg.sys_misc&SM_NOCDTCVT) {
 								cfg.sys_misc&=~SM_NOCDTCVT;
-								uifc.changes=1; 
 							}
 							else if(i==1 && !(cfg.sys_misc&SM_NOCDTCVT)) {
 								cfg.sys_misc|=SM_NOCDTCVT;
-								uifc.changes=1; 
 							}
 							break;
-						case __COUNTER__:
-							i=cfg.sys_misc&SM_R_SYSOP ? 0:1;
-							uifc.helpbuf=
-								"`Allow Sysop Access:`\n"
-								"\n"
-								"Setting this option to `No` will prevent users with sysop security level\n"
-								"from invoking functions that require system-password authentication.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Allow Sysop Access",uifcYesNoOpts);
-							if(!i && !(cfg.sys_misc&SM_R_SYSOP)) {
-								cfg.sys_misc|=SM_R_SYSOP;
-								uifc.changes=1; 
-							}
-							else if(i==1 && cfg.sys_misc&SM_R_SYSOP) {
-								cfg.sys_misc&=~SM_R_SYSOP;
-								uifc.changes=1; 
-							}
-							break;
-						case __COUNTER__:
-							i=cfg.sys_misc&SM_ECHO_PW ? 0:1;
-							uifc.helpbuf=
-								"`Display/Log Passwords Locally:`\n"
-								"\n"
-								"If you want to passwords to be displayed locally and/or logged to disk\n"
-								"(e.g. when there's a failed login attempt), set this option to `Yes`.\n"
-								"\n"
-								"For elevated security, set this option to `No`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Display/Log Passwords Locally",uifcYesNoOpts);
-							if(!i && !(cfg.sys_misc&SM_ECHO_PW)) {
-								cfg.sys_misc|=SM_ECHO_PW;
-								uifc.changes=1; 
-							}
-							else if(i==1 && cfg.sys_misc&SM_ECHO_PW) {
-								cfg.sys_misc&=~SM_ECHO_PW;
-								uifc.changes=1; 
-							}
-							break;
-						case __COUNTER__:
-							i=cfg.sys_login & LOGIN_PWPROMPT ? 0:1;
-							uifc.helpbuf=
-								"`Always Prompt for Password:`\n"
-								"\n"
-								"If you want to have attempted logins using an unknown user name still\n"
-								"prompt for a password (i.e. for enhanced security), set this option to\n"
-								"`Yes`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-								,"Always Prompt for Password",uifcYesNoOpts);
-							if((i==0 && !(cfg.sys_login & LOGIN_PWPROMPT))
-								|| (i==1 && (cfg.sys_login & LOGIN_PWPROMPT))) {
-								cfg.sys_login ^= LOGIN_PWPROMPT;
-								uifc.changes=1; 
-							}
-							break;
-						case __COUNTER__:
+						case 3:
 							i=cfg.sys_misc&SM_SHRTPAGE ? 0:1;
 							uifc.helpbuf=
 								"`Short Sysop Page:`\n"
@@ -746,14 +1235,12 @@ void sys_cfg(void)
 								,uifcYesNoOpts);
 							if(i==1 && cfg.sys_misc&SM_SHRTPAGE) {
 								cfg.sys_misc&=~SM_SHRTPAGE;
-								uifc.changes=1; 
 							}
 							else if(!i && !(cfg.sys_misc&SM_SHRTPAGE)) {
 								cfg.sys_misc|=SM_SHRTPAGE;
-								uifc.changes=1; 
 							}
 							break;
-						case __COUNTER__:
+						case 4:
 							i=cfg.sys_misc&SM_SYSSTAT ? 0:1;
 							uifc.helpbuf=
 								"`Include Sysop Activity in System Statistics:`\n"
@@ -768,32 +1255,12 @@ void sys_cfg(void)
 								,uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_SYSSTAT)) {
 								cfg.sys_misc|=SM_SYSSTAT;
-								uifc.changes=1; 
 							}
 							else if(i==1 && cfg.sys_misc&SM_SYSSTAT) {
 								cfg.sys_misc&=~SM_SYSSTAT;
-								uifc.changes=1; 
 							}
 							break;
-						case __COUNTER__:
-							i=cfg.sys_misc&SM_CLOSED ? 0:1;
-							uifc.helpbuf=
-								"`Closed to New Users:`\n"
-								"\n"
-								"If you want callers to be able to logon as `New`, set this option to `No`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Closed to New Users",uifcYesNoOpts);
-							if(!i && !(cfg.sys_misc&SM_CLOSED)) {
-								cfg.sys_misc|=SM_CLOSED;
-								uifc.changes=1; 
-							}
-							else if(i==1 && cfg.sys_misc&SM_CLOSED) {
-								cfg.sys_misc&=~SM_CLOSED;
-								uifc.changes=1; 
-							}
-							break;
-						case __COUNTER__:
+						case 5:
 							i=cfg.sys_misc&SM_LISTLOC ? 0:1;
 							uifc.helpbuf=
 								"`User Location in User Lists:`\n"
@@ -807,14 +1274,12 @@ void sys_cfg(void)
 								,uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_LISTLOC)) {
 								cfg.sys_misc|=SM_LISTLOC;
-								uifc.changes=1; 
 							}
 							else if(i==1 && cfg.sys_misc&SM_LISTLOC) {
 								cfg.sys_misc&=~SM_LISTLOC;
-								uifc.changes=1; 
 							}
 							break;
-						case __COUNTER__:
+						case 6:
 							i=cfg.sys_misc&SM_MILITARY ? 0:1;
 							uifc.helpbuf=
 								"`Military:`\n"
@@ -826,14 +1291,12 @@ void sys_cfg(void)
 								,"Use Military Time Format",uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_MILITARY)) {
 								cfg.sys_misc|=SM_MILITARY;
-								uifc.changes=1; 
 							}
 							else if(i==1 && cfg.sys_misc&SM_MILITARY) {
 								cfg.sys_misc&=~SM_MILITARY;
-								uifc.changes=1; 
 							}
 							break;
-						case __COUNTER__:
+						case 7:
 							i=cfg.sys_misc&SM_EURODATE ? 0:1;
 							uifc.helpbuf=
 								"`European Date Format:`\n"
@@ -845,53 +1308,12 @@ void sys_cfg(void)
 								,"European Date Format",uifcYesNoOpts);
 							if(!i && !(cfg.sys_misc&SM_EURODATE)) {
 								cfg.sys_misc|=SM_EURODATE;
-								uifc.changes=1; 
 							}
 							else if(i==1 && cfg.sys_misc&SM_EURODATE) {
 								cfg.sys_misc&=~SM_EURODATE;
-								uifc.changes=1; 
 							}
 							break;
-						case __COUNTER__:
-							i=cfg.sys_misc&SM_TIME_EXP ? 0:1;
-							uifc.helpbuf=
-								"`User Expires When Out-of-time:`\n"
-								"\n"
-								"If you want users to be set to `Expired User Values` if they run out of\n"
-								"time online, then set this option to `Yes`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"User Expires When Out-of-time",uifcYesNoOpts);
-							if(!i && !(cfg.sys_misc&SM_TIME_EXP)) {
-								cfg.sys_misc|=SM_TIME_EXP;
-								uifc.changes=1; 
-							}
-							else if(i==1 && cfg.sys_misc&SM_TIME_EXP) {
-								cfg.sys_misc&=~SM_TIME_EXP;
-								uifc.changes=1; 
-							}
-							break;
-						case __COUNTER__:
-							i=cfg.sys_misc&SM_SYSPASSLOGIN ? 0:1;
-							uifc.helpbuf=
-								"`Require System Password for Sysop Login:`\n"
-								"\n"
-								"If you want to require the correct system password to be provided during\n"
-								"system operator logins (in addition to the sysop's personal user account\n"
-								"password), set this option to `Yes`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Require System Password for Sysop Logon",uifcYesNoOpts);
-							if(i==1 && cfg.sys_misc&SM_SYSPASSLOGIN) {
-								cfg.sys_misc&=~SM_SYSPASSLOGIN;
-								uifc.changes=1; 
-							}
-							else if(i==0 && !(cfg.sys_misc&SM_SYSPASSLOGIN)) {
-								cfg.sys_misc|=SM_SYSPASSLOGIN;
-								uifc.changes=1; 
-							}
-							break;
-						case __COUNTER__:
+						case 8:
 							i=cfg.sys_misc&SM_NOSYSINFO ? 1:0;
 							uifc.helpbuf=
 								"`Display System Information During Logon:`\n"
@@ -903,14 +1325,12 @@ void sys_cfg(void)
 								,"Display System Information During Logon",uifcYesNoOpts);
 							if(!i && cfg.sys_misc&SM_NOSYSINFO) {
 								cfg.sys_misc&=~SM_NOSYSINFO;
-								uifc.changes=1; 
 							}
 							else if(i==1 && !(cfg.sys_misc&SM_NOSYSINFO)) {
 								cfg.sys_misc|=SM_NOSYSINFO;
-								uifc.changes=1; 
 							}
 							break;
-						case __COUNTER__:
+						case 9:
 							i=cfg.sys_misc&SM_NONODELIST ? 1:0;
 							uifc.helpbuf=
 								"`Display Active Node List During Logon:`\n"
@@ -922,17 +1342,15 @@ void sys_cfg(void)
 								,"Display Active Node List During Logon",uifcYesNoOpts);
 							if(!i && cfg.sys_misc&SM_NONODELIST) {
 								cfg.sys_misc&=~SM_NONODELIST;
-								uifc.changes=1; 
 							}
 							else if(i==1 && !(cfg.sys_misc&SM_NONODELIST)) {
 								cfg.sys_misc|=SM_NONODELIST;
-								uifc.changes=1; 
 							}
 							break;
 						} 
 					}
 				break;
-			case 10:    /* New User Values */
+			case 5:    /* New User Values */
 				done=0;
 				while(!done) {
 					i=0;
@@ -1114,7 +1532,6 @@ void sys_cfg(void)
 							i=uifc.list(WIN_SAV|WIN_RHT,2,1,13,&i,0,"Editors",opt);
 							if(i==-1)
 								break;
-							uifc.changes=1;
 							if(i && i<=cfg.total_xedits)
 								SAFECOPY(cfg.new_xedit, cfg.xedit[i-1]->code);
 							else
@@ -1136,7 +1553,6 @@ void sys_cfg(void)
 							if(i==-1)
 								break;
 							cfg.new_shell=i;
-							uifc.changes=1;
 							break;
 						case 12:
 							uifc.helpbuf=
@@ -1237,7 +1653,6 @@ void sys_cfg(void)
 									,"Default Toggle Options",opt);
 								if(j==-1)
 									break;
-								uifc.changes=1;
 								switch(j) {
 									case 0:
 										cfg.new_misc^=EXPERT;
@@ -1275,8 +1690,7 @@ void sys_cfg(void)
 									case 11:
 										cfg.new_misc^=AUTOHANG;
 										break;
-									
-								} 
+								}
 							}
 							break;
 						case 16:
@@ -1352,7 +1766,6 @@ void sys_cfg(void)
 									,"New User Questions",opt);
 								if(j==-1)
 									break;
-								uifc.changes=1;
 								switch(j) {
 									case 0:
 										cfg.uq^=UQ_REALNAME;
@@ -1417,7 +1830,10 @@ void sys_cfg(void)
 					}
 				}
 				break;
-			case 11:	/* Advanced Options */
+			case 6:
+				security_cfg();
+				break;
+			case 7:	/* Advanced Options */
 				done=0;
 				while(!done) {
 					i=0;
@@ -1782,10 +2198,8 @@ void sys_cfg(void)
 						} 
 					}
 					break;
-			case 12: /* Loadable Modules */
+			case 8: /* Loadable Modules */
 				done=0;
-				bar=0;
-				k=0;
 				while(!done) {
 					i=0;
 					sprintf(opt[i++],"%-16.16s%s","Login",cfg.login_mod);
@@ -1846,7 +2260,7 @@ void sys_cfg(void)
 						"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
 						"      in your `exec` or `mods` directories.\n"
 					;
-					switch(uifc.list(WIN_ACT|WIN_T2B|WIN_RHT,0,0,40,&k,&bar
+					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,40,&mod_dflt,&mod_bar
 						,"Loadable Modules",opt)) {
 
 						case -1:
@@ -1941,432 +2355,6 @@ void sys_cfg(void)
 				}
 				break;
 
-			case 13: /* Security Levels */
-				k=0;
-				while(1) {
-					for(i=0;i<100;i++) {
-						byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
-						sprintf(opt[i],"%-2d    %5d %5d "
-							"%5d %5d %5d %5d %6s %7s %2u",i
-							,cfg.level_timeperday[i],cfg.level_timepercall[i]
-							,cfg.level_callsperday[i],cfg.level_emailperday[i]
-							,cfg.level_postsperday[i],cfg.level_linespermsg[i]
-							,tmp
-							,cfg.level_misc[i]&LEVEL_EXPTOVAL ? "Val Set" : "Level"
-							,cfg.level_misc[i]&(LEVEL_EXPTOVAL|LEVEL_EXPTOLVL) ?
-								cfg.level_expireto[i] : cfg.expired_level); 
-					}
-					opt[i][0]=0;
-					i=0;
-					uifc.helpbuf=
-						"`Security Level Values:`\n"
-						"\n"
-						"This menu allows you to change the security options for every possible\n"
-						"security level from 0 to 99. The available options for each level are:\n"
-						"\n"
-						"    Time Per Day           Maximum online time per day\n"
-						"    Time Per Call          Maximum online time per call (logon)\n"
-						"    Calls Per Day          Maximum number of calls (logons) per day\n"
-						"    Email Per Day          Maximum number of email sent per day\n"
-						"    Posts Per Day          Maximum number of posted messages per day\n"
-						"    Lines Per Message      Maximum number of lines per message\n"
-						"    Free Credits Per Day   Number of free credits awarded per day\n"
-						"    Expire To              Level or validation set to Expire to\n"
-					;
-					i=uifc.list(WIN_RHT|WIN_ACT,0,3,0, &seclevel_dflt, &seclevel_bar
-						,"Level   T/D   T/C   C/D   E/D   P/D   L/M   F/D   "
-							"Expire To",opt);
-					if(i==-1)
-						break;
-					while(1) {
-						sprintf(str,"Security Level %d Values",i);
-						j=0;
-						sprintf(opt[j++],"%-22.22s%-5u","Time Per Day"
-							,cfg.level_timeperday[i]);
-						sprintf(opt[j++],"%-22.22s%-5u","Time Per Call"
-							,cfg.level_timepercall[i]);
-						sprintf(opt[j++],"%-22.22s%-5u","Calls Per Day"
-							,cfg.level_callsperday[i]);
-						sprintf(opt[j++],"%-22.22s%-5u","Email Per Day"
-							,cfg.level_emailperday[i]);
-						sprintf(opt[j++],"%-22.22s%-5u","Posts Per Day"
-							,cfg.level_postsperday[i]);
-						sprintf(opt[j++],"%-22.22s%-5u","Lines Per Message"
-							,cfg.level_linespermsg[i]);
-						byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
-						sprintf(opt[j++],"%-22.22s%-6s","Free Credits Per Day"
-							,tmp);
-						sprintf(opt[j++],"%-22.22s%s %u","Expire To"
-							,cfg.level_misc[i]&LEVEL_EXPTOVAL ? "Validation Set"
-								: "Level"
-							,cfg.level_misc[i]&(LEVEL_EXPTOVAL|LEVEL_EXPTOLVL) ?
-								cfg.level_expireto[i] : cfg.expired_level);
-						opt[j][0]=0;
-						uifc_winmode_t wmode = WIN_RHT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
-						if(i > 0)
-							wmode |= WIN_LEFTKEY;
-						if(i + 1 < 100)
-							wmode |= WIN_RIGHTKEY;
-						j=uifc.list(wmode,2,1,0,&k,0
-							,str,opt);
-						if(j==-1)
-							break;
-						switch(j) {
-							case -CIO_KEY_LEFT-2:
-								if(i > 0)
-									i--;
-								break;
-							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < 100)
-									i++;
-								break;
-							case 0:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Total Time Allowed Per Day (in minutes)"
-									,ultoa(cfg.level_timeperday[i],tmp,10),4
-									,K_NUMBER|K_EDIT);
-								cfg.level_timeperday[i]=atoi(tmp);
-								if(cfg.level_timeperday[i]>1440)
-									cfg.level_timeperday[i]=1440;
-								break;
-							case 1:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Time Allowed Per Call (in minutes)"
-									,ultoa(cfg.level_timepercall[i],tmp,10),4
-									,K_NUMBER|K_EDIT);
-								cfg.level_timepercall[i]=atoi(tmp);
-								if(cfg.level_timepercall[i]>1440)
-									cfg.level_timepercall[i]=1440;
-								break;
-							case 2:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Calls (Logons) Allowed Per Day"
-									,ultoa(cfg.level_callsperday[i],tmp,10),4
-									,K_NUMBER|K_EDIT);
-								cfg.level_callsperday[i]=atoi(tmp);
-								break;
-							case 3:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Email (Sent) Allowed Per Day"
-									,ultoa(cfg.level_emailperday[i],tmp,10),4
-									,K_NUMBER|K_EDIT);
-								cfg.level_emailperday[i]=atoi(tmp);
-								break;
-							case 4:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Posted Messages Allowed Per Day"
-									,ultoa(cfg.level_postsperday[i],tmp,10),4
-									,K_NUMBER|K_EDIT);
-								cfg.level_postsperday[i]=atoi(tmp);
-								break;
-							case 5:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Lines Allowed Per Message (Post/E-mail)"
-									,ultoa(cfg.level_linespermsg[i],tmp,10),5
-									,K_NUMBER|K_EDIT);
-								cfg.level_linespermsg[i]=atoi(tmp);
-								break;
-							case 6:
-								byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
-								if(uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Free Credits Awarded Per Day"
-									,tmp,19
-									,K_EDIT|K_UPPER) > 0)
-									cfg.level_freecdtperday[i] = parse_byte_count(tmp, 1);
-								break;
-							case 7:
-								j=0;
-								sprintf(opt[j++],"Default Expired Level "
-									"(Currently %u)",cfg.expired_level);
-								sprintf(opt[j++],"Specific Level");
-								sprintf(opt[j++],"Quick-Validation Set");
-								opt[j][0]=0;
-								j=0;
-								sprintf(str,"Level %u Expires To",i);
-								j=uifc.list(WIN_SAV,2,1,0,&j,0
-									,str,opt);
-								if(j==-1)
-									break;
-								if(j==0) {
-									cfg.level_misc[i]&=
-										~(LEVEL_EXPTOLVL|LEVEL_EXPTOVAL);
-									uifc.changes=1;
-									break; 
-								}
-								if(j==1) {
-									cfg.level_misc[i]&=~LEVEL_EXPTOVAL;
-									cfg.level_misc[i]|=LEVEL_EXPTOLVL;
-									uifc.changes=1;
-									uifc.input(WIN_MID|WIN_SAV,0,0
-										,"Expired Level"
-										,ultoa(cfg.level_expireto[i],tmp,10),2
-										,K_EDIT|K_NUMBER);
-									cfg.level_expireto[i]=atoi(tmp);
-									break; 
-								}
-								cfg.level_misc[i]&=~LEVEL_EXPTOLVL;
-								cfg.level_misc[i]|=LEVEL_EXPTOVAL;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Quick-Validation Set to Expire To"
-									,ultoa(cfg.level_expireto[i],tmp,10),1
-									,K_EDIT|K_NUMBER);
-								cfg.level_expireto[i]=atoi(tmp);
-								break;
-						} 
-					} 
-				}
-				break;
-			case 14:	/* Expired Acccount Values */
-				dflt=0;
-				done=0;
-				while(!done) {
-					i=0;
-					sprintf(opt[i++],"%-27.27s%u","Level",cfg.expired_level);
-					sprintf(opt[i++],"%-27.27s%s","Flag Set #1 to Remove"
-						,u32toaf(cfg.expired_flags1,str));
-					sprintf(opt[i++],"%-27.27s%s","Flag Set #2 to Remove"
-						,u32toaf(cfg.expired_flags2,str));
-					sprintf(opt[i++],"%-27.27s%s","Flag Set #3 to Remove"
-						,u32toaf(cfg.expired_flags3,str));
-					sprintf(opt[i++],"%-27.27s%s","Flag Set #4 to Remove"
-						,u32toaf(cfg.expired_flags4,str));
-					sprintf(opt[i++],"%-27.27s%s","Exemptions to Remove"
-						,u32toaf(cfg.expired_exempt,str));
-					sprintf(opt[i++],"%-27.27s%s","Restrictions to Add"
-						,u32toaf(cfg.expired_rest,str));
-					opt[i][0]=0;
-					uifc.helpbuf=
-						"`Expired Account Values:`\n"
-						"\n"
-						"If a user's account expires, the security levels for that account will\n"
-						"be modified according to the settings of this menu. The account's\n"
-						"security level will be set to the value listed on this menu. The `Flags`\n"
-						"and `Exemptions` listed on this menu will be removed from the account\n"
-						"if they are set. The `Restrictions` listed will be added to the account.\n"
-					;
-					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&dflt,0
-						,"Expired Account Values",opt)) {
-						case -1:
-							done=1;
-							break;
-						case 0:
-							ultoa(cfg.expired_level,str,10);
-							uifc.helpbuf=
-								"`Expired Account Security Level:`\n"
-								"\n"
-								"This is the security level automatically given to expired user accounts.\n"
-							;
-							uifc.input(WIN_SAV|WIN_MID,0,0,"Security Level"
-								,str,2,K_EDIT|K_NUMBER);
-							cfg.expired_level=atoi(str);
-							break;
-						case 1:
-							truncsp(u32toaf(cfg.expired_flags1,str));
-							uifc.helpbuf=
-								"`Expired Security Flags to Remove:`\n"
-								"\n"
-								"These are the security flags automatically removed when a user account\n"
-								"has expired.\n"
-							;
-							uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #1"
-								,str,26,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.expired_flags1=aftou32(str);
-							break;
-						case 2:
-							truncsp(u32toaf(cfg.expired_flags2,str));
-							uifc.helpbuf=
-								"`Expired Security Flags to Remove:`\n"
-								"\n"
-								"These are the security flags automatically removed when a user account\n"
-								"has expired.\n"
-							;
-							uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #2"
-								,str,26,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.expired_flags2=aftou32(str);
-							break;
-						case 3:
-							truncsp(u32toaf(cfg.expired_flags3,str));
-							uifc.helpbuf=
-								"`Expired Security Flags to Remove:`\n"
-								"\n"
-								"These are the security flags automatically removed when a user account\n"
-								"has expired.\n"
-							;
-							uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #3"
-								,str,26,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.expired_flags3=aftou32(str);
-							break;
-						case 4:
-							truncsp(u32toaf(cfg.expired_flags4,str));
-							uifc.helpbuf=
-								"`Expired Security Flags to Remove:`\n"
-								"\n"
-								"These are the security flags automatically removed when a user account\n"
-								"has expired.\n"
-							;
-							uifc.input(WIN_SAV|WIN_MID,0,0,"Flags Set #4"
-								,str,26,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.expired_flags4=aftou32(str);
-							break;
-						case 5:
-							truncsp(u32toaf(cfg.expired_exempt,str));
-							uifc.helpbuf=
-								"`Expired Exemption Flags to Remove:`\n"
-								"\n"
-								"These are the exemptions that are automatically removed from a user\n"
-								"account if it expires.\n"
-							;
-							uifc.input(WIN_SAV|WIN_MID,0,0,"Exemption Flags",str,26
-								,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.expired_exempt=aftou32(str);
-							break;
-						case 6:
-							truncsp(u32toaf(cfg.expired_rest,str));
-							uifc.helpbuf=
-								"`Expired Restriction Flags to Add:`\n"
-								"\n"
-								"These are the restrictions that are automatically added to a user\n"
-								"account if it expires.\n"
-							;
-							uifc.input(WIN_SAV|WIN_MID,0,0,"Restriction Flags",str,26
-								,K_EDIT|K_UPPER|K_ALPHA);
-							cfg.expired_rest=aftou32(str);
-							break; 
-						} 
-				}
-				break;
-			case 15:	/* Quick-Validation Values */
-				dflt=0;
-				k=0;
-				while(1) {
-					for(i=0;i<10;i++)
-						sprintf(opt[i],"%d  SL: %-2d  F1: %s"
-							,i,cfg.val_level[i],u32toaf(cfg.val_flags1[i],str));
-					opt[i][0]=0;
-					i=0;
-					uifc.helpbuf=
-						"`Quick-Validation Values:`\n"
-						"\n"
-						"This is a list of the ten quick-validation sets. These sets are used to\n"
-						"quickly set a user's security values (Level, Flags, Exemptions,\n"
-						"Restrictions, Expiration Date, and Credits) with one key stroke. The\n"
-						"user's expiration date may be extended and additional credits may also\n"
-						"be added using quick-validation sets.\n"
-						"\n"
-						"From within the `User Edit` function, a sysop can use the `V`alidate\n"
-						"User command and select from this quick-validation list to change a\n"
-						"user's security values with very few key-strokes.\n"
-					;
-					i=uifc.list(WIN_RHT|WIN_BOT|WIN_ACT|WIN_SAV,0,0,0,&dflt,0
-						,"Quick-Validation Values",opt);
-					if(i==-1)
-						break;
-					while(1) {
-						j=0;
-						sprintf(opt[j++],"%-22.22s%u","Level",cfg.val_level[i]);
-						sprintf(opt[j++],"%-22.22s%s","Flag Set #1"
-							,u32toaf(cfg.val_flags1[i],tmp));
-						sprintf(opt[j++],"%-22.22s%s","Flag Set #2"
-							,u32toaf(cfg.val_flags2[i],tmp));
-						sprintf(opt[j++],"%-22.22s%s","Flag Set #3"
-							,u32toaf(cfg.val_flags3[i],tmp));
-						sprintf(opt[j++],"%-22.22s%s","Flag Set #4"
-							,u32toaf(cfg.val_flags4[i],tmp));
-						sprintf(opt[j++],"%-22.22s%s","Exemptions"
-							,u32toaf(cfg.val_exempt[i],tmp));
-						sprintf(opt[j++],"%-22.22s%s","Restrictions"
-							,u32toaf(cfg.val_rest[i],tmp));
-						sprintf(opt[j++],"%-22.22s%u days","Extend Expiration"
-							,cfg.val_expire[i]);
-						sprintf(opt[j++],"%-22.22s%u","Additional Credits"
-							,cfg.val_cdt[i]);
-						opt[j][0]=0;
-
-						uifc_winmode_t wmode = WIN_RHT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
-						if(i > 0)
-							wmode |= WIN_LEFTKEY;
-						if(i + 1 < 10)
-							wmode |= WIN_RIGHTKEY;
-						SAFEPRINTF(str,"Quick-Validation Set %d",i);
-						j=uifc.list(wmode,2,1,0,&k,0,str,opt);
-						if(j==-1)
-							break;
-						switch(j) {
-							case -CIO_KEY_LEFT-2:
-								if(i > 0)
-									i--;
-								break;
-							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < 10)
-									i++;
-								break;
-							case 0:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Level"
-									,ultoa(cfg.val_level[i],tmp,10),2
-									,K_NUMBER|K_EDIT);
-								cfg.val_level[i]=atoi(tmp);
-								break;
-							case 1:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Flag Set #1"
-									,truncsp(u32toaf(cfg.val_flags1[i],tmp)),26
-									,K_UPPER|K_ALPHA|K_EDIT);
-								cfg.val_flags1[i]=aftou32(tmp);
-								break;
-							case 2:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Flag Set #2"
-									,truncsp(u32toaf(cfg.val_flags2[i],tmp)),26
-									,K_UPPER|K_ALPHA|K_EDIT);
-								cfg.val_flags2[i]=aftou32(tmp);
-								break;
-							case 3:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Flag Set #3"
-									,truncsp(u32toaf(cfg.val_flags3[i],tmp)),26
-									,K_UPPER|K_ALPHA|K_EDIT);
-								cfg.val_flags3[i]=aftou32(tmp);
-								break;
-							case 4:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Flag Set #4"
-									,truncsp(u32toaf(cfg.val_flags4[i],tmp)),26
-									,K_UPPER|K_ALPHA|K_EDIT);
-								cfg.val_flags4[i]=aftou32(tmp);
-								break;
-							case 5:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Exemption Flags"
-									,truncsp(u32toaf(cfg.val_exempt[i],tmp)),26
-									,K_UPPER|K_ALPHA|K_EDIT);
-								cfg.val_exempt[i]=aftou32(tmp);
-								break;
-							case 6:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Restriction Flags"
-									,truncsp(u32toaf(cfg.val_rest[i],tmp)),26
-									,K_UPPER|K_ALPHA|K_EDIT);
-								cfg.val_rest[i]=aftou32(tmp);
-								break;
-							case 7:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Days to Extend Expiration"
-									,ultoa(cfg.val_expire[i],tmp,10),4
-									,K_NUMBER|K_EDIT);
-								cfg.val_expire[i]=atoi(tmp);
-								break;
-							case 8:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Additional Credits"
-									,ultoa(cfg.val_cdt[i],tmp,10),10
-									,K_NUMBER|K_EDIT);
-								cfg.val_cdt[i]=atol(tmp);
-								break; 
-						} 
-					} 
-				}
-				break; 
 		} 
 	}
 }
