@@ -90,7 +90,7 @@ void security_cfg(void)
 
 		SAFEPRINTF(str,"%s Password"
 			,cfg.sys_misc&SM_PWEDIT && cfg.sys_pwdays ? "Users Must Change"
-			: cfg.sys_pwdays ? "Users Get New Random" : "Users Can Change");
+			: cfg.sys_pwdays ? "Users Get New Random" : "Users Can Choose");
 		if(cfg.sys_pwdays)
 			SAFEPRINTF(tmp,"Every %u Days",cfg.sys_pwdays);
 		else if(cfg.sys_misc&SM_PWEDIT)
@@ -165,6 +165,8 @@ void security_cfg(void)
 					"If you want to require the correct system password to be provided during\n"
 					"system operator logins (in addition to the sysop's personal user account\n"
 					"password), set this option to `Yes`.\n"
+					"\n"
+					"For elevated security, set this option to `Yes`.\n"
 				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Require System Password for Sysop Login",uifcYesNoOpts);
@@ -181,6 +183,8 @@ void security_cfg(void)
 					"Set this value to the number of minutes after which the system password\n"
 					"will again have to be successfully entered to engage in system operator\n"
 					"activities.\n"
+					"\n"
+					"For elevated security, set this option to `0`.\n"
 				;
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"System Password Timeout (minutes)", str, 5, K_EDIT | K_NUMBER) > 0)
 					cfg.sys_pass_timeout = atoi(str);
@@ -209,6 +213,8 @@ void security_cfg(void)
 					"\n"
 					"If you want users to be able login using their real name as well as\n"
 					"their alias, set this option to `Yes`.\n"
+					"\n"
+					"For elevated security, set this option to `No`.\n"
 				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 					,"Allow Login by Real Name",uifcYesNoOpts);
@@ -224,6 +230,8 @@ void security_cfg(void)
 					"\n"
 					"If you want users to be able login using their user number at the\n"
 					"login prompt, set this option to `Yes`.\n"
+					"\n"
+					"For elevated security, set this option to `No`.\n"
 				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 					,"Allow Login by User Number",uifcYesNoOpts);
@@ -235,14 +243,16 @@ void security_cfg(void)
 			case __COUNTER__:
 				i = (cfg.sys_misc&SM_PWEDIT) ? 0 : 1;
 				uifc.helpbuf=
-					"`Allow Users to Change Their Password:`\n"
+					"`Allow Users to Choose Their Password:`\n"
 					"\n"
 					"If you want the users of your system to have the option of changing\n"
-					"their password to a string of their choice, set this option to `Yes`.\n"
-					"For the highest level of security, set this option to `No.`\n"
+					"their randomly-generated password to a string of their choice, set this\n"
+					"option to `Yes`.\n"
+					"\n"
+					"For elevated security, set this option to `No`.\n"
 				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Allow Users to Change Their Password",uifcYesNoOpts);
+					,"Allow Users to Choose Their Password",uifcYesNoOpts);
 				if(!i && !(cfg.sys_misc&SM_PWEDIT)) {
 					cfg.sys_misc|=SM_PWEDIT;
 				}
@@ -252,6 +262,13 @@ void security_cfg(void)
 					break;
 
 				if(cfg.sys_misc&SM_PWEDIT) {
+					uifc.helpbuf=
+						"`Minimum Password Length`\n"
+						"\n"
+						"Set the minimum required user password length, in characters.\n"
+						"\n"
+						"For elevated of security, set this to at least `8`.\n"
+						;
 					SAFEPRINTF(tmp, "%u", cfg.min_pwlen);
 					SAFEPRINTF2(str, "Minimum Password Length (between %u and %u)", MIN_PASS_LEN, LEN_PASS);
 					if(uifc.input(WIN_MID|WIN_SAV,0,0, str
@@ -267,21 +284,27 @@ void security_cfg(void)
 				uifc.helpbuf=
 					"`Force Periodic New Password:`\n"
 					"\n"
-					"If you want your users to be forced to have a new password periodically,\n"
-					"select `Yes`.\n"
+					"\n"
+					"If you want your users to be forced to change their password\n"
+					"periodically, select `Yes`.\n"
+					"\n"
+					"For elevated security, set this option to `Yes`.\n"
 				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Force Periodic New Password",uifcYesNoOpts);
 				if(!i) {
 					ultoa(cfg.sys_pwdays,str,10);
-				uifc.helpbuf=
-					"`Maximum Days Between New Passwords:`\n"
-					"\n"
-					"Enter the maximum number of days allowed between password changes.\n"
-					"If a user has not voluntarily changed his or her password in this\n"
-					"many days, he or she will be forced to change their password upon\n"
-					"logon.\n"
-				;
+					uifc.helpbuf=
+						"`Maximum Days Between New Passwords:`\n"
+						"\n"
+						"Enter the maximum number of days allowed between password changes.  If a\n"
+						"user has not voluntarily changed his or her password in this many days,\n"
+						"he or she will be forced to change their password upon logon.\n"
+						"\n"
+						"Setting this value to `0` disables the forced periodic password change.\n"
+						"\n"
+						"For elevated security, set this to `90` or less.\n"
+					;
 					uifc.input(WIN_MID,0,0,"Maximum Days Between New Password"
 						,str,5,K_NUMBER|K_EDIT);
 					cfg.sys_pwdays=atoi(str); 
@@ -295,9 +318,10 @@ void security_cfg(void)
 				uifc.helpbuf=
 					"`Always Prompt for Password:`\n"
 					"\n"
-					"If you want to have attempted logins using an unknown user name still\n"
-					"prompt for a password (i.e. for enhanced security), set this option to\n"
-					"`Yes`.\n"
+					"If you want to have attempted logins using an unknown login ID still\n"
+					"prompt for a password, set this option to `Yes`.\n"
+					"\n"
+					"For elevated security, set this option to `Yes`.\n"
 				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 					,"Always Prompt for Password",uifcYesNoOpts);
@@ -360,7 +384,9 @@ void security_cfg(void)
 				uifc.helpbuf=
 					"`Open to New Users:`\n"
 					"\n"
-					"If you want callers to be able to logon as `New`, set this option to Yes`.\n"
+					"If you want callers to be able to register as a new user of your system\n"
+					"(e.g. create a new user account by logging-in as `New`), set this option\n"
+					"to `Yes`.\n"
 				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Open to New Users",uifcYesNoOpts);
@@ -369,9 +395,9 @@ void security_cfg(void)
 					uifc.helpbuf=
 						"`New User Password:`\n"
 						"\n"
-						"If you want callers to only be able to logon as `New` ~ only ~ if they know\n"
-						"a secret password, enter that password here.  If you prefer any caller\n"
-						"be able to logon as `New`, leave this option blank.\n"
+						"If you want callers to only be able to register ~ only ~ if they know\n"
+						"a secret password, enter that password here.  If you prefer `any` caller\n"
+						"be able to register a new user account, leave this option blank.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"New User Password (optional)",cfg.new_pass,sizeof(cfg.new_pass)-1
 						,K_EDIT|K_UPPER);
@@ -421,8 +447,8 @@ void security_cfg(void)
 						"security level from 0 to 99. The available options for each level are:\n"
 						"\n"
 						"    Time Per Day           Maximum online time per day\n"
-						"    Time Per Call          Maximum online time per call (logon)\n"
-						"    Calls Per Day          Maximum number of calls (logons) per day\n"
+						"    Time Per Call          Maximum online time per call (session)\n"
+						"    Calls Per Day          Maximum number of calls (logins) per day\n"
 						"    Email Per Day          Maximum number of email sent per day\n"
 						"    Posts Per Day          Maximum number of posted messages per day\n"
 						"    Lines Per Message      Maximum number of lines per message\n"
@@ -1408,7 +1434,8 @@ void sys_cfg(void)
 					uifc.helpbuf=
 						"`New User Values:`\n"
 						"\n"
-						"This menu allows you to determine the default settings for new users.\n"
+						"This menu allows you to determine the default values (settings,\n"
+						"security) assigned to newly-created user accounts.\n"
 					;
 					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&new_dflt,0
 						,"New User Values",opt)) {
@@ -1421,6 +1448,8 @@ void sys_cfg(void)
 								"`New User Security Level:`\n"
 								"\n"
 								"This is the security level automatically given to new users.\n"
+								"\n"
+								"Recommended setting: `50` or less.\n"
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Security Level"
 								,str,2,K_EDIT|K_NUMBER);
