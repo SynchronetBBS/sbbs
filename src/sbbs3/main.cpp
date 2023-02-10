@@ -4154,8 +4154,8 @@ void sbbs_t::reset_logon_vars(void)
     menu_dir[0]=0;
     menu_file[0]=0;
 	row = 0;
-    rows = TERM_ROWS_DEFAULT;
-	cols = TERM_COLS_DEFAULT;
+	rows = startup->default_term_height;
+	cols = startup->default_term_width;
     lncntr=0;
     autoterm=0;
 	cterm_version = 0;
@@ -5510,7 +5510,7 @@ NO_SSH:
 			sbbs->outcom(0); /* acknowledge RLogin per RFC 1282 */
 
 		sbbs->autoterm=0;
-		sbbs->cols = TERM_COLS_DEFAULT;
+		sbbs->cols = startup->default_term_width;
 		SOCKADDR_IN local_addr;
 		memset(&local_addr, 0, sizeof(local_addr));
 		socklen_t addr_len=sizeof(local_addr);

@@ -414,6 +414,9 @@ void sbbs_read_ini(
 		SAFECOPY(bbs->temp_dir
 			,iniGetString(list,section,strTempDirectory,global->temp_dir,value));
 
+		bbs->default_term_width = iniGetUInteger(list, section, "DefaultTermWidth", TERM_COLS_DEFAULT);
+		bbs->default_term_height = iniGetUInteger(list, section, "DefaultTermHeight", TERM_ROWS_DEFAULT);
+
 		/* Set default terminal type to "stock" termcap closest to "ansi-bbs" */
 	#if defined(__FreeBSD__)
 		default_term_ansi="cons25";
@@ -891,6 +894,9 @@ BOOL sbbs_write_ini(
 			iniRemoveKey(lp,section,strTempDirectory);
 		else if(!iniSetString(lp,section,strTempDirectory,bbs->temp_dir,&style))
 			break;
+
+		iniSetUInteger(lp, section, "DefaultTermWidth", bbs->default_term_width, &style);
+		iniSetUInteger(lp, section, "DefaultTermHeight", bbs->default_term_height, &style);
 
 		if(!iniSetString(lp,section,"ExternalTermANSI",bbs->xtrn_term_ansi,&style))
 			break;

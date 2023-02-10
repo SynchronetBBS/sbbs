@@ -147,6 +147,8 @@ typedef struct {
 
 	/* Miscellaneous */
 	uint	max_concurrent_connections;
+	uint	default_term_height;
+	uint	default_term_width;
 	BOOL    usedosemu;
 	char	xtrn_term_ansi[32];		/* external ANSI terminal type (e.g. "ansi-bbs") */
 	char	xtrn_term_dumb[32];		/* external dumb terminal type (e.g. "dumb") */

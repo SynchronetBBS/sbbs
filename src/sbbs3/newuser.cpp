@@ -176,7 +176,7 @@ BOOL sbbs_t::newuser()
 				useron.misc &= ~MOUSE;
 		}
 		else
-			useron.rows = TERM_ROWS_DEFAULT;
+			useron.rows = startup->default_term_height;
 
 		if(useron.misc&PETSCII) {
 			autoterm |= PETSCII;
