@@ -74,12 +74,15 @@ void security_cfg(void)
 		i = 0;
 		sprintf(opt[i++],"%-33.33s%s","System Password", "*******");
 		if(cfg.sys_misc & SM_R_SYSOP) {
-			SAFECOPY(str, "Yes");
+			*str = '\0';
 			if(cfg.sys_misc & SM_SYSPASSLOGIN)
-				SAFECAT(str, ", SYSPASS required at login");
+				SAFECOPY(str, "At Login and ");
+			sprintf(str + strlen(str), "After %u minutes", cfg.sys_pass_timeout);
 		} else
-			SAFECOPY(str, "No");
-		sprintf(opt[i++],"%-33.33s%s","Allow Sysop Access", str);
+			SAFECOPY(str, "N/A");
+		sprintf(opt[i++],"%-33.33s%s","Prompt for System Password", str);
+		sprintf(opt[i++],"%-33.33s%s","Allow Sysop Access"
+			,(cfg.sys_misc & SM_R_SYSOP) ? "Yes" : "No");
 		sprintf(opt[i++],"%-33.33s%s","Allow Login by Real Name"
 			,(!(cfg.uq&UQ_ALIASES) || cfg.sys_login & LOGIN_REALNAME) ? "Yes" : "No");
 		sprintf(opt[i++],"%-33.33s%s","Allow Login by User Number"
@@ -153,6 +156,36 @@ void security_cfg(void)
 				uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
 				break;
 			case __COUNTER__:
+				if(!(cfg.sys_misc&SM_R_SYSOP))
+					break;
+				i=cfg.sys_misc&SM_SYSPASSLOGIN ? 0:1;
+				uifc.helpbuf=
+					"`Require System Password for Sysop Login:`\n"
+					"\n"
+					"If you want to require the correct system password to be provided during\n"
+					"system operator logins (in addition to the sysop's personal user account\n"
+					"password), set this option to `Yes`.\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"Require System Password for Sysop Login",uifcYesNoOpts);
+				if(i == 1)
+					cfg.sys_misc &= ~SM_SYSPASSLOGIN;
+				else if(i == 0)
+					cfg.sys_misc |= SM_SYSPASSLOGIN;
+				else
+					break;
+				sprintf(str, "%u", cfg.sys_pass_timeout);
+				uifc.helpbuf=
+					"`System Password Timeout:`\n"
+					"\n"
+					"Set this value to the number of minutes after which the system password\n"
+					"will again have to be successfully entered to engage in system operator\n"
+					"activities.\n"
+				;
+				if(uifc.input(WIN_MID|WIN_SAV,0,0,"System Password Timeout (minutes)", str, 5, K_EDIT | K_NUMBER) > 0)
+					cfg.sys_pass_timeout = atoi(str);
+				break;
+			case __COUNTER__:
 				i=cfg.sys_misc&SM_R_SYSOP ? 0:1;
 				uifc.helpbuf=
 					"`Allow Sysop Access:`\n"
@@ -162,26 +195,10 @@ void security_cfg(void)
 				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Allow Sysop Access",uifcYesNoOpts);
-				if(i == 0) {
-					cfg.sys_misc|=SM_R_SYSOP;
-					i=cfg.sys_misc&SM_SYSPASSLOGIN ? 0:1;
-					uifc.helpbuf=
-						"`Require System Password for Sysop Login:`\n"
-						"\n"
-						"If you want to require the correct system password to be provided during\n"
-						"system operator logins (in addition to the sysop's personal user account\n"
-						"password), set this option to `Yes`.\n"
-					;
-					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-						,"Require System Password for Sysop Login",uifcYesNoOpts);
-					if(i==1)
-						cfg.sys_misc &= ~SM_SYSPASSLOGIN;
-					else if(i==0)
-						cfg.sys_misc |= SM_SYSPASSLOGIN;
-				}
-				else if(i == 1) {
+				if(i == 0)
+					cfg.sys_misc |= SM_R_SYSOP;
+				else if(i == 1)
 					cfg.sys_misc &= ~SM_R_SYSOP;
-				}
 				break;
 			case __COUNTER__:
 				if(!(cfg.uq&UQ_ALIASES))

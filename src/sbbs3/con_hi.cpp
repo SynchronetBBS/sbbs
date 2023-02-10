@@ -165,7 +165,7 @@ bool sbbs_t::chksyspass(const char* sys_pw)
 		logline(LOG_NOTICE,"S!","Remote sysop access disabled");
 		return(false);
 	}
-	if(time(NULL) - last_sysop_auth < 15*60)
+	if(time(NULL) - last_sysop_auth < cfg.sys_pass_timeout * 60)
 		return true;
 	if(sys_pw != NULL)
 		SAFECOPY(str, sys_pw);
