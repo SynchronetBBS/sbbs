@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.64     2023-02-09   When reading personal email (received or sent), as a
+                      loadable module, now it can allow reading another user's
+                      mail (for the sysop when deleting a user account).
 1.63     2023-02-01   Fix for reading colors from the theme file. Also, the
                       theme file now no longer needs the control character for
                       color codes.
