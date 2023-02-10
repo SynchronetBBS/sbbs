@@ -761,9 +761,9 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 			&& (strstr(pass,cfg.sys_id) || strstr(cfg.sys_id,pass)))
 		|| (cfg.node_phone[0] && strstr(pass,cfg.node_phone))
 		|| (user->phone[0] && strstr(user->phone,pass))
-		|| !strncmp(pass,"QWER",3)
-		|| !strncmp(pass,"ASDF",3)
-		|| !strncmp(pass,"!@#$",3)
+		|| !strncmp(pass,"QWER",4)
+		|| !strncmp(pass,"ASDF",4)
+		|| !strncmp(pass,"!@#$",4)
 		)
 		{
 		bputs(text[PasswordObvious]);
