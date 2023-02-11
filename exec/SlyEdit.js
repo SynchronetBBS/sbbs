@@ -25,6 +25,11 @@
  *                              Quote lines that are wider than the user's terminal width are
  *                              now wrapped to the user's terminal width to ensure all the
  *                              quote lines are entirely available to be quoted.
+ * 2023-02-10 Eric Oulashin     Version 1.84
+ *                              Sysops: When importing a file from the BBS machine, SlyEdit now
+ *                              prompts to send it immediately or not (if not, edit it before
+ *                              sending).  Sending immediately can be useful for posting
+ *                              ANSI files unmodified.
  */
 
 "use strict";
@@ -94,12 +99,12 @@ const SPELL_CHECK_PAUSE_MS = 1000;
 
 // This script requires Synchronet version 3.14 or higher.
 // Exit if the Synchronet version is below the minimum.
-if (system.version_num < 31400)
+if (system.version_num < 31500) // 3.15 for user.is_sysop
 {
 	console.print("\x01n");
 	console.crlf();
 	console.print("\x01n\x01h\x01y\x01i* Warning:\x01n\x01h\x01w " + EDITOR_PROGRAM_NAME);
-	console.print(" " + "requires version \x01g3.14\x01w or");
+	console.print(" " + "requires version \x01g3.15\x01w or");
 	console.crlf();
 	console.print("higher of Synchronet.  This BBS is using version \x01g");
 	console.print(system.version + "\x01w.  Please notify the sysop.");
@@ -122,8 +127,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.83";
-var EDITOR_VER_DATE = "2022-12-14";
+var EDITOR_VERSION = "1.84";
+var EDITOR_VER_DATE = "2023-02-10";
 
 
 // Program variables
@@ -1144,7 +1149,7 @@ function doEditLoop()
 				break;
 			case CMDLIST_HELP_KEY:
 			case CMDLIST_HELP_KEY_2:
-				displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop,
+				displayCommandList(true, true, true, gCanCrossPost,
 				                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings,
 				                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection);
 				clearEditAreaBuffer();
@@ -1497,7 +1502,7 @@ function doEditLoop()
 						else if (enterRetObj.showHelp)
 						{
 							displayProgramInfo(true, false);
-							displayCommandList(false, false, true, gCanCrossPost, gConfigSettings.userIsSysop,
+							displayCommandList(false, false, true, gCanCrossPost,
 							                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings,
 							                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection);
 							clearEditAreaBuffer();
@@ -1560,20 +1565,22 @@ function doEditLoop()
 				break;
 			case IMPORT_FILE_KEY:
 				// Only let sysops import files.
-				if (gConfigSettings.userIsSysop)
+				if (user.is_sysop)
 				{
-					var importRetObj = importFile(gConfigSettings.userIsSysop, curpos);
+					var importRetObj = importFile(curpos);
 					curpos.x = importRetObj.x;
 					curpos.y = importRetObj.y;
 					currentWordLength = importRetObj.currentWordLength;
-					console.print(chooseEditColor()); // Make sure the edit color is correct
+					continueOn = !importRetObj.sendImmediately;
+					if (continueOn)
+						console.print(chooseEditColor()); // Make sure the edit color is correct
 				}
 				break;
 			case EXPORT_TO_FILE_KEY:
 				// Only let sysops export/save the message to a file.
-				if (gConfigSettings.userIsSysop)
+				if (user.is_sysop)
 				{
-					exportToFile(gConfigSettings.userIsSysop);
+					exportToFile();
 					console.print(chooseEditColor()); // Make sure the edit color is correct
 					console.gotoxy(curpos);
 				}
@@ -3488,7 +3495,7 @@ function callDCTESCMenu(pCurpos)
 	var editLineDiff = pCurpos.y - gEditTop;
 	var chosenAction = doDCTESCMenu(gEditLeft, gEditRight, gEditTop,
 	                                displayMessageRectangle, gEditLinesIndex,
-	                                editLineDiff, gConfigSettings.userIsSysop, gCanCrossPost);
+	                                editLineDiff, gCanCrossPost);
 	return chosenAction;
 }
 // Shows the ESC menu (different, depending on the UI style) and takes action
@@ -3505,6 +3512,7 @@ function callDCTESCMenu(pCurpos)
 //                 x: The horizontal component of the cursor position
 //                 y: The vertical component of the cursor position
 //                 currentWordLength: The length of the current word
+//                 sendImmediately: Boolean - Whether or not to send immediately (i.e., if importing a file)
 function doESCMenu(pCurpos, pCurrentWordLength)
 {
 	var returnObj = {
@@ -3536,18 +3544,19 @@ function doESCMenu(pCurpos, pCurrentWordLength)
 			toggleInsertMode(pCurpos);
 			break;
 		case ESC_MENU_SYSOP_IMPORT_FILE:
-			if (gConfigSettings.userIsSysop)
+			if (user.is_sysop)
 			{
-				var retval = importFile(gConfigSettings.userIsSysop, pCurpos);
+				var retval = importFile(pCurpos);
 				returnObj.x = retval.x;
 				returnObj.y = retval.y;
 				returnObj.currentWordLength = retval.currentWordLength;
+				returnObj.continueOn = !retval.sendImmediately;
 			}
 			break;
 		case ESC_MENU_SYSOP_EXPORT_FILE:
-			if (gConfigSettings.userIsSysop)
+			if (user.is_sysop)
 			{
-				exportToFile(gConfigSettings.userIsSysop);
+				exportToFile();
 				console.gotoxy(returnObj.x, returnObj.y);
 			}
 			break;
@@ -3557,7 +3566,7 @@ function doESCMenu(pCurpos, pCurrentWordLength)
 			returnObj.y = retval.y;
 			break;
 		case ESC_MENU_HELP_COMMAND_LIST:
-			displayCommandList(true, true, true, gCanCrossPost, gConfigSettings.userIsSysop,
+			displayCommandList(true, true, true, gCanCrossPost,
 			                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings,
 			                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection);
 			clearEditAreaBuffer();
@@ -3787,23 +3796,24 @@ function insertLineIntoMsg(pInsertLineIndex, pString, pHardNewline, pIsQuoteLine
 //
 // Parameters:
 //  pIsSysop: Whether or not the user is the sysop
-//  pCurpos: The current cursor position (with x and y properties)
 //
 // Return value: An object containing the following information:
 //               x: The horizontal component of the cursor's location
 //               y: The vertical component of the cursor's location
 //               currentWordLength: The length of the current word
-function importFile(pIsSysop, pCurpos)
+//               sendImmediately: Boolean - Whether or not to send the message immediately
+function importFile(pCurpos)
 {
 	// Create the return object
 	var retObj = {
 		x: pCurpos.x,
 		y: pCurpos.y,
-		currentWordLength: getWordLength(gEditLinesIndex, gTextLineIndex)
-	}
+		currentWordLength: getWordLength(gEditLinesIndex, gTextLineIndex),
+		sendImmediately: false
+	};
 
 	// Don't let non-sysops do this.
-	if (!pIsSysop)
+	if (!user.is_sysop)
 		return retObj;
 
 	var loadedAFile = false;
@@ -3829,39 +3839,62 @@ function importFile(pIsSysop, pCurpos)
 				var inFile = new File(filename);
 				if (inFile.exists && inFile.open("r"))
 				{
-					const maxLineLength = gEditWidth - 1; // Don't insert lines longer than this
-					var fileLine;
-					while (!inFile.eof)
+					// Prompt if the user wants to send the file as-is or import into the edit area
+					//promptYesNo(pQuestion, pDefaultYes, pBoxTitle, pIceRefreshForBothAnswers, pAlwaysEraseBox)
+					retObj.sendImmediately = promptYesNo("Send immediately", true, "Send", true, true);
+					var fileLine = "";
+					if (retObj.sendImmediately)
 					{
-						fileLine = inFile.readln(1024);
-						// fileLine should always be a string, but there seem to be
-						// situations where it isn't.  So if it's a string, we can
-						// insert text into gEditLines as normal.  If it's not a
-						// string, insert a blank line.
-						if (typeof(fileLine) == "string")
+						while (!inFile.eof)
 						{
-							// Tab characters can cause problems, so replace tabs with 3 spaces.
-							fileLine = fileLine.replace(/\t/, "   ");
-							// Insert the line into the message, splitting up the line,
-							// if the line is longer than the edit area.
-							do
+							// Read the next line from the file
+							fileLine = inFile.readln(2048);
+							// fileLine should be a string, but I've seen some cases
+							// where for some reason it isn't.  If it's not a string,
+							// then continue onto the next line.
+							if (typeof(fileLine) != "string")
+								continue;
+							// Add the line to gEditLines
+							// TODO: It seems this isn't populating gEditLines and
+							// it's sending an empty message.
+							gEditLines.push(new TextLine(fileLine, true, false));
+						}
+					}
+					else
+					{
+						const maxLineLength = gEditWidth - 1; // Don't insert lines longer than this
+						while (!inFile.eof)
+						{
+							fileLine = inFile.readln(1024);
+							// fileLine should always be a string, but there seem to be
+							// situations where it isn't.  So if it's a string, we can
+							// insert text into gEditLines as normal.  If it's not a
+							// string, insert a blank line.
+							if (typeof(fileLine) == "string")
 							{
-								insertLineIntoMsg(gEditLinesIndex, fileLine.substr(0, maxLineLength),
-								                  true, false);
-								fileLine = fileLine.substr(maxLineLength);
-								++gEditLinesIndex;
-							} while (fileLine.length > maxLineLength);
-							// Edge case, if the line still has characters in it
-							if (fileLine.length > 0)
+								// Tab characters can cause problems, so replace tabs with 3 spaces.
+								fileLine = fileLine.replace(/\t/, "   ");
+								// Insert the line into the message, splitting up the line,
+								// if the line is longer than the edit area.
+								do
+								{
+									insertLineIntoMsg(gEditLinesIndex, fileLine.substr(0, maxLineLength),
+													  true, false);
+									fileLine = fileLine.substr(maxLineLength);
+									++gEditLinesIndex;
+								} while (fileLine.length > maxLineLength);
+								// Edge case, if the line still has characters in it
+								if (fileLine.length > 0)
+								{
+									insertLineIntoMsg(gEditLinesIndex, fileLine, true, false);
+									++gEditLinesIndex;
+								}
+							}
+							else
 							{
-								insertLineIntoMsg(gEditLinesIndex, fileLine, true, false);
+								insertLineIntoMsg(gEditLinesIndex, "", true, false);
 								++gEditLinesIndex;
 							}
-						}
-						else
-						{
-							insertLineIntoMsg(gEditLinesIndex, "", true, false);
-							++gEditLinesIndex;
 						}
 					}
 					inFile.close();
@@ -3887,8 +3920,8 @@ function importFile(pIsSysop, pCurpos)
 	// Refresh the help line on the bottom of the screen
 	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
 
-	// If we loaded a file, then refresh the message text.
-	if (loadedAFile)
+	// If not sending immediately and we loaded a file, then refresh the message text.
+	if (!retObj.sendImmediately && loadedAFile)
 	{
 		// Insert a blank line into gEditLines so that the user ends up on a new
 		// blank line.
@@ -3936,13 +3969,10 @@ function importFile(pIsSysop, pCurpos)
 
 // This function lets sysops export (save) the current message to
 // a file.
-//
-// Parameters:
-//  pIsSysop: Whether or not the user is the sysop
-function exportToFile(pIsSysop)
+function exportToFile()
 {
    // Don't let non-sysops do this.
-   if (!pIsSysop)
+   if (!user.is_sysop)
       return;
 
    // Go to the last row on the screen and prompt the user for a filename

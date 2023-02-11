@@ -1798,13 +1798,12 @@ function displayHelpHeader()
 //  pClear: Whether or not to clear the screen first
 //  pPause: Whether or not to pause at the end
 //  pCanCrossPost: Whether or not cross-posting is enabled
-//  pIsSysop: Whether or not the user is the sysop.
 //  pTxtReplacments: Whether or not the text replacements feature is enabled
 //  pUserSettings: Whether or not the user settings feature is enabled
 //  pSpellCheck: Whether or not spell check is allowed
 //  pCanChangeColor: Whether or not changing text color is allowed
-function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSysop,
-                            pTxtReplacments, pUserSettings, pSpellCheck, pCanChangeColor)
+function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtReplacments,
+                            pUserSettings, pSpellCheck, pCanChangeColor)
 {
 	if (pClear)
 		console.clear("\x01n");
@@ -1813,8 +1812,6 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 		displayHelpHeader();
 		console.crlf();
 	}
-
-	var isSysop = (pIsSysop != null ? pIsSysop : user.compare_ars("SYSOP"));
 
 	// This function displays a key and its description with formatting & colors.
 	//
@@ -1879,7 +1876,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pIsSy
 		remainingHotkeysAndDescriptions.push(makeHotkeyAndDescObj("Ctrl-K", "Change text color"));
 	if (pSpellCheck)
 		remainingHotkeysAndDescriptions.push(makeHotkeyAndDescObj("Ctrl-R", "Spell checker"));
-	if (isSysop)
+	if (user.is_sysop)
 	{
 		remainingHotkeysAndDescriptions.push(makeHotkeyAndDescObj("Ctrl-O", "Import a file"));
 		remainingHotkeysAndDescriptions.push(makeHotkeyAndDescObj("Ctrl-X", "Export to file"));
@@ -2081,7 +2078,6 @@ function promptYesNo(pQuestion, pDefaultYes, pBoxTitle, pIceRefreshForBothAnswer
 function ReadSlyEditConfigFile()
 {
 	var cfgObj = {
-		userIsSysop: user.compare_ars("SYSOP"), // Whether or not the user is a sysop
 		// Default settings
 		thirdPartyLoadOnStart: [],
 		runJSOnStart: [],
