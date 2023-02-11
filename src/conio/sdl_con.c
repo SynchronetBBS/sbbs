@@ -230,6 +230,7 @@ static void sdl_user_func(int func, ...)
 			case SDL_USEREVENT_FLUSH:
 				break;
 			default:
+				pthread_mutex_unlock(&sdl_ufunc_mtx);
 				va_end(argptr);
 				return;
 		}
@@ -1058,6 +1059,7 @@ void sdl_video_event_thread(void *data)
 						sem_post(&sdl_ufunc_ret);
 						return;
 					case SDL_USEREVENT_FLUSH:
+						pthread_mutex_lock(&vstatlock);
 						pthread_mutex_lock(&win_mutex);
 						if (win != NULL) {
 							pthread_mutex_lock(&sdl_headlock);
@@ -1079,7 +1081,6 @@ void sdl_video_event_thread(void *data)
 									int tw, th;
 
 									sdl.RenderClear(renderer);
-									pthread_mutex_lock(&vstatlock);
 									if (internal_scaling) {
 										struct graphics_buffer *gb;
 										int xscale, yscale;
@@ -1150,7 +1151,6 @@ void sdl_video_event_thread(void *data)
 										dst.x = (cvstat.winwidth - dst.w) / 2;
 										dst.y = (cvstat.winheight - dst.h) / 2;
 									}
-									pthread_mutex_unlock(&vstatlock);
 									if (sdl.RenderCopy(renderer, texture, &src, &dst))
 										fprintf(stderr, "RenderCopy() failed! (%s)\n", sdl.GetError());
 								}
@@ -1160,6 +1160,7 @@ void sdl_video_event_thread(void *data)
 						}
 
 						pthread_mutex_unlock(&win_mutex);
+						pthread_mutex_unlock(&vstatlock);
 						break;
 					case SDL_USEREVENT_SETNAME:
 						pthread_mutex_lock(&win_mutex);
