@@ -4417,18 +4417,10 @@ function getUserKey(pMode, pCfgObj)
 	var inputTimeoutMS = 300000;
 
 	// If the user is a sysop, then use a much higher timeout.
-	if (typeof(pCfgObj) == "object")
-	{
-		if ((typeof(pCfgObj.userIsSysop) == "boolean") && pCfgObj.userIsSysop)
-			inputTimeoutMS = 999999;
-		else if (typeof(pCfgObj.userInputTimeout) == "number")
-			inputTimeoutMS = pCfgObj.inputTimeoutMS;
-	}
-	else if (typeof(pCfgObj) == "boolean")
-	{
-		if (pCfgObj)
-			inputTimeoutMS = 999999;
-	}
+	if (user.is_sysop)
+		inputTimeoutMS = 999999;
+	else if (typeof(pCfgObj) == "object" && typeof(pCfgObj.userInputTimeout) === "number")
+		inputTimeoutMS = pCfgObj.inputTimeoutMS;
 
 	// Input a key from the user
 	userKey = console.inkey(pMode, inputTimeoutMS);
