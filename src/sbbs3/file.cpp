@@ -235,22 +235,24 @@ bool sbbs_t::movefile(smb_t* smb, file_t* f, int newdir)
 	file_t newfile = *f;
 	if(findfile(&cfg, newdir, f->name, NULL)) {
 		bprintf(text[FileAlreadyThere], f->name);
-		return false; 
+		return false;
 	}
 
-	f->dir = newdir;
+	newfile.dir = newdir;
 	newfile.dfield = NULL; // addfile() ends up realloc'ing dfield (in smb_addmsg)
 	bool result = addfile(&cfg, &newfile, newfile.extdesc, newfile.metadata, /* client: */NULL);
 	free(newfile.dfield);
-	if(!result)
+	if(!result) {
+		errormsg(WHERE, "adding file", f->name, newfile.dir);
 		return false;
+	}
 	if(!removefile(smb, f))	// Use ::removefile() here instead?
 		return false;
 	bprintf(text[MovedFile],f->name
 		,cfg.lib[cfg.dir[newdir]->lib]->sname,cfg.dir[newdir]->sname);
 	char str[MAX_PATH+1];
-	SAFEPRINTF4(str, "%s moved %s to %s %s",f->name
-		,useron.alias
+	SAFEPRINTF3(str, "moved %s to %s %s"
+		,f->name
 		,cfg.lib[cfg.dir[newdir]->lib]->sname
 		,cfg.dir[newdir]->sname);
 	logline(nulstr,str);
