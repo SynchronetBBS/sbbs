@@ -1412,7 +1412,7 @@ bool sbbs_t::js_create_user_objects(JSContext* cx, JSObject* glob)
 	bool result = false;
 	if(cx != NULL) {
 		JS_BEGINREQUEST(cx);
-		if(!js_CreateUserObjects(cx, glob, &cfg, &useron, &client, startup->web_file_vpath_prefix, subscan))
+		if(!js_CreateUserObjects(cx, glob, &cfg, &useron, &client, startup == NULL ? NULL :startup->web_file_vpath_prefix, subscan))
 			lprintf(LOG_ERR,"!JavaScript ERROR creating user objects");
 		else
 			result = true;
@@ -1517,7 +1517,7 @@ extern "C" BOOL js_CreateCommonObjects(JSContext* js_cx
 			break;
 
 		/* Area Objects */
-		if(!js_CreateUserObjects(js_cx, *glob, cfg, /* user: */NULL, client, startup->web_file_vpath_prefix, /* subscan: */NULL))
+		if(!js_CreateUserObjects(js_cx, *glob, cfg, /* user: */NULL, client, startup == NULL ? NULL :startup->web_file_vpath_prefix, /* subscan: */NULL))
 			break;
 
 		success=TRUE;
