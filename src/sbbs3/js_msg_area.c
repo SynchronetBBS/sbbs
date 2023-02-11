@@ -62,6 +62,7 @@ static char* msg_sub_prop_desc[] = {
 	,"sub-board operator requirements"
 	,"sub-board moderated-user requirements (if non-blank)"
 	,"sub-board data storage location"
+	,"FidoNet node address"
 	,"FidoNet origin line"
 	,"QWK Network tagline"
 	,"toggle options (bitfield) - see <tt>SUB_*</tt> in <tt>sbbsdefs.js</tt> for details"
@@ -191,6 +192,12 @@ BOOL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, ui
 	if(!JS_DefineProperty(cx, subobj, "data_dir", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 		return(FALSE);
+
+	if((js_str = JS_NewStringCopyZ(cx, smb_faddrtoa(&sub->faddr, str))) == NULL)
+		return FALSE;
+	if(!JS_DefineProperty(cx, subobj, "fidonet_addr", STRING_TO_JSVAL(js_str)
+		,NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+		return FALSE;
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->origline))==NULL)
 		return(FALSE);
