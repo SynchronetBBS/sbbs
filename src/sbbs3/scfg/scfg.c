@@ -409,6 +409,7 @@ int main(int argc, char **argv)
     		printf("ciolib library init returned error %d\n",i);
     		exit(1);
 		}
+		ciolib_settitle("Synchronet Configuration");
 		i=uifcini32(&uifc);  /* curses/conio/X/ANSI */
 	}
 	else
