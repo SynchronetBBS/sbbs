@@ -686,12 +686,11 @@ function displayTimeRemaining_DCTStyle()
 //                   function.
 //  pEditLineDiff: The difference between the current edit line and the top of
 //                 the edit area.
-//  pIsSysop: Whether or not the user is a sysop.
 //  pCanCrossPost: Whether or not cross-posting is allowed.
 //
 // Return value: The action code, based on the user's selection
 function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
-                      pEditLinesIndex, pEditLineDiff, pIsSysop, pCanCrossPost)
+                      pEditLinesIndex, pEditLineDiff, pCanCrossPost)
 {
 	// This function displays the top menu options, with a given one highlighted.
 	//
@@ -699,10 +698,9 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 	//  pItemPositions: An object containing the menu item positions.
 	//  pHighlightedItemNum: The index (0-based) of the menu item to be highlighted.
 	//  pMenus: An array containing the menus
-	//  pIsSysop: Whether or not the user is the sysop.
 	//
 	// Return value: The user's last keypress during the menu's input loop.
-	function displayTopMenuItems(pItemPositions, pHighlightedItemNum, pMenus, pIsSysop)
+	function displayTopMenuItems(pItemPositions, pHighlightedItemNum, pMenus)
 	{
 		// File
 		console.gotoxy(pItemPositions.fileX, pItemPositions.mainMenuY);
@@ -725,7 +723,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 		else
 			console.print("\x01n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "Edit\x01n ");
 		// SysOp
-		if (pIsSysop)
+		if (user.is_sysop)
 		{
 			console.gotoxy(pItemPositions.sysopX, pItemPositions.mainMenuY);
 			if (pHighlightedItemNum == 2)
@@ -780,7 +778,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 		doDCTESCMenu.mainMenuItemPositions.editX = doDCTESCMenu.mainMenuItemPositions.fileX + 11;
 		doDCTESCMenu.mainMenuItemPositions.sysopX = doDCTESCMenu.mainMenuItemPositions.editX + 11;
 		// Horizontal position of of the "Help" text
-		if (pIsSysop)
+		if (user.is_sysop)
 			doDCTESCMenu.mainMenuItemPositions.helpX = doDCTESCMenu.mainMenuItemPositions.sysopX + 12;
 		else
 			doDCTESCMenu.mainMenuItemPositions.helpX = doDCTESCMenu.mainMenuItemPositions.sysopX;
@@ -869,20 +867,20 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 	var menuNum = fileMenuNum; // 0: File, ..., 3: Help
 	var subMenuItemNum = 0;
 	var menuRetObj = displayTopMenuItems(doDCTESCMenu.mainMenuItemPositions, menuNum,
-	                                     doDCTESCMenu.allMenus, pIsSysop);
+	                                     doDCTESCMenu.allMenus);
 	// Input loop
 	var userInput = "";
 	var matchedMenuRetval = false; // Whether one of the menu return values was matched
 	var continueOn = true;
 	while (continueOn)
 	{
-		matchedMenuRetval = valMatchesMenuCode(menuRetObj.returnVal, pIsSysop);
+		matchedMenuRetval = valMatchesMenuCode(menuRetObj.returnVal);
 		// If a menu return value was matched, then set userInput to it.
 		if (matchedMenuRetval)
 			userInput = menuRetObj.returnVal;
 		// If the user's input from the last menu was ESC, left, right, or one of the
 		// characters from the menus, then set userInput to the last menu keypress.
-		else if (inputMatchesMenuSelection(menuRetObj.userInput, pIsSysop))
+		else if (inputMatchesMenuSelection(menuRetObj.userInput))
 			userInput = menuRetObj.userInput;
 		// If nothing from the menu was matched, then get a key from the user.
 		else
@@ -903,10 +901,10 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 				else
 					--menuNum;
 				// Don't allow the sysop menu for non-sysops.
-				if ((menuNum == sysopMenuNum) && !pIsSysop)
+				if ((menuNum == sysopMenuNum) && !user.is_sysop)
 					--menuNum;
 				subMenuItemNum = 0;
-				menuRetObj = displayTopMenuItems(doDCTESCMenu.mainMenuItemPositions, menuNum, doDCTESCMenu.allMenus, pIsSysop);
+				menuRetObj = displayTopMenuItems(doDCTESCMenu.mainMenuItemPositions, menuNum, doDCTESCMenu.allMenus);
 				break;
 			case KEY_RIGHT:
 				if (menuNum == 3)
@@ -914,10 +912,10 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 				else
 					++menuNum;
 				// Don't allow the sysop menu for non-sysops.
-				if ((menuNum == sysopMenuNum) && !pIsSysop)
+				if ((menuNum == sysopMenuNum) && !user.is_sysop)
 					++menuNum;
 				subMenuItemNum = 0;
-				menuRetObj = displayTopMenuItems(doDCTESCMenu.mainMenuItemPositions, menuNum, doDCTESCMenu.allMenus, pIsSysop);
+				menuRetObj = displayTopMenuItems(doDCTESCMenu.mainMenuItemPositions, menuNum, doDCTESCMenu.allMenus);
 				break;
 			case KEY_UP:
 			case KEY_DOWN:
@@ -982,13 +980,13 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 	// Import file (sysop only)
 	else if (userInput == DCTMENU_SYSOP_IMPORT_FILE)
 	{
-		if (pIsSysop)
+		if (user.is_sysop)
 			chosenAction = ESC_MENU_SYSOP_IMPORT_FILE;
 	}
 	// Import file for sysop, or Insert/Overwrite toggle for non-sysop
 	else if (userInput == "I")
 	{
-		if (pIsSysop)
+		if (user.is_sysop)
 			chosenAction = ESC_MENU_SYSOP_IMPORT_FILE;
 		else
 			chosenAction = ESC_MENU_INS_OVR_TOGGLE;
@@ -1008,7 +1006,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 	// Export the message
 	else if ((userInput == "X") || (userInput == DCTMENU_SYSOP_EXPORT_FILE))
 	{
-		if (pIsSysop)
+		if (user.is_sysop)
 			chosenAction = ESC_MENU_SYSOP_EXPORT_FILE;
 	}
 	// Edit the message
@@ -1041,10 +1039,9 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 //
 // Parameters:
 //  pVal: The value to test
-//  pIsSysop: Whether or not the user is a sysop
 //
 // Return: Boolean - Whether or not the value matches a DCT Edit menu return value.
-function valMatchesMenuCode(pVal, pIsSysop)
+function valMatchesMenuCode(pVal)
 {
 	var valMatches = false;
 	valMatches = ((pVal == DCTMENU_FILE_SAVE) || (pVal == DCTMENU_FILE_ABORT) ||
@@ -1054,7 +1051,7 @@ function valMatchesMenuCode(pVal, pIsSysop)
 	              (pVal == DCTMENU_EDIT_SETTINGS) || (pVal == DCTMENU_EDIT_SPELL_CHECKER));
 	if (gConfigSettings.enableTextReplacements)
 		valMatches = (valMatches || (pVal == DCTMENU_LIST_TXT_REPLACEMENTS));
-	if (pIsSysop)
+	if (user.is_sysop)
 		valMatches = (valMatches || (pVal == DCTMENU_SYSOP_IMPORT_FILE) || (pVal == DCTMENU_SYSOP_EXPORT_FILE));
 	return valMatches;
 }
@@ -1064,13 +1061,12 @@ function valMatchesMenuCode(pVal, pIsSysop)
 //
 // Parameters:
 //  pInput: The user input to test
-//  pIsSysop: Whether or not the user is a sysop
-function inputMatchesMenuSelection(pInput, pIsSysop)
+function inputMatchesMenuSelection(pInput)
 {
    return((pInput == KEY_ESC) || (pInput == KEY_LEFT) ||
            (pInput == KEY_RIGHT) || (pInput == KEY_ENTER) ||
            (pInput == "S") || (pInput == "A") || (pInput == "E") ||
-           (pInput == "I") || (pIsSysop && (pInput == "X")) ||
+           (pInput == "I") || (user.is_sysop && (pInput == "X")) ||
            (pInput == "F") || (pInput == "C") || (pInput == "G") ||
            (pInput == "P") || (pInput == "T"));
 }
