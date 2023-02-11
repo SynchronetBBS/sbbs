@@ -37,7 +37,7 @@ for(var c=0; c < options.login_prompts; c++) {
 	const legacy_login_prompt = "NN: \x01[";
 	const legacy_password_prompt = "PW: \x01[";
 	var str = "\1n\1h\1cEnter \1wUser Name";
-	if(!(bbs.node_settings&NM_NO_NUM))
+	if(system.login_settings & LOGIN_USERNUM)
 		str += "\1c or \1wNumber";
 	if(!(system.settings&SYS_CLOSED))
 		str += "\1c or '\1yNew\1c'";
