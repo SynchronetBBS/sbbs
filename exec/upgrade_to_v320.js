@@ -115,7 +115,7 @@ delete cnf.validation_set;
 for(var i in cnf.sec_level) {
 	var level = cnf.sec_level[i];
 	if(level.freecdtperd)
-		level.freecreditperday = level.freecdtperd;
+		level.freecdtperday = level.freecdtperd;
 	level.freecdtperday = format("%lld", level.freecdtperday);
 	ini.iniSetObject("level:" + i, level);
 }
