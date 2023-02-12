@@ -320,11 +320,11 @@ typedef struct {							/* Generic Timed Event */
 
 typedef struct {							/* QWK Network Hub */
 	char		id[LEN_QWKID+1],			/* System ID of Hub */
-				*mode,						/* Mode for Ctrl-A codes for ea. sub */
-				days,						/* Days to call-out on */
 				call[LEN_CMD+1],			/* Call-out command line to execute */
 				pack[LEN_CMD+1],			/* Packing command line */
 				unpack[LEN_CMD+1];			/* Unpacking command line */
+	uint8_t		*mode,						/* Mode for Ctrl-A codes for ea. sub */
+				days;						/* Days to call-out on */
 	char		fmt[MAX_FILEEXT_LEN+1]; 	/* Archive format */
 	uint16_t	time,						/* Time to call-out */
 				node,						/* Node to do the call-out */

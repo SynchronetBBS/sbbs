@@ -54,7 +54,7 @@ bool new_qhub_sub(qhub_t* qhub, unsigned subnum, sub_t* sub, unsigned confnum)
 {
 	if((qhub->sub=realloc(qhub->sub, sizeof(*qhub->sub)*(qhub->subs+1)))==NULL
 		|| (qhub->conf=(ushort *)realloc(qhub->conf, sizeof(*qhub->conf)*(qhub->subs+1)))==NULL
-		|| (qhub->mode=(char *)realloc(qhub->mode, sizeof(*qhub->mode)*(qhub->subs+1)))==NULL) {
+		|| (qhub->mode=(uchar *)realloc(qhub->mode, sizeof(*qhub->mode)*(qhub->subs+1)))==NULL) {
 		/* ToDo: report error */
 		return false;
 	}

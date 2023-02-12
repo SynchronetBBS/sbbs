@@ -531,7 +531,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 				return allocerr(error, maxerrlen, fname, "qhub sub", sizeof(sub_t)*k);
 			if((cfg->qhub[i]->conf=(ushort *)malloc(sizeof(ushort)*k))==NULL)
 				return allocerr(error, maxerrlen, fname, "qhub conf", sizeof(ushort)*k);
-			if((cfg->qhub[i]->mode=(char *)malloc(sizeof(char)*k))==NULL)
+			if((cfg->qhub[i]->mode=(uchar *)malloc(sizeof(uchar)*k))==NULL)
 				return allocerr(error, maxerrlen, fname, "qhub mode", sizeof(uchar)*k);
 		}
 
