@@ -359,7 +359,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		iniSetString(&section, name, "description", cfg->grp[i]->lname, NULL);
 		iniSetString(&section, name, "ars", cfg->grp[i]->arstr, NULL);
 		iniSetString(&section, name, "code_prefix", cfg->grp[i]->code_prefix, NULL);
-		iniSetShortInt(&section, name, "sort", cfg->grp[i]->sort, NULL);
+		iniSetUInteger(&section, name, "sort", cfg->grp[i]->sort, NULL);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -590,12 +590,12 @@ static void write_dir_defaults_cfg(str_list_t* ini, const char* section, dir_t* 
 	iniSetString(ini, section, "upload_sem", dir->upload_sem, NULL);
 	iniSetString(ini, section, "extensions", dir->exts, NULL);
 	iniSetHexInt(ini, section, "settings", dir->misc, NULL);
-	iniSetShortInt(ini, section, "seq_dev", dir->seqdev, NULL);
-	iniSetShortInt(ini, section, "sort", dir->sort, NULL);
-	iniSetShortInt(ini, section, "max_age", dir->maxage, NULL);
-	iniSetShortInt(ini, section, "max_files", dir->maxfiles, NULL);
-	iniSetShortInt(ini, section, "upload_credit_pct", dir->up_pct, NULL);
-	iniSetShortInt(ini, section, "download_credit_pct", dir->dn_pct, NULL);
+	iniSetUInteger(ini, section, "seq_dev", dir->seqdev, NULL);
+	iniSetUInteger(ini, section, "sort", dir->sort, NULL);
+	iniSetUShortInt(ini, section, "max_age", dir->maxage, NULL);
+	iniSetUShortInt(ini, section, "max_files", dir->maxfiles, NULL);
+	iniSetUShortInt(ini, section, "upload_credit_pct", dir->up_pct, NULL);
+	iniSetUShortInt(ini, section, "download_credit_pct", dir->dn_pct, NULL);
 }
 
 /****************************************************************************/
@@ -615,15 +615,15 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 
 	str_list_t ini = strListInit();
 	iniSetUShortInt(&ini, ROOT_SECTION, "min_dspace", cfg->min_dspace, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "max_batup", cfg->max_batup, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "max_batdn", cfg->max_batdn, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "max_userxfer" ,cfg->max_userxfer, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "upload_credit_pct", cfg->cdt_up_pct, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "download_credit_pct", cfg->cdt_dn_pct, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "leech_pct", cfg->leech_pct, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "leech_sec", cfg->leech_sec, NULL);
+	iniSetUShortInt(&ini, ROOT_SECTION, "max_batup", cfg->max_batup, NULL);
+	iniSetUShortInt(&ini, ROOT_SECTION, "max_batdn", cfg->max_batdn, NULL);
+	iniSetUShortInt(&ini, ROOT_SECTION, "max_userxfer" ,cfg->max_userxfer, NULL);
+	iniSetUShortInt(&ini, ROOT_SECTION, "upload_credit_pct", cfg->cdt_up_pct, NULL);
+	iniSetUShortInt(&ini, ROOT_SECTION, "download_credit_pct", cfg->cdt_dn_pct, NULL);
+	iniSetUShortInt(&ini, ROOT_SECTION, "leech_pct", cfg->leech_pct, NULL);
+	iniSetUShortInt(&ini, ROOT_SECTION, "leech_sec", cfg->leech_sec, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->file_misc, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "filename_maxlen", cfg->filename_maxlen, NULL);
+	iniSetUShortInt(&ini, ROOT_SECTION, "filename_maxlen", cfg->filename_maxlen, NULL);
 
 	/* Extractable File Types */
 

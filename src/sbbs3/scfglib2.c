@@ -61,14 +61,14 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	ini = iniReadFile(fp);
 	fclose(fp);
 
-	cfg->min_dspace = iniGetShortInt(ini, ROOT_SECTION, "min_dspace", 0);
-	cfg->max_batup = iniGetShortInt(ini, ROOT_SECTION, "max_batup", 0);
-	cfg->max_batdn = iniGetShortInt(ini, ROOT_SECTION, "max_batdn", 0);
-	cfg->max_userxfer = iniGetShortInt(ini, ROOT_SECTION, "max_userxfer", 0);
-	cfg->cdt_up_pct = iniGetShortInt(ini, ROOT_SECTION, "upload_credit_pct", 0);
-	cfg->cdt_dn_pct = iniGetShortInt(ini, ROOT_SECTION, "download_credit_pct", 0);
-	cfg->leech_pct = iniGetShortInt(ini, ROOT_SECTION, "leech_pct", 0);
-	cfg->leech_sec = iniGetShortInt(ini, ROOT_SECTION, "leech_sec", 0);
+	cfg->min_dspace = iniGetUShortInt(ini, ROOT_SECTION, "min_dspace", 0);
+	cfg->max_batup = iniGetUShortInt(ini, ROOT_SECTION, "max_batup", 0);
+	cfg->max_batdn = iniGetUShortInt(ini, ROOT_SECTION, "max_batdn", 0);
+	cfg->max_userxfer = iniGetUShortInt(ini, ROOT_SECTION, "max_userxfer", 0);
+	cfg->cdt_up_pct = iniGetUShortInt(ini, ROOT_SECTION, "upload_credit_pct", 0);
+	cfg->cdt_dn_pct = iniGetUShortInt(ini, ROOT_SECTION, "download_credit_pct", 0);
+	cfg->leech_pct = iniGetUShortInt(ini, ROOT_SECTION, "leech_pct", 0);
+	cfg->leech_sec = iniGetUShortInt(ini, ROOT_SECTION, "leech_sec", 0);
 	cfg->file_misc = iniGetInt32(ini, ROOT_SECTION, "settings", 0);
 	cfg->filename_maxlen = iniGetIntInRange(ini, ROOT_SECTION, "filename_maxlen", 8, SMB_FILEIDX_NAMELEN, UINT16_MAX);
 
