@@ -26,6 +26,7 @@
 #include "git_hash.h"
 #include "git_branch.h"
 #include "cryptlib.h"
+#include "xpdatetime.h"
 
 /********************/
 /* Global Variables */
@@ -36,6 +37,7 @@ uifcapi_t uifc; /* User Interface (UIFC) Library API */
 
 BOOL forcesave=FALSE;
 BOOL new_install=FALSE;
+BOOL run_wizard = FALSE;
 static BOOL auto_save=FALSE;
 extern BOOL all_msghdr;
 extern BOOL no_msghdr;
@@ -151,6 +153,51 @@ void sort_dirs(int libnum)
 }
 
 
+void cfg_wizard(void)
+{
+	char errormsg[MAX_PATH*2];
+
+	if(!load_main_cfg(&cfg, error, sizeof(error))) {
+		SAFEPRINTF(errormsg,"ERROR: %s",error);
+		uifc.msg(errormsg);
+		return;
+	}
+	if(!load_msgs_cfg(&cfg, error, sizeof(error))) {
+		SAFEPRINTF(errormsg,"ERROR: %s",error);
+		uifc.msg(errormsg);
+		return;
+	}
+
+	do {
+		if(edit_sys_name() < 1)
+			continue;
+		if(edit_sys_operator() < 1)
+			continue;
+		if(edit_sys_password() < 1)
+			continue;
+		if(edit_sys_inetaddr() < 1)
+			continue;
+		if(edit_sys_id() < 0)
+			continue;
+		if(edit_sys_location() < 1)
+			continue;
+		if(edit_sys_timezone() < 0)
+			continue;
+		if(edit_sys_timefmt() < 0)
+			continue;
+		if(edit_sys_datefmt() < 0)
+			continue;
+		uifc.msg("Initial Setup Complete!");
+		cfg.new_install = new_install;
+		save_main_cfg(&cfg, backup_level);
+		save_msgs_cfg(&cfg, backup_level);
+		break;
+	} while(!uifc.confirm("Abort Setup Wizard?"));
+
+	free_main_cfg(&cfg);
+	free_msgs_cfg(&cfg);
+}
+
 int main(int argc, char **argv)
 {
 	char	**mopt,*p;
@@ -203,6 +250,9 @@ int main(int argc, char **argv)
 				continue;
 			}
             switch(toupper(argv[i][1])) {
+				case 'W':
+					run_wizard = TRUE;
+					break;
                 case 'N':   /* Set "New Installation" flag */
 					new_install=TRUE;
 					forcesave=TRUE;
@@ -290,6 +340,7 @@ int main(int argc, char **argv)
 					USAGE:
                     printf("\nusage: scfg [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
+                        "-w  =  run initial setup wizard\n"
                         "-f  =  force save of configuration files\n"
                         "-a  =  update all message base status headers\n"
                         "-h  =  don't update message base status headers\n"
@@ -442,6 +493,17 @@ int main(int argc, char **argv)
 		SAFEPRINTF(errormsg, "Main configuration file (%s) missing!",str);
 		uifc.msg(errormsg);
 	}
+	FILE* fp = iniOpenFile(str, /* for_modify */TRUE);
+	if(fp == NULL) {
+		SAFEPRINTF2(errormsg, "Error %d opening configuration file: %s", errno, str);
+		uifc.msg(errormsg);
+	} else {
+		cfg.new_install = iniReadBool(fp, ROOT_SECTION, "new_install", FALSE);
+		iniCloseFile(fp);
+	}
+	if(run_wizard
+		|| (cfg.new_install && uifc.msg("New install detected, starting Initial Setup Wizard") >= 0))
+			cfg_wizard();
 
 	i=0;
 	strcpy(mopt[i++],"Nodes");

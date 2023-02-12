@@ -21,6 +21,102 @@
 #include "ssl.h"
 #include "ciolib.h"	// CIO_KEY_*
 
+int edit_sys_name()
+{
+	uifc.helpbuf=
+		"`BBS Name:`\n"
+		"\n"
+		"This is the name of your Bulletin Board System.  Try to be original.\n"
+		;
+	return uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Name",cfg.sys_name,sizeof(cfg.sys_name)-1,K_EDIT);
+}
+
+int edit_sys_location()
+{
+	uifc.helpbuf=
+		"`System Location:`\n"
+		"\n"
+		"This is the location of the BBS. The format is flexible, but it is\n"
+		"suggested you use the `City, State` format for US locations.\n"
+		;
+	return uifc.input(WIN_MID|WIN_SAV,0,0,"System Location",cfg.sys_location,sizeof(cfg.sys_location)-1,K_EDIT);
+}
+
+int edit_sys_operator()
+{
+	uifc.helpbuf=
+		"`System Operator:`\n"
+		"\n"
+		"This is the name or alias of the system operator. This does not have to\n"
+		"be the same as user #1.  This field is used for informational purposes\n"
+		"only.\n"
+		;
+	return uifc.input(WIN_MID|WIN_SAV,0,0,"System Operator Name",cfg.sys_op,sizeof(cfg.sys_op)-1,K_EDIT);
+}
+
+int edit_sys_password()
+{
+	uifc.helpbuf=
+		"`System Password:`\n"
+		"\n"
+		"This is an extra security password required for sysop logon and certain\n"
+		"sysop functions. This password should be something not easily guessed\n"
+		"and should be kept absolutely confidential. This password must be\n"
+		"entered at the Terminal Server `SY:` prompt.\n"
+		"\n"
+		"This system password can also be used to enable sysop access to the\n"
+		"FTP Server by authenticating with a password that combines a sysop's\n"
+		"password with the system password, separated by a colon\n"
+		"(i.e. '`user-pass:system-pass`').\n"
+		"\n"
+		"`Note:` When the `Allow Sysop Access` Toggle Option is set to `No`,\n"
+		"      The system password is effectively disabled."
+		;
+	return uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
+}
+
+int edit_sys_inetaddr()
+{
+	uifc.helpbuf=
+		"`Sytem Internet Address:`\n"
+		"\n"
+		"Enter your system's Internet address (hostname or IP address) here\n"
+		"(e.g. `joesbbs.com`).\n"
+		;
+	return uifc.input(WIN_MID|WIN_SAV,0,0,"System Internet Address"
+		,cfg.sys_inetaddr,sizeof(cfg.sys_inetaddr)-1,K_EDIT);
+}
+
+int edit_sys_id()
+{
+	char str[LEN_QWKID + 1];
+
+	do {
+		SAFECOPY(str,cfg.sys_id);
+		uifc.helpbuf=
+			"`BBS ID for QWK Packets:`\n"
+			"\n"
+			"This is a short system ID for your BBS that is used for QWK packets.\n"
+			"It should be an abbreviation of your BBS name or other related string.\n"
+			"This ID will be used for your outgoing and incoming QWK packets. If\n"
+			"you plan on networking via QWK packets with another Synchronet BBS,\n"
+			"this ID should not begin with a number. The maximum length of the ID\n"
+			"is eight characters and cannot contain spaces or other invalid DOS\n"
+			"filename characters. In a QWK packet network, each system must have\n"
+			"a unique QWK system ID.\n"
+		;
+
+		uifc.input(WIN_MID|WIN_SAV,0,0,"BBS ID for QWK Packets"
+			,str,LEN_QWKID,K_EDIT|K_UPPER);
+		if(code_ok(str)) {
+			SAFECOPY(cfg.sys_id,str);
+			return 1;
+		}
+	} while(uifc.msg("Invalid QWK-ID (view help for constraints)") >= 0);
+
+	return -1;
+}
+
 static void configure_dst(void)
 {
 	strcpy(opt[0],"Yes");
@@ -58,6 +154,236 @@ static void configure_dst(void)
 			sys_timezone(&cfg);
 			break;
 	}
+}
+
+int edit_sys_timezone(void)
+{
+	char str[128];
+	int i;
+
+	i = !(cfg.sys_timezone & US_ZONE);
+	uifc.helpbuf=
+		"`United States Time Zone:`\n"
+		"\n"
+			"If your local time zone is the United States, select `Yes`.\n"
+	;
+
+	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+		,"United States Time Zone",uifcYesNoOpts);
+	if(i==-1)
+		return -1;
+	if(i==0) {
+		strcpy(opt[i++],"Atlantic");
+		strcpy(opt[i++],"Eastern");
+		strcpy(opt[i++],"Central");
+		strcpy(opt[i++],"Mountain");
+		strcpy(opt[i++],"Pacific");
+		strcpy(opt[i++],"Yukon");
+		strcpy(opt[i++],"Hawaii/Alaska");
+		strcpy(opt[i++],"Bering");
+		opt[i][0]=0;
+		switch(cfg.sys_timezone) {
+			default:
+			case AST: i = 0; break;
+			case EST: i = 1; break;
+			case CST: i = 2; break;
+			case MST: i = 3; break;
+			case PST: i = 4; break;
+			case YST: i = 5; break;
+			case HST: i = 6; break;
+			case BST: i = 7; break;
+		}
+		uifc.helpbuf=
+			"`U.S. Time Zone:`\n"
+			"\n"
+			"Choose the region which most closely reflects your local U.S. time zone.\n"
+		;
+		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+			,"U.S. Time Zone",opt);
+		if(i==-1)
+			return -1;
+		switch(i) {
+			case 0:
+				cfg.sys_timezone=AST;
+				break;
+			case 1:
+				cfg.sys_timezone=EST;
+				break;
+			case 2:
+				cfg.sys_timezone=CST;
+				break;
+			case 3:
+				cfg.sys_timezone=MST;
+				break;
+			case 4:
+				cfg.sys_timezone=PST;
+				break;
+			case 5:
+				cfg.sys_timezone=YST;
+				break;
+			case 6:
+				cfg.sys_timezone=HST;
+				break;
+			case 7:
+				cfg.sys_timezone=BST;
+				break;
+		}
+		configure_dst();
+		return 1;
+	}
+	i=0;
+	strcpy(opt[i++],"Midway");
+	strcpy(opt[i++],"Vancouver");
+	strcpy(opt[i++],"Edmonton");
+	strcpy(opt[i++],"Winnipeg");
+	strcpy(opt[i++],"Bogota");
+	strcpy(opt[i++],"Caracas");
+	strcpy(opt[i++],"Rio de Janeiro");
+	strcpy(opt[i++],"Fernando de Noronha");
+	strcpy(opt[i++],"Azores");
+	strcpy(opt[i++],"Western Europe (WET)");
+	strcpy(opt[i++],"Central Europe (CET)");
+	strcpy(opt[i++],"Eastern Europe (EET)");
+	strcpy(opt[i++],"Moscow");
+	strcpy(opt[i++],"Dubai");
+	strcpy(opt[i++],"Kabul");
+	strcpy(opt[i++],"Karachi");
+	strcpy(opt[i++],"Bombay");
+	strcpy(opt[i++],"Kathmandu");
+	strcpy(opt[i++],"Dhaka");
+	strcpy(opt[i++],"Bangkok");
+	strcpy(opt[i++],"Hong Kong");
+	strcpy(opt[i++],"Tokyo");
+	strcpy(opt[i++],"Australian Central");
+	strcpy(opt[i++],"Australian Eastern");
+	strcpy(opt[i++],"Noumea");
+	strcpy(opt[i++],"New Zealand");
+	strcpy(opt[i++],"Other...");
+	opt[i][0]=0;
+	i=0;
+	uifc.helpbuf=
+		"`Non-U.S. Time Zone:`\n"
+		"\n"
+		"Choose the region which most closely reflects your local time zone.\n"
+		"\n"
+		"Choose `Other...` if a region representing your local time zone is\n"
+		"not listed (you will be able to set the UTC offset manually)."
+	;
+	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+		,"None-U.S. Time Zone",opt);
+	if(i==-1)
+		return -1;
+	switch(i) {
+		case 0:
+			cfg.sys_timezone=MID;
+			break;
+		case 1:
+			cfg.sys_timezone=VAN;
+			break;
+		case 2:
+			cfg.sys_timezone=EDM;
+			break;
+		case 3:
+			cfg.sys_timezone=WIN;
+			break;
+		case 4:
+			cfg.sys_timezone=BOG;
+			break;
+		case 5:
+			cfg.sys_timezone=CAR;
+			break;
+		case 6:
+			cfg.sys_timezone=RIO;
+			break;
+		case 7:
+			cfg.sys_timezone=FER;
+			break;
+		case 8:
+			cfg.sys_timezone=AZO;
+			break;
+		case 9:
+			cfg.sys_timezone=WET;
+			break;
+		case 10:
+			cfg.sys_timezone=CET;
+			break;
+		case 11:
+			cfg.sys_timezone=EET;
+			break;
+		case 12:
+			cfg.sys_timezone=MOS;
+			break;
+		case 13:
+			cfg.sys_timezone=DUB;
+			break;
+		case 14:
+			cfg.sys_timezone=KAB;
+			break;
+		case 15:
+			cfg.sys_timezone=KAR;
+			break;
+		case 16:
+			cfg.sys_timezone=BOM;
+			break;
+		case 17:
+			cfg.sys_timezone=KAT;
+			break;
+		case 18:
+			cfg.sys_timezone=DHA;
+			break;
+		case 19:
+			cfg.sys_timezone=BAN;
+			break;
+		case 20:
+			cfg.sys_timezone=HON;
+			break;
+		case 21:
+			cfg.sys_timezone=TOK;
+			break;
+		case 22:
+			cfg.sys_timezone=ACST;
+			break;
+		case 23:
+			cfg.sys_timezone=AEST;
+			break;
+		case 24:
+			cfg.sys_timezone=NOU;
+			break;
+		case 25:
+			cfg.sys_timezone=NZST;
+			break;
+		default:
+			if(cfg.sys_timezone>720 || cfg.sys_timezone<-720)
+				cfg.sys_timezone=0;
+			if(cfg.sys_timezone==0)
+				str[0]=0;
+			else
+				sprintf(str,"%02d:%02d"
+					,cfg.sys_timezone/60,cfg.sys_timezone<0
+					? (-cfg.sys_timezone)%60 : cfg.sys_timezone%60);
+			uifc.helpbuf=
+				"`Time Zone Offset:`\n"
+				"\n"
+				"Enter your local time zone offset from Universal Time (UTC/GMT)\n"
+				"in `HH:MM` format.\n"
+			;
+			uifc.input(WIN_MID|WIN_SAV,0,0
+				,"Time (HH:MM) East (+) or West (-) of Universal "
+					"Time"
+				,str,6,K_EDIT|K_UPPER);
+			cfg.sys_timezone=atoi(str)*60;
+			char *p=strchr(str,':');
+			if(p) {
+				if(cfg.sys_timezone<0)
+					cfg.sys_timezone-=atoi(p+1);
+				else
+					cfg.sys_timezone+=atoi(p+1); 
+			}
+			return 0;
+	}
+	if(SMB_TZ_HAS_DST(cfg.sys_timezone))
+		configure_dst();
+	return 1;
 }
 
 void security_cfg(void)
@@ -137,23 +463,7 @@ void security_cfg(void)
 			case -1:
 				return;
 			case __COUNTER__:
-				uifc.helpbuf=
-					"`System Password:`\n"
-					"\n"
-					"This is an extra security password required for sysop logon and certain\n"
-					"sysop functions. This password should be something not easily guessed\n"
-					"and should be kept absolutely confidential. This password must be\n"
-					"entered at the Terminal Server `SY:` prompt.\n"
-					"\n"
-					"This system password can also be used to enable sysop access to the\n"
-					"FTP Server by authenticating with a password that combines a sysop's\n"
-					"password with the system password, separated by a colon\n"
-					"(i.e. '`user-pass:system-pass`').\n"
-					"\n"
-					"`Note:` When the `Allow Sysop Access` Toggle Option is set to `No`,\n"
-					"      The system password is effectively disabled."
-				;
-				uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
+				edit_sys_password();
 				break;
 			case __COUNTER__:
 				if(!(cfg.sys_misc&SM_R_SYSOP))
@@ -849,6 +1159,44 @@ void security_cfg(void)
 	}
 }
 
+int edit_sys_timefmt()
+{
+	int i = (cfg.sys_misc & SM_MILITARY) ? 1:0;
+	char* opts[3] = { "12 hour (AM/PM)", "24 hour", NULL };
+	uifc.helpbuf=
+		"`Time Display Format:`\n"
+		"\n"
+		"If you would like the time-of-day to be displayed and entered in 24 hour\n"
+		"format always, set this option to `24 hour`.\n"
+	;
+	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+		,"Time Display Format", opts);
+	if(i == 0)
+		cfg.sys_misc &= ~SM_MILITARY;
+	else if(i == 1)
+		cfg.sys_misc |= SM_MILITARY;
+	return i;
+}
+
+int edit_sys_datefmt()
+{
+	int i = (cfg.sys_misc & SM_EURODATE) ? 1:0;
+	char* opts[3] = { "MM/DD/YY", "DD/MM/YY", NULL };
+	uifc.helpbuf=
+		"`Date Display Format:`\n"
+		"\n"
+		"If you would like dates to be displayed and entered in `DD/MM/YY` format\n"
+		"instead of `MM/DD/YY` format, set this option to `Yes`.\n"
+	;
+	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+		,"Date Display Format", opts);
+	if(i == 0)
+		cfg.sys_misc &= ~SM_EURODATE;
+	else if(i == 1)
+		cfg.sys_misc |= SM_EURODATE;
+	return i;
+}
+
 void sys_cfg(void)
 {
 	static int sys_dflt,adv_dflt,tog_dflt,new_dflt;
@@ -933,245 +1281,16 @@ void sys_cfg(void)
 				}
 				return;
 			case 0:
-				uifc.helpbuf=
-					"`BBS Name:`\n"
-					"\n"
-					"This is the name of the BBS.\n"
-				;
-				uifc.input(WIN_MID,0,0,"BBS Name",cfg.sys_name,sizeof(cfg.sys_name)-1,K_EDIT);
+				edit_sys_name();
 				break;
 			case 1:
-				uifc.helpbuf=
-					"`System Location:`\n"
-					"\n"
-					"This is the location of the BBS. The format is flexible, but it is\n"
-					"suggested you use the `City, State` format for clarity.\n"
-				;
-				uifc.input(WIN_MID,0,0,"Location",cfg.sys_location,sizeof(cfg.sys_location)-1,K_EDIT);
+				edit_sys_location();
 				break;
 			case 2:
-				i = !(cfg.sys_timezone & US_ZONE);
-				uifc.helpbuf=
-					"`United States Time Zone:`\n"
-					"\n"
-					"If your local time zone is the United States, select `Yes`.\n"
-				;
-
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"United States Time Zone",uifcYesNoOpts);
-				if(i==-1)
-					break;
-				if(i==0) {
-					strcpy(opt[i++],"Atlantic");
-					strcpy(opt[i++],"Eastern");
-					strcpy(opt[i++],"Central");
-					strcpy(opt[i++],"Mountain");
-					strcpy(opt[i++],"Pacific");
-					strcpy(opt[i++],"Yukon");
-					strcpy(opt[i++],"Hawaii/Alaska");
-					strcpy(opt[i++],"Bering");
-					opt[i][0]=0;
-					i=0;
-					uifc.helpbuf=
-						"`U.S. Time Zone:`\n"
-						"\n"
-						"Choose the region which most closely reflects your local U.S. time zone.\n"
-					;
-					i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-						,"U.S. Time Zone",opt);
-					if(i==-1)
-						break;
-					switch(i) {
-						case 0:
-							cfg.sys_timezone=AST;
-							break;
-						case 1:
-							cfg.sys_timezone=EST;
-							break;
-						case 2:
-							cfg.sys_timezone=CST;
-							break;
-						case 3:
-							cfg.sys_timezone=MST;
-							break;
-						case 4:
-							cfg.sys_timezone=PST;
-							break;
-						case 5:
-							cfg.sys_timezone=YST;
-							break;
-						case 6:
-							cfg.sys_timezone=HST;
-							break;
-						case 7:
-							cfg.sys_timezone=BST;
-							break; 
-					}
-					configure_dst();
-					break; 
-				}
-				i=0;
-				strcpy(opt[i++],"Midway");
-				strcpy(opt[i++],"Vancouver");
-				strcpy(opt[i++],"Edmonton");
-				strcpy(opt[i++],"Winnipeg");
-				strcpy(opt[i++],"Bogota");
-				strcpy(opt[i++],"Caracas");
-				strcpy(opt[i++],"Rio de Janeiro");
-				strcpy(opt[i++],"Fernando de Noronha");
-				strcpy(opt[i++],"Azores");
-				strcpy(opt[i++],"Western Europe (WET)");
-				strcpy(opt[i++],"Central Europe (CET)");
-				strcpy(opt[i++],"Eastern Europe (EET)");
-				strcpy(opt[i++],"Moscow");
-				strcpy(opt[i++],"Dubai");
-				strcpy(opt[i++],"Kabul");
-				strcpy(opt[i++],"Karachi");
-				strcpy(opt[i++],"Bombay");
-				strcpy(opt[i++],"Kathmandu");
-				strcpy(opt[i++],"Dhaka");
-				strcpy(opt[i++],"Bangkok");
-				strcpy(opt[i++],"Hong Kong");
-				strcpy(opt[i++],"Tokyo");
-				strcpy(opt[i++],"Australian Central");
-				strcpy(opt[i++],"Australian Eastern");
-				strcpy(opt[i++],"Noumea");
-				strcpy(opt[i++],"New Zealand");
-				strcpy(opt[i++],"Other...");
-				opt[i][0]=0;
-				i=0;
-				uifc.helpbuf=
-					"`Non-U.S. Time Zone:`\n"
-					"\n"
-					"Choose the region which most closely reflects your local time zone.\n"
-					"\n"
-					"Choose `Other...` if a region representing your local time zone is\n"
-					"not listed (you will be able to set the UTC offset manually)."
-				;
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"None-U.S. Time Zone",opt);
-				if(i==-1)
-					break;
-				switch(i) {
-					case 0:
-						cfg.sys_timezone=MID;
-						break;
-					case 1:
-						cfg.sys_timezone=VAN;
-						break;
-					case 2:
-						cfg.sys_timezone=EDM;
-						break;
-					case 3:
-						cfg.sys_timezone=WIN;
-						break;
-					case 4:
-						cfg.sys_timezone=BOG;
-						break;
-					case 5:
-						cfg.sys_timezone=CAR;
-						break;
-					case 6:
-						cfg.sys_timezone=RIO;
-						break;
-					case 7:
-						cfg.sys_timezone=FER;
-						break;
-					case 8:
-						cfg.sys_timezone=AZO;
-						break;
-					case 9:
-						cfg.sys_timezone=WET;
-						break;
-					case 10:
-						cfg.sys_timezone=CET;
-						break;
-					case 11:
-						cfg.sys_timezone=EET;
-						break;
-					case 12:
-						cfg.sys_timezone=MOS;
-						break;
-					case 13:
-						cfg.sys_timezone=DUB;
-						break;
-					case 14:
-						cfg.sys_timezone=KAB;
-						break;
-					case 15:
-						cfg.sys_timezone=KAR;
-						break;
-					case 16:
-						cfg.sys_timezone=BOM;
-						break;
-					case 17:
-						cfg.sys_timezone=KAT;
-						break;
-					case 18:
-						cfg.sys_timezone=DHA;
-						break;
-					case 19:
-						cfg.sys_timezone=BAN;
-						break;
-					case 20:
-						cfg.sys_timezone=HON;
-						break;
-					case 21:
-						cfg.sys_timezone=TOK;
-						break;
-					case 22:
-						cfg.sys_timezone=ACST;
-						break;
-					case 23:
-						cfg.sys_timezone=AEST;
-						break;
-					case 24:
-						cfg.sys_timezone=NOU;
-						break;
-					case 25:
-						cfg.sys_timezone=NZST;
-						break;
-					default:
-						if(cfg.sys_timezone>720 || cfg.sys_timezone<-720)
-							cfg.sys_timezone=0;
-						if(cfg.sys_timezone==0)
-							str[0]=0;
-						else
-							sprintf(str,"%02d:%02d"
-								,cfg.sys_timezone/60,cfg.sys_timezone<0
-								? (-cfg.sys_timezone)%60 : cfg.sys_timezone%60);
-						uifc.helpbuf=
-							"`Time Zone Offset:`\n"
-							"\n"
-							"Enter your local time zone offset from Universal Time (UTC/GMT)\n"
-							"in `HH:MM` format.\n"
-						;
-						uifc.input(WIN_MID|WIN_SAV,0,0
-							,"Time (HH:MM) East (+) or West (-) of Universal "
-								"Time"
-							,str,6,K_EDIT|K_UPPER);
-						cfg.sys_timezone=atoi(str)*60;
-						char *p=strchr(str,':');
-						if(p) {
-							if(cfg.sys_timezone<0)
-								cfg.sys_timezone-=atoi(p+1);
-							else
-								cfg.sys_timezone+=atoi(p+1); 
-						}
-						break;
-				}
-				if(SMB_TZ_HAS_DST(cfg.sys_timezone))
-					configure_dst();
+				edit_sys_timezone();
 				break;
 			case 3:
-				uifc.helpbuf=
-					"`System Operator:`\n"
-					"\n"
-					"This is the name or alias of the system operator. This does not have to\n"
-					"be the same as user #1. This field is used for informational purposes\n"
-					"only.\n"
-				;
-				uifc.input(WIN_MID,0,0,"System Operator",cfg.sys_op,sizeof(cfg.sys_op)-1,K_EDIT);
+				edit_sys_operator();
 				break;
 			case 4:    /* Toggle Options */
 				done=0;
@@ -1323,38 +1442,10 @@ void sys_cfg(void)
 							}
 							break;
 						case 6:
-							i=cfg.sys_misc&SM_MILITARY ? 0:1;
-							uifc.helpbuf=
-								"`Military:`\n"
-								"\n"
-								"If you would like the time-of-day to be displayed and entered in 24 hour\n"
-								"format always, set this option to `Yes`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Use Military Time Format",uifcYesNoOpts);
-							if(!i && !(cfg.sys_misc&SM_MILITARY)) {
-								cfg.sys_misc|=SM_MILITARY;
-							}
-							else if(i==1 && cfg.sys_misc&SM_MILITARY) {
-								cfg.sys_misc&=~SM_MILITARY;
-							}
+							edit_sys_timefmt();
 							break;
 						case 7:
-							i=cfg.sys_misc&SM_EURODATE ? 0:1;
-							uifc.helpbuf=
-								"`European Date Format:`\n"
-								"\n"
-								"If you would like dates to be displayed and entered in `DD/MM/YY` format\n"
-								"instead of `MM/DD/YY` format, set this option to `Yes`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"European Date Format",uifcYesNoOpts);
-							if(!i && !(cfg.sys_misc&SM_EURODATE)) {
-								cfg.sys_misc|=SM_EURODATE;
-							}
-							else if(i==1 && cfg.sys_misc&SM_EURODATE) {
-								cfg.sys_misc&=~SM_EURODATE;
-							}
+							edit_sys_datefmt();
 							break;
 						case 8:
 							i=cfg.sys_misc&SM_NOSYSINFO ? 1:0;

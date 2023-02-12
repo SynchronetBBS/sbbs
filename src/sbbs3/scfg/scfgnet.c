@@ -923,14 +923,7 @@ void net_cfg()
 						done=1;
 						break;
 					case 0:
-						uifc.helpbuf=
-							"`Sytem Internet Address:`\n"
-							"\n"
-							"Enter your system's Internet address (hostname or IP address) here\n"
-							"(e.g. `joesbbs.com`).\n"
-						;
-						uifc.input(WIN_MID|WIN_SAV,0,0,""
-							,cfg.sys_inetaddr,sizeof(cfg.sys_inetaddr)-1,K_EDIT);
+						edit_sys_inetaddr();
 						break;
 					case 1:
 						uifc.helpbuf=

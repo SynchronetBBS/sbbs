@@ -1180,26 +1180,7 @@ void msg_opts()
                 }
 				return;
 			case 0:
-				SAFECOPY(str,cfg.sys_id);
-				uifc.helpbuf=
-					"`BBS ID for QWK Packets:`\n"
-					"\n"
-					"This is a short system ID for your BBS that is used for QWK packets.\n"
-					"It should be an abbreviation of your BBS name or other related string.\n"
-					"This ID will be used for your outgoing and incoming QWK packets. If\n"
-					"you plan on networking via QWK packets with another Synchronet BBS,\n"
-					"this ID should not begin with a number. The maximum length of the ID\n"
-					"is eight characters and cannot contain spaces or other invalid DOS\n"
-					"filename characters. In a QWK packet network, each system must have\n"
-					"a unique QWK system ID.\n"
-				;
-
-				uifc.input(WIN_MID|WIN_SAV,0,0,"BBS ID for QWK Packets"
-					,str,LEN_QWKID,K_EDIT|K_UPPER);
-				if(code_ok(str))
-					SAFECOPY(cfg.sys_id,str);
-				else
-					uifc.msg("Invalid ID");
+				edit_sys_id();
 				break;
 			case 1:
 				uifc.helpbuf=
