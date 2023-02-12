@@ -81,8 +81,8 @@ void xfer_opts()
 
 	while(1) {
 		i=0;
-		sprintf(opt[i++],"%-33.33s%uk","Min Bytes Free Disk Space"
-			,cfg.min_dspace);
+		sprintf(opt[i++],"%-33.33s%s","Min Bytes Free Disk Space"
+			,byte_count_to_str(cfg.min_dspace, str, sizeof(str)));
 		sprintf(opt[i++],"%-33.33s%u","Max Files in Batch UL Queue"
 			,cfg.max_batup);
 		sprintf(opt[i++],"%-33.33s%u","Max Files in Batch DL Queue"
@@ -133,15 +133,16 @@ void xfer_opts()
 				return;
 			case __COUNTER__:
 				uifc.helpbuf=
-					"`Minimum Kilobytes Free Disk Space to Allow Uploads:`\n"
+					"`Minimum Byte Free Disk Space to Allow Uploads:`\n"
 					"\n"
 					"This is the minimum free space in a file directory to allow user\n"
 					"uploads.\n"
 				;
-				uifc.input(WIN_MID,0,0
-					,"Minimum Kilobytes Free Disk Space to Allow Uploads"
-					,ultoa(cfg.min_dspace,tmp,10),5,K_EDIT|K_NUMBER);
-				cfg.min_dspace=atoi(tmp);
+				byte_count_to_str(cfg.min_dspace, str, sizeof(str));
+				if(uifc.input(WIN_MID,0,0
+					,"Minimum Bytes Free Disk Space to Allow Uploads"
+					,str, 10, K_UPPER|K_EDIT) > 0)
+					cfg.min_dspace = parse_byte_count(str, 1);
 				break;
 			case __COUNTER__:
 				uifc.helpbuf=
