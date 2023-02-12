@@ -614,7 +614,7 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 	backup(inipath, backup_level, TRUE);
 
 	str_list_t ini = strListInit();
-	iniSetShortInt(&ini, ROOT_SECTION, "min_dspace", cfg->min_dspace, NULL);
+	iniSetUShortInt(&ini, ROOT_SECTION, "min_dspace", cfg->min_dspace, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "max_batup", cfg->max_batup, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "max_batdn", cfg->max_batdn, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "max_userxfer" ,cfg->max_userxfer, NULL);
