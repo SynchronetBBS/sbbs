@@ -213,11 +213,11 @@ bool sbbs_t::okay_to_upload(uint dirnum)
 	}
 
 	/* get free disk space */
-	ulong space = getfreediskspace(path, 1024);
-	byte_count_to_str(space * 1024, str, sizeof(str));
-	if(space < (ulong)(cfg.min_dspace / 1024)) {
+	int64_t space = getfreediskspace(path, 1);
+	byte_estimate_to_str(space, str, sizeof(str), /* units: */1024, /* precision: */1);
+	if(space < cfg.min_dspace) {
 		bputs(text[LowDiskSpace]);
-		lprintf(LOG_ERR, "Diskspace is low: %s (%s bytes)", path, str);
+		lprintf(LOG_ERR, "Disk space is low: %s (%s bytes)", path, str);
 		if(!dir_op(dirnum))
 			return(false);
 	}

@@ -3668,7 +3668,7 @@ js_freediskspace(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32		unit=0;
 	char*		p = NULL;
-	ulong		fd;
+	uint64_t	fd;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -3703,7 +3703,7 @@ js_disksize(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32		unit=0;
 	char*		p = NULL;
-	ulong		ds;
+	uint64_t	ds;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
