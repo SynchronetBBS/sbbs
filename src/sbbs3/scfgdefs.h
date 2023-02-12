@@ -576,7 +576,7 @@ typedef struct
 	uint32_t		expired_flags4; /* Flags from set #4 to remove when expired */
 	uint32_t		expired_exempt; /* Exemptions to remove when expired */
 	uint32_t		expired_rest;	/* Restrictions to add when expired */
-	uint16_t		min_dspace; 	/* Minimum amount of free space for uploads (in kilobytes) */
+	int64_t			min_dspace; 	/* Minimum amount of free space for uploads */
 	uint16_t		max_batup;		/* Max number of files in upload queue */
 	uint16_t		max_batdn;		/* Max number of files in download queue */
 	uint16_t		max_userxfer;	/* Max dest. users of user to user xfer */

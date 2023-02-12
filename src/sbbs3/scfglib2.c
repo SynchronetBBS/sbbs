@@ -61,7 +61,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	ini = iniReadFile(fp);
 	fclose(fp);
 
-	cfg->min_dspace = iniGetUShortInt(ini, ROOT_SECTION, "min_dspace", 0);
+	cfg->min_dspace = iniGetBytes(ini, ROOT_SECTION, "min_dspace", 1, 100 * 1024 * 1024);
 	cfg->max_batup = iniGetUShortInt(ini, ROOT_SECTION, "max_batup", 0);
 	cfg->max_batdn = iniGetUShortInt(ini, ROOT_SECTION, "max_batdn", 0);
 	cfg->max_userxfer = iniGetUShortInt(ini, ROOT_SECTION, "max_userxfer", 0);
