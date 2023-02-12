@@ -265,6 +265,7 @@ for(var i in cnf.txtsec) {
 }
 delete cnf.txtsec;
 
+cnf.min_dspace = format("%uK", cnf.min_dspace);
 cnf.settings = format("0x%lx", cnf.settings);
 ini.iniSetObject(null, cnf);
 ini.close();
