@@ -732,8 +732,12 @@ char* iniSetHexInt(str_list_t* list, const char* section, const char* key, uint 
 {
 	char	str[INI_MAX_VALUE_LEN] = "0";
 
-	if(value)
-		SAFEPRINTF(str,"0x%x",value);
+	if(value) {
+		if(value < 10)
+			SAFEPRINTF(str,"%u",value);
+		else
+			SAFEPRINTF(str,"0x%x",value);
+	}
 	return iniSetString(list, section, key, str, style);
 }
 
@@ -742,8 +746,12 @@ char* iniSetHexInt64(str_list_t* list, const char* section, const char* key, uin
 {
 	char	str[INI_MAX_VALUE_LEN] = "0";
 
-	if(value)
-		SAFEPRINTF(str,"0x%" PRIx64, value);
+	if(value) {
+		if(value < 10)
+			SAFEPRINTF(str,"%" PRIu64, value);
+		else
+			SAFEPRINTF(str,"0x%" PRIx64, value);
+	}
 	return iniSetString(list, section, key, str, style);
 }
 
