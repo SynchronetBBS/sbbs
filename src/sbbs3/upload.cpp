@@ -199,6 +199,32 @@ bool sbbs_t::uploadfile(file_t* f)
 	return true;
 }
 
+bool sbbs_t::okay_to_upload(uint dirnum)
+{
+	char str[MAX_PATH + 1];
+	char path[MAX_PATH + 1];
+
+	SAFECOPY(path, cfg.dir[dirnum]->path);
+
+	if(!isdir(path)) {
+		bprintf(text[DirectoryDoesNotExist], path);
+		lprintf(LOG_ERR,"File directory does not exist: %s", path);
+		return(false);
+	}
+
+	/* get free disk space */
+	ulong space = getfreediskspace(path, 1024);
+	byte_count_to_str(space * 1024, str, sizeof(str));
+	if(space < (ulong)(cfg.min_dspace / 1024)) {
+		bputs(text[LowDiskSpace]);
+		lprintf(LOG_ERR, "Diskspace is low: %s (%s bytes)", path, str);
+		if(!dir_op(dirnum))
+			return(false);
+	}
+	bprintf(text[DiskNBytesFree], str);
+	return true;
+}
+
 /****************************************************************************/
 /* Uploads files                                                            */
 /****************************************************************************/
@@ -211,7 +237,6 @@ bool sbbs_t::upload(uint dirnum)
 	char 	tmp[512];
     time_t	start,end;
     uint	i,j,k;
-	ulong	space;
 	file_t	f = {{}};
 	str_list_t dest_user_list = NULL;
 
@@ -239,23 +264,8 @@ bool sbbs_t::upload(uint dirnum)
 	if(sys_status&SS_EVENT && online==ON_REMOTE && !dir_op(dirnum))
 		bprintf(text[UploadBeforeEvent],timeleft/60);
 
-	SAFECOPY(path,cfg.dir[dirnum]->path);
-
-	if(!isdir(path)) {
-		bprintf(text[DirectoryDoesNotExist], path);
-		lprintf(LOG_ERR,"File directory does not exist: %s", path);
-		return(false);
-	}
-
-	/* get free disk space */
-	space=getfreediskspace(path,1024);
-	if(space<(ulong)(cfg.min_dspace / 1024)) {
-		bputs(text[LowDiskSpace]);
-		lprintf(LOG_ERR,"Diskspace is low: %s (%lu KB)",path,space);
-		if(!dir_op(dirnum))
-			return(false); 
-	}
-	bprintf(text[DiskNBytesFree],ultoac(space,tmp));
+	if(!okay_to_upload(dirnum))
+		return false;
 
 	f.dir=curdirnum=dirnum;
 	bputs(text[Filename]);

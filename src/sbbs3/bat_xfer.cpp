@@ -182,6 +182,8 @@ void sbbs_t::batchmenu()
 					bputs(text[UploadQueueIsEmpty]);
 					break; 
 				}
+				if(cfg.upload_dir != INVALID_DIR && !okay_to_upload(cfg.upload_dir))
+					break;
 				xfer_prot_menu(XFER_BATCH_UPLOAD);
 				if(!create_batchup_lst())
 					break;

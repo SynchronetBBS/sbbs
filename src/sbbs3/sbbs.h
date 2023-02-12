@@ -1040,6 +1040,7 @@ public:
 
 	/* upload.cpp */
 	bool	uploadfile(file_t* f);
+	bool	okay_to_upload(uint dirnum);
 	bool	upload(uint dirnum);
     char	upload_lastdesc[LEN_FDESC+1];
 	bool	bulkupload(uint dirnum);
