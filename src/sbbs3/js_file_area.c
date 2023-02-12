@@ -25,7 +25,7 @@
 #ifdef BUILD_JSDOCS
 
 static char* file_area_prop_desc[] = {
-	 "minimum amount of available disk space (in kilobytes) required for user uploads to be allowed"
+	 "minimum amount of available disk space (in bytes) required for user uploads to be allowed"
 	,"file area settings (bitfield) - see <tt>FM_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"web file virtual path prefix <i>(introduced in v3.19c)</i>"
 	,NULL
@@ -216,7 +216,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 	if(name==NULL || strcmp(name, "min_diskspace")==0) {
 		if(name)
 			free(name);
-		val=UINT_TO_JSVAL(p->cfg->min_dspace);
+		val=DOUBLE_TO_JSVAL((jsdouble)p->cfg->min_dspace);
 		JS_DefineProperty(cx, areaobj, "min_diskspace", val, NULL, NULL, JSPROP_ENUMERATE);
 		if(name)
 			return(JS_TRUE);
