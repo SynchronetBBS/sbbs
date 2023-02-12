@@ -345,7 +345,7 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 		case 0x4569c62e:
 			return((int32_t *)&cfg.expired_rest);
 		case 0xfcf3542e:
-			sysvar_l[sysvar_li]=cfg.min_dspace;
+			sysvar_l[sysvar_li]=(int32_t)(cfg.min_dspace / 1024);
 			break;
 		case 0xcf9ce02c:
 			sysvar_l[sysvar_li]=cfg.cdt_min_value;

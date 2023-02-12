@@ -117,7 +117,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	char*		p=NULL;
     jsint       tiny;
 	JSString*	js_str;
-	ulong		val;
+	uint64_t	space;
 	jsrefcount	rc;
 	JSObject *robj;
 	jsval jval;
@@ -194,11 +194,11 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SYS_PROP_FREEDISKSPACEK:
 			rc=JS_SUSPENDREQUEST(cx);
 			if(tiny==SYS_PROP_FREEDISKSPACE)
-				val = getfreediskspace(cfg->temp_dir,0);
+				space = getfreediskspace(cfg->temp_dir,0);
 			else
-				val = getfreediskspace(cfg->temp_dir,1024);
+				space = getfreediskspace(cfg->temp_dir,1024);
 			JS_RESUMEREQUEST(cx, rc);
-			*vp=DOUBLE_TO_JSVAL((double)val);
+			*vp=DOUBLE_TO_JSVAL((double)space);
 			break;
 #ifndef JSDOOR
 		case SYS_PROP_NEW_PASS:

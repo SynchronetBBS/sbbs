@@ -336,12 +336,12 @@ int globi(const char *p, int flags,
 /* Returns number of files and/or sub-directories in directory (path)		*/
 /* Similar, but not identical, to getfilecount()							*/
 /****************************************************************************/
-long getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only)
+size_t getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only)
 {
 	char		match[MAX_PATH+1];
 	glob_t		g;
 	unsigned	gi;
-	long		count=0;
+	size_t		count=0;
 
 	if(!isdir(path))
 		return -1;
@@ -886,21 +886,10 @@ uint64_t getfilesizetotal(const char *inpath)
 #if defined(_WIN32)
 typedef BOOL(WINAPI * GetDiskFreeSpaceEx_t)
 	(LPCTSTR,PULARGE_INTEGER,PULARGE_INTEGER,PULARGE_INTEGER);
-
-static int bit_num(ulong val)
-{
-	int i;
-
-	for(i=31;i>=0;i--)
-		if(val&(1<<i))
-			return(i);
-
-	return(-1);
-}
 #endif
 
 /* Unit should be a power-of-2 (e.g. 1024 to report kilobytes) or 1 (to report bytes) */
-static ulong getdiskspace(const char* path, ulong unit, BOOL freespace)
+static uint64_t getdiskspace(const char* path, uint64_t unit, BOOL freespace)
 {
 #if defined(_WIN32)
 	char			root[16];
@@ -926,24 +915,7 @@ static ulong getdiskspace(const char* path, ulong unit, BOOL freespace)
 			NULL))		/* receives the free bytes on disk */
 			return(0);
 
-		if(freespace)
-			size=avail;
-
-		if(unit>1)
-			size.QuadPart=Int64ShrlMod32(size.QuadPart,bit_num(unit));
-
-#if defined(_ANONYMOUS_STRUCT)
-		if(size.HighPart)
-#else
-		if(size.u.HighPart)
-#endif
-			return(0xffffffff);	/* 4GB max */
-
-#if defined(_ANONYMOUS_STRUCT)
-		return(size.LowPart);
-#else
-		return(size.u.LowPart);
-#endif
+		return freespace ? size.QuadPart : avail.QuadPart;
 	}
 
 	/* Windows 95 (old way), limited to 2GB */
@@ -960,14 +932,14 @@ static ulong getdiskspace(const char* path, ulong unit, BOOL freespace)
 	if(freespace)
 		TotalNumberOfClusters = NumberOfFreeClusters;
 	if(unit>1)
-		TotalNumberOfClusters/=unit;
+		TotalNumberOfClusters/=(DWORD)unit;
 	return(TotalNumberOfClusters*SectorsPerCluster*BytesPerSector);
 
 
 #elif defined(__solaris__) || (defined(__NetBSD_Version__) && (__NetBSD_Version__ >= 300000000 /* NetBSD 3.0 */))
 
 	struct statvfs fs;
-	unsigned long blocks;
+	uint64_t blocks;
 
     if (statvfs(path, &fs) < 0)
     	return 0;
@@ -985,7 +957,7 @@ static ulong getdiskspace(const char* path, ulong unit, BOOL freespace)
 #elif defined(__GLIBC__) || defined(BSD)
 
 	struct statfs fs;
-	unsigned long blocks;
+	uint64_t blocks;
 
 	if(statfs(path, &fs) < 0)
     	return 0;
@@ -1007,12 +979,12 @@ static ulong getdiskspace(const char* path, ulong unit, BOOL freespace)
 #endif
 }
 
-ulong getfreediskspace(const char* path, ulong unit)
+uint64_t getfreediskspace(const char* path, uint64_t unit)
 {
 	return getdiskspace(path, unit, /* freespace? */TRUE);
 }
 
-ulong getdisksize(const char* path, ulong unit)
+uint64_t getdisksize(const char* path, uint64_t unit)
 {
 	return getdiskspace(path, unit, /* freespace? */FALSE);
 }
