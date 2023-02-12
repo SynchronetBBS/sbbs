@@ -240,9 +240,9 @@
 "\1r\1hFilenames, specs, or flags [None]: \1m\1h\1~"        197 BatchDlFlags
 "\r\n\7\1r\1h\1iBatch download queue is full.\1n\r\n"       198 BatchDlQueueIsFull
 "\1_\1?\1y\1hFilespec [\1wAll Files\1y]: \1n"               199 FileSpecStarDotStar
-"\r\n\r\n\1r\1h\1iNot enough free disk space.\1n\r\n"\      200 LowDiskSpace
+"\1?\1r\1h\1iNot enough free disk space.\1n\r\n"\           200 LowDiskSpace
 	"\r\n\1hThe sysop has been notified.\1n\r\n"
-"\r\n%s kilobytes free\r\n\r\n"                         201 DiskNBytesFree
+"\r\n%s bytes free\r\n\r\n"                                 201 DiskNBytesFree
 "\1_\1y\1hFilename: \1n"                                    202 Filename
 "\1/\1r\1hBad filename: '%s'\r\n"                           203 BadFilename
 "Upload '%s' to Sysop directory"                        204 UploadToSysopDirQ
@@ -705,7 +705,7 @@
 	"upcoming event on \1w%s\r\n\r\n"
 "\1n\r\nTimed Event - Node: %d   Time: %02d:%02d   "\    568 EventInfo
 	"Last Ran: %s\r\n"
-"\1_\1r\1h\1i\r\n\r\nConnection will be dropped in %d "\       569 UploadBeforeEvent
+"\1_\1r\1h\1i\1?Connection will be dropped in %d "\       569 UploadBeforeEvent
 	"minutes due to upcoming event.\1n"
 "\1_\1y\1h\r\nQWK: \1n"                                     570 QWKPrompt
 "\r\nCtrl-A codes: ~Expand to ANSI, ~Leave in, or "\    571 QWKCtrlACodes
