@@ -730,18 +730,20 @@ char* iniSetULongInt(str_list_t* list, const char* section, const char* key, ulo
 char* iniSetHexInt(str_list_t* list, const char* section, const char* key, uint value
 					,ini_style_t* style)
 {
-	char	str[INI_MAX_VALUE_LEN];
+	char	str[INI_MAX_VALUE_LEN] = "0";
 
-	SAFEPRINTF(str,"0x%x",value);
+	if(value)
+		SAFEPRINTF(str,"0x%x",value);
 	return iniSetString(list, section, key, str, style);
 }
 
 char* iniSetHexInt64(str_list_t* list, const char* section, const char* key, uint64_t value
 					,ini_style_t* style)
 {
-	char	str[INI_MAX_VALUE_LEN];
+	char	str[INI_MAX_VALUE_LEN] = "0";
 
-	SAFEPRINTF(str,"0x%" PRIx64, value);
+	if(value)
+		SAFEPRINTF(str,"0x%" PRIx64, value);
 	return iniSetString(list, section, key, str, style);
 }
 
