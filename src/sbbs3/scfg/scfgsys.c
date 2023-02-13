@@ -160,6 +160,7 @@ int edit_sys_timezone(void)
 {
 	char str[128];
 	int i;
+	int bar;
 
 	i = !(cfg.sys_timezone & US_ZONE);
 	uifc.helpbuf=
@@ -260,7 +261,35 @@ int edit_sys_timezone(void)
 	strcpy(opt[i++],"New Zealand");
 	strcpy(opt[i++],"Other...");
 	opt[i][0]=0;
-	i=0;
+	switch(cfg.sys_timezone) {
+		case MID: i = 0; break;
+		case VAN: i = 1; break;
+		case EDM: i = 2; break;
+		case WIN: i = 3; break;
+		case BOG: i = 4; break;
+		case CAR: i = 5; break;
+		case RIO: i = 6; break;
+		case FER: i = 7; break;
+		case AZO: i = 8; break;
+		case WET: i = 9; break;
+		case CET: i = 10; break;
+		case EET: i = 11; break;
+		case MOS: i = 12; break;
+		case DUB: i = 13; break;
+		case KAB: i = 14; break;
+		case KAR: i = 15; break;
+		case BOM: i = 16; break;
+		case KAT: i = 17; break;
+		case DHA: i = 18; break;
+		case BAN: i = 19; break;
+		case HON: i = 20; break;
+		case TOK: i = 21; break;
+		case ACST: i = 22; break;
+		case AEST: i = 23; break;
+		case NOU: i = 24; break;
+		case NZST: i = 25; break;
+		default: i = 26; break;
+	}
 	uifc.helpbuf=
 		"`Non-U.S. Time Zone:`\n"
 		"\n"
@@ -269,7 +298,8 @@ int edit_sys_timezone(void)
 		"Choose `Other...` if a region representing your local time zone is\n"
 		"not listed (you will be able to set the UTC offset manually)."
 	;
-	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+	bar = i;
+	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,&bar
 		,"None-U.S. Time Zone",opt);
 	if(i==-1)
 		return -1;
