@@ -1372,7 +1372,9 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	xtrndat(name,dropdir,cfg.xtrn[xtrnnum]->type,tleft,cfg.xtrn[xtrnnum]->misc);
 	if(!online)
 		return(false);
-	snprintf(str, sizeof(str), "running external %s: %s", cfg.xtrn[xtrnnum]->name, user_event ? "user event" : "program");
+	snprintf(str, sizeof(str), "running external %s: %s"
+		,user_event ? "user event" : "program"
+		,cfg.xtrn[xtrnnum]->name);
 	logline("X-",str);
 	if(cfg.xtrn[xtrnnum]->cmd[0]!='*' && logfile_fp!=NULL) {
 		fclose(logfile_fp);
