@@ -224,8 +224,8 @@ static char* prop_desc[] = {
 	,"do callbacks after script finishes running"
 	/* New properties go here... */
 	,"full path and filename of JS file executed"
-	,"directory of executed JS file"
 	,"JS filename executed (with no path)"
+	,"directory of executed JS file"
 	,"Either the configured startup directory in SCFG (for externals) or the cwd when jsexec is started"
 	,"global scope for this script"
 	,"load() search path array.<br>For relative load paths (e.g. not beginning with '/' or '\\'), "
