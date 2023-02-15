@@ -81,8 +81,8 @@ static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 	return(i);
 }
 
-static void showbuf(uifc_winmode_t, int left, int top, int width, int height
-                            ,const char *title, const char *hbuf, int *curp, int *barp)
+static void showbuf(uifc_winmode_t mode, int left, int top, int width, int height
+	,const char *title, const char *hbuf, int *curp, int *barp)
 {
 	puts(title);
 	puts(hbuf);
