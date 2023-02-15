@@ -667,7 +667,7 @@ int ulist(int64_t mode, int left, int top, int width, int *cur, int *bar
 	if(!(api->mode&UIFC_NHM))
 		uifc_mouse_disable();
 
-	title_len=strlen(title);
+	title_len=(mode & WIN_NOBRDR) ? 0 :strlen(title);
 
 	if(mode&WIN_FAT) {
 		s_top=1;
