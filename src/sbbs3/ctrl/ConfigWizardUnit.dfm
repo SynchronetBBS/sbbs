@@ -1115,7 +1115,7 @@ object ConfigWizard: TConfigWizard
           'This same password will be required of you'
           '(via the SY: prompt)'
           'when you logon to the BBS with any user account'
-          'that has System Operator (sysop) privilages '
+          'that has System Operator (sysop) privileges '
           '(i.e. level 90 or higher).')
         ReadOnly = True
         TabOrder = 1
