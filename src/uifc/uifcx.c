@@ -81,6 +81,12 @@ static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 	return(i);
 }
 
+static void showbuf(uifc_winmode_t, int left, int top, int width, int height
+                            ,const char *title, const char *hbuf, int *curp, int *barp)
+{
+	puts(title);
+	puts(hbuf);
+}
 
 /****************************************************************************/
 /* Initialization function, see uifc.h for details.							*/
@@ -110,7 +116,7 @@ int uifcinix(uifcapi_t* uifcapi)
     api->input=uinput;
     api->sethelp=sethelp;
     api->showhelp=help;
-	api->showbuf=NULL;
+	api->showbuf=showbuf;
 	api->timedisplay=NULL;
 	api->printf = uprintf;
 
