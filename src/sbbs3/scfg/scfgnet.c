@@ -923,7 +923,7 @@ void net_cfg()
 						done=1;
 						break;
 					case 0:
-						edit_sys_inetaddr();
+						edit_sys_inetaddr(false);
 						break;
 					case 1:
 						uifc.helpbuf=

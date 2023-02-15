@@ -46,6 +46,7 @@ char tmp[256];
 char error[256];
 int  backup_level=5;
 char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code Suffix", NULL };
+static char title[128];
 
 /* convenient space-saving global constants */
 const char* nulstr="";
@@ -168,31 +169,81 @@ void cfg_wizard(void)
 		return;
 	}
 
+	scfg_t saved_cfg = cfg;
 	do {
-		if(edit_sys_name() < 1)
+		if(edit_sys_name(true) < 1)
 			continue;
-		if(edit_sys_operator() < 1)
+		if(edit_sys_operator(true) < 1)
 			continue;
-		if(edit_sys_password() < 1)
+		if(edit_sys_password(true) < 1)
 			continue;
-		if(edit_sys_inetaddr() < 1)
+		if(edit_sys_inetaddr(true) < 1)
 			continue;
-		if(edit_sys_id() < 0)
+		if(edit_sys_id(true) < 0)
 			continue;
-		if(edit_sys_location() < 1)
+		if(edit_sys_location(true) < 1)
 			continue;
-		if(edit_sys_timezone() < 0)
+		if(edit_sys_timezone(true) < 0)
 			continue;
-		if(edit_sys_timefmt() < 0)
+		if(edit_sys_timefmt(true) < 0)
 			continue;
-		if(edit_sys_datefmt() < 0)
+		if(edit_sys_datefmt(true) < 0)
 			continue;
-		uifc.msg("Initial Setup Complete!");
+		if(edit_sys_newuser_policy(true) < 0)
+			continue;
+		if(edit_sys_alias_policy(true) < 0)
+			continue;
+		if(edit_sys_delmsg_policy(true) < 0)
+			continue;
+		if(memcmp(&saved_cfg, &cfg, sizeof(cfg)) == 0) {
+			uifc.scrn(title);
+			uifc.msg("No configuration changes made");
+			continue;
+		}
+		uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 80, 20
+			,"System Password Verification"
+			,"At this point you must re-enter the system password that you created\n"
+			"earlier in the configuration wizard.\n"
+			"\n"
+			"This same password will be required of you when you logon to the BBS with\n"
+			"any user account that has System Operator (sysop) privileges\n"
+			"(i.e. security level 90 or higher).\n"
+			,NULL,NULL);
+		char pass[sizeof(cfg.sys_pass)];
+		do {
+			if(uifc.input(WIN_L2R|WIN_SAV, 0, 10, "SY", pass, sizeof(cfg.sys_pass)-1, K_PASSWORD | K_UPPER) < 0)
+				break;
+		} while(strcmp(cfg.sys_pass, pass) != 0);
+		if(strcmp(cfg.sys_pass, pass))
+			continue;
+		uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 80, 20
+			,"Setup Wizard"
+			,"                        ~ Initial Setup Complete! ~\n"
+			"\n"
+			"You have completed the initial configuration of the basic parameters\n"
+			"required to run Synchronet - the ultimate choice in BBS software\n"
+			"for the Internet Age.\n"
+			"\n"
+			"\n"
+			"\n"
+			"\n"
+			"\n"
+			"\n"
+			"\n"
+			"\n"
+			"\n"
+			"Thank you for choosing Synchronet,\n"
+			"                                             Rob Swindell (digital man)\n"
+			,NULL, NULL);
+		if(!uifc.confirm("Save Changes"))
+			continue;
+		if(strcmp(saved_cfg.sys_pass, cfg.sys_pass) != 0)
+			reencrypt_keys(saved_cfg.sys_pass, cfg.sys_pass);
 		cfg.new_install = new_install;
 		save_main_cfg(&cfg, backup_level);
 		save_msgs_cfg(&cfg, backup_level);
 		break;
-	} while(!uifc.confirm("Abort Setup Wizard?"));
+	} while(uifc.deny("Abort Setup Wizard"));
 
 	free_main_cfg(&cfg);
 	free_msgs_cfg(&cfg);
@@ -482,8 +533,8 @@ int main(int argc, char **argv)
 		if((mopt[i]=(char *)malloc(64))==NULL)
 			allocfail(64);
 
-	SAFEPRINTF2(str,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
-	if(uifc.scrn(str)) {
+	SAFEPRINTF2(title,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
+	if(uifc.scrn(title)) {
 		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
 		bail(1);
 	}
@@ -502,8 +553,11 @@ int main(int argc, char **argv)
 		iniCloseFile(fp);
 	}
 	if(run_wizard
-		|| (cfg.new_install && uifc.msg("New install detected, starting Initial Setup Wizard") >= 0))
-			cfg_wizard();
+		|| (cfg.new_install && uifc.msg("New install detected, starting Initial Setup Wizard") >= 0)) {
+		cfg_wizard();
+		if(run_wizard)
+			bail(0);
+	}
 
 	i=0;
 	strcpy(mopt[i++],"Nodes");

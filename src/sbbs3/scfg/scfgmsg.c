@@ -1180,7 +1180,7 @@ void msg_opts()
                 }
 				return;
 			case 0:
-				edit_sys_id();
+				edit_sys_id(false);
 				break;
 			case 1:
 				uifc.helpbuf=
@@ -1451,43 +1451,7 @@ void msg_opts()
 				}
                 break;
 			case 16:
-				strcpy(opt[0],"Yes");
-				strcpy(opt[1],"No");
-				strcpy(opt[2],"Sysops Only");
-				opt[3][0]=0;
-				i=1;
-				uifc.helpbuf=
-					"`Users Can View Deleted Messages:`\n"
-					"\n"
-					"If this option is set to `Yes`, then users will be able to view messages\n"
-					"they've sent and deleted or messages sent to them and they've deleted\n"
-					"with the option of un-deleting the message before the message is\n"
-					"physically purged from the e-mail database.\n"
-					"\n"
-					"If this option is set to `No`, then when a message is deleted, it is no\n"
-					"longer viewable (with SBBS) by anyone.\n"
-					"\n"
-					"If this option is set to `Sysops Only`, then only sysops and sub-ops (when\n"
-					"appropriate) can view deleted messages.\n"
-				;
-
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Users Can View Deleted Messages",opt);
-				if(!i && (cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM))
-					!=(SM_USRVDELM|SM_SYSVDELM)) {
-					cfg.sys_misc|=(SM_USRVDELM|SM_SYSVDELM);
-					uifc.changes=1; 
-				}
-				else if(i==1 && cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM)) {
-					cfg.sys_misc&=~(SM_USRVDELM|SM_SYSVDELM);
-					uifc.changes=1; 
-				}
-				else if(i==2 && (cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM))
-					!=SM_SYSVDELM) {
-					cfg.sys_misc|=SM_SYSVDELM;
-					cfg.sys_misc&=~SM_USRVDELM;
-					uifc.changes=1; 
-				}
+				edit_sys_delmsg_policy(false);
                 break;
 			case 17:
 				uifc.helpbuf=

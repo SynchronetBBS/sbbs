@@ -21,74 +21,97 @@
 #include "ssl.h"
 #include "ciolib.h"	// CIO_KEY_*
 
-int edit_sys_name()
+static int wiz_help(const char* buf)
 {
+	uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 80, 20
+		,"Setup Wizard", buf, NULL, NULL);
+	uifc.helpbuf = NULL;
+	return WIN_SAV | WIN_L2R | WIN_NOBRDR;
+}
+
+int edit_sys_name(bool wiz)
+{
+	int mode = WIN_SAV | WIN_MID;
 	uifc.helpbuf=
 		"`BBS Name:`\n"
 		"\n"
 		"This is the name of your Bulletin Board System.  Try to be original.\n"
+		"If you want to see BBS names already in use, reference Internet indexes\n"
+		"such as `http://synchro.net/sbbslist.html` and `http://telnetbbsguide.com`"
 		;
-	return uifc.input(WIN_MID|WIN_SAV,0,0,"BBS Name",cfg.sys_name,sizeof(cfg.sys_name)-1,K_EDIT);
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	return uifc.input(mode,0,10,"BBS Name",cfg.sys_name,sizeof(cfg.sys_name)-1,K_EDIT);
 }
 
-int edit_sys_location()
+int edit_sys_location(bool wiz)
 {
+	int mode = WIN_SAV | WIN_MID;
 	uifc.helpbuf=
 		"`System Location:`\n"
 		"\n"
 		"This is the location of the BBS. The format is flexible, but it is\n"
-		"suggested you use the `City, State` format for US locations.\n"
+		"suggested you use the `City, State` format for U.S. locations.\n"
 		;
-	return uifc.input(WIN_MID|WIN_SAV,0,0,"System Location",cfg.sys_location,sizeof(cfg.sys_location)-1,K_EDIT);
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	return uifc.input(mode,0,10,"System Location",cfg.sys_location,sizeof(cfg.sys_location)-1,K_EDIT);
 }
 
-int edit_sys_operator()
+int edit_sys_operator(bool wiz)
 {
+	int mode = WIN_SAV | WIN_MID;
 	uifc.helpbuf=
 		"`System Operator:`\n"
 		"\n"
-		"This is the name or alias of the system operator. This does not have to\n"
+		"This is the name or alias of the system operator.  This does not have to\n"
 		"be the same as user #1.  This field is used for informational purposes\n"
 		"only.\n"
 		;
-	return uifc.input(WIN_MID|WIN_SAV,0,0,"System Operator Name",cfg.sys_op,sizeof(cfg.sys_op)-1,K_EDIT);
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	return uifc.input(mode,0,10,"System Operator Name",cfg.sys_op,sizeof(cfg.sys_op)-1,K_EDIT);
 }
 
-int edit_sys_password()
+int edit_sys_password(bool wiz)
 {
+	int mode = WIN_SAV | WIN_MID;
 	uifc.helpbuf=
 		"`System Password:`\n"
 		"\n"
 		"This is an extra security password required for sysop logon and certain\n"
-		"sysop functions. This password should be something not easily guessed\n"
-		"and should be kept absolutely confidential. This password must be\n"
+		"sysop functions.  This password should be something not easily guessed\n"
+		"and should be kept absolutely confidential.  This password must be\n"
 		"entered at the Terminal Server `SY:` prompt.\n"
 		"\n"
 		"This system password can also be used to enable sysop access to the\n"
 		"FTP Server by authenticating with a password that combines a sysop's\n"
 		"password with the system password, separated by a colon\n"
 		"(i.e. '`user-pass:system-pass`').\n"
-		"\n"
-		"`Note:` When the `Allow Sysop Access` Toggle Option is set to `No`,\n"
-		"      The system password is effectively disabled."
 		;
-	return uifc.input(WIN_MID|WIN_SAV,0,0,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	return uifc.input(mode,0,16,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
 }
 
-int edit_sys_inetaddr()
+int edit_sys_inetaddr(bool wiz)
 {
+	int mode = WIN_SAV | WIN_MID;
 	uifc.helpbuf=
 		"`Sytem Internet Address:`\n"
 		"\n"
 		"Enter your system's Internet address (hostname or IP address) here\n"
 		"(e.g. `joesbbs.com`).\n"
 		;
-	return uifc.input(WIN_MID|WIN_SAV,0,0,"System Internet Address"
-		,cfg.sys_inetaddr,sizeof(cfg.sys_inetaddr)-1,K_EDIT);
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	return uifc.input(mode,0,10,"System Internet Address"
+		,cfg.sys_inetaddr,32,K_EDIT);
 }
 
-int edit_sys_id()
+int edit_sys_id(bool wiz)
 {
+	int mode = WIN_SAV | WIN_MID;
 	char str[LEN_QWKID + 1];
 
 	do {
@@ -98,16 +121,18 @@ int edit_sys_id()
 			"\n"
 			"This is a short system ID for your BBS that is used for QWK packets.\n"
 			"It should be an abbreviation of your BBS name or other related string.\n"
-			"This ID will be used for your outgoing and incoming QWK packets. If\n"
+			"This ID will be used for your outgoing and incoming QWK packets.  If\n"
 			"you plan on networking via QWK packets with another Synchronet BBS,\n"
-			"this ID should not begin with a number. The maximum length of the ID\n"
+			"this ID should not begin with a number.  The maximum length of the ID\n"
 			"is eight characters and cannot contain spaces or other invalid DOS\n"
-			"filename characters. In a QWK packet network, each system must have\n"
+			"filename characters.  In a QWK packet network, each system must have\n"
 			"a unique QWK system ID.\n"
 		;
-
-		uifc.input(WIN_MID|WIN_SAV,0,0,"BBS ID for QWK Packets"
-			,str,LEN_QWKID,K_EDIT|K_UPPER);
+		if(wiz)
+			mode = wiz_help(uifc.helpbuf);
+		if(uifc.input(mode,0,16,"BBS ID for QWK Packets"
+			,str,LEN_QWKID,K_EDIT|K_UPPER) < 1)
+			break;
 		if(code_ok(str)) {
 			SAFECOPY(cfg.sys_id,str);
 			return 1;
@@ -117,8 +142,9 @@ int edit_sys_id()
 	return -1;
 }
 
-static void configure_dst(void)
+static int configure_dst(bool wiz)
 {
+	int mode = WIN_SAV | WIN_MID;
 	strcpy(opt[0],"Yes");
 	strcpy(opt[1],"No");
 	strcpy(opt[2],"Automatic");
@@ -137,10 +163,12 @@ static void configure_dst(void)
 		"instead of \"PST\" and calculate the correct offset from UTC), it does not\n"
 		"actually change the time on your computer system(s) for you.\n"
 	;
-	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	i=uifc.list(mode,0,14,0,&i,0
 		,"Daylight Saving Time (DST)",opt);
 	if(i==-1)
-        return;
+        return -1;
 	cfg.sys_misc&=~SM_AUTO_DST;
 	switch(i) {
 		case 0:
@@ -154,10 +182,12 @@ static void configure_dst(void)
 			sys_timezone(&cfg);
 			break;
 	}
+	return i;
 }
 
-int edit_sys_timezone(void)
+int edit_sys_timezone(bool wiz)
 {
+	int mode = WIN_SAV | WIN_MID;
 	char str[128];
 	int i;
 	int bar;
@@ -168,8 +198,9 @@ int edit_sys_timezone(void)
 		"\n"
 			"If your local time zone is the United States, select `Yes`.\n"
 	;
-
-	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	i=uifc.list(mode,0,10,0,&i,0
 		,"United States Time Zone",uifcYesNoOpts);
 	if(i==-1)
 		return -1;
@@ -199,7 +230,9 @@ int edit_sys_timezone(void)
 			"\n"
 			"Choose the region which most closely reflects your local U.S. time zone.\n"
 		;
-		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+		if(wiz)
+			mode = wiz_help(uifc.helpbuf);
+		i=uifc.list(mode,0,10,0,&i,0
 			,"U.S. Time Zone",opt);
 		if(i==-1)
 			return -1;
@@ -229,8 +262,7 @@ int edit_sys_timezone(void)
 				cfg.sys_timezone=BST;
 				break;
 		}
-		configure_dst();
-		return 1;
+		return configure_dst(wiz);
 	}
 	i=0;
 	strcpy(opt[i++],"Midway");
@@ -295,12 +327,17 @@ int edit_sys_timezone(void)
 		"\n"
 		"Choose the region which most closely reflects your local time zone.\n"
 		"\n"
-		"Choose `Other...` if a region representing your local time zone is\n"
-		"not listed (you will be able to set the UTC offset manually)."
+		"Choose `Other...` if a region representing your local time zone is not listed\n"
+		"(you will be able to set the exact UTC offset manually)."
 	;
+	if(wiz) {
+		mode = wiz_help(uifc.helpbuf);
+		mode |= WIN_FIXEDHEIGHT;
+	}
 	bar = i;
-	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,&bar
-		,"None-U.S. Time Zone",opt);
+	uifc.list_height = 8;
+	i=uifc.list(mode,0,10,0,&i,&bar
+		,"Non-U.S. Time Zone",opt);
 	if(i==-1)
 		return -1;
 	switch(i) {
@@ -394,26 +431,117 @@ int edit_sys_timezone(void)
 			uifc.helpbuf=
 				"`Time Zone Offset:`\n"
 				"\n"
-				"Enter your local time zone offset from Universal Time (UTC/GMT)\n"
-				"in `HH:MM` format.\n"
+				"Enter your local time zone offset from Universal Time (UTC/GMT) in `HH:MM`\n"
+				"format.\n"
 			;
-			uifc.input(WIN_MID|WIN_SAV,0,0
-				,"Time (HH:MM) East (+) or West (-) of Universal "
-					"Time"
-				,str,6,K_EDIT|K_UPPER);
+			if(wiz)
+				mode = wiz_help(uifc.helpbuf);
+			if(uifc.input(mode,0,10
+				,"Time (HH:MM) East (+) or West (-) of Universal Time"
+				,str,6,K_EDIT|K_UPPER) < 1)
+				return -1;
 			cfg.sys_timezone=atoi(str)*60;
 			char *p=strchr(str,':');
 			if(p) {
 				if(cfg.sys_timezone<0)
 					cfg.sys_timezone-=atoi(p+1);
 				else
-					cfg.sys_timezone+=atoi(p+1); 
+					cfg.sys_timezone+=atoi(p+1);
 			}
 			return 0;
 	}
 	if(SMB_TZ_HAS_DST(cfg.sys_timezone))
-		configure_dst();
+		return configure_dst(wiz);
 	return 1;
+}
+
+int edit_sys_newuser_policy(bool wiz)
+{
+	int mode = WIN_SAV | WIN_MID;
+	int i=cfg.sys_misc&SM_CLOSED ? 1:0;
+	uifc.helpbuf=
+		"`Open to New Users:`\n"
+		"\n"
+		"If you want callers to be able to register as a new user of your system\n"
+		"(e.g. create a new user account by logging-in as `New`), set this option\n"
+		"to `Yes`.\n"
+	;
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	i=uifc.list(mode,0,10,0,&i,0
+		,"Open to New Users",uifcYesNoOpts);
+	if(i == 0) {
+		cfg.sys_misc &= ~SM_CLOSED;
+		uifc.helpbuf=
+			"`New User Password:`\n"
+			"\n"
+			"If you want callers to be able to register ~ only ~ if they know a secret\n"
+			"password, enter that password here.  If you prefer that `any` caller be\n"
+			"able to register a new user account, leave this option blank.\n"
+		;
+		if(wiz)
+			mode = wiz_help(uifc.helpbuf);
+		if(uifc.input(mode,0,10,"New User Password (optional)",cfg.new_pass,sizeof(cfg.new_pass)-1
+			,K_EDIT|K_UPPER) < 0)
+			return -1;
+	}
+	else if(i == 1) {
+		cfg.sys_misc |= SM_CLOSED;
+	}
+	return i;
+}
+
+int edit_sys_delmsg_policy(bool wiz)
+{
+	int mode = WIN_SAV | WIN_MID;
+	char* opt[] = {"Yes", "No", "Sysops Only", NULL };
+	int i;
+	switch(cfg.sys_misc & (SM_USRVDELM | SM_SYSVDELM)) {
+		default:
+		case SM_USRVDELM | SM_SYSVDELM:
+			i = 0;
+			break;
+		case 0:
+			i = 1;
+			break;
+		case SM_SYSVDELM:
+			i = 2;
+			break;
+	}
+	uifc.helpbuf=
+		"`Users Can View Deleted Messages:`\n"
+		"\n"
+		"If this option is set to `Yes`, then users will be able to view messages\n"
+		"they've sent and deleted or messages sent to them and they've deleted\n"
+		"with the option of un-deleting the message before the message is\n"
+		"physically purged from the e-mail database.\n"
+		"\n"
+		"If this option is set to `No`, then when a message is deleted, it is no\n"
+		"longer viewable (with SBBS) by anyone.\n"
+		"\n"
+		"If this option is set to `Sysops Only`, then only sysops and sub-ops (when\n"
+		"appropriate) can view deleted messages.\n"
+	;
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	i=uifc.list(mode,0,15,0,&i,0
+		,"Users Can View Deleted Messages",opt);
+	if(!i && (cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM))
+		!=(SM_USRVDELM|SM_SYSVDELM)) {
+		cfg.sys_misc|=(SM_USRVDELM|SM_SYSVDELM);
+		uifc.changes=1;
+	}
+	else if(i==1 && cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM)) {
+		cfg.sys_misc&=~(SM_USRVDELM|SM_SYSVDELM);
+		uifc.changes=1;
+	}
+	else if(i==2 && (cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM))
+		!=SM_SYSVDELM) {
+		cfg.sys_misc|=SM_SYSVDELM;
+		cfg.sys_misc&=~SM_USRVDELM;
+		uifc.changes=1;
+	}
+	return i;
 }
 
 void security_cfg(void)
@@ -493,7 +621,7 @@ void security_cfg(void)
 			case -1:
 				return;
 			case __COUNTER__:
-				edit_sys_password();
+				edit_sys_password(false);
 				break;
 			case __COUNTER__:
 				if(!(cfg.sys_misc&SM_R_SYSOP))
@@ -720,31 +848,7 @@ void security_cfg(void)
 				cfg.sys_autodel=atoi(str);
 				break;
 			case __COUNTER__:
-				i=cfg.sys_misc&SM_CLOSED ? 1:0;
-				uifc.helpbuf=
-					"`Open to New Users:`\n"
-					"\n"
-					"If you want callers to be able to register as a new user of your system\n"
-					"(e.g. create a new user account by logging-in as `New`), set this option\n"
-					"to `Yes`.\n"
-				;
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Open to New Users",uifcYesNoOpts);
-				if(i == 0) {
-					cfg.sys_misc &= ~SM_CLOSED;
-					uifc.helpbuf=
-						"`New User Password:`\n"
-						"\n"
-						"If you want callers to only be able to register ~ only ~ if they know\n"
-						"a secret password, enter that password here.  If you prefer `any` caller\n"
-						"be able to register a new user account, leave this option blank.\n"
-					;
-					uifc.input(WIN_MID|WIN_SAV,0,0,"New User Password (optional)",cfg.new_pass,sizeof(cfg.new_pass)-1
-						,K_EDIT|K_UPPER);
-				}
-				else if(i == 1) {
-					cfg.sys_misc |= SM_CLOSED;
-				}
+				edit_sys_newuser_policy(false);
 				break;
 			case __COUNTER__:
 				i=cfg.sys_misc&SM_TIME_EXP ? 0:1;
@@ -1189,8 +1293,9 @@ void security_cfg(void)
 	}
 }
 
-int edit_sys_timefmt()
+int edit_sys_timefmt(bool wiz)
 {
+	int mode = WIN_SAV | WIN_MID;
 	int i = (cfg.sys_misc & SM_MILITARY) ? 1:0;
 	char* opts[3] = { "12 hour (AM/PM)", "24 hour", NULL };
 	uifc.helpbuf=
@@ -1199,7 +1304,9 @@ int edit_sys_timefmt()
 		"If you would like the time-of-day to be displayed and entered in 24 hour\n"
 		"format always, set this option to `24 hour`.\n"
 	;
-	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	i=uifc.list(mode,0,10,0,&i,0
 		,"Time Display Format", opts);
 	if(i == 0)
 		cfg.sys_misc &= ~SM_MILITARY;
@@ -1208,23 +1315,91 @@ int edit_sys_timefmt()
 	return i;
 }
 
-int edit_sys_datefmt()
+int edit_sys_datefmt(bool wiz)
 {
+	int mode = WIN_SAV | WIN_MID;
 	int i = (cfg.sys_misc & SM_EURODATE) ? 1:0;
 	char* opts[3] = { "MM/DD/YY", "DD/MM/YY", NULL };
 	uifc.helpbuf=
 		"`Date Display Format:`\n"
 		"\n"
-		"If you would like dates to be displayed and entered in `DD/MM/YY` format\n"
-		"instead of `MM/DD/YY` format, set this option to `Yes`.\n"
+		"If you would like abbreviated dates to be displayed in the traditional\n"
+		"U.S. date format of month first, choose `MM/DD/YY`.  If you prefer the\n"
+		"Europaen traditional date format of day first, choose `DD/MM/YY`.\n"
 	;
-	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	i=uifc.list(mode,0,10,0,&i,0
 		,"Date Display Format", opts);
 	if(i == 0)
 		cfg.sys_misc &= ~SM_EURODATE;
 	else if(i == 1)
 		cfg.sys_misc |= SM_EURODATE;
 	return i;
+}
+
+int edit_sys_alias_policy(bool wiz)
+{
+	int mode = WIN_SAV | WIN_MID;
+	int i = (cfg.uq & UQ_ALIASES) ? 0:1;
+	uifc.helpbuf=
+		"`Allow Users to Use Aliases:`\n"
+		"\n"
+		"If you want the users of your system to be allowed to be known by a\n"
+		"false name, handle, or alias, set this option to `Yes`.  If you want all\n"
+		"users on your system to be known only by their real names, select `No`.\n"
+	;
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	i=uifc.list(mode,0,10,0,&i,0
+		,"Allow Users to Use Aliases",uifcYesNoOpts);
+	if(!i && !(cfg.uq&UQ_ALIASES)) {
+		cfg.uq|=UQ_ALIASES;
+	}
+	else if(i==1 && cfg.uq&UQ_ALIASES) {
+		cfg.uq&=~UQ_ALIASES;
+	}
+	return i;
+}
+
+void reencrypt_keys(const char *old_pass, const char* new_pass)
+{
+	if(fexist("ssl.cert") || fexist("cryptlib.key") || fexist("letsyncrypt.key")) {
+		CRYPT_KEYSET ssl_keyset;
+		CRYPT_CONTEXT ssl_context = -1;
+		int status;
+		int ignoreme;
+
+		if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "ssl.cert", CRYPT_KEYOPT_NONE)))
+			if (cryptStatusOK(status = cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssl_cert", old_pass)))
+				if (cryptStatusOK(status = cryptDeleteKey(ssl_keyset, CRYPT_KEYID_NAME, "ssl_cert"))) {
+					ignoreme = cryptAddPrivateKey(ssl_keyset, ssl_context, new_pass);
+					cryptKeysetClose(ssl_keyset);
+				}
+
+		if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "cryptlib.key", CRYPT_KEYOPT_NONE)))
+			if (cryptStatusOK(status = cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssh_server", old_pass)))
+				if (cryptStatusOK(status = cryptDeleteKey(ssl_keyset, CRYPT_KEYID_NAME, "ssh_server"))) {
+					ignoreme = cryptAddPrivateKey(ssl_keyset, ssl_context, new_pass);
+					cryptKeysetClose(ssl_keyset);
+				}
+
+		if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "letsyncrypt.key", CRYPT_KEYOPT_NONE))) {
+			char value[INI_MAX_VALUE_LEN];
+			char* host = "acme-v02.api.letsencrypt.org";
+			FILE* fp = fopen("letsyncrypt.ini", "r");
+			if(fp != NULL) {
+				host = iniReadString(fp, "state", "host", host, value);
+				fclose(fp);
+			}
+			if (cryptStatusOK(status = cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, host, old_pass)))
+				if (cryptStatusOK(status = cryptDeleteKey(ssl_keyset, CRYPT_KEYID_NAME, host))) {
+					ignoreme = cryptAddPrivateKey(ssl_keyset, ssl_context, new_pass);
+					cryptKeysetClose(ssl_keyset);
+				}
+		}
+		(void)ignoreme;
+	}
 }
 
 void sys_cfg(void)
@@ -1269,58 +1444,23 @@ void sys_cfg(void)
 				if(!i) {
 					cfg.new_install=new_install;
 					if(strcmp(sys_pass, cfg.sys_pass) != 0) {
-						if(fexist("ssl.cert") || fexist("cryptlib.key") || fexist("letsyncrypt.key")) {
-							CRYPT_KEYSET ssl_keyset;
-							CRYPT_CONTEXT ssl_context = -1;
-							int status;
-							int ignoreme;
-
-							if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "ssl.cert", CRYPT_KEYOPT_NONE)))
-								if (cryptStatusOK(status = cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssl_cert", sys_pass)))
-									if (cryptStatusOK(status = cryptDeleteKey(ssl_keyset, CRYPT_KEYID_NAME, "ssl_cert"))) {
-										ignoreme = cryptAddPrivateKey(ssl_keyset, ssl_context, cfg.sys_pass);
-										cryptKeysetClose(ssl_keyset);
-									}
-
-							if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "cryptlib.key", CRYPT_KEYOPT_NONE)))
-								if (cryptStatusOK(status = cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssh_server", sys_pass)))
-									if (cryptStatusOK(status = cryptDeleteKey(ssl_keyset, CRYPT_KEYID_NAME, "ssh_server"))) {
-										ignoreme = cryptAddPrivateKey(ssl_keyset, ssl_context, cfg.sys_pass);
-										cryptKeysetClose(ssl_keyset);
-									}
-
-							if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "letsyncrypt.key", CRYPT_KEYOPT_NONE))) {
-								char value[INI_MAX_VALUE_LEN];
-								char* host = "acme-v02.api.letsencrypt.org";
-								FILE* fp = fopen("letsyncrypt.ini", "r");
-								if(fp != NULL) {
-									host = iniReadString(fp, "state", "host", host, value);
-									fclose(fp);
-								}
-								if (cryptStatusOK(status = cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, host, sys_pass)))
-									if (cryptStatusOK(status = cryptDeleteKey(ssl_keyset, CRYPT_KEYID_NAME, host))) {
-										ignoreme = cryptAddPrivateKey(ssl_keyset, ssl_context, cfg.sys_pass);
-										cryptKeysetClose(ssl_keyset);
-									}
-							}
-							(void)ignoreme;
-						}
+						reencrypt_keys(sys_pass, cfg.sys_pass);
 					}
 					save_main_cfg(&cfg,backup_level);
 					refresh_cfg(&cfg);
 				}
 				return;
 			case 0:
-				edit_sys_name();
+				edit_sys_name(false);
 				break;
 			case 1:
-				edit_sys_location();
+				edit_sys_location(false);
 				break;
 			case 2:
-				edit_sys_timezone();
+				edit_sys_timezone(false);
 				break;
 			case 3:
-				edit_sys_operator();
+				edit_sys_operator(false);
 				break;
 			case 4:    /* Toggle Options */
 				done=0;
@@ -1359,22 +1499,7 @@ void sys_cfg(void)
 							done=1;
 							break;
 						case 0:
-							i=cfg.uq&UQ_ALIASES ? 0:1;
-							uifc.helpbuf=
-								"`Allow Users to Use Aliases:`\n"
-								"\n"
-								"If you want the users of your system to be allowed to be known by a\n"
-								"false name, handle, or alias, set this option to `Yes`. If you want all\n"
-								"users on your system to be known only by their real names, select `No`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-								,"Allow Users to Use Aliases",uifcYesNoOpts);
-							if(!i && !(cfg.uq&UQ_ALIASES)) {
-								cfg.uq|=UQ_ALIASES;
-							}
-							else if(i==1 && cfg.uq&UQ_ALIASES) {
-								cfg.uq&=~UQ_ALIASES;
-							}
+							edit_sys_alias_policy(false);
 							break;
 						case 1:
 							i=cfg.sys_misc&SM_TIMEBANK ? 0:1;
@@ -1472,10 +1597,10 @@ void sys_cfg(void)
 							}
 							break;
 						case 6:
-							edit_sys_timefmt();
+							edit_sys_timefmt(false);
 							break;
 						case 7:
-							edit_sys_datefmt();
+							edit_sys_datefmt(false);
 							break;
 						case 8:
 							i=cfg.sys_misc&SM_NOSYSINFO ? 1:0;
