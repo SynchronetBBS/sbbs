@@ -134,13 +134,18 @@ void sbbs_t::logout()
 		putuserstr(useron.number, USER_CURDIR, cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
 	hhmmtostr(&cfg,&tm,str);
 	SAFECAT(str,"  ");
-	if(sys_status&SS_USERON)
+	if(sys_status&SS_USERON) {
+		char ulb[64];
+		char dlb[64];
 		safe_snprintf(tmp,sizeof(tmp),"T:%3u   R:%3lu   P:%3lu   E:%3lu   F:%3lu   "
-			"U:%3luk %lu   D:%3luk %lu"
+			"U:%4s %lu   D:%4s %lu"
 			,(uint)(now-logontime)/60,posts_read,logon_posts
-			,logon_emails,logon_fbacks,logon_ulb/1024UL,logon_uls
-			,logon_dlb/1024UL,logon_dls);
-	else
+			,logon_emails,logon_fbacks
+			,byte_estimate_to_str(logon_ulb, ulb, sizeof(ulb), 1024, /* precision: */logon_ulb > 1024*1024)
+			,logon_uls
+			,byte_estimate_to_str(logon_dlb, dlb, sizeof(dlb), 1024, /* precision: */logon_dlb > 1024*1204)
+			,logon_dls);
+	} else
 		SAFEPRINTF(tmp,"T:%3u sec",(uint)(now-answertime));
 	SAFECAT(str,tmp);
 	SAFECAT(str,"\r\n");
