@@ -2740,8 +2740,6 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
 	_setcursortype(_NOCURSOR);
 
 	title_len=strlen(title);
-	if(api->mode&UIFC_MOUSE)
-		title_len+=6;
 
 	if((unsigned)(top+height)>=api->scrn_len)
 		height = api->scrn_len - top;
@@ -2788,7 +2786,7 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
 		for(i=0; i<width*height; i++)
 			set_vmem(&tmp_buffer2[i], ' ', api->hclr|(api->bclr<<4), 0);
 		tmp_buffer2[0].ch=api->chars->help_top_left;
-		j=title_len;
+		j=title_len + 4; // Account for title breaks and spaces
 		if(j>width-6) {
 			j=width-6;
 		}
