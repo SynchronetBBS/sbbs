@@ -333,25 +333,24 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
     return(JS_TRUE);
 }
 
-static void badlogin(SOCKET sock, char* prot, char* user, char* passwd, char* host, union xp_sockaddr* addr)
+static void badlogin(SOCKET sock, char* user, char* passwd, client_t* client, union xp_sockaddr* addr)
 {
 	char reason[128];
-	char addr_ip[INET6_ADDRSTRLEN];
 	ulong count;
 
-	SAFEPRINTF(reason,"%s LOGIN", prot);
-	count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
+	SAFEPRINTF(reason,"%s LOGIN", client->protocol);
+	count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd);
+	mqtt_user_login_fail(&mqtt, client, user);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
-		hacklog(&scfg, &mqtt, reason, user, passwd, host, addr);
+		hacklog(&scfg, &mqtt, reason, user, passwd, client->host, addr);
 #ifdef _WIN32
 		if(startup->sound.hack[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 	}
 	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
-		inet_addrtop(addr, addr_ip, sizeof(addr_ip));
 		SAFEPRINTF(reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu)", count);
-		filter_ip(&scfg, prot, reason, host, addr_ip, user, /* fname: */NULL);
+		filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL);
 	}
 
 	mswait(startup->login_attempt.delay);
@@ -400,7 +399,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if(getuserdat(&scfg,&client->user)!=0) {
 		lprintf(LOG_NOTICE,"%04d %s !USER NOT FOUND: '%s'"
 			,client->socket,client->service->protocol,user);
-		badlogin(client->socket, client->service->protocol, user, pass, client->client->host, &client->addr);
+		badlogin(client->socket, user, pass, client->client, &client->addr);
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
@@ -416,7 +415,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if(client->user.pass[0] && (pass == NULL || stricmp(client->user.pass,pass))) { /* Wrong password */
 		lprintf(LOG_WARNING,"%04d %s !INVALID PASSWORD ATTEMPT FOR USER: %s"
 			,client->socket,client->service->protocol,client->user.alias);
-		badlogin(client->socket, client->service->protocol, user, pass, client->client->host, &client->addr);
+		badlogin(client->socket, user, pass, client->client, &client->addr);
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}

@@ -143,6 +143,7 @@ void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol
 	socklen_t addr_len = sizeof(*addr);
 	SAFEPRINTF(reason,"%s LOGIN", protocol);
 	count=loginFailure(startup->login_attempt_list, addr, protocol, user, passwd);
+	mqtt_user_login_fail(mqtt, &client, user);
 	if(user!=NULL && startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		getnameinfo(&addr->addr, addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 		::hacklog(&cfg, mqtt, reason, user, passwd, host_name, addr);

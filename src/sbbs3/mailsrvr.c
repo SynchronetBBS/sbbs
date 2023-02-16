@@ -967,34 +967,34 @@ static u_long resolve_ip(const char *inaddr)
 /* A successful login from the same host resets the counter.				*/
 /****************************************************************************/
 
-static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* prot, const char* resp, char* user, char* passwd, char* host, union xp_sockaddr* addr)
+static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* resp
+	,char* user, char* passwd, client_t* client, union xp_sockaddr* addr)
 {
 	char	reason[128];
-	char	ip[INET6_ADDRSTRLEN];
 	ulong	count;
 	
 	if(user == NULL)
 		user = "<unspecified>";
 
 	if(addr!=NULL) {
-		SAFEPRINTF(reason,"%s LOGIN", prot);
-		count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
+		SAFEPRINTF(reason,"%s LOGIN", client->protocol);
+		count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd);
+		mqtt_user_login_fail(&mqtt, client, user);
 		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
-			hacklog(&scfg, &mqtt, reason, user, passwd, host, addr);
+			hacklog(&scfg, &mqtt, reason, user, passwd, client->host, addr);
 #ifdef _WIN32
 			if(startup->sound.hack[0] && !sound_muted(&scfg)) 
 				PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 		}
-		inet_addrtop(addr, ip, sizeof(ip));
 		if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 			SAFEPRINTF(reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu)", count);
-			filter_ip(&scfg, (char*)prot, reason ,host, ip, user, /* fname: */NULL);
+			filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL);
 		}
 	}
 
 	mswait(startup->login_attempt.delay);
-	sockprintf(sock,prot,sess, "%s", resp);
+	sockprintf(sock, client->protocol, sess, "%s", resp);
 }
 
 static void pop3_thread(void* arg)
@@ -1305,7 +1305,7 @@ static void pop3_thread(void* arg)
 			else
 				lprintf(LOG_NOTICE,"%04d %s [%s] !UNKNOWN USER: '%s'"
 					,socket, client.protocol, host_ip, username);
-			badlogin(socket, session, client.protocol, pop_auth_error, username, password, host_name, &pop3.client_addr);
+			badlogin(socket, session, pop_auth_error, username, password, &client, &pop3.client_addr);
 			break;
 		}
 		if((i=getuserdat(&scfg, &user))!=0) {
@@ -1316,7 +1316,7 @@ static void pop3_thread(void* arg)
 		if(user.misc&(DELETED|INACTIVE)) {
 			lprintf(LOG_NOTICE,"%04d %s [%s] !DELETED or INACTIVE user #%u (%s)"
 				,socket, client.protocol, host_ip, user.number, username);
-			badlogin(socket, session, client.protocol, pop_auth_error, username, password, NULL, NULL);
+			badlogin(socket, session, pop_auth_error, username, password, &client, NULL);
 			break;
 		}
 		if(apop) {
@@ -1332,7 +1332,7 @@ static void pop3_thread(void* arg)
 				lprintf(LOG_DEBUG,"%04d !POP3 calc digest: %s",socket,str);
 				lprintf(LOG_DEBUG,"%04d !POP3 resp digest: %s",socket,response);
 #endif
-				badlogin(socket, session, client.protocol, pop_auth_error, username, response, host_name, &pop3.client_addr);
+				badlogin(socket, session, pop_auth_error, username, response, &client, &pop3.client_addr);
 				break;
 			}
 		} else if(stricmp(password,user.pass)) {
@@ -1342,7 +1342,7 @@ static void pop3_thread(void* arg)
 			else
 				lprintf(LOG_NOTICE,"%04d %s [%s] !FAILED Password attempt for user %s"
 					,socket, client.protocol, host_ip, username);
-			badlogin(socket, session, client.protocol, pop_auth_error, username, password, host_name, &pop3.client_addr);
+			badlogin(socket, session, pop_auth_error, username, password, &client, &pop3.client_addr);
 			break;
 		}
 
@@ -3991,8 +3991,12 @@ static void smtp_thread(void* arg)
 					}
 					lprintf(LOG_INFO,"%04d %s %s Added message header #%u from %s to %s"
 						,socket, client.protocol, client_id, newmsg.hdr.number, sender_info, rcpt_info);
-					if(relay_user.number!=0)
+					if(relay_user.number!=0) {
 						user_sent_email(&scfg, &relay_user, 1, usernum==1);
+						lprintf(LOG_DEBUG, "%04d %s %s #%u sent %u email messages today (of %u max), %u total"
+							,socket, client.protocol, client_id, relay_user.number
+							,relay_user.etoday, scfg.level_emailperday[relay_user.level], relay_user.emails);
+					}
 
 					if(nettype == NET_FIDO && scfg.netmail_sem[0])
 						ftouch(mailcmdstr(scfg.netmail_sem
@@ -4139,27 +4143,27 @@ static void smtp_thread(void* arg)
 				sockprintf(socket,client.protocol,session,"334 VXNlcm5hbWU6");	/* Base64-encoded "Username:" */
 				if((rd=sockreadline(socket, client.protocol, session, buf, sizeof(buf)))<1) {
 					lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH LOGIN username argument", socket, client.protocol, client_id);
-					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
+					badlogin(socket, session, badarg_rsp, NULL, NULL, &client, &smtp.client_addr);
 					continue;
 				}
 				if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
 					lprintf(LOG_DEBUG,"%04d %s %s RX: %s", socket, client.protocol, client_id, buf);
 				if(b64_decode(user_name,sizeof(user_name),buf,rd)<1 || str_has_ctrl(user_name)) {
 					lprintf(LOG_WARNING,"%04d %s %s !Bad AUTH LOGIN username argument", socket, client.protocol, client_id);
-					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
+					badlogin(socket, session, badarg_rsp, NULL, NULL, &client, &smtp.client_addr);
 					continue;
 				}
 				sockprintf(socket,client.protocol,session,"334 UGFzc3dvcmQ6");	/* Base64-encoded "Password:" */
 				if((rd=sockreadline(socket, client.protocol, session, buf, sizeof(buf)))<1) {
 					lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH LOGIN password argument", socket, client.protocol, client_id);
-					badlogin(socket, session, client.protocol, badarg_rsp, user_name, NULL, host_name, &smtp.client_addr);
+					badlogin(socket, session, badarg_rsp, user_name, NULL, &client, &smtp.client_addr);
 					continue;
 				}
 				if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
 					lprintf(LOG_DEBUG,"%04d %s %s RX: %s", socket, client.protocol, client_id, buf);
 				if(b64_decode(user_pass,sizeof(user_pass),buf,rd)<1 || str_has_ctrl(user_pass)) {
 					lprintf(LOG_WARNING,"%04d %s %s !Bad AUTH LOGIN password argument", socket, client.protocol, client_id);
-					badlogin(socket, session, client.protocol, badarg_rsp, user_name, NULL, host_name, &smtp.client_addr);
+					badlogin(socket, session, badarg_rsp, user_name, NULL, &client, &smtp.client_addr);
 					continue;
 				}
 			} else {	/* AUTH PLAIN b64(<username>\0<user-id>\0<password>) */
@@ -4167,13 +4171,13 @@ static void smtp_thread(void* arg)
 				SKIP_WHITESPACE(p);
 				if(*p==0) {
 					lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH PLAIN argument", socket, client.protocol, client_id);
-					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
+					badlogin(socket, session, badarg_rsp, NULL, NULL, &client, &smtp.client_addr);
 					continue;
 				}
 				ZERO_VAR(tmp);
 				if(b64_decode(tmp,sizeof(tmp),p,strlen(p))<1 || str_has_ctrl(tmp)) {
 					lprintf(LOG_WARNING,"%04d %s %s !Bad AUTH PLAIN argument", socket, client.protocol, client_id);
-					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
+					badlogin(socket, session, badarg_rsp, NULL, NULL, &client, &smtp.client_addr);
 					continue;
 				}
 				p=tmp;
@@ -4181,7 +4185,7 @@ static void smtp_thread(void* arg)
 				p++;			/* skip NULL */
 				if(*p==0) {
 					lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH PLAIN user-id argument", socket, client.protocol, client_id);
-					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
+					badlogin(socket, session, badarg_rsp, NULL, NULL, &client, &smtp.client_addr);
 					continue;
 				}
 				SAFECOPY(user_name,p);
@@ -4189,7 +4193,7 @@ static void smtp_thread(void* arg)
 				p++;			/* skip NULL */
 				if(*p==0) {
 					lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH PLAIN password argument", socket, client.protocol, client_id);
-					badlogin(socket, session, client.protocol, badarg_rsp, user_name, NULL, host_name, &smtp.client_addr);
+					badlogin(socket, session, badarg_rsp, user_name, NULL, &client, &smtp.client_addr);
 					continue;
 				}
 				SAFECOPY(user_pass,p);
@@ -4202,19 +4206,19 @@ static void smtp_thread(void* arg)
 				else
 					lprintf(LOG_WARNING,"%04d %s %s !UNKNOWN USER: '%s'"
 						,socket, client.protocol, client_id, user_name);
-				badlogin(socket, session, client.protocol, badauth_rsp, user_name, user_pass, host_name, &smtp.client_addr);
+				badlogin(socket, session, badauth_rsp, user_name, user_pass, &client, &smtp.client_addr);
 				break;
 			}
 			if((i=getuserdat(&scfg, &relay_user))!=0) {
 				lprintf(LOG_ERR,"%04d %s %s !ERROR %d getting data on user (%s)"
 					,socket, client.protocol, client_id, i, user_name);
-				badlogin(socket, session, client.protocol, badauth_rsp, NULL, NULL, NULL, NULL);
+				badlogin(socket, session, badauth_rsp, NULL, NULL, &client, NULL);
 				break;
 			}
 			if(relay_user.misc&(DELETED|INACTIVE)) {
 				lprintf(LOG_WARNING,"%04d %s %s !DELETED or INACTIVE user #%u (%s)"
 					,socket, client.protocol, client_id, relay_user.number, user_name);
-				badlogin(socket, session, client.protocol, badauth_rsp, NULL, NULL, NULL, NULL);
+				badlogin(socket, session, badauth_rsp, NULL, NULL, &client, NULL);
 				break;
 			}
 			if(stricmp(user_pass,relay_user.pass)) {
@@ -4224,7 +4228,7 @@ static void smtp_thread(void* arg)
 				else
 					lprintf(LOG_WARNING,"%04d %s %s !FAILED Password attempt for user %s"
 						,socket, client.protocol, client_id, user_name);
-				badlogin(socket, session, client.protocol, badauth_rsp, user_name, user_pass, host_name, &smtp.client_addr);
+				badlogin(socket, session, badauth_rsp, user_name, user_pass, &client, &smtp.client_addr);
 				break;
 			}
 
@@ -4285,19 +4289,19 @@ static void smtp_thread(void* arg)
 			if((relay_user.number = find_login_id(&scfg, user_name))==0) {
 				lprintf(LOG_WARNING,"%04d %s %s !UNKNOWN USER: '%s'"
 					,socket, client.protocol, client_id, user_name);
-				badlogin(socket, session, client.protocol, badauth_rsp, user_name, NULL, host_name, &smtp.client_addr);
+				badlogin(socket, session, badauth_rsp, user_name, NULL, &client, &smtp.client_addr);
 				break;
 			}
 			if((i=getuserdat(&scfg, &relay_user))!=0) {
 				lprintf(LOG_ERR,"%04d %s %s !ERROR %d getting data on user (%s)"
 					,socket, client.protocol, client_id, i, user_name);
-				badlogin(socket, session, client.protocol, badauth_rsp, NULL, NULL, NULL, NULL);
+				badlogin(socket, session, badauth_rsp, NULL, NULL, &client, NULL);
 				break;
 			}
 			if(relay_user.misc&(DELETED|INACTIVE)) {
 				lprintf(LOG_WARNING,"%04d %s %s !DELETED or INACTIVE user #%u (%s)"
 					,socket, client.protocol, client_id, relay_user.number, user_name);
-				badlogin(socket, session, client.protocol, badauth_rsp, NULL, NULL, NULL, NULL);
+				badlogin(socket, session, badauth_rsp, NULL, NULL, &client, NULL);
 				break;
 			}
 			/* Calculate correct response */
@@ -4322,7 +4326,7 @@ static void smtp_thread(void* arg)
 				lprintf(LOG_DEBUG,"%04d !SMTP resp digest: %s"
 					,socket,p);
 #endif
-				badlogin(socket, session, client.protocol, badauth_rsp, user_name, p, host_name, &smtp.client_addr);
+				badlogin(socket, session, badauth_rsp, user_name, p, &client, &smtp.client_addr);
 				break;
 			}
 

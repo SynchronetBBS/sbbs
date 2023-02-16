@@ -97,6 +97,7 @@ DLLEXPORT int mqtt_thread_stop(struct mqtt*);
 DLLEXPORT int mqtt_client_on(struct mqtt*, BOOL on, int sock, client_t* client, BOOL update);
 DLLEXPORT int mqtt_client_max(struct mqtt*, ulong count);
 DLLEXPORT int mqtt_client_count(struct mqtt*);
+DLLEXPORT int mqtt_user_login_fail(struct mqtt*, client_t*, const char* username);
 DLLEXPORT int mqtt_user_login(struct mqtt*, client_t*);
 DLLEXPORT int mqtt_user_logout(struct mqtt*, client_t*, time_t);
 DLLEXPORT int mqtt_file_upload(struct mqtt*, user_t*, file_t*, off_t size, client_t*);
