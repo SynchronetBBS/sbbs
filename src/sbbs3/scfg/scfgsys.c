@@ -23,8 +23,7 @@
 
 static int wiz_help(const char* buf)
 {
-	uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 80, 20
-		,"Setup Wizard", buf, NULL, NULL);
+	wizard_msg(buf);
 	uifc.helpbuf = NULL;
 	return WIN_SAV | WIN_L2R | WIN_NOBRDR;
 }
@@ -64,9 +63,9 @@ int edit_sys_operator(bool wiz)
 	uifc.helpbuf=
 		"`System Operator:`\n"
 		"\n"
-		"This is the name or alias of the system operator.  This does not have to\n"
-		"be the same as user #1.  This field is used for informational purposes\n"
-		"only.\n"
+		"This is the name or alias of the system operator (you).  This does not have\n"
+		"to be the same name or alias as user #1.  This field is used for informational\n"
+		"display purposes only.\n"
 		;
 	if(wiz)
 		mode = wiz_help(uifc.helpbuf);
@@ -327,8 +326,8 @@ int edit_sys_timezone(bool wiz)
 		"\n"
 		"Choose the region which most closely reflects your local time zone.\n"
 		"\n"
-		"Choose `Other...` if a region representing your local time zone is not listed\n"
-		"(you will be able to set the exact UTC offset manually)."
+		"Choose `Other...` if a region representing your local time zone is not\n"
+		"listed (you will be able to set the exact UTC offset manually)."
 	;
 	if(wiz) {
 		mode = wiz_help(uifc.helpbuf);
@@ -422,12 +421,9 @@ int edit_sys_timezone(bool wiz)
 		default:
 			if(cfg.sys_timezone>720 || cfg.sys_timezone<-720)
 				cfg.sys_timezone=0;
-			if(cfg.sys_timezone==0)
-				str[0]=0;
-			else
-				sprintf(str,"%02d:%02d"
-					,cfg.sys_timezone/60,cfg.sys_timezone<0
-					? (-cfg.sys_timezone)%60 : cfg.sys_timezone%60);
+			snprintf(str, sizeof(str), "%02d:%02d"
+				,cfg.sys_timezone/60,cfg.sys_timezone<0
+				? (-cfg.sys_timezone)%60 : cfg.sys_timezone%60);
 			uifc.helpbuf=
 				"`Time Zone Offset:`\n"
 				"\n"
@@ -512,7 +508,7 @@ int edit_sys_delmsg_policy(bool wiz)
 		"`Users Can View Deleted Messages:`\n"
 		"\n"
 		"If this option is set to `Yes`, then users will be able to view messages\n"
-		"they've sent and deleted or messages sent to them and they've deleted\n"
+		"they've sent and deleted, or messages sent to them and they've deleted\n"
 		"with the option of un-deleting the message before the message is\n"
 		"physically purged from the e-mail database.\n"
 		"\n"
