@@ -6051,9 +6051,9 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 void check_free_diskspace(const char* path)
 {
 	if(cfg.min_free_diskspace && isdir(path)) {
-		ulong freek = getfreediskspace(path, 1024);
+		uint64_t freek = getfreediskspace(path, 1024);
 
-		if(freek < cfg.min_free_diskspace / 1024) {
+		if(freek < (uint64_t)cfg.min_free_diskspace / 1024) {
 			lprintf(LOG_ERR, "!Insufficient free disk space (%luK < %"PRId64"K bytes) in %s\n"
 				, freek, cfg.min_free_diskspace / 1024, path);
 			bail(1);
