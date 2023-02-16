@@ -1227,6 +1227,7 @@ int zmodem_recv_header_raw(zmodem_t* zm)
 	int c;
 	int type = INVALIDSUBPKT;
 	int	frame_type;
+	uint64_t freespace;
 
 //	lprintf(zm,LOG_DEBUG, __FUNCTION__);
 
@@ -1330,7 +1331,8 @@ int zmodem_recv_header_raw(zmodem_t* zm)
 			}
 			break;
 		case ZFREECNT:
-			zmodem_send_pos_header(zm, ZACK, getfreediskspace(".",1), /* Hex? */ TRUE);
+			freespace = getfreediskspace(".",1);
+			zmodem_send_pos_header(zm, ZACK, (uint32_t)(freespace > UINT32_MAX ? UINT32_MAX : freespace), /* Hex? */ TRUE);
 			break;
 	}
 
