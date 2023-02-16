@@ -147,6 +147,7 @@ void guru_cfg(void);
 void actsets_cfg(void);
 void chan_cfg(void);
 void mdm_cfg(int mdmnum);
+void wizard_msg(const char* text);
 int edit_sys_name(bool wiz);
 int edit_sys_id(bool wiz);
 int edit_sys_location(bool wiz);

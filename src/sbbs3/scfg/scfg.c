@@ -153,6 +153,18 @@ void sort_dirs(int libnum)
 	qsort(cfg.dir, cfg.total_dirs, sizeof(dir_t*), dir_compare);
 }
 
+void wizard_msg(const char* text)
+{
+	uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 80, 20, "Setup Wizard", text, NULL, NULL);
+}
+
+static bool abort_wizard(void)
+{
+	char* opt[] = { "Abort", "Restart", NULL };
+	wizard_msg("You can abort or restart the Setup Wizard from the beginning.");
+	return uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 10 ,0, NULL, NULL
+		,"Abort Setup Wizard", opt) == 0;
+}
 
 void cfg_wizard(void)
 {
@@ -171,6 +183,21 @@ void cfg_wizard(void)
 
 	scfg_t saved_cfg = cfg;
 	do {
+		char* opt[] = { "Continue", NULL };
+
+		wizard_msg(
+			"                              ~    Welcome   ~\n"
+			"\n"
+			"This wizard will take you through the configuration of the basic\n"
+			"parameters required to run a Synchronet Bulletin Board System.  All of\n"
+			"these configuration parameters may be changed later if you choose.\n"
+			"\n"
+			"Hit ~ ENTER ~ to advance through the setup wizard or ~ ESC ~ to abort\n"
+			"or restart the wizard."
+			);
+		if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 12 ,0, NULL, NULL
+			,"Continue", opt) == -1)
+			continue;
 		if(edit_sys_name(true) < 1)
 			continue;
 		if(edit_sys_operator(true) < 1)
@@ -200,29 +227,27 @@ void cfg_wizard(void)
 			uifc.msg("No configuration changes made");
 			continue;
 		}
-		uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 80, 20
-			,"System Password Verification"
-			,"At this point you must re-enter the system password that you created\n"
-			"earlier in the configuration wizard.\n"
+		wizard_msg("`System Password Verification`\n\n"
+			"At this point you must re-enter the system password that you set earlier\n"
+			"in the configuration wizard.\n"
 			"\n"
 			"This same password will be required of you when you logon to the BBS with\n"
 			"any user account that has System Operator (sysop) privileges\n"
 			"(i.e. security level 90 or higher).\n"
-			,NULL,NULL);
+			);
 		char pass[sizeof(cfg.sys_pass)];
 		do {
-			if(uifc.input(WIN_L2R|WIN_SAV, 0, 10, "SY", pass, sizeof(cfg.sys_pass)-1, K_PASSWORD | K_UPPER) < 0)
+			if(uifc.input(WIN_L2R|WIN_SAV, 0, 12, "SY", pass, sizeof(cfg.sys_pass)-1, K_PASSWORD | K_UPPER) < 0)
 				break;
 		} while(strcmp(cfg.sys_pass, pass) != 0);
 		if(strcmp(cfg.sys_pass, pass))
 			continue;
-		uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 80, 20
-			,"Setup Wizard"
-			,"                        ~ Initial Setup Complete! ~\n"
+		wizard_msg(
+			"                         ~ Initial Setup Complete! ~\n"
 			"\n"
 			"You have completed the initial configuration of the basic parameters\n"
-			"required to run Synchronet - the ultimate choice in BBS software\n"
-			"for the Internet Age.\n"
+			"required to run Synchronet - the ultimate choice in BBS software for the\n"
+			"Internet Age.\n"
 			"\n"
 			"\n"
 			"\n"
@@ -233,8 +258,8 @@ void cfg_wizard(void)
 			"\n"
 			"\n"
 			"Thank you for choosing Synchronet,\n"
-			"                                             Rob Swindell (digital man)\n"
-			,NULL, NULL);
+			"                                               Rob Swindell (digital man)\n"
+			);
 		if(!uifc.confirm("Save Changes"))
 			continue;
 		if(strcmp(saved_cfg.sys_pass, cfg.sys_pass) != 0)
@@ -243,7 +268,7 @@ void cfg_wizard(void)
 		save_main_cfg(&cfg, backup_level);
 		save_msgs_cfg(&cfg, backup_level);
 		break;
-	} while(uifc.deny("Abort Setup Wizard"));
+	} while(!abort_wizard());
 
 	free_main_cfg(&cfg);
 	free_msgs_cfg(&cfg);
