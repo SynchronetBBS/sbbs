@@ -1868,16 +1868,16 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 	return(TRUE);
 }
 
-static void badlogin(SOCKET sock, const char* prot, const char* user, const char* passwd, const char* host, union xp_sockaddr* addr)
+static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t* client, union xp_sockaddr* addr)
 {
 	char reason[128];
-	char addrstr[INET6_ADDRSTRLEN];
 	ulong count;
 
-	SAFEPRINTF(reason,"%s LOGIN", prot);
-	count=loginFailure(startup->login_attempt_list, addr, prot, user, passwd);
+	SAFEPRINTF(reason,"%s LOGIN", client->protocol);
+	count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd);
+	mqtt_user_login_fail(&mqtt, client, user);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
-		hacklog(&scfg, &mqtt, reason, user, passwd, host, addr);
+		hacklog(&scfg, &mqtt, reason, user, passwd, client->host, addr);
 #ifdef _WIN32
 		if(startup->sound.hack[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
@@ -1885,8 +1885,8 @@ static void badlogin(SOCKET sock, const char* prot, const char* user, const char
 	}
 	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 		SAFEPRINTF(reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu)", count);
-		filter_ip(&scfg, prot, reason
-			,host, inet_addrtop(addr, addrstr, sizeof(addrstr)), user, /* fname: */NULL);
+		filter_ip(&scfg, client->protocol, reason
+			,client->host, client->addr, user, /* fname: */NULL);
 	}
 	if(count>1)
 		mswait(startup->login_attempt.delay);
@@ -1995,7 +1995,7 @@ static BOOL check_ars(http_session_t * session)
 				else
 					lprintf(LOG_WARNING,"%04d !BASIC AUTHENTICATION FAILURE for user '%s'"
 						,session->socket,session->req.auth.username);
-				badlogin(session->socket,session->client.protocol, session->req.auth.username, session->req.auth.password, session->host_name, &session->addr);
+				badlogin(session->socket, session->req.auth.username, session->req.auth.password, &session->client, &session->addr);
 				return(FALSE);
 			}
 			break;
@@ -2005,7 +2005,7 @@ static BOOL check_ars(http_session_t * session)
 			if(!digest_authentication(session, auth_allowed, thisuser, &reason)) {
 				lprintf(LOG_NOTICE,"%04d !DIGEST AUTHENTICATION FAILURE (reason: %s) for user '%s'"
 						,session->socket,reason,session->req.auth.username);
-				badlogin(session->socket,session->client.protocol, session->req.auth.username, "<digest>", session->host_name, &session->addr);
+				badlogin(session->socket, session->req.auth.username, "<digest>", &session->client, &session->addr);
 				return(FALSE);
 			}
 			break;
@@ -5579,7 +5579,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 			rc=JS_SUSPENDREQUEST(cx);
 			lprintf(LOG_WARNING,"%04d !INVALID PASSWORD ATTEMPT FOR USER: '%s'"
 				,session->socket,user.alias);
-			badlogin(session->socket,session->client.protocol, username, password, session->host_name, &session->addr);
+			badlogin(session->socket, username, password, &session->client, &session->addr);
 			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);
 		}
@@ -6186,7 +6186,7 @@ static void respond(http_session_t * session)
 				e = 1;
 			lprintf(LOG_INFO, "%04d Sent file: %s (%"PRIdOFF" bytes, %ld cps)"
 				,session->socket, session->req.physical_path, snt, (long)(snt / e));
-			if(session->parsed_vpath == PARSED_VPATH_FULL) {
+			if(session->parsed_vpath == PARSED_VPATH_FULL && session->file.name != NULL) {
 				user_downloaded_file(&scfg, &session->user, &session->client, session->file.dir, session->file.name, snt);
 				mqtt_file_download(&mqtt, &session->user, &session->file, snt, &session->client);
 			}

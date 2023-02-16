@@ -1746,20 +1746,20 @@ static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, union xp
 /* Consecutive failed login (possible password hack) attempt tracking		*/
 /****************************************************************************/
 
-static BOOL badlogin(SOCKET sock, CRYPT_SESSION sess, ulong* login_attempts, char* user, char* passwd, char* host, union xp_sockaddr* addr)
+static BOOL badlogin(SOCKET sock, CRYPT_SESSION sess, ulong* login_attempts
+	,char* user, char* passwd, client_t* client, union xp_sockaddr* addr)
 {
 	ulong count;
-	char	host_ip[INET6_ADDRSTRLEN];
 
 	if(addr!=NULL) {
-		count=loginFailure(startup->login_attempt_list, addr, "FTP", user, passwd);
+		count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd);
+		mqtt_user_login_fail(&mqtt, client, user);
 		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold)
-			ftp_hacklog("FTP LOGIN", user, passwd, host, addr);
+			ftp_hacklog("FTP LOGIN", user, passwd, client->host, addr);
 		if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 			char reason[128];
 			SAFEPRINTF(reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu)", count);
-			inet_addrtop(addr, host_ip, sizeof(host_ip));
-			filter_ip(&scfg, "FTP", reason, host, host_ip, user, /* fname: */NULL);
+			filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL);
 		}
 		if(count > *login_attempts)
 			*login_attempts=count;
@@ -2140,7 +2140,7 @@ static void ctrl_thread(void* arg)
 	long		timeleft;
 	ulong		l;
 	ulong		login_attempts=0;
-	ulong		avail;	/* disk space */
+	uint64_t	avail;	/* disk space */
 	ulong		count;
 	BOOL		detail;
 	BOOL		success;
@@ -2461,7 +2461,7 @@ static void ctrl_thread(void* arg)
 					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: '%s' (password: %s)",sock,user.alias,p);
 				else
 					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: '%s'",sock,user.alias);
-				if(badlogin(sock, sess, &login_attempts, user.alias, p, host_name, &ftp.client_addr))
+				if(badlogin(sock, sess, &login_attempts, user.alias, p, &client, &ftp.client_addr))
 					break;
 				continue;
 			}
@@ -2531,7 +2531,7 @@ static void ctrl_thread(void* arg)
 					lprintf(LOG_WARNING,"%04d <%s> !FAILED Password attempt"
 						,sock, user.alias);
 				user.number=0;
-				if(badlogin(sock, sess, &login_attempts, user.alias, password, host_name, &ftp.client_addr))
+				if(badlogin(sock, sess, &login_attempts, user.alias, password, &client, &ftp.client_addr))
 					break;
 				continue;
 			}
@@ -3050,9 +3050,9 @@ static void ctrl_thread(void* arg)
 			else
 				avail=getfreediskspace(scfg.data_dir,0);	/* Change to temp_dir? */
 			if(l && l>avail)
-				sockprintf(sock,sess,"504 Only %lu bytes available.",avail);
+				sockprintf(sock,sess,"504 Only %" PRIu64 " bytes available.",avail);
 			else
-				sockprintf(sock,sess,"200 %lu bytes available.",avail);
+				sockprintf(sock,sess,"200 %" PRIu64 " bytes available.",avail);
 			continue;
 		}
 

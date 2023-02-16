@@ -687,6 +687,29 @@ int mqtt_client_on(struct mqtt* mqtt, BOOL on, int sock, client_t* client, BOOL 
 	return result;
 }
 
+int mqtt_user_login_fail(struct mqtt* mqtt, client_t* client, const char* username)
+{
+	char str[128];
+	char topic[128];
+
+	if(mqtt == NULL || mqtt->cfg == NULL || client == NULL)
+		return MQTT_FAILURE;
+
+	if(!mqtt->cfg->mqtt.enabled)
+		return MQTT_SUCCESS;
+
+	if(client->protocol == NULL || username == NULL)
+		return MQTT_FAILURE;
+	snprintf(topic, sizeof(topic), "login_fail/%s", client->protocol);
+	strlwr(topic);
+	snprintf(str, sizeof(str), "%s\t%s\t%s"
+		,username
+		,client->addr
+		,client->host
+		);
+	return mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, time(NULL), str);
+}
+
 int mqtt_user_login(struct mqtt* mqtt, client_t* client)
 {
 	char str[128];
