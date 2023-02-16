@@ -158,6 +158,8 @@ DLLEXPORT int 			iniGetInteger(str_list_t, const char* section, const char* key
 							,int deflt);
 DLLEXPORT int 			iniGetIntInRange(str_list_t, const char* section, const char* key
 							,int min, int deflt, int max);
+DLLEXPORT int 			iniGetClampedInt(str_list_t, const char* section, const char* key
+							,int min, int deflt, int max);
 DLLEXPORT uint 			iniGetUInteger(str_list_t, const char* section, const char* key
 							,uint deflt);
 DLLEXPORT short 		iniGetShortInt(str_list_t, const char* section, const char* key
