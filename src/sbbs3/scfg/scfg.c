@@ -155,13 +155,13 @@ void sort_dirs(int libnum)
 
 void wizard_msg(const char* text)
 {
-	uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 80, 20, "Setup Wizard", text, NULL, NULL);
+	uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 78, 20, "Setup Wizard", text, NULL, NULL);
 }
 
 static bool abort_wizard(void)
 {
 	char* opt[] = { "Abort", "Restart", NULL };
-	wizard_msg("You can abort the Setup Wizard or restart from the beginning.");
+	wizard_msg("You can abort the Setup Wizard now or restart from the beginning.");
 	return uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 10 ,0, NULL, NULL
 		,"Abort Setup Wizard", opt) == 0;
 }
@@ -195,8 +195,7 @@ void cfg_wizard(void)
 			"Press ~ ENTER ~ to advance through the setup wizard or ~ ESC ~ to abort\n"
 			"or restart the wizard."
 			);
-		if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 12 ,0, NULL, NULL
-			,"Continue", opt) == -1)
+		if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 12 ,0, NULL, NULL, NULL, opt) == -1)
 			continue;
 		if(edit_sys_name(true) < 1)
 			continue;
@@ -253,18 +252,12 @@ void cfg_wizard(void)
 			"required to run Synchronet - the ultimate choice in BBS software for the\n"
 			"Internet Age.\n"
 			"\n"
-			"\n"
-			"\n"
-			"\n"
-			"\n"
-			"\n"
-			"\n"
-			"\n"
-			"\n"
 			"Thank you for choosing Synchronet,\n"
-			"                                               Rob Swindell (digital man)\n"
+			"\n"
+			"Rob Swindell (digital man)\n"
 			);
-		if(!uifc.confirm("Save Changes"))
+		char* save_opts[] = { "Save Changes", "Discard Changes", NULL };
+		if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 14 ,0, NULL, NULL, NULL, save_opts) != 0)
 			continue;
 		if(strcmp(saved_cfg.sys_pass, cfg.sys_pass) != 0)
 			reencrypt_keys(saved_cfg.sys_pass, cfg.sys_pass);
