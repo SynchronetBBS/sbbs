@@ -285,7 +285,7 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 		case 0x709c07da:
 			return((int32_t *)&cfg.node_misc);
 		case 0xb17e7914:
-			sysvar_l[sysvar_li]=cfg.node_valuser;
+			sysvar_l[sysvar_li]=cfg.valuser;
 			break;
 		case 0xadae168a:
 			sysvar_l[sysvar_li]=cfg.node_ivt;

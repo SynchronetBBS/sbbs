@@ -160,6 +160,7 @@ int edit_sys_datefmt(bool wiz);
 int edit_sys_newuser_policy(bool wiz);
 int edit_sys_alias_policy(bool wiz);
 int edit_sys_delmsg_policy(bool wiz);
+int edit_sys_newuser_fback_policy(bool wiz);
 void reencrypt_keys(const char* old_pass, const char* new_pass);
 int export_mdm(char *fname);
 int code_ok(char *str);

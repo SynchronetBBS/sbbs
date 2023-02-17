@@ -467,19 +467,19 @@ BOOL sbbs_t::newuser()
 
 	delallmail(useron.number, MAIL_ANY);
 
-	if(useron.number!=1 && cfg.node_valuser) {
+	if(useron.number!=1 && cfg.valuser) {
 		menu("../feedback", P_NOABORT|P_NOERROR);
 		safe_snprintf(str,sizeof(str),text[NewUserFeedbackHdr]
 			,nulstr,getage(&cfg,useron.birth),useron.sex,useron.birth
 			,useron.name,useron.phone,useron.comp,useron.modem);
-		email(cfg.node_valuser,str,"New User Validation",WM_SUBJ_RO|WM_FORCEFWD);
+		email(cfg.valuser,str,"New User Validation",WM_SUBJ_RO|WM_FORCEFWD);
 		if(!useron.fbacks && !useron.emails) {
 			if(online) {						/* didn't hang up */
-				bprintf(text[NoFeedbackWarning],username(&cfg,cfg.node_valuser,tmp));
-				email(cfg.node_valuser,str,"New User Validation",WM_SUBJ_RO|WM_FORCEFWD);
+				bprintf(text[NoFeedbackWarning],username(&cfg,cfg.valuser,tmp));
+				email(cfg.valuser,str,"New User Validation",WM_SUBJ_RO|WM_FORCEFWD);
 				} /* give 'em a 2nd try */
 			if(!useron.fbacks && !useron.emails) {
-        		bprintf(text[NoFeedbackWarning],username(&cfg,cfg.node_valuser,tmp));
+        		bprintf(text[NoFeedbackWarning],username(&cfg,cfg.valuser,tmp));
 				logline(LOG_NOTICE,"N!","Aborted feedback");
 				hangup();
 				putuserstr(useron.number, USER_COMMENT, "Didn't leave feedback");

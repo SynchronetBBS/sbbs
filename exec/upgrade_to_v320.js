@@ -4,6 +4,9 @@ print("Upgrading Synchronet v3.1x config files to v3.20");
 load('sbbsdefs.js');
 var cnflib = load({}, 'cnflib.js');
 var node_settings;
+var node_valuser;
+var node_erruser;
+var node_errlevel;
 
 function upgrade_node(dir)
 {
@@ -23,6 +26,9 @@ function upgrade_node(dir)
 	ini.iniSetObject(null, cnf);
 	ini.close();
 	node_settings = cnf.settings;
+	node_valuser = cnf.valuser;
+	node_erruser = cnf.erruser;
+	node_errlevel = cnf.errlevel;
 }
 
 //---------------------------------------------------------------------------
@@ -126,6 +132,9 @@ for(var i in cnf.command_shell) {
 	ini.iniSetObject(key, cnf.command_shell[i]);
 }
 delete cnf.command_shell;
+cnf.valuser = node_valuser;
+cnf.erruser = node_erruser;
+cnf.errlevel = node_errlevel;
 ini.iniSetObject(null, cnf);
 ini.close();
 

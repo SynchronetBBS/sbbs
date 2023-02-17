@@ -512,9 +512,9 @@ typedef struct
 	uchar			node_scrnlen;		/* Length of screen (rows) */
 	uchar			node_scrnblank; 	/* Min of inactivity for blank screen */
 	uint32_t		node_misc;			/* Misc bits for node setup */
-	uint16_t		node_valuser;		/* User validation mail goes to */
-	uint16_t		node_erruser;		/* User error messages goes to */
-	uchar			node_errlevel;		/* Log level threshold to notify user (node_erruser) */
+	uint16_t		valuser;			/* User validation mail goes to */
+	uint16_t		erruser;			/* User error messages goes to */
+	uchar			errlevel;			/* Log level threshold to notify user (erruser) */
 	uint16_t		node_ivt;			/* Time-slice APIs */
 	uchar			node_swap;			/* Swap types allowed */
 	char			node_swapdir[LEN_DIR+1];	/* Swap directory */
@@ -532,8 +532,8 @@ typedef struct
 	char			new_install;		/* This is a brand new installation */
 	char			new_pass[41];		/* New User Password */
 	char			new_magic[21];		/* New User Magic Word */
-	char			new_sif[LEN_SIFNAME+1]; 		/* New User SIF Questionaire */
-	char			new_sof[LEN_SIFNAME+1]; 		/* New User SIF Questionaire output SIF */
+	char			new_sif[LEN_SIFNAME+1]; 		/* New User SIF Questionnaire */
+	char			new_sof[LEN_SIFNAME+1]; 		/* New User SIF Questionnaire output SIF */
 	char			new_genders[41];	/* New User Gender options (default: "MF") */
 	int				new_level;			/* New User Main Level */
 	uint32_t		new_flags1; 		/* New User Main Flags from set #1*/

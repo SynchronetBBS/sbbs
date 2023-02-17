@@ -366,7 +366,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 
 		case BBS_PROP_NODE_VAL_USER:
-			val=sbbs->cfg.node_valuser;
+			val=sbbs->cfg.valuser;
 			break;
 
 		case BBS_PROP_LOGON_ULB:
@@ -831,7 +831,7 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 			sbbs->action=(uchar)val;
 			break;
 		case BBS_PROP_NODE_VAL_USER:
-			sbbs->cfg.node_valuser=(ushort)val;
+			sbbs->cfg.valuser=(ushort)val;
 			break;
 		case BBS_PROP_LOGON_ULB:
 			sbbs->logon_ulb=val;
