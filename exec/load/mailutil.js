@@ -3,8 +3,6 @@
 // Parses Internet mail and USENET article header fields 
 // for use with newsutil.js and mailproc_util.js
 
-// $Id: mailutil.js,v 1.3 2016/08/12 22:15:02 rswindell Exp $
-
 //Michael J. Ryan - 2004-04-16 - tracker1(at)theroughnecks.net
 // gets the name portion for the "to/from"
 function mail_get_name(strIn) {
@@ -27,6 +25,17 @@ function mail_get_address(strIn) {
 	if (strIn.match(reEmail1)) return strIn.replace(reEmail1,"$1");
 	if (strIn.match(reEmail2)) return strIn.replace(reEmail2,"$1");
 	return null;
+}
+
+function parse_mail_recipient(str)
+{
+	var hdr = {
+		to: mail_get_name(str),
+		to_net_addr: mail_get_address(str)
+	};
+	if(netaddr_type(str) == NET_NONE)
+		hdr.to_ext = 1; // TODO: look up alias?
+	return hdr;
 }
 
 function fidoaddr_to_emailaddr(name, addr, tld)
