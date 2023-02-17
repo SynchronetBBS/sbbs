@@ -12,13 +12,13 @@ const nodelist = new NodeList(nodelist_filename);
 var out = {};
 for(var i in nodelist.entries) {
 	var entry = nodelist.entries[i];
-	
+
 	if(entry.private)
 		continue;
 	if(entry.down)
 		continue;
 	if(!entry.flags) {
-		alert("No flags for " + entry.name);
+		log("No flags for " + entry.name);
 		continue;
 	}
 	var inet_address = entry.flags.INA;
@@ -27,7 +27,7 @@ for(var i in nodelist.entries) {
 	if(typeof inet_address != "string")
 		inet_address = entry.flags.IBN;
 	if(typeof inet_address != "string") {
-		alert("No Telnet address available for " + entry.addr + " " + entry.name);
+		log("No Telnet address available for " + entry.addr + " " + entry.name);
 		continue;
 	}
 	var colon = inet_address.indexOf(':');
@@ -39,11 +39,11 @@ for(var i in nodelist.entries) {
 
 var lst = new File(syncterm_listfile);
 if(!lst.open("w")) {
-	alert("Error " + lst.error + " opening " + lst.name);
+	log("Error " + lst.error + " opening " + lst.name);
 	exit(1);
 }
 
-lst.writeln("; Exported from " + file_getname(nodelist_filename) + " on " + new Date().toString());
+lst.writeln("; Exported " + nodelist.entries.length + " from " + file_getname(nodelist_filename) + " on " + new Date().toString());
 lst.writeln();
 var exported = 0;
 for(var i in out) {
@@ -68,4 +68,6 @@ for(var i in out) {
 	lst.writeln("\tComment=" + comment);
 	exported++;
 }
-print("Exported " + exported + " entries to " + syncterm_listfile);
+log("Exported " + exported + " entries to " + syncterm_listfile);
+lst.close();
+
