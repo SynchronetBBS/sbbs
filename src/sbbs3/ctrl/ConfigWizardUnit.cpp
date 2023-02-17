@@ -199,7 +199,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
     }
 
     NewUsersCheckBox->Checked=!(scfg.sys_misc&SM_CLOSED);
-    FeedbackCheckBox->Checked=scfg.node_valuser;
+    FeedbackCheckBox->Checked=scfg.valuser;
     AliasesCheckBox->Checked=scfg.uq&UQ_ALIASES;
     NewUsersCheckBoxClick(Sender);
 
@@ -300,7 +300,7 @@ void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
             scfg.uq|=UQ_ALIASES;
         else
             scfg.uq&=~UQ_ALIASES;
-        scfg.node_valuser=FeedbackCheckBox->Checked;
+        scfg.valuser=FeedbackCheckBox->Checked;
 
         if(DeletedEmailYesButton->Checked)
             scfg.sys_misc|=(SM_USRVDELM|SM_SYSVDELM);
