@@ -231,7 +231,7 @@ int edit_sys_timezone(bool wiz)
 		;
 		if(wiz)
 			mode = wiz_help(uifc.helpbuf);
-		i=uifc.list(mode,0,10,0,&i,0
+		i=uifc.list(mode,0,9,0,&i,0
 			,"U.S. Time Zone",opt);
 		if(i==-1)
 			return -1;
