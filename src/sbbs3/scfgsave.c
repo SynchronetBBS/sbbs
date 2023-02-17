@@ -85,13 +85,10 @@ BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 	iniSetString(&ini, ROOT_SECTION, "ars", cfg->node_arstr, NULL);
 
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->node_misc, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "valuser", cfg->node_valuser, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "sem_check", cfg->node_sem_check, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "stat_check", cfg->node_stat_check, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "sec_warn", cfg->sec_warn, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "sec_hangup", cfg->sec_hangup, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "erruser", cfg->node_erruser, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "errlevel", cfg->node_errlevel, NULL);
 
 	if((fp = fopen(inipath, "w")) != NULL) {
 		result = iniWriteFile(fp, ini);
@@ -147,6 +144,9 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 	iniSetHexInt(&ini, ROOT_SECTION, "ctrlkey_passthru", cfg->ctrlkey_passthru, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "user_backup_level", cfg->user_backup_level, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "mail_backup_level", cfg->mail_backup_level, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "valuser", cfg->valuser, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "erruser", cfg->erruser, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "errlevel", cfg->errlevel, NULL);
 
 	for(uint i=0;i<cfg->sys_nodes;i++) {
 		char key[128];

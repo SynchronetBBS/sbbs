@@ -56,12 +56,12 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 		return(false); 
 	}
 	if(usernumber==1 && useron.rest&FLAG('S')
-		&& (cfg.node_valuser!=1 || useron.fbacks || useron.emails)) { /* ! val fback */
+		&& (cfg.valuser!=1 || useron.fbacks || useron.emails)) { /* ! val fback */
 		bprintf(text[R_Feedback],cfg.sys_op);
 		return(false); 
 	}
 	if(usernumber!=1 && useron.rest&FLAG('E')
-		&& (cfg.node_valuser!=usernumber || useron.fbacks || useron.emails)) {
+		&& (cfg.valuser!=usernumber || useron.fbacks || useron.emails)) {
 		bputs(text[R_Email]);
 		return(false); 
 	}
@@ -95,7 +95,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 	nodesync();
 
 	SAFEPRINTF(str,"%sfeedback.*", cfg.exec_dir);
-	if(usernumber==cfg.node_valuser && useron.fbacks && fexist(str)) {
+	if(usernumber==cfg.valuser && useron.fbacks && fexist(str)) {
 		exec_bin("feedback",&main_csi);
 		if(main_csi.logic!=LOGIC_TRUE)
 			return(false); 

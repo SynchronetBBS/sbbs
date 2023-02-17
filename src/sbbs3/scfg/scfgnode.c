@@ -19,10 +19,6 @@
 
 #include "scfg.h"
 
-/* These correlate with the LOG_* definitions in syslog.h/gen_defs.h */
-static char* errLevelStringList[]
-	= {"Emergency", "Alert", "Critical", "Error", NULL};
-
 static char* node_path_help =
 	"`Node Directory:`\n"
 	"\n"
@@ -303,12 +299,6 @@ void node_cfg()
 				done=0;
 				while(!done) {
 					i=0;
-					sprintf(opt[i++],"%-27.27s%s","Validation User"
-						,cfg.node_valuser ? ultoa(cfg.node_valuser,tmp,10) : "Nobody");
-					sprintf(opt[i++],"%-27.27s%s","Notification User"
-						,cfg.node_erruser ? ultoa(cfg.node_erruser,tmp,10) : "Nobody");
-					sprintf(opt[i++],"%-27.27s%s","Notification Error Level"
-						,errLevelStringList[cfg.node_errlevel]);
 					sprintf(opt[i++],"%-27.27s%u seconds","Semaphore Frequency"
 						,cfg.node_sem_check);
 					sprintf(opt[i++],"%-27.27s%u seconds","Statistics Frequency"
@@ -332,53 +322,6 @@ void node_cfg()
 						,"Advanced Options",opt)) {
 						case -1:
 							done=1;
-							break;
-						case __COUNTER__:
-							ultoa(cfg.node_valuser,str,10);
-							uifc.helpbuf=
-								"`Validation User Number:`\n"
-								"\n"
-								"When a caller logs onto the system as `New`, he or she must send\n"
-								"validation feedback to the sysop. This feature can be disabled by\n"
-								"setting this value to `0`, allowing new users to logon without sending\n"
-								"validation feedback. If you want new users on this node to be forced to\n"
-								"send validation feedback, set this value to the number of the user to\n"
-								"whom the feedback is sent. The normal value of this option is `1` for\n"
-								"user number one.\n"
-							;
-							uifc.input(WIN_MID|WIN_SAV,0,13,"Validation User Number (0=Nobody)"
-								,str,4,K_NUMBER|K_EDIT);
-							cfg.node_valuser=atoi(str);
-							break;
-						case __COUNTER__:
-							ultoa(cfg.node_erruser,str,10);
-							uifc.helpbuf=
-								"`Notification User Number:`\n"
-								"\n"
-								"When an error has occurred, a notification message can be sent to a\n"
-								"configured user number (i.e. a sysop). This feature can be disabled by\n"
-								"setting this value to `0`. The normal value of this option is `1` for\n"
-								"user number one.\n"
-								"\n"
-								"Note: error messages are always logged as well (e.g. to `data/error.log`)."
-							;
-							uifc.input(WIN_MID|WIN_SAV,0,13,"Notification User Number (0=Nobody)"
-								,str,4,K_NUMBER|K_EDIT);
-							cfg.node_erruser=atoi(str);
-							break;
-						case __COUNTER__:
-							uifc.helpbuf=
-								"`Notification Error Level`\n"
-								"\n"
-								"Select the minimum severity of error messages that should be forwarded\n"
-								"to the Notification User. The normal setting would be `Critical`.";
-							int i = cfg.node_errlevel;
-							i = uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Notification Error Level",errLevelStringList);
-							if(i>=0 && i<=LOG_ERR) {
-								if(cfg.node_errlevel != i)
-									uifc.changes = TRUE;
-								cfg.node_errlevel=i;
-							}
 							break;
 						case __COUNTER__:
 							ultoa(cfg.node_sem_check,str,10);

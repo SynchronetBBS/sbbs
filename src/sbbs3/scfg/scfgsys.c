@@ -63,9 +63,9 @@ int edit_sys_operator(bool wiz)
 	uifc.helpbuf=
 		"`System Operator:`\n"
 		"\n"
-		"This is the name or alias of the system operator (you).  This does not have\n"
-		"to be the same name or alias as user #1.  This field is used for informational\n"
-		"display purposes only.\n"
+		"This is the name or alias of the system operator (you).  This does not\n"
+		"have to be the same name or alias as user #1.  This value is used for\n"
+		"informational/display purposes only.\n"
 		;
 	if(wiz)
 		mode = wiz_help(uifc.helpbuf);
@@ -1358,6 +1358,33 @@ int edit_sys_alias_policy(bool wiz)
 	return i;
 }
 
+int edit_sys_newuser_fback_policy(bool wiz)
+{
+	int mode = WIN_SAV | WIN_MID;
+	char str[128];
+	ultoa(cfg.valuser,str,10);
+	uifc.helpbuf=
+		"`Require New User Feedback:`\n"
+		"\n"
+		"When a caller registers as a new user, they can be required to send a\n"
+		"validation request via feedback message to the sysop.\n"
+		"\n"
+		"If you want new users of this system to be forced to send validation\n"
+		"feedback, set this value to the number of the user to whom the feedback\n"
+		"is sent, e.g. `1` for user number one.\n"
+		"\n"
+		"This feature can be disabled by setting this value to `0`, allowing new\n"
+		"users to register and logon without sending validation feedback.\n" 
+	;
+	if(wiz)
+		mode = wiz_help(uifc.helpbuf);
+	int i = uifc.input(mode, 0, 16, "Require New User Feedback to (0=Nobody)"
+		,str, 5, K_NUMBER|K_EDIT);
+	if(i >= 0)
+		cfg.valuser=atoi(str);
+	return i;
+}
+
 void reencrypt_keys(const char *old_pass, const char* new_pass)
 {
 	if(fexist("ssl.cert") || fexist("cryptlib.key") || fexist("letsyncrypt.key")) {
@@ -1398,6 +1425,78 @@ void reencrypt_keys(const char *old_pass, const char* new_pass)
 	}
 }
 
+/* These correlate with the LOG_* definitions in syslog.h/gen_defs.h */
+static char* errLevelStringList[]
+	= {"Emergency", "Alert", "Critical", "Error", NULL};
+
+void cfg_notify(void)
+{
+	char str[128];
+	static int dflt;
+
+	while(1) {
+		int i=0;
+		if(cfg.valuser)
+			SAFEPRINTF(str, "User #%u", cfg.valuser);
+		else
+			SAFECOPY(str, "Nobody");
+		sprintf(opt[i++],"%-23.23s%s","New User Feedback", str);
+		if(cfg.erruser)
+			SAFEPRINTF(str, "User #%u", cfg.erruser);
+		else
+			SAFECOPY(str, "Nobody");
+		sprintf(opt[i++],"%-23.23s%s","Error Notifications", str);
+		sprintf(opt[i++],"%-23.23s%s","Error Level", errLevelStringList[cfg.errlevel]);
+		opt[i][0] = '\0';
+		uifc.helpbuf=
+			"`System Operator Notifications:`\n"
+			"\n"
+			"Configure settings related to notifications sent to the operators of\n"
+			"the system via emails and instant messages.\n"
+		;
+		switch(uifc.list(WIN_BOT|WIN_RHT|WIN_ACT|WIN_SAV, 0, 0, 0, &dflt, 0
+			,"System Operator Notifications",opt)) {
+			case -1:
+				return;
+				break;
+			case 0:
+				edit_sys_newuser_fback_policy(false);
+				break;
+			case 1:
+				ultoa(cfg.erruser,str,10);
+				uifc.helpbuf=
+					"`Error Notifications:`\n"
+					"\n"
+					"When an error has occurred, a notification message can be sent to a\n"
+					"configured user number (i.e. a sysop). This feature can be disabled by\n"
+					"setting this value to `0`. The normal value of this option is `1` for\n"
+					"user number one.\n"
+					"\n"
+					"Note: error messages are always logged as well (e.g. to `data/error.log`)."
+				;
+				uifc.input(WIN_MID|WIN_SAV,0,13,"Send Error Notifications to (0=Nobody)"
+					,str, 5, K_NUMBER|K_EDIT);
+				cfg.erruser=atoi(str);
+				break;
+			case 2:
+				uifc.helpbuf=
+					"`Notification Error Level`\n"
+					"\n"
+					"Select the minimum severity of error messages that should be forwarded\n"
+					"to the Error Notification User.  `Error` is the lowest severity level\n"
+					"while `Emergency` is the highest.\n"
+					"\n"
+					"The default minimum level for error notifications is `Critical`.";
+				int i = cfg.errlevel;
+				i = uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Notification Error Level",errLevelStringList);
+				if(i>=0 && i<=LOG_ERR)
+					cfg.errlevel=i;
+				break;
+		} 
+	}
+} 
+
+
 void sys_cfg(void)
 {
 	static int sys_dflt,adv_dflt,tog_dflt,new_dflt;
@@ -1418,6 +1517,7 @@ void sys_cfg(void)
 			,SMB_TZ_HAS_DST(cfg.sys_timezone) && cfg.sys_misc&SM_AUTO_DST ? "(Auto-DST)" : "");
 		sprintf(opt[i++],"%-33.33s%s","Operator",cfg.sys_op);
 
+		strcpy(opt[i++],"Notifications...");
 		strcpy(opt[i++],"Toggle Options...");
 		strcpy(opt[i++],"New User Values...");
 		strcpy(opt[i++],"Security Options...");
@@ -1458,7 +1558,10 @@ void sys_cfg(void)
 			case 3:
 				edit_sys_operator(false);
 				break;
-			case 4:    /* Toggle Options */
+			case 4:
+				cfg_notify();
+				break;
+			case 5:    /* Toggle Options */
 				done=0;
 				while(!done) {
 					i=0;
@@ -1635,7 +1738,7 @@ void sys_cfg(void)
 						} 
 					}
 				break;
-			case 5:    /* New User Values */
+			case 6:    /* New User Values */
 				done=0;
 				while(!done) {
 					i=0;
@@ -2118,10 +2221,10 @@ void sys_cfg(void)
 					}
 				}
 				break;
-			case 6:
+			case 7:
 				security_cfg();
 				break;
-			case 7:	/* Advanced Options */
+			case 8:	/* Advanced Options */
 				done=0;
 				while(!done) {
 					i=0;
@@ -2486,7 +2589,7 @@ void sys_cfg(void)
 						} 
 					}
 					break;
-			case 8: /* Loadable Modules */
+			case 9: /* Loadable Modules */
 				done=0;
 				while(!done) {
 					i=0;

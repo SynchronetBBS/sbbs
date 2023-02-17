@@ -161,7 +161,7 @@ void wizard_msg(const char* text)
 static bool abort_wizard(void)
 {
 	char* opt[] = { "Abort", "Restart", NULL };
-	wizard_msg("You can abort or restart the Setup Wizard from the beginning.");
+	wizard_msg("You can abort the Setup Wizard or restart from the beginning.");
 	return uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 10 ,0, NULL, NULL
 		,"Abort Setup Wizard", opt) == 0;
 }
@@ -192,7 +192,7 @@ void cfg_wizard(void)
 			"parameters required to run a Synchronet Bulletin Board System.  All of\n"
 			"these configuration parameters may be changed later if you choose.\n"
 			"\n"
-			"Hit ~ ENTER ~ to advance through the setup wizard or ~ ESC ~ to abort\n"
+			"Press ~ ENTER ~ to advance through the setup wizard or ~ ESC ~ to abort\n"
 			"or restart the wizard."
 			);
 		if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 12 ,0, NULL, NULL
@@ -218,8 +218,12 @@ void cfg_wizard(void)
 			continue;
 		if(edit_sys_newuser_policy(true) < 0)
 			continue;
-		if(edit_sys_alias_policy(true) < 0)
-			continue;
+		if(!(cfg.sys_misc & SM_CLOSED)) {
+			if(edit_sys_newuser_fback_policy(true) < 0)
+				continue;
+			if(edit_sys_alias_policy(true) < 0)
+				continue;
+		}
 		if(edit_sys_delmsg_policy(true) < 0)
 			continue;
 		if(memcmp(&saved_cfg, &cfg, sizeof(cfg)) == 0) {
@@ -237,7 +241,7 @@ void cfg_wizard(void)
 			);
 		char pass[sizeof(cfg.sys_pass)];
 		do {
-			if(uifc.input(WIN_L2R|WIN_SAV, 0, 12, "SY", pass, sizeof(cfg.sys_pass)-1, K_PASSWORD | K_UPPER) < 0)
+			if(uifc.input(WIN_L2R|WIN_SAV, 0, 14, "SY", pass, sizeof(cfg.sys_pass)-1, K_PASSWORD | K_UPPER) < 0)
 				break;
 		} while(strcmp(cfg.sys_pass, pass) != 0);
 		if(strcmp(cfg.sys_pass, pass))
@@ -606,17 +610,17 @@ int main(int argc, char **argv)
 			"This is the main menu of the Synchronet configuration utility (SCFG).\n"
 			"From this menu, you have the following choices:\n"
 			"\n"
-			"    Nodes                : Add, delete, or configure nodes\n"
-			"    System               : System-wide configuration options\n"
-			"    Networks             : Networking configuration\n"
-			"    File Areas           : File area configuration\n"
-			"    File Options         : File area options\n"
-			"    Chat Features        : Chat actions, sections, pagers, and robots\n"
-			"    Message Areas        : Message area configuration\n"
-			"    Message Options      : Message and e-mail options\n"
-			"    Command Shells       : Terminal server user interface/menu modules\n"
-			"    External Programs    : Events, editors, and online programs (doors)\n"
-			"    Text File Sections   : Text file areas available for online viewing\n"
+			"    `Nodes               ` Add, delete, or configure nodes\n"
+			"    `System              ` System-wide configuration options\n"
+			"    `Networks            ` Networking configuration\n"
+			"    `File Areas          ` File area configuration\n"
+			"    `File Options        ` File area options\n"
+			"    `Chat Features       ` Chat actions, sections, pagers, and robots\n"
+			"    `Message Areas       ` Message area configuration\n"
+			"    `Message Options     ` Message and e-mail options\n"
+			"    `Command Shells      ` Terminal server user interface/menu modules\n"
+			"    `External Programs   ` Events, editors, and online programs (doors)\n"
+			"    `Text File Sections  ` Text file areas available for online viewing\n"
 			"\n"
 			"Use the arrow keys and ~ ENTER ~ to select an option, or ~ ESC ~ to exit.\n"
 		;

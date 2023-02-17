@@ -62,13 +62,10 @@ BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	arstr(NULL, cfg->node_arstr, cfg, cfg->node_ar);
 
 	cfg->node_misc = iniGetUInteger(ini, ROOT_SECTION, "settings", 0);
-	cfg->node_valuser = iniGetShortInt(ini, ROOT_SECTION, "valuser", 0);
 	cfg->node_sem_check = iniGetShortInt(ini, ROOT_SECTION, "sem_check", 60);
 	cfg->node_stat_check = iniGetShortInt(ini, ROOT_SECTION, "stat_check", 10);
 	cfg->sec_warn = iniGetShortInt(ini, ROOT_SECTION, "sec_warn", 180);
 	cfg->sec_hangup = iniGetShortInt(ini, ROOT_SECTION, "sec_hangup", 300);
-	cfg->node_erruser = iniGetShortInt(ini, ROOT_SECTION, "erruser", 300);
-	cfg->node_errlevel = (uchar)iniGetShortInt(ini, ROOT_SECTION, "errlevel", 0);
 
 	iniFreeStringList(ini);
 
@@ -132,6 +129,9 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->user_backup_level = iniGetInteger(ini, ROOT_SECTION, "user_backup_level", 5);
 	cfg->mail_backup_level = iniGetInteger(ini, ROOT_SECTION, "mail_backup_level", 5);
 	cfg->new_install = iniGetBool(ini, ROOT_SECTION, "new_install", FALSE);
+	cfg->valuser = iniGetShortInt(ini, ROOT_SECTION, "valuser", 0);
+	cfg->erruser = iniGetShortInt(ini, ROOT_SECTION, "erruser", 0);
+	cfg->errlevel = (uchar)iniGetShortInt(ini, ROOT_SECTION, "errlevel", LOG_CRIT);
 
 	// fixed events
 	SAFECOPY(cfg->sys_logon, iniGetString(ini, "logon_event", "cmd", "", value));
