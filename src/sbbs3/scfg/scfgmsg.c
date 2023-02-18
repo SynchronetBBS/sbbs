@@ -1180,7 +1180,7 @@ void msg_opts()
                 }
 				return;
 			case 0:
-				edit_sys_id(false);
+				edit_sys_id(false, false);
 				break;
 			case 1:
 				uifc.helpbuf=
@@ -1451,7 +1451,7 @@ void msg_opts()
 				}
                 break;
 			case 16:
-				edit_sys_delmsg_policy(false);
+				edit_sys_delmsg_policy(false, false);
                 break;
 			case 17:
 				uifc.helpbuf=

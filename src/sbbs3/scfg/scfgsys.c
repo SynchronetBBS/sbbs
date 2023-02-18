@@ -21,14 +21,14 @@
 #include "ssl.h"
 #include "ciolib.h"	// CIO_KEY_*
 
-static int wiz_help(const char* buf)
+static int wiz_help(int page, int total, const char* buf)
 {
-	wizard_msg(buf);
+	wizard_msg(page, total, buf);
 	uifc.helpbuf = NULL;
 	return WIN_SAV | WIN_L2R | WIN_NOBRDR;
 }
 
-int edit_sys_name(bool wiz)
+int edit_sys_name(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	uifc.helpbuf=
@@ -38,12 +38,12 @@ int edit_sys_name(bool wiz)
 		"If you want to see BBS names already in use, reference Internet indexes\n"
 		"such as `http://synchro.net/sbbslist.html` and `http://telnetbbsguide.com`"
 		;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	return uifc.input(mode,0,10,"BBS Name",cfg.sys_name,sizeof(cfg.sys_name)-1,K_EDIT);
 }
 
-int edit_sys_location(bool wiz)
+int edit_sys_location(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	uifc.helpbuf=
@@ -52,12 +52,12 @@ int edit_sys_location(bool wiz)
 		"This is the location of the BBS. The format is flexible, but it is\n"
 		"suggested you use the `City, State` format for U.S. locations.\n"
 		;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	return uifc.input(mode,0,10,"System Location",cfg.sys_location,sizeof(cfg.sys_location)-1,K_EDIT);
 }
 
-int edit_sys_operator(bool wiz)
+int edit_sys_operator(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	uifc.helpbuf=
@@ -67,12 +67,12 @@ int edit_sys_operator(bool wiz)
 		"have to be the same name or alias as user #1.  This value is used for\n"
 		"informational/display purposes only.\n"
 		;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	return uifc.input(mode,0,10,"System Operator Name",cfg.sys_op,sizeof(cfg.sys_op)-1,K_EDIT);
 }
 
-int edit_sys_password(bool wiz)
+int edit_sys_password(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	uifc.helpbuf=
@@ -88,12 +88,12 @@ int edit_sys_password(bool wiz)
 		"password with the system password, separated by a colon\n"
 		"(i.e. '`user-pass:system-pass`').\n"
 		;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	return uifc.input(mode,0,16,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
 }
 
-int edit_sys_inetaddr(bool wiz)
+int edit_sys_inetaddr(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	uifc.helpbuf=
@@ -102,13 +102,13 @@ int edit_sys_inetaddr(bool wiz)
 		"Enter your system's Internet address (hostname or IP address) here\n"
 		"(e.g. `joesbbs.com`).\n"
 		;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	return uifc.input(mode,0,10,"System Internet Address"
 		,cfg.sys_inetaddr,32,K_EDIT);
 }
 
-int edit_sys_id(bool wiz)
+int edit_sys_id(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	char str[LEN_QWKID + 1];
@@ -127,8 +127,8 @@ int edit_sys_id(bool wiz)
 			"filename characters.  In a QWK packet network, each system must have\n"
 			"a unique QWK system ID.\n"
 		;
-		if(wiz)
-			mode = wiz_help(uifc.helpbuf);
+		if(page)
+			mode = wiz_help(page, total, uifc.helpbuf);
 		if(uifc.input(mode,0,16,"BBS ID for QWK Packets"
 			,str,LEN_QWKID,K_EDIT|K_UPPER) < 1)
 			break;
@@ -141,7 +141,7 @@ int edit_sys_id(bool wiz)
 	return -1;
 }
 
-static int configure_dst(bool wiz)
+static int configure_dst(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	strcpy(opt[0],"Yes");
@@ -162,8 +162,8 @@ static int configure_dst(bool wiz)
 		"instead of \"PST\" and calculate the correct offset from UTC), it does not\n"
 		"actually change the time on your computer system(s) for you.\n"
 	;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	i=uifc.list(mode,0,14,0,&i,0
 		,"Daylight Saving Time (DST)",opt);
 	if(i==-1)
@@ -184,7 +184,7 @@ static int configure_dst(bool wiz)
 	return i;
 }
 
-int edit_sys_timezone(bool wiz)
+int edit_sys_timezone(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	char str[128];
@@ -197,8 +197,8 @@ int edit_sys_timezone(bool wiz)
 		"\n"
 			"If your local time zone is the United States, select `Yes`.\n"
 	;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	i=uifc.list(mode,0,10,0,&i,0
 		,"United States Time Zone",uifcYesNoOpts);
 	if(i==-1)
@@ -229,8 +229,8 @@ int edit_sys_timezone(bool wiz)
 			"\n"
 			"Choose the region which most closely reflects your local U.S. time zone.\n"
 		;
-		if(wiz)
-			mode = wiz_help(uifc.helpbuf);
+		if(page)
+			mode = wiz_help(page, total, uifc.helpbuf);
 		i=uifc.list(mode,0,9,0,&i,0
 			,"U.S. Time Zone",opt);
 		if(i==-1)
@@ -261,7 +261,7 @@ int edit_sys_timezone(bool wiz)
 				cfg.sys_timezone=BST;
 				break;
 		}
-		return configure_dst(wiz);
+		return configure_dst(page, total);
 	}
 	i=0;
 	strcpy(opt[i++],"Midway");
@@ -329,8 +329,8 @@ int edit_sys_timezone(bool wiz)
 		"Choose `Other...` if a region representing your local time zone is not\n"
 		"listed (you will be able to set the exact UTC offset manually)."
 	;
-	if(wiz) {
-		mode = wiz_help(uifc.helpbuf);
+	if(page) {
+		mode = wiz_help(page, total, uifc.helpbuf);
 		mode |= WIN_FIXEDHEIGHT;
 	}
 	bar = i;
@@ -430,8 +430,8 @@ int edit_sys_timezone(bool wiz)
 				"Enter your local time zone offset from Universal Time (UTC/GMT) in `HH:MM`\n"
 				"format.\n"
 			;
-			if(wiz)
-				mode = wiz_help(uifc.helpbuf);
+			if(page)
+				mode = wiz_help(page, total, uifc.helpbuf);
 			if(uifc.input(mode,0,10
 				,"Time (HH:MM) East (+) or West (-) of Universal Time"
 				,str,6,K_EDIT|K_UPPER) < 1)
@@ -447,11 +447,11 @@ int edit_sys_timezone(bool wiz)
 			return 0;
 	}
 	if(SMB_TZ_HAS_DST(cfg.sys_timezone))
-		return configure_dst(wiz);
+		return configure_dst(page, total);
 	return 1;
 }
 
-int edit_sys_newuser_policy(bool wiz)
+int edit_sys_newuser_policy(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	int i=cfg.sys_misc&SM_CLOSED ? 1:0;
@@ -462,8 +462,8 @@ int edit_sys_newuser_policy(bool wiz)
 		"(e.g. create a new user account by logging-in as `New`), set this option\n"
 		"to `Yes`.\n"
 	;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	i=uifc.list(mode,0,10,0,&i,0
 		,"Open to New Users",uifcYesNoOpts);
 	if(i == 0) {
@@ -475,8 +475,8 @@ int edit_sys_newuser_policy(bool wiz)
 			"password, enter that password here.  If you prefer that `any` caller be\n"
 			"able to register a new user account, leave this option blank.\n"
 		;
-		if(wiz)
-			mode = wiz_help(uifc.helpbuf);
+		if(page)
+			mode = wiz_help(page, total, uifc.helpbuf);
 		if(uifc.input(mode,0,10,"New User Password (optional)",cfg.new_pass,sizeof(cfg.new_pass)-1
 			,K_EDIT|K_UPPER) < 0)
 			return -1;
@@ -487,7 +487,7 @@ int edit_sys_newuser_policy(bool wiz)
 	return i;
 }
 
-int edit_sys_delmsg_policy(bool wiz)
+int edit_sys_delmsg_policy(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	char* opt[] = {"Yes", "No", "Sysops Only", NULL };
@@ -518,8 +518,8 @@ int edit_sys_delmsg_policy(bool wiz)
 		"If this option is set to `Sysops Only`, then only sysops and sub-ops (when\n"
 		"appropriate) can view deleted messages.\n"
 	;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	i=uifc.list(mode,0,15,0,&i,0
 		,"Users Can View Deleted Messages",opt);
 	if(!i && (cfg.sys_misc&(SM_USRVDELM|SM_SYSVDELM))
@@ -617,7 +617,7 @@ void security_cfg(void)
 			case -1:
 				return;
 			case __COUNTER__:
-				edit_sys_password(false);
+				edit_sys_password(false, false);
 				break;
 			case __COUNTER__:
 				if(!(cfg.sys_misc&SM_R_SYSOP))
@@ -844,7 +844,7 @@ void security_cfg(void)
 				cfg.sys_autodel=atoi(str);
 				break;
 			case __COUNTER__:
-				edit_sys_newuser_policy(false);
+				edit_sys_newuser_policy(false, false);
 				break;
 			case __COUNTER__:
 				i=cfg.sys_misc&SM_TIME_EXP ? 0:1;
@@ -1289,7 +1289,7 @@ void security_cfg(void)
 	}
 }
 
-int edit_sys_timefmt(bool wiz)
+int edit_sys_timefmt(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	int i = (cfg.sys_misc & SM_MILITARY) ? 1:0;
@@ -1300,8 +1300,8 @@ int edit_sys_timefmt(bool wiz)
 		"If you would like the time-of-day to be displayed and entered in 24 hour\n"
 		"format always, set this option to `24 hour`.\n"
 	;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	i=uifc.list(mode,0,10,0,&i,0
 		,"Time Display Format", opts);
 	if(i == 0)
@@ -1311,7 +1311,7 @@ int edit_sys_timefmt(bool wiz)
 	return i;
 }
 
-int edit_sys_datefmt(bool wiz)
+int edit_sys_datefmt(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	int i = (cfg.sys_misc & SM_EURODATE) ? 1:0;
@@ -1323,8 +1323,8 @@ int edit_sys_datefmt(bool wiz)
 		"U.S. date format of month first, choose `MM/DD/YY`.  If you prefer the\n"
 		"Europaen traditional date format of day first, choose `DD/MM/YY`.\n"
 	;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	i=uifc.list(mode,0,10,0,&i,0
 		,"Date Display Format", opts);
 	if(i == 0)
@@ -1334,7 +1334,7 @@ int edit_sys_datefmt(bool wiz)
 	return i;
 }
 
-int edit_sys_alias_policy(bool wiz)
+int edit_sys_alias_policy(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	int i = (cfg.uq & UQ_ALIASES) ? 0:1;
@@ -1345,8 +1345,8 @@ int edit_sys_alias_policy(bool wiz)
 		"false name, handle, or alias, set this option to `Yes`.  If you want all\n"
 		"users on your system to be known only by their real names, select `No`.\n"
 	;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	i=uifc.list(mode,0,10,0,&i,0
 		,"Allow Users to Use Aliases",uifcYesNoOpts);
 	if(!i && !(cfg.uq&UQ_ALIASES)) {
@@ -1358,7 +1358,7 @@ int edit_sys_alias_policy(bool wiz)
 	return i;
 }
 
-int edit_sys_newuser_fback_policy(bool wiz)
+int edit_sys_newuser_fback_policy(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	char str[128];
@@ -1376,8 +1376,8 @@ int edit_sys_newuser_fback_policy(bool wiz)
 		"This feature can be disabled by setting this value to `0`, allowing new\n"
 		"users to register and logon without sending validation feedback.\n" 
 	;
-	if(wiz)
-		mode = wiz_help(uifc.helpbuf);
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
 	int i = uifc.input(mode, 0, 16, "Require New User Feedback to (0=Nobody)"
 		,str, 5, K_NUMBER|K_EDIT);
 	if(i >= 0)
@@ -1460,7 +1460,7 @@ void cfg_notify(void)
 				return;
 				break;
 			case 0:
-				edit_sys_newuser_fback_policy(false);
+				edit_sys_newuser_fback_policy(false, false);
 				break;
 			case 1:
 				ultoa(cfg.erruser,str,10);
@@ -1547,16 +1547,16 @@ void sys_cfg(void)
 				}
 				return;
 			case 0:
-				edit_sys_name(false);
+				edit_sys_name(false, false);
 				break;
 			case 1:
-				edit_sys_location(false);
+				edit_sys_location(false, false);
 				break;
 			case 2:
-				edit_sys_timezone(false);
+				edit_sys_timezone(false, false);
 				break;
 			case 3:
-				edit_sys_operator(false);
+				edit_sys_operator(false, false);
 				break;
 			case 4:
 				cfg_notify();
@@ -1598,7 +1598,7 @@ void sys_cfg(void)
 							done=1;
 							break;
 						case 0:
-							edit_sys_alias_policy(false);
+							edit_sys_alias_policy(false, false);
 							break;
 						case 1:
 							i=cfg.sys_misc&SM_TIMEBANK ? 0:1;
@@ -1696,10 +1696,10 @@ void sys_cfg(void)
 							}
 							break;
 						case 6:
-							edit_sys_timefmt(false);
+							edit_sys_timefmt(false, false);
 							break;
 						case 7:
-							edit_sys_datefmt(false);
+							edit_sys_datefmt(false, false);
 							break;
 						case 8:
 							i=cfg.sys_misc&SM_NOSYSINFO ? 1:0;
