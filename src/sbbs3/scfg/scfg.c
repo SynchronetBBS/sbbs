@@ -187,12 +187,14 @@ void cfg_wizard(void)
 	do {
 		switch(stage) {
 			case -1:
+			{
 				char* opt[] = { "Abort", "Continue", NULL };
 				wizard_msg(stage, total, "Do you wish to abort the Setup Wizard now?");
 				if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 10 ,0, NULL, NULL
 					,"Abort Setup Wizard", opt) == 0)
 					stage = 100;
 				break;
+			}
 			case __COUNTER__:
 			{
 				char* opt[] = { "Continue", NULL };
@@ -335,8 +337,8 @@ void cfg_wizard(void)
 					"\n"
 					"                                               digital man (rob)\n"
 					);
-				char* save_opts[] = { "Save Changes", "Discard Changes", NULL };
-				if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 14 ,0, NULL, NULL, NULL, save_opts) != 0) {
+				char* opts[] = { "Save Changes", "Discard Changes", NULL };
+				if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 14 ,0, NULL, NULL, NULL, opts) != 0) {
 					stage = -1;
 					continue;
 				}
