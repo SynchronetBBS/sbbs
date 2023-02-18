@@ -317,7 +317,7 @@ void cfg_wizard(void)
 					);
 				char pass[sizeof(cfg.sys_pass)];
 				do {
-					if(uifc.input(WIN_L2R|WIN_SAV, 0, 14, "SY", pass, sizeof(cfg.sys_pass)-1, K_PASSWORD | K_UPPER) < 0)
+					if(uifc.input(WIN_L2R|WIN_SAV|WIN_NOBRDR, 0, 14, "SY", pass, sizeof(cfg.sys_pass)-1, K_PASSWORD | K_UPPER) < 0)
 						break;
 				} while(strcmp(cfg.sys_pass, pass) != 0);
 				if(strcmp(cfg.sys_pass, pass)) {
