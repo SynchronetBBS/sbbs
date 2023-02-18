@@ -1023,7 +1023,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 	if(to==NULL || *to==0)
 		to="Sysop";
 	if(!startmsg) startmsg=1;
-	if((nodecfg=findnodecfg(&cfg, dest, 0)) != NULL) {
+	if((nodecfg=findnodecfg(&cfg, dest, /* exact: */false)) != NULL) {
 		if(nodecfg->status == MAIL_STATUS_NORMAL && !nodecfg->direct)
 			nodecfg=findnodecfg(&cfg, dest, /* skip exact match: */2);
 	}
@@ -1402,7 +1402,7 @@ void netmail_arealist(enum arealist_type type, fidoaddr_t addr, const char* to)
 	}
 
 	if(type != AREALIST_CONNECTED) {
-		nodecfg_t* nodecfg=findnodecfg(&cfg, addr,0);
+		nodecfg_t* nodecfg=findnodecfg(&cfg, addr, /* exact: */false);
 		if(nodecfg != NULL) {
 			for(u=0;u<cfg.listcfgs;u++) {
 				match=0;
@@ -1475,7 +1475,7 @@ int check_elists(const char *areatag, fidoaddr_t addr)
 	unsigned k,x,match=0;
 	unsigned u;
 
-	nodecfg_t* nodecfg=findnodecfg(&cfg, addr,0);
+	nodecfg_t* nodecfg=findnodecfg(&cfg, addr, /* exact: */false);
 	if(nodecfg!=NULL) {
 		for(u=0;u<cfg.listcfgs;u++) {
 			quit=0;
@@ -1692,7 +1692,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 	}
 	fclose(afilein);
 	if(nomatch || (add_count && stricmp(add_area[0],"+ALL") == 0)) {
-		nodecfg_t* nodecfg=findnodecfg(&cfg, addr,0);
+		nodecfg_t* nodecfg=findnodecfg(&cfg, addr, /* exact: */false);
 		if(nodecfg != NULL) {
 			for(j=0;j<cfg.listcfgs;j++) {
 				match=0;
@@ -2184,7 +2184,7 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 		addr=atofaddr(str);
 	}
 
-	nodecfg_t* nodecfg = findnodecfg(&cfg, addr,0);
+	nodecfg_t* nodecfg = findnodecfg(&cfg, addr, /* exact: */false);
 	if(nodecfg==NULL || !nodecfg->areafix) {
 		lprintf(LOG_NOTICE,"AreaFix (for %s) Request received, but AreaFix not enabled for this node!", smb_faddrtoa(&addr,NULL));
 		create_netmail(name,/* msg: */NULL,"Area Management Request"
@@ -2325,7 +2325,7 @@ int pack(const char *srcfile, const char *destfile, fidoaddr_t dest)
 		lprintf(LOG_DEBUG, "ERROR: pack() called with no archive types configured!");
 		return -1;
 	}
-	if((nodecfg=findnodecfg(&cfg, dest, 0)) != NULL)
+	if((nodecfg=findnodecfg(&cfg, dest, /* exact: */false)) != NULL)
 		archive = nodecfg->archive;
 	else
 		archive = &cfg.arcdef[0];
@@ -2528,7 +2528,7 @@ bool pack_bundle(const char *tmp_pkt, fidoaddr_t orig, fidoaddr_t dest)
 	if(!bso_lock_node(dest))
 		return false;
 
-	nodecfg=findnodecfg(&cfg, dest,0);
+	nodecfg=findnodecfg(&cfg, dest, /* exact: */false);
 	lprintf(LOG_INFO,"Sending packet (%s, %1.1fKB) from %s to %s"
 		, tmp_pkt, flength(tmp_pkt)/1024.0, smb_faddrtoa(&orig, str), smb_faddrtoa(&dest,NULL));
 
@@ -3733,7 +3733,7 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 			}
 
 			for(u=0;u<area.links;u++) {			/* Add all links to SEEN-BYs */
-				nodecfg_t* nodecfg=findnodecfg(&cfg, area.link[u],0);
+				nodecfg_t* nodecfg=findnodecfg(&cfg, area.link[u], /* exact: */false);
 				if(nodecfg!=NULL && nodecfg->passive)
 					continue;
 				strcpy(seenby," ");
@@ -4188,7 +4188,7 @@ bool write_to_pkts(const char *fbuf, area_t area, const fidoaddr_t* faddr, const
 			pkt_origin++;
 			continue;	// Don't loop message back to packet originator
 		}
-		nodecfg_t* nodecfg = findnodecfg(&cfg, area.link[u],0);
+		nodecfg_t* nodecfg = findnodecfg(&cfg, area.link[u], /* exact: */false);
 		if(nodecfg != NULL && nodecfg->passive) {
 			passive_node++;
 			continue;
@@ -5474,13 +5474,13 @@ void pack_netmail(void)
 			return;
 		}
 
-		nodecfg=findnodecfg(&cfg, addr, 0);
+		nodecfg=findnodecfg(&cfg, addr, /* exact: */false);
 		if(!sysfaddr_is_valid(find_sysfaddr(addr, false))) {
 			if(nodecfg!=NULL && nodecfg->route.zone	&& nodecfg->status==MAIL_STATUS_NORMAL
 				&& !(hdr.attr&(FIDO_CRASH|FIDO_HOLD))) {
 				addr=nodecfg->route;		/* Routed */
 				lprintf(LOG_INFO, "Routing NetMail (%s) to %s",getfname(path),smb_faddrtoa(&addr,NULL));
-				nodecfg=findnodecfg(&cfg, addr,0);
+				nodecfg=findnodecfg(&cfg, addr, /* exact: */false);
 			}
 			if(nodecfg == NULL && addr.point != 0) {
 				fidoaddr_t	boss = addr;
@@ -5766,7 +5766,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			continue;
 		}
 
-		nodecfg_t* nodecfg = findnodecfg(&cfg, pkt_orig, 1);
+		nodecfg_t* nodecfg = findnodecfg(&cfg, pkt_orig, /* exact: */true);
 		SAFECOPY(password,(char*)pkthdr.type2.password);
 		if(nodecfg !=NULL && (cfg.strict_packet_passwords || nodecfg->pktpwd[0])
 			&& stricmp(password,nodecfg->pktpwd)) {
