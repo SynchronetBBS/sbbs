@@ -1875,6 +1875,7 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 	int	width;
 	int height=3;
 	int i,plen,slen,j;
+	int offset;
 	int	iwidth;
 	int l;
 	char *prompt;
@@ -1900,10 +1901,13 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 
 	prompt=strdup(inprompt==NULL ? "":inprompt);
 	plen=strlen(prompt);
-	if(!plen)
-		slen=2+hbrdrsize;
+	if(mode & WIN_NOBRDR)
+		offset = 3;
+	else if(!plen)
+		offset = 2;
 	else
-		slen=4+hbrdrsize;
+		offset = 4;
+	slen = hbrdrsize + offset;
 
 	width=plen+slen+max;
 	if(width>(s_right-s_left+1))
@@ -2018,10 +2022,7 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 	if(api->bottomline != NULL)
 		api->bottomline(WIN_COPY|WIN_CUT|WIN_PASTE);
 	textattr(api->lclr|(api->bclr<<4));
-	if(!plen)
-		i=ugetstr(s_left+left+2,s_top+top+tbrdrwidth,iwidth,str,max,kmode,NULL);
-	else
-		i=ugetstr(s_left+left+plen+4,s_top+top+tbrdrwidth,iwidth,str,max,kmode,NULL);
+	i=ugetstr(s_left+left+plen+offset,s_top+top+tbrdrwidth,iwidth,str,max,kmode,NULL);
 	if(mode&WIN_SAV)
 		vmem_puttext(s_left+left,s_top+top,s_left+left+width+1
 			,s_top+top+height,save_buf);
