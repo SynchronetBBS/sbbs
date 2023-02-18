@@ -7,6 +7,7 @@
 // Example: "?chkspace [dir1] [dir2] [minfreespace]"
 
 load("sbbsdefs.js");
+load("file_size.js");
 
 var minspace = file_area.min_diskspace*2;	// default to twice the min allowed for uploads
 var dirs = new Array();
@@ -23,10 +24,11 @@ if(!dirs.length)
 var msgbase;
 for(i in dirs) {
 
-	var freespace = dir_freespace(dirs[i],1024);
+	var freespace = dir_freespace(dirs[i]);
 
-	if(freespace==-1 || freespace >= minspace)
+	if(freespace >= minspace) {
 		continue;	// everything's fine
+	}
 
 	if(!msgbase) {
 		msgbase = new MsgBase("mail");
@@ -35,11 +37,11 @@ for(i in dirs) {
 			exit();
 		}
 	}
-	log(LOG_WARNING,"!Low disk space: " + freespace + " kilobytes on " + dirs[i]);
+	log(LOG_WARNING,"!Low disk space: " + file_size_str(freespace, 1, 1) + " bytes on " + dirs[i]);
 
 	hdr = { to: 'sysop', to_ext: '1', from: 'chkspace', subject: 'Low disk space notification' }
 
-	if(!msgbase.save_msg(hdr, "WARNING: Only " + freespace + " kilobytes of free disk space in " 
+	if(!msgbase.save_msg(hdr, "WARNING: Only " + file_size_str(freespace, 1, 1) + " bytes of free disk space in "
 		+ dirs[i] + " on " + system.timestr()))
 		log(LOG_ERR,"!Error " + msgbase.last_error + "saving mail message");
 
