@@ -153,17 +153,17 @@ void sort_dirs(int libnum)
 	qsort(cfg.dir, cfg.total_dirs, sizeof(dir_t*), dir_compare);
 }
 
-void wizard_msg(const char* text)
+void wizard_msg(int page, int total, const char* text)
 {
 	uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 78, 20, "Setup Wizard", text, NULL, NULL);
-}
-
-static bool abort_wizard(void)
-{
-	char* opt[] = { "Abort", "Restart", NULL };
-	wizard_msg("You can abort the Setup Wizard now or restart from the beginning.");
-	return uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 10 ,0, NULL, NULL
-		,"Abort Setup Wizard", opt) == 0;
+	if(page > 0 && page < total) {
+		int x = (uifc.scrn_width / 2) + 22;
+		int y = 21;
+		uifc.printf(x, y, uifc.bclr<<4,  "%*.*s", total, total
+			, "\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0");
+		uifc.printf(x, y, uifc.lclr|(uifc.bclr<<4), "%*.*s", page, page
+			, "\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0");
+	}
 }
 
 void cfg_wizard(void)
@@ -181,91 +181,174 @@ void cfg_wizard(void)
 		return;
 	}
 
+	int stage = 0;
+	int total = 16;
 	scfg_t saved_cfg = cfg;
 	do {
-		char* opt[] = { "Continue", NULL };
-
-		wizard_msg(
-			"                              ~    Welcome   ~\n"
-			"\n"
-			"This wizard will take you through the configuration of the basic\n"
-			"parameters required to run a Synchronet Bulletin Board System.  All of\n"
-			"these configuration parameters may be changed later if you choose.\n"
-			"\n"
-			"Press ~ ENTER ~ to advance through the setup wizard or ~ ESC ~ to abort\n"
-			"or restart the wizard."
-			);
-		if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 12 ,0, NULL, NULL, NULL, opt) == -1)
-			continue;
-		if(edit_sys_name(true) < 1)
-			continue;
-		if(edit_sys_operator(true) < 1)
-			continue;
-		if(edit_sys_password(true) < 1)
-			continue;
-		if(edit_sys_inetaddr(true) < 1)
-			continue;
-		if(edit_sys_id(true) < 0)
-			continue;
-		if(edit_sys_location(true) < 1)
-			continue;
-		if(edit_sys_timezone(true) < 0)
-			continue;
-		if(edit_sys_timefmt(true) < 0)
-			continue;
-		if(edit_sys_datefmt(true) < 0)
-			continue;
-		if(edit_sys_newuser_policy(true) < 0)
-			continue;
-		if(!(cfg.sys_misc & SM_CLOSED)) {
-			if(edit_sys_newuser_fback_policy(true) < 0)
-				continue;
-			if(edit_sys_alias_policy(true) < 0)
-				continue;
-		}
-		if(edit_sys_delmsg_policy(true) < 0)
-			continue;
-		if(memcmp(&saved_cfg, &cfg, sizeof(cfg)) == 0) {
-			uifc.scrn(title);
-			uifc.msg("No configuration changes made");
-			continue;
-		}
-		wizard_msg("`System Password Verification`\n\n"
-			"At this point you must re-enter the system password that you set earlier\n"
-			"in the configuration wizard.\n"
-			"\n"
-			"This same password will be required of you when you logon to the BBS with\n"
-			"any user account that has System Operator (sysop) privileges\n"
-			"(i.e. security level 90 or higher).\n"
-			);
-		char pass[sizeof(cfg.sys_pass)];
-		do {
-			if(uifc.input(WIN_L2R|WIN_SAV, 0, 14, "SY", pass, sizeof(cfg.sys_pass)-1, K_PASSWORD | K_UPPER) < 0)
+		switch(stage) {
+			case -1:
+				char* opt[] = { "Abort", "Continue", NULL };
+				wizard_msg(stage, total, "Do you wish to abort the Setup Wizard now?");
+				if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 10 ,0, NULL, NULL
+					,"Abort Setup Wizard", opt) == 0)
+					stage = 100;
 				break;
-		} while(strcmp(cfg.sys_pass, pass) != 0);
-		if(strcmp(cfg.sys_pass, pass))
-			continue;
-		wizard_msg(
-			"                         ~ Initial Setup Complete! ~\n"
-			"\n"
-			"You have completed the initial configuration of the basic parameters\n"
-			"required to run Synchronet - the ultimate choice in BBS software for the\n"
-			"Internet Age.\n"
-			"\n"
-			"Thank you for choosing Synchronet,\n"
-			"\n"
-			"Rob Swindell (digital man)\n"
-			);
-		char* save_opts[] = { "Save Changes", "Discard Changes", NULL };
-		if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 14 ,0, NULL, NULL, NULL, save_opts) != 0)
-			continue;
-		if(strcmp(saved_cfg.sys_pass, cfg.sys_pass) != 0)
-			reencrypt_keys(saved_cfg.sys_pass, cfg.sys_pass);
-		cfg.new_install = new_install;
-		save_main_cfg(&cfg, backup_level);
-		save_msgs_cfg(&cfg, backup_level);
-		break;
-	} while(!abort_wizard());
+			case __COUNTER__:
+			{
+				char* opt[] = { "Continue", NULL };
+
+				wizard_msg(stage, total,
+					"                              ~    Welcome   ~\n"
+					"\n"
+					"This wizard will take you through the configuration of the basic\n"
+					"parameters required to run a Synchronet Bulletin Board System.  All of\n"
+					"these configuration parameters may be changed later if you choose.\n"
+					"\n"
+					"Press ~ ENTER ~ to advance through the setup wizard or ~ ESC ~ to move\n"
+					"backward or abort the wizard."
+					);
+				if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 12 ,0, NULL, NULL, NULL, opt) == -1) {
+					--stage;
+					continue;
+				}
+				break;
+			}
+			case __COUNTER__:
+				if(edit_sys_name(stage, total) < 1) {
+					--stage;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				if(edit_sys_operator(stage, total) < 1) {
+					--stage;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				if(edit_sys_password(stage, total) < 1) {
+					--stage;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				if(edit_sys_inetaddr(stage, total) < 1) {
+					--stage;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				if(edit_sys_id(stage, total) < 0) {
+					--stage;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				if(edit_sys_location(stage, total) < 1) {
+					--stage;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				if(edit_sys_timezone(stage, total) < 0) {
+					--stage;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				if(edit_sys_timefmt(stage, total) < 0) {
+					--stage;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				if(edit_sys_datefmt(stage, total) < 0) {
+					--stage;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				if(edit_sys_newuser_policy(stage, total) < 0) {
+					--stage;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				if(!(cfg.sys_misc & SM_CLOSED)) {
+					if(edit_sys_newuser_fback_policy(stage, total) < 0) {
+						--stage;
+						continue;
+					}
+				}
+				break;
+			case __COUNTER__:
+				if(!(cfg.sys_misc & SM_CLOSED)) {
+					if(edit_sys_alias_policy(stage, total) < 0) {
+						--stage;
+						continue;
+					}
+				}
+				break;
+			case __COUNTER__:
+				if(edit_sys_delmsg_policy(stage, total) < 0) {
+					--stage;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				if(memcmp(&saved_cfg, &cfg, sizeof(cfg)) == 0) {
+					uifc.scrn(title);
+					uifc.msg("No configuration changes made");
+					stage = -1;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				wizard_msg(stage, total,
+					"`System Password Verification`\n\n"
+					"At this point you must re-enter the system password that you set earlier\n"
+					"in the configuration wizard.\n"
+					"\n"
+					"This same password will be required of you when you logon to the BBS with\n"
+					"any user account that has System Operator (sysop) privileges\n"
+					"(i.e. security level 90 or higher).\n"
+					);
+				char pass[sizeof(cfg.sys_pass)];
+				do {
+					if(uifc.input(WIN_L2R|WIN_SAV, 0, 14, "SY", pass, sizeof(cfg.sys_pass)-1, K_PASSWORD | K_UPPER) < 0)
+						break;
+				} while(strcmp(cfg.sys_pass, pass) != 0);
+				if(strcmp(cfg.sys_pass, pass)) {
+					stage = -1;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				wizard_msg(stage, total,
+					"                         ~ Initial Setup Complete! ~\n"
+					"\n"
+					"You have completed the initial configuration of the basic parameters\n"
+					"required to run Synchronet - the ultimate choice in BBS software for the\n"
+					"Internet Age.\n"
+					"\n"
+					"Thank you for choosing Synchronet,\n"
+					"\n"
+					"                                           digital man (rob)\n"
+					);
+				char* save_opts[] = { "Save Changes", "Discard Changes", NULL };
+				if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 14 ,0, NULL, NULL, NULL, save_opts) != 0) {
+					stage = -1;
+					continue;
+				}
+				if(strcmp(saved_cfg.sys_pass, cfg.sys_pass) != 0)
+					reencrypt_keys(saved_cfg.sys_pass, cfg.sys_pass);
+				cfg.new_install = new_install;
+				save_main_cfg(&cfg, backup_level);
+				save_msgs_cfg(&cfg, backup_level);
+				break;
+		}
+		++stage;
+	} while(stage < __COUNTER__);
 
 	free_main_cfg(&cfg);
 	free_msgs_cfg(&cfg);
