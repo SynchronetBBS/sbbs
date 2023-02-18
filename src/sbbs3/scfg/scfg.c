@@ -159,10 +159,10 @@ void wizard_msg(int page, int total, const char* text)
 	if(page > 0 && page < total) {
 		int x = (uifc.scrn_width / 2) + 22;
 		int y = 21;
-		uifc.printf(x, y, uifc.bclr<<4,  "%*.*s", total, total
-			, "\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0");
+		uifc.printf(x, y, uifc.cclr|(uifc.bclr<<4),  "%*.*s", total, total
+			, "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1");
 		uifc.printf(x, y, uifc.lclr|(uifc.bclr<<4), "%*.*s", page, page
-			, "\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0");
+			, "\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2\xb2");
 	}
 }
 
@@ -333,7 +333,7 @@ void cfg_wizard(void)
 					"\n"
 					"Thank you for choosing Synchronet,\n"
 					"\n"
-					"                                           digital man (rob)\n"
+					"                                               digital man (rob)\n"
 					);
 				char* save_opts[] = { "Save Changes", "Discard Changes", NULL };
 				if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 14 ,0, NULL, NULL, NULL, save_opts) != 0) {
