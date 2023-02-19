@@ -201,6 +201,12 @@ void cfg_wizard(void)
 
 				wizard_msg(stage, total,
 					"                              ~    Welcome   ~\n"
+					"  _________                   .__                                __   \n"
+ 					" /   _____/__.__. ____   ____ |  |_________  ____   ____   _____/  |_ \n"
+ 					" \\_____  <   |  |/    \\_/ ___\\|  |  \\_  __ \\/  _ \\ /    \\_/ __ \\   __\\\n"
+ 					" /        \\___  |   |  \\  \\___|   Y  \\  | \\(  <_> )   |  \\  ___/|  |  \n"
+					"/_______  / ____|___|  /\\___  >___|  /__|   \\____/|___|  /\\___  >__| \n"
+        			"        \\/\\/         \\/     \\/     \\/                  \\/     \\/     \n"
 					"\n"
 					"This wizard will take you through the configuration of the basic\n"
 					"parameters required to run a Synchronet Bulletin Board System.  All of\n"
@@ -209,7 +215,7 @@ void cfg_wizard(void)
 					"Press ~ ENTER ~ to advance through the setup wizard or ~ ESC ~ to move\n"
 					"backward or abort the wizard."
 					);
-				if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 12 ,0, NULL, NULL, NULL, opt) == -1) {
+				if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 18 ,0, NULL, NULL, NULL, opt) == -1) {
 					--stage;
 					continue;
 				}
