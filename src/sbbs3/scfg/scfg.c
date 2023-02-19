@@ -311,7 +311,7 @@ void cfg_wizard(void)
 					"At this point you must re-enter the system password that you set earlier\n"
 					"in the configuration wizard.\n"
 					"\n"
-					"This same password will be required of you when you logon to the BBS with\n"
+					"This same password will be required of you when you login to the BBS with\n"
 					"any user account that has System Operator (sysop) privileges\n"
 					"(i.e. security level 90 or higher).\n"
 					);
