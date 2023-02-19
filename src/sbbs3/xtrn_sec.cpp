@@ -228,12 +228,12 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,dte_rate							/* Com rate */
 			,"Yes"								/* Hardware flow ctrl Y/N */
 			,"Yes"								/* Locked DTE rate Y/N */
-			,cfg.mdm_init						/* Modem initialization string */
-			,cfg.mdm_spec						/* Modem special init string */
-			,cfg.mdm_term						/* Modem terminal mode init str */
-			,cfg.mdm_dial						/* Modem dial string */
-			,cfg.mdm_offh						/* Modem off-hook string */
-			,cfg.mdm_answ						/* Modem answer string */
+			,""									/* Modem initialization string */
+			,""									/* Modem special init string */
+			,""									/* Modem terminal mode init str */
+			,""									/* Modem dial string */
+			,""									/* Modem off-hook string */
+			,""									/* Modem answer string */
 			,0L
 			);
 		lfexpand(str,misc);

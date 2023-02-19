@@ -168,7 +168,6 @@ void prep_cfg(scfg_t* cfg)
 
 	prep_dir(cfg->ctrl_dir, cfg->netmail_dir, sizeof(cfg->netmail_dir));
 	prep_dir(cfg->ctrl_dir, cfg->echomail_dir, sizeof(cfg->echomail_dir));
-	prep_dir(cfg->ctrl_dir, cfg->fidofile_dir, sizeof(cfg->fidofile_dir));
 
 	prep_path(cfg->netmail_sem);
 	prep_path(cfg->echomail_sem);

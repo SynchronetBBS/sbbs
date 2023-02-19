@@ -859,15 +859,12 @@ void sbbs_t::sys_info()
 	bprintf(text[SiSysID],cfg.sys_id);	/* QWK ID */
 	for(i=0;i<cfg.total_faddrs;i++)
 		bprintf(text[SiSysFaddr],smb_faddrtoa(&cfg.faddr[i],tmp));
-	if(cfg.sys_psname[0])				/* PostLink/PCRelay */
-		bprintf(text[SiSysPsite],cfg.sys_psname,cfg.sys_psnum);
 	if(cfg.sys_location[0])
 		bprintf(text[SiSysLocation],cfg.sys_location);
 	bprintf(text[TiNow],timestr(now),smb_zonestr(sys_timezone(&cfg),NULL));
 	if(cfg.sys_op[0])
 		bprintf(text[SiSysop],cfg.sys_op);
 	bprintf(text[SiSysNodes],cfg.sys_nodes);
-//	bprintf(text[SiNodeNumberName],cfg.node_num,cfg.node_name);
 	if(cfg.node_phone[0])
 		bprintf(text[SiNodePhone],cfg.node_phone);
 	bprintf(text[SiTotalLogons],ultoac(stats.logons,tmp));

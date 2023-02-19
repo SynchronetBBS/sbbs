@@ -200,14 +200,10 @@ char* getoldfilepath(scfg_t* cfg, oldfile_t* f, char* path)
 	if(f->dir>=cfg->total_dirs)
 		safe_snprintf(path,MAX_PATH,"%s%s",cfg->temp_dir,fname);
 	else
-		safe_snprintf(path,MAX_PATH,"%s%s",f->altpath>0 && f->altpath<=cfg->altpaths 
-			? cfg->altpath[f->altpath-1] : cfg->dir[f->dir]->path
-			,fname);
+		safe_snprintf(path,MAX_PATH,"%s%s",cfg->dir[f->dir]->path,fname);
 	if(!fexistcase(path)) {
 		char tmp[MAX_PATH + 1];
-		safe_snprintf(tmp,MAX_PATH,"%s%s",f->altpath>0 && f->altpath<=cfg->altpaths 
-			? cfg->altpath[f->altpath-1] : cfg->dir[f->dir]->path
-			,f->desc);
+		safe_snprintf(tmp,MAX_PATH,"%s%s",cfg->dir[f->dir]->path,f->desc);
 		if(fexistcase(tmp))
 			strcpy(path, tmp);
 	}

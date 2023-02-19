@@ -250,8 +250,6 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 			return((int32_t *)&sys_status);
 		case 0x7e29c819:
 			return((int32_t *)&cfg.sys_misc);
-		case 0x11c83294:
-			return((int32_t *)&cfg.sys_psnum);
 		case 0x02408dc5:
 			sysvar_l[sysvar_li]=sys_timezone(&cfg);
 			break;
@@ -276,25 +274,10 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 		case 0xdd982780:
 			sysvar_l[sysvar_li]=cfg.sys_autonode;
 			break;
-		case 0xf53db6c7:
-			sysvar_l[sysvar_li]=cfg.node_scrnlen;
-			break;
-		case 0xa1f0fcb7:
-			sysvar_l[sysvar_li]=cfg.node_scrnblank;
-			break;
 		case 0x709c07da:
 			return((int32_t *)&cfg.node_misc);
 		case 0xb17e7914:
 			sysvar_l[sysvar_li]=cfg.valuser;
-			break;
-		case 0xadae168a:
-			sysvar_l[sysvar_li]=cfg.node_ivt;
-			break;
-		case 0x2aa89801:
-			sysvar_l[sysvar_li]=cfg.node_swap;
-			break;
-		case 0x4f02623a:
-			sysvar_l[sysvar_li]=cfg.node_minbps;
 			break;
 		case 0xe7a7fb07:
 			sysvar_l[sysvar_li]=cfg.node_num;

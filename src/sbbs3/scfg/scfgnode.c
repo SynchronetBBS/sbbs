@@ -117,7 +117,6 @@ void node_menu()
 			SAFECOPY(cfg.node_path[i-1],str);
 			md(str);
 			cfg.node_num=++cfg.sys_nodes;
-			SAFEPRINTF(cfg.node_name,"Node %u",cfg.node_num);
 			SAFECOPY(cfg.node_phone,"N/A");
 			cfg.new_install=new_install;
 			save_node_cfg(&cfg,backup_level);
