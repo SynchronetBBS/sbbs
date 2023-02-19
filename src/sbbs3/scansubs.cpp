@@ -37,7 +37,7 @@ void sbbs_t::scansubs(int mode)
 		char cmdline[256];
 
 		scansubs_inside = true;
-		safe_snprintf(cmdline, sizeof(cmdline), "%s 0 %ld", cfg.scansubs_mod, mode);
+		safe_snprintf(cmdline, sizeof(cmdline), "%s 0 %u", cfg.scansubs_mod, mode);
 		exec_bin(cmdline, &main_csi);
 		scansubs_inside = false;
 		return;
@@ -68,7 +68,7 @@ void sbbs_t::scansubs(int mode)
 						found=listsub(usrsub[curgrp][i],SCAN_FIND,0,str);
 						subs_scanned++;
 					}
-				SAFEPRINTF2(tmp, "searched %lu sub-boards for '%s'", subs_scanned, str);
+				SAFEPRINTF2(tmp, "searched %u sub-boards for '%s'", subs_scanned, str);
 				logline(nulstr,tmp);
 				if(!found)
 					CRLF;
@@ -147,7 +147,7 @@ void sbbs_t::scanallsubs(int mode)
 		char cmdline[256];
 
 		scansubs_inside = true;
-		safe_snprintf(cmdline, sizeof(cmdline), "%s 1 %ld", cfg.scansubs_mod, mode);
+		safe_snprintf(cmdline, sizeof(cmdline), "%s 1 %u", cfg.scansubs_mod, mode);
 		exec_bin(cmdline, &main_csi);
 		scansubs_inside = false;
 		return;
@@ -174,7 +174,7 @@ void sbbs_t::scanallsubs(int mode)
 				}
 				if(!found)
 					CRLF;
-				sprintf(tmp,"searched %lu sub-boards for '%s'"
+				sprintf(tmp,"searched %u sub-boards for '%s'"
 					,subs_scanned,str);
 				logline(nulstr,tmp);
 				return;

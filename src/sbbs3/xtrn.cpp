@@ -906,7 +906,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 /*****************************************************************************/
 // Expands Unix LF to CRLF
 /*****************************************************************************/
-BYTE* lf_expand(BYTE* inbuf, uint inlen, BYTE* outbuf, uint& newlen)
+BYTE* lf_expand(BYTE* inbuf, uint inlen, BYTE* outbuf, ulong& newlen)
 {
 	uint	i,j;
 
@@ -1085,7 +1085,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	BYTE	buf[XTRN_IO_BUF_LEN];
     BYTE 	output_buf[XTRN_IO_BUF_LEN*2];
 	uint	avail;
-    uint	output_len;
+    ulong	output_len;
 	bool	native=false;			// DOS program by default
 	bool	rio_abortable_save=rio_abortable;
 	int		i;

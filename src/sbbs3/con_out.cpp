@@ -574,7 +574,7 @@ bool sbbs_t::update_nodeterm(void)
 		char str[256];
 		char topic[128];
 		SAFEPRINTF(topic, "node/%u/terminal", cfg.node_num);
-		snprintf(str, sizeof(str), "%lu\t%lu\t%s\t%s\t%s\t%lx\t%lx\t%lx"
+		snprintf(str, sizeof(str), "%u\t%u\t%s\t%s\t%s\t%x\t%x\t%x"
 			,cols
 			,rows
 			,terminal
@@ -1444,7 +1444,7 @@ bool sbbs_t::saveline(void)
 {
 	struct savedline line;
 #ifdef _DEBUG
-	lprintf(LOG_DEBUG, "Saving %d chars, cursor at col %ld: '%.*s'", lbuflen, column, lbuflen, lbuf);
+	lprintf(LOG_DEBUG, "Saving %d chars, cursor at col %d: '%.*s'", lbuflen, column, lbuflen, lbuf);
 #endif
 	line.beg_attr = latr;
 	line.end_attr = curatr;
@@ -1461,7 +1461,7 @@ bool sbbs_t::restoreline(void)
 	if(line == NULL)
 		return false;
 #ifdef _DEBUG
-	lprintf(LOG_DEBUG, "Restoring %d chars, cursor at col %ld: '%s'", (int)strlen(line->buf), line->column, line->buf);
+	lprintf(LOG_DEBUG, "Restoring %d chars, cursor at col %d: '%s'", (int)strlen(line->buf), line->column, line->buf);
 #endif
 	lbuflen=0;
 	attr(line->beg_attr);

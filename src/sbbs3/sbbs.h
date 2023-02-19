@@ -636,7 +636,7 @@ public:
 	uint32_t *	global_int_var_name;
 	char *	sysvar_p[MAX_SYSVARS];
 	uint	sysvar_pi;
-	int32_t	sysvar_l[MAX_SYSVARS];
+	long	sysvar_l[MAX_SYSVARS];
 	uint	sysvar_li;
 
     /* ansi_term.cpp */
@@ -667,7 +667,7 @@ public:
 	void	clearvars(csi_t *bin);
 	void	freevars(csi_t *bin);
 	char**	getstrvar(csi_t *bin, uint32_t name);
-	int32_t*	getintvar(csi_t *bin, uint32_t name);
+	int32_t* getintvar(csi_t *bin, uint32_t name);
 	char*	copystrvar(csi_t *csi, char *p, char *str);
 	void	skipto(csi_t *csi, uchar inst);
 	bool	ftp_cmd(csi_t* csi, SOCKET ctrl_sock, const char* cmdsrc, char* rsp);

@@ -67,7 +67,7 @@ void sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 		char cmdline[256];
 
 		readmail_inside = true;
-		safe_snprintf(cmdline, sizeof(cmdline), "%s %d %u %lu", cfg.readmail_mod, which, usernumber, lm_mode);
+		safe_snprintf(cmdline, sizeof(cmdline), "%s %d %u %u", cfg.readmail_mod, which, usernumber, lm_mode);
 		exec_bin(cmdline, &main_csi);
 		readmail_inside = false;
 		return;
@@ -455,7 +455,7 @@ void sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				if(cfg.listmsgs_mod[0]) {
 					char cmdline[256];
 
-					safe_snprintf(cmdline, sizeof(cmdline), "%s %s %d %u %lu", cfg.listmsgs_mod, "mail", which, usernumber, lm_mode);
+					safe_snprintf(cmdline, sizeof(cmdline), "%s %s %d %u %u", cfg.listmsgs_mod, "mail", which, usernumber, lm_mode);
 					exec_bin(cmdline, &main_csi);
 					break;
 				}

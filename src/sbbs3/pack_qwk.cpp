@@ -78,7 +78,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			,/* file_list: */NULL /* all files */
 			,error, sizeof(error));
 		if(file_count > 0) {
-			lprintf(LOG_DEBUG, "libarchive extracted %lu files from %s", file_count, str);
+			lprintf(LOG_DEBUG, "libarchive extracted %u files from %s", file_count, str);
 			preqwk = TRUE;
 		} else {
 			if(*error)
@@ -583,7 +583,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			break; 
 	}
 
-	lprintf(LOG_INFO,"scanned %lu sub-boards for new messages", subs_scanned);
+	lprintf(LOG_INFO,"scanned %u sub-boards for new messages", subs_scanned);
 
 	if((*msgcnt)+mailmsgs) {
 		time_t elapsed = time(NULL)-start;
@@ -591,17 +591,17 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			elapsed = 1;
 		byte_estimate_to_str(ftell(qwk), tmp, sizeof(tmp), 1024, 1);
 		if(online == ON_REMOTE)
-			bprintf("\r\n\r\n\1n\1hPacked %lu messages (%s bytes) in %lu seconds "
+			bprintf("\r\n\r\n\1n\1hPacked %u messages (%s bytes) in %u seconds "
 				"(%lu messages/second)."
 				,(*msgcnt)+mailmsgs
 				,tmp
 				,(uint)elapsed
 				,((*msgcnt)+mailmsgs) / elapsed);
-		lprintf(LOG_INFO, "packed %lu messages (%s bytes) in %lu seconds (%lu msgs/sec)"
+		lprintf(LOG_INFO, "packed %u messages (%s bytes) in %u seconds (%u msgs/sec)"
 			,(*msgcnt)+mailmsgs
 			,tmp
 			,(uint)elapsed
-			,((*msgcnt)+mailmsgs)/elapsed);
+			,(uint)(((*msgcnt)+mailmsgs)/elapsed));
 	}
 
 	BOOL voting_data = FALSE;
@@ -739,7 +739,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		if(file_count < 0)
 			lprintf(LOG_ERR, "libarchive error (%s) creating %s", error, packet);
 		else
-			lprintf(LOG_INFO, "libarchive created %s from %ld files", packet, file_count);
+			lprintf(LOG_INFO, "libarchive created %s from %d files", packet, file_count);
 	}
 	if(flength(packet) < 1) {
 		remove(packet);

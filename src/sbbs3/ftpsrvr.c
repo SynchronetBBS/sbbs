@@ -4560,7 +4560,7 @@ static void ctrl_thread(void* arg)
 					}
 
 					if(!append && scfg.dir[dir]->maxfiles && getfiles(&scfg,dir)>=scfg.dir[dir]->maxfiles) {
-						lprintf(LOG_WARNING,"%04d <%s> cannot upload to /%s/%s (directory full: %ld files)"
+						lprintf(LOG_WARNING,"%04d <%s> cannot upload to /%s/%s (directory full: %d files)"
 							,sock,user.alias
 							,scfg.lib[scfg.dir[dir]->lib]->vdir
 							,scfg.dir[dir]->vdir

@@ -432,8 +432,8 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 		}
 		safe_snprintf(str,maxlen,"%s%u:%02u"
 	        ,days
-			,(up/(60L*60L))
-			,((up/60L)%60L)
+			,(uint)(up/(60L*60L))
+			,(uint)((up/60L)%60L)
 			);
 		return(str);
 	}
@@ -456,16 +456,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 		return(cfg.sys_name);
 
 	if(!strcmp(sp,"BAUD") || !strcmp(sp,"BPS")) {
-		safe_snprintf(str,maxlen,"%lu",cur_output_rate ? cur_output_rate : cur_rate);
+		safe_snprintf(str,maxlen,"%u",cur_output_rate ? cur_output_rate : cur_rate);
 		return(str);
 	}
 
 	if(!strcmp(sp,"COLS")) {
-		safe_snprintf(str,maxlen,"%lu",cols);
+		safe_snprintf(str,maxlen,"%u",cols);
 		return(str);
 	}
 	if(!strcmp(sp,"ROWS")) {
-		safe_snprintf(str,maxlen,"%lu",rows);
+		safe_snprintf(str,maxlen,"%u",rows);
 		return(str);
 	}
 	if(strcmp(sp,"TERM") == 0)
@@ -642,7 +642,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 
 	if(strncmp(sp, "FILES:", 6) == 0) {	// Number of files in specified directory
 		const char* path = getpath(&cfg, sp + 6);
-		safe_snprintf(str, maxlen, "%lu", getfilecount(path));
+		safe_snprintf(str, maxlen, "%u", getfilecount(path));
 		return str;
 	}
 
@@ -927,7 +927,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 
 	if(strcmp(sp, "PWAGE") == 0) {
 		time_t age = time(NULL) - useron.pwmod;
-		safe_snprintf(str, maxlen, "%d", (age/(24*60*60)));
+		safe_snprintf(str, maxlen, "%d", (uint)(age/(24*60*60)));
 		return str;
 	}
 
@@ -964,7 +964,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 
 	if(!strcmp(sp,"TIMEON") || !strcmp(sp,"TIMEUSED")) {
 		now=time(NULL);
-		safe_snprintf(str,maxlen,"%u",(now-logontime)/60L);
+		safe_snprintf(str,maxlen,"%u",(uint)(now-logontime)/60);
 		return(str);
 	}
 
@@ -1016,7 +1016,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 
 	if(!strcmp(sp,"MINLEFT") || !strcmp(sp,"LEFT") || !strcmp(sp,"TIMELEFT")) {
 		gettimeleft();
-		safe_snprintf(str,maxlen,"%lu",timeleft/60);
+		safe_snprintf(str,maxlen,"%u",timeleft/60);
 		return(str);
 	}
 
@@ -1148,7 +1148,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 	}
 
 	if(!strcmp(sp,"MSGREAD")) {
-		safe_snprintf(str,maxlen,"%lu",posts_read);
+		safe_snprintf(str,maxlen,"%u",posts_read);
 		return(str);
 	}
 

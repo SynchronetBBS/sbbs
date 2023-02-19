@@ -729,7 +729,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 				y=l-(x*1000);
 				if(x>=usrgrps || y>=usrsubs[x]) {
 					bprintf(text[QWKInvalidConferenceN],l);
-					sprintf(str,"Invalid conference number %lu",l);
+					sprintf(str,"Invalid conference number %u",l);
 					logline(LOG_NOTICE,"Q!",str);
 				}
 				else
@@ -965,15 +965,15 @@ bool sbbs_t::qwk_voting(str_list_t* ini, int offset, smb_net_type_t net_type, co
 	int found;
 	str_list_t section_list = iniGetSectionList(*ini, /* prefix: */NULL);
 
-	sprintf(location, "%lx", offset);
+	sprintf(location, "%x", offset);
 	if((found = strListFind(section_list, location, /* case_sensitive: */FALSE)) < 0) {
-		lprintf(LOG_NOTICE, "QWK vote message (offset: %ld) not found in %s VOTING.DAT", offset, qnet_id);
+		lprintf(LOG_NOTICE, "QWK vote message (offset: %d) not found in %s VOTING.DAT", offset, qnet_id);
 		strListFree(&section_list);
 		return false;
 	}
 	/* The section immediately following the (empty) [offset] section is the section of interest */
 	if((section = section_list[found+1]) == NULL) {
-		lprintf(LOG_NOTICE, "QWK vote section (offset: %ld) not found in %s VOTING.DAT", offset, qnet_id);
+		lprintf(LOG_NOTICE, "QWK vote section (offset: %d) not found in %s VOTING.DAT", offset, qnet_id);
 		strListFree(&section_list);
 		return false;
 	}

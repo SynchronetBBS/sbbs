@@ -277,7 +277,7 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 		);
 
 	safe_snprintf(str,sizeof(str),"ERROR %s"
-		"in %s line %u (%s) %s \"%s\" access=%ld %s%s"
+		"in %s line %u (%s) %s \"%s\" access=%d %s%s"
 		,errno_info
 		,src, line, function, action, object, access
 		,extinfo==NULL ? "":"info="

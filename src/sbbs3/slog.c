@@ -101,13 +101,13 @@ int main(int argc, char **argv)
 		yesterday = timestamp-(24*60*60);	/* 1 day less than stamp */
 		tm = localtime(&yesterday);
 		printf("%02d/%02d/%02d", tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday);
-		printf(" T:%4lu  L:%3lu  P:%3lu  E:%3lu  F:%3lu"
+		printf(" T:%4u  L:%3u  P:%3u  E:%3u  F:%3u"
 			,stats.ttoday, stats.ltoday, stats.ptoday, stats.etoday, stats.ftoday);
-		printf("  U:%5s %5lu"
+		printf("  U:%5s %5u"
 			,byte_estimate_to_str(stats.ulb, str, sizeof(str), 1, 0), stats.uls);
-		printf("  D:%5s %5lu"
+		printf("  D:%5s %5u"
 			,byte_estimate_to_str(stats.dlb, str, sizeof(str), 1, 0), stats.dls);
-		printf("  N:%2lu\n", stats.nusers);
+		printf("  N:%2u\n", stats.nusers);
 		total.timeon += stats.ttoday;
 		total.logons += stats.ltoday;
 		total.posts += stats.ptoday;
