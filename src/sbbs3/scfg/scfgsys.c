@@ -118,14 +118,14 @@ int edit_sys_id(int page, int total)
 		uifc.helpbuf=
 			"`BBS ID for QWK Packets:`\n"
 			"\n"
-			"This is a short system ID for your BBS that is used for QWK packets.\n"
-			"It should be an abbreviation of your BBS name or other related string.\n"
-			"This ID will be used for your outgoing and incoming QWK packets.  If\n"
-			"you plan on networking via QWK packets with another Synchronet BBS,\n"
-			"this ID should not begin with a number.  The maximum length of the ID\n"
-			"is eight characters and cannot contain spaces or other invalid DOS\n"
-			"filename characters.  In a QWK packet network, each system must have\n"
-			"a unique QWK system ID.\n"
+			"Enter an ID for your BBS that will be used for QWK message packets.  This\n"
+			"ID should be an abbreviation of your BBS name or other related words.\n"
+			"\n"
+			"The maximum length of the ID is eight characters and cannot contain spaces\n"
+			"or other invalid DOS filename characters.  This ID should not begin with a\n"
+			"number.\n" 
+			"\n"
+			"In a QWK packet network, each system must have a unique BBS ID.\n"
 		;
 		if(page)
 			mode = wiz_help(page, total, uifc.helpbuf);
