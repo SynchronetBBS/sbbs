@@ -1248,7 +1248,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 {
 	char	str[128];
 	char 	tmp[512];
-	uint 	i,j;
+	int 	i,j;
 	node_t	node;
 
 	if(!lastnodemsg)

@@ -41,10 +41,10 @@ void sbbs_t::useredit(int usernumber)
 	char 	tmp[512];
 	char	search[256]={""},artxt[128]={""};
 	uchar	*ar=NULL;
-	uint	i,j,k;
+	int		i,j,k;
 	float	f;
-	long	l;
-	long	kmode = K_LINE|K_EDIT|K_AUTODEL|K_TRIM;
+	int		l;
+	int		kmode = K_LINE|K_EDIT|K_AUTODEL|K_TRIM;
 	int64_t adj;
 	user_t	user;
 	struct	tm tm;

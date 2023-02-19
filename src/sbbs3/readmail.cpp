@@ -47,7 +47,7 @@ void sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 	int		i;
 	uint32_t u,v;
 	int		mismatches=0,act;
-	uint	unum;
+	int		unum;
     int    l,last_mode;
 	uint	last;
 	bool	replied;
