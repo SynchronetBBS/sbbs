@@ -155,7 +155,7 @@ void sort_dirs(int libnum)
 
 void wizard_msg(int page, int total, const char* text)
 {
-	uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 78, 20, "Setup Wizard", text, NULL, NULL);
+	uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 76, 20, "Setup Wizard", text, NULL, NULL);
 	if(page > 0 && page < total) {
 		int x = (uifc.scrn_width / 2) + 22;
 		int y = 21;
@@ -317,8 +317,8 @@ void cfg_wizard(void)
 					"At this point you must re-enter the system password that you set earlier\n"
 					"in the configuration wizard.\n"
 					"\n"
-					"This same password will be required of you when you login to the BBS with\n"
-					"any user account that has System Operator (sysop) privileges\n"
+					"This same password will be required of you when you login to the BBS\n"
+					"with any user account that has System Operator (sysop) privileges\n"
 					"(i.e. security level 90 or higher).\n"
 					);
 				char pass[sizeof(cfg.sys_pass)];

@@ -118,12 +118,13 @@ int edit_sys_id(int page, int total)
 		uifc.helpbuf=
 			"`BBS ID for QWK Packets:`\n"
 			"\n"
-			"Enter an ID for your BBS that will be used for QWK message packets.  This\n"
-			"ID should be an abbreviation of your BBS name or other related words.\n"
+			"Enter an ID for your BBS that will be used for QWK message packets.\n"
+			"This ID should be an abbreviation of your BBS name or other related\n"
+			"words.\n"
 			"\n"
-			"The maximum length of the ID is eight characters and cannot contain spaces\n"
-			"or other invalid DOS filename characters.  This ID should not begin with a\n"
-			"number.\n" 
+			"The maximum length of the ID is eight characters and cannot contain\n"
+			"spaces or other invalid DOS filename characters.  This ID should not\n"
+			"begin with a number.\n" 
 			"\n"
 			"In a QWK packet network, each system must have a unique BBS ID.\n"
 		;
