@@ -407,7 +407,7 @@ BOOL iniRemoveKey(str_list_t* list, const char* section, const char* key)
 		i=get_value(*list, section, key, NULL, &vp, /* literals_supported: */FALSE);
 
 		if(vp==NULL)
-			return removed;
+			break;
 
 		if(!strListDelete(list,i))
 			return FALSE;
