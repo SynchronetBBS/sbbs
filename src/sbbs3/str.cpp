@@ -33,7 +33,7 @@ void sbbs_t::userlist(int mode)
 	char *	line[2500];
 	user_t	user;
 
-	if(lastuser(&cfg)<=(sizeof(line)/sizeof(line[0])))
+	if(lastuser(&cfg)<=(int)(sizeof(line)/sizeof(line[0])))
 		sort=yesno(text[SortAlphaQ]);
 	if(sort) {
 		bputs(text[CheckingSlots]); 

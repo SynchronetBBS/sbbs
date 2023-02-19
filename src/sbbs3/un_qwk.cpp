@@ -45,7 +45,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	uchar	block[QWK_BLOCK_LEN];
 	int 	k,file;
 	uint	i,j,n,lastsub=INVALID_SUB;
-	uint	usernum;
+	int		usernum;
 	uint	blocks;
 	long	l,size,misc;
 	ulong	t;
