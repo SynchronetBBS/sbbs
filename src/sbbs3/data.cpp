@@ -36,7 +36,7 @@ uint sbbs_t::finduser(const char* name, bool silent_failure)
 	int file,i;
 	char buf[256],ynq[25],c,pass=1;
 	char path[MAX_PATH + 1];
-	long l,length;
+	int l,length;
 	FILE *stream;
 
 	SKIP_WHITESPACE(name);
@@ -54,7 +54,7 @@ uint sbbs_t::finduser(const char* name, bool silent_failure)
 		return(0); 
 	}
 	SAFEPRINTF3(ynq, "%c%c%c", yes_key(), no_key(), quit_key());
-	length=(long)filelength(file);
+	length=(int)filelength(file);
 	while(pass<3) {
 		fseek(stream,0L,SEEK_SET);	/* seek to beginning for each pass */
 		for(l=0;l<length;l+=LEN_ALIAS+2) {
@@ -175,7 +175,7 @@ extern "C" time_t getnextevent(scfg_t* cfg, event_t* event)
 /* user if their time is up.                                                */
 /* Called from functions main_sec and xfer_sec                              */
 /****************************************************************************/
-ulong sbbs_t::gettimeleft(bool handle_out_of_time)
+uint sbbs_t::gettimeleft(bool handle_out_of_time)
 {
     char    str[128];
 	char 	tmp[512];
@@ -183,7 +183,7 @@ ulong sbbs_t::gettimeleft(bool handle_out_of_time)
 
 	now=time(NULL);
 
-	timeleft = (ulong)::gettimeleft(&cfg, &useron, starttime);
+	timeleft = (uint)::gettimeleft(&cfg, &useron, starttime);
 
 	/* Timed event time reduction handler */
 	event_time=getnextevent(&cfg, &nextevent);
@@ -194,7 +194,7 @@ ulong sbbs_t::gettimeleft(bool handle_out_of_time)
 		if(event_time<now)
 			timeleft=0;
 		else
-			timeleft=(ulong)(event_time-now); 
+			timeleft=(uint)(event_time-now); 
 		if(!(sys_status&SS_EVENT)) {
 			lprintf(LOG_NOTICE,"Node %d Time reduced (to %s) due to upcoming event (%s) on %s"
 				,cfg.node_num,sectostr(timeleft,tmp),event_code,timestr(event_time));
@@ -202,7 +202,7 @@ ulong sbbs_t::gettimeleft(bool handle_out_of_time)
 		}
 	}
 
-	if((long)timeleft<0)  /* timeleft can't go negative */
+	if((int)timeleft<0)  /* timeleft can't go negative */
 		timeleft=0;
 	if(thisnode.status==NODE_NEWUSER) {
 		timeleft=cfg.level_timepercall[cfg.new_level];

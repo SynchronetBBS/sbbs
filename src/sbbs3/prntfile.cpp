@@ -35,14 +35,14 @@
 /* for pauses, aborts and ANSI. 'str' is the path of the file to print      */
 /* Called from functions menu and text_sec                                  */
 /****************************************************************************/
-bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* obj)
+bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 {
 	char* buf;
 	char fpath[MAX_PATH+1];
 	char* p;
 	int file;
 	BOOL rip=FALSE;
-	long l,length,savcon=console;
+	int l,length,savcon=console;
 	FILE *stream;
 
 	SAFECOPY(fpath, fname);
@@ -78,7 +78,7 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 		return false; 
 	}
 
-	length=(long)filelength(file);
+	length=(int)filelength(file);
 	if(length < 1) {
 		fclose(stream);
 		if(length < 0) {
@@ -110,11 +110,11 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 		}
 		free(buf);
 	} else {	// Line-at-a-time mode
-		ulong sys_status_sav = sys_status;
+		uint sys_status_sav = sys_status;
 		enum output_rate output_rate = cur_output_rate;
 		uint org_line_delay = line_delay;
 		uint tmpatr = curatr;
-		ulong orgcon = console;
+		uint orgcon = console;
 		attr_sp = 0;	/* clear any saved attributes */
 		if(!(mode&P_SAVEATR))
 			attr(LIGHTGRAY);
@@ -164,14 +164,14 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 	return true;
 }
 
-bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, JSObject* obj)
+bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSObject* obj)
 {
 	char*	buf;
 	char	fpath[MAX_PATH+1];
 	char*	p;
 	FILE*	fp;
 	int		file,cur=0;
-	long	length,l;
+	int		length,l;
 
 	SAFECOPY(fpath, fname);
 	(void)fexistcase(fpath);
@@ -195,7 +195,7 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 	if(!(mode&P_NOCRLF) && row > 0) {
 		newline();
 	}
-	length=(long)filelength(file);
+	length=(int)filelength(file);
 	if(length<0) {
 		fclose(fp);
 		errormsg(WHERE,ERR_CHK,fpath,length);
@@ -242,7 +242,7 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 /* Pass a code including wildcards (* or ?) to display a randomly-chosen	*/
 /* file matching the pattern in 'code'										*/
 /****************************************************************************/
-bool sbbs_t::menu(const char *code, long mode, JSObject* obj)
+bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 {
     char path[MAX_PATH+1];
 	const char *next= "msg";
@@ -255,7 +255,7 @@ bool sbbs_t::menu(const char *code, long mode, JSObject* obj)
 	if(menu_file[0])
 		SAFECOPY(path,menu_file);
 	else {
-		long term = term_supports();
+		int term = term_supports();
 		do {
 			if((term&RIP) && menu_exists(code, "rip", path))
 				break;
@@ -320,9 +320,9 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 		char term[MAX_PATH + 1];
 		safe_snprintf(term, sizeof(term), ".%s", ext);
 		size_t skip = safe_snprintf(path, MAX_PATH, "%s.c", prefix);
-		long max = 0;
+		int max = 0;
 		for(size_t i = 0; i < g.gl_pathc; i++) {
-			long c = strtol(g.gl_pathv[i] + skip, &p, 10);
+			int c = strtol(g.gl_pathv[i] + skip, &p, 10);
 			if(stricmp(p, term) != 0) // Some other weird pattern ending in c*.<ext>
 				continue;
 			if(c <= cols && c > max) {
@@ -342,7 +342,7 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 /****************************************************************************/
 /* Displays a random menu file (e.g. from the text/menu directory)          */
 /****************************************************************************/
-bool sbbs_t::random_menu(const char *name, long mode, JSObject* obj)
+bool sbbs_t::random_menu(const char *name, int mode, JSObject* obj)
 {
 	char path[MAX_PATH + 1];
 	glob_t g = {0};

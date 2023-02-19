@@ -368,13 +368,13 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 		case 0x8b12ba9d:
 			return((int32_t *)&posts_read);
 		case 0xe51c1956:
-			sysvar_l[sysvar_li]=(ulong)logfile_fp;
+			sysvar_l[sysvar_li]=(uint)logfile_fp;
 			break;
 		case 0x5a22d4bd:
-			sysvar_l[sysvar_li]=(ulong)nodefile_fp;
+			sysvar_l[sysvar_li]=(uint)nodefile_fp;
 			break;
 		case 0x3a37c26b:
-			sysvar_l[sysvar_li]=(ulong)node_ext_fp;
+			sysvar_l[sysvar_li]=(uint)node_ext_fp;
 			break;
 
 		case 0xeb6c9c73:
@@ -529,7 +529,7 @@ js_OperationCallback(JSContext *cx)
 	return ret;
 }
 
-long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope, JSContext* js_cx, JSObject* js_glob)
+int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope, JSContext* js_cx, JSObject* js_glob)
 {
 	char*		p;
 	char*		args=NULL;
@@ -717,13 +717,13 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 }
 
 // Execute a JS Module in its own temporary JS runtime and context
-long sbbs_t::js_execxtrn(const char *cmd, const char* startup_dir)
+int sbbs_t::js_execxtrn(const char *cmd, const char* startup_dir)
 {
 	JSRuntime* js_runtime;
 	JSObject* js_glob;
 	JSContext* js_cx = js_init(&js_runtime, &js_glob, "XtrnModule");
 	js_create_user_objects(js_cx, js_glob);
-	long result = js_execfile(cmd, startup_dir, js_glob, js_cx, js_glob);
+	int result = js_execfile(cmd, startup_dir, js_glob, js_cx, js_glob);
 	JS_BEGINREQUEST(js_cx);
 	JS_RemoveObjectRoot(js_cx, &js_glob);
 	JS_ENDREQUEST(js_cx);
@@ -734,7 +734,7 @@ long sbbs_t::js_execxtrn(const char *cmd, const char* startup_dir)
 #endif
 
 /* Important change as of Nov-16-2006, 'cmdline' may contain args */
-long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
+int sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 {
     char    str[MAX_PATH+1];
 	char	mod[MAX_PATH+1];
@@ -798,7 +798,7 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 
 	memcpy(&bin,csi,sizeof(csi_t));
 	clearvars(&bin);
-	bin.length = (long)filelength(file);
+	bin.length = (size_t)filelength(file);
 	if(bin.length < 1) {
 		close(file);
 		errormsg(WHERE, ERR_LEN, str, bin.length);
@@ -1213,7 +1213,7 @@ int sbbs_t::exec(csi_t *csi)
 							break; 
 						}
 						for(i=0;i<TOTAL_TEXT && !feof(stream);i++) {
-							if((text[i]=readtext((long *)NULL,stream,i))==NULL) {
+							if((text[i]=readtext(NULL,stream,i))==NULL) {
 								i--;
 								continue; 
 							}

@@ -27,7 +27,7 @@
 /* of message.                                                              */
 /* Called from functions main_sec, newuser, readmail and scanposts			*/
 /****************************************************************************/
-bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode, smb_t* resmb, smbmsg_t* remsg)
+bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, smb_t* resmb, smbmsg_t* remsg)
 {
 	char		str[256],str2[256],msgpath[256],ch
 				,buf[SDT_BLOCK_LEN];
@@ -38,8 +38,8 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 	uint16_t	msgattr=0;
 	uint16_t	xlat=XLAT_NONE;
 	int 		i,j,x,file;
-	long		l;
-	long		length;
+	int			l;
+	int			length;
 	off_t		offset;
 	uint32_t	crc=0xffffffffUL;
 	FILE*		instream;
@@ -164,7 +164,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 		safe_snprintf(tmp,sizeof(tmp),"%s%s",cfg.temp_dir,title);
 		if(!fexistcase(str2) && fexistcase(tmp))
 			mv(tmp,str2,0);
-		l=(long)flength(str2);
+		l=(int)flength(str2);
 		if(l>0)
 			bprintf(text[FileNBytesReceived],title,ultoac(l,tmp));
 		else {
@@ -194,7 +194,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 		return(false); 
 	}
 
-	length=(long)flength(msgpath)+2;	 /* +2 for translation string */
+	length=(int)flength(msgpath)+2;	 /* +2 for translation string */
 
 	if(length&0xfff00000UL) {
 		smb_unlocksmbhdr(&smb);

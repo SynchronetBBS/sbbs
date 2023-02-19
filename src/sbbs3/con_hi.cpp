@@ -1,7 +1,4 @@
 /* Synchronet hi-level console routines */
-// vi: tabstop=4
-
-/* $Id: con_hi.cpp,v 1.30 2020/05/24 08:11:45 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -41,7 +26,7 @@
 /* Redraws str using i as current cursor position and l as length           */
 /* Currently only used by getstr() - so should be moved to getstr.cpp?		*/
 /****************************************************************************/
-void sbbs_t::redrwstr(char *strin, int i, int l, long mode)
+void sbbs_t::redrwstr(char *strin, int i, int l, int mode)
 {
 	if(i <= 0)
 		i = 0;
@@ -76,7 +61,7 @@ int sbbs_t::uselect(int add, uint n, const char *title, const char *item, const 
 		if(!uselect_total)
 			bprintf(text[SelectItemHdr],title);
 		uselect_num[uselect_total++]=n;
-		add_hotspot((ulong)uselect_total);
+		add_hotspot(uselect_total);
 		bprintf(text[SelectItemFmt],uselect_total,item);
 		return(0); 
 	}
@@ -119,13 +104,13 @@ unsigned count_set_bits(long val)
 	return count;
 }
 
-long sbbs_t::mselect(const char *hdr, str_list_t list, unsigned max_selections, const char* item_fmt
+int sbbs_t::mselect(const char *hdr, str_list_t list, unsigned max_selections, const char* item_fmt
 	,const char* selected_str, const char* unselected_str, const char* prompt_fmt)
 {
 	char	prompt[128];
 	int		i;
 	int		max_item_len = 0;
-	long	selected = 0;
+	int		selected = 0;
 
 	for(i=0; list[i] != NULL; i++) {
 		int len = strlen(list[i]);

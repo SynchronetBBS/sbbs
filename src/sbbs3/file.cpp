@@ -147,9 +147,9 @@ bool sbbs_t::checkfname(const char *fname)
 	return allowed_filename(&cfg, fname);
 }
 
-long sbbs_t::delfiles(const char *inpath, const char *spec, size_t keep)
+int sbbs_t::delfiles(const char *inpath, const char *spec, size_t keep)
 {
-	long result = ::delfiles(inpath, spec, keep);
+	int result = ::delfiles(inpath, spec, keep);
 	if(result < 0)
 		errormsg(WHERE, ERR_REMOVE, inpath, result, spec);
 	return result;

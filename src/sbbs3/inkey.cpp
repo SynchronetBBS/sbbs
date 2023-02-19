@@ -22,7 +22,7 @@
 #include "sbbs.h"
 #include "petdefs.h"
 
-int sbbs_t::kbincom(unsigned long timeout)
+int sbbs_t::kbincom(unsigned int timeout)
 {
 	int	ch;
 
@@ -47,7 +47,7 @@ int sbbs_t::kbincom(unsigned long timeout)
 
 int sbbs_t::translate_input(int ch)
 {
-	long term = term_supports();
+	int term = term_supports();
 	if(term&PETSCII) {
 		switch(ch) {
 			case PETSCII_HOME:
@@ -96,7 +96,7 @@ void sbbs_t::translate_input(char* buf, size_t len)
 /* Returns character if a key has been hit remotely and responds			*/
 /* May return NOINP on timeout instead of '\0' when K_NUL mode is used.		*/
 /****************************************************************************/
-int sbbs_t::inkey(long mode, unsigned long timeout)
+int sbbs_t::inkey(int mode, unsigned int timeout)
 {
 	int	ch=0;
 
@@ -130,7 +130,7 @@ int sbbs_t::inkey(long mode, unsigned long timeout)
 	return(ch);
 }
 
-char sbbs_t::handle_ctrlkey(char ch, long mode)
+char sbbs_t::handle_ctrlkey(char ch, int mode)
 {
 	char	str[512];
 	char 	tmp[512];
@@ -562,11 +562,11 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 	return(ch);
 }
 
-void sbbs_t::set_mouse(long flags)
+void sbbs_t::set_mouse(int flags)
 {
-	long term = term_supports();
+	int term = term_supports();
 	if((term&ANSI) && ((term&MOUSE) || flags == MOUSE_MODE_OFF)) {
-		long mode = mouse_mode & ~flags;
+		int mode = mouse_mode & ~flags;
 		if(mode & MOUSE_MODE_X10)	ansi_mouse(ANSI_MOUSE_X10, false);
 		if(mode & MOUSE_MODE_NORM)	ansi_mouse(ANSI_MOUSE_NORM, false);
 		if(mode & MOUSE_MODE_BTN)	ansi_mouse(ANSI_MOUSE_BTN, false);
@@ -613,7 +613,7 @@ struct mouse_hotspot* sbbs_t::add_hotspot(struct mouse_hotspot* spot)
 
 void sbbs_t::clear_hotspots(void)
 {
-	long spots = listCountNodes(&mouse_hotspots);
+	int spots = listCountNodes(&mouse_hotspots);
 	if(spots) {
 #if 0 //def _DEBUG
 		lprintf(LOG_DEBUG, "Clearing %ld mouse hot spots", spots);
@@ -624,10 +624,10 @@ void sbbs_t::clear_hotspots(void)
 	}
 }
 
-void sbbs_t::scroll_hotspots(long count)
+void sbbs_t::scroll_hotspots(int count)
 {
-	long spots = 0;
-	long remain = 0;
+	int spots = 0;
+	int remain = 0;
 	for(list_node_t* node = mouse_hotspots.first; node != NULL; node = node->next) {
 		struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
 		spot->y -= count;
@@ -643,7 +643,7 @@ void sbbs_t::scroll_hotspots(long count)
 		clear_hotspots();
 }
 
-struct mouse_hotspot* sbbs_t::add_hotspot(char cmd, bool hungry, long minx, long maxx, long y)
+struct mouse_hotspot* sbbs_t::add_hotspot(char cmd, bool hungry, int minx, int maxx, int y)
 {
 	struct mouse_hotspot spot = {};
 	spot.cmd[0] = cmd;
@@ -654,7 +654,7 @@ struct mouse_hotspot* sbbs_t::add_hotspot(char cmd, bool hungry, long minx, long
 	return add_hotspot(&spot);
 }
 
-struct mouse_hotspot* sbbs_t::add_hotspot(ulong num, bool hungry, long minx, long maxx, long y)
+struct mouse_hotspot* sbbs_t::add_hotspot(uint num, bool hungry, int minx, int maxx, int y)
 {
 	struct mouse_hotspot spot = {};
 	SAFEPRINTF(spot.cmd, "%lu\r", num);
@@ -665,7 +665,7 @@ struct mouse_hotspot* sbbs_t::add_hotspot(ulong num, bool hungry, long minx, lon
 	return add_hotspot(&spot);
 }
 
-struct mouse_hotspot* sbbs_t::add_hotspot(const char* cmd, bool hungry, long minx, long maxx, long y)
+struct mouse_hotspot* sbbs_t::add_hotspot(const char* cmd, bool hungry, int minx, int maxx, int y)
 {
 	struct mouse_hotspot spot = {};
 	SAFECOPY(spot.cmd, cmd);

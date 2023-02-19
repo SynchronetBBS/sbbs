@@ -30,7 +30,7 @@
 /* a word, ^X backspaces a line, ^Gs, BSs, TABs are processed, LFs ignored. */
 /* ^N non-destructive BS, ^V center line. Valid keys are echoed.            */
 /****************************************************************************/
-size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t history)
+size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t history)
 {
     size_t	i,l,x,z;    /* i=current position, l=length, j=printed chars */
                     /* x&z=misc */
@@ -38,16 +38,16 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
     uchar	ch;
 	uint	atr;
 	int		hidx = -1;
-	long	org_column = column;
+	int		org_column = column;
 	int		org_lbuflen = lbuflen;
 
-	long term = term_supports();
+	int term = term_supports();
 	console&=~(CON_UPARROW|CON_DOWNARROW|CON_LEFTARROW|CON_BACKSPACE|CON_DELETELINE);
 	if(!(mode&K_WRAP))
 		console&=~CON_INSERT;
 	sys_status&=~SS_ABORT;
 	if(cols >= TERM_COLS_MIN && !(mode&K_NOECHO) && !(console&CON_R_ECHOX)
-		&& column + (long)maxlen >= cols)	/* Don't allow the terminal to auto line-wrap */
+		&& column + (int)maxlen >= cols)	/* Don't allow the terminal to auto line-wrap */
 		maxlen = cols-column-1;
 	if(mode&K_LINE && (term&(ANSI|PETSCII)) && !(mode&K_NOECHO)) {
 		attr(cfg.color[clr_inputline]);
@@ -636,10 +636,10 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 /* Returns a valid number between 1 and max, 0 if no number entered, or -1  */
 /* if the user hit the quit key (e.g. 'Q') or ctrl-c                        */
 /****************************************************************************/
-long sbbs_t::getnum(ulong max, ulong dflt)
+int sbbs_t::getnum(uint max, uint dflt)
 {
     uchar ch,n=0;
-	long i=0;
+	int i=0;
 
 	while(online) {
 		ch=getkey(K_UPPER);
@@ -693,7 +693,7 @@ void sbbs_t::insert_indicator(void)
 {
 	if(term_supports(ANSI)) {
 		char str[32];
-		long col = column;
+		int col = column;
 		ansi_save();
 		ansi_gotoxy(cols,1);
 		int tmpatr;

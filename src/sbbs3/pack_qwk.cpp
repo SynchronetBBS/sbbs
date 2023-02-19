@@ -26,7 +26,7 @@
 /****************************************************************************/
 /* Creates QWK packet, returning 1 if successful, 0 if not. 				*/
 /****************************************************************************/
-bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
+bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 {
 	char	str[MAX_PATH+1],ch;
 	char 	tmp[MAX_PATH+1];
@@ -35,13 +35,13 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	char*	fname;
 	int 	mode;
 	uint	i,j,k,conf;
-	long	l,size,msgndx,ex;
+	int		l,size,msgndx,ex;
 	uint32_t posts;
 	uint32_t mailmsgs=0;
 	uint32_t u;
-	ulong	files,submsgs,msgs,netfiles=0,preqwk=0;
+	uint	files,submsgs,msgs,netfiles=0,preqwk=0;
 	uint32_t	lastmsg;
-	ulong	subs_scanned=0;
+	uint	subs_scanned=0;
 	float	f;	/* Sparky is responsible */
 	time_t	start;
 	mail_t	*mail;
@@ -69,7 +69,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	delfiles(cfg.temp_dir,ALLFILES);
 	SAFEPRINTF2(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
 	if(fexistcase(str)) {
-		long file_count = extract_files_from_archive(str
+		int file_count = extract_files_from_archive(str
 			,/* outdir: */cfg.temp_dir
 			,/* allowed_filename_chars: */NULL /* any */
 			,/* with_path: */false
@@ -125,7 +125,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 		now=time(NULL);
 		if(localtime_r(&now,&tm)==NULL) {
-			errormsg(WHERE, ERR_CHK, "time", (ulong)now);
+			errormsg(WHERE, ERR_CHK, "time", (uint)now);
 			return(false);
 		}
 
@@ -304,7 +304,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			return(false); 
 		}
 	}
-	l=(long)filelength(fileno(qwk));
+	l=(int)filelength(fileno(qwk));
 	if(l<1) {
 		fprintf(qwk,"%-128.128s","Produced by " VERSION_NOTICE "  " COPYRIGHT_NOTICE);
 		msgndx=1; 
@@ -595,12 +595,12 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				"(%lu messages/second)."
 				,(*msgcnt)+mailmsgs
 				,tmp
-				,(ulong)elapsed
+				,(uint)elapsed
 				,((*msgcnt)+mailmsgs) / elapsed);
 		lprintf(LOG_INFO, "packed %lu messages (%s bytes) in %lu seconds (%lu msgs/sec)"
 			,(*msgcnt)+mailmsgs
 			,tmp
-			,(ulong)elapsed
+			,(uint)elapsed
 			,((*msgcnt)+mailmsgs)/elapsed);
 	}
 
@@ -734,7 +734,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	SAFEPRINTF2(path,"%s%s",cfg.temp_dir,ALLFILES);
 	if(strListFind((str_list_t)supported_archive_formats, useron.tmpext, /* case_sensitive */FALSE) >= 0) {
 		str_list_t file_list = directory(path);
-		long file_count = create_archive(packet, useron.tmpext, /* with_path: */false, file_list, error, sizeof(error));
+		int file_count = create_archive(packet, useron.tmpext, /* with_path: */false, file_list, error, sizeof(error));
 		strListFree(&file_list);
 		if(file_count < 0)
 			lprintf(LOG_ERR, "libarchive error (%s) creating %s", error, packet);

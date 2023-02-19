@@ -32,7 +32,7 @@
 /* Returns the number of bytes used for the body-text (multiple of 128)		*/
 /* or negative on error.													*/
 /****************************************************************************/
-long sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
+int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 	, int conf, FILE* hdrs, FILE* voting)
 {
 	char	str[512],ch=0,tear=0,tearwatch=0,*buf,*p;
@@ -42,7 +42,7 @@ long sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 	char	msgid[256];
 	char	reply_id[256];
 	char 	tmp[512];
-	long	l,size=0,offset;
+	int		l,size=0,offset;
 	int 	i;
 	ushort	hfield_type;
 	struct	tm	tm;
@@ -51,7 +51,7 @@ long sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 	uint	subnum = smb->subnum;
 
 	get_msgid(&cfg, subnum, msg, msgid, sizeof(msgid));
-	offset=(long)ftell(qwk_fp);
+	offset=(int)ftell(qwk_fp);
 
 	if(msg->to != NULL)
 		SAFECOPY(to, msghdr_field(msg, msg->to, NULL, mode&QM_UTF8));
@@ -239,7 +239,7 @@ long sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 		fprintf(hdrs,"\n");
 	}
 
-	ulong getmsgtxt_mode = GETMSGTXT_ALL;
+	uint getmsgtxt_mode = GETMSGTXT_ALL;
 	if(!(mode&QM_TO_QNET))	// Get just the plain-text portion of MIME-encoded messages
 		getmsgtxt_mode |= GETMSGTXT_PLAIN;
 	buf=smb_getmsgtxt(smb, msg, getmsgtxt_mode);
@@ -541,7 +541,7 @@ long sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 	safe_snprintf(str,sizeof(str),"%c%-7lu%-13.13s%-25.25s"
 		"%-25.25s%-25.25s%12s%-8lu%-6lu\xe1%c%c%c%c%c"
 		,ch                     /* message status flag */
-		,mode&QM_REP ? (ulong)conf /* conference or */
+		,mode&QM_REP ? (uint)conf /* conference or */
 			: msg->hdr.number&MAX_MSGNUM	/* message number */
 		,tmp					/* date and time */
 		,to 					/* To: */

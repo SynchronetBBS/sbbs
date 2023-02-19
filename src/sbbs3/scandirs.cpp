@@ -24,7 +24,7 @@
 /****************************************************************************/
 /* Used to scan single or multiple directories. 'mode' is the scan type.    */
 /****************************************************************************/
-void sbbs_t::scandirs(long mode)
+void sbbs_t::scandirs(int mode)
 {
 	char	keys[32];
 	char	ch,str[256]="";
@@ -98,7 +98,7 @@ void sbbs_t::scandirs(long mode)
 /****************************************************************************/
 /* Scan all directories in all libraries for files							*/
 /****************************************************************************/
-void sbbs_t::scanalldirs(long mode)
+void sbbs_t::scanalldirs(int mode)
 {
 	char	str[256]="";
 	int		s;

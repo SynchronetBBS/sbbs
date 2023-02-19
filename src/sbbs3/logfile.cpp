@@ -254,7 +254,7 @@ void sbbs_t::logch(char ch, bool comma)
 /* write the error information into the file ERROR.LOG and NODE.LOG         */
 /****************************************************************************/
 void sbbs_t::errormsg(int line, const char* function, const char *src, const char* action, const char *object
-					  ,long access, const char *extinfo)
+					  ,int access, const char *extinfo)
 {
     char	str[2048];
 	char	errno_str[128];

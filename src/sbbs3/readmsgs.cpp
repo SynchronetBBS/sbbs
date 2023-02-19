@@ -52,12 +52,12 @@ uchar sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg, post_t* post)
 	return ' ';
 }
 
-long sbbs_t::listmsgs(uint subnum, long mode, post_t *post, long start, long posts, bool reading)
+int sbbs_t::listmsgs(uint subnum, int mode, post_t *post, int start, int posts, bool reading)
 {
 	smbmsg_t msg;
-	long listed=0;
+	int listed=0;
 
-	for(long i = start; i<posts && !msgabort(); i++) {
+	for(int i = start; i<posts && !msgabort(); i++) {
 		if(mode&SCAN_NEW && post[i].idx.number<=subscan[subnum].ptr)
 			continue;
 		msg.idx.offset=post[i].idx.offset;
@@ -98,11 +98,11 @@ void sbbs_t::dump_msghdr(smbmsg_t* msg)
 /* visible is the number of visible posts to the user (not all included in	*/
 /* returned array)															*/
 /****************************************************************************/
-post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, ulong *unvalidated_num, uint32_t* visible)
+post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, uint ptr, int mode, uint *unvalidated_num, uint32_t* visible)
 {
 	ushort aliascrc,namecrc,sysop;
 	int i,skip;
-	ulong l=0,total,alloc_len;
+	uint l=0,total,alloc_len;
 	uint32_t	curmsg=0;
 	smbmsg_t	msg;
 	idxrec_t	idx;
@@ -118,7 +118,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 		return(NULL); 
 	}
 
-	total=(long)filelength(fileno(smb.sid_fp))/sizeof(idxrec_t); /* total msgs in sub */
+	total=(int)filelength(fileno(smb.sid_fp))/sizeof(idxrec_t); /* total msgs in sub */
 
 	if(!total) {			/* empty */
 		smb_unlocksmbhdr(&smb);
@@ -173,7 +173,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, u
 		case MSG_UPVOTE:
 		case MSG_DOWNVOTE:
 		{
-			ulong u;
+			uint u;
 			for(u = 0; u < l; u++)
 				if(post[u].idx.number == idx.remsg)
 					break;
@@ -392,7 +392,7 @@ void sbbs_t::show_thread(uint32_t msgnum, post_t* post, unsigned curmsg, int thr
 /* Returns 0 if normal completion, 1 if aborted.                            */
 /* Called from function main_sec                                            */
 /****************************************************************************/
-int sbbs_t::scanposts(uint subnum, long mode, const char *find)
+int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 {
 	char	str[256],str2[256],do_find=true,mismatches=0
 			,done=0,domsg=1,*buf;
@@ -403,8 +403,8 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 	int		quit=0;
 	uint 	usub,ugrp,reads=0;
 	uint	lp = LP_BYSELF;
-	long	org_mode=mode;
-	ulong	msgs,l,unvalidated;
+	int		org_mode=mode;
+	uint	msgs,l,unvalidated;
 	uint32_t last;
 	uint32_t u;
 	post_t	*post;
@@ -784,7 +784,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		do_find=true;
 		l=getkeys(str,smb.msgs);
 		if(l&0x80000000L) {
-			if((long)l==-1) { /* ctrl-c */
+			if((int)l==-1) { /* ctrl-c */
 				quit=1;
 				break; 
 			}
@@ -949,7 +949,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 				if(!getstr(find_buf,40,K_LINE|K_UPPER|K_EDIT|K_AUTODEL))
 					break;
 				if(text[DisplaySubjectsOnlyQ][0] && yesno(text[DisplaySubjectsOnlyQ]))
-					searchposts(subnum,post,(long)i,smb.msgs,find_buf);
+					searchposts(subnum,post,(int)i,smb.msgs,find_buf);
 				else {
 					smb.curmsg=i;
 					find=find_buf;
@@ -1134,7 +1134,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					notice = text[PollVoteNotice];
 				} else {
 					mnemonics(text[VoteMsgUpDownOrQuit]);
-					long cmd = getkeys("UDQ", 0);
+					int cmd = getkeys("UDQ", 0);
 					if(cmd != 'U' && cmd != 'D')
 						break;
 					vote.hdr.attr = (cmd == 'U' ? MSG_UPVOTE : MSG_DOWNVOTE);
@@ -1299,18 +1299,18 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 						{
 							domsg = false;
 							bprintf("\r\nFirst message to delete [%u]: ", smb.curmsg + 1);
-							long first = getnum(LONG_MAX, smb.curmsg + 1);
-							if(first < 1 || first > (long)smb.msgs)
+							int first = getnum(LONG_MAX, smb.curmsg + 1);
+							if(first < 1 || first > (int)smb.msgs)
 								break;
 							bprintf(" Last message to delete [%u]: ", smb.msgs);
-							long last = getnum(LONG_MAX, smb.msgs);
-							if(first > last || last > (long)smb.msgs)
+							int last = getnum(LONG_MAX, smb.msgs);
+							if(first > last || last > (int)smb.msgs)
 								break;
-							ulong already = 0;
-							ulong deleted = 0;
-							ulong failed = 0;
+							uint already = 0;
+							uint deleted = 0;
+							uint failed = 0;
 							if(smb_locksmbhdr(&smb)==SMB_SUCCESS) {	/* Lock the entire base */
-								for(long n = first; n <= last; n++) {
+								for(int n = first; n <= last; n++) {
 									if(post[n - 1].idx.attr & MSG_DELETE) {
 										already++;
 										continue;	// Already deleted
@@ -1617,13 +1617,13 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 /* Displays msg header information only (no body text)						*/
 /* Returns number of messages found/displayed.                              */
 /****************************************************************************/
-long sbbs_t::listsub(uint subnum, long mode, long start, const char* search)
+int sbbs_t::listsub(uint subnum, int mode, int start, const char* search)
 {
 	int 	i;
 	uint32_t	posts;
 	uint32_t	total=0;
-	long	displayed = 0;
-	long	lp_mode = LP_BYSELF;
+	int	displayed = 0;
+	int	lp_mode = LP_BYSELF;
 	post_t	*post;
 
 	if((mode&SCAN_INDEX) && cfg.listmsgs_mod[0]) {
@@ -1679,11 +1679,11 @@ long sbbs_t::listsub(uint subnum, long mode, long start, const char* search)
 /* title). 'msgs' is the total number of valid messages.                    */
 /* Returns number of messages found.                                        */
 /****************************************************************************/
-long sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
+int sbbs_t::searchposts(uint subnum, post_t *post, int start, int posts
 	, const char *search)
 {
 	char*	buf;
-	long	l,found=0;
+	int		l,found=0;
 	smbmsg_t msg;
 
 	msg.total_hfields=0;
@@ -1721,11 +1721,11 @@ long sbbs_t::searchposts(uint subnum, post_t *post, long start, long posts
 /* Will search the messages pointed to by 'msg' for message to the user on  */
 /* Returns number of messages found.                                        */
 /****************************************************************************/
-long sbbs_t::showposts_toyou(uint subnum, post_t *post, ulong start, long posts, long mode)
+int sbbs_t::showposts_toyou(uint subnum, post_t *post, uint start, int posts, int mode)
 {
 	char	str[128];
 	ushort	namecrc,aliascrc,sysop;
-	long	l,found;
+	int		l,found;
     smbmsg_t msg;
 
 	strcpy(str,useron.alias);

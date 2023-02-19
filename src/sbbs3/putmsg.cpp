@@ -35,12 +35,12 @@
 /* the attributes prior to displaying the message are always restored.      */
 /* Stops parsing/displaying upon CTRL-Z (only in P_CPM_EOF mode).           */
 /****************************************************************************/
-char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
+char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 {
 	uint 	tmpatr;
 	uint	org_line_delay = line_delay;
-	ulong 	orgcon=console;
-	ulong	sys_status_sav=sys_status;
+	uint 	orgcon=console;
+	uint	sys_status_sav=sys_status;
 	enum output_rate output_rate = cur_output_rate;
 
 	attr_sp=0;	/* clear any saved attributes */
@@ -73,15 +73,15 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 }
 
 // Print a message fragment, doesn't save/restore any console states (e.g. attributes, auto-pause)
-char sbbs_t::putmsgfrag(const char* buf, long& mode, long org_cols, JSObject* obj)
+char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 {
 	char 	tmp2[256],tmp3[128];
 	char*	str=(char*)buf;
 	uchar	exatr=0;
 	char	mark = '\0';
 	int 	i;
-	long	col = column;
-	ulong	l=0;
+	int		col = column;
+	uint	l=0;
 	uint	lines_printed = 0;
 	struct mouse_hotspot hot_spot = {};
 
@@ -90,7 +90,7 @@ char sbbs_t::putmsgfrag(const char* buf, long& mode, long org_cols, JSObject* ob
 	str = auto_utf8(str, mode);
 	size_t len = strlen(str);
 
-	long term = term_supports();
+	int term = term_supports();
 	if(!(mode&P_NOATCODES) && memcmp(str, "@WRAPOFF@", 9) == 0) {
 		mode &= ~P_WORDWRAP;
 		l += 9;
@@ -234,7 +234,7 @@ char sbbs_t::putmsgfrag(const char* buf, long& mode, long org_cols, JSObject* ob
 			&& (cfg.sys_misc&SM_PCBOARD) && str[l]=='@' && str[l+1]=='X'
 			&& IS_HEXDIGIT(str[l+2]) && IS_HEXDIGIT(str[l+3])) {
 			sprintf(tmp2,"%.2s",str+l+2);
-			ulong val = ahtoul(tmp2);
+			uint val = ahtoul(tmp2);
 			// @X00 saves the current color and @XFF restores that saved color
 			static uchar save_attr;
 			switch(val) {

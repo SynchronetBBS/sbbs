@@ -25,7 +25,7 @@
 #include "petdefs.h"
 #include "cp437defs.h"
 
-char* sbbs_t::auto_utf8(const char* str, long& mode)
+char* sbbs_t::auto_utf8(const char* str, int& mode)
 {
 	if(strncmp(str, "\xEF\xBB\xBF", 3) == 0) {
 		mode |= P_UTF8;
@@ -49,11 +49,11 @@ char* sbbs_t::auto_utf8(const char* str, long& mode)
    P_TRUNCATE
    P_REMOTE
  ****************************************************************************/
-int sbbs_t::bputs(const char *str, long mode)
+int sbbs_t::bputs(const char *str, int mode)
 {
 	int i;
-    ulong l=0;
-	long term = term_supports();
+    size_t l=0;
+	int term = term_supports();
 
 	if((mode & P_REMOTE) && online != ON_REMOTE)
 		return 0;
@@ -135,7 +135,7 @@ int sbbs_t::bputs(const char *str, long mode)
 /****************************************************************************/
 /* Returns the printed columns from 'str' accounting for Ctrl-A codes		*/
 /****************************************************************************/
-size_t sbbs_t::bstrlen(const char *str, long mode)
+size_t sbbs_t::bstrlen(const char *str, int mode)
 {
 	str = auto_utf8(str, mode);
 	size_t count = 0;
@@ -372,7 +372,7 @@ int sbbs_t::rputs(const char *str, size_t len)
 		return 0;
 	if(len==0)
 		len=strlen(str);
-	long term = term_supports();
+	int term = term_supports();
 	char utf8[UTF8_MAX_LEN + 1] = "";
 	for(l=0;l<len && online;l++) {
 		uchar ch = str[l];
@@ -430,7 +430,7 @@ int sbbs_t::bprintf(const char *fmt, ...)
 /****************************************************************************/
 /* Performs printf() using bbs bputs function (with mode)					*/
 /****************************************************************************/
-int sbbs_t::bprintf(long mode, const char *fmt, ...)
+int sbbs_t::bprintf(int mode, const char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[4096];
@@ -503,9 +503,9 @@ void sbbs_t::backspace(int count)
 /* all of the specified terminal 'cmp_flags' (e.g. ANSI, COLOR, RIP).		*/
 /* If no flags specified, returns all terminal flag bits supported			*/
 /****************************************************************************/
-long sbbs_t::term_supports(long cmp_flags)
+int sbbs_t::term_supports(int cmp_flags)
 {
-	long flags = ((sys_status&(SS_USERON|SS_NEWUSER)) && !(useron.misc&AUTOTERM)) ? useron.misc : autoterm;
+	int flags = ((sys_status&(SS_USERON|SS_NEWUSER)) && !(useron.misc&AUTOTERM)) ? useron.misc : autoterm;
 
 	if((sys_status&(SS_USERON|SS_NEWUSER)) && (useron.misc&AUTOTERM))
 		flags |= useron.misc & (NO_EXASCII | SWAP_DELETE | COLOR | ICE_COLOR | MOUSE);
@@ -516,7 +516,7 @@ long sbbs_t::term_supports(long cmp_flags)
 /****************************************************************************/
 /* Returns description of the terminal type									*/
 /****************************************************************************/
-const char* sbbs_t::term_type(long term)
+const char* sbbs_t::term_type(int term)
 {
 	if(term == -1)
 		term = term_supports();
@@ -532,7 +532,7 @@ const char* sbbs_t::term_type(long term)
 /****************************************************************************/
 /* Returns description of the terminal supported character set (charset)	*/
 /****************************************************************************/
-const char* sbbs_t::term_charset(long term)
+const char* sbbs_t::term_charset(int term)
 {
 	if(term == -1)
 		term = term_supports();
@@ -639,7 +639,7 @@ int sbbs_t::outchar(char ch)
 	}
 	else
 		outchar_esc = ansiState_none;
-	long term = term_supports();
+	int term = term_supports();
 	char utf8[UTF8_MAX_LEN + 1] = "";
 	if(!(term&PETSCII)) {
 		if((term&NO_EXASCII) && (ch&0x80))
@@ -819,7 +819,7 @@ void sbbs_t::center(const char *instr, bool msg, unsigned int columns)
 
 void sbbs_t::wide(const char* str)
 {
-	long term = term_supports();
+	int term = term_supports();
 	while(*str != '\0') {
 		if((term&UTF8) && *str >= '!' && *str <= '~')
 			outchar((enum unicode_codepoint)(UNICODE_FULLWIDTH_EXCLAMATION_MARK + (*str - '!')));
@@ -870,7 +870,7 @@ void sbbs_t::newline(int count)
 	}
 }
 
-void sbbs_t::clearscreen(long term)
+void sbbs_t::clearscreen(int term)
 {
 	clear_hotspots();
 	if(term&ANSI)
@@ -892,7 +892,7 @@ void sbbs_t::clearline(void)
 
 void sbbs_t::cursor_home(void)
 {
-	long term = term_supports();
+	int term = term_supports();
 	if(term&ANSI)
 		putcom("\x1b[H");
 	else if(term&PETSCII)
@@ -907,7 +907,7 @@ void sbbs_t::cursor_up(int count)
 {
 	if(count<1)
 		return;
-	long term = term_supports();
+	int term = term_supports();
 	if(term&ANSI) {
 		if(count>1)
 			comprintf("\x1b[%dA",count);
@@ -941,7 +941,7 @@ void sbbs_t::cursor_right(int count)
 {
 	if(count<1)
 		return;
-	long term = term_supports();
+	int term = term_supports();
 	if(term&ANSI) {
 		if(count>1)
 			comprintf("\x1b[%dC",count);
@@ -962,7 +962,7 @@ void sbbs_t::cursor_left(int count)
 {
 	if(count<1)
 		return;
-	long term = term_supports();
+	int term = term_supports();
 	if(term&ANSI) {
 		if(count>1)
 			comprintf("\x1b[%dD",count);
@@ -984,7 +984,7 @@ void sbbs_t::cursor_left(int count)
 
 bool sbbs_t::cursor_xy(int x, int y)
 {
-	long term = term_supports();
+	int term = term_supports();
 	if(term&ANSI)
 		return ansi_gotoxy(x, y);
 	if(term&PETSCII) {
@@ -1009,7 +1009,7 @@ void sbbs_t::cleartoeol(void)
 {
 	int i,j;
 
-	long term = term_supports();
+	int term = term_supports();
 	if(term&ANSI)
 		putcom("\x1b[K");
 	else {
@@ -1298,7 +1298,7 @@ int sbbs_t::attr(int atr)
 	char	str[16];
 	int		newatr = atr;
 
-	long term = term_supports();
+	int term = term_supports();
 	if(term&PETSCII) {
 		if(atr&(0x70|BG_BRIGHT)) {	// background color (reverse video for PETSCII)
 			if(atr&BG_BRIGHT)
@@ -1376,7 +1376,7 @@ int sbbs_t::attr(int atr)
 /****************************************************************************/
 bool sbbs_t::msgabort(bool clear)
 {
-	static ulong counter;
+	static uint counter;
 
 	if(sys_status&SS_SYSPAGE && !(++counter%100))
 		sbbs_beep(400 + sbbs_random(800), 10);
@@ -1437,7 +1437,7 @@ struct savedline {
 	char 	buf[LINE_BUFSIZE+1];	/* Line buffer (i.e. ANSI-encoded) */
 	uint	beg_attr;				/* Starting attribute of each line */
 	uint	end_attr;				/* Ending attribute of each line */
-	long	column;					/* Current column number */
+	int		column;					/* Current column number */
 };
 
 bool sbbs_t::saveline(void)

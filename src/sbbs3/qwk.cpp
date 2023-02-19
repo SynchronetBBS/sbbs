@@ -24,16 +24,16 @@
 #include "filedat.h"
 
 /****************************************************************************/
-/* Converts a long to an msbin real number. required for QWK NDX file		*/
+/* Converts a int to an msbin real number. required for QWK NDX file		*/
 /****************************************************************************/
-float ltomsbin(long val)
+float ltomsbin(int32_t val)
 {
 	union {
-		uchar	uc[10];
-		ushort	ui[5];
-		ulong	ul[2];
-		float	f[2];
-		double	d[1];
+		uint8_t		uc[10];
+		uint16_t	ui[5];
+		uint32_t	ul[2];
+		float		f[2];
+		double		d[1];
 	} t;
 	int   sign, exp;	/* sign and exponent */
 
@@ -265,11 +265,11 @@ void sbbs_t::update_qwkroute(char *via)
 /****************************************************************************/
 /* Successful download of QWK packet										*/
 /****************************************************************************/
-void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
+void sbbs_t::qwk_success(uint msgcnt, char bi, char prepack)
 {
 	char	str[MAX_PATH+1];
 	int 	i;
-	long	deleted=0;
+	int		deleted=0;
 	uint32_t	u,msgs;
 	mail_t	*mail;
 	smbmsg_t msg;
@@ -279,7 +279,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 		SAFECOPY(id,useron.alias);
 		strlwr(id);
 		sprintf(str,"%sqnet/%s.out/",cfg.data_dir,id);
-		long result = delfiles(str,ALLFILES);
+		int result = delfiles(str,ALLFILES);
 		if(result < 0)
 			errormsg(WHERE, ERR_REMOVE, str, result);
 	}
@@ -377,7 +377,7 @@ void sbbs_t::qwk_sec()
 	int		error;
 	int 	s;
 	uint	i;
-	ulong	msgcnt;
+	uint	msgcnt;
 	uint32_t* sav_ptr;
 
 	getusrdirs();
@@ -585,7 +585,7 @@ void sbbs_t::qwk_sec()
 				, byte_estimate_to_str(l, tmp2, sizeof(tmp2), /* units: */1024, /* precision: */1));
 
 			if(l>0L && cur_cps)
-				i=(uint)(l/(ulong)cur_cps);
+				i=(uint)(l/(uint)cur_cps);
 			else
 				i=0;
 			bprintf(text[FiTransferTime],sectostr(i,tmp));
@@ -676,7 +676,7 @@ void sbbs_t::qwk_sec()
 
 void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 {
-	long		l;
+	int			l;
 	uint32_t	last;
 
 	if(reset && !IS_DIGIT(*buf)) {
@@ -694,7 +694,7 @@ void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 		subscan[subnum].ptr=l;
 	else {								  /* relative (to last msg) ptr specified */
 		getlastmsg(subnum,&last,/* time_t* */NULL);
-		if(-l>(long)last)
+		if(-l>(int)last)
 			subscan[subnum].ptr=0;
 		else
 			subscan[subnum].ptr=last+l;
@@ -709,8 +709,8 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 {
 	char	str[128];
 	uint 	x,y;
-	long	l;
-	ulong	qwk=useron.qwk;
+	int		l;
+	uint	qwk=useron.qwk;
 	file_t f = {{}};
 
 	sprintf(str,"%-25.25s",buf);	/* Note: must be space-padded, left justified */
@@ -909,7 +909,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 }
 
 
-bool sbbs_t::set_qwk_flag(ulong flag)
+bool sbbs_t::set_qwk_flag(uint flag)
 {
 	if(useron.qwk&flag)
 		return true;
@@ -956,7 +956,7 @@ uint sbbs_t::resolve_qwkconf(uint n, int hubnum)
 	return usrsub[j][k];
 }
 
-bool sbbs_t::qwk_voting(str_list_t* ini, long offset, smb_net_type_t net_type, const char* qnet_id
+bool sbbs_t::qwk_voting(str_list_t* ini, int offset, smb_net_type_t net_type, const char* qnet_id
 	, uint confnum, msg_filters filters, int hubnum)
 {
 	char* section;
