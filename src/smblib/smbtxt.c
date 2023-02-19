@@ -56,7 +56,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 			length=strlen(str)+2;	/* +2 for crlf */
 			if((p=(char*)realloc(buf,l+length+1))==NULL) {
 				safe_snprintf(smb->last_error, sizeof(smb->last_error)
-					,"%s realloc failure of %ld bytes for comment buffer"
+					,"%s realloc failure of %d bytes for comment buffer"
 					, __FUNCTION__, l+length+1);
 				free(buf);
 				return(NULL);
@@ -67,7 +67,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 		if(l) {	/* Add a blank line after comments */
 			if((p=(char*)realloc(buf,l+3))==NULL) {
 				safe_snprintf(smb->last_error, sizeof(smb->last_error)
-					,"%s realloc failure of %ld bytes for comment buffer"
+					,"%s realloc failure of %d bytes for comment buffer"
 					, __FUNCTION__, l+3);
 				free(buf);
 				return(NULL);
@@ -83,7 +83,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 			length = safe_snprintf(tmp, sizeof(tmp), "%2u: %s\r\n", ++answers, (char*)msg->hfield_dat[i]);
 			if((p=(char*)realloc(buf,l+length+1))==NULL) {
 				safe_snprintf(smb->last_error, sizeof(smb->last_error)
-					,"%s realloc failure of %ld bytes for comment buffer"
+					,"%s realloc failure of %d bytes for comment buffer"
 					, __FUNCTION__, l+length+1);
 				free(buf);
 				return(NULL);
@@ -131,7 +131,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 				continue;
 			if((lzhbuf=(char*)malloc(length))==NULL) {
 				safe_snprintf(smb->last_error, sizeof(smb->last_error)
-					,"%s malloc failure of %ld bytes for LZH buffer"
+					,"%s malloc failure of %d bytes for LZH buffer"
 					, __FUNCTION__, length);
 				free(buf);
 				free(preamble);
@@ -139,7 +139,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 			}
 			if(smb_fread(smb,lzhbuf,length,smb->sdt_fp) != length) {
 				safe_snprintf(smb->last_error, sizeof(smb->last_error)
-					,"%s read failure of %ld bytes for LZH data"
+					,"%s read failure of %d bytes for LZH data"
 					, __FUNCTION__, length);
 				free(lzhbuf);
 				free(buf);
@@ -149,8 +149,8 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 			lzhlen=*(int32_t*)lzhbuf;
 			if((p=(char*)realloc(buf,l+lzhlen+3L))==NULL) {
 				safe_snprintf(smb->last_error, sizeof(smb->last_error)
-					,"%s realloc failure of %ld bytes for text buffer"
-					, __FUNCTION__, l+lzhlen+3L);
+					,"%s realloc failure of %d bytes for text buffer"
+					, __FUNCTION__, l+lzhlen+3);
 				free(lzhbuf);
 				free(buf);
 				free(preamble);
@@ -164,8 +164,8 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 		else {
 			if((p=(char*)realloc(buf,l+length+3L))==NULL) {
 				safe_snprintf(smb->last_error, sizeof(smb->last_error)
-					,"%s realloc failure of %ld bytes for text buffer"
-					, __FUNCTION__, l+length+3L);
+					,"%s realloc failure of %d bytes for text buffer"
+					, __FUNCTION__, l+length+3);
 				free(buf);
 				free(preamble);
 				return(NULL);
