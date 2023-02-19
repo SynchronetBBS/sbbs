@@ -664,6 +664,14 @@ function wait_for(commands)  {
 	}
 }
 
+function in_a_channel() {
+	if(channels.current==undefined)  {
+		screen.print_line("\x01H\x01RYou are not in a channel!\x01N\x01W");
+		return false;
+	}
+	return true;
+}
+
 function send_command(command,param)  {
 	var params=[null];
 	var send_to=null;
@@ -705,10 +713,7 @@ function send_command(command,param)  {
 			channels.join(param);
 			break;
 		case "ME":
-			if(channels.current==undefined)  {
-				screen.print_line("\x01H\x01RYou are not in a channel!\x01N\x01W");
-			}
-			else  {
+			if(in_a_channel()) {
 				channels.current.send("\x01ACTION "+param+"\x01");
 				screen.print_line("\x01N\x01B*\x01W "+nick+" "+param);
 			}
@@ -723,7 +728,8 @@ function send_command(command,param)  {
 		case "PART":
 			// If the user specifies a channel, this SHOULD part that channel,
 			// not the current one.
-			channels.part(channels.current.name,param);
+			if(in_a_channel())
+				channels.part(channels.current.name,param);
 			break;
 		case "N":
 		case "NEXT":
@@ -743,19 +749,23 @@ function send_command(command,param)  {
 			screen.update_statline();
 			break;
 		case "TOPIC":
-			if (param.substr(0,1) == '#' || param.substr(0,1) == '&')  {
-				send_cmd(command, param);
-			}
-			else  {
-				send_cmd(command, channels.current.name+" "+param);
+			if(in_a_channel()) {
+				if (param.substr(0,1) == '#' || param.substr(0,1) == '&')  {
+					send_cmd(command, param);
+				}
+				else  {
+					send_cmd(command, channels.current.name+" "+param);
+				}
 			}
 			break;
 		case "KICK":
-			if (param.substr(0,1) == '#' || param.substr(0,1) == '&')  {
-				send_cmd(command, param);
-			}
-			else  {
-				send_cmd(command, channels.current.name+" "+param);
+			if(in_a_channel()) {
+				if (param.substr(0,1) == '#' || param.substr(0,1) == '&')  {
+					send_cmd(command, param);
+				}
+				else  {
+					send_cmd(command, channels.current.name+" "+param);
+				}
 			}
 			break;
 		case "QUOTE":
