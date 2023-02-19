@@ -809,7 +809,7 @@ int sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 		errormsg(WHERE,ERR_ALLOC,str,bin.length);
 		return(-1); 
 	}
-	if(lread(file,bin.cs,bin.length)!=(ssize_t)bin.length) {
+	if(read(file,bin.cs,bin.length)!=(ssize_t)bin.length) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,bin.length);
 		free(bin.cs);

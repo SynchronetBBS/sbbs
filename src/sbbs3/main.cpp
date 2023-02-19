@@ -4217,7 +4217,7 @@ void sbbs_t::catsyslog(int crash)
 			free((char *)buf);
 			return;
 		}
-		if(lwrite(file,buf,length)!=length) {
+		if(write(file,buf,length)!=length) {
 			close(file);
 			errormsg(WHERE,ERR_WRITE,str,length);
 			free((char *)buf);
@@ -4364,7 +4364,7 @@ void node_thread(void* arg)
 					break;
 				}
 
-				if(lread(file,sbbs->main_csi.cs,sbbs->main_csi.length)
+				if(read(file,sbbs->main_csi.cs,sbbs->main_csi.length)
 					!=(int)sbbs->main_csi.length) {
 					sbbs->errormsg(WHERE,ERR_READ,str,sbbs->main_csi.length);
 					close(file);

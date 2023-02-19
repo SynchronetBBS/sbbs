@@ -678,7 +678,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				length=(long)filelength(file);
 				l=length>(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-1
 					? (cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-1 : length;
-				lread(file,buf,l);
+				read(file,buf,l);
 				buf[l]=0;
 				close(file);
 				// remove(msgtmp);
