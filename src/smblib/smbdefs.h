@@ -53,9 +53,7 @@
 #ifdef __GLIBC__
 	#include <sys/types.h>
 #else
-	#ifndef ushort
-	#define ushort				unsigned short
-	#define ulong				unsigned long
+	#ifndef uint
 	#define uint				unsigned int
 	#endif
 #endif
