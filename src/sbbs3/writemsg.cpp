@@ -143,7 +143,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 
 /****************************************************************************/
 /****************************************************************************/
-int sbbs_t::process_edited_text(char* buf, FILE* stream, long mode, unsigned* lines, unsigned maxlines)
+int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lines, unsigned maxlines)
 {
 	unsigned i,l;
 	int	len=0;
@@ -221,7 +221,7 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, long mode, unsigned* li
 
 /****************************************************************************/
 /****************************************************************************/
-int sbbs_t::process_edited_file(const char* src, const char* dest, long mode, unsigned* lines, unsigned maxlines)
+int sbbs_t::process_edited_file(const char* src, const char* dest, int mode, unsigned* lines, unsigned maxlines)
 {
 	char*	buf;
 	long	len;
@@ -257,7 +257,7 @@ int sbbs_t::process_edited_file(const char* src, const char* dest, long mode, un
 /* message and 'title' is the title (70chars max) for the message.          */
 /* 'dest' contains a text description of where the message is going.        */
 /****************************************************************************/
-bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode, uint subnum
+bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, uint subnum
 	,const char *to, const char* from, const char** editor, const char** charset)
 {
 	char	str[256],quote[128],c,*buf,*p,*tp
@@ -796,7 +796,7 @@ void quotestr(char *str)
 
 /****************************************************************************/
 /****************************************************************************/
-void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const char *subj, long mode
+void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const char *subj, int mode
 	,uint subnum, const char* tagfile)
 {
 	char	path[MAX_PATH+1];
@@ -913,7 +913,7 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 /* The Synchronet editor.                                                    */
 /* Returns the number of lines edited.                                       */
 /*****************************************************************************/
-ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
+uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 {
 	int		i,j,line,lines=0,maxlines;
 	char	strin[TERM_COLS_MAX + 1];

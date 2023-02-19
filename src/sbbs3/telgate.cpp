@@ -22,18 +22,18 @@
 #include "sbbs.h"
 #include "telnet.h" 
 
-void sbbs_t::telnet_gate(char* destaddr, ulong mode, unsigned timeout, char* client_user_name, char* server_user_name, char* term_type)
+void sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* client_user_name, char* server_user_name, char* term_type)
 {
 	char*	p;
 	uchar	buf[512];
 	int		i;
 	int		rd;
 	uint	attempts;
-	ulong	l;
+	u_long	l;
 	bool	gotline;
 	ushort	port;
-	ulong	ip_addr;
-	ulong	save_console;
+	uint	ip_addr;
+	uint	save_console;
 	SOCKET	remote_socket;
 	SOCKADDR_IN	addr;
 

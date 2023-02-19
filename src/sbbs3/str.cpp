@@ -25,7 +25,7 @@
 /****************************************************************************/
 /* Lists all users who have access to the current sub.                      */
 /****************************************************************************/
-void sbbs_t::userlist(long mode)
+void sbbs_t::userlist(int mode)
 {
 	char	name[256],sort=0;
 	char 	tmp[512];
@@ -127,12 +127,12 @@ void sbbs_t::userlist(long mode)
 /****************************************************************************/
 /* SIF input function. See SIF.DOC for more info        					*/
 /****************************************************************************/
-void sbbs_t::sif(char *fname, char *answers, long len)
+void sbbs_t::sif(char *fname, char *answers, int len)
 {
 	char	str[256],tmplt[256],*buf;
 	uint	t,max,min,mode,cr;
 	int		file;
-	long	length,l=0,m,top,a=0;
+	int	length,l=0,m,top,a=0;
 
 	*answers = 0;
 	sprintf(str,"%s%s.sif",cfg.text_dir,fname);
@@ -140,7 +140,7 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return; 
 	}
-	length=(long)filelength(file);
+	length=(int)filelength(file);
 	if(length < 0) {
 		errormsg(WHERE, ERR_CHK, str, length);
 		return;
@@ -298,11 +298,11 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 /****************************************************************************/
 /* SIF output function. See SIF.DOC for more info        					*/
 /****************************************************************************/
-void sbbs_t::sof(char *fname, char *answers, long len)
+void sbbs_t::sof(char *fname, char *answers, int len)
 {
 	char str[256],*buf,max,min,cr;
 	int file;
-	long length,l=0,m,a=0;
+	int length,l=0,m,a=0;
 
 	*answers = '\0';
 	sprintf(str,"%s%s.sif",cfg.text_dir,fname);
@@ -310,7 +310,7 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return; 
 	}
-	length=(long)filelength(file);
+	length=(int)filelength(file);
 	if(length < 0) {
 		close(file);
 		errormsg(WHERE, ERR_LEN, str, length);
@@ -457,13 +457,13 @@ void sbbs_t::read_sif_dat(char *siffile, char *datfile)
 {
 	char *buf;
 	int file;
-	long length;
+	int length;
 
 	if((file=nopen(datfile,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,datfile,O_RDONLY);
 		return; 
 	}
-	length=(long)filelength(file);
+	length=(int)filelength(file);
 	if(length <= 0) {
 		close(file);
 		return; 
@@ -484,11 +484,11 @@ void sbbs_t::read_sif_dat(char *siffile, char *datfile)
 /* First character MUST be an A,N or !.                                     */
 /* Modes - K_LINE and K_UPPER are supported.                                */
 /****************************************************************************/
-size_t sbbs_t::gettmplt(char *strout, const char *templt, long mode)
+size_t sbbs_t::gettmplt(char *strout, const char *templt, int mode)
 {
 	char	ch,str[256];
 	char	tmplt[128];
-	uint	t=strlen(templt),c=0;
+	size_t	t=strlen(templt),c=0;
 
 	sys_status&=~SS_ABORT;
 	SAFECOPY(tmplt, templt);

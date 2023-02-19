@@ -154,11 +154,11 @@
 /*****************************************************************************/
 /* Interrupt routine to expand WWIV Ctrl-C# codes into ANSI escape sequences */
 /*****************************************************************************/
-BYTE* wwiv_expand(BYTE* buf, ulong buflen, BYTE* outbuf, ulong& newlen
-	,ulong user_misc, bool& ctrl_c)
+BYTE* wwiv_expand(BYTE* buf, uint buflen, BYTE* outbuf, ulong& newlen
+	,uint user_misc, bool& ctrl_c)
 {
     char	ansi_seq[32];
-	ulong 	i,j,k;
+	uint 	i,j,k;
 
     for(i=j=0;i<buflen;i++) {
         if(buf[i]==CTRL_C) {	/* WWIV color escape char */
@@ -211,14 +211,14 @@ BYTE* wwiv_expand(BYTE* buf, ulong buflen, BYTE* outbuf, ulong& newlen
     return(outbuf);
 }
 
-static void petscii_convert(BYTE* buf, ulong len)
+static void petscii_convert(BYTE* buf, uint len)
 {
-    for(ulong i=0; i<len; i++) {
+    for(uint i=0; i<len; i++) {
 		buf[i] = cp437_to_petscii(buf[i]);
 	}
 }
 
-BOOL native_executable(scfg_t* cfg, const char* cmdline, long mode)
+BOOL native_executable(scfg_t* cfg, const char* cmdline, int mode)
 {
 	char*	p;
 	char	str[MAX_PATH+1];
@@ -270,7 +270,7 @@ extern SOCKET node_socket[];
 /*****************************************************************************/
 BYTE* cr_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
 {
-	ulong	i,j;
+	uint	i,j;
 
 	for(i=j=0;i<inlen;i++) {
 		outbuf[j++]=inbuf[i];
@@ -302,7 +302,7 @@ static void add_env_var(str_list_t* list, const char* var, const char* val)
 /****************************************************************************/
 /* Runs an external program 												*/
 /****************************************************************************/
-int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
+int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 {
 	char	str[MAX_PATH+1];
 	char*	env_block=NULL;
@@ -906,9 +906,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 /*****************************************************************************/
 // Expands Unix LF to CRLF
 /*****************************************************************************/
-BYTE* lf_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
+BYTE* lf_expand(BYTE* inbuf, uint inlen, BYTE* outbuf, uint& newlen)
 {
-	ulong	i,j;
+	uint	i,j;
 
 	for(i=j=0;i<inlen;i++) {
 		if(inbuf[i]=='\n' && (!i || inbuf[i-1]!='\r'))
@@ -1074,7 +1074,7 @@ static int forkpty(int *amaster, char *name, termios *termp, winsize *winp)
 }
 #endif /* NEED_FORKPTY */
 
-int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
+int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 {
 	char	str[MAX_PATH+1];
 	char	fname[MAX_PATH+1];
@@ -1084,8 +1084,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	BYTE*	bp;
 	BYTE	buf[XTRN_IO_BUF_LEN];
     BYTE 	output_buf[XTRN_IO_BUF_LEN*2];
-	ulong	avail;
-    ulong	output_len;
+	uint	avail;
+    uint	output_len;
 	bool	native=false;			// DOS program by default
 	bool	rio_abortable_save=rio_abortable;
 	int		i;
@@ -1948,7 +1948,7 @@ static const char* quoted_string(const char* str, char* buf, size_t maxlen)
 /*****************************************************************************/
 /* Returns command line generated from instr with %c replacements            */
 /*****************************************************************************/
-char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, long mode)
+char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, int mode)
 {
 	char	str[MAX_PATH+1],*cmd;
     int		i,j,len;
@@ -1980,10 +1980,10 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,connection, avail);
                     break;
                 case 'D':   /* Connect (DCE) Rate */
-                    strncat(cmd,ultoa((ulong)cur_rate,str,10), avail);
+                    strncat(cmd,ultoa((uint)cur_rate,str,10), avail);
                     break;
                 case 'E':   /* Estimated Rate */
-                    strncat(cmd,ultoa((ulong)cur_cps*10,str,10), avail);
+                    strncat(cmd,ultoa((uint)cur_cps*10,str,10), avail);
                     break;
                 case 'F':   /* File path */
 #if defined(__linux__)

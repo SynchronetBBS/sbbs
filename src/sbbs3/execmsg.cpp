@@ -41,7 +41,7 @@
 int sbbs_t::exec_msg(csi_t *csi)
 {
 	char	str[256],ch;
-	ulong	i,j;
+	uint	i,j;
 	
 	switch(*(csi->ip++)) {
 

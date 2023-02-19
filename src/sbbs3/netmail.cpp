@@ -55,7 +55,7 @@ static faddr_t atofaddr(scfg_t* cfg, const char *str)
 /****************************************************************************/
 /* Send FidoNet/QWK/Internet NetMail from BBS								*/
 /****************************************************************************/
-bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resmb, smbmsg_t* remsg, str_list_t cc_list)
+bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb, smbmsg_t* remsg, str_list_t cc_list)
 {
 	char	str[256],fname[128],*buf,*p,ch;
 	char	to[256] = "";
@@ -918,7 +918,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 /****************************************************************************/
 /* Internet mail															*/
 /****************************************************************************/
-bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resmb, smbmsg_t* remsg, str_list_t cc_list)
+bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb, smbmsg_t* remsg, str_list_t cc_list)
 {
 	char	str[256],str2[256],msgpath[256],ch, *p;
 	char 	tmp[512];
@@ -1240,7 +1240,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	return(true);
 }
 
-bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resmb, smbmsg_t* remsg)
+bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb, smbmsg_t* remsg)
 {
 	char	str[256],msgpath[128],fulladdr[128]
 			,buf[SDT_BLOCK_LEN],*addr;

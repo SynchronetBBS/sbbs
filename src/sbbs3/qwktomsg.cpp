@@ -23,7 +23,7 @@
 #include "qwk.h"
 #include "utf8.h"
 
-static bool qwk_parse_header_list(sbbs_t* sbbs, ulong confnum, smbmsg_t* msg, str_list_t* headers, bool parse_sender_hfields, bool parse_recipient_hfields)
+static bool qwk_parse_header_list(sbbs_t* sbbs, uint confnum, smbmsg_t* msg, str_list_t* headers, bool parse_sender_hfields, bool parse_recipient_hfields)
 {
 	char*		p;
 	char		zone[32] = "";
@@ -157,7 +157,7 @@ static bool qwk_parse_header_list(sbbs_t* sbbs, ulong confnum, smbmsg_t* msg, st
 	return true;
 }
 
-bool sbbs_t::qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset, str_list_t all_headers, bool parse_sender_hfields)
+bool sbbs_t::qwk_new_msg(uint confnum, smbmsg_t* msg, char* hdrblk, int offset, str_list_t all_headers, bool parse_sender_hfields)
 {
 	char str[128];
 	char to[128];
@@ -221,7 +221,7 @@ bool sbbs_t::qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset
 /* Converts a QWK message packet into a message.							*/
 /* Does *not* free the msgmem												*/
 /****************************************************************************/
-bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
+bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 							,char fromhub, smb_t* smb
 							,uint touser, smbmsg_t* msg, bool* dupe)
 {
@@ -232,11 +232,11 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 	char		from[128];
 	int 		i;
 	uint		k;
-	long		bodylen,taillen;
+	int			bodylen,taillen;
 	bool		success=false;
 	uint16_t	net_type;
 	ushort		xlat=XLAT_NONE;
-	long		dupechk_hashes=SMB_HASH_SOURCE_DUPE;
+	int			dupechk_hashes=SMB_HASH_SOURCE_DUPE;
 	str_list_t	kludges;
 	uint		subnum = smb->subnum;
 

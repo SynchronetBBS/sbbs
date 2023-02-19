@@ -39,7 +39,7 @@ static char mail_listing_flag(smbmsg_t* msg)
 /****************************************************************************/
 /* Reads mail waiting for usernumber.                                       */
 /****************************************************************************/
-void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
+void sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 {
 	char	str[256],str2[256],done=0,domsg=1
 			,*p;
@@ -48,8 +48,8 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 	uint32_t u,v;
 	int		mismatches=0,act;
 	uint	unum;
-    long    l,last_mode;
-	ulong	last;
+    int    l,last_mode;
+	uint	last;
 	bool	replied;
 	mail_t	*mail;
 	smbmsg_t msg;
@@ -460,7 +460,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 					break;
 				}
 
-				bprintf(text[StartWithN],(long)smb.curmsg+1);
+				bprintf(text[StartWithN],(int)smb.curmsg+1);
 				if((i=getnum(smb.msgs))>0)
 					i--;
 				else if(i==-1)
@@ -767,7 +767,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				bputs(text[SearchStringPrompt]);
 				if(!getstr(search_str,40,K_LINE|K_UPPER|K_EDIT|K_AUTODEL))
 					break;
-				searchmail(mail, (long)i64, smb.msgs, which, search_str, order);
+				searchmail(mail, (int)i64, smb.msgs, which, search_str, order);
 				break;
 			case '?':
 				menu(menu_file);
@@ -803,11 +803,11 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 	current_msg=NULL;
 }
 
-long sbbs_t::searchmail(mail_t *mail, long start, long msgs, int which, const char *search, const char* order)
+int sbbs_t::searchmail(mail_t *mail, int start, int msgs, int which, const char *search, const char* order)
 {
 	char*	buf;
 	char	subj[128];
-	long	l,found=0;
+	int		l,found=0;
 	smbmsg_t msg;
 
 	msg.total_hfields=0;

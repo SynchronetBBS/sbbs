@@ -27,7 +27,7 @@ int sbbs_t::exec_file(csi_t *csi)
 {
 	char	str[256],ch;
 	int		s;
-	ulong 	i,j,x,y;
+	uint 	i,j,x,y;
 	file_t	f;
 
 	switch(*(csi->ip++)) {

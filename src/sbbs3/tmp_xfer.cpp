@@ -38,12 +38,12 @@ void sbbs_t::temp_xfer()
 /* Creates a text file named NEWFILES.DAT in the temp directory that        */
 /* all new files since p-date. Returns number of files in list.             */
 /****************************************************************************/
-ulong sbbs_t::create_filelist(const char *name, long mode)
+uint sbbs_t::create_filelist(const char *name, int mode)
 {
     char	str[256];
 	FILE*	fp;
 	uint	i,j,d;
-	ulong	l,k;
+	uint	l,k;
 
 	if(online == ON_REMOTE)
 		bprintf(text[CreatingFileList],name);
@@ -67,7 +67,7 @@ ulong sbbs_t::create_filelist(const char *name, long mode)
 				|| cfg.dir[usrdir[i][j]]->misc&DIR_NOSCAN))
 				continue;
 			l=listfiles(usrdir[i][j], nulstr, fp, mode);
-			if((long)l==-1)
+			if(l==-1)
 				break;
 			k+=l;
 		}

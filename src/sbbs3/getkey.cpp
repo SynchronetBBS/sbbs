@@ -1,7 +1,5 @@
 /* Synchronet single-key console functions */
 
-/* $Id: getkey.cpp,v 1.69 2020/05/24 08:19:18 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -42,10 +28,10 @@
 /* key hit if mode&K_UPPER or key out of KEY BUFFER. Does not print key.    */
 /* Called from functions all over the place.                                */
 /****************************************************************************/
-char sbbs_t::getkey(long mode)
+char sbbs_t::getkey(int mode)
 {
 	uchar	ch, coldkey;
-	ulong	c = sbbs_random(5);
+	uint	c = sbbs_random(5);
 	time_t	last_telnet_cmd=0;
 	char* cursor = text[SpinningCursor0  + sbbs_random(10)];
 	size_t cursors = strlen(cursor);
@@ -186,7 +172,7 @@ char sbbs_t::getkey(long mode)
 void sbbs_t::mnemonics(const char *str)
 {
     const char *ctrl_a_codes;
-    long l;
+    size_t l;
 
 	if(!strchr(str,'~')) {
 		mnestr=str;
@@ -203,7 +189,7 @@ void sbbs_t::mnemonics(const char *str)
 		attr(cfg.color[clr_mnelow]); 
 	}
 	l=0L;
-	long term = term_supports();
+	int term = term_supports();
 
 	while(str[l]) {
 		if(str[l]=='~' && str[l+1] < ' ') {
@@ -265,7 +251,7 @@ void sbbs_t::mnemonics(const char *str)
 /* Returns true for Yes or false for No                                     */
 /* Called from quite a few places                                           */
 /****************************************************************************/
-bool sbbs_t::yesno(const char *str, long mode)
+bool sbbs_t::yesno(const char *str, int mode)
 {
     char ch;
 
@@ -303,7 +289,7 @@ bool sbbs_t::yesno(const char *str, long mode)
 /* Prompts user for N or Y (no or yes) and CR is interpreted as a N         */
 /* Returns true for No or false for Yes                                     */
 /****************************************************************************/
-bool sbbs_t::noyes(const char *str, long mode)
+bool sbbs_t::noyes(const char *str, int mode)
 {
     char ch;
 
@@ -344,11 +330,11 @@ bool sbbs_t::noyes(const char *str, long mode)
 /* and return the value OR'd with 0x80000000.								*/
 /* default mode value is K_UPPER											*/
 /****************************************************************************/
-long sbbs_t::getkeys(const char *keys, ulong max, long mode)
+int sbbs_t::getkeys(const char *keys, uint max, int mode)
 {
 	char	str[81];
 	uchar	ch,n=0,c=0;
-	ulong	i=0;
+	uint	i=0;
 
 	if(keys != NULL) {
 		SAFECOPY(str,keys);
@@ -437,7 +423,7 @@ void sbbs_t::pause()
 {
 	char	ch;
 	uint	tempattrs=curatr; /* was lclatr(-1) */
-	long	l=K_UPPER;
+	int		l=K_UPPER;
 	size_t	len;
 
  	if((sys_status&SS_ABORT) || pause_inside)

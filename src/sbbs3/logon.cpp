@@ -34,8 +34,8 @@ bool sbbs_t::logon()
 	char	str[256],c;
 	char 	tmp[512];
 	uint	i,j,mailw,mailr;
-	long	kmode;
-	ulong	totallogons;
+	int		kmode;
+	uint	totallogons;
 	node_t	node;
 	struct	tm	tm;
 
@@ -571,7 +571,7 @@ bool sbbs_t::logon()
 /* stats are cleared. Also increments the logon values in dsts.ini if       */
 /* applicable.                                                              */
 /****************************************************************************/
-ulong sbbs_t::logonstats()
+uint sbbs_t::logonstats()
 {
 	char msg[256];
     char path[MAX_PATH+1];

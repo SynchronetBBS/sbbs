@@ -23,7 +23,7 @@
 #include "utf8.h"
 #include "filedat.h"
 
-int msgbase_open(scfg_t* cfg, smb_t* smb, unsigned int subnum, int* storage, long* dupechk_hashes, uint16_t* xlat)
+int msgbase_open(scfg_t* cfg, smb_t* smb, unsigned int subnum, int* storage, int* dupechk_hashes, uint16_t* xlat)
 {
 	int i;
 
@@ -64,7 +64,7 @@ static uchar* findsig(char* msgbuf)
 /* Posts a message on sub-board number 'subnum'								*/
 /* Returns true if posted, false if not.                                    */
 /****************************************************************************/
-bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
+bool sbbs_t::postmsg(uint subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 {
 	char	str[256];
 	char	title[LEN_TITLE+1] = "";
@@ -78,8 +78,8 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	uint16_t xlat;
 	ushort	msgattr = 0;
 	int 	i,storage;
-	long	dupechk_hashes;
-	long	length;
+	int		dupechk_hashes;
+	int		length;
 	FILE*	fp;
 	smbmsg_t msg;
 	uint	reason;
@@ -225,7 +225,7 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	if(!writemsg(str,top,title,wm_mode,subnum,touser
 		,/* from: */cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias
 		,&editor, &charset)
-		|| (length=(long)flength(str))<1) {	/* Bugfix Aug-20-2003: Reject negative length */
+		|| (length=(int)flength(str))<1) {	/* Bugfix Aug-20-2003: Reject negative length */
 		bputs(text[Aborted]);
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
@@ -414,7 +414,7 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 {
 	ushort	xlat=XLAT_NONE;
 	int 	i;
-	long	dupechk_hashes=SMB_HASH_SOURCE_DUPE;
+	int	dupechk_hashes=SMB_HASH_SOURCE_DUPE;
 
 	if(msg==NULL)
 		return(SMB_FAILURE);
@@ -657,7 +657,7 @@ extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, const c
 	smb_t		smb = {};
 	uint16_t	xlat;
 	int			storage;
-	long		dupechk_hashes;
+	int			dupechk_hashes;
 	uint16_t	agent = AGENT_PROCESS;
 	uint16_t	nettype = NET_UNKNOWN;
 	smbmsg_t	msg = {};

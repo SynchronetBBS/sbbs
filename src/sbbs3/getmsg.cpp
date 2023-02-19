@@ -34,7 +34,7 @@
 /* Call this function with a msg->idx.offset of 0 (so msg->offset will be	*/
 /* initialized correctly)													*/
 /****************************************************************************/
-int sbbs_t::loadmsg(smbmsg_t *msg, ulong number)
+int sbbs_t::loadmsg(smbmsg_t *msg, uint number)
 {
 	char str[128];
 	int i;
@@ -170,7 +170,7 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 	char	*sender=NULL;
 	int 	i;
 	smb_t	saved_smb = this->smb;
-	long	pmode = 0;
+	int		pmode = 0;
 
 	if(smb != NULL)
 		this->smb = *smb;	// Needed for @-codes and JS bbs.smb_* properties
@@ -245,7 +245,7 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 /****************************************************************************/
 /* Displays message header and text (if not deleted)                        */
 /****************************************************************************/
-bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
+bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 {
 	char*	txt;
 	BOOL	is_sub = is_valid_subnum(&cfg, smb->subnum);
@@ -476,7 +476,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 /****************************************************************************/
 /* Writes message header and text data to a text file						*/
 /****************************************************************************/
-bool sbbs_t::msgtotxt(smb_t* smb, smbmsg_t* msg, const char *fname, bool header, ulong gettxt_mode)
+bool sbbs_t::msgtotxt(smb_t* smb, smbmsg_t* msg, const char *fname, bool header, uint gettxt_mode)
 {
 	char	*buf;
 	char	tmp[128];
@@ -522,7 +522,7 @@ bool sbbs_t::msgtotxt(smb_t* smb, smbmsg_t* msg, const char *fname, bool header,
 /****************************************************************************/
 /* Returns message number posted at or after time							*/
 /****************************************************************************/
-ulong sbbs_t::getmsgnum(uint subnum, time_t t)
+uint sbbs_t::getmsgnum(uint subnum, time_t t)
 {
     int			i;
 	smb_t		smb;
@@ -549,7 +549,7 @@ ulong sbbs_t::getmsgnum(uint subnum, time_t t)
 /****************************************************************************/
 /* Returns the time of the message number pointed to by 'ptr'               */
 /****************************************************************************/
-time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
+time_t sbbs_t::getmsgtime(uint subnum, uint ptr)
 {
 	int 		i;
 	smb_t		smb;
@@ -624,10 +624,10 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 /* Returns the total number of msgs in the sub-board and sets 'ptr' to the  */
 /* number of the last message in the sub (0) if no messages.				*/
 /****************************************************************************/
-ulong sbbs_t::getlastmsg(uint subnum, uint32_t *ptr, time_t *t)
+uint sbbs_t::getlastmsg(uint subnum, uint32_t *ptr, time_t *t)
 {
 	int 		i;
-	ulong		total;
+	uint		total;
 	smb_t		smb;
 	idxrec_t	idx;
 
@@ -662,7 +662,7 @@ ulong sbbs_t::getlastmsg(uint subnum, uint32_t *ptr, time_t *t)
 		return(0);
 	}
 	if(cfg.sub[subnum]->misc & SUB_NOVOTING)
-		total = (long)filelength(fileno(smb.sid_fp))/sizeof(idxrec_t);
+		total = (int)filelength(fileno(smb.sid_fp))/sizeof(idxrec_t);
 	else
 		total = smb_msg_count(&smb, (1 << SMB_MSG_TYPE_NORMAL) | (1 << SMB_MSG_TYPE_POLL));
 	smb_unlocksmbhdr(&smb);

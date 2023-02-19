@@ -761,7 +761,7 @@ int removecase(const char *path)
 /* Optionally, keep the last so many files (sorted by name)                 */
 /* Returns number of files deleted or negative on error						*/
 /****************************************************************************/
-long delfiles(const char *inpath, const char *spec, size_t keep)
+int delfiles(const char *inpath, const char *spec, size_t keep)
 {
 	char*	path;
 	char*	fpath;
@@ -828,12 +828,12 @@ long delfiles(const char *inpath, const char *spec, size_t keep)
 /* Returns number of files matching 'inpath'								*/
 /* Similar, but not identical, to getdirsize(), e.g. subdirs never counted	*/
 /****************************************************************************/
-ulong getfilecount(const char *inpath)
+uint getfilecount(const char *inpath)
 {
 	char path[MAX_PATH+1];
 	glob_t	g;
 	uint	gi;
-	ulong	count = 0;
+	uint	count = 0;
 
 	SAFECOPY(path, inpath);
 	if(isdir(path))

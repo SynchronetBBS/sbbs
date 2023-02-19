@@ -78,7 +78,7 @@ const char* server_abbrev = "term";
 #endif
 
 volatile time_t	uptime=0;
-volatile ulong	served=0;
+volatile uint	served=0;
 
 static	protected_uint32_t node_threads_running;
 
@@ -548,7 +548,7 @@ JSBool
 js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
 {
 	uint		i;
-	long		ver;
+	int		ver;
 	jsval		val;
 	jsuint		len=0;
 	JSObject*	array;
@@ -587,7 +587,7 @@ js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 {
 	int			i;
 	jsuint		len=0;
-	long		ver;
+	int		ver;
 	jsval		val;
 	JSObject*	method;
 	JSObject*	method_array;
@@ -1697,8 +1697,8 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
 							,sbbs->telnet_location);
 					} else if(option==TELNET_NEGOTIATE_WINDOW_SIZE) {
-						long cols = (sbbs->telnet_cmd[3]<<8) | sbbs->telnet_cmd[4];
-						long rows = (sbbs->telnet_cmd[5]<<8) | sbbs->telnet_cmd[6];
+						int cols = (sbbs->telnet_cmd[3]<<8) | sbbs->telnet_cmd[4];
+						int rows = (sbbs->telnet_cmd[5]<<8) | sbbs->telnet_cmd[6];
 						lprintf(LOG_DEBUG,"Node %d %s telnet window size: %ldx%ld"
 	                		,sbbs->cfg.node_num
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
@@ -1921,8 +1921,8 @@ void input_thread(void *arg)
    	BYTE		telbuf[sizeof(inbuf)];
     BYTE		*wrbuf;
     int			i,rd,wr,avail;
-	ulong		total_recv=0;
-	ulong		total_pkts=0;
+	uint		total_recv=0;
+	uint		total_pkts=0;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	SOCKET sock;
 #ifdef PREFER_POLL
@@ -2174,7 +2174,7 @@ void sbbs_t::passthru_socket_activate(bool activate)
 		}
 	} else {
 		/* Re-enable blocking (in case disabled by external program) */	 
-		ulong l=0;	 
+		u_long l=0;	 
 		ioctlsocket(client_socket_dup, FIONBIO, &l);	 
  	 
 		/* Re-set socket options */
@@ -2253,7 +2253,7 @@ void passthru_thread(void* arg)
 			int wr = RingBufWrite(&sbbs->outbuf, bp, rd);
     		if(wr != rd) {
 				lprintf(LOG_ERR,"Short-write (%ld of %ld bytes) from passthru socket to outbuf"
-					,(long)wr, (long)rd);
+					,(int)wr, (int)rd);
 				break;
 			}
 		} else {
@@ -2277,15 +2277,15 @@ void output_thread(void* arg)
 	char		spy_topic[128];
 	BYTE		buf[IO_THREAD_BUF_SIZE];
 	int			i=0;	// Assignment to silence Valgrind
-	ulong		avail;
-	ulong		total_sent=0;
-	ulong		total_pkts=0;
-	ulong		short_sends=0;
-	ulong		bufbot=0;
-	ulong		buftop=0;
+	uint		avail;
+	uint		total_sent=0;
+	uint		total_pkts=0;
+	uint		short_sends=0;
+	uint		bufbot=0;
+	uint		buftop=0;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
-	ulong		mss=IO_THREAD_BUF_SIZE;
-	ulong		ssh_errors = 0;
+	uint		mss=IO_THREAD_BUF_SIZE;
+	uint		ssh_errors = 0;
 
 	SetThreadName("sbbs/termOutput");
 	thread_up(TRUE /* setuid */);
@@ -2592,7 +2592,7 @@ void event_thread(void* arg)
 	int			offset;
 	bool		check_semaphores;
 	bool		packed_rep;
-	ulong	l;
+	uint	l;
 	/* TODO: This is a silly hack... */
 	uint32_t	l32;
 	time_t		now;
@@ -2628,7 +2628,7 @@ void event_thread(void* arg)
 	else {
 		for(i=0;i<sbbs->cfg.total_events;i++) {
 			sbbs->cfg.event[i]->last=0;
-			if(filelength(file)<(long)(sizeof(time32_t)*(i+1))) {
+			if(filelength(file)<(int)(sizeof(time32_t)*(i+1))) {
 				sbbs->lprintf(LOG_WARNING,"Initializing last run time for event: %s"
 					,sbbs->cfg.event[i]->code);
 				write(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last));
@@ -2652,7 +2652,7 @@ void event_thread(void* arg)
 	else {
 		for(i=0;i<sbbs->cfg.total_qhubs;i++) {
 			sbbs->cfg.qhub[i]->last=0;
-			if(filelength(file)<(long)(sizeof(time32_t)*(i+1))) {
+			if(filelength(file)<(int)(sizeof(time32_t)*(i+1))) {
 				sbbs->lprintf(LOG_WARNING,"Initializing last call-out time for QWKnet hub: %s"
 					,sbbs->cfg.qhub[i]->id);
 				write(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last));
@@ -2834,7 +2834,7 @@ void event_thread(void* arg)
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
 					break;
 				}
-				lseek(file,(long)sbbs->cfg.total_events*4L,SEEK_SET);
+				lseek(file,(int)sbbs->cfg.total_events*4L,SEEK_SET);
 				write(file,&lastprepack,sizeof(lastprepack));
 				close(file);
 
@@ -2940,7 +2940,7 @@ void event_thread(void* arg)
 						sbbs->console|=CON_L_ECHO;
 						if(sbbs->unpack_qwk(str,i)==false) {
 							char newname[MAX_PATH+1];
-							SAFEPRINTF2(newname,"%s.%lx.bad",str,(long)now);
+							SAFEPRINTF2(newname,"%s.%lx.bad",str,(int)now);
 							remove(newname);
 							if(rename(str,newname)==0)
 								sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", str, newname);
@@ -3089,7 +3089,7 @@ void event_thread(void* arg)
 								sbbs->cfg.event[i]->last=(time32_t)now;
 								continue;
 							}
-							lseek(file,(long)i*4L,SEEK_SET);
+							lseek(file,(int)i*4L,SEEK_SET);
 							read(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last));
 							close(file);
 							if(now-sbbs->cfg.event[i]->last<(60*60))	/* event is done */
@@ -3223,7 +3223,7 @@ void event_thread(void* arg)
 						sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
 						break;
 					}
-					lseek(file,(long)i*4L,SEEK_SET);
+					lseek(file,(int)i*4L,SEEK_SET);
 					write(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last));
 					close(file);
 
@@ -3528,7 +3528,7 @@ bool sbbs_t::init()
 			fprintf(fp, "addr=%s\n", client.addr);
 			fprintf(fp, "host=%s\n", client.host);
 			fprintf(fp, "port=%u\n", (uint)client.port);
-			fprintf(fp, "time=%lu\n", (ulong)client.time);
+			fprintf(fp, "time=%lu\n", (uint)client.time);
 			fprintf(fp, "prot=%s\n", client.protocol);
 			fprintf(fp, "local_addr=%s\n", local_addr);
 			fprintf(fp, "local_port=%u\n", (uint)inet_addrport(&addr));
@@ -3559,7 +3559,7 @@ bool sbbs_t::init()
 	}
 	memset(&node,0,sizeof(node_t));  /* write NULL to node struct */
 	node.status=NODE_OFFLINE;
-	while(filelength(nodefile)<(long)(cfg.sys_nodes*sizeof(node_t))) {
+	while(filelength(nodefile)<(int)(cfg.sys_nodes*sizeof(node_t))) {
 		lseek(nodefile,0L,SEEK_END);
 		if(write(nodefile,&node,sizeof(node_t))!=sizeof(node_t)) {
 			errormsg(WHERE,ERR_WRITE,str,sizeof(node_t));
@@ -3990,7 +3990,7 @@ void sbbs_t::hangup(void)
 	SetEvent(outbuf.highwater_event);
 }
 
-int sbbs_t::incom(unsigned long timeout)
+int sbbs_t::incom(unsigned int timeout)
 {
 	uchar	ch;
 
@@ -4186,7 +4186,7 @@ void sbbs_t::catsyslog(int crash)
 	char *buf;
 	FILE* fp;
 	int  i,file;
-	long length;
+	int length;
 	struct tm tm;
 
 	if(logfile_fp==NULL) {
@@ -4267,10 +4267,10 @@ void sbbs_t::logoffstats()
 	if(now <= logontime) {
 		char tmp[128];
 		lprintf(LOG_WARNING, "Logoff time (%lu) <= logon time (%lu): %s"
-			,(ulong)now, (ulong)logontime, ctime_r(&logontime, tmp));
+			,(uint)now, (uint)logontime, ctime_r(&logontime, tmp));
 		return;
 	}
-	ulong minutes_used = (ulong)(now-logontime)/60;
+	uint minutes_used = (uint)(now-logontime)/60;
 	if(minutes_used < 1)
 		return;
 
@@ -4293,7 +4293,7 @@ void node_thread(void* arg)
 	int				file;
 	uint			curshell=0;
 	node_t			node;
-	ulong			login_attempts;
+	uint			login_attempts;
 	sbbs_t*			sbbs = (sbbs_t*) arg;
 
 	update_clients();
@@ -4349,7 +4349,7 @@ void node_thread(void* arg)
 				sbbs->freevars(&sbbs->main_csi);
 				sbbs->clearvars(&sbbs->main_csi);
 
-				sbbs->main_csi.length=(long)filelength(file);
+				sbbs->main_csi.length=(int)filelength(file);
 				if(sbbs->main_csi.length < 1) {
 					close(file);
 					sbbs->errormsg(WHERE,ERR_LEN, str, sbbs->main_csi.length);
@@ -4404,7 +4404,7 @@ void node_thread(void* arg)
 	if(fp != NULL) {
 		fprintf(fp, "user=%u\n", sbbs->useron.number);
 		fprintf(fp, "name=%s\n", sbbs->useron.alias);
-		fprintf(fp, "done=%lu\n", (ulong)now);
+		fprintf(fp, "done=%lu\n", (uint)now);
 		fclose(fp);
 	}
 
@@ -4519,7 +4519,7 @@ bool sbbs_t::backup(const char* fname, int backup_level, bool rename)
 	if(!fexist(fname))
 		return false;
 
-	lprintf(LOG_DEBUG, "Backing-up %s (%lu bytes)", fname, (long)flength(fname));
+	lprintf(LOG_DEBUG, "Backing-up %s (%lu bytes)", fname, (int)flength(fname));
 	return ::backup(fname, backup_level, rename) ? true : false;
 }
 
@@ -4615,7 +4615,7 @@ void sbbs_t::daily_maint(void)
 			continue;	/* skip expiration/inactivity checks for user #1 */
 
 		if(!(user.misc&(DELETED|INACTIVE))
-			&& user.expire && (ulong)user.expire<=(ulong)now) {
+			&& user.expire && (uint)user.expire<=(uint)now) {
 			putsmsg(&cfg,user.number,text[AccountHasExpired]);
 			SAFEPRINTF2(str,"DAILY: %s #%u Expired",user.alias,user.number);
 			lputs(LOG_NOTICE, str);
@@ -4668,7 +4668,7 @@ void sbbs_t::daily_maint(void)
 		/***********************************************************/
 		if(!(user.exempt&FLAG('P'))     /* Not a permanent account */
 			&& !(user.misc&(DELETED|INACTIVE))	 /* alive */
-			&& (cfg.sys_autodel && (now-user.laston)/(long)(24L*60L*60L)
+			&& (cfg.sys_autodel && (now-user.laston)/(int)(24L*60L*60L)
 			> cfg.sys_autodel)) {			/* Inactive too long */
 			SAFEPRINTF4(str,"DAILY: Auto-Deleted %s (%s) #%u due to inactivity > %u days"
 				,user.alias, user.name, user.number, cfg.sys_autodel);
@@ -4742,7 +4742,7 @@ const char* bbs_ver(void)
 }
 
 /* Returns binary-coded version and revision (e.g. 0x31000 == 3.10a) */
-long bbs_ver_num(void)
+int bbs_ver_num(void)
 {
 	return(VERSION_HEX);
 }
@@ -5013,7 +5013,7 @@ void bbs_thread(void* arg)
 		}
 		SAFEPRINTF(oldfn, "%scsts.dab", i ? scfg.node_path[i-1] : scfg.ctrl_dir);
 		if(fexist(oldfn) && !fexist(cstats_fname(&scfg, i, newfn, sizeof(newfn)))) {
-			ulong record = 0;
+			uint record = 0;
 			lprintf(LOG_NOTICE, "Auto-upgrading cumulative statistics log file: %s", oldfn);
 			stats_t stats;
 			FILE* out = fopen_cstats(&scfg, i, /* write: */TRUE);
@@ -5379,7 +5379,7 @@ NO_SSH:
 			sbbs->online=ON_REMOTE;
 
 		login_attempt_t attempted;
-		ulong banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */NULL, startup->login_attempt, &attempted);
+		uint banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */NULL, startup->login_attempt, &attempted);
 		if(banned || sbbs->trashcan(host_ip,"ip")) {
 			if(banned) {
 				char ban_duration[128];

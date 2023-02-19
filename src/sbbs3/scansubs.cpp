@@ -24,13 +24,13 @@
 /****************************************************************************/
 /* Used to scan single or multiple sub-boards. 'mode' is the scan type.     */
 /****************************************************************************/
-void sbbs_t::scansubs(long mode)
+void sbbs_t::scansubs(int mode)
 {
 	char	keys[32];
 	char	ch,str[256] = "";
 	char 	tmp[512];
 	uint	i=0,found=0;
-	ulong	subs_scanned=0;
+	uint	subs_scanned=0;
 	bool	subj_only=false;
 
 	if(cfg.scansubs_mod[0] && !scansubs_inside) {
@@ -133,14 +133,14 @@ void sbbs_t::scansubs(long mode)
 /****************************************************************************/
 /* Performs a new message scan of all sub-boards							*/
 /****************************************************************************/
-void sbbs_t::scanallsubs(long mode)
+void sbbs_t::scanallsubs(int mode)
 {
 	char	str[256] = "";
 	char 	tmp[512];
 	uint	i,j,found=0;
-	ulong	subs_scanned=0;
+	uint	subs_scanned=0;
 	uint*	sub;
-	ulong	total_subs=0;
+	uint	total_subs=0;
 	bool	subj_only=false;
 
 	if(cfg.scansubs_mod[0] && !scansubs_inside) {
@@ -242,11 +242,11 @@ void sbbs_t::new_scan_ptr_cfg()
 {
 	char	keys[32];
 	uint	i,j;
-	long	s;
+	int		s;
 	uint32_t	l;
 	time_t	t;
-	ulong	total_subs;
-	ulong	subs;
+	uint	total_subs;
+	uint	subs;
 
 	while(online) {
 		bputs(text[CfgGrpLstHdr]);
@@ -299,7 +299,7 @@ void sbbs_t::new_scan_ptr_cfg()
 						continue;
 					}
 					getlastmsg(usrsub[i][j],&l,0);
-					if(s>(long)l)
+					if(s>(int)l)
 						subscan[usrsub[i][j]].ptr=0;
 					else
 						subscan[usrsub[i][j]].ptr=l-s;
@@ -316,7 +316,7 @@ void sbbs_t::new_scan_ptr_cfg()
 				if(j<9) outchar(' ');
 				if(j<99) outchar(' ');
 				t=getmsgtime(usrsub[i][j],subscan[usrsub[i][j]].ptr);
-				if(t>(long)l)
+				if(t>l)
 					l=(uint32_t)t;
 				bprintf(text[SubPtrLstFmt],j+1,cfg.sub[usrsub[i][j]]->lname
 					,timestr(t),nulstr);
@@ -361,7 +361,7 @@ void sbbs_t::new_scan_ptr_cfg()
 						continue;
 					}
 					getlastmsg(usrsub[i][j],&l,0);
-					if(s>(long)l)
+					if(s>(int)l)
 						subscan[usrsub[i][j]].ptr=0;
 					else
 						subscan[usrsub[i][j]].ptr=l-s;
@@ -391,7 +391,7 @@ void sbbs_t::new_scan_ptr_cfg()
 				if(s)
 					s&=~0x80000000L;
 				getlastmsg(usrsub[i][j],&l,0);
-				if(s>(long)l)
+				if(s>(int)l)
 					subscan[usrsub[i][j]].ptr=0;
 				else
 					subscan[usrsub[i][j]].ptr=l-s;
@@ -400,12 +400,12 @@ void sbbs_t::new_scan_ptr_cfg()
 	}
 }
 
-void sbbs_t::new_scan_cfg(ulong misc)
+void sbbs_t::new_scan_cfg(uint misc)
 {
 	char	keys[32];
-	long	s;
-	ulong	i,j;
-	ulong	t;
+	int		s;
+	uint	i,j;
+	uint	t;
 
 	while(online) {
 		bputs(text[CfgGrpLstHdr]);

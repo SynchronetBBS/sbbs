@@ -379,9 +379,9 @@ typedef struct js_callback {
 
 struct mouse_hotspot {		// Mouse hot-spot
 	char	cmd[128];
-	long	y;
-	long	minx;
-	long	maxx;
+	int	y;
+	int	minx;
+	int	maxx;
 	bool	hungry;
 };
 
@@ -446,8 +446,8 @@ public:
 	#define OUTCOM_RETRY_ATTEMPTS	1000	// 80 seconds
 	int 	_outcom(uchar ch); 	   // send character, without retry (on buffer flow condition)
 	int		outcom(uchar ch, int max_attempts = OUTCOM_RETRY_ATTEMPTS);		// send character, with retry
-	int 	incom(unsigned long timeout=0);		   // receive character
-	int 	kbincom(unsigned long timeout=0);	   // " " or return keyboard buffer
+	int 	incom(unsigned int timeout=0);		   // receive character
+	int 	kbincom(unsigned int timeout=0);	   // " " or return keyboard buffer
 	int		translate_input(int ch);
 	void	translate_input(char* buf, size_t);
 
@@ -463,15 +463,15 @@ public:
 
 	uchar	telnet_cmd[64];
 	uint	telnet_cmdlen;
-	ulong	telnet_cmds_received;
-	ulong	telnet_mode;
+	uint	telnet_cmds_received;
+	uint	telnet_mode;
 	/* 	input_thread() writes to these variables: */
 	uchar	telnet_last_rxch;
 	char	telnet_location[128];
 	char	telnet_terminal[TELNET_TERM_MAXLEN+1];
-	long 	telnet_rows;
-	long	telnet_cols;
-	long	telnet_speed;
+	int 	telnet_rows;
+	int		telnet_cols;
+	int		telnet_speed;
 
 	xpevent_t	telnet_ack_event;
 
@@ -490,8 +490,8 @@ public:
 	JSContext*		js_hotkey_cx;
 	JSObject*		js_hotkey_glob=nullptr;
 	js_callback_t	js_callback{};
-	long			js_execfile(const char *fname, const char* startup_dir, JSObject* scope = NULL, JSContext* cx = NULL, JSObject* glob = NULL);
-	long			js_execxtrn(const char *fname, const char* startup_dir);
+	int				js_execfile(const char *fname, const char* startup_dir, JSObject* scope = NULL, JSContext* cx = NULL, JSObject* glob = NULL);
+	int				js_execxtrn(const char *fname, const char* startup_dir);
 	JSContext*		js_init(JSRuntime**, JSObject**, const char* desc);
 	void			js_cleanup(void);
 	bool			js_create_user_objects(JSContext*, JSObject* glob);
@@ -541,31 +541,31 @@ public:
 
 	ushort	node_connection;
 	char	connection[LEN_MODEM+1];	/* Connection Description */
-	ulong	cur_rate=0;		/* Current Connection (DCE) Rate */
-	ulong	cur_cps=0;		/* Current Average Transfer CPS */
-	ulong	dte_rate=0;		/* Current COM Port (DTE) Rate */
+	uint	cur_rate=0;		/* Current Connection (DCE) Rate */
+	uint	cur_cps=0;		/* Current Average Transfer CPS */
+	uint	dte_rate=0;		/* Current COM Port (DTE) Rate */
 	time_t 	timeout=0;		/* User inactivity timeout reference */
-	ulong 	timeleft_warn=0;/* low timeleft warning flag */
+	uint 	timeleft_warn=0;/* low timeleft warning flag */
 	uint	curatr; 		/* Current Text Attributes Always */
 	uint	attr_stack[64];	/* Saved attributes (stack) */
 	int 	attr_sp;		/* Attribute stack pointer */
-	long 	lncntr; 		/* Line Counter - for PAUSE */
+	int 	lncntr; 		/* Line Counter - for PAUSE */
 	bool	msghdr_tos;		/* Message header was displayed at Top of Screen */
-	long	row=0;			/* Current row */
-	long 	rows=0;			/* Current number of Rows for User */
-	long	cols=0;			/* Current number of Columns for User */
-	long	column;			/* Current column counter (for line counter) */
-	long	tabstop;		/* Current symmetric-tabstop (size) */
-	long	lastlinelen;	/* The previously displayed line length */
-	long 	autoterm=0;		/* Auto-detected terminal type */
+	int		row=0;			/* Current row */
+	int 	rows=0;			/* Current number of Rows for User */
+	int		cols=0;			/* Current number of Columns for User */
+	int		column;			/* Current column counter (for line counter) */
+	int		tabstop;		/* Current symmetric-tabstop (size) */
+	int		lastlinelen;	/* The previously displayed line length */
+	int 	autoterm=0;		/* Auto-detected terminal type */
 	char	terminal[TELNET_TERM_MAXLEN+1];	// <- answer() writes to this
-	long	cterm_version=0;/* (MajorVer*1000) + MinorVer */
+	int		cterm_version=0;/* (MajorVer*1000) + MinorVer */
 	link_list_t savedlines;
 	char 	lbuf[LINE_BUFSIZE+1];/* Temp storage for each line output */
 	int		lbuflen;		/* Number of characters in line buffer */
 	uint	latr=0;			/* Starting attribute of line buffer */
 	uint	line_delay=0;	/* Delay duration (ms) after each line sent */
-	ulong	console;		/* Defines current Console settings */
+	uint	console;		/* Defines current Console settings */
 	char 	wordwrap[81];	/* Word wrap buffer */
 	time_t	now=0,			/* Used to store current time in Unix format */
 			last_sysop_auth,/* Time sysop was last authenticated */
@@ -575,22 +575,22 @@ public:
 			ns_time=0,		/* File new-scan time */
 			last_ns_time;	/* Most recent new-file-scan this call */
 	uchar 	action;			/* Current action of user */
-	long 	online; 		/* Remote/Local or not online */
-	long 	sys_status; 	/* System Status */
+	int 	online; 		/* Remote/Local or not online */
+	int 	sys_status; 	/* System Status */
 	subscan_t	*subscan;	/* User sub configuration/scan info */
 
 	int64_t	logon_ulb=0,	/* Upload Bytes This Call */
 			logon_dlb=0;	/* Download Bytes This Call */
-	ulong	logon_uls=0,	/* Uploads This Call */
+	uint	logon_uls=0,	/* Uploads This Call */
 			logon_dls=0;	/* Downloads This Call */
-	ulong	logon_posts=0,	/* Posts This Call */
+	uint	logon_posts=0,	/* Posts This Call */
 			logon_emails=0,	/* Emails This Call */
 			logon_fbacks=0;	/* Feedbacks This Call */
 	uchar	logon_ml;		/* Security level of the user upon logon */
 
 	uint 	main_cmds;		/* Number of Main Commands this call */
 	uint 	xfer_cmds;		/* Number of Xfer Commands this call */
-	ulong	posts_read; 	/* Number of Posts read this call */
+	uint	posts_read; 	/* Number of Posts read this call */
 	bool 	autohang;		/* Used for auto-hangup after transfer */
 	size_t 	logcol; 		/* Current column of log file */
 	uint 	criterrs; 		/* Critical error counter */
@@ -611,12 +611,12 @@ public:
 	uint	*usrdirs;		/* Num of dirs with access for each lib */
 	uint	cursubnum;		/* For ARS */
 	uint	curdirnum;		/* For ARS */
-	ulong 	timeleft;		/* Number of seconds user has left online */
+	uint 	timeleft;		/* Number of seconds user has left online */
 
 	char 	*comspec;		/* Pointer to environment variable COMSPEC */
 	char 	cid[LEN_CID+1]; /* Caller ID (IP Address) of current caller */
 	char 	*noaccess_str;	/* Why access was denied via ARS */
-	long 	noaccess_val;	/* Value of parameter not met in ARS */
+	int 	noaccess_val;	/* Value of parameter not met in ARS */
 	int		errorlevel; 	/* Error level of external program */
 
 	csi_t	main_csi;		/* Main Command Shell Image */
@@ -663,7 +663,7 @@ public:
 	int		exec_net(csi_t *csi);
 	int		exec_msg(csi_t *csi);
 	int		exec_file(csi_t *csi);
-	long	exec_bin(const char *mod, csi_t *csi, const char* startup_dir=NULL);
+	int		exec_bin(const char *mod, csi_t *csi, const char* startup_dir=NULL);
 	void	clearvars(csi_t *bin);
 	void	freevars(csi_t *bin);
 	char**	getstrvar(csi_t *bin, uint32_t name);
@@ -718,7 +718,7 @@ public:
 
 	uint	finduserstr(uint usernumber, enum user_field, const char* str
 				,bool del=false, bool next=false);
-	ulong	gettimeleft(bool handle_out_of_time=true);
+	uint	gettimeleft(bool handle_out_of_time=true);
 	bool	gettimeleft_inside;
 
 	/* str.cpp */
@@ -728,17 +728,17 @@ public:
     char	timestr_output[60];
 	char	datestr_output[60];
 	char*	age_of_posted_item(char* buf, size_t max, time_t);
-	void	userlist(long mode);
-	size_t	gettmplt(char *outstr, const char *tmplt, long mode);
-	void	sif(char *fname, char *answers, long len);	/* Synchronet Interface File */
-	void	sof(char *fname, char *answers, long len);
+	void	userlist(int mode);
+	size_t	gettmplt(char *outstr, const char *tmplt, int mode);
+	void	sif(char *fname, char *answers, int len);	/* Synchronet Interface File */
+	void	sof(char *fname, char *answers, int len);
 	void	create_sif_dat(char *siffile, char *datfile);
 	void	read_sif_dat(char *siffile, char *datfile);
 	void	printnodedat(uint number, node_t* node);
 	bool	inputnstime32(time32_t *dt);
 	bool	inputnstime(time_t *dt);
 	bool	chkpass(char *pass, user_t* user, bool unique);
-	char *	cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, long mode = EX_UNSPECIFIED);
+	char *	cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, int mode = EX_UNSPECIFIED);
 	char	cmdstr_output[512];
 	char*	ultoac(uint32_t, char*, char sep=',');
 	char*	u64toac(uint64_t, char*, char sep=',');
@@ -751,76 +751,76 @@ public:
 
 	/* writemsg.cpp */
 	void	automsg(void);
-	bool	writemsg(const char *str, const char *top, char *subj, long mode, uint subnum
+	bool	writemsg(const char *str, const char *top, char *subj, int mode, uint subnum
 				,const char *to, const char* from, const char** editor=NULL, const char** charset=NULL);
 	char*	quotes_fname(int xedit, char* buf, size_t len);
 	char*	msg_tmp_fname(int xedit, char* fname, size_t len);
-	char	putmsg(const char *str, long mode, long org_cols = 0, JSObject* obj = NULL);
-	char	putmsgfrag(const char* str, long& mode, long org_cols = 0, JSObject* obj = NULL);
+	char	putmsg(const char *str, int mode, int org_cols = 0, JSObject* obj = NULL);
+	char	putmsgfrag(const char* str, int& mode, int org_cols = 0, JSObject* obj = NULL);
 	bool	msgabort(bool clear = false);
 	void	clearabort() { sys_status &= ~SS_ABORT; }
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL
-				, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
+				, int mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
 	bool	forwardmsg(smb_t*, smbmsg_t*, const char* to, const char* subject = NULL, const char* comment = NULL);
 	void	removeline(char *str, char *str2, char num, char skip);
-	ulong	msgeditor(char *buf, const char *top, char *title);
+	uint	msgeditor(char *buf, const char *top, char *title);
 	bool	editfile(char *path, bool msg=false);
 	ushort	chmsgattr(const smbmsg_t*);
 	bool	quotemsg(smb_t*, smbmsg_t*, bool tails = false);
 	bool	editmsg(smb_t*, smbmsg_t*);
-	void	editor_inf(int xeditnum, const char *to, const char* from, const char *subj, long mode
+	void	editor_inf(int xeditnum, const char *to, const char* from, const char *subj, int mode
 				,uint subnum, const char* tagfile);
 	bool	copyfattach(uint to, uint from, const char* subj);
 	bool	movemsg(smbmsg_t* msg, uint subnum);
-	int		process_edited_text(char* buf, FILE* stream, long mode, unsigned* lines, unsigned maxlines);
-	int		process_edited_file(const char* src, const char* dest, long mode, unsigned* lines, unsigned maxlines);
+	int		process_edited_text(char* buf, FILE* stream, int mode, unsigned* lines, unsigned maxlines);
+	int		process_edited_file(const char* src, const char* dest, int mode, unsigned* lines, unsigned maxlines);
 	void	editor_info_to_msg(smbmsg_t*, const char* editor, const char* charset);
 	char	editor_details[128];
 
 	/* postmsg.cpp */
-	bool	postmsg(uint subnum, long wm_mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
+	bool	postmsg(uint subnum, int wm_mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
 
 	/* mail.cpp */
 	int		delmail(uint usernumber,int which);
 	void	telluser(smbmsg_t* msg);
-	void	delallmail(uint usernumber, int which, bool permanent=true, long lm_mode = 0);
+	void	delallmail(uint usernumber, int which, bool permanent=true, int lm_mode = 0);
 
 	/* getmsg.cpp */
-	int		loadmsg(smbmsg_t *msg, ulong number);
+	int		loadmsg(smbmsg_t *msg, uint number);
 	void	show_msgattr(const smbmsg_t*);
 	void	show_msghdr(smb_t*, const smbmsg_t*, const char *subj = NULL, const char* from = NULL, const char* to = NULL);
-	bool	show_msg(smb_t*, smbmsg_t*, long p_mode = 0, post_t* post = NULL);
-	bool	msgtotxt(smb_t*, smbmsg_t*, const char *fname, bool header = true, ulong gettxt_mode = GETMSGTXT_ALL);
+	bool	show_msg(smb_t*, smbmsg_t*, int p_mode = 0, post_t* post = NULL);
+	bool	msgtotxt(smb_t*, smbmsg_t*, const char *fname, bool header = true, uint gettxt_mode = GETMSGTXT_ALL);
 	const char* msghdr_text(const smbmsg_t*, uint index);
 	char	msghdr_utf8_text[128];
 	const char* msghdr_field(const smbmsg_t*, const char* str, char* buf = NULL, bool can_utf8 = false);
 	char	msgghdr_field_cp437_str[128];
-	ulong	getlastmsg(uint subnum, uint32_t *ptr, time_t *t);
-	time_t	getmsgtime(uint subnum, ulong ptr);
-	ulong	getmsgnum(uint subnum, time_t t);
+	uint	getlastmsg(uint subnum, uint32_t *ptr, time_t *t);
+	time_t	getmsgtime(uint subnum, uint ptr);
+	uint	getmsgnum(uint subnum, time_t t);
 	void	download_msg_attachments(smb_t*, smbmsg_t*, bool del);
 
 	/* readmail.cpp */
-	void	readmail(uint usernumber, int which, long lm_mode = 0);
+	void	readmail(uint usernumber, int which, int lm_mode = 0);
 	bool	readmail_inside;
-	long	searchmail(mail_t*, long start, long msgss, int which, const char *search, const char* order);
+	int	searchmail(mail_t*, int start, int msgss, int which, const char *search, const char* order);
 
 	/* bulkmail.cpp */
 	bool	bulkmail(uchar *ar);
 	int		bulkmailhdr(smb_t*, smbmsg_t*, uint usernum);
 
 	/* con_out.cpp */
-	size_t	bstrlen(const char *str, long mode = 0);
-	int		bputs(const char *str, long mode = 0);	/* BBS puts function */
-	int		bputs(long mode, const char* str) { return bputs(str, mode); }
+	size_t	bstrlen(const char *str, int mode = 0);
+	int		bputs(const char *str, int mode = 0);	/* BBS puts function */
+	int		bputs(int mode, const char* str) { return bputs(str, mode); }
 	int		rputs(const char *str, size_t len=0);	/* BBS raw puts function */
-	int		rputs(long mode, const char* str) { return rputs(str, mode); }
+	int		rputs(int mode, const char* str) { return rputs(str, mode); }
 	int		bprintf(const char *fmt, ...)			/* BBS printf function */
 #if defined(__GNUC__)   // Catch printf-format errors
     __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
 #endif
 	;
-	int		bprintf(long mode, const char *fmt, ...)
+	int		bprintf(int mode, const char *fmt, ...)
 #if defined(__GNUC__)   // Catch printf-format errors
     __attribute__ ((format (printf, 3, 4)));		// 1 is 'this', 2 is 'mode'
 #endif
@@ -843,7 +843,7 @@ public:
 	void	inc_column(int count);
 	void	center(const char *str, bool msg = false, unsigned int columns = 0);
 	void	wide(const char*);
-	void	clearscreen(long term);
+	void	clearscreen(int term);
 	void	clearline(void);
 	void	cleartoeol(void);
 	void	cleartoeos(void);
@@ -860,9 +860,9 @@ public:
 	void	cond_newline() { if(column > 0) newline(); }
 	void	cond_blankline() { if(column > 0) newline(); if(lastlinelen) newline(); }
 	void	cond_contline() { if(column > 0 && cols < TERM_COLS_DEFAULT) bputs(text[LongLineContinuationPrefix]); }
-	long	term_supports(long cmp_flags=0);
-	const char* term_type(long term_supports = -1);
-	const char* term_charset(long term_supports = -1);
+	int		term_supports(int cmp_flags=0);
+	const char* term_type(int term_supports = -1);
+	const char* term_charset(int term_supports = -1);
 	bool	update_nodeterm(void);
 	int		backfill(const char* str, float pct, int full_attr, int empty_attr);
 	void	progress(const char* str, int count, int total, int interval = 500);
@@ -873,7 +873,7 @@ public:
 	size_t	print_utf8_as_cp437(const char*, size_t);
 	int		attr(int);				/* Change text color/attributes */
 	void	ctrl_a(char);			/* Performs Ctrl-Ax attribute changes */
-	char*	auto_utf8(const char*, long& mode);
+	char*	auto_utf8(const char*, int& mode);
 	enum output_rate {
 		output_rate_unlimited,
 		output_rate_300 = 300,
@@ -892,26 +892,26 @@ public:
 
 	/* getstr.cpp */
 	size_t	getstr_offset;
-	size_t	getstr(char *str, size_t length, long mode, const str_list_t history = NULL);
-	long	getnum(ulong max, ulong dflt=0);
+	size_t	getstr(char *str, size_t length, int mode, const str_list_t history = NULL);
+	int		getnum(uint max, uint dflt=0);
 	void	insert_indicator(void);
 
 	/* getkey.cpp */
-	char	getkey(long mode = K_NONE);
-	long	getkeys(const char *str, ulong max, long mode = K_UPPER);
+	char	getkey(int mode = K_NONE);
+	int		getkeys(const char *str, uint max, int mode = K_UPPER);
 	void	ungetkey(char ch, bool insert = false);		/* Places 'ch' into the input buffer    */
 	void	ungetstr(const char* str, bool insert = false);
 	char	question[MAX_TEXTDAT_ITEM_LEN+1];
-	bool	yesno(const char *str, long mode = 0);
-	bool	noyes(const char *str, long mode = 0);
+	bool	yesno(const char *str, int mode = 0);
+	bool	noyes(const char *str, int mode = 0);
 	bool	pause_inside;
 	void	pause(void);
 	const char *	mnestr;
 	void	mnemonics(const char *str);
 
 	/* inkey.cpp */
-	int		inkey(long mode = K_NONE, unsigned long timeout=0);
-	char	handle_ctrlkey(char ch, long mode=0);
+	int		inkey(int mode = K_NONE, unsigned int timeout=0);
+	char	handle_ctrlkey(char ch, int mode=0);
 
 									// Terminal mouse reporting mode (mouse_mode)
 #define MOUSE_MODE_OFF		0		// No terminal mouse reporting enabled/expected
@@ -922,36 +922,36 @@ public:
 #define MOUSE_MODE_EXT		(1<<4)	// SGR-encoded extended coordinate mouse reporting
 #define MOUSE_MODE_ON		(MOUSE_MODE_NORM | MOUSE_MODE_EXT) // Default mouse "enabled" mode flags
 
-	long	mouse_mode;			// Mouse reporting mode flags
+	int		mouse_mode;			// Mouse reporting mode flags
 	uint	hot_attr;			// Auto-Mouse hot-spot attribute (when non-zero)
 	bool	hungry_hotspots;
 	link_list_t mouse_hotspots;	// Mouse hot-spots
 	struct mouse_hotspot* pause_hotspot;
 	struct mouse_hotspot* add_hotspot(struct mouse_hotspot*);
-	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, long minx = -1, long maxx = -1, long y = -1);
-	struct mouse_hotspot* add_hotspot(ulong num, bool hungry = true, long minx = -1, long maxx = -1, long y = -1);
-	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry = true, long minx = -1, long maxx = -1, long y = -1);
+	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
+	struct mouse_hotspot* add_hotspot(uint num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
+	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
 	void	clear_hotspots(void);
-	void	scroll_hotspots(long count);
-	void	set_mouse(long mode);
+	void	scroll_hotspots(int count);
+	void	set_mouse(int mode);
 
 	/* prntfile.cpp */
-	bool	printfile(const char* fname, long mode, long org_cols = 0, JSObject* obj = NULL);
-	bool	printtail(const char* fname, int lines, long mode, long org_cols = 0, JSObject* obj = NULL);
-	bool	menu(const char *code, long mode = 0, JSObject* obj = NULL);
-	bool	random_menu(const char *code, long mode = 0, JSObject* obj = NULL);
+	bool	printfile(const char* fname, int mode, int org_cols = 0, JSObject* obj = NULL);
+	bool	printtail(const char* fname, int lines, int mode, int org_cols = 0, JSObject* obj = NULL);
+	bool	menu(const char *code, int mode = 0, JSObject* obj = NULL);
+	bool	random_menu(const char *code, int mode = 0, JSObject* obj = NULL);
 	bool	menu_exists(const char *code, const char* ext=NULL, char* realpath=NULL);
 
 	int		uselect(int add, uint n, const char *title, const char *item, const uchar *ar);
 	uint	uselect_total, uselect_num[500];
 
-	long	mselect(const char *title, str_list_t list, unsigned max_selections, const char* item_fmt, const char* selected_str, const char* unselected_str, const char* prompt_fmt);
+	int		mselect(const char *title, str_list_t list, unsigned max_selections, const char* item_fmt, const char* selected_str, const char* unselected_str, const char* prompt_fmt);
 
-	void	redrwstr(char *strin, int i, int l, long mode);
+	void	redrwstr(char *strin, int i, int l, int mode);
 
 	/* atcodes.cpp */
 	int		show_atcode(const char *code, JSObject* obj = NULL);
-	const char*	atcode(char* sp, char* str, size_t maxlen, long* pmode = NULL, bool centered = false, JSObject* obj = NULL);
+	const char*	atcode(char* sp, char* str, size_t maxlen, int* pmode = NULL, bool centered = false, JSObject* obj = NULL);
 
 	/* getnode.cpp */
 	int		getsmsg(int usernumber, bool clearline = false);
@@ -990,13 +990,13 @@ public:
 	int		text_sec(void);						/* Text sections */
 
 	/* readmsgs.cpp */
-	post_t* loadposts(uint32_t *posts, uint subnum, ulong ptr, long mode, ulong *unvalidated_num, uint32_t* visible=NULL);
-	int		scanposts(uint subnum, long mode, const char* find);	/* Scan sub-board */
+	post_t* loadposts(uint32_t *posts, uint subnum, uint ptr, int mode, uint *unvalidated_num, uint32_t* visible=NULL);
+	int		scanposts(uint subnum, int mode, const char* find);	/* Scan sub-board */
 	bool	scanposts_inside;
-	long	listsub(uint subnum, long mode, long start, const char* search);
-	long	listmsgs(uint subnum, long mode, post_t* post, long start, long posts, bool reading = true);
-	long	searchposts(uint subnum, post_t* post, long start, long msgs, const char* find);
-	long	showposts_toyou(uint subnum, post_t* post, ulong start, long posts, long mode=0);
+	int		listsub(uint subnum, int mode, int start, const char* search);
+	int		listmsgs(uint subnum, int mode, post_t* post, int start, int posts, bool reading = true);
+	int		searchposts(uint subnum, post_t* post, int start, int msgs, const char* find);
+	int		showposts_toyou(uint subnum, post_t* post, uint start, int posts, int mode=0);
 	void	show_thread(uint32_t msgnum, post_t* post, unsigned curmsg, int thread_depth = 0, uint64_t reply_mask = 0);
 	void	dump_msghdr(smbmsg_t*);
 	uchar	msg_listing_flag(uint subnum, smbmsg_t*, post_t*);
@@ -1028,7 +1028,7 @@ public:
 #endif
 	;
 	void	printstatslog(uint node);
-	ulong	logonstats(void);
+	uint	logonstats(void);
 	void	logoffstats(void);
 	int		nopen(char *str, int access);
 	int		mv(const char *src, const char *dest, bool copy); /* fast file move/copy function */
@@ -1072,14 +1072,14 @@ public:
 	bool	editfilename(file_t*);
 	bool	editfiledesc(file_t*);
 	bool	editfileinfo(file_t*);
-	long	delfiles(const char *inpath, const char *spec, size_t keep = 0);
+	int		delfiles(const char *inpath, const char *spec, size_t keep = 0);
 
 	/* listfile.cpp */
 	bool	listfile(file_t*, uint dirnum, const char *search, const char letter, size_t namelen);
-	int		listfiles(uint dirnum, const char *filespec, FILE* tofile, long mode);
-	int		listfileinfo(uint dirnum, const char *filespec, long mode);
+	int		listfiles(uint dirnum, const char *filespec, FILE* tofile, int mode);
+	int		listfileinfo(uint dirnum, const char *filespec, int mode);
 	void	listfiletofile(file_t*, FILE*);
-	int		batchflagprompt(smb_t*, file_t* bf[], ulong row[], uint total, long totalfiles);
+	int		batchflagprompt(smb_t*, file_t* bf[], uint row[], uint total, int totalfiles);
 
 	/* bat_xfer.cpp */
 	void	batchmenu(void);
@@ -1093,7 +1093,7 @@ public:
 	/* tmp_xfer.cpp */
 	void	temp_xfer(void);
 	const char*	temp_cmd(void);					/* Returns temp file command line */
-	ulong	create_filelist(const char *name, long mode);
+	uint	create_filelist(const char *name, int mode);
 
 	/* viewfile.cpp */
 	int		viewfile(file_t* f, bool extdesc);
@@ -1101,14 +1101,14 @@ public:
 	bool	viewfilecontents(file_t* f);
 
 	/* xtrn.cpp */
-	int		external(const char* cmdline, long mode, const char* startup_dir=NULL);
-	long	xtrn_mode;
+	int		external(const char* cmdline, int mode, const char* startup_dir=NULL);
+	int		xtrn_mode;
 	char	term_env[256];
 
 	/* xtrn_sec.cpp */
 	int		xtrn_sec(const char* section = "");	/* The external program section  */
-	void	xtrndat(const char* name, const char* dropdir, uchar type, ulong tleft
-				,ulong misc);
+	void	xtrndat(const char* name, const char* dropdir, uchar type, uint tleft
+				,uint misc);
 	bool	exec_xtrn(uint xtrnnum, bool user_event = false);	/* Executes online external program */
 	bool	user_event(user_event_t);			/* Executes user event(s) */
 	void	moduserdat(uint xtrnnum);
@@ -1123,11 +1123,11 @@ public:
 	void	logofflist(void);              /* List of users logon activity */
 	bool	errormsg_inside;
 	void	errormsg(int line, const char* function, const char *source, const char* action, const char *object
-				,long access=0, const char *extinfo=NULL);
+				,int access=0, const char *extinfo=NULL);
 	BOOL	hacklog(const char* prot, const char* text);
 
 	/* qwk.cpp */
-	ulong	qwkmail_last;
+	uint	qwkmail_last;
 	void	qwk_sec(void);
 	uint	total_qwknodes;
 	struct qwknode {
@@ -1136,10 +1136,10 @@ public:
 		time_t	time;
 	}* qwknode;
 	void	update_qwkroute(char *via);
-	void	qwk_success(ulong msgcnt, char bi, char prepack);
+	void	qwk_success(uint msgcnt, char bi, char prepack);
 	void	qwksetptr(uint subnum, char *buf, int reset);
 	void	qwkcfgline(char *buf,uint subnum);
-	bool	set_qwk_flag(ulong flag);
+	bool	set_qwk_flag(uint flag);
 	uint	resolve_qwkconf(uint confnum, int hubnum=-1);
 	struct msg_filters {
 		str_list_t ip_can;
@@ -1149,11 +1149,11 @@ public:
 	};
 	bool	qwk_msg_filtered(smbmsg_t* msg, msg_filters);
 	bool	qwk_vote(str_list_t ini, const char* section, smb_net_type_t, const char* qnet_id, uint confnum, msg_filters, int hubnum);
-	bool	qwk_voting(str_list_t* ini, long offset, smb_net_type_t, const char* qnet_id, uint confnum, msg_filters, int hubnum = -1);
+	bool	qwk_voting(str_list_t* ini, int offset, smb_net_type_t, const char* qnet_id, uint confnum, msg_filters, int hubnum = -1);
 	void	qwk_handle_remaining_votes(str_list_t* ini, smb_net_type_t, const char* qnet_id, int hubnum = -1);
 
 	/* pack_qwk.cpp */
-	bool	pack_qwk(char *packet, ulong *msgcnt, bool prepack);
+	bool	pack_qwk(char *packet, uint *msgcnt, bool prepack);
 
 	/* un_qwk.cpp */
 	bool	unpack_qwk(char *packet,uint hubnum);
@@ -1165,20 +1165,20 @@ public:
 	bool	unpack_rep(char* repfile=NULL);
 
 	/* msgtoqwk.cpp */
-	long	msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t*, int conf, FILE* hdrs_dat, FILE* voting_dat = NULL);
+	int		msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t*, int conf, FILE* hdrs_dat, FILE* voting_dat = NULL);
 
 	/* qwktomsg.cpp */
-	bool	qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset, str_list_t headers, bool parse_sender_hfields);
-	bool	qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks, char fromhub, smb_t*
+	bool	qwk_new_msg(uint confnum, smbmsg_t* msg, char* hdrblk, int offset, str_list_t headers, bool parse_sender_hfields);
+	bool	qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks, char fromhub, smb_t*
 				,uint touser, smbmsg_t* msg, bool* dupe);
 
 	/* fido.cpp */
-	bool	netmail(const char *into, const char *subj = NULL, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL, str_list_t cc = NULL);
+	bool	netmail(const char *into, const char *subj = NULL, int mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL, str_list_t cc = NULL);
 	void	qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub = 0);
 	bool	lookup_netuser(char *into);
 
-	bool	inetmail(const char *into, const char *subj = NULL, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL, str_list_t cc = NULL);
-	bool	qnetmail(const char *into, const char *subj = NULL, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
+	bool	inetmail(const char *into, const char *subj = NULL, int mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL, str_list_t cc = NULL);
+	bool	qnetmail(const char *into, const char *subj = NULL, int mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
 
 	/* useredit.cpp */
 	void	useredit(int usernumber);
@@ -1191,15 +1191,15 @@ public:
 	void	ver(void);
 
 	/* scansubs.cpp */
-	void	scansubs(long mode);
+	void	scansubs(int mode);
 	bool	scansubs_inside;
-	void	scanallsubs(long mode);
-	void	new_scan_cfg(ulong misc);
+	void	scanallsubs(int mode);
+	void	new_scan_cfg(uint misc);
 	void	new_scan_ptr_cfg(void);
 
 	/* scandirs.cpp */
-	void	scanalldirs(long mode);
-	void	scandirs(long mode);
+	void	scanalldirs(int mode);
+	void	scandirs(int mode);
 
 	#define nosound()
 	#define checkline()
@@ -1207,7 +1207,7 @@ public:
 	void	catsyslog(int crash);
 
 	/* telgate.cpp */
-	void	telnet_gate(char* addr, ulong mode, unsigned timeout=10, char* client_user_name=NULL, char* server_user_name=NULL, char* term_type=NULL);	// See TG_* for mode bits
+	void	telnet_gate(char* addr, uint mode, unsigned timeout=10, char* client_user_name=NULL, char* server_user_name=NULL, char* term_type=NULL);	// See TG_* for mode bits
 
 };
 
@@ -1277,7 +1277,7 @@ extern "C" {
 	unsigned char		cp437_to_petscii(unsigned char);
 
 	/* xtrn.cpp */
-	BOOL				native_executable(scfg_t*, const char* cmdline, long mode);
+	BOOL				native_executable(scfg_t*, const char* cmdline, int mode);
 
 #ifdef JAVASCRIPT
 
@@ -1439,7 +1439,7 @@ extern "C" {
 													,char *name, struct xpms_set *set);
 
 	DLLEXPORT SOCKET	js_socket(JSContext *cx, jsval val);
-	DLLEXPORT int js_polltimeout(JSContext* cx, jsval val);
+	DLLEXPORT int		js_polltimeout(JSContext* cx, jsval val);
 #ifdef PREFER_POLL
 	DLLEXPORT size_t js_socket_numsocks(JSContext *cx, jsval val);
 	DLLEXPORT size_t js_socket_add(JSContext *cx, jsval val, struct pollfd *fds, short events);
@@ -1510,7 +1510,7 @@ extern "C" {
 	int		close_socket(SOCKET);
 	u_long	resolve_ip(char *addr);
 
-	char *	readtext(long *line, FILE *stream, long dflt);
+	char *	readtext(int *line, FILE *stream, int dflt);
 
 	/* ver.cpp */
 	char*	socklib_version(char* str, char* winsock_ver);

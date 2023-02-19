@@ -416,6 +416,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define XTRN_UART		(1<<25)		/* Enable the virtual UART driver		*/
 #define XTRN_FOSSIL		(1<<26)		/* Enable the int14h/FOSSIL driver		*/
 #define XTRN_NODISPLAY	(1<<27)		/* Disable local screen/display			*/
+#define XTRN_COOKEDINP	(1<<28)		/* Perform keyboard input translations	*/
 #define XTRN_CONIO		(1<<31)		/* Intercept Windows Console I/O (Drwy)	*/
 
 									/* Bits in user.qwk 					*/
@@ -746,6 +747,7 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_UART		XTRN_UART
 #define EX_FOSSIL	XTRN_FOSSIL
 #define EX_NODISPLAY XTRN_NODISPLAY
+#define EX_COOKEDINP XTRN_COOKEDINP
 #define EX_NOLOG	(1<<30)		/* Don't log intercepted stdio				*/
 #define EX_CONIO	(1<<31)		/* Intercept Windows console I/O (doorway)	*/
 #define EX_UNSPECIFIED	-1
@@ -834,7 +836,7 @@ enum {							/* Values of mode for userlist function     */
 #define SYSOP_LEVEL		90
 #define SYSOP			(useron.level>=SYSOP_LEVEL || sys_status & SS_TMPSYSOP)
 #define REALSYSOP		(useron.level>=SYSOP_LEVEL)
-#define FLAG(x) 		(ulong)(1UL<<(x-'A'))
+#define FLAG(x) 		(uint)(1U<<(x-'A'))
 #define CLS         	outchar(FF)
 #define WHERE       	__LINE__,__FUNCTION__,getfname(__FILE__)
 #define SAVELINE		saveline()
@@ -981,16 +983,16 @@ typedef fidoaddr_t faddr_t;				/* defined in smbdefs.h */
 typedef smbfile_t file_t;				/* defined in smbdefs.h */
 
 typedef struct {						/* System/Node Statistics */
-	ulong		logons;
-	ulong		timeon;
-	ulong		uls;
+	uint		logons;
+	uint		timeon;
+	uint		uls;
 	uint64_t	ulb;
-	ulong		dls;
+	uint		dls;
 	uint64_t	dlb;
-	ulong		posts;
-	ulong		email;
-	ulong		fbacks;
-	ulong		nusers;
+	uint		posts;
+	uint		email;
+	uint		fbacks;
+	uint		nusers;
 } totals_t;
 
 typedef struct {						/* System/Node Statistics */
@@ -998,23 +1000,23 @@ typedef struct {						/* System/Node Statistics */
 	union {
 		totals_t		total;
 		struct { // legacy names
-			ulong		logons;
-			ulong		timeon;
+			uint		logons;
+			uint		timeon;
 		};
 	};
 	union {
 		totals_t		today;
 		struct { // legacy names
-			ulong		ltoday;
-			ulong		ttoday;
-			ulong		uls;
+			uint		ltoday;
+			uint		ttoday;
+			uint		uls;
 			uint64_t	ulb;
-			ulong		dls;
+			uint		dls;
 			uint64_t	dlb;
-			ulong		ptoday;
-			ulong		etoday;
-			ulong		ftoday;
-			ulong		nusers;
+			uint		ptoday;
+			uint		etoday;
+			uint		ftoday;
+			uint		nusers;
 		};
 	};
 } stats_t;

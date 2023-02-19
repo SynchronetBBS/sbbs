@@ -74,7 +74,7 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 	bool	thousep = false;	// thousands-separated
 	bool	uppercase = false;
 	bool	width_specified = false;
-	long	pmode = 0;
+	int		pmode = 0;
 	const char *cp;
 
 	if(*instr != '@')
@@ -249,7 +249,7 @@ static const char* getpath(scfg_t* cfg, const char* path)
 	return path;
 }
 
-const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool centered, JSObject* obj)
+const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool centered, JSObject* obj)
 {
 	char*	tp = NULL;
 	uint	i;
@@ -427,20 +427,20 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 			up = now-uptime;
 		char   days[64]="";
 		if((up/(24*60*60))>=2) {
-	        sprintf(days,"%lu days ",(ulong)(up/(24L*60L*60L)));
+	        sprintf(days,"%u days ",(uint)(up/(24L*60L*60L)));
 			up%=(24*60*60);
 		}
-		safe_snprintf(str,maxlen,"%s%lu:%02lu"
+		safe_snprintf(str,maxlen,"%s%u:%02u"
 	        ,days
-			,(ulong)(up/(60L*60L))
-			,(ulong)((up/60L)%60L)
+			,(up/(60L*60L))
+			,((up/60L)%60L)
 			);
 		return(str);
 	}
 
 	if(!strcmp(sp,"SERVED")) {
-		extern volatile ulong served;
-		safe_snprintf(str,maxlen,"%lu",served);
+		extern volatile uint served;
+		safe_snprintf(str,maxlen,"%u",served);
 		return(str);
 	}
 
@@ -647,7 +647,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	}
 
 	if(strcmp(sp, "FILES") == 0) {	// Number of files in current directory
-		safe_snprintf(str, maxlen, "%lu", (ulong)getfiles(&cfg, usrdir[curlib][curdir[curlib]]));
+		safe_snprintf(str, maxlen, "%u", getfiles(&cfg, usrdir[curlib][curdir[curlib]]));
 		return str;
 	}
 
@@ -713,7 +713,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(!strcmp(sp,"TCALLS") || !strcmp(sp,"NUMCALLS")) {
 		getstats(&cfg,0,&stats);
-		safe_snprintf(str,maxlen,"%lu", (ulong)stats.logons);
+		safe_snprintf(str,maxlen,"%u", stats.logons);
 		return(str);
 	}
 
@@ -765,7 +765,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(strncmp(sp, "FILL:", 5) == 0) {
 		sp += 5;
-		long margin = centered ? column : 1;
+		int margin = centered ? column : 1;
 		if(margin < 1) margin = 1;
 		c_unescape_str(sp);
 		while(*sp && online && column < cols - margin)
@@ -927,7 +927,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(strcmp(sp, "PWAGE") == 0) {
 		time_t age = time(NULL) - useron.pwmod;
-		safe_snprintf(str, maxlen, "%ld", (long)(age/(24*60*60)));
+		safe_snprintf(str, maxlen, "%d", (age/(24*60*60)));
 		return str;
 	}
 
@@ -964,7 +964,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(!strcmp(sp,"TIMEON") || !strcmp(sp,"TIMEUSED")) {
 		now=time(NULL);
-		safe_snprintf(str,maxlen,"%lu",(ulong)(now-logontime)/60L);
+		safe_snprintf(str,maxlen,"%u",(now-logontime)/60L);
 		return(str);
 	}
 
@@ -1318,7 +1318,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(!strcmp(sp,"EXPDAYS")) {
 		now=time(NULL);
-		l=(long)(useron.expire-now);
+		l=(uint)(useron.expire-now);
 		if(l<0)
 			l=0;
 		safe_snprintf(str,maxlen,"%lu",l/(1440L*60L));
@@ -1709,29 +1709,29 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		getstats(&cfg,0,&stats);
 		sp+=6;
 		if(!strcmp(sp,"LOGONS"))
-			safe_snprintf(str,maxlen,"%lu", (ulong)stats.logons);
+			safe_snprintf(str,maxlen,"%u", stats.logons);
 		else if(!strcmp(sp,"LTODAY"))
-			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ltoday);
+			safe_snprintf(str,maxlen,"%u", stats.ltoday);
 		else if(!strcmp(sp,"TIMEON"))
-			safe_snprintf(str,maxlen,"%lu", (ulong)stats.timeon);
+			safe_snprintf(str,maxlen,"%u", stats.timeon);
 		else if(!strcmp(sp,"TTODAY"))
-			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ttoday);
+			safe_snprintf(str,maxlen,"%u", stats.ttoday);
 		else if(!strcmp(sp,"ULS"))
-			safe_snprintf(str,maxlen,"%lu", (ulong)stats.uls);
+			safe_snprintf(str,maxlen,"%u", stats.uls);
 		else if(!strcmp(sp,"ULB"))
 			safe_snprintf(str,maxlen,"%" PRIu64, stats.ulb);
 		else if(!strcmp(sp,"DLS"))
-			safe_snprintf(str,maxlen,"%lu", (ulong)stats.dls);
+			safe_snprintf(str,maxlen,"%u", stats.dls);
 		else if(!strcmp(sp,"DLB"))
 			safe_snprintf(str,maxlen,"%" PRIu64, stats.dlb);
 		else if(!strcmp(sp,"PTODAY"))
-			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ptoday);
+			safe_snprintf(str,maxlen,"%u", stats.ptoday);
 		else if(!strcmp(sp,"ETODAY"))
-			safe_snprintf(str,maxlen,"%lu", (ulong)stats.etoday);
+			safe_snprintf(str,maxlen,"%u", stats.etoday);
 		else if(!strcmp(sp,"FTODAY"))
-			safe_snprintf(str,maxlen,"%lu", (ulong)stats.ftoday);
+			safe_snprintf(str,maxlen,"%u", stats.ftoday);
 		else if(!strcmp(sp,"NUSERS"))
-			safe_snprintf(str,maxlen,"%lu",stats.nusers);
+			safe_snprintf(str,maxlen,"%u",stats.nusers);
 		return(str);
 	}
 

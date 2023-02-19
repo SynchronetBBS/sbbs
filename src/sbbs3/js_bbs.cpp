@@ -1618,7 +1618,7 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 	for(i=0;i<TOTAL_TEXT && !feof(stream);i++) {
-		if((sbbs->text[i]=readtext((long *)NULL,stream,i))==NULL) {
+		if((sbbs->text[i]=readtext(NULL,stream,i))==NULL) {
 			i--;
 			continue;
 		}

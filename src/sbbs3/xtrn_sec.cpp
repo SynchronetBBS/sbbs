@@ -47,7 +47,7 @@ const char *hungupstr="\1n\1h%s\1n hung up on \1h%s\1n %s\r\n";
 int unixtojulian(time_t unix_time)
 {
 	int days[12]={0,31,59,90,120,151,181,212,243,273,304,334};
-	long j;
+	int j;
 	struct tm tm;
 
 	if(localtime_r(&unix_time,&tm)==NULL)
@@ -66,7 +66,7 @@ int unixtojulian(time_t unix_time)
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-time_t juliantounix(ulong j)
+time_t juliantounix(uint j)
 {
 #if 0 /* julian time */
     int days[2][12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334,
@@ -103,7 +103,7 @@ time_t juliantounix(ulong j)
 }
 
 #ifdef __unix__
-static void lfexpand(char *str, ulong misc)
+static void lfexpand(char *str, uint misc)
 {
 	char *p;
 	char newstr[1024];
@@ -128,8 +128,8 @@ static void lfexpand(char *str, ulong misc)
 /****************************************************************************/
 /* Creates various types of xtrn (Doors, Chains, etc.) data (drop) files.	*/
 /****************************************************************************/
-void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tleft
-					,ulong misc)
+void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tleft
+					,uint misc)
 {
 	char	str[1024],tmp2[128],*p;
 	char 	tmp[512];
@@ -140,7 +140,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	struct tm tm;
 	struct tm tl;
 	stats_t stats;
-	long term = term_supports();
+	int term = term_supports();
 
 	char	node_dir[MAX_PATH+1];
 	char	ctrl_dir[MAX_PATH+1];
@@ -260,10 +260,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		safe_snprintf(str, sizeof(str), "%s\n%s\n%lx\n%s\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%x\n%s\n%s\n%s\n"
 			,u32toaf(useron.exempt,tmp)			/* Exemptions */
 			,u32toaf(useron.rest,tmp2)			/* Restrictions */
-			,(long)useron.expire				/* Expiration date in unix form */
+			,useron.expire						/* Expiration date in unix form */
 			,useron.address 					/* Address */
 			,useron.location					/* City/State */
 			,useron.zipcode 					/* Zip/Postal code */
@@ -804,8 +804,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(localtime_r(&now,&tm)==NULL)
 			l=0;
 		else
-			l=((((long)tm.tm_hour*60L)+(long)tm.tm_min)*60L)
-				+(long)tm.tm_sec;
+			l=(((tm.tm_hour*60)+tm.tm_min)*60) + tm.tm_sec;
 
 		SAFECOPY(tmp,name);
 		if((p=strchr(tmp,' '))!=NULL)
@@ -827,11 +826,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(localtime_r(&logontime,&tm)==NULL)
 			l=0;
 		else
-			l=((((long)tm.tm_hour*60L)+(long)tm.tm_min)*60L)
-				+(long)tm.tm_sec;
+			l=(((tm.tm_hour*60)+tm.tm_min)*60) + tm.tm_sec;
 
 		safe_snprintf(str, sizeof(str), "%s\n%s\n%u\n%u\n%u\n%u\n%" PRId32 "\n%lu\n%s\n"
-			"%s\n%s\n%lu\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"
+			"%s\n%s\n%u\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"
 			"%" PRIu64 "\n%" PRIu64 "\n%s\n%s\n"
 			,dropdir
 			,(term & ANSI) ? "TRUE":"FALSE"		/* ANSI ? True or False */
@@ -840,7 +838,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,useron.dls 						/* Total downloads */
 			,cfg.level_timepercall[useron.level]/* Minutes allowed this call */
 			,l									/* Secs since midnight (logon) */
-			,(long)(starttime-logontime)		/* Extra time in seconds */
+			,starttime-logontime				/* Extra time in seconds */
 			,"FALSE"                            /* Sysop next? */
 			,"FALSE"                            /* From Front-end? */
 			,"FALSE"                            /* Software Flow Control? */
@@ -1006,7 +1004,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 	char 	tmp[512];
 	/* TODO: I don't really like a 16-bit i */
 	uint16_t	i;
-	long	mod;
+	int		mod;
     int		file;
     FILE *	stream;
 
@@ -1060,7 +1058,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				&& IS_DIGIT(str[3]) && IS_DIGIT(str[4])
 				&& (str[5]=='/' || str[5]=='-')
 				&& IS_DIGIT(str[6]) && IS_DIGIT(str[7])) { /* valid expire date */
-				useron.expire=(ulong)dstrtounix(&cfg,str);
+				useron.expire=dstrtounix(&cfg,str);
 				putuserdatetime(useron.number, USER_EXPIRE, useron.expire); 
 			}
 
@@ -1113,7 +1111,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				lseek(file,75,SEEK_CUR);	/* read in expiration date */
 				read(file,&i,2);			/* convert from julian to unix */
 				i = LE_INT(i);
-				useron.expire=(ulong)juliantounix(i);
+				useron.expire=(time32_t)juliantounix(i);
 				putuserdatetime(useron.number, USER_EXPIRE, useron.expire); 
 			}
 			close(file); 
@@ -1259,7 +1257,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 {
 	char str[256],path[MAX_PATH+1],dropdir[MAX_PATH+1],name[32],c;
 	uint i;
-	long tleft,mode;
+	int tleft,mode;
     node_t node;
 	time_t start,end;
 

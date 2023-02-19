@@ -35,22 +35,22 @@
 #include "link_list.h"
 
 typedef struct {
-	ulong	max_bytes;		/* max allocated bytes before garbage collection */
-	ulong	time_limit;		/* maximum number of ticks (for infinite loop detection) */
-	ulong	gc_interval;	/* number of ticks between garbage collection attempts */
-	ulong	yield_interval;	/* number of ticks between time-slice yields */
-	ulong	options;
+	uint	max_bytes;		/* max allocated bytes before garbage collection */
+	uint	time_limit;		/* maximum number of ticks (for infinite loop detection) */
+	uint	gc_interval;	/* number of ticks between garbage collection attempts */
+	uint	yield_interval;	/* number of ticks between time-slice yields */
+	uint	options;
 	char	load_path[INI_MAX_VALUE_LEN];	/* additional (comma-separated) directories to search for load()ed scripts */
 } js_startup_t;
 
 /* Login Attempt parameters */
 struct login_attempt_settings {
-	ulong	delay;				/* in milliseconds */
-	ulong	throttle;			/* in milliseconds */
-	ulong	hack_threshold;
-	ulong	tempban_threshold;
-	ulong	tempban_duration;	/* in seconds */
-	ulong	filter_threshold;
+	uint	delay;				/* in milliseconds */
+	uint	throttle;			/* in milliseconds */
+	uint	hack_threshold;
+	uint	tempban_threshold;
+	uint	tempban_duration;	/* in seconds */
+	uint	filter_threshold;
 };
 
 struct startup_sound_settings {
@@ -279,7 +279,7 @@ DLLEXPORT void			bbs_thread(void* arg);
 DLLEXPORT void			bbs_terminate(void);
 DLLEXPORT const char*	js_ver(void);
 DLLEXPORT const char*	bbs_ver(void);
-DLLEXPORT long			bbs_ver_num(void);
+DLLEXPORT int			bbs_ver_num(void);
 
 #ifdef __cplusplus
 }
