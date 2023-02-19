@@ -150,8 +150,12 @@ uint find_login_id(scfg_t* cfg, const char* user_id)
 {
 	int usernum;
 
-	if((cfg->sys_login & LOGIN_USERNUM) && IS_DIGIT(user_id[0]))
-		return atoi(user_id);
+	if((cfg->sys_login & LOGIN_USERNUM) && IS_DIGIT(user_id[0])) {
+		usernum = atoi(user_id);
+		if(usernum > lastuser(cfg))
+			usernum = 0;
+		return usernum;
+	}
 
 	usernum = matchuser(cfg, user_id, /* sysop_alias: */FALSE);
 	if(usernum < 1 && check_realname(cfg, user_id) && (cfg->sys_login & LOGIN_REALNAME))
@@ -162,9 +166,9 @@ uint find_login_id(scfg_t* cfg, const char* user_id)
 }
 
 /****************************************************************************/
-uint total_users(scfg_t* cfg)
+int total_users(scfg_t* cfg)
 {
-    uint	total_users=0;
+    int		total_users=0;
 	int		file;
 	bool	success = true;
 
@@ -192,7 +196,7 @@ uint total_users(scfg_t* cfg)
 /****************************************************************************/
 /* Returns the number of the last user in user.tab (deleted ones too)		*/
 /****************************************************************************/
-uint lastuser(scfg_t* cfg)
+int lastuser(scfg_t* cfg)
 {
 	char path[MAX_PATH + 1];
 	off_t length;
@@ -201,7 +205,7 @@ uint lastuser(scfg_t* cfg)
 		return(0);
 
 	if((length = flength(userdat_filename(cfg, path, sizeof(path)))) > 0)
-		return (uint)(length / USER_RECORD_LINE_LEN);
+		return (int)(length / USER_RECORD_LINE_LEN);
 	return 0;
 }
 
