@@ -55,8 +55,8 @@ DLLEXPORT uint	matchuser(scfg_t*, const char *str, BOOL sysop_alias); // Checks 
 DLLEXPORT BOOL	matchusername(scfg_t*, const char* name, const char* compare);
 DLLEXPORT char* alias(scfg_t*, const char* name, char* buf);
 DLLEXPORT int	putusername(scfg_t*, int number, const char* name);
-DLLEXPORT uint	total_users(scfg_t*);
-DLLEXPORT uint	lastuser(scfg_t*);
+DLLEXPORT int	total_users(scfg_t*);
+DLLEXPORT int	lastuser(scfg_t*);
 DLLEXPORT BOOL	del_lastuser(scfg_t*);
 DLLEXPORT int	getage(scfg_t*, const char* birthdate);
 DLLEXPORT int	getbirthmonth(scfg_t*, const char* birthdate);
