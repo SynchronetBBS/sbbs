@@ -250,7 +250,7 @@ int sbbs_t::getnmsg(bool clearline)
 		errormsg(WHERE,ERR_ALLOC,str,length+1);
 		return(-1); 
 	}
-	if(lread(file,buf,length)!=length) {
+	if(read(file,buf,length)!=length) {
 		close(file);
 		free(buf);
 		errormsg(WHERE,ERR_READ,str,length);

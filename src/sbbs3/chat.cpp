@@ -718,7 +718,7 @@ bool sbbs_t::sysop_page(void)
 		}
 		else if(cfg.sys_misc&SM_SHRTPAGE) {
 			bprintf(text[PagingGuru],cfg.sys_op);
-			for(i=0;i<10 && !lkbrd(1);i++) {
+			for(i=0;i<10;i++) {
 				sbbs_beep(1000,200);
 				mswait(200);
 				outchar('.'); 
