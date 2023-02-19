@@ -239,7 +239,7 @@ int smb_incdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 		}
 		i+=refs;
 		if(fseek(smb->sda_fp,-(int)sizeof(i),SEEK_CUR)) {
-			safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s rewinding %ld", __FUNCTION__, -(int)sizeof(i));
+			safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s rewinding %d", __FUNCTION__, -(int)sizeof(i));
 			return(SMB_ERR_SEEK);
 		}
 		if(!fwrite(&i,sizeof(i),1,smb->sda_fp)) {
@@ -318,7 +318,7 @@ int smb_freemsghdr(smb_t* smb, off_t offset, uint length)
 	}
 
 	if(fseeko(smb->sha_fp, sha_offset, SEEK_SET)) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s seeking to %ld", __FUNCTION__, (int)sha_offset);
+		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s seeking to %d", __FUNCTION__, (int)sha_offset);
 		return(SMB_ERR_SEEK);
 	}
 	for(l=0;l<blocks;l++)
@@ -400,7 +400,7 @@ off_t smb_allochdr(smb_t* smb, uint length)
 	}
 	clearerr(smb->sha_fp);
 	if(fseek(smb->sha_fp,offset/SHD_BLOCK_LEN,SEEK_SET)) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s seeking to %ld", __FUNCTION__, offset/SHD_BLOCK_LEN);
+		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s seeking to %d", __FUNCTION__, offset/SHD_BLOCK_LEN);
 		return(SMB_ERR_SEEK);
 	}
 	for(l=0;l<blocks;l++)

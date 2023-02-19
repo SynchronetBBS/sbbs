@@ -76,7 +76,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 
 			if(smb_findhash(smb, hashes, &found, dupechk_hashes, /* mark? */FALSE)==SMB_SUCCESS) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)
-					,"%s duplicate %s: %s found in message #%lu"
+					,"%s duplicate %s: %s found in message #%u"
 					,__FUNCTION__
 					,smb_hashsourcetype(found.source)
 					,smb_hashsource(msg,found.source)
@@ -188,7 +188,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 
 				if(smb_fwrite(smb,body,bodylen,smb->sdt_fp)!=bodylen) {
 					safe_snprintf(smb->last_error,sizeof(smb->last_error)
-						,"%s writing body (%ld bytes)"
+						,"%s writing body (%d bytes)"
 						,__FUNCTION__
 						,(int)bodylen);
 					retval=SMB_ERR_WRITE;
@@ -211,7 +211,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 
 				if(smb_fwrite(smb,tail,taillen-sizeof(xlat),smb->sdt_fp)!=taillen-sizeof(xlat)) {
 					safe_snprintf(smb->last_error,sizeof(smb->last_error)
-						,"%s writing tail (%ld bytes)"
+						,"%s writing tail (%d bytes)"
 						,__FUNCTION__
 						,(int)(taillen-sizeof(xlat)));
 					retval=SMB_ERR_WRITE;

@@ -1520,7 +1520,7 @@ static void pop3_thread(void* arg)
 						continue;
 					}
 					if(!strnicmp(buf, "LIST",4)) {
-						sockprintf(socket,client.protocol,session,"+OK %" PRIu32 " %lu",msgnum,smb_getmsgtxtlen(&msg));
+						sockprintf(socket,client.protocol,session,"+OK %" PRIu32 " %u",msgnum,smb_getmsgtxtlen(&msg));
 					} else /* UIDL */
 						sockprintf(socket,client.protocol,session,"+OK %" PRIu32 " %u",msgnum,msg.hdr.number);
 
@@ -1552,7 +1552,7 @@ static void pop3_thread(void* arg)
 						break;
 					}
 					if(!strnicmp(buf, "LIST",4)) {
-						sockprintf(socket,client.protocol,session,"%u %lu",l+1,smb_getmsgtxtlen(&msg));
+						sockprintf(socket,client.protocol,session,"%u %u",l+1,smb_getmsgtxtlen(&msg));
 					} else /* UIDL */
 						sockprintf(socket,client.protocol,session,"%u %u",l+1,msg.hdr.number);
 

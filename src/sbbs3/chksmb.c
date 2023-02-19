@@ -440,7 +440,7 @@ int main(int argc, char **argv)
 			fprintf(stderr,"%sHeader length mismatch\n",beep);
 			msgerr=TRUE;
 			if(extinfo)
-				printf("MSGERR: Header length (%hu) does not match calculcated length (%lu)\n"
+				printf("MSGERR: Header length (%hu) does not match calculcated length (%u)\n"
 					,msg.hdr.length,smb_getmsghdrlen(&msg));
 			hdrlenerr++;
 		}
