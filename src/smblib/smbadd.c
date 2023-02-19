@@ -29,11 +29,11 @@
 
 /****************************************************************************/
 /****************************************************************************/
-int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
+int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 					   ,uint16_t xlat, const uchar* body, const uchar* tail)
 {
 	uchar*		lzhbuf=NULL;
-	long		lzhlen;
+	int			lzhlen;
 	int			retval;
 	size_t		n;
 	off_t		l;
@@ -80,7 +80,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
 					,__FUNCTION__
 					,smb_hashsourcetype(found.source)
 					,smb_hashsource(msg,found.source)
-					,(ulong)found.number);
+					,(uint)found.number);
 				retval=SMB_DUPE_MSG;
 				break;
 			}
@@ -190,7 +190,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
 					safe_snprintf(smb->last_error,sizeof(smb->last_error)
 						,"%s writing body (%ld bytes)"
 						,__FUNCTION__
-						,(long)bodylen);
+						,(int)bodylen);
 					retval=SMB_ERR_WRITE;
 					break;
 				}
@@ -213,7 +213,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
 					safe_snprintf(smb->last_error,sizeof(smb->last_error)
 						,"%s writing tail (%ld bytes)"
 						,__FUNCTION__
-						,(long)(taillen-sizeof(xlat)));
+						,(int)(taillen-sizeof(xlat)));
 					retval=SMB_ERR_WRITE;
 					break;
 				}

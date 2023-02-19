@@ -268,8 +268,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 	char	draft[MAX_PATH + 1];
 	char 	tmp[512];
 	int		i,j,file,linesquoted=0;
-	long	length,qlen=0,qtime=0,ex_mode=0;
-	ulong	l;
+	int		length,qlen=0,qtime=0,ex_mode=0;
+	uint	l;
 	FILE*	stream;
 	FILE*	fp;
 	unsigned lines;

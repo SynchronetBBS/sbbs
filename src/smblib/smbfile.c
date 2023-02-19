@@ -61,7 +61,7 @@ off_t smb_fgetlength(FILE* fp)
 	return(filelength(fileno(fp)));
 }
 
-int smb_fsetlength(FILE* fp, long length)
+int smb_fsetlength(FILE* fp, off_t length)
 {
 	return(chsize(fileno(fp),length));
 }

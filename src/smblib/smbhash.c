@@ -31,7 +31,7 @@
 
 /* If return value is SMB_ERR_NOT_FOUND, hash file is left open */
 int smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, 
-						 long source_mask, BOOL mark)
+						 int source_mask, BOOL mark)
 {
 	int		retval;
 	BOOL	found=FALSE;
@@ -176,7 +176,7 @@ static char* strip_ctrla(uchar* dst, const uchar* src)
 
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Returns NULL on failure													*/
-hash_t* smb_hash(ulong msgnum, uint32_t t, unsigned source, unsigned flags
+hash_t* smb_hash(uint msgnum, uint32_t t, unsigned source, unsigned flags
 						 ,const void* data, size_t length)
 {
 	hash_t*	hash;
@@ -208,7 +208,7 @@ hash_t* smb_hash(ulong msgnum, uint32_t t, unsigned source, unsigned flags
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Supports string hash "pre-processing" (e.g. lowercase, strip whitespace)	*/
 /* Returns NULL on failure													*/
-hash_t* smb_hashstr(ulong msgnum, uint32_t t, unsigned source, unsigned flags
+hash_t* smb_hashstr(uint msgnum, uint32_t t, unsigned source, unsigned flags
 							,const char* str)
 {
 	char*	p=NULL;
@@ -236,7 +236,7 @@ hash_t* smb_hashstr(ulong msgnum, uint32_t t, unsigned source, unsigned flags
 
 /* Allocates and calculates all hashes for a single message					*/
 /* Returns NULL on failure													*/
-hash_t** smb_msghashes(smbmsg_t* msg, const uchar* body, long source_mask)
+hash_t** smb_msghashes(smbmsg_t* msg, const uchar* body, int source_mask)
 {
 	size_t		h=0;
 	uchar		flags=SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5|SMB_HASH_SHA1;
@@ -306,7 +306,7 @@ int smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL update)
 			,"%s duplicate %s: %s found in message #%lu", __FUNCTION__
 			,smb_hashsourcetype(found.source)
 			,smb_hashsource(msg,found.source)
-			,(ulong)found.number);
+			,(uint)found.number);
 	} else
 		if((retval=smb_addhashes(smb,hashes,/* skip_marked? */TRUE))==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;

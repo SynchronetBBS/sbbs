@@ -28,7 +28,7 @@
 #include "base64.h"
 #include "lzh.h"
 
-char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
+char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 {
 	char*	buf;
 	char*	preamble;
@@ -38,7 +38,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 	uint16_t	xlat;
 	uint 	i;
 	int		lzh;	/* BOOL */
-	long	l=0,lzhlen,length;
+	int		l=0,lzhlen,length;
 
 	if((buf=(char*)malloc(sizeof(char)))==NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error)
@@ -592,12 +592,12 @@ uint8_t* smb_getattachment(smbmsg_t* msg, char* buf, char* filename, size_t file
 
 /* Return number of file attachments contained in MIME-encoded message body */
 /* 'body' may be NULL if the body text is not already read/available */
-ulong smb_countattachments(smb_t* smb, smbmsg_t* msg, const char* body)
+uint smb_countattachments(smb_t* smb, smbmsg_t* msg, const char* body)
 {
 	if(msg->mime_version == NULL || msg->content_type == NULL)	/* not MIME */
 		return 0;
 
-	ulong count = 0;
+	uint count = 0;
 	char* buf;
 
 	if(body == NULL)

@@ -58,6 +58,8 @@
 	#define SH_COMPAT			0
 	#endif
 
+	#define chsize(fd,size)		_chsize_s(fd,size)
+
 	#if defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS==64)
 		#define	lseek			_lseeki64
 		#define	tell			_telli64
