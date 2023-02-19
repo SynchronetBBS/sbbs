@@ -913,7 +913,7 @@
 "\1n\1b[\1h\1wX\1n\1b] \1hExtended (QWKE) Packet Format\1n\1b: \1c%s\r\n"	755 QWKSettingsExtended
 "\r\n\1n\1h\1bWhich or [\1wQ\1b]uit: \1c"                   	756 QWKSettingsWhich
 "\1n\r\nSorry, you can't edit this message.\r\n"	757 CantEditMsg
-"\1n\r\nSorry, you can't delete message #%lu.\r\n"	758 CantDeleteMsg
+"\1n\r\nSorry, you can't delete message #%u.\r\n"	758 CantDeleteMsg
 "\1n\r\nSorry, you can't read messages on %s %s\r\n"	759 CantReadSub
 "\1n\r\nSorry, you can't post that message.\r\n"	760 CantPostMsg
 "\r\n\1y\1hOperator: \1w"				761 OperatorPrompt
