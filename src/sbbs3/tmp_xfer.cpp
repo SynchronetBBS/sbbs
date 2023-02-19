@@ -43,7 +43,7 @@ uint sbbs_t::create_filelist(const char *name, int mode)
     char	str[256];
 	FILE*	fp;
 	uint	i,j,d;
-	uint	l,k;
+	int		l,k;
 
 	if(online == ON_REMOTE)
 		bprintf(text[CreatingFileList],name);
@@ -76,7 +76,7 @@ uint sbbs_t::create_filelist(const char *name, int mode)
 	}
 	progress(text[Done], d, total_dirs);
 	if(k>1) {
-		fprintf(fp,"\r\n%ld Files Listed.\r\n",k);
+		fprintf(fp,"\r\n%d Files Listed.\r\n",k);
 	}
 	fclose(fp);
 	if(k)

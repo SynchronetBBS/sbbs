@@ -5893,7 +5893,7 @@ static BOOL js_setup_cx(http_session_t* session)
 	JSObject*	argv;
 
 	if(session->js_runtime == NULL) {
-		lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %lu bytes"
+		lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %u bytes"
 			,session->socket,startup->js.max_bytes);
 
 		if((session->js_runtime=jsrt_GetNew(startup->js.max_bytes, 5000, __FILE__, __LINE__))==NULL) {

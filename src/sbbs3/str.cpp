@@ -350,7 +350,7 @@ void sbbs_t::sof(char *fname, char *answers, int len)
 			rioctl(IOSM|ABORT);
 		if(a>=len) {
 			bprintf("\r\nSOF: %s defined more data than buffer size "
-				"(%lu bytes)\r\n",fname,len);
+				"(%u bytes)\r\n",fname,len);
 			break; 
 		}
 		if((buf[m]&0xdf)=='C') {

@@ -309,7 +309,7 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 		SAFECOPY(prefix, path);
 	}
 	// Display specified EXACT width file
-	safe_snprintf(path, MAX_PATH, "%s.%lucol.%s", prefix, cols, ext);
+	safe_snprintf(path, MAX_PATH, "%s.%ucol.%s", prefix, cols, ext);
 	if(fexistcase(path))
 		return true;
 	// Display specified MINIMUM width file

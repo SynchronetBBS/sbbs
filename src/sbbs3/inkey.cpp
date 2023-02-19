@@ -637,7 +637,7 @@ void sbbs_t::scroll_hotspots(int count)
 	}
 #ifdef _DEBUG
 	if(spots)
-		lprintf(LOG_DEBUG, "Scrolled %ld mouse hot-spots %ld rows (%ld remain)", spots, count, remain);
+		lprintf(LOG_DEBUG, "Scrolled %d mouse hot-spots %d rows (%d remain)", spots, count, remain);
 #endif
 	if(remain < 1)
 		clear_hotspots();
@@ -657,7 +657,7 @@ struct mouse_hotspot* sbbs_t::add_hotspot(char cmd, bool hungry, int minx, int m
 struct mouse_hotspot* sbbs_t::add_hotspot(uint num, bool hungry, int minx, int maxx, int y)
 {
 	struct mouse_hotspot spot = {};
-	SAFEPRINTF(spot.cmd, "%lu\r", num);
+	SAFEPRINTF(spot.cmd, "%u\r", num);
 	spot.minx = minx;
 	spot.maxx = maxx;
 	spot.y = y;

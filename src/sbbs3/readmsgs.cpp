@@ -140,7 +140,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, uint ptr, int mode, uin
 	memset(post, 0, alloc_len);
 
 	if(unvalidated_num)
-		*unvalidated_num=ULONG_MAX;
+		*unvalidated_num=UINT_MAX;
 
 	while(!feof(smb.sid_fp)) {
 		skip=0;
@@ -417,7 +417,7 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 		char cmdline[256];
 
 		scanposts_inside = true;
-		safe_snprintf(cmdline, sizeof(cmdline), "%s %s %ld %s", cfg.scanposts_mod, cfg.sub[subnum]->code, mode, find);
+		safe_snprintf(cmdline, sizeof(cmdline), "%s %s %u %s", cfg.scanposts_mod, cfg.sub[subnum]->code, mode, find);
 		i=exec_bin(cmdline, &main_csi);
 		scanposts_inside = false;
 		return i;
@@ -980,7 +980,7 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 				if(cfg.listmsgs_mod[0]) {
 					char cmdline[256];
 
-					safe_snprintf(cmdline, sizeof(cmdline), "%s %s %ld", cfg.listmsgs_mod, cfg.sub[subnum]->code, mode);
+					safe_snprintf(cmdline, sizeof(cmdline), "%s %s %u", cfg.listmsgs_mod, cfg.sub[subnum]->code, mode);
 					exec_bin(cmdline, &main_csi);
 					break;
 				}
@@ -1299,11 +1299,11 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 						{
 							domsg = false;
 							bprintf("\r\nFirst message to delete [%u]: ", smb.curmsg + 1);
-							int first = getnum(LONG_MAX, smb.curmsg + 1);
+							int first = getnum(INT_MAX, smb.curmsg + 1);
 							if(first < 1 || first > (int)smb.msgs)
 								break;
 							bprintf(" Last message to delete [%u]: ", smb.msgs);
-							int last = getnum(LONG_MAX, smb.msgs);
+							int last = getnum(INT_MAX, smb.msgs);
 							if(first > last || last > (int)smb.msgs)
 								break;
 							uint already = 0;
@@ -1339,7 +1339,7 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 								}
 								smb_unlocksmbhdr(&smb);
 							}
-							bprintf("Messages-deleted: %lu, Already-deleted: %lu, Failed-to-delete: %lu\n"
+							bprintf("Messages-deleted: %u, Already-deleted: %u, Failed-to-delete: %u\n"
 								, deleted, already, failed);
 							break;
 						}
@@ -1629,7 +1629,7 @@ int sbbs_t::listsub(uint subnum, int mode, int start, const char* search)
 	if((mode&SCAN_INDEX) && cfg.listmsgs_mod[0]) {
 		char cmdline[256];
 
-		safe_snprintf(cmdline, sizeof(cmdline), "%s %s %ld", cfg.listmsgs_mod, cfg.sub[subnum]->code, mode);
+		safe_snprintf(cmdline, sizeof(cmdline), "%s %s %u", cfg.listmsgs_mod, cfg.sub[subnum]->code, mode);
 		return exec_bin(cmdline, &main_csi);
 	}
 

@@ -368,13 +368,13 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 		case 0x8b12ba9d:
 			return((int32_t *)&posts_read);
 		case 0xe51c1956:
-			sysvar_l[sysvar_li]=(uint)logfile_fp;
+			sysvar_l[sysvar_li]=(ulong)logfile_fp;
 			break;
 		case 0x5a22d4bd:
-			sysvar_l[sysvar_li]=(uint)nodefile_fp;
+			sysvar_l[sysvar_li]=(ulong)nodefile_fp;
 			break;
 		case 0x3a37c26b:
-			sysvar_l[sysvar_li]=(uint)node_ext_fp;
+			sysvar_l[sysvar_li]=(ulong)node_ext_fp;
 			break;
 
 		case 0xeb6c9c73:
@@ -422,7 +422,7 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 			return(NULL); 
 }
 
-	return(&sysvar_l[sysvar_li++]);
+	return((int32_t*)&sysvar_l[sysvar_li++]);
 }
 
 void sbbs_t::clearvars(csi_t *bin)
@@ -809,7 +809,7 @@ int sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 		errormsg(WHERE,ERR_ALLOC,str,bin.length);
 		return(-1); 
 	}
-	if(lread(file,bin.cs,bin.length)!=bin.length) {
+	if(lread(file,bin.cs,bin.length)!=(ssize_t)bin.length) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,bin.length);
 		free(bin.cs);

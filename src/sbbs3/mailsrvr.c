@@ -2262,7 +2262,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 	*result = 0;
 	do {
 		if(*js_runtime==NULL) {
-			lprintf(LOG_DEBUG,"%04d %s JavaScript: Creating runtime: %lu bytes"
+			lprintf(LOG_DEBUG,"%04d %s JavaScript: Creating runtime: %u bytes"
 				,sock, log_prefix, startup->js.max_bytes);
 
 			if((*js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__))==NULL)

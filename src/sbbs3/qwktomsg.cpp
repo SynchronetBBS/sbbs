@@ -165,7 +165,7 @@ bool sbbs_t::qwk_new_msg(uint confnum, smbmsg_t* msg, char* hdrblk, int offset, 
 
 	smb_freemsgmem(msg);
 
-	sprintf(str,"%lx",offset);
+	sprintf(str,"%x",offset);
 	msg_headers=iniGetSection(all_headers,str);
 	if(msg_headers == NULL && all_headers != NULL) {
 		errormsg(WHERE, ERR_CHK, "missing header section", offset);

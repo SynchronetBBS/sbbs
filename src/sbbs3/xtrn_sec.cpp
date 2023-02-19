@@ -196,7 +196,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		safe_snprintf(str, sizeof(str), "%s\n%s\n%u\n%u\n%lu\n%s\n%lu\n%" PRIu64 "\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%u\n%u\n%u\n%s\n%u\n%" PRIu64 "\n"
 			,ctrl_dir							/* Ctrl dir */
 			,data_dir							/* Data dir */
 			,cfg.sys_nodes						/* Total system nodes */
@@ -220,7 +220,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		safe_snprintf(str, sizeof(str), "%u\n%u\n%x\n%lu\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%u\n%x\n%u\n%s\n%s\n"
 			"%s\n%s\n%s\n%s\n%s\n%s\n%lu\n"
 			,misc&(XTRN_STDIO|XTRN_CONIO) ? 0:cfg.com_port		/* Com port or 0 if !FOSSIL */
 			,cfg.com_irq						/* Com IRQ */
@@ -271,7 +271,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		safe_snprintf(str, sizeof(str), "%s\n%s\n%d\n%s\n%lu\n%s\n%s\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%d\n%s\n%u\n%s\n%s\n%s\n%s\n"
 			"%" PRIx32 "\n%d\n"
 			,u32toaf(useron.flags3,tmp)			/* Flag set #3 */
 			,u32toaf(useron.flags4,tmp2)			/* Flag set #4 */
@@ -315,7 +315,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 
 		time_t t = useron.laston;
 		localtime_r(&t, &tm);
-		safe_snprintf(str, sizeof(str), "%" PRIu64 "\n%02u/%02u/%02u\n%lu\n%ld\n%u\n%u\n%u\n%d\n%u\n"
+		safe_snprintf(str, sizeof(str), "%" PRIu64 "\n%02u/%02u/%02u\n%u\n%d\n%u\n%u\n%u\n%d\n%u\n"
 			,useron.cdt+useron.freecdt			/* Gold */
 			,TM_MONTH(tm.tm_mon)				/* User last on date (MM/DD/YY) */
 			,tm.tm_mday, TM_YEAR(tm.tm_year)
@@ -329,7 +329,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		safe_snprintf(str, sizeof(str), "%lu\n%s\n%s\n%s\n%lu\n%d\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%s\n%s\n%s\n%u\n%d\n%s\n%s\n"
 			"%u\n%u\n%" PRIu64 "\n%u\n%" PRIu64 "\n%u\n%s\n"
 			,MIN(tleft, INT16_MAX)				/* Time left in seconds */
 			,node_dir							/* Gfiles dir (log dir) */
@@ -376,7 +376,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		   changing this value to the DTE rate until/unless some other doors
 		   have an issue with that. <sigh>
 		*/
-		safe_snprintf(str, sizeof(str), "%lu\n%u\n%u\n%lu\n%c\n%c\n%c\n%c\n"
+		safe_snprintf(str, sizeof(str), "%u\n%u\n%u\n%u\n%c\n%c\n%c\n%c\n"
 			,dte_rate /* was cur_rate */		/* 02: DCE rate, see note above */
 			,8									/* 03: Data bits */
 			,cfg.node_num						/* 04: Node number */
@@ -399,11 +399,11 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 
 		time_t t = useron.laston;
 		localtime_r(&t, &tm);
-		safe_snprintf(str, sizeof(str), "%u\n%u\n%02u/%02u/%02u\n%lu\n%lu\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%u\n%02u/%02u/%02u\n%u\n%u\n%s\n"
 			,useron.level						/* 15: User security level */
 			,MIN(useron.logons, INT16_MAX)		/* 16: User total logons */
 			,TM_MONTH(tm.tm_mon)				/* 17: User last on date */
-			,tm.tm_mday, TM_YEAR(tm.tm_year)	
+			,tm.tm_mday, TM_YEAR(tm.tm_year)
 			,MIN(tleft, INT16_MAX)				/* 18: User time left in sec */
 			,MIN((tleft/60), INT16_MAX)			/* 19: User time left in min */
 			,(term & NO_EXASCII)				/* 20: GR if COLOR ANSI */
@@ -413,7 +413,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 
 		t = useron.expire;
 		localtime_r(&t, &tm);
-		safe_snprintf(str, sizeof(str), "%lu\n%c\n%s\n%u\n%02u/%02u/%02u\n%u\n%c\n%u\n%u\n"
+		safe_snprintf(str, sizeof(str), "%u\n%c\n%s\n%u\n%02u/%02u/%02u\n%u\n%c\n%u\n%u\n"
 			,rows								/* 21: User screen length */
 			,(useron.misc&EXPERT) ? 'Y':'N'     /* 22: Expert? (Y/N) */
 			,u32toaf(useron.flags1,tmp2)			/* 23: Registered conferences */
@@ -500,7 +500,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		else
 			p=(char*)nulstr;
 
-		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\nCOM%d\n%lu BAUD,N,8,1\n%u\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\nCOM%d\n%u BAUD,N,8,1\n%u\n"
 			,cfg.sys_name						/* Name of BBS */
 			,tmp								/* Sysop's firstname */
 			,p									/* Sysop's lastname */
@@ -517,7 +517,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			*(p++)=0;
 		else
 			p=(char*)nulstr;
-		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%d\n%u\n%lu\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%d\n%u\n%u\n"
 			,tmp								/* User's firstname */
 			,p									/* User's lastname */
 			,useron.location					/* User's city */
@@ -624,7 +624,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 					i=7;
 					break; 
 		}
-		safe_snprintf(str, sizeof(str), "%s\n%u\n%s\n%u\n%lu\n%s\n%s\n%u\n"
+		safe_snprintf(str, sizeof(str), "%s\n%u\n%s\n%u\n%u\n%s\n%s\n%u\n"
 			,name								/* User name */
 			,i									/* DTE rate */
 			,useron.location					/* User location */
@@ -637,7 +637,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		fwrite(str,strlen(str),1,fp);
 
 		localtime_r(&now,&tm);
-		safe_snprintf(str, sizeof(str), "%lu\n%02d:%02d\n%02d:%02d %02d/%02d/%02d\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%02d:%02d\n%02d:%02d %02d/%02d/%02d\n%s\n"
 			,MIN(tleft, INT16_MAX)			/* Time left in seconds */
 			,tm.tm_hour,tm.tm_min 			/* Current time HH:MM */
 			,tm.tm_hour,tm.tm_min 			/* Current time and date HH:MM */
@@ -662,7 +662,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		fwrite(str,strlen(str),1,fp);
 
 		localtime_r(&ns_time,&tm);
-		safe_snprintf(str, sizeof(str), "%s\n%s\n%02d/%02d/%02d\n%u\n%lu\n%u"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%02d/%02d/%02d\n%u\n%u\n%u"
 			"\n%u\n%u\n"
 			,useron.misc&EXPERT 				/* Expert or Novice mode */
 				? "EXPERT":"NOVICE"
@@ -677,7 +677,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		safe_snprintf(str, sizeof(str), "%u\n%s\nCOM%u\n%s\n%lu\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%s\nCOM%u\n%s\n%u\n%s\n%s\n"
 			,8									/* Data bits */
 			,online==ON_LOCAL?"LOCAL":"REMOTE"  /* Online local or remote */
 			,cfg.com_port						/* COMx port */
@@ -718,7 +718,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		sys.ErrorCorrected = true;
 		sys.GraphicsMode = (term & NO_EXASCII) ? 'N' : 'Y';
 		sys.UserNetStatus = (thisnode.misc & NODE_POFF) ? 'U' : 'A'; /* Node chat status ([A]vailable or [U]navailable) */
-		SAFEPRINTF(tmp, "%lu", dte_rate);
+		SAFEPRINTF(tmp, "%u", dte_rate);
 		sys.ModemSpeed = tmp;
 		sys.CarrierSpeed = connection;
 		sys.UserRecNo = useron.number;
@@ -810,7 +810,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		if((p=strchr(tmp,' '))!=NULL)
 			*p=0;
 
-		safe_snprintf(str, sizeof(str), "%u\n%s\n%s\n%s\n%lu\n%u\n%lu\n%" PRId32 "\n"
+		safe_snprintf(str, sizeof(str), "%u\n%s\n%s\n%s\n%u\n%u\n%u\n%" PRId32 "\n"
 			,useron.number						/* User number */
 			,name								/* User name */
 			,useron.pass						/* Password */
@@ -875,7 +875,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 
 		SAFECOPY(tmp,name);
 		strupr(tmp);
-		safe_snprintf(str, sizeof(str), "%s\n%lu\n%u\n%lu\n%lu\n"
+		safe_snprintf(str, sizeof(str), "%s\n%u\n%u\n%u\n%u\n"
 			,tmp								/* User name */
 			,cur_rate							/* Actual BPS rate */
 			,online==ON_LOCAL ? 0: cfg.com_port /* COM Port */
@@ -903,7 +903,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		 * the "Real Name" line.  This line will be used in the
 		 * future for BRE's "dupe-checking" feature.
 		 */
-		safe_snprintf(str, sizeof(str), "%s\n%d\n%d\n%lu\n%lu\n%u\n%lu\n%s\n"
+		safe_snprintf(str, sizeof(str), "%s\n%d\n%d\n%u\n%u\n%u\n%u\n%s\n"
 			,name								// Complete name or handle of user
 			,INT_TO_BOOL(term & ANSI)			// ANSI status:  1 = yes, 0 = no, -1 = don't know
 			,!INT_TO_BOOL(term & NO_EXASCII)	// IBM Graphic characters:  1 = yes, 0 = no, -1 = unknown
@@ -929,7 +929,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			return; 
 		}
 
-		safe_snprintf(str, sizeof(str), "%u\n%s\n%s\n%u\n%c\n%c\n%lu\n%s\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%s\n%s\n%u\n%c\n%c\n%u\n%s\n%s\n%s\n"
 			,useron.number						/* User's record number */
 			,name								/* User's name */
 			,useron.pass						/* User's password */
@@ -944,10 +944,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		lfexpand(str,misc);
 		fwrite(str, strlen(str), 1, fp);
 
-		safe_snprintf(str, sizeof(str), "%u\n%u\n%lu\n%lu\n%c\n%c\n%s\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%u\n%u\n%u\n%c\n%c\n%s\n%s\n%s\n"
 			,cfg.node_num						/* Node number */
 			,cfg.com_port						/* Serial port */
-			,online==ON_LOCAL ? 0L:cur_rate 	/* Baud rate */
+			,online==ON_LOCAL ? 0:cur_rate 	/* Baud rate */
 			,dte_rate							/* Locked rate */
 			,'Y'
 			,'Y'                                /* Error correcting connection */
@@ -971,7 +971,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			return; 
 		}
 
-		safe_snprintf(str, sizeof(str), "%d\n%d\n%lu\n%s%c\n%d\n%s\n%s\n%d\n%ld\n"
+		safe_snprintf(str, sizeof(str), "%d\n%d\n%u\n%s%c\n%d\n%s\n%s\n%d\n%d\n"
 			"%d\n%d\n"
 			,misc&(XTRN_STDIO|XTRN_CONIO) ? 0 /* Local */ : 2 /* Telnet */
 			,misc&(XTRN_STDIO|XTRN_CONIO) ? INVALID_SOCKET : client_socket_dup

@@ -369,7 +369,7 @@ bool sbbs_t::answer()
 			}
 		}
 		if(terminal[0])
-			lprintf(LOG_DEBUG, "auto-detected terminal type: %lux%lu %s", cols, rows, terminal);
+			lprintf(LOG_DEBUG, "auto-detected terminal type: %ux%u %s", cols, rows, terminal);
 		else
 			SAFECOPY(terminal,"DUMB");
 	}
@@ -396,10 +396,10 @@ bool sbbs_t::answer()
 
 		if(telnet_cmds_received) {
 			if(stricmp(telnet_terminal,"sexpots")==0) {	/* dial-up connection (via SexPOTS) */
-				SAFEPRINTF2(str,"%s connection detected at %lu bps", terminal, cur_rate);
+				SAFEPRINTF2(str,"%s connection detected at %u bps", terminal, cur_rate);
 				logline("@S",str);
 				node_connection = (ushort)cur_rate;
-				SAFEPRINTF(connection,"%lu",cur_rate);
+				SAFEPRINTF(connection,"%u",cur_rate);
 				SAFECOPY(cid,"Unknown");
 				SAFECOPY(client_name,"Unknown");
 				if(telnet_location[0]) {			/* Caller-ID info provided */
@@ -434,7 +434,7 @@ bool sbbs_t::answer()
 				}
 			}
 			if(telnet_speed) {
-				lprintf(LOG_INFO, "Telnet Speed: %lu bps", telnet_speed);
+				lprintf(LOG_INFO, "Telnet Speed: %u bps", telnet_speed);
 				cur_rate = telnet_speed;
 				cur_cps = telnet_speed/10;
 			}
@@ -454,7 +454,7 @@ bool sbbs_t::answer()
 		}
 		pthread_mutex_unlock(&input_thread_mutex);
 	}
-	lprintf(LOG_INFO, "terminal type: %lux%lu %s", cols, rows, terminal);
+	lprintf(LOG_INFO, "terminal type: %ux%u %s", cols, rows, terminal);
 	SAFECOPY(client_ipaddr, cid);	/* Over-ride IP address with Caller-ID info */
 	SAFECOPY(useron.comp,client_name);
 

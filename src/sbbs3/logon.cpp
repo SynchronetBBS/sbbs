@@ -444,7 +444,7 @@ bool sbbs_t::logon()
 	/* SUCCESSFUL LOGON */
 	/********************/
 	totallogons=logonstats();
-	safe_snprintf(str, sizeof(str), "(%04u)  %-25s  %sLogon %lu - %u"
+	safe_snprintf(str, sizeof(str), "(%04u)  %-25s  %sLogon %u - %u"
 		,useron.number,useron.alias, (sys_status&SS_FASTLOGON) ? "Fast-":"", totallogons,useron.ltoday);
 	logline("++",str);
 

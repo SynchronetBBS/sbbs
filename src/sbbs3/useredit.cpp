@@ -734,8 +734,8 @@ void sbbs_t::maindflts(user_t* user)
 							,term&SWAP_DELETE ? "DEL=BS" : nulstr);
 		add_hotspot('T');
 		bprintf(text[UserDefaultsTerminal], truncsp(str));
-		safe_snprintf(str, sizeof(str), "%s%ld %s,", user->cols ? nulstr:text[TerminalAutoDetect], cols, text[TerminalColumns]);
-		safe_snprintf(tmp, sizeof(tmp), "%s%ld %s", user->rows ? nulstr:text[TerminalAutoDetect], rows, text[TerminalRows]);
+		safe_snprintf(str, sizeof(str), "%s%d %s,", user->cols ? nulstr:text[TerminalAutoDetect], cols, text[TerminalColumns]);
+		safe_snprintf(tmp, sizeof(tmp), "%s%d %s", user->rows ? nulstr:text[TerminalAutoDetect], rows, text[TerminalRows]);
 		add_hotspot('L');
 		bprintf(text[UserDefaultsRows], str, tmp);
 		if(cfg.total_shells>1) {

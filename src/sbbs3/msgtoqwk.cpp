@@ -63,7 +63,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 	if(msg->hdr.type != SMB_MSG_TYPE_NORMAL) {
 		if(voting == NULL)
 			return -1;
-		fprintf(voting,"[%lx]\n",offset);
+		fprintf(voting,"[%x]\n",offset);
 		switch(msg->hdr.type) {
 		case SMB_MSG_TYPE_BALLOT:
 			fprintf(voting, "[vote:%s]\n", msgid);
@@ -116,7 +116,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 		fputc('\n', voting);
 	}
 	else if(hdrs!=NULL) {
-		fprintf(hdrs,"[%lx]\n",offset);
+		fprintf(hdrs,"[%x]\n",offset);
 
 		fprintf(hdrs,"Utf8 = %s\n"
 			,((smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8)) && (mode&QM_UTF8))
@@ -539,7 +539,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 
 
 	safe_snprintf(str,sizeof(str),"%c%-7lu%-13.13s%-25.25s"
-		"%-25.25s%-25.25s%12s%-8lu%-6lu\xe1%c%c%c%c%c"
+		"%-25.25s%-25.25s%12s%-8lu%-6u\xe1%c%c%c%c%c"
 		,ch                     /* message status flag */
 		,mode&QM_REP ? (uint)conf /* conference or */
 			: msg->hdr.number&MAX_MSGNUM	/* message number */

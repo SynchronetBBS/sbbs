@@ -1302,7 +1302,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 
 	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
 
-	lprintf(LOG_DEBUG,"JavaScript: Creating %s runtime: %lu bytes"
+	lprintf(LOG_DEBUG,"JavaScript: Creating %s runtime: %u bytes"
 		,desc, startup->js.max_bytes);
 	if((*runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__)) == NULL)
 		return NULL;
@@ -1699,7 +1699,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 					} else if(option==TELNET_NEGOTIATE_WINDOW_SIZE) {
 						int cols = (sbbs->telnet_cmd[3]<<8) | sbbs->telnet_cmd[4];
 						int rows = (sbbs->telnet_cmd[5]<<8) | sbbs->telnet_cmd[6];
-						lprintf(LOG_DEBUG,"Node %d %s telnet window size: %ldx%ld"
+						lprintf(LOG_DEBUG,"Node %d %s telnet window size: %dx%d"
 	                		,sbbs->cfg.node_num
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
 							,cols
@@ -2157,7 +2157,7 @@ void input_thread(void *arg)
 		sbbs->terminated = true;	// Signal JS to stop execution
 
 	thread_down();
-	lprintf(LOG_DEBUG,"Node %d input thread terminated (received %lu bytes in %lu blocks)"
+	lprintf(LOG_DEBUG,"Node %d input thread terminated (received %u bytes in %u blocks)"
 		,sbbs->cfg.node_num, total_recv, total_pkts);
 }
 
@@ -2252,8 +2252,8 @@ void passthru_thread(void* arg)
 
 			int wr = RingBufWrite(&sbbs->outbuf, bp, rd);
     		if(wr != rd) {
-				lprintf(LOG_ERR,"Short-write (%ld of %ld bytes) from passthru socket to outbuf"
-					,(int)wr, (int)rd);
+				lprintf(LOG_ERR,"Short-write (%d of %d bytes) from passthru socket to outbuf"
+					,wr, rd);
 				break;
 			}
 		} else {
@@ -2382,7 +2382,7 @@ void output_thread(void* arg)
 			 * into linear buffer.
 			 */
 			if (avail > sizeof(buf)) {
-				lprintf(LOG_WARNING,"%s !Insufficient linear output buffer (%lu > %d)"
+				lprintf(LOG_WARNING,"%s !Insufficient linear output buffer (%u > %d)"
 					,node, avail, (int)sizeof(buf));
 				avail = sizeof(buf);
 			}
@@ -2496,7 +2496,7 @@ void output_thread(void* arg)
 		}
 
 		if(i!=(int)(buftop-bufbot)) {
-			lprintf(LOG_WARNING,"%s !Short socket send (%u instead of %lu)"
+			lprintf(LOG_WARNING,"%s !Short socket send (%u instead of %u)"
 				,node, i ,buftop-bufbot);
 			short_sends++;
 		}
@@ -2510,7 +2510,7 @@ void output_thread(void* arg)
 	sbbs->output_thread_running = false;
 
 	if(total_sent)
-		safe_snprintf(stats,sizeof(stats),"(sent %lu bytes in %lu blocks, %lu average, %lu short)"
+		safe_snprintf(stats,sizeof(stats),"(sent %u bytes in %u blocks, %u average, %u short)"
 			,total_sent, total_pkts, total_sent/total_pkts, short_sends);
 	else
 		stats[0]=0;
@@ -2940,7 +2940,7 @@ void event_thread(void* arg)
 						sbbs->console|=CON_L_ECHO;
 						if(sbbs->unpack_qwk(str,i)==false) {
 							char newname[MAX_PATH+1];
-							SAFEPRINTF2(newname,"%s.%lx.bad",str,(int)now);
+							SAFEPRINTF2(newname,"%s.%x.bad",str,(int)now);
 							remove(newname);
 							if(rename(str,newname)==0)
 								sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", str, newname);
@@ -3528,7 +3528,7 @@ bool sbbs_t::init()
 			fprintf(fp, "addr=%s\n", client.addr);
 			fprintf(fp, "host=%s\n", client.host);
 			fprintf(fp, "port=%u\n", (uint)client.port);
-			fprintf(fp, "time=%lu\n", (uint)client.time);
+			fprintf(fp, "time=%u\n", (uint)client.time);
 			fprintf(fp, "prot=%s\n", client.protocol);
 			fprintf(fp, "local_addr=%s\n", local_addr);
 			fprintf(fp, "local_port=%u\n", (uint)inet_addrport(&addr));
@@ -4266,7 +4266,7 @@ void sbbs_t::logoffstats()
 	now = time(NULL);
 	if(now <= logontime) {
 		char tmp[128];
-		lprintf(LOG_WARNING, "Logoff time (%lu) <= logon time (%lu): %s"
+		lprintf(LOG_WARNING, "Logoff time (%u) <= logon time (%u): %s"
 			,(uint)now, (uint)logontime, ctime_r(&logontime, tmp));
 		return;
 	}
@@ -4315,7 +4315,7 @@ void node_thread(void* arg)
 
 	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &sbbs->client_addr)) > 1) {
-		lprintf(LOG_DEBUG,"Node %d Throttling suspicious connection from: %s (%lu login attempts)"
+		lprintf(LOG_DEBUG,"Node %d Throttling suspicious connection from: %s (%u login attempts)"
 			,sbbs->cfg.node_num, sbbs->client_ipaddr, login_attempts);
 		mswait(login_attempts*startup->login_attempt.throttle);
 	}
@@ -4404,7 +4404,7 @@ void node_thread(void* arg)
 	if(fp != NULL) {
 		fprintf(fp, "user=%u\n", sbbs->useron.number);
 		fprintf(fp, "name=%s\n", sbbs->useron.alias);
-		fprintf(fp, "done=%lu\n", (uint)now);
+		fprintf(fp, "done=%u\n", (uint)now);
 		fclose(fp);
 	}
 
@@ -4480,7 +4480,7 @@ void node_thread(void* arg)
 		node_thread_running already destroyed
 		bbs_thread() timed out waiting for 1 node thread(s) to terminate */
 		uint32_t remain = protected_uint32_adjust_fetch(&node_threads_running, -1);
-		lprintf(LOG_INFO,"Node %d thread terminated (%u node threads remain, %lu clients served)"
+		lprintf(LOG_INFO,"Node %d thread terminated (%u node threads remain, %u clients served)"
 			,sbbs->cfg.node_num, remain, served);
 	}
     if(!sbbs->input_thread_running && !sbbs->output_thread_running)
@@ -4519,7 +4519,7 @@ bool sbbs_t::backup(const char* fname, int backup_level, bool rename)
 	if(!fexist(fname))
 		return false;
 
-	lprintf(LOG_DEBUG, "Backing-up %s (%lu bytes)", fname, (int)flength(fname));
+	lprintf(LOG_DEBUG, "Backing-up %s (%u bytes)", fname, (int)flength(fname));
 	return ::backup(fname, backup_level, rename) ? true : false;
 }
 
@@ -4787,7 +4787,7 @@ static void cleanup(int code)
 
 	thread_down();
 	if(terminate_server || code)
-		lprintf(LOG_INFO,"Terminal Server thread terminated (%lu clients served)", served);
+		lprintf(LOG_INFO,"Terminal Server thread terminated (%u clients served)", served);
 	set_state(SERVER_STOPPED);
 	mqtt_shutdown(&mqtt);
 	if(startup->terminated!=NULL)
@@ -5044,7 +5044,7 @@ void bbs_thread(void* arg)
 					record++;
 					if(legacy_stats.logons > 1000
 						|| legacy_stats.timeon > 10000) {
-						lprintf(LOG_WARNING, "Skipped corrupted record #%lu in %s", record, oldfn);
+						lprintf(LOG_WARNING, "Skipped corrupted record #%u in %s", record, oldfn);
 						continue;
 					}
 					ZERO_VAR(stats);
@@ -5066,7 +5066,7 @@ void bbs_thread(void* arg)
 				fclose(in);
 			}
 			fclose_cstats(out);
-			lprintf(LOG_INFO, "Done (%lu daily-statistics records converted)", record);
+			lprintf(LOG_INFO, "Done (%u daily-statistics records converted)", record);
 		}
 	}
 

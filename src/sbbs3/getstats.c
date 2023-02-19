@@ -275,7 +275,7 @@ BOOL fwrite_cstats(FILE* fp, const stats_t* stats)
 			return FALSE;
 	}
 	len = fprintf(fp
-		,"%" PRIu32 "\t%lu\t%lu\t%lu\t%" PRIu64 "\t%lu\t%" PRIu64 "\t%lu\t%lu\t%lu\t%lu\t"
+		,"%" PRIu32 "\t%u\t%u\t%u\t%" PRIu64 "\t%u\t%" PRIu64 "\t%u\t%u\t%u\t%u\t"
 		,time_to_isoDate(stats->date)
 		,stats->ltoday
 		,stats->ttoday
@@ -310,7 +310,7 @@ void parse_cstats(str_list_t record, stats_t* stats)
 /****************************************************************************/
 /* Returns the number of files in the directory 'dirnum'                    */
 /****************************************************************************/
-long getfiles(scfg_t* cfg, uint dirnum)
+int getfiles(scfg_t* cfg, uint dirnum)
 {
 	char path[MAX_PATH + 1];
 	off_t l;
@@ -321,13 +321,13 @@ long getfiles(scfg_t* cfg, uint dirnum)
 	l = flength(path);
 	if(l <= 0)
 		return 0;
-	return (long)(l / sizeof(fileidxrec_t));
+	return (int)(l / sizeof(fileidxrec_t));
 }
 
 /****************************************************************************/
 /* Returns total number of posts in a sub-board 							*/
 /****************************************************************************/
-ulong getposts(scfg_t* cfg, uint subnum)
+uint getposts(scfg_t* cfg, uint subnum)
 {
 	if(cfg->sub[subnum]->misc & SUB_NOVOTING) {
 		char path[MAX_PATH + 1];
@@ -337,7 +337,7 @@ ulong getposts(scfg_t* cfg, uint subnum)
 		l = flength(path);
 		if(l < sizeof(idxrec_t))
 			return 0;
-		return (ulong)(l / sizeof(idxrec_t));
+		return (uint)(l / sizeof(idxrec_t));
 	}
 	smb_t smb = {{0}};
 	SAFEPRINTF2(smb.file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
@@ -350,13 +350,13 @@ ulong getposts(scfg_t* cfg, uint subnum)
 	return result;
 }
 
-static void inc_xfer_stat_keys(str_list_t* ini, const char* section, ulong files, uint64_t bytes, const char* files_key, const char* bytes_key)
+static void inc_xfer_stat_keys(str_list_t* ini, const char* section, uint files, uint64_t bytes, const char* files_key, const char* bytes_key)
 {
 	iniSetUInteger(ini, section, files_key, iniGetUInteger(*ini, section, files_key, 0) + files, /* style: */NULL);
 	iniSetBytes(ini, section, bytes_key, /* unit: */1, iniGetBytes(*ini, section, bytes_key, /* unit: */1, 0) + bytes, /* style: */NULL);
 }
 
-static BOOL inc_xfer_stats(scfg_t* cfg, uint node, ulong files, uint64_t bytes, const char* files_key, const char* bytes_key)
+static BOOL inc_xfer_stats(scfg_t* cfg, uint node, uint files, uint64_t bytes, const char* files_key, const char* bytes_key)
 {
 	FILE* fp;
 	str_list_t ini;
@@ -375,7 +375,7 @@ static BOOL inc_xfer_stats(scfg_t* cfg, uint node, ulong files, uint64_t bytes, 
 	return result;
 }
 
-static BOOL inc_all_xfer_stats(scfg_t* cfg, ulong files, uint64_t bytes, const char* files_key, const char* bytes_key)
+static BOOL inc_all_xfer_stats(scfg_t* cfg, uint files, uint64_t bytes, const char* files_key, const char* bytes_key)
 {
 	BOOL success = TRUE;
 	if(cfg->node_num)
@@ -383,12 +383,12 @@ static BOOL inc_all_xfer_stats(scfg_t* cfg, ulong files, uint64_t bytes, const c
 	return inc_xfer_stats(cfg, /* system = node_num 0 */0, files, bytes, files_key, bytes_key) && success;
 }
 
-BOOL inc_upload_stats(scfg_t* cfg, ulong files, uint64_t bytes)
+BOOL inc_upload_stats(scfg_t* cfg, uint files, uint64_t bytes)
 {
 	return inc_all_xfer_stats(cfg, files, bytes, strStatsUploads, strStatsUploadBytes);
 }
 
-BOOL inc_download_stats(scfg_t* cfg, ulong files, uint64_t bytes)
+BOOL inc_download_stats(scfg_t* cfg, uint files, uint64_t bytes)
 {
 	return inc_all_xfer_stats(cfg, files, bytes, strStatsDownloads, strStatsDownloadBytes);
 }

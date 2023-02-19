@@ -116,7 +116,7 @@ void sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 		if(term_type!=NULL)
 			p+=sprintf(p,"%s",term_type);
 		else
-			p+=sprintf(p,"%s/%lu",terminal, cur_rate);
+			p+=sprintf(p,"%s/%u",terminal, cur_rate);
 		p++;	// Add NULL
 		l=p-(char*)buf;
 		(void)sendsocket(remote_socket,(char*)buf,l);
