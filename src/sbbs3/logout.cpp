@@ -182,8 +182,8 @@ void sbbs_t::logofflist()
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 		return; 
 	}
-	safe_snprintf(str,sizeof(str),"%-*.*s %-2d %-8.8s %2.2d:%2.2d %2.2d:%2.2d %3d%3d%3d%3d%3d"
-		"%3d%3d\r\n",LEN_ALIAS,LEN_ALIAS,useron.alias,cfg.node_num,connection
+	safe_snprintf(str,sizeof(str),"%-*.*s %-2u %-8.8s %2.2u:%2.2u %2.2u:%2.2u %3u %2u %2u %2u %2u "
+		"%2u %2u\r\n",LEN_ALIAS,LEN_ALIAS,useron.alias,cfg.node_num,connection
 		,tm.tm_hour,tm.tm_min,tm_now.tm_hour,tm_now.tm_min
 		,(int)(now-logontime)/60,posts_read,logon_posts,logon_emails
 		,logon_fbacks,logon_uls,logon_dls);
