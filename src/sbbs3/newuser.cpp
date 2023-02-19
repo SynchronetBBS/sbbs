@@ -454,6 +454,7 @@ BOOL sbbs_t::newuser()
 		,useron.number, useron.alias);
 	char topic[128];
 	snprintf(topic, sizeof(topic), "newuser/%s", client.protocol);
+	strlwr(topic);
 	mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, answertime, str);
 
 	if(cfg.new_sif[0]) {
