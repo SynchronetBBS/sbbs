@@ -34,14 +34,14 @@ function checkfname(spec)
 
 function checkspace()
 {
-	var space = dir_freespace(system.temp_dir, 1024);
-	
+	var space = dir_freespace(system.temp_dir);
+
 	if(space < file_area.min_diskspace) {
 		console.putmsg(bbs.text(LowDiskSpace));
-		log(LOG_ERR, format("Disk space is low: %s (%lu kilobytes)", system.temp_dir, space));
+		log(LOG_ERR, format("Disk space is low: %s (%s bytes)", system.temp_dir, file_size_float(space, 1, 1)));
 		return false;
 	}
-	console.putmsg(format(bbs.text(DiskNBytesFree), file_size_float(space, 1024, 1)));
+	console.putmsg(format(bbs.text(DiskNBytesFree), file_size_float(space, 1, 1)));
 	return true;
 }
 
