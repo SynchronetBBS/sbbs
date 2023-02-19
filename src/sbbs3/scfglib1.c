@@ -490,7 +490,6 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->netmail_sem, iniGetString(section, NULL, "netmail_sem", "", value));
 	SAFECOPY(cfg->echomail_sem, iniGetString(section, NULL, "echomail_sem", "", value));
 	SAFECOPY(cfg->netmail_dir, iniGetString(section, NULL, "netmail_dir", "", value));
-	SAFECOPY(cfg->fidofile_dir, iniGetString(section, NULL, "file_dir", "", value));
 	cfg->netmail_misc = iniGetUShortInt(section, NULL, "netmail_settings", 0);
 	cfg->netmail_cost = iniGetUInt32(section, NULL, "netmail_cost", 0);
 

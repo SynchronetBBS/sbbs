@@ -893,13 +893,6 @@ void free_file_cfg(scfg_t* cfg)
 	}
 	cfg->total_prots=0;
 
-	if(cfg->altpath!=NULL) {
-		for(i=0;i<cfg->altpaths;i++)
-			FREE_AND_NULL(cfg->altpath[i]);
-		FREE_AND_NULL(cfg->altpath);
-	}
-	cfg->altpaths=0;
-
 	if(cfg->lib!=NULL) {
 		for(i=0;i<cfg->total_libs;i++) {
 			FREE_AND_NULL(cfg->lib[i]);

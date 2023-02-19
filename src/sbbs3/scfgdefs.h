@@ -458,27 +458,12 @@ typedef struct
 	uint32_t		com_rate;			/* DTE rate in bps	   */
 	char  			com_port;			/* Number of COM port  */
 
-										/* Modem command strings */
-	char 			mdm_init[64],		/* Initialization */
-					mdm_spec[64],		/* Special Initialization */
-					mdm_term[64],		/* Terminal Initialization String */
-					mdm_dial[64],		/* Dial */
-					mdm_offh[64],		/* Off hook */
-					mdm_answ[64],		/* Answer */
-					mdm_hang[64];		/* Hang-up */
-	uint32_t		mdm_misc;			/* Misc bits used for flags */
-	uint16_t		mdm_reinit; 		/* Modem reinitialization minute count */
-	uint16_t		mdm_ansdelay;		/* Modem seconds to delay after answer */
-	uchar			mdm_rings;			/* Rings to wait till answer */
-
 	uint32_t		sys_login;			// Login Settings (Bit-flags)
 	uint32_t 		sys_misc;			/* System Misc Settings */
 	uint32_t		sys_pass_timeout;	// Minutes between required SYSPASS entry
 	char 			sys_pass[41];		/* System Pass Word */
 	char 			sys_name[41];		/* System Name */
 	char 			sys_id[LEN_QWKID+1];/* System ID for QWK Packets */
-	char 			sys_psname[13]; 	/* PostLink and PCRelay Site Name */
-	uint32_t		sys_psnum;			/* PostLink and PCRelay Site Number */
 	char 			sys_inetaddr[128];	/* System's internet address */
 	char 			sys_location[41];	/* System Location */
 	int16_t			sys_timezone;		/* Time Zone of BBS */
@@ -493,7 +478,6 @@ typedef struct
 	char			sys_op[41];         /* Name of system operator */
 	char			sys_guru[41];       /* Name of system guru */
 	uchar			sys_exp_warn;		/* Days left till expire to notify */
-	char 			sys_def_stat;		/* Default status line */
 	char 			sys_phonefmt[LEN_PHONE+1];	/* format of phone numbers */
 	uint16_t		sys_lastnode;		/* Last displayable node number */
 	uint16_t		sys_autonode;		/* First node number for autonode */
@@ -505,27 +489,15 @@ typedef struct
 	int32_t			xtrn_misc;			/* External Programs Misc Settings */
 	uint16_t		filename_maxlen;	/* Maximum filename length */
 
-	char			node_comspec[LEN_CMD+1];	/* DOS COMMAND.COM to use */
-	char			node_editor[LEN_CMD+1]; /* Local text editor command line to use */
-	char			node_viewer[LEN_CMD+1]; /* Local text viewer command line */
 	char			node_daily[LEN_CMD+1];	/* Name of node's daily event */
-	uchar			node_scrnlen;		/* Length of screen (rows) */
-	uchar			node_scrnblank; 	/* Min of inactivity for blank screen */
 	uint32_t		node_misc;			/* Misc bits for node setup */
 	uint16_t		valuser;			/* User validation mail goes to */
 	uint16_t		erruser;			/* User error messages goes to */
 	uchar			errlevel;			/* Log level threshold to notify user (erruser) */
-	uint16_t		node_ivt;			/* Time-slice APIs */
-	uchar			node_swap;			/* Swap types allowed */
-	char			node_swapdir[LEN_DIR+1];	/* Swap directory */
-	uint16_t		node_minbps;		/* Minimum connect rate of this node */
 	uint16_t		node_num;			/* Local node number of this node */
-	char			node_phone[13], 	/* Phone number of this node */
-					node_name[41];     	/* Name of this node */
+	char			node_phone[13]; 	/* Phone number of this node */
 	char			node_arstr[LEN_ARSTR+1]; /* Node minimum requirements */
 	uchar			node_ar[LEN_ARSTR+1];
-	uint32_t		node_cost;			/* Node cost to call - in credits */
-	uchar			node_dollars_per_call;	/* Billing Node Dollars Per Call */
 	uint16_t		node_sem_check; 	/* Seconds between semaphore checks */
 	uint16_t		node_stat_check;	/* Seconds between statistic checks */
 
@@ -604,8 +576,6 @@ typedef struct
 	uint			sysop_dir;			/* Destination for uploads to sysop */
 	uint			user_dir;			/* Directory for user to user xfers */
 	uint			upload_dir; 		/* Directory where all uploads go */
-	char **			altpath;			/* Alternate paths for files */
-	uint16_t		altpaths;			/* Total number of alternate paths */
 	uint16_t		leech_pct;			/* Leech detection percentage */
 	uint16_t		leech_sec;			/* Minimum seconds before possible leech */
 	uint32_t		netmail_cost;		/* Cost in credits to send netmail */
@@ -616,7 +586,6 @@ typedef struct
 	char			smtpmail_sem[LEN_DIR+1];	/* Inbound Internet Mail semaphore file */
 	char			inetmail_sem[LEN_DIR+1];	/* Outbound Internet Mail semaphore file */
 	char			echomail_dir[LEN_DIR+1];	/* Directory to store echomail in */
-	char 			fidofile_dir[LEN_DIR+1];	/* Directory where inbound files go (deprecated and not used) */
 	char			netmail_sem[LEN_DIR+1];		/* FidoNet NetMail semaphore */
 	char 			echomail_sem[LEN_DIR+1];	/* FidoNet EchoMail semaphore  */
 	char		 	origline[51];		/* Default EchoMail origin line */
@@ -624,7 +593,6 @@ typedef struct
 	int32_t 		uq; 					/* User Questions */
 	uint32_t		mail_maxcrcs;			/* Dupe checking in e-mail */
 	uint16_t		mail_maxage;			/* Maximum age of e-mail */
-	faddr_t			dflt_faddr; 			/* Default FidoNet address */
 	char			logon_mod[LEN_MODNAME+1];			/* Logon module */
 	char			logoff_mod[LEN_MODNAME+1];			/* Logoff module */
 	char			newuser_mod[LEN_MODNAME+1]; 		/* New User Module */
@@ -646,7 +614,6 @@ typedef struct
     char			prextrn_mod[LEN_MODNAME+1];			/* External Program pre-execution module */
     char			postxtrn_mod[LEN_MODNAME+1];		/* External Program post-execution module */
 	char			tempxfer_mod[LEN_MODNAME+1];
-	char			scfg_cmd[LEN_CMD+1];	/* SCFG command line - unused! */
 	uchar			smb_retry_time; 		/* Seconds to retry on SMBs */
 	uint16_t		sec_warn;				/* Seconds before inactivity warning */
 	uint16_t		sec_hangup; 			/* Seconds before inactivity hang-up */
@@ -654,9 +621,6 @@ typedef struct
 	uint* 			color;					/* Different colors for the BBS */
 	uint32_t		total_colors;
 	uint32_t		ctrlkey_passthru;		/* Bits represent control keys NOT handled by inkey() */
-
-	char			wfc_cmd[10][LEN_CMD+1];    /* 0-9 WFC DOS commands */
-	char			wfc_scmd[12][LEN_CMD+1];   /* F1-F12 WFC shrinking DOS commands */
 
 	uint16_t		user_backup_level;
 	uint16_t		mail_backup_level;
