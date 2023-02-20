@@ -594,16 +594,16 @@ typedef struct
 	int32_t 		uq; 					/* User Questions */
 	uint32_t		mail_maxcrcs;			/* Dupe checking in e-mail */
 	uint16_t		mail_maxage;			/* Maximum age of e-mail */
-	char			logon_mod[LEN_MODNAME+1];			/* Logon module */
-	char			logoff_mod[LEN_MODNAME+1];			/* Logoff module */
-	char			newuser_mod[LEN_MODNAME+1]; 		/* New User Module */
-	char			login_mod[LEN_MODNAME+1];			/* Login module */
-	char			logout_mod[LEN_MODNAME+1];			/* Logout module */
-	char			sync_mod[LEN_MODNAME+1];			/* Synchronization module */
-	char			expire_mod[LEN_MODNAME+1];			/* User expiration module */
-	char			textsec_mod[LEN_MODNAME+1];			/* Text section module */
-	char			xtrnsec_mod[LEN_MODNAME+1];			/* External Program section module */
-	char			automsg_mod[LEN_MODNAME+1];			/* Auto-message module */
+	char			logon_mod[LEN_CMD+1];			/* Logon module */
+	char			logoff_mod[LEN_CMD+1];			/* Logoff module */
+	char			newuser_mod[LEN_CMD+1]; 		/* New User Module */
+	char			login_mod[LEN_CMD+1];			/* Login module */
+	char			logout_mod[LEN_CMD+1];			/* Logout module */
+	char			sync_mod[LEN_CMD+1];			/* Synchronization module */
+	char			expire_mod[LEN_CMD+1];			/* User expiration module */
+	char			textsec_mod[LEN_CMD+1];			/* Text section module */
+	char			xtrnsec_mod[LEN_CMD+1];			/* External Program section module */
+	char			automsg_mod[LEN_CMD+1];			/* Auto-message module */
 	char			readmail_mod[LEN_CMD+1];	/* Reading mail module */
 	char			scanposts_mod[LEN_CMD+1];	/* Scanning posts (in a single sub) module */
 	char			scansubs_mod[LEN_CMD+1];	/* Scanning sub-boards module */
@@ -612,9 +612,9 @@ typedef struct
 	char			whosonline_mod[LEN_CMD+1];
 	char			privatemsg_mod[LEN_CMD+1];
 	char			logonlist_mod[LEN_CMD+1];
-    char			prextrn_mod[LEN_MODNAME+1];			/* External Program pre-execution module */
-    char			postxtrn_mod[LEN_MODNAME+1];		/* External Program post-execution module */
-	char			tempxfer_mod[LEN_MODNAME+1];
+    char			prextrn_mod[LEN_CMD+1];			/* External Program pre-execution module */
+    char			postxtrn_mod[LEN_CMD+1];		/* External Program post-execution module */
+	char			tempxfer_mod[LEN_CMD+1];
 	uchar			smb_retry_time; 		/* Seconds to retry on SMBs */
 	uint16_t		sec_warn;				/* Seconds before inactivity warning */
 	uint16_t		sec_hangup; 			/* Seconds before inactivity hang-up */

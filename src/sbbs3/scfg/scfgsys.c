@@ -2621,8 +2621,7 @@ void sys_cfg(void)
 						"\n"
 						"Baja modules (`.bin` files) or JavaScript modules (`.js` files) can be\n"
 						"automatically loaded and executed during certain Terminal Server\n"
-						"operations. The name (root filename) of the module can be specified for\n"
-						"each of the available operations listed below:\n"
+						"operations.  Command-line arguments may be included for all.\n"
 						"\n"
 						"`Login`         Required module for interactive terminal logins (answer)\n"
 						"`Logon`         Executed during terminal logon procedure\n"
@@ -2637,9 +2636,6 @@ void sys_cfg(void)
 						"`Pre Xtrn`      Executed before external programs (doors) run\n"
 						"`Post Xtrn`     Executed after external programs (doors) run\n"
 						"`Temp Transfer` Temporary/archive file transfer menu\n"
-						"\n"
-						"Full module command-lines may be used for the operations listed below:\n"
-						"\n"
 						"`Read Mail`     Executed when a user reads email/netmail\n"
 						"`Scan Msgs`     Executed when a user reads or scans a message sub-board\n"
 						"`Scan Subs`     Executed when a user scans one or more sub-boards for msgs\n"
@@ -2652,7 +2648,7 @@ void sys_cfg(void)
 						"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
 						"      in your `exec` or `mods` directories.\n"
 					;
-					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,40,&mod_dflt,&mod_bar
+					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,50,&mod_dflt,&mod_bar
 						,"Loadable Modules",opt)) {
 
 						case -1:
@@ -2706,37 +2702,37 @@ void sys_cfg(void)
 						case 11:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Post External Program Module"
 								,cfg.postxtrn_mod,sizeof(cfg.postxtrn_mod)-1,K_EDIT);
-							break;														
+							break;
 						case 12:
-							uifc.input(WIN_MID|WIN_SAV,0,0,"Read Mail Command"
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Read Mail Module"
 								,cfg.readmail_mod,sizeof(cfg.readmail_mod)-1,K_EDIT);
 							break;
 						case 13:
-							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Msgs Command"
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Msgs Module"
 								,cfg.scanposts_mod,sizeof(cfg.scanposts_mod)-1,K_EDIT);
 							break;
 						case 14:
-							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Subs Command"
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Subs Module"
 								,cfg.scansubs_mod,sizeof(cfg.scansubs_mod)-1,K_EDIT);
 							break;
 						case 15:
-							uifc.input(WIN_MID|WIN_SAV,0,0,"List Msgs Command"
+							uifc.input(WIN_MID|WIN_SAV,0,0,"List Msgs Module"
 								,cfg.listmsgs_mod,sizeof(cfg.listmsgs_mod)-1,K_EDIT);
 							break;
 						case 16:
-							uifc.input(WIN_MID|WIN_SAV,0,0,"List Logons Command"
+							uifc.input(WIN_MID|WIN_SAV,0,0,"List Logons Module"
 								,cfg.logonlist_mod,sizeof(cfg.logonlist_mod)-1,K_EDIT);
 							break;
 						case 17:
-							uifc.input(WIN_MID|WIN_SAV,0,0,"List Nodes Command"
+							uifc.input(WIN_MID|WIN_SAV,0,0,"List Nodes Module"
 								,cfg.nodelist_mod,sizeof(cfg.nodelist_mod)-1,K_EDIT);
 							break;
 						case 18:
-							uifc.input(WIN_MID|WIN_SAV,0,0,"Who's Online Command"
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Who's Online Module"
 								,cfg.whosonline_mod,sizeof(cfg.whosonline_mod)-1,K_EDIT);
 							break;
 						case 19:
-							uifc.input(WIN_MID|WIN_SAV,0,0,"Private Message Command"
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Private Message Module"
 								,cfg.privatemsg_mod,sizeof(cfg.privatemsg_mod)-1,K_EDIT);
 							break;
 						case 20:
