@@ -33,6 +33,7 @@ bool new_qhub(unsigned new_qhubnum)
 		return false;
 	}
 	memset(new_qhub, 0, sizeof(*new_qhub));
+	new_qhub->enabled = TRUE;
 
 	qhub_t** new_qhub_list = realloc(cfg.qhub, sizeof(qhub_t*) * (cfg.total_qhubs + 1));
 	if(new_qhub_list == NULL) {
@@ -451,7 +452,9 @@ void net_cfg()
 					case 0:
 						while(1) {
 							for(i=0;i<cfg.total_qhubs && i<MAX_OPTS;i++)
-								sprintf(opt[i],"%-8.8s",cfg.qhub[i]->id);
+								sprintf(opt[i],"%-8.8s  %s"
+									,cfg.qhub[i]->id
+									,cfg.qhub[i]->enabled ? cfg.qhub[i]->call : "<DISABLED>");
 							opt[i][0]=0;
 							i=WIN_ACT|WIN_RHT|WIN_SAV;
 							if(cfg.total_qhubs<MAX_OPTS)
@@ -1064,6 +1067,57 @@ void net_cfg()
 	}
 }
 
+void qhub_adv_edit(qhub_t* qhub)
+{
+	char str[128];
+	static int dflt;
+	int i;
+
+	while(1) {
+		i=0;
+		sprintf(opt[i++], "%-27.27s%s", "Pack Command Line", qhub->pack);
+		sprintf(opt[i++], "%-27.27s%s", "Unpack Command Line", qhub->unpack);
+		opt[i][0] = 0;
+		sprintf(str,"%s Advanced Options", qhub->id);
+		uifc.helpbuf="`QWK Network Hub Advanced Options`\n"
+			"\n"
+			"The `Pack` and `Unpack Command Lines` are used for creating and extracting\n"
+			"REP (reply) and QWK message packets using an external archive utility\n"
+			"(these command-lines are optional).\n"
+			;
+		uifc_winmode_t wmode = WIN_ACT|WIN_MID|WIN_SAV;
+		switch(uifc.list(wmode, 0, 0, 0, &dflt, 0, str, opt)) {
+			case -1:
+				return;
+				break;
+			case 0:
+				uifc.helpbuf=
+					"`REP Packet Creation Command:`\n"
+					"\n"
+					"This is the command line to use to create (compress) REP packets for\n"
+					"this QWK network hub.\n"
+					SCFG_CMDLINE_PREFIX_HELP
+					SCFG_CMDLINE_SPEC_HELP
+				;
+				uifc.input(WIN_MID|WIN_SAV,0,0,""
+					,qhub->pack, sizeof(qhub->pack)-1, K_EDIT);
+				break;
+			case 1:
+				uifc.helpbuf=
+					"`QWK Packet Extraction Command:`\n"
+					"\n"
+					"This is the command line to use to extract (decompress) QWK packets from\n"
+					"this QWK network hub.\n"
+					SCFG_CMDLINE_PREFIX_HELP
+					SCFG_CMDLINE_SPEC_HELP
+				;
+				uifc.input(WIN_MID|WIN_SAV,0,0,""
+					,qhub->unpack,sizeof(qhub->unpack)-1,K_EDIT);
+				break;
+		}
+	}
+}
+
 void qhub_edit(int num)
 {
 	static int qhub_dflt;
@@ -1073,9 +1127,8 @@ void qhub_edit(int num)
 	while(!done) {
 		i=0;
 		sprintf(opt[i++],"%-27.27s%s","Hub System ID",cfg.qhub[num]->id);
+		sprintf(opt[i++],"%-27.27s%s","Enabled", cfg.qhub[num]->enabled ? "Yes":"No");
 		sprintf(opt[i++],"%-27.27s%s","Archive Format",cfg.qhub[num]->fmt);
-		sprintf(opt[i++],"%-27.27s%s","Pack Command Line",cfg.qhub[num]->pack);
-		sprintf(opt[i++],"%-27.27s%s","Unpack Command Line",cfg.qhub[num]->unpack);
 		sprintf(opt[i++],"%-27.27s%s","Call-out Command Line",cfg.qhub[num]->call);
 		sprintf(opt[i++],"%-27.27s%s","Native Call-out Command",cfg.qhub[num]->misc&QHUB_NATIVE ? "Yes":"No");
 		if(cfg.qhub[num]->node == NODE_ANY)
@@ -1099,6 +1152,7 @@ void qhub_edit(int num)
 		sprintf(opt[i++],"%-27.27s%s","Extended (QWKE) Packets", cfg.qhub[num]->misc&QHUB_EXT ? "Yes":"No");
 		sprintf(opt[i++],"%-27.27s%s","Exported Ctrl-A Codes"
 			,cfg.qhub[num]->misc&QHUB_EXPCTLA ? "Expand" : cfg.qhub[num]->misc&QHUB_RETCTLA ? "Leave in" : "Strip");
+		strcpy(opt[i++],"Advanced Options...");
 		strcpy(opt[i++],"Import Conferences...");
 		strcpy(opt[i++],"Networked Sub-boards...");
 		opt[i][0]=0;
@@ -1113,10 +1167,6 @@ void qhub_edit(int num)
 			"The `Archive Format` should be set to an archive/compression format\n"
 			"that the hub will expect your REP packets to be submitted with\n"
 			"(typically, ZIP).\n"
-			"\n"
-			"The `Pack` and `Unpack Command Lines` are used for creating and extracting\n"
-			"REP (reply) and QWK message packets using an external archive utility\n"
-			"(these command-lines are optional).\n"
 			"\n"
 			"The `Call-out Command Line` is executed when your system attempts a packet\n"
 			"exchange with the QWKnet hub (e.g. executes a script).\n"
@@ -1186,6 +1236,10 @@ void qhub_edit(int num)
 					,cfg.qhub[num]->id,LEN_QWKID,K_UPPER|K_EDIT);
 				break;
 			case __COUNTER__:
+				cfg.qhub[num]->enabled = !cfg.qhub[num]->enabled;
+				uifc.changes=1;
+				break;
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`REP Packet Archive Format:`\n"
 					"\n"
@@ -1194,30 +1248,6 @@ void qhub_edit(int num)
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,0,"REP Packet Archive Format"
 					,cfg.qhub[num]->fmt,sizeof(cfg.qhub[num]->fmt)-1,K_EDIT|K_UPPER);
-				break;
-			case __COUNTER__:
-				uifc.helpbuf=
-					"`REP Packet Creation Command:`\n"
-					"\n"
-					"This is the command line to use to create (compress) REP packets for\n"
-					"this QWK network hub.\n"
-					SCFG_CMDLINE_PREFIX_HELP
-					SCFG_CMDLINE_SPEC_HELP
-				;
-				uifc.input(WIN_MID|WIN_SAV,0,0,""
-					,cfg.qhub[num]->pack,sizeof(cfg.qhub[num]->pack)-1,K_EDIT);
-				break;
-			case __COUNTER__:
-				uifc.helpbuf=
-					"`QWK Packet Extraction Command:`\n"
-					"\n"
-					"This is the command line to use to extract (decompress) QWK packets from\n"
-					"this QWK network hub.\n"
-					SCFG_CMDLINE_PREFIX_HELP
-					SCFG_CMDLINE_SPEC_HELP
-				;
-				uifc.input(WIN_MID|WIN_SAV,0,0,""
-					,cfg.qhub[num]->unpack,sizeof(cfg.qhub[num]->unpack)-1,K_EDIT);
 				break;
 			case __COUNTER__:
 				uifc.helpbuf=
@@ -1358,6 +1388,9 @@ void qhub_edit(int num)
 				uifc.changes=1;
 				break;
 			case __COUNTER__:
+				qhub_adv_edit(cfg.qhub[num]);
+				break;
+			case __COUNTER__:
 				import_qwk_conferences(num);
 				break;
 			case __COUNTER__:
@@ -1430,8 +1463,8 @@ void qhub_sub_edit(uint num)
 			"To configure a sub-board for this QWK network hub, select it and hit\n"
 			"~ ENTER ~.\n"
 		;
-		j=uifc.list(mode,0,0,0,&k,&bar
-			,"Networked Sub-boards",opt);
+		SAFEPRINTF(str, "%s Networked Sub-boards", cfg.qhub[num]->id);
+		j=uifc.list(mode,0,0,0,&k,&bar,str,opt);
 		if(j==-1)
 			break;
 		if((j&MSK_ON)==MSK_INS) {
