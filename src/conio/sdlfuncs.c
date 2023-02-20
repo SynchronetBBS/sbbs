@@ -206,7 +206,7 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 	{
 		int (HACK_HACK_HACK *ra)(char *name, Uint32 style, void *hInst);
 		if ((ra = xp_dlsym(sdl_dll, SDL_RegisterApp)) != NULL) {
-			ra(ciolib_appname, 0, NULL);
+			ra((char*)ciolib_appname, 0, NULL);
 		}
 	}
 #endif
