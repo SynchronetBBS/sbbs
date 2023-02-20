@@ -606,7 +606,7 @@ js_uifc_init(JSContext *cx, uintN argc, jsval *arglist)
 			return(JS_TRUE);
 	}
 	if(argc>1) {
-		JSVALUE_TO_ASTRING(cx, argv[1], mode, 7, NULL);
+		JSVALUE_TO_ASTRING(cx, argv[1], mode, 16, NULL);
 		if(mode != NULL) {
 			if(!stricmp(mode,"STDIO"))
 				ciolib_mode=-1;
