@@ -2889,6 +2889,8 @@ void event_thread(void* arg)
 
 			/* QWK Networking Call-out semaphores */
 			for(i=0;i<sbbs->cfg.total_qhubs;i++) {
+				if(!sbbs->cfg.qhub[i]->enabled)
+					continue;
 				if(sbbs->cfg.qhub[i]->node != NODE_ANY
 					&& (sbbs->cfg.qhub[i]->node<first_node || sbbs->cfg.qhub[i]->node>last_node))
 					continue;
@@ -2924,6 +2926,8 @@ void event_thread(void* arg)
 		/* QWK Networking Call-out Events */
 		sbbs->event_code = "QNET";
 		for(i=0;i<sbbs->cfg.total_qhubs && !sbbs->terminated;i++) {
+			if(!sbbs->cfg.qhub[i]->enabled)
+				continue;
 			if(sbbs->cfg.qhub[i]->node != NODE_ANY
 				&& (sbbs->cfg.qhub[i]->node<first_node || sbbs->cfg.qhub[i]->node>last_node))
 				continue;

@@ -334,6 +334,7 @@ typedef struct {							/* QWK Network Hub */
 	sub_t**		sub;
 	time32_t	last;						/* Last network attempt */
 	uint32_t	misc;						/* QHUB_* flags */
+	BOOL		enabled;
 
 } qhub_t;
 
