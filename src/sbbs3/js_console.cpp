@@ -667,7 +667,7 @@ js_handle_ctrlkey(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_INT(argv[0]))
 		key=(char)JSVAL_TO_INT(argv[0]);
 	else {
-		JSVALUE_TO_ASTRING(cx, argv[0], keystr, 2, NULL);
+		JSVALUE_TO_ASTRING(cx, argv[0], keystr, 8, NULL);
 		if(keystr==NULL)
 			return(JS_FALSE);
 		key=keystr[0];

@@ -2222,7 +2222,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc>1) {
-		JSVALUE_TO_ASTRING(cx, argv[1], p, 2, NULL);
+		JSVALUE_TO_ASTRING(cx, argv[1], p, 8, NULL);
 		if(p!=NULL)
 			prot=*p;
 		uintN argn = 2;
@@ -2271,7 +2271,7 @@ js_recvfile(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc>1) {
-		JSVALUE_TO_ASTRING(cx, argv[1], p, 2, NULL);
+		JSVALUE_TO_ASTRING(cx, argv[1], p, 8, NULL);
  		if(p!=NULL)
 			prot=*p;
 		if(argc > 2)
