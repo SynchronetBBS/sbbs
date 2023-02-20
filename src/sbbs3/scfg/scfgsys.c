@@ -78,7 +78,7 @@ int edit_sys_password(int page, int total)
 	uifc.helpbuf=
 		"`System Password:`\n"
 		"\n"
-		"This is an extra security password required for sysop logon and certain\n"
+		"This is an extra security password required for sysop login and certain\n"
 		"sysop functions.  This password should be something not easily guessed\n"
 		"and should be kept absolutely confidential.  This password must be\n"
 		"entered at the Terminal Server `SY:` prompt.\n"
