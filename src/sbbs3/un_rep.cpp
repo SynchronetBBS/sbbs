@@ -38,7 +38,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	int 	file;
 	uint	i,j,k,lastsub=INVALID_SUB;
 	uint	blocks;
-	uint	usernum;
+	int		usernum;
 	long	l,size;
 	ulong	n;
 	ulong	ex;
