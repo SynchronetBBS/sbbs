@@ -95,7 +95,6 @@
 
 #define LEN_CODE	16		/* Maximum length of internal codes			*/
 #define LEN_QWKID	8		/* Maximum length of QWK-ID					*/
-#define LEN_MODNAME 8		/* Maximum length of loadable module name	*/
 #define LEN_SIFNAME 8		/* Maximum length of SIF filename			*/
 #define LEN_EXTCODE (LEN_CODE*2)	/* Code prefix + suffix */
 
