@@ -493,6 +493,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	for(uint i=0; i<cfg->total_qhubs; i++) {
 		SAFEPRINTF(name, "qhub:%s", cfg->qhub[i]->id);
 		str_list_t section = strListInit();
+		iniSetBool(&section, name, "enabled", cfg->qhub[i]->enabled, NULL);
 		iniSetShortInt(&section, name, "time", cfg->qhub[i]->time, NULL);
 		iniSetShortInt(&section, name, "freq", cfg->qhub[i]->freq, NULL);
 		iniSetShortInt(&section, name, "days", cfg->qhub[i]->days, NULL);

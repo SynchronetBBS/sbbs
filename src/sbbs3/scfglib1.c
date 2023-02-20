@@ -511,6 +511,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		memset(cfg->qhub[i],0,sizeof(qhub_t));
 
 		SAFECOPY(cfg->qhub[i]->id, name + 5);
+		cfg->qhub[i]->enabled = iniGetBool(section, NULL, "enabled", TRUE);
 		cfg->qhub[i]->time = iniGetShortInt(section, NULL, "time", 0);
 		cfg->qhub[i]->freq = iniGetShortInt(section, NULL, "freq", 0);
 		cfg->qhub[i]->days = (char)iniGetShortInt(section, NULL, "days", 0);
