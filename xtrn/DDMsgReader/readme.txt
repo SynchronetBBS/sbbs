@@ -174,14 +174,17 @@ Digital Distortion Message Reader is comprised of the following files:
 3. DefaultTheme.cfg       The default theme file containing colors & some
                           configurable text strings used in the reader
 
-4. ddmr_lm.js             Loadable module script for setup in SCFG
+4. ddmr_lm.js             Loadable module script for setup in SCFG (only needed
+                          for Synchronet 3.19 and earlier, or Synchronet built
+						  before 2023-02-20)
 
 The configuration files are plain text files, so they can be edited using any
 editor.
 
 The first 3 files (DDMsgReader.js, DDMsgReader.cfg, and DefaultTheme.cfg) can be
-placed together in any directory. ddmr_lm.js should be copied to your sbbs/mods
-directory.
+placed together in any directory. ddmr_lm.js is only needed if you're using
+Synchronet 3.19 or earlier (or a Synchronet development build before
+2023-02-20); if so, ddmr_lm.js should be copied to your sbbs/mods directory.
 
 The examples in this document will assume the first 3 files are in the
 sbbs/xtrn/DDMsgReader directory.
@@ -199,12 +202,39 @@ are available in SCFG for message reading/scanning events:
 - Scan Subs (added in Synchronet 3.16)
 - List Msgs (added in Synchronet 3.18)
 
-The Loadable Modules options take the filename of the script without the
-extension.  The Loadable Modules options don't allow a leading path in front of
-the name, so if you have DDMsgReader.js in a path other than sbbs/exec or
-sbbs/mods, one solution is to copy the included ddmr_lm.js to either your
-sbbs/exec or sbbs/mods directory (ideally sbbs/mods so it wouldn't get
-accidentally deleted) and specify ddmr_lm in your Loadable Modules as follows:
+The Loadable Modules options take the filename of the script (sometimes without
+the filename extension).
+
+Depending on your Synchronet version and where you have DDMsgReader.js, you may
+be able to specify DDMsgReader.js directly as the loadable module for the above
+settings. However, if you're using an earlier verison of Synchronet (before
+3.20) and you have DDMsgReader.js in ../xtrn/DDMsgReader or another path, you
+will need to use ddmr_lm.js.  Refer to one of the below sections, depending on
+which version of Synchronet you're using.
+
+For Synchronet 3.20 (& builds from 2023-02-20) and newer
+--------------------------------------------------------
+As of Synchronet 3.20, Synchronet allows up to 63 characters with a full
+command-line for a loadable module, allowing DDMsgReader.js to be specified
+directly as the loadable module for the 4 entries mentioned above. I've noticed
+that it must include the .js filename extension. For example, if you have
+DDMsgReader.js in ../xtrn/DDMsgReader, you would specify the following for all
+4 of the above loadable module settings:
+
+ Read Mail       ../xtrn/DDMsgReader/DDMsgReader.js
+ Scan Msgs       ../xtrn/DDMsgReader/DDMsgReader.js
+ Scan Subs       ../xtrn/DDMsgReader/DDMsgReader.js
+ List Msgs       ../xtrn/DDMsgReader/DDMsgReader.js
+
+For Synchronet 3.19 (& builds before 2023-02-20)
+------------------------------------------------
+For older versions of Synchronet, the Loadable Modules options don't allow a
+leading path in front of the name; also, many/most loadable modules were limited
+to just 8 characters. So, if you have DDMsgReader.js in a path other than
+sbbs/exec or sbbs/mods, one solution is to copy the included ddmr_lm.js to
+either your sbbs/exec or sbbs/mods directory (ideally sbbs/mods so it wouldn't
+get accidentally deleted) and specify ddmr_lm in your Loadable Modules as
+follows:
 
  Read Mail       ddmr_lm
  Scan Msgs       ddmr_lm
