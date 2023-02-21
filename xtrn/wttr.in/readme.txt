@@ -33,10 +33,19 @@ Contents
 
 3) Customization
 
-	Any arguments that you pass on the command line will be treated as an
-	alternate URL to query. For example:
+	The default query URL is https://wttr.in/?AFn for ANSI, no 'Follow' line,
+	and narrow output. You can override this by supplying an alternate URL on
+	the command line, such as:
 
 		Command Line	?wttr.js https://wttr.in/?m0AFn
 
-	The default is URL is 'https://wttr.in/?AFn' for ANSI, no 'Follow' line,
-	and narrow output.
+	Responses are cached in your OS temp directory and remain valid for 3600
+	seconds (one hour). You can override this default cache TTL by supplying
+	a numeric value (in seconds) on the command line, such as:
+
+		Command Line	?wttr.js 1800
+
+	You can combine the parameters in whichever order you prefer:
+
+		Command Line 	?wttr.js https://wttr.in/?m0AFn 1800
+		Command Line 	?wttr.js 1800 https://wttr.in/?m0AFn
