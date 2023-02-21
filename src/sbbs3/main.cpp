@@ -3492,6 +3492,12 @@ bool sbbs_t::init()
 	socklen_t	addr_len;
 	union xp_sockaddr	addr;
 
+	if(cfg.total_shells < 1) {
+		errormsg(WHERE, ERR_CHK, "At least one command shell must be configured (e.g. in SCFG->Command Shells)"
+			,cfg.total_shells);
+		return false;
+	}
+
 	RingBufInit(&inbuf, IO_THREAD_BUF_SIZE);
 	if(cfg.node_num>0)
 		node_inbuf[cfg.node_num-1]=&inbuf;
@@ -4295,7 +4301,7 @@ void node_thread(void* arg)
 {
 	char			str[MAX_PATH + 1];
 	int				file;
-	uint			curshell=0;
+	int				curshell=-1;
 	node_t			node;
 	uint			login_attempts;
 	sbbs_t*			sbbs = (sbbs_t*) arg;
@@ -4336,9 +4342,24 @@ void node_thread(void* arg)
 		} else while(sbbs->useron.number
 			&& (sbbs->main_csi.misc&CS_OFFLINE_EXEC || sbbs->online)) {
 
-			if(!sbbs->main_csi.cs || curshell!=sbbs->useron.shell) {
+			if(curshell != sbbs->useron.shell) {
 				if(sbbs->useron.shell>=sbbs->cfg.total_shells)
 					sbbs->useron.shell=0;
+
+				if(sbbs->cfg.mods_dir[0]) {
+					SAFEPRINTF2(str,"%s%s.js",sbbs->cfg.mods_dir
+						,sbbs->cfg.shell[sbbs->useron.shell]->code);
+					if(fexistcase(str)) {
+						sbbs->js_execfile(str);
+						continue;
+					}
+				}
+				SAFEPRINTF2(str, "%s%s.js", sbbs->cfg.exec_dir
+					,sbbs->cfg.shell[sbbs->useron.shell]->code);
+				if(fexistcase(str)) {
+					sbbs->js_execfile(str);
+					continue;
+				}
 				SAFEPRINTF2(str,"%s%s.bin",sbbs->cfg.mods_dir
 					,sbbs->cfg.shell[sbbs->useron.shell]->code);
 				if(sbbs->cfg.mods_dir[0]==0 || !fexistcase(str))

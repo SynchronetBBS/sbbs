@@ -1274,7 +1274,8 @@ void shell_cfg()
 				"\n"
 				"This code will be the base filename used to load the shell from your\n"
 				"`exec` directory. e.g. A shell with an internal code of `MYBBS` would\n"
-				"indicate a Baja shell file named `mybbs.bin` in your exec directory.\n"
+				"indicate a shell file named 'mybbs.js' or `mybbs.bin` in your `exec`\n"
+				"or your `mods` directory.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Internal Code",code,LEN_CODE
 				,K_EDIT|K_UPPER)<1)
@@ -1342,13 +1343,16 @@ void shell_cfg()
 				"`Command Shell:`\n"
 				"\n"
 				"A command shell is a programmed command and menu structure that you or\n"
-				"your users can use to navigate the BBS. For every command shell\n"
-				"configured here, there must be an associated `.bin` file in your `exec`\n"
-				"directory for Synchronet to execute.\n"
+				"your users can use to navigate the BBS Terminal Server.  For each\n"
+				"command shell, there must be an associated `.js` or `.bin` file in your\n"
+				"`exec` or `mods` directory for Synchronet to execute upon user logon.\n"
 				"\n"
-				"Command shell files are created by using the Baja command shell compiler\n"
+				"Command shells may be JavaScript modules (`.js` files) in your `exec` or\n"
+				"`mods` directory, created with any text editor.\n"
+				"\n"
+				"Legacy command shells may be created by using the Baja compiler\n"
 				"to turn Baja source code (`.src`) files into binary files (`.bin`) for\n"
-				"Synchronet to interpret. See the example `.src` files in the `exec`\n"
+				"Synchronet to interpret.  See the example `.src` files in the `exec`\n"
 				"directory and the documentation for the Baja compiler for more details.\n"
 			;
 			uifc_winmode_t wmode = WIN_ACT|WIN_MID|WIN_EXTKEYS;
@@ -1392,7 +1396,7 @@ void shell_cfg()
 						"\n"
 						"This code will be the base filename used to load the shell from your\n"
 						"`exec` directory. e.g. A shell with an internal code of `MYBBS` would\n"
-						"indicate a Baja shell file named `mybbs.bin` in your exec directory.\n"
+						"indicate a Baja shell file named `mybbs.bin` in your `exec` directory.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);

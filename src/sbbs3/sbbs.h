@@ -490,7 +490,8 @@ public:
 	JSContext*		js_hotkey_cx;
 	JSObject*		js_hotkey_glob=nullptr;
 	js_callback_t	js_callback{};
-	int				js_execfile(const char *fname, const char* startup_dir, JSObject* scope = NULL, JSContext* cx = NULL, JSObject* glob = NULL);
+	int				js_execfile(const char *fname, const char* startup_dir = NULL
+						,JSObject* scope = NULL, JSContext* cx = NULL, JSObject* glob = NULL);
 	int				js_execxtrn(const char *fname, const char* startup_dir);
 	JSContext*		js_init(JSRuntime**, JSObject**, const char* desc);
 	void			js_cleanup(void);
