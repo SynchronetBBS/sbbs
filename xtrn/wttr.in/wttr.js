@@ -8,10 +8,10 @@ function uReplace(str) {
 }
 
 function fetchWeather(addr) {
-	const qs = argc > 0 ? argv.join('') : 'AFn';
+	const qs = argc > 0 ? argv.join('') : 'https://wttr.in/?AFn';
 	const http = new HTTPRequest();
 	if (addr !== undefined) http.extra_headers = { 'X-Forwarded-For': addr };
-	const body = http.Get('https://wttr.in/?' + qs);
+	const body = http.Get(qs);
 	if (http.response_code !== 200) throw new Error('wttr.in response had status ' + http.response_code);
 	return body;
 }
