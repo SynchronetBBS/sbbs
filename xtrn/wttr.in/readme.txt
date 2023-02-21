@@ -39,6 +39,8 @@ Contents
 
 		Command Line	?wttr.js https://wttr.in/?m0AFn
 
+	See https://wttr.in/:help for possible query paths and parameters.
+
 	Responses are cached in your OS temp directory and remain valid for 3600
 	seconds (one hour). You can override this default cache TTL by supplying
 	a numeric value (in seconds) on the command line, such as:
