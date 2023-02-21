@@ -33,14 +33,10 @@ Contents
 
 3) Customization
 
-	Please see https://wttr.in/:help for a list of options. You may pass any
-	of the 'Units' and 'View options' values to this script on the command
-	line to customize the output, for example:
+	Any arguments that you pass on the command line will be treated as an
+	alternate URL to query. For example:
 
-		Command Line	?wttr.js m0AFn
+		Command Line	?wttr.js https://wttr.in/?m0AFn
 
-	The default is 'AFn' for ANSI, no 'Follow' line, and narrow output.
-
-	Note that your command line argument will completely replace the default
-	parameters. You will probably want to specify 'A' and 'n' in addition to
-	your chosen values.
+	The default is URL is 'https://wttr.in/?AFn' for ANSI, no 'Follow' line,
+	and narrow output.
