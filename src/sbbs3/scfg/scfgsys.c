@@ -2612,6 +2612,7 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-16.16s%s","List Msgs",cfg.listmsgs_mod);
 					sprintf(opt[i++],"%-16.16s%s","List Logons",cfg.logonlist_mod);
 					sprintf(opt[i++],"%-16.16s%s","List Nodes",cfg.nodelist_mod);
+					sprintf(opt[i++],"%-16.16s%s","List Users",cfg.userlist_mod);
 					sprintf(opt[i++],"%-16.16s%s","Who's Online",cfg.whosonline_mod);
 					sprintf(opt[i++],"%-16.16s%s","Private Msg",cfg.privatemsg_mod);
 					sprintf(opt[i++],"%-16.16s%s","Temp Transfer",cfg.tempxfer_mod);
@@ -2642,6 +2643,7 @@ void sys_cfg(void)
 						"`List Msgs`     Executed when a user lists msgs from the msg read prompt\n"
 						"`List Logons`   Executed when a user lists logons ('-y' for yesterday)\n"
 						"`List Nodes`    Executed when a user lists all nodes\n"
+						"`List Users`    Executed when a user lists the users of the system\n"
 						"`Who's Online`  Executed when a user lists the nodes in-use (e.g. `^U`)\n"
 						"`Private Msg`   Executed when a user sends a private node msg (e.g. `^P`)\n"
 						"\n"
@@ -2728,14 +2730,18 @@ void sys_cfg(void)
 								,cfg.nodelist_mod,sizeof(cfg.nodelist_mod)-1,K_EDIT);
 							break;
 						case 18:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"List Users"
+								,cfg.userlist_mod,sizeof(cfg.userlist_mod)-1,K_EDIT);
+							break;
+						case 19:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Who's Online Module"
 								,cfg.whosonline_mod,sizeof(cfg.whosonline_mod)-1,K_EDIT);
 							break;
-						case 19:
+						case 20:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Private Message Module"
 								,cfg.privatemsg_mod,sizeof(cfg.privatemsg_mod)-1,K_EDIT);
 							break;
-						case 20:
+						case 21:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Temporary File Transfer Module"
 								,cfg.tempxfer_mod, sizeof(cfg.tempxfer_mod)-1, K_EDIT);
 							break;

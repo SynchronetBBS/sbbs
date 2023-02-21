@@ -248,12 +248,13 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 		iniSetString(&ini, name, "textsec", cfg->textsec_mod, NULL);
 		iniSetString(&ini, name, "automsg", cfg->automsg_mod, NULL);
 		iniSetString(&ini, name, "xtrnsec", cfg->xtrnsec_mod, NULL);
+		iniSetString(&ini, name, "userlist", cfg->userlist_mod, NULL);
 
 		iniSetString(&ini, name, "nodelist", cfg->nodelist_mod, NULL);
 		iniSetString(&ini, name, "whosonline", cfg->whosonline_mod, NULL);
 		iniSetString(&ini, name, "privatemsg", cfg->privatemsg_mod, NULL);
 		iniSetString(&ini, name, "logonlist", cfg->logonlist_mod, NULL);
-	
+
 		iniSetString(&ini, name, "prextrn", cfg->prextrn_mod, NULL);
 		iniSetString(&ini, name, "postxtrn", cfg->postxtrn_mod, NULL);
 

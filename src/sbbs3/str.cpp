@@ -33,6 +33,12 @@ void sbbs_t::userlist(int mode)
 	char *	line[2500];
 	user_t	user;
 
+	if(cfg.userlist_mod[0] != '\0') {
+		char str[128];
+		SAFEPRINTF2(str, "%s %d", cfg.userlist_mod, mode);
+		exec_bin(str, &main_csi);
+		return;
+	}
 	if(lastuser(&cfg)<=(int)(sizeof(line)/sizeof(line[0])))
 		sort=yesno(text[SortAlphaQ]);
 	if(sort) {
