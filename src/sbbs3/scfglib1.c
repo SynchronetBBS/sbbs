@@ -243,6 +243,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->automsg_mod, iniGetString(section, NULL, "automsg", "automsg", value));
 	SAFECOPY(cfg->xtrnsec_mod, iniGetString(section, NULL, "xtrnsec", "xtrn_sec", value));
 	SAFECOPY(cfg->nodelist_mod, iniGetString(section, NULL, "nodelist", "nodelist", value));
+	SAFECOPY(cfg->userlist_mod, iniGetString(section, NULL, "userlist", "", value));
 	SAFECOPY(cfg->whosonline_mod, iniGetString(section, NULL, "whosonline", "nodelist -active", value));
 	SAFECOPY(cfg->privatemsg_mod, iniGetString(section, NULL, "privatemsg", "privatemsg", value));
 	SAFECOPY(cfg->logonlist_mod, iniGetString(section, NULL, "logonlist", "logonlist", value));
