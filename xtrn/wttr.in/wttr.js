@@ -1,26 +1,25 @@
 require('sbbsdefs.js', 'P_UTF8');
-require('http.js', 'HTTPRequest');
-const xterm = load({}, js.exec_dir + 'xterm-colors.js');
-const locator = load({}, js.exec_dir + 'locator.js');
+const wttr = load({}, js.exec_dir + 'wttr-lib.js');
 
-function uReplace(str) {
-	return str.replace(/\xE2\x9A\xA1/g, '/ '); // U+26A1 Lightning bolt
-}
-
-function fetchWeather(addr) {
-	const qs = argc > 0 ? argv.join('') : 'https://wttr.in/?AFn';
-	const http = new HTTPRequest();
-	if (addr !== undefined) http.extra_headers = { 'X-Forwarded-For': addr };
-	const body = http.Get(qs);
-	if (http.response_code !== 200) throw new Error('wttr.in response had status ' + http.response_code);
-	return body;
+function parseArgs() {
+	const ret = {
+		qs: 'https://wttr.in/?AFn',
+		ttl: 3600, // Seconds
+	};
+	for (var n = 0; n < argc; n++) {
+		const arg = parseInt(argv[n], 10);
+		if (isNaN(arg)) {
+			ret.qs = arg;
+		} else {
+			ret.ttl = arg;
+		}
+	}
+	return ret;
 }
 
 function main() {
-	const addr = locator.getAddress();
-	const weather = fetchWeather(addr);
-	const text = uReplace(weather);
-	const ansi = xterm.convertColors(text);
+	const args = parseArgs();
+	const ansi = wttr.getWeather(args.qs, args.ttl);
 	const attr = console.attributes;
 	console.clear(BG_BLACK|LIGHTGRAY);
 	console.putmsg(ansi, P_UTF8);
