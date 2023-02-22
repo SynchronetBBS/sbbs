@@ -4,7 +4,7 @@ const wttr = load({}, js.exec_dir + 'wttr-lib.js');
 function parseArgs() {
 	const ret = {
 		qs: 'https://wttr.in/?AFn',
-		ttl: 3600, // Seconds
+		ttl: 0, // Seconds
 	};
 	for (var n = 0; n < argc; n++) {
 		const arg = parseInt(argv[n], 10);
