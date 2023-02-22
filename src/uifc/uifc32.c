@@ -2135,6 +2135,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	char	*pastebuf=NULL;
 	unsigned char	*pb=NULL;
 
+	mode |= api->kmode; // Global keyboard input mode flags (e.g. K_TRIM)
+
 	api->exit_flags = 0;
 	if((str=alloca(max+1))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
