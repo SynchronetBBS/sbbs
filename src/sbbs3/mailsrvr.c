@@ -40,6 +40,7 @@
 #include "ini_file.h"
 #include "netwrap.h"	/* getNameServerList() */
 #include "xpendian.h"
+#include "xpprintf.h"
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "multisock.h"
@@ -359,21 +360,9 @@ int mail_close_socket(SOCKET *sock, int *sess)
 int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...)
 {
 	int		len;
-	int		maxlen;
 	int		result;
 	va_list argptr;
-	char	sbuf[1024];
-
-    va_start(argptr,fmt);
-    len=vsnprintf(sbuf,maxlen=sizeof(sbuf)-2,fmt,argptr);
-    va_end(argptr);
-
-	if(len<0 || len > maxlen) /* format error or output truncated */
-		len=maxlen;
-	if(startup->options&MAIL_OPT_DEBUG_TX)
-		lprintf(LOG_DEBUG,"%04d %s TX: %.*s", sock, prot, len, sbuf);
-	memcpy(sbuf+len,"\r\n",2);
-	len+=2;
+	char*	sbuf = NULL;
 
 	if(sock==INVALID_SOCKET) {
 		lprintf(LOG_WARNING,"%s !INVALID SOCKET in call to sockprintf", prot);
@@ -387,6 +376,27 @@ int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...
 		return(0);
 	}
 
+    va_start(argptr,fmt);
+    len = vasprintf(&sbuf, fmt, argptr);
+    va_end(argptr);
+
+	if(len < 0 || sbuf == NULL) { /* format error or allocation error */
+		lprintf(LOG_CRIT, "%04d %s %s error (%d) formatting string: '%s'", sock, prot, __FUNCTION__, len, fmt);
+		free(sbuf);
+		return 0;
+	}
+	if(startup->options&MAIL_OPT_DEBUG_TX)
+		lprintf(LOG_DEBUG,"%04d %s TX: %.*s", sock, prot, len, sbuf);
+	char* newp = realloc(sbuf, len + 2); // "\r\n"
+	if(newp == NULL) { /* format error or allocation error */
+		lprintf(LOG_CRIT, "%04d %s %s re-allocation failure of %d bytes", sock, prot, __FUNCTION__, len + 2);
+		free(sbuf);
+		return 0;
+	}
+	sbuf = newp;
+	memcpy(sbuf+len,"\r\n",2);
+	len+=2;
+
 	if (sess != -1) {
 		int tls_sent;
 		int sent = 0;
@@ -396,11 +406,13 @@ int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...
 				sent += tls_sent;
 			else {
 				GCES(result, prot, sock, sess, "pushing data");
+				free(sbuf);
 				return 0;
 			}
 		}
 		if ((result = cryptFlushData(sess)) != CRYPT_OK) {
 			GCES(result, prot, sock, sess, "flushing data");
+			free(sbuf);
 			return 0;
 		}
 	}
@@ -418,11 +430,13 @@ int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...
 					lprintf(LOG_NOTICE,"%04d %s Connection aborted by peer on send",sock, prot);
 				else
 					lprintf(LOG_NOTICE,"%04d %s !ERROR %d sending on socket",sock,prot,ERROR_VALUE);
+				free(sbuf);
 				return(0);
 			}
 			lprintf(LOG_WARNING,"%04d %s !ERROR: short send on socket: %d instead of %d",sock,prot,result,len);
 		}
 	}
+	free(sbuf);
 	return(len);
 }
 
