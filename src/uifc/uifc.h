@@ -204,6 +204,8 @@ typedef int64_t uifc_winmode_t;
 								/* And ungets the mouse event.				*/
 #define K_PASSWORD	(1L<<16)	/* Does not display text while editing		*/
 #define K_FIND		(1L<<17)	/* Don't set the "changes" flag				*/
+#define K_TRIM		(1L<<23)	/* Don't allow leading or trailing wsp		*/
+#define K_NOSPACE	(1L<<26)	/* Don't allow any wsp chars				*/
 
 
 						/* Extra exit flags */

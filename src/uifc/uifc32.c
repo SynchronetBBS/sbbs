@@ -2258,6 +2258,10 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					pb=NULL;
 				}
 			}
+			if((mode & K_TRIM) && i < 1 && IS_WHITESPACE(ch))
+				continue;
+			if((mode & K_NOSPACE) && IS_WHITESPACE(ch))
+				continue;
 			if(ch==CIO_KEY_MOUSE) {
 				ch=uifc_getmouse(&mevnt);
 				if(ch==0 || (ch==ESC && mevnt.event==CIOLIB_BUTTON_3_CLICK)) {
@@ -2476,7 +2480,6 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	str[j]=0;
 	if(mode&K_EDIT)
 	{
-		truncspctrl(str);
 		if(!(mode&K_FIND) && strcmp(outstr,str))
 			api->changes=1;
 	}
@@ -2485,6 +2488,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		if(!(mode&K_FIND) && j)
 			api->changes=1;
 	}
+	if(mode & K_TRIM)
+		truncspctrl(str);
 	strcpy(outstr,str);
 	cursor=_NOCURSOR;
 	_setcursortype(cursor);
