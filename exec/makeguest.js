@@ -3,8 +3,6 @@
 // Script to create the Guest/Anonymous user account
 // This is normally executed from logon.js (rev 1.7+)
 
-// $Id: makeguest.js,v 1.8 2016/11/16 08:01:46 rswindell Exp $
-
 // Don't create guest account if sysop account hasn't been created yet
 if(!system.stats.total_users)	{
 	printf("No users in database.\r\n");

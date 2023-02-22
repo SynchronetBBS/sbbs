@@ -2,8 +2,6 @@
 
 // Convert plain-text with (optional) Synchronet attribute (Ctrl-A) codes to HTML
 
-// $Id: typeasc.js,v 1.8 2020/07/18 04:07:29 rswindell Exp $
-
 load("sbbsdefs.js");
 load("asc2htmlterm.js");
 var f;

@@ -1,5 +1,3 @@
-// $Id: nodelist.js,v 1.12 2020/04/21 20:30:19 rswindell Exp $
-
 // Node Listing / Who's Online Module
 // Installed in SCFG->System->Loadable Modules->List Nodes / Who's Online
 // or as an 'exec/node list' replacement ('jexec nodelist').
@@ -44,7 +42,7 @@ if(js.global.bbs) {
 		options = load({}, "nodelist_options.js");
 	js.on_exit("console.status = " + console.status);
 } else{ // e.g. invoked via JSexec
-	var REVISION = "$Revision: 1.12 $".split(' ')[1];
+	var REVISION = "1.13";
 	options = { 
 		format: "Node %2d: %s", 
 		include_age: true, 

@@ -1,5 +1,3 @@
-// $Id: scrubmsgs.js,v 1.2 2018/02/16 02:29:24 rswindell Exp $
-
 // Scrub msg headers of invalid control characters (sign of corruption) in one or more message bases
 
 var debug = false;

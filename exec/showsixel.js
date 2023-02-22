@@ -1,5 +1,3 @@
-// $Id: showsixel.js,v 1.5 2018/02/26 19:23:05 deuce Exp $
-
 load('cterm_lib.js');
 
 if(console.cterm_version >= 1189) {

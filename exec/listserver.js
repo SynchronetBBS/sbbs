@@ -2,12 +2,10 @@
 
 // Mailing List Server module for Synchronet v3.12
 
-// $Id: listserver.js,v 1.46 2018/01/09 06:26:53 rswindell Exp $
-
 load("sbbsdefs.js");
 load("mailproc_util.js");	// import parse_msg_header() and get_msg_body()
 
-const REVISION = "$Revision: 1.46 $".split(' ')[1];
+const REVISION = "1.47";
 const user_list_ext = ".list.sub";
 
 log(LOG_INFO,"ListServer " + REVISION);

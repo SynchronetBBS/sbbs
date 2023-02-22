@@ -1,5 +1,3 @@
-// $Id: getnewsgrouplist.js,v 1.1 2019/12/01 03:02:31 rswindell Exp $
-
 "use strict";
 
 if(argc < 3) {

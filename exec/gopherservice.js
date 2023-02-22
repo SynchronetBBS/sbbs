@@ -1,7 +1,5 @@
 // gopherservice.js
 
-// $Id: gopherservice.js,v 1.17 2018/03/06 08:28:00 rswindell Exp $
-
 // Synchronet Service for the Gopher Protocol (RFC 1436)
 
 // Example configuration (in ctrl/services.ini):
@@ -15,7 +13,7 @@
 load("sbbsdefs.js");
 load("nodedefs.js");
 
-const REVISION = "$Revision: 1.17 $".split(' ')[1];
+const REVISION = "1.18";
 const GOPHER_PORT = client.socket.local_port;
 
 var debug = false;

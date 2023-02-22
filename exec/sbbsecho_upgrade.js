@@ -1,11 +1,9 @@
-// $Id: sbbsecho_upgrade.js,v 1.14 2019/01/18 23:03:01 rswindell Exp $
-
 // SBBSecho upgrade from v2.x to v3.x (run with jsexec)
 
 // Converts ctrl/sbbsecho.cfg (or other file if specified)
 // to ctrl/sbbsecho.ini
 
-const REVISION = "$Revision: 1.14 $".split(' ')[1];
+const REVISION = "1.15";
 
 var debug =  false;
 

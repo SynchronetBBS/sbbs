@@ -1,5 +1,3 @@
-/* $Id: asc_handler.js,v 1.8 2011/07/20 04:30:03 deuce Exp $ */
-
 // This module converts ANSI, Ex-ASCII, and Ctrl-A encoded files to HTML
 
 // The filename to encode may be passed on the command-line (e.g. running

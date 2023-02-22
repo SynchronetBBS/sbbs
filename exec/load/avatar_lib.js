@@ -1,5 +1,3 @@
-// $Id: avatar_lib.js,v 1.20 2019/06/15 01:24:19 rswindell Exp $
-
 // Library for dealing with user Avatars (ex-ASCII/ANSI block art)
 
 const defs = {

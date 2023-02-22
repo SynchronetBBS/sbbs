@@ -5,7 +5,6 @@
  * Copyright 2009, Stephen Hurd.
  * Don't steal my code bitches.
  *
- * $Id: imapservice.js,v 1.76 2020/08/12 06:48:14 rswindell Exp $
  */
 
 require('sbbsdefs.js', 'SCAN_CFG_NEW');

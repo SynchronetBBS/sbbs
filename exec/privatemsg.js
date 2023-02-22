@@ -1,5 +1,3 @@
-// $Id: privatemsg.js,v 1.10 2020/09/13 20:30:19 rswindell Exp $
-
 // Private Message Module
 // Installed in SCFG->System->Loadable Modules->Private Msg
 

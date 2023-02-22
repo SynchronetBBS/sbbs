@@ -2,8 +2,6 @@
 
 // Synchronet Service for the Message Send Protocol 2 (RFC 1312/1159)
 
-// $Id: mspservice.js,v 1.10 2018/10/22 06:42:00 rswindell Exp $
-
 // Example configuration (in ctrl/services.ini):
 
 // [MSP]

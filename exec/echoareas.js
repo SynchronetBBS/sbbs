@@ -1,5 +1,3 @@
-// $Id: echoareas.js,v 1.1 2018/02/21 04:23:09 rswindell Exp $
-
 // Displays (in areas.bbs format) all the FTN-linked sub-boards with their
 // configured "GroupHub" (from sbbsecho.ini -> [node:*] -> GroupHub).
 // Requires that you're using SBBSecho v3.x and configured one or more hubs in

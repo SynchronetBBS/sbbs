@@ -1,6 +1,3 @@
-// $Id: exportcfg.js,v 1.4 2019/02/15 11:11:07 rswindell Exp $
-// vi: tabstop=4
-
 // *****************************************************************
 // Output a list of configuration items (e.g. msg areas, file areas)
 // *****************************************************************

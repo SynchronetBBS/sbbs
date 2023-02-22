@@ -1,5 +1,3 @@
-// $Id: hexdump.js,v 1.2 2018/03/22 23:03:45 rswindell Exp $
-
 var hexdump = load({}, "hexdump_lib.js");
 
 function main()

@@ -25,8 +25,6 @@
    - mspservice.js listening on TCP port 18
 */
 
-// $Id: sbbsimsg.js,v 1.41 2019/07/24 22:17:27 rswindell Exp $
-
 require("sbbsdefs.js", 'K_UPPER');
 require("sockdefs.js", 'SOCK_DGRAM');
 var options=load({}, "modopts.js", "sbbsimsg");

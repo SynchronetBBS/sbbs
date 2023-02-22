@@ -27,6 +27,8 @@
 
 "use strict";
 
+log("argv = " + JSON.stringify(argv, null, 4));
+
 function install()
 {
 	var f = new File(system.ctrl_dir + "main.ini");
