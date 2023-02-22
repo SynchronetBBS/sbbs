@@ -200,7 +200,7 @@ void cfg_wizard(void)
 				char* opt[] = { "Continue", NULL };
 
 				wizard_msg(stage, total,
-					"                              ~    Welcome   ~\n"
+					"                             ~    Welcome   ~\n"
 					"  _________                   .__                                __   \n"
  					" /   _____/__.__. ____   ____ |  |_________  ____   ____   _____/  |_ \n"
  					" \\_____  <   |  |/    \\_/ ___\\|  |  \\_  __ \\/  _ \\ /    \\_/ __ \\   __\\\n"
@@ -633,6 +633,7 @@ int main(int argc, char **argv)
 		printf("uifc library init returned error %d\n",i);
 		exit(1);
 	}
+	uifc.kmode = K_TRIM; // trim all leading & trailing whitespace on string input
 
 	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
