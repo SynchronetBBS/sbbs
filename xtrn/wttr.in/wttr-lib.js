@@ -31,10 +31,14 @@ function writeCache(qs, addr, ans) {
 }
 
 function fetchWeather(qs, addr) {
+	log(LOG_DEBUG, 'Requesting weather from ' + qs + ' for ' + addr);
 	const http = new HTTPRequest();
 	if (addr !== undefined) http.extra_headers = { 'X-Forwarded-For': addr };
 	const body = http.Get(qs);
-	if (http.response_code !== 200) throw new Error('wttr.in response had status ' + http.response_code);
+	if (http.response_code !== 200) {
+		log(LOG_DEBUG, 'wttr.in response had status ' + http.response_code);
+		throw new Error('wttr.in response had status ' + http.response_code);
+	}
 	return body;
 }
 
