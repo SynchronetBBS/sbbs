@@ -1,7 +1,3 @@
-// $Id: websocketservice.js,v 1.14 2019/08/11 19:20:20 echicken Exp $
-
-// websocketservice.js 
-
 // Synchronet Service for redirecting incoming WebSocket connections to the Telnet and/or RLogin server
 // Mainly to be used in conjunction with fTelnet
 

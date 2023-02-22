@@ -1,5 +1,3 @@
-// $Id: showfileavatar.js,v 1.5 2019/06/15 01:23:30 rswindell Exp $
-
 const FM_ANON			=(1<<1);
 require("userdefs.js", 'USER_ANSI');
 

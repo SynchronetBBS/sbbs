@@ -2,8 +2,6 @@
 
 // Global String Command Module for Synchronet
 
-// $Id: str_cmds.js,v 1.57 2020/05/02 08:09:26 rswindell Exp $
-
 // @format.tab-size 4, @format.use-tabs true
 
 // This is NOT a command shell, DO NOT add to SCFG->Command Shells

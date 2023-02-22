@@ -1,5 +1,3 @@
-// $Id: age.js,v 1.1 2020/03/02 18:38:49 rswindell Exp $
-
 require('text.js', 'Years');
 
 // Ported from src/sbbs3/str.cpp, sbbs_t::age_of_posted_item()

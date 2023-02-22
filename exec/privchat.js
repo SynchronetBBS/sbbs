@@ -1,5 +1,3 @@
-/* $Id: privchat.js,v 1.2 2013/09/15 08:46:47 rswindell Exp $ */
-
 /* JS implementation of sbbs_t::privchat() from src/sbbs3/chat.cpp */
 
 /* Local/sysop and private node-to-node chat using sbbs v2 file I/O scheme */

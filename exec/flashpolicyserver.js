@@ -1,5 +1,3 @@
-// $Id: flashpolicyserver.js,v 1.6 2011/07/18 01:36:31 ree Exp $
-
 /***
 
 Flash Policy Server

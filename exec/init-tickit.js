@@ -1,4 +1,3 @@
-// $Id: init-tickit.js,v 1.2 2020/04/10 20:25:29 rswindell Exp $
 /*
  Nigel Reed - nigel@nigelreed.net sysop@endofthelinebbs.com
 

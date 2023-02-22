@@ -1,9 +1,7 @@
-// $Id: chksetup.js,v 1.17 2020/04/02 17:46:23 rswindell Exp $
-
 // Sanity-check a Synchronet BBS installation
 
 "use strict";
-const REVISION = "$Revision: 1.18 $".split(' ')[1];
+const REVISION = '1.19';
 require("sbbsdefs.js", 'USER_DELETED');
 
 function check_codes(desc, grp_list, sub_list)

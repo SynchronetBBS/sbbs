@@ -2,11 +2,9 @@
 
 /* Send a message (from stdin or the command-line) to an IRC channel */
 
-/* $Id: ircmsg.js,v 1.34 2015/11/25 09:05:26 deuce Exp $ */
-
 load("irclib.js");	// Thanks Cyan!
 
-const REVISION = "$Revision: 1.34 $".split(' ')[1];
+const REVISION = '1.35';
 
 var server="irc.synchro.net";
 var channel="#channel";

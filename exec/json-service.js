@@ -1,5 +1,3 @@
-/* $Id: json-service.js,v 1.38 2020/05/06 04:20:12 rswindell Exp $ */
-
 load("event-timer.js");
 load("json-sock.js");
 load("json-db.js");
@@ -116,7 +114,7 @@ var errors = {
 /* server object */
 service = new (function() {
 
-	this.VERSION = "$Revision: 1.38 $".replace(/\$/g,'').split(' ')[1];
+	this.VERSION = "1.39";
 	this.fileDate = file_date(serviceIniFile);
 	this.online = true;
 	this.sockets = [];

@@ -1,4 +1,4 @@
-// $Id: init-fidonet.tup script - interactive, run via JSexec or ;exec
+// init-fidonet.tup script - interactive, run via JSexec or ;exec
 
 // usage: init-fidonet.js [zone | othernet-name] [http://path/to/echolist.na]
 

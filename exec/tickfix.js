@@ -1,10 +1,8 @@
-// $Id: tickfix.js,v 1.7 2020/05/03 20:00:45 rswindell Exp $
-
 // TickFix: A remote Area Manager (ala FileFix) for TickIT
 // Requires SBBSecho v3.11 or later
 // Install using "jsexec tickfix -install"
 
-const REVISION = "$Revision: 1.7 $".split(' ')[1];
+const REVISION = "1.8";
 require('smbdefs.js', 'NET_FIDO');
 var fidoaddr = load({}, 'fidoaddr.js');
 

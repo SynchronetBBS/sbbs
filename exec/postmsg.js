@@ -1,5 +1,3 @@
-// $Id: postmsg.js,v 1.7 2020/03/30 08:31:14 rswindell Exp $
-
 // Post a message to a local sub-board or mail message base
 // a preferred alternative to using "smbutil i"
 

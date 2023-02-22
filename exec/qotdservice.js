@@ -2,10 +2,7 @@
 
 // Synchronet Service for the Quote of The Day protocol (RFC 865)
 
-// $Id: qotdservice.js,v 1.1 2007/08/13 04:25:41 deuce Exp $
-
-
-const REVISION = "$Revision: 1.1 $".split(' ')[1];
+const REVISION = "1.2";
 
 var output_buf = "";
 

@@ -277,7 +277,7 @@ if (renew || rekey || revoke || print_tos) {
 	 */
 	settings.open(settings.exists ? "r+" : "w+");
 	key_id = settings.iniGetValue("key_id", new_host, undefined);
-	acme = new ACMEv2({key:rsa, key_id:key_id, host:new_host, dir_path:dir_path, user_agent:'LetSyncrypt '+("$Revision: 1.35 $".split(' ')[1])});
+	acme = new ACMEv2({key:rsa, key_id:key_id, host:new_host, dir_path:dir_path, user_agent:'LetSyncrypt 1.36'});
 	if (renew || rekey || revoke) {
 		if (acme.key_id === undefined) {
 			if (TOSAgreed)
