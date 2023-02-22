@@ -105,7 +105,7 @@ int edit_sys_inetaddr(int page, int total)
 	if(page)
 		mode = wiz_help(page, total, uifc.helpbuf);
 	return uifc.input(mode,0,10,"System Internet Address"
-		,cfg.sys_inetaddr,32,K_EDIT);
+		,cfg.sys_inetaddr,32,K_EDIT | K_NOSPACE);
 }
 
 int edit_sys_id(int page, int total)
