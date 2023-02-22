@@ -82,11 +82,11 @@ function wsrsGetIPAddress() {
 }
 
 function getAddress() {
-	log(LOG_DEBUG, 'user.ip_address is ' + user.ip_address);
+	log(LOG_DEBUG, 'client.ip_address is ' + client.ip_address);
 	const addrRe = /(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^169\.254\.)|(^::1$)|(^[fF][cCdD])/;
-	if (user.ip_address.search(addrRe) > -1) {
+	if (client.ip_address.search(addrRe) > -1) {
 		var addr;
-		if (client.protocol === 'Telnet') {
+		if (client.protocol === 'Telnet' || client.protocol === 'SSH') {
 			log(LOG_DEBUG, 'Trying wsts method');
 			addr = wstsGetIPAddress();
 			log(LOG_DEBUG, 'wsts result: ' + addr);
@@ -99,8 +99,8 @@ function getAddress() {
 		log(LOG_DEBUG, 'returning: ' + addr);
 		return addr;
 	}
-	log(LOG_DEBUG, 'returning: ' + user.ip_address);
-	return user.ip_address;
+	log(LOG_DEBUG, 'returning: ' + client.ip_address);
+	return client.ip_address;
 }
 
 this;
