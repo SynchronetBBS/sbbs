@@ -248,9 +248,6 @@ enum {
 #ifndef uint
 #define uint unsigned int
 #endif
-#ifndef ulong
-#define ulong unsigned long
-#endif
 
 #ifndef BOOL
 #define BOOL    int
@@ -333,9 +330,12 @@ typedef struct {
 /* Controls general UIFC library behavior.									*/
 /****************************************************************************/
     int		mode;
-    int		kmode;
 /****************************************************************************/
-/* Set to TRUE when changes to data have been made by input function.		*/ 
+/* Common input mode flags (K_*) to always set.								*/
+/****************************************************************************/
+    int		input_mode;
+/****************************************************************************/
+/* Set to TRUE when changes to data have been made by input function.		*/
 /****************************************************************************/
     BOOL    changes;
 /****************************************************************************/

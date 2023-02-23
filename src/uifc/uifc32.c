@@ -1888,6 +1888,8 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 
 	reset_dynamic();
 
+	kmode |= api->input_mode; // Global keyboard input mode flags (e.g. K_TRIM)
+
 	if(mode&WIN_FAT) {
 		s_top=1;
 		s_left=2;
@@ -2134,8 +2136,6 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	struct mouse_event	mevnt;
 	char	*pastebuf=NULL;
 	unsigned char	*pb=NULL;
-
-	mode |= api->kmode; // Global keyboard input mode flags (e.g. K_TRIM)
 
 	api->exit_flags = 0;
 	if((str=alloca(max+1))==NULL) {
