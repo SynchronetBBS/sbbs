@@ -333,7 +333,7 @@ void cfg_wizard(void)
 				break;
 			case __COUNTER__:
 				wizard_msg(stage, total,
-					"                         ~ Initial Setup Complete! ~\n"
+					"                        ~ Initial Setup Complete! ~\n"
 					"\n"
 					"You have completed the initial configuration of the basic parameters\n"
 					"required to run Synchronet - the ultimate choice in BBS software for the\n"
@@ -633,7 +633,7 @@ int main(int argc, char **argv)
 		printf("uifc library init returned error %d\n",i);
 		exit(1);
 	}
-	uifc.kmode = K_TRIM; // trim all leading & trailing whitespace on string input
+	uifc.input_mode = K_TRIM; // trim all leading & trailing whitespace on string input
 
 	if((opt=(char **)malloc(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
