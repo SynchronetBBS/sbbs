@@ -14,6 +14,8 @@ function getAddress() {
 	 */
 	const f = new File(system.temp_path + 'sbbs-ws-' + client.socket.remote_port + '.ip');
 	if (!f.exists) return;
+	if (f.date < client.connect_time) return; // Avoid stale ws ip files
+	if (f.date - client.connect_time > 5) return; // Avoid ws ip files probably not belonging to this user (5 seconds arbitrary)
 	if (!f.open('r')) return;
 	const addr = f.read();
 	f.close();
