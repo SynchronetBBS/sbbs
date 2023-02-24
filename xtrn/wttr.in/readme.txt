@@ -6,12 +6,22 @@ Contents
 	1) About
 	2) Installation
 	3) Customization
+	4) Notes
 
 1) About
 
 	This script pulls a weather report from https://wttr.in and displays it in
 	the terminal. wttr.in is a console-oriented weather forecast service
 	created and hosted by Igor Chubin (https://github.com/chubin/wttr.in).
+
+	The output that you see on your BBS was generated entirely by wttr.in,
+	except that this script translates their xterm colours to ANSI-BBS. See
+	the 'Customization' section below for information on changing the format.
+	I can't (won't) change the look any further (different icons, etc.).
+
+	Geolocation is provided automatically by wttr.in. In a future update, we
+	might use our own geolocation provider, but I'd rather avoid it for
+	simplicity's sake.
 
 2) Installation
 
@@ -33,21 +43,45 @@ Contents
 
 3) Customization
 
-	The default query URL is https://wttr.in/?AFn for ANSI, no 'Follow' line,
-	and narrow output. You can override this by supplying an alternate URL on
-	the command line, such as:
+	See https://wttr.in/:help for details on query parameters.
 
-		Command Line	?wttr.js https://wttr.in/?m0AFn
+	By default, this script will query https://wttr.in/?AFn and will cache
+	non-error responses for 3600 seconds (one hour). If the user's IP address
+	is available, wttr.in will use it for geolocation. If the user's IP
+	address is not available, your BBS' external IP address will be used for
+	geolocation.
 
-	See https://wttr.in/:help for possible query paths and parameters.
+	If you wish to override any of this behaviour, create this file:
 
-	Responses are cached in your OS temp directory and remain valid for 3600
-	seconds (one hour). You can override this default cache TTL by supplying
-	a numeric value (in seconds) on the command line, such as:
+		ctrl/modopts.d/wttr.ini
 
-		Command Line	?wttr.js 1800
+	Paste this into the file:
 
-	You can combine the parameters in whichever order you prefer:
+		[wttr.in]
+		base_url = https://wttr.in/
+		units = m
+		view = AFn
+		cache_ttl = 3600
 
-		Command Line 	?wttr.js https://wttr.in/?m0AFn 1800
-		Command Line 	?wttr.js 1800 https://wttr.in/?m0AFn
+	All of the above settings are optional and any may be omitted. Substitute
+	the default values shown above with your preferred settings (obviously).
+
+	You may also add either of these optional settings:
+
+		fallback_location = Mountain View
+		fallback_ip = 8.8.8.8
+
+	If fallback_location is set, it will be used instead of your BBS' external
+	IP address to find the default weather report.
+
+	If fallback_ip is set, it will be used instead of your BBS' external IP
+	address. If present, this setting will override fallback_location.
+
+4) Notes
+
+	Ensure that your ctrl/modopts.ini file includes this line:
+
+		!include modopts.d/*.ini
+
+	If this line does not exist, add it to the bottom of the file. This
+	ensures that everything in your ctrl/modopts.d directory is loadable.
