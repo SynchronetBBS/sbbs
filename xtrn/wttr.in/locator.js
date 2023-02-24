@@ -1,6 +1,8 @@
 // To do: use user.location / zipcode if available?
 
 function getAddress() {
+	if (js.global.client === undefined) return; // jsexec
+
 	const addrRe = /(^0\.0\.0\.0$)|(^127\.)|(^192\.168\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^169\.254\.)|(^::1$)|(^[fF][cCdD])/;
 	if (client.ip_address.search(addrRe) < 0) return client.ip_address; // Not a private/local address
 
