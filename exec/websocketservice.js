@@ -38,6 +38,7 @@ var FFramePayloadReceived = 0;
 var FServerSocket = null;
 var FWebSocketHeader = {};
 var FWebSocketState = WEBSOCKET_NEED_PACKET_START;
+var ipFile;
 
 // Main line
 try {
@@ -102,8 +103,8 @@ try {
 				hapstr += TargetPort.toString(16);
 				FServerSocket.send(hapstr);
 			}
-
-            var ipFile = new File (system.temp_path + 'sbbs-ws-' + FServerSocket.local_port + '.ip');
+            
+            ipFile = new File(system.temp_path + 'sbbs-ws-' + FServerSocket.local_port + '.ip');
             if (ipFile.open('w')) {
                 ipFile.write(client.ip_address);
                 ipFile.close();
@@ -136,7 +137,6 @@ try {
             }
             if (!client.socket.is_connected) log(LOG_DEBUG, 'Client socket no longer connected');
 			if (!FServerSocket.is_connected) log(LOG_DEBUG, 'Server socket no longer connected');
-            ipFile.remove();
         } else {
             // FServerSocket.connect() failed
             log(LOG_ERR, "Error " + FServerSocket.error + " connecting to server at " + TargetHostname + ":" + TargetPort);
@@ -152,6 +152,7 @@ try {
     if (FServerSocket != null) {
         FServerSocket.close();
     }
+    if (ipFile instanceof File) ipFile.remove();
 }
 
 function CalculateWebSocketKey(InLine) {
