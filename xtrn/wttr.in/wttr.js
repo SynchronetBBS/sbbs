@@ -2,7 +2,7 @@ require('sbbsdefs.js', 'P_UTF8');
 const wttr = load({}, js.exec_dir + 'wttr-lib.js');
 
 function main() {
-	const ansi = wttr.getWeather();
+	const ansi = wttr.getWeather(argv);
 	if (js.global.console === undefined) { // jsexec
 		writeln(ansi);
 	} else {
