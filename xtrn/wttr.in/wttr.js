@@ -3,11 +3,15 @@ const wttr = load({}, js.exec_dir + 'wttr-lib.js');
 
 function main() {
 	const ansi = wttr.getWeather();
-	const attr = console.attributes;
-	console.clear(BG_BLACK|LIGHTGRAY);
-	console.putmsg(ansi, P_UTF8);
-	console.pause();
-	console.attributes = attr;
+	if (js.global.console === undefined) { // jsexec
+		writeln(ansi);
+	} else {
+		const attr = console.attributes;
+		console.clear(BG_BLACK|LIGHTGRAY);
+		console.putmsg(ansi, P_UTF8);
+		console.pause();
+		console.attributes = attr;
+	}
 }
 
 try {
