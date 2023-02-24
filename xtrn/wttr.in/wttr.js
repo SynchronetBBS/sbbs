@@ -9,6 +9,7 @@ function main() {
 		const attr = console.attributes;
 		console.clear(BG_BLACK|LIGHTGRAY);
 		console.putmsg(ansi, P_UTF8);
+		console.crlf();
 		console.pause();
 		console.attributes = attr;
 	}
