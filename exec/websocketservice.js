@@ -83,6 +83,7 @@ try {
         FServerSocket = new Socket();
 		log(LOG_DEBUG, "Connecting to " + TargetHostname + ":" + TargetPort);
         if (FServerSocket.connect(TargetHostname, TargetPort)) {
+
             // Variables we'll use in the loop
             var DoYield = true;
             var ClientData = [];
@@ -101,6 +102,12 @@ try {
 				hapstr += TargetPort.toString(16);
 				FServerSocket.send(hapstr);
 			}
+
+            var ipFile = new File (system.temp_path + 'sbbs-ws-' + FServerSocket.local_port + '.ip');
+            if (ipFile.open('w')) {
+                ipFile.write(client.ip_address);
+                ipFile.close();
+            }
 
             // Loop while we're still connected on both ends
             while ((client.socket.is_connected) && (FServerSocket.is_connected)) {
@@ -129,6 +136,7 @@ try {
             }
             if (!client.socket.is_connected) log(LOG_DEBUG, 'Client socket no longer connected');
 			if (!FServerSocket.is_connected) log(LOG_DEBUG, 'Server socket no longer connected');
+            ipFile.remove();
         } else {
             // FServerSocket.connect() failed
             log(LOG_ERR, "Error " + FServerSocket.error + " connecting to server at " + TargetHostname + ":" + TargetPort);
