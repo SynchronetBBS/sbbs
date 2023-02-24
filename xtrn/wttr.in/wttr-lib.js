@@ -67,13 +67,19 @@ function getWeather() {
 	const settings = loadSettings();
 	const addr = locator.getAddress() || settings.fallback_ip;
 	const url = getURL(settings, addr);
-	const cachedWeather = readCache(url, addr, settings.cache_ttl);
-	if (cachedWeather !== undefined) return cachedWeather;
+	if (settings.cache_ttl > 0) {
+		const cachedWeather = readCache(url, addr, settings.cache_ttl);
+		if (cachedWeather !== undefined) return cachedWeather;
+	}
 	const weather = fetchWeather(url, addr);
 	const text = uReplace(weather);
 	const ansi = xterm.convertColors(text);
-	writeCache(url, addr, ansi);
+	if (settings.cache_ttl > 0) writeCache(url, addr, ansi);
 	return ansi;
 }
 
-this;
+const exports = {
+	getWeather: getWeather,
+};
+
+exports;
