@@ -113,4 +113,8 @@ function convertColors(str) {
 	);
 }
 
-this;
+const exports = {
+	convertColors: convertColors,
+}
+
+exports;
