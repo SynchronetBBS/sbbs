@@ -45,7 +45,7 @@ Contents
 
 	See https://wttr.in/:help for details on query parameters.
 
-	By default, this script will query https://wttr.in/?AFn and will cache
+	By default, this script will query https://wttr.in/?1AFn and will cache
 	non-error responses for 3600 seconds (one hour). If the user's IP address
 	is available, wttr.in will use it for geolocation. If the user's IP
 	address is not available, your BBS' external IP address will be used for
@@ -60,7 +60,7 @@ Contents
 		[wttr.in]
 		base_url = https://wttr.in/
 		units = m
-		view = AFn
+		view = 1AFn
 		cache_ttl = 3600
 
 	All of the above settings are optional and any may be omitted. Substitute

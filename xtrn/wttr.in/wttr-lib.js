@@ -26,7 +26,7 @@ function loadSettings(argv) {
 	var settings = load({}, 'modopts.js', 'wttr.in') || {};
 	if (settings.base_url === undefined) settings.base_url = 'https://wttr.in/';
 	if (settings.units === undefined) settings.units = '';
-	if (settings.view === undefined) settings.view = 'AFn';
+	if (settings.view === undefined) settings.view = '1AFn';
 	if (settings.cache_ttl === undefined) settings.cache_ttl = 3600;
 	if (settings.fallback_location === undefined) settings.fallback_location = '';
 	settings = parseArgs(settings, argv);
