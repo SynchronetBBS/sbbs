@@ -85,6 +85,12 @@ try {
 		log(LOG_DEBUG, "Connecting to " + TargetHostname + ":" + TargetPort);
         if (FServerSocket.connect(TargetHostname, TargetPort)) {
 
+            ipFile = new File(system.temp_path + 'sbbs-ws-' + FServerSocket.local_port + '.ip');
+            if (ipFile.open('w')) {
+                ipFile.write(client.ip_address);
+                ipFile.close();
+            }
+
             // Variables we'll use in the loop
             var DoYield = true;
             var ClientData = [];
@@ -104,12 +110,6 @@ try {
 				FServerSocket.send(hapstr);
 			}
             
-            ipFile = new File(system.temp_path + 'sbbs-ws-' + FServerSocket.local_port + '.ip');
-            if (ipFile.open('w')) {
-                ipFile.write(client.ip_address);
-                ipFile.close();
-            }
-
             // Loop while we're still connected on both ends
             while ((client.socket.is_connected) && (FServerSocket.is_connected)) {
                 // Should we yield or not (default true, but disable if we had line activity)
