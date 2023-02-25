@@ -1,0 +1,23 @@
+# Synchronet IRCd startup file
+# Only for use when you want the ircd.js to run via jsexec, separate from sbbs
+# You should have the ircd service *disabled* in your sbbs/ctrl/services.ini
+
+[Unit]
+Description=Synchronet IRC service
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=SBBSCTRL=/sbbs/ctrl
+User=sbbs
+Group=sbbs
+PermissionsStartOnly=true
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+ExecStart=/sbbs/exec/jsexec -A -L7 ircd.js
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=30
+LimitNOFILE=10000
+
+[Install]
+WantedBy=multi-user.target
