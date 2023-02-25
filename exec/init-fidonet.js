@@ -141,6 +141,7 @@ function send_app_netmail(destaddr)
 		to_net_addr: destaddr,
 		from: sysop,
 		from_ext: 1,
+		replyto_net_addr: sysop_email,
 		subject: netname + " node number request"
 	}
 	print("Message text:");
@@ -555,16 +556,27 @@ while(!confirm("Your node address is " + fidoaddr.to_str(your)) && !aborted()) {
 		your.point = parseInt(prompt("Your point number (i.e. 0 for a normal node)"));
 }
 
-/* Get/Confirm Sysop Name */
+/* Get/Confirm Sysop Name and E-mail address*/
+var sysop_email;
 var sysop = system.operator;
 if(system.stats.total_users) {
 	var u = new User(1);
-	if(u && u.name)
-		sysop = u.name;
+	if(u) {
+		if(u.name)
+			sysop = u.name;
+		if(netaddr_type(u.netmail) == NET_INTERNET)
+			sysop_email = u.netmail;
+	}
 }
 sysop = get_binkp_sysop() || sysop;
 while((!sysop || !confirm("Your name is '" + sysop + "'")) && !aborted())
 	sysop = prompt("Your name");
+if(!sysop_email) {
+	sysop_email = sysop.replace(' ', '.');
+	sysop_email += '@' + system.inet_addr;
+}
+while((netaddr_type(sysop_email) != NET_INTERNET || !confirm("Your e-mail address is " + sysop_email)) && !aborted())
+	sysop_email = prompt("Your e-mail address");
 
 /* Get/Confirm passwords */
 while((!link.AreaFixPwd || !confirm("Your AreaFix Password is '" + link.AreaFixPwd + "'")) && !aborted())
