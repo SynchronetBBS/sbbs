@@ -575,8 +575,8 @@ if(!sysop_email) {
 	sysop_email = sysop.replace(' ', '.');
 	sysop_email += '@' + system.inet_addr;
 }
-while((netaddr_type(sysop_email) != NET_INTERNET || !confirm("Your e-mail address is " + sysop_email)) && !aborted())
-	sysop_email = prompt("Your e-mail address");
+while((netaddr_type(sysop_email) != NET_INTERNET || !confirm("Your Internet e-mail address is " + sysop_email)) && !aborted())
+	sysop_email = prompt("Your Internet e-mail address");
 
 /* Get/Confirm passwords */
 while((!link.AreaFixPwd || !confirm("Your AreaFix Password is '" + link.AreaFixPwd + "'")) && !aborted())
@@ -708,11 +708,8 @@ if(network.echolist
 			file.close();
 
 			// try to extract
-			var prefix = "";
-			if(system.platform == "Win32")
-				prefix = system.exec_dir;
-			if (system.exec(prefix + "unzip -CLjo " + file_getname(network.pack) + " " + echolist_fname) !== 0) {
-				print("Please extract " + network.echolist + " from " + file.name + " into " + system.ctrl_dir);
+			if(Archive(file.name).extract(system.ctrl_dir, echolist_fname) !== 1) {
+				print("Please extract " + echolist_fname + " from " + file.name + " into " + system.ctrl_dir);
 			}
 
 			break;
