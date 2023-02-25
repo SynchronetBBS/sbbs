@@ -31,6 +31,16 @@ void sbbs_t::scandirs(int mode)
 	int		s;
 	uint	i,k;
 
+	if(cfg.scandirs_mod[0] && !scandirs_inside) {
+		char cmdline[256];
+
+		scandirs_inside = true;
+		snprintf(cmdline, sizeof(cmdline), "%s 0 %u", cfg.scandirs_mod, mode);
+		exec_bin(cmdline, &main_csi);
+		scandirs_inside = false;
+		return;
+	}
+
 	if(!usrlibs) return;
 	mnemonics(text[DirLibOrAll]);
 	SAFEPRINTF2(keys, "%s%c\r", text[DirLibKeys], all_key());
@@ -103,6 +113,16 @@ void sbbs_t::scanalldirs(int mode)
 	char	str[256]="";
 	int		s;
 	uint	i,j,k,d;
+
+	if(cfg.scandirs_mod[0] && !scandirs_inside) {
+		char cmdline[256];
+
+		scandirs_inside = true;
+		snprintf(cmdline, sizeof(cmdline), "%s 1 %u", cfg.scandirs_mod, mode);
+		exec_bin(cmdline, &main_csi);
+		scandirs_inside = false;
+		return;
+	}
 
 	if(!usrlibs) return;
 	k=0;

@@ -1078,7 +1078,9 @@ public:
 	/* listfile.cpp */
 	bool	listfile(file_t*, uint dirnum, const char *search, const char letter, size_t namelen);
 	int		listfiles(uint dirnum, const char *filespec, FILE* tofile, int mode);
+	bool	listfiles_inside = false;
 	int		listfileinfo(uint dirnum, const char *filespec, int mode);
+	bool	listfileinfo_inside = false;
 	void	listfiletofile(file_t*, FILE*);
 	int		batchflagprompt(smb_t*, file_t* bf[], uint row[], uint total, int totalfiles);
 
@@ -1201,6 +1203,7 @@ public:
 	/* scandirs.cpp */
 	void	scanalldirs(int mode);
 	void	scandirs(int mode);
+	bool	scandirs_inside = false;
 
 	#define nosound()
 	#define checkline()

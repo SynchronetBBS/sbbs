@@ -33,7 +33,7 @@ int extdesclines(char *str);
 /* list the directory header.                                                */
 /* Returns -1 if the listing was aborted, otherwise total files listed		 */
 /*****************************************************************************/
-int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, int mode)
+int sbbs_t::listfiles(const uint dirnum, const char *filespec, FILE* tofile, const int mode)
 {
 	char	hdr[256],letter='A';
 	uchar	flagprompt=0;
@@ -45,6 +45,20 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, int mode)
 	file_t* bf[BF_MAX];	/* bf is batch flagged files */
 	uint	file_row[BF_MAX];
 	size_t	longest = 0;
+
+	if(!tofile) {
+		action = NODE_LFIL;
+		curdirnum = dirnum;
+		if(cfg.listfiles_mod[0] && !listfiles_inside) {
+			char cmdline[256];
+
+			listfiles_inside = true;
+			snprintf(cmdline, sizeof(cmdline), "%s %s %u %s", cfg.listfiles_mod, cfg.dir[dirnum]->code, mode, filespec);
+			i=exec_bin(cmdline, &main_csi);
+			listfiles_inside = false;
+			return i;
+		}
+	}
 
 	if(!smb_init_dir(&cfg, &smb, dirnum))
 		return 0;
@@ -76,7 +90,6 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, int mode)
 	}
 
 	if(!tofile) {
-		action=NODE_LFIL;
 		getnodedat(cfg.node_num,&thisnode,0);
 		if(thisnode.action!=NODE_LFIL) {	/* was a sync */
 			if(getnodedat(cfg.node_num,&thisnode,true)==0) {
@@ -330,7 +343,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, FILE* tofile, int mode)
 /* Prints one file's information on a single line                           */
 /* Return 1 if displayed, 0 otherwise										*/
 /****************************************************************************/
-bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char letter, size_t namelen)
+bool sbbs_t::listfile(file_t* f, const  uint dirnum, const char *search, const char letter, size_t namelen)
 {
 	char	*ptr;
 	bool	exist = true;
@@ -447,8 +460,8 @@ bool sbbs_t::listfile(file_t* f, uint dirnum, const char *search, const char let
 /* Returns -1 if 'Q' or Ctrl-C, 0 if skip, 1 if [Enter], 2 otherwise        */
 /* or 3, backwards. 														*/
 /****************************************************************************/
-int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, uint total
-							,int totalfiles)
+int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const uint total
+							,const int totalfiles)
 {
 	char	ch,str[256],*p,remcdt=0,remfile=0;
 	int		c, d;
@@ -719,7 +732,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, uint total
 /* action depending on 'mode.'                                              */
 /* Returns number of files matching filespec that were found                */
 /****************************************************************************/
-int sbbs_t::listfileinfo(uint dirnum, const char *filespec, int mode)
+int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode)
 {
 	char	str[MAX_PATH + 1],path[MAX_PATH + 1],dirpath[MAX_PATH + 1],done=0,ch;
 	char 	tmp[512];
@@ -730,6 +743,19 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, int mode)
     time_t	start,end,t;
     file_t*	f;
 	struct	tm tm;
+
+	action = NODE_LFIL;
+	curdirnum = dirnum;
+
+	if(cfg.fileinfo_mod[0] && !listfileinfo_inside) {
+		char cmdline[256];
+
+		listfileinfo_inside = true;
+		snprintf(cmdline, sizeof(cmdline), "%s %s %u %s", cfg.fileinfo_mod, cfg.dir[dirnum]->code, mode, filespec);
+		i=exec_bin(cmdline, &main_csi);
+		listfileinfo_inside = false;
+		return i;
+	}
 
 	if(!smb_init_dir(&cfg, &smb, dirnum))
 		return 0;
@@ -766,7 +792,6 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, int mode)
 			continue;
 		if((mode==FI_OLDUL || mode==FI_OLD) && f->hdr.when_written.time > ns_time)
 			continue;
-		curdirnum = dirnum;
 		if(mode==FI_OFFLINE && getfilesize(&cfg, f) >= 0)
 			continue;
 		if(mode==FI_USERXFER) {

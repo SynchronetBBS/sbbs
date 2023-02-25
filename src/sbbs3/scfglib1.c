@@ -249,6 +249,9 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->logonlist_mod, iniGetString(section, NULL, "logonlist", "logonlist", value));
 	SAFECOPY(cfg->prextrn_mod, iniGetString(section, NULL, "prextrn", "prextrn", value));
 	SAFECOPY(cfg->postxtrn_mod, iniGetString(section, NULL, "postxtrn", "postxtrn", value));
+	SAFECOPY(cfg->scandirs_mod, iniGetString(section, NULL, "scandirs", "", value));
+	SAFECOPY(cfg->listfiles_mod, iniGetString(section, NULL, "listfiles", "", value));
+	SAFECOPY(cfg->fileinfo_mod, iniGetString(section, NULL, "fileinfo", "", value));
 	SAFECOPY(cfg->tempxfer_mod, iniGetString(section, NULL, "tempxfer", "tempxfer", value));
 
 	/*******************/
