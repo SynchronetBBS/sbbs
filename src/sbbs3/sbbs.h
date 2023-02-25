@@ -397,28 +397,28 @@ public:
 	bbs_startup_t*	startup;
 
 	bool	init(void);
-	BOOL	terminated;
+	BOOL	terminated = false;
 
-	client_t client;
-	SOCKET	client_socket;
-	SOCKET	client_socket_dup;
-	union xp_sockaddr	client_addr;
-	char	client_name[128];
-	char	client_ident[128];
-	char	client_ipaddr[INET6_ADDRSTRLEN];
-	char	local_addr[INET6_ADDRSTRLEN];
+	client_t client{};
+	SOCKET	client_socket = INVALID_SOCKET;
+	SOCKET	client_socket_dup = INVALID_SOCKET;
+	union xp_sockaddr	client_addr{};
+	char	client_name[128]{};
+	char	client_ident[128]{};
+	char	client_ipaddr[INET6_ADDRSTRLEN]{};
+	char	local_addr[INET6_ADDRSTRLEN]{};
 #ifdef USE_CRYPTLIB
 	CRYPT_SESSION	ssh_session=-1;
 #endif
 	int		session_channel=-1;
-	bool	ssh_mode;
+	bool	ssh_mode = false;
 	SOCKET	passthru_socket=INVALID_SOCKET;
-	bool	passthru_socket_active;
+	bool	passthru_socket_active = false;
 	void	passthru_socket_activate(bool);
-    bool	passthru_thread_running;
+    bool	passthru_thread_running = false;
 
-	scfg_t	cfg;
-	struct mqtt* mqtt=NULL;
+	scfg_t	cfg{};
+	struct mqtt* mqtt = nullptr;
 
 	enum ansiState {
 		 ansiState_none		// No sequence
@@ -428,19 +428,19 @@ public:
 		,ansiState_string	// APS, DCS, PM, or OSC
 		,ansiState_sos		// SOS
 		,ansiState_sos_esc	// ESC inside SOS
-	} outchar_esc;			// track ANSI escape seq output
+	} outchar_esc = ansiState_none;	// track ANSI escape seq output
 
 	int 	rioctl(ushort action); // remote i/o control
-	bool	rio_abortable;
+	bool	rio_abortable = false;
 
-    RingBuf	inbuf;
-    RingBuf	outbuf;
+	RingBuf	inbuf{};
+	RingBuf	outbuf{};
 	bool	WaitForOutbufEmpty(int timeout) { return WaitForEvent(outbuf.empty_event, timeout) == WAIT_OBJECT_0; }
 	HANDLE	input_thread=nullptr;
 	pthread_mutex_t	input_thread_mutex;
-	bool	input_thread_mutex_created;
+	bool	input_thread_mutex_created = false;
 	pthread_mutex_t	ssh_mutex;
-	bool	ssh_mutex_created;
+	bool	ssh_mutex_created = false;
 
 	#define OUTCOM_RETRY_DELAY		80		// milliseconds
 	#define OUTCOM_RETRY_ATTEMPTS	1000	// 80 seconds
@@ -456,39 +456,39 @@ public:
 	int		putcom(const char *str, size_t len=0);  // Send string
 	void	hangup(void);		   // Hangup modem
 
-	uchar	telnet_local_option[0x100];
-	uchar	telnet_remote_option[0x100];
+	uchar	telnet_local_option[0x100]{};
+	uchar	telnet_remote_option[0x100]{};
 	void	send_telnet_cmd(uchar cmd, uchar opt);
 	bool	request_telnet_opt(uchar cmd, uchar opt, unsigned waitforack=0);
 
-	uchar	telnet_cmd[64];
-	uint	telnet_cmdlen;
-	uint	telnet_cmds_received;
-	uint	telnet_mode;
+	uchar	telnet_cmd[64]{};
+	uint	telnet_cmdlen = 0;
+	uint	telnet_cmds_received = 0;
+	uint	telnet_mode = 0;
 	/* 	input_thread() writes to these variables: */
-	uchar	telnet_last_rxch;
-	char	telnet_location[128];
-	char	telnet_terminal[TELNET_TERM_MAXLEN+1];
-	int 	telnet_rows;
-	int		telnet_cols;
-	int		telnet_speed;
+	uchar	telnet_last_rxch = 0;
+	char	telnet_location[128]{};
+	char	telnet_terminal[TELNET_TERM_MAXLEN+1]{};
+	int 	telnet_rows = 0;
+	int		telnet_cols = 0;
+	int		telnet_speed = 0;
 
 	xpevent_t	telnet_ack_event;
 
-	time_t	event_time;				// Time of next exclusive event
-	const char*	event_code;				// Internal code of next exclusive event
-	bool	is_event_thread;
-	bool	event_thread_running;
-    bool	output_thread_running;
-    bool	input_thread_running;
-	bool	terminate_output_thread=false;
+	time_t	event_time = 0;				// Time of next exclusive event
+	const char*	event_code = "";			// Internal code of next exclusive event
+	bool	is_event_thread = false;
+	bool	event_thread_running = false;
+    bool	output_thread_running = false;
+    bool	input_thread_running = false;
+	bool	terminate_output_thread = false;
 
-	JSRuntime*		js_runtime;
-	JSContext*		js_cx;
-	JSObject*		js_glob=nullptr;
-	JSRuntime*		js_hotkey_runtime;
-	JSContext*		js_hotkey_cx;
-	JSObject*		js_hotkey_glob=nullptr;
+	JSRuntime*		js_runtime = nullptr;
+	JSContext*		js_cx = nullptr;
+	JSObject*		js_glob = nullptr;
+	JSRuntime*		js_hotkey_runtime = nullptr;
+	JSContext*		js_hotkey_cx = nullptr;
+	JSObject*		js_hotkey_glob = nullptr;
 	js_callback_t	js_callback{};
 	int				js_execfile(const char *fname, const char* startup_dir = NULL
 						,JSObject* scope = NULL, JSContext* cx = NULL, JSObject* glob = NULL);
@@ -497,88 +497,88 @@ public:
 	void			js_cleanup(void);
 	bool			js_create_user_objects(JSContext*, JSObject* glob);
 
-	char	syspage_semfile[MAX_PATH+1];	/* Sysop page semaphore file */
-	char 	menu_dir[128];	/* Over-ride default menu dir */
-	char 	menu_file[128]; /* Over-ride menu file */
+	char	syspage_semfile[MAX_PATH+1]{};	/* Sysop page semaphore file */
+	char 	menu_dir[128]{};	/* Over-ride default menu dir */
+	char 	menu_file[128]{};	/* Over-ride menu file */
 
-	user_t	useron; 		/* User currently online */
-	node_t	thisnode;		/* Node information */
-	smb_t	smb;			/* Currently active message base */
-	link_list_t smb_list;
+	user_t	useron{}; 		/* User currently online */
+	node_t	thisnode{};		/* Node information */
+	smb_t	smb{};			/* Currently active message base */
+	link_list_t smb_list{};
 #define SMB_STACK_PUSH	true
 #define SMB_STACK_POP	false
 	int 	smb_stack(smb_t* smb, bool push);
 
-	char	rlogin_name[LEN_ALIAS+1];
-	char	rlogin_pass[LEN_PASS+1];
-	char	rlogin_term[TELNET_TERM_MAXLEN+1];	/* RLogin passed terminal type/speed (e.g. "xterm/57600") */
+	char	rlogin_name[LEN_ALIAS+1]{};
+	char	rlogin_pass[LEN_PASS+1]{};
+	char	rlogin_term[TELNET_TERM_MAXLEN+1]{};	/* RLogin passed terminal type/speed (e.g. "xterm/57600") */
 
-	FILE	*nodefile_fp,
-			*node_ext_fp,
-			*logfile_fp;
+	FILE	*nodefile_fp = nullptr,
+			*node_ext_fp = nullptr,
+			*logfile_fp = nullptr;
 
-	int 	nodefile;		/* File handle for node.dab */
+	int 	nodefile = -1;	/* File handle for node.dab */
 	pthread_mutex_t	nodefile_mutex;
-	int		node_ext;		/* File handle for node.exb */
+	int		node_ext = -1;	/* File handle for node.exb */
 	size_t	batup_total();
 	size_t	batdn_total();
 
 	/*********************************/
 	/* Color Configuration Variables */
 	/*********************************/
-	char 	*text[TOTAL_TEXT];			/* Text from ctrl\text.dat */
-	char 	*text_sav[TOTAL_TEXT];		/* Text from ctrl\text.dat */
+	char 	*text[TOTAL_TEXT]{};			/* Text from ctrl\text.dat */
+	char 	*text_sav[TOTAL_TEXT]{};		/* Text from ctrl\text.dat */
 	char	yes_key(void) { return toupper(text[YNQP][0]); }
 	char	no_key(void) { return toupper(text[YNQP][1]); }
 	char	quit_key(void) { return toupper(text[YNQP][2]); }
 	char	all_key(void) { return toupper(text[AllKey][0]); }
 	char	list_key(void) { return toupper(text[ListKey][0]); }
 
-	char 	dszlog[127];	/* DSZLOG environment variable */
-    int     keybuftop,keybufbot;    /* Keyboard input buffer pointers (for ungetkey) */
-	char    keybuf[KEY_BUFSIZE];    /* Keyboard input buffer */
+	char 	dszlog[127]{};	/* DSZLOG environment variable */
+    int     keybuftop=0, keybufbot=0;    /* Keyboard input buffer pointers (for ungetkey) */
+	char    keybuf[KEY_BUFSIZE]{};    /* Keyboard input buffer */
 	size_t	keybuf_space(void);
 	size_t	keybuf_level(void);
 
-	ushort	node_connection;
-	char	connection[LEN_MODEM+1];	/* Connection Description */
+	ushort	node_connection = NODE_CONNECTION_TELNET;
+	char	connection[LEN_MODEM+1] = "Telnet";	/* Connection Description */
 	uint	cur_rate=0;		/* Current Connection (DCE) Rate */
 	uint	cur_cps=0;		/* Current Average Transfer CPS */
 	uint	dte_rate=0;		/* Current COM Port (DTE) Rate */
 	time_t 	timeout=0;		/* User inactivity timeout reference */
 	uint 	timeleft_warn=0;/* low timeleft warning flag */
-	uint	curatr; 		/* Current Text Attributes Always */
-	uint	attr_stack[64];	/* Saved attributes (stack) */
-	int 	attr_sp;		/* Attribute stack pointer */
-	int 	lncntr; 		/* Line Counter - for PAUSE */
-	bool	msghdr_tos;		/* Message header was displayed at Top of Screen */
+	uint	curatr = LIGHTGRAY;	/* Current Text Attributes Always */
+	uint	attr_stack[64]{};	/* Saved attributes (stack) */
+	int 	attr_sp = 0;	/* Attribute stack pointer */
+	int 	lncntr = 0; 	/* Line Counter - for PAUSE */
+	bool	msghdr_tos = false;	/* Message header was displayed at Top of Screen */
 	int		row=0;			/* Current row */
 	int 	rows=0;			/* Current number of Rows for User */
 	int		cols=0;			/* Current number of Columns for User */
-	int		column;			/* Current column counter (for line counter) */
-	int		tabstop;		/* Current symmetric-tabstop (size) */
-	int		lastlinelen;	/* The previously displayed line length */
+	int		column = 0;		/* Current column counter (for line counter) */
+	int		tabstop = 8;	/* Current symmetric-tabstop (size) */
+	int		lastlinelen = 0;	/* The previously displayed line length */
 	int 	autoterm=0;		/* Auto-detected terminal type */
-	char	terminal[TELNET_TERM_MAXLEN+1];	// <- answer() writes to this
+	char	terminal[TELNET_TERM_MAXLEN+1]{};	// <- answer() writes to this
 	int		cterm_version=0;/* (MajorVer*1000) + MinorVer */
-	link_list_t savedlines;
-	char 	lbuf[LINE_BUFSIZE+1];/* Temp storage for each line output */
-	int		lbuflen;		/* Number of characters in line buffer */
+	link_list_t savedlines{};
+	char 	lbuf[LINE_BUFSIZE+1]{};/* Temp storage for each line output */
+	int		lbuflen = 0;	/* Number of characters in line buffer */
 	uint	latr=0;			/* Starting attribute of line buffer */
 	uint	line_delay=0;	/* Delay duration (ms) after each line sent */
-	uint	console;		/* Defines current Console settings */
-	char 	wordwrap[81];	/* Word wrap buffer */
+	uint	console = 0;	/* Defines current Console settings */
+	char 	wordwrap[81]{};	/* Word wrap buffer */
 	time_t	now=0,			/* Used to store current time in Unix format */
-			last_sysop_auth,/* Time sysop was last authenticated */
+			last_sysop_auth=0,/* Time sysop was last authenticated */
 			answertime=0, 	/* Time call was answered */
 			logontime=0,	/* Time user logged on */
 			starttime=0,	/* Time stamp to use for time left calcs */
 			ns_time=0,		/* File new-scan time */
-			last_ns_time;	/* Most recent new-file-scan this call */
-	uchar 	action;			/* Current action of user */
-	int 	online; 		/* Remote/Local or not online */
-	int 	sys_status; 	/* System Status */
-	subscan_t	*subscan;	/* User sub configuration/scan info */
+			last_ns_time=0;	/* Most recent new-file-scan this call */
+	uchar 	action = NODE_MAIN;		/* Current action of user */
+	int 	online = 0; 	/* Remote/Local or not online */
+	int 	sys_status = 0;	/* System Status */
+	subscan_t* subscan = nullptr;	/* User sub configuration/scan info */
 
 	int64_t	logon_ulb=0,	/* Upload Bytes This Call */
 			logon_dlb=0;	/* Download Bytes This Call */
@@ -587,58 +587,58 @@ public:
 	uint	logon_posts=0,	/* Posts This Call */
 			logon_emails=0,	/* Emails This Call */
 			logon_fbacks=0;	/* Feedbacks This Call */
-	uchar	logon_ml;		/* Security level of the user upon logon */
+	uchar	logon_ml = 0;	/* Security level of the user upon logon */
 
-	uint 	main_cmds;		/* Number of Main Commands this call */
-	uint 	xfer_cmds;		/* Number of Xfer Commands this call */
-	uint	posts_read; 	/* Number of Posts read this call */
-	bool 	autohang;		/* Used for auto-hangup after transfer */
-	size_t 	logcol; 		/* Current column of log file */
-	uint 	criterrs; 		/* Critical error counter */
+	uint 	main_cmds = 0;		/* Number of Main Commands this call */
+	uint 	xfer_cmds = 0;		/* Number of Xfer Commands this call */
+	uint	posts_read = 0; 	/* Number of Posts read this call */
+	bool 	autohang = false;	/* Used for auto-hangup after transfer */
+	size_t 	logcol = 1; 		/* Current column of log file */
+	uint 	criterrs = 0;		/* Critical error counter */
 
-	uint 	curgrp; 		/* Current group */
-	uint	*cursub;		/* Current sub-board for each group */
-	uint	curlib; 		/* Current library */
-	uint	*curdir;		/* Current directory for each library */
-	uint 	*usrgrp;		/* Real group numbers */
-	uint	usrgrps;		/* Number groups this user has access to */
-	uint	usrgrp_total;	/* Total number of groups */
-	uint 	*usrlib;		/* Real library numbers */
-	uint	usrlibs;		/* Number of libs this user can access */
-	uint	usrlib_total;	/* Total number of libraries */
-	uint 	**usrsub;		/* Real sub numbers */
-	uint	*usrsubs;		/* Num of subs with access for each grp */
-	uint 	**usrdir;		/* Real dir numbers */
-	uint	*usrdirs;		/* Num of dirs with access for each lib */
-	uint	cursubnum;		/* For ARS */
-	uint	curdirnum;		/* For ARS */
-	uint 	timeleft;		/* Number of seconds user has left online */
+	uint 	curgrp = 0;				/* Current group */
+	uint	*cursub = nullptr;		/* Current sub-board for each group */
+	uint	curlib = 0; 			/* Current library */
+	uint	*curdir = nullptr;		/* Current directory for each library */
+	uint 	*usrgrp = nullptr;		/* Real group numbers */
+	uint	usrgrps = 0;			/* Number groups this user has access to */
+	uint	usrgrp_total = 0;		/* Total number of groups */
+	uint 	*usrlib = nullptr;		/* Real library numbers */
+	uint	usrlibs = 0;			/* Number of libs this user can access */
+	uint	usrlib_total = 0;		/* Total number of libraries */
+	uint 	**usrsub = nullptr;		/* Real sub numbers */
+	uint	*usrsubs = nullptr;		/* Num of subs with access for each grp */
+	uint 	**usrdir = nullptr;		/* Real dir numbers */
+	uint	*usrdirs = nullptr;		/* Num of dirs with access for each lib */
+	uint	cursubnum = INVALID_SUB;	/* For ARS */
+	uint	curdirnum = INVALID_DIR;	/* For ARS */
+	uint 	timeleft = 60 * 10;	/* Number of seconds user has left online */
 
-	char 	*comspec;		/* Pointer to environment variable COMSPEC */
-	char 	cid[LEN_CID+1]; /* Caller ID (IP Address) of current caller */
-	char 	*noaccess_str;	/* Why access was denied via ARS */
-	int 	noaccess_val;	/* Value of parameter not met in ARS */
-	int		errorlevel; 	/* Error level of external program */
+	char 	*comspec = nullptr;	/* Pointer to environment variable COMSPEC */
+	char 	cid[LEN_CID+1]{}; /* Caller ID (IP Address) of current caller */
+	char 	*noaccess_str = nullptr;	/* Why access was denied via ARS */
+	int 	noaccess_val = 0;	/* Value of parameter not met in ARS */
+	int		errorlevel = 0;	/* Error level of external program */
 
-	csi_t	main_csi;		/* Main Command Shell Image */
+	csi_t	main_csi{};		/* Main Command Shell Image */
 
-	const smbmsg_t*	current_msg;	/* For message header @-codes */
-	const char*	current_msg_subj;
-	const char*	current_msg_from;
-	const char*	current_msg_to;
-	file_t*	current_file;	
+	const smbmsg_t*	current_msg = nullptr;	/* For message header @-codes */
+	const char*	current_msg_subj = nullptr;
+	const char*	current_msg_from = nullptr;
+	const char*	current_msg_to = nullptr;
+	file_t*	current_file = nullptr;	
 
 			/* Global command shell variables */
-	uint	global_str_vars;
-	char **	global_str_var;
-	uint32_t *	global_str_var_name;
-	uint	global_int_vars;
-	int32_t *	global_int_var;
-	uint32_t *	global_int_var_name;
-	char *	sysvar_p[MAX_SYSVARS];
-	uint	sysvar_pi;
-	long	sysvar_l[MAX_SYSVARS];
-	uint	sysvar_li;
+	uint	global_str_vars = 0;
+	char **	global_str_var = nullptr;
+	uint32_t *	global_str_var_name = nullptr;
+	uint	global_int_vars = 0;
+	int32_t *	global_int_var = nullptr;
+	uint32_t *	global_int_var_name = nullptr;
+	char *	sysvar_p[MAX_SYSVARS]{};
+	uint	sysvar_pi = 0;
+	long	sysvar_l[MAX_SYSVARS]{};
+	uint	sysvar_li = 0;
 
     /* ansi_term.cpp */
 	const char*	ansi(int atr);			/* Returns ansi escape sequence for atr */
@@ -720,14 +720,14 @@ public:
 	uint	finduserstr(uint usernumber, enum user_field, const char* str
 				,bool del=false, bool next=false);
 	uint	gettimeleft(bool handle_out_of_time=true);
-	bool	gettimeleft_inside;
+	bool	gettimeleft_inside = false;
 
 	/* str.cpp */
 	char*	server_host_name(void);
 	char*	timestr(time_t);
 	char*	datestr(time_t);
-    char	timestr_output[60];
-	char	datestr_output[60];
+	char	timestr_output[60]{};
+	char	datestr_output[60]{};
 	char*	age_of_posted_item(char* buf, size_t max, time_t);
 	void	userlist(int mode);
 	size_t	gettmplt(char *outstr, const char *tmplt, int mode);
@@ -740,7 +740,7 @@ public:
 	bool	inputnstime(time_t *dt);
 	bool	chkpass(char *pass, user_t* user, bool unique);
 	char *	cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, int mode = EX_UNSPECIFIED);
-	char	cmdstr_output[512];
+	char	cmdstr_output[512]{};
 	char*	ultoac(uint32_t, char*, char sep=',');
 	char*	u64toac(uint64_t, char*, char sep=',');
 
@@ -776,7 +776,7 @@ public:
 	int		process_edited_text(char* buf, FILE* stream, int mode, unsigned* lines, unsigned maxlines);
 	int		process_edited_file(const char* src, const char* dest, int mode, unsigned* lines, unsigned maxlines);
 	void	editor_info_to_msg(smbmsg_t*, const char* editor, const char* charset);
-	char	editor_details[128];
+	char	editor_details[128]{};
 
 	/* postmsg.cpp */
 	bool	postmsg(uint subnum, int wm_mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
@@ -793,9 +793,9 @@ public:
 	bool	show_msg(smb_t*, smbmsg_t*, int p_mode = 0, post_t* post = NULL);
 	bool	msgtotxt(smb_t*, smbmsg_t*, const char *fname, bool header = true, uint gettxt_mode = GETMSGTXT_ALL);
 	const char* msghdr_text(const smbmsg_t*, uint index);
-	char	msghdr_utf8_text[128];
+	char	msghdr_utf8_text[128]{};
 	const char* msghdr_field(const smbmsg_t*, const char* str, char* buf = NULL, bool can_utf8 = false);
-	char	msgghdr_field_cp437_str[128];
+	char	msgghdr_field_cp437_str[128]{};
 	uint	getlastmsg(uint subnum, uint32_t *ptr, time_t *t);
 	time_t	getmsgtime(uint subnum, uint ptr);
 	uint	getmsgnum(uint subnum, time_t t);
@@ -803,7 +803,7 @@ public:
 
 	/* readmail.cpp */
 	void	readmail(uint usernumber, int which, int lm_mode = 0);
-	bool	readmail_inside;
+	bool	readmail_inside = false;
 	int	searchmail(mail_t*, int start, int msgss, int which, const char *search, const char* order);
 
 	/* bulkmail.cpp */
@@ -888,11 +888,11 @@ public:
 		output_rate_57600 = 57600,
 		output_rate_76800 = 76800,
 		output_rate_115200 = 115200,
-	} cur_output_rate;
+	} cur_output_rate = output_rate_unlimited;
 	void	set_output_rate(enum output_rate);
 
 	/* getstr.cpp */
-	size_t	getstr_offset;
+	size_t	getstr_offset = 0;
 	size_t	getstr(char *str, size_t length, int mode, const str_list_t history = NULL);
 	int		getnum(uint max, uint dflt=0);
 	void	insert_indicator(void);
@@ -902,12 +902,12 @@ public:
 	int		getkeys(const char *str, uint max, int mode = K_UPPER);
 	void	ungetkey(char ch, bool insert = false);		/* Places 'ch' into the input buffer    */
 	void	ungetstr(const char* str, bool insert = false);
-	char	question[MAX_TEXTDAT_ITEM_LEN+1];
+	char	question[MAX_TEXTDAT_ITEM_LEN+1]{};
 	bool	yesno(const char *str, int mode = 0);
 	bool	noyes(const char *str, int mode = 0);
-	bool	pause_inside;
+	bool	pause_inside = false;
 	void	pause(void);
-	const char *	mnestr;
+	const char*	mnestr = nullptr;
 	void	mnemonics(const char *str);
 
 	/* inkey.cpp */
@@ -923,11 +923,11 @@ public:
 #define MOUSE_MODE_EXT		(1<<4)	// SGR-encoded extended coordinate mouse reporting
 #define MOUSE_MODE_ON		(MOUSE_MODE_NORM | MOUSE_MODE_EXT) // Default mouse "enabled" mode flags
 
-	int		mouse_mode;			// Mouse reporting mode flags
-	uint	hot_attr;			// Auto-Mouse hot-spot attribute (when non-zero)
-	bool	hungry_hotspots;
-	link_list_t mouse_hotspots;	// Mouse hot-spots
-	struct mouse_hotspot* pause_hotspot;
+	int		mouse_mode = MOUSE_MODE_OFF;	// Mouse reporting mode flags
+	uint	hot_attr = 0;		// Auto-Mouse hot-spot attribute (when non-zero)
+	bool	hungry_hotspots = true;
+	link_list_t mouse_hotspots{};	// Mouse hot-spots
+	struct mouse_hotspot* pause_hotspot = nullptr;
 	struct mouse_hotspot* add_hotspot(struct mouse_hotspot*);
 	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
 	struct mouse_hotspot* add_hotspot(uint num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
@@ -944,7 +944,7 @@ public:
 	bool	menu_exists(const char *code, const char* ext=NULL, char* realpath=NULL);
 
 	int		uselect(int add, uint n, const char *title, const char *item, const uchar *ar);
-	uint	uselect_total, uselect_num[500];
+	uint	uselect_total = 0, uselect_num[500]{};
 
 	int		mselect(const char *title, str_list_t list, unsigned max_selections, const char* item_fmt, const char* selected_str, const char* unselected_str, const char* prompt_fmt);
 
@@ -962,8 +962,8 @@ public:
 	int		getnodeext(uint number, char * str);
 	int		getnodedat(uint number, node_t * node, bool lock);
 	void	nodesync(bool clearline = false);
-	user_t	nodesync_user;
-	bool	nodesync_inside;
+	user_t	nodesync_user{};
+	bool	nodesync_inside = false;
 	uint	count_nodes(bool self = true);
 
 	/* putnode.cpp */
@@ -993,7 +993,7 @@ public:
 	/* readmsgs.cpp */
 	post_t* loadposts(uint32_t *posts, uint subnum, uint ptr, int mode, uint *unvalidated_num, uint32_t* visible=NULL);
 	int		scanposts(uint subnum, int mode, const char* find);	/* Scan sub-board */
-	bool	scanposts_inside;
+	bool	scanposts_inside = false;
 	int		listsub(uint subnum, int mode, int start, const char* search);
 	int		listmsgs(uint subnum, int mode, post_t* post, int start, int posts, bool reading = true);
 	int		searchposts(uint subnum, post_t* post, int start, int msgs, const char* find);
@@ -1008,10 +1008,10 @@ public:
 	void	multinodechat(int channel=1);
 	void	nodepage(void);
 	void	nodemsg(void);
-	uint	nodemsg_inside;
-	uint	hotkey_inside;
-	uchar	lastnodemsg;	/* Number of node last message was sent to */
-	char	lastnodemsguser[LEN_ALIAS+1];
+	uint	nodemsg_inside = 0;
+	uint	hotkey_inside = 0;
+	uchar	lastnodemsg = 0;	/* Number of node last message was sent to */
+	char	lastnodemsguser[LEN_ALIAS+1]{};
 	void	guruchat(char* line, char* guru, int gurunum, char* last_answer);
 	bool	guruexp(char **ptrptr, char *line);
 	void	localguru(char *guru, int gurunum);
@@ -1043,7 +1043,7 @@ public:
 	bool	uploadfile(file_t* f);
 	bool	okay_to_upload(uint dirnum);
 	bool	upload(uint dirnum);
-    char	upload_lastdesc[LEN_FDESC+1];
+	char	upload_lastdesc[LEN_FDESC+1]{};
 	bool	bulkupload(uint dirnum);
 
 	/* download.cpp */
@@ -1105,8 +1105,8 @@ public:
 
 	/* xtrn.cpp */
 	int		external(const char* cmdline, int mode, const char* startup_dir=NULL);
-	int		xtrn_mode;
-	char	term_env[256];
+	int		xtrn_mode = 0;
+	char	term_env[256]{};
 
 	/* xtrn_sec.cpp */
 	int		xtrn_sec(const char* section = "");	/* The external program section  */
@@ -1124,20 +1124,20 @@ public:
 	void	logline(const char *code,const char *str); /* Writes 'str' on it's own line in log (LOG_INFO level) */
 	void	logline(int level, const char *code,const char *str);
 	void	logofflist(void);              /* List of users logon activity */
-	bool	errormsg_inside;
+	bool	errormsg_inside = false;
 	void	errormsg(int line, const char* function, const char *source, const char* action, const char *object
 				,int access=0, const char *extinfo=NULL);
 	BOOL	hacklog(const char* prot, const char* text);
 
 	/* qwk.cpp */
-	uint	qwkmail_last;
+	uint	qwkmail_last = 0;
 	void	qwk_sec(void);
-	uint	total_qwknodes;
+	uint	total_qwknodes = 0;
 	struct qwknode {
 		char	id[LEN_QWKID+1];
 		char	path[MAX_PATH+1];
 		time_t	time;
-	}* qwknode;
+	}* qwknode = nullptr;
 	void	update_qwkroute(char *via);
 	void	qwk_success(uint msgcnt, char bi, char prepack);
 	void	qwksetptr(uint subnum, char *buf, int reset);
@@ -1195,7 +1195,7 @@ public:
 
 	/* scansubs.cpp */
 	void	scansubs(int mode);
-	bool	scansubs_inside;
+	bool	scansubs_inside = false;
 	void	scanallsubs(int mode);
 	void	new_scan_cfg(uint misc);
 	void	new_scan_ptr_cfg(void);
