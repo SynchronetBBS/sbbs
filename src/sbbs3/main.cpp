@@ -3270,8 +3270,6 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	// Initialize some member variables used by lputs:
 	this->is_event_thread = is_event_thread;
 	cfg.node_num = node_num;
-	event_code = nulstr;
-	ZERO_VAR(useron);
 	SAFECOPY(client_name, name);
 
     lprintf(LOG_DEBUG,"constructor using socket %d (settings=%x)"
@@ -3308,176 +3306,23 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	}
 	lprintf(LOG_DEBUG, "temporary file directory: %s", cfg.temp_dir);
 
-	terminated = false;
-	event_thread_running = false;
-    input_thread_running = false;
-    output_thread_running = false;
-	passthru_socket_active = false;
-	passthru_thread_running = false;
-
-	if(client_info==NULL)
-		memset(&client,0,sizeof(client));
-	else
+	if(client_info != nullptr)
 		memcpy(&client,client_info,sizeof(client));
 	client_addr.store = addr->store;
 	client_socket = sd;
 	client_socket_dup=INVALID_SOCKET;
-	client_ident[0]=0;
-	client_ipaddr[0]=0;
-
-	terminal[0]=0;
-	telnet_location[0]=0;
-	telnet_terminal[0]=0;
-	telnet_cols=0;
-	telnet_rows=0;
-	telnet_speed=0;
-	telnet_cmds_received = 0;
-	rlogin_name[0]=0;
-	rlogin_pass[0]=0;
-	rlogin_term[0]=0;
 
 	/* Init some important variables */
 
-	input_thread_mutex_created = false;
-#ifdef USE_CRYPTLIB
-	ssh_mode=false;
-	ssh_mutex_created=false;
-#endif
-
-	rio_abortable=false;
-
-	mouse_mode = MOUSE_MODE_OFF;
-	hungry_hotspots = true;
-	pause_hotspot = NULL;
-	console = 0;
-	online = 0;
-	outchar_esc = ansiState_none;
-	nodemsg_inside = 0;	/* allows single nest */
-	hotkey_inside = 0;	/* allows single nest */
-	event_time = 0;
-	nodesync_inside = false;
-	errormsg_inside = false;
-	gettimeleft_inside = false;
-	readmail_inside = false;
-	scanposts_inside = false;
-	scansubs_inside = false;
-	pause_inside = false;
-	timeleft = 60*10;	/* just incase this is being used for calling gettimeleft() */
-	last_sysop_auth = 0;
-	uselect_total = 0;
-	lbuflen = 0;
-	keybufbot=keybuftop=0;	/* initialize [unget]keybuf pointers */
-	SAFECOPY(connection,"Telnet");
-	node_connection=NODE_CONNECTION_TELNET;
-
-	ZERO_VAR(telnet_local_option);
-	ZERO_VAR(telnet_remote_option);
-
-    telnet_cmdlen=0;
-	telnet_mode=0;
-	telnet_last_rxch=0;
 	telnet_ack_event=CreateEvent(NULL, /* Manual Reset: */FALSE,/* InitialState */FALSE,NULL);
 
 	listInit(&savedlines, /* flags: */0);
-	sys_status=lncntr=criterrs=0L;
-	msghdr_tos = false;
 	listInit(&smb_list, /* flags: */0);
 	listInit(&mouse_hotspots, /* flags: */0);
-	column=0;
-	tabstop=8;
-	lastlinelen=0;
-	curatr=LIGHTGRAY;
-	hot_attr = 0;
-	attr_sp=0;	/* attribute stack pointer */
-	errorlevel=0;
-	logcol=1;
-	logfile_fp=NULL;
-	nodefile=-1;
 	pthread_mutex_init(&nodefile_mutex, NULL);
-	node_ext=-1;
-	nodefile_fp=NULL;
-	node_ext_fp=NULL;
-	current_msg=NULL;
-	current_msg_subj=NULL;
-	current_msg_from=NULL;
-	current_msg_to=NULL;
-	current_file=NULL;
-	mnestr=NULL;
-
-#ifdef JAVASCRIPT
-	js_runtime=NULL;	/* runtime */
-	js_cx=NULL;			/* context */
-	js_hotkey_runtime = NULL;
-	js_hotkey_cx = NULL;
-#endif
 
 	for(i=0;i<TOTAL_TEXT;i++)
 		text[i]=text_sav[i]=global_text[i];
-
-	ZERO_VAR(main_csi);
-	ZERO_VAR(thisnode);
-	ZERO_VAR(inbuf);
-	ZERO_VAR(outbuf);
-	ZERO_VAR(smb);
-	ZERO_VAR(nodesync_user);
-
-	action=NODE_MAIN;
-	global_str_vars=0;
-	global_str_var=NULL;
-	global_str_var_name=NULL;
-	global_int_vars=0;
-	global_int_var=NULL;
-	global_int_var_name=NULL;
-	sysvar_li=0;
-	sysvar_pi=0;
-	memset(sysvar_p, 0, sizeof(sysvar_p));
-	memset(sysvar_l, 0, sizeof(sysvar_l));
-
-	cursub=NULL;
-	cursubnum=INVALID_SUB;
-	usrgrp=NULL;
-	usrsubs=NULL;
-	usrsub=NULL;
-	usrgrp_total=0;
-
-	subscan=NULL;
-
-	curdir=NULL;
-	curdirnum=INVALID_SUB;
-	usrlib=NULL;
-	usrdirs=NULL;
-	usrdir=NULL;
-	usrlib_total=0;
-
-	/* used by update_qwkroute(): */
-	qwknode=NULL;
-	total_qwknodes=0;
-
-	qwkmail_last = 0;
-	logon_ulb = 0;
-    logon_dlb = 0;
-    logon_uls = 0;
-    logon_dls = 0;
-    logon_posts = 0;
-    logon_emails = 0;
-    logon_fbacks = 0;
-    logon_ml = 0;
-    main_cmds = 0;
-    xfer_cmds = 0;
-    posts_read = 0;
-    autohang = 0;
-    curgrp = 0;
-    curlib = 0;
-    usrgrps = 0;
-    usrlibs = 0;
-    comspec = 0;
-    noaccess_str = 0;
-    noaccess_val = 0;
-    cur_output_rate = output_rate_unlimited;
-    getstr_offset = 0;
-    lastnodemsg = 0;
-    xtrn_mode = 0;
-	last_ns_time = 0;
 }
 
 //****************************************************************************
