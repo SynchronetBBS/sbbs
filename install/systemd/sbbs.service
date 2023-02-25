@@ -18,7 +18,7 @@
 [Unit]
 Description=Synchronet BBS
 Documentation=http://wiki.synchro.net/
-After=syslog.target network.target
+After=syslog.target network-online.target
 
 [Service]
 Type=forking
