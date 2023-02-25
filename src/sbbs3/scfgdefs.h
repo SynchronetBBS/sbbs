@@ -608,6 +608,9 @@ typedef struct
 	char			scanposts_mod[LEN_CMD+1];	/* Scanning posts (in a single sub) module */
 	char			scansubs_mod[LEN_CMD+1];	/* Scanning sub-boards module */
 	char			listmsgs_mod[LEN_CMD+1];	/* Listing messages module */
+	char			scandirs_mod[LEN_CMD+1];
+	char			listfiles_mod[LEN_CMD+1];
+	char			fileinfo_mod[LEN_CMD+1];
 	char			nodelist_mod[LEN_CMD+1];
 	char			whosonline_mod[LEN_CMD+1];
 	char			privatemsg_mod[LEN_CMD+1];

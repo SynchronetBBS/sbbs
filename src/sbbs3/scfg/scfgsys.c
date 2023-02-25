@@ -2615,6 +2615,9 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-16.16s%s","List Nodes",cfg.nodelist_mod);
 					sprintf(opt[i++],"%-16.16s%s","Who's Online",cfg.whosonline_mod);
 					sprintf(opt[i++],"%-16.16s%s","Private Msg",cfg.privatemsg_mod);
+					sprintf(opt[i++],"%-16.16s%s","Scan Dirs",cfg.scandirs_mod);
+					sprintf(opt[i++],"%-16.16s%s","List Files",cfg.listfiles_mod);
+					sprintf(opt[i++],"%-16.16s%s","View File Info",cfg.fileinfo_mod);
 					sprintf(opt[i++],"%-16.16s%s","Temp Transfer",cfg.tempxfer_mod);
 					opt[i][0]=0;
 					uifc.helpbuf=
@@ -2624,28 +2627,31 @@ void sys_cfg(void)
 						"automatically loaded and executed during certain Terminal Server\n"
 						"operations.  Command-line arguments may be included for all.\n"
 						"\n"
-						"`Login`         Required module for interactive terminal logins (answer)\n"
-						"`Logon`         Executed during terminal logon procedure\n"
-						"`Sync`          Executed when terminal nodes are periodically synchronized\n"
-						"`Logoff`        Executed during terminal logoff procedure (interactive)\n"
-						"`Logout`        Executed during terminal logout procedure (offline)\n"
-						"`New User`      Executed at end of new terminal user creation process\n"
-						"`Expired User`  Executed during daily event when user expires (offline)\n"
-						"`Auto Message`  Executed when a user chooses to edit the auto-message\n"
-						"`Text Section`  Executed to handle general text file (viewing) section\n"
-						"`Xtrn Section`  Executed to handle external programs (doors) section\n"
-						"`Pre Xtrn`      Executed before external programs (doors) run\n"
-						"`Post Xtrn`     Executed after external programs (doors) run\n"
-						"`Temp Transfer` Temporary/archive file transfer menu\n"
-						"`Read Mail`     Executed when a user reads email/netmail\n"
-						"`Scan Msgs`     Executed when a user reads or scans a message sub-board\n"
-						"`Scan Subs`     Executed when a user scans one or more sub-boards for msgs\n"
-						"`List Msgs`     Executed when a user lists msgs from the msg read prompt\n"
-						"`List Logons`   Executed when a user lists logons ('-y' for yesterday)\n"
-						"`List Users`    Executed when a user lists the users of the system\n"
-						"`List Nodes`    Executed when a user lists all nodes\n"
-						"`Who's Online`  Executed when a user lists the nodes in-use (e.g. `^U`)\n"
-						"`Private Msg`   Executed when a user sends a private node msg (e.g. `^P`)\n"
+						"`Login`          Required module for interactive terminal logins (answer)\n"
+						"`Logon`          Terminal logon procedure\n"
+						"`Sync`           Terminal node is periodically synchronized\n"
+						"`Logoff`         Terminal logoff procedure (interactive)\n"
+						"`Logout`         Terminal logout procedure (offline)\n"
+						"`New User`       End of new terminal user creation process\n"
+						"`Expired User`   User account expires (offline)\n"
+						"`Auto Message`   User chooses to re-read or edit the auto-message\n"
+						"`Text Section`   Handle general text file (viewing) section\n"
+						"`Xtrn Section`   Handle external programs (doors) section\n"
+						"`Pre Xtrn`       Executed before external programs (doors) run\n"
+						"`Post Xtrn`      Executed after external programs (doors) run\n"
+						"`Read Mail`      User reads email/netmail\n"
+						"`Scan Msgs`      User reads or scans a message sub-board\n"
+						"`Scan Subs`      User scans one or more sub-boards for msgs\n"
+						"`List Msgs`      User lists msgs from the msg read prompt\n"
+						"`List Logons`    User lists logons ('-y' for yesterday)\n"
+						"`List Users`     User lists the users of the system\n"
+						"`List Nodes`     User lists all nodes\n"
+						"`Who's Online`   User lists the nodes in-use (e.g. `^U`)\n"
+						"`Private Msg`    User sends a private node msg (e.g. `^P`)\n"
+						"`Scan Dirs`      User scans one or more directories for files\n"
+						"`List Files`     User lists files within a file directory\n"
+						"`View File Info` User views detailed information on files in a directory\n" 
+						"`Temp Transfer`  Temporary/archive file transfer menu\n"
 						"\n"
 						"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
 						"      in your `exec` or `mods` directories.\n"
@@ -2742,6 +2748,18 @@ void sys_cfg(void)
 								,cfg.privatemsg_mod,sizeof(cfg.privatemsg_mod)-1,K_EDIT);
 							break;
 						case 21:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Dirs Module"
+								,cfg.scandirs_mod,sizeof(cfg.scandirs_mod)-1,K_EDIT);
+							break;
+						case 22:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"List Files Module"
+								,cfg.listfiles_mod,sizeof(cfg.listfiles_mod)-1,K_EDIT);
+							break;
+						case 23:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"View File Information Module"
+								,cfg.fileinfo_mod,sizeof(cfg.fileinfo_mod)-1,K_EDIT);
+							break;
+						case 24:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Temporary File Transfer Module"
 								,cfg.tempxfer_mod, sizeof(cfg.tempxfer_mod)-1, K_EDIT);
 							break;
