@@ -58,6 +58,9 @@
  *                              scrolls through the file list/search results.  Also,
  *                              used lfexpand() to ensure the extended description has
  *                              CRLF endings, useful for splitting it into multiple lines properly.
+ * 2023-02-25 Eric Oulashin     Version 2.09
+ *                              Now supports being used as a loadable module for
+ *                              Scan Dirs and List Files
 */
 
 "use strict";
@@ -84,39 +87,42 @@ else
 }
 
 
-// If the user's terminal doesn't support ANSI, then just call the standard Synchronet
-// file list function and exit now
-if (!console.term_supports(USER_ANSI))
-{
-	bbs.list_files();
-	exit();
-}
+/*
+Configured in SCFG->System->Loadable Modules:
+Scan Dirs:      User scans one or more directories for (e.g. new) files
+List Files:     User lists files within a file directory
+View File Info: User views detailed information on files in a directory
+
+This addresses/fixes feature request #521 for Nightfox
+
+Will need to document the mode argument bit values on the wiki, but
+it's the usual suspects: FL_* for scandirs and listfiles and FI_* for
+fileinfo. The scandirs_mod will be passed an extra bool (0/1) arg that
+indicates whether or not the user is scanning *all* directories.
+*/
 
 
-
-// This script requires Synchronet version 3.19 or higher.
-// If the Synchronet version is below the minimum, then just call the standard
-// Synchronet file list and exit.
+// This script requires Synchronet version 3.19 or newer.
+// If the Synchronet version is below the minimum, then exit.
 if (system.version_num < 31900)
 {
 	if (user.is_sysop)
 	{
 		var message = "\x01n\x01h\x01y\x01i* Warning:\x01n\x01h\x01w Digital Distortion File Lister "
 		            + "requires version \x01g3.19\x01w or\r\n"
-		            + "higher of Synchronet.  This BBS is using version \x01g" + system.version
+		            + "newer of Synchronet.  This BBS is using version \x01g" + system.version
 		            + "\x01w.\x01n";
 		console.crlf();
 		console.print(message);
 		console.crlf();
 		console.pause();
 	}
-	bbs.list_files();
 	exit();
 }
 
 // Lister version information
-var LISTER_VERSION = "2.08";
-var LISTER_DATE = "2023-01-18";
+var LISTER_VERSION = "2.09";
+var LISTER_DATE = "2023-02-25";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -194,13 +200,21 @@ var FILE_MOVE = 6;   // Sysop action
 var FILE_DELETE = 7; // Sysop action
 
 // Search/list modes
-var MODE_LIST_CURDIR = 1;
+var MODE_LIST_DIR = 1;
 var MODE_SEARCH_FILENAME = 2;
 var MODE_SEARCH_DESCRIPTION = 3;
 var MODE_NEW_FILE_SEARCH = 4;
 
+// Sort orders (not included in FileBase.SORT)
+var SORT_FL_ULTIME = 50; // Sort by upload time
+var SORT_FL_DLTIME = 51; // Sort by download time
+
 // The searc/list mode for the current run
-var gScriptMode = MODE_LIST_CURDIR; // Default
+var gScriptMode = MODE_LIST_DIR; // Default
+var gListBehavior = FL_NONE; // From sbbsdefs.js
+
+// The directory internal code to list
+var gDirCode = bbs.curdir_code;
 
 
 
@@ -222,16 +236,37 @@ var gPauseAfterViewingFile = true;
 ///////////////////////////////////////////////////////////////////////////////
 // Script execution code
 
+// The filename pattern to match
+var gFilespec = "*";
+
 // The sort order to use for the file list
 var gFileSortOrder = FileBase.SORT.NATURAL; // Natural sort order, same as DATE_A (import date ascending)
 
 var gSearchVerbose = false;
+
+// When called as a lodable module, one of the options is to scan all dirs
+var gScanAllDirs = false;
 
 // Read the configuration file and set the settings
 readConfigFile();
 
 // Parse command-line arguments (which sets program options)
 parseArgs(argv);
+
+// If the user's terminal doesn't support ANSI, then just call the standard Synchronet
+// file list function and exit now
+if (!console.term_supports(USER_ANSI))
+{
+	var exitCode = 0;
+	if (gScriptMode == MODE_SEARCH_FILENAME || gScriptMode == MODE_SEARCH_DESCRIPTION || gScriptMode == MODE_NEW_FILE_SEARCH)
+	{
+		//if (user.is_sysop) console.print("\x01n\r\nScan dirs\r\n"); // Temporary
+		bbs.scan_dirs(gListBehavior, gScanAllDirs);
+	}
+	else
+		exitCode = bbs.list_files(gDirCode, gFilespec, gListBehavior);
+	exit(exitCode);
+}
 
 // This array will contain file metadata objects
 var gFileList = [];
@@ -249,8 +284,13 @@ if (gFileList.length == 0)
 {
 	console.crlf();
 	console.print("\x01n\x01c");
-	if (gScriptMode == MODE_LIST_CURDIR)
-		console.print("There are no files in the current directory.");
+	if (gScriptMode == MODE_LIST_DIR)
+	{
+		if (gFilespec == "*" || gFilespec == "*.*")
+			console.print("There are no files in the directory.");
+		else
+			console.print("No files in the directory were found matching " + gFilespec);
+	}
 	else
 		console.print("No files were found.");
 	console.print("\x01n");
@@ -262,7 +302,8 @@ if (gFileList.length == 0)
 
 // Clear the screen and display the header lines
 console.clear("\x01n");
-displayFileLibAndDirHeader();
+if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
+	displayFileLibAndDirHeader();
 // Construct and display the menu/command bar at the bottom of the screen
 var fileMenuBar = new DDFileMenuBar({ x: 1, y: console.screen_rows });
 fileMenuBar.writePromptLine();
@@ -322,16 +363,19 @@ while (continueDoingFileList)
 			continueDoingFileList = false;
 		else
 		{
-			if (actionRetObj.reDrawHeaderTextOnly)
+			if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
 			{
-				console.print("\x01n");
-				displayFileLibAndDirHeader(true); // Will move the cursor where it needs to be
-			}
-			else if (actionRetObj.reDrawListerHeader)
-			{
-				console.print("\x01n");
-				console.gotoxy(1, 1);
-				displayFileLibAndDirHeader();
+				if (actionRetObj.reDrawHeaderTextOnly)
+				{
+					console.print("\x01n");
+					displayFileLibAndDirHeader(true); // Will move the cursor where it needs to be
+				}
+				else if (actionRetObj.reDrawListerHeader)
+				{
+					console.print("\x01n");
+					console.gotoxy(1, 1);
+					displayFileLibAndDirHeader();
+				}
 			}
 			if (actionRetObj.reDrawCmdBar) // Could call fileMenuBar.constructPromptText(); if needed
 				fileMenuBar.writePromptLine();
@@ -537,8 +581,7 @@ function showFileInfo(pFileList, pFileListMenu)
 	// extended information.  Get a metadata object with extended information so we
 	// can display the extended description.
 	// The metadata object in pFileList should have a dirCode added by this script.
-	// If not, assume the user's current directory.
-	var dirCode = bbs.curdir_code;
+	var dirCode = gDirCode;
 	if (pFileList[pFileListMenu.selectedItemIdx].hasOwnProperty("dirCode"))
 		dirCode = pFileList[pFileListMenu.selectedItemIdx].dirCode;
 	var fileMetadata = null;
@@ -558,7 +601,7 @@ function showFileInfo(pFileList, pFileListMenu)
 	// Note: File size can also be retrieved by calling a FileBase's get_size(fileMetadata.name)
 	// TODO: Shouldn't need the max length here
 	fileInfoStr += "Size: " + gColors.fileSize + getFileSizeStr(fileMetadata.size, 99999) + "\x01n\x01w\r\n";
-	fileInfoStr += "Timestamp: " + gColors.fileTimestamp + strftime("%Y-%m-%d %H:%M:%S", fileMetadata.time) + "\x01n\x01w\r\n"
+	fileInfoStr += "Timestamp: " + gColors.fileTimestamp + strftime("%Y-%m-%d %H:%M:%S", fileMetadata.time) + "\x01n\x01w\r\n";
 	fileInfoStr += "\r\n";
 
 	// File library/directory information
@@ -993,15 +1036,15 @@ function displayHelpScreen()
 	console.crlf();
 
 	// If listing files in a directory, display information about the current file directory.
-	if (gScriptMode == MODE_LIST_CURDIR)
+	if (gScriptMode == MODE_LIST_DIR)
 	{
-		var libIdx = file_area.dir[bbs.curdir_code].lib_index;
-		var dirIdx = file_area.dir[bbs.curdir_code].index;
+		var libIdx = file_area.dir[gDirCode].lib_index;
+		var dirIdx = file_area.dir[gDirCode].index;
 		console.print("\x01n\x01cCurrent file library: \x01g" + file_area.lib_list[libIdx].description);
 		console.crlf();
-		console.print("\x01cCurrent file directory: \x01g" + file_area.dir[bbs.curdir_code].description);
+		console.print("\x01cCurrent file directory: \x01g" + file_area.dir[gDirCode].description);
 		console.crlf();
-		console.print("\x01cThere are \x01g" + file_area.dir[bbs.curdir_code].files + " \x01cfiles in this directory.");
+		console.print("\x01cThere are \x01g" + file_area.dir[gDirCode].files + " \x01cfiles in this directory.");
 	}
 	else if (gScriptMode == MODE_SEARCH_FILENAME)
 		console.print("\x01n\x01cCurrently performing a filename search");
@@ -1167,7 +1210,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 				// If we're listing files in the user's current directory, then remove
 				// the file info object from the file list array.  Otherwise, update
 				// the metadata object in the list.
-				if (gScriptMode == MODE_LIST_CURDIR)
+				if (gScriptMode == MODE_LIST_DIR)
 				{
 					pFileList.splice(fileIdx, 1);
 					// Subtract 1 from the remaining indexes in the fileIndexes array
@@ -1207,7 +1250,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 		// set allSameDir to false so the header lines will now say "various".
 		// However, if not all files were in the same directory, check to see if they
 		// are now, and if so, we'll need to re-draw the header lines.
-		if (gScriptMode != MODE_LIST_CURDIR && typeof(pFileList.allSameDir) == "boolean")
+		if (gScriptMode != MODE_LIST_DIR && typeof(pFileList.allSameDir) == "boolean")
 		{
 			if (pFileList.allSameDir)
 			{
@@ -1235,7 +1278,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 		}
 		// After moving the files, if there are no more files (in the directory or otherwise),
 		// say so and exit now.
-		if (gScriptMode == MODE_LIST_CURDIR && file_area.dir[bbs.curdir_code].files == 0)
+		if (gScriptMode == MODE_LIST_DIR && file_area.dir[gDirCode].files == 0)
 		{
 			displayMsg("There are no more files in the directory.", false);
 			retObj.exitNow = true;
@@ -1354,7 +1397,7 @@ function confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu)
 				}
 				if (removeFileSucceeded)
 				{
-					if (gScriptMode == MODE_LIST_CURDIR)
+					if (gScriptMode == MODE_LIST_DIR)
 						numFilesRemaining = filebase.files;
 				}
 				filebase.close();
@@ -1430,7 +1473,7 @@ function confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu)
 		}
 		else
 		{
-			if (gScriptMode == MODE_LIST_CURDIR)
+			if (gScriptMode == MODE_LIST_DIR)
 				displayMsg("The directory now has no files.", false, true);
 			else
 				displayMsg("There are no more files to show.", false, true);
@@ -1994,6 +2037,10 @@ function doFrameInputLoop(pFrame, pScrollbar, pFrameContentStr, pAdditionalQuitK
 //  pDirCodeOverride: Optional string: If this is valid, this will be used for the library & directory name
 function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride)
 {
+	// If the behavior flags include no header, then just return immediately
+	if ((gListBehavior & FL_NO_HDR) == FL_NO_HDR)
+		return;
+
 	var textOnly = (typeof(pTextOnly) === "boolean" ? pTextOnly : false);
 
 	// Determine if this is the first time this function has been called.  If so,
@@ -2013,8 +2060,8 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride)
 	var libDesc = "";
 	var dirDesc =  "";
 	var dirCode = "";
-	if (gScriptMode == MODE_LIST_CURDIR)
-		dirCode = bbs.curdir_code;
+	if (gScriptMode == MODE_LIST_DIR)
+		dirCode = gDirCode;
 	else if (typeof(gFileList.allSameDir) === "boolean" && gFileList.allSameDir && gFileList.length > 0)
 		dirCode = gFileList[0].dirCode;
 	if (dirCode.length > 0)
@@ -2183,9 +2230,12 @@ function createFileListMenu(pQuitKeys)
 		var allSameDir = (typeof(gFileList.allSameDir) === "boolean" ? gFileList.allSameDir : false);
 		if (isDoingFileSearch() && !allSameDir && gFileList[pIdx].dirCode != this.lastFileDirCode)
 		{
-			var originalCurPos = console.getxy();
-			displayFileLibAndDirHeader(true, gFileList[pIdx].dirCode);
-			console.gotoxy(originalCurPos);
+			if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
+			{
+				var originalCurPos = console.getxy();
+				displayFileLibAndDirHeader(true, gFileList[pIdx].dirCode);
+				console.gotoxy(originalCurPos);
+			}
 		}
 		this.lastFileDirCode = gFileList[pIdx].dirCode;
 
@@ -2945,6 +2995,10 @@ function readConfigFile()
 						gFileSortOrder = FileBase.SORT.DATE_A;
 					else if (valueUpper == "DATE_D")
 						gFileSortOrder = FileBase.SORT.DATE_D;
+					else if (valueUpper == "ULTIME")
+						gFileSortOrder = SORT_FL_ULTIME;
+					else if (valueUpper == "DLTIME")
+						gFileSortOrder = SORT_FL_DLTIME;
 					else // Default
 						gFileSortOrder = FileBase.SORT.NATURAL;
 				}
@@ -3131,59 +3185,139 @@ function shortenFilename(pFilename, pMaxLen, pFillWidth)
 // value will be a boolean.  Otherwise, the value will be a string.
 //
 // Parameters:
-//  pArgArr: An array of strings containing values in the format -arg=val
-function parseArgs(pArgArr)
+//  argv: An array of strings containing values in the format -arg=val
+//
+// Return value: Boolean: Whether or not this script was run as a loadable
+//                        module (depending on the arguments used).
+function parseArgs(argv)
 {
 	// Default program options
-	gScriptMode = MODE_LIST_CURDIR;
+	gScriptMode = MODE_LIST_DIR;
 
-	// Sanity checking for pArgArr - Make sure it's an array
-	if ((typeof(pArgArr) != "object") || (typeof(pArgArr.length) != "number"))
-		return;
+	// Sanity checking for argv - Make sure it's an array
+	if ((typeof(argv) != "object") || (typeof(argv.length) != "number"))
+		return false;
 
-	// Go through pArgArr looking for strings in the format -arg=val and parse them
-	// into objects in the argVals array.
-	var equalsIdx = 0;
-	var argName = "";
-	var argVal = "";
-	var argValUpper = ""; // For case-insensitive matching
-	for (var i = 0; i < pArgArr.length; ++i)
+	// This script accepts arguments in -arg=val format; See if there are any of those.
+	// If so, process arguments with that assumption; otherwise, we'll check for args
+	// passed when Synchronet runs this as a loadable module.
+	var scriptRanAsLoadableModule = false;
+	var anySettingEqualsVal = false;
+	for (var i = 0; i < argv.length && !anySettingEqualsVal; ++i)
+		anySettingEqualsVal = (typeof(argv[i]) === "string" && argv[i].length > 0 && argv[i].charAt(0) == "-" && argv[i].indexOf("=") > 1);
+	if (anySettingEqualsVal)
 	{
-		// We're looking for strings that start with "-", except strings that are
-		// only "-".
-		if ((typeof(pArgArr[i]) != "string") || (pArgArr[i].length == 0) ||
-		    (pArgArr[i].charAt(0) != "-") || (pArgArr[i] == "-"))
+		// Go through argv looking for strings in the format -arg=val and parse them
+		// into objects in the argVals array.
+		var equalsIdx = 0;
+		var argName = "";
+		var argVal = "";
+		var argValUpper = ""; // For case-insensitive matching
+		for (var i = 0; i < argv.length; ++i)
 		{
-			continue;
-		}
+			// We're looking for strings that start with "-", except strings that are
+			// only "-".
+			if (typeof(argv[i]) !== "string" || argv[i].length == 0 || argv[i].charAt(0) != "-" || argv[i] == "-")
+				continue;
 
-		// Look for an = and if found, split the string on the =
-		equalsIdx = pArgArr[i].indexOf("=");
-		// If a = is found, then split on it and add the argument name & value
-		// to the array.  Otherwise (if the = is not found), then treat the
-		// argument as a boolean and set it to true (to enable an option).
-		if (equalsIdx > -1)
-		{
-			argName = pArgArr[i].substring(1, equalsIdx).toUpperCase();
-			argVal = pArgArr[i].substr(equalsIdx+1);
-			argValUpper = argVal.toUpperCase();
-			if (argName === "MODE")
+			// Look for an = and if found, split the string on the =
+			equalsIdx = argv[i].indexOf("=");
+			// If a = is found, then split on it and add the argument name & value
+			// to the array.  Otherwise (if the = is not found), then treat the
+			// argument as a boolean and set it to true (to enable an option).
+			if (equalsIdx > -1)
 			{
-				if (argValUpper === "SEARCH_FILENAME")
-					gScriptMode = MODE_SEARCH_FILENAME;
-				else if (argValUpper === "SEARCH_DESCRIPTION")
-					gScriptMode = MODE_SEARCH_DESCRIPTION;
-				else if (argValUpper === "NEW_FILE_SEARCH")
-					gScriptMode = MODE_NEW_FILE_SEARCH;
-				else if (argValUpper === "LIST_CURDIR")
-					gScriptMode = MODE_LIST_CURDIR;
+				argName = argv[i].substring(1, equalsIdx).toUpperCase();
+				argVal = argv[i].substr(equalsIdx+1);
+				argValUpper = argVal.toUpperCase();
+				if (argName === "MODE")
+				{
+					if (argValUpper === "SEARCH_FILENAME")
+						gScriptMode = MODE_SEARCH_FILENAME;
+					else if (argValUpper === "SEARCH_DESCRIPTION")
+						gScriptMode = MODE_SEARCH_DESCRIPTION;
+					else if (argValUpper === "NEW_FILE_SEARCH")
+						gScriptMode = MODE_NEW_FILE_SEARCH;
+					else if (argValUpper === "LIST_CURDIR")
+						gScriptMode = MODE_LIST_DIR;
+				}
 			}
-		}
-		else // An equals sign (=) was not found.  Add as a boolean set to true to enable the option.
-		{
-			// Nothing to be done here for this script
+			// Nothing to do if an = was not found
 		}
 	}
+	else
+	{
+		// Check for arguments as if this was run by Synchronet as a loadable module
+		// (for either Scan Dirs or List Files)
+
+		/*
+		// bbs.list_files() & bbs.scan_dirs()
+		//********************************************
+		var FL_NONE			=0;			// No special behavior
+		var FL_ULTIME		=(1<<0);	// List files by upload time
+		var FL_DLTIME		=(1<<1);	// List files by download time
+		var FL_NO_HDR		=(1<<2);	// Don't list directory header
+		var FL_FINDDESC		=(1<<3);	// Find text in description
+		var FL_EXFIND		=(1<<4);	// Find text in description - extended info
+		var FL_VIEW			=(1<<5);	// View ZIP/ARC/GIF etc. info
+		*/
+
+		// There must be either 2 or 3 arguments
+		if (argv.length < 2)
+			return false;
+		// The 2nd argument is the mode/behavior bits in either case
+		var FLBehavior = parseInt(argv[1]);
+		if (isNaN(FLBehavior))
+			return false;
+		else
+			gListBehavior = FLBehavior;
+		scriptRanAsLoadableModule = true;
+
+		// Default gScriptmode to MODE_LIST_DIR; for FLBehavior as FL_NONE, no special behavior
+		gScriptMode = MODE_LIST_DIR;
+
+		// 2 args - Scanning/searching
+		if (argv.length == 2)
+		{
+			// - 0: Bool (scanning all directories): 0/1
+			// - 1: FL_ mode value
+			gScanAllDirs = (argv[0] == "1");
+			if ((FLBehavior & FL_ULTIME) == FL_ULTIME)
+				gScriptMode = MODE_NEW_FILE_SEARCH;
+			else if ((FLBehavior & FL_FINDDESC) == FL_FINDDESC || (FLBehavior & FL_EXFIND) == FL_EXFIND)
+				gScriptMode = MODE_SEARCH_DESCRIPTION;
+			if ((FLBehavior & FL_VIEW) == FL_VIEW)
+			{
+				// View ZIP/ARC/GIF etc. info
+				// TODO: Not sure what to do with this
+			}
+		}
+		// 3 args - Listing
+		else if (argv.length >= 3) //==3
+		{
+			// - 0: Directory internal code
+			// - 1: FL_ mode value
+			// - 2: Filespec (i.e., *, *.zip, etc.)
+			if (!file_area.dir.hasOwnProperty(argv[0]))
+				return false;
+			gDirCode = argv[0];
+			gFilespec = argv[2];
+			if ((FLBehavior & FL_VIEW) == FL_VIEW)
+			{
+				// View ZIP/ARC/GIF etc. info
+				// TODO: Not sure what to do with this
+			}
+		}
+
+		// Options that apply to both searching and listing
+		if ((FLBehavior & FL_ULTIME) == FL_ULTIME)
+			gFileSortOrder = SORT_FL_ULTIME;
+		else if ((FLBehavior & FL_DLTIME) == FL_DLTIME)
+			gFileSortOrder = SORT_FL_DLTIME;
+
+	}
+
+	return scriptRanAsLoadableModule;
 }
 
 // Populates the file list (gFileList).
@@ -3205,19 +3339,19 @@ function populateFileList(pSearchMode)
 	var allSameDir = true;
 
 	// Do the things for list or search, depending on the specified mode
-	if (pSearchMode == MODE_LIST_CURDIR) // This is the default
+	if (pSearchMode == MODE_LIST_DIR) // This is the default
 	{
-		var filebase = new FileBase(bbs.curdir_code);
+		var filebase = new FileBase(gDirCode);
 		if (filebase.open())
 		{
 			// If there are no files in the filebase, then say so and exit now.
 			if (filebase.files == 0)
 			{
 				filebase.close();
-				var libIdx = file_area.dir[bbs.curdir_code].lib_index;
+				var libIdx = file_area.dir[gDirCode].lib_index;
 				console.crlf();
 				console.print("\x01n\x01cThere are no files in \x01h" + file_area.lib_list[libIdx].description + "\x01n\x01c - \x01h" +
-							  file_area.dir[bbs.curdir_code].description + "\x01n");
+							  file_area.dir[gDirCode].description + "\x01n");
 				console.crlf();
 				console.pause();
 				retObj.exitNow = true;
@@ -3227,7 +3361,16 @@ function populateFileList(pSearchMode)
 
 			// Get a list of file data
 			var fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
-			gFileList = filebase.get_list("*", fileDetail, 0, true, gFileSortOrder);
+			if (gFileSortOrder == SORT_FL_ULTIME || gFileSortOrder == SORT_FL_DLTIME)
+			{
+				gFileList = filebase.get_list(gFilespec, fileDetail, 0, true, FileBase.SORT.NATURAL);
+				if (gFileSortOrder == SORT_FL_ULTIME)
+					gFileList.sort(fileInfoSortULTime);
+				else if (gFileSortOrder == SORT_FL_DLTIME)
+					gFileList.sort(fileInfoSortDLTime);
+			}
+			else
+				gFileList = filebase.get_list(gFilespec, fileDetail, 0, true, gFileSortOrder);
 			filebase.close();
 			// Add a dirCode property to the file metadata objects (for consistency,
 			// as file search results may contain files from multiple directories).
@@ -3235,7 +3378,7 @@ function populateFileList(pSearchMode)
 			// from the end.
 			for (var i = 0; i < gFileList.length; ++i)
 			{
-				gFileList[i].dirCode = bbs.curdir_code;
+				gFileList[i].dirCode = gDirCode;
 				if (gFileList[i].hasOwnProperty("extdesc") && /\r\n$/.test(gFileList[i].extdesc))
 				{
 					gFileList[i].extdesc = gFileList[i].extdesc.substr(0, gFileList[i].extdesc.length-2);
@@ -3247,7 +3390,7 @@ function populateFileList(pSearchMode)
 		else
 		{
 			console.crlf();
-			console.print("\x01n\x01h\x01yUnable to open \x01w" + file_area.dir[bbs.curdir_code].description + "\x01n");
+			console.print("\x01n\x01h\x01yUnable to open \x01w" + file_area.dir[gDirCode].description + "\x01n");
 			console.crlf();
 			console.pause();
 			retObj.exitNow = true;
@@ -3259,12 +3402,18 @@ function populateFileList(pSearchMode)
 	{
 		var lastDirCode = "";
 
-		// Prompt the user for directory, library, or all
-		console.print("\x01n");
-		console.crlf();
-		console.mnemonics(bbs.text(DirLibOrAll));
+		// If not searching all already, prompt the user for directory, library, or all
 		var validInputOptions = "DLA";
-		var userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
+		var userInputDLA = "";
+		if (gScanAllDirs)
+			userInputDLA = "A";
+		else
+		{
+			console.print("\x01n");
+			console.crlf();
+			console.mnemonics(bbs.text(DirLibOrAll));
+			userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
+		}
 		var userFilespec = "";
 		if (userInputDLA.length > 0 && validInputOptions.indexOf(userInputDLA) > -1)
 		{
@@ -3286,14 +3435,20 @@ function populateFileList(pSearchMode)
 	{
 		var lastDirCode = "";
 
-		// Prompt the user for directory, library, or all
-		console.print("\x01n");
-		console.crlf();
-		//console.print("\r\n\x01c\x01hFind Text in File Descriptions (no wildcards)\x01n\r\n");
-		console.mnemonics(bbs.text(DirLibOrAll));
-		console.print("\x01n");
+		// If not saerching all already, prompt the user for directory, library, or all
 		var validInputOptions = "DLA";
-		var userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
+		var userInputDLA = "";
+		if (gScanAllDirs)
+			userInputDLA = "A";
+		else
+		{
+			console.print("\x01n");
+			console.crlf();
+			//console.print("\r\n\x01c\x01hFind Text in File Descriptions (no wildcards)\x01n\r\n");
+			console.mnemonics(bbs.text(DirLibOrAll));
+			console.print("\x01n");
+			userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
+		}
 		var searchDescription = "";
 		if (userInputDLA.length > 0 && validInputOptions.indexOf(userInputDLA) > -1)
 		{
@@ -3344,14 +3499,20 @@ function populateFileList(pSearchMode)
 		between successive sessions.
 		*/
 
-		// Prompt the user for directory, library, or all
-		console.print("\x01n");
-		console.crlf();
-		console.mnemonics(bbs.text(DirLibOrAll));
-		var validInputOptions = "DLA";
-		var userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
-		console.print("\x01n");
-		console.crlf();
+		// If not searching all dirs already, prompt the user for directory, library, or all
+		var userInputDLA = "";
+		if (gScanAllDirs)
+			userInputDLA = "A";
+		else
+		{
+			console.print("\x01n");
+			console.crlf();
+			console.mnemonics(bbs.text(DirLibOrAll));
+			var validInputOptions = "DLA";
+			userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
+			console.print("\x01n");
+			console.crlf();
+		}
 		if (userInputDLA == "D" || userInputDLA == "L" || userInputDLA == "A")
 		{
 			console.print("\x01n\x01cSearching for files uploaded after \x01h" + system.timestr(bbs.new_file_time) + "\x01n");
@@ -3375,7 +3536,7 @@ function populateFileList(pSearchMode)
 		return retObj;
 	}
 
-	if (pSearchMode != MODE_LIST_CURDIR)
+	if (pSearchMode != MODE_LIST_DIR)
 		gFileList.allSameDir = allSameDir;
 
 	if (dirErrors.length > 0)
@@ -3448,7 +3609,17 @@ function searchDirWithFilespec(pDirCode, pFilespec)
 	if (filebase.open())
 	{
 		var fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
-		var fileList = filebase.get_list(pFilespec, fileDetail, 0, true, gFileSortOrder);
+		var fileList;
+		if (gFileSortOrder == SORT_FL_ULTIME || gFileSortOrder == SORT_FL_DLTIME)
+		{
+			fileList = filebase.get_list(pFilespec, fileDetail, 0, true, FileBase.SORT.NATURAL);
+			if (gFileSortOrder == SORT_FL_ULTIME)
+				fileList.sort(fileInfoSortULTime);
+			else if (gFileSortOrder == SORT_FL_DLTIME)
+				fileList.sort(fileInfoSortDLTime);
+		}
+		else
+			fileList = filebase.get_list(pFilespec, fileDetail, 0, true, gFileSortOrder);
 		retObj.foundFiles = (fileList.length > 0);
 		filebase.close();
 		for (var i = 0; i < fileList.length; ++i)
@@ -3491,7 +3662,18 @@ function searchDirWithDescUpper(pDirCode, pDescUpper)
 	var filebase = new FileBase(pDirCode);
 	if (filebase.open())
 	{
-		var fileList = filebase.get_list("*", FileBase.DETAIL.EXTENDED, 0, true, gFileSortOrder);
+		//var fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, gFileSortOrder);
+		var fileList;
+		if (gFileSortOrder == SORT_FL_ULTIME || gFileSortOrder == SORT_FL_DLTIME)
+		{
+			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, FileBase.SORT.NATURAL);
+			if (gFileSortOrder == SORT_FL_ULTIME)
+				fileList.sort(fileInfoSortULTime);
+			else if (gFileSortOrder == SORT_FL_DLTIME)
+				fileList.sort(fileInfoSortDLTime);
+		}
+		else
+			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, gFileSortOrder);
 		filebase.close();
 		for (var i = 0; i < fileList.length; ++i)
 		{
@@ -3550,7 +3732,17 @@ function searchDirNewFiles(pDirCode, pSinceTime)
 	if (filebase.open())
 	{
 		var fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
-		var fileList = filebase.get_list("*", fileDetail, 0, true, gFileSortOrder);
+		var fileList;
+		if (gFileSortOrder == SORT_FL_ULTIME || gFileSortOrder == SORT_FL_DLTIME)
+		{
+			fileList = filebase.get_list(gFilespec, fileDetail, 0, true, FileBase.SORT.NATURAL);
+			if (gFileSortOrder == SORT_FL_ULTIME)
+				fileList.sort(fileInfoSortULTime);
+			else if (gFileSortOrder == SORT_FL_DLTIME)
+				fileList.sort(fileInfoSortDLTime);
+		}
+		else
+			fileList = filebase.get_list(gFilespec, fileDetail, 0, true, gFileSortOrder);
 		filebase.close();
 		for (var i = 0; i < fileList.length; ++i)
 		{
@@ -3610,7 +3802,7 @@ function searchDirGroupOrAll(pSearchOption, pDirSearchFn)
 	if (searchOptionUpper == "D")
 	{
 		// Current directory
-		var searchRetObj = pDirSearchFn(bbs.curdir_code);
+		var searchRetObj = pDirSearchFn(gDirCode);
 		retObj.allSameDir = true;
 		for (var i = 0; i < searchRetObj.dirErrors.length; ++i)
 			retObj.errors.push(searchRetObj.dirErrors[i]);
@@ -3618,7 +3810,7 @@ function searchDirGroupOrAll(pSearchOption, pDirSearchFn)
 	else if (searchOptionUpper == "L")
 	{
 		// Current file library
-		var libIdx = file_area.dir[bbs.curdir_code].lib_index;
+		var libIdx = file_area.dir[gDirCode].lib_index;
 		for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
 		{
 			if (file_area.lib_list[libIdx].dir_list[dirIdx].can_access) // And can_download?
@@ -3670,7 +3862,8 @@ function searchDirGroupOrAll(pSearchOption, pDirSearchFn)
 	}
 	else
 	{
-		retObj.errors.push("Invalid search option" + (pSearchOption.length > 0 ? ": " + pSearchOption : ""));
+		//retObj.errors.push("Invalid search option" + (pSearchOption.length > 0 ? ": " + pSearchOption : ""));
+		retObj.errors.push("Aborted");
 	}
 
 	return retObj;
@@ -3867,4 +4060,43 @@ function refreshScreenMainContent(pUpperLeftX, pUpperLeftY, pWidth, pHeight, pSe
 function isDoingFileSearch()
 {
 	return (gScriptMode == MODE_SEARCH_FILENAME || gScriptMode == MODE_SEARCH_DESCRIPTION || gScriptMode == MODE_NEW_FILE_SEARCH);
+}
+
+// Custom file info sort function for upload time
+function fileInfoSortULTime(pA, pB)
+{
+	if (pA.hasOwnProperty("added") && pB.hasOwnProperty("added"))
+	{
+		if (pA.added < pB.added)
+			return -1;
+		else if (pA.added > pB.added)
+			return 1;
+		else
+			return 0;
+	}
+	else
+	{
+		if (pA.time < pB.time)
+			return -1;
+		else if (pA.time > pB.time)
+			return 1;
+		else
+			return 0;
+	}
+}
+
+// Custom file info sort function for download time
+function fileInfoSortDLTime(pA, pB)
+{
+	if (pA.hasOwnProperty("last_downloaded") && pB.hasOwnProperty("last_downloaded"))
+	{
+		if (pA.last_downloaded < pB.last_downloaded)
+			return -1;
+		else if (pA.last_downloaded > pB.last_downloaded)
+			return 1;
+		else
+			return 0;
+	}
+	else
+		return 0;
 }

@@ -1,13 +1,13 @@
                         Digital Distortion File Lister
-                                 Version 2.08
-                           Release date: 2023-01-18
+                                 Version 2.09
+                           Release date: 2023-02-25
 
                                      by
 
                                 Eric Oulashin
                           Sysop of Digital Distortion
                   BBS internet address: digitaldistortionbbs.com
-                     Alternate address: digdist.bbsindex.com
+                      Alternate address: digdist.synchro.net
                         Email: eric.oulashin@gmail.com
 
 
@@ -19,6 +19,7 @@ Contents
 1. Disclaimer
 2. Introduction
 3. Installation & Setup
+   - Loadable Module setup
    - Command shell setup
    - Background: Running JavaScript scripts in Synchronet
 4. Configuration file & color/text theme configuration file
@@ -105,17 +106,42 @@ where the .js script is located.  So, if you desire, you could place
 ddfilelister.js in sbbs/exec and the .cfg file sin your sbbs/ctrl directory,
 for example.
 
+One way to install ddfilelister.js is to run it directly from your command
+shell.  Also, as of Synchronet 3.20 (built on February 25, 2023 and newer),
+there are a couple of loadable module options in SCFG for file operations;
+ddfilelister.js can be used as a loadable module for  Scan Dirs and List Files.
+The advantage of having ddfilelister.js set up as a loadable module is that
+ddfilelister.js will be used from standard command shells and using the standard
+file list/search commands/functions.
+
+Loadable Module setup
+---------------------
+Note: This only works in Synchronet 3.20 (built from February 25, 2020) and
+newer.
+
+As a loadable module, ddfilelister.js works for the Scan Dirs and List Files
+options.  These options are available in SCFG > System > Loadable Modules.
+If you have ddfilelister.js in your mods directory or other standard directory,
+you can specify the settings as follows:
+  Scan Dirs           ddfilelister.js
+  List Files          ddfilelister.js
+
+If you keep ddfilelister.js in sbbs/xtrn/ddfilelister, you can specify it as
+follows:
+  Scan Dirs           ../xtrn/ddfilelister/ddfilelister.js
+  List Files          ../xtrn/ddfilelister/ddfilelister.js
+
+
 Command shell setup
 -------------------
-Running the file lister involves simply having the BBS run a command to run
-ddfilelister.js.  No command-line parameters are required.  The command to run
-ddfilelister.js can be placed in a command shell for a command key, or in
+To running the file lister in a command shell, you simply need to add a command
+to your command shell run ddfilelister.js.  To list the files in the user's
+current file directory, no command-line parameters are required. The command to
+run ddfilelister.js can be placed in a command shell for a command key, or in
 SCFG > External Programs > Online Programs (Doors) in one of your program
 groups, and then you could have your command shell run the lister via the
 internal program code you configured in SCFG.
 
-Installing into a command shell is described in section 3, "Installation &
-Setup".
 
 Background: Running JavaScript scripts in Synchronet
 ----------------------------------------------------

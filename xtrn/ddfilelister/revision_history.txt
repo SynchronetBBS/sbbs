@@ -5,10 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.09     2023-02-25   Now supports being used as a loadable module for Scan Dirs
+                      and List Files (applicable for Synchronet 3.20+)
 2.08     2023-01-18   When doing a file search in multiple directories, the
                       file library & directory is now shown in the header as
                       the user scrolls through the file list/search results.
-					  Also, improved searching with extended descriptions to
+                      Also, improved searching with extended descriptions to
                       ensure all lines of the description are displayed.
 2.07     2022-12-02   In a file's extended description, added the number of
                       times downloaded and date/time last downloaded.  Also,
