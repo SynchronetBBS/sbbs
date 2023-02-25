@@ -51,6 +51,8 @@ function DNS(synchronous, servers) {
 	if (servers === undefined)
 		servers = system.name_servers;
 
+	if (!servers || !servers.length)
+		throw new Error("No nameservers specified in constructor or configured in system");
 	servers.forEach(function(server) {
 		var sock = new Socket(SOCK_DGRAM, "dns", server.indexOf(':') >= 0);
 		sock.bind();
@@ -63,7 +65,7 @@ function DNS(synchronous, servers) {
 	}, this);
 
 	if (this.sockets.length < 1)
-		throw('Unable to create any sockets');
+		throw new Error('Unable to create any sockets');
 
 	this.increment_id = function() {
 		var ret = nextid;
