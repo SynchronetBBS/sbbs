@@ -96,6 +96,9 @@
  *                              loadable module 2nd command-line argument, which specifies the user number.
  *                              When deleting a user, the sysop might be prompted whether to read that
  *                              user's email.
+ * 2023-02-24 Eric Oulashin     Version 1.65
+ *                              Ctrl-C can now be used to cancel message scans. Output from the scan
+ *                              is now word-wrapped to the terminal width.
  */
 
 "use strict";
@@ -201,8 +204,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.64";
-var READER_DATE = "2023-02-09";
+var READER_VERSION = "1.65";
+var READER_DATE = "2023-02-24";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -582,6 +585,7 @@ if (gDoDDMR)
 	var msgReader = new DigDistMsgReader(readerSubCode, gCmdLineArgVals);
 	if (gCmdLineArgVals.indexedmode)
 	{
+		// TODO: Finish indexed mode
 		msgReader.DoIndexedMode();
 	}
 	else
@@ -2210,8 +2214,15 @@ function DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs(pCloseMsgbaseAn
 					formattedText = format(this.text.loadingPersonalMailText, subBoardGrpAndName(this.subBoardCode));
 				else
 					formattedText = format(this.text.searchingSubBoardText, subBoardGrpAndName(this.subBoardCode));
-				//console.print("\x01n" + replaceAtCodesInStr(formattedText) + "\x01n");
-				console.putmsg("\x01n" + formattedText + "\x01n");
+				formattedText = replaceAtCodesInStr(formattedText);
+				formattedText = word_wrap(formattedText, console.screen_columns-1, formattedText.length, false).replace(/\r|\n/g, "\r\n");
+				while (formattedText.lastIndexOf("\r\n") == formattedText.length-2)
+					formattedText = formattedText.substr(0, formattedText.length-2);
+				while (formattedText.lastIndexOf("\r") == formattedText.length-1)
+					formattedText = formattedText.substr(0, formattedText.length-1);
+				while (formattedText.lastIndexOf("\n") == formattedText.length-1)
+					formattedText = formattedText.substr(0, formattedText.length-1);
+				console.print("\x01n" + formattedText + "\x01n");
 			}
 			var readingMailUserNum = user.is_sysop ? this.personalMailUserNum : user.number;
 			this.msgSearchHdrs[this.subBoardCode] = searchMsgbase(this.subBoardCode, this.searchType, this.searchString, this.readingPersonalEmailFromUser, null, null, readingMailUserNum);
@@ -2249,8 +2260,10 @@ function DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs(pCloseMsgbaseAn
 					formattedText = format(this.text.noSearchResultsInSubBoardText, subBoardGrpAndName(this.subBoardCode));
 				else
 					formattedText = format(this.text.noMessagesInSubBoardText, subBoardGrpAndName(this.subBoardCode));
-				//console.print(replaceAtCodesInStr(formattedText));
-				console.putmsg(formattedText);
+				//console.putmsg(formattedText); // Doesn't seem to be word-wrapping
+				formattedText = replaceAtCodesInStr(formattedText);
+				formattedText = word_wrap(formattedText, console.screen_columns-1, formattedText.length, false).replace(/\r|\n/g, "\r\n");
+				console.print(formattedText);
 			}
 			console.crlf();
 			var pauseOnNoMsgsError = (typeof(pPauseOnNoMsgError) == "boolean" ? pPauseOnNoMsgError : true);
@@ -2550,6 +2563,12 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 		}
 		// Pause for a short moment to avoid causing CPU usage going to 99%
 		mswait(10);
+
+		// Briefly see if there's any input from the console to be received, and
+		// allow the user to use Ctrl-C to cancel the scan.
+		var userKeyInput = console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, 50);
+		if (userKeyInput == CTRL_C)
+			break;
 	}
 	this.doingMultiSubBoardScan = false;
 
