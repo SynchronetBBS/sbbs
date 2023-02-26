@@ -4455,7 +4455,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	{"batch_clear",		js_batchclear,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("upload=false")
-	,JSDOCSTR("clear batch download (or upoload) queue")
+	,JSDOCSTR("clear batch download (or upload) queue")
 	,320
 	},
 	{"view_file",		js_viewfile,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
