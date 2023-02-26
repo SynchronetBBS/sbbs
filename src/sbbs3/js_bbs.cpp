@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "js_request.h"
+#include "filedat.h"
 
 #ifdef JAVASCRIPT
 
@@ -2174,6 +2175,34 @@ js_batchaddlist(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_batchclear(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+	enum XFER_TYPE xfer_type = XFER_BATCH_DOWNLOAD;
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(!js_argc(cx, argc, 1))
+		return(JS_FALSE);
+
+	if(JSVAL_TO_BOOLEAN(argv[0]))
+		xfer_type = XFER_BATCH_UPLOAD;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	bool result = batch_list_clear(&sbbs->cfg, sbbs->useron.number, xfer_type);
+	JS_RESUMEREQUEST(cx, rc);
+
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_viewfile(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -2186,7 +2215,7 @@ js_viewfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
- 	if(!js_argc(cx, argc, 1))
+	if(!js_argc(cx, argc, 1))
 		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], cstr, NULL);
@@ -4424,6 +4453,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"batch_add_list",	js_batchaddlist,	1,	JSTYPE_VOID,	JSDOCSTR("list_filename")
 	,JSDOCSTR("add file list to batch download queue")
 	,310
+	},
+	{"batch_clear",		js_batchclear,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("upload=false")
+	,JSDOCSTR("clear batch download (or upoload) queue")
+	,320
 	},
 	{"view_file",		js_viewfile,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
 	,JSDOCSTR("list contents of specified filename (complete path)")
