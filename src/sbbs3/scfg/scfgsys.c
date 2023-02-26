@@ -2394,7 +2394,7 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"SIF Questionnaire for User Input"
-								,str,LEN_CODE,K_UPPER|K_EDIT);
+								,str,LEN_CODE,K_UPPER|K_EDIT|K_NOSPACE);
 							if(!str[0] || code_ok(str))
 								strcpy(cfg.new_sif,str);
 							else
@@ -2410,7 +2410,7 @@ void sys_cfg(void)
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"SIF Questionnaire for Reviewing User Input"
-								,str,LEN_CODE,K_UPPER|K_EDIT);
+								,str,LEN_CODE,K_UPPER|K_EDIT|K_NOSPACE);
 							if(!str[0] || code_ok(str))
 								strcpy(cfg.new_sof,str);
 							else

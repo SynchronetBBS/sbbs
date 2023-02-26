@@ -390,7 +390,7 @@ void xfer_cfg()
 			if(strlen(code_prefix) < LEN_CODE)
 				strcat(code_prefix, "_");
 			uifc.helpbuf=lib_code_prefix_help;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code Prefix", code_prefix, LEN_CODE, K_EDIT|K_UPPER) < 0)
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code Prefix", code_prefix, LEN_CODE, K_EDIT|K_UPPER|K_NOSPACE) < 0)
 				continue;
 			if (code_prefix_exists(code_prefix)) {
 				uifc.msg(strDuplicateCodePrefix);
@@ -564,7 +564,7 @@ void xfer_cfg()
 					SAFECOPY(code_prefix, cfg.lib[libnum]->code_prefix);
 					uifc.helpbuf=lib_code_prefix_help;
 					if(uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Prefix"
-						,code_prefix,LEN_CODE,K_EDIT|K_UPPER) < 0)
+						,code_prefix,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE) < 0)
 						continue;
 					if(stricmp(code_prefix, cfg.lib[libnum]->code_prefix) == 0)
 						break;
@@ -1181,7 +1181,7 @@ void dir_toggle_options(dir_t* dir)
 						sprintf(str,"%u",dir->seqdev);
 					uifc.input(WIN_MID|WIN_SAV,0,0
 						,"Device Number"
-						,str,2,K_EDIT|K_UPPER);
+						,str,2,K_EDIT|K_NUMBER);
 					dir->seqdev=atoi(str);
 				}
 				else if(n==1 && dir->seqdev) {
@@ -1719,7 +1719,7 @@ void dir_cfg(uint libnum)
 			prep_code(code,/* prefix: */NULL);
 			uifc.helpbuf=dir_code_help;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Directory Internal Code Suffix",code,LEN_CODE
-				,K_EDIT|K_UPPER)<1)
+				,K_EDIT|K_UPPER|K_NOSPACE)<1)
 				continue;
 			SAFEPRINTF2(tmp, "%s%s", cfg.lib[libnum]->code_prefix, code);
 			if(getdirnum(&cfg, tmp) >= 0) {
@@ -1906,7 +1906,7 @@ void dir_cfg(uint libnum)
 					uifc.helpbuf=dir_code_help;
 					SAFECOPY(str,cfg.dir[i]->code_suffix);
 					uifc.input(WIN_L2R|WIN_SAV,0,17,"Internal Code Suffix (unique)"
-						,str,LEN_CODE,K_EDIT|K_UPPER);
+						,str,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE);
 					if(strcmp(str,cfg.dir[i]->code_suffix) == 0)
 						break;
 					SAFEPRINTF2(tmp, "%s%s", cfg.lib[cfg.dir[i]->lib]->code_prefix, str);
@@ -1928,11 +1928,11 @@ void dir_cfg(uint libnum)
 						"this file area. If no tag name is configured here, a tag name will be\n"
 						"automatically generated from the Directory's `Short Name`.\n"
 						"\n"
-						"This tag should ~ not ~ contain spaces."
+						"This tag may ~ not ~ contain spaces."
 						;
 					SAFECOPY(str, cfg.dir[i]->area_tag);
 					if(uifc.input(WIN_L2R|WIN_SAV,0,17,"FidoNet File Echo Area Tag"
-						,str, sizeof(cfg.dir[i]->area_tag) - 1, K_EDIT | K_UPPER) > 0)
+						,str, sizeof(cfg.dir[i]->area_tag) - 1, K_EDIT | K_UPPER | K_NOSPACE) > 0)
 						SAFECOPY(cfg.dir[i]->area_tag, str);
 					break;
 				case 4:

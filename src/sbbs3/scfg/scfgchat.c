@@ -258,7 +258,7 @@ void chan_cfg()
 				"channel name.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
-				,code,LEN_CODE,K_EDIT|K_UPPER)<1)
+				,code,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE)<1)
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
@@ -370,7 +370,7 @@ void chan_cfg()
 					;
 					SAFECOPY(str,cfg.chan[i]->code);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Internal Code"
-						,str,LEN_CODE,K_UPPER|K_EDIT))
+						,str,LEN_CODE,K_UPPER|K_EDIT|K_NOSPACE))
 						break;
 					if(code_ok(str))
 						SAFECOPY(cfg.chan[i]->code,str);
@@ -663,7 +663,7 @@ void guru_cfg()
 				"it internally. This code is usually an abbreviation of the Guru name.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
-				,code,LEN_CODE,K_EDIT|K_UPPER)<1)
+				,code,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE)<1)
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
@@ -764,7 +764,7 @@ void guru_cfg()
 	;
 					SAFECOPY(str,cfg.guru[i]->code);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Guru Internal Code"
-						,str,LEN_CODE,K_EDIT|K_UPPER))
+						,str,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE))
 						break;
 					if(code_ok(str))
 						SAFECOPY(cfg.guru[i]->code,str);
