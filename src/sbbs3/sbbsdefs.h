@@ -516,7 +516,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_NAME		25	/* User name									*/
 #define LEN_HANDLE		8	/* User chat handle 							*/
 #define LEN_NOTE		30	/* User note									*/
-#define LEN_COMP		30	/* User computer description					*/
+#define LEN_HOST		60	/* User hostname								*/
 #define LEN_COMMENT 	60	/* User comment 								*/
 #define LEN_NETMAIL 	60	/* NetMail forwarding address					*/
 #define LEN_PHONE		12	/* User phone number							*/
@@ -920,7 +920,7 @@ typedef struct {						/* Users information */
 	char	alias[LEN_ALIAS+1], 		/* Alias */
 			name[LEN_NAME+1],			/* Name - Real */
 			handle[LEN_HANDLE+1],		/* Chat handle */
-			comp[LEN_COMP+1],			/* Computer type */
+			comp[LEN_HOST+1],			/* Hostname */
 			note[LEN_NOTE+1],			/* Public notice about this user */
 			address[LEN_ADDRESS+1], 	/* Street Address */
 			location[LEN_LOCATION+1],	/* Location of user */

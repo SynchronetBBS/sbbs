@@ -1533,7 +1533,7 @@ int edit_personal(scfg_t *cfg, user_t *user)
 			case 10:
 				/* Host Name */
 				GETUSERDAT(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Host Name",user->comp,LEN_COMP,K_EDIT);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Hostname",user->comp,LEN_HOST,K_EDIT);
 				if(uifc.changes)
 					putuserstr(cfg, user->number, USER_HOST, user->comp);
 				break;
