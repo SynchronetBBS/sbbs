@@ -261,6 +261,7 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 		iniSetString(&ini, name, "scandirs", cfg->scandirs_mod, NULL);
 		iniSetString(&ini, name, "listfiles", cfg->listfiles_mod, NULL);
 		iniSetString(&ini, name, "fileinfo", cfg->fileinfo_mod, NULL);
+		iniSetString(&ini, name, "batxfer", cfg->batxfer_mod, NULL);
 		iniSetString(&ini, name, "tempxfer", cfg->tempxfer_mod, NULL);
 	}
 

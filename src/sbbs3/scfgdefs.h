@@ -619,6 +619,7 @@ typedef struct
     char			prextrn_mod[LEN_CMD+1];			/* External Program pre-execution module */
     char			postxtrn_mod[LEN_CMD+1];		/* External Program post-execution module */
 	char			tempxfer_mod[LEN_CMD+1];
+	char			batxfer_mod[LEN_CMD+1];
 	uchar			smb_retry_time; 		/* Seconds to retry on SMBs */
 	uint16_t		sec_warn;				/* Seconds before inactivity warning */
 	uint16_t		sec_hangup; 			/* Seconds before inactivity hang-up */

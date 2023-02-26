@@ -1086,6 +1086,7 @@ public:
 
 	/* bat_xfer.cpp */
 	void	batchmenu(void);
+	bool	batchmenu_inside = false;
 	void	batch_add_list(char *list);
 	bool	create_batchup_lst(void);
 	bool	create_batchdn_lst(bool native);

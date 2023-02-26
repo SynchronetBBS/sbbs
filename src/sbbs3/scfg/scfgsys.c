@@ -2618,6 +2618,7 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-16.16s%s","Scan Dirs",cfg.scandirs_mod);
 					sprintf(opt[i++],"%-16.16s%s","List Files",cfg.listfiles_mod);
 					sprintf(opt[i++],"%-16.16s%s","View File Info",cfg.fileinfo_mod);
+					sprintf(opt[i++],"%-16.16s%s","Batch Transfer",cfg.batxfer_mod);
 					sprintf(opt[i++],"%-16.16s%s","Temp Transfer",cfg.tempxfer_mod);
 					opt[i][0]=0;
 					uifc.helpbuf=
@@ -2650,7 +2651,8 @@ void sys_cfg(void)
 						"`Private Msg`    User sends a private node msg (e.g. `^P`)\n"
 						"`Scan Dirs`      User scans one or more directories for files\n"
 						"`List Files`     User lists files within a file directory\n"
-						"`View File Info` User views detailed information on files in a directory\n" 
+						"`View File Info` User views detailed information on files in a directory\n"
+						"`Batch Transfer` Batch file transfer menu\n"
 						"`Temp Transfer`  Temporary/archive file transfer menu\n"
 						"\n"
 						"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
@@ -2760,6 +2762,10 @@ void sys_cfg(void)
 								,cfg.fileinfo_mod,sizeof(cfg.fileinfo_mod)-1,K_EDIT);
 							break;
 						case 24:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Batch File Transfer Module"
+								,cfg.batxfer_mod, sizeof(cfg.batxfer_mod)-1, K_EDIT);
+							break;
+						case 25:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Temporary File Transfer Module"
 								,cfg.tempxfer_mod, sizeof(cfg.tempxfer_mod)-1, K_EDIT);
 							break;
