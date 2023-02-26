@@ -192,7 +192,7 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'C':
 				bputs(text[EnterYourComputer]);
-				getstr(user.comp,LEN_COMP,kmode);
+				getstr(user.comp,LEN_HOST,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserstr(user.number, USER_HOST, user.comp);

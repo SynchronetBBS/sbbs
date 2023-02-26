@@ -1645,7 +1645,7 @@ int sbbs_t::exec(csi_t *csi)
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_COMPUTER:
-						sprintf(useron.comp,"%.*s",LEN_COMP,csi->str);
+						SAFECOPY(useron.comp, csi->str);
 						putuserstr(useron.number, USER_HOST
 							,useron.comp);
 						csi->logic=LOGIC_TRUE;

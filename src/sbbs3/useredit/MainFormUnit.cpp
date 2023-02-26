@@ -458,7 +458,7 @@ void __fastcall TMainForm::FormShow(TObject *Sender)
     NameEdit->MaxLength = LEN_NAME;
     PhoneEdit->MaxLength = LEN_PHONE;
     HandleEdit->MaxLength = LEN_HANDLE;
-    ComputerEdit->MaxLength = LEN_COMP;
+    ComputerEdit->MaxLength = LEN_HOST;
     NetMailEdit->MaxLength = LEN_NETMAIL;
     NoteEdit->MaxLength = LEN_NOTE;
     AddressEdit->MaxLength = LEN_ADDRESS;
