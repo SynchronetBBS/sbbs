@@ -663,7 +663,7 @@ int main(int argc, char **argv)
 		SAFEPRINTF2(errormsg, "Error %d opening configuration file: %s", errno, str);
 		uifc.msg(errormsg);
 	} else {
-		cfg.new_install = iniReadBool(fp, ROOT_SECTION, "new_install", FALSE);
+		cfg.new_install = iniReadBool(fp, ROOT_SECTION, "new_install", TRUE);
 		iniCloseFile(fp);
 	}
 	if(run_wizard

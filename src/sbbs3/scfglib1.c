@@ -128,7 +128,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	cfg->user_backup_level = iniGetInteger(ini, ROOT_SECTION, "user_backup_level", 5);
 	cfg->mail_backup_level = iniGetInteger(ini, ROOT_SECTION, "mail_backup_level", 5);
-	cfg->new_install = iniGetBool(ini, ROOT_SECTION, "new_install", FALSE);
+	cfg->new_install = iniGetBool(ini, ROOT_SECTION, "new_install", TRUE);
 	cfg->valuser = iniGetShortInt(ini, ROOT_SECTION, "valuser", 0);
 	cfg->erruser = iniGetShortInt(ini, ROOT_SECTION, "erruser", 0);
 	cfg->errlevel = (uchar)iniGetShortInt(ini, ROOT_SECTION, "errlevel", LOG_CRIT);
@@ -164,7 +164,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/* New User Settings */
 	/*********************/
 	section = iniGetParsedSection(sections, "newuser", /* cut: */TRUE);
-	cfg->uq = iniGetUInteger(section, NULL, "questions", 0);
+	cfg->uq = iniGetUInteger(section, NULL, "questions", DEFAULT_NEWUSER_QS);
 
 	SAFECOPY(cfg->new_genders, iniGetString(section, NULL, "gender_options", "MFX", value));
 	SAFECOPY(cfg->new_pass, iniGetString(section, NULL, "password", "", value));
@@ -176,7 +176,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(new_shell, iniGetString(section, NULL, "command_shell", "default", value));
 	SAFECOPY(cfg->new_xedit, iniGetString(section, NULL, "editor", "", value));
 
-	cfg->new_level = iniGetInteger(section, NULL, "level", 0);
+	cfg->new_level = iniGetInteger(section, NULL, "level", 50);
 	cfg->new_flags1 = iniGetUInt32(section, NULL, "flags1", 0);
 	cfg->new_flags2 = iniGetUInt32(section, NULL, "flags2", 0);
 	cfg->new_flags3 = iniGetUInt32(section, NULL, "flags3", 0);
@@ -281,12 +281,12 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		char name[128];
 		SAFEPRINTF(name, "level:%u", i);
 		section = iniGetParsedSection(sections, name, /* cut: */TRUE);
-		cfg->level_timeperday[i] = iniGetInteger(section, NULL, "timeperday", 0);
-		cfg->level_timepercall[i] = iniGetInteger(section, NULL, "timepercall", 0);
-		cfg->level_callsperday[i] = iniGetInteger(section, NULL, "callsperday", 0);
-		cfg->level_linespermsg[i] = iniGetInteger(section, NULL, "linespermsg", 0);
-		cfg->level_postsperday[i] = iniGetInteger(section, NULL, "postsperday", 0);
-		cfg->level_emailperday[i] = iniGetInteger(section, NULL, "emailperday", 0);
+		cfg->level_timeperday[i] = iniGetInteger(section, NULL, "timeperday", i);
+		cfg->level_timepercall[i] = iniGetInteger(section, NULL, "timepercall", i);
+		cfg->level_callsperday[i] = iniGetInteger(section, NULL, "callsperday", i);
+		cfg->level_linespermsg[i] = iniGetInteger(section, NULL, "linespermsg", i);
+		cfg->level_postsperday[i] = iniGetInteger(section, NULL, "postsperday", i);
+		cfg->level_emailperday[i] = iniGetInteger(section, NULL, "emailperday", i);
 		cfg->level_misc[i] = iniGetUInteger(section, NULL, "settings", 0);
 		cfg->level_expireto[i] = iniGetInteger(section, NULL, "expireto", 0);
 		cfg->level_freecdtperday[i] = iniGetBytes(section, NULL, "freecdtperday", 1, 0);

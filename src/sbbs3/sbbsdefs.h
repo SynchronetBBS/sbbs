@@ -130,6 +130,9 @@
 #define UQ_COLORTERM	(1L<<20)	/* Ask if new user has color terminal	*/
 #define UQ_DUPNETMAIL	(1L<<21)	/* Don't allow duplicate e-mail address */
 
+#define DEFAULT_NEWUSER_QS (UQ_ALIASES | UQ_LOCATION | UQ_HANDLE | UQ_DUPHAND | UQ_SEX | UQ_BIRTH \
+							| UQ_REALNAME)
+
 								// Different bits in sys_misc				
 #define SM_CLOSED		(1<<0) 	// System is clsoed to New Users			
 #define SM_SYSSTAT		(1<<1) 	// Sysops activity included in statistics	
