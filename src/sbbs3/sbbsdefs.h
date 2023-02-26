@@ -934,7 +934,7 @@ typedef struct {						/* Users information */
 			comment[LEN_COMMENT+1], 	/* Private comment about user */
 			cursub[LEN_EXTCODE+1],		/* Current sub-board internal code */
 			curdir[LEN_EXTCODE+1],		/* Current directory internal code */
-			curxtrn[9],					/* Current external program internal code */
+			curxtrn[LEN_CODE+1],		/* Current external program internal code */
 			ipaddr[LEN_IPADDR+1];		/* Last known IP address */
 
 	uchar	level,						/* Security level */
