@@ -475,7 +475,7 @@ void tevents_cfg()
 				"This is the internal code for the timed event.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Event Internal Code",str,LEN_CODE
-				,K_UPPER)<1)
+				,K_UPPER|K_NOSPACE)<1)
 				continue;
 			if (!new_timed_event(i))
 				continue;
@@ -586,7 +586,7 @@ void tevents_cfg()
 						"command line or program name.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-						,str,LEN_CODE,K_EDIT|K_UPPER);
+						,str,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE);
 					if(code_ok(str))
 						SAFECOPY(cfg.event[i]->code,str);
 					else {
@@ -1122,7 +1122,7 @@ void xtrn_cfg(uint section)
 				"online program name.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
-				,code,LEN_CODE,K_EDIT|K_UPPER)<1)
+				,code,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE)<1)
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
@@ -1279,7 +1279,7 @@ void xtrn_cfg(uint section)
 					;
 					SAFECOPY(str,cfg.xtrn[i]->code);
 					uifc.input(WIN_MID|WIN_SAV,0,10,"Internal Code"
-						,str,LEN_CODE,K_UPPER|K_EDIT);
+						,str,LEN_CODE,K_UPPER|K_EDIT|K_NOSPACE);
 					if(code_ok(str))
 						SAFECOPY(cfg.xtrn[i]->code,str);
 					else {
@@ -1782,7 +1782,7 @@ void xedit_cfg()
 				"This is the internal code for the external editor.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"External Editor Internal Code",code,8
-				,K_UPPER|K_EDIT)<1)
+				,K_UPPER|K_EDIT|K_NOSPACE)<1)
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
@@ -1926,7 +1926,7 @@ void xedit_cfg()
 						"abbreviation of the name.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-						,str,LEN_CODE,K_EDIT|K_UPPER);
+						,str,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE);
 					if(code_ok(str))
 						SAFECOPY(cfg.xedit[i]->code,str);
 					else {
@@ -2406,7 +2406,7 @@ void xtrnsec_cfg()
 				"abbreviation of the name.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Section Internal Code"
-				,code,LEN_CODE,K_EDIT|K_UPPER)<1)
+				,code,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE)<1)
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
@@ -2534,7 +2534,7 @@ void xtrnsec_cfg()
 						"abbreviation of the name.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-						,str,LEN_CODE,K_EDIT|K_UPPER);
+						,str,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE);
 					if(code_ok(str))
 						SAFECOPY(cfg.xtrnsec[i]->code,str);
 					else {
@@ -2601,7 +2601,7 @@ void hotkey_cfg(void)
 				"indicates a Ctrl-A hot key event.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Control Key",str,1
-				,K_UPPER)<1)
+				,K_UPPER|K_NOSPACE)<1)
 				continue;
 
 			if((cfg.hotkey=(hotkey_t **)realloc(cfg.hotkey
@@ -2686,7 +2686,7 @@ void hotkey_cfg(void)
 					;
 					sprintf(str,"%c",cfg.hotkey[i]->key+'@');
 					if(uifc.input(WIN_MID|WIN_SAV,0,10,"Global Hot Ctrl-Key"
-						,str,1,K_EDIT|K_UPPER)>0)
+						,str,1,K_EDIT|K_UPPER|K_NOSPACE)>0)
 						cfg.hotkey[i]->key=str[0]-'@';
 					break;
 			   case 1:

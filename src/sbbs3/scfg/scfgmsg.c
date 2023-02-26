@@ -555,7 +555,7 @@ void msgs_cfg()
 			if(strlen(code_prefix) < LEN_CODE)
 				strcat(code_prefix, "_");
 			uifc.helpbuf=grp_code_prefix_help;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code Prefix", code_prefix, LEN_CODE, K_EDIT|K_UPPER) < 0)
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code Prefix", code_prefix, LEN_CODE, K_EDIT|K_UPPER|K_NOSPACE) < 0)
 				continue;
 			if (code_prefix_exists(code_prefix)) {
 				uifc.msg(strDuplicateCodePrefix);
@@ -711,7 +711,7 @@ void msgs_cfg()
 					SAFECOPY(code_prefix, cfg.grp[grpnum]->code_prefix);
 					uifc.helpbuf=grp_code_prefix_help;
 					if(uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Prefix"
-						,code_prefix,LEN_CODE,K_EDIT|K_UPPER) < 0)
+						,code_prefix,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE) < 0)
 						continue;
 					if(stricmp(code_prefix, cfg.grp[grpnum]->code_prefix) == 0)
 						break;

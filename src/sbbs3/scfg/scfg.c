@@ -1091,7 +1091,7 @@ void txt_cfg()
 				"abbreviation of the name.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Internal Code",code,LEN_CODE
-				,K_EDIT|K_UPPER)<1)
+				,K_EDIT|K_UPPER|K_NOSPACE)<1)
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
@@ -1191,7 +1191,7 @@ void txt_cfg()
 						"abbreviation of the name.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-						,str,LEN_CODE,K_EDIT|K_UPPER);
+						,str,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE);
 					if(code_ok(str))
 						SAFECOPY(cfg.txtsec[i]->code,str);
 					else {
@@ -1279,7 +1279,7 @@ void shell_cfg()
 				"or your `mods` directory.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Internal Code",code,LEN_CODE
-				,K_EDIT|K_UPPER)<1)
+				,K_EDIT|K_UPPER|K_NOSPACE)<1)
 				continue;
 			if(!code_ok(code)) {
 				uifc.helpbuf=invalid_code;
@@ -1400,7 +1400,7 @@ void shell_cfg()
 						"indicate a Baja shell file named `mybbs.bin` in your `exec` directory.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-						,str,LEN_CODE,K_EDIT|K_UPPER);
+						,str,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE);
 					if(code_ok(str))
 						SAFECOPY(cfg.shell[i]->code,str);
 					else {

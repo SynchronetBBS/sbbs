@@ -270,7 +270,7 @@ void sub_cfg(uint grpnum)
 			prep_code(code,/* prefix: */NULL);
 			uifc.helpbuf=sub_code_help;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Internal Code Suffix",code,LEN_CODE
-				,K_EDIT|K_UPPER)<1)
+				,K_EDIT|K_UPPER|K_NOSPACE)<1)
 				continue;
 			SAFEPRINTF2(tmp, "%s%s", cfg.grp[grpnum]->code_prefix, code);
 			if(getsubnum(&cfg, tmp) >= 0) {
@@ -453,7 +453,7 @@ void sub_cfg(uint grpnum)
 					uifc.helpbuf=sub_code_help;
 					SAFECOPY(str,cfg.sub[i]->code_suffix);
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Suffix (unique)"
-						,str,LEN_CODE,K_EDIT|K_UPPER);
+						,str,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE);
 					if(strcmp(str,cfg.sub[i]->code_suffix) == 0)
 						break;
 					SAFEPRINTF2(tmp, "%s%s", cfg.grp[cfg.sub[i]->grp]->code_prefix, str);
@@ -489,10 +489,10 @@ void sub_cfg(uint grpnum)
 						"automatically generated from the Sub-board's `Newsgroup Name` (if exists)\n"
 						"or the Sub-board's `Short Name`.\n"
 						"\n"
-						"This tag should ~ not ~ contain spaces."
+						"This tag may ~ not ~ contain spaces."
 					;
 					uifc.input(WIN_MID|WIN_SAV, 0, 17, "FidoNet Area Tag"
-						,cfg.sub[i]->area_tag, sizeof(cfg.sub[i]->area_tag)-1, K_EDIT|K_UPPER);
+						,cfg.sub[i]->area_tag, sizeof(cfg.sub[i]->area_tag)-1, K_EDIT|K_UPPER|K_NOSPACE);
 					break;
 				case 6:
 					sprintf(str,"%s Access",cfg.sub[i]->sname);
