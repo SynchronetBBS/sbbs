@@ -80,10 +80,16 @@ void sbbs_t::useredit(int usernumber)
 			user.freecdt=cfg.level_freecdtperday[user.level];
 			putuserdat(&cfg,&user); 	/* Leave alone */
 		}
+		char user_pass[LEN_PASS + 1];
+		SAFECOPY(user_pass, user.pass);
+		size_t max_len = cols < 60 ? 8 : cols - 60;
+		if(strlen(user_pass) > max_len - 2)
+			SAFEPRINTF2(user_pass, "%.*s..", (int)(max_len - 2), user.pass);
 		bprintf(text[UeditAliasPassword]
-			,user.alias, (user.level>useron.level && console&CON_R_ECHO)
-			|| !(cfg.sys_misc&SM_ECHO_PW) ? "XXXXXXXX" : user.pass
-			, unixtodstr(&cfg,user.pwmod,tmp));
+			,user.alias
+			,unixtodstr(&cfg,user.pwmod,tmp)
+			,(user.level>useron.level || !(cfg.sys_misc&SM_ECHO_PW)) ? "<hidden>" : user_pass
+			);
 		bprintf(text[UeditRealNamePhone]
 			,user.level>useron.level && console&CON_R_ECHO
 			? "XXXXXXXX" : user.name
