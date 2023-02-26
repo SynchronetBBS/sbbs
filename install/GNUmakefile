@@ -247,10 +247,9 @@ $(REPODIR):
 	git clone https://gitlab.com/SynchronetBBS/sbbs.git $(REPODIR) \
 		|| git clone https://github.com/SynchronetBBS/sbbs.git $(REPODIR) \
 		|| git clone https://gitlab.synchro.net/main/sbbs.git $(REPODIR)
-	cd $(REPODIR)
-	git remote set-url origin https://gitlab.synchro.net/main/sbbs.git
+	cd $(REPODIR); git remote set-url origin https://gitlab.synchro.net/main/sbbs.git
 ifdef TAG
-	git checkout tags/$(TAG)
+	cd $(REPODIR); git checkout tags/$(TAG)
 endif
 
 src: $(REPODIR)
