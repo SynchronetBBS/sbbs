@@ -1,7 +1,3 @@
-# wildcat.src
-
-# $Id: wildcat.src,v 1.17 2020/09/12 02:46:09 rswindell Exp $
-
 # @format.tab-size 8, @format.use-tabs true
 
 !include sbbsdefs.inc
@@ -65,7 +61,7 @@ cmdkey F
 	goto transfers
 	end_cmd
 cmdkey T
-	exec_bin chat_sec
+	chat_section
 	end_cmd
 cmdkey J
 	msg_select_area

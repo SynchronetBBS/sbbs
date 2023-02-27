@@ -1,7 +1,3 @@
-# renegade.src
-
-# $Id: renegade.src,v 1.16 2020/09/12 02:46:09 rswindell Exp $
-
 # @format.tab-size 8, @format.use-tabs true
 
 !include sbbsdefs.inc
@@ -95,7 +91,7 @@ cmdkey A
 	end_cmd
 
 cmdkey C
-	exec_bin chat_sec
+	chat_section
 	end_cmd
 
 cmdkey E
@@ -483,7 +479,7 @@ cmdkey E
 	end_cmd
 
 cmdkey C
-	exec_bin chat_sec
+	chat_section
 	end_cmd
 
 cmdkey D
@@ -746,7 +742,7 @@ cmdkey /A
 	end_cmd
 
 cmdkey C
-	exec_bin chat_sec
+	chat_section
 	end_cmd
 
 cmdkey /L

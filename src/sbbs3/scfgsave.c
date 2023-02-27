@@ -246,6 +246,7 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 		iniSetString(&ini, name, "scansubs", cfg->scansubs_mod, NULL);
 		iniSetString(&ini, name, "listmsgs", cfg->listmsgs_mod, NULL);
 		iniSetString(&ini, name, "textsec", cfg->textsec_mod, NULL);
+		iniSetString(&ini, name, "chatsec", cfg->chatsec_mod, NULL);
 		iniSetString(&ini, name, "automsg", cfg->automsg_mod, NULL);
 		iniSetString(&ini, name, "feedback", cfg->feedback_mod, NULL);
 		iniSetString(&ini, name, "userlist", cfg->userlist_mod, NULL);

@@ -1,8 +1,4 @@
-# major.src
-
 # MajorBBS Clone Command Shell for Synchronet
-
-# $Id: major.src,v 1.13 2020/09/12 02:46:08 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -25,7 +21,7 @@ cmdkey ?
 	end_cmd
 
 cmdkey T
-	exec_bin chat_sec
+	chat_section
 	end_cmd
 
 cmdkey I
@@ -273,7 +269,7 @@ cmdkey Q
         end_cmd
 
 cmdkey T
-	exec_bin chat_sec
+	chat_section
 	end_cmd
 
 cmdkey S

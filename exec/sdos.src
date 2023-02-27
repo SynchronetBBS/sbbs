@@ -1,8 +1,4 @@
-# sdos.src
-
 # DOS shell for Synchronet version 2 systems
-
-# $Id: sdos.src,v 1.15 2020/09/12 02:46:09 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -111,7 +107,7 @@ if_true
 # Global BBS commands
 compare_str "chat"
 if_true
-	exec_bin chat_sec
+	chat_section
 	return
 	end_if
 
