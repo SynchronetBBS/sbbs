@@ -2943,10 +2943,12 @@ int newuserdefaults(scfg_t* cfg, user_t* user)
 	else
 		SAFECOPY(user->tmpext,"zip");
 
-	user->shell=cfg->new_shell;
-	user->misc=cfg->new_misc|(AUTOTERM|COLOR);
-	user->prot=cfg->new_prot;
-	user->qwk=QWK_DEFAULT;
+	user->shell = cfg->new_shell;
+	user->misc = cfg->new_misc|(AUTOTERM|COLOR);
+	user->misc &= ~(DELETED|INACTIVE|QUIET|NETMAIL);
+	user->prot = cfg->new_prot;
+	user->qwk = cfg->new_qwk;
+	user->chat = cfg->new_chat;
 
 	for(i=0;i<cfg->total_xedits;i++)
 		if(!stricmp(cfg->xedit[i]->code,cfg->new_xedit) && chk_ar(cfg,cfg->xedit[i]->ar, user, /* client: */NULL))

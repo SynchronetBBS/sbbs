@@ -116,41 +116,7 @@ int main(int argc, char **argv)
 	/* Set Defaults */
 	/****************/
 
-	/* security */
-	user.level=scfg.new_level;
-	user.flags1=scfg.new_flags1;
-	user.flags2=scfg.new_flags2;
-	user.flags3=scfg.new_flags3;
-	user.flags4=scfg.new_flags4;
-	user.rest=scfg.new_rest;
-	user.exempt=scfg.new_exempt; 
-
-	user.cdt=scfg.new_cdt;
-	user.min=scfg.new_min;
-	user.freecdt=scfg.level_freecdtperday[user.level];
-
-	if(scfg.total_fcomps)
-		SAFECOPY(user.tmpext,scfg.fcomp[0]->ext);
-	else
-		SAFECOPY(user.tmpext,"ZIP");
-	for(i=0;i<scfg.total_xedits;i++)
-		if(!stricmp(scfg.xedit[i]->code,scfg.new_xedit))
-			break;
-	if(i<scfg.total_xedits)
-		user.xedit=i+1;
-
-	user.shell=scfg.new_shell;
-	user.misc=(scfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
-	user.misc|=AUTOTERM;	/* No way to frob the default value... */
-	user.qwk=QWK_DEFAULT;
-	user.firston=(time32_t)now;
-	user.laston=(time32_t)now;	/* must set this or user may be purged prematurely */
-	user.pwmod=(time32_t)now;
-	user.sex=' ';
-	user.prot=scfg.new_prot;
-
-	if(scfg.new_expire)
-		user.expire=(time32_t)(now+((long)scfg.new_expire*24L*60L*60L)); 
+	newuserdefaults(&scfg, &user);
 
 	for(i=first_arg;i<argc;i++) {
 		if(argv[i][0]=='-') {
