@@ -314,7 +314,7 @@ function docommand(command, commandparam1, commandparam2)
 			filearea(commandparam1, commandparam2);
 			break;
 		case 'chat':
-			load("chat_sec.js");
+			bbs.chat_sec();
 			break;
 		default:
 			doerror("Unknown command " + command);
