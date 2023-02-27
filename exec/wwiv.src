@@ -130,7 +130,7 @@ cmdkey A
 	end_cmd
 
 cmdkey C
-	exec_bin chat_sec
+	chat_section
 	end_cmd
 
 cmdkey D
@@ -514,7 +514,7 @@ cmdkey B
 	end_cmd
 
 cmdkey C
-	exec_bin chat_sec
+	chat_section
 	end_cmd
 
 cmdkey D

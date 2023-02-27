@@ -1,8 +1,4 @@
-# simple.src
-
 # Simple Synchronet Command Shell - for beginner/first-time users
-
-# $Id: simple.src,v 1.13 2020/09/12 02:46:09 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -31,11 +27,11 @@ logstr
 # Commands
 
 cmdstr C
-	exec_bin chat_sec
+	chat_section
 	end_cmd
 
 cmdstr CHAT
-	exec_bin chat_sec
+	chat_section
 	end_cmd
 
 cmdstr Q

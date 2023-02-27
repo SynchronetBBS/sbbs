@@ -603,6 +603,7 @@ typedef struct
 	char			expire_mod[LEN_CMD+1];			/* User expiration module */
 	char			textsec_mod[LEN_CMD+1];			/* Text section module */
 	char			xtrnsec_mod[LEN_CMD+1];			/* External Program section module */
+	char			chatsec_mod[LEN_CMD+1];			/* Chat section module */
 	char			automsg_mod[LEN_CMD+1];			/* Auto-message module */
 	char			feedback_mod[LEN_CMD+1];		/* Send feedback to sysop module */
 	char			readmail_mod[LEN_CMD+1];	/* Reading mail module */

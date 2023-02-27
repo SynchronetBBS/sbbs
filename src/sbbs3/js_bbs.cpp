@@ -2055,6 +2055,24 @@ js_text_sec(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_chat_sec(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	sbbs->chatsection();
+	JS_RESUMEREQUEST(cx, rc);
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_qwk_sec(JSContext *cx, uintN argc, jsval *arglist)
 {
 	sbbs_t*		sbbs;
@@ -4437,6 +4455,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"xtrn_sec",		js_xtrn_sec,		0,	JSTYPE_VOID,	JSDOCSTR("[section]")
 	,JSDOCSTR("enter the external programs section (or go directly to the specified <i>section</i>)")
 	,310
+	},
+	{"chat_sec",		js_chat_sec,		0,	JSTYPE_VOID,	JSDOCSTR("")
+	,JSDOCSTR("enter the chat section/menu")
+	,320
 	},
 	{"xfer_policy",		js_xfer_policy,		0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("display the file transfer policy")

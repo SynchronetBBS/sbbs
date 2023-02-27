@@ -240,6 +240,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->scansubs_mod, iniGetString(section, NULL, "scansubs", "", value));
 	SAFECOPY(cfg->listmsgs_mod, iniGetString(section, NULL, "listmsgs", "", value));
 	SAFECOPY(cfg->textsec_mod, iniGetString(section, NULL, "textsec", "text_sec", value));
+	SAFECOPY(cfg->chatsec_mod, iniGetString(section, NULL, "chatsec", "chat_sec", value));
 	SAFECOPY(cfg->automsg_mod, iniGetString(section, NULL, "automsg", "automsg", value));
 	SAFECOPY(cfg->feedback_mod, iniGetString(section, NULL, "feedback", "", value));
 	SAFECOPY(cfg->xtrnsec_mod, iniGetString(section, NULL, "xtrnsec", "xtrn_sec", value));
