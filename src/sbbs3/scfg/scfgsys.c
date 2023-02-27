@@ -1497,6 +1497,143 @@ void cfg_notify(void)
 	}
 } 
 
+void newuser_qwk_opts(void)
+{
+	static int cur, bar;
+
+	uifc.helpbuf=
+		"`New User QWK Message Packet Settings:`\n"
+		"\n"
+		"This menu contains the default state of new user QWK message packet\n"
+		"related settings.\n"
+		"\n"
+		"Note that while most of the options may be toggled between 2 states\n"
+		"(`Yes` and `No`), some options offer 3 states:\n"
+		"  `Include Ctrl-A Codes:` Yes, Expand (to ANSI), and No\n"
+		"  `Include E-mail Messages`: All, Unread (only), and No\n"
+	;
+	while(1) {
+		int i = 0;
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include QWKE Extensions"
+			,(cfg.new_qwk & QWK_EXT) ? "Yes" : "No");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include Ctrl-A Codes"
+			,(cfg.new_qwk & QWK_RETCTLA) ? "Yes" : (cfg.new_qwk & QWK_EXPCTLA) ? "Expand" : "No");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include UTF-8 Characters"
+			,(cfg.new_qwk & QWK_UTF8) ? "Yes" : "No");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include New Files List"
+			,(cfg.new_qwk & QWK_FILES) ? "Yes" : "No");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include File Attachments"
+			,(cfg.new_qwk & QWK_ATTACH) ? "Yes" : "No");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include Messages From Self"
+			,(cfg.new_qwk & QWK_BYSELF) ? "Yes" : "No");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include E-mail Messages"
+			,(cfg.new_qwk & QWK_ALLMAIL) ? "All" : (cfg.new_qwk & QWK_EMAIL) ? "Unread" : "No");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Delete Downloaded E-mail"
+			,(cfg.new_qwk & QWK_DELMAIL) ? "Yes" : "No");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include Index Files"
+			,(cfg.new_qwk & QWK_NOINDEX) ? "No" : "Yes");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include Control Files"
+			,(cfg.new_qwk & QWK_NOCTRL) ? "No" : "Yes");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include Time Zone Kludges"
+			,(cfg.new_qwk & QWK_TZ) ? "Yes" : "No");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include Via/Routing Kludges"
+			,(cfg.new_qwk & QWK_VIA) ? "Yes" : "No");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include Message-ID Kludges"
+			,(cfg.new_qwk & QWK_MSGID) ? "Yes" : "No");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include HEADERS.DAT File"
+			,(cfg.new_qwk & QWK_HEADERS) ? "Yes" : "No");
+		sprintf(opt[i++],"%-27.27s %s"
+			,"Include VOTING.DAT File"
+			,(cfg.new_qwk & QWK_VOTING) ? "Yes" : "No");
+		opt[i][0] = '\0';
+		switch(uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0, &cur, &bar
+			,"QWK Message Packet Settings",opt)) {
+			case -1:
+				return;
+			case 0:
+				cfg.new_qwk ^= QWK_EXT;
+				break;
+			case 1:
+				switch(cfg.new_qwk & (QWK_RETCTLA | QWK_EXPCTLA)) {
+					case QWK_RETCTLA:
+						cfg.new_qwk ^= QWK_RETCTLA;
+						cfg.new_qwk |= QWK_EXPCTLA;
+						break;
+					case QWK_EXPCTLA:
+						cfg.new_qwk ^= QWK_EXPCTLA;
+						break;
+					default:
+						cfg.new_qwk |= QWK_RETCTLA;
+						break;
+				}
+				break;
+			case 2:
+				cfg.new_qwk ^= QWK_UTF8;
+				break;
+			case 3:
+				cfg.new_qwk ^= QWK_FILES;
+				break;
+			case 4:
+				cfg.new_qwk ^= QWK_ATTACH;
+				break;
+			case 5:
+				cfg.new_qwk ^= QWK_BYSELF;
+				break;
+			case 6:
+				switch(cfg.new_qwk & (QWK_ALLMAIL | QWK_EMAIL)) {
+					case QWK_ALLMAIL:
+						cfg.new_qwk ^= QWK_ALLMAIL;
+						cfg.new_qwk |= QWK_EMAIL;
+						break;
+					case QWK_EMAIL:
+						cfg.new_qwk ^= QWK_EMAIL;
+						break;
+					default:
+						cfg.new_qwk |= QWK_ALLMAIL;
+						break;
+				}
+				break;
+			case 7:
+				cfg.new_qwk ^= QWK_DELMAIL;
+				break;
+			case 8:
+				cfg.new_qwk ^= QWK_NOINDEX;
+				break;
+			case 9:
+				cfg.new_qwk ^= QWK_NOCTRL;
+				break;
+			case 10:
+				cfg.new_qwk ^= QWK_TZ;
+				break;
+			case 11:
+				cfg.new_qwk ^= QWK_VIA;
+				break;
+			case 12:
+				cfg.new_qwk ^= QWK_MSGID;
+				break;
+			case 13:
+				cfg.new_qwk ^= QWK_HEADERS;
+				break;
+			case 14:
+				cfg.new_qwk ^= QWK_VOTING;
+				break;
+		}
+	}
+}
 
 void sys_cfg(void)
 {
@@ -1504,8 +1641,10 @@ void sys_cfg(void)
 	static int tog_bar;
 	static int adv_bar;
 	static int mod_dflt, mod_bar;
+	static int uq_cur, uq_bar;
+	static int newtog_cur, newtog_bar;
 	char str[81],done=0;
-	int i,j,k;
+	int i,j;
 	scfg_t saved_cfg = cfg;
 	char sys_pass[sizeof(cfg.sys_pass)];
 	SAFECOPY(sys_pass, cfg.sys_pass);
@@ -1521,6 +1660,7 @@ void sys_cfg(void)
 		strcpy(opt[i++],"Notifications...");
 		strcpy(opt[i++],"Toggle Options...");
 		strcpy(opt[i++],"New User Values...");
+		strcpy(opt[i++],"New User Prompts...");
 		strcpy(opt[i++],"Security Options...");
 		strcpy(opt[i++],"Advanced Options...");
 		strcpy(opt[i++],"Loadable Modules...");
@@ -1775,7 +1915,7 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-27.27s%hu","Days of New Messages", cfg.new_msgscan_init);
 					sprintf(opt[i++],"%-27.27s%s", "Gender Options", cfg.new_genders);
 					strcpy(opt[i++],"Default Toggles...");
-					strcpy(opt[i++],"Question Toggles...");
+					strcpy(opt[i++],"QWK Packet Setting...");
 					opt[i][0]=0;
 					uifc.helpbuf=
 						"`New User Values:`\n"
@@ -2001,7 +2141,6 @@ void sys_cfg(void)
 								"for more information on the individual options available.\n"
 							;
 							j=0;
-							k=0;
 							while(1) {
 								i=0;
 								sprintf(opt[i++],"%-27.27s %-3.3s"
@@ -2040,8 +2179,23 @@ void sys_cfg(void)
 								sprintf(opt[i++],"%-27.27s %-3.3s"
 									,"Auto Hang-up After Xfer"
 									,cfg.new_misc&AUTOHANG ? "Yes":"No");
+								sprintf(opt[i++],"%-27.27s %-3.3s"
+									,"Multinode Chat Echo"
+									,cfg.new_chat & CHAT_ECHO ? "Yes":"No");
+								sprintf(opt[i++],"%-27.27s %-3.3s"
+									,"Multinode Chat Actions"
+									,cfg.new_chat & CHAT_ACTION ? "Yes":"No");
+								sprintf(opt[i++],"%-27.27s %-3.3s"
+									,"Pageable for Chat"
+									,cfg.new_chat & CHAT_NOPAGE ? "No":"Yes");
+								sprintf(opt[i++],"%-27.27s %-3.3s"
+									,"Node Activity Messages"
+									,cfg.new_chat & CHAT_NOACT ? "No":"Yes");
+								sprintf(opt[i++],"%-27.27s %-3.3s"
+									,"Split-Screen Private Chat"
+									,cfg.new_chat & CHAT_SPLITP ? "Yes":"No");
 								opt[i][0]=0;
-								j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0,&j,&k
+								j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0, &newtog_cur, &newtog_bar
 									,"Default Toggle Options",opt);
 								if(j==-1)
 									break;
@@ -2082,150 +2236,167 @@ void sys_cfg(void)
 									case 11:
 										cfg.new_misc^=AUTOHANG;
 										break;
+									case 12:
+										cfg.new_chat ^= CHAT_ECHO;
+										break;
+									case 13:
+										cfg.new_chat ^= CHAT_ACTION;
+										break;
+									case 14:
+										cfg.new_chat ^= CHAT_NOPAGE;
+										break;
+									case 15:
+										cfg.new_chat ^= CHAT_NOACT;
+										break;
+									case 16:
+										cfg.new_chat ^= CHAT_SPLITP;
+										break;
 								}
 							}
 							break;
 						case 16:
-							uifc.helpbuf=
-								"`New User Question Toggles:`\n"
-								"\n"
-								"This menu allows you to decide which questions will be asked of a new\n"
-								"user.\n"
-							;
-							j=0;
-							k=0;
-							while(1) {
-								i=0;
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Real Name"
-									,cfg.uq&UQ_REALNAME ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Force Unique Real Name"
-									,cfg.uq&UQ_DUPREAL ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Force Upper/Lower Case"
-									,cfg.uq&UQ_NOUPRLWR ? "No":"Yes");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Company Name"
-									,cfg.uq&UQ_COMPANY ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Chat Handle / Call Sign"
-									,cfg.uq&UQ_HANDLE ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Force Unique Handle / Call Sign"
-									,cfg.uq&UQ_DUPHAND ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"E-mail/NetMail Address"
-									,cfg.uq&UQ_NONETMAIL ? "No":"Yes");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Force Unique E-mail/NetMail Address"
-									,cfg.uq&UQ_DUPNETMAIL ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Sex (Gender)"
-									,cfg.uq&UQ_SEX ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Birthday"
-									,cfg.uq&UQ_BIRTH ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Address and Zip Code"
-									,cfg.uq&UQ_ADDRESS ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Location"
-									,cfg.uq&UQ_LOCATION ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Require Comma in Location"
-									,cfg.uq&UQ_NOCOMMAS ? "No":"Yes");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Phone Number"
-									,cfg.uq&UQ_PHONE ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Allow EX-ASCII in Answers"
-									,cfg.uq&UQ_NOEXASC ? "No":"Yes");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"External Editor"
-									,cfg.uq&UQ_XEDIT ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Command Shell"
-									,cfg.uq&UQ_CMDSHELL ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Default Settings"
-									,cfg.uq&UQ_NODEF ? "No":"Yes");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
-									,"Color Terminal"
-									,cfg.uq&UQ_COLORTERM ? "Yes":"No");
-								opt[i][0]=0;
-								j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0,&j,&k
-									,"New User Questions",opt);
-								if(j==-1)
-									break;
-								switch(j) {
-									case 0:
-										cfg.uq^=UQ_REALNAME;
-										break;
-									case 1:
-										cfg.uq^=UQ_DUPREAL;
-										break;
-									case 2:
-										cfg.uq^=UQ_NOUPRLWR;
-										break;
-									case 3:
-										cfg.uq^=UQ_COMPANY;
-										break;
-									case 4:
-										cfg.uq^=UQ_HANDLE;
-										break;
-									case 5:
-										cfg.uq^=UQ_DUPHAND;
-										break;
-									case 6:
-										cfg.uq^=UQ_NONETMAIL;
-										break;
-									case 7:
-										cfg.uq^=UQ_DUPNETMAIL;
-										break;
-									case 8:
-										cfg.uq^=UQ_SEX;
-										break;
-									case 9:
-										cfg.uq^=UQ_BIRTH;
-										break;
-									case 10:
-										cfg.uq^=UQ_ADDRESS;
-										break;
-									case 11:
-										cfg.uq^=UQ_LOCATION;
-										break;
-									case 12:
-										cfg.uq^=UQ_NOCOMMAS;
-										break;
-									case 13:
-										cfg.uq^=UQ_PHONE;
-										break;
-									case 14:
-										cfg.uq^=UQ_NOEXASC;
-										break;
-									case 15:
-										cfg.uq^=UQ_XEDIT;
-										break;
-									case 16:
-										cfg.uq^=UQ_CMDSHELL;
-										break;
-									case 17:
-										cfg.uq^=UQ_NODEF;
-										break;
-									case 18:
-										cfg.uq^=UQ_COLORTERM;
-										break;
-								}
-							}
-						break; 
+							newuser_qwk_opts();
+							break;
+						}
+					}
+				break;
+			case 7:
+				uifc.helpbuf=
+					"`New User Questions/Prompts:`\n"
+					"\n"
+					"This menu allows you to decide which questions will be asked of a new\n"
+					"user.\n"
+				;
+				j=0;
+				while(1) {
+					i=0;
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Real Name"
+						,cfg.uq&UQ_REALNAME ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Force Unique Real Name"
+						,cfg.uq&UQ_DUPREAL ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Force Upper/Lower Case"
+						,cfg.uq&UQ_NOUPRLWR ? "No":"Yes");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Company Name"
+						,cfg.uq&UQ_COMPANY ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Chat Handle / Call Sign"
+						,cfg.uq&UQ_HANDLE ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Force Unique Handle / Call Sign"
+						,cfg.uq&UQ_DUPHAND ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"E-mail/NetMail Address"
+						,cfg.uq&UQ_NONETMAIL ? "No":"Yes");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Force Unique E-mail/NetMail Address"
+						,cfg.uq&UQ_DUPNETMAIL ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Sex (Gender)"
+						,cfg.uq&UQ_SEX ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Birthday"
+						,cfg.uq&UQ_BIRTH ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Address and Zip Code"
+						,cfg.uq&UQ_ADDRESS ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Location"
+						,cfg.uq&UQ_LOCATION ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Require Comma in Location"
+						,cfg.uq&UQ_NOCOMMAS ? "No":"Yes");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Phone Number"
+						,cfg.uq&UQ_PHONE ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Allow EX-ASCII in Answers"
+						,cfg.uq&UQ_NOEXASC ? "No":"Yes");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"External Editor"
+						,cfg.uq&UQ_XEDIT ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Command Shell"
+						,cfg.uq&UQ_CMDSHELL ? "Yes":"No");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Default Settings"
+						,cfg.uq&UQ_NODEF ? "No":"Yes");
+					sprintf(opt[i++],"%-27.27s %-3.3s"
+						,"Color Terminal"
+						,cfg.uq&UQ_COLORTERM ? "Yes":"No");
+					opt[i][0]=0;
+					j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0, &uq_cur, &uq_bar
+						,"New User Questions/Prompts",opt);
+					if(j==-1)
+						break;
+					switch(j) {
+						case 0:
+							cfg.uq^=UQ_REALNAME;
+							break;
+						case 1:
+							cfg.uq^=UQ_DUPREAL;
+							break;
+						case 2:
+							cfg.uq^=UQ_NOUPRLWR;
+							break;
+						case 3:
+							cfg.uq^=UQ_COMPANY;
+							break;
+						case 4:
+							cfg.uq^=UQ_HANDLE;
+							break;
+						case 5:
+							cfg.uq^=UQ_DUPHAND;
+							break;
+						case 6:
+							cfg.uq^=UQ_NONETMAIL;
+							break;
+						case 7:
+							cfg.uq^=UQ_DUPNETMAIL;
+							break;
+						case 8:
+							cfg.uq^=UQ_SEX;
+							break;
+						case 9:
+							cfg.uq^=UQ_BIRTH;
+							break;
+						case 10:
+							cfg.uq^=UQ_ADDRESS;
+							break;
+						case 11:
+							cfg.uq^=UQ_LOCATION;
+							break;
+						case 12:
+							cfg.uq^=UQ_NOCOMMAS;
+							break;
+						case 13:
+							cfg.uq^=UQ_PHONE;
+							break;
+						case 14:
+							cfg.uq^=UQ_NOEXASC;
+							break;
+						case 15:
+							cfg.uq^=UQ_XEDIT;
+							break;
+						case 16:
+							cfg.uq^=UQ_CMDSHELL;
+							break;
+						case 17:
+							cfg.uq^=UQ_NODEF;
+							break;
+						case 18:
+							cfg.uq^=UQ_COLORTERM;
+							break;
 					}
 				}
 				break;
-			case 7:
+			case 8:
 				security_cfg();
 				break;
-			case 8:	/* Advanced Options */
+			case 9:	/* Advanced Options */
 				done=0;
 				while(!done) {
 					i=0;
@@ -2590,7 +2761,7 @@ void sys_cfg(void)
 						} 
 					}
 					break;
-			case 9: /* Loadable Modules */
+			case 10: /* Loadable Modules */
 				done=0;
 				while(!done) {
 					i=0;
