@@ -126,6 +126,7 @@ DLLEXPORT BOOL	can_user_post(scfg_t*, uint subnum, user_t*, client_t* client, ui
 DLLEXPORT BOOL	can_user_upload(scfg_t*, uint dirnum, user_t*, client_t* client, uint* reason);
 DLLEXPORT BOOL	can_user_download(scfg_t*, uint dirnum, user_t*, client_t* client, uint* reason);
 DLLEXPORT BOOL	can_user_send_mail(scfg_t*, enum smb_net_type, uint usernumber, user_t*, uint* reason);
+DLLEXPORT BOOL	is_user_sysop(user_t*);
 DLLEXPORT BOOL	is_user_subop(scfg_t*, uint subnum, user_t*, client_t* client);
 DLLEXPORT BOOL	is_user_dirop(scfg_t*, uint dirnum, user_t*, client_t* client);
 DLLEXPORT BOOL	is_download_free(scfg_t*, uint dirnum, user_t*, client_t* client);

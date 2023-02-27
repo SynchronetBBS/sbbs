@@ -3235,7 +3235,7 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 	if(nodenum >= 1) {	/* !all */
 		sbbs->getnodedat(nodenum, &node, false);
 		usernumber = node.useron;
-		if((node.misc&NODE_POFF) && sbbs->useron.level < SYSOP_LEVEL) {
+		if((node.misc&NODE_POFF) && !is_user_sysop(&sbbs->useron)) {
 			sbbs->bprintf(sbbs->text[CantPageNode]
 				, node.misc&NODE_ANON ? sbbs->text[UNKNOWN_USER] : username(&sbbs->cfg,node.useron,tmp));
 			return JS_TRUE;
@@ -3281,8 +3281,8 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 				continue;
 			sbbs->getnodedat(i, &node, false);
 			if((node.status==NODE_INUSE
-				|| (sbbs->useron.level >= SYSOP_LEVEL && node.status==NODE_QUIET))
-				&& (sbbs->useron.level >= SYSOP_LEVEL || !(node.misc&NODE_POFF)))
+				|| (is_user_sysop(&sbbs->useron) && node.status==NODE_QUIET))
+				&& (is_user_sysop(&sbbs->useron) || !(node.misc&NODE_POFF)))
 				if(putnmsg(&sbbs->cfg, i, msg) != 0)
 					success = FALSE;
 		}

@@ -1917,7 +1917,7 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				else result=!not;
 				break;
 			case AR_SYSOP:
-				if(user==NULL || user->level<SYSOP_LEVEL)
+				if(!is_user_sysop(user))
 					result=not;
 				else result=!not;
 				break;
@@ -2671,7 +2671,7 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 			u64toac(mod,tmp,',');
 			const char* alias = user->alias[0] ? user->alias : cfg->text[UNKNOWN_USER];
 			char username[64];
-			if(client != NULL && uploader.level >= SYSOP_LEVEL) {
+			if(client != NULL && is_user_sysop(&uploader)) {
 				if(client->host[0] != '\0' && strcmp(client->host, STR_NO_HOSTNAME) != 0)
 					SAFEPRINTF2(username,"%s [%s]", alias, client->host);
 				else
@@ -3349,6 +3349,16 @@ BOOL can_user_send_mail(scfg_t* cfg, enum smb_net_type net_type, uint usernumber
 }
 
 /****************************************************************************/
+/* Determine if the specified user is a system operator						*/
+/****************************************************************************/
+BOOL is_user_sysop(user_t* user)
+{
+	if(user == NULL)
+		return FALSE;
+	return user->level >= SYSOP_LEVEL;
+}
+
+/****************************************************************************/
 /* Determine if the specified user is a sub-board operator					*/
 /****************************************************************************/
 BOOL is_user_subop(scfg_t* cfg, uint subnum, user_t* user, client_t* client)
@@ -3357,7 +3367,7 @@ BOOL is_user_subop(scfg_t* cfg, uint subnum, user_t* user, client_t* client)
 		return FALSE;
 	if(!can_user_access_sub(cfg, subnum, user, client))
 		return FALSE;
-	if(user->level>=SYSOP_LEVEL)
+	if(is_user_sysop(user))
 		return TRUE;
 
 	return cfg->sub[subnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->sub[subnum]->op_ar,user,client);
@@ -3372,7 +3382,7 @@ BOOL is_user_dirop(scfg_t* cfg, uint dirnum, user_t* user, client_t* client)
 		return FALSE;
 	if(!can_user_access_dir(cfg, dirnum, user, client))
 		return FALSE;
-	if(user->level >= SYSOP_LEVEL)
+	if(is_user_sysop(user))
 		return TRUE;
 
 	return (cfg->dir[dirnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client))

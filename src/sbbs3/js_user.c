@@ -408,7 +408,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			return(JS_TRUE);	/* intentional early return */
 
 		case USER_PROP_IS_SYSOP:
-			*vp = BOOLEAN_TO_JSVAL(p->user->level >= SYSOP_LEVEL);
+			*vp = BOOLEAN_TO_JSVAL(is_user_sysop(p->user));
 			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);	/* intentional early return */
 
