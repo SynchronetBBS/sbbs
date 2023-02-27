@@ -604,6 +604,7 @@ typedef struct
 	char			textsec_mod[LEN_CMD+1];			/* Text section module */
 	char			xtrnsec_mod[LEN_CMD+1];			/* External Program section module */
 	char			automsg_mod[LEN_CMD+1];			/* Auto-message module */
+	char			feedback_mod[LEN_CMD+1];		/* Send feedback to sysop module */
 	char			readmail_mod[LEN_CMD+1];	/* Reading mail module */
 	char			scanposts_mod[LEN_CMD+1];	/* Scanning posts (in a single sub) module */
 	char			scansubs_mod[LEN_CMD+1];	/* Scanning sub-boards module */

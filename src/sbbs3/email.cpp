@@ -38,12 +38,12 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	uint16_t	msgattr=0;
 	uint16_t	xlat=XLAT_NONE;
 	int 		i,j,x,file;
-	int			l;
 	int			length;
 	off_t		offset;
 	uint32_t	crc=0xffffffffUL;
 	FILE*		instream;
 	node_t		node;
+	user_t		user{};
 	smbmsg_t	msg;
 
 	if(subj != NULL)
@@ -55,35 +55,29 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		bputs(text[TooManyEmailsToday]);
 		return(false); 
 	}
-	if(usernumber==1 && useron.rest&FLAG('S')
-		&& (cfg.valuser!=1 || useron.fbacks || useron.emails)) { /* ! val fback */
+	user.number = usernumber;
+	if(getuserdat(&cfg, &user) != 0 || (user.misc & (DELETED | INACTIVE))) {
+		bputs(text[UnknownUser]);
+		return(false);
+	}
+	bool to_sysop = is_user_sysop(&user);
+	if(to_sysop && useron.rest&FLAG('S')
+		&& (cfg.valuser!=usernumber || useron.fbacks || useron.emails)) { /* ! val fback */
 		bprintf(text[R_Feedback],cfg.sys_op);
 		return(false); 
 	}
-	if(usernumber!=1 && useron.rest&FLAG('E')
+	if(!to_sysop && useron.rest&FLAG('E')
 		&& (cfg.valuser!=usernumber || useron.fbacks || useron.emails)) {
 		bputs(text[R_Email]);
 		return(false); 
 	}
-	if(!usernumber) {
-		bputs(text[UnknownUser]);
-		return(false); 
-	}
-	str[0] = '\0';
-	l = getusermisc(&cfg, usernumber);
-	if(l&(DELETED|INACTIVE)) {              /* Deleted or Inactive User */
-		bputs(text[UnknownUser]);
-		return(false); 
-	}
-	if((l&NETMAIL) && (cfg.sys_misc&SM_FWDTONET) && !(mode & WM_NOFWD) && !(useron.rest&FLAG('M'))) {
-		str[0] = '\0';
-		if(getuserstr(&cfg, usernumber, USER_NETMAIL, str, sizeof(str)) != NULL
-			&& is_supported_netmail_addr(&cfg, str)) {
-			bprintf(text[UserNetMail],str);
+	if((user.misc&NETMAIL) && (cfg.sys_misc&SM_FWDTONET) && !(mode & WM_NOFWD) && !(useron.rest&FLAG('M'))) {
+		if(is_supported_netmail_addr(&cfg, user.netmail)) {
+			bprintf(text[UserNetMail], user.netmail);
 			if((mode & WM_FORCEFWD) || yesno(text[ForwardMailQ])) /* Forward to netmail address */
-				return(netmail(str, subj, mode, resmb, remsg));
+				return(netmail(user.netmail, subj, mode, resmb, remsg));
 		} else {
-			bprintf(text[InvalidNetMailAddr], str);
+			bprintf(text[InvalidNetMailAddr], user.netmail);
 		}
 	}
 	if(sys_status&SS_ABORT) {
@@ -94,11 +88,11 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	action=NODE_SMAL;
 	nodesync();
 
-	SAFEPRINTF(str,"%sfeedback.*", cfg.exec_dir);
-	if(usernumber==cfg.valuser && useron.fbacks && fexist(str)) {
-		exec_bin("feedback",&main_csi);
-		if(main_csi.logic!=LOGIC_TRUE)
-			return(false); 
+	if(cfg.feedback_mod[0] && to_sysop && !SYSOP
+		&& (useron.fbacks || usernumber != cfg.valuser)) {
+		main_csi.logic = LOGIC_TRUE;
+		if(exec_bin(cfg.feedback_mod, &main_csi) != 0 || main_csi.logic != LOGIC_TRUE)
+			return(false);
 	}
 
 	if(cfg.sys_misc&SM_ANON_EM && useron.exempt&FLAG('A')
@@ -164,7 +158,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		safe_snprintf(tmp,sizeof(tmp),"%s%s",cfg.temp_dir,title);
 		if(!fexistcase(str2) && fexistcase(tmp))
 			mv(tmp,str2,0);
-		l=(int)flength(str2);
+		off_t l=flength(str2);
 		if(l>0)
 			bprintf(text[FileNBytesReceived],title,ultoac(l,tmp));
 		else {
