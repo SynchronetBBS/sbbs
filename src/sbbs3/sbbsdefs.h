@@ -461,6 +461,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define CHAT_NOACT	(1<<3)	/* No activity alerts							*/
 #define CHAT_SPLITP (1<<4)	/* Split screen private chat					*/
 
+#define CHAT_DEFAULT	CHAT_SPLITP
 
 #define INVALID_DIR ((uint)-1)	/* Invalid directory value					*/
 #define INVALID_SUB ((uint)-1)	/* Invalid sub-board value					*/

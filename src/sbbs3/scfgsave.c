@@ -188,6 +188,8 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 		if(cfg->total_shells > 0)
 			iniSetString(&ini, name, "command_shell", cfg->shell[cfg->new_shell]->code, NULL);
 		iniSetHexInt(&ini, name, "settings", cfg->new_misc, NULL);
+		iniSetHexInt(&ini, name, "chat_settings", cfg->new_chat, NULL);
+		iniSetHexInt(&ini, name, "qwk_settings", cfg->new_qwk, NULL);
 		SAFEPRINTF(tmp, "%c", cfg->new_prot);
 		iniSetString(&ini, name, "download_protocol", tmp, NULL);
 		iniSetShortInt(&ini, name, "msgscan_init", cfg->new_msgscan_init, NULL);

@@ -187,6 +187,8 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->new_min = iniGetUInteger(section, NULL, "minutes", 0);
 	cfg->new_expire = iniGetInteger(section, NULL, "expiration_days", 0);
 	cfg->new_misc = iniGetUInt32(section, NULL, "settings", 0);
+	cfg->new_chat = iniGetUInt32(section, NULL, "chat_settings", CHAT_DEFAULT);
+	cfg->new_qwk = iniGetUInt32(section, NULL, "qwk_settings", QWK_DEFAULT);
 	cfg->new_msgscan_init = iniGetInteger(section, NULL, "msgscan_init", 0);
 
 	/*************************/

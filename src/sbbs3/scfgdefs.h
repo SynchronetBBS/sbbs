@@ -520,6 +520,8 @@ typedef struct
 	char			new_xedit[LEN_CODE+1];		/* New User Default Editor */
 	uint16_t		new_shell;			/* New User Default Command Set */
 	uint32_t		new_misc;			/* New User Miscellaneous Defaults */
+	uint32_t		new_chat;			/* New User Chat settings */
+	uint32_t		new_qwk;			/* New User QWK settings */
 	uint16_t		new_expire; 		/* Expiration days for new user */
 	uchar			new_prot;			/* New User Default Download Protocol */
 	uint16_t		new_msgscan_init;	/* Uew User new-scan pointers initialized to msgs this old (in days) */

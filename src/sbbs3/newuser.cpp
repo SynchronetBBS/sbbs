@@ -75,7 +75,8 @@ BOOL sbbs_t::newuser()
 
 	/* Sets defaults per sysop config */
 	useron.misc|=(cfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
-	useron.qwk=QWK_DEFAULT;
+	useron.qwk = cfg.new_qwk;
+	useron.chat = cfg.new_chat;
 	useron.firston=useron.laston=useron.pwmod=time32(NULL);
 	if(cfg.new_expire) {
 		now=time(NULL);
