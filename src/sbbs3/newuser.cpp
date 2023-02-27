@@ -56,6 +56,7 @@ BOOL sbbs_t::newuser()
 	thisnode.connection=node_connection;
 	putnodedat(cfg.node_num,&thisnode);
 	memset(&useron,0,sizeof(user_t));	  /* Initialize user info to null */
+	newuserdefaults(&cfg, &useron);
 	if(cfg.new_pass[0] && online==ON_REMOTE) {
 		c=0;
 		while(++c<4) {
@@ -74,17 +75,6 @@ BOOL sbbs_t::newuser()
 	}
 
 	/* Sets defaults per sysop config */
-	useron.misc|=(cfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
-	useron.qwk = cfg.new_qwk;
-	useron.chat = cfg.new_chat;
-	useron.firston=useron.laston=useron.pwmod=time32(NULL);
-	if(cfg.new_expire) {
-		now=time(NULL);
-		useron.expire=(time32_t)(now+((long)cfg.new_expire*24L*60L*60L)); 
-	} else
-		useron.expire=0;
-	useron.sex=' ';
-	useron.prot=cfg.new_prot;
 	SAFECOPY(useron.comp,client_name);	/* hostname or CID name */
 	SAFECOPY(useron.ipaddr,cid);			/* IP address or CID number */
 	if((i=finduserstr(0, USER_IPADDR, cid, /* del */true))!=0) {	/* Duplicate IP address */
@@ -93,7 +83,6 @@ BOOL sbbs_t::newuser()
 		logline(LOG_NOTICE,"N!",useron.comment); 
 	}
 
-	SAFECOPY(useron.alias,"New");     /* just for status line */
 	SAFECOPY(useron.modem,connection);
 	if(!lastuser(&cfg)) {	/* Automatic sysop access for first user */
 		bprintf("Creating sysop account... System password required.\r\n");
@@ -103,28 +92,7 @@ BOOL sbbs_t::newuser()
 		useron.exempt=useron.flags1=useron.flags2=0xffffffffUL;
 		useron.flags3=useron.flags4=0xffffffffUL;
 		useron.rest=0L; 
-	} else {
-		useron.level=cfg.new_level;
-		useron.flags1=cfg.new_flags1;
-		useron.flags2=cfg.new_flags2;
-		useron.flags3=cfg.new_flags3;
-		useron.flags4=cfg.new_flags4;
-		useron.rest=cfg.new_rest;
-		useron.exempt=cfg.new_exempt; 
 	}
-
-	useron.cdt=cfg.new_cdt;
-	useron.min=cfg.new_min;
-	useron.freecdt=cfg.level_freecdtperday[useron.level];
-
-	if(cfg.total_fcomps)
-		SAFECOPY(useron.tmpext,cfg.fcomp[0]->ext);
-	else
-		SAFECOPY(useron.tmpext,supported_archive_formats[0]);
-
-	useron.shell=cfg.new_shell;
-
-	useron.alias[0]=0;
 
 	kmode=(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL|K_TRIM;
 	if(!(cfg.uq&UQ_NOUPRLWR))
