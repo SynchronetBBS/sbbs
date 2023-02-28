@@ -6,15 +6,15 @@
    cmdkey L
 		exec_bin "msglist"
 		end_cmd
-		
+
    ... and then recompile with baja (e.g. "baja default.src").
  */
- 
+
 /* To install as mail reading module and message list module, run:
    jsexec msglist -install
  */
- 
-/* TODO: 
+
+/* TODO:
  * - display poll messages "correctly"
  * - support voting
  * - fix issues with operator sub-menu display
@@ -26,8 +26,6 @@
  */
 
 "use strict";
-
-log("argv = " + JSON.stringify(argv, null, 4));
 
 function install()
 {
