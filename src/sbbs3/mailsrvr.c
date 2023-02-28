@@ -73,6 +73,8 @@ int dns_getmx(char* name, char* mx, char* mx2
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define DNSBL_THROTTLE_VALUE	1000	/* Milliseconds */
 #define SMTP_MAX_BAD_CMDS		9
+#define SMTP_MAX_CMD_LEN		510		/* Excluding CRLF */
+#define RFC822_MAX_LINE_LEN		998		/* Excluding CRLF */
 
 static mail_startup_t* startup=NULL;
 static scfg_t	scfg;
@@ -659,14 +661,6 @@ int compare_addrs(const char* addr1, const char* addr2)
 	return strcmp(angle_bracket(tmp1, sizeof(tmp1), addr1), angle_bracket(tmp2, sizeof(tmp2), addr2));
 }
 
-/* RFC822: The maximum total length of a text line including the
-   <CRLF> is 1000 characters (but not counting the leading
-   dot duplicated for transparency). 
-
-   POP3 (RFC1939) actually calls for a 512 byte line length limit!
-*/
-#define MAX_LINE_LEN	998		
-
 static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, smbmsg_t* msg, char* msgtxt, ulong maxlines
 						  ,str_list_t file_list, char* mime_boundary)
 {
@@ -845,7 +839,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	np=msgtxt;
 	while(*np && lines<maxlines) {
 		len=0;
-		while(len<MAX_LINE_LEN && *(np+len)!=0 && *(np+len)!='\n')
+		while(len<RFC822_MAX_LINE_LEN && *(np+len)!=0 && *(np+len)!='\n')
 			len++;
 
 		tlen=len;
@@ -3214,12 +3208,6 @@ static void smtp_thread(void* arg)
 		rd = sockreadline(socket, client.protocol, session, buf, sizeof(buf));
 		if(rd<0) 
 			break;
-		if(strlen(buf) > 998) { /* RFC2822: "Each line of characters MUST be no more than 998 characters" */
-			lprintf(LOG_WARNING, "%04d %s %s sent an ILLEGALLY-LONG line (%d chars > 998): '%s'"
-				,socket, client.protocol, client_id, (int)strlen(buf), buf);
-			sockprintf(socket, client.protocol, session, "500 Line too long");
-			break;
-		}
 		truncsp(buf);
 		if(spy!=NULL)
 			fprintf(spy,"%s\n",buf);
@@ -4084,6 +4072,12 @@ static void smtp_thread(void* arg)
 			if(state==SMTP_STATE_DATA_BODY) {
 				p=buf;
 				if(*p=='.') p++;	/* Transparency (RFC821 4.5.2) */
+				if(strlen(p) > RFC822_MAX_LINE_LEN) {
+					lprintf(LOG_WARNING, "%04d %s %s sent an ILLEGALLY-LONG body line (%d chars > %d): '%s'"
+						,socket, client.protocol, client_id, (int)strlen(p), RFC822_MAX_LINE_LEN, p);
+					sockprintf(socket, client.protocol, session, "500 Line too long (body)");
+					break;
+				}
 				if(msgtxt!=NULL) {
 					fputs(p, msgtxt);
 					fputs("\r\n", msgtxt);
@@ -4095,6 +4089,12 @@ static void smtp_thread(void* arg)
 				continue;
 			}
 			/* RFC822 Header parsing */
+			if(strlen(buf) > RFC822_MAX_LINE_LEN) {
+				lprintf(LOG_WARNING, "%04d %s %s sent an ILLEGALLY-LONG header line (%d chars > %d): '%s'"
+					,socket, client.protocol, client_id, (int)strlen(buf), RFC822_MAX_LINE_LEN, buf);
+				sockprintf(socket, client.protocol, session, "500 Line too long (header)");
+				break;
+			}
 			strip_char(buf, buf, '\r');	/* There should be no bare carriage returns in header fields */
 			if(startup->options&MAIL_OPT_DEBUG_RX_HEADER)
 				lprintf(LOG_DEBUG,"%04d %s %s %s",socket, client.protocol, client_id, buf);
@@ -4117,6 +4117,12 @@ static void smtp_thread(void* arg)
 			}
 			hdr_lines++;
 			continue;
+		}
+		if(strlen(buf) > SMTP_MAX_CMD_LEN) {
+			lprintf(LOG_WARNING, "%04d %s %s sent an ILLEGALLY-LONG command line (%d chars > %d): '%s'"
+				,socket, client.protocol, client_id, (int)strlen(buf), SMTP_MAX_CMD_LEN, buf);
+			sockprintf(socket, client.protocol, session, "500 Line too long (command)");
+			break;
 		}
 		strip_ctrl(buf, buf);
 		lprintf(LOG_DEBUG,"%04d %s %s RX: %s", socket, client.protocol, client_id, buf);
