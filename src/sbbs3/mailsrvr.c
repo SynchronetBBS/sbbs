@@ -3214,6 +3214,12 @@ static void smtp_thread(void* arg)
 		rd = sockreadline(socket, client.protocol, session, buf, sizeof(buf));
 		if(rd<0) 
 			break;
+		if(strlen(buf) > 998) { /* RFC2822: "Each line of characters MUST be no more than 998 characters" */
+			lprintf(LOG_WARNING, "%04d %s %s sent an ILLEGALLY-LONG line (%d chars > 998): '%s'"
+				,socket, client.protocol, client_id, strlen(buf), buf);
+			sockprintf(socket, client.protocol, session, "500 Line too long");
+			break;
+		}
 		truncsp(buf);
 		if(spy!=NULL)
 			fprintf(spy,"%s\n",buf);
