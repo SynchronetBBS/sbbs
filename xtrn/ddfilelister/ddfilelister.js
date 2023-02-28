@@ -840,7 +840,7 @@ function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
 				// If the file isn't in the user's batch DL queue already, then add it.
 				var fileAlreadyInQueue = false;
 				for (var fIdx = 0; fIdx < batchDLQueueStats.filenames.length && !fileAlreadyInQueue; ++fIdx)
-					exists = (batchDLQueueStats.filenames[fIdx].filename == metadataObjects[i].name);
+					fileAlreadyInQueue = (batchDLQueueStats.filenames[fIdx].filename == metadataObjects[i].name);
 				if (!fileAlreadyInQueue)
 				{
 					var addToQueueSuccessful = true;
@@ -999,7 +999,8 @@ function getUserDLQueueStats()
 		// See if a section exists for the filename
 		//File.iniGetAllObjects([name_property] [,prefix=none] [,lowercase=false] [,blanks=false])
 		var allIniObjs = batchDLFile.iniGetAllObjects();
-		console.print("\x01n\r\n");
+		console.attributes = "N";
+		console.crlf();
 		for (var i = 0; i < allIniObjs.length; ++i)
 		{
 			if (typeof(allIniObjs[i]) === "object")
@@ -1044,6 +1045,7 @@ function letUserDownloadSelectedFile(pFileList, pFileListMenu)
 {
 	var retObj = getDefaultActionRetObj();
 	console.attributes = "N";
+	console.crlf();
 	console.crlf();
 	if (pFileListMenu.selectedItemIdx >= 0 && pFileListMenu.selectedItemIdx < pFileListMenu.NumItems())
 	{
