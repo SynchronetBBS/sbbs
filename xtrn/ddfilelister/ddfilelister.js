@@ -61,6 +61,8 @@
  * 2023-02-25 Eric Oulashin     Version 2.09
  *                              Now supports being used as a loadable module for
  *                              Scan Dirs and List Files
+ * 2023-02-27 Eric Oulashin     Version 2.10
+ *                              Now allows downloading a single selected file with the D key
 */
 
 "use strict";
@@ -68,6 +70,7 @@
 if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_UPPER");
+	require('key_defs.js', 'KEY_UP');
 	require("text.js", "Email"); // Text string definitions (referencing text.dat)
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
 	require("frame.js", "Frame");
@@ -78,6 +81,7 @@ if (typeof(require) === "function")
 else
 {
 	load("sbbsdefs.js");
+	load('key_defs.js');
 	load("text.js"); // Text string definitions (referencing text.dat)
 	load("dd_lightbar_menu.js");
 	load("frame.js");
@@ -121,12 +125,14 @@ if (system.version_num < 31900)
 }
 
 // Lister version information
-var LISTER_VERSION = "2.09";
-var LISTER_DATE = "2023-02-25";
+var LISTER_VERSION = "2.10";
+var LISTER_DATE = "2023-02-27";
 
 
 ///////////////////////////////////////////////////////////////////////////////
 // Global variables
+
+var KEY_BACKSPACE = CTRL_H;
 
 // Block characters
 var BLOCK1 = "\xB0"; // Dimmest block
@@ -194,10 +200,11 @@ var gColors = {
 var FILE_VIEW_INFO = 1;
 var FILE_VIEW = 2;
 var FILE_ADD_TO_BATCH_DL = 3;
-var HELP = 4;
-var QUIT = 5;
-var FILE_MOVE = 6;   // Sysop action
-var FILE_DELETE = 7; // Sysop action
+var FILE_DOWNLOAD_SINGLE = 4;
+var HELP = 5;
+var QUIT = 6;
+var FILE_MOVE = 7;   // Sysop action
+var FILE_DELETE = 8; // Sysop action
 
 // Search/list modes
 var MODE_LIST_DIR = 1;
@@ -259,10 +266,7 @@ if (!console.term_supports(USER_ANSI))
 {
 	var exitCode = 0;
 	if (gScriptMode == MODE_SEARCH_FILENAME || gScriptMode == MODE_SEARCH_DESCRIPTION || gScriptMode == MODE_NEW_FILE_SEARCH)
-	{
-		//if (user.is_sysop) console.print("\x01n\r\nScan dirs\r\n"); // Temporary
 		bbs.scan_dirs(gListBehavior, gScanAllDirs);
-	}
 	else
 		exitCode = bbs.list_files(gDirCode, gFilespec, gListBehavior);
 	exit(exitCode);
@@ -339,8 +343,9 @@ while (continueDoingFileList)
 		fileMenuBar.setCurrentActionCode(currentActionVal);
 		actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 	}
-	// Allow the delete key as a special key for sysops to delete the selected file(s)
-	else if (lastUserInputUpper == KEY_DEL)
+	// Allow the delete key as a special key for sysops to delete the selected file(s). Also allow backspace
+	// due to some terminals returning backspace for delete.
+	else if (lastUserInputUpper == KEY_DEL || lastUserInputUpper == KEY_BACKSPACE)
 	{
 		if (user.is_sysop)
 		{
@@ -504,6 +509,9 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 			break;
 		case FILE_ADD_TO_BATCH_DL:
 			retObj = addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu);
+			break;
+		case FILE_DOWNLOAD_SINGLE:
+			 retObj = letUserDownloadSelectedFile(pFileList, pFileListMenu);
 			break;
 		case HELP:
 			retObj = displayHelpScreen();
@@ -1024,6 +1032,70 @@ function getUserDLQueueStats()
 	return retObj;
 }
 
+// Lets the user download the currently selected file on the file list menu
+//
+// Parameters:
+//  pFileList: The list of file metadata objects from the file directory
+//  pFileListMenu: The menu object for the file diretory
+//
+// Return value: An object with values to indicate status & screen refresh actions; see
+//               getDefaultActionRetObj() for details.
+function letUserDownloadSelectedFile(pFileList, pFileListMenu)
+{
+	var retObj = getDefaultActionRetObj();
+	console.attributes = "N";
+	console.crlf();
+	if (pFileListMenu.selectedItemIdx >= 0 && pFileListMenu.selectedItemIdx < pFileListMenu.NumItems())
+	{
+		// If the user has the security level to download the file, let them do so
+		if (bbs.compare_ars(file_area.dir[pFileList[pFileListMenu.selectedItemIdx].dirCode].download_ars))
+		{
+			console.print("\x01cDownloading \x01h" + pFileList[pFileListMenu.selectedItemIdx].name + "\x01n");
+			console.crlf();
+			var selectedFilanmeFullPath = backslash(file_area.dir[pFileList[pFileListMenu.selectedItemIdx].dirCode].path) + pFileList[pFileListMenu.selectedItemIdx].name;
+			bbs.send_file(selectedFilanmeFullPath);
+		}
+		else
+		{
+			// The user doesn't have permission to download from this directory
+			//file_area.dir[pFileList[pFileListMenu.selectedItemIdx].dirCode].name
+			var areaFullDesc = file_area.dir[pFileList[pFileListMenu.selectedItemIdx].dirCode].lib_name + ": "
+							 + file_area.dir[pFileList[pFileListMenu.selectedItemIdx].dirCode].description;
+			areaFullDesc = word_wrap(areaFullDesc, console.screen_columns-1, areaFullDesc.length).replace(/\r|\n/g, "\r\n");
+			while (areaFullDesc.lastIndexOf("\r\n") == areaFullDesc.length-2)
+				areaFullDesc = areaFullDesc.substr(0, areaFullDesc.length-2);
+			console.print(areaFullDesc);
+			console.crlf();
+			console.mnemonics(bbs.text(CantDownloadFromDir));
+			console.crlf();
+			console.pause();
+		}
+
+		// We should only have to set these here, but it seems we need to set these regardless:
+		/*
+		retObj.reDrawListerHeader = true;
+		retObj.reDrawHeaderTextOnly = false;
+		retObj.reDrawMainScreenContent = true;
+		retObj.reDrawCmdBar = true;
+		*/
+	}
+	/*
+	else
+	{
+		retObj.reDrawListerHeader = false;
+		retObj.reDrawMainScreenContent = false;
+		retObj.reDrawCmdBar = false;
+	}
+	*/
+
+	retObj.reDrawListerHeader = true;
+	retObj.reDrawHeaderTextOnly = false;
+	retObj.reDrawMainScreenContent = true;
+	retObj.reDrawCmdBar = true;
+
+	return retObj;
+}
+
 // Displays the help screen.
 function displayHelpScreen()
 {
@@ -1076,11 +1148,12 @@ function displayHelpScreen()
 	var printfStr = "\x01n\x01c\x01h%-" + commandStrWidth + "s\x01g: \x01n\x01c%s\r\n";
 	printf(printfStr, "I", "Display extended file information");
 	printf(printfStr, "V", "View the file");
-	printf(printfStr, "B", "Flag the file(s) for batch download");
+	printf(printfStr, "B", "Flag the selected file(s) for batch download");
+	printf(printfStr, "D", "Download the highlighted (selected) file");
 	if (user.is_sysop)
 	{
 		printf(printfStr, "M", "Move the file(s) to another directory");
-		printf(printfStr, "D", "Delete the file(s)");
+		printf(printfStr, "DEL", "Delete the file(s)");
 	}
 	printf(printfStr, "?", "Show this help screen");
 	printf(printfStr, "Q", "Quit back to the BBS");
@@ -1523,10 +1596,12 @@ function DDFileMenuBar(pPos)
 	this.cmdArray.push(new DDFileMenuBarItem("Info", 0, FILE_VIEW_INFO));
 	this.cmdArray.push(new DDFileMenuBarItem("View", 0, FILE_VIEW));
 	this.cmdArray.push(new DDFileMenuBarItem("Batch", 0, FILE_ADD_TO_BATCH_DL));
+	this.cmdArray.push(new DDFileMenuBarItem("DL", 0, FILE_DOWNLOAD_SINGLE));
 	if (user.is_sysop)
 	{
 		this.cmdArray.push(new DDFileMenuBarItem("Move", 0, FILE_MOVE));
-		this.cmdArray.push(new DDFileMenuBarItem("Del", 0, FILE_DELETE));
+		//this.cmdArray.push(new DDFileMenuBarItem("Del", 0, FILE_DELETE));
+		this.cmdArray.push(new DDFileMenuBarItem("DEL", 0, FILE_DELETE, KEY_DEL));
 	}
 	this.cmdArray.push(new DDFileMenuBarItem("?", 0, HELP));
 	this.cmdArray.push(new DDFileMenuBarItem("Quit", 0, QUIT));
@@ -1695,7 +1770,12 @@ function DDFileMenuBar_getActionFromChar(pChar, pCaseSensitive)
 	{
 		for (var i = 0; i < this.cmdArray.length && retCode == -1; ++i)
 		{
-			if (this.cmdArray[i].itemText.length > 0 && this.cmdArray[i].itemText.charAt(0) == pChar)
+			if (this.cmdArray[i].hotkeyOverride != null && typeof(this.cmdArray[i].hotkeyOverride) !== "undefined")
+			{
+				if (pChar == this.cmdArray[i].hotkeyOverride)
+					retCode = this.cmdArray[i].retCode;
+			}
+			else if (this.cmdArray[i].itemText.length > 0 && this.cmdArray[i].itemText.charAt(0) == pChar)
 				retCode = this.cmdArray[i].retCode;
 		}
 	}
@@ -1705,7 +1785,12 @@ function DDFileMenuBar_getActionFromChar(pChar, pCaseSensitive)
 		var charUpper = pChar.toUpperCase();
 		for (var i = 0; i < this.cmdArray.length && retCode == -1; ++i)
 		{
-			if (this.cmdArray[i].itemText.length > 0 && this.cmdArray[i].itemText.charAt(0).toUpperCase() == charUpper)
+			if (this.cmdArray[i].hotkeyOverride != null && typeof(this.cmdArray[i].hotkeyOverride) !== "undefined")
+			{
+				if (pChar == this.cmdArray[i].hotkeyOverride)
+					retCode = this.cmdArray[i].retCode;
+			}
+			else if (this.cmdArray[i].itemText.length > 0 && this.cmdArray[i].itemText.charAt(0).toUpperCase() == charUpper)
 				retCode = this.cmdArray[i].retCode;
 		}
 	}
@@ -1769,11 +1854,15 @@ function DDFileMenuBar_getAllActionKeysStr(pLowercase, pUppercase)
 //  pItemText: The text of the item
 //  pPos: Horizontal (or vertical) starting location in the bar
 //  pRetCode: The item's return code
-function DDFileMenuBarItem(pItemText, pPos, pRetCode)
+//  pHotkeyOverride: Optional: A key to use for the action instead of the first character in pItemText
+function DDFileMenuBarItem(pItemText, pPos, pRetCode, pHotkeyOverride)
 {
 	this.itemText = pItemText;
 	this.pos = pPos;
 	this.retCode = pRetCode;
+	this.hotkeyOverride = null;
+	if (pHotkeyOverride != null && typeof(pHotkeyOverride) !== "undefined")
+		this.hotkeyOverride = pHotkeyOverride;
 }
 
 
@@ -3409,7 +3498,7 @@ function populateFileList(pSearchMode)
 			userInputDLA = "A";
 		else
 		{
-			console.print("\x01n");
+			console.attributes = "N";
 			console.crlf();
 			console.mnemonics(bbs.text(DirLibOrAll));
 			userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
