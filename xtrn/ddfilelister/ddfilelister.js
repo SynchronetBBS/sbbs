@@ -341,7 +341,7 @@ while (continueDoingFileList)
 	{
 		currentActionVal = fileMenuBar.getCurrentSelectedAction();
 		fileMenuBar.setCurrentActionCode(currentActionVal);
-		actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+		actionRetObj = doAction_ANSI(currentActionVal, gFileList, gFileListMenu);
 	}
 	// Allow the delete key as a special key for sysops to delete the selected file(s). Also allow backspace
 	// due to some terminals returning backspace for delete.
@@ -350,7 +350,7 @@ while (continueDoingFileList)
 		if (user.is_sysop)
 		{
 			fileMenuBar.setCurrentActionCode(FILE_DELETE, true);
-			actionRetObj = doAction(FILE_DELETE, gFileList, gFileListMenu);
+			actionRetObj = doAction_ANSI(FILE_DELETE, gFileList, gFileListMenu);
 			currentActionVal = FILE_DELETE;
 		}
 	}
@@ -358,7 +358,7 @@ while (continueDoingFileList)
 	{
 		currentActionVal = fileMenuBar.getActionFromChar(lastUserInputUpper, false);
 		fileMenuBar.setCurrentActionCode(currentActionVal, true);
-		actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+		actionRetObj = doAction_ANSI(currentActionVal, gFileList, gFileListMenu);
 	}
 	// If an action was done (actionRetObj is not null), then look at actionRetObj and
 	// do what's needed.  Note that quit (for the Q key) is already handled.
@@ -483,7 +483,7 @@ while (continueDoingFileList)
 ///////////////////////////////////////////////////////////////////////////////
 // Functions: File actions
 
-// Performs a specified file action based on an action code.
+// Performs a specified file action based on an action code. For the ANSI user interface.
 //
 // Parameters:
 //  pActionCode: A code specifying an action to do.  Must be one of the global
@@ -493,25 +493,30 @@ while (continueDoingFileList)
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function doAction(pActionCode, pFileList, pFileListMenu)
+function doAction_ANSI(pActionCode, pFileList, pFileListMenu)
 {
 	if (typeof(pActionCode) !== "number")
 		return getDefaultActionRetObj();
+
+	var fileMetadata = pFileList[pFileListMenu.selectedItemIdx];
 
 	var retObj = null;
 	switch (pActionCode)
 	{
 		case FILE_VIEW_INFO:
-			retObj = showFileInfo(pFileList, pFileListMenu);
+			retObj = showFileInfo_ANSI(fileMetadata);
 			break;
 		case FILE_VIEW:
-			retObj = viewFile(pFileList, pFileListMenu);
+			retObj = viewFile_ANSI(fileMetadata);
 			break;
 		case FILE_ADD_TO_BATCH_DL:
-			retObj = addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu);
+			retObj = addSelectedFilesToBatchDLQueue_ANSI(fileMetadata, pFileList);
 			break;
 		case FILE_DOWNLOAD_SINGLE:
-			 retObj = letUserDownloadSelectedFile(pFileList, pFileListMenu);
+			if (pFileListMenu.selectedItemIdx >= 0 && pFileListMenu.selectedItemIdx < pFileListMenu.NumItems())
+				retObj = letUserDownloadSelectedFile_ANSI(fileMetadata);
+			else
+				retObj = getDefaultActionRetObj();
 			break;
 		case HELP:
 			retObj = displayHelpScreen();
@@ -522,11 +527,11 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 			break;
 		case FILE_MOVE: // Sysop action
 			if (user.is_sysop)
-				retObj = chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu);
+				retObj = chooseFilebaseAndMoveFileToOtherFilebase_ANSI(pFileList, pFileListMenu);
 			break;
 		case FILE_DELETE: // Sysop action
 			if (user.is_sysop)
-				retObj = confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu);
+				retObj = confirmAndRemoveFilesFromFilebase_ANSI(pFileList, pFileListMenu);
 			break;
 	}
 
@@ -571,12 +576,11 @@ function getDefaultActionRetObj()
 // Shows extended information about a file to the user.
 //
 // Parameters:
-//  pFileList: The list of file metadata objects, as retrieved from the filebase
-//  pFileListMenu: The file list menu
+//  pFileMetadata: The file metadata object for the file to view information about
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function showFileInfo(pFileList, pFileListMenu)
+function showFileInfo_ANSI(pFileMetadata)
 {
 	var retObj = getDefaultActionRetObj();
 
@@ -590,13 +594,13 @@ function showFileInfo(pFileList, pFileListMenu)
 	// can display the extended description.
 	// The metadata object in pFileList should have a dirCode added by this script.
 	var dirCode = gDirCode;
-	if (pFileList[pFileListMenu.selectedItemIdx].hasOwnProperty("dirCode"))
-		dirCode = pFileList[pFileListMenu.selectedItemIdx].dirCode;
+	if (pFileMetadata.hasOwnProperty("dirCode"))
+		dirCode = pFileMetadata.dirCode;
 	var fileMetadata = null;
 	if (extendedDescEnabled())
-		fileMetadata = pFileList[pFileListMenu.selectedItemIdx];
+		fileMetadata = pFileMetadata;
 	else
-		fileMetadata = getFileInfoFromFilebase(dirCode, pFileList[pFileListMenu.selectedItemIdx].name, FileBase.DETAIL.EXTENDED);
+		fileMetadata = getFileInfoFromFilebase(dirCode, pFileMetadata.name, FileBase.DETAIL.EXTENDED);
 	// Build a string with the file information
 	// Make sure the displayed filename isn't too crazy long
 	var frameInnerWidth = frameWidth - 2; // Without borders
@@ -754,21 +758,20 @@ function splitStrAndCombineWithRN(pStr, pSplitStr)
 // Lets the user view a file.
 //
 // Parameters:
-//  pFileList: The list of file metadata objects, as retrieved from the filebase
-//  pFileListMenu: The file list menu
+//  pFileMetadata: The file metadata object for the file to view
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function viewFile(pFileList, pFileListMenu)
+function viewFile_ANSI(pFileMetadata)
 {
 	var retObj = getDefaultActionRetObj();
 
 	// Open the filebase & get the fully pathed filename
 	var fullyPathedFilename = "";
-	var filebase = new FileBase(pFileList[pFileListMenu.selectedItemIdx].dirCode);
+	var filebase = new FileBase(pFileMetadata.dirCode);
 	if (filebase.open())
 	{
-		fullyPathedFilename = filebase.get_path(pFileList[pFileListMenu.selectedItemIdx]);
+		fullyPathedFilename = filebase.get_path(pFileMetadata);
 		filebase.close();
 	}
 	else
@@ -795,12 +798,12 @@ function viewFile(pFileList, pFileListMenu)
 // Allows the user to add their selected file to their batch downloaded queue
 //
 // Parameters:
+//  pFileMetadata: The file metadata object for the file
 //  pFileList: The list of file metadata objects from the file directory
-//  pFileListMenu: The menu object for the file diretory
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
+function addSelectedFilesToBatchDLQueue_ANSI(pFileMetadata, pFileList)
 {
 	var retObj = getDefaultActionRetObj();
 
@@ -819,8 +822,8 @@ function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
 	}
 	else
 	{
-		filenames.push(pFileList[pFileListMenu.selectedItemIdx].name);
-		metadataObjects.push(pFileList[pFileListMenu.selectedItemIdx]);
+		filenames.push(pFileMetadata.name);
+		metadataObjects.push(pFileMetadata);
 	}
 	// Note that confirmFileActionWithUser() will re-draw the parts of the file
 	// list menu that are necessary.
@@ -910,8 +913,8 @@ function addSelectedFilesToBatchDLQueue(pFileList, pFileListMenu)
 				// \x01cFiles: \x01h1 \x01n\x01c(\x01h100 \x01n\x01cMax)  Credits: 0  Bytes: \x01h2,228,254 \x01n\x01c Time: 00:09:40
 				// Note: The maximum number of allowed files in the batch download queue doesn't seem to
 				// be available to JavaScript.
-				var totalQueueSize = batchDLQueueStats.totalSize + pFileList[pFileListMenu.selectedItemIdx].size;
-				var totalQueueCost = batchDLQueueStats.totalCost + pFileList[pFileListMenu.selectedItemIdx].cost;
+				var totalQueueSize = batchDLQueueStats.totalSize + pFileMetadata.size;
+				var totalQueueCost = batchDLQueueStats.totalCost + pFileMetadata.cost;
 				var queueStats = "\x01n\x01cFiles: \x01h" + batchDLQueueStats.numFilesInQueue + "  \x01n\x01cCredits: \x01h"
 				               + totalQueueCost + "\x01n\x01c  Bytes: \x01h" + numWithCommas(totalQueueSize) + "\x01n\x01w\r\n";
 				for (var i = 0; i < batchDLQueueStats.filenames.length; ++i)
@@ -1036,59 +1039,39 @@ function getUserDLQueueStats()
 // Lets the user download the currently selected file on the file list menu
 //
 // Parameters:
-//  pFileList: The list of file metadata objects from the file directory
-//  pFileListMenu: The menu object for the file diretory
+//  pFileMetadata: The file metadata object for the file to download
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function letUserDownloadSelectedFile(pFileList, pFileListMenu)
+function letUserDownloadSelectedFile_ANSI(pFileMetadata)
 {
 	var retObj = getDefaultActionRetObj();
 	console.attributes = "N";
 	console.crlf();
 	console.crlf();
-	if (pFileListMenu.selectedItemIdx >= 0 && pFileListMenu.selectedItemIdx < pFileListMenu.NumItems())
+	// If the user has the security level to download the file, let them do so
+	if (bbs.compare_ars(file_area.dir[pFileMetadata.dirCode].download_ars))
 	{
-		// If the user has the security level to download the file, let them do so
-		if (bbs.compare_ars(file_area.dir[pFileList[pFileListMenu.selectedItemIdx].dirCode].download_ars))
-		{
-			console.print("\x01cDownloading \x01h" + pFileList[pFileListMenu.selectedItemIdx].name + "\x01n");
-			console.crlf();
-			var selectedFilanmeFullPath = backslash(file_area.dir[pFileList[pFileListMenu.selectedItemIdx].dirCode].path) + pFileList[pFileListMenu.selectedItemIdx].name;
-			bbs.send_file(selectedFilanmeFullPath);
-		}
-		else
-		{
-			// The user doesn't have permission to download from this directory
-			//file_area.dir[pFileList[pFileListMenu.selectedItemIdx].dirCode].name
-			var areaFullDesc = file_area.dir[pFileList[pFileListMenu.selectedItemIdx].dirCode].lib_name + ": "
-							 + file_area.dir[pFileList[pFileListMenu.selectedItemIdx].dirCode].description;
-			areaFullDesc = word_wrap(areaFullDesc, console.screen_columns-1, areaFullDesc.length).replace(/\r|\n/g, "\r\n");
-			while (areaFullDesc.lastIndexOf("\r\n") == areaFullDesc.length-2)
-				areaFullDesc = areaFullDesc.substr(0, areaFullDesc.length-2);
-			console.print(areaFullDesc);
-			console.crlf();
-			console.mnemonics(bbs.text(CantDownloadFromDir));
-			console.crlf();
-			console.pause();
-		}
-
-		// We should only have to set these here, but it seems we need to set these regardless:
-		/*
-		retObj.reDrawListerHeader = true;
-		retObj.reDrawHeaderTextOnly = false;
-		retObj.reDrawMainScreenContent = true;
-		retObj.reDrawCmdBar = true;
-		*/
+		console.print("\x01cDownloading \x01h" + pFileMetadata.name + "\x01n");
+		console.crlf();
+		var selectedFilanmeFullPath = backslash(file_area.dir[pFileMetadata.dirCode].path) + pFileMetadata.name;
+		bbs.send_file(selectedFilanmeFullPath);
 	}
-	/*
 	else
 	{
-		retObj.reDrawListerHeader = false;
-		retObj.reDrawMainScreenContent = false;
-		retObj.reDrawCmdBar = false;
+		// The user doesn't have permission to download from this directory
+		//file_area.dir[pFileMetadata.dirCode].name
+		var areaFullDesc = file_area.dir[pFileMetadata.dirCode].lib_name + ": "
+						 + file_area.dir[pFileMetadata.dirCode].description;
+		areaFullDesc = word_wrap(areaFullDesc, console.screen_columns-1, areaFullDesc.length).replace(/\r|\n/g, "\r\n");
+		while (areaFullDesc.lastIndexOf("\r\n") == areaFullDesc.length-2)
+			areaFullDesc = areaFullDesc.substr(0, areaFullDesc.length-2);
+		console.print(areaFullDesc);
+		console.crlf();
+		console.mnemonics(bbs.text(CantDownloadFromDir));
+		console.crlf();
+		console.pause();
 	}
-	*/
 
 	retObj.reDrawListerHeader = true;
 	retObj.reDrawHeaderTextOnly = false;
@@ -1177,9 +1160,11 @@ function displayHelpScreen()
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
+function chooseFilebaseAndMoveFileToOtherFilebase_ANSI(pFileList, pFileListMenu)
 {
 	var retObj = getDefaultActionRetObj();
+
+	var fileMetadata = pFileList[pFileListMenu.selectedItemIdx];
 
 	// Confirm with the user to move the file(s).  If they don't want to,
 	// then just return now.
@@ -1190,7 +1175,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 			filenames.push(pFileList[+idx].name);
 	}
 	else
-		filenames.push(pFileList[pFileListMenu.selectedItemIdx].name);
+		filenames.push(fileMetadata.name);
 	// Note that confirmFileActionWithUser() will re-draw the parts of the file
 	// list menu that are necessary.
 	var moveFilesConfirmed = confirmFileActionWithUser(filenames, "Move", false);
@@ -1228,7 +1213,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 			chosenDirCode = fileDirMenu.GetVal();
 			if (typeof(chosenDirCode) === "string")
 			{
-				if (chosenDirCode != pFileList[pFileListMenu.selectedItemIdx].dirCode)
+				if (chosenDirCode != fileMetadata.dirCode)
 					continueOn = false;
 				else
 				{
@@ -1384,7 +1369,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 //               returned will have the following additional properties:
 //               filesDeleted: Boolean - Whether or not files were actually deleted (after
 //                             confirmation)
-function confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu)
+function confirmAndRemoveFilesFromFilebase_ANSI(pFileList, pFileListMenu)
 {
 	var retObj = getDefaultActionRetObj();
 	retObj.filesDeleted = false;
