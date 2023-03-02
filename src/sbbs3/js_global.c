@@ -1400,7 +1400,7 @@ js_netaddr_type(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*	str = NULL;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(NET_NONE));
 
 	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
 		return(JS_TRUE);
