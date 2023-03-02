@@ -62,7 +62,10 @@
  *                              Now supports being used as a loadable module for
  *                              Scan Dirs and List Files
  * 2023-02-27 Eric Oulashin     Version 2.10
- *                              Now allows downloading a single selected file with the D key
+ *                              Now allows downloading a single selected file with the D key.
+ *                              Also, ddfilelister now checks whether the user has permission (based
+ *                              on ARS) to download before allowing adding files to their batch
+ *                              download queue (and downloading a single file as well).
 */
 
 "use strict";
@@ -510,10 +513,13 @@ function doAction_ANSI(pActionCode, pFileList, pFileListMenu)
 			retObj = viewFile_ANSI(fileMetadata);
 			break;
 		case FILE_ADD_TO_BATCH_DL:
-			retObj = addSelectedFilesToBatchDLQueue_ANSI(fileMetadata, pFileList);
+			if (userCanDownloadFromFileArea_ShowErrorIfNot(fileMetadata.dirCode))
+				retObj = addSelectedFilesToBatchDLQueue_ANSI(fileMetadata, pFileList);
+			else
+				retObj = getDefaultActionRetObj();
 			break;
 		case FILE_DOWNLOAD_SINGLE:
-			if (pFileListMenu.selectedItemIdx >= 0 && pFileListMenu.selectedItemIdx < pFileListMenu.NumItems())
+			if (userCanDownloadFromFileArea_ShowErrorIfNot(fileMetadata.dirCode) && pFileListMenu.selectedItemIdx >= 0 && pFileListMenu.selectedItemIdx < pFileListMenu.NumItems())
 				retObj = letUserDownloadSelectedFile_ANSI(fileMetadata);
 			else
 				retObj = getDefaultActionRetObj();
@@ -806,6 +812,8 @@ function viewFile_ANSI(pFileMetadata)
 function addSelectedFilesToBatchDLQueue_ANSI(pFileMetadata, pFileList)
 {
 	var retObj = getDefaultActionRetObj();
+	if (!userCanDownloadFromFileArea_ShowErrorIfNot(pFileMetadata.dirCode))
+		return retObj;
 
 	// Confirm with the user to add the file(s) to their batch queue.  If they don't want to,
 	// then just return now.
@@ -1050,27 +1058,12 @@ function letUserDownloadSelectedFile_ANSI(pFileMetadata)
 	console.crlf();
 	console.crlf();
 	// If the user has the security level to download the file, let them do so
-	if (bbs.compare_ars(file_area.dir[pFileMetadata.dirCode].download_ars))
+	if (userCanDownloadFromFileArea_ShowErrorIfNot(pFileMetadata.dirCode))
 	{
 		console.print("\x01cDownloading \x01h" + pFileMetadata.name + "\x01n");
 		console.crlf();
 		var selectedFilanmeFullPath = backslash(file_area.dir[pFileMetadata.dirCode].path) + pFileMetadata.name;
 		bbs.send_file(selectedFilanmeFullPath);
-	}
-	else
-	{
-		// The user doesn't have permission to download from this directory
-		//file_area.dir[pFileMetadata.dirCode].name
-		var areaFullDesc = file_area.dir[pFileMetadata.dirCode].lib_name + ": "
-						 + file_area.dir[pFileMetadata.dirCode].description;
-		areaFullDesc = word_wrap(areaFullDesc, console.screen_columns-1, areaFullDesc.length).replace(/\r|\n/g, "\r\n");
-		while (areaFullDesc.lastIndexOf("\r\n") == areaFullDesc.length-2)
-			areaFullDesc = areaFullDesc.substr(0, areaFullDesc.length-2);
-		console.print(areaFullDesc);
-		console.crlf();
-		console.mnemonics(bbs.text(CantDownloadFromDir));
-		console.crlf();
-		console.pause();
 	}
 
 	retObj.reDrawListerHeader = true;
@@ -4175,4 +4168,32 @@ function fileInfoSortDLTime(pA, pB)
 	}
 	else
 		return 0;
+}
+
+// Returns whether or not a user can download from a file directory, and writes an error if not.
+//
+// Parameters:
+//  pDirCode: The internal directory code of a file directory
+//
+// Return value: Boolean - Whether or not the user can download from the file directory given
+function userCanDownloadFromFileArea_ShowErrorIfNot(pDirCode)
+{
+	var userCanDownload = bbs.compare_ars(file_area.dir[pDirCode].download_ars);
+	if (!userCanDownload)
+	{
+		// The user doesn't have permission to download from this directory
+		//file_area.dir[pFileMetadata.dirCode].name
+		var areaFullDesc = file_area.dir[pFileMetadata.dirCode].lib_name + ": "
+						 + file_area.dir[pFileMetadata.dirCode].description;
+		areaFullDesc = word_wrap(areaFullDesc, console.screen_columns-1, areaFullDesc.length).replace(/\r|\n/g, "\r\n");
+		while (areaFullDesc.lastIndexOf("\r\n") == areaFullDesc.length-2)
+			areaFullDesc = areaFullDesc.substr(0, areaFullDesc.length-2);
+		console.crlf();
+		console.print(areaFullDesc);
+		console.crlf();
+		console.mnemonics(bbs.text(CantDownloadFromDir));
+		console.crlf();
+		console.pause();
+	}
+	return userCanDownload;
 }
