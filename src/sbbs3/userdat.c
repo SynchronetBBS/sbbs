@@ -3173,11 +3173,9 @@ BOOL can_user_read_sub(scfg_t* cfg, uint subnum, user_t* user, client_t* client)
 BOOL can_user_post(scfg_t* cfg, uint subnum, user_t* user, client_t* client, uint* reason)
 {
 	if(reason!=NULL)
-		*reason=NoAccessSub;
+		*reason=CantPostOnSub;
 	if(!can_user_access_sub(cfg, subnum, user, client))
 		return FALSE;
-	if(reason!=NULL)
-		*reason=CantPostOnSub;
 	if(!chk_ar(cfg,cfg->sub[subnum]->post_ar,user,client))
 		return FALSE;
 	if(cfg->sub[subnum]->misc&(SUB_QNET|SUB_FIDO|SUB_PNET|SUB_INET)
@@ -3269,7 +3267,7 @@ BOOL can_user_access_dir(scfg_t* cfg, uint dirnum, user_t* user, client_t* clien
 BOOL can_user_upload(scfg_t* cfg, uint dirnum, user_t* user, client_t* client, uint* reason)
 {
 	if(reason!=NULL)
-		*reason=NoAccessDir;
+		*reason=CantUploadHere;
 	if(!can_user_access_dir(cfg, dirnum, user, client))
 		return FALSE;
 	if(reason!=NULL)
@@ -3298,11 +3296,9 @@ BOOL can_user_upload(scfg_t* cfg, uint dirnum, user_t* user, client_t* client, u
 BOOL can_user_download(scfg_t* cfg, uint dirnum, user_t* user, client_t* client, uint* reason)
 {
 	if(reason!=NULL)
-		*reason=NoAccessDir;
+		*reason=CantDownloadFromDir;
 	if(!can_user_access_dir(cfg, dirnum, user, client))
 		return FALSE;
-	if(reason!=NULL)
-		*reason=CantDownloadFromDir;
 	if(!chk_ar(cfg,cfg->lib[cfg->dir[dirnum]->lib]->dl_ar,user,client))
 		return FALSE;
 	if(!chk_ar(cfg,cfg->dir[dirnum]->dl_ar,user,client))
