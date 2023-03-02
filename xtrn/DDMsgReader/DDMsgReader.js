@@ -99,6 +99,8 @@
  * 2023-02-24 Eric Oulashin     Version 1.65
  *                              Ctrl-C can now be used to cancel message scans. Output from the scan
  *                              is now word-wrapped to the terminal width.
+ * 2023-03-02 Eric Oulashin     Version 1.66
+ *                              Now allows editing the subject when forwarding a message
  */
 
 "use strict";
@@ -204,8 +206,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.65";
-var READER_DATE = "2023-02-24";
+var READER_VERSION = "1.66";
+var READER_DATE = "2023-03-02";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -14360,15 +14362,20 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 
 	var retStr = "";
 
-	console.print("\x01n");
+	console.attributes = "N";
 	console.crlf();
 	console.print("\x01cUser name/number/email address\x01h:\x01n");
 	console.crlf();
 	var msgDest = console.getstr(console.screen_columns - 1, K_LINE);
-	console.print("\x01n");
+	console.attributes = "N";
 	console.crlf();
 	if (msgDest.length > 0)
 	{
+		// Let the user change the subject if they want
+		var subjPromptText = bbs.text(SubjectPrompt);
+		console.putmsg(subjPromptText);
+		var msgSubject = console.getstr(pMsgHdr.subject, console.screen_columns - console.strlen(subjPromptText) - 1, K_LINE | K_EDIT);
+
 		var tmpMsgbase = new MsgBase("mail");
 		if (tmpMsgbase.open())
 		{
@@ -14403,7 +14410,13 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 			}
 			newMsgBody += "From: " + pMsgHdr.from + "\n";
 			newMsgBody += "To: " + pMsgHdr.to + "\n";
-			newMsgBody += "Subject: " + pMsgHdr.subject + "\n";
+			if (msgSubject == pMsgHdr.subject)
+				newMsgBody += "Subject: " + pMsgHdr.subject + "\n";
+			else
+			{
+				newMsgBody += "Subject: " + msgSubject + "\n";
+				newMsgBody += "(Original subject: " + pMsgHdr.subject + ")\n";
+			}
 			newMsgBody += "==================================\n\n";
 			newMsgBody += pMsgBody;
 
@@ -14460,7 +14473,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 			// the message.  The destination ("to" informatoin) will be filled in
 			// according to the destination type.
 			var destMsgHdr = { to_net_type: NET_NONE, from: user.name,
-							   replyto: user.name, subject: "Fwd: " + pMsgHdr.subject };
+							   replyto: user.name, subject: "Fwd: " + msgSubject }; // pMsgHdr.subject
 			if (user.netmail.length > 0)
 			{
 				destMsgHdr.replyto_net_addr = user.netmail;
