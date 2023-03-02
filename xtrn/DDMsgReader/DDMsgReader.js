@@ -14374,9 +14374,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 		// Let the user change the subject if they want
 		var subjPromptText = bbs.text(SubjectPrompt);
 		console.putmsg(subjPromptText);
-		// Put the subject into the keyboard buffer to allow using the existing subject, and prompt for the subject
-		console.ungetstr(pMsgHdr.subject);
-		var msgSubject = console.getstr(console.screen_columns - console.strlen(subjPromptText) - 1, K_LINE);
+		var msgSubject = console.getstr(pMsgHdr.subject, console.screen_columns - console.strlen(subjPromptText) - 1, K_LINE | K_EDIT);
 
 		var tmpMsgbase = new MsgBase("mail");
 		if (tmpMsgbase.open())
