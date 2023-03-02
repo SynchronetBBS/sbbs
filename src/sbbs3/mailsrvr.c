@@ -3643,7 +3643,7 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 				if(relay_user.number == 0
-					&& strchr(sender, '@') != NULL
+					&& smb_netaddr_type(sender) == NET_INTERNET
 					&& compare_addrs(sender, sender_addr) != 0) {
 					lprintf(LOG_WARNING,"%04d %s %s !FORGED mail header 'FROM' field ('%s' vs '%s', %lu total)"
 						,socket, client.protocol, client_id, sender, sender_addr, ++stats.msgs_refused);
@@ -4073,8 +4073,8 @@ static void smtp_thread(void* arg)
 				p=buf;
 				if(*p=='.') p++;	/* Transparency (RFC821 4.5.2) */
 				if(strlen(p) > RFC822_MAX_LINE_LEN) {
-					lprintf(LOG_WARNING, "%04d %s %s sent an ILLEGALLY-LONG body line (%d chars > %d): '%s'"
-						,socket, client.protocol, client_id, (int)strlen(p), RFC822_MAX_LINE_LEN, p);
+					lprintf(LOG_WARNING, "%04d %s %s !%s sent an ILLEGALLY-LONG body line (%d chars > %d): '%s'"
+						,socket, client.protocol, client_id, reverse_path, (int)strlen(p), RFC822_MAX_LINE_LEN, p);
 					sockprintf(socket, client.protocol, session, "500 Line too long (body)");
 					break;
 				}
@@ -4090,8 +4090,8 @@ static void smtp_thread(void* arg)
 			}
 			/* RFC822 Header parsing */
 			if(strlen(buf) > RFC822_MAX_LINE_LEN) {
-				lprintf(LOG_WARNING, "%04d %s %s sent an ILLEGALLY-LONG header line (%d chars > %d): '%s'"
-					,socket, client.protocol, client_id, (int)strlen(buf), RFC822_MAX_LINE_LEN, buf);
+				lprintf(LOG_WARNING, "%04d %s %s !%s sent an ILLEGALLY-LONG header line (%d chars > %d): '%s'"
+					,socket, client.protocol, client_id, reverse_path, (int)strlen(buf), RFC822_MAX_LINE_LEN, buf);
 				sockprintf(socket, client.protocol, session, "500 Line too long (header)");
 				break;
 			}
