@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.66     2023-03-02   When forwarding a message, the subject can now be edited
+                      before sending the message
+1.65     2023-02-24   Ctrl-C can now be used to cancel message scans. Output
+                      from the scan is now word-wrapped to the terminal width.
 1.64     2023-02-09   When reading personal email (received or sent), as a
                       loadable module, now it can allow reading another user's
                       mail (for the sysop when deleting a user account).
