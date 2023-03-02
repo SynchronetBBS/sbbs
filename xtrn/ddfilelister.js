@@ -63,9 +63,9 @@
  *                              Scan Dirs and List Files
  * 2023-02-27 Eric Oulashin     Version 2.10
  *                              Now allows downloading a single selected file with the D key.
- *                              Also, ddfilelister now checks whether the user has permission to
- *                              download before allowing adding files to their batch download queue
- *                              (and downloading a single file as well).
+ *                              Also, ddfilelister now checks whether the user has permission (based
+ *                              on ARS) to download before allowing adding files to their batch
+ *                              download queue (and downloading a single file as well).
 */
 
 "use strict";
@@ -529,6 +529,7 @@ function doAction_ANSI(pActionCode, pFileList, pFileListMenu)
 				retObj = letUserDownloadSelectedFile_ANSI(fileMetadata);
 			else
 			{
+				retObj = getDefaultActionRetObj();
 				retObj = getDefaultActionRetObj();
 				retObj.reDrawListerHeader = true;
 				retObj.reDrawHeaderTextOnly = false;
@@ -4190,12 +4191,13 @@ function fileInfoSortDLTime(pA, pB)
 // Return value: Boolean - Whether or not the user can download from the file directory given
 function userCanDownloadFromFileArea_ShowErrorIfNot(pDirCode)
 {
-	var userCanDownload = file_area.dir[pDirCode].can_download;
+	var userCanDownload = bbs.compare_ars(file_area.dir[pDirCode].download_ars);
 	if (!userCanDownload)
 	{
 		// The user doesn't have permission to download from this directory
 		//file_area.dir[pDirCode].name
-		var areaFullDesc = file_area.dir[pDirCode].lib_name + ": " + file_area.dir[pDirCode].description;
+		var areaFullDesc = file_area.dir[pDirCode].lib_name + ": "
+						 + file_area.dir[pDirCode].description;
 		areaFullDesc = word_wrap(areaFullDesc, console.screen_columns-1, areaFullDesc.length).replace(/\r|\n/g, "\r\n");
 		while (areaFullDesc.lastIndexOf("\r\n") == areaFullDesc.length-2)
 			areaFullDesc = areaFullDesc.substr(0, areaFullDesc.length-2);
