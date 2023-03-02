@@ -331,8 +331,11 @@ char* smb_netaddrstr(const net_t* net, char* fidoaddr_buf)
 /****************************************************************************/
 enum smb_net_type smb_netaddr_type(const char* str)
 {
+	enum smb_net_type type;
 	const char*	p;
 
+	if(str == NULL || IS_WHITESPACE(*str))
+		return NET_NONE;
 	if((p=strchr(str,'@')) == NULL) {
 		p = str;
 		SKIP_WHITESPACE(p);
@@ -342,13 +345,17 @@ enum smb_net_type smb_netaddr_type(const char* str)
 			return NET_FIDO;
 		return NET_NONE;
 	}
-	else
-		p++;
+	if(p == str)
+		return NET_UNKNOWN;
+	p++;
 	SKIP_WHITESPACE(p);
 	if(*p==0)
 		return(NET_UNKNOWN);
 
-	return smb_get_net_type_by_addr(p);
+	type = smb_get_net_type_by_addr(p);
+	if(type == NET_INTERNET && strchr(str, ' ') != NULL)
+		return NET_NONE;
+	return type;
 }
 
 /****************************************************************************/
@@ -357,6 +364,7 @@ enum smb_net_type smb_netaddr_type(const char* str)
 /* Examples:																*/
 /*  ""					= NET_NONE											*/
 /*	"@"					= NET_NONE											*/
+/*	"@something"		= NET_UNKNOWN										*/
 /*	"VERT"				= NET_QWK											*/
 /*	"VERT/NIX"			= NET_QWK											*/
 /*	"1:103/705"			= NET_FIDO											*/
@@ -374,6 +382,8 @@ enum smb_net_type smb_get_net_type_by_addr(const char* addr)
 	const char*	tp;
 
 	char* at = strchr(p,'@');
+	if(at == p)
+		return NET_UNKNOWN;
 	if(at != NULL)
 		p = at + 1;
 
@@ -383,8 +393,9 @@ enum smb_net_type smb_get_net_type_by_addr(const char* addr)
 	char* dot = strchr(p,'.');
 	char* colon = strchr(p,':');
 	char* slash = strchr(p,'/');
+	char* space = strchr(p,' ');
 
-	if(at == NULL && IS_ALPHA(*p) && dot == NULL && colon == NULL)
+	if(at == NULL && IS_ALPHA(*p) && dot == NULL && colon == NULL && space == NULL)
 		return NET_QWK;
 
 	char last = 0;
@@ -417,7 +428,7 @@ enum smb_net_type smb_get_net_type_by_addr(const char* addr)
 	}
 	if(at == NULL && IS_DIGIT(*p) && *tp == '\0' && IS_DIGIT(last))
 		return NET_FIDO;
-	if(slash == NULL && (IS_ALPHANUMERIC(*p) || p == colon))
+	if(slash == NULL && space == NULL && dot != NULL && (IS_ALPHANUMERIC(*p) || p == colon))
 		return NET_INTERNET;
 
 	return NET_UNKNOWN;
@@ -455,6 +466,7 @@ char* smb_msgattrstr(int16_t attr, char* outstr, size_t maxlen)
 	MSG_ATTR_CHECK(attr, DOWNVOTE);
 	MSG_ATTR_CHECK(attr, POLL);
 	MSG_ATTR_CHECK(attr, SPAM);
+	MSG_ATTR_CHECK(attr, FILE);
 	strncpy(outstr, str, maxlen);
 	return outstr;
 }
