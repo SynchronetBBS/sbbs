@@ -969,6 +969,7 @@ public:
 	/* putnode.cpp */
 	int		putnodedat(uint number, node_t * node);
 	int		putnodeext(uint number, char * str);
+	bool	putnode_downloading(off_t size);
 
 	/* login.ccp */
 	int		login(const char *user_name, const char *pw_prompt, const char* user_pw = NULL, const char* sys_pw = NULL);
