@@ -166,3 +166,22 @@ int sbbs_t::putnodeext(uint number, char *ext)
 
 	return(0);
 }
+
+bool sbbs_t::putnode_downloading(off_t size)
+{
+	action = NODE_DLNG;
+
+	/* calculate ETA */
+	time_t t = now;
+	if(size < cur_cps)
+		++t;
+	else if(cur_cps > 0)
+		t += size / cur_cps;
+	struct tm tm;
+	if(localtime_r(&t, &tm) != NULL)
+		thisnode.aux = (tm.tm_hour * 60) + tm.tm_min;
+	if(getnodedat(cfg.node_num, &thisnode, /* lock-it: */true) != 0)
+		return false;
+	thisnode.action = action;
+	return putnodedat(cfg.node_num, &thisnode) == 0;
+}
