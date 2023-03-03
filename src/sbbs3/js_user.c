@@ -81,6 +81,7 @@ enum {
 	,USER_PROP_ULS       
 	,USER_PROP_DLB       
 	,USER_PROP_DLS       
+	,USER_PROP_DLCPS
 	,USER_PROP_CDT		
 	,USER_PROP_MIN		
 	,USER_PROP_LEVEL 	
@@ -278,6 +279,9 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case USER_PROP_DLS:
 			val=p->user->dls;
+			break;
+		case USER_PROP_DLCPS:
+			val=p->user->dlcps;
 			break;
 		case USER_PROP_CDT:
 			*vp = DOUBLE_TO_JSVAL((jsdouble)p->user->cdt);
@@ -961,6 +965,7 @@ static jsSyncPropertySpec js_user_stats_properties[] = {
 	{	"files_uploaded"	,USER_PROP_ULS        	,USER_PROP_FLAGS,		310 },
 	{	"bytes_downloaded"	,USER_PROP_DLB        	,USER_PROP_FLAGS,		310 },
 	{	"files_downloaded"	,USER_PROP_DLS        	,USER_PROP_FLAGS,		310 },
+	{	"download_cps"		,USER_PROP_DLCPS       	,USER_PROP_FLAGS,		320 },
 	{	"leech_attempts"	,USER_PROP_LEECH 	 	,USER_PROP_FLAGS,		310 },
 	{	"mail_waiting"		,USER_PROP_MAIL_WAITING	,USER_PROP_FLAGS,		312	},
 	{	"read_mail_waiting"	,USER_PROP_READ_WAITING	,USER_PROP_FLAGS,		31802 },
@@ -989,6 +994,7 @@ static char* user_stats_prop_desc[] = {
 	,"total files uploaded"
 	,"total bytes downloaded"
 	,"total files downloaded"
+	,"latest average download rate, in characters (bytes) per second"
 	,"suspected leech downloads"
 	,"total number of e-mail messages currently waiting in inbox"
 	,"number of read e-mail messages currently waiting in inbox"

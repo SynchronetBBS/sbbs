@@ -450,6 +450,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	user->uls = (ushort)strtoul(field[USER_ULS], NULL, 0);
 	user->dlb = strtoull(field[USER_DLB], NULL, 0);
 	user->dls = (ushort)strtoul(field[USER_DLS], NULL, 0);
+	user->dlcps = (uint32_t)strtoul(field[USER_DLCPS], NULL, 0);
 	user->leech = (uchar)strtoul(field[USER_LEECH], NULL, 0);
 
 	SAFECOPY(user->pass, field[USER_PASS]);
@@ -662,7 +663,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		"%u\t"			// USER_ULS
 		"%" PRIu64 "\t" // USER_DLB
 		"%u\t"			// USER_DLS
-		"%u\t"	// USER_LEECH
+		"%" PRIu32 "\t" // USER_DLCPS
 		"%s\t"	// USER_PASS
 		"%s\t"	// USER_PWMOD
 		"%u\t"	// USER_LEVEL
@@ -677,6 +678,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		"%" PRIu32 "\t" // USER_MIN
 		"%u\t"	// USER_TEXTRA
 		"%s\t"	// USER_EXPIRE
+		"%u\t"	// USER_LEECH
 		,user->number
 		,user->alias
 		,user->name
@@ -723,7 +725,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		,(uint)user->uls
 		,user->dlb
 		,(uint)user->dls
-		,(uint)user->leech
+		,user->dlcps
 		,user->pass
 		,pwmod
 		,(uint)user->level
@@ -738,6 +740,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		,user->min
 		,user->textra
 		,expire
+		,(uint)user->leech
 	);
 	if(len > USER_RECORD_LEN || len < 0) // truncated?
 		return FALSE;
@@ -3116,6 +3119,7 @@ size_t user_field_len(enum user_field fnum)
 		case USER_ULS:			return sizeof(user.uls);
 		case USER_DLB:			return sizeof(user.dlb);
 		case USER_DLS:			return sizeof(user.dls);
+		case USER_DLCPS:		return sizeof(user.dlcps);
 		case USER_LEECH:		return sizeof(user.leech);
 
 		// Security:

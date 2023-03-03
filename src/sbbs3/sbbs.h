@@ -543,7 +543,7 @@ public:
 	ushort	node_connection = NODE_CONNECTION_TELNET;
 	char	connection[LEN_MODEM+1];	/* Connection Description */
 	uint	cur_rate=0;		/* Current Connection (DCE) Rate */
-	uint	cur_cps=0;		/* Current Average Transfer CPS */
+	uint	cur_cps=10000;	/* Current Average Download CPS */
 	uint	dte_rate=0;		/* Current COM Port (DTE) Rate */
 	time_t 	timeout=0;		/* User inactivity timeout reference */
 	uint 	timeleft_warn=0;/* low timeleft warning flag */
