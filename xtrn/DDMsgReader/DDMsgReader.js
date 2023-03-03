@@ -14473,7 +14473,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 			// the message.  The destination ("to" informatoin) will be filled in
 			// according to the destination type.
 			var destMsgHdr = { to_net_type: NET_NONE, from: user.name,
-							   replyto: user.name, subject: "Fwd: " + msgSubject }; // pMsgHdr.subject
+							   replyto: user.name, subject: msgSubject }; // pMsgHdr.subject
 			if (user.netmail.length > 0)
 			{
 				destMsgHdr.replyto_net_addr = user.netmail;
