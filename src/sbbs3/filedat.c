@@ -655,12 +655,15 @@ time_t getfiletime(scfg_t* cfg, file_t* f)
 	return f->time;
 }
 
+// Return estimated time to transfer file, in seconds
 ulong gettimetodl(scfg_t* cfg, file_t* f, uint rate_cps)
 {
 	if(getfilesize(cfg, f) < 1)
 		return 0;
 	if(f->size <= (off_t)rate_cps)
 		return 1;
+	if(rate_cps < 1)
+		rate_cps = 100000;
 	return (ulong)(f->size / rate_cps);
 }
 
