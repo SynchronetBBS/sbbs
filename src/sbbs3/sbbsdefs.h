@@ -960,6 +960,7 @@ typedef struct {						/* Users information */
 	uint64_t freecdt;					/* Free credits (renewed daily) */
 	uint64_t ulb;						/* Total bytes uploaded */
 	uint64_t dlb;						/* Total bytes downloaded */
+	uint32_t dlcps;						/* Last download rate (in CPS) */
 	time32_t firston,					/* Date/Time first called */
 			laston, 					/* Last logoff date/time */
 			expire, 					/* Expiration date */

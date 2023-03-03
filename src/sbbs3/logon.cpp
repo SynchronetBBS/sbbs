@@ -54,6 +54,9 @@ bool sbbs_t::logon()
 	js_create_user_objects(js_cx, js_glob);
 #endif
 
+	if(useron.dlcps)
+		cur_cps = useron.dlcps;
+
 	if(useron.rest&FLAG('Q'))
 		sys_status ^= SS_QWKLOGON;
 

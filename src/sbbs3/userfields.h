@@ -81,7 +81,7 @@ enum user_field {
 	USER_ULS,
 	USER_DLB,
 	USER_DLS,
-	USER_LEECH,
+	USER_DLCPS,
 
 	// Security:
 	USER_PASS,
@@ -98,6 +98,7 @@ enum user_field {
 	USER_MIN,
 	USER_TEXTRA,
 	USER_EXPIRE,
+	USER_LEECH,
 
 	// Last:
 	USER_FIELD_COUNT
