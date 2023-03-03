@@ -228,14 +228,19 @@ bool sbbs_t::logon()
 		iniFreeStringList(filenames);
 	}
 
-	/* Inform the user of what's in their batch download queue */
+	/* Remove defunct files from user's batch download queue and inform them of what's remaining */
 	{
 		str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
 		str_list_t filenames = iniGetSectionList(ini, NULL);
 		for(size_t i = 0; filenames[i] != NULL; i++) {
 			const char* filename = filenames[i];
 			file_t f = {{}};
-			if(batch_file_load(&cfg, ini, filename, &f)) {
+			if(!batch_file_load(&cfg, ini, filename, &f)
+				|| !can_user_download(&cfg, f.dir, &useron, &client, /* reason: */NULL)) {
+				lprintf(LOG_NOTICE, "Removing defunct file from user's batch download queue: %s", filename);
+				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+			}
+			else {
 				char tmp2[256];
 				getfilesize(&cfg, &f);
 				bprintf(text[FileAddedToBatDlQueue]
@@ -243,9 +248,8 @@ bool sbbs_t::logon()
 					,byte_estimate_to_str(f.cost, tmp, sizeof(tmp), 1, 1)
 					,byte_estimate_to_str(f.size, tmp2, sizeof(tmp2), 1, 1)
 					,sectostr((uint)(f.size / (uint64_t)cur_cps),str));
-				smb_freefilemem(&f);
-			} else
-				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+			}
+			smb_freefilemem(&f);
 		}
 		iniFreeStringList(ini);
 		iniFreeStringList(filenames);
