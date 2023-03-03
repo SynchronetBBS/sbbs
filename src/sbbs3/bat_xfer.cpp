@@ -245,8 +245,7 @@ BOOL sbbs_t::start_batch_download()
 	char	list[1024] = "";
 	int		error;
     uint	i,xfrprot;
-    time_t	start,end,t;
-	struct	tm tm;
+    time_t	start,end;
 
 	if(useron.rest&FLAG('D')) {     /* Download restriction */
 		bputs(text[R_Download]);
@@ -264,10 +263,28 @@ BOOL sbbs_t::start_batch_download()
 	str_list_t filenames = iniGetSectionList(ini, NULL);
 
 	if(file_count == 1) {	// Only one file in the queue? Perform a non-batch (e.g. XMODEM) download
+		const char* filename = filenames[0];
 		file_t f = {{}};
 		BOOL result = FALSE;
-		if(batch_file_get(&cfg, ini, filenames[0], &f)) {
-			result = sendfile(&f, useron.prot, /* autohang: */true);
+		if(!batch_file_load(&cfg, ini, filename, &f)) {
+			bprintf(text[FileDoesNotExist], filename);
+			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+		} else {
+			uint reason = R_Download;
+			if(!can_user_download(&cfg, f.dir, &useron, &client, &reason)) {
+				bputs(text[reason]);
+				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+			}
+			else if(f.cost > useron.cdt + useron.freecdt)
+				bprintf(text[YouOnlyHaveNCredits]
+					,u64toac(useron.cdt + useron.freecdt, tmp));
+			else if(!(cfg.dir[f.dir]->misc&DIR_TFREE) && gettimetodl(&cfg, &f, cur_cps) > timeleft
+				&& !dir_op(f.dir) && !(useron.exempt&FLAG('T')))
+				bputs(text[NotEnoughTimeToDl]);
+			else {
+				putnode_downloading(getfilesize(&cfg, &f));
+				result = sendfile(&f, useron.prot, /* autohang: */true);
+			}
 			if(result == TRUE)
 				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, f.name);
 		}
@@ -279,12 +296,21 @@ BOOL sbbs_t::start_batch_download()
 
 	uint64_t totalcdt = 0;
 	for(size_t i=0; filenames[i] != NULL; ++i) {
+		const char* filename = filenames[i];
 		progress(text[Scanning], i, file_count);
 		file_t f = {{}};
-		if(batch_file_load(&cfg, ini, filenames[i], &f)) {
-			totalcdt += f.cost;
-			smb_freefilemem(&f);
+		if(!batch_file_load(&cfg, ini, filename, &f)) {
+			bprintf(text[FileDoesNotExist], filename);
+			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+			continue;
 		}
+		uint reason = R_Download;
+		if(!can_user_download(&cfg, f.dir, &useron, &client, &reason)) {
+			bputs(text[reason]);
+			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+		} else
+			totalcdt += f.cost;
+		smb_freefilemem(&f);
 	}
 	bputs(text[Scanned]);
 	if(totalcdt > useron.cdt+useron.freecdt) {
@@ -301,8 +327,9 @@ BOOL sbbs_t::start_batch_download()
 		file_t f = {{}};
 		if(!batch_file_get(&cfg, ini, filenames[i], &f))
 			continue;
-		if(!(cfg.dir[f.dir]->misc&DIR_TFREE) && cur_cps)
-			totaltime += getfilesize(&cfg, &f) / (ulong)cur_cps;
+		totalsize += getfilesize(&cfg, &f);
+		if(!(cfg.dir[f.dir]->misc&DIR_TFREE))
+			totaltime += gettimetodl(&cfg, &f, cur_cps);
 		SAFECAT(list, getfilepath(&cfg, &f, path));
 		SAFECAT(list, " ");
 		smb_freefilemem(&f);
@@ -393,16 +420,7 @@ BOOL sbbs_t::start_batch_download()
 #endif
 
 	SAFEPRINTF(str,"%sBATCHDN.LST",cfg.node_dir);
-	action=NODE_DLNG;
-	t=now;
-	if(cur_cps) 
-		t+=(totalsize/(ulong)cur_cps);
-	localtime_r(&t,&tm);
-	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
-		thisnode.aux=(tm.tm_hour*60)+tm.tm_min;
-		thisnode.action=action;
-		putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
-	}
+	putnode_downloading(totalsize);
 	start=time(NULL);
 	error=protocol(cfg.prot[xfrprot],XFER_BATCH_DOWNLOAD,str,list,false);
 	end=time(NULL);
@@ -429,6 +447,8 @@ bool sbbs_t::create_batchdn_lst(bool native)
 		errormsg(WHERE, ERR_OPEN, path);
 		return false;
 	}
+	bool result = false;
+	uint64_t totalcdt = 0;
 	const char* list_desc = "Batch Download File List";
 	bprintf(text[CreatingFileList], list_desc);
 	str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
@@ -437,6 +457,12 @@ bool sbbs_t::create_batchdn_lst(bool native)
 		const char* filename = filenames[i];
 		file_t f = {};
 		f.dir = batch_file_dir(&cfg, ini, filename);
+		uint reason = R_Download;
+		if(!can_user_download(&cfg, f.dir, &useron, &client, &reason)) {
+			bputs(text[reason]);
+			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+			continue;
+		}
 		if(!loadfile(&cfg, f.dir, filename, &f, file_detail_index)) {
 			errormsg(WHERE, "loading file", filename, i);
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
@@ -445,6 +471,12 @@ bool sbbs_t::create_batchdn_lst(bool native)
 		getfilepath(&cfg, &f, path);
 		if(!fexistcase(path)) {
 			bprintf(text[FileDoesNotExist], path);
+			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+		}
+		else if(totalcdt + f.cost > useron.cdt + useron.freecdt) {
+			char tmp[128];
+			bprintf(text[YouOnlyHaveNCredits]
+				,u64toac(useron.cdt + useron.freecdt, tmp));
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 		}
 		else {
@@ -456,6 +488,8 @@ bool sbbs_t::create_batchdn_lst(bool native)
 			}
 #endif
 			fprintf(fp, "%s\r\n", path);
+			totalcdt += f.cost;
+			result = true;
 		}
 		smb_freefilemem(&f);
 	}
@@ -463,7 +497,7 @@ bool sbbs_t::create_batchdn_lst(bool native)
 	iniFreeStringList(ini);
 	iniFreeStringList(filenames);
 	bprintf(text[CreatedFileList], list_desc);
-	return true;
+	return result;
 }
 
 /****************************************************************************/
@@ -668,16 +702,13 @@ bool sbbs_t::addtobatdl(file_t* f)
     char	str[256],tmp2[256];
 	char 	tmp[512];
     uint	i;
+	uint	reason = R_Download;
 	uint64_t	totalcost, totalsize;
 	uint64_t	totaltime;
 
-	if(useron.rest&FLAG('D')) {
-		bputs(text[R_Download]);
-		return false;
-	}
-	if(!can_user_download(&cfg, f->dir, &useron, &client, /* reason */NULL)) {
+	if(!can_user_download(&cfg, f->dir, &useron, &client, &reason)) {
 		bprintf(text[CantAddToQueue],f->name);
-		bputs(text[CantDownloadFromDir]);
+		bputs(text[reason]);
 		return false;
 	}
 	if(getfilesize(&cfg, f) < 1) {
