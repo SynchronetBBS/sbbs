@@ -740,9 +740,8 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 	int		found=0;
     uint	i,j;
     size_t	m;
-    time_t	start,end,t;
+    time_t	start,end;
     file_t*	f;
-	struct	tm tm;
 
 	action = NODE_LFIL;
 	curdirnum = dirnum;
@@ -1053,14 +1052,7 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 							clearline();
 						}
 					}
-					action = NODE_DLNG;
-					if(getnodedat(cfg.node_num,&thisnode,true) == 0) {
-						thisnode.action = action;
-						t=now + gettimetodl(&cfg, f, cur_cps);
-						localtime_r(&t,&tm);
-						thisnode.aux=(tm.tm_hour*60)+tm.tm_min;
-						putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
-					}
+					putnode_downloading(getfilesize(&cfg, f));
 					start=time(NULL);
 					error=protocol(cfg.prot[i],XFER_DOWNLOAD,path,nulstr,false);
 					end=time(NULL);
