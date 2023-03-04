@@ -160,7 +160,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 			mv(tmp,str2,0);
 		off_t l=flength(str2);
 		if(l>0)
-			bprintf(text[FileNBytesReceived],title,ultoac(l,tmp));
+			bprintf(text[FileNBytesReceived],title,u64toac(l,tmp));
 		else {
 			bprintf(text[FileNotReceived],title);
 			(void)remove(msgpath);
