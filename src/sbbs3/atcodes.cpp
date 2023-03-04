@@ -460,6 +460,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 		return(str);
 	}
 
+	if(!strcmp(sp,"CPS")) {
+		safe_snprintf(str,maxlen,"%u",cur_cps);
+		return(str);
+	}
+
 	if(!strcmp(sp,"COLS")) {
 		safe_snprintf(str,maxlen,"%u",cols);
 		return(str);
