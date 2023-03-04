@@ -1099,6 +1099,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// Whether or not to use the scrollbar in the enhanced message reader
 	this.useEnhReaderScrollbar = true;
 
+	// Whether or not to prepend the subject for forwarded messages with "Fwd: "
+	this.prependFowardMsgSubject = true;
+
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
 	// before reading the configuration file.  Defaults to the current user
@@ -8296,6 +8299,8 @@ function DigDistMsgReader_ReadConfigFile()
 				}
 				else if (settingUpper == "CONVERTYSTYLEMCIATTRSTOSYNC")
 					this.convertYStyleMCIAttrsToSync = (valueUpper == "TRUE");
+				else if (settingUpper == "PREPENDFOWARDMSGSUBJECT")
+					this.prependFowardMsgSubject = (valueUpper == "TRUE");
 			}
 		}
 
@@ -14371,10 +14376,12 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 	console.crlf();
 	if (msgDest.length > 0)
 	{
-		// Let the user change the subject if they want
+		// Let the user change the subject if they want (prepend it with "Fwd: " for forwarded
+		// and let the user edit the subject
 		var subjPromptText = bbs.text(SubjectPrompt);
 		console.putmsg(subjPromptText);
-		var msgSubject = console.getstr(pMsgHdr.subject, console.screen_columns - console.strlen(subjPromptText) - 1, K_LINE | K_EDIT);
+		var initialMsgSubject = (this.prependFowardMsgSubject ? "Fwd: " + pMsgHdr.subject : pMsgHdr.subject);
+		var msgSubject = console.getstr(initialMsgSubject, console.screen_columns - console.strlen(subjPromptText) - 1, K_LINE | K_EDIT);
 
 		var tmpMsgbase = new MsgBase("mail");
 		if (tmpMsgbase.open())
