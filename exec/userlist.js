@@ -86,7 +86,7 @@ if(!sort)
 
 switch(sort) {
 	case 'L':
-		list.sort(function(a, b) { return a.stats.laston_date - b.stats.laston_date; });
+		list.sort(function(a, b) { return b.stats.laston_date - a.stats.laston_date; });
 		break;
 	case 'N':
 		list.sort(function(a, b) { if(a.alias.toLowerCase() > b.alias.toLowerCase()) return 1; return -1; });
