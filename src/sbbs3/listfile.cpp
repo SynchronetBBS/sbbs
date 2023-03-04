@@ -740,7 +740,6 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 	int		found=0;
     uint	i,j;
     size_t	m;
-    time_t	start,end;
     file_t*	f;
 
 	action = NODE_LFIL;
@@ -1053,15 +1052,15 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 						}
 					}
 					putnode_downloading(getfilesize(&cfg, f));
-					start=time(NULL);
-					error=protocol(cfg.prot[i],XFER_DOWNLOAD,path,nulstr,false);
-					end=time(NULL);
+					time_t elapsed = 0;
+					error=protocol(cfg.prot[i],XFER_DOWNLOAD,path,nulstr,/* cd: */false, /* autohangup: */true, &elapsed);
 					if(cfg.dir[f->dir]->misc&DIR_TFREE)
-						starttime+=end-start;
-					if(checkprotresult(cfg.prot[i],error, f))
+						starttime+=elapsed;
+					if(checkprotresult(cfg.prot[i],error, f)) {
 						downloadedfile(f);
-					else
-						notdownloaded(f->size, start, end); 
+						downloadedbytes(f->size, elapsed); 
+					} else
+						notdownloaded(f->size, elapsed); 
 					delfiles(cfg.temp_dir,ALLFILES);
 					autohangup(); 
 				} 

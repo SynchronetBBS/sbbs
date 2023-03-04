@@ -439,7 +439,8 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 									&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 									break;
 							if(i<cfg.total_prots) {
-								int error = protocol(cfg.prot[i], XFER_DOWNLOAD, fpath, nulstr, false);
+								time_t elapsed = 0;
+								int error = protocol(cfg.prot[i], XFER_DOWNLOAD, fpath, nulstr, /* cid: */false, /* autohang: */true, &elapsed);
 								if(checkprotresult(cfg.prot[i],error,fpath)) {
 									if(del)
 										(void)remove(fpath);
@@ -449,6 +450,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 										,USER_DLS,1);
 									useron.dlb=adjustuserval(&cfg, useron.number
 										,USER_DLB, length);
+									downloadedbytes(length, elapsed);
 									bprintf(text[FileNBytesSent]
 										,getfname(fpath),u64toac(length,tmp));
 									SAFEPRINTF(str

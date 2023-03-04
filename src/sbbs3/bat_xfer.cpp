@@ -33,7 +33,6 @@ void sbbs_t::batchmenu()
 	BOOL	sort = -1;
 	uint	i,n,xfrprot,xfrdir;
     int64_t	totalcdt,totalsize;
-    time_t	start,end;
 	str_list_t ini;
 	str_list_t filenames;
 
@@ -217,11 +216,10 @@ void sbbs_t::batchmenu()
 					SYNC;
 					if(online==ON_REMOTE) {
 						delfiles(cfg.temp_dir,ALLFILES);
-						start=time(NULL);
-						protocol(cfg.prot[xfrprot],XFER_BATCH_UPLOAD,str,nulstr,true);
-						end=time(NULL);
+						time_t elapsed = 0;
+						protocol(cfg.prot[xfrprot],XFER_BATCH_UPLOAD,str,nulstr, /* cd: */true, /* autohang: */true, &elapsed);
 						if(xfrdir != INVALID_DIR && !(cfg.dir[xfrdir]->misc&DIR_ULTIME))
-							starttime+=end-start; 
+							starttime+=elapsed; 
 					}
 					batch_upload();
 					delfiles(cfg.temp_dir,ALLFILES);
@@ -245,7 +243,6 @@ BOOL sbbs_t::start_batch_download()
 	char	list[1024] = "";
 	int		error;
     uint	i,xfrprot;
-    time_t	start,end;
 
 	if(useron.rest&FLAG('D')) {     /* Download restriction */
 		bputs(text[R_Download]);
@@ -421,13 +418,14 @@ BOOL sbbs_t::start_batch_download()
 
 	SAFEPRINTF(str,"%sBATCHDN.LST",cfg.node_dir);
 	putnode_downloading(totalsize);
-	start=time(NULL);
-	error=protocol(cfg.prot[xfrprot],XFER_BATCH_DOWNLOAD,str,list,false);
-	end=time(NULL);
+	time_t elapsed = 0;
+	error=protocol(cfg.prot[xfrprot],XFER_BATCH_DOWNLOAD,str,list,false,&elapsed);
 	if(cfg.prot[xfrprot]->misc&PROT_DSZLOG || !error)
 		batch_download(xfrprot);
 	if(batdn_total())
-		notdownloaded((ulong)totalsize,start,end);
+		notdownloaded(totalsize, elapsed);
+	else
+		downloadedbytes(totalsize, elapsed);
 	autohangup();
 
 	return TRUE;

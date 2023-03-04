@@ -52,21 +52,33 @@ void sbbs_t::downloadedfile(file_t* f)
 }
 
 /****************************************************************************/
+/* This function is called when a file is successfully downloaded.			*/
+/****************************************************************************/
+void sbbs_t::downloadedbytes(off_t size, time_t elapsed)
+{
+	if(elapsed <= 1)
+		cur_cps = (uint)size;
+	else
+		cur_cps = (uint)(size / elapsed);
+	putuserdec32(useron.number, USER_DLCPS, cur_cps);
+}
+
+/****************************************************************************/
 /* This function is called when a file is unsuccessfully downloaded.        */
 /* It logs the transfer time and checks for possible leech protocol use.    */
 /****************************************************************************/
-void sbbs_t::notdownloaded(off_t size, time_t start, time_t end)
+void sbbs_t::notdownloaded(off_t size, time_t elapsed)
 {
     char	str[256],tmp2[256];
 	char 	tmp[512];
 
 	SAFEPRINTF2(str,"Estimated Time: %s  Transfer Time: %s"
 		,sectostr(cur_cps ? (uint)(size/cur_cps) : 0,tmp)
-		,sectostr((uint)(end-start),tmp2));
+		,sectostr((uint)(elapsed),tmp2));
 	logline(nulstr,str);
 	if(cfg.leech_pct && cur_cps                 /* leech detection */
-		&& end-start>=cfg.leech_sec
-		&& end-start>=(double)(size/cur_cps)*(double)cfg.leech_pct/100.0) {
+		&& elapsed>=cfg.leech_sec
+		&& elapsed>=(double)(size/cur_cps)*(double)cfg.leech_pct/100.0) {
 		lprintf(LOG_ERR, "Node %d Possible use of leech protocol (leech=%u  downloads=%u)"
 			,cfg.node_num, useron.leech+1,useron.dls);
 		useron.leech = (uchar)adjustuserval(&cfg, useron.number, USER_LEECH, 1);
@@ -93,7 +105,7 @@ const char* sbbs_t::protcmdline(prot_t* prot, enum XFER_TYPE type)
 /* Handles start and stop routines for transfer protocols                   */
 /****************************************************************************/
 int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
-					 ,const char *fpath, const char *fspec, bool cd, bool autohangup)
+					 ,const char *fpath, const char *fspec, bool cd, bool autohangup, time_t* elapsed)
 {
 	char	protlog[256],*p;
 	char*	cmdline;
@@ -136,7 +148,9 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
 	request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
 
+	time_t start = time(NULL);
 	i=external(cmdline,ex_mode,p);
+	time_t end = time(NULL);
 	/* Got back to Text/NVT mode */
 	request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX);
 	request_telnet_opt(TELNET_WONT,TELNET_BINARY_TX);
@@ -156,6 +170,11 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 
 	CRLF;
 	if(autohang) sys_status|=SS_PAUSEOFF;	/* Pause off after download */
+	if(elapsed != nullptr) {
+		*elapsed = end - start;
+		if(*elapsed < 0)
+			*elapsed = 0;
+	}
 	return(i);
 }
 
@@ -384,7 +403,8 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 			break;
 	if(i >= cfg.total_prots)
 		return false;
-	error = protocol(cfg.prot[i], XFER_DOWNLOAD, fname, fname, false, autohang);
+	time_t elapsed = 0;
+	error = protocol(cfg.prot[i], XFER_DOWNLOAD, fname, fname, false, autohang, &elapsed);
 	if(cfg.prot[i]->misc&PROT_DSZLOG)
 		result = checkdszlog(fname);
 	else
@@ -396,8 +416,9 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 		logon_dls++;
 		useron.dls = (ushort)adjustuserval(&cfg, useron.number, USER_DLS, 1);
 		useron.dlb = (uint32_t)adjustuserval(&cfg, useron.number, USER_DLB, length);
+		downloadedbytes(length, elapsed);
 		char bytes[32];
-		ultoac((ulong)length, bytes);
+		u64toac(length, bytes);
 		bprintf(text[FileNBytesSent], getfname(fname), bytes);
 		char str[128];
 		SAFEPRINTF3(str, "downloaded %s: %s (%s bytes)"
