@@ -115,6 +115,7 @@ DLLEXPORT BOOL	writeuserfields(scfg_t*, char* field[], int file);
 DLLEXPORT BOOL	logoutuserdat(scfg_t*, user_t*, time_t now, time_t logontime);
 DLLEXPORT void	resetdailyuserdat(scfg_t*, user_t*, BOOL write);
 DLLEXPORT void	subtract_cdt(scfg_t*, user_t*, uint64_t amt);
+DLLEXPORT uint64_t user_available_credits(user_t*);
 DLLEXPORT size_t user_field_len(enum user_field);
 DLLEXPORT BOOL	can_user_access_all_libs(scfg_t*, user_t*, client_t*);
 DLLEXPORT BOOL	can_user_access_all_dirs(scfg_t*, uint libnum, user_t*, client_t*);

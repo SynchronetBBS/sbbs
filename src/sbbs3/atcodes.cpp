@@ -1270,12 +1270,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 	}
 
 	if(!strcmp(sp,"KBLEFT")) {
-		safe_snprintf(str,maxlen,"%" PRIu64,(useron.cdt+useron.freecdt)/1024UL);
+		safe_snprintf(str,maxlen,"%" PRIu64,user_available_credits(&useron)/1024UL);
 		return(str);
 	}
 
 	if(!strcmp(sp,"BYTESLEFT")) {
-		safe_snprintf(str,maxlen,"%" PRIu64,useron.cdt+useron.freecdt);
+		safe_snprintf(str,maxlen,"%" PRIu64,user_available_credits(&useron));
 		return(str);
 	}
 

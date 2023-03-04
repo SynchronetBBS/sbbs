@@ -272,9 +272,9 @@ BOOL sbbs_t::start_batch_download()
 				bputs(text[reason]);
 				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 			}
-			else if(f.cost > useron.cdt + useron.freecdt)
+			else if(f.cost > user_available_credits(&useron))
 				bprintf(text[YouOnlyHaveNCredits]
-					,u64toac(useron.cdt + useron.freecdt, tmp));
+					,u64toac(user_available_credits(&useron), tmp));
 			else if(!(cfg.dir[f.dir]->misc&DIR_TFREE) && gettimetodl(&cfg, &f, cur_cps) > timeleft
 				&& !dir_op(f.dir) && !(useron.exempt&FLAG('T')))
 				bputs(text[NotEnoughTimeToDl]);
@@ -310,9 +310,9 @@ BOOL sbbs_t::start_batch_download()
 		smb_freefilemem(&f);
 	}
 	bputs(text[Scanned]);
-	if(totalcdt > useron.cdt+useron.freecdt) {
+	if(totalcdt > user_available_credits(&useron)) {
 		bprintf(text[YouOnlyHaveNCredits]
-			,u64toac(useron.cdt+useron.freecdt,tmp));
+			,u64toac(user_available_credits(&useron),tmp));
 		iniFreeStringList(ini);
 		iniFreeStringList(filenames);
 		return(FALSE); 
@@ -471,10 +471,10 @@ bool sbbs_t::create_batchdn_lst(bool native)
 			bprintf(text[FileDoesNotExist], path);
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 		}
-		else if(totalcdt + f.cost > useron.cdt + useron.freecdt) {
+		else if(totalcdt + f.cost > user_available_credits(&useron)) {
 			char tmp[128];
 			bprintf(text[YouOnlyHaveNCredits]
-				,u64toac(useron.cdt + useron.freecdt, tmp));
+				,u64toac(user_available_credits(&useron), tmp));
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 		}
 		else {
@@ -746,9 +746,9 @@ bool sbbs_t::addtobatdl(file_t* f)
 			f->cost=0L;
 		if(!is_download_free(&cfg,f->dir,&useron,&client))
 			totalcost += f->cost;
-		if(totalcost > useron.cdt+useron.freecdt) {
+		if(totalcost > user_available_credits(&useron)) {
 			bprintf(text[CantAddToQueue],f->name);
-			bprintf(text[YouOnlyHaveNCredits],u64toac(useron.cdt+useron.freecdt,tmp));
+			bprintf(text[YouOnlyHaveNCredits],u64toac(user_available_credits(&useron),tmp));
 		} else {
 			totalsize += f->size;
 			if(!(cfg.dir[f->dir]->misc&DIR_TFREE) && cur_cps)

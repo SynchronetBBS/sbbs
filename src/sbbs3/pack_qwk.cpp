@@ -657,9 +657,9 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			if(!batch_file_load(&cfg, ini, filename, &f))
 				continue;
 			if(!is_download_free(&cfg, f.dir, &useron, &client)) {
-				if(totalcdt + f.cost > (uint64_t)(useron.cdt+useron.freecdt)) {
+				if(totalcdt + f.cost > (uint64_t)user_available_credits(&useron)) {
 					bprintf(text[YouOnlyHaveNCredits]
-						,u64toac(useron.cdt+useron.freecdt,tmp));
+						,u64toac(user_available_credits(&useron),tmp));
 					batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 					continue;
 				}
