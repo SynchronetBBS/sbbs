@@ -665,7 +665,7 @@ bool sbbs_t::chan_access(uint cnum)
 		bputs(text[CantAccessThatChannel]);
 		return(false); 
 	}
-	if(!(useron.exempt&FLAG('J')) && cfg.chan[cnum]->cost>useron.cdt+useron.freecdt) {
+	if(!(useron.exempt&FLAG('J')) && cfg.chan[cnum]->cost>user_available_credits(&useron)) {
 		bputs(text[NotEnoughCredits]);
 		return(false); 
 	}

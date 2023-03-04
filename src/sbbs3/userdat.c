@@ -1952,8 +1952,8 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 			case AR_CREDIT:
 				l = i * 1024UL;
 				if(user==NULL
-					|| (equal && user->cdt+user->freecdt!=l)
-					|| (!equal && user->cdt+user->freecdt<l))
+					|| (equal && user_available_credits(user)!=l)
+					|| (!equal && user_available_credits(user)<l))
 					result=not;
 				else
 					result=!not;
@@ -2544,6 +2544,20 @@ uint64_t adjustuserval(scfg_t* cfg, int usernumber, enum user_field fnum, int64_
 	close(file);
 	dirtyuserdat(cfg, usernumber);
 	return val;
+}
+
+/****************************************************************************/
+/* Returns user's available credits, handling integer overflow				*/
+/****************************************************************************/
+uint64_t user_available_credits(user_t* user)
+{
+	uint64_t result;
+	if(user == NULL)
+		return 0;
+	result = user->cdt + user->freecdt;
+	if(result < user->cdt)
+		return UINT64_MAX;
+	return result;
 }
 
 /****************************************************************************/

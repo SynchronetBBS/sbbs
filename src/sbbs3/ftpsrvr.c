@@ -2555,9 +2555,9 @@ static void ctrl_thread(void* arg)
 			if(sysop)
 				sockprintf(sock,sess,"230-Sysop access granted.");
 			sockprintf(sock,sess,"230-%s logged in.",user.alias);
-			if(!(user.exempt&FLAG('D')) && (user.cdt+user.freecdt)>0)
-				sockprintf(sock,sess,"230-You have %lu download credits."
-					,user.cdt+user.freecdt);
+			if(!(user.exempt&FLAG('D')) && user_available_credits(&user)>0)
+				sockprintf(sock,sess,"230-You have %" PRIu64 " download credits."
+					,user_available_credits(&user));
 			sockprintf(sock,sess,"230 You are allowed %lu minutes of use for this session."
 				,timeleft/60);
 			sprintf(qwkfile,"%sfile/%04d.qwk",scfg.data_dir,user.number);
@@ -4382,7 +4382,7 @@ static void ctrl_thread(void* arg)
 						loadfile(&scfg, dir, p, &f, file_detail_normal);
 					else
 						f.cost=(uint32_t)flength(fname);
-					if(f.cost>(user.cdt+user.freecdt)) {
+					if(f.cost>user_available_credits(&user)) {
 						lprintf(LOG_WARNING,"%04d <%s> has insufficient credit to download /%s/%s/%s (%lu credits)"
 							,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->vdir
 							,scfg.dir[dir]->vdir

@@ -961,10 +961,10 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 				continue; 
 			}
 			if(!is_download_free(&cfg,f->dir,&useron,&client)
-				&& f->cost>(useron.cdt+useron.freecdt)) {
+				&& f->cost>user_available_credits(&useron)) {
 				SYNC;
 				bprintf(text[YouOnlyHaveNCredits]
-					,u64toac(useron.cdt+useron.freecdt,tmp));
+					,u64toac(user_available_credits(&useron),tmp));
 				mnemonics(text[QuitOrNext]);
 				if(getkeys("\rQ",0)=='Q') {
 					found=-1;

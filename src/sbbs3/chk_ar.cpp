@@ -295,8 +295,8 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				break;
 			case AR_CREDIT:
 				l = i * 1024UL;
-				if((equal && user->cdt+user->freecdt!=l)
-					|| (!equal && user->cdt+user->freecdt<l))
+				if((equal && user_available_credits(user)!=l)
+					|| (!equal && user_available_credits(user)<l))
 					result=_not;
 				else
 					result=!_not;

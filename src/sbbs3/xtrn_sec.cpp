@@ -206,7 +206,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 				? (term & COLOR)
 				? "Yes":"Mono":"No"
 			,rows								/* User Screen lines */
-			,useron.cdt+useron.freecdt);		/* User Credits */
+			,user_available_credits(&useron));	/* User Credits */
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
@@ -316,7 +316,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		time_t t = useron.laston;
 		localtime_r(&t, &tm);
 		safe_snprintf(str, sizeof(str), "%" PRIu64 "\n%02u/%02u/%02u\n%u\n%d\n%u\n%u\n%u\n%d\n%u\n"
-			,useron.cdt+useron.freecdt			/* Gold */
+			,user_available_credits(&useron)	/* Gold */
 			,TM_MONTH(tm.tm_mon)				/* User last on date (MM/DD/YY) */
 			,tm.tm_mday, TM_YEAR(tm.tm_year)
 			,cols 								/* User screen width */
@@ -432,7 +432,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		safe_snprintf(str, sizeof(str), "%u\n%" PRIu64 "\n%s\n%s\n%s\n%s"
 			"\n%s\n%02d:%02d\n%c\n"
 			,0									/* 30: Kbytes downloaded today */
-			,(useron.cdt+useron.freecdt)/1024UL /* 31: Max Kbytes to download today */
+			,user_available_credits(&useron)/1024UL /* 31: Max Kbytes to download today */
 			,getbirthmmddyy(&cfg, useron.birth, tmp, sizeof(tmp))	/* 32: User birthday (MM/DD/YY) */
 			,node_dir							/* 33: Path to MAIN directory */
 			,data_dir							/* 34: Path to GEN directory */
@@ -1268,7 +1268,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	}
 
 	if(cfg.xtrn[xtrnnum]->cost && !(useron.exempt&FLAG('X'))) {    /* costs */
-		if(cfg.xtrn[xtrnnum]->cost>useron.cdt+useron.freecdt) {
+		if(cfg.xtrn[xtrnnum]->cost>user_available_credits(&useron)) {
 			bputs(text[NotEnoughCredits]);
 			pause();
 			return(false); 

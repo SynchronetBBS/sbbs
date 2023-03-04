@@ -161,7 +161,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	/* Look-up in nodelist? */
 
 	if(cfg.netmail_cost && !(useron.exempt&FLAG('S'))) {
-		if(useron.cdt+useron.freecdt<cfg.netmail_cost) {
+		if(user_available_credits(&useron)<cfg.netmail_cost) {
 			bputs(text[NotEnoughCredits]);
 			return(false); 
 		}
@@ -592,7 +592,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	if(inet) {				/* Internet E-mail */
 
 		if(cfg.inetmail_cost && !(useron.exempt&FLAG('S'))) {
-			if(useron.cdt+useron.freecdt<cfg.inetmail_cost) {
+			if(user_available_credits(&useron)<cfg.inetmail_cost) {
 				bputs(text[NotEnoughCredits]);
 				free(qwkbuf);
 				smb_freemsgmem(&msg);
@@ -769,7 +769,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	/* Look-up in nodelist? */
 
 	if(cfg.netmail_cost && !(useron.exempt&FLAG('S'))) {
-		if(useron.cdt+useron.freecdt<cfg.netmail_cost) {
+		if(user_available_credits(&useron)<cfg.netmail_cost) {
 			bputs(text[NotEnoughCredits]);
 			free(qwkbuf);
 			return; 
@@ -998,7 +998,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	}
 
 	if(cfg.inetmail_cost && !(useron.exempt&FLAG('S'))) {
-		if(useron.cdt+useron.freecdt < cfg.inetmail_cost * rcpt_count) {
+		if(user_available_credits(&useron) < cfg.inetmail_cost * rcpt_count) {
 			strListFree(&rcpt_list);
 			bputs(text[NotEnoughCredits]);
 			return(false); 
