@@ -235,7 +235,6 @@ bool sbbs_t::upload(uint dirnum)
 	char	str[MAX_PATH+1];
 	char	path[MAX_PATH+1];
 	char 	tmp[512];
-    time_t	start,end;
     uint	i,j,k;
 	file_t	f = {{}};
 	str_list_t dest_user_list = NULL;
@@ -474,11 +473,10 @@ bool sbbs_t::upload(uint dirnum)
 					&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 					break;
 			if(i<cfg.total_prots) {
-				start=time(NULL);
-				protocol(cfg.prot[i],XFER_UPLOAD,path,nulstr,true);
-				end=time(NULL);
+				time_t elapsed = 0;
+				protocol(cfg.prot[i],XFER_UPLOAD,path,nulstr,/* cd: */true, /* autohang: */true, &elapsed);
 				if(!(cfg.dir[dirnum]->misc&DIR_ULTIME)) /* Don't deduct upload time */
-					starttime+=end-start;
+					starttime+=elapsed;
 				result = uploadfile(&f);
 				autohangup();
 			} 
