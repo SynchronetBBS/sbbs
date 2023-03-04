@@ -708,6 +708,10 @@ convertYStyleMCIAttrsToSync           Whether or not to convert Y-style MCI
                                       attribute codes to Synchronet attribute
                                       codes. Valid values are true and false.
 
+prependFowardMsgSubject               Whether or not to prepend the subject for
+                                      forwarded messages with "Fwd: ". Valid
+                                      values are true and false. Defaulse to
+                                      true.
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
