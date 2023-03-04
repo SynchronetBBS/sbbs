@@ -1049,8 +1049,9 @@ public:
 
 	/* download.cpp */
 	void	downloadedfile(file_t* f);
-	void	notdownloaded(off_t size, time_t start, time_t end);
-	int		protocol(prot_t* prot, enum XFER_TYPE, const char *fpath, const char *fspec, bool cd, bool autohangup=true);
+	void	notdownloaded(off_t size, time_t elapsed);
+	void	downloadedbytes(off_t size, time_t elapsed);
+	int		protocol(prot_t* prot, enum XFER_TYPE, const char *fpath, const char *fspec, bool cd, bool autohangup=true, time_t* elapsed=NULL);
 	const char*	protcmdline(prot_t* prot, enum XFER_TYPE type);
 	void	seqwait(uint devnum);
 	void	autohangup(void);
