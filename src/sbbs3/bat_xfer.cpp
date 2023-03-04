@@ -419,7 +419,7 @@ BOOL sbbs_t::start_batch_download()
 	SAFEPRINTF(str,"%sBATCHDN.LST",cfg.node_dir);
 	putnode_downloading(totalsize);
 	time_t elapsed = 0;
-	error=protocol(cfg.prot[xfrprot],XFER_BATCH_DOWNLOAD,str,list,false,&elapsed);
+	error=protocol(cfg.prot[xfrprot],XFER_BATCH_DOWNLOAD,str,list,/* cid: */false, /* autohang: */true, &elapsed);
 	if(cfg.prot[xfrprot]->misc&PROT_DSZLOG || !error)
 		batch_download(xfrprot);
 	if(batdn_total())
