@@ -27,7 +27,15 @@ while(bbs.online) {
 			bbs.exec("?msglist.js mail -preview");
 			break;
 		case 'R':	// Read your mail
-			bbs.read_mail(MAIL_YOUR, user.number);
+			const MAIL_LM_MODE = LM_REVERSE;
+			var lm_mode = user.mail_settings & MAIL_LM_MODE;
+			var new_lm_mode = bbs.read_mail(MAIL_YOUR, user.number, lm_mode) & MAIL_LM_MODE;
+			if(new_lm_mode != lm_mode) {
+				if(new_lm_mode & MAIL_LM_MODE)
+					user.mail_settings |= MAIL_LM_MODE;
+				else
+					user.mail_settings &= ~MAIL_LM_MODE;
+			}
 			break;
 		case 'U':	// Read your un-read mail
 			bbs.read_mail(MAIL_YOUR, user.number, LM_UNREAD|LM_REVERSE);
