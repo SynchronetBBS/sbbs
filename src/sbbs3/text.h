@@ -873,6 +873,7 @@ enum {
 	,FidoEchoMailReceived
 	,HashingFile
 	,HashedFile
+	,NewUserValEmailSubj
 
 	,TOTAL_TEXT
 };
