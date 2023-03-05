@@ -69,7 +69,7 @@ for(var i = 0; i < argc; i++) {
 			writeln("optional:");
 			writeln("  dir-code:       File directory internal code");
 			writeln("  listfile:       Name of listfile (e.g. FILES.BBS)");
-			writeln("  desc-off:       Descripition character offset (number)");
+			writeln("  desc-off:       Description character offset (number)");
 			exit(0);
 		}
 		if(opt.indexOf("ex=") == 0) {
