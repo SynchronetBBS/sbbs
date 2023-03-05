@@ -408,6 +408,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	user->misc = (uint32_t)strtoul(field[USER_MISC], NULL, 16);
 	user->qwk = (uint32_t)strtoul(field[USER_QWK], NULL, 16);
 	user->chat = (uint32_t)strtoul(field[USER_CHAT], NULL, 16);
+	user->mail = (uint32_t)strtoul(field[USER_MAIL], NULL, 16);
 
 	user->rows = strtoul(field[USER_ROWS], NULL, 0);
 	user->cols = strtoul(field[USER_COLS], NULL, 0);
@@ -679,6 +680,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		"%u\t"	// USER_TEXTRA
 		"%s\t"	// USER_EXPIRE
 		"%u\t"	// USER_LEECH
+		"%x\t"	// USER_MAIL
 		,user->number
 		,user->alias
 		,user->name
@@ -741,6 +743,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		,user->textra
 		,expire
 		,(uint)user->leech
+		,user->mail
 	);
 	if(len > USER_RECORD_LEN || len < 0) // truncated?
 		return FALSE;
@@ -2370,6 +2373,11 @@ uint32_t getuserchat(scfg_t* cfg, int usernumber)
 	return getuserhex32(cfg, usernumber, USER_CHAT);
 }
 
+uint32_t getusermail(scfg_t* cfg, int usernumber)
+{
+	return getuserhex32(cfg, usernumber, USER_MAIL);
+}
+
 uint32_t getuserqwk(scfg_t* cfg, int usernumber)
 {
 	return getuserhex32(cfg, usernumber, USER_QWK);
@@ -2464,6 +2472,11 @@ int putusermisc(scfg_t* cfg, int usernumber, uint32_t value)
 int putuserchat(scfg_t* cfg, int usernumber, uint32_t value)
 {
 	return putuserhex32(cfg, usernumber, USER_CHAT, value);
+}
+
+int putusermail(scfg_t* cfg, int usernumber, uint32_t value)
+{
+	return putuserhex32(cfg, usernumber, USER_MAIL, value);
 }
 
 int putuserqwk(scfg_t* cfg, int usernumber, uint32_t value)

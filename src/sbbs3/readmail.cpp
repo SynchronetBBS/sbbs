@@ -39,7 +39,7 @@ static char mail_listing_flag(smbmsg_t* msg)
 /****************************************************************************/
 /* Reads mail waiting for usernumber.                                       */
 /****************************************************************************/
-void sbbs_t::readmail(uint usernumber, int which, int lm_mode)
+int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 {
 	char	str[256],str2[256],done=0,domsg=1
 			,*p;
@@ -48,7 +48,7 @@ void sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 	uint32_t u,v;
 	int		mismatches=0,act;
 	int		unum;
-    int    l,last_mode;
+    int		l,last_mode;
 	uint	last;
 	bool	replied;
 	mail_t	*mail;
@@ -63,26 +63,30 @@ void sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 		act=NODE_RMAL;
 	action=act;
 
+	lm_mode &= ~(LM_NOSPAM | LM_SPAMONLY | LM_INCDEL);
+	if(cfg.sys_misc&SM_SYSVDELM && (SYSOP || cfg.sys_misc&SM_USRVDELM))
+		lm_mode |= LM_INCDEL;
+
 	if(cfg.readmail_mod[0] && !readmail_inside) {
 		char cmdline[256];
 
 		readmail_inside = true;
 		safe_snprintf(cmdline, sizeof(cmdline), "%s %d %u %u", cfg.readmail_mod, which, usernumber, lm_mode);
-		exec_bin(cmdline, &main_csi);
+		int result = exec_bin(cmdline, &main_csi);
 		readmail_inside = false;
-		return;
+		return result;
 	}
 
 	if(which==MAIL_SENT && useron.rest&FLAG('K')) {
 		bputs(text[R_ReadSentMail]);
-		return;
+		return lm_mode;
 	}
 
 	msg.total_hfields=0;			/* init to NULL, cause not allocated yet */
 
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,"MAIL",i);
-		return; 
+		return lm_mode;
 	}
 	SAFEPRINTF(smb.file,"%smail",cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
@@ -90,11 +94,9 @@ void sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 	if((i=smb_open(&smb))!=0) {
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return; 
+		return lm_mode;
 	}
 
-	if(cfg.sys_misc&SM_SYSVDELM && (SYSOP || cfg.sys_misc&SM_USRVDELM))
-		lm_mode |= LM_INCDEL;
 	mail=loadmail(&smb,&smb.msgs,usernumber,which,lm_mode);
 	last_mode = lm_mode;
 	if(!smb.msgs) {
@@ -106,7 +108,7 @@ void sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 			bprintf(text[NoMailWaiting], lm_mode&LM_UNREAD ? "un-read mail" : "mail");
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
-		return; 
+		return lm_mode;
 	}
 
 	last=smb.status.last_msg;
@@ -150,7 +152,7 @@ void sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				free(mail);
 				smb_close(&smb);
 				smb_stack(&smb,SMB_STACK_POP);
-				return;
+				return lm_mode;
 			}
 			else
 				smb.curmsg=l;
@@ -801,6 +803,8 @@ void sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
 	current_msg=NULL;
+
+	return lm_mode;
 }
 
 int sbbs_t::searchmail(mail_t *mail, int start, int msgs, int which, const char *search, const char* order)

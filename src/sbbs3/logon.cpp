@@ -562,8 +562,13 @@ bool sbbs_t::logon()
 		rioctl(IOSM|ABORT);		/* Turn abort ability on */
 	if(text[ReadYourMailNowQ][0] && mailw) {
 		if((mailw == mailr && !noyes(text[ReadYourMailNowQ]))
-			|| (mailw != mailr && yesno(text[ReadYourMailNowQ])))
-			readmail(useron.number,MAIL_YOUR);
+			|| (mailw != mailr && yesno(text[ReadYourMailNowQ]))) {
+				uint32_t user_mail = useron.mail & ~MAIL_LM_MODE;
+				int result = readmail(useron.number, MAIL_YOUR, useron.mail & MAIL_LM_MODE);
+				user_mail |= result & MAIL_LM_MODE;
+				if(user_mail != useron.mail)
+					putusermail(&cfg, useron.number, useron.mail = user_mail);
+			}
 	}
 	if(usrgrps && useron.misc&ASK_NSCAN && text[NScanAllGrpsQ][0] && yesno(text[NScanAllGrpsQ]))
 		scanallsubs(SCAN_NEW);
