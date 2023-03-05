@@ -2716,8 +2716,10 @@ js_readmail(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->readmail(usernumber, readwhich, lm_mode);
+	int result = sbbs->readmail(usernumber, readwhich, lm_mode);
 	JS_RESUMEREQUEST(cx, rc);
+
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
 
 	return(JS_TRUE);
 }
@@ -4556,9 +4558,9 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("display the logon list (optionally passing arguments to the logon list module)")
 	,310
 	},
-	{"read_mail",		js_readmail,		0,	JSTYPE_VOID,	JSDOCSTR("[which=<tt>MAIL_YOUR</tt>] [,user_number=<i>current</i>] [,loadmail_mode=<tt>0</tt>]")
+	{"read_mail",		js_readmail,		0,	JSTYPE_NUMBER,	JSDOCSTR("[which=<tt>MAIL_YOUR</tt>] [,user_number=<i>current</i>] [,loadmail_mode=<tt>0</tt>]")
 	,JSDOCSTR("read private e-mail"
-	"(see <tt>MAIL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>which</i> values)")
+	"(see <tt>MAIL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>which</i> values), returns user-modified loadmail_mode value")
 	,310
 	},
 	{"email",			js_email,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("to_user_number [,mode=<tt>WM_EMAIL</tt>] [,top=<i>none</i>] [,subject=<i>none</i>] [,object reply_header]")

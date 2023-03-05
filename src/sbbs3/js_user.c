@@ -94,7 +94,7 @@ enum {
 	,USER_PROP_ROWS
 	,USER_PROP_COLS
 	,USER_PROP_SEX		
-	,USER_PROP_MISC		
+	,USER_PROP_MISC
 	,USER_PROP_LEECH 	
 	,USER_PROP_CURSUB	
 	,USER_PROP_CURDIR	
@@ -105,6 +105,7 @@ enum {
 	,USER_PROP_QWK		
 	,USER_PROP_TMPEXT	
 	,USER_PROP_CHAT		
+	,USER_PROP_MAIL
 	,USER_PROP_NS_TIME	
 	,USER_PROP_PROT		
 	,USER_PROP_LOGONTIME
@@ -359,6 +360,9 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case USER_PROP_CHAT:
 			val=p->user->chat;
 			break;
+		case USER_PROP_MAIL:
+			val = p->user->mail;
+			break;
 		case USER_PROP_NS_TIME:
 			val=p->user->ns_time;
 			break;
@@ -602,6 +606,15 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			putuserchat(scfg, p->user->number, p->user->chat = val);
 			rc=JS_SUSPENDREQUEST(cx);
 			break;
+		case USER_PROP_MAIL:
+			JS_RESUMEREQUEST(cx, rc);
+			if(!JS_ValueToECMAUint32(cx,*vp,&val)) {
+				free(str);
+				return JS_FALSE;
+			}
+			putusermail(scfg, p->user->number, p->user->mail = val);
+			rc=JS_SUSPENDREQUEST(cx);
+			break;
 		case USER_PROP_TMPEXT:	 
 			SAFECOPY(p->user->tmpext,str);
 			putuserstr(scfg, p->user->number, USER_TMPEXT, str);
@@ -810,6 +823,7 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{	"settings"			,USER_PROP_MISC		 	,USER_PROP_FLAGS,		310},
 	{	"qwk_settings"		,USER_PROP_QWK		 	,USER_PROP_FLAGS,		310},
 	{	"chat_settings"		,USER_PROP_CHAT		 	,USER_PROP_FLAGS,		310},
+	{	"mail_settings"		,USER_PROP_MAIL 		,USER_PROP_FLAGS,		320},
 	{	"temp_file_ext"		,USER_PROP_TMPEXT	 	,USER_PROP_FLAGS,		310},
 	{	"new_file_time"		,USER_PROP_NS_TIME	 	,USER_PROP_FLAGS,		311},
 	{	"newscan_date"		,USER_PROP_NS_TIME	 	,0, /* Alias */			310},
@@ -856,6 +870,7 @@ static char* user_prop_desc[] = {
 	,"settings bitfield - see <tt>USER_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions"
 	,"QWK packet settings bitfield - see <tt>QWK_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions"
 	,"chat settings bitfield - see <tt>CHAT_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions"
+	,"mail settings bitfield - see <tt>MAIL_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions"
 	,"temporary file type (extension)"
 	,"new file scan date/time (time_t format)"
 	,"file transfer protocol (command key)"

@@ -463,6 +463,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 
 #define CHAT_DEFAULT	CHAT_SPLITP
 
+								// Bits in user.mail
+#define MAIL_LM_MODE	(LM_REVERSE)
+
 #define INVALID_DIR ((uint)-1)	/* Invalid directory value					*/
 #define INVALID_SUB ((uint)-1)	/* Invalid sub-board value					*/
 
@@ -948,7 +951,8 @@ typedef struct {						/* Users information */
 
 	uint32_t misc,						/* Misc. bits - ANSI, Deleted etc. */
 			qwk,						/* QWK settings */
-			chat,						/* Chat defaults */
+			chat,						/* Chat settings */
+			mail,						/* Mail setttings */
 			flags1, 					/* Flag set #1 */
 			flags2, 					/* Flag set #2 */
 			flags3, 					/* Flag set #3 */

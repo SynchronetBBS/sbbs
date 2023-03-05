@@ -95,6 +95,7 @@ DLLEXPORT BOOL	chk_ar(scfg_t*, uchar* str, user_t*, client_t*); /* checks access
 
 DLLEXPORT uint32_t getusermisc(scfg_t*, int usernumber);
 DLLEXPORT uint32_t getuserchat(scfg_t*, int usernumber);
+DLLEXPORT uint32_t getusermail(scfg_t*, int usernumber);
 DLLEXPORT uint32_t getuserqwk(scfg_t*, int usernumber);
 DLLEXPORT uint32_t getuserflags(scfg_t*, int usernumber, enum user_field);
 DLLEXPORT uint32_t getuserhex32(scfg_t*, int usernumber, enum user_field);
@@ -109,6 +110,7 @@ DLLEXPORT int	putuserdec32(scfg_t*, int usernumber, enum user_field, uint32_t va
 DLLEXPORT int	putuserdec64(scfg_t*, int usernumber, enum user_field, uint64_t value);
 DLLEXPORT int	putusermisc(scfg_t*, int usernumber, uint32_t value);
 DLLEXPORT int	putuserchat(scfg_t*, int usernumber, uint32_t value);
+DLLEXPORT int	putusermail(scfg_t*, int usernumber, uint32_t value);
 DLLEXPORT int	putuserqwk(scfg_t*, int usernumber, uint32_t value);
 DLLEXPORT uint64_t adjustuserval(scfg_t*, int usernumber, enum user_field, int64_t value);
 DLLEXPORT BOOL	writeuserfields(scfg_t*, char* field[], int file);
