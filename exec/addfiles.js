@@ -35,6 +35,7 @@ function archive_date(file)
 var uploader;
 var listfile;
 var date_fmt;
+var desc_off = 0;
 var options = {};
 var exclude = [];
 var include = "*";
@@ -47,7 +48,7 @@ for(var i = 0; i < argc; i++) {
 		while(opt[0] == '-')
 			opt = opt.slice(1);
 		if(opt == '?' || opt.toLowerCase() == "help") {
-			writeln("usage: [-options] [dir-code] [listfile]");
+			writeln("usage: [-options] [dir-code] [listfile] [desc-off]");
 			writeln("options:");
 			writeln("  -all            add files in all libraries/directories (implies -auto)");
 			writeln("  -lib=<name>     add files in all directories of specified library (implies -auto)");
@@ -65,6 +66,10 @@ for(var i = 0; i < argc; i++) {
 			writeln("  -delete         delete list after import");
 			writeln("  -v              increase verbosity of output");
 			writeln("  -debug          enable debug output");
+			writeln("optional:");
+			writeln("  dir-code:       File directory internal code");
+			writeln("  listfile:       Name of listfile (e.g. FILES.BBS)");
+			writeln("  desc-off:       Descripition character offset (number)");
 			exit(0);
 		}
 		if(opt.indexOf("ex=") == 0) {
@@ -119,7 +124,9 @@ for(var i = 0; i < argc; i++) {
 		}
 		options[opt] = true;
 	} else {
-		if(!dir_list.length)
+		if(Number(arg))
+			desc_off = Number(arg);
+		else if(!dir_list.length)
 			dir_list.push(arg);
 		else
 			listfile = arg;
@@ -280,6 +287,8 @@ function parse_file_list(lines)
 //		writeln('fname line match: ' + JSON.stringify(match));
 		if(match && match.length > 1) {
 			var file = { name: match[1], desc: match[2] };
+			if(desc_off)
+				file.desc = line.substring(desc_off).trim();
 			if(file.desc && file.desc.length > LEN_FDESC)
 				file.extdesc = word_wrap(file.desc, 45);
 			file_list.push(file);
