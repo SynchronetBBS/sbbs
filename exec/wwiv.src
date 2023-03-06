@@ -170,7 +170,7 @@ cmdkey L
 cmdkey /L
 	nodelist_users
 	end_cmd
-    
+
 cmdkey W
     nodelist_all
     end_cmd
@@ -273,7 +273,7 @@ cmdkey /*
 	end_cmd
 
 cmdkey &
-	call main_cfg
+	exec_bin "msgscancfg"
 	end_cmd
 
 cmdkey #
@@ -340,49 +340,6 @@ cmdkey Q
 	end_cmd
 
 cmd_pop
-return
-
-########################### Main Config Section  ##############################
-
-:main_cfg
-
-compare_ars expert
-if_false
-	menu MAINCFG
-	end_if
-async
-print "\r\n\x01y\x01hConfig: \x01n"
-getcmd ?QNPIS\r
-logkey
-
-cmdkey ?
-	compare_ars expert
-	if_true
-		menu MAINCFG
-		end_if
-	goto main_cfg
-	end_cmd
-
-cmdkey N
-	msg_new_scan_cfg
-	return
-	end_cmd
-
-cmdkey S
-	msg_your_scan_cfg
-	return
-	end_cmd
-
-cmdkey P
-	msg_ptrs_cfg
-	return
-	end_cmd
-
-cmdkey I
-	msg_ptrs_reinit
-	return
-	end_cmd
-
 return
 
 ########################### File Transfer Section #############################
@@ -570,7 +527,7 @@ cmdkey L
 cmdkey /L
 	nodelist_users
 	end_cmd
-    
+
 cmdkey W
     nodelist_all
     end_cmd

@@ -6,7 +6,9 @@
 ÛW HCSY NCAreas to scan for your messagesW‚BÛ
 Û HCP NCSet new-scan pointersWŒBÛ
 Û HCI NCReinitialize new-scan pointersWƒBÛ
+Û HCR NCReload new-scan config & pointers WBÛ
+Û HCW NCSave new-scan config & pointers   WBÛ
 Û²ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ²Û
-Û HCQ NCQuit to Main menuWBÛ
+Û HCQ NCQuit to Main/Message menu         WBÛ
 ÛÛÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÛÛ
 Z
