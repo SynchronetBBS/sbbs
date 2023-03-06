@@ -399,43 +399,7 @@ cmdkey C
         end_cmd
 
 cmdkey U
-	cmd_home
-	compare_ars expert
-	if_false
-		menu maincfg
-		end_if
-	async
-	print "\r\n\x01y\x01hConfig: \x01n"
-	getcmd ?QNPIS
-	logkey
-
-	cmdkey ?
-		compare_ars expert
-		if_true
-			menu maincfg
-			end_if
-		end_cmd
-
-	cmdkey N
-		msg_new_scan_cfg
-		end_cmd
-
-	cmdkey S
-		msg_your_scan_cfg
-		end_cmd
-
-	cmdkey P
-		msg_ptrs_cfg
-		end_cmd
-
-	cmdkey I
-		msg_ptrs_reinit
-		end_cmd
-
-	cmdkey Q
-		cmd_pop
-		end_cmd
-
+	exec_bin "msgscancfg"
 	end_cmd
 
 cmdkey H
@@ -531,9 +495,9 @@ cmdkey D
 	if_true
 		compare_ars "UNIX"
 		if_true
-			exec_int "%y -i"	
+			exec_int "%y -i"
 		else
-			exec_int "%y"	
+			exec_int "%y"
 			end_if
 		end_if
 	end_cmd

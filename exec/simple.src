@@ -154,7 +154,7 @@ cmdstr R
 		end_cmd
 
 	cmdstr C
-	       call msg_cfg
+	       exec_bin "msgscancfg"
 	       end_cmd
 
       # Quit back to main menu
@@ -348,38 +348,5 @@ if_true
 	msg_post
 	end_if
 return
-
-########################### Msg Config Section	##############################
-
-:msg_cfg
-
-menu maincfg
-async
-print "\r\n\x01y\x01hCommand: \x01n"
-getstrupr 10
-logkey
-
-cmdkey N
-	msg_new_scan_cfg
-	return
-	end_cmd
-
-cmdkey S
-	msg_your_scan_cfg
-	return
-	end_cmd
-
-cmdkey P
-	msg_ptrs_cfg
-	return
-	end_cmd
-
-cmdkey I
-	msg_ptrs_reinit
-	return
-	end_cmd
-
-return
-
 
 #end of SIMPLE.SRC

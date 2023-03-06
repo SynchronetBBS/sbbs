@@ -468,7 +468,7 @@ if_true
 	nodelist_all
 	return
 	end_if
-    
+
 compare_word who
 if_true
 	nodelist_users
@@ -556,7 +556,7 @@ cmdstr "dir"
 	end_cmd
 
 cmdstr "config"
-	call main_cfg
+	exec_bin "msgscancfg"
 	end_cmd
 
 cmdstr "send"
@@ -647,48 +647,5 @@ cmdstr "readmsgs"
 
 call global
 end_cmd
-
-########################### Main Config Section  ##############################
-
-:main_cfg
-
-compare_user_misc UM_expert
-if_false
-	menu maincfg
-	end_if
-async
-print "\r\n\x01y\x01hConfig: \x01n"
-getcmd ?QNPIS\r
-logkey
-
-cmdkey ?
-	compare_user_misc UM_expert
-	if_true
-		menu maincfg
-		end_if
-	goto main_cfg
-	end_cmd
-
-cmdkey N
-	msg_new_scan_cfg
-	return
-	end_cmd
-
-cmdkey S
-	msg_your_scan_cfg
-	return
-	end_cmd
-
-cmdkey P
-	msg_ptrs_cfg
-	return
-	end_cmd
-
-cmdkey I
-	msg_ptrs_reinit
-	return
-	end_cmd
-
-return
 
 # End of SDOS.SRC

@@ -214,7 +214,7 @@ if_true
 cmdkey A
 	auto_message
 	end_cmd
-    
+
 cmdkey /A
 	compare_ars ANSI and not GUEST
 	if_false
@@ -265,7 +265,7 @@ cmdkey I
 cmdkey J
 	msg_select_area
 	end_cmd
-    
+
 cmdkey L
     msg_list
     end_cmd
@@ -277,7 +277,7 @@ cmdkey /L
 cmdkey W
 	nodelist_users
 	end_cmd
-    
+
 cmdkey M
 	minute_bank
 	end_cmd
@@ -387,7 +387,7 @@ cmdkey /*
 	end_cmd
 
 cmdkey &
-	call main_cfg
+	exec_bin "msgscancfg"
 	end_cmd
 
 cmdkey #
@@ -456,50 +456,6 @@ cmdkey Q
 
 cmd_pop
 return
-
-########################### Main Config Section  ##############################
-
-:main_cfg
-
-compare_user_misc UM_expert
-if_false
-	menu maincfg
-	end_if
-async
-print "\r\n\1y\1hConfig: \1n"
-getcmd ?QNPIS\r
-logkey
-
-cmdkey ?
-	compare_user_misc UM_expert
-	if_true
-		menu maincfg
-		end_if
-	goto main_cfg
-	end_cmd
-
-cmdkey N
-	msg_new_scan_cfg
-	return
-	end_cmd
-
-cmdkey S
-	msg_your_scan_cfg
-	return
-	end_cmd
-
-cmdkey P
-	msg_ptrs_cfg
-	return
-	end_cmd
-
-cmdkey I
-	msg_ptrs_reinit
-	return
-	end_cmd
-
-return
-
 
 ########################### File Transfer Section #############################
 
@@ -753,11 +709,11 @@ cmdkey L
 cmdkey /L
 	nodelist_all
 	end_cmd
-    
+
 cmdkey W
 	nodelist_users
 	end_cmd
-   
+
 cmdkey N
 	print "\r\n\1c\1hNew File Scan\r\n"
 	file_new_scan
@@ -874,7 +830,7 @@ cmdkey &
                     end_if
                 crlf
 		end_cmd
-    
+
 	cmdkey E
                 crlf
 		toggle_user_misc UM_EXTDESC
