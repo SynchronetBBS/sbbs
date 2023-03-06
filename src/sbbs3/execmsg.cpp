@@ -296,10 +296,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 			new_scan_ptr_cfg();
 			return(0);
 		case CS_MSG_PTRS_REINIT:
-			for(i=0;i<cfg.total_subs;i++) {
-				subscan[i].ptr=subscan[i].sav_ptr;
-				subscan[i].last=subscan[i].sav_last; 
-			}
+			reinit_msg_ptrs();
 			bputs(text[MsgPtrsInitialized]);
 			return(0);
 		case CS_MSG_NEW_SCAN_CFG:

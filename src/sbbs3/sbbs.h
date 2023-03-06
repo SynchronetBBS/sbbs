@@ -700,6 +700,7 @@ public:
 
 	void	getmsgptrs(void);
 	void	putmsgptrs(void);
+	void	reinit_msg_ptrs(void);
 	void	getusrsubs(void);
 	void	getusrdirs(void);
 	uint	getusrsub(uint subnum);

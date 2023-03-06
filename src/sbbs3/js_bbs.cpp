@@ -4060,10 +4060,7 @@ js_msgscan_reinit(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	for(uint i=0;i<sbbs->cfg.total_subs;i++) {
-		sbbs->subscan[i].ptr=sbbs->subscan[i].sav_ptr;
-		sbbs->subscan[i].last=sbbs->subscan[i].sav_last;
-	}
+	sbbs->reinit_msg_ptrs();
 	sbbs->bputs(sbbs->text[MsgPtrsInitialized]);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -4642,7 +4639,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	{"reinit_msg_ptrs",	js_msgscan_reinit,	0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("re-initialize new message scan pointers")
+	,JSDOCSTR("re-initialize new message scan pointers to values at logon")
 	,310
 	},
 	{"scan_subs",		js_scansubs,		0,	JSTYPE_VOID,	JSDOCSTR("[mode=<tt>SCAN_NEW</tt>] [,all=<tt>false</tt>]")

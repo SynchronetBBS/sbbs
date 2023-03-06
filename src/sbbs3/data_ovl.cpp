@@ -47,6 +47,14 @@ void sbbs_t::putmsgptrs()
 		errormsg(WHERE, ERR_WRITE, "message pointers", 0);
 }
 
+void sbbs_t::reinit_msg_ptrs()
+{
+	for(uint i = 0; i < cfg.total_subs; ++i) {
+		subscan[i].ptr = subscan[i].sav_ptr;
+		subscan[i].last = subscan[i].sav_last;
+	}
+}
+
 static void ProgressSearchingUsers(void* cbdata, int count, int total)
 {
 	sbbs_t* sbbs = ((sbbs_t*)cbdata);
