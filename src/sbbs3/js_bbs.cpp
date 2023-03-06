@@ -4055,13 +4055,49 @@ js_msgscan_reinit(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	sbbs->reinit_msg_ptrs();
 	sbbs->bputs(sbbs->text[MsgPtrsInitialized]);
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_save_msg_scan(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	sbbs->putmsgptrs();
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_reload_msg_scan(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	sbbs->getmsgptrs();
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -4641,6 +4677,14 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"reinit_msg_ptrs",	js_msgscan_reinit,	0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("re-initialize new message scan pointers to values at logon")
 	,310
+	},
+	{"save_msg_scan",	js_save_msg_scan,	0,	JSTYPE_VOID,	JSDOCSTR("")
+	,JSDOCSTR("save message scan configuration and pointers to userbase")
+	,320
+	},
+	{"reload_msg_scan",	js_reload_msg_scan,	0,	JSTYPE_VOID,	JSDOCSTR("")
+	,JSDOCSTR("re-loads message scan configuration and pointers from userbase")
+	,320
 	},
 	{"scan_subs",		js_scansubs,		0,	JSTYPE_VOID,	JSDOCSTR("[mode=<tt>SCAN_NEW</tt>] [,all=<tt>false</tt>]")
 	,JSDOCSTR("scan sub-boards for messages")
