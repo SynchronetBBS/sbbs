@@ -1060,7 +1060,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				sprintf(opt[i++], "Address           %s", item->addr);
 		}
 		sprintf(opt[i++], "Connection Type   %s", conn_types[item->conn_type]);
-		if ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL))
+		if ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL) || (item->conn_type == CONN_TYPE_SERIAL_NORTS))
 			fc_str(opt[i++], item->flow_control);
 		else if (item->conn_type != CONN_TYPE_SHELL)
 			sprintf(opt[i++], "TCP Port          %hu", item->port);

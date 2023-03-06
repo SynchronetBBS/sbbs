@@ -322,7 +322,7 @@ modem_connect(struct bbslist *bbs)
 	}
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
-	if (bbs->conn_type == CONN_TYPE_SERIAL) {
+	if ((bbs->conn_type == CONN_TYPE_SERIAL) || (bbs->conn_type == CONN_TYPE_SERIAL_NORTS)) {
 		_beginthread(modem_output_thread, 0, (void *)-1);
 		_beginthread(modem_input_thread, 0, (void *)-1);
 	}
