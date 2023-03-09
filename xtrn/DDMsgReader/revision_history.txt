@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.67     2023-03-09   Fixes for time zone alignment & list key help for wide
+                      terminals
 1.66     2023-03-02   When forwarding a message, the subject can now be edited
                       before sending the message
 1.65     2023-02-24   Ctrl-C can now be used to cancel message scans. Output
