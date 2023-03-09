@@ -101,6 +101,8 @@
  *                              is now word-wrapped to the terminal width.
  * 2023-03-02 Eric Oulashin     Version 1.66
  *                              Now allows editing the subject when forwarding a message
+ * 2023-03-09 Eric Oulashin     Version 1.67
+ *                              Fixes for time zone alignment & list key help for wide terminals
  */
 
 "use strict";
@@ -206,8 +208,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.66";
-var READER_DATE = "2023-03-02";
+var READER_VERSION = "1.67";
+var READER_DATE = "2023-03-09";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1269,14 +1271,15 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		this.enhMsgHeaderLinesToReadingUser.push(hdrLine5);
 		var hdrLine6 = "\x01n\x01c" + VERTICAL_SINGLE + "\x01h\x01k" + BLOCK1 + BLOCK2 + BLOCK3
 		             + "\x01gD\x01n\x01gate\x01h\x01c: " + this.colors.msgHdrDateColor + "@MSG_DATE-L";
-		//numChars = console.screen_columns - 23;
-		numChars = console.screen_columns - 67;
+		//numChars = console.screen_columns - 67;
+		//Wed, 08 Mar 2023 19:06:37
+		numChars = 26 - 11;
 		for (var i = 0; i < numChars; ++i)
 			hdrLine6 += "#";
 		//hdrLine6 += "@\x01n\x01c" + VERTICAL_SINGLE;
 		hdrLine6 += "@ @MSG_TIMEZONE@\x01n";
-		for (var i = 0; i < 40; ++i)
-			hdrLine6 += " ";
+		numChars = console.screen_columns - 42;
+		hdrLine6 += format("%" + numChars + "s", "");
 		hdrLine6 += "\x01n\x01c" + VERTICAL_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine6);
 		this.enhMsgHeaderLinesToReadingUser.push(hdrLine6);
@@ -8082,23 +8085,26 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 						 + this.colors.enhReaderHelpLineParenColor + ")"
 						 + this.colors.enhReaderHelpLineGeneralColor + "uit, "
 						 + this.colors.enhReaderHelpLineHotkeyColor + "@`?`?@";
-
 	// Center the help text based on the console width
-	var numCharsRemaining = console.screen_columns - console.strlen(this.enhReadHelpLine) - 1;
-	var numCharsOnEachSide = Math.floor(numCharsRemaining/2);
-	// Left side
-	for (var i = 0; i < numCharsOnEachSide; ++i)
-		this.enhReadHelpLine = " " + this.enhReadHelpLine;
+	//var numHotkeyChars = 92;
+	var numHotkeyChars = 89;
+	//var numCharsRemaining = console.screen_columns - (console.strlen(this.enhReadHelpLine) - numHotkeyChars) - 1;
+	var helpLineScreenLen = (console.strlen(this.enhReadHelpLine) - numHotkeyChars);
+	var numCharsRemaining = console.screen_columns - helpLineScreenLen - 1;
+	var frontPaddingLen = Math.floor(numCharsRemaining/2);
+	var padding = format("%" + frontPaddingLen + "s", "");
+	this.enhReadHelpLine = padding + this.enhReadHelpLine;
 	this.enhReadHelpLine = "\x01n" + this.colors.enhReaderHelpLineBkgColor + this.enhReadHelpLine;
-	// Right side
-	for (var i = 0; i < numCharsOnEachSide; ++i)
-		this.enhReadHelpLine += " ";
-	//numCharsRemaining = console.screen_columns - console.strlen(this.enhReadHelpLine) - 5;
-	numCharsRemaining = console.screen_columns - 1 - console.strlen(this.enhReadHelpLine);
-	if (numCharsRemaining > 0)
+	if (console.screen_columns > 80)
 	{
-		for (var i = 0; i < numCharsRemaining; ++i)
-		this.enhReadHelpLine += " ";
+		//helpLineScreenLen += frontPaddingLen;
+		//numCharsRemaining = console.screen_columns - helpLineScreenLen - 1;
+		helpLineScreenLen = (console.strlen(this.enhReadHelpLine) - numHotkeyChars);
+		//numCharsRemaining = console.screen_columns - helpLineScreenLen - 2;
+		// Adding 3 as a correction factor for wide terminals (this is a kludge)
+		numCharsRemaining = console.screen_columns - helpLineScreenLen + 3;
+		if (numCharsRemaining > 0)
+			this.enhReadHelpLine += format("%" + numCharsRemaining + "s", "");
 	}
 
 	// Create a version without the change area option
@@ -8138,20 +8144,24 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 									   + this.colors.enhReaderHelpLineHotkeyColor + "@`?`?@  ";
 
 	// Center the help text based on the console width
-	numCharsRemaining = console.screen_columns - console.strlen(this.enhReadHelpLineWithoutChgArea) - 2;
-	numCharsOnEachSide = Math.floor(numCharsRemaining/2);
-	// Left side
-	for (var i = 0; i < numCharsOnEachSide; ++i)
-		this.enhReadHelpLineWithoutChgArea = " " + this.enhReadHelpLineWithoutChgArea;
-	this.enhReadHelpLineWithoutChgArea = "\x01n" + this.colors.enhReaderHelpLineBkgColor + this.enhReadHelpLineWithoutChgArea;
-	// Right side
-	for (var i = 0; i < numCharsOnEachSide; ++i)
-		this.enhReadHelpLineWithoutChgArea += " ";
-	numCharsRemaining = console.screen_columns - console.strlen(this.enhReadHelpLineWithoutChgArea) - 1;
+	numHotkeyChars = 84;
+	//var numCharsRemaining = console.screen_columns - (console.strlen(this.enhReadHelpLineWithoutChgArea) - numHotkeyChars) - 1;
+	helpLineScreenLen = (console.strlen(this.enhReadHelpLineWithoutChgArea) - numHotkeyChars);
+	numCharsRemaining = console.screen_columns - helpLineScreenLen - 1;
 	if (numCharsRemaining > 0)
 	{
-		for (var i = 0; i < numCharsRemaining; ++i)
-		this.enhReadHelpLineWithoutChgArea += " ";
+		frontPaddingLen = Math.floor(numCharsRemaining/2);
+		padding = format("%" + frontPaddingLen + "s", "");
+		this.enhReadHelpLineWithoutChgArea = padding + this.enhReadHelpLineWithoutChgArea;
+	}
+	this.enhReadHelpLineWithoutChgArea = "\x01n" + this.colors.enhReaderHelpLineBkgColor + this.enhReadHelpLineWithoutChgArea;
+	if (console.screen_columns > 80)
+	{
+		helpLineScreenLen = (console.strlen(this.enhReadHelpLineWithoutChgArea) - numHotkeyChars);
+		// Adding 3 as a correction factor for wide terminals (this is a kludge)
+		numCharsRemaining = console.screen_columns - helpLineScreenLen + 3;
+		if (numCharsRemaining > 0)
+			this.enhReadHelpLineWithoutChgArea += format("%" + numCharsRemaining + "s", "");
 	}
 }
 function stripCtrlFromEnhReadHelpLine_ReplaceArrowChars(pHelpLine)
