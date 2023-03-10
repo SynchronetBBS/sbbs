@@ -1215,7 +1215,7 @@ public:
 	void	catsyslog(int crash);
 
 	/* telgate.cpp */
-	void	telnet_gate(char* addr, uint mode, unsigned timeout=10, char* client_user_name=NULL, char* server_user_name=NULL, char* term_type=NULL);	// See TG_* for mode bits
+	bool	telnet_gate(char* addr, uint mode, unsigned timeout=10, char* client_user_name=NULL, char* server_user_name=NULL, char* term_type=NULL);	// See TG_* for mode bits
 
 };
 

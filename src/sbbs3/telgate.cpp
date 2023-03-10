@@ -22,7 +22,7 @@
 #include "sbbs.h"
 #include "telnet.h" 
 
-void sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* client_user_name, char* server_user_name, char* term_type)
+bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* client_user_name, char* server_user_name, char* term_type)
 {
 	char*	p;
 	uchar	buf[512];
@@ -52,12 +52,12 @@ void sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 	if(ip_addr==INADDR_NONE) {
 		lprintf(LOG_NOTICE,"!TELGATE Failed to resolve address: %s",destaddr);
 		bprintf("!Failed to resolve address: %s\r\n",destaddr);
-		return;
+		return false;
 	}
 
     if((remote_socket = open_socket(PF_INET, SOCK_STREAM, client.protocol)) == INVALID_SOCKET) {
 		errormsg(WHERE,ERR_OPEN,"socket",0);
-		return;
+		return false;
 	}
 
 	memset(&addr,0,sizeof(addr));
@@ -68,7 +68,7 @@ void sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 		lprintf(LOG_NOTICE,"!TELGATE ERROR %d (%d) binding to socket %d",i, ERROR_VALUE, remote_socket);
 		bprintf("!ERROR %d (%d) binding to socket\r\n",i, ERROR_VALUE);
 		close_socket(remote_socket);
-		return;
+		return false;
 	}
 
 	memset(&addr,0,sizeof(addr));
@@ -82,7 +82,7 @@ void sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 		lprintf(LOG_NOTICE,"!TELGATE ERROR %d (%d) disabling socket blocking"
 			,i, ERROR_VALUE);
 		close_socket(remote_socket);
-		return;
+		return false;
 	}
 
 	lprintf(LOG_INFO,"Node %d %s gate to %s port %u on socket %d"
@@ -96,7 +96,7 @@ void sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 		bprintf("!ERROR %d (%d) connecting to server: %s\r\n"
 			,i,ERROR_VALUE, destaddr);
 		close_socket(remote_socket);
-		return;
+		return false;
 	}
 
 	if(!(mode&TG_CTRLKEYS))
@@ -260,4 +260,5 @@ void sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 	close_socket(remote_socket);
 
 	lprintf(LOG_INFO,"Node %d Telnet gate to %s finished",cfg.node_num,destaddr);
+	return true;
 }

@@ -1286,8 +1286,6 @@ js_exec(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
 
@@ -1336,8 +1334,6 @@ js_exec_xtrn(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	if(!js_argc(cx, argc, 1))
 		return JS_FALSE;
 
@@ -1375,8 +1371,6 @@ js_user_event(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc && JSVAL_IS_NUMBER(argv[0])) {
 		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
@@ -1427,8 +1421,6 @@ js_chksyspass(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	if (argc) {
 		JSString* str = JS_ValueToString(cx, argv[0]);
 		JSSTRING_TO_ASTRING(cx, str, sys_pw, sizeof(sbbs->cfg.sys_pass)+2, NULL);
@@ -1450,8 +1442,6 @@ js_chkpass(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
@@ -1547,8 +1537,6 @@ js_revert_text(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc && JSVAL_IS_NUMBER(argv[0])) {
 		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
@@ -1658,8 +1646,6 @@ js_atcode(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
@@ -1795,8 +1781,6 @@ js_finduser(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
 
@@ -1831,8 +1815,6 @@ js_trashcan(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
  	if(!js_argc(cx, argc, 2))
 		return(JS_FALSE);
@@ -1877,8 +1859,6 @@ js_newuser(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->newuser()));
 	JS_RESUMEREQUEST(cx, rc);
@@ -1893,8 +1873,6 @@ js_logon(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->logon()));
@@ -1919,8 +1897,6 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
  	if(!js_argc(cx, argc, 2))
 		return(JS_FALSE);
@@ -2157,8 +2133,6 @@ js_batchdownload(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->start_batch_download()));
 	JS_RESUMEREQUEST(cx, rc);
@@ -2203,8 +2177,6 @@ js_batchclear(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-
 	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
 
@@ -2230,8 +2202,6 @@ js_viewfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(!js_argc(cx, argc, 1))
 		return JS_FALSE;
@@ -2262,8 +2232,6 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
@@ -2311,8 +2279,6 @@ js_recvfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
@@ -2699,8 +2665,6 @@ js_readmail(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	usernumber=sbbs->useron.number;
 	if(argc>0 && JSVAL_IS_NUMBER(argv[0])) {
 		if(!JS_ValueToECMAUint32(cx,argv[0],&readwhich))
@@ -2746,7 +2710,6 @@ js_email(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	ZERO_VAR(msg);
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
@@ -2932,8 +2895,6 @@ js_upload_file(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
@@ -2958,8 +2919,6 @@ js_bulkupload(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
 
@@ -2988,8 +2947,6 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
 
@@ -3014,7 +2971,7 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->telnet_gate(addr,mode,timeout);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->telnet_gate(addr,mode,timeout)));
 	free(addr);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -3040,8 +2997,6 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
@@ -3085,7 +3040,8 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 		if(mode == TG_MODE_UNSPECIFIED)
 			mode = 0;
 		rc=JS_SUSPENDREQUEST(cx);
-		sbbs->telnet_gate(addr,mode|TG_RLOGIN,timeout,client_user_name,server_user_name,term_type);
+		JS_SET_RVAL(cx, arglist
+			,BOOLEAN_TO_JSVAL(sbbs->telnet_gate(addr,mode|TG_RLOGIN,timeout,client_user_name,server_user_name,term_type)));
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	FREE_AND_NULL(addr);
@@ -3105,8 +3061,6 @@ js_pagesysop(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->sysop_page()));
 	JS_RESUMEREQUEST(cx, rc);
@@ -3121,8 +3075,6 @@ js_pageguru(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->guru_page()));
@@ -4749,11 +4701,11 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	"(see <tt>EVENT_*</tt> in <tt>sbbsdefs.js</tt> for valid values)")
 	,310
 	},
-	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [,mode=<tt>TG_NONE</tt>] [,timeout=<tt>10</tt>]")
+	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("address[:port] [,mode=<tt>TG_NONE</tt>] [,timeout=<tt>10</tt>]")
 	,JSDOCSTR("external Telnet gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags).")
 	,310
 	},
-	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [,client-user-name=<tt>user.alias</tt>, server-user-name=<tt>user.name</tt>, terminal=<tt>console.terminal</tt>] [,mode=<tt>TG_NONE</tt>]  [,timeout=<tt>10</tt>]")
+	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("address[:port] [,client-user-name=<tt>user.alias</tt>, server-user-name=<tt>user.name</tt>, terminal=<tt>console.terminal</tt>] [,mode=<tt>TG_NONE</tt>]  [,timeout=<tt>10</tt>]")
 	,JSDOCSTR("external RLogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags).")
 	,316
 	},
