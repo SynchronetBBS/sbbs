@@ -1,5 +1,11 @@
 /*
  * New user creation routine... basically a copy of newuser.cpp
+ *
+ * NOTICE:
+ * This script is not normally called/used by anything, so making changes
+ * to this script is unlikely to achieve what you're wanting. Instead,
+ * consider making changes to SCFG->System->New User Prompts, New User
+ * Values, or the new user question strings in your ctrl/text.dat file.
  */
 
 load("text.js");
