@@ -813,7 +813,7 @@ enum XFER_TYPE {				/* Values for type in xfer_prot_select()	*/
 #define LOL_SIZE    81			/* Length of each logon list entry          */
 
 								/* Bits in mode of scanposts() function 	*/
-#define SCAN_CONST		(1<<0)	/* Continuous message scanning				*/
+#define SCAN_CONT		(1<<0)	/* Continuous message scanning				*/
 #define SCAN_NEW		(1<<1)	/* New scanning								*/
 #define SCAN_BACK		(1<<2)	/* Scan the last message if no new			*/
 #define SCAN_TOYOU		(1<<3)	/* Scan for messages to you 				*/

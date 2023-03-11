@@ -312,10 +312,10 @@ int sbbs_t::exec_msg(csi_t *csi)
 			scanallsubs(SCAN_NEW);
 			return(0);
 		case CS_MSG_CONT_SCAN:
-			scansubs(SCAN_NEW|SCAN_CONST);
+			scansubs(SCAN_NEW|SCAN_CONT);
 			return(0);
 		case CS_MSG_CONT_SCAN_ALL:
-			scanallsubs(SCAN_NEW|SCAN_CONST);
+			scanallsubs(SCAN_NEW|SCAN_CONT);
 			return(0);
 		case CS_MSG_BROWSE_SCAN:
 			scansubs(SCAN_NEW|SCAN_BACK);
