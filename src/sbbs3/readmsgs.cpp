@@ -429,7 +429,7 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 		return(0); 
 	}
 	ZERO_VAR(msg);				/* init to NULL, specify not-allocated */
-	if(!(mode&SCAN_CONST))
+	if(!(mode&SCAN_CONT))
 		lncntr=0;
 	if((msgs=getlastmsg(subnum,&last,0))==0) {
 		if(mode&(SCAN_NEW|SCAN_TOYOU))
@@ -549,7 +549,7 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 	smb_unlocksmbhdr(&smb);
 	last=smb.status.last_msg;
 
-	if(mode&SCAN_CONST) {   /* update action */
+	if(mode&SCAN_CONT) {   /* update action */
 		getnodedat(cfg.node_num,&thisnode,1);
 		thisnode.action=NODE_RMSG;
 		putnodedat(cfg.node_num,&thisnode); 
@@ -559,7 +559,7 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 
 		action=NODE_RMSG;
 
-		if(mode&(SCAN_CONST|SCAN_FIND) && sys_status&SS_ABORT)
+		if(mode&(SCAN_CONT|SCAN_FIND) && sys_status&SS_ABORT)
 			break;
 
 		if(post==NULL)	/* Been unloaded */
@@ -662,7 +662,7 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 				free(buf); 
 			}
 
-			if(mode&SCAN_CONST)
+			if(mode&SCAN_CONT)
 				bprintf(text[ZScanPostHdr],ugrp,usub,smb.curmsg+1,smb.msgs);
 
 			if(!reads && mode)
@@ -754,7 +754,7 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 			}
 		}
 		else domsg=1;
-		if(mode&SCAN_CONST) {
+		if(mode&SCAN_CONT) {
 			if(smb.curmsg<smb.msgs-1) smb.curmsg++;
 				else done=1;
 			continue; 
@@ -837,7 +837,7 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 				current_msg=NULL;
 				return(0);
 			case 'C':   /* Continuous */
-				mode|=SCAN_CONST;
+				mode|=SCAN_CONT;
 				if(smb.curmsg<smb.msgs-1) smb.curmsg++;
 				else done=1;
 				break;
@@ -1596,14 +1596,14 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 	if(post)
 		free(post);
 	if(!quit
-		&& !(org_mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND|SCAN_POLLS)) && !(cfg.sub[subnum]->misc&SUB_PONLY)
+		&& !(org_mode&(SCAN_CONT|SCAN_TOYOU|SCAN_FIND|SCAN_POLLS)) && !(cfg.sub[subnum]->misc&SUB_PONLY)
 		&& reads && can_user_post(&cfg, subnum, &useron, &client, /* reason: */NULL) && text[Post][0]) {
 		SAFEPRINTF2(str,text[Post],cfg.grp[cfg.sub[subnum]->grp]->sname
 			,cfg.sub[subnum]->lname);
 		if(!noyes(str))
 			postmsg(subnum,0,0); 
 	}
-	if(!(org_mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND))
+	if(!(org_mode&(SCAN_CONT|SCAN_TOYOU|SCAN_FIND))
 		&& !(subscan[subnum].cfg&SUB_CFG_NSCAN) && !noyes(text[AddSubToNewScanQ]))
 		subscan[subnum].cfg|=SUB_CFG_NSCAN;
 	smb_close(&smb);
