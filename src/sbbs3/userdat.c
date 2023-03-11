@@ -146,13 +146,18 @@ BOOL matchusername(scfg_t* cfg, const char* name, const char* comp)
 	return *np == '\0' && (*cp == '\0' || *cp == '@');
 }
 
+/****************************************************************************/
 uint find_login_id(scfg_t* cfg, const char* user_id)
 {
-	int usernum;
+	uint usernum;
+
+	if(cfg == NULL || user_id == NULL)
+		return 0;
 
 	if((cfg->sys_login & LOGIN_USERNUM) && IS_DIGIT(user_id[0])) {
-		usernum = atoi(user_id);
-		if(usernum > lastuser(cfg))
+		char* end = NULL;
+		usernum = (uint)strtoul(user_id, &end, 10);
+		if(end == NULL || *end != '\0' || usernum > (uint)lastuser(cfg))
 			usernum = 0;
 		return usernum;
 	}
