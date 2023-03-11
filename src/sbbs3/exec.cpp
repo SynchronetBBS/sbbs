@@ -1866,10 +1866,10 @@ int sbbs_t::exec(csi_t *csi)
 				csi->logic=LOGIC_FALSE;
 			return(0);
 		case CS_SAVELINE:
-			SAVELINE;
+			saveline();
 			return(0);
 		case CS_RESTORELINE:
-			RESTORELINE;
+			restoreline();
 			return(0);
 		case CS_SELECT_SHELL:
 			csi->logic=select_shell() ? LOGIC_TRUE:LOGIC_FALSE;

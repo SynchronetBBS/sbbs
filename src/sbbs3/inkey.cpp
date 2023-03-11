@@ -149,7 +149,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 		hotkey_inside |= (1<<ch);
 		if(mode&K_SPIN)
 			bputs("\b ");
-		SAVELINE;
+		saveline();
 		attr(LIGHTGRAY);
 		CRLF;
 		bputs(text[RawMsgInputModeIsNow]);
@@ -160,7 +160,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 		console^=CON_RAW_IN;
 		CRLF;
 		CRLF;
-		RESTORELINE;
+		restoreline();
 		lncntr=0;
 		hotkey_inside &= ~(1<<ch);
 		if(action!=NODE_MAIN && action!=NODE_XFER)
@@ -188,7 +188,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if(mode&K_SPIN)
 				bputs("\b ");
 			if(!(sys_status&SS_SPLITP)) {
-				SAVELINE;
+				saveline();
 				attr(LIGHTGRAY);
 				CRLF; 
 			}
@@ -202,7 +202,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 				external(cmdstr(cfg.hotkey[i]->cmd,nulstr,nulstr,tmp),0);
 			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
-				RESTORELINE; 
+				restoreline(); 
 			}
 			lncntr=0;
 			hotkey_inside &= ~(1<<ch);
@@ -223,7 +223,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if(mode&K_SPIN)
 				bputs("\b ");
 			if(!(sys_status&SS_SPLITP)) {
-				SAVELINE;
+				saveline();
 				attr(LIGHTGRAY);
 				CRLF; 
 			}
@@ -232,7 +232,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			sync();
 			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
-				RESTORELINE; 
+				restoreline(); 
 			}
 			lncntr=0;
 			hotkey_inside &= ~(1<<ch);
@@ -247,7 +247,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if(mode&K_SPIN)
 				bputs("\b ");
 			if(!(sys_status&SS_SPLITP)) {
-				SAVELINE;
+				saveline();
 				attr(LIGHTGRAY);
 				CRLF; 
 			}
@@ -255,7 +255,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			sync();
 			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
-				RESTORELINE; 
+				restoreline(); 
 			}
 			lncntr=0;
 			hotkey_inside &= ~(1<<ch);
@@ -270,7 +270,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			hotkey_inside |= (1<<ch);
 			if(mode&K_SPIN)
 				bputs("\b ");
-			SAVELINE;
+			saveline();
 			attr(LIGHTGRAY);
 			now=time(NULL);
 			bprintf(text[TiLogon],timestr(logontime));
@@ -282,7 +282,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if(sys_status&SS_EVENT)
 				bprintf(text[ReducedTime],timestr(event_time));
 			sync();
-			RESTORELINE;
+			restoreline();
 			lncntr=0;
 			hotkey_inside &= ~(1<<ch);
 			return(0); 
@@ -296,7 +296,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			hotkey_inside |= (1<<ch);
 			if(mode&K_SPIN)
 				bputs("\b ");
-			SAVELINE;
+			saveline();
 			attr(LIGHTGRAY);
 			lncntr=0;
 			if(mode&K_GETSTR)
@@ -304,7 +304,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			else
 				bputs(text[ControlKeyMenu]);
 			sync();
-			RESTORELINE;
+			restoreline();
 			lncntr=0;
 			hotkey_inside &= ~(1<<ch);
 			return(0); 

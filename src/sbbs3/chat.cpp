@@ -1307,14 +1307,14 @@ void sbbs_t::nodemsg()
 			if(getnodedat(cfg.node_num,&thisnode,false)==0) {
 				if(thisnode.misc&(NODE_MSGW|NODE_NMSG)) {
 					lncntr=0;	/* prevent pause prompt */
-					SAVELINE;
+					saveline();
 					CRLF;
 					if(thisnode.misc&NODE_NMSG)
 						getnmsg();
 					if(thisnode.misc&NODE_MSGW)
 						getsmsg(useron.number);
 					CRLF;
-					RESTORELINE; 
+					restoreline(); 
 				}
 				else
 					nodesync();

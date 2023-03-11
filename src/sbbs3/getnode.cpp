@@ -176,19 +176,19 @@ void sbbs_t::nodesync(bool clearline)
 	}
 
 	if(thisnode.misc&NODE_LCHAT) { // pulled into local chat with sysop
-		SAVELINE;
+		saveline();
 		privchat(true);
-		RESTORELINE;
+		restoreline();
 	}
 
 	if(thisnode.misc&NODE_FCHAT) { // forced into private chat
 		int n = getpagingnode(&cfg);
 		if(n) {
 			uint save_action = action;
-			SAVELINE;
+			saveline();
 			privchat(true, n);
 			action = save_action;
-			RESTORELINE;
+			restoreline();
 		}
 		if(getnodedat(cfg.node_num, &thisnode, true)==0) {
 			thisnode.action = action;

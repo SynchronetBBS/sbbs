@@ -117,11 +117,11 @@ char sbbs_t::getkey(int mode)
 		if(sys_status&SS_USERON && online && (timeleft/60)<(5-timeleft_warn)
 			&& !SYSOP && !(sys_status&SS_LCHAT)) {
 			timeleft_warn=5-(timeleft/60);
-			SAVELINE;
+			saveline();
 			attr(LIGHTGRAY);
 			bprintf(text[OnlyXminutesLeft]
 				,((ushort)timeleft/60)+1,(timeleft/60) ? "s" : nulstr);
-			RESTORELINE; 
+			restoreline();
 		}
 
 		if(!(startup->options&BBS_OPT_NO_TELNET_GA)
@@ -135,7 +135,7 @@ char sbbs_t::getkey(int mode)
 		if(online==ON_REMOTE && !(console&CON_NO_INACT)
 			&& (now-timeout >= cfg.sec_warn || now-timeout >= cfg.sec_hangup)) {
 			if(sys_status&SS_USERON && cfg.sec_warn < cfg.sec_hangup) {
-				SAVELINE;
+				saveline();
 				bputs(text[AreYouThere]); 
 			}
 			else
@@ -155,7 +155,7 @@ char sbbs_t::getkey(int mode)
 			}
 			if(sys_status&SS_USERON) {
 				bputs("\r\1n\1>");
-				RESTORELINE; 
+				restoreline(); 
 			}
 			timeout=now; 
 		}
