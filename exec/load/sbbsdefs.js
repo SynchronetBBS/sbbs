@@ -484,7 +484,7 @@ var TELNET_BINARY_TX = 0;		/* option: binary transmission */
                                 /*             and bbs.list_msgs()			*/
 					    		/********************************************/
 var SCAN_READ		=0;			/* Just normal read prompt (all messages)	*/
-var	SCAN_CONST		=(1<<0);	/* Continuous message scanning				*/
+var	SCAN_CONT		=(1<<0);	/* Continuous message scanning				*/
 var	SCAN_NEW		=(1<<1);	/* Display messages newer than pointer 	    */
 var	SCAN_BACK		=(1<<2);	/* Display most recent message if none new  */
 var	SCAN_TOYOU		=(1<<3);	/* Display messages to you only				*/
@@ -493,6 +493,7 @@ var	SCAN_UNREAD		=(1<<5);	/* Display un-read messages to you only		*/
 var SCAN_MSGSONLY	=(1<<6);	/* Do not do a new file scan even if the    */
 var SCAN_POLLS		=(1<<7);	/* Scan for polls only (no messages)		*/
 var SCAN_INDEX		=(1<<8);	// List the msg index or exec listmsgs_mod
+var	SCAN_CONST		=SCAN_CONT;	// For backwards compatibility
 								/* user enabled Automatic New File Scan		*/
 					    		/********************************************/
 
