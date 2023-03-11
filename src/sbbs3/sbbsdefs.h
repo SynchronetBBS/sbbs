@@ -845,8 +845,6 @@ enum {							/* Values of mode for userlist function     */
 #define FLAG(x) 		(uint)(1U<<(x-'A'))
 #define CLS         	outchar(FF)
 #define WHERE       	__LINE__,__FUNCTION__,getfname(__FILE__)
-#define SAVELINE		saveline()
-#define RESTORELINE 	restoreline()
 #define TM_MONTH(mm)	((mm) + 1)
 #define TM_YEAR(yy)		((yy)%100)
 #define sbbs_beep(f,d)	BEEP(f,d)
