@@ -181,7 +181,7 @@ void sbbs_t::sif(char *fname, char *answers, int len)
 		m++;
 		if(toupper(buf[m])!='C' && toupper(buf[m])!='S')
 			continue;
-		SYNC;
+		sync();
 		if(online==ON_REMOTE)
 			rioctl(IOSM|ABORT);
 		if(a>=len) {
@@ -351,7 +351,7 @@ void sbbs_t::sof(char *fname, char *answers, int len)
 		m++;
 		if(toupper(buf[m])!='C' && toupper(buf[m])!='S')
 			continue;
-		SYNC;
+		sync();
 		if(online==ON_REMOTE)
 			rioctl(IOSM|ABORT);
 		if(a>=len) {

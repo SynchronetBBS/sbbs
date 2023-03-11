@@ -847,10 +847,6 @@ enum {							/* Values of mode for userlist function     */
 #define WHERE       	__LINE__,__FUNCTION__,getfname(__FILE__)
 #define SAVELINE		saveline()
 #define RESTORELINE 	restoreline()
-#define SYNC			{ getnodedat(cfg.node_num,&thisnode,0); \
-						  nodesync(); }
-#define ASYNC			{ getnodedat(cfg.node_num,&thisnode,0); \
-						  nodesync(); }
 #define TM_MONTH(mm)	((mm) + 1)
 #define TM_YEAR(yy)		((yy)%100)
 #define sbbs_beep(f,d)	BEEP(f,d)

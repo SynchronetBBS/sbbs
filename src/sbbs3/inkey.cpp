@@ -229,7 +229,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			}
 			nodesync(); 	/* read any waiting messages */
 			nodemsg();		/* send a message */
-			SYNC;
+			sync();
 			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
 				RESTORELINE; 
@@ -252,7 +252,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 				CRLF; 
 			}
 			whos_online(true); 	/* list users */
-			ASYNC;
+			sync();
 			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
 				RESTORELINE; 
@@ -281,7 +281,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 				,sectostr(timeleft,tmp));
 			if(sys_status&SS_EVENT)
 				bprintf(text[ReducedTime],timestr(event_time));
-			SYNC;
+			sync();
 			RESTORELINE;
 			lncntr=0;
 			hotkey_inside &= ~(1<<ch);
@@ -303,7 +303,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 				bputs(text[GetStrMenu]);
 			else
 				bputs(text[ControlKeyMenu]);
-			ASYNC;
+			sync();
 			RESTORELINE;
 			lncntr=0;
 			hotkey_inside &= ~(1<<ch);

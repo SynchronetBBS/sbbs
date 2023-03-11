@@ -286,7 +286,7 @@ uint sbbs_t::gettimeleft(bool handle_out_of_time)
 				gettimeleft_inside=0;
 				return timeleft; 
 			}
-			SYNC;
+			sync();
 			hangup(); 
 		}
 		gettimeleft_inside=0;

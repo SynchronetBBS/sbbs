@@ -160,7 +160,7 @@ void sbbs_t::multinodechat(int channel)
 		for(i=0;i<usrs;i++)
 			preusr[i]=usr[i];
 		attr(cfg.color[clr_multichat]);
-		SYNC;
+		sync();
 		sys_status&=~SS_ABORT;
 		if((ch=inkey(K_NONE,250))!=0 || wordwrap[0]) {
 			if(ch=='/') {
@@ -757,7 +757,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 				action=NODE_PAGE;
 				checkline();
 				gettimeleft();
-				SYNC; 
+				sync(); 
 				inkey(K_NONE,500);
 			} 
 		}
@@ -851,13 +851,13 @@ void sbbs_t::privchat(bool forced, int node_num)
 				break;
 			checkline();
 			gettimeleft();
-			SYNC;
+			sync();
 			SLEEP(500); 
 		}
 	}
 
 	action=NODE_PCHT;
-	SYNC;
+	sync();
 
 	if(sys_status&SS_SPLITP) {
 		lncntr=0;
@@ -974,7 +974,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 								cleartoeol(); 
 						} 
 					}
-					// SYNC;
+					// sync();
 				} 
 			} else { // illegal key
 				continue;
@@ -1295,7 +1295,7 @@ void sbbs_t::nodemsg()
 			bputs(text[R_SendMessages]);
 			break; 
 		}
-		SYNC;
+		sync();
 		mnemonics(text[PrivateMsgPrompt]);
 		sys_status&=~SS_ABORT;
 		while(online) { 	 /* Watch for incoming messages */
@@ -1933,7 +1933,7 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 	while(online && (sys_status&SS_GURUCHAT)) {
 		checkline();
 		action=NODE_GCHT;
-		SYNC;
+		sync();
 		if(wordwrap[0]==0) {
 			if((ch=inkey(K_NONE,1000))==0) {
 				if(str[0]) {

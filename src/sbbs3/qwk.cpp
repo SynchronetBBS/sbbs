@@ -395,7 +395,7 @@ void sbbs_t::qwk_sec()
 			&& (useron.logons<2 || !(useron.rest&FLAG('Q'))))
 			menu("qwk");
 		action=NODE_TQWK;
-		ASYNC;
+		sync();
 		bputs(text[QWKPrompt]);
 		sprintf(str,"?UDCSP\r%c",quit_key());
 		ch=(char)getkeys(str,0);

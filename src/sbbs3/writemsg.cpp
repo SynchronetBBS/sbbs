@@ -959,7 +959,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 		cleartoeol();  /* delete to end of line */
 		CRLF; 
 	}
-	SYNC;
+	sync();
 	rioctl(IOSM|ABORT);
 	while(online) {
 		if(line < 0)
@@ -1123,7 +1123,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 					j++; 
 				}
 				line = j;
-				SYNC;
+				sync();
 				continue; 
 			}
 			else if(!stricmp(strin,"/S")) { /* Save */
@@ -1133,19 +1133,19 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				if(title != nulstr) { // hack
 					bputs(text[SubjectPrompt]);
 					getstr(title,LEN_TITLE,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
-					SYNC;
+					sync();
 					CRLF; 
 				}
 				continue; 
 			}
 			else if(!stricmp(strin,"/?")) {
 				menu("editor"); /* User Editor Commands */
-				SYNC;
+				sync();
 				continue; 
 			}
 			else if(!stricmp(strin,"/ATTR"))    {
 				menu("attr");   /* User ANSI Commands */
-				SYNC;
+				sync();
 				continue; 
 			}
 			else if(!stricmp(strin, "/UPLOAD")) {

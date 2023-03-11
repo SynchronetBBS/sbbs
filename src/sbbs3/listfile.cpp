@@ -650,7 +650,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const uint total
 					CRLF;
 					for(i=0;i<usrlibs;i++)
 						bprintf(text[MoveToLibLstFmt],i+1,cfg.lib[usrlib[i]]->lname);
-					SYNC;
+					sync();
 					bprintf(text[MoveToLibPrompt],cfg.dir[smb->dirnum]->lib+1);
 					if((int)(ml=getnum(usrlibs))==-1)
 						return(2);
@@ -662,7 +662,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const uint total
 					for(j=0;j<usrdirs[ml];j++)
 						bprintf(text[MoveToDirLstFmt]
 							,j+1,cfg.dir[usrdir[ml][j]]->lname);
-					SYNC;
+					sync();
 					bprintf(text[MoveToDirPrompt],usrdirs[ml]);
 					if((int)(md=getnum(usrdirs[ml]))==-1)
 						return(2);
@@ -825,7 +825,7 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 		}
 		if(mode==FI_REMOVE || mode==FI_OLD || mode==FI_OLDUL
 			|| mode==FI_OFFLINE) {
-			SYNC;
+			sync();
 //			CRLF;
 			SAFECOPY(str, "VDEQRN\r");
 			if(m > 1)
@@ -844,7 +844,7 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 				case 'V':
 					viewfilecontents(f);
 					CRLF;
-					ASYNC;
+					sync();
 					pause();
 					m--;
 					continue;
@@ -914,7 +914,7 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 					CRLF;
 					for(i=0;i<usrlibs;i++)
 						bprintf(text[MoveToLibLstFmt],i+1,cfg.lib[usrlib[i]]->lname);
-					SYNC;
+					sync();
 					bprintf(text[MoveToLibPrompt],cfg.dir[dirnum]->lib+1);
 					if((int)(i=getnum(usrlibs))==-1)
 						continue;
@@ -926,7 +926,7 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 					for(j=0;j<usrdirs[i];j++)
 						bprintf(text[MoveToDirLstFmt]
 							,j+1,cfg.dir[usrdir[i][j]]->lname);
-					SYNC;
+					sync();
 					bprintf(text[MoveToDirPrompt],usrdirs[i]);
 					if((int)(j=getnum(usrdirs[i]))==-1)
 						continue;
@@ -952,7 +952,7 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 		else if(mode==FI_DOWNLOAD || mode==FI_USERXFER) {
 			getfilepath(&cfg, f, path);
 			if(getfilesize(&cfg, f) < 1L) { /* getfilesize will set this to -1 if non-existant */
-				SYNC;       /* and 0 byte files shouldn't be d/led */
+				sync();       /* and 0 byte files shouldn't be d/led */
 				mnemonics(text[QuitOrNext]);
 				if(getkeys("\rQ",0)=='Q') {
 					found=-1;
@@ -962,7 +962,7 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 			}
 			if(!is_download_free(&cfg,f->dir,&useron,&client)
 				&& f->cost>user_available_credits(&useron)) {
-				SYNC;
+				sync();
 				bprintf(text[YouOnlyHaveNCredits]
 					,u64toac(user_available_credits(&useron),tmp));
 				mnemonics(text[QuitOrNext]);
@@ -973,7 +973,7 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 				continue; 
 			}
 			if(!can_user_download(&cfg, f->dir, &useron, &client, /* reason: */NULL)) {
-				SYNC;
+				sync();
 				bputs(text[CantDownloadFromDir]);
 				mnemonics(text[QuitOrNext]);
 				if(getkeys("\rQ",0)=='Q') {
@@ -985,7 +985,7 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 
 			if(!(cfg.dir[f->dir]->misc&DIR_TFREE) && gettimetodl(&cfg, f, cur_cps) > timeleft && !dir_op(dirnum)
 				&& !(useron.exempt&FLAG('T'))) {
-				SYNC;
+				sync();
 				bputs(text[NotEnoughTimeToDl]);
 				mnemonics(text[QuitOrNext]);
 				if(getkeys("\rQ",0)=='Q') {
@@ -995,7 +995,7 @@ int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode
 				continue; 
 			}
 			xfer_prot_menu(XFER_DOWNLOAD);
-			SYNC;
+			sync();
 			mnemonics(text[ProtocolBatchQuitOrNext]);
 			SAFEPRINTF(str,"B%cN\r",quit_key());
 			if(m > 1)
