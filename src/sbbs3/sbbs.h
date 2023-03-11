@@ -966,6 +966,7 @@ public:
 	user_t	nodesync_user{};
 	bool	nodesync_inside = false;
 	uint	count_nodes(bool self = true);
+	void	sync(bool clearline = false) { getnodedat(cfg.node_num, &thisnode, 0); nodesync(clearline); }
 
 	/* putnode.cpp */
 	int		putnodedat(uint number, node_t * node);
