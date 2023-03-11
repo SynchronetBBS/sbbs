@@ -513,7 +513,7 @@ bool sbbs_t::logon()
 	putnodedat(cfg.node_num,&thisnode);
 
 	getsmsg(useron.number); 		/* Moved from further down */
-	SYNC;
+	sync();
 	c=0;
 	for(i=1;i<=cfg.sys_nodes;i++)
 		if(i!=cfg.node_num) {
@@ -556,7 +556,7 @@ bool sbbs_t::logon()
 		bprintf(text[UserXferForYou],i,i>1 ? "s" : nulstr); 
 	if((i=getuserxfers(&cfg, useron.alias, /* to: */0)) != 0)
 		bprintf(text[UnreceivedUserXfer],i,i>1 ? "s" : nulstr);
-	SYNC;
+	sync();
 	sys_status&=~SS_PAUSEON;	/* Turn off the pause override flag */
 	if(online==ON_REMOTE)
 		rioctl(IOSM|ABORT);		/* Turn abort ability on */

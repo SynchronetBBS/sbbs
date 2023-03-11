@@ -155,7 +155,7 @@ void sbbs_t::useredit(int usernumber)
 		else
 			CRLF;
 		l=lastuser(&cfg);
-		ASYNC;
+		sync();
 		bprintf(text[UeditPrompt],user.number,l);
 		SAFEPRINTF4(str, "QG[]?/{}%c%c%c%c", TERM_KEY_LEFT, TERM_KEY_RIGHT, TERM_KEY_HOME, TERM_KEY_END);
 		if(user.level <= useron.level)
@@ -468,7 +468,7 @@ void sbbs_t::useredit(int usernumber)
 						,u32toaf(cfg.val_exempt[i], tmp)
 						,u32toaf(cfg.val_rest[i], tmp3)); 
 				}
-				ASYNC;
+				sync();
 				bputs(text[QuickValidatePrompt]);
 				c=getkey(0);
 				if(!IS_DIGIT(c))
@@ -817,7 +817,7 @@ void sbbs_t::maindflts(user_t* user)
 		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))
 			bputs(text[UserDefaultsPassword]);
 
-		ASYNC;
+		sync();
 		bputs(text[UserDefaultsWhich]);
 		SAFECOPY(str,"HTBALPRSYFNCQXZ\r");
 		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))
@@ -1089,7 +1089,7 @@ void sbbs_t::maindflts(user_t* user)
 				break;
 			case 'Z':
 				xfer_prot_menu(XFER_DOWNLOAD);
-				SYNC;
+				sync();
 				mnemonics(text[ProtocolOrQuit]);
 				sprintf(str,"%c",quit_key());
 				for(i=0;i<cfg.total_prots;i++)

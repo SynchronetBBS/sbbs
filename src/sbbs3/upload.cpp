@@ -336,7 +336,7 @@ bool sbbs_t::upload(uint dirnum)
 	}
 	bputs(text[SearchedForDupes]);
 	if(cfg.dir[dirnum]->misc&DIR_RATE) {
-		SYNC;
+		sync();
 		bputs(text[RateThisFile]);
 		ch=getkey(K_ALPHA);
 		if(!IS_ALPHA(ch) || sys_status&SS_ABORT)
@@ -352,7 +352,7 @@ bool sbbs_t::upload(uint dirnum)
 		strcat(descbeg,str); 
 	}
 	if(cfg.dir[dirnum]->misc&DIR_MULT) {
-		SYNC;
+		sync();
 		if(!noyes(text[MultipleDiskQ])) {
 			bputs(text[HowManyDisksTotal]);
 			if((int)(i=getnum(99))<2)
@@ -441,7 +441,7 @@ bool sbbs_t::upload(uint dirnum)
 		result = uploadfile(&f);
 	} else {
 		xfer_prot_menu(XFER_UPLOAD);
-		SYNC;
+		sync();
 		SAFEPRINTF(keys,"%c",quit_key());
 		if(dirnum==cfg.user_dir || !cfg.max_batup)  /* no batch user to user xfers */
 			mnemonics(text[ProtocolOrQuit]);
@@ -513,7 +513,7 @@ bool sbbs_t::bulkupload(uint dirnum)
 		return false;
 	}
 	action=NODE_ULNG;
-	SYNC;
+	sync();
 	str_list_t list = loadfilenames(&smb, ALLFILES, /* time_t */0, FILE_SORT_NATURAL, NULL);
 	smb_close(&smb);
 	dir=opendir(path);

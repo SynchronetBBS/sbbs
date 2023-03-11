@@ -139,7 +139,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 			msg.total_hfields=0; 
 		}
 
-		ASYNC;
+		sync();
 		if(sys_status&SS_ABORT) {
 			domsg=0;
 			smb.curmsg=0;
@@ -278,7 +278,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 		if(useron.misc&WIP)
 			menu(menu_file); 
 
-		ASYNC;
+		sync();
 		if(which==MAIL_SENT)
 			bprintf(text[ReadingSentMail],smb.curmsg+1,smb.msgs);
 		else if(which==MAIL_ALL)

@@ -155,7 +155,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 	}
 
 	if((mode&P_NOABORT || rip) && online==ON_REMOTE) {
-		SYNC;
+		sync();
 		rioctl(IOSM|ABORT); 
 	}
 	if(rip)
@@ -230,7 +230,7 @@ bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSO
 		putmsg(p,mode,org_cols, obj);
 	}
 	if(mode&P_NOABORT && online==ON_REMOTE) {
-		SYNC;
+		sync();
 		rioctl(IOSM|ABORT); 
 	}
 	free(buf);

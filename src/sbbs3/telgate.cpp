@@ -154,7 +154,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 					console&=~CON_RAW_IN;	// Allow Ctrl-U/Ctrl-P
 					CRLF;
 					while(online) {
-						SYNC;
+						sync();
 						mnemonics("\1n\r\n\1h\1bTelnet Gate: \1y~D\1wisconnect, "
 							"\1y~E\1wcho toggle, \1y~L\1wist Users, \1y~P\1wrivate message, "
 							"\1y~Q\1wuit: ");
@@ -222,7 +222,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 		if(rd<0) {
 			if(ERROR_VALUE==EWOULDBLOCK) {
 				if(mode&TG_NODESYNC) {
-					SYNC;
+					sync();
 				} else {
 					// Check if the node has been interrupted
 					getnodedat(cfg.node_num,&thisnode,0);

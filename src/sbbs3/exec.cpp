@@ -1818,10 +1818,10 @@ int sbbs_t::exec(csi_t *csi)
 				putnodedat(cfg.node_num,&thisnode);
 			return(0);
 		case CS_SYNC:
-			SYNC;
+			sync();
 			return(0);
 		case CS_ASYNC:
-			ASYNC;
+			sync();
 			return(0);
 		case CS_GETTIMELEFT:
 			gettimeleft();

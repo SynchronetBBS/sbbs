@@ -761,7 +761,7 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 		}
 		if(useron.misc&WIP)
 			menu("msgscan");
-		ASYNC;
+		sync();
 		if(unvalidated < smb.curmsg)
 			bprintf(text[UnvalidatedWarning],unvalidated+1);
 		if(lncntr >= rows-2)

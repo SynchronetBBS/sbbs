@@ -1171,7 +1171,7 @@ void sbbs_t::ctrl_a(char x)
 			mswait(2000);
 			break;
 		case 'S':   /* Synchronize */
-			ASYNC;
+			sync();
 			break;
 		case 'J':	/* clear to end-of-screen */
 			cleartoeos();

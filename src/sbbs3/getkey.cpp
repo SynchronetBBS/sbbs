@@ -258,7 +258,7 @@ bool sbbs_t::yesno(const char *str, int mode)
 	if(*str == 0)
 		return true;
 	SAFECOPY(question,str);
-	SYNC;
+	sync();
 	bprintf(mode, text[YesNoQuestion], str);
 	while(online) {
 		if(sys_status&SS_ABORT)
@@ -296,7 +296,7 @@ bool sbbs_t::noyes(const char *str, int mode)
 	if(*str == 0)
 		return true;
 	SAFECOPY(question,str);
-	SYNC;
+	sync();
 	bprintf(mode, text[NoYesQuestion], str);
 	while(online) {
 		if(sys_status&SS_ABORT)

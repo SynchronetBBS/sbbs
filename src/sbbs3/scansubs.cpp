@@ -256,7 +256,7 @@ void sbbs_t::new_scan_ptr_cfg()
 			if(i<99) outchar(' ');
 			bprintf(text[CfgGrpLstFmt],i+1,cfg.grp[usrgrp[i]]->lname);
 		}
-		SYNC;
+		sync();
 		mnemonics(text[WhichOrAll]);
 		sprintf(keys, "%c%c", all_key(), quit_key());
 		s=getkeys(keys,usrgrps);
@@ -321,7 +321,7 @@ void sbbs_t::new_scan_ptr_cfg()
 				bprintf(text[SubPtrLstFmt],j+1,cfg.sub[usrsub[i][j]]->lname
 					,timestr(t),nulstr);
 			}
-			SYNC;
+			sync();
 			mnemonics(text[WhichOrAll]);
 			sprintf(keys, "%c%c", all_key(), quit_key());
 			s=getkeys(keys,usrsubs[i]);
@@ -415,7 +415,7 @@ void sbbs_t::new_scan_cfg(uint misc)
 			if(i<99) outchar(' ');
 			bprintf(text[CfgGrpLstFmt],i+1,cfg.grp[usrgrp[i]]->lname);
 		}
-		SYNC;
+		sync();
 		if(misc&SUB_CFG_NSCAN)
 			mnemonics(text[NScanCfgWhichGrp]);
 		else
@@ -438,7 +438,7 @@ void sbbs_t::new_scan_cfg(uint misc)
 						(misc&SUB_CFG_NSCAN && subscan[usrsub[i][j]].cfg&SUB_CFG_YSCAN) ?
 						text[ToYouOnly] : text[On] : text[Off]);
 					}
-			SYNC;
+			sync();
 			if(misc&SUB_CFG_NSCAN)
 				mnemonics(text[NScanCfgWhichSub]);
 			else

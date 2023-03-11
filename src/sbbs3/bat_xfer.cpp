@@ -54,14 +54,14 @@ void sbbs_t::batchmenu()
 		if(!(useron.misc&(EXPERT|RIP|WIP|HTML))) {
 			sys_status&=~SS_ABORT;
 			if(lncntr) {
-				SYNC;
+				sync();
 				CRLF;
 				if(lncntr)          /* CRLF or SYNC can cause pause */
 					pause(); 
 			}
 			menu("batchxfr"); 
 		}
-		ASYNC;
+		sync();
 		bputs(text[BatchMenuPrompt]);
 		SAFEPRINTF(keys,"CDLRU?\r%c", quit_key());
 		ch=(char)getkeys(keys,0);
@@ -193,7 +193,7 @@ void sbbs_t::batchmenu()
 				xfer_prot_menu(XFER_BATCH_UPLOAD);
 				if(!create_batchup_lst())
 					break;
-				ASYNC;
+				sync();
 				mnemonics(text[ProtocolOrQuit]);
 				SAFEPRINTF(str,"%c",quit_key());
 				for(i=0;i<cfg.total_prots;i++)
@@ -213,7 +213,7 @@ void sbbs_t::batchmenu()
 					xfrprot=i;
 					xfrdir=cfg.upload_dir;
 					action=NODE_ULNG;
-					SYNC;
+					sync();
 					if(online==ON_REMOTE) {
 						delfiles(cfg.temp_dir,ALLFILES);
 						time_t elapsed = 0;
@@ -339,7 +339,7 @@ BOOL sbbs_t::start_batch_download()
 		return(FALSE); 
 	}
 	xfer_prot_menu(XFER_BATCH_DOWNLOAD);
-	ASYNC;
+	sync();
 	mnemonics(text[ProtocolOrQuit]);
 	SAFEPRINTF(str,"%c",quit_key());
 	for(i=0;i<cfg.total_prots;i++)

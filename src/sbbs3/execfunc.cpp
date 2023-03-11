@@ -98,12 +98,12 @@ int sbbs_t::exec_function(csi_t *csi)
 					exec_bin(cfg.logoff_mod,csi);
 				user_event(EVENT_LOGOFF);
 				menu("logoff");
-				SYNC;
+				sync();
 				hangup(); 
 			}
 			return(0);
 		case CS_LOGOFF_FAST:
-			SYNC;
+			sync();
 			hangup();
 			return(0);
 		case CS_NODELIST_ALL:

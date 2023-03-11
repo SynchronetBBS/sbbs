@@ -45,7 +45,7 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 				SAFEPRINTF(str, text[FileInfoEditPrompt], fname);
 		} else
 			viewfilecontents(f);
-		ASYNC;
+		sync();
 		mnemonics(str);
 		SAFECOPY(str, "BEVQPN\b-\r");
 		if(can_edit)

@@ -189,7 +189,7 @@ void sbbs_t::autohangup()
 
 	if(online!=ON_REMOTE)
 		return;
-	SYNC;
+	sync();
 	sys_status&=~SS_PAUSEOFF;		/* turn pause back on */
 	rioctl(IOFI);
 	if(!autohang) return;
