@@ -1940,7 +1940,7 @@ js_logoff(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	if(argc)
 		JS_ValueToBoolean(cx,argv[0],&prompt);
@@ -1953,6 +1953,7 @@ js_logoff(JSContext *cx, uintN argc, jsval *arglist)
 		sbbs->menu("logoff");
 		sbbs->sync();
 		sbbs->hangup();
+		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	}
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -4406,8 +4407,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("interactive logon procedure")
 	,310
 	},
-	{"logoff",			js_logoff,			1,	JSTYPE_VOID,	JSDOCSTR("[prompt=<i>true</i>]")
-	,JSDOCSTR("interactive logoff procedure, pass <i>false</i> for <i>prompt</i> argument to avoid yes/no prompt")
+	{"logoff",			js_logoff,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[prompt=<i>true</i>]")
+	,JSDOCSTR("interactive logoff procedure, pass <i>false</i> for <i>prompt</i> argument to avoid yes/no prompt, returns <i>false</i> if denied logoff")
 	,315
 	},
 	{"logout",			js_logout,			0,	JSTYPE_VOID,	JSDOCSTR("")
