@@ -279,7 +279,11 @@ int64_t parse_byte_count(const char* str, ulong unit)
 				break;
 		}
 	}
-	return((int64_t)(unit>1 ? (bytes/unit):bytes));
+	if(unit > 1)
+		bytes /= unit;
+	if(bytes < 0 || bytes > INT64_MAX)
+		return INT64_MAX;
+	return (int64_t)bytes;
 }
 
 static const double one_pebibyte = 1024.0*1024.0*1024.0*1024.0*1024.0;
