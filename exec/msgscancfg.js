@@ -6,7 +6,7 @@ require("sbbsdefs.js", "USER_EXPERT");
 
 const menufile = "maincfg";
 
-while(bbs.online) {
+while(bbs.online && !js.terminated) {
 	if(!(user.settings & USER_EXPERT))
 		bbs.menu(menufile);
 	bbs.nodesync();
@@ -40,5 +40,5 @@ while(bbs.online) {
 			console.print("\r\nMessage scan configuration and pointers saved.\r\n");
 			break;
 	}
-	exit();
+	break;
 }
