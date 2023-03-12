@@ -610,32 +610,8 @@ cmdkey /*
 	end_cmd
 
 cmdkey T
-	:xfercfg
-	compare_ars expert
-	if_false
-		menu XFERCFG
-		end_if
-	async
-	print "\r\n\x01y\x01hConfig: \x01n"
-	getcmd ?QBP\r
-	logkey
-
-	cmdkey ?
-		compare_ars expert
-		if_true
-			menu XFERCFG
-			end_if
-		goto xfercfg
-		end_cmd
-
-	cmdkey P
-		file_ptrs_cfg
-		end_cmd
-
-	cmdkey B
-		toggle_user_misc UM_BATCHFLAG
-		end_cmd
-	end_cmd
+    exec_bin "filescancfg"
+    end_cmd
 
 cmdkey #
 	print "\r\n\x01c\x01hType the actual number, not the symbol.\r\n"
