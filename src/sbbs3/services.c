@@ -788,7 +788,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 	BOOL		rooted=FALSE;
 
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL) {
-		lprintf(LOG_CRIT, "%04d %s JavaScript: Failed to create new context", sock, service_client->client->protocol);
+		lprintf(LOG_CRIT, "%04d %s JavaScript: Failed to create new context", sock, service_client->service->protocol);
 		return(NULL);
 	}
 	JS_SetOptions(js_cx, startup->js.options);
@@ -898,7 +898,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
 	if(!success) {
 		lprintf(LOG_CRIT, "%04d %s JavaScript: Failed to create global objects and classes"
-			,sock, service_client->client->protocol);
+			,sock, service_client->service->protocol);
 		if(rooted)
 			JS_RemoveObjectRoot(js_cx, glob);
 		JS_ENDREQUEST(js_cx);
