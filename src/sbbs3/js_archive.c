@@ -110,6 +110,7 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 	str_list_t	file_list = NULL;
 	bool		with_path = false;
 	bool		overwrite = true;
+	bool		recurse = false;
 	int32		max_files = 0;
 	char		error[256] = "";
 	jsrefcount	rc;
@@ -149,17 +150,20 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		argn++;
 	}
-	for(; argn < argc; argn++) {
-		if(JSVAL_IS_STRING(argv[argn])) {
-			char path[MAX_PATH + 1];
-			JSVALUE_TO_STRBUF(cx, argv[argn], path, sizeof(path), NULL);
-			strListPush(&file_list, path);
-		}
+	while(argc > argn && JSVAL_IS_STRING(argv[argn])) {
+		char path[MAX_PATH + 1];
+		JSVALUE_TO_STRBUF(cx, argv[argn], path, sizeof(path), NULL);
+		strListPush(&file_list, path);
+		argn++;
+	}
+	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
+		recurse = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
 	long extracted = extract_files_from_archive(filename, outdir, allowed_filename_chars
-		,with_path, overwrite, (ulong)max_files, file_list, error, sizeof(error));
+		,with_path, overwrite, (ulong)max_files, file_list, recurse, error, sizeof(error));
 	strListFree(&file_list);
 	free(outdir);
 	JS_RESUMEREQUEST(cx, rc);
@@ -555,7 +559,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 
 static jsSyncMethodSpec js_archive_functions[] = {
 	{ "create",		js_create,		1,	JSTYPE_NUMBER
-		,JSDOCSTR("[string format] [,boolean with_path = false] [,array file_list]")
+		,JSDOCSTR("[string format] [,boolean with_path=false] [,array file_list]")
 		,JSDOCSTR("Create an archive of the specified format (e.g. 'zip', '7z', 'tgz').<br>"
 			"Returns the number of files archived.<br>"
 			"Will throw exception upon error.")
@@ -567,14 +571,14 @@ static jsSyncMethodSpec js_archive_functions[] = {
 		,31900
 	},
 	{ "extract",	js_extract,		1,	JSTYPE_NUMBER
-		,JSDOCSTR("output_directory [,boolean with_path = false] [,boolean overwrite = true] [,number max_files = 0] [,string file/pattern [...]]")
+		,JSDOCSTR("output_directory [,boolean with_path=false] [,boolean overwrite=true] [,number max_files=0] [,string file/pattern [...]] [,boolean recurse=false]")
 		,JSDOCSTR("Extract files from an archive to specified output directory.<br>"
 			"Returns the number of files extracted.<br>"
 			"Will throw exception upon error.")
 		,31900
 	},
 	{ "list",		js_list,		1,	JSTYPE_ARRAY
-		,JSDOCSTR("[,boolean hash = false] [,string file/pattern]")
+		,JSDOCSTR("[,boolean hash=false] [,string file/pattern]")
 		,JSDOCSTR("Get list of archive contents as an array of objects.<br>"
 			"Archived object properties:<br>"
 			"<ol>"

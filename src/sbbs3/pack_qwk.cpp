@@ -76,6 +76,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			,/* overwrite: */true
 			,/* max_files: */0 /* unlimited */
 			,/* file_list: */NULL /* all files */
+			,/* recurse: */false
 			,error, sizeof(error));
 		if(file_count > 0) {
 			lprintf(LOG_DEBUG, "libarchive extracted %u files from %s", file_count, str);
