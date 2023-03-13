@@ -5381,14 +5381,14 @@ NO_SSH:
 
 		sbbs->autoterm=0;
 		sbbs->cols = startup->default_term_width;
-		SOCKADDR_IN local_addr;
+		union xp_sockaddr local_addr;
 		memset(&local_addr, 0, sizeof(local_addr));
 		socklen_t addr_len=sizeof(local_addr);
 		if(getsockname(client_socket, (struct sockaddr *)&local_addr, &addr_len) == 0
-			&& (ntohs(local_addr.sin_port) == startup->pet40_port
-				|| ntohs(local_addr.sin_port) == startup->pet80_port)) {
+			&& (inet_addrport(&local_addr) == startup->pet40_port
+				|| inet_addrport(&local_addr) == startup->pet80_port)) {
 			sbbs->autoterm = PETSCII;
-			sbbs->cols = ntohs(local_addr.sin_port) == startup->pet40_port ? 40 : 80;
+			sbbs->cols = inet_addrport(&local_addr) == startup->pet40_port ? 40 : 80;
 			sbbs->outcom(PETSCII_UPPERLOWER);
 		}
 
