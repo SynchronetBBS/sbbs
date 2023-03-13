@@ -443,7 +443,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 					mode &= ~P_NOABORT;
 					continue;
 				}
-				if(memcmp(str+l, "@QOFF@", 6) == 0) {	// Do not allow the display of teh file to be aborted (PCBoard)
+				if(memcmp(str+l, "@QOFF@", 6) == 0) {	// Do not allow the display of the file to be aborted (PCBoard)
 					l += 6;
 					mode |= P_NOABORT;
 					continue;
