@@ -2265,7 +2265,7 @@ int unpack(const char *infile, const char* outdir)
 
 	file_count = extract_files_from_archive(infile, outdir
 		,/* allowed_filename_chars: */SAFEST_FILENAME_CHARS, /* with_path */false, /* overwrite: */true
-		,/* max_files: */0, /* file_list = ALL */NULL, error, sizeof(error));
+		,/* max_files: */0, /* file_list = ALL */NULL, /* recurse: */false, error, sizeof(error));
 	if(file_count > 0) {
 		lprintf(LOG_DEBUG, "libarchive extracted %lu files from %s", file_count, infile);
 		return 0;

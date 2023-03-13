@@ -914,8 +914,10 @@ long create_archive(const char* archive, const char* format
 	return archived;
 }
 
+// 'with_path' means to extract with sub-dirs
+// 'recurse' means to apply the file_list filter (if non-NULL) recursively
 long extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
-	,bool with_path, bool overwrite, long max_files, str_list_t file_list, char* error, size_t maxerrlen)
+	,bool with_path, bool overwrite, long max_files, str_list_t file_list, bool recurse, char* error, size_t maxerrlen)
 {
 	int result;
 	struct archive *ar;
@@ -971,9 +973,9 @@ long extract_files_from_archive(const char* archive, const char* outdir, const c
 		if(filetype != AE_IFREG)
 			continue;
 		char* filename = getfname(pathname);
-		if(!with_path)
-			pathname = filename;
 		if(file_list != NULL) {
+			if(recurse)
+				pathname = filename;
 			int i;
 			for (i = 0; file_list[i] != NULL; i++)
 				if(wildmatch(pathname, file_list[i], with_path, /* case-sensitive: */false))
@@ -987,6 +989,8 @@ long extract_files_from_archive(const char* archive, const char* outdir, const c
 			safe_snprintf(error, maxerrlen, "disallowed filename '%s'", pathname);
 			break;
 		}
+		if(!with_path)
+			pathname = filename;
 		SAFECOPY(fpath, outdir);
 		backslash(fpath);
 		SAFECAT(fpath, pathname);
@@ -1053,10 +1057,11 @@ bool extract_diz(scfg_t* cfg, file_t* f, str_list_t diz_fnames, char* path, size
 		if(extract_files_from_archive(archive
 			,/* outdir: */cfg->temp_dir
 			,/* allowed_filename_chars: */NULL /* any */
-			,/* with_path: */!nested
+			,/* with_path: */false
 			,/* overwrite: */false
 			,/* max_files: */strListCount(diz_fnames)
 			,/* file_list: */diz_fnames
+			,/* recurse: */nested
 			,/* error: */NULL, 0) >= 0) {
 			for(i = 0; diz_fnames[i] != NULL; i++) {
 				safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]); // no slash

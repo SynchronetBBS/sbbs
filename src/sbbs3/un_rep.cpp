@@ -76,6 +76,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		,/* overwrite: */true
 		,/* max_files */1000
 		,/* file_list: */NULL /* all files */
+		,/* recurse: */false
 		,error, sizeof(error));
 	if(file_count > 0) {
 		lprintf(LOG_DEBUG, "libarchive extracted %lu files from %s", file_count, rep_fname);

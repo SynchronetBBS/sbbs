@@ -80,6 +80,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		,/* overwrite: */true
 		,/* max_files: */0 /* unlimited */
 		,/* file_list: */NULL /* all files */
+		,/* recurse: */false
 		,error, sizeof(error));
 	if(file_count >= 0) {
 		lprintf(LOG_DEBUG, "libarchive extracted %ld files from %s", file_count, packet);
