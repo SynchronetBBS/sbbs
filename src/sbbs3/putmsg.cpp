@@ -433,6 +433,11 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 					mode |= P_TRUNCATE;
 					continue;
 				}
+				if(memcmp(str+l, "@TRUNCOFF@", 10) == 0) {
+					l += 10;
+					mode &= ~P_TRUNCATE;
+					continue;
+				}
 				if(memcmp(str+l, "@QON@", 5) == 0) {	// Allow the file display to be aborted (PCBoard)
 					l += 5;
 					mode &= ~P_NOABORT;
