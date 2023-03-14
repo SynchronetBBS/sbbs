@@ -1,7 +1,5 @@
 /* Synchronet JavaScript "Queue" Object */
 
-/* $Id: js_queue.c,v 1.57 2019/08/22 01:41:23 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -277,10 +263,10 @@ enum {
 
 #ifdef BUILD_JSDOCS
 static char* queue_prop_desc[] = {
-	 "name of the queue (if it has one)"
+	 "Name of the queue (if it has one)"
 	,"<i>true</i> if data is waiting to be read from queue"
-	,"number of values in the read queue"
-	,"number of values in the write queue"
+	,"Number of values in the read queue"
+	,"Number of values in the write queue"
 	,"<i>true</i> if current thread is the owner/creator of the queue"
 	,"<i>true</i> if the owner of the queue has detached from the queue"
 	,NULL
@@ -350,24 +336,24 @@ static jsSyncPropertySpec js_queue_properties[] = {
 
 static jsSyncMethodSpec js_queue_functions[] = {
 	{"poll",		js_poll,		1,	JSTYPE_UNDEF,	"[timeout=<tt>0</tt>]"
-	,JSDOCSTR("wait for any value to be written to the queue for up to <i>timeout</i> milliseconds "
+	,JSDOCSTR("Wait for any value to be written to the queue for up to <i>timeout</i> milliseconds "
 		"(default: <i>0</i>), returns <i>true</i> or the <i>name</i> (string) of "
 		"the value waiting (if it has one), or <i>false</i> if no values are waiting")
 	,312
 	},
 	{"read",		js_read,		1,	JSTYPE_UNDEF,	"[string name] or [timeout=<tt>0</tt>]"
-	,JSDOCSTR("read a value from the queue, if <i>name</i> not specified, reads next value "
+	,JSDOCSTR("Read a value from the queue, if <i>name</i> not specified, reads next value "
 		"from the bottom of the queue (waiting up to <i>timeout</i> milliseconds)")
 	,313
 	},
 	{"peek",		js_peek,		1,	JSTYPE_UNDEF,	"[timeout=<tt>0</tt>]"
-	,JSDOCSTR("peek at the value at the bottom of the queue, "
+	,JSDOCSTR("Peek at the value at the bottom of the queue, "
 		"wait up to <i>timeout</i> milliseconds for any value to be written "
 		"(default: <i>0</i>)")
 	,313
 	},
 	{"write",		js_write,		1,	JSTYPE_BOOLEAN,	"value [,name=<i>none</i>]"
-	,JSDOCSTR("write a value (optionally named) to the queue")
+	,JSDOCSTR("Write a value (optionally named) to the queue")
 	,312
 	},
 	{0}

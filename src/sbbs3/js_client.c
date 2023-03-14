@@ -52,16 +52,16 @@ enum {
 
 #ifdef BUILD_JSDOCS
 	static char* client_prop_desc[] = {
-	 "client's IPv4 or IPv6 address"
-	,"client's host name (up to 64 characters)"
-	,"client's TCP or UDP port number"
-	,"date/time of initial connection (in time_t format)"
-	,"protocol/service name (e.g. 'Telnet', 'FTP', etc.)"
-	,"user's name/alias"
-	,"user's number (non-zero if logged in)"
+	 "Client's IPv4 or IPv6 address"
+	,"Client's host name (up to 64 characters)"
+	,"Client's TCP or UDP port number"
+	,"Date/time of initial connection (in time_t format)"
+	,"Protocol/service name (e.g. 'Telnet', 'FTP', etc.)"
+	,"User's name/alias"
+	,"User's number (non-zero if logged in)"
 
 	/* this next one must be last */
-	,"instance of <a href=#Socket>Socket class</a> representing client's TCP/IP connection"
+	,"Instance of <a href=#Socket>Socket class</a> representing client's TCP/IP connection"
 	,NULL
 	};
 #endif

@@ -609,8 +609,8 @@ static jsSyncMethodSpec js_archive_functions[] = {
 #ifdef BUILD_JSDOCS
 static char* archive_prop_desc[] = {
 
-	 "format/compression type of archive file - <small>READ ONLY</small>"
-	,"filename specified in constructor - <small>READ ONLY</small>"
+	 "Format/compression type of archive file - <small>READ ONLY</small>"
+	,"Filename specified in constructor - <small>READ ONLY</small>"
 	,NULL
 };
 #endif

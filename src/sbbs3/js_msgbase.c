@@ -3077,19 +3077,19 @@ static jsSyncPropertySpec js_msgbase_properties[] = {
 #ifdef BUILD_JSDOCS
 static char* msgbase_prop_desc[] = {
 
-	 "last occurred message base error - <small>READ ONLY</small>"
-	,"return value of last <i>SMB Library</i> function call - <small>READ ONLY</small>"
-	,"base path and filename of message base - <small>READ ONLY</small>"
-	,"message base open/lock retry timeout (in seconds)"
-	,"delay between message base open/lock retries (in milliseconds)"
-	,"first message number - <small>READ ONLY</small>"
-	,"last message number - <small>READ ONLY</small>"
-	,"total number of messages - <small>READ ONLY</small>"
-	,"maximum number of message CRCs to store (for dupe checking) - <small>READ ONLY</small>"
-	,"maximum number of messages before expiration - <small>READ ONLY</small>"
-	,"maximum age (in days) of messages to store - <small>READ ONLY</small>"
-	,"message base attributes - <small>READ ONLY</small>"
-	,"sub-board number (0-based, 65535 for e-mail) - <small>READ ONLY</small>"
+	 "Last occurred message base error - <small>READ ONLY</small>"
+	,"Return value of last <i>SMB Library</i> function call - <small>READ ONLY</small>"
+	,"Base path and filename of message base - <small>READ ONLY</small>"
+	,"Message base open/lock retry timeout (in seconds)"
+	,"Delay between message base open/lock retries (in milliseconds)"
+	,"First message number - <small>READ ONLY</small>"
+	,"Last message number - <small>READ ONLY</small>"
+	,"Total number of messages - <small>READ ONLY</small>"
+	,"Maximum number of message CRCs to store (for dupe checking) - <small>READ ONLY</small>"
+	,"Maximum number of messages before expiration - <small>READ ONLY</small>"
+	,"Maximum age (in days) of messages to store - <small>READ ONLY</small>"
+	,"Message base attributes - <small>READ ONLY</small>"
+	,"Sub-board number (0-based, 65535 for e-mail) - <small>READ ONLY</small>"
 	,"<i>true</i> if the message base has been opened successfully - <small>READ ONLY</small>"
 	,NULL
 };
@@ -3097,15 +3097,15 @@ static char* msgbase_prop_desc[] = {
 
 static jsSyncMethodSpec js_msgbase_functions[] = {
 	{"open",			js_open,			0, JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("open message base")
+	,JSDOCSTR("Open message base")
 	,310
 	},
 	{"close",			js_close,			0, JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("close message base (if open)")
+	,JSDOCSTR("Close message base (if open)")
 	,310
 	},
 	{"get_msg_header",	js_get_msg_header,	4, JSTYPE_OBJECT,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset_or_id [,expand_fields=<tt>true</tt>] [,include_votes=<tt>false</tt>]")
-	,JSDOCSTR("returns a specific message header, <i>null</i> on failure. "
+	,JSDOCSTR("Returns a specific message header, <i>null</i> on failure. "
 	"<br><i>New in v3.12:</i> Pass <i>false</i> for the <i>expand_fields</i> argument (default: <i>true</i>) "
 	"if you will be re-writing the header later with <i>put_msg_header()</i>"
 	"<br>"
@@ -3114,18 +3114,18 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,312
 	},
 	{"get_all_msg_headers", js_get_all_msg_headers, 1, JSTYPE_OBJECT, JSDOCSTR("[include_votes=<tt>false</tt>] [,expand_fields=<tt>true</tt>]")
-	,JSDOCSTR("returns an object (associative array) of all message headers \"indexed\" by message number.<br>"
+	,JSDOCSTR("Returns an object (associative array) of all message headers \"indexed\" by message number.<br>"
 	"Message headers returned by this function include additional properties: <tt>upvotes</tt>, <tt>downvotes</tt> and <tt>total_votes</tt>.<br>"
 	"Vote messages are excluded by default.")
 	,316
 	},
 	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[by_offset=<tt>false</tt>,] [number_or_offset_or_id,] object header")
-	,JSDOCSTR("modify an existing message header (must have been 'got' without expanded fields)")
+	,JSDOCSTR("Modify an existing message header (must have been 'got' without expanded fields)")
 	,310
 	},
 	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset_or_id_or_header [,strip_ctrl_a=<tt>false</tt>] "
 		"[,dot_stuffing=<tt>false</tt>] [,include_tails=<tt>true</tt>] [,plain_text=<tt>false</tt>]")
-	,JSDOCSTR("returns the entire body text of a specific message as a single String, <i>null</i> on failure. "
+	,JSDOCSTR("Returns the entire body text of a specific message as a single String, <i>null</i> on failure. "
 	"The default behavior is to leave Ctrl-A codes intact, do not stuff dots (e.g. per RFC-821), and to include tails (if any) in the "
 		"returned body text. When <i>plain_text</i> is true, only the first plain-text portion of a multi-part MIME encoded message body is returned. "
 		"The first argument (following the optional <i>by_offset</i> boolean) must be either a number (message number or index-offset), string (message-ID), or object (message header). "
@@ -3137,11 +3137,11 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,310
 	},
 	{"get_msg_tail",	js_get_msg_tail,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset_or_id_or_header [,strip_ctrl_a]=<tt>false</tt>")
-	,JSDOCSTR("returns the tail text of a specific message, <i>null</i> on failure")
+	,JSDOCSTR("Returns the tail text of a specific message, <i>null</i> on failure")
 	,310
 	},
 	{"get_msg_index",	js_get_msg_index,	3, JSTYPE_OBJECT,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset, [include_votes=<tt>false</tt>]")
-	,JSDOCSTR("returns a specific message index record, <i>null</i> on failure. "
+	,JSDOCSTR("Returns a specific message index record, <i>null</i> on failure. "
 	"The index object will contain the following properties:<br>"
 	"<table>"
 	"<tr><td align=top><tt>attr</tt><td>Attribute bitfield"
@@ -3164,17 +3164,17 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,311
 	},
 	{"get_index",	js_get_index, 0, JSTYPE_ARRAY,	JSDOCSTR("")
-	,JSDOCSTR("return an array of message index records represented as objects, the same format as returned by <i>get_msg_index()</i>"
+	,JSDOCSTR("Return an array of message index records represented as objects, the same format as returned by <i>get_msg_index()</i>"
 		"<br>"
 		"This is the fastest method of obtaining a list of all message index records.")
 	,31702
 	},
 	{"remove_msg",		js_remove_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset_or_id")
-	,JSDOCSTR("mark message for deletion")
+	,JSDOCSTR("Mark message for deletion")
 	,311
 	},
 	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("object header [,client=<i>none</i>] [,body_text=<tt>\"\"</tt>] [,array rcpt_list=<i>none</i>]")
-	,JSDOCSTR("create a new message in message base, the <i>header</i> object may contain the following properties:<br>"
+	,JSDOCSTR("Create a new message in message base, the <i>header</i> object may contain the following properties:<br>"
 	"<table>"
 	"<tr><td align=top><tt>subject</tt><td>Message subject <i>(required)</i>"
 	"<tr><td align=top><tt>to</tt><td>Recipient's name <i>(required)</i>"
@@ -3257,7 +3257,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,312
 	},
 	{"vote_msg",		js_vote_msg,		1, JSTYPE_BOOLEAN,	JSDOCSTR("object header")
-	,JSDOCSTR("create a new vote in message base, the <i>header</i> object should contain the following properties:<br>"
+	,JSDOCSTR("Create a new vote in message base, the <i>header</i> object should contain the following properties:<br>"
 	"<table>"
 	"<tr><td align=top><tt>from</tt><td>Sender's name <i>(required)</i>"
 	"<tr><td align=top><tt>from_ext</tt><td>Sender's user number (if applicable)"
@@ -3271,7 +3271,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,317
 	},
 	{"add_poll",		js_add_poll,		1, JSTYPE_BOOLEAN,	JSDOCSTR("object header")
-	,JSDOCSTR("create a new poll in message base, the <i>header</i> object should contain the following properties:<br>"
+	,JSDOCSTR("Create a new poll in message base, the <i>header</i> object should contain the following properties:<br>"
 	"<table>"
 	"<tr><td align=top><tt>subject</tt><td>Polling question <i>(required)</i>"
 	"<tr><td align=top><tt>from</tt><td>Sender's name <i>(required)</i>"
@@ -3283,7 +3283,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,317
 	},
 	{"close_poll",		js_close_poll,		2, JSTYPE_BOOLEAN,	JSDOCSTR("message number, user name or alias")
-	,JSDOCSTR("close an existing poll")
+	,JSDOCSTR("Close an existing poll")
 	,317
 	},
 	{"how_user_voted",		js_how_user_voted,		2, JSTYPE_NUMBER,	JSDOCSTR("message number, user name or alias")
@@ -3291,7 +3291,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,317
 	},
 	{"dump_msg_header",		js_dump_msg_header,		1,	JSTYPE_ARRAY,	JSDOCSTR("object header")
-		,JSDOCSTR("dump a message header object to an array of strings for diagnostic uses")
+		,JSDOCSTR("Dump a message header object to an array of strings for diagnostic uses")
 		,31702
 	},
 	{0}

@@ -1,5 +1,5 @@
-/* js_uifc.c */
 /* Synchronet "uifc" (user interface) object */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -1135,28 +1123,28 @@ js_finalize(JSContext *cx, JSObject *obj)
 }
 static jsSyncMethodSpec js_functions[] = {
 	{"init",            js_uifc_init,       1,	JSTYPE_BOOLEAN,	JSDOCSTR("string title [, string mode]")
-	,JSDOCSTR("initialize.  <tt>mode</tt> is a string representing the desired conio mode... one of STDIO, AUTO, "
+	,JSDOCSTR("Initialize.  <tt>mode</tt> is a string representing the desired conio mode... one of STDIO, AUTO, "
 	"X, CURSES, ANSI, CONIO, or SDL.")
 	,314
 	},
 	{"bail",			js_uifc_bail,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("uninitialize")
+	,JSDOCSTR("Uninitialize")
 	,314
 	},
 	{"msg",				js_uifc_msg,		1,	JSTYPE_VOID,	JSDOCSTR("string text")
-	,JSDOCSTR("print a message")
+	,JSDOCSTR("Print a message")
 	,314
 	},
 	{"pop",				js_uifc_pop,		1,	JSTYPE_VOID,	JSDOCSTR("[string text]")
-	,JSDOCSTR("popup (or down) a message")
+	,JSDOCSTR("Pop-up (or down) a message. Pop-down by passing no <i>text</i> argument.")
 	,314
 	},
 	{"input",			js_uifc_input,		0,	JSTYPE_STRING,	JSDOCSTR("[number mode] [,number left] [,number top] [,string default] [,number maxlen] [,number kmode]")
-	,JSDOCSTR("prompt for a string input")
+	,JSDOCSTR("Prompt for a string input")
 	,314
 	},
 	{"list",			js_uifc_list,		0,	JSTYPE_NUMBER,	JSDOCSTR("[number mode,] string title, array options [,uifc.list.CTX object]")
-	,JSDOCSTR("select from a list of options.<br>"
+	,JSDOCSTR("Select from a list of options.<br>"
 		"The context object can be created using new uifc.list.CTX() and if the same object is passed, allows WIN_SAV to work correctly.<br>"
 		"The context object has the following properties:<br>cur, bar, top, left, width"
 	)
@@ -1263,7 +1251,7 @@ JSObject* js_CreateUifcObject(JSContext* cx, JSObject* parent)
 	if(!JS_SetPrivate(cx, obj, api))	/* Store a pointer to uifcapi_t */
 		return(NULL);
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,obj,"User InterFaCe object - used for jsexec menus" ,314);
+	js_DescribeSyncObject(cx,obj,"User InterFaCe object - Text User Interface (TUI) menu system for JSexec" ,314);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", uifc_prop_desc, JSPROP_READONLY);
 #endif
 	return(obj);

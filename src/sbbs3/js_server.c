@@ -120,11 +120,11 @@ static jsSyncPropertySpec js_server_properties[] = {
 #ifdef BUILD_JSDOCS
 static char* server_prop_desc[] = {
 
-	 "server name and version number"
-	,"detailed version/build information"
+	 "Server name and version number"
+	,"Detailed version/build information"
 	,"First bound IPv4 address (<tt>0.0.0.0</tt> = <i>ANY</i>) (obsolete since 3.17, see interface_ip_addr_list)"
-	,"bit-field of server-specific startup options"
-	,"number of active clients (if available)"
+	,"Bit-field of server-specific startup options"
+	,"Number of active clients (if available)"
 	,"Array of IP addresses of bound network interface (<tt>0.0.0.0</tt> = <i>ANY</i>)"
 	,NULL
 };
@@ -248,7 +248,7 @@ JSObject* js_CreateServerObject(JSContext* cx, JSObject* parent
 		return(NULL);
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,obj,"Server-specifc properties",310);
+	js_DescribeSyncObject(cx,obj,"Server-specific properties",310);
 	js_CreateArrayOfStrings(cx,obj,"_property_desc_list", server_prop_desc, JSPROP_READONLY);
 #endif
 

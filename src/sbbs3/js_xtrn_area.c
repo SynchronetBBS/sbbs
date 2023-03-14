@@ -27,65 +27,65 @@
 
 static char* xtrn_sec_prop_desc[] = {
 
-	 "index into sec_list array (or -1 if not in index) <i>(introduced in v3.12)</i>"
-	,"unique number for this external program section"
-	,"external program section internal code"
-	,"external program section name"
-	,"external program section access requirements"
-	,"user has sufficient access to enter this section <i>(introduced in v3.15)</i>"
+	 "Index into sec_list array (or -1 if not in index) <i>(introduced in v3.12)</i>"
+	,"Unique number for this external program section"
+	,"External program section internal code"
+	,"External program section name"
+	,"External program section access requirements"
+	,"User has sufficient access to enter this section <i>(introduced in v3.15)</i>"
 	,NULL
 };
 
 static char* xtrn_prog_prop_desc[] = {
 
-	 "index into prog_list array (or -1 if not in index) <i>(introduced in v3.12)</i>"
-	,"program number"
-	,"program section index <i>(introduced in v3.12)</i>"
-	,"program section number"
-	,"program section internal code <i>(introduced in v3.12)</i>"
-	,"internal code"
-	,"name"
-	,"command-line"
-	,"clean-up command-line"
-	,"startup directory"
-	,"access requirements"
-	,"execution requirements"
-	,"toggle options (bitfield)"
-	,"drop file type"
-	,"event type (0=none)"
-	,"extra time given to users running this program"
-	,"maximum time allowed in program"
-	,"execution cost (credits to run this program)"
+	 "Index into prog_list array (or -1 if not in index) <i>(introduced in v3.12)</i>"
+	,"Program number"
+	,"Program section index <i>(introduced in v3.12)</i>"
+	,"Program section number"
+	,"Program section internal code <i>(introduced in v3.12)</i>"
+	,"Internal code"
+	,"Name"
+	,"Command-line"
+	,"Clean-up command-line"
+	,"Startup directory"
+	,"Access requirements"
+	,"Execution requirements"
+	,"Toggle options (bitfield)"
+	,"Drop file type"
+	,"Event type (0=none)"
+	,"Extra time given to users running this program"
+	,"Maximum time allowed in program"
+	,"Execution cost (credits to run this program)"
 	/* Insert here */
-	,"user has sufficient access to see this program"
-	,"user has sufficient access to run this program"
+	,"User has sufficient access to see this program"
+	,"User has sufficient access to run this program"
 	,NULL
 };
 
 static char* event_prop_desc[] = {
 
-	 "command-line"
-	,"startup directory"
-	,"node number"
-	,"time to execute (minutes since midnight)"
-	,"frequency to execute"
-	,"days of week to execute (bitfield)"
-	,"days of month to execute (bitfield)"
-	,"months of year to execute (bitfield)"
-	,"date/time of last run (in time_t format)"
-	,"date/time of next run (in time_t format)"
-	,"error log level"
-	,"toggle options (bitfield)"
+	 "Command-line"
+	,"Startup directory"
+	,"Node number"
+	,"Time to execute (minutes since midnight)"
+	,"Frequency to execute"
+	,"Days of week to execute (bitfield)"
+	,"Days of month to execute (bitfield)"
+	,"Months of year to execute (bitfield)"
+	,"Date/time of last run (in time_t format)"
+	,"Date/time of next run (in time_t format)"
+	,"Error log level"
+	,"Toggle options (bitfield)"
 	,NULL
 };
 
 static char* xedit_prop_desc[] = {
 
-	 "name"
-	,"command-line"
-	,"access requirements"
-	,"toggle options (bitfield)"
-	,"drop file type"
+	 "Name"
+	,"Command-line"
+	,"Access requirements"
+	,"Toggle options (bitfield)"
+	,"Drop file type"
 	,NULL
 };
 

@@ -513,9 +513,9 @@ enum {
 
 #ifdef BUILD_JSDOCS
 static char* com_prop_desc[] = {
-	 "error status for the last COM operation that failed - <small>READ ONLY</small>"
+	 "Error status for the last COM operation that failed - <small>READ ONLY</small>"
 	,"<i>true</i> if port is in a connected state - <small>READ ONLY</small>"
-	,"enable debug logging"
+	,"Enable debug logging"
 	,"COM handle (advanced uses only)"
 	,"<i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i>"
 	,"COM port Baud rate"
@@ -696,41 +696,41 @@ static jsSyncPropertySpec js_com_properties[] = {
 
 static jsSyncMethodSpec js_com_functions[] = {
 	{"close",		js_close,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("close the port immediately")
+	,JSDOCSTR("Close the port immediately")
 	,315
 	},
 	{"open",     js_open,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("connect to a COM port")
+	,JSDOCSTR("Connect to a COM port")
 	,315
 	},
 	{"write",		js_send,		1,	JSTYPE_ALIAS },
 	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("data")
-	,JSDOCSTR("send a string (AKA write)")
+	,JSDOCSTR("Send a string (AKA write)")
 	,315
 	},
 	{"sendfile",	js_sendfile,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename")
-	,JSDOCSTR("send an entire file over the port")
+	,JSDOCSTR("Send an entire file over the port")
 	,315
 	},
 	{"writeBin",	js_sendbin,		1,	JSTYPE_ALIAS },
 	{"sendBin",		js_sendbin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value [,bytes=<tt>4</tt>]")
-	,JSDOCSTR("send a binary integer over the port, default number of bytes is 4 (32-bits)")
+	,JSDOCSTR("Send a binary integer over the port, default number of bytes is 4 (32-bits)")
 	,315
 	},
 	{"read",		js_recv,		1,	JSTYPE_ALIAS },
 	{"recv",		js_recv,		1,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt> [,timeout=<tt>30</tt>]]")
-	,JSDOCSTR("receive a string, default maxlen is 512 characters, default timeout is 30 seconds (AKA read)")
+	,JSDOCSTR("Receive a string, default maxlen is 512 characters, default timeout is 30 seconds (AKA read)")
 	,315
 	},
 	{"readline",	js_recvline,	0,	JSTYPE_ALIAS },
 	{"readln",		js_recvline,	0,	JSTYPE_ALIAS },
 	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>] [,timeout=<tt>30.0</tt>]")
-	,JSDOCSTR("receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds (AKA readline and readln)")
+	,JSDOCSTR("Receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds (AKA readline and readln)")
 	,315
 	},
 	{"readBin",		js_recvbin,		0,	JSTYPE_ALIAS },
 	{"recvBin",		js_recvbin,		0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes=<tt>4</tt> [,timeout=<tt>30</tt>]")
-	,JSDOCSTR("receive a binary integer from the port, default number of bytes is 4 (32-bits), default timeout is 30 seconds")
+	,JSDOCSTR("Receive a binary integer from the port, default number of bytes is 4 (32-bits), default timeout is 30 seconds")
 	,315
 	},
 	{0}
