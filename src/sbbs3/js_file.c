@@ -3062,7 +3062,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,32000
 	},
 	{"iniReadAll",		js_iniReadAll,		0,	JSTYPE_ARRAY,	JSDOCSTR("")
-	,JSDOCSTR("Read entire <tt>.ini</tt> file into an array of string (with <tt>!include</tt>ed files).")
+	,JSDOCSTR("Read entire <tt>.ini</tt> file into an array of strings (with <tt>!include</tt>ed files).")
 	,31802
 	},
 	{0}
