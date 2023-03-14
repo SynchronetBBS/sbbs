@@ -4188,7 +4188,7 @@ js_rmfiles(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		dir = NULL;
 	char*		spec = NULL;
-	size_t		keep = 0;
+	int32		keep = 0;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
