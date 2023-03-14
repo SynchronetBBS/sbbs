@@ -1849,6 +1849,8 @@ static char* filebase_sort_prop_desc[] = {
 	"Filename descending, case sensitive sort order",
 	"Import date/time ascending sort order",
 	"Import date/time descending sort order",
+	"File size in bytes, ascending sort order",
+	"File size in bytes, descending sort order",
 	NULL
 };
 #endif
