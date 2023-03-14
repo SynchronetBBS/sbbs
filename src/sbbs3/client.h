@@ -38,25 +38,5 @@ typedef struct {
 	uint32_t	usernum;	/* user number (authenticated when non-zero) */
 } client_t;
 
-/* Used for ctrl/client.dab */
-typedef struct client_rec {
-	DWORD		local_addr;
-	DWORD		remote_addr;
-	DWORD		local_port;
-	DWORD		remote_port;
-	DWORD		socket;
-	/* 20 */
-	DWORD		time;
-	/* 24 */
-	char		protocol[16];
-	/* 40 */
-	char		user_name[32];
-	/* 72 */
-	char		local_host[64];
-	/* 136 */
-	char		remote_host[64];
-	/* 200 */
-	char		pad[512-200];
-} client_rec_t;
 
 #endif /* Don't add anything after this line */
