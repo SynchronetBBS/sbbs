@@ -418,8 +418,9 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 
 /****************************************************************************/
 /* Prints PAUSE message and waits for a key stoke                           */
+/* Returns false if aborted by user											*/
 /****************************************************************************/
-void sbbs_t::pause()
+bool sbbs_t::pause(bool set_abort)
 {
 	char	ch;
 	uint	tempattrs=curatr; /* was lclatr(-1) */
@@ -427,7 +428,7 @@ void sbbs_t::pause()
 	size_t	len;
 
  	if((sys_status&SS_ABORT) || pause_inside)
-		return;
+		return false;
 	pause_inside = true;
 	lncntr=0;
 	if(online==ON_REMOTE)
@@ -444,7 +445,8 @@ void sbbs_t::pause()
 		clear_hotspots();
 		pause_hotspot = NULL;
 	}
-	if(ch==no_key() || ch==quit_key())
+	bool aborted = (ch==no_key() || ch==quit_key() || (sys_status & SS_ABORT));
+	if(set_abort && aborted)
 		sys_status|=SS_ABORT;
 	else if(ch==LF)	// down arrow == display one more line
 		lncntr=rows-2;
@@ -454,6 +456,7 @@ void sbbs_t::pause()
 	nodesync();
 	attr(tempattrs);
 	pause_inside = false;
+	return !aborted;
 }
 
 /****************************************************************************/
