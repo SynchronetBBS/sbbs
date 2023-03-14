@@ -4182,6 +4182,52 @@ js_rmdir(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_rmfiles(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		dir = NULL;
+	char*		spec = NULL;
+	size_t		keep = 0;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
+
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], dir, NULL)
+	HANDLE_PENDING(cx, dir);
+	if(dir == NULL)
+		return JS_TRUE;
+
+	uintN argn = 1;
+	if(argn < argc && JSVAL_IS_STRING(argv[argn])) {
+		JSVALUE_TO_MSTRING(cx, argv[argn], spec, NULL)
+		HANDLE_PENDING(cx, spec);
+		if(spec == NULL) {
+			free(dir);
+			return JS_TRUE;
+		}
+		argn++;
+	}
+	if(argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx, argv[argn], &keep)) {
+			free(dir);
+			free(spec);
+			return JS_FALSE;
+		}
+		argn++;
+	}
+
+	rc=JS_SUSPENDREQUEST(cx);
+	int ret = delfiles(dir, spec, keep);
+	free(dir);
+	free(spec);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(ret));
+	return JS_TRUE;
+}
 
 static JSBool
 js_strftime(JSContext *cx, uintN argc, jsval *arglist)
@@ -5015,7 +5061,11 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"rmdir",			js_rmdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory")
 	,JSDOCSTR("remove a directory")
 	,310
-	},		
+	},
+	{"rmfiles",			js_rmfiles,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory [,file-spec='*'] [,files-to-keep=0]")
+	,JSDOCSTR("remove all files and sub-directories in the specified directory, recursively - <b>use with caution!</b>")
+	,320
+	},
 	{"strftime",		js_strftime,		1,	JSTYPE_STRING,	JSDOCSTR("format [,time=<i>current</i>]")
 	,JSDOCSTR("return a formatted time string (ala C strftime)")
 	,310
