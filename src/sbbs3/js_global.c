@@ -4786,13 +4786,13 @@ js_qwknet_route(JSContext *cx, uintN argc, jsval *arglist)
 
 static jsSyncMethodSpec js_global_functions[] = {
 	{"exit",			js_exit,			0,	JSTYPE_VOID,	"[exit_code]"
-	,JSDOCSTR("stop script execution, "
+	,JSDOCSTR("Stop script execution, "
 		"optionally setting the global property <tt>exit_code</tt> to the specified numeric value")
 	,311
 	},		
 	{"load",            js_load,            1,	JSTYPE_UNDEF
 	,JSDOCSTR("[<i>bool</i> background or <i>object</i> scope,] <i>string</i> filename [,args]")
-	,JSDOCSTR("load and execute a JavaScript module (<i>filename</i>), "
+	,JSDOCSTR("Load and execute a JavaScript module (<i>filename</i>), "
 		"optionally specifying a target <i>scope</i> object (default: <i>this</i>) "
 		"and a list of arguments to pass to the module (as <i>argv</i>). "
 		"Returns the result (last executed statement) of the executed script "
@@ -4810,7 +4810,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"require",         js_require,         1,	JSTYPE_UNDEF
 	,JSDOCSTR("[<i>object</i> scope,] <i>string</i> filename, propname [,args]")
-	,JSDOCSTR("load and execute a JavaScript module (<i>filename</i>), "
+	,JSDOCSTR("Load and execute a JavaScript module (<i>filename</i>), "
 		"optionally specifying a target <i>scope</i> object (default: <i>this</i>) "
 		"and a list of arguments to pass to the module (as <i>argv</i>) "
 		"IF AND ONLY IF the property named <i>propname</i> is not defined in "
@@ -4822,80 +4822,80 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
 	{"mswait",			js_mswait,			0,	JSTYPE_NUMBER,	JSDOCSTR("[milliseconds=<tt>1</tt>]")
-	,JSDOCSTR("millisecond wait/sleep routine (AKA sleep), returns number of elapsed clock ticks (in v3.13)")
+	,JSDOCSTR("Millisecond wait/sleep routine (AKA sleep), returns number of elapsed clock ticks (in v3.13)")
 	,313
 	},
 	{"yield",			js_yield,			0,	JSTYPE_VOID,	JSDOCSTR("[forced=<tt>true</tt>]")
-	,JSDOCSTR("release current thread time-slice, "
+	,JSDOCSTR("Release current thread time-slice, "
 		"a <i>forced</i> yield will yield to all other pending tasks (lowering CPU utilization), "
 		"a non-<i>forced</i> yield will yield only to pending tasks of equal or higher priority. "
 		"<i>forced</i> defaults to <i>true</i>")
 	,311
 	},
 	{"random",			js_random,			1,	JSTYPE_NUMBER,	JSDOCSTR("max_number=<tt>100</tt>")
-	,JSDOCSTR("return random integer between <tt>0</tt> and <i>max_number</i>-1")
+	,JSDOCSTR("Return random integer between <tt>0</tt> and <i>max_number</i>-1")
 	,310
 	},		
 	{"time",			js_time,			0,	JSTYPE_NUMBER,	""
-	,JSDOCSTR("return current time and date in Unix (time_t) format "
+	,JSDOCSTR("Return current time and date in Unix (time_t) format "
 		"(number of seconds since Jan-01-1970)")
 	,310
 	},		
 	{"beep",			js_beep,			0,	JSTYPE_VOID,	JSDOCSTR("[frequency=<tt>500</tt>] [,duration=<tt>500</tt>]")
-	,JSDOCSTR("produce a tone on the local speaker at specified frequency for specified duration (in milliseconds)")
+	,JSDOCSTR("Produce a tone on the local speaker at specified frequency for specified duration (in milliseconds)")
 	,310
 	},		
 	{"sound",			js_sound,			0,	JSTYPE_BOOLEAN,	JSDOCSTR("[filename]")
-	,JSDOCSTR("play a waveform (.wav) sound file (currently, on Windows platforms only)")
+	,JSDOCSTR("Play a waveform (.wav) sound file (currently, on Windows platforms only)")
 	,310
 	},		
 	{"ctrl",			js_ctrl,			1,	JSTYPE_STRING,	JSDOCSTR("number or string")
-	,JSDOCSTR("return ASCII control character representing character passed - Example: <tt>ctrl('C') returns '\3'</tt>")
+	,JSDOCSTR("Return ASCII control character representing character passed - Example: <tt>ctrl('C') returns '\3'</tt>")
 	,311
 	},
 	{"ascii",			js_ascii,			1,	JSTYPE_UNDEF,	JSDOCSTR("[string text] or [number value]")
-	,JSDOCSTR("convert single character to numeric ASCII value or vice-versa (returns number OR string)")
+	,JSDOCSTR("Convert single character to numeric ASCII value or vice-versa (returns number OR string)")
 	,310
 	},		
 	{"ascii_str",		js_ascii_str,		1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("convert extended-ASCII (CP437) characters in text string to plain US-ASCII equivalent, returns modified string")
+	,JSDOCSTR("Convert extended-ASCII (CP437) characters in text string to plain US-ASCII equivalent, returns modified string")
 	,310
 	},		
 	{"strip_ctrl",		js_strip_ctrl,		1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("strip control characters from string, returns modified string")
+	,JSDOCSTR("Strip control characters from string, returns modified string")
 	,310
 	},		
 	{"strip_ansi",		js_strip_ansi,		1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("strip all ANSI terminal control sequences from string, returns modified string")
+	,JSDOCSTR("Strip all ANSI terminal control sequences from string, returns modified string")
 	,31802
 	},		
 	{"strip_exascii",	js_strip_exascii,	1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("strip all extended-ASCII characters from string, returns modified string")
+	,JSDOCSTR("Strip all extended-ASCII characters from string, returns modified string")
 	,310
 	},		
 	{"skipsp",			js_skipsp,			1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("skip (trim) white-space characters off <b>beginning</b> of string, returns modified string")
+	,JSDOCSTR("Skip (trim) white-space characters off <b>beginning</b> of string, returns modified string")
 	,315
 	},
 	{"truncsp",			js_truncsp,			1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("truncate (trim) white-space characters off <b>end</b> of string, returns modified string")
+	,JSDOCSTR("Truncate (trim) white-space characters off <b>end</b> of string, returns modified string")
 	,310
 	},
 	{"truncstr",		js_truncstr,		2,	JSTYPE_STRING,	JSDOCSTR("text, charset")
-	,JSDOCSTR("truncate (trim) string at first char in <i>charset</i>, returns modified string")
+	,JSDOCSTR("Truncate (trim) string at first char in <i>charset</i>, returns modified string")
 	,310
 	},		
 	{"lfexpand",		js_lfexpand,		1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("expand line-feeds (LF) to carriage-return/line-feeds (CRLF), returns modified string")
+	,JSDOCSTR("Expand line-feeds (LF) to carriage-return/line-feeds (CRLF), returns modified string")
 	,310
 	},
 	{"wildmatch",		js_wildmatch,		2,	JSTYPE_BOOLEAN, JSDOCSTR("[case_sensitive=<tt>false</tt>,] string [,pattern=<tt>'*'</tt>] [,path=<tt>false</tt>]")
-	,JSDOCSTR("returns <tt>true</tt> if the <i>string</i> matches the wildcard <i>pattern</i> (wildcards supported are '*' and '?'), "
+	,JSDOCSTR("Returns <tt>true</tt> if the <i>string</i> matches the wildcard <i>pattern</i> (wildcards supported are '*' and '?'), "
 	"if <i>path</i> is <tt>true</tt>, '*' will not match path delimeter characters (e.g. '/')")
 	,314
 	},
 	{"backslash",		js_backslash,		1,	JSTYPE_STRING,	JSDOCSTR("path")
-	,JSDOCSTR("returns directory path with trailing (platform-specific) path delimeter "
+	,JSDOCSTR("Returns directory path with trailing (platform-specific) path delimeter "
 		"(i.e. \"slash\" or \"backslash\")")
 	,312
 	},
@@ -4904,45 +4904,45 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,315
 	},
 	{"file_getname",	js_getfname,		1,	JSTYPE_STRING,	JSDOCSTR("path/filename")
-	,JSDOCSTR("returns filename portion of passed path string")
+	,JSDOCSTR("Returns filename portion of passed path string")
 	,311
 	},
 	{"file_getext",		js_getfext,			1,	JSTYPE_STRING,	JSDOCSTR("path/filename")
-	,JSDOCSTR("returns file extension portion of passed path/filename string (including '.') "
+	,JSDOCSTR("Returns file extension portion of passed path/filename string (including '.') "
 		"or <i>undefined</i> if no extension is found")
 	,311
 	},
 	{"file_getcase",	js_getfcase,		1,	JSTYPE_STRING,	JSDOCSTR("path/filename")
-	,JSDOCSTR("returns correct case of filename (long version of filename on Windows) "
+	,JSDOCSTR("Returns correct case of filename (long version of filename on Windows) "
 		"or <i>undefined</i> if the file doesn't exist")
 	,311
 	},
 	{"file_cfgname",	js_cfgfname,		2,	JSTYPE_STRING,	JSDOCSTR("path, filename")
-	,JSDOCSTR("returns completed configuration filename from supplied <i>path</i> and <i>filename</i>, "
+	,JSDOCSTR("Returns completed configuration filename from supplied <i>path</i> and <i>filename</i>, "
 	"optionally including the local hostname (e.g. <tt>path/file.<i>host</i>.<i>domain</i>.ext</tt> "
 	"or <tt>path/file.<i>host</i>.ext</tt>) if such a variation of the filename exists")
 	,312
 	},
 	{"file_getdosname",	js_dosfname,		1,	JSTYPE_STRING,	JSDOCSTR("path/filename")
-	,JSDOCSTR("returns DOS-compatible (Micros~1 shortened) version of specified <i>path/filename</i>"
+	,JSDOCSTR("Returns DOS-compatible (Micros~1 shortened) version of specified <i>path/filename</i>"
 		"(on Windows only)<br>"
 		"returns unmodified <i>path/filename</i> on other platforms")
 	,315
 	},
 	{"file_exists",		js_fexist,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename")
-	,JSDOCSTR("verify a file's existence")
+	,JSDOCSTR("Verify a file's existence")
 	,310
 	},		
 	{"file_remove",		js_remove,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename")
-	,JSDOCSTR("delete a file")
+	,JSDOCSTR("Delete a file")
 	,310
 	},		
 	{"file_removecase",	js_removecase,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename")
-	,JSDOCSTR("delete files case insensitively")
+	,JSDOCSTR("Delete files case insensitively")
 	,314
 	},		
 	{"file_rename",		js_rename,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/oldname, path/newname")
-	,JSDOCSTR("rename a file, possibly moving it to another directory in the process")
+	,JSDOCSTR("Rename a file, possibly moving it to another directory in the process")
 	,311
 	},
 	{"file_copy",		js_fcopy,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/source, path/destination")
@@ -4950,7 +4950,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,311
 	},
 	{"file_backup",		js_backup,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename [,level=<tt>5</tt>] [,rename=<tt>false</tt>]")
-	,JSDOCSTR("backup the specified <i>filename</i> as <tt>filename.<i>number</i>.extension</tt> "
+	,JSDOCSTR("Backup the specified <i>filename</i> as <tt>filename.<i>number</i>.extension</tt> "
 		"where <i>number</i> is the backup number 0 through <i>level</i>-1 "
 		"(default backup <i>level</i> is 5), "
 		"if <i>rename</i> is <i>true</i>, the original file is renamed instead of copied "
@@ -4958,53 +4958,53 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,311
 	},
 	{"file_isdir",		js_isdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename")
-	,JSDOCSTR("check if specified <i>filename</i> is a directory")
+	,JSDOCSTR("Check if specified <i>filename</i> is a directory")
 	,310
 	},		
 	{"file_attrib",		js_fattr,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
-	,JSDOCSTR("get a file's attributes (same as </i>file_mode()</i> on *nix). "
+	,JSDOCSTR("Get a file's attributes (same as </i>file_mode()</i> on *nix). "
 		"On Windows, the return value corresponds with <tt>_finddata_t.attrib</tt> "
 		"(includes DOS/Windows file system-specific attributes, like <i>hidden</i>, and <i>archive</i>). "
 		"Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
 	,310
 	},		
 	{"file_mode",		js_fmode,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
-	,JSDOCSTR("get a file's type and mode flags (e.g. read/write/execute permissions). "
+	,JSDOCSTR("Get a file's type and mode flags (e.g. read/write/execute permissions). "
 		"The return value corresponds with <tt>struct stat.st_mode</tt>. "
 		"Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
 	,31702
 	},		
 	{"file_chmod",		js_chmod,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename, number mode")
-	,JSDOCSTR("set a file's permissions flags. "
+	,JSDOCSTR("Set a file's permissions flags. "
 		"The supported <i>mode</i> bit values are system-dependent "
 		"(e.g. Windows only supports setting or clearing the user-write/0x80 mode flag). "
 		"Returns <tt>true</tt> if the requested change was successful.")
 	,31702
 	},		
 	{"file_date",		js_fdate,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
-	,JSDOCSTR("get a file's last modified date/time (in time_t format). Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
+	,JSDOCSTR("Get a file's last modified date/time (in time_t format). Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
 	,310
 	},
 	{"file_cdate",		js_fcdate,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
-	,JSDOCSTR("get a file's creation date/time (in time_t format). Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
+	,JSDOCSTR("Get a file's creation date/time (in time_t format). Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
 	,317
 	},
 	{"file_size",		js_flength,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
-	,JSDOCSTR("get a file's length (in bytes). Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
+	,JSDOCSTR("Get a file's length (in bytes). Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
 	,310
 	},
 	{"file_utime",		js_utime,			3,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename [,access_time=<i>current</i>] [,mod_time=<i>current</i>]")
-	,JSDOCSTR("change a file's last accessed and modification date/time (in time_t format), "
+	,JSDOCSTR("Change a file's last accessed and modification date/time (in time_t format), "
 		"or change to current time")
 	,311
 	},
 	{"file_touch",		js_ftouch,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename")
-	,JSDOCSTR("updates a file's last modification date/time to current time, "
+	,JSDOCSTR("Updates a file's last modification date/time to current time, "
 		"creating an empty file if it doesn't already exist")
 	,311
 	},
 	{"file_mutex",		js_fmutex,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename [,text=<i>local_hostname</i>] [,max_age=<tt>0</tt>]")
-	,JSDOCSTR("attempts to create an mutual-exclusion (e.g. lock) file, "
+	,JSDOCSTR("Attempts to create an mutual-exclusion (e.g. lock) file, "
 		"optionally with the contents of <i>text</i>. "
 		"If a non-zero <i>max_age</i> (supported in v3.13b+) is specified "
 		"and the lock file exists, but is older than this value (in seconds), "
@@ -5012,29 +5012,29 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,312
 	},
 	{"file_compare",	js_fcompare,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/file1, path/file2")
-	,JSDOCSTR("compare 2 files, returning <i>true</i> if they are identical, <i>false</i> otherwise")
+	,JSDOCSTR("Compare 2 files, returning <i>true</i> if they are identical, <i>false</i> otherwise")
 	,314
 	},
 	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	JSDOCSTR("path/pattern [,flags=<tt>GLOB_MARK</tt>]")
-	,JSDOCSTR("returns an array of directory entries, "
+	,JSDOCSTR("Returns an array of directory entries, "
 		"<i>pattern</i> is the path and filename or wildcards to search for (e.g. '/subdir/*.txt'), "
 		"<i>flags</i> is a bitfield of optional <tt>glob</tt> flags (default is <tt>GLOB_MARK</tt>)")
 	,310
 	},
 	{"dir_freespace",	js_freediskspace,	2,	JSTYPE_NUMBER,	JSDOCSTR("directory [,unit_size=<tt>1</tt>]")
-	,JSDOCSTR("returns the amount of available disk space in the specified <i>directory</i> "
+	,JSDOCSTR("Returns the amount of available disk space in the specified <i>directory</i> "
 		"using the specified <i>unit_size</i> in bytes (default: 1), "
 		"specify a <i>unit_size</i> of <tt>1024</tt> to return the available space in <i>kilobytes</i>.")
 	,311
 	},
 	{"disk_size",		js_disksize,		2,	JSTYPE_NUMBER,	JSDOCSTR("directory [,unit_size=<tt>1</tt>]")
-	,JSDOCSTR("returns the total disk size of the specified <i>directory</i> "
+	,JSDOCSTR("Returns the total disk size of the specified <i>directory</i> "
 		"using the specified <i>unit_size</i> in bytes (default: 1), "
 		"specify a <i>unit_size</i> of <tt>1024</tt> to return the total disk size in <i>kilobytes</i>.")
 	,314
 	},
 	{"socket_select",	js_socket_select,	0,	JSTYPE_ARRAY,	JSDOCSTR("[array of socket objects or descriptors] [,timeout=<tt>0</tt>] [,write=<tt>false</tt>]")
-	,JSDOCSTR("checks an array of socket objects or descriptors for read or write ability (default is <i>read</i>), "
+	,JSDOCSTR("Checks an array of socket objects or descriptors for read or write ability (default is <i>read</i>), "
 		"default timeout value is 0.0 seconds (immediate timeout), "
 		"returns an array of 0-based index values into the socket array, representing the sockets that were ready for reading or writing, or <i>null</i> on error. "
 		"If multiple arrays of sockets are passed, they are presumed to be in the order of read, write, and except.  In this case, the write parameter is ignored "
@@ -5043,141 +5043,141 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,311
 	},
 	{"socket_strerror", js_socket_strerror,	1,	JSTYPE_STRING,	JSDOCSTR("error")
-		,JSDOCSTR("get the description(string representation) of a numeric socket error value (e.g. <tt>socket_errno</tt>)")
+		,JSDOCSTR("Get the description(string representation) of a numeric socket error value (e.g. <tt>socket_errno</tt>)")
 		,31802
 	},
 	{"strerror",		js_strerror,		1,	JSTYPE_STRING,	JSDOCSTR("error")
-		,JSDOCSTR("get the description(string representation) of a numeric system error value (e.g. <tt>errno</tt>)")
+		,JSDOCSTR("Get the description(string representation) of a numeric system error value (e.g. <tt>errno</tt>)")
 		,31802
 	},
 	{"mkdir",			js_mkdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory")
-	,JSDOCSTR("make a directory")
+	,JSDOCSTR("Make a directory on a local file system")
 	,310
 	},		
 	{"mkpath",			js_mkpath,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory")
-	,JSDOCSTR("make a path to a directory (creating all necessary sub-directories). Returns true if the directory already exists.")
+	,JSDOCSTR("Make a path to a directory (creating all necessary sub-directories). Returns true if the directory already exists.")
 	,315
 	},		
 	{"rmdir",			js_rmdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory")
-	,JSDOCSTR("remove a directory")
+	,JSDOCSTR("Remove a directory")
 	,310
 	},
 	{"rmfiles",			js_rmfiles,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory [,file-spec='*'] [,files-to-keep=0]")
-	,JSDOCSTR("remove all files and sub-directories in the specified directory, recursively - <b>use with caution!</b>")
+	,JSDOCSTR("Remove all files and sub-directories in the specified directory, recursively - <b>use with caution!</b>")
 	,320
 	},
 	{"strftime",		js_strftime,		1,	JSTYPE_STRING,	JSDOCSTR("format [,time=<i>current</i>]")
-	,JSDOCSTR("return a formatted time string (ala C strftime)")
+	,JSDOCSTR("Return a formatted time string (ala C strftime)")
 	,310
 	},		
 	{"format",			js_format,			1,	JSTYPE_STRING,	JSDOCSTR("format [,args]")
-	,JSDOCSTR("return a formatted string (ala the standard C <tt>sprintf</tt> function)")
+	,JSDOCSTR("Return a formatted string (ala the standard C <tt>sprintf</tt> function)")
 	,310
 	},
 	{"html_encode",		js_html_encode,		1,	JSTYPE_STRING,	JSDOCSTR("text [,ex_ascii=<tt>true</tt>] [,white_space=<tt>true</tt>] [,ansi=<tt>true</tt>] [,ctrl_a=<tt>true</tt>] [, state (object)]")
-	,JSDOCSTR("return an HTML-encoded text string (using standard HTML character entities), "
+	,JSDOCSTR("Return an HTML-encoded text string (using standard HTML character entities), "
 		"escaping IBM extended-ASCII (CP437), white-space characters, ANSI codes, and CTRL-A codes by default."
 		"Optionally storing the current ANSI state in <i>state</i> object")
 	,311
 	},
 	{"html_decode",		js_html_decode,		1,	JSTYPE_STRING,	JSDOCSTR("html")
-	,JSDOCSTR("return a decoded HTML-encoded text string")
+	,JSDOCSTR("Return a decoded HTML-encoded text string")
 	,311
 	},
 	{"word_wrap",		js_word_wrap,		1,	JSTYPE_STRING,	JSDOCSTR("text [,line_length=<tt>79</tt> [, orig_line_length=<tt>79</tt> [, handle_quotes=<tt>true</tt> [, is_utf8=<tt>false</tt>]]]]")
-	,JSDOCSTR("returns a word-wrapped version of the text string argument optionally handing quotes magically, "
+	,JSDOCSTR("Returns a word-wrapped version of the text string argument optionally handing quotes magically, "
 		"<i>line_length</i> defaults to <i>79</i>, <i>orig_line_length</i> defaults to <i>79</i>, "
 		"<i>handle_quotes</i> defaults to <i>true</i>, and <i>is_utf8</i> defaults to <i>false</i>")
 	,311
 	},
 	{"quote_msg",		js_quote_msg,		1,	JSTYPE_STRING,	JSDOCSTR("text [,line_length=<tt>79</tt>] [,prefix=<tt>\" > \"</tt>]")
-	,JSDOCSTR("returns a quoted version of the message text string argument, <i>line_length</i> defaults to <i>79</i>, "
+	,JSDOCSTR("Returns a quoted version of the message text string argument, <i>line_length</i> defaults to <i>79</i>, "
 		"<i>prefix</i> defaults to <tt>\" > \"</tt>")
 	,311
 	},
 	{"rot13_translate",	js_rot13,			1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("returns ROT13-translated version of text string (will encode or decode text)")
+	,JSDOCSTR("Returns ROT13-translated version of text string (will encode or decode text)")
 	,311
 	},
 	{"base64_encode",	js_b64_encode,		1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("returns base64-encoded version of text string or <i>null</i> on error")
+	,JSDOCSTR("Returns base64-encoded version of text string or <i>null</i> on error")
 	,311
 	},
 	{"base64_decode",	js_b64_decode,		1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("returns base64-decoded text string or <i>null</i> on error")
+	,JSDOCSTR("Returns base64-decoded text string or <i>null</i> on error")
 	,311
 	},
 	{"crc16_calc",		js_crc16,			1,	JSTYPE_NUMBER,	JSDOCSTR("text")
-	,JSDOCSTR("calculate and return 16-bit CRC of text string")
+	,JSDOCSTR("Calculate and return 16-bit CRC of text string")
 	,311
 	},		
 	{"crc32_calc",		js_crc32,			1,	JSTYPE_NUMBER,	JSDOCSTR("text")
-	,JSDOCSTR("calculate and return 32-bit CRC of text string")
+	,JSDOCSTR("Calculate and return 32-bit CRC of text string")
 	,311
 	},		
 	{"chksum_calc",		js_chksum,			1,	JSTYPE_NUMBER,	JSDOCSTR("text")
-	,JSDOCSTR("calculate and return 32-bit checksum of text string")
+	,JSDOCSTR("Calculate and return 32-bit checksum of text string")
 	,311
 	},
 	{"md5_calc",		js_md5_calc,		1,	JSTYPE_STRING,	JSDOCSTR("text [,hex=<tt>false</tt>]")
-	,JSDOCSTR("calculate and return 128-bit MD5 digest of text string, result encoded in base64 (default) or hexadecimal")
+	,JSDOCSTR("Calculate and return 128-bit MD5 digest of text string, result encoded in base64 (default) or hexadecimal")
 	,311
 	},
 	{"sha1_calc",		js_sha1_calc,		1,	JSTYPE_STRING,	JSDOCSTR("text [,hex=false]")
-	,JSDOCSTR("calculate and return 160-bit SHA-1 digest of text string, result encoded in base64 (default) or hexadecimal")
+	,JSDOCSTR("Calculate and return 160-bit SHA-1 digest of text string, result encoded in base64 (default) or hexadecimal")
 	,31900
 	},
 	{"gethostbyname",	js_resolve_ip,		1,	JSTYPE_ALIAS },
 	{"resolve_ip",		js_resolve_ip,		1,	JSTYPE_STRING,	JSDOCSTR("hostname [,array=<tt>false</tt>]")
-	,JSDOCSTR("resolve IP address of specified hostname (AKA gethostbyname).  If <i>array</i> is true (added in 3.17), will return "
+	,JSDOCSTR("Resolve IP address of specified hostname (AKA gethostbyname).  If <i>array</i> is true (added in 3.17), will return "
 	"an array of all addresses rather than just the first one (upon success).")
 	,311
 	},
 	{"gethostbyaddr",	js_resolve_host,	1,	JSTYPE_ALIAS },
 	{"resolve_host",	js_resolve_host,	1,	JSTYPE_STRING,	JSDOCSTR("ip_address")
-	,JSDOCSTR("resolve hostname of specified IP address (AKA gethostbyaddr)")
+	,JSDOCSTR("Resolve hostname of specified IP address (AKA gethostbyaddr)")
 	,311
 	},
 	{"netaddr_type",	js_netaddr_type,	1,	JSTYPE_NUMBER,	JSDOCSTR("email_address")
-	,JSDOCSTR("returns the proper message <i>net_type</i> for the specified <i>email_address</i>, "
+	,JSDOCSTR("Returns the proper message <i>net_type</i> for the specified <i>email_address</i>, "
 		"(e.g. <tt>NET_INTERNET</tt> for Internet e-mail or <tt>NET_NONE</tt> for local e-mail)")
 	,312
 	},
 	{"list_named_queues",js_list_named_queues,0,JSTYPE_ARRAY,	JSDOCSTR("")
-	,JSDOCSTR("returns an array of <i>named queues</i> (created with the <i>Queue</i> constructor)")
+	,JSDOCSTR("Returns an array of <i>named queues</i> (created with the <i>Queue</i> constructor)")
 	,312
 	},
 	{"flags_str",		js_flags_str,		1,	JSTYPE_UNDEF,	JSDOCSTR("[string] or [number]")
-	,JSDOCSTR("convert a string of security flags (letters) into their numeric value or vice-versa "
+	,JSDOCSTR("Convert a string of security flags (letters) into their numeric value or vice-versa "
 	"(returns number OR string) - (added in v3.13)")
 	,313
 	},
 	{"utf8_encode",		js_utf8_encode,		1,	JSTYPE_STRING,	JSDOCSTR("[string CP437] or [string UTF16] or [number codepoint]")
-	,JSDOCSTR("returns UTF-8 encoded version of the specified CP437 text string, UTF-16 encoded text string, or a single Unicode <i>codepoint</i>")
+	,JSDOCSTR("Returns UTF-8 encoded version of the specified CP437 text string, UTF-16 encoded text string, or a single Unicode <i>codepoint</i>")
 	,31702
 	},
 	{"utf8_decode",		js_utf8_decode,		1,	JSTYPE_STRING,	JSDOCSTR("text")
-		,JSDOCSTR("returns CP437 representation of UTF-8 encoded text string or <i>null</i> on error (invalid UTF-8)")
+		,JSDOCSTR("Returns CP437 representation of UTF-8 encoded text string or <i>null</i> on error (invalid UTF-8)")
 		,31702
 	},
 	{"utf8_get_width",		js_utf8_get_width,	1,	JSTYPE_NUMBER,	JSDOCSTR("text")
-		,JSDOCSTR("returns the fixed printed-width of the specified string of UTF-8 encoded characters")
+		,JSDOCSTR("Returns the fixed printed-width of the specified string of UTF-8 encoded characters")
 		,31702
 	},
 	{"str_is_utf8",			js_str_is_utf8,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
-		,JSDOCSTR("returns <tt>true</tt> if the specified string contains only valid UTF-8 encoded and US-ASCII characters")
+		,JSDOCSTR("Returns <tt>true</tt> if the specified string contains only valid UTF-8 encoded and US-ASCII characters")
 		,31702
 	},
 	{"str_is_utf16",		js_str_is_utf16,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
-		,JSDOCSTR("returns <tt>true</tt> if the specified string contains one or more UTF-16 encoded characters")
+		,JSDOCSTR("Returns <tt>true</tt> if the specified string contains one or more UTF-16 encoded characters")
 		,31702
 	},
 	{"str_is_ascii",		js_str_is_ascii,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
-		,JSDOCSTR("returns <tt>true</tt> if the specified string contains only US-ASCII (no CP437 or UTF-8) characters")
+		,JSDOCSTR("Returns <tt>true</tt> if the specified string contains only US-ASCII (no CP437 or UTF-8) characters")
 		,31702
 	},
 	{"str_has_ctrl",		js_str_has_ctrl,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
-		,JSDOCSTR("returns <tt>true</tt> if the specified string contains any control characters (ASCII 0x01 - 0x1F)")
+		,JSDOCSTR("Returns <tt>true</tt> if the specified string contains any control characters (ASCII 0x01 - 0x1F)")
 		,31702
 	},
 	{0}

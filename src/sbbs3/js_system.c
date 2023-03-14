@@ -480,83 +480,83 @@ static jsSyncPropertySpec js_system_properties[] = {
 #ifdef BUILD_JSDOCS
 static char* sys_prop_desc[] = {
 	 "BBS name"
-	,"operator name"
-	,"operator is available for chat"
-	,"system QWK-ID (for QWK packets)"
-	,"settings bitfield (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"Operator name"
+	,"Operator is available for chat"
+	,"System QWK-ID (for QWK packets)"
+	,"Settings bitfield (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"Internet address (host or domain name)"
-	,"location (city, state)"
-	,"timezone (use <i>system.zonestr()</i> to get string representation)"
-	,"days between forced user password changes (<tt>0</tt>=<i>never</i>)"
-	,"minimum number of characters in user passwords"
-	,"maximum number of characters in user passwords"
-	,"days to preserve deleted user records, record will not be reused/overwritten during this period"
-	,"days of user inactivity before auto-deletion (<tt>0</tt>=<i>disabled</i>), N/A to P-exempt users"
+	,"Location (city, state)"
+	,"Timezone (use <i>system.zonestr()</i> to get string representation)"
+	,"Days between forced user password changes (<tt>0</tt>=<i>never</i>)"
+	,"Minimum number of characters in user passwords"
+	,"Maximum number of characters in user passwords"
+	,"Days to preserve deleted user records, record will not be reused/overwritten during this period"
+	,"Days of user inactivity before auto-deletion (<tt>0</tt>=<i>disabled</i>), N/A to P-exempt users"
 
-	,"last user record number in user database (includes deleted and inactive user records)"
-	,"name of last user to logoff"
-	,"amount of free disk space (in bytes)"
-	,"amount of free disk space (in kilobytes)"
+	,"Last user record number in user database (includes deleted and inactive user records)"
+	,"Name of last user to logoff"
+	,"Amount of free disk space (in bytes)"
+	,"Amount of free disk space (in kilobytes)"
 
-	,"total number of BBS nodes"
-	,"last displayable node number"
+	,"Total number of BBS nodes"
+	,"Last displayable node number"
 
-	,"new user password"
-	,"new user magic word"
-	,"new user level"
-	,"new user flag set #1"
-	,"new user flag set #2"
-	,"new user flag set #3"
-	,"new user flag set #4"
-	,"new user restriction flags"
-	,"new user exemption flags"
-	,"new user credits"
-	,"new user extra minutes"
-	,"new user command shell"
-	,"new user external editor"
-	,"new user settings"
-	,"new user file transfer protocol (command key)"
-	,"new user expiration days"
-	,"new user questions bitfield (see <tt>UQ_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"New user password"
+	,"New user magic word"
+	,"New user level"
+	,"New user flag set #1"
+	,"New user flag set #2"
+	,"New user flag set #3"
+	,"New user flag set #4"
+	,"New user restriction flags"
+	,"New user exemption flags"
+	,"New user credits"
+	,"New user extra minutes"
+	,"New user command shell"
+	,"New user external editor"
+	,"New user settings"
+	,"New user file transfer protocol (command key)"
+	,"New user expiration days"
+	,"New user questions bitfield (see <tt>UQ_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 
-	,"expired user level"
-	,"expired user flag set #1"
-	,"expired user flag set #2"
-	,"expired user flag set #3"
-	,"expired user flag set #4"
-	,"expired user restriction flags"
-	,"expired user exemption flags"
+	,"Expired user level"
+	,"Expired user flag set #1"
+	,"Expired user flag set #2"
+	,"Expired user flag set #3"
+	,"Expired user flag set #4"
+	,"Expired user restriction flags"
+	,"Expired user exemption flags"
 
 	/* directories */
-	,"node directory"
-	,"control file directory"
-	,"data file directory"
-	,"text file directory"
-	,"temporary file directory"
-	,"executable file directory"
-	,"modified modules directory (optional)"
-	,"log file directory"
+	,"Node directory"
+	,"Control file directory"
+	,"Data file directory"
+	,"Text file directory"
+	,"Temporary file directory"
+	,"Executable file directory"
+	,"Modified modules directory (optional)"
+	,"Log file directory"
 
 	/* filenames */
-	,"platform-specific \"null\" device filename"
-	,"platform-specific temporary file directory"
-	,"platform-specific command processor/shell"
+	,"Platform-specific \"null\" device filename"
+	,"Platform-specific temporary file directory"
+	,"Platform-specific command processor/shell"
 
 	/* clock */
-	,"amount of elapsed time in clock 'ticks'"
-	,"number of clock ticks per second"
-	,"high-resolution timer, in seconds (fractional seconds supported)"
+	,"Amount of elapsed time in clock 'ticks'"
+	,"Number of clock ticks per second"
+	,"High-resolution timer, in seconds (fractional seconds supported)"
 
-	,"private host name that uniquely identifies this system on the local network"
-	,"array of nameservers in use by the system"
+	,"Private host name that uniquely identifies this system on the local network"
+	,"Array of nameservers in use by the system"
 	/* INSERT new tabled properties here */
 
 	/* Manually created (non-tabled) properties */
-	,"public host name that uniquely identifies this system on the Internet (usually the same as <i>system.inet_addr</i>)"
-	,"socket library version information"
-	,"time/date system was brought online (in time_t format)"
+	,"Public host name that uniquely identifies this system on the Internet (usually the same as <i>system.inet_addr</i>)"
+	,"Socket library version information"
+	,"Time/date system was brought online (in time_t format)"
 	,"Synchronet full version information (e.g. '3.10k Beta Debug')"
-	,"date and time compiled"
+	,"Date and time compiled"
 	,"Synchronet version number (e.g. '3.10')"
 	,"Synchronet revision letter (e.g. 'k')"
 	,"Synchronet alpha/beta designation (e.g. ' beta')"
@@ -565,14 +565,14 @@ static char* sys_prop_desc[] = {
 	,"Synchronet version number in hexadecimal (e.g. 0x31301 for v3.13b)"
 	,"Synchronet Git repository branch name"
 	,"Synchronet Git repository commit hash"
-	,"platform description (e.g. 'Win32', 'Linux', 'FreeBSD')"
-	,"architecture description (e.g. 'i386', 'i686', 'x86_64')"
-	,"message base library version information"
-	,"compiler used to build Synchronet"
+	,"Platform description (e.g. 'Win32', 'Linux', 'FreeBSD')"
+	,"Architecture description (e.g. 'i386', 'i686', 'x86_64')"
+	,"Message base library version information"
+	,"Compiler used to build Synchronet"
 	,"Synchronet copyright display"
 	,"JavaScript engine version information"
-	,"operating system version information"
-	,"array of FidoNet Technology Network (FTN) addresses associated with this system"
+	,"Operating system version information"
+	,"Array of FidoNet Technology Network (FTN) addresses associated with this system"
 	,NULL
 };
 #endif
@@ -738,23 +738,23 @@ static jsSyncPropertySpec js_sysstats_properties[] = {
 
 #if !defined(JSDOOR) && defined(BUILD_JSDOCS)
 static char* sysstat_prop_desc[] = {
-	 "total logons"
-	,"logons today"
-	,"total time used"
-	,"time used today"
-	,"total files in file bases"
-	,"files uploaded today"
-	,"bytes uploaded today"
-	,"files downloaded today"
-	,"bytes downloaded today"
-	,"total messages in message bases"
-	,"messages posted today"
-	,"total messages in mail base"
-	,"email sent today"
-	,"total feedback messages waiting"
-	,"feedback sent today"
-	,"total user records (does not include deleted or inactive user records)"
-	,"new users today"
+	 "Total logons"
+	,"Logons today"
+	,"Total time used"
+	,"Time used today"
+	,"Total files in file bases"
+	,"Files uploaded today"
+	,"Bytes uploaded today"
+	,"Files downloaded today"
+	,"Bytes downloaded today"
+	,"Total messages in message bases"
+	,"Messages posted today"
+	,"Total messages in mail base"
+	,"Email sent today"
+	,"Total feedback messages waiting"
+	,"Feedback sent today"
+	,"Total user records (does not include deleted or inactive user records)"
+	,"New users today"
 	,NULL
 };
 #endif
@@ -2127,24 +2127,24 @@ js_text(JSContext *cx, uintN argc, jsval *arglist)
 static jsSyncMethodSpec js_system_functions[] = {
 #ifndef JSDOOR
 	{"username",		js_username,		1,	JSTYPE_STRING,	JSDOCSTR("user_number")
-	,JSDOCSTR("returns name of user in specified user record <i>number</i>, or empty string if not found")
+	,JSDOCSTR("Returns name of user in specified user record <i>number</i>, or empty string if not found")
 	,311
 	},
 	{"alias",			js_alias,			1,	JSTYPE_STRING,	JSDOCSTR("alias")
-	,JSDOCSTR("returns name of user that matches alias (if found in <tt>ctrl/alias.cfg</tt>)")
+	,JSDOCSTR("Returns name of user that matches alias (if found in <tt>ctrl/alias.cfg</tt>)")
 	,310
 	},
 	{"find_login_id",	js_find_login_id,	1,	JSTYPE_NUMBER,	JSDOCSTR("user-id")
-	,JSDOCSTR("find a user's login ID (alias, real name, or number), returns matching user record number or 0 if not found")
+	,JSDOCSTR("Find a user's login ID (alias, real name, or number), returns matching user record number or 0 if not found")
 	,32000
 	},
 	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("username [,sysop_alias=<tt>true</tt>]")
-	,JSDOCSTR("exact user name matching, returns number of user whose name/alias matches <i>username</i> "
+	,JSDOCSTR("Exact user name matching, returns number of user whose name/alias matches <i>username</i> "
 		" or 0 if not found, matches well-known sysop aliases by default")
 	,310
 	},
 	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_NUMBER,	JSDOCSTR("field, data [,match_del=<tt>false</tt>] [,usernumber, match_next=<tt>false</tt>]")
-	,JSDOCSTR("search user database for data in a specific field (see <tt>U_*</tt> in <tt>sbbsdefs.js</tt>), "
+	,JSDOCSTR("Search user database for data in a specific field (see <tt>U_*</tt> in <tt>sbbsdefs.js</tt>), "
 		"if <i>match_del</i> is <tt>true</tt>, deleted user records are searched, "
 		"returns first matching user record number, optional <i>usernumber</i> specifies user record to skip, "
 		"or record at which to begin searching if optional <i>match_next</i> is <tt>true</tt>")
@@ -2152,133 +2152,133 @@ static jsSyncMethodSpec js_system_functions[] = {
 	},
 #endif
 	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("basename, find_string")
-	,JSDOCSTR("search <tt>text/<i>basename</i>.can</tt> for pseudo-regexp")
+	,JSDOCSTR("Search <tt>text/<i>basename</i>.can</tt> for pseudo-regexp")
 	,310
 	},
 	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename or array of strings, find_string")
-	,JSDOCSTR("search any trashcan/filter file or array of pattern strings (in <tt>*.can</tt> format) for <i>find_string</i>")
+	,JSDOCSTR("Search any trashcan/filter file or array of pattern strings (in <tt>*.can</tt> format) for <i>find_string</i>")
 	,310
 	},
 	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	JSDOCSTR("[timezone=<i>local</i>]")
-	,JSDOCSTR("convert time zone integer to string, defaults to system timezone if <i>timezone</i> not specified")
+	,JSDOCSTR("Convert time zone integer to string, defaults to system timezone if <i>timezone</i> not specified")
 	,310
 	},
 	{"timestr",			js_timestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time=<i>current</i>]")
-	,JSDOCSTR("convert time_t integer into a time string, "
+	,JSDOCSTR("Convert time_t integer into a time string, "
 		"defaults to current time if <i>time</i> not specified")
 	,310
 	},
 	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time=<i>current</i>]")
-	,JSDOCSTR("convert time_t integer into a date string (in either <tt>MM/DD/YY</tt> or <tt>DD/MM/YY</tt> format), "
+	,JSDOCSTR("Convert time_t integer into a date string (in either <tt>MM/DD/YY</tt> or <tt>DD/MM/YY</tt> format), "
 		"defaults to current date if <i>time</i> not specified. "
 		"If <i>time</i> is a string in the appropriate format, returns the time_t.")
 	,310
 	},
 	{"secondstr",		js_secondstr,		0,	JSTYPE_STRING,	JSDOCSTR("seconds")
-	,JSDOCSTR("convert elapsed time in seconds into a string in <tt>hh:mm:ss</tt> format")
+	,JSDOCSTR("Convert elapsed time in seconds into a string in <tt>hh:mm:ss</tt> format")
 	,310
 	},
 #ifndef JSDOOR
 	{"spamlog",			js_spamlog,			6,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, action, reason, host, ip, to, from]")
-	,JSDOCSTR("log a suspected SPAM attempt")
+	,JSDOCSTR("Log a suspected SPAM attempt")
 	,310
 	},
 	{"hacklog",			js_hacklog,			5,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, user, text, host, ip, port]")
-	,JSDOCSTR("log a suspected hack attempt")
+	,JSDOCSTR("Log a suspected hack attempt")
 	,310
 	},
 	{"filter_ip",		js_filter_ip,		4,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, reason, host, ip, username, filename]")
-	,JSDOCSTR("add an IP address (with comment) to an IP filter file. If filename is not specified, the ip.can file is used")
+	,JSDOCSTR("Add an IP address (with comment) to an IP filter file. If filename is not specified, the ip.can file is used")
 	,311
 	},
 	{"get_node",		js_get_node,		1,	JSTYPE_OBJECT,	JSDOCSTR("node_number")
-	,JSDOCSTR("read a node data record all at once (and leaving the record unlocked) "
+	,JSDOCSTR("Read a node data record all at once (and leaving the record unlocked) "
 		"returning an object matching the elements of <tt>system.node_list</tt>")
 	,31702
 	},
 	{"get_node_message",js_get_node_message,0,	JSTYPE_STRING,	JSDOCSTR("node_number")
-	,JSDOCSTR("read any messages waiting for the specified node and return in a single string")
+	,JSDOCSTR("Read any messages waiting for the specified node and return in a single string")
 	,311
 	},
 	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("node_number, message_text")
-	,JSDOCSTR("send a node a short text message, delivered immediately")
+	,JSDOCSTR("Send a node a short text message, delivered immediately")
 	,310
 	},
 	{"get_telegram",	js_get_telegram,	1,	JSTYPE_STRING,	JSDOCSTR("user_number")
-	,JSDOCSTR("returns any short text messages waiting for the specified user")
+	,JSDOCSTR("Returns any short text messages waiting for the specified user")
 	,311
 	},
 	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number, message_text")
-	,JSDOCSTR("sends a user a short text message, delivered immediately or during next logon")
+	,JSDOCSTR("Sends a user a short text message, delivered immediately or during next logon")
 	,310
 	},
 	{"notify",			js_notify,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number, subject [,message_text]")
-	,JSDOCSTR("notify a user or operator via both email and a short text message about an important event")
+	,JSDOCSTR("Notify a user or operator via both email and a short text message about an important event")
 	,31801
 	},
 	{"newuser",			js_new_user,		1,	JSTYPE_ALIAS },
 	{"new_user",		js_new_user,		1,	JSTYPE_OBJECT,	JSDOCSTR("name/alias [,client object]")
-	,JSDOCSTR("creates a new user record, returns a new <a href=#User>User</a> object representing the new user account, on success.<br>"
+	,JSDOCSTR("Creates a new user record, returns a new <a href=#User>User</a> object representing the new user account, on success.<br>"
 	"returns an numeric error code on failure (optional <i>client</i> object argument added in v3.15a.  As of 3.16c, the global "
 	"client object is used if the argument is omitted)")
 	,310
 	},
 	{"del_user",		js_del_user,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number")
-	,JSDOCSTR("delete the specified user account")
+	,JSDOCSTR("Delete the specified user account")
 	,316
 	},
 #endif
 	{"exec",			js_sys_exec,		0,	JSTYPE_NUMBER,	JSDOCSTR("command-line")
-	,JSDOCSTR("executes a native system/shell command-line, returns <i>0</i> on success")
+	,JSDOCSTR("Executes a native system/shell command-line, returns <i>0</i> on success")
 	,311
 	},
 	{"popen",			js_popen,			0,	JSTYPE_ARRAY,	JSDOCSTR("command-line")
-	,JSDOCSTR("executes a native system/shell command-line, returns array of captured output lines on success "
+	,JSDOCSTR("Executes a native system/shell command-line, returns array of captured output lines on success "
 		"(<b>only functional on UNIX systems</b>)")
 	,311
 	},
 #ifndef JSDOOR
 	{"check_syspass",	js_chksyspass,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("password")
-	,JSDOCSTR("compares the supplied <i>password</i> against the system password and returns <i>true</i> if it matches")
+	,JSDOCSTR("Compares the supplied <i>password</i> against the system password and returns <i>true</i> if it matches")
 	,311
 	},
 	{"check_name",		js_chkname,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("name/alias")
-	,JSDOCSTR("checks that the provided name/alias string is suitable for a new user account, "
+	,JSDOCSTR("Checks that the provided name/alias string is suitable for a new user account, "
 		"returns <i>true</i> if it is valid")
 	,315
 	},
 	{"check_filename",	js_chkfname,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
-	,JSDOCSTR("verify that the specified <i>filename</i> string is legal and allowed for upload by users "
+	,JSDOCSTR("Verify that the specified <i>filename</i> string is legal and allowed for upload by users "
 		"(based on system configuration), returns <i>true</i> if the filename is allowed")
 	,31902
 	},
 	{"allowed_filename", js_allowed_fname,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
-	,JSDOCSTR("verify that the specified <i>filename</i> string is allowed for upload by users "
+	,JSDOCSTR("Verify that the specified <i>filename</i> string is allowed for upload by users "
 		"(based on system configuration), returns <i>true</i> if the filename is allowed")
 	,31902
 	},
 	{"safest_filename",	js_safest_fname,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
-	,JSDOCSTR("verify that the specified <i>filename</i> string contains only the safest subset of characters")
+	,JSDOCSTR("Verify that the specified <i>filename</i> string contains only the safest subset of characters")
 	,31902
 	},
 	{"illegal_filename", js_illegal_fname,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
-	,JSDOCSTR("check if the specified <i>filename</i> string contains illegal characters or sequences, "
+	,JSDOCSTR("Check if the specified <i>filename</i> string contains illegal characters or sequences, "
 		"returns <i>true</i> if it is an illegal filename")
 	,31902
 	},
 #endif
 	{"check_pid",		js_chkpid,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("process-ID")
-	,JSDOCSTR("checks that the provided process ID is a valid executing process on the system, "
+	,JSDOCSTR("Checks that the provided process ID is a valid executing process on the system, "
 		"returns <i>true</i> if it is valid")
 	,315
 	},
 	{"terminate_pid",	js_killpid,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("process-ID")
-	,JSDOCSTR("terminates executing process on the system with the specified process ID, "
+	,JSDOCSTR("Terminates executing process on the system with the specified process ID, "
 		"returns <i>true</i> on success")
 	,315
 	},
 	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("number")
-	,JSDOCSTR("returns specified text string from text.dat (like <tt>bbs.text()</tt>) or returns <i>null</i> upon error")
+	,JSDOCSTR("Returns specified text string from text.dat (like <tt>bbs.text()</tt>) or returns <i>null</i> upon error")
 	,31802
 	},
 	{0}
@@ -2301,15 +2301,15 @@ enum {
 
 #ifdef BUILD_JSDOCS
 static char* node_prop_desc[] = {
-	 "status (see <tt>nodedefs.js</tt> for valid values)"
-	,"error counter"
-	,"current user action (see <tt>nodedefs.js</tt>)"
-	,"current user number"
-	,"connection speed (<tt>0xffff</tt> = Telnet or RLogin)"
-	,"miscellaneous bitfield (see <tt>nodedefs.js</tt>)"
-	,"auxillary value"
-	,"extended auxillary value"
-	,"node directory"
+	 "Status (see <tt>nodedefs.js</tt> for valid values)"
+	,"Error counter"
+	,"Current user action (see <tt>nodedefs.js</tt>)"
+	,"Current user number"
+	,"Connection speed (<tt>0xffff</tt> = Telnet or RLogin)"
+	,"Miscellaneous bitfield (see <tt>nodedefs.js</tt>)"
+	,"Auxillary value"
+	,"Extended auxillary value"
+	,"Node directory"
 	,NULL
 };
 #endif

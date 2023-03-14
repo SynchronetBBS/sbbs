@@ -206,28 +206,28 @@ static jsSyncPropertySpec js_properties[] = {
 #ifdef BUILD_JSDOCS
 static char* prop_desc[] = {
 	 "JavaScript engine version information (AKA system.js_version)"
-	,"set to <i>false</i> to disable the automatic termination of the script upon external request"
-	,"termination has been requested (stop execution as soon as possible)"
-	,"number of operation callbacks performed in this runtime"
-	,"maximum number of operation callbacks, used for infinite-loop detection (0=disabled)"
-	,"interval of periodic time-slice yields (lower number=higher frequency, 0=disabled)"
-	,"interval of periodic garbage collection attempts (lower number=higher frequency, 0=disabled)"
-	,"number of garbage collections attempted in this runtime - <small>READ ONLY</small>"
+	,"Set to <i>false</i> to disable the automatic termination of the script upon external request"
+	,"Termination has been requested (stop execution as soon as possible)"
+	,"Number of operation callbacks performed in this runtime"
+	,"Maximum number of operation callbacks, used for infinite-loop detection (0=disabled)"
+	,"Interval of periodic time-slice yields (lower number=higher frequency, 0=disabled)"
+	,"Interval of periodic garbage collection attempts (lower number=higher frequency, 0=disabled)"
+	,"Number of garbage collections attempted in this runtime - <small>READ ONLY</small>"
 #ifdef jscntxt_h___
-	,"number of garbage collections performed in this runtime - <small>READ ONLY</small>"
-	,"number of heap bytes in use after last garbage collection - <small>READ ONLY</small>"
-	,"number of heap bytes currently in use - <small>READ ONLY</small>"
-	,"maximum number of bytes available for heap"
+	,"Number of garbage collections performed in this runtime - <small>READ ONLY</small>"
+	,"Number of heap bytes in use after last garbage collection - <small>READ ONLY</small>"
+	,"Number of heap bytes currently in use - <small>READ ONLY</small>"
+	,"Maximum number of bytes available for heap"
 #endif
-	,"global (top level) object - <small>READ ONLY</small>"
-	,"option flags - <small>READ ONLY</small>"
-	,"do callbacks after script finishes running"
+	,"Global (top level) object - <small>READ ONLY</small>"
+	,"Option flags - <small>READ ONLY</small>"
+	,"Do callbacks after script finishes running"
 	/* New properties go here... */
-	,"full path and filename of JS file executed"
+	,"Full path and filename of JS file executed"
 	,"JS filename executed (with no path)"
-	,"directory of executed JS file"
+	,"Directory of executed JS file"
 	,"Either the configured startup directory in SCFG (for externals) or the cwd when jsexec is started"
-	,"global scope for this script"
+	,"Global scope for this script"
 	,"load() search path array.<br>For relative load paths (e.g. not beginning with '/' or '\\'), "
 		"the path is assumed to be a sub-directory of the (configurable) mods or exec directories "
 		"and is searched accordingly. "
@@ -1434,62 +1434,62 @@ done:
 
 static jsSyncMethodSpec js_functions[] = {
 	{"eval",            js_eval,            0,	JSTYPE_UNDEF,	JSDOCSTR("script")
-	,JSDOCSTR("evaluate a JavaScript string in its own (secure) context, returning the result")
+	,JSDOCSTR("Evaluate a JavaScript string in its own (secure) context, returning the result")
 	,311
 	},		
 	{"gc",				js_gc,				0,	JSTYPE_VOID,	JSDOCSTR("forced=<tt>true</tt>")
-	,JSDOCSTR("perform a garbage collection operation (freeing memory for unused allocated objects), "
+	,JSDOCSTR("Perform a garbage collection operation (freeing memory for unused allocated objects), "
 		"if <i>forced</i> is <i>true</i> (the default) a garbage collection is always performed, "
 		"otherwise it is only performed if deemed appropriate by the JavaScript engine")
 	,311
 	},
 	{"on_exit",			js_on_exit,			1,	JSTYPE_VOID,	JSDOCSTR("to_eval")
-	,JSDOCSTR("add a string to evaluate/execute (LIFO stack) upon script's termination")
+	,JSDOCSTR("Add a string to evaluate/execute (LIFO stack) upon script's termination (e.g. call of <tt>exit()</tt>)")
 	,313
 	},
 	{"report_error",	js_report_error,	1,	JSTYPE_VOID,	JSDOCSTR("error [,fatal=<tt>false</tt>]")
-	,JSDOCSTR("report an error using the standard JavaScript error reporting mechanism "
+	,JSDOCSTR("Report an error using the standard JavaScript error reporting mechanism "
 	"(including script filename and line number), "
 	"if <i>fatal</i> is <i>true</i>, immediately terminates script")
 	,313
 	},
 	{"get_parent",		js_get_parent,		1,	JSTYPE_OBJECT,	JSDOCSTR("object")
-	,JSDOCSTR("return the parent of the specified object")
+	,JSDOCSTR("Return the parent of the specified object")
 	,314
 	},
 	{"get_size",		js_getsize,			1,	JSTYPE_NUMBER,	JSDOCSTR("[object]")
-	,JSDOCSTR("return the size in bytes the object uses in memory (forces GC) ")
+	,JSDOCSTR("Return the size in bytes the object uses in memory (forces GC) ")
 	,316
 	},
 	{"flatten_string",	js_flatten,			1,	JSTYPE_VOID,	JSDOCSTR("[string]")
-	,JSDOCSTR("flatten a string, optimizing allocated memory used for concatenated strings")
+	,JSDOCSTR("Flatten a string, optimizing allocated memory used for concatenated strings")
 	,316
 	},
-	{"exec",	js_execfile,			1,	JSTYPE_NUMBER,	JSDOCSTR("filename [, startup_dir], <i>object</i> scope [,...]")
-	,JSDOCSTR("execute a script within the specified scope.  The main difference between this method "
-	"and <tt>load()</tt> is that scripts called this way can call <tt>exit()</tt> without terminating the caller.  If it does, any "
-	"<tt>on_exit()</tt> handlers will be evaluated in scripts scope when the script exists. <br>"
+	{"exec",	js_execfile,			1,	JSTYPE_NUMBER,	JSDOCSTR("filename [,startup_dir], <i>object</i> scope [,...]")
+	,JSDOCSTR("Execute a script within the specified <i>scope</i>.  The main difference between this method "
+	"and <tt>load()</tt> is that scripts invoked in this way can call <tt>exit()</tt> without terminating the caller.  If it does, any "
+	"<tt>on_exit()</tt> handlers will be evaluated in the script's scope when the script exits. <br>"
 	"NOTE: to get a child of the current scope, you need to create an object in the current scope. "
 	"An anonymous object can be created using '<tt>new function(){}</tt>'. <br>"
-	"NOTE: Use <tt>js.exec.apply()</tt> if you need to pass a variable number of arguments to the executed script.")
+	"TIP: Use <tt>js.exec.apply()</tt> if you need to pass a variable number of arguments to the executed script.")
 	,31702
 	},
-	{"setTimeout",	js_setTimeout,			2,	JSTYPE_NUMBER,	JSDOCSTR("callback, time [, thisObj]")
-	,JSDOCSTR("install a timeout timer.  <tt>callback()<.tt> will be called <tt>time</tt> (milliseconds) after this function is called. "
+	{"setTimeout",	js_setTimeout,			2,	JSTYPE_NUMBER,	JSDOCSTR("callback, time [,thisObj]")
+	,JSDOCSTR("Install a timeout timer.  <tt>callback()</tt> will be called <tt>time</tt> (milliseconds) after this function is called. "
 	 "Returns an id which can be passed to <tt>clearTimeout()</tt>")
 	,31900
 	},
-	{"setInterval",	js_setInterval,			2,	JSTYPE_NUMBER,	JSDOCSTR("callback, period [, thisObj]")
-	,JSDOCSTR("install an interval timer.  <tt>callback()</tt> will be called every <tt>period</tt> (milliseconds) after <tt>setInterval()</tt> is called. "
+	{"setInterval",	js_setInterval,			2,	JSTYPE_NUMBER,	JSDOCSTR("callback, period [,thisObj]")
+	,JSDOCSTR("Install an interval timer.  <tt>callback()</tt> will be called every <tt>period</tt> (milliseconds) after <tt>setInterval()</tt> is called. "
 	 "Returns an id which can be passed to <tt>clearInterval()</tt>")
 	,31900
 	},
 	{"clearTimeout",	js_clearTimeout,	1,	JSTYPE_VOID,	JSDOCSTR("id")
-	,JSDOCSTR("remove a timeout timer")
+	,JSDOCSTR("Remove a timeout timer")
 	,31900
 	},
 	{"clearInterval",	js_clearInterval,	1,	JSTYPE_VOID,	JSDOCSTR("id")
-	,JSDOCSTR("remove an interval timer")
+	,JSDOCSTR("Remove an interval timer")
 	,31900
 	},
 	{"addEventListener",	js_addEventListener,	2,	JSTYPE_NUMBER,	JSDOCSTR("eventName, callback")
@@ -1500,11 +1500,11 @@ static jsSyncMethodSpec js_functions[] = {
 	,JSDOCSTR("Remove listeners added with <tt>js.addEventListener()</tt>.  <tt>id</tt> can be a string or an id returned by <tt>addEventListener()</tt>.  This does not remove already triggered callbacks from the run queue.")
 	,31900
 	},
-	{"dispatchEvent",	js_dispatchEvent,	1,	JSTYPE_VOID,	JSDOCSTR("eventName [, thisObj]")
+	{"dispatchEvent",	js_dispatchEvent,	1,	JSTYPE_VOID,	JSDOCSTR("eventName [,thisObj]")
 	,JSDOCSTR("Add all listeners of eventName to the end of the run queue.  If <tt>thisObj</tt> is passed, specifies <tt>this</tt> in the callback (the <tt>js</tt> object is used otherwise).")
 	,31900
 	},
-	{"setImmediate",	js_setImmediate,	1,	JSTYPE_VOID,	JSDOCSTR("callback[, thisObj]")
+	{"setImmediate",	js_setImmediate,	1,	JSTYPE_VOID,	JSDOCSTR("callback [,thisObj]")
 	,JSDOCSTR("Adds <tt>callback</tt> to the end of the run queue, where it will be called after all pending events are processed")
 	,31900
 	},

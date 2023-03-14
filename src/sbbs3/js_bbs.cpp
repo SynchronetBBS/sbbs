@@ -153,124 +153,124 @@ enum {
 
 #ifdef BUILD_JSDOCS
 	static const char* bbs_prop_desc[] = {
-	 "system status bitfield (see <tt>SS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
-	,"startup options bitfield (see <tt>BBS_OPT_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
-	,"answer time, in <i>time_t</i> format"
-	,"logon time, in <i>time_t</i> format"
-	,"time from which user's time left is calculated, in <i>time_t</i> format"
-	,"current file new-scan time, in <i>time_t</i> format"
-	,"previous file new-scan time, in <i>time_t</i> format"
-	,"online (see <tt>ON_*</tt> in <tt>sbbsdefs.js</tt> for valid values)"
-	,"time left (in seconds)"
-	,"time of next exclusive event (in <i>time_t</i> format), or 0 if none"
-	,"internal code of next exclusive event"
+	 "System status bitfield (see <tt>SS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"Startup options bitfield (see <tt>BBS_OPT_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"Answer time, in <i>time_t</i> format"
+	,"Logon time, in <i>time_t</i> format"
+	,"Time from which user's time left is calculated, in <i>time_t</i> format"
+	,"Current file new-scan time, in <i>time_t</i> format"
+	,"Previous file new-scan time, in <i>time_t</i> format"
+	,"Online (see <tt>ON_*</tt> in <tt>sbbsdefs.js</tt> for valid values)"
+	,"Time left (in seconds)"
+	,"Time of next exclusive event (in <i>time_t</i> format), or 0 if none"
+	,"Internal code of next exclusive event"
 
-	,"current node number"
-	,"current node settings bitfield (see <tt>NM_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
-	,"current node status value (see <tt>nodedefs.js</tt> for valid values)"
-	,"current node error counter"
-	,"current node action (see <tt>nodedefs.js</tt> for valid values)"
-	,"current node user number (<i>useron</i> value)"
-	,"current node connection type (see <tt>nodedefs.js</tt> for valid values)"
-	,"current node misc value (see <tt>nodedefs.js</tt> for valid values)"
-	,"current node aux value"
-	,"current node extended aux (<i>extaux</i>) value"
-	,"validation feedback user for this node (or 0 for no validation feedback required)"
+	,"Current node number"
+	,"Current node settings bitfield (see <tt>NM_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"Current node status value (see <tt>nodedefs.js</tt> for valid values)"
+	,"Current node error counter"
+	,"Current node action (see <tt>nodedefs.js</tt> for valid values)"
+	,"Current node user number (<i>useron</i> value)"
+	,"Current node connection type (see <tt>nodedefs.js</tt> for valid values)"
+	,"Current node misc value (see <tt>nodedefs.js</tt> for valid values)"
+	,"Current node aux value"
+	,"Current node extended aux (<i>extaux</i>) value"
+	,"Validation feedback user for this node (or 0 for no validation feedback required)"
 
-	,"bytes uploaded during this session"
-	,"bytes downloaded during this session"
-	,"files uploaded during this session"
-	,"files downloaded during this session"
-	,"messages posted during this session"
-	,"e-mails sent during this session"
-	,"feedback messages sent during this session"
-	,"messages read during this session"
+	,"Bytes uploaded during this session"
+	,"Bytes downloaded during this session"
+	,"Files uploaded during this session"
+	,"Files downloaded during this session"
+	,"Messages posted during this session"
+	,"E-mails sent during this session"
+	,"Feedback messages sent during this session"
+	,"Messages read during this session"
 
-	,"menu subdirectory (overrides default)"
-	,"menu file (overrides default)"
-	,"total main menu commands received from user during this session"
-	,"total file menu commands received from user during this session"
+	,"Menu subdirectory (overrides default)"
+	,"Menu file (overrides default)"
+	,"Total main menu commands received from user during this session"
+	,"Total file menu commands received from user during this session"
 
-	,"current message group"
-	,"current message sub-board"
-	,"current message sub-board internal code"
-	,"current file library"
-	,"current file directory"
-	,"current file directory internal code"
+	,"Current message group"
+	,"Current message sub-board"
+	,"Current message sub-board internal code"
+	,"Current file library"
+	,"Current file directory"
+	,"Current file directory internal code"
 
-	,"remote connection type"
-	,"login name given during RLogin negotiation"
-	,"password specified during RLogin negotiation"
-	,"terminal specified during RLogin negotiation"
-	,"client name"
+	,"Remote connection type"
+	,"Login name given during RLogin negotiation"
+	,"Password specified during RLogin negotiation"
+	,"Terminal specified during RLogin negotiation"
+	,"Client name"
 
-	,"error level returned from last executed external program"
-
-	/* READ ONLY */
-	,"message group name of message being read"
-	,"message group description of message being read"
-	,"message group number of message being read"
-	,"sub-board name of message being read"
-	,"sub-board description of message being read"
-	,"sub-board internal code of message being read"
-	,"sub-board number of message being read"
-	,"message base attributes"
-	,"highest message number in message base"
-	,"total number of messages in message base"
-	,"number of messages loaded from message base"
-	,"current message number in message base"
+	,"Error level returned from last executed external program"
 
 	/* READ ONLY */
-	,"message recipient name"
-	,"message recipient extension"
-	,"message recipient network address"
-	,"message recipient agent type"
-	,"message sender name"
-	,"message sender extension"
-	,"message sender network address"
-	,"message sender BBS ID"
-	,"message sender agent type"
-	,"message reply-to name"
-	,"message reply-to extension"
-	,"message reply-to network address"
-	,"message reply-to agent type"
-	,"message subject"
-	,"message date/time"
-	,"message time zone"
-	,"message date/time imported"
-	,"message attributes"
-	,"message auxiliary attributes"
-	,"message network attributes"
-	,"message header offset"
-	,"message number (unique, monotonically incrementing)"
-	,"message expiration"
-	,"message forwarded"
-	,"message thread identifier (0 if unknown)"
-	,"message thread, back message number"
-	,"message thread, next message number"
-	,"message thread, message number of first reply to this message"
-	,"message identifier"
-	,"message replied-to identifier"
-	,"message delivery attempt counter"
+	,"Message group name of message being read"
+	,"Message group description of message being read"
+	,"Message group number of message being read"
+	,"Sub-board name of message being read"
+	,"Sub-board description of message being read"
+	,"Sub-board internal code of message being read"
+	,"Sub-board number of message being read"
+	,"Message base attributes"
+	,"Highest message number in message base"
+	,"Total number of messages in message base"
+	,"Number of messages loaded from message base"
+	,"Current message number in message base"
 
-	,"message header displayed at top-of-screen"
+	/* READ ONLY */
+	,"Message recipient name"
+	,"Message recipient extension"
+	,"Message recipient network address"
+	,"Message recipient agent type"
+	,"Message sender name"
+	,"Message sender extension"
+	,"Message sender network address"
+	,"Message sender BBS ID"
+	,"Message sender agent type"
+	,"Message reply-to name"
+	,"Message reply-to extension"
+	,"Message reply-to network address"
+	,"Message reply-to agent type"
+	,"Message subject"
+	,"Message date/time"
+	,"Message time zone"
+	,"Message date/time imported"
+	,"Message attributes"
+	,"Message auxiliary attributes"
+	,"Message network attributes"
+	,"Message header offset"
+	,"Message number (unique, monotonically incrementing)"
+	,"Message expiration"
+	,"Message forwarded"
+	,"Message thread identifier (0 if unknown)"
+	,"Message thread, back message number"
+	,"Message thread, next message number"
+	,"Message thread, message number of first reply to this message"
+	,"Message identifier"
+	,"Message replied-to identifier"
+	,"Message delivery attempt counter"
 
-	,"file name"
-	,"file description"
-	,"file directory (number)"
-	,"file attribute flags"
-	,"file date"
-	,"file size (in bytes)"
-	,"file credit value"
-	,"file uploader (user name)"
-	,"file upload date"
-	,"file last-download date"
-	,"file download count"
+	,"Message header displayed at top-of-screen"
 
-	,"number of files in batch upload queue"
-	,"number of files in batch download queue"
+	,"File name"
+	,"File description"
+	,"File directory (number)"
+	,"File attribute flags"
+	,"File date"
+	,"File size (in bytes)"
+	,"File credit value"
+	,"File uploader (user name)"
+	,"File upload date"
+	,"File last-download date"
+	,"File download count"
 
-	,"current command shell/module <i>command string</i> value"
+	,"Number of files in batch upload queue"
+	,"Number of files in batch download queue"
+
+	,"Current command shell/module <i>command string</i> value"
 	,NULL
 	};
 #endif
@@ -4372,20 +4372,20 @@ js_select_user(JSContext *cx, uintN argc, jsval *arglist)
 
 static jsSyncMethodSpec js_bbs_functions[] = {
 	{"atcode",			js_atcode,			1,	JSTYPE_STRING,	JSDOCSTR("code_string")
-	,JSDOCSTR("returns @-code value, specified <i>code</i> string does not include @ character delimiters")
+	,JSDOCSTR("Returns @-code value, specified <i>code</i> string does not include @ character delimiters")
 	,310
 	},
 	/* text.dat */
 	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("line_number")
-	,JSDOCSTR("returns specified text string from text.dat")
+	,JSDOCSTR("Returns specified text string from text.dat")
 	,310
 	},
 	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("line_number, text")
-	,JSDOCSTR("replaces specified text string in memory")
+	,JSDOCSTR("Replaces specified text string in memory")
 	,310
 	},
 	{"revert_text",		js_revert_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[line_number=<i>all</i>]")
-	,JSDOCSTR("reverts specified text string to original text string; "
+	,JSDOCSTR("Reverts specified text string to original text string; "
 		"if <i>line_number</i> unspecified, reverts all text lines")
 	,310
 	},
@@ -4395,86 +4395,87 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	},
 	/* procedures */
 	{"newuser",			js_newuser,			0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("interactive new user procedure")
+	,JSDOCSTR("Interactive new user procedure")
 	,310
 	},
 	{"login",			js_login,			4,	JSTYPE_BOOLEAN,	JSDOCSTR("user_name [,password_prompt] [,user_password] [,system_password]")
-	,JSDOCSTR("login with <i>user_name</i>, displaying <i>password_prompt</i> for user's password (if required), "
+	,JSDOCSTR("Login with <i>user_name</i>, displaying <i>password_prompt</i> for user's password (if required), "
 	"optionally supplying the user's password and the system password as arguments so as to not be prompted")
 	,310
 	},
 	{"logon",			js_logon,			0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("interactive logon procedure")
+	,JSDOCSTR("Interactive user-logon procedure")
 	,310
 	},
 	{"logoff",			js_logoff,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[prompt=<i>true</i>]")
-	,JSDOCSTR("interactive logoff procedure, pass <i>false</i> for <i>prompt</i> argument to avoid yes/no prompt, returns <i>false</i> if denied logoff")
+	,JSDOCSTR("Interactive user-logoff procedure, pass <i>false</i> for <i>prompt</i> argument to avoid yes/no prompt, returns <i>false</i> if denied logoff, "
+		"hangs-up (disconnects) upon completion of logoff")
 	,315
 	},
 	{"logout",			js_logout,			0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("non-interactive logout procedure")
+	,JSDOCSTR("Non-interactive user-logout procedure, invoked implicitly upon user-disconnect. Only invoke this method to force a logout without a disconnect.")
 	,310
 	},
 	{"hangup",			js_hangup,			0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("hangup (disconnect) immediately")
+	,JSDOCSTR("Hangup (disconnect) the connected user/client immediately")
 	,310
 	},
 	{"node_sync",		js_nodesync,		1,	JSTYPE_ALIAS },
-	{"nodesync",		js_nodesync,		1,	JSTYPE_VOID,	JSDOCSTR("[clearline=<i>false</i>]")
-	,JSDOCSTR("synchronize with node database, checks for messages, interruption, etc. (AKA node_sync), "
-	"clears the current console line if there's a message to print when <i>clearline</i> is <i>true</i>.")
+	{"nodesync",		js_nodesync,		1,	JSTYPE_VOID,	JSDOCSTR("[clear-line=<i>false</i>]")
+	,JSDOCSTR("Synchronize with node database, checks for messages, interruption, etc. (AKA node_sync), "
+	"clears the current console line if there's a message to print when <i>clear-line</i> is <i>true</i>.")
 	,310
 	},
 	{"auto_msg",		js_automsg,			0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("read/create system's auto-message")
+	,JSDOCSTR("Read/create system's auto-message")
 	,310
 	},
 	{"time_bank",		js_time_bank,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("enter the time banking system")
+	,JSDOCSTR("Enter the time banking system")
 	,310
 	},
 	{"qwk_sec",			js_qwk_sec,			0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("enter the QWK message packet upload/download/config section")
+	,JSDOCSTR("Enter the QWK message packet upload/download/config section")
 	,310
 	},
 	{"text_sec",		js_text_sec,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("enter the text files section")
+	,JSDOCSTR("Enter the text files section")
 	,310
 	},
 	{"xtrn_sec",		js_xtrn_sec,		0,	JSTYPE_VOID,	JSDOCSTR("[section]")
-	,JSDOCSTR("enter the external programs section (or go directly to the specified <i>section</i>)")
+	,JSDOCSTR("Enter the external programs section (or go directly to the specified <i>section</i>)")
 	,310
 	},
 	{"chat_sec",		js_chat_sec,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("enter the chat section/menu")
+	,JSDOCSTR("Enter the chat section/menu")
 	,320
 	},
 	{"xfer_policy",		js_xfer_policy,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("display the file transfer policy")
+	,JSDOCSTR("Display the file transfer policy")
 	,310
 	},
 	{"batch_menu",		js_batchmenu,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("enter the batch file transfer menu")
+	,JSDOCSTR("Enter the batch file transfer menu")
 	,310
 	},
 	{"batch_download",	js_batchdownload,	0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("start a batch download")
+	,JSDOCSTR("Start a batch download")
 	,310
 	},
 	{"batch_add_list",	js_batchaddlist,	1,	JSTYPE_VOID,	JSDOCSTR("list_filename")
-	,JSDOCSTR("add file list to batch download queue")
+	,JSDOCSTR("Add file list to batch download queue")
 	,310
 	},
 	{"batch_clear",		js_batchclear,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("upload=false")
-	,JSDOCSTR("clear batch download (or upload) queue")
+	,JSDOCSTR("Clear batch download (or upload) queue")
 	,320
 	},
 	{"view_file",		js_viewfile,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
-	,JSDOCSTR("list contents of specified filename (complete path)")
+	,JSDOCSTR("List contents of specified filename (complete path)")
 	,319
 	},
 	{"send_file",		js_sendfile,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename [,protocol] [,description] [,autohang=true]")
-	,JSDOCSTR("send specified filename (complete path) to user via user-prompted "
+	,JSDOCSTR("Send specified filename (complete path) to user via user-prompted "
 		"(or optionally specified) protocol.<br>"
 		"The optional <i>description</i> string is used for logging purposes.<br>"
 		"When <i>autohang=true</i>, disconnect after transfer based on user's default setting."
@@ -4482,111 +4483,111 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,314
 	},
 	{"receive_file",	js_recvfile,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename [,protocol] [,autohang=true]")
-	,JSDOCSTR("received specified filename (complete path) from user via user-prompted "
+	,JSDOCSTR("Received specified filename (complete path) from user via user-prompted "
 		"(or optionally specified) protocol.<br>"
 		"When <i>autohang=true</i>, disconnect after transfer based on user's default setting."
 	)
 	,314
 	},
 	{"temp_xfer",		js_temp_xfer,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("enter the temporary file tranfer menu")
+	,JSDOCSTR("Enter the temporary file tranfer menu")
 	,310
 	},
 	{"user_sync",		js_user_sync,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("read the current user data from the database")
+	,JSDOCSTR("Read the current user data from the database")
 	,310
 	},
 	{"user_config",		js_user_config,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("enter the user settings configuration menu")
+	,JSDOCSTR("Enter the user settings configuration menu")
 	,310
 	},
 	{"sys_info",		js_sys_info,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("display system information")
+	,JSDOCSTR("Display system information")
 	,310
 	},
 	{"sub_info",		js_sub_info,		1,	JSTYPE_VOID,	JSDOCSTR("[sub-board=<i>current</i>]")
-	,JSDOCSTR("display message sub-board information (current <i>sub-board</i>, if unspecified)")
+	,JSDOCSTR("Display message sub-board information (current <i>sub-board</i>, if unspecified)")
 	,310
 	},
 	{"dir_info",		js_dir_info,		0,	JSTYPE_VOID,	JSDOCSTR("[directory=<i>current</i>]")
-	,JSDOCSTR("display file directory information (current <i>directory</i>, if unspecified)")
+	,JSDOCSTR("Display file directory information (current <i>directory</i>, if unspecified)")
 	,310
 	},
 	{"user_info",		js_user_info,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("display current user information")
+	,JSDOCSTR("Display current user information")
 	,310
 	},
 	{"ver",				js_ver,				0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("display software version information")
+	,JSDOCSTR("Display software version information")
 	,310
 	},
 	{"sys_stats",		js_sys_stats,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("display system statistics")
+	,JSDOCSTR("Display system statistics")
 	,310
 	},
 	{"node_stats",		js_node_stats,		0,	JSTYPE_VOID,	JSDOCSTR("[node_number=<i>current</i>]")
-	,JSDOCSTR("display current (or specified) node statistics")
+	,JSDOCSTR("Display current (or specified) node statistics")
 	,310
 	},
 	{"list_users",		js_userlist,		0,	JSTYPE_VOID,	JSDOCSTR("[mode=<tt>UL_ALL</tt>]")
-	,JSDOCSTR("display user list"
+	,JSDOCSTR("Display user list"
 	"(see <tt>UL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> values)")
 	,310
 	},
 	{"edit_user",		js_useredit,		0,	JSTYPE_VOID,	JSDOCSTR("[user_number=<i>current</i>]")
-	,JSDOCSTR("enter the user editor")
+	,JSDOCSTR("Enter the user editor")
 	,310
 	},
 	{"change_user",		js_change_user,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("change to a different user")
+	,JSDOCSTR("Change to a different user")
 	,310
 	},
 	{"list_logons",		js_logonlist,		0,	JSTYPE_VOID,	JSDOCSTR("[arguments]")
-	,JSDOCSTR("display the logon list (optionally passing arguments to the logon list module)")
+	,JSDOCSTR("Display the logon list (optionally passing arguments to the logon list module)")
 	,310
 	},
 	{"read_mail",		js_readmail,		0,	JSTYPE_NUMBER,	JSDOCSTR("[which=<tt>MAIL_YOUR</tt>] [,user_number=<i>current</i>] [,loadmail_mode=<tt>0</tt>]")
-	,JSDOCSTR("read private e-mail"
+	,JSDOCSTR("Read private e-mail"
 	"(see <tt>MAIL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>which</i> values), returns user-modified loadmail_mode value")
 	,310
 	},
 	{"email",			js_email,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("to_user_number [,mode=<tt>WM_EMAIL</tt>] [,top=<i>none</i>] [,subject=<i>none</i>] [,object reply_header]")
-	,JSDOCSTR("send private e-mail to a local user (<i>reply_header</i> added in v3.17c)")
+	,JSDOCSTR("Send private e-mail to a local user (<i>reply_header</i> added in v3.17c)")
 	,310
 	},
 	{"netmail",			js_netmail,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[string address or array of addresses] [,mode=<tt>WM_NONE</tt>] [,subject=<i>none</i>] [,object reply_header]")
-	,JSDOCSTR("send private netmail (<i>reply_header</i> added in v3.17c, <i>array of addresses</i> added in v3.18a)")
+	,JSDOCSTR("Send private netmail (<i>reply_header</i> added in v3.17c, <i>array of addresses</i> added in v3.18a)")
 	,310
 	},
 	{"bulk_mail",		js_bulkmail,		0,	JSTYPE_VOID,	JSDOCSTR("[ars]")
-	,JSDOCSTR("send bulk private e-mail, if <i>ars</i> not specified, prompt for destination users")
+	,JSDOCSTR("Send bulk private e-mail, if <i>ars</i> not specified, prompt for destination users")
 	,310
 	},
 	{"upload_file",		js_upload_file,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory=<i>current</i>]")
-	,JSDOCSTR("upload file to file directory specified by number or internal code")
+	,JSDOCSTR("Upload file to file directory specified by number or internal code")
 	,310
 	},
 	{"bulk_upload",		js_bulkupload,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory=<i>current</i>]")
-	,JSDOCSTR("add files (already in local storage path) to file directory "
+	,JSDOCSTR("Add files (already in local storage path) to file directory "
 		"specified by number or internal code")
 	,310
 	},
 	{"export_filelist",	js_export_filelist,	2,	JSTYPE_NUMBER,	JSDOCSTR("filename [,mode=<tt>FL_NONE</tt>]")
-	,JSDOCSTR("export list of files to a text file, optionally specifying a file list mode (e.g. <tt>FL_ULTIME</tt>), returning the number of files listed")
+	,JSDOCSTR("Export list of files to a text file, optionally specifying a file list mode (e.g. <tt>FL_ULTIME</tt>), returning the number of files listed")
 	,319
 	},
 	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt> or search_string] [,mode=<tt>FL_NONE</tt>]")
-	,JSDOCSTR("list files in the specified file directory, "
+	,JSDOCSTR("List files in the specified file directory, "
 		"optionally specifying a file specification (wildcards) or a description search string, "
 		"and <i>mode</i> (bitfield)")
 	,310
 	},
 	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt>] [,mode=<tt>FI_INFO</tt>]")
-	,JSDOCSTR("list extended file information for files in the specified file directory")
+	,JSDOCSTR("List extended file information for files in the specified file directory")
 	,310
 	},
 	{"post_msg",		js_post_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>WM_NONE</tt>] [,object reply_header]")
-	,JSDOCSTR("post a message in the specified message sub-board (number or internal code) "
+	,JSDOCSTR("Post a message in the specified message sub-board (number or internal code) "
 		"with optional <i>mode</i> (bitfield)<br>"
 		"If <i>reply_header</i> is specified (a header object returned from <i>MsgBase.get_msg_header()</i>), that header "
 		"will be used for the in-reply-to header fields.")
@@ -4601,210 +4602,210 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,31802
 	},
 	{"show_msg",		js_show_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("object header [,mode=<tt>P_NONE</tt>] ")
-	,JSDOCSTR("show a message's header and body (text) with optional print <i>mode</i> (bitfield)<br>"
+	,JSDOCSTR("Show a message's header and body (text) with optional print <i>mode</i> (bitfield)<br>"
 		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
 	,31702
 	},
 	{"show_msg_header",	js_show_msg_header,	1,	JSTYPE_VOID,	JSDOCSTR("object header [,subject] [,from] [,to]")
-	,JSDOCSTR("show a message's header (only)<br>"
+	,JSDOCSTR("Show a message's header (only)<br>"
 		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
 	,31702
 	},
 	{"download_msg_attachments", js_download_msg_attachments, 1, JSTYPE_VOID, JSDOCSTR("object header")
-	,JSDOCSTR("prompt the user to download each of the message's file attachments (if there are any)<br>"
+	,JSDOCSTR("Prompt the user to download each of the message's file attachments (if there are any)<br>"
 		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
 	,31702
 	},
 	{"change_msg_attr", js_change_msg_attr, 1, JSTYPE_NUMBER, JSDOCSTR("object header")
-	,JSDOCSTR("prompt the user to modify the specified message header attributes")
+	,JSDOCSTR("Prompt the user to modify the specified message header attributes")
 	,31702
 	},
 	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	JSDOCSTR("[type=<tt>SCAN_CFG_NEW</tt>]")
-	,JSDOCSTR("configure message scan "
+	,JSDOCSTR("Configure message scan "
 		"(<i>type</i> is either <tt>SCAN_CFG_NEW</tt> or <tt>SCAN_CFG_TOYOU</tt>)")
 	,310
 	},
 	{"cfg_msg_ptrs",	js_msgscan_ptrs,	0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("change message scan pointer values")
+	,JSDOCSTR("Change message scan pointer values")
 	,310
 	},
 	{"reinit_msg_ptrs",	js_msgscan_reinit,	0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("re-initialize new message scan pointers to values at logon")
+	,JSDOCSTR("Re-initialize new message scan pointers to values at logon")
 	,310
 	},
 	{"save_msg_scan",	js_save_msg_scan,	0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("save message scan configuration and pointers to userbase")
+	,JSDOCSTR("Save message scan configuration and pointers to userbase")
 	,320
 	},
 	{"reload_msg_scan",	js_reload_msg_scan,	0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("re-loads message scan configuration and pointers from userbase")
+	,JSDOCSTR("Re-loads message scan configuration and pointers from userbase")
 	,320
 	},
 	{"scan_subs",		js_scansubs,		0,	JSTYPE_VOID,	JSDOCSTR("[mode=<tt>SCAN_NEW</tt>] [,all=<tt>false</tt>]")
-	,JSDOCSTR("scan sub-boards for messages")
+	,JSDOCSTR("Scan sub-boards for messages")
 	,310
 	},
 	{"scan_dirs",		js_scandirs,		0,	JSTYPE_VOID,	JSDOCSTR("[mode=<tt>FL_NONE</tt>] [,all=<tt>false</tt>]")
-	,JSDOCSTR("scan directories for files")
+	,JSDOCSTR("Scan directories for files")
 	,310
 	},
 	{"scan_posts",		js_scanposts,		1,	JSTYPE_ALIAS },
 	{"scan_msgs",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,find]")
-	,JSDOCSTR("scan messages in the specified message sub-board (number or internal code), "
+	,JSDOCSTR("Scan messages in the specified message sub-board (number or internal code), "
 		"optionally search for 'find' string (AKA scan_posts)")
 	,310
 	},
 	{"list_msgs",		js_listmsgs,		1,	JSTYPE_NUMBER,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_INDEX</tt>] [,message_number=<tt>0</tt>] [,find]")
-	,JSDOCSTR("list messages in the specified message sub-board (number or internal code), "
+	,JSDOCSTR("List messages in the specified message sub-board (number or internal code), "
 		"optionally search for 'find' string, returns number of messages listed")
 	,314
 	},
 	/* menuing */
 	{"menu",			js_menu,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename [,mode=<tt>P_NONE</tt>] [,object scope]")
-	,JSDOCSTR("display a menu file from the text/menu directory.<br>"
+	,JSDOCSTR("Display a menu file from the text/menu directory.<br>"
 	"See <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.<br>"
 	"When <i>scope</i> is specified, <tt>@JS:property@</tt> codes will expand the referenced property names.<br>"
 	"To display a randomly-chosen menu file, including wild-card (* or ?) characters in the <tt>base_filename</tt>.")
 	,310
 	},
 	{"menu_exists",		js_menu_exists,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename")
-	,JSDOCSTR("returns true if the referenced menu file exists (i.e. in the text/menu directory)")
+	,JSDOCSTR("Returns true if the referenced menu file exists (i.e. in the text/menu directory)")
 	,31700
 	},
 	{"log_key",			js_logkey,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("key [,comma=<tt>false</tt>]")
-	,JSDOCSTR("log key to node.log (comma optional)")
+	,JSDOCSTR("Log key to node.log (comma optional)")
 	,310
 	},
 	{"log_str",			js_logstr,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
-	,JSDOCSTR("log string to node.log")
+	,JSDOCSTR("Log string to node.log")
 	,310
 	},
 	/* users */
 	{"finduser",		js_finduser,		1,	JSTYPE_NUMBER,	JSDOCSTR("username_or_number")
-	,JSDOCSTR("find user name (partial name support), interactive")
+	,JSDOCSTR("Find user name (partial name support), interactive")
 	,310
 	},
 	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename, search_string")
-	,JSDOCSTR("search file for pseudo-regexp (search string) in trashcan file (text/base_filename.can)")
+	,JSDOCSTR("Search file for pseudo-regexp (search string) in trashcan file (text/base_filename.can)")
 	,310
 	},
 	/* xtrn programs/modules */
 	{"exec",			js_exec,			2,	JSTYPE_NUMBER,	JSDOCSTR("cmdline [,mode=<tt>EX_NONE</tt>] [,startup_dir]")
-	,JSDOCSTR("execute a program, optionally changing current directory to <i>startup_dir</i> "
+	,JSDOCSTR("Execute a program, optionally changing current directory to <i>startup_dir</i> "
 	"(see <tt>EX_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags.)")
 	,310
 	},
 	{"exec_xtrn",		js_exec_xtrn,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("xtrn_number_or_code")
-	,JSDOCSTR("execute external program by number or internal code")
+	,JSDOCSTR("Execute external program by number or internal code")
 	,310
 	},
 	{"user_event",		js_user_event,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("event_type")
-	,JSDOCSTR("execute user event by event type "
+	,JSDOCSTR("Execute user event by event type "
 	"(see <tt>EVENT_*</tt> in <tt>sbbsdefs.js</tt> for valid values)")
 	,310
 	},
 	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("address[:port] [,mode=<tt>TG_NONE</tt>] [,timeout=<tt>10</tt>]")
-	,JSDOCSTR("external Telnet gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags).")
+	,JSDOCSTR("External Telnet gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags).")
 	,310
 	},
 	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("address[:port] [,client-user-name=<tt>user.alias</tt>, server-user-name=<tt>user.name</tt>, terminal=<tt>console.terminal</tt>] [,mode=<tt>TG_NONE</tt>]  [,timeout=<tt>10</tt>]")
-	,JSDOCSTR("external RLogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags).")
+	,JSDOCSTR("External RLogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags).")
 	,316
 	},
 	/* security */
 	{"check_filename",	js_checkfname,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
-	,JSDOCSTR("verify that the specified <i>filename</i> string is legal and allowed for upload "
+	,JSDOCSTR("Verify that the specified <i>filename</i> string is legal and allowed for upload "
 		"(based on system configuration), returns <i>true</i> if the filename is allowed.<br>"
 		"Note: Will display <tt>text/badfile.msg</tt> for matching filenames, if it exists.")
 	,31902
 	},
 	{"check_syspass",	js_chksyspass,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[sys_pw]")
-	,JSDOCSTR("verify system password, prompting for the password if not passed as an argument")
+	,JSDOCSTR("Verify system password, prompting for the password if not passed as an argument")
 	,310
 	},
 	{"good_password",	js_chkpass,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("password")
-	,JSDOCSTR("check if requested user password meets minimum password requirements "
+	,JSDOCSTR("Check if requested user password meets minimum password requirements "
 		"(length, uniqueness, etc.)")
 	,310
 	},
 	/* chat/node stuff */
 	{"page_sysop",		js_pagesysop,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("page the sysop for chat, returns <i>false</i> if the sysop could not be paged")
+	,JSDOCSTR("Page the sysop for chat, returns <i>false</i> if the sysop could not be paged")
 	,310
 	},
 	{"page_guru",		js_pageguru,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("page the guru for chat")
+	,JSDOCSTR("Page the guru for chat")
 	,310
 	},
 	{"multinode_chat",	js_multinode_chat,	0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("enter multi-node chat")
+	,JSDOCSTR("Enter multi-node chat")
 	,310
 	},
 	{"private_message",	js_private_message,	0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("use the private inter-node message prompt")
+	,JSDOCSTR("Use the private inter-node message prompt")
 	,310
 	},
 	{"private_chat",	js_private_chat,	0,	JSTYPE_VOID,	JSDOCSTR("[local=<i>false</i>]")
-	,JSDOCSTR("enter private inter-node chat, or local sysop chat (if <i>local</i>=<i>true</i>)")
+	,JSDOCSTR("Enter private inter-node chat, or local sysop chat (if <i>local</i>=<i>true</i>)")
 	,310
 	},
 	{"get_node_message",js_get_node_message,1,	JSTYPE_VOID,	JSDOCSTR("[clearline=<i>false</i>]")
-	,JSDOCSTR("receive and display an inter-node message")
+	,JSDOCSTR("Receive and display an inter-node message")
 	,310
 	},
 	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("[node_number] [,text]")
-	,JSDOCSTR("send an inter-node message (specify a <i>node_number</i> value of <tt>-1</tt> for 'all active nodes')")
+	,JSDOCSTR("Send an inter-node message (specify a <i>node_number</i> value of <tt>-1</tt> for 'all active nodes')")
 	,31700
 	},
 	{"get_telegram",	js_get_telegram,	2,	JSTYPE_VOID,	JSDOCSTR("[user_number=<i>current</i>], [clearline=<i>false</i>]")
-	,JSDOCSTR("receive and display waiting telegrams for specified (or current) user")
+	,JSDOCSTR("Receive and display waiting telegrams for specified (or current) user")
 	,310
 	},
 	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("[user_number] [,text]")
-	,JSDOCSTR("send a telegram (short multi-line stored message) to a user")
+	,JSDOCSTR("Send a telegram (short multi-line stored message) to a user")
 	,31700
 	},
 	{"list_nodes",		js_nodelist,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("list all nodes")
+	,JSDOCSTR("List all nodes")
 	,310
 	},
 	{"whos_online",		js_whos_online,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("list active nodes only (who's online)")
+	,JSDOCSTR("List active nodes only (who's online)")
 	,310
 	},
 	{"spy",				js_spy,				1,	JSTYPE_VOID,	JSDOCSTR("node_number")
-	,JSDOCSTR("spy on a node")
+	,JSDOCSTR("Spy on a node")
 	,310
 	},
 	/* misc */
 	{"cmdstr",			js_cmdstr,			1,	JSTYPE_STRING,	JSDOCSTR("command_string [,fpath=<tt>\"\"</tt>] [,fspec=<tt>\"\"</tt>]")
-	,JSDOCSTR("return expanded command string using Synchronet command-line specifiers")
+	,JSDOCSTR("Return expanded command string using Synchronet command-line specifiers")
 	,310
 	},
 	/* input */
 	{"get_filespec",	js_getfilespec,		0,	JSTYPE_STRING,	JSDOCSTR("")
-	,JSDOCSTR("returns a file specification input by the user (optionally with wildcards)")
+	,JSDOCSTR("Returns a file specification input by the user (optionally with wildcards)")
 	,310
 	},
 	{"get_newscantime",	js_getnstime,		1,	JSTYPE_NUMBER,	JSDOCSTR("time=<i>current</i>")
-	,JSDOCSTR("confirm or change a new-scan time, returns the new new-scan time value (<i>time_t</i> format)")
+	,JSDOCSTR("Confirm or change a new-scan time, returns the new new-scan time value (<i>time_t</i> format)")
 	,310
 	},
 	{"select_shell",	js_select_shell,	0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("prompt user to select a new command shell")
+	,JSDOCSTR("Prompt user to select a new command shell")
 	,310
 	},
 	{"select_editor",	js_select_editor,	0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("prompt user to select a new external message editor")
+	,JSDOCSTR("Prompt user to select a new external message editor")
 	,310
 	},
 	{"get_time_left",	js_get_time_left,	0,	JSTYPE_NUMBER,	JSDOCSTR("")
-	,JSDOCSTR("check the user's available remaining time online and return the value, in seconds<br>"
+	,JSDOCSTR("Check the user's available remaining time online and return the value, in seconds<br>"
 	"This method will inform (and disconnect) the user when they are out of time")
 	,31401
 	},
 	{"compare_ars",		js_chk_ar,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("ars")
-	,JSDOCSTR("verify the current user online meets the specified Access Requirements String")
+	,JSDOCSTR("Verify the current user online meets the specified Access Requirements String")
 	,315
 	},
 	{"select_node",		js_select_node,		1,	JSTYPE_NUMBER,	JSDOCSTR("all_is_an_option=<i>false</i>")

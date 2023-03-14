@@ -1198,52 +1198,52 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 
 static jsSyncMethodSpec js_global_functions[] = {
 	{"log",				js_log,				1,	JSTYPE_STRING,	JSDOCSTR("[level,] value [,value]")
-	,JSDOCSTR("add a line of text to the server and/or system log, "
+	,JSDOCSTR("Add a line of text to the server and/or system log, "
 		"<i>values</i> are typically string constants or variables, "
 		"<i>level</i> is the debug level/priority (default: <tt>LOG_INFO</tt>)")
 	,311
 	},
 	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[count]")
-	,JSDOCSTR("read up to count characters from input stream")
+	,JSDOCSTR("Read up to count characters from input stream")
 	,311
 	},
 	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[count]")
-	,JSDOCSTR("read a single line, up to count characters, from input stream")
+	,JSDOCSTR("Read a single line, up to count characters, from input stream")
 	,311
 	},
 	{"write",			js_write,			0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
-	,JSDOCSTR("send one or more values (typically strings) to the server output")
+	,JSDOCSTR("Send one or more values (typically strings) to the server output")
 	,311
 	},
 	{"write_raw",			js_write_raw,			0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
-	,JSDOCSTR("send a stream of bytes (possibly containing NULLs or special control code sequences) to the server output")
+	,JSDOCSTR("Send a stream of bytes (possibly containing NULLs or special control code sequences) to the server output")
 	,314
 	},
 	{"print",			js_writeln,			0,	JSTYPE_ALIAS },
     {"writeln",         js_writeln,         0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
-	,JSDOCSTR("send a line of text to the console or event log with automatic line termination (CRLF), "
+	,JSDOCSTR("Send a line of text to the console or event log with automatic line termination (CRLF), "
 		"<i>values</i> are typically string constants or variables (AKA print)")
 	,311
 	},
     {"printf",          js_printf,          1,	JSTYPE_STRING,	JSDOCSTR("string format [,value][,value]")
-	,JSDOCSTR("print a formatted string - <small>CAUTION: for experienced C programmers ONLY</small>")
+	,JSDOCSTR("Print a formatted string - <small>CAUTION: for experienced C programmers ONLY</small>")
 	,310
 	},
 	{"alert",			js_alert,			1,	JSTYPE_VOID,	JSDOCSTR("value")
-	,JSDOCSTR("print an alert message (ala client-side JS)")
+	,JSDOCSTR("Print an alert message (ala client-side JS)")
 	,310
 	},
 	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[text] [,value] [,mode=K_EDIT]")
-	,JSDOCSTR("displays a prompt (<i>text</i>) and returns a string of user input (ala client-side JS)")
+	,JSDOCSTR("Displays a prompt (<i>text</i>) and returns a string of user input (ala client-side JS)")
 	,310
 	},
 	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
-	,JSDOCSTR("displays a Yes/No prompt and returns <i>true</i> or <i>false</i> "
+	,JSDOCSTR("Displays a Yes/No prompt and returns <i>true</i> or <i>false</i> "
 		"based on user's confirmation (ala client-side JS, <i>true</i> = yes)")
 	,310
 	},
 	{"deny",			js_deny,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
-	,JSDOCSTR("displays a No/Yes prompt and returns <i>true</i> or <i>false</i> "
+	,JSDOCSTR("Displays a No/Yes prompt and returns <i>true</i> or <i>false</i> "
 		"based on user's denial (<i>true</i> = no)")
 	,31501
 	},

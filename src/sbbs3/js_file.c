@@ -2815,45 +2815,44 @@ static jsSyncPropertySpec js_file_properties[] = {
 
 #ifdef BUILD_JSDOCS
 static const char* file_prop_desc[] = {
-	 "filename specified in constructor - <small>READ ONLY</small>"
-	,"mode string specified in <i>open</i> call - <small>READ ONLY</small>"
+	 "Filename specified in constructor - <small>READ ONLY</small>"
+	,"Mode string specified in <i>open</i> call - <small>READ ONLY</small>"
 	,"<i>true</i> if the file is open or exists (case-insensitive) - <small>READ ONLY</small>"
 	,"<i>true</i> if the file has been opened successfully - <small>READ ONLY</small>"
 	,"<i>true</i> if the current file position is at the <i>end of file</i> - <small>READ ONLY</small>"
-	,"the last occurred error value (use <i>clear_error</i> to clear) - <small>READ ONLY</small>"
-	,"the open file descriptor (advanced use only) - <small>READ ONLY</small>"
-	,"end-of-text character (advanced use only), if non-zero used by <i>read</i>, <i>readln</i>, and <i>write</i>"
-	,"set to <i>true</i> to enable debug log output"
-	,"the current file position (offset in bytes), change value to seek within file"
-	,"last modified date/time (in time_t format)"
-	,"the current length of the file (in bytes)"
-	,"file type/mode flags (i.e. <tt>struct stat.st_mode</tt> value, compatible with <tt>file_chmod()</tt>)"
-	,"set to <i>true</i> if binary data is to be written and read in Network Byte Order (big end first)"
-	,"set to <i>true</i> to enable automatic ROT13 translation of text"
-	,"set to <i>true</i> to enable automatic Unix-to-Unix encode and decode on <tt>read</tt> and <tt>write</tt> calls"
-	,"set to <i>true</i> to enable automatic yEnc encode and decode on <tt>read</tt> and <tt>write</tt> calls"
-	,"set to <i>true</i> to enable automatic Base64 encode and decode on <tt>read</tt> and <tt>write</tt> calls"
-	,"calculated 16-bit CRC of file contents - <small>READ ONLY</small>"
-	,"calculated 32-bit CRC of file contents - <small>READ ONLY</small>"
-	,"calculated 32-bit checksum of file contents - <small>READ ONLY</small>"
-	,"calculated 128-bit MD5 digest of file contents as hexadecimal string - <small>READ ONLY</small>"
-	,"calculated 128-bit MD5 digest of file contents as base64-encoded string - <small>READ ONLY</small>"
-	,"calculated 160-bit SHA1 digest of file contents as hexadecimal string - <small>READ ONLY</small>"
-	,"calculated 160-bit SHA1 digest of file contents as base64-encoded string - <small>READ ONLY</small>"
-	,"ini style: minimum key length (for left-justified white-space padded keys)"
-	,"ini style: key prefix (e.g. '\\t', null = default prefix)"
-	,"ini style: section separator (e.g. '\\n', null = default separator)"
-	,"ini style: value separator (e.g. ' = ', null = default separator)"
-	,"ini style: bit separator (e.g. ' | ', null = default separator)"
-	,"ini style: literal separator (null = default separator)"
+	,"The last occurred error value (use <i>clear_error</i> to clear) - <small>READ ONLY</small>"
+	,"The open file descriptor (advanced use only) - <small>READ ONLY</small>"
+	,"End-of-text character (advanced use only), if non-zero used by <i>read</i>, <i>readln</i>, and <i>write</i>"
+	,"Set to <i>true</i> to enable debug log output"
+	,"The current file position (offset in bytes), change value to seek within file"
+	,"Last modified date/time (in time_t format)"
+	,"The current length of the file (in bytes)"
+	,"File type/mode flags (i.e. <tt>struct stat.st_mode</tt> value, compatible with <tt>file_chmod()</tt>)"
+	,"Set to <i>true</i> if binary data is to be written and read in Network Byte Order (big end first)"
+	,"Set to <i>true</i> to enable automatic ROT13 translation of text"
+	,"Set to <i>true</i> to enable automatic Unix-to-Unix encode and decode on <tt>read</tt> and <tt>write</tt> calls"
+	,"Set to <i>true</i> to enable automatic yEnc encode and decode on <tt>read</tt> and <tt>write</tt> calls"
+	,"Set to <i>true</i> to enable automatic Base64 encode and decode on <tt>read</tt> and <tt>write</tt> calls"
+	,"Calculated 16-bit CRC of file contents - <small>READ ONLY</small>"
+	,"Calculated 32-bit CRC of file contents - <small>READ ONLY</small>"
+	,"Calculated 32-bit checksum of file contents - <small>READ ONLY</small>"
+	,"Calculated 128-bit MD5 digest of file contents as hexadecimal string - <small>READ ONLY</small>"
+	,"Calculated 128-bit MD5 digest of file contents as base64-encoded string - <small>READ ONLY</small>"
+	,"Calculated 160-bit SHA1 digest of file contents as hexadecimal string - <small>READ ONLY</small>"
+	,"Calculated 160-bit SHA1 digest of file contents as base64-encoded string - <small>READ ONLY</small>"
+	,"Ini style: minimum key length (for left-justified white-space padded keys)"
+	,"Ini style: key prefix (e.g. '\\t', null = default prefix)"
+	,"Ini style: section separator (e.g. '\\n', null = default separator)"
+	,"Ini style: value separator (e.g. ' = ', null = default separator)"
+	,"Ini style: bit separator (e.g. ' | ', null = default separator)"
+	,"Ini style: literal separator (null = default separator)"
 	,NULL
 };
 #endif
 
-
 static jsSyncMethodSpec js_file_functions[] = {
 	{"open",			js_open,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[mode=<tt>\"w+\"</tt>] [,shareable=<tt>false</tt>] [,buffer_length]")
-	,JSDOCSTR("open file, <i>shareable</i> defaults to <i>false</i>, <i>buffer_length</i> defaults to 2048 bytes, "
+	,JSDOCSTR("Open file, <i>shareable</i> defaults to <i>false</i>, <i>buffer_length</i> defaults to 2048 bytes, "
 		"mode (default: <tt>'w+'</tt>) specifies the type of access requested for the file, as follows:<br>"
 		"<tt>r&nbsp</tt> open for reading; if the file does not exist or cannot be found, the open call fails<br>"
 		"<tt>w&nbsp</tt> open an empty file for writing; if the given file exists, its contents are destroyed<br>"
@@ -2886,7 +2885,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,310
 	},
 	{"popen",			js_popen,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[mode=<tt>\"r+\"</tt>] [,buffer_length]")
-	,JSDOCSTR("open pipe to command, <i>buffer_length</i> defaults to 2048 bytes, "
+	,JSDOCSTR("Open pipe to command, <i>buffer_length</i> defaults to 2048 bytes, "
 		"mode (default: <tt>'r+'</tt>) specifies the type of access requested for the file, as follows:<br>"
 		"<tt>r&nbsp</tt> read the programs stdout;<br>"
 		"<tt>w&nbsp</tt> write to the programs stdin<br>"
@@ -2896,112 +2895,112 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,315
 	},
 	{"close",			js_close,			0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("close file")
+	,JSDOCSTR("Close file")
 	,310
 	},
 	{"remove",			js_delete,			0,	JSTYPE_BOOLEAN, JSDOCSTR("")
-	,JSDOCSTR("remove the file from the disk")
+	,JSDOCSTR("Remove the file from the disk")
 	,310
 	},
 	{"clearError",		js_clear_error,		0,	JSTYPE_ALIAS },
 	{"clear_error",		js_clear_error,		0,	JSTYPE_BOOLEAN, JSDOCSTR("")
-	,JSDOCSTR("clears the current error value (AKA clearError)")
+	,JSDOCSTR("Clears the current error value (AKA clearError)")
 	,310
 	},
 	{"flush",			js_flush,			0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("flush/commit buffers to disk")
+	,JSDOCSTR("Flush/commit buffers to disk")
 	,310
 	},
 	{"rewind",			js_rewind,			0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("repositions the file pointer (<i>position</i>) to the beginning of a file "
+	,JSDOCSTR("Repositions the file pointer (<i>position</i>) to the beginning of a file "
 		"and clears error and end-of-file indicators")
 	,311
 	},
 	{"truncate",		js_truncate,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[length=<tt>0</tt>]")
-	,JSDOCSTR("changes the file <i>length</i> (default: 0) and repositions the file pointer "
+	,JSDOCSTR("Changes the file <i>length</i> (default: 0) and repositions the file pointer "
 	"(<i>position</i>) to the new end-of-file")
 	,314
 	},
 	{"lock",			js_lock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset=<tt>0</tt>] [,length=<i>file_length</i>-<i>offset</i>]")
-	,JSDOCSTR("lock file record for exclusive access (file must be opened <i>shareable</i>)")
+	,JSDOCSTR("Lock file record for exclusive access (file must be opened <i>shareable</i>)")
 	,310
 	},
 	{"unlock",			js_unlock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset=<tt>0</tt>] [,length=<i>file_length</i>-<i>offset</i>]")
-	,JSDOCSTR("unlock file record for exclusive access")
+	,JSDOCSTR("Unlock file record for exclusive access")
 	,310
 	},
 	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<i>file_length</i>-<i>file_position</i>]")
-	,JSDOCSTR("read a string from file (optionally unix-to-unix or base64 decoding in the process), "
+	,JSDOCSTR("Read a string from file (optionally unix-to-unix or base64 decoding in the process), "
 		"<i>maxlen</i> defaults to the current length of the file minus the current file position")
 	,310
 	},
 	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>]")
-	,JSDOCSTR("read a line-feed terminated string, <i>maxlen</i> defaults to 512 characters. "
+	,JSDOCSTR("Read a line-feed terminated string, <i>maxlen</i> defaults to 512 characters. "
 		"Returns <i>null</i> upon end of file.")
 	,310
 	},
 	{"readBin",			js_readbin,			0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes=<tt>4</tt> [,count=<tt>1</tt>]")
-	,JSDOCSTR("read one or more binary integers from the file, default number of <i>bytes</i> is 4 (32-bits). "
+	,JSDOCSTR("Read one or more binary integers from the file, default number of <i>bytes</i> is 4 (32-bits). "
 			  "if count is not equal to 1, an array is returned (even if no integers were read)")
 	,310
 	},
 	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	JSDOCSTR("[maxlen=<tt>512</tt>]")
-	,JSDOCSTR("read all lines into an array of strings, <i>maxlen</i> defaults to 512 characters")
+	,JSDOCSTR("Read all lines into an array of strings, <i>maxlen</i> defaults to 512 characters")
 	,310
 	},
 	{"raw_read",		js_raw_read,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<i>1</i>]")
-	,JSDOCSTR("read a string from underlying file descriptor. "
+	,JSDOCSTR("Read a string from underlying file descriptor. "
 				"Undefined results when mixed with any other read/write methods except raw_write, including indirect ones. "
 				"<i>maxlen</i> defaults to one")
 	,317
 	},
 	{"raw_pollin",		js_raw_pollin,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[timeout]")
-	,JSDOCSTR("waits up to <i>timeout</i> milliseconds (or forever if timeout is not specified) for data to be available "
+	,JSDOCSTR("Waits up to <i>timeout</i> milliseconds (or forever if timeout is not specified) for data to be available "
 			"via raw_read().")
 	,317
 	},
 	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("text [,length=<i>text_length</i>]")
-	,JSDOCSTR("write a string to the file (optionally unix-to-unix or base64 decoding in the process). "
+	,JSDOCSTR("Write a string to the file (optionally unix-to-unix or base64 decoding in the process). "
 		"If the specified <i>length</i> is longer than the <i>text</i>, the remaining length will be written as NUL bytes.")
 	,310
 	},
 	{"writeln",			js_writeln,			0,	JSTYPE_BOOLEAN, JSDOCSTR("[text]")
-	,JSDOCSTR("write a new-line terminated string (a line of text) to the file")
+	,JSDOCSTR("Write a new-line terminated string (a line of text) to the file")
 	,310
 	},
 	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value(s) [,bytes=<tt>4</tt>]")
-	,JSDOCSTR("write one or more binary integers to the file, default number of <i>bytes</i> is 4 (32-bits). "
+	,JSDOCSTR("Write one or more binary integers to the file, default number of <i>bytes</i> is 4 (32-bits). "
 			  "If value is an array, writes the entire array to the file.")
 	,310
 	},
 	{"writeAll",		js_writeall,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("array lines")
-	,JSDOCSTR("write an array of new-line terminated strings (lines of text) to the file")
+	,JSDOCSTR("Write an array of new-line terminated strings (lines of text) to the file")
 	,310
 	},
 	{"raw_write",		js_raw_write,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
-	,JSDOCSTR("write a string to the underlying file descriptor. "
+	,JSDOCSTR("Write a string to the underlying file descriptor. "
 				"Undefined results when mixed with any other read/write methods except raw_read, including indirect ones.")
 	,317
 	},
 	{"printf",			js_fprintf,			0,	JSTYPE_NUMBER,	JSDOCSTR("format [,args]")
-	,JSDOCSTR("write a formatted string to the file (ala fprintf) - "
+	,JSDOCSTR("Write a formatted string to the file (ala fprintf) - "
 		"<small>CAUTION: for experienced C programmers ONLY</small>")
 	,310
 	},
 	{"iniGetSections",	js_iniGetSections,	0,	JSTYPE_ARRAY,	JSDOCSTR("[prefix=<i>none</i>]")
-	,JSDOCSTR("parse all section names from a <tt>.ini</tt> file (format = '<tt>[section]</tt>') "
+	,JSDOCSTR("Parse all section names from a <tt>.ini</tt> file (format = '<tt>[section]</tt>') "
 		"and return the section names as an <i>array of strings</i>, "
 		"optionally, only those section names that begin with the specified <i>prefix</i>")
 	,311
 	},
 	{"iniGetKeys",		js_iniGetKeys,		1,	JSTYPE_ARRAY,	JSDOCSTR("[section=<i>root</i>]")
-	,JSDOCSTR("parse all key names from the specified <i>section</i> in a <tt>.ini</tt> file "
+	,JSDOCSTR("Parse all key names from the specified <i>section</i> in a <tt>.ini</tt> file "
 		"and return the key names as an <i>array of strings</i>. "
 		"if <i>section</i> is undefined, returns key names from the <i>root</i> section")
 	,311
 	},
 	{"iniGetValue",		js_iniGetValue,		3,	JSTYPE_UNDEF,	JSDOCSTR("section, key [,default=<i>none</i>]")
-	,JSDOCSTR("parse a key from a <tt>.ini</tt> file and return its value (format = '<tt>key = value</tt>'). "
+	,JSDOCSTR("Parse a key from a <tt>.ini</tt> file and return its value (format = '<tt>key = value</tt>'). "
 		"returns the specified <i>default</i> value if the key or value is missing or invalid. "
 		"to parse a key from the <i>root</i> section, pass <i>null</i> for <i>section</i>. "
 		"Returns a <i>bool</i>, <i>number</i>, <i>string</i>, or an <i>array of strings</i> "
@@ -3011,14 +3010,14 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,311
 	},
 	{"iniSetValue",		js_iniSetValue,		3,	JSTYPE_BOOLEAN,	JSDOCSTR("section, key, [value=<i>none</i>]")
-	,JSDOCSTR("set the specified <i>key</i> to the specified <i>value</i> in the specified <i>section</i> "
+	,JSDOCSTR("Set the specified <i>key</i> to the specified <i>value</i> in the specified <i>section</i> "
 		"of a <tt>.ini</tt> file. "
 		"to set a key in the <i>root</i> section, pass <i>null</i> for <i>section</i>. ")
 	,312
 	},
 	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("[section=<i>root</i>] [,lowercase=<tt>false</tt>] "
 		"[,blanks=<tt>false</tt>]")
-	,JSDOCSTR("parse an entire section from a .ini file "
+	,JSDOCSTR("Parse an entire section from a .ini file "
 		"and return all of its keys (optionally lowercased) and values as properties of an object. "
 		"If <i>section</i> is <tt>null</tt> or <tt>undefined</tt>, returns keys and values from the <i>root</i> section. "
 		"If <i>blanks</i> is <tt>true</tt> then empty string (instead of <tt>undefined</tt>) values may included in the returned object."
@@ -3026,7 +3025,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,311
 	},
 	{"iniSetObject",	js_iniSetObject,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("section, object")
-	,JSDOCSTR("write all the properties of the specified <i>object</i> as separate <tt>key=value</tt> pairs "
+	,JSDOCSTR("Write all the properties of the specified <i>object</i> as separate <tt>key=value</tt> pairs "
 		"in the specified <i>section</i> of a <tt>.ini</tt> file. "
 		"to write an object in the <i>root</i> section, pass <i>null</i> for <i>section</i>. "
 		"<br><b>Note:</b> this method does not remove unreferenced keys from an existing section. "
@@ -3035,7 +3034,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 	},
 	{"iniGetAllObjects",js_iniGetAllObjects,1,	JSTYPE_ARRAY,	JSDOCSTR("[name_property] [,prefix=<i>none</i>] [,lowercase=<tt>false</tt>] "
 		"[,blanks=<tt>false</tt>]")
-	,JSDOCSTR("parse all sections from a .ini file and return all (non-<i>root</i>) sections "
+	,JSDOCSTR("Parse all sections from a .ini file and return all (non-<i>root</i>) sections "
 		"in an array of objects with each section's keys (optionally lowercased) as properties of each object. "
 		"<i>name_property</i> is the name of the property to create to contain the section's name "
 		"(optionally lowercased, default is <tt>\"name\"</tt>), "
@@ -3046,24 +3045,24 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,311
 	},
 	{"iniSetAllObjects",js_iniSetAllObjects,1,	JSTYPE_BOOLEAN,	JSDOCSTR("object array [,name_property=<tt>\"name\"</tt>]")
-	,JSDOCSTR("write an array of objects to a .ini file, each object in its own section named "
+	,JSDOCSTR("Write an array of objects to a .ini file, each object in its own section named "
 	"after the object's <i>name_property</i> (default: <tt>name</tt>)")
 	,312
 	},
 	{"iniRemoveKey",	js_iniRemoveKey,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("section, key")
-	,JSDOCSTR("remove specified <i>key</i> from specified <i>section</i> in <tt>.ini</tt> file.")
+	,JSDOCSTR("Remove specified <i>key</i> from specified <i>section</i> in <tt>.ini</tt> file.")
 	,314
 	},
 	{"iniRemoveSection",js_iniRemoveSection,1,	JSTYPE_BOOLEAN,	JSDOCSTR("section")
-	,JSDOCSTR("remove specified <i>section</i> from <tt>.ini</tt> file.")
+	,JSDOCSTR("Remove specified <i>section</i> from <tt>.ini</tt> file.")
 	,314
 	},
 	{"iniRemoveSections",js_iniRemoveSections,1, JSTYPE_BOOLEAN,	JSDOCSTR("[prefix]")
-	,JSDOCSTR("remove all sections from <tt>.ini</tt> file, optionally only sections with the specified section name <i>prefix</i>.")
+	,JSDOCSTR("Remove all sections from <tt>.ini</tt> file, optionally only sections with the specified section name <i>prefix</i>.")
 	,32000
 	},
 	{"iniReadAll",		js_iniReadAll,		0,	JSTYPE_ARRAY,	JSDOCSTR("")
-	,JSDOCSTR("read entire <tt>.ini</tt> file into an array of string (with <tt>!include</tt>ed files).")
+	,JSDOCSTR("Read entire <tt>.ini</tt> file into an array of string (with <tt>!include</tt>ed files).")
 	,31802
 	},
 	{0}

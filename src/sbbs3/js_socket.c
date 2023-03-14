@@ -2239,28 +2239,28 @@ enum {
 #ifdef BUILD_JSDOCS
 static char* socket_prop_desc[] = {
 	/* Regular properties */
-	 "error status for the last socket operation that failed - <small>READ ONLY</small>"
-	,"error description for the last socket operation that failed - <small>READ ONLY</small>"
+	 "Error status for the last socket operation that failed - <small>READ ONLY</small>"
+	,"Error description for the last socket operation that failed - <small>READ ONLY</small>"
 	,"<i>true</i> if socket is in a connected state - <small>READ ONLY</small>"
 	,"<i>true</i> if socket can accept written data - Setting to false will shutdown the write end of the socket."
-	,"alias for is_writeable"
+	,"Alias for is_writeable"
 	,"<i>true</i> if data is waiting to be read from socket - <small>READ ONLY</small>"
-	,"number of bytes waiting to be read - TLS sockets will never return more than 1 - <small>READ ONLY</small>"
-	,"enable debug logging"
-	,"socket descriptor (advanced uses only)"
-	,"use non-blocking operation (default is <i>false</i>)"
-	,"local IP address (string in dotted-decimal format)"
-	,"local TCP or UDP port number"
-	,"remote IP address (string in dotted-decimal format)"
-	,"remote TCP or UDP port number"
-	,"socket type, <tt>SOCK_STREAM</tt> (TCP) or <tt>SOCK_DGRAM</tt> (UDP)"
-	,"socket protocol family, <tt>PF_INET</tt> (IPv4) or <tt>PF_INET6</tt> (IPv6)"
+	,"Number of bytes waiting to be read - TLS sockets will never return more than 1 - <small>READ ONLY</small>"
+	,"Enable debug logging"
+	,"Socket descriptor (advanced uses only)"
+	,"Use non-blocking operation (default is <i>false</i>)"
+	,"Local IP address (string in dotted-decimal format)"
+	,"Local TCP or UDP port number"
+	,"Remote IP address (string in dotted-decimal format)"
+	,"Remote TCP or UDP port number"
+	,"Socket type, <tt>SOCK_STREAM</tt> (TCP) or <tt>SOCK_DGRAM</tt> (UDP)"
+	,"Socket protocol family, <tt>PF_INET</tt> (IPv4) or <tt>PF_INET6</tt> (IPv6)"
 	,"<i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i>"
-	,"set to <i>true</i> to enable SSL as a client on the socket"
-	,"set to <i>true</i> to enable SSL as a server on the socket"
+	,"Set to <i>true</i> to enable SSL as a client on the socket"
+	,"Set to <i>true</i> to enable SSL as a server on the socket"
 
 	/* statically-defined properties: */
-	,"array of socket option names supported by the current platform"
+	,"Array of socket option names supported by the current platform"
 	,NULL
 };
 #endif
@@ -2597,110 +2597,110 @@ static jsSyncPropertySpec js_socket_properties[] = {
 
 static jsSyncMethodSpec js_socket_functions[] = {
 	{"close",		js_close,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("close (shutdown) the socket immediately")
+	,JSDOCSTR("Close (shutdown) the socket immediately")
 	,310
 	},
 	{"bind",		js_bind,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[port] [,ip_address]")
-	,JSDOCSTR("bind socket to a TCP or UDP <i>port</i> (number or service name), "
+	,JSDOCSTR("Bind socket to a TCP or UDP <i>port</i> (number or service name), "
 		"optionally specifying a network interface (via <i>ip_address</i>)")
 	,311
 	},
 	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout=<tt>10.0</tt>]")
-	,JSDOCSTR("connect to a remote port (number or service name) on the specified host (IP address or host name)"
+	,JSDOCSTR("Connect to a remote port (number or service name) on the specified host (IP address or host name)"
 	", default <i>timeout</i> value is <i>10.0</i> (seconds)")
 	,311
 	},
 	{"listen",		js_listen,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("place socket in a state to listen for incoming connections (use before an accept)")
+	,JSDOCSTR("Place socket in a state to listen for incoming connections (use before an accept)")
 	,310
 	},
 	{"accept",		js_accept,		0,	JSTYPE_OBJECT,	JSDOCSTR("")
-	,JSDOCSTR("accept an incoming connection, returns a new <i>Socket</i> object representing the new connection")
+	,JSDOCSTR("Accept an incoming connection, returns a new <i>Socket</i> object representing the new connection")
 	,310
 	},
 	{"write",		js_send,		1,	JSTYPE_ALIAS },
 	{"send",		js_send,		1,	JSTYPE_NUMBER,	JSDOCSTR("data")
-	,JSDOCSTR("send a string (AKA write).  Returns the number of bytes sent or undefined if an error occured.  "
+	,JSDOCSTR("Send a string (AKA write).  Returns the number of bytes sent or undefined if an error occured.  "
 	"Versions before 3.17 returned a bool true if all bytes were sent and false otherwise.")
 	,310
 	},
 	{"writeln",		js_sendline,		1,	JSTYPE_ALIAS },
 	{"sendline",	js_sendline,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("data")
-	,JSDOCSTR("send a string (AKA write) with a carriage return line feed appended")
+	,JSDOCSTR("Send a string (AKA write) with a carriage return line feed appended")
 	,317
 	},
 	{"sendto",		js_sendto,		3,	JSTYPE_BOOLEAN,	JSDOCSTR("data, address, port")
-	,JSDOCSTR("send data to a specific host (IP address or host name) and port (number or service name), for UDP sockets")
+	,JSDOCSTR("Send data to a specific host (IP address or host name) and port (number or service name), for UDP sockets")
 	,310
 	},
 	{"sendfile",	js_sendfile,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename")
-	,JSDOCSTR("send an entire file over the socket")
+	,JSDOCSTR("Send an entire file over the socket")
 	,310
 	},
 	{"writeBin",	js_sendbin,		1,	JSTYPE_ALIAS },
 	{"sendBin",		js_sendbin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value [,bytes=<tt>4</tt>]")
-	,JSDOCSTR("send a binary integer over the socket, default number of bytes is 4 (32-bits)")
+	,JSDOCSTR("Send a binary integer over the socket, default number of bytes is 4 (32-bits)")
 	,311
 	},
 	{"read",		js_recv,		1,	JSTYPE_ALIAS },
 	{"recv",		js_recv,		1,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>, [timeout_sec=<tt>120</tt>]]")
-	,JSDOCSTR("receive a string, default maxlen is 512 characters (AKA read)")
+	,JSDOCSTR("Receive a string, default maxlen is 512 characters (AKA read)")
 	,310
 	},
 	{"peek",		js_peek,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>]")
-	,JSDOCSTR("receive a string, default maxlen is 512 characters, leaves string in receive buffer (TLS sockets will never return more than one byte)")
+	,JSDOCSTR("Receive a string, default maxlen is 512 characters, leaves string in receive buffer (TLS sockets will never return more than one byte)")
 	,310
 	},
 	{"readline",	js_recvline,	0,	JSTYPE_ALIAS },
 	{"readln",		js_recvline,	0,	JSTYPE_ALIAS },
 	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>] [,timeout=<tt>30.0</tt>]")
-	,JSDOCSTR("receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds (AKA readline and readln)")
+	,JSDOCSTR("Receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds (AKA readline and readln)")
 	,310
 	},
 	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[binary=<tt>false</tt>] [,maxlen=<tt>512</tt> or int_size=<tt>4</tt>]")
-	,JSDOCSTR("receive data (string or integer) from a socket (typically UDP)"
+	,JSDOCSTR("Receive data (string or integer) from a socket (typically UDP)"
 	"<p>returns object with <i>ip_address</i> and <i>port</i> of sender along with <i>data</i> properties"
 	"<p><i>binary</i> defaults to <i>false</i>, <i>maxlen</i> defaults to 512 chars, <i>int_size</i> defaults to 4 bytes (32-bits)")
 	,311
 	},
 	{"readBin",		js_recvbin,		0,	JSTYPE_ALIAS },
 	{"recvBin",		js_recvbin,		0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes=<tt>4</tt>]")
-	,JSDOCSTR("receive a binary integer from the socket, default number of bytes is 4 (32-bits)")
+	,JSDOCSTR("Receive a binary integer from the socket, default number of bytes is 4 (32-bits)")
 	,311
 	},
 	{"getoption",	js_getsockopt,	1,	JSTYPE_NUMBER,	JSDOCSTR("option")
-	,JSDOCSTR("get socket option value, option may be socket option name "
+	,JSDOCSTR("Get socket option value, option may be socket option name "
 	"(see <tt>sockopts</tt> in <tt>sockdefs.js</tt>) or number")
 	,310
 	},
 	{"setoption",	js_setsockopt,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("option, value")
-	,JSDOCSTR("set socket option value, option may be socket option name "
+	,JSDOCSTR("Set socket option value, option may be socket option name "
 	"(see <tt>sockopts</tt> in <tt>sockdefs.js</tt>) or number")
 	,310
 	},
 	{"ioctl",		js_ioctlsocket,	1,	JSTYPE_NUMBER,	JSDOCSTR("command [,argument=<tt>0</tt>]")
-	,JSDOCSTR("send socket IOCTL (advanced)")
+	,JSDOCSTR("Send socket IOCTL (advanced)")
 	,310
 	},
 	{"poll",		js_poll,		1,	JSTYPE_NUMBER,	JSDOCSTR("[timeout=<tt>0</tt>] [,write=<tt>false</tt>]")
-	,JSDOCSTR("poll socket for read or write ability (default is <i>read</i>), "
+	,JSDOCSTR("Poll socket for read or write ability (default is <i>read</i>), "
 	"default timeout value is 0.0 seconds (immediate timeout)")
 	,310
 	},
 	{"on",		js_on,		2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), callback")
-	,JSDOCSTR("execute callback whenever socket is readable/writable.  Returns an id to be passed to js.clearOn()")
+	,JSDOCSTR("Execute callback whenever socket is readable/writable.  Returns an id to be passed to js.clearOn()")
 	,31900
 	},
 	{"once",	js_once,	2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), callback")
-	,JSDOCSTR("execute callback next time socket is readable/writable  Returns and id to be passed to js.clearOnce()")
+	,JSDOCSTR("Execute callback next time socket is readable/writable  Returns and id to be passed to js.clearOnce()")
 	,31900
 	},
 	{"clearOn",	js_clearOn,	2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), id")
-	,JSDOCSTR("remove callback installed by Socket.on()")
+	,JSDOCSTR("Remove callback installed by Socket.on()")
 	,31900
 	},
 	{"clearOnce",	js_clearOnce,	2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), id")
-	,JSDOCSTR("remove callback installed by Socket.once()")
+	,JSDOCSTR("Remove callback installed by Socket.once()")
 	,31900
 	},
 	{0}
