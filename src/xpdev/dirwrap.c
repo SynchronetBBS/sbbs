@@ -785,6 +785,8 @@ int delfiles(const char *inpath, const char *spec, size_t keep)
 		lastch=0;
 	else
 		lastch=inpath[inpath_len-1];
+	if(spec == NULL)
+		spec = ALLFILES;
 	path=(char *)malloc(inpath_len+1/*Delim*/+strlen(spec)+1/*Terminator*/);
 	if(path==NULL)
 		return -1;
