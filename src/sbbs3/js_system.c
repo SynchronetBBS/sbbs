@@ -484,6 +484,7 @@ static char* sys_prop_desc[] = {
 	,"Operator is available for chat"
 	,"System QWK-ID (for QWK packets)"
 	,"Settings bitfield (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"Login control settings bitfield (see <tt>LOGIN_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"Internet address (host or domain name)"
 	,"Location (city, state)"
 	,"Timezone (use <i>system.zonestr()</i> to get string representation)"
