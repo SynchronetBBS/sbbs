@@ -1177,16 +1177,22 @@ js_crlf(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_pause(JSContext *cx, uintN argc, jsval *arglist)
 {
+	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
+	bool		set_abort = true;
 	jsrefcount	rc;
 
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	uintN argn = 0;
+	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
+		set_abort = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->pause();
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->pause(set_abort)));
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }
@@ -2406,8 +2412,9 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("output <i>count</i> number of carriage-return/line-feed pairs (new-lines)")
 	,310
 	},
-	{"pause",			js_pause,			0, JSTYPE_VOID,		JSDOCSTR("")
-	,JSDOCSTR("display pause prompt and wait for key hit")
+	{"pause",			js_pause,			0, JSTYPE_BOOLEAN,	JSDOCSTR("[set_abort=true]")
+	,JSDOCSTR("display pause prompt and wait for key hit, returns <i>false</i> if user responded with Quit/Abort key.<br>"
+		"Passing <tt>false</tt> for the <i>set_abort</i> argument will prevent the ''console.aborted'' flag from being set by this method.")
 	,310
 	},
 	{"beep",			js_beep,			1, JSTYPE_VOID,		JSDOCSTR("[count=<tt>1</tt>]")

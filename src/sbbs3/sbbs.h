@@ -907,7 +907,7 @@ public:
 	bool	yesno(const char *str, int mode = 0);
 	bool	noyes(const char *str, int mode = 0);
 	bool	pause_inside = false;
-	void	pause(void);
+	bool	pause(bool set_abort = true);
 	const char*	mnestr = nullptr;
 	void	mnemonics(const char *str);
 
