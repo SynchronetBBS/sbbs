@@ -4765,7 +4765,8 @@ static BOOL exec_fastcgi(http_session_t *session)
 	memset(br->reserved, 0, sizeof(br->reserved));
 	int result = sendsocket(sock, (void *)msg, msglen);
 	if (result != msglen) {
-		lprintf(LOG_ERR, "%04d !ERROR %d sending %d bytes to FastCGI socket (send returned %d)", session->socket, ERROR_VALUE, msglen, result);
+		lprintf(LOG_ERR, "%04d %s [%s] !ERROR %d sending %d bytes to FastCGI socket (send returned %d)"
+			,session->socket, session->client.protocol, session->host_ip, ERROR_VALUE, msglen, result);
 		free(msg);
 		closesocket(sock);
 		return FALSE;
