@@ -13,6 +13,8 @@ if(user.security.restrictions & UFLAG_D) {
 
 function delfiles(dir, spec)
 {
+	if(typeof js.global.rmfiles == "function")
+		return js.global.rmfiles(dir, spec);
 	var count = 0;
 	var list = directory(dir + spec);
 	for(var i = 0; i < list.length; i++) {
@@ -47,7 +49,12 @@ function checkspace()
 
 function checktemp()
 {
-	if(!directory(system.temp_dir + "*").length) {
+	var list = directory(system.temp_dir + "*");
+	var files = 0;
+	for(var i = 0; i < list.length; i++)
+		if(!file_isdir(list[i]))
+			files++;
+	if(files < 1) {
 		writeln("\r\nNo files in temp directory.");
 		writeln("Use 'E' to extract from file or Create File List with 'N' or 'F' commands.");
 		return false;
@@ -131,6 +138,8 @@ while(bbs.online && !console.aborted) {
 			for(var i = 0; i < list.length; i++)
 				longest = Math.max(longest, file_getname(list[i]).length);
 			for(var i = 0; i < list.length && !console.aborted; i++) {
+				if(file_isdir(list[i]))
+					continue;
 				var size = file_size(list[i]);
 				writeln(format(file_fmt
 					,longest
@@ -255,3 +264,6 @@ while(bbs.online && !console.aborted) {
 			break menu;
 	}
 }
+
+// Clear out the temp directory when done
+delfiles(system.temp_dir, "*");
