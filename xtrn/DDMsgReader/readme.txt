@@ -992,6 +992,10 @@ searchingSubBoardText                For displaying the sub-board name when
                                      doing a search.  %s will be replaced with
                                      a sub-board name.
 
+scanningSubBoardText                 For displaying the sub-board name when
+                                     doing a scan (i.e., a newscan).  %s will be
+                                     replaced with a sub-board name.
+
 noMessagesInSubBoardText             No messages in a sub-board (i.e., trying
                                      to read a sub-board that has no messages).
                                      %s will be replaced with a sub-board name.

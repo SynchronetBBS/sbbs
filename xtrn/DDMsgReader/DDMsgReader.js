@@ -989,6 +989,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		editMsgNumPromptText: "\x01n\x01cNumber of the message to be edited (or \x01hENTER\x01n\x01c to cancel)\x01g\x01h: \x01c",
 		searchingSubBoardAbovePromptText: "\x01n\x01cSearching (current sub-board: \x01b\x01h%s\x01n\x01c)",
 		searchingSubBoardText: "\x01n\x01cSearching \x01h%s\x01n\x01c...",
+		scanningSubBoardText: "\x01n\x01cScanning \x01h%s\x01n\x01c...",
 		noMessagesInSubBoardText: "\x01n\x01h\x01bThere are no messages in the area \x01w%s\x01b.",
 		noSearchResultsInSubBoardText: "\x01n\x01h\x01bNo messages were found in the area \x01w%s\x01b with the given search criteria.",
 		msgScanCompleteText: "\x01n\x01h\x01cM\x01n\x01cessage scan complete\x01h\x01g.\x01n",
@@ -2444,10 +2445,10 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 		this.setSubBoardCode(subBoardsToScan[subCodeIdx]); // Needs to be set before getting the last read/scan pointer index
 		if (msg_area.sub[this.subBoardCode].can_read && ((msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
 		{
-			// If running a new message scan (not new-to-you), output which sub-board that is currently being scanned
-			if (pScanCfgOpt == SCAN_CFG_NEW && pScanMode == SCAN_NEW)
+			// If running a new message scan (not new-to-you or search), output which sub-board that is currently being scanned
+			if (pScanMode == SCAN_NEW || pScanMode == SCAN_BACK)
 			{
-				var statusText = format(this.text.searchingSubBoardText, subBoardGrpAndName(this.subBoardCode));
+				var statusText = format(this.text.scanningSubBoardText, subBoardGrpAndName(this.subBoardCode));
 				console.print("\x01n" + replaceAtCodesAndRemoveCRLFs(statusText) + "\x01n");
 				console.crlf();
 				console.line_counter = 0; // Prevent pausing for screen output and when displaying a message
@@ -8473,6 +8474,7 @@ function DigDistMsgReader_ReadConfigFile()
 							 (setting == "searchingPersonalMailText") ||
 					         (setting == "searchingSubBoardAbovePromptText") ||
 					         (setting == "searchingSubBoardText") ||
+							 (setting == "scanningSubBoardText") ||
 							 (setting == "searchTextPromptText") ||
 							 (setting == "fromNamePromptText") ||
 							 (setting == "toNamePromptText") ||
