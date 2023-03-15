@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.68     2023-03-15   Makes use of console.aborted when displaying help screens
+                      so that screen updates work better after pausing output.
+                      Also, when running a new message scan (not new-to-you),
+                      the current sub-board being scanned is now outputted.
 1.67     2023-03-09   Fixes for time zone alignment & list key help for wide
                       terminals
 1.66     2023-03-02   When forwarding a message, the subject can now be edited
