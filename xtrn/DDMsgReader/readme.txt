@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.67
-                           Release date: 2023-03-09
+                                 Version 1.68
+                           Release date: 2023-03-15
 
                                      by
 
@@ -176,7 +176,7 @@ Digital Distortion Message Reader is comprised of the following files:
 
 4. ddmr_lm.js             Loadable module script for setup in SCFG (only needed
                           for Synchronet 3.19 and earlier, or Synchronet built
-						  before 2023-02-20)
+                          before 2023-02-20)
 
 The configuration files are plain text files, so they can be edited using any
 editor.
