@@ -103,6 +103,11 @@
  *                              Now allows editing the subject when forwarding a message
  * 2023-03-09 Eric Oulashin     Version 1.67
  *                              Fixes for time zone alignment & list key help for wide terminals
+ * 2023-03-15 Eric Oulashin     Version 1.68
+ *                              Makes use of console.aborted when displaying help screens
+ *                              so that screen updates work better after pausing output.
+ *                              Also, when running a new message scan (not new-to-you), the current
+ *                              sub-board being scanned is now outputted.
  */
 
 "use strict";
@@ -208,8 +213,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.67";
-var READER_DATE = "2023-03-09";
+var READER_VERSION = "1.68";
+var READER_DATE = "2023-03-15";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1186,7 +1191,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 
 	// this.tabReplacementText will be the text that tabs will be replaced
 	// with in enhanced reader mode
-	this.tabReplacementText = format("%" + this.numTabSpaces + "s", "");
+	//this.tabReplacementText = format("%" + this.numTabSpaces + "s", "");
+	this.tabReplacementText = format("%*s", this.numTabSpaces, "");
 
 	// Calculate the message list widths and format strings based on the current
 	// sub-board code and color settings.  Start with a message # field length
@@ -1279,7 +1285,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		//hdrLine6 += "@\x01n\x01c" + VERTICAL_SINGLE;
 		hdrLine6 += "@ @MSG_TIMEZONE@\x01n";
 		numChars = console.screen_columns - 42;
-		hdrLine6 += format("%" + numChars + "s", "");
+		hdrLine6 += format("%*s", numChars, ""); // More correct than format("%" + numChars + "s", "");
 		hdrLine6 += "\x01n\x01c" + VERTICAL_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine6);
 		this.enhMsgHeaderLinesToReadingUser.push(hdrLine6);
@@ -2222,14 +2228,7 @@ function DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs(pCloseMsgbaseAn
 					formattedText = format(this.text.loadingPersonalMailText, subBoardGrpAndName(this.subBoardCode));
 				else
 					formattedText = format(this.text.searchingSubBoardText, subBoardGrpAndName(this.subBoardCode));
-				formattedText = replaceAtCodesInStr(formattedText);
-				formattedText = word_wrap(formattedText, console.screen_columns-1, formattedText.length, false).replace(/\r|\n/g, "\r\n");
-				while (formattedText.lastIndexOf("\r\n") == formattedText.length-2)
-					formattedText = formattedText.substr(0, formattedText.length-2);
-				while (formattedText.lastIndexOf("\r") == formattedText.length-1)
-					formattedText = formattedText.substr(0, formattedText.length-1);
-				while (formattedText.lastIndexOf("\n") == formattedText.length-1)
-					formattedText = formattedText.substr(0, formattedText.length-1);
+				formattedText = replaceAtCodesAndRemoveCRLFs(formattedText);
 				console.print("\x01n" + formattedText + "\x01n");
 			}
 			var readingMailUserNum = user.is_sysop ? this.personalMailUserNum : user.number;
@@ -2358,7 +2357,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 	{
 		// Prompt the user to scan in the current sub-board, the current message group,
 		// or all.  Default to all.
-		console.print("\x01n");
+		console.attributes = "N";
 		console.mnemonics(bbs.text(SubGroupOrAll));
 		scanScopeChar = console.getkeys("SGAC").toString();
 		// If the user just pressed Enter without choosing anything, then abort and return.
@@ -2445,6 +2444,15 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 		this.setSubBoardCode(subBoardsToScan[subCodeIdx]); // Needs to be set before getting the last read/scan pointer index
 		if (msg_area.sub[this.subBoardCode].can_read && ((msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
 		{
+			// If running a new message scan (not new-to-you), output which sub-board that is currently being scanned
+			if (pScanCfgOpt == SCAN_CFG_NEW && pScanMode == SCAN_NEW)
+			{
+				var statusText = format(this.text.searchingSubBoardText, subBoardGrpAndName(this.subBoardCode));
+				console.print("\x01n" + replaceAtCodesAndRemoveCRLFs(statusText) + "\x01n");
+				console.crlf();
+				console.line_counter = 0; // Prevent pausing for screen output and when displaying a message
+			}
+
 			var grpIndex = msg_area.sub[this.subBoardCode].grp_index;
 			var subIndex = msg_area.sub[this.subBoardCode].index;
 			// Sub-board description: msg_area.grp_list[grpIndex].sub_list[subIndex].description
@@ -7659,8 +7667,10 @@ function DigDistMsgReader_DisplayMsgListHelp(pChgSubBoardAllowed, pPauseAtEnd)
 
 	// If pPauseAtEnd is true, then output a newline and
 	// prompt the user whether or not to continue.
-	if (pPauseAtEnd)
+	if (pPauseAtEnd && !console.aborted)
 		console.pause();
+
+	console.aborted = false;
 }
 // For the DigDistMsgReader Class: Displays help for the traditional-interface
 // message list
@@ -7758,8 +7768,11 @@ function DigDistMsgReader_DisplayTraditionalMsgListHelp(pDisplayHeader, pChgSubB
 
 	// If pPauseAtEnd is true, then output a newline and
 	// prompt the user whether or not to continue.
-	if (pPauseAtEnd)
+	if (pPauseAtEnd && !console.aborted)
 		console.pause();
+
+	// Don't set this here - This is only ever called by DisplayMsgListHelp()
+	//console.aborted = false;
 }
 // For the DigDistMsgReader Class: Displays help for the lightbar message list
 //
@@ -7849,8 +7862,11 @@ function DigDistMsgReader_DisplayLightbarMsgListHelp(pDisplayHeader, pChgSubBoar
 	console.print("\x01n\x01h\x01c?" + this.colors["tradInterfaceHelpScreenColor"] + ": Show this help screen\r\n");
 
 	// If pPauseAtEnd is true, then pause.
-	if (pPauseAtEnd)
+	if (pPauseAtEnd && !console.aborted)
 		console.pause();
+
+	// Don't set this here - This is only ever called by DisplayMsgListHelp()
+	//console.aborted = false;
 }
 // For the DigDistMsgReader class: Displays the message list notes for the
 // help screens.
@@ -8092,7 +8108,8 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 	var helpLineScreenLen = (console.strlen(this.enhReadHelpLine) - numHotkeyChars);
 	var numCharsRemaining = console.screen_columns - helpLineScreenLen - 1;
 	var frontPaddingLen = Math.floor(numCharsRemaining/2);
-	var padding = format("%" + frontPaddingLen + "s", "");
+	//var padding = format("%" + frontPaddingLen + "s", "");
+	var padding = format("%*s", frontPaddingLen, "");
 	this.enhReadHelpLine = padding + this.enhReadHelpLine;
 	this.enhReadHelpLine = "\x01n" + this.colors.enhReaderHelpLineBkgColor + this.enhReadHelpLine;
 	if (console.screen_columns > 80)
@@ -8104,7 +8121,10 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 		// Adding 3 as a correction factor for wide terminals (this is a kludge)
 		numCharsRemaining = console.screen_columns - helpLineScreenLen + 3;
 		if (numCharsRemaining > 0)
-			this.enhReadHelpLine += format("%" + numCharsRemaining + "s", "");
+		{
+			//this.enhReadHelpLine += format("%" + numCharsRemaining + "s", "");
+			this.enhReadHelpLine += format("%*s", numCharsRemaining, "");
+		}
 	}
 
 	// Create a version without the change area option
@@ -8151,7 +8171,8 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 	if (numCharsRemaining > 0)
 	{
 		frontPaddingLen = Math.floor(numCharsRemaining/2);
-		padding = format("%" + frontPaddingLen + "s", "");
+		//padding = format("%" + frontPaddingLen + "s", "");
+		padding = format("%*s", frontPaddingLen, "");
 		this.enhReadHelpLineWithoutChgArea = padding + this.enhReadHelpLineWithoutChgArea;
 	}
 	this.enhReadHelpLineWithoutChgArea = "\x01n" + this.colors.enhReaderHelpLineBkgColor + this.enhReadHelpLineWithoutChgArea;
@@ -8161,7 +8182,10 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 		// Adding 3 as a correction factor for wide terminals (this is a kludge)
 		numCharsRemaining = console.screen_columns - helpLineScreenLen + 3;
 		if (numCharsRemaining > 0)
-			this.enhReadHelpLineWithoutChgArea += format("%" + numCharsRemaining + "s", "");
+		{
+			//this.enhReadHelpLineWithoutChgArea += format("%" + numCharsRemaining + "s", "");
+			this.enhReadHelpLineWithoutChgArea += format("%*s", numCharsRemaining, "");
+		}
 	}
 }
 function stripCtrlFromEnhReadHelpLine_ReplaceArrowChars(pHelpLine)
@@ -10417,6 +10441,8 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	// I'm not sure the above is needed anymore.  Should be able to use
 	// console.pause(), which easily supports custom pause scripts being loaded.
 	console.pause();
+
+	console.aborted = false;
 }
 
 // For the DigDistMsgReader class: Displays the enhanced reader mode message
@@ -13096,7 +13122,7 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 			{
 				// Look for the next message with the same thread ID.
 				// Write "Searching.."  in case searching takes a while.
-				console.print("\x01n");
+				console.attributes = "N";
 				if (pPositionCursorForStatus)
 				{
 					console.gotoxy(1, console.screen_rows);
@@ -13192,7 +13218,7 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 
 				// Perform the search
 				// Write "Searching.."  in case searching takes a while.
-				console.print("\x01n");
+				console.attributes = "N";
 				if (pPositionCursorForStatus)
 				{
 					console.gotoxy(1, console.screen_rows);
@@ -13287,7 +13313,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 			{
 				// Look for the previous message with the same thread ID.
 				// Write "Searching.." in case searching takes a while.
-				console.print("\x01n");
+				console.attributes = "N";
 				if (pPositionCursorForStatus)
 				{
 					console.gotoxy(1, console.screen_rows);
@@ -13362,7 +13388,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 					// Synchronet, so I'm not sure of the minimum version where
 					// this will work.
 					// Write "Searching.." in case searching takes a while.
-					console.print("\x01n");
+					console.attributes = "N";
 					if (pPositionCursorForStatus)
 					{
 						console.gotoxy(1, console.screen_rows);
@@ -13436,7 +13462,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 
 				// Perform the search
 				// Write "Searching.."  in case searching takes a while.
-				console.print("\x01n");
+				console.attributes = "N";
 				if (pPositionCursorForStatus)
 				{
 					console.gotoxy(1, console.screen_rows);
@@ -15531,7 +15557,8 @@ function DigDistMsgReader_RefreshMsgAreaRectangle(pTxtLines, pTopLineIdx, pTopLe
 			if (printableTxtLen < pWidth)
 			{
 				var lenDiff = pWidth - printableTxtLen;
-				lineText += format("\x01n%" + lenDiff + "s", "");
+				//lineText += format("\x01n%" + lenDiff + "s", "");
+				lineText += format("\x01n%*s", lenDiff, "");
 			}
 			console.print(lineText);
 		}
@@ -20545,6 +20572,30 @@ function attrCodeStr(pAttrCodeCharStr)
 			str += "\x01" + currentChar;
 	}
 	return str;
+}
+
+// Replaces @-codes in a string and removes any newlines and carriage returns from the end
+// of the string
+//
+// Parameters:
+//  pText: The text to modify
+//
+// Return value: The text with @-codes replaced and newlines & carriage returns removed
+//               from the end of the text
+function replaceAtCodesAndRemoveCRLFs(pText)
+{
+	if (typeof(pText) !== "string")
+		return "";
+
+	var formattedText = replaceAtCodesInStr(pText);
+	formattedText = word_wrap(formattedText, console.screen_columns-1, formattedText.length, false).replace(/\r|\n/g, "\r\n");
+	while (formattedText.lastIndexOf("\r\n") == formattedText.length-2)
+		formattedText = formattedText.substr(0, formattedText.length-2);
+	while (formattedText.lastIndexOf("\r") == formattedText.length-1)
+		formattedText = formattedText.substr(0, formattedText.length-1);
+	while (formattedText.lastIndexOf("\n") == formattedText.length-1)
+		formattedText = formattedText.substr(0, formattedText.length-1);
+	return formattedText;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
