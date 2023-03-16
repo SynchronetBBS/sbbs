@@ -41,6 +41,9 @@ enum {
 	,BBS_PROP_EVENT_TIME
 	,BBS_PROP_EVENT_CODE
 
+	,BBS_PROP_FIRST_NODE
+	,BBS_PROP_LAST_NODE
+
 	,BBS_PROP_NODE_NUM
 	,BBS_PROP_NODE_SETTINGS
 	,BBS_PROP_NODE_STATUS
@@ -164,6 +167,9 @@ enum {
 	,"Time left (in seconds)"
 	,"Time of next exclusive event (in <i>time_t</i> format), or 0 if none"
 	,"Internal code of next exclusive event"
+
+	,"First node number (of this instance of Synchronet)"
+	,"Last node number (of this instance of Synchronet)"
 
 	,"Current node number"
 	,"Current node settings bitfield (see <tt>NM_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
@@ -333,6 +339,13 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case BBS_PROP_EVENT_CODE:
 			p=sbbs->event_code;
+			break;
+
+		case BBS_PROP_FIRST_NODE:
+			val = sbbs->startup->first_node;
+			break;
+		case BBS_PROP_LAST_NODE:
+			val = sbbs->startup->last_node;
 			break;
 
 		case BBS_PROP_NODE_NUM:
@@ -990,6 +1003,8 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"time_left"			,BBS_PROP_TIMELEFT		,PROP_READONLY		,311},
 	{	"event_time"		,BBS_PROP_EVENT_TIME	,PROP_READONLY		,311},
 	{	"event_code"		,BBS_PROP_EVENT_CODE	,PROP_READONLY		,311},
+	{	"first_node"		,BBS_PROP_FIRST_NODE	,PROP_READONLY		,320},
+	{	"last_node"			,BBS_PROP_LAST_NODE		,PROP_READONLY		,320},
 	{	"node_num"			,BBS_PROP_NODE_NUM		,PROP_READONLY		,310},
 	{	"node_settings"		,BBS_PROP_NODE_SETTINGS	,JSPROP_ENUMERATE	,310},
 	{	"node_status"		,BBS_PROP_NODE_STATUS	,PROP_READONLY		,31700},
@@ -4876,7 +4891,7 @@ JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,mods,"Global repository for 3rd party modifications",312);
-	js_DescribeSyncObject(cx,obj,"Controls the Telnet/SSH/RLogin BBS experience",310);
+	js_DescribeSyncObject(cx,obj,"Controls the Terminal Server (traditional BBS) experience",310);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", bbs_prop_desc, JSPROP_READONLY);
 #endif
 
