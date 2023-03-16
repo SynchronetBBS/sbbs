@@ -414,15 +414,18 @@ static jsSyncPropertySpec js_system_properties[] = {
 	{	"deldays",					SYS_PROP_DELDAYS,	SYSOBJ_FLAGS,		310  },
 	{	"autodel",					SYS_PROP_AUTODEL,	SYSOBJ_FLAGS,		31702  },
 
-	{	"lastuser",					SYS_PROP_LASTUSER		,SYSOBJ_FLAGS,	311  },
-	{	"lastuseron",				SYS_PROP_LASTUSERON		,SYSOBJ_FLAGS,	310  },
+	{	"last_user",				SYS_PROP_LASTUSER		,SYSOBJ_FLAGS,	311  },
+	{	"lastuser",					SYS_PROP_LASTUSER	,JSPROP_READONLY,	311  }, /* alias */
+	{	"last_useron",				SYS_PROP_LASTUSERON		,SYSOBJ_FLAGS,	310  },
+	{	"lastuseron",				SYS_PROP_LASTUSERON	,JSPROP_READONLY,	310  }, /* alias */
 #endif
 	{	"freediskspace",			SYS_PROP_FREEDISKSPACE	,SYSOBJ_FLAGS,	310  },
 	{	"freediskspacek",			SYS_PROP_FREEDISKSPACEK	,SYSOBJ_FLAGS,	310  },
 
 #ifndef JSDOOR
 	{	"nodes",					SYS_PROP_NODES,		SYSOBJ_FLAGS,		310  },
-	{	"lastnode",					SYS_PROP_LASTNODE,	SYSOBJ_FLAGS,		310  },
+	{	"last_node",				SYS_PROP_LASTNODE,	SYSOBJ_FLAGS,		310  },
+	{	"lastnode",					SYS_PROP_LASTNODE,	JSPROP_READONLY,	310  }, /* alias */
 
 	{	"newuser_password",			SYS_PROP_NEW_PASS		,SYSOBJ_FLAGS,	310  },
 	{	"newuser_magic_word",		SYS_PROP_NEW_MAGIC		,SYSOBJ_FLAGS,	310  },
