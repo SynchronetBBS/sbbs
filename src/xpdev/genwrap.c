@@ -336,6 +336,11 @@ char* byte_estimate_to_str(uint64_t bytes, char* str, size_t size, ulong unit, i
 	return str;
 }
 
+static const double one_year   = 365.0*24.0*60.0*60.0; // Actually, 365.2425
+static const double one_week   =   7.0*24.0*60.0*60.0;
+static const double one_day    =       24.0*60.0*60.0;
+static const double one_hour   =            60.0*60.0;
+static const double one_minute =                 60.0;
 
 /* Parse a duration string, default unit is in seconds */
 /* (Y)ears, (W)eeks, (D)ays, (H)ours, and (M)inutes */
@@ -350,11 +355,11 @@ double parse_duration(const char* str)
 	if(p!=NULL) {
 		SKIP_WHITESPACE(p);
 		switch(toupper(*p)) {
-			case 'Y':	t*=365.0*24.0*60.0*60.0; break;
-			case 'W':	t*=  7.0*24.0*60.0*60.0; break;
-			case 'D':	t*=		 24.0*60.0*60.0; break;
-			case 'H':	t*=			  60.0*60.0; break;
-			case 'M':	t*=				   60.0; break;
+			case 'Y':	t*= one_year; break;
+			case 'W':	t*= one_week; break;
+			case 'D':	t*= one_day; break;
+			case 'H':	t*= one_hour; break;
+			case 'M':	t*= one_minute; break;
 		}
 	}
 	return t;
@@ -366,16 +371,16 @@ double parse_duration(const char* str)
  */
 char* duration_to_str(double value, char* str, size_t size)
 {
-	if(value && fmod(value,365.0*24.0*60.0*60.0)==0)
-		safe_snprintf(str, size, "%gY",value/(365.0*24.0*60.0*60.0));
-	else if(value && fmod(value,7.0*24.0*60.0*60.0)==0)
-		safe_snprintf(str, size, "%gW",value/(7.0*24.0*60.0*60.0));
-	else if(value && fmod(value,24.0*60.0*60.0)==0)
-		safe_snprintf(str, size, "%gD",value/(24.0*60.0*60.0));
-	else if(value && fmod(value,60.0*60.0)==0)
-		safe_snprintf(str, size, "%gH",value/(60.0*60.0));
-	else if(value && fmod(value,60.0)==0)
-		safe_snprintf(str, size, "%gM",value/60.0);
+	if(value && fmod(value, one_year)==0)
+		safe_snprintf(str, size, "%gY",value/one_year);
+	else if(value && fmod(value, one_week)==0)
+		safe_snprintf(str, size, "%gW",value/one_week);
+	else if(value && fmod(value, one_day)==0)
+		safe_snprintf(str, size, "%gD",value/one_day);
+	else if(value && fmod(value, one_hour)==0)
+		safe_snprintf(str, size, "%gH",value/one_hour);
+	else if(value && fmod(value, one_minute)==0)
+		safe_snprintf(str, size, "%gM",value/one_minute);
 	else
 		safe_snprintf(str, size, "%gS",value);
 
@@ -388,24 +393,24 @@ char* duration_to_str(double value, char* str, size_t size)
  */
 char* duration_to_vstr(double value, char* str, size_t size)
 {
-	if(value && fmod(value,365.0*24.0*60.0*60.0)==0) {
-		value /= (365.0*24.0*60.0*60.0);
+	if(value && fmod(value, one_year)==0) {
+		value /= one_year;
 		safe_snprintf(str, size, "%g year%s", value, value == 1 ? "":"s");
 	}
-	else if(value && fmod(value,7.0*24.0*60.0*60.0)==0) {
-		value /= (7.0*24.0*60.0*60.0);
+	else if(value && fmod(value, one_week)==0) {
+		value /= one_week;
 		safe_snprintf(str, size, "%g week%s", value, value == 1 ? "":"s");
 	}
-	else if(value && fmod(value,24.0*60.0*60.0)==0) {
-		value /= (24.0*60.0*60.0);
+	else if(value && fmod(value, one_day)==0) {
+		value /= one_day;
 		safe_snprintf(str, size, "%g day%s", value, value == 1 ? "":"s");
 	}
-	else if(value && fmod(value,60.0*60.0)==0) {
-		value /= (60.0*60.0);
+	else if(value && fmod(value, one_hour)==0) {
+		value /= one_hour;
 		safe_snprintf(str, size, "%g hour%s", value, value == 1 ? "":"s");
 	}
-	else if(value && fmod(value,60.0)==0) {
-		value /= 60.0;
+	else if(value && fmod(value, one_minute)==0) {
+		value /= one_minute;
 		safe_snprintf(str, size, "%g minute%s", value, value == 1 ? "":"s");
 	}
 	else
