@@ -49,7 +49,7 @@ int edit_sys_location(int page, int total)
 	uifc.helpbuf=
 		"`System Location:`\n"
 		"\n"
-		"This is the location of the BBS. The format is flexible, but it is\n"
+		"This is the location of the BBS.  The format is flexible, but it is\n"
 		"suggested you use the `City, State` format for U.S. locations.\n"
 		;
 	if(page)
@@ -78,7 +78,7 @@ int edit_sys_password(int page, int total)
 	uifc.helpbuf=
 		"`System Password:`\n"
 		"\n"
-		"This is an extra security password required for sysop login and certain\n"
+		"This is an extra security password may be required for sysop login and\n"
 		"sysop functions.  This password should be something not easily guessed\n"
 		"and should be kept absolutely confidential.  This password must be\n"
 		"entered at the Terminal Server `SY:` prompt.\n"
@@ -428,8 +428,8 @@ int edit_sys_timezone(int page, int total)
 			uifc.helpbuf=
 				"`Time Zone Offset:`\n"
 				"\n"
-				"Enter your local time zone offset from Universal Time (UTC/GMT) in `HH:MM`\n"
-				"format.\n"
+				"Enter your local time zone offset from Universal Time (UTC/GMT) in\n"
+				"`HH:MM` format.\n"
 			;
 			if(page)
 				mode = wiz_help(page, total, uifc.helpbuf);
