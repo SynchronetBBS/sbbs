@@ -115,7 +115,7 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 		&& (!(sys_status&SS_USERON) || term_supports(NO_EXASCII)))
 		ch&=0x7f; 
 
-	this->timeout=time(NULL);
+	getkey_last_activity = time(NULL);
 
 	/* Is this a control key */
 	if(!(mode & K_CTRLKEYS) && ch < ' ') {

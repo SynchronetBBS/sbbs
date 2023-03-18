@@ -1942,9 +1942,26 @@ void input_thread(void *arg)
 	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
 		&& node_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
 
+		if(sbbs->max_socket_inactivity && !(sbbs->console & CON_NO_INACT)) {
+			if(sbbs->cfg.inactivity_warn
+				&& sbbs->socket_inactive >= sbbs->max_socket_inactivity * (sbbs->cfg.inactivity_warn / 100.0)
+				&& !sbbs->socket_inactivity_warning_sent) {
+				sbbs->bputs(text[InactivityAlert]);
+				sbbs->socket_inactivity_warning_sent = true;
+			}
+			if(sbbs->socket_inactive > sbbs->max_socket_inactivity) {
+				lprintf(LOG_NOTICE, "Node %d maximum socket inactivity exceeded: %u seconds"
+					,sbbs->cfg.node_num, sbbs->max_socket_inactivity);
+				sbbs->bputs(text[CallBackWhenYoureThere]);
+				break;
+			}
+		}
+
 #ifdef _WIN32	// No spy sockets
-		if (!socket_readable(sbbs->client_socket, 1000))
+		if (!socket_readable(sbbs->client_socket, 1000)) {
+			++sbbs->socket_inactive;
 			continue;
+		}
 #else
 #ifdef PREFER_POLL
 		fds[0].fd = sbbs->client_socket;
@@ -1956,8 +1973,10 @@ void input_thread(void *arg)
 			nfds++;
 		}
 
-		if (poll(fds, nfds, 1000) < 1)
+		if (poll(fds, nfds, 1000) < 1) {
+			++sbbs->socket_inactive;
 			continue;
+		}
 #else
 #error Spy sockets without poll() was removed in commit 3971ef4dcc3db19f400a648b6110718e56a64cf3
 #endif
@@ -1965,6 +1984,9 @@ void input_thread(void *arg)
 
 		if(sbbs->client_socket==INVALID_SOCKET)
 			break;
+
+		sbbs->socket_inactive = 0;
+		sbbs->socket_inactivity_warning_sent = false;
 
 /*         ^          ^
  *      \______    ______/

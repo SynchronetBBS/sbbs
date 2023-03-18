@@ -47,9 +47,9 @@ enum {
 	,CON_PROP_CTERM_VERSION
 	,CON_PROP_WORDWRAP
 	,CON_PROP_QUESTION
-	,CON_PROP_INACTIV_WARN
-	,CON_PROP_INACTIV_HANGUP
-	,CON_PROP_TIMEOUT			/* User inactivity timeout reference */
+	,CON_PROP_MAX_GETKEY_INACTIVITY
+	,CON_PROP_LAST_GETKEY_ACTIVITY			/* User inactivity timeout reference */
+	,CON_PROP_MAX_SOCKET_INACTIVITY
 	,CON_PROP_TIMELEFT_WARN		/* low timeleft warning counter */
 	,CON_PROP_ABORTED
 	,CON_PROP_ABORTABLE
@@ -141,14 +141,14 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val=sbbs->cterm_version;
 			break;
 
-		case CON_PROP_INACTIV_WARN:
-			val=sbbs->cfg.sec_warn;
+		case CON_PROP_MAX_GETKEY_INACTIVITY:
+			val=sbbs->cfg.max_getkey_inactivity;
 			break;
-		case CON_PROP_INACTIV_HANGUP:
-			val=sbbs->cfg.sec_hangup;
+		case CON_PROP_LAST_GETKEY_ACTIVITY:
+			val=(int32)sbbs->getkey_last_activity;
 			break;
-		case CON_PROP_TIMEOUT:
-			val=(int32)sbbs->timeout;
+		case CON_PROP_MAX_SOCKET_INACTIVITY:
+			val=sbbs->max_socket_inactivity;
 			break;
 		case CON_PROP_TIMELEFT_WARN:
 			val=sbbs->timeleft_warn;
@@ -291,14 +291,14 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_CTERM_VERSION:
 			sbbs->cterm_version = val;
 			break;
-		case CON_PROP_INACTIV_WARN:
-			sbbs->cfg.sec_warn = (uint16_t)val;
+		case CON_PROP_MAX_GETKEY_INACTIVITY:
+			sbbs->cfg.max_getkey_inactivity = (uint16_t)val;
 			break;
-		case CON_PROP_INACTIV_HANGUP:
-			sbbs->cfg.sec_hangup = (uint16_t)val;
+		case CON_PROP_LAST_GETKEY_ACTIVITY:
+			sbbs->getkey_last_activity = val;
 			break;
-		case CON_PROP_TIMEOUT:
-			sbbs->timeout=val;
+		case CON_PROP_MAX_SOCKET_INACTIVITY:
+			sbbs->max_socket_inactivity = val;
 			break;
 		case CON_PROP_TIMELEFT_WARN:
 			sbbs->timeleft_warn=val;
@@ -373,9 +373,11 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{	"type"				,CON_PROP_TERM_TYPE			,JSPROP_ENUMERATE|JSPROP_READONLY ,31702},
 	{	"charset"			,CON_PROP_CHARSET			,JSPROP_ENUMERATE|JSPROP_READONLY ,31702},
 	{	"cterm_version"		,CON_PROP_CTERM_VERSION		,CON_PROP_FLAGS ,317},
-	{	"inactivity_warning",CON_PROP_INACTIV_WARN		,CON_PROP_FLAGS, 31401},
-	{	"inactivity_hangup"	,CON_PROP_INACTIV_HANGUP	,CON_PROP_FLAGS, 31401},
-	{	"timeout"			,CON_PROP_TIMEOUT			,CON_PROP_FLAGS	,310},
+	{	"max_getkey_inactivity"	,CON_PROP_MAX_GETKEY_INACTIVITY	,CON_PROP_FLAGS, 320},
+	{	"inactivity_hangup"		,CON_PROP_MAX_GETKEY_INACTIVITY	,0				,31401}, // alias
+	{	"last_getkey_activity"	,CON_PROP_LAST_GETKEY_ACTIVITY	,CON_PROP_FLAGS	,320},
+	{	"timeout"				,CON_PROP_LAST_GETKEY_ACTIVITY	,0				,310},	// alias
+	{	"max_socket_inactivity"	,CON_PROP_MAX_SOCKET_INACTIVITY	,CON_PROP_FLAGS, 320},
 	{	"timeleft_warning"	,CON_PROP_TIMELEFT_WARN		,CON_PROP_FLAGS	,310},
 	{	"aborted"			,CON_PROP_ABORTED			,CON_PROP_FLAGS	,310},
 	{	"abortable"			,CON_PROP_ABORTABLE			,CON_PROP_FLAGS	,310},
@@ -415,9 +417,9 @@ static const char* con_prop_desc[] = {
 	,"Terminal type (i.e. 'ANSI', 'RIP', 'PETSCII', or 'DUMB')"
 	,"Terminal character set (i.e. 'UTF-8', 'CP437', 'CBM-ASCII', or 'US-ASCII')"
 	,"Detected CTerm (SyncTERM) version as an integer > 1000 where major version is cterm_version / 1000 and minor version is cterm_version % 1000"
-	,"Number of seconds before displaying warning (Are you really there?) due to user/keyboard inactivity"
-	,"Number of seconds before disconnection due to user/keyboard inactivity"
+	,"Number of seconds before disconnection due to user/keyboard inactivity (in getkey/getstr)"
 	,"User/keyboard inactivity timeout reference value (time_t format)"
+	,"Number of seconds before disconnection due to socket inactivity (in input_thread)"
 	,"Number of low time-left (5 or fewer minutes remaining) warnings displayed to user"
 	,"Input/output has been aborted"
 	,"Remote output can be asynchronously aborted with Ctrl-C"

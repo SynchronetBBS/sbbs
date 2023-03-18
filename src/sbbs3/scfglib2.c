@@ -480,6 +480,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->xtrn[i]->path, iniGetString(section, NULL, "startup_dir", "", value));
 		cfg->xtrn[i]->textra = (uint8_t)iniGetShortInt(section, NULL, "textra", 0);
 		cfg->xtrn[i]->maxtime = (uint8_t)iniGetShortInt(section, NULL, "max_time", 0);
+		cfg->xtrn[i]->max_inactivity = iniGetUInteger(section, NULL, "max_inactivity", 0);
 		++cfg->total_xtrns;
 	}
 	iniFreeStringList(list);

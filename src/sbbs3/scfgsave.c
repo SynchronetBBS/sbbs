@@ -87,8 +87,6 @@ BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->node_misc, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "sem_check", cfg->node_sem_check, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "stat_check", cfg->node_stat_check, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "sec_warn", cfg->sec_warn, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "sec_hangup", cfg->sec_hangup, NULL);
 
 	if((fp = fopen(inipath, "w")) != NULL) {
 		result = iniWriteFile(fp, ini);
@@ -142,6 +140,8 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 	iniSetBytes(&ini, ROOT_SECTION, "max_log_size", 1, cfg->max_log_size, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "max_logs_kept", cfg->max_logs_kept, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "ctrlkey_passthru", cfg->ctrlkey_passthru, NULL);
+	iniSetUInteger(&ini, ROOT_SECTION, "max_getkey_inactivity", cfg->max_getkey_inactivity, NULL);
+	iniSetShortInt(&ini, ROOT_SECTION, "inactivity_warn", cfg->inactivity_warn, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "user_backup_level", cfg->user_backup_level, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "mail_backup_level", cfg->mail_backup_level, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "valuser", cfg->valuser, NULL);
@@ -947,6 +947,7 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 			iniSetString(&section, name, "startup_dir", cfg->xtrn[i]->path, NULL);
 			iniSetShortInt(&section, name, "textra", cfg->xtrn[i]->textra, NULL);
 			iniSetShortInt(&section, name, "max_time", cfg->xtrn[i]->maxtime, NULL);
+			iniSetUInteger(&section, name, "max_inactivity", cfg->xtrn[i]->max_inactivity, NULL);
 			strListMerge(&ini, section);
 			free(section);
 		}

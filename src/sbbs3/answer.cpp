@@ -34,6 +34,7 @@ bool sbbs_t::answer()
 	int		i,l,in;
 	struct tm tm;
 
+	max_socket_inactivity = startup->max_login_inactivity;
 	useron.number=0;
 	answertime=logontime=starttime=now=time(NULL);
 	/* Caller ID string is client IP address, by default (may be overridden later) */
@@ -497,5 +498,6 @@ bool sbbs_t::answer()
 	if(useron.pass[0])
 		loginSuccess(startup->login_attempt_list, &client_addr);
 
+	max_socket_inactivity = startup->max_session_inactivity;
 	return(true);
 }

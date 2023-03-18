@@ -46,7 +46,7 @@ char sbbs_t::getkey(int mode)
 	if((sys_status&SS_USERON || action==NODE_DFLT) && !(mode&(K_GETSTR|K_NOSPIN)))
 		mode|=(useron.misc&SPIN);
 	lncntr=0;
-	timeout=time(NULL);
+	getkey_last_activity=time(NULL);
 #if !defined SPINNING_CURSOR_OVER_HARDWARE_CURSOR
 	if(mode&K_SPIN)
 		outchar(' ');
@@ -125,31 +125,33 @@ char sbbs_t::getkey(int mode)
 		}
 
 		if(!(startup->options&BBS_OPT_NO_TELNET_GA)
-			&& now!=last_telnet_cmd && now-timeout>=60 && !((now-timeout)%60)) {
+			&& now!=last_telnet_cmd && now-getkey_last_activity>=60 && !((now-getkey_last_activity)%60)) {
 			// Let's make sure the socket is up
 			// Sending will trigger a socket d/c detection
 			send_telnet_cmd(TELNET_GA,0);
 			last_telnet_cmd=now;
 		}
-			
+
+		time_t inactive = now - getkey_last_activity;
 		if(online==ON_REMOTE && !(console&CON_NO_INACT)
-			&& (now-timeout >= cfg.sec_warn || now-timeout >= cfg.sec_hangup)) {
-			if(sys_status&SS_USERON && cfg.sec_warn < cfg.sec_hangup) {
+			&& ((cfg.inactivity_warn && inactive >= cfg.max_getkey_inactivity * (cfg.inactivity_warn / 100.0))
+				|| inactive >= cfg.max_getkey_inactivity)) {
+			if(sys_status&SS_USERON && inactive < cfg.max_getkey_inactivity) {
 				saveline();
 				bputs(text[AreYouThere]); 
 			}
 			else
-				bputs("\7\7");
-			while(!inkey(K_NONE,100) && online && now-timeout < cfg.sec_hangup) {
+				bputs(text[InactivityAlert]);
+			while(!inkey(K_NONE,100) && online && now-getkey_last_activity < cfg.max_getkey_inactivity) {
 				now=time(NULL);
 			}
-			if(now-timeout >= cfg.sec_hangup) {
+			if(now-getkey_last_activity >= cfg.max_getkey_inactivity) {
 				if(online==ON_REMOTE) {
 					console|=CON_R_ECHO;
 					console&=~CON_R_ECHOX; 
 				}
 				bputs(text[CallBackWhenYoureThere]);
-				logline(LOG_NOTICE,nulstr,"Inactive");
+				logline(LOG_NOTICE,nulstr,"Maximum user input inactivity exceeded");
 				hangup();
 				return(0); 
 			}
@@ -157,7 +159,7 @@ char sbbs_t::getkey(int mode)
 				bputs("\r\1n\1>");
 				restoreline(); 
 			}
-			timeout=now; 
+			getkey_last_activity=now; 
 		}
 
 	} while(online);

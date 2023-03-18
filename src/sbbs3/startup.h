@@ -152,6 +152,9 @@ typedef struct {
 	BOOL    usedosemu;
 	char	xtrn_term_ansi[32];		/* external ANSI terminal type (e.g. "ansi-bbs") */
 	char	xtrn_term_dumb[32];		/* external dumb terminal type (e.g. "dumb") */
+	uint16_t	max_login_inactivity;	// seconds
+	uint16_t	max_newuser_inactivity;	// seconds
+	uint16_t	max_session_inactivity;	// seconds
 
 	/* JavaScript operating parameters */
 	js_startup_t js;

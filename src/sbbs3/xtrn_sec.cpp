@@ -1418,6 +1418,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	}
 
 	start=time(NULL);
+	if(cfg.xtrn[xtrnnum]->max_inactivity > 0)
+		max_socket_inactivity = cfg.xtrn[xtrnnum]->max_inactivity;
 
 	char topic[128];
 	snprintf(topic, sizeof(topic), "exec/%s", cfg.xtrn[xtrnnum]->code);
@@ -1428,12 +1430,14 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		,mode
 		,cfg.xtrn[xtrnnum]->path);
 	end=time(NULL);
+
 	if(cfg.xtrn[xtrnnum]->misc&FREETIME)
 		starttime+=end-start;
 	if(cfg.xtrn[xtrnnum]->clean[0]) {
 		external(cmdstr(cfg.xtrn[xtrnnum]->clean, drop_file, startup_dir, NULL, mode)
 			,mode&~(EX_STDIN|EX_CONIO), cfg.xtrn[xtrnnum]->path); 
 	}
+	max_socket_inactivity = startup->max_session_inactivity;
 	/* Re-open the logfile */
 	if(logfile_fp==NULL) {
 		SAFEPRINTF(str,"%snode.log",cfg.node_dir);

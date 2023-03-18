@@ -39,6 +39,9 @@ static const char*	strInterfaces="Interface";
 static const char*	strPort="Port";
 static const char*	strMaxClients="MaxClients";
 static const char*	strMaxInactivity="MaxInactivity";
+static const char*	strMaxLoginInactivity="MaxLoginInactivity";
+static const char*	strMaxNewUserInactivity="MaxNewUserInactivity";
+static const char*	strMaxSessionInactivity="MaxSessionInactivity";
 static const char*	strMaxConConn="MaxConcurrentConnections";
 static const char*	strHostName="HostName";
 static const char*	strLogLevel="LogLevel";
@@ -458,6 +461,10 @@ void sbbs_read_ini(
 		bbs->login_attempt = get_login_attempt_settings(list, section, global);
 		bbs->max_concurrent_connections = iniGetInteger(list, section, strMaxConConn, 0);
 
+		bbs->max_login_inactivity = iniGetShortInt(list, section, strMaxLoginInactivity, 10 * 60);
+		bbs->max_newuser_inactivity = iniGetShortInt(list, section, strMaxNewUserInactivity, 60 * 60);
+		bbs->max_session_inactivity = iniGetShortInt(list, section, strMaxSessionInactivity, 0);
+
 		SAFECOPY(bbs->web_file_vpath_prefix, iniGetString(list, "web", strFileVPathPrefix, nulstr, value));
 	}
 
@@ -868,7 +875,12 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetInteger(lp,section,strMaxConConn,bbs->max_concurrent_connections,&style))
 			break;
-
+		if(!iniSetShortInt(lp, section, strMaxLoginInactivity, bbs->max_login_inactivity, &style))
+			break;
+		if(!iniSetShortInt(lp, section, strMaxNewUserInactivity, bbs->max_newuser_inactivity, &style))
+			break;
+		if(!iniSetShortInt(lp, section, strMaxSessionInactivity, bbs->max_session_inactivity, &style))
+			break;
 
 		if(bbs->sem_chk_freq==global->sem_chk_freq)
 			iniRemoveValue(lp,section,strSemFileCheckFrequency);

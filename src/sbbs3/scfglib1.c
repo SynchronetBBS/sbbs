@@ -64,8 +64,6 @@ BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->node_misc = iniGetUInteger(ini, ROOT_SECTION, "settings", 0);
 	cfg->node_sem_check = iniGetShortInt(ini, ROOT_SECTION, "sem_check", 60);
 	cfg->node_stat_check = iniGetShortInt(ini, ROOT_SECTION, "stat_check", 10);
-	cfg->sec_warn = iniGetShortInt(ini, ROOT_SECTION, "sec_warn", 180);
-	cfg->sec_hangup = iniGetShortInt(ini, ROOT_SECTION, "sec_hangup", 300);
 
 	iniFreeStringList(ini);
 
@@ -125,6 +123,8 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->max_log_size = (uint32_t)iniGetBytes(ini, ROOT_SECTION, "max_log_size", 1, 0);
 	cfg->max_logs_kept = iniGetUInt16(ini, ROOT_SECTION, "max_logs_kept", 0);
 	cfg->ctrlkey_passthru = iniGetInteger(ini, ROOT_SECTION, "ctrlkey_passthru", 0);
+	cfg->max_getkey_inactivity = iniGetUInteger(ini, ROOT_SECTION, "max_getkey_inactivity", 300);
+	cfg->inactivity_warn = (uchar)iniGetShortInt(ini, ROOT_SECTION, "inactivity_warn", 75);
 
 	cfg->user_backup_level = iniGetInteger(ini, ROOT_SECTION, "user_backup_level", 5);
 	cfg->mail_backup_level = iniGetInteger(ini, ROOT_SECTION, "mail_backup_level", 5);
