@@ -870,7 +870,8 @@ var FidoEchoMailReceived=860;
 var HashingFile=861;
 var HashedFile=862;
 var NewUserValEmailSubj=863;
+var InactivityAlert=864;
 
-var TOTAL_TEXT=864;
+var TOTAL_TEXT=865;
 
 this;
