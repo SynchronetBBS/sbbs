@@ -22,10 +22,17 @@ var guest = options.guest && system.matchuser("guest");
 
 if(!bbs.online)
 	exit();
-if(!(console.autoterm&(USER_ANSI | USER_PETSCII | USER_UTF8))) {
-	console.inactivity_hangup = parseInt(options.inactive_hangup, 10);
-	log(LOG_NOTICE, "terminal not detected, reducing inactivity hang-up timeout to " + console.inactivity_hangup + " seconds");
+var inactive_hangup = parseInt(options.inactive_hangup, 10);
+if(inactive_hangup && inactive_hangup < console.max_socket_inactivity
+	&& !(console.autoterm&(USER_ANSI | USER_PETSCII | USER_UTF8))) {
+	console.max_socket_inactivity = inactive_hangup;
+	log(LOG_NOTICE, "terminal not detected, reducing inactivity hang-up timeout to " + console.max_socket_inactivity + " seconds");
 }
+if(console.max_socket_inactivity > 0 && bbs.node_num == bbs.last_node) {
+	console.max_socket_inactivity /= 2;
+	log(LOG_NOTICE, "last node login inactivity timeout reduced to " + console.max_socket_inactivity);
+}
+
 for(var c=0; c < options.login_prompts; c++) {
 
 	// The "node sync" is required for sysop interruption/chat/etc.
