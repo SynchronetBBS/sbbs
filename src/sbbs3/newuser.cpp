@@ -37,6 +37,7 @@ BOOL sbbs_t::newuser()
 	long	kmode;
 	bool	usa;
 
+	max_socket_inactivity = startup->max_newuser_inactivity;
 	bputs(text[StartingNewUserRegistration]);
 	getnodedat(cfg.node_num,&thisnode,0);
 	if(thisnode.misc&NODE_LOCK) {

@@ -2445,6 +2445,16 @@ void sys_cfg(void)
 						SAFECOPY(str, "Unlimited");
 					}
 					sprintf(opt[i++],"%-27.27s%s","Maximum Log File Size", str);
+					if(cfg.max_getkey_inactivity)
+						duration_to_vstr(cfg.max_getkey_inactivity, str, sizeof(str));
+					else
+						SAFECOPY(str, "Unlimited");
+					sprintf(opt[i++],"%-27.27s%s","Maximum User Inactivity", str);
+					if(cfg.inactivity_warn)
+						SAFEPRINTF(str, "%u percent", cfg.inactivity_warn);
+					else
+						SAFECOPY(str, "Disabled");
+					sprintf(opt[i++],"%-27.27s%s","User Inactivity Warning", str);
 					sprintf(opt[i++],"%-27.27s%"PRIX32,"Control Key Pass-through"
 						,cfg.ctrlkey_passthru);
 					opt[i][0]=0;
@@ -2734,6 +2744,44 @@ void sys_cfg(void)
 							}
 							break;
 						case 17:
+							if(cfg.max_getkey_inactivity < 1)
+								SAFECOPY(str, "Unlimited");
+							else
+								duration_to_str(cfg.max_getkey_inactivity, str, sizeof(str));
+							uifc.helpbuf=
+								"`Duration Before Inactive-User Disconnection:`\n"
+								"\n"
+								"This is the duration of time the user must be inactive while the BBS\n"
+								"is waiting for keyboard input (via `getkey()`) before the user will be\n"
+								"automatically disconnected.  A setting of `0` will disable this user\n"
+								"inactivity detection feature.  Default is `5 minutes`.\n"
+								"\n"
+								"For lower-level inactive socket detection/disconnection, see the\n"
+								"`Max*Inactivity` keys in the `[BBS]` section of your `ctrl/sbbs.ini` file.\n"
+								"\n"
+								"H-exempt users will not be disconnected due to inactivity."
+							;
+							uifc.input(WIN_MID|WIN_SAV,0,14
+								,"Duration Before Inactive-User Disconnection"
+								,str, 10, K_EDIT);
+							cfg.max_getkey_inactivity = (uint)parse_duration(str);
+							break;
+						case 18:
+							ultoa(cfg.inactivity_warn,str,10);
+							uifc.helpbuf=
+								"`Percentage of Maximum Inactivity Before Warning:`\n"
+								"\n"
+								"This is the percentage of the maximum inactivity duration that must\n"
+								"elapse before a warning of detected user inactivity will be given.\n"
+								"A setting of `0` will disable all inactivity warnings (including socket\n"
+								"inactivity warnings).  Default is `75` percent.\n"
+							;
+							uifc.input(WIN_MID|WIN_SAV,0,14
+								,"Percentage of Maximum Inactivity Before Warning"
+								,str,4,K_NUMBER|K_EDIT);
+							cfg.inactivity_warn=atoi(str);
+							break;
+						case 19:
 							uifc.helpbuf=
 								"`Control Key Pass-through:`\n"
 								"\n"

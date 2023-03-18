@@ -168,6 +168,7 @@ typedef struct {							/* External Program Information */
 				event,                      /* Execute upon what event */
 				textra, 					/* Extra time while in this program */
 				maxtime;					/* Maximum time allowed in this door */
+	uint		max_inactivity;				/* Maximum socket inactivity (in seconds), when non-zero */
 	uint16_t	sec;						/* Section this program belongs to */
 	uint32_t	cost,						/* Cost to run in credits */
 				misc;						/* Misc. bits - ANSI, DOS I/O etc. */
@@ -625,8 +626,8 @@ typedef struct
 	char			tempxfer_mod[LEN_CMD+1];
 	char			batxfer_mod[LEN_CMD+1];
 	uchar			smb_retry_time; 		/* Seconds to retry on SMBs */
-	uint16_t		sec_warn;				/* Seconds before inactivity warning */
-	uint16_t		sec_hangup; 			/* Seconds before inactivity hang-up */
+	uchar			inactivity_warn;		// percentage
+	uint			max_getkey_inactivity;	// Seconds before user inactivity hang-up
 
 	uint* 			color;					/* Different colors for the BBS */
 	uint32_t		total_colors;

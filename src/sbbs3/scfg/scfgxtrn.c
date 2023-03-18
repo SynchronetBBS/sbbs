@@ -1640,6 +1640,11 @@ void xtrn_cfg(uint section)
 							,cfg.xtrn[i]->misc&FREETIME ? "Yes" : "No");
 						sprintf(opt[k++],"%-25.25s%s","Monitor Time Left"
 							,cfg.xtrn[i]->misc&XTRN_CHKTIME ? "Yes" : "No");
+						if(cfg.xtrn[i]->max_inactivity)
+							duration_to_vstr(cfg.xtrn[i]->max_inactivity, str, sizeof(str));
+						else
+							SAFECOPY(str, "None");
+						sprintf(opt[k++],"%-25.25s%s","Maximum Inactivity", str);
 						opt[k][0]=0;
 						uifc.helpbuf=
 							"`Online Program Time Options:`\n"
@@ -1721,6 +1726,29 @@ void xtrn_cfg(uint section)
 									cfg.xtrn[i]->misc&=~XTRN_CHKTIME;
 									uifc.changes=TRUE; 
 								}
+								break;
+							case 4:
+								if(cfg.xtrn[i]->max_inactivity < 1)
+									SAFECOPY(str, "None");
+								else
+									duration_to_str(cfg.xtrn[i]->max_inactivity, str, sizeof(str));
+								uifc.helpbuf=
+									"`Duration Before Inactive-Socket Disconnection:`\n"
+									"\n"
+									"This is the duration of time the client socket must be inactive before\n"
+									"the user will be automatically disconnected and control returned to the\n"
+									"BBS.\n"
+									"\n"
+									"H-exempt users will not be disconnected due to inactivity.\n"
+									"\n"
+									"A setting of `0` (the default) will disable this inactivity detection\n"
+									"feature and rely on the external program itself to detect inactivity\n"
+									"and return control to the BBS.\n"
+								;
+								uifc.input(WIN_MID|WIN_SAV,0,14
+									,"Duration Before Inactive-Socket Disconnection"
+									,str,5,K_EDIT);
+								cfg.xtrn[i]->max_inactivity = (uint)parse_duration(str);
 								break;
 							} 
 						}

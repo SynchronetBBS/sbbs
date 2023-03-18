@@ -302,10 +302,6 @@ void node_cfg()
 						,cfg.node_sem_check);
 					sprintf(opt[i++],"%-27.27s%u seconds","Statistics Frequency"
 						,cfg.node_stat_check);
-					sprintf(opt[i++],"%-27.27s%u seconds","Inactivity Warning"
-						,cfg.sec_warn);
-					sprintf(opt[i++],"%-27.27s%u seconds","Inactivity Disconnection"
-						,cfg.sec_hangup);
 					sprintf(opt[i++],"%-27.27s%s","Daily Event",cfg.node_daily);
 					sprintf(opt[i++],"%-27.27s%s","Node Directory",cfg.node_path[cfg.node_num-1]);
 					sprintf(opt[i++],"%-27.27s%s","Text Directory",cfg.text_dir);
@@ -347,32 +343,6 @@ void node_cfg()
 								,"Seconds Between Statistic Checks"
 								,str,3,K_NUMBER|K_EDIT);
 							cfg.node_stat_check=atoi(str);
-							break;
-						case __COUNTER__:
-							ultoa(cfg.sec_warn,str,10);
-							uifc.helpbuf=
-								"`Seconds Before Inactivity Warning:`\n"
-								"\n"
-								"This is the number of seconds the user must be inactive before a\n"
-								"warning will be given. Default is `180` seconds.\n"
-							;
-							uifc.input(WIN_MID|WIN_SAV,0,14
-								,"Seconds Before Inactivity Warning"
-								,str,4,K_NUMBER|K_EDIT);
-							cfg.sec_warn=atoi(str);
-							break;
-						case __COUNTER__:
-							ultoa(cfg.sec_hangup,str,10);
-							uifc.helpbuf=
-								"`Seconds Before Inactivity Disconnection:`\n"
-								"\n"
-								"This is the number of seconds the user must be inactive before they\n"
-								"will be automatically disconnected. Default is `300` seconds.\n"
-							;
-							uifc.input(WIN_MID|WIN_SAV,0,14
-								,"Seconds Before Inactivity Disconnection"
-								,str,4,K_NUMBER|K_EDIT);
-							cfg.sec_hangup=atoi(str);
 							break;
 						case __COUNTER__:
 							uifc.helpbuf=

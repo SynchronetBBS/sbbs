@@ -545,8 +545,11 @@ public:
 	uint	cur_rate=0;		/* Current Connection (DCE) Rate */
 	uint	cur_cps=10000;	/* Current Average Download CPS */
 	uint	dte_rate=0;		/* Current COM Port (DTE) Rate */
-	time_t 	timeout=0;		/* User inactivity timeout reference */
+	time_t 	getkey_last_activity=0;		/* User inactivity timeout reference */
 	uint 	timeleft_warn=0;/* low timeleft warning flag */
+	uint	socket_inactive=0;			// Socket inactivity counter (watchdog), in seconds, incremented by input_thread()
+	uint	max_socket_inactivity=0;	// Socket inactivity limit (in seconds), enforced by input_thread()
+	bool	socket_inactivity_warning_sent=false;
 	uint	curatr = LIGHTGRAY;	/* Current Text Attributes Always */
 	uint	attr_stack[64]{};	/* Saved attributes (stack) */
 	int 	attr_sp = 0;	/* Attribute stack pointer */
