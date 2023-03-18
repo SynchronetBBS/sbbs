@@ -63,7 +63,6 @@ const main_menu = {
 	'/V': { exec: 'scanpolls.js', args: ['all'] },
 	 'W': { eval: 'bbs.whos_online()' },
 	 'X': { eval: 'bbs.xtrn_sec()' },
-	'/X': { eval: 'exit(0)' },
 	 'Z': { eval: 'bbs.scan_subs(SCAN_NEW | SCAN_CONT)'
 			,msg: '\r\n\x01c\x01hContinuous New Message Scan\r\n' },
 	'/Z': { eval: 'bbs.scan_subs(SCAN_NEW | SCAN_CONT, /* all */true)' },
@@ -190,7 +189,6 @@ while(bbs.online && !js.terminated) {
 	console.aborted = false;
 	console.putmsg(menu.prompt, P_SAVEATR);
 	var cmd = console.getkey(K_UPPER);
-	log("cmd = " + ascii(cmd));
 	if(cmd > ' ')
 		console.print(cmd);
 	if(cmd == ';') {
