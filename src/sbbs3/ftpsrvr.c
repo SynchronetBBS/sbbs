@@ -909,6 +909,24 @@ static void receive_thread(void* arg)
 			,xfer.ctrl_sock,xfer.user->alias, *xfer.data_sock,xfer.filename,xfer.filepos);
 
 	fseeko(fp,xfer.filepos,SEEK_SET);
+
+	// Determine the maximum file size to allow, accounting for minimum free space
+	char path[MAX_PATH + 1];
+	SAFECOPY(path, xfer.filename);
+	*getfname(path) = '\0';
+	uint64_t avail = getfreediskspace(path, 1);
+	if(avail <= scfg.min_dspace)
+		avail = 0;
+	else
+		avail -= scfg.min_dspace;
+	uint64_t max_fsize = xfer.filepos + avail;
+	if(startup->max_fsize > 0 && startup->max_fsize < max_fsize)
+		max_fsize = startup->max_fsize;
+	if(startup->options & FTP_OPT_DEBUG_DATA)
+		lprintf(LOG_DEBUG, "%04d <%s> DATA Limiting uploaded file size to %" PRIu64 " (%s) bytes"
+			,xfer.ctrl_sock, xfer.user->alias, max_fsize
+			,byte_estimate_to_str(max_fsize, tmp, sizeof(tmp), 1, 1));
+
 	last_report=start=time(NULL);
 	while(1) {
 
@@ -929,7 +947,7 @@ static void receive_thread(void* arg)
 			last_total=total;
 			last_report=now;
 		}
-		if(startup->max_fsize && (xfer.filepos+total) > startup->max_fsize) {
+		if(xfer.filepos + total > max_fsize) {
 			lprintf(LOG_WARNING,"%04d <%s> !DATA received %"PRIdOFF" bytes of %s exceeds maximum allowed (%"PRIu64" bytes)"
 				,xfer.ctrl_sock, xfer.user->alias, xfer.filepos+total, xfer.filename, startup->max_fsize);
 			sockprintf(xfer.ctrl_sock,sess,"552 File size exceeds maximum allowed (%"PRIu64" bytes)", startup->max_fsize);
@@ -4625,9 +4643,9 @@ static void ctrl_thread(void* arg)
 				freespace = getfreediskspace(scfg.dir[dir]->path, 1);
 			}
 			if(freespace < scfg.min_dspace) {
-				lprintf(LOG_ERR, "%04d <%s> !insufficient disk free space (%" PRIu64 " bytes) to allow upload"
-					,sock, user.alias, freespace);
-				sockprintf(sock, sess, "452 insufficient free disk space, try again later");
+				lprintf(LOG_ERR, "%04d <%s> !Insufficient free disk space (%s bytes) to allow upload"
+					,sock, user.alias, byte_estimate_to_str(freespace, str, sizeof(str), 1,1));
+				sockprintf(sock, sess, "452 Insufficient free disk space, try again later");
 				continue;
 			}
 			sockprintf(sock,sess,"150 Opening BINARY mode data connection for file transfer.");
