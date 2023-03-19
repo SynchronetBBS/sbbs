@@ -362,7 +362,7 @@ function view_file_info(mode)
 		return;
 	if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, mode)) {
 		var s=0;
-		console.print(bbs.text(SearchingAllDirs));
+		console.putmsg(bbs.text(SearchingAllDirs));
 		for(var i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
 			if(i!=bbs.curdir &&
 					(s=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, mode))!=0) {
@@ -371,11 +371,11 @@ function view_file_info(mode)
 				}
 			}
 		}
-		console.print(bbs.text(SearchingAllLibs));
+		console.putmsg(bbs.text(SearchingAllLibs));
 		for(var i=0; i<file_area.lib_list.length; i++) {
 			if(i==bbs.curlib)
 				continue;
-			for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
+			for(var j=0; j<file_area.lib_list[i].dir_list.length; j++) {
 				if((s=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number, str, mode))!=0) {
 					if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
 						return;
@@ -392,7 +392,7 @@ function view_files()
 	if(!str)
 		return;
 	if(!bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FL_VIEW)) {
-		console.print(bbs.text(SearchingAllDirs));
+		console.putmsg(bbs.text(SearchingAllDirs));
 		for(var i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
 			if(i==bbs.curdir)
 				continue;
@@ -401,11 +401,11 @@ function view_files()
 		}
 		if(i<file_area.lib_list[bbs.curlib].dir_list.length)
 			return;
-		console.print(bbs.text(SearchingAllLibs));
+		console.putmsg(bbs.text(SearchingAllLibs));
 		for(var i=0; i<file_area.lib_list.length; i++) {
 			if(i==bbs.curlib)
 				continue;
-			for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
+			for(var j=0; j<file_area.lib_list[i].dir_list.length; j++) {
 				if(bbs.list_files(file_area.lib_list[i].dir_list[j].number, str, FL_VIEW))
 					return;
 			}
