@@ -5,6 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.33     2023-03-19   File area chooser: Fix for inputting the library/dir # in
+                      lightbar mode. Updated wording for that as well. Changed
+                      the version to match the message area chooser.
+                      Messsage area chooser: Updated wording for inputting the
+                      library/dir # in lightbar mode
 1.32     2022-11-07   Message area chooser only: Bug fix for numeric input when
                       choosing a sub-board.  Bug fix for getting the number of
 					  posts with the traditional user interface.
