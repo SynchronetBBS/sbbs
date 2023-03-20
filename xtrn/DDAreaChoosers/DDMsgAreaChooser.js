@@ -119,6 +119,9 @@ if (typeof(KEY_PAGEDN) === "string")
 var UP_ARROW = ascii(24);
 var DOWN_ARROW = ascii(25);
 
+// Characters for display
+var HORIZONTAL_SINGLE = "\xC4";
+
 // Misc. defines
 var ERROR_WAIT_MS = 1500;
 var SEARCH_TIMEOUT_MS = 10000;
@@ -2184,7 +2187,11 @@ function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 	else
 		console.print("\1n");
 	console.center("\1c\1hDigital Distortion Message Area Chooser");
-	console.center("\1k컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴�");
+	var lineStr = "";
+	for (var i = 0; i < 39; ++i)
+		lineStr += HORIZONTAL_SINGLE;
+	console.attributes = "HK";
+	console.center(lineStr);
 	console.center("\1n\1cVersion \1g" + DD_MSG_AREA_CHOOSER_VERSION +
 	               " \1w\1h(\1b" + DD_MSG_AREA_CHOOSER_VER_DATE + "\1w)");
 	console.crlf();
@@ -2200,7 +2207,9 @@ function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 		console.crlf();
 		console.print("\1n\1cThe lightbar interface also allows up & down navigation through the lists:");
 		console.crlf();
-		console.print("\1k\1h컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴");
+		console.attributes = "HK";
+		for (var i = 0; i < 74; ++i)
+			console.print(HORIZONTAL_SINGLE);
 		console.crlf();
 		console.print("\1n\1c\1hUp arrow\1n\1c: Move the cursor up one line");
 		console.crlf();
@@ -2225,7 +2234,9 @@ function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 	console.crlf();
 	console.print("Additional keyboard commands:");
 	console.crlf();
-	console.print("\1k\1h컴컴컴컴컴컴컴컴컴컴컴컴컴컴�");
+	console.attributes = "HK";
+	for (var i = 0; i < 29; ++i)
+		console.print(HORIZONTAL_SINGLE);
 	console.crlf();
 	console.print("\1n\1c\1h?\1n\1c: Show this help screen");
 	console.crlf();

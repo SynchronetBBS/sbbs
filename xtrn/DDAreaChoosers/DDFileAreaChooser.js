@@ -113,6 +113,9 @@ if (typeof(KEY_PAGEDN) === "string")
 var UP_ARROW = ascii(24);
 var DOWN_ARROW = ascii(25);
 
+// Characters for display
+var HORIZONTAL_SINGLE = "\xC4";
+
 // Misc. defines
 var ERROR_WAIT_MS = 1500;
 var SEARCH_TIMEOUT_MS = 10000;
@@ -1808,7 +1811,11 @@ function DDFileAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 	else
 		console.print("\x01n");
 	console.center("\x01c\x01hDigital Distortion File Area Chooser");
-	console.center("\x01k컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴");
+	var lineStr = "";
+	for (var i = 0; i < 36; ++i)
+		lineStr += HORIZONTAL_SINGLE;
+	console.attributes = "HK";
+	console.center(lineStr);
 	console.center("\x01n\x01cVersion \x01g" + DD_FILE_AREA_CHOOSER_VERSION +
 	               " \x01w\x01h(\x01b" + DD_FILE_AREA_CHOOSER_VER_DATE + "\x01w)");
 	console.crlf();
@@ -1824,7 +1831,9 @@ function DDFileAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 		console.crlf();
 		console.print("\x01n\x01cThe lightbar interface also allows up & down navigation through the lists:");
 		console.crlf();
-		console.print("\x01k\x01h컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴");
+		console.attributes = "HK";
+		for (var i = 0; i < 74; ++i)
+			console.print(HORIZONTAL_SINGLE);
 		console.crlf();
 		console.print("\x01n\x01c\x01hUp arrow\x01n\x01c: Move the cursor up one line");
 		console.crlf();
@@ -1849,7 +1858,9 @@ function DDFileAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 	console.crlf();
 	console.print("Additional keyboard commands:");
 	console.crlf();
-	console.print("\x01k\x01h컴컴컴컴컴컴컴컴컴컴컴컴컴컴�");
+	for (var i = 0; i < 29; ++i)
+			console.print(HORIZONTAL_SINGLE);
+	console.attributes = "HK";
 	console.crlf();
 	console.print("\x01n\x01c\x01h?\x01n\x01c: Show this help screen");
 	console.crlf();
