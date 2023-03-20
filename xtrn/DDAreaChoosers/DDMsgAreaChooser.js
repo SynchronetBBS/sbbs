@@ -46,6 +46,8 @@
  * 2022-11-07 Eric Oulashin   Version 1.32
  *                            Bug fix for numeric input when choosing a sub-board.  Bug fix for getting the number of
  *                            posts with the traditional user interface.
+ * 2023-03-19 Eric Oulashin   Version 1.33
+ *                            Updated wording for inputting the library/dir # in lightbar mode
 */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -89,8 +91,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.32";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2022-11-07";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.33";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-03-19";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -783,7 +785,19 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 			// prompt the user for the message number.
 			console.gotoxy(1, console.screen_rows);
 			console.clearline("\1n");
-			console.print("\1cChoose group #: \1h");
+			var itemPromptWord = "";
+			if (this.useSubCollapsing)
+			{
+				if (level == 1)
+					itemPromptWord = "group";
+				else if (level == 2)
+					itemPromptWord = "item";
+				else if (level == 3)
+					itemPromptWord = "sub-board";
+			}
+			else
+				itemPromptWord = (level == 1 ? "group" : "sub-board");
+			printf("\1cChoose %s #: \1h", itemPromptWord);
 			var userInput = console.getnum(msgAreaMenu.NumItems());
 			if (userInput > 0)
 				chosenIdx = userInput - 1;
