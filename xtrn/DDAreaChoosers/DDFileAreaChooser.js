@@ -42,6 +42,9 @@
  * 2022-08-19 Eric Oulashin   Version 1.30
  *                            Set the control key pass-thru so that some hotkeys (such as Ctrl-P for PageUp) only
  *                            get caught by this script.
+ * 2023-03-19 Eric Oulashin   Verison 1.33
+ *                            Fix for inputting the library/dir # in lightbar mode. Updated wording for that
+ *                            as well. Changed the version to match the message area chooser.
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -82,8 +85,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.30";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2022-08-19";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.33";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-03-19";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -203,7 +206,7 @@ function DDFileAreaChooser()
 	// If useDirCollapsing is true, then lib_list will be populated
 	// with some information from Synchronet's file_area.lib_list,
 	// including a sub_list for each library.  The sub_list arrays
-	// could have one that was collapsed from multiple sub-boards
+	// could have one that was collapsed from multiple directorys
 	// set up in the BBS - The sub_list within that one would then
 	// contain multiple directories split based on the dir collapse
 	// separator.
@@ -1317,7 +1320,7 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 			this.WriteKeyHelpLine();
 		}
 		// If the user entered a numeric digit, then treat it as
-		// the start of the message group number.
+		// the start of the file library number.
 		else if (lastUserInputUpper.match(/[0-9]/))
 		{
 			// Put the user's input back in the input buffer to
@@ -1327,8 +1330,20 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 			// prompt the user for the message number.
 			console.gotoxy(1, console.screen_rows);
 			console.clearline("\x01n");
-			console.print("\x01cChoose group #: \x01h");
-			var userInput = console.getnum(msg_area.grp_list.length);
+			var itemPromptWord = "";
+			if (this.useDirCollapsing)
+			{
+				if (level == 1)
+					itemPromptWord = "library";
+				else if (level == 2)
+					itemPromptWord = "item";
+				else if (level == 3)
+					itemPromptWord = "directory";
+			}
+			else
+				itemPromptWord = (level == 1 ? "library" : "directory");
+			printf("\x01cChoose %s #: \x01h", itemPromptWord);
+			var userInput = console.getnum(fileAreaMenu.NumItems());
 			if (userInput > 0)
 				chosenIdx = userInput - 1;
 			else
@@ -1340,7 +1355,7 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 			}
 		}
 
-		// If a group/sub-board was chosen, then deal with it.
+		// If a library/directory was chosen, then deal with it.
 		if (chosenIdx > -1)
 		{
 			// If choosing a file library, then let the user choose a file
@@ -1530,10 +1545,10 @@ function DDFileAreaChooser_CreateLightbarFileLibMenu()
 // the given file library
 function DDFileAreaChooser_CreateLightbarFileDirMenu(pLibIdx, pDirIdx, pLevel)
 {
-	// TODO: Update this for sub-board name collapsing
+	// TODO: Update this for directory name collapsing
 
 	// Start & end indexes for the various items in each mssage group list row
-	// Selected mark, group#, description, # sub-boards
+	// Selected mark, group#, description, # directorys
 	var fileDirListIdxes = {
 		markCharStart: 0,
 		markCharEnd: 1,
@@ -1665,9 +1680,9 @@ function DDFileAreaChooser_CreateLightbarFileDirMenu(pLibIdx, pDirIdx, pLevel)
 			return menuItemObj;
 		};
 
-		// Set the currently selected item.  If the current sub-board is in this list,
+		// Set the currently selected item.  If the current directory is in this list,
 		// then set the selected item to that; otherwise, the selected item should be
-		// the first sub-board.
+		// the first directory.
 		if (file_area.dir[bbs.curdir_code].lib_index == pLibIdx)
 		{
 			fileDirMenu.selectedItemIdx = file_area.dir[bbs.curdir_code].index;
@@ -2100,7 +2115,7 @@ function DDFileAreaChooser_SetUpLibListWithCollapsedDirs()
 				if (dirDesc.indexOf(this.dirCollapseSeparator) > -1)
 					++numDirsWithSeparator;
 			}
-			// Whether or not to use sub-board collapsing for this file library
+			// Whether or not to use directory collapsing for this file library
 			var collapseThisLib = (numDirsWithSeparator > 0 && numDirsWithSeparator < file_area.lib_list[libIdx].dir_list.length);
 			for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
 			{
@@ -2589,7 +2604,7 @@ function isPrintableChar(pText)
 //  pFileDir: Boolean - If true, search the file directory list for the given library index.
 //            If false, search the library list.
 //  pStartItemIdx: The item index to start at
-//  pLibIdx: The index of the library to search in (only for doing a sub-board search)
+//  pLibIdx: The index of the library to search in (only for doing a directory search)
 //
 // Return value: An object containing the following properties:
 //               pageNum: The page number of the item (1-based; will be 0 if not found)
