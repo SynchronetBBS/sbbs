@@ -289,8 +289,7 @@ function file_info()
 	while(1) {
 		if(!(user.settings & USER_EXPERT))
 			bbs.menu("xferinfo");
-
-		// async
+		bbs.nodesync();
 		console.print("\r\n\x01y\x01hInfo: \x01n");
 		key=console.getkeys("?TYDUQ\r");
 		bbs.log_key(key);
