@@ -461,9 +461,9 @@ void sbbs_read_ini(
 		bbs->login_attempt = get_login_attempt_settings(list, section, global);
 		bbs->max_concurrent_connections = iniGetInteger(list, section, strMaxConConn, 0);
 
-		bbs->max_login_inactivity = iniGetShortInt(list, section, strMaxLoginInactivity, 10 * 60);
-		bbs->max_newuser_inactivity = iniGetShortInt(list, section, strMaxNewUserInactivity, 60 * 60);
-		bbs->max_session_inactivity = iniGetShortInt(list, section, strMaxSessionInactivity, 0);
+		bbs->max_login_inactivity = (uint16_t)iniGetDuration(list, section, strMaxLoginInactivity, 10 * 60);
+		bbs->max_newuser_inactivity = (uint16_t)iniGetDuration(list, section, strMaxNewUserInactivity, 60 * 60);
+		bbs->max_session_inactivity = (uint16_t)iniGetDuration(list, section, strMaxSessionInactivity, 0);
 
 		SAFECOPY(bbs->web_file_vpath_prefix, iniGetString(list, "web", strFileVPathPrefix, nulstr, value));
 	}
@@ -488,11 +488,11 @@ void sbbs_read_ini(
 		ftp->max_clients
 			=iniGetShortInt(list,section,strMaxClients,FTP_DEFAULT_MAX_CLIENTS);
 		ftp->max_inactivity
-			=iniGetShortInt(list,section,strMaxInactivity,FTP_DEFAULT_MAX_INACTIVITY);	/* seconds */
+			=(uint16_t)iniGetDuration(list,section,strMaxInactivity,FTP_DEFAULT_MAX_INACTIVITY);	/* seconds */
 		ftp->qwk_timeout
-			=iniGetShortInt(list,section,"QwkTimeout",FTP_DEFAULT_QWK_TIMEOUT);		/* seconds */
+			=(uint16_t)iniGetDuration(list,section,"QwkTimeout",FTP_DEFAULT_QWK_TIMEOUT);		/* seconds */
 		ftp->sem_chk_freq
-			=iniGetShortInt(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
+			=(uint16_t)iniGetDuration(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 		ftp->min_fsize
 			=iniGetBytes(list,section,"MinFileSize",1,0);
 		ftp->max_fsize
@@ -564,7 +564,7 @@ void sbbs_read_ini(
 		mail->max_clients
 			=iniGetShortInt(list,section,strMaxClients,MAIL_DEFAULT_MAX_CLIENTS);
 		mail->max_inactivity
-			=iniGetShortInt(list,section,strMaxInactivity,MAIL_DEFAULT_MAX_INACTIVITY);		/* seconds */
+			=(uint16_t)iniGetDuration(list,section,strMaxInactivity,MAIL_DEFAULT_MAX_INACTIVITY);		/* seconds */
 		mail->max_delivery_attempts
 			=iniGetShortInt(list,section,"MaxDeliveryAttempts",MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS);
 		mail->rescan_frequency
@@ -696,7 +696,7 @@ void sbbs_read_ini(
 		web->max_clients
 			=iniGetShortInt(list,section,strMaxClients,WEB_DEFAULT_MAX_CLIENTS);
 		web->max_inactivity
-			=iniGetShortInt(list,section,strMaxInactivity,WEB_DEFAULT_MAX_INACTIVITY);		/* seconds */
+			=(uint16_t)iniGetDuration(list,section,strMaxInactivity,WEB_DEFAULT_MAX_INACTIVITY);		/* seconds */
 		web->sem_chk_freq
 			=iniGetShortInt(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 
@@ -738,7 +738,7 @@ void sbbs_read_ini(
 			,iniGetString(list,section,"JavaScriptExtension",".ssjs",value));
 
 		web->max_cgi_inactivity
-			=iniGetShortInt(list,section,"MaxCgiInactivity",WEB_DEFAULT_MAX_CGI_INACTIVITY);	/* seconds */
+			=(uint16_t)iniGetDuration(list,section,"MaxCgiInactivity",WEB_DEFAULT_MAX_CGI_INACTIVITY);	/* seconds */
 
 		sbbs_get_sound_settings(list, section, &web->sound, &global->sound);
 
@@ -875,11 +875,11 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetInteger(lp,section,strMaxConConn,bbs->max_concurrent_connections,&style))
 			break;
-		if(!iniSetShortInt(lp, section, strMaxLoginInactivity, bbs->max_login_inactivity, &style))
+		if(!iniSetDuration(lp, section, strMaxLoginInactivity, bbs->max_login_inactivity, &style))
 			break;
-		if(!iniSetShortInt(lp, section, strMaxNewUserInactivity, bbs->max_newuser_inactivity, &style))
+		if(!iniSetDuration(lp, section, strMaxNewUserInactivity, bbs->max_newuser_inactivity, &style))
 			break;
-		if(!iniSetShortInt(lp, section, strMaxSessionInactivity, bbs->max_session_inactivity, &style))
+		if(!iniSetDuration(lp, section, strMaxSessionInactivity, bbs->max_session_inactivity, &style))
 			break;
 
 		if(bbs->sem_chk_freq==global->sem_chk_freq)
@@ -967,7 +967,7 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetShortInt(lp,section,strMaxClients,ftp->max_clients,&style))
 			break;
-		if(!iniSetShortInt(lp,section,strMaxInactivity,ftp->max_inactivity,&style))
+		if(!iniSetDuration(lp,section,strMaxInactivity,ftp->max_inactivity,&style))
 			break;
 		if(!iniSetInteger(lp,section,strMaxConConn,ftp->max_concurrent_connections,&style))
 			break;
@@ -1078,7 +1078,7 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetShortInt(lp,section,strMaxClients,mail->max_clients,&style))
 			break;
-		if(!iniSetShortInt(lp,section,strMaxInactivity,mail->max_inactivity,&style))
+		if(!iniSetDuration(lp,section,strMaxInactivity,mail->max_inactivity,&style))
 			break;
 		if(!iniSetShortInt(lp,section,"MaxDeliveryAttempts",mail->max_delivery_attempts,&style))
 			break;
@@ -1244,7 +1244,9 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetShortInt(lp,section,strMaxClients,web->max_clients,&style))
 			break;
-		if(!iniSetShortInt(lp,section,strMaxInactivity,web->max_inactivity,&style))
+		if(!iniSetDuration(lp,section,strMaxInactivity,web->max_inactivity,&style))
+			break;
+		if(!iniSetDuration(lp,section,"MaxCgiInactivity",web->max_cgi_inactivity,&style))
 			break;
 
 		if(web->sem_chk_freq==global->sem_chk_freq)
@@ -1302,11 +1304,6 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(!iniSetString(lp,section,"JavaScriptExtension",web->ssjs_ext,&style))
-			break;
-
-		if(!iniSetShortInt(lp,section,strMaxInactivity,web->max_inactivity,&style))
-			break;
-		if(!iniSetShortInt(lp,section,"MaxCgiInactivity",web->max_cgi_inactivity,&style))
 			break;
 
 		if(!sbbs_set_sound_settings(lp, section, &web->sound, &global->sound, &style))
