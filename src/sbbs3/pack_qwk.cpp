@@ -126,6 +126,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 
 		now=time(NULL);
 		if(localtime_r(&now,&tm)==NULL) {
+			fclose(stream);
 			errormsg(WHERE, ERR_CHK, "time", (uint)now);
 			return(false);
 		}
