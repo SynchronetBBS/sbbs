@@ -197,7 +197,6 @@ void sbbs_t::ansi_getlines()
 	if(sys_status&SS_USERON && useron.misc&ANSI
 		&& (useron.rows == TERM_ROWS_AUTO || useron.cols == TERM_COLS_AUTO)
 		&& online==ON_REMOTE) {									/* Remote */
-		sync();
 		putcom("\x1b[s\x1b[255B\x1b[255C\x1b[6n\x1b[u");
 		inkey(K_ANSI_CPR,TIMEOUT_ANSI_GETXY*1000); 
 	}
