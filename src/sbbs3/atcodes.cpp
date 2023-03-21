@@ -731,6 +731,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 		return(nulstr);
 	}
 
+	if(strcmp(sp, "GETDIM") == 0) {
+		ansi_getlines();
+		return nulstr;
+	}
+
 	if(strcmp(sp, "GETKEY") == 0) {
 		getkey();
 		return(nulstr);
