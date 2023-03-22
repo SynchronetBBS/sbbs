@@ -2257,7 +2257,7 @@ function ReadSlyEditConfigFile()
 				cfgObj.enableTextReplacements = true;
 		}
 		if (behaviorSettings.hasOwnProperty("tagLineFilename") && typeof(behaviorSettings.tagLineFilename) === "string")
-			cfgObj.tagLineFilename = genFullPathCfgFilename(behaviorSettings.taglineFilename, gStartupPath);
+			cfgObj.tagLineFilename = genFullPathCfgFilename(behaviorSettings.tagLineFilename, gStartupPath);
 		if (behaviorSettings.hasOwnProperty("taglinePrefix") && typeof(behaviorSettings.taglinePrefix) === "string")
 			cfgObj.taglinePrefix = behaviorSettings.taglinePrefix;
 		if (behaviorSettings.hasOwnProperty("dictionaryFilenames") && typeof(behaviorSettings.dictionaryFilenames) === "string")
@@ -2274,7 +2274,7 @@ function ReadSlyEditConfigFile()
 		if (iceColorSettings.hasOwnProperty("menuOptClassicColors") && typeof(iceColorSettings.menuOptClassicColors) === "boolean")
 			cfgObj.iceColors.menuOptClassicColors = iceColorSettings.menuOptClassicColors; // This is a boolean
 		if (DCTColorSettings.hasOwnProperty("ThemeFilename") && typeof(DCTColorSettings.ThemeFilename) === "string")
-		cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename(DCTColorSettings.ThemeFilename, gStartupPath);
+			cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename(DCTColorSettings.ThemeFilename, gStartupPath);
 
 		cfgFile.close();
 
