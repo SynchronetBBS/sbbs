@@ -197,7 +197,6 @@ while(bbs.online && !js.terminated) {
 			cmd = last_str_cmd;
 		js.exec("str_cmds.js", {}, cmd);
 		last_str_cmd = cmd;
-		console.line_counter = 0;
 		continue;
 	}
 	if(cmd == '/') {
