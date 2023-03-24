@@ -914,12 +914,12 @@ static void receive_thread(void* arg)
 	char path[MAX_PATH + 1];
 	SAFECOPY(path, xfer.filename);
 	*getfname(path) = '\0';
-	uint64_t avail = getfreediskspace(path, 1);
+	int64_t avail = getfreediskspace(path, 1);
 	if(avail <= scfg.min_dspace)
 		avail = 0;
 	else
 		avail -= scfg.min_dspace;
-	uint64_t max_fsize = xfer.filepos + avail;
+	int64_t max_fsize = xfer.filepos + avail;
 	if(startup->max_fsize > 0 && startup->max_fsize < max_fsize)
 		max_fsize = startup->max_fsize;
 	if(startup->options & FTP_OPT_DEBUG_DATA)
@@ -4549,7 +4549,7 @@ static void ctrl_thread(void* arg)
 					dir=i;
 				p=tp+1;
 			}
-			uint64_t freespace;
+			int64_t freespace;
 			if(dir<0) {
 				sprintf(str,"%s.rep",scfg.sys_id);
 				if(!(startup->options&FTP_OPT_ALLOW_QWK)
