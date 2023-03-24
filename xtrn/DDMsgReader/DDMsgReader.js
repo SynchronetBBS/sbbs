@@ -108,6 +108,10 @@
  *                              so that screen updates work better after pausing output.
  *                              Also, when running a new message scan (not new-to-you), the current
  *                              sub-board being scanned is now outputted.
+ * 2023-03-24 Eric Oulashin     Version 1.69
+ *                              Bug fix for deleting multiple selected messages: When updating message
+ *                              headers in the cached arrays, don't try to save them back to the database,
+ *                              because that was already done (this avoids a 'header has expanded fields' error).
  */
 
 "use strict";
@@ -213,8 +217,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.68";
-var READER_DATE = "2023-03-15";
+var READER_VERSION = "1.69";
+var READER_DATE = "2023-03-24";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1686,15 +1690,20 @@ function msgNumToIdxFromMsgbase(pSubCode, pMsgNum)
 //  pApply: Optional boolean - Whether or not to apply the attribute or remove it. Defaults to true.
 //  pSubBoardCode: Optional - An internal sub-board code.  If not specified, then
 //                 this method will default to this.subBoardCode.
-function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pApply, pSubBoardCode)
+//  pWriteHdrToMsgbase: Optional boolean - Whether or not to also save the message to the messagebase.  Defaults to true.
+function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pApply, pSubBoardCode, pWriteHdrToMsgbase)
 {
 	if (typeof(pMsgIndex) != "number")
 		return;
 
 	var applyAttr = (typeof(pApply) === "boolean" ? pApply : true);
-	var subCode = (typeof(pSubBoardCode) == "string" ? pSubBoardCode : this.subBoardCode);
+	var subCode = (typeof(pSubBoardCode) === "string" ? pSubBoardCode : this.subBoardCode);
+	var writeHdrToMsgbase = (typeof(pWriteHdrToMsgbase) === "boolean" ? pWriteHdrToMsgbase : true);
 	var msgbase = new MsgBase(subCode);
-	if (msgbase.open())
+	var continueOn = true;
+	if (writeHdrToMsgbase)
+		continueOn = msgbase.open();
+	if (continueOn)
 	{
 		if (this.msgSearchHdrs.hasOwnProperty(subCode))
 		{
@@ -1707,8 +1716,11 @@ function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pApply, 
 						this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr | pAttrib;
 					else
 						this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr ^ pAttrib;
-					var msgOffsetFromHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].offset;
-					msgbase.put_msg_header(true, msgOffsetFromHdr, this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex]);
+					if (writeHdrToMsgbase)
+					{
+						var msgOffsetFromHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].offset;
+						msgbase.put_msg_header(true, msgOffsetFromHdr, this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex]);
+					}
 				}
 			}
 			else
@@ -1717,11 +1729,13 @@ function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pApply, 
 				if (this.msgSearchHdrs[this.subBoardCode].indexed.hasOwnProperty(pMsgIndex))
 				{
 					this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex] = msgHeader;
-					msgbase.put_msg_header(true, msgHeader.offset, msgHeader);
+					if (writeHdrToMsgbase)
+						msgbase.put_msg_header(true, msgHeader.offset, msgHeader);
 				}
 			}
 		}
-		msgbase.close();
+		if (writeHdrToMsgbase)
+			msgbase.close();
 	}
 }
 
@@ -1758,10 +1772,11 @@ function DigDistMsgReader_RefreshHdrInSubBoardHdrs(pMsgIndex, pAttrib, pApply)
 //  pApply: Optional boolean - Whether or not to apply the attribute or remove it. Defaults to true.
 //  pSubBoardCode: Optional - An internal sub-board code.  If not specified, then
 //                 this method will default to this.subBoardCode.
-function DigDistMsgReader_RefreshHdrInSavedArrays(pMsgIndex, pAttrib, pApply, pSubBoardCode)
+//  pWriteHdrToMsgbase: Optional boolean - Whether or not to also save the message to the messagebase.  Defaults to true.
+function DigDistMsgReader_RefreshHdrInSavedArrays(pMsgIndex, pAttrib, pApply, pSubBoardCode, pWriteHdrToMsgbase)
 {
 	var applyAttr = (typeof(pApply) === "boolean" ? pApply : true);
-	this.RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, applyAttr, pSubBoardCode);
+	this.RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, applyAttr, pSubBoardCode, pWriteHdrToMsgbase);
 	this.RefreshHdrInSubBoardHdrs(pMsgIndex, pAttrib, applyAttr);
 }
 
@@ -14317,7 +14332,7 @@ function DigDistMsgReader_DeleteOrUndeleteSelectedMessages(pDelete)
 						// Refresh the message header in the header arrays (if it exists there) and
 						// remove the message index from the selectedMessages object.  Also, delete
 						// or undelete any vote response messages that may exist for this message.
-						this.RefreshHdrInSavedArrays(msgIdxNumber, MSG_DELETE, markAsDeleted, subBoardCode);
+						this.RefreshHdrInSavedArrays(msgIdxNumber, MSG_DELETE, markAsDeleted, subBoardCode, false);
 						var voteDelRetObj = toggleVoteMsgsDeleted(msgBase, msgHdr.number, msgHdr.id, markAsDeleted, (subBoardCode == "mail"));
 						if (!voteDelRetObj.allVoteMsgsAffected)
 						{
