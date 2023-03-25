@@ -115,6 +115,7 @@ extern char* area_sort_desc[AREA_SORT_TYPES+1];
 /* Function Prototypes */
 /***********************/
 
+void display_filename(const char*);
 void bail(int code);
 void errormsg(int line, const char* function, const char *source, const char* action, const char *object, ulong access);
 void clearptrs(int subnum);
@@ -146,6 +147,7 @@ void init_mdms(void);
 void guru_cfg(void);
 void actsets_cfg(void);
 void chan_cfg(void);
+void server_cfg(void);
 void mdm_cfg(int mdmnum);
 void wizard_msg(int page, int total, const char* text);
 int edit_sys_name(int page, int total);
@@ -185,7 +187,7 @@ BOOL save_main_cfg(scfg_t*, int);
 BOOL save_node_cfg(scfg_t*, int);
 BOOL save_msgs_cfg(scfg_t*, int);
 BOOL save_file_cfg(scfg_t*, int);
-BOOL save_chat_cfg(scfg_t*, int);	
+BOOL save_chat_cfg(scfg_t*, int);
 BOOL save_xtrn_cfg(scfg_t*, int);
 
 long import_msg_areas(enum import_list_type, FILE*, unsigned grpnum, int min_confnum, int max_confnum

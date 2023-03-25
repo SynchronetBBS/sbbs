@@ -9,6 +9,7 @@ OBJS =	$(MTOBJODIR)/scfg$(OFILE)\
 	$(MTOBJODIR)/scfgmsg$(OFILE)\
 	$(MTOBJODIR)/scfgnet$(OFILE)\
 	$(MTOBJODIR)/scfgnode$(OFILE)\
+	$(MTOBJODIR)/scfgsrvr$(OFILE)\
 	$(MTOBJODIR)/scfgsub$(OFILE)\
 	$(MTOBJODIR)/scfgsys$(OFILE)\
 	$(MTOBJODIR)/scfgxfr1$(OFILE)\
@@ -18,6 +19,7 @@ OBJS =	$(MTOBJODIR)/scfg$(OFILE)\
 	$(MTOBJODIR)/scfglib1$(OFILE)\
 	$(MTOBJODIR)/scfglib2$(OFILE)\
 	$(MTOBJODIR)/getctrl$(OFILE)\
+	$(MTOBJODIR)/sbbs_ini$(OFILE)\
 	$(MTOBJODIR)/load_cfg$(OFILE)\
 	$(MTOBJODIR)/readtext$(OFILE)\
 	$(MTOBJODIR)/text_defaults$(OFILE)\
