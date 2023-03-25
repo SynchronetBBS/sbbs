@@ -39,16 +39,15 @@ BOOL allocerr(char* error, size_t maxerrlen, const char* fname, const char *item
 /****************************************************************************/
 BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	path[MAX_PATH+1];
 	char	errstr[256];
 	FILE*	fp;
 	str_list_t	ini;
 	char	value[INI_MAX_VALUE_LEN];
 
 	const char* fname = "node.ini";
-	SAFEPRINTF2(path,"%s%s",cfg->node_dir,fname);
-	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
+	SAFEPRINTF2(cfg->filename,"%s%s",cfg->node_dir,fname);
+	if((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),cfg->filename);
 		return FALSE;
 	}
 	ini = iniReadFile(fp);
@@ -76,7 +75,6 @@ BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
 	BOOL	result = FALSE;
-	char	path[MAX_PATH+1];
 	char	errstr[256];
 	FILE*	fp;
 	str_list_t	ini = NULL;
@@ -84,9 +82,9 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t section;
 
 	const char* fname = "main.ini";
-	SAFEPRINTF2(path,"%s%s",cfg->ctrl_dir,fname);
-	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
+	SAFEPRINTF2(cfg->filename,"%s%s",cfg->ctrl_dir,fname);
+	if((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),cfg->filename);
 	} else {
 		ini = iniReadFile(fp);
 		fclose(fp);
@@ -332,16 +330,15 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 /****************************************************************************/
 BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	path[MAX_PATH+1];
 	char	errstr[256];
 	FILE*	fp;
 	str_list_t	ini;
 	char	value[INI_MAX_VALUE_LEN];
 
 	const char* fname = "msgs.ini";
-	SAFEPRINTF2(path,"%s%s",cfg->ctrl_dir,fname);
-	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
+	SAFEPRINTF2(cfg->filename,"%s%s",cfg->ctrl_dir,fname);
+	if((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),cfg->filename);
 		return FALSE;
 	}
 	ini = iniReadFile(fp);
@@ -678,7 +675,7 @@ void make_data_dirs(scfg_t* cfg)
 
 	for(int i = 0; i < cfg->total_dirs; i++) {
 		md(cfg->dir[i]->data_dir);
-		if(cfg->dir[i]->misc & DIR_FCHK) 
+		if(cfg->dir[i]->misc & DIR_FCHK)
 			md(cfg->dir[i]->path);
 	}
 }

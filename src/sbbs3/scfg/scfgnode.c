@@ -32,11 +32,13 @@ static char* node_path_help =
 void node_menu()
 {
 	char	str[81],savnode=0;
+	char	cfg_filename[MAX_PATH + 1];
 	int 	i,j;
 	static int node_menu_dflt, node_bar;
 
+	SAFECOPY(cfg_filename, cfg.filename);
 	while(1) {
-		display_filename("");
+		SAFECOPY(cfg.filename, cfg_filename);
 		for(i=0;i<cfg.sys_nodes;i++)
 			sprintf(opt[i],"Node %d",i+1);
 		opt[i][0]=0;
@@ -156,9 +158,6 @@ void node_menu()
 			cfg.node_num = i + 1;		/* so fix it */
 			save_node_cfg(&cfg, backup_level); /* and write it back */
 		}
-		char cfg_fname[MAX_PATH + 1];
-		SAFEPRINTF(cfg_fname, "%snode.ini", cfg.node_dir);
-		display_filename(cfg_fname);
 		node_cfg();
 
 		free_node_cfg(&cfg);

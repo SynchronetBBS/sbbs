@@ -115,7 +115,6 @@ extern char* area_sort_desc[AREA_SORT_TYPES+1];
 /* Function Prototypes */
 /***********************/
 
-void display_filename(const char*);
 void bail(int code);
 void errormsg(int line, const char* function, const char *source, const char* action, const char *object, ulong access);
 void clearptrs(int subnum);

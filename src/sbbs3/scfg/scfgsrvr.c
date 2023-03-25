@@ -52,6 +52,7 @@ static const char* maximum(uint val)
 static void global_cfg(global_startup_t* startup)
 {
 	static int cur;
+	char str[256];
 	char tmp[256];
 
 	while(1) {
@@ -85,6 +86,35 @@ static void global_cfg(global_startup_t* startup)
 			,"Global Server Setttings",opt)) {
 			default:
 				return;
+			case 0:
+				i = startup->log_level;
+				i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Log Level", iniLogLevelStringList());
+				if(i >= 0 && startup->log_level != i) {
+					startup->log_level = i;
+					uifc.changes = true;
+				}
+				break;
+			case 1:
+				i = startup->tls_error_level;
+				i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "TLS Error Log Level", iniLogLevelStringList());
+				if(i >= 0 && startup->tls_error_level != i) {
+					startup->tls_error_level = i;
+					uifc.changes = true;
+				}
+				break;
+			case 2:
+				strListCombine(startup->interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "", str, sizeof(str)-1, K_NONE|K_EDIT) >= 0) {
+					strListFree(&startup->interfaces);
+					strListSplitCopy(&startup->interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 3:
+				IPv4AddressToStr(startup->outgoing4.s_addr, str, sizeof(str));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Outbound Network Interface", str, sizeof(str)-1, K_NONE|K_EDIT) > 0)
+					startup->outgoing4.s_addr = parseIPv4Address(str);
+				break;
 		}
 	}
 }
@@ -380,17 +410,15 @@ void server_cfg(void)
 	mail_startup_t mail_startup = {0};
 	services_startup_t services_startup = {0};
 
-	char ini_fname[MAX_PATH + 1];
-	sbbs_get_ini_fname(ini_fname, cfg.ctrl_dir);
-	FILE* fp = fopen(ini_fname, "r");
+	sbbs_get_ini_fname(cfg.filename, cfg.ctrl_dir);
+	FILE* fp = fopen(cfg.filename, "r");
 	if(fp == NULL) {
-		uifc.msgf("Error opening %s", ini_fname);
+		uifc.msgf("Error opening %s", cfg.filename);
 		return;
 	}
-	display_filename(ini_fname);
 	sbbs_read_ini(
 		 fp
-		,ini_fname
+		,cfg.filename
 		,&global_startup
 		,&run_bbs
 		,&bbs_startup

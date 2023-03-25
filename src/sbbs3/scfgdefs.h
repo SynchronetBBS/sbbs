@@ -286,7 +286,7 @@ enum xedit_soft_cr {						// What to do with so-called "Soft CRs"
 	XEDIT_SOFT_CR_EXPAND,
 	XEDIT_SOFT_CR_STRIP,
 	XEDIT_SOFT_CR_RETAIN
-};								
+};
 
 typedef struct {							/* External Editors */
 	char		code[LEN_CODE+1],
@@ -392,10 +392,11 @@ struct mqtt_cfg {
 	} tls;
 };
 
-typedef struct 
+typedef struct
 {
 	DWORD			size;				/* sizeof(scfg_t) */
 	BOOL			prepped;			/* TRUE if prep_cfg() has been used */
+	char			filename[MAX_PATH + 1]; // last-loaded cfg file path/name
 
 	grp_t			**grp;				/* Each message group */
 	uint16_t		total_grps; 		/* Total number of groups */
