@@ -206,6 +206,10 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
     int optnumlen;
     int yesno=0;
     int lines;
+    int	tmpcur;
+
+	if(cur == NULL)
+		cur = &tmpcur;
 
     for(opts=0;opts<MAX_OPTS;opts++)
     	if(option[opts]==NULL || option[opts][0]==0)
@@ -230,7 +234,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
             yesno=1;
             printf("%s? ",title);
         } else {
-            printf("\n[%s]\n",title);
+			if(title != NULL)
+				printf("\n[%s]\n",title);
             lines=2;
             for(i=0;i<opts;i++) {
                 printf("%*d: %s\n",optnumlen,i+1,option[i]);
