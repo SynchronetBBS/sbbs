@@ -362,12 +362,19 @@ void cfg_wizard(void)
 	free_msgs_cfg(&cfg);
 }
 
+void display_filename(const char* fname)
+{
+	if(strlen(fname) + 30 > uifc.scrn_width)
+		fname = getfname(fname);
+	uifc.printf(29, 1, uifc.bclr|(uifc.cclr<<4), "%*s", uifc.scrn_width - 30, fname);
+}
+
 int main(int argc, char **argv)
 {
 	char	**mopt,*p;
     char    errormsg[MAX_PATH*2];
 	int 	i,j,main_dflt=0,chat_dflt=0;
-	char 	str[MAX_PATH+1];
+	char 	cfg_fname[MAX_PATH+1];
 	BOOL    door_mode=FALSE;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
 	char	compiler[32];
@@ -647,20 +654,21 @@ int main(int argc, char **argv)
 		if((mopt[i]=(char *)malloc(64))==NULL)
 			allocfail(64);
 
+	uifc.timedisplay = NULL;
 	SAFEPRINTF2(title,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
 	if(uifc.scrn(title)) {
 		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
 		bail(1);
 	}
 
-	SAFEPRINTF(str,"%smain.ini",cfg.ctrl_dir);
-	if(!fexist(str)) {
-		SAFEPRINTF(errormsg, "Main configuration file (%s) missing!",str);
+	SAFEPRINTF(cfg_fname, "%smain.ini", cfg.ctrl_dir);
+	if(!fexist(cfg_fname)) {
+		SAFEPRINTF(errormsg, "Main configuration file (%s) missing!", cfg_fname);
 		uifc.msg(errormsg);
 	}
-	FILE* fp = iniOpenFile(str, /* for_modify */TRUE);
+	FILE* fp = iniOpenFile(cfg_fname, /* for_modify */TRUE);
 	if(fp == NULL) {
-		SAFEPRINTF2(errormsg, "Error %d opening configuration file: %s", errno, str);
+		SAFEPRINTF2(errormsg, "Error %d opening configuration file: %s", errno, cfg_fname);
 		uifc.msg(errormsg);
 	} else {
 		cfg.new_install = iniReadBool(fp, ROOT_SECTION, "new_install", TRUE);
@@ -672,10 +680,10 @@ int main(int argc, char **argv)
 		if(run_wizard)
 			bail(0);
 	}
-
 	i=0;
 	strcpy(mopt[i++],"Nodes");
 	strcpy(mopt[i++],"System");
+	strcpy(mopt[i++],"Servers");
 	strcpy(mopt[i++],"Networks");
 	strcpy(mopt[i++],"File Areas");
 	strcpy(mopt[i++],"File Options");
@@ -689,6 +697,7 @@ int main(int argc, char **argv)
 	i = cryptInit();
 	(void)i;
 	while(1) {
+		display_filename(cfg_fname);
 		uifc.helpbuf=
 			"`Main Configuration Menu:`\n"
 			"\n"
@@ -697,6 +706,7 @@ int main(int argc, char **argv)
 			"\n"
 			"    `Nodes               ` Add, delete, or configure nodes\n"
 			"    `System              ` System-wide configuration options\n"
+			"    `Servers             ` TCP/IP Servers and Services\n"
 			"    `Networks            ` Networking configuration\n"
 			"    `File Areas          ` File area configuration\n"
 			"    `File Options        ` File area options\n"
@@ -736,9 +746,12 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 2:
-				net_cfg();
+				server_cfg();
 				break;
 			case 3:
+				net_cfg();
+				break;
+			case 4:
 				if(!load_main_cfg(&cfg, error, sizeof(error))) {
 					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
@@ -748,12 +761,12 @@ int main(int argc, char **argv)
 					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
-				}	
+				}
 				xfer_cfg();
 				free_file_cfg(&cfg);
 				free_main_cfg(&cfg);
 				break;
-			case 4:
+			case 5:
 				if(!load_main_cfg(&cfg, error, sizeof(error))) {
 					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
@@ -768,12 +781,12 @@ int main(int argc, char **argv)
 				free_file_cfg(&cfg);
 				free_main_cfg(&cfg);
 				break;
-			case 5:
+			case 6:
 				if(!load_chat_cfg(&cfg, error, sizeof(error))) {
 					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
-				}	
+				}
 				while(1) {
 					i=0;
 					strcpy(opt[i++],"Artificial Gurus");
@@ -809,12 +822,12 @@ int main(int argc, char **argv)
 							break;
 						case 3:
 							page_cfg();
-							break; 
-					} 
+							break;
+					}
 				}
 				free_chat_cfg(&cfg);
 				break;
-			case 6:
+			case 7:
 				if(!load_main_cfg(&cfg, error, sizeof(error))) {
 					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
@@ -829,7 +842,7 @@ int main(int argc, char **argv)
 				free_msgs_cfg(&cfg);
 				free_main_cfg(&cfg);
 				break;
-			case 7:
+			case 8:
 				if(!load_main_cfg(&cfg, error, sizeof(error))) {
 					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
@@ -844,7 +857,7 @@ int main(int argc, char **argv)
 				free_msgs_cfg(&cfg);
 				free_main_cfg(&cfg);
 				break;
-			case 8:
+			case 9:
 				if(!load_main_cfg(&cfg, error, sizeof(error))) {
 					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
@@ -853,7 +866,7 @@ int main(int argc, char **argv)
 				shell_cfg();
 				free_main_cfg(&cfg);
 				break;
-			case 9:
+			case 10:
 				if(!load_main_cfg(&cfg, error, sizeof(error))) {
 					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
@@ -868,7 +881,7 @@ int main(int argc, char **argv)
 				free_xtrn_cfg(&cfg);
 				free_main_cfg(&cfg);
 				break;
-			case 10:
+			case 11:
 				if(!load_main_cfg(&cfg, error, sizeof(error))) {
 					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
@@ -894,8 +907,8 @@ int main(int argc, char **argv)
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Exit SCFG",uifcYesNoOpts);
 				if(!i)
 					bail(0);
-				break; 
-		} 
+				break;
+		}
 	}
 }
 
@@ -1097,28 +1110,28 @@ void txt_cfg()
 				uifc.helpbuf=invalid_code;
 				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
-				continue; 
+				continue;
 			}
 			if((cfg.txtsec=(txtsec_t **)realloc(cfg.txtsec
 				,sizeof(txtsec_t *)*(cfg.total_txtsecs+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_txtsecs+1);
 				cfg.total_txtsecs=0;
 				bail(1);
-				continue; 
+				continue;
 			}
 			if(cfg.total_txtsecs)
 				for(u=cfg.total_txtsecs;u>i;u--)
 					cfg.txtsec[u]=cfg.txtsec[u-1];
 			if((cfg.txtsec[i]=(txtsec_t *)malloc(sizeof(txtsec_t)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(txtsec_t));
-				continue; 
+				continue;
 			}
 			memset((txtsec_t *)cfg.txtsec[i],0,sizeof(txtsec_t));
 			SAFECOPY(cfg.txtsec[i]->name,str);
 			SAFECOPY(cfg.txtsec[i]->code,code);
 			cfg.total_txtsecs++;
 			uifc.changes=1;
-			continue; 
+			continue;
 		}
 		if (msk == MSK_DEL || msk == MSK_CUT) {
 			if(msk == MSK_CUT)
@@ -1128,16 +1141,16 @@ void txt_cfg()
 			for(j=i;j<cfg.total_txtsecs;j++)
 				cfg.txtsec[j]=cfg.txtsec[j+1];
 			uifc.changes=1;
-			continue; 
+			continue;
 		}
 		if (msk == MSK_COPY) {
 			savtxtsec=*cfg.txtsec[i];
-			continue; 
+			continue;
 		}
 		if (msk == MSK_PASTE) {
 			*cfg.txtsec[i]=savtxtsec;
 			uifc.changes=1;
-			continue; 
+			continue;
 		}
 		if (msk != 0)
 			continue;
@@ -1197,15 +1210,15 @@ void txt_cfg()
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf=0; 
+						uifc.helpbuf=0;
 					}
-					break; 
+					break;
 				case 2:
 					sprintf(str,"%s Text Section",cfg.txtsec[i]->name);
 					getar(str,cfg.txtsec[i]->arstr);
 					break;
-			} 
-		} 
+			}
+		}
 	}
 }
 
@@ -1285,28 +1298,28 @@ void shell_cfg()
 				uifc.helpbuf=invalid_code;
 				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
-				continue; 
+				continue;
 			}
 			if((cfg.shell=(shell_t **)realloc(cfg.shell
 				,sizeof(shell_t *)*(cfg.total_shells+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_shells+1);
 				cfg.total_shells=0;
 				bail(1);
-				continue; 
+				continue;
 			}
 			if(cfg.total_shells)
 				for(u=cfg.total_shells;u>i;u--)
 					cfg.shell[u]=cfg.shell[u-1];
 			if((cfg.shell[i]=(shell_t *)malloc(sizeof(shell_t)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(shell_t));
-				continue; 
+				continue;
 			}
 			memset((shell_t *)cfg.shell[i],0,sizeof(shell_t));
 			SAFECOPY(cfg.shell[i]->name,str);
 			SAFECOPY(cfg.shell[i]->code,code);
 			cfg.total_shells++;
 			uifc.changes=1;
-			continue; 
+			continue;
 		}
 		if (msk == MSK_DEL || msk == MSK_CUT) {
 			if(msk == MSK_CUT)
@@ -1316,16 +1329,16 @@ void shell_cfg()
 			for(j=i;j<cfg.total_shells;j++)
 				cfg.shell[j]=cfg.shell[j+1];
 			uifc.changes=1;
-			continue; 
+			continue;
 		}
 		if (msk == MSK_COPY) {
 			savshell=*cfg.shell[i];
-			continue; 
+			continue;
 		}
 		if (msk == MSK_PASTE) {
 			*cfg.shell[i]=savshell;
 			uifc.changes=1;
-			continue; 
+			continue;
 		}
 		if (msk != 0)
 			continue;
@@ -1406,15 +1419,15 @@ void shell_cfg()
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf=0; 
+						uifc.helpbuf=0;
 					}
 					break;
 				case 2:
 					SAFEPRINTF(str,"%s Command Shell",cfg.shell[i]->name);
 					getar(str,cfg.shell[i]->arstr);
-					break; 
-			} 
-		} 
+					break;
+			}
+		}
 	}
 }
 
@@ -1484,33 +1497,33 @@ void getar(char *desc, char *inar)
 		for(i=0;i<n;i++) {					/* Shorten operators */
 			if(!strncmp(ar+i,"AND",3)) {
 				strcat(str,"&");
-				i+=2; 
+				i+=2;
 			}
 			else if(!strncmp(ar+i,"NOT",3)) {
 				strcat(str,"!");
-				i+=2; 
+				i+=2;
 			}
 			else if(!strncmp(ar+i,"EQUAL",5)) {
 				strcat(str,"=");
-				i+=4; 
+				i+=4;
 			}
 			else if(!strncmp(ar+i,"EQUALS",6)) {
 				strcat(str,"=");
-				i+=5; 
+				i+=5;
 			}
 			else if(!strncmp(ar+i,"EQUAL TO",8)) {
 				strcat(str,"=");
-				i+=7; 
+				i+=7;
 			}
 			else if(!strncmp(ar+i,"OR",2)) {
 				strcat(str,"|");
-				i+=1; 
+				i+=1;
 			}
 			else
-				strncat(str,ar+i,1); 
+				strncat(str,ar+i,1);
 		}
 		SAFECOPY(ar,str);
-		len=strlen(ar); 
+		len=strlen(ar);
 	}
 
 	if(len>=30) {
@@ -1519,21 +1532,21 @@ void getar(char *desc, char *inar)
 		for(i=0;i<n;i++) {					/* Remove spaces from ! and = */
 			if(!strncmp(ar+i," ! ",3)) {
 				strcat(str,"!");
-				i+=2; 
+				i+=2;
 			}
 			else if(!strncmp(ar+i,"= ",2)) {
 				strcat(str,"=");
-                i++; 
+                i++;
 			}
 			else if(!strncmp(ar+i," = ",3)) {
 				strcat(str,"=");
-				i+=2; 
+				i+=2;
 			}
 			else
-				strncat(str,ar+i,1); 
+				strncat(str,ar+i,1);
 		}
 		SAFECOPY(ar,str);
-        len=strlen(ar); 
+        len=strlen(ar);
 	}
 
 	if(len>=30) {
@@ -1542,17 +1555,17 @@ void getar(char *desc, char *inar)
 		for(i=0;i<n;i++) {					/* Remove spaces from & and | */
 			if(!strncmp(ar+i," & ",3)) {
 				strcat(str," ");
-				i+=2; 
+				i+=2;
 			}
 			else if(!strncmp(ar+i," | ",3)) {
 				strcat(str,"|");
-				i+=2; 
+				i+=2;
 			}
 			else
-				strncat(str,ar+i,1); 
+				strncat(str,ar+i,1);
 		}
 		SAFECOPY(ar,str);
-        len=strlen(ar); 
+        len=strlen(ar);
 	}
 
 	if(len>=30) {					/* change week days to numbers */
@@ -1566,10 +1579,10 @@ void getar(char *desc, char *inar)
 					break;
 				}
 			if(j==7)
-				strncat(str,ar+i,1); 
+				strncat(str,ar+i,1);
 		}
         SAFECOPY(ar,str);
-        len=strlen(ar); 
+        len=strlen(ar);
 	}
 
 	if(len>=30) {				  /* Shorten parameters */
@@ -1578,112 +1591,112 @@ void getar(char *desc, char *inar)
 		for(i=0;i<n;i++) {
 			if(!strncmp(ar+i,"AGE",3)) {
 				strcat(str,"$A");
-				i+=2; 
+				i+=2;
 			}
 			else if(!strncmp(ar+i,"BPS",3)) {
 				strcat(str,"$B");
-				i+=2; 
+				i+=2;
 			}
 			else if(!strncmp(ar+i,"PCR",3)) {
 				strcat(str,"$P");
-				i+=2; 
+				i+=2;
 			}
 			else if(!strncmp(ar+i,"RIP",3)) {
 				strcat(str,"$*");
-				i+=2; 
+				i+=2;
 			}
 			else if(!strncmp(ar+i,"SEX",3)) {
 				strcat(str,"$S");
-				i+=2; 
+				i+=2;
 			}
 			else if(!strncmp(ar+i,"UDR",3)) {
 				strcat(str,"$K");
-				i+=2; 
+				i+=2;
 			}
 			else if(!strncmp(ar+i,"DAY",3)) {
 				strcat(str,"$W");
-                i+=2; 
+                i+=2;
 			}
 			else if(!strncmp(ar+i,"ANSI",4)) {
 				strcat(str,"$[");
-                i+=3; 
+                i+=3;
 			}
 			else if(!strncmp(ar+i,"UDFR",4)) {
 				strcat(str,"$D");
-				i+=3; 
+				i+=3;
 			}
 			else if(!strncmp(ar+i,"FLAG",4)) {
 				strcat(str,"$F");
-				i+=3; 
+				i+=3;
 			}
 			else if(!strncmp(ar+i,"NODE",4)) {
 				strcat(str,"$N");
-				i+=3; 
+				i+=3;
 			}
 			else if(!strncmp(ar+i,"NULL",4)) {
 				strcat(str,"$0");
-                i+=3; 
+                i+=3;
 			}
 			else if(!strncmp(ar+i,"TIME",4)) {
 				strcat(str,"$T");
-				i+=3; 
+				i+=3;
 			}
 			else if(!strncmp(ar+i,"USER",4)) {
 				strcat(str,"$U");
-				i+=3; 
+				i+=3;
 			}
 			else if(!strncmp(ar+i,"REST",4)) {
 				strcat(str,"$Z");
-                i+=3; 
+                i+=3;
 			}
 			else if(!strncmp(ar+i,"LOCAL",5)) {
 				strcat(str,"$G");
-				i+=4; 
+				i+=4;
 			}
 			else if(!strncmp(ar+i,"LEVEL",5)) {
 				strcat(str,"$L");
-                i+=4; 
+                i+=4;
 			}
 			else if(!strncmp(ar+i,"TLEFT",5)) {
 				strcat(str,"$R");
-				i+=4; 
+				i+=4;
 			}
 			else if(!strncmp(ar+i,"TUSED",5)) {
 				strcat(str,"$O");
-				i+=4; 
+				i+=4;
 			}
 			else if(!strncmp(ar+i,"EXPIRE",6)) {
 				strcat(str,"$E");
-				i+=5; 
+				i+=5;
 			}
 			else if(!strncmp(ar+i,"CREDIT",6)) {
 				strcat(str,"$C");
-                i+=5; 
+                i+=5;
 			}
 			else if(!strncmp(ar+i,"EXEMPT",6)) {
 				strcat(str,"$X");
-                i+=5; 
+                i+=5;
 			}
 			else if(!strncmp(ar+i,"RANDOM",6)) {
 				strcat(str,"$Q");
-                i+=5; 
+                i+=5;
 			}
 			else if(!strncmp(ar+i,"LASTON",6)) {
 				strcat(str,"$Y");
-                i+=5; 
+                i+=5;
 			}
 			else if(!strncmp(ar+i,"LOGONS",6)) {
 				strcat(str,"$V");
-                i+=5; 
+                i+=5;
 			}
 			else if(!strncmp(ar+i,":00",3)) {
-				i+=2; 
+				i+=2;
 			}
 			else
-				strncat(str,ar+i,1); 
+				strncat(str,ar+i,1);
 }
 		SAFECOPY(ar,str);
-		len=strlen(ar); 
+		len=strlen(ar);
 }
 	if(len>=30) {				  /* Remove all spaces and &s */
 		str[0]=0;
@@ -1759,13 +1772,13 @@ void getar(char *desc, char *inar)
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Are You Sure",uifcYesNoOpts);
 			if(!i) {
 				ar[0]=0;
-				uifc.changes=1; 
+				uifc.changes=1;
 			}
 			break;
 		case 2:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=whichlogic();
 			if(i==-1)
@@ -1787,7 +1800,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-					strcat(ar," OR "); 
+					strcat(ar," OR ");
 			}
 			strcat(ar,"LEVEL ");
 			switch(i) {
@@ -1799,14 +1812,14 @@ void getar(char *desc, char *inar)
 					break;
 				case 3:
 					strcat(ar,"NOT ");
-					break; 
+					break;
 			}
 			strcat(ar,str);
 			break;
 		case 3:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 
 			for(i=0;i<4;i++)
@@ -1834,7 +1847,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"FLAG ");
 			if(i)
@@ -1844,7 +1857,7 @@ void getar(char *desc, char *inar)
 		case 4:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=whichlogic();
 			if(i==-1)
@@ -1866,7 +1879,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"AGE ");
 			switch(i) {
@@ -1878,14 +1891,14 @@ void getar(char *desc, char *inar)
 					break;
 				case 3:
 					strcat(ar,"NOT ");
-					break; 
+					break;
 			}
 			strcat(ar,str);
             break;
 		case 5:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			str[0]=0;
 			uifc.helpbuf=
@@ -1906,7 +1919,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-					strcat(ar," OR "); 
+					strcat(ar," OR ");
 			}
 			strcat(ar,"SEX ");
 			strcat(ar,str);
@@ -1914,7 +1927,7 @@ void getar(char *desc, char *inar)
 		case 6:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=whichlogic();
 			if(i==-1)
@@ -1932,7 +1945,7 @@ void getar(char *desc, char *inar)
 			j=atoi(str);
 			if(j>=300 && j<30000) {
 				j/=100;
-				sprintf(str,"%d",j); 
+				sprintf(str,"%d",j);
 			}
 			if(ar[0]) {
 				j=whichcond();
@@ -1941,7 +1954,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"BPS ");
 			switch(i) {
@@ -1953,14 +1966,14 @@ void getar(char *desc, char *inar)
 					break;
 				case 3:
 					strcat(ar,"NOT ");
-					break; 
+					break;
 			}
 			strcat(ar,str);
             break;
 		case 7:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=whichlogic();
 			if(i==-1)
@@ -1983,7 +1996,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"PCR ");
 			switch(i) {
@@ -1995,14 +2008,14 @@ void getar(char *desc, char *inar)
 					break;
 				case 3:
 					strcat(ar,"NOT ");
-					break; 
+					break;
 			}
 			strcat(ar,str);
             break;
 		case 8:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=whichlogic();
 			if(i==-1)
@@ -2025,7 +2038,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"CREDIT ");
 			switch(i) {
@@ -2037,14 +2050,14 @@ void getar(char *desc, char *inar)
 					break;
 				case 3:
 					strcat(ar,"NOT ");
-					break; 
+					break;
 			}
 			strcat(ar,str);
             break;
 		case 9:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=whichlogic();
 			if(i==-1)
@@ -2069,7 +2082,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"UDR ");
 			switch(i) {
@@ -2081,14 +2094,14 @@ void getar(char *desc, char *inar)
 					break;
 				case 3:
 					strcat(ar,"NOT ");
-					break; 
+					break;
 			}
 			strcat(ar,str);
             break;
 		case 10:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=whichlogic();
 			if(i==-1)
@@ -2114,7 +2127,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"UDFR ");
 			switch(i) {
@@ -2126,14 +2139,14 @@ void getar(char *desc, char *inar)
 					break;
 				case 3:
 					strcat(ar,"NOT ");
-					break; 
+					break;
 			}
 			strcat(ar,str);
             break;
 		case 11:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=0;
 			strcpy(opt[0],"Before");
@@ -2160,7 +2173,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"TIME ");
 			if(!i)
@@ -2170,7 +2183,7 @@ void getar(char *desc, char *inar)
 		case 12:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=whichlogic();
 			if(i==-1)
@@ -2197,7 +2210,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"DAY ");
 			switch(i) {
@@ -2209,14 +2222,14 @@ void getar(char *desc, char *inar)
 					break;
 				case 3:
 					strcat(ar,"NOT ");
-					break; 
+					break;
 			}
 			strcat(ar,str);
             break;
 		case 13:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=whichlogic();
 			if(i==-1)
@@ -2238,7 +2251,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"NODE ");
 			switch(i) {
@@ -2250,14 +2263,14 @@ void getar(char *desc, char *inar)
 					break;
 				case 3:
 					strcat(ar,"NOT ");
-					break; 
+					break;
 			}
 			strcat(ar,str);
             break;
 		case 14:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=whichlogic();
 			if(i==-1)
@@ -2279,7 +2292,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"USER ");
 			switch(i) {
@@ -2291,7 +2304,7 @@ void getar(char *desc, char *inar)
 					break;
 				case 3:
 					strcat(ar,"NOT ");
-					break; 
+					break;
 			}
 			strcat(ar,str);
             break;
@@ -2299,7 +2312,7 @@ void getar(char *desc, char *inar)
 		case 15:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=whichlogic();
 			if(i==-1)
@@ -2322,7 +2335,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"TLEFT ");
 			switch(i) {
@@ -2334,7 +2347,7 @@ void getar(char *desc, char *inar)
 					break;
 				case 3:
 					strcat(ar,"NOT ");
-					break; 
+					break;
 			}
 			strcat(ar,str);
 			break;
@@ -2342,7 +2355,7 @@ void getar(char *desc, char *inar)
 		case 16:
 			if(strlen(ar)>=30) {
 				uifc.msg("Maximum string length reached");
-                break; 
+                break;
 			}
 			i=whichlogic();
 			if(i==-1)
@@ -2365,7 +2378,7 @@ void getar(char *desc, char *inar)
 				if(!j)
 					strcat(ar," AND ");
 				else
-                    strcat(ar," OR "); 
+                    strcat(ar," OR ");
 			}
 			strcat(ar,"EXPIRE ");
 			switch(i) {
@@ -2377,12 +2390,12 @@ void getar(char *desc, char *inar)
 					break;
 				case 3:
 					strcat(ar,"NOT ");
-					break; 
+					break;
 			}
 			strcat(ar,str);
             break;
-			
-		} 
+
+		}
 	}
 	sprintf(inar,"%.*s",LEN_ARSTR,ar);
 }
@@ -2444,7 +2457,7 @@ void bail(int code)
         save_msgs_cfg(&cfg,backup_level);
         save_file_cfg(&cfg,backup_level);
         save_chat_cfg(&cfg,backup_level);
-        save_xtrn_cfg(&cfg,backup_level); 
+        save_xtrn_cfg(&cfg,backup_level);
 	}
 
 	uifc.pop("Exiting");

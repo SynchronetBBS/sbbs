@@ -15,7 +15,7 @@
  * http://www.synchro.net/source.html										*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
- ****************************************************************************/ 
+ ****************************************************************************/
 
 #include "scfg.h"
 
@@ -36,6 +36,7 @@ void node_menu()
 	static int node_menu_dflt, node_bar;
 
 	while(1) {
+		display_filename("");
 		for(i=0;i<cfg.sys_nodes;i++)
 			sprintf(opt[i],"Node %d",i+1);
 		opt[i][0]=0;
@@ -70,9 +71,9 @@ void node_menu()
 		if(i==-1) {
 			if(savnode) {
 				free_node_cfg(&cfg);
-				savnode=0; 
+				savnode=0;
 			}
-			return; 
+			return;
 		}
 		int msk = i & MSK_ON;
 		if(msk == MSK_DEL) {
@@ -91,7 +92,7 @@ void node_menu()
 				save_main_cfg(&cfg,backup_level);
 				refresh_cfg(&cfg);
 			}
-			continue; 
+			continue;
 		}
 		if(msk == MSK_INS && cfg.sys_nodes < MAX_NODES) {
 			SAFECOPY(cfg.node_dir,cfg.node_path[cfg.sys_nodes-1]);
@@ -132,7 +133,7 @@ void node_menu()
 			SAFECOPY(cfg.node_dir,cfg.node_path[i]);
 			load_node_cfg(&cfg,error, sizeof(error));
 			savnode=1;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_PASTE) {
 			i&=MSK_OFF;
@@ -145,7 +146,7 @@ void node_menu()
 
 		if(savnode) {
 			free_node_cfg(&cfg);
-			savnode=0; 
+			savnode=0;
 		}
 		SAFECOPY(cfg.node_dir,cfg.node_path[i]);
 		prep_dir(cfg.ctrl_dir, cfg.node_dir, sizeof(cfg.node_dir));
@@ -155,9 +156,12 @@ void node_menu()
 			cfg.node_num = i + 1;		/* so fix it */
 			save_node_cfg(&cfg, backup_level); /* and write it back */
 		}
+		char cfg_fname[MAX_PATH + 1];
+		SAFEPRINTF(cfg_fname, "%snode.ini", cfg.node_dir);
+		display_filename(cfg_fname);
 		node_cfg();
 
-		free_node_cfg(&cfg); 
+		free_node_cfg(&cfg);
 	}
 }
 
@@ -244,11 +248,11 @@ void node_cfg()
 								,"Allow 8-bit Remote Input During Login",uifcYesNoOpts);
 							if(i==1 && !(cfg.node_misc&NM_7BITONLY)) {
 								cfg.node_misc|=NM_7BITONLY;
-								uifc.changes=1; 
+								uifc.changes=1;
 							}
 							else if(i==0 && (cfg.node_misc&NM_7BITONLY)) {
 								cfg.node_misc&=~NM_7BITONLY;
-								uifc.changes=1; 
+								uifc.changes=1;
 							}
 							break;
 						case 1:
@@ -263,11 +267,11 @@ void node_cfg()
 								,"Spinning Cursor at Pause Prompt",uifcYesNoOpts);
 							if(i==0 && cfg.node_misc&NM_NOPAUSESPIN) {
 								cfg.node_misc&=~NM_NOPAUSESPIN;
-								uifc.changes=1; 
+								uifc.changes=1;
 							}
 							else if(i==1 && !(cfg.node_misc&NM_NOPAUSESPIN)) {
 								cfg.node_misc|=NM_NOPAUSESPIN;
-								uifc.changes=1; 
+								uifc.changes=1;
 							}
 							break;
 						case 2:
@@ -284,11 +288,11 @@ void node_cfg()
 								,"Keep Node File Open",uifcYesNoOpts);
 							if(i==0 && cfg.node_misc&NM_CLOSENODEDAB) {
 								cfg.node_misc&=~NM_CLOSENODEDAB;
-								uifc.changes=1; 
+								uifc.changes=1;
 							}
 							else if(i==1 && !(cfg.node_misc&NM_CLOSENODEDAB)) {
 								cfg.node_misc|=NM_CLOSENODEDAB;
-								uifc.changes=1; 
+								uifc.changes=1;
 							}
 							break;
 						}
@@ -376,10 +380,10 @@ void node_cfg()
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,10,"Text Directory"
 								,cfg.text_dir,sizeof(cfg.text_dir)-1,K_EDIT);
-							break; 
-					} 
+							break;
+					}
 				}
 				break;
-		} 
+		}
 	}
 }
