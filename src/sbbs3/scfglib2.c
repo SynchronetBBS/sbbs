@@ -46,16 +46,15 @@ static void read_dir_defaults_cfg(scfg_t* cfg, str_list_t ini, dir_t* dir)
 /****************************************************************************/
 BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	path[MAX_PATH+1];
 	char	errstr[256];
 	FILE*	fp;
 	str_list_t	ini;
 	char	value[INI_MAX_VALUE_LEN];
 
 	const char* fname = "file.ini";
-	SAFEPRINTF2(path,"%s%s",cfg->ctrl_dir,fname);
-	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
+	SAFEPRINTF2(cfg->filename,"%s%s",cfg->ctrl_dir,fname);
+	if((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),cfg->filename);
 		return FALSE;
 	}
 	ini = iniReadFile(fp);
@@ -364,16 +363,15 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 /****************************************************************************/
 BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	path[MAX_PATH+1];
 	char	errstr[256];
 	FILE*	fp;
 	str_list_t	ini;
 	char	value[INI_MAX_VALUE_LEN];
 
 	const char* fname = "xtrn.ini";
-	SAFEPRINTF2(path,"%s%s",cfg->ctrl_dir,fname);
-	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
+	SAFEPRINTF2(cfg->filename,"%s%s",cfg->ctrl_dir,fname);
+	if((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),cfg->filename);
 		return FALSE;
 	}
 	ini = iniReadFile(fp);
@@ -576,16 +574,15 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 /****************************************************************************/
 BOOL read_chat_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	path[MAX_PATH+1];
 	char	errstr[256];
 	FILE*	fp;
 	str_list_t	ini;
 	char	value[INI_MAX_VALUE_LEN];
 
 	const char* fname = "chat.ini";
-	SAFEPRINTF2(path,"%s%s",cfg->ctrl_dir,fname);
-	if((fp = fnopen(NULL, path, O_RDONLY)) == NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),path);
+	SAFEPRINTF2(cfg->filename,"%s%s",cfg->ctrl_dir,fname);
+	if((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),cfg->filename);
 		return FALSE;
 	}
 	ini = iniReadFile(fp);
@@ -746,7 +743,7 @@ uint32_t aftou32(const char *str)
 		ch=toupper(str[c]);
 		if(ch>='A' && ch<='Z')
 			l|=FLAG(ch);
-		c++; 
+		c++;
 	}
 	return(l);
 }
@@ -762,7 +759,7 @@ char *u32toaf(uint32_t l,char *str)
 		if(l & (1 << c))
 			str[c]='A'+c;
 		else str[c]=' ';
-		c++; 
+		c++;
 	}
 	str[c]=0;
 	return(str);
@@ -832,12 +829,12 @@ uint attrstr(char *str)
 				break;
 			case '6':	/* Cyan Background */
 				atr=(uchar)((atr&0x8f)|BG_CYAN);
-				break; 
+				break;
 			case '7':	/* White Background */
 				atr=(uchar)((atr&0x8f)|BG_LIGHTGRAY);
 				break;
 			}
-		l++; 
+		l++;
 	}
 	return(atr);
 }

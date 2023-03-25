@@ -62,7 +62,7 @@ bool new_qhub_sub(qhub_t* qhub, unsigned subnum, sub_t* sub, unsigned confnum)
 	for(unsigned u = qhub->subs; u > subnum; u--) {
 		qhub->sub[u]=qhub->sub[u-1];
 		qhub->conf[u]=qhub->conf[u-1];
-		qhub->mode[u]=qhub->mode[u-1]; 
+		qhub->mode[u]=qhub->mode[u-1];
 	}
 	qhub->sub[subnum] = sub;
 	qhub->conf[subnum] = confnum;
@@ -82,14 +82,14 @@ faddr_t atofaddr(char *str)
 	addr.zone=addr.net=addr.node=addr.point=0;
 	if((p=strchr(str,':'))!=NULL) {
 		addr.zone=atoi(str);
-		addr.net=atoi(p+1); 
+		addr.net=atoi(p+1);
 	}
 	else {
 		if(cfg.total_faddrs)
 			addr.zone=cfg.faddr[0].zone;
 		else
 			addr.zone=1;
-		addr.net=atoi(str); 
+		addr.net=atoi(str);
 	}
 	if(!addr.zone)              /* no such thing as zone 0 */
 		addr.zone=1;
@@ -100,7 +100,7 @@ faddr_t atofaddr(char *str)
 			addr.net=cfg.faddr[0].net;
 		else
 			addr.net=1;
-		addr.node=atoi(str); 
+		addr.node=atoi(str);
 	}
 	if((p=strchr(str,'.'))!=NULL)
 		addr.point=atoi(p+1);
@@ -132,7 +132,7 @@ uint getsub(void)
 		for(j=k=0;j<cfg.total_subs && k<MAX_OPTS;j++)
 			if(cfg.sub[j]->grp==i) {
 				sprintf(opt[k],"%-25s",cfg.sub[j]->lname);
-				subnum[k++]=j; 
+				subnum[k++]=j;
 			}
 		opt[k][0]=0;
 		sprintf(str,"Select %s Sub-board",cfg.grp[i]->sname);
@@ -141,7 +141,7 @@ uint getsub(void)
 			continue;
 		sub_dflt++;
 		sub_bar++;
-		return(subnum[j]); 
+		return(subnum[j]);
 	}
 }
 
@@ -388,6 +388,7 @@ void net_cfg()
 	int		mode;
 
 	while(1) {
+		*cfg.filename = '\0';
 		i=0;
 		strcpy(opt[i++],"Internet E-mail");
 		strcpy(opt[i++],"QWK Packet Networks");
@@ -498,7 +499,7 @@ void net_cfg()
 								cfg.qhub[i]->node = NODE_ANY;
 								cfg.qhub[i]->days=0x7f; /* all days */
 								uifc.changes=1;
-								continue; 
+								continue;
 							}
 							if (msk == MSK_DEL) {
 								free(cfg.qhub[i]->mode);
@@ -508,16 +509,16 @@ void net_cfg()
 								cfg.total_qhubs--;
 								while(i<cfg.total_qhubs) {
 									cfg.qhub[i]=cfg.qhub[i+1];
-									i++; 
+									i++;
 								}
 								uifc.changes=1;
-								continue; 
+								continue;
 							}
-							qhub_edit(i); 
+							qhub_edit(i);
 						}
-						break; 
-				} 
-			} 
+						break;
+				}
+			}
 		}
 
 		else if(i==2) { 	/* FidoNet Stuff */
@@ -601,7 +602,7 @@ void net_cfg()
 								else
 									sprintf(str,"AKA %u",i);
 								sprintf(opt[i],"%-8.8s %16s"
-									,str,smb_faddrtoa(&cfg.faddr[i],tmp)); 
+									,str,smb_faddrtoa(&cfg.faddr[i],tmp));
 							}
 							opt[i][0]=0;
 							mode=WIN_RHT|WIN_SAV|WIN_ACT|WIN_INSACT;
@@ -633,7 +634,7 @@ void net_cfg()
 										,sizeof(faddr_t)*cfg.total_faddrs+1);
 									cfg.total_faddrs=0;
 									bail(1);
-									continue; 
+									continue;
 								}
 
 								for(j=cfg.total_faddrs;j>i;j--)
@@ -642,7 +643,7 @@ void net_cfg()
 								cfg.faddr[i]=newfaddr;
 								cfg.total_faddrs++;
 								uifc.changes=1;
-								continue; 
+								continue;
 							}
 							if (msk == MSK_COPY) {
 								savfaddr = cfg.faddr[i];
@@ -654,15 +655,15 @@ void net_cfg()
 								cfg.total_faddrs--;
 								while(i<cfg.total_faddrs) {
 									cfg.faddr[i]=cfg.faddr[i+1];
-									i++; 
+									i++;
 								}
 								uifc.changes=1;
-								continue; 
+								continue;
 							}
 							smb_faddrtoa(&cfg.faddr[i],str);
 							if(uifc.input(WIN_MID|WIN_SAV,0,0,"Address"
 								,str,25,K_EDIT|K_UPPER) >= 1)
-								cfg.faddr[i]=atofaddr(str); 
+								cfg.faddr[i]=atofaddr(str);
 						}
 						break;
 					case 1:
@@ -726,11 +727,11 @@ void net_cfg()
 							,"Allow Users to Send NetMail",uifcYesNoOpts);
 						if(!i && !(cfg.netmail_misc&NMAIL_ALLOW)) {
 							uifc.changes=1;
-							cfg.netmail_misc|=NMAIL_ALLOW; 
+							cfg.netmail_misc|=NMAIL_ALLOW;
 						}
 						else if(i==1 && cfg.netmail_misc&NMAIL_ALLOW) {
 							uifc.changes=1;
-							cfg.netmail_misc&=~NMAIL_ALLOW; 
+							cfg.netmail_misc&=~NMAIL_ALLOW;
 						}
 						break;
 					case 6:
@@ -745,11 +746,11 @@ void net_cfg()
 							,"Allow Users to Send NetMail File Attachments",uifcYesNoOpts);
 						if(!i && !(cfg.netmail_misc&NMAIL_FILE)) {
 							uifc.changes=1;
-							cfg.netmail_misc|=NMAIL_FILE; 
+							cfg.netmail_misc|=NMAIL_FILE;
 						}
 						else if(i==1 && cfg.netmail_misc&NMAIL_FILE) {
 							uifc.changes=1;
-							cfg.netmail_misc&=~NMAIL_FILE; 
+							cfg.netmail_misc&=~NMAIL_FILE;
 						}
 						break;
 					case 7:
@@ -769,11 +770,11 @@ void net_cfg()
 							,"Use Aliases in NetMail",uifcYesNoOpts);
 						if(!i && !(cfg.netmail_misc&NMAIL_ALIAS)) {
 							uifc.changes=1;
-							cfg.netmail_misc|=NMAIL_ALIAS; 
+							cfg.netmail_misc|=NMAIL_ALIAS;
 						}
 						else if(i==1 && cfg.netmail_misc&NMAIL_ALIAS) {
 							uifc.changes=1;
-							cfg.netmail_misc&=~NMAIL_ALIAS; 
+							cfg.netmail_misc&=~NMAIL_ALIAS;
 						}
 						break;
 					case 8:
@@ -788,11 +789,11 @@ void net_cfg()
 							,"NetMail Defaults to Crash Status",uifcYesNoOpts);
 						if(!i && !(cfg.netmail_misc&NMAIL_CRASH)) {
 							uifc.changes=1;
-							cfg.netmail_misc|=NMAIL_CRASH; 
+							cfg.netmail_misc|=NMAIL_CRASH;
 						}
 						else if(i==1 && cfg.netmail_misc&NMAIL_CRASH) {
 							uifc.changes=1;
-							cfg.netmail_misc&=~NMAIL_CRASH; 
+							cfg.netmail_misc&=~NMAIL_CRASH;
 						}
 						break;
 					case 9:
@@ -807,11 +808,11 @@ void net_cfg()
 							,"NetMail Defaults to Direct Status",uifcYesNoOpts);
 						if(!i && !(cfg.netmail_misc&NMAIL_DIRECT)) {
 							uifc.changes=1;
-							cfg.netmail_misc|=NMAIL_DIRECT; 
+							cfg.netmail_misc|=NMAIL_DIRECT;
 						}
 						else if(i==1 && cfg.netmail_misc&NMAIL_DIRECT) {
 							uifc.changes=1;
-							cfg.netmail_misc&=~NMAIL_DIRECT; 
+							cfg.netmail_misc&=~NMAIL_DIRECT;
 						}
 						break;
 					case 10:
@@ -826,11 +827,11 @@ void net_cfg()
 							,"NetMail Defaults to Hold Status",uifcYesNoOpts);
 						if(!i && !(cfg.netmail_misc&NMAIL_HOLD)) {
 							uifc.changes=1;
-							cfg.netmail_misc|=NMAIL_HOLD; 
+							cfg.netmail_misc|=NMAIL_HOLD;
 						}
 						else if(i==1 && cfg.netmail_misc&NMAIL_HOLD) {
 							uifc.changes=1;
-							cfg.netmail_misc&=~NMAIL_HOLD; 
+							cfg.netmail_misc&=~NMAIL_HOLD;
 						}
 						break;
 					case 11:
@@ -845,11 +846,11 @@ void net_cfg()
 							,"Kill NetMail After it is Sent",uifcYesNoOpts);
 						if(!i && !(cfg.netmail_misc&NMAIL_KILL)) {
 							uifc.changes=1;
-							cfg.netmail_misc|=NMAIL_KILL; 
+							cfg.netmail_misc|=NMAIL_KILL;
 						}
 						else if(i==1 && cfg.netmail_misc&NMAIL_KILL) {
 							uifc.changes=1;
-							cfg.netmail_misc&=~NMAIL_KILL; 
+							cfg.netmail_misc&=~NMAIL_KILL;
 						}
 						break;
 					case 12:
@@ -864,7 +865,7 @@ void net_cfg()
 							,"Cost in Credits to Send NetMail"
 							,str,10,K_EDIT|K_NUMBER);
 						cfg.netmail_cost=atol(str);
-						break; 
+						break;
 					case 13:
 						i = (cfg.netmail_misc & NMAIL_CHSRCADDR) ? 0 : 1;
 						uifc.helpbuf=
@@ -878,15 +879,15 @@ void net_cfg()
 							,"Allow Senders of NetMail to Choose the Source Address",uifcYesNoOpts);
 						if(!i && !(cfg.netmail_misc&NMAIL_CHSRCADDR)) {
 							uifc.changes=1;
-							cfg.netmail_misc|=NMAIL_CHSRCADDR; 
+							cfg.netmail_misc|=NMAIL_CHSRCADDR;
 						}
 						else if(i==1 && cfg.netmail_misc&NMAIL_CHSRCADDR) {
 							uifc.changes=1;
-							cfg.netmail_misc&=~NMAIL_CHSRCADDR; 
+							cfg.netmail_misc&=~NMAIL_CHSRCADDR;
 						}
 						break;
-				} 
-			} 
+				}
+			}
 		}
 		else if(i==0) { 	/* Internet E-mail */
 			done=0;
@@ -968,11 +969,11 @@ void net_cfg()
 							,"Allow Users to Send E-mail",uifcYesNoOpts);
 						if(!i && !(cfg.inetmail_misc&NMAIL_ALLOW)) {
 							uifc.changes=1;
-							cfg.inetmail_misc|=NMAIL_ALLOW; 
+							cfg.inetmail_misc|=NMAIL_ALLOW;
 						}
 						else if(i==1 && cfg.inetmail_misc&NMAIL_ALLOW) {
 							uifc.changes=1;
-							cfg.inetmail_misc&=~NMAIL_ALLOW; 
+							cfg.inetmail_misc&=~NMAIL_ALLOW;
 						}
 						break;
 					case 4:
@@ -987,11 +988,11 @@ void net_cfg()
 							,"Allow Users to Send E-mail with File Attachments",uifcYesNoOpts);
 						if(!i && !(cfg.inetmail_misc&NMAIL_FILE)) {
 							uifc.changes=1;
-							cfg.inetmail_misc|=NMAIL_FILE; 
+							cfg.inetmail_misc|=NMAIL_FILE;
 						}
 						else if(i==1 && cfg.inetmail_misc&NMAIL_FILE) {
 							uifc.changes=1;
-							cfg.inetmail_misc&=~NMAIL_FILE; 
+							cfg.inetmail_misc&=~NMAIL_FILE;
 						}
 						break;
 					case 5:
@@ -1011,11 +1012,11 @@ void net_cfg()
 							,"Use Aliases in Internet E-mail",uifcYesNoOpts);
 						if(!i && !(cfg.inetmail_misc&NMAIL_ALIAS)) {
 							uifc.changes=1;
-							cfg.inetmail_misc|=NMAIL_ALIAS; 
+							cfg.inetmail_misc|=NMAIL_ALIAS;
 						}
 						else if(i==1 && cfg.inetmail_misc&NMAIL_ALIAS) {
 							uifc.changes=1;
-							cfg.inetmail_misc&=~NMAIL_ALIAS; 
+							cfg.inetmail_misc&=~NMAIL_ALIAS;
 						}
 						break;
 					case 6:
@@ -1030,7 +1031,7 @@ void net_cfg()
 							,"Kill Internet E-mail After it is Sent",uifcYesNoOpts);
 						if(!i && !(cfg.inetmail_misc&NMAIL_KILL)) {
 							uifc.changes=1;
-							cfg.inetmail_misc|=NMAIL_KILL; 
+							cfg.inetmail_misc|=NMAIL_KILL;
 						}
 						else if(i==1 && cfg.inetmail_misc&NMAIL_KILL) {
 							uifc.changes=1;
@@ -1050,9 +1051,9 @@ void net_cfg()
 							,"Cost in Credits to Send Internet E-mail"
 							,str,10,K_EDIT|K_NUMBER);
 						cfg.inetmail_cost=atol(str);
-						break; 
-				} 
-			} 
+						break;
+				}
+			}
 		}
 
 		i=save_changes(WIN_MID|WIN_SAV);
@@ -1139,11 +1140,11 @@ void qhub_edit(int num)
 		sprintf(opt[i++],"%-27.27s%s","Call-out Days",daystr(cfg.qhub[num]->days));
 		if(cfg.qhub[num]->freq) {
 			sprintf(str,"%u times a day",1440/cfg.qhub[num]->freq);
-			sprintf(opt[i++],"%-27.27s%s","Call-out Frequency",str); 
+			sprintf(opt[i++],"%-27.27s%s","Call-out Frequency",str);
 		}
 		else {
 			sprintf(str,"%2.2u:%2.2u",cfg.qhub[num]->time/60,cfg.qhub[num]->time%60);
-			sprintf(opt[i++],"%-27.27s%s","Call-out Time",str); 
+			sprintf(opt[i++],"%-27.27s%s","Call-out Time",str);
 		}
 		sprintf(opt[i++],"%-27.27s%s","Include Kludge Lines", cfg.qhub[num]->misc&QHUB_NOKLUDGES ? "No":"Yes");
 		sprintf(opt[i++],"%-27.27s%s","Include VOTING.DAT File", cfg.qhub[num]->misc&QHUB_NOVOTING ? "No":"Yes");
@@ -1302,7 +1303,7 @@ void qhub_edit(int num)
 					if(i==-1)
 						break;
 					cfg.qhub[num]->days^=(1<<i);
-					uifc.changes=1; 
+					uifc.changes=1;
 				}
 				break;
 			case __COUNTER__:
@@ -1332,8 +1333,8 @@ void qhub_edit(int num)
 						cfg.qhub[num]->freq=0;
 						cfg.qhub[num]->time=atoi(str)*60;
 						if((p=strchr(str,':'))!=NULL)
-							cfg.qhub[num]->time+=atoi(p+1); 
-					} 
+							cfg.qhub[num]->time+=atoi(p+1);
+					}
 				}
 				else if(i==1) {
 					sprintf(str,"%u",cfg.qhub[num]->freq
@@ -1355,8 +1356,8 @@ void qhub_edit(int num)
 						if(i && i<=1440)
 							cfg.qhub[num]->freq=1440/i;
 						else
-							cfg.qhub[num]->freq=0; 
-					} 
+							cfg.qhub[num]->freq=0;
+					}
 				}
 				break;
 			case __COUNTER__:
@@ -1395,8 +1396,8 @@ void qhub_edit(int num)
 				break;
 			case __COUNTER__:
 				qhub_sub_edit(num);
-				break; 
-		} 
+				break;
+		}
 	}
 }
 
@@ -1419,7 +1420,7 @@ void qhub_sub_edit(uint num)
 		"a `CONTROL.DAT` file extracted from a `.QWK` packet downloaded from\n"
 		"the QWK network hub."
 		;
-	char* qwk_ctrl_a_help = 
+	char* qwk_ctrl_a_help =
 		"`Ctrl-A Codes:`\n"
 		"\n"
 		"You are being prompted for the method of handling Ctrl-A attribute codes\n"
@@ -1501,7 +1502,7 @@ void qhub_sub_edit(uint num)
 			uifc.changes=1;
 			k++;
 			bar++;
-			continue; 
+			continue;
 		}
 		if((j&MSK_ON)==MSK_DEL) {
 			j&=MSK_OFF;
@@ -1510,10 +1511,10 @@ void qhub_sub_edit(uint num)
 				cfg.qhub[num]->sub[j]=cfg.qhub[num]->sub[j+1];
 				cfg.qhub[num]->mode[j]=cfg.qhub[num]->mode[j+1];
 				cfg.qhub[num]->conf[j]=cfg.qhub[num]->conf[j+1];
-				j++; 
+				j++;
 			}
 			uifc.changes=1;
-			continue; 
+			continue;
 		}
 		l=0;
 		while(1) {
@@ -1561,8 +1562,8 @@ void qhub_sub_edit(uint num)
 				m=getsub();
 				if(m!=-1) {
 					cfg.qhub[num]->sub[j]=cfg.sub[m];
-					uifc.changes=1; 
-				} 
+					uifc.changes=1;
+				}
 			}
 			else if(l==1) {
 				uifc.helpbuf=qwk_conf_num_help;
@@ -1570,7 +1571,7 @@ void qhub_sub_edit(uint num)
 				if(uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Conference Number on Hub"
 					,str,5,K_NUMBER|K_EDIT) > 0)
-					cfg.qhub[num]->conf[j] = atoi(str); 
+					cfg.qhub[num]->conf[j] = atoi(str);
 			}
 			else if(l==2) {
 				strcpy(opt[0],"Strip out");
@@ -1587,9 +1588,9 @@ void qhub_sub_edit(uint num)
 				else if(m==1)
 					cfg.qhub[num]->mode[j]=QHUB_RETCTLA;
 				else if(m==2)
-					cfg.qhub[num]->mode[j]=QHUB_EXPCTLA; 
-			} 
-		} 
+					cfg.qhub[num]->mode[j]=QHUB_EXPCTLA;
+			}
+		}
 	}
 }
 
@@ -1627,7 +1628,7 @@ BOOL import_qwk_conferences(uint qhubnum)
 	FILE *fp;
 	if((fp = fopen(filename, "rt"))==NULL) {
 		uifc.msg("File Open Failure");
-		return FALSE; 
+		return FALSE;
 	}
 	uifc.pop("Importing Areas...");
 	long added = 0;
@@ -1660,7 +1661,7 @@ char *daystr(char days)
 	for(i=0;i<7;i++) {
 		if(days&(1<<i)) {
 			SAFECAT(str,wday[i]);
-			SAFECAT(str," "); 
+			SAFECAT(str," ");
 		}
 	}
 	return(str);

@@ -362,11 +362,15 @@ void cfg_wizard(void)
 	free_msgs_cfg(&cfg);
 }
 
-void display_filename(const char* fname)
+void display_filename(BOOL force)
 {
+	static char last[MAX_PATH + 1];
+	const char* fname = cfg.filename;
 	if(strlen(fname) + 30 > uifc.scrn_width)
 		fname = getfname(fname);
-	uifc.printf(29, 1, uifc.bclr|(uifc.cclr<<4), "%*s", uifc.scrn_width - 30, fname);
+	if(force || strcmp(last, fname) != 0)
+		uifc.printf(29, 1, uifc.bclr|(uifc.cclr<<4), "%*s", uifc.scrn_width - 30, fname);
+	SAFECOPY(last, fname);
 }
 
 int main(int argc, char **argv)
@@ -374,7 +378,7 @@ int main(int argc, char **argv)
 	char	**mopt,*p;
     char    errormsg[MAX_PATH*2];
 	int 	i,j,main_dflt=0,chat_dflt=0;
-	char 	cfg_fname[MAX_PATH+1];
+	char	cfg_fname[MAX_PATH + 1];
 	BOOL    door_mode=FALSE;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
 	char	compiler[32];
@@ -654,7 +658,7 @@ int main(int argc, char **argv)
 		if((mopt[i]=(char *)malloc(64))==NULL)
 			allocfail(64);
 
-	uifc.timedisplay = NULL;
+	uifc.timedisplay = display_filename;
 	SAFEPRINTF2(title,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
 	if(uifc.scrn(title)) {
 		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
@@ -697,7 +701,7 @@ int main(int argc, char **argv)
 	i = cryptInit();
 	(void)i;
 	while(1) {
-		display_filename(cfg_fname);
+		*cfg.filename = '\0';
 		uifc.helpbuf=
 			"`Main Configuration Menu:`\n"
 			"\n"
@@ -731,12 +735,12 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 1:
-				if(!load_main_cfg(&cfg, error, sizeof(error))) {
+				if(!load_xtrn_cfg(&cfg, error, sizeof(error))) {
 					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
-				if(!load_xtrn_cfg(&cfg, error, sizeof(error))) {
+				if(!load_main_cfg(&cfg, error, sizeof(error))) {
 					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
