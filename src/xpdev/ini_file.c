@@ -425,6 +425,8 @@ BOOL iniRemoveValue(str_list_t* list, const char* section, const char* key)
 	if(vp==NULL)
 		return(FALSE);
 
+	while(*vp != '\0' && isspace(*(vp - 1)))
+		--vp;
 	*vp=0;
 	return(TRUE);
 }
@@ -794,9 +796,11 @@ char* iniSetBytes(str_list_t* list, const char* section, const char* key, uint u
 char* iniSetDuration(str_list_t* list, const char* section, const char* key
 					,double value, ini_style_t* style)
 {
-	char	str[INI_MAX_VALUE_LEN];
+	char	str[INI_MAX_VALUE_LEN] = "0";
 
-	return iniSetString(list, section, key, duration_to_str(value, str, sizeof(str)), style);
+	if(value)
+		duration_to_str(value, str, sizeof(str));
+	return iniSetString(list, section, key, str, style);
 }
 
 
