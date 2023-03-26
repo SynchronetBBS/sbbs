@@ -56,10 +56,9 @@ static const char* maximum(uint val)
 
 static void global_cfg(void)
 {
-	static int cur;
+	static int cur, bar;
 	char str[256];
 	char tmp[256];
-	uint32_t ip4_addr;
 	global_startup_t startup = {0};
 
 	FILE* fp = iniOpenFile(cfg.filename, /* for_modify? */false);
@@ -112,8 +111,101 @@ static void global_cfg(void)
 			"`Global Server Settings:`\n"
 			"\n"
 		;
-		switch(uifc.list(WIN_ACT|WIN_CHE|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, 0
+		switch(uifc.list(WIN_ACT|WIN_CHE|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"Global Server Setttings",opt)) {
+			case 0:
+				i = startup.log_level;
+				i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Log Level", iniLogLevelStringList());
+				if(i >= 0)
+					startup.log_level = i;
+				break;
+			case 1:
+				i = startup.tls_error_level;
+				i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "TLS Error Log Level", iniLogLevelStringList());
+				if(i >= 0)
+					startup.tls_error_level = i;
+				break;
+			case 2:
+				strListCombine(startup.interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup.interfaces);
+					strListSplitCopy(&startup.interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 3:
+				IPv4AddressToStr(startup.outgoing4.s_addr, str, sizeof(str));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Outbound Network Interface", str, sizeof(str)-1, K_EDIT) > 0)
+					startup.outgoing4.s_addr = parseIPv4Address(str);
+				break;
+			case 4:
+				SAFECOPY(str, threshold(startup.bind_retry_count));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Port Bind Retry Count", str, 6, K_EDIT) > 0)
+					startup.bind_retry_count = atoi(str);
+				break;
+			case 5:
+				SAFECOPY(str, duration(startup.bind_retry_delay, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Port Bind Retry Delay", str, 6, K_EDIT) > 0)
+					startup.bind_retry_delay = parse_duration(str);
+				break;
+			case 6:
+				SAFEPRINTF(str, "%u", startup.login_attempt.delay);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Millisecond Delay After Failed Login Attempts", str, 6, K_NUMBER|K_EDIT) > 0)
+					startup.login_attempt.delay = atoi(str);
+				break;
+			case 7:
+				SAFEPRINTF(str, "%u", startup.login_attempt.throttle);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Throttle multiplier (in milliseconds) for Failed Logins", str, 6, K_NUMBER|K_EDIT) > 0)
+					startup.login_attempt.throttle = atoi(str);
+				break;
+			case 8:
+				SAFEPRINTF(str, "%u", startup.login_attempt.hack_threshold);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Logging Failed Logins to hack.log", str, 3, K_NUMBER|K_EDIT) > 0)
+					startup.login_attempt.hack_threshold = atoi(str);
+				break;
+			case 9:
+				SAFEPRINTF(str, "%u", startup.login_attempt.tempban_threshold);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Temp-ban IPs of Failed Logins", str, 3, K_NUMBER|K_EDIT) > 0)
+					startup.login_attempt.tempban_threshold = atoi(str);
+				break;
+			case 10:
+				SAFECOPY(str, duration(startup.login_attempt.tempban_duration, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Duration of Temp-ban for Failed Logins", str, 6, K_EDIT) > 0)
+					startup.login_attempt.tempban_duration = parse_duration(str);
+				break;
+			case 11:
+				SAFEPRINTF(str, "%u", startup.login_attempt.filter_threshold);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Filtering IPs of Failed Logins", str, 3, K_NUMBER|K_EDIT) > 0)
+					startup.login_attempt.filter_threshold = atoi(str);
+				break;
+			case 12:
+				byte_count_to_str(startup.js.max_bytes, str, sizeof(str));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Heap Size (Maximum Allocated Bytes)", str, 6, K_UPPER|K_EDIT) > 0)
+					startup.js.max_bytes = parse_byte_count(str, 1);
+				break;
+			case 13:
+				SAFEPRINTF(str, "%u", startup.js.time_limit);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Execution Time Limit (in ticks)", str, 6, K_NUMBER|K_EDIT) > 0)
+					startup.js.time_limit = atoi(str);
+				break;
+			case 14:
+				SAFEPRINTF(str, "%u", startup.js.gc_interval);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Garbage Collection Interval (in ticks)", str, 6, K_NUMBER|K_EDIT) > 0)
+					startup.js.gc_interval = atoi(str);
+				break;
+			case 15:
+				SAFEPRINTF(str, "%u", startup.js.yield_interval);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Yield Interval (in ticks)", str, 6, K_NUMBER|K_EDIT) > 0)
+					startup.js.yield_interval = atoi(str);
+				break;
+			case 16:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Load Library Path", startup.js.load_path, sizeof(startup.js.load_path) - 1, K_EDIT);
+				break;
+			case 17:
+				SAFECOPY(str, duration(startup.sem_chk_freq, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Semaphore File Check Interval", str, 6, K_EDIT) > 0)
+					startup.sem_chk_freq = parse_duration(str);
+				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
 					uifc.changes = true;
@@ -152,62 +244,6 @@ static void global_cfg(void)
 					,NULL //&services_startup
 					);
 				return;
-			case 0:
-				i = startup.log_level;
-				i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Log Level", iniLogLevelStringList());
-				if(i >= 0 && startup.log_level != i) {
-					startup.log_level = i;
-				}
-				break;
-			case 1:
-				i = startup.tls_error_level;
-				i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "TLS Error Log Level", iniLogLevelStringList());
-				if(i >= 0 && startup.tls_error_level != i) {
-					startup.tls_error_level = i;
-				}
-				break;
-			case 2:
-				strListCombine(startup.interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
-					strListFree(&startup.interfaces);
-					strListSplitCopy(&startup.interfaces, str, ", ");
-					uifc.changes = true;
-				}
-				break;
-			case 3:
-				IPv4AddressToStr(ip4_addr = startup.outgoing4.s_addr, str, sizeof(str));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Outbound Network Interface", str, sizeof(str)-1, K_EDIT) > 0) {
-					if((ip4_addr = parseIPv4Address(str)) != startup.outgoing4.s_addr) {
-						startup.outgoing4.s_addr = ip4_addr;
-					}
-				}
-				break;
-			case 4:
-				SAFECOPY(str, threshold(startup.bind_retry_count));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Port Bind Retry Count", str, 6, K_EDIT) > 0) {
-					if(atoi(str) != startup.bind_retry_count) {
-						startup.bind_retry_count = atoi(str);
-					}
-				}
-				break;
-			case 5:
-				SAFECOPY(str, duration(startup.bind_retry_delay, false));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Port Bind Retry Delay", str, 6, K_EDIT) > 0) {
-					uint dur = parse_duration(str);
-					if(dur != startup.bind_retry_delay) {
-						startup.bind_retry_delay = dur;
-					}
-				}
-				break;
-			case 6:
-				SAFEPRINTF(str, "%u", startup.login_attempt.delay);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Millisecond Delay After Failed Login Attempts", str, 6, K_NUMBER|K_EDIT) > 0) {
-					uint dur = atoi(str);
-					if(dur != startup.login_attempt.delay) {
-						startup.login_attempt.delay = dur;
-					}
-				}
-				break;
 		}
 	}
 }
@@ -851,38 +887,6 @@ void server_cfg(void)
 			"for reference.\n"
 		;
 		i = uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,0,&srvr_dflt,0, "Server Configuration",opt);
-		if(i < 0) {
-#if 0
-			i = save_changes(WIN_MID);
-			if(i < 0)
-				continue;
-			if(i == 0) {
-				fp = iniOpenFile(cfg.filename, /* for_modify? */true);
-				if(fp == NULL)
-					uifc.msgf("Error opening %s", cfg.filename);
-				else {
-					if(!sbbs_write_ini(
-						 fp
-						,&cfg
-						,&global_startup
-						,run_bbs
-						,&bbs_startup
-						,run_ftp
-						,&ftp_startup
-						,run_web
-						,&web_startup
-						,run_mail
-						,&mail_startup
-						,run_services
-						,&services_startup
-						))
-						uifc.msgf("Error writing %s", cfg.filename);
-					iniCloseFile(fp);
-				}
-			}
-#endif
-			break;
-		}
 		switch(i) {
 			case 0:
 				global_cfg();
@@ -902,6 +906,8 @@ void server_cfg(void)
 			case 5:
 				services_cfg();
 				break;
+			default:
+				return;
 		}
 	}
 }
