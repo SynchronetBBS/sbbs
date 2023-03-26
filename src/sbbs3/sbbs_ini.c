@@ -79,10 +79,10 @@ void sbbs_get_ini_fname(char* ini_file, const char* ctrl_dir)
 {
 	/* pHostName is no longer used since iniFileName calls gethostname() itself */
 
-#if defined(_WINSOCKAPI_)	 
-	WSADATA WSAData;	 
-    (void)WSAStartup(MAKEWORD(1,1), &WSAData); /* req'd for gethostname */	 
-#endif	 
+#if defined(_WINSOCKAPI_)
+	WSADATA WSAData;
+    (void)WSAStartup(MAKEWORD(1,1), &WSAData); /* req'd for gethostname */
+#endif
 
 #if defined(__unix__) && defined(PREFIX)
 	sprintf(ini_file,PREFIX"/etc/sbbs.ini");
@@ -91,8 +91,8 @@ void sbbs_get_ini_fname(char* ini_file, const char* ctrl_dir)
 #endif
 	iniFileName(ini_file,MAX_PATH,ctrl_dir,"sbbs.ini");
 
-#if defined(_WINSOCKAPI_)	 
-	WSACleanup();	 
+#if defined(_WINSOCKAPI_)
+	WSACleanup();
 #endif
 }
 
@@ -100,8 +100,7 @@ static BOOL iniSetStringWithGlobalDefault(str_list_t* lp, const char* section, c
 	,const char* value, const char* global_value, ini_style_t* style)
 {
 	if(value != global_value && strcmp(value, global_value) == 0) {
-		iniRemoveKey(lp, section, key);
-		return iniKeyExists(*lp, section, key) == FALSE;
+		return iniKeyExists(*lp, section, key) == FALSE || iniRemoveValue(lp, section, key) == TRUE;
 	}
 	return iniSetString(lp, section, key, value, style) != NULL;
 }
@@ -172,12 +171,12 @@ BOOL sbbs_set_js_settings(
 
 	if(js->gc_interval==defaults->gc_interval)
 		iniRemoveValue(lp,section,strJavaScriptGcInterval);
-	else 
+	else
 		failure|=iniSetInteger(lp,section,strJavaScriptGcInterval,js->gc_interval,style)==NULL;
 
 	if(js->yield_interval==defaults->yield_interval)
 		iniRemoveValue(lp,section,strJavaScriptYieldInterval);
-	else 
+	else
 		failure|=iniSetInteger(lp,section,strJavaScriptYieldInterval,js->yield_interval,style)==NULL;
 
 	if(strcmp(js->load_path,defaults->load_path)==0)
@@ -253,12 +252,13 @@ static void set_login_attempt_settings(str_list_t* lp, const char* section, stru
 	iniSetInteger(lp,section,strLoginAttemptFilterThreshold,settings.filter_threshold,&style);
 }
 
+static const struct in6_addr wildcard6;
+
 static void get_ini_globals(str_list_t list, global_startup_t* global)
 {
 	const char* section = "Global";
 	char		value[INI_MAX_VALUE_LEN];
 	char*		p;
-	struct in6_addr	wildcard6 = {{{0}}};
 
 	p=iniGetString(list,section,strCtrlDirectory,nulstr,value);
 	if(*p) {
@@ -276,10 +276,9 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 	if(*p)
         SAFECOPY(global->host_name,value);
 
-	global->sem_chk_freq=iniGetShortInt(list,section,strSemFileCheckFrequency,DEFAULT_SEM_CHK_FREQ);
-	iniFreeStringList(global->interfaces);
+	global->sem_chk_freq=iniGetUInteger(list,section,strSemFileCheckFrequency,DEFAULT_SEM_CHK_FREQ);
 	global->interfaces=iniGetStringList(list,section,strInterfaces, ",", "0.0.0.0,::");
-	global->outgoing4.s_addr=iniGetIpAddress(list,section,strOutgoing4,0);
+	global->outgoing4.s_addr=iniGetIpAddress(list,section,strOutgoing4,INADDR_ANY);
 	global->outgoing6=iniGetIp6Address(list,section,strOutgoing6,wildcard6);
 	global->log_level=iniGetLogLevel(list,section,strLogLevel,DEFAULT_LOG_LEVEL);
 	global->tls_error_level=iniGetLogLevel(list,section, strTLSErrorLevel, 0);
@@ -299,6 +298,40 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 	sbbs_get_sound_settings(list, section, &global->sound, &global->sound);
 }
 
+void sbbs_free_ini(
+	 global_startup_t*		global
+	,bbs_startup_t*			bbs
+	,ftp_startup_t*			ftp
+	,web_startup_t*			web
+	,mail_startup_t*		mail
+	,services_startup_t*	services
+	)
+{
+	if(global != NULL) {
+		iniFreeStringList(global->interfaces);
+	}
+	if(bbs != NULL) {
+		iniFreeStringList(bbs->telnet_interfaces);
+		iniFreeStringList(bbs->rlogin_interfaces);
+		iniFreeStringList(bbs->ssh_interfaces);
+	}
+	if(web != NULL) {
+		iniFreeStringList(web->interfaces);
+		iniFreeStringList(web->tls_interfaces);
+		iniFreeStringList(web->index_file_name);
+		iniFreeStringList(web->cgi_ext);
+	}
+	if(ftp != NULL) {
+		iniFreeStringList(ftp->interfaces);
+	}
+	if(mail != NULL) {
+		iniFreeStringList(mail->interfaces);
+		iniFreeStringList(mail->pop3_interfaces);
+	}
+	if(services != NULL) {
+		iniFreeStringList(services->interfaces);
+	}
+}
 
 void sbbs_read_ini(
 	 FILE*					fp
@@ -310,7 +343,7 @@ void sbbs_read_ini(
 	,ftp_startup_t*			ftp
 	,BOOL*					run_web
 	,web_startup_t*			web
-	,BOOL*					run_mail		
+	,BOOL*					run_mail
 	,mail_startup_t*		mail
 	,BOOL*					run_services
 	,services_startup_t*	services
@@ -334,6 +367,14 @@ void sbbs_read_ini(
 		memset(&global_buf,0,sizeof(global_buf));
 		global=&global_buf;
 	}
+
+	sbbs_free_ini(global
+		,bbs
+		,ftp
+		,web
+		,mail
+		,services
+		);
 
 	list=iniReadFile(fp);
 
@@ -371,14 +412,12 @@ void sbbs_read_ini(
 			=iniGetIp6Address(list,section,strOutgoing6,global->outgoing6);
 
 		bbs->telnet_port
-			=iniGetShortInt(list,section,"TelnetPort",IPPORT_TELNET);
-		iniFreeStringList(bbs->telnet_interfaces);
+			=iniGetUInt16(list,section,"TelnetPort",IPPORT_TELNET);
 		bbs->telnet_interfaces
 			=iniGetStringList(list,section,"TelnetInterface",",",global_interfaces);
 
 		bbs->rlogin_port
 			=iniGetShortInt(list,section,"RLoginPort",513);
-		iniFreeStringList(bbs->rlogin_interfaces);
 		bbs->rlogin_interfaces
 			=iniGetStringList(list,section,"RLoginInterface",",",global_interfaces);
 
@@ -391,7 +430,6 @@ void sbbs_read_ini(
 			=iniGetShortInt(list,section,"SSHPort",22);
 		bbs->ssh_connect_timeout
 			=iniGetShortInt(list,section,"SSHConnectTimeout",10);
-		iniFreeStringList(bbs->ssh_interfaces);
 		bbs->ssh_interfaces
 			=iniGetStringList(list,section,"SSHInterface",",",global_interfaces);
 
@@ -440,7 +478,7 @@ void sbbs_read_ini(
 		default_dosemuconf_path="";
 
 		SAFECOPY(bbs->dosemuconf_path
-			,iniGetString(list,section,"DOSemuConfPath",default_dosemuconf_path,value));			
+			,iniGetString(list,section,"DOSemuConfPath",default_dosemuconf_path,value));
 	#endif
 		bbs->usedosemu=iniGetBool(list,section,"UseDOSemu",TRUE);
 		SAFECOPY(bbs->dosemu_path
@@ -482,7 +520,6 @@ void sbbs_read_ini(
 			=iniGetIp6Address(list,section,strOutgoing6,global->outgoing6);
 		ftp->port
 			=iniGetShortInt(list,section,strPort,IPPORT_FTP);
-		iniFreeStringList(ftp->interfaces);
 		ftp->interfaces
 			=iniGetStringList(list,section,strInterfaces,",",global_interfaces);
 		ftp->max_clients
@@ -539,7 +576,6 @@ void sbbs_read_ini(
 
 	if(mail!=NULL) {
 
-		iniFreeStringList(mail->interfaces);
 		mail->interfaces
 			=iniGetStringList(list,section,strInterfaces,",",global_interfaces);
 		mail->outgoing4.s_addr
@@ -552,7 +588,6 @@ void sbbs_read_ini(
 			=iniGetShortInt(list,section,"SubmissionPort",IPPORT_SUBMISSION);
 		mail->submissions_port
 			=iniGetShortInt(list,section,"TLSSubmissionPort",IPPORT_SUBMISSIONS);
-		iniFreeStringList(mail->pop3_interfaces);
 		mail->pop3_interfaces
 			=iniGetStringList(list,section,"POP3Interface",",",global_interfaces);
 		mail->pop3_port
@@ -566,15 +601,15 @@ void sbbs_read_ini(
 		mail->max_inactivity
 			=(uint16_t)iniGetDuration(list,section,strMaxInactivity,MAIL_DEFAULT_MAX_INACTIVITY);		/* seconds */
 		mail->max_delivery_attempts
-			=iniGetShortInt(list,section,"MaxDeliveryAttempts",MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS);
+			=iniGetUInteger(list,section,"MaxDeliveryAttempts",MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS);
 		mail->rescan_frequency
-			=iniGetShortInt(list,section,"RescanFrequency",MAIL_DEFAULT_RESCAN_FREQUENCY);	/* 60 minutes */
+			=iniGetUInteger(list,section,"RescanFrequency",MAIL_DEFAULT_RESCAN_FREQUENCY);	/* 60 minutes */
 		mail->sem_chk_freq
-			=iniGetShortInt(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
+			=iniGetUInteger(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 		mail->lines_per_yield
-			=iniGetShortInt(list,section,"LinesPerYield",MAIL_DEFAULT_LINES_PER_YIELD);
+			=iniGetUInteger(list,section,"LinesPerYield",MAIL_DEFAULT_LINES_PER_YIELD);
 		mail->max_recipients
-			=iniGetShortInt(list,section,"MaxRecipients",MAIL_DEFAULT_MAX_RECIPIENTS);
+			=iniGetUInteger(list,section,"MaxRecipients",MAIL_DEFAULT_MAX_RECIPIENTS);
 		mail->max_msg_size
 			=(DWORD)iniGetBytes(list,section,"MaxMsgSize",/* units: */1,MAIL_DEFAULT_MAX_MSG_SIZE);
 		mail->max_msgs_waiting
@@ -639,7 +674,6 @@ void sbbs_read_ini(
 
 	if(services!=NULL) {
 
-		iniFreeStringList(services->interfaces);
 		services->interfaces
 			=iniGetStringList(list,section,strInterfaces,",",global_interfaces);
 		services->outgoing4.s_addr
@@ -648,7 +682,7 @@ void sbbs_read_ini(
 			=iniGetIp6Address(list,section,strOutgoing6,global->outgoing6);
 
 		services->sem_chk_freq
-			=iniGetShortInt(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
+			=iniGetUInteger(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 
 		/* JavaScript operating parameters */
 		sbbs_get_js_settings(list, section, &services->js, &global->js);
@@ -683,22 +717,20 @@ void sbbs_read_ini(
 
 	if(web!=NULL) {
 
-		iniFreeStringList(web->interfaces);
 		web->interfaces
 			=iniGetStringList(list,section,strInterfaces,",",global_interfaces);
-		iniFreeStringList(web->tls_interfaces);
 		web->tls_interfaces
 			=iniGetStringList(list,section,"TLSInterface",",",global_interfaces);
 		web->port
-			=iniGetShortInt(list,section,strPort,IPPORT_HTTP);
+			=iniGetUInt16(list,section,strPort,IPPORT_HTTP);
 		web->tls_port
-			=iniGetShortInt(list,section,"TLSPort",IPPORT_HTTPS);
+			=iniGetUInt16(list,section,"TLSPort",IPPORT_HTTPS);
 		web->max_clients
-			=iniGetShortInt(list,section,strMaxClients,WEB_DEFAULT_MAX_CLIENTS);
+			=iniGetUInteger(list,section,strMaxClients,WEB_DEFAULT_MAX_CLIENTS);
 		web->max_inactivity
 			=(uint16_t)iniGetDuration(list,section,strMaxInactivity,WEB_DEFAULT_MAX_INACTIVITY);		/* seconds */
 		web->sem_chk_freq
-			=iniGetShortInt(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
+			=iniGetUInteger(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 
 		/* JavaScript operating parameters */
 		sbbs_get_js_settings(list, section, &web->js, &global->js);
@@ -728,10 +760,8 @@ void sbbs_read_ini(
 		SAFECOPY(web->default_cgi_content
 			,iniGetString(list,section,"DefaultCGIContent",WEB_DEFAULT_CGI_CONTENT,value));
 
-		iniFreeStringList(web->index_file_name);
 		web->index_file_name
 			=iniGetStringList(list,section,"IndexFileNames", "," ,"index.html,index.ssjs");
-		iniFreeStringList(web->cgi_ext);
 		web->cgi_ext
 			=iniGetStringList(list,section,"CGIExtensions", "," ,".cgi");
 		SAFECOPY(web->ssjs_ext
@@ -750,7 +780,7 @@ void sbbs_read_ini(
 			=iniGetBitField(list,section,strOptions,web_options
 				,BBS_OPT_NO_HOST_LOOKUP | WEB_OPT_HTTP_LOGGING);
 		web->outbuf_drain_timeout
-			=iniGetShortInt(list,section,"OutbufDrainTimeout",10);
+			=iniGetUInteger(list,section,"OutbufDrainTimeout",10);
 
 		web->bind_retry_count=iniGetInteger(list,section,strBindRetryCount,global->bind_retry_count);
 		web->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
@@ -771,7 +801,7 @@ BOOL sbbs_write_ini(
 	,ftp_startup_t*			ftp
 	,BOOL					run_web
 	,web_startup_t*			web
-	,BOOL					run_mail		
+	,BOOL					run_mail
 	,mail_startup_t*		mail
 	,BOOL					run_services
 	,services_startup_t*	services
@@ -798,7 +828,7 @@ BOOL sbbs_write_ini(
 		get_ini_globals(list, &global_buf);
 		global = &global_buf;
 	}
-	
+
 	lp=&list;
 
 	do { /* try */
@@ -810,9 +840,11 @@ BOOL sbbs_write_ini(
 		iniSetString(lp,section,strCtrlDirectory,global->ctrl_dir,&style);
 		iniSetString(lp,section,strTempDirectory,global->temp_dir,&style);
 		iniSetString(lp,section,strHostName,global->host_name,&style);
-		iniSetShortInt(lp,section,strSemFileCheckFrequency,global->sem_chk_freq,&style);
-		iniSetIpAddress(lp,section,strOutgoing4,global->outgoing4.s_addr,&style);
-		iniSetIp6Address(lp,section,strOutgoing6,global->outgoing6,&style);
+		iniSetUInteger(lp,section,strSemFileCheckFrequency,global->sem_chk_freq,&style);
+		if(global->outgoing4.s_addr != INADDR_ANY)
+			iniSetIpAddress(lp,section,strOutgoing4,global->outgoing4.s_addr,&style);
+		if(memcmp(&global->outgoing6, &wildcard6, sizeof(wildcard6)) != 0)
+			iniSetIp6Address(lp,section,strOutgoing6,global->outgoing6,&style);
 		iniSetStringList(lp, section, strInterfaces, ",", global->interfaces, &style);
 		iniSetLogLevel(lp,section,strLogLevel,global->log_level,&style);
 		iniSetLogLevel(lp,section,strTLSErrorLevel,global->tls_error_level,&style);
@@ -841,37 +873,37 @@ BOOL sbbs_write_ini(
 		else if(!iniSetStringList(lp,section,"TelnetInterface", ",", bbs->telnet_interfaces, &style))
 			break;
 
-		if(!iniSetShortInt(lp,section,"TelnetPort",bbs->telnet_port,&style))
+		if(!iniSetUInt16(lp,section,"TelnetPort",bbs->telnet_port,&style))
 			break;
 
 		if(strListCmp(bbs->rlogin_interfaces, global->interfaces)==0)
 			iniRemoveValue(lp,section,"RLoginInterface");
 		else if(!iniSetStringList(lp,section,"RLoginInterface", ",", bbs->rlogin_interfaces,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"RLoginPort",bbs->rlogin_port,&style))
+		if(!iniSetUInt16(lp,section,"RLoginPort",bbs->rlogin_port,&style))
 			break;
 
-		if(!iniSetShortInt(lp,section,"Pet40Port",bbs->pet40_port,&style))
+		if(!iniSetUInt16(lp,section,"Pet40Port",bbs->pet40_port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"Pet80Port",bbs->pet80_port,&style))
+		if(!iniSetUInt16(lp,section,"Pet80Port",bbs->pet80_port,&style))
 			break;
 
 		if(strListCmp(bbs->ssh_interfaces, global->interfaces)==0)
 			iniRemoveValue(lp,section,"SSHInterface");
 		else if(!iniSetStringList(lp,section,"SSHInterface", ",", bbs->ssh_interfaces,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"SSHPort",bbs->ssh_port,&style))
+		if(!iniSetUInt16(lp,section,"SSHPort",bbs->ssh_port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"SSHConnectTimeout",bbs->ssh_connect_timeout,&style))
+		if(!iniSetUInteger(lp,section,"SSHConnectTimeout",bbs->ssh_connect_timeout,&style))
 			break;
 
-		if(!iniSetShortInt(lp,section,"FirstNode",bbs->first_node,&style))
+		if(!iniSetUInteger(lp,section,"FirstNode",bbs->first_node,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"LastNode",bbs->last_node,&style))
+		if(!iniSetUInteger(lp,section,"LastNode",bbs->last_node,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"OutbufHighwaterMark",bbs->outbuf_highwater_mark,&style))
+		if(!iniSetUInteger(lp,section,"OutbufHighwaterMark",bbs->outbuf_highwater_mark,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"OutbufDrainTimeout",bbs->outbuf_drain_timeout,&style))
+		if(!iniSetUInteger(lp,section,"OutbufDrainTimeout",bbs->outbuf_drain_timeout,&style))
 			break;
 		if(!iniSetInteger(lp,section,strMaxConConn,bbs->max_concurrent_connections,&style))
 			break;
@@ -884,7 +916,7 @@ BOOL sbbs_write_ini(
 
 		if(bbs->sem_chk_freq==global->sem_chk_freq)
 			iniRemoveValue(lp,section,strSemFileCheckFrequency);
-		else if(!iniSetShortInt(lp,section,strSemFileCheckFrequency,bbs->sem_chk_freq,&style))
+		else if(!iniSetUInteger(lp,section,strSemFileCheckFrequency,bbs->sem_chk_freq,&style))
 			break;
 
 		if(bbs->log_level==global->log_level)
@@ -958,20 +990,20 @@ BOOL sbbs_write_ini(
 		else if(!iniSetIpAddress(lp, section, strOutgoing4, ftp->outgoing4.s_addr, &style))
 			break;
 
-		if(memcmp(&ftp->outgoing6, &global->outgoing6, sizeof(ftp->outgoing6)))
+		if(memcmp(&ftp->outgoing6, &global->outgoing6, sizeof(ftp->outgoing6)) == 0)
 			iniRemoveValue(lp,section,strOutgoing6);
 		else if(!iniSetIp6Address(lp, section, strOutgoing6, ftp->outgoing6, &style))
 			break;
 
-		if(!iniSetShortInt(lp,section,strPort,ftp->port,&style))
+		if(!iniSetUInt16(lp,section,strPort,ftp->port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,strMaxClients,ftp->max_clients,&style))
+		if(!iniSetUInteger(lp,section,strMaxClients,ftp->max_clients,&style))
 			break;
 		if(!iniSetDuration(lp,section,strMaxInactivity,ftp->max_inactivity,&style))
 			break;
 		if(!iniSetInteger(lp,section,strMaxConConn,ftp->max_concurrent_connections,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"QwkTimeout",ftp->qwk_timeout,&style))
+		if(!iniSetUInteger(lp,section,"QwkTimeout",ftp->qwk_timeout,&style))
 			break;
 		if(!iniSetBytes(lp,section,"MinFileSize",1,ftp->min_fsize,&style))
 			break;
@@ -983,14 +1015,14 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetIp6Address(lp,section,"PasvIp6Address",ftp->pasv_ip6_addr,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"PasvPortLow",ftp->pasv_port_low,&style))
+		if(!iniSetUInt16(lp,section,"PasvPortLow",ftp->pasv_port_low,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"PasvPortHigh",ftp->pasv_port_high,&style))
+		if(!iniSetUInt16(lp,section,"PasvPortHigh",ftp->pasv_port_high,&style))
 			break;
 
 		if(ftp->sem_chk_freq==global->sem_chk_freq)
 			iniRemoveValue(lp,section,strSemFileCheckFrequency);
-		else if(!iniSetShortInt(lp,section,strSemFileCheckFrequency,ftp->sem_chk_freq,&style))
+		else if(!iniSetUInteger(lp,section,strSemFileCheckFrequency,ftp->sem_chk_freq,&style))
 			break;
 
 		if(ftp->log_level==global->log_level)
@@ -1014,7 +1046,7 @@ BOOL sbbs_write_ini(
 
 		if(!sbbs_set_sound_settings(lp, section, &ftp->sound, &global->sound, &style))
 			break;
-	
+
 		if(!iniSetBitField(lp,section,strOptions,ftp_options,ftp->options,&style))
 			break;
 
@@ -1046,14 +1078,14 @@ BOOL sbbs_write_ini(
 		else if(!iniSetIpAddress(lp, section, strOutgoing4, mail->outgoing4.s_addr, &style))
 			break;
 
-		if(memcmp(&mail->outgoing6, &global->outgoing6, sizeof(ftp->outgoing6)))
+		if(memcmp(&mail->outgoing6, &global->outgoing6, sizeof(ftp->outgoing6)) == 0)
 			iniRemoveValue(lp,section,strOutgoing6);
 		else if(!iniSetIp6Address(lp, section, strOutgoing6, mail->outgoing6, &style))
 			break;
 
 		if(mail->sem_chk_freq==global->sem_chk_freq)
 			iniRemoveValue(lp,section,strSemFileCheckFrequency);
-		else if(!iniSetShortInt(lp,section,strSemFileCheckFrequency,mail->sem_chk_freq,&style))
+		else if(!iniSetUInteger(lp,section,strSemFileCheckFrequency,mail->sem_chk_freq,&style))
 			break;
 
 		if(mail->log_level==global->log_level)
@@ -1064,29 +1096,29 @@ BOOL sbbs_write_ini(
 			iniRemoveValue(lp,section,strTLSErrorLevel);
 		else if(!iniSetLogLevel(lp,section,strTLSErrorLevel,mail->tls_error_level,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"SMTPPort",mail->smtp_port,&style))
+		if(!iniSetUInt16(lp,section,"SMTPPort",mail->smtp_port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"SubmissionPort",mail->submission_port,&style))
+		if(!iniSetUInt16(lp,section,"SubmissionPort",mail->submission_port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"TLSSubmissionPort",mail->submissions_port,&style))
+		if(!iniSetUInt16(lp,section,"TLSSubmissionPort",mail->submissions_port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"POP3Port",mail->pop3_port,&style))
+		if(!iniSetUInt16(lp,section,"POP3Port",mail->pop3_port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"TLSPOP3Port",mail->pop3s_port,&style))
+		if(!iniSetUInt16(lp,section,"TLSPOP3Port",mail->pop3s_port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"RelayPort",mail->relay_port,&style))
+		if(!iniSetUInt16(lp,section,"RelayPort",mail->relay_port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,strMaxClients,mail->max_clients,&style))
+		if(!iniSetUInteger(lp,section,strMaxClients,mail->max_clients,&style))
 			break;
 		if(!iniSetDuration(lp,section,strMaxInactivity,mail->max_inactivity,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"MaxDeliveryAttempts",mail->max_delivery_attempts,&style))
+		if(!iniSetUInteger(lp,section,"MaxDeliveryAttempts",mail->max_delivery_attempts,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"RescanFrequency",mail->rescan_frequency,&style))
+		if(!iniSetUInteger(lp,section,"RescanFrequency",mail->rescan_frequency,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"LinesPerYield",mail->lines_per_yield,&style))
+		if(!iniSetUInteger(lp,section,"LinesPerYield",mail->lines_per_yield,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"MaxRecipients",mail->max_recipients,&style))
+		if(!iniSetUInteger(lp,section,"MaxRecipients",mail->max_recipients,&style))
 			break;
 		if(!iniSetBytes(lp,section,"MaxMsgSize",/* unit: */1,mail->max_msg_size,&style))
 			break;
@@ -1171,14 +1203,14 @@ BOOL sbbs_write_ini(
 		else if(!iniSetIpAddress(lp, section, strOutgoing4, services->outgoing4.s_addr, &style))
 			break;
 
-		if(memcmp(&services->outgoing6, &global->outgoing6, sizeof(ftp->outgoing6)))
+		if(memcmp(&services->outgoing6, &global->outgoing6, sizeof(ftp->outgoing6)) == 0)
 			iniRemoveValue(lp,section,strOutgoing6);
 		else if(!iniSetIp6Address(lp, section, strOutgoing6, services->outgoing6, &style))
 			break;
 
 		if(services->sem_chk_freq==global->sem_chk_freq)
 			iniRemoveValue(lp,section,strSemFileCheckFrequency);
-		else if(!iniSetShortInt(lp,section,strSemFileCheckFrequency,services->sem_chk_freq,&style))
+		else if(!iniSetUInteger(lp,section,strSemFileCheckFrequency,services->sem_chk_freq,&style))
 			break;
 
 		if(services->log_level==global->log_level)
@@ -1237,12 +1269,11 @@ BOOL sbbs_write_ini(
 			iniRemoveValue(lp,section,"TLSInterface");
 		else if(!iniSetStringList(lp,section,"TLSInterface",",",web->tls_interfaces,&style))
 			break;
-
-		if(!iniSetShortInt(lp,section,strPort,web->port,&style))
+		if(!iniSetUInt16(lp,section,strPort,web->port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"TLSPort",web->tls_port,&style))
+		if(!iniSetUInt16(lp,section,"TLSPort",web->tls_port,&style))
 			break;
-		if(!iniSetShortInt(lp,section,strMaxClients,web->max_clients,&style))
+		if(!iniSetUInteger(lp,section,strMaxClients,web->max_clients,&style))
 			break;
 		if(!iniSetDuration(lp,section,strMaxInactivity,web->max_inactivity,&style))
 			break;
@@ -1251,7 +1282,7 @@ BOOL sbbs_write_ini(
 
 		if(web->sem_chk_freq==global->sem_chk_freq)
 			iniRemoveValue(lp,section,strSemFileCheckFrequency);
-		else if(!iniSetShortInt(lp,section,strSemFileCheckFrequency,web->sem_chk_freq,&style))
+		else if(!iniSetUInteger(lp,section,strSemFileCheckFrequency,web->sem_chk_freq,&style))
 			break;
 
 		if(web->log_level==global->log_level)
@@ -1320,7 +1351,7 @@ BOOL sbbs_write_ini(
 			iniRemoveValue(lp,section,strBindRetryDelay);
 		else if(!iniSetInteger(lp,section,strBindRetryDelay,web->bind_retry_delay,&style))
 			break;
-		if(!iniSetShortInt(lp,section,"OutbufDrainTimeout",web->outbuf_drain_timeout,&style))
+		if(!iniSetUInteger(lp,section,"OutbufDrainTimeout",web->outbuf_drain_timeout,&style))
 			break;
 	}
 

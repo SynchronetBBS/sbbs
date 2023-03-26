@@ -49,9 +49,18 @@ void sbbs_read_ini(
 	,ftp_startup_t*			ftp_startup
 	,BOOL*					run_web
 	,web_startup_t*			web_startup
-	,BOOL*					run_mail		
+	,BOOL*					run_mail
 	,mail_startup_t*		mail_startup
 	,BOOL*					run_services
+	,services_startup_t*	services_startup
+	);
+
+void sbbs_free_ini(
+	 global_startup_t*		global
+	,bbs_startup_t*			bbs_startup
+	,ftp_startup_t*			ftp_startup
+	,web_startup_t*			web_startup
+	,mail_startup_t*		mail_startup
 	,services_startup_t*	services_startup
 	);
 
@@ -80,7 +89,7 @@ BOOL sbbs_write_ini(
 	,ftp_startup_t*			ftp
 	,BOOL					run_web
 	,web_startup_t*			web
-	,BOOL					run_mail		
+	,BOOL					run_mail
 	,mail_startup_t*		mail
 	,BOOL					run_services
 	,services_startup_t*	services
