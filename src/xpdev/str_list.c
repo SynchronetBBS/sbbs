@@ -590,8 +590,7 @@ int strListCmp(str_list_t list1, str_list_t list2)
 	strListSortAlphaCase(l1);
 	strListSortAlphaCase(l2);
 
-	for(; *l1; l1++) {
-		l2++;
+	for(; *l1; l1++, l2++) {
 		if(*l2==NULL) {
 			ret=1;
 			goto early_return;
@@ -602,7 +601,6 @@ int strListCmp(str_list_t list1, str_list_t list2)
 			goto early_return;
 		}
 	}
-	l2++;
 	if(*l2==NULL)
 		ret=0;
 	else
