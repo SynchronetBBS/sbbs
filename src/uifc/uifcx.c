@@ -206,7 +206,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
     int optnumlen;
     int yesno=0;
     int lines;
-    int	tmpcur;
+    int	tmpcur=0;
 
 	if(cur == NULL)
 		cur = &tmpcur;
