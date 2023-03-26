@@ -613,7 +613,7 @@ if(your.node === temp_node && network.email && network.email.indexOf('@') > 0
 if(!find_sys_addr(fidoaddr.to_str(your))
 	&& confirm("Add node address " + fidoaddr.to_str(your) + " to your configuration")) {
 	var fido_addr_list = msgs_ini.iniGetValue("fidonet", "addr_list", []);
-	fido_addr_list.push(your);
+	fido_addr_list.push(fidoaddr.to_str(your));
 	msgs_ini.iniSetValue("fidonet", "addr_list", fido_addr_list);
 }
 
