@@ -27,6 +27,7 @@
 #include "git_branch.h"
 #include "cryptlib.h"
 #include "xpdatetime.h"
+#include "sbbs_ini.h"
 
 /********************/
 /* Global Variables */
@@ -2451,6 +2452,16 @@ void bail(int code)
 		(void)getchar();
 	}
     else if(forcesave) {
+		FILE* fp;
+		BOOL run_bbs, run_ftp, run_web, run_mail, run_services;
+		global_startup_t global_startup = {0};
+		bbs_startup_t bbs_startup = {0};
+		web_startup_t web_startup = {0};
+		ftp_startup_t ftp_startup = {0};
+		mail_startup_t mail_startup = {0};
+		services_startup_t services_startup = {0};
+
+		uifc.pop("Force-saving configuration files...");
         load_main_cfg(&cfg, error, sizeof(error));
         load_msgs_cfg(&cfg, error, sizeof(error));
         load_file_cfg(&cfg, error, sizeof(error));
@@ -2461,7 +2472,47 @@ void bail(int code)
         save_msgs_cfg(&cfg,backup_level);
         save_file_cfg(&cfg,backup_level);
         save_chat_cfg(&cfg,backup_level);
-        save_xtrn_cfg(&cfg,backup_level);
+		save_xtrn_cfg(&cfg,backup_level);
+
+		sbbs_get_ini_fname(cfg.filename, cfg.ctrl_dir);
+
+		fp = iniOpenFile(cfg.filename, /* for_modify? */false);
+		if(fp == NULL)
+			uifc.msgf("Error opening %s", cfg.filename);
+		else {
+			sbbs_read_ini(
+				 fp
+				,cfg.filename
+				,&global_startup
+				,&run_bbs
+				,&bbs_startup
+				,&run_ftp
+				,&ftp_startup
+				,&run_web
+				,&web_startup
+				,&run_mail
+				,&mail_startup
+				,&run_services
+				,&services_startup
+				);
+			sbbs_write_ini(
+				 fp
+				,&cfg
+				,&global_startup
+				,run_bbs
+				,&bbs_startup
+				,run_ftp
+				,&ftp_startup
+				,run_web
+				,&web_startup
+				,run_mail
+				,&mail_startup
+				,run_services
+				,&services_startup
+				);
+			iniCloseFile(fp);
+		}
+        uifc.pop(NULL);
 	}
 
 	uifc.pop("Exiting");
