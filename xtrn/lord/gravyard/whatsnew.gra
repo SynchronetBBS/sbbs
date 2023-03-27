@@ -1,0 +1,109 @@
+		       -=-=-=-=-=-=-=-=-=-=-=-
+		       The Warrior's Graveyard
+		       -=-=-=-=-=-=-=-=-=-=-=-
+
+JS v 1.0     - 21 years after the last release, we are back baby!  
+(04/01/23) 
+
+		 - Having recently found out that JS Lord was a thing I decided to port
+	       over my old IGMs! 
+
+	     - This is essentially the same IGM as ver 1.8, with some text
+	       cleanups and some other housekeeping. I also changed a few 
+	       things since... well it ain't the year 2000 any more! :)
+		   
+		 - Cringy text changes and plenty of speelign mistaeks fixed. I'm
+		   sure that there are more, so please let me know if you find them!
+		   
+		 - Removed the comment sheet. All of the BBS I checked have zero custom 
+		   entries, so it doesn't seem to have a use in game these days.
+
+-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+v 1.8        - Fixed a bug that would take away your Fairy upon exit.
+(01/25/02)   
+	     - This is the LAST version of the warrior's graveyard. I don't
+	       see myself releasing any new versions of this IGM unless there
+	       are more bugs that need squashing. Enjoy!                
+
+
+v 1.7        - Fixed the [s]ign comment sheet viewing bug.
+(09/15/00)
+	     - Added key functionality. I was origionally going to brand
+	       individul copies of the IGM and send that to donators... but I
+	       decided to add support for key files.. it'll make things easier,
+	       trust me :)
+
+	     - Fixed the bug where the igm set your screentype to ascii on
+	       exit. These 2 bugs were fixed with the latest KLord Door driver 
+	       from Korombos. I wasn't even aware that these popped up when I 
+	       changed to the newer KLord beta.
+
+	     - Fixed the bug where entering the IGM with 1billion+ exp and gaining
+	       a bit woud reset your exp to a negative. This was actually a long
+	       standing KLord bug that was never reported! So either I'm one of
+	       the few that check for rollovers, or my beta testers are good at
+	       weeding out the bugs! I sincerely hope this hasn't broken any of 
+	       your lord games.
+
+	     - Added another secret into the game. Look around the ..... to find it! 
+	       The kitten goes `meow meow` ;)           
+
+v 1.6        - Added support for processors higher then a P200. This 
+(08/14/00)     should fix all the people who are having the error 
+	       200 problems.
+
+	     - Fixed the cheat where people could re-enter indefinitly
+	       by changing their name in another IGM.
+
+	       NOTE: This changed the data file, you MUST delete your old
+		     player.gra, or the IGM won't work correctly.
+
+	     - Changed the IGM commandline. Unfortunatly that means you'll have
+	       to reinstall this IGM. Or read the README.NOW file and make the
+	       changed manually. Sorry but this had to be done. 
+
+	     - Cleaned up the code and fixed a few spelling mistakes.
+
+	     - Removed the possibility of "flipping" players stats. In that I mean
+	       your stats/gold/exp going over the physical maximum for the data type.
+	       I thought that I had already done that, but I guess not.
+
+	     - Added actual working contact information! Wow.. imagine that! :) 
+
+	     - Players can now view their stats by hitting 'V' from any menu. 
+
+	     - Added an option to Register the IGM for free and get a personalized
+	       copy of this IGM e-mailed to you!. See GRAVYARD.DOC for information.
+
+v 1.5        - Fixed the 'exit/re-enter/buy lemon-aid again' bug :)
+(08/05/97)
+	     - Did some minor code fixes, and fixed alot of spelling
+	       mistakes.
+
+v 1.1        - Fixed the error where you could flirt with the
+(08/06/95)     ghosts forever! I forgot to uncomment some code.
+	       Boy do I feel dumb :>
+
+	     - Fixed a whole heap 'o Spellin Mistakes
+
+
+v 1.0        - Finished the Installation program! Wow!!! <G>
+(07/23/95)
+	     - Added the Lemon-Aide Stand!
+
+	     - Added a few Ghosts :> Hidden of course
+
+--Beta's--
+
+v 0.005Beta  - Added Data file routines so Players couldn't
+(07/11/95)     re-enter and do everything again.
+
+	     - Added a few secrets to make gameplay better.
+
+
+v 0.001Beta  - Original Beta - Tested only at my BBS ****
+(07/05/95)
+	     - Player.Dat was never written to. Made for fair
+	       play testing.
+
