@@ -1,0 +1,84 @@
+
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+                         The Warrior's Graveyard v 1.0
+         (C) Copyright 1995-2023: Lloyd Hannesson All rights reserved.
+
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+-> Disclaimer
+
+  Use this software at your own risk.  The only guarantee that you get with
+this program, is that it will take up space. It works fine and all my Beta
+sites. It is as far as I know safe and stable.  To be safe, make sure you
+SCAN the files included within this ZIP for Viruses. Better safe than sorry!
+
+
+-> What the Heck is This!???
+
+  Well hmmm... Good question <G>. The Warrior's Graveyard is an IGM  for the 
+popular door game Legend Of The Red Dragon by Seth Able Robinson. This is an 
+add-on Graveyard. Players can grave rob, find all hidden ghosts, or cool off 
+with a nice glass of enchanted Lemon-Aide!
+
+
+-> Files
+
+Files Included in GRAJS1_0.ZIP, and what they are:
+
+GRAVYARD.JS  : The Warrior's Graveyard IGM for JSLord 5!
+GRAVYARD.TXT : The File you're reading! Duh!
+GRAVYARD.GRA : Menu Data File.
+WHATSNEW.GRA : The Short but Sweet History of The Warrior's Graveyard
+FILE_ID.DIZ  : The Diz.
+DESC.SDI     : Same as the Diz but different.
+
+Files created by The Warrior's Graveyard:
+
+GRAVYARD.GRA : The Player Data File.
+
+
+-> Simple Set-Up
+
+   Setting up The Warrior's Graveyard couldn't be any easier. 
+UNZIP GRAJS1_0.ZIP into a folder named gravyard in your lord directory. Then 
+run the following:
+
+	jsexec lord.js +IGM gravyard/gravyard.js
+
+
+-> Simple Un-Installation
+
+   Un-installing The Warrior's Graveyard is just as easy. Run the following:
+
+	jsexec lord.js -IGM gravyard/gravyard.js
+
+
+-> Q and A
+
+ Q: Where are all the Ghosts Hidden?
+
+ A: Well if I told you that, it wouldn't be a secret any more!
+    ...but I'll give you a few hints.
+      Jim Bob Jones is a random sorta guy.
+      George likes the Graves for some reason.
+      Tanya, well you can only see her if you're male.
+      Mike, he won't talk to guys...so female is the way to go
+    I hope these hints help...but don't ruin the IGM.
+
+=-----
+
+ Q: Why so few Qs?
+ 
+ A: Well this is new... no Qs mean no As!
+
+=-----
+
+
+-> Any Other Questions? Drop me a line at:
+
+  Email:     dasme@dasme.org
+
+
+-> The Warrior's Graveyard (C)Copyright Lloyd Hannesson, 1995-2023
