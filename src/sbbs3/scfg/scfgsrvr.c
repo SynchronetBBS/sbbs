@@ -111,23 +111,17 @@ static void global_cfg(void)
 			"`Global Server Settings:`\n"
 			"\n"
 		;
-		switch(uifc.list(WIN_ACT|WIN_CHE|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
+		switch(uifc.list(WIN_ACT|WIN_RHT|WIN_SAV|WIN_ESC, 0, 0, 0, &cur, &bar
 			,"Global Server Setttings",opt)) {
 			case 0:
-				i = startup.log_level;
-				i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Log Level", iniLogLevelStringList());
-				if(i >= 0)
-					startup.log_level = i;
+				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup.log_level, 0, "Log Level", iniLogLevelStringList());
 				break;
 			case 1:
-				i = startup.tls_error_level;
-				i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "TLS Error Log Level", iniLogLevelStringList());
-				if(i >= 0)
-					startup.tls_error_level = i;
+				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup.tls_error_level, 0, "TLS Error Log Level", iniLogLevelStringList());
 				break;
 			case 2:
 				strListCombine(startup.interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Inbound Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.interfaces);
 					strListSplitCopy(&startup.interfaces, str, ", ");
 					uifc.changes = true;
@@ -135,7 +129,7 @@ static void global_cfg(void)
 				break;
 			case 3:
 				IPv4AddressToStr(startup.outgoing4.s_addr, str, sizeof(str));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Outbound Network Interface", str, sizeof(str)-1, K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Outbound Network Interface (IPv4)", str, sizeof(str)-1, K_EDIT) > 0)
 					startup.outgoing4.s_addr = parseIPv4Address(str);
 				break;
 			case 4:
@@ -251,6 +245,7 @@ static void global_cfg(void)
 static void termsrvr_cfg(void)
 {
 	static int cur, bar;
+	char str[256];
 	char tmp[256];
 	BOOL enabled = FALSE;
 	bbs_startup_t startup = {0};
@@ -286,16 +281,22 @@ static void termsrvr_cfg(void)
 		sprintf(opt[i++], "%-30s%u", "Last Node", startup.last_node);
 		sprintf(opt[i++], "%-30s%s", "DOS Program Support", startup.options & BBS_OPT_NO_DOS ? "No" : "Yes");
 		sprintf(opt[i++], "%-30s%s", "SSH Support", startup.options & BBS_OPT_ALLOW_SSH ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "SSH Interfaces", startup.options & BBS_OPT_ALLOW_SSH ? strListCombine(startup.ssh_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
+		sprintf(opt[i++], "%-30s%s", "SSH Interfaces"
+			,startup.options & BBS_OPT_ALLOW_SSH ? strListCombine(startup.ssh_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
 		sprintf(opt[i++], "%-30s%u", "SSH Port", startup.ssh_port);
-		sprintf(opt[i++], "%-30s%s", "SSH Connect Timeout", startup.options & BBS_OPT_ALLOW_SSH ? vduration(startup.ssh_connect_timeout) : "N/A");
+		sprintf(opt[i++], "%-30s%s", "SSH Connect Timeout"
+			,startup.options & BBS_OPT_ALLOW_SSH ? vduration(startup.ssh_connect_timeout) : "N/A");
 		sprintf(opt[i++], "%-30s%s", "Telnet Support", startup.options & BBS_OPT_NO_TELNET ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "Telnet Interfaces", startup.options & BBS_OPT_NO_TELNET ? "N/A" : strListCombine(startup.telnet_interfaces, tmp, sizeof(tmp), ", "));
+		sprintf(opt[i++], "%-30s%s", "Telnet Interfaces"
+			,startup.options & BBS_OPT_NO_TELNET ? "N/A" : strListCombine(startup.telnet_interfaces, tmp, sizeof(tmp), ", "));
 		sprintf(opt[i++], "%-30s%u", "Telnet Port", startup.telnet_port);
-		sprintf(opt[i++], "%-30s%s", "Telnet Command Debug", startup.options & BBS_OPT_NO_TELNET ? "N/A" : startup.options & BBS_OPT_DEBUG_TELNET ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Telnet Send Go-Aheads", startup.options & BBS_OPT_NO_TELNET ? "N/A" : startup.options & BBS_OPT_NO_TELNET_GA ? "No" : "Yes");
+		sprintf(opt[i++], "%-30s%s", "Telnet Command Debug"
+			,startup.options & BBS_OPT_NO_TELNET ? "N/A" : startup.options & BBS_OPT_DEBUG_TELNET ? "Yes" : "No");
+		sprintf(opt[i++], "%-30s%s", "Telnet Send Go-Aheads"
+			,startup.options & BBS_OPT_NO_TELNET ? "N/A" : startup.options & BBS_OPT_NO_TELNET_GA ? "No" : "Yes");
 		sprintf(opt[i++], "%-30s%s", "RLogin Support", startup.options & BBS_OPT_ALLOW_RLOGIN ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "RLogin Interfaces", startup.options & BBS_OPT_ALLOW_RLOGIN ? strListCombine(startup.rlogin_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
+		sprintf(opt[i++], "%-30s%s", "RLogin Interfaces"
+			,startup.options & BBS_OPT_ALLOW_RLOGIN ? strListCombine(startup.rlogin_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
 		sprintf(opt[i++], "%-30s%u", "RLogin Port", startup.rlogin_port);
 		sprintf(opt[i++], "%-30s%u", "40 Column PETSCII Port", startup.pet40_port);
 		sprintf(opt[i++], "%-30s%u", "80 Column PETSCII Port", startup.pet80_port);
@@ -305,7 +306,8 @@ static void termsrvr_cfg(void)
 		sprintf(opt[i++], "%-30s%s", "Max User Inactivity", vduration(startup.max_session_inactivity));
 		sprintf(opt[i++], "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
 		sprintf(opt[i++], "%-30s%s", "Execute Timed Events", startup.options & BBS_OPT_NO_EVENTS ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "Execute QWK-relatd Events", startup.options & BBS_OPT_NO_EVENTS ? "N/A" : startup.options & BBS_OPT_NO_QWK_EVENTS ? "No" : "Yes");
+		sprintf(opt[i++], "%-30s%s", "Execute QWK-relatd Events"
+			,startup.options & BBS_OPT_NO_EVENTS ? "N/A" : startup.options & BBS_OPT_NO_QWK_EVENTS ? "No" : "Yes");
 		sprintf(opt[i++], "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		if(!enabled)
 			i = 1;
@@ -315,20 +317,130 @@ static void termsrvr_cfg(void)
 			"`Terminal Server Configuration:`\n"
 			"\n"
 		;
-		switch(uifc.list(WIN_ACT|WIN_CHE|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"Terminal Server",opt)) {
 			case 0:
 				enabled = !enabled;
 				uifc.changes = true;
 				break;
 			case 1:
-				startup.options ^= BBS_OPT_NO_TELNET;
+				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup.log_level, 0, "Log Level", iniLogLevelStringList());
 				break;
 			case 2:
-				startup.options ^= BBS_OPT_ALLOW_SSH;
+				SAFEPRINTF(str, "%u", startup.first_node);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "First Node Available For Terminal Logins", str, 3, K_NUMBER|K_EDIT) > 0)
+					startup.first_node = atoi(str);
 				break;
 			case 3:
+				SAFEPRINTF(str, "%u", startup.last_node);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Last Node Available For Terminal Logins", str, 3, K_NUMBER|K_EDIT) > 0)
+					startup.last_node = atoi(str);
+				break;
+			case 4:
+				startup.options ^= BBS_OPT_NO_DOS;
+				break;
+			case 5:
+				startup.options ^= BBS_OPT_ALLOW_SSH;
+				break;
+			case 6:
+				strListCombine(startup.ssh_interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup.ssh_interfaces);
+					strListSplitCopy(&startup.ssh_interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 7:
+				SAFEPRINTF(str, "%u", startup.ssh_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.ssh_port = atoi(str);
+				break;
+			case 8:
+				SAFECOPY(str, duration(startup.ssh_connect_timeout, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH Connect Timeout", str, 6, K_EDIT) > 0)
+					startup.ssh_connect_timeout = parse_duration(str);
+				break;
+			case 9:
+				startup.options ^= BBS_OPT_NO_TELNET;
+				break;
+			case 10:
+				strListCombine(startup.telnet_interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Telnet Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup.telnet_interfaces);
+					strListSplitCopy(&startup.telnet_interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 11:
+				SAFEPRINTF(str, "%u", startup.telnet_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Telnet TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.telnet_port = atoi(str);
+				break;
+			case 12:
+				startup.options ^= BBS_OPT_DEBUG_TELNET;
+				break;
+			case 13:
+				startup.options ^= BBS_OPT_NO_TELNET_GA;
+				break;
+			case 14:
 				startup.options ^= BBS_OPT_ALLOW_RLOGIN;
+				break;
+			case 15:
+				strListCombine(startup.rlogin_interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "RLogin Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup.rlogin_interfaces);
+					strListSplitCopy(&startup.rlogin_interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 16:
+				SAFEPRINTF(str, "%u", startup.rlogin_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "RLogin TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.rlogin_port = atoi(str);
+				break;
+			case 17:
+				SAFEPRINTF(str, "%u", startup.pet40_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "40 Column CBM/PETSCII TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.pet40_port = atoi(str);
+				break;
+			case 18:
+				SAFEPRINTF(str, "%u", startup.pet80_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "80 Column CBM/PETSCII TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.pet80_port = atoi(str);
+				break;
+			case 19:
+				SAFECOPY(str, maximum(startup.max_concurrent_connections));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
+					startup.max_concurrent_connections = atoi(str);
+				break;
+			case 20:
+				SAFECOPY(str, duration(startup.max_login_inactivity, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity at Login", str, 10, K_EDIT) > 0)
+					startup.max_login_inactivity = parse_duration(str);
+				break;
+			case 21:
+				SAFECOPY(str, duration(startup.max_newuser_inactivity, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity at New User Registration", str, 10, K_EDIT) > 0)
+					startup.max_newuser_inactivity = parse_duration(str);
+				break;
+			case 22:
+				SAFECOPY(str, duration(startup.max_session_inactivity, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity during User Session", str, 10, K_EDIT) > 0)
+					startup.max_session_inactivity = parse_duration(str);
+				break;
+			case 23:
+				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Output Buffer Draing Timeout (milliseconds)", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.outbuf_drain_timeout = atoi(str);
+				break;
+			case 24:
+				startup.options ^= BBS_OPT_NO_EVENTS;
+				break;
+			case 25:
+				startup.options ^= BBS_OPT_NO_QWK_EVENTS;
+				break;
+			case 26:
+				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -376,6 +488,7 @@ static void websrvr_cfg(void)
 {
 	static int cur, bar;
 	char tmp[256];
+	char str[256];
 	BOOL enabled = FALSE;
 	web_startup_t startup = {0};
 
@@ -409,7 +522,8 @@ static void websrvr_cfg(void)
 		sprintf(opt[i++], "%-30s%s", "HTTP Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
 		sprintf(opt[i++], "%-30s%u", "HTTP Port", startup.port);
 		sprintf(opt[i++], "%-30s%s", "HTTPS Support", startup.options & WEB_OPT_ALLOW_TLS ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "HTTPS Interfaces", startup.options & WEB_OPT_ALLOW_TLS ? strListCombine(startup.tls_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
+		sprintf(opt[i++], "%-30s%s", "HTTPS Interfaces"
+			,startup.options & WEB_OPT_ALLOW_TLS ? strListCombine(startup.tls_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
 		sprintf(opt[i++], "%-30s%u", "HTTPS Port", startup.tls_port);
 		sprintf(opt[i++], "%-30s%s", "SSJS File Extension", startup.ssjs_ext);
 		sprintf(opt[i++], "%-30s%s", "Index Filenames", strListCombine(startup.index_file_name, tmp, sizeof(tmp), ", "));
@@ -417,7 +531,10 @@ static void websrvr_cfg(void)
 		sprintf(opt[i++], "%-30s%s", "Error Sub-directory", startup.error_dir);
 		sprintf(opt[i++], "%-30s%s", "Strict Transport Security", startup.options & WEB_OPT_HSTS_SAFE ? "Yes" : "No");
 		sprintf(opt[i++], "%-30s%s", "Virtual Host Support", startup.options & WEB_OPT_VIRTUAL_HOSTS ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Access Logging", startup.options & WEB_OPT_HTTP_LOGGING ? startup.logfile_base : strDisabled);
+		SAFECOPY(str, startup.logfile_base);
+		if(*str == '\0')
+			SAFEPRINTF(str, "[%slogs/http-*]", cfg.logs_dir);
+		sprintf(opt[i++], "%-30s%s", "Access Logging", startup.options & WEB_OPT_HTTP_LOGGING ? str : strDisabled);
 		sprintf(opt[i++], "%-30s%s", "Max Clients", maximum(startup.max_clients));
 		sprintf(opt[i++], "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
 		sprintf(opt[i++], "%-30s%s", "Filebase Index Script", startup.file_index_script);
@@ -442,14 +559,137 @@ static void websrvr_cfg(void)
 			"`Web Server Configuration:`\n"
 			"\n"
 		;
-		switch(uifc.list(WIN_ACT|WIN_CHE|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"Web Server",opt)) {
 			case 0:
 				enabled = !enabled;
 				uifc.changes = true;
 				break;
+			case 1:
+				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup.log_level, 0, "Log Level", iniLogLevelStringList());
+				break;
 			case 2:
+				strListCombine(startup.interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup.interfaces);
+					strListSplitCopy(&startup.interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 3:
+				SAFEPRINTF(str, "%u", startup.port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.port = atoi(str);
+				break;
+			case 4:
 				startup.options ^= WEB_OPT_ALLOW_TLS;
+				break;
+			case 5:
+				strListCombine(startup.tls_interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP/TLS Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup.tls_interfaces);
+					strListSplitCopy(&startup.tls_interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 6:
+				SAFEPRINTF(str, "%u", startup.tls_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP/TLS (HTTPS) TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.tls_port = atoi(str);
+				break;
+			case 7:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Server-side JavaScript File Extension"
+					, startup.ssjs_ext, sizeof(startup.ssjs_ext) -1, K_EDIT);
+				break;
+			case 8:
+				strListCombine(startup.index_file_name, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Index Filenames", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup.index_file_name);
+					strListSplitCopy(&startup.index_file_name, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 9:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Content Root Directory"
+					,startup.root_dir, sizeof(startup.root_dir)-1, K_EDIT);
+				break;
+			case 10:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Error Sub-directory"
+					,startup.error_dir, sizeof(startup.error_dir)-1, K_EDIT);
+				break;
+			case 11:
+				startup.options ^= WEB_OPT_HSTS_SAFE;
+				break;
+			case 12:
+				startup.options ^= WEB_OPT_VIRTUAL_HOSTS;
+				break;
+			case 13:
+				i = startup.options & WEB_OPT_HTTP_LOGGING ? 0 : 1;
+				i = uifc.list(WIN_SAV|WIN_MID, 0, 0, 0, &i, 0, "Log (to disk) HTTP Requests", uifcYesNoOpts);
+				if(i == 0) {
+					startup.options |= WEB_OPT_HTTP_LOGGING;
+					uifc.input(WIN_MID|WIN_SAV, 0, 0, "Base path/filename (blank = default)"
+						,startup.logfile_base, sizeof(startup.logfile_base)-1, K_EDIT);
+				} else if(i == 1)
+					startup.options &= ~WEB_OPT_HTTP_LOGGING;
+				break;
+			case 14:
+				SAFECOPY(str, maximum(startup.max_clients));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Count (0=unlimited)", str, 10, K_EDIT) > 0)
+					startup.max_clients = atoi(str);
+				break;
+			case 15:
+				SAFECOPY(str, duration(startup.max_inactivity, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
+					startup.max_inactivity = parse_duration(str);
+				break;
+			case 16:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Filebase Index Script"
+					,startup.file_index_script, sizeof(startup.file_index_script)-1, K_EDIT);
+				break;
+			case 17:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Filebase Virtual Path Prefix"
+					,startup.file_vpath_prefix, sizeof(startup.file_vpath_prefix)-1, K_EDIT);
+				break;
+			case 18:
+				startup.file_vpath_for_vhosts = !startup.file_vpath_for_vhosts;
+				break;
+			case 19:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Authentication Methods"
+					,startup.default_auth_list, sizeof(startup.default_auth_list)-1, K_EDIT);
+				break;
+			case 20:
+				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)"
+					,str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.outbuf_drain_timeout = atoi(str);
+				break;
+			case 21:
+				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
+				break;
+			case 22:
+				startup.options ^= WEB_OPT_NO_CGI;
+				break;
+			case 23:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "CGI Directory"
+					,startup.cgi_dir, sizeof(startup.cgi_dir)-1, K_EDIT);
+				break;
+			case 24:
+				strListCombine(startup.cgi_ext, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "CGI File Extensions", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup.cgi_ext);
+					strListSplitCopy(&startup.cgi_ext, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 25:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Default CGI MIME Content-Type"
+					,startup.default_cgi_content, sizeof(startup.default_cgi_content)-1, K_EDIT);
+				break;
+			case 26:
+				duration_to_str(startup.max_cgi_inactivity, str, sizeof(str));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum CGI Inactivity", str, 10, K_EDIT) > 0)
+					startup.max_cgi_inactivity = parse_duration(str);
 				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -497,6 +737,7 @@ static void ftpsrvr_cfg(void)
 {
 	static int cur, bar;
 	char tmp[256];
+	char str[256];
 	BOOL enabled = FALSE;
 	ftp_startup_t startup = {0};
 
@@ -529,7 +770,8 @@ static void ftpsrvr_cfg(void)
 		sprintf(opt[i++], "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
 		sprintf(opt[i++], "%-30s%s", "Network Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
 		sprintf(opt[i++], "%-30s%u, Data: %u", "Control Port", startup.port, startup.port - 1);
-		sprintf(opt[i++], "%-30s%s", "Passive Interface (IPv4)", startup.options & FTP_OPT_LOOKUP_PASV_IP ? "<automatic>" : IPv4AddressToStr(startup.pasv_ip_addr.s_addr, tmp, sizeof(tmp)));
+		sprintf(opt[i++], "%-30s%s", "Passive Interface (IPv4)"
+			,startup.options & FTP_OPT_LOOKUP_PASV_IP ? "<automatic>" : IPv4AddressToStr(startup.pasv_ip_addr.s_addr, tmp, sizeof(tmp)));
 		sprintf(opt[i++], "%-30s%u - %u", "Passive Port Range", startup.pasv_port_low, startup.pasv_port_high);
 		sprintf(opt[i++], "%-30s%s", "Auto-generate Index File", startup.options & FTP_OPT_INDEX_FILE ? startup.index_file_name : strDisabled);
 		sprintf(opt[i++], "%-30s%s", "QWK Message Packet Transfers", startup.options & FTP_OPT_ALLOW_QWK ? "Yes" : "No");
@@ -548,11 +790,91 @@ static void ftpsrvr_cfg(void)
 			"`FTP Server Configuration:`\n"
 			"\n"
 		;
-		switch(uifc.list(WIN_ACT|WIN_CHE|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"FTP Server",opt)) {
 			case 0:
 				enabled = !enabled;
 				uifc.changes = true;
+				break;
+			case 1:
+				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup.log_level, 0, "Log Level", iniLogLevelStringList());
+				break;
+			case 2:
+				strListCombine(startup.interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup.interfaces);
+					strListSplitCopy(&startup.interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 3:
+				SAFEPRINTF(str, "%u", startup.port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Control TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.port = atoi(str);
+				break;
+			case 4:
+				i = startup.options & FTP_OPT_LOOKUP_PASV_IP ? 0 : 1;
+				i = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Automatically Detect Public IP Address", uifcYesNoOpts);
+				if(i == 0)
+					startup.options |= FTP_OPT_LOOKUP_PASV_IP;
+				else if(i == 1) {
+					startup.options &= ~FTP_OPT_LOOKUP_PASV_IP;
+					IPv4AddressToStr(startup.pasv_ip_addr.s_addr, str, sizeof(str));
+					if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "IPv4 Address for Passive Connections", str, sizeof(str)-1, K_EDIT) > 0)
+						startup.pasv_ip_addr.s_addr = parseIPv4Address(str);
+				}
+				break;
+			case 5:
+				SAFEPRINTF(str, "%u", startup.pasv_port_low);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Lowest Passive TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.pasv_port_low = atoi(str);
+				else
+					break;
+				SAFEPRINTF(str, "%u", startup.pasv_port_high);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Highest Passive TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.pasv_port_high = atoi(str);
+				break;
+			case 6:
+				i = startup.options & FTP_OPT_INDEX_FILE ? 0 : 1;
+				i = uifc.list(WIN_SAV|WIN_MID, 0, 0, 0, &i, 0, "Autogenerate Index Files", uifcYesNoOpts);
+				if(i == 0) {
+					startup.options |= FTP_OPT_INDEX_FILE;
+					uifc.input(WIN_MID|WIN_SAV, 0, 0, "Index Filename"
+						,startup.index_file_name, sizeof(startup.index_file_name)-1, K_EDIT);
+				} else if(i == 1)
+					startup.options &= ~FTP_OPT_INDEX_FILE;
+				break;
+			case 7:
+				startup.options ^= FTP_OPT_ALLOW_QWK;
+				break;
+			case 8:
+				SAFECOPY(str, duration(startup.qwk_timeout, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "QWK Message Packet Creation Timeout", str, 10, K_EDIT) > 0)
+					startup.qwk_timeout = parse_duration(str);
+				break;
+			case 9:
+				SAFECOPY(str, maximum(startup.max_clients));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Count (0=unlimited)", str, 10, K_EDIT) > 0)
+					startup.max_clients = atoi(str);
+				break;
+			case 10:
+				SAFECOPY(str, duration(startup.max_inactivity, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
+					startup.max_inactivity = parse_duration(str);
+				break;
+			case 11:
+				SAFECOPY(str, maximum(startup.max_concurrent_connections));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
+					startup.max_concurrent_connections = atoi(str);
+				break;
+			case 12:
+				startup.options ^= FTP_OPT_NO_LOCAL_FSYS;
+				break;
+			case 13:
+				startup.options ^= FTP_OPT_ALLOW_BOUNCE;
+				break;
+			case 14:
+				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -696,7 +1018,7 @@ static void mailsrvr_cfg(void)
 			"`Mail Server Configuration:`\n"
 			"\n"
 		;
-		switch(uifc.list(WIN_ACT|WIN_CHE|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"Mail Server",opt)) {
 			case 0:
 				enabled = !enabled;
@@ -789,7 +1111,7 @@ static void services_cfg(void)
 			"`Services Server Configuration:`\n"
 			"\n"
 		;
-		switch(uifc.list(WIN_ACT|WIN_CHE|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"Services Server",opt)) {
 			case 0:
 				enabled = !enabled;
@@ -886,7 +1208,7 @@ void server_cfg(void)
 			"the `ctrl/sbbs.ini` file and `https://wiki.synchro.net/config:sbbs.ini`\n"
 			"for reference.\n"
 		;
-		i = uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,0,&srvr_dflt,0, "Server Configuration",opt);
+		i = uifc.list(WIN_ORG|WIN_ACT,0,0,0,&srvr_dflt,0, "Server Configuration",opt);
 		switch(i) {
 			case 0:
 				global_cfg();
