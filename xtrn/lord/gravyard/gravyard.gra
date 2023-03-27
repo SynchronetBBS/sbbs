@@ -1,0 +1,238 @@
+@#MAIN
+
+  `5.ת`#שת`2[`0The Graveyard`2]`#תש`5ת.
+       
+`2    As you enter the Graveyard, you can smell the overpowering scent
+`2  of rotting flesh. `0"Ahh nothing like the smell of rotting flesh 
+`2  `0in the morning" `2you say jokingly.  But for some reason you feel 
+`2  a little uneasy.
+`2    There are graves as far as the eye can see.  You see a shack
+`2  a little ways away. You also notice a `$Lemon-Aide Stand`2!?
+`2    A Grave Digger looks up as you enter.
+
+        `5ת`2[`0e`2]`5ת `2Enter Shack
+        `5ת`2[`0t`2]`5ת `2Talk to Grave Digger
+        `5ת`2[`0g`2]`5ת `2Search the Newly Dug Gave
+        `5ת`2[`0s`2]`5ת `2Check Out the Stand!
+        `5ת`2[`0l`2]`5ת `2Flee In Terror!!!!
+
+@#DIGGER
+                                      
+  `5.ת`#שת`2[`0The Grave Digger`2]`#תש`5ת.
+
+`2    You walk up to this dirty scarred man. Even though his outer
+`2  appearance is revolting, you can tell he has a warm heart by his
+`2  friendly smile.`0 "E'ye don't get many a visitor down here, what can
+`0  I do you for?"`2 he asks. What should you talk about???
+
+        `5ת`2[`0w`2]`5ת `2Who's The Lucky Person?
+        `5ת`2[`0g`2]`5ת `2Ghosts.
+        `5ת`2[`0t`2]`5ת `2Treasure.
+        `5ת`2[`0h`2]`5ת `2Old Hag.
+        `5ת`2[`0l`2]`5ת `2That's All For Now.
+
+@#SHACK
+
+  `5.ת`#שת`2[`0In The Shack`2]`#תש`5ת.
+
+`2    Upon entering the shack you are surprised to see another. But this
+`2  Hag's looks surprise you more! Not since Grizilda the Hun have you
+`2  ever seen such a beastly looking woman. She greets you by saying
+`0  "Hi! I'm Helga! Who are you?"`2.  The stench of garlic is overpowering.
+
+        `5ת`2[`0a`2]`5ת `2Ask Hag To Make You A Potion.
+        `5ת`2[`0p`2]`5ת `2Play A Game With The Hag.       
+        `5ת`2[`0l`2]`5ת `2Leave Before You Pass Out.
+
+@#LEMON
+
+  `5.ת`#שת`2[`0Ye Olde Lemon-Aide Stand`2]`#תש`5ת.
+
+`2    You wander over to what seems to ba a Lemon-Aide Stand, and to
+`2  your suprise, That's what it is! You wonder what the heck a Lemon-Aide
+`2  Stand could be doing in the middle of a graveyard, `0"Hmmm I wonder 
+`0  how much corpses drink!", `2you think to yourself. You stop yourself
+`2  From Laughing though as not to hurt the man's feelings.
+
+        `5ת`2[`0b`2]`5ת `2Buy Some Lemon-Aide.
+        `5ת`2[`0t`2]`5ת `2Talk To The Juice Seller.
+        `5ת`2[`0l`2]`5ת `2Get Out before You Pass Out.
+
+@#AIDETALK
+
+  `5.ת`#שת`2[`0Talking To The Juice Seller`2]`#תש`5ת.
+
+     `0"Who the hell buys yer Juice???? This is a graveyard dead people are
+   `0buried here if you didn't already know!!"`2, you scream into the
+   `2Mans face. `0"I know that!!!! What do you think I am Stupid???"`2, says
+   `2the Man in rebuttle. I make it fer the Ghosts here!!!"`2. `0"Ghosts??? Of 
+   `0who???"`2, you ask. `0"Well There is George Price, The Ex-Towne Banker.
+   `0Tanya Travis, an Ex umm well....Whore!  Mike The Knife, an Ex-Towne Pimp!
+   `0And of course Jim Bob Jones, The best Warrior there ever was."
+
+   `0  "Damn there are so many.....Where do I find them all???"`2, you ask.
+   `0"You find Ghosts the same way you go places, if you know what I mean
+   `0You just need to know where they hang out!
+
+@#BUYAIDE
+
+  `5.ת`#שת`2[`0Buying Some Lemon Aide`2]`#תש`5ת.
+
+    `2You look at the Lemon-Aide the Juice-Seller is pushing on you, and
+  `2say, `0"What the hell is in that stuff???? It almost looks green!?"
+  `2The Juice-Seller says, `0"Well it's `$Lemon-Aide`0! Duh. Why else would
+  `0I be at a Lemon-Aide stand!? Well that greenish tinge is from the special
+  `0ingredient I add......It has some weird effects, but the ghosts seem to
+  `0like it."
+
+@#GEORGEMENU
+
+  `5.ת`#שת`2[`%Ghostly Event`2]`#תש`5ת.
+
+  `2  George just smiles and says, `0"Is there anything I can do for you?
+  `0I'd be glad to help a young adventurer like yourself!" `2You wonder
+  `2why this ghost is so nice, but also why he can talk!?
+
+          `5ת`2[`0a`2]`5ת `2Ask for a little help.
+          `5ת`2[`0t`2]`5ת `2Talk to this Ghost.
+          `5ת`2[`0l`2]`5ת `2Leave this Ghost to his Hauntings.
+
+@#FOUNDGEORGE
+
+  `2  You decide to look for the fabled ghost of the recently deaceaced
+  `2town banker, George Sharp. `0"He'll be able to help me", `2you
+  `2assure yourself still uneasy about the idea of ghosts.
+  
+  `2  You approach this transparent figure carefully as not to scare him.
+  `2As if he knew you were behind him he turns around and glides over.
+  `2you see a faint smile on his face.
+
+  `% **** `0YOU FOUND GEORGE THE GHOST!!!!! `%****
+
+@#FLIRTTANYA
+
+  `2  You begin to flirt with Tanya. You use all your worst pick-up lines,
+  `2well you think they're good, but no one else does. `0"So what's a ghoul like
+  `0you doing in a place like this?"`2, even after that winner of a line
+  `2Tanya still seems uninterested...
+  
+  `0  "If you want to get to know me, why don't you just say so!?"`2, asks Tanya
+  `2rather bluntly. You just smile....you emerge some time later a satisfied
+  `2man.
+
+  `%YOU SPENT THE NIGHT WITH TANYA THE GHOST!!!
+
+@#FOUNDTANYA
+
+  `2  After hearing stories of the ex-Lady of the Night, Tanya Travis,
+  `2you decide to look for her. Thinking this as good a place as any
+  `2you begin to look around.
+  
+  `0You find TANYA!!!!
+
+  `2  You approach this transparent figure carefully as not to scare her.
+  `2Even in death she hasn't lost her figure! You smile at her and she
+  `2floats towards you. 
+  
+  `% **** `0YOU FOUND TANYA THE GHOST!!!!! `%****
+
+@#TANYAMENU
+
+  `5.ת`#שת`2[`%Ghostly Event`2]`#תש`5ת.
+
+  `2  Tanya just looks at you and says, `0"I know there is something *I* can
+  `0DO for you. Just ask, your wish is my command...", `2You wonder why this
+  `2ghost is so nice, But after remembering her late profession you realize 
+  `2that her niceness is probably just a habit by now.
+
+          `5ת`2[`0a`2]`5ת `2Ask For A Little Help.
+          `5ת`2[`0t`2]`5ת `2Talk To This Ghost.
+          `5ת`2[`0f`2]`5ת `2Flirt with Tanya.
+          `5ת`2[`0l`2]`5ת `2Leave This Ghost to her Hauntings.
+
+@#TANYATALK
+
+  `0  "Wow!! I'm not used to guys wanting to talk to me!!! You really
+  `0are different now aren't you!?" `2purrs Tanya.
+
+  `0  "Well I can tell you this, Finding Jim is purely random. I'm not
+  `0sure where he likes to hang out, but well maybe you do? Also, I hear
+  `0that George likes to hang out around the graves. Maybe you should look
+  `0for him there. Gee this feels wierd, I'm not used to talking with
+  `0people." 
+  
+  `2You can't help but feel a little sad for this old Ghost.
+
+@#TANYAPOTION
+
+  `2  You ask Tanya for a little help. `0"That's all you want; help???
+  `0Well I guess I can help you, but what a strange guy you are!"`2, she
+  `2says confused.
+
+  `2  Tanya pulls out a potion and gives it to you. `0"Here I don't need this
+  `0anymore. It's really no use to someone who has passed on."`2, she grins.
+
+  `%YOU GOT A POTION FROM TANYA!!!!
+  
+@#FLIRTMIKE
+
+  `2  You begin to flirt shyly with Mike. You bat your eyelashes and bite
+  `2your lips seductivly. Mike just looks at you and smiles. `0"You don't
+  `0have to be so coy with me. Come here baby! Papa will show you some fun!"
+  `2After an hour of fun you emerge satisfied...
+
+  `0"I never knew Ghosts could do *THAT*!"`2, you think to yourself.
+
+  `%YOU SPENT THE NIGHT WITH MIKE THE GHOST!!!!
+
+@#FOUNDMIKE
+
+  `2  After hearing stories of the legendary Gigalo, Mike the Knife, and his 
+  `2BODY, you decide to look for him. Thinking this as good a place as any
+  `2you begin to look around.
+  
+  `0You found MIKE!!!!
+
+  `2  You approach this transparent figure carefully as not to scare him.
+  `2But after looking at him, could you really scare a tough guy like this!?
+
+  `% **** `0YOU FOUND MIKE THE GHOST!!!!! `%****
+
+@#MIKEMENU
+
+  `5.ת`#שת`2[`%Ghostly Event`2]`#תש`5ת.
+
+  `2  Mike just looks up at you, smiles, and says, `0"Hey baby! Come over here
+  `0and let Papa make it all better.", `2You wonder how even in the afterlife
+  `2a guy could be such a pig. You shrug it off, that's just the way he is.
+  `2  Mike continues to watch you while flipping his coin in the air. 
+
+          `5ת`2[`0a`2]`5ת `2Ask For A Little Help.
+          `5ת`2[`0t`2]`5ת `2Talk To This Ghost.
+          `5ת`2[`0f`2]`5ת `2Flirt with this Ghostly Pimp.
+          `5ת`2[`0l`2]`5ת `2Leave This Ghost to his Coin Flipping.
+
+@#MIKEASK
+
+  `0  "Hey babe, you and I know that you aren't the best looking thing
+  `0in this world of ours. Luckily, I did study plastic surgery when I
+  `0went to The DragonVille Collegiate, maybe I can help?"
+
+  `2  You agree, and lay down on the ground. `0"Ok I'll give you a little
+  `0of this Dragon's spit, should put you right out!"`2, the room slowly
+  `2fades to black.
+
+  `2When you awake you notice that you have gotten `%Prettier!
+  
+  `%YOU'VE GAINED 2 CHARM!!!!
+
+@#TALKMIKE
+
+  `0"Wow, what can I say 'cept that Papa can make you REAL happy!"`2, he smiles.
+
+  `0  "Well I can tell you this, Finding Jim is purely random. I'm not
+  `0sure where he likes to hang out, but well maybe you do??? Also,
+  `0George likes to hang out around the graves. Maybe you should look for
+  `0him there. But why would you want the others when you can have me!
+
+@#
