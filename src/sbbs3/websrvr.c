@@ -2392,7 +2392,7 @@ static void js_add_request_property(http_session_t * session, char *key, char *v
 			js_str=JS_NewStringCopyN(session->js_cx, value, len);
 		else
 			js_str=JS_NewStringCopyZ(session->js_cx, value);
-	
+
 		if(js_str == NULL)
 			return;
 
@@ -7328,7 +7328,7 @@ void web_server(void* arg)
 				lprintf(LOG_NOTICE, "%04d New active client highwater mark: %lu"
 					,client_socket, client_highwater);
 			}
-			if(startup->max_clients && protected_uint32_value(active_clients)>=startup->max_clients) {
+			if(startup->max_clients && count>=startup->max_clients) {
 				lprintf(LOG_WARNING,"%04d [%s] !MAXIMUM CLIENTS (%d) reached, access denied"
 					,client_socket, host_ip, startup->max_clients);
 				if (!len_503)
