@@ -121,7 +121,7 @@ static void global_cfg(void)
 				break;
 			case 2:
 				strListCombine(startup.interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Inbound Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Inbound Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.interfaces);
 					strListSplitCopy(&startup.interfaces, str, ", ");
 					uifc.changes = true;
@@ -344,7 +344,7 @@ static void termsrvr_cfg(void)
 				break;
 			case 6:
 				strListCombine(startup.ssh_interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.ssh_interfaces);
 					strListSplitCopy(&startup.ssh_interfaces, str, ", ");
 					uifc.changes = true;
@@ -365,7 +365,7 @@ static void termsrvr_cfg(void)
 				break;
 			case 10:
 				strListCombine(startup.telnet_interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Telnet Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Telnet Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.telnet_interfaces);
 					strListSplitCopy(&startup.telnet_interfaces, str, ", ");
 					uifc.changes = true;
@@ -387,7 +387,7 @@ static void termsrvr_cfg(void)
 				break;
 			case 15:
 				strListCombine(startup.rlogin_interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "RLogin Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "RLogin Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.rlogin_interfaces);
 					strListSplitCopy(&startup.rlogin_interfaces, str, ", ");
 					uifc.changes = true;
@@ -570,7 +570,7 @@ static void websrvr_cfg(void)
 				break;
 			case 2:
 				strListCombine(startup.interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.interfaces);
 					strListSplitCopy(&startup.interfaces, str, ", ");
 					uifc.changes = true;
@@ -578,7 +578,7 @@ static void websrvr_cfg(void)
 				break;
 			case 3:
 				SAFEPRINTF(str, "%u", startup.port);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.port = atoi(str);
 				break;
 			case 4:
@@ -586,7 +586,7 @@ static void websrvr_cfg(void)
 				break;
 			case 5:
 				strListCombine(startup.tls_interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP/TLS Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP/TLS (HTTPS) Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.tls_interfaces);
 					strListSplitCopy(&startup.tls_interfaces, str, ", ");
 					uifc.changes = true;
@@ -801,7 +801,7 @@ static void ftpsrvr_cfg(void)
 				break;
 			case 2:
 				strListCombine(startup.interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Network Interfaces", str, sizeof(str)-1, K_EDIT) >= 0) {
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.interfaces);
 					strListSplitCopy(&startup.interfaces, str, ", ");
 					uifc.changes = true;
@@ -922,6 +922,7 @@ static void mailsrvr_cfg(void)
 {
 	static int cur, bar;
 	char tmp[256];
+	char str[256];
 	const char* p;
 	BOOL enabled = FALSE;
 	mail_startup_t startup = {0};
@@ -983,7 +984,7 @@ static void mailsrvr_cfg(void)
 			p = "Silently Ignore";
 		else if(startup.options & MAIL_OPT_DNSBL_BADUSER)
 			p = "Refuse Mail";
-		else if(startup.options)
+		else
 			p = "Tag Mail";
 		sprintf(opt[i++], "%-30s%s%s", "Blacklisted Servers", startup.options & MAIL_OPT_DNSBL_THROTTLE ? "Throttle and " : "", p);
 		sprintf(opt[i++], "%-30s%s", "Hash Blacklisted Messages", startup.options & MAIL_OPT_DNSBL_SPAMHASH ? "Yes" : "No");
@@ -1023,6 +1024,217 @@ static void mailsrvr_cfg(void)
 			case 0:
 				enabled = !enabled;
 				uifc.changes = true;
+				break;
+			case 1:
+				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup.log_level, 0, "Log Level", iniLogLevelStringList());
+				break;
+			case 2:
+				strListCombine(startup.interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SMTP Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup.interfaces);
+					strListSplitCopy(&startup.interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 3:
+				SAFEPRINTF(str, "%u", startup.smtp_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SMTP TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.smtp_port = atoi(str);
+				break;
+			case 4:
+				startup.options ^= MAIL_OPT_USE_SUBMISSION_PORT;
+				break;
+			case 5:
+				SAFEPRINTF(str, "%u", startup.submission_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SMTP-Submission TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.submission_port = atoi(str);
+				break;
+			case 6:
+				startup.options ^= MAIL_OPT_TLS_SUBMISSION;
+				break;
+			case 7:
+				SAFEPRINTF(str, "%u", startup.submissions_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SMTP-Submission/TLS TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.submissions_port = atoi(str);
+				break;
+			case 8:
+				startup.options ^= MAIL_OPT_ALLOW_POP3;
+				break;
+			case 9:
+				strListCombine(startup.pop3_interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "POP3 Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup.pop3_interfaces);
+					strListSplitCopy(&startup.pop3_interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 10:
+				SAFEPRINTF(str, "%u", startup.pop3_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "POP3 TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.pop3_port = atoi(str);
+				break;
+			case 11:
+				startup.options ^= MAIL_OPT_TLS_POP3;
+				break;
+			case 12:
+				SAFEPRINTF(str, "%u", startup.pop3s_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "POP3/TLS TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.pop3s_port = atoi(str);
+				break;
+			case 13:
+				SAFECOPY(str, maximum(startup.max_clients));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Count (0=unlimited)", str, 10, K_EDIT) > 0)
+					startup.max_clients = atoi(str);
+				break;
+			case 14:
+				SAFECOPY(str, duration(startup.max_inactivity, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
+					startup.max_inactivity = parse_duration(str);
+				break;
+			case 15:
+				SAFECOPY(str, maximum(startup.max_concurrent_connections));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
+					startup.max_concurrent_connections = atoi(str);
+				break;
+			case 16:
+				SAFECOPY(str, maximum(startup.max_recipients));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Recipients per Message", str, 10, K_EDIT) > 0)
+					startup.max_recipients = atoi(str);
+				break;
+			case 17:
+				SAFECOPY(str, maximum(startup.max_msgs_waiting));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Messages Waiting per User", str, 10, K_EDIT) > 0)
+					startup.max_msgs_waiting = atoi(str);
+				break;
+			case 18:
+				byte_count_to_str(startup.max_msg_size, str, sizeof(str));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Received Message Size (in bytes)", str, 10, K_EDIT) > 0)
+					startup.max_msg_size = parse_byte_count(str, 1);
+				break;
+			case 19:
+				startup.options ^= MAIL_OPT_ALLOW_RELAY;
+				break;
+			case 20:
+				startup.options ^= MAIL_OPT_ALLOW_SYSOP_ALIASES;
+				break;
+			case 21:
+				startup.options ^= MAIL_OPT_NO_NOTIFY;
+				break;
+			case 22:
+				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
+				break;
+			case 23:
+				startup.options ^= MAIL_OPT_DNSBL_CHKRECVHDRS;
+				break;
+			case 24:
+				i = 0;
+				strcpy(opt[i++], "Refuse Session");
+				strcpy(opt[i++], "Silently Ignore");
+				strcpy(opt[i++], "Refuse Mail");
+				strcpy(opt[i++], "Tag Mail");
+				opt[i][0] = '\0';
+				if(startup.options & MAIL_OPT_DNSBL_REFUSE)
+					i = 0;
+				else if(startup.options & MAIL_OPT_DNSBL_IGNORE)
+					i = 1;
+				else if(startup.options & MAIL_OPT_DNSBL_BADUSER)
+					i = 2;
+				else
+					i = 3;
+				if(uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "DNS-Blacklisted Servers", opt) < 0)
+					break;
+				startup.options &= ~(MAIL_OPT_DNSBL_REFUSE | MAIL_OPT_DNSBL_IGNORE | MAIL_OPT_DNSBL_BADUSER);
+				switch(i) {
+					case 0:
+						startup.options |= MAIL_OPT_DNSBL_REFUSE;
+						break;
+					case 1:
+						startup.options |= MAIL_OPT_DNSBL_IGNORE;
+						break;
+					case 2:
+						startup.options |= MAIL_OPT_DNSBL_BADUSER;
+				}
+				i = startup.options & MAIL_OPT_DNSBL_THROTTLE ? 0 : 1;
+				if(uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Throttle DNS-Blacklisted Servers", uifcYesNoOpts) < 0)
+					break;
+				if(i == 0)
+					startup.options |= MAIL_OPT_DNSBL_THROTTLE;
+				else
+					startup.options &= ~MAIL_OPT_DNSBL_THROTTLE;
+				break;
+			case 25:
+				startup.options ^= MAIL_OPT_DNSBL_SPAMHASH;
+				break;
+			case 26:
+				startup.options ^= MAIL_OPT_NO_AUTO_EXEMPT;
+				break;
+			case 27:
+				startup.options ^= MAIL_OPT_KILL_READ_SPAM;
+				break;
+			case 28:
+				startup.options ^= MAIL_OPT_NO_SENDMAIL;
+				break;
+			case 29:
+				startup.options ^= MAIL_OPT_RELAY_TX;
+				break;
+			case 30:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server Address", startup.relay_server, sizeof(startup.relay_server)-1, K_EDIT);
+				break;
+			case 31:
+				SAFEPRINTF(str, "%u", startup.relay_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.relay_port = atoi(str);
+				break;
+			case 32:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server Username", startup.relay_user, sizeof(startup.relay_user)-1, K_EDIT);
+				break;
+			case 33:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server Password", startup.relay_pass, sizeof(startup.relay_pass)-1, K_EDIT);
+				break;
+			case 34:
+				i = 0;
+				strcpy(opt[i++], "Plain");
+				strcpy(opt[i++], "Login");
+				strcpy(opt[i++], "CRAM-MD5");
+				strcpy(opt[i++], "None");
+				opt[i][0] = '\0';
+				if(startup.options & MAIL_OPT_RELAY_AUTH_PLAIN)
+					i = 0;
+				else if(startup.options & MAIL_OPT_RELAY_AUTH_LOGIN)
+					i = 1;
+				else if(startup.options & MAIL_OPT_RELAY_AUTH_CRAM_MD5)
+					i = 2;
+				else
+					i = 3;
+				if(uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Relay Server Authentication Method", opt) < 0)
+					break;
+				startup.options &= ~(MAIL_OPT_RELAY_AUTH_PLAIN | MAIL_OPT_RELAY_AUTH_LOGIN | MAIL_OPT_RELAY_AUTH_CRAM_MD5);
+				switch(i) {
+					case 0:
+						startup.options |= MAIL_OPT_RELAY_AUTH_PLAIN;
+						break;
+					case 1:
+						startup.options |= MAIL_OPT_RELAY_AUTH_LOGIN;
+						break;
+					case 2:
+						startup.options |= MAIL_OPT_RELAY_AUTH_CRAM_MD5;
+						break;
+				}
+				break;
+			case 35:
+				SAFEPRINTF(str, "%u", startup.max_delivery_attempts);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Number of SendMail Delivery Attempts", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup.max_delivery_attempts = atoi(str);
+				break;
+			case 36:
+				SAFECOPY(str, duration(startup.rescan_frequency, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "MailBase Re-scan Interval", str, 5, K_EDIT) > 0)
+					startup.rescan_frequency = parse_duration(str);
+				break;
+			case 37:
+				SAFECOPY(str, duration(startup.connect_timeout, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SendMail Connect Timeout", str, 5, K_EDIT) > 0)
+					startup.connect_timeout = parse_duration(str);
 				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -1070,6 +1282,7 @@ static void services_cfg(void)
 {
 	static int cur, bar;
 	char tmp[256];
+	char str[256];
 	BOOL enabled = FALSE;
 	services_startup_t startup = {0};
 
@@ -1116,6 +1329,23 @@ static void services_cfg(void)
 			case 0:
 				enabled = !enabled;
 				uifc.changes = true;
+				break;
+			case 1:
+				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup.log_level, 0, "Log Level", iniLogLevelStringList());
+				break;
+			case 2:
+				strListCombine(startup.interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup.interfaces);
+					strListSplitCopy(&startup.interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 3:
+				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
+				break;
+			case 4:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Services Configuration File", startup.services_ini, sizeof(startup.services_ini)-1, K_EDIT);
 				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
