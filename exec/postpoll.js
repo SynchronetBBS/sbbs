@@ -50,12 +50,16 @@ if(!(poll.subject = prompt("Poll question")))
 
 var comment;
 while(comment = prompt("Comment [done]")) poll.field_list.push({ type: SMB_COMMENT, data: comment});
+if(js.global.console && console.aborted)
+	exit(1);
 
 var count=0;
 var answer;
 while(count < MSG_POLL_MAX_ANSWERS && (answer = prompt("Answer "+ (++count) + " [done]")))
 	poll.field_list.push({ type: SMB_POLL_ANSWER, data: answer});
 
+if(js.global.console && console.aborted)
+	exit(1);
 print();
 print("Results Visibility:");
 print("0 = voters only (and pollster)");
@@ -63,6 +67,9 @@ print("1 = everyone always");
 print("2 = everyone once poll is closed (and pollster)");
 print("3 = pollster only");
 var results = parseInt(prompt("Results"));
+if(js.global.console && console.aborted)
+	exit(1);
+
 poll.auxattr = results << 30;
 if(js.global.bbs) {
 	poll.from = user.alias;
