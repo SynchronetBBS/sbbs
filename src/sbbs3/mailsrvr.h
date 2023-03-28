@@ -28,33 +28,33 @@
 typedef struct {
 
 	STARTUP_COMMON_ELEMENTS
-	WORD	smtp_port;
-	WORD	pop3_port;
-	WORD	pop3s_port;
-	WORD	submission_port;
-	WORD	submissions_port;
-	WORD	max_clients;
+	uint16_t	smtp_port;
+	uint16_t	pop3_port;
+	uint16_t	pop3s_port;
+	uint16_t	submission_port;
+	uint16_t	submissions_port;
+	uint16_t	max_clients;
 #define MAIL_DEFAULT_MAX_CLIENTS			10
-	WORD	max_inactivity;
+	uint16_t	max_inactivity;
 #define MAIL_DEFAULT_MAX_INACTIVITY			120
-	WORD	max_delivery_attempts;
+	uint16_t	max_delivery_attempts;
 #define MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS	50
-	WORD	rescan_frequency;	/* In seconds */
+	uint16_t	rescan_frequency;	/* In seconds */
 #define MAIL_DEFAULT_RESCAN_FREQUENCY		3600
-	WORD	relay_port;
-	WORD	lines_per_yield;	/* 0=none */
+	uint16_t	relay_port;
+	uint16_t	lines_per_yield;	/* 0=none */
 #define MAIL_DEFAULT_LINES_PER_YIELD		10
-	WORD	max_recipients;
+	uint16_t	max_recipients;
 #define MAIL_DEFAULT_MAX_RECIPIENTS			100
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
-    str_list_t   interfaces;
-    str_list_t   pop3_interfaces;
-    DWORD	max_msg_size;		/* Max msg size in bytes (0=unlimited) */
+    str_list_t	interfaces;
+    str_list_t	pop3_interfaces;
+	uint32_t	max_msg_size;		/* Max msg size in bytes (0=unlimited) */
 #define MAIL_DEFAULT_MAX_MSG_SIZE			(20*1024*1024)	/* 20MB */
-	DWORD	max_msgs_waiting;	/* Max msgs in user's inbox (0=unlimited) */
+	uint32_t	max_msgs_waiting;	/* Max msgs in user's inbox (0=unlimited) */
 #define MAIL_DEFAULT_MAX_MSGS_WAITING		100
-	DWORD	connect_timeout;	/* in seconds, for non-blocking connect (0=blocking socket) */
+	uint32_t	connect_timeout;	/* in seconds, for non-blocking connect (0=blocking socket) */
 #define MAIL_DEFAULT_CONNECT_TIMEOUT		30		/* seconds */
 
 	/* Strings */

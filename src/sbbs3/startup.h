@@ -66,8 +66,8 @@ typedef struct {
 	char	ctrl_dir[INI_MAX_VALUE_LEN];
 	char	temp_dir[INI_MAX_VALUE_LEN];
 	char	host_name[INI_MAX_VALUE_LEN];
-	ushort	sem_chk_freq;
-	struct in_addr		outgoing4;
+	uint16_t sem_chk_freq;
+	struct in_addr	outgoing4;
 	struct in6_addr	outgoing6;
 	str_list_t		interfaces;
 	int		log_level;
@@ -119,16 +119,16 @@ struct startup {
 typedef struct {
 
 	STARTUP_COMMON_ELEMENTS
-    WORD	first_node;
-    WORD	last_node;
-	WORD	telnet_port;
-	WORD	rlogin_port;
-	WORD	pet40_port;			// 40-column PETSCII terminal server
-	WORD	pet80_port;			// 80-column PETSCII terminal server
-	WORD	ssh_port;
-	WORD	ssh_connect_timeout;
-	WORD	outbuf_highwater_mark;	/* output block size control */
-	WORD	outbuf_drain_timeout;
+	uint16_t	first_node;
+	uint16_t	last_node;
+	uint16_t	telnet_port;
+	uint16_t	rlogin_port;
+	uint16_t	pet40_port;			// 40-column PETSCII terminal server
+	uint16_t	pet80_port;			// 80-column PETSCII terminal server
+	uint16_t	ssh_port;
+	uint16_t	ssh_connect_timeout;
+	uint16_t	outbuf_highwater_mark;	/* output block size control */
+	uint16_t	outbuf_drain_timeout;
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
     str_list_t	telnet_interfaces;
