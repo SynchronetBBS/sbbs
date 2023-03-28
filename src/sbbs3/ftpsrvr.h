@@ -27,20 +27,20 @@
 typedef struct {
 
 	STARTUP_COMMON_ELEMENTS
-	WORD	port;
-	WORD	max_clients;
+	uint16_t	port;
+	uint16_t	max_clients;
 #define FTP_DEFAULT_MAX_CLIENTS		10
-	WORD	max_inactivity;
+	uint16_t	max_inactivity;
 #define FTP_DEFAULT_MAX_INACTIVITY	300
-	WORD	qwk_timeout;
+	uint16_t	qwk_timeout;
 #define FTP_DEFAULT_QWK_TIMEOUT		600
 	struct in_addr outgoing4;
 	struct in6_addr	outgoing6;
     str_list_t	interfaces;
 	struct in_addr pasv_ip_addr;
 	struct in6_addr	pasv_ip6_addr;
-	WORD	pasv_port_low;
-	WORD	pasv_port_high;
+	uint16_t	pasv_port_low;
+	uint16_t	pasv_port_high;
 	int64_t	min_fsize;			/* Minimum file size accepted for upload */
 	int64_t	max_fsize;			/* Maximum file size accepted for upload (0=unlimited) */
 	uint	max_concurrent_connections;
