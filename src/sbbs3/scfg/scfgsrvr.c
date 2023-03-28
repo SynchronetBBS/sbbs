@@ -21,6 +21,7 @@
 #include "sbbs_ini.h"
 #include "netwrap.h"
 
+const char* strReadingIniFile = "Reading sbbs.ini ...";
 const char* strDisabled = "<disabled>";
 
 static const char* threshold(uint val)
@@ -54,6 +55,120 @@ static const char* maximum(uint val)
 	return str;
 }
 
+static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
+{
+	static int cur, bar;
+	char str[256];
+	BOOL changes = uifc.changes;
+
+	while(1) {
+		int i = 0;
+		sprintf(opt[i++], "%-30s%u ms", "Delay", login_attempt->delay);
+		sprintf(opt[i++], "%-30s%u ms", "Throttle", login_attempt->throttle);
+		sprintf(opt[i++], "%-30s%s", "Hack Log Threshold", threshold(login_attempt->hack_threshold));
+		sprintf(opt[i++], "%-30s%s", "Temporary Ban Threshold", threshold(login_attempt->tempban_threshold));
+		sprintf(opt[i++], "%-30s%s", "Temporary Ban Duration"
+			,duration_to_vstr(login_attempt->tempban_duration, tmp, sizeof(tmp)));
+		sprintf(opt[i++], "%-30s%s", "Auto-filter Threshold", threshold(login_attempt->filter_threshold));
+		opt[i][0] = '\0';
+
+		uifc.helpbuf=
+			"`Failed Login Attempt Settings:`\n"
+			"\n"
+			"Settings that control the throttling, logging, and subsequent filtering\n"
+			"of clients (based on IP address) that have failed login attempts.\n"
+		;
+		switch(uifc.list(WIN_ACT|WIN_BOT|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"Failed Login Attempts",opt)) {
+			case 0:
+				SAFEPRINTF(str, "%u", login_attempt->delay);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Millisecond Delay After Each Failed Login Attempt", str, 6, K_NUMBER|K_EDIT) > 0)
+					login_attempt->delay = atoi(str);
+				break;
+			case 1:
+				SAFEPRINTF(str, "%u", login_attempt->throttle);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Throttle multiplier (in milliseconds) for Failed Logins", str, 6, K_NUMBER|K_EDIT) > 0)
+					login_attempt->throttle = atoi(str);
+				break;
+			case 2:
+				SAFEPRINTF(str, "%u", login_attempt->hack_threshold);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Logging Failed Logins to hack.log", str, 4, K_NUMBER|K_EDIT) > 0)
+					login_attempt->hack_threshold = atoi(str);
+				break;
+			case 3:
+				SAFEPRINTF(str, "%u", login_attempt->tempban_threshold);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Temp-ban IPs of Failed Logins", str, 4, K_NUMBER|K_EDIT) > 0)
+					login_attempt->tempban_threshold = atoi(str);
+				break;
+			case 4:
+				SAFECOPY(str, duration(login_attempt->tempban_duration, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Duration of Temp-ban for Failed Logins", str, 6, K_EDIT) > 0)
+					login_attempt->tempban_duration = (uint)parse_duration(str);
+				break;
+			case 5:
+				SAFEPRINTF(str, "%u", login_attempt->filter_threshold);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Filtering IPs of Failed Logins", str, 3, K_NUMBER|K_EDIT) > 0)
+					login_attempt->filter_threshold = atoi(str);
+				break;
+			default:
+				uifc.changes = changes;
+				return;
+		}
+	}
+}
+
+static void js_startup_cfg(js_startup_t* js)
+{
+	static int cur, bar;
+	char str[256];
+	BOOL changes = uifc.changes;
+
+	while(1) {
+		int i = 0;
+		sprintf(opt[i++], "%-20s%s bytes", "Heap Size", byte_count_to_str(js->max_bytes, str, sizeof(str)));
+		sprintf(opt[i++], "%-20s%u ticks", "Time Limit", js->time_limit);
+		sprintf(opt[i++], "%-20s%u ticks", "GC Interval ", js->gc_interval);
+		sprintf(opt[i++], "%-20s%u ticks", "Yield Interval", js->yield_interval);
+		sprintf(opt[i++], "%-20s%s", "Load Path", js->load_path);
+		opt[i][0] = '\0';
+
+		uifc.helpbuf=
+			"`JavaScript Server Settings:`\n"
+			"\n"
+			"Settings that control the server-side JavaScript execution environment.\n"
+		;
+		switch(uifc.list(WIN_ACT|WIN_BOT|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"JavaScript Settings",opt)) {
+			case 0:
+				byte_count_to_str(js->max_bytes, str, sizeof(str));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Heap Size (Maximum Allocated Bytes)", str, 6, K_UPPER|K_EDIT) > 0)
+					js->max_bytes = (uint)parse_byte_count(str, 1);
+				break;
+			case 1:
+				SAFEPRINTF(str, "%u", js->time_limit);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Execution Time Limit (in ticks)", str, 6, K_NUMBER|K_EDIT) > 0)
+					js->time_limit = atoi(str);
+				break;
+			case 2:
+				SAFEPRINTF(str, "%u", js->gc_interval);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Garbage Collection Interval (in ticks)", str, 6, K_NUMBER|K_EDIT) > 0)
+					js->gc_interval = atoi(str);
+				break;
+			case 3:
+				SAFEPRINTF(str, "%u", js->yield_interval);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Yield Interval (in ticks)", str, 6, K_NUMBER|K_EDIT) > 0)
+					js->yield_interval = atoi(str);
+				break;
+			case 4:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Load Library Path", js->load_path, sizeof(js->load_path) - 1, K_EDIT);
+				break;
+			default:
+				uifc.changes = changes;
+				return;
+		}
+	}
+}
+
 static void global_cfg(void)
 {
 	static int cur, bar;
@@ -66,6 +181,7 @@ static void global_cfg(void)
 		uifc.msgf("Error opening %s", cfg.filename);
 		return;
 	}
+	uifc.pop(strReadingIniFile);
 	sbbs_read_ini(
 		 fp
 		,cfg.filename
@@ -82,6 +198,7 @@ static void global_cfg(void)
 		,NULL //&services_startup
 		);
 	iniCloseFile(fp);
+	uifc.pop(NULL);
 	global_startup_t saved_startup = startup;
 
 	while(1) {
@@ -92,27 +209,21 @@ static void global_cfg(void)
 		sprintf(opt[i++], "%-40s%s", "Outbound Interface (IPv4)", IPv4AddressToStr(startup.outgoing4.s_addr, tmp, sizeof(tmp)));
 		sprintf(opt[i++], "%-40s%s", "Bind Retry Count", threshold(startup.bind_retry_count));
 		sprintf(opt[i++], "%-40s%s", "Bind Retry Delay", vduration(startup.bind_retry_delay));
-		sprintf(opt[i++], "%-40s%u ms", "Failed Login Delay", startup.login_attempt.delay);
-		sprintf(opt[i++], "%-40s%u ms", "Failed Login Throttle", startup.login_attempt.throttle);
-		sprintf(opt[i++], "%-40s%s", "Failed Login Hack Log Threshold", threshold(startup.login_attempt.hack_threshold));
-		sprintf(opt[i++], "%-40s%s", "Failed Login Temporary Ban Threshold", threshold(startup.login_attempt.tempban_threshold));
-		sprintf(opt[i++], "%-40s%s", "Failed Login Temporary Ban Duration"
-			,duration_to_vstr(startup.login_attempt.tempban_duration, tmp, sizeof(tmp)));
-		sprintf(opt[i++], "%-40s%s", "Failed Login Auto-Filter Threshold", threshold(startup.login_attempt.filter_threshold));
-		sprintf(opt[i++], "%-40s%s bytes", "JavaScript Heap Size", byte_count_to_str(startup.js.max_bytes, tmp, sizeof(tmp)));
-		sprintf(opt[i++], "%-40s%u ticks", "JavaScript Time Limit", startup.js.time_limit);
-		sprintf(opt[i++], "%-40s%u ticks", "JavaScript GC Interval ", startup.js.gc_interval);
-		sprintf(opt[i++], "%-40s%u ticks", "JavaScript Yield Interval", startup.js.yield_interval);
-		sprintf(opt[i++], "%-40s%s", "JavaScript Load Path", startup.js.load_path);
 		sprintf(opt[i++], "%-40s%s", "Semaphore File Check Interval", vduration(startup.sem_chk_freq));
+		strcpy(opt[i++], "JavaScript Settings...");
+		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
 			"`Global Server Settings:`\n"
 			"\n"
+			"Settings that are shared among multiple Synchronet servers.\n"
+			"\n"
+			"These settings can be over-ridden on a per-server basis by editing the\n"
+			"corresponding keys in each `[server]` section of the `ctrl/sbbs.ini` file.\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_RHT|WIN_SAV|WIN_ESC, 0, 0, 0, &cur, &bar
-			,"Global Server Setttings",opt)) {
+			,"Global Server Settings",opt)) {
 			case 0:
 				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup.log_level, 0, "Log Level", iniLogLevelStringList());
 				break;
@@ -143,62 +254,15 @@ static void global_cfg(void)
 					startup.bind_retry_delay = (uint)parse_duration(str);
 				break;
 			case 6:
-				SAFEPRINTF(str, "%u", startup.login_attempt.delay);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Millisecond Delay After Failed Login Attempts", str, 6, K_NUMBER|K_EDIT) > 0)
-					startup.login_attempt.delay = atoi(str);
-				break;
-			case 7:
-				SAFEPRINTF(str, "%u", startup.login_attempt.throttle);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Throttle multiplier (in milliseconds) for Failed Logins", str, 6, K_NUMBER|K_EDIT) > 0)
-					startup.login_attempt.throttle = atoi(str);
-				break;
-			case 8:
-				SAFEPRINTF(str, "%u", startup.login_attempt.hack_threshold);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Logging Failed Logins to hack.log", str, 3, K_NUMBER|K_EDIT) > 0)
-					startup.login_attempt.hack_threshold = atoi(str);
-				break;
-			case 9:
-				SAFEPRINTF(str, "%u", startup.login_attempt.tempban_threshold);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Temp-ban IPs of Failed Logins", str, 3, K_NUMBER|K_EDIT) > 0)
-					startup.login_attempt.tempban_threshold = atoi(str);
-				break;
-			case 10:
-				SAFECOPY(str, duration(startup.login_attempt.tempban_duration, false));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Duration of Temp-ban for Failed Logins", str, 6, K_EDIT) > 0)
-					startup.login_attempt.tempban_duration = (uint)parse_duration(str);
-				break;
-			case 11:
-				SAFEPRINTF(str, "%u", startup.login_attempt.filter_threshold);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Filtering IPs of Failed Logins", str, 3, K_NUMBER|K_EDIT) > 0)
-					startup.login_attempt.filter_threshold = atoi(str);
-				break;
-			case 12:
-				byte_count_to_str(startup.js.max_bytes, str, sizeof(str));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Heap Size (Maximum Allocated Bytes)", str, 6, K_UPPER|K_EDIT) > 0)
-					startup.js.max_bytes = (uint)parse_byte_count(str, 1);
-				break;
-			case 13:
-				SAFEPRINTF(str, "%u", startup.js.time_limit);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Execution Time Limit (in ticks)", str, 6, K_NUMBER|K_EDIT) > 0)
-					startup.js.time_limit = atoi(str);
-				break;
-			case 14:
-				SAFEPRINTF(str, "%u", startup.js.gc_interval);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Garbage Collection Interval (in ticks)", str, 6, K_NUMBER|K_EDIT) > 0)
-					startup.js.gc_interval = atoi(str);
-				break;
-			case 15:
-				SAFEPRINTF(str, "%u", startup.js.yield_interval);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Yield Interval (in ticks)", str, 6, K_NUMBER|K_EDIT) > 0)
-					startup.js.yield_interval = atoi(str);
-				break;
-			case 16:
-				uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Load Library Path", startup.js.load_path, sizeof(startup.js.load_path) - 1, K_EDIT);
-				break;
-			case 17:
 				SAFECOPY(str, duration(startup.sem_chk_freq, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Semaphore File Check Interval", str, 6, K_EDIT) > 0)
 					startup.sem_chk_freq = (uint16_t)parse_duration(str);
+				break;
+			case 7:
+				js_startup_cfg(&startup.js);
+				break;
+			case 8:
+				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -255,6 +319,7 @@ static void termsrvr_cfg(void)
 		uifc.msgf("Error opening %s", cfg.filename);
 		return;
 	}
+	uifc.pop(strReadingIniFile);
 	sbbs_read_ini(
 		 fp
 		,cfg.filename
@@ -271,6 +336,7 @@ static void termsrvr_cfg(void)
 		,NULL //&services_startup
 		);
 	iniCloseFile(fp);
+	uifc.pop(NULL);
 	bbs_startup_t saved_startup = startup;
 
 	while(1) {
@@ -316,6 +382,9 @@ static void termsrvr_cfg(void)
 		uifc.helpbuf=
 			"`Terminal Server Configuration:`\n"
 			"\n"
+			"The initialization settings of the Synchchronet server that provides the\n"
+			"traditional BBS experience over `Telnet`, `SSH`, `RLogin`, or `Raw TCP`\n"
+			"protocols.\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"Terminal Server",opt)) {
@@ -497,6 +566,7 @@ static void websrvr_cfg(void)
 		uifc.msgf("Error opening %s", cfg.filename);
 		return;
 	}
+	uifc.pop(strReadingIniFile);
 	sbbs_read_ini(
 		 fp
 		,cfg.filename
@@ -513,6 +583,7 @@ static void websrvr_cfg(void)
 		,NULL //&services_startup
 		);
 	iniCloseFile(fp);
+	uifc.pop(NULL);
 	web_startup_t saved_startup = startup;
 
 	while(1) {
@@ -746,6 +817,7 @@ static void ftpsrvr_cfg(void)
 		uifc.msgf("Error opening %s", cfg.filename);
 		return;
 	}
+	uifc.pop(strReadingIniFile);
 	sbbs_read_ini(
 		 fp
 		,cfg.filename
@@ -762,6 +834,7 @@ static void ftpsrvr_cfg(void)
 		,NULL //&services_startup
 		);
 	iniCloseFile(fp);
+	uifc.pop(NULL);
 	ftp_startup_t saved_startup = startup;
 
 	while(1) {
@@ -918,6 +991,118 @@ static void ftpsrvr_cfg(void)
 	}
 }
 
+static void sendmail_cfg(mail_startup_t* startup)
+{
+	const char* p;
+	char str[256];
+	static int cur, bar;
+
+	while(1) {
+		int i = 0;
+		sprintf(opt[i++], "%-30s%s", "Enabled", startup->options & MAIL_OPT_NO_SENDMAIL ? "No" : "Yes");
+		sprintf(opt[i++], "%-30s%s", "Rescan Interval", vduration(startup->rescan_frequency));
+		sprintf(opt[i++], "%-30s%s", "Connect Timeout", vduration(startup->connect_timeout));
+		sprintf(opt[i++], "%-30s%u", "Max Delivery Attempts", startup->max_delivery_attempts);
+		bool applicable = startup->options & MAIL_OPT_RELAY_TX;
+		sprintf(opt[i++], "%-30s%s", "Delivery Method", applicable ? "Relay" : "Direct");
+		if(applicable) {
+			sprintf(opt[i++], "%-30s%s", "Relay Server Address", startup->relay_server);
+			sprintf(opt[i++], "%-30s%u", "Relay Server TCP Port", startup->relay_port);
+			if(startup->options & MAIL_OPT_RELAY_AUTH_PLAIN)
+				p = "Plain";
+			else if(startup->options & MAIL_OPT_RELAY_AUTH_LOGIN)
+				p = "Login";
+			else if(startup->options & MAIL_OPT_RELAY_AUTH_CRAM_MD5)
+				p = "CRAM-MD5";
+			else
+				p = "None";
+			sprintf(opt[i++], "%-30s%s", "Relay Server Authentication", p);
+			if(startup->options & (MAIL_OPT_RELAY_AUTH_PLAIN | MAIL_OPT_RELAY_AUTH_LOGIN | MAIL_OPT_RELAY_AUTH_CRAM_MD5)) {
+				sprintf(opt[i++], "%-30s%s", "Relay Server Username", startup->relay_user);
+				sprintf(opt[i++], "%-30s%s", "Relay Server Password", startup->relay_pass);
+			}
+		}
+		if(startup->options & MAIL_OPT_NO_SENDMAIL)
+			i = 1;
+		opt[i][0] = '\0';
+
+		uifc.helpbuf=
+			"`Mail Server SendMail Thread Configuration:`\n"
+			"\n"
+		;
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_BOT|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"SendMail",opt)) {
+			case 0:
+				startup->options ^= MAIL_OPT_NO_SENDMAIL;
+				break;
+			case 1:
+				SAFECOPY(str, duration(startup->rescan_frequency, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "MailBase Re-scan Interval", str, 5, K_EDIT) > 0)
+					startup->rescan_frequency = (uint16_t)parse_duration(str);
+				break;
+			case 2:
+				SAFECOPY(str, duration(startup->connect_timeout, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SendMail Connect Timeout", str, 5, K_EDIT) > 0)
+					startup->connect_timeout = (uint32_t)parse_duration(str);
+				break;
+			case 3:
+				SAFEPRINTF(str, "%u", startup->max_delivery_attempts);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Number of SendMail Delivery Attempts", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup->max_delivery_attempts = atoi(str);
+				break;
+			case 4:
+				startup->options ^= MAIL_OPT_RELAY_TX;
+				break;
+			case 5:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server Address", startup->relay_server, sizeof(startup->relay_server)-1, K_EDIT);
+				break;
+			case 6:
+				SAFEPRINTF(str, "%u", startup->relay_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup->relay_port = atoi(str);
+				break;
+			case 7:
+				i = 0;
+				strcpy(opt[i++], "Plain");
+				strcpy(opt[i++], "Login");
+				strcpy(opt[i++], "CRAM-MD5");
+				strcpy(opt[i++], "None");
+				opt[i][0] = '\0';
+				if(startup->options & MAIL_OPT_RELAY_AUTH_PLAIN)
+					i = 0;
+				else if(startup->options & MAIL_OPT_RELAY_AUTH_LOGIN)
+					i = 1;
+				else if(startup->options & MAIL_OPT_RELAY_AUTH_CRAM_MD5)
+					i = 2;
+				else
+					i = 3;
+				if(uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Relay Server Authentication Method", opt) < 0)
+					break;
+				startup->options &= ~(MAIL_OPT_RELAY_AUTH_PLAIN | MAIL_OPT_RELAY_AUTH_LOGIN | MAIL_OPT_RELAY_AUTH_CRAM_MD5);
+				switch(i) {
+					case 0:
+						startup->options |= MAIL_OPT_RELAY_AUTH_PLAIN;
+						break;
+					case 1:
+						startup->options |= MAIL_OPT_RELAY_AUTH_LOGIN;
+						break;
+					case 2:
+						startup->options |= MAIL_OPT_RELAY_AUTH_CRAM_MD5;
+						break;
+				}
+				break;
+			case 8:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server Username", startup->relay_user, sizeof(startup->relay_user)-1, K_EDIT);
+				break;
+			case 9:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server Password", startup->relay_pass, sizeof(startup->relay_pass)-1, K_EDIT);
+				break;
+			default:
+				return;
+		}
+	}
+}
+
 static void mailsrvr_cfg(void)
 {
 	static int cur, bar;
@@ -932,6 +1117,7 @@ static void mailsrvr_cfg(void)
 		uifc.msgf("Error opening %s", cfg.filename);
 		return;
 	}
+	uifc.pop(strReadingIniFile);
 	sbbs_read_ini(
 		 fp
 		,cfg.filename
@@ -948,6 +1134,7 @@ static void mailsrvr_cfg(void)
 		,NULL //&services_startup
 		);
 	iniCloseFile(fp);
+	uifc.pop(NULL);
 	mail_startup_t saved_startup = startup;
 
 	while(1) {
@@ -990,27 +1177,7 @@ static void mailsrvr_cfg(void)
 		sprintf(opt[i++], "%-30s%s", "Hash Blacklisted Messages", startup.options & MAIL_OPT_DNSBL_SPAMHASH ? "Yes" : "No");
 		sprintf(opt[i++], "%-30s%s", "Auto-exempt Recipients", startup.options & MAIL_OPT_NO_AUTO_EXEMPT ? "No" : "Yes");
 		sprintf(opt[i++], "%-30s%s", "Kill SPAM When Read", startup.options & MAIL_OPT_KILL_READ_SPAM ? "Yes": "No");
-		sprintf(opt[i++], "%-30s%s", "SendMail Support", startup.options & MAIL_OPT_NO_SENDMAIL ? "No" : "Yes");
-		if(!(startup.options & MAIL_OPT_NO_SENDMAIL)) {
-			bool applicable = startup.options & MAIL_OPT_RELAY_TX;
-			sprintf(opt[i++], "%-30s%s", "SendMail Delivery", applicable ? "Relay" : "Direct");
-			sprintf(opt[i++], "%-30s%s", "SendMail Relay Server", applicable ? startup.relay_server : "N/A");
-			sprintf(opt[i++], "%-30s%u", "SendMail Relay Port", startup.relay_port);
-			sprintf(opt[i++], "%-30s%s", "SendMail Relay User", applicable ? startup.relay_user : "N/A");
-			sprintf(opt[i++], "%-30s%s", "SendMail Relay Password", applicable ? startup.relay_pass : "N/A");
-			if(startup.options & MAIL_OPT_RELAY_AUTH_PLAIN)
-				p = "Plain";
-			else if(startup.options & MAIL_OPT_RELAY_AUTH_LOGIN)
-				p = "Login";
-			else if(startup.options & MAIL_OPT_RELAY_AUTH_CRAM_MD5)
-				p = "CRAM-MD5";
-			else
-				p = "None";
-			sprintf(opt[i++], "%-30s%s", "SendMail Relay Auth", applicable ? p : "N/A");
-			sprintf(opt[i++], "%-30s%u", "SendMail Max Attempts", startup.max_delivery_attempts);
-			sprintf(opt[i++], "%-30s%s", "SendMail Rescan Interval", vduration(startup.rescan_frequency));
-			sprintf(opt[i++], "%-30s%s", "SendMail Connect Timeout", vduration(startup.connect_timeout));
-		}
+		sprintf(opt[i++], "%-30s%s", "SendMail Support...", startup.options & MAIL_OPT_NO_SENDMAIL ? strDisabled : "");
 		if(!enabled)
 			i = 1;
 		opt[i][0] = '\0';
@@ -1172,69 +1339,7 @@ static void mailsrvr_cfg(void)
 				startup.options ^= MAIL_OPT_KILL_READ_SPAM;
 				break;
 			case 28:
-				startup.options ^= MAIL_OPT_NO_SENDMAIL;
-				break;
-			case 29:
-				startup.options ^= MAIL_OPT_RELAY_TX;
-				break;
-			case 30:
-				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server Address", startup.relay_server, sizeof(startup.relay_server)-1, K_EDIT);
-				break;
-			case 31:
-				SAFEPRINTF(str, "%u", startup.relay_port);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
-					startup.relay_port = atoi(str);
-				break;
-			case 32:
-				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server Username", startup.relay_user, sizeof(startup.relay_user)-1, K_EDIT);
-				break;
-			case 33:
-				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server Password", startup.relay_pass, sizeof(startup.relay_pass)-1, K_EDIT);
-				break;
-			case 34:
-				i = 0;
-				strcpy(opt[i++], "Plain");
-				strcpy(opt[i++], "Login");
-				strcpy(opt[i++], "CRAM-MD5");
-				strcpy(opt[i++], "None");
-				opt[i][0] = '\0';
-				if(startup.options & MAIL_OPT_RELAY_AUTH_PLAIN)
-					i = 0;
-				else if(startup.options & MAIL_OPT_RELAY_AUTH_LOGIN)
-					i = 1;
-				else if(startup.options & MAIL_OPT_RELAY_AUTH_CRAM_MD5)
-					i = 2;
-				else
-					i = 3;
-				if(uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &i, 0, "Relay Server Authentication Method", opt) < 0)
-					break;
-				startup.options &= ~(MAIL_OPT_RELAY_AUTH_PLAIN | MAIL_OPT_RELAY_AUTH_LOGIN | MAIL_OPT_RELAY_AUTH_CRAM_MD5);
-				switch(i) {
-					case 0:
-						startup.options |= MAIL_OPT_RELAY_AUTH_PLAIN;
-						break;
-					case 1:
-						startup.options |= MAIL_OPT_RELAY_AUTH_LOGIN;
-						break;
-					case 2:
-						startup.options |= MAIL_OPT_RELAY_AUTH_CRAM_MD5;
-						break;
-				}
-				break;
-			case 35:
-				SAFEPRINTF(str, "%u", startup.max_delivery_attempts);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Number of SendMail Delivery Attempts", str, 5, K_NUMBER|K_EDIT) > 0)
-					startup.max_delivery_attempts = atoi(str);
-				break;
-			case 36:
-				SAFECOPY(str, duration(startup.rescan_frequency, false));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "MailBase Re-scan Interval", str, 5, K_EDIT) > 0)
-					startup.rescan_frequency = (uint16_t)parse_duration(str);
-				break;
-			case 37:
-				SAFECOPY(str, duration(startup.connect_timeout, false));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SendMail Connect Timeout", str, 5, K_EDIT) > 0)
-					startup.connect_timeout = (uint32_t)parse_duration(str);
+				sendmail_cfg(&startup);
 				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -1291,6 +1396,7 @@ static void services_cfg(void)
 		uifc.msgf("Error opening %s", cfg.filename);
 		return;
 	}
+	uifc.pop(strReadingIniFile);
 	sbbs_read_ini(
 		 fp
 		,cfg.filename
@@ -1307,6 +1413,7 @@ static void services_cfg(void)
 		,&startup
 		);
 	iniCloseFile(fp);
+	uifc.pop(NULL);
 	services_startup_t saved_startup = startup;
 
 	while(1) {
@@ -1402,6 +1509,7 @@ void server_cfg(void)
 			uifc.msgf("Error opening %s", cfg.filename);
 			return;
 		}
+		uifc.pop(strReadingIniFile);
 		sbbs_read_ini(
 			 fp
 			,cfg.filename
@@ -1418,14 +1526,15 @@ void server_cfg(void)
 			,NULL //&services_startup
 			);
 		iniCloseFile(fp);
+		uifc.pop(NULL);
 
 		int i = 0;
 		strcpy(opt[i++], "Global Settings");
-		sprintf(opt[i++], "%-27s%s", "Terminal Server", run_bbs ? "Enabled" : strDisabled);
-		sprintf(opt[i++], "%-27s%s", "Web Server", run_web ? "Enabled" : strDisabled);
-		sprintf(opt[i++], "%-27s%s", "FTP Server", run_ftp ? "Enabled" : strDisabled);
-		sprintf(opt[i++], "%-27s%s", "Mail Server", run_mail ? "Enabled" : strDisabled);
-		sprintf(opt[i++], "%-27s%s", "Services Server", run_services ? "Enabled" : strDisabled);
+		sprintf(opt[i++], "%-20s%s", "Terminal Server", run_bbs ? "" : strDisabled);
+		sprintf(opt[i++], "%-20s%s", "Web Server", run_web ? "" : strDisabled);
+		sprintf(opt[i++], "%-20s%s", "FTP Server", run_ftp ? "" : strDisabled);
+		sprintf(opt[i++], "%-20s%s", "Mail Server", run_mail ? "" : strDisabled);
+		sprintf(opt[i++], "%-20s%s", "Services Server", run_services ? "" : strDisabled);
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
@@ -1434,12 +1543,12 @@ void server_cfg(void)
 			"Here you can configure the initialization settings of the various\n"
 			"Internet servers that are integrated into Synchronet BBS Software.\n"
 			"\n"
-			"`Global Settings` Settings that are applied to multiple servers\n"
-			"`Terminal Server` Handles the traditional BBS user experience\n"
-			"`Web Server`      Handles the modern HTTP/HTTPS browser experience\n"
-			"`FTP Server`      Serves clients using the old File Transfer Protocol\n"
-			"`Mail Server`     Supports SMTP and POP3 mail transfer protocols\n"
-			"`Services Server` Supports plug-in style servers: NNTP, IRC, IMAP, etc.\n"
+			"`Global Settings`   Settings that are applied to multiple servers\n"
+			"`Terminal Server`   Provides the traditional BBS user experience\n"
+			"`Web Server`        Provides the modern HTTP/HTTPS browser experience\n"
+			"`FTP Server`        Serves clients using ye olde File Transfer Protocol\n"
+			"`Mail Server`       Supports SMTP and POP3 mail transfer protocols\n"
+			"`Services Server`   Supports plug-in style servers: NNTP, IRC, IMAP, etc.\n"
 			"\n"
 			"For additional advanced Synchronet server initialization settings, see\n"
 			"the `ctrl/sbbs.ini` file and `https://wiki.synchro.net/config:sbbs.ini`\n"
