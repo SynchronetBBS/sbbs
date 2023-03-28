@@ -281,7 +281,7 @@ int64_t parse_byte_count(const char* str, ulong unit)
 	}
 	if(unit > 1)
 		bytes /= unit;
-	if(bytes < 0 || bytes > INT64_MAX)
+	if(bytes < 0 || bytes > (double)INT64_MAX)
 		return INT64_MAX;
 	return (int64_t)bytes;
 }
