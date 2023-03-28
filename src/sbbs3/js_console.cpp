@@ -441,8 +441,8 @@ static const char* con_prop_desc[] = {
 	,"Number of bytes currently in the output buffer (from the local server) - <small>READ ONLY</small>"
 	,"Number of bytes available in the output buffer - <small>READ ONLY</small>"
 	,"Emulated serial data output rate, in bits-per-second (0 = unlimited)"
-	,"Number of characters current in the keyboard input buffer (from <tt>ungetstr</tt>) - <small>READ ONLY</small>"
-	,"Number of characters spaces available in the keyboard input buffer - <small>READ ONLY</small>"
+	,"Number of characters currently in the keyboard input buffer (from <tt>ungetstr</tt>) - <small>READ ONLY</small>"
+	,"Number of character spaces available in the keyboard input buffer - <small>READ ONLY</small>"
 	,NULL
 };
 #endif
