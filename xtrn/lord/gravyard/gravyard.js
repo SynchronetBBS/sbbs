@@ -241,6 +241,7 @@ var Graveyard_Defs = [
 /* -=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 function exit_game() {
+	var i;
 	sclrscr();
   	lln('`2Thanks for playing`% '+graName+' `0'+graVersion);
   	lw('`2Now returning to Other Places');
@@ -249,7 +250,6 @@ function exit_game() {
 		lw('`4.');
 	}
 	//Catch any unsaved record changes and close out all open files.
-	graFile.put();
 	player.put();
 	graFile.close();
 	menu_file.close();	
