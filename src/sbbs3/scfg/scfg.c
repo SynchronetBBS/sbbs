@@ -2495,7 +2495,7 @@ void bail(int code)
 				,&run_services
 				,&services_startup
 				);
-			sbbs_write_ini(
+			if(!sbbs_write_ini(
 				 fp
 				,&cfg
 				,&global_startup
@@ -2509,7 +2509,8 @@ void bail(int code)
 				,&mail_startup
 				,run_services
 				,&services_startup
-				);
+				))
+				uifc.msgf("Error writing %s", cfg.filename);
 			iniCloseFile(fp);
 		}
         uifc.pop(NULL);
