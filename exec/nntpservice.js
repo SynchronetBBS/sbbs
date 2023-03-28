@@ -34,6 +34,7 @@ var tagline	=  format(" *  %s - %s - telnet://%s\r\n"
 
 load("sbbsdefs.js");
 load("newsutil.js");
+load("mailutil.js");
 
 var debug = false;
 var no_anonymous = false;
@@ -757,6 +758,18 @@ while(client.socket.is_connected && !quit) {
 					writeln(format("From: \"%s\" <%s>"
 						,hdr.from
 						,hdr.from_net_addr));
+				else if(hdr.from_net_type == NET_FIDO)
+					writeln(format("From: \"%s\" (%s) <%s>"
+						,hdr.from
+						,hdr.from_net_addr
+						,fidoaddr_to_emailaddr(hdr.from, hdr.from_net_addr)));
+				else if(hdr.from_net_type == NET_QWK)
+					writeln(format("From: \"%s\" (%s) <%s!%s@%s>"
+						,hdr.from
+						,hdr.from_net_addr
+						,hdr.from_net_addr
+						,hdr.from.replace(/ /g,".")
+						,system.inetaddr));
 				else
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from
