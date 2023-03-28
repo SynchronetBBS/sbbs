@@ -140,7 +140,7 @@ static void global_cfg(void)
 			case 5:
 				SAFECOPY(str, duration(startup.bind_retry_delay, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Port Bind Retry Delay", str, 6, K_EDIT) > 0)
-					startup.bind_retry_delay = parse_duration(str);
+					startup.bind_retry_delay = (uint)parse_duration(str);
 				break;
 			case 6:
 				SAFEPRINTF(str, "%u", startup.login_attempt.delay);
@@ -165,7 +165,7 @@ static void global_cfg(void)
 			case 10:
 				SAFECOPY(str, duration(startup.login_attempt.tempban_duration, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Duration of Temp-ban for Failed Logins", str, 6, K_EDIT) > 0)
-					startup.login_attempt.tempban_duration = parse_duration(str);
+					startup.login_attempt.tempban_duration = (uint)parse_duration(str);
 				break;
 			case 11:
 				SAFEPRINTF(str, "%u", startup.login_attempt.filter_threshold);
@@ -175,7 +175,7 @@ static void global_cfg(void)
 			case 12:
 				byte_count_to_str(startup.js.max_bytes, str, sizeof(str));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "JavaScript Heap Size (Maximum Allocated Bytes)", str, 6, K_UPPER|K_EDIT) > 0)
-					startup.js.max_bytes = parse_byte_count(str, 1);
+					startup.js.max_bytes = (uint)parse_byte_count(str, 1);
 				break;
 			case 13:
 				SAFEPRINTF(str, "%u", startup.js.time_limit);
@@ -198,7 +198,7 @@ static void global_cfg(void)
 			case 17:
 				SAFECOPY(str, duration(startup.sem_chk_freq, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Semaphore File Check Interval", str, 6, K_EDIT) > 0)
-					startup.sem_chk_freq = parse_duration(str);
+					startup.sem_chk_freq = (uint16_t)parse_duration(str);
 				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -358,7 +358,7 @@ static void termsrvr_cfg(void)
 			case 8:
 				SAFECOPY(str, duration(startup.ssh_connect_timeout, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH Connect Timeout", str, 6, K_EDIT) > 0)
-					startup.ssh_connect_timeout = parse_duration(str);
+					startup.ssh_connect_timeout = (uint16_t)parse_duration(str);
 				break;
 			case 9:
 				startup.options ^= BBS_OPT_NO_TELNET;
@@ -416,17 +416,17 @@ static void termsrvr_cfg(void)
 			case 20:
 				SAFECOPY(str, duration(startup.max_login_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity at Login", str, 10, K_EDIT) > 0)
-					startup.max_login_inactivity = parse_duration(str);
+					startup.max_login_inactivity = (uint16_t)parse_duration(str);
 				break;
 			case 21:
 				SAFECOPY(str, duration(startup.max_newuser_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity at New User Registration", str, 10, K_EDIT) > 0)
-					startup.max_newuser_inactivity = parse_duration(str);
+					startup.max_newuser_inactivity = (uint16_t)parse_duration(str);
 				break;
 			case 22:
 				SAFECOPY(str, duration(startup.max_session_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity during User Session", str, 10, K_EDIT) > 0)
-					startup.max_session_inactivity = parse_duration(str);
+					startup.max_session_inactivity = (uint16_t)parse_duration(str);
 				break;
 			case 23:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
@@ -625,7 +625,7 @@ static void websrvr_cfg(void)
 				break;
 			case 13:
 				i = startup.options & WEB_OPT_HTTP_LOGGING ? 0 : 1;
-				i = uifc.list(WIN_SAV|WIN_MID, 0, 0, 0, &i, 0, "Log (to disk) HTTP Requests", uifcYesNoOpts);
+				i = uifc.list(WIN_SAV|WIN_MID, 0, 0, 0, &i, 0, "Log Requests to Files in Combined Log Format", uifcYesNoOpts);
 				if(i == 0) {
 					startup.options |= WEB_OPT_HTTP_LOGGING;
 					uifc.input(WIN_MID|WIN_SAV, 0, 0, "Base path/filename (blank = default)"
@@ -641,7 +641,7 @@ static void websrvr_cfg(void)
 			case 15:
 				SAFECOPY(str, duration(startup.max_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
-					startup.max_inactivity = parse_duration(str);
+					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
 			case 16:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Filebase Index Script"
@@ -689,7 +689,7 @@ static void websrvr_cfg(void)
 			case 26:
 				duration_to_str(startup.max_cgi_inactivity, str, sizeof(str));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum CGI Inactivity", str, 10, K_EDIT) > 0)
-					startup.max_cgi_inactivity = parse_duration(str);
+					startup.max_cgi_inactivity = (uint16_t)parse_duration(str);
 				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -779,7 +779,7 @@ static void ftpsrvr_cfg(void)
 		sprintf(opt[i++], "%-30s%s", "Max Clients", maximum(startup.max_clients));
 		sprintf(opt[i++], "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
 		sprintf(opt[i++], "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
-		sprintf(opt[i++], "%-30s%s", "Sysop Filesystem Access", startup.options & FTP_OPT_NO_LOCAL_FSYS ? "Yes" : "No");
+		sprintf(opt[i++], "%-30s%s", "Sysop File System Access", startup.options & FTP_OPT_NO_LOCAL_FSYS ? "No" : "Yes");
 		sprintf(opt[i++], "%-30s%s", "Allow Bounce Transfers", startup.options & FTP_OPT_ALLOW_BOUNCE ? "Yes" : "No");
 		sprintf(opt[i++], "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		if(!enabled)
@@ -836,7 +836,7 @@ static void ftpsrvr_cfg(void)
 				break;
 			case 6:
 				i = startup.options & FTP_OPT_INDEX_FILE ? 0 : 1;
-				i = uifc.list(WIN_SAV|WIN_MID, 0, 0, 0, &i, 0, "Autogenerate Index Files", uifcYesNoOpts);
+				i = uifc.list(WIN_SAV|WIN_MID, 0, 0, 0, &i, 0, "Automatically Generate Index Files", uifcYesNoOpts);
 				if(i == 0) {
 					startup.options |= FTP_OPT_INDEX_FILE;
 					uifc.input(WIN_MID|WIN_SAV, 0, 0, "Index Filename"
@@ -850,7 +850,7 @@ static void ftpsrvr_cfg(void)
 			case 8:
 				SAFECOPY(str, duration(startup.qwk_timeout, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "QWK Message Packet Creation Timeout", str, 10, K_EDIT) > 0)
-					startup.qwk_timeout = parse_duration(str);
+					startup.qwk_timeout = (uint16_t)parse_duration(str);
 				break;
 			case 9:
 				SAFECOPY(str, maximum(startup.max_clients));
@@ -860,7 +860,7 @@ static void ftpsrvr_cfg(void)
 			case 10:
 				SAFECOPY(str, duration(startup.max_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
-					startup.max_inactivity = parse_duration(str);
+					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
 			case 11:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
@@ -1089,7 +1089,7 @@ static void mailsrvr_cfg(void)
 			case 14:
 				SAFECOPY(str, duration(startup.max_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
-					startup.max_inactivity = parse_duration(str);
+					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
 			case 15:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
@@ -1109,7 +1109,7 @@ static void mailsrvr_cfg(void)
 			case 18:
 				byte_count_to_str(startup.max_msg_size, str, sizeof(str));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Received Message Size (in bytes)", str, 10, K_EDIT) > 0)
-					startup.max_msg_size = parse_byte_count(str, 1);
+					startup.max_msg_size = (uint32_t)parse_byte_count(str, 1);
 				break;
 			case 19:
 				startup.options ^= MAIL_OPT_ALLOW_RELAY;
@@ -1229,12 +1229,12 @@ static void mailsrvr_cfg(void)
 			case 36:
 				SAFECOPY(str, duration(startup.rescan_frequency, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "MailBase Re-scan Interval", str, 5, K_EDIT) > 0)
-					startup.rescan_frequency = parse_duration(str);
+					startup.rescan_frequency = (uint16_t)parse_duration(str);
 				break;
 			case 37:
 				SAFECOPY(str, duration(startup.connect_timeout, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SendMail Connect Timeout", str, 5, K_EDIT) > 0)
-					startup.connect_timeout = parse_duration(str);
+					startup.connect_timeout = (uint32_t)parse_duration(str);
 				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -1431,10 +1431,17 @@ void server_cfg(void)
 		uifc.helpbuf=
 			"`Server Configuration:`\n"
 			"\n"
-			"Here you can configure initialization settings of the various TCP/IP\n"
-			"servers that are integrated into Synchronet BBS Software.\n"
+			"Here you can configure the initialization settings of the various\n"
+			"Internet servers that are integrated into Synchronet BBS Software.\n"
 			"\n"
-			"For additinal advanced Synchronet server initialization settings, see\n"
+			"`Global Settings` Settings that are applied to multiple servers\n"
+			"`Terminal Server` Handles the traditional BBS user experience\n"
+			"`Web Server`      Handles the modern HTTP/HTTPS browser experience\n"
+			"`FTP Server`      Serves clients using the old File Transfer Protocol\n"
+			"`Mail Server`     Supports SMTP and POP3 mail transfer protocols\n"
+			"`Services Server` Supports plug-in style servers: NNTP, IRC, IMAP, etc.\n"
+			"\n"
+			"For additional advanced Synchronet server initialization settings, see\n"
 			"the `ctrl/sbbs.ini` file and `https://wiki.synchro.net/config:sbbs.ini`\n"
 			"for reference.\n"
 		;
