@@ -122,17 +122,30 @@ while((line=readln()) != undefined) {
 	}
 }
 
-var msgbase = new MsgBase('mail');
-if(!msgbase.open()) {
-	writeln("Cannot send email (open error)!");
-	exit();
+// Sanity-check the from_net_addr (SENDERNETADDR) field
+if(typeof hdr.from_net_addr == "string") {
+	if(hdr.from_net_addr.indexOf('@') < 0)
+		hdr.from_net_addr += '@';
+	if(hdr.from_net_addr.indexOf('@') == hdr.from_net_addr.length - 1)
+		hdr.from_net_addr += system.inet_addr;
 }
-if(!msgbase.save_msg(hdr, body, rcpt_list)) {
-	writeln("Cannot send email: " + msgbase.error);
-	exit();
-}
-
 log.writeln("---");
 log.writeln("hdr = " + JSON.stringify(hdr, null, 4));
 log.writeln("rcpt_list = " + JSON.stringify(rcpt_list, null, 4));
+
+if(rcpt_list.length < 1) {
+	writeln("No recipients specified!");
+	exit(1);
+}
+var msgbase = new MsgBase('mail');
+if(!msgbase.open()) {
+	writeln("Cannot send email (open error)!");
+	exit(1);
+}
+if(!msgbase.save_msg(hdr, body, rcpt_list)) {
+	writeln("Cannot send email: " + msgbase.error);
+	exit(1);
+}
+
+log.writeln("Sent successfully");
 log.writeln("===");
