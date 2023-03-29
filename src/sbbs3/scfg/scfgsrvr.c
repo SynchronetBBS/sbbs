@@ -385,6 +385,8 @@ static void termsrvr_cfg(void)
 			"The initialization settings of the Synchchronet server that provides the\n"
 			"traditional BBS experience over `Telnet`, `SSH`, `RLogin`, or `Raw TCP`\n"
 			"protocols.\n"
+			"\n"
+			"For full documentation, see `http://wiki.synchro.net/server:terminal`\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"Terminal Server",opt)) {
@@ -629,6 +631,18 @@ static void websrvr_cfg(void)
 		uifc.helpbuf=
 			"`Web Server Configuration:`\n"
 			"\n"
+			"The initialization settings of the Synchchronet Web Server that provides\n"
+			"support for web browser access to the BBS over `HTTP` and `HTTPS` (TLS)\n"
+			"protocols.\n"
+			"\n"
+			"Static content (e.g. HTML and graphics files) can be served up as well\n"
+			"as dynamic content via Server-side JavaScript (SSJS) and external CGI\n"
+			"processes (traditional and fast-CGI).\n"
+			"\n"
+			"Advanced features such as Virtual Hosts, Filebase access, and Strict\n"
+			"Transport Security are also supported.\n"
+			"\n"
+			"For full documentation, see `http://wiki.synchro.net/server:web`\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"Web Server",opt)) {
@@ -862,6 +876,15 @@ static void ftpsrvr_cfg(void)
 		uifc.helpbuf=
 			"`FTP Server Configuration:`\n"
 			"\n"
+			"These settings define the initialization parameters of the Synchronet\n"
+			"FTP Server.  FTP and FTPS (TLS) protocols are supported for downloads\n"
+			"and uploads (including resume) to/from filebases and local filesystem.\n"
+			"\n"
+			"Active and passive FTP transfers are supported along with QWK message\n"
+			"packet transfers, dynamically-generated file indexes, and other advanced\n"
+			"features.\n"
+			"\n"
+			"For full documentation, see `http://wiki.synchro.net/server:ftp`\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"FTP Server",opt)) {
@@ -1002,6 +1025,7 @@ static void sendmail_cfg(mail_startup_t* startup)
 		sprintf(opt[i++], "%-30s%s", "Enabled", startup->options & MAIL_OPT_NO_SENDMAIL ? "No" : "Yes");
 		sprintf(opt[i++], "%-30s%s", "Rescan Interval", vduration(startup->rescan_frequency));
 		sprintf(opt[i++], "%-30s%s", "Connect Timeout", vduration(startup->connect_timeout));
+		sprintf(opt[i++], "%-30s%s", "Auto-exempt Recipients", startup->options & MAIL_OPT_NO_AUTO_EXEMPT ? "No" : "Yes");
 		sprintf(opt[i++], "%-30s%u", "Max Delivery Attempts", startup->max_delivery_attempts);
 		bool applicable = startup->options & MAIL_OPT_RELAY_TX;
 		sprintf(opt[i++], "%-30s%s", "Delivery Method", applicable ? "Relay" : "Direct");
@@ -1027,17 +1051,21 @@ static void sendmail_cfg(mail_startup_t* startup)
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
-			"`Mail Server SendMail Thread Configuration:`\n"
+			"`SendMail Thread Configuration:`\n"
 			"\n"
+			"Set the operating parameters of the Synchronet Mail Server SendMail\n"
+			"Thread.\n"
+			"\n"
+			"For full documentation, see `http://wiki.synchro.net/server:mail`\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_BOT|WIN_SAV, 0, 0, 0, &cur, &bar
-			,"SendMail",opt)) {
+			,"SendMail Thread",opt)) {
 			case 0:
 				startup->options ^= MAIL_OPT_NO_SENDMAIL;
 				break;
 			case 1:
 				SAFECOPY(str, duration(startup->rescan_frequency, false));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "MailBase Re-scan Interval", str, 5, K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "MailBase Rescan Interval", str, 5, K_EDIT) > 0)
 					startup->rescan_frequency = (uint16_t)parse_duration(str);
 				break;
 			case 2:
@@ -1046,22 +1074,25 @@ static void sendmail_cfg(mail_startup_t* startup)
 					startup->connect_timeout = (uint32_t)parse_duration(str);
 				break;
 			case 3:
+				startup->options ^= MAIL_OPT_NO_AUTO_EXEMPT;
+				break;
+			case 4:
 				SAFEPRINTF(str, "%u", startup->max_delivery_attempts);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Number of SendMail Delivery Attempts", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup->max_delivery_attempts = atoi(str);
 				break;
-			case 4:
+			case 5:
 				startup->options ^= MAIL_OPT_RELAY_TX;
 				break;
-			case 5:
+			case 6:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server Address", startup->relay_server, sizeof(startup->relay_server)-1, K_EDIT);
 				break;
-			case 6:
+			case 7:
 				SAFEPRINTF(str, "%u", startup->relay_port);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup->relay_port = atoi(str);
 				break;
-			case 7:
+			case 8:
 				i = 0;
 				strcpy(opt[i++], "Plain");
 				strcpy(opt[i++], "Login");
@@ -1091,10 +1122,10 @@ static void sendmail_cfg(mail_startup_t* startup)
 						break;
 				}
 				break;
-			case 8:
+			case 9:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server Username", startup->relay_user, sizeof(startup->relay_user)-1, K_EDIT);
 				break;
-			case 9:
+			case 10:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Relay Server Password", startup->relay_pass, sizeof(startup->relay_pass)-1, K_EDIT);
 				break;
 			default:
@@ -1160,9 +1191,11 @@ static void mailsrvr_cfg(void)
 		sprintf(opt[i++], "%-30s%s", "Max Recipients Per Message", maximum(startup.max_recipients));
 		sprintf(opt[i++], "%-30s%s", "Max Messages Waiting", maximum(startup.max_msgs_waiting));
 		sprintf(opt[i++], "%-30s%s bytes", "Max Receive Message Size", byte_count_to_str(startup.max_msg_size, tmp, sizeof(tmp)));
-		sprintf(opt[i++], "%-30s%s", "Allow Users to Relay Mail", startup.options & MAIL_OPT_ALLOW_RELAY ? "Yes" : "No");
+		sprintf(opt[i++], "%-30s%s", "Default Recipient", startup.default_user);
+		sprintf(opt[i++], "%-30s%s", "Receive By User Number", startup.options & MAIL_OPT_ALLOW_RX_BY_NUMBER ? "Yes" : "No");
 		sprintf(opt[i++], "%-30s%s", "Receive By Sysop Aliases", startup.options & MAIL_OPT_ALLOW_SYSOP_ALIASES ? "Yes" : "No");
 		sprintf(opt[i++], "%-30s%s", "Notify Local Recipients", startup.options & MAIL_OPT_NO_NOTIFY ? "No" : "Yes");
+		sprintf(opt[i++], "%-30s%s", "Allow Users to Relay Mail", startup.options & MAIL_OPT_ALLOW_RELAY ? "Yes" : "No");
 		sprintf(opt[i++], "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		sprintf(opt[i++], "%-30s%s", "Check Headers against DNSBL", startup.options & MAIL_OPT_DNSBL_CHKRECVHDRS ? "Yes" : "No");
 		if(startup.options & MAIL_OPT_DNSBL_REFUSE)
@@ -1173,11 +1206,10 @@ static void mailsrvr_cfg(void)
 			p = "Refuse Mail";
 		else
 			p = "Tag Mail";
-		sprintf(opt[i++], "%-30s%s%s", "Blacklisted Servers", startup.options & MAIL_OPT_DNSBL_THROTTLE ? "Throttle and " : "", p);
-		sprintf(opt[i++], "%-30s%s", "Hash Blacklisted Messages", startup.options & MAIL_OPT_DNSBL_SPAMHASH ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Auto-exempt Recipients", startup.options & MAIL_OPT_NO_AUTO_EXEMPT ? "No" : "Yes");
+		sprintf(opt[i++], "%-30s%s%s", "DNS-Blacklisted Servers", startup.options & MAIL_OPT_DNSBL_THROTTLE ? "Throttle and " : "", p);
+		sprintf(opt[i++], "%-30s%s", "Hash DNS-Blacklisted Msgs", startup.options & MAIL_OPT_DNSBL_SPAMHASH ? "Yes" : "No");
 		sprintf(opt[i++], "%-30s%s", "Kill SPAM When Read", startup.options & MAIL_OPT_KILL_READ_SPAM ? "Yes": "No");
-		sprintf(opt[i++], "%-30s%s", "SendMail Support...", startup.options & MAIL_OPT_NO_SENDMAIL ? strDisabled : "");
+		sprintf(opt[i++], "%-30s%s", "SendMail Thread...", startup.options & MAIL_OPT_NO_SENDMAIL ? strDisabled : "");
 		if(!enabled)
 			i = 1;
 		opt[i][0] = '\0';
@@ -1185,6 +1217,13 @@ static void mailsrvr_cfg(void)
 		uifc.helpbuf=
 			"`Mail Server Configuration:`\n"
 			"\n"
+			"Set the initial parameters of the Synchronet Mail Server here.  This\n"
+			"server supports receiving mail over [E]SMTP and [E]SMTPS protocols as\n"
+			"well as sending mail to clients via the POP3 or POP3S protocols and\n"
+			"sending mail to other servers (the SendMail thread) via [E]SMTP and\n"
+			"[E]SMTPS protocols.\n"
+			"\n"
+			"For full documentation, see `http://wiki.synchro.net/server:mail`\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"Mail Server",opt)) {
@@ -1279,21 +1318,28 @@ static void mailsrvr_cfg(void)
 					startup.max_msg_size = (uint32_t)parse_byte_count(str, 1);
 				break;
 			case 19:
-				startup.options ^= MAIL_OPT_ALLOW_RELAY;
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Default Recipient (user alias)"
+					,startup.default_user, sizeof(startup.default_user)-1, K_EDIT);
 				break;
 			case 20:
-				startup.options ^= MAIL_OPT_ALLOW_SYSOP_ALIASES;
+				startup.options ^= MAIL_OPT_ALLOW_RX_BY_NUMBER;
 				break;
 			case 21:
-				startup.options ^= MAIL_OPT_NO_NOTIFY;
+				startup.options ^= MAIL_OPT_ALLOW_SYSOP_ALIASES;
 				break;
 			case 22:
-				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
+				startup.options ^= MAIL_OPT_NO_NOTIFY;
 				break;
 			case 23:
-				startup.options ^= MAIL_OPT_DNSBL_CHKRECVHDRS;
+				startup.options ^= MAIL_OPT_ALLOW_RELAY;
 				break;
 			case 24:
+				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
+				break;
+			case 25:
+				startup.options ^= MAIL_OPT_DNSBL_CHKRECVHDRS;
+				break;
+			case 26:
 				i = 0;
 				strcpy(opt[i++], "Refuse Session");
 				strcpy(opt[i++], "Silently Ignore");
@@ -1329,16 +1375,13 @@ static void mailsrvr_cfg(void)
 				else
 					startup.options &= ~MAIL_OPT_DNSBL_THROTTLE;
 				break;
-			case 25:
+			case 27:
 				startup.options ^= MAIL_OPT_DNSBL_SPAMHASH;
 				break;
-			case 26:
-				startup.options ^= MAIL_OPT_NO_AUTO_EXEMPT;
-				break;
-			case 27:
+			case 28:
 				startup.options ^= MAIL_OPT_KILL_READ_SPAM;
 				break;
-			case 28:
+			case 29:
 				sendmail_cfg(&startup);
 				break;
 			default:
@@ -1430,6 +1473,8 @@ static void services_cfg(void)
 		uifc.helpbuf=
 			"`Services Server Configuration:`\n"
 			"\n"
+			"For full documentation, see `http://wiki.synchro.net/server:services`\n"
+
 		;
 		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"Services Server",opt)) {
