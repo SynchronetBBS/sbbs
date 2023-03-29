@@ -1152,7 +1152,7 @@ readSmallMenu(unsigned char *codeStr)
 }
 
 static void
-checkStamp(int xx, int yy, char stampStr[20]) // used w/ incomingCheck
+checkStamp(int xx, int yy, char stampStr[]) // used w/ incomingCheck
 {
 	term_gotoxy(xx + 1, yy + 1);
 	term_setattr(LIGHTCYAN);
