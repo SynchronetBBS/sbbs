@@ -372,7 +372,7 @@ static void termsrvr_cfg(void)
 		sprintf(opt[i++], "%-30s%s", "Max User Inactivity", vduration(startup.max_session_inactivity));
 		sprintf(opt[i++], "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
 		sprintf(opt[i++], "%-30s%s", "Execute Timed Events", startup.options & BBS_OPT_NO_EVENTS ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "Execute QWK-relatd Events"
+		sprintf(opt[i++], "%-30s%s", "Execute QWK-related Events"
 			,startup.options & BBS_OPT_NO_EVENTS ? "N/A" : startup.options & BBS_OPT_NO_QWK_EVENTS ? "No" : "Yes");
 		sprintf(opt[i++], "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		if(!enabled)
