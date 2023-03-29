@@ -2230,7 +2230,7 @@ capture_control(struct bbslist *bbs)
 							if ((tm = localtime(&t)) != NULL) { // The null-terminator
                                                                                             // overwrites the first
                                                                                             // byte of filesize
-								sprintf(sauce.date, "%04u%02u%02u",
+								snprintf(sauce.date, sizeof(sauce.date), "%04u%02u%02u",
 								    1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday);
 							}
 							sauce.filesize = LE_INT32(ftell(fp)); // LE
@@ -2949,7 +2949,7 @@ draw_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
 	}
 
 	if (mask != NULL) {
-		if (asprintf(&maskfn, "%s%s", fn, mask) < 0)
+		if (asprintf(&maskfn, "%s%s", fn, (char*)mask) < 0)
 			goto done;
 	}
 
@@ -3231,7 +3231,7 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 	}
 
 	if (mask != NULL) {
-		if (asprintf(&maskfn, "%s%s", fn, mask) < 0)
+		if (asprintf(&maskfn, "%s%s", fn, (char*)mask) < 0)
 			goto done;
 	}
 
