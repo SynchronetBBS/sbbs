@@ -364,8 +364,8 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 		}
 #endif
 		backslash(cpath);
-		sprintf(cglob,"%s%s",cpath,(opts&UIFC_FP_MSKCASE)?cmsk:insensitive_mask(cmsk));
-		sprintf(dglob,"%s*",cpath);
+		snprintf(cglob, sizeof(cglob), "%s%s",cpath,(opts&UIFC_FP_MSKCASE)?cmsk:insensitive_mask(cmsk));
+		snprintf(dglob, sizeof(dglob), "%s*",cpath);
 		switch(currfield) {
 			case DIR_LIST:
 				if(lastfield==DIR_LIST)
