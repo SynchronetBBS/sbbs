@@ -11966,6 +11966,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (no_viewport())
 								break;
 							arg1 = parse_mega(&args[0], 2);
+							if(arg1 < 1)
+								break;
 							struct point *argv = malloc(sizeof(struct point) * arg1);
 							x1 = rip.x_dim - 1;
 							y1 = rip.x_dim - 1;
