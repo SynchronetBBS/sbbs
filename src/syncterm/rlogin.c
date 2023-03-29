@@ -142,7 +142,7 @@ rlogin_connect(struct bbslist *bbs)
 
         /* Negotiate with GHost and bail if there's apparently no GHost listening. */
 	if (bbs->conn_type == CONN_TYPE_MBBS_GHOST) {
-		char sbuf[80];
+		char sbuf[180];
 		char rbuf[10];
 		int  idx, ret;
 
