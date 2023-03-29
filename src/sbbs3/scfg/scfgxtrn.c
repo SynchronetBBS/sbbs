@@ -187,7 +187,7 @@ static char* monthstr(uint16_t months)
 			strcat(str," ");
 		SAFECAT(str,mon[i]);
 	}
-	
+
 	return(str);
 }
 
@@ -209,7 +209,7 @@ static char* mdaystr(long mdays)
 		sprintf(tmp,"%u",i);
 		strcat(str,tmp);
 	}
-	
+
 	return(str);
 }
 
@@ -299,7 +299,7 @@ static char* dropfile(int type, ulong misc)
             break;
 		default:
 			strcpy(str,"None");
-			break; 
+			break;
 	}
 	return(str);
 }
@@ -354,7 +354,7 @@ void xprogs_cfg()
 				break;
 			case 5:
 				xtrnsec_cfg();
-				break; 
+				break;
 		}
 	}
 }
@@ -425,8 +425,8 @@ void fevents_cfg()
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Daily Event"
 					,cfg.sys_daily,sizeof(cfg.sys_daily)-1,K_EDIT);
 
-				break; 
-		} 
+				break;
+		}
 	}
 }
 
@@ -481,7 +481,7 @@ void tevents_cfg()
 				continue;
 			SAFECOPY(cfg.event[i]->code,str);
 			uifc.changes=1;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_DEL || msk == MSK_CUT) {
 			if(msk == MSK_CUT)
@@ -491,18 +491,18 @@ void tevents_cfg()
 			for(j=i;j<cfg.total_events;j++)
 				cfg.event[j]=cfg.event[j+1];
 			uifc.changes=1;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_COPY) {
 			savevent=*cfg.event[i];
-			continue; 
+			continue;
 		}
 		if(msk == MSK_PASTE) {
 			if (!new_timed_event(i))
 				continue;
 			*cfg.event[i]=savevent;
 			uifc.changes=1;
-			continue; 
+			continue;
 		}
 		if (msk != 0)
 			continue;
@@ -592,7 +592,7 @@ void tevents_cfg()
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf=0; 
+						uifc.helpbuf=0;
 					}
 					break;
 				case 1:
@@ -629,10 +629,10 @@ void tevents_cfg()
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 						,"Event Enabled",uifcYesNoOpts);
-					if((k==0 && cfg.event[i]->misc&EVENT_DISABLED) 
+					if((k==0 && cfg.event[i]->misc&EVENT_DISABLED)
 						|| (k==1 && !(cfg.event[i]->misc&EVENT_DISABLED))) {
 						cfg.event[i]->misc^=EVENT_DISABLED;
-						uifc.changes=1; 
+						uifc.changes=1;
 					}
 					break;
 
@@ -727,7 +727,7 @@ void tevents_cfg()
 							cfg.event[i]->days=0;
 						else
 							cfg.event[i]->days^=(1<<k);
-						uifc.changes=1; 
+						uifc.changes=1;
 					}
 					break;
 				case 8:
@@ -758,8 +758,8 @@ void tevents_cfg()
 							cfg.event[i]->freq=0;
 							cfg.event[i]->time=atoi(str)*60;
 							if((p=strchr(str,':'))!=NULL)
-								cfg.event[i]->time+=atoi(p+1); 
-						} 
+								cfg.event[i]->time+=atoi(p+1);
+						}
 					}
 					else if(k==1) {
 						sprintf(str,"%u"
@@ -795,11 +795,11 @@ void tevents_cfg()
 						,uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&EVENT_EXCL)) {
 						cfg.event[i]->misc|=EVENT_EXCL;
-						uifc.changes=1; 
+						uifc.changes=1;
 					}
 					else if(k==1 && cfg.event[i]->misc&EVENT_EXCL) {
 						cfg.event[i]->misc&=~EVENT_EXCL;
-						uifc.changes=1; 
+						uifc.changes=1;
 					}
 					break;
 				case 10:
@@ -814,11 +814,11 @@ void tevents_cfg()
 						,"Force Users Off-line for Event",uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&EVENT_FORCE)) {
 						cfg.event[i]->misc|=EVENT_FORCE;
-						uifc.changes=1; 
+						uifc.changes=1;
 					}
 					else if(k==1 && (cfg.event[i]->misc&EVENT_FORCE)) {
 						cfg.event[i]->misc&=~EVENT_FORCE;
-						uifc.changes=1; 
+						uifc.changes=1;
 					}
 					break;
 
@@ -884,11 +884,11 @@ void tevents_cfg()
 						,"Always Run After (re-)Initialization",uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&EVENT_INIT)) {
 						cfg.event[i]->misc|=EVENT_INIT;
-						uifc.changes=1; 
+						uifc.changes=1;
 					}
 					else if(k==1 && (cfg.event[i]->misc&EVENT_INIT)) {
 						cfg.event[i]->misc&=~EVENT_INIT;
-						uifc.changes=1; 
+						uifc.changes=1;
 					}
 					break;
 
@@ -906,8 +906,8 @@ void tevents_cfg()
 						uifc.changes = true;
 					}
 					break;
-			} 
-		} 
+			}
+		}
 	}
 }
 
@@ -1015,11 +1015,11 @@ void choose_io_method(uint32_t* misc)
 				,uifcYesNoOpts);
 			if(!k && !((*misc) & WWIVCOLOR)) {
 				(*misc) |= WWIVCOLOR;
-				uifc.changes=TRUE; 
+				uifc.changes=TRUE;
 			}
 			else if(k==1 && ((*misc)&WWIVCOLOR)) {
 				(*misc) &= ~WWIVCOLOR;
-				uifc.changes=TRUE; 
+				uifc.changes=TRUE;
 			}
 			k=((*misc) & XTRN_NOECHO) ? 1:0;
 			uifc.helpbuf=
@@ -1033,30 +1033,30 @@ void choose_io_method(uint32_t* misc)
 				,uifcYesNoOpts);
 			if(!k && ((*misc) & XTRN_NOECHO)) {
 				(*misc) &=~XTRN_NOECHO;
-				uifc.changes=TRUE; 
+				uifc.changes=TRUE;
 			} else if(k==1 && !((*misc) & XTRN_NOECHO)) {
 				(*misc) |= XTRN_NOECHO;
-				uifc.changes=TRUE; 
+				uifc.changes=TRUE;
 			}
 			break;
 		case 1:	/* FOSSIL or UART or Socket */
 			if(((*misc) & (XTRN_STDIO|XTRN_UART|XTRN_FOSSIL)) != 0) {
 				(*misc) &= ~(XTRN_UART|XTRN_FOSSIL|XTRN_STDIO|WWIVCOLOR|XTRN_NOECHO);
-				uifc.changes=TRUE; 
+				uifc.changes=TRUE;
 			}
 			break;
 		case 2: /* UART */
 			if(((*misc) & (XTRN_STDIO|XTRN_UART|XTRN_FOSSIL)) != XTRN_UART) {
 				(*misc) |= XTRN_UART;
 				(*misc) &= ~(XTRN_FOSSIL|XTRN_STDIO|WWIVCOLOR|XTRN_NOECHO);
-				uifc.changes=TRUE; 
+				uifc.changes=TRUE;
 			}
 			break;
 		case 3: /* FOSSIL */
 			if(((*misc) & (XTRN_STDIO|XTRN_UART|XTRN_FOSSIL)) != XTRN_FOSSIL) {
 				(*misc) |= XTRN_FOSSIL;
 				(*misc) &= ~(XTRN_UART|XTRN_STDIO|WWIVCOLOR|XTRN_NOECHO);
-				uifc.changes=TRUE; 
+				uifc.changes=TRUE;
 			}
 			break;
 	}
@@ -1074,7 +1074,7 @@ void xtrn_cfg(uint section)
 		for(i=0,j=0;i<cfg.total_xtrns && j<MAX_OPTS;i++)
 			if(cfg.xtrn[i]->sec==section) {
 				sprintf(opt[j],"%-25s",cfg.xtrn[i]->name);
-				xtrnnum[j++]=i; 
+				xtrnnum[j++]=i;
 			}
 		xtrnnum[j]=cfg.total_xtrns;
 		opt[j][0]=0;
@@ -1128,14 +1128,14 @@ void xtrn_cfg(uint section)
 				uifc.helpbuf=invalid_code;
 				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
-				continue; 
+				continue;
 			}
 			if (!new_external_program(xtrnnum[i], section))
 				continue;
 			SAFECOPY(cfg.xtrn[xtrnnum[i]]->name,str);
 			SAFECOPY(cfg.xtrn[xtrnnum[i]]->code,code);
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_DEL || msk == MSK_CUT) {
 			if(msk == MSK_CUT)
@@ -1145,11 +1145,11 @@ void xtrn_cfg(uint section)
 			for(j=xtrnnum[i];j<cfg.total_xtrns;j++)
 				cfg.xtrn[j]=cfg.xtrn[j+1];
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_COPY) {
 			savxtrn=*cfg.xtrn[xtrnnum[i]];
-			continue; 
+			continue;
 		}
 		if(msk == MSK_PASTE) {
 			if (!new_external_program(xtrnnum[i], section))
@@ -1157,7 +1157,7 @@ void xtrn_cfg(uint section)
 			*cfg.xtrn[xtrnnum[i]]=savxtrn;
 			cfg.xtrn[xtrnnum[i]]->sec=section;
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if (msk != 0)
 			continue;
@@ -1214,7 +1214,7 @@ void xtrn_cfg(uint section)
 					break;
 				default:
 					strcpy(str,"No");
-					break; 
+					break;
 			}
 			if((cfg.xtrn[i]->misc&EVENTONLY) && cfg.xtrn[i]->event)
 				strcat(str,", Only");
@@ -1285,7 +1285,7 @@ void xtrn_cfg(uint section)
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf=0; 
+						uifc.helpbuf=0;
 					}
 					break;
 				case __COUNTER__:
@@ -1357,11 +1357,11 @@ void xtrn_cfg(uint section)
 						,uifcYesNoOpts);
 					if(!k && !(cfg.xtrn[i]->misc&MULTIUSER)) {
 						cfg.xtrn[i]->misc|=MULTIUSER;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==1 && (cfg.xtrn[i]->misc&MULTIUSER)) {
 						cfg.xtrn[i]->misc&=~MULTIUSER;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case __COUNTER__:
@@ -1374,11 +1374,11 @@ void xtrn_cfg(uint section)
 						,"Native",uifcYesNoOpts);
 					if(!k && !(cfg.xtrn[i]->misc&XTRN_NATIVE)) {
 						cfg.xtrn[i]->misc|=XTRN_NATIVE;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==1 && (cfg.xtrn[i]->misc&XTRN_NATIVE)) {
 						cfg.xtrn[i]->misc&=~XTRN_NATIVE;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case __COUNTER__:
@@ -1388,11 +1388,11 @@ void xtrn_cfg(uint section)
 						,use_shell_prompt,uifcYesNoOpts);
 					if(!k && !(cfg.xtrn[i]->misc&XTRN_SH)) {
 						cfg.xtrn[i]->misc|=XTRN_SH;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==1 && (cfg.xtrn[i]->misc&XTRN_SH)) {
 						cfg.xtrn[i]->misc&=~XTRN_SH;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case __COUNTER__:
@@ -1408,11 +1408,11 @@ void xtrn_cfg(uint section)
 						,"Program Can Modify User Data",uifcYesNoOpts);
 					if(!k && !(cfg.xtrn[i]->misc&MODUSERDAT)) {
 						cfg.xtrn[i]->misc|=MODUSERDAT;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==1 && (cfg.xtrn[i]->misc&MODUSERDAT)) {
 						cfg.xtrn[i]->misc&=~MODUSERDAT;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case __COUNTER__:
@@ -1440,12 +1440,12 @@ void xtrn_cfg(uint section)
 						break;
 					if(cfg.xtrn[i]->event!=k) {
 						cfg.xtrn[i]->event=k;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					if(!cfg.xtrn[i]->event) {
 						if(cfg.xtrn[i]->misc&EVENTONLY) {
 							cfg.xtrn[i]->misc&=~EVENTONLY;
-							uifc.changes=TRUE; 
+							uifc.changes=TRUE;
 						}
 						break;
 					}
@@ -1462,11 +1462,11 @@ void xtrn_cfg(uint section)
 						,uifcYesNoOpts);
 					if(!k && !(cfg.xtrn[i]->misc&EVENTONLY)) {
 						cfg.xtrn[i]->misc|=EVENTONLY;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==1 && (cfg.xtrn[i]->misc&EVENTONLY)) {
 						cfg.xtrn[i]->misc&=~EVENTONLY;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case __COUNTER__:
@@ -1486,7 +1486,7 @@ void xtrn_cfg(uint section)
 					if((!k && !(cfg.xtrn[i]->misc&XTRN_PAUSE))
 						|| (k && (cfg.xtrn[i]->misc&XTRN_PAUSE))) {
 						cfg.xtrn[i]->misc^=XTRN_PAUSE;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case __COUNTER__:
@@ -1506,7 +1506,7 @@ void xtrn_cfg(uint section)
 					if((!k && !(cfg.xtrn[i]->misc & XTRN_NODISPLAY))
 						|| (k && (cfg.xtrn[i]->misc & XTRN_NODISPLAY))) {
 						cfg.xtrn[i]->misc ^= XTRN_NODISPLAY;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case __COUNTER__:
@@ -1555,7 +1555,7 @@ void xtrn_cfg(uint section)
 						cfg.xtrn[i]->type=k;
 						if(cfg.xtrn[i]->type==XTRN_DOOR32)
 							cfg.xtrn[i]->misc|=XTRN_NATIVE;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					if(cfg.xtrn[i]->type && cfg.uq&UQ_ALIASES) {
 						k=(cfg.xtrn[i]->misc&REALNAME) ? 0:1;
@@ -1564,11 +1564,11 @@ void xtrn_cfg(uint section)
 							break;
 						if(k==0 && !(cfg.xtrn[i]->misc&REALNAME)) {
 							cfg.xtrn[i]->misc|=REALNAME;
-							uifc.changes=TRUE; 
+							uifc.changes=TRUE;
 						}
 						else if(k==1 && (cfg.xtrn[i]->misc&REALNAME)) {
 							cfg.xtrn[i]->misc&=~REALNAME;
-							uifc.changes=TRUE; 
+							uifc.changes=TRUE;
 						}
 					}
 					if(cfg.xtrn[i]->type) {
@@ -1576,12 +1576,12 @@ void xtrn_cfg(uint section)
 						k=uifc.list(WIN_MID,0,0,0,&k,0,"Lowercase Filename",uifcYesNoOpts);
 						if(k==0 && !(cfg.xtrn[i]->misc&XTRN_LWRCASE)) {
 							cfg.xtrn[i]->misc|=XTRN_LWRCASE;
-							uifc.changes=TRUE; 
+							uifc.changes=TRUE;
 						}
 						else if(k==1 && (cfg.xtrn[i]->misc&XTRN_LWRCASE)) {
 							cfg.xtrn[i]->misc&=~XTRN_LWRCASE;
-							uifc.changes=TRUE; 
-						} 
+							uifc.changes=TRUE;
+						}
 					}
 					break;
 				case __COUNTER__:
@@ -1610,17 +1610,17 @@ void xtrn_cfg(uint section)
 						,opt);
 					if(!k && (cfg.xtrn[i]->misc&(STARTUPDIR | XTRN_TEMP_DIR)) != 0) {
 						cfg.xtrn[i]->misc &= ~(STARTUPDIR | XTRN_TEMP_DIR);
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==1 && (cfg.xtrn[i]->misc&(STARTUPDIR | XTRN_TEMP_DIR)) != STARTUPDIR) {
 						cfg.xtrn[i]->misc &= ~(STARTUPDIR | XTRN_TEMP_DIR);
 						cfg.xtrn[i]->misc |= STARTUPDIR;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==2 && (cfg.xtrn[i]->misc&(STARTUPDIR | XTRN_TEMP_DIR)) != XTRN_TEMP_DIR) {
 						cfg.xtrn[i]->misc &= ~(STARTUPDIR | XTRN_TEMP_DIR);
 						cfg.xtrn[i]->misc |= XTRN_TEMP_DIR;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case __COUNTER__:
@@ -1700,13 +1700,13 @@ void xtrn_cfg(uint section)
 									,"Suspended (Free) Time",uifcYesNoOpts);
 								if(!k && !(cfg.xtrn[i]->misc&FREETIME)) {
 									cfg.xtrn[i]->misc|=FREETIME;
-									uifc.changes=TRUE; 
+									uifc.changes=TRUE;
 								}
 								else if(k==1 && (cfg.xtrn[i]->misc&FREETIME)) {
 									cfg.xtrn[i]->misc&=~FREETIME;
-									uifc.changes=TRUE; 
+									uifc.changes=TRUE;
 								}
-								break; 
+								break;
 							case 3:
 								k=(cfg.xtrn[i]->misc&XTRN_CHKTIME) ? 0:1;
 								uifc.helpbuf=
@@ -1720,11 +1720,11 @@ void xtrn_cfg(uint section)
 									,"Monitor Time Left",uifcYesNoOpts);
 								if(!k && !(cfg.xtrn[i]->misc&XTRN_CHKTIME)) {
 									cfg.xtrn[i]->misc|=XTRN_CHKTIME;
-									uifc.changes=TRUE; 
+									uifc.changes=TRUE;
 								}
 								else if(k==1 && (cfg.xtrn[i]->misc&XTRN_CHKTIME)) {
 									cfg.xtrn[i]->misc&=~XTRN_CHKTIME;
-									uifc.changes=TRUE; 
+									uifc.changes=TRUE;
 								}
 								break;
 							case 4:
@@ -1750,11 +1750,11 @@ void xtrn_cfg(uint section)
 									,str,5,K_EDIT);
 								cfg.xtrn[i]->max_inactivity = (uint)parse_duration(str);
 								break;
-							} 
+							}
 						}
 						break;
-				} 
-			} 
+				}
+			}
 	}
 }
 
@@ -1816,14 +1816,14 @@ void xedit_cfg()
 				uifc.helpbuf=invalid_code;
 				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
-				continue; 
+				continue;
 			}
 			if (!new_external_editor(i))
 				continue;
 			SAFECOPY(cfg.xedit[i]->name,str);
 			SAFECOPY(cfg.xedit[i]->code,code);
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_DEL || msk == MSK_CUT) {
 			if(msk == MSK_CUT)
@@ -1833,18 +1833,18 @@ void xedit_cfg()
 			for(j=i;j<cfg.total_xedits;j++)
 				cfg.xedit[j]=cfg.xedit[j+1];
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_COPY) {
 			savxedit=*cfg.xedit[i];
-			continue; 
+			continue;
 		}
 		if(msk == MSK_PASTE) {
 			if (!new_external_editor(i))
 				continue;
 			*cfg.xedit[i]=savxedit;
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if (msk != 0)
 			continue;
@@ -1960,7 +1960,7 @@ void xedit_cfg()
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf=0; 
+						uifc.helpbuf=0;
 					}
 					break;
 			   case 2:
@@ -1988,11 +1988,11 @@ void xedit_cfg()
 						,"Native",uifcYesNoOpts);
 					if(!k && !(cfg.xedit[i]->misc&XTRN_NATIVE)) {
 						cfg.xedit[i]->misc|=XTRN_NATIVE;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==1 && (cfg.xedit[i]->misc&XTRN_NATIVE)) {
 						cfg.xedit[i]->misc&=~XTRN_NATIVE;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case 6:
@@ -2002,10 +2002,10 @@ void xedit_cfg()
 						,use_shell_prompt, uifcYesNoOpts);
 					if(!k && !(cfg.xedit[i]->misc&XTRN_SH)) {
 						cfg.xedit[i]->misc|=XTRN_SH;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					} else if(k==1 && (cfg.xedit[i]->misc&XTRN_SH)) {
 						cfg.xedit[i]->misc&=~XTRN_SH;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case 7:
@@ -2032,7 +2032,7 @@ void xedit_cfg()
 						case 1:
 							if(cfg.xedit[i]->misc&SAVECOLUMNS) {
 								cfg.xedit[i]->misc &= ~SAVECOLUMNS;
-								uifc.changes = TRUE; 
+								uifc.changes = TRUE;
 							}
 							break;
 					}
@@ -2074,7 +2074,7 @@ void xedit_cfg()
 						case 1:
 							if(cfg.xedit[i]->misc&QUOTEWRAP) {
 								cfg.xedit[i]->misc&=~QUOTEWRAP;
-								uifc.changes=TRUE; 
+								uifc.changes=TRUE;
 							}
 							break;
 					}
@@ -2113,16 +2113,16 @@ void xedit_cfg()
 					if(!k && !(cfg.xedit[i]->misc&QUOTEALL)) {
 						cfg.xedit[i]->misc|=QUOTEALL;
 						cfg.xedit[i]->misc&=~QUOTENONE;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==1 && !(cfg.xedit[i]->misc&QUOTENONE)) {
 						cfg.xedit[i]->misc|=QUOTENONE;
 						cfg.xedit[i]->misc&=~QUOTEALL;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==2 && cfg.xedit[i]->misc&(QUOTENONE|QUOTEALL)) {
 						cfg.xedit[i]->misc&=~(QUOTENONE|QUOTEALL);
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case 10:
@@ -2142,11 +2142,11 @@ void xedit_cfg()
 						break;
 					if(!k && !(cfg.xedit[i]->misc&QUICKBBS)) {
 						cfg.xedit[i]->misc|=QUICKBBS;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==1 && (cfg.xedit[i]->misc&QUICKBBS)) {
 						cfg.xedit[i]->misc&=~QUICKBBS;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					goto lowercase_filename;
 					break;
@@ -2162,11 +2162,11 @@ void xedit_cfg()
 						,uifcYesNoOpts);
 					if(!k && !(cfg.xedit[i]->misc&EXPANDLF)) {
 						cfg.xedit[i]->misc|=EXPANDLF;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==1 && (cfg.xedit[i]->misc&EXPANDLF)) {
 						cfg.xedit[i]->misc&=~EXPANDLF;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case 12:
@@ -2212,11 +2212,11 @@ void xedit_cfg()
 						,uifcYesNoOpts);
 					if(!k && !(cfg.xedit[i]->misc&STRIPKLUDGE)) {
 						cfg.xedit[i]->misc|=STRIPKLUDGE;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==1 && (cfg.xedit[i]->misc&STRIPKLUDGE)) {
 						cfg.xedit[i]->misc&=~STRIPKLUDGE;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case 14:
@@ -2232,11 +2232,11 @@ void xedit_cfg()
 						,uifcYesNoOpts);
 					if(!k && !(cfg.xedit[i]->misc&XTRN_UTF8)) {
 						cfg.xedit[i]->misc ^= XTRN_UTF8;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					else if(k==1 && (cfg.xedit[i]->misc&XTRN_UTF8)) {
 						cfg.xedit[i]->misc ^= XTRN_UTF8;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					break;
 				case 15:
@@ -2270,7 +2270,7 @@ void xedit_cfg()
 						cfg.xedit[i]->type=k;
 						if(cfg.xedit[i]->type==XTRN_DOOR32)
 							cfg.xedit[i]->misc|=XTRN_NATIVE;
-						uifc.changes=TRUE; 
+						uifc.changes=TRUE;
 					}
 					if(cfg.xedit[i]->type) {
 						lowercase_filename:
@@ -2278,16 +2278,16 @@ void xedit_cfg()
 						k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Lowercase Filename",uifcYesNoOpts);
 						if(k==0 && !(cfg.xedit[i]->misc&XTRN_LWRCASE)) {
 							cfg.xedit[i]->misc|=XTRN_LWRCASE;
-							uifc.changes=TRUE; 
+							uifc.changes=TRUE;
 						}
 						else if(k==1 && (cfg.xedit[i]->misc&XTRN_LWRCASE)) {
 							cfg.xedit[i]->misc&=~XTRN_LWRCASE;
-							uifc.changes=TRUE; 
-						} 
+							uifc.changes=TRUE;
+						}
 					}
 					break;
-			} 
-		} 
+			}
+		}
 	}
 }
 
@@ -2343,20 +2343,20 @@ int natvpgm_cfg()
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_natvpgms+1);
 				cfg.total_natvpgms=0;
 				bail(1);
-				continue; 
+				continue;
 			}
 			if(cfg.total_natvpgms)
 				for(u=cfg.total_natvpgms;u>i;u--)
 					cfg.natvpgm[u]=cfg.natvpgm[u-1];
 			if((cfg.natvpgm[i]=(natvpgm_t *)malloc(sizeof(natvpgm_t)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(natvpgm_t));
-				continue; 
+				continue;
 			}
 			memset((natvpgm_t *)cfg.natvpgm[i],0,sizeof(natvpgm_t));
 			SAFECOPY(cfg.natvpgm[i]->name,str);
 			cfg.total_natvpgms++;
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_DEL) {
 			free(cfg.natvpgm[i]);
@@ -2364,7 +2364,7 @@ int natvpgm_cfg()
 			for(j=i;j<cfg.total_natvpgms;j++)
 				cfg.natvpgm[j]=cfg.natvpgm[j+1];
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if (msk != 0)
 			continue;
@@ -2377,6 +2377,15 @@ int natvpgm_cfg()
 	return(0);
 }
 
+static uint progs_in_sec(uint sec)
+{
+	uint total = 0;
+
+	for(uint i = 0; i < cfg.total_xtrns; ++i)
+		if(cfg.xtrn[i]->sec == sec)
+			++total;
+	return total;
+}
 
 void xtrnsec_cfg()
 {
@@ -2388,7 +2397,7 @@ void xtrnsec_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_xtrnsecs && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-25s",cfg.xtrnsec[i]->name);
+			sprintf(opt[i],"%-*s %5u", (int)sizeof(cfg.xtrn[i]->name)-1, cfg.xtrnsec[i]->name, progs_in_sec(i));
 		opt[i][0]=0;
 		j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_BOT;
 		if(cfg.total_xtrnsecs)
@@ -2409,7 +2418,7 @@ void xtrnsec_cfg()
 			"\n"
 			"To configure an online program section, select it and hit ~ ENTER ~.\n"
 		;
-		i=uifc.list(j,0,0,45,&xtrnsec_dflt,&xtrnsec_bar,"Online Program Sections",opt);
+		i=uifc.list(j,0,0,0,&xtrnsec_dflt,&xtrnsec_bar,"Online Program Sections               Programs",opt);
 		if((signed)i==-1)
 			return;
 		int msk = i & MSK_ON;
@@ -2440,14 +2449,14 @@ void xtrnsec_cfg()
 				uifc.helpbuf=invalid_code;
 				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
-				continue; 
+				continue;
 			}
 			if (!new_external_program_section(xtrnsec_num))
 				continue;
 			SAFECOPY(cfg.xtrnsec[xtrnsec_num]->name,str);
 			SAFECOPY(cfg.xtrnsec[xtrnsec_num]->code,code);
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_DEL || msk == MSK_CUT) {
 			if(msk == MSK_CUT)
@@ -2482,11 +2491,11 @@ void xtrnsec_cfg()
 			for (i = xtrnsec_num; i < cfg.total_xtrnsecs; i++)
 				cfg.xtrnsec[i]=cfg.xtrnsec[i+1];
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_COPY) {
 			savxtrnsec=*cfg.xtrnsec[xtrnsec_num];
-			continue; 
+			continue;
 		}
 		if(msk == MSK_PASTE) {
 			if (!new_external_program_section(xtrnsec_num))
@@ -2497,7 +2506,7 @@ void xtrnsec_cfg()
 					cfg.xtrn[u]->sec = xtrnsec_num;
 			*cfg.xtrnsec[xtrnsec_num]=savxtrnsec;
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if (msk != 0)
 			continue;
@@ -2568,7 +2577,7 @@ void xtrnsec_cfg()
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf=0; 
+						uifc.helpbuf=0;
 					}
 					break;
 				case 2:
@@ -2576,9 +2585,9 @@ void xtrnsec_cfg()
 					break;
 				case 3:
 					xtrn_cfg(i);
-					break; 
-			} 
-		} 
+					break;
+			}
+		}
 	}
 }
 
@@ -2637,20 +2646,20 @@ void hotkey_cfg(void)
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_hotkeys+1);
 				cfg.total_hotkeys=0;
 				bail(1);
-				continue; 
+				continue;
 			}
 			if(cfg.total_hotkeys)
 				for(u=cfg.total_hotkeys;u>i;u--)
 					cfg.hotkey[u]=cfg.hotkey[u-1];
 			if((cfg.hotkey[i]=(hotkey_t *)malloc(sizeof(hotkey_t)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(hotkey_t));
-				continue; 
+				continue;
 			}
 			memset((hotkey_t *)cfg.hotkey[i],0,sizeof(hotkey_t));
 			cfg.hotkey[i]->key=str[0]-'@';
 			cfg.total_hotkeys++;
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_DEL || msk == MSK_CUT) {
 			if(msk == MSK_CUT)
@@ -2660,16 +2669,16 @@ void hotkey_cfg(void)
 			for(j=i;j<cfg.total_hotkeys;j++)
 				cfg.hotkey[j]=cfg.hotkey[j+1];
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_COPY) {
 			savhotkey=*cfg.hotkey[i];
-			continue; 
+			continue;
 		}
 		if(msk == MSK_PASTE) {
 			*cfg.hotkey[i]=savhotkey;
 			uifc.changes=TRUE;
-			continue; 
+			continue;
 		}
 		if (msk != 0)
 			continue;
@@ -2728,7 +2737,7 @@ void hotkey_cfg(void)
 					uifc.input(WIN_MID|WIN_SAV,0,10,"Command"
 						,cfg.hotkey[i]->cmd,sizeof(cfg.hotkey[i]->cmd)-1,K_EDIT);
 					break;
-			} 
-		} 
+			}
+		}
 	}
 }
