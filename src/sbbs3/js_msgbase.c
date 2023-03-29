@@ -2628,7 +2628,12 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 		body=strdup("");
 
 	if(rcpt_list!=NULL) {
-		if(!JS_GetArrayLength(cx, rcpt_list, &rcpt_list_length) || !rcpt_list_length) {
+		if(!JS_GetArrayLength(cx, rcpt_list, &rcpt_list_length)) {
+			free(body);
+			return JS_TRUE;
+		}
+		if(rcpt_list_length < 1) {
+			JS_ReportError(cx, "Empty recipient list");
 			free(body);
 			return JS_TRUE;
 		}
