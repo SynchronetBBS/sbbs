@@ -237,7 +237,7 @@ G_MODULE_EXPORT void on_todays_log1_activate(GtkWidget *wiggy, gpointer data)
 {
 	time_t	t;
 	struct tm *tm;
-	char	fn[20];
+	char	fn[120];
 
 	t=time(NULL);
 	tm=localtime(&t);
@@ -249,7 +249,7 @@ G_MODULE_EXPORT void on_yesterdays_log1_activate(GtkWidget *wiggy, gpointer data
 {
 	time_t	t;
 	struct tm *tm;
-	char	fn[20];
+	char	fn[120];
 
 	t=time(NULL);
 	t-=24*60*60;
@@ -260,7 +260,7 @@ G_MODULE_EXPORT void on_yesterdays_log1_activate(GtkWidget *wiggy, gpointer data
 
 G_MODULE_EXPORT void on_another_days_log1_activate(GtkWidget *wiggy, gpointer data) {
 	isoDate_t	date;
-	char	fn[20];
+	char	fn[120];
 
 	date=time_to_isoDate(time(NULL));
 	get_date(wiggy, &date);
