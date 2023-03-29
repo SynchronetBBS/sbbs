@@ -1847,7 +1847,7 @@ change_settings(int connected)
 			case 2:
 				j = settings.startup_mode;
 				uifc.helpbuf = "`Startup Screen Mode`\n\n"
-				    "Select the screen mode/size for at startup\n";
+				    "Select the initial screen mode/size to use at startup.\n";
 				i = sizeof(screen_modes) / sizeof(screen_modes[0]);
 				switch (i = uifc.list(WIN_SAV, 0, 0, 0, &j, &i, "Startup Screen Mode", screen_modes)) {
 					case -1:
@@ -3043,7 +3043,10 @@ show_bbslist(char *current, int connected)
 						gettextinfo(&ti);
 
 						uifc.helpbuf = "`Current Screen Mode`\n\n"
-						    "Change the current screen size/mode.\n";
+						    "Change the current screen size/mode.\n"
+						    "\n"
+						    "To change the initial screen mode, set Program Settings->Startup Screen\n"
+						    "Mode instead.";
 						i = ti.currmode;
 						i = ciolib_to_screen(ti.currmode);
 						i--;
@@ -3116,15 +3119,15 @@ show_bbslist(char *current, int connected)
 						asprintf(&p,
 						    "`SyncTERM File Locations`\n\n"
 						    "~ Global Dialing Directory (Read-Only) ~\n"
-						    "        %s\n\n"
+						    "  %s\n\n"
 						    "~ Personal Dialing Directory ~\n"
-						    "        %s\n\n"
+						    "  %s\n\n"
 						    "~ Configuration File ~\n"
-						    "        %s\n\n"
+						    "  %s\n\n"
 						    "~ Default download Directory ~\n"
-						    "        %s\n\n"
+						    "  %s\n\n"
 						    "~ Cache Directory ~\n"
-						    "        %s\n\n",
+						    "  %s\n\n",
 						    shared_list,
 						    personal_list,
 						    setting_file,
