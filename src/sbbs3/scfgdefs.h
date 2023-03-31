@@ -216,14 +216,6 @@ typedef struct {							/* Chat Channel Information */
 
 } chan_t;
 
-typedef struct {							/* Modem Result codes info */
-	uint16_t	code,						/* Numeric Result Code */
-				cps,    		            /* Average Transfer CPS */
-				rate;   		            /* DCE Rate (Modem to Modem) */
-	char		str[LEN_MODEM+1];   		/* String to use for description */
-
-} mdm_result_t;
-
 typedef struct {							/* Transfer Protocol information */
 	char		mnemonic;					/* Letter to select this protocol */
 	char		name[26],					/* Name of protocol */
@@ -412,8 +404,6 @@ typedef struct
 	uint16_t		total_xtrnsecs; 	/* Total number of external sections */
 	xtrn_t			**xtrn; 			/* Each external program */
 	uint16_t		total_xtrns;		/* Total number of externals */
-	mdm_result_t	*mdm_result;		/* Each Modem Result Code */
-	uint16_t		mdm_results;		/* Total number of Modem Results */
 	prot_t			**prot; 			/* Each Transfer Protocol */
 	uint16_t		total_prots;		/* Total Transfer Protocols */
 	fextr_t			**fextr;			/* Each extractable file type */

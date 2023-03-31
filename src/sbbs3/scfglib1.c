@@ -582,9 +582,6 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 void free_node_cfg(scfg_t* cfg)
 {
-	if(cfg->mdm_result!=NULL) {
-		FREE_AND_NULL(cfg->mdm_result);
-	}
 }
 
 void free_main_cfg(scfg_t* cfg)
