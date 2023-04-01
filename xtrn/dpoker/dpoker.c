@@ -305,7 +305,7 @@ int main(int argc, char **argv)
         }
         close(file);
         for (l=0;l<length;l+=sizeof(player_stuff)) {
-            sprintf(player_stuff.name,"%.25s",buf+l);
+            snprintf(player_stuff.name, sizeof(player_stuff.name), "%s", buf+l);
             player_stuff.time=*(ulong *)(buf+l+25);
             player_stuff.points=*(long *)(buf+l+29);
             truncsp(player_stuff.name);
@@ -373,7 +373,7 @@ int main(int argc, char **argv)
                     }
                     close(file);
                     for (l=0;l<length;l+=sizeof(player_stuff)) {
-                        sprintf(player_stuff.name,"%.25s",buf+l);
+                        snprintf(player_stuff.name, sizeof(player_stuff.name), "%s",buf+l);
                         player_stuff.time=*(ulong *)(buf+l+25);
                         player_stuff.points=*(long *)(buf+l+29);
                         if (player_stuff.points>0) strcpy(str,"\1m\1hWON!");
