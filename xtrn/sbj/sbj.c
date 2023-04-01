@@ -685,11 +685,11 @@ while(1) {
 				strcat(str," ");
 			if(h>21) {
 				strcat(str,Bust);
-				sprintf(str2,YourHand,h,str);
+				snprintf(str2, sizeof(str2), YourHand,h,str);
 				if(!symbols)
 					strip_symbols(str2);
 				bputs(str2);
-				sprintf(str2,UserHand,user_name,h,str);
+				snprintf(str2, sizeof(str2), UserHand,user_name,h,str);
 				putallnodemsg(str2);
 				break; }
 			if(h==21) {
@@ -703,20 +703,20 @@ while(1) {
 						&& player[i][2].value==7)
 						strcat(str,Three7s);
 					strcat(str,TwentyOne); }
-				sprintf(str2,YourHand,h,str);
+				snprintf(str2, sizeof(str2), YourHand,h,str);
 				if(!symbols)
 					strip_symbols(str2);
 				bputs(str2);
-				sprintf(str2,UserHand,user_name,h,str);
+				snprintf(str2, sizeof(str2), UserHand,user_name,h,str);
                 putallnodemsg(str2);
 				// fdelay(500);
 				break; }
 			strcat(str,"\r\n");
-			sprintf(str2,YourHand,h,str);
+			snprintf(str2, sizeof(str2), YourHand,h,str);
 			if(!symbols)
 				strip_symbols(str2);
 			bputs(str2);
-			sprintf(str2,UserHand,user_name,h,str);
+			snprintf(str2, sizeof(str2), UserHand,user_name,h,str);
 			putallnodemsg(str2);
 			if(doub)
 				break;
@@ -939,11 +939,11 @@ while(1) {
 			write(file,tmp,strlen(tmp));
 			close(file); }					/* close winning log */
 		strcat(str,"\1n\r\n");
-		sprintf(str2,YourHand,h,str);
+		snprintf(str2, sizeof(str2), YourHand,h,str);
 		if(!symbols)
 			strip_symbols(str2);
 		bputs(str2);
-		sprintf(str2,UserHand,user_name,h,str);
+		snprintf(str2, sizeof(str2), UserHand,user_name,h,str);
 		putallnodemsg(str2); }
 
 	nextplayer();
