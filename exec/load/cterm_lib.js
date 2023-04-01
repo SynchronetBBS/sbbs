@@ -21,6 +21,16 @@ const font_state_field_result = 1;
 const font_state_field_style = 2;
 const da_ver_major = 0;
 const da_ver_minor = 1;
+const cterm_device_attributes = {
+	valid:'0',
+	loadable_fonts:'1',
+	bright_background:'2',
+	palette_settable:'3',
+	pixelops_supported:'4',
+	font_selectable:'5',
+	extended_palette:'6',
+	mouse_available:'7'
+};
 
 if(console.cterm_version === undefined || console.cterm_version < 0) {
 	var response = query_da();
@@ -190,6 +200,17 @@ function query_fontdim()
 	if(response.substr(0,5) == "\x1b[=3;" && response.substr(-1) == "n")
 		return response.slice(5, -1).split(/;/);
 	return false;
+}
+
+function query_ctda(which)
+{
+	var response = query("\x1b[<c");
+	if(response.substr(0, 3) != "\x1b[<" || response.substr(-1) != "c")
+		return false;
+	var attributes = response.slice(3, -1).split(/;/);
+	if(which !== undefined)
+		return attributes.indexOf(which) >= 0;
+	return attributes;
 }
 
 function fontsize(n)
