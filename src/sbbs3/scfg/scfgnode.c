@@ -46,9 +46,13 @@ void adjust_last_node()
 	SAFEPRINTF(prompt, "Update Terminal Server 'LastNode' value to %u", cfg.sys_nodes);
 	if(last_node < cfg.sys_nodes && uifc.confirm(prompt)) {
 		fp = iniOpenFile(ini_fname, /* modify */true);
-		iniSetUInteger(&ini, section, key, cfg.sys_nodes, NULL);
-		iniWriteFile(fp, ini);
-		iniCloseFile(fp);
+		if(fp == NULL)
+			uifc.msgf("Error %d opening %s", errno, ini_fname);
+		else {
+			iniSetUInteger(&ini, section, key, cfg.sys_nodes, NULL);
+			iniWriteFile(fp, ini);
+			iniCloseFile(fp);
+		}
 	}
 	iniFreeStringList(ini);
 }
