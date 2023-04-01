@@ -93,25 +93,25 @@ void get_term(void);
 
 /* BBS Print String
 	- Displays a string locally and remotely (with Ctrl-A codes) */
-void bputs(char *str);
+void bputs(const char *str);
 
 /* Raw Print String
 	- Oututs a string locally and remotely (verbatim) */
-void rputs(char *str);
+void rputs(const char *str);
 
 /* BBS Print Formatted
 	- Displays a formatted string locally and remotely (with Ctrl-A codes)
 	- printf() equivalent */
-int  bprintf(char *fmt, ...);
+int  bprintf(const char *fmt, ...);
 
 /* Raw Print Formated
 	- Displays a formatted string locally and remotely (verbatim)
 	- printf() equivalent */
-int  rprintf(char *fmt, ...);
+int  rprintf(const char *fmt, ...);
 
 /* BBS String Length
 	- Returns length of string, excluding Ctrl-A codes */
-int  bstrlen(char *str);
+int  bstrlen(const char *str);
 
 /* Output character
 	- Displays a single character */
@@ -121,7 +121,7 @@ void outchar(char ch);
 	- Display a string expanding ~letter combinations to command keys
 	- Automatically colorizes mnemonic letters or places them in parenthesis
 	  for non-ANSI users */
-void mnemonics(char *str);
+void mnemonics(const char *str);
 
 /* Pause prompt
 	- Displays [Hit a key] and waits for the user to hit a key */
@@ -132,13 +132,13 @@ void bpause(void);
 	  'Y', 'N' or enter
 	- Returns 1 if the user hit 'Y' or enter
 	- Automatic colorization */
-char yesno(char *str);
+char yesno(const char *str);
 
 /* No/yes Question
 	- Displays a string with (y/N) ? appended and waits for the user to hit
 	  'Y', 'N' or enter
 	- Returns 1 if the user hit 'N' or enter */
-char noyes(char *str);
+char noyes(const char *str);
 
 /* Inbound Keystroke
 	- If the local or remote user has struck a key, this function returns the
@@ -162,7 +162,7 @@ char getkey(long mode);
 	  followed by CRLF
 	- If the user entered a number, the number is ORed with 0x8000 and returned
 	  you must XOR (or not) this bit to get the correct number */
-int  getkeys(char *str, int max);
+int  getkeys(const char *str, int max);
 
 /* Get a Number
 	- Waits for the user to enter a number from 0 to max, 'Q' or ENTER
@@ -212,7 +212,7 @@ void checktimeleft(void);
 
 /* Print File
 	- Displays contents of file (expanding Ctrl-A characters if appropriate) */
-void printfile(char *str);
+void printfile(const char *str);
 
 /* Get String
 	- Waits for the user to enter a string
@@ -222,7 +222,7 @@ int  getstr(char *str, size_t maxlen, long mode);
 
 /* Redraw String
 	- Redisplays a string, mainly called by getstr() */
-void redrwstr(char *strin, int i, int l, long mode);
+void redrwstr(const char *strin, int i, int l, long mode);
 
 /* Strip Invalid Ctrl-A codes */
 char stripattr(char *strin);
@@ -232,13 +232,13 @@ char *xsdk_username(uint usernumber);
 #define username(x)	xsdk_username(x)
 
 /* Returns the number of the user name passed */
-uint usernumber(char *username);
+uint usernumber(const char *username);
 
 /* Convert unsigned long to an ASCII string with commas */
 char *ultoac(ulong l, char *string);
 
 /* Convert an ASCII string of hex digits into an unsigned long */
-ulong ahtoul(char *str);
+ulong ahtoul(const char *str);
 
 /* Display status of node */
 void xsdk_printnodedat(int number, node_t node);
@@ -256,7 +256,7 @@ void xsdk_getnodedat(int number, node_t *node, char lockit);
 #define getnodedat(a,b,c)	xsdk_getnodedat(a,b,c)
 
 /* Writes a short message (telegram) for specified user number */
-void xsdk_putsmsg(int usernumber, char *strin);
+void xsdk_putsmsg(int usernumber, const char *strin);
 #define putsmsg(a,b)	xsdk_putsmsg(a,b)
 
 /* Reads and displays short message for specified user number */
@@ -264,7 +264,7 @@ void xsdk_getsmsg(int usernumber);
 #define getsmsg(a)	xsdk_getsmsg(a)
 
 /* Writes a node message for specified node */
-void xsdk_putnmsg(int num, char *strin);
+void xsdk_putnmsg(int num, const char *strin);
 #define putnmsg(a,b)	xsdk_putnmsg(a,b)
 
 /* Reads and displays node message for current node */
@@ -285,7 +285,7 @@ int isconnected(void);
 void checkline(void);
 
 /* Display a line (with ctrl-A codes) centered on the screen */
-void center(char *str);
+void center(const char *str);
 
 #ifdef _MSC_VER
 int lock(int file, long offset, long size);

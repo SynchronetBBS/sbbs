@@ -1,7 +1,3 @@
-/* SBJ.C */
-
-/* $Id: sbj.c,v 1.14 2003/08/29 21:51:52 rswindell Exp $ */
-
 /************************/
 /* Synchronet Blackjack */
 /************************/
@@ -111,19 +107,20 @@ enum {								/* values for status bytes */
 typedef struct { char value, suit; } card_t;
 
 card_t newdeck[52]={
-	 2,H, 2,D, 2,C, 2,S,
-	 3,H, 3,D, 3,C, 3,S,
-	 4,H, 4,D, 4,C, 4,S,
-	 5,H, 5,D, 5,C, 5,S,
-	 6,H, 6,D, 6,C, 6,S,
-	 7,H, 7,D, 7,C, 7,S,
-	 8,H, 8,D, 8,C, 8,S,
-	 9,H, 9,D, 9,C, 9,S,
-	10,H,10,D,10,C,10,S,
-	 J,H, J,D, J,C, J,S,
-	 Q,H, Q,D, Q,C, Q,S,
-	 K,H, K,D, K,C, K,S,
-	 A,H, A,D, A,C, A,S };
+	{ 2,H }, { 2,D }, { 2,C }, { 2,S },
+	{ 3,H }, { 3,D }, { 3,C }, { 3,S },
+	{ 4,H }, { 4,D }, { 4,C }, { 4,S },
+	{ 5,H }, { 5,D }, { 5,C }, { 5,S },
+	{ 6,H }, { 6,D }, { 6,C }, { 6,S },
+	{ 7,H }, { 7,D }, { 7,C }, { 7,S },
+	{ 8,H }, { 8,D }, { 8,C }, { 8,S },
+	{ 9,H }, { 9,D }, { 9,C }, { 9,S },
+	{10,H }, {10,D }, {10,C }, {10,S },
+	{ J,H }, { J,D }, { J,C }, { J,S },
+	{ Q,H }, { Q,D }, { Q,C }, { Q,S },
+	{ K,H }, { K,D }, { K,C }, { K,S },
+	{ A,H }, { A,D }, { A,C }, { A,S }
+};
 
 uchar	misc;
 uchar	curplayer;
@@ -201,7 +198,7 @@ int my_random(int n)
 /****************************************************************************/
 int main(int argc, char **argv)
 {
-	char str[81],compiler[32],*p;
+	char str[128],compiler[32],*p;
 	int i,file;
 	FILE *stream;
 
@@ -330,7 +327,7 @@ int main(int argc, char **argv)
 	mnelow=CYAN|HIGH;
 
 	/* Override default inactivity timeout values */
-	sec_warn=120;	
+	sec_warn=120;
 	sec_timeout=180;
 
 	COMPILER_DESC(compiler);
@@ -391,8 +388,8 @@ int main(int argc, char **argv)
 				play();
 				sec_warn=120;
 				sec_timeout=180;
-				break; 
-		} 
+				break;
+		}
 	}
 }
 
@@ -576,7 +573,7 @@ while(1) {
 		max=max_bet;
 	else
 		max=credits/1024L;
-	sprintf(str,"\r\nBet amount (in kilobytes) or ~Quit [%u]: "
+	sprintf(str,"\r\nBet amount (in kilobytes) or ~Quit [%lu]: "
 		,ibet<credits/1024L ? ibet : credits/1024L);
 	chat();
 	mnemonics(str);
@@ -637,7 +634,7 @@ while(1) {
     bputs(str);
 	sprintf(str,UserWasDealt,user_name,cardstr(card[cur_card-1]));
     putallnodemsg(str);
-	
+
 	if(lastplayer()) {
 		getcarddat();
 		dealer[0]=card[cur_card++];
@@ -659,7 +656,7 @@ while(1) {
 	bputs(str);
 	sprintf(str,UserWasDealt,user_name,cardstr(card[cur_card-1]));
     putallnodemsg(str);
-	
+
 	if(lastplayer()) {
 		getcarddat();
 		dealer[1]=card[cur_card++];
@@ -1417,7 +1414,7 @@ while(node[node_num-1] && status[node_num-1]==SYNC_P) {
 /****************************************************************************/
 void moduserdat()
 {
-	char str[128];
+	char str[MAX_PATH + 1];
 	FILE *stream;
 
 sprintf(str,"%sMODUSER.DAT",node_dir);

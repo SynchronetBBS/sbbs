@@ -88,7 +88,7 @@ int main(int argc, char **argv)
             if (!strchr(argv[x],'/')) {
                 strcpy(node_dir,argv[x]);
 					backslash(node_dir); }
-					
+
             if(strstr(strupr(argv[x]),"/COST=")) {
                 p=strchr(argv[x],'=');
                     if(p!=NULL) cost_per_min=atoi(p+1); }
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
             return(0);
     }
     if((file=nopen("tbd.mnt",O_RDWR))==-1) {
-        cls(); 
+        cls();
         bprintf("\r\nPLEASE WAIT: Daily maintenance is running.");
         for(x=0;x<(SQUARE/2);x++) { mswait(1000); bprintf("."); }
     } else {
@@ -728,7 +728,8 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
         }
         if(invisible) write_movement(32,x,y,z,gx,gy);
         else write_movement(tpic,x,y,z,gx,gy);
-        if(user.mapx!=x) user.mapx=x; if(user.mapy!=y) user.mapy=y;
+        if(user.mapx!=x) user.mapx=x;
+        if(user.mapy!=y) user.mapy=y;
         if(in_shop && weapon_ready) {          /* put weapon away if drawn */
             status_message(0,"\1r\1hAll weapons must be put away while you"
                            " are within shops!");
@@ -965,7 +966,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                    && oz[n][0]==z) {
                     attr((n+1)&0x1f);
                     bprintf("\x1b[%d;%dH%c",ogy[n][0]+7,ogx[n][0]+35,
-                        active[n][0]); 
+                        active[n][0]);
                     attr((n+1)); }
                 /********************************************/
                 /* Erase the other guy if he left the room! */
@@ -1080,8 +1081,8 @@ void read_player_message()
 ******************************************************************************/
 void send_message(int nodes)
 {
-    int file,num,n;
-    char ch,fname[81],str[256],str1[256],count=0,chbuf[8];
+    int num,n;
+    char str[256],str1[256],count=0,chbuf[8];
 
     if(!nodes) {
         bprintf("\x1b[18;0H\x1b[K\1r\1hYou are the only player!\1n");
@@ -1198,7 +1199,8 @@ void perform_daily_maintenance(int maint_only)
                     for (y=0;y<3;y++) {
                         for(z=0;z<18;z++) {
                             if(level<5 && level>1) ch=y+NUM_WEAPON+1;
-                            else ch=y+4+NUM_WEAPON; val=0;
+                            else ch=y+4+NUM_WEAPON;
+                            val=0;
                             fwrite(&ch,1,1,stream);
                             fwrite(&val,1,1,stream);
                         }
@@ -1207,7 +1209,8 @@ void perform_daily_maintenance(int maint_only)
                     for (y=0;y<3;y++) {
                         for(z=0;z<18;z++) {
                             if(level<5 && level>1) ch=y+NUM_ARMOR;
-                            else ch=y+3+NUM_ARMOR; val=0;
+                            else ch=y+3+NUM_ARMOR;
+                            val=0;
                             fwrite(&ch,1,1,stream);
                             fwrite(&val,1,1,stream);
                         }

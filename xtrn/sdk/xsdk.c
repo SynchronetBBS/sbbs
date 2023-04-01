@@ -22,7 +22,7 @@
 /***************************** Revision History *****************************\
 
 			Initial version for use with Synchronet v1a r6
-	1.0á	
+	1.0á
 			Added bgotoxy() macro
 			Added mnehigh and mnelow vars for control of the mnemonic colors
 			Added sys_nodes and node_num variables to xtrn_sdk.c
@@ -184,12 +184,12 @@
 			Added support for telnet nodes (connection=0xffff)
 	3.00
 			Fixed problem with clear screen (form feed) in node messages.
-			checkline() now exits when the remote user disconnects on 32-bit 
+			checkline() now exits when the remote user disconnects on 32-bit
 				programs. Use atexit() to add cleanup code.
 	3.01
 			Eliminated warnings in ctrl_a() when compiled with VC++ 6.0.
 			Added Linux/GCC support (xsdkwrap.c, xsdkwrap.h, and xsdkinet.h)
-	3.10	
+	3.10
 			Added COMPILER_DESC and PLATFORM_DESC macros to xsdkwrap.h
 			Added support for no local console (XSDK_MODE_NOCONSOLE)
 				- This is now the default mode when building 32-bit programs
@@ -225,7 +225,7 @@ int cbreakh(void)	/* ctrl-break handler */
 /****************************************************************************/
 /* Performs printf() using bbs bputs function								*/
 /****************************************************************************/
-int bprintf(char *fmt, ...)
+int bprintf(const char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];
@@ -241,7 +241,7 @@ int bprintf(char *fmt, ...)
 /****************************************************************************/
 /* Performs printf() using bbs rputs function								*/
 /****************************************************************************/
-int rprintf(char *fmt, ...)
+int rprintf(const char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];
@@ -257,7 +257,7 @@ int rprintf(char *fmt, ...)
 /****************************************************************************/
 /* Outputs a NULL terminated string locally and remotely (if applicable) 	*/
 /****************************************************************************/
-void bputs(char *str)
+void bputs(const char *str)
 {
 	ulong l=0;
 
@@ -276,7 +276,7 @@ void bputs(char *str)
 /* Does not process ctrl-a codes (raw output)								*/
 /* Max length of str is 64 kbytes											*/
 /****************************************************************************/
-void rputs(char *str)
+void rputs(const char *str)
 {
 	ulong l=0;
 
@@ -288,7 +288,7 @@ void rputs(char *str)
 /* Returns the number of characters in 'str' not counting ctrl-ax codes		*/
 /* or the null terminator													*/
 /****************************************************************************/
-int bstrlen(char *str)
+int bstrlen(const char *str)
 {
 	int i=0;
 
@@ -310,7 +310,7 @@ int bstrlen(char *str)
 /* Outputs the string 'str' centered for an 80 column display               */
 /* Automatically appends "\r\n" to output                                   */
 /****************************************************************************/
-void center(char *str)
+void center(const char *str)
 {
 	 int i,j;
 
@@ -338,7 +338,7 @@ void output_thread(void* arg)
 		if(outbufbot==outbuftop) {
 			sem_init(&output_sem,0,0);
 			sem_wait(&output_sem);
-			continue; 
+			continue;
 		}
 
 		if(outbuftop>outbufbot)
@@ -395,31 +395,31 @@ void outchar(char ch)
 	if(ch==LF) {
 		lncntr++;
 		lbuflen=0;
-		tos=0; 
+		tos=0;
 	}
 	else if(ch==FF) {
 		if(lncntr>1) {
 			lncntr=0;
 			CRLF;
-			bpause(); 
+			bpause();
 		}
 		lncntr=0;
 		lbuflen=0;
-		tos=1; 
+		tos=1;
 	}
 	else if(ch==BS) {
 		if(lbuflen)
-			lbuflen--; 
+			lbuflen--;
 	}
 	else {
 		if(!lbuflen)
 			latr=curatr;
 		if(lbuflen>=LINE_BUFSIZE) lbuflen=0;
-		lbuf[lbuflen++]=ch; 
+		lbuf[lbuflen++]=ch;
 	}
 	if(lncntr==user_rows-1) {
 		lncntr=0;
-		bpause(); 
+		bpause();
 	}
 	lastch=ch;
 }
@@ -439,7 +439,8 @@ void flushoutput(void)
 void bpause(void)
 {
 	char	ch;
-	uchar	tempattrs=curatr,*msg="\1_\1r\1h[Hit a key] ";
+	uchar	tempattrs=curatr;
+	const char*	msg="\1_\1r\1h[Hit a key] ";
 	int		i,j;
 
 	lncntr=0;
@@ -458,7 +459,7 @@ void bpause(void)
 /* Returns 1 for Y or 0 for N												*/
 /* Called from quite a few places											*/
 /****************************************************************************/
-char yesno(char *str)
+char yesno(const char *str)
 {
 	char ch;
 
@@ -470,8 +471,8 @@ char yesno(char *str)
 			return(1); }
 		if(ch=='N' || aborted) {
 			bputs("No\r\n");
-			return(0); 
-		} 
+			return(0);
+		}
 	}
 }
 
@@ -480,7 +481,7 @@ char yesno(char *str)
 /* Returns 1 for N or 0 for Y												*/
 /* Called from quite a few places											*/
 /****************************************************************************/
-char noyes(char *str)
+char noyes(const char *str)
 {
 	char ch;
 
@@ -492,8 +493,8 @@ char noyes(char *str)
 			return(1); }
 		if(ch=='Y') {
 			bputs("Yes\r\n");
-			return(0); 
-		} 
+			return(0);
+		}
 	}
 }
 
@@ -503,7 +504,7 @@ char noyes(char *str)
 /* If the user doesn't have ANSI, it puts the character following the tilde */
 /* in parenthesis.															*/
 /****************************************************************************/
-void mnemonics(char *str)
+void mnemonics(const char *str)
 {
 	long l;
 
@@ -519,10 +520,10 @@ void mnemonics(char *str)
 			l++;
 			if(!(user_misc&ANSI))
 				outchar(')');
-			attr(mnelow); 
+			attr(mnelow);
 		}
 		else
-			outchar(str[l++]); 
+			outchar(str[l++]);
 	}
 	attr(LIGHTGRAY);
 }
@@ -592,7 +593,7 @@ char inkey(long mode)
 		}
 	}
 
-	if(i==0 && cnt) 
+	if(i==0 && cnt)
 		recv(client_socket,&ch,1,0);
 	else
 #endif
@@ -626,7 +627,7 @@ char inkey(long mode)
 				case 0x53:	/* Delete */
 					return(0x7f);   /* ctrl-bkspc - del cur char */
 				}
-			return(0); } 
+			return(0); }
 		ch=i;
 	}
 
@@ -717,7 +718,7 @@ char inkey(long mode)
 		return(0); }
 
 #ifndef __16BIT__
-	if(ch==LF) 
+	if(ch==LF)
 		ch=0;		/* Ignore LF of Telnet CR/LF sequence */
 #endif
 
@@ -756,7 +757,7 @@ char getkey(long mode)
 			if(ch==LF) continue;
 			if(mode&K_UPPER)
 				return(toupper(ch));
-			return(ch); 
+			return(ch);
 		}
 		checktimeleft();
 
@@ -770,7 +771,7 @@ char getkey(long mode)
 				bprintf("\1n\1h\r\n\7\r\nYou only have \1r\1i%u\1n\1h minute%s "
 					"left.\r\n\r\n"
 					,((ushort)tleft/60)+1,(tleft/60) ? "s" : "");
-				RESTORELINE; 
+				RESTORELINE;
 			}
 		}
 
@@ -839,13 +840,13 @@ void checkline(void)
 /* returned with the high bit set. If the return of this function has the	*/
 /* high bit set (&0x8000), just flip the bit (^0x8000) to get the number.	*/
 /****************************************************************************/
-int getkeys(char *instr,int max)
+int getkeys(const char *instr,int max)
 {
 	char	str[256];
 	uchar	ch,n=0;
 	int		i=0;
 
-	sprintf(str,"%.*s",sizeof(str)-1,instr);
+	sprintf(str,"%.*s",(int)sizeof(str)-1,instr);
 	strupr(str);
 	while(!aborted) {
 		ch=getkey(K_UPPER);
@@ -855,19 +856,19 @@ int getkeys(char *instr,int max)
 			outchar(ch);
 			attr(LIGHTGRAY);
 			CRLF;
-			return(ch); 
+			return(ch);
 		}
 		if(ch==CR && max) {             /* return 0 if no number */
 			attr(LIGHTGRAY);
 			CRLF;
 			if(n)
 				return(i|0x8000);		/* return number plus high bit */
-			return(0); 
+			return(0);
 		}
 		if(ch==BS && n) {
 			bputs("\b \b");
 			i/=10;
-			n--; 
+			n--;
 		}
 		else if(max && isdigit(ch) && (i*10)+(ch&0xf)<=max && (ch!='0' || n)) {
 			i*=10;
@@ -877,9 +878,9 @@ int getkeys(char *instr,int max)
 			if(i*10>max) {
 				attr(LIGHTGRAY);
 				CRLF;
-				return(i|0x8000); 
-			} 
-		}	 
+				return(i|0x8000);
+			}
+		}
 	}
 	return(0);
 }
@@ -940,18 +941,18 @@ int getstr(char *strout, size_t maxlen, long mode)
 {
 	size_t i,l,x,z;	/* i=current position, l=length, j=printed chars */
 					/* x&z=misc */
-	uchar ch,str1[256],str2[256],ins=0,atr;
+	char ch,str1[256],str2[256],ins=0,atr;
 
 	if(mode&K_LINE && user_misc&ANSI) {
 		attr(LIGHTGRAY|HIGH|(BLUE<<4));  /* white on blue */
 		for(i=0;i<maxlen;i++)
 			outchar(' ');
-		bprintf("\x1b[%dD",maxlen); 
+		bprintf("\x1b[%dD",maxlen);
 	}
 	i=l=0;	/* i=total number of chars, j=number of printable chars */
 	if(wordwrap[0]) {
 		strcpy(str1,wordwrap);
-		wordwrap[0]=0; 
+		wordwrap[0]=0;
 	}
 	else str1[0]=0;
 	if(mode&K_EDIT)
@@ -972,16 +973,16 @@ int getstr(char *strout, size_t maxlen, long mode)
 		if(isprint(ch) || ch==0x7f) {
 			for(i=0;i<l;i++)
 				bputs("\b \b");
-			i=l=0; 
+			i=l=0;
 		}
 		else {
 			for(i=0;i<l;i++)
 				outchar(BS);
 			rputs(str1);
-			i=l; 
+			i=l;
 		}
 		if(ch!=' ' && ch!=TAB)
-			ungetkey(ch); 
+			ungetkey(ch);
 	}
 
 	while((ch=getkey(mode|K_GETSTR))!=CR && !aborted) {
@@ -997,14 +998,14 @@ int getstr(char *strout, size_t maxlen, long mode)
 					rprintf("%.*s",l-i,str1+i);
 					rprintf("\x1b[%dD",l-i);
 					if(i==maxlen-1)
-						ins=0; 
+						ins=0;
 				}
 				outchar(str1[i++]=1);
 				break;
 			case TERM_KEY_HOME:	/* Ctrl-B Beginning of Line */
 				if(user_misc&ANSI && i) {
 					bprintf("\x1b[%dD",i);
-					i=0; 
+					i=0;
 				}
 				break;
 			case 4:	/* Ctrl-D Delete word right */
@@ -1012,21 +1013,21 @@ int getstr(char *strout, size_t maxlen, long mode)
 					x=i;
 					while(x<l && str1[x]!=' ') {
 						outchar(' ');
-						x++; 
+						x++;
 					}
 					while(x<l && str1[x]==' ') {
 						outchar(' ');
-						x++; 
+						x++;
 					}
 					bprintf("\x1b[%dD",x-i);   /* move cursor back */
 					z=i;
 					while(z<l-(x-i))  {             /* move chars in string */
 						outchar(str1[z]=str1[z+(x-i)]);
-						z++; 
+						z++;
 					}
 					while(z<l) {					/* write over extra chars */
 						outchar(' ');
-						z++; 
+						z++;
 					}
 					bprintf("\x1b[%dD",z-i);
 					l-=x-i; 						/* l=new length */
@@ -1035,13 +1036,13 @@ int getstr(char *strout, size_t maxlen, long mode)
 			case TERM_KEY_END:	/* Ctrl-E End of line */
 				if(user_misc&ANSI && i<l) {
 					bprintf("\x1b[%dC",l-i);  /* move cursor right one */
-					i=l; 
+					i=l;
 				}
 				break;
 			case 6:	/* Ctrl-F move cursor forewards */
 				if(i<l && (user_misc&ANSI)) {
 					bputs("\x1b[C");   /* move cursor right one */
-					i++; 
+					i++;
 				}
 				break;
 			case 7:
@@ -1053,11 +1054,11 @@ int getstr(char *strout, size_t maxlen, long mode)
 					for(x=l;x>i;x--)
 						str1[x]=str1[x-1];
 					if(i==maxlen-1)
-						ins=0; 
+						ins=0;
 				 }
 				 if(i<maxlen) {
 					str1[i++]=7;
-					outchar(7); 
+					outchar(7);
 				 }
 				 break;
 			case 14:	/* Ctrl-N Next word */
@@ -1067,7 +1068,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 						i++;
 					while(str1[i]==' ' && i<l)
 						i++;
-					bprintf("\x1b[%dC",i-x); 
+					bprintf("\x1b[%dC",i-x);
 				}
 				break;
 			case 0x1c:	  /* Ctrl-\ Previous word */
@@ -1077,7 +1078,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 						i--;
 					while(str1[i-1]!=' ' && i)
 						i--;
-					bprintf("\x1b[%dD",x-i); 
+					bprintf("\x1b[%dD",x-i);
 				}
 				break;
 			case 18:	/* Ctrl-R Redraw Line */
@@ -1091,10 +1092,10 @@ int getstr(char *strout, size_t maxlen, long mode)
 						for(x=l;x>i;x--)
 							str1[x]=str1[x-1];
 						if(i==maxlen-1)
-							ins=0; 
+							ins=0;
 					}
 					str1[i++]=' ';
-					outchar(' '); 
+					outchar(' ');
 				}
 				while(i<maxlen && i%TABSIZE) {
             		if(ins) {
@@ -1103,10 +1104,10 @@ int getstr(char *strout, size_t maxlen, long mode)
 						for(x=l;x>i;x--)
 							str1[x]=str1[x-1];
 						if(i==maxlen-1)
-							ins=0; 
+							ins=0;
 					}
 					str1[i++]=' ';
-					outchar(' '); 
+					outchar(' ');
 				}
 				if(ins)
 					redrwstr(str1,i,l,0);
@@ -1121,10 +1122,10 @@ int getstr(char *strout, size_t maxlen, long mode)
 					z=i;
 					while(z<l)	{		/* move the characters in the line */
 						outchar(str1[z]=str1[z+1]);
-						z++; 
+						z++;
 					}
 					outchar(' ');		/* write over the last char */
-					bprintf("\x1b[%dD",(l-i)+1); 
+					bprintf("\x1b[%dD",(l-i)+1);
 				}
 				else
 					bputs("\b \b");
@@ -1145,7 +1146,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 						bputs("\b");
 					bputs(strout);
 					if(mode&K_LINE)
-						attr(LIGHTGRAY); 
+						attr(LIGHTGRAY);
 				}
 				CRLF;
 				return(l);
@@ -1154,20 +1155,20 @@ int getstr(char *strout, size_t maxlen, long mode)
 					x=i;							/* x=original offset */
 					while(i && str1[i-1]==' ') {
 						outchar(BS);
-						i--; 
+						i--;
 					}
 					while(i && str1[i-1]!=' ') {
 						outchar(BS);
-						i--; 
+						i--;
 					}
 					z=i;                            /* i=z=new offset */
 					while(z<l-(x-i))  {             /* move chars in string */
 						outchar(str1[z]=str1[z+(x-i)]);
-						z++; 
+						z++;
 					}
 					while(z<l) {					/* write over extra chars */
 						outchar(' ');
-						z++; 
+						z++;
 					}
 					bprintf("\x1b[%dD",z-i);        /* back to new x corridnant */
 					l-=x-i; 						/* l=new length */
@@ -1176,30 +1177,30 @@ int getstr(char *strout, size_t maxlen, long mode)
             		while(i && str1[i-1]==' ') {
 						i--;
 						l--;
-						bputs("\b \b"); 
+						bputs("\b \b");
 					}
 					while(i && str1[i-1]!=' ') {
 						i--;
 						l--;
-						bputs("\b \b"); 
-					} 
+						bputs("\b \b");
+					}
 				}
 				break;
 			case 24:	/* Ctrl-X   Delete entire line */
 				while(i<l) {
 					outchar(' ');
-					i++; 
+					i++;
 				}
 				while(l) {
 					l--;
-					bputs("\b \b"); 
+					bputs("\b \b");
 				}
 				i=0;
 				break;
 			case 25:	/* Ctrl-Y	Delete to end of line */
 				if(user_misc&ANSI) {
 					bputs("\x1b[s\x1b[K\x1b[u");
-					l=i; 
+					l=i;
 				}
 				break;
 			case 22:	/* Ctrl-V		Toggles Insert/Overwrite */
@@ -1207,7 +1208,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 					break;
 				if(ins) {
 					ins=0;
-					redrwstr(str1,i,l,0); 
+					redrwstr(str1,i,l,0);
 				}
 				else if(i<l) {
 					ins=1;
@@ -1222,7 +1223,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 			case 0x1d:	/* Ctrl-]  Reverse Cursor Movement */
 				if(i && (user_misc&ANSI)) {
 					bputs("\x1b[D");   /* move cursor left one */
-					i--; 
+					i--;
 				}
 				break;
 			case 0x7f:	/* Ctrl-BkSpc (DEL) Delete current char */
@@ -1238,7 +1239,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 				z=i;
 				while(z<l)	{		/* move the characters in the line */
 					outchar(str1[z]=str1[z+1]);
-					z++; 
+					z++;
 				}
 				outchar(' ');		/* write over the last char */
 				bprintf("\x1b[%dD",(l-i)+1);
@@ -1248,29 +1249,29 @@ int getstr(char *strout, size_t maxlen, long mode)
 					break;
 				if((ch=getkey(0x8000))!='[') {
 					ungetkey(ch);
-					break; 
+					break;
 				}
 				if((ch=getkey(0x8000))=='C') {
 					if(i<l) {
 						bputs("\x1b[C");   /* move cursor right one */
-						i++; 
-					} 
+						i++;
+					}
 				}
 				else if(ch=='D') {
 					if(i) {
 						bputs("\x1b[D");   /* move cursor left one */
-						i--; 
-					} 
+						i--;
+					}
 				}
 				else {
 					while(isdigit(ch) || ch==';' || isalpha(ch)) {
 						if(isalpha(ch)) {
 							ch=getkey(0);
-							break; 
+							break;
 						}
-						ch=getkey(0); 
+						ch=getkey(0);
 					}
-					ungetkey(ch); 
+					ungetkey(ch);
 				}
 				break;
 			default:
@@ -1281,7 +1282,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 						if(stripattr(strout))
 							redrwstr(strout,i,l,K_MSG);
 						CRLF;
-						return(i); 
+						return(i);
 					}
 					x=i-1;
 					z=1;
@@ -1294,12 +1295,12 @@ int getstr(char *strout, size_t maxlen, long mode)
 						if(stripattr(strout))
 							redrwstr(strout,i,l,K_MSG);
 						CRLF;
-						return(i); 
+						return(i);
 					}
 					wordwrap[z]=0;
 					while(z--) {
 						i--;
-						bputs("\b \b"); 
+						bputs("\b \b");
 					}
 					strrev(wordwrap);
 					str1[x]=0;
@@ -1307,15 +1308,16 @@ int getstr(char *strout, size_t maxlen, long mode)
 					if(stripattr(strout))
 						redrwstr(strout,i,x,mode);
 					CRLF;
-					return(x); 
+					return(x);
 				}
 				if(i<maxlen && ch>=' ') {
-					if(mode&K_UPRLWR)
+					if(mode&K_UPRLWR) {
 						if(!i || (i && (str1[i-1]==' ' || str1[i-1]=='-'
 							|| str1[i-1]=='.' || str1[i-1]=='_')))
 							ch=toupper(ch);
 						else
 							ch=tolower(ch);
+					}
 					if(ins) {
 						if(l<maxlen)	/* l<maxlen */
 							l++;
@@ -1325,17 +1327,17 @@ int getstr(char *strout, size_t maxlen, long mode)
 						rprintf("\x1b[%dD",l-i);
 						if(i==maxlen-1) {
 							bputs("  \b\b");
-							ins=0; 
-						} 
+							ins=0;
+						}
 					}
 					str1[i++]=ch;
-					outchar(ch); 
-				} 
+					outchar(ch);
+				}
 			} /* switch */
 		if(i>l)
 			l=i;
 		if(mode&K_CHAT && !l)
-			return(0); 
+			return(0);
 	}
 	if(i>l)
 		l=i;
@@ -1343,7 +1345,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 	if(!aborted) {
 		strcpy(strout,str1);
 		if(stripattr(strout) || ins)
-			redrwstr(strout,i,l,K_MSG); 
+			redrwstr(strout,i,l,K_MSG);
 	}
 	else
 		l=0;
@@ -1351,7 +1353,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 	if(!(mode&K_NOCRLF)) {
 		outchar(CR);
 		if(!(mode&K_MSG && aborted))
-			outchar(LF); 
+			outchar(LF);
 	}
 	return(l);
 }
@@ -1359,7 +1361,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 /****************************************************************************/
 /* Redraws str using i as current cursor position and l as length           */
 /****************************************************************************/
-void redrwstr(char *strin, int i, int l, long mode)
+void redrwstr(const char *strin, int i, int l, long mode)
 {
 	char str[256],c;
 
@@ -1374,17 +1376,17 @@ void redrwstr(char *strin, int i, int l, long mode)
 	if(user_misc&ANSI) {
 		bputs("\x1b[K");
 		if(i<l)
-			bprintf("\x1b[%dD",l-i); 
+			bprintf("\x1b[%dD",l-i);
 	}
 	else {
 		while(c<79)	{ /* clear to end of line */
 			outchar(' ');
-			c++; 
+			c++;
 		}
 		while(c>l) { /* back space to end of string */
 			outchar(BS);
-			c--; 
-		} 
+			c--;
+		}
 	}
 }
 
@@ -1394,8 +1396,8 @@ void redrwstr(char *strin, int i, int l, long mode)
 /****************************************************************************/
 char stripattr(char *strin)
 {
-	uchar str[81];
-	uchar a,c,d,e;
+	char str[81];
+	size_t a,c,d,e;
 
 	e=strlen(strin);
 	for(a=c=d=0;c<e;c++) {
@@ -1429,10 +1431,10 @@ char stripattr(char *strin)
 					break;
 				default:
 					c++;
-					continue; 
-			} 
+					continue;
+			}
 		}
-		str[d++]=strin[c]; 
+		str[d++]=strin[c];
 	}
 	str[d]=0;
 	strcpy(strin,str);
@@ -1540,7 +1542,7 @@ void cls(void)
 
 	if(user_misc&ANSI)
 		bputs("\x1b[2J\x1b[H");	/* clear screen, home cursor */
-	else 
+	else
 		outchar(FF);
 	tos=1;
 	lncntr=0;
@@ -1765,7 +1767,7 @@ void initdata(void)
 
 	/* Sets node_dir to node directory environment variable defined by synchronet. */
 	if(node_dir[0]==0 && (p=getenv("SBBSNODE"))!=NULL)
-		sprintf(node_dir,"%.*s",sizeof(node_dir)-1,p); 
+		sprintf(node_dir,"%.*s",(int)sizeof(node_dir)-1,p);
 
 	sprintf(str,"%sXTRN.DAT",node_dir);
 	if((stream=fopen(str,"rt"))==NULL) {
@@ -1787,7 +1789,7 @@ void initdata(void)
 	fgets(str,81,stream);			/* ctrl dir */
 	str[50]=0;
 	if(str[0]=='.')
-		sprintf(ctrl_dir,"%s%s",node_dir,str);
+		snprintf(ctrl_dir, sizeof(ctrl_dir), "%s%s",node_dir,str);
 	else
 		strcpy(ctrl_dir,str);
 	truncsp(ctrl_dir);
@@ -1797,7 +1799,7 @@ void initdata(void)
 
 	fgets(str,81,stream);			/* data dir */
 	if(str[0]=='.')
-		sprintf(data_dir,"%s%s",node_dir,str);
+		snprintf(data_dir, sizeof(data_dir), "%s%s",node_dir,str);
 	else
 		sprintf(data_dir,"%.40s",str);
 	truncsp(data_dir);
@@ -1874,13 +1876,13 @@ void initdata(void)
 	else
 		total_xtrns=atoi(str);
 	if(total_xtrns && (xtrn=(char **)malloc(sizeof(char *)*total_xtrns))==NULL) {
-		printf("Allocation error 1: %u\r\n",sizeof(char *)*total_xtrns);
+		printf("Allocation error 1: %u\r\n",(unsigned int)(sizeof(char *)*total_xtrns));
 		exit(1); }
 	for(i=0;i<(int)total_xtrns;i++) {
 		fgets(str,81,stream);
 		truncsp(str);
 		if((xtrn[i]=(char *)malloc(strlen(str)+1))==NULL) {
-			printf("Allocation error 2 (%u): %u\r\n",i,strlen(str)+1);
+			printf("Allocation error 2 (%u): %u\r\n",i,(unsigned int)strlen(str)+1);
 			exit(1); }
 		strcpy(xtrn[i],str); }
 	fgets(str,81,stream);			/* user's main flags */
@@ -1910,7 +1912,7 @@ void initdata(void)
 	fgets(str,81,stream);
 	sprintf(user_flags4,"%.26s",str);
 	if(fgets(str,81,stream))		/* Time-slice API type */
-#ifdef __16BIT__ 
+#ifdef __16BIT__
 		mswtyp=ahtoul(str);
 #else
 		;
@@ -1926,10 +1928,10 @@ void initdata(void)
 	str[0]=0;
 	fgets(str,81,stream);			/* exec dir */
 	if(!str[0])
-		sprintf(exec_dir,"%s../exec/",ctrl_dir);
+		snprintf(exec_dir, sizeof(exec_dir), "%s../exec/",ctrl_dir);
 	else {
 		if(str[0]=='.')
-			sprintf(exec_dir,"%s%s",node_dir,str);
+			snprintf(exec_dir, sizeof(exec_dir), "%s%s",node_dir,str);
 		else
 			sprintf(exec_dir,"%.50s",str); }
 	truncsp(exec_dir);
@@ -1940,10 +1942,10 @@ void initdata(void)
 	str[0]=0;
 	fgets(str,81,stream);			/* text dir */
 	if(!str[0])
-		sprintf(text_dir,"%s../text/",ctrl_dir);
+		snprintf(text_dir, sizeof(text_dir), "%s../text/",ctrl_dir);
 	else {
 		if(str[0]=='.')
-			sprintf(text_dir,"%s%s",node_dir,str);
+			snprintf(text_dir, sizeof(text_dir), "%s%s",node_dir,str);
 		else
 			sprintf(text_dir,"%.50s",str); }
 	truncsp(text_dir);
@@ -1954,10 +1956,10 @@ void initdata(void)
 	str[0]=0;
 	fgets(str,81,stream);			/* temp dir */
 	if(!str[0])
-		sprintf(temp_dir,"%stemp/",node_dir);
+		snprintf(temp_dir, sizeof(temp_dir), "%stemp/",node_dir);
 	else {
 		if(str[0]!=BACKSLASH && str[1]!=':')
-			sprintf(temp_dir,"%s%s",node_dir,str);
+			snprintf(temp_dir, sizeof(temp_dir), "%s%s",node_dir,str);
 		else
 			sprintf(temp_dir,"%.50s",str); }
 	truncsp(temp_dir);
@@ -2010,12 +2012,12 @@ void initdata(void)
 	if(fexist(str)) {
 		if((stream=fopen(str,"rt"))==NULL) {
 			printf("Can't open %s\n",str);
-			exit(1); 
+			exit(1);
 		}
 		fgets(tmp,81,stream);					/* so get MSR address from file */
 		msr=(uint *)atol(tmp);
 		fclose(stream);
-		remove(str); 
+		remove(str);
 	}
 
 	starttime=time(NULL);			/* initialize start time stamp */
@@ -2033,13 +2035,13 @@ void initdata(void)
 	sprintf(str,"%s%s",ctrl_dir,"node.dab");
 	if((nodefile=sopen(str,O_BINARY|O_RDWR,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		printf("\r\n\7Error opening %s\r\n",str);
-		exit(1); 
+		exit(1);
 	}
 
 	sprintf(str,"%suser/name.dat",data_dir);
 	if((i=nopen(str,O_RDONLY))==-1) {
 		printf("\r\n\7Error opening %s\r\n",str);
-		exit(1); 
+		exit(1);
 	}
 	memset(str,0,30);
 	read(i,str,26);
@@ -2115,8 +2117,8 @@ void backslash(char *str)
 
 	i=strlen(str);
 	if(i && str[i-1]!='\\' && str[i-1]!='/') {
-		str[i]=BACKSLASH; 
-		str[i+1]=0; 
+		str[i]=BACKSLASH;
+		str[i+1]=0;
 	}
 }
 #endif	/* USE_XPDEV */
@@ -2138,7 +2140,7 @@ void checktimeleft(void)
 /* Prints a file remotely and locally, interpreting ^A sequences.			*/
 /* 'str' is the path of the file to print                                   */
 /****************************************************************************/
-void printfile(char *str)
+void printfile(const char *str)
 {
 	char *buf;
 	int file;
@@ -2178,7 +2180,7 @@ char *xsdk_username(uint usernumber)
 	if(!usernumber) {
 		bputs("\7username: called with zero usernumber\r\n");
 		return(name); }
-	sprintf(str,"%suser/name.dat",data_dir);
+	snprintf(str, sizeof(str), "%suser/name.dat",data_dir);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		bprintf("\7username: couldn't open %s\r\n",str);
 		return(name); }
@@ -2201,7 +2203,7 @@ char *xsdk_username(uint usernumber)
 /* Returns the number of the user 'username' from the NAME.DAT file.        */
 /* If the username is not found, the function returns 0.					*/
 /****************************************************************************/
-uint usernumber(char *username)
+uint usernumber(const char *username)
 {
 	char str[128];
 	int i,file;
@@ -2209,7 +2211,7 @@ uint usernumber(char *username)
 
 	if(!data_dir[0])
 		return(0);
-	sprintf(str,"%suser/name.dat",data_dir);
+	snprintf(str, sizeof(str), "%suser/name.dat",data_dir);
 	if((file=nopen(str,O_RDONLY))==-1 || (stream=fdopen(file,"rb"))==NULL) {
 		if(file!=-1)
 			close(file);
@@ -2251,7 +2253,7 @@ char *ultoac(ulong l, char *string)
 /****************************************************************************/
 /* Converts an ASCII Hex string into a ulong								*/
 /****************************************************************************/
-ulong ahtoul(char *str)
+ulong ahtoul(const char *str)
 {
 	ulong l,val=0;
 
@@ -2280,7 +2282,7 @@ void xsdk_getnodedat(int number, node_t *node, char lockit)
 			continue; }
 		if(read(nodefile,node,sizeof(node_t))==sizeof(node_t))
 			break;
-		count++; 
+		count++;
 		mswait(10);
 	}
 	if(count==LOOP_NODEDAB)
@@ -2301,7 +2303,7 @@ void xsdk_putnodedat(int number, node_t node)
 	if(write(nodefile,&node,sizeof(node_t))!=sizeof(node_t)) {
 		unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 		bprintf("\7Error %d writing node.dab for node %u\r\n", errno, number+1);
-		return; 
+		return;
 	}
 	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 }
@@ -2580,7 +2582,7 @@ void xsdk_getsmsg(int usernumber)
 /****************************************************************************/
 /* Creates a short message for 'usernumber' than contains 'strin'			*/
 /****************************************************************************/
-void xsdk_putsmsg(int usernumber, char *strin)
+void xsdk_putsmsg(int usernumber, const char *strin)
 {
 	char str[256];
 	int file,i;
@@ -2651,7 +2653,7 @@ void xsdk_getnmsg(void)
 /****************************************************************************/
 /* Creates a short message for node 'num' than contains 'strin'             */
 /****************************************************************************/
-void xsdk_putnmsg(int num, char *strin)
+void xsdk_putnmsg(int num, const char *strin)
 {
 	char str[256];
 	int file,i;
