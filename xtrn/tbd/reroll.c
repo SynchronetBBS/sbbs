@@ -64,7 +64,7 @@
 int main(int argc, char **argv)
 {
     FILE *stream;
-    char door=0,room[SQUARE][SQUARE],str[128];
+    char door=0,room[SQUARE][SQUARE];
     unsigned char ch,val;
     int file,v=0,w=0,x=0,y=0,z=1,weapons[10],weapons2[10],armor[10],armor2[10],
         magic[10],magic2[10],num_monster,num_gold,fountain[10],stairs,staff,
@@ -325,7 +325,7 @@ for (w=0;w<LEVELS;w++) {
                 if(object[ch].type==STAIRS) {
                     if(w<5 && w>1) ch=NUM_MONSTER+rand()%7;
                     else if(w==1 || w==5) ch=NUM_MONSTER+7+rand()%7;
-                    else ch=NUM_MONSTER+14+rand()%8; 
+                    else ch=NUM_MONSTER+14+rand()%8;
                 }
                 if(object[ch].type==GOLD) {
                     ++num_gold;

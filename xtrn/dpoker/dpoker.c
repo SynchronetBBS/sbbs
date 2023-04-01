@@ -50,19 +50,20 @@ char	compiler[32];
 typedef struct { char value, suit; } card_t;
 
 card_t newdeck[52]={
-	 2,H, 2,D, 2,C, 2,S,
-	 3,H, 3,D, 3,C, 3,S,
-	 4,H, 4,D, 4,C, 4,S,
-	 5,H, 5,D, 5,C, 5,S,
-	 6,H, 6,D, 6,C, 6,S,
-	 7,H, 7,D, 7,C, 7,S,
-	 8,H, 8,D, 8,C, 8,S,
-	 9,H, 9,D, 9,C, 9,S,
-	10,H,10,D,10,C,10,S,
-	 J,H, J,D, J,C, J,S,
-	 Q,H, Q,D, Q,C, Q,S,
-	 K,H, K,D, K,C, K,S,
-     A,H, A,D, A,C, A,S };
+	{ 2,H }, { 2,D }, { 2,C }, { 2,S },
+	{ 3,H }, { 3,D }, { 3,C }, { 3,S },
+	{ 4,H }, { 4,D }, { 4,C }, { 4,S },
+	{ 5,H }, { 5,D }, { 5,C }, { 5,S },
+	{ 6,H }, { 6,D }, { 6,C }, { 6,S },
+	{ 7,H }, { 7,D }, { 7,C }, { 7,S },
+	{ 8,H }, { 8,D }, { 8,C }, { 8,S },
+	{ 9,H }, { 9,D }, { 9,C }, { 9,S },
+	{10,H }, {10,D }, {10,C }, {10,S },
+	{ J,H }, { J,D }, { J,C }, { J,S },
+	{ Q,H }, { Q,D }, { Q,C }, { Q,S },
+	{ K,H }, { K,D }, { K,C }, { K,S },
+	{ A,H }, { A,D }, { A,C }, { A,S }
+};
 
 card_t deck[52], card[52];
 card_t hand[MAX_NODES+1][10];
@@ -147,7 +148,7 @@ enum { OPEN, DEAL, BET, DISCARD, BET2, GET_WINNER };
 #pragma pack(1)
 #endif
 
-#ifdef __GNUC__ 
+#ifdef __GNUC__
 	#define _PACK __attribute__ ((packed))
 #else
 	#define _PACK
@@ -205,7 +206,7 @@ int main(int argc, char **argv)
 			printf("\tL = Create daily log of computer vs player "
 				  "wins/losses\n");
 			printf("\tCLEAN = Clean-up player/node data (replaces 'dpclean')\n");
-			return(0); 
+			return(0);
 		}
     }
     initdata();
@@ -471,7 +472,7 @@ void discard()
     bprintf("\x1b[6A");
     do {
         strcpy(dishand,handstr(node_num)); if(!symbols) strip_symbols(dishand);
-        sprintf(str,"\r\n\t\t\t\1b\1h%s - \1b\1h(\1c%s\1b)\1n",dishand,
+        snprintf(str, sizeof(str), "\r\n\t\t\t\1b\1h%s - \1b\1h(\1c%s\1b)\1n",dishand,
             ranking(rank));
         bprintf("%s\r\n\t\t\t\1b\1h(\1c1\1b) (\1c2\1b) (\1c3\1b) (\1c4\1b) "
                 "(\1c5\1b)\r\n",str);
@@ -1031,7 +1032,7 @@ void play_menu()
         *waitcmd="\1y\1hCommand \1b\1h(\1c\1hL,S,Y,Q,^P,^U,?\1b\1h):\1n ",
         *dealcmd="\1m\1hDealer \1n\1b\1h(\1c\1hD,L,S,Y,Q,^P,^U,?\1b\1h):\1n ";
     int warn,tt;
-    time_t timeout,timeout2,now;
+    time_t timeout, now;
 
     sprintf(fname,"message.%d",node_num);
     get_game_status(cur_table);
@@ -1044,7 +1045,6 @@ void play_menu()
     else
         bprintf(waitcmd);               /* Show the command prompt */
     timeout=time(NULL);                 /* Set entry time here */
-    timeout2=time(NULL);                /* for the demo game timer only */
 
     do {
         now=time(NULL);                 /* Start the timer here */
@@ -1119,7 +1119,7 @@ void play_menu()
         get_player(node_num);
         if (flength(fname)>0) {                 /* Checks for new player   */
             bprintf("\r\n");                    /* Messages and reads them */
-            do {                                
+            do {
                 read_player_message();
                 mswait(100);
             } while (flength(fname)>0);
@@ -1164,7 +1164,7 @@ void play_menu()
         }
 
         if (!cur_node && dealer==node_num) {    /* Computer is cur_node */
-            if (stage==BET && comp_bet!=current_bet || !current_bet) {
+            if ((stage==BET && comp_bet!=current_bet) || !current_bet) {
                 bprintf("\r\n");
                 computer_bet(); timeout=time(NULL); warn=0;
                 bprintf("\r\n"); nodesync();
@@ -1211,9 +1211,7 @@ void play_menu()
         time_played+=time(NULL)-now;
         if (time_played>time_allowed) time_played=time_allowed;
     }
-    if (timeout2);
-
-        if((now-timeout)>=240 && !warn) /* Warning Beep */
+	if((now-timeout)>=240 && !warn) /* Warning Beep */
         for(warn=0;warn<5;warn++) {
             putchar(7);
         }
@@ -1435,7 +1433,8 @@ void dealer_ctrl()
             declare_winner();
             return;                             /* All but 1 has folded */
         }
-        if (firstbid) firstbid=0; put_game_status(-1); x=0;
+        if (firstbid) firstbid=0;
+        put_game_status(-1); x=0;
         for (num=1;num<=sys_nodes;num++) {
             if (node[num-1]==WAITING) {
                 get_player(num);
@@ -1709,7 +1708,9 @@ void gethandtype(int player)
             highest_card=hand[player][i].value;
         if (temphand[0].suit==hand[player][i].suit) x++;
         for (j=0;j<5;j++) {
-            if (m==j)  j++; if (m1==j) j++; if (m2==j) j++;
+            if (m==j)  j++;
+            if (m1==j) j++;
+            if (m2==j) j++;
             if (temphand[i].value==hand[player][j].value) {
                 same++;
                 if (same==2 && i<5 && m>-1 && m1==-1) {
@@ -1907,7 +1908,7 @@ void send_message()
                 do {
                     if (!getstr(str1,45,K_CHAT|K_WRAP))
                         break;
-                    sprintf(str,"\r\n\1g\1hFrom %s: \1n\1g%s\r\n",user_name
+                    snprintf(str, sizeof(str), "\r\n\1g\1hFrom %s: \1n\1g%s\r\n",user_name
                             ,str1);
                     if (num=='A') {
                         send_all_message(str,0);
