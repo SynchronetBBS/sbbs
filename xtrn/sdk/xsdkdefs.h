@@ -377,11 +377,11 @@ typedef struct _PACK {					/* Node information kept in NODE.DAB */
 	uchar	status,						/* Current Status of Node */
 			errors,						/* Number of Critical Errors */
 			action;						/* Action User is doing on Node */
-	ushort	useron,						/* User on Node */
+	uint16_t useron,						/* User on Node */
 			connection,					/* Connection rate of Node */
 			misc,						/* Miscellaneous bits for node */
 			aux;						/* Auxillary word for node */
-	ulong	extaux;						/* Extended aux dword for node */
+	uint32_t extaux;						/* Extended aux dword for node */
             } node_t;
 #endif
 
