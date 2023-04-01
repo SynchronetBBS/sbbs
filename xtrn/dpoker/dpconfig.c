@@ -46,10 +46,9 @@ uifcapi_t	uifc;
 void read_ini(void)
 {
 	FILE	*inifile;
-	BOOL	tmpbool;
 	int		opts;
 	int		table;
-	char	key_name[8];
+	char	key_name[16];
 
 	inifile=fopen("dpoker.ini","r");
 	iniReadString(inifile,NULL,"ComputerName","King Drafus",comp_name);
@@ -93,10 +92,8 @@ void read_ini(void)
 void write_ini(void)
 {
 	FILE	*inifile;
-	BOOL	tmpbool;
-	int		opts;
 	int		table;
-	char	key_name[8];
+	char	key_name[16];
 	str_list_t inilines;
 
 	if((inifile=fopen("dpoker.ini","r"))!=NULL) {
@@ -173,7 +170,7 @@ void edit_table(int table)
 		opts[2]=strdup(str);
 		sprintf(str,"Bet Limit            %d",tables[table].bet_limit);
 		opts[3]=strdup(str);
-		sprintf(str,"Table Limit          %d",tables[table].max_total);
+		sprintf(str,"Table Limit          %ld",tables[table].max_total);
 		opts[4]=strdup(str);
 		opts[5]=strdup("");
 		sprintf(str,"Table %d Options",table+1);
@@ -204,7 +201,7 @@ void edit_table(int table)
 					tables[table].bet_limit=1;
 				break;
 			case 4: /* Table Limit */
-				sprintf(str,"%d",tables[table].max_total);
+				sprintf(str,"%ld",tables[table].max_total);
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Table Limit",str,5,K_EDIT|K_NUMBER)!=-1)
 					tables[table].max_total=atoi(str);
 				if(tables[table].max_total<1)
@@ -250,7 +247,7 @@ int main(int argc, char **argv)
 		opts[0]=strdup(str);
 		sprintf(str,"Number of Tables                 %d",num_tables);
 		opts[1]=strdup(str);
-		sprintf(str,"Time allow playing computer      %d",time_allowed);
+		sprintf(str,"Time allow playing computer      %ld",time_allowed);
 		opts[2]=strdup(str);
 		sprintf(str,"Percentage house takes from pot  %d%%",skim);
 		opts[3]=strdup(str);
@@ -280,7 +277,7 @@ int main(int argc, char **argv)
 					num_tables=1;
 				break;
 			case 2: /* Time allowed */
-				sprintf(str,"%d",time_allowed);
+				sprintf(str,"%ld",time_allowed);
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Time allowed computer",str,5,K_EDIT|K_NUMBER)!=-1)
 					time_allowed=atoi(str);
 				if(time_allowed>86400 || time_allowed<0)
@@ -298,7 +295,7 @@ int main(int argc, char **argv)
 			case 4:	/* Table configuration */
 				while(1) {
 					for(i=0;i<num_tables;i++) {
-						sprintf(str,"Table %-2d (%u/%u/%u)",i+1
+						sprintf(str,"Table %-2d (%u/%u/%lu)",i+1
 							,tables[i].ante,tables[i].bet_limit,tables[i].max_total);
 						topts[i]=strdup(str);
 					}
