@@ -18,6 +18,7 @@
  ****************************************************************************/
 
 #include "scfg.h"
+#include "sbbs_ini.h"
 
 static char* node_path_help =
 	"`Node Directory:`\n"
@@ -28,6 +29,29 @@ static char* node_path_help =
 	"The drive and directory of this path can be set to any valid directory\n"
 	"that can be accessed by `ALL` nodes of the BBS.\n"
 ;
+
+void adjust_last_node()
+{
+	char ini_fname[MAX_PATH + 1];
+	const char* section = "bbs";
+	const char* key = "LastNode";
+
+	sbbs_get_ini_fname(ini_fname, cfg.ctrl_dir);
+
+	FILE* fp = iniOpenFile(ini_fname, /* modify */false);
+	str_list_t ini = iniReadFile(fp);
+	iniCloseFile(fp);
+	uint last_node = iniGetUInteger(ini, section, key, cfg.sys_nodes);
+	char prompt[128];
+	SAFEPRINTF(prompt, "Update Terminal Server 'LastNode' value to %u", cfg.sys_nodes);
+	if(last_node < cfg.sys_nodes && uifc.confirm(prompt)) {
+		fp = iniOpenFile(ini_fname, /* modify */true);
+		iniSetUInteger(&ini, section, key, cfg.sys_nodes, NULL);
+		iniWriteFile(fp, ini);
+		iniCloseFile(fp);
+	}
+	iniFreeStringList(ini);
+}
 
 void node_menu()
 {
@@ -92,6 +116,7 @@ void node_menu()
 				--cfg.sys_nodes;
 				cfg.new_install=new_install;
 				save_main_cfg(&cfg,backup_level);
+				adjust_last_node();
 				refresh_cfg(&cfg);
 			}
 			continue;
@@ -112,7 +137,7 @@ void node_menu()
 			}
 			sprintf(tmp,"Node %d Directory",i);
 			uifc.helpbuf=node_path_help;
-			j=uifc.input(WIN_MID,0,0,tmp,str,50,K_EDIT);
+			j=uifc.input(WIN_MID|WIN_SAV,0,0,tmp,str,50,K_EDIT);
 			uifc.changes=0;
 			if(j<2)
 				continue;
@@ -125,6 +150,7 @@ void node_menu()
 			save_node_cfg(&cfg,backup_level);
 			save_main_cfg(&cfg,backup_level);
 			free_node_cfg(&cfg);
+			adjust_last_node();
 			refresh_cfg(&cfg);
 			continue;
 		}
