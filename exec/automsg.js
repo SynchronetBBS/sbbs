@@ -21,6 +21,8 @@ if(!options)
 	options = {};
 if(!options.max_line_len)
 	options.max_line_len = 76;
+if(options.backup_level === undefined)
+	options.backup_level = 10;
 
 function automsg()
 {
@@ -63,8 +65,8 @@ function automsg()
 						if(!console.noyes(bbs.text(AnonymousQ)))
 							anon = true;
 					}
-					if(options.backup_level !== 0)
-						file_backup(automsg, options.backup_level);
+					if(typeof options.backup_level == "number")
+						file_backup(automsg, Number(options.backup_level));
 					var file = new File(automsg);
 					if(!file.open("w")) {
 						alert("Error " + file.error + " opening " + file.name);
