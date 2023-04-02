@@ -665,8 +665,6 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 						  ,str_list_t file_list, char* mime_boundary)
 {
 	char		toaddr[256]="";
-	char		fromaddr[256]="";
-	char		fromhost[256];
 	char		msgid[256];
 	char		tmp[256];
 	char		date[64];
@@ -695,26 +693,8 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		s=sockprintf(socket,prot,sess,"From: %s",p);	/* use original RFC822 header field */
 	else {
 		char fromname[256];
-		SAFEPRINTF(fromname, "\"%s\"", msg->from);
-		if(msg->from_net.type==NET_QWK && msg->from_net.addr!=NULL)
-			SAFEPRINTF2(fromaddr,"%s!%s"
-				,(char*)msg->from_net.addr
-				,usermailaddr(&scfg,fromhost,msg->from));
-		else if(msg->from_net.type==NET_FIDO && msg->from_net.addr!=NULL) {
-			faddr_t* faddr = (faddr_t *)msg->from_net.addr;
-			char faddrstr[128];
-			SAFEPRINTF2(fromname,"\"%s\" (%s)", msg->from, smb_faddrtoa(faddr, NULL));
-			if(faddr->point)
-				SAFEPRINTF4(faddrstr,"p%hu.f%hu.n%hu.z%hu"FIDO_TLD
-					,faddr->point, faddr->node, faddr->net, faddr->zone);
-			else
-				SAFEPRINTF3(faddrstr,"f%hu.n%hu.z%hu"FIDO_TLD
-					,faddr->node, faddr->net, faddr->zone);
-			SAFEPRINTF2(fromaddr,"%s@%s", usermailaddr(NULL,fromhost,msg->from), faddrstr);
-		} else if(msg->from_net.type!=NET_NONE && msg->from_net.addr!=NULL)
-			SAFECOPY(fromaddr,(char*)msg->from_net.addr);
-		else 
-			usermailaddr(&scfg,fromaddr,msg->from);
+		char fromaddr[256];
+		smtp_netmailaddr(&scfg, msg, fromname, sizeof(fromname), fromaddr, sizeof(fromaddr));
 		s = sockprintf(socket,prot,sess,"From: %s %s", fromname, angle_bracket(tmp, sizeof(tmp), fromaddr));
 	}
 	if(!s)
@@ -747,7 +727,8 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			else
 				s=sockprintf(socket,prot,sess,"To: \"%s\" <%s>",msg->to,(char*)msg->to_net.addr);
 		} else if(msg->to_net.type==NET_FIDO) {
-			s=sockprintf(socket,prot,sess,"To: \"%s\" (%s)",msg->to, smb_faddrtoa((fidoaddr_t*)msg->to_net.addr, NULL));
+			char faddrbuf[64];
+			s=sockprintf(socket,prot,sess,"To: \"%s\" (%s)",msg->to, smb_faddrtoa((fidoaddr_t*)msg->to_net.addr, faddrbuf));
 		} else {
 			usermailaddr(&scfg,toaddr,msg->to);
 			s=sockprintf(socket,prot,sess,"To: \"%s\" <%s>",msg->to,toaddr);
@@ -4654,12 +4635,14 @@ static void smtp_thread(void* arg)
 							faddr.net = net;
 							faddr.zone = zone;
 
+							char faddrstr[64];
+							smb_faddrtoa(&faddr, faddrstr);
 							lprintf(LOG_INFO,"%04d %s %s %s relaying to FidoNet address: %s (%s)"
-								,socket, client.protocol, client_id, relay_user.alias, p, smb_faddrtoa(&faddr, NULL));
+								,socket, client.protocol, client_id, relay_user.alias, p, faddrstr);
 							fprintf(rcptlst,"[%u]\n",rcpt_count++);
 							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT), p);
 							fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_FIDO);
-							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),smb_faddrtoa(&faddr,NULL));
+							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),faddrstr);
 							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(SMTPFORWARDPATH),rcpt_to);
 
 							sockprintf(socket,client.protocol,session,ok_rsp);

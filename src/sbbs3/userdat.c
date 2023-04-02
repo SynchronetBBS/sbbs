@@ -2880,6 +2880,38 @@ char* usermailaddr(scfg_t* cfg, char* addr, const char* name)
 	return(addr);
 }
 
+/****************************************************************************/
+/* Convert a sender's name/address from a message header into Synchronet	*/
+/* SMTP-server-routable form												*/
+/****************************************************************************/
+void smtp_netmailaddr(scfg_t* cfg, smbmsg_t* msg, char* name, size_t namelen, char* addr, size_t addrlen)
+{
+	char addrbuf[256];
+
+	if(name != NULL)
+		snprintf(name, namelen, "\"%s\"", msg->from);
+	if(msg->from_net.type==NET_QWK && msg->from_net.addr!=NULL)
+		snprintf(addr, addrlen, "%s!%s"
+			,(char*)msg->from_net.addr
+			,usermailaddr(cfg, addrbuf, msg->from));
+	else if(msg->from_net.type==NET_FIDO && msg->from_net.addr!=NULL) {
+		faddr_t* faddr = (faddr_t *)msg->from_net.addr;
+		char faddrstr[128];
+		if(name != NULL)
+			snprintf(name, namelen, "\"%s\" (%s)", msg->from, smb_faddrtoa(faddr, faddrstr));
+		if(faddr->point)
+			SAFEPRINTF4(faddrstr,"p%hu.f%hu.n%hu.z%hu"FIDO_TLD
+				,faddr->point, faddr->node, faddr->net, faddr->zone);
+		else
+			SAFEPRINTF3(faddrstr,"f%hu.n%hu.z%hu"FIDO_TLD
+				,faddr->node, faddr->net, faddr->zone);
+		snprintf(addr, addrlen, "%s@%s", usermailaddr(NULL, addrbuf, msg->from), faddrstr);
+	} else if(msg->from_net.type!=NET_NONE && msg->from_net.addr!=NULL)
+		snprintf(addr, addrlen, (char*)msg->from_net.addr);
+	else 
+		usermailaddr(cfg, addr, msg->from);
+}
+
 char* alias(scfg_t* cfg, const char* name, char* buf)
 {
 	char	line[128];
