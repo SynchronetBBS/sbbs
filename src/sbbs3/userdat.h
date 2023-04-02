@@ -70,6 +70,7 @@ DLLEXPORT char* format_birthdate(scfg_t*, const char* birthdate, char* out, size
 DLLEXPORT const char* birthdate_format(scfg_t*);
 DLLEXPORT char*	username(scfg_t*, int usernumber, char * str);
 DLLEXPORT char* usermailaddr(scfg_t*, char* addr, const char* name);
+DLLEXPORT void	smtp_netmailaddr(scfg_t*, smbmsg_t*, char* name, size_t namelen, char* addr, size_t addrlen);
 DLLEXPORT int	opennodedat(scfg_t*);
 DLLEXPORT int	opennodeext(scfg_t*);
 DLLEXPORT int	getnodedat(scfg_t*, uint number, node_t *node, BOOL lockit, int* file);
