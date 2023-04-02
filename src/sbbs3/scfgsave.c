@@ -85,8 +85,6 @@ BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 	iniSetString(&ini, ROOT_SECTION, "ars", cfg->node_arstr, NULL);
 
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->node_misc, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "sem_check", cfg->node_sem_check, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "stat_check", cfg->node_stat_check, NULL);
 
 	if((fp = fopen(inipath, "w")) != NULL) {
 		result = iniWriteFile(fp, ini);
