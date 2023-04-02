@@ -207,7 +207,7 @@ function Scan_For_Banned_Clients() {
 		if (   isklined(user.uprefix + "@" + user.hostname)
 			|| IP_Banned(user.ip)
 		) {
-			theuser.quit("User has been banned");
+			this.quit("User has been banned");
 		}
 	}
 }
