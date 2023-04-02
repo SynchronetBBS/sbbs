@@ -66,6 +66,7 @@ static ulong msgid_serialno(smbmsg_t* msg)
 char* ftn_msgid(sub_t *sub, smbmsg_t* msg, char* msgid, size_t maxlen)
 {
 	static char msgidbuf[256];
+	char faddrbuf[64];
 	
 	if(msgid == NULL) {
 		msgid = msgidbuf;
@@ -81,7 +82,7 @@ char* ftn_msgid(sub_t *sub, smbmsg_t* msg, char* msgid, size_t maxlen)
 		,"%lu.%s@%s %08lx"
 		,msg_number(msg)
 		,sub->code
-		,smb_faddrtoa(&sub->faddr,NULL)
+		,smb_faddrtoa(&sub->faddr, faddrbuf)
 		,msgid_serialno(msg)
 		);
 
@@ -161,6 +162,7 @@ char* get_replyid(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgid, size_t ma
 BOOL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 {
 	char msg_id[256];
+	char faddrbuf[64];
 
 	if(msg->hdr.number == 0)
 		msg->hdr.number = get_new_msg_number(smb);
@@ -170,7 +172,7 @@ BOOL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 		if(smb->subnum == INVALID_SUB && msg->to_net.type == NET_FIDO) {
 			safe_snprintf(msg_id, sizeof(msg_id)
 				,"%s %08lx"
-				,smb_faddrtoa(nearest_sysfaddr(cfg, msg->to_net.addr), NULL)
+				,smb_faddrtoa(nearest_sysfaddr(cfg, msg->to_net.addr), faddrbuf)
 				,msgid_serialno(msg)
 				);
 			if(smb_hfield_str(msg, FIDOMSGID, msg_id) != SMB_SUCCESS)
