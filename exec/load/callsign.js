@@ -602,7 +602,7 @@ var CallSign={
 		if(callsign.search(/^L[A-N]/)==0)
 			return 'Norway';
 		if(callsign.search(/^L[O-W]/)==0)
-			return 'Republic';
+			return 'Argentine Republic';
 		if(callsign.search(/^LX/)==0)
 			return 'Luxembourg';
 		if(callsign.search(/^LY/)==0)
