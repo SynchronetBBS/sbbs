@@ -8,6 +8,7 @@
 //   user_fmt
 //   line_fmt
 //   max_line_len
+//   backup_level
 
 "use strict";
 
@@ -62,6 +63,8 @@ function automsg()
 						if(!console.noyes(bbs.text(AnonymousQ)))
 							anon = true;
 					}
+					if(options.backup_level !== 0)
+						file_backup(automsg, options.backup_level);
 					var file = new File(automsg);
 					if(!file.open("w")) {
 						alert("Error " + file.error + " opening " + file.name);
