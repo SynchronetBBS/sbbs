@@ -373,6 +373,10 @@ enum {
 #endif
 
 #ifndef _NODEDEFS_H
+#ifndef USE_XPDEV
+	typedef ushort uint16_t;
+	typedef uint uint32_t;
+#endif
 typedef struct _PACK {					/* Node information kept in NODE.DAB */
 	uchar	status,						/* Current Status of Node */
 			errors,						/* Number of Critical Errors */
