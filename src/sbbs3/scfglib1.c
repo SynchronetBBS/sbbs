@@ -61,8 +61,6 @@ BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	arstr(NULL, cfg->node_arstr, cfg, cfg->node_ar);
 
 	cfg->node_misc = iniGetUInteger(ini, ROOT_SECTION, "settings", 0);
-	cfg->node_sem_check = iniGetShortInt(ini, ROOT_SECTION, "sem_check", 60);
-	cfg->node_stat_check = iniGetShortInt(ini, ROOT_SECTION, "stat_check", 10);
 
 	iniFreeStringList(ini);
 

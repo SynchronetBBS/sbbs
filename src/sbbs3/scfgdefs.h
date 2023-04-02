@@ -491,8 +491,6 @@ typedef struct
 	char			node_phone[13]; 	/* Phone number of this node */
 	char			node_arstr[LEN_ARSTR+1]; /* Node minimum requirements */
 	uchar			node_ar[LEN_ARSTR+1];
-	uint16_t		node_sem_check; 	/* Seconds between semaphore checks */
-	uint16_t		node_stat_check;	/* Seconds between statistic checks */
 
 	char			new_install;		/* This is a brand new installation */
 	char			new_pass[41];		/* New User Password */

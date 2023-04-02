@@ -2695,7 +2695,7 @@ void event_thread(void* arg)
 
 		now=time(NULL);
 
-		if(now-lastsemchk>=sbbs->cfg.node_sem_check) {
+		if(now-lastsemchk >= startup->sem_chk_freq) {
 			check_semaphores=true;
 			lastsemchk=now;
 		} else

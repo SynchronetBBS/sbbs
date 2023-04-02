@@ -331,10 +331,6 @@ void node_cfg()
 				done=0;
 				while(!done) {
 					i=0;
-					sprintf(opt[i++],"%-27.27s%u seconds","Semaphore Frequency"
-						,cfg.node_sem_check);
-					sprintf(opt[i++],"%-27.27s%u seconds","Statistics Frequency"
-						,cfg.node_stat_check);
 					sprintf(opt[i++],"%-27.27s%s","Daily Event",cfg.node_daily);
 					sprintf(opt[i++],"%-27.27s%s","Node Directory",cfg.node_path[cfg.node_num-1]);
 					sprintf(opt[i++],"%-27.27s%s","Text Directory",cfg.text_dir);
@@ -350,32 +346,6 @@ void node_cfg()
 						,"Advanced Options",opt)) {
 						case -1:
 							done=1;
-							break;
-						case __COUNTER__:
-							ultoa(cfg.node_sem_check,str,10);
-							uifc.helpbuf=
-								"`Semaphore Check Frequency While Waiting for Call (in seconds):`\n"
-								"\n"
-								"This is the number of seconds between semaphore checks while this node\n"
-								"is waiting for a caller. Default is `5` seconds.\n"
-							;
-							uifc.input(WIN_MID|WIN_SAV,0,14
-								,"Seconds Between Semaphore Checks"
-								,str,3,K_NUMBER|K_EDIT);
-							cfg.node_sem_check=atoi(str);
-							break;
-						case __COUNTER__:
-							ultoa(cfg.node_stat_check,str,10);
-							uifc.helpbuf=
-								"`Statistics Check Frequency While Waiting for Call (in seconds):`\n"
-								"\n"
-								"This is the number of seconds between static checks while this node\n"
-								"is waiting for a caller. Default is `5` seconds.\n"
-							;
-							uifc.input(WIN_MID|WIN_SAV,0,14
-								,"Seconds Between Statistic Checks"
-								,str,3,K_NUMBER|K_EDIT);
-							cfg.node_stat_check=atoi(str);
 							break;
 						case __COUNTER__:
 							uifc.helpbuf=
