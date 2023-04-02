@@ -1447,7 +1447,8 @@ void cfg_notify(void)
 		else
 			SAFECOPY(str, "Nobody");
 		sprintf(opt[i++],"%-23.23s%s","Error Notifications", str);
-		sprintf(opt[i++],"%-23.23s%s","Error Level", errLevelStringList[cfg.errlevel]);
+		if(cfg.erruser)
+			sprintf(opt[i++],"%-23.23s%s","Error Level", errLevelStringList[cfg.errlevel]);
 		opt[i][0] = '\0';
 		uifc.helpbuf=
 			"`System Operator Notifications:`\n"
@@ -1469,8 +1470,8 @@ void cfg_notify(void)
 					"`Error Notifications:`\n"
 					"\n"
 					"When an error has occurred, a notification message can be sent to a\n"
-					"configured user number (i.e. a sysop). This feature can be disabled by\n"
-					"setting this value to `0`. The normal value of this option is `1` for\n"
+					"configured user number (i.e. a sysop).  This feature can be disabled by\n"
+					"setting this value to `0`.  The normal value of this option is `1` for\n"
 					"user number one.\n"
 					"\n"
 					"Note: error messages are always logged as well (e.g. to `data/error.log`)."
@@ -1915,7 +1916,7 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-27.27s%hu","Days of New Messages", cfg.new_msgscan_init);
 					sprintf(opt[i++],"%-27.27s%s", "Gender Options", cfg.new_genders);
 					strcpy(opt[i++],"Default Toggles...");
-					strcpy(opt[i++],"QWK Packet Setting...");
+					strcpy(opt[i++],"QWK Packet Settings...");
 					opt[i][0]=0;
 					uifc.helpbuf=
 						"`New User Values:`\n"
@@ -2734,7 +2735,7 @@ void sys_cfg(void)
 								"Oldest rotated log files are automatically deleted to save disk space.\n"
 								;
 							byte_count_to_str(cfg.max_log_size, str, sizeof(str));
-							if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Log File Size (in bytes, 0=unlimited)", str, 10, K_EDIT|K_UPPER) > 0) {
+							if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Log File Size (in bytes, 0=Unlimited)", str, 10, K_EDIT|K_UPPER) > 0) {
 								cfg.max_log_size = (uint32_t)parse_byte_count(str, 1);
 								if(cfg.max_log_size) {
 									SAFEPRINTF(str, "%u", cfg.max_logs_kept);
