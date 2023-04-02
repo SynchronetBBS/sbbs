@@ -284,7 +284,7 @@ function supports_sixel()
 {
 	if(console.cterm_version == undefined || console.cterm_version < cterm_version_supports_sixel)
 		return false;
-	return true;
+	return query_ctda(cterm_device_attributes.pixelops_supported);
 }
 
 // Returns:
