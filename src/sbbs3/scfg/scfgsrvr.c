@@ -720,7 +720,7 @@ static void websrvr_cfg(void)
 				break;
 			case 14:
 				SAFECOPY(str, maximum(startup.max_clients));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Count (0=unlimited)", str, 10, K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Count (0=Unlimited)", str, 10, K_EDIT) > 0)
 					startup.max_clients = atoi(str);
 				break;
 			case 15:
@@ -950,7 +950,7 @@ static void ftpsrvr_cfg(void)
 				break;
 			case 9:
 				SAFECOPY(str, maximum(startup.max_clients));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Count (0=unlimited)", str, 10, K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Count (0=Unlimited)", str, 10, K_EDIT) > 0)
 					startup.max_clients = atoi(str);
 				break;
 			case 10:
@@ -1289,7 +1289,7 @@ static void mailsrvr_cfg(void)
 				break;
 			case 13:
 				SAFECOPY(str, maximum(startup.max_clients));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Count (0=unlimited)", str, 10, K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Count (0=Unlimited)", str, 10, K_EDIT) > 0)
 					startup.max_clients = atoi(str);
 				break;
 			case 14:
