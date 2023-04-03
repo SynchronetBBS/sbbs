@@ -2907,7 +2907,7 @@ void smtp_netmailaddr(scfg_t* cfg, smbmsg_t* msg, char* name, size_t namelen, ch
 				,faddr->node, faddr->net, faddr->zone);
 		snprintf(addr, addrlen, "%s@%s", usermailaddr(NULL, addrbuf, msg->from), faddrstr);
 	} else if(msg->from_net.type!=NET_NONE && msg->from_net.addr!=NULL)
-		snprintf(addr, addrlen, (char*)msg->from_net.addr);
+		snprintf(addr, addrlen, "%s", (char*)msg->from_net.addr);
 	else 
 		usermailaddr(cfg, addr, msg->from);
 }
