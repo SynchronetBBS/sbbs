@@ -1,0 +1,357 @@
+*****************************************
+* What's New in Synchronet Version 3.20 *
+* (ChangeLog since v3.19b Jan 2, 2022)  *
+*****************************************
+
+General
+~~~~~~~
+o New userbase (see https://wiki.synchro.net/history:newuserbase for details)
+o Overhaul statistics files
+  - */dsts.dab (daily statistics and running totals) -> */dsts.ini
+  - */csts.dab (cumulative statistics / log) -> */csts.tab
+  - DSTSEDIT (daily stats editor) goes away, not needed (just edit the file)
+o Baja: Make !INCLUDE directives filename case-insensitive
+
+Security
+~~~~~~~~
+o Disallow new user aliases from matching an existing user's real name
+o Implement duplicate new-user email address checking (optional)
+  - Set SCFG->System->New User Prompts->Force Unique E-mail/NetMail to "Yes"
+o New 'O' restriction is automatically applied to accounts with a duplicate
+  real name (when allowed by the sysop) and prevent such users from posting
+  or sending mail with their real name
+o Change the semantics of the "Allow Sysop Logins" setting in SCFG->System:
+  an account with sysop access (i.e. level 90+) can still login, but any action that
+  normally requires the system password will not be allowed. This includes the
+  sysop-actions available in the FTP server when authenticating with
+  <user-pass>:<system-pass> as the password. The sysop-user can still
+  authenticate (and login), but none of those sysop-actions will be available
+  to them.
+  Renamed/moved to SCFG->System->Security Options->Toggles->Allow Sysop Access
+
+Customization
+~~~~~~~~~~~~~
+o New modules: msgscancfg.js and filescancfg.js
+o New @-codes:
+  - BUILD_DATE
+  - BUILD_TIME
+  - CPS
+  - OS_CPU
+  - TRUNCATE
+  - TRUNCOFF
+  - GETDIM
+  - LINEDELAY[:n]
+o @-codes can now be included in text centered with the CENTER @-code
+  Note: this centering logic does not know the expanded-size of the @-code, so
+  use a fixed-length @-code (e.g. with padding) or use the 'C' @-code format
+  modifier instead
+o New text.dat strings:
+  - HashingFile
+  - HashedFile
+  - String 387 is now used for YouCantUseThatNetmail string
+  - NewUserValEmailSubj
+  - InactivityAlert
+
+Windows
+~~~~~~
+o Synchronet should run on Windows XP again
+  Fixed 'The procedure entry point inet_ntop could not be located in the
+  dynamic link library WS2_32.dll'
+o Ignore VDD WriteFile() failures if the child process has terminated
+  If the child process (e.g. door game) has terminated, don't log errors
+  if/when WriteFile() to the mailslot fails. This would be expected as the
+  mailslot is created/owen-by sbbsexec.dll which would also terminate along
+  with the process, thus closing the mailslot
+o Suppress "VDD Open failed" warning if child process terminated
+o Fix (loss of) carrier detect reporting in Virtual UART driver
+o Many improvements to the Virtual UART Driver as a result of SVDM development:
+  - Report CTS status in FOSSIL driver (high when outbuf has some space)
+  - Emulate FIFO enablement
+  - Support RTS flow control
+  - Report "DCD change" in MSR correctly
+o Synchronet Control Panel (sbbsctrl.exe) now has a "Log Events to Disk" option
+  and will write the event thread log messages to data/events*.log
+o New useredit.exe (Delphi forms ported to C++Builder)
+
+Configuration Utility (SCFG)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+o Displays path/filename of config file actively being edited, not date/time
+o Supports cycling through like-items using left/right arrow keys
+  e.g. comparing/glancing through grps, subs, libs, and dirs, is really easy!
+o New "Servers" menu: Almost all settings in the sbbs.ini file are now
+  configurable here.
+o New "Initial Setup Wizard" runs automatically on new-install or via '-w' opt
+  Similar to the SBBSCTRL:Configuration Wizard in function, but TUI, not GUI
+o Moved Node->Toggle Options->Allow Login by User Number, Login by Real Name,
+  Always Prompt for Password, to System->Security Options
+o Moved Node->Advanced Options->Validation user, Notification User, and
+  Notification Error Level to (new) System->Notifications menu
+o Moved Node->Advanced Options->Inactivity Warning and Inactivity Disconnection
+  to System->Advanced->User Inactivity Warning (now a percentage) and
+  Maximum User Inactivity
+o Removed Node->Advanced Options->Semaphore Frequency and Statistics Frequency
+o Adding nodes, prompts to automatically adjust the Terminal Server LastNode
+  value to include the new (higher) node number
+o Moved security settings from "System" menu to System->Security Options
+  - Password
+  - Users Can Change Password
+  - Days to Preserve Deleted Users
+  - Maximum Days of Inactivity
+  - New User Password (now prompted when setting Security->Open to New Users)
+  - Security Level Values, Expired Account Values, and Quick-Validation Values
+  - Toggle Options->Allow Sysop Logins, Display/Log Passwords Locally, Users
+    Expire when Out-of-time, Require Sys Pass during Login, Closed to New Users
+o Added System->New User Values->QWK Packet Settings
+o Moved System->New User Values->Question Toggles to System->New User Prompts
+o Added System->Advanced->Maximum Log File Size (enable/control log rotation)
+o Added System->Loadable Modules->Send Feedback, Chat Section, List Users,
+  Scan Dirs, List Files, View File Info, Batch Transfer
+  - All configured loadable modules can now include command-line options
+o File Directory->Toggle->Template for New replaced with File Library->Diretory
+  Defaults...
+  "Clone Options" moved to Directory Defaults->Clone Settings
+o New File Library options:
+  Upload Requirements, Download Requirements, Operator Requirements, Exemption
+  Requirements, Auto-Add Sub-directories, Virtual Sub-directories
+o Internal codes (prefixes and suffixes) have double in size
+o Add "Native" option for QWKnet call-out cmd-lines
+o Add an 'enabled' property for QWKnet hubs, defaults to true
+o Move the pack and unpack commands to an "Advanced" sub-menu since they
+  are completely optional now
+o Trim leading and trailing white-space in input strings, automatically
+o Don't allow spaces when inputting/editing internal codes
+
+JavaScript
+~~~~~~~~~~
+o Command-shells can be written entirely in JavaScript, no .bin stub needed
+o file_area.web_vpath_prefix
+o file-metadata-object (return value of FileBase.get()).vpath
+o methods for vetting filenames (e.g. for upload by users)
+  - system.illegal_filename() - check if contains illegal chars/sequences
+  - system.safest_filename() - check if contains only safest chars
+  - system.allowed_filename() - check if meets criteria from SCFG->File Options
+  - system.check_filename() - check if legal and meets configured criteria and
+    is not in file.can
+  - bbs.check_filename() - ditto, except will display badfile.msg as
+    appropriate
+o Restore ability for MsgBase.open() to open an arbitrary SMB msgbase
+o Remember the last 'first_msg' property value after MsgBase instance is closed
+o Fixed user.dat open file descriptor leak in User object constructor
+o New User.close() method
+o New console.flush() method
+o New console.progress() method
+  Display a progress indication bar, e.g. "[ Scanning 10.0% ]" with the bar
+  backfill effect (when supported by the terminal)
+o File.readBin() and writeBin() methods now support 64-bit integer binary data
+o console.mouse_mode now supports being set to just true or false (no flags)
+o console.pause() now accepts an optional bool argument (set_abort)
+o Allow system.matchuserdata() to search deleted user records
+o Add 'fidonet_addr' property to msg_area.sub[]
+o New property: system.login_settings
+o New property: system.mail_settings
+o file_area.min_diskspace is in bytes now, not kilobytes
+o New global function: rmfiles() - remove files and sub-dirs, recursively
+o New bbs.batch_clear() method
+o New bbs.chat_sec() method
+o New bbs.sync() method
+o New User.stats.download_cps property
+o New User.mail_settings property
+o New bbs methods: save_msg_scan() and reload_msgs_scan()
+o bbs.telnet_gate() and rlogin_gate() now return boolean (success/failure)
+o bbs.logoff() now returns boolean (false if log-off was denied)
+o New bbs properties: first_node and last_node
+o MsgBase.save_msg() throw an exception when empty recipient list is provided
+o New system.find_login_id() method
+o New console properties:
+  - line_delay
+  - max_getkey_inactivity
+  - last_getkey_activity
+  - max_socket_inactivity
+o New method: File.iniRemoveSections()
+
+Servers
+~~~~~~~
+o MQTT (IoT protocol) statistics/status/output publishing and control
+o Allow a configured maximum-severity (minimum value) for TLS-related log
+  messages. Default is 0 (LOG_EMERG, maximum severity)
+o All servers support login-by-realname/user-number (if enabled by the sysop)
+o systemd integration (status reporting) on *nix builds
+o Fix uploader-notification, credit awards, download-counters in FTP downloads
+
+Services
+~~~~~~~~
+o Allow a per-service "LowestLogLevel" setting
+  Have a service (e.g. imapservice.js) that logs errors that you'd rather not
+  fill your error.log file with? Set that service's "LowestLogLevel" to
+  "Warning" in your services.ini file ("lower" means "more severe" when it
+  comes to log levels, so this would set the maximum severity to Warning)
+
+Terminal Server
+~~~~~~~~~~~~~~~
+o Socket inactivity watchdog now supported and configurable with separate
+  maximum inactivity values for Login, New User Registration, and normal
+  User Session (SCFG->Servers->Terminal Server->Max * Inactivity settings
+  - This inactivity detection works even when scripts don't call getkey()
+    but is reset upon received TCP traffic of any kind (even NOP/GA)
+o Progress-update displays are now optimized for slow (e.g. modem) connections
+o Basic PETSCII output column/line counting support (for auto-pause)
+o Displayed Instant Messages (notifications and telegrams) are now stored
+  and historic messages viewable via ;msgs command and 'V' from the ^P prompt
+o New display file naming (*.cXX.[asc|msg|ans|rip|seq]) where XX is the minimum
+  column width (not necessarily the exact column width)
+  The existing *.XXcol.* naming is still supported for exact-column width files
+o ASC/MSG versions of display files no longer required
+  If all a sysop wants to create/use are .ans files, they can do that, non-ANSI
+  users be damned
+o Use nearest-zone matching for source FTN address when replying to netmail
+o Fix lost 'unexpected characters' received in ANSI get cursor position
+  response (issue #304)
+o newuser.js has a new 'notify_sysop' option (enabled via modopts.ini)
+  Will notify the sysop via email and telegram whenever a new user account has
+  been created
+o Configurable system password timeout (default: 15 minutes)
+o Fix PETSCII 40/80 column port connections for IPv6
+o [BBS]
+  DefaultTermWidth=80
+  DefaultTermHeight=24
+o Online user editor display more of the user's (long) password
+o Increase user's hostname field (aka user_t.comp) from 30 to 60 chars
+o Most sysops didn't know it, but if exec/feedback.* existed, it would be
+  executed just before any user sent an email to the sysop (user #1),
+  excluding new user validation requests:
+  - make this module name configurable and loadable from mods
+  - support JS module here (exit(1) to abort the feedback)
+  - invoke for email being sent to *any* sysop (not just user #1)
+  - don't invoke the module when sending *from* a sysop account
+o Make new user QWK-related and Chat-related settings configurable
+  - Added chat-settings to SCFG->System->New User Values->Toggle Options
+  - Added new menu: SCFG->System->New User Values->QWK Packet Settings
+o New line-based method of output throttling (e.g for animated ANSIs)
+
+Doors
+~~~~~
+o New option to Disable Local Display
+o New option to Alert/Disconnect an Inactive User while running program
+o Fix EXITINFO.BBS drop file generation (a few problems with size and garbage)
+o Totally re-write the PCBOARD.SYS and USERS.SYS drop file generation logic
+o Limit door.sys drop file numeric values to 32767
+  Fixes issue with doors using The DoorFrame door library (e.g Lemonade!)
+o Populate line 36 (user alias) of door.sys with the current user's handle
+  Previously, we just always made this a blank line
+o Add line 8 (user's real name) to DOORFILE.SR (Solar Realms' drop file)
+o Dates in drop files are now always in MM/DD/YY format, never DD/MM/YY
+o Line 37 ("Event Time") of DOOR.SYS was always 00:00, now it'll be the
+  next event time (in HH:MM format)
+o Add "Disable Local Display" option for doors
+  New option to disable local screen display for door programs: sets the
+  'Screen' value appropriately in door.sys or pcboard.sys drop files and on
+  Windows, doesn't create a new console window.
+o Parse DOSXTRN.ERR
+  Also, now parsing the DOSXTRN.ERR file created by the latest/greatest
+  dosxtrn.exe when failing to execute the child/DOS program and log the parsed
+  error details (errno value and description), helpful in debugging the reason
+  why a DOS program may not have been successfully executed by DOSXTRN
+o When user hangs-up on external programs on *nix, try to terminate w/SIGTERM
+  Previously, when a user disconnected or ran out of time while running a
+  stdio-based external program on *nix, if the program was still running, we'd
+  send it a SIGHUP, wait up to 10 seconds for the process to terminate and if
+  it did not, terminate it (ungracefully) with SIGKILL. Since some programs
+  catch SIGTERM (and not SIGHUP) to indicate a termination request, we now will
+  first attempt a SIGHUP, wait up to 5 seconds for the process to terminate and
+  if it does not, then send a SIGTERM and wait up to another 5 seconds for it
+  to terminate and if it doesn't, then finally send it a SIGKILL (which cannot
+  be caught and always results in an ungraceful termination of the child
+  process)
+
+File Transfers
+~~~~~~~~~~~~~~
+o Extracted DIZ from sub-directory of archive does not preempt root DIZ File
+o Increase maximum extended file description length from 4000 to 5000 chars
+o Filenames > 12 chars use liberal filename matching
+  (fixes issue seen at https://youtu.be/_IWzIV0_sZ4?t=310)
+o Allow maximum uploaded filename length to be configured (default: 64)
+o Searching for file descriptions in the Terminal Server, now searchings file's
+  tags, author, and author group, if available
+o Fixed issue (#328) removing files from batch queues
+o Fix "Testable Files" file extension comparison (issue #331)
+  Issue introduced in v3.19: Testable Files (a.k.a. upload processors) with a
+  specified file extension/type (e.g. "ZIP" and not "*") would never run
+  because the file extension comparison logic was "off by one". Testable Files
+  with an extension of "*" (all files/types) would still run however.
+o Implement the sbbsfile.nam and sbbsfile.des post-processing removed in v3.19
+o Auto-detect/display UTF-8 encoded extended file descriptions
+o Improved support for files > 4GB in size
+o Add options to sort directories by file size (ascending or descending)
+o Allow sysop-choice of source of virtual sub-directory source name
+  By default, each file transfer directory's internal code suffix is
+  used as the source of the sub-directory of the virtual path used
+  to represent a file area in the FTP and Web servers. Now, a sysop
+  can change that source to either each directory's short name or
+  long name, if they prefer.
+o Removed FTP server DIR_FILES option (no longer applicable)
+o Fix: Use the user's default download protocol for batch downloads
+o Increase maximum file extension length from 3 to 15 characters (e.g. .tar.gz)
+o Fix bug (issue #515) with moving files between directories
+o Minimum disk space more universally enforced and no longer limited to 65535K
+o Better access enforcement to files in batch download queues
+o Remove defunct files from batch download queue during logon
+o Store/reuse file download throughput (in CPS), for transfer estimates/ETA
+
+Message Areas
+~~~~~~~~~~~~~
+o Sanity check sub-board's assigned FTN addresses when loading configuration
+  (use nearest matching configured AKA)
+o Fixed QWKnet netmail dest user look-up (using qnet/users.dat)
+  broken back in 2021
+o New text.dat strings for received Fido and Internet mail
+  - InternetMailReceived
+  - InternetMailForwarded
+  - FidoNetMailReceived
+  - WithAttachment
+  - FidoEchoMailReceived
+  For The Millionaire (RIP?), closing issue #254
+  The first string (suppressed with %.0s) is an optional date/time stamp.
+  This also deprecates (removes support for) the [mail] NewMailNotice and
+  ForwardNotice keys from sbbs.ini.
+o Fix heap corruption in decoding of quoted-printable text in smblib
+o Fix erroneous filtering of vote messages by age
+  e.g. !Filtering QWK message from (null) due to age: 19321 days
+o Fix: Include blank lines in messages edited with internal editor
+o Don't save draft messages upon disconnect for Guest or "no one" (user #0)
+
+SBBSecho
+~~~~~~~~
+o Don't use libarchive for creating/appending bundles
+  - Must use (have configured) external archive program (e.g. zip)
+o New EchoCfg->Global->Sort Linked Node List option
+o Supports filtering messages based on text/subject.can file
+o Rework NetMail routing logic to handle point destinations better
+
+HatchIT
+~~~~~~~
+o Supports a new non-interactive mode (patch by @acn)
+o Generates MS-DOS compatible 'File' key values and 'Lfile' key when source
+  filename is not MS-DOS compatible
+
+Web Server
+~~~~~~~~~~
+o Direct Filebase access for downloading files with access controls,
+  notifications, updated statistics and credits (optional, enabled
+  via SCFG->Servers->Web Server->Filebase VPath Prefix (e.g. "/files/")
+o Requsted-path aliasing, via ctrl/web_alias.ini
+o Log requests that resolve outside of the web root as hack attempts
+o Fix HTTP-requests for files >= 2GB in size
+o Perform a JS garbage collection for each new request in a reused session
+o Dynamic file area/base indexing
+  (set sbbs.ini [web] FileIndexScript to webfileindex.ssjs for demo)
+o Add UNIX domain FastCGI support
+
+Mail Server
+~~~~~~~~~~~
+o Fix corrupted RFC822 msg headers when a header field was > 1024 chars
+o Reject SMTP session from any client that sends illegally-long lines
+o Fix false FORGED mail header 'FROM' field detection/rejection
+
+FTP Server
+~~~~~~~~~~
+o Limit uploaded file sizes, accounting for free disk space
