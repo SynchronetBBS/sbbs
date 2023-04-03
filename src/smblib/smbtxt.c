@@ -375,7 +375,10 @@ void smb_parse_content_type(const char* content_type, char** subtype, char** cha
 			}
 		}
 		char* parms = p;
-		if(charset != NULL && ((p = strcasestr(parms, " charset=")) != NULL || (p = strcasestr(parms, ";charset=")) != NULL)) {
+		if(charset != NULL &&
+			((p = strcasestr(parms, " charset=")) != NULL
+				|| (p = strcasestr(parms, ";charset=")) != NULL
+				|| (p = strcasestr(parms, "\tcharset=")) != NULL)) {
 			BOOL quoted = FALSE;
 			p += 9;
 			if(*p == '"') {
