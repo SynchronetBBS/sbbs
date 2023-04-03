@@ -25,7 +25,7 @@ const system_info = f.iniGetObject('info') || {};
 f.close();
 f = undefined;
 
-const PROTOCOL_VERSION = '1.2.9';
+const PROTOCOL_VERSION = '1.3.0';
 const MAX_LINE = 256;
 const FROM_SITE = system.qwk_id.toLowerCase();
 const SYSTEM_NAME = system_info.system_name || system.name;
@@ -140,7 +140,8 @@ function client_accept() {
 function client_send(message, username) {
     Object.keys(clients).forEach(function (e) {
         if (message.to_user == 'NOTME' && message.from_user == clients[e].username) return;
-        if (!username || clients[e].username == username) {
+        // Ignore case for users since MRC is not case sensitive in user context
+        if (!username || clients[e].username.toUpperCase() == username.toUpperCase()) {
             log(LOG_DEBUG, 'Forwarding message to ' + clients[e].username);
             clients[e].socket.sendline(JSON.stringify(message));
         }

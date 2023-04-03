@@ -170,8 +170,9 @@ function MRC_Session(host, port, user, pass, alias) {
         chatters: {
             help: 'List current users'
         },
-        connected: {
-            help: 'List connected BBSs'
+        bbses: {
+            help: 'List connected BBSs',
+            command: 'CONNECTED'
         },
         help: {
             help: 'Display this help message',
@@ -214,10 +215,10 @@ function MRC_Session(host, port, user, pass, alias) {
                 }
             }
         },
-        notify: {
-            help: 'Send a notification message to the server (what?)',
+        quote: {
+            help: 'Send a raw command to the server',
             callback: function (str) {
-                this.send_command('NOTIFY:' + str, 'ALL');
+                this.send_command(str);
             }
         },
         quit: {
@@ -232,7 +233,8 @@ function MRC_Session(host, port, user, pass, alias) {
             command: 'LIST'
         },
         stats: {
-            help: 'Return anonymous server stats'
+            help: 'Return anonymous server stats',
+            command: 'statistics'
         },
         topic: {
             help: 'Change the topic of the current room',
