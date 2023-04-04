@@ -15,7 +15,7 @@
 
  How unregistered clients are handled in the IRCd.
 
- Copyright 2003-2022 Randy Sommerfeld <cyan@synchro.net>
+ Copyright 2003-2023 Randy Sommerfeld <cyan@synchro.net>
 
 */
 
@@ -426,13 +426,13 @@ function Unregistered_Welcome() {
 	));
 	if (server.client_update != undefined)
 		server.client_update(this.socket, this.nick, this.hostname);
-	server_bcast_to_servers(format("NICK %s 1 %lu + %s %s %s 0 %lu :%s",
+	server_bcast_to_servers(format("NICK %s 1 %lu + %s %s %s 0 %s :%s",
 			this.nick,
 			new_user.created,
 			this.uprefix,
 			this.hostname,
 			ServerName,
-			ip_to_int(new_user.ip),
+			new_user.ip,
 			this.realname
 	));
 	log(LOG_NOTICE, format(

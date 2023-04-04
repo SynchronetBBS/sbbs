@@ -15,7 +15,7 @@
 
  Handling of regular user-to-server communication in the IRCd.
 
- Copyright 2003-2022 Randy Sommerfeld <cyan@synchro.net>
+ Copyright 2003-2023 Randy Sommerfeld <cyan@synchro.net>
 
 */
 
@@ -343,7 +343,7 @@ function User_Work(cmdline) {
 					break;
 				}
 				p.shift();
-				this.set_chanmode(tmp, p, false /* bounce? */);
+				this.set_chanmode(tmp, p, tmp.created);
 			} else if (p[0].toUpperCase() == this.nick.toUpperCase()) {
 				this.setusermode(p[1]);
 			} else {

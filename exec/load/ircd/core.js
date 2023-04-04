@@ -15,7 +15,7 @@
 
  Core IRCd functions.
 
- Copyright 2003-2022 Randy Sommerfeld <cyan@synchro.net>
+ Copyright 2003-2023 Randy Sommerfeld <cyan@synchro.net>
 
 */
 
@@ -207,7 +207,7 @@ function Scan_For_Banned_Clients() {
 		if (   isklined(user.uprefix + "@" + user.hostname)
 			|| IP_Banned(user.ip)
 		) {
-			this.quit("User has been banned");
+			user.quit("User has been banned");
 		}
 	}
 }
@@ -1371,7 +1371,7 @@ function IRCClient_do_info() {
 		this.servername
 	));
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=-=-*[ The Synchronet IRCd 1.9 ]*-=-=-=-=-=-=-=-=-=-=--");
-	this.numeric(371, ":   IRCd Copyright 2003-2022 by Randy Sommerfeld <cyan@synchro.net>");
+	this.numeric(371, ":   IRCd Copyright 2003-2023 by Randy Sommerfeld <cyan@synchro.net>");
 	this.numeric(371, ":" + system.version_notice + " " + system.copyright + ".");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=-( A big thanks to the following )-=-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":DigitalMan (Rob Swindell): Resident coder god, various hacking all");
@@ -1382,7 +1382,7 @@ function IRCClient_do_info() {
 	this.numeric(371, ":   hacks, and lots of guidance.");
 	this.numeric(371, ":Thanks to the DALnet Bahamut team for their help over the years.");
 	this.numeric(371, ":Greets to: Arrak, ElvishMerchant, Foobar, Grimp, Kufat, Psyko,");
-	this.numeric(371, ":   Samael, TheStoryTillNow, Torke, and all the #square oldbies.");
+	this.numeric(371, ":   Samael, TheStoryTillNow, Torke, #sqt, and all the #square oldbies.");
 	this.numeric(371, ":In memory of Palidor (Alex Kimbel) March 17, 1984 - December 12, 2012.");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":Synchronet " + system.full_version);

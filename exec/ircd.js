@@ -44,7 +44,7 @@ const VERSION_STR = format(
 	system.platform, system.beta_version
 );
 /* This will be replaced with a dynamic CAPAB system */
-const SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP TSMODE";
+const SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE";
 /* This will be in the configuration for 2.0 */
 const SUMMON = true;
 
