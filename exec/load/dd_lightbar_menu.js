@@ -1,5 +1,3 @@
-// $Id: dd_lightbar_menu.js,v 1.24 2020/05/08 04:49:10 nightfox Exp $
-
 /* Digital Distortion Lightbar Menu library
  * Author: Eric Oulashin (AKA Nightfox)
  * BBS: Digital Distortion
@@ -47,6 +45,7 @@ itemTextCharHighlightColor: The color of a highlighted non-space character in an
                             item text (specified by having a & in the item text).
 							It's important not to specify a "\x01n" in here in case
 							the item text should have a background color.
+unselectableItemColor: The color to use for items that are not selectable
 borderColor: The color for the borders (if borders are enabled)
 You can also call SetColors() and pass in a JS object with any or all of the
 above properties to set the colors internally in the DDLightbarMenu object.
@@ -325,6 +324,20 @@ The parameters:
  pWidth: The width of the content to draw
  pHeight: The height of the content to draw
  pSelectedItemIndexes: Optional - An object containing indexes of selected items
+
+
+Menu items can be marked not selectable by setting the isSelectable proprty of the item to false.
+Alternately, the menu function ToggleItemSelectable can be used for this purpose too:
+Parameters:
+- The index of the item to be toggled
+- Boolean: Whether or not the item should be selectable
+Example - Making the first item not selectable:
+lbMenu.ToggleItemSelectable(0, false);
+
+By default, DDLightbarMenu ignores the isSelectable attribute of items and considers all items
+selectable (for efficiency).  To enable usage of unselectable items, set the allowUnselectableItems
+property to true:
+lbMenu.allowUnselectableItems = true;
 */
 
 "use strict";
@@ -417,6 +430,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 		selectedItemColor: "\x01n\x01b\x01" + "7", // Can be either a string or an array specifying colors within the item
 		altItemColor: "\x01n\x01w\x01" + "4", // Alternate item color.  Can be either a string or an array specifying colors within the item
 		altSelectedItemColor: "\x01n\x01b\x01" + "7", // Alternate selected item color.  Can be either a string or an array specifying colors within the item
+		unselectableItemColor: "\x01n\x01b\x01h", // Can be either a string or an array specifying colors within the item
 		itemTextCharHighlightColor: "\x01y\x01h",
 		borderColor: "\x01n\x01b",
 		scrollbarScrollBlockColor: "\x01h\x01w",
@@ -485,12 +499,26 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// to get the user's choice
 	this.callOnItemNavOnStartup = false;
 
+	// Whether or not to allow unselectable items (pay attention to the isSelectable attribute of items).
+	// Defaults to false, mainly for backwards compatibility.
+	this.allowUnselectableItems = false;
+
+	// Whether or not to allow ANSI behavior. Mainly for testing (this should be true).
+	this.allowANSI = true;
+
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
 	this.Remove = DDLightbarMenu_Remove;
 	this.RemoveAllItems = DDLightbarMenu_RemoveAllItems;
 	this.NumItems = DDLightbarMenu_NumItems;
 	this.GetItem = DDLightbarMenu_GetItem;
+	this.ItemIsSelectable = DDLightbarMenu_ItemIsSelectable;
+	this.FindSelectableItemForward = DDLightbarMenu_FindSelectableItemForward;
+	this.FindSelectableItemBackward = DDLightbarMenu_FindSelectableItemBackward;
+	this.HasAnySelectableItems = DDLightbarMenu_HasAnySelectableItems;
+	this.ToggleItemSelectable = DDLightbarMenu_ToggleItemSelectable;
+	this.FirstSelectableItemIdx = DDLightbarMenu_FirstSelectableItemIdx;
+	this.LastSelectableItemIdx = DDLightbarMenu_LastSelectableItemIdx;
 	this.SetPos = DDLightbarMenu_SetPos;
 	this.SetSize = DDLightbarMenu_SetSize;
 	this.SetWidth = DDLightbarMenu_SetWidth;
@@ -510,12 +538,18 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.RemoveAllItemHotkeys = DDLightbarMenu_RemoveAllItemHotkeys;
 	this.GetMouseClickRegion = DDLightbarMenu_GetMouseClickRegion;
 	this.GetVal = DDLightbarMenu_GetVal;
+	this.DoKeyUp = DDLightbarMenu_DoKeyUp;
 	this.DoKeyDown = DDLightbarMenu_DoKeyDown;
+	this.DoPageUp = DDLightbarMenu_DoPageUp;
+	this.DoPageDown = DDLightbarMenu_DoPageDown;
+	this.NavMenuForNewSelectedItemTop = DDLightbarMenu_NavMenuForNewSelectedItemTop;
+	this.NavMenuForNewSelectedItemBottom = DDLightbarMenu_NavMenuForNewSelectedItemBottom;
 	this.SetBorderChars = DDLightbarMenu_SetBorderChars;
 	this.SetColors = DDLightbarMenu_SetColors;
 	this.GetNumItemsPerPage = DDLightbarMenu_GetNumItemsPerPage;
 	this.GetTopItemIdxOfLastPage = DDLightbarMenu_GetTopItemIdxOfLastPage;
-	this.SetTopItemIdxToTopOfLastPage = DDLightbarMenu_SetTopItemIdxToTopOfLastPage;
+	this.CalcAndSetTopItemIdxToTopOfLastPage = DDLightbarMenu_CalcAndSetTopItemIdxToTopOfLastPage;
+	this.CalcPageForItemAndSetTopItemIdx = DDLightbarMenu_CalcPageForItemAndSetTopItemIdx;
 	this.AddAdditionalQuitKeys = DDLightbarMenu_AddAdditionalQuitKeys;
 	this.QuitKeysIncludes = DDLightbarMenu_QuitKeysIncludes;
 	this.ClearAdditionalQuitKeys = DDLightbarMenu_ClearAdditionalQuitKeys;
@@ -538,6 +572,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.GetTopDisplayedItemPos = DDLightbarMenu_GetTopDisplayedItemPos;
 	this.GetBottomDisplayedItemPos = DDLightbarMenu_GetBottomDisplayedItemPos;
 	this.ScreenRowForItem = DDLightbarMenu_ScreenRowForItem;
+	this.ANSISupported = DDLightbarMenu_ANSISupported;
 
 	// ValidateSelectItem is a function for validating that the user can select an item.
 	// It takes the selected item's return value and returns a boolean to signify whether
@@ -572,11 +607,13 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 //  pText: The text of the menu item
 //  pRetval: The value to return when the item is chosen.  Can be any type of value.
 //  pHotkey: Optional - A key to select the item when pressed by the user
-function DDLightbarMenu_Add(pText, pRetval, pHotkey)
+//  pSelectable: Optional - Whether or not the item is to be selectable. Defaults to true.
+function DDLightbarMenu_Add(pText, pRetval, pHotkey, pSelectable)
 {
 	var item = getDefaultMenuItem();
 	item.text = pText;
 	item.retval = (pRetval == undefined ? this.NumItems() : pRetval);
+	item.isSelectable = (typeof(pSelectable) === "boolean" ?  pSelectable : true);
 	// If pHotkey is defined, then use it as the hotkey.  Otherwise, if
 	// ampersandHotkeysInItems is true, look for the first & in the item text
 	// and if there's a non-space after it, then use that character as the
@@ -647,9 +684,178 @@ function DDLightbarMenu_NumItems()
 // Return value: The item (or null if pItemIndex is invalid)
 function DDLightbarMenu_GetItem(pItemIndex)
 {
-	if ((pItemIndex < 0) || (pItemIndex >= this.items.length))
+	if ((pItemIndex < 0) || (pItemIndex >= this.NumItems()))
 		return null;
 	return this.items[pItemIndex];
+}
+
+// Returns whether an item is selectable
+//
+// Parameters:
+//  pItemIndex: The index of the item to check
+//
+// Return value: Boolean - Whether or not the item is selectable
+function DDLightbarMenu_ItemIsSelectable(pItemIndex)
+{
+	if ((pItemIndex < 0) || (pItemIndex >= this.NumItems()))
+		return false;
+
+	if (!this.allowUnselectableItems)
+		return true;
+
+	var item = this.GetItem(pItemIndex);
+	if (item == null || typeof(item) !== "object")
+		return false;
+	if (item.hasOwnProperty("isSelectable"))
+		return item.isSelectable;
+	else
+		return false;
+}
+
+// Finds a selectable menu item index going forward, starting at a given item index
+//
+// Parameters:
+//  pStartItemIdx: The index of the item to start at. This will be included in the search.
+//  pWrapAround: Boolean - Whether or not to wrap around. Defaults to false.
+//
+// Return value: The index of the next selectable item, or -1 if none is found.
+function DDLightbarMenu_FindSelectableItemForward(pStartItemIdx, pWrapAround)
+{
+	var numItems = this.NumItems();
+	if (typeof(pStartItemIdx) !== "number" || pStartItemIdx < 0 || pStartItemIdx >= numItems)
+		return -1;
+
+	if (!this.allowUnselectableItems)
+		return pStartItemIdx;
+
+	var wrapAround = (typeof(pWrapAround) === "boolean" ? pWrapAround : false);
+
+	var selectableItemIdx = -1;
+	var wrappedAround = false;
+	var onePastLastItemIdx = numItems;
+	for (var i = pStartItemIdx; i < onePastLastItemIdx && selectableItemIdx == -1; ++i)
+	{
+		var item = this.GetItem(i);
+		if (item.isSelectable)
+			selectableItemIdx = i;
+		else
+		{
+			if (i == pStartItemIdx - 1 && wrappedAround)
+				break;
+			else if (i == numItems-1 && wrapAround)
+			{
+				i = -1;
+				onePastLastItemIdx = pStartItemIdx;
+				wrappedAround = true;
+			}
+		}
+	}
+	return selectableItemIdx;
+}
+
+// Finds a selectable menu item index going backward, starting at a given item index
+//
+// Parameters:
+//  pStartItemIdx: The index of the item to start at. This will be included in the search.
+//  pWrapAround: Boolean - Whether or not to wrap around. Defaults to false.
+//
+// Return value: The index of the previous selectable item, or -1 if none is found.
+function DDLightbarMenu_FindSelectableItemBackward(pStartItemIdx, pWrapAround)
+{
+	var numItems = this.NumItems();
+	if (typeof(pStartItemIdx) !== "number" || pStartItemIdx < 0 || pStartItemIdx >= numItems)
+		return -1;
+
+	if (!this.allowUnselectableItems)
+		return pStartItemIdx;
+
+	var wrapAround = (typeof(pWrapAround) === "boolean" ? pWrapAround : false);
+
+	var selectableItemIdx = -1;
+	var wrappedAround = false;
+	for (var i = pStartItemIdx; i >= 0 && selectableItemIdx == -1; --i)
+	{
+		var item = this.GetItem(i);
+		if (item.isSelectable)
+			selectableItemIdx = i;
+		else
+		{
+			if (i == pStartItemIdx - 1 && wrappedAround)
+				break;
+			else if (i == numItems-1 && wrapAround)
+			{
+				i = this.NumItems() + 1;
+				onePastLastItemIdx = pStartItemIdx;
+				wrappedAround = true;
+			}
+		}
+	}
+	return selectableItemIdx;
+}
+
+// Returns whether there are any selectable items in the menu
+function DDLightbarMenu_HasAnySelectableItems(pNumItems)
+{
+	if (!this.allowUnselectableItems)
+		return true;
+
+	var numItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
+	var anySelectable = false;
+	for (var i = 0; i < numItems && !anySelectable; ++i)
+		anySelectable = this.GetItem(i).isSelectable;
+	return anySelectable;
+}
+
+// Toggles whether an item is selectable
+//
+// Parameters:
+//  pItemIdx: The index of the item to toggle
+//  pSelectable: Boolean - Whether or not the item should be selectable
+function DDLightbarMenu_ToggleItemSelectable(pItemIdx, pSelectable)
+{
+	if (typeof(pItemIdx) !== "number" || pItemIdx < 0 || pItemIdx >= this.NumItems() || typeof(pSelectable) !== "boolean")
+		return;
+	this.GetItem(pItemIdx).isSelectable = false;
+}
+
+// Returns the index of the first electable item, or -1 if there is none.
+function DDLightbarMenu_FirstSelectableItemIdx(pNumItems)
+{
+	var numItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
+	if (numItems == 0)
+		return -1;
+
+	if (!this.allowUnselectableItems)
+		return 0;
+
+	var selectableItemIdx = -1;
+	var anySelectable = false;
+	for (var i =0; i < numItems && selectableItemIdx == -1; ++i)
+	{
+		if (this.GetItem(i).isSelectable)
+			selectableItemIdx = i;
+	}
+	return selectableItemIdx;
+}
+
+// Returns the index of the last selectable item, or -1 if there is none.
+function DDLightbarMenu_LastSelectableItemIdx(pNumItems)
+{
+	var numItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
+	if (numItems == 0)
+		return -1;
+
+	if (!this.allowUnselectableItems)
+		return numItems - 1;
+
+	var selectableItemIdx = -1;
+	var anySelectable = false;
+	for (var i = numItems-1; i >= 0 && selectableItemIdx == -1; --i)
+	{
+		if (this.GetItem(i).isSelectable)
+			selectableItemIdx = i;
+	}
+	return selectableItemIdx;
 }
 
 // Sets the menu's upper-left corner position
@@ -730,79 +936,105 @@ function DDLightbarMenu_SetHeight(pHeight)
 //  pDrawScrollbar: Optional boolean - Whether or not to draw the scrollbar, if
 //                  the scrollbar is enabled.  Defaults to this.scrollbarEnabled, and the scrollbar
 //                  will only be drawn if not all items can be shown in a single page.
-function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar)
+//  pNumItems: Optional - A cached value for the number of menu items.  If not specified, this will
+//             call this.NumItems();
+function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar, pNumItems)
 {
-	var drawBorders = (typeof(pDrawBorders) == "boolean" ? pDrawBorders : true);
-	var drawScrollbar = (typeof(pDrawScrollbar) == "boolean" ? pDrawScrollbar : true);
+	var numMenuItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
+	if (this.ANSISupported())
+	{
+		var drawBorders = (typeof(pDrawBorders) == "boolean" ? pDrawBorders : true);
+		var drawScrollbar = (typeof(pDrawScrollbar) == "boolean" ? pDrawScrollbar : true);
 
-	var curPos = { x: this.pos.x, y: this.pos.y }; // For writing the menu items
-	var itemLen = this.size.width;
-	// If borders are enabled, then adjust the item length, starting x, and starting
-	// y accordingly, and draw the border.
-	if (this.borderEnabled)
-	{
-		itemLen -= 2;
-		++curPos.x;
-		++curPos.y;
-		if (drawBorders)
-			this.DrawBorder();
-	}
-	if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
-		--itemLen; // Leave room for the scrollbar in the item lengths
-	// If the scrollbar is enabled & needed and we are to update it,
-	// then calculate the scrollbar blocks and update it on the screen.
-	if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow() && drawScrollbar)
-	{
-		this.CalcScrollbarBlocks();
-		if (!this.drawnAlready)
-			this.DisplayInitialScrollbar(this.pos.y);
-		else
-			this.UpdateScrollbarWithHighlightedItem(true);
-	}
-	// For numbered mode, we'll need to know the length of the longest item number
-	// so that we can use that space to display the item numbers.
-	if (this.numberedMode)
-	{
-		this.itemNumLen = this.NumItems().toString().length;
-		itemLen -= this.itemNumLen;
-		--itemLen; // Have a space for separation between the numbers and items
-	}
-
-	// Write the menu items, only up to the height of the menu
-	var numPossibleItems = (this.borderEnabled ? this.size.height - 2 : this.size.height);
-	var numItemsWritten = 0;
-	var writeTheItem = true;
-	for (var idx = this.topItemIdx; (idx < this.NumItems()) && (numItemsWritten < numPossibleItems); ++idx)
-	{
-		writeTheItem = ((this.nextDrawOnlyItems.length == 0) || (this.nextDrawOnlyItems.indexOf(idx) > -1));
-		if (writeTheItem)
+		var curPos = { x: this.pos.x, y: this.pos.y }; // For writing the menu items
+		var itemLen = this.size.width;
+		// If borders are enabled, then adjust the item length, starting x, and starting
+		// y accordingly, and draw the border.
+		if (this.borderEnabled)
 		{
-			console.gotoxy(curPos.x, curPos.y);
-			var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
-			this.WriteItem(idx, itemLen, idx == this.selectedItemIdx, showMultiSelectMark, curPos.x, curPos.y);
+			itemLen -= 2;
+			++curPos.x;
+			++curPos.y;
+			if (drawBorders)
+				this.DrawBorder();
 		}
-		++curPos.y;
-		++numItemsWritten;
-	}
-	// If there are fewer items than the height of the menu, then write blank lines to fill
-	// the rest of the height of the menu.
-	if (numItemsWritten < numPossibleItems)
-	{
-		var numberFormatStr = "%" + this.itemNumLen + "s ";
-		var itemFormatStr = "%-" + itemLen + "s";
-		for (; numItemsWritten < numPossibleItems; ++numItemsWritten)
+		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+			--itemLen; // Leave room for the scrollbar in the item lengths
+		// If the scrollbar is enabled & needed and we are to update it,
+		// then calculate the scrollbar blocks and update it on the screen.
+		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow() && drawScrollbar)
 		{
-			writeTheItem = ((this.nextDrawOnlyItems.length == 0) || (this.nextDrawOnlyItems.indexOf(numItemsWritten) > -1));
+			this.CalcScrollbarBlocks();
+			if (!this.drawnAlready)
+				this.DisplayInitialScrollbar(this.pos.y);
+			else
+				this.UpdateScrollbarWithHighlightedItem(true);
+		}
+		// For numbered mode, we'll need to know the length of the longest item number
+		// so that we can use that space to display the item numbers.
+		if (this.numberedMode)
+		{
+			this.itemNumLen = numMenuItems.toString().length;
+			itemLen -= this.itemNumLen;
+			--itemLen; // Have a space for separation between the numbers and items
+		}
+
+		// Write the menu items, only up to the height of the menu
+		var numPossibleItems = (this.borderEnabled ? this.size.height - 2 : this.size.height);
+		var numItemsWritten = 0;
+		var writeTheItem = true;
+		for (var idx = this.topItemIdx; (idx < numMenuItems) && (numItemsWritten < numPossibleItems); ++idx)
+		{
+			writeTheItem = ((this.nextDrawOnlyItems.length == 0) || (this.nextDrawOnlyItems.indexOf(idx) > -1));
 			if (writeTheItem)
 			{
-				console.gotoxy(curPos.x, curPos.y++);
-				console.print("\x01n");
-				if (this.numberedMode)
-					printf(numberFormatStr, "");
-				var itemText = addAttrsToString(format(itemFormatStr, ""), this.colors.itemColor);
-				console.print(itemText);
+				console.gotoxy(curPos.x, curPos.y);
+				var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
+				this.WriteItem(idx, itemLen, idx == this.selectedItemIdx, showMultiSelectMark, curPos.x, curPos.y);
+			}
+			++curPos.y;
+			++numItemsWritten;
+		}
+		// If there are fewer items than the height of the menu, then write blank lines to fill
+		// the rest of the height of the menu.
+		if (numItemsWritten < numPossibleItems)
+		{
+			var numberFormatStr = "%" + this.itemNumLen + "s ";
+			var itemFormatStr = "%-" + itemLen + "s";
+			for (; numItemsWritten < numPossibleItems; ++numItemsWritten)
+			{
+				writeTheItem = ((this.nextDrawOnlyItems.length == 0) || (this.nextDrawOnlyItems.indexOf(numItemsWritten) > -1));
+				if (writeTheItem)
+				{
+					console.gotoxy(curPos.x, curPos.y++);
+					console.print("\x01n");
+					if (this.numberedMode)
+						printf(numberFormatStr, "");
+					var itemText = addAttrsToString(format(itemFormatStr, ""), this.colors.itemColor);
+					console.print(itemText);
+				}
 			}
 		}
+	}
+	else
+	{
+		// The user's terminal doesn't support ANSI
+		var numberedModeBackup = this.numberedMode;
+		this.numberedMode = true;
+		var itemLen = this.size.width;
+		// For numbered mode, we'll need to know the length of the longest item number
+		// so that we can use that space to display the item numbers.
+		this.itemNumLen = numMenuItems.toString().length;
+		itemLen -= this.itemNumLen;
+		--itemLen; // Have a space for separation between the numbers and items
+		console.print("\x01n");
+		for (var i = 0; i < numMenuItems; ++i)
+		{
+			var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
+			console.print(this.GetItemText(i, itemLen, false, showMultiSelectMark) + "\x01n");
+			console.crlf();
+		}
+		this.numberedMode = numberedModeBackup;
 	}
 
 	this.drawnAlready = true;
@@ -1165,7 +1397,7 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 	if ((pIdx >= 0) && (pIdx < numItems))
 	{
 		var itemLen = 0;
-		if (typeof(pItemLen) == "number")
+		if (typeof(pItemLen) === "number")
 			itemLen = pItemLen;
 		else
 		{
@@ -1201,19 +1433,27 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 		else
 			selectedItemColor = (menuItem.useAltColors ? this.colors.altSelectedItemColor : this.colors.selectedItemColor);
 		var itemColor = "";
-		if (typeof(pHighlight) === "boolean")
+		if (this.allowUnselectableItems && !menuItem.isSelectable)
+			itemColor = this.colors.unselectableItemColor;
+		else if (typeof(pHighlight) === "boolean")
 			itemColor = (pHighlight ? selectedItemColor : normalItemColor);
 		else
 			itemColor = (pIdx == this.selectedItemIdx ? selectedItemColor : normalItemColor);
 		var selected = (typeof(pSelected) == "boolean" ? pSelected : false);
 
-		// Get the item text, and truncate it to the displayable item width.
-		// Use strip_ctrl to ensure there are no attribute codes, since we will
-		// apply our own.  This might be only a temporary item returned by a
-		// replaced GetItem(), so we just have to strip_ctrl() it here.
-		itemText = strip_ctrl(menuItem.text);
+		// Get the item text
+		if ((typeof(itemColor) === "string" || Array.isArray(itemColor)) && itemColor.length > 0)
+		{
+			// Use strip_ctrl to ensure there are no attribute codes, since we will
+			// apply our own.  This might be only a temporary item returned by a
+			// replaced GetItem(), so we just have to strip_ctrl() it here.
+			itemText = strip_ctrl(menuItem.text);
+		}
+		else // Allow other colors in the text to be specified if the configured item color is empty
+			itemText = menuItem.text;
+		// Truncate the item text to the displayable item width
 		if (itemTextDisplayableLen(itemText, this.ampersandHotkeysInItems) > itemLen)
-			itemText = itemText.substr(0, itemLen);
+			itemText = substrWithAttrCodes(itemText, 0, itemLen); //itemText = itemText.substr(0, itemLen);
 		// If the item text is empty, then fill it with spaces for the item length
 		// so that the line's colors/attributes will be applied for the whole line
 		// when written
@@ -1389,13 +1629,35 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	if (numItems == 0)
 		return null;
 
+	// If allowing unselectable items, then make sure there are selectable items before
+	// doing the input loop (and if not, return null).  If there are selectable items,
+	// make sure the current selected item is selectable (if not, go to the next one).
+	if (this.allowUnselectableItems)
+	{
+		if (this.HasAnySelectableItems())
+		{
+			if (!this.ItemIsSelectable(this.selectedItemIdx))
+			{
+				var nextSelectableItemIdx = this.FindSelectableItemForward(this.selectedItemIdx+1, true);
+				// nextSelectableItemIdx should be valid since we know there are selectable items
+				if (nextSelectableItemIdx > -1 && nextSelectableItemIdx != this.selectedItemIdx)
+				{
+					this.selectedItemIdx = nextSelectableItemIdx;
+					this.CalcPageForItemAndSetTopItemIdx(this.GetNumItemsPerPage(), numItems);
+				}
+			}
+		}
+		else // No selectable items
+			return null;
+	}
+
 	if (typeof(this.lastMouseClickTime) == "undefined")
 		this.lastMouseClickTime = -1;
 
 	var draw = (typeof(pDraw) == "boolean" ? pDraw : true);
 	if (draw)
 	{
-		this.Draw(pSelectedItemIndexes);
+		this.Draw(pSelectedItemIndexes, null, null, numItems);
 		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
 			this.DisplayInitialScrollbar(this.scrollbarInfo.solidBlockLastStartRow);
 	}
@@ -1403,82 +1665,66 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	if (this.callOnItemNavOnStartup && typeof(this.OnItemNav) === "function")
 		this.OnItemNav(0, this.selectedItemIdx);
 
-	// User input loop
-	var userChoices = null; // For multi-select mode
-	var selectedItemIndexes = { }; // For multi-select mode
-	if (typeof(pSelectedItemIndexes) == "object")
-		selectedItemIndexes = pSelectedItemIndexes;
-	var retVal = null; // For single-choice mode
-	// mouseInputOnly_continue specifies whether to continue to the
-	// next iteration if the mouse was clicked & there's no need to
-	// process user input further
-	var mouseInputOnly_continue = false;
-	var continueOn = true;
-	while (continueOn)
+	if (this.ANSISupported())
 	{
-		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
-			this.UpdateScrollbarWithHighlightedItem();
-
-		mouseInputOnly_continue = false;
-
-		// TODO: With mouse_getkey(), it seems you need to press ESC twice
-		// to get the ESC key and exit the menu
-		var inputMode = K_NOECHO|K_NOSPIN|K_NOCRLF;
-		var mk = null; // Will be used for mouse support
-		var mouseNoAction = false;
-		if (this.mouseEnabled)
+		// User input loop
+		var userChoices = null; // For multi-select mode
+		var selectedItemIndexes = { }; // For multi-select mode
+		if (typeof(pSelectedItemIndexes) == "object")
+			selectedItemIndexes = pSelectedItemIndexes;
+		var retVal = null; // For single-choice mode
+		// mouseInputOnly_continue specifies whether to continue to the
+		// next iteration if the mouse was clicked & there's no need to
+		// process user input further
+		var mouseInputOnly_continue = false;
+		var continueOn = true;
+		while (continueOn)
 		{
-			mk = mouse_getkey(inputMode, this.inputTimeoutMS > 1 ? this.inputTimeoutMS : undefined, this.mouseEnabled);
-			if (mk.mouse !== null)
-			{
-				// See if the user clicked anywhere in the region where items are
-				// listed or the scrollbar
-				var clickRegion = this.GetMouseClickRegion();
-				// Button 0 is the left/main mouse button
-				if (mk.mouse.press && (mk.mouse.button == 0) && (mk.mouse.motion == 0) &&
-					(mk.mouse.x >= clickRegion.left) && (mk.mouse.x <= clickRegion.right) &&
-					(mk.mouse.y >= clickRegion.top) && (mk.mouse.y <= clickRegion.bottom))
-				{
-					var isDoubleClick = ((this.lastMouseClickTime > -1) && (system.timer - this.lastMouseClickTime <= 0.4));
+			if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+				this.UpdateScrollbarWithHighlightedItem();
 
-					// If the scrollbar is enabled, then see if the mouse click was
-					// in the scrollbar region.  If below the scrollbar bright blocks,
-					// then we'll want to do a PageDown.  If above the scrollbar bright
-					// blocks, then we'll want to do a PageUp.
-					var scrollbarX = this.pos.x + this.size.width - 1;
-					if (this.borderEnabled)
-						--scrollbarX;
-					if ((mk.mouse.x == scrollbarX) && this.scrollbarEnabled)
+			mouseInputOnly_continue = false;
+
+			// TODO: With mouse_getkey(), it seems you need to press ESC twice
+			// to get the ESC key and exit the menu
+			var inputMode = K_NOECHO|K_NOSPIN|K_NOCRLF;
+			var mk = null; // Will be used for mouse support
+			var mouseNoAction = false;
+			if (this.mouseEnabled)
+			{
+				mk = mouse_getkey(inputMode, this.inputTimeoutMS > 1 ? this.inputTimeoutMS : undefined, this.mouseEnabled);
+				if (mk.mouse !== null)
+				{
+					// See if the user clicked anywhere in the region where items are
+					// listed or the scrollbar
+					var clickRegion = this.GetMouseClickRegion();
+					// Button 0 is the left/main mouse button
+					if (mk.mouse.press && (mk.mouse.button == 0) && (mk.mouse.motion == 0) &&
+						(mk.mouse.x >= clickRegion.left) && (mk.mouse.x <= clickRegion.right) &&
+						(mk.mouse.y >= clickRegion.top) && (mk.mouse.y <= clickRegion.bottom))
 					{
-						var scrollbarSolidBlockEndRow = this.scrollbarInfo.solidBlockLastStartRow + this.scrollbarInfo.numSolidScrollBlocks - 1;
-						if (mk.mouse.y < this.scrollbarInfo.solidBlockLastStartRow)
-							this.lastUserInput = KEY_PAGEUP;
-						else if (mk.mouse.y > scrollbarSolidBlockEndRow)
-							this.lastUserInput = KEY_PAGEDN;
-						else
+						var isDoubleClick = ((this.lastMouseClickTime > -1) && (system.timer - this.lastMouseClickTime <= 0.4));
+
+						// If the scrollbar is enabled, then see if the mouse click was
+						// in the scrollbar region.  If below the scrollbar bright blocks,
+						// then we'll want to do a PageDown.  If above the scrollbar bright
+						// blocks, then we'll want to do a PageUp.
+						var scrollbarX = this.pos.x + this.size.width - 1;
+						if (this.borderEnabled)
+							--scrollbarX;
+						if ((mk.mouse.x == scrollbarX) && this.scrollbarEnabled)
 						{
-							// Mouse click no-action
-							// TODO: Can we detect if they're holding the mouse down
-							// and scroll while the user holds the mouse & scrolls on
-							// the scrollbar?
-							this.lastUserInput = "";
-							mouseNoAction = true;
-							mouseInputOnly_continue = true;
-						}
-					}
-					else
-					{
-						// The user didn't click on the scrollbar or the scrollbar
-						// isn't enabled.
-						// For a double-click, if multi-select is enabled, set the
-						// last user input to a space to select/de-select the item.
-						if (isDoubleClick)
-						{
-							if (this.multiSelect)
-								this.lastUserInput = " ";
+							var scrollbarSolidBlockEndRow = this.scrollbarInfo.solidBlockLastStartRow + this.scrollbarInfo.numSolidScrollBlocks - 1;
+							if (mk.mouse.y < this.scrollbarInfo.solidBlockLastStartRow)
+								this.lastUserInput = KEY_PAGEUP;
+							else if (mk.mouse.y > scrollbarSolidBlockEndRow)
+								this.lastUserInput = KEY_PAGEDN;
 							else
 							{
-								// No mouse action
+								// Mouse click no-action
+								// TODO: Can we detect if they're holding the mouse down
+								// and scroll while the user holds the mouse & scrolls on
+								// the scrollbar?
 								this.lastUserInput = "";
 								mouseNoAction = true;
 								mouseInputOnly_continue = true;
@@ -1486,533 +1732,351 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						}
 						else
 						{
-							// Make the clicked-on item the currently highlighted
-							// item.  Only select the item if the index is valid.
-							var topItemY = (this.borderEnabled ? this.pos.y + 1 : this.pos.y);
-							var distFromTopY = mk.mouse.y - topItemY;
-							var itemIdx = this.topItemIdx + distFromTopY;
-							if ((itemIdx >= 0) && (itemIdx < this.NumItems()))
+							// The user didn't click on the scrollbar or the scrollbar
+							// isn't enabled.
+							// For a double-click, if multi-select is enabled, set the
+							// last user input to a space to select/de-select the item.
+							if (isDoubleClick)
 							{
-								this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-								this.selectedItemIdx = itemIdx;
-								this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+								if (this.multiSelect)
+									this.lastUserInput = " ";
+								else
+								{
+									// No mouse action
+									this.lastUserInput = "";
+									mouseNoAction = true;
+									mouseInputOnly_continue = true;
+								}
 							}
-							// Don't have the later code do anything
-							this.lastUserInput = "";
-							mouseNoAction = true;
-							mouseInputOnly_continue = true;
+							else
+							{
+								// Make the clicked-on item the currently highlighted
+								// item.  Only select the item if the index is valid.
+								var topItemY = (this.borderEnabled ? this.pos.y + 1 : this.pos.y);
+								var distFromTopY = mk.mouse.y - topItemY;
+								var itemIdx = this.topItemIdx + distFromTopY;
+								if ((itemIdx >= 0) && (itemIdx < this.NumItems()))
+								{
+									this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+									this.selectedItemIdx = itemIdx;
+									this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+								}
+								// Don't have the later code do anything
+								this.lastUserInput = "";
+								mouseNoAction = true;
+								mouseInputOnly_continue = true;
+							}
 						}
+
+						this.lastMouseClickTime = system.timer;
 					}
-
-					this.lastMouseClickTime = system.timer;
-				}
-				else
-				{
-					// The mouse click is outside the click region.  Set the appropriate
-					// variables for mouse no-action.
-					// TODO: Perhaps this may also need to be done in some places above
-					// where no action needs to be taken
-					this.lastUserInput = "";
-					mouseNoAction = true;
-					mouseInputOnly_continue = true;
-				}
-			}
-			else
-			{
-				// mouse is null, so a keybaord key must have been pressed
-				this.lastUserInput = mk.key;
-			}
-		}
-		else // this.mouseEnabled is false
-		{
-			this.lastUserInput = getKeyWithESCChars(inputMode, this.inputTimeoutMS);
-		}
-
-		// If no further input processing needs to be done due to a mouse click
-		// action, then continue to the next loop iteration.
-		if (mouseInputOnly_continue)
-			continue;
-
-		// Take the appropriate action based on the user's last input/keypress
-		if ((this.lastUserInput == KEY_ESC) || (this.QuitKeysIncludes(this.lastUserInput)))
-		{
-			// Only exit if there was not a no-action mouse click
-			// TODO: Is this logic good and clean?
-			var goAheadAndExit = true;
-			if (mk !== null && mk.mouse !== null)
-			{
-				goAheadAndExit = !mouseNoAction; // Only really needed with an input timer?
-			}
-			if (goAheadAndExit)
-			{
-				continueOn = false;
-				// Ensure any returned choice objects are null/empty to signal
-				// that the user aborted
-				userChoices = null; // For multi-select mode
-				selectedItemIndexes = { }; // For multi-select mode
-				retVal = null; // For single-choice mode
-			}
-		}
-		else if ((this.lastUserInput == KEY_UP) || (this.lastUserInput == KEY_LEFT))
-		{
-			if (this.selectedItemIdx > 0)
-			{
-				// Draw the current item in regular colors
-				this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-				var oldSelectedItemIdx = this.selectedItemIdx--;
-				// Draw the new current item in selected colors
-				// If the selected item is above the top of the menu, then we'll need to
-				// scroll the items down.
-				if (this.selectedItemIdx < this.topItemIdx)
-				{
-					--this.topItemIdx;
-					this.Draw(selectedItemIndexes);
-				}
-				else
-				{
-					// The selected item is not above the top of the menu, so we can
-					// just draw the selected item highlighted.
-					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-				}
-				if (typeof(this.OnItemNav) === "function")
-					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
-			}
-			else
-			{
-				// selectedItemIdx is 0.  If wrap navigation is enabled, then go to the
-				// last item.
-				if (this.wrapNavigation)
-				{
-					// Draw the current item in regular colors
-					//this.WriteItemAtItsLocation(pIdx, pHighlight, pSelected)
-					this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-					// Go to the last item and scroll to the bottom if necessary
-					var oldSelectedItemIdx = this.selectedItemIdx;
-					this.selectedItemIdx = numItems - 1;
-					var oldTopItemIdx = this.topItemIdx;
-					var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
-					this.topItemIdx = numItems - numItemsPerPage;
-					if (this.topItemIdx < 0)
-						this.topItemIdx = 0;
-					if (this.topItemIdx != oldTopItemIdx)
-						this.Draw(selectedItemIndexes);
 					else
 					{
-						// Draw the new current item in selected colors
-						this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-					}
-					if (typeof(this.OnItemNav) === "function")
-						this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
-				}
-			}
-		}
-		else if ((this.lastUserInput == KEY_DOWN) || (this.lastUserInput == KEY_RIGHT))
-		{
-			this.DoKeyDown(selectedItemIndexes, numItems);
-		}
-		else if (this.lastUserInput == KEY_PAGEUP)
-		{
-			// Only do this if we're not already at the top of the list
-			if (this.topItemIdx > 0)
-			{
-				var oldSelectedItemIdx = this.selectedItemIdx;
-				var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
-				var newTopItemIdx = this.topItemIdx - numItemsPerPage;
-				if (newTopItemIdx < 0)
-					newTopItemIdx = 0;
-				if (newTopItemIdx != this.topItemIdx)
-				{
-					this.topItemIdx = newTopItemIdx;
-					this.selectedItemIdx -= numItemsPerPage;
-					if (this.selectedItemIdx < 0)
-						this.selectedItemIdx = 0;
-					this.Draw(selectedItemIndexes);
-				}
-				else
-				{
-					// The top index is the top index for the last page.
-					// If wrapping is enabled, then go back to the first page.
-					if (this.wrapNavigation)
-					{
-						var topIndexForLastPage = numItems - numItemsPerPage;
-						if (topIndexForLastPage < 0)
-							topIndexForLastPage = 0;
-						else if (topIndexForLastPage >= numItems)
-							topIndexForLastPage = numItems - 1;
-
-						this.topItemIdx = topIndexForLastPage;
-						this.selectedItemIdx = topIndexForLastPage;
-						this.Draw(selectedItemIndexes);
+						// The mouse click is outside the click region.  Set the appropriate
+						// variables for mouse no-action.
+						// TODO: Perhaps this may also need to be done in some places above
+						// where no action needs to be taken
+						this.lastUserInput = "";
+						mouseNoAction = true;
+						mouseInputOnly_continue = true;
 					}
 				}
-				if (typeof(this.OnItemNav) === "function")
-					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
-			}
-			else
-			{
-				// We're already showing the first page of items.
-				// If the currently selected item is not the first
-				// item, then make it so.
-				if (this.selectedItemIdx > 0)
-				{
-					var oldSelectedItemIdx = this.selectedItemIdx;
-					this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-					this.selectedItemIdx = 0;
-					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-					if (typeof(this.OnItemNav) === "function")
-						this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
-				}
-			}
-		}
-		else if (this.lastUserInput == KEY_PAGEDN)
-		{
-			var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
-			// Only do the pageDown if we're not showing the last item already
-			var lastItemIdx = this.NumItems() - 1;
-			if (lastItemIdx > this.topItemIdx+numItemsPerPage-1)
-			{
-				var oldSelectedItemIdx = this.selectedItemIdx;
-				// Figure out the top index for the last page.
-				var topIndexForLastPage = numItems - numItemsPerPage;
-				if (topIndexForLastPage < 0)
-					topIndexForLastPage = 0;
-				else if (topIndexForLastPage >= numItems)
-					topIndexForLastPage = numItems - 1;
-				if (topIndexForLastPage != this.topItemIdx)
-				{
-					// Update the selected & top item indexes
-					this.selectedItemIdx += numItemsPerPage;
-					this.topItemIdx += numItemsPerPage;
-					if (this.selectedItemIdx >= topIndexForLastPage)
-						this.selectedItemIdx = topIndexForLastPage;
-					if (this.topItemIdx > topIndexForLastPage)
-						this.topItemIdx = topIndexForLastPage;
-					this.Draw(selectedItemIndexes);
-				}
 				else
 				{
-					// The top index is the top index for the last page.
-					// If wrapping is enabled, then go back to the first page.
-					if (this.wrapNavigation)
-					{
-						this.topItemIdx = 0;
-						this.selectedItemIdx = 0;
-					}
-					this.Draw(selectedItemIndexes);
-				}
-				if (typeof(this.OnItemNav) === "function")
-					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
-			}
-			else
-			{
-				// We're already showing the last page of items.
-				// If the currently selected item is not the last
-				// item, then make it so.
-				if (this.selectedItemIdx < lastItemIdx)
-				{
-					var oldSelectedItemIdx = this.selectedItemIdx;
-					this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-					this.selectedItemIdx = lastItemIdx;
-					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-					if (typeof(this.OnItemNav) === "function")
-						this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+					// mouse is null, so a keybaord key must have been pressed
+					this.lastUserInput = mk.key;
 				}
 			}
-		}
-		else if (this.lastUserInput == KEY_HOME)
-		{
-			// Go to the first item in the list
-			if (this.selectedItemIdx > 0)
+			else // this.mouseEnabled is false
 			{
-				var oldSelectedItemIdx = this.selectedItemIdx;
-				this.oldTopItemIdx = this.topItemIdx;
-				// If the current item index is not on first current page, then scroll.
-				// Otherwise, draw more efficiently by drawing the current item in
-				// regular colors and the first item in highlighted colors.
-				this.topItemIdx = 0;
-				var numItemsPerPage = this.GetNumItemsPerPage();
-				if (this.oldTopItemIdx > 0)
-				{
-					this.selectedItemIdx = 0;
-					this.Draw(pSelectedItemIndexes, false);
-				}
-				else
-				{
-					// We're already on the first page, so we can re-draw the
-					// 2 items more efficiently.
-					// Draw the current item in regular colors
-					if (this.borderEnabled)
-						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-					else
-						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-					this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-					this.selectedItemIdx = 0;
-					// Draw the new current item in selected colors
-					if (this.borderEnabled)
-						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-					else
-						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-					this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-				}
-				if (typeof(this.OnItemNav) === "function")
-					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+				this.lastUserInput = getKeyWithESCChars(inputMode, this.inputTimeoutMS);
 			}
-		}
-		else if (this.lastUserInput == KEY_END)
-		{
-			// Go to the last item in the list
-			var numItemsPerPage = this.GetNumItemsPerPage();
-			if (this.selectedItemIdx < numItems-1)
-			{
-				var oldSelectedItemIdx = this.selectedItemIdx;
-				var lastPossibleTop = numItems - numItemsPerPage;
-				if (lastPossibleTop < 0)
-					lastPossibleTop = 0;
-				var lastItemIdx = numItems - 1;
-				// If the last item index is below the current page, then scroll.
-				// Otherwise, draw more efficiently by drawing the current item in
-				// regular colors and the last item in highlighted colors.
-				if (lastItemIdx >= this.topItemIdx + numItemsPerPage)
-				{
-					this.topItemIdx = lastPossibleTop;
-					this.selectedItemIdx = lastItemIdx;
-					this.Draw(pSelectedItemIndexes, false);
-				}
-				else
-				{
-					// We're already on the last page, so we can re-draw the
-					// 2 items more efficiently.
-					// Draw the current item in regular colors
-					if (this.borderEnabled)
-						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-					else
-						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-					this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-					this.selectedItemIdx = this.topItemIdx + numItemsPerPage - 1;
-					if (this.selectedItemIdx >= numItems)
-						this.selectedItemIdx = lastItemIdx;
-					// Draw the new current item in selected colors
-					if (this.borderEnabled)
-						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-					else
-						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-					this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-				}
-				if (typeof(this.OnItemNav) === "function")
-					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
-			}
-		}
-		// Enter key or additional select-item key: Select the item & quit out of the input loop
-		else if ((this.lastUserInput == KEY_ENTER) || (this.SelectItemKeysIncludes(this.lastUserInput)))
-		{
-			// Let the user select the item if ValidateSelectItem() returns true
-			var allowSelectItem = true;
-			if (typeof(this.ValidateSelectItem) === "function")
-				allowSelectItem = this.ValidateSelectItem(this.GetItem(this.selectedItemIdx).retval);
-			if (allowSelectItem)
-			{
-				// If multi-select is enabled and if the user hasn't made any choices,
-				// then add the current item to the user choices.  Otherwise, choose
-				// the current item.  Then exit.
-				if (this.multiSelect)
-				{
-					if (Object.keys(selectedItemIndexes).length == 0)
-						selectedItemIndexes[+(this.selectedItemIdx)] = true;
-				}
-				else
-					retVal = this.GetItem(this.selectedItemIdx).retval;
 
-				// Run the OnItemSelect event function
-				if (typeof(this.OnItemSelect) === "function")
-					this.OnItemSelect(retVal, true);
+			// If no further input processing needs to be done due to a mouse click
+			// action, then continue to the next loop iteration.
+			if (mouseInputOnly_continue)
+				continue;
 
-				// Exit the input loop if this.exitOnItemSelect is set to true
-				if (this.exitOnItemSelect)
+			// Take the appropriate action based on the user's last input/keypress
+			if ((this.lastUserInput == KEY_ESC) || (this.QuitKeysIncludes(this.lastUserInput)))
+			{
+				// Only exit if there was not a no-action mouse click
+				// TODO: Is this logic good and clean?
+				var goAheadAndExit = true;
+				if (mk !== null && mk.mouse !== null)
+				{
+					goAheadAndExit = !mouseNoAction; // Only really needed with an input timer?
+				}
+				if (goAheadAndExit)
+				{
 					continueOn = false;
+					// Ensure any returned choice objects are null/empty to signal
+					// that the user aborted
+					userChoices = null; // For multi-select mode
+					selectedItemIndexes = { }; // For multi-select mode
+					retVal = null; // For single-choice mode
+				}
 			}
-		}
-		else if (this.lastUserInput == " ") // Add the current item to multi-select
-		{
-			// Add the current item to multi-select if multi-select is enabled
-			if (this.multiSelect)
+			else if ((this.lastUserInput == KEY_UP) || (this.lastUserInput == KEY_LEFT))
+				this.DoKeyUp(selectedItemIndexes, numItems);
+			else if ((this.lastUserInput == KEY_DOWN) || (this.lastUserInput == KEY_RIGHT))
+				this.DoKeyDown(selectedItemIndexes, numItems);
+			else if (this.lastUserInput == KEY_PAGEUP)
+				this.DoPageUp(selectedItemIndexes, numItems);
+			else if (this.lastUserInput == KEY_PAGEDN)
+				this.DoPageDown(selectedItemIndexes, numItems);
+			else if (this.lastUserInput == KEY_HOME)
 			{
-				// Only let the user select the item if ValidateSelectItem() returns true
+				// Go to the first item in the list
+				var firstSelectableItemIdx = this.FindSelectableItemForward(0, false);
+				if (this.selectedItemIdx > firstSelectableItemIdx)
+					this.NavMenuForNewSelectedItemTop(firstSelectableItemIdx, this.GetNumItemsPerPage(), numItems, selectedItemIndexes);
+			}
+			else if (this.lastUserInput == KEY_END)
+			{
+				// Go to the last item in the list
+				var lastSelectableItem = this.FindSelectableItemBackward(numItems-1, false);
+				if (this.selectedItemIdx < lastSelectableItem)
+					this.NavMenuForNewSelectedItemBottom(lastSelectableItem, this.GetNumItemsPerPage(), numItems, selectedItemIndexes, true);
+			}
+			// Enter key or additional select-item key: Select the item & quit out of the input loop
+			else if ((this.lastUserInput == KEY_ENTER) || (this.SelectItemKeysIncludes(this.lastUserInput)))
+			{
+				// Let the user select the item if ValidateSelectItem() returns true
 				var allowSelectItem = true;
 				if (typeof(this.ValidateSelectItem) === "function")
 					allowSelectItem = this.ValidateSelectItem(this.GetItem(this.selectedItemIdx).retval);
 				if (allowSelectItem)
 				{
-					var added = false; // Will be true if added or false if deleted
-					if (selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)))
-						delete selectedItemIndexes[+(this.selectedItemIdx)];
-					else
+					// If multi-select is enabled and if the user hasn't made any choices,
+					// then add the current item to the user choices.  Otherwise, choose
+					// the current item.  Then exit.
+					if (this.multiSelect)
 					{
-						var addIt = true;
-						if (this.maxNumSelections > 0)
-							addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
-						if (addIt)
-						{
+						if (Object.keys(selectedItemIndexes).length == 0)
 							selectedItemIndexes[+(this.selectedItemIdx)] = true;
-							added = true;
-						}
 					}
+					else
+						retVal = this.GetItem(this.selectedItemIdx).retval;
 
 					// Run the OnItemSelect event function
 					if (typeof(this.OnItemSelect) === "function")
-					{
-						//this.OnItemSelect = function(pItemRetval, pSelected) { }
-						this.OnItemSelect(this.GetItem(this.selectedItemIdx).retval, added);
-					}
+						this.OnItemSelect(retVal, true);
 
-					// Draw a character next to the item if it's selected, or nothing if it's not selected
-					var XPos = this.pos.x + this.size.width - 2;
-					var YPos = this.pos.y+(this.selectedItemIdx-this.topItemIdx);
-					if (this.borderEnabled)
-					{
-						--XPos;
-						++YPos;
-					}
-					if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
-						--XPos;
-					console.gotoxy(XPos, YPos);
-					if (added)
-					{
-						// If the item color is an array, then default to a color string here
-						var itemColor = this.GetColorForItem(this.selectedItemIdx, true);
-						if (Array.isArray(itemColor))
-						{
-							var bkgColor = getBackgroundAttrAtIdx(itemColor, this.size.width-1);
-							itemColor = "\x01n\x01h\x01g" + bkgColor;
-						}
-						console.print(itemColor + " " + this.multiSelectItemChar + "\x01n");
-					}
-					else
-					{
-						// Display the last 2 characters of the regular item text
-						var itemText = this.GetItemText(this.selectedItemIdx, null, true, false);
-						var textToPrint = substrWithAttrCodes(itemText, console.strlen(itemText)-2, 2);
-						console.print(textToPrint + "\x01n");
-					}
+					// Exit the input loop if this.exitOnItemSelect is set to true
+					if (this.exitOnItemSelect)
+						continueOn = false;
 				}
 			}
-		}
-		// For numbered mode, if the user enters a number, allow the user to
-		// choose an item by typing its number.
-		else if (/[0-9]/.test(this.lastUserInput) && this.numberedMode)
-		{
-			var originalCurpos = console.getxy();
-
-			// Put the user's input back in the input buffer to
-			// be used for getting the rest of the message number.
-			console.ungetstr(this.lastUserInput);
-			// Move the cursor to the bottom of the screen and
-			// prompt the user for the message number.
-			var promptX = this.pos.x;
-			var promptY = this.pos.y+this.size.height;
-			console.gotoxy(promptX, promptY);
-			printf("\x01n%" + this.size.width + "s", ""); // Blank out what might be on the screen already
-			console.gotoxy(promptX, promptY);
-			console.print("\x01cItem #: \x01h");
-			var userEnteredItemNum = console.getnum(numItems);
-			// Blank out the input prompt
-			console.gotoxy(promptX, promptY);
-			printf("\x01n%" + this.size.width + "s", "");
-			// If the user entered a number, then get that item's return value
-			// and stop the input loop.
-			if (userEnteredItemNum > 0)
+			else if (this.lastUserInput == " ") // Add the current item to multi-select
 			{
-				var oldSelectedItemIdx = this.selectedItemIdx;
-				this.selectedItemIdx = userEnteredItemNum-1;
+				// Add the current item to multi-select if multi-select is enabled
 				if (this.multiSelect)
 				{
-					if (selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)))
-						delete selectedItemIndexes[+(this.selectedItemIdx)];
-					else
+					// Only let the user select the item if ValidateSelectItem() returns true
+					var allowSelectItem = true;
+					if (typeof(this.ValidateSelectItem) === "function")
+						allowSelectItem = this.ValidateSelectItem(this.GetItem(this.selectedItemIdx).retval);
+					if (allowSelectItem)
 					{
-						var addIt = true;
-						if (this.maxNumSelections > 0)
-							addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
-						if (addIt)
-							selectedItemIndexes[+(this.selectedItemIdx)] = true;
-					}
-				}
-				else
-				{
-					retVal = this.GetItem(this.selectedItemIdx).retval;
-					continueOn = false;
-				}
-				// If the item typed by the user is different than the current selected item
-				// index, then refresh the selected item on the menu (if they're visible).
-				// If multi-select mode is enabled, also toggle the checkmark in the item text.
-				if (this.selectedItemIdx != oldSelectedItemIdx)
-				{
-					if (this.ScreenRowForItem(oldSelectedItemIdx) > -1)
-					{
-						var oldIsSelected = selectedItemIndexes.hasOwnProperty(oldSelectedItemIdx);
-						this.WriteItemAtItsLocation(oldSelectedItemIdx, false, oldIsSelected);
-					}
-					if (this.ScreenRowForItem(this.selectedItemIdx) > -1)
-					{
-						var newIsSelected = selectedItemIndexes.hasOwnProperty(this.selectedItemIdx);
-						this.WriteItemAtItsLocation(this.selectedItemIdx, true, newIsSelected);
-					}
-				}
-
-				if (typeof(this.OnItemNav) === "function")
-					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
-			}
-			else
-				console.gotoxy(originalCurpos); // Move the cursor back where it was
-		}
-		else
-		{
-			// See if the user pressed a hotkey set for one of the items.  If so,
-			// then choose that item.
-			for (var i = 0; i < numItems; ++i)
-			{
-				var theItem = this.GetItem(i);
-				for (var h = 0; h < theItem.hotkeys.length; ++h)
-				{
-					var userPressedHotkey = false;
-					if (this.hotkeyCaseSensitive)
-						userPressedHotkey = (this.lastUserInput == theItem.hotkeys.charAt(h));
-					else
-						userPressedHotkey = (this.lastUserInput.toUpperCase() == theItem.hotkeys.charAt(h).toUpperCase());
-					if (userPressedHotkey)
-					{
-						if (this.multiSelect)
+						var added = false; // Will be true if added or false if deleted
+						if (selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)))
+							delete selectedItemIndexes[+(this.selectedItemIdx)];
+						else
 						{
-							if (selectedItemIndexes.hasOwnProperty(i))
-								delete selectedItemIndexes[i];
-							else
+							var addIt = true;
+							if (this.maxNumSelections > 0)
+								addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
+							if (addIt)
 							{
-								var addIt = true;
-								if (this.maxNumSelections > 0)
-									addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
-								if (addIt)
-									selectedItemIndexes[i] = true;
+								selectedItemIndexes[+(this.selectedItemIdx)] = true;
+								added = true;
 							}
-							// TODO: Screen refresh?
+						}
+
+						// Run the OnItemSelect event function
+						if (typeof(this.OnItemSelect) === "function")
+						{
+							//this.OnItemSelect = function(pItemRetval, pSelected) { }
+							this.OnItemSelect(this.GetItem(this.selectedItemIdx).retval, added);
+						}
+
+						// Draw a character next to the item if it's selected, or nothing if it's not selected
+						var XPos = this.pos.x + this.size.width - 2;
+						var YPos = this.pos.y+(this.selectedItemIdx-this.topItemIdx);
+						if (this.borderEnabled)
+						{
+							--XPos;
+							++YPos;
+						}
+						if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+							--XPos;
+						console.gotoxy(XPos, YPos);
+						if (added)
+						{
+							// If the item color is an array, then default to a color string here
+							var itemColor = this.GetColorForItem(this.selectedItemIdx, true);
+							if (Array.isArray(itemColor))
+							{
+								var bkgColor = getBackgroundAttrAtIdx(itemColor, this.size.width-1);
+								itemColor = "\x01n\x01h\x01g" + bkgColor;
+							}
+							console.print(itemColor + " " + this.multiSelectItemChar + "\x01n");
 						}
 						else
 						{
-							retVal = theItem.retval;
-							var oldSelectedItemIdx = this.selectedItemIdx;
-							this.selectedItemIdx = i;
-							continueOn = false;
-							if (typeof(this.OnItemNav) === "function")
-								this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+							// Display the last 2 characters of the regular item text
+							var itemText = this.GetItemText(this.selectedItemIdx, null, true, false);
+							var textToPrint = substrWithAttrCodes(itemText, console.strlen(itemText)-2, 2);
+							console.print(textToPrint + "\x01n");
 						}
-						break;
+					}
+				}
+			}
+			// For numbered mode, if the user enters a number, allow the user to
+			// choose an item by typing its number.
+			else if (/[0-9]/.test(this.lastUserInput) && this.numberedMode)
+			{
+				var originalCurpos = console.getxy();
+
+				// Put the user's input back in the input buffer to
+				// be used for getting the rest of the message number.
+				console.ungetstr(this.lastUserInput);
+				// Move the cursor to the bottom of the screen and
+				// prompt the user for the message number.
+				var promptX = this.pos.x;
+				var promptY = this.pos.y+this.size.height;
+				console.gotoxy(promptX, promptY);
+				printf("\x01n%" + this.size.width + "s", ""); // Blank out what might be on the screen already
+				console.gotoxy(promptX, promptY);
+				console.print("\x01cItem #: \x01h");
+				var userEnteredItemNum = console.getnum(numItems);
+				// Blank out the input prompt
+				console.gotoxy(promptX, promptY);
+				printf("\x01n%" + this.size.width + "s", "");
+				// If the user entered a number, then get that item's return value
+				// and stop the input loop.
+				if (userEnteredItemNum > 0)
+				{
+					var oldSelectedItemIdx = this.selectedItemIdx;
+					this.selectedItemIdx = userEnteredItemNum-1;
+					if (this.multiSelect)
+					{
+						if (selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)))
+							delete selectedItemIndexes[+(this.selectedItemIdx)];
+						else
+						{
+							var addIt = true;
+							if (this.maxNumSelections > 0)
+								addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
+							if (addIt)
+								selectedItemIndexes[+(this.selectedItemIdx)] = true;
+						}
+					}
+					else
+					{
+						retVal = this.GetItem(this.selectedItemIdx).retval;
+						continueOn = false;
+					}
+					// If the item typed by the user is different than the current selected item
+					// index, then refresh the selected item on the menu (if they're visible).
+					// If multi-select mode is enabled, also toggle the checkmark in the item text.
+					if (this.selectedItemIdx != oldSelectedItemIdx)
+					{
+						if (this.ScreenRowForItem(oldSelectedItemIdx) > -1)
+						{
+							var oldIsSelected = selectedItemIndexes.hasOwnProperty(oldSelectedItemIdx);
+							this.WriteItemAtItsLocation(oldSelectedItemIdx, false, oldIsSelected);
+						}
+						if (this.ScreenRowForItem(this.selectedItemIdx) > -1)
+						{
+							var newIsSelected = selectedItemIndexes.hasOwnProperty(this.selectedItemIdx);
+							this.WriteItemAtItsLocation(this.selectedItemIdx, true, newIsSelected);
+						}
+					}
+
+					if (typeof(this.OnItemNav) === "function")
+						this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+				}
+				else
+					console.gotoxy(originalCurpos); // Move the cursor back where it was
+			}
+			else
+			{
+				// See if the user pressed a hotkey set for one of the items.  If so,
+				// then choose that item.
+				for (var i = 0; i < numItems; ++i)
+				{
+					var theItem = this.GetItem(i);
+					for (var h = 0; h < theItem.hotkeys.length; ++h)
+					{
+						var userPressedHotkey = false;
+						if (this.hotkeyCaseSensitive)
+							userPressedHotkey = (this.lastUserInput == theItem.hotkeys.charAt(h));
+						else
+							userPressedHotkey = (this.lastUserInput.toUpperCase() == theItem.hotkeys.charAt(h).toUpperCase());
+						if (userPressedHotkey)
+						{
+							if (this.multiSelect)
+							{
+								if (selectedItemIndexes.hasOwnProperty(i))
+									delete selectedItemIndexes[i];
+								else
+								{
+									var addIt = true;
+									if (this.maxNumSelections > 0)
+										addIt = (Object.keys(selectedItemIndexes).length < this.maxNumSelections);
+									if (addIt)
+										selectedItemIndexes[i] = true;
+								}
+								// TODO: Screen refresh?
+							}
+							else
+							{
+								retVal = theItem.retval;
+								var oldSelectedItemIdx = this.selectedItemIdx;
+								this.selectedItemIdx = i;
+								continueOn = false;
+								if (typeof(this.OnItemNav) === "function")
+									this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+							}
+							break;
+						}
 					}
 				}
 			}
 		}
 	}
+	else
+	{
+		// The user's terminal doesn't support ANSI
+		var userAnswerIsValid = false;
+		do
+		{
+			console.print("\x01n\x01c\x01hY\x01n\x01cour \x01hC\x01n\x01choice\x01h\x01g: \x01c");
+			console.attributes = "N";
+			var userEnteredItemNum = console.getnum(numItems);
+			if (!console.aborted && userEnteredItemNum > 0)
+			{
+				if (this.ItemIsSelectable(userEnteredItemNum-1))
+				{
+					var chosenItem = this.GetItem(userEnteredItemNum-1);
+					if (typeof(chosenItem) === "object" && chosenItem.hasOwnProperty("retval"))
+						retVal = chosenItem.retval;
+					userAnswerIsValid = true;
+				}
+			}
+			else
+			{
+				this.lastUserInput = "Q"; // To signify quitting
+				userAnswerIsValid = true;
+			}
+		} while (!userAnswerIsValid);
+	}
 
 	// Set the screen color back to normal so that text written to the screen
 	// after this looks good.
-	console.print("\x01n");
+	console.attributes = "N";
 	
 	// If in multi-select mode, populate userChoices with the choices
 	// that the user selected.
@@ -2024,6 +2088,88 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	}
 
 	return (this.multiSelect ? userChoices : retVal);
+}
+// Performs the key-up behavior for showing the menu items
+//
+// Parameters:
+//  pSelectedItemIndexes: An object containing indexes of selected items.  This is
+//                        normally a temporary object created/used in GetVal().
+//  pNumItems: The pre-calculated number of menu items.  If this not given, this
+//             will be retrieved by calling NumItems().
+function DDLightbarMenu_DoKeyUp(pSelectedItemIndexes, pNumItems)
+{
+	var selectedItemIndexes = (typeof(pSelectedItemIndexes) === "object" ? pSelectedItemIndexes : {});
+	var numItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
+	if (this.selectedItemIdx > this.FirstSelectableItemIdx(numItems))
+	{
+		var prevSelectableItemIdx = this.FindSelectableItemBackward(this.selectedItemIdx-1, false);
+		if (prevSelectableItemIdx < this.selectedItemIdx && prevSelectableItemIdx > -1)
+		{
+			// Draw the current item in regular colors
+			this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			var oldSelectedItemIdx = this.selectedItemIdx;
+			this.selectedItemIdx = prevSelectableItemIdx;
+			var numItemsDiff = oldSelectedItemIdx - prevSelectableItemIdx;
+			// Draw the new current item in selected colors
+			// If the selected item is above the top of the menu, then we'll need to
+			// scroll the items down.
+			if (this.selectedItemIdx < this.topItemIdx)
+			{
+				this.topItemIdx -= numItemsDiff;
+				this.Draw(selectedItemIndexes);
+			}
+			else
+			{
+				// The selected item is not above the top of the menu, so we can
+				// just draw the selected item highlighted.
+				this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			}
+			if (typeof(this.OnItemNav) === "function")
+				this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+		}
+	}
+	else
+	{
+		// selectedItemIdx is 0.  If wrap navigation is enabled, then go to the
+		// last item.
+		// If there are unselectable items above the current one, then scroll the item list up before
+		// wrapping down to the last selectable item
+		var canWrapNav = false;
+		if (this.allowUnselectableItems && this.selectedItemIdx > 0)
+		{
+			if (this.topItemIdx > 0)
+			{
+				--this.topItemIdx;
+				this.Draw(selectedItemIndexes);
+			}
+			else
+				canWrapNav = true;
+		}
+		if (canWrapNav && this.wrapNavigation)
+		{
+			// If there are more items than can fit on the menu, then ideally, the top
+			// item index would be the one at the top of the page where the rest of the items
+			// fill the menu.
+			var prevSelectableItemIdx = this.FindSelectableItemBackward(numItems-1, false);
+			if (prevSelectableItemIdx > this.selectedItemIdx && prevSelectableItemIdx > -1)
+			{
+				// Draw the current item in regular colors
+				this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				// Set the new selected item index, and figure out what page it's on
+				var oldSelectedItemIdx = this.selectedItemIdx;
+				this.selectedItemIdx = prevSelectableItemIdx;
+				// Calculate the top index for the page of the new selected item.  If the page
+				// is different, go to that page.
+				if (this.CalcPageForItemAndSetTopItemIdx(this.GetNumItemsPerPage(), numItems))
+					this.Draw(selectedItemIndexes);
+				else // The selected item is on the current page
+					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+
+				if (typeof(this.OnItemNav) === "function")
+					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+			}
+		}
+	}
 }
 // Performs the key-down behavior for showing the menu items
 //
@@ -2037,35 +2183,84 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 	var selectedItemIndexes = (typeof(pSelectedItemIndexes) === "object" ? pSelectedItemIndexes : {});
 	var numItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
 
-	if (this.selectedItemIdx < numItems-1)
+	if (this.selectedItemIdx < this.LastSelectableItemIdx(numItems))
 	{
-		// Draw the current item in regular colors
-		this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
-		var oldSelectedItemIdx = this.selectedItemIdx++;
-		// Draw the new current item in selected colors
-		// If the selected item is below the bottom of the menu, then we'll need to
-		// scroll the items up.
-		var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
-		if (this.selectedItemIdx > this.topItemIdx+numItemsPerPage-1)
+		var nextSelectableItemIdx = this.FindSelectableItemForward(this.selectedItemIdx+1, false);
+		if (nextSelectableItemIdx > this.selectedItemIdx)
 		{
-			++this.topItemIdx;
-			this.Draw(selectedItemIndexes);
+			// Draw the current item in regular colors
+			this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
+			var oldSelectedItemIdx = this.selectedItemIdx;
+			this.selectedItemIdx = nextSelectableItemIdx;
+			var numItemsDiff = nextSelectableItemIdx - oldSelectedItemIdx;
+			// Draw the new current item in selected colors
+			// If the selected item is below the bottom of the menu, then we'll need to
+			// scroll the items up.
+			var numItemsPerPage = this.GetNumItemsPerPage();
+			if (this.selectedItemIdx > this.topItemIdx + numItemsPerPage-1)
+			{
+				this.topItemIdx += numItemsDiff;
+				this.Draw(selectedItemIndexes);
+			}
+			else
+			{
+				// The selected item is not below the bottom of the menu, so we can
+				// just draw the selected item highlighted.
+				this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
+			}
+			if (typeof(this.OnItemNav) === "function")
+				this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 		}
-		else
-		{
-			// The selected item is not below the bottom of the menu, so we can
-			// just draw the selected item highlighted.
-			this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
-		}
-		if (typeof(this.OnItemNav) === "function")
-			this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 	}
 	else
 	{
 		// selectedItemIdx is the last item index.  If wrap navigation is enabled,
 		// then go to the first item.
-		if (this.wrapNavigation)
+		// If there are unselectable items below the current one, then scroll the item down up before
+		// wrapping up to the first selectable item
+		var canWrapNav = false;
+		if (this.allowUnselectableItems && this.selectedItemIdx > 0)
 		{
+			var topIndexForLastPage = numItems - this.GetNumItemsPerPage();
+			if (topIndexForLastPage < 0)
+				topIndexForLastPage = 0;
+			else if (topIndexForLastPage >= numItems)
+				topIndexForLastPage = numItems - 1;
+			if (this.topItemIdx < topIndexForLastPage)
+			{
+				++this.topItemIdx;
+				this.Draw(selectedItemIndexes);
+			}
+			else
+				canWrapNav = true;
+		}
+		if (canWrapNav && this.wrapNavigation)
+		{
+			// If there are more items than can fit on the menu, then ideally, the top
+			// item index would be the one at the top of the page where the rest of the items
+			// fill the menu.
+			//var nextSelectableItemIdx = this.FindSelectableItemForward(0, false);
+			var nextSelectableItemIdx = this.FirstSelectableItemIdx(numItems);
+			if (nextSelectableItemIdx < this.selectedItemIdx && nextSelectableItemIdx > -1)
+			{
+				// Draw the current item in regular colors
+				this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				// Set the new selected item index, and figure out what page it's on
+				var oldSelectedItemIdx = this.selectedItemIdx;
+				this.selectedItemIdx = nextSelectableItemIdx;
+				// Calculate the top index for the page of the new selected item.  If the page
+				// is different, go to that page.
+				if (this.CalcPageForItemAndSetTopItemIdx(this.GetNumItemsPerPage(), numItems))
+					this.Draw(selectedItemIndexes);
+				else // The selected item is on the current page
+					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+
+				if (typeof(this.OnItemNav) === "function")
+					this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+			}
+
+			// Older, before non-selectable items:
+			/*
 			// Draw the current item in regular colors
 			this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(+(this.selectedItemIdx)));
 			// Go to the first item and scroll to the top if necessary
@@ -2082,7 +2277,268 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 			}
 			if (typeof(this.OnItemNav) === "function")
 				this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+			*/
 		}
+	}
+}
+// Performs the page-up behavior for showing the menu items
+//
+// Parameters:
+//  pSelectedItemIndexes: An object containing indexes of selected items.  This is
+//                        normally a temporary object created/used in GetVal().
+//  pNumItems: The pre-calculated number of menu items.  If this not given, this
+//             will be retrieved by calling NumItems().
+function DDLightbarMenu_DoPageUp(pSelectedItemIndexes, pNumItems)
+{
+	var selectedItemIndexes = (typeof(pSelectedItemIndexes) === "object" ? pSelectedItemIndexes : {});
+	var numItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
+	var numItemsPerPage = this.GetNumItemsPerPage();
+
+	var prevSelectableItemIdx = 0;
+	var currentPageNum = findPageNumOfItemNum(this.selectedItemIdx+1, numItemsPerPage, numItems, false);
+	if (currentPageNum > 1)
+	{
+		var startIdxToCheck = this.selectedItemIdx - numItemsPerPage;
+		if (startIdxToCheck < 0)
+		{
+			//startIdxToCheck = 0;
+			startIdxToCheck = (this.selectedItemIdx > 0 ? this.selectedItemIdx - 1 : 0);
+		}
+		prevSelectableItemIdx = this.FindSelectableItemBackward(startIdxToCheck, this.wrapNavigation);
+		//this.NavMenuForNewSelectedItemTop(prevSelectableItemIdx, numItemsPerPage, numItems, selectedItemIndexes);
+	}
+	else
+		prevSelectableItemIdx = this.FindSelectableItemForward(0, this.wrapNavigation);
+	this.NavMenuForNewSelectedItemTop(prevSelectableItemIdx, numItemsPerPage, numItems, selectedItemIndexes);
+
+	// Older, before un-selectable items:
+	/*
+	// Only do this if we're not already at the top of the list
+	if (this.topItemIdx > 0)
+	{
+		var oldSelectedItemIdx = this.selectedItemIdx;
+		var numItemsPerPage = this.GetNumItemsPerPage();
+		var newTopItemIdx = this.topItemIdx - numItemsPerPage;
+		if (newTopItemIdx < 0)
+			newTopItemIdx = 0;
+		if (newTopItemIdx != this.topItemIdx)
+		{
+			this.topItemIdx = newTopItemIdx;
+			this.selectedItemIdx -= numItemsPerPage;
+			if (this.selectedItemIdx < 0)
+				this.selectedItemIdx = 0;
+			this.Draw(selectedItemIndexes);
+		}
+		else
+		{
+			// The top index is the top index for the last page.
+			// If wrapping is enabled, then go back to the first page.
+			if (this.wrapNavigation)
+			{
+				var topIndexForLastPage = numItems - numItemsPerPage;
+				if (topIndexForLastPage < 0)
+					topIndexForLastPage = 0;
+				else if (topIndexForLastPage >= numItems)
+					topIndexForLastPage = numItems - 1;
+
+				this.topItemIdx = topIndexForLastPage;
+				this.selectedItemIdx = topIndexForLastPage;
+				this.Draw(selectedItemIndexes);
+			}
+		}
+		if (typeof(this.OnItemNav) === "function")
+			this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+	}
+	else
+	{
+		// We're already showing the first page of items.
+		// If the currently selected item is not the first
+		// item, then make it so.
+		if (this.selectedItemIdx > 0)
+		{
+			var oldSelectedItemIdx = this.selectedItemIdx;
+			this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			this.selectedItemIdx = 0;
+			this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			if (typeof(this.OnItemNav) === "function")
+				this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+		}
+	}
+	*/
+}
+// Performs the page-down behavior for showing the menu items
+//
+// Parameters:
+//  pSelectedItemIndexes: An object containing indexes of selected items.  This is
+//                        normally a temporary object created/used in GetVal().
+//  pNumItems: The pre-calculated number of menu items.  If this not given, this
+//             will be retrieved by calling NumItems().
+function DDLightbarMenu_DoPageDown(pSelectedItemIndexes, pNumItems)
+{
+	var selectedItemIndexes = (typeof(pSelectedItemIndexes) === "object" ? pSelectedItemIndexes : {});
+	var numItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
+
+	var numItemsPerPage = this.GetNumItemsPerPage();
+	var startIdxToCheck = this.selectedItemIdx + numItemsPerPage;
+	if (startIdxToCheck >= numItems)
+		startIdxToCheck = numItems - 1;
+	var nextSelectableItemIdx = this.FindSelectableItemForward(startIdxToCheck, this.wrapNavigation);
+	this.NavMenuForNewSelectedItemBottom(nextSelectableItemIdx, numItemsPerPage, numItems, selectedItemIndexes, true);
+
+	// Older, before un-selectable items:
+	/*
+	// Only do the pageDown if we're not showing the last item already
+	var lastItemIdx = numItems - 1;
+	if (lastItemIdx > this.topItemIdx+numItemsPerPage-1)
+	{
+		var oldSelectedItemIdx = this.selectedItemIdx;
+		// Figure out the top index for the last page.
+		var topIndexForLastPage = numItems - numItemsPerPage;
+		if (topIndexForLastPage < 0)
+			topIndexForLastPage = 0;
+		else if (topIndexForLastPage >= numItems)
+			topIndexForLastPage = numItems - 1;
+		if (topIndexForLastPage != this.topItemIdx)
+		{
+			// Update the selected & top item indexes
+			this.selectedItemIdx += numItemsPerPage;
+			this.topItemIdx += numItemsPerPage;
+			if (this.selectedItemIdx >= topIndexForLastPage)
+				this.selectedItemIdx = topIndexForLastPage;
+			if (this.topItemIdx > topIndexForLastPage)
+				this.topItemIdx = topIndexForLastPage;
+			this.Draw(selectedItemIndexes);
+		}
+		else
+		{
+			// The top index is the top index for the last page.
+			// If wrapping is enabled, then go back to the first page.
+			if (this.wrapNavigation)
+			{
+				this.topItemIdx = 0;
+				this.selectedItemIdx = 0;
+			}
+			this.Draw(selectedItemIndexes);
+		}
+		if (typeof(this.OnItemNav) === "function")
+			this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+	}
+	else
+	{
+		// We're already showing the last page of items.
+		// If the currently selected item is not the last
+		// item, then make it so.
+		if (this.selectedItemIdx < lastItemIdx)
+		{
+			var oldSelectedItemIdx = this.selectedItemIdx;
+			this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			this.selectedItemIdx = lastItemIdx;
+			this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			if (typeof(this.OnItemNav) === "function")
+				this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+		}
+	}
+	*/
+}
+
+function DDLightbarMenu_NavMenuForNewSelectedItemTop(pNewSelectedItemIdx, pNumItemsPerPage, pNumItems, pSelectedItemIndexes)
+{
+	var selectedItemIndexes = (typeof(pSelectedItemIndexes) === "object" ? pSelectedItemIndexes : {});
+	var numItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
+	if (pNewSelectedItemIdx > -1 && pNewSelectedItemIdx != this.selectedItemIdx)
+	{
+		var indexDiff = 0;
+		if (pNewSelectedItemIdx < this.selectedItemIdx)
+			indexDiff = this.selectedItemIdx - pNewSelectedItemIdx;
+		else if (pNewSelectedItemIdx > this.selectedItemIdx)
+			indexDiff = pNewSelectedItemIdx - this.selectedItemIdx;
+		var oldSelectedItemIdx = this.selectedItemIdx;
+		this.selectedItemIdx = pNewSelectedItemIdx;
+		var pageNum = findPageNumOfItemNum(this.selectedItemIdx + 1, pNumItemsPerPage, numItems, false);
+		if (pageNum > 0)
+		{
+			var newTopItemIdx = pNumItemsPerPage * (pageNum-1);
+			if (newTopItemIdx != this.topItemIdx)
+			{
+				this.topItemIdx = newTopItemIdx;
+				this.Draw(selectedItemIndexes);
+			}
+			else
+			{
+				// We're already showing the first page of items.
+				// Re-draw the old & new selected items with the proper highlighting
+				this.WriteItemAtItsLocation(oldSelectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			}
+		}
+		if (typeof(this.OnItemNav) === "function")
+			this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
+	}
+}
+
+function DDLightbarMenu_NavMenuForNewSelectedItemBottom(pNewSelectedItemIdx, pNumItemsPerPage, pNumItems, pSelectedItemIndexes, pLastItemAtBottom)
+{
+	var numItemsPerPage = (typeof(pNumItemsPerPage) === "number" ? pNumItemsPerPage : this.GetNumItemsPerPage());
+	var selectedItemIndexes = (typeof(pSelectedItemIndexes) === "object" ? pSelectedItemIndexes : {});
+	var numItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
+	var lastItemAtBottom = (typeof(pLastItemAtBottom) === "boolean" ? pLastItemAtBottom : false);
+	if (pNewSelectedItemIdx > -1 && pNewSelectedItemIdx != this.selectedItemIdx)
+	{
+		if (lastItemAtBottom)
+		{
+			var oldSelectedItemIdx = this.selectedItemIdx;
+			this.selectedItemIdx = pNewSelectedItemIdx;
+			var newTopItemIdx = pNewSelectedItemIdx - numItemsPerPage + 1;
+			if (newTopItemIdx < 0)
+				newTopItemIdx = 0;
+			if (newTopItemIdx != this.topItemIdx)
+			{
+				this.topItemIdx = newTopItemIdx;
+				this.Draw(selectedItemIndexes);
+			}
+			else
+			{
+				// We're already showing the page with the calculated top index
+				// Re-draw the old & new selected items with the proper highlighting
+				this.WriteItemAtItsLocation(oldSelectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+			}
+		}
+		else
+		{
+			var indexDiff = 0;
+			if (pNewSelectedItemIdx < this.selectedItemIdx)
+				indexDiff = this.selectedItemIdx - pNewSelectedItemIdx;
+			else if (pNewSelectedItemIdx > this.selectedItemIdx)
+				indexDiff = pNewSelectedItemIdx - this.selectedItemIdx;
+			var oldSelectedItemIdx = this.selectedItemIdx;
+			this.selectedItemIdx = pNewSelectedItemIdx;
+			var pageNum = findPageNumOfItemNum(this.selectedItemIdx + 1, numItemsPerPage, numItems, false);
+			if (pageNum > 0)
+			{
+				var newTopItemIdx = numItemsPerPage * (pageNum-1);
+				// Figure out the top index for the last page.
+				var topIndexForLastPage = numItems - numItemsPerPage;
+				if (topIndexForLastPage < 0)
+					topIndexForLastPage = 0;
+				else if (topIndexForLastPage >= numItems)
+					topIndexForLastPage = numItems - 1;
+				if (newTopItemIdx != topIndexForLastPage)
+				{
+					this.topItemIdx = newTopItemIdx;
+					this.Draw(selectedItemIndexes);
+				}
+				else
+				{
+					// We're already showing the last page of items.
+					// Re-draw the old & new selected items with the proper highlighting
+					this.WriteItemAtItsLocation(oldSelectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				}
+			}
+		}
+		if (typeof(this.OnItemNav) === "function")
+			this.OnItemNav(oldSelectedItemIdx, this.selectedItemIdx);
 	}
 }
 
@@ -2102,7 +2558,7 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 //                right: The character to use for the right border
 function DDLightbarMenu_SetBorderChars(pBorderChars)
 {
-	if (typeof(pBorderChars) != "object")
+	if (typeof(pBorderChars) !== "object")
 		return;
 
 	var borderPropNames = [ "upperLeft", "upperRight", "lowerLeft", "lowerRight",
@@ -2138,7 +2594,7 @@ function DDLightbarMenu_SetColors(pColors)
 
 	var colorPropNames = ["itemColor", "selectedItemColor", "altItemColor", "altSelectedItemColor",
 	                      "itemTextCharHighlightColor", "borderColor", "scrollbarScrollBlockColor",
-	                      "scrollbarBGColor"];
+	                      "scrollbarBGColor", "unselectableItemColor"];
 	for (var i = 0; i < colorPropNames.length; ++i)
 	{
 		if (pColors.hasOwnProperty(colorPropNames[i]))
@@ -2167,15 +2623,49 @@ function DDLightbarMenu_GetTopItemIdxOfLastPage()
 	return topItemIndex;
 }
 
-// Sets the top item index to the top item of the last page of items
-function DDLightbarMenu_SetTopItemIdxToTopOfLastPage()
+// Calculates & sets the top item index to the top item of the last page of items
+function DDLightbarMenu_CalcAndSetTopItemIdxToTopOfLastPage(pNumItems)
 {
 	var numItemsPerPage = this.size.height;
 	if (this.borderEnabled)
 		numItemsPerPage -= 2;
-	this.topItemIdx = this.NumItems() - numItemsPerPage;
+
+	var numItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
+	this.topItemIdx = numItems - numItemsPerPage;
 	if (this.topItemIdx < 0)
 		this.topItemIdx = 0;
+}
+
+// Calculates the page for an item (by its index) and sets the top index for the menu
+// based on that page.
+//
+// Parameters:
+//  pNumItemsPerPage: Optional - The number of items per page, if already calculated
+//  pNumItems: Optional - The number of items in the menu, if already known
+//
+//
+// Return value: Boolean - Whether or not the top index of the menu changed
+function DDLightbarMenu_CalcPageForItemAndSetTopItemIdx(pNumItemsPerPage, pNumItems)
+{
+	var numItemsPerPage = (typeof(pNumItemsPerPage) === "number" ? pNumItemsPerPage : this.GetNumItemsPerPage());
+	var numItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
+
+	var topItemIdxChanged = false;
+	var pageNum = findPageNumOfItemNum(this.selectedItemIdx+1, numItemsPerPage, numItems, false);
+	if (pageNum > 0)
+	{
+		var topItemIdxOnNewPage = numItemsPerPage * (pageNum-1);
+		if (topItemIdxOnNewPage + numItemsPerPage >= numItems)
+			topItemIdxOnNewPage = numItems - numItemsPerPage;
+		if (topItemIdxOnNewPage < 0)
+			topItemIdxOnNewPage = 0;
+		if (topItemIdxOnNewPage != this.topItemIdx)
+		{
+			this.topItemIdx = topItemIdxOnNewPage;
+			topItemIdxChanged = true;
+		}
+	}
+	return topItemIdxChanged;
 }
 
 // Adds additional key characters to cause quitting out of the menu
@@ -2622,6 +3112,12 @@ function DDLightbarMenu_ScreenRowForItem(pItemIdx)
 	return screenRow;
 }
 
+// Returns whether ANSI is supported by the user's terminal. Also checks this.allowANSI
+function DDLightbarMenu_ANSISupported()
+{
+	return (console.term_supports(USER_ANSI) && this.allowANSI);
+}
+
 // Calculates the number of solid scrollbar blocks & non-solid scrollbar blocks
 // to use.  Saves the information in this.scrollbarInfo.numSolidScrollBlocks and
 // this.scrollbarInfo.numNonSolidScrollBlocks.
@@ -2649,6 +3145,9 @@ function DDLightbarMenu_CalcScrollbarBlocks()
 		this.scrollbarInfo.numNonSolidScrollBlocks = 0;
 	}
 }
+
+
+
 
 //////////////////////////////////////////////////////////
 // Helper functions, not part of the DDLightbarMenu class
@@ -2907,7 +3406,8 @@ function getDefaultMenuItem() {
 		hotkeys: "",
 		useAltColors: false,
 		itemColor: null,
-		itemSelectedColor: null
+		itemSelectedColor: null,
+		isSelectable: true
 	};
 }
 
@@ -3083,4 +3583,106 @@ function getKeyWithESCChars(pGetKeyMode, pInputTimeoutMS)
 	}
 
 	return userInput;
+}
+
+// Calculates & returns a page number.
+//
+// Parameters:
+//  pTopIndex: The index (0-based) of the topmost item on the page
+//  pNumPerPage: The number of items per page
+//
+// Return value: The page number
+function calcPageNum(pTopIndex, pNumPerPage)
+{
+  return ((pTopIndex / pNumPerPage) + 1);
+}
+
+// Finds the (1-based) page number of an item by number (1-based).  If no page
+// is found, then the return value will be 0.
+//
+// Parameters:
+//  pItemNum: The item number (1-based)
+//  pNumPerPage: The number of items per page
+//  pTotoalNum: The total number of items in the list
+//  pReverseOrder: Boolean - Whether or not the list is in reverse order.  If not specified,
+//                 this will default to false.
+//
+// Return value: The page number (1-based) of the item number.  If no page is found,
+//               the return value will be 0.
+function findPageNumOfItemNum(pItemNum, pNumPerPage, pTotalNum, pReverseOrder)
+{
+	if ((typeof(pItemNum) !== "number") || (typeof(pNumPerPage) !== "number") || (typeof(pTotalNum) !== "number"))
+		return 0;
+	if ((pItemNum < 1) || (pItemNum > pTotalNum))
+		return 0;
+
+	var reverseOrder = (typeof(pReverseOrder) == "boolean" ? pReverseOrder : false);
+	var itemPageNum = 0;
+	if (reverseOrder)
+	{
+		var pageNum = 1;
+		for (var topNum = pTotalNum; ((topNum > 0) && (itemPageNum == 0)); topNum -= pNumPerPage)
+		{
+			if ((pItemNum <= topNum) && (pItemNum >= topNum-pNumPerPage+1))
+				itemPageNum = pageNum;
+			++pageNum;
+		}
+	}
+	else // Forward order
+		itemPageNum = Math.ceil(pItemNum / pNumPerPage);
+
+	return itemPageNum;
+}
+
+
+
+
+function logStackTrace(levels) {
+    var callstack = [];
+    var isCallstackPopulated = false;
+    try {
+        i.dont.exist += 0; //doesn't exist- that's the point
+    } catch (e) {
+        if (e.stack) { //Firefox / chrome
+            var lines = e.stack.split('\n');
+            for (var i = 0, len = lines.length; i < len; i++) {
+                    callstack.push(lines[i]);
+            }
+            //Remove call to logStackTrace()
+            callstack.shift();
+            isCallstackPopulated = true;
+        }
+        else if (window.opera && e.message) { //Opera
+            var lines = e.message.split('\n');
+            for (var i = 0, len = lines.length; i < len; i++) {
+                if (lines[i].match(/^\s*[A-Za-z0-9\-_\$]+\(/)) {
+                    var entry = lines[i];
+                    //Append next line also since it has the file info
+                    if (lines[i + 1]) {
+                        entry += " at " + lines[i + 1];
+                        i++;
+                    }
+                    callstack.push(entry);
+                }
+            }
+            //Remove call to logStackTrace()
+            callstack.shift();
+            isCallstackPopulated = true;
+        }
+    }
+    if (!isCallstackPopulated) { //IE and Safari
+        var currentFunction = arguments.callee.caller;
+        while (currentFunction) {
+            var fn = currentFunction.toString();
+            var fname = fn.substring(fn.indexOf("function") + 8, fn.indexOf("(")) || "anonymous";
+            callstack.push(fname);
+            currentFunction = currentFunction.caller;
+        }
+    }
+    if (levels) {
+        console.print(callstack.slice(0, levels).join("\r\n"));
+    }
+    else {
+        console.print(callstack.join("\r\n"));
+    }
 }
