@@ -308,28 +308,28 @@ void sbbs_free_ini(
 	)
 {
 	if(global != NULL) {
-		iniFreeStringList(global->interfaces);
+		strListFree(&global->interfaces);
 	}
 	if(bbs != NULL) {
-		iniFreeStringList(bbs->telnet_interfaces);
-		iniFreeStringList(bbs->rlogin_interfaces);
-		iniFreeStringList(bbs->ssh_interfaces);
+		strListFree(&bbs->telnet_interfaces);
+		strListFree(&bbs->rlogin_interfaces);
+		strListFree(&bbs->ssh_interfaces);
 	}
 	if(web != NULL) {
-		iniFreeStringList(web->interfaces);
-		iniFreeStringList(web->tls_interfaces);
-		iniFreeStringList(web->index_file_name);
-		iniFreeStringList(web->cgi_ext);
+		strListFree(&web->interfaces);
+		strListFree(&web->tls_interfaces);
+		strListFree(&web->index_file_name);
+		strListFree(&web->cgi_ext);
 	}
 	if(ftp != NULL) {
-		iniFreeStringList(ftp->interfaces);
+		strListFree(&ftp->interfaces);
 	}
 	if(mail != NULL) {
-		iniFreeStringList(mail->interfaces);
-		iniFreeStringList(mail->pop3_interfaces);
+		strListFree(&mail->interfaces);
+		strListFree(&mail->pop3_interfaces);
 	}
 	if(services != NULL) {
-		iniFreeStringList(services->interfaces);
+		strListFree(&services->interfaces);
 	}
 }
 
