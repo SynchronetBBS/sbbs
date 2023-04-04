@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.69
-                           Release date: 2023-03-24
+                                 Version 1.70
+                           Release date: 2023-04-04
 
                                      by
 
@@ -30,8 +30,9 @@ Contents
 6. Configuration file & color/text theme configuration file
    - Main configuration file (DDMsgReader.cfg)
    - Theme configuration file
-7. Drop file for replying to messages with Synchronet message editors
-8. text.dat lines used in Digital Distortion Message Reader
+7. Indexed reader mode
+8. Drop file for replying to messages with Synchronet message editors
+9. text.dat lines used in Digital Distortion Message Reader
 
 
 1. Disclaimer
@@ -139,6 +140,9 @@ confirmation before deleting the messages.
   files.  The configuration files may be placed in the same directory as the
   .js script or in the sbbs/ctrl directory.
 - Allows a personal twit list, editable via user settings (Ctrl-U)
+- Has an "indexed" reader mode, which lists all sub-boards configured for
+  newscan by the user, with total number of messages, number of new messages,
+  and last post date, allowing the user to select a sub-board to read
 
 If a message has been marked for deletion, it will appear in the message list
 with a blinking red asterisk (*) after the message number.
@@ -299,6 +303,12 @@ scan.  Another example is -personalEmail which lets the user read their
 personal email.
 
 The following are the command-line parameters supported by DDMsgReader.js:
+-indexedMode: Starts DDMsgreader in "indexed" reader mode, which lists all
+              sub-boards configured for newscan by the user, with total number
+              of messages, number of new messages, and last post date, allowing
+              the user to select a sub-board to read. This is intended to work
+              if it is the only command-line option.
+
 -search: A search type.  Available options:
  keyword_search: Do a keyword search in message subject/body text (current message area)
  from_name_search: 'From' name search (current message area)
@@ -435,6 +445,9 @@ common message operations.
 
 - Scan for all messages to the user:
 ?../xtrn/DDMsgReader/DDMsgReader.js -startMode=read -search=to_user_all_scan
+
+- Start in indexed reader mode:
+?../xtrn/DDMsgReader/DDMsgReader.js -indexedMode
 
 - Text (keyword) search in the current sub-board, and list the messages found:
 ?../xtrn/DDMsgReader/DDMsgReader.js -search=keyword_search -startMode=list
@@ -713,6 +726,10 @@ prependFowardMsgSubject               Whether or not to prepend the subject for
                                       values are true and false. Defaulse to
                                       true.
 
+enableIndexedModeMsgListCache         For indexed reader mode, whether or not to
+                                      enable caching the message header lists
+                                      for performance
+
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
 
@@ -810,6 +827,41 @@ msgListDateHighlightColor            Message list highlighted date color (for
                                      lightbar mode)
 msgListTimeHighlightColor            Message list highlighted time color (for
                                      lightbar mode)
+
+ Colors for the indexed mode sub-board menu:
+indexMenuDesc                        Indexed mode menu item description
+
+indexMenuTotalMsgs                   Indexed mode menu total number of messages
+
+indexMenuNumNewMsgs                  Indexed mode menu number of new messages
+
+indexMenuLastPostDate                Indexed mode menu last post date
+
+indexMenuHighlightBkg                Indexed mode menu highlighted item
+                                     background
+
+indexMenuDescHighlight               Indexed mode menu highlighted description
+
+indexMenuTotalMsgsHighlight          Indexed mode menu highlighted total number
+                                     of messages
+
+indexMenuNumNewMsgsHighlight         Indexed mode menu highlighted number of new
+                                     messages
+
+indexMenuLastPostDateHighlight       Indexed mode menu highlighted last post
+                                     date
+
+Colors for the indexed mode lightbar help line text:
+lightbarIndexedModeHelpLineBkgColor  Indexed help line background
+
+lightbarIndexedModeHelpLineHotkeyColor  Indexed help line hotkey color
+
+lightbarIndexedModeHelpLineGeneralColor Indexed help line general text color
+
+lightbarIndexedModeHelpLineParenColor  Indexed help line - For the ) separating
+                                       the hotkeys from general text
+
+Lightbar message list help line colors:
 
 lightbarMsgListHelpLineBkgColor      Background color for the lightbar message
                                      list help line
@@ -1084,7 +1136,53 @@ selectedMsgMarkColor                 The color to use for the checkmark for
                                      selected messages (used in the message
                                      list)
 
-7. Drop file for replying to messages with Synchronet message editors
+7. Indexed reader mode
+======================
+"Indexed" reader mode is a new mode that was added to DDMsgReader v1.70.  This
+mode displays a menu/list of message sub-boards within their groups with total
+and number of new messages and allows the user to select one to read.  There is
+also a user setting to allow the user to use this mode for a newscan (rather
+than the traditional newscan) if they wish.
+
+Indexed reader mode may also be started with the -indexedMode command-line
+parameter.  For example, if you are using a JavaScript command shell:
+  bbs.exec("?../xtrn/DDMsgReader/DDMsgReader.js -indexedMode");
+With the above command-line parameter, DDMsgReader will show all sub-boards the
+user is allowed to read and which they have in their newscan configuration.
+If the user has enabled indexed mode for newscans, then during a newscan, it
+will show sub-boards based on the user's chosen option for current
+sub-board/group/all.
+  
+This is an example of the sub-board menu that appears in indexed mode - And from
+here, the user can choose a sub-board to read:
+
+Description                                                 Total New Last Post
+───── AgoraNet ────────────────────────────────────────────────────────────────
+    AGN GEN - General Chat                                   1004  0 2023-04-02
+    AGN BBS - BBS Discussion                                 1000  0 2023-01-17
+NEW AGN ART - Art/Demo Scene                                  603  1 2023-04-02
+    AGN DEV - Software Development                            398  0 2021-11-09
+    AGN NIX - Unix/Linux Related                              297  0 2023-04-02
+    AGN L46 - League Scores & Recons                         1000  0 2016-09-10
+NEW AGN TST - Testing Setups                                 2086 10 2023-04-03
+    AGN SYS - Sysops Only                                    1000  0 2023-01-19
+───── FIDO - FidoNet ──────────────────────────────────────────────────────────
+NEW BBS CARNIVAL - BBS Software Chatter                       660  5 2023-04-04
+    BBS INTERNET - DOS/Win/OS2/Unix Internet BBS Applicatio    18  0 2023-03-04
+    CHWARE - Cheepware Support/Discussion                     111  0 2023-03-16
+    CLASSIC COMPUTER - Classic Computers                      191  0 2023-02-10
+    CONSPRCY - Conspiracy Discussions                          59  0 2023-03-14
+    CONTROVERSIAL - Controversial Topics, current events, at    3  0 2023-01-31
+NEW DOORGAMES - BBS Doorgames and discussions                 288  1 2023-04-03
+NEW FUNNY - FUNNY Jokes and Stories                          1184  3 2023-04-04
+    FUTURE4FIDO - Discussion of new and future Fidonet tec    152  0 2023-04-01
+    LINUX BBS - Linux BBSing                                   46  0 2023-04-01
+    LINUX - Linux operating system (OS), a Unix vari         1076  0 2023-04-01
+    LINUX-UBUNTU - The Ubuntu Linux Distribution Discussion    18  0 2023-02-17
+NEW MEMORIES - NOSTALGIA                                     2434  3 2023-04-03
+
+
+8. Drop file for replying to messages with Synchronet message editors
 =====================================================================
 When reading a message, the message lister will write a drop file in the node
 directory, called DDML_SyncSMBInfo.txt, which contains some information about
@@ -1119,7 +1217,7 @@ Note that if you have SlyEdit installed on your BBS, this version of Digital
 Distortion Message Reader (1.00) requires version 1.27 or newer of SlyEdit in
 order for SlyEdit to properly get the correct message from the message lister.
 
-8. text.dat lines used in Digital Distortion Message Reader
+9. text.dat lines used in Digital Distortion Message Reader
 ===========================================================
 This message reader uses the following lines from Synchronet's text.dat file
 (located in the sbbs/ctrl directory):
