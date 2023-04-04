@@ -5,8 +5,8 @@
 	(c) 2023 Lloyd Hannesson - dasme@dasme.org
 */
 var graName = 'The Warrior\'s Graveyard';
-var graNameFancy = ' `$- `%The Warrior\'s Graveyard `$- ';
-var graVersion = 'JS v1.0';
+var graNameFancy = '`8ï `%T`7he `%W`7arrior\'s `%G`7raveyard `8ï';
+var graVersion = 'JS v1.1';
 var graDebug = false;
 var menu_redisplay = true;
 var menu_file;
@@ -332,7 +332,9 @@ function command_prompt(currentPlace,menu_keys) {
 
 function press_a_key(no_clear) {
 	var ch;
-	lw('  `2<`0MORE`2>');	
+	//lw('  `2<`0MORE`2>');
+	lw(' `@í `0Press A Key `@í');	
+	flush_keys();	
 	ch = getkey();
 	if(no_clear) {
 		dk.console.print('\r');
@@ -353,6 +355,12 @@ function are_you_sure() {
 	}
 	sln('');
 	return(false);
+}
+
+function flush_keys() {
+	while (dk.console.waitkey(0)) {
+		dk.console.getkey();
+	}
 }
 
 // Adding in some functions to match the old door driver I used..
@@ -1003,7 +1011,7 @@ function graKitten() {
 			lw('  `0You gain '+TempInt.toString()+' Strength!');
 			sln('');
 			StrCheck(TempInt);
-			sln('');			
+			sln('');
 			press_a_key();
 			break;
 		case 1:
@@ -1151,7 +1159,7 @@ function graGraveRob() {
 }
 
 /* -=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
-/*	Menus
+/*	Menus                                                                               */
 /* -=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 function graDebugMenu() {
@@ -1761,11 +1769,10 @@ function main() {
 
 if (argc == 1 && argv[0] == 'INSTALL') {
 	var install = {
-		desc:'`6- `%The Warrior\'s Graveyard `6-'
+		desc:graNameFancy
 	}
 	exit(0);
-}
-else {
+} else {
 	main();
 	exit(0);
 }
