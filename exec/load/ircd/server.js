@@ -15,7 +15,7 @@
 
  IRCd inter-server communication.
 
- Copyright 2003-2022 Randy Sommerfeld <cyan@synchro.net>
+ Copyright 2003-2023 Randy Sommerfeld <cyan@synchro.net>
 
 */
 
@@ -438,13 +438,8 @@ function Server_Work(cmdline) {
 		tmp = Channels[p[0].toUpperCase()];
 		if (!tmp)
 			break;
-		j = false; /* bounce our side? */
-		if (parseInt(p[1]) > tmp.created) /* TS violation TODO: bounce their side */
-			break;
-		if (parseInt(p[1]) < tmp.created && origin.server)
-			j = true;
 		p.shift();
-		origin.set_chanmode(tmp,p,j);
+		origin.set_chanmode(tmp,p,parseInt(p[1]));
 		break;
 	case "MOTD":
 		if (!p[0] || origin.server)
@@ -574,7 +569,7 @@ function Server_Work(cmdline) {
 			j.servername = p[6];
 			j.realname = p[9];
 			j.parent = this.nick;
-			j.ip = int_to_ip(p[8]);
+			j.ip = p[8];
 			j.setusermode(p[3]);
 			for (i in ULines) {
 				if (ULines[i] == p[6]) {
@@ -583,7 +578,7 @@ function Server_Work(cmdline) {
 				}
 			}
 			this.bcast_to_servers_raw(
-				format("NICK %s %d %lu %s %s %s %s 0 %lu :%s",
+				format("NICK %s %d %lu %s %s %s %s 0 %s :%s",
 					j.nick,
 					j.hops + 1,
 					j.created,
@@ -591,7 +586,7 @@ function Server_Work(cmdline) {
 					j.uprefix,
 					j.hostname,
 					j.servername,
-					ip_to_int(j.ip),
+					j.ip,
 					j.realname
 				)
 			);
@@ -910,7 +905,7 @@ function Server_Work(cmdline) {
 			this.set_chanmode(
 				tmp, /* channel */
 				p.splice(2,p.length-3), /* modeline and arguments */
-				(tmp.created >= parseInt(p[0])) ? false : true /* ts superiority */
+				parseInt(p[0]) /* ts */
 			);
 
 			j = p[p.length-1].split(" "); /* Channel members */
@@ -1431,7 +1426,7 @@ function IRCClient_server_info(sni_server) {
 
 function IRCClient_server_nick_info(sni_client) {
 	this.rawout(
-		format("NICK %s %d %lu %s %s %s %s 0 %lu :%s",
+		format("NICK %s %d %lu %s %s %s %s 0 %s :%s",
 			sni_client.nick,
 			parseInt(sni_client.hops) + 1,
 			sni_client.created,
@@ -1439,7 +1434,7 @@ function IRCClient_server_nick_info(sni_client) {
 			sni_client.uprefix,
 			sni_client.hostname,
 			sni_client.servername,
-			ip_to_int(sni_client.ip),
+			sni_client.ip,
 			sni_client.realname
 		)
 	);
