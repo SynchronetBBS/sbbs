@@ -150,6 +150,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="getctrl.c" />
+    <ClCompile Include="nopen.c" />
     <ClCompile Include="ringbuf.c" />
     <ClCompile Include="sbbs_ini.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
