@@ -278,6 +278,7 @@ static void global_cfg(void)
 						if(!sbbs_write_ini(
 							 fp
 							,&cfg
+							,backup_level
 							,&startup
 							,false
 							,NULL
@@ -527,6 +528,7 @@ static void termsrvr_cfg(void)
 						if(!sbbs_write_ini(
 							 fp
 							,&cfg
+							,backup_level
 							,NULL
 							,enabled
 							,&startup
@@ -790,6 +792,7 @@ static void websrvr_cfg(void)
 						if(!sbbs_write_ini(
 							 fp
 							,&cfg
+							,backup_level
 							,NULL
 							,FALSE
 							,NULL
@@ -986,6 +989,7 @@ static void ftpsrvr_cfg(void)
 						if(!sbbs_write_ini(
 							 fp
 							,&cfg
+							,backup_level
 							,NULL
 							,FALSE
 							,NULL
@@ -1398,6 +1402,7 @@ static void mailsrvr_cfg(void)
 						if(!sbbs_write_ini(
 							 fp
 							,&cfg
+							,backup_level
 							,NULL
 							,FALSE
 							,NULL
@@ -1513,6 +1518,7 @@ static void services_cfg(void)
 						if(!sbbs_write_ini(
 							 fp
 							,&cfg
+							,backup_level
 							,NULL
 							,FALSE
 							,NULL

@@ -2498,6 +2498,7 @@ void bail(int code)
 			if(!sbbs_write_ini(
 				 fp
 				,&cfg
+				,backup_level
 				,&global_startup
 				,run_bbs
 				,&bbs_startup
