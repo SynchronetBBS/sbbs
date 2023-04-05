@@ -16194,7 +16194,7 @@ function getDefaultColors()
 		msgListFromUserTimeColor: "\x01h\x01b",
 
 		// Message list highlight colors
-		msgListHighlightBkgColor: "\x01" + "4", 	// Background
+		msgListHighlightBkgColor: "\x014", 	// Background
 		msgListMsgNumHighlightColor: "\x01h\x01y",
 		msgListFromHighlightColor: "\x01h\x01c",
 		msgListToHighlightColor: "\x01h\x01c",
@@ -16204,7 +16204,7 @@ function getDefaultColors()
 		msgListTimeHighlightColor: "\x01h\x01w",
 
 		// Lightbar message list help line colors
-		lightbarMsgListHelpLineBkgColor: "\x01" + "7", 	// Background
+		lightbarMsgListHelpLineBkgColor: "\x017", 	// Background
 		lightbarMsgListHelpLineGeneralColor: "\x01b",
 		lightbarMsgListHelpLineHotkeyColor: "\x01r",
 		lightbarMsgListHelpLineParenColor: "\x01m",
@@ -16236,14 +16236,14 @@ function getDefaultColors()
 		areaChooserMsgAreaLatestDateColor: "\x01n\x01g",
 		areaChooserMsgAreaLatestTimeColor: "\x01n\x01m",
 		// Highlighted colors (for lightbar mode)
-		areaChooserMsgAreaBkgHighlightColor: "\x01" + "4", 	// Blue background
+		areaChooserMsgAreaBkgHighlightColor: "\x014", 	// Blue background
 		areaChooserMsgAreaNumHighlightColor: "\x01w\x01h",
 		areaChooserMsgAreaDescHighlightColor: "\x01c",
 		areaChooserMsgAreaDateHighlightColor: "\x01w\x01h",
 		areaChooserMsgAreaTimeHighlightColor: "\x01w\x01h",
 		areaChooserMsgAreaNumItemsHighlightColor: "\x01w\x01h",
 		// Lightbar area chooser help line
-		lightbarAreaChooserHelpLineBkgColor: "\x01" + "7", 	// Background
+		lightbarAreaChooserHelpLineBkgColor: "\x017", 	// Background
 		lightbarAreaChooserHelpLineGeneralColor: "\x01b",
 		lightbarAreaChooserHelpLineHotkeyColor: "\x01r",
 		lightbarAreaChooserHelpLineParenColor: "\x01m",
@@ -16256,7 +16256,7 @@ function getDefaultColors()
 		// area in the enhanced reader mode before a prompt
 		enhReaderPromptSepLineColor: "\x01n\x01h\x01g",
 		// Colors for the enhanced reader help line
-		enhReaderHelpLineBkgColor: "\x01" + "7",
+		enhReaderHelpLineBkgColor: "\x017",
 		enhReaderHelpLineGeneralColor: "\x01b",
 		enhReaderHelpLineHotkeyColor: "\x01r",
 		enhReaderHelpLineParenColor: "\x01m",
@@ -16266,7 +16266,29 @@ function getDefaultColors()
 		hdrLineValueColor: "\x01n\x01b\x01h",
 
 		// Selected message marker color
-		selectedMsgMarkColor: "\x01n\x01w\x01h"
+		selectedMsgMarkColor: "\x01n\x01w\x01h",
+
+		// Colors for the indexed mode sub-board menu:
+		indexMenuDesc: "\x01n\x01w",
+		indexMenuTotalMsgs: "\x01n\x01w",
+		indexMenuNumNewMsgs: "\x01n\x01w",
+		indexMenuLastPostDate: "\x01b\x01h",
+		// Highlighted/selected:
+		indexMenuHighlightBkg: "\x014",
+		indexMenuDescHighlight: "\x01w\x01h",
+		indexMenuTotalMsgsHighlight: "\x01w\x01h",
+		indexMenuNumNewMsgsHighlight: "\x01w\x01h",
+		indexMenuLastPostDateHighlight: "\x01w\x01h",
+
+		// Colors for the indexed mode help line text:
+		// Background
+		lightbarIndexedModeHelpLineBkgColor: "\x017",
+		// Hotkey color
+		lightbarIndexedModeHelpLineHotkeyColor: "\x01r",
+		// General text
+		lightbarIndexedModeHelpLineGeneralColor: "\x01b",
+		// For ) separating the hotkeys from general text
+		lightbarIndexedModeHelpLineParenColor: "\x01m"
 	};
 }
 
