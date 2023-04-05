@@ -2256,6 +2256,7 @@ bool __fastcall TMainForm::SaveIniSettings(TObject* Sender)
 
     bool success = sbbs_write_ini(fp
         ,&cfg
+		,10	/* backup_level */
         ,&global
         ,SysAutoStart		,&bbs_startup
         ,FtpAutoStart		,&ftp_startup
