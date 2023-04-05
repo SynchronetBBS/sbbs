@@ -27,6 +27,7 @@
 #include "sbbs_ini.h"
 #include "dirwrap.h"	/* backslash */
 #include "sbbsdefs.h"	/* JAVASCRIPT_* macros */
+#include "nopen.h"		/* backup */
 
 static const char*	nulstr="";
 static const char*  strAutoStart="AutoStart";
@@ -794,6 +795,7 @@ void sbbs_read_ini(
 BOOL sbbs_write_ini(
 	 FILE*					fp
     ,scfg_t*                cfg
+	,int					backup_level
 	,global_startup_t*		global
 	,BOOL					run_bbs
 	,bbs_startup_t*			bbs
@@ -1356,6 +1358,7 @@ BOOL sbbs_write_ini(
 	}
 
 	/***********************************************************************/
+	backup(cfg->filename, backup_level, /* rename: */FALSE);
 	result=iniWriteFile(fp,list);
 
 	} while(0);	/* finally */

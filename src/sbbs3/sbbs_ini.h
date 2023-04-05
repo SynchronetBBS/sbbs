@@ -82,6 +82,7 @@ BOOL sbbs_set_js_settings(
 BOOL sbbs_write_ini(
 	 FILE*					fp
     ,scfg_t*                cfg
+	,int					backup_level
 	,global_startup_t*		global
 	,BOOL					run_bbs
 	,bbs_startup_t*			bbs
