@@ -311,7 +311,7 @@ void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
             scfg.sys_misc&=~SM_USRVDELM;
         }
         scfg.new_install=FALSE;
-        if(!save_cfg(&scfg,0)) {
+        if(!save_cfg(&scfg)) {
         	Application->MessageBox("Error saving configuration"
             	,"ERROR",MB_OK|MB_ICONEXCLAMATION);
         } else
