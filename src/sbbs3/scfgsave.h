@@ -27,13 +27,13 @@
 extern "C" {
 #endif
 
-DLLEXPORT BOOL		save_cfg(scfg_t* cfg, int backup_level);
-DLLEXPORT BOOL		write_node_cfg(scfg_t* cfg, int backup_level);
-DLLEXPORT BOOL		write_main_cfg(scfg_t* cfg, int backup_level);
-DLLEXPORT BOOL		write_msgs_cfg(scfg_t* cfg, int backup_level);
-DLLEXPORT BOOL		write_file_cfg(scfg_t* cfg, int backup_level);
-DLLEXPORT BOOL		write_chat_cfg(scfg_t* cfg, int backup_level);
-DLLEXPORT BOOL		write_xtrn_cfg(scfg_t* cfg, int backup_level);
+DLLEXPORT BOOL		save_cfg(scfg_t* cfg);
+DLLEXPORT BOOL		write_node_cfg(scfg_t* cfg);
+DLLEXPORT BOOL		write_main_cfg(scfg_t* cfg);
+DLLEXPORT BOOL		write_msgs_cfg(scfg_t* cfg);
+DLLEXPORT BOOL		write_file_cfg(scfg_t* cfg);
+DLLEXPORT BOOL		write_chat_cfg(scfg_t* cfg);
+DLLEXPORT BOOL		write_xtrn_cfg(scfg_t* cfg);
 DLLEXPORT void		refresh_cfg(scfg_t* cfg);
 
 #ifdef __cplusplus

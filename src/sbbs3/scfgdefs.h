@@ -622,8 +622,9 @@ typedef struct
 	uint32_t		total_colors;
 	uint32_t		ctrlkey_passthru;		/* Bits represent control keys NOT handled by inkey() */
 
-	uint16_t		user_backup_level;
-	uint16_t		mail_backup_level;
+	uint			user_backup_level;
+	uint			mail_backup_level;
+	uint			config_backup_level;
 	char**			text;
 
 	// Run-time state information (not configuration)

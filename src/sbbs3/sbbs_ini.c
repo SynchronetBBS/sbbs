@@ -795,7 +795,6 @@ void sbbs_read_ini(
 BOOL sbbs_write_ini(
 	 FILE*					fp
     ,scfg_t*                cfg
-	,int					backup_level
 	,global_startup_t*		global
 	,BOOL					run_bbs
 	,bbs_startup_t*			bbs
@@ -1358,7 +1357,7 @@ BOOL sbbs_write_ini(
 	}
 
 	/***********************************************************************/
-	backup(cfg->filename, backup_level, /* rename: */FALSE);
+	backup(cfg->filename, cfg->config_backup_level, /* rename: */FALSE);
 	result=iniWriteFile(fp,list);
 
 	} while(0);	/* finally */

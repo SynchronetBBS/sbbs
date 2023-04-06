@@ -30,27 +30,27 @@ BOOL no_msghdr=FALSE,all_msghdr=FALSE;
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL save_cfg(scfg_t* cfg, int backup_level)
+BOOL save_cfg(scfg_t* cfg)
 {
 	int i;
 
 	if(cfg->prepped)
 		return(FALSE);
 
-	if(!write_main_cfg(cfg,backup_level))
+	if(!write_main_cfg(cfg))
 		return(FALSE);
-	if(!write_msgs_cfg(cfg,backup_level))
+	if(!write_msgs_cfg(cfg))
 		return(FALSE);
-	if(!write_file_cfg(cfg,backup_level))
+	if(!write_file_cfg(cfg))
 		return(FALSE);
-	if(!write_chat_cfg(cfg,backup_level))
+	if(!write_chat_cfg(cfg))
 		return(FALSE);
-	if(!write_xtrn_cfg(cfg,backup_level))
+	if(!write_xtrn_cfg(cfg))
 		return(FALSE);
 
 	for(i=0;i<cfg->sys_nodes;i++) {
 		cfg->node_num=i+1;
-		if(!write_node_cfg(cfg,backup_level))
+		if(!write_node_cfg(cfg))
 			return(FALSE);
 	}
 
@@ -59,7 +59,7 @@ BOOL save_cfg(scfg_t* cfg, int backup_level)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL write_node_cfg(scfg_t* cfg, int backup_level)
+BOOL write_node_cfg(scfg_t* cfg)
 {
 	BOOL	result = FALSE;
 	char	inipath[MAX_PATH+1];
@@ -75,7 +75,7 @@ BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 	prep_dir(cfg->ctrl_dir, inipath, sizeof(inipath));
 	md(inipath);
 	SAFECAT(inipath, "node.ini");
-	backup(inipath, backup_level, TRUE);
+	backup(inipath, cfg->config_backup_level, TRUE);
 
 	str_list_t ini = strListInit();
 	iniSetString(&ini, ROOT_SECTION, "phone", cfg->node_phone, NULL);
@@ -97,7 +97,7 @@ BOOL write_node_cfg(scfg_t* cfg, int backup_level)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL write_main_cfg(scfg_t* cfg, int backup_level)
+BOOL write_main_cfg(scfg_t* cfg)
 {
 	BOOL	result = FALSE;
 	char	inipath[MAX_PATH+1];
@@ -109,7 +109,7 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 		return FALSE;
 
 	SAFEPRINTF(inipath, "%smain.ini", cfg->ctrl_dir);
-	backup(inipath, backup_level, TRUE);
+	backup(inipath, cfg->config_backup_level, TRUE);
 
 	str_list_t ini = strListInit();
 	iniSetString(&ini, ROOT_SECTION, "name", cfg->sys_name, NULL);
@@ -140,8 +140,9 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 	iniSetHexInt(&ini, ROOT_SECTION, "ctrlkey_passthru", cfg->ctrlkey_passthru, NULL);
 	iniSetDuration(&ini, ROOT_SECTION, "max_getkey_inactivity", cfg->max_getkey_inactivity, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "inactivity_warn", cfg->inactivity_warn, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "user_backup_level", cfg->user_backup_level, NULL);
-	iniSetShortInt(&ini, ROOT_SECTION, "mail_backup_level", cfg->mail_backup_level, NULL);
+	iniSetUInteger(&ini, ROOT_SECTION, "user_backup_level", cfg->user_backup_level, NULL);
+	iniSetUInteger(&ini, ROOT_SECTION, "mail_backup_level", cfg->mail_backup_level, NULL);
+	iniSetUInteger(&ini, ROOT_SECTION, "config_backup_level", cfg->config_backup_level, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "valuser", cfg->valuser, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "erruser", cfg->erruser, NULL);
 	iniSetShortInt(&ini, ROOT_SECTION, "errlevel", cfg->errlevel, NULL);
@@ -321,7 +322,7 @@ BOOL write_main_cfg(scfg_t* cfg, int backup_level)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
+BOOL write_msgs_cfg(scfg_t* cfg)
 {
 	BOOL	result = FALSE;
 	char	path[MAX_PATH+1];
@@ -337,7 +338,7 @@ BOOL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	ZERO_VAR(smb);
 
 	SAFEPRINTF(inipath, "%smsgs.ini", cfg->ctrl_dir);
-	backup(inipath, backup_level, TRUE);
+	backup(inipath, cfg->config_backup_level, TRUE);
 
 	str_list_t ini = strListInit();
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->msg_misc, NULL);
@@ -608,7 +609,7 @@ static void write_dir_defaults_cfg(str_list_t* ini, const char* section, dir_t* 
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL write_file_cfg(scfg_t* cfg, int backup_level)
+BOOL write_file_cfg(scfg_t* cfg)
 {
 	BOOL	result = FALSE;
 	char	path[MAX_PATH+1];
@@ -619,7 +620,7 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 		return FALSE;
 
 	SAFEPRINTF(inipath, "%sfile.ini", cfg->ctrl_dir);
-	backup(inipath, backup_level, TRUE);
+	backup(inipath, cfg->config_backup_level, TRUE);
 
 	str_list_t ini = strListInit();
 	iniSetBytes(&ini, ROOT_SECTION, "min_dspace", 1, cfg->min_dspace, NULL);
@@ -831,7 +832,7 @@ BOOL write_file_cfg(scfg_t* cfg, int backup_level)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
+BOOL write_chat_cfg(scfg_t* cfg)
 {
 	BOOL	result = FALSE;
 	char	inipath[MAX_PATH+1];
@@ -841,7 +842,7 @@ BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 		return FALSE;
 
 	SAFEPRINTF(inipath, "%schat.ini", cfg->ctrl_dir);
-	backup(inipath, backup_level, TRUE);
+	backup(inipath, cfg->config_backup_level, TRUE);
 
 	str_list_t ini = strListInit();
 	for(uint i=0; i<cfg->total_gurus; i++) {
@@ -888,7 +889,7 @@ BOOL write_chat_cfg(scfg_t* cfg, int backup_level)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
+BOOL write_xtrn_cfg(scfg_t* cfg)
 {
 	BOOL	result = FALSE;
 	char	inipath[MAX_PATH+1];
@@ -898,7 +899,7 @@ BOOL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 		return FALSE;
 
 	SAFEPRINTF(inipath, "%sxtrn.ini", cfg->ctrl_dir);
-	backup(inipath, backup_level, TRUE);
+	backup(inipath, cfg->config_backup_level, TRUE);
 
 	str_list_t ini = strListInit();
 	for(uint i=0; i<cfg->total_xedits; i++) {

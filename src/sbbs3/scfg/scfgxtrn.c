@@ -332,8 +332,8 @@ void xprogs_cfg()
 					break;
 				if(!i) {
 					cfg.new_install=new_install;
-					save_xtrn_cfg(&cfg,backup_level);
-					save_main_cfg(&cfg,backup_level);
+					save_xtrn_cfg(&cfg);
+					save_main_cfg(&cfg);
 					refresh_cfg(&cfg);
 				}
 				return;

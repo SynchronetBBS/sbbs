@@ -529,7 +529,7 @@ void msgs_cfg()
 			if(j==-1)
 			   continue;
 			if(!j) {
-				save_msgs_cfg(&cfg,backup_level);
+				save_msgs_cfg(&cfg);
 				refresh_cfg(&cfg);
 			}
 			return;
@@ -1174,8 +1174,8 @@ void msg_opts()
 				   continue;
 				if(!i) {
 					cfg.new_install=new_install;
-					save_msgs_cfg(&cfg,backup_level);
-					save_main_cfg(&cfg,backup_level);
+					save_msgs_cfg(&cfg);
+					save_main_cfg(&cfg);
                     refresh_cfg(&cfg);
                 }
 				return;
