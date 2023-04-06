@@ -364,7 +364,7 @@ void xfer_cfg()
 			if(j==-1)
 				continue;
 			if(!j) {
-				save_file_cfg(&cfg,backup_level);
+				save_file_cfg(&cfg);
 				refresh_cfg(&cfg);
 			}
 			return;

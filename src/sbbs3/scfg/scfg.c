@@ -45,7 +45,6 @@ extern BOOL no_msghdr;
 char **opt;
 char tmp[256];
 char error[256];
-int  backup_level=5;
 char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code Suffix", NULL };
 static char title[128];
 
@@ -352,8 +351,8 @@ void cfg_wizard(void)
 				if(strcmp(saved_cfg.sys_pass, cfg.sys_pass) != 0)
 					reencrypt_keys(saved_cfg.sys_pass, cfg.sys_pass);
 				cfg.new_install = new_install;
-				save_main_cfg(&cfg, backup_level);
-				save_msgs_cfg(&cfg, backup_level);
+				save_main_cfg(&cfg);
+				save_msgs_cfg(&cfg);
 				break;
 		}
 		++stage;
@@ -446,9 +445,6 @@ int main(int argc, char **argv)
 					printf("NOTICE: The -d option is deprecated, use -id instead\n");
 					SLEEP(2000);
                     door_mode=TRUE;
-                    break;
-                case 'B':
-        			backup_level=atoi(argv[i]+2);
                     break;
 				case 'U':
 					umask(strtoul(argv[i]+2,NULL,8));
@@ -543,9 +539,7 @@ int main(int argc, char **argv)
 						"       D = standard input/output/door mode\n"
                         "-v# =  set video mode to # (default=auto)\n"
                         "-l# =  set screen lines to # (default=auto-detect)\n"
-                        "-b# =  set automatic back-up level (default=%d)\n"
 						"-y  =  automatically save changes (don't ask)\n"
-						,backup_level
                         );
         			exit(0);
 			}
@@ -621,7 +615,7 @@ int main(int argc, char **argv)
 		else {
 			printf("Imported %ld areas (%ld added) from %s\n", ported, added, fname);
 			printf("Saving configuration (%u message areas) ... ", cfg.total_subs);
-			write_msgs_cfg(&cfg,backup_level);
+			write_msgs_cfg(&cfg);
 			printf("done.\n");
 			refresh_cfg(&cfg);
 		}
@@ -810,7 +804,7 @@ int main(int argc, char **argv)
 						if(j==-1)
 							continue;
 						if(!j) {
-							save_chat_cfg(&cfg,backup_level);
+							save_chat_cfg(&cfg);
 							refresh_cfg(&cfg);
 						}
 						break;
@@ -965,50 +959,50 @@ BOOL load_xtrn_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 	return result;
 }
 
-BOOL save_main_cfg(scfg_t* cfg, int backup_level)
+BOOL save_main_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing main.ini ...");
-	BOOL result = write_main_cfg(cfg, backup_level);
+	BOOL result = write_main_cfg(cfg);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL save_node_cfg(scfg_t* cfg, int backup_level)
+BOOL save_node_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing node.ini ...");
-	BOOL result = write_node_cfg(cfg, backup_level);
+	BOOL result = write_node_cfg(cfg);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL save_msgs_cfg(scfg_t* cfg, int backup_level)
+BOOL save_msgs_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing msgs.ini ...");
-	BOOL result = write_msgs_cfg(cfg, backup_level);
+	BOOL result = write_msgs_cfg(cfg);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL save_file_cfg(scfg_t* cfg, int backup_level)
+BOOL save_file_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing file.ini ...");
-	BOOL result = write_file_cfg(cfg, backup_level);
+	BOOL result = write_file_cfg(cfg);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL save_chat_cfg(scfg_t* cfg, int backup_level)
+BOOL save_chat_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing chat.ini ...");
-	BOOL result = write_chat_cfg(cfg, backup_level);
+	BOOL result = write_chat_cfg(cfg);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL save_xtrn_cfg(scfg_t* cfg, int backup_level)
+BOOL save_xtrn_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing xtrn.ini ...");
-	BOOL result = write_xtrn_cfg(cfg, backup_level);
+	BOOL result = write_xtrn_cfg(cfg);
 	uifc.pop(NULL);
 	return result;
 }
@@ -1084,7 +1078,7 @@ void txt_cfg()
 			if(j==-1)
 				continue;
 			if(!j) {
-				save_file_cfg(&cfg,backup_level);
+				save_file_cfg(&cfg);
 				refresh_cfg(&cfg);
 			}
 			return;
@@ -1267,7 +1261,7 @@ void shell_cfg()
 				continue;
 			if(!j) {
 				cfg.new_install=new_install;
-				save_main_cfg(&cfg,backup_level);
+				save_main_cfg(&cfg);
 				refresh_cfg(&cfg);
 			}
 			return;
@@ -2468,11 +2462,11 @@ void bail(int code)
         load_chat_cfg(&cfg, error, sizeof(error));
         load_xtrn_cfg(&cfg, error, sizeof(error));
 		cfg.new_install=new_install;
-        save_main_cfg(&cfg,backup_level);
-        save_msgs_cfg(&cfg,backup_level);
-        save_file_cfg(&cfg,backup_level);
-        save_chat_cfg(&cfg,backup_level);
-		save_xtrn_cfg(&cfg,backup_level);
+        save_main_cfg(&cfg);
+        save_msgs_cfg(&cfg);
+        save_file_cfg(&cfg);
+        save_chat_cfg(&cfg);
+		save_xtrn_cfg(&cfg);
 
 		sbbs_get_ini_fname(cfg.filename, cfg.ctrl_dir);
 
@@ -2498,7 +2492,6 @@ void bail(int code)
 			if(!sbbs_write_ini(
 				 fp
 				,&cfg
-				,backup_level
 				,&global_startup
 				,run_bbs
 				,&bbs_startup

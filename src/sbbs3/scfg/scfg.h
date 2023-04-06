@@ -107,7 +107,6 @@ extern char tmp[256];
 extern char error[256];
 extern const char *nulstr;
 extern char *invalid_code,*num_flags;
-extern int	backup_level;
 extern BOOL new_install;
 extern char* area_sort_desc[AREA_SORT_TYPES+1];
 
@@ -179,12 +178,12 @@ BOOL load_msgs_cfg(scfg_t*, char*, size_t);
 BOOL load_file_cfg(scfg_t*, char*, size_t);
 BOOL load_chat_cfg(scfg_t*, char*, size_t);
 BOOL load_xtrn_cfg(scfg_t*, char*, size_t);
-BOOL save_main_cfg(scfg_t*, int);
-BOOL save_node_cfg(scfg_t*, int);
-BOOL save_msgs_cfg(scfg_t*, int);
-BOOL save_file_cfg(scfg_t*, int);
-BOOL save_chat_cfg(scfg_t*, int);
-BOOL save_xtrn_cfg(scfg_t*, int);
+BOOL save_main_cfg(scfg_t*);
+BOOL save_node_cfg(scfg_t*);
+BOOL save_msgs_cfg(scfg_t*);
+BOOL save_file_cfg(scfg_t*);
+BOOL save_chat_cfg(scfg_t*);
+BOOL save_xtrn_cfg(scfg_t*);
 
 long import_msg_areas(enum import_list_type, FILE*, unsigned grpnum, int min_confnum, int max_confnum
 	, qhub_t*, const char* pkt_orig, faddr_t* faddr, uint32_t misc, long* added);

@@ -1684,7 +1684,7 @@ void sys_cfg(void)
 					if(strcmp(sys_pass, cfg.sys_pass) != 0) {
 						reencrypt_keys(sys_pass, cfg.sys_pass);
 					}
-					save_main_cfg(&cfg,backup_level);
+					save_main_cfg(&cfg);
 					refresh_cfg(&cfg);
 				}
 				return;
@@ -2438,6 +2438,11 @@ void sys_cfg(void)
 					else
 						strcpy(str,"None");
 					sprintf(opt[i++],"%-27.27s%s","Mail Database Backups",str);
+					if(cfg.config_backup_level)
+						sprintf(str,"%hu",cfg.config_backup_level);
+					else
+						strcpy(str,"None");
+					sprintf(opt[i++],"%-27.27s%s","Configuration Backups",str);
 					if(cfg.max_log_size && cfg.max_logs_kept) {
 						SAFEPRINTF2(str, "%s bytes, keep %hu"
 							,byte_count_to_str(cfg.max_log_size, tmp, sizeof(tmp))
@@ -2714,6 +2719,19 @@ void sys_cfg(void)
 							break;
 						case 16:
 							uifc.helpbuf=
+								"`Configuraiton File Backups:`\n"
+								"\n"
+								"Setting this option to anything but 0 will enable automatic\n"
+								"backups of your configuration files when saving changes.\n"
+							;
+							sprintf(str,"%u",cfg.config_backup_level);
+							uifc.input(WIN_MID|WIN_SAV,0,0
+								,"Number of Configuraiton File Backups to Keep"
+								,str,4,K_NUMBER|K_EDIT);
+							cfg.config_backup_level=atoi(str);
+							break;
+						case 17:
+							uifc.helpbuf=
 								"`Maximum Log File Size:`\n"
 								"\n"
 								"This option allows you to limit the size of the following log files\n"
@@ -2744,7 +2762,7 @@ void sys_cfg(void)
 								}
 							}
 							break;
-						case 17:
+						case 18:
 							if(cfg.max_getkey_inactivity < 1)
 								SAFECOPY(str, "Unlimited");
 							else
@@ -2767,7 +2785,7 @@ void sys_cfg(void)
 								,str, 10, K_EDIT);
 							cfg.max_getkey_inactivity = (uint)parse_duration(str);
 							break;
-						case 18:
+						case 19:
 							ultoa(cfg.inactivity_warn,str,10);
 							uifc.helpbuf=
 								"`Percentage of Maximum Inactivity Before Warning:`\n"
@@ -2782,7 +2800,7 @@ void sys_cfg(void)
 								,str,4,K_NUMBER|K_EDIT);
 							cfg.inactivity_warn=atoi(str);
 							break;
-						case 19:
+						case 20:
 							uifc.helpbuf=
 								"`Control Key Pass-through:`\n"
 								"\n"
@@ -2807,7 +2825,7 @@ void sys_cfg(void)
 								,str,8,K_UPPER|K_EDIT);
 							cfg.ctrlkey_passthru=strtoul(str,NULL,16);
 							break;
-						} 
+						}
 					}
 					break;
 			case 10: /* Loadable Modules */

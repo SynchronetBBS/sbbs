@@ -206,7 +206,7 @@ void mqtt_cfg()
 			if(i == -1)
 				continue;
 			if(i == 0) {
-				save_main_cfg(&cfg, backup_level);
+				save_main_cfg(&cfg);
 				refresh_cfg(&cfg);
 			}
 			return;
@@ -1060,7 +1060,7 @@ void net_cfg()
 		if(i==-1)
 			continue;
 		if(!i) {
-			save_msgs_cfg(&cfg,backup_level);
+			save_msgs_cfg(&cfg);
 			refresh_cfg(&cfg);
 		}
 		free_msgs_cfg(&cfg);

@@ -119,7 +119,7 @@ void node_menu()
 			if(!i) {
 				--cfg.sys_nodes;
 				cfg.new_install=new_install;
-				save_main_cfg(&cfg,backup_level);
+				save_main_cfg(&cfg);
 				adjust_last_node();
 				refresh_cfg(&cfg);
 			}
@@ -151,8 +151,8 @@ void node_menu()
 			cfg.node_num=++cfg.sys_nodes;
 			SAFECOPY(cfg.node_phone,"N/A");
 			cfg.new_install=new_install;
-			save_node_cfg(&cfg,backup_level);
-			save_main_cfg(&cfg,backup_level);
+			save_node_cfg(&cfg);
+			save_main_cfg(&cfg);
 			free_node_cfg(&cfg);
 			adjust_last_node();
 			refresh_cfg(&cfg);
@@ -171,7 +171,7 @@ void node_menu()
 			i&=MSK_OFF;
 			SAFECOPY(cfg.node_dir,cfg.node_path[i]);
 			cfg.node_num=i+1;
-			save_node_cfg(&cfg,backup_level);
+			save_node_cfg(&cfg);
 			refresh_cfg(&cfg);
 			continue;
 		}
@@ -186,7 +186,7 @@ void node_menu()
 		load_node_cfg(&cfg,error, sizeof(error));
 		if (cfg.node_num != i + 1) { 	/* Node number isn't right? */
 			cfg.node_num = i + 1;		/* so fix it */
-			save_node_cfg(&cfg, backup_level); /* and write it back */
+			save_node_cfg(&cfg); /* and write it back */
 		}
 		node_cfg();
 
@@ -219,8 +219,8 @@ void node_cfg()
 			case -1:
 				i=save_changes(WIN_MID|WIN_SAV);
 				if(!i) {
-					save_node_cfg(&cfg,backup_level);
-					save_main_cfg(&cfg,backup_level);
+					save_node_cfg(&cfg);
+					save_main_cfg(&cfg);
 					refresh_cfg(&cfg);
 				}
 				if(i!=-1)
