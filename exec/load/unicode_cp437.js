@@ -1,5 +1,3 @@
-// $Id: unicode_cp437.js,v 1.3 2019/07/25 11:13:25 rswindell Exp $
-
 function unicode_cp437(uc)
 {
 	switch(uc) {
@@ -215,7 +213,7 @@ function unicode_cp437(uc)
 		case 0x2013: return String.fromCharCode(0x002D);
 		case 0x2014: return String.fromCharCode(0x002D);
 		case 0x2015: return String.fromCharCode(0x002D);
-		case 0x2018: return String.fromCharCode(0x0027);
+		case 0x2018: return String.fromCharCode(0x0060);
 		case 0x2019: return String.fromCharCode(0x0027);
 		case 0x201A: return String.fromCharCode(0x0027);
 		case 0x201B: return String.fromCharCode(0x0027);
