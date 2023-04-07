@@ -15,6 +15,8 @@ load(js.startup_dir + 'mrc-session.js');
 
 var input_state = 'chat';
 
+var show_nicks = false;
+
 var f = new File(js.startup_dir + 'mrc-client.ini');
 f.open('r');
 const settings = {
@@ -73,9 +75,9 @@ function pipe_to_ctrl_a(str) {
 }
 
 function resize_nicklist(frames, nicks) {
-    const maxlen = Math.max(1, nicks.reduce(function (a, c) {
+    const maxlen = show_nicks ? Math.max(1, nicks.reduce(function (a, c) {
         return c.length > a ? c.length : a;
-    }, 0));
+    }, 0)) : 0;
     frames.nicklist.moveTo(frames.top.x + frames.top.width - 1 - maxlen - 1, 2);
     frames.nicklist_divider.moveTo(frames.nicklist.x, 2);
     frames.nicks.moveTo(frames.nicklist.x + 1, 2);
@@ -86,10 +88,12 @@ function resize_nicklist(frames, nicks) {
 
 function redraw_nicklist(frames, nicks, colours) {
     frames.nicks.clear();
-    nicks.forEach(function (e, i) {
-        frames.nicks.gotoxy(1, i + 1);
-        frames.nicks.putmsg(colours[e] + e + '\1n\1w');
-    });
+    if (show_nicks) {
+        nicks.forEach(function (e, i) {
+            frames.nicks.gotoxy(1, i + 1);
+            frames.nicks.putmsg(colours[e] + e + '\1n\1w');
+        });
+    }
 }
 
 function init_display() {
@@ -124,7 +128,7 @@ function append_message(frames, msg) {
         }
         frames.output.gotoxy(1, frames.output.height);
     }
-    frames.output.putmsg(msg + '\r\n');
+    frames.output.putmsg("\1k\1h" + (new Date()).toLocaleTimeString() + "\1k\1h " + msg + '\r\n');
     frames.output.scroll(0, -1);
     if (input_state == 'scroll') frames.output.scrollTo(0, top);
 }
@@ -151,11 +155,13 @@ function set_alias(alias) {
 }
 
 function new_alias() {
-    const alias = format(
+    const prefix = format("|03%s", "<");
+    const suffix = format("|03%s", ">");
+    const alias = prefix + format(
         '|%02d%s',
         PIPE_COLOURS[Math.floor(Math.random() * PIPE_COLOURS.length)],
         user.alias.replace(/\s/g, '_')
-    );
+    ) + suffix;
     set_alias(alias);
     settings.aliases[user.alias] = alias;
 }
@@ -211,6 +217,7 @@ function main() {
             + ', eg. /nick_color 11'
         );
         display_server_message(frames, '\1h\1w/\1h\1cnick_suffix \1h\1w- \1n\1wSet an eight-character suffix for your handle, eg. /nick_suffix <poop>');
+        display_server_message(frames, '\1h\1w/\1h\1ctoggle_nicks \1h\1w- \1n\1wShow/hide the nicklist');
         display_server_message(frames, '\1h\1w/\1h\1cquit \1n\1w- \1h\1wExit the program');
     });
     session.on('message', function (msg) {
@@ -305,6 +312,11 @@ function main() {
                                 set_alias(settings.aliases[user.alias]);
                                 session.alias = settings.aliases[user.alias];
                             }
+                            break;
+                        case 'toggle_nicks':
+                            show_nicks = !show_nicks;
+                            resize_nicklist(frames, session.nicks);
+                            redraw_nicklist(frames, session.nicks, nick_colours);
                             break;
                         default:
                             if (typeof session[cmd[0]] == 'function') {
