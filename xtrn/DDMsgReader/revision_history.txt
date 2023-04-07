@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.71     2023-04-07   Ctrl-C is now supported for message searches to abort the
+                      search. A new configurable string was added for this
+                      situation: msgSearchAbortedText
 1.70     2023-04-04   Added "indexed" reader mode, which lists sub-boards with
                       total and number of new/unread messages and lets the user
                       read messages in those sub-boards. Also, utf-8 characters

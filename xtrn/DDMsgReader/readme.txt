@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.70
-                           Release date: 2023-04-04
+                                 Version 1.71
+                           Release date: 2023-04-07
 
                                      by
 
@@ -1034,6 +1034,9 @@ msgScanCompleteText                  Text to display when the message scan is
                                      complete
 
 msgScanAbortedText                   Text to display when the message scan has
+                                     been aborted
+
+msgSearchAbortedText                 Text to display when the message search has
                                      been aborted
 
 searchingSubBoardAbovePromptText     Text for "Searching message sub-board: .."

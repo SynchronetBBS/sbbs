@@ -117,6 +117,9 @@
  *                              number of new/unread messages and lets the user read messages in those
  *                              sub-boards.
  *                              Also, utf-8 characters should now be converted properfly for non utf-8 terminals.
+ * 2023-04-07 Eric Oulashin     Version 1.71
+ *                              Ctrl-C is now supported for message searches to abort the search. A
+ *                              new configurable string was added for this situation: msgSearchAbortedText
  */
 
 "use strict";
@@ -222,8 +225,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.70";
-var READER_DATE = "2023-04-04";
+var READER_VERSION = "1.71";
+var READER_DATE = "2023-04-07";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1005,6 +1008,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		allToYouMsgScanText: "\x01c\x01hA\x01n\x01cll \x01hM\x01n\x01cessages \x01hT\x01n\x01co \x01hY\x01n\x01cou \x01hS\x01n\x01ccan",
 		goToMsgNumPromptText: "\x01n\x01cGo to message # (or \x01hENTER\x01n\x01c to cancel)\x01g\x01h: \x01c",
 		msgScanAbortedText: "\x01n\x01h\x01cM\x01n\x01cessage scan \x01h\x01y\x01iaborted\x01n",
+		msgSearchAbortedText: "\x01n\x01h\x01cM\x01n\x01cessage search \x01h\x01y\x01iaborted\x01n",
 		deleteMsgNumPromptText: "\x01n\x01cNumber of the message to be deleted (or \x01hENTER\x01n\x01c to cancel)\x01g\x01h: \x01c",
 		editMsgNumPromptText: "\x01n\x01cNumber of the message to be edited (or \x01hENTER\x01n\x01c to cancel)\x01g\x01h: \x01c",
 		searchingSubBoardAbovePromptText: "\x01n\x01cSearching (current sub-board: \x01b\x01h%s\x01n\x01c)",
@@ -1934,6 +1938,15 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 				// Now using the can_read property.
 				for (var subCodeIdx = 0; (subCodeIdx < subBoardsToScan.length) && continueScan; ++subCodeIdx)
 				{
+					// Briefly see if there's any input from the console to be received, and
+					// allow the user to use Ctrl-C to cancel the scan. Also, waiting momentarily
+					// here should help avoid causing CPU usage going to 99%
+					var userKeyInput = console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, 20);
+					if (userKeyInput == CTRL_C)
+					{
+						userAborted = true;
+						break;
+					}
 					subCode = subBoardsToScan[subCodeIdx];
 					if (skipSubBoardScanCfgCheck || (msg_area.sub[subCode].can_read && ((msg_area.sub[subCode].scan_cfg & SCAN_CFG_NEW) == SCAN_CFG_NEW)))
 					{
@@ -1956,6 +1969,11 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 					}
 				}
 				this.subBoardCode = subBoardCodeBackup;
+				if (userAborted)
+				{
+					console.putmsg("\x01n" + this.text.msgSearchAbortedText + "\x01n");
+					console.crlf();
+				}
 				console.pause();
 			}
 			else
@@ -2623,14 +2641,16 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 					msgbase.close();
 			}
 		}
-		// Pause for a short moment to avoid causing CPU usage going to 99%
-		mswait(10);
 
 		// Briefly see if there's any input from the console to be received, and
-		// allow the user to use Ctrl-C to cancel the scan.
-		var userKeyInput = console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, 50);
+		// allow the user to use Ctrl-C to cancel the scan. Also, waiting momentarily
+		// here should help avoid causing CPU usage going to 99%
+		var userKeyInput = console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, 20);
 		if (userKeyInput == CTRL_C)
+		{
+			userAborted = true;
 			break;
+		}
 	}
 	this.doingMultiSubBoardScan = false;
 
@@ -7616,7 +7636,7 @@ function DigDistMsgReader_WriteMsgListScreenTopHeader()
 		// Display the sub-board name on the next line
 		++curpos.y;
 		console.gotoxy(curpos);
-		console.print(this.colors["msgListHeaderSubBoardTextColor"] + "Sub-board: " +
+		console.print(this.colors.msgListHeaderSubBoardTextColor + "Sub-board: " +
 		this.colors["msgListHeaderMsgSubBoardName"] + subBoardName);
 		console.cleartoeol(); // Fill to the end of the line with the current colors
 		++curpos.y;
@@ -8532,6 +8552,7 @@ function DigDistMsgReader_ReadConfigFile()
 					         (setting == "goToMsgNumPromptText") ||
 					         (setting == "msgScanCompleteText") ||
 					         (setting == "msgScanAbortedText") ||
+					         (setting == "msgSearchAbortedText") ||
 					         (setting == "deleteMsgNumPromptText") ||
 					         (setting == "editMsgNumPromptText") ||
 					         (setting == "noMessagesInSubBoardText") ||
