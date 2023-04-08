@@ -16923,6 +16923,7 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 		attrCodes = getAttrsBeforeStrIdx(pTxtLines[lineIdx], pTxtLines[lineIdx].length-1);
 	}
 
+	var pMode = (typeof(pmode) === "number" ? pmode|P_NOATCODES : P_NOATCODES);
 	var writeTxtLines = pWriteTxtLines;
 	var continueOn = true;
 	var mouseInputOnly_continue = false;
@@ -16947,7 +16948,7 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 			{
 				console.gotoxy(pTopLeftX, screenY++);
 				// Print the text line, then clear the rest of the line
-				console.print(pTxtAttrib + pTxtLines[lineIdx], typeof(pmode) === "number" ? pmode|P_NOATCODES : P_NOATCODES);
+				console.print(pTxtAttrib + pTxtLines[lineIdx], pMode);
 				printf("\x01n%*s", pWidth-console.strlen(pTxtLines[lineIdx]), "");
 			}
 			// If there are still some lines left in the message reading area, then
