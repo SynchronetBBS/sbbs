@@ -16,6 +16,29 @@ SRC_ROOT	?=	${PWD}/..
 include $(SRC_ROOT)/build/Common.gmake
 include extdeps.mk
 
+help:
+	@echo "Synchronet build targets (multiple may be specified):"
+	@echo " 'all'         Build all libraries, utilities, and sbbs (the default)"
+	@echo " 'gitinfo'     Build GIT branch and hash information (header) files only"
+	@echo " 'gtkutils'    Build graphical (GTK-based) sysop utilities"
+ifeq ($(os), linux)
+	@echo " 'setcap'      Set port bind capabilities (on Linux only, or use systemd)"
+endif
+	@echo
+	@echo "Synchronet install/update targets (choose one):"
+	@echo " 'symlinks'    Update symbolic links in sbbs/exec directory (recommended)"
+	@echo " 'install'     Copy output executable/library files to sbbs/exec directory"
+	@echo " (these targets require either SBBSCTRL or SBBSEXEC environment variable set)"
+	@echo
+	@echo "Clean-up targets (beware use with symlinked exec/* files)"
+	@echo " 'clean'       Delete output files (see also ../cleanall.sh)"
+	@echo
+	@echo "Options:"
+	@echo " 'DEBUG=1'     Build output files with debug information"
+	@echo " 'RELEASE=1'   Build output files withOUT debug information (the default)"
+	@echo " 'JSLIB=x'     Specify an alternate path to libmozjs[185].so"
+	@echo " 'JSINCLUDE=x  Specify an alternate Mozilla JS library header path"
+
 UTIL_LDFLAGS	:=	$(LDFLAGS)
 UTIL_LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV_LDFLAGS) $(ENCODE_LDFLAGS)
 CONSOLE_LDFLAGS	+=	$(LDFLAGS) $(SMBLIB_LDFLAGS) $(XPDEV_LDFLAGS)
