@@ -113,6 +113,15 @@ while((line=readln()) != undefined) {
 				case 'date':
 					hdr.date=m[2];
 					break;
+				default:
+					if(hdr.field_list == undefined)
+						hdr.field_list = [];
+					hdr.field_list.push(
+						{	type: RFC822HEADER,
+							data: line
+						}
+					);
+					break;
 			}
 		} else
 			print("Non-header line received: " + line);
