@@ -33,9 +33,10 @@ endif
 	@echo "Clean-up targets (beware use with symlinked exec/* files)"
 	@echo " 'clean'       Delete output files (see also ../cleanall.sh)"
 	@echo
-	@echo "Options:"
+	@echo "Options (may be set persistently in ../build/localdefs.mk):"
+	@echo " 'GIT=NO'      Don't require Git repository to (re)build Git info .h files"
 	@echo " 'DEBUG=1'     Build output files with debug information"
-	@echo " 'RELEASE=1'   Build output files withOUT debug information (the default)"
+	@echo " 'RELEASE=1'   Build output files withOUT debug information"
 	@echo " 'JSLIB=x'     Specify an alternate path to libmozjs[185].so"
 	@echo " 'JSINCLUDE=x  Specify an alternate Mozilla JS library header path"
 
