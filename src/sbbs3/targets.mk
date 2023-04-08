@@ -53,6 +53,8 @@ GIT_INFO	= git_hash.h git_branch.h
 
 all:	$(GIT_INFO) dlls utils console scfg uedit umonitor
 
+gitinfo:	$(GIT_INFO)
+
 console:	$(JS_DEPS) xpdev-mt smblib \
 		$(MTOBJODIR) $(LIBODIR) $(EXEODIR) \
 		dlls \
@@ -120,12 +122,12 @@ FORCE:
 ifneq ($(GIT), NO)
 git_hash.h: FORCE ../../.git
 	$(QUIET)echo '#define GIT_HASH "'`git log -1 HEAD --format=%h`\" > $@.tmp
-	$(QUIET)diff $@.tmp $@ || cp $@.tmp $@
+	$(QUIET)test -e $@ && diff $@.tmp $@ || cp $@.tmp $@
 	$(QUIET)rm -f $@.tmp
 
 git_branch.h: FORCE ../../.git
 	$(QUIET)echo '#define GIT_BRANCH "'`git rev-parse --abbrev-ref HEAD`\" > $@.tmp
-	$(QUIET)diff $@.tmp $@ || cp $@.tmp $@
+	$(QUIET)test -e $@ && diff $@.tmp $@ || cp $@.tmp $@
 	$(QUIET)rm -f $@.tmp
 endif
 
