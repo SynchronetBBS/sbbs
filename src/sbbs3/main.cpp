@@ -2195,13 +2195,13 @@ void sbbs_t::passthru_socket_activate(bool activate)
 				break;
 		}
 	} else {
-		/* Re-enable blocking (in case disabled by external program) */	 
-		u_long l=0;	 
-		ioctlsocket(client_socket_dup, FIONBIO, &l);	 
- 	 
+		/* Re-enable blocking (in case disabled by external program) */
+		u_long l=0;
+		ioctlsocket(client_socket_dup, FIONBIO, &l);
+
 		/* Re-set socket options */
 		char err[512];
-		if(set_socket_options(&cfg, client_socket_dup, "passthru", err, sizeof(err)))	 
+		if(set_socket_options(&cfg, client_socket_dup, "passthru", err, sizeof(err)))
 			lprintf(LOG_ERR,"%04d !ERROR %s setting passthru socket options", client_socket, err);
 
 		do { // Allow time for the passthru_thread to move any pending socket data to the outbuf
@@ -3671,7 +3671,7 @@ sbbs_t::~sbbs_t()
 
 	freevars(&main_csi);
 	clearvars(&main_csi);
-	FREE_AND_NULL(main_csi.str);	/* crash */
+	FREE_AND_NULL(main_csi.str);
 	FREE_AND_NULL(main_csi.cs);
 
 	for(i=0;i<global_str_vars && global_str_var!=NULL;i++)
@@ -3687,7 +3687,7 @@ sbbs_t::~sbbs_t()
 
 	/* Sub-board variables */
 	for(i=0;i<usrgrp_total && usrsub!=NULL;i++)
-		FREE_AND_NULL(usrsub[i]);	/* exception here (ptr=0xfdfdfdfd) on exit July-10-2002 */
+		FREE_AND_NULL(usrsub[i]);
 
 	FREE_AND_NULL(cursub);
 	FREE_AND_NULL(usrgrp);

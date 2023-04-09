@@ -570,7 +570,7 @@ public:
 	uint	latr=0;			/* Starting attribute of line buffer */
 	uint	line_delay=0;	/* Delay duration (ms) after each line sent */
 	uint	console = 0;	/* Defines current Console settings */
-	char 	wordwrap[81]{};	/* Word wrap buffer */
+	char 	wordwrap[TERM_COLS_MAX + 1]{};	/* Word wrap buffer */
 	time_t	now=0,			/* Used to store current time in Unix format */
 			last_sysop_auth=0,/* Time sysop was last authenticated */
 			answertime=0, 	/* Time call was answered */
@@ -629,7 +629,7 @@ public:
 	const char*	current_msg_subj = nullptr;
 	const char*	current_msg_from = nullptr;
 	const char*	current_msg_to = nullptr;
-	file_t*	current_file = nullptr;	
+	file_t*	current_file = nullptr;
 
 			/* Global command shell variables */
 	uint	global_str_vars = 0;
