@@ -6,6 +6,7 @@
 General
 ~~~~~~~
 o New userbase (see https://wiki.synchro.net/history:newuserbase for details)
+o New primary configuration files: http://wiki.synchro.net/history:newcfgfiles
 o New statistics file formats
   - */dsts.dab (daily statistics and running totals) -> */dsts.ini
   - */csts.dab (cumulative statistics / log) -> */csts.tab
@@ -136,6 +137,8 @@ o Move the QWKnet hub pack and unpack commands to an "Advanced" sub-menu since
   they are completely optional now (SBBS uses libarchive otherwise)
 o Trim leading and trailing white-space in input strings, automatically
 o Don't allow spaces when entering/editing internal codes
+o Configuration file back-ups are now configured (in SCFG->System->Advanced)
+  rather than controlled via command-line option (-b) to SCFG
 
 JavaScript
 ~~~~~~~~~~
