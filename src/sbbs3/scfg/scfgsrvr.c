@@ -382,7 +382,7 @@ static void termsrvr_cfg(void)
 		uifc.helpbuf=
 			"`Terminal Server Configuration:`\n"
 			"\n"
-			"The initialization settings of the Synchchronet server that provides the\n"
+			"The initialization settings of the Synchronet server that provides the\n"
 			"traditional BBS experience over `Telnet`, `SSH`, `RLogin`, or `Raw TCP`\n"
 			"protocols.\n"
 			"\n"
@@ -501,7 +501,7 @@ static void termsrvr_cfg(void)
 				break;
 			case 23:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Output Buffer Draing Timeout (milliseconds)", str, 5, K_NUMBER|K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.outbuf_drain_timeout = atoi(str);
 				break;
 			case 24:
@@ -631,7 +631,7 @@ static void websrvr_cfg(void)
 		uifc.helpbuf=
 			"`Web Server Configuration:`\n"
 			"\n"
-			"The initialization settings of the Synchchronet Web Server that provides\n"
+			"The initialization settings of the Synchronet Web Server that provides\n"
 			"support for web browser access to the BBS over `HTTP` and `HTTPS` (TLS)\n"
 			"protocols.\n"
 			"\n"

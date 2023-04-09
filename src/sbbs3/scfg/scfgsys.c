@@ -97,7 +97,7 @@ int edit_sys_inetaddr(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	uifc.helpbuf=
-		"`Sytem Internet Address:`\n"
+		"`System Internet Address:`\n"
 		"\n"
 		"Enter your system's Internet address (hostname or IP address) here\n"
 		"(e.g. `joesbbs.com`).\n"
@@ -196,7 +196,7 @@ int edit_sys_timezone(int page, int total)
 	uifc.helpbuf=
 		"`United States Time Zone:`\n"
 		"\n"
-			"If your local time zone is the United States, select `Yes`.\n"
+		"If your local time zone is the United States, select `Yes`.\n"
 	;
 	if(page)
 		mode = wiz_help(page, total, uifc.helpbuf);
@@ -1059,10 +1059,10 @@ void security_cfg(void)
 						"`Expired Account Values:`\n"
 						"\n"
 						"If a user's account expires, the security levels for that account will\n"
-						"be modified according to the settings of this menu. The account's\n"
-						"security level will be set to the value listed on this menu. The `Flags`\n"
+						"be modified according to the settings of this menu.  The account's\n"
+						"security level will be set to the value listed on this menu.  The `Flags`\n"
 						"and `Exemptions` listed on this menu will be removed from the account\n"
-						"if they are set. The `Restrictions` listed will be added to the account.\n"
+						"if they are set.  The `Restrictions` listed will be added to the account.\n"
 					;
 					switch(uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,60,&expired_dflt,0
 						,"Expired Account Values",opt)) {
@@ -1166,9 +1166,9 @@ void security_cfg(void)
 					uifc.helpbuf=
 						"`Quick-Validation Values:`\n"
 						"\n"
-						"This is a list of the ten quick-validation sets. These sets are used to\n"
+						"This is a list of the ten quick-validation sets.  These sets are used to\n"
 						"quickly set a user's security values (Level, Flags, Exemptions,\n"
-						"Restrictions, Expiration Date, and Credits) with one key stroke. The\n"
+						"Restrictions, Expiration Date, and Credits) with one key stroke.  The\n"
 						"user's expiration date may be extended and additional credits may also\n"
 						"be added using quick-validation sets.\n"
 						"\n"
@@ -1322,7 +1322,7 @@ int edit_sys_datefmt(int page, int total)
 		"\n"
 		"If you would like abbreviated dates to be displayed in the traditional\n"
 		"U.S. date format of month first, choose `MM/DD/YY`.  If you prefer the\n"
-		"Europaen traditional date format of day first, choose `DD/MM/YY`.\n"
+		"European traditional date format of day first, choose `DD/MM/YY`.\n"
 	;
 	if(page)
 		mode = wiz_help(page, total, uifc.helpbuf);
@@ -1749,7 +1749,7 @@ void sys_cfg(void)
 								"\n"
 								"If you want the users of your system to be allowed to deposit\n"
 								"any extra time they may have left during a call into their minute bank,\n"
-								"set this option to `Yes`. If this option is set to `No`, then the only\n"
+								"set this option to `Yes`.  If this option is set to `No`, then the only\n"
 								"way a user may get minutes in their minute bank is to purchase them\n"
 								"with credits.\n"
 							;
@@ -1767,9 +1767,9 @@ void sys_cfg(void)
 							uifc.helpbuf=
 								"`Allow Credits to be Converted into Minutes:`\n"
 								"\n"
-								"If you want the users of your system to be allowed to convert\n"
-								"any credits they may have into minutes for their minute bank,\n"
-								"set this option to `Yes`.\n"
+								"If you want the users of your system to be allowed to convert any\n"
+								"credits they may have into minutes for their minute bank, set this\n"
+								"option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 								,"Allow Users to Convert Credits into Minutes"
@@ -1804,7 +1804,7 @@ void sys_cfg(void)
 								"`Include Sysop Activity in System Statistics:`\n"
 								"\n"
 								"If you want sysops to be included in the statistical data of the BBS,\n"
-								"set this option to `Yes`. The suggested setting for this option is\n"
+								"set this option to `Yes`.  The suggested setting for this option is\n"
 								"`No` so that statistical data will only reflect user usage and not\n"
 								"include sysop maintenance activity.\n"
 							;
@@ -1824,7 +1824,7 @@ void sys_cfg(void)
 								"`User Location in User Lists:`\n"
 								"\n"
 								"If you want user locations (city, state) displayed in the user lists,\n"
-								"set this option to `Yes`. If this option is set to `No`, the user notes\n"
+								"set this option to `Yes`.  If this option is set to `No`, the user notes\n"
 								"(if they exist) are displayed in the user lists.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
@@ -2133,10 +2133,9 @@ void sys_cfg(void)
 							uifc.helpbuf=
 								"`New User Default Toggle Options:`\n"
 								"\n"
-								"This menu contains the default state of new user toggle options. All new\n"
-								"users on your system will have their defaults set according to the\n"
-								"settings on this menu. The user can then change them to his or her\n"
-								"liking.\n"
+								"This menu contains the default state of new user toggle options.  All\n"
+								"new users on your system will have their defaults set according to the\n"
+								"settings on this menu.  The user can then change them to their liking.\n"
 								"\n"
 								"See the Synchronet User Manual (`http://synchro.net/docs/user.html`)\n"
 								"for more information on the individual options available.\n"
@@ -2694,7 +2693,7 @@ void sys_cfg(void)
 								"`User Database Backups:`\n"
 								"\n"
 								"Setting this option to anything but 0 will enable automatic daily\n"
-								"backups of the user database. This number determines how many backups\n"
+								"backups of the user database.  This number determines how many backups\n"
 								"to keep on disk.\n"
 							;
 							sprintf(str,"%u",cfg.user_backup_level);
@@ -2708,7 +2707,7 @@ void sys_cfg(void)
 								"`Mail Database Backups:`\n"
 								"\n"
 								"Setting this option to anything but 0 will enable automatic daily\n"
-								"backups of the mail database. This number determines how many backups\n"
+								"backups of the mail database.  This number determines how many backups\n"
 								"to keep on disk.\n"
 							;
 							sprintf(str,"%u",cfg.mail_backup_level);
@@ -2719,14 +2718,14 @@ void sys_cfg(void)
 							break;
 						case 16:
 							uifc.helpbuf=
-								"`Configuraiton File Backups:`\n"
+								"`Configuration Backups:`\n"
 								"\n"
-								"Setting this option to anything but 0 will enable automatic\n"
-								"backups of your configuration files when saving changes.\n"
+								"Setting this option to anything but 0 will enable automatic backups of\n"
+								"your configuration files when saving changes.\n"
 							;
 							sprintf(str,"%u",cfg.config_backup_level);
 							uifc.input(WIN_MID|WIN_SAV,0,0
-								,"Number of Configuraiton File Backups to Keep"
+								,"Number of Configuration File Backups to Keep"
 								,str,4,K_NUMBER|K_EDIT);
 							cfg.config_backup_level=atoi(str);
 							break;
@@ -2872,9 +2871,9 @@ void sys_cfg(void)
 						"`Logon`          Terminal logon procedure\n"
 						"`Sync`           Terminal node is periodically synchronized\n"
 						"`Logoff`         Terminal logoff procedure (interactive)\n"
-						"`Logout`         Terminal logout procedure (offline)\n"
+						"`Logout`         Terminal logout procedure (off-line)\n"
 						"`New User`       End of new terminal user creation process\n"
-						"`Expired User`   User account expires (offline)\n"
+						"`Expired User`   User account expires (off-line)\n"
 						"`Auto Message`   User chooses to re-read or edit the auto-message\n"
 						"`Send Feedback`  User sending email to a sysop (return error to cancel)\n"
 						"`Chat Section`   User enters chat section/menu\n"
