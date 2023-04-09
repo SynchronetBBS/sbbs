@@ -1771,8 +1771,12 @@ void initdata(void)
 
 	sprintf(str,"%sXTRN.DAT",node_dir);
 	if((stream=fopen(str,"rt"))==NULL) {
-		printf("Can't open %s\r\n",str);
-		exit(1); }
+		strlwr(str);
+		if((stream=fopen(str,"rt"))==NULL) {
+			printf("Can't open %s\r\n",str);
+			exit(1);
+		}
+	}
 	fgets(str,81,stream);			/* username */
 	sprintf(user_name,"%.25s",str);
 	truncsp(user_name);
