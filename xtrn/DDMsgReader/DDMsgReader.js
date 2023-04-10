@@ -592,7 +592,7 @@ if (gDoDDMR)
 	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 	// Set a control key pass-thru so we can capture certain control keys that we normally wouldn't be able to
 	var gOldCtrlKeyPassthru = console.ctrlkey_passthru; // Backup to be restored later
-	console.ctrlkey_passthru = "+ACGKLOPQRTUVWXYZ_";
+	console.ctrlkey_passthru = "+AGKLOPQRTUVWXYZ_";
 
 	// Create an instance of the DigDistMsgReader class and use it to read/list the
 	// messages in the user's current sub-board.  Pass the parsed command-line
@@ -1927,7 +1927,6 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 				var subBoardsToScan = getSubBoardsToScanArray(pScanScopeChar);
 				this.doingMsgScan = true;
 				var continueScan = true;
-				var userAborted = false;
 				this.doingMultiSubBoardScan = (subBoardsToScan.length > 1);
 				// If the sub-board's access requirements allows the user to read it
 				// and it's enabled in the user's message scan configuration, then go
@@ -1936,17 +1935,11 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 				// sub-board:
 				//user.compare_ars(msg_area.grp_list[grpIndex].sub_list[subIndex].ars)
 				// Now using the can_read property.
-				for (var subCodeIdx = 0; (subCodeIdx < subBoardsToScan.length) && continueScan; ++subCodeIdx)
+				for (var subCodeIdx = 0; (subCodeIdx < subBoardsToScan.length) && continueScan && !console.aborted; ++subCodeIdx)
 				{
-					// Briefly see if there's any input from the console to be received, and
-					// allow the user to use Ctrl-C to cancel the scan. Also, waiting momentarily
-					// here should help avoid causing CPU usage going to 99%
-					var userKeyInput = console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, 20);
-					if (userKeyInput == CTRL_C)
-					{
-						userAborted = true;
-						break;
-					}
+					// Pause for a short moment to avoid causing CPU usage goign to 99%
+					mswait(10);
+
 					subCode = subBoardsToScan[subCodeIdx];
 					if (skipSubBoardScanCfgCheck || (msg_area.sub[subCode].can_read && ((msg_area.sub[subCode].scan_cfg & SCAN_CFG_NEW) == SCAN_CFG_NEW)))
 					{
@@ -1969,10 +1962,11 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 					}
 				}
 				this.subBoardCode = subBoardCodeBackup;
-				if (userAborted)
+				if (console.aborted)
 				{
-					console.putmsg("\x01n" + this.text.msgSearchAbortedText + "\x01n");
+					console.print("\x01n" + replaceAtCodesInStr(this.text.msgSearchAbortedText) + "\x01n");
 					console.crlf();
+					console.aborted = false; // So that the console.pause() a couple lines down will indeed pause
 				}
 				console.pause();
 			}
@@ -2490,7 +2484,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 	var continueNewScan = true;
 	var userAborted = false;
 	this.doingMultiSubBoardScan = (subBoardsToScan.length > 1);
-	for (var subCodeIdx = 0; (subCodeIdx < subBoardsToScan.length) && continueNewScan; ++subCodeIdx)
+	for (var subCodeIdx = 0; (subCodeIdx < subBoardsToScan.length) && continueNewScan && !console.aborted; ++subCodeIdx)
 	{
 		// Force garbage collection to ensure enough memory is available to continue
 		js.gc(true);
@@ -2641,16 +2635,8 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 					msgbase.close();
 			}
 		}
-
-		// Briefly see if there's any input from the console to be received, and
-		// allow the user to use Ctrl-C to cancel the scan. Also, waiting momentarily
-		// here should help avoid causing CPU usage going to 99%
-		var userKeyInput = console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, 20);
-		if (userKeyInput == CTRL_C)
-		{
-			userAborted = true;
-			break;
-		}
+		// Briefly wait, to prevent the CPU from reaching 99% usage
+		mswait(10);
 	}
 	this.doingMultiSubBoardScan = false;
 
@@ -2669,16 +2655,14 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 	if (this.pauseAfterNewMsgScan)
 	{
 		console.crlf();
-		if (userAborted)
+		if (userAborted || console.aborted)
 		{
-			//console.print("\x01n" + replaceAtCodesInStr(this.text.msgScanAbortedText) + "\x01n");
-			console.putmsg("\x01n" + this.text.msgScanAbortedText + "\x01n");
+			console.print("\x01n" + replaceAtCodesInStr(this.text.msgScanAbortedText) + "\x01n");
+			if (console.aborted)
+				console.aborted = false; // So that the console.pause() several lines down will indeed pause
 		}
 		else
-		{
-			//console.print("\x01n" + replaceAtCodesInStr(this.text.msgScanCompleteText) + "\x01n");
-			console.putmsg("\x01n" + this.text.msgScanCompleteText + "\x01n");
-		}
+			console.print("\x01n" + replaceAtCodesInStr(this.text.msgScanCompleteText) + "\x01n");
 		console.crlf();
 		console.pause();
 	}
@@ -16939,6 +16923,7 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 		attrCodes = getAttrsBeforeStrIdx(pTxtLines[lineIdx], pTxtLines[lineIdx].length-1);
 	}
 
+	var pMode = (typeof(pmode) === "number" ? pmode|P_NOATCODES : P_NOATCODES);
 	var writeTxtLines = pWriteTxtLines;
 	var continueOn = true;
 	var mouseInputOnly_continue = false;
@@ -16963,7 +16948,7 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 			{
 				console.gotoxy(pTopLeftX, screenY++);
 				// Print the text line, then clear the rest of the line
-				console.print(pTxtAttrib + pTxtLines[lineIdx], typeof(pmode) === "number" ? pmode|P_NOATCODES : P_NOATCODES);
+				console.print(pTxtAttrib + pTxtLines[lineIdx], pMode);
 				printf("\x01n%*s", pWidth-console.strlen(pTxtLines[lineIdx]), "");
 			}
 			// If there are still some lines left in the message reading area, then
