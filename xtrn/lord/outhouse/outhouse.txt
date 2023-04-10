@@ -1,0 +1,58 @@
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+                        The Outhouse for JSLord v1.0
+         (C) Copyright 1995-2023: Lloyd Hannesson All rights reserved.
+
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+-> What the Heck is This!???
+
+  This is a quick daily IGM for JSLord. Pop over to the Outhouse and do your
+business! Trade 1 Forest Fight for the chance at a stat boost, or take your 
+chances and find a spot in the wild. This was designed to be a quick daily 
+play, though there is a lot of text to read through :)
+
+  This IGM was originally created by Robert Fogt in the 90s, but I was 
+passed the source to fix the BP200 errors. I figured that this would be a fun 
+addition to any JSLord game, so here we are!
+
+
+-> Simple Set-Up
+
+   Installing The Outhouse couldn't be any easier! Just run the following:
+
+	jsexec lord.js +IGM outhouse/outhouse.js
+
+
+-> Simple Un-Installation
+
+   Un-installing The Outhouse is just as easy. Run the following:
+
+	jsexec lord.js -IGM outhouse/outhouse.js
+
+
+-> Q and A
+
+ Q: What does this IGM add to Lord?
+
+ A: Basically you can trade 1 Forest Fight for a chance at Charm, Defense or 
+    Strength. There is a chance at finding some extra loot as well. If you 
+	choose not to spend the Forest Fight you can gain or lose charm. 
+	
+	Hopefully this won't break any meta, but please let me know!
+
+=-----
+
+ Q: Why so few Qs?
+ 
+ A: Well this is new... no Qs mean no As!
+
+=-----
+
+
+-> Any Other Questions? Drop me a line at:
+
+  Email:     dasme@dasme.org
+
+
+-> The Outhouse Copyright (c) 1995-2023 - Lloyd Hannesson
