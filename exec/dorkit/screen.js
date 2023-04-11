@@ -445,6 +445,19 @@ Screen.prototype.print=function(str) {
 					//case 'T':	// Scroll down
 					//case 'L':	// Insert line
 					//case 'M':	// Delete line (also ANSI music!)
+					case 'l':
+					case 'h':
+						x = true;
+						y = false;
+						if (ext == '?') {
+							p.forEach(function(el) {
+								if (parseInt(el) !== 25)
+									x = false;
+									y = true;
+							});
+						}
+						if (x === false && y === true)
+							break;
 					default:
 						log("Sent unsupported ANSI sequence '"+ext+pb+ib+fb+"' please let shurd@sasktel.net net know about this so it can be fixed.");
 				}
