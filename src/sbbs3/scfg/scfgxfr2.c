@@ -22,6 +22,7 @@
 #include <stdbool.h>
 
 #define CUT_LIBNUM	USHRT_MAX
+#define ADDFILES_HELP "Help adding files to directories, see `http://wiki.synchro.net/faq:files`"
 
 void dir_defaults_cfg(dir_t*);
 
@@ -48,7 +49,7 @@ static char* up_pct_help =
 	"`Percentage of Credits to Credit Uploader on Upload:`\n"
 	"\n"
 	"This is the percentage of a file's credit value that is given to users\n"
-	"when they upload files. Most often, this value will be set to `100` to\n"
+	"when they upload files.  Most often, this value will be set to `100` to\n"
 	"give full credit value (100%) for uploads.\n"
 	"\n"
 	"If you want uploaders to receive no credits upon upload, set this value\n"
@@ -59,7 +60,7 @@ static char* dn_pct_help =
 	"`Percentage of Credits to Credit Uploader on Download:`\n"
 	"\n"
 	"This is the percentage of a file's credit value that is given to users\n"
-	"who upload a file that is later downloaded by another user. This is an\n"
+	"who upload a file that is later downloaded by another user.  This is an\n"
 	"award type system where more popular files will generate more credits\n"
 	"for the uploader.\n"
 	"\n"
@@ -83,16 +84,20 @@ static char* max_files_help =
 	"\n"
 	"This value is the maximum number of files allowed in this directory.\n"
 	"\n"
-	"The value 0 indicates an unlimited number of files will be allowed."
+	"The value `0` indicates an unlimited number of files will be allowed."
+	"\n"
+	ADDFILES_HELP
 	;
 
 static char* file_ext_help =
 	"`File Extensions Allowed:`\n"
 	"\n"
 	"This option allows you to limit the types of files uploaded to this\n"
-	"directory. This is a list of file extensions that are allowed, each\n"
-	"separated by a comma (Example: `ZIP,EXE`). If this option is left\n"
+	"directory.  This is a list of file extensions that are allowed, each\n"
+	"separated by a comma (Example: `ZIP,EXE`).  If this option is left\n"
 	"blank, all file extensions will be allowed to be uploaded.\n"
+	"\n"
+	ADDFILES_HELP
 	;
 
 static char* data_dir_help =
@@ -100,6 +105,8 @@ static char* data_dir_help =
 	"\n"
 	"Use this if you wish to place the data directory for this directory\n"
 	"on another drive or in another directory besides the default setting.\n"
+	"\n"
+	ADDFILES_HELP
 	;
 
 static char* upload_sem_help =
@@ -345,18 +352,19 @@ void xfer_cfg()
 		uifc.helpbuf=
 			"`File Libraries:`\n"
 			"\n"
-			"This is a listing of file libraries for your BBS. File Libraries are\n"
-			"used to logically separate your file `directories` into groups. Every\n"
-			"directory belongs to a file library.\n"
+			"This is a listing of file libraries for your BBS.   File Libraries are\n"
+			"used to logically separate your file `directories` into groups.  Every\n"
+			"directory (database of files available for transfer) must be a child of\n"
+			"a file library.\n"
 			"\n"
-			"One popular use for file libraries is to separate CD-ROM and hard disk\n"
-			"directories. One might have an `Uploads` file library that contains\n"
-			"uploads to the hard disk directories and also have a `PC-SIG` file\n"
-			"library that contains directories from a PC-SIG CD-ROM. Some sysops\n"
-			"separate directories into more specific areas such as `Main`, `Graphics`,\n"
-			"or `Adult`. If you have many directories that have a common subject\n"
-			"denominator, you may want to have a separate file library for those\n"
-			"directories for a more organized file structure.\n"
+			"To add a library, select the desired position with the arrow keys and\n"
+			"hit ~ INS ~.\n"
+			"\n"
+			"To delete a library, select it with the arrow keys and hit ~ DEL ~.\n"
+			"\n"
+			"To configure a library, select it with the arrow keys and hit ~ ENTER ~.\n"
+			"\n"
+			ADDFILES_HELP
 		;
 		i=uifc.list(j,0,0,0,&libs_dflt,&libs_bar,"File Libraries                     Directories", opt);
 		if((signed)i==-1) {
@@ -521,11 +529,13 @@ void xfer_cfg()
 				"`File Library Configuration:`\n"
 				"\n"
 				"This menu allows you to configure the security requirements for access\n"
-				"to this file library. You can also add, delete, and configure the\n"
+				"to this file library.  You can also add, delete, and configure the\n"
 				"directories of this library by selecting the `File Directories...` option.\n"
 				"\n"
 				"The left and right arrow keys may be used to cycle through file\n"
 				"libraries.\n"
+				"\n"
+				ADDFILES_HELP
 			;
 			uifc_winmode_t wmode = WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
 			if(libnum > 0)
@@ -583,7 +593,7 @@ void xfer_cfg()
 						"`Parent Directory:`\n"
 						"\n"
 						"This an optional path to be used as the physical \"parent\" directory for \n"
-						"all logical directories in this library. This parent directory will be\n"
+						"all logical directories in this library.  This parent directory will be\n"
 						"used in combination with each directory's `Transfer File Path` to create\n"
 						"the full physical storage path for files in each directory.\n"
 						"\n"
@@ -670,7 +680,7 @@ void xfer_cfg()
 					uifc.helpbuf="`Source of Virtual Sub-directory Names:`\n"
 						"\n"
 						"File areas accessed via the FTP server or Web server are represented\n"
-						"by a virtual path. This setting determines the source of the\n"
+						"by a virtual path.  This setting determines the source of the\n"
 						"sub-directory portion of the virtual paths used to represent directories\n"
 						"within this file library.\n"
 						;
@@ -1161,8 +1171,8 @@ void dir_toggle_options(dir_t* dir)
 					"`Slow Media Device:`\n"
 					"\n"
 					"If this directory contains files located on CD-ROM or other slow media\n"
-					"device, you should set this option to `Yes`. Each slow media device on\n"
-					"your system should have a unique `Device Number`. If you only have one\n"
+					"device, you should set this option to `Yes`.  Each slow media device on\n"
+					"your system should have a unique `Device Number`.  If you only have one\n"
 					"slow media device, then this number should be set to `1`.\n"
 					"\n"
 					"`CD-ROM multi-disk changers` are considered `one` device and all the\n"
@@ -1472,7 +1482,7 @@ void dir_toggle_options(dir_t* dir)
 					"`Allow Anonymous Uploads:`\n"
 					"\n"
 					"If you want users with the `A` exemption to be able to upload anonymously\n"
-					"to this directory, set this option to `Yes`. If you want all uploads to\n"
+					"to this directory, set this option to `Yes`.  If you want all uploads to\n"
 					"this directory to be forced anonymous, set this option to `Only`.\n"
 				;
 				n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
@@ -1628,7 +1638,7 @@ void dir_cfg(uint libnum)
 		"`Directory Internal Code Suffix:`\n"
 		"\n"
 		"Every directory must have its own unique code for Synchronet to refer to\n"
-		"it internally. This code should be descriptive of the directory's\n"
+		"it internally.  This code should be descriptive of the directory's\n"
 		"contents, usually an abbreviation of the directory's name.\n"
 		"\n"
 		"`Note:` The Internal Code (displayed) is the complete internal code\n"
@@ -1652,8 +1662,7 @@ void dir_cfg(uint libnum)
 		"either the library's `Parent Directory` (if set) or the data directory\n"
 		"(e.g. ../data/dirs)\n"
 		"\n"
-		"This path can be overridden on a per-file basis using `Alternate File\n"
-		"Paths`.\n"
+		ADDFILES_HELP
 		;
 
 	while(1) {
@@ -1698,6 +1707,8 @@ void dir_cfg(uint libnum)
 			"To delete a directory, select it with the arrow keys and hit ~ DEL ~.\n"
 			"\n"
 			"To configure a directory, select it with the arrow keys and hit ~ ENTER ~.\n"
+			"\n"
+			ADDFILES_HELP
 		;
 		i = uifc.list(mode, 0, 0, 0, &dflt, &bar, str, opt);
 		if((signed)i==-1)
@@ -1870,6 +1881,8 @@ void dir_cfg(uint libnum)
 				"\n"
 				"The left and right arrow keys may be used to cycle through file\n"
 				"directories.\n"
+				"\n"
+				ADDFILES_HELP
 			;
 			uifc_winmode_t wmode = WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT|WIN_EXTKEYS;
 			int prev = prev_dirnum(cfg.dir[i]);
@@ -1925,7 +1938,7 @@ void dir_cfg(uint libnum)
 						"`FidoNet Area Tag:`\n"
 						"\n"
 						"This field may be used to specify the FidoNet-style `Echo/Area Tag` for\n"
-						"this file area. If no tag name is configured here, a tag name will be\n"
+						"this file area.  If no tag name is configured here, a tag name will be\n"
 						"automatically generated from the Directory's `Short Name`.\n"
 						"\n"
 						"This tag may ~ not ~ contain spaces."
