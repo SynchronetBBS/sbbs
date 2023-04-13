@@ -2905,7 +2905,7 @@ static void ctrl_thread(void* arg)
 			inet_addrtop(&data_addr, data_ip, sizeof(data_ip));
 			bool bounce_allowed = (startup->options & FTP_OPT_ALLOW_BOUNCE) && !(user.rest & FLAG('G'));
 			if(data_port < IPPORT_RESERVED
-				|| (memcmp(&data_addr, &ftp.client_addr, ftp.client_addr_len) != 0 && !bounce_allowed)) {
+				|| (strcmp(data_ip, host_ip) != 0 && !bounce_allowed)) {
 				lprintf(LOG_WARNING,"%04d <%s> !SUSPECTED BOUNCE ATTACK ATTEMPT to %s port %u"
 					,sock,user.alias
 					,data_ip,data_port);
