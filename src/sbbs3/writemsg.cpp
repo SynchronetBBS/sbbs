@@ -526,8 +526,11 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			,(ulong)cfg.level_linespermsg[useron_level]*MAX_LINE_LEN);
 		if(top[0] && !(mode&WM_NOTOP)) {
 			strcpy((char *)buf,top);
-			strcat((char *)buf,crlf);
-			l=strlen((char *)buf); 
+			l=strlen((char *)buf);
+			if(l < 4 || strcmp(buf + l - 4, "\r\n\r\n") != 0) {
+				strcat((char *)buf,crlf);
+				l += 2;
+			}
 		}
 		else
 			l=0;
