@@ -845,7 +845,7 @@ int main(int argc, char **argv)
 	"configured.\n"
 	"\n"
 	"The `Domains` sub-menu is where FidoNet-style domains (the '@domain'\n"
-	"of 5D FTN address) are mapped to zone numbers, DNS suffixes, NodeLists\n"
+	"of 5D FTN addresses) are mapped to zone numbers, DNS suffixes, NodeLists\n"
 	"and BSO root directories for use by the BinkIT mailer.\n"
 	"\n"
 	"The `EchoLists` sub-menu is for configuring additional (optional)\n"
@@ -2367,8 +2367,15 @@ int main(int argc, char **argv)
 				uifc.helpbuf=
 					"~ Domains ~\n\n"
 					"The `Domains` sub-menu is where FidoNet-style domains (the '@domain'\n"
-					"of 5D FTN address) are mapped to zone numbers, DNS suffixes, NodeLists\n"
+					"of 5D FTN addresses) are mapped to zone numbers, DNS suffixes, NodeLists\n"
 					"and BSO root directories for use by the BinkIT mailer.\n"
+					"\n"
+					"The `DNS Suffix` is optional, but when specified, should point to a valid,\n"
+					"working Internet DNS service name for FTN address resolution (e.g.\n"
+					"`binkp.net` for FidoNet proper).\n"
+					"\n"
+					"The `NodeList` is optional, but when specified, should point to an\n"
+					"uncompressed, unarchived, NodeList in standard FidoNet NodeList format.\n"
 				;
 				i=0;
 				while(1) {
