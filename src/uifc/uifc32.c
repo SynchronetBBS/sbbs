@@ -1244,6 +1244,7 @@ int ulist(int64_t mode, int left, int top, int width, int *cur, int *bar
 					if(!(api->mode&UIFC_NOCTRL))
 						gotkey=CIO_KEY_SHIFT_DC;	/* cut */
 					break;
+				case '?':
 				case CTRL_Z:
 					if(!(api->mode&UIFC_NOCTRL))
 						gotkey=CIO_KEY_F(1);	/* help */
