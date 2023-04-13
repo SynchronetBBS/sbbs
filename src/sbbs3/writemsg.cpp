@@ -26,7 +26,7 @@
 #include "git_hash.h"
 
 #define MAX_LINES		10000
-#define MAX_LINE_LEN	(cols - 1)
+#define MAX_LINE_LEN	((cols - 1) + 2)
 
 const char *quote_fmt=" > %.*s\r\n";
 void quotestr(char *str);
@@ -275,8 +275,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 	unsigned lines;
 	ushort useron_xedit = useron.xedit;
 
-	if(cols < 2) {
-		errormsg(WHERE, ERR_CHK, "columns", cols);
+	if(cols < TERM_COLS_MIN) {
+		errormsg(WHERE, ERR_CHK, "columns (too narrow)", cols);
 		return false;
 	}
 
@@ -921,8 +921,8 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 	str_list_t str;
 	long	pmode = P_SAVEATR | P_NOATCODES | P_AUTO_UTF8;
 
-	if(cols < 2) {
-		errormsg(WHERE, ERR_CHK, "columns", cols);
+	if(cols < TERM_COLS_MIN) {
+		errormsg(WHERE, ERR_CHK, "columns (too narrow)", cols);
 		return 0;
 	}
 
@@ -968,7 +968,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 			if(line >= maxlines)
 				bprintf(text[NoMoreLines],line);
 			else
-				bprintf(text[OnlyNLinesLeft],maxlines-line); 
+				bprintf(text[OnlyNLinesLeft],maxlines-line);
 		}
 		char prot = 0;
 		do {
@@ -1190,7 +1190,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 			continue;
 		}
 
-		if(line + 1 < maxlines) {
+		if(line < maxlines) {
 			strListAppend(&str, strin, line);
 			line++;
 		}
@@ -1200,17 +1200,18 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 	else
 		buf[0]=0;
 	lines = strListCount(str);
-	for(i=0;i<lines;i++) {
-		strcat(buf,str[i]);
-		strcat(buf,crlf);
-		free(str[i]); 
+	if(lines > maxlines) {
+		SAFEPRINTF(tmp, "max lines (%u) exceeded", maxlines);
+		errormsg(WHERE, ERR_CHK, tmp, lines);
+		lines = maxlines;
 	}
-	free(str);
+	for(i=0;i<lines;i++)
+		snprintf(buf + strlen(buf), MAX_LINE_LEN, "%s\r\n", str[i]);
+	strListFree(&str);
 	if(!online)
 		return 0;
 	return(lines);
 }
-
 
 /****************************************************************************/
 /* Edits an existing file or creates a new one in MSG format                */
