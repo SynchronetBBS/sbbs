@@ -286,11 +286,11 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		cfg->level_timeperday[i] = iniGetInteger(section, NULL, "timeperday", i);
 		cfg->level_timepercall[i] = iniGetInteger(section, NULL, "timepercall", i);
 		cfg->level_callsperday[i] = iniGetInteger(section, NULL, "callsperday", i);
-		cfg->level_linespermsg[i] = iniGetInteger(section, NULL, "linespermsg", i);
+		cfg->level_linespermsg[i] = iniGetClampedInt(section, NULL, "linespermsg", 1, i, UINT16_MAX);
 		cfg->level_postsperday[i] = iniGetInteger(section, NULL, "postsperday", i);
 		cfg->level_emailperday[i] = iniGetInteger(section, NULL, "emailperday", i);
 		cfg->level_misc[i] = iniGetUInteger(section, NULL, "settings", 0);
-		cfg->level_expireto[i] = iniGetInteger(section, NULL, "expireto", 0);
+		cfg->level_expireto[i] = iniGetClampedInt(section, NULL, "expireto", 0, 0, 99);
 		cfg->level_freecdtperday[i] = iniGetBytes(section, NULL, "freecdtperday", 1, 0);
 	}
 
