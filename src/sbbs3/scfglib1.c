@@ -100,7 +100,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->sys_chat_arstr, iniGetString(ini, ROOT_SECTION, "chat_ars", "", value));
 	arstr(NULL, cfg->sys_chat_arstr, cfg, cfg->sys_chat_ar);
 
-	cfg->sys_timezone = iniGetShortInt(ini, ROOT_SECTION, "timezone", 0);
+	cfg->sys_timezone = iniGetInt16(ini, ROOT_SECTION, "timezone", 0);
 	cfg->sys_misc = iniGetUInteger(ini, ROOT_SECTION, "settings", 0);
 	cfg->sys_login = iniGetUInteger(ini, ROOT_SECTION, "login", 0);
 	cfg->sys_pwdays = iniGetInteger(ini, ROOT_SECTION, "pwdays", 0);
@@ -120,15 +120,15 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->max_logs_kept = iniGetUInt16(ini, ROOT_SECTION, "max_logs_kept", 0);
 	cfg->ctrlkey_passthru = iniGetInteger(ini, ROOT_SECTION, "ctrlkey_passthru", 0);
 	cfg->max_getkey_inactivity = (uint)iniGetDuration(ini, ROOT_SECTION, "max_getkey_inactivity", 300);
-	cfg->inactivity_warn = (uchar)iniGetShortInt(ini, ROOT_SECTION, "inactivity_warn", 75);
+	cfg->inactivity_warn = (uchar)iniGetUInteger(ini, ROOT_SECTION, "inactivity_warn", 75);
 
 	cfg->user_backup_level = iniGetUInteger(ini, ROOT_SECTION, "user_backup_level", 5);
 	cfg->mail_backup_level = iniGetUInteger(ini, ROOT_SECTION, "mail_backup_level", 5);
 	cfg->config_backup_level = iniGetUInteger(ini, ROOT_SECTION, "config_backup_level", 5);
 	cfg->new_install = iniGetBool(ini, ROOT_SECTION, "new_install", TRUE);
-	cfg->valuser = iniGetShortInt(ini, ROOT_SECTION, "valuser", 0);
-	cfg->erruser = iniGetShortInt(ini, ROOT_SECTION, "erruser", 0);
-	cfg->errlevel = (uchar)iniGetShortInt(ini, ROOT_SECTION, "errlevel", LOG_CRIT);
+	cfg->valuser = iniGetUInteger(ini, ROOT_SECTION, "valuser", 0);
+	cfg->erruser = iniGetUInteger(ini, ROOT_SECTION, "erruser", 0);
+	cfg->errlevel = (uchar)iniGetUInteger(ini, ROOT_SECTION, "errlevel", LOG_CRIT);
 
 	// fixed events
 	SAFECOPY(cfg->sys_logon, iniGetString(ini, "logon_event", "cmd", "", value));
@@ -466,7 +466,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 #endif
 
 
-		cfg->sub[i]->qwkconf = iniGetShortInt(section, NULL, "qwk_conf", 0);
+		cfg->sub[i]->qwkconf = iniGetUInt16(section, NULL, "qwk_conf", 0);
 		cfg->sub[i]->pmode = iniGetUInteger(section, NULL, "print_mode", 0);
 		cfg->sub[i]->n_pmode = iniGetUInteger(section, NULL, "print_mode_neg", 0);
 		++cfg->total_subs;
@@ -495,7 +495,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->netmail_sem, iniGetString(section, NULL, "netmail_sem", "", value));
 	SAFECOPY(cfg->echomail_sem, iniGetString(section, NULL, "echomail_sem", "", value));
 	SAFECOPY(cfg->netmail_dir, iniGetString(section, NULL, "netmail_dir", "", value));
-	cfg->netmail_misc = iniGetUShortInt(section, NULL, "netmail_settings", 0);
+	cfg->netmail_misc = iniGetUInt16(section, NULL, "netmail_settings", 0);
 	cfg->netmail_cost = iniGetUInt32(section, NULL, "netmail_cost", 0);
 
 	/**********/
@@ -517,10 +517,10 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		SAFECOPY(cfg->qhub[i]->id, name + 5);
 		cfg->qhub[i]->enabled = iniGetBool(section, NULL, "enabled", TRUE);
-		cfg->qhub[i]->time = iniGetShortInt(section, NULL, "time", 0);
-		cfg->qhub[i]->freq = iniGetShortInt(section, NULL, "freq", 0);
-		cfg->qhub[i]->days = (char)iniGetShortInt(section, NULL, "days", 0);
-		cfg->qhub[i]->node = iniGetShortInt(section, NULL, "node_num", 0);
+		cfg->qhub[i]->time = iniGetUInt16(section, NULL, "time", 0);
+		cfg->qhub[i]->freq = iniGetUInt16(section, NULL, "freq", 0);
+		cfg->qhub[i]->days = (uint8_t)iniGetUInteger(section, NULL, "days", 0);
+		cfg->qhub[i]->node = iniGetUInteger(section, NULL, "node_num", 0);
 		SAFECOPY(cfg->qhub[i]->call, iniGetString(section, NULL, "call", "", value));
 		SAFECOPY(cfg->qhub[i]->pack, iniGetString(section, NULL, "pack", "", value));
 		SAFECOPY(cfg->qhub[i]->unpack, iniGetString(section, NULL, "unpack", "", value));
@@ -534,8 +534,8 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		if(k) {
 			if((cfg->qhub[i]->sub=(sub_t**)malloc(sizeof(sub_t*)*k))==NULL)
 				return allocerr(error, maxerrlen, fname, "qhub sub", sizeof(sub_t)*k);
-			if((cfg->qhub[i]->conf=(ushort *)malloc(sizeof(ushort)*k))==NULL)
-				return allocerr(error, maxerrlen, fname, "qhub conf", sizeof(ushort)*k);
+			if((cfg->qhub[i]->conf=(uint16_t *)malloc(sizeof(uint16_t)*k))==NULL)
+				return allocerr(error, maxerrlen, fname, "qhub conf", sizeof(uint16_t)*k);
 			if((cfg->qhub[i]->mode=(uchar *)malloc(sizeof(uchar)*k))==NULL)
 				return allocerr(error, maxerrlen, fname, "qhub mode", sizeof(uchar)*k);
 		}
