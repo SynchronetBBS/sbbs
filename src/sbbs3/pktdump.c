@@ -116,7 +116,8 @@ int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 
 	if(pkthdr.type2plus.cword==BYTE_SWAP_16(pkthdr.type2plus.cwcopy)  /* 2+ Packet Header */
 		&& pkthdr.type2plus.cword&1) {
-		fprintf(stdout,"2+ (prod: %02X%02X, rev: %u.%u)"
+		fprintf(stdout,"2%c (prod: %02X%02X, rev: %u.%u)"
+			,pkthdr.type2plus.auxnet == 0 ? 'e' : '+'
 			,pkthdr.type2plus.prodcodeHi	,pkthdr.type2plus.prodcodeLo
 			,pkthdr.type2plus.prodrevMajor	,pkthdr.type2plus.prodrevMinor);
 		dest.point=pkthdr.type2plus.destpoint;
