@@ -32,13 +32,13 @@ static void read_dir_defaults_cfg(scfg_t* cfg, str_list_t ini, dir_t* dir)
 	SAFECOPY(dir->upload_sem, iniGetString(ini, NULL, "upload_sem", "", value));
 	SAFECOPY(dir->exts, iniGetString(ini, NULL, "extensions", "", value));
 
-	dir->maxfiles = iniGetShortInt(ini, NULL, "max_files", 0);
+	dir->maxfiles = iniGetUInt16(ini, NULL, "max_files", 0);
 	dir->misc = iniGetInt32(ini, NULL, "settings",  DEFAULT_DIR_OPTIONS);
 	dir->seqdev = iniGetUInteger(ini, NULL, "seq_dev", 0);
 	dir->sort = iniGetUInteger(ini, NULL, "sort", 0);
-	dir->maxage = iniGetShortInt(ini, NULL, "max_age", 0);
-	dir->up_pct = iniGetShortInt(ini, NULL, "upload_credit_pct", cfg->cdt_up_pct);
-	dir->dn_pct = iniGetShortInt(ini, NULL, "download_credit_pct", cfg->cdt_dn_pct);
+	dir->maxage = iniGetUInt16(ini, NULL, "max_age", 0);
+	dir->up_pct = iniGetUInt16(ini, NULL, "upload_credit_pct", cfg->cdt_up_pct);
+	dir->dn_pct = iniGetUInt16(ini, NULL, "download_credit_pct", cfg->cdt_dn_pct);
 }
 
 /****************************************************************************/
@@ -61,13 +61,13 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	fclose(fp);
 
 	cfg->min_dspace = iniGetBytes(ini, ROOT_SECTION, "min_dspace", 1, 100 * 1024 * 1024);
-	cfg->max_batup = iniGetUShortInt(ini, ROOT_SECTION, "max_batup", 0);
-	cfg->max_batdn = iniGetUShortInt(ini, ROOT_SECTION, "max_batdn", 0);
-	cfg->max_userxfer = iniGetUShortInt(ini, ROOT_SECTION, "max_userxfer", 0);
-	cfg->cdt_up_pct = iniGetUShortInt(ini, ROOT_SECTION, "upload_credit_pct", 0);
-	cfg->cdt_dn_pct = iniGetUShortInt(ini, ROOT_SECTION, "download_credit_pct", 0);
-	cfg->leech_pct = iniGetUShortInt(ini, ROOT_SECTION, "leech_pct", 0);
-	cfg->leech_sec = iniGetUShortInt(ini, ROOT_SECTION, "leech_sec", 0);
+	cfg->max_batup = iniGetUInt16(ini, ROOT_SECTION, "max_batup", 0);
+	cfg->max_batdn = iniGetUInt16(ini, ROOT_SECTION, "max_batdn", 0);
+	cfg->max_userxfer = iniGetUInt16(ini, ROOT_SECTION, "max_userxfer", 0);
+	cfg->cdt_up_pct = iniGetUInt16(ini, ROOT_SECTION, "upload_credit_pct", 0);
+	cfg->cdt_dn_pct = iniGetUInt16(ini, ROOT_SECTION, "download_credit_pct", 0);
+	cfg->leech_pct = iniGetUInt16(ini, ROOT_SECTION, "leech_pct", 0);
+	cfg->leech_sec = iniGetUInt16(ini, ROOT_SECTION, "leech_sec", 0);
 	cfg->file_misc = iniGetInt32(ini, ROOT_SECTION, "settings", 0);
 	cfg->filename_maxlen = iniGetIntInRange(ini, ROOT_SECTION, "filename_maxlen", 8, SMB_FILEIDX_NAMELEN, UINT16_MAX);
 
@@ -251,7 +251,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->lib[i]->parent_path, iniGetString(section, NULL, "parent_path", "", value));
 		cfg->lib[i]->sort = iniGetInteger(section, NULL, "sort", 0);
 		cfg->lib[i]->misc = iniGetInt32(section, NULL, "settings", 0);
-		cfg->lib[i]->vdir_name = iniGetShortInt(section, NULL, "vdir_name", 0);
+		cfg->lib[i]->vdir_name = iniGetUInteger(section, NULL, "vdir_name", 0);
 
 		char dir_defaults[128];
 		SAFEPRINTF(dir_defaults, "dir_defaults:%s", cfg->lib[i]->sname);
@@ -403,9 +403,9 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->xedit[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		arstr(NULL, cfg->xedit[i]->arstr, cfg, cfg->xedit[i]->ar);
 
-		cfg->xedit[i]->type = (uint8_t)iniGetShortInt(section, NULL, "type", 0);
-		cfg->xedit[i]->soft_cr = iniGetShortInt(section, NULL, "soft_cr", (cfg->xedit[i]->misc&QUICKBBS) ? XEDIT_SOFT_CR_EXPAND : XEDIT_SOFT_CR_RETAIN);
-		cfg->xedit[i]->quotewrap_cols = iniGetShortInt(section, NULL, "quotewrap_cols", 0);
+		cfg->xedit[i]->type = (uint8_t)iniGetUInteger(section, NULL, "type", 0);
+		cfg->xedit[i]->soft_cr = iniGetUInteger(section, NULL, "soft_cr", (cfg->xedit[i]->misc&QUICKBBS) ? XEDIT_SOFT_CR_EXPAND : XEDIT_SOFT_CR_RETAIN);
+		cfg->xedit[i]->quotewrap_cols = iniGetUInteger(section, NULL, "quotewrap_cols", 0);
 	}
 	iniFreeStringList(list);
 
@@ -469,15 +469,15 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		arstr(NULL, cfg->xtrn[i]->arstr, cfg, cfg->xtrn[i]->ar);
 		arstr(NULL, cfg->xtrn[i]->run_arstr, cfg, cfg->xtrn[i]->run_ar);
 
-		cfg->xtrn[i]->type = (uint8_t)iniGetShortInt(section, NULL, "type", 0);
+		cfg->xtrn[i]->type = (uint8_t)iniGetUInteger(section, NULL, "type", 0);
 		cfg->xtrn[i]->misc = iniGetInt32(section, NULL, "settings", 0);
-		cfg->xtrn[i]->event = (uint8_t)iniGetShortInt(section, NULL, "event", 0);
+		cfg->xtrn[i]->event = (uint8_t)iniGetUInteger(section, NULL, "event", 0);
 		cfg->xtrn[i]->cost = iniGetInt32(section, NULL, "cost", 0);
 		SAFECOPY(cfg->xtrn[i]->cmd, iniGetString(section, NULL, "cmd", "", value));
 		SAFECOPY(cfg->xtrn[i]->clean, iniGetString(section, NULL, "clean_cmd", "", value));
 		SAFECOPY(cfg->xtrn[i]->path, iniGetString(section, NULL, "startup_dir", "", value));
-		cfg->xtrn[i]->textra = (uint8_t)iniGetShortInt(section, NULL, "textra", 0);
-		cfg->xtrn[i]->maxtime = (uint8_t)iniGetShortInt(section, NULL, "max_time", 0);
+		cfg->xtrn[i]->textra = (uint8_t)iniGetUInteger(section, NULL, "textra", 0);
+		cfg->xtrn[i]->maxtime = (uint8_t)iniGetUInteger(section, NULL, "max_time", 0);
 		cfg->xtrn[i]->max_inactivity = (uint)iniGetDuration(section, NULL, "max_inactivity", 0);
 		++cfg->total_xtrns;
 	}
@@ -502,15 +502,15 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		SAFECOPY(cfg->event[i]->code, name + 6);
 		SAFECOPY(cfg->event[i]->cmd, iniGetString(section, NULL, "cmd", "", value));
-		cfg->event[i]->days = (uint8_t)iniGetShortInt(section, NULL, "days", 0);
-		cfg->event[i]->time = iniGetShortInt(section, NULL, "time", 0);
-		cfg->event[i]->node = iniGetShortInt(section, NULL, "node_num", 0);
+		cfg->event[i]->days = (uint8_t)iniGetUInteger(section, NULL, "days", 0);
+		cfg->event[i]->time = iniGetUInteger(section, NULL, "time", 0);
+		cfg->event[i]->node = iniGetUInteger(section, NULL, "node_num", 0);
 		cfg->event[i]->misc = iniGetInt32(section, NULL, "settings", 0);
 		SAFECOPY(cfg->event[i]->dir, iniGetString(section, NULL, "startup_dir", "", value));
-		cfg->event[i]->freq = iniGetShortInt(section, NULL, "freq", 0);
+		cfg->event[i]->freq = iniGetUInt16(section, NULL, "freq", 0);
 		cfg->event[i]->mdays = iniGetUInt32(section, NULL, "mdays", 0);
-		cfg->event[i]->months = iniGetShortInt(section, NULL, "months", 0);
-		cfg->event[i]->errlevel = (uint8_t)iniGetShortInt(section, NULL, "errlevel", LOG_ERR);
+		cfg->event[i]->months = iniGetUInt16(section, NULL, "months", 0);
+		cfg->event[i]->errlevel = (uint8_t)iniGetUInteger(section, NULL, "errlevel", LOG_ERR);
 
 		// You can't require exclusion *and* not specify which node/instance will execute the event
 		if(cfg->event[i]->node == NODE_ANY)
