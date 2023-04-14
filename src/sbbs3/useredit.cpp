@@ -1083,7 +1083,7 @@ void sbbs_t::maindflts(user_t* user)
 				if(fexist(str) && yesno(text[ViewSignatureQ]))
 					printfile(str,P_NOATCODES);
 				if(!noyes(text[CreateEditSignatureQ]))
-					editfile(str);
+					editfile(str, cfg.level_linespermsg[user->level] / 10);
 				else if(fexist(str) && !noyes(text[DeleteSignatureQ]))
 					remove(str);
 				break;
