@@ -933,7 +933,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 	rioctl(IOCS|ABORT); 
 
 	if((str = strListDivide(NULL, buf, "\n")) == NULL) {
-		errormsg(WHERE,ERR_ALLOC,"msgeditor",sizeof(char *)*(maxlines+1));
+		errormsg(WHERE,ERR_ALLOC,"msgeditor",strlen(buf));
 		return(0); 
 	}
 	lines = strListCount(str);
@@ -963,7 +963,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 	sync();
 	rioctl(IOSM|ABORT);
 	while(online) {
-		if(line < 0)
+		if((int)line < 0)
 			line = 0;
 		if((int)line>(int)maxlines-10) {
 			if(line >= maxlines)
