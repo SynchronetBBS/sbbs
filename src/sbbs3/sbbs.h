@@ -768,8 +768,8 @@ public:
 				, int mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
 	bool	forwardmsg(smb_t*, smbmsg_t*, const char* to, const char* subject = NULL, const char* comment = NULL);
 	void	removeline(char *str, char *str2, char num, char skip);
-	uint	msgeditor(char *buf, const char *top, char *title);
-	bool	editfile(char *path, bool msg=false);
+	uint	msgeditor(char *buf, const char *top, char *title, uint max_lines, uint max_line_len);
+	bool	editfile(char *path, uint max_lines = 10000);
 	ushort	chmsgattr(const smbmsg_t*);
 	bool	quotemsg(smb_t*, smbmsg_t*, bool tails = false);
 	bool	editmsg(smb_t*, smbmsg_t*);

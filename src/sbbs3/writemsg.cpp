@@ -25,7 +25,6 @@
 #include "git_branch.h"
 #include "git_hash.h"
 
-#define MAX_LINES		10000
 #define MAX_LINE_LEN	((cols - 1) + 2)
 
 const char *quote_fmt=" > %.*s\r\n";
@@ -687,7 +686,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				// remove(msgtmp);
 			} 
 		}
-		if(!(msgeditor((char *)buf,mode&WM_NOTOP ? nulstr : top, subj))) {
+		if(!(msgeditor((char *)buf,mode&WM_NOTOP ? nulstr : top, subj, cfg.level_linespermsg[useron_level], MAX_LINE_LEN))) {
 			if(!online) {
 				FILE* fp = fopen(draft, "wb");
 				if(fp == NULL)
@@ -916,9 +915,10 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 /* The Synchronet editor.                                                    */
 /* Returns the number of lines edited.                                       */
 /*****************************************************************************/
-uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
+uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, uint max_line_len)
 {
-	int		i,j,line,lines=0,maxlines;
+	int		i,j;
+	uint	line,lines=0;
 	char	strin[TERM_COLS_MAX + 1];
 	char 	tmp[512];
 	str_list_t str;
@@ -931,8 +931,6 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 
 	rioctl(IOCM|ABORT);
 	rioctl(IOCS|ABORT); 
-
-	maxlines=cfg.level_linespermsg[useron.level];
 
 	if((str = strListDivide(NULL, buf, "\n")) == NULL) {
 		errormsg(WHERE,ERR_ALLOC,"msgeditor",sizeof(char *)*(maxlines+1));
@@ -967,7 +965,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 	while(online) {
 		if(line < 0)
 			line = 0;
-		if(line>(maxlines-10)) {
+		if((int)line>(int)maxlines-10) {
 			if(line >= maxlines)
 				bprintf(text[NoMoreLines],line);
 			else
@@ -1045,12 +1043,12 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				i=atoi(strin+2)-1;
 				if(i==-1)   /* /D means delete last line */
 					i=lines-1;
-				if(i>=lines || i<0)
+				if(i>=(int)lines || i<0)
 					bputs(text[InvalidLineNumber]);
 				else {
 					free(str[i]);
 					lines--;
-					while(i<lines) {
+					while(i<(int)lines) {
 						str[i]=str[i+1];
 						i++; 
 					}
@@ -1067,7 +1065,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				i=atoi(strin+2)-1;
 				if(i < 0)
 					i = lines - 1;
-				if(i >= lines || i < 0)
+				if(i >= (int)lines || i < 0)
 					bputs(text[InvalidLineNumber]);
 				else {
 					strListInsert(&str, "", i);
@@ -1085,7 +1083,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 					i=lines-1;
 					j|=K_WRAP;	/* wrap when editing last line */
 				}    
-				if(i>=lines || i<0)
+				if(i>=(int)lines || i<0)
 					bputs(text[InvalidLineNumber]);
 				else {
 					SAFECOPY(strin, str[i]);
@@ -1208,8 +1206,8 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 		errormsg(WHERE, ERR_CHK, tmp, lines);
 		lines = maxlines;
 	}
-	for(i=0;i<lines;i++)
-		snprintf(buf + strlen(buf), MAX_LINE_LEN, "%s\r\n", str[i]);
+	for(i=0;i<(int)lines;i++)
+		snprintf(buf + strlen(buf), max_line_len, "%s\r\n", str[i]);
 	strListFree(&str);
 	if(!online)
 		return 0;
@@ -1219,29 +1217,25 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title)
 /****************************************************************************/
 /* Edits an existing file or creates a new one in MSG format                */
 /****************************************************************************/
-bool sbbs_t::editfile(char *fname, bool msg)
+bool sbbs_t::editfile(char *fname, uint maxlines)
 {
 	char *buf,path[MAX_PATH+1];
 	char msgtmp[MAX_PATH+1];
 	char str[MAX_PATH+1];
     int file;
-	long length,maxlines,l,mode=0;
+	long length,l,mode=0;
 	FILE*	stream;
 	unsigned lines;
 	ushort useron_xedit = useron.xedit;
 
-	if(cols < 2) {
-		errormsg(WHERE, ERR_CHK, "columns", cols);
+	if(cols < TERM_COLS_MIN) {
+		errormsg(WHERE, ERR_CHK, "columns (too narrow)", cols);
 		return false;
 	}
 
 	if(useron_xedit && !chk_ar(cfg.xedit[useron_xedit-1]->ar, &useron, &client))
 		useron_xedit = 0;
 
-	if(msg)
-		maxlines=cfg.level_linespermsg[useron.level];
-	else
-		maxlines=MAX_LINES;
 	quotes_fname(useron_xedit, path, sizeof(path));
 	(void)removecase(path);
 
@@ -1306,7 +1300,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 		buf[0]=0;
 		bputs(text[NewFile]); 
 	}
-	if(!msgeditor(buf,nulstr,/* title: */(char*)nulstr)) {
+	if(!msgeditor(buf,nulstr,/* title: */(char*)nulstr, maxlines, MAX_LINE_LEN)) {
 		free(buf);
 		return false; 
 	}
@@ -1640,7 +1634,7 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
 	(void)removecase(msgtmp);
 	msgtotxt(smb, msg, msgtmp, /* header: */false, /* mode: */is_msg ? GETMSGTXT_ALL : GETMSGTXT_BODY_ONLY);
-	if(!editfile(msgtmp, is_msg))
+	if(!editfile(msgtmp, cfg.level_linespermsg[useron.level]))
 		return false;
 	length=(long)flength(msgtmp);
 	if(length<1L)
