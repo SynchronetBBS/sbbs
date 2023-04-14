@@ -1283,7 +1283,7 @@ bool sbbs_t::editfile(char *fname, uint maxlines)
 			close(file);
 			free(buf); 
 			attr(cfg.color[clr_err]);
-			bprintf("\7\r\nFile size (%lu bytes) is larger than %lu (maxlines: %lu).\r\n"
+			bprintf("\7\r\nFile size (%lu bytes) is larger than %lu (maxlines: %u).\r\n"
 				,length, (ulong)maxlines*MAX_LINE_LEN, maxlines);
 			return false;
 		}
