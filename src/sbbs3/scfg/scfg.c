@@ -380,6 +380,7 @@ int main(int argc, char **argv)
 	int 	i,j,main_dflt=0,chat_dflt=0;
 	char	cfg_fname[MAX_PATH + 1];
 	BOOL    door_mode=FALSE;
+	BOOL	alt_chars = FALSE;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
 	char	compiler[32];
 
@@ -491,6 +492,9 @@ int main(int argc, char **argv)
 							goto USAGE;
 					}
 					break;
+				case 'A':
+					alt_chars = TRUE;
+					break;
                 case 'v':
                     textmode(atoi(argv[i]+2));
                     break;
@@ -526,6 +530,7 @@ int main(int argc, char **argv)
 #endif
 						"       A = ANSI mode\n"
 						"       D = standard input/output/door mode\n"
+						"-A  =  use alternate (ASCII) characters for arrow symbols\n"
                         "-v# =  set video mode to # (default=auto)\n"
                         "-l# =  set screen lines to # (default=auto-detect)\n"
 						"-y  =  automatically save changes (don't ask)\n"
@@ -621,6 +626,12 @@ int main(int argc, char **argv)
 		}
 		ciolib_settitle("Synchronet Configuration");
 		i=uifcini32(&uifc);  /* curses/conio/X/ANSI */
+		if(alt_chars) {
+			uifc.chars->left_arrow = '<';
+			uifc.chars->right_arrow = '>';
+			uifc.chars->up_arrow = '^';
+			uifc.chars->down_arrow = 'v';
+		}
 	}
 	else
 		i=uifcinix(&uifc);  /* stdio */
