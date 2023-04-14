@@ -404,9 +404,6 @@ int main(int argc, char **argv)
 	uint32_t misc = 0;
 	for(i=1;i<argc;i++) {
         if(argv[i][0]=='-'
-#ifndef __unix__
-            || argv[i][0]=='/'
-#endif
             ) {
 			if(strncmp(argv[i], "-import=", 8) == 0) {
 				import = argv[i] + 8;
@@ -424,53 +421,48 @@ int main(int argc, char **argv)
 				uifc.insert_mode = TRUE;
 				continue;
 			}
-            switch(toupper(argv[i][1])) {
-				case 'W':
+            switch(argv[i][1]) {
+				case 'w':
 					run_wizard = TRUE;
 					break;
-                case 'N':   /* Set "New Installation" flag */
+                case 'n':   /* Set "New Installation" flag */
 					new_install=TRUE;
 					forcesave=TRUE;
                     continue;
-				case 'K':	/* Keyboard only (no mouse) */
+				case 'k':	/* Keyboard only (no mouse) */
 					uifc.mode |= UIFC_NOMOUSE;
 					break;
-		        case 'M':   /* Monochrome mode */
+		        case 'm':   /* Monochrome mode */
         			uifc.mode|=UIFC_MONO;
                     break;
-                case 'C':
+                case 'c':
         			uifc.mode|=UIFC_COLOR;
                     break;
-                case 'D':
-					printf("NOTICE: The -d option is deprecated, use -id instead\n");
-					SLEEP(2000);
-                    door_mode=TRUE;
-                    break;
-				case 'U':
+				case 'u':
 					umask(strtoul(argv[i]+2,NULL,8));
 					break;
-				case 'G':
+				case 'g':
 					if(IS_ALPHA(argv[i][2]))
 						grpname = argv[i]+2;
 					else
 						grpnum = atoi(argv[i]+2);
 					break;
-                case 'H':
+                case 'h':
         			no_msghdr=!no_msghdr;
                     break;
-                case 'A':
+                case 'a':
         			all_msghdr=!all_msghdr;
                     break;
-                case 'F':
+                case 'f':
                 	forcesave=TRUE;
                     break;
-                case 'L':
+                case 'l':
                     uifc.scrn_len=atoi(argv[i]+2);
                     break;
-                case 'E':
+                case 'e':
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
-				case 'I':
+				case 'i':
 					switch(toupper(argv[i][2])) {
 						case 'A':
 							ciolib_mode=CIOLIB_MODE_ANSI;
@@ -499,14 +491,11 @@ int main(int argc, char **argv)
 							goto USAGE;
 					}
 					break;
-                case 'V':
+                case 'v':
                     textmode(atoi(argv[i]+2));
                     break;
-				case 'Y':
+				case 'y':
 					auto_save=TRUE;
-					break;
-				case 'T':
-					/* Legacy (time-slice API), ignore */
 					break;
                 default:
 					USAGE:
