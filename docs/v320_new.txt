@@ -34,6 +34,7 @@ o Change the semantics of the "Allow Sysop Logins" setting in SCFG->System:
 Customization
 ~~~~~~~~~~~~~
 o New stock modules: msgscancfg.js and filescancfg.js
+  Replaces logic previously copy/pasted into multiple Baja command shells
 o New @-codes:
   - BUILD_DATE
   - BUILD_TIME
@@ -68,7 +69,7 @@ o New text.dat strings for received Fido and Internet mail
  
 Windows
 ~~~~~~
-o Synchronet should run on Windows XP again
+o Synchronet runs on Windows XP again
   Fixed 'The procedure entry point inet_ntop could not be located in the
   dynamic link library WS2_32.dll'
 o Ignore VDD WriteFile() failures if the child process has terminated
@@ -118,7 +119,7 @@ o Moved security settings from "System" menu to (new) System->Security Options
 o Added System->New User Values->QWK Packet Settings
 o Added New User Chat options to System->New User Values->Default Toggles:
   Multinode Chat Echo, Multinode Chat Actions, Pageable for Chat,
-  Node Acitivty Messages, and Split-Screen Private Chat
+  Node Activity Messages, and Split-Screen Private Chat
 o Moved System->New User Values->Question Toggles to System->New User Prompts
 o Added System->Advanced->Maximum Log File Size (enable/control log rotation)
 o Added System->Loadable Modules->Send Feedback, Chat Section, List Users,
@@ -131,7 +132,7 @@ o New File Library options:
   Upload Requirements, Download Requirements, Operator Requirements, Exemption
   Requirements, Auto-Add Sub-directories, Virtual Sub-directories
 o Internal codes (prefixes and suffixes) have doubled in maximum length
-o Add "Native" option for QWKnet call-out cmd-lines
+o Add "Native" option for QWKnet call-out Command-lines
 o Add an 'enabled' property for QWKnet hubs, defaults to true
 o Move the QWKnet hub pack and unpack commands to an "Advanced" sub-menu since
   they are completely optional now (SBBS uses libarchive otherwise)
@@ -139,6 +140,10 @@ o Trim leading and trailing white-space in input strings, automatically
 o Don't allow spaces when entering/editing internal codes
 o Configuration file back-ups are now configured (in SCFG->System->Advanced)
   rather than controlled via command-line option (-b) to SCFG
+o New command-line option (-A) to enable alternate/ASCII arrow symbols
+o SCFG Command-line options are now case-sensitive ('-a' and '-A' are unique)
+o SCFG Command-line options must be preceded with '-', not '/', on all OSes
+o '?' key can be used to pull-up online help (e.g. when F1 key is not working)
 
 JavaScript
 ~~~~~~~~~~
@@ -336,6 +341,10 @@ o Don't use libarchive for creating/appending bundles
 o New EchoCfg->Global->Sort Linked Node List option
 o Supports filtering messages based on text/subject.can file
 o Rework NetMail routing logic to handle point destinations better
+o Options for handling of incoming bad packets
+  - delete
+  - rename *.bad (the previous behavior)
+  - rename *.<reason>.bad (the new default behavior)
 
 HatchIT
 ~~~~~~~
@@ -366,5 +375,6 @@ FTP Server
 ~~~~~~~~~~
 o Limit uploaded file sizes, accounting for free disk space
 o Fix uploader-notification, credit awards, download-counters in downloads
+o Fix false "SUSPECTED BOUND ATTACK ATTEMPT" for IPv6 active-data connections
 o Source of virtual sub-directory names are now configurable in SCFG
   - May be derived from internal code suffix (default), the short or long name
