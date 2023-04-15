@@ -5664,7 +5664,9 @@ void find_stray_packets(void)
 
 bool rename_bad_packet(const char* packet, const char* reason)
 {
-	lprintf(LOG_WARNING, "Bad packet detected: %s", packet);
+	lprintf(LOG_WARNING, "Bad packet detected (reason: %s): %s", reason, packet);
+	if(cfg.delete_bad_packets)
+		return delfile(packet, __LINE__);
 	char badpkt[MAX_PATH+1];
 	SAFECOPY(badpkt, packet);
 	char* ext = getfext(badpkt);
@@ -5674,11 +5676,7 @@ bool rename_bad_packet(const char* packet, const char* reason)
 		sprintf(ext, ".%s.bad", reason);
 	else
 		strcpy(ext, ".bad");
-	if(mv(packet, badpkt, /* copy: */false) == 0)
-		return true;
-	if(cfg.delete_packets)
-		delfile(packet, __LINE__);
-	return false;
+	return mv(packet, badpkt, /* copy: */false) == 0;
 }
 
 void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
