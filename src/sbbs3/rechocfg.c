@@ -218,6 +218,7 @@ void get_default_echocfg(sbbsecho_cfg_t* cfg)
 	cfg->auto_utf8					= true;
 	cfg->strip_soft_cr				= true;
 	cfg->require_linked_node_cfg	= true;
+	cfg->verbose_bad_packet_names	= true;
 	cfg->min_free_diskspace			= 10*1024*1024;
 	cfg->max_logs_kept				= 10;
 	cfg->max_log_size				= 10*1024*1024;
@@ -276,6 +277,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->use_outboxes			= iniGetBool(ini, ROOT_SECTION, "UseOutboxes", cfg->use_outboxes);
 	cfg->auto_utf8				= iniGetBool(ini, ROOT_SECTION, "AutoUTF8", cfg->auto_utf8);
 	cfg->sort_nodelist			= iniGetBool(ini, ROOT_SECTION, "SortNodeList", cfg->sort_nodelist);
+	cfg->verbose_bad_packet_names = iniGetBool(ini, ROOT_SECTION, "VerboseBadPacketNames", cfg->verbose_bad_packet_names);
 
 	/* EchoMail options: */
 	cfg->maxbdlsize				= (ulong)iniGetBytes(ini, ROOT_SECTION, "BundleSize", 1, cfg->maxbdlsize);
@@ -566,6 +568,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetBool(&ini,		ROOT_SECTION, "KillEmptyNetmail",		cfg->kill_empty_netmail			,style);
 	iniSetBool(&ini,		ROOT_SECTION, "DeleteNetmail",			cfg->delete_netmail				,style);
 	iniSetBool(&ini,		ROOT_SECTION, "DeletePackets",			cfg->delete_packets				,style);
+	iniSetBool(&ini,		ROOT_SECTION, "VerboseBadPacketNames",	cfg->verbose_bad_packet_names	,style);
 
 	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailDestAddr"	,cfg->ignore_netmail_dest_addr	,style);
 	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailSentAttr"	,cfg->ignore_netmail_sent_attr	,style);

@@ -5662,7 +5662,7 @@ void find_stray_packets(void)
 	globfree(&g);
 }
 
-bool rename_bad_packet(const char* packet)
+bool rename_bad_packet(const char* packet, const char* reason)
 {
 	lprintf(LOG_WARNING, "Bad packet detected: %s", packet);
 	char badpkt[MAX_PATH+1];
@@ -5670,7 +5670,10 @@ bool rename_bad_packet(const char* packet)
 	char* ext = getfext(badpkt);
 	if(ext == NULL)
 		return false;
-	strcpy(ext, ".bad");
+	if(cfg.verbose_bad_packet_names)
+		sprintf(ext, ".%s.bad", reason);
+	else
+		strcpy(ext, ".bad");
 	if(mv(packet, badpkt, /* copy: */false) == 0)
 		return true;
 	if(cfg.delete_packets)
@@ -5725,7 +5728,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			lprintf(LOG_WARNING,"Invalid length of %s: %lu bytes"
 				,packet,filelength(fmsg));
 			fclose(fidomsg);
-			rename_bad_packet(packet);
+			rename_bad_packet(packet, "pkt-len");
 			continue;
 		}
 
@@ -5735,7 +5738,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			|| terminator != FIDO_PACKET_TERMINATOR) {
 			fclose(fidomsg);
 			lprintf(LOG_WARNING,"WARNING: packet %s not terminated correctly (0x%04hX)", packet, terminator);
-			rename_bad_packet(packet);
+			rename_bad_packet(packet, "pkt-term");
 			continue;
 		}
 		(void)fseek(fidomsg,0L,SEEK_SET);
@@ -5743,7 +5746,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			fclose(fidomsg);
 			lprintf(LOG_ERR,"ERROR line %d reading %lu bytes from %s",__LINE__
 				,(ulong)sizeof(pkthdr),packet);
-			rename_bad_packet(packet);
+			rename_bad_packet(packet, "file-read");
 			continue;
 		}
 
@@ -5751,14 +5754,14 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			fclose(fidomsg);
 			lprintf(LOG_WARNING,"%s is not a type 2 packet (type=%u)"
 				,packet, pkthdr.type2.pkttype);
-			rename_bad_packet(packet);
+			rename_bad_packet(packet, "pkt-type");
 			continue;
 		}
 		if(inbox != NULL && memcmp(&pkt_orig, &inbox->addr, sizeof(pkt_orig)) != 0) {
 			fclose(fidomsg);
 			lprintf(LOG_WARNING, "Inbox packet from %s (not from %s): %s"
 				,smb_faddrtoa(&pkt_orig, NULL), smb_faddrtoa(&inbox->addr, str), packet);
-			rename_bad_packet(packet);
+			rename_bad_packet(packet, "src-addr");
 			continue;
 		}
 
@@ -5771,7 +5774,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				,packet,smb_faddrtoa(&pkt_orig,NULL)
 				,password, nodecfg->pktpwd);
 			fclose(fidomsg);
-			rename_bad_packet(packet);
+			rename_bad_packet(packet, "pkt-passwd");
 			continue;
 		}
 
@@ -5779,7 +5782,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			,packet, pktTypeStringList[pkt_type], flength(packet)/1024.0
 			,smb_faddrtoa(&pkt_orig,NULL), smb_faddrtoa(&pkt_dest, str));
 
-		bool bad_packet = false;
+		const char* bad_packet = NULL;
 		while(!feof(fidomsg)) {
 
 			memset(&hdr,0,sizeof(fmsghdr_t));
@@ -5813,7 +5816,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				lprintf(LOG_NOTICE, "Grunged message (type %d) from %s at offset %ld in packet: %s"
 					, pkdmsg.type, smb_faddrtoa(&pkt_orig, NULL), (long)msg_offset, packet);
 				printf("Grunged message!\n");
-				bad_packet = true;
+				bad_packet = "msg-hdr";
 				break;
 			}
 			msg_offset = ftello(fidomsg);	// Save offset to msg body
@@ -5823,7 +5826,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				lprintf(LOG_NOTICE, "Invalid message body offset (%ld, next hdr: %ld) from %s in packet: %s"
 					,(long)msg_offset, (long)next_msg, smb_faddrtoa(&pkt_orig, NULL), packet);
 				printf("Invalid message!\n");
-				bad_packet = true;
+				bad_packet = "msg-offset";
 				break;
 			}
 
@@ -5865,7 +5868,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				lprintf(LOG_WARNING, "Unauthenticated %s EchoMail from %s (in the non-secure inbound directory) ignored"
 					,areatag, smb_faddrtoa(&pkt_orig, NULL));
 				printf("\n");
-				bad_packet = true;
+				bad_packet = "echo-auth";
 				continue;
 			}
 
@@ -5902,7 +5905,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 					lprintf(LOG_WARNING, "%s: Security violation - %s not in Area File"
 						,areatag, smb_faddrtoa(&pkt_orig,NULL));
 					printf("Security Violation (Not in %s)\n", cfg.areafile);
-					bad_packet = true;
+					bad_packet = "security";
 					continue;
 				}
 			}
@@ -6033,8 +6036,8 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 		fclose(fidomsg);
 		FREE_AND_NULL(fmsgbuf);
 
-		if(bad_packet)
-			rename_bad_packet(packet);
+		if(bad_packet != NULL)
+			rename_bad_packet(packet, bad_packet);
 		else {
 			packets_imported++;
 			if(cfg.delete_packets)

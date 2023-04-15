@@ -199,6 +199,7 @@ typedef struct {
 	bool		kill_empty_netmail;
 	bool		delete_netmail;
 	bool		delete_packets;
+	bool		verbose_bad_packet_names;
 	bool		echomail_notify;
 	bool		ignore_netmail_dest_addr;
 	bool		ignore_netmail_sent_attr;

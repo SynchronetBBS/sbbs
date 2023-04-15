@@ -90,6 +90,10 @@ void global_settings(void)
 			,cfg.use_outboxes ? "Yes":"No");
 		snprintf(opt[i++],MAX_OPLN-1,"%-30s %-3.3s","Sort Linked Node List  "
 			,cfg.sort_nodelist ? "Yes":"No");
+		snprintf(opt[i++],MAX_OPLN-1,"%-30s %-3.3s","Delete Processed Packets"
+			,cfg.delete_packets ? "Yes":"No");
+		snprintf(opt[i++],MAX_OPLN-1,"%-30s %-3.3s","Verbose Bad Packet Filenames"
+			,cfg.verbose_bad_packet_names ? "Yes":"No");
 
 		sprintf(opt[i++], "%-30s %s", "BSY Mutex File Timeout", duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration)));
 		if(cfg.flo_mailer) {
@@ -160,7 +164,13 @@ void global_settings(void)
 			"    outbound directories, even when this option is set to `No`.\n"
 			"\n"
 			"`Sort Linked Node List` instructs SBBSecho to sort the list of linked\n"
-			"    nodes (in sbbsecho.ini) both when readnig and writing the file.\n"
+			"    nodes (in sbbsecho.ini) both when reading and writing the file.\n"
+			"\n"
+			"`Delete Processed Packets` instructs SBBSecho to delete packet files\n"
+			"    after they've been imported (as one would normally expect).\n"
+			"\n"
+			"`Verbose Bad Packet Filenames` instructs SBBSecho to include the `reason` an\n"
+			"    incoming packet is considered `bad` in the renamed packet filename.\n"
 			"\n"
 			"`BSY Mutex File Timeout` determines the maximum age of an existing\n"
 			"    mutex file (`*.bsy`) before SBBSecho will act as though the mutex\n"
@@ -198,7 +208,7 @@ void global_settings(void)
 			"    Default: Supported\n"
 			;
 
-		int key = uifc.list(WIN_BOT|WIN_L2R|WIN_ACT|WIN_SAV, 0, 0, 0, &global_opt,0, "Global Settings", opt);
+		int key = uifc.list(WIN_ACT|WIN_SAV, 0, 0, 0, &global_opt,0, "Global Settings", opt);
 
 		switch(key) {
 
@@ -305,34 +315,54 @@ void global_settings(void)
 				break;
 			}
 			case 12:
+			{
+				int k = !cfg.delete_packets;
+				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Delete Incoming Processed Packets (.pkt files)",uifcYesNoOpts)) {
+					case 0:	cfg.delete_packets = true;	break;
+					case 1:	cfg.delete_packets = false;	break;
+				}
+				break;
+			}
+			case 13:
+			{
+				int k = !cfg.verbose_bad_packet_names;
+				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Include Reason in Renamed Bad Packet Filenames",uifcYesNoOpts)) {
+					case 0:	cfg.verbose_bad_packet_names = true;	break;
+					case 1:	cfg.verbose_bad_packet_names = false;	break;
+				}
+				break;
+			}
+			case 14:
 				duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "BSY Mutex File Timeout", duration, 10, K_EDIT) > 0)
 					cfg.bsy_timeout = (ulong)parse_duration(duration);
 				break;
 
-			case 13:
+			case 15:
 				duration_to_vstr(cfg.bso_lock_delay, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Delay Between BSO Lock Attempts", duration, 10, K_EDIT) > 0)
 					cfg.bso_lock_delay = (ulong)parse_duration(duration);
 				break;
 
-			case 14:
+			case 16:
 				sprintf(str, "%lu", cfg.bso_lock_attempts);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum BSO Lock Attempts", str, 5, K_EDIT|K_NUMBER) > 0)
 					cfg.bso_lock_attempts = atoi(str);
 				break;
 
-			case 15:
+			case 17:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Capabilities (BinkIT)", cfg.binkp_caps, sizeof(cfg.binkp_caps)-1, K_EDIT);
 				break;
 
-			case 16:
+			case 18:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Sysop Name (BinkIT)", cfg.binkp_sysop, sizeof(cfg.binkp_sysop)-1, K_EDIT);
 				break;
 
-			case 17:
+			case 19:
 			{
 				int k = !cfg.binkp_plainAuthOnly;
 				strcpy(opt[0], "Plain-Password Only");
@@ -350,7 +380,7 @@ void global_settings(void)
 				break;
 			}
 
-			case 18:
+			case 20:
 			{
 				if(cfg.binkp_plainAuthOnly) {
 					uifc.msg("CRAM-MD5 authentication/encryption has been disabled globally");
@@ -1447,7 +1477,7 @@ int main(int argc, char **argv)
 						"~ Paths and Filenames ~\n\n"
 						"From this menu you can configure the paths and filenames that SBBSecho\n"
 						"will use during its operation (e.g. importing and exporting messages).\n";
-					j=uifc.list(WIN_BOT|WIN_L2R|WIN_ACT|WIN_SAV,0,0,0,&path_opt,0
+					j=uifc.list(WIN_ACT|WIN_SAV,0,0,0,&path_opt,0
 						,"Paths and Filenames",opt);
 					if(j==-1)
 						break;
@@ -1915,7 +1945,7 @@ int main(int argc, char **argv)
 					snprintf(opt[i++],MAX_OPLN-1,"%-45.45s%s","Require Area-Linked Nodes to be Configured"
 						,cfg.require_linked_node_cfg ? "Yes" : "No");
 					opt[i][0]=0;
-					j=uifc.list(WIN_ACT|WIN_MID|WIN_SAV,0,0,0,&echomail_opt,0,"EchoMail Settings",opt);
+					j=uifc.list(WIN_ACT|WIN_SAV,0,0,0,&echomail_opt,0,"EchoMail Settings",opt);
 					if(j==-1)
 						break;
 					switch(j) {
