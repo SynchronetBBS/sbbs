@@ -92,8 +92,8 @@ void global_settings(void)
 			,cfg.sort_nodelist ? "Yes":"No");
 		snprintf(opt[i++],MAX_OPLN-1,"%-30s %-3.3s","Delete Processed Packets"
 			,cfg.delete_packets ? "Yes":"No");
-		snprintf(opt[i++],MAX_OPLN-1,"%-30s %-3.3s","Verbose Bad Packet Filenames"
-			,cfg.verbose_bad_packet_names ? "Yes":"No");
+		snprintf(opt[i++],MAX_OPLN-1,"%-30s %s","Incoming Bad Packets"
+			,cfg.delete_bad_packets ? "Deleted" : cfg.verbose_bad_packet_names ? "Renamed *.reason.bad" : "Renamed *.bad");
 
 		sprintf(opt[i++], "%-30s %s", "BSY Mutex File Timeout", duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration)));
 		if(cfg.flo_mailer) {
@@ -169,8 +169,8 @@ void global_settings(void)
 			"`Delete Processed Packets` instructs SBBSecho to delete packet files\n"
 			"    after they've been imported (as one would normally expect).\n"
 			"\n"
-			"`Verbose Bad Packet Filenames` instructs SBBSecho to include the `reason` an\n"
-			"    incoming packet is considered `bad` in the renamed packet filename.\n"
+			"`Incoming Bad Packets` can be `Deleted` or `Renamed` (*.bad) and optionally\n"
+			"    include the `reason` in the renamed packet filename (the default).\n"
 			"\n"
 			"`BSY Mutex File Timeout` determines the maximum age of an existing\n"
 			"    mutex file (`*.bsy`) before SBBSecho will act as though the mutex\n"
@@ -326,11 +326,19 @@ void global_settings(void)
 			}
 			case 13:
 			{
-				int k = !cfg.verbose_bad_packet_names;
+				int k = !cfg.delete_bad_packets;
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-					,"Include Reason in Renamed Bad Packet Filenames",uifcYesNoOpts)) {
-					case 0:	cfg.verbose_bad_packet_names = true;	break;
-					case 1:	cfg.verbose_bad_packet_names = false;	break;
+					,"Delete Bad Incoming Packets (.pkt files) When Detected", uifcYesNoOpts)) {
+					case 0:	cfg.delete_bad_packets = true;
+						break;
+					case 1:	cfg.delete_bad_packets = false;
+						int k = !cfg.verbose_bad_packet_names;
+						switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+							,"Include Reason in Renamed Bad Packet Filenames", uifcYesNoOpts)) {
+							case 0:	cfg.verbose_bad_packet_names = true;	break;
+							case 1:	cfg.verbose_bad_packet_names = false;	break;
+						}
+						break;
 				}
 				break;
 			}
