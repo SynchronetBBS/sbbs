@@ -45,6 +45,10 @@
  * 2023-03-19 Eric Oulashin   Verison 1.33
  *                            Fix for inputting the library/dir # in lightbar mode. Updated wording for that
  *                            as well. Changed the version to match the message area chooser.
+ * 2023-04-15 Eric Oulashin   Version 1.34
+ *                            Fix: For lightbar mode with directory collapsing, now sets the selected item based
+ *                            on the user's current directory. Also, color settings no longer need the control
+ *                            character (they can just be a list of the attribute characters).
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -85,8 +89,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.33";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-03-19";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.34";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-04-15";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -1631,6 +1635,37 @@ function DDFileAreaChooser_CreateLightbarFileDirMenu(pLibIdx, pDirIdx, pLevel)
 
 				return menuItemObj;
 			};
+			
+			// Set the currently selected item.  If the current directory is in this list,
+			// then set the selected item to that; otherwise, the selected item should be
+			// the first directory.
+			if (file_area.dir[bbs.curdir_code].lib_index == pLibIdx)
+			{
+				var currentIdx = -1;
+				for (var dirI = 0; dirI < this.lib_list[pLibIdx].dir_list.length && currentIdx == -1; ++dirI)
+				{
+					var dirSubdirsValid = this.lib_list[pLibIdx].dir_list[dirI].hasOwnProperty("subdir_list") && this.lib_list[pLibIdx].dir_list[dirI].subdir_list.length > 0;
+					if (dirSubdirsValid)
+					{
+						for (var subDirIdx = 0; subDirIdx < this.lib_list[pLibIdx].dir_list[dirI].subdir_list.length && currentIdx == -1; ++subDirIdx)
+						{
+							if (bbs.curdir_code == this.lib_list[pLibIdx].dir_list[dirI].subdir_list[subDirIdx].code)
+								currentIdx = dirI;
+						}
+					}
+					else
+					{
+						if (bbs.curdir_code == this.lib_list[pLibIdx].dir_list[dirI].code)
+							currentIdx = dirI;
+					}
+				}
+				if (currentIdx > -1)
+				{
+					fileDirMenu.selectedItemIdx = currentIdx
+					if (fileDirMenu.selectedItemIdx >= fileDirMenu.topItemIdx+fileDirMenu.GetNumItemsPerPage())
+						fileDirMenu.topItemIdx = fileDirMenu.selectedItemIdx - fileDirMenu.GetNumItemsPerPage() + 1;
+				}
+			}
 		}
 		else if (pLevel == 3)
 		{
@@ -1657,6 +1692,23 @@ function DDFileAreaChooser_CreateLightbarFileDirMenu(pLibIdx, pDirIdx, pLevel)
 				}
 
 				return menuItemObj;
+			}
+
+			// Set the currently selected item.  If the current directory is in this list,
+			// then set the selected item to that; otherwise, the selected item should be
+			// the first directory.
+			if (file_area.dir[bbs.curdir_code].lib_index == pLibIdx)
+			{
+				for (var i = 0; i < this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length; ++i)
+				{
+					if (bbs.curdir_code == this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list[i].code)
+					{
+						fileDirMenu.selectedItemIdx = i;
+						if (fileDirMenu.selectedItemIdx >= fileDirMenu.topItemIdx+fileDirMenu.GetNumItemsPerPage())
+							fileDirMenu.topItemIdx = fileDirMenu.selectedItemIdx - fileDirMenu.GetNumItemsPerPage() + 1;
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -1715,6 +1767,7 @@ function DDFileAreaChooser_ReadConfigFile()
 	var cfgFile = new File(gStartupPath + "DDFileAreaChooser.cfg");
 	if (cfgFile.open("r"))
 	{
+		var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');
 		var settingsMode = "behavior";
 		var fileLine = null;     // A line read from the file
 		var equalsPos = 0;       // Position of a = in the line
@@ -1788,7 +1841,14 @@ function DDFileAreaChooser_ReadConfigFile()
 					}
 				}
 				else if (settingsMode == "colors")
-					this.colors[setting] = value;
+				{
+					// If the value doesn't have any control characters, then add the control character
+					// before attribute characters
+					if (!/\x01/.test(value))
+						value = attrCodeStr(value);
+					if (onlySyncAttrsRegexWholeWord.test(value))
+						this.colors[setting] = value;
+				}
 			}
 		}
 
@@ -2791,4 +2851,28 @@ function findFileDirIdxFromText(pLibIdx, pSearchText, pStartItemIdx)
 	}
 
 	return fileDirIdx;
+}
+
+// Given a string of attribute characters, this function inserts the control code
+// in front of each attribute character and returns the new string.
+//
+// Parameters:
+//  pAttrCodeCharStr: A string of attribute characters (i.e., "YH" for yellow high)
+//
+// Return value: A string with the control character inserted in front of the attribute characters
+function attrCodeStr(pAttrCodeCharStr)
+{
+	if (typeof(pAttrCodeCharStr) !== "string")
+		return "";
+
+	var str = "";
+	// See this page for Synchronet color attribute codes:
+	// http://wiki.synchro.net/custom:ctrl-a_codes
+	for (var i = 0; i < pAttrCodeCharStr.length; ++i)
+	{
+		var currentChar = pAttrCodeCharStr.charAt(i);
+		if (/[krgybmcwKRGYBMCWHhIiEeFfNn01234567]/.test(currentChar))
+			str += "\x01" + currentChar;
+	}
+	return str;
 }
