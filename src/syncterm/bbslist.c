@@ -2821,6 +2821,27 @@ show_bbslist(char *current, int connected)
 								    list[listcount - 1]->addr,
 								    LIST_ADDR_MAX,
 								    K_EDIT);
+								// Parse TCP port from address, if specified
+								switch(list[listcount -1]->conn_type) {
+									case CONN_TYPE_MODEM:
+									case CONN_TYPE_SERIAL:
+									case CONN_TYPE_SERIAL_NORTS:
+									case CONN_TYPE_SHELL:
+										break;
+									default:
+									{
+										char* p = strrchr(list[listcount - 1]->addr + 1, ':');
+										if(p != NULL && p == strchr(list[listcount -1]->addr, ':')) {
+											char* tp;
+											long port = strtol(p + 1, &tp, 10);
+											if(*tp == '\0' && port > 0 && port <= 65535) {
+												list[listcount -1]->port = port;
+												*p = '\0';
+											}
+										}
+										break;
+									}
+								}
 								check_exit(false);
 							}
 							if (quitting || !uifc.changes) {
