@@ -1,6 +1,6 @@
                      Digital Distortion Area Choosers
-                              Version 1.33
-                        Release date: 2023-03-19
+                              Version 1.34
+                        Release date: 2023-04-15
 
                                   by
 
@@ -202,6 +202,10 @@ value for the setting/color.  The colors are Synchronet color codes.
 
 Also, comments are allowed in the configuration file.  Comments begin with a
 semicolon (;).
+
+For the color settings, the colors specified for each setting can simply be a
+list of the color attribute characters.  For instance, for normal white: nw
+Or, for high cyan: ch
 
 Behavior section: Message area chooser
 --------------------------------------
