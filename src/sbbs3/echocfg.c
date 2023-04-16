@@ -514,7 +514,7 @@ void binkp_settings(nodecfg_t* node)
 		if(!cfg.binkp_plainAuthOnly && !node->binkp_plainAuthOnly) {
 			if(!cfg.binkp_plainTextOnly)
 				crypt = node->binkp_allowPlainText ? "Supported" : "Required";
-			if(node->binkp_allowPlainAuth) 
+			if(node->binkp_allowPlainAuth)
 				auth = "Plain or CRAM-MD5";
 			else
 				auth = "CRAM-MD5 Only";
@@ -596,7 +596,7 @@ void binkp_settings(nodecfg_t* node)
 				opt[3][0] = 0;
 				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Authentication",opt)) {
-					case 0:	
+					case 0:
 						node->binkp_plainAuthOnly = true;
 						node->binkp_allowPlainAuth = true;
 						node->binkp_allowPlainText = true;
@@ -806,6 +806,7 @@ int main(int argc, char **argv)
     		printf("ciolib library init returned error %d\n",i);
     		exit(1);
 		}
+		ciolib_settitle("Synchronet FidoNet Configuration");
     	i=uifcini32(&uifc);  /* curses/conio/X/ANSI */
 	}
 	else
@@ -1141,10 +1142,23 @@ int main(int argc, char **argv)
 						opt[j][0]=0;
 						SAFEPRINTF(str, "Linked Node - %s"
 							,cfg.nodecfg[i].name[0] ? cfg.nodecfg[i].name : faddrtoa(&cfg.nodecfg[i].addr));
-						k=uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&nodeop,&nodeopbar,str,opt);
+						uifc_winmode_t wmode = WIN_MID|WIN_ACT|WIN_SAV|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < cfg.nodecfgs)
+							wmode |= WIN_RIGHTKEY;
+						k=uifc.list(wmode,0,0,72,&nodeop,&nodeopbar,str,opt);
 						if(k==-1)
 							break;
 						switch(k) {
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < cfg.nodecfgs)
+									i++;
+								break;
 							case __COUNTER__:
 	uifc.helpbuf=
 	"~ Address ~\n\n"
@@ -2199,10 +2213,23 @@ int main(int argc, char **argv)
 							,cfg.arcdef[i].unpack);
 						opt[j][0]=0;
 						SAFEPRINTF(str,"Archive Type - %s", cfg.arcdef[i].name);
-						k=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,0,0,0,&packop,0,str,opt);
+						uifc_winmode_t wmode = WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < cfg.arcdefs)
+							wmode |= WIN_RIGHTKEY;
+						k=uifc.list(wmode,0,0,72,&packop,0,str,opt);
 						if(k==-1)
 							break;
 						switch(k) {
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < cfg.arcdefs)
+									i++;
+								break;
 							case 0:
 								uifc.helpbuf=
 								"~ Archive Type ~\n\n"
@@ -2373,10 +2400,23 @@ int main(int argc, char **argv)
 							,cfg.robot_list[i].attr);
 						opt[j][0]=0;
 						SAFEPRINTF(str, "Robot - %s", cfg.robot_list[i].name);
-						k=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,0,0,0,&listop,0,str,opt);
+						uifc_winmode_t wmode = WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < cfg.robot_count)
+							wmode |= WIN_RIGHTKEY;
+						k=uifc.list(wmode,0,0,72,&listop,0,str,opt);
 						if(k==-1)
 							break;
 						switch(k) {
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < cfg.robot_count)
+									i++;
+								break;
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Robot Name"
@@ -2483,10 +2523,23 @@ int main(int argc, char **argv)
 							,cfg.domain_list[i].nodelist);
 						opt[j][0]=0;
 						SAFEPRINTF(str, "Domain - %s", cfg.domain_list[i].name);
-						k=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,0,0,0,&listop,0,str,opt);
+						uifc_winmode_t wmode = WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < cfg.domain_count)
+							wmode |= WIN_RIGHTKEY;
+						k=uifc.list(wmode,0,0,72,&listop,0,str,opt);
 						if(k==-1)
 							break;
 						switch(k) {
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < cfg.domain_count)
+									i++;
+								break;
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Domain Name"
@@ -2618,10 +2671,23 @@ int main(int argc, char **argv)
 						}
 						opt[j][0]=0;
 						SAFEPRINTF(str, "EchoList - %s", getfname(cfg.listcfg[i].listpath));
-						k=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,0,0,0,&listop,0,str,opt);
+						uifc_winmode_t wmode = WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT|WIN_EXTKEYS;
+						if(i > 0)
+							wmode |= WIN_LEFTKEY;
+						if(i + 1 < cfg.listcfgs)
+							wmode |= WIN_RIGHTKEY;
+						k=uifc.list(wmode,0,0,72,&listop,0,str,opt);
 						if(k==-1)
 							break;
 						switch(k) {
+							case -CIO_KEY_LEFT-2:
+								if(i > 0)
+									i--;
+								break;
+							case -CIO_KEY_RIGHT-2:
+								if(i + 1 < cfg.listcfgs)
+									i++;
+								break;
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"EchoList Path/Name"
