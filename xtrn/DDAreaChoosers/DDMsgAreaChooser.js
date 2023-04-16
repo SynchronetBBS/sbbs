@@ -48,6 +48,10 @@
  *                            posts with the traditional user interface.
  * 2023-03-19 Eric Oulashin   Version 1.33
  *                            Updated wording for inputting the library/dir # in lightbar mode
+ * 2023-04-15 Eric Oulashin   Version 1.34
+ *                            Fix: For lightbar mode with sub-board collapsing, now sets the selected item based
+ *                            on the user's current sub-board. Also, color settings no longer need the control
+ *                            character (they can just be a list of the attribute characters).
 */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -91,8 +95,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.33";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-03-19";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.34";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-04-15";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -607,6 +611,7 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 		var returnedMenuIdx = msgAreaMenu.GetVal(drawMenu);
 		drawMenu = true;
 		var lastUserInputUpper = (typeof(msgAreaMenu.lastUserInput) === "string" ? msgAreaMenu.lastUserInput.toUpperCase() : "");
+		//if (user.is_sysop) console.print("\x01n\r\nlastUserInputUpper: " + lastUserInputUpper + ":\r\n\x01p"); // Temporary
 		if (typeof(returnedMenuIdx) === "number")
 			chosenIdx = returnedMenuIdx;
 		// If userChoice is not a number, then it should be null in this case,
@@ -1112,6 +1117,23 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 
 				return menuItemObj;
 			};
+
+			// Set the currently selected item.  If the current sub-board is in this list,
+			// then set the selected item to that; otherwise, the selected item should be
+			// the first sub-board.
+			if (msg_area.sub[bbs.cursub_code].grp_index == pGrpIdx)
+			{
+				if ((pSubIdx >= 0) && (pSubIdx < this.group_list[pGrpIdx].sub_list.length))
+				{
+					var subSubsValid = Array.isArray(this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list) && this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length > 0;
+					if (!subSubsValid && bbs.cursub_code == this.group_list[pGrpIdx].sub_list[pSubIdx].code)
+					{
+						subBoardMenu.selectedItemIdx = pSubIdx;
+						if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
+							subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
+					}
+				}
+			}
 		}
 		else if (pLevel == 3)
 		{
@@ -1135,6 +1157,23 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 				}
 
 				return menuItemObj;
+			}
+
+			// Set the currently selected item.  If the current sub-board is in this list,
+			// then set the selected item to that; otherwise, the selected item should be
+			// the first sub-board.
+			if (msg_area.sub[bbs.cursub_code].grp_index == pGrpIdx)
+			{
+				for (var i = 0; i < this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length; ++i)
+				{
+					if (bbs.cursub_code == this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[i].code)
+					{
+						subBoardMenu.selectedItemIdx = i;
+						if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
+							subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -2089,6 +2128,7 @@ function DDMsgAreaChooser_ReadConfigFile()
 	var cfgFile = new File(startup_path + "DDMsgAreaChooser.cfg");
 	if (cfgFile.open("r"))
 	{
+		var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');
 		var settingsMode = "behavior";
 		var fileLine = null;     // A line read from the file
 		var equalsPos = 0;       // Position of a = in the line
@@ -2166,7 +2206,14 @@ function DDMsgAreaChooser_ReadConfigFile()
 					}
 				}
 				else if (settingsMode == "colors")
-					this.colors[setting] = value;
+				{
+					// If the value doesn't have any control characters, then add the control character
+					// before attribute characters
+					if (!/\x01/.test(value))
+						value = attrCodeStr(value);
+					if (onlySyncAttrsRegexWholeWord.test(value))
+						this.colors[setting] = value;
+				}
 			}
 		}
 
@@ -3526,4 +3573,32 @@ function DDMsgAreaChooser_GetSubNameLenAndNumMsgsLen(pGrpIdx)
 		}
 	}
 	return retObj;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Helper functions
+
+// Given a string of attribute characters, this function inserts the control code
+// in front of each attribute character and returns the new string.
+//
+// Parameters:
+//  pAttrCodeCharStr: A string of attribute characters (i.e., "YH" for yellow high)
+//
+// Return value: A string with the control character inserted in front of the attribute characters
+function attrCodeStr(pAttrCodeCharStr)
+{
+	if (typeof(pAttrCodeCharStr) !== "string")
+		return "";
+
+	var str = "";
+	// See this page for Synchronet color attribute codes:
+	// http://wiki.synchro.net/custom:ctrl-a_codes
+	for (var i = 0; i < pAttrCodeCharStr.length; ++i)
+	{
+		var currentChar = pAttrCodeCharStr.charAt(i);
+		if (/[krgybmcwKRGYBMCWHhIiEeFfNn01234567]/.test(currentChar))
+			str += "\x01" + currentChar;
+	}
+	return str;
 }
