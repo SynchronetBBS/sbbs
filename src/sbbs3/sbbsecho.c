@@ -5884,7 +5884,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 					lprintf(LOG_NOTICE, "Adding unknown area (%s) to bad area list: %s", areatag, cfg.badareafile);
 					strListPush(&bad_areas, areatag);
 				}
-				if(cfg.badecho>=0) {
+				if(cfg.badecho>=0 && (cfg.secure_echomail == false || area_is_linked(cfg.badecho, &pkt_orig))) {
 					i=cfg.badecho;
 					if(cfg.area[i].sub!=INVALID_SUB)
 						printf("%s ",scfg.sub[cfg.area[i].sub]->code);
