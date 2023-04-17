@@ -120,6 +120,10 @@
  * 2023-04-07 Eric Oulashin     Version 1.71
  *                              Ctrl-C is now supported for message searches to abort the search. A
  *                              new configurable string was added for this situation: msgSearchAbortedText
+ * 2023-04-16 Eric Oulashin     Version 1.72
+ *                              Added a quick-validation hotkey, Ctrl-Q, for sysops to use to apply a
+ *                              quick-validation set to a user when reading their message. Quick-Validation
+ *                              sets are configured in SCFG > System > Security Options > Quick-Validation Values.
  */
 
 "use strict";
@@ -225,8 +229,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.71";
-var READER_DATE = "2023-04-07";
+var READER_VERSION = "1.72";
+var READER_DATE = "2023-04-16";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1101,10 +1105,12 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		closePoll: "!",
 		bypassSubBoardInNewScan: "B",
 		userSettings: CTRL_U,
+		validateMsg: "A", // Only if the user is a sysop
+		quickValUser: CTRL_Q,
 		threadView: "*" // TODO: Implement this
 	};
-	if (user.is_sysop)
-		this.enhReaderKeys.validateMsg = "A";
+	//if (user.is_sysop)
+	//	this.enhReaderKeys.validateMsg = "A";
 	// Some key bindings for the message list (not necessarily all of them)
 	this.msgListKeys = {
 		deleteMessage: KEY_DEL,
@@ -1130,6 +1136,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 
 	// Whether or not to prepend the subject for forwarded messages with "Fwd: "
 	this.prependFowardMsgSubject = true;
+
+	// An index of a quick-validation set for the sysop to apply to a user when reading their message, or
+	// an invalid index (such as -1) to show a menu of quick-validation values
+	this.quickUserValSetIndex = -1;
 
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
@@ -3450,7 +3460,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 			else if (retvalObj.userInput == "?")
 			{
 				console.clear("\x01n");
-				this.DisplayMsgListHelp(allowChgSubBoard, true);
+				this.DisplayMsgListHelp(!this.readingPersonalEmail && allowChgSubBoard, true);
 				console.clear("\x01n");
 				this.WriteMsgListScreenTopHeader();
 			}
@@ -3991,7 +4001,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		else if (lastUserInputUpper == this.msgListKeys.showHelp) // Show help
 		{
 			console.clear("\x01n");
-			this.DisplayMsgListHelp(allowChgSubBoard, true);
+			this.DisplayMsgListHelp(!this.readingPersonalEmail && allowChgSubBoard, true);
 			// Re-draw the message list header & help line before
 			// the menu is re-drawn
 			this.WriteMsgListScreenTopHeader();
@@ -5954,6 +5964,33 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				else
 					writeMessage = false;
 				break;
+			case this.enhReaderKeys.quickValUser: // Quick-validate the user
+				if (user.is_sysop)
+				{
+					var valRetObj = quickValidateLocalUser(msgHeader.from, this.scrollingReaderInterface && console.term_supports(USER_ANSI), this.quickUserValSetIndex);
+					if (valRetObj.needWholeScreenRefresh)
+					{
+						this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+						if (this.userSettings.useEnhReaderScrollbar)
+							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+						else
+						{
+							// TODO
+						}
+						this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+					}
+					else
+					{
+						writeMessage = false; // Don't refresh the whole message
+						if (valRetObj.refreshBottomLine)
+							this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+						if (valRetObj.optionBoxTopLeftX > 0 && valRetObj.optionBoxTopLeftY > 0 && valRetObj.optionBoxWidth > 0 && valRetObj.optionBoxHeight > 0)
+							this.RefreshMsgAreaRectangle(msgInfo.messageLines, topMsgLineIdx, valRetObj.optionBoxTopLeftX, valRetObj.optionBoxTopLeftY, valRetObj.optionBoxWidth, valRetObj.optionBoxHeight);
+					}
+				}
+				else
+					writeMessage = false;
+				break;
 			case this.enhReaderKeys.bypassSubBoardInNewScan:
 				writeMessage = false; // TODO: Finish
 				/*
@@ -7003,6 +7040,12 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					console.crlf();
 					console.pause();
 				}
+				else
+					writeMessage = false;
+				break;
+			case this.enhReaderKeys.quickValUser: // Quick-validate the user
+				if (user.is_sysop)
+					quickValidateLocalUser(msgHeader.from, this.scrollingReaderInterface && console.term_supports(USER_ANSI), this.quickUserValSetIndex);
 				else
 					writeMessage = false;
 				break;
@@ -8360,9 +8403,9 @@ function DigDistMsgReader_ReadConfigFile()
 				}
 				else if (settingUpper == "TABSPACES")
 				{
-					var numSpaces = +value;
+					var numSpaces = parseInt(value);
 					// If greater than 0, then set this.numTabSpaces
-					if (numSpaces > 0)
+					if (!isNaN(numSpaces) && numSpaces > 0)
 						this.numTabSpaces = numSpaces;
 				}
 				else if (settingUpper == "PAUSEAFTERNEWMSGSCAN")
@@ -8373,8 +8416,8 @@ function DigDistMsgReader_ReadConfigFile()
 					this.areaChooserHdrFilenameBase = value;
 				else if (settingUpper == "AREACHOOSERHDRMAXLINES")
 				{
-					var maxNumLines = +value;
-					if (maxNumLines > 0)
+					var maxNumLines = parseInt(value);
+					if (!isNaN(maxNumLines) && maxNumLines > 0)
 						this.areaChooserHdrMaxLines = maxNumLines;
 				}
 				else if (settingUpper == "THEMEFILENAME")
@@ -8403,6 +8446,12 @@ function DigDistMsgReader_ReadConfigFile()
 					this.prependFowardMsgSubject = (valueUpper == "TRUE");
 				else if (settingUpper == "ENABLEINDEXEDMODEMSGLISTCACHE")
 					this.enableIndexedModeMsgListCache = (valueUpper == "TRUE");
+				else if (settingUpper == "QUICKUSERVALSETINDEX")
+				{
+					var numberVal = parseInt(value);
+					if (!isNaN(numberVal) && numberVal > -1)
+						this.quickUserValSetIndex = numberVal;
+				}
 			}
 		}
 
@@ -8433,7 +8482,7 @@ function DigDistMsgReader_ReadConfigFile()
 			var setting = null;      // A setting name (string)
 			var value = null;        // To store a value for a setting (string)
 			// A regex for attribute settings - Note that this doesn't contain some of the control codes
-			var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');;
+			var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');
 			while (!themeFile.eof)
 			{
 				// Read the next line from the config file.
@@ -10444,6 +10493,10 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 		keyHelpLines.push("\x01h\x01cDEL              \x01g: \x01n\x01cDelete the current message");
 		keyHelpLines.push("\x01h\x01cCtrl-S           \x01g: \x01n\x01cSave the message (to the BBS machine)");
 		keyHelpLines.push("\x01h\x01c" + this.enhReaderKeys.validateMsg + "                \x01g: \x01n\x01cValidate the message");
+		var quickValUserLine = "\x01h\x01cCtrl-Q           \x01g: \x01n\x01cQuick-validate user (must be local)";
+		if (this.quickUserValSetIndex >= 0 && this.quickUserValSetIndex < 10)
+			quickValUserLine += "; Set index: " + this.quickUserValSetIndex;
+		keyHelpLines.push(quickValUserLine);
 	}
 	else if (this.CanDelete() || this.CanDeleteLastMsg())
 		keyHelpLines.push("\x01h\x01cDEL              \x01g: \x01n\x01cDelete the current message (if it's yours)");
@@ -12923,6 +12976,17 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 		// To remove the "By: <name> to <name> on <date>" lines altogether:
 		//msgTextAltered = msgTextAltered.substr(strIdx);
 	}
+
+	// ASCII 0x8D (141 decimal) is considered a soft-CR character in FidoNet.  In
+	// echocfg, under Global Settings, the setting "Strip Incoming Soft-CRs" can
+	// be enabled to remove those characters (that are not UTF-8
+	// encoded).
+	//msgTextAltered = msgTextAltered.replace(new RegExp("\x8D", "g"), ""); // 'i' with accent; hard word wrap character
+	//msgTextAltered = msgTextAltered.replace(new RegExp("\x8D", "g"), "\r\n"); // 'i' with accent; hard word wrap character
+	// This PDF lists some characters without any description - Are these normally non-printable?
+	// https://www.utm.edu/staff/lholder/csci201/ascii_table.pdf
+	// 0x8D (141) is 'i' with accent; hard word wrap character
+	//msgTextAltered = msgTextAltered.replace(new RegExp("[\x81\x8D\x8F\x90\x9D]", "g"), "");
 
 	var wordWrapTheMsgText = true;
 	if (typeof(pWordWrap) == "boolean")
@@ -21220,6 +21284,404 @@ function msg_pmode(pMsgbase, pMsgHdr)
 function isValidScanScopeVal(pScanScope)
 {
 	return (typeof(pScanScope) === "number" && (pScanScope == SCAN_SCOPE_SUB_BOARD || pScanScope == SCAN_SCOPE_GROUP || pScanScope == SCAN_SCOPE_ALL));
+}
+
+// Lets the user (if they're a sysop) apply a quick-validation value (from SCFG > System > Security Options > Quick-Validation Values)
+// to a user by username
+//
+// Parameters:
+//  pUsername: The name of the user to apply the quick-validation set to
+//  pUseANSI: Optional boolean - Whether or not to use ANSI
+//  pQuickValSetIdx: Optional - The index of the quick validation set to apply (0-9, as they
+//                   appear in SCFG). If this is omitted, a menu will be displayed to allow
+//                   choosing one of them
+//
+// Return value: An object containing the following properties:
+//               needWholeScreenRefresh: Boolean - Whether or not the whole screen needs to be
+//                                       refreshed (i.e., when the user has edited their twitlist)
+//               refreshBottomLine: Boolean - Whether or not the bottom line on the screen needs to be refreshed
+//               optionBoxTopLeftX: The top-left screen column of the option box (0 if none was used)
+//               optionBoxTopLeftY: The top-left screen row of the option box (0 if none was used)
+//               optionBoxWidth: The width of the option box (0 if none was used)
+//               optionBoxHeight: The height of the option box (0 if none was used)
+function quickValidateLocalUser(pUsername, pUseANSI, pQuickValSetIdx)
+{
+	var retObj = {
+		needWholeScreenRefresh: false,
+		refreshBottomLine: false,
+		optionBoxTopLeftX: 0,
+		optionBoxTopLeftY: 0,
+		optionBoxWidth: 0,
+		optionBoxHeight: 0
+	};
+
+	if (!user.is_sysop)
+		return retObj;
+	if (typeof(pUsername) !== "string" || pUsername == "")
+		return retObj;
+
+	var useANSI = typeof(pUseANSI) === "boolean" ? pUseANSI : console.term_supports(USER_ANSI);
+	//useANSI = false; // Temporary
+
+	var userNum = system.matchuser(pUsername);
+	if (userNum == 0)
+	{
+		var msgText = bbs.text(UnknownUser).replace(/\r|\n/g, ""); // Or UNKNOWN_USER
+		msgText += "\x01."; // Delay for 2 seconds
+		if (useANSI)
+		{
+			retObj.refreshBottomLine = true;
+			console.gotoxy(1, console.screen_columns);
+			console.cleartoeol("\x01n");
+			console.gotoxy(1, console.screen_columns);
+			console.attributes = msgAttrs;
+			console.putmsg(msgText);
+		}
+		else
+		{
+			console.attributes = "N";
+			console.crlf();
+			console.putmsg(msgText);
+		}
+		return retObj;
+	}
+
+
+	// Get an array of the quick-validation values from SCFG
+	var quickValidationVals = getQuickValidationVals();
+	// If pQuickValSetIdx is a number specifying a valid index, then use it; otherwise, display
+	// a menu of the quick-validation values to choose from
+	var quickValidationValSet = null;
+	var displayedMenu = false;
+	if (typeof(pQuickValSetIdx) === "number" && pQuickValSetIdx >= 0 && pQuickValSetIdx < quickValidationVals.length)
+		quickValidationValSet = quickValidationVals[pQuickValSetIdx];
+	else
+	{
+		// No valid validation set index given; display the menu
+		var menuX = 2;
+		var menuY = 3;
+		var valHdrLineWithUsername = "Quick validation for " + pUsername;
+		var menuHdrStr = " Level E 1 2 3 4 C E R";
+		console.attributes = "N";
+		if (useANSI)
+		{
+			menuX = 25;
+			menuY = 12;
+		}
+		else
+		{
+			menuX = 2;
+			menuY = 3;
+			menuHdrStr = "   " + menuHdrStr;
+			console.clear("\x01n");
+			console.print(valHdrLineWithUsername);
+			console.crlf();
+			console.print("Quick-Validation sets:");
+			console.crlf();
+			console.print(menuHdrStr);
+			console.crlf();
+		}
+		// Create the menu of quick-validation sets
+		var valSetMenu = makeQuickValidationValLightbarMenu(useANSI, menuX, menuY, quickValidationVals);
+		// If using ANSI, draw some border characters at the left, bottom, and right sides of the menu
+		if (useANSI)
+		{
+			// Screen refresh values for returning from this function
+			retObj.needWholeScreenRefresh = false;
+			retObj.optionBoxTopLeftX = valSetMenu.pos.x-1;
+			retObj.optionBoxTopLeftY = valSetMenu.pos.y-4;
+			retObj.optionBoxWidth = valSetMenu.size.width+2;
+			retObj.optionBoxHeight = valSetMenu.size.height+5;
+			retObj.refreshBottomLine = false;
+
+			// Display the menu
+			console.attributes = "GH";
+			// Top border
+			var screenRow = valSetMenu.pos.y - 4;
+			console.gotoxy(valSetMenu.pos.x-1, screenRow);
+			console.print(UPPER_LEFT_DOUBLE);
+			for (var i = 0; i < valSetMenu.size.width; ++i)
+				console.print(HORIZONTAL_DOUBLE);
+			console.print(UPPER_RIGHT_DOUBLE);
+			// Side border characters
+			screenRow = valSetMenu.pos.y - 3;
+			var height = valSetMenu.size.height + 3;
+			for (var i = 0; i < height; ++i)
+			{
+				console.gotoxy(valSetMenu.pos.x-1, screenRow);
+				console.print(VERTICAL_DOUBLE);
+				console.gotoxy(valSetMenu.pos.x+valSetMenu.size.width, screenRow);
+				console.print(VERTICAL_DOUBLE);
+				++screenRow;
+			}
+			// Bottom border characters
+			screenRow = valSetMenu.pos.y+valSetMenu.size.height;
+			console.gotoxy(valSetMenu.pos.x-1, screenRow);
+			console.print(LOWER_LEFT_DOUBLE);
+			for (var i = 0; i < valSetMenu.size.width; ++i)
+				console.print(HORIZONTAL_DOUBLE);
+			console.print(LOWER_RIGHT_DOUBLE);
+			console.attributes = "N";
+
+			console.gotoxy(menuX, menuY-3);
+			//printf("%-*s", valSetMenu.size.width, "Quick validation for:");
+			printf("%-*s", valSetMenu.size.width, "Quick validation sets:");
+			console.gotoxy(menuX, menuY-2);
+			printf("%-*s", valSetMenu.size.width, pUsername.substr(0, valSetMenu.size.width));
+			console.gotoxy(menuX, menuY-1);
+			console.print(menuHdrStr);
+		}
+		else
+			retObj.needWholeScreenRefresh = true;
+		quickValidationValSet = valSetMenu.GetVal();
+		displayedMenu = true;
+		console.attributes = "N";
+	}
+	var statusMsg = "";
+	var msgAttrs = "N";
+	if (quickValidationValSet != null && typeof(quickValidationValSet) === "object")
+	{
+		var userToEdit = new User(userNum);
+		/*
+		user.security properties
+		Name			Type	Ver		Description
+		password		string	3.10	password
+		password_date	number	3.10	date password last modified (time_t format)
+		level			number	3.10	security level (0-99)
+		flags1			number	3.10	flag set #1 (bitfield) can use +/-[A-?] notation
+		flags2			number	3.10	flag set #2 (bitfield) can use +/-[A-?] notation
+		flags3			number	3.10	flag set #3 (bitfield) can use +/-[A-?] notation
+		flags4			number	3.10	flag set #4 (bitfield) can use +/-[A-?] notation
+		exemptions		number	3.10	exemption flags (bitfield) can use +/-[A-?] notation
+		restrictions	number	3.10	restriction flags (bitfield) can use +/-[A-?] notation
+		credits			number	3.10	credits
+		free_credits	number	3.10	free credits (for today only)
+		minutes			number	3.10	extra minutes (time bank)
+		extra_time		number	3.10	extra minutes (for today only)
+		expiration_date	number	3.10	expiration date/time (time_t format)
+		*/
+		// Each object in the returned array will have the following properties:
+		//  level (numeric)
+		//  expire
+		//  flags1
+		//  flags2
+		//  flags3
+		//  flags4
+		//  credits
+		//  exemptions
+		//  restrictions
+		userToEdit.security.level = quickValidationValSet.level;
+		userToEdit.security.flags1 |= quickValidationValSet.flags1;
+		userToEdit.security.flags2 |= quickValidationValSet.flags2;
+		userToEdit.security.flags3 |= quickValidationValSet.flags3;
+		userToEdit.security.flags4 |= quickValidationValSet.flags4;
+		userToEdit.security.exemptions |= quickValidationValSet.exemptions;
+		userToEdit.security.restrictions |= quickValidationValSet.restrictions;
+		userToEdit.security.credits = quickValidationValSet.credits;
+		statusMsg = "Validation set applied";
+		msgAttrs = "CH";
+	}
+	else
+	{
+		statusMsg = "Aborted";
+		msgAttrs = "YH";
+	}
+
+	// Display the final status message
+	if (useANSI)
+	{
+		if (displayedMenu)
+		{
+			// Clear the box on the screen and write that the validation set was applied to the user
+			var topBoxScreenRow = valSetMenu.pos.y - 3;
+			clearScreenRectangle(valSetMenu.pos.x, topBoxScreenRow, valSetMenu.size.width, valSetMenu.size.height+3);
+			console.gotoxy(valSetMenu.pos.x, topBoxScreenRow);
+			console.attributes = msgAttrs;
+			console.print(statusMsg + "\x01;\x01;");
+		}
+		else
+		{
+			retObj.refreshBottomLine = true;
+			console.gotoxy(1, console.screen_columns);
+			console.cleartoeol("\x01n");
+			console.gotoxy(1, console.screen_columns);
+			console.attributes = msgAttrs;
+			console.print(statusMsg + "\x01;\x01;");
+		}
+	}
+	else
+	{
+		console.crlf();
+		console.attributes = msgAttrs;
+		console.print(statusMsg + "\x01n\r\n\x01p");
+	}
+
+	console.attributes = "N";
+
+	return retObj;
+}
+
+// Creates a DDLightbarMenu object to use for the quick-validation values.
+//
+// Parameters:
+//  pUseANSI: Boolean - Whether or not to enable the use of ANSI
+//  pMenuX: The top-left X coordinate for the menu
+//  pMenuY: The top-left Y coordinate for the menu
+//  pQuickValidationVals: An array of the quick-validation values from SCFG > System > Security Settings > Quick-Validation Values
+//
+// Return value: A DDLightbarMenu object to use for the quick-validation values menu
+function makeQuickValidationValLightbarMenu(pUseANSI, pMenuX, pMenuY, pQuickValidationVals)
+{
+	var useANSI = (typeof(pUseANSI) === "boolean" ? pUseANSI : true);
+
+	//  Level E 1 2 3 4 C E R
+	//     60 Y Y Y Y Y Y Y Y
+	var quickValsMenuWidth = 22; //console.screen_columns - 4;
+	if (!console.term_supports(USER_ANSI))
+		quickValsMenuWidth += 3;
+	var quickValsMenuHeight = pQuickValidationVals.length;
+	var quickValsMenu = new DDLightbarMenu(pMenuX, pMenuY, quickValsMenuWidth, quickValsMenuHeight);
+	quickValsMenu.AddAdditionalQuitKeys("qQ");
+	quickValsMenu.scrollbarEnabled = true;
+	quickValsMenu.borderEnabled = false;
+	quickValsMenu.allowANSI = useANSI;
+
+	//SetBorderChars(pBorderChars)
+	//"upperLeft", "upperRight", "lowerLeft", "lowerRight", "top", "bottom", "left", "right"
+
+	var colors = {
+		level: "\x01n\x01w",
+		levelHi: "\x01n\x01w\x014",
+		YN: "\x01n\x01w",
+		YNHi: "\x01n\x01w\x014"
+	};
+	var itemTextIdxes = {
+		levelStart: 0,
+		levelEnd: 7,
+		YN1Start: 7,
+		YN1End: 9,
+		YN2Start: 9,
+		YN2End: 11,
+		YN3Start: 11,
+		YN3End: 13,
+		YN4Start: 13,
+		YN4End: 15,
+		YN5Start: 15,
+		YN5End: 17,
+		YN6Start: 17,
+		YN6End: 19,
+		YN7Start: 19,
+		YN7End: 21,
+		YN8Start: 21,
+		YN8End: 23
+	};
+
+	quickValsMenu.SetColors({
+		itemColor: [{start: itemTextIdxes.levelStart, end: itemTextIdxes.levelEnd, attrs: colors.level},
+		            {start: itemTextIdxes.YN1Start, end: itemTextIdxes.YN1End, attrs: colors.YN},
+					{start: itemTextIdxes.YN2Start, end: itemTextIdxes.YN2End, attrs: colors.YN},
+					{start: itemTextIdxes.YN3Start, end: itemTextIdxes.YN3End, attrs: colors.YN},
+					{start: itemTextIdxes.YN4Start, end: itemTextIdxes.YN4End, attrs: colors.YN},
+					{start: itemTextIdxes.YN5Start, end: itemTextIdxes.YN5End, attrs: colors.YN},
+					{start: itemTextIdxes.YN6Start, end: itemTextIdxes.YN6End, attrs: colors.YN},
+					{start: itemTextIdxes.YN7Start, end: itemTextIdxes.YN7End, attrs: colors.YN},
+					{start: itemTextIdxes.YN8Start, end: itemTextIdxes.YN8End, attrs: colors.YN}],
+		selectedItemColor: [{start: itemTextIdxes.levelStart, end: itemTextIdxes.levelEnd, attrs: colors.levelHi},
+		                    {start: itemTextIdxes.YN1Start, end: itemTextIdxes.YN1End, attrs: colors.YNHi},
+		                    {start: itemTextIdxes.YN2Start, end: itemTextIdxes.YN2End, attrs: colors.YNHi},
+		                    {start: itemTextIdxes.YN3Start, end: itemTextIdxes.YN3End, attrs: colors.YNHi},
+		                    {start: itemTextIdxes.YN4Start, end: itemTextIdxes.YN4End, attrs: colors.YNHi},
+		                    {start: itemTextIdxes.YN5Start, end: itemTextIdxes.YN5End, attrs: colors.YNHi},
+		                    {start: itemTextIdxes.YN6Start, end: itemTextIdxes.YN6End, attrs: colors.YNHi},
+		                    {start: itemTextIdxes.YN7Start, end: itemTextIdxes.YN7End, attrs: colors.YNHi},
+		                    {start: itemTextIdxes.YN8Start, end: itemTextIdxes.YN8End, attrs: colors.YNHi}]
+	});
+
+	quickValsMenu.quickValidationVals = pQuickValidationVals;
+	//format("%*s", this.numTabSpaces, "")
+	quickValsMenu.itemFormatStr = "%6d %s %s %s %s %s %s %s %s";
+	quickValsMenu.NumItems = function() {
+		return this.quickValidationVals.length;
+	};
+	quickValsMenu.GetItem = function(pItemIndex) {
+		var valYNStrs = [
+			this.quickValidationVals[pItemIndex].expire > 0 ? CHECK_CHAR : " ",
+			this.quickValidationVals[pItemIndex].flags1 > 0 ? CHECK_CHAR : " ",
+			this.quickValidationVals[pItemIndex].flags2 > 0 ? CHECK_CHAR : " ",
+			this.quickValidationVals[pItemIndex].flags3 > 0 ? CHECK_CHAR : " ",
+			this.quickValidationVals[pItemIndex].flags4 > 0 ? CHECK_CHAR : " ",
+			this.quickValidationVals[pItemIndex].credits > 0 ? CHECK_CHAR : " ",
+			this.quickValidationVals[pItemIndex].exemptions > 0 ? CHECK_CHAR : " ",
+			this.quickValidationVals[pItemIndex].restrictions > 0 ? CHECK_CHAR : " "
+		];
+
+		var menuItemObj = this.MakeItemWithRetval(-1);
+		menuItemObj.retval = this.quickValidationVals[pItemIndex];
+		menuItemObj.text = format("%6d", this.quickValidationVals[pItemIndex].level);
+		for (var i = 0; i < valYNStrs.length; ++i)
+			menuItemObj.text += " " + valYNStrs[i];
+		return menuItemObj;
+	};
+
+	return quickValsMenu;
+}
+
+// Returns an array of the quick-validation sets configured in
+// SCFG > System > Security > Quick-Validation Values.  This reads
+// from main.ini, which exists with Synchronet 3.20 and newer.
+// In SCFG:
+//
+// Level                 60     |
+// Flag Set #1                  |
+// Flag Set #2                  |
+// Flag Set #3                  |
+// Flag Set #4                  |
+// Exemptions                   |
+// Restrictions                 |
+// Extend Expiration     0 days |
+// Additional Credits    0      |
+//
+// Each object in the returned array will have the following properties:
+//  level (numeric)
+//  expire
+//  flags1
+//  flags2
+//  flags3
+//  flags4
+//  credits
+//  exemptions
+//  restrictions
+function getQuickValidationVals()
+{
+	var validationValSets = [];
+	// In SCFG > System > Security > Quick-Validation Values, there are 10 sets of
+	// validation values.  These are in main.ini as [valset:0] through [valset:9]
+	// This reads from main.ini, which exists with Synchronet 3.20 and newer.
+	//system.version_num >= 32000
+	var mainIniFile = new File(system.ctrl_dir + "main.ini");
+	if (mainIniFile.open("r"))
+	{
+		for (var i = 0; i < 10; ++i)
+		{
+			var valSection = mainIniFile.iniGetObject(format("valset:%d", i));
+			if (valSection != null)
+				validationValSets.push(valSection);
+		}
+		mainIniFile.close();
+	}
+	return validationValSets;
+}
+
+// Clears a rectangle on the screen
+function clearScreenRectangle(pX, pY, pWidth, pHeight)
+{
+	console.attributes = "N";
+	var lastScreenRow = pY + pHeight - 1;
+	for (var screenRow = pY; screenRow <= lastScreenRow; ++screenRow)
+	{
+		console.gotoxy(pX, screenRow);
+		printf("%-*s", pWidth, "");
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////

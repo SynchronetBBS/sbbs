@@ -5,6 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.72     2023-04-16   Added a quick-validation hotkey, Ctrl-Q, for sysops to
+                      use to apply a quick-validation set to a user when
+                      reading their message. Quick-Validation sets are
+                      configured in SCFG > System > Security Options >
+                      Quick-Validation Values.
 1.71     2023-04-07   Ctrl-C is now supported for message searches to abort the
                       search. A new configurable string was added for this
                       situation: msgSearchAbortedText

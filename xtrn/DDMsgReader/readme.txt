@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.71
-                           Release date: 2023-04-07
+                                 Version 1.72
+                           Release date: 2023-04-16
 
                                      by
 
@@ -31,8 +31,9 @@ Contents
    - Main configuration file (DDMsgReader.cfg)
    - Theme configuration file
 7. Indexed reader mode
-8. Drop file for replying to messages with Synchronet message editors
-9. text.dat lines used in Digital Distortion Message Reader
+8. Quick-Validating users (while reading their message)
+9. Drop file for replying to messages with Synchronet message editors
+10. text.dat lines used in Digital Distortion Message Reader
 
 
 1. Disclaimer
@@ -143,6 +144,8 @@ confirmation before deleting the messages.
 - Has an "indexed" reader mode, which lists all sub-boards configured for
   newscan by the user, with total number of messages, number of new messages,
   and last post date, allowing the user to select a sub-board to read
+- Allows the sysop to quick-validate a local user while reading one of their
+  messages. The hotkey to do so is Ctrl-Q.
 
 If a message has been marked for deletion, it will appear in the message list
 with a blinking red asterisk (*) after the message number.
@@ -730,6 +733,16 @@ enableIndexedModeMsgListCache         For indexed reader mode, whether or not to
                                       enable caching the message header lists
                                       for performance
 
+quickUserValSetIndex                  The index of the quick-validation set to
+                                      use for quick-validating a local user.
+                                      Normally, this should be 0-9, as there are
+                                      10 sets of values in SCFG). Alternately,
+                                      quickUserValSetIndex can be set to
+                                      something invalid (like -1) to have a menu
+                                      of the quick-validation sets displayed for
+                                      you to choose from
+one.
+
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
 
@@ -1185,7 +1198,43 @@ NEW FUNNY - FUNNY Jokes and Stories                          1184  3 2023-04-04
 NEW MEMORIES - NOSTALGIA                                     2434  3 2023-04-03
 
 
-8. Drop file for replying to messages with Synchronet message editors
+8. Quick-Validating users (while reading their message)
+=======================================================
+While reading messages, the sysop may apply quick-validation values to a local
+user using the Ctrl-Q hotkey. Quick-Validation sets are configured in SCFG >
+System > Security Options > Quick-Validation Values. In DDMsgReader.cfg, the
+option quickUserValSetIndex can be used to set the index of the quick-validation
+set to use (normally it would be 0-9, as there are 10 sets of values in SCFG).
+Alternately, quickUserValSetIndex can be set to something invalid (like -1) for
+DDMsgReader to display a menu of the quick-validation sets to let you choose
+one.
+
+A quick-validation set in CFG is a set that includes a security level, flag
+sets, exemptions, restrictions, and additional credits. For example:
+
+░░░░╔══════════════════════════════════════════════════════════════════════╗░░░░
+░░░░║                         System Conf╔══════════════════════════[  >]╗ ║░░░░
+░░░░╔════════════════════════════════════║     Quick-Validation Set 0    ║═╗░░░░
+░░░░║                     ╔══════════════╠═══════════════════════════════╣ ║░░░░
+░░░░╠═════════════════════║ Quick-Validat║ │Level                 5      ║═╣░░░░
+░░░░║ │System Password    ╠══════════════║ │Flag Set #1                  ║ ║░░░░
+░░░░║ │Prompt for System P║ │0  SL: 5   F║ │Flag Set #2                  ║ ║░░░░
+░░░░║ │Allow Sysop Access ║ │1  SL: 10  F║ │Flag Set #3                  ║ ║░░░░
+░░░░║ │Allow Login by Real║ │2  SL: 20  F║ │Flag Set #4                  ║ ║░░░░
+░░░░║ │Allow Login by User║ │3  SL: 30  F║ │Exemptions                   ║ ║░░░░
+░░░░║ │Users Can Choose Pa║ │4  SL: 40  F║ │Restrictions                 ║ ║░░░░
+░░░░║ │Always Prompt for P║ │5  SL: 50  F║ │Extend Expiration     0 days ║ ║░░░░
+░░░░║ │Display/Log Passwor║ │6  SL: 60  F║ │Additional Credits    0      ║ ║░░░░
+░░░░║ │Days to Preserve De║ │7  SL: 70  F╚═══════════════════════════════╝ ║░░░░
+░░░░║ │Maximum Days of Use║ │8  SL: 80  F1:         ║                      ║░░░░
+░░░░║ │Open to New Users  ║ │9  SL: 90  F1:         ║                      ║░░░░
+░░░░║ │User Expires When O╚═════════════════════════╝                      ║░░░░
+░░░░║ │Security Level Values...                                            ║░░░░
+░░░░║ │Expired Account Values...                                           ║░░░░
+░░░░║ │Quick-Validation Values...                                          ║░░░░
+░░░░╚══════════════════════════════════════════════════════════════════════╝
+
+9. Drop file for replying to messages with Synchronet message editors
 =====================================================================
 When reading a message, the message lister will write a drop file in the node
 directory, called DDML_SyncSMBInfo.txt, which contains some information about
@@ -1220,13 +1269,14 @@ Note that if you have SlyEdit installed on your BBS, this version of Digital
 Distortion Message Reader (1.00) requires version 1.27 or newer of SlyEdit in
 order for SlyEdit to properly get the correct message from the message lister.
 
-9. text.dat lines used in Digital Distortion Message Reader
+10. text.dat lines used in Digital Distortion Message Reader
 ===========================================================
 This message reader uses the following lines from Synchronet's text.dat file
 (located in the sbbs/ctrl directory):
 10 (Email)
 30 (Aborted)
 54 (DeleteMailQ)
+390 (UnknownUser)
 501 (SelectItemHdr)
 503 (SelectItemWhich)
 563 (Pause)
