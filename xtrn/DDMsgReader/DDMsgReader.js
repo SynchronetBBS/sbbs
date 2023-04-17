@@ -12722,7 +12722,7 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 						if ((lastHdrFieldLabel == null) || (hdrFieldLabel != lastHdrFieldLabel))
 						{
 							msgHdrInfoLines.push("");
-							msgHdrInfoLines.push(hdrFieldLabel + "!");
+							msgHdrInfoLines.push(hdrFieldLabel);
 						}
 						var infoLineWrapped = msgHdr.field_list[fieldI].data;
 						var infoLineWrappedArray = lfexpand(infoLineWrapped).split("\r\n");
@@ -12868,24 +12868,18 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 
 	// Make sure the header lines aren't too long for the user's terminal.
 	// Leave a column for the scrollbar.
-	// Note: substrWithAttrCodes(pStr, pStartIdx, pLen) is defined in dd_lightbar_menu.js
+	var maxLen = console.screen_columns - 1;
+	var hdrInfoLinesWrapped = [];
 	for (var i = 0; i < msgHdrInfoLines.length; ++i)
 	{
-		var maxLen = console.screen_columns - 1;
-		var strLen = console.strlen(msgHdrInfoLines[i]);
-		if (console.strlen(msgHdrInfoLines[i]) > maxLen)
+		var wrappedLines = word_wrap(msgHdrInfoLines[i], maxLen).split("\n");
+		for (var wrappedI = 0; wrappedI < wrappedLines.length; ++wrappedI)
 		{
-			// This assumes the line will probably not span more than 2 lines after
-			// being split
-			var line1 = substrWithAttrCodes(msgHdrInfoLines[i], 0, maxLen);
-			var line2 = substrWithAttrCodes(msgHdrInfoLines[i], maxLen, maxLen);
-			msgHdrInfoLines[i] = line1;
-			msgHdrInfoLines.splice(i+1, 0, line2);
-			++i;
+			if (console.strlen(wrappedLines[wrappedI]) > 0)
+				hdrInfoLinesWrapped.push(wrappedLines[wrappedI]);
 		}
 	}
-
-	return msgHdrInfoLines;
+	return hdrInfoLinesWrapped;
 }
 
 // For the DigDistMsgReader class: Gets & prepares message information for
