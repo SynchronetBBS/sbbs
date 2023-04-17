@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.73     2023-04-17   Bug fix: When getting header lines to view, ensure the
+                      header lines are not too wide for the user's terminal.
+                      Header lines that are too long will be split into no more
+                      than 2 lines.
 1.72     2023-04-16   Added a quick-validation hotkey, Ctrl-Q, for sysops to
                       use to apply a quick-validation set to a user when
                       reading their message. Quick-Validation sets are
