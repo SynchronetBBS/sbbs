@@ -21338,7 +21338,6 @@ function quickValidateLocalUser(pUsername, pUseANSI, pQuickValSetIdx)
 		return retObj;
 
 	var useANSI = typeof(pUseANSI) === "boolean" ? pUseANSI : console.term_supports(USER_ANSI);
-	//useANSI = false; // Temporary
 
 	var userNum = system.matchuser(pUsername);
 	if (userNum == 0)
