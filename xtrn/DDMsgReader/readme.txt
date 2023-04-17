@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.72
-                           Release date: 2023-04-16
+                                 Version 1.73
+                           Release date: 2023-04-17
 
                                      by
 
@@ -1208,6 +1208,10 @@ set to use (normally it would be 0-9, as there are 10 sets of values in SCFG).
 Alternately, quickUserValSetIndex can be set to something invalid (like -1) for
 DDMsgReader to display a menu of the quick-validation sets to let you choose
 one.
+
+DDMsgReader applies the flag sets, exemptions, and restrictions to a user in
+addition to any that the user might already have, so that any that you have
+added for a user will be preserved (DDMsgReader does a bitwise 'or').
 
 A quick-validation set in CFG is a set that includes a security level, flag
 sets, exemptions, restrictions, and additional credits. For example:
