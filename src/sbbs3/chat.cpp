@@ -607,7 +607,7 @@ bool sbbs_t::sysop_page(void)
 
 		if(!(sys_status&SS_SYSPAGE)) {
 			logline("C", "paged sysop for chat");
-			sprintf(str, "%s paged you to chat", useron.alias);
+			SAFEPRINTF2(str, "%s paged you to chat from node %u", useron.alias, cfg.node_num);
 			notify(&cfg, 1, str, NULL);
 			ftouch(syspage_semfile);
 			char topic[128];
