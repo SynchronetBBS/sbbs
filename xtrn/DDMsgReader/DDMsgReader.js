@@ -124,6 +124,10 @@
  *                              Added a quick-validation hotkey, Ctrl-Q, for sysops to use to apply a
  *                              quick-validation set to a user when reading their message. Quick-Validation
  *                              sets are configured in SCFG > System > Security Options > Quick-Validation Values.
+ * 2023-04-17 Eric Oulashin     Version 1.73
+ *                              Bug fix: When getting header lines to view, ensure the header lines
+ *                              are not too wide for the user's terminal. Header lines that are too
+ *                              long will be split into no more than 2 lines.
  */
 
 "use strict";
@@ -229,8 +233,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.72";
-var READER_DATE = "2023-04-16";
+var READER_VERSION = "1.73";
+var READER_DATE = "2023-04-17";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -12860,6 +12864,25 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pMsgHdr, pKludgeOnly)
 		}
 		if (msgHdrInfoLines[msgHdrInfoLines.length-1].length == 0)
 			msgHdrInfoLines.pop();
+	}
+
+	// Make sure the header lines aren't too long for the user's terminal.
+	// Leave a column for the scrollbar.
+	// Note: substrWithAttrCodes(pStr, pStartIdx, pLen) is defined in dd_lightbar_menu.js
+	for (var i = 0; i < msgHdrInfoLines.length; ++i)
+	{
+		var maxLen = console.screen_columns - 1;
+		var strLen = console.strlen(msgHdrInfoLines[i]);
+		if (console.strlen(msgHdrInfoLines[i]) > maxLen)
+		{
+			// This assumes the line will probably not span more than 2 lines after
+			// being split
+			var line1 = substrWithAttrCodes(msgHdrInfoLines[i], 0, maxLen);
+			var line2 = substrWithAttrCodes(msgHdrInfoLines[i], maxLen, maxLen);
+			msgHdrInfoLines[i] = line1;
+			msgHdrInfoLines.splice(i+1, 0, line2);
+			++i;
+		}
 	}
 
 	return msgHdrInfoLines;
