@@ -65,6 +65,17 @@ pthread_mutex_t sdl_keylock;
 sem_t sdl_key_pending;
 static unsigned int sdl_pending_mousekeys=0;
 
+/*
+ * TODO:
+ * The intent of this was a copy of current vstat that
+ * does not require vstatlock to be held.
+ *
+ * Unfortunately, this is accessed from multiple threads
+ * currently (at least main and video events), so it
+ * requires *a* lock, and vstatlock is used for that purpose.
+ * This should either have its own lock, or be used *only*
+ * from a single thread.
+ */
 static struct video_stats cvstat;
 
 struct sdl_keyvals {
