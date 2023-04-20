@@ -1060,6 +1060,8 @@ void sdl_video_event_thread(void *data)
 						return;
 					case SDL_USEREVENT_FLUSH:
 						pthread_mutex_lock(&vstatlock);
+						struct video_stats lvstat = cvstat;
+						pthread_mutex_unlock(&vstatlock);
 						pthread_mutex_lock(&win_mutex);
 						if (win != NULL) {
 							pthread_mutex_lock(&sdl_headlock);
@@ -1080,19 +1082,19 @@ void sdl_video_event_thread(void *data)
 									int row;
 									int tw, th;
 
-									sdl.RenderClear(renderer);
 									if (internal_scaling) {
 										struct graphics_buffer *gb;
 										int xscale, yscale;
-										internal_scaling_factors(cvstat.winwidth, cvstat.winheight, &xscale, &yscale);
+										internal_scaling_factors(lvstat.winwidth, lvstat.winheight, &xscale, &yscale);
 										gb = do_scale(list, xscale, yscale,
-										    cvstat.aspect_width, cvstat.aspect_height);
+										    lvstat.aspect_width, lvstat.aspect_height);
 										src.x = 0;
 										src.y = 0;
 										src.w = gb->w;
 										src.h = gb->h;
 										if (sdl.QueryTexture(texture, NULL, NULL, &tw, &th) != 0)
 											fprintf(stderr, "Unable to query texture (%s)\n", sdl.GetError());
+										sdl.RenderClear(renderer);
 										if (sdl.LockTexture(texture, &src, &pixels, &pitch) != 0)
 											fprintf(stderr, "Unable to lock texture (%s)\n", sdl.GetError());
 										if (pitch != gb->w * sizeof(gb->data[0])) {
@@ -1112,8 +1114,8 @@ void sdl_video_event_thread(void *data)
 											memcpy(pixels, gb->data, gb->w * ch * sizeof(gb->data[0]));
 										}
 										sdl.UnlockTexture(texture);
-										dst.x = (cvstat.winwidth - gb->w) / 2;
-										dst.y = (cvstat.winheight - gb->h) / 2;
+										dst.x = (lvstat.winwidth - gb->w) / 2;
+										dst.y = (lvstat.winheight - gb->h) / 2;
 										dst.w = gb->w;
 										dst.h = gb->h;
 										release_buffer(gb);
@@ -1125,6 +1127,7 @@ void sdl_video_event_thread(void *data)
 										src.h = list->rect.height;
 										if (sdl.QueryTexture(texture, NULL, NULL, &tw, &th) != 0)
 											fprintf(stderr, "Unable to query texture (%s)\n", sdl.GetError());
+										sdl.RenderClear(renderer);
 										if (sdl.LockTexture(texture, &src, &pixels, &pitch) != 0)
 											fprintf(stderr, "Unable to lock texture (%s)\n", sdl.GetError());
 										if (pitch != list->rect.width * sizeof(list->data[0])) {
@@ -1144,23 +1147,22 @@ void sdl_video_event_thread(void *data)
 											memcpy(pixels, list->data, list->rect.width * ch * sizeof(list->data[0]));
 										}
 										sdl.UnlockTexture(texture);
-										dst.w = cvstat.winwidth;
-										dst.h = cvstat.winheight;
+										dst.w = lvstat.winwidth;
+										dst.h = lvstat.winheight;
 										// Get correct aspect ratio for dst...
-										aspect_fix(&dst.w, &dst.h, cvstat.aspect_width, cvstat.aspect_height);
-										dst.x = (cvstat.winwidth - dst.w) / 2;
-										dst.y = (cvstat.winheight - dst.h) / 2;
+										aspect_fix(&dst.w, &dst.h, lvstat.aspect_width, lvstat.aspect_height);
+										dst.x = (lvstat.winwidth - dst.w) / 2;
+										dst.y = (lvstat.winheight - dst.h) / 2;
 									}
 									if (sdl.RenderCopy(renderer, texture, &src, &dst))
 										fprintf(stderr, "RenderCopy() failed! (%s)\n", sdl.GetError());
+									sdl.RenderPresent(renderer);
 								}
 								bitmap_drv_free_rect(list);
 							}
-							sdl.RenderPresent(renderer);
 						}
 
 						pthread_mutex_unlock(&win_mutex);
-						pthread_mutex_unlock(&vstatlock);
 						break;
 					case SDL_USEREVENT_SETNAME:
 						pthread_mutex_lock(&win_mutex);
