@@ -665,6 +665,11 @@ static void setup_surfaces_locked(struct video_stats *vs)
 			sdl.DestroyTexture(texture);
 		texture = newtexture;
 	}
+	if (vs != &vstat) {
+		pthread_mutex_lock(&vstatlock);
+		*vs = vstat;
+		pthread_mutex_unlock(&vstatlock);
+	}
 	sdl.SetWindowMinimumSize(win, idealmw, idealmh);
 
 	if(win!=NULL) {
@@ -686,14 +691,13 @@ static void setup_surfaces(void)
 }
 
 /* Called from event thread only */
-static void sdl_add_key(unsigned int keyval)
+static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 {
-	if(keyval==0xa600) {
+	if(keyval==0xa600 && vs != NULL) {
 		fullscreen=!fullscreen;
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		sdl.SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-		// TODO: This uses vstat from the video event thread...
-		setup_surfaces();
+		setup_surfaces_locked(vs);
 		return;
 	}
 	if(keyval <= 0xffff) {
@@ -787,7 +791,7 @@ static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 }
 
 static void
-sdl_add_keys(uint8_t *utf8s)
+sdl_add_keys(uint8_t *utf8s, struct video_stats *vs)
 {
 	char *chars;
 	char *p;
@@ -795,7 +799,7 @@ sdl_add_keys(uint8_t *utf8s)
 	chars = utf8_to_cp(getcodepage(), utf8s, '\x00', strlen((char *)utf8s), NULL);
 	if (chars) {
 		for (p = chars; *p; p++) {
-			sdl_add_key(*((uint8_t *)p));
+			sdl_add_key(*((uint8_t *)p), vs);
 		}
 		free(chars);
 	}
@@ -807,7 +811,7 @@ static void sdl_mouse_thread(void *data)
 	SetThreadName("SDL Mouse");
 	while(1) {
 		if(mouse_wait())
-			sdl_add_key(CIO_KEY_MOUSE);
+			sdl_add_key(CIO_KEY_MOUSE, NULL);
 	}
 }
 
@@ -945,11 +949,11 @@ void sdl_video_event_thread(void *data)
 					    || ev.key.keysym.sym == SDLK_KP_PLUS
 					    || ev.key.keysym.sym == SDLK_KP_PERIOD))
 						break;
-					sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
+					sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod), &cvstat);
 				}
 				else if (!isprint(ev.key.keysym.sym)) {
 					if (ev.key.keysym.sym < 128)
-						sdl_add_key(ev.key.keysym.sym);
+						sdl_add_key(ev.key.keysym.sym, &cvstat);
 				}
 				break;
 			case SDL_TEXTINPUT:
@@ -957,9 +961,9 @@ void sdl_video_event_thread(void *data)
 					unsigned int charcode = sdl_get_char_code(last_sym, last_mod & ~(KMOD_ALT));
 					// If the key is exactly what we would expect, use sdl_get_char_code()
 					if (*(uint8_t *)ev.text.text == charcode)
-						sdl_add_key(sdl_get_char_code(last_sym, last_mod));
+						sdl_add_key(sdl_get_char_code(last_sym, last_mod), &cvstat);
 					else
-						sdl_add_keys((uint8_t *)ev.text.text);
+						sdl_add_keys((uint8_t *)ev.text.text, &cvstat);
 				}
 				break;
 			case SDL_KEYUP:
@@ -1025,7 +1029,7 @@ void sdl_video_event_thread(void *data)
 				if (ciolib_reaper)
 					sdl_user_func(SDL_USEREVENT_QUIT);
 				else
-					sdl_add_key(CIO_KEY_QUIT);
+					sdl_add_key(CIO_KEY_QUIT, &cvstat);
 				break;
 			case SDL_WINDOWEVENT:
 				switch(ev.window.event) {
