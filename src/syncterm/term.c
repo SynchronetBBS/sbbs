@@ -6,6 +6,7 @@
 #include <ciolib.h>
 #include <cterm.h>
 #include <genwrap.h>
+#include <math.h>
 #include <stdbool.h>
 #include <vidmodes.h>
 
