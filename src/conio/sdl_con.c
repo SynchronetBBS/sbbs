@@ -65,19 +65,6 @@ pthread_mutex_t sdl_keylock;
 sem_t sdl_key_pending;
 static unsigned int sdl_pending_mousekeys=0;
 
-/*
- * TODO:
- * The intent of this was a copy of current vstat that
- * does not require vstatlock to be held.
- *
- * Unfortunately, this is accessed from multiple threads
- * currently (at least main and video events), so it
- * requires *a* lock, and vstatlock is used for that purpose.
- * This should either have its own lock, or be used *only*
- * from a single thread.
- */
-static struct video_stats cvstat;
-
 struct sdl_keyvals {
 	int	keysym
 		,key
@@ -200,7 +187,7 @@ const struct sdl_keyvals sdl_keyval[] =
 };
 
 void sdl_video_event_thread(void *data);
-static void setup_surfaces_locked(void);
+static void setup_surfaces_locked(struct video_stats *vs);
 
 static void sdl_user_func(int func, ...)
 {
@@ -348,25 +335,29 @@ void sdl_flush(void)
  * vstat lock must be held
  */
 static bool
-window_can_scale_internally(int winwidth, int winheight)
+window_can_scale_internally(struct video_stats *vs)
 {
 	int fw, fh;
-	aspect_fix(&winwidth, &winheight, cvstat.aspect_width, cvstat.aspect_height);
-	fw = winwidth;
-	fh = winheight;
-	aspect_reverse(&winwidth, &winheight, cvstat.scrnwidth, cvstat.scrnheight, cvstat.aspect_width, cvstat.aspect_height);
-	if (fw == winwidth || fh == winheight)
+	int ww = vs->winwidth;
+	int wh = vs->winheight;
+	aspect_fix(&ww, &wh, vs->aspect_width, vs->aspect_height);
+	fw = ww;
+	fh = wh;
+	aspect_reverse(&ww, &wh, vs->scrnwidth, vs->scrnheight, vs->aspect_width, vs->aspect_height);
+	if (fw == ww || fh == wh)
 		return true;
 	return false;
 }
 
 static void
-internal_scaling_factors(int winwidth, int winheight, int *x, int *y)
+internal_scaling_factors(int *x, int *y, struct video_stats *vs)
 {
-	aspect_fix_low(&winwidth, &winheight, cvstat.aspect_width, cvstat.aspect_height);
-	aspect_reverse(&winwidth, &winheight, cvstat.scrnwidth, cvstat.scrnheight, cvstat.aspect_width, cvstat.aspect_height);
-	*x = winwidth / cvstat.scrnwidth;
-	*y = winheight / cvstat.scrnheight;
+	int winwidth = vs->winwidth;
+	int winheight = vs->winheight;
+	aspect_fix_low(&winwidth, &winheight, vs->aspect_width, vs->aspect_height);
+	aspect_reverse(&winwidth, &winheight, vs->scrnwidth, vs->scrnheight, vs->aspect_width, vs->aspect_height);
+	*x = winwidth / vs->scrnwidth;
+	*y = winheight / vs->scrnheight;
 	if (*x < 1 || *x > 14)
 		*x = 1;
 	if (*y < 1 || *y > 14)
@@ -391,10 +382,10 @@ static int sdl_init_mode(int mode)
 
 	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
-	oldcols = cvstat.cols;
+	oldcols = vstat.cols;
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
-	if (cvstat.scrnwidth > 0) {
-		for (scaling = 1; (scaling + 1) * cvstat.scrnwidth < cvstat.winwidth; scaling++)
+	if (vstat.scrnwidth > 0) {
+		for (scaling = 1; (scaling + 1) * vstat.scrnwidth < vstat.winwidth; scaling++)
 			;
 	}
 	vstat.winwidth = vstat.scrnwidth * scaling;
@@ -423,15 +414,14 @@ static int sdl_init_mode(int mode)
 	if (vstat.winheight < vstat.scrnheight)
 		vstat.winheight = vstat.scrnheight;
 
-	cvstat = vstat;
-	internal_scaling = window_can_scale_internally(vstat.winwidth, vstat.winheight);
+	internal_scaling = window_can_scale_internally(&vstat);
 	pthread_mutex_lock(&sdl_mode_mutex);
 	sdl_mode = true;
 	pthread_mutex_unlock(&sdl_mode_mutex);
 	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&blinker_lock);
 
-	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE, cvstat.winwidth, cvstat.winheight);
+	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE, vstat.winwidth, vstat.winheight);
 
 	return(0);
 }
@@ -466,22 +456,26 @@ int sdl_init(int mode)
 	return(-1);
 }
 
-static void internal_setwinsize(int w, int h)
+static void internal_setwinsize(struct video_stats *vs)
 {
-	pthread_mutex_lock(&vstatlock);
+	int w, h;
+
+	w = vs->winwidth;
+	h = vs->winheight;
 	if (w > 16384)
 		w = 16384;
 	if (h > 16384)
 		h = 16384;
-	if (w < cvstat.scrnwidth)
-		w = cvstat.scrnwidth;
-	if (h < cvstat.scrnheight)
-		h = cvstat.scrnheight;
-	cvstat.winwidth = vstat.winwidth = w;
-	cvstat.winheight = vstat.winheight = h;
-	internal_scaling = window_can_scale_internally(cvstat.winwidth, cvstat.winheight);
-	setup_surfaces_locked();
+	if (w < vs->scrnwidth)
+		w = vs->scrnwidth;
+	if (h < vs->scrnheight)
+		h = vs->scrnheight;
+	pthread_mutex_lock(&vstatlock);
+	vs->winwidth = vstat.winwidth = w;
+	vs->winheight = vstat.winheight = h;
 	pthread_mutex_unlock(&vstatlock);
+	internal_scaling = window_can_scale_internally(vs);
+	setup_surfaces_locked(vs);
 }
 
 void sdl_setwinsize(int w, int h)
@@ -499,9 +493,9 @@ void sdl_setwinposition(int x, int y)
 void sdl_getwinsize_locked(int *w, int *h)
 {
 	if (w)
-		*w = cvstat.winwidth;
+		*w = vstat.winwidth;
 	if (h)
-		*h = cvstat.winheight;
+		*h = vstat.winheight;
 }
 
 void sdl_getwinsize(int *w, int *h)
@@ -599,16 +593,16 @@ int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	if (width || height) {
 		pthread_mutex_lock(&vstatlock);
 		if(width)
-			*width=cvstat.winwidth;
+			*width=vstat.winwidth;
 		if(height)
-			*height=cvstat.winheight;
+			*height=vstat.winheight;
 		pthread_mutex_unlock(&vstatlock);
 	}
 
 	return(1);
 }
 
-static void setup_surfaces_locked(void)
+static void setup_surfaces_locked(struct video_stats *vs)
 {
 	int		flags=0;
 	SDL_Event	ev;
@@ -627,25 +621,25 @@ static void setup_surfaces_locked(void)
 #endif
 
 	pthread_mutex_lock(&win_mutex);
-	idealmw = cvstat.scrnwidth;
-	idealmh = cvstat.scrnheight;
-	aspect_correct(&idealmw, &idealmh, cvstat.aspect_width, cvstat.aspect_height);
-	idealw = cvstat.winwidth;
-	idealh = cvstat.winheight;
-	internal_scaling = window_can_scale_internally(idealw, idealh);
+	idealmw = vs->scrnwidth;
+	idealmh = vs->scrnheight;
+	aspect_correct(&idealmw, &idealmh, vs->aspect_width, vs->aspect_height);
+	idealw = vs->winwidth;
+	idealh = vs->winheight;
+	internal_scaling = window_can_scale_internally(vs);
 	sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, internal_scaling ? "0" : "2");
 
 	if (win == NULL) {
 		// SDL2: This is slow sometimes... not sure why.
-		if (sdl.CreateWindowAndRenderer(cvstat.winwidth, cvstat.winheight, flags, &win, &renderer) == 0) {
+		if (sdl.CreateWindowAndRenderer(vs->winwidth, vs->winheight, flags, &win, &renderer) == 0) {
 			sdl.GetWindowSize(win, &idealw, &idealh);
-			cvstat.winwidth = idealw;
-			cvstat.winheight = idealh;
+			vs->winwidth = idealw;
+			vs->winheight = idealh;
 			sdl.RenderClear(renderer);
 			if (internal_scaling)
 				newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, idealw, idealh);
 			else
-				newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
+				newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, vs->scrnwidth, vs->scrnheight);
 
 			if (texture)
 				sdl.DestroyTexture(texture);
@@ -660,12 +654,12 @@ static void setup_surfaces_locked(void)
 		sdl.SetWindowMinimumSize(win, idealmw, idealmh);
 		sdl.SetWindowSize(win, idealw, idealh);
 		sdl.GetWindowSize(win, &idealw, &idealh);
-		cvstat.winwidth = idealw;
-		cvstat.winheight = idealh;
+		vs->winwidth = idealw;
+		vs->winheight = idealh;
 		if (internal_scaling)
 			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, idealw, idealh);
 		else
-			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
+			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, vs->scrnwidth, vs->scrnheight);
 		sdl.RenderClear(renderer);
 		if (texture)
 			sdl.DestroyTexture(texture);
@@ -687,7 +681,7 @@ static void setup_surfaces_locked(void)
 static void setup_surfaces(void)
 {
 	pthread_mutex_lock(&vstatlock);
-	setup_surfaces_locked();
+	setup_surfaces_locked(&vstat);
 	pthread_mutex_unlock(&vstatlock);
 }
 
@@ -698,6 +692,7 @@ static void sdl_add_key(unsigned int keyval)
 		fullscreen=!fullscreen;
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		sdl.SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+		// TODO: This uses vstat from the video event thread...
 		setup_surfaces();
 		return;
 	}
@@ -816,51 +811,43 @@ static void sdl_mouse_thread(void *data)
 	}
 }
 
-static int win_to_text_xpos(int winpos)
+static int win_to_text_xpos(int winpos, struct video_stats *vs)
 {
 	int ret;
 
-	pthread_mutex_lock(&vstatlock);
-	ret = winpos/(((float)cvstat.winwidth)/cvstat.cols)+1;
-	if (ret > cvstat.cols)
-		ret = cvstat.cols;
+	ret = winpos/(((float)vs->winwidth)/vs->cols)+1;
+	if (ret > vs->cols)
+		ret = vs->cols;
 	if (ret < 1)
 		ret = 1;
-	pthread_mutex_unlock(&vstatlock);
 	return ret;
 }
 
-static int win_to_text_ypos(int winpos)
+static int win_to_text_ypos(int winpos, struct video_stats *vs)
 {
 	int ret;
 
-	pthread_mutex_lock(&vstatlock);
-	ret = winpos/(((float)cvstat.winheight)/cvstat.rows)+1;
-	if (ret > cvstat.rows)
-		ret = cvstat.rows;
+	ret = winpos/(((float)vs->winheight)/vs->rows)+1;
+	if (ret > vs->rows)
+		ret = vs->rows;
 	if (ret < 1)
 		ret = 1;
-	pthread_mutex_unlock(&vstatlock);
 	return ret;
 }
 
-static int win_to_res_xpos(int winpos)
+static int win_to_res_xpos(int winpos, struct video_stats *vs)
 {
 	int ret;
 
-	pthread_mutex_lock(&vstatlock);
-	ret = winpos * (cvstat.scrnwidth) / cvstat.winwidth;
-	pthread_mutex_unlock(&vstatlock);
+	ret = winpos * (vs->scrnwidth) / vs->winwidth;
 	return ret;
 }
 
-static int win_to_res_ypos(int winpos)
+static int win_to_res_ypos(int winpos, struct video_stats *vs)
 {
 	int ret;
 
-	pthread_mutex_lock(&vstatlock);
-	ret = winpos * (cvstat.scrnheight) / cvstat.winheight;
-	pthread_mutex_unlock(&vstatlock);
+	ret = winpos * (vs->scrnheight) / vs->winheight;
 	return ret;
 }
 
@@ -870,6 +857,7 @@ void sdl_video_event_thread(void *data)
 	int		block_text = 0;
 	static SDL_Keycode last_sym = SDLK_UNKNOWN;
 	static Uint16 last_mod = 0;
+	struct video_stats cvstat = vstat;
 
 	while(1) {
 		if(sdl.WaitEventTimeout(&ev, 1)!=1)
@@ -888,7 +876,6 @@ void sdl_video_event_thread(void *data)
 						// Don't allow ALT-DIR to change size when maximized...
 						if ((sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) == 0) {
 							bool wc;
-							pthread_mutex_lock(&vstatlock);
 							w = cvstat.winwidth;
 							h = cvstat.winheight;
 							aspect_fix(&w, &h, cvstat.aspect_width, cvstat.aspect_height);
@@ -936,10 +923,9 @@ void sdl_video_event_thread(void *data)
 							else {
 								cvstat.winwidth = w;
 								cvstat.winheight = h;
-								internal_scaling = window_can_scale_internally(w, h);
+								internal_scaling = window_can_scale_internally(&cvstat);
 							}
-							setup_surfaces_locked();
-							pthread_mutex_unlock(&vstatlock);
+							setup_surfaces_locked(&cvstat);
 						}
 						break;
 					}
@@ -984,20 +970,20 @@ void sdl_video_event_thread(void *data)
 			case SDL_MOUSEMOTION:
 				if(!ciolib_mouse_initialized)
 					break;
-				ciomouse_gotevent(CIOLIB_MOUSE_MOVE,win_to_text_xpos(ev.motion.x),win_to_text_ypos(ev.motion.y), win_to_res_xpos(ev.motion.x), win_to_res_ypos(ev.motion.y));
+				ciomouse_gotevent(CIOLIB_MOUSE_MOVE,win_to_text_xpos(ev.motion.x, &cvstat),win_to_text_ypos(ev.motion.y, &cvstat), win_to_res_xpos(ev.motion.x, &cvstat), win_to_res_ypos(ev.motion.y, &cvstat));
 				break;
 			case SDL_MOUSEBUTTONDOWN:
 				if(!ciolib_mouse_initialized)
 					break;
 				switch(ev.button.button) {
 					case SDL_BUTTON_LEFT:
-						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
 						break;
 					case SDL_BUTTON_MIDDLE:
-						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
 						break;
 					case SDL_BUTTON_RIGHT:
-						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
 						break;
 				}
 				break;
@@ -1020,13 +1006,13 @@ void sdl_video_event_thread(void *data)
 					break;
 				switch(ev.button.button) {
 					case SDL_BUTTON_LEFT:
-						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
+						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
 						break;
 					case SDL_BUTTON_MIDDLE:
-						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
+						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
 						break;
 					case SDL_BUTTON_RIGHT:
-						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
+						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
 						break;
 				}
 				break;
@@ -1052,7 +1038,7 @@ void sdl_video_event_thread(void *data)
 							break;
 						}
 						pthread_mutex_unlock(&sdl_mode_mutex);
-						internal_setwinsize(ev.window.data1, ev.window.data2);
+						internal_setwinsize(&cvstat);
 						break;
 					case SDL_WINDOWEVENT_EXPOSED:
 						bitmap_drv_request_pixels();
@@ -1070,9 +1056,6 @@ void sdl_video_event_thread(void *data)
 						sem_post(&sdl_ufunc_ret);
 						return;
 					case SDL_USEREVENT_FLUSH:
-						pthread_mutex_lock(&vstatlock);
-						struct video_stats lvstat = cvstat;
-						pthread_mutex_unlock(&vstatlock);
 						pthread_mutex_lock(&win_mutex);
 						if (win != NULL) {
 							pthread_mutex_lock(&sdl_headlock);
@@ -1096,9 +1079,9 @@ void sdl_video_event_thread(void *data)
 									if (internal_scaling) {
 										struct graphics_buffer *gb;
 										int xscale, yscale;
-										internal_scaling_factors(lvstat.winwidth, lvstat.winheight, &xscale, &yscale);
+										internal_scaling_factors(&xscale, &yscale, &cvstat);
 										gb = do_scale(list, xscale, yscale,
-										    lvstat.aspect_width, lvstat.aspect_height);
+										    cvstat.aspect_width, cvstat.aspect_height);
 										src.x = 0;
 										src.y = 0;
 										src.w = gb->w;
@@ -1125,8 +1108,8 @@ void sdl_video_event_thread(void *data)
 											memcpy(pixels, gb->data, gb->w * ch * sizeof(gb->data[0]));
 										}
 										sdl.UnlockTexture(texture);
-										dst.x = (lvstat.winwidth - gb->w) / 2;
-										dst.y = (lvstat.winheight - gb->h) / 2;
+										dst.x = (cvstat.winwidth - gb->w) / 2;
+										dst.y = (cvstat.winheight - gb->h) / 2;
 										dst.w = gb->w;
 										dst.h = gb->h;
 										release_buffer(gb);
@@ -1158,12 +1141,12 @@ void sdl_video_event_thread(void *data)
 											memcpy(pixels, list->data, list->rect.width * ch * sizeof(list->data[0]));
 										}
 										sdl.UnlockTexture(texture);
-										dst.w = lvstat.winwidth;
-										dst.h = lvstat.winheight;
+										dst.w = cvstat.winwidth;
+										dst.h = cvstat.winheight;
 										// Get correct aspect ratio for dst...
-										aspect_fix(&dst.w, &dst.h, lvstat.aspect_width, lvstat.aspect_height);
-										dst.x = (lvstat.winwidth - dst.w) / 2;
-										dst.y = (lvstat.winheight - dst.h) / 2;
+										aspect_fix(&dst.w, &dst.h, cvstat.aspect_width, cvstat.aspect_height);
+										dst.x = (cvstat.winwidth - dst.w) / 2;
+										dst.y = (cvstat.winheight - dst.h) / 2;
 									}
 									if (sdl.RenderCopy(renderer, texture, &src, &dst))
 										fprintf(stderr, "RenderCopy() failed! (%s)\n", sdl.GetError());
@@ -1210,7 +1193,10 @@ void sdl_video_event_thread(void *data)
 						sdl_mode = false;
 						pthread_mutex_unlock(&sdl_mode_mutex);
 
-						internal_setwinsize(ev.user.data1 - NULL, ev.user.data2 - NULL);
+						pthread_mutex_lock(&vstatlock);
+						cvstat = vstat;
+						pthread_mutex_unlock(&vstatlock);
+						internal_setwinsize(&cvstat);
 						sdl_ufunc_retval=0;
 						sem_post(&sdl_ufunc_ret);
 						break;
