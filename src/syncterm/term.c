@@ -4240,6 +4240,8 @@ doterm(struct bbslist *bbs)
 					case 96: /* No backtick */
 						break;
 					default:
+						if (key < 128)
+							key = cpchar_from_unicode_cpoint(getcodepage(), key, key);
 						if (key < 256) {
                                                         /* ASCII Translation */
 							if (key < 123) {
@@ -4324,6 +4326,8 @@ doterm(struct bbslist *bbs)
 						conn_send(ch, 1, 0);
 						break;
 					default:
+						if (key < 128)
+							key = cpchar_from_unicode_cpoint(getcodepage(), key, key);
 						if (key < 256) {
 							ch[0] = key;
 							conn_send(ch, 1, 0);
@@ -4527,6 +4531,8 @@ doterm(struct bbslist *bbs)
 
                                         /* FALLTHROUGH to default */
 					default:
+						if (key < 128)
+							key = cpchar_from_unicode_cpoint(getcodepage(), key, key);
 						if ((key < 256) && (key >= 0)) {
 							ch[0] = key;
 							conn_send(ch, 1, 0);
