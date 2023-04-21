@@ -750,13 +750,12 @@ CSI < Ps c (CTDA)
 
 	Possible values for Ps:
 	1 - Loadable fonts are availabe via Device Control Strings
-	2 - Palette entries may be modified via an Operating System Command
+	2 - Bright Background (ie: DECSET 32) is supported
+	3 - Palette entries may be modified via an Operating System Command
 	    string
-	3 - Pixel operations are supported (currently, sixel and PPM
+	4 - Pixel operations are supported (currently, sixel and PPM
 	    graphics)
-	4 - The current font may be selected via CSI Ps1 ; Ps2 sp D
-	5 - More than the standard 16 colours may by configured via
-	    Operating System Command strings
+	5 - The current font may be selected via CSI Ps1 ; Ps2 sp D
 	6 - Extended palette is available
 	7 - Mouse is available
 
