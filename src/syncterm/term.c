@@ -8,6 +8,7 @@
 #include <genwrap.h>
 #include <math.h>
 #include <stdbool.h>
+#include <string.h>
 #include <vidmodes.h>
 
 #include "conn.h"
@@ -18,6 +19,7 @@
 #include "menu.h"
 #include "saucedefs.h"
 #include "sexyz.h"
+#include "strwrap.h"
 #include "syncterm.h"
 #include "telnet_io.h"
 #include "term.h"
@@ -27,6 +29,7 @@
 #include "xmodem.h"
 #include "xpbeep.h"
 #include "xpendian.h"
+#include "xpprintf.h"
 #include "zmodem.h"
 
 #ifndef WITHOUT_OOII
