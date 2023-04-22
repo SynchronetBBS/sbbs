@@ -667,7 +667,7 @@ static void setup_surfaces_locked(struct video_stats *vs)
 	}
 	if (vs != &vstat) {
 		pthread_mutex_lock(&vstatlock);
-		*vs = vstat;
+		vstat = *vs;
 		pthread_mutex_unlock(&vstatlock);
 	}
 	sdl.SetWindowMinimumSize(win, idealmw, idealmh);
@@ -681,13 +681,6 @@ static void setup_surfaces_locked(struct video_stats *vs)
 		sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
 	}
 	pthread_mutex_unlock(&win_mutex);
-}
-
-static void setup_surfaces(void)
-{
-	pthread_mutex_lock(&vstatlock);
-	setup_surfaces_locked(&vstat);
-	pthread_mutex_unlock(&vstatlock);
 }
 
 /* Called from event thread only */
