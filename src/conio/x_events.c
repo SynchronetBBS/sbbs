@@ -976,8 +976,8 @@ static int x11_event(XEvent *ev)
 					case XLookupChars:
 						if (lus == XLookupChars || ((ev->xkey.state & (Mod1Mask | ControlMask)) == 0)) {
 							for (i = 0; i < cnt; i++) {
-								if (wbuf[i] < 127)
-									ch = wbuf[i];
+								if (wbuf[i] < 128)
+									ch = cpchar_from_unicode_cpoint(getcodepage(), wbuf[i], wbuf[i]);
 								else
 									ch = cpchar_from_unicode_cpoint(getcodepage(), wbuf[i], 0);
 								if (ch) {
@@ -1164,6 +1164,8 @@ static int x11_event(XEvent *ev)
 						}
 						if (scan != 0xffff) {
 							uint16_t key=scan;
+							if (key < 128)
+								key = cpchar_from_unicode_cpoint(getcodepage(), key, key);
 							write(key_pipe[1], &key, (scan&0xff)?1:2);
 						}
 						break;
