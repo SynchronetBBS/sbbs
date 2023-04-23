@@ -1063,6 +1063,7 @@ void sdl_video_event_thread(void *data)
 					case SDL_USEREVENT_FLUSH:
 						pthread_mutex_lock(&win_mutex);
 						if (win != NULL) {
+							pthread_mutex_unlock(&win_mutex);
 							pthread_mutex_lock(&sdl_headlock);
 							pthread_mutex_lock(&sdl_mode_mutex);
 							list = update_list;
@@ -1160,8 +1161,9 @@ void sdl_video_event_thread(void *data)
 								bitmap_drv_free_rect(list);
 							}
 						}
+						else
+							pthread_mutex_unlock(&win_mutex);
 
-						pthread_mutex_unlock(&win_mutex);
 						break;
 					case SDL_USEREVENT_SETNAME:
 						pthread_mutex_lock(&win_mutex);
