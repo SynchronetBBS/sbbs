@@ -718,6 +718,14 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 	}
 }
 
+static void
+sdl_add_key_uc(unsigned int keyval, struct video_stats *vs)
+{
+	if (keyval < 128)
+		keyval = cpchar_from_unicode_cpoint(getcodepage(), keyval, keyval);
+	sdl_add_key(keyval, vs);
+}
+
 /* Called from event thread only */
 static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 {
@@ -942,11 +950,11 @@ void sdl_video_event_thread(void *data)
 					    || ev.key.keysym.sym == SDLK_KP_PLUS
 					    || ev.key.keysym.sym == SDLK_KP_PERIOD))
 						break;
-					sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod), &cvstat);
+					sdl_add_key_uc(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod), &cvstat);
 				}
 				else if (!isprint(ev.key.keysym.sym)) {
 					if (ev.key.keysym.sym < 128)
-						sdl_add_key(ev.key.keysym.sym, &cvstat);
+						sdl_add_key_uc(ev.key.keysym.sym, &cvstat);
 				}
 				break;
 			case SDL_TEXTINPUT:
@@ -954,7 +962,7 @@ void sdl_video_event_thread(void *data)
 					unsigned int charcode = sdl_get_char_code(last_sym, last_mod & ~(KMOD_ALT));
 					// If the key is exactly what we would expect, use sdl_get_char_code()
 					if (*(uint8_t *)ev.text.text == charcode)
-						sdl_add_key(sdl_get_char_code(last_sym, last_mod), &cvstat);
+						sdl_add_key_uc(sdl_get_char_code(last_sym, last_mod), &cvstat);
 					else
 						sdl_add_keys((uint8_t *)ev.text.text, &cvstat);
 				}
