@@ -1120,6 +1120,40 @@ int bitmap_loadfont(const char *filename)
 	return ret;
 }
 
+static void
+bitmap_movetext_screen(struct bitmap_screen *screen, int x, int y, int tox, int toy, int direction, int height, int width)
+{
+	int32_t sdestoffset;
+	size_t ssourcepos;
+	int step;
+	int32_t screeny;
+
+	if (direction == -1) {
+		ssourcepos=((y + height - 1)     * vstat.charheight - 1) * vstat.scrnwidth + (x - 1)  * vstat.charwidth;
+		sdestoffset=((((toy + height - 1) * vstat.charheight - 1) * vstat.scrnwidth + (tox - 1) * vstat.charwidth) - ssourcepos);
+	}
+	else {
+		ssourcepos=(y - 1)     * vstat.scrnwidth * vstat.charheight + (x - 1)  * vstat.charwidth;
+		sdestoffset=(((toy - 1) * vstat.scrnwidth * vstat.charheight + (tox - 1) * vstat.charwidth) - ssourcepos);
+	}
+
+	pthread_mutex_lock(&screen->screenlock);
+	if (width == cio_textinfo.screenwidth) {
+		memmove(&(screen->screen[ssourcepos+sdestoffset]), &(screen->screen[ssourcepos]), sizeof(screen->screen[0])*width*vstat.charwidth*height*vstat.charheight);
+		memmove(&(screen->rect->data[ssourcepos+sdestoffset]), &(screen->rect->data[ssourcepos]), sizeof(screen->screen[0])*width*vstat.charwidth*height*vstat.charheight);
+	}
+	else {
+		step = direction * vstat.scrnwidth;
+		for(screeny=0; screeny < height*vstat.charheight; screeny++) {
+			memmove(&(screen->screen[ssourcepos+sdestoffset]), &(screen->screen[ssourcepos]), sizeof(screen->screen[0])*width*vstat.charwidth);
+			memmove(&(screen->rect->data[ssourcepos+sdestoffset]), &(screen->rect->data[ssourcepos]), sizeof(screen->screen[0])*width*vstat.charwidth);
+			ssourcepos += step;
+		}
+	}
+	screen->update_pixels = 1;
+	pthread_mutex_unlock(&screen->screenlock);
+}
+
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 {
 	int	direction=1;
@@ -1129,9 +1163,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	int width=ex-x+1;
 	int height=ey-y+1;
 	struct vstat_vmem *vmem_ptr;
-	int32_t sdestoffset;
-	size_t ssourcepos;
-	int32_t screeny;
+	int step;
 
 	if(		   x<1
 			|| y<1
@@ -1163,46 +1195,23 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 
 	pthread_mutex_lock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
-	for(cy=0; cy<height; cy++) {
-		memmove(&(vmem_ptr->vmem[sourcepos+destoffset]), &(vmem_ptr->vmem[sourcepos]), sizeof(vmem_ptr->vmem[0])*width);
-		sourcepos += direction * cio_textinfo.screenwidth;
-	}
-
-	if (direction == -1) {
-		ssourcepos=((y + height - 1)     * vstat.charheight - 1) * vstat.scrnwidth + (x - 1)  * vstat.charwidth;
-		sdestoffset=((((toy + height - 1) * vstat.charheight - 1) * vstat.scrnwidth + (tox - 1) * vstat.charwidth) - ssourcepos);
+	/*
+	 * TODO: Optimization... make the buffers twice the height of the actual screen and just move the pointer
+	 * when scrolling until you hit the end... maybe not worth it for vmem, but likely a big win for the screen
+	 */
+	if (width == cio_textinfo.screenwidth) {
+		memmove(&(vmem_ptr->vmem[sourcepos+destoffset]), &(vmem_ptr->vmem[sourcepos]), sizeof(vmem_ptr->vmem[0])*width*height);
 	}
 	else {
-		ssourcepos=(y - 1)     * vstat.scrnwidth * vstat.charheight + (x - 1)  * vstat.charwidth;
-		sdestoffset=(((toy - 1) * vstat.scrnwidth * vstat.charheight + (tox - 1) * vstat.charwidth) - ssourcepos);
+		step = direction * cio_textinfo.screenwidth;
+		for(cy=0; cy<height; cy++) {
+			memmove(&(vmem_ptr->vmem[sourcepos+destoffset]), &(vmem_ptr->vmem[sourcepos]), sizeof(vmem_ptr->vmem[0])*width);
+			sourcepos += step;
+		}
 	}
 
-	pthread_mutex_lock(&screena.screenlock);
-	for(screeny=0; screeny < height*vstat.charheight; screeny++) {
-		memmove(&(screena.screen[ssourcepos+sdestoffset]), &(screena.screen[ssourcepos]), sizeof(screena.screen[0])*width*vstat.charwidth);
-		memmove(&(screena.rect->data[ssourcepos+sdestoffset]), &(screena.rect->data[ssourcepos]), sizeof(screena.screen[0])*width*vstat.charwidth);
-		ssourcepos += direction * vstat.scrnwidth;
-	}
-	screena.update_pixels = 1;
-	pthread_mutex_unlock(&screena.screenlock);
-
-	if (direction == -1) {
-		ssourcepos=((y+height-1)     *vstat.charheight-1)*vstat.scrnwidth + (x-1)  *vstat.charwidth;
-		sdestoffset=((((toy+height-1)*vstat.charheight-1)*vstat.scrnwidth + (tox-1)*vstat.charwidth)-ssourcepos);
-	}
-	else {
-		ssourcepos=(y-1)     *vstat.scrnwidth*vstat.charheight + (x-1)  *vstat.charwidth;
-		sdestoffset=(((toy-1)*vstat.scrnwidth*vstat.charheight + (tox-1)*vstat.charwidth)-ssourcepos);
-	}
-
-	pthread_mutex_lock(&screenb.screenlock);
-	for(screeny=0; screeny < height*vstat.charheight; screeny++) {
-		memmove(&(screenb.screen[ssourcepos+sdestoffset]), &(screenb.screen[ssourcepos]), sizeof(screenb.screen[0])*width*vstat.charwidth);
-		memmove(&(screenb.rect->data[ssourcepos+sdestoffset]), &(screenb.rect->data[ssourcepos]), sizeof(screenb.screen[0])*width*vstat.charwidth);
-		ssourcepos += direction * vstat.scrnwidth;
-	}
-	screenb.update_pixels = 1;
-	pthread_mutex_unlock(&screenb.screenlock);
+	bitmap_movetext_screen(&screena, x, y, tox, toy, direction, height, width);
+	bitmap_movetext_screen(&screenb, x, y, tox, toy, direction, height, width);
 
 	release_vmem(vmem_ptr);
 	pthread_mutex_unlock(&vstatlock);
@@ -1624,7 +1633,7 @@ int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 // Called with vstatlock
 static int init_screen(struct bitmap_screen *screen, int *width, int *height)
 {
-	uint32_t *newscreen;
+	uint32_t *newbuf;
 
 	pthread_mutex_lock(&screen->screenlock);
 	screen->screenwidth = vstat.scrnwidth;
@@ -1633,14 +1642,14 @@ static int init_screen(struct bitmap_screen *screen, int *width, int *height)
 	screen->screenheight = vstat.scrnheight;
 	if (height)
 		*height = screen->screenheight;
-	newscreen = realloc(screen->screen, screen->screenwidth * screen->screenheight * sizeof(screen->screen[0]));
+	newbuf = realloc(screen->screen, screen->screenwidth * screen->screenheight * 2 * sizeof(screen->screen[0]));
 
-	if (!newscreen) {
+	if (!newbuf) {
 		pthread_mutex_unlock(&screen->screenlock);
 		return(-1);
 	}
-	screen->screen = newscreen;
-	memset_u32(screen->screen, vstat.palette[0], screen->screenwidth * screen->screenheight);
+	memset_u32(newbuf, vstat.palette[0], screen->screenwidth * 2 * screen->screenheight);
+	screen->screen = newbuf;
 	screen->update_pixels = 1;
 	bitmap_drv_free_rect(screen->rect);
 	screen->rect = alloc_full_rect(screen);
