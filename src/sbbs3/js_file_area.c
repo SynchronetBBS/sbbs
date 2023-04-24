@@ -250,7 +250,9 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 	js_CreateArrayOfStrings(cx, areaobj, "_property_desc_list", file_area_prop_desc, JSPROP_READONLY);
 #endif
 
-	if (name==NULL || strcmp(name, "lib")==0 || strcmp(name, "dir")==0 || strcmp(name, "lib_list")==0) {
+	if (name==NULL || strcmp(name, "lib")==0 || strcmp(name, "dir")==0 || strcmp(name, "lib_list")==0
+		|| strcmp(name, "user_dir")==0 || strcmp(name, "sysop_dir")==0 || strcmp(name, "upload_dir")==0
+		|| strcmp(name, "offline_dir")==0) {
 		if(name)
 			FREE_AND_NULL(name);
 		if((alllibs=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
@@ -393,7 +395,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 						,NULL,NULL,JSPROP_READONLY))
 					return JS_FALSE;
 
-				if(d==p->cfg->upload_dir 
+				if(d==p->cfg->upload_dir
 					&& !JS_DefineProperty(cx, areaobj, "upload_dir", val
 						,NULL,NULL,JSPROP_READONLY))
 					return JS_FALSE;
