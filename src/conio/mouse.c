@@ -107,7 +107,7 @@ struct mouse_state {
 
 struct mouse_state state;
 uint64_t mouse_events=0;
-int ciolib_mouse_initialized=0;
+pthread_once_t ciolib_mouse_initialized = PTHREAD_ONCE_INIT;
 static int ungot=0;
 pthread_mutex_t unget_mutex;
 
@@ -119,18 +119,11 @@ void init_mouse(void)
 	listInit(&state.input,LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
 	listInit(&state.output,LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
 	pthread_mutex_init(&unget_mutex, NULL);
-	ciolib_mouse_initialized=1;
 }
 
 void mousestate(int *x, int *y, uint8_t *buttons)
 {
-	if (!ciolib_mouse_initialized) {
-		if (x)
-			*x = -1;
-		if (y)
-			*y = -1;
-		return;
-	}
+	pthread_once(&ciolib_mouse_initialized, init_mouse);
 	if (x)
 		*x = state.curx;
 	if (y)
@@ -142,13 +135,7 @@ void mousestate(int *x, int *y, uint8_t *buttons)
 
 void mousestate_res(int *x, int *y, uint8_t *buttons)
 {
-	if (!ciolib_mouse_initialized) {
-		if (x)
-			*x = -1;
-		if (y)
-			*y = -1;
-		return;
-	}
+	pthread_once(&ciolib_mouse_initialized, init_mouse);
 	if (x)
 		*x = state.curx_res;
 	if (y)
@@ -192,8 +179,7 @@ void ciomouse_gotevent(int event, int x, int y, int x_res, int y_res)
 {
 	struct in_mouse_event *ime;
 
-	while(!ciolib_mouse_initialized)
-		SLEEP(1);
+	pthread_once(&ciolib_mouse_initialized, init_mouse);
 	ime=(struct in_mouse_event *)malloc(sizeof(struct in_mouse_event));
 	if(ime) {
 		ime->ts=MSEC_CLOCK();
@@ -269,7 +255,7 @@ void ciolib_mouse_thread(void *data)
 	long long ttime=0;
 
 	SetThreadName("Mouse");
-	init_mouse();
+	pthread_once(&ciolib_mouse_initialized, init_mouse);
 	while(1) {
 		timedout=0;
 		if(timeout_button) {
@@ -521,8 +507,7 @@ int mouse_trywait(void)
 {
 	int	result;
 
-	while(!ciolib_mouse_initialized)
-		SLEEP(1);
+	pthread_once(&ciolib_mouse_initialized, init_mouse);
 	while(1) {
 		result=listSemTryWait(&state.output);
 		pthread_mutex_lock(&unget_mutex);
@@ -539,8 +524,7 @@ int mouse_wait(void)
 {
 	int result;
 
-	while(!ciolib_mouse_initialized)
-		SLEEP(1);
+	pthread_once(&ciolib_mouse_initialized, init_mouse);
 	while(1) {
 		result=listSemWait(&state.output);
 		pthread_mutex_lock(&unget_mutex);
@@ -555,8 +539,7 @@ int mouse_wait(void)
 
 int mouse_pending(void)
 {
-	while(!ciolib_mouse_initialized)
-		SLEEP(1);
+	pthread_once(&ciolib_mouse_initialized, init_mouse);
 	return(listCountNodes(&state.output));
 }
 
@@ -564,8 +547,7 @@ int ciolib_getmouse(struct mouse_event *mevent)
 {
 	int retval=0;
 
-	while(!ciolib_mouse_initialized)
-		SLEEP(1);
+	pthread_once(&ciolib_mouse_initialized, init_mouse);
 	if(listCountNodes(&state.output)) {
 		struct out_mouse_event *out;
 		out=listShiftNode(&state.output);
