@@ -2253,7 +2253,7 @@ static jsSyncMethodSpec js_system_functions[] = {
 	},
 	{"check_filename",	js_chkfname,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
 	,JSDOCSTR("Verify that the specified <i>filename</i> string is legal and allowed for upload by users "
-		"(based on system configuration), returns <i>true</i> if the filename is allowed")
+		"(based on system configuration and filter files), returns <i>true</i> if the filename is allowed")
 	,31902
 	},
 	{"allowed_filename", js_allowed_fname,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
