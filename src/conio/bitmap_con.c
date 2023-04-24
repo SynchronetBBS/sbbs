@@ -502,6 +502,7 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	int		x;
 	int		fdx;
 	uint8_t fb = 0;
+	uint8_t fbb = 0;
 	int		y;
 	int		fontoffset;
 	int		pixeloffset;
@@ -509,6 +510,8 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	WORD	sch;
 	struct vstat_vmem *vmem_ptr;
 	BOOL	draw_fg = TRUE;
+	size_t vmo;
+	size_t rsz;
 
 	if(!bitmap_initialized) {
 		return(-1);
@@ -520,9 +523,12 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 		return(-1);
 	}
 
-	sch=vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].legacy_attr << 8 | vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].ch;
-	fg = vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].fg;
-	bg = vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].bg;
+	vmo = (ypos-1)*cio_textinfo.screenwidth+(xpos-1);
+	sch = vmem_ptr->vmem[vmo].legacy_attr << 8 | vmem_ptr->vmem[vmo].ch;
+	fg = vmem_ptr->vmem[vmo].fg;
+	bg = vmem_ptr->vmem[vmo].bg;
+	draw_fg = ((!(sch & 0x8000)) || vstat.no_blink);
+	sch &= 0xff;
 
 	if (vstat.forced_font) {
 		this_font = vstat.forced_font;
@@ -533,13 +539,13 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 		else {
 			switch (vstat.charheight) {
 				case 8:
-					this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].font].eight_by_eight;
+					this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[vmo].font].eight_by_eight;
 					break;
 				case 14:
-					this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].font].eight_by_fourteen;
+					this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[vmo].font].eight_by_fourteen;
 					break;
 				case 16:
-					this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[(ypos-1)*cio_textinfo.screenwidth+(xpos-1)].font].eight_by_sixteen;
+					this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[vmo].font].eight_by_sixteen;
 					break;
 				default:
 					return(-1);
@@ -549,7 +555,7 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	if (this_font == NULL)
 		this_font = font[0];
 	fdw = vstat.charwidth - (vstat.flags & VIDMODES_FLAG_EXPAND) ? 1 : 0;
-	fontoffset=(sch & 0xff) * (vstat.charheight * ((fdw + 7) / 8));
+	fontoffset=(sch) * (vstat.charheight * ((fdw + 7) / 8));
 
 	pthread_mutex_lock(&screena.screenlock);
 	pthread_mutex_lock(&screenb.screenlock);
@@ -567,8 +573,8 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 		return(-1);
 	}
 
-	draw_fg = ((!(sch & 0x8000)) || vstat.no_blink);
 	pixeloffset = PIXEL_OFFSET(screena, xoffset, yoffset);
+	rsz = screena.screenwidth - vstat.charwidth;
 	for(y=0; y<vstat.charheight; y++) {
 		for(x=0; x<vstat.charwidth; x++) {
 			fdx = x;
@@ -582,7 +588,7 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 					if (!(vstat.flags & VIDMODES_FLAG_LINE_GRAPHICS_EXPAND)) {
 						fb = 0;
 					}
-					else if ((sch & 0xff) >= 0xC0 && (sch & 0xff) <= 0xDF) {
+					else if ((sch) >= 0xC0 && (sch) <= 0xDF) {
 						fb = this_font[fontoffset];
 					}
 					else
@@ -590,8 +596,9 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 					
 				}
 			}
+			fbb = fb & (0x80 >> (fdx & 7));
 
-			if(fb & (0x80 >> (fdx & 7)) && draw_fg) {
+			if(fbb && draw_fg) {
 				if (screena.rect->data[pixeloffset] != fg) {
 					screena.update_pixels = 1;
 					screena.rect->data[pixeloffset] = fg;
@@ -604,7 +611,7 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 				}
 			}
 
-			if(fb & (0x80 >> (fdx & 7))) {
+			if(fbb) {
 				if (screenb.rect->data[pixeloffset] != fg) {
 					screenb.update_pixels = 1;
 					screenb.rect->data[pixeloffset] = fg;
@@ -620,7 +627,7 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 		}
 		if (x & 0x07)
 			fontoffset++;
-		pixeloffset += screena.screenwidth - vstat.charwidth;
+		pixeloffset += rsz;
 	}
 	pthread_mutex_unlock(&screenb.screenlock);
 	pthread_mutex_unlock(&screena.screenlock);
@@ -1696,10 +1703,14 @@ int bitmap_drv_init_mode(int mode, int *width, int *height)
 
 	/* Initialize video memory with black background, white foreground */
 	for (i = 0; i < vstat.cols*vstat.rows; ++i) {
-		vstat.vmem->vmem[i].ch = 0;
-		vstat.vmem->vmem[i].legacy_attr = vstat.currattr;
-		vstat.vmem->vmem[i].font = default_font;
-		bitmap_attr2palette_locked(vstat.currattr, &vstat.vmem->vmem[i].fg, &vstat.vmem->vmem[i].bg);
+		if (i > 0)
+			vstat.vmem->vmem[i] = vstat.vmem->vmem[0];
+		else {
+			vstat.vmem->vmem[i].ch = 0;
+			vstat.vmem->vmem[i].legacy_attr = vstat.currattr;
+			vstat.vmem->vmem[i].font = default_font;
+			bitmap_attr2palette_locked(vstat.currattr, &vstat.vmem->vmem[i].fg, &vstat.vmem->vmem[i].bg);
+		}
 	}
 
 	if (init_screen(&screena, width, height))

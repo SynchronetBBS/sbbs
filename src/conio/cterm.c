@@ -1131,11 +1131,15 @@ cterm_clreol(struct cterminal *cterm)
 	if (!buf)
 		return;
 	for (i = 0; i < width; i++) {
-		buf[i].ch = ' ';
-		buf[i].legacy_attr = cterm->attr;
-		buf[i].fg = cterm->fg_color;
-		buf[i].bg = cterm->bg_color;
-		buf[i].font = ciolib_attrfont(cterm->attr);
+		if (i > 0)
+			buf[i] = buf[0];
+		else {
+			buf[i].ch = ' ';
+			buf[i].legacy_attr = cterm->attr;
+			buf[i].fg = cterm->fg_color;
+			buf[i].bg = cterm->bg_color;
+			buf[i].font = ciolib_attrfont(cterm->attr);
+		}
 	}
 	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &x, &y);
 	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &rm, NULL);
@@ -1154,11 +1158,15 @@ cterm_clrblk(struct cterminal *cterm, int sx, int sy, int ex, int ey)
 	if (!buf)
 		return;
 	for (i = 0; i < chars ; i++) {
-		buf[i].ch = ' ';
-		buf[i].legacy_attr = cterm->attr;
-		buf[i].fg = cterm->fg_color;
-		buf[i].bg = cterm->bg_color;
-		buf[i].font = ciolib_attrfont(cterm->attr);
+		if (i > 0)
+			buf[i] = buf[0];
+		else {
+			buf[i].ch = ' ';
+			buf[i].legacy_attr = cterm->attr;
+			buf[i].fg = cterm->fg_color;
+			buf[i].bg = cterm->bg_color;
+			buf[i].font = ciolib_attrfont(cterm->attr);
+		}
 	}
 	vmem_puttext(sx, sy, ex, ey, buf);
 	free(buf);
@@ -1263,11 +1271,15 @@ clear2bol(struct cterminal * cterm)
 	CURR_XY(&x, &y);
 	buf = malloc(x * sizeof(*buf));
 	for(i = 0; i < x; i++) {
-		buf[i].ch = ' ';
-		buf[i].legacy_attr = cterm->attr;
-		buf[i].fg = cterm->fg_color;
-		buf[i].bg = cterm->bg_color;
-		buf[i].font = ciolib_attrfont(cterm->attr);
+		if (i > 0)
+			buf[i] = buf[0];
+		else {
+			buf[i].ch = ' ';
+			buf[i].legacy_attr = cterm->attr;
+			buf[i].fg = cterm->fg_color;
+			buf[i].bg = cterm->bg_color;
+			buf[i].font = ciolib_attrfont(cterm->attr);
+		}
 	}
 	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &x, &y);
 	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &minx, NULL);
