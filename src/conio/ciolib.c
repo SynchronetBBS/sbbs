@@ -905,11 +905,15 @@ CIOLIBEXPORT void ciolib_clreol(void)
 	if (!buf)
 		return;
 	for(i=0;i<width*height;i++) {
-		buf[i].ch = ' ';
-		buf[i].legacy_attr = cio_textinfo.attribute;
-		buf[i].fg = ciolib_fg;
-		buf[i].bg = ciolib_bg;
-		buf[i].font = ciolib_attrfont(cio_textinfo.attribute);
+		if (i > 0)
+			buf[i] = buf[0];
+		else {
+			buf[i].ch = ' ';
+			buf[i].legacy_attr = cio_textinfo.attribute;
+			buf[i].fg = ciolib_fg;
+			buf[i].bg = ciolib_bg;
+			buf[i].font = ciolib_attrfont(cio_textinfo.attribute);
+		}
 	}
 	ciolib_vmem_puttext(
 			cio_textinfo.curx+cio_textinfo.winleft-1,
@@ -940,11 +944,15 @@ CIOLIBEXPORT void ciolib_clrscr(void)
 	if(!buf)
 		return;
 	for(i=0;i<width*height;i++) {
-		buf[i].ch = ' ';
-		buf[i].legacy_attr = cio_textinfo.attribute;
-		buf[i].fg = ciolib_fg;
-		buf[i].bg = ciolib_bg;
-		buf[i].font = ciolib_attrfont(cio_textinfo.attribute);
+		if (i > 0)
+			buf[i] = buf[0];
+		else {
+			buf[i].ch = ' ';
+			buf[i].legacy_attr = cio_textinfo.attribute;
+			buf[i].fg = ciolib_fg;
+			buf[i].bg = ciolib_bg;
+			buf[i].font = ciolib_attrfont(cio_textinfo.attribute);
+		}
 	}
 	puttext_can_move=1;
 	ciolib_vmem_puttext(cio_textinfo.winleft,cio_textinfo.wintop,cio_textinfo.winright,cio_textinfo.winbottom,buf);
