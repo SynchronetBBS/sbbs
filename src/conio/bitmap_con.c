@@ -490,9 +490,6 @@ static void memset_u32(void *buf, uint32_t u, size_t len)
 	}
 }
 
-/*
- * vstatlock needs to be held.
- */
 static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 {
 	uint32_t fg;
@@ -513,14 +510,26 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	BOOL	draw_fg = TRUE;
 	size_t vmo;
 	size_t rsz;
+	int charwidth, charheight, no_blink, flags;
+	uint8_t *forced_font;
 
 	if(!bitmap_initialized) {
 		return(-1);
 	}
 
-	vmem_ptr = vstat.vmem;
+	pthread_mutex_lock(&vstatlock);
+	charwidth = vstat.charwidth;
+	charheight = vstat.charheight;
+	no_blink = vstat.no_blink;
+	forced_font = vstat.forced_font;
+	flags = vstat.flags;
+	vmem_ptr = get_vmem(&vstat);
+	pthread_mutex_unlock(&vstatlock);
 
 	if(!vmem_ptr) {
+		pthread_mutex_lock(&vstatlock);
+		release_vmem(vmem_ptr);
+		pthread_mutex_unlock(&vstatlock);
 		return(-1);
 	}
 
@@ -528,17 +537,17 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 	sch = vmem_ptr->vmem[vmo].legacy_attr << 8 | vmem_ptr->vmem[vmo].ch;
 	fg = vmem_ptr->vmem[vmo].fg;
 	bg = vmem_ptr->vmem[vmo].bg;
-	draw_fg = ((!(sch & 0x8000)) || vstat.no_blink);
+	draw_fg = ((!(sch & 0x8000)) || no_blink);
 	sch &= 0xff;
 
-	if (vstat.forced_font) {
-		this_font = vstat.forced_font;
+	if (forced_font) {
+		this_font = forced_font;
 	}
 	else {
 		if (current_font[0] == -1)
 			this_font = font[0];
 		else {
-			switch (vstat.charheight) {
+			switch (charheight) {
 				case 8:
 					this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[vmo].font].eight_by_eight;
 					break;
@@ -549,41 +558,47 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 					this_font = (unsigned char *)conio_fontdata[vmem_ptr->vmem[vmo].font].eight_by_sixteen;
 					break;
 				default:
+					pthread_mutex_lock(&vstatlock);
+					release_vmem(vmem_ptr);
+					pthread_mutex_unlock(&vstatlock);
 					return(-1);
 			}
 		}
 	}
 	if (this_font == NULL)
 		this_font = font[0];
-	fdw = vstat.charwidth - (vstat.flags & VIDMODES_FLAG_EXPAND) ? 1 : 0;
-	fontoffset=(sch) * (vstat.charheight * ((fdw + 7) / 8));
+	fdw = charwidth - (flags & VIDMODES_FLAG_EXPAND) ? 1 : 0;
+	fontoffset=(sch) * (charheight * ((fdw + 7) / 8));
 
 	pthread_mutex_lock(&screenlock);
 
-	if ((xoffset + vstat.charwidth > screena.screenwidth) || (yoffset + vstat.charheight > screena.screenheight) ||
-	    (xoffset + vstat.charwidth > screenb.screenwidth) || (yoffset + vstat.charheight > screenb.screenheight)) {
+	if ((xoffset + charwidth > screena.screenwidth) || (yoffset + charheight > screena.screenheight) ||
+	    (xoffset + charwidth > screenb.screenwidth) || (yoffset + charheight > screenb.screenheight)) {
 		pthread_mutex_unlock(&screenlock);
 		return(-1);
 	}
 
 	if((!screena.rect) || (!screenb.rect)) {
 		pthread_mutex_unlock(&screenlock);
+		pthread_mutex_lock(&vstatlock);
+		release_vmem(vmem_ptr);
+		pthread_mutex_unlock(&vstatlock);
 		return(-1);
 	}
 
 	pixeloffset = PIXEL_OFFSET(screena, xoffset, yoffset);
-	rsz = screena.screenwidth - vstat.charwidth;
-	for(y=0; y<vstat.charheight; y++) {
-		for(x=0; x<vstat.charwidth; x++) {
+	rsz = screena.screenwidth - charwidth;
+	for(y=0; y<charheight; y++) {
+		for(x=0; x<charwidth; x++) {
 			fdx = x;
 			fb = this_font[fontoffset];
 			if ((x & 0x07) == 7)
 				fontoffset++;
-			if (vstat.flags & VIDMODES_FLAG_EXPAND) {
-				if (x == vstat.charwidth - 1) {
+			if (flags & VIDMODES_FLAG_EXPAND) {
+				if (x == charwidth - 1) {
 					fontoffset--;
 					fdx--;
-					if (!(vstat.flags & VIDMODES_FLAG_LINE_GRAPHICS_EXPAND)) {
+					if (!(flags & VIDMODES_FLAG_LINE_GRAPHICS_EXPAND)) {
 						fb = 0;
 					}
 					else if ((sch) >= 0xC0 && (sch) <= 0xDF) {
@@ -628,6 +643,9 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 		pixeloffset += rsz;
 	}
 	pthread_mutex_unlock(&screenlock);
+	pthread_mutex_lock(&vstatlock);
+	release_vmem(vmem_ptr);
+	pthread_mutex_unlock(&vstatlock);
 
 	return(0);
 }
