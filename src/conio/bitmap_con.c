@@ -384,8 +384,8 @@ static void	cb_drawrect(struct rectlist *data)
 	curs_col = vstat.curs_col;
 	charheight = vstat.charheight;
 	charwidth = vstat.charwidth;
-	pthread_mutex_unlock(&vstatlock);
 	if (cursor_visible_locked()) {
+		pthread_mutex_unlock(&vstatlock);
 		cv = color_value(ciolib_fg);
 		for (y = curs_start; y <= curs_end; y++) {
 			pixel = &data->data[((curs_row - 1) * charheight + y) * data->rect.width + (curs_col - 1) * charwidth];
@@ -394,6 +394,8 @@ static void	cb_drawrect(struct rectlist *data)
 			}
 		}
 	}
+	else
+		pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_lock(&callbacks.lock);
 	callbacks.drawrect(data);
 	callbacks.rects++;
@@ -674,10 +676,16 @@ static void blinker_thread(void *data)
 	while(1) {
 		curs_changed = 0;
 		blink_changed = 0;
-		do {
+		for (;;) {
 			SLEEP(10);
 			both_screens(&screen, &ncscreen);
-		} while (screen->rect == NULL);
+			pthread_mutex_lock(&screen->screenlock);
+			if (screen->rect != NULL) {
+				pthread_mutex_unlock(&screen->screenlock);
+				break;
+			}
+			pthread_mutex_unlock(&screen->screenlock);
+		}
 		count++;
 		if (count==25) {
 			pthread_mutex_lock(&vstatlock);
@@ -716,24 +724,26 @@ static void blinker_thread(void *data)
 				if (update_from_vmem(FALSE))
 					request_redraw();
 		}
-		pthread_mutex_lock(&screen->screenlock);
+		// Lock both screens in same order every time...
+		pthread_mutex_lock(&screena.screenlock);
+		pthread_mutex_lock(&screenb.screenlock);
 		// TODO: Maybe we can optimize the blink_changed forced update?
 		if (screen->update_pixels || curs_changed || blink_changed) {
 			// If the other screen is update_pixels == 2, clear it.
-			pthread_mutex_lock(&ncscreen->screenlock);
 			if (ncscreen->update_pixels == 2)
 				ncscreen->update_pixels = 0;
-			pthread_mutex_unlock(&ncscreen->screenlock);
 			rect = get_full_rectangle_locked(screen);
 			screen->update_pixels = 0;
-			pthread_mutex_unlock(&screen->screenlock);
+			pthread_mutex_unlock(&screenb.screenlock);
+			pthread_mutex_unlock(&screena.screenlock);
 			cb_drawrect(rect);
 		}
 		else {
 			if (force_cursor) {
 				rect = get_full_rectangle_locked(screen);
 			}
-			pthread_mutex_unlock(&screen->screenlock);
+			pthread_mutex_unlock(&screenb.screenlock);
+			pthread_mutex_unlock(&screena.screenlock);
 			if (force_cursor) {
 				cb_drawrect(rect);
 				force_cursor = 0;

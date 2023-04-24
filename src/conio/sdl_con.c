@@ -973,13 +973,11 @@ void sdl_video_event_thread(void *data)
 					block_text = 0;
 				break;
 			case SDL_MOUSEMOTION:
-				if(!ciolib_mouse_initialized)
-					break;
+				pthread_once(&ciolib_mouse_initialized, init_mouse);
 				ciomouse_gotevent(CIOLIB_MOUSE_MOVE,win_to_text_xpos(ev.motion.x, &cvstat),win_to_text_ypos(ev.motion.y, &cvstat), win_to_res_xpos(ev.motion.x, &cvstat), win_to_res_ypos(ev.motion.y, &cvstat));
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				if(!ciolib_mouse_initialized)
-					break;
+				pthread_once(&ciolib_mouse_initialized, init_mouse);
 				switch(ev.button.button) {
 					case SDL_BUTTON_LEFT:
 						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
@@ -993,8 +991,7 @@ void sdl_video_event_thread(void *data)
 				}
 				break;
 			case SDL_MOUSEWHEEL:
-				if (!ciolib_mouse_initialized)
-					break;
+				pthread_once(&ciolib_mouse_initialized, init_mouse);
 				if (ev.wheel.y) {
 #if (SDL_MINOR_VERSION > 0) || (SDL_PATCHLEVEL > 3)
 					if (ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
@@ -1007,8 +1004,7 @@ void sdl_video_event_thread(void *data)
 				}
 				break;
 			case SDL_MOUSEBUTTONUP:
-				if(!ciolib_mouse_initialized)
-					break;
+				pthread_once(&ciolib_mouse_initialized, init_mouse);
 				switch(ev.button.button) {
 					case SDL_BUTTON_LEFT:
 						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));

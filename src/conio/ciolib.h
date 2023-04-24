@@ -660,7 +660,7 @@ enum {
 
 #define CIOLIB_BUTTON_BASE(x)		(x!=CIOLIB_MOUSE_MOVE?x-9*(CIOLIB_BUTTON_NUMBER(x)-1):CIOLIB_MOUSE_MOVE)
 
-extern int ciolib_mouse_initialized;
+extern pthread_once_t ciolib_mouse_initialized;
 
 #ifdef __cplusplus
 extern "C" {
@@ -669,6 +669,7 @@ CIOLIBEXPORT void ciomouse_gotevent(int event, int x, int y, int x_res, int y_re
 CIOLIBEXPORT int mouse_trywait(void);
 CIOLIBEXPORT int mouse_wait(void);
 CIOLIBEXPORT int mouse_pending(void);
+CIOLIBEXPORT void init_mouse(void);
 CIOLIBEXPORT int ciolib_getmouse(struct mouse_event *mevent);
 CIOLIBEXPORT int ciolib_ungetmouse(struct mouse_event *mevent);
 CIOLIBEXPORT void ciolib_mouse_thread(void *data);
