@@ -87,7 +87,7 @@ function post(query)
 		}
 		log(LOG_WARNING
 			,format("Receive mismatch QWK packet receipt size (%lu), expected: %lu", size, qwksize));
-		return "400 recipe size mismatch, expected: " + qwksize;
+		return "400 received size mismatch, expected: " + qwksize;
 	}
 
 	if(!http_request.post_data) {
@@ -99,7 +99,7 @@ function post(query)
 	var repfile = system.data_dir + format("file/%04u.rep", user.number);
 
 	if(file_exists(repfile)) {
-		log(LOG_ERR, file.name + " already exists");
+		log(LOG_ERR, repfile + " already exists");
 		return "409 REP packet already pending";
 	}
 
