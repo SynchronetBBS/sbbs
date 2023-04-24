@@ -412,7 +412,6 @@ static void init_mode_internal(int mode)
 
 	oldcols=x_cvstat.cols;
 
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	if (last) {
 		release_buffer(last);
@@ -432,7 +431,6 @@ static void init_mode_internal(int mode)
 
 	x_cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 	map_window();
 }
 

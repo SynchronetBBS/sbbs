@@ -380,7 +380,6 @@ static int sdl_init_mode(int mode)
 
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	oldcols = vstat.cols;
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
@@ -419,7 +418,6 @@ static int sdl_init_mode(int mode)
 	sdl_mode = true;
 	pthread_mutex_unlock(&sdl_mode_mutex);
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 
 	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE, vstat.winwidth, vstat.winheight);
 
