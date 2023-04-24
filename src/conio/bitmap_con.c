@@ -1470,12 +1470,21 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		pos = pixels->width*(y-sy+y_off)+x_off;
 		if (mask == NULL) {
 			for (x = sx; x <= ex; x++) {
-				screena.rect->data[PIXEL_OFFSET(screena, x, y)] = pixels->pixels[pos];
+				if (screena.rect->data[PIXEL_OFFSET(screena, x, y)] != pixels->pixels[pos]) {
+					screena.rect->data[PIXEL_OFFSET(screena, x, y)] = pixels->pixels[pos];
+					screena.update_pixels = 1;
+				}
 				if (pixels->pixelsb) {
-					screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] = pixels->pixelsb[pos];
+					if (screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] != pixels->pixelsb[pos]) {
+						screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] = pixels->pixelsb[pos];
+						screenb.update_pixels = 1;
+					}
 				}
 				else {
-					screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] = pixels->pixels[pos];
+					if (screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] != pixels->pixels[pos]) {
+						screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] = pixels->pixels[pos];
+						screenb.update_pixels = 1;
+					}
 				}
 				pos++;
 			}
@@ -1487,12 +1496,21 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 				mask_bit = mpos % 8;
 				mask_bit = 0x80 >> mask_bit;
 				if (mask->bits[mask_byte] & mask_bit) {
-					screena.rect->data[PIXEL_OFFSET(screena, x, y)] = pixels->pixels[pos];
+					if (screena.rect->data[PIXEL_OFFSET(screena, x, y)] != pixels->pixels[pos]) {
+						screena.rect->data[PIXEL_OFFSET(screena, x, y)] = pixels->pixels[pos];
+						screena.update_pixels = 1;
+					}
 					if (pixels->pixelsb) {
-						screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] = pixels->pixelsb[pos];
+						if (screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] != pixels->pixelsb[pos]) {
+							screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] = pixels->pixelsb[pos];
+							screenb.update_pixels = 1;
+						}
 					}
 					else {
-						screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] = pixels->pixels[pos];
+						if (screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] != pixels->pixels[pos]) {
+							screenb.rect->data[PIXEL_OFFSET(screenb, x, y)] = pixels->pixels[pos];
+							screenb.update_pixels = 1;
+						}
 					}
 				}
 				pos++;
@@ -1500,8 +1518,6 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 			}
 		}
 	}
-	screena.update_pixels = 1;
-	screenb.update_pixels = 1;
 	pthread_mutex_unlock(&screenb.screenlock);
 	pthread_mutex_unlock(&screena.screenlock);
 	pthread_mutex_unlock(&blinker_lock);
@@ -1626,8 +1642,7 @@ void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size)
 			free(name);
 			free(data);
 	}
-	screena.update_pixels = 1;
-	screenb.update_pixels = 1;
+	request_redraw();
 	pthread_mutex_unlock(&screenb.screenlock);
 	pthread_mutex_unlock(&screena.screenlock);
 	pthread_mutex_unlock(&blinker_lock);
