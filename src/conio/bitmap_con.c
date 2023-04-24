@@ -100,7 +100,6 @@ pthread_mutex_t free_rect_lock;
 /* Exported globals */
 
 pthread_mutex_t		vstatlock;
-pthread_mutex_t blinker_lock;
 
 /* Forward declarations */
 
@@ -714,7 +713,6 @@ static void blinker_thread(void *data)
 			pthread_mutex_unlock(&vstatlock);
 		}
 		/* Lock out ciolib while we handle shit */
-		pthread_mutex_lock(&blinker_lock);
 		if (check_redraw()) {
 			if (update_from_vmem(TRUE))
 				request_redraw();
@@ -750,7 +748,6 @@ static void blinker_thread(void *data)
 			}
 		}
 		cb_flush();
-		pthread_mutex_unlock(&blinker_lock);
 	}
 }
 
@@ -877,8 +874,6 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 	uint16_t *buf = fill;
 	struct vstat_vmem *vmem_ptr;
 
-	pthread_mutex_lock(&blinker_lock);
-
 	pthread_mutex_lock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
 	pthread_mutex_unlock(&vstatlock);
@@ -891,7 +886,6 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 	pthread_mutex_lock(&vstatlock);
 	release_vmem(vmem_ptr);
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 	return ret;
 }
 
@@ -902,9 +896,7 @@ int bitmap_vmem_puttext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 	if(!bitmap_initialized)
 		return(0);
 
-	pthread_mutex_lock(&blinker_lock);
 	ret = bitmap_vmem_puttext_locked(sx, sy, ex, ey, fill);
-	pthread_mutex_unlock(&blinker_lock);
 
 	return ret;
 }
@@ -929,7 +921,6 @@ int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 		return(0);
 	}
 
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
 	pthread_mutex_unlock(&vstatlock);
@@ -940,7 +931,6 @@ int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 	pthread_mutex_lock(&vstatlock);
 	release_vmem(vmem_ptr);
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 	return(1);
 }
 
@@ -949,7 +939,6 @@ void bitmap_gotoxy(int x, int y)
 	if(!bitmap_initialized)
 		return;
 	/* Move cursor location */
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	if (vstat.curs_col != x + cio_textinfo.winleft - 1 || vstat.curs_row != y + cio_textinfo.wintop - 1) {
 		cio_textinfo.curx=x;
@@ -960,14 +949,12 @@ void bitmap_gotoxy(int x, int y)
 			force_cursor = 1;
 	}
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 }
 
 void bitmap_setcursortype(int type)
 {
 	if(!bitmap_initialized)
 		return;
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	switch(type) {
 		case _NOCURSOR:
@@ -986,7 +973,6 @@ void bitmap_setcursortype(int type)
 			break;
 	}
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 }
 
 int bitmap_setfont(int font, int force, int font_num)
@@ -1014,7 +1000,6 @@ int bitmap_setfont(int font, int force, int font_num)
 	else if(conio_fontdata[font].eight_by_eight!=NULL)
 		newmode=C80X50;
 
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	switch(vstat.charheight) {
 		case 8:
@@ -1073,7 +1058,6 @@ int bitmap_setfont(int font, int force, int font_num)
 			if(!new) {
 				free(old);
 				pthread_mutex_unlock(&vstatlock);
-				pthread_mutex_unlock(&blinker_lock);
 				return 0;
 			}
 			pold=old;
@@ -1120,12 +1104,10 @@ int bitmap_setfont(int font, int force, int font_num)
 	}
 	bitmap_loadfont_locked(NULL);
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 	return(1);
 
 error_return:
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 	return(0);
 }
 
@@ -1133,14 +1115,12 @@ int bitmap_getfont(int font_num)
 {
 	int ret;
 
-	pthread_mutex_lock(&blinker_lock);
 	if (font_num == 0)
 		ret = default_font;
 	else if (font_num > 4)
 		ret = -1;
 	else
 		ret = current_font[font_num - 1];
-	pthread_mutex_unlock(&blinker_lock);
 
 	return ret;
 }
@@ -1149,11 +1129,9 @@ int bitmap_loadfont(const char *filename)
 {
 	int ret;
 
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	ret = bitmap_loadfont_locked(filename);
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 	return ret;
 }
 
@@ -1218,7 +1196,6 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	if(toy > y)
 		direction=-1;
 
-	pthread_mutex_lock(&blinker_lock);
 	if (direction == -1) {
 		sourcepos=(y+height-2)*cio_textinfo.screenwidth+(x-1);
 		destoffset=(((toy+height-2)*cio_textinfo.screenwidth+(tox-1))-sourcepos);
@@ -1248,7 +1225,6 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	pthread_mutex_lock(&vstatlock);
 	release_vmem(vmem_ptr);
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 
 	return(1);
 }
@@ -1260,7 +1236,6 @@ void bitmap_clreol(void)
 	struct vstat_vmem *vmem_ptr;
 	int row;
 
-	pthread_mutex_lock(&blinker_lock);
 	row = cio_textinfo.cury + cio_textinfo.wintop - 1;
 	pos=(row - 1)*cio_textinfo.screenwidth;
 	pthread_mutex_lock(&vstatlock);
@@ -1273,7 +1248,6 @@ void bitmap_clreol(void)
 	pthread_mutex_lock(&vstatlock);
 	release_vmem(vmem_ptr);
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 }
 
 void bitmap_clrscr(void)
@@ -1283,7 +1257,6 @@ void bitmap_clrscr(void)
 	struct vstat_vmem *vmem_ptr;
 	int rows, cols;
 
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
 	rows = vstat.rows;
@@ -1298,12 +1271,10 @@ void bitmap_clrscr(void)
 	pthread_mutex_lock(&vstatlock);
 	release_vmem(vmem_ptr);
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 }
 
 void bitmap_getcustomcursor(int *s, int *e, int *r, int *b, int *v)
 {
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	if(s)
 		*s=vstat.curs_start;
@@ -1316,14 +1287,12 @@ void bitmap_getcustomcursor(int *s, int *e, int *r, int *b, int *v)
 	if(v)
 		*v=vstat.curs_visible;
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 }
 
 void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 {
 	double ratio;
 
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	if(r==0)
 		ratio=0;
@@ -1339,14 +1308,12 @@ void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 		vstat.curs_visible=v;
 	force_cursor = 1;
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 }
 
 int bitmap_getvideoflags(void)
 {
 	int flags=0;
 
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	if(vstat.bright_background)
 		flags |= CIOLIB_VIDEO_BGBRIGHT;
@@ -1359,13 +1326,11 @@ int bitmap_getvideoflags(void)
 	if(vstat.blink_altcharset)
 		flags |= CIOLIB_VIDEO_BLINKALTCHARS;
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 	return(flags);
 }
 
 void bitmap_setvideoflags(int flags)
 {
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	if(flags & CIOLIB_VIDEO_BGBRIGHT)
 		vstat.bright_background=1;
@@ -1392,26 +1357,21 @@ void bitmap_setvideoflags(int flags)
 	else
 		vstat.blink_altcharset=0;
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 }
 
 int bitmap_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp)
 {
 	int ret;
 
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
 	ret = bitmap_attr2palette_locked(attr, fgp, bgp);
 	pthread_mutex_unlock(&vstatlock);
-	pthread_mutex_unlock(&blinker_lock);
 
 	return ret;
 }
 
 int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 {
-	pthread_mutex_lock(&blinker_lock);
-
 	pthread_mutex_lock(&screena.screenlock);
 	if (x < screena.screenwidth && y < screena.screenheight) {
 		if (screena.rect->data[PIXEL_OFFSET(screena, x, y)] != colour) {
@@ -1429,8 +1389,6 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 		}
 	}
 	pthread_mutex_unlock(&screenb.screenlock);
-
-	pthread_mutex_unlock(&blinker_lock);
 
 	return 1;
 }
@@ -1466,13 +1424,11 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 			return 0;
 	}
 
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&screena.screenlock);
 	pthread_mutex_lock(&screenb.screenlock);
 	if (ex > screena.screenwidth || ey > screena.screenheight) {
 		pthread_mutex_unlock(&screenb.screenlock);
 		pthread_mutex_unlock(&screena.screenlock);
-		pthread_mutex_unlock(&blinker_lock);
 		return 0;
 	}
 
@@ -1530,7 +1486,6 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	}
 	pthread_mutex_unlock(&screenb.screenlock);
 	pthread_mutex_unlock(&screena.screenlock);
-	pthread_mutex_unlock(&blinker_lock);
 
 	return 1;
 }
@@ -1568,7 +1523,6 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 		return NULL;
 	}
 
-	pthread_mutex_lock(&blinker_lock);
 	update_from_vmem(force);
 	pthread_mutex_lock(&screena.screenlock);
 	pthread_mutex_lock(&screenb.screenlock);
@@ -1576,7 +1530,6 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 	    ex >= screenb.screenwidth || ey >= screenb.screenheight) {
 		pthread_mutex_unlock(&screenb.screenlock);
 		pthread_mutex_unlock(&screena.screenlock);
-		pthread_mutex_unlock(&blinker_lock);
 		free(pixels->pixelsb);
 		free(pixels->pixels);
 		free(pixels);
@@ -1590,7 +1543,6 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 	}
 	pthread_mutex_unlock(&screenb.screenlock);
 	pthread_mutex_unlock(&screena.screenlock);
-	pthread_mutex_unlock(&blinker_lock);
 
 	return pixels;
 }
@@ -1618,12 +1570,9 @@ uint32_t bitmap_map_rgb(uint16_t r, uint16_t g, uint16_t b)
 
 void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size)
 {
-	pthread_mutex_lock(&blinker_lock);
-
 	if (id < CONIO_FIRST_FREE_FONT) {
 		free(name);
 		free(data);
-		pthread_mutex_unlock(&blinker_lock);
 		return;
 	}
 
@@ -1655,7 +1604,6 @@ void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size)
 	request_redraw();
 	pthread_mutex_unlock(&screenb.screenlock);
 	pthread_mutex_unlock(&screena.screenlock);
-	pthread_mutex_unlock(&blinker_lock);
 }
 
 int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
@@ -1663,7 +1611,6 @@ int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 	if (index > 65535)
 		return 0;
 
-	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&screena.screenlock);
 	pthread_mutex_lock(&screenb.screenlock);
 	palette[index] = (0xff << 24) | ((r>>8) << 16) | ((g>>8) << 8) | (b>>8);
@@ -1671,7 +1618,6 @@ int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 	screenb.update_pixels = 1;
 	pthread_mutex_unlock(&screenb.screenlock);
 	pthread_mutex_unlock(&screena.screenlock);
-	pthread_mutex_unlock(&blinker_lock);
 	return 1;
 }
 
@@ -1721,8 +1667,6 @@ int bitmap_drv_init_mode(int mode, int *width, int *height)
 		return(-1);
 
 	if(load_vmode(&vstat, mode)) {
-		// TODO: WTF?
-		//pthread_mutex_unlock(&blinker_lock);
 		return(-1);
 	}
 
@@ -1785,7 +1729,6 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 			| CONIO_OPT_SET_PIXEL | CONIO_OPT_CUSTOM_CURSOR
 			| CONIO_OPT_FONT_SELECT | CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING
 			| CONIO_OPT_BLOCKY_SCALING;
-	pthread_mutex_init(&blinker_lock, NULL);
 	pthread_mutex_init(&callbacks.lock, NULL);
 	pthread_mutex_init(&vstatlock, NULL);
 	pthread_mutex_init(&screena.screenlock, NULL);
