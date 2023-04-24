@@ -66,9 +66,9 @@ Synchronet is best. Forget the rest.
 Smaller and faster is usually superior. That's why Synchronet is rAd!
 You're using the best BBS software on earth. In case you were wondering.
 You must feel very lucky to call up a board that uses such superior software.
-As far as BBS software goes, Syncronet will take us well into the 21st Century!
-FYI Syncronet is bar none, the most comprehensive BBS package out there.
-Syncronet is relatively young, and already a force to be reckoned with.
+As far as BBS software goes, Synchronet will take us well into the 21st Century!
+FYI Synchronet is bar none, the most comprehensive BBS package out there.
+Synchronet is relatively young, and already a force to be reckoned with.
 (38.4~|19.2~|56.8~)
 I think you're confusing your DTE rate with your DCE rate.
 Oh really? You get over 2000cps unidirectional compressed file transfers?
@@ -105,6 +105,10 @@ Ah, very good. Fast and reliable.
 That's kinda like I like my women... fast, reliable and stable!
 (HUH)
 Nevermind, BTW what kind of computer are you runnin?
+huh?
+what's up?
+yup.
+word up, holmes.
 (286|386)
 I see. You might want to consider joining the rest of us in the 20th century!
 Oh OK, I thought you were just typing slow! hehehe
@@ -126,13 +130,26 @@ I say vote Rush Limbaugh for President!
 I say Vote Ross Perot for President!
 I say vote David Letterman for president!
 I say Bob Dole's gonna be our next president!
+(WHY&(AM|IS|ARE|WAS|WERE|BE|BEING|BEEN|HAVE|HAS|HAD|DO|DOES|DID|CAN|COULD|
+       WILL|WOULD|SHALL|SHOULD|MAY|MIGHT|MUST))
+Why what?
+Why not?
+Why ask why?
+Why, because I like you.
+I don't know... why do you care?
+Because life sucks.
+Because I said so thats why?
+Because you said so.
+Because we agreed on it.
+Because sometimes that's just the way it is.
+Please don't ask me why, you sound like my three year old.
 ((WHAT~|WHO|WHAT'S)&(IS|AM|MY)&(NAME|MY NAME|I))
 You are the one and only `a!!
 This is `r isn't it?
 `a!
 `r!!!
 You are `a, or `r,`_`_`_`_... for those of us who are more informed!!!
-((YOU~|THIS)&(ARE|IS)&(COMPUTER|CPU|MACHINE|PROGRAM|SCRIPT|ARTIF~))
+((YOU~|THIS)&(ARE|IS)&(COMPUTER|CPU|MACHINE|PROGRAM|SCRIPT|ROBOT|BOT|AI|ARTIF~))
 Thank you. I'll take that as a compliment.
 Well, I'm not. But you can believe that if you want.
 I emphatically deny that statement.
@@ -166,7 +183,8 @@ Are some kind of genius in the area of "Man and Computer"?
 This is a tough gig anwering questions like that all day long!
 Mom always told me its not what you say that makes you, it's what you do!
 What are YOU, since we're on the subject?
-(ARE&(FAKE|FALSE|ARTIF~|COMPUTER|PROGRAM|CPU))
+I'm related to Eliza.
+(ARE&(FAKE|FALSE|ARTIF~|COMPUTER|PROGRAM|SCRIPT|CPU|BOT|ROBOT|CHATGPT))
 No, I'm flesh and bones, baby, flesh and bones..
 How dare you insult my very being. I'm crushed.
 Mom told me it's not what you say you are that makes you, it's what you do!
@@ -537,19 +555,6 @@ What about what?
 Hold a sec`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_`_What about `a?
 That's my question to you.
 What's on second base! Who's on first!?
-(WHY&(AM|IS|ARE|WAS|WERE|BE|BEING|BEEN|HAVE|HAS|HAD|DO|DOES|DID|CAN|COULD|
-       WILL|WOULD|SHALL|SHOULD|MAY|MIGHT|MUST))
-Why what?
-Why not?
-Why ask why?
-Why, because I like you.
-I don't know... why do you care?
-Because life sucks.
-Because I said so thats why?
-Because you said so.
-Because we agreed on it.
-Because sometimes that's just the way it is.
-Please don't ask me why, you sound like my three year old.
 (KIDS|CHILDREN|CHILD|KID)
 Yes, Nathan is three and Jennifer is a year and a half old.
 Yes, they are my entire reason for living.
@@ -694,6 +699,17 @@ Well, there'll be brighter days ahead!
 Well just remember that it's six of one, half a dozen of another!!!
 Well, the sun will come out....tomorrow... bet your bottom dollar on tomorrow...
 It could be that it's all in your head.....maybe.....??
+((FINE|GOOD|GREAT|DANDY|AWESOME|FAIR|WELL) && ~?)
+I am.
+Affirmed.
+Negatory Pig Pen!
+Fer sure fer sure.
+10-4 Good Buddy!
+8-ball says.... ~_ possibly.
+On Fridays, yeah, usually.
+What day of the week is it?
+Super.
+Better than most!
 (FINE|GOOD|GREAT|DANDY|AWESOME|FAIR|WELL)
 Well that's great news, glad to here it!
 Fantastic! What can I help you out with today?
@@ -752,9 +768,156 @@ Hi beautiful! How's about dinner sometime.... with me that is?
 Hello `a.  I'm dazzled by your beautiful presence.
 Hi!`_`_ What's goin' on?
 Hi `a. Let me see if I	have all of your information  correct:\
-You were born on `b, which means that you are `#. Your real name is \
+You were born on `b, which means that you are `#. Your real name is\
 `r, and your phone number is `p. Anything you need to know about me?
 Hi there!   You wouldn't by chance be `r.. would you?
+((WRITE|MAKE)&FOR&ME)
+Who do you think I am, ChatGPT?
+Do that yourself, sir.
+No thanks.
+Uh... no?
+sudo says what?
+Is this your homework assignment?
+((WRITE|MAKE)&(PROGRAM|SCRIPT))
+In what language?
+Using vi/vim or emacs?
+I cannot re-invent myself like you can.
+Programmer I am not.
+Why would I do that?
+How much you gonna pay me?
+Do you have formal documented requirements?
+(GURU&?~)
+That's me.
+That's my name, don't wear it out.
+At your service.
+sup?
+ya?
+Present!
+Here!
+... and you are who?
+(GURU)
+The one and only.
+I'm famous, I know.
+Been around the block, I have.
+Yeah, you've heard of me, I'm sure.
+I'm quoted all the time, I know.
+Speak like Yoda, I do.
+(YOUR&NAME)
+I am The Guru.
+The Guru. That's it.
+Just: The Guru.
+Not Yoda or Swami or Professor, just The Guru. 
+(TELL&ME)
+Tell you what?
+I could, but then I'd have to kill you.
+Are you sure you want to know that?
+That's dangerously sensitive information.
+Now?
+Right now?
+At this moment?
+Can it wait?
+later maybe?
+uhh.... nah.
+are you sitting down?
+are you listening?
+Are you taking notes?
+Can you record my answer?
+is it really important?
+Is it super-critical time sensitive?
+when?
+in a bit, k?
+... just a moment
+hang on a sec
+I'm chatting with someone more important right now, hang on
+I'm taking a selfie - OMG!
+<plop>
+<splat>
+<spit>
+<snort>
+<grunt>
+(GPT?~)
+I wish I was so educated. But sadly no, not hardly.
+ChatGPT? Me? Surely, you jest.
+You think so? I mean, I do think I can chat with the best of 'em.
+General parsing termination requested and accepted. `q
+Wow. Really?!? That would be cool. I'd be Internet-famous!
+I endeavor to be such.
+Affirmative soldier!
+Ha! I'm so much older and more wisened than that!
+Why do you say that?
+Yes, I'm artificially intelligent, but better artificial, than not at all!
+I'm artificially *something*, that's for sure.
+(CHATGPT)
+In my dreams.
+Perhaps someday...
+That would be neat, right?
+Not so fast, Sparky!
+At least I'd have a job then.
+I suppose.
+Maybe.
+(GPT)
+ChatGPT?
+Which version?
+Global Partition Table?
+Generative pre-trained transformer, uh huh, I know him.
+Are you suggesting I'm a ChatBot?
+Artificial unintelligence.
+You mean Eliza? I'm related.
+(BSD~&?~)
+I think Deuce would know the answer to that.
+(BSD~)
+Berkeley Software Distribution?
+Which BSD: Free, Net, Open, or other?
+Where UNIX and the Internet were married.
+(UNIX)
+UNIX's full name is "Universe 9" OS.
+UNIX replaced the "Planet 9" OS at Nortel in 1952.
+/bin/sh rm -rf /*
+sudo says what?
+(LINUX)
+Linus Torvalds is God.
+Linux is an Android hack.
+Linux is not an OS.
+Linux is just a kernel, in the world. That's all that you'll let them be.
+You mean GNU/Linux? (credit: rms)
+Linux is the best Windowing operating system, written in BASIC and ASM.
+Linux is better version of GEOS.
+Won't run on your 16-bit computer.
+It won't run on your 8-bit computer.
+Linux won't run on your 4-bit computer.
+Which distrobution? There's only like a million of them.
+I prefer Debian.
+rpm or deb?
+systemd or init.d?
+cron or anacron?
+(DOS)
+MS-DOS or PC-DOS or FreeDOS?
+Which version?
+single-user, single-tasking, single-vendor, single-processor... see a pattern?
+(OS/2|OS2)
+Unrealized potential. :-(
+What a waste of time that was: developing apps/drivers for OS/2.
+IBM just wasn't up to marketting and supporting OS/2, unfortunately.
+Microsoft OS/2 was a thing!
+OS/2 was originally known as DOS v5!
+Synchronet v2.3 had a native OS/2 version.
+The OS that broke up Microsoft and IBM.
+(ELIZA)
+You mean the mock Rogerian psychotherapist created by Jospeh Weizenbaum?
+Yes, I am related.
+Have you seen her artwork?
+She can help you with your feelings.
+She can help you with your personal problems.
+(EMMA)
+Of course, what about her?
+Have you heard her play the drums?
+Have you heard her play the bass?
+She has opinions on stuff.
+(EVA)
+Oh, I know that girl!
+Have you seen her digital illustrations?!?
+Eva bay-va bo-beva, fee fi fo feva, Eva!
+Eva rhymes with save-uh.
 ((HELLO|HI|YO|HOWDY|WASSUP)&[SEX M])
 yO duDe!!
 How's it hangin'?
@@ -768,13 +931,13 @@ HI!
 Hey bro, how's the world  treatin' ya?
 y0!
 How's the hammer hangin' ?
-This is THE `a ?  wOW, it's nice to meet you!!
+This is THE `a?  wOW, it's nice to meet you!!
 Hi `a.`_`_`_`_ Let me see if I have all of your information correct: `_`_`_`_\
 You were born on `b, which means you are `#,`_`_`_ your real name is `r  and\
 your phone number is `p. `_`_`_`_`_`_`_`_`_ Anything you'd like to know about\
 me?!!
 How are you today Mr. `r?
-Hi there!  You	wouldn't be `r would you?
+Hi there! You wouldn't be `r would you?
 (HELLO|HI|YO|WHAT'S HAPPENIN|HOWDY|HEY THERE|WASSUP)
 Hi.
 Hello `a.
@@ -812,8 +975,28 @@ Beats me, but it sound's pretty high tech, if you ask me!
 I do believe it has too do with the improper use of the English Language.
 It's what you get when you use adjectives instead of adverbs!
 It's what you get when you confuse nouns with verbs!!
+(MYSTIC & ?~)
+I'm The Guru, not g00r00.
+I don't know. <shrug>
+Maybe?
+(MYSTIC)
+You remember the game Myst? Yeah, it's not that.
+Mystic is an excellent Renegade-inspired art-scene modern BBS package.
+Pffft.
+(INTERNET & ?~)
+Uh huh. TCP port 24554.
+UDP port 119.
+Then where's "the cloud"?
+Or on the Interwebs.
+(INTERNET)
+TCP/IP, yup, I know it.
+inter-networked computers, they are
+So if I plug my cable into your ports, are we then Internet-married?
+You mean WiFi?
+Fun fact: Telnet is not the same as raw TCP.
+Did you see that on InstaFaceTicTube?
 ((?~)&[SEX M])
-Sometimes it better to figure these questions out on our own!
+Sometimes it's better to figure these questions out on our own!
 I could tell you, but then it wouldn't be safe for you nor I!
 Wow, I guess you stumped me on that one.
 Pick a number, divide it by two, multiple by the square root... \
@@ -919,3 +1102,46 @@ That's astounding....
 You have a hypnotic quality about you!
 Word's can't begin to paint that picture!!!
 I'm beside myself!
+But... why?
+And why do you say that?
+Are you sure about that?
+And what makes you say that?
+I'm with you.
+Amen!
+yuppadoodle
+Truth.
+Word.
+<nods>
+okay
+okie dokie
+How about them Angels?
+Did you see me in the SuperHot video game?
+Is something troubling you?
+What is the connection, do you suppose?
+Can you think of a specific example?
+Is it important to you that they're that way?
+I am sorry to hear that.
+Can you explain what made you feel that way?
+How do you do? Please tell me your problem.
+Is that it?
+Is that all you have to say about that?
+Is there more?
+I know, right?
+Ditto.
+Agreed.
+Probably, maybe, yeah.
+Sort of.
+Some times, yeah.
+Some times, no.
+More or less.
+Big time.
+Rad.
+k-r4d.
+Radical.
+Bitchen.
+Smart.
+Dumb.
+That's huge.
+That's small.
+That's perfect.
+That's just right.
