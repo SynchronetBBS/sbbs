@@ -454,9 +454,10 @@ int sdl_init(int mode)
 	return(-1);
 }
 
-static void internal_setwinsize(struct video_stats *vs)
+static void internal_setwinsize(struct video_stats *vs, bool force)
 {
 	int w, h;
+	bool changed = true;
 
 	w = vs->winwidth;
 	h = vs->winheight;
@@ -469,11 +470,16 @@ static void internal_setwinsize(struct video_stats *vs)
 	if (h < vs->scrnheight)
 		h = vs->scrnheight;
 	pthread_mutex_lock(&vstatlock);
-	vs->winwidth = vstat.winwidth = w;
-	vs->winheight = vstat.winheight = h;
+	if (w == vstat.winwidth && h == vstat.winheight)
+		changed = force;
+	else {
+		vs->winwidth = vstat.winwidth = w;
+		vs->winheight = vstat.winheight = h;
+	}
 	pthread_mutex_unlock(&vstatlock);
 	internal_scaling = window_can_scale_internally(vs);
-	setup_surfaces_locked(vs);
+	if (changed)
+		setup_surfaces_locked(vs);
 }
 
 void sdl_setwinsize(int w, int h)
@@ -1037,7 +1043,7 @@ void sdl_video_event_thread(void *data)
 							break;
 						}
 						pthread_mutex_unlock(&sdl_mode_mutex);
-						internal_setwinsize(&cvstat);
+						internal_setwinsize(&cvstat, false);
 						break;
 					case SDL_WINDOWEVENT_EXPOSED:
 						bitmap_drv_request_pixels();
@@ -1197,7 +1203,7 @@ void sdl_video_event_thread(void *data)
 						pthread_mutex_lock(&vstatlock);
 						cvstat = vstat;
 						pthread_mutex_unlock(&vstatlock);
-						internal_setwinsize(&cvstat);
+						internal_setwinsize(&cvstat, true);
 						sdl_ufunc_retval=0;
 						sem_post(&sdl_ufunc_ret);
 						break;
