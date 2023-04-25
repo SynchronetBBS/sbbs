@@ -298,10 +298,12 @@ set_vmem_cell(struct vstat_vmem *vmem_ptr, size_t pos, uint16_t cell, uint32_t f
 	bitmap_attr2palette_locked(cell>>8, fg == 0xffffff ? &fg : NULL, bg == 0xffffff ? &bg : NULL);
 
 	altfont = (cell>>11 & 0x01) | ((cell>>14) & 0x02);
+	pthread_mutex_lock(&vstatlock);
 	if (!vstat.bright_altcharset)
 		altfont &= ~0x01;
 	if (!vstat.blink_altcharset)
 		altfont &= ~0x02;
+	pthread_mutex_unlock(&vstatlock);
 	font=current_font[altfont];
 	if (font == -99)
 		font = default_font;
@@ -565,8 +567,9 @@ static int bitmap_draw_one_char(unsigned int xpos, unsigned int ypos)
 			}
 		}
 	}
-	if (this_font == NULL)
+	if (this_font == NULL) {
 		this_font = font[0];
+	}
 	fdw = charwidth - (flags & VIDMODES_FLAG_EXPAND) ? 1 : 0;
 	fontoffset=(sch) * (charheight * ((fdw + 7) / 8));
 

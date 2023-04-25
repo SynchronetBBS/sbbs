@@ -454,11 +454,22 @@ int sdl_init(int mode)
 	return(-1);
 }
 
+static void
+update_cvstat(struct video_stats *vs)
+{
+	if (vs != NULL && vs != &vstat) {
+		pthread_mutex_lock(&vstatlock);
+		*vs = vstat;
+		pthread_mutex_unlock(&vstatlock);
+	}
+}
+
 static void internal_setwinsize(struct video_stats *vs, bool force)
 {
 	int w, h;
 	bool changed = true;
 
+	update_cvstat(vs);
 	w = vs->winwidth;
 	h = vs->winheight;
 	if (w > 16384)
@@ -671,7 +682,8 @@ static void setup_surfaces_locked(struct video_stats *vs)
 	}
 	if (vs != &vstat) {
 		pthread_mutex_lock(&vstatlock);
-		vstat = *vs;
+		vstat.winwidth = vs->winwidth;
+		vstat.winheight = vs->winheight;
 		pthread_mutex_unlock(&vstatlock);
 	}
 	sdl.SetWindowMinimumSize(win, idealmw, idealmh);
@@ -694,6 +706,7 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 		fullscreen=!fullscreen;
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		sdl.SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+		update_cvstat(vs);
 		setup_surfaces_locked(vs);
 		return;
 	}
@@ -885,6 +898,8 @@ void sdl_video_event_thread(void *data)
 						// Don't allow ALT-DIR to change size when maximized...
 						if ((sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) == 0) {
 							bool wc;
+
+							update_cvstat(&cvstat);
 							w = cvstat.winwidth;
 							h = cvstat.winheight;
 							aspect_fix(&w, &h, cvstat.aspect_width, cvstat.aspect_height);
@@ -1061,6 +1076,7 @@ void sdl_video_event_thread(void *data)
 						sem_post(&sdl_ufunc_ret);
 						return;
 					case SDL_USEREVENT_FLUSH:
+						update_cvstat(&cvstat);
 						pthread_mutex_lock(&win_mutex);
 						if (win != NULL) {
 							pthread_mutex_unlock(&win_mutex);
@@ -1200,9 +1216,6 @@ void sdl_video_event_thread(void *data)
 						sdl_mode = false;
 						pthread_mutex_unlock(&sdl_mode_mutex);
 
-						pthread_mutex_lock(&vstatlock);
-						cvstat = vstat;
-						pthread_mutex_unlock(&vstatlock);
 						internal_setwinsize(&cvstat, true);
 						sdl_ufunc_retval=0;
 						sem_post(&sdl_ufunc_ret);
