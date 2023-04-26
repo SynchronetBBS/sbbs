@@ -877,7 +877,7 @@ bitmap_vmem_puttext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 
 	pthread_mutex_lock(&vstatlock);
 	ret = bitmap_vmem_puttext_locked(sx, sy, ex, ey, fill);
-	pthread_mutex_lock(&vstatlock);
+	pthread_mutex_unlock(&vstatlock);
 	return ret;
 }
 
