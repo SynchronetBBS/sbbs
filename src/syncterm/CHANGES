@@ -15,6 +15,7 @@ On Windows, indicate "awareness" for "High DPI"
 Prefer X11 mode over SDL mode
 Fix scrolling with left/right margins
 Resumed ZModem ETA estimation fix
+Support PPM graphics
 
 Version 1.1
 -----------

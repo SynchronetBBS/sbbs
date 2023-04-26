@@ -220,36 +220,37 @@ ifneq ($(os),win32)
  endif
 endif
 
-machine		:=	$(shell if uname -m | egrep -v "(i[3456789]*|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
-machine		:=	$(shell if uname -m | egrep "64" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; else echo $(machine) ; fi)
+machine_uname	:=	$(shell if uname -m | egrep -v "(i[3456789]*|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
+machine_uname	:=	$(shell if uname -m | egrep "64" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; else echo $(machine_uname) ; fi)
 ifeq ($(os),darwin)
- ifeq ("$(machine)","")
+ ifeq ("$(machine_uname)","")
   ifeq ($(shell sysctl hw.optional.x86_64),hw.optional.x86_64: 1)
-   machine	:= x86_64
+   machine_uname := x86_64
   endif
  endif
 endif
 
-ifeq ($(machine),x86_64)
- machine	:= x64
+ifeq ($(machine_uname),x86_64)
+ machine_uname	:= x64
 endif
 CFLAGS +=	-fpic
-ifeq ($(machine),sparc64)
+ifeq ($(machine_uname),sparc64)
  CFLAGS +=      -D__BIG_ENDIAN__
 endif
-ifeq ($(machine),sun4u)
+ifeq ($(machine_uname),sun4u)
  CFLAGS +=      -D__BIG_ENDIAN__
 endif
-ifeq ($(machine),power_macintosh)
+ifeq ($(machine_uname),power_macintosh)
  CFLAGS +=      -D__BIG_ENDIAN__
 endif
-ifeq ($(machine),mac68k)
+ifeq ($(machine_uname),mac68k)
  CFLAGS +=      -D__BIG_ENDIAN__
 endif
-ifeq ($(machine),)
+ifeq ($(machine_uname),)
  machine	:=	$(os)
 else
- machine	:=	$(os).$(machine)
+ machine	:=	$(os).$(machine_uname)
+ CFLAGS +=      -DUNAME_ARCHITECTURE_DESC=$(machine_uname)
 endif
 
 ifeq ($(shell if [ -f /usr/include/inttypes.h ] ; then echo YES ; fi),YES)
