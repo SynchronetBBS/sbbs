@@ -1539,7 +1539,6 @@ main(int argc, char **argv)
 	vparams[cvmode].aspect_height = settings.custom_ah;
 	ciolib_initial_window_height = settings.window_height;
 	ciolib_initial_window_width = settings.window_width;
-	aspect_fix(&ciolib_initial_window_width, &ciolib_initial_window_height, settings.custom_aw, settings.custom_ah);
 	ciolib_mode = settings.output_mode;
 	if (settings.startup_mode != SCREEN_MODE_CURRENT)
 		text_mode = screen_to_ciolib(settings.startup_mode);
