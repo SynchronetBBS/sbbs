@@ -25,13 +25,13 @@ rlogin_input_thread(void *args)
 	SetThreadName("RLogin Input");
 	conn_api.input_thread_running = 1;
 	while (rlogin_sock != INVALID_SOCKET && !conn_api.terminate) {
-		if (socket_readable(rlogin_sock, -1)) {
+		if (socket_readable(rlogin_sock, 100)) {
 			rd = recv(rlogin_sock, conn_api.rd_buf, conn_api.rd_buf_size, 0);
 			if (rd <= 0)
 				break;
 		}
 		buffered = 0;
-		while (buffered < rd) {
+		while (rlogin_sock != INVALID_SOCKET && buffered < rd) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
 			buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 1000);
 			buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
@@ -62,8 +62,8 @@ rlogin_output_thread(void *args)
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
-			while (sent < wr) {
-				if (socket_writable(rlogin_sock, -1)) {
+			while (rlogin_sock != INVALID_SOCKET && sent < wr) {
+				if (socket_writable(rlogin_sock, 100)) {
 					ret = sendsocket(rlogin_sock, conn_api.wr_buf + sent, wr - sent);
 					if (ret == -1)
 						break;
@@ -210,13 +210,16 @@ int
 rlogin_close(void)
 {
 	char garbage[1024];
+	SOCKET oldsock;
 
 	conn_api.terminate = 1;
-	closesocket(rlogin_sock);
+	oldsock = rlogin_sock;
+	rlogin_sock = INVALID_SOCKET;
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
 	}
+	closesocket(oldsock);
 	destroy_conn_buf(&conn_inbuf);
 	destroy_conn_buf(&conn_outbuf);
 	FREE_AND_NULL(conn_api.rd_buf);

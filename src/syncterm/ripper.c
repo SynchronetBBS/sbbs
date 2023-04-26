@@ -8,6 +8,7 @@
 #endif
 #include <bitmap_con.h>
 #include <ciolib.h>
+#include <datewrap.h>
 #include <dirwrap.h>
 #include <gen_defs.h>
 #include <genwrap.h>
