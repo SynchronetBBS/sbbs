@@ -15585,7 +15585,7 @@ handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, uns
 	}
 	else if (strcmp(pending, "\x1b[2!") == 0) {
 		gettextinfo(&ti);
-		if (rip.version)
+		if (rip.version && (cio_api.options & CONIO_OPT_SET_PIXEL))
 			rip.enabled = true;
 	}
 	else if ((pending[0] == '\x1b') && (pending[1] == '[')) {
@@ -16051,7 +16051,7 @@ init_rip(struct bbslist *bbs)
 	memset(&rip, 0, sizeof(rip));
 	rip.state = RIP_STATE_BOL;
 	rip.newstate = RIP_STATE_FLUSHING;
-	rip.enabled = bbs->rip != RIP_VERSION_NONE;
+	rip.enabled = (bbs->rip != RIP_VERSION_NONE) && (cio_api.options & CONIO_OPT_SET_PIXEL);
 	rip.version = bbs->rip;
 	rip.x = 0;
 	rip.y = 0;
@@ -16067,15 +16067,17 @@ init_rip(struct bbslist *bbs)
 	rip.line_pattern = 0xffff;
 	rip.line_width = 1;
 	rip.x_dim = 640;
-	pthread_mutex_lock(&vstatlock);
-	rip.x_max = vstat.scrnwidth;
-	if (rip.x_max > rip.x_dim)
-		rip.x_max = rip.x_dim;
-	rip.y_dim = 350;
-	rip.y_max = vstat.scrnheight;
-	if (rip.y_max > rip.y_dim)
-		rip.y_max = rip.y_dim;
-	pthread_mutex_unlock(&vstatlock);
+	if (cio_api.options & CONIO_OPT_SET_PIXEL) {
+		pthread_mutex_lock(&vstatlock);
+		rip.x_max = vstat.scrnwidth;
+		if (rip.x_max > rip.x_dim)
+			rip.x_max = rip.x_dim;
+		rip.y_dim = 350;
+		rip.y_max = vstat.scrnheight;
+		if (rip.y_max > rip.y_dim)
+			rip.y_max = rip.y_dim;
+		pthread_mutex_unlock(&vstatlock);
+	}
 	rip.viewport.ex = rip.x_dim - 1;
 	rip.viewport.ey = rip.y_dim - 1;
 	rip.bbs = bbs;
