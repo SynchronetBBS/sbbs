@@ -18501,138 +18501,20 @@ function quoteStrWithSpaces(pStr)
 // Return value: A text label for the field (a string)
 function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
 {
-	// The page at this URL lists the header field types:
-	// http://synchro.net/docs/smb.html#Header Field Types:
-	// Some are defined in load/smbdefs.js
-
 	var fieldTypeLabel = "";
 	switch (pFieldListType)
 	{
-		case 0x00: // Sender
-			fieldTypeLabel = "Sender";
-			break;
-		case 0x01: // Sender Agent
-			fieldTypeLabel = "Sender Agent";
-			break;
-		case 0x02: // Sender net type
-			fieldTypeLabel = "Sender Net Type";
-			break;
-		case 0x03: // Sender Net Address
-			fieldTypeLabel = "Sender Net Address";
-			break;
-		case 0x04: // Sender Agent Extension
-			fieldTypeLabel = "Sender Agent Extension";
-			break;
-		case 0x05: // Sending agent (Sender POS)
-			fieldTypeLabel = "Sender Agent";
-			break;
-		case 0x06: // Sender organization
-			fieldTypeLabel = "Sender Organization";
-			break;
-		case 0x07:
-			fieldTypeLabel = "Sender IP address";
-			break;
-		case 0x08:
-			fieldTypeLabel = "Sender hostname";
-			break;
-		case 0x09:
-			fieldTypeLabel = "Sender protocol";
-			break;
-		case 0x0B:
-			fieldTypeLabel = "Sender Port";
-			break;
-		case 0x10: // Author
-			fieldTypeLabel = "Author";
-			break;
-		case 0x16: // Author Organization
-			fieldTypeLabel = "Author Organization";
-			break;
-		case 0x20: // Reply To
-			fieldTypeLabel = "Reply To";
-			break;
-		case 0x21: // Reply To agent
-			fieldTypeLabel = "Reply To Agent";
-			break;
-		case 0x22: // Reply To net type
-			fieldTypeLabel = "Reply To net type";
-			break;
-		case 0x23: // Reply To net address
-			fieldTypeLabel = "Reply To net address";
-			break;
-		case 0x24: // Reply To extension
-			fieldTypeLabel = "Reply To (extended)";
-			break;
-		case 0x25: // Reply To position
-			fieldTypeLabel = "Reply To position";
-			break;
-		case 0x26: // Reply To organization
-			fieldTypeLabel = "Reply To organization";
-			break;
-		case 0x27:
-			fieldTypeLabel = "Reply To List";
-			break;
-
-		case 0x30:
-			fieldTypeLabel = "Recipient";
-			break;
-		case 0x31:// Recipient agent
-			fieldTypeLabel = "Recipient Agent";
-			break;
-		case 0x32: // Recipient net type
-			fieldTypeLabel = "Recipient Net Type";
-			break;
-		case 0x33:
-			fieldTypeLabel = "Recipient Net Address";
-			break;
-		case 0x34:
-			fieldTypeLabel = "Recipient Extension";
-			break;
-		case 0x35:
-			fieldTypeLabel = "Recipient Position";
-			break;
-		case 0x36:
-			fieldTypeLabel = "Recipient Organization";
-			break;
-		case 0x37:
-			fieldTypeLabel = "Recipient List";
-			break;
-
-		case 0x60:
-			fieldTypeLabel = "Subject";
-			break
-		case 0x61:
-			fieldTypeLabel = "Summary";
-			break
 		case SMB_COMMENT:
 			fieldTypeLabel = "Comment";
 			break
-		case 0x63:
-			fieldTypeLabel = "Carbon Copy";
-			break
-		case 0x64:
+		case SMB_POLL_ANSWER:
+			fieldTypeLabel = "Poll answer";
+			break;
+		case 0x64: // SMB_GROUP
 			fieldTypeLabel = "Group";
-			break
-		case 0x65:
-			fieldTypeLabel = "Expiration date/time";
-			break
-		case 0x66:
-			fieldTypeLabel = "Priority";
-			break
-		case SMB_TAGS:
-			fieldTypeLabel = "Tags";
-			break;
-		case 0x6a:
-			fieldTypeLabel = "Columns";
-			break;
-		case 0x48:
-			fieldTypeLabel = "Forwarded date/time";
-			break
-
+			break;			
 		case FIDOCTRL:
 			fieldTypeLabel = "FIDO control";
-			break;
-		case 0xA1:
-			fieldTypeLabel = "FIDO area";
 			break;
 		case FIDOSEENBY:
 			fieldTypeLabel = "Seen-by";
@@ -18640,84 +18522,32 @@ function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
 		case FIDOPATH:
 			fieldTypeLabel = "FIDO Path";
 			break;
-		case 0xA4:
-			fieldTypeLabel = "FIDO MSGID";
-			break;
-		case 0xA5:
-			fieldTypeLabel = "FIDO Reply ID";
-			break;
-		case 0xA6:
-			fieldTypeLabel = "FIDO Program ID";
-			break;
-		case 0xA7:
-			fieldTypeLabel = "FIDO Flags";
-			break;
-		case 0xA8:
-			fieldTypeLabel = "FIDO TID";
-			break;
-		case 0xA9:
-			fieldTypeLabel = "FIDO character set";
-			break;
-		case 0xAA:
-			fieldTypeLabel = "FIDO BBS ID";
-			break;
-
 		case RFC822HEADER:
 			fieldTypeLabel = "RFCC822 Header";
 			break;
-		case 0xB1: // RFC822 MSGID
-			fieldTypeLabel = "RFC822 MSGID";
-			break;
-		case 0xB2: // RFC822 REPLYID
-			fieldTypeLabel = "RFC822 REPLYID";
-			break;
-		case 0xB3:
+		case 0xB3: // RFC822TO
 			fieldTypeLabel = "RFC822 To";
 			break;
-		case 0xB4:
-			fieldTypeLabel = "RFC822 From";
-			break;
-		case 0xB5:
-			fieldTypeLabel = "RFC822 Reply To";
-			break;
-		case 0xB6:
+		case 0xB6: // RFC822CC
 			fieldTypeLabel = "RFC822 CC";
 			break;
-		case 0xB7:
+		case 0xB7: // RFC822ORG
 			fieldTypeLabel = "RFC822 Org";
 			break;
-		case 0xB8:
+		case 0xB4: // RFC822FROM
+			fieldTypeLabel = "RFC822 From";
+			break;
+		case 0xB5: // RFC822REPLYTO
+			fieldTypeLabel = "RFC822 Reply To";
+			break;
+		case 0xB8: // RFC822SUBJECT
 			fieldTypeLabel = "RFC822 Subject";
-			break;
-		case 0xC0:
-			fieldTypeLabel = "Usenet Path";
-			break;
-		case 0xC1:
-			fieldTypeLabel = "Usetnet Newsgroups";
-			break;
-		case 0xD0:
-			fieldTypeLabel = "SMTP command";
-			break;
-		case 0xD1:
-			fieldTypeLabel = "SMTP Server Path";
-			break;
-		case 0xD2:
-			fieldTypeLabel = "SMTP Forward Path";
 			break;
 		case SMTPRECEIVED:
 			fieldTypeLabel = "SMTP Received";
 			break;
-		case SMB_POLL_ANSWER:
-			fieldTypeLabel = "Poll answer";
-			break;
-		case 0xF0: // UNKNOWN
-			fieldTypeLabel = "UNKNOWN";
-			break;
 		case 0xF1: // UNKNOWNASCII
 			fieldTypeLabel = "UNKNOWN (ASCII)";
-			break;
-		case 0xFF:
-			fieldTypeLabel = "UNUSED";
 			break;
 		default:
 			fieldTypeLabel = "Unknown (" + pFieldListType.toString() + ")";
