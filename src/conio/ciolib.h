@@ -38,6 +38,7 @@
 #if defined(__DARWIN__)
 #include <semwrap.h>
 #endif
+#include "threadwrap.h"
 #include "gen_defs.h"
 #include "utf8_codepages.h"
 

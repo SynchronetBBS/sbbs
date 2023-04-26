@@ -316,11 +316,12 @@ static struct vstat_vmem *new_vmem(int cols, int rows, bool palette)
 	if (ret == NULL)
 		return ret;
 	ret->refcount = 1;
-	ret->vmem = malloc(cols*rows*sizeof(ret->vmem[0]));
+	ret->vmem = malloc(cols * rows * sizeof(ret->vmem[0]));
 	if (ret->vmem == NULL) {
 		free(ret);
 		return NULL;
 	}
+
 	return ret;
 }
 
