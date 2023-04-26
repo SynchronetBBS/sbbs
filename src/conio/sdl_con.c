@@ -487,6 +487,13 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 		vs->winwidth = vstat.winwidth = w;
 		vs->winheight = vstat.winheight = h;
 	}
+	if (!changed) {
+		pthread_mutex_lock(&win_mutex);
+		sdl.GetWindowSize(win, &w, &h);
+		pthread_mutex_unlock(&win_mutex);
+		if (w != vs->winwidth || h != vs->winheight)
+			changed = true;
+	}
 	pthread_mutex_unlock(&vstatlock);
 	internal_scaling = window_can_scale_internally(vs);
 	if (changed)
