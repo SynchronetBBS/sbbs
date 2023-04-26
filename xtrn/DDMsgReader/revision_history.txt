@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.73a    2023-04-25   For viewing message headers, now all message header
+                      information is displayed & sorted alphabetically by field
+                      name (same with saving a message to a file).
 1.73     2023-04-17   Bug fix: When getting header lines to view, ensure the
                       header lines are not too wide for the user's terminal.
                       Header lines that are too long will be split into no more
