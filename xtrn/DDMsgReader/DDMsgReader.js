@@ -231,6 +231,7 @@ require("dd_lightbar_menu.js", "DDLightbarMenu");
 require("html2asc.js", 'html2asc');
 require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 require("graphic.js", 'Graphic');
+require("smbdefs.js", "SMB_POLL_ANSWER");
 load('822header.js');
 var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
@@ -494,15 +495,10 @@ var gFileAttachDir = backslash(system.node_dir + "DDMsgReader_Attachments");
 if (file_exists(gFileAttachDir))
 	deltree(gFileAttachDir);
 
-// See if the avatar support files are available, and load them if so
+// See if the avatar support file is available, and load is if so
 var gAvatar = null;
-var gSMBDefsLoaded = false;
-if (file_exists(backslash(system.exec_dir) + "load/smbdefs.js") && file_exists(backslash(system.exec_dir) + "load/avatar_lib.js"))
-{
-	require("smbdefs.js", "SMB_POLL_ANSWER");
+if (file_exists(backslash(system.exec_dir) + "load/avatar_lib.js"))
 	gAvatar = load({}, "avatar_lib.js");
-	gSMBDefsLoaded = true;
-}
 
 // User twitlist filename (and settings filename)
 var gUserTwitListFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".DDMsgReader_twitlist";
@@ -18533,23 +18529,20 @@ function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
 		case 0x06: // Sender organization
 			fieldTypeLabel = "Sender Organization";
 			break;
+		case 0x07:
+			fieldTypeLabel = "Sender IP address";
+			break;
+		case 0x08:
+			fieldTypeLabel = "Sender hostname";
+			break;
+		case 0x09:
+			fieldTypeLabel = "Sender protocol";
+			break;
+		case 0x0B:
+			fieldTypeLabel = "Sender Port";
+			break;
 		case 0x10: // Author
 			fieldTypeLabel = "Author";
-			break;
-		case 0x11: // Author Agent
-			fieldTypeLabel = "Author Agent";
-			break;
-		case 0x12: // Author Net Type
-			fieldTypeLabel = "Author Net Type";
-			break;
-		case 0x13: // Author Net Address
-			fieldTypeLabel = "Author Net Address";
-			break;
-		case 0x14: // Author Extension
-			fieldTypeLabel = "Author Extension";
-			break;
-		case 0x15: // Author Agent (Author POS)
-			fieldTypeLabel = "Author Agent";
 			break;
 		case 0x16: // Author Organization
 			fieldTypeLabel = "Author Organization";
@@ -18575,7 +18568,10 @@ function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
 		case 0x26: // Reply To organization
 			fieldTypeLabel = "Reply To organization";
 			break;
-		//case 48: // Recipient (0x30 hex)
+		case 0x27:
+			fieldTypeLabel = "Reply To List";
+			break;
+
 		case 0x30:
 			fieldTypeLabel = "Recipient";
 			break;
@@ -18597,61 +18593,17 @@ function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
 		case 0x36:
 			fieldTypeLabel = "Recipient Organization";
 			break;
-		case 0x40:
-			fieldTypeLabel = "Forward To";
+		case 0x37:
+			fieldTypeLabel = "Recipient List";
 			break;
-		case 0x41:
-			fieldTypeLabel = "Forward To Agent";
-			break
-		case 0x42:
-			fieldTypeLabel = "Forward To Net Type";
-			break
-		case 0x43:
-			fieldTypeLabel = "Forward To Net Address";
-			break
-		case 0x44:
-			fieldTypeLabel = "Forward To Extension";
-			break
-		case 0x45:
-			fieldTypeLabel = "Forward To Position";
-			break
-		case 0x46:
-			fieldTypeLabel = "Forward To Organization";
-			break
-		case 0x48:
-			fieldTypeLabel = "Forwarded date/time";
-			break
-		case 0x50:
-			fieldTypeLabel = "Received By";
-			break
-		case 0x51:
-			fieldTypeLabel = "Received By Agent";
-			break
-		case 0x52:
-			fieldTypeLabel = "Received By Net Type";
-			break
-		case 0x53:
-			fieldTypeLabel = "Received By Net Address";
-			break
-		case 0x54:
-			fieldTypeLabel = "Received By Extension";
-			break
-		case 0x55:
-			fieldTypeLabel = "Received By Position";
-			break
-		case 0x56:
-			fieldTypeLabel = "Received By Organization";
-			break
-		case 0x58:
-			fieldTypeLabel = "Received date/time";
-			break
+
 		case 0x60:
 			fieldTypeLabel = "Subject";
 			break
 		case 0x61:
 			fieldTypeLabel = "Summary";
 			break
-		case 0x62:
+		case SMB_COMMENT:
 			fieldTypeLabel = "Comment";
 			break
 		case 0x63:
@@ -18666,85 +18618,26 @@ function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
 		case 0x66:
 			fieldTypeLabel = "Priority";
 			break
-		case 0x69:
+		case SMB_TAGS:
 			fieldTypeLabel = "Tags";
 			break;
-		case 0x70:
-			fieldTypeLabel = "File attachment name/specification";
-			break
-		case 0x71:
-			fieldTypeLabel = "Destination filename";
-			break
-		case 0x72:
-			fieldTypeLabel = "File attachment list";
-			break
-		case 0x73:
-			fieldTypeLabel = "Destination file list";
-			break
-		case 0x74:
-			fieldTypeLabel = "File request name";
-			break
-		case 0x75:
-			fieldTypeLabel = "File password";
-			break
-		case 0x76:
-			fieldTypeLabel = "File request list";
-			break
-		case 0x77:
-			fieldTypeLabel = "File password list";
-			break
-		case 0x80:
-			fieldTypeLabel = "Image attachment type & filename";
-			break
-		case 0x81:
-			fieldTypeLabel = "Animation attachment type & filename";
-			break
-		case 0x82:
-			fieldTypeLabel = "Font attachment type & filename";
-			break
-		case 0x83:
-			fieldTypeLabel = "Sound attachment type & filename";
-			break
-		case 0x84:
-			fieldTypeLabel = "Presentation attachment type & filename";
-			break
-		case 0x85:
-			fieldTypeLabel = "Video attachment type & filename";
-			break
-		case 0x86:
-			fieldTypeLabel = "Application data type & filename";
-			break
-		case 0x90:
-			fieldTypeLabel = "Image file trigger";
-			break
-		case 0x91:
-			fieldTypeLabel = "Animation file trigger";
+		case 0x6a:
+			fieldTypeLabel = "Columns";
 			break;
-		case 0x92:
-			fieldTypeLabel = "Font file trigger";
-			break;
-		case 0x93:
-			fieldTypeLabel = "Sound file trigger";
-			break;
-		case 0x94:
-			fieldTypeLabel = "Presentation file trigger";
-			break;
-		case 0x95:
-			fieldTypeLabel = "Video file trigger";
-			break;
-		case 0x96:
-			fieldTypeLabel = "Application data trigger";
-			break;
-		case 0xA0:
+		case 0x48:
+			fieldTypeLabel = "Forwarded date/time";
+			break
+
+		case FIDOCTRL:
 			fieldTypeLabel = "FIDO control";
 			break;
 		case 0xA1:
 			fieldTypeLabel = "FIDO area";
 			break;
-		case 0xA2: // Seen-by
+		case FIDOSEENBY:
 			fieldTypeLabel = "Seen-by";
 			break;
-		case 0xA3: // FIDO Path
+		case FIDOPATH:
 			fieldTypeLabel = "FIDO Path";
 			break;
 		case 0xA4:
@@ -18759,7 +18652,17 @@ function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
 		case 0xA7:
 			fieldTypeLabel = "FIDO Flags";
 			break;
-		case 0xB0: // RFCC822 Header
+		case 0xA8:
+			fieldTypeLabel = "FIDO TID";
+			break;
+		case 0xA9:
+			fieldTypeLabel = "FIDO character set";
+			break;
+		case 0xAA:
+			fieldTypeLabel = "FIDO BBS ID";
+			break;
+
+		case RFC822HEADER:
 			fieldTypeLabel = "RFCC822 Header";
 			break;
 		case 0xB1: // RFC822 MSGID
@@ -18768,10 +18671,43 @@ function msgHdrFieldListTypeToLabel(pFieldListType, pIncludeTrailingColon)
 		case 0xB2: // RFC822 REPLYID
 			fieldTypeLabel = "RFC822 REPLYID";
 			break;
-		case 0xD3:
+		case 0xB3:
+			fieldTypeLabel = "RFC822 To";
+			break;
+		case 0xB4:
+			fieldTypeLabel = "RFC822 From";
+			break;
+		case 0xB5:
+			fieldTypeLabel = "RFC822 Reply To";
+			break;
+		case 0xB6:
+			fieldTypeLabel = "RFC822 CC";
+			break;
+		case 0xB7:
+			fieldTypeLabel = "RFC822 Org";
+			break;
+		case 0xB8:
+			fieldTypeLabel = "RFC822 Subject";
+			break;
+		case 0xC0:
+			fieldTypeLabel = "Usenet Path";
+			break;
+		case 0xC1:
+			fieldTypeLabel = "Usetnet Newsgroups";
+			break;
+		case 0xD0:
+			fieldTypeLabel = "SMTP command";
+			break;
+		case 0xD1:
+			fieldTypeLabel = "SMTP Server Path";
+			break;
+		case 0xD2:
+			fieldTypeLabel = "SMTP Forward Path";
+			break;
+		case SMTPRECEIVED:
 			fieldTypeLabel = "SMTP Received";
 			break;
-		case 0xE0:
+		case SMB_POLL_ANSWER:
 			fieldTypeLabel = "Poll answer";
 			break;
 		case 0xF0: // UNKNOWN
