@@ -203,7 +203,11 @@ extern "C" {
 #elif defined(_M_IA64) || defined(__ia64__)
 	#define ARCHITECTURE_DESC "ia64"
 #else
-	#error "Need to describe target architecture"
+	#ifdef UNAME_ARCHITECTURE_DESC
+		#define ARCHITECTURE_DESC UNAME_ARCHITECTURE_DESC
+	#else
+		#error "Need to describe target architecture"
+	#endif
 #endif
 
 /*********************/
