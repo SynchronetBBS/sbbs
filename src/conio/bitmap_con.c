@@ -838,9 +838,8 @@ static int update_from_vmem(int force)
 		}
 	}
 	release_vmem(vmem_ptr);
-	pthread_mutex_unlock(&vstatlock);
-
 	vs = vstat;
+	pthread_mutex_unlock(&vstatlock);
 
 	return(0);
 }
