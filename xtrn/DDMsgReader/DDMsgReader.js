@@ -13090,11 +13090,9 @@ function MsgHdrPropIsKludgeLine(pPropName)
 		return false;
 
 	var propNameUpper = pPropName.toUpperCase();
-	return (propNameUpper == "FTN_MSGID" || propNameUpper == "X-FTN-MSGID" || propNameUpper == "FTN_REPLY" ||
-	        propNameUpper == "X-FTN-REPLY" || propNameUpper == "FTN_AREA" || propNameUpper == "X-FTN-AREA" ||
-	        propNameUpper == "FTN_FLAGS" || propNameUpper == "FTN_PID" || propNameUpper == "FTN_TID" ||
-	        propNameUpper == "X-FTN-TID" || propNameUpper == "X-FTN-KLUDGE" ||
-	        propNameUpper == "X-FTN-SEEN-BY" || propNameUpper == "X-FTN-PATH" ||
+	return (propNameUpper == "FTN_MSGID" || propNameUpper == "FTN_REPLY" ||
+	        propNameUpper == "FTN_AREA" || propNameUpper == "FTN_FLAGS" ||
+		propNameUpper == "FTN_PID" || propNameUpper == "FTN_TID" ||
 	        propNameUpper == "WHEN_WRITTEN_TIME" || propNameUpper == "WHEN_IMPORTED_TIME");
 }
 
