@@ -33,7 +33,7 @@ modem_input_thread(void *args)
 	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
 		rd = comReadBuf(com, (char *)conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
 		buffered = 0;
-		while (buffered < rd) {
+		while (com != COM_HANDLE_INVALID && buffered < rd) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
 			buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 100);
 			buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
@@ -74,7 +74,7 @@ modem_output_thread(void *args)
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
-			while (sent < wr) {
+			while (com != COM_HANDLE_INVALID && sent < wr) {
 				ret = comWriteBuf(com, conn_api.wr_buf + sent, wr - sent);
 				sent += ret;
 				if (ret == COM_ERROR)
@@ -357,6 +357,7 @@ modem_close(void)
 {
 	time_t start;
 	char   garbage[1024];
+	COM_HANDLE oldcom;
 
 	conn_api.terminate = 1;
 
@@ -370,11 +371,14 @@ modem_close(void)
 		goto CLOSEIT;
 
 	start = time(NULL);
+	oldcom = com;
+	com = COM_HANDLE_INVALID;
 	while (time(NULL) - start <= 10) {
 		if ((comGetModemStatus(com) & COM_DCD) == 0)
 			goto CLOSEIT;
 		SLEEP(1000);
 	}
+	com = oldcom;
 
 CLOSEIT:
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {

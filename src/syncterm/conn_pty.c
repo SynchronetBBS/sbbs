@@ -308,6 +308,7 @@ pty_input_thread(void *args)
 	int    buffered;
 	size_t buffer;
 	int    i;
+	struct timeval tv;
 
 	SetThreadName("PTY Input");
 	conn_api.input_thread_running = 1;
@@ -316,16 +317,9 @@ pty_input_thread(void *args)
 			break;
 		FD_ZERO(&rds);
 		FD_SET(master, &rds);
-#ifdef __linux__
-		{
-			struct timeval tv;
-			tv.tv_sec = 0;
-			tv.tv_usec = 500000;
-			rd = select(master + 1, &rds, NULL, NULL, &tv);
-		}
-#else
-		rd = select(master + 1, &rds, NULL, NULL, NULL);
-#endif
+		tv.tv_sec = 0;
+		tv.tv_usec = 100000;
+		rd = select(master + 1, &rds, NULL, NULL, &tv);
 		if (rd == -1) {
 			if (errno == EBADF)
 				break;
@@ -358,6 +352,7 @@ pty_output_thread(void *args)
 	int    wr;
 	int    ret;
 	int    sent;
+	struct timeval tv;
 
 	SetThreadName("PTY Output");
 	conn_api.output_thread_running = 1;
@@ -371,20 +366,12 @@ pty_output_thread(void *args)
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
-			while (sent < wr) {
+			while (master != -1 && sent < wr) {
 				FD_ZERO(&wds);
 				FD_SET(master, &wds);
-#ifdef __linux__
-				{
-					struct timeval tv;
-
-					tv.tv_sec = 0;
-					tv.tv_usec = 500000;
-					ret = select(master + 1, NULL, &wds, NULL, &tv);
-				}
-#else
-				ret = select(master + 1, NULL, &wds, NULL, NULL);
-#endif
+				tv.tv_sec = 0;
+				tv.tv_usec = 100000;
+				ret = select(master + 1, NULL, &wds, NULL, &tv);
 				if (ret == -1) {
 					if (errno == EBADF)
 						break;
@@ -514,6 +501,7 @@ pty_close(void)
 {
 	time_t start;
 	char   garbage[1024];
+	int oldmaster;
 
 	conn_api.terminate = 1;
 	start = time(NULL);
@@ -527,10 +515,13 @@ pty_close(void)
 	kill(child_pid, SIGKILL);
 	waitpid(child_pid, &status, 0);
 
+	oldmaster = master;
+	master = -1;
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
 	}
+	master = oldmaster;
 	destroy_conn_buf(&conn_inbuf);
 	destroy_conn_buf(&conn_outbuf);
 	FREE_AND_NULL(conn_api.rd_buf);

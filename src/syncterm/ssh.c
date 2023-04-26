@@ -54,7 +54,7 @@ ssh_input_thread(void *args)
 	SetThreadName("SSH Input");
 	conn_api.input_thread_running = 1;
 	while (ssh_active && !conn_api.terminate) {
-		if (!socket_readable(ssh_sock, 10))
+		if (!socket_readable(ssh_sock, 100))
 			continue;
 
 		pthread_mutex_lock(&ssh_mutex);
@@ -105,7 +105,7 @@ ssh_output_thread(void *args)
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
-			while (sent < wr) {
+			while (ssh_active && sent < wr) {
 				pthread_mutex_lock(&ssh_mutex);
 				status = cl.PushData(ssh_session, conn_api.wr_buf + sent, wr - sent, &ret);
 				pthread_mutex_unlock(&ssh_mutex);
@@ -352,8 +352,8 @@ ssh_close(void)
 	char garbage[1024];
 
 	conn_api.terminate = 1;
-	ssh_active = true;
 	cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 0);
+	ssh_active = false;
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
