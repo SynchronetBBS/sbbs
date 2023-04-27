@@ -3430,9 +3430,7 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 		paste_pixmap(strbuf, slen, fn, apcd);
 	}
 
-	// TODO: Copy PPM to memory
 	// TODO: Copy PBM mask to memory
-	// TODO: Multiple (at least two) memory buffers
 }
 
 void
