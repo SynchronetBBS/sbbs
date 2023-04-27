@@ -287,7 +287,11 @@ static int try_curses_init(int mode)
 		cio_api.setvideoflags=curs_setvideoflags;
 		cio_api.getvideoflags=curs_getvideoflags;
 #if defined(NCURSES_VERSION_MAJOR) || defined (__NetBSD__)
+#if NCURSES_REENTRANT
+		// TODO: set_escdelay() is used for this.
+#else
 		cio_api.escdelay=&ESCDELAY;
+#endif
 #endif
 		cio_api.setfont = curs_setfont;
 		cio_api.getfont = curs_getfont;

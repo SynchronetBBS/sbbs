@@ -38,6 +38,8 @@
 // TODO: Output parsing... (yech)
 // TODO: Actually make the graphics viewport work properly
 
+#ifdef HAS_VSTAT
+
 enum rip_state {
 	RIP_STATE_BOL  // Beginning of the line
 	,
@@ -15744,10 +15746,62 @@ ansi_only(BYTE *buf, unsigned count)
 	return out - buf;
 }
 
+static void
+handle_mouse_button(struct rip_button_style *but)
+{
+	if (but->flags.radiogroup)
+		puts("TODO: Handle radio group");
+	if (but->flags.cbgroup)
+		puts("TODO: Handle checkbox group");
+	if (but->flags.explode)
+		puts("TODO: Handle explode flag");
+	handle_command_str(but->command);
+
+        /*
+         * The docs says this happens before the command str, but the
+         * behaviour of popups disagrees.
+         *
+         * Also, the command str can free() all this stuff!
+         */
+	if (rip.mfields) {
+		if (but->flags.resetafter)
+			rv_reset("RESET", NULL);
+	}
+}
+
+static void
+shadow_palette(void)
+{
+	uint32_t palette[16];
+	int      i;
+
+	if (get_modepalette(palette)) {
+		for (i = 0; i < 16; i++)
+			palette[i] += 16;
+		set_modepalette(palette);
+	}
+}
+
+static void
+normal_palette(void)
+{
+	uint32_t palette[16];
+	int      i;
+
+	if (get_modepalette(palette)) {
+		for (i = 0; i < 16; i++)
+			palette[i] -= 16;
+		set_modepalette(palette);
+	}
+}
+
+#endif
+
 // This may end up stuffing up to three bytes into the buffer...
 size_t
 parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 {
+#ifdef HAS_VSTAT
 	unsigned pos = 0;
 	size_t   rip_start = maxlen + 1;
 	bool     copy = false;
@@ -16039,12 +16093,29 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 	}
 	if (rip.text_disabled)
 		return ansi_only(origbuf, blen);
+#endif
 	return blen;
+}
+
+void
+suspend_rip(bool suspend)
+{
+#ifdef HAS_VSTAT
+	if (suspend) {
+		if (rip.enabled)
+			rip_suspended = true;
+	}
+	else {
+		if (rip.enabled)
+			rip_suspended = false;
+	}
+#endif
 }
 
 void
 init_rip(struct bbslist *bbs)
 {
+#ifdef HAS_VSTAT
 	FREE_AND_NULL(rip.xmap);
 	FREE_AND_NULL(rip.ymap);
 	FREE_AND_NULL(rip.xunmap);
@@ -16095,58 +16166,24 @@ init_rip(struct bbslist *bbs)
 		set_ega_palette();
 		normal_palette();
 	}
-}
-
-void
-suspend_rip(bool suspend)
-{
-	if (suspend) {
-		if (rip.enabled)
-			rip_suspended = true;
-	}
-	else {
-		if (rip.enabled)
-			rip_suspended = false;
-	}
+#endif
 }
 
 int
 rip_kbhit(void)
 {
+#ifdef HAS_VSTAT
 	if (rip.enabled)
 		if (ripbuf)
 			return 1;
-
-
+#endif
 	return kbhit();
-}
-
-static void
-handle_mouse_button(struct rip_button_style *but)
-{
-	if (but->flags.radiogroup)
-		puts("TODO: Handle radio group");
-	if (but->flags.cbgroup)
-		puts("TODO: Handle checkbox group");
-	if (but->flags.explode)
-		puts("TODO: Handle explode flag");
-	handle_command_str(but->command);
-
-        /*
-         * The docs says this happens before the command str, but the
-         * behaviour of popups disagrees.
-         *
-         * Also, the command str can free() all this stuff!
-         */
-	if (rip.mfields) {
-		if (but->flags.resetafter)
-			rv_reset("RESET", NULL);
-	}
 }
 
 int
 rip_getch(void)
 {
+#ifdef HAS_VSTAT
 	int                ch;
 	struct mouse_event mevent;
 	int                oldhold = hold_update;
@@ -16314,30 +16351,7 @@ rip_getch(void)
 	normal_palette();
 	hold_update = oldhold;
 	return ch;
-}
-
-static void
-shadow_palette(void)
-{
-	uint32_t palette[16];
-	int      i;
-
-	if (get_modepalette(palette)) {
-		for (i = 0; i < 16; i++)
-			palette[i] += 16;
-		set_modepalette(palette);
-	}
-}
-
-static void
-normal_palette(void)
-{
-	uint32_t palette[16];
-	int      i;
-
-	if (get_modepalette(palette)) {
-		for (i = 0; i < 16; i++)
-			palette[i] -= 16;
-		set_modepalette(palette);
-	}
+#else
+	return getch();
+#endif
 }
