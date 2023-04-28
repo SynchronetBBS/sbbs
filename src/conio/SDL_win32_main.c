@@ -107,6 +107,7 @@ static int console_main(int argc, char *argv[], char **env)
 	return(n);
 }
 
+HINSTANCE WinMainHInst;
 /* This is where execution begins [windowed apps] */
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int sw)
 {
@@ -116,6 +117,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int sw)
 	char *cmdline;
 	char *bufp;
 
+	WinMainHInst = hInst;
 	/* Start up DDHELP.EXE before opening any files, so DDHELP doesn't
 	   keep them open.  This is a hack.. hopefully it will be fixed 
 	   someday.  DDHELP.EXE starts up the first time DDRAW.DLL is loaded.

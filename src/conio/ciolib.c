@@ -50,6 +50,9 @@
 #define CIOLIB_NO_MACROS
 #include "ciolib.h"
 
+#if defined(WITH_GDI)
+ #include "win32gdi.h"
+#endif
 #if defined(WITH_SDL)
  #include "sdl_con.h"
  #include "sdlfuncs.h"
@@ -149,6 +152,57 @@ int sdl_video_initialized = 0;
 #endif
 
 #define CIOLIB_INIT()		{ if(initialized != 1) initciolib(CIOLIB_MODE_AUTO); }
+
+#if defined(WITH_GDI)
+static int try_gdi_init(int mode)
+{
+	if(!gdi_initciolib(mode)) {
+		cio_api.mouse=1;
+		cio_api.puttext=bitmap_puttext;
+		cio_api.vmem_puttext=bitmap_vmem_puttext;
+		cio_api.vmem_gettext=bitmap_vmem_gettext;
+		cio_api.gotoxy=bitmap_gotoxy;
+		cio_api.setcursortype=bitmap_setcursortype;
+		cio_api.setfont=bitmap_setfont;
+		cio_api.getfont=bitmap_getfont;
+		cio_api.loadfont=bitmap_loadfont;
+		cio_api.movetext=bitmap_movetext;
+		cio_api.clreol=bitmap_clreol;
+		cio_api.clrscr=bitmap_clrscr;
+		cio_api.getcustomcursor=bitmap_getcustomcursor;
+		cio_api.setcustomcursor=bitmap_setcustomcursor;
+		cio_api.getvideoflags=bitmap_getvideoflags;
+		cio_api.setvideoflags=bitmap_setvideoflags;
+
+		cio_api.kbhit=gdi_kbhit;
+		cio_api.getch=gdi_getch;
+		cio_api.textmode=gdi_textmode;
+		cio_api.showmouse=gdi_showmouse;
+		cio_api.hidemouse=gdi_hidemouse;
+		cio_api.setname=gdi_setname;
+		cio_api.seticon=gdi_seticon;
+		cio_api.settitle=gdi_settitle;
+		cio_api.copytext=gdi_copytext;
+		cio_api.getcliptext=gdi_getcliptext;
+		cio_api.get_window_info=gdi_get_window_info;
+		cio_api.setwinsize=gdi_setwinsize;
+		cio_api.setwinposition=gdi_setwinposition;
+		cio_api.setpalette=bitmap_setpalette;
+		cio_api.attr2palette=bitmap_attr2palette;
+		cio_api.setpixel=bitmap_setpixel;
+		cio_api.getpixels=bitmap_getpixels;
+		cio_api.setpixels=bitmap_setpixels;
+		cio_api.get_modepalette=bitmap_get_modepalette;
+		cio_api.set_modepalette=bitmap_set_modepalette;
+		cio_api.map_rgb = bitmap_map_rgb;
+		cio_api.replace_font = bitmap_replace_font;
+		cio_api.beep = gdi_beep;
+		cio_api.mousepointer=gdi_mousepointer;
+		return(1);
+	}
+	return(0);
+}
+#endif
 
 #if defined(WITH_SDL)
 static int try_sdl_init(int mode)
@@ -404,6 +458,9 @@ CIOLIBEXPORT int initciolib(int mode)
 		case CIOLIB_MODE_AUTO:
 #ifndef NO_X
 			if(!try_x_init(mode))
+#endif
+#ifdef _WIN32
+			if (!try_gdi_init(mode))
 #endif
 #if defined(WITH_SDL)
 				if(!try_sdl_init(CIOLIB_MODE_SDL))
