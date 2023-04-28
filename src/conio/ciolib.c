@@ -459,7 +459,7 @@ CIOLIBEXPORT int initciolib(int mode)
 #ifndef NO_X
 			if(!try_x_init(mode))
 #endif
-#ifdef _WIN32
+#if defined(WITH_GDI)
 			if (!try_gdi_init(mode))
 #endif
 #if defined(WITH_SDL)
