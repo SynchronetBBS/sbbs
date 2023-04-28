@@ -1,14 +1,15 @@
 #include <windows.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #define BITMAP_CIOLIB_DRIVER
 #include "win32gdi.h"
 #include "bitmap_con.h"
+#include "win32cio.h"
 #include "scale.h"
 
 HBITMAP bmp;
 HWND win;
-FILE *debug;
 HANDLE rch;
 HANDLE wch;
 
@@ -43,14 +44,29 @@ static void
 add_key(uint16_t key)
 {
 	uint8_t buf[2];
+	uint8_t *bp = buf;
 	DWORD added;
-	DWORD remain = sizeof(buf);
-	buf[0] = key & 0xff;
-	buf[1] = key >> 8;
+	DWORD remain;
+	if (key < 256) {
+		buf[0] = key;
+		remain = 1;
+	}
+	else {
+		buf[0] = key & 0xff;
+		buf[1] = key >> 8;
+		remain = 2;
+	}
 	do {
-		WriteFile(wch, buf, remain, &added, NULL);
+		WriteFile(wch, bp, remain, &added, NULL);
 		remain -= added;
+		bp += added;
 	} while (remain > 0);
+}
+
+static uint32_t
+sp_to_codepoint(uint16_t high, uint16_t low)
+{
+	return (high - 0xd800) * 0x400 + (low - 0xdc00) + 0x10000;
 }
 
 static LRESULT CALLBACK
@@ -59,6 +75,12 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	HBITMAP obmp;
 	HDC memDC;
 	HDC winDC;
+	WPARAM highpair;
+	uint32_t cp;
+	uint8_t ch;
+	uint16_t repeat;
+	uint16_t i;
+	bool alt;
 
 	switch(msg) {
 		case WM_PAINT:
@@ -77,6 +99,26 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			break;
 		case WM_DESTROY:
 			PostQuitMessage(0);
+			return 0;
+		case WM_CHAR:
+			repeat = lParam & 0xffff;
+			alt = lParam & (1 << 29);
+			if (IS_HIGH_SURROGATE(wParam)) {
+				highpair = wParam;
+				return 0;
+			}
+			else if (IS_LOW_SURROGATE(wParam)) {
+				cp = sp_to_codepoint(highpair, wParam);
+			}
+			else {
+				cp = wParam;
+			}
+			// Translate from unicode to codepage...
+			ch = cpchar_from_unicode_cpoint(getcodepage(), cp, 0);
+			if (ch) {
+				for (i = 0; i < repeat; i++)
+					add_key(ch);
+			}
 			return 0;
 	}
 
@@ -99,6 +141,88 @@ setup_bitmaps(void)
 	b5hdr.bV5Width = vstat.scrnwidth;
 	b5hdr.bV5Height = -vstat.scrnheight;
 	b5hdr.bV5SizeImage = b5hdr.bV5Width * b5hdr.bV5Height * 4;
+}
+
+#define WMOD_CTRL     1
+#define WMOD_LCTRL    2
+#define WMOD_RCTRL    4
+#define WMOD_SHIFT    8
+#define WMOD_LSHIFT  16
+#define WMOD_RSHIFT  32
+bool
+magic_message(MSG msg)
+{
+	static uint8_t mods = 0;
+	size_t i;
+	uint8_t set = 0;
+	int *hack;
+
+	// TODO: When window gets focus, poll mods... *sigh*
+	// TODO: Check "extended" for RCTRL and RSHIFT
+	if (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP || msg.message == WM_SYSKEYDOWN || msg.message == WM_SYSKEYUP) {
+		switch (msg.wParam) {
+			case VK_CONTROL:
+				set = WMOD_CTRL;
+				break;
+			case VK_LCONTROL:
+				set = WMOD_LCTRL;
+				break;
+			case VK_RCONTROL:
+				set = WMOD_RCTRL;
+				break;
+			case VK_SHIFT:
+				set = WMOD_SHIFT;
+				break;
+			case VK_LSHIFT:
+				set = WMOD_LSHIFT;
+				break;
+			case VK_RSHIFT:
+				set = WMOD_RSHIFT;
+				break;
+		}
+		if (set) {
+			if (msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN)
+				mods |= set;
+			else
+				mods &= ~set;
+			return false;
+		}
+		if (msg.message == WM_KEYUP)
+			return false;
+		while (keyval[i].VirtualKeyCode != 0) {
+			if (keyval[i].VirtualKeyCode == msg.wParam)
+				break;
+			i++;
+		}
+		if (keyval[i].VirtualKeyCode != 0) {
+			if (msg.lParam & (0x2000)) {
+				if (keyval[i].ALT > 255) {
+					add_key(keyval[i].ALT);
+					return true;
+				}
+			}
+			else if (mods & (WMOD_CTRL | WMOD_LCTRL | WMOD_RCTRL)) {
+				if (keyval[i].CTRL > 255) {
+					add_key(keyval[i].CTRL);
+					return true;
+				}
+			}
+			else if (mods & (WMOD_SHIFT | WMOD_LSHIFT | WMOD_RSHIFT)) {
+				if (keyval[i].Shift > 255) {
+					add_key(keyval[i].Shift);
+					return true;
+				}
+			}
+			else {
+				if (keyval[i].Key > 255) {
+					add_key(keyval[i].Key);
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
 }
 
 static void
@@ -131,8 +255,10 @@ gdi_thread(void *arg)
 	win = CreateWindowW(wc.lpszClassName, L"SyncTERM", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, r.right - r.left, r.bottom - r.top, NULL, NULL, wc.hInstance, NULL);
 
 	while (GetMessage(&msg, NULL, 0, 0)) {
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		if (!magic_message(msg)) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
 	}
 	// This may not be necessary...
 	DestroyWindow(win);
@@ -254,8 +380,6 @@ gdi_get_window_info(int *width, int *height, int *xpos, int *ypos)
 int
 gdi_init(int mode)
 {
-	pthread_mutex_init(&gdi_headlock, NULL);
-	pthread_mutex_init(&bmp_lock, NULL);
 	CreatePipe(&rch, &wch, NULL, 0);
 
 	bitmap_drv_init(gdi_drawrect, gdi_flush);
@@ -272,7 +396,6 @@ gdi_init(int mode)
 int
 gdi_initciolib(int mode)
 {
-debug = fopen("gdi.log", "w");
 	pthread_mutex_init(&gdi_headlock, NULL);
 	pthread_mutex_init(&bmp_lock, NULL);
 
@@ -319,9 +442,6 @@ gdi_flush(void)
 			pthread_mutex_lock(&bmp_lock);
 			obmp2 = SelectObject(mDC2, bmp);
 			BitBlt(mDC2, list->rect.x, list->rect.y, list->rect.width, list->rect.height, mDC1, 0, 0, SRCCOPY);
-			//pthread_mutex_lock(&vstatlock);
-			//StretchBlt(mDC2, 0, 0, vstat.winwidth, vstat.winheight, mDC1, 0, 0, vstat.scrnwidth, vstat.scrnheight, SRCCOPY);
-			//pthread_mutex_unlock(&vstatlock);
 			SelectObject(mDC1, obmp1);
 			SelectObject(mDC2, obmp2);
 			pthread_mutex_unlock(&bmp_lock);
