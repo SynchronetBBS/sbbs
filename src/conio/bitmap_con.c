@@ -114,7 +114,7 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 static void cb_flush(void);
 static int check_redraw(void);
 static void blinker_thread(void *data);
-static __inline void both_screens(struct bitmap_screen** current, struct bitmap_screen** noncurrent);
+static __inline void both_screens(int blink, struct bitmap_screen** current, struct bitmap_screen** noncurrent);
 static int update_from_vmem(int force);
 static uint32_t color_value(uint32_t col);
 void bitmap_drv_free_rect(struct rectlist *rect);
@@ -658,34 +658,26 @@ static void blinker_thread(void *data)
 	int blink_changed;
 	struct bitmap_screen *screen;
 	struct bitmap_screen *ncscreen;
+	int lfc;
+	int blink;
 
 	SetThreadName("Blinker");
 	while(1) {
 		curs_changed = 0;
 		blink_changed = 0;
-		for (;;) {
-			SLEEP(10);
-			both_screens(&screen, &ncscreen);
-			pthread_mutex_lock(&screenlock);
-			if (screen->rect != NULL) {
-				pthread_mutex_unlock(&screenlock);
-				break;
-			}
-			pthread_mutex_unlock(&screenlock);
-		}
+		SLEEP(10);
 		count++;
+
+		pthread_mutex_lock(&vstatlock);
 		if (count==25) {
-			pthread_mutex_lock(&vstatlock);
 			curs_changed = cursor_visible_locked();
 			if(vstat.curs_blink)
 				vstat.curs_blink=FALSE;
 			else
 				vstat.curs_blink=TRUE;
 			curs_changed = (curs_changed != cursor_visible_locked());
-			pthread_mutex_unlock(&vstatlock);
 		}
 		if(count==50) {
-			pthread_mutex_lock(&vstatlock);
 			if(vstat.blink)
 				vstat.blink=FALSE;
 			else
@@ -698,9 +690,12 @@ static void blinker_thread(void *data)
 				vstat.curs_blink=TRUE;
 			curs_changed = (curs_changed != cursor_visible_locked());
 			count=0;
-			pthread_mutex_unlock(&vstatlock);
 		}
-		/* Lock out ciolib while we handle shit */
+		lfc = force_cursor;
+		force_cursor = 0;
+		blink = vstat.blink;
+		pthread_mutex_unlock(&vstatlock);
+
 		if (check_redraw()) {
 			if (update_from_vmem(TRUE))
 				request_redraw();
@@ -710,10 +705,14 @@ static void blinker_thread(void *data)
 				if (update_from_vmem(FALSE))
 					request_redraw();
 		}
-		// Lock both screens in same order every time...
 		pthread_mutex_lock(&screenlock);
+		both_screens(blink, &screen, &ncscreen);
+		if (screen->rect == NULL) {
+			pthread_mutex_unlock(&screenlock);
+			continue;
+		}
 		// TODO: Maybe we can optimize the blink_changed forced update?
-		if (screen->update_pixels || curs_changed || blink_changed) {
+		if (screen->update_pixels || curs_changed || blink_changed || lfc) {
 			// If the other screen is update_pixels == 2, clear it.
 			if (ncscreen->update_pixels == 2)
 				ncscreen->update_pixels = 0;
@@ -723,39 +722,30 @@ static void blinker_thread(void *data)
 			cb_drawrect(rect);
 		}
 		else {
-			if (force_cursor) {
-				rect = get_full_rectangle_locked(screen);
-			}
 			pthread_mutex_unlock(&screenlock);
-			if (force_cursor) {
-				cb_drawrect(rect);
-				force_cursor = 0;
-			}
 		}
 		cb_flush();
 	}
 }
 
-static __inline struct bitmap_screen *noncurrent_screen_locked(void)
+static __inline struct bitmap_screen *noncurrent_screen_locked(int blink)
 {
-	if (vstat.blink)
+	if (blink)
 		return &screenb;
 	return &screena;
 }
 
-static __inline struct bitmap_screen *current_screen_locked(void)
+static __inline struct bitmap_screen *current_screen_locked(int blink)
 {
-	if (vstat.blink)
+	if (blink)
 		return &screena;
 	return(&screenb);
 }
 
-static __inline void both_screens(struct bitmap_screen** current, struct bitmap_screen** noncurrent)
+static __inline void both_screens(int blink, struct bitmap_screen** current, struct bitmap_screen** noncurrent)
 {
-	pthread_mutex_lock(&vstatlock);
-	*current = current_screen_locked();
-	*noncurrent = noncurrent_screen_locked();
-	pthread_mutex_unlock(&vstatlock);
+	*current = current_screen_locked(blink);
+	*noncurrent = noncurrent_screen_locked(blink);
 }
 
 /*
