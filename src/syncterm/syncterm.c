@@ -760,6 +760,9 @@ char *output_types[] = {
 	, "SDL",
 	"SDL Fullscreen"
 #endif
+#if defined(WITH_GDI)
+	, "GDI"
+#endif
 	, NULL
 };
 int   output_map[] = {
@@ -781,6 +784,10 @@ int   output_map[] = {
 	, CIOLIB_MODE_SDL,
 	CIOLIB_MODE_SDL_FULLSCREEN
 #endif
+#ifdef WITH_GDI
+	, CIOLIB_MODE_GDI,
+	CIOLIB_MODE_GDI
+#endif
 	, 0
 };
 char *output_descrs[] = {
@@ -794,6 +801,7 @@ char *output_descrs[] = {
 	"Win32 Console Fullscreen",
 	"SDL",
 	"SDL Fullscreen",
+	"GDI",
 	NULL
 };
 
@@ -808,6 +816,7 @@ char *output_enum[] = {
 	"WinConsoleFullscreen",
 	"SDL",
 	"SDLFullscreen",
+	"GDI",
 	NULL
 };
 

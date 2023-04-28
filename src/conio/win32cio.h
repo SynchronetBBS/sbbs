@@ -34,6 +34,14 @@
 #ifndef _WIN32CIO_H_
 #define _WIN32CIO_H_
 
+struct keyvals {
+	int	VirtualKeyCode
+		,Key
+		,Shift
+		,CTRL
+		,ALT;
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -61,6 +69,7 @@ void win32_setcustomcursor(int s, int e, int r, int b, int v);
 int win32_getvideoflags(void);
 int win32_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 
+extern const struct keyvals keyval[];
 #ifdef __cplusplus
 }
 #endif
