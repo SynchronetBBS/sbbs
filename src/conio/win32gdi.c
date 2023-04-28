@@ -9,6 +9,8 @@
 HBITMAP bmp;
 HWND win;
 FILE *debug;
+HANDLE rch;
+HANDLE wch;
 
 #define LCS_WINDOWS_COLOR_SPACE 0x57696E20
 
@@ -36,6 +38,20 @@ static pthread_mutex_t bmp_lock;
 static int bitmap_width,bitmap_height;
 
 // Internal implementation
+
+static void
+add_key(uint16_t key)
+{
+	uint8_t buf[2];
+	DWORD added;
+	DWORD remain = sizeof(buf);
+	buf[0] = key & 0xff;
+	buf[1] = key >> 8;
+	do {
+		WriteFile(wch, buf, remain, &added, NULL);
+		remain -= added;
+	} while (remain > 0);
+}
 
 static LRESULT CALLBACK
 gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -121,6 +137,7 @@ gdi_thread(void *arg)
 	// This may not be necessary...
 	DestroyWindow(win);
 	UnregisterClassW(wc.lpszClassName, NULL);
+	add_key(CIO_KEY_QUIT);
 }
 
 // Public API
@@ -128,13 +145,22 @@ gdi_thread(void *arg)
 int
 gdi_kbhit(void)
 {
-	return 0;
+	DWORD avail;
+
+	PeekNamedPipe(rch, NULL, 0, NULL, &avail, NULL);
+	return (avail > 0);
 }
 
 int
 gdi_getch(void)
 {
-	return 0;
+	uint8_t ch;
+	DWORD got;
+
+	do {
+		ReadFile(rch, &ch, 1, &got, NULL);
+	} while (got == 0);
+	return ch;
 }
 
 void
@@ -230,6 +256,7 @@ gdi_init(int mode)
 {
 	pthread_mutex_init(&gdi_headlock, NULL);
 	pthread_mutex_init(&bmp_lock, NULL);
+	CreatePipe(&rch, &wch, NULL, 0);
 
 	bitmap_drv_init(gdi_drawrect, gdi_flush);
 	gdi_textmode(mode);
