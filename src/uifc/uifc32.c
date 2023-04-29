@@ -199,6 +199,13 @@ int kbwait(void) {
 	return(FALSE);
 }
 
+static int
+dyn_kbwait(mode) {
+	if (mode & WIN_DYN)
+		return kbhit();
+	return kbwait();
+}
+
 int inkey(void)
 {
 	int c;
@@ -1102,7 +1109,7 @@ int ulist(int64_t mode, int left, int top, int width, int *cur, int *bar
 		gotkey=0;
 		textattr(((api->lbclr)&0x0f)|((api->lbclr >> 4)&0x0f));
 		gotoxy(s_left+lbrdrwidth+2+left, s_top+y);
-		if((api->exit_flags & UIFC_XF_QUIT) || kbwait() || (mode&(WIN_POP|WIN_SEL))) {
+		if((api->exit_flags & UIFC_XF_QUIT) || dyn_kbwait(mode) || (mode&(WIN_POP|WIN_SEL))) {
 			if(api->exit_flags & UIFC_XF_QUIT)
 				gotkey = CIO_KEY_QUIT;
 			else if(mode&WIN_POP)
@@ -2949,7 +2956,7 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
 				putch(p > textbuf ? api->chars->up_arrow : ' ');
 				putch(p < textend ? api->chars->down_arrow : ' ');
 			}
-			if(kbwait()) {
+			if(dyn_kbwait(mode)) {
 				j=inkey();
 				if(j==CIO_KEY_MOUSE) {
 					/* Ignores return value to avoid hitting help/exit hotspots */
