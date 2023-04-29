@@ -101,7 +101,8 @@ char *usage =
     "       I = Curses mode with forced ASCII charset\n"
     "       F = Curses mode with forced IBM charset\n"
 #else
-    "       W[F] = Win32 native mode, F for fullscreen\n"
+    "       W[F] = Win32 console (text) mode, F for fullscreen\n"
+    "       G    = Win32 GDI (graphics) mode\n"
 #endif
     "       A = ANSI mode\n"
     "-l# =  set screen lines to # (default=auto-detect)\n"
@@ -1605,6 +1606,9 @@ main(int argc, char **argv)
 							break;
 						case 'F':
 							ciolib_mode = CIOLIB_MODE_CURSES_IBM;
+							break;
+						case 'G':
+							ciolib_mode = CIOLIB_MODE_GDI;
 							break;
 						case 'I':
 							ciolib_mode = CIOLIB_MODE_CURSES_ASCII;

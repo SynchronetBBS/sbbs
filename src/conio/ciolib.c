@@ -177,9 +177,6 @@ static int try_gdi_init(int mode)
 		cio_api.kbhit=gdi_kbhit;
 		cio_api.getch=gdi_getch;
 		cio_api.textmode=gdi_textmode;
-		cio_api.showmouse=gdi_showmouse;
-		cio_api.hidemouse=gdi_hidemouse;
-		cio_api.setname=gdi_setname;
 		cio_api.seticon=gdi_seticon;
 		cio_api.settitle=gdi_settitle;
 		cio_api.copytext=gdi_copytext;
@@ -459,9 +456,6 @@ CIOLIBEXPORT int initciolib(int mode)
 #ifndef NO_X
 			if(!try_x_init(mode))
 #endif
-#if defined(WITH_GDI)
-			if (!try_gdi_init(mode))
-#endif
 #if defined(WITH_SDL)
 				if(!try_sdl_init(CIOLIB_MODE_SDL))
 #endif
@@ -470,7 +464,10 @@ CIOLIBEXPORT int initciolib(int mode)
 #else
 					if(!try_curses_init(mode))
 #endif
-						try_ansi_init(mode);
+#if defined(WITH_GDI)
+						if (!try_gdi_init(mode))
+#endif
+							try_ansi_init(mode);
 			break;
 #ifdef _WIN32
 		case CIOLIB_MODE_CONIO:
@@ -498,6 +495,12 @@ CIOLIBEXPORT int initciolib(int mode)
 		case CIOLIB_MODE_SDL:
 		case CIOLIB_MODE_SDL_FULLSCREEN:
 			try_sdl_init(mode);
+			break;
+#endif
+
+#if defined(WITH_GDI)
+		case CIOLIB_MODE_GDI:
+			try_gdi_init(mode);
 			break;
 #endif
 	}
