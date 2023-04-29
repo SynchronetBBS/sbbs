@@ -47,7 +47,7 @@ extern "C" {
 #endif
 int win32_kbhit(void);
 int win32_getch(void);
-int win32_getmouse(struct cio_mouse_event *mevent);
+int win32_getmouse(struct mouse_event *mevent);
 int win32_hidemouse(void);
 int win32_showmouse(void);
 
