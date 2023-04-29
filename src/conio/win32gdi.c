@@ -12,7 +12,6 @@ static HWND win;
 static HANDLE rch;
 static HANDLE wch;
 
-static FILE *debug;
 static uint8_t *title;
 
 #define WM_USER_INVALIDATE WM_USER
@@ -239,7 +238,7 @@ magic_message(MSG msg)
 
 			for (i = 0; keyval[i].VirtualKeyCode != 0; i++) {
 				if (keyval[i].VirtualKeyCode == msg.wParam) {
-					if (msg.lParam & (0x2000)) {
+					if (msg.lParam & (1 << 29)) {
 						if (keyval[i].ALT > 255) {
 							add_key(keyval[i].ALT);
 							return true;
@@ -266,6 +265,8 @@ magic_message(MSG msg)
 					break;
 				}
 			}
+			break;
+		case WM_PAINT:
 			break;
 	}
 
@@ -470,7 +471,6 @@ gdi_init(int mode)
 int
 gdi_initciolib(int mode)
 {
-debug = fopen("gdi.log", "w");
 	pthread_mutex_init(&gdi_headlock, NULL);
 	pthread_mutex_init(&rect_lock, NULL);
 
