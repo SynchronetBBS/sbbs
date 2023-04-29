@@ -1826,7 +1826,8 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 		while((**ptrptr) && IS_WHITESPACE(**ptrptr))
 			(*ptrptr)++;
 		while((**ptrptr)!='|' && (**ptrptr)!='&' && (**ptrptr)!=')' &&(**ptrptr)) {
-			str[c++]=(**ptrptr);
+			if(c < sizeof(str) - 1)
+				str[c++]=(**ptrptr);
 			(*ptrptr)++; 
 		}
 		str[c]=0;
