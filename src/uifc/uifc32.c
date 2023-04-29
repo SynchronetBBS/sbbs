@@ -200,7 +200,7 @@ int kbwait(void) {
 }
 
 static int
-dyn_kbwait(mode) {
+dyn_kbwait(uifc_winmode_t mode) {
 	if (mode & WIN_DYN)
 		return kbhit();
 	return kbwait();
@@ -628,7 +628,7 @@ inactive_win(struct vmem_cell *buf, int left, int top, int right, int bottom, in
 /****************************************************************************/
 /* General menu function, see uifc.h for details.							*/
 /****************************************************************************/
-int ulist(int64_t mode, int left, int top, int width, int *cur, int *bar
+int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 	, const char *initial_title, char **option)
 {
 	struct vmem_cell *ptr, *win, shade[MAX_LINES*2], line[MAX_COLS];
@@ -706,7 +706,7 @@ int ulist(int64_t mode, int left, int top, int width, int *cur, int *bar
 	api->help_available = (api->helpbuf!=NULL || api->helpixbfile[0]!=0);
 
 	/* Create the status bar/bottom-line */
-	int64_t bline = mode;
+	uifc_winmode_t bline = mode;
 	if (api->bottomline != NULL) {
 		if ((mode&(WIN_XTR | WIN_PASTEXTR)) == WIN_XTR && (*cur) == opts - 1)
 			api->bottomline(bline & ~WIN_PASTE);
