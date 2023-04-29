@@ -960,12 +960,12 @@ void sdl_video_event_thread(void *data)
 					block_text = 1;
 				if (block_text || ev.key.keysym.sym < 0 || ev.key.keysym.sym > 127) {
 					// NUMLOCK makes 
-					if ((ev.key.keysym.mod & KMOD_NUM) && ((ev.key.keysym.sym >= SDLK_KP_1 && ev.key.keysym.sym <= SDLK_KP_0)
-					    || ev.key.keysym.sym == SDLK_KP_DIVIDE
+					if (ev.key.keysym.sym == SDLK_KP_DIVIDE
 					    || ev.key.keysym.sym == SDLK_KP_MULTIPLY
 					    || ev.key.keysym.sym == SDLK_KP_MINUS
-					    || ev.key.keysym.sym == SDLK_KP_PLUS
-					    || ev.key.keysym.sym == SDLK_KP_PERIOD))
+					    || ev.key.keysym.sym == SDLK_KP_PLUS)
+						break;
+					if ((ev.key.keysym.mod & KMOD_NUM) && ((ev.key.keysym.sym >= SDLK_KP_1 && ev.key.keysym.sym <= SDLK_KP_0) || (ev.key.keysym.sym == SDLK_KP_PERIOD)))
 						break;
 					sdl_add_key_uc(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod), &cvstat);
 				}
