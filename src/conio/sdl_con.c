@@ -352,16 +352,7 @@ window_can_scale_internally(struct video_stats *vs)
 static void
 internal_scaling_factors(int *x, int *y, struct video_stats *vs)
 {
-	int winwidth = vs->winwidth;
-	int winheight = vs->winheight;
-	aspect_fix_low(&winwidth, &winheight, vs->aspect_width, vs->aspect_height);
-	aspect_reverse(&winwidth, &winheight, vs->scrnwidth, vs->scrnheight, vs->aspect_width, vs->aspect_height);
-	*x = winwidth / vs->scrnwidth;
-	*y = winheight / vs->scrnheight;
-	if (*x < 1 || *x > 14)
-		*x = 1;
-	if (*y < 1 || *y > 14)
-		*y = 1;
+	calc_scaling_factors(x, y, vs->winwidth, vs->winheight, vs->aspect_width, vs->aspect_height, vs->scrnwidth, vs->scrnheight);
 }
 
 static int sdl_init_mode(int mode)

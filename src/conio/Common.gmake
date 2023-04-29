@@ -63,7 +63,7 @@ ifneq ($(os),win32)
 else
  NO_X			 :=  1
  CIOLIB-MT_CFLAGS        +=  -DDISABLE_X11=1
- ifdef WITH_GDI
+ ifndef WITHOUT_GDI
   CIOLIB-MT_LIBS += -lgdi32
   CIOLIB-MT_CFLAGS += -DWITH_GDI
  endif

@@ -212,6 +212,19 @@ release_buffer(struct graphics_buffer *buf)
 	free_list = buf;
 }
 
+void
+calc_scaling_factors(int *x, int *y, int winwidth, int winheight, int aspect_width, int aspect_height, int scrnwidth, int scrnheight)
+{
+	aspect_fix_low(&winwidth, &winheight, aspect_width, aspect_height);
+	aspect_reverse(&winwidth, &winheight, scrnwidth, scrnheight, aspect_width, aspect_height);
+	*x = winwidth / scrnwidth;
+	*y = winheight / scrnheight;
+	if (*x < 1 || *x > 14)
+		*x = 1;
+	if (*y < 1 || *y > 14)
+		*y = 1;
+}
+
 struct graphics_buffer *
 do_scale(struct rectlist* rect, int xscale, int yscale, int aspect_width, int aspect_height)
 {
