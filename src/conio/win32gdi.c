@@ -181,10 +181,11 @@ static LRESULT
 gdi_handle_wm_paint(HWND hwnd)
 {
 	static HDC memDC = NULL;
+	static HBITMAP di = NULL;
+	static int diw, dih;
 
 	PAINTSTRUCT ps;
 	struct rectlist *list;
-	HBITMAP di;
 	HDC winDC;
 	int w,h;
 	int aw,ah;
@@ -207,13 +208,25 @@ gdi_handle_wm_paint(HWND hwnd)
 	if (ciolib_scaling) {
 		calc_scaling_factors(&xscale, &yscale, w, h, aw, ah, sw, sh);
 		gb = do_scale(list, xscale, yscale, aw, ah);
+		if (diw != gb->w || dih != gb->h) {
+			DeleteObject(di);
+			di = NULL;
+		}
+		diw = gb->w;
 		b5hdr.bV5Width = gb->w;
+		dih = gb->h;
 		b5hdr.bV5Height = -gb->h;
 		b5hdr.bV5SizeImage = gb->w * gb->h * 4;
 		data = gb->data;
 	}
 	else {
+		if (diw != list->rect.width || dih != list->rect.height) {
+			DeleteObject(di);
+			di = NULL;
+		}
+		diw = list->rect.width;
 		b5hdr.bV5Width = list->rect.width;
+		dih = list->rect.height;
 		b5hdr.bV5Height = -list->rect.height;
 		b5hdr.bV5SizeImage = list->rect.width * list->rect.height * 4;
 		data = list->data;
@@ -222,7 +235,10 @@ gdi_handle_wm_paint(HWND hwnd)
 	if (memDC == NULL)
 		memDC = CreateCompatibleDC(winDC);
 	// Scale...
-	di = CreateDIBitmap(winDC, (BITMAPINFOHEADER *)&b5hdr, CBM_INIT, data, (BITMAPINFO *)&b5hdr, 0/*DIB_RGB_COLORS*/);
+	if (di == NULL)
+		di = CreateDIBitmap(winDC, (BITMAPINFOHEADER *)&b5hdr, CBM_INIT, data, (BITMAPINFO *)&b5hdr, 0/*DIB_RGB_COLORS*/);
+	else
+		SetDIBits(winDC, di, 0, -b5hdr.bV5Height, data, (BITMAPINFO *)&b5hdr, DIB_RGB_COLORS);
 	di = SelectObject(memDC, di);
 	if (ciolib_scaling) {
 		BitBlt(winDC, 0, 0, w, h, memDC, 0, 0, SRCCOPY);
@@ -232,7 +248,6 @@ gdi_handle_wm_paint(HWND hwnd)
 	}
 	EndPaint(hwnd, &ps);
 	di = SelectObject(memDC, di);
-	DeleteObject(di);
 	if (ciolib_scaling) {
 		release_buffer(gb);
 	}
