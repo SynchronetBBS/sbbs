@@ -893,12 +893,10 @@ int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 
 	pthread_mutex_lock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
-	pthread_mutex_unlock(&vstatlock);
 	for(y=sy-1;y<ey;y++) {
 		for(x=sx-1;x<ex;x++)
 			memcpy(fill++, &vmem_ptr->vmem[y*cio_textinfo.screenwidth+x], sizeof(*fill));
 	}
-	pthread_mutex_lock(&vstatlock);
 	release_vmem(vmem_ptr);
 	pthread_mutex_unlock(&vstatlock);
 	return(1);
