@@ -29,13 +29,13 @@ rlogin_input_thread(void *args)
 			rd = recv(rlogin_sock, conn_api.rd_buf, conn_api.rd_buf_size, 0);
 			if (rd <= 0)
 				break;
-		}
-		buffered = 0;
-		while (rlogin_sock != INVALID_SOCKET && buffered < rd) {
-			pthread_mutex_lock(&(conn_inbuf.mutex));
-			buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 1000);
-			buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
-			pthread_mutex_unlock(&(conn_inbuf.mutex));
+			buffered = 0;
+			while (rlogin_sock != INVALID_SOCKET && buffered < rd) {
+				pthread_mutex_lock(&(conn_inbuf.mutex));
+				buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 1000);
+				buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
+				pthread_mutex_unlock(&(conn_inbuf.mutex));
+			}
 		}
 	}
 	conn_api.input_thread_running = 2;
