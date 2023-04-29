@@ -14,7 +14,6 @@ static HWND win;
 static HANDLE rch;
 static HANDLE wch;
 static bool maximized = false;
-static uint8_t *title;
 static uint16_t winxpos, winypos;
 static const DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
 
@@ -52,6 +51,43 @@ static bool ciolib_scaling = false;
 
 // Internal implementation
 
+static LPWSTR
+utf8_to_utf16(const uint8_t *str8, int buflen)
+{
+	int sz;
+	LPWSTR ret;
+
+	// First, get the size required for the conversion...
+	sz = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, str8, buflen, NULL, 0);
+	if (sz == 0)
+		return NULL;
+	ret = (LPWSTR)malloc((sz + 1) * sizeof(*ret));
+	if (sz == MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, str8, buflen, ret, sz)) {
+		ret[sz] = 0;
+		return ret;
+	}
+	free(ret);
+	return NULL;
+}
+
+static uint8_t *
+utf16_to_utf8(const LPWSTR str16)
+{
+	int sz;
+	uint8_t *ret;
+
+	// First, get the size required for the conversion...
+	sz = WideCharToMultiByte(CP_UTF8, 0, str16, -1, NULL, 0, NULL, NULL);
+	if (sz == 0)
+		return NULL;
+	ret = (uint8_t *)malloc(sz * sizeof(*ret));
+	if (sz == WideCharToMultiByte(CP_UTF8, 0, str16, -1, ret, sz * sizeof(*ret), NULL, NULL)) {
+		return ret;
+	}
+	free(ret);
+	return NULL;
+}
+
 static struct rectlist *
 get_rect(void)
 {
@@ -82,7 +118,7 @@ next_rect(struct rectlist *rect)
 }
 
 static void
-add_key(uint16_t key)
+gdi_add_key(uint16_t key)
 {
 	uint8_t buf[2];
 	uint8_t *bp = buf;
@@ -103,6 +139,16 @@ add_key(uint16_t key)
 		remain -= added;
 		bp += added;
 	} while (remain > 0);
+}
+
+static void
+gdi_mouse_thread(void *data)
+{
+	SetThreadName("GDI Mouse");
+	while(1) {
+		if(mouse_wait())
+			gdi_add_key(CIO_KEY_MOUSE);
+	}
 }
 
 static uint32_t
@@ -279,8 +325,62 @@ gdi_handle_wm_char(WPARAM wParam, LPARAM lParam)
 	ch = cpchar_from_unicode_cpoint(getcodepage(), cp, 0);
 	if (ch) {
 		for (i = 0; i < repeat; i++)
-			add_key(ch);
+			gdi_add_key(ch);
 	}
+	return 0;
+}
+
+struct gdi_mouse_pos {
+	int tx;
+	int ty;
+	int px;
+	int py;
+};
+
+static void
+win_to_pos(LPARAM lParam, struct gdi_mouse_pos *p)
+{
+	uint16_t cx, cy;
+
+	cx = lParam & 0xffff;
+	cy = (lParam >> 16) & 0xffff;
+
+	pthread_mutex_lock(&vstatlock);
+	p->tx = cx / (((float)vstat.winwidth) / vstat.cols) + 1;
+	if (p->tx > vstat.cols)
+		p->tx = vstat.cols;
+	if (p->tx < 1)
+		p->tx = 1;
+
+	p->px = cx * (vstat.scrnwidth) / vstat.winwidth;
+
+	p->ty = cy / (((float)vstat.winheight) / vstat.rows) + 1;
+	if (p->ty > vstat.rows)
+		p->ty = vstat.rows;
+	if (p->ty < 1)
+		p->ty = 1;
+
+	p->py = cy * (vstat.scrnheight) / vstat.winheight;
+	pthread_mutex_unlock(&vstatlock);
+}
+
+static LRESULT
+gdi_handle_mouse_button(LPARAM lParam, int event)
+{
+	struct gdi_mouse_pos p;
+
+	win_to_pos(lParam, &p);
+	ciomouse_gotevent(event, p.tx, p.ty, p.px, p.py);
+	return 0;
+}
+
+static LRESULT
+gdi_handle_mouse_wheel(int16_t distance, LPARAM lParam)
+{
+	if (distance < 0) // Forward
+		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), -1, -1 ,-1 ,-1);
+	else
+		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), -1, -1 ,-1 ,-1);
 	return 0;
 }
 
@@ -302,6 +402,22 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		case WM_DESTROY:
 			PostQuitMessage(0);
 			return 0;
+		case WM_LBUTTONDOWN:
+			return gdi_handle_mouse_button(lParam, CIOLIB_BUTTON_PRESS(1));
+		case WM_LBUTTONUP:
+			return gdi_handle_mouse_button(lParam, CIOLIB_BUTTON_RELEASE(1));
+		case WM_MBUTTONDOWN:
+			return gdi_handle_mouse_button(lParam, CIOLIB_BUTTON_PRESS(2));
+		case WM_MBUTTONUP:
+			return gdi_handle_mouse_button(lParam, CIOLIB_BUTTON_RELEASE(2));
+		case WM_MOUSEMOVE:
+			return gdi_handle_mouse_button(lParam, CIOLIB_MOUSE_MOVE);
+		case WM_MOUSEWHEEL:
+			return gdi_handle_mouse_wheel((wParam >> 16) & 0xffff, lParam);
+		case WM_RBUTTONDOWN:
+			return gdi_handle_mouse_button(lParam, CIOLIB_BUTTON_PRESS(3));
+		case WM_RBUTTONUP:
+			return gdi_handle_mouse_button(lParam, CIOLIB_BUTTON_RELEASE(3));
 	}
 
 	return DefWindowProcW(hwnd, msg, wParam, lParam);
@@ -448,25 +564,25 @@ magic_message(MSG msg)
 							else if (keyval[i].VirtualKeyCode == VK_RIGHT) {
 								gdi_snap(true);
 							}
-							add_key(keyval[i].ALT);
+							gdi_add_key(keyval[i].ALT);
 							return true;
 						}
 					}
 					else if (mods & (WMOD_CTRL | WMOD_LCTRL | WMOD_RCTRL)) {
 						if (keyval[i].CTRL > 255) {
-							add_key(keyval[i].CTRL);
+							gdi_add_key(keyval[i].CTRL);
 							return true;
 						}
 					}
 					else if (mods & (WMOD_SHIFT | WMOD_LSHIFT | WMOD_RSHIFT)) {
 						if (keyval[i].Shift > 255) {
-							add_key(keyval[i].Shift);
+							gdi_add_key(keyval[i].Shift);
 							return true;
 						}
 					}
 					else {
 						if (keyval[i].Key > 255) {
-							add_key(keyval[i].Key);
+							gdi_add_key(keyval[i].Key);
 							return true;
 						}
 					}
@@ -516,7 +632,7 @@ gdi_thread(void *arg)
 	// This may not be necessary...
 	DestroyWindow(win);
 	UnregisterClassW(wc.lpszClassName, NULL);
-	add_key(CIO_KEY_QUIT);
+	gdi_add_key(CIO_KEY_QUIT);
 }
 
 // Public API
@@ -607,17 +723,13 @@ gdi_textmode(int mode)
 void
 gdi_settitle(const char *newTitle)
 {
-	uint8_t *utf8;
-	size_t sz;
+	LPWSTR utf16;
 
-	free(title);
-	utf8 = cp_to_utf8(getcodepage(), newTitle, strlen(newTitle), NULL);
-	// Overkill
-	sz = strlen(utf8) * 4;
-	title = malloc(sz);
-	if (MultiByteToWideChar(CP_UTF8, 0, utf8, -1, (LPWSTR)title, sz / 2))
-		PostMessageW(win, WM_SETTEXT, 0, (LPARAM)title);
-	free(utf8);
+	utf16 = utf8_to_utf16(newTitle, -1);
+	if (utf16 != NULL) {
+		SetWindowTextW(win, utf16);
+		free(utf16);
+	}
 }
 
 void
@@ -629,14 +741,48 @@ gdi_seticon(const void *icon, unsigned long size)
 void
 gdi_copytext(const char *text, size_t buflen)
 {
-	// TODO
+	LPWSTR utf16;
+	LPWSTR clipStr;
+	HGLOBAL clipBuf;
+
+	utf16 = utf8_to_utf16(text, buflen);
+	if (utf16 != NULL) {
+		if (OpenClipboard(NULL)) {
+			EmptyClipboard();
+			clipBuf = GlobalAlloc(GMEM_MOVEABLE, (wcslen(utf16) + 1) * sizeof(utf16[0]));
+			if (clipBuf != NULL) {
+				clipStr = GlobalLock(clipBuf);
+				wcscpy(clipStr, utf16);
+				GlobalUnlock(clipBuf);
+				SetClipboardData(CF_UNICODETEXT, clipBuf);
+			}
+			CloseClipboard();
+		}
+		free(utf16);
+	}
 }
 
 char *
 gdi_getcliptext(void)
 {
-	// TODO
-	return NULL;
+	char *ret = NULL;
+	HANDLE dat;
+	LPWSTR datstr;
+
+	if (!IsClipboardFormatAvailable(CF_UNICODETEXT))
+		return NULL;
+	if (!OpenClipboard(NULL))
+		return NULL;
+	dat = GetClipboardData(CF_UNICODETEXT);
+	if (dat != NULL) {
+		datstr = GlobalLock(dat);
+		if (datstr != NULL) {
+			ret = utf16_to_utf8(datstr);
+			GlobalUnlock(dat);
+		}
+	}
+	CloseClipboard();
+	return ret;
 }
 
 int
@@ -668,6 +814,7 @@ gdi_init(int mode)
 	bitmap_drv_init(gdi_drawrect, gdi_flush);
 	gdi_textmode(mode);
 
+	_beginthread(gdi_mouse_thread, 0, NULL);
 	_beginthread(gdi_thread, 0, NULL);
 
 	cio_api.mode=CIOLIB_MODE_GDI;
