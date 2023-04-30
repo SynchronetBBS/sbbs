@@ -21,3 +21,4 @@ void aspect_reverse(int *x, int *y, int scrnwidth, int scrnheight, int aspect_wi
 void aspect_fix(int *x, int *y, int aspect_width, int aspect_height);
 void aspect_fix_low(int *x, int *y, int aspect_width, int aspect_height);
 void calc_scaling_factors(int *x, int *y, int winwidth, int winheight, int aspect_width, int aspect_height, int scrnwidth, int scrnheight);
+void aspect_fix_inside(int *x, int *y, int aspect_width, int aspect_height);

@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include <xp_dl.h>
+
 #define BITMAP_CIOLIB_DRIVER
 #include "win32gdi.h"
 #include "bitmap_con.h"
@@ -169,7 +171,7 @@ set_ciolib_scaling(void)
 
 	w = vstat.winwidth;
 	h = vstat.winheight;
-	aspect_fix_low(&w, &h, vstat.aspect_width, vstat.aspect_height);
+	aspect_fix_inside(&w, &h, vstat.aspect_width, vstat.aspect_height);
 	fw = w;
 	fh = h;
 	aspect_reverse(&w, &h, vstat.scrnwidth, vstat.scrnheight, vstat.aspect_width, vstat.aspect_height);
@@ -231,7 +233,9 @@ gdi_handle_wm_paint(HWND hwnd)
 {
 	static HDC memDC = NULL;
 	static HBITMAP di = NULL;
-	static int diw, dih;
+	static int diw = -1, dih = -1;
+	static int sww = -1, swh = -1;
+	static int lww = -1, lwh = -1;
 
 	PAINTSTRUCT ps;
 	struct rectlist *list;
@@ -279,24 +283,28 @@ gdi_handle_wm_paint(HWND hwnd)
 		b5hdr.bV5Height = -list->rect.height;
 		b5hdr.bV5SizeImage = list->rect.width * list->rect.height * 4;
 		data = list->data;
+		if (lww != w || lwh != h) {
+			sww = w;
+			swh = h;
+			aspect_fix_inside(&sww, &swh, aw, ah);
+		}
 	}
 	winDC = BeginPaint(hwnd, &ps);
 	if (memDC == NULL) {
 		memDC = CreateCompatibleDC(winDC);
-		SetPixel(memDC, 0, 0, RGB(0, 0, 0));
 	}
 	if (di == NULL)
 		di = CreateDIBitmap(winDC, (BITMAPINFOHEADER *)&b5hdr, CBM_INIT, data, (BITMAPINFO *)&b5hdr, DIB_RGB_COLORS);
 	else
 		SetDIBits(winDC, di, 0, dih, data, (BITMAPINFO *)&b5hdr, DIB_RGB_COLORS);
 	// Clear to black first
-	StretchBlt(winDC, 0, 0, w, h, memDC, 0, 0, 1, 1, SRCCOPY);
+	StretchBlt(winDC, 0, 0, w, h, memDC, 0, 0, 1, 1, BLACKNESS);
 	di = SelectObject(memDC, di);
 	if (ciolib_scaling) {
-		BitBlt(winDC, 0, 0, w, h, memDC, 0, 0, SRCCOPY);
+		BitBlt(winDC, (w - diw) / 2, (h - dih) / 2, diw, dih, memDC, 0, 0, SRCCOPY);
 	}
 	else {
-		StretchBlt(winDC, 0, 0, w, h, memDC, 0, 0, list->rect.width, list->rect.height, SRCCOPY);
+		StretchBlt(winDC, (w - sww) / 2, (h - swh) / 2, sww, swh, memDC, 0, 0, diw, dih, SRCCOPY);
 	}
 	EndPaint(hwnd, &ps);
 	di = SelectObject(memDC, di);
@@ -352,6 +360,8 @@ win_to_pos(LPARAM lParam, struct gdi_mouse_pos *p)
 	cx = lParam & 0xffff;
 	cy = (lParam >> 16) & 0xffff;
 
+	// TODO: Fix up to work with windows that have black bars...
+
 	pthread_mutex_lock(&vstatlock);
 	p->tx = cx / (((float)vstat.winwidth) / vstat.cols) + 1;
 	if (p->tx > vstat.cols)
@@ -398,13 +408,14 @@ gdi_handle_activate(HWND hwnd, WPARAM wParam)
 	uint16_t lw = wParam & 0xffff;
 
 	// TODO: We may need to read the state of CTRL and SHIFT keys for extended key input...
-	if (lw != 0)
-		SetCursor(cursor);
 	return 0;
 }
 
 static LRESULT CALLBACK
 gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	POINT p;
+	RECT r;
+
 	switch(msg) {
 		case WM_PAINT:
 			return gdi_handle_wm_paint(hwnd);
@@ -439,10 +450,23 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			return gdi_handle_mouse_button(lParam, CIOLIB_BUTTON_RELEASE(3));
 		case WM_ACTIVATE:
 			return gdi_handle_activate(hwnd, wParam);
-		case WM_SETCURSOR:
 		case WM_USER_SETCURSOR:
+			if (!GetClientRect(hwnd, &r))
+				break;
+			if (!GetCursorPos(&p))
+				break;
+			if (!ScreenToClient(hwnd, &p))
+				break;
+			if (p.x < 0 || p.y < 0 || p.x > (r.right - r.left) || p.y > (r.bottom - r.top))
+				break;
 			SetCursor(cursor);
-			return 0;
+			break;
+		case WM_SETCURSOR:
+			if ((lParam & 0xffff) == HTCLIENT) {
+				SetCursor(cursor);
+				return 0;
+			}
+			break;
 	}
 
 	return DefWindowProcW(hwnd, msg, wParam, lParam);
@@ -453,17 +477,26 @@ gdi_snap(bool grow)
 {
 	bool wc;
 	int w, h;
+	int mw, mh;
 
 	if (maximized)
 		return;
+	mw = GetSystemMetrics(SM_CXMAXTRACK);
+	mh = GetSystemMetrics(SM_CYMAXTRACK);
+	UnadjustWindowSize(&mw, &mh);
 	pthread_mutex_lock(&vstatlock);
 	w = vstat.winwidth;
 	h = vstat.winheight;
-	aspect_fix(&w, &h, vstat.aspect_width, vstat.aspect_height);
+	aspect_fix_inside(&w, &h, vstat.aspect_width, vstat.aspect_height);
 	if (vstat.aspect_width == 0 || vstat.aspect_height == 0)
 		wc = true;
 	else
 		wc = lround((double)(h * vstat.aspect_width) / vstat.aspect_height * vstat.scrnwidth / vstat.scrnheight) > w;
+	if (wc)
+		mw = mw - mw % vstat.scrnwidth;
+	else
+		mh = mh - mh % vstat.scrnheight;
+	mh = mw - mw % vstat.scrnwidth;
 	if (grow) {
 		if (wc)
 			w = (w - w % vstat.scrnwidth) + vstat.scrnwidth;
@@ -496,7 +529,11 @@ gdi_snap(bool grow)
 		h = INT_MAX;
 	else
 		w = INT_MAX;
-	aspect_fix(&w, &h, vstat.aspect_width, vstat.aspect_height);
+	if (w > mw)
+		w = mw;
+	if (h > mh)
+		h = mh;
+	aspect_fix_inside(&w, &h, vstat.aspect_width, vstat.aspect_height);
 	if (w > 16384 || h > 16384)
 		gdi_beep();
 	else {
@@ -715,7 +752,7 @@ gdi_textmode(int mode)
 	}
 	vstat.winwidth = vstat.scrnwidth * scaling;
 	vstat.winheight = vstat.scrnheight * scaling;
-	aspect_fix(&vstat.winwidth, &vstat.winheight, vstat.aspect_width, vstat.aspect_height);
+	aspect_fix_inside(&vstat.winwidth, &vstat.winheight, vstat.aspect_width, vstat.aspect_height);
 	if (oldcols != vstat.cols) {
 		if (oldcols == 0) {
 			if (ciolib_initial_window_width > 0)
@@ -891,6 +928,43 @@ gdi_init(int mode)
 	bitmap_drv_init(gdi_drawrect, gdi_flush);
 	gdi_textmode(mode);
 
+	// code that tells windows we're High DPI aware so it doesn't scale our windows
+	// taken from Yamagi Quake II
+
+	typedef enum D3_PROCESS_DPI_AWARENESS {
+		D3_PROCESS_DPI_UNAWARE = 0,
+		D3_PROCESS_SYSTEM_DPI_AWARE = 1,
+		D3_PROCESS_PER_MONITOR_DPI_AWARE = 2
+	} YQ2_PROCESS_DPI_AWARENESS;
+
+	/* For Vista, Win7 and Win8 */
+	BOOL(WINAPI *SetProcessDPIAware)(void) = NULL;
+
+	/* Win8.1 and later */
+	HRESULT(WINAPI *SetProcessDpiAwareness)(enum D3_PROCESS_DPI_AWARENESS dpiAwareness) = NULL;
+
+	const char* user32dll[] = {"User32", NULL};
+	dll_handle userDLL = xp_dlopen(user32dll, RTLD_LAZY, 0);
+
+	if (userDLL)
+	{
+		SetProcessDPIAware = xp_dlsym(userDLL, SetProcessDPIAware);
+	}
+
+	const char* shcoredll[] = {"SHCore", NULL};
+	dll_handle shcoreDLL = xp_dlopen(shcoredll, RTLD_LAZY, 0);
+
+	if (shcoreDLL)
+	{
+		SetProcessDpiAwareness = xp_dlsym(shcoreDLL, SetProcessDpiAwareness);
+	}
+
+	if (SetProcessDpiAwareness) {
+		SetProcessDpiAwareness(D3_PROCESS_PER_MONITOR_DPI_AWARE);
+	}
+	else if (SetProcessDPIAware) {
+		SetProcessDPIAware();
+	}
 	_beginthread(gdi_mouse_thread, 0, NULL);
 	_beginthread(gdi_thread, 0, NULL);
 	WaitForSingleObject(init_sem, INFINITE);

@@ -29,6 +29,29 @@ static struct graphics_buffer *free_list;
 
 /*
  * Corrects width/height to have the specified aspect ratio
+ * any fit inside the specified rectangle
+ */
+void
+aspect_fix_inside(int *x, int *y, int aspect_width, int aspect_height)
+{
+	int bestx, besty;
+
+	if (aspect_width == 0 || aspect_height == 0)
+		return;
+	bestx = lround((double)*y * aspect_width / aspect_height);
+	besty = lround((double)*x * aspect_height / aspect_width);
+
+	if (besty <= *y)
+		*y = besty;
+	else if (bestx <= *x)
+		*x = bestx;
+	else {
+		fprintf(stderr, "Unable to fix %dx%d at ratio %d:%d (best %d, %d)\n", *x, *y, aspect_width, aspect_height, bestx, besty);
+	}
+}
+
+/*
+ * Corrects width/height to have the specified aspect ratio
  */
 void
 aspect_fix(int *x, int *y, int aspect_width, int aspect_height)
