@@ -16,10 +16,12 @@ static HANDLE wch;
 static bool maximized = false;
 static uint16_t winxpos, winypos;
 static const DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+static HCURSOR cursor = IDC_IBEAM;
 
 #define WM_USER_INVALIDATE WM_USER
 #define WM_USER_SETSIZE (WM_USER + 1)
 #define WM_USER_SETPOS (WM_USER + 2)
+#define WM_USER_SETCURSOR (WM_USER + 3)
 
 #define LCS_WINDOWS_COLOR_SPACE 0x57696E20
 
@@ -384,6 +386,17 @@ gdi_handle_mouse_wheel(int16_t distance, LPARAM lParam)
 	return 0;
 }
 
+static LRESULT
+gdi_handle_activate(HWND hwnd, WPARAM wParam)
+{
+	static LPCTSTR lc = IDC_IBEAM;
+	uint16_t lw = wParam & 0xffff;
+
+	if (lw != 0)
+		SetCursor(cursor);
+	return 0;
+}
+
 static LRESULT CALLBACK
 gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch(msg) {
@@ -418,6 +431,12 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			return gdi_handle_mouse_button(lParam, CIOLIB_BUTTON_PRESS(3));
 		case WM_RBUTTONUP:
 			return gdi_handle_mouse_button(lParam, CIOLIB_BUTTON_RELEASE(3));
+		case WM_ACTIVATE:
+			return gdi_handle_activate(hwnd, wParam);
+		case WM_SETCURSOR:
+		case WM_USER_SETCURSOR:
+			SetCursor(cursor);
+			return 0;
 	}
 
 	return DefWindowProcW(hwnd, msg, wParam, lParam);
@@ -608,11 +627,12 @@ gdi_thread(void *arg)
 	wc.lpfnWndProc   = gdi_WndProc;
 	wc.hInstance     = WinMainHInst;
 	//wc.hIcon         = ICON;        // TODO: Icon from ciolib.rc
-	wc.hCursor       = LoadCursor(0, IDC_IBEAM);
+	wc.hCursor       = LoadCursor(NULL, cursor);
 	wc.hbrBackground = NULL;
 	wc.lpszMenuName  = NULL;
 	wc.lpszClassName = L"SyncConsole";
 
+	cursor = wc.hCursor;
 	RegisterClassW(&wc);
 	pthread_mutex_lock(&vstatlock);
 	// Now make the inside of the window the size we want (sigh)
@@ -871,7 +891,15 @@ gdi_flush(void)
 int
 gdi_mousepointer(enum ciolib_mouse_ptr type)
 {
-	// TODO
+	switch (type) {
+		case CIOLIB_MOUSEPTR_ARROW:
+			cursor = LoadCursor(NULL, IDC_ARROW);
+			break;
+		case CIOLIB_MOUSEPTR_BAR:
+			cursor = LoadCursor(NULL, IDC_IBEAM);
+			break;
+	}
+	PostMessageW(win, WM_USER_SETCURSOR, 0, 0);
 	return 0;
 }
 
