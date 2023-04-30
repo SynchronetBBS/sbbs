@@ -1605,6 +1605,7 @@ void* iniFreeParsedSections(named_str_list_t** list)
 
 	for(i = 0; list[i] != NULL; ++i) {
 		free(list[i]->name);
+		free(list[i]->list);
 		free(list[i]);
 	}
 
