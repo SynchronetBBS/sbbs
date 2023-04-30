@@ -330,7 +330,7 @@ void sbbs_t::multinodechat(int channel)
 								break;
 						if(i>=usrs) {
 							bputs(text[UserNotFound]);
-							break; 
+							break;
 						}
 
 						bputs(text[NodeMsgPrompt]);
@@ -598,7 +598,7 @@ bool sbbs_t::sysop_page(void)
 
 	if(useron.rest&FLAG('C')) {
 		bputs(text[R_Chat]);
-		return(false); 
+		return(false);
 	}
 
 	if(sysop_available(&cfg)
@@ -627,22 +627,22 @@ bool sbbs_t::sysop_page(void)
 				mode|= EX_NATIVE;
 			if(cfg.page[i]->misc&XTRN_SH)
 				mode |= EX_SH;
-			external(cmdstr(cfg.page[i]->cmd,nulstr,nulstr,NULL,mode), mode); 
+			external(cmdstr(cfg.page[i]->cmd,nulstr,nulstr,NULL,mode), mode);
 		}
 		else if(cfg.sys_misc&SM_SHRTPAGE) {
 			bprintf(text[PagingGuru],cfg.sys_op);
 			for(i=0;i<10;i++) {
 				sbbs_beep(1000,200);
 				mswait(200);
-				outchar('.'); 
+				outchar('.');
 			}
-			CRLF; 
+			CRLF;
 		}
 		else {
 			sys_status^=SS_SYSPAGE;
 			bprintf(text[SysopPageIsNow]
 				,sys_status&SS_SYSPAGE ? text[ON] : text[OFF]);
-			nosound();	
+			nosound();
 		}
 		if(!(sys_status&SS_SYSPAGE))
 			remove(syspage_semfile);
@@ -663,11 +663,11 @@ bool sbbs_t::chan_access(uint cnum)
 
 	if(!cfg.total_chans || cnum>=cfg.total_chans || !chk_ar(cfg.chan[cnum]->ar,&useron,&client)) {
 		bputs(text[CantAccessThatChannel]);
-		return(false); 
+		return(false);
 	}
 	if(!(useron.exempt&FLAG('J')) && cfg.chan[cnum]->cost>user_available_credits(&useron)) {
 		bputs(text[NotEnoughCredits]);
-		return(false); 
+		return(false);
 	}
 	return(true);
 }
@@ -698,7 +698,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 
 		if(useron.rest&FLAG('C')) {
 			bputs(text[R_Chat]);
-			return; 
+			return;
 		}
 
 		n=getnodetopage(0,0);
@@ -706,12 +706,12 @@ void sbbs_t::privchat(bool forced, int node_num)
 			return;
 		if(n==cfg.node_num) {
 			bputs(text[NoNeedToPageSelf]);
-			return; 
+			return;
 		}
 		getnodedat(n,&node,0);
 		if(node.action==NODE_PCHT && node.aux!=cfg.node_num) {
 			bprintf(text[NodeNAlreadyInPChat],n);
-			return; 
+			return;
 		}
 		if(SYSOP && getnodedat(n, &node, true) == 0) {
 			node.misc |= NODE_FCHAT;
@@ -752,14 +752,14 @@ void sbbs_t::privchat(bool forced, int node_num)
 					bprintf(text[NodeJoinedPrivateChat]
 						,n,node.misc&NODE_ANON ? text[UNKNOWN_USER]
 							: username(&cfg,node.useron,tmp));
-					break; 
+					break;
 				}
 				action=NODE_PAGE;
 				checkline();
 				gettimeleft();
-				sync(); 
+				sync();
 				inkey(K_NONE,500);
-			} 
+			}
 		}
 	}
 
@@ -801,7 +801,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 	sprintf(outpath,"%schat.dab",cfg.node_dir);
 	if((out=sopen(outpath,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,DEFFILEMODE))==-1) {
 		errormsg(WHERE,ERR_OPEN,outpath,O_RDWR|O_DENYNONE|O_CREAT);
-		return; 
+		return;
 	}
 
 	if(forced && n == 0)
@@ -813,14 +813,14 @@ void sbbs_t::privchat(bool forced, int node_num)
 	if((in=sopen(inpath,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,DEFFILEMODE))==-1) {
 		close(out);
 		errormsg(WHERE,ERR_OPEN,inpath,O_RDWR|O_DENYNONE|O_CREAT);
-		return; 
+		return;
 	}
 
 	if((p=(char *)malloc(PCHAT_LEN))==NULL) {
 		close(in);
 		close(out);
 		errormsg(WHERE,ERR_ALLOC,nulstr,PCHAT_LEN);
-		return; 
+		return;
 	}
 	memset(p,0,PCHAT_LEN);
 	write(in,p,PCHAT_LEN);
@@ -852,7 +852,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 			checkline();
 			gettimeleft();
 			sync();
-			SLEEP(500); 
+			SLEEP(500);
 		}
 	}
 
@@ -870,7 +870,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 			,sectostr(timeleft,tmp)
 			,thisnode.misc&NODE_NMSG ? 'M':' ');
 		ansi_gotoxy(1,14);
-		local_y=14; 
+		local_y=14;
 	}
 
 	while(online && (forced || !(sys_status&SS_ABORT))) {
@@ -889,8 +889,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 					if(echo)
 						backspace();
 					localchar--;
-					localbuf[localline][localchar]=0; 
-				} 
+					localbuf[localline][localchar]=0;
+				}
 			}
 			else if(ch==TAB) {
 				if(echo)
@@ -900,8 +900,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 				while(localchar<78 && localchar%8) {
 					if(echo)
 						outchar(' ');
-					localbuf[localline][localchar++]=' '; 
-				} 
+					localbuf[localline][localchar++]=' ';
+				}
 			}
 			else if(ch==CTRL_R) {
 				if(sys_status&SS_SPLITP) {
@@ -909,8 +909,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 					attr(cfg.color[clr_chatremote]);
 					remotebuf[remoteline][remotechar]=0;
 					for(i=0;i<=remoteline;i++) {
-						bputs(remotebuf[i]); 
-						if(i!=remoteline) 
+						bputs(remotebuf[i]);
+						if(i!=remoteline)
 							bputs(crlf);
 					}
 					remote_y=1+remoteline;
@@ -926,7 +926,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 					localbuf[localline][localchar]=0;
 					for(i=0;i<=localline;i++) {
 						bputs(localbuf[i]);
-						if(i!=localline) 
+						if(i!=localline)
 							bputs(crlf);
 					}
 					local_y=15+localline;
@@ -937,7 +937,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 				if(ch!=CR) {
 					if(echo)
 						outchar(ch);
-					localbuf[localline][localchar]=ch; 
+					localbuf[localline][localchar]=ch;
 				}
 
 				if(ch==CR || (localchar>68 && ch==' ') || ++localchar>78) {
@@ -956,10 +956,10 @@ void sbbs_t::privchat(bool forced, int node_num)
 						for(x=13,y=0;x<rows;x++,y++) {
 							comprintf("\x1b[%d;1H\x1b[K",x+1);
 							if(y<=localline)
-								bprintf("%s\r\n",localbuf[y]); 
+								bprintf("%s\r\n",localbuf[y]);
 						}
 						ansi_gotoxy(1,local_y=(15+localline));
-						localline=0; 
+						localline=0;
 					}
 					else {
 						if(localline>=4)
@@ -971,11 +971,11 @@ void sbbs_t::privchat(bool forced, int node_num)
 							CRLF;
 		            		local_y++;
 							if(sys_status&SS_SPLITP)
-								cleartoeol(); 
-						} 
+								cleartoeol();
+						}
 					}
 					// sync();
-				} 
+				}
 			} else { // illegal key
 				continue;
 			}
@@ -990,7 +990,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 				lseek(out,-1L,SEEK_CUR);
 				ch=0;
 				wr = write(out,&ch,1);
-				lseek(out,-1L,SEEK_CUR); 
+				lseek(out,-1L,SEEK_CUR);
 			}
 			if(wr != 1)
 				lprintf(LOG_ERR, "write of character 0x%02X to %s returned %d", ch, outpath, wr);
@@ -1034,8 +1034,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 				if(remotechar) {
 					backspace();
 					remotechar--;
-					remotebuf[remoteline][remotechar]=0; 
-				} 
+					remotebuf[remoteline][remotechar]=0;
+				}
 			}
 			else if(ch==TAB) {
 				outchar(' ');
@@ -1043,13 +1043,13 @@ void sbbs_t::privchat(bool forced, int node_num)
 				remotechar++;
 				while(remotechar<78 && remotechar%8) {
 					outchar(' ');
-					remotebuf[remoteline][remotechar++]=' '; 
-				} 
+					remotebuf[remoteline][remotechar++]=' ';
+				}
 			}
 			else if(ch>=' ' || ch==CR) {
 				if(ch!=CR) {
 					outchar(ch);
-					remotebuf[remoteline][remotechar]=ch; 
+					remotebuf[remoteline][remotechar]=ch;
 				}
 
 				if(ch==CR || (remotechar>68 && ch==' ') || ++remotechar>78) {
@@ -1067,10 +1067,10 @@ void sbbs_t::privchat(bool forced, int node_num)
 						for(i=0;i<12;i++) {
 							bprintf("\x1b[%d;1H\x1b[K",i+1);
 							if(i<=remoteline)
-								bprintf("%s\r\n",remotebuf[i]); 
+								bprintf("%s\r\n",remotebuf[i]);
 						}
 						remoteline=0;
-						ansi_gotoxy(1, remote_y=6); 
+						ansi_gotoxy(1, remote_y=6);
 					}
 					else {
 						if(remoteline>=4)
@@ -1082,10 +1082,10 @@ void sbbs_t::privchat(bool forced, int node_num)
 							CRLF;
 		            		remote_y++;
 							if(sys_status&SS_SPLITP)
-								cleartoeol(); 
-						} 
-					} 
-				} 
+								cleartoeol();
+						}
+					}
+				}
 			}
 			ch=0;
 			if(write(in,&ch,1) != 1)
@@ -1098,7 +1098,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 		if(sys_status&SS_SPLITP && remote_activity) {
 			bputs("\1i_\1n");  /* Fake cursor */
 			ansi_save();
-			ansi_gotoxy(x,y); 
+			ansi_gotoxy(x,y);
 		}
 
 		now=time(NULL);
@@ -1113,12 +1113,12 @@ void sbbs_t::privchat(bool forced, int node_num)
 						getuserdat(&cfg,&useron);
 						if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 							thisnode.misc&=~NODE_UDAT;
-							putnodedat(cfg.node_num,&thisnode); 
+							putnodedat(cfg.node_num,&thisnode);
 						}
-					} 
+					}
 				}
 				else
-					nodesync(); 
+					nodesync();
 			}
 
 			if(n != 0) {
@@ -1128,7 +1128,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 					bprintf(text[NodeLeftPrivateChat]
 						,n,node.misc&NODE_ANON ? text[UNKNOWN_USER]
 						: username(&cfg,node.useron,tmp));
-					break; 
+					break;
 				}
 			}
 			getnodedat(cfg.node_num,&thisnode,0);
@@ -1142,11 +1142,11 @@ void sbbs_t::privchat(bool forced, int node_num)
 				lseek(out,0L,SEEK_SET);
 				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 					thisnode.misc&=~NODE_RPCHT;
-					putnodedat(cfg.node_num,&thisnode); 
+					putnodedat(cfg.node_num,&thisnode);
 				}
 			}
 			last_nodechk=now;
-			gettimeleft(); 
+			gettimeleft();
 		}
 	}
 	if(sys_status&SS_SPLITP)
@@ -1169,7 +1169,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 	if(lastnodemsg) {
 		getnodedat(lastnodemsg,&node,0);
 		if(node.status!=NODE_INUSE && !SYSOP)
-			lastnodemsg=1; 
+			lastnodemsg=1;
 	}
 	for(j=0,i=1;i<=cfg.sys_nodes && i<=cfg.sys_lastnode;i++) {
 		getnodedat(i,&node,0);
@@ -1178,8 +1178,8 @@ int sbbs_t::getnodetopage(int all, int telegram)
 		if(node.status==NODE_INUSE || (SYSOP && node.status >= NODE_LOGON && node.status <= NODE_QUIET)) {
 			if(!lastnodemsg)
 				lastnodemsg=i;
-			j++; 
-		} 
+			j++;
+		}
 	}
 
 	if(!lastnodemsguser[0])
@@ -1187,7 +1187,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 
 	if(!j && !telegram) {
 		bputs(text[NoOtherActiveNodes]);
-		return(0); 
+		return(0);
 	}
 
 	if(all)
@@ -1210,17 +1210,17 @@ int sbbs_t::getnodetopage(int all, int telegram)
 		getnodedat(j,&node,0);
 		if(node.status!=NODE_INUSE && !SYSOP) {
 			bprintf(text[NodeNIsNotInUse],j);
-			return(0); 
+			return(0);
 		}
 		if(telegram && node.misc&(NODE_POFF|NODE_ANON) && !SYSOP) {
 			bprintf(text[CantPageNode],node.misc&NODE_ANON
 				? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp));
-			return(0); 
+			return(0);
 		}
 		SAFECOPY(lastnodemsguser,str);
 		if(telegram)
 			return(node.useron);
-		return(j); 
+		return(j);
 	}
 	if(all && !stricmp(str,"ALL"))
 		return(-1);
@@ -1229,8 +1229,8 @@ int sbbs_t::getnodetopage(int all, int telegram)
 		j=finduserstr(0, USER_HANDLE, str+1);
 		if(!j) {
 			bputs(text[UnknownUser]);
-			return(0); 
-		} 
+			return(0);
+		}
 	}
 	else if(str[0]=='#')
 		j=atoi(str+1);
@@ -1242,7 +1242,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 		return(0);
 	if(getusermisc(&cfg, j) & (DELETED|INACTIVE)) {              /* Deleted or Inactive User */
 		bputs(text[UnknownUser]);
-		return(0); 
+		return(0);
 	}
 
 	for(i=1;i<=cfg.sys_nodes && i<=cfg.sys_lastnode;i++) {
@@ -1252,17 +1252,17 @@ int sbbs_t::getnodetopage(int all, int telegram)
 			if(telegram && node.misc&NODE_POFF && !SYSOP) {
 				bprintf(text[CantPageNode],node.misc&NODE_ANON
 					? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp));
-				return(0); 
+				return(0);
 			}
 			if(telegram)
 				return(j);
 			SAFECOPY(lastnodemsguser,str);
-			return(i); 
-		} 
+			return(i);
+		}
 	}
 	if(telegram) {
 		SAFECOPY(lastnodemsguser,str);
-		return(j); 
+		return(j);
 	}
 	bputs(text[UserNotFound]);
 	return(0);
@@ -1293,7 +1293,7 @@ void sbbs_t::nodemsg()
 	while(online && !done) {
 		if(useron.rest&FLAG('C')) {
 			bputs(text[R_SendMessages]);
-			break; 
+			break;
 		}
 		sync();
 		mnemonics(text[PrivateMsgPrompt]);
@@ -1314,7 +1314,7 @@ void sbbs_t::nodemsg()
 					if(thisnode.misc&NODE_MSGW)
 						getsmsg(useron.number);
 					CRLF;
-					restoreline(); 
+					restoreline();
 				}
 				else
 					nodesync();
@@ -1325,7 +1325,7 @@ void sbbs_t::nodemsg()
 		if(!online || sys_status&SS_ABORT) {
 			sys_status&=~SS_ABORT;
 			CRLF;
-			break; 
+			break;
 		}
 
 		switch(toupper(ch)) {
@@ -1337,11 +1337,11 @@ void sbbs_t::nodemsg()
 
 				if(usernumber==1 && useron.rest&FLAG('S')) { /* ! val fback */
 					bprintf(text[R_Feedback],cfg.sys_op);
-					break; 
+					break;
 				}
 				if(usernumber!=1 && useron.rest&FLAG('E')) {
 					bputs(text[R_Email]);
-					break; 
+					break;
 				}
 				now=time(NULL);
 				bprintf(text[SendingTelegramToUser]
@@ -1362,13 +1362,13 @@ void sbbs_t::nodemsg()
 							SAFECAT(logbuf,"   ");
 						SAFECAT(logbuf,line);
 					}
-					i++; 
+					i++;
 				}
 				if(!i)
 					break;
 				if(sys_status&SS_ABORT) {
 					CRLF;
-					break; 
+					break;
 				}
 				putsmsg(&cfg,usernumber,buf);
 				sprintf(str,"sent telegram to %s #%u"
@@ -1407,8 +1407,8 @@ void sbbs_t::nodemsg()
 						sprintf(str,"sent message to %s on node %d:"
 							,username(&cfg,usernumber,tmp),i);
 						logline("C",str);
-						logline(nulstr,line); 
-					} 
+						logline(nulstr,line);
+					}
 				}
 				else {	/* ALL */
 					bputs(text[NodeMsgPrompt]);
@@ -1424,18 +1424,18 @@ void sbbs_t::nodemsg()
 						if((node.status==NODE_INUSE
 							|| (SYSOP && node.status==NODE_QUIET))
 							&& (SYSOP || !(node.misc&NODE_POFF)))
-							putnmsg(&cfg,i,buf); 
+							putnmsg(&cfg,i,buf);
 					}
 					SAFECOPY(str,"sent message to all nodes");
 					logline("C",str);
-					logline(nulstr,line); 
+					logline(nulstr,line);
 				}
 				break;
 			case 'C':   /* Chat */
 				bputs("Chat\r\n");
 				if(action==NODE_PCHT) { /* already in pchat */
 					done=1;
-					break; 
+					break;
 				}
 				privchat();
 				action=savenode.action;
@@ -1443,8 +1443,8 @@ void sbbs_t::nodemsg()
 			default:
 				bputs("Quit\r\n");
 				done=1;
-				break; 
-		} 
+				break;
+		}
 	}
 	nodemsg_inside--;
 	if(!nodemsg_inside)
@@ -1478,11 +1478,11 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 			errormsg(WHERE,ERR_ALLOC,nulstr,512);
 			while(i) {
 				i--;
-				free(answer[i]); 
+				free(answer[i]);
 			}
 			sys_status&=~SS_GURUCHAT;
-			return; 
-		} 
+			return;
+		}
 	}
 	ptr=gurubuf;
 	len=strlen(gurubuf);
@@ -1498,19 +1498,19 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 			if(line[i+1]=='?')	/* fix "WHAT ?" */
 				continue;
 		}
-		cstr[k++]=line[i]; 
+		cstr[k++]=line[i];
 	}
 	cstr[k]=0;
 	while(k) {
 		k--;
 		if(!IS_ALPHANUMERIC(cstr[k]))
 			continue;
-		break; 
+		break;
 	}
 	if(k<1) {
 		for(i=0;i<100;i++)
 			free(answer[i]);
-		return; 
+		return;
 	}
 	if(cstr[k+1]=='?')
 		k++;
@@ -1519,10 +1519,10 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 		if(*ptr=='(') {
 			ptr++;
 			if(!guruexp(&ptr,cstr)) {
-				while(*ptr && *ptr!='(' && ptr<gurubuf+len)
+				while(*ptr && !(*ptr == '(' && *(ptr-1) == '\n') && ptr<gurubuf+len)
 					ptr++;
-				continue; 
-			} 
+				continue;
+			}
 		}
 		else {
 			while(*ptr && *ptr!=LF && ptr<gurubuf+len) /* skip LF after ')' */
@@ -1540,16 +1540,16 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 						ptr++;	/* skip \ */
 						while(*ptr && *ptr<' ') ptr++;	/* skip [CR]LF */
 						answer[answers][i++]=CR;
-						answer[answers][i++]=LF; 
-					} 
+						answer[answers][i++]=LF;
+					}
 				}
 				answer[answers][i]=0;
 				if(!strlen(answer[answers]) || answer[answers][0]=='(') {
 					ptr-=strlen(answer[answers]);
-					break; 
+					break;
 				}
 				while(*ptr && *ptr<' ') ptr++;	/* skip [CR]LF */
-				answers++; 
+				answers++;
 			}
 			if(answers==100)
 				while(*ptr && *ptr!='(' && ptr<gurubuf+len)
@@ -1693,12 +1693,12 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 							break;
 						case '_':
 							mswait(500);
-							break; 
+							break;
 					}
-					k=strlen(theanswer); 
+					k=strlen(theanswer);
 				}
 				else
-					theanswer[k++]=answer[i][j]; 
+					theanswer[k++]=answer[i][j];
 			}
 			theanswer[k]=0;
 			mswait(500+sbbs_random(1000));	 /* thinking time */
@@ -1713,16 +1713,16 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 						while(j) {
 							outchar(97+sbbs_random(26));
 							mswait(25+sbbs_random(150));
-							j--; 
+							j--;
 						}
 						if(sbbs_random(100)) {
 							mswait(100+sbbs_random(300));
 							while(c) {
 								backspace();
 								mswait(50+sbbs_random(50));
-								c--; 
-							} 
-						} 
+								c--;
+							}
+						}
 					}
 					outchar(theanswer[i]);
 					if(theanswer[i]==theanswer[i+1])
@@ -1730,13 +1730,13 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 					else
 						mswait(25+sbbs_random(150));
 					if(theanswer[i]==' ')
-						mswait(sbbs_random(50)); 
-				} 
+						mswait(sbbs_random(50));
+				}
 			}
 			else {
 				mswait(strlen(theanswer)*100);
 				bprintf(text[ChatLineFmt],cfg.guru[gurunum]->name
-					,cfg.sys_nodes+1,':',theanswer); 
+					,cfg.sys_nodes+1,':',theanswer);
 			}
 			CRLF;
 			sprintf(str,"%sguru.log",cfg.logs_dir);
@@ -1755,12 +1755,12 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 					fprintf(fp,"\r\n");
 				fprintf(fp,"%s:\r\n",cfg.guru[gurunum]->name);
 				fprintf(fp,"%s\r\n",theanswer);
-				fcloselog(fp); 
+				fcloselog(fp);
 			}
 			if(hu)
 				hangup();
-			break; 
-		} 
+			break;
+		}
 	}
 	for(i=0;i<100;i++)
 		free(answer[i]);
@@ -1780,7 +1780,7 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 
 	if((**ptrptr)==')') {	/* expressions of () are always result */
 		(*ptrptr)++;
-		return(true); 
+		return(true);
 	}
 	while((**ptrptr)!=')' && (**ptrptr)) {
 		if((**ptrptr)=='[') {
@@ -1796,29 +1796,29 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 			free(ar);
 			if(!c && _and) {
 				result=false;
-				break; 
+				break;
 			}
 			if(c && _or) {
 				result=true;
-				break; 
+				break;
 			}
 			if(c)
 				result=true;
-			continue; 
+			continue;
 		}
 		if((**ptrptr)=='(') {
 			(*ptrptr)++;
 			c=guruexp(&(*ptrptr),line);
 			if(!c && _and) {
 				result=false;
-				break; 
+				break;
 			}
 			if(c && _or) {
 				result=true;
-				break; 
+				break;
 			}
 			if(c)
-				result=true; 
+				result=true;
 		}
 		if((**ptrptr)==')')
 			break;
@@ -1828,43 +1828,43 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 		while((**ptrptr)!='|' && (**ptrptr)!='&' && (**ptrptr)!=')' &&(**ptrptr)) {
 			if(c < sizeof(str) - 1)
 				str[c++]=(**ptrptr);
-			(*ptrptr)++; 
+			(*ptrptr)++;
 		}
 		str[c]=0;
 		if((**ptrptr)=='|') {
 			if(!c && result)
 				break;
 			_and=false;
-			_or=true; 
+			_or=true;
 		}
 		else if((**ptrptr)=='&') {
 			if(!c && !result)
 				break;
 			_and=true;
-			_or=false; 
+			_or=false;
 		}
 		if(!c) {				/* support ((exp)op(exp)) */
 			(*ptrptr)++;
-			continue; 
+			continue;
 		}
 		if((**ptrptr)!=')')
 			(*ptrptr)++;
 		c=0;					/* c now used for start line flag */
 		if(str[strlen(str)-1]=='^') {	/* ^signifies start of line only */
 			str[strlen(str)-1]=0;
-			c=true; 
+			c=true;
 		}
 		if(str[strlen(str)-1]=='~') {	/* ~signifies non-isolated word */
 			str[strlen(str)-1]=0;
 			cp=strstr(line,str);
 			if(c && cp!=line)
-				cp=0; 
+				cp=0;
 		}
 		else {
 			cp=strstr(line,str);
 			if(cp && c) {
 				if(cp!=line || IS_ALPHANUMERIC(*(cp+strlen(str))))
-					cp=0; 
+					cp=0;
 			}
 			else {	/* must be isolated word */
 				while(cp)
@@ -1872,19 +1872,19 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 						|| IS_ALPHANUMERIC(*(cp+strlen(str))))
 						cp=strstr(cp+strlen(str),str);
 					else
-						break; 
-			} 
+						break;
+			}
 		}
 		if(!cp && _and) {
 			result=false;
-			break; 
+			break;
 		}
 		if(cp && _or) {
 			result=true;
-			break; 
+			break;
 		}
 		if(cp)
-			result=true; 
+			result=true;
 	}
 	nest=0;
 	while((**ptrptr)!=')' && (**ptrptr)) {		/* handle nested exp */
@@ -1893,8 +1893,8 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 		(*ptrptr)++;
 		while((**ptrptr)==')' && nest && (**ptrptr)) {
 			nest--;
-			(*ptrptr)++; 
-		} 
+			(*ptrptr)++;
+		}
 	}
 	(*ptrptr)++;	/* skip over ')' */
 	return(result);
@@ -1919,8 +1919,8 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 		ch=sbbs_random(25)+25;
 		while(ch--) {
 			mswait(200);
-			outchar('.'); 
-		} 
+			outchar('.');
+		}
 	}
 	bprintf(text[SysopIsHere],cfg.guru[gurunum]->name);
 	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
@@ -1939,7 +1939,7 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 			if((ch=inkey(K_NONE,1000))==0) {
 				if(str[0]) {
 					attr(cfg.color[clr_chatlocal]);
-					guruchat(str,gurubuf,gurunum,lastanswer); 
+					guruchat(str,gurubuf,gurunum,lastanswer);
 					str[0]=0;
 				}
 				continue;
