@@ -281,12 +281,16 @@ gdi_handle_wm_paint(HWND hwnd)
 		data = list->data;
 	}
 	winDC = BeginPaint(hwnd, &ps);
-	if (memDC == NULL)
+	if (memDC == NULL) {
 		memDC = CreateCompatibleDC(winDC);
+		SetPixel(memDC, 0, 0, RGB(0, 0, 0));
+	}
 	if (di == NULL)
 		di = CreateDIBitmap(winDC, (BITMAPINFOHEADER *)&b5hdr, CBM_INIT, data, (BITMAPINFO *)&b5hdr, DIB_RGB_COLORS);
 	else
 		SetDIBits(winDC, di, 0, dih, data, (BITMAPINFO *)&b5hdr, DIB_RGB_COLORS);
+	// Clear to black first
+	StretchBlt(winDC, 0, 0, w, h, memDC, 0, 0, 1, 1, SRCCOPY);
 	di = SelectObject(memDC, di);
 	if (ciolib_scaling) {
 		BitBlt(winDC, 0, 0, w, h, memDC, 0, 0, SRCCOPY);
