@@ -248,13 +248,13 @@ o Most sysops didn't know it, but if exec/feedback.* existed, it would be
   - invoke for email being sent to *any* sysop (not just user #1)
   - don't invoke the module when sending *from* a sysop account
 o Make new user QWK-related and Chat-related settings configurable
-  - Added chat-settings to SCFG->System->New User Values->Toggle Options
+  - Added chat-settings to SCFG->System->New User Values->Default Toggles
   - Added new menu: SCFG->System->New User Values->QWK Packet Settings
 o New line-based method of output throttling (e.g for animated ANSIs)
+  Enabled/set via LINEDELAY @-code and JS console.line_delay property
 
 Doors
 ~~~~~
-o New option to Disable Local Display
 o New option to Alert/Disconnect an Inactive User while running program
 o Fix EXITINFO.BBS drop file generation (a few problems with size and garbage)
 o Total rewrite of the PCBOARD.SYS and USERS.SYS drop file generation logic
@@ -306,7 +306,7 @@ o Implement the sbbsfile.nam and sbbsfile.des post-processing removed in v3.19
 o Auto-detect/display UTF-8 encoded extended file descriptions
 o Improved support for files > 4GB in size
 o Add options to sort directories by file size (ascending or descending)
-o Allow sysop-choice of source of virtual sub-directory source name
+o Allow sysop-choice of source of virtual sub-directory source name:
   By default, each file transfer directory's internal code suffix is
   used as the source of the sub-directory of the virtual path used
   to represent a file area in the FTP and Web servers. Now, a sysop
@@ -359,7 +359,7 @@ o Direct Filebase access for downloading files with access controls,
   via SCFG->Servers->Web Server->Filebase VPath Prefix (e.g. "/files/")
 o Dynamic file area/base indexing
   (set sbbs.ini [web] FileIndexScript to webfileindex.ssjs for demo)
-o Requsted-path aliasing, via ctrl/web_alias.ini
+o Requested-path aliasing, via ctrl/web_alias.ini
 o Log requests that resolve outside of the web root as hack attempts
 o Fix HTTP-requests for files >= 2GB in size
 o Perform a JS garbage collection for each new request in a reused session
