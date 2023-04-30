@@ -16,7 +16,8 @@ static HANDLE wch;
 static bool maximized = false;
 static uint16_t winxpos, winypos;
 static const DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-static HCURSOR cursor = IDC_IBEAM;
+static HCURSOR cursor;
+static HANDLE init_sem;
 
 #define WM_USER_INVALIDATE WM_USER
 #define WM_USER_SETSIZE (WM_USER + 1)
@@ -392,6 +393,7 @@ gdi_handle_activate(HWND hwnd, WPARAM wParam)
 	static LPCTSTR lc = IDC_IBEAM;
 	uint16_t lw = wParam & 0xffff;
 
+	// TODO: We may need to read the state of CTRL and SHIFT keys for extended key input...
 	if (lw != 0)
 		SetCursor(cursor);
 	return 0;
@@ -626,8 +628,8 @@ gdi_thread(void *arg)
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc   = gdi_WndProc;
 	wc.hInstance     = WinMainHInst;
-	//wc.hIcon         = ICON;        // TODO: Icon from ciolib.rc
-	wc.hCursor       = LoadCursor(NULL, cursor);
+	wc.hIcon         = LoadIcon(NULL, MAKEINTRESOURCE(1));
+	wc.hCursor       = LoadCursor(NULL, IDC_IBEAM);
 	wc.hbrBackground = NULL;
 	wc.lpszMenuName  = NULL;
 	wc.lpszClassName = L"SyncConsole";
@@ -642,6 +644,7 @@ gdi_thread(void *arg)
 	pthread_mutex_unlock(&vstatlock);
 	AdjustWindowRect(&r, style, FALSE);
 	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", style, CW_USEDEFAULT, CW_USEDEFAULT, r.right - r.left, r.bottom - r.top, NULL, NULL, wc.hInstance, NULL);
+	ReleaseSemaphore(init_sem, 1, NULL);
 
 	while (GetMessage(&msg, NULL, 0, 0)) {
 		if (!magic_message(msg)) {
@@ -731,7 +734,6 @@ gdi_textmode(int mode)
 		vstat.winwidth = vstat.scrnwidth;
 	if (vstat.winheight < vstat.scrnheight)
 		vstat.winheight = vstat.scrnheight;
-	// TODO? This is called before there's a window...
 	set_ciolib_scaling();
 	gdi_setwinsize(vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
@@ -755,7 +757,58 @@ gdi_settitle(const char *newTitle)
 void
 gdi_seticon(const void *icon, unsigned long size)
 {
-	// TODO
+	HICON icn = NULL;
+	BITMAPINFOHEADER *bmi;
+	uint8_t *mi;
+	size_t mlen;
+	size_t blen;
+	size_t isz;
+	size_t x,y;
+	uint32_t *bdata;
+	const uint32_t *sdata = icon;
+	uint8_t *mdata;
+	uint32_t tmp;
+	uint8_t r, g, b, a;
+	uint32_t *brow;
+	const uint32_t *srow;
+	uint8_t *mrow;
+
+	blen = size * size * sizeof(uint32_t);
+	mlen = size * (size + 7) / 8;
+	isz = sizeof(BITMAPINFOHEADER) + blen + mlen;
+	mi = (uint8_t *)calloc(1, isz);
+	if (mi == NULL)
+		return;
+	bmi = (BITMAPINFOHEADER *)mi;
+	bdata = (uint32_t *)&mi[sizeof(BITMAPINFOHEADER)];
+	mdata = ((uint8_t *)bdata) + blen;
+	bmi->biSize = sizeof(BITMAPINFOHEADER);
+	bmi->biWidth = size;
+	bmi->biHeight = size * 2;
+	bmi->biPlanes = 1;
+	bmi->biBitCount = 32;
+	bmi->biCompression = BI_RGB;
+	bmi->biSizeImage = blen;
+	for (y = 0; y < size; y++) {
+		srow = &sdata[y * size];
+		brow = &bdata[(size - y - 1) * size];
+		mrow = &mdata[(size - y - 1) * (size + 7) / 8];
+		for (x = 0; x < size; x++) {
+			tmp = srow[x];
+			a = (tmp & 0xff000000) >> 24;
+			r = (tmp & 0x00ff0000) >> 16;
+			g = (tmp & 0x0000ff00) >> 8;
+			b = tmp & 0x000000ff;
+			brow[x] = (a << 24) | (b << 16) | (g << 8) | (r);
+			if (a > 127)
+				mrow[x / 8] |= 1 << (x % 8);
+		}
+	}
+
+	icn = CreateIconFromResource(mi, isz, TRUE, 0x00030000);
+	free(mi);
+	SendMessage(win, WM_SETICON, ICON_SMALL, (LPARAM)icn);
+	SendMessage(win, WM_SETICON, ICON_BIG, (LPARAM)icn);
 }
 
 void
@@ -836,6 +889,8 @@ gdi_init(int mode)
 
 	_beginthread(gdi_mouse_thread, 0, NULL);
 	_beginthread(gdi_thread, 0, NULL);
+	WaitForSingleObject(init_sem, INFINITE);
+	CloseHandle(init_sem);
 
 	cio_api.mode=CIOLIB_MODE_GDI;
 	FreeConsole();
@@ -849,6 +904,7 @@ gdi_initciolib(int mode)
 	pthread_mutex_init(&gdi_headlock, NULL);
 	pthread_mutex_init(&winpos_lock, NULL);
 	pthread_mutex_init(&rect_lock, NULL);
+	init_sem = CreateSemaphore(NULL, 0, INT_MAX, NULL);
 
 	return(gdi_init(mode));
 }
