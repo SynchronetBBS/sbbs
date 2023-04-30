@@ -585,7 +585,18 @@ Because that's the way the cookie bounces.
 Because that's the way the ball crumbles.
 Because sometimes that's just the way it is?
 Man you ask a lot of questions.
-(?&YOU&(AM|IS|ARE|WAS|WERE|BE|BEING|BEEN|HAVE|HAS|HAD|DO|DOES|DID|CAN|COULD|
+((ARE YOU^|IS THIS^)&?~)
+I am.
+On Wednesdays and every fifth Monday.
+No, why do you ask?
+Possibly so.
+Could be.
+Affirmative.
+Negatory.
+Nope.
+Yulp.
+Word.
+(?~&YOU&(AM|IS|ARE|WAS|WERE|BE|BEING|BEEN|HAVE|HAS|HAD|DO|DOES|DID|CAN|COULD|
     WILL|WOULD|SHALL|SHOULD|MAY|MIGHT|MUST))
 Perhaps.
 I might.
@@ -806,7 +817,7 @@ Speak like Yoda, I do.
 I am The Guru.
 The Guru. That's it.
 Just: The Guru.
-Not Yoda or Swami or Professor, just The Guru. 
+Not Yoda or Swami or Professor, just The Guru.
 (TELL&ME)
 Tell you what?
 I could, but then I'd have to kill you.
@@ -956,7 +967,7 @@ This is THE `a? Wow it's nice to meet you.
 Hello `a. `_Let me see if I have all your information correct. You were born on\
 `b,`_`_which means you are `_`_`#; `_your real name is `_`_`_`r, and your phone \
 number is  `_`_`p.`_`_`_`_`_`_`_`_`_  Anything you want to know about me?
-(?&(EMAIL|E-MAIL|FILE|POST|DOWNLOAD|UPLOAD|BATCH|GAME|DOOR))
+(?~&(EMAIL|E-MAIL|FILE|POST|DOWNLOAD|UPLOAD|BATCH|GAME|DOOR))
 Hit '?' for a menu from just about any prompt.
 You mean you want to USE the BBS?
 You're asking me? Ba ahab hahaha hAHA HA
