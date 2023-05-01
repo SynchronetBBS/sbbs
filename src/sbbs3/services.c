@@ -1700,8 +1700,10 @@ static void cleanup(int code)
 	}
 	protected_uint32_destroy(threads_pending_start);
 
-	for(unsigned i = 0; i < services; i++)
+	for(unsigned i = 0; i < services; i++) {
 		protected_uint32_destroy(service[i].clients);
+		iniFreeStringList(service[i].interfaces);
+	}
 
 	FREE_AND_NULL(service);
 	services=0;
