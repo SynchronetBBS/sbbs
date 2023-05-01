@@ -41,6 +41,7 @@ endif
 ifdef NEED_BITMAP
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)bitmap_con$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)scale$(OFILE)
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)rgbmap$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)xbr$(OFILE)
 endif
 
@@ -63,3 +64,8 @@ $(MTOBJODIR)$(DIRSEP)ciolib_res${OFILE}: ciolib.rc syncicon64.ico
 	@echo Creating $< ...
 	$(QUIET)${WINDRES} $(WINDRESFLAGS) -O coff -i ciolib.rc -o $@
 endif
+
+genamp: $(EXEODIR) $(MTOBJODIR) $(EXEODIR)$(DIRSEP)genmap$(EXEFILE)
+
+$(EXEODIR)$(DIRSEP)genmap$(EXEFILE): $(MTOBJODIR)$(DIRSEP)genmap$(OFILE) $(MTOBJODIR)$(DIRSEP)scale$(OFILE) $(MTOBJODIR)$(DIRSEP)xbr$(OFILE)
+	$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(MTOBJODIR)$(DIRSEP)genmap$(OFILE) $(MTOBJODIR)$(DIRSEP)scale$(OFILE) $(MTOBJODIR)$(DIRSEP)xbr$(OFILE) -o $@ -lm

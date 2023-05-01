@@ -7,9 +7,11 @@
 #include "scale.h"
 #include "xbr.h"
 
+#if 0
 uint32_t r2y[1<<24];
 uint32_t y2r[1<<24];
-static int r2y_inited;
+#endif
+static int r2y_inited = true;
 
 static void pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height);
 static void pointy_scale5(uint32_t* src, uint32_t* dest, int width, int height);
@@ -207,7 +209,7 @@ init_r2y(void)
 			}
 		}
 	}
-	r2y_inited = 1;
+	r2y_inited = true;
 }
 
 struct graphics_buffer *

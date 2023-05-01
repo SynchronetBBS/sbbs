@@ -1697,7 +1697,6 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 	pthread_mutex_init(&screenlock, NULL);
 	pthread_mutex_init(&free_rect_lock, NULL);
 	pthread_mutex_lock(&vstatlock);
-	init_r2y();
 	vstat.vmem=NULL;
 	vstat.flags = VIDMODES_FLAG_PALETTE_VMEM;
 	pthread_mutex_lock(&screenlock);
