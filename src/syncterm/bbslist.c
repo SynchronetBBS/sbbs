@@ -2430,12 +2430,21 @@ done:
 	return ret;
 }
 
+static void
+kbwait(void)
+{
+	for (int tc = 0; tc < 50; tc++) {
+		if (kbhit())
+			break;
+		SLEEP(1);
+	}
+}
+
 /*
  * Displays the BBS list and allows edits to user BBS list
  * Mode is one of BBSLIST_SELECT or BBSLIST_EDIT
  */
 struct bbslist *
-
 show_bbslist(char *current, int connected)
 {
 #define BBSLIST_SIZE ((MAX_OPTS + 1) * sizeof(struct bbslist *))
@@ -2561,6 +2570,7 @@ show_bbslist(char *current, int connected)
 				uifc.list_height = listcount + 5;
 				if (uifc.list_height > (uifc.scrn_len - 4))
 					uifc.list_height = uifc.scrn_len - 4;
+				kbwait();
 				val = uifc.list((listcount < MAX_OPTS ? WIN_XTR : 0)
 				        | WIN_ACT | WIN_INSACT | WIN_DELACT | WIN_UNGETMOUSE | WIN_SAV | WIN_ESC
 				        | WIN_INS | WIN_DEL | WIN_EDIT | WIN_EXTKEYS | WIN_DYN | WIN_FIXEDHEIGHT
@@ -2725,6 +2735,8 @@ show_bbslist(char *current, int connected)
 							free_list(&list[0], listcount);
 							free(list);
 							return NULL;
+						case -2:
+							kbwait();
 					}
 				}
 				else if (val & MSK_ON) {
@@ -2994,6 +3006,7 @@ show_bbslist(char *current, int connected)
 				if (oldopt != -2)
 					settitle(syncterm_version);
 				oldopt = -2;
+				kbwait();
 				val = uifc.list(WIN_T2B | WIN_RHT | WIN_EXTKEYS | WIN_DYN | WIN_UNGETMOUSE | WIN_ACT | WIN_ESC
 				        ,
 				        0,
