@@ -375,7 +375,7 @@ void display_filename(BOOL force)
 
 int main(int argc, char **argv)
 {
-	char	**mopt,*p;
+	char*	p;
     char    errormsg[MAX_PATH*2];
 	int 	i,j,main_dflt=0,chat_dflt=0;
 	char	cfg_fname[MAX_PATH + 1];
@@ -647,12 +647,6 @@ int main(int argc, char **argv)
 		if((opt[i]=(char *)malloc(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	if((mopt=(char **)malloc(sizeof(char *)*14))==NULL)
-		allocfail(sizeof(char *)*14);
-	for(i=0;i<14;i++)
-		if((mopt[i]=(char *)malloc(64))==NULL)
-			allocfail(64);
-
 	uifc.timedisplay = display_filename;
 	SAFEPRINTF2(title,"Synchronet for %s v%s",PLATFORM_DESC,VERSION);
 	if(uifc.scrn(title)) {
@@ -680,19 +674,21 @@ int main(int argc, char **argv)
 			bail(0);
 	}
 	i=0;
-	strcpy(mopt[i++],"Nodes");
-	strcpy(mopt[i++],"System");
-	strcpy(mopt[i++],"Servers");
-	strcpy(mopt[i++],"Networks");
-	strcpy(mopt[i++],"File Areas");
-	strcpy(mopt[i++],"File Options");
-	strcpy(mopt[i++],"Chat Features");
-	strcpy(mopt[i++],"Message Areas");
-	strcpy(mopt[i++],"Message Options");
-	strcpy(mopt[i++],"Command Shells");
-	strcpy(mopt[i++],"External Programs");
-	strcpy(mopt[i++],"Text File Sections");
-	mopt[i][0]=0;
+	char* mopt[] = {
+		"Nodes",
+		"System",
+		"Servers",
+		"Networks",
+		"File Areas",
+		"File Options",
+		"Chat Features",
+		"Message Areas",
+		"Message Options",
+		"Command Shells",
+		"External Programs",
+		"Text File Sections",
+		NULL
+	};
 	i = cryptInit();
 	(void)i;
 	while(1) {
@@ -2514,7 +2510,12 @@ void bail(int code)
     uifc.bail();
 
 	cryptEnd();
-    exit(code);
+
+	for(int i=0; i<(MAX_OPTS+1); ++i)
+		free(opt[i]);
+	free(opt);
+
+	exit(code);
 }
 
 /****************************************************************************/
