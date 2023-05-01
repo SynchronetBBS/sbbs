@@ -818,18 +818,20 @@ interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwi
 {
 	int x, y;
 	const double mult = (double)width / newwidth;
+	uint32_t *s = dst;
 
-	for (y = 0; y < height; y++) {
-		for (x = 0; x < newwidth; x++) {
-			// First, calculate which two pixels this is between.
-			const double xpos = mult * x;
-			const int xposi = xpos;
-			if (x == xpos) {
+	for (x = 0; x < newwidth; x++) {
+		// First, calculate which two pixels this is between.
+		const double xpos = mult * x;
+		const int xposi = xpos;
+		const uint16_t weight = xpos * 65536;
+		dst = &s[x];
+		for (y = 0; y < height; y++) {
+			if (weight == 0) {
 				// Exact match!
 				*dst = src[width * y + x];
 			}
 			else {
-				const uint16_t weight = xpos * 65536;
 				// Now pick the two pixels
 				const uint32_t pix1 = src[y * width + xposi];
 				uint32_t pix2;
@@ -843,7 +845,7 @@ interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwi
 					*dst = blend(pix1, pix2, weight);
 				}
 			}
-			dst++;
+			dst += newwidth;
 		}
 	}
 }
@@ -886,6 +888,7 @@ interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newh
 	memcpy(nline, src + width, width * sizeof(*tline));
 	for (y = 0; y < newheight; y++) {
 		const int yposi = ypos;
+		const uint16_t weight = ypos * 65536;
 		if (yposi != last_yposi) {
 			ywn += width;
 			last_yposi = yposi;
@@ -894,12 +897,11 @@ interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newh
 			nline = stmp;
 			memcpy(nline, &src[ywn], nsz);
 		}
-		if (y == ypos || yposi >= height - 1) {
+		if (weight == 0 || yposi >= height - 1) {
 			memcpy(dst, tline, tsz);
 			dst += width;
 		}
 		else {
-			const uint16_t weight = ypos * 65536;
 			for (x = 0; x < width; x++) {
 				// Now pick the two pixels
 				const uint32_t pix1 = tline[x];
