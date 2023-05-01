@@ -784,25 +784,25 @@ pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height)
 }
 
 static uint32_t
-blend(const uint32_t c1, const uint32_t c2, int weight)
+blend(const uint32_t c1, const uint32_t c2, uint16_t weight)
 {
 	uint8_t yuv1[4];
 	uint8_t yuv2[4];
 	uint8_t yuv3[4];
-	const double iw = 256 - weight;
+	const uint16_t iw = 65535 - weight;
 
 	*(uint32_t *)yuv1 = r2y[c1];
 	*(uint32_t *)yuv2 = r2y[c2];
 #ifdef __BIG_ENDIAN__
 	yuv3[0] = 0;
-	yuv3[1] = (yuv1[1] * iw + yuv2[1] * weight) / 256;
-	yuv3[2] = (yuv1[2] * iw + yuv2[2] * weight) / 256;
-	yuv3[3] = (yuv1[3] * iw + yuv2[3] * weight) / 256;
+	yuv3[1] = (yuv1[1] * iw + yuv2[1] * weight) / 65535;
+	yuv3[2] = (yuv1[2] * iw + yuv2[2] * weight) / 65535;
+	yuv3[3] = (yuv1[3] * iw + yuv2[3] * weight) / 65535;
 #else
 	yuv3[3] = 0;
-	yuv3[2] = (yuv1[2] * iw + yuv2[2] * weight) / 256;
-	yuv3[1] = (yuv1[1] * iw + yuv2[1] * weight) / 256;
-	yuv3[0] = (yuv1[0] * iw + yuv2[0] * weight) / 256;
+	yuv3[2] = (yuv1[2] * iw + yuv2[2] * weight) / 65535;
+	yuv3[1] = (yuv1[1] * iw + yuv2[1] * weight) / 65535;
+	yuv3[0] = (yuv1[0] * iw + yuv2[0] * weight) / 65535;
 #endif
 
 	return y2r[*(uint32_t*)yuv3];
@@ -829,7 +829,7 @@ interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwi
 				*dst = src[width * y + x];
 			}
 			else {
-				const double weight = xpos - xposi;
+				const uint16_t weight = xpos * 65536;
 				// Now pick the two pixels
 				const uint32_t pix1 = src[y * width + xposi];
 				uint32_t pix2;
@@ -899,7 +899,7 @@ interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newh
 			dst += width;
 		}
 		else {
-			const uint8_t weight = ypos * 256;
+			const uint16_t weight = ypos * 65536;
 			for (x = 0; x < width; x++) {
 				// Now pick the two pixels
 				const uint32_t pix1 = tline[x];
