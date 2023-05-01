@@ -131,6 +131,10 @@
  * 2023-04-25 Eric Oulashin     Version 1.73a
  *                              Refactored the functions for getting message header lines. Also, now
  *                              all message header information is retrieved.
+ * 2023-04-29 Eric Oulashin     Version 1.74
+ *                              Settings for users being able to read deleted messages now applies to
+ *                              personal email. Also, allows reading messages that are marked for deletion
+ *                              in addition to just seeing them in the message list.
  */
 
 "use strict";
@@ -237,8 +241,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.73a";
-var READER_DATE = "2023-04-25";
+var READER_VERSION = "1.74";
+var READER_DATE = "2023-04-29";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -2102,7 +2106,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 
 	// Set the sub-board code if applicable
 	var previousSubBoardCode = this.subBoardCode;
-	if (typeof(pSubBoardCode) == "string")
+	if (typeof(pSubBoardCode) === "string")
 	{
 		if (subBoardCodeIsValid(pSubBoardCode))
 			this.setSubBoardCode(pSubBoardCode);
@@ -2269,7 +2273,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 // Return value: Boolean - Whether or not there are messages to read in the current
 //               sub-board
 function DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs(pCloseMsgbaseAndSetNullIfNoMsgs,
-                                                 pOutputMessages, pPauseOnNoMsgError)
+                                                                 pOutputMessages, pPauseOnNoMsgError)
 {
 	var thereAreMessagesToRead = true;
 
@@ -2830,9 +2834,10 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 	}
 
 	// If the current message index is for a message that has been
-	// deleted, then find the next non-deleted message.
+	// deleted and the user is not able to read deleted messages, then find the next non-deleted message.
 	var testMsgHdr = this.GetMsgHdrByIdx(msgIndex);
-	if ((testMsgHdr == null) || ((testMsgHdr.attr & MSG_DELETE) == MSG_DELETE))
+	// TODO: Should this really allow reading messages that are marked for deletion?
+	if ((testMsgHdr == null) || (((testMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs()))
 	{
 		// First try going forward
 		var nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(msgIndex, true);
@@ -3018,9 +3023,10 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 					else
 						msgIndex = chgSubBoardRetObj.lastReadMsgIdx;
 					// If the current message index is for a message that has been
-					// deleted, then find the next non-deleted message.
+					// deleted and the user is not able to read deleted messages, then find the next non-deleted message.
 					testMsgHdr = this.GetMsgHdrByIdx(msgIndex);
-					if ((testMsgHdr == null) || ((testMsgHdr.attr & MSG_DELETE) == MSG_DELETE))
+					// TODO: Should this really allow reading deleted messages?
+					if ((testMsgHdr == null) || (((testMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs()))
 					{
 						// First try going forward
 						var nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(msgIndex, true);
@@ -13526,7 +13532,7 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 					for (var messageIdx = this.GetMsgIdx(pMsgHdr.number)+1; (messageIdx < numOfMessages) && (nextMsgOffset == -1); ++messageIdx)
 					{
 						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-						if (((nextMsgHdr.attr & MSG_DELETE) == 0) && (typeof(nextMsgHdr.thread_id) == "number") && (nextMsgHdr.thread_id == pMsgHdr.thread_id))
+						if ((((nextMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (typeof(nextMsgHdr.thread_id) == "number") && (nextMsgHdr.thread_id == pMsgHdr.thread_id))
 						{
 							//nextMsgOffset = nextMsgHdr.offset;
 							nextMsgOffset = this.GetMsgIdx(nextMsgHdr.number);
@@ -13573,21 +13579,21 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 					// Remove any leading & trailing whitespace from the subject
 					subjUppercase = trimSpaces(subjUppercase, true, true, true);
 					msgHdrMatch = function(pMsgHdr) {
-						return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.subject.toUpperCase().indexOf(subjUppercase, 0) > -1));
+						return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (pMsgHdr.subject.toUpperCase().indexOf(subjUppercase, 0) > -1));
 					};
 				}
 				else if (pThreadType == THREAD_BY_AUTHOR)
 				{
 					fromNameUppercase = pMsgHdr.from.toUpperCase();
 					msgHdrMatch = function(pMsgHdr) {
-						return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.from.toUpperCase() == fromNameUppercase));
+						return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (pMsgHdr.from.toUpperCase() == fromNameUppercase));
 					};
 				}
 				else if (pThreadType == THREAD_BY_TO_USER)
 				{
 					toNameUppercase = pMsgHdr.to.toUpperCase();
 					msgHdrMatch = function(pMsgHdr) {
-						return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.to.toUpperCase() == toNameUppercase));
+						return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (pMsgHdr.to.toUpperCase() == toNameUppercase));
 					};
 				}
 
@@ -13716,7 +13722,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 					for (var messageIdx = this.GetMsgIdx(pMsgHdr.number)-1; (messageIdx >= 0) && (nextMsgOffset == -1); --messageIdx)
 					{
 						prevMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-						if (((prevMsgHdr.attr & MSG_DELETE) == 0) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
+						if ((((prevMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
 						{
 							//nextMsgOffset = prevMsgHdr.offset;
 							nextMsgOffset = this.GetMsgIdx(prevMsgHdr.number);
@@ -13817,21 +13823,21 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 					// Remove any leading & trailing whitespace from the subject
 					subjUppercase = trimSpaces(subjUppercase, true, true, true);
 					msgHdrMatch = function(pMsgHdr) {
-						return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.subject.toUpperCase().indexOf(subjUppercase, 0) > -1));
+						return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (pMsgHdr.subject.toUpperCase().indexOf(subjUppercase, 0) > -1));
 					};
 				}
 				else if (pThreadType == THREAD_BY_AUTHOR)
 				{
 					fromNameUppercase = pMsgHdr.from.toUpperCase();
 					msgHdrMatch = function(pMsgHdr) {
-						return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.from.toUpperCase() == fromNameUppercase));
+						return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (pMsgHdr.from.toUpperCase() == fromNameUppercase));
 					};
 				}
 				else if (pThreadType == THREAD_BY_TO_USER)
 				{
 					toNameUppercase = pMsgHdr.to.toUpperCase();
 					msgHdrMatch = function(pMsgHdr) {
-						return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.to.toUpperCase() == toNameUppercase));
+						return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (pMsgHdr.to.toUpperCase() == toNameUppercase));
 					};
 				}
 
@@ -16127,6 +16133,17 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 		}
 	}
 
+
+	// If this message has been marked for deletion, prepend a couple lines saying so
+	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+	{
+		var deletedNotice = "\x01n\x01h\x01yThis message has been marked for deletion.";
+		if (user.is_sysop)
+			deletedNotice += " To un-mark, return to the message list and press U to un-mark this message.";
+		deletedNotice += "\x01n\r\n\r\n";
+		retObj.msgBody = deletedNotice + retObj.msgBody;
+	}
+
 	return retObj;
 }
 
@@ -17032,7 +17049,7 @@ function numMsgsInSubBoard(pSubBoardCode, pIncludeDeleted)
          for (var msgIdx = 0; msgIdx < msgbase.total_msgs; ++msgIdx)
          {
             var msgHdr = msgbase.get_msg_header(true, msgIdx, false);
-            if ((msgHdr != null) && ((msgHdr.attr & MSG_DELETE) == 0))
+            if ((msgHdr != null) && (((msgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()))
                ++numMessages;
          }
       }
@@ -17646,7 +17663,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 				// See if the message is not marked as deleted and the 'To' name
 				// matches the user's handle, alias, and/or username.
-				return (((pMsgHdr.attr & MSG_DELETE) == 0) && userNameHandleAliasMatch(pMsgHdr.to));
+				return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && userNameHandleAliasMatch(pMsgHdr.to));
 			}
 			break;
 		case SEARCH_TO_USER_NEW_SCAN:
@@ -17694,7 +17711,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 				// Note: This assumes pSubBoardCode is not "mail" (personal mail).
 				// See if the message 'To' name matches the user's handle, alias,
 				// and/or username and is not marked as deleted and is unread.
-				return (((pMsgHdr.attr & MSG_DELETE) == 0) && ((pMsgHdr.attr & MSG_READ) == 0) && userNameHandleAliasMatch(pMsgHdr.to));
+				return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && ((pMsgHdr.attr & MSG_READ) == 0) && userNameHandleAliasMatch(pMsgHdr.to));
 			}
 			break;
 		case SEARCH_MSG_NEWSCAN:
@@ -17792,8 +17809,8 @@ function msgIsToUserByNum(pMsgHdr, pUserNum)
 {
 	if (typeof(pMsgHdr) != "object")
 		return false;
-	// Return false if  the message is marked as deleted
-	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+	// Return false if the message is marked as deleted and the user can't read deleted messages
+	if (((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
 		return false;
 
 	var userNum = user.number;
@@ -17825,8 +17842,8 @@ function msgIsFromUser(pMsgHdr, pUserNum)
 {
 	if (typeof(pMsgHdr) != "object")
 		return false;
-	// Return false if  the message is marked as deleted
-	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+	// Return false if  the message is marked as deleted and the user can't read deleted messages
+	if (((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
 		return false;
 
 	var pUserNumIsValid = (typeof(pUserNum) === "number" && pUserNum > 0 && pUserNum <= system.lastuser);
@@ -18945,21 +18962,8 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 	}
 	// If the message is deleted, determine whether it should be viewable, based
 	// on the system settings.
-	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
-	{
-		// If the user is a sysop, check whether sysops can view deleted messages.
-		// Otherwise, check whether users can view deleted messages.
-		if (user.is_sysop)
-		{
-			if ((system.settings & SYS_SYSVDELM) == 0)
-				return false;
-		}
-		else
-		{
-			if ((system.settings & SYS_USRVDELM) == 0)
-				return false;
-		}
-	}
+	if (((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
+		return false;
 	// The message voting and poll variables were added in sbbsdefs.js for
 	// Synchronet 3.17.  Make sure they're defined before referencing them.
 	if (typeof(MSG_UPVOTE) != "undefined")

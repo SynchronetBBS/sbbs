@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.74     2023-04-29   Settings for users being able to read deleted messages now
+                      applies to personal email. Also, allows reading messages
+                      that are marked for deletion in addition to just seeing
+                      them in the message list
 1.73a    2023-04-25   For viewing message headers, now all message header
                       information is displayed & sorted alphabetically by field
                       name (same with saving a message to a file).
