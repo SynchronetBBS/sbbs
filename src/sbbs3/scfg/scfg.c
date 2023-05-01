@@ -2513,6 +2513,7 @@ void bail(int code)
 	uifc.pop("Exiting");
     uifc.bail();
 
+	cryptEnd();
     exit(code);
 }
 
