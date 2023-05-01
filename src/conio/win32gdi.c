@@ -20,6 +20,9 @@ static uint16_t winxpos, winypos;
 static const DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
 static HCURSOR cursor;
 static HANDLE init_sem;
+static int xoff, yoff;
+static int dwidth = 640;
+static int dheight = 480;
 
 #define WM_USER_INVALIDATE WM_USER
 #define WM_USER_SETSIZE (WM_USER + 1)
@@ -52,6 +55,7 @@ static struct rectlist *next = NULL;
 static pthread_mutex_t gdi_headlock;
 static pthread_mutex_t winpos_lock;
 static pthread_mutex_t rect_lock;
+static pthread_mutex_t off_lock;
 static bool ciolib_scaling = false;
 
 // Internal implementation
@@ -261,32 +265,53 @@ gdi_handle_wm_paint(HWND hwnd)
 	if (ciolib_scaling) {
 		calc_scaling_factors(&xscale, &yscale, w, h, aw, ah, sw, sh);
 		gb = do_scale(list, xscale, yscale, aw, ah);
-		if (diw != gb->w || dih != gb->h) {
-			DeleteObject(di);
-			di = NULL;
+		if (di == NULL || diw != gb->w || dih != gb->h) {
+			lww = -1;
+			if (di != NULL) {
+				DeleteObject(di);
+				di = NULL;
+			}
+			diw = gb->w;
+			b5hdr.bV5Width = gb->w;
+			dih = gb->h;
+			b5hdr.bV5Height = -gb->h;
+			b5hdr.bV5SizeImage = gb->w * gb->h * 4;
+			pthread_mutex_lock(&off_lock);
+			dwidth = diw;
+			dheight = dih;
+			pthread_mutex_unlock(&off_lock);
 		}
-		diw = gb->w;
-		b5hdr.bV5Width = gb->w;
-		dih = gb->h;
-		b5hdr.bV5Height = -gb->h;
-		b5hdr.bV5SizeImage = gb->w * gb->h * 4;
+		pthread_mutex_lock(&off_lock);
+		xoff = (w - diw) / 2;
+		yoff = (h - dih) / 2;
+		pthread_mutex_unlock(&off_lock);
 		data = gb->data;
 	}
 	else {
-		if (diw != list->rect.width || dih != list->rect.height) {
-			DeleteObject(di);
-			di = NULL;
+		if (di != NULL || diw != list->rect.width || dih != list->rect.height) {
+			if (di != NULL) {
+				DeleteObject(di);
+				di = NULL;
+			}
+			diw = list->rect.width;
+			b5hdr.bV5Width = list->rect.width;
+			dih = list->rect.height;
+			b5hdr.bV5Height = -list->rect.height;
+			b5hdr.bV5SizeImage = list->rect.width * list->rect.height * 4;
 		}
-		diw = list->rect.width;
-		b5hdr.bV5Width = list->rect.width;
-		dih = list->rect.height;
-		b5hdr.bV5Height = -list->rect.height;
-		b5hdr.bV5SizeImage = list->rect.width * list->rect.height * 4;
 		data = list->data;
 		if (lww != w || lwh != h) {
 			sww = w;
 			swh = h;
 			aspect_fix_inside(&sww, &swh, aw, ah);
+			pthread_mutex_lock(&off_lock);
+			xoff = (w - sww) / 2;
+			yoff = (h - swh) / 2;
+			dwidth = sww;
+			dheight = swh;
+			pthread_mutex_unlock(&off_lock);
+			lww = w;
+			lwh = h;
 		}
 	}
 	winDC = BeginPaint(hwnd, &ps);
@@ -300,12 +325,14 @@ gdi_handle_wm_paint(HWND hwnd)
 	// Clear to black first
 	StretchBlt(winDC, 0, 0, w, h, memDC, 0, 0, 1, 1, BLACKNESS);
 	di = SelectObject(memDC, di);
+	pthread_mutex_lock(&off_lock);
 	if (ciolib_scaling) {
-		BitBlt(winDC, (w - diw) / 2, (h - dih) / 2, diw, dih, memDC, 0, 0, SRCCOPY);
+		BitBlt(winDC, xoff, yoff, dwidth, dheight, memDC, 0, 0, SRCCOPY);
 	}
 	else {
-		StretchBlt(winDC, (w - sww) / 2, (h - swh) / 2, sww, swh, memDC, 0, 0, diw, dih, SRCCOPY);
+		StretchBlt(winDC, xoff, yoff, dwidth, dheight, memDC, 0, 0, diw, dih, SRCCOPY);
 	}
+	pthread_mutex_unlock(&off_lock);
 	EndPaint(hwnd, &ps);
 	di = SelectObject(memDC, di);
 	if (ciolib_scaling) {
@@ -352,33 +379,46 @@ struct gdi_mouse_pos {
 	int py;
 };
 
-static void
+static bool
 win_to_pos(LPARAM lParam, struct gdi_mouse_pos *p)
 {
 	uint16_t cx, cy;
+	bool ret = true;
+	int cols, rows, scrnheight, scrnwidth;
 
 	cx = lParam & 0xffff;
 	cy = (lParam >> 16) & 0xffff;
 
-	// TODO: Fix up to work with windows that have black bars...
-
 	pthread_mutex_lock(&vstatlock);
-	p->tx = cx / (((float)vstat.winwidth) / vstat.cols) + 1;
-	if (p->tx > vstat.cols)
-		p->tx = vstat.cols;
-	if (p->tx < 1)
-		p->tx = 1;
-
-	p->px = cx * (vstat.scrnwidth) / vstat.winwidth;
-
-	p->ty = cy / (((float)vstat.winheight) / vstat.rows) + 1;
-	if (p->ty > vstat.rows)
-		p->ty = vstat.rows;
-	if (p->ty < 1)
-		p->ty = 1;
-
-	p->py = cy * (vstat.scrnheight) / vstat.winheight;
+	cols = vstat.cols;
+	rows = vstat.rows;
+	scrnheight = vstat.scrnheight;
+	scrnwidth = vstat.scrnwidth;
 	pthread_mutex_unlock(&vstatlock);
+
+	cx = lParam & 0xffff;
+	pthread_mutex_lock(&off_lock);
+	if (cx < xoff || cy < yoff) {
+		pthread_mutex_unlock(&off_lock);
+		return false;
+	}
+	cx -= xoff;
+	cy -= yoff;
+
+	p->tx = cx / (((float)dwidth) / cols) + 1;
+	if (p->tx > cols)
+		ret = false;
+
+	p->px = cx * (scrnwidth) / dwidth;
+
+	p->ty = cy / (((float)dheight) / rows) + 1;
+	if (p->ty > rows)
+		ret = false;
+
+	p->py = cy * (scrnheight) / dheight;
+	pthread_mutex_unlock(&off_lock);
+	cx = lParam & 0xffff;
+	return ret;
 }
 
 static LRESULT
@@ -386,8 +426,8 @@ gdi_handle_mouse_button(LPARAM lParam, int event)
 {
 	struct gdi_mouse_pos p;
 
-	win_to_pos(lParam, &p);
-	ciomouse_gotevent(event, p.tx, p.ty, p.px, p.py);
+	if (win_to_pos(lParam, &p))
+		ciomouse_gotevent(event, p.tx, p.ty, p.px, p.py);
 	return 0;
 }
 
@@ -982,6 +1022,7 @@ gdi_initciolib(int mode)
 	pthread_mutex_init(&gdi_headlock, NULL);
 	pthread_mutex_init(&winpos_lock, NULL);
 	pthread_mutex_init(&rect_lock, NULL);
+	pthread_mutex_init(&off_lock, NULL);
 	init_sem = CreateSemaphore(NULL, 0, INT_MAX, NULL);
 
 	return(gdi_init(mode));
