@@ -398,6 +398,8 @@ void sbbs_read_ini(
 	}
 
 	global_interfaces = strListCombine(global->interfaces, NULL, 16384, ",");
+	if(global == &global_buf)
+		iniFreeStringList(global->interfaces);
 
 	/***********************************************************************/
 	section = "BBS";
