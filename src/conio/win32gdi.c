@@ -323,7 +323,6 @@ gdi_handle_wm_paint(HWND hwnd)
 	else
 		SetDIBits(winDC, di, 0, dih, data, (BITMAPINFO *)&b5hdr, DIB_RGB_COLORS);
 	// Clear to black first
-	StretchBlt(winDC, 0, 0, w, h, memDC, 0, 0, 1, 1, BLACKNESS);
 	di = SelectObject(memDC, di);
 	pthread_mutex_lock(&off_lock);
 	if (ciolib_scaling) {
@@ -331,6 +330,14 @@ gdi_handle_wm_paint(HWND hwnd)
 	}
 	else {
 		StretchBlt(winDC, xoff, yoff, dwidth, dheight, memDC, 0, 0, diw, dih, SRCCOPY);
+	}
+	if (xoff > 0) {
+		BitBlt(winDC, 0, 0, xoff - 1, dheight, memDC, 0, 0, BLACKNESS);
+		BitBlt(winDC, xoff + dwidth, 0, w, h, memDC, 0, 0, BLACKNESS);
+	}
+	else if (yoff > 0) {
+		BitBlt(winDC, 0, 0, w, yoff - 1, memDC, 0, 0, BLACKNESS);
+		BitBlt(winDC, 0, yoff + dheight, w, h, memDC, 0, 0, BLACKNESS);
 	}
 	pthread_mutex_unlock(&off_lock);
 	EndPaint(hwnd, &ps);
