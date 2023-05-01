@@ -538,6 +538,7 @@ CIOLIBEXPORT int initciolib(int mode)
 /*
  * Returns non-zero if a key is hit
  */
+// TODO: A version that takes a timeout and blocks (ie: kbwait()?)
 CIOLIBEXPORT int ciolib_kbhit(void)
 {
 	CIOLIB_INIT();
