@@ -138,7 +138,7 @@ void usage()
 		"    -h[hostname]   use local or specified host name (instead of SCFG value)\n"
 #endif
 		"    -u<mask>       set file creation permissions mask (in octal)\n"
-		"    -L<level>      set log level (default=%u)\n"
+		"    -L<level>      set output log level by number or name (default=%u)\n"
 		"    -E<level>      set error log level threshold (default=%u)\n"
 		"    -i<path_list>  set load() comma-sep search path list (default=\"%s\")\n"
 		"    -f             use non-buffered stream for console messages\n"
