@@ -37,14 +37,8 @@ aspect_fix_wc(int *x, int *y, bool wc, int aspect_width, int aspect_height)
 
 	if (aspect_width == 0 || aspect_height == 0)
 		return;
-	if (r2yptr != NULL && y2rptr != NULL) {
-		bestx = lround((double)*y * aspect_width / aspect_height);
-		besty = lround((double)*x * aspect_height / aspect_width);
-	}
-	else {
-		bestx = lround((double)*y * *x / *y);
-		besty = lround((double)*x * *y / *x);
-	}
+	bestx = lround((double)*y * aspect_width / aspect_height);
+	besty = lround((double)*x * aspect_height / aspect_width);
 
 	if (wc)
 		*y = besty;
@@ -63,14 +57,8 @@ aspect_fix_inside(int *x, int *y, int aspect_width, int aspect_height)
 
 	if (aspect_width == 0 || aspect_height == 0)
 		return;
-	if (r2yptr != NULL && y2rptr != NULL) {
-		bestx = lround((double)*y * aspect_width / aspect_height);
-		besty = lround((double)*x * aspect_height / aspect_width);
-	}
-	else {
-		bestx = lround((double)*y * *x / *y);
-		besty = lround((double)*x * *y / *x);
-	}
+	bestx = lround((double)*y * aspect_width / aspect_height);
+	besty = lround((double)*x * aspect_height / aspect_width);
 
 	if (besty <= *y)
 		*y = besty;
@@ -92,14 +80,8 @@ aspect_fix(int *x, int *y, int aspect_width, int aspect_height)
 	// Nothing we can do here...
 	if (aspect_width == 0 || aspect_height == 0)
 		return;
-	if (r2yptr != NULL && y2rptr != NULL) {
-		bestx = lround((double)*y * aspect_width / aspect_height);
-		besty = lround((double)*x * aspect_height / aspect_width);
-	}
-	else {
-		bestx = lround((double)*y * *x / *y);
-		besty = lround((double)*x * *y / *x);
-	}
+	bestx = lround((double)*y * aspect_width / aspect_height);
+	besty = lround((double)*x * aspect_height / aspect_width);
 
 	if (bestx < *x && besty > 0)
 		*y = besty;
@@ -118,13 +100,8 @@ aspect_fix_low(int *x, int *y, int aspect_width, int aspect_height)
 	// Nothing we can do here...
 	if (aspect_width == 0 || aspect_height == 0)
 		return;
-	if (r2yptr != NULL && y2rptr != NULL) {
-		bestx = lround((double)*y * aspect_width / aspect_height);
-		besty = lround((double)*x * aspect_height / aspect_width);
-	} else {
-		bestx = lround((double)*y * *x / *y);
-		besty = lround((double)*x * *y / *x);
-	}
+	bestx = lround((double)*y * aspect_width / aspect_height);
+	besty = lround((double)*x * aspect_height / aspect_width);
 
 	if (bestx < *x && bestx > 0)
 		*x = bestx;
@@ -142,8 +119,6 @@ aspect_correct(int *x, int *y, int aspect_width, int aspect_height)
 	int width = *x;
 	int height;
 
-	if (r2yptr == NULL || y2rptr == NULL)
-		return;
 	if (!aspect_height || !aspect_width)
 		return;
 	height = lround((double)(width * aspect_height) / aspect_width);
@@ -172,8 +147,6 @@ aspect_reverse(int *x, int *y, int scrnwidth, int scrnheight, int aspect_width, 
 	int cheight;
 	int cwidth;
 
-	if (r2yptr == NULL || y2rptr == NULL)
-		return;
 	if (!aspect_height || !aspect_width) {
 		width = scrnwidth * (*x / scrnwidth);
 		if (width < scrnwidth)

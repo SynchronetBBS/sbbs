@@ -17,7 +17,7 @@ static HANDLE rch;
 static HANDLE wch;
 static bool maximized = false;
 static uint16_t winxpos, winypos;
-static const DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+static const DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_VISIBLE;
 static HCURSOR cursor;
 static HANDLE init_sem;
 static int xoff, yoff;
@@ -56,7 +56,6 @@ static pthread_mutex_t gdi_headlock;
 static pthread_mutex_t winpos_lock;
 static pthread_mutex_t rect_lock;
 static pthread_mutex_t off_lock;
-static bool ciolib_scaling = false;
 
 // Internal implementation
 
@@ -166,29 +165,6 @@ sp_to_codepoint(uint16_t high, uint16_t low)
 	return (high - 0xd800) * 0x400 + (low - 0xdc00) + 0x10000;
 }
 
-// vstatlock must be held
-static void
-set_ciolib_scaling(void)
-{
-	int w, h;
-	int fw, fh;
-
-	w = vstat.winwidth;
-	h = vstat.winheight;
-	aspect_fix_inside(&w, &h, vstat.aspect_width, vstat.aspect_height);
-	fw = w;
-	fh = h;
-	aspect_reverse(&w, &h, vstat.scrnwidth, vstat.scrnheight, vstat.aspect_width, vstat.aspect_height);
-	if ((fw == w) || (fh == h)) {
-		if (fw > vstat.winwidth || fh > vstat.winheight)
-			ciolib_scaling = false;
-		else
-			ciolib_scaling = true;
-	}
-	else
-		ciolib_scaling = false;
-}
-
 static bool
 UnadjustWindowSize(int *w, int *h)
 {
@@ -206,8 +182,9 @@ UnadjustWindowSize(int *w, int *h)
 static LRESULT
 gdi_handle_wm_size(WPARAM wParam, LPARAM lParam)
 {
-	RECT r;
 	int w, h;
+	int ww, wh;
+	int mult;
 
 	switch (wParam) {
 		case SIZE_MAXIMIZED:
@@ -218,17 +195,51 @@ gdi_handle_wm_size(WPARAM wParam, LPARAM lParam)
 			maximized = false;
 			break;
 	}
-	if (wParam == SIZE_MINIMIZED)
-		return 0;
 	w = lParam & 0xffff;
 	h = (lParam >> 16) & 0xffff;
 	pthread_mutex_lock(&vstatlock);
 	vstat.winwidth = w;
 	vstat.winheight = h;
-	set_ciolib_scaling();
+	mult = bitmap_largest_mult_inside(w, h);
+	bitmap_get_scaled_win_size(mult, &w, &h, 0, 0);
+	if (w != vstat.winwidth || h != vstat.winheight) {
+		gdi_setwinsize(w, h);
+	}
 	pthread_mutex_unlock(&vstatlock);
 
 	return 0;
+}
+
+static LRESULT
+gdi_handle_wm_sizing(WPARAM wParam, RECT *rect)
+{
+	int w, h;
+	int mult;
+
+	mult = bitmap_largest_mult_inside(w, h);
+	bitmap_get_scaled_win_size(mult, &w, &h, 0, 0);
+	switch(wParam) {
+		case WMSZ_BOTTOM:
+		case WMSZ_BOTTOMLEFT:
+		case WMSZ_LEFT:
+			rect->bottom = rect->top + h;
+			rect->left = rect->right - w;
+			break;
+		case WMSZ_BOTTOMRIGHT:
+		case WMSZ_RIGHT:
+			rect->bottom = rect->top + h;
+			rect->right = rect->left + w;
+			break;
+		case WMSZ_TOP:
+		case WMSZ_TOPLEFT:
+			rect->top = rect->bottom - h;
+			rect->left = rect->right - w;
+			break;
+		case WMSZ_TOPRIGHT:
+			rect->right = rect->left + w;
+			break;
+	}
+	return TRUE;
 }
 
 static LRESULT
@@ -261,58 +272,31 @@ gdi_handle_wm_paint(HWND hwnd)
 	sw = vstat.scrnwidth;
 	sh = vstat.scrnheight;
 	pthread_mutex_unlock(&vstatlock);
-	if (ciolib_scaling) {
-		calc_scaling_factors(&xscale, &yscale, w, h, aw, ah, sw, sh);
-		gb = do_scale(list, xscale, yscale, aw, ah);
-		if (di == NULL || diw != gb->w || dih != gb->h) {
-			lww = -1;
-			if (di != NULL) {
-				DeleteObject(di);
-				di = NULL;
-			}
-			diw = gb->w;
-			b5hdr.bV5Width = gb->w;
-			dih = gb->h;
-			b5hdr.bV5Height = -gb->h;
-			b5hdr.bV5SizeImage = gb->w * gb->h * 4;
-			pthread_mutex_lock(&off_lock);
-			dwidth = diw;
-			dheight = dih;
-			pthread_mutex_unlock(&off_lock);
+	calc_scaling_factors(&xscale, &yscale, w, h, aw, ah, sw, sh);
+	gb = do_scale(list, xscale, yscale, aw, ah);
+	if (di == NULL || diw != gb->w || dih != gb->h) {
+		lww = -1;
+		if (di != NULL) {
+			DeleteObject(di);
+			di = NULL;
 		}
+		diw = gb->w;
+		b5hdr.bV5Width = gb->w;
+		dih = gb->h;
+		b5hdr.bV5Height = -gb->h;
+		b5hdr.bV5SizeImage = gb->w * gb->h * 4;
 		pthread_mutex_lock(&off_lock);
+		dwidth = diw;
+		dheight = dih;
+		pthread_mutex_unlock(&off_lock);
+	}
+	pthread_mutex_lock(&off_lock);
+	if (maximized) {
 		xoff = (w - diw) / 2;
 		yoff = (h - dih) / 2;
-		pthread_mutex_unlock(&off_lock);
-		data = gb->data;
 	}
-	else {
-		if (di != NULL || diw != list->rect.width || dih != list->rect.height) {
-			if (di != NULL) {
-				DeleteObject(di);
-				di = NULL;
-			}
-			diw = list->rect.width;
-			b5hdr.bV5Width = list->rect.width;
-			dih = list->rect.height;
-			b5hdr.bV5Height = -list->rect.height;
-			b5hdr.bV5SizeImage = list->rect.width * list->rect.height * 4;
-		}
-		data = list->data;
-		if (lww != w || lwh != h) {
-			sww = w;
-			swh = h;
-			aspect_fix_inside(&sww, &swh, aw, ah);
-			pthread_mutex_lock(&off_lock);
-			xoff = (w - sww) / 2;
-			yoff = (h - swh) / 2;
-			dwidth = sww;
-			dheight = swh;
-			pthread_mutex_unlock(&off_lock);
-			lww = w;
-			lwh = h;
-		}
-	}
+	pthread_mutex_unlock(&off_lock);
+	data = gb->data;
 	winDC = BeginPaint(hwnd, &ps);
 	if (memDC == NULL) {
 		memDC = CreateCompatibleDC(winDC);
@@ -324,26 +308,27 @@ gdi_handle_wm_paint(HWND hwnd)
 	// Clear to black first
 	di = SelectObject(memDC, di);
 	pthread_mutex_lock(&off_lock);
-	if (ciolib_scaling) {
-		BitBlt(winDC, xoff, yoff, dwidth, dheight, memDC, 0, 0, SRCCOPY);
-	}
-	else {
-		StretchBlt(winDC, xoff, yoff, dwidth, dheight, memDC, 0, 0, diw, dih, SRCCOPY);
-	}
+	BitBlt(winDC, xoff, yoff, dwidth, dheight, memDC, 0, 0, SRCCOPY);
 	if (xoff > 0) {
-		BitBlt(winDC, 0, 0, xoff - 1, dheight, memDC, 0, 0, BLACKNESS);
+		BitBlt(winDC, 0, 0, xoff - 1, h, memDC, 0, 0, BLACKNESS);
 		BitBlt(winDC, xoff + dwidth, 0, w, h, memDC, 0, 0, BLACKNESS);
 	}
-	else if (yoff > 0) {
+	else {
+		if (dwidth != w)
+			BitBlt(winDC, dwidth, 0, w, h, memDC, 0, 0, BLACKNESS);
+	}
+	if (yoff > 0) {
 		BitBlt(winDC, 0, 0, w, yoff - 1, memDC, 0, 0, BLACKNESS);
 		BitBlt(winDC, 0, yoff + dheight, w, h, memDC, 0, 0, BLACKNESS);
+	}
+	else {
+		if (dheight != h)
+			BitBlt(winDC, 0, dheight, w, h, memDC, 0, 0, BLACKNESS);
 	}
 	pthread_mutex_unlock(&off_lock);
 	EndPaint(hwnd, &ps);
 	di = SelectObject(memDC, di);
-	if (ciolib_scaling) {
-		release_buffer(gb);
-	}
+	release_buffer(gb);
 	return 0;
 }
 
@@ -457,6 +442,63 @@ gdi_handle_activate(HWND hwnd, WPARAM wParam)
 	return 0;
 }
 
+static bool
+gdi_get_monitor_size(int *w, int *h)
+{
+	HMONITOR mon;
+	MONITORINFO mi;
+	bool ret;
+
+	mon = MonitorFromWindow(win, MONITOR_DEFAULTTOPRIMARY);
+	mi.cbSize = sizeof(mi);
+	ret = GetMonitorInfoW(mon, &mi);
+	*w = mi.rcWork.right - mi.rcWork.left;
+	*h = mi.rcWork.bottom - mi.rcWork.top;
+	return ret;
+}
+
+static LRESULT
+handle_wm_getminmaxinfo(MINMAXINFO *inf)
+{
+	int monw, monh;
+	int minw, minh;
+	int maxw, maxh;
+	int mult;
+	RECT r;
+
+	gdi_get_monitor_size(&monw, &monh);
+	maxw = monw;
+	maxh = monh;
+	UnadjustWindowSize(&maxw, &maxh);
+	pthread_mutex_lock(&vstatlock);
+	mult = bitmap_largest_mult_inside(maxw, maxh);
+	bitmap_get_scaled_win_size(mult, &maxw, &maxh, 0, 0);
+	bitmap_get_scaled_win_size(1, &minw, &minh, 0, 0);
+	pthread_mutex_unlock(&vstatlock);
+
+	r.top = 0;
+	r.left = 0;
+	r.right = maxw;
+	r.bottom = maxh;
+	AdjustWindowRect(&r, style, FALSE);
+	inf->ptMaxTrackSize.x = r.right - r.left;
+	inf->ptMaxTrackSize.y = r.bottom - r.top;
+	inf->ptMaxSize.x = inf->ptMaxTrackSize.x;
+	inf->ptMaxSize.y = inf->ptMaxTrackSize.y;
+	inf->ptMaxPosition.x = (monw - inf->ptMaxTrackSize.x) / 2;
+	inf->ptMaxPosition.y = (monh - inf->ptMaxTrackSize.y) / 2;
+
+	r.top = 0;
+	r.left = 0;
+	r.right = minw;
+	r.bottom = minh;
+	AdjustWindowRect(&r, style, FALSE);
+	inf->ptMinTrackSize.x = r.right - r.left;
+	inf->ptMinTrackSize.y = r.bottom - r.top;
+
+	return 0;
+}
+
 static LRESULT CALLBACK
 gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	POINT p;
@@ -475,6 +517,8 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			return 0;
 		case WM_SIZE:
 			return gdi_handle_wm_size(wParam, lParam);
+		//case WM_SIZING:
+		//	return gdi_handle_wm_sizing(wParam, (RECT *)lParam);
 		case WM_DESTROY:
 			PostQuitMessage(0);
 			return 0;
@@ -496,6 +540,14 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			return gdi_handle_mouse_button(lParam, CIOLIB_BUTTON_RELEASE(3));
 		case WM_ACTIVATE:
 			return gdi_handle_activate(hwnd, wParam);
+		case WM_GETMINMAXINFO:
+			return handle_wm_getminmaxinfo((MINMAXINFO *)lParam);
+		case WM_SETCURSOR:
+			if ((lParam & 0xffff) == HTCLIENT) {
+				SetCursor(cursor);
+				return 0;
+			}
+			break;
 		case WM_USER_SETCURSOR:
 			if (!GetClientRect(hwnd, &r))
 				break;
@@ -507,30 +559,25 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				break;
 			SetCursor(cursor);
 			break;
-		case WM_SETCURSOR:
-			if ((lParam & 0xffff) == HTCLIENT) {
-				SetCursor(cursor);
-				return 0;
-			}
-			break;
+		case WM_USER_INVALIDATE:
+			InvalidateRect(win, NULL, FALSE);
+			return true;
+		case WM_USER_SETSIZE:
+			pthread_mutex_lock(&vstatlock);
+			// Now make the inside of the window the size we want (sigh)
+			r.left = r.top = 0;
+			r.right = wParam;
+			r.bottom = lParam;
+			pthread_mutex_unlock(&vstatlock);
+			AdjustWindowRect(&r, style, FALSE);
+			SetWindowPos(win, NULL, 0, 0, r.right - r.left, r.bottom - r.top, SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
+			return true;
+		case WM_USER_SETPOS:
+			SetWindowPos(win, NULL, wParam, lParam, 0, 0, SWP_NOSIZE|SWP_NOOWNERZORDER|SWP_NOZORDER);
+			return true;
 	}
 
 	return DefWindowProcW(hwnd, msg, wParam, lParam);
-}
-
-static bool
-gdi_get_monitor_size(int *w, int *h)
-{
-	HMONITOR mon;
-	MONITORINFO mi;
-	bool ret;
-
-	mon = MonitorFromWindow(win, MONITOR_DEFAULTTOPRIMARY);
-	mi.cbSize = sizeof(mi);
-	ret = GetMonitorInfoW(mon, &mi);
-	*w = mi.rcWork.right - mi.rcWork.left;
-	*h = mi.rcWork.bottom - mi.rcWork.top;
-	return ret;
 }
 
 static void
@@ -544,7 +591,6 @@ gdi_snap(bool grow)
 	UnadjustWindowSize(&mw, &mh);
 	pthread_mutex_lock(&vstatlock);
 	bitmap_snap(grow, mw, mh);
-	set_ciolib_scaling();
 	gdi_setwinsize(vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
 }
@@ -564,25 +610,10 @@ magic_message(MSG msg)
 	int *hack;
 	RECT r;
 
+	/* Note that some messages go directly to gdi_WndProc(), so we can't
+	 * put generic stuff in here.
+	 */
 	switch(msg.message) {
-		// User messages
-		case WM_USER_INVALIDATE:
-			InvalidateRect(win, NULL, FALSE);
-			return true;
-		case WM_USER_SETSIZE:
-			pthread_mutex_lock(&vstatlock);
-			// Now make the inside of the window the size we want (sigh)
-			r.left = r.top = 0;
-			r.right = vstat.winwidth = msg.wParam;
-			r.bottom = vstat.winheight = msg.lParam;
-			pthread_mutex_unlock(&vstatlock);
-			AdjustWindowRect(&r, style, FALSE);
-			SetWindowPos(win, NULL, 0, 0, r.right - r.left, r.bottom - r.top, SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
-			return true;
-		case WM_USER_SETPOS:
-			SetWindowPos(win, NULL, msg.wParam, msg.lParam, 0, 0, SWP_NOSIZE|SWP_NOOWNERZORDER|SWP_NOZORDER);
-			return true;
-
 		// Keyboard stuff
 		case WM_KEYDOWN:
 		case WM_KEYUP:
@@ -671,7 +702,9 @@ gdi_thread(void *arg)
 
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc   = gdi_WndProc;
+	// This is actually required or the link will fail (it can be overwritten though)
 	wc.hInstance     = WinMainHInst;
+	//wc.hInstance     = GetModuleHandleW(NULL);
 	wc.hIcon         = LoadIcon(NULL, MAKEINTRESOURCE(1));
 	wc.hCursor       = LoadCursor(NULL, IDC_IBEAM);
 	wc.hbrBackground = NULL;
@@ -687,7 +720,7 @@ gdi_thread(void *arg)
 	r.bottom = vstat.winheight;
 	pthread_mutex_unlock(&vstatlock);
 	AdjustWindowRect(&r, style, FALSE);
-	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", style, CW_USEDEFAULT, CW_USEDEFAULT, r.right - r.left, r.bottom - r.top, NULL, NULL, wc.hInstance, NULL);
+	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", style, CW_USEDEFAULT, CW_USEDEFAULT, r.right - r.left, r.bottom - r.top, NULL, NULL, NULL, NULL);
 	ReleaseSemaphore(init_sem, 1, NULL);
 
 	while (GetMessage(&msg, NULL, 0, 0)) {
@@ -750,7 +783,6 @@ gdi_textmode(int mode)
 	gdi_get_monitor_size(&mw, &mh);
 	UnadjustWindowSize(&mw, &mh);
 	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
-	set_ciolib_scaling();
 	gdi_setwinsize(vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
 	bitmap_drv_request_pixels();
@@ -901,7 +933,7 @@ gdi_init(int mode)
 	CreatePipe(&rch, &wch, NULL, 0);
 
 	bitmap_drv_init(gdi_drawrect, gdi_flush);
-	gdi_textmode(mode);
+	gdi_textmode(C80);
 
 	// code that tells windows we're High DPI aware so it doesn't scale our windows
 	// taken from Yamagi Quake II
@@ -944,6 +976,7 @@ gdi_init(int mode)
 	_beginthread(gdi_thread, 0, NULL);
 	WaitForSingleObject(init_sem, INFINITE);
 	CloseHandle(init_sem);
+	gdi_textmode(C80);
 
 	cio_api.mode=CIOLIB_MODE_GDI;
 	FreeConsole();

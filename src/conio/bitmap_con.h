@@ -57,6 +57,8 @@ void bitmap_drv_request_pixels(void);
 void bitmap_drv_request_some_pixels(int x, int y, int width, int height);
 void bitmap_drv_free_rect(struct rectlist *rect);
 void bitmap_snap(bool grow, int maxwidth, int maxheight);
+void bitmap_get_scaled_win_size(int scale, int *w, int *h, int maxwidth, int maxheight);
+int bitmap_largest_mult_inside(int maxwidth, int maxheight);
 #endif
 
 #endif

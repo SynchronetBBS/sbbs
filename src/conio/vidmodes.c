@@ -6,6 +6,7 @@
 /* xpdev: */
 #include <gen_defs.h>	/* FREE_AND_NULL */
 
+#include "scale.h"
 #include "vidmodes.h"
 
 // TODO: Pretty much all the 1:1 aspect ratios are wrong...
@@ -374,7 +375,7 @@ int load_vmode(struct video_stats *vs, int mode)
 	vs->currattr = vparams[i].default_attr;
 	vs->aspect_width = vparams[i].aspect_width;
 	vs->aspect_height = vparams[i].aspect_height;
-	if (vs->aspect_width == 0 || vs->aspect_height == 0) {
+	if (vs->aspect_width == 0 || vs->aspect_height == 0 || r2yptr == NULL || y2rptr == NULL) {
 		vs->aspect_width = vs->scrnwidth;
 		vs->aspect_height = vs->scrnheight;
 	}
@@ -386,6 +387,10 @@ int load_vmode(struct video_stats *vs, int mode)
 		vs->scrnheight = vparams[i].yres;
 	else
 		vs->scrnheight = vs->charheight * vs->rows;
+	if (vs->aspect_width == 0 || vs->aspect_height == 0 || r2yptr == NULL || y2rptr == NULL) {
+		vs->aspect_width = vs->scrnwidth;
+		vs->aspect_height = vs->scrnheight;
+	}
 	vs->forced_font = NULL;
 	return(0);
 }
