@@ -64,11 +64,16 @@ else
  NO_X			 :=  1
  CIOLIB-MT_CFLAGS        +=  -DDISABLE_X11=1
  ifndef WITHOUT_GDI
-  CIOLIB-MT_LIBS += -lgdi32
+  CIOLIB-MT_LIBS += -lgdi32 -mwindows
   CIOLIB-MT_CFLAGS += -DWITH_GDI
   NEED_BITMAP := 1
+  IS_WINDOWS := 1
  endif
  ifdef USE_SDL
+  CIOLIB-MT_LIBS += -lgdi32
+  ifndef IS_WINDOWS
+   CIOLIB-MT_LIBS += -mwindows
+  endif
   WITH_SDL := 1
  endif
 endif
