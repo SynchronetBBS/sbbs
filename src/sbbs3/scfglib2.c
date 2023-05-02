@@ -1013,4 +1013,11 @@ void free_xtrn_cfg(scfg_t* cfg)
 		FREE_AND_NULL(cfg->natvpgm);
 	}
 	cfg->total_natvpgms=0;
+
+	if(cfg->hotkey != NULL) {
+		for(i=0; i < cfg->total_hotkeys; ++i)
+			free(cfg->hotkey[i]);
+		FREE_AND_NULL(cfg->hotkey);
+	}
+	cfg->total_hotkeys = 0;
 }
