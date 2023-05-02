@@ -66,6 +66,7 @@ else
  ifndef WITHOUT_GDI
   CIOLIB-MT_LIBS += -lgdi32
   CIOLIB-MT_CFLAGS += -DWITH_GDI
+  NEED_BITMAP := 1
  endif
  ifdef USE_SDL
   WITH_SDL := 1
@@ -102,6 +103,7 @@ ifdef USE_SDL
 endif
 
 ifdef WITH_SDL
+ NEED_BITMAP := 1
  # Prefer local include over system includes.
  #CFLAGS += -I$(SRC_ROOT)/../include/sdl
  ifdef SDL_CONFIG
@@ -155,6 +157,7 @@ ifdef WITH_SDL
 endif
 
 ifndef NO_X
+ NEED_BITMAP := 1
  CIOLIB_CFLAGS += -DHAS_VSTAT
  CIOLIB-MT_CFLAGS += -DHAS_VSTAT
 else
@@ -169,4 +172,8 @@ ifdef NO_X
   CIOLIB-MT_CFLAGS		+=	-DNO_FONTS
   CIOLIB_CFLAGS			+=	-DNO_FONTS
  endif
+endif
+
+ifdef NEED_BITMAP
+ CIOLIB_INTERPOLATE_OBJS = $(CIOLIB_SRC)$(DIRSEP)$(MTOBJODIR)$(DIRSEP)rgbmap$(OFILE)
 endif

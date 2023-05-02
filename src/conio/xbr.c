@@ -47,9 +47,9 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y)
 #define VMASK 0x0000ff
 #define ABSDIFF(a,b) (abs((int)(a)-(int)(b)))
 
-    uint32_t yuv1 = r2y[x & 0xffffff];
+    uint32_t yuv1 = r2yptr[x & 0xffffff];
 
-    uint32_t yuv2 = r2y[y & 0xffffff];
+    uint32_t yuv2 = r2yptr[y & 0xffffff];
 
     return (ABSDIFF(yuv1 & YMASK, yuv2 & YMASK) >> 16) +
            (ABSDIFF(yuv1 & UMASK, yuv2 & UMASK) >>  8) +

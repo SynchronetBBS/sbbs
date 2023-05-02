@@ -7,6 +7,7 @@ CFLAGS += $(XPDEV-MT_CFLAGS) $(HASH_CFLAGS) $(ENCODE_CFLAGS) $(CIOLIB-MT_CFLAGS)
 ifeq ($(os),win32)
  ifndef WITHOUT_GDI
   OBJS	+=	$(MTOBJODIR)$(DIRSEP)win32gdi$(OFILE)
+  NEED_BITMAP := 1
  endif
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)SDL_win32_main$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)win32cio$(OFILE)
@@ -41,12 +42,13 @@ endif
 ifdef NEED_BITMAP
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)bitmap_con$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)scale$(OFILE)
- OBJS	+=	$(MTOBJODIR)$(DIRSEP)rgbmap$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)xbr$(OFILE)
 endif
 
+
+
 # CIOLIB Library Link Rule
-$(CIOLIB-MT_BUILD): $(MTOBJODIR) $(OBJS)
+$(CIOLIB-MT_BUILD): $(MTOBJODIR) $(OBJS) $(CIOLIB_INTERPOLATE_OBJS)
 	@echo Creating $@ ...
 	$(QUIET)$(AR) rc $@ $(OBJS)
 	$(QUIET)$(RANLIB) $@

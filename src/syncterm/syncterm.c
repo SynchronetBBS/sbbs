@@ -46,6 +46,7 @@ static const KNOWNFOLDERID FOLDERID_ProgramData = {
  #include <xp_dl.h> /* xp_dlopen() and friends */
 #endif /* ifdef _WIN32 */
 
+#include <rgbmap.h>
 #include <ciolib.h>
 #include <cterm.h>
 #include <dirwrap.h>
@@ -1707,6 +1708,8 @@ main(int argc, char **argv)
 		cio_api.options |= CONIO_OPT_BLOCKY_SCALING;
 	else
 		cio_api.options &= ~CONIO_OPT_BLOCKY_SCALING;
+	r2yptr = r2y;
+	y2rptr = y2r;
 	if (initciolib(ciolib_mode))
 		return 1;
 	if (settings.blocky)

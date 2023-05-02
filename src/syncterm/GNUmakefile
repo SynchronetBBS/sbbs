@@ -2,6 +2,10 @@ SRC_ROOT	:=	..
 include ${SRC_ROOT}/build/Common.gmake
 include extdeps.mk
 
+ifdef NEED_BITMAP
+ OBJS += $(CIOLIB_INTERPOLATE_OBJS)
+endif
+
 ifdef WITHOUT_OOII
  CFLAGS	+= -DWITHOUT_OOII=1
 else

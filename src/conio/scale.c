@@ -7,11 +7,8 @@
 #include "scale.h"
 #include "xbr.h"
 
-#if 0
-uint32_t r2y[1<<24];
-uint32_t y2r[1<<24];
-#endif
-static int r2y_inited = true;
+const uint32_t *r2yptr;
+const uint32_t *y2rptr;
 
 static void pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height);
 static void pointy_scale5(uint32_t* src, uint32_t* dest, int width, int height);
@@ -40,8 +37,14 @@ aspect_fix_inside(int *x, int *y, int aspect_width, int aspect_height)
 
 	if (aspect_width == 0 || aspect_height == 0)
 		return;
-	bestx = lround((double)*y * aspect_width / aspect_height);
-	besty = lround((double)*x * aspect_height / aspect_width);
+	if (r2yptr != NULL && y2rptr != NULL) {
+		bestx = lround((double)*y * aspect_width / aspect_height);
+		besty = lround((double)*x * aspect_height / aspect_width);
+	}
+	else {
+		bestx = lround((double)*y * *x / *y);
+		besty = lround((double)*x * *y / *x);
+	}
 
 	if (besty <= *y)
 		*y = besty;
@@ -63,8 +66,14 @@ aspect_fix(int *x, int *y, int aspect_width, int aspect_height)
 	// Nothing we can do here...
 	if (aspect_width == 0 || aspect_height == 0)
 		return;
-	bestx = lround((double)*y * aspect_width / aspect_height);
-	besty = lround((double)*x * aspect_height / aspect_width);
+	if (r2yptr != NULL && y2rptr != NULL) {
+		bestx = lround((double)*y * aspect_width / aspect_height);
+		besty = lround((double)*x * aspect_height / aspect_width);
+	}
+	else {
+		bestx = lround((double)*y * *x / *y);
+		besty = lround((double)*x * *y / *x);
+	}
 
 	if (bestx < *x && besty > 0)
 		*y = besty;
@@ -83,8 +92,13 @@ aspect_fix_low(int *x, int *y, int aspect_width, int aspect_height)
 	// Nothing we can do here...
 	if (aspect_width == 0 || aspect_height == 0)
 		return;
-	bestx = lround((double)*y * aspect_width / aspect_height);
-	besty = lround((double)*x * aspect_height / aspect_width);
+	if (r2yptr != NULL && y2rptr != NULL) {
+		bestx = lround((double)*y * aspect_width / aspect_height);
+		besty = lround((double)*x * aspect_height / aspect_width);
+	} else {
+		bestx = lround((double)*y * *x / *y);
+		besty = lround((double)*x * *y / *x);
+	}
 
 	if (bestx < *x && bestx > 0)
 		*x = bestx;
@@ -102,6 +116,8 @@ aspect_correct(int *x, int *y, int aspect_width, int aspect_height)
 	int width = *x;
 	int height;
 
+	if (r2yptr == NULL || y2rptr == NULL)
+		return;
 	if (!aspect_height || !aspect_width)
 		return;
 	height = lround((double)(width * aspect_height) / aspect_width);
@@ -130,6 +146,8 @@ aspect_reverse(int *x, int *y, int scrnwidth, int scrnheight, int aspect_width, 
 	int cheight;
 	int cwidth;
 
+	if (r2yptr == NULL || y2rptr == NULL)
+		return;
 	if (!aspect_height || !aspect_width) {
 		width = scrnwidth * (*x / scrnwidth);
 		if (width < scrnwidth)
@@ -168,6 +186,7 @@ aspect_reverse(int *x, int *y, int scrnwidth, int scrnheight, int aspect_width, 
 	*y = height;
 }
 
+#if 0
 void
 init_r2y(void)
 {
@@ -188,7 +207,7 @@ init_r2y(void)
 				v = 128 + (112.439 * r -  94.154 * g -  18.285 * b + 128) / 256;
 				CLAMP(v);
 
-				r2y[(r<<16) | (g<<8) | b] = (y<<16)|(u<<8)|v;
+				r2yptr[(r<<16) | (g<<8) | b] = (y<<16)|(u<<8)|v;
 			}
 		}
 	}
@@ -205,12 +224,13 @@ init_r2y(void)
 				b = luma * c + col * 1.772 * d;
 				CLAMP(b);
 
-				y2r[(y<<16) | (u<<8) | v] = (r<<16)|(g<<8)|b;
+				y2rptr[(y<<16) | (u<<8) | v] = (r<<16)|(g<<8)|b;
 			}
 		}
 	}
 	r2y_inited = true;
 }
+#endif
 
 struct graphics_buffer *
 get_buffer(void)
@@ -305,19 +325,21 @@ do_scale(struct rectlist* rect, int xscale, int yscale, int aspect_width, int as
 				total_yscaling /= 3;
 				yscale *= 3;
 			}
-			while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
-				xbr4++;
-				total_xscaling /= 4;
-				xscale *= 4;
-				total_yscaling /= 4;
-				yscale *= 4;
-			}
-			while (total_xscaling > 1 && ((total_xscaling % 2) == 0) && ((total_yscaling % 2) == 0)) {
-				xbr2++;
-				total_xscaling /= 2;
-				xscale *= 2;
-				total_yscaling /= 2;
-				yscale *= 2;
+			if (r2yptr != NULL && y2rptr != NULL) {
+				while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
+					xbr4++;
+					total_xscaling /= 4;
+					xscale *= 4;
+					total_yscaling /= 4;
+					yscale *= 4;
+				}
+				while (total_xscaling > 1 && ((total_xscaling % 2) == 0) && ((total_yscaling % 2) == 0)) {
+					xbr2++;
+					total_xscaling /= 2;
+					xscale *= 2;
+					total_yscaling /= 2;
+					yscale *= 2;
+				}
 			}
 		}
 	}
@@ -462,26 +484,28 @@ csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->
 	}
 
 	// And finally, interpolate if needed
-	if (fheight != csrc->h) {
-		interpolate_height(csrc->data, ctarget->data, csrc->w, csrc->h, fheight);
-		ctarget->h = fheight;
-		ctarget->w = csrc->w;
-		csrc = ctarget;
-		if (ctarget == ret1)
-			ctarget = ret2;
-		else
-			ctarget = ret1;
-	}
-
-	if (fwidth != csrc->w) {
-		interpolate_width(csrc->data, ctarget->data, csrc->w, csrc->h, fwidth);
-		ctarget->h = csrc->h;
-		ctarget->w = fwidth;
-		csrc = ctarget;
-		if (ctarget == ret1)
-			ctarget = ret2;
-		else
-			ctarget = ret1;
+	if (r2yptr != NULL && y2rptr != NULL) {
+		if (fheight != csrc->h) {
+			interpolate_height(csrc->data, ctarget->data, csrc->w, csrc->h, fheight);
+			ctarget->h = fheight;
+			ctarget->w = csrc->w;
+			csrc = ctarget;
+			if (ctarget == ret1)
+				ctarget = ret2;
+			else
+				ctarget = ret1;
+		}
+	
+		if (fwidth != csrc->w) {
+			interpolate_width(csrc->data, ctarget->data, csrc->w, csrc->h, fwidth);
+			ctarget->h = csrc->h;
+			ctarget->w = fwidth;
+			csrc = ctarget;
+			if (ctarget == ret1)
+				ctarget = ret2;
+			else
+				ctarget = ret1;
+		}
 	}
 
 	release_buffer(ctarget);
@@ -793,8 +817,8 @@ blend(const uint32_t c1, const uint32_t c2, uint16_t weight)
 	uint8_t yuv3[4];
 	const uint16_t iw = 65535 - weight;
 
-	*(uint32_t *)yuv1 = r2y[c1];
-	*(uint32_t *)yuv2 = r2y[c2];
+	*(uint32_t *)yuv1 = r2yptr[c1];
+	*(uint32_t *)yuv2 = r2yptr[c2];
 #ifdef __BIG_ENDIAN__
 	yuv3[0] = 0;
 	yuv3[1] = (yuv1[1] * iw + yuv2[1] * weight) / 65535;
@@ -807,7 +831,7 @@ blend(const uint32_t c1, const uint32_t c2, uint16_t weight)
 	yuv3[0] = (yuv1[0] * iw + yuv2[0] * weight) / 65535;
 #endif
 
-	return y2r[*(uint32_t*)yuv3];
+	return y2rptr[*(uint32_t*)yuv3];
 }
 
 /*

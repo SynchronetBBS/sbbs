@@ -8,8 +8,8 @@ struct graphics_buffer {
 	struct graphics_buffer *next;
 };
 
-extern uint32_t r2y[1<<24];
-extern uint32_t y2r[1<<24];
+extern const uint32_t *r2yptr;
+extern const uint32_t *y2rptr;
 
 struct graphics_buffer * get_buffer(void);
 void release_buffer(struct graphics_buffer *);

@@ -449,8 +449,6 @@ CIOLIBEXPORT int initciolib(int mode)
 			return(0);
 	}
 
-	memset(&cio_api,0,sizeof(cio_api));
-
 	switch(mode) {
 		case CIOLIB_MODE_AUTO:
 #ifndef NO_X
