@@ -2485,6 +2485,7 @@ show_bbslist(char *current, int connected)
 	char                  cache_path[MAX_PATH + 1];
 	char                  list_title[30];
 	int                   redraw = 0;
+	bool                  nowait = true;
 
 	glob_sbar = &sbar;
 	glob_sopt = &sopt;
@@ -2570,7 +2571,10 @@ show_bbslist(char *current, int connected)
 				uifc.list_height = listcount + 5;
 				if (uifc.list_height > (uifc.scrn_len - 4))
 					uifc.list_height = uifc.scrn_len - 4;
-				kbwait();
+				if (!nowait) {
+					kbwait();
+					nowait = true;
+				}
 				val = uifc.list((listcount < MAX_OPTS ? WIN_XTR : 0)
 				        | WIN_ACT | WIN_INSACT | WIN_DELACT | WIN_UNGETMOUSE | WIN_SAV | WIN_ESC
 				        | WIN_INS | WIN_DEL | WIN_EDIT | WIN_EXTKEYS | WIN_DYN | WIN_FIXEDHEIGHT
@@ -2736,7 +2740,8 @@ show_bbslist(char *current, int connected)
 							free(list);
 							return NULL;
 						case -2:
-							kbwait();
+							nowait = false;
+							break;
 					}
 				}
 				else if (val & MSK_ON) {
@@ -3006,7 +3011,10 @@ show_bbslist(char *current, int connected)
 				if (oldopt != -2)
 					settitle(syncterm_version);
 				oldopt = -2;
-				kbwait();
+				if (!nowait) {
+					kbwait();
+					nowait = true;
+				}
 				val = uifc.list(WIN_T2B | WIN_RHT | WIN_EXTKEYS | WIN_DYN | WIN_UNGETMOUSE | WIN_ACT | WIN_ESC
 				        ,
 				        0,
@@ -3059,6 +3067,9 @@ show_bbslist(char *current, int connected)
 						    "SyncTERM Settings",
 						    connected ? connected_settings_menu : settings_menu);
 						at_settings = !at_settings;
+						break;
+					case -2:
+						nowait = false;
 						break;
 					case -1: /* ESC */
 						if (!connected)
