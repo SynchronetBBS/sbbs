@@ -417,7 +417,7 @@ static void init_mode_internal(int mode)
 		release_buffer(last);
 		last = NULL;
 	}
-	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
+	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height, 0, 0);
 
 	/* Deal with 40 col doubling */
 	if(oldcols != vstat.cols) {

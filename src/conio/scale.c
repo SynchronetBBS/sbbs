@@ -31,6 +31,32 @@ static struct graphics_buffer *free_list;
  * any fit inside the specified rectangle
  */
 void
+aspect_fix_wc(int *x, int *y, bool wc, int aspect_width, int aspect_height)
+{
+	int bestx, besty;
+
+	if (aspect_width == 0 || aspect_height == 0)
+		return;
+	if (r2yptr != NULL && y2rptr != NULL) {
+		bestx = lround((double)*y * aspect_width / aspect_height);
+		besty = lround((double)*x * aspect_height / aspect_width);
+	}
+	else {
+		bestx = lround((double)*y * *x / *y);
+		besty = lround((double)*x * *y / *x);
+	}
+
+	if (wc)
+		*y = besty;
+	else
+		*x = bestx;
+}
+
+/*
+ * Corrects width/height to have the specified aspect ratio
+ * any fit inside the specified rectangle
+ */
+void
 aspect_fix_inside(int *x, int *y, int aspect_width, int aspect_height)
 {
 	int bestx, besty;

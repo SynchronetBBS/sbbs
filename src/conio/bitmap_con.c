@@ -1,6 +1,8 @@
 /* $Id: bitmap_con.c,v 1.148 2020/06/27 00:04:44 deuce Exp $ */
 
+#include <math.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>		/* NULL */
 #include <stdlib.h>
 #include <string.h>
@@ -1612,6 +1614,64 @@ static int init_screens(int *width, int *height)
 /* Called from drivers */
 /***********************/
 
+// Must be called with vstatlock
+static void
+get_scaled_win_size(int scale, bool wc, int *w, int *h, int maxwidth, int maxheight)
+{
+	*w = vstat.scrnwidth * scale;
+	*h = vstat.scrnheight * scale;
+	if (wc)
+		*h = INT_MAX;
+	else
+		*w = INT_MAX;
+	if (*w > maxwidth && maxwidth > 0)
+		*w = maxwidth;
+	if (*h > maxheight && maxheight > 0)
+		*h = maxheight;
+	aspect_fix_wc(w, h, wc, vstat.aspect_width, vstat.aspect_height);
+}
+
+// Must be called with vstatlock
+void
+bitmap_snap(bool grow, int maxwidth, int maxheight)
+{
+	int mult;
+	int wc;
+	int cw;
+	int cs;
+	int w, h;
+
+	w = vstat.winwidth;
+	h = vstat.winheight;
+	if (vstat.aspect_width == 0 || vstat.aspect_height == 0)
+		wc = true;
+	else
+		wc = lround((double)(vstat.scrnheight * vstat.aspect_width) / vstat.aspect_height) <= vstat.scrnwidth;
+	if (wc) {
+		mult = vstat.winwidth / vstat.scrnwidth;
+		cw = vstat.winwidth;
+		cs = vstat.scrnwidth;
+	}
+	else {
+		mult = vstat.winheight / vstat.scrnheight;
+		cw = vstat.winheight;
+		cs = vstat.winwidth;
+	}
+	if (grow) {
+		mult++;
+	}
+	else {
+		if (cw % cs == 0)
+			mult--;
+	}
+	if (mult < 1)
+		mult = 1;
+	do {
+		get_scaled_win_size(mult, wc, &vstat.winwidth, &vstat.winheight, maxwidth, maxheight);
+		mult--;
+	} while ((vstat.winwidth > maxwidth || vstat.winheight > maxheight) && mult > 1);
+}
+
 /*
  * This function is intended to be called from the driver.
  * as a result, it cannot block waiting for driver status
@@ -1624,9 +1684,16 @@ static int init_screens(int *width, int *height)
  * out after this and only grab that lock again briefly to update
  * vstat.scaling.
  */
-int bitmap_drv_init_mode(int mode, int *width, int *height)
+int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int maxheight)
 {
 	int i;
+	int64_t os;
+	int64_t ls;
+	int64_t ns;
+	int64_t bs;
+	int w, h;
+	int mult;
+	bool wc;
 
 	if(!bitmap_initialized)
 		return(-1);
@@ -1634,6 +1701,9 @@ int bitmap_drv_init_mode(int mode, int *width, int *height)
 	if(load_vmode(&vstat, mode)) {
 		return(-1);
 	}
+
+	// Save the old diagonal (no point is sqrting here)
+	os = ((int64_t)vstat.winwidth * vstat.winwidth) + ((int64_t)vstat.winheight * vstat.winheight);
 
 	/* Initialize video memory with black background, white foreground */
 	for (i = 0; i < vstat.cols*vstat.rows; ++i) {
@@ -1673,6 +1743,41 @@ int bitmap_drv_init_mode(int mode, int *width, int *height)
 	cio_textinfo.wintop=1;
 	cio_textinfo.winright=cio_textinfo.screenwidth;
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
+
+	// Now calculate the closest diagonal new size that's smaller than max...
+	if (vstat.aspect_width == 0 || vstat.aspect_height == 0)
+		wc = true;
+	else
+		wc = lround((double)(vstat.scrnheight * vstat.aspect_width) / vstat.aspect_height) <= vstat.scrnwidth;
+	mult = 1;
+	get_scaled_win_size(mult, wc, &w, &h, maxwidth, maxheight);
+	bs = ((int64_t)w * w) + ((int64_t)h * h);
+	ls = bs;
+	ns = bs;
+	while (ns < os) {
+		mult++;
+		get_scaled_win_size(mult, wc, &w, &h, maxwidth, maxheight);
+		if ((maxwidth > 0) && (w > maxwidth)) {
+			mult--;
+			ns = ls;
+			break;
+		}
+		if ((maxheight > 0) && (h > maxheight)) {
+			mult--;
+			ns = ls;
+			break;
+		}
+		bs = ((int64_t)w * w) + ((int64_t)h * h);
+		ls = ns;
+		ns = bs;
+	}
+	if ((os - ls) <= (ns - os)) {
+		if (mult > 1)
+			mult--;
+	}
+	get_scaled_win_size(mult, wc, &w, &h, maxwidth, maxheight);
+	vstat.winwidth = w;
+	vstat.winheight = h;
 
 	return(0);
 }

@@ -50,12 +50,13 @@ int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b);
 
 #ifdef BITMAP_CIOLIB_DRIVER
 /* Called from drivers */
-int bitmap_drv_init_mode(int mode, int *width, int *height);
+int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int maxheight);
 int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 				,void (*flush) (void));
 void bitmap_drv_request_pixels(void);
 void bitmap_drv_request_some_pixels(int x, int y, int width, int height);
 void bitmap_drv_free_rect(struct rectlist *rect);
+void bitmap_snap(bool grow, int maxwidth, int maxheight);
 #endif
 
 #endif

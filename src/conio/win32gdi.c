@@ -197,8 +197,8 @@ UnadjustWindowSize(int *w, int *h)
 
 	ret = AdjustWindowRect(&r, style, FALSE);
 	if (ret) {
-		w += r.left - r.right;
-		h += r.top - r.bottom;
+		*w += r.left - r.right;
+		*h += r.top - r.bottom;
 	}
 	return ret;
 }
@@ -222,7 +222,6 @@ gdi_handle_wm_size(WPARAM wParam, LPARAM lParam)
 		return 0;
 	w = lParam & 0xffff;
 	h = (lParam >> 16) & 0xffff;
-	UnadjustWindowSize(&w, &h);
 	pthread_mutex_lock(&vstatlock);
 	vstat.winwidth = w;
 	vstat.winheight = h;
@@ -519,76 +518,34 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	return DefWindowProcW(hwnd, msg, wParam, lParam);
 }
 
+static bool
+gdi_get_monitor_size(int *w, int *h)
+{
+	HMONITOR mon;
+	MONITORINFO mi;
+	bool ret;
+
+	mon = MonitorFromWindow(win, MONITOR_DEFAULTTOPRIMARY);
+	mi.cbSize = sizeof(mi);
+	ret = GetMonitorInfoW(mon, &mi);
+	*w = mi.rcWork.right - mi.rcWork.left;
+	*h = mi.rcWork.bottom - mi.rcWork.top;
+	return ret;
+}
+
 static void
 gdi_snap(bool grow)
 {
-	bool wc;
-	int w, h;
 	int mw, mh;
 
 	if (maximized)
 		return;
-	mw = GetSystemMetrics(SM_CXMAXTRACK);
-	mh = GetSystemMetrics(SM_CYMAXTRACK);
+	gdi_get_monitor_size(&mw, &mh);
 	UnadjustWindowSize(&mw, &mh);
 	pthread_mutex_lock(&vstatlock);
-	w = vstat.winwidth;
-	h = vstat.winheight;
-	aspect_fix_inside(&w, &h, vstat.aspect_width, vstat.aspect_height);
-	if (vstat.aspect_width == 0 || vstat.aspect_height == 0)
-		wc = true;
-	else
-		wc = lround((double)(h * vstat.aspect_width) / vstat.aspect_height * vstat.scrnwidth / vstat.scrnheight) > w;
-	if (wc)
-		mw = mw - mw % vstat.scrnwidth;
-	else
-		mh = mh - mh % vstat.scrnheight;
-	mh = mw - mw % vstat.scrnwidth;
-	if (grow) {
-		if (wc)
-			w = (w - w % vstat.scrnwidth) + vstat.scrnwidth;
-		else
-			h = (h - h % vstat.scrnheight) + vstat.scrnheight;
-	}
-	else {
-		if (wc) {
-			if (w % (vstat.scrnwidth)) {
-				w = w - w % vstat.scrnwidth;
-			}
-			else {
-				w -= vstat.scrnwidth;
-				if (w < vstat.scrnwidth)
-					w = vstat.scrnwidth;
-			}
-		}
-		else {
-			if (h % (vstat.scrnheight)) {
-				h = h - h % vstat.scrnheight;
-			}
-			else {
-				h -= vstat.scrnheight;
-				if (h < vstat.scrnheight)
-					h = vstat.scrnheight;
-			}
-		}
-	}
-	if (wc)
-		h = INT_MAX;
-	else
-		w = INT_MAX;
-	if (w > mw)
-		w = mw;
-	if (h > mh)
-		h = mh;
-	aspect_fix_inside(&w, &h, vstat.aspect_width, vstat.aspect_height);
-	if (w > 16384 || h > 16384)
-		gdi_beep();
-	else {
-		vstat.winwidth = w;
-		vstat.winheight = h;
-		set_ciolib_scaling();
-		gdi_setwinsize(w, h);
-	}
+	bitmap_snap(grow, mw, mh);
+	set_ciolib_scaling();
+	gdi_setwinsize(vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
 }
 
@@ -618,7 +575,6 @@ magic_message(MSG msg)
 			r.left = r.top = 0;
 			r.right = vstat.winwidth = msg.wParam;
 			r.bottom = vstat.winheight = msg.lParam;
-			set_ciolib_scaling();
 			pthread_mutex_unlock(&vstatlock);
 			AdjustWindowRect(&r, style, FALSE);
 			SetWindowPos(win, NULL, 0, 0, r.right - r.left, r.bottom - r.top, SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
@@ -778,8 +734,8 @@ gdi_beep(void)
 void
 gdi_textmode(int mode)
 {
-	int oldcols;
 	int scaling = 1;
+	int mw, mh;
 
 	if (mode != CIOLIB_MODE_CUSTOM) {
 		pthread_mutex_lock(&vstatlock);
@@ -791,37 +747,9 @@ gdi_textmode(int mode)
 	}
 
 	pthread_mutex_lock(&vstatlock);
-	oldcols = vstat.cols;
-	bitmap_drv_init_mode(mode, NULL, NULL);
-	if (vstat.scrnwidth > 0) {
-		for (scaling = 1; (scaling + 1) * vstat.scrnwidth < vstat.winwidth; scaling++)
-			;
-	}
-	vstat.winwidth = vstat.scrnwidth * scaling;
-	vstat.winheight = vstat.scrnheight * scaling;
-	aspect_fix_inside(&vstat.winwidth, &vstat.winheight, vstat.aspect_width, vstat.aspect_height);
-	if (oldcols != vstat.cols) {
-		if (oldcols == 0) {
-			if (ciolib_initial_window_width > 0)
-				vstat.winwidth = ciolib_initial_window_width;
-			if (ciolib_initial_window_height > 0)
-				vstat.winheight = ciolib_initial_window_height;
-			if (vstat.cols == 40)
-				oldcols = 40;
-		}
-		if (oldcols == 40) {
-			vstat.winwidth /= 2;
-			vstat.winheight /= 2;
-		}
-		if (vstat.cols == 40) {
-			vstat.winwidth *= 2;
-			vstat.winheight *= 2;
-		}
-	}
-	if (vstat.winwidth < vstat.scrnwidth)
-		vstat.winwidth = vstat.scrnwidth;
-	if (vstat.winheight < vstat.scrnheight)
-		vstat.winheight = vstat.scrnheight;
+	gdi_get_monitor_size(&mw, &mh);
+	UnadjustWindowSize(&mw, &mh);
+	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
 	set_ciolib_scaling();
 	gdi_setwinsize(vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);

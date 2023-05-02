@@ -359,6 +359,8 @@ static int sdl_init_mode(int mode)
 {
 	int oldcols;
 	int scaling = 1;
+	int w, h;
+	SDL_Rect r;
 
 	if (mode != CIOLIB_MODE_CUSTOM) {
 		pthread_mutex_lock(&vstatlock);
@@ -373,37 +375,15 @@ static int sdl_init_mode(int mode)
 
 	pthread_mutex_lock(&vstatlock);
 	oldcols = vstat.cols;
-	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
-	if (vstat.scrnwidth > 0) {
-		for (scaling = 1; (scaling + 1) * vstat.scrnwidth < vstat.winwidth; scaling++)
-			;
+	if (sdl.GetDisplayUsableBounds(0, &r) == 0) {
+		w = r.w;
+		h = r.h;
 	}
-	vstat.winwidth = vstat.scrnwidth * scaling;
-	vstat.winheight = vstat.scrnheight * scaling;
-	aspect_fix(&vstat.winwidth, &vstat.winheight, vstat.aspect_width, vstat.aspect_height);
-	if (oldcols != vstat.cols) {
-		if (oldcols == 0) {
-			if (ciolib_initial_window_width > 0)
-				vstat.winwidth = ciolib_initial_window_width;
-			if (ciolib_initial_window_height > 0)
-				vstat.winheight = ciolib_initial_window_height;
-			if (vstat.cols == 40)
-				oldcols = 40;
-		}
-		if (oldcols == 40) {
-			vstat.winwidth /= 2;
-			vstat.winheight /= 2;
-		}
-		if (vstat.cols == 40) {
-			vstat.winwidth *= 2;
-			vstat.winheight *= 2;
-		}
+	else {
+		w = 0;
+		h = 0;
 	}
-	if (vstat.winwidth < vstat.scrnwidth)
-		vstat.winwidth = vstat.scrnwidth;
-	if (vstat.winheight < vstat.scrnheight)
-		vstat.winheight = vstat.scrnheight;
-
+	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height, w, h);
 	internal_scaling = window_can_scale_internally(&vstat);
 	pthread_mutex_lock(&sdl_mode_mutex);
 	sdl_mode = true;
@@ -891,62 +871,22 @@ void sdl_video_event_thread(void *data)
 					if ((ev.key.keysym.mod & KMOD_ALT) &&
 					    (ev.key.keysym.sym == SDLK_LEFT ||
 					     ev.key.keysym.sym == SDLK_RIGHT)) {
-						int w, h;
-
 						// Don't allow ALT-DIR to change size when maximized...
 						if ((sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) == 0) {
-							bool wc;
-
-							update_cvstat(&cvstat);
-							w = cvstat.winwidth;
-							h = cvstat.winheight;
-							aspect_fix(&w, &h, cvstat.aspect_width, cvstat.aspect_height);
-							if (cvstat.aspect_width == 0 || cvstat.aspect_height == 0)
-								wc = true;
-							else
-								wc = lround((double)(h * cvstat.aspect_width) / cvstat.aspect_height * cvstat.scrnwidth / cvstat.scrnheight) > w;
-							switch(ev.key.keysym.sym) {
-								case SDLK_LEFT:
-									if (wc) {
-										if (w % (cvstat.scrnwidth)) {
-											w = w - w % cvstat.scrnwidth;
-										}
-										else {
-											w -= cvstat.scrnwidth;
-											if (w < cvstat.scrnwidth)
-												w = cvstat.scrnwidth;
-										}
-									}
-									else {
-										if (h % (cvstat.scrnheight)) {
-											h = h - h % cvstat.scrnheight;
-										}
-										else {
-											h -= cvstat.scrnheight;
-											if (h < cvstat.scrnheight)
-												h = cvstat.scrnheight;
-										}
-									}
-									break;
-								case SDLK_RIGHT:
-									if (wc)
-										w = (w - w % cvstat.scrnwidth) + cvstat.scrnwidth;
-									else
-										h = (h - h % cvstat.scrnheight) + cvstat.scrnheight;
-									break;
+							int w, h;
+							SDL_Rect r;
+							if (sdl.GetDisplayUsableBounds(0, &r) == 0) {
+								w = r.w;
+								h = r.h;
 							}
-							if (wc)
-								h = INT_MAX;
-							else
-								w = INT_MAX;
-							aspect_fix(&w, &h, cvstat.aspect_width, cvstat.aspect_height);
-							if (w > 16384 || h > 16384)
-								beep();
 							else {
-								cvstat.winwidth = w;
-								cvstat.winheight = h;
-								internal_scaling = window_can_scale_internally(&cvstat);
+								w = 0;
+								h = 0;
 							}
+							pthread_mutex_lock(&vstatlock);
+							bitmap_snap(ev.key.keysym.sym == SDLK_RIGHT, w, h);
+							pthread_mutex_unlock(&vstatlock);
+							update_cvstat(&cvstat);
 							setup_surfaces_locked(&cvstat);
 						}
 						break;
