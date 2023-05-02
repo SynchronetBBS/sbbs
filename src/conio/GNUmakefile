@@ -48,7 +48,7 @@ endif
 
 
 # CIOLIB Library Link Rule
-$(CIOLIB-MT_BUILD): $(MTOBJODIR) $(OBJS) $(CIOLIB_INTERPOLATE_OBJS)
+$(CIOLIB-MT_BUILD): $(MTOBJODIR) $(OBJS) $(CIOLIB_INTERPOLATE_TARGET)
 	@echo Creating $@ ...
 	$(QUIET)$(AR) rc $@ $(OBJS)
 	$(QUIET)$(RANLIB) $@
