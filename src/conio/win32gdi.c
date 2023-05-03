@@ -711,6 +711,8 @@ gdi_thread(void *arg)
 	wc.hInstance     = WinMainHInst;
 	if (wc.hInstance == NULL)
 		wc.hInstance     = GetModuleHandleW(NULL);
+	if (wc.hInstance == NULL)
+		goto fail;
 	wc.hIcon         = LoadIcon(NULL, MAKEINTRESOURCE(1));
 	wc.hCursor       = LoadCursor(NULL, IDC_IBEAM);
 	wc.hbrBackground = NULL;
