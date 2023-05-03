@@ -124,5 +124,17 @@ SOURCE=.\vidmodes.c
 
 SOURCE=.\win32cio.c
 # End Source File
+# Begin Source File
+
+SOURCE=.\win32gdi.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\scale.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\xbr.c
+# End Source File
 # End Target
 # End Project

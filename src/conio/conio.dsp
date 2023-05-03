@@ -116,5 +116,9 @@ SOURCE=.\win32gdi.c
 
 SOURCE=.\scale.c
 # End Source File
+# Begin Source File
+
+SOURCE=.\xbr.c
+# End Source File
 # End Target
 # End Project

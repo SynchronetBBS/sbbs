@@ -150,6 +150,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="scale.c" />
+    <ClCompile Include="xbr.c" />
     <ClCompile Include="sdlfuncs.c" />
     <ClCompile Include="sdl_con.c" />
     <ClCompile Include="SDL_win32_main.c" />
