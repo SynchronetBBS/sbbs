@@ -591,6 +591,15 @@ CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
 #endif
 #endif
 
+#ifdef WITH_GDI
+#if defined(_WIN32) || defined(__DARWIN__)
+	#ifdef main
+		#undef main
+	#endif
+	#define main	CIOLIB_main
+#endif
+#endif
+
 #define CIOLIB_BUTTON_1	1
 #define CIOLIB_BUTTON_2	2
 #define CIOLIB_BUTTON_3	4
