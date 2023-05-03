@@ -46,9 +46,6 @@
 
 #include "sbbs.h"
 #include "ciolib.h"
-#ifdef main
- #undef main
-#endif
 #include "ini_file.h"
 #include "js_rtpool.h"
 #include "js_request.h"
