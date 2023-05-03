@@ -32,6 +32,9 @@
 #define STARTUP_INI_JSOPT_BITDESC_TABLE
 #include "sbbs.h"
 #include "ciolib.h"
+#ifdef main
+ #undef main	// Don't be a Windows program, be a Console one
+#endif
 #include "ini_file.h"
 #include "js_rtpool.h"
 #include "js_request.h"
