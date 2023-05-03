@@ -23,6 +23,7 @@ static HANDLE init_sem;
 static int xoff, yoff;
 static int dwidth = 640;
 static int dheight = 480;
+static bool init_success;
 
 #define WM_USER_INVALIDATE WM_USER
 #define WM_USER_SETSIZE (WM_USER + 1)
@@ -132,6 +133,7 @@ gdi_add_key(uint16_t key)
 	uint8_t *bp = buf;
 	DWORD added;
 	DWORD remain;
+	HANDLE lwch;
 
 	if (key < 256) {
 		buf[0] = key;
@@ -143,7 +145,9 @@ gdi_add_key(uint16_t key)
 		remain = 2;
 	}
 	do {
-		WriteFile(wch, bp, remain, &added, NULL);
+		lwch = wch;
+		if (lwch != NULL)
+			WriteFile(lwch, bp, remain, &added, NULL);
 		remain -= added;
 		bp += added;
 	} while (remain > 0);
@@ -153,7 +157,7 @@ static void
 gdi_mouse_thread(void *data)
 {
 	SetThreadName("GDI Mouse");
-	while(1) {
+	while(wch != NULL) {
 		if(mouse_wait())
 			gdi_add_key(CIO_KEY_MOUSE);
 	}
@@ -697,6 +701,7 @@ gdi_thread(void *arg)
 	WNDCLASSW wc = {0};
 	MSG  msg;
 	RECT r;
+	ATOM cl;
 
 	SetThreadName("GDI Events");
 
@@ -704,7 +709,8 @@ gdi_thread(void *arg)
 	wc.lpfnWndProc   = gdi_WndProc;
 	// This is actually required or the link will fail (it can be overwritten though)
 	wc.hInstance     = WinMainHInst;
-	//wc.hInstance     = GetModuleHandleW(NULL);
+	if (wc.hInstance == NULL)
+		wc.hInstance     = GetModuleHandleW(NULL);
 	wc.hIcon         = LoadIcon(NULL, MAKEINTRESOURCE(1));
 	wc.hCursor       = LoadCursor(NULL, IDC_IBEAM);
 	wc.hbrBackground = NULL;
@@ -712,7 +718,9 @@ gdi_thread(void *arg)
 	wc.lpszClassName = L"SyncConsole";
 
 	cursor = wc.hCursor;
-	RegisterClassW(&wc);
+	cl = RegisterClassW(&wc);
+	if (cl == 0)
+		goto fail;
 	pthread_mutex_lock(&vstatlock);
 	// Now make the inside of the window the size we want (sigh)
 	r.left = r.top = 0;
@@ -721,6 +729,10 @@ gdi_thread(void *arg)
 	pthread_mutex_unlock(&vstatlock);
 	AdjustWindowRect(&r, style, FALSE);
 	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", style, CW_USEDEFAULT, CW_USEDEFAULT, r.right - r.left, r.bottom - r.top, NULL, NULL, NULL, NULL);
+	if (win == NULL)
+		goto fail;
+	// No failing after this...
+	init_success = true;
 	ReleaseSemaphore(init_sem, 1, NULL);
 
 	while (GetMessage(&msg, NULL, 0, 0)) {
@@ -733,6 +745,14 @@ gdi_thread(void *arg)
 	DestroyWindow(win);
 	UnregisterClassW(wc.lpszClassName, NULL);
 	gdi_add_key(CIO_KEY_QUIT);
+	return;
+
+fail:
+	if (cl != 0)
+		UnregisterClassW(wc.lpszClassName, wc.hInstance);
+	if (win != NULL)
+		DestroyWindow(win);
+	ReleaseSemaphore(init_sem, 1, NULL);
 }
 
 // Public API
@@ -976,12 +996,19 @@ gdi_init(int mode)
 	_beginthread(gdi_thread, 0, NULL);
 	WaitForSingleObject(init_sem, INFINITE);
 	CloseHandle(init_sem);
-	gdi_textmode(C80);
+	if (init_success) {
+		gdi_textmode(C80);
 
-	cio_api.mode=CIOLIB_MODE_GDI;
-	FreeConsole();
-	cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
-	return(0);
+		cio_api.mode=CIOLIB_MODE_GDI;
+		FreeConsole();
+		cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
+		return(0);
+	}
+	CloseHandle(rch);
+	rch = NULL;
+	CloseHandle(wch);
+	wch = NULL;
+	return 1;
 }
 
 int
