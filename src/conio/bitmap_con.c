@@ -1674,10 +1674,7 @@ bitmap_snap(bool grow, int maxwidth, int maxheight)
 	int wc;
 	int cw;
 	int cs;
-	int w, h;
 
-	w = vstat.winwidth;
-	h = vstat.winheight;
 	wc = bitmap_width_controls();
 	if (wc) {
 		mult = vstat.winwidth / vstat.scrnwidth;
