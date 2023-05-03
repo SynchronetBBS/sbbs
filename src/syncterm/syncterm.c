@@ -1327,8 +1327,6 @@ load_settings(struct syncterm_settings *set)
 	get_syncterm_filename(set->list_path, sizeof(set->list_path), SYNCTERM_PATH_LIST, false);
 	iniReadString(inifile, "SyncTERM", "ListPath", set->list_path, set->list_path);
 	set->scaling_factor = iniReadInteger(inifile, "SyncTERM", "ScalingFactor", 0);
-	set->window_width = iniReadInteger(inifile, "SyncTERM", "WindowWidth", 0);
-	set->window_height = iniReadInteger(inifile, "SyncTERM", "WindowHeight", 0);
 	set->blocky = iniReadBool(inifile, "SyncTERM", "BlockyScaling", true);
 
         // TODO: Add this to the UI somewhere.
@@ -1381,7 +1379,7 @@ main(int argc, char **argv)
 	char             *last_bbs = NULL;
 	char             *p, *lp;
 	int               cvmode;
-	int               ww, wh, sf;
+	int               sf;
 	int               default_hidepopups = -1;
 	int               default_nostatus = -1;
 	const char        syncterm_termcap[] = "\n# terminfo database entry for SyncTERM\n"
@@ -1548,8 +1546,7 @@ main(int argc, char **argv)
 	vparams[cvmode].charheight = settings.custom_fontheight;
 	vparams[cvmode].aspect_width = settings.custom_aw;
 	vparams[cvmode].aspect_height = settings.custom_ah;
-	ciolib_initial_window_height = settings.window_height;
-	ciolib_initial_window_width = settings.window_width;
+	ciolib_initial_scaling = settings.scaling_factor;
 	ciolib_mode = settings.output_mode;
 	if (settings.startup_mode != SCREEN_MODE_CURRENT)
 		text_mode = screen_to_ciolib(settings.startup_mode);
@@ -1716,8 +1713,6 @@ main(int argc, char **argv)
 	textmode(text_mode);
 	if (settings.scaling_factor)
 		setscaling(settings.scaling_factor);
-	if (settings.window_width && settings.window_height)
-		setwinsize(settings.window_width, settings.window_height);
 
 	gettextinfo(&txtinfo);
 	if ((txtinfo.screenwidth < 40) || (txtinfo.screenheight < 24)) {
@@ -1941,12 +1936,8 @@ main(int argc, char **argv)
         // Only save window info if we're in the startup mode...
 	if ((txtinfo.currmode == screen_to_ciolib(settings.startup_mode))
 	    || ((settings.startup_mode == SCREEN_MODE_CURRENT) && (txtinfo.currmode == C80))) {
-		ww = wh = sf = -1;
-		get_window_info(&ww, &wh, NULL, NULL);
 		sf = getscaling();
-		if (((sf > 0) && (sf != settings.scaling_factor))
-		    || ((ww > 0) && (ww != settings.window_width))
-		    || ((wh > 0) && (wh != settings.window_height))) {
+		if (((sf > 0) && (sf != settings.scaling_factor))) {
 			char       inipath[MAX_PATH + 1];
 			FILE      *inifile;
 			str_list_t inicontents;
@@ -1961,10 +1952,6 @@ main(int argc, char **argv)
 			}
 			if ((sf > 0) && (sf != settings.scaling_factor))
 				iniSetInteger(&inicontents, "SyncTERM", "ScalingFactor", sf, &ini_style);
-			if ((ww > 0) && (ww != settings.window_width))
-				iniSetInteger(&inicontents, "SyncTERM", "WindowWidth", ww, &ini_style);
-			if ((wh > 0) && (wh != settings.window_height))
-				iniSetInteger(&inicontents, "SyncTERM", "WindowHeight", wh, &ini_style);
 			if ((inifile = fopen(inipath, "w")) != NULL) {
 				iniWriteFile(inifile, inicontents);
 				fclose(inifile);
