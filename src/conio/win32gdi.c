@@ -724,13 +724,16 @@ gdi_thread(void *arg)
 	if (cl == 0)
 		goto fail;
 	pthread_mutex_lock(&vstatlock);
+	if (ciolib_initial_scaling != 0) {
+		bitmap_get_scaled_win_size(ciolib_initial_scaling, &vstat.winwidth, &vstat.winheight, 0, 0);
+	}
 	// Now make the inside of the window the size we want (sigh)
 	r.left = r.top = 0;
 	r.right = vstat.winwidth;
 	r.bottom = vstat.winheight;
 	pthread_mutex_unlock(&vstatlock);
 	AdjustWindowRect(&r, style, FALSE);
-	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", style, CW_USEDEFAULT, CW_USEDEFAULT, r.right - r.left, r.bottom - r.top, NULL, NULL, NULL, NULL);
+	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", style, CW_USEDEFAULT, SW_SHOWNORMAL, r.right - r.left, r.bottom - r.top, NULL, NULL, NULL, NULL);
 	if (win == NULL)
 		goto fail;
 	// No failing after this...
@@ -1085,4 +1088,27 @@ void
 gdi_setwinsize(int w, int h)
 {
 	PostMessageW(win, WM_USER_SETSIZE, w, h);
+}
+
+int
+gdi_getscaling(void)
+{
+	int ret;
+
+	// TODO: I hate having nested locks like this. :(
+	pthread_mutex_lock(&vstatlock);
+	ret = bitmap_largest_mult_inside(vstat.winwidth, vstat.winheight);
+	pthread_mutex_unlock(&vstatlock);
+	return ret;
+}
+
+void
+gdi_setscaling(int newval)
+{
+	int w, h;
+
+	pthread_mutex_lock(&vstatlock);
+	bitmap_get_scaled_win_size(newval, &w, &h, 0, 0);
+	pthread_mutex_unlock(&vstatlock);
+	gdi_setwinsize(w, h);
 }

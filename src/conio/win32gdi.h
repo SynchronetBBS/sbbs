@@ -19,5 +19,7 @@ void gdi_flush(void);
 int gdi_mousepointer(enum ciolib_mouse_ptr type);
 void gdi_setwinposition(int x, int y);
 void gdi_setwinsize(int w, int h);
+int gdi_getscaling(void);
+void gdi_setscaling(int newval);
 
 #endif

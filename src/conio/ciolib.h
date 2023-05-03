@@ -406,6 +406,7 @@ CIOLIBEXPORTVAR int ciolib_reaper;
 CIOLIBEXPORTVAR const char *ciolib_appname;
 CIOLIBEXPORTVAR int ciolib_initial_window_height;
 CIOLIBEXPORTVAR int ciolib_initial_window_width;
+CIOLIBEXPORTVAR int ciolib_initial_scaling;
 
 CIOLIBEXPORT int initciolib(int mode);
 CIOLIBEXPORT void suspendciolib(void);

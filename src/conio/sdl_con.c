@@ -355,16 +355,15 @@ internal_scaling_factors(int *x, int *y, struct video_stats *vs)
 	calc_scaling_factors(x, y, vs->winwidth, vs->winheight, vs->aspect_width, vs->aspect_height, vs->scrnwidth, vs->scrnheight);
 }
 
-static int sdl_init_mode(int mode)
+static int sdl_init_mode(int mode, bool init)
 {
 	int oldcols;
-	int scaling = 1;
 	int w, h;
 	SDL_Rect r;
 
 	if (mode != CIOLIB_MODE_CUSTOM) {
 		pthread_mutex_lock(&vstatlock);
-		if (mode == vstat.mode) {
+		if (mode == vstat.mode && !init) {
 			pthread_mutex_unlock(&vstatlock);
 			return 0;
 		}
@@ -384,6 +383,9 @@ static int sdl_init_mode(int mode)
 		h = 0;
 	}
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height, w, h);
+	if (init && ciolib_initial_scaling) {
+		bitmap_get_scaled_win_size(ciolib_initial_scaling, &vstat.winwidth, &vstat.winheight, 0, 0);
+	}
 	internal_scaling = window_can_scale_internally(&vstat);
 	pthread_mutex_lock(&sdl_mode_mutex);
 	sdl_mode = true;
@@ -409,7 +411,7 @@ int sdl_init(int mode)
 	_beginthread(sdl_video_event_thread, 0, NULL);
 #endif
 	sdl_user_func_ret(SDL_USEREVENT_INIT);
-	sdl_init_mode(3);
+	sdl_init_mode(3, true);
 
 	if(sdl_init_good) {
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
@@ -440,9 +442,9 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 	int w, h;
 	bool changed = true;
 
-	update_cvstat(vs);
 	w = vs->winwidth;
 	h = vs->winheight;
+	update_cvstat(vs);
 	if (w > 16384)
 		w = 16384;
 	if (h > 16384)
@@ -535,7 +537,7 @@ int sdl_getch(void)
 /* Called from main thread only */
 void sdl_textmode(int mode)
 {
-	sdl_init_mode(mode);
+	sdl_init_mode(mode, false);
 }
 
 /* Called from main thread only (Passes Event) */
@@ -1154,6 +1156,8 @@ void sdl_video_event_thread(void *data)
 						sdl_mode = false;
 						pthread_mutex_unlock(&sdl_mode_mutex);
 
+						cvstat.winwidth = ev.user.data1;
+						cvstat.winheight = ev.user.data2;
 						internal_setwinsize(&cvstat, true);
 						sdl_ufunc_retval=0;
 						sem_post(&sdl_ufunc_ret);
@@ -1262,4 +1266,27 @@ int sdl_mousepointer(enum ciolib_mouse_ptr type)
 {
 	sdl_user_func(SDL_USEREVENT_MOUSEPOINTER,type);
 	return(0);
+}
+
+int
+sdl_getscaling(void)
+{
+	int ret;
+
+	// TODO: I hate having nested locks like this. :(
+	pthread_mutex_lock(&vstatlock);
+	ret = bitmap_largest_mult_inside(vstat.winwidth, vstat.winwidth);
+	pthread_mutex_unlock(&vstatlock);
+	return ret;
+}
+
+void
+sdl_setscaling(int newval)
+{
+	int w, h;
+
+	pthread_mutex_lock(&vstatlock);
+	bitmap_get_scaled_win_size(newval, &w, &h, 0, 0);
+	pthread_mutex_unlock(&vstatlock);
+	sdl_setwinsize(w, h);
 }

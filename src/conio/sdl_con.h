@@ -39,6 +39,8 @@ void sdl_setwinsize(int w, int h);
 void sdl_setwinposition(int x, int y);
 void sdl_beep(void);
 int sdl_mousepointer(enum ciolib_mouse_ptr type);
+int sdl_getscaling(void);
+void sdl_setscaling(int newval);
 
 #if defined(__DARWIN__)
 void sdl_init_darwin(void *args);

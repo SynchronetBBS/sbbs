@@ -87,6 +87,7 @@ CIOLIBEXPORT int ciolib_reaper=TRUE;
 CIOLIBEXPORT const char *ciolib_appname=NULL;
 CIOLIBEXPORT int ciolib_initial_window_height = -1;
 CIOLIBEXPORT int ciolib_initial_window_width = -1;
+CIOLIBEXPORT int ciolib_initial_scaling = 0;
 static int initialized=0;
 
 CIOLIBEXPORT int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
@@ -182,6 +183,8 @@ static int try_gdi_init(int mode)
 		cio_api.copytext=gdi_copytext;
 		cio_api.getcliptext=gdi_getcliptext;
 		cio_api.get_window_info=gdi_get_window_info;
+		cio_api.setscaling=gdi_setscaling;
+		cio_api.getscaling=gdi_getscaling;
 		cio_api.setwinsize=gdi_setwinsize;
 		cio_api.setwinposition=gdi_setwinposition;
 		cio_api.setpalette=bitmap_setpalette;
@@ -233,6 +236,8 @@ static int try_sdl_init(int mode)
 		cio_api.copytext=sdl_copytext;
 		cio_api.getcliptext=sdl_getcliptext;
 		cio_api.get_window_info=sdl_get_window_info;
+		cio_api.setscaling=sdl_setscaling;
+		cio_api.getscaling=sdl_getscaling;
 		cio_api.setwinsize=sdl_setwinsize;
 		cio_api.setwinposition=sdl_setwinposition;
 		cio_api.setpalette=bitmap_setpalette;
