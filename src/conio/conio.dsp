@@ -120,5 +120,9 @@ SOURCE=.\scale.c
 
 SOURCE=.\xbr.c
 # End Source File
+# Begin Source File
+
+SOURCE=.\SDL_win32_main.c
+# End Source File
 # End Target
 # End Project
