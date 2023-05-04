@@ -357,7 +357,6 @@ internal_scaling_factors(int *x, int *y, struct video_stats *vs)
 
 static int sdl_init_mode(int mode, bool init)
 {
-	int oldcols;
 	int w, h;
 	SDL_Rect r;
 
@@ -373,7 +372,6 @@ static int sdl_init_mode(int mode, bool init)
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 
 	pthread_mutex_lock(&vstatlock);
-	oldcols = vstat.cols;
 	if (sdl.GetDisplayUsableBounds(0, &r) == 0) {
 		w = r.w;
 		h = r.h;
@@ -1156,8 +1154,8 @@ void sdl_video_event_thread(void *data)
 						sdl_mode = false;
 						pthread_mutex_unlock(&sdl_mode_mutex);
 
-						cvstat.winwidth = ev.user.data1;
-						cvstat.winheight = ev.user.data2;
+						cvstat.winwidth = (int)ev.user.data1;
+						cvstat.winheight = (int)ev.user.data2;
 						internal_setwinsize(&cvstat, true);
 						sdl_ufunc_retval=0;
 						sem_post(&sdl_ufunc_ret);
