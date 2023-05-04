@@ -493,10 +493,7 @@ static void resize_window()
 
 static void init_mode_internal(int mode)
 {
-	int oldcols;
 	int mw, mh;
-
-	oldcols=x_cvstat.cols;
 
 	x11_get_maxsize(&mw, &mh);
 	pthread_mutex_lock(&vstatlock);
