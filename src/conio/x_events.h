@@ -96,8 +96,10 @@ struct x11 {
 	Cursor (*XCreateFontCursor)(Display *display, unsigned int shape);
 	int (*XDefineCursor)(Display *display, Window w, Cursor cursor);
 	int (*XFreeCursor)(Display *display, Cursor cursor);
+	Status (*XGetGeometry)(Display *, Drawable, Window *, int *, int *, unsigned int *, unsigned int *, unsigned int *, unsigned int *);
 	Atom utf8;
 	Atom targets;
+	Atom workarea;
 };
 
 extern int local_pipe[2];			/* Used for passing local events */
@@ -118,8 +120,6 @@ extern sem_t	event_thread_complete;
 extern int terminate;
 extern int x11_window_xpos;
 extern int x11_window_ypos;
-extern int x11_window_width;
-extern int x11_window_height;
 extern int x11_initialized;
 extern struct video_stats x_cvstat;
 

@@ -56,6 +56,9 @@
 #define BITMAP_CIOLIB_DRIVER
 #include "bitmap_con.h"
 
+pthread_mutex_t scalinglock;
+int newscaling;
+
 int x_kbhit(void)
 {
 	fd_set	rfd;
@@ -179,10 +182,12 @@ char *x_getcliptext(void)
 
 int x_get_window_info(int *width, int *height, int *xpos, int *ypos)
 {
+	pthread_mutex_lock(&vstatlock);
 	if(width)
-		*width=x11_window_width;
+		*width=vstat.winwidth;
 	if(height)
-		*height=x11_window_height;
+		*height=vstat.winheight;
+	pthread_mutex_unlock(&vstatlock);
 	if(xpos)
 		*xpos=x11_window_xpos;
 	if(ypos)
@@ -213,6 +218,8 @@ int x_init(void)
 	/* Ensure we haven't already initialized */
 	if(x11_initialized)
 		return(0);
+
+	pthread_mutex_init(&scalinglock, NULL);
 
 	/* Set up the pipe for local events */
 	if(pipe(local_pipe))
@@ -459,6 +466,10 @@ int x_init(void)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XGetGeometry=xp_dlsym(dl,XGetGeometry))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
 	setlocale(LC_ALL, "");
 	x11.XSetLocaleModifiers("@im=none");
 
@@ -534,14 +545,19 @@ void x_setscaling(int newval)
 {
 	if (newval < 1)
 		newval = 1;
-	pthread_mutex_lock(&vstatlock);
-	x_cvstat.scaling = vstat.scaling = newval;
-	pthread_mutex_unlock(&vstatlock);
+	pthread_mutex_lock(&scalinglock);
+	newscaling = newval;
+	pthread_mutex_unlock(&scalinglock);
 }
 
 int x_getscaling(void)
 {
-	return x_cvstat.scaling;
+	int ret;
+
+	pthread_mutex_lock(&vstatlock);
+	ret = vstat.scaling;
+	pthread_mutex_unlock(&vstatlock);
+	return ret;
 }
 
 int x_mousepointer(enum ciolib_mouse_ptr type)

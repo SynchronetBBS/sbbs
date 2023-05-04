@@ -51,8 +51,6 @@ sem_t	init_complete;
 sem_t	mode_set;
 int x11_window_xpos;
 int x11_window_ypos;
-int x11_window_width;
-int x11_window_height;
 int x11_initialized=0;
 sem_t	event_thread_complete;
 int	terminate = 0;
@@ -79,9 +77,6 @@ static unsigned int depth=0;
 static int xfd;
 static unsigned long black;
 static unsigned long white;
-static int bitmap_width=0;
-static int bitmap_height=0;
-static int old_scaling = 0;
 struct video_stats x_cvstat;
 static unsigned long base_pixel;
 static int r_shift;
@@ -208,12 +203,72 @@ static struct {
     {	0x8600, 0x5888, 0x8a00, 0x8c00 }, /* key 88 - F12 */
 };
 
+static bool
+x11_get_maxsize(int *w, int *h)
+{
+	int i;
+	long offset;
+	int maxw = 0, maxh = 0;
+	Atom atr;
+	int afr;
+	long *ret;
+	unsigned long nir;
+	unsigned long bytes_left = 4;
+	Window root = DefaultRootWindow(dpy);
+	unsigned int rw, rh;
+	uint64_t dummy;
+	unsigned char *prop;
+
+	if (dpy == NULL)
+		return false;
+	// First, try to get _NET_WORKAREA...
+	if (x11.workarea == None) {
+		x11.workarea = x11.XInternAtom(dpy, "_NET_WORKAREA", True);
+	}
+	if (x11.workarea != None) {
+		for (i = 0, offset = 0; bytes_left; i++) {
+			if (x11.XGetWindowProperty(dpy, root, x11.workarea, offset, 4, False, XA_CARDINAL, &atr, &afr, &nir, &bytes_left, &prop) != Success)
+				break;
+			if (atr != XA_CARDINAL)
+				break;
+			ret = (long *)prop;
+			if (nir >= 3) {
+				if (ret[2] > maxw)
+					maxw = ret[2];
+			}
+			if (nir >= 4) {
+				if (ret[3] > maxh)
+					maxh = ret[3];
+			}
+			x11.XFree(prop);
+		}
+	}
+
+	// Couldn't get work area, get size of root window instead. :(
+	if (maxw == 0 || maxh == 0) {
+		if (x11.XGetGeometry(dpy, root, (void *)&dummy, (void *)&dummy, (void *)&dummy, &rw, &rh, (void *)&dummy, (void *)&dummy)) {
+			if (rw > maxw)
+				maxw = rw;
+			if (rh > maxh)
+				maxh = rh;
+		}
+	}
+	if (maxw != 0 && maxh != 0) {
+		*w = maxw;
+		*h = maxh;
+		return true;
+	}
+	return false;
+}
+
 static void resize_xim(void)
 {
-	int width = bitmap_width * x_cvstat.scaling;
-	int height = bitmap_height * x_cvstat.scaling;
+	int width, height;
 
-	aspect_correct(&width, &height, x_cvstat.aspect_width, x_cvstat.aspect_height);
+	pthread_mutex_lock(&vstatlock);
+	bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
+	pthread_mutex_unlock(&vstatlock);
+
 	if (xim) {
 		if (width == xim->width
 		    && height == xim->height) {
@@ -221,7 +276,7 @@ static void resize_xim(void)
 				release_buffer(last);
 				last = NULL;
 			}
-			x11.XFillRectangle(dpy, win, gc, 0, 0, x11_window_width, x11_window_height);
+			x11.XFillRectangle(dpy, win, gc, 0, 0, width, height);
 			return;
 		}
 #ifdef XDestroyImage
@@ -236,7 +291,7 @@ static void resize_xim(void)
 	}
 	xim = x11.XCreateImage(dpy, &visual, depth, ZPixmap, 0, NULL, width, height, 32, 0);
 	xim->data=(char *)calloc(1, xim->bytes_per_line*xim->height);
-	x11.XFillRectangle(dpy, win, gc, 0, 0, x11_window_width, x11_window_height);
+	x11.XFillRectangle(dpy, win, gc, 0, 0, width, height);
 }
 
 /* Swiped from FreeBSD libc */
@@ -252,6 +307,50 @@ my_fls(unsigned long mask)
         return (bit);
 }
 
+/*
+ * Actually maps (shows) the window
+ */
+static void map_window()
+{
+	XSizeHints *sh;
+	int minwidth = x_cvstat.scrnwidth;
+	int minheight = x_cvstat.scrnheight;
+
+	sh = x11.XAllocSizeHints();
+	if (sh == NULL) {
+		fprintf(stderr, "Could not get XSizeHints structure");
+		exit(1);
+	}
+
+	sh->base_width = x_cvstat.scrnwidth * x_cvstat.scaling;
+	sh->base_height = x_cvstat.scrnheight * x_cvstat.scaling;
+
+	int mw, mh;
+	if (x11_get_maxsize(&mw,&mh)) {
+		pthread_mutex_lock(&vstatlock);
+		bitmap_get_scaled_win_size(bitmap_largest_mult_inside(mw, mh), &sh->max_width, &sh->max_height, mw, mh);
+		pthread_mutex_unlock(&vstatlock);
+	}
+
+	aspect_correct(&sh->base_width, &sh->base_height, x_cvstat.aspect_width, x_cvstat.aspect_height);
+	aspect_correct(&minwidth, &minheight, x_cvstat.aspect_width, x_cvstat.aspect_height);
+
+	sh->min_width = sh->width_inc = sh->min_aspect.x = sh->max_aspect.x = minwidth;
+	sh->min_height = sh->height_inc = sh->min_aspect.y = sh->max_aspect.y = minheight;
+
+	sh->flags = USSize | PMinSize | PSize | PResizeInc | PAspect | PMaxSize;
+
+	x11.XSetWMNormalHints(dpy, win, sh);
+	pthread_mutex_lock(&vstatlock);
+	vstat.scaling = x_cvstat.scaling;
+	pthread_mutex_unlock(&vstatlock);
+	x11.XMapWindow(dpy, win);
+
+	x11.XFree(sh);
+
+	return;
+}
+
 /* Get a connection to the X server and create the window. */
 static int init_window()
 {
@@ -265,6 +364,8 @@ static int init_window()
 	int best_cmap=0;
 	XVisualInfo template = {0};
 	XVisualInfo *vi;
+	int w, h;
+	int mw, mh;
 
 	dpy = x11.XOpenDisplay(NULL);
 	if (dpy == NULL) {
@@ -273,6 +374,7 @@ static int init_window()
 	xfd = ConnectionNumber(dpy);
 	x11.utf8 = x11.XInternAtom(dpy, "UTF8_STRING", False);
 	x11.targets = x11.XInternAtom(dpy, "TARGETS", False);
+	x11.workarea = x11.XInternAtom(dpy, "_NET_WORKAREA", True);
 
 	template.screen = DefaultScreen(dpy);
 	template.class = TrueColor;
@@ -317,8 +419,15 @@ static int init_window()
 	wa.background_pixel = black;
 	wa.border_pixel = black;
 	depth = best_depth;
-    win = x11.XCreateWindow(dpy, DefaultRootWindow(dpy), 0, 0,
-			      640*x_cvstat.scaling, 400*x_cvstat.scaling, 2, depth, InputOutput, &visual, CWColormap | CWBorderPixel | CWBackPixel, &wa);
+	x11_get_maxsize(&mw, &mh);
+	pthread_mutex_lock(&vstatlock);
+	bitmap_get_scaled_win_size(x_cvstat.scaling, &w, &h, mw, mh);
+	vstat.winwidth = x_cvstat.winwidth = w;
+	vstat.winwidth = x_cvstat.winheight = h;
+	vstat.scaling = x_cvstat.scaling;
+	pthread_mutex_unlock(&vstatlock);
+	win = x11.XCreateWindow(dpy, DefaultRootWindow(dpy), 0, 0,
+	    w, h, 2, depth, InputOutput, &visual, CWColormap | CWBorderPixel | CWBackPixel, &wa);
 
 	classhints=x11.XAllocClassHint();
 	if (classhints)
@@ -359,47 +468,23 @@ static int init_window()
 	return(0);
 }
 
-/*
- * Actually maps (shows) the window
- */
-static void map_window()
-{
-	XSizeHints *sh;
-	int minwidth = bitmap_width;
-	int minheight = bitmap_height;
-
-	sh = x11.XAllocSizeHints();
-	if (sh == NULL) {
-		fprintf(stderr, "Could not get XSizeHints structure");
-		exit(1);
-	}
-
-	sh->base_width = bitmap_width * x_cvstat.scaling;
-	sh->base_height = bitmap_height * x_cvstat.scaling;
-
-	aspect_correct(&sh->base_width, &sh->base_height, x_cvstat.aspect_width, x_cvstat.aspect_height);
-	aspect_correct(&minwidth, &minheight, x_cvstat.aspect_width, x_cvstat.aspect_height);
-
-	sh->min_width = sh->width_inc = sh->min_aspect.x = sh->max_aspect.x = minwidth;
-	sh->min_height = sh->height_inc = sh->min_aspect.y = sh->max_aspect.y = minheight;
-
-	sh->flags = USSize | PMinSize | PSize | PResizeInc | PAspect;
-
-	x11.XSetWMNormalHints(dpy, win, sh);
-	x11.XMapWindow(dpy, win);
-
-	x11.XFree(sh);
-
-	return;
-}
-
 /* Resize the window. This function is called after a mode change. */
 static void resize_window()
 {
-	int width = bitmap_width * x_cvstat.scaling;
-	int height = bitmap_height * x_cvstat.scaling;
+	int width = x_cvstat.scrnwidth * x_cvstat.scaling;
+	int height = x_cvstat.scrnheight * x_cvstat.scaling;
 
 	aspect_correct(&width, &height, x_cvstat.aspect_width, x_cvstat.aspect_height);
+	pthread_mutex_lock(&vstatlock);
+	if (width == x_cvstat.winwidth && height == x_cvstat.winheight) {
+		pthread_mutex_unlock(&vstatlock);
+		resize_xim();
+		return;
+	}
+	x_cvstat.winwidth = vstat.winwidth = width;
+	x_cvstat.winheight = vstat.winheight = height;
+	vstat.scaling = bitmap_largest_mult_inside(width, height);
+	pthread_mutex_unlock(&vstatlock);
 	x11.XResizeWindow(dpy, win, width, height);
 	resize_xim();
 
@@ -409,36 +494,37 @@ static void resize_window()
 static void init_mode_internal(int mode)
 {
 	int oldcols;
+	int mw, mh;
 
 	oldcols=x_cvstat.cols;
 
+	x11_get_maxsize(&mw, &mh);
 	pthread_mutex_lock(&vstatlock);
 	if (last) {
 		release_buffer(last);
 		last = NULL;
 	}
-	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height, 0, 0);
-
-	/* Deal with 40 col doubling */
-	if(oldcols != vstat.cols) {
-		if(oldcols == 40)
-			vstat.scaling /= 2;
-		if(vstat.cols == 40)
-			vstat.scaling *= 2;
-	}
-	if(vstat.scaling < 1)
-		vstat.scaling = 1;
-
+	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
 	x_cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
+	resize_xim();
 	map_window();
 }
 
 static void check_scaling(void)
 {
-	if (old_scaling != x_cvstat.scaling) {
+	pthread_mutex_lock(&vstatlock);
+	pthread_mutex_lock(&scalinglock);
+	if (newscaling != 0 && newscaling != vstat.scaling) {
+		x_cvstat.scaling = newscaling;
+		newscaling = 0;
+		pthread_mutex_unlock(&scalinglock);
+		pthread_mutex_unlock(&vstatlock);
 		resize_window();
-		old_scaling = x_cvstat.scaling;
+	}
+	else {
+		pthread_mutex_unlock(&scalinglock);
+		pthread_mutex_unlock(&vstatlock);
 	}
 }
 
@@ -454,20 +540,29 @@ static int init_mode(int mode)
 
 static int video_init()
 {
-    /* If we are running under X, get a connection to the X server and create
-       an empty window of size (1, 1). It makes a couple of init functions a
-       lot easier. */
-	if(x_cvstat.scaling<1)
-		x_setscaling(1);
-    if(init_window())
+	/* If we are running under X, get a connection to the X server and create
+	   an empty window of size (1, 1). It makes a couple of init functions a
+	   lot easier. */
+
+	pthread_mutex_lock(&vstatlock);
+	if (x_cvstat.scaling < 1)
+		x_cvstat.scaling = vstat.scaling = 1;
+	if (ciolib_initial_scaling)
+		x_cvstat.scaling = vstat.scaling = ciolib_initial_scaling;
+	pthread_mutex_unlock(&vstatlock);
+	/* Initialize mode 3 (text, 80x25, 16 colors) */
+	if(load_vmode(&vstat, C80))
 		return(-1);
-
+	x_cvstat = vstat;
 	bitmap_drv_init(x11_drawrect, x11_flush);
+	pthread_mutex_lock(&vstatlock);
+	bitmap_drv_init_mode(vstat.mode, NULL, NULL, 0, 0);
+	pthread_mutex_unlock(&vstatlock);
+	if(init_window())
+		return(-1);
+	init_mode_internal(x_cvstat.mode);
 
-    /* Initialize mode 3 (text, 80x25, 16 colors) */
-    init_mode_internal(3);
-
-    return(0);
+	return(0);
 }
 
 static void
@@ -483,18 +578,12 @@ local_draw_rect(struct rectlist *rect)
 	int idx;
 	uint32_t last_pixel = 0x55555555;
 	struct graphics_buffer *source;
+	int w, h;
 
-	if (bitmap_width != rect->rect.width || bitmap_height != rect->rect.height) {
+	if (x_cvstat.scrnwidth != rect->rect.width || x_cvstat.scrnheight != rect->rect.height || xim == NULL) {
 		bitmap_drv_free_rect(rect);
 		return;
 	}
-
-	xoff = (x11_window_width - xim->width) / 2;
-	if (xoff < 0)
-		xoff = 0;
-	yoff = (x11_window_height - xim->height) / 2;
-	if (yoff < 0)
-		yoff = 0;
 
 	// Scale...
 	source = do_scale(rect, x_cvstat.scaling, x_cvstat.scaling, x_cvstat.aspect_width, x_cvstat.aspect_height);
@@ -504,10 +593,14 @@ local_draw_rect(struct rectlist *rect)
 	cleft = source->w;
 	ctop = source->h;
 
-	xoff = (x11_window_width - source->w) / 2;
+	pthread_mutex_lock(&vstatlock);
+	w = vstat.winwidth;
+	h = vstat.winheight;
+	pthread_mutex_unlock(&vstatlock);
+	xoff = (w - source->w) / 2;
 	if (xoff < 0)
 		xoff = 0;
-	yoff = (x11_window_height - source->h) / 2;
+	yoff = (h - source->h) / 2;
 	if (yoff < 0)
 		yoff = 0;
 
@@ -584,6 +677,13 @@ local_draw_rect(struct rectlist *rect)
 		}
 	}
 
+	// TODO: We really only need to do this once after changing resolution...
+	if (xoff > 0 || yoff > 0) {
+		x11.XFillRectangle(dpy, win, gc, 0, 0, w, yoff);
+		x11.XFillRectangle(dpy, win, gc, 0, yoff, xoff, yoff + xim->height);
+		x11.XFillRectangle(dpy, win, gc, xoff+xim->width, yoff, w, yoff + xim->height);
+		x11.XFillRectangle(dpy, win, gc, 0, yoff + xim->height, w, h);
+	}
 	if (last == NULL)
 		x11.XPutImage(dpy, win, gc, xim, 0, 0, xoff, yoff, source->w, source->h);
 	else
@@ -593,30 +693,32 @@ local_draw_rect(struct rectlist *rect)
 
 static void handle_resize_event(int width, int height)
 {
-	int newFSH=1;
-	int newFSW=1;
+	bool resize = false;
+	int new_scaling;
 
-	aspect_fix(&width, &height, x_cvstat.aspect_width, x_cvstat.aspect_height);
-	newFSH=width / bitmap_width;
-	newFSW=height / bitmap_height;
-	if(newFSW<1)
-		newFSW=1;
-	if(newFSH<1)
-		newFSH=1;
-	if(newFSH<newFSW)
-		x_setscaling(newFSH);
-	else
-		x_setscaling(newFSW);
-	old_scaling = x_cvstat.scaling;
-	if(x_cvstat.scaling > 16)
-		x_setscaling(16);
-
+	pthread_mutex_lock(&vstatlock);
+	vstat.winwidth = x_cvstat.winwidth = width;
+	vstat.winheight = x_cvstat.winheight = height;
+	new_scaling = bitmap_largest_mult_inside(width, height);
+	if (new_scaling != vstat.scaling) {
+		vstat.scaling = x_cvstat.scaling = new_scaling;
+		resize = true;
+	}
+	if (new_scaling > 16) {
+		new_scaling = 16;
+		pthread_mutex_lock(&scalinglock);
+		newscaling = new_scaling;
+		pthread_mutex_unlock(&scalinglock);
+		x_cvstat.scaling = new_scaling;
+		resize = true;
+	}
+	pthread_mutex_unlock(&vstatlock);
 	/*
 	 * We only need to resize if the width/height are not even multiples,
 	 * or if the two axis don't scale the same way.
 	 * Otherwise, we can simply resend everything
 	 */
-	if (newFSH != newFSW)
+	if (resize)
 		resize_window();
 	else
 		resize_xim();
@@ -627,25 +729,35 @@ static void expose_rect(int x, int y, int width, int height)
 {
 	int sx,sy,ex,ey;
 	int xoff=0, yoff=0;
+	int w, h, s;
 
-	xoff = (x11_window_width - xim->width) / 2;
+	if (xim == NULL) {
+		fprintf(stderr, "Exposing NULL xim!\n");
+		return;
+	}
+	pthread_mutex_lock(&vstatlock);
+	w = vstat.winwidth;
+	h = vstat.winheight;
+	s = vstat.scaling;
+	pthread_mutex_unlock(&vstatlock);
+	xoff = (w - xim->width) / 2;
 	if (xoff < 0)
 		xoff = 0;
-	yoff = (x11_window_height - xim->height) / 2;
+	yoff = (h - xim->height) / 2;
 	if (yoff < 0)
 		yoff = 0;
 
 	if (xoff > 0 || yoff > 0) {
 		if (x < xoff || y < yoff || x + width > xoff + xim->width || y + height > yoff + xim->height) {
-			x11.XFillRectangle(dpy, win, gc, 0, 0, x11_window_width, yoff);
+			x11.XFillRectangle(dpy, win, gc, 0, 0, w, yoff);
 			x11.XFillRectangle(dpy, win, gc, 0, yoff, xoff, yoff + xim->height);
-			x11.XFillRectangle(dpy, win, gc, xoff+xim->width, yoff, x11_window_width, yoff + xim->height);
-			x11.XFillRectangle(dpy, win, gc, 0, yoff + xim->height, x11_window_width, x11_window_height);
+			x11.XFillRectangle(dpy, win, gc, xoff+xim->width, yoff, w, yoff + xim->height);
+			x11.XFillRectangle(dpy, win, gc, 0, yoff + xim->height, w, h);
 		}
 	}
 
-	sx=(x-xoff)/x_cvstat.scaling;
-	sy=(y-yoff)/(x_cvstat.scaling);
+	sx = (x - xoff) / s;
+	sy = (y - yoff) / s;
 	if (sx < 0)
 		sx = 0;
 	if (sy < 0)
@@ -657,14 +769,14 @@ static void expose_rect(int x, int y, int width, int height)
 		ex = 0;
 	if (ey < 0)
 		ey = 0;
-	if((ex+1)%x_cvstat.scaling) {
-		ex += x_cvstat.scaling-(ex%x_cvstat.scaling);
+	if ((ex + 1) % s) {
+		ex += s - (ex % s);
 	}
-	if((ey+1)%(x_cvstat.scaling)) {
-		ey += x_cvstat.scaling-(ey%(x_cvstat.scaling));
+	if ((ey + 1) % s) {
+		ey += s - (ey % s);
 	}
-	ex=ex/x_cvstat.scaling;
-	ey=ey/(x_cvstat.scaling);
+	ex = ex / s;
+	ey = ey / s;
 
 	/* Since we're exposing, we *have* to redraw */
 	if (last) {
@@ -683,12 +795,14 @@ xlat_mouse_xy(int *x, int *y)
 {
 	int xoff, yoff;
 
-	xoff = (x11_window_width - xim->width) / 2;
+	pthread_mutex_lock(&vstatlock);
+	xoff = (vstat.winwidth - xim->width) / 2;
 	if (xoff < 0)
 		xoff = 0;
-	yoff = (x11_window_height - xim->height) / 2;
+	yoff = (vstat.winheight - xim->height) / 2;
 	if (yoff < 0)
 		yoff = 0;
+	pthread_mutex_unlock(&vstatlock);
 
 	if (*x < xoff)
 		return false;
@@ -720,47 +834,11 @@ static int x11_event(XEvent *ev)
 			break;
 		/* Graphics related events */
 		case ConfigureNotify: {
-			int width, height;
-
 			if (x11_window_xpos != ev->xconfigure.x || x11_window_ypos != ev->xconfigure.y) {
 				x11_window_xpos=ev->xconfigure.x;
 				x11_window_ypos=ev->xconfigure.y;
 			}
-			if (x11_window_width != ev->xconfigure.width || x11_window_height != ev->xconfigure.height) {
-				x11_window_width=ev->xconfigure.width;
-				x11_window_height=ev->xconfigure.height;
-				handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
-				break;
-			}
-			width = bitmap_width * x_cvstat.scaling;
-			height = bitmap_height * x_cvstat.scaling;
-
-			aspect_correct(&width, &height, x_cvstat.aspect_width, x_cvstat.aspect_height);
-			if (ev->xconfigure.width != width || ev->xconfigure.height != height) {
-				// We can't have the size we requested... accept the size we got.
-				int newFSH=1;
-				int newFSW=1;
-
-				width = ev->xconfigure.width;
-				height = ev->xconfigure.height;
-				aspect_fix(&width, &height, x_cvstat.aspect_width, x_cvstat.aspect_height);
-				newFSH=width / bitmap_width;
-				newFSW=height / bitmap_height;
-				if(newFSW<1)
-					newFSW=1;
-				if(newFSH<1)
-					newFSH=1;
-				if(newFSH<newFSW)
-					x_setscaling(newFSH);
-				else
-					x_setscaling(newFSW);
-				old_scaling = x_cvstat.scaling;
-				if(x_cvstat.scaling > 16)
-					x_setscaling(16);
-
-				resize_xim();
-				bitmap_drv_request_pixels();
-			}
+			handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
 			break;
 		}
 		case NoExpose:
@@ -1049,7 +1127,7 @@ static int x11_event(XEvent *ev)
 							case XK_KP_Left:
 								if (ev->xkey.state & Mod1Mask) {
 									if (x_cvstat.scaling > 1)
-										x_cvstat.scaling--;
+										x_setscaling(x_cvstat.scaling - 1);
 								}
 								scan = 75;
 								goto docode;
@@ -1067,8 +1145,15 @@ static int x11_event(XEvent *ev)
 							case XK_KP_Right:
 								scan = 77;
 								if (ev->xkey.state & Mod1Mask) {
-									if (x_cvstat.scaling < 7)
-										x_cvstat.scaling++;
+									if (x_cvstat.scaling < 7) {
+										int mw, mh, ms;
+										x11_get_maxsize(&mw,&mh);
+										pthread_mutex_lock(&vstatlock);
+										ms = bitmap_largest_mult_inside(mw, mh);
+										pthread_mutex_unlock(&vstatlock);
+										if (x_cvstat.scaling < ms)
+											x_setscaling(x_cvstat.scaling + 1);
+									}
 								}
 								goto docode;
 

@@ -39,6 +39,8 @@
  #undef CIOLIB_EXPORTS
 #endif
 
+#include <threadwrap.h>
+
 #include "ciolib.h"
 #include "bitmap_con.h"
 #include "x_events.h"
@@ -46,6 +48,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+extern pthread_mutex_t scalinglock;
+extern int newscaling;
+
 int x_puttext(int sx, int sy, int ex, int ey, void *fill);
 int x_gettext(int sx, int sy, int ex, int ey, void *fill);
 void x_textattr(int attr);
