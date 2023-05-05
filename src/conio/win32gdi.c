@@ -359,8 +359,11 @@ gdi_handle_wm_char(WPARAM wParam, LPARAM lParam)
 		cp = wParam;
 	}
 	// Translate from unicode to codepage...
-	ch = cpchar_from_unicode_cpoint(getcodepage(), cp, cp);
-	if (ch && ch < 256) {
+	ch = cpchar_from_unicode_cpoint(getcodepage(), cp, 0);
+	// Control characters get a pass (TODO: Test in ATASCII)
+	if (ch == 0 && cp < 32)
+		ch = cp;
+	if (ch) {
 		for (i = 0; i < repeat; i++)
 			gdi_add_key(ch);
 	}
