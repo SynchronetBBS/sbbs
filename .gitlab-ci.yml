@@ -146,7 +146,7 @@ syncterm-windows:
   extends: .rules
   script:
     - cd src/syncterm
-    - gmake AR=mingw32-ar CC=mingw32-gcc CXX=mingw32-g++ RANLIB=mingw32-ranlib RELEASE=1 STATIC_CRYPTLIB=yes USE_SDL=1 VERBOSE=please WINDRES=mingw32-windres
+    - gmake AR=mingw32-ar AS=mingw32-as CC=mingw32-gcc CXX=mingw32-g++ RANLIB=mingw32-ranlib RELEASE=1 STATIC_CRYPTLIB=yes USE_SDL=1 VERBOSE=please WINDRES=mingw32-windres
   artifacts:
     name: syncterm-win32
     paths:
@@ -220,7 +220,7 @@ jsdoor-windows:
   extends: .rules
   script:
     - cd src/sbbs3
-    - gmake AR=mingw32-ar CC=mingw32-gcc CXX=mingw32-g++ JSINCLUDE=../../3rdp/win32.release/mozjs/include/ JSLIB=mozjs JSLIBDIR=../../3rdp/win32.release/mozjs/bin/ RANLIB=mingw32-ranlib RELEASE=1 VERBOSE=please WINDRES=mingw32-windres jsdoor
+    - gmake AR=mingw32-ar AS=mingw32-as CC=mingw32-gcc CXX=mingw32-g++ JSINCLUDE=../../3rdp/win32.release/mozjs/include/ JSLIB=mozjs JSLIBDIR=../../3rdp/win32.release/mozjs/bin/ RANLIB=mingw32-ranlib RELEASE=1 VERBOSE=please WINDRES=mingw32-windres jsdoor
   artifacts:
     name: jsdoor-win32
     paths:
