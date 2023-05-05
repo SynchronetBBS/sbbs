@@ -741,9 +741,9 @@ static const struct {
 char *output_types[] = {
 	"Autodetect"
 #ifdef __unix__
-	" (X11, SDL, Curses)"
+	" (X11, SDL, Curses, ANSI)"
 #elif defined(_WIN32)
-	" (SDL, Console, ANSI)"
+	" (GDI, SDL, Console, ANSI)"
 #endif
 #ifdef __unix__
 	, "Curses",

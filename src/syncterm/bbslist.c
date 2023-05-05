@@ -1878,12 +1878,12 @@ change_settings(int connected)
 				    "        these are attempted is:"
 #ifdef __unix__
  #ifdef NO_X
-				    " SDL, then Curses\n\n"
+				    " SDL, Curses, then ANSI\n\n"
  #else
-				    " X11, SDL, then Curses\n\n"
+				    " X11, SDL, Curses, then ANSI\n\n"
  #endif
 #else
-				    " SDL, then Windows Console\n\n"
+				    " GDI, SDL, Windows Console, then ANSI\n\n"
 #endif
 #ifdef __unix__
 				    "~ Curses ~\n"
