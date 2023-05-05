@@ -157,7 +157,7 @@ static void
 gdi_mouse_thread(void *data)
 {
 	SetThreadName("GDI Mouse");
-	while(wch != NULL) {
+	while(wch != NULL && ciolib_reaper) {
 		if(mouse_wait())
 			gdi_add_key(CIO_KEY_MOUSE);
 	}
@@ -526,6 +526,7 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			return gdi_handle_wm_size(wParam, lParam);
 		//case WM_SIZING:
 		//	return gdi_handle_wm_sizing(wParam, (RECT *)lParam);
+		case WM_CLOSE:
 		case WM_DESTROY:
 			PostQuitMessage(0);
 			return 0;
@@ -743,13 +744,12 @@ gdi_thread(void *arg)
 	init_success = true;
 	ReleaseSemaphore(init_sem, 1, NULL);
 
-	while (GetMessage(&msg, NULL, 0, 0)) {
+	while (GetMessage(&msg, NULL, 0, 0) && ciolib_reaper) {
 		if (!magic_message(msg)) {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
 	}
-	// This may not be necessary...
 	DestroyWindow(win);
 	UnregisterClassW(wc.lpszClassName, NULL);
 	gdi_add_key(CIO_KEY_QUIT);
@@ -955,6 +955,12 @@ gdi_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	return(1);
 }
 
+void
+gdi_reaper(void)
+{
+	ciolib_reaper = 0;
+}
+
 int
 gdi_init(int mode)
 {
@@ -1000,6 +1006,7 @@ gdi_init(int mode)
 	else if (SetProcessDPIAware) {
 		SetProcessDPIAware();
 	}
+	atexit(gdi_reaper);
 	_beginthread(gdi_mouse_thread, 0, NULL);
 	_beginthread(gdi_thread, 0, NULL);
 	WaitForSingleObject(init_sem, INFINITE);
