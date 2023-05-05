@@ -385,9 +385,9 @@ void fevents_cfg()
 					"`Logon Event:`\n"
 					"\n"
 					"This is the command line for a program that will execute during the\n"
-					"logon sequence of every user. The program cannot have user interaction.\n"
+					"logon sequence of every user.  The program cannot have user interaction.\n"
 					"The program will be executed after the LOGON message is displayed and\n"
-					"before the logon user list is displayed. If you wish to place a program\n"
+					"before the logon user list is displayed.  If you wish to place a program\n"
 					"in the logon sequence of users that includes interaction or requires\n"
 					"account information, you probably want to use an online external\n"
 					"program configured to run as a logon event.\n"
@@ -402,8 +402,8 @@ void fevents_cfg()
 					"`Logout Event:`\n"
 					"\n"
 					"This is the command line for a program that will execute during the\n"
-					"logout sequence of every user. This program cannot have user\n"
-					"interaction because it is executed after carrier is dropped. If you\n"
+					"logout sequence of every user.  This program cannot have user\n"
+					"interaction because it is executed after carrier is dropped.  If you\n"
 					"wish to have a program execute before carrier is dropped, you probably\n"
 					"want to use an `Online External Program` configured to run as a logoff\n"
 					"event.\n"
@@ -550,9 +550,9 @@ void tevents_cfg()
 			uifc.helpbuf=
 				"`Timed Event:`\n"
 				"\n"
-				"This is the configuration menu for a timed event. An event is an\n"
+				"This is the configuration menu for a timed event.  An event is an\n"
 				"external program that performs some type of automated function on the\n"
-				"system. Use this menu to configure how and when this event will be\n"
+				"system.  Use this menu to configure how and when this event will be\n"
 				"executed.\n"
 				"\n"
 				"The left and right arrow keys may be used to cycle through events.\n"
@@ -582,8 +582,8 @@ void tevents_cfg()
 						"`Timed Event Internal Code:`\n"
 						"\n"
 						"Every timed event must have its own unique internal code for Synchronet\n"
-						"to reference it by. It is helpful if this code is an abbreviation of the\n"
-						"command line or program name.\n"
+						"to reference it by.  It is helpful if this code is an abbreviation of\n"
+						"the command line or program name.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE);
@@ -601,7 +601,7 @@ void tevents_cfg()
 						"\n"
 						"This is the DOS drive/directory where the event program is located.\n"
 						"If a path is specified here, it will be made the current directory\n"
-						"before the event's command line is executed. This eliminates the need\n"
+						"before the event's command line is executed.  This eliminates the need\n"
 						"for batch files that just change the current drive and directory before\n"
 						"executing the event.\n"
 					;
@@ -739,7 +739,7 @@ void tevents_cfg()
 						"`Execute Event at a Specific Time:`\n"
 						"\n"
 						"If you want the system execute this event at a specific time, set\n"
-						"this option to `Yes`. If you want the system to execute this event more\n"
+						"this option to `Yes`.  If you want the system to execute this event more\n"
 						"than once a day at predetermined intervals, set this option to `No`.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -955,9 +955,9 @@ void choose_io_method(uint32_t* misc)
 			"\n"
 			"`Socket`\n"
 			"   Stream (TCP) socket interface to a native (e.g. Win32 or *nix)\n"
-			"   program. The socket descriptor/handle (number) is passed to the\n"
+			"   program.  The socket descriptor/handle (number) is passed to the\n"
 			"   program either via drop file (e.g. DOOR32.SYS) or command-line\n"
-			"   option.\n"
+			"   parameter.\n"
 			"\n"
 			"~ Note ~\n"
 			"   This setting is not applied when invoking Baja or JavaScript modules.\n"
@@ -977,14 +977,14 @@ void choose_io_method(uint32_t* misc)
 			"   Will not intercept direct screen writes or PC-BIOS int10h calls.\n"
 			"\n"
 			"`FOSSIL`\n"
-			"   Int14h (PC-BIOS) serial communication interface to 16-bit\n"
-			"   MS-DOS programs. Most traditional BBS door games will support FOSSIL.\n"
+			"   Int14h (PC-BIOS) serial communication interface to 16-bit MS-DOS\n"
+			"   programs.  Most traditional BBS door games will support FOSSIL.\n"
 			"   The port number (contained in the DX register of int14h calls) is\n"
-			"   ignored by the Synchronet FOSSIL driver.\n"
+			"   ignored by the Synchronet FOSSIL driver for Windows.\n"
 			"\n"
 			"`UART`\n"
 			"   Communication port I/O of 16-bit MS-DOS programs via emulation of an\n"
-			"   NS8250 Universal Asynchronous Receiver/Transmitter (UART), by\n"
+			"   NS16550 Universal Asynchronous Receiver/Transmitter (UART), by\n"
 			"   default as an IBM-PC `COM1` port (I/O port 3F8h, IRQ 4).\n"
 			"\n"
 			"~ Note ~\n"
@@ -1118,7 +1118,7 @@ void xtrn_cfg(uint section)
 				"`Program Internal Code:`\n"
 				"\n"
 				"Every online program must have its own unique code for Synchronet to\n"
-				"refer to it internally. This code is usually an abbreviation of the\n"
+				"refer to it internally.  This code is usually an abbreviation of the\n"
 				"online program name.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code"
@@ -1274,7 +1274,7 @@ void xtrn_cfg(uint section)
 						"`Online Program Internal Code:`\n"
 						"\n"
 						"Every online program must have its own unique code for Synchronet to\n"
-						"refer to it internally. This code is usually an abbreviation of the\n"
+						"refer to it internally.  This code is usually an abbreviation of the\n"
 						"online program name.\n"
 					;
 					SAFECOPY(str,cfg.xtrn[i]->code);
@@ -1294,7 +1294,7 @@ void xtrn_cfg(uint section)
 						"\n"
 						"This is the DOS drive/directory where the online program is located.\n"
 						"If a path is specified here, it will be made the current directory\n"
-						"before the program's command line is executed. This eliminates the need\n"
+						"before the program's command line is executed.  This eliminates the need\n"
 						"for batch files that just change the current drive and directory before\n"
 						"executing the program.\n"
 					;
@@ -1316,7 +1316,7 @@ void xtrn_cfg(uint section)
 					uifc.helpbuf=
 						"`Online Program Clean-up Command:`\n"
 						"\n"
-						"This is the command line to execute after the main command line. This\n"
+						"This is the command line to execute after the main command line.  This\n"
 						"option is usually only used for multiuser online programs.\n"
 						SCFG_CMDLINE_PREFIX_HELP
 						SCFG_CMDLINE_SPEC_HELP
@@ -1330,7 +1330,7 @@ void xtrn_cfg(uint section)
 						"`Online Program Cost to Run:`\n"
 						"\n"
 						"If you want users to be charged credits to run this online program,\n"
-						"set this value to the number of credits to charge. If you want this\n"
+						"set this value to the number of credits to charge.  If you want this\n"
 						"online program to be free, set this value to `0`.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Cost to Run (in Credits)"
@@ -1498,7 +1498,7 @@ void xtrn_cfg(uint section)
 						"displaying on the local screen.\n"
 						"\n"
 						"This will disable 'Screen' output in the `DOOR.SYS` and `PCBOARD.SYS` drop\n"
-						"files and on Windows, stop the creation a new console window when\n"
+						"files and on Windows, stop the creation of a new console window when\n"
 						"executing this program."
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -1739,7 +1739,7 @@ void xtrn_cfg(uint section)
 									"the user will be automatically disconnected and control returned to the\n"
 									"BBS.\n"
 									"\n"
-									"H-exempt users will not be disconnected due to inactivity.\n"
+									"`H`-exempt users will not be disconnected due to inactivity.\n"
 									"\n"
 									"A setting of `0` (the default) will disable this inactivity detection\n"
 									"feature and rely on the external program itself to detect inactivity\n"
@@ -1950,7 +1950,7 @@ void xedit_cfg()
 						"`External Editor Internal Code:`\n"
 						"\n"
 						"Every external editor must have its own unique internal code for\n"
-						"Synchronet to reference it by. It is helpful if this code is an\n"
+						"Synchronet to reference it by.  It is helpful if this code is an\n"
 						"abbreviation of the name.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
@@ -2319,7 +2319,7 @@ int natvpgm_cfg()
 			"`Native Program List:`\n"
 			"\n"
 			"This is a list of all native (non-DOS) external program names that\n"
-			"may be executed in the Terminal Server. Any programs `not` listed\n"
+			"may be executed in the Terminal Server.  Any programs `not` listed\n"
 			"here will be assumed to be DOS programs (unless otherwise flagged as\n"
 			"'`Native`') and executed accordingly, or not, depending on the system.\n"
 			"\n"
@@ -2439,7 +2439,7 @@ void xtrnsec_cfg()
 				"`Online Program Section Internal Code:`\n"
 				"\n"
 				"Every online program section must have its own unique internal code\n"
-				"for Synchronet to reference it by. It is helpful if this code is an\n"
+				"for Synchronet to reference it by.  It is helpful if this code is an\n"
 				"abbreviation of the name.\n"
 			;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Section Internal Code"
@@ -2524,7 +2524,7 @@ void xtrnsec_cfg()
 				"`Program Section Configuration:`\n"
 				"\n"
 				"This menu allows you to configure the security requirements for access\n"
-				"to this external program section. You can also add, delete, and\n"
+				"to this external program section.  You can also add, delete, and\n"
 				"configure the programs (e.g. door games) of this section by selecting\n"
 				"the `Online Programs...` option.\n"
 				"\n"
@@ -2567,7 +2567,7 @@ void xtrnsec_cfg()
 						"`Online Program Section Internal Code:`\n"
 						"\n"
 						"Every online program section must have its own unique internal code\n"
-						"for Synchronet to reference it by. It is helpful if this code is an\n"
+						"for Synchronet to reference it by.  It is helpful if this code is an\n"
 						"abbreviation of the name.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
@@ -2693,7 +2693,7 @@ void hotkey_cfg(void)
 				"`Global Hot Key Event:`\n"
 				"\n"
 				"This menu allows you to change the settings for the selected global\n"
-				"hot key event. Hot key events are control characters that are used to\n"
+				"hot key event.  Hot key events are control characters that are used to\n"
 				"execute an external program or module anywhere in the BBS.\n"
 			;
 			sprintf(str,"Ctrl-%c Hot Key Event",cfg.hotkey[i]->key+'@');
