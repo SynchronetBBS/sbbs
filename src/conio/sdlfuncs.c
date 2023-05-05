@@ -294,7 +294,7 @@ int init_sdl_video(void)
 #endif
 	if(sdl_video_initialized && (drivername = sdl.GetCurrentVideoDriver())!=NULL) {
 		/* Unacceptable drivers */
-		if((!strcmp(drivername, "caca")) || (!strcmp(drivername,"aalib")) || (!strcmp(drivername,"dummy"))) {
+		if((!strcmp(drivername, "offscreen")) || (!strcmp(drivername, "caca")) || (!strcmp(drivername,"aalib")) || (!strcmp(drivername,"dummy"))) {
 			sdl.Quit();
 			sdl_video_initialized=FALSE;
 		}
