@@ -551,12 +551,12 @@ static int video_init()
 	if(load_vmode(&vstat, C80))
 		return(-1);
 	x_cvstat = vstat;
+	if(init_window())
+		return(-1);
 	bitmap_drv_init(x11_drawrect, x11_flush);
 	pthread_mutex_lock(&vstatlock);
 	bitmap_drv_init_mode(vstat.mode, NULL, NULL, 0, 0);
 	pthread_mutex_unlock(&vstatlock);
-	if(init_window())
-		return(-1);
 	init_mode_internal(x_cvstat.mode);
 
 	return(0);
