@@ -78,5 +78,5 @@ rgbmap.h: rgbmap.s
 $(MTOBJODIR)$(DIRSEP)rgbmap$(OFILE): rgbmap.s rgbmap.h
 
 $(EXEODIR)$(DIRSEP)genmap$(EXEFILE): $(OBJODIR)$(DIRSEP)genmap$(OFILE)
-	$(CC) $(LDFLAGS) $(OBJODIR)$(DIRSEP)genmap$(OFILE) -o $@
+	cc $(LDFLAGS) $(OBJODIR)$(DIRSEP)genmap$(OFILE) -o $@
 
