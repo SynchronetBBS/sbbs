@@ -16,13 +16,6 @@ static void multiply_scale(uint32_t* src, uint32_t* dst, int width, int height, 
 
 static struct graphics_buffer *free_list;
 
-#define CLAMP(x) do { \
-	if (x < 0) \
-		x = 0; \
-	else if (x > 255) \
-		x = 255; \
-} while(0)
-
 /*
  * Corrects width/height to have the specified aspect ratio
  * any fit inside the specified rectangle
@@ -181,52 +174,6 @@ aspect_reverse(int *x, int *y, int scrnwidth, int scrnheight, int aspect_width, 
 	*x = width;
 	*y = height;
 }
-
-#if 0
-void
-init_r2y(void)
-{
-	int r, g, b;
-	int y, u, v;
-	const double luma = 255.0 / 219;
-	const double col  = 255.0 / 224;
-
-	if (r2y_inited)
-		return;
-	for (r = 0; r < 256; r++) {
-		for (g = 0; g < 256; g++) {
-			for (b = 0; b < 256; b++) {
-				y =  16 + ( 65.738 * r + 129.057 * g +  25.064 * b + 128) / 256;
-				CLAMP(y);
-				u = 128 + (-37.945 * r -  74.494 * g + 112.439 * b + 128) / 256;
-				CLAMP(u);
-				v = 128 + (112.439 * r -  94.154 * g -  18.285 * b + 128) / 256;
-				CLAMP(v);
-
-				ciolib_r2yptr[(r<<16) | (g<<8) | b] = (y<<16)|(u<<8)|v;
-			}
-		}
-	}
-	for (y = 0; y < 256; y++) {
-		for (u = 0; u < 256; u++) {
-			for (v = 0; v < 256; v++) {
-				const int c = y - 16;
-				const int d = u - 128;
-				const int e = v - 128;
-				r = luma * c                                     + col * 1.402 * e;
-				CLAMP(r);
-				g = luma * c - col * 1.772 * (0.114 / 0.587) * d - col * 1.402 * (0.299 / 0.587) * e;
-				CLAMP(g);
-				b = luma * c + col * 1.772 * d;
-				CLAMP(b);
-
-				ciolib_y2rptr[(y<<16) | (u<<8) | v] = (r<<16)|(g<<8)|b;
-			}
-		}
-	}
-	r2y_inited = true;
-}
-#endif
 
 struct graphics_buffer *
 get_buffer(void)

@@ -67,7 +67,16 @@ $(MTOBJODIR)$(DIRSEP)ciolib_res${OFILE}: ciolib.rc syncicon64.ico
 	$(QUIET)${WINDRES} $(WINDRESFLAGS) -O coff -i ciolib.rc -o $@
 endif
 
-genamp: $(EXEODIR) $(MTOBJODIR) $(EXEODIR)$(DIRSEP)genmap$(EXEFILE)
+$(EXEODIR)$(DIRSEP)genmap$(EXEFILE): $(EXEODIR)
 
-$(EXEODIR)$(DIRSEP)genmap$(EXEFILE): $(MTOBJODIR)$(DIRSEP)genmap$(OFILE) $(MTOBJODIR)$(DIRSEP)scale$(OFILE) $(MTOBJODIR)$(DIRSEP)xbr$(OFILE)
-	$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(MTOBJODIR)$(DIRSEP)genmap$(OFILE) $(MTOBJODIR)$(DIRSEP)scale$(OFILE) $(MTOBJODIR)$(DIRSEP)xbr$(OFILE) -o $@ -lm
+rgbmap.s: $(EXEODIR)$(DIRSEP)genmap$(EXEFILE)
+	@echo Creating $@...
+	$(QUIET)$(EXEODIR)$(DIRSEP)genmap$(EXEFILE)
+
+rgbmap.h: rgbmap.s
+
+$(MTOBJODIR)$(DIRSEP)rgbmap$(OFILE): rgbmap.s rgbmap.h
+
+$(EXEODIR)$(DIRSEP)genmap$(EXEFILE): $(OBJODIR)$(DIRSEP)genmap$(OFILE)
+	$(CC) $(LDFLAGS) $(OBJODIR)$(DIRSEP)genmap$(OFILE) -o $@
+

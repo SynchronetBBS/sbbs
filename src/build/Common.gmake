@@ -452,6 +452,11 @@ endif
 -include $(SRC_ROOT)/build/rules.mk
 -include objects.mk		# defines $(OBJS)
 
+# Implicit ASM Compile Rule
+$(OBJODIR)/%$(OFILE) : %.s $(BUILD_DEPENDS) | $(OBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(AS) $(ASFLAGS) -o $@ $<
+
 # Implicit C Compile Rule
 $(OBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS) | $(OBJODIR)
 	@echo $(COMPILE_MSG) $<
@@ -461,6 +466,11 @@ $(OBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS) | $(OBJODIR)
 $(OBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS) | $(OBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++11 $(CFLAGS) $(CXXFLAGS) -o $@ -c $<
+
+# Implicit MT ASM Compile Rule
+$(MTOBJODIR)/%$(OFILE) : %.s $(BUILD_DEPENDS) | $(OBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(AS) $(ASFLAGS) -o $@ $<
 
 # Implicit MT C Compile Rule
 $(MTOBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS) | $(MTOBJODIR)
