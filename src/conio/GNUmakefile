@@ -71,7 +71,7 @@ $(EXEODIR)$(DIRSEP)genmap$(EXEFILE): $(EXEODIR)
 
 rgbmap.s: $(EXEODIR)$(DIRSEP)genmap$(EXEFILE)
 	@echo Creating $@...
-	$(QUIET)$(EXEODIR)$(DIRSEP)genmap$(EXEFILE)
+	$(QUIET)$(EXEODIR)$(DIRSEP)genmap$(EXEFILE) $(os)
 
 rgbmap.h: rgbmap.s
 

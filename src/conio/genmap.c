@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <string.h>
 #include <inttypes.h>
+
 uint32_t r2y[16777216];
 uint32_t y2r[16777216];
 
@@ -58,20 +60,21 @@ main(int argc, char **argv)
 	FILE *h = fopen("rgbmap.h", "w");
 	FILE *r = fopen("r2y.bin", "wb");
 	FILE *y = fopen("y2r.bin", "wb");
+	char *mangle = "";
+
 	init_r2y();
+	if (argc > 1 && strcmp(argv[1], "win32") == 0)
+		mangle = "_";
 
 	fprintf(s,
 	    ".section .rodata\n"
-	    ".global r2y\n"
-	    ".type   r2y, @object\n"
+	    ".global %sr2y\n"
+	    ".global %sy2r\n"
 	    ".align  4\n"
-	    "r2y:\n"
+	    "%sr2y:\n"
 	    "	.incbin \"r2y.bin\"\n"
-	    ".global y2r\n"
-	    ".type   y2r, @object\n"
-	    ".align  4\n"
-	    "y2r:\n"
-	    "	.incbin \"y2r.bin\"\n");
+	    "%sy2r:\n"
+	    "	.incbin \"y2r.bin\"\n", mangle, mangle, mangle, mangle);
 	fprintf(h,
 	    "#ifndef RGBMAP_H\n"
 	    "#define RGBMAP_H\n"
