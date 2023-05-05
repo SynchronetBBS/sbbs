@@ -157,7 +157,7 @@ static void
 gdi_mouse_thread(void *data)
 {
 	SetThreadName("GDI Mouse");
-	while(wch != NULL && ciolib_reaper) {
+	while(wch != NULL) {
 		if(mouse_wait())
 			gdi_add_key(CIO_KEY_MOUSE);
 	}
@@ -744,7 +744,7 @@ gdi_thread(void *arg)
 	init_success = true;
 	ReleaseSemaphore(init_sem, 1, NULL);
 
-	while (GetMessage(&msg, NULL, 0, 0) && ciolib_reaper) {
+	while (GetMessage(&msg, NULL, 0, 0)) {
 		if (!magic_message(msg)) {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
@@ -955,12 +955,6 @@ gdi_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	return(1);
 }
 
-void
-gdi_reaper(void)
-{
-	ciolib_reaper = 0;
-}
-
 int
 gdi_init(int mode)
 {
@@ -1006,7 +1000,6 @@ gdi_init(int mode)
 	else if (SetProcessDPIAware) {
 		SetProcessDPIAware();
 	}
-	atexit(gdi_reaper);
 	_beginthread(gdi_mouse_thread, 0, NULL);
 	_beginthread(gdi_thread, 0, NULL);
 	WaitForSingleObject(init_sem, INFINITE);
