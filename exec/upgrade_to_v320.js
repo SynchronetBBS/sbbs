@@ -14,14 +14,12 @@ function upgrade_node(dir)
 	print(path + " -> node.ini");
 	var cnf = cnflib.read(path);
 	if(!cnf) {
-		alert("Error reading " + path);
-		exit(1);
+		return "Error reading " + path;
 	}
 	var ini = new File(dir + "node.ini");
 	ini.ini_section_separator = "";
 	if(!ini.open("w+")) {
-		alert("Error " + ini.error + " opening/creating " + ini.name);
-		exit(1);
+		return "Error " + ini.error + " opening/creating " + ini.name;
 	}
 	ini.iniSetObject(null, cnf);
 	ini.close();
@@ -29,6 +27,7 @@ function upgrade_node(dir)
 	node_valuser = cnf.valuser;
 	node_erruser = cnf.erruser;
 	node_errlevel = cnf.errlevel;
+	return true;
 }
 
 //---------------------------------------------------------------------------
@@ -101,10 +100,15 @@ for(var i in cnf) {
 }
 ini.iniSetObject("expired", exp);
 
-for(var i in cnf.node_dir) {
+for(var i = 0; i < cnf.node_dir.length; ++i) {
 	var path = backslash(cnf.node_dir[i].path.replace('\\','/'));
-	ini.iniSetValue("node_dir", parseInt(i, 10) + 1, path);
-	upgrade_node(path);
+	ini.iniSetValue("node_dir", i + 1, path);
+	var result = upgrade_node(path);
+	if(result !== true) {
+		alert(result);
+		if(i == 0)
+			exit(1);
+	}
 }
 delete cnf.node_dir;
 cnf.login = 0;
