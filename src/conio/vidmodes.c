@@ -375,7 +375,7 @@ int load_vmode(struct video_stats *vs, int mode)
 	vs->currattr = vparams[i].default_attr;
 	vs->aspect_width = vparams[i].aspect_width;
 	vs->aspect_height = vparams[i].aspect_height;
-	if (vs->aspect_width == 0 || vs->aspect_height == 0 || r2yptr == NULL || y2rptr == NULL) {
+	if (vs->aspect_width == 0 || vs->aspect_height == 0 || ciolib_r2yptr == NULL || ciolib_y2rptr == NULL) {
 		vs->aspect_width = vs->scrnwidth;
 		vs->aspect_height = vs->scrnheight;
 	}
@@ -387,7 +387,7 @@ int load_vmode(struct video_stats *vs, int mode)
 		vs->scrnheight = vparams[i].yres;
 	else
 		vs->scrnheight = vs->charheight * vs->rows;
-	if (vs->aspect_width == 0 || vs->aspect_height == 0 || r2yptr == NULL || y2rptr == NULL) {
+	if (vs->aspect_width == 0 || vs->aspect_height == 0 || ciolib_r2yptr == NULL || ciolib_y2rptr == NULL) {
 		vs->aspect_width = vs->scrnwidth;
 		vs->aspect_height = vs->scrnheight;
 	}

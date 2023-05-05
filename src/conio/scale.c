@@ -7,9 +7,6 @@
 #include "scale.h"
 #include "xbr.h"
 
-const uint32_t *r2yptr;
-const uint32_t *y2rptr;
-
 static void pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height);
 static void pointy_scale5(uint32_t* src, uint32_t* dest, int width, int height);
 static void pointy_scale_odd(uint32_t* src, uint32_t* dest, int width, int height, int mult);
@@ -206,7 +203,7 @@ init_r2y(void)
 				v = 128 + (112.439 * r -  94.154 * g -  18.285 * b + 128) / 256;
 				CLAMP(v);
 
-				r2yptr[(r<<16) | (g<<8) | b] = (y<<16)|(u<<8)|v;
+				ciolib_r2yptr[(r<<16) | (g<<8) | b] = (y<<16)|(u<<8)|v;
 			}
 		}
 	}
@@ -223,7 +220,7 @@ init_r2y(void)
 				b = luma * c + col * 1.772 * d;
 				CLAMP(b);
 
-				y2rptr[(y<<16) | (u<<8) | v] = (r<<16)|(g<<8)|b;
+				ciolib_y2rptr[(y<<16) | (u<<8) | v] = (r<<16)|(g<<8)|b;
 			}
 		}
 	}
@@ -324,7 +321,7 @@ do_scale(struct rectlist* rect, int xscale, int yscale, int aspect_width, int as
 				total_yscaling /= 3;
 				yscale *= 3;
 			}
-			if (r2yptr != NULL && y2rptr != NULL) {
+			if (ciolib_r2yptr != NULL && ciolib_y2rptr != NULL) {
 				while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
 					xbr4++;
 					total_xscaling /= 4;
@@ -483,7 +480,7 @@ csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->
 	}
 
 	// And finally, interpolate if needed
-	if (r2yptr != NULL && y2rptr != NULL) {
+	if (ciolib_r2yptr != NULL && ciolib_y2rptr != NULL) {
 		if (fheight != csrc->h) {
 			interpolate_height(csrc->data, ctarget->data, csrc->w, csrc->h, fheight);
 			ctarget->h = fheight;
@@ -816,8 +813,8 @@ blend(const uint32_t c1, const uint32_t c2, uint16_t weight)
 	uint8_t yuv3[4];
 	const uint16_t iw = 65535 - weight;
 
-	*(uint32_t *)yuv1 = r2yptr[c1];
-	*(uint32_t *)yuv2 = r2yptr[c2];
+	*(uint32_t *)yuv1 = ciolib_r2yptr[c1];
+	*(uint32_t *)yuv2 = ciolib_r2yptr[c2];
 #ifdef __BIG_ENDIAN__
 	yuv3[0] = 0;
 	yuv3[1] = (yuv1[1] * iw + yuv2[1] * weight) / 65535;
@@ -830,7 +827,7 @@ blend(const uint32_t c1, const uint32_t c2, uint16_t weight)
 	yuv3[0] = (yuv1[0] * iw + yuv2[0] * weight) / 65535;
 #endif
 
-	return y2rptr[*(uint32_t*)yuv3];
+	return ciolib_y2rptr[*(uint32_t*)yuv3];
 }
 
 /*

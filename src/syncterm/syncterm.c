@@ -1700,8 +1700,10 @@ main(int argc, char **argv)
 		cio_api.options |= CONIO_OPT_BLOCKY_SCALING;
 	else
 		cio_api.options &= ~CONIO_OPT_BLOCKY_SCALING;
-	r2yptr = r2y;
-	y2rptr = y2r;
+#ifdef HAS_BITMAP
+	ciolib_r2yptr = r2y;
+	ciolib_y2rptr = y2r;
+#endif
 	if (initciolib(ciolib_mode))
 		return 1;
 	if (settings.blocky)

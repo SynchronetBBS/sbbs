@@ -10,9 +10,6 @@ struct graphics_buffer {
 	struct graphics_buffer *next;
 };
 
-extern const uint32_t *r2yptr;
-extern const uint32_t *y2rptr;
-
 struct graphics_buffer * get_buffer(void);
 void release_buffer(struct graphics_buffer *);
 void init_r2y(void);
