@@ -40,8 +40,6 @@ int sbbs_t::kbincom(unsigned int timeout)
 	}
 	ch = incom(timeout);
 
-	if(ch != NOINP)
-		ch = translate_input(ch);
 	return ch;
 }
 
@@ -86,7 +84,7 @@ int sbbs_t::translate_input(int ch)
 	return ch;
 }
 
-void sbbs_t::translate_input(char* buf, size_t len)
+void sbbs_t::translate_input(uchar* buf, size_t len)
 {
 	for(size_t i =0; i < len; i++)
 		buf[i] = translate_input(buf[i]);

@@ -449,7 +449,7 @@ public:
 	int 	incom(unsigned int timeout=0);		   // receive character
 	int 	kbincom(unsigned int timeout=0);	   // " " or return keyboard buffer
 	int		translate_input(int ch);
-	void	translate_input(char* buf, size_t);
+	void	translate_input(uchar* buf, size_t);
 
 	void	spymsg(const char *msg);		// send message to active spies
 
@@ -1053,6 +1053,8 @@ public:
 	bool	bulkupload(uint dirnum);
 
 	/* download.cpp */
+	void	data_transfer_begin(void);
+	void	data_transfer_end(void);
 	void	downloadedfile(file_t* f);
 	void	notdownloaded(off_t size, time_t elapsed);
 	void	downloadedbytes(off_t size, time_t elapsed);

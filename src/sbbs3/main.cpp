@@ -2131,6 +2131,9 @@ void input_thread(void *arg)
 		if(wr > (int)sizeof(telbuf))
 			lprintf(LOG_ERR,"!TELBUF OVERFLOW (%d>%d)",wr,(int)sizeof(telbuf));
 
+		if(!(sbbs->console & CON_RAW_IN))
+			sbbs->translate_input(wrbuf, wr);
+
 		if(sbbs->passthru_socket_active == true) {
 			BOOL writable = FALSE;
 			if(socket_check(sbbs->passthru_socket, NULL, &writable, 1000) && writable)
