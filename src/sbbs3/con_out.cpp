@@ -404,7 +404,7 @@ int sbbs_t::rputs(const char *str, size_t len)
 		else if(lbuflen<LINE_BUFSIZE) {
 			if(lbuflen == 0)
 				latr = curatr;
-			lbuf[lbuflen++] = ch;
+			lbuf[lbuflen++] = str[l]; // save non-translated char to line buffer
 		}
 	}
 	return(l);
@@ -1466,6 +1466,8 @@ bool sbbs_t::restoreline(void)
 	lbuflen=0;
 	attr(line->beg_attr);
 	rputs(line->buf);
+	if(term_supports(PETSCII))
+		column = strlen(line->buf);
 	curatr = line->end_attr;
 	carriage_return();
 	cursor_right(line->column);

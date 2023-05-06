@@ -156,7 +156,9 @@ char sbbs_t::getkey(int mode)
 				return(0); 
 			}
 			if(sys_status&SS_USERON) {
-				bputs("\r\1n\1>");
+				attr(LIGHTGRAY);
+				carriage_return();
+				cleartoeol();
 				restoreline(); 
 			}
 			getkey_last_activity=now; 
