@@ -46,7 +46,9 @@ static const KNOWNFOLDERID FOLDERID_ProgramData = {
  #include <xp_dl.h> /* xp_dlopen() and friends */
 #endif /* ifdef _WIN32 */
 
+#ifdef HAS_BITMAP
 #include <rgbmap.h>
+#endif
 #include <ciolib.h>
 #include <cterm.h>
 #include <dirwrap.h>
