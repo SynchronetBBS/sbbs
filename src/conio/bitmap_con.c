@@ -1113,21 +1113,22 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 	int step;
 	int32_t screeny;
 
-	if (direction == -1) {
-		ssourcepos=((y + height - 1)     * vstat.charheight - 1) * vstat.scrnwidth + (x - 1)  * vstat.charwidth;
-		sdestoffset=((((toy + height - 1) * vstat.charheight - 1) * vstat.scrnwidth + (tox - 1) * vstat.charwidth) - ssourcepos);
-	}
-	else {
-		ssourcepos=(y - 1)     * vstat.scrnwidth * vstat.charheight + (x - 1)  * vstat.charwidth;
-		sdestoffset=(((toy - 1) * vstat.scrnwidth * vstat.charheight + (tox - 1) * vstat.charwidth) - ssourcepos);
-	}
-
 	pthread_mutex_lock(&screenlock);
 	if (width == cio_textinfo.screenwidth) {
+		ssourcepos =  ((  y - 1) * vstat.scrnwidth * vstat.charheight + (  x - 1) * vstat.charwidth);
+		sdestoffset = ((toy - 1) * vstat.scrnwidth * vstat.charheight + (tox - 1) * vstat.charwidth) - ssourcepos;
 		memmove(&(screena.rect->data[ssourcepos+sdestoffset]), &(screena.rect->data[ssourcepos]), sizeof(screena.rect->data[0])*width*vstat.charwidth*height*vstat.charheight);
 		memmove(&(screenb.rect->data[ssourcepos+sdestoffset]), &(screenb.rect->data[ssourcepos]), sizeof(screenb.rect->data[0])*width*vstat.charwidth*height*vstat.charheight);
 	}
 	else {
+		if (direction == -1) {
+			ssourcepos=((y + height - 2)      * vstat.charheight - 1) * vstat.scrnwidth + (x -   1) * vstat.charwidth;
+			sdestoffset=((((toy + height - 2) * vstat.charheight - 1) * vstat.scrnwidth + (tox - 1) * vstat.charwidth) - ssourcepos);
+		}
+		else {
+			ssourcepos=(y - 1)     * vstat.scrnwidth * vstat.charheight + (x - 1)  * vstat.charwidth;
+			sdestoffset=(((toy - 1) * vstat.scrnwidth * vstat.charheight + (tox - 1) * vstat.charwidth) - ssourcepos);
+		}
 		step = direction * vstat.scrnwidth;
 		for(screeny=0; screeny < height*vstat.charheight; screeny++) {
 			memmove(&(screena.rect->data[ssourcepos+sdestoffset]), &(screena.rect->data[ssourcepos]), sizeof(screena.rect->data[0])*width*vstat.charwidth);
@@ -1172,21 +1173,22 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	if(toy > y)
 		direction=-1;
 
-	if (direction == -1) {
-		sourcepos=(y+height-2)*cio_textinfo.screenwidth+(x-1);
-		destoffset=(((toy+height-2)*cio_textinfo.screenwidth+(tox-1))-sourcepos);
-	}
-	else {
-		sourcepos=(y-1)*cio_textinfo.screenwidth+(x-1);
-		destoffset=(((toy-1)*cio_textinfo.screenwidth+(tox-1))-sourcepos);
-	}
-
 	pthread_mutex_lock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
 	if (width == cio_textinfo.screenwidth) {
+		sourcepos =  ((  y - 1) * cio_textinfo.screenwidth + (  x - 1));
+		destoffset = ((toy - 1) * cio_textinfo.screenwidth + (tox - 1)) - sourcepos;
 		memmove(&(vmem_ptr->vmem[sourcepos+destoffset]), &(vmem_ptr->vmem[sourcepos]), sizeof(vmem_ptr->vmem[0])*width*height);
 	}
 	else {
+		if (direction == -1) {
+			sourcepos=(y+height-2)*cio_textinfo.screenwidth+(x-1);
+			destoffset=(((toy+height-2)*cio_textinfo.screenwidth+(tox-1))-sourcepos);
+		}
+		else {
+			sourcepos=(y-1)*cio_textinfo.screenwidth+(x-1);
+			destoffset=(((toy-1)*cio_textinfo.screenwidth+(tox-1))-sourcepos);
+		}
 		step = direction * cio_textinfo.screenwidth;
 		for(cy=0; cy<height; cy++) {
 			memmove(&(vmem_ptr->vmem[sourcepos+destoffset]), &(vmem_ptr->vmem[sourcepos]), sizeof(vmem_ptr->vmem[0])*width);
