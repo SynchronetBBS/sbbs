@@ -157,7 +157,7 @@ void sbbs_t::useredit(int usernumber)
 		l=lastuser(&cfg);
 		sync();
 		bprintf(text[UeditPrompt],user.number,l);
-		SAFEPRINTF4(str, "QG[]?/{}%c%c%c%c", TERM_KEY_LEFT, TERM_KEY_RIGHT, TERM_KEY_HOME, TERM_KEY_END);
+		SAFEPRINTF4(str, "QG[]?/{}()%c%c%c%c", TERM_KEY_LEFT, TERM_KEY_RIGHT, TERM_KEY_HOME, TERM_KEY_END);
 		if(user.level <= useron.level)
 			SAFECAT(str, "ABCDEFHIJKLMNOPRSTUVWXYZ+~*$#");
 		l=getkeys(str, l, K_UPPER|K_NOCRLF);
@@ -165,7 +165,7 @@ void sbbs_t::useredit(int usernumber)
 			user.number=(ushort)(l&~0x80000000L);
 			continue; 
 		}
-		if(l >= ' ' && l != '[' && l != ']' && l != '{' && l != '}' && l != '?')
+		if(IS_ALPHA(l))
 			newline();
 		switch(l) {
 			case 'A':
@@ -587,6 +587,7 @@ void sbbs_t::useredit(int usernumber)
 				ar=arstr(NULL,artxt,&cfg,NULL);
 				break;
 			case '{':
+			case '(':
 				if(stype==SEARCH_TXT)
 					user.number=searchdn(search,user.number);
 				else {
@@ -605,6 +606,7 @@ void sbbs_t::useredit(int usernumber)
 				}
 				break;
 			case '}':
+			case ')':
 				if(stype==SEARCH_TXT)
 					user.number=searchup(search,user.number);
 				else {
