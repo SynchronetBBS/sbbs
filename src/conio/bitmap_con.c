@@ -1160,9 +1160,12 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 			|| x>cio_textinfo.screenwidth
 			|| ex>cio_textinfo.screenwidth
 			|| tox>cio_textinfo.screenwidth
+			|| tox + width > cio_textinfo.screenwidth
 			|| y>cio_textinfo.screenheight
 			|| ey>cio_textinfo.screenheight
-			|| toy>cio_textinfo.screenheight) {
+			|| toy>cio_textinfo.screenheight
+			|| toy + height > cio_textinfo.screenheight
+			) {
 		return(0);
 	}
 
