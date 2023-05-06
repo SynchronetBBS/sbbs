@@ -227,7 +227,7 @@ int sbbs_t::listfiles(const uint dirnum, const char *filespec, FILE* tofile, con
 				}
 				else {
 					sprintf(hdr,text[ShortHdrLib],i+1,cfg.lib[usrlib[i]]->sname);
-					bputs("\r\1>\r\n");
+					bputs("\1[\1>\r\n");
 					bputs(hdr); 
 					c=bstrlen(hdr);
 				}
@@ -256,7 +256,7 @@ int sbbs_t::listfiles(const uint dirnum, const char *filespec, FILE* tofile, con
 		disp=1;
 		if(mode&(FL_EXT | FL_VIEW)) {
 			if(!found)
-				bputs("\r\1>");
+				bputs("\1[\1>");
 			if(!viewfile(f, INT_TO_BOOL(mode & FL_EXT))) {
 				found = -1;
 				break;
