@@ -1154,8 +1154,8 @@ void sdl_video_event_thread(void *data)
 						sdl_mode = false;
 						pthread_mutex_unlock(&sdl_mode_mutex);
 
-						cvstat.winwidth = (int)ev.user.data1;
-						cvstat.winheight = (int)ev.user.data2;
+						cvstat.winwidth = (intptr_t)ev.user.data1;
+						cvstat.winheight = (intptr_t)ev.user.data2;
 						internal_setwinsize(&cvstat, true);
 						sdl_ufunc_retval=0;
 						sem_post(&sdl_ufunc_ret);
