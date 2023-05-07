@@ -476,7 +476,7 @@ static void resize_window()
 
 	aspect_correct(&width, &height, x_cvstat.aspect_width, x_cvstat.aspect_height);
 	pthread_mutex_lock(&vstatlock);
-	if (width == x_cvstat.winwidth && height == x_cvstat.winheight) {
+	if (width == vstat.winwidth && height == vstat.winheight) {
 		pthread_mutex_unlock(&vstatlock);
 		resize_xim();
 		return;
@@ -502,6 +502,7 @@ static void init_mode_internal(int mode)
 		last = NULL;
 	}
 	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
+	resize_window();
 	x_cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
 	resize_xim();
