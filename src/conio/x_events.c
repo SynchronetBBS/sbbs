@@ -494,6 +494,7 @@ static void resize_window()
 static void init_mode_internal(int mode)
 {
 	int mw, mh;
+	int ow, oh;
 
 	x11_get_maxsize(&mw, &mh);
 	pthread_mutex_lock(&vstatlock);
@@ -501,8 +502,15 @@ static void init_mode_internal(int mode)
 		release_buffer(last);
 		last = NULL;
 	}
+	ow = vstat.winwidth;
+	oh = vstat.winheight;
 	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
+	x_cvstat = vstat;
+	vstat.winwidth = ow;
+	vstat.winheight = oh;
+	pthread_mutex_unlock(&vstatlock);
 	resize_window();
+	pthread_mutex_lock(&vstatlock);
 	x_cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
 	resize_xim();
@@ -557,6 +565,7 @@ static int video_init()
 	bitmap_drv_init(x11_drawrect, x11_flush);
 	pthread_mutex_lock(&vstatlock);
 	bitmap_drv_init_mode(vstat.mode, NULL, NULL, 0, 0);
+	x_cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
 	init_mode_internal(x_cvstat.mode);
 
