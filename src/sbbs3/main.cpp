@@ -2128,8 +2128,10 @@ void input_thread(void *arg)
 			wrbuf=inbuf;
 		else
 			wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
-		if(wr > (int)sizeof(telbuf))
+		if(wr > (int)sizeof(telbuf)) {
 			lprintf(LOG_ERR,"!TELBUF OVERFLOW (%d>%d)",wr,(int)sizeof(telbuf));
+			wr = sizeof(telbuf);
+		}
 
 		if(!(sbbs->console & CON_RAW_IN))
 			sbbs->translate_input(wrbuf, wr);
