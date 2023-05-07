@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -56,12 +57,22 @@ init_r2y(void)
 int
 main(int argc, char **argv)
 {
-	FILE *s = fopen("rgbmap.s", "w");
-	FILE *h = fopen("rgbmap.h", "w");
-	FILE *r = fopen("r2y.bin", "wb");
-	FILE *y = fopen("y2r.bin", "wb");
+	FILE *s, *h, *r, *y;
+	char path[1024];
 	char *mangle = "";
 
+	if (argc != 3) {
+		fprintf(stderr, "Usage: %s <os> <path>\n", argv[0]);
+		return EXIT_FAILURE;
+	}
+	sprintf(path, "%s/rgbmap.s", argv[2]);
+	s = fopen(path, "w");
+	sprintf(path, "%s/rgbmap.h", argv[2]);
+	h = fopen(path, "w");
+	sprintf(path, "%s/r2y.bin", argv[2]);
+	r = fopen(path, "wb");
+	sprintf(path, "%s/y2r.bin", argv[2]);
+	y = fopen(path, "wb");
 	init_r2y();
 	if (argc > 1 && strcmp(argv[1], "win32") == 0)
 		mangle = "_";
@@ -91,5 +102,5 @@ main(int argc, char **argv)
 	fclose(h);
 	fclose(r);
 	fclose(y);
-	return 0;
+	return EXIT_SUCCESS;
 }

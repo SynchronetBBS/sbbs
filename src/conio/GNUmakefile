@@ -3,6 +3,7 @@ SRC_ROOT = ..
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
 CFLAGS += $(XPDEV-MT_CFLAGS) $(HASH_CFLAGS) $(ENCODE_CFLAGS) $(CIOLIB-MT_CFLAGS)
+VPATH = $(SRCODIR)
 
 ifeq ($(os),win32)
  ifndef WITHOUT_GDI
@@ -48,7 +49,8 @@ endif
 
 
 # CIOLIB Library Link Rule
-$(CIOLIB-MT_BUILD): $(MTOBJODIR) $(OBJS) $(CIOLIB_INTERPOLATE_TARGET)
+$(CIOLIB-MT_BUILD): $(MTOBJODIR) $(OBJS) $(CIOLIB_INTERPOLATE_TARGET) $(MTOBJODIR)$(DIRSEP)rgbmap$(OFILE)
+
 	@echo Creating $@ ...
 	$(QUIET)$(AR) rc $@ $(OBJS)
 	$(QUIET)$(RANLIB) $@
@@ -69,13 +71,13 @@ endif
 
 $(EXEODIR)$(DIRSEP)genmap$(EXEFILE): $(EXEODIR)
 
-rgbmap.s: $(EXEODIR)$(DIRSEP)genmap$(EXEFILE)
+$(SRCODIR)$(DIRSEP)rgbmap.s: $(EXEODIR)$(DIRSEP)genmap$(EXEFILE) $(SRCODIR)
 	@echo Creating $@...
-	$(QUIET)$(EXEODIR)$(DIRSEP)genmap$(EXEFILE) $(os)
+	$(QUIET)$(EXEODIR)$(DIRSEP)genmap$(EXEFILE) $(os) $(SRCODIR)
 
-rgbmap.h: rgbmap.s
+$(SRCODIR)$(DIRSEP)rgbmap.h: $(SRCODIR)$(DIRSEP)rgbmap.s
 
-$(MTOBJODIR)$(DIRSEP)rgbmap$(OFILE): rgbmap.s rgbmap.h
+$(MTOBJODIR)$(DIRSEP)rgbmap$(OFILE): $(SRCODIR)$(DIRSEP)rgbmap.s $(SRCODIR)$(DIRSEP)rgbmap.h
 
 $(EXEODIR)$(DIRSEP)genmap$(EXEFILE): genmap.c
 	@echo Compiling $@...

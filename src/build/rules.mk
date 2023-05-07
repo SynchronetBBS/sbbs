@@ -16,6 +16,9 @@ $(LIBODIR):
 $(EXEODIR):
 	$(QUIET)$(IFNOTEXIST) mkdir $(EXEODIR)
 
+$(SRCODIR):
+	$(QUIET)$(IFNOTEXIST) mkdir $(SRCODIR)
+
 clean:
 clean:
 	@echo Deleting $(OBJODIR)$(DIRSEP)
@@ -26,3 +29,5 @@ clean:
 	-$(QUIET)$(DELETE) $(LIBODIR)$(DIRSEP)*
 	@echo Deleting $(EXEODIR)$(DIRSEP)
 	-$(QUIET)$(DELETE) $(EXEODIR)$(DIRSEP)*
+	@echo Deleting $(SRCODIR)$(DIRSEP)
+	-$(QUIET)$(DELETE) $(SRCODIR)$(DIRSEP)*
