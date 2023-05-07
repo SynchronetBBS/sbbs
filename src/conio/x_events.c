@@ -542,7 +542,7 @@ static int video_init()
 	   lot easier. */
 
 	pthread_mutex_lock(&vstatlock);
-	if (x_cvstat.scaling < 1)
+	if (x_cvstat.scaling < 1 || vstat.scaling < 1)
 		x_cvstat.scaling = vstat.scaling = 1;
 	if (ciolib_initial_scaling)
 		x_cvstat.scaling = vstat.scaling = ciolib_initial_scaling;

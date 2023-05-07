@@ -1663,6 +1663,8 @@ bitmap_largest_mult_inside(int maxwidth, int maxheight)
 		mult = maxwidth / vstat.scrnwidth;
 	else
 		mult = maxheight / vstat.scrnheight;
+	if (mult < 1)
+		mult = 1;
 	for (;mult > 1; mult--) {
 		bitmap_get_scaled_win_size(mult, &w, &h, 0, 0);
 		if (w <= maxwidth && h <= maxheight)
