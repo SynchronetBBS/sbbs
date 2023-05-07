@@ -85,7 +85,7 @@ main(int argc, char **argv)
 	    "%sr2y:\n"
 	    "	.incbin \"%s/r2y.bin\"\n"
 	    "%sy2r:\n"
-	    "	.incbin \"%s/y2r.bin\"\n", mangle, mangle, argv[2], mangle, argv[2], mangle);
+	    "	.incbin \"%s/y2r.bin\"\n", mangle, mangle, mangle, argv[2], mangle, argv[2]);
 	fprintf(h,
 	    "#ifndef RGBMAP_H\n"
 	    "#define RGBMAP_H\n"
