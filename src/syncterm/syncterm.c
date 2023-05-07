@@ -1554,6 +1554,7 @@ main(int argc, char **argv)
 		text_mode = screen_to_ciolib(settings.startup_mode);
 	else
 		text_mode = _ORIGMODE;
+	ciolib_initial_mode = text_mode;
 
 	for (i = 1; i < argc; i++) {
 		if (argv[i][0] == '-'

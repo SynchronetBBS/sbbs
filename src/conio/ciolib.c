@@ -88,6 +88,7 @@ CIOLIBEXPORT const char *ciolib_appname=NULL;
 CIOLIBEXPORT int ciolib_initial_window_height = -1;
 CIOLIBEXPORT int ciolib_initial_window_width = -1;
 CIOLIBEXPORT int ciolib_initial_scaling = 0;
+CIOLIBEXPORT int ciolib_initial_mode = C80;
 CIOLIBEXPORT const uint32_t *ciolib_r2yptr;
 CIOLIBEXPORT const uint32_t *ciolib_y2rptr;
 

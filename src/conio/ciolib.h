@@ -407,6 +407,7 @@ CIOLIBEXPORTVAR const char *ciolib_appname;
 CIOLIBEXPORTVAR int ciolib_initial_window_height;
 CIOLIBEXPORTVAR int ciolib_initial_window_width;
 CIOLIBEXPORTVAR int ciolib_initial_scaling;
+CIOLIBEXPORTVAR int ciolib_initial_mode;
 CIOLIBEXPORTVAR const uint32_t *ciolib_r2yptr;
 CIOLIBEXPORTVAR const uint32_t *ciolib_y2rptr;
 

@@ -409,7 +409,7 @@ int sdl_init(int mode)
 	_beginthread(sdl_video_event_thread, 0, NULL);
 #endif
 	sdl_user_func_ret(SDL_USEREVENT_INIT);
-	sdl_init_mode(3, true);
+	sdl_init_mode(ciolib_initial_mode, true);
 
 	if(sdl_init_good) {
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;

@@ -557,7 +557,7 @@ static int video_init()
 		x_cvstat.scaling = vstat.scaling = 1;
 	pthread_mutex_unlock(&vstatlock);
 	/* Initialize mode 3 (text, 80x25, 16 colors) */
-	if(load_vmode(&vstat, C80))
+	if(load_vmode(&vstat, ciolib_initial_mode))
 		return(-1);
 	x_cvstat = vstat;
 	if(init_window())
