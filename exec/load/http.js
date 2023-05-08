@@ -11,7 +11,7 @@ require('url.js', 'URL');
  *	Parse response headers
  */
 
-function HTTPRequest(username,password,extra_headers)
+function HTTPRequest(username,password,extra_headers,recv_timeout)
 {
 	/* request properties */
 	this.request_headers = undefined;
@@ -25,6 +25,7 @@ function HTTPRequest(username,password,extra_headers)
 	this.password=password;
 	this.user_agent='SYNXv0.1';
 	this.follow_redirects = 0;
+	this.recv_timeout = recv_timeout || 60;
 
 	this.status = { ok: 200, created: 201, accepted: 202, no_content: 204 };
 }
@@ -141,7 +142,7 @@ HTTPRequest.prototype.SendRequest=function() {
 };
 
 HTTPRequest.prototype.ReadStatus=function() {
-	this.status_line=this.sock.recvline(4096);
+	this.status_line=this.sock.recvline(4096, this.recv_timeout);
 	if(this.status_line==null)
 		throw new Error("Unable to read status");
 	var m = this.status_line.match(/^HTTP\/[0-9]+\.[0-9]+ ([0-9]{3})/);
@@ -157,7 +158,7 @@ HTTPRequest.prototype.ReadHeaders=function() {
 	this.response_headers_parsed={};
 
 	for(;;) {
-		header=this.sock.recvline(4096, 120);
+		header=this.sock.recvline(4096, this.recv_timeout);
 		if(header==null)
 			throw new Error("Unable to receive headers");
 		if(header=='')
@@ -183,7 +184,7 @@ HTTPRequest.prototype.ReadBody=function() {
 		len=1024;
 
 	this.body='';
-	while((ch=this.sock.recv(len))!=null && ch != '') {
+	while((ch=this.sock.recv(len, this.recv_timeout))!=null && ch != '') {
 		this.body += ch.toString();
 		len -= ch.length;
 		if(len < 1)
