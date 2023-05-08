@@ -1145,7 +1145,7 @@ int main(int argc, char **argv)
 						uifc_winmode_t wmode = WIN_MID|WIN_ACT|WIN_SAV|WIN_EXTKEYS;
 						if(i > 0)
 							wmode |= WIN_LEFTKEY;
-						if(i + 1 < cfg.nodecfgs)
+						if(i + 1 < (int)cfg.nodecfgs)
 							wmode |= WIN_RIGHTKEY;
 						k=uifc.list(wmode,0,0,72,&nodeop,&nodeopbar,str,opt);
 						if(k==-1)
@@ -1156,7 +1156,7 @@ int main(int argc, char **argv)
 									i--;
 								break;
 							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < cfg.nodecfgs)
+								if(i + 1 < (int)cfg.nodecfgs)
 									i++;
 								break;
 							case __COUNTER__:
@@ -2216,7 +2216,7 @@ int main(int argc, char **argv)
 						uifc_winmode_t wmode = WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT|WIN_EXTKEYS;
 						if(i > 0)
 							wmode |= WIN_LEFTKEY;
-						if(i + 1 < cfg.arcdefs)
+						if(i + 1 < (int)cfg.arcdefs)
 							wmode |= WIN_RIGHTKEY;
 						k=uifc.list(wmode,0,0,72,&packop,0,str,opt);
 						if(k==-1)
@@ -2227,7 +2227,7 @@ int main(int argc, char **argv)
 									i--;
 								break;
 							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < cfg.arcdefs)
+								if(i + 1 < (int)cfg.arcdefs)
 									i++;
 								break;
 							case 0:
@@ -2403,7 +2403,7 @@ int main(int argc, char **argv)
 						uifc_winmode_t wmode = WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT|WIN_EXTKEYS;
 						if(i > 0)
 							wmode |= WIN_LEFTKEY;
-						if(i + 1 < cfg.robot_count)
+						if(i + 1 < (int)cfg.robot_count)
 							wmode |= WIN_RIGHTKEY;
 						k=uifc.list(wmode,0,0,72,&listop,0,str,opt);
 						if(k==-1)
@@ -2414,7 +2414,7 @@ int main(int argc, char **argv)
 									i--;
 								break;
 							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < cfg.robot_count)
+								if(i + 1 < (int)cfg.robot_count)
 									i++;
 								break;
 							case 0:
@@ -2526,7 +2526,7 @@ int main(int argc, char **argv)
 						uifc_winmode_t wmode = WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT|WIN_EXTKEYS;
 						if(i > 0)
 							wmode |= WIN_LEFTKEY;
-						if(i + 1 < cfg.domain_count)
+						if(i + 1 < (int)cfg.domain_count)
 							wmode |= WIN_RIGHTKEY;
 						k=uifc.list(wmode,0,0,72,&listop,0,str,opt);
 						if(k==-1)
@@ -2537,7 +2537,7 @@ int main(int argc, char **argv)
 									i--;
 								break;
 							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < cfg.domain_count)
+								if(i + 1 < (int)cfg.domain_count)
 									i++;
 								break;
 							case 0:
@@ -2674,7 +2674,7 @@ int main(int argc, char **argv)
 						uifc_winmode_t wmode = WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT|WIN_EXTKEYS;
 						if(i > 0)
 							wmode |= WIN_LEFTKEY;
-						if(i + 1 < cfg.listcfgs)
+						if(i + 1 < (int)cfg.listcfgs)
 							wmode |= WIN_RIGHTKEY;
 						k=uifc.list(wmode,0,0,72,&listop,0,str,opt);
 						if(k==-1)
@@ -2685,7 +2685,7 @@ int main(int argc, char **argv)
 									i--;
 								break;
 							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < cfg.listcfgs)
+								if(i + 1 < (int)cfg.listcfgs)
 									i++;
 								break;
 							case 0:
