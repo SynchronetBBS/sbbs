@@ -53,8 +53,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sexyz", "sexyz.vcxproj", "{
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "slog", "slog.vcxproj", "{D39AE752-B910-4EFF-A819-1FA8F30FA3D0}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "smbactiv", "smbactiv.vcxproj", "{453A20D0-847F-4E21-A31B-B316EEA59BFD}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "smblib", "..\smblib\smblib.vcxproj", "{D674842B-2F41-42CB-9426-B3C4B0682574}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "smbutil", "smbutil.vcxproj", "{D9C78CF8-0F08-417B-A242-22B86626F00D}"

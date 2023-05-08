@@ -279,9 +279,6 @@ DELFILES_OBJS = 	$(LOAD_CFG_OBJS) \
 DUPEFIND_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/dupefind$(OFILE)
 
-SMBACTIV_OBJS = 	$(LOAD_CFG_OBJS) \
-			$(OBJODIR)/smbactiv$(OFILE)
-
 READSAUCE_OBJS = \
 			$(OBJODIR)/readsauce$(OFILE)
 
