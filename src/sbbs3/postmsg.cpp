@@ -449,7 +449,7 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 		/* duplicate message-IDs must be allowed in mail database */
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_MSG_ID);
 
-	} else {	/* sub-board */
+	} else if(is_valid_subnum(cfg, smb->subnum)) {	/* sub-board */
 
 		smb->status.max_crcs=cfg->sub[smb->subnum]->maxcrcs;
 		smb->status.max_msgs=cfg->sub[smb->subnum]->maxmsgs;
@@ -510,7 +510,7 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 			int usernum = 0;
 			if(msg->to_ext != NULL)
 				usernum = atoi(msg->to_ext);
-			else if(smb->subnum != INVALID_SUB && (cfg->sub[smb->subnum]->misc & SUB_NAME))
+			else if(is_valid_subnum(cfg, smb->subnum) && (cfg->sub[smb->subnum]->misc & SUB_NAME))
 				usernum = finduserstr(cfg, 0, USER_NAME, msg->to, /* del: */FALSE, /* next: */FALSE, NULL, NULL);
 			else
 				usernum = matchuser(cfg, msg->to, TRUE /* sysop_alias */);
