@@ -178,7 +178,7 @@ BOOL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 			if(smb_hfield_str(msg, FIDOMSGID, msg_id) != SMB_SUCCESS)
 				return FALSE;
 		}
-		else if(smb->subnum != INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FIDO) {
+		else if(is_valid_subnum(cfg, smb->subnum) && cfg->sub[smb->subnum]->misc&SUB_FIDO) {
 			if(ftn_msgid(cfg->sub[smb->subnum], msg, msg_id, sizeof(msg_id)) != NULL) {
 				if(smb_hfield_str(msg, FIDOMSGID, msg_id) != SMB_SUCCESS)
 					return FALSE;
