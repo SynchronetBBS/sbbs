@@ -2566,8 +2566,8 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if(argc<2)
-		return JS_TRUE;
+	if(!js_argc(cx, argc, 1))
+		return JS_FALSE;
 
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class))==NULL) {
 		return JS_FALSE;
