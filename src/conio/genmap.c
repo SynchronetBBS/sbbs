@@ -60,6 +60,7 @@ main(int argc, char **argv)
 	FILE *s, *h, *r, *y;
 	char path[1024];
 	char *mangle = "";
+	char *section = ".rodata";
 
 	if (argc != 3) {
 		fprintf(stderr, "Usage: %s <os> <path>\n", argv[0]);
@@ -74,18 +75,22 @@ main(int argc, char **argv)
 	sprintf(path, "%s/y2r.bin", argv[2]);
 	y = fopen(path, "wb");
 	init_r2y();
-	if (argc > 1 && strcmp(argv[1], "win32") == 0)
+	if (strcmp(argv[1], "win32") == 0)
 		mangle = "_";
+	if (strcmp(argv[1], "darwin") == 0) {
+		section = "__TEXT,__const";
+		mangle = "_";
+	}
 
 	fprintf(s,
-	    ".section .rodata\n"
+	    ".section %s\n"
 	    ".global %sr2y\n"
 	    ".global %sy2r\n"
 	    ".align  4\n"
 	    "%sr2y:\n"
 	    "	.incbin \"%s/r2y.bin\"\n"
 	    "%sy2r:\n"
-	    "	.incbin \"%s/y2r.bin\"\n", mangle, mangle, mangle, argv[2], mangle, argv[2]);
+	    "	.incbin \"%s/y2r.bin\"\n", section, mangle, mangle, mangle, argv[2], mangle, argv[2]);
 	fprintf(h,
 	    "#ifndef RGBMAP_H\n"
 	    "#define RGBMAP_H\n"
