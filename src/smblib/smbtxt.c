@@ -411,6 +411,7 @@ static const char* mime_getpart(const char* buf, const char* content_type, const
 	char	match2[128];
 	int		match_len = 0;
 	int		found = 0;
+	BOOL	quoted_boundary = FALSE;
 
 	if(content_match != NULL) {
 		match_len = sprintf(match1, "%s;", content_match);
@@ -432,11 +433,14 @@ static const char* mime_getpart(const char* buf, const char* content_type, const
 	if(p == NULL)
 		return NULL;
 	p += 9;
-	if(*p == '"')
+	if(*p == '"') {
 		p++;
+		quoted_boundary = TRUE;
+	}
 	SAFEPRINTF(boundary, "--%s", p);
-	if((p = strchr(boundary,'"')) != NULL)
+	if((p = strchr(boundary, quoted_boundary ? '"' : ';')) != NULL)
 		*p = 0;
+	truncsp(boundary); // RC2046: "NOT ending with white space"
 	txt = buf;
 	while((p = strstr(txt, boundary)) != NULL) {
 		txt = p+strlen(boundary);
