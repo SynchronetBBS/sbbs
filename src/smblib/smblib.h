@@ -151,6 +151,7 @@ SMBEXPORT int 		smb_dfield(smbmsg_t*, uint16_t type, uint length);
 SMBEXPORT void*		smb_get_hfield(smbmsg_t*, uint16_t type, hfield_t** hfield);
 SMBEXPORT int		smb_new_hfield(smbmsg_t*, uint16_t type, size_t, void* data);
 SMBEXPORT int		smb_new_hfield_str(smbmsg_t*, uint16_t type, const char*);
+SMBEXPORT int 		smb_new_msghdr(smb_t*, smbmsg_t*, int storage, BOOL new_msg);
 SMBEXPORT int 		smb_addmsghdr(smb_t*, smbmsg_t*, int storage);
 SMBEXPORT int 		smb_putmsg(smb_t*, smbmsg_t*);
 SMBEXPORT int 		smb_putmsgidx(smb_t*, smbmsg_t*);

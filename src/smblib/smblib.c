@@ -1598,6 +1598,10 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 /****************************************************************************/
 int smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 {
+	return smb_new_msghdr(smb, msg, storage, /* new_msg: */TRUE);
+}
+int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, BOOL new_msg)
+{
 	int		i;
 	off_t	l;
 	uint	hdrlen;
@@ -1635,18 +1639,19 @@ int smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 		return SMB_ERR_FILE_LEN;
 	}
 
-	msg->hdr.number=smb->status.last_msg+1;
+	if(new_msg) {
+		msg->hdr.number=smb->status.last_msg+1;
 
-	if(msg->hdr.thread_id==0)	/* new thread being started */
-		msg->hdr.thread_id=msg->hdr.number;
+		if(msg->hdr.thread_id==0)	/* new thread being started */
+			msg->hdr.thread_id=msg->hdr.number;
 
-	/* This is *not* a dupe-check */
-	if(!(msg->flags&MSG_FLAG_HASHED) /* not already hashed */
-		&& (i=smb_hashmsg(smb,msg,/* text: */NULL,/* update? */TRUE))!=SMB_SUCCESS) {
-		smb_unlocksmbhdr(smb);
-		return(i);	/* error updating hash table */
+		/* This is *not* a dupe-check */
+		if(!(msg->flags&MSG_FLAG_HASHED) /* not already hashed */
+			&& (i=smb_hashmsg(smb,msg,/* text: */NULL,/* update? */TRUE))!=SMB_SUCCESS) {
+			smb_unlocksmbhdr(smb);
+			return(i);	/* error updating hash table */
+		}
 	}
-
 	if(storage!=SMB_HYPERALLOC && (i=smb_open_ha(smb))!=SMB_SUCCESS) {
 		smb_unlocksmbhdr(smb);
 		return(i);
@@ -1669,10 +1674,11 @@ int smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 	}
 
 	msg->idx.offset=(uint32_t)(smb->status.header_offset + l);
-	msg->idx_offset=smb->status.total_msgs;
+	if(new_msg)
+		msg->idx_offset=smb->status.total_msgs;
 	msg->hdr.attr &= ~MSG_DELETE;
 	i=smb_putmsg(smb,msg);
-	if(i==SMB_SUCCESS) {
+	if(i==SMB_SUCCESS && new_msg) {
 		smb->status.last_msg++;
 		smb->status.total_msgs++;
 		smb_putstatus(smb);
@@ -1916,11 +1922,23 @@ int smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 		return(SMB_ERR_HDR_LEN);
 	}
 	if(smb_hdrblocks(hdrlen) > smb_hdrblocks(msg->hdr.length)) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%s illegal header length increase: %u (%u blocks, %hu hfields, %hu dfields) vs %hu (%u blocks)", __FUNCTION__
-			,hdrlen, smb_hdrblocks(hdrlen), msg->total_hfields, msg->hdr.total_dfields
-			,msg->hdr.length, smb_hdrblocks(msg->hdr.length));
-		return(SMB_ERR_HDR_LEN);
+		off_t offset = msg->idx.offset;
+		int result = smb_new_msghdr(smb, msg, (smb->status.attr&SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_SELFPACK, FALSE);
+		if(result != SMB_SUCCESS)
+			return result;
+		if(fseeko(smb->shd_fp, offset, SEEK_SET) != 0) {
+			safe_snprintf(smb->last_error,sizeof(smb->last_error)
+				,"%s %d '%s' seeking to %u in header file (to delete)", __FUNCTION__
+				,get_errno(),STRERROR(get_errno()), (uint)msg->idx.offset);
+			return(SMB_ERR_SEEK);
+		}
+		msg->hdr.attr |= MSG_DELETE;
+		if(fwrite(&msg->hdr, sizeof(msg->hdr), 1, smb->shd_fp) != 1) {
+			safe_snprintf(smb->last_error,sizeof(smb->last_error)
+				,"%s writing fixed portion of header record (to delete)", __FUNCTION__);
+			return(SMB_ERR_WRITE);
+		}
+		return smb_freemsghdr(smb, msg->idx.offset-smb->status.header_offset, msg->hdr.length);
 	}
 	msg->hdr.length=(uint16_t)hdrlen; /* store the actual header length */
 	/**********************************/

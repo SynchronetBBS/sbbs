@@ -299,6 +299,9 @@ int smb_freemsghdr(smb_t* smb, off_t offset, uint length)
 	int		l,blocks;
 	off_t	sha_offset;
 
+	if(smb->status.attr&SMB_HYPERALLOC)  /* Nothing to do */
+		return(SMB_SUCCESS);
+
 	if(smb->sha_fp==NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
 		return(SMB_ERR_NOT_OPEN);
