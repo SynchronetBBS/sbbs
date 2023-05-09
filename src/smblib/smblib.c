@@ -1938,11 +1938,12 @@ int smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 				,"%s writing fixed portion of header record (to delete)", __FUNCTION__);
 			return(SMB_ERR_WRITE);
 		}
-		if((smb->status.attr&SMB_HYPERALLOC) == 0 && (result = smb_open_ha(smb)) != SMB_SUCCESS)
-			return result;
-		result = smb_freemsghdr(smb, old_msg.idx.offset - smb->status.header_offset, old_msg.hdr.length);
-		if((smb->status.attr&SMB_HYPERALLOC) == 0)
+		if(!(smb->status.attr&SMB_HYPERALLOC)) {
+			if((result = smb_open_ha(smb)) != SMB_SUCCESS)
+				return result;
+			result = smb_freemsghdr(smb, old_msg.idx.offset - smb->status.header_offset, old_msg.hdr.length);
 			smb_close_ha(smb);
+		}
 		return result;
 	}
 	msg->hdr.length=(uint16_t)hdrlen; /* store the actual header length */
