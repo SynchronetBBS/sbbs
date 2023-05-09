@@ -3365,7 +3365,7 @@ BOOL can_user_download(scfg_t* cfg, uint dirnum, user_t* user, client_t* client,
 {
 	if(reason!=NULL)
 		*reason=CantDownloadFromDir;
-	if(!can_user_access_dir(cfg, dirnum, user, client))
+	if(dirnum != cfg->user_dir && !can_user_access_dir(cfg, dirnum, user, client))
 		return FALSE;
 	if(!chk_ar(cfg,cfg->lib[cfg->dir[dirnum]->lib]->dl_ar,user,client))
 		return FALSE;
