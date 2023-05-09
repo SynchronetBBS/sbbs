@@ -1058,9 +1058,9 @@ int smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		}
 		msg->hfield=vp;
 		if(smb_fread(smb,&msg->hfield[i],sizeof(hfield_t),smb->shd_fp)!=sizeof(hfield_t)) {
-			smb_freemsgmem(msg);
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%s reading header field", __FUNCTION__);
+				,"%s reading header field (#%d)", __FUNCTION__, (int)i);
+			smb_freemsgmem(msg);
 			return(SMB_ERR_READ); 
 		}
 		l+=sizeof(hfield_t);
@@ -1077,9 +1077,9 @@ int smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		if(msg->hfield[i].length
 			&& smb_fread(smb,msg->hfield_dat[i],msg->hfield[i].length,smb->shd_fp)
 				!=(size_t)msg->hfield[i].length) {
-			smb_freemsgmem(msg);
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%s reading header field data", __FUNCTION__);
+				,"%s reading header (#%d) field data (%d bytes)", __FUNCTION__, (int)i, (int)msg->hfield[i].length);
+			smb_freemsgmem(msg);
 			return(SMB_ERR_READ); 
 		}
 		set_convenience_ptr(msg,msg->hfield[i].type,msg->hfield[i].length,msg->hfield_dat[i]);
