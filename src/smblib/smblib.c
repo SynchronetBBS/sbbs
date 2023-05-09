@@ -1922,23 +1922,28 @@ int smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 		return(SMB_ERR_HDR_LEN);
 	}
 	if(smb_hdrblocks(hdrlen) > smb_hdrblocks(msg->hdr.length)) {
-		off_t offset = msg->idx.offset;
+		smbmsg_t old_msg = *msg;
 		int result = smb_new_msghdr(smb, msg, (smb->status.attr&SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_SELFPACK, FALSE);
 		if(result != SMB_SUCCESS)
 			return result;
-		if(fseeko(smb->shd_fp, offset, SEEK_SET) != 0) {
+		if(fseeko(smb->shd_fp, old_msg.idx.offset, SEEK_SET) != 0) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' seeking to %u in header file (to delete)", __FUNCTION__
 				,get_errno(),STRERROR(get_errno()), (uint)msg->idx.offset);
 			return(SMB_ERR_SEEK);
 		}
-		msg->hdr.attr |= MSG_DELETE;
-		if(fwrite(&msg->hdr, sizeof(msg->hdr), 1, smb->shd_fp) != 1) {
+		old_msg.hdr.attr |= MSG_DELETE;
+		if(fwrite(&old_msg.hdr, sizeof(old_msg.hdr), 1, smb->shd_fp) != 1) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s writing fixed portion of header record (to delete)", __FUNCTION__);
 			return(SMB_ERR_WRITE);
 		}
-		return smb_freemsghdr(smb, msg->idx.offset-smb->status.header_offset, msg->hdr.length);
+		if((smb->status.attr&SMB_HYPERALLOC) == 0 && (result = smb_open_ha(smb)) != SMB_SUCCESS)
+			return result;
+		result = smb_freemsghdr(smb, old_msg.idx.offset - smb->status.header_offset, old_msg.hdr.length);
+		if((smb->status.attr&SMB_HYPERALLOC) == 0)
+			smb_close_ha(smb);
+		return result;
 	}
 	msg->hdr.length=(uint16_t)hdrlen; /* store the actual header length */
 	/**********************************/
