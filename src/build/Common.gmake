@@ -296,7 +296,11 @@ OFILE		:= .o
 ifeq ($(os),win32)
  EXEFILE		:= .exe
 else
- EXEFILE		:=
+ ifeq ($(os),emscripten)
+  EXEFILE		:= .html
+ else
+  EXEFILE		:=
+ endif
 endif
 SOFILE		:= .so
 LIBFILE		:= .a
