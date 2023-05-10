@@ -206,7 +206,7 @@ str_list_t dataCreateList(const str_list_t records[], const str_list_t columns, 
 BOOL dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t columns, const char* separator
 				   ,dataLineCreator_t lineCreator)
 {
-#ifdef __EMSCRIPTEN_major__
+#ifdef __EMSCRIPTEN__
 	fprintf(stderr, "%s not implemented.\n", __func__);
 	return FALSE;
 #else

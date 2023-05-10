@@ -371,7 +371,7 @@ long getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream)
 #ifdef __unix__
 FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
 {
-#ifdef __EMSCRIPTEN_major__
+#ifdef __EMSCRIPTEN__
 	fprintf(stderr, "%s not implemented\n", __func__);
 	return NULL;
 #else

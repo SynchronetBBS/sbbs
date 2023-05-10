@@ -36,7 +36,7 @@ size_t strnlen(const char *s, size_t maxlen);
 #if defined(__cplusplus)
 extern "C" {
 #endif
-#if defined(__EMSCRIPTEN_major__)
+#if defined(__EMSCRIPTEN__)
 char * strdup(const char *str);
 char * strtok_r(char *str, const char *delim, char **saveptr);
 #endif

@@ -76,7 +76,7 @@ strndup(const char *str, size_t maxlen)
 }
 #endif
 
-#if defined(__EMSCRIPTEN_major__)
+#if defined(__EMSCRIPTEN__)
 char *
 strdup(const char *str)
 {

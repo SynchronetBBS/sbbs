@@ -13,7 +13,7 @@
 #elif defined(__unix__)
 	#include <fcntl.h>
 	#include <sys/ioctl.h>
-	#ifndef __EMSCRIPTEN_major__
+	#ifndef __EMSCRIPTEN__
 		#if SOUNDCARD_H_IN==1
 			#include <sys/soundcard.h>
 		#elif SOUNDCARD_H_IN==2
@@ -1198,7 +1198,7 @@ void unix_beep(int freq, int dur)
 	}
 #endif
 
-#if !defined(__GNU__) && !defined(__QNX__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__APPLE__) && !defined(__CYGWIN__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN_major__)
+#if !defined(__GNU__) && !defined(__QNX__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__APPLE__) && !defined(__CYGWIN__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
 	if(console_fd == -1) 
   		console_fd = open("/dev/console", O_NOCTTY);
 	

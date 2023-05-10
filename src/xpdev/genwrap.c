@@ -983,7 +983,7 @@ uint64_t xp_timer64(void)
 /* Returns TRUE if specified process is running */
 BOOL check_pid(pid_t pid)
 {
-#ifdef __EMSCRIPTEN_major__
+#ifdef __EMSCRIPTEN__
 	fprintf(stderr, "%s not implemented", __func__);
 	return FALSE;
 #else
@@ -1009,7 +1009,7 @@ BOOL check_pid(pid_t pid)
 /* Terminate (unconditionally) the specified process */
 BOOL terminate_pid(pid_t pid)
 {
-#ifdef __EMSCRIPTEN_major__
+#ifdef __EMSCRIPTEN__
 	fprintf(stderr, "%s not implemented", __func__);
 	return FALSE;
 #else
@@ -1042,7 +1042,7 @@ char* safe_strerror(int errnum, char *buf, size_t buflen)
 
 #if defined(_MSC_VER)
 	strerror_s(buf, buflen, errnum);
-#elif defined(_WIN32) || defined(__EMSCRIPTEN_major__)
+#elif defined(_WIN32) || defined(__EMSCRIPTEN__)
 	strncpy(buf, strerror(errnum), buflen);
 	buf[buflen - 1] = 0;
 #elif defined(_GNU_SOURCE)
