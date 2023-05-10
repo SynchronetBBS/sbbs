@@ -65,6 +65,7 @@ void _termios_reset(void)
 #if defined(__BORLANDC__)
         #pragma argsused
 #endif
+#ifndef __EMSCRIPTEN_major__
 void _sighandler_stop(int sig)
 {
     /* clean up the terminal */
@@ -73,6 +74,7 @@ void _sighandler_stop(int sig)
     /* ... and stop */
 	kill(getpid(), SIGSTOP);
 }
+#endif
 #if defined(__BORLANDC__)
         #pragma argsused
 #endif
@@ -103,7 +105,9 @@ void _termios_setup(void)
     atexit(_termios_reset);
 
     /* install the Ctrl-Z handler */
+#ifndef __EMSCRIPTEN_major__
     signal(SIGTSTP, _sighandler_stop);
+#endif
     signal(SIGCONT, _sighandler_cont);
 }
 

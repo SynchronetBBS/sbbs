@@ -814,7 +814,9 @@ int delfiles(const char *inpath, const char *spec, size_t keep)
 				errors++;
 			continue;
 		}
+#ifndef __EMSCRIPTEN_major__
 		(void)CHMOD(fpath, S_IWRITE);	/* In case it's been marked RDONLY */
+#endif
 		if(remove(fpath)==0)
 			files++;
 		else
@@ -1218,6 +1220,10 @@ int mkpath(const char* path)
 #if !defined _WIN32
 BOOL CopyFile(const char* src, const char* dest, BOOL failIfExists)
 {
+#ifdef __EMSCRIPTEN_major__
+	fprintf(stderr, "%s not implemented\n", __func__);
+	return FALSE;
+#else
 	uint8_t	buf[256 * 1024];
 	FILE*	in;
 	FILE*	out;
@@ -1249,5 +1255,6 @@ BOOL CopyFile(const char* src, const char* dest, BOOL failIfExists)
 	setfdate(dest,ftime);
 
 	return success;
+#endif
 }
 #endif

@@ -157,7 +157,7 @@ void gettime(struct time* nyt)
 
 #endif	/* !Borland */
 
-#if !defined(__unix__)
+#if (!defined(__unix__)) || defined(__EMSCRIPTEN_major__)
 
 /****************************************************************************/
 /* Win32 implementations of the recursive (thread-safe) versions of std C	*/

@@ -249,6 +249,9 @@ ifeq ($(machine_uname),mac68k)
 endif
 ifeq ($(machine_uname),)
  machine	:=	$(os)
+endif
+ifeq ($(os),emscripten)
+ machine	:=	webassembly
 else
  machine	:=	$(os).$(machine_uname)
  CFLAGS +=      -DUNAME_ARCHITECTURE_DESC=$(machine_uname)
@@ -382,9 +385,13 @@ else
       ifeq ($(os),win32) # Windows
        CFLAGS		+= -U__STRICT_ANSI__ -D_WIN32 -D_WIN32_WINNT=0x0501 -DWINVER=0x0501 -D_WIN32_IE=0x0500
        MT_CFLAGS	+= -D_WIN32
-      else           # Linux / Other UNIX
-       XP_SEM :=    1
-       MT_CFLAGS    += -DUSE_XP_SEMAPHORES
+      else
+       ifeq ($(os),emscripten)
+        CFLAGS += -D_BSD_SOURCE -D__STDC_NO_ATOMICS__
+       else           # Linux / Other UNIX
+        XP_SEM :=    1
+        MT_CFLAGS    += -DUSE_XP_SEMAPHORES
+       endif
       endif
      endif
     endif

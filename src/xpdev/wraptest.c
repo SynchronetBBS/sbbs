@@ -56,7 +56,7 @@ int main()
 	/* Show platform details */
 	DESCRIBE_COMPILER(compiler);
 	printf("%-15s: %s\n","Platform",PLATFORM_DESC);
-	printf("%-15s: %s\n","Version",os_version(str));
+	printf("%-15s: %s\n","Version",os_version(str, sizeof(str)));
 	printf("%-15s: %s\n","Compiler"	,compiler);
 	printf("%-15s: %ld\n","Random Number",xp_random(1000));
 

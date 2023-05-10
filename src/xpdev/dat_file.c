@@ -23,7 +23,7 @@
 #include "genwrap.h"	/* lastchar */
 #include "filewrap.h"	/* chsize */
 #include <stdlib.h>		/* malloc */
-#include <string.h>		/* strdup */
+#include "strwrap.h"		/* strdup */
 
 /***********************************/
 /* CSV (Comma Separated Value) API */
@@ -206,6 +206,10 @@ str_list_t dataCreateList(const str_list_t records[], const str_list_t columns, 
 BOOL dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t columns, const char* separator
 				   ,dataLineCreator_t lineCreator)
 {
+#ifdef __EMSCRIPTEN_major__
+	fprintf(stderr, "%s not implemented.\n", __func__);
+	return FALSE;
+#else
 	size_t		count,total;
 	str_list_t	list;
 
@@ -222,6 +226,7 @@ BOOL dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t column
 	strListFree(&list);
 
 	return(count == total);
+#endif
 }
 
 str_list_t* dataParseList(const str_list_t records, str_list_t* columns, dataLineParser_t lineParser)

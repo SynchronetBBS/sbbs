@@ -44,7 +44,7 @@ DLLEXPORT struct tm*	localtime32(const time32_t* t, struct tm* tm);
 /* Win32 implementations of recursive (thread-safe) std C time functions on Unix */
 /*********************************************************************************/
 
-#if !defined(__unix__)	
+#if (!defined(__unix__)) || defined(__EMSCRIPTEN_major__)
 
 	#include <time.h>		/* time_t, etc. */
 
@@ -58,6 +58,10 @@ DLLEXPORT struct tm*	localtime32(const time32_t* t, struct tm* tm);
 /* Microsoft's equivalent of GLIBC/BSD timegm() */
 #if defined(_MSC_VER) || defined(__MINGW32__)
 	#define timegm _mkgmtime
+#endif
+
+#if defined(__EMSCRIPTEN_major__)
+	#define timegm	mktime
 #endif
 
 /***********************************/

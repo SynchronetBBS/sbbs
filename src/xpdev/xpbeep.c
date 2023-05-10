@@ -13,37 +13,39 @@
 #elif defined(__unix__)
 	#include <fcntl.h>
 	#include <sys/ioctl.h>
-	#if SOUNDCARD_H_IN==1
-		#include <sys/soundcard.h>
-	#elif SOUNDCARD_H_IN==2
-		#include <soundcard.h>
-	#elif SOUNDCARD_H_IN==3
-		#include <linux/soundcard.h>
-	#else
-		#ifndef USE_ALSA_SOUND
-			#warning Cannot find soundcard.h
+	#ifndef __EMSCRIPTEN_major__
+		#if SOUNDCARD_H_IN==1
+			#include <sys/soundcard.h>
+		#elif SOUNDCARD_H_IN==2
+			#include <soundcard.h>
+		#elif SOUNDCARD_H_IN==3
+			#include <linux/soundcard.h>
+		#else
+			#ifndef USE_ALSA_SOUND
+				#warning Cannot find soundcard.h
+			#endif
 		#endif
-	#endif
-	#ifdef USE_ALSA_SOUND
-		#include <dlfcn.h>
-		#include <alsa/asoundlib.h>
-	#endif
-	/* KIOCSOUND */
-	#if defined(__FreeBSD__)
-		#include <sys/kbio.h>
-	#elif defined(__linux__)
-		#include <sys/kd.h>	
-	#elif defined(__solaris__)
-		#include <sys/kbio.h>
-		#include <sys/kbd.h>
-	#endif
-	#if (defined(__OpenBSD__) || defined(__NetBSD__)) && defined(HAS_MACHINE_SPKR_H)
-		#include <machine/spkr.h>
-	#elif defined(__FreeBSD__)
-		#if defined(HAS_DEV_SPEAKER_SPEAKER_H)
-			#include <dev/speaker/speaker.h>
-		#elif defined(HAS_MACHINE_SPEAKER_H)
-			#include <machine/speaker.h>
+		#ifdef USE_ALSA_SOUND
+			#include <dlfcn.h>
+			#include <alsa/asoundlib.h>
+		#endif
+		/* KIOCSOUND */
+		#if defined(__FreeBSD__)
+			#include <sys/kbio.h>
+		#elif defined(__linux__)
+			#include <sys/kd.h>
+		#elif defined(__solaris__)
+			#include <sys/kbio.h>
+			#include <sys/kbd.h>
+		#endif
+		#if (defined(__OpenBSD__) || defined(__NetBSD__)) && defined(HAS_MACHINE_SPKR_H)
+			#include <machine/spkr.h>
+		#elif defined(__FreeBSD__)
+			#if defined(HAS_DEV_SPEAKER_SPEAKER_H)
+				#include <dev/speaker/speaker.h>
+			#elif defined(HAS_MACHINE_SPEAKER_H)
+				#include <machine/speaker.h>
+			#endif
 		#endif
 	#endif
 #endif
@@ -1196,7 +1198,7 @@ void unix_beep(int freq, int dur)
 	}
 #endif
 
-#if !defined(__GNU__) && !defined(__QNX__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__APPLE__) && !defined(__CYGWIN__) && !defined(__HAIKU__)
+#if !defined(__GNU__) && !defined(__QNX__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__APPLE__) && !defined(__CYGWIN__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN_major__)
 	if(console_fd == -1) 
   		console_fd = open("/dev/console", O_NOCTTY);
 	

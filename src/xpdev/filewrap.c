@@ -194,7 +194,11 @@ int unlock(int fd, off_t pos, off_t len)
 int sopen(const char *fn, int sh_access, int share, ...)
 {
 	int fd;
+#ifdef S_IREAD
 	int pmode=S_IREAD;
+#else
+	int pmode=0;
+#endif
 #ifndef F_SANEWRLCKNO
 	int	flock_op=LOCK_NB;	/* non-blocking */
 #endif
@@ -367,6 +371,10 @@ long getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream)
 #ifdef __unix__
 FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
 {
+#ifdef __EMSCRIPTEN_major__
+	fprintf(stderr, "%s not implemented\n", __func__);
+	return NULL;
+#else
 	int file;
 	int Mode=0;
 	const char *p;
@@ -423,5 +431,6 @@ FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
 	if(file==-1)
 		return(NULL);
 	return(fdopen(file,pszMode));
+#endif
 }
 #endif

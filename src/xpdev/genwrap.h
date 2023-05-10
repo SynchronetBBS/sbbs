@@ -30,7 +30,6 @@
 
 #if defined(__unix__)
 	#include <sched.h>		/* sched_yield */
-	#include <time.h>	/* clock_t */
 	#include <sys/time.h>	/* struct timeval */
 	#include <strings.h>	/* strcasecmp() */
 	#include <unistd.h>		/* usleep */
@@ -202,6 +201,8 @@ extern "C" {
 	#define ARCHITECTURE_DESC "ppc"
 #elif defined(_M_IA64) || defined(__ia64__)
 	#define ARCHITECTURE_DESC "ia64"
+#elif defined(__EMSCRIPTEN_major__)
+	#define ARCHITECTURE_DESC "wasm"
 #else
 	#ifdef UNAME_ARCHITECTURE_DESC
 		#define ARCHITECTURE_DESC UNAME_ARCHITECTURE_DESC

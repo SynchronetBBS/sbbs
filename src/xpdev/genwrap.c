@@ -29,6 +29,7 @@
 #include <limits.h>		/* CHAR_BIT */
 #include <math.h>		/* fmod */
 
+#include "strwrap.h"		/* strdup */
 #include "ini_file.h"
 
 #if defined(__unix__)
@@ -982,6 +983,10 @@ uint64_t xp_timer64(void)
 /* Returns TRUE if specified process is running */
 BOOL check_pid(pid_t pid)
 {
+#ifdef __EMSCRIPTEN_major__
+	fprintf(stderr, "%s not implemented", __func__);
+	return FALSE;
+#else
 #if defined(__unix__)
 	return(kill(pid,0)==0);
 #elif defined(_WIN32)
@@ -998,11 +1003,16 @@ BOOL check_pid(pid_t pid)
 #else
 	return FALSE;	/* Need check_pid() definition! */
 #endif
+#endif
 }
 
 /* Terminate (unconditionally) the specified process */
 BOOL terminate_pid(pid_t pid)
 {
+#ifdef __EMSCRIPTEN_major__
+	fprintf(stderr, "%s not implemented", __func__);
+	return FALSE;
+#else
 #if defined(__unix__)
 	return(kill(pid,SIGKILL)==0);
 #elif defined(_WIN32)
@@ -1018,6 +1028,7 @@ BOOL terminate_pid(pid_t pid)
 #else
 	return FALSE;	/* Need check_pid() definition! */
 #endif
+#endif
 }
 
 /****************************************************************************/
@@ -1031,7 +1042,7 @@ char* safe_strerror(int errnum, char *buf, size_t buflen)
 
 #if defined(_MSC_VER)
 	strerror_s(buf, buflen, errnum);
-#elif defined(_WIN32)
+#elif defined(_WIN32) || defined(__EMSCRIPTEN_major__)
 	strncpy(buf, strerror(errnum), buflen);
 	buf[buflen - 1] = 0;
 #elif defined(_GNU_SOURCE)

@@ -75,3 +75,39 @@ strndup(const char *str, size_t maxlen)
 	return copy;
 }
 #endif
+
+#if defined(__EMSCRIPTEN_major__)
+char *
+strdup(const char *str)
+{
+	if (str == NULL)
+		return NULL;
+	char *ret = malloc(strlen(str) + 1);
+	if (ret != NULL)
+		strcpy(ret, str);
+	return ret;
+}
+
+char *
+strtok_r(char *str, const char *delim, char **saveptr)
+{
+	char *ret;
+	char *end;
+
+	if (str == NULL)
+		str = *saveptr;
+	if (str == NULL)
+		return NULL;
+	end = strchr(str, '\0');
+	ret = strtok(str, delim);
+	if (ret == NULL) {
+		*saveptr = NULL;
+	}
+	else {
+		*saveptr = strchr(ret, '\0') + 1;
+		if (*saveptr > end)
+			*saveptr = NULL;
+	}
+	return ret;
+}
+#endif
