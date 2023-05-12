@@ -96,7 +96,7 @@ struct video_stats {
 	int bright_altcharset;
 	int blink_altcharset;
 	int currattr;
-	int scaling;
+	double scaling;
 	int scrnwidth;
 	int scrnheight;
 	int winwidth;

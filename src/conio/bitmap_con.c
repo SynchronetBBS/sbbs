@@ -1634,12 +1634,66 @@ bitmap_width_controls(void)
 
 // Must be called with vstatlock
 void
-bitmap_get_scaled_win_size(int scale, int *w, int *h, int maxwidth, int maxheight)
+bitmap_get_scaled_win_size_nomax(double scale, int *w, int *h)
 {
 	bool wc = bitmap_width_controls();
 
-	*w = vstat.scrnwidth * scale;
-	*h = vstat.scrnheight * scale;
+	if (scale < 1.0)
+		scale = 1.0;
+	*w = lround(vstat.scrnwidth * scale);
+	*h = lround(vstat.scrnheight * scale);
+	if (wc)
+		*h = INT_MAX;
+	else
+		*w = INT_MAX;
+	aspect_fix_wc(w, h, wc, vstat.aspect_width, vstat.aspect_height);
+}
+
+// Must be called with vstatlock
+double
+bitmap_double_mult_inside(int maxwidth, int maxheight)
+{
+	double mult = 1.0;
+	double wmult = 1.0;
+	double hmult = 1.0;
+	int w, h;
+
+	bitmap_get_scaled_win_size_nomax(1.0, &w, &h);
+	wmult = (double)maxwidth / w;
+	hmult = (double)maxheight / h;
+	if (wmult < hmult)
+		mult = wmult;
+	else
+		mult = hmult;
+	// TODO: Allow below 1.0?
+	if (mult < 1.0)
+		mult = 1.0;
+	return mult;
+}
+
+// Must be called with vstatlock
+int
+bitmap_largest_mult_inside(int maxwidth, int maxheight)
+{
+	return bitmap_double_mult_inside(maxwidth, maxheight);
+}
+
+// Must be called with vstatlock
+void
+bitmap_get_scaled_win_size(double scale, int *w, int *h, int maxwidth, int maxheight)
+{
+	bool wc = bitmap_width_controls();
+	double max;
+
+	if (maxwidth == 0 && maxheight == 0)
+		return bitmap_get_scaled_win_size_nomax(scale, w, h);
+	max = bitmap_double_mult_inside(maxwidth, maxheight);
+	if (scale < 1.0)
+		scale = 1.0;
+	if (scale > max)
+		scale = max;
+	*w = lround(vstat.scrnwidth * scale);
+	*h = lround(vstat.scrnheight * scale);
 	if (wc)
 		*h = INT_MAX;
 	else
@@ -1649,28 +1703,6 @@ bitmap_get_scaled_win_size(int scale, int *w, int *h, int maxwidth, int maxheigh
 	if (*h > maxheight && maxheight > 0)
 		*h = maxheight;
 	aspect_fix_wc(w, h, wc, vstat.aspect_width, vstat.aspect_height);
-}
-
-// Must be called with vstatlock
-int
-bitmap_largest_mult_inside(int maxwidth, int maxheight)
-{
-	bool wc = bitmap_width_controls();
-	int mult = 1;
-	int w, h;
-
-	if (wc)
-		mult = maxwidth / vstat.scrnwidth;
-	else
-		mult = maxheight / vstat.scrnheight;
-	if (mult < 1)
-		mult = 1;
-	for (;mult > 1; mult--) {
-		bitmap_get_scaled_win_size(mult, &w, &h, 0, 0);
-		if (w <= maxwidth && h <= maxheight)
-			break;
-	}
-	return mult;
 }
 
 // Must be called with vstatlock

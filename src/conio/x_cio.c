@@ -56,8 +56,10 @@
 #define BITMAP_CIOLIB_DRIVER
 #include "bitmap_con.h"
 
+#include "x_cio.h"
+
 pthread_mutex_t scalinglock;
-int newscaling;
+double newscaling;
 
 int x_kbhit(void)
 {
@@ -541,7 +543,7 @@ void x11_flush(void)
 		write_event(&ev);
 }
 
-void x_setscaling(int newval)
+void x_setscaling(double newval)
 {
 	if (newval < 1)
 		newval = 1;
@@ -550,7 +552,7 @@ void x_setscaling(int newval)
 	pthread_mutex_unlock(&scalinglock);
 }
 
-int x_getscaling(void)
+double x_getscaling(void)
 {
 	int ret;
 

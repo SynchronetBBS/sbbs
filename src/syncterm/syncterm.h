@@ -62,7 +62,7 @@ struct syncterm_settings {
 	struct modem_settings mdm;
 	char                  TERM[INI_MAX_VALUE_LEN + 1];
 	char                  list_path[MAX_PATH + 1];
-	int                   scaling_factor;
+	double                scaling_factor;
 	int                   xfer_failure_keypress_timeout; /* wait for user acknowledgement via keypress, in seconds
                                                               */
 	int                   xfer_success_keypress_timeout; /* wait for user acknowledgement via keypress, in seconds

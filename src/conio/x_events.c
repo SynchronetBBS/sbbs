@@ -313,8 +313,6 @@ my_fls(unsigned long mask)
 static void map_window()
 {
 	XSizeHints *sh;
-	int minwidth = x_cvstat.scrnwidth;
-	int minheight = x_cvstat.scrnheight;
 
 	sh = x11.XAllocSizeHints();
 	if (sh == NULL) {
@@ -322,23 +320,29 @@ static void map_window()
 		exit(1);
 	}
 
-	sh->base_width = x_cvstat.scrnwidth * x_cvstat.scaling;
-	sh->base_height = x_cvstat.scrnheight * x_cvstat.scaling;
-
-	int mw, mh;
-	if (x11_get_maxsize(&mw,&mh)) {
+	if (x11_get_maxsize(&sh->max_width,&sh->max_height)) {
 		pthread_mutex_lock(&vstatlock);
-		bitmap_get_scaled_win_size(bitmap_largest_mult_inside(mw, mh), &sh->max_width, &sh->max_height, mw, mh);
-		pthread_mutex_unlock(&vstatlock);
+		bitmap_get_scaled_win_size(bitmap_double_mult_inside(sh->max_width, sh->max_height), &sh->max_width, &sh->max_height, sh->max_width, sh->max_height);
+	}
+	else {
+		pthread_mutex_lock(&vstatlock);
+		bitmap_get_scaled_win_size(7.0, &sh->max_width, &sh->max_height, 0, 0);
 	}
 
-	aspect_correct(&sh->base_width, &sh->base_height, x_cvstat.aspect_width, x_cvstat.aspect_height);
-	aspect_correct(&minwidth, &minheight, x_cvstat.aspect_width, x_cvstat.aspect_height);
+	bitmap_get_scaled_win_size(x_cvstat.scaling, &sh->base_width, &sh->base_height, 0, 0);
+	bitmap_get_scaled_win_size(1.0, &sh->min_width, &sh->min_height, 0, 0);
+	pthread_mutex_unlock(&vstatlock);
 
-	sh->min_width = sh->width_inc = sh->min_aspect.x = sh->max_aspect.x = minwidth;
-	sh->min_height = sh->height_inc = sh->min_aspect.y = sh->max_aspect.y = minheight;
+	if (x_cvstat.aspect_width != 0 && x_cvstat.aspect_height != 0) {
+		sh->min_aspect.x = sh->max_aspect.x = sh->min_width;
+		sh->min_aspect.y = sh->max_aspect.y = sh->min_height;
+	}
+	else {
+		sh->min_aspect.x = sh->max_aspect.x = sh->min_width;
+		sh->min_aspect.y = sh->max_aspect.y = sh->min_height;
+	}
 
-	sh->flags = USSize | PMinSize | PSize | PResizeInc | PAspect | PMaxSize;
+	sh->flags = USSize | PMinSize | PSize | PAspect | PMaxSize;
 
 	x11.XSetWMNormalHints(dpy, win, sh);
 	pthread_mutex_lock(&vstatlock);
@@ -474,16 +478,17 @@ static void resize_window()
 	int width = x_cvstat.scrnwidth * x_cvstat.scaling;
 	int height = x_cvstat.scrnheight * x_cvstat.scaling;
 
-	aspect_correct(&width, &height, x_cvstat.aspect_width, x_cvstat.aspect_height);
 	pthread_mutex_lock(&vstatlock);
+	bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
 	if (width == vstat.winwidth && height == vstat.winheight) {
+		vstat.scaling = x_cvstat.scaling = bitmap_double_mult_inside(width, height);
 		pthread_mutex_unlock(&vstatlock);
 		resize_xim();
 		return;
 	}
-	x_cvstat.winwidth = vstat.winwidth = width;
-	x_cvstat.winheight = vstat.winheight = height;
-	vstat.scaling = bitmap_largest_mult_inside(width, height);
+	x_cvstat.winwidth = vstat.winwidth;
+	x_cvstat.winheight = vstat.winheight;
+	vstat.scaling = x_cvstat.scaling = bitmap_double_mult_inside(width, height);
 	pthread_mutex_unlock(&vstatlock);
 	x11.XResizeWindow(dpy, win, width, height);
 	resize_xim();
@@ -521,9 +526,9 @@ static void check_scaling(void)
 {
 	pthread_mutex_lock(&vstatlock);
 	pthread_mutex_lock(&scalinglock);
-	if (newscaling != 0 && newscaling != vstat.scaling) {
+	if (newscaling != 0) {
 		x_cvstat.scaling = newscaling;
-		newscaling = 0;
+		newscaling = 0.0;
 		pthread_mutex_unlock(&scalinglock);
 		pthread_mutex_unlock(&vstatlock);
 		resize_window();
@@ -551,15 +556,15 @@ static int video_init()
 	   lot easier. */
 
 	pthread_mutex_lock(&vstatlock);
-	if (ciolib_initial_scaling)
+	if (ciolib_initial_scaling != 0.0)
 		x_cvstat.scaling = vstat.scaling = ciolib_initial_scaling;
-	if (x_cvstat.scaling < 1 || vstat.scaling < 1)
+	if (x_cvstat.scaling < 1.0 || vstat.scaling < 1.0)
 		x_cvstat.scaling = vstat.scaling = 1;
-	pthread_mutex_unlock(&vstatlock);
 	/* Initialize mode 3 (text, 80x25, 16 colors) */
 	if(load_vmode(&vstat, ciolib_initial_mode))
 		return(-1);
 	x_cvstat = vstat;
+	pthread_mutex_unlock(&vstatlock);
 	if(init_window())
 		return(-1);
 	bitmap_drv_init(x11_drawrect, x11_flush);
@@ -593,7 +598,10 @@ local_draw_rect(struct rectlist *rect)
 	}
 
 	// Scale...
-	source = do_scale(rect, x_cvstat.scaling, x_cvstat.scaling, x_cvstat.aspect_width, x_cvstat.aspect_height);
+	pthread_mutex_lock(&vstatlock);
+	bitmap_get_scaled_win_size(x_cvstat.scaling, &w, &h, vstat.winwidth, vstat.winheight);
+	pthread_mutex_unlock(&vstatlock);
+	source = do_scale(rect, w, h);
 	bitmap_drv_free_rect(rect);
 	if (source == NULL)
 		return;
@@ -701,20 +709,19 @@ local_draw_rect(struct rectlist *rect)
 static void handle_resize_event(int width, int height)
 {
 	bool resize = false;
-	int new_scaling;
+	double new_scaling;
 
 	pthread_mutex_lock(&vstatlock);
-	vstat.winwidth = x_cvstat.winwidth = width;
-	vstat.winheight = x_cvstat.winheight = height;
-	new_scaling = bitmap_largest_mult_inside(width, height);
+	vstat.winwidth = width;
+	vstat.winheight = height;
+	new_scaling = bitmap_double_mult_inside(width, height);
 	if (new_scaling != vstat.scaling) {
-		vstat.scaling = x_cvstat.scaling = new_scaling;
+		x_cvstat.scaling = new_scaling;
 		resize = true;
 	}
 	if (new_scaling > 16) {
 		new_scaling = 16;
 		pthread_mutex_lock(&scalinglock);
-		newscaling = new_scaling;
 		pthread_mutex_unlock(&scalinglock);
 		x_cvstat.scaling = new_scaling;
 		resize = true;
@@ -725,8 +732,9 @@ static void handle_resize_event(int width, int height)
 	 * or if the two axis don't scale the same way.
 	 * Otherwise, we can simply resend everything
 	 */
-	if (resize)
+	if (resize) {
 		resize_window();
+	}
 	else
 		resize_xim();
 	bitmap_drv_request_pixels();
@@ -1133,8 +1141,18 @@ static int x11_event(XEvent *ev)
 							case XK_Left:
 							case XK_KP_Left:
 								if (ev->xkey.state & Mod1Mask) {
-									if (x_cvstat.scaling > 1)
-										x_setscaling(x_cvstat.scaling - 1);
+									double fval;
+									double ival;
+									fval = modf(x_cvstat.scaling, &ival);
+									if (fval != 0.0) {
+										if (ival < 1.0)
+											ival = 1.0;
+										x_setscaling(ival);
+									}
+									else if (ival > 1.0)
+										x_setscaling(ival - 1.0);
+									else
+										x_setscaling(1.0);
 								}
 								scan = 75;
 								goto docode;
@@ -1152,14 +1170,18 @@ static int x11_event(XEvent *ev)
 							case XK_KP_Right:
 								scan = 77;
 								if (ev->xkey.state & Mod1Mask) {
-									if (x_cvstat.scaling < 7) {
+									double ival;
+									modf(x_cvstat.scaling, &ival);
+									if (ival < 1.0)
+										ival = 1.0;
+									if (ival < 7.0) {
 										int mw, mh, ms;
 										x11_get_maxsize(&mw,&mh);
 										pthread_mutex_lock(&vstatlock);
 										ms = bitmap_largest_mult_inside(mw, mh);
 										pthread_mutex_unlock(&vstatlock);
-										if (x_cvstat.scaling < ms)
-											x_setscaling(x_cvstat.scaling + 1);
+										if (x_cvstat.scaling + 1 <= ms)
+											x_setscaling(ival + 1);
 									}
 								}
 								goto docode;

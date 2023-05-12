@@ -7,7 +7,6 @@ extern "C" {
 /* Low-Level stuff (Shouldn't be used by ciolib programs */
 int sdl_init(int mode);
 int sdl_load_font(char *filename, int width, int height, double scale);
-int sdl_init_mode(int mode);
 int sdl_setup_colours(void);
 int sdl_draw_char(unsigned short vch, int xpos, int ypos);
 int sdl_screen_redraw(void);
@@ -19,7 +18,7 @@ int sdl_gettext(int sx, int sy, int ex, int ey, void *fill);
 int sdl_kbhit(void);
 void sdl_delay(long msec);
 void sdl_gotoxy(int x, int y);
-int sdl_initciolib(long inmode);
+int sdl_initciolib(int inmode);
 void sdl_setcursortype(int type);
 int sdl_getch(void);
 void sdl_textmode(int mode);
@@ -39,8 +38,8 @@ void sdl_setwinsize(int w, int h);
 void sdl_setwinposition(int x, int y);
 void sdl_beep(void);
 int sdl_mousepointer(enum ciolib_mouse_ptr type);
-int sdl_getscaling(void);
-void sdl_setscaling(int newval);
+double sdl_getscaling(void);
+void sdl_setscaling(double newval);
 
 #if defined(__DARWIN__)
 void sdl_init_darwin(void *args);

@@ -87,7 +87,7 @@ CIOLIBEXPORT int ciolib_reaper=TRUE;
 CIOLIBEXPORT const char *ciolib_appname=NULL;
 CIOLIBEXPORT int ciolib_initial_window_height = -1;
 CIOLIBEXPORT int ciolib_initial_window_width = -1;
-CIOLIBEXPORT int ciolib_initial_scaling = 0;
+CIOLIBEXPORT double ciolib_initial_scaling = 0;
 CIOLIBEXPORT int ciolib_initial_mode = C80;
 CIOLIBEXPORT const uint32_t *ciolib_r2yptr;
 CIOLIBEXPORT const uint32_t *ciolib_y2rptr;
@@ -131,8 +131,8 @@ CIOLIBEXPORT char * ciolib_getpass(const char *prompt);
 CIOLIBEXPORT void ciolib_copytext(const char *text, size_t buflen);
 CIOLIBEXPORT char * ciolib_getcliptext(void);
 CIOLIBEXPORT int ciolib_get_window_info(int *width, int *height, int *xpos, int *ypos);
-CIOLIBEXPORT void ciolib_setscaling(int new_value);
-CIOLIBEXPORT int ciolib_getscaling(void);
+CIOLIBEXPORT void ciolib_setscaling(double new_value);
+CIOLIBEXPORT double ciolib_getscaling(void);
 CIOLIBEXPORT int ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 CIOLIBEXPORT int ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
 CIOLIBEXPORT int ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
@@ -1646,7 +1646,7 @@ CIOLIBEXPORT int ciolib_getvideoflags(void)
 }
 
 /* Optional */
-CIOLIBEXPORT void ciolib_setscaling(int new_value)
+CIOLIBEXPORT void ciolib_setscaling(double new_value)
 {
 	CIOLIB_INIT();
 
@@ -1656,7 +1656,7 @@ CIOLIBEXPORT void ciolib_setscaling(int new_value)
 
 /* Optional */
 /* Returns zero on error */
-CIOLIBEXPORT int ciolib_getscaling(void)
+CIOLIBEXPORT double ciolib_getscaling(void)
 {
 	CIOLIB_INIT();
 

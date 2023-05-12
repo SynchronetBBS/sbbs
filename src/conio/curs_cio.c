@@ -827,7 +827,7 @@ void curs_resume(void)
 	suspended = 0;
 }
 
-int curs_initciolib(long inmode)
+int curs_initciolib(int inmode)
 {
 	short	fg, bg, pair=0;
 	char *p;

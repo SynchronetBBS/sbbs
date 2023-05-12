@@ -20,7 +20,19 @@ struct rectlist {
 extern struct video_stats vstat;
 extern pthread_mutex_t vstatlock;
 
-#ifndef BITMAP_CIOLIB_DRIVER
+#ifdef BITMAP_CIOLIB_DRIVER
+/* Called from drivers */
+int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int maxheight);
+int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
+				,void (*flush) (void));
+void bitmap_drv_request_pixels(void);
+void bitmap_drv_request_some_pixels(int x, int y, int width, int height);
+void bitmap_drv_free_rect(struct rectlist *rect);
+void bitmap_snap(bool grow, int maxwidth, int maxheight);
+void bitmap_get_scaled_win_size(double scale, int *w, int *h, int maxwidth, int maxheight);
+int bitmap_largest_mult_inside(int maxwidth, int maxheight);
+double bitmap_double_mult_inside(int maxwidth, int maxheight);
+#else
 /* Called from ciolib */
 int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill);
 int bitmap_vmem_puttext(int sx, int sy, int ex, int ey, struct vmem_cell *fill);
@@ -46,19 +58,6 @@ int bitmap_set_modepalette(uint32_t p[16]);
 uint32_t bitmap_map_rgb(uint16_t r, uint16_t g, uint16_t b);
 void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size);
 int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b);
-#endif
-
-#ifdef BITMAP_CIOLIB_DRIVER
-/* Called from drivers */
-int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int maxheight);
-int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
-				,void (*flush) (void));
-void bitmap_drv_request_pixels(void);
-void bitmap_drv_request_some_pixels(int x, int y, int width, int height);
-void bitmap_drv_free_rect(struct rectlist *rect);
-void bitmap_snap(bool grow, int maxwidth, int maxheight);
-void bitmap_get_scaled_win_size(int scale, int *w, int *h, int maxwidth, int maxheight);
-int bitmap_largest_mult_inside(int maxwidth, int maxheight);
 #endif
 
 #endif

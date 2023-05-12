@@ -188,7 +188,6 @@ gdi_handle_wm_size(WPARAM wParam, LPARAM lParam)
 {
 	int w, h;
 	int ww, wh;
-	int mult;
 
 	switch (wParam) {
 		case SIZE_MAXIMIZED:
@@ -204,8 +203,8 @@ gdi_handle_wm_size(WPARAM wParam, LPARAM lParam)
 	pthread_mutex_lock(&vstatlock);
 	vstat.winwidth = w;
 	vstat.winheight = h;
-	mult = bitmap_largest_mult_inside(w, h);
-	bitmap_get_scaled_win_size(mult, &w, &h, 0, 0);
+	vstat.scaling = bitmap_double_mult_inside(w, h);
+	bitmap_get_scaled_win_size(vstat.scaling, &w, &h, 0, 0);
 	if (w != vstat.winwidth || h != vstat.winheight) {
 		gdi_setwinsize(w, h);
 	}
@@ -218,9 +217,9 @@ static LRESULT
 gdi_handle_wm_sizing(WPARAM wParam, RECT *rect)
 {
 	int w, h;
-	int mult;
+	double mult;
 
-	mult = bitmap_largest_mult_inside(w, h);
+	mult = bitmap_double_mult_inside(w, h);
 	bitmap_get_scaled_win_size(mult, &w, &h, 0, 0);
 	switch(wParam) {
 		case WMSZ_BOTTOM:
@@ -259,7 +258,6 @@ gdi_handle_wm_paint(HWND hwnd)
 	struct rectlist *list;
 	HDC winDC;
 	int w,h;
-	int aw,ah;
 	int sw,sh;
 	int xscale, yscale;
 	struct graphics_buffer *gb;
@@ -271,13 +269,9 @@ gdi_handle_wm_paint(HWND hwnd)
 	pthread_mutex_lock(&vstatlock);
 	w = vstat.winwidth;
 	h = vstat.winheight;
-	aw = vstat.aspect_width;
-	ah = vstat.aspect_height;
-	sw = vstat.scrnwidth;
-	sh = vstat.scrnheight;
+	bitmap_get_scaled_win_size(vstat.scaling, &sw, &sh, vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
-	calc_scaling_factors(&xscale, &yscale, w, h, aw, ah, sw, sh);
-	gb = do_scale(list, xscale, yscale, aw, ah);
+	gb = do_scale(list, sw, sh);
 	if (di == NULL || diw != gb->w || dih != gb->h) {
 		lww = -1;
 		if (di != NULL) {
@@ -470,7 +464,7 @@ handle_wm_getminmaxinfo(MINMAXINFO *inf)
 	int monw, monh;
 	int minw, minh;
 	int maxw, maxh;
-	int mult;
+	double mult;
 	RECT r;
 
 	gdi_get_monitor_size(&monw, &monh);
@@ -478,7 +472,7 @@ handle_wm_getminmaxinfo(MINMAXINFO *inf)
 	maxh = monh;
 	UnadjustWindowSize(&maxw, &maxh);
 	pthread_mutex_lock(&vstatlock);
-	mult = bitmap_largest_mult_inside(maxw, maxh);
+	mult = bitmap_double_mult_inside(maxw, maxh);
 	bitmap_get_scaled_win_size(mult, &maxw, &maxh, 0, 0);
 	bitmap_get_scaled_win_size(1, &minw, &minh, 0, 0);
 	pthread_mutex_unlock(&vstatlock);
@@ -795,7 +789,6 @@ gdi_beep(void)
 void
 gdi_textmode(int mode)
 {
-	int scaling = 1;
 	int mw, mh;
 
 	if (mode != CIOLIB_MODE_CUSTOM) {
@@ -1093,20 +1086,20 @@ gdi_setwinsize(int w, int h)
 	PostMessageW(win, WM_USER_SETSIZE, w, h);
 }
 
-int
+double
 gdi_getscaling(void)
 {
 	int ret;
 
 	// TODO: I hate having nested locks like this. :(
 	pthread_mutex_lock(&vstatlock);
-	ret = bitmap_largest_mult_inside(vstat.winwidth, vstat.winheight);
+	ret = bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
 	return ret;
 }
 
 void
-gdi_setscaling(int newval)
+gdi_setscaling(double newval)
 {
 	int w, h;
 

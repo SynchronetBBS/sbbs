@@ -59,7 +59,7 @@ void	win32_setcursortype(int);
 int	win32_getch(void);
 int	win32_kbhit(void);
 void	win32_settitle(const char *title);
-int	win32_initciolib(long inmode);
+int	win32_initciolib(int inmode);
 void win32_copytext(const char *text, size_t buflen);
 char *win32_getcliptext(void);
 void	win32_suspend(void);

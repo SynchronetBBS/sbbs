@@ -1328,7 +1328,7 @@ load_settings(struct syncterm_settings *set)
 	set->custom_ah = iniReadInteger(inifile, "SyncTERM", "CustomAspectHeight", 3);
 	get_syncterm_filename(set->list_path, sizeof(set->list_path), SYNCTERM_PATH_LIST, false);
 	iniReadString(inifile, "SyncTERM", "ListPath", set->list_path, set->list_path);
-	set->scaling_factor = iniReadInteger(inifile, "SyncTERM", "ScalingFactor", 0);
+	set->scaling_factor = iniReadFloat(inifile, "SyncTERM", "ScalingFactor", 0);
 	set->blocky = iniReadBool(inifile, "SyncTERM", "BlockyScaling", true);
 
         // TODO: Add this to the UI somewhere.
@@ -1956,7 +1956,7 @@ main(int argc, char **argv)
 				inicontents = strListInit();
 			}
 			if ((sf > 0) && (sf != settings.scaling_factor))
-				iniSetInteger(&inicontents, "SyncTERM", "ScalingFactor", sf, &ini_style);
+				iniSetFloat(&inicontents, "SyncTERM", "ScalingFactor", sf, &ini_style);
 			if ((inifile = fopen(inipath, "w")) != NULL) {
 				iniWriteFile(inifile, inicontents);
 				fclose(inifile);

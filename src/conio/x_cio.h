@@ -49,7 +49,7 @@
 extern "C" {
 #endif
 extern pthread_mutex_t scalinglock;
-extern int newscaling;
+extern double newscaling;
 
 int x_puttext(int sx, int sy, int ex, int ey, void *fill);
 int x_gettext(int sx, int sy, int ex, int ey, void *fill);
@@ -61,7 +61,7 @@ int x_wherex(void);
 int x_putch(int ch);
 void x_gotoxy(int x, int y);
 int x_init(void);
-void x_initciolib(long inmode);
+void x_initciolib(int inmode);
 void x_gettextinfo(struct text_info *info);
 void x_setcursortype(int type);
 int x_getch(void);
@@ -78,8 +78,8 @@ int x_loadfont(const char *filename);
 int x_get_window_info(int *width, int *height, int *xpos, int *ypos);
 void x11_drawrect(struct rectlist *data);
 void x11_flush(void);
-void x_setscaling(int newval);
-int x_getscaling(void);
+void x_setscaling(double newval);
+double x_getscaling(void);
 void x_seticon(const void *icon, unsigned long size);
 int x_mousepointer(enum ciolib_mouse_ptr type);
 #ifdef __cplusplus

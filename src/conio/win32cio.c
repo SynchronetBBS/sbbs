@@ -503,7 +503,7 @@ static BOOL WINAPI ControlHandler(unsigned long CtrlType)
 	return TRUE;
 }
 
-int win32_initciolib(long inmode)
+int win32_initciolib(int inmode)
 {
 	DWORD	conmode;
 	HANDLE	h;

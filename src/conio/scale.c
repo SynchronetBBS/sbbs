@@ -214,7 +214,7 @@ calc_scaling_factors(int *x, int *y, int winwidth, int winheight, int aspect_wid
 }
 
 struct graphics_buffer *
-do_scale(struct rectlist* rect, int xscale, int yscale, int aspect_width, int aspect_height)
+do_scale(struct rectlist* rect, int fwidth, int fheight)
 {
 	struct graphics_buffer* ret1 = get_buffer();
 	struct graphics_buffer* ret2 = get_buffer();
@@ -230,9 +230,10 @@ do_scale(struct rectlist* rect, int xscale, int yscale, int aspect_width, int as
 	struct graphics_buffer *ctarget;
 	struct graphics_buffer *csrc;
 	uint32_t* nt;
-	int fheight;
-	int fwidth;
 	bool swapxy = false;
+
+	int xscale = fwidth / rect->rect.width;
+	int yscale = fheight / rect->rect.height;
 
 	if (xscale > yscale) {
 		swapxy = true;
@@ -306,11 +307,6 @@ do_scale(struct rectlist* rect, int xscale, int yscale, int aspect_width, int as
 		xscale = yscale;
 		yscale = tmp;
 	}
-
-	// Calculate the scaled height from rxscaleatio...
-	fwidth = rect->rect.width * xscale;
-	fheight = rect->rect.height * yscale;
-	aspect_correct(&fwidth, &fheight, aspect_width, aspect_height);
 
 	// Now make sure target is big enough...
 	size_t needsz = fwidth * fheight * sizeof(uint32_t);
@@ -798,7 +794,7 @@ interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwi
 		for (y = 0; y < height; y++) {
 			if (weight == 0) {
 				// Exact match!
-				*dst = src[width * y + x];
+				*dst = src[width * y + xposi];
 			}
 			else {
 				// Now pick the two pixels

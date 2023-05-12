@@ -58,7 +58,7 @@ int curs_kbhit(void);
 void curs_gotoxy(int x, int y);
 void curs_suspend(void);
 void curs_resume(void);
-int curs_initciolib(long inmode);
+int curs_initciolib(int inmode);
 void curs_setcursortype(int type);
 int curs_getch(void);
 void curs_textmode(int mode);
