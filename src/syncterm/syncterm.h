@@ -76,6 +76,7 @@ struct syncterm_settings {
 	int                   window_height;
 	int                   left_just;
 	int                   blocky;
+	int                   extern_scale;
 };
 
 extern char                    *inpath;

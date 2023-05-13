@@ -228,6 +228,11 @@ enum
 	_NORMALCURSOR
 };
 
+enum ciolib_scaling {
+	CIOLIB_SCALING_INTERNAL,
+	CIOLIB_SCALING_EXTERNAL,
+};
+
 struct text_info {
 	unsigned char winleft;        /* left window coordinate */
 	unsigned char wintop;         /* top window coordinate */
@@ -303,19 +308,20 @@ typedef struct {
 	int		mode;
 	int		mouse;
 	uint64_t	options;
-#define	CONIO_OPT_LOADABLE_FONTS	1
-#define CONIO_OPT_BLINK_ALT_FONT	2
-#define CONIO_OPT_BOLD_ALT_FONT		4
-#define CONIO_OPT_BRIGHT_BACKGROUND	8
-#define CONIO_OPT_PALETTE_SETTING	16
-#define CONIO_OPT_SET_PIXEL			32
-#define CONIO_OPT_CUSTOM_CURSOR		64
-#define CONIO_OPT_FONT_SELECT		128
-#define CONIO_OPT_SET_TITLE			256
-#define CONIO_OPT_SET_NAME			512
-#define CONIO_OPT_SET_ICON			1024
-#define CONIO_OPT_EXTENDED_PALETTE	2048
-#define CONIO_OPT_BLOCKY_SCALING	4096
+#define	CONIO_OPT_LOADABLE_FONTS    (1 <<  1)
+#define CONIO_OPT_BLINK_ALT_FONT    (1 <<  2)
+#define CONIO_OPT_BOLD_ALT_FONT     (1 <<  3)
+#define CONIO_OPT_BRIGHT_BACKGROUND (1 <<  4)
+#define CONIO_OPT_PALETTE_SETTING   (1 <<  5)
+#define CONIO_OPT_SET_PIXEL         (1 <<  6)
+#define CONIO_OPT_CUSTOM_CURSOR     (1 <<  7)
+#define CONIO_OPT_FONT_SELECT       (1 <<  8)
+#define CONIO_OPT_SET_TITLE         (1 <<  9)
+#define CONIO_OPT_SET_NAME          (1 << 10)
+#define CONIO_OPT_SET_ICON          (1 << 11)
+#define CONIO_OPT_EXTENDED_PALETTE  (1 << 12)
+#define CONIO_OPT_BLOCKY_SCALING    (1 << 13)
+#define CONIO_OPT_EXTERNAL_SCALING  (1 << 14)
 	void	(*clreol)		(void);
 	int		(*puttext)		(int,int,int,int,void *);
 	int		(*vmem_puttext)		(int,int,int,int,struct vmem_cell *);
@@ -386,6 +392,8 @@ typedef struct {
 	int	(*checkfont)(int font_num);
 	void	(*setwinsize)	(int width, int height);
 	void	(*setwinposition)	(int x, int y);
+	void	(*setscaling_type)	(enum ciolib_scaling);
+	enum ciolib_scaling (*getscaling_type)	(void);
 } cioapi_t;
 
 #define _conio_kbhit()		kbhit()
@@ -408,6 +416,7 @@ CIOLIBEXPORTVAR int ciolib_initial_window_height;
 CIOLIBEXPORTVAR int ciolib_initial_window_width;
 CIOLIBEXPORTVAR double ciolib_initial_scaling;
 CIOLIBEXPORTVAR int ciolib_initial_mode;
+CIOLIBEXPORTVAR enum ciolib_scaling ciolib_initial_scaling_type;
 CIOLIBEXPORTVAR const uint32_t *ciolib_r2yptr;
 CIOLIBEXPORTVAR const uint32_t *ciolib_y2rptr;
 
@@ -489,6 +498,8 @@ CIOLIBEXPORT void ciolib_set_vmem_attr(struct vmem_cell *cell, uint8_t attr);
 CIOLIBEXPORT void ciolib_setwinsize(int width, int height);
 CIOLIBEXPORT void ciolib_setwinposition(int x, int y);
 CIOLIBEXPORT enum ciolib_codepage ciolib_getcodepage(void);
+CIOLIBEXPORT void ciolib_setscaling_type(enum ciolib_scaling);
+CIOLIBEXPORT enum ciolib_scaling ciolib_getscaling_type(void);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
@@ -575,6 +586,8 @@ CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
 	#define setwinsize(a,b)			ciolib_setwinsize(a,b)
 	#define setwinposition(a,b)		ciolib_setwinposition(a,b)
 	#define getcodepage()			ciolib_getcodepage()
+	#define setscaling_type(a)		ciolib_setscaling_type(a)
+	#define getscaling_type()		ciolib_getscaling_type()
 #endif
 
 #ifdef WITH_SDL

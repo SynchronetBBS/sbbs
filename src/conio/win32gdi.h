@@ -21,5 +21,7 @@ void gdi_setwinposition(int x, int y);
 void gdi_setwinsize(int w, int h);
 double gdi_getscaling(void);
 void gdi_setscaling(double newval);
+enum ciolib_scaling gdi_getscaling_type(void);
+void gdi_setscaling_type(enum ciolib_scaling newtype);
 
 #endif

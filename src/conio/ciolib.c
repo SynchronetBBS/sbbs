@@ -89,6 +89,7 @@ CIOLIBEXPORT int ciolib_initial_window_height = -1;
 CIOLIBEXPORT int ciolib_initial_window_width = -1;
 CIOLIBEXPORT double ciolib_initial_scaling = 0;
 CIOLIBEXPORT int ciolib_initial_mode = C80;
+CIOLIBEXPORT enum ciolib_scaling ciolib_initial_scaling_type = CIOLIB_SCALING_INTERNAL;
 CIOLIBEXPORT const uint32_t *ciolib_r2yptr;
 CIOLIBEXPORT const uint32_t *ciolib_y2rptr;
 
@@ -151,6 +152,8 @@ CIOLIBEXPORT void ciolib_set_vmem_attr(struct vmem_cell *cell, uint8_t attr);
 CIOLIBEXPORT void ciolib_setwinsize(int width, int height);
 CIOLIBEXPORT void ciolib_setwinposition(int x, int y);
 CIOLIBEXPORT enum ciolib_codepage ciolib_getcodepage(void);
+CIOLIBEXPORT void ciolib_setscaling_type(enum ciolib_scaling);
+CIOLIBEXPORT enum ciolib_scaling ciolib_getscaling_type(void);
 
 #if defined(WITH_SDL)
 int sdl_video_initialized = 0;
@@ -202,6 +205,8 @@ static int try_gdi_init(int mode)
 		cio_api.replace_font = bitmap_replace_font;
 		cio_api.beep = gdi_beep;
 		cio_api.mousepointer=gdi_mousepointer;
+		cio_api.setscaling_type=gdi_setscaling_type;
+		cio_api.getscaling_type=gdi_getscaling_type;
 		return(1);
 	}
 	return(0);
@@ -255,6 +260,8 @@ static int try_sdl_init(int mode)
 		cio_api.replace_font = bitmap_replace_font;
 		cio_api.beep = sdl_beep;
 		cio_api.mousepointer=sdl_mousepointer;
+		cio_api.setscaling_type=sdl_setscaling_type;
+		cio_api.getscaling_type=sdl_getscaling_type;
 		return(1);
 	}
 	return(0);
@@ -1969,6 +1976,19 @@ CIOLIBEXPORT enum ciolib_codepage ciolib_getcodepage(void)
 	if (font >= sizeof(conio_fontdata) / sizeof(conio_fontdata[0]))
 		return CIOLIB_CP437;
 	return conio_fontdata[font].cp;
+}
+
+CIOLIBEXPORT enum ciolib_scaling ciolib_getscaling_type(void)
+{
+	if (cio_api.getscaling != NULL)
+		return cio_api.getscaling();
+	return CIOLIB_SCALING_INTERNAL;
+}
+
+CIOLIBEXPORT void ciolib_setscaling_type(enum ciolib_scaling newval)
+{
+	if (cio_api.setscaling_type != NULL)
+		cio_api.setscaling_type(newval);
 }
 
 #if defined(__DARWIN__)

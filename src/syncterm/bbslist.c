@@ -267,6 +267,8 @@ static char *conn_type_help = "`Connection Type`\n\n"
 
 static char *YesNo[3] = {"Yes", "No", ""};
 
+static char *scaling_names[4] = {"Blocky", "Pointy", "External"};
+
 ini_style_t  ini_style = {
         /* key_len */
 	15,
@@ -1757,6 +1759,27 @@ custom_mode_adjusted(int *cur, char **opt)
 	    opt);
 }
 
+static int
+settings_to_scale(void)
+{
+	int i = 0;
+
+	if (!settings.blocky)
+		i |= 1;
+	if (settings.extern_scale)
+		i |= 2;
+	if (i > 2)
+		i = 2;
+	return i;
+}
+
+static void
+scale_to_settings(int i)
+{
+	settings.blocky = (i & 1) ? false : true;
+	settings.extern_scale = (i & 2) ? true : false;
+}
+
 void
 change_settings(int connected)
 {
@@ -1807,8 +1830,8 @@ change_settings(int connected)
 		    "        The complete path to the user's BBS list.\n\n"
 		    "~ TERM For Shell ~\n"
 		    "        The value to set the TERM envirnonment variable to goes here.\n\n"
-		    "~ Blocky Scaling ~\n"
-		    "        Toggle \"blocky\" scaling.\n\n"
+		    "~ Scaling ~\n"
+		    "        Cycle scaling type.\n\n"
 		    "~ Custom Screen Mode ~\n"
 		    "        Configure the Custom screen mode.\n\n";
 		SAFEPRINTF(opts[0], "Confirm Program Exit    %s", settings.confirm_close ? "Yes" : "No");
@@ -1826,7 +1849,7 @@ change_settings(int connected)
 		SAFEPRINTF(opts[8], "Modem Dial String       %s", settings.mdm.dial_string);
 		SAFEPRINTF(opts[9], "List Path               %s", settings.list_path);
 		SAFEPRINTF(opts[10], "TERM For Shell          %s", settings.TERM);
-		sprintf(opts[11], "Blocky Scaling          %s", settings.blocky ? "On" : "Off");
+		sprintf(opts[11],   "Scaling                 %s", scaling_names[settings_to_scale()]);
 		if (connected)
 			opt[12] = NULL;
 		else
@@ -2091,12 +2114,19 @@ change_settings(int connected)
 					check_exit(false);
 				break;
 			case 11:
-				settings.blocky = !settings.blocky;
+				i = settings_to_scale();
+				i++;
+				if (i == 3)
+					i = 0;
+				scale_to_settings(i);
+
 				iniSetBool(&inicontents, "SyncTERM", "BlockyScaling", settings.blocky, &ini_style);
+				iniSetBool(&inicontents, "SyncTERM", "ExternalScaling", settings.extern_scale, &ini_style);
 				if (settings.blocky)
 					cio_api.options |= CONIO_OPT_BLOCKY_SCALING;
 				else
 					cio_api.options &= ~CONIO_OPT_BLOCKY_SCALING;
+				setscaling_type(settings.extern_scale ? CIOLIB_SCALING_EXTERNAL : CIOLIB_SCALING_INTERNAL);
 				break;
 			case 12:
 				uifc.helpbuf = "`Custom Screen Mode`\n\n"

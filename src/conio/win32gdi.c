@@ -24,6 +24,7 @@ static int xoff, yoff;
 static int dwidth = 640;
 static int dheight = 480;
 static bool init_success;
+static enum ciolib_scaling stype;
 
 #define WM_USER_INVALIDATE WM_USER
 #define WM_USER_SETSIZE (WM_USER + 1)
@@ -57,6 +58,7 @@ static pthread_mutex_t gdi_headlock;
 static pthread_mutex_t winpos_lock;
 static pthread_mutex_t rect_lock;
 static pthread_mutex_t off_lock;
+static pthread_mutex_t stypelock;
 
 // Internal implementation
 
@@ -251,17 +253,16 @@ gdi_handle_wm_paint(HWND hwnd)
 	static HDC memDC = NULL;
 	static HBITMAP di = NULL;
 	static int diw = -1, dih = -1;
-	static int sww = -1, swh = -1;
-	static int lww = -1, lwh = -1;
 
 	PAINTSTRUCT ps;
 	struct rectlist *list;
 	HDC winDC;
 	int w,h;
 	int sw,sh;
-	int xscale, yscale;
+	int vsw,vsh;
 	struct graphics_buffer *gb;
 	void *data;
+	enum ciolib_scaling st;
 
 	list = get_rect();
 	if (list == NULL)
@@ -269,32 +270,54 @@ gdi_handle_wm_paint(HWND hwnd)
 	pthread_mutex_lock(&vstatlock);
 	w = vstat.winwidth;
 	h = vstat.winheight;
+	vsw = vstat.scrnwidth;
+	vsh = vstat.scrnheight;
 	bitmap_get_scaled_win_size(vstat.scaling, &sw, &sh, vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
-	gb = do_scale(list, sw, sh);
-	if (di == NULL || diw != gb->w || dih != gb->h) {
-		lww = -1;
-		if (di != NULL) {
-			DeleteObject(di);
-			di = NULL;
+	pthread_mutex_lock(&off_lock);
+	dwidth = sw;
+	dheight = sh;
+	pthread_mutex_unlock(&off_lock);
+	pthread_mutex_lock(&stypelock);
+	st = stype;
+	pthread_mutex_unlock(&stypelock);
+	if (st == CIOLIB_SCALING_INTERNAL) {
+		gb = do_scale(list, sw, sh);
+		if (di == NULL || diw != gb->w || dih != gb->h) {
+			if (di != NULL) {
+				DeleteObject(di);
+				di = NULL;
+			}
+			diw = gb->w;
+			b5hdr.bV5Width = gb->w;
+			dih = gb->h;
+			b5hdr.bV5Height = -gb->h;
+			b5hdr.bV5SizeImage = gb->w * gb->h * 4;
 		}
-		diw = gb->w;
-		b5hdr.bV5Width = gb->w;
-		dih = gb->h;
-		b5hdr.bV5Height = -gb->h;
-		b5hdr.bV5SizeImage = gb->w * gb->h * 4;
-		pthread_mutex_lock(&off_lock);
-		dwidth = diw;
-		dheight = dih;
-		pthread_mutex_unlock(&off_lock);
+		data = gb->data;
+	}
+	else {
+		if (di == NULL || diw != vsw || dih != vsh) {
+			if (di != NULL) {
+				DeleteObject(di);
+				di = NULL;
+			}
+			diw = vsw;
+			b5hdr.bV5Width = vsw;
+			dih = vsh;
+			b5hdr.bV5Height = -vsh;
+			b5hdr.bV5SizeImage = vsw * vsh * 4;
+		}
+		sw = vsw;
+		sh = vsh;
+		data = list->data;
 	}
 	pthread_mutex_lock(&off_lock);
 	if (maximized) {
-		xoff = (w - diw) / 2;
-		yoff = (h - dih) / 2;
+		xoff = (w - dwidth) / 2;
+		yoff = (h - dheight) / 2;
 	}
 	pthread_mutex_unlock(&off_lock);
-	data = gb->data;
 	winDC = BeginPaint(hwnd, &ps);
 	if (memDC == NULL) {
 		memDC = CreateCompatibleDC(winDC);
@@ -303,10 +326,13 @@ gdi_handle_wm_paint(HWND hwnd)
 		di = CreateDIBitmap(winDC, (BITMAPINFOHEADER *)&b5hdr, CBM_INIT, data, (BITMAPINFO *)&b5hdr, DIB_RGB_COLORS);
 	else
 		SetDIBits(winDC, di, 0, dih, data, (BITMAPINFO *)&b5hdr, DIB_RGB_COLORS);
-	// Clear to black first
 	di = SelectObject(memDC, di);
 	pthread_mutex_lock(&off_lock);
-	BitBlt(winDC, xoff, yoff, dwidth, dheight, memDC, 0, 0, SRCCOPY);
+	if (st == CIOLIB_SCALING_INTERNAL)
+		BitBlt(winDC, xoff, yoff, dwidth, dheight, memDC, 0, 0, SRCCOPY);
+	else
+		StretchBlt(winDC, xoff, yoff, dwidth, dheight, memDC, 0, 0, sw, sh, SRCCOPY);
+	// Clear around image
 	if (xoff > 0) {
 		BitBlt(winDC, 0, 0, xoff - 1, h, memDC, 0, 0, BLACKNESS);
 		BitBlt(winDC, xoff + dwidth, 0, w, h, memDC, 0, 0, BLACKNESS);
@@ -326,7 +352,8 @@ gdi_handle_wm_paint(HWND hwnd)
 	pthread_mutex_unlock(&off_lock);
 	EndPaint(hwnd, &ps);
 	di = SelectObject(memDC, di);
-	release_buffer(gb);
+	if (st == CIOLIB_SCALING_INTERNAL)
+		release_buffer(gb);
 	return 0;
 }
 
@@ -725,6 +752,7 @@ gdi_thread(void *arg)
 	if (ciolib_initial_scaling != 0) {
 		bitmap_get_scaled_win_size(ciolib_initial_scaling, &vstat.winwidth, &vstat.winheight, 0, 0);
 	}
+	stype = ciolib_initial_scaling_type;
 	// Now make the inside of the window the size we want (sigh)
 	r.left = r.top = 0;
 	r.right = vstat.winwidth;
@@ -1019,6 +1047,7 @@ gdi_initciolib(int mode)
 	pthread_mutex_init(&winpos_lock, NULL);
 	pthread_mutex_init(&rect_lock, NULL);
 	pthread_mutex_init(&off_lock, NULL);
+	pthread_mutex_init(&stypelock, NULL);
 	init_sem = CreateSemaphore(NULL, 0, INT_MAX, NULL);
 
 	return(gdi_init(mode));
@@ -1107,4 +1136,27 @@ gdi_setscaling(double newval)
 	bitmap_get_scaled_win_size(newval, &w, &h, 0, 0);
 	pthread_mutex_unlock(&vstatlock);
 	gdi_setwinsize(w, h);
+}
+
+enum ciolib_scaling
+gdi_getscaling_type(void)
+{
+	enum ciolib_scaling ret;
+
+	// TODO: I hate having nested locks like this. :(
+	pthread_mutex_lock(&stypelock);
+	ret = stype;
+	pthread_mutex_unlock(&stypelock);
+	return ret;
+}
+
+void
+gdi_setscaling_type(enum ciolib_scaling newtype)
+{
+	int w, h;
+
+	pthread_mutex_lock(&stypelock);
+	stype = newtype;
+	pthread_mutex_unlock(&stypelock);
+
 }

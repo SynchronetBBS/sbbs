@@ -40,6 +40,8 @@ void sdl_beep(void);
 int sdl_mousepointer(enum ciolib_mouse_ptr type);
 double sdl_getscaling(void);
 void sdl_setscaling(double newval);
+enum ciolib_scaling sdl_getscaling_type(void);
+void sdl_setscaling_type(enum ciolib_scaling newval);
 
 #if defined(__DARWIN__)
 void sdl_init_darwin(void *args);

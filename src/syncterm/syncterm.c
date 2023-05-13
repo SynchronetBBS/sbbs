@@ -1330,6 +1330,7 @@ load_settings(struct syncterm_settings *set)
 	iniReadString(inifile, "SyncTERM", "ListPath", set->list_path, set->list_path);
 	set->scaling_factor = iniReadFloat(inifile, "SyncTERM", "ScalingFactor", 0);
 	set->blocky = iniReadBool(inifile, "SyncTERM", "BlockyScaling", true);
+	set->extern_scale = iniReadBool(inifile, "SyncTERM", "ExternalScaling", false);
 
         // TODO: Add this to the UI somewhere.
 	set->left_just = iniReadBool(inifile, "SyncTERM", "LeftJustify", false);
@@ -1703,6 +1704,7 @@ main(int argc, char **argv)
 		cio_api.options |= CONIO_OPT_BLOCKY_SCALING;
 	else
 		cio_api.options &= ~CONIO_OPT_BLOCKY_SCALING;
+	ciolib_initial_scaling_type = (settings.extern_scale ? CIOLIB_SCALING_EXTERNAL : CIOLIB_SCALING_INTERNAL);
 #ifdef HAS_BITMAP
 	ciolib_r2yptr = r2y;
 	ciolib_y2rptr = y2r;

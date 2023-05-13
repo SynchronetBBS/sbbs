@@ -329,25 +329,6 @@ void sdl_flush(void)
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 }
 
-/*
- * Returns true if the specified width/height can use the
- * internal scaler
- *
- * vstat lock must be held
- */
-static bool
-window_can_scale_internally(struct video_stats *vs)
-{
-	double ival;
-	double fval = modf(vstat.scaling, &ival);
-
-	// TODO: Add toggle for software scaling
-	return true;
-	if (fval == 0.0)
-		return true;
-	return false;
-}
-
 static int sdl_init_mode(int mode, bool init)
 {
 	int w, h;
@@ -374,10 +355,12 @@ static int sdl_init_mode(int mode, bool init)
 		h = 0;
 	}
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height, w, h);
-	if (init && ciolib_initial_scaling) {
-		bitmap_get_scaled_win_size(ciolib_initial_scaling, &vstat.winwidth, &vstat.winheight, 0, 0);
+	if (init) {
+		internal_scaling = (ciolib_initial_scaling_type == CIOLIB_SCALING_INTERNAL);
+		if (ciolib_initial_scaling) {
+			bitmap_get_scaled_win_size(ciolib_initial_scaling, &vstat.winwidth, &vstat.winheight, 0, 0);
+		}
 	}
-	internal_scaling = window_can_scale_internally(&vstat);
 	pthread_mutex_lock(&sdl_mode_mutex);
 	sdl_mode = true;
 	pthread_mutex_unlock(&sdl_mode_mutex);
@@ -409,7 +392,7 @@ int sdl_init(int mode)
 #ifdef _WIN32
 		FreeConsole();
 #endif
-		cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
+		cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON | CONIO_OPT_EXTERNAL_SCALING;
 		return(0);
 	}
 
@@ -461,7 +444,6 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 		vstat.scaling = sdl_getscaling();
 	}
 	pthread_mutex_unlock(&vstatlock);
-	internal_scaling = window_can_scale_internally(vs);
 	if (changed)
 		setup_surfaces(vs);
 }
@@ -610,7 +592,6 @@ static void setup_surfaces(struct video_stats *vs)
 	pthread_mutex_lock(&win_mutex);
 	idealw = vs->winwidth;
 	idealh = vs->winheight;
-	internal_scaling = window_can_scale_internally(vs);
 	sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, internal_scaling ? "0" : "2");
 
 	if (win == NULL) {
@@ -620,10 +601,12 @@ static void setup_surfaces(struct video_stats *vs)
 			vs->winwidth = idealw;
 			vs->winheight = idealh;
 			sdl.RenderClear(renderer);
-			if (internal_scaling)
+			if (internal_scaling) {
 				newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, idealw, idealh);
-			else
+			}
+			else {
 				newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, vs->scrnwidth, vs->scrnheight);
+			}
 
 			if (texture)
 				sdl.DestroyTexture(texture);
@@ -640,10 +623,12 @@ static void setup_surfaces(struct video_stats *vs)
 		sdl.GetWindowSize(win, &idealw, &idealh);
 		vs->winwidth = idealw;
 		vs->winheight = idealh;
-		if (internal_scaling)
+		if (internal_scaling) {
 			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, idealw, idealh);
-		else
+		}
+		else {
 			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, vs->scrnwidth, vs->scrnheight);
+		}
 		sdl.RenderClear(renderer);
 		if (texture)
 			sdl.DestroyTexture(texture);
@@ -1278,4 +1263,35 @@ sdl_setscaling(double newval)
 	bitmap_get_scaled_win_size(newval, &w, &h, 0, 0);
 	pthread_mutex_unlock(&vstatlock);
 	sdl_setwinsize(w, h);
+}
+
+enum ciolib_scaling
+sdl_getscaling_type(void)
+{
+	enum ciolib_scaling ret;
+
+	pthread_mutex_lock(&vstatlock);
+	ret = (internal_scaling ? CIOLIB_SCALING_INTERNAL : CIOLIB_SCALING_EXTERNAL);
+	pthread_mutex_unlock(&vstatlock);
+	return ret;
+}
+
+void
+sdl_setscaling_type(enum ciolib_scaling newval)
+{
+	struct video_stats cvstat = vstat;
+	int w, h;
+
+	update_cvstat(&cvstat);
+	pthread_mutex_lock(&vstatlock);
+	if ((newval == CIOLIB_SCALING_INTERNAL) != internal_scaling) {
+		internal_scaling = (newval == CIOLIB_SCALING_INTERNAL);
+		w = vstat.winwidth;
+		h = vstat.winheight;
+		pthread_mutex_unlock(&vstatlock);
+		sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE, w, h);
+	}
+	else {
+		pthread_mutex_unlock(&vstatlock);
+	}
 }
