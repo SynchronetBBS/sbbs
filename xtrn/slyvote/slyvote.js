@@ -181,6 +181,9 @@
  *                              Also, no longer has hard-coded CP437 characters, and
  *                              now uses "use strict" for better runtime checks of proper
  *                              code.
+ * 2023-05-13 Eric Oulashin     Version 1.13
+ *                              Fix for error when quitting/aborting out of choosing a
+ *                              different sub-board. Refactored ReadConfigFile().
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -252,8 +255,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.12";
-var SLYVOTE_DATE = "2022-06-21";
+var SLYVOTE_VERSION = "1.13";
+var SLYVOTE_DATE = "2023-05-13";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -456,12 +459,14 @@ else
 	else // Let the user choose a sub-board
 	{
 		var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.msgGroups);
-		gSubBoardCode = chooseSubRetObj.subBoardChoice;
-		// Exit if the user pressed ESC rather than choosing an area
-		if (gSubBoardCode == null)
-			exit(0);
-		else
+		if (typeof(chooseSubRetObj.subBoardChoice) === "string" && chooseSubRetObj.subBoardChoice.length > 0 && msg_area.sub.hasOwnProperty(chooseSubRetObj.subBoardChoice))
+		{
+			gSubBoardCode = chooseSubRetObj.subBoardChoice;
 			console.gotoxy(1, chooseSubRetObj.menuPos.y + chooseSubRetObj.menuSize.height + 1);
+		}
+		// Exit if the user pressed ESC rather than choosing an area
+		else
+			exit(0);
 	}
 }
 // Output a "loading..." text, in case it takes a while to count the polls in
@@ -837,8 +842,8 @@ function DoMainMenu()
 	{
 		var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.msgGroups);
 		var chosenSubBoardCode = chooseSubRetObj.subBoardChoice;
-		// If the user didn't abort choosing an area, then set gSubBoardCode.
-		if (chosenSubBoardCode != null)
+		// If the user chose a sub-board, then set gSubBoardCode.
+		if (typeof(chosenSubBoardCode) === "string" && chosenSubBoardCode.length > 0 && msg_area.sub.hasOwnProperty(chosenSubBoardCode))
 		{
 			gSubBoardCode = chosenSubBoardCode;
 			gSubBoardPollCountObj = CountPollsInSubBoard(gSubBoardCode);
@@ -1220,77 +1225,40 @@ function ReadConfigFile()
 	var cfgFile = new File(cfgFilename);
 	if (cfgFile.open("r"))
 	{
-		var fileLine = null;     // A line read from the file
-		var equalsPos = 0;       // Position of a = in the line
-		var commentPos = 0;      // Position of the start of a comment
-		var setting = null;      // A setting name (string)
-		var settingUpper = null; // Upper-case setting name
-		var value = null;        // To store a value for a setting (string)
-		while (!cfgFile.eof)
+		var settingsObj = cfgFile.iniGetObject();
+		cfgFile.close();
+
+		if (typeof(settingsObj["showAvatars"]) === "boolean")
+			retObj.showAvatars = settingsObj.showAvatars;
+		if (typeof(settingsObj["useAllAvailableSubBoards"]) === "boolean")
+			retObj.useAllAvailableSubBoards = settingsObj.useAllAvailableSubBoards;
+		if (typeof(settingsObj["startupSubBoardCode"]) === "string")
 		{
-			// Read the next line from the config file.
-			fileLine = cfgFile.readln(2048);
-
-			// fileLine should be a string, but I've seen some cases
-			// where it isn't, so check its type.
-			if (typeof(fileLine) != "string")
-				continue;
-
-			// If the line starts with with a semicolon (the comment
-			// character) or is blank, then skip it.
-			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-				continue;
-
-			// If the line has a semicolon anywhere in it, then remove
-			// everything from the semicolon onward.
-			commentPos = fileLine.indexOf(";");
-			if (commentPos > -1)
-				fileLine = fileLine.substr(0, commentPos);
-
-			// Look for an equals sign, and if found, separate the line
-			// into the setting name (before the =) and the value (after the
-			// equals sign).
-			equalsPos = fileLine.indexOf("=");
-			if (equalsPos > 0)
+			if (msg_area.sub.hasOwnProperty(settingsObj.startupSubBoardCode))
+				retObj.startupSubBoardCode = settingsObj.startupSubBoardCode;
+		}
+		if (typeof(settingsObj["subBoardCodes"]) === "string")
+		{
+			// Split the value on commas and add all sub-board codes to
+			// the appropriate array in retObj (based on its group index), as
+			// long as they're valid sub-board codes.
+			var valueLower = settingsObj.subBoardCodes.toLowerCase();
+			var subCodeArray = valueLower.split(",");
+			for (var idx = 0; idx < subCodeArray.length; ++idx)
 			{
-				// Read the setting & value, and trim leading & trailing spaces.
-				setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-				settingUpper = setting.toUpperCase();
-				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
-
-				// Set the appropriate value in the settings object.
-				if (settingUpper == "SHOWAVATARS")
-					retObj.showAvatars = (value.toUpperCase() == "TRUE");
-				else if (settingUpper == "USEALLAVAILABLESUBBOARDS")
-					retObj.useAllAvailableSubBoards = (value.toUpperCase() == "TRUE");
-				else if (settingUpper == "SUBBOARDCODES")
+				// If the sub-board code exists and voting is allowed in the sub-board, then add it.
+				if (msg_area.sub.hasOwnProperty(subCodeArray[idx]))
 				{
-					// Split the value on commas and add all sub-board codes to
-					// the appropriate array in retObj (based on its group index), as
-					// long as they're valid sub-board codes.
-					var valueLower = value.toLowerCase();
-					var subCodeArray = valueLower.split(",");
-					for (var idx = 0; idx < subCodeArray.length; ++idx)
+					if ((msg_area.sub[subCodeArray[idx]].settings & SUB_NOVOTING) == 0)
 					{
-						// If the sub-board code exists and voting is allowed in the sub-board, then add it.
-						if (msg_area.sub.hasOwnProperty(subCodeArray[idx]))
-						{
-							if ((msg_area.sub[subCodeArray[idx]].settings & SUB_NOVOTING) == 0)
-							{
-								var groupIdx = msg_area.sub[subCodeArray[idx]].grp_index;
-								if (!retObj.msgGroups.hasOwnProperty(groupIdx))
-									retObj.msgGroups[groupIdx] = [];
-								retObj.msgGroups[groupIdx].push(subCodeArray[idx]);
-							}
-						}
+						var groupIdx = msg_area.sub[subCodeArray[idx]].grp_index;
+						if (!retObj.msgGroups.hasOwnProperty(groupIdx))
+							retObj.msgGroups[groupIdx] = [];
+						retObj.msgGroups[groupIdx].push(subCodeArray[idx]);
 					}
 				}
-				else if (settingUpper == "STARTUPSUBBOARDCODE")
-					retObj.startupSubBoardCode = value;
 			}
 		}
-
-		cfgFile.close();
 	}
 	else // Unable to read the configuration file
 		retObj.cfgReadError = "Unable to open the configuration file: slyvote.cfg";
@@ -4018,6 +3986,9 @@ function CountPollsInSubBoard(pSubBoardCode)
 		numPollsUserVotedOn: 0,
 		numPollsRemainingForUser: 0
 	};
+
+	if (typeof(pSubBoardCode) !== "string" || pSubBoardCode.length == 0 || !msg_area.sub.hasOwnProperty(pSubBoardCode))
+		return retObj;
 
 	var msgbase = new MsgBase(pSubBoardCode);
 	if (msgbase.open())
