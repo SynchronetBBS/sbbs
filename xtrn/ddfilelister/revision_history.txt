@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.11     2023-05-14   The theme configuration file can now just contain the
+                      attribute characters, without the control character.
+                      Code: Refactored the function that reads the configuration
+                      file.
 2.10     2023-02-27   Now allows downloading a single selected file with the D key
 2.09     2023-02-25   Now supports being used as a loadable module for Scan Dirs
                       and List Files (applicable for Synchronet 3.20+)

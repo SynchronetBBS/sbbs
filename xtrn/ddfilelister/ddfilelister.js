@@ -66,6 +66,12 @@
  *                              Also, ddfilelister now checks whether the user has permission to
  *                              download before allowing adding files to their batch download queue
  *                              (and downloading a single file as well).
+ * 2023-05-14 Eric Oulashin     Version 2.11
+ *                              Refactored the function that reads the configuration file. Also,
+ *                              the theme configuration file can now just contain the attribute
+ *                              characters, without the control character.
+ *
+ *                              Future work: Actual support for a traditional/non-lightbar user interface
 */
 
 "use strict";
@@ -128,8 +134,8 @@ if (system.version_num < 31900)
 }
 
 // Lister version information
-var LISTER_VERSION = "2.10";
-var LISTER_DATE = "2023-02-27";
+var LISTER_VERSION = "2.11";
+var LISTER_DATE = "2023-05-14";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -243,6 +249,11 @@ var gErrorMsgBoxHeight = 3;
 // Whether or not to pause after viewing a file
 var gPauseAfterViewingFile = true;
 
+// Whether or not to use the lightbar interface (this could be specified as false
+// in the configuration file, to use the traditional interface even if the user's
+// terminal supports ANSI)
+var gUseLightbarInterface = true;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Script execution code
 
@@ -265,7 +276,8 @@ parseArgs(argv);
 
 // If the user's terminal doesn't support ANSI, then just call the standard Synchronet
 // file list function and exit now
-if (!console.term_supports(USER_ANSI))
+// TODO: Add support in this script for a traditional/non-lightbar user interface
+if (!console.term_supports(USER_ANSI) || !gUseLightbarInterface)
 {
 	var exitCode = 0;
 	if (gScriptMode == MODE_SEARCH_FILENAME || gScriptMode == MODE_SEARCH_DESCRIPTION || gScriptMode == MODE_NEW_FILE_SEARCH)
@@ -2245,6 +2257,8 @@ function createFileListMenu(pQuitKeys)
 		menuWidth = gListIdxes.fileSizeEnd + 1;
 	var menuHeight = console.screen_rows - (startRow-1) - 1;
 	var fileListMenu = new DDLightbarMenu(1, startRow, menuWidth, menuHeight);
+	// TODO: Add support for a traditional/non-lightbar user interface
+	//fileListMenu.allowANSI = gUseLightbarInterface;
 	fileListMenu.scrollbarEnabled = true;
 	fileListMenu.borderEnabled = false;
 	fileListMenu.multiSelect = true;
@@ -2986,8 +3000,6 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 // Reads the configuration file and sets the settings accordingly
 function readConfigFile()
 {
-	this.cfgFileSuccessfullyRead = false;
-
 	var themeFilename = ""; // In case a theme filename is specified
 
 	// Determine the script's startup directory.
@@ -3009,97 +3021,48 @@ function readConfigFile()
 	var cfgFile = new File(cfgFilenameFullPath);
 	if (cfgFile.open("r"))
 	{
-		this.cfgFileSuccessfullyRead = true;
-
-		var fileLine = null;     // A line read from the file
-		var equalsPos = 0;       // Position of a = in the line
-		var commentPos = 0;      // Position of the start of a comment
-		var setting = null;      // A setting name (string)
-		var settingUpper = null; // Upper-case setting name
-		var value = null;        // To store a value for a setting (string)
-		while (!cfgFile.eof)
-		{
-			// Read the next line from the config file.
-			fileLine = cfgFile.readln(2048);
-
-			// fileLine should be a string, but I've seen some cases
-			// where it isn't, so check its type.
-			if (typeof(fileLine) != "string")
-				continue;
-
-			// If the line starts with with a semicolon (the comment
-			// character) or is blank, then skip it.
-			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-				continue;
-
-			// If the line has a semicolon anywhere in it, then remove
-			// everything from the semicolon onward.
-			commentPos = fileLine.indexOf(";");
-			if (commentPos > -1)
-				fileLine = fileLine.substr(0, commentPos);
-
-			// Look for an equals sign, and if found, separate the line
-			// into the setting name (before the =) and the value (after the
-			// equals sign).
-			equalsPos = fileLine.indexOf("=");
-			if (equalsPos > 0)
-			{
-				// Read the setting & value, and trim leading & trailing spaces.
-				setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-				settingUpper = setting.toUpperCase();
-				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
-				var valueUpper = value.toUpperCase();
-
-				// Set the appropriate valueUpper in the settings object.
-				if (settingUpper == "SORTORDER")
-				{
-					// FileBase.SORT properties
-					// Name		Type	Description
-					// NATURAL	number	Natural sort order (same as DATE_A)
-					// NAME_AI	number	Filename ascending, case insensitive sort order
-					// NAME_DI	number	Filename descending, case insensitive sort order
-					// NAME_AS	number	Filename ascending, case sensitive sort order
-					// NAME_DS	number	Filename descending, case sensitive sort order
-					// DATE_A	number	Import date/time ascending sort order
-					// DATE_D	number	Import date/time descending sort order
-					if (valueUpper == "NATURAL")
-						gFileSortOrder = FileBase.SORT.NATURAL;
-					else if (valueUpper == "NAME_AI")
-						gFileSortOrder = FileBase.SORT.NAME_AI;
-					else if (valueUpper == "NAME_DI")
-						gFileSortOrder = FileBase.SORT.NAME_DI;
-					else if (valueUpper == "NAME_AS")
-						gFileSortOrder = FileBase.SORT.NAME_AS;
-					else if (valueUpper == "NAME_DS")
-						gFileSortOrder = FileBase.SORT.NAME_DS;
-					else if (valueUpper == "DATE_A")
-						gFileSortOrder = FileBase.SORT.DATE_A;
-					else if (valueUpper == "DATE_D")
-						gFileSortOrder = FileBase.SORT.DATE_D;
-					else if (valueUpper == "ULTIME")
-						gFileSortOrder = SORT_FL_ULTIME;
-					else if (valueUpper == "DLTIME")
-						gFileSortOrder = SORT_FL_DLTIME;
-					else // Default
-						gFileSortOrder = FileBase.SORT.NATURAL;
-				}
-				else if (settingUpper == "PAUSEAFTERVIEWINGFILE")
-					gPauseAfterViewingFile = (value.toUpperCase() == "TRUE");
-				else if (settingUpper == "THEMEFILENAME")
-				{
-					// First look for the theme config file in the sbbs/mods
-					// directory, then sbbs/ctrl, then the same directory as
-					// this script.
-					themeFilename = system.mods_dir + value;
-					if (!file_exists(themeFilename))
-						themeFilename = system.ctrl_dir + value;
-					if (!file_exists(themeFilename))
-						themeFilename = startupPath + value;
-				}
-			}
-		}
-
+		var settingsObj = cfgFile.iniGetObject();
 		cfgFile.close();
+
+		if (typeof(settingsObj["sortOrder"]) === "string")
+		{
+			var valueUpper = settingsObj.sortOrder.toUpperCase();
+			if (valueUpper == "NATURAL")
+				gFileSortOrder = FileBase.SORT.NATURAL;
+			else if (valueUpper == "NAME_AI")
+				gFileSortOrder = FileBase.SORT.NAME_AI;
+			else if (valueUpper == "NAME_DI")
+				gFileSortOrder = FileBase.SORT.NAME_DI;
+			else if (valueUpper == "NAME_AS")
+				gFileSortOrder = FileBase.SORT.NAME_AS;
+			else if (valueUpper == "NAME_DS")
+				gFileSortOrder = FileBase.SORT.NAME_DS;
+			else if (valueUpper == "DATE_A")
+				gFileSortOrder = FileBase.SORT.DATE_A;
+			else if (valueUpper == "DATE_D")
+				gFileSortOrder = FileBase.SORT.DATE_D;
+			else if (valueUpper == "ULTIME")
+				gFileSortOrder = SORT_FL_ULTIME;
+			else if (valueUpper == "DLTIME")
+				gFileSortOrder = SORT_FL_DLTIME;
+			else // Default
+				gFileSortOrder = FileBase.SORT.NATURAL;
+		}
+		if (typeof(settingsObj["pauseAfterViewingFile"]) === "boolean")
+			gPauseAfterViewingFile = settingsObj.pauseAfterViewingFile;
+		if (typeof(settingsObj["useLightbarInterface"]) === "boolean")
+			gUseLightbarInterface = settingsObj.useLightbarInterface;
+		if (typeof(settingsObj["themeFilename"]) === "string")
+		{
+			// First look for the theme config file in the sbbs/mods
+			// directory, then sbbs/ctrl, then the same directory as
+			// this script.
+			themeFilename = system.mods_dir + settingsObj.themeFilename;
+			if (!file_exists(themeFilename))
+				themeFilename = system.ctrl_dir + settingsObj.themeFilename;
+			if (!file_exists(themeFilename))
+				themeFilename = startupPath + settingsObj.themeFilename;
+		}
 	}
 	else
 	{
@@ -3117,62 +3080,35 @@ function readConfigFile()
 	// from it.
 	if (themeFilename.length > 0)
 	{
+		var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');
 		var themeFile = new File(themeFilename);
 		if (themeFile.open("r"))
 		{
-			var fileLine = null;     // A line read from the file
-			var equalsPos = 0;       // Position of a = in the line
-			var commentPos = 0;      // Position of the start of a comment
-			var setting = null;      // A setting name (string)
-			var value = null;        // To store a value for a setting (string)
-			while (!themeFile.eof)
+			var themeSettingsObj = themeFile.iniGetObject();
+			themeFile.close();
+
+			// Set any color values specified
+			for (var prop in gColors)
 			{
-				// Read the next line from the config file.
-				fileLine = themeFile.readln(2048);
-
-				// fileLine should be a string, but I've seen some cases
-				// where it isn't, so check its type.
-				if (typeof(fileLine) != "string")
-					continue;
-
-				// If the line starts with with a semicolon (the comment
-				// character) or is blank, then skip it.
-				if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-					continue;
-
-				// If the line has a semicolon anywhere in it, then remove
-				// everything from the semicolon onward.
-				commentPos = fileLine.indexOf(";");
-				if (commentPos > -1)
-					fileLine = fileLine.substr(0, commentPos);
-
-				// Look for an equals sign, and if found, separate the line
-				// into the setting name (before the =) and the value (after the
-				// equals sign).
-				equalsPos = fileLine.indexOf("=");
-				if (equalsPos > 0)
+				if (typeof(themeSettingsObj[prop]) === "string")
 				{
-					// Read the setting (without leading/trailing spaces) & value
-					setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-					value = fileLine.substr(equalsPos+1);
-
-					if (gColors.hasOwnProperty(setting))
-					{
-						// Trim leading & trailing spaces from the value when
-						// setting a color.  Also, replace any instances of "\x01" or "\1"
-						// with the Synchronet attribute control character.
-						gColors[setting] = trimSpaces(value, true, false, true).replace(/\\[xX]01/g, "\x01").replace(/\\1/g, "\x01");
-					}
+					// Trim leading & trailing spaces from the value when
+					// setting a color.  Also, replace any instances of "\x01" or "\1"
+					// with the Synchronet attribute control character.
+					var value = trimSpaces(themeSettingsObj[prop].toString(), true, false, true).replace(/\\[xX]01/g, "\x01").replace(/\\1/g, "\x01");
+					// If the value doesn't have any control characters, then add the control character
+					// before attribute characters
+					if (!/\x01/.test(value))
+						value = attrCodeStr(value);
+					if (onlySyncAttrsRegexWholeWord.test(value))
+						gColors[prop] = value;
 				}
 			}
-
-			themeFile.close();
 		}
 		else
 		{
 			// Was unable to read the theme file.  Output a warning to the user
 			// that defaults will be used and to notify the sysop.
-			this.cfgFileSuccessfullyRead = false;
 			console.print("\x01n");
 			console.crlf();
 			console.print("\x01w\x01hUnable to open the theme file: \x01y" + themeFilename);
@@ -4207,4 +4143,28 @@ function userCanDownloadFromFileArea_ShowErrorIfNot(pDirCode)
 		console.pause();
 	}
 	return userCanDownload;
+}
+
+// Given a string of attribute characters, this function inserts the control code
+// in front of each attribute character and returns the new string.
+//
+// Parameters:
+//  pAttrCodeCharStr: A string of attribute characters (i.e., "YH" for yellow high)
+//
+// Return value: A string with the control character inserted in front of the attribute characters
+function attrCodeStr(pAttrCodeCharStr)
+{
+	if (typeof(pAttrCodeCharStr) !== "string")
+		return "";
+
+	var str = "";
+	// See this page for Synchronet color attribute codes:
+	// http://wiki.synchro.net/custom:ctrl-a_codes
+	for (var i = 0; i < pAttrCodeCharStr.length; ++i)
+	{
+		var currentChar = pAttrCodeCharStr.charAt(i);
+		if (/[krgybmcwKRGYBMCWHhIiEeFfNn01234567]/.test(currentChar))
+			str += "\x01" + currentChar;
+	}
+	return str;
 }
