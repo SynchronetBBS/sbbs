@@ -215,7 +215,10 @@ int x_init(void)
 {
 	dll_handle	dl;
 	const char *libnames[]={"X11",NULL};
+	dll_handle	dl2;
+	const char *libnames2[]={"Xrender",NULL};
 	Status (*xit)(void);
+	int *_Xdebug;
 
 	/* Ensure we haven't already initialized */
 	if(x11_initialized)
@@ -234,6 +237,8 @@ int x_init(void)
 	/* Load X11 functions */
 	if((dl=xp_dlopen(libnames,RTLD_LAZY,7))==NULL)
 		return(-1);
+	if ((_Xdebug = xp_dlsym(dl,_Xdebug))!=NULL)
+		*_Xdebug=1;
 	if((xit=xp_dlsym(dl,XInitThreads))!=NULL)
 		xit();
 	if((x11.XChangeGC=xp_dlsym(dl,XChangeGC))==NULL) {
@@ -472,6 +477,57 @@ int x_init(void)
 		xp_dlclose(dl);
 		return(-1);
 	}
+#ifndef DefaultDepth
+	if((x11.DefaultDepth=xp_dlsym(dl,DefaultDepth))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+#endif
+#ifndef DefaultVisual
+	if((x11.DefaultVisual=xp_dlsym(dl,DefaultVisual))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+#endif
+#ifdef WITH_XRENDER
+	xrender_found = true;
+	if ((dl2 = xp_dlopen(libnames2,RTLD_LAZY,7)) == NULL) {
+		xp_dlclose(dl2);
+		xrender_found = false;
+	}
+	if (xrender_found && ((x11.XRenderFindStandardFormat = xp_dlsym(dl2, XRenderFindStandardFormat)) == NULL)) {
+		xp_dlclose(dl);
+		xrender_found = false;
+	}
+	if (xrender_found && ((x11.XRenderCreatePicture = xp_dlsym(dl2, XRenderCreatePicture)) == NULL)) {
+		xp_dlclose(dl);
+		xrender_found = false;
+	}
+	if (xrender_found && ((x11.XRenderFreePicture = xp_dlsym(dl2, XRenderFreePicture)) == NULL)) {
+		xp_dlclose(dl);
+		xrender_found = false;
+	}
+	if (xrender_found && ((x11.XRenderSetPictureTransform = xp_dlsym(dl2, XRenderSetPictureTransform)) == NULL)) {
+		xp_dlclose(dl);
+		xrender_found = false;
+	}
+	if (xrender_found && ((x11.XRenderComposite = xp_dlsym(dl2, XRenderComposite)) == NULL)) {
+		xp_dlclose(dl);
+		xrender_found = false;
+	}
+	if (xrender_found && ((x11.XRenderFindVisualFormat = xp_dlsym(dl2, XRenderFindVisualFormat)) == NULL)) {
+		xp_dlclose(dl);
+		xrender_found = false;
+	}
+	if (xrender_found && ((x11.XRenderQueryVersion = xp_dlsym(dl2, XRenderQueryVersion)) == NULL)) {
+		xp_dlclose(dl);
+		xrender_found = false;
+	}
+	if (xrender_found && ((x11.XRenderSetPictureFilter = xp_dlsym(dl2, XRenderSetPictureFilter)) == NULL)) {
+		xp_dlclose(dl);
+		xrender_found = false;
+	}
+#endif
 	setlocale(LC_ALL, "");
 	x11.XSetLocaleModifiers("@im=none");
 
@@ -573,4 +629,25 @@ int x_mousepointer(enum ciolib_mouse_ptr type)
 		return 1;
 	}
 	return 0;
+}
+
+enum ciolib_scaling
+x_getscaling_type(void)
+{
+	enum ciolib_scaling ret;
+
+	ret = (x_internal_scaling ? CIOLIB_SCALING_INTERNAL : CIOLIB_SCALING_EXTERNAL);
+	return ret;
+}
+
+void
+x_setscaling_type(enum ciolib_scaling newval)
+{
+	struct x11_local_event ev = {0};
+
+	if ((newval == CIOLIB_SCALING_INTERNAL) != x_internal_scaling) {
+		ev.type = X11_LOCAL_SETSCALING_TYPE;
+		ev.data.st = newval;
+		write_event(&ev);
+	}
 }

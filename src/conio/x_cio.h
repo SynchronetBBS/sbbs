@@ -82,6 +82,8 @@ void x_setscaling(double newval);
 double x_getscaling(void);
 void x_seticon(const void *icon, unsigned long size);
 int x_mousepointer(enum ciolib_mouse_ptr type);
+enum ciolib_scaling x_getscaling_type(void);
+void x_setscaling_type(enum ciolib_scaling newval);
 #ifdef __cplusplus
 }
 #endif

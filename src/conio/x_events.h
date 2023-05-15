@@ -6,6 +6,9 @@
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
+#ifdef WITH_XRENDER
+#include <X11/extensions/Xrender.h>
+#endif
 
 enum x11_local_events {
 	 X11_LOCAL_SETMODE
@@ -18,17 +21,19 @@ enum x11_local_events {
 	,X11_LOCAL_BEEP
 	,X11_LOCAL_SETICON
 	,X11_LOCAL_MOUSEPOINTER
+	,X11_LOCAL_SETSCALING_TYPE
 };
 
 struct x11_local_event {
 	enum x11_local_events	type;
 	union {
-		int		mode;
-		char	name[81];
-		char	title[81];
-		struct	rectlist *rect;
-		unsigned long	*icon_data;
+		int  mode;
+		char name[81];
+		char title[81];
+		struct rectlist *rect;
+		unsigned long   *icon_data;
 		enum ciolib_mouse_ptr ptr;
+                enum ciolib_scaling st;
 	} data;
 };
 
@@ -97,6 +102,22 @@ struct x11 {
 	int (*XDefineCursor)(Display *display, Window w, Cursor cursor);
 	int (*XFreeCursor)(Display *display, Cursor cursor);
 	Status (*XGetGeometry)(Display *, Drawable, Window *, int *, int *, unsigned int *, unsigned int *, unsigned int *, unsigned int *);
+#ifndef DefaultDepth
+	int (*DefaultDepth)(Display *, int);
+#endif
+#ifndef Defaultvisual
+	Visual *(*DefaultVisual)(Display *, int);
+#endif
+#ifdef WITH_XRENDER
+	XRenderPictFormat *(*XRenderFindStandardFormat)(Display *dpy, int format);
+	Picture (*XRenderCreatePicture)(Display *dpy, Drawable drawable, _Xconst XRenderPictFormat *format, unsigned long valuemask, _Xconst XRenderPictureAttributes *attributes);
+	void (*XRenderFreePicture)(Display *dpy, Picture picture);
+	void (*XRenderSetPictureTransform)(Display *dpy, Picture picture, XTransform *transform);
+	void (*XRenderComposite)(Display *dpy, int op, Picture src, Picture mask, Picture dst, int src_x, int src_y, int mask_x, int mask_y, int dst_x, int dst_y, unsigned int width, unsigned int height);
+	XRenderPictFormat *(*XRenderFindVisualFormat)(Display *dpy, _Xconst Visual *visual);
+	Status (*XRenderQueryVersion)(Display *, int *, int *);
+	void (*XRenderSetPictureFilter)(Display *, Picture, const char *, XFixed *, int);
+#endif
 	Atom utf8;
 	Atom targets;
 	Atom workarea;
@@ -122,6 +143,8 @@ extern int x11_window_xpos;
 extern int x11_window_ypos;
 extern int x11_initialized;
 extern struct video_stats x_cvstat;
+extern bool xrender_found;
+extern bool x_internal_scaling;
 
 void x11_event_thread(void *args);
 

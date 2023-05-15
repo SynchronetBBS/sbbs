@@ -318,6 +318,8 @@ static int try_x_init(int mode)
 		cio_api.map_rgb = bitmap_map_rgb;
 		cio_api.replace_font = bitmap_replace_font;
 		cio_api.mousepointer=x_mousepointer;
+		cio_api.setscaling_type=x_setscaling_type;
+		cio_api.getscaling_type=x_getscaling_type;
 		return(1);
 	}
 	return(0);

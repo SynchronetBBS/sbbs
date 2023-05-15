@@ -56,6 +56,8 @@ sem_t	event_thread_complete;
 int	terminate = 0;
 Atom	copybuf_format;
 Atom	pastebuf_format;
+bool xrender_found;
+bool x_internal_scaling = true;
 
 /*
  * Local variables
@@ -68,7 +70,7 @@ static Atom WM_DELETE_WINDOW=0;
 static Display *dpy=NULL;
 static Window win;
 static Cursor curs = None;
-static Visual visual;
+static Visual *visual;
 static bool VisualIsRGB8 = false;
 static XImage *xim;
 static XIM im;
@@ -83,6 +85,12 @@ static int r_shift;
 static int g_shift;
 static int b_shift;
 static struct graphics_buffer *last = NULL;
+#ifdef WITH_XRENDER
+static XRenderPictFormat *xrender_pf = NULL;
+static Pixmap xrender_pm = None;
+static Picture xrender_src_pict = None;
+static Picture xrender_dst_pict = None;
+#endif
 
 /* Array of Graphics Contexts */
 static GC gc;
@@ -261,13 +269,55 @@ x11_get_maxsize(int *w, int *h)
 	return false;
 }
 
+static void
+resize_pictures(void)
+{
+#ifdef WITH_XRENDER
+	if (xrender_pf == NULL)
+		xrender_pf = x11.XRenderFindStandardFormat(dpy, PictStandardRGB24);
+	if (xrender_pf == NULL)
+		xrender_pf = x11.XRenderFindVisualFormat(dpy, visual);
+	if (xrender_pf == NULL)
+		xrender_pf = x11.XRenderFindVisualFormat(dpy, DefaultVisual(dpy, DefaultScreen(dpy)));
+
+	if (xrender_pm != None)
+		x11.XFreePixmap(dpy, xrender_pm);
+	xrender_pm = x11.XCreatePixmap(dpy, win, x_cvstat.scrnwidth, x_cvstat.scrnheight, depth);
+
+	if (xrender_src_pict != None)
+		x11.XRenderFreePicture(dpy, xrender_src_pict);
+	if (xrender_dst_pict != None)
+		x11.XRenderFreePicture(dpy, xrender_dst_pict);
+	XRenderPictureAttributes pa;
+	xrender_src_pict = x11.XRenderCreatePicture(dpy, xrender_pm, xrender_pf, 0, &pa);
+	xrender_dst_pict = x11.XRenderCreatePicture(dpy, win, xrender_pf, 0, &pa);
+	x11.XRenderSetPictureFilter(dpy, xrender_src_pict, "best", NULL, 0);
+
+	pthread_mutex_lock(&vstatlock);
+	XTransform transform_matrix = {{
+	  {XDoubleToFixed((double)vstat.scrnwidth / vstat.winwidth), XDoubleToFixed(0), XDoubleToFixed(0)},
+	  {XDoubleToFixed(0), XDoubleToFixed((double)vstat.scrnheight / vstat.winheight), XDoubleToFixed(0)},
+	  {XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1.0)}  
+	}};
+	pthread_mutex_unlock(&vstatlock);
+	x11.XRenderSetPictureTransform(dpy, xrender_src_pict, &transform_matrix);
+#endif
+}
+
 static void resize_xim(void)
 {
 	int width, height;
 
-	pthread_mutex_lock(&vstatlock);
-	bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
-	pthread_mutex_unlock(&vstatlock);
+	resize_pictures();
+	if (x_internal_scaling) {
+		pthread_mutex_lock(&vstatlock);
+		bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
+		pthread_mutex_unlock(&vstatlock);
+	}
+	else {
+		width = x_cvstat.scrnwidth;
+		height = x_cvstat.scrnheight;
+	}
 
 	if (xim) {
 		if (width == xim->width
@@ -289,7 +339,7 @@ static void resize_xim(void)
 		release_buffer(last);
 		last = NULL;
 	}
-	xim = x11.XCreateImage(dpy, &visual, depth, ZPixmap, 0, NULL, width, height, 32, 0);
+	xim = x11.XCreateImage(dpy, visual, depth, ZPixmap, 0, NULL, width, height, 32, 0);
 	xim->data=(char *)calloc(1, xim->bytes_per_line*xim->height);
 	x11.XFillRectangle(dpy, win, gc, 0, 0, width, height);
 }
@@ -359,59 +409,48 @@ static void map_window()
 static int init_window()
 {
 	XGCValues gcv;
-	int i;
 	XWMHints *wmhints;
 	XClassHint *classhints;
-	int ret;
-	int best=-1;
-	int best_depth=0;
-	int best_cmap=0;
-	XVisualInfo template = {0};
-	XVisualInfo *vi;
 	int w, h;
 	int mw, mh;
+	int screen;
+	int major, minor;
 
 	dpy = x11.XOpenDisplay(NULL);
 	if (dpy == NULL) {
 		return(-1);
 	}
+
+#ifdef WITH_XRENDER
+	if (xrender_found && x11.XRenderQueryVersion(dpy, &major, &minor) == 0)
+		xrender_found = false;
+#endif
+
 	xfd = ConnectionNumber(dpy);
 	x11.utf8 = x11.XInternAtom(dpy, "UTF8_STRING", False);
 	x11.targets = x11.XInternAtom(dpy, "TARGETS", False);
 	x11.workarea = x11.XInternAtom(dpy, "_NET_WORKAREA", True);
 
-	template.screen = DefaultScreen(dpy);
-	template.class = TrueColor;
-	vi = x11.XGetVisualInfo(dpy, VisualScreenMask | VisualClassMask, &template, &ret);
-	for (i=0; i<ret; i++) {
-		if (vi[i].depth >= best_depth && vi[i].colormap_size >= best_cmap) {
-			best = i;
-			best_depth = vi[i].depth;
-		}
-	}
-	if (best != -1) {
-		visual = *vi[best].visual;
-		/*
-		 * TODO: Set VisualIsRGB8 if appropriate...
-		 * "appropriate" in this context means it's a sequence of
-		 * unpadded uint32_t values in XXRRGGBB format where XX is
-		 * ignored, and RR, GG, and BB are Red, Green, Blue values
-		 * respectively.
-		 */
-		base_pixel = ULONG_MAX;
-		base_pixel &= ~visual.red_mask;
-		base_pixel &= ~visual.green_mask;
-		base_pixel &= ~visual.blue_mask;
-		r_shift = my_fls(visual.red_mask)-16;
-		g_shift = my_fls(visual.green_mask)-16;
-		b_shift = my_fls(visual.blue_mask)-16;
-	}
-	else {
-		fprintf(stderr, "Unable to find TrueColor visual\n");
-		x11.XFree(vi);
-		return -1;
-	}
-	x11.XFree(vi);
+	screen = DefaultScreen(dpy);
+#ifdef DefaultVisual
+	visual = DefaultVisual(dpy, screen);
+#else
+	visual = x11.DefaultVisual(dpy, screen);
+#endif
+#ifdef DefaultDepth
+	depth = DefaultDepth(dpy, screen);
+#else
+	depth = x11.DefaultDepth(dpy, screen);
+#endif
+	base_pixel = ULONG_MAX;
+	base_pixel &= ~visual->red_mask;
+	base_pixel &= ~visual->green_mask;
+	base_pixel &= ~visual->blue_mask;
+	r_shift = my_fls(visual->red_mask)-16;
+	g_shift = my_fls(visual->green_mask)-16;
+	b_shift = my_fls(visual->blue_mask)-16;
+	if (visual->red_mask == 0xff0000 && visual->green_mask == 0xff00 && visual->blue_mask == 0xff)
+		VisualIsRGB8 = true;
 
 	/* Allocate black and white */
 	black=BlackPixel(dpy, DefaultScreen(dpy));
@@ -419,10 +458,9 @@ static int init_window()
 
     /* Create window, but defer setting a size and GC. */
 	XSetWindowAttributes wa = {0};
-	wa.colormap = x11.XCreateColormap(dpy, DefaultRootWindow(dpy), &visual, AllocNone);
+	wa.colormap = x11.XCreateColormap(dpy, DefaultRootWindow(dpy), visual, AllocNone);
 	wa.background_pixel = black;
 	wa.border_pixel = black;
-	depth = best_depth;
 	x11_get_maxsize(&mw, &mh);
 	pthread_mutex_lock(&vstatlock);
 	bitmap_get_scaled_win_size(x_cvstat.scaling, &w, &h, mw, mh);
@@ -431,7 +469,7 @@ static int init_window()
 	vstat.scaling = x_cvstat.scaling;
 	pthread_mutex_unlock(&vstatlock);
 	win = x11.XCreateWindow(dpy, DefaultRootWindow(dpy), 0, 0,
-	    w, h, 2, depth, InputOutput, &visual, CWColormap | CWBorderPixel | CWBackPixel, &wa);
+	    w, h, 2, depth, InputOutput, visual, CWColormap | CWBorderPixel | CWBackPixel, &wa);
 
 	classhints=x11.XAllocClassHint();
 	if (classhints)
@@ -558,6 +596,7 @@ static int video_init()
 	   lot easier. */
 
 	pthread_mutex_lock(&vstatlock);
+	x_internal_scaling = (ciolib_initial_scaling_type == CIOLIB_SCALING_INTERNAL);
 	if (ciolib_initial_scaling != 0.0)
 		x_cvstat.scaling = vstat.scaling = ciolib_initial_scaling;
 	if (x_cvstat.scaling < 1.0 || vstat.scaling < 1.0)
@@ -595,6 +634,8 @@ local_draw_rect(struct rectlist *rect)
 	uint32_t last_pixel = 0x55555555;
 	struct graphics_buffer *source;
 	int w, h;
+	int dw, dh;
+	uint32_t *source_data;
 
 	if (x_cvstat.scrnwidth != rect->rect.width || x_cvstat.scrnheight != rect->rect.height || xim == NULL) {
 		bitmap_drv_free_rect(rect);
@@ -609,25 +650,37 @@ local_draw_rect(struct rectlist *rect)
 		bitmap_drv_free_rect(rect);
 		return;
 	}
-	source = do_scale(rect, w, h);
-	bitmap_drv_free_rect(rect);
-	if (source == NULL)
-		return;
-	cleft = source->w;
-	ctop = source->h;
+	if (x_internal_scaling) {
+		source = do_scale(rect, w, h);
+		bitmap_drv_free_rect(rect);
+		if (source == NULL)
+			return;
+		cleft = source->w;
+		ctop = source->h;
+		source_data = source->data;
+		dw = source->w;
+		dh = source->h;
+	}
+	else {
+		cleft = w;
+		ctop = h;
+		source_data = rect->data;
+		dw = rect->rect.width;
+		dh = rect->rect.height;
+	}
 
 	pthread_mutex_lock(&vstatlock);
 	w = vstat.winwidth;
 	h = vstat.winheight;
 	pthread_mutex_unlock(&vstatlock);
-	xoff = (w - source->w) / 2;
+	xoff = (w - cleft) / 2;
 	if (xoff < 0)
 		xoff = 0;
-	yoff = (h - source->h) / 2;
+	yoff = (h - ctop) / 2;
 	if (yoff < 0)
 		yoff = 0;
 
-	if (last && (last->w != source->w || last->h != source->h)) {
+	if (last && (last->w != dw || last->h != dh)) {
 		release_buffer(last);
 		last = NULL;
 	}
@@ -635,10 +688,10 @@ local_draw_rect(struct rectlist *rect)
 	/* TODO: Translate into local colour depth */
 	idx = 0;
 
-	for (y = 0; y < source->h; y++) {
-		for (x = 0; x < source->w; x++) {
+	for (y = 0; y < dh; y++) {
+		for (x = 0; x < dw; x++) {
 			if (last) {
-				if (last->data[idx] != source->data[idx]) {
+				if (last->data[idx] != source_data[idx]) {
 					if (x < cleft)
 						cleft = x;
 					if (x > cright)
@@ -654,31 +707,31 @@ local_draw_rect(struct rectlist *rect)
 				}
 			}
 			if (VisualIsRGB8) {
-				pixel = source->data[idx];
+				pixel = source_data[idx];
 				((uint32_t*)xim->data)[idx] = pixel;
 			}
 			else {
-				if (last_pixel != source->data[idx]) {
-					last_pixel = source->data[idx];
-					r = source->data[idx] >> 16 & 0xff;
-					g = source->data[idx] >> 8 & 0xff;
-					b = source->data[idx] & 0xff;
+				if (last_pixel != source_data[idx]) {
+					last_pixel = source_data[idx];
+					r = source_data[idx] >> 16 & 0xff;
+					g = source_data[idx] >> 8 & 0xff;
+					b = source_data[idx] & 0xff;
 					r = (r<<8)|r;
 					g = (g<<8)|g;
 					b = (b<<8)|b;
 					pixel = base_pixel;
 					if (r_shift >= 0)
-						pixel |= (r << r_shift) & visual.red_mask;
+						pixel |= (r << r_shift) & visual->red_mask;
 					else
-						pixel |= (r >> (0-r_shift)) & visual.red_mask;
+						pixel |= (r >> (0-r_shift)) & visual->red_mask;
 					if (g_shift >= 0)
-						pixel |= (g << g_shift) & visual.green_mask;
+						pixel |= (g << g_shift) & visual->green_mask;
 					else
-						pixel |= (g >> (0-g_shift)) & visual.green_mask;
+						pixel |= (g >> (0-g_shift)) & visual->green_mask;
 					if (b_shift >= 0)
-						pixel |= (b << b_shift) & visual.blue_mask;
+						pixel |= (b << b_shift) & visual->blue_mask;
 					else
-						pixel |= (b >> (0-b_shift)) & visual.blue_mask;
+						pixel |= (b >> (0-b_shift)) & visual->blue_mask;
 				}
 #ifdef XPutPixel
 				XPutPixel(xim, x, y, pixel);
@@ -688,15 +741,17 @@ local_draw_rect(struct rectlist *rect)
 			}
 			idx++;
 		}
-		/* This line was changed */
-		// TODO: Previously this did one update per display line...
-		if (last && cright >= 0 && (cbottom != y || y == source->h - 1)) {
-			x11.XPutImage(dpy, win, gc, xim, cleft, ctop
-			    , cleft + xoff, ctop + yoff
-			    , (cright - cleft + 1), (cbottom - ctop + 1));
-			cleft = source->w;
-			cright = cbottom = -100;
-			ctop = source->h;
+		if (x_internal_scaling) {
+			/* This line was changed */
+			// TODO: Previously this did one update per display line...
+			if (last && cright >= 0 && (cbottom != y || y == source->h - 1)) {
+				x11.XPutImage(dpy, win, gc, xim, cleft, ctop
+				    , cleft + xoff, ctop + yoff
+				    , (cright - cleft + 1), (cbottom - ctop + 1));
+				cleft = source->w;
+				cright = cbottom = -100;
+				ctop = source->h;
+			}
 		}
 	}
 
@@ -707,10 +762,25 @@ local_draw_rect(struct rectlist *rect)
 		x11.XFillRectangle(dpy, win, gc, xoff+xim->width, yoff, w, yoff + xim->height);
 		x11.XFillRectangle(dpy, win, gc, 0, yoff + xim->height, w, h);
 	}
-	if (last == NULL)
-		x11.XPutImage(dpy, win, gc, xim, 0, 0, xoff, yoff, source->w, source->h);
-	else
-		release_buffer(last);
+	if (x_internal_scaling || xrender_found == false) {
+		if (last == NULL)
+			x11.XPutImage(dpy, win, gc, xim, 0, 0, xoff, yoff, source->w, source->h);
+		else
+			release_buffer(last);
+	}
+	else {
+#ifdef WITH_XRENDER
+		bitmap_drv_free_rect(rect);
+		if (last != NULL)
+			release_buffer(last);
+		x11.XPutImage(dpy, xrender_pm, gc, xim, 0, 0, 0, 0, dw, dh);
+		x11.XRenderComposite(dpy, PictOpSrc, xrender_src_pict, 0, xrender_dst_pict, 
+				0, 0, 0, 0, 0, 0,
+				cleft, ctop);
+#else
+		fprintf(stderr, "External scaling enabled without XRender support compiled in!\n");
+#endif
+	}
 	last = source;
 }
 
@@ -1492,6 +1562,10 @@ void x11_event_thread(void *args)
 								x11.XFreeCursor(dpy, oc);
 							break;
 						}
+						case X11_LOCAL_SETSCALING_TYPE:
+							x_internal_scaling = (lev.data.st == CIOLIB_SCALING_INTERNAL);
+							resize_xim();
+							break;
 					}
 				}
 		}
