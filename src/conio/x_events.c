@@ -857,11 +857,18 @@ static int x11_event(XEvent *ev)
 			break;
 		/* Graphics related events */
 		case ConfigureNotify: {
+			bool resize = false;
+
 			if (x11_window_xpos != ev->xconfigure.x || x11_window_ypos != ev->xconfigure.y) {
 				x11_window_xpos=ev->xconfigure.x;
 				x11_window_ypos=ev->xconfigure.y;
 			}
-			handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
+			pthread_mutex_lock(&vstatlock);
+			if (ev->xconfigure.width != vstat.winwidth || ev->xconfigure.height != vstat.winheight)
+				resize = true;
+			pthread_mutex_unlock(&vstatlock);
+			if (resize)
+				handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
 			break;
 		}
 		case NoExpose:
