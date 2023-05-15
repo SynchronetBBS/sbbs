@@ -1687,6 +1687,8 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 				cterm->sx_pixels->width = ti.screenwidth * vparams[vmode].charwidth;
 				cterm->sx_pixels->height = cterm->sx_iv * 6;
 				cterm->sx_mask = malloc(sizeof(struct ciolib_mask));
+				cterm->sx_mask->width = cterm->sx_pixels->width;
+				cterm->sx_mask->height = cterm->sx_pixels->height;
 				cterm->sx_mask->bits = malloc((cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
 				memset(cterm->sx_mask->bits, 0, (cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
 			}
@@ -1896,6 +1898,8 @@ all_done:
 	cterm->sixel = SIXEL_INACTIVE;
 	if (cterm->sx_pixels)
 		FREE_AND_NULL(cterm->sx_pixels->pixels);
+	if (cterm->sx_mask)
+		FREE_AND_NULL(cterm->sx_mask->bits);
 	FREE_AND_NULL(cterm->sx_pixels);
 	FREE_AND_NULL(cterm->sx_mask);
 }
