@@ -805,10 +805,12 @@ static void expose_rect(int x, int y, int width, int height)
 		last = NULL;
 		bitmap_drv_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
 	}
-	// Do nothing...
-	if (sx == ex || sy == ey)
-		return;
-	bitmap_drv_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
+	else {
+		// Do nothing...
+		if (sx == ex || sy == ey)
+			return;
+		bitmap_drv_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
+	}
 }
 
 static bool

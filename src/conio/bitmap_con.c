@@ -722,11 +722,11 @@ static void blinker_thread(void *data)
 			screen->update_pixels = 0;
 			pthread_mutex_unlock(&screenlock);
 			cb_drawrect(rect);
+			cb_flush();
 		}
 		else {
 			pthread_mutex_unlock(&screenlock);
 		}
-		cb_flush();
 	}
 }
 
