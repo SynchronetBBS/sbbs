@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.35     2023-05-14   File area chooser fix: Displays correct file counts in
+                      directories when using directory name collapsing.
+                      Both: Internal refactor for the code that reads the
+                      configuration file (no functional change).
 1.34     2023-04-15   Fix: For lightbar mode with sub-board or dir collapsing,
                       these now set the selected item based on the user's
                       current sub-board or directory. Also, color settings no

@@ -49,6 +49,9 @@
  *                            Fix: For lightbar mode with directory collapsing, now sets the selected item based
  *                            on the user's current directory. Also, color settings no longer need the control
  *                            character (they can just be a list of the attribute characters).
+ * 2023-05-14 Eric Oulashin   Version 1.35
+ *                            Refactored the configuration reading code.
+ *                            Fix: Displays correct file counts in directories when using directory name collapsing
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -89,8 +92,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.34";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-04-15";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.35";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-05-14";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -1552,8 +1555,6 @@ function DDFileAreaChooser_CreateLightbarFileLibMenu()
 // the given file library
 function DDFileAreaChooser_CreateLightbarFileDirMenu(pLibIdx, pDirIdx, pLevel)
 {
-	// TODO: Update this for directory name collapsing
-
 	// Start & end indexes for the various items in each mssage group list row
 	// Selected mark, group#, description, # directorys
 	var fileDirListIdxes = {
@@ -1767,92 +1768,37 @@ function DDFileAreaChooser_ReadConfigFile()
 	var cfgFile = new File(gStartupPath + "DDFileAreaChooser.cfg");
 	if (cfgFile.open("r"))
 	{
+		var behaviorSettings = cfgFile.iniGetObject("BEHAVIOR");
+		var colorSettings = cfgFile.iniGetObject("COLORS");
+		cfgFile.close();
+		// Behavior settings
+		var hdrMaxNumLines = parseInt(behaviorSettings["areaChooserHdrMaxLines"]);
+		if (!isNaN(hdrMaxNumLines) && hdrMaxNumLines > 0)
+			this.areaChooserHdrMaxLines = hdrMaxNumLines;
+		if (typeof(behaviorSettings["useLightbarInterface"]) === "boolean")
+			this.useLightbarInterface = behaviorSettings.useLightbarInterface;
+		if (typeof(behaviorSettings["areaChooserHdrFilenameBase"]) === "string")
+			this.areaChooserHdrFilenameBase = behaviorSettings.areaChooserHdrFilenameBase;
+		if (typeof(behaviorSettings["useDirCollapsing"]) === "boolean")
+			this.useDirCollapsing = behaviorSettings.useDirCollapsing;
+		if (typeof(behaviorSettings["dirCollapseSeparator"]) === "string" && behaviorSettings["dirCollapseSeparator"].length > 0)
+			this.dirCollapseSeparator = behaviorSettings.dirCollapseSeparator;
+		// Color settings
 		var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');
-		var settingsMode = "behavior";
-		var fileLine = null;     // A line read from the file
-		var equalsPos = 0;       // Position of a = in the line
-		var commentPos = 0;      // Position of the start of a comment
-		var setting = null;      // A setting name (string)
-		var settingUpper = null; // Upper-case setting name
-		var value = null;        // A value for a setting (string)
-		while (!cfgFile.eof)
+		for (var prop in this.colors)
 		{
-			// Read the next line from the config file.
-			fileLine = cfgFile.readln(2048);
-
-			// fileLine should be a string, but I've seen some cases
-			// where it isn't, so check its type.
-			if (typeof(fileLine) != "string")
-				continue;
-
-			// If the line starts with with a semicolon (the comment
-			// character) or is blank, then skip it.
-			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-				continue;
-
-			// If in the "behavior" section, then set the behavior-related variables.
-			if (fileLine.toUpperCase() == "[BEHAVIOR]")
+			if (typeof(colorSettings[prop] === "string"))
 			{
-				settingsMode = "behavior";
-				continue;
-			}
-			else if (fileLine.toUpperCase() == "[COLORS]")
-			{
-				settingsMode = "colors";
-				continue;
-			}
-
-			// If the line has a semicolon anywhere in it, then remove
-			// everything from the semicolon onward.
-			commentPos = fileLine.indexOf(";");
-			if (commentPos > -1)
-				fileLine = fileLine.substr(0, commentPos);
-
-			// Look for an equals sign, and if found, separate the line
-			// into the setting name (before the =) and the value (after the
-			// equals sign).
-			equalsPos = fileLine.indexOf("=");
-			if (equalsPos > 0)
-			{
-				// Read the setting & value, and trim leading & trailing spaces.
-				setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-				settingUpper = setting.toUpperCase();
-				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
-
-				if (settingsMode == "behavior")
-				{
-					// Set the appropriate value in the settings object.
-					if (settingUpper == "USELIGHTBARINTERFACE")
-						this.useLightbarInterface = (value.toUpperCase() == "TRUE");
-					else if (settingUpper == "AREACHOOSERHDRFILENAMEBASE")
-						this.areaChooserHdrFilenameBase = value;
-					else if (settingUpper == "AREACHOOSERHDRMAXLINES")
-					{
-						var maxNumLines = +value;
-						if (maxNumLines > 0)
-							this.areaChooserHdrMaxLines = maxNumLines;
-					}
-					else if (settingUpper == "USEDIRCOLLAPSING")
-						this.useDirCollapsing = (value.toUpperCase() == "TRUE");
-					else if (settingUpper == "DIRCOLLAPSESEPARATOR")
-					{
-						if (value.length > 0)
-							this.dirCollapseSeparator = value;
-					}
-				}
-				else if (settingsMode == "colors")
-				{
-					// If the value doesn't have any control characters, then add the control character
-					// before attribute characters
-					if (!/\x01/.test(value))
-						value = attrCodeStr(value);
-					if (onlySyncAttrsRegexWholeWord.test(value))
-						this.colors[setting] = value;
-				}
+				// Make sure the value is a string (for attrCodeStr() etc; in some cases, such as a background attribute of 4, it will be a number)
+				var value = colorSettings[prop].toString();
+				// If the value doesn't have any control characters, then add the control character
+				// before attribute characters
+				if (!/\x01/.test(value))
+					value = attrCodeStr(value);
+				if (onlySyncAttrsRegexWholeWord.test(value))
+					this.colors[prop] = value;
 			}
 		}
-
-		cfgFile.close();
 	}
 }
 
@@ -1943,7 +1889,7 @@ function numFilesInDir(pLibIdx, pDirIdx)
 
 	// file_area.lib_list[pLibIdx].dir_list[pDirIdx].files was added in Synchronet 3.18c
 	if (file_area.lib_list[pLibIdx].dir_list[pDirIdx].hasOwnProperty("files"))
-		numFiles = +(file_area.lib_list[pLibIdx].dir_list[pDirIdx].files);
+		numFiles = file_area.lib_list[pLibIdx].dir_list[pDirIdx].files;
 	else
 	{
 		// Count the files in the directory.  If it's not a directory, then
@@ -2362,7 +2308,10 @@ function DDFileAreaChooser_GetGreatestNumFiles(pLibIndex)
 			if (this.lib_list[pLibIndex].dir_list[dirIndex].subdir_list.length > 0)
 				retObj.fileCounts[dirIndex] = this.lib_list[pLibIndex].dir_list[dirIndex].subdir_list.length;
 			else
-				retObj.fileCounts[dirIndex] = numFilesInDir(pLibIndex, dirIndex);
+			{
+				var dirCode = this.lib_list[pLibIndex].dir_list[dirIndex].code;
+				retObj.fileCounts[dirIndex] = numFilesInDir(file_area.dir[dirCode].lib_index, file_area.dir[dirCode].index);
+			}
 			if (retObj.fileCounts[dirIndex] > retObj.greatestNumFiles)
 				retObj.greatestNumFiles = retObj.fileCounts[dirIndex];
 		}
@@ -2876,3 +2825,4 @@ function attrCodeStr(pAttrCodeCharStr)
 	}
 	return str;
 }
+
