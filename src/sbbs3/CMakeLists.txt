@@ -429,17 +429,6 @@ add_executable(dupefind
 )
 require_libs(dupefind xpdev smblib)
 
-add_executable(smbactiv
-	smbactiv.c
-	load_cfg.c
-	scfglib1.c
-	scfglib2.c
-	str_util.c
-	ars.c
-	nopen.c
-)
-require_libs(smbactiv xpdev smblib)
-
 add_executable(dstsedit
 	dstsedit.c
 	date_str.c
@@ -483,7 +472,6 @@ install(TARGETS
 	allusers
 	delfiles
 	dupefind
-	smbactiv
 	dstsedit
 	ans2asc
 	asc2ans
