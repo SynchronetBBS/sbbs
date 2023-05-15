@@ -405,8 +405,8 @@ static void
 update_cvstat(struct video_stats *vs)
 {
 	if (vs != NULL && vs != &vstat) {
-		pthread_mutex_lock(&vstatlock);
 		vstat.scaling = sdl_getscaling();
+		pthread_mutex_lock(&vstatlock);
 		*vs = vstat;
 		pthread_mutex_unlock(&vstatlock);
 	}
@@ -435,15 +435,18 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 		vs->winwidth = vstat.winwidth = w;
 		vs->winheight = vstat.winheight = h;
 	}
-	if (!changed) {
+	if (changed) {
+		pthread_mutex_unlock(&vstatlock);
+	}
+	else {
 		pthread_mutex_lock(&win_mutex);
 		sdl.GetWindowSize(win, &w, &h);
 		pthread_mutex_unlock(&win_mutex);
 		if (w != vs->winwidth || h != vs->winheight)
 			changed = true;
+		pthread_mutex_unlock(&vstatlock);
 		vstat.scaling = sdl_getscaling();
 	}
-	pthread_mutex_unlock(&vstatlock);
 	if (changed)
 		setup_surfaces(vs);
 }
@@ -651,9 +654,7 @@ static void setup_surfaces(struct video_stats *vs)
 		sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
 	}
 	pthread_mutex_unlock(&win_mutex);
-	pthread_mutex_lock(&vstatlock);
 	vstat.scaling = sdl_getscaling();
-	pthread_mutex_unlock(&vstatlock);
 }
 
 /* Called from event thread only */
