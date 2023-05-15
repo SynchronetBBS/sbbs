@@ -131,6 +131,10 @@
  * 2023-04-25 Eric Oulashin     Version 1.73a
  *                              Refactored the functions for getting message header lines. Also, now
  *                              all message header information is retrieved.
+ * 2023-05-13 Eric Oulashin     Version 1.74
+ *                              Settings for users being able to read deleted messages now applies to
+ *                              personal email. Also, allows reading messages that are marked for deletion
+ *                              in addition to just seeing them in the message list.
  */
 
 "use strict";
@@ -237,8 +241,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.73a";
-var READER_DATE = "2023-04-25";
+var READER_VERSION = "1.74";
+var READER_DATE = "2023-05-13";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -2102,7 +2106,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 
 	// Set the sub-board code if applicable
 	var previousSubBoardCode = this.subBoardCode;
-	if (typeof(pSubBoardCode) == "string")
+	if (typeof(pSubBoardCode) === "string")
 	{
 		if (subBoardCodeIsValid(pSubBoardCode))
 			this.setSubBoardCode(pSubBoardCode);
@@ -2269,7 +2273,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 // Return value: Boolean - Whether or not there are messages to read in the current
 //               sub-board
 function DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs(pCloseMsgbaseAndSetNullIfNoMsgs,
-                                                 pOutputMessages, pPauseOnNoMsgError)
+                                                                 pOutputMessages, pPauseOnNoMsgError)
 {
 	var thereAreMessagesToRead = true;
 
@@ -2830,9 +2834,10 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 	}
 
 	// If the current message index is for a message that has been
-	// deleted, then find the next non-deleted message.
+	// deleted and the user is not able to read deleted messages, then find the next non-deleted message.
 	var testMsgHdr = this.GetMsgHdrByIdx(msgIndex);
-	if ((testMsgHdr == null) || ((testMsgHdr.attr & MSG_DELETE) == MSG_DELETE))
+	// TODO: Should this really allow reading messages that are marked for deletion?
+	if ((testMsgHdr == null) || (((testMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs()))
 	{
 		// First try going forward
 		var nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(msgIndex, true);
@@ -3018,9 +3023,10 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 					else
 						msgIndex = chgSubBoardRetObj.lastReadMsgIdx;
 					// If the current message index is for a message that has been
-					// deleted, then find the next non-deleted message.
+					// deleted and the user is not able to read deleted messages, then find the next non-deleted message.
 					testMsgHdr = this.GetMsgHdrByIdx(msgIndex);
-					if ((testMsgHdr == null) || ((testMsgHdr.attr & MSG_DELETE) == MSG_DELETE))
+					// TODO: Should this really allow reading deleted messages?
+					if ((testMsgHdr == null) || (((testMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs()))
 					{
 						// First try going forward
 						var nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(msgIndex, true);
@@ -8342,129 +8348,82 @@ function DigDistMsgReader_ReadConfigFile()
 	if (cfgFile.open("r"))
 	{
 		this.cfgFileSuccessfullyRead = true;
-
-		var fileLine = null;     // A line read from the file
-		var equalsPos = 0;       // Position of a = in the line
-		var commentPos = 0;      // Position of the start of a comment
-		var setting = null;      // A setting name (string)
-		var settingUpper = null; // Upper-case setting name
-		var value = null;        // To store a value for a setting (string)
-		var valueUpper = null;   // Upper-cased value for a setting (string)
-		while (!cfgFile.eof)
-		{
-			// Read the next line from the config file.
-			fileLine = cfgFile.readln(2048);
-
-			// fileLine should be a string, but I've seen some cases
-			// where it isn't, so check its type.
-			if (typeof(fileLine) != "string")
-				continue;
-
-			// If the line starts with with a semicolon (the comment
-			// character) or is blank, then skip it.
-			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-				continue;
-
-			// If the line has a semicolon anywhere in it, then remove
-			// everything from the semicolon onward.
-			commentPos = fileLine.indexOf(";");
-			if (commentPos > -1)
-				fileLine = fileLine.substr(0, commentPos);
-
-			// Look for an equals sign, and if found, separate the line
-			// into the setting name (before the =) and the value (after the
-			// equals sign).
-			equalsPos = fileLine.indexOf("=");
-			if (equalsPos > 0)
-			{
-				// Read the setting & value, and trim leading & trailing spaces.
-				setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-				settingUpper = setting.toUpperCase();
-				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
-				valueUpper = value.toUpperCase();
-
-				// Set the appropriate valueUpper in the settings object.
-				if (settingUpper == "LISTINTERFACESTYLE")
-					this.msgListUseLightbarListInterface = (valueUpper == "LIGHTBAR");
-				else if (settingUpper == "READERINTERFACESTYLE")
-					this.scrollingReaderInterface = (valueUpper == "SCROLLABLE");
-				else if (settingUpper == "READERINTERFACESTYLEFORANSIMESSAGES")
-					this.useScrollingInterfaceForANSIMessages = (valueUpper == "SCROLLABLE");
-				else if (settingUpper == "DISPLAYBOARDINFOINHEADER")
-					this.displayBoardInfoInHeader = (valueUpper == "TRUE");
-				// Note: this.reverseListOrder can be true, false, or "ASK"
-				else if (settingUpper == "REVERSELISTORDER")
-					this.reverseListOrder = (valueUpper == "ASK" ? "ASK" : (valueUpper == "TRUE"));
-				else if (settingUpper == "PROMPTTOCONTINUELISTINGMESSAGES")
-					this.promptToContinueListingMessages = (valueUpper == "TRUE");
-				else if (settingUpper == "PROMPTCONFIRMREADMESSAGE")
-					this.promptToReadMessage = (valueUpper == "TRUE");
-				else if (settingUpper == "MSGLISTDISPLAYTIME")
-					this.msgList_displayMessageDateImported = (valueUpper == "IMPORTED");
-				else if (settingUpper == "MSGAREALIST_LASTIMPORTEDMSG_TIME")
-					this.msgAreaList_lastImportedMsg_showImportTime = (valueUpper == "IMPORTED");
-				else if (settingUpper == "STARTMODE")
-				{
-					if ((valueUpper == "READER") || (valueUpper == "READ"))
-						this.startMode = READER_MODE_READ;
-					else if ((valueUpper == "LISTER") || (valueUpper == "LIST"))
-						this.startMode = READER_MODE_LIST;
-				}
-				else if (settingUpper == "TABSPACES")
-				{
-					var numSpaces = parseInt(value);
-					// If greater than 0, then set this.numTabSpaces
-					if (!isNaN(numSpaces) && numSpaces > 0)
-						this.numTabSpaces = numSpaces;
-				}
-				else if (settingUpper == "PAUSEAFTERNEWMSGSCAN")
-					this.pauseAfterNewMsgScan = (valueUpper == "TRUE");
-				else if (settingUpper == "READINGPOSTONSUBBOARDINSTEADOFGOTONEXT")
-					this.readingPostOnSubBoardInsteadOfGoToNext = (valueUpper == "TRUE");
-				else if (settingUpper == "AREACHOOSERHDRFILENAMEBASE")
-					this.areaChooserHdrFilenameBase = value;
-				else if (settingUpper == "AREACHOOSERHDRMAXLINES")
-				{
-					var maxNumLines = parseInt(value);
-					if (!isNaN(maxNumLines) && maxNumLines > 0)
-						this.areaChooserHdrMaxLines = maxNumLines;
-				}
-				else if (settingUpper == "THEMEFILENAME")
-				{
-					// First look for the theme config file in the sbbs/mods
-					// directory, then sbbs/ctrl, then the same directory as
-					// this script.
-					themeFilename = system.mods_dir + value;
-					if (!file_exists(themeFilename))
-						themeFilename = system.ctrl_dir + value;
-					if (!file_exists(themeFilename))
-						themeFilename = gStartupPath + value;
-				}
-				else if (settingUpper == "DISPLAYAVATARS")
-					this.displayAvatars = (valueUpper == "TRUE");
-				else if (settingUpper == "RIGHTJUSTIFYAVATARS")
-					this.rightJustifyAvatar = (valueUpper == "TRUE");
-				else if (settingUpper == "MSGLISTSORT")
-				{
-					if (valueUpper == "WRITTEN")
-						this.msgListSort = MSG_LIST_SORT_DATETIME_WRITTEN;
-				}
-				else if (settingUpper == "CONVERTYSTYLEMCIATTRSTOSYNC")
-					this.convertYStyleMCIAttrsToSync = (valueUpper == "TRUE");
-				else if (settingUpper == "PREPENDFOWARDMSGSUBJECT")
-					this.prependFowardMsgSubject = (valueUpper == "TRUE");
-				else if (settingUpper == "ENABLEINDEXEDMODEMSGLISTCACHE")
-					this.enableIndexedModeMsgListCache = (valueUpper == "TRUE");
-				else if (settingUpper == "QUICKUSERVALSETINDEX")
-				{
-					var numberVal = parseInt(value);
-					if (!isNaN(numberVal) && numberVal > -1)
-						this.quickUserValSetIndex = numberVal;
-				}
-			}
-		}
-
+		var settingsObj = cfgFile.iniGetObject();
 		cfgFile.close();
+
+		var numSpaces = parseInt(settingsObj["tabSpaces"]);
+		if (!isNaN(numSpaces) && numSpaces > 0)
+			this.numTabSpaces = numSpaces;
+		var maxNumLines = parseInt(settingsObj["areaChooserHdrMaxLines"]);
+		if (!isNaN(maxNumLines) && maxNumLines > 0)
+			this.areaChooserHdrMaxLines = maxNumLines;
+		var numberVal = parseInt(settingsObj["quickUserValSetIndex"]);
+		if (!isNaN(numberVal) && numberVal > -1)
+			this.quickUserValSetIndex = numberVal;
+		if (settingsObj.hasOwnProperty("listInterfaceStyle") && typeof(settingsObj.listInterfaceStyle) === "string")
+			this.msgListUseLightbarListInterface = (settingsObj.listInterfaceStyle.toUpperCase() == "LIGHTBAR");
+		if (settingsObj.hasOwnProperty("reverseListOrder"))
+		{
+			var valType = typeof(settingsObj.reverseListOrder);
+			if (valType === "boolean")
+				this.reverseListOrder = settingsObj.reverseListOrder;
+			else if (valType === "string")
+				this.reverseListOrder = (settingsObj.reverseListOrder.toUpperCase() == "ASK");
+		}
+		if (typeof(settingsObj["readerInterfaceStyle"]) === "string")
+			this.scrollingReaderInterface = (settingsObj.readerInterfaceStyle.toUpperCase() == "SCROLLABLE");
+		if (typeof(settingsObj["readerInterfaceStyleForANSIMessages"]) === "string")
+			this.useScrollingInterfaceForANSIMessages = (settingsObj.readerInterfaceStyleForANSIMessages.toUpperCase() == "SCROLLABLE");
+		if (typeof(settingsObj["displayBoardInfoInHeader"]) === "boolean")
+			this.displayBoardInfoInHeader = settingsObj.displayBoardInfoInHeader;
+		if (typeof(settingsObj["promptToContinueListingMessages"]) === "boolean")
+			this.promptToContinueListingMessages = settingsObj.promptToContinueListingMessages;
+		if (typeof(settingsObj["promptConfirmReadMessage"]) === "boolean")
+			this.promptToReadMessage = settingsObj.promptConfirmReadMessage;
+		if (typeof(settingsObj["msgListDisplayTime"]) === "string")
+			this.msgList_displayMessageDateImported = (settingsObj.msgListDisplayTime.toUpperCase() == "IMPORTED");
+		if (typeof(settingsObj["msgAreaList_lastImportedMsg_time"]) === "string")
+			this.msgAreaList_lastImportedMsg_showImportTime = (settingsObj.msgAreaList_lastImportedMsg_time.toUpperCase() == "IMPORTED");
+		if (typeof(settingsObj["startMode"]) === "string")
+		{
+			var valueUpper = settingsObj.startMode.toUpperCase();
+			if ((valueUpper == "READER") || (valueUpper == "READ"))
+				this.startMode = READER_MODE_READ;
+			else if ((valueUpper == "LISTER") || (valueUpper == "LIST"))
+				this.startMode = READER_MODE_LIST;
+		}
+		if (typeof(settingsObj["pauseAfterNewMsgScan"]) === "boolean")
+			this.pauseAfterNewMsgScan = settingsObj.pauseAfterNewMsgScan;
+		if (typeof(settingsObj["readingPostOnSubBoardInsteadOfGoToNext"]) === "boolean")
+			this.readingPostOnSubBoardInsteadOfGoToNext = settingsObj.readingPostOnSubBoardInsteadOfGoToNext;
+		if (typeof(settingsObj["areaChooserHdrFilenameBase"]) === "string")
+			this.areaChooserHdrFilenameBase = settingsObj.areaChooserHdrFilenameBase;
+		if (typeof(settingsObj["displayAvatars"]) === "boolean")
+			this.displayAvatars = settingsObj.displayAvatars;
+		if (typeof(settingsObj["rightJustifyAvatars"]) === "boolean")
+			this.rightJustifyAvatar = settingsObj.rightJustifyAvatars;
+		if (typeof(settingsObj["msgListSort"]) === "string")
+		{
+			if (settingsObj.msgListSort.toUpperCase() == "WRITTEN")
+				this.msgListSort = MSG_LIST_SORT_DATETIME_WRITTEN;
+		}
+		if (typeof(settingsObj["convertYStyleMCIAttrsToSync"]) === "boolean")
+			this.convertYStyleMCIAttrsToSync = settingsObj.convertYStyleMCIAttrsToSync;
+		if (typeof(settingsObj["prependFowardMsgSubject"]) === "boolean")
+			this.prependFowardMsgSubject = settingsObj.prependFowardMsgSubject;
+		if (typeof(settingsObj["enableIndexedModeMsgListCache"]) === "boolean")
+			this.enableIndexedModeMsgListCache = settingsObj.enableIndexedModeMsgListCache;
+		if (typeof(settingsObj["themeFilename"]) === "string")
+		{
+			// First look for the theme config file in the sbbs/mods
+			// directory, then sbbs/ctrl, then the same directory as
+			// this script.
+			themeFilename = system.mods_dir + settingsObj.themeFilename;
+			if (!file_exists(themeFilename))
+				themeFilename = system.ctrl_dir + settingsObj.themeFilename;
+			if (!file_exists(themeFilename))
+				themeFilename = gStartupPath + settingsObj.themeFilename;
+		}
 	}
 	else
 	{
@@ -8482,156 +8441,41 @@ function DigDistMsgReader_ReadConfigFile()
 	// from it.
 	if (themeFilename.length > 0)
 	{
+		var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');
+
 		var themeFile = new File(themeFilename);
 		if (themeFile.open("r"))
 		{
-			var fileLine = null;     // A line read from the file
-			var equalsPos = 0;       // Position of a = in the line
-			var commentPos = 0;      // Position of the start of a comment
-			var setting = null;      // A setting name (string)
-			var value = null;        // To store a value for a setting (string)
-			// A regex for attribute settings - Note that this doesn't contain some of the control codes
-			var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');
-			while (!themeFile.eof)
+			var themeSettingsObj = themeFile.iniGetObject();
+			themeFile.close();
+
+			// Set any color values specified
+			for (var prop in this.colors)
 			{
-				// Read the next line from the config file.
-				fileLine = themeFile.readln(2048);
-
-				// fileLine should be a string, but I've seen some cases
-				// where it isn't, so check its type.
-				if (typeof(fileLine) != "string")
-					continue;
-
-				// If the line starts with with a semicolon (the comment
-				// character) or is blank, then skip it.
-				if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-					continue;
-
-				// If the line has a semicolon anywhere in it, then remove
-				// everything from the semicolon onward.
-				commentPos = fileLine.indexOf(";");
-				if (commentPos > -1)
-					fileLine = fileLine.substr(0, commentPos);
-
-				// Look for an equals sign, and if found, separate the line
-				// into the setting name (before the =) and the value (after the
-				// equals sign).
-				equalsPos = fileLine.indexOf("=");
-				if (equalsPos > 0)
+				//themeSettingsObj.hasOwnProperty(prop)
+				if (typeof(themeSettingsObj[prop]) === "string")
 				{
-					// Read the setting (without leading/trailing spaces) & value
-					setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-					value = fileLine.substr(equalsPos+1);
-
-					// Colors
-					if ((setting == "msgListHeaderMsgGroupTextColor") || (setting == "msgListHeaderMsgGroupNameColor") ||
-					    (setting == "msgListHeaderSubBoardTextColor") || (setting == "msgListHeaderMsgSubBoardName") ||
-					    (setting == "msgListColHeader") ||
-					    (setting == "msgListMsgNumColor") || (setting == "msgListFromColor") ||
-						(setting == "msgListToColor") || (setting == "msgListSubjectColor") ||
-						(setting == "msgListDateColor") || (setting == "msgListTimeColor") ||
-					    (setting == "msgListToUserMsgNumColor") || (setting == "msgListToUserFromColor") ||
-					    (setting == "msgListToUserToColor") || (setting == "msgListToUserSubjectColor") ||
-					    (setting == "msgListToUserDateColor") || (setting == "msgListToUserTimeColor") ||
-					    (setting == "msgListFromUserMsgNumColor") || (setting == "msgListFromUserFromColor") ||
-					    (setting == "msgListFromUserToColor") || (setting == "msgListFromUserSubjectColor") ||
-					    (setting == "msgListFromUserDateColor") || (setting == "msgListFromUserTimeColor") ||
-					    (setting == "msgListHighlightBkgColor") || (setting == "msgListMsgNumHighlightColor") ||
-					    (setting == "msgListFromHighlightColor") || (setting == "msgListToHighlightColor") ||
-					    (setting == "msgListSubjHighlightColor") || (setting == "msgListDateHighlightColor") ||
-					    (setting == "msgListTimeHighlightColor") || (setting == "lightbarMsgListHelpLineBkgColor") ||
-					    (setting == "lightbarMsgListHelpLineGeneralColor") || (setting == "lightbarMsgListHelpLineHotkeyColor") ||
-					    (setting == "lightbarMsgListHelpLineParenColor") || (setting == "tradInterfaceContPromptMainColor") ||
-					    (setting == "tradInterfaceContPromptHotkeyColor") || (setting == "tradInterfaceContPromptUserInputColor") ||
-					    (setting == "msgBodyColor") || (setting == "readMsgConfirmColor") ||
-					    (setting == "readMsgConfirmNumberColor") ||
-					    (setting == "afterReadMsg_ListMorePromptColor") ||
-					    (setting == "tradInterfaceHelpScreenColor") || (setting == "areaChooserMsgAreaNumColor") ||
-					    (setting == "areaChooserMsgAreaDescColor") || (setting == "areaChooserMsgAreaNumItemsColor") ||
-					    (setting == "areaChooserMsgAreaHeaderColor") || (setting == "areaChooserSubBoardHeaderColor") ||
-					    (setting == "areaChooserMsgAreaMarkColor") || (setting == "areaChooserMsgAreaLatestDateColor") ||
-					    (setting == "areaChooserMsgAreaLatestTimeColor") || (setting == "areaChooserMsgAreaBkgHighlightColor") ||
-					    (setting == "areaChooserMsgAreaNumHighlightColor") || (setting == "areaChooserMsgAreaDescHighlightColor") ||
-					    (setting == "areaChooserMsgAreaDateHighlightColor") || (setting == "areaChooserMsgAreaTimeHighlightColor") ||
-					    (setting == "areaChooserMsgAreaNumItemsHighlightColor") || (setting == "lightbarAreaChooserHelpLineBkgColor") ||
-					    (setting == "lightbarAreaChooserHelpLineGeneralColor") || (setting == "lightbarAreaChooserHelpLineHotkeyColor") ||
-					    (setting == "lightbarAreaChooserHelpLineParenColor") || (setting == "scrollbarBGColor") ||
-					    (setting == "scrollbarScrollBlockColor") || (setting == "enhReaderPromptSepLineColor") ||
-					    (setting == "enhReaderHelpLineBkgColor") || (setting == "enhReaderHelpLineGeneralColor") ||
-					    (setting == "enhReaderHelpLineHotkeyColor") || (setting == "enhReaderHelpLineParenColor") ||
-					    (setting == "hdrLineLabelColor") || (setting == "hdrLineValueColor") ||
-					    (setting == "selectedMsgMarkColor") || (setting ==  "msgListScoreColor") ||
-					    (setting == "msgListToUserScoreColor") || (setting == "msgListFromUserScoreColor") ||
-					    (setting == "msgListScoreHighlightColor") || (setting == "msgHdrMsgNumColor") ||
-					    (setting == "msgHdrFromColor") || (setting == "msgHdrToColor") ||
-					    (setting == "msgHdrToUserColor") || (setting == "msgHdrSubjColor") ||
-					    (setting == "msgHdrDateColor") || (setting == "lightbarIndexedModeHelpLineBkgColor") ||
-					    (setting == "lightbarIndexedModeHelpLineHotkeyColor") || (setting == "lightbarIndexedModeHelpLineGeneralColor") ||
-					    (setting == "lightbarIndexedModeHelpLineParenColor") || (setting == "indexMenuDesc") || (setting == "indexMenuTotalMsgs") ||
-					    (setting == "indexMenuNumNewMsgs") || (setting == "indexMenuLastPostDate") ||
-					    (setting == "indexMenuHighlightBkg") || (setting == "indexMenuDescHighlight") ||
-					    (setting == "indexMenuTotalMsgsHighlight") || (setting == "indexMenuNumNewMsgsHighlight") ||
-					    (setting == "indexMenuLastPostDateHighlight"))
-					{
-						// Trim spaces from the color value
-						value = trimSpaces(value, true, true, true);
-						value = value.replace(/\\x01/g, "\x01"); // Replace "\x01" with control character
-						// If the value doesn't have any control characters, then add the control character
-						// before attribute characters
-						if (!/\x01/.test(value))
-							value = attrCodeStr(value);
-						if (onlySyncAttrsRegexWholeWord.test(value))
-							this.colors[setting] = value;
-					}
-					// Text values
-					else if ((setting == "scrollbarBGChar") ||
-					         (setting == "scrollbarScrollBlockChar") ||
-					         (setting == "goToPrevMsgAreaPromptText") ||
-					         (setting == "goToNextMsgAreaPromptText") ||
-					         (setting == "newMsgScanText") ||
-					         (setting == "newToYouMsgScanText") ||
-					         (setting == "allToYouMsgScanText") ||
-					         (setting == "goToMsgNumPromptText") ||
-					         (setting == "msgScanCompleteText") ||
-					         (setting == "msgScanAbortedText") ||
-					         (setting == "msgSearchAbortedText") ||
-					         (setting == "deleteMsgNumPromptText") ||
-					         (setting == "editMsgNumPromptText") ||
-					         (setting == "noMessagesInSubBoardText") ||
-					         (setting == "noSearchResultsInSubBoardText") ||
-					         (setting == "invalidMsgNumText") ||
-					         (setting == "readMsgNumPromptText") ||
-							 (setting == "msgHasBeenDeletedText") ||
-					         (setting == "noHdrLinesForThisMsgText") ||
-					         (setting == "noKludgeLinesForThisMsgText") ||
-							 (setting == "searchingPersonalMailText") ||
-					         (setting == "searchingSubBoardAbovePromptText") ||
-					         (setting == "searchingSubBoardText") ||
-							 (setting == "scanningSubBoardText") ||
-							 (setting == "searchTextPromptText") ||
-							 (setting == "fromNamePromptText") ||
-							 (setting == "toNamePromptText") ||
-							 (setting == "abortedText") ||
-							 (setting == "loadingPersonalMailText") ||
-							 (setting == "msgDelConfirmText") ||
-							 (setting == "msgUndelConfirmText") ||
-							 (setting == "selectedMsgsUndeletedText") ||
-							 (setting == "msgDeletedText") ||
-							 (setting == "msgUndeletedText") ||
-							 (setting == "cannotDeleteMsgText_notYoursNotASysop") ||
-							 (setting == "cannotDeleteMsgText_notLastPostedMsg") ||
-							 (setting == "msgEditConfirmText") ||
-							 (setting == "noPersonalEmailText") ||
-							 (setting == "postOnSubBoard"))
-					{
-						// Replace any instances of "\x01" with the Synchronet
-						// attribute control character
-						this.text[setting] = value.replace(/\\x01/g, "\x01");
-					}
+					// Trim spaces from the color value
+					var value = trimSpaces(themeSettingsObj[prop], true, true, true);
+					value = value.replace(/\\x01/g, "\x01"); // Replace "\x01" with control character
+					// If the value doesn't have any control characters, then add the control character
+					// before attribute characters
+					if (!/\x01/.test(value))
+						value = attrCodeStr(value);
+					if (onlySyncAttrsRegexWholeWord.test(value))
+						this.colors[prop] = value;
 				}
 			}
-
-			themeFile.close();
+			// Set any text strings specified
+			for (var prop in this.text)
+			{
+				if (typeof(themeSettingsObj[prop]) === "string")
+				{
+					// Replace any instances of "\x01" with the Synchronet
+					// attribute control character
+					this.text[prop] = themeSettingsObj[prop].replace(/\\x01/g, "\x01");
+				}
+			}
 
 			// Ensure that scrollbarBGChar and scrollbarScrollBlockChar are
 			// only one character.  If they're longer, use only the first
@@ -13526,7 +13370,7 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 					for (var messageIdx = this.GetMsgIdx(pMsgHdr.number)+1; (messageIdx < numOfMessages) && (nextMsgOffset == -1); ++messageIdx)
 					{
 						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-						if (((nextMsgHdr.attr & MSG_DELETE) == 0) && (typeof(nextMsgHdr.thread_id) == "number") && (nextMsgHdr.thread_id == pMsgHdr.thread_id))
+						if ((((nextMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (typeof(nextMsgHdr.thread_id) == "number") && (nextMsgHdr.thread_id == pMsgHdr.thread_id))
 						{
 							//nextMsgOffset = nextMsgHdr.offset;
 							nextMsgOffset = this.GetMsgIdx(nextMsgHdr.number);
@@ -13573,21 +13417,21 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 					// Remove any leading & trailing whitespace from the subject
 					subjUppercase = trimSpaces(subjUppercase, true, true, true);
 					msgHdrMatch = function(pMsgHdr) {
-						return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.subject.toUpperCase().indexOf(subjUppercase, 0) > -1));
+						return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (pMsgHdr.subject.toUpperCase().indexOf(subjUppercase, 0) > -1));
 					};
 				}
 				else if (pThreadType == THREAD_BY_AUTHOR)
 				{
 					fromNameUppercase = pMsgHdr.from.toUpperCase();
 					msgHdrMatch = function(pMsgHdr) {
-						return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.from.toUpperCase() == fromNameUppercase));
+						return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (pMsgHdr.from.toUpperCase() == fromNameUppercase));
 					};
 				}
 				else if (pThreadType == THREAD_BY_TO_USER)
 				{
 					toNameUppercase = pMsgHdr.to.toUpperCase();
 					msgHdrMatch = function(pMsgHdr) {
-						return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.to.toUpperCase() == toNameUppercase));
+						return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (pMsgHdr.to.toUpperCase() == toNameUppercase));
 					};
 				}
 
@@ -13716,7 +13560,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 					for (var messageIdx = this.GetMsgIdx(pMsgHdr.number)-1; (messageIdx >= 0) && (nextMsgOffset == -1); --messageIdx)
 					{
 						prevMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-						if (((prevMsgHdr.attr & MSG_DELETE) == 0) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
+						if ((((prevMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
 						{
 							//nextMsgOffset = prevMsgHdr.offset;
 							nextMsgOffset = this.GetMsgIdx(prevMsgHdr.number);
@@ -13817,21 +13661,21 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 					// Remove any leading & trailing whitespace from the subject
 					subjUppercase = trimSpaces(subjUppercase, true, true, true);
 					msgHdrMatch = function(pMsgHdr) {
-						return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.subject.toUpperCase().indexOf(subjUppercase, 0) > -1));
+						return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (pMsgHdr.subject.toUpperCase().indexOf(subjUppercase, 0) > -1));
 					};
 				}
 				else if (pThreadType == THREAD_BY_AUTHOR)
 				{
 					fromNameUppercase = pMsgHdr.from.toUpperCase();
 					msgHdrMatch = function(pMsgHdr) {
-						return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.from.toUpperCase() == fromNameUppercase));
+						return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (pMsgHdr.from.toUpperCase() == fromNameUppercase));
 					};
 				}
 				else if (pThreadType == THREAD_BY_TO_USER)
 				{
 					toNameUppercase = pMsgHdr.to.toUpperCase();
 					msgHdrMatch = function(pMsgHdr) {
-						return (((pMsgHdr.attr & MSG_DELETE) == 0) && (pMsgHdr.to.toUpperCase() == toNameUppercase));
+						return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (pMsgHdr.to.toUpperCase() == toNameUppercase));
 					};
 				}
 
@@ -16110,7 +15954,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 
 	// Remove any Synchronet pause codes that might exist in the message
 	retObj.msgBody = retObj.msgBody.replace("\x01p", "").replace("\x01P", "");
-
+	
 	// If the user is a sysop, this is a moderated message area, and the message
 	// hasn't been validated, then prepend the message with a message to let the
 	// sysop now know to validate it.
@@ -16125,6 +15969,17 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 			validateNotice += "\x01n\r\n";
 			retObj.msgBody = validateNotice + retObj.msgBody;
 		}
+	}
+
+
+	// If this message has been marked for deletion, prepend a couple lines saying so
+	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+	{
+		var deletedNotice = "\x01n\x01h\x01yThis message has been marked for deletion.";
+		if (user.is_sysop)
+			deletedNotice += " To un-mark, return to the message list and press U to un-mark this message.";
+		deletedNotice += "\x01n\r\n\r\n";
+		retObj.msgBody = deletedNotice + retObj.msgBody;
 	}
 
 	return retObj;
@@ -17032,7 +16887,7 @@ function numMsgsInSubBoard(pSubBoardCode, pIncludeDeleted)
          for (var msgIdx = 0; msgIdx < msgbase.total_msgs; ++msgIdx)
          {
             var msgHdr = msgbase.get_msg_header(true, msgIdx, false);
-            if ((msgHdr != null) && ((msgHdr.attr & MSG_DELETE) == 0))
+            if ((msgHdr != null) && (((msgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()))
                ++numMessages;
          }
       }
@@ -17646,7 +17501,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 				// See if the message is not marked as deleted and the 'To' name
 				// matches the user's handle, alias, and/or username.
-				return (((pMsgHdr.attr & MSG_DELETE) == 0) && userNameHandleAliasMatch(pMsgHdr.to));
+				return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && userNameHandleAliasMatch(pMsgHdr.to));
 			}
 			break;
 		case SEARCH_TO_USER_NEW_SCAN:
@@ -17694,7 +17549,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 				// Note: This assumes pSubBoardCode is not "mail" (personal mail).
 				// See if the message 'To' name matches the user's handle, alias,
 				// and/or username and is not marked as deleted and is unread.
-				return (((pMsgHdr.attr & MSG_DELETE) == 0) && ((pMsgHdr.attr & MSG_READ) == 0) && userNameHandleAliasMatch(pMsgHdr.to));
+				return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && ((pMsgHdr.attr & MSG_READ) == 0) && userNameHandleAliasMatch(pMsgHdr.to));
 			}
 			break;
 		case SEARCH_MSG_NEWSCAN:
@@ -17792,8 +17647,8 @@ function msgIsToUserByNum(pMsgHdr, pUserNum)
 {
 	if (typeof(pMsgHdr) != "object")
 		return false;
-	// Return false if  the message is marked as deleted
-	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+	// Return false if the message is marked as deleted and the user can't read deleted messages
+	if (((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
 		return false;
 
 	var userNum = user.number;
@@ -17825,8 +17680,8 @@ function msgIsFromUser(pMsgHdr, pUserNum)
 {
 	if (typeof(pMsgHdr) != "object")
 		return false;
-	// Return false if  the message is marked as deleted
-	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+	// Return false if  the message is marked as deleted and the user can't read deleted messages
+	if (((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
 		return false;
 
 	var pUserNumIsValid = (typeof(pUserNum) === "number" && pUserNum > 0 && pUserNum <= system.lastuser);
@@ -18945,21 +18800,8 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 	}
 	// If the message is deleted, determine whether it should be viewable, based
 	// on the system settings.
-	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
-	{
-		// If the user is a sysop, check whether sysops can view deleted messages.
-		// Otherwise, check whether users can view deleted messages.
-		if (user.is_sysop)
-		{
-			if ((system.settings & SYS_SYSVDELM) == 0)
-				return false;
-		}
-		else
-		{
-			if ((system.settings & SYS_USRVDELM) == 0)
-				return false;
-		}
-	}
+	if (((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
+		return false;
 	// The message voting and poll variables were added in sbbsdefs.js for
 	// Synchronet 3.17.  Make sure they're defined before referencing them.
 	if (typeof(MSG_UPVOTE) != "undefined")
