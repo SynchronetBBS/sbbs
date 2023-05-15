@@ -559,10 +559,12 @@ static int video_init()
 	if (ciolib_initial_scaling != 0.0)
 		x_cvstat.scaling = vstat.scaling = ciolib_initial_scaling;
 	if (x_cvstat.scaling < 1.0 || vstat.scaling < 1.0)
-		x_cvstat.scaling = vstat.scaling = 1;
+		x_cvstat.scaling = vstat.scaling = 1.0;
 	/* Initialize mode 3 (text, 80x25, 16 colors) */
-	if(load_vmode(&vstat, ciolib_initial_mode))
+	if(load_vmode(&vstat, ciolib_initial_mode)) {
+		pthread_mutex_unlock(&vstatlock);
 		return(-1);
+	}
 	x_cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
 	if(init_window())
