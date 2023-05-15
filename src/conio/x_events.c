@@ -870,7 +870,8 @@ static int x11_event(XEvent *ev)
 			expose_rect(ev->xgraphicsexpose.x, ev->xgraphicsexpose.y, ev->xgraphicsexpose.width, ev->xgraphicsexpose.height);
 			break;
 		case Expose:
-			expose_rect(ev->xexpose.x, ev->xexpose.y, ev->xexpose.width, ev->xexpose.height);
+			if (ev->xexpose.count == 0)
+				expose_rect(ev->xexpose.x, ev->xexpose.y, ev->xexpose.width, ev->xexpose.height);
 			break;
 
 		/* Copy/Paste events */
