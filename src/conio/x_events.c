@@ -334,8 +334,8 @@ static void map_window()
 	pthread_mutex_unlock(&vstatlock);
 
 	if (x_cvstat.aspect_width != 0 && x_cvstat.aspect_height != 0) {
-		sh->min_aspect.x = sh->max_aspect.x = sh->min_width;
-		sh->min_aspect.y = sh->max_aspect.y = sh->min_height;
+		sh->min_aspect.x = sh->max_aspect.x = x_cvstat.aspect_width;
+		sh->min_aspect.y = sh->max_aspect.y = x_cvstat.aspect_height;
 	}
 	else {
 		sh->min_aspect.x = sh->max_aspect.x = sh->min_width;
