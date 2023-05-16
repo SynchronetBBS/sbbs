@@ -8452,11 +8452,10 @@ function DigDistMsgReader_ReadConfigFile()
 			// Set any color values specified
 			for (var prop in this.colors)
 			{
-				//themeSettingsObj.hasOwnProperty(prop)
-				if (typeof(themeSettingsObj[prop]) === "string")
+				if (themeSettingsObj.hasOwnProperty(prop))
 				{
 					// Trim spaces from the color value
-					var value = trimSpaces(themeSettingsObj[prop], true, true, true);
+					var value = trimSpaces(themeSettingsObj[prop].toString(), true, true, true);
 					value = value.replace(/\\x01/g, "\x01"); // Replace "\x01" with control character
 					// If the value doesn't have any control characters, then add the control character
 					// before attribute characters
@@ -16524,11 +16523,11 @@ function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 	var leading = true;
 	var multiple = true;
 	var trailing = true;
-	if(typeof(pLeading) != "undefined")
+	if (typeof(pLeading) != "undefined")
 		leading = pLeading;
-	if(typeof(pMultiple) != "undefined")
+	if (typeof(pMultiple) != "undefined")
 		multiple = pMultiple;
-	if(typeof(pTrailing) != "undefined")
+	if (typeof(pTrailing) != "undefined")
 		trailing = pTrailing;
 
 	// To remove both leading & trailing spaces:

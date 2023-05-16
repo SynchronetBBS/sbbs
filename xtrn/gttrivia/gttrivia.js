@@ -524,13 +524,36 @@ function playTrivia()
 // Return value: An object with 'behavior' and 'color' sections with the settings loaded from the .ini file
 function loadSettings(pStartupPath)
 {
-	var settings = {};
+	var settings = {
+		colors: {
+			error: "YH",
+			triviaCategoryHdr: "MH",
+			triviaCategoryListNumbers: "CH",
+			triviaCategoryListSeparator: "GH",
+			triviaCategoryName: "C",
+			categoryNumPrompt: "C",
+			categoryNumPromptSeparator: "GH",
+			categoryNumInput: "CH",
+			questionHdr: "M",
+			questionHdrNum: "CH",
+			question: "BH",
+			answerPrompt: "C",
+			answerPromptSep: "GH",
+			answerInput: "CH",
+			userScore: "CH",
+			scoreSoFarText: "C",
+			clueHdr: "RH",
+			clue: "GH",
+			answerAfterIncorrect: "G",
+			answerFact: "G"
+		}
+	};
 	var cfgFileName = genFullPathCfgFilename("gttrivia.ini", pStartupPath);
 	var iniFile = new File(cfgFileName);
 	if (iniFile.open("r"))
 	{
 		settings.behavior = iniFile.iniGetObject("BEHAVIOR");
-		settings.colors = iniFile.iniGetObject("COLORS");
+		var colorSettingsObj = iniFile.iniGetObject("COLORS");
 		settings.category_ars = iniFile.iniGetObject("CATEGORY_ARS");
 		settings.remoteServer = iniFile.iniGetObject("REMOTE_SERVER");
 		settings.server = iniFile.iniGetObject("SERVER");
@@ -554,44 +577,20 @@ function loadSettings(pStartupPath)
 		if (typeof(settings.behavior.maxNumPlayerScoresToDisplay) !== "number")
 			settings.behavior.maxNumPlayerScoresToDisplay = 10;
 
-		if (typeof(settings.colors.error) !== "string")
-			settings.colors.error = "YH";
-		if (typeof(settings.colors.triviaCategoryHdr) !== "string")
-			settings.colors.triviaCategoryHdr = "MH";
-		if (typeof(settings.colors.triviaCategoryListNumbers) !== "string")
-			settings.colors.triviaCategoryListNumbers = "CH";
-		if (typeof(settings.colors.triviaCategoryListSeparator) !== "string")
-			settings.colors.triviaCategoryListSeparator = "GH";
-		if (typeof(settings.colors.triviaCategoryName) !== "string")
-			settings.colors.triviaCategoryName = "C";
-		if (typeof(settings.colors.categoryNumPrompt) !== "string")
-			settings.colors.categoryNumPrompt = "C";
-		if (typeof(settings.colors.categoryNumPromptSeparator) !== "string")
-			settings.colors.categoryNumPromptSeparator = "GH";
-		if (typeof(settings.colors.categoryNumInput) !== "string")
-			settings.colors.categoryNumInput = "CH";
-		if (typeof(settings.colors.questionHdr) !== "string")
-			settings.colors.questionHdr = "M";
-		if (typeof(settings.colors.questionHdrNum) !== "string")
-			settings.colors.questionHdrNum = "CH";
-		if (typeof(settings.colors.question) !== "string")
-			settings.colors.question = "BH";
-		if (typeof(settings.colors.answerPrompt) !== "string")
-			settings.colors.answerPrompt = "C";
-		if (typeof(settings.colors.answerPromptSep) !== "string")
-			settings.colors.answerPromptSep = "GH";
-		if (typeof(settings.colors.answerInput) !== "string")
-			settings.colors.answerInput = "CH";
-		if (typeof(settings.colors.userScore) !== "string")
-			settings.colors.userScore = "CH";
-		if (typeof(settings.colors.scoreSoFarText) !== "string")
-			settings.colors.scoreSoFarText = "C";
-		if (typeof(settings.colors.clueHdr) !== "string")
-			settings.colors.clueHdr = "RH";
-		if (typeof(settings.colors.clue) !== "string")
-			settings.colors.clue = "GH";
-		if (typeof(settings.colors.answerAfterIncorrect) !== "string")
-			settings.colors.answerAfterIncorrect = "G";
+		// Colors - For any setting that matches one in settings.colors, replace it.
+		var onlySyncAttrCharsRegexWholeWord = new RegExp("^[krgybmcw01234567hinq,;\.dtlasz]+$", 'i');
+		for (var prop in settings.colors)
+		{
+			if (colorSettingsObj.hasOwnProperty(prop))
+			{
+				// Trim spaces from the color value.  Using toString() to ensure the color attributes
+				// are strings (in case the value is just a number)
+				var value = trimSpaces(colorSettingsObj[prop].toString(), true, true, true);
+				value = value.replace(/\\x01/g, "\x01"); // Replace "\x01" with control character
+				if (onlySyncAttrCharsRegexWholeWord.test(value))
+					settings.colors[prop] = value;
+			}
+		}
 
 		settings.behavior.scoresMsgSubBoardsForPosting = splitAndVerifyMsgSubCodes(settings.behavior.scoresMsgSubBoardsForPosting, "scoresMsgSubBoardsForPosting");
 		settings.server.scoresMsgSubBoardsForReading = splitAndVerifyMsgSubCodes(settings.server.scoresMsgSubBoardsForReading, "scoresMsgSubBoardsForReading");
@@ -2224,6 +2223,43 @@ function add_commas(val, pad)
 	while (s.length < pad)
 		s = " " + s;
 	return(s);
+}
+
+// Removes multiple, leading, and/or trailing spaces
+// The search & replace regular expressions used in this
+// function came from the following URL:
+//  http://qodo.co.uk/blog/javascript-trim-leading-and-trailing-spaces
+//
+// Parameters:
+//  pString: The string to trim
+//  pLeading: Whether or not to trim leading spaces (optional, defaults to true)
+//  pMultiple: Whether or not to trim multiple spaces (optional, defaults to true)
+//  pTrailing: Whether or not to trim trailing spaces (optional, defaults to true)
+//
+// Return value: The string with whitespace trimmed
+function trimSpaces(pString, pLeading, pMultiple, pTrailing)
+{
+	var leading = true;
+	var multiple = true;
+	var trailing = true;
+	if (typeof(pLeading) != "undefined")
+		leading = pLeading;
+	if (typeof(pMultiple) != "undefined")
+		multiple = pMultiple;
+	if (typeof(pTrailing) != "undefined")
+		trailing = pTrailing;
+
+	// To remove both leading & trailing spaces:
+	//pString = pString.replace(/(^\s*)|(\s*$)/gi,"");
+
+	if (leading)
+		pString = pString.replace(/(^\s*)/gi,"");
+	if (multiple)
+		pString = pString.replace(/[ ]{2,}/gi," ");
+	if (trailing)
+		pString = pString.replace(/(\s*$)/gi,"");
+
+	return pString;
 }
 
 // Parses command-line arguments.  Returns an object with settings/actions specified.

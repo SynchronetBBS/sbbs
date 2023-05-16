@@ -3090,11 +3090,12 @@ function readConfigFile()
 			// Set any color values specified
 			for (var prop in gColors)
 			{
-				if (typeof(themeSettingsObj[prop]) === "string")
+				if (themeSettingsObj.hasOwnProperty(prop))
 				{
 					// Trim leading & trailing spaces from the value when
 					// setting a color.  Also, replace any instances of "\x01" or "\1"
 					// with the Synchronet attribute control character.
+					// Using toString() to ensure the color attributes are strings (in case the value is just a number)
 					var value = trimSpaces(themeSettingsObj[prop].toString(), true, false, true).replace(/\\[xX]01/g, "\x01").replace(/\\1/g, "\x01");
 					// If the value doesn't have any control characters, then add the control character
 					// before attribute characters
