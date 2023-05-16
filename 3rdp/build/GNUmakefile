@@ -30,10 +30,8 @@ endif
 # OS/2 and "GNU" (HURD?) also need this, but we never plan to support them.
 ifneq ($(os),darwin)
  ifneq ($(os),linux)
-  ifneq ($(os),freebsd)
-   ifneq ($(os),sunos)
-    JS_CONFIGURE_ARGS += '--disable-tracejit'
-   endif
+  ifneq ($(os),sunos)
+   JS_CONFIGURE_ARGS += '--disable-tracejit'
   endif
  endif
 endif
