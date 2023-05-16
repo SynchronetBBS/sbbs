@@ -13,6 +13,7 @@
  * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
  * 2021-12-11 Eric Oulashin     Updated the quote window bottom border text
  * 2022-11-19 Eric Oulashin     Updated readColorConfig() to handle just attribute characters
+ * 2023-05-15 Eric Oulashin     Refactored readColorConfig()
  */
 
 "use strict";
@@ -41,26 +42,39 @@ readColorConfig(gConfigSettings.iceColors.ThemeFilename);
 //  pFilename: The name of the color configuration file
 function readColorConfig(pFilename)
 {
-	var colors = readValueSettingConfigFile(pFilename, 512);
-	if (colors != null)
+	var themeFile = new File(pFilename);
+	if (themeFile.open("r"))
 	{
-		// Convert the color values from just attribute characters to actual attribute codes
-		for (var prop in colors)
-		{
-			// Remove any instances of specifying the control character
-			colors[prop] = colors[prop].replace(/\\[xX]01/g, "").replace(/\\[xX]1/g, "").replace(/\\1/g, "");
-			// Add actual control characters in the color setting
-			colors[prop] = attrCodeStr(colors[prop]);
-		}
+		var colorSettingsObj = themeFile.iniGetObject();
+		themeFile.close();
 
-		// Make a backup of the menuOptClassicColors setting so we can set it
-		// back in the Ice color settings object after setting the colors.
-		var useClassicColorsBackup = gConfigSettings.iceColors.menuOptClassicColors;
-		gConfigSettings.iceColors = colors;
-		// Move the general color settings into gConfigSettings.genColors.*
-		if (EDITOR_STYLE == "ICE")
-			moveGenColorsToGenSettings(gConfigSettings.iceColors, gConfigSettings);
-		gConfigSettings.iceColors.menuOptClassicColors = useClassicColorsBackup;
+		// Ice-specific colors
+		for (var prop in gConfigSettings.iceColors)
+		{
+			if (prop == "menuOptClassicColors") // Skip this one (it's a boolean value, not a color)
+				continue;
+			if (colorSettingsObj.hasOwnProperty(prop))
+			{
+				// Using toString() to ensure the color attributes are strings (in case the value is just a number)
+				var value = colorSettingsObj[prop].toString();
+				// Remove any instances of specifying the control character
+				value = value.replace(/\\[xX]01/g, "").replace(/\\[xX]1/g, "").replace(/\\1/g, "");
+				// Add actual control characters in the color setting
+				gConfigSettings.iceColors[prop] = attrCodeStr(value);
+			}
+		}
+		// General colors
+		for (var prop in gConfigSettings.genColors)
+		{
+			if (colorSettingsObj.hasOwnProperty(prop))
+			{
+				var value = colorSettingsObj[prop].toString();
+				// Remove any instances of specifying the control character
+				value = value.replace(/\\[xX]01/g, "").replace(/\\[xX]1/g, "").replace(/\\1/g, "");
+				// Add actual control characters in the color setting
+				gConfigSettings.genColors[prop] = attrCodeStr(value);
+			}
+		}
 	}
 }
 

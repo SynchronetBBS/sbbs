@@ -30,6 +30,9 @@
  *                              prompts to send it immediately or not (if not, edit it before
  *                              sending).  Sending immediately can be useful for posting
  *                              ANSI files unmodified.
+ * 2023-05-15 Eric Oulashin     Version 1.85
+ *                              Internal: Refactored readColorConfig() in _DCTStuff.js and _IceStuff.js.
+ *                              Removed the readValueSettingConfigFile() function.
  */
 
 "use strict";
@@ -127,8 +130,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.84";
-var EDITOR_VER_DATE = "2023-02-10";
+var EDITOR_VERSION = "1.85";
+var EDITOR_VER_DATE = "2023-05-15";
 
 
 // Program variables

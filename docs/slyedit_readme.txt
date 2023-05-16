@@ -1,13 +1,13 @@
                          SlyEdit message editor
-                              Version 1.84
-                        Release date: 2023-02-10
+                              Version 1.85
+                        Release date: 2023-05-15
 
                                   by
 
                              Eric Oulashin
                      Sysop of Digital Distortion BBS
                BBS internet address: digitaldistortionbbs.com
-                     Alternate: digdist.synchro.net
+			         Alternate: digdist.synchro.net
                      Email: eric.oulashin@gmail.com
 
 
@@ -918,10 +918,6 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
-1.84     2023-02-10   Sysops: When importing a file from the BBS machine,
-                      SlyEdit now prompts to send it immediately or not (if
-                      not, edit it before sending).  Sending immediately can be
-                      useful for posting ANSI files unmodified.
 1.83     2022-12-13   Quote lines that are wider than the user's terminal width
                       are now wrapped to the user's terminal width to ensure
 					  all the quote lines are entirely available to be quoted.

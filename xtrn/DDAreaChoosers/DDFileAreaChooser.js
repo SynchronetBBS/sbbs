@@ -1787,7 +1787,7 @@ function DDFileAreaChooser_ReadConfigFile()
 		var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');
 		for (var prop in this.colors)
 		{
-			if (typeof(colorSettings[prop] === "string"))
+			if (colorSettings.hasOwnProperty(prop))
 			{
 				// Make sure the value is a string (for attrCodeStr() etc; in some cases, such as a background attribute of 4, it will be a number)
 				var value = colorSettings[prop].toString();
