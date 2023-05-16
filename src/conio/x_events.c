@@ -427,7 +427,7 @@ static int init_window()
 	pthread_mutex_lock(&vstatlock);
 	bitmap_get_scaled_win_size(x_cvstat.scaling, &w, &h, mw, mh);
 	vstat.winwidth = x_cvstat.winwidth = w;
-	vstat.winwidth = x_cvstat.winheight = h;
+	vstat.winheight = x_cvstat.winheight = h;
 	vstat.scaling = x_cvstat.scaling;
 	pthread_mutex_unlock(&vstatlock);
 	win = x11.XCreateWindow(dpy, DefaultRootWindow(dpy), 0, 0,

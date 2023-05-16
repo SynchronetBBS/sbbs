@@ -163,7 +163,7 @@ static int bitmap_loadfont_locked(const char *filename)
 	}
 
 	fh=vstat.charheight;
-	fdw = vstat.charwidth - (vstat.flags & VIDMODES_FLAG_EXPAND) ? 1 : 0;
+	fdw = vstat.charwidth - ((vstat.flags & VIDMODES_FLAG_EXPAND) ? 1 : 0);
 	fw = fdw / 8 + (fdw % 8 ? 1 : 0);
 
 	fontsize=fw*fh*256*sizeof(unsigned char);
@@ -1564,8 +1564,8 @@ void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size)
 			free(name);
 			free(data);
 	}
-	request_redraw();
 	pthread_mutex_unlock(&screenlock);
+	request_redraw();
 }
 
 int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)

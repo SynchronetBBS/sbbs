@@ -1460,9 +1460,10 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 		if ((cps = (unsigned)(offset / t)) == 0)
 			cps = 1;           /* cps so far */
 		l = (time_t)(fsize / cps); /* total transfer est time */
-		l -= t;                    /* now, it's est time left */
-		if (l < 0)
+		if (t >= l)
 			l = 0;
+		else
+			l -= t;                    /* now, it's est time left */
 		if ((*(xm->mode)) & SEND) {
 			total_blocks = num_blocks(block_num, offset, fsize, xm->block_size);
 			cprintf("Block (%lu%s): %u/%" PRId64 "  Byte: %" PRId64,
@@ -3211,10 +3212,10 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 	}
 
 	if (bufnum >= sizeof(pixmap_buffer) / sizeof(pixmap_buffer[0]))
-		return;
+		goto done;
 
 	if (pixmap_buffer[bufnum] == NULL)
-		return;
+		goto done;
 
 	if (sw == 0)
 		sw = pixmap_buffer[bufnum]->width - sx;
@@ -3242,6 +3243,7 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 	if (maskfn != NULL) {
 		freemask(ctmask);
 		ctmask = read_pbm(maskfn, true);
+		free(maskfn);
 		if (ctmask == NULL)
 			goto done;
 	}

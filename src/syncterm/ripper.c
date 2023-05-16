@@ -9082,9 +9082,9 @@ do_fill(bool overwrite)
 	bool                  in_line = false;
 
 	pix = getpixels(0, 0, rip.x_max - 1, rip.y_max - 1, false);
-	FREE_AND_NULL(pix->pixelsb);
 	if (pix == NULL)
 		return;
+	FREE_AND_NULL(pix->pixelsb);
 
         // Horizontal even-odd top-left to bottom-right.
 	pixel = 0;
