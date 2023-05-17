@@ -263,6 +263,8 @@ Fun snippet from the FreeBSD manpage:
 
 BOOL comClose(COM_HANDLE handle)
 {
+    if (handle == COM_HANDLE_INVALID)
+        return FALSE;
     return (!close(handle));
 }
 
