@@ -1208,12 +1208,6 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 				if (!isdir(fn))
 					if (MKDIR(fn))
 						fn[0] = 0;
-
-
-				if (type == SYNCTERM_PATH_CACHE) {
-					strcat(fn, "cache");
-					backslash(fn);
-				}
 				return fn;
 			}
 			SAFECOPY(oldlst, home);
