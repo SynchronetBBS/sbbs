@@ -140,7 +140,8 @@ while(bbs.online && !console.aborted) {
 			bbs.private_chat();
 			break;
 		case 'C':
-			if(!bbs.page_sysop())
+			if(!bbs.page_sysop()
+				&& !deny(format(bbs.text(ChatWithGuruInsteadQ), system.guru || "The Guru")))
 				bbs.page_guru();
 			break;
 		case 'T':
