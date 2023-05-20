@@ -39,6 +39,7 @@ enum {
 	 SYS_PROP_NAME
 	,SYS_PROP_OP
 	,SYS_PROP_OP_AVAIL
+	,SYS_PROP_GURU
 	,SYS_PROP_ID
 	,SYS_PROP_MISC
 	,SYS_PROP_LOGIN
@@ -142,6 +143,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SYS_PROP_OP_AVAIL:
 			*vp=BOOLEAN_TO_JSVAL(sysop_available(cfg));
+			break;
+		case SYS_PROP_GURU:
+			p = cfg->sys_guru;
 			break;
 		case SYS_PROP_ID:
 			p=cfg->sys_id;
@@ -401,6 +405,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 	{	"name",						SYS_PROP_NAME,		SYSOBJ_FLAGS,		310  },
 	{	"operator",					SYS_PROP_OP,		SYSOBJ_FLAGS,		310  },
 	{	"operator_available",		SYS_PROP_OP_AVAIL,	JSPROP_ENUMERATE,	31801  },
+	{	"guru",						SYS_PROP_GURU,		SYSOBJ_FLAGS,		32000 },
 	{	"qwk_id",					SYS_PROP_ID,		SYSOBJ_FLAGS,		310  },
 	{	"settings",					SYS_PROP_MISC,		JSPROP_ENUMERATE,	310  },
 	{	"login_settings",			SYS_PROP_LOGIN,		JSPROP_ENUMERATE,	32000  },
@@ -485,6 +490,7 @@ static char* sys_prop_desc[] = {
 	 "BBS name"
 	,"Operator name"
 	,"Operator is available for chat"
+	,"Default Guru (AI) name"
 	,"System QWK-ID (for QWK packets)"
 	,"Settings bitfield (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"Login control settings bitfield (see <tt>LOGIN_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
