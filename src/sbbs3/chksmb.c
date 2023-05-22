@@ -132,6 +132,7 @@ char *usage="\nusage: chksmb [-opts] <filespec.SHD>\n"
 			"       a - don't check allocation files\n"
 			"       t - don't check translation strings\n"
 			"       i - don't check message IDs\n"
+			"       S - don't check subject CRCs\n"
 			"       e - display extended info on corrupted msgs\n";
 
 int main(int argc, char **argv)
@@ -144,6 +145,7 @@ int main(int argc, char **argv)
 	BOOL		stop_on_error=FALSE,pause_on_error=FALSE,chkxlat=TRUE,chkalloc=TRUE,chkhash=TRUE
 				,lzhmsg,extinfo=FALSE,msgerr;
 	BOOL		chk_msgids = TRUE;
+	BOOL		chk_subjcrc = TRUE;
 	uint16_t	xlat;
 	uint32_t	m;
 	ulong		l,n,size,total=0,orphan,deleted,headers
@@ -176,7 +178,7 @@ int main(int argc, char **argv)
 	hash_t**	hashes;
 	time_t		now=time(NULL);
 
-	fprintf(stderr,"\nCHKSMB v3.19-%s %s/%s SMBLIB %s - Check Synchronet Message Base\n"
+	fprintf(stderr,"\nCHKSMB v3.20-%s %s/%s SMBLIB %s - Check Synchronet Message Base\n"
 		,PLATFORM_DESC, GIT_BRANCH, GIT_HASH, smb_lib_ver());
 
 	if(argc<2) {
@@ -196,37 +198,37 @@ int main(int argc, char **argv)
 		}
 		errlast=errors;
 		if(argv[x][0]=='-'
-#if !defined(__unix__)	/* just for backwards compatibility */
-			|| argv[x][0]=='/'
-#endif
 			) {
 			for(y=1;argv[x][y];y++)
-				switch(toupper(argv[x][y])) {
-					case 'Q':
+				switch(argv[x][y]) {
+					case 'q':
 						beep="";
 						break;
-					case 'B':
+					case 'b':
 						beep="\a";
 						break;
-					case 'P':
+					case 'p':
 						pause_on_error=TRUE;
 						break;
-					case 'S':
+					case 's':
 						stop_on_error=TRUE;
 						break;
-					case 'T':
+					case 'S':
+						chk_subjcrc = FALSE;
+						break;
+					case 't':
 						chkxlat=FALSE;
 						break;
-					case 'A':
+					case 'a':
 						chkalloc=FALSE;
 						break;
-					case 'H':
+					case 'h':
 						chkhash=FALSE;
 						break;
-					case 'I':
+					case 'i':
 						chk_msgids = FALSE;
 						break;
-					case 'E':
+					case 'e':
 						extinfo=TRUE;
 						break;
 					default:
@@ -578,7 +580,7 @@ int main(int argc, char **argv)
 							"index import date/time\n");
 					timeerr++;
 				}
-				if((msg.hdr.type == SMB_MSG_TYPE_NORMAL || msg.hdr.type == SMB_MSG_TYPE_POLL)
+				if(chk_subjcrc && (msg.hdr.type == SMB_MSG_TYPE_NORMAL || msg.hdr.type == SMB_MSG_TYPE_POLL)
 					&& msg.idx.subj!=smb_subject_crc(msg.subj)) {
 					fprintf(stderr,"%sSubject CRC mismatch\n",beep);
 					msgerr=TRUE;
