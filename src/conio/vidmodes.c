@@ -330,6 +330,10 @@ int load_vmode(struct video_stats *vs, int mode)
 {
 	int i;
 
+	if(mode==64)
+		mode=C80X50;
+	if(mode==_ORIGMODE)
+		mode=C80;
 	i=find_vmode(mode);
 	if(i==-1)
 		return(-1);
