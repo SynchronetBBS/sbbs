@@ -1376,7 +1376,7 @@ main(int argc, char **argv)
 	char             *last_bbs = NULL;
 	char             *p, *lp;
 	int               cvmode;
-	int               sf;
+	double sf;
 	int               default_hidepopups = -1;
 	int               default_nostatus = -1;
 	const char        syncterm_termcap[] = "\n# terminfo database entry for SyncTERM\n"
