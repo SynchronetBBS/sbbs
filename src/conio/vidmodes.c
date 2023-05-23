@@ -286,6 +286,8 @@ int find_vmode(int mode)
 {
     unsigned i;
 
+	if(mode==_ORIGMODE)
+		mode=C80;
 	for (i = 0; i < NUMMODES; i++)
 		if (vparams[i].mode == mode)
 			return i;

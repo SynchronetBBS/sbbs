@@ -632,10 +632,9 @@ void win32_textmode(int mode)
 	CONSOLE_SCREEN_BUFFER_INFOEX	bi;
 #endif
 
-	for(i=0;i<NUMMODES;i++) {
-		if(vparams[i].mode==mode)
-			modeidx=i;
-	}
+	modeidx = find_vmode(mode);
+	if (modeidx == -1)
+		modeidx = CO80;
 	sz.X = cio_textinfo.screenwidth > vparams[modeidx].cols ? cio_textinfo.screenwidth : vparams[modeidx].cols;
 	sz.Y = cio_textinfo.screenheight > vparams[modeidx].rows ? cio_textinfo.screenheight : vparams[modeidx].rows;
 	rc.Left=0;

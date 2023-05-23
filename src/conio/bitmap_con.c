@@ -1765,6 +1765,8 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 	if(!bitmap_initialized)
 		return(-1);
 
+	if (mode == _ORIGMODE)
+		mode = C80;
 	if(load_vmode(&vstat, mode)) {
 		return(-1);
 	}
