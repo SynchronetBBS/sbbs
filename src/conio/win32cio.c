@@ -634,7 +634,7 @@ void win32_textmode(int mode)
 
 	modeidx = find_vmode(mode);
 	if (modeidx == -1)
-		modeidx = CO80;
+		modeidx = C80;
 	sz.X = cio_textinfo.screenwidth > vparams[modeidx].cols ? cio_textinfo.screenwidth : vparams[modeidx].cols;
 	sz.Y = cio_textinfo.screenheight > vparams[modeidx].rows ? cio_textinfo.screenheight : vparams[modeidx].rows;
 	rc.Left=0;
