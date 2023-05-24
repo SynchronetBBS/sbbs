@@ -113,7 +113,7 @@ uint getgrp(char* title)
 	int i;
 
 	for(i=0;i<cfg.total_grps && i<MAX_OPTS;i++)
-		sprintf(opt[i], "%-25s", cfg.grp[i]->lname);
+		snprintf(opt[i], MAX_OPLN, "%-25s", cfg.grp[i]->lname);
 	opt[i][0]=0;
 	return uifc.list(WIN_SAV|WIN_RHT|WIN_BOT,0,0,0,&grp_dflt,&grp_bar, title, opt);
 }
@@ -131,7 +131,7 @@ uint getsub(void)
 			return(-1);
 		for(j=k=0;j<cfg.total_subs && k<MAX_OPTS;j++)
 			if(cfg.sub[j]->grp==i) {
-				sprintf(opt[k],"%-25s",cfg.sub[j]->lname);
+				snprintf(opt[k],MAX_OPLN,"%-25s",cfg.sub[j]->lname);
 				subnum[k++]=j;
 			}
 		opt[k][0]=0;

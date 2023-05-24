@@ -366,9 +366,9 @@ void fevents_cfg()
 
 	while(1) {
 		i=0;
-		sprintf(opt[i++],"%-32.32s%s","Logon Event",cfg.sys_logon);
-		sprintf(opt[i++],"%-32.32s%s","Logout Event",cfg.sys_logout);
-		sprintf(opt[i++],"%-32.32s%s","Daily Event",cfg.sys_daily);
+		snprintf(opt[i++],MAX_OPLN,"%-32.32s%s","Logon Event",cfg.sys_logon);
+		snprintf(opt[i++],MAX_OPLN,"%-32.32s%s","Logout Event",cfg.sys_logout);
+		snprintf(opt[i++],MAX_OPLN,"%-32.32s%s","Daily Event",cfg.sys_daily);
 		opt[i][0]=0;
 		uifc.helpbuf=
 			"`External Events:`\n"
@@ -440,7 +440,7 @@ void tevents_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_events && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-*s  %s"
+			snprintf(opt[i], MAX_OPLN, "%-*s  %s"
 				,LEN_CODE
 				,cfg.event[i]->code
 				,(cfg.event[i]->misc&EVENT_DISABLED) ? "<DISABLED>" : cfg.event[i]->cmd);
@@ -509,43 +509,43 @@ void tevents_cfg()
 		done=0;
 		while(!done) {
 			k=0;
-			sprintf(opt[k++],"%-32.32s%s","Internal Code",cfg.event[i]->code);
-			sprintf(opt[k++],"%-32.32s%s","Start-up Directory",cfg.event[i]->dir);
-			sprintf(opt[k++],"%-32.32s%s","Command Line",cfg.event[i]->cmd);
-			sprintf(opt[k++],"%-32.32s%s","Enabled"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Internal Code",cfg.event[i]->code);
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Start-up Directory",cfg.event[i]->dir);
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Command Line",cfg.event[i]->cmd);
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Enabled"
 				,cfg.event[i]->misc&EVENT_DISABLED ? "No":"Yes");
 			if(cfg.event[i]->node == NODE_ANY)
 				SAFECOPY(str, "Any");
 			else
 				SAFEPRINTF(str, "%u", cfg.event[i]->node);
-			sprintf(opt[k++],"%-32.32s%s","Execution Node", str);
-			sprintf(opt[k++],"%-32.32s%s","Execution Months"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Execution Node", str);
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Execution Months"
 				,monthstr(cfg.event[i]->months));
-			sprintf(opt[k++],"%-32.32s%s","Execution Days of Month"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Execution Days of Month"
 				,mdaystr(cfg.event[i]->mdays));
-			sprintf(opt[k++],"%-32.32s%s","Execution Days of Week",daystr(cfg.event[i]->days));
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Execution Days of Week",daystr(cfg.event[i]->days));
 			if(cfg.event[i]->freq) {
 				sprintf(str,"%u times a day",1440/cfg.event[i]->freq);
-				sprintf(opt[k++],"%-32.32s%s","Execution Frequency",str);
+				snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Execution Frequency",str);
 			} else {
 				sprintf(str,"%2.2u:%2.2u"
 					,cfg.event[i]->time/60,cfg.event[i]->time%60);
-				sprintf(opt[k++],"%-32.32s%s","Execution Time",str);
+				snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Execution Time",str);
 			}
-			sprintf(opt[k++],"%-32.32s%s","Requires Exclusive Execution"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Requires Exclusive Execution"
 				,cfg.event[i]->misc&EVENT_EXCL ? "Yes":"No");
-			sprintf(opt[k++],"%-32.32s%s","Force Users Off-line For Event"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Force Users Off-line For Event"
 				,cfg.event[i]->misc&EVENT_FORCE ? "Yes":"No");
-			sprintf(opt[k++],"%-32.32s%s","Native Executable/Script"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Native Executable/Script"
 				,cfg.event[i]->misc&EX_NATIVE ? "Yes" : "No");
-			sprintf(opt[k++],"%-32.32s%s",use_shell_opt
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s",use_shell_opt
 				,cfg.event[i]->misc&XTRN_SH ? "Yes" : "No");
-			sprintf(opt[k++],"%-32.32s%s","Background Execution"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Background Execution"
 				,cfg.event[i]->misc&EX_BG ? "Yes" : "No");
-			sprintf(opt[k++],"%-32.32s%s","Always Run After Init/Re-init"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Always Run After Init/Re-init"
 				,cfg.event[i]->misc&EVENT_INIT ? "Yes":"No");
 			if(!(cfg.event[i]->misc&EX_BG))
-				sprintf(opt[k++],"%-32.32s%s","Error Log Level", iniLogLevelStringList()[cfg.event[i]->errlevel]);
+				snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Error Log Level", iniLogLevelStringList()[cfg.event[i]->errlevel]);
 			opt[k][0]=0;
 			uifc.helpbuf=
 				"`Timed Event:`\n"
@@ -1073,7 +1073,7 @@ void xtrn_cfg(uint section)
 	while(1) {
 		for(i=0,j=0;i<cfg.total_xtrns && j<MAX_OPTS;i++)
 			if(cfg.xtrn[i]->sec==section) {
-				sprintf(opt[j],"%-25s",cfg.xtrn[i]->name);
+				snprintf(opt[j],MAX_OPLN,"%-25s",cfg.xtrn[i]->name);
 				xtrnnum[j++]=i;
 			}
 		xtrnnum[j]=cfg.total_xtrns;
@@ -1165,27 +1165,27 @@ void xtrn_cfg(uint section)
 		i=xtrnnum[i];
 		while(!done) {
 			k=0;
-			sprintf(opt[k++],"%-27.27s%s","Name",cfg.xtrn[i]->name);
-			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.xtrn[i]->code);
-			sprintf(opt[k++],"%-27.27s%s","Start-up Directory",cfg.xtrn[i]->path);
-			sprintf(opt[k++],"%-27.27s%s","Command Line",cfg.xtrn[i]->cmd);
-			sprintf(opt[k++],"%-27.27s%s","Clean-up Command Line",cfg.xtrn[i]->clean);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Name",cfg.xtrn[i]->name);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Internal Code",cfg.xtrn[i]->code);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Start-up Directory",cfg.xtrn[i]->path);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Command Line",cfg.xtrn[i]->cmd);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Clean-up Command Line",cfg.xtrn[i]->clean);
 			if(cfg.xtrn[i]->cost)
 				sprintf(str,"%"PRIu32" credits",cfg.xtrn[i]->cost);
 			else
 				strcpy(str,"None");
-			sprintf(opt[k++],"%-27.27s%s","Execution Cost",str);
-			sprintf(opt[k++],"%-27.27s%s","Access Requirements",cfg.xtrn[i]->arstr);
-			sprintf(opt[k++],"%-27.27s%s","Execution Requirements"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Execution Cost",str);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Access Requirements",cfg.xtrn[i]->arstr);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Execution Requirements"
 				,cfg.xtrn[i]->run_arstr);
-			sprintf(opt[k++],"%-27.27s%s","Multiple Concurrent Users"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Multiple Concurrent Users"
 				,cfg.xtrn[i]->misc&MULTIUSER ? "Yes" : "No");
-			sprintf(opt[k++],"%-27.27s%s","I/O Method", io_method(cfg.xtrn[i]->misc));
-			sprintf(opt[k++],"%-27.27s%s","Native Executable/Script"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","I/O Method", io_method(cfg.xtrn[i]->misc));
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Native Executable/Script"
 				,cfg.xtrn[i]->misc&XTRN_NATIVE ? "Yes" : "No");
-			sprintf(opt[k++],"%-27.27s%s",use_shell_opt
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s",use_shell_opt
 				,cfg.xtrn[i]->misc&XTRN_SH ? "Yes" : "No");
-			sprintf(opt[k++],"%-27.27s%s","Modify User Data"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Modify User Data"
 				,cfg.xtrn[i]->misc&MODUSERDAT ? "Yes" : "No");
 			switch(cfg.xtrn[i]->event) {
 				case EVENT_LOGON:
@@ -1218,17 +1218,17 @@ void xtrn_cfg(uint section)
 			}
 			if((cfg.xtrn[i]->misc&EVENTONLY) && cfg.xtrn[i]->event)
 				strcat(str,", Only");
-			sprintf(opt[k++],"%-27.27s%s","Execute on Event",str);
-			sprintf(opt[k++],"%-27.27s%s","Pause After Execution"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Execute on Event",str);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Pause After Execution"
 				,cfg.xtrn[i]->misc&XTRN_PAUSE ? "Yes" : "No");
-			sprintf(opt[k++],"%-27.27s%s","Disable Local Display"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Disable Local Display"
 				,cfg.xtrn[i]->misc&XTRN_NODISPLAY ? "Yes" : "No");
-			sprintf(opt[k++],"%-23.23s%-4s%s","BBS Drop File Type"
+			snprintf(opt[k++],MAX_OPLN,"%-23.23s%-4s%s","BBS Drop File Type"
 				,cfg.xtrn[i]->misc&REALNAME ? "(R)":nulstr
 				,dropfile(cfg.xtrn[i]->type,cfg.xtrn[i]->misc));
-			sprintf(opt[k++],"%-27.27s%s","Place Drop File In"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Place Drop File In"
 				,cfg.xtrn[i]->misc&STARTUPDIR ? "Start-Up Directory":cfg.xtrn[i]->misc&XTRN_TEMP_DIR ? "Temp Directory" : "Node Directory");
-			sprintf(opt[k++],"Time Options...");
+			snprintf(opt[k++],MAX_OPLN,"Time Options...");
 			opt[k][0]=0;
 			uifc.helpbuf=
 				"`Online Program Configuration:`\n"
@@ -1768,7 +1768,7 @@ void xedit_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_xedits && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-*s  %s", LEN_CODE, cfg.xedit[i]->code, cfg.xedit[i]->rcmd);
+			snprintf(opt[i],MAX_OPLN,"%-*s  %s", LEN_CODE, cfg.xedit[i]->code, cfg.xedit[i]->rcmd);
 		opt[i][0]=0;
 		j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
 		if(cfg.total_xedits)
@@ -1851,16 +1851,16 @@ void xedit_cfg()
 		done=0;
 		while(!done) {
 			k=0;
-			sprintf(opt[k++],"%-32.32s%s","Name",cfg.xedit[i]->name);
-			sprintf(opt[k++],"%-32.32s%s","Internal Code",cfg.xedit[i]->code);
-			sprintf(opt[k++],"%-32.32s%s","Command Line",cfg.xedit[i]->rcmd);
-			sprintf(opt[k++],"%-32.32s%s","Access Requirements",cfg.xedit[i]->arstr);
-			sprintf(opt[k++],"%-32.32s%s","I/O Method", io_method(cfg.xedit[i]->misc));
-			sprintf(opt[k++],"%-32.32s%s","Native Executable/Script"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Name",cfg.xedit[i]->name);
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Internal Code",cfg.xedit[i]->code);
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Command Line",cfg.xedit[i]->rcmd);
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Access Requirements",cfg.xedit[i]->arstr);
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","I/O Method", io_method(cfg.xedit[i]->misc));
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Native Executable/Script"
 				,cfg.xedit[i]->misc&XTRN_NATIVE ? "Yes" : "No");
-			sprintf(opt[k++],"%-32.32s%s",use_shell_opt
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s",use_shell_opt
 				,cfg.xedit[i]->misc&XTRN_SH ? "Yes" : "No");
-			sprintf(opt[k++],"%-32.32s%s","Record Terminal Width"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Record Terminal Width"
 				,cfg.xedit[i]->misc&SAVECOLUMNS ? "Yes" : "No");
 			str[0]=0;
 			if(cfg.xedit[i]->misc&QUOTEWRAP) {
@@ -1869,17 +1869,17 @@ void xedit_cfg()
 				else
 					SAFEPRINTF(str, ", for %u columns", (uint)cfg.xedit[i]->quotewrap_cols);
 			}
-			sprintf(opt[k++],"%-32.32s%s%s","Word-wrap Quoted Text"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s%s","Word-wrap Quoted Text"
 				,cfg.xedit[i]->misc&QUOTEWRAP ? "Yes":"No", str);
-			sprintf(opt[k++],"%-32.32s%s","Automatically Quoted Text"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Automatically Quoted Text"
 				,cfg.xedit[i]->misc&QUOTEALL ? "All":cfg.xedit[i]->misc&QUOTENONE
 					? "None" : "Prompt User");
 			SAFECOPY(str, cfg.xedit[i]->misc&QUICKBBS ? "MSGINF/MSGTMP ": "EDITOR.INF/RESULT.ED");
 			if(cfg.xedit[i]->misc&XTRN_LWRCASE)
 				strlwr(str);
-			sprintf(opt[k++],"%-32.32s%s %s","Editor Information Files"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s %s","Editor Information Files"
 				,cfg.xedit[i]->misc&QUICKBBS ? "QuickBBS":"WWIV", str);
-			sprintf(opt[k++],"%-32.32s%s","Expand Line Feeds to CRLF"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Expand Line Feeds to CRLF"
 				,cfg.xedit[i]->misc&EXPANDLF ? "Yes":"No");
 			const char* p;
 			switch(cfg.xedit[i]->soft_cr) {
@@ -1897,12 +1897,12 @@ void xedit_cfg()
 					p = "Unspecified";
 					break;
 			}
-			sprintf(opt[k++],"%-32.32s%s","Handle Soft Carriage Returns", p);
-			sprintf(opt[k++],"%-32.32s%s","Strip FidoNet Kludge Lines"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Handle Soft Carriage Returns", p);
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Strip FidoNet Kludge Lines"
 				,cfg.xedit[i]->misc&STRIPKLUDGE ? "Yes":"No");
-			sprintf(opt[k++],"%-32.32s%s","Support UTF-8 Encoding"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","Support UTF-8 Encoding"
 				,cfg.xedit[i]->misc&XTRN_UTF8 ? "Yes":"No");
-			sprintf(opt[k++],"%-32.32s%s","BBS Drop File Type"
+			snprintf(opt[k++],MAX_OPLN,"%-32.32s%s","BBS Drop File Type"
 				,dropfile(cfg.xedit[i]->type,cfg.xedit[i]->misc));
 			opt[k][0]=0;
 			uifc.helpbuf=
@@ -2308,7 +2308,7 @@ int natvpgm_cfg()
 
 	while(1) {
 		for(i=0;i<MAX_OPTS && i<cfg.total_natvpgms;i++)
-			sprintf(opt[i],"%-12s",cfg.natvpgm[i]->name);
+			snprintf(opt[i],MAX_OPLN,"%-12s",cfg.natvpgm[i]->name);
 		opt[i][0]=0;
 		j=WIN_ACT|WIN_CHE|WIN_L2R|WIN_SAV;
 		if(cfg.total_natvpgms)
@@ -2397,7 +2397,7 @@ void xtrnsec_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_xtrnsecs && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-*s %5u", (int)sizeof(cfg.xtrn[i]->name)-1, cfg.xtrnsec[i]->name, progs_in_sec(i));
+			snprintf(opt[i],MAX_OPLN,"%-*s %5u", (int)sizeof(cfg.xtrn[i]->name)-1, cfg.xtrnsec[i]->name, progs_in_sec(i));
 		opt[i][0]=0;
 		j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_BOT;
 		if(cfg.total_xtrnsecs)
@@ -2513,11 +2513,11 @@ void xtrnsec_cfg()
 		done=0;
 		while(!done) {
 			k=0;
-			sprintf(opt[k++],"%-27.27s%s","Name",cfg.xtrnsec[i]->name);
-			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.xtrnsec[i]->code);
-			sprintf(opt[k++],"%-27.27s%s","Access Requirements"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Name",cfg.xtrnsec[i]->name);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Internal Code",cfg.xtrnsec[i]->code);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Access Requirements"
 				,cfg.xtrnsec[i]->arstr);
-			sprintf(opt[k++],"%s","Online Programs...");
+			snprintf(opt[k++],MAX_OPLN,"%s","Online Programs...");
 			opt[k][0]=0;
 			sprintf(str,"%s Program Section",cfg.xtrnsec[i]->name);
 			uifc.helpbuf=
@@ -2602,7 +2602,7 @@ void hotkey_cfg(void)
 
 	while(1) {
 		for(i=0;i<cfg.total_hotkeys && i<MAX_OPTS;i++)
-			sprintf(opt[i],"Ctrl-%c    %s"
+			snprintf(opt[i],MAX_OPLN,"Ctrl-%c    %s"
 				,cfg.hotkey[i]->key+'@'
 				,cfg.hotkey[i]->cmd);
 		opt[i][0]=0;
@@ -2685,9 +2685,9 @@ void hotkey_cfg(void)
 		done=0;
 		while(!done) {
 			k=0;
-			sprintf(opt[k++],"%-27.27sCtrl-%c","Global Hot Key"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27sCtrl-%c","Global Hot Key"
 				,cfg.hotkey[i]->key+'@');
-			sprintf(opt[k++],"%-27.27s%s","Command Line",cfg.hotkey[i]->cmd);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Command Line",cfg.hotkey[i]->cmd);
 			opt[k][0]=0;
 			uifc.helpbuf=
 				"`Global Hot Key Event:`\n"

@@ -1043,7 +1043,7 @@ void txt_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_txtsecs;i++)
-			sprintf(opt[i],"%-25s",cfg.txtsec[i]->name);
+			snprintf(opt[i],MAX_OPLN,"%-25s",cfg.txtsec[i]->name);
 		opt[i][0]=0;
 		j=WIN_ORG|WIN_ACT|WIN_CHE;
 		if(cfg.total_txtsecs)
@@ -1154,9 +1154,9 @@ void txt_cfg()
 		done=0;
 		while(!done) {
 			k=0;
-			sprintf(opt[k++],"%-27.27s%s","Name",cfg.txtsec[i]->name);
-			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.txtsec[i]->code);
-			sprintf(opt[k++],"%-27.27s%s","Access Requirements"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Name",cfg.txtsec[i]->name);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Internal Code",cfg.txtsec[i]->code);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Access Requirements"
 				,cfg.txtsec[i]->arstr);
 			opt[k][0]=0;
 			uifc_winmode_t wmode = WIN_ACT|WIN_MID|WIN_EXTKEYS;
@@ -1227,7 +1227,7 @@ void shell_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_shells;i++)
-			sprintf(opt[i],"%-25s",cfg.shell[i]->name);
+			snprintf(opt[i],MAX_OPLN,"%-25s",cfg.shell[i]->name);
 		opt[i][0]=0;
 		j=WIN_ORG|WIN_ACT|WIN_CHE;
 		if(cfg.total_shells)
@@ -1343,9 +1343,9 @@ void shell_cfg()
 		while(!done) {
 			static int bar;
 			k=0;
-			sprintf(opt[k++],"%-27.27s%s","Name",cfg.shell[i]->name);
-			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.shell[i]->code);
-			sprintf(opt[k++],"%-27.27s%s","Access Requirements"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Name",cfg.shell[i]->name);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Internal Code",cfg.shell[i]->code);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Access Requirements"
 				,cfg.shell[i]->arstr);
 			opt[k][0]=0;
 			uifc.helpbuf=
@@ -1702,7 +1702,7 @@ void getar(char *desc, char *inar)
 		SAFECOPY(ar,str);
 	}
 	i=0;
-	sprintf(opt[i++],"Requirement String (%s)",ar);
+	snprintf(opt[i++],MAX_OPLN,"Requirement String (%s)",ar);
 	strcpy(opt[i++],"Clear Requirements");
 	strcpy(opt[i++],"Set Required Level");
 	strcpy(opt[i++],"Set Required Flag");
@@ -1818,7 +1818,7 @@ void getar(char *desc, char *inar)
 			}
 
 			for(i=0;i<4;i++)
-				sprintf(opt[i],"Flag Set #%d",i+1);
+				snprintf(opt[i],MAX_OPLN,"Flag Set #%d",i+1);
 			opt[i][0]=0;
 			i=0;
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Select Flag Set",opt);

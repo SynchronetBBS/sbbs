@@ -496,7 +496,7 @@ void msgs_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_grps && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-*s %5u", LEN_GLNAME, cfg.grp[i]->lname, subs_in_group(i));
+			snprintf(opt[i],MAX_OPLN,"%-*s %5u", LEN_GLNAME, cfg.grp[i]->lname, subs_in_group(i));
 		opt[i][0]=0;
 		int mode = WIN_ORG|WIN_ACT|WIN_CHE;
 		if(cfg.total_grps)
@@ -652,12 +652,12 @@ void msgs_cfg()
 		done=0;
 		while(!done) {
 			j=0;
-			sprintf(opt[j++],"%-27.27s%s","Long Name",cfg.grp[grpnum]->lname);
-			sprintf(opt[j++],"%-27.27s%s","Short Name",cfg.grp[grpnum]->sname);
-			sprintf(opt[j++],"%-27.27s%s","Internal Code Prefix",cfg.grp[grpnum]->code_prefix);
-			sprintf(opt[j++],"%-27.27s%s","Access Requirements"
+			snprintf(opt[j++],MAX_OPLN,"%-27.27s%s","Long Name",cfg.grp[grpnum]->lname);
+			snprintf(opt[j++],MAX_OPLN,"%-27.27s%s","Short Name",cfg.grp[grpnum]->sname);
+			snprintf(opt[j++],MAX_OPLN,"%-27.27s%s","Internal Code Prefix",cfg.grp[grpnum]->code_prefix);
+			snprintf(opt[j++],MAX_OPLN,"%-27.27s%s","Access Requirements"
 				,cfg.grp[grpnum]->arstr);
-			sprintf(opt[j++],"%-27.27s%s","Sort Group by Sub-board", area_sort_desc[cfg.grp[grpnum]->sort]);
+			snprintf(opt[j++],MAX_OPLN,"%-27.27s%s","Sort Group by Sub-board", area_sort_desc[cfg.grp[grpnum]->sort]);
 			strcpy(opt[j++],"Clone Options");
 			strcpy(opt[j++],"Export Areas...");
 			strcpy(opt[j++],"Import Areas...");
@@ -1102,61 +1102,61 @@ void msg_opts()
 
 	while(1) {
 		i=0;
-		sprintf(opt[i++],"%-33.33s%s"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s"
 			,"BBS ID for QWK Packets",cfg.sys_id);
-		sprintf(opt[i++],"%-33.33s%u seconds"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%u seconds"
 			,"Maximum Retry Time",cfg.smb_retry_time);
 		if(cfg.max_qwkmsgs)
 			sprintf(str,"%"PRIu32,cfg.max_qwkmsgs);
 		else
 			sprintf(str,"Unlimited");
-		sprintf(opt[i++],"%-33.33s%s"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s"
 			,"Maximum QWK Messages",str);
 		if(cfg.max_qwkmsgage)
 			sprintf(str,"%u days",cfg.max_qwkmsgage);
 		else
 			sprintf(str,"Unlimited");
-		sprintf(opt[i++],"%-33.33s%s"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s"
 			,"Maximum QWK Message Age",str);
-		sprintf(opt[i++],"%-33.33s%s","Pre-pack QWK Requirements",cfg.preqwk_arstr);
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Pre-pack QWK Requirements",cfg.preqwk_arstr);
 		if(cfg.mail_maxage)
 			SAFEPRINTF(str,"Enabled (%u days old)",cfg.mail_maxage);
         else
             SAFECOPY(str,"Disabled");
-		sprintf(opt[i++],"%-33.33s%s","Purge E-mail by Age",str);
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Purge E-mail by Age",str);
 		if(cfg.max_spamage)
 			SAFEPRINTF(str,"Enabled (%u days old)",cfg.max_spamage);
         else
             SAFECOPY(str,"Disabled");
-		sprintf(opt[i++],"%-33.33s%s","Purge SPAM by Age",str);
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Purge SPAM by Age",str);
 		if(cfg.sys_misc&SM_DELEMAIL)
 			SAFECOPY(str,"Immediately");
 		else
 			SAFECOPY(str,"Daily");
-		sprintf(opt[i++],"%-33.33s%s","Purge Deleted E-mail",str);
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Purge Deleted E-mail",str);
 		if(cfg.mail_maxcrcs)
 			SAFEPRINTF(str,"Enabled (%"PRIu32" mail CRCs)",cfg.mail_maxcrcs);
 		else
 			SAFECOPY(str,"Disabled");
-		sprintf(opt[i++],"%-33.33s%s","Duplicate E-mail Checking",str);
-		sprintf(opt[i++],"%-33.33s%s","Allow Anonymous E-mail"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Duplicate E-mail Checking",str);
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Allow Anonymous E-mail"
 			,cfg.sys_misc&SM_ANON_EM ? "Yes" : "No");
-		sprintf(opt[i++],"%-33.33s%s","Allow Quoting in E-mail"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Allow Quoting in E-mail"
 			,cfg.sys_misc&SM_QUOTE_EM ? "Yes" : "No");
-		sprintf(opt[i++],"%-33.33s%s","Allow Uploads in E-mail"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Allow Uploads in E-mail"
 			,cfg.sys_misc&SM_FILE_EM ? "Yes" : "No");
-		sprintf(opt[i++],"%-33.33s%s","Allow Forwarding to NetMail"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Allow Forwarding to NetMail"
 			,cfg.sys_misc&SM_FWDTONET ? "Yes" : "No");
-		sprintf(opt[i++],"%-33.33s%s","Kill Read E-mail"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Kill Read E-mail"
 			,cfg.sys_misc&SM_DELREADM ? "Yes" : "No");
-		sprintf(opt[i++],"%-33.33s%s","Receive E-mail by Real Name"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Receive E-mail by Real Name"
 			,cfg.msg_misc&MM_REALNAME ? "Yes" : "No");
-		sprintf(opt[i++],"%-33.33s%s","Include Signatures in E-mail"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Include Signatures in E-mail"
 			,cfg.msg_misc&MM_EMAILSIG ? "Yes" : "No");
-		sprintf(opt[i++],"%-33.33s%s","Users Can View Deleted Messages"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Users Can View Deleted Messages"
 			,cfg.sys_misc&SM_USRVDELM ? "Yes" : cfg.sys_misc&SM_SYSVDELM
 				? "Sysops Only":"No");
-		sprintf(opt[i++],"%-33.33s%hu","Days of New Messages for Guest", cfg.guest_msgscan_init);
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%hu","Days of New Messages for Guest", cfg.guest_msgscan_init);
 		strcpy(opt[i++],"Extra Attribute Codes...");
 		opt[i][0]=0;
 		uifc.helpbuf=
@@ -1489,15 +1489,15 @@ void msg_opts()
 				j=0;
 				while(1) {
 					i=0;
-					sprintf(opt[i++],"%-15.15s %-3.3s","WWIV"
+					snprintf(opt[i++],MAX_OPLN,"%-15.15s %-3.3s","WWIV"
 						,cfg.sys_misc&SM_WWIV ? "Yes":"No");
-					sprintf(opt[i++],"%-15.15s %-3.3s","PCBoard"
+					snprintf(opt[i++],MAX_OPLN,"%-15.15s %-3.3s","PCBoard"
 						,cfg.sys_misc&SM_PCBOARD ? "Yes":"No");
-					sprintf(opt[i++],"%-15.15s %-3.3s","Wildcat"
+					snprintf(opt[i++],MAX_OPLN,"%-15.15s %-3.3s","Wildcat"
 						,cfg.sys_misc&SM_WILDCAT ? "Yes":"No");
-					sprintf(opt[i++],"%-15.15s %-3.3s","Celerity"
+					snprintf(opt[i++],MAX_OPLN,"%-15.15s %-3.3s","Celerity"
 						,cfg.sys_misc&SM_CELERITY ? "Yes":"No");
-					sprintf(opt[i++],"%-15.15s %-3.3s","Renegade"
+					snprintf(opt[i++],MAX_OPLN,"%-15.15s %-3.3s","Renegade"
 						,cfg.sys_misc&SM_RENEGADE ? "Yes":"No");
 					opt[i][0]=0;
 					j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,2,0,&j,0

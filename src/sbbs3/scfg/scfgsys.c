@@ -553,7 +553,7 @@ void security_cfg(void)
 
 	while(1) {
 		i = 0;
-		sprintf(opt[i++],"%-33.33s%s","System Password", "*******");
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","System Password", "*******");
 		if(cfg.sys_misc & SM_R_SYSOP) {
 			*str = '\0';
 			if(cfg.sys_misc & SM_SYSPASSLOGIN)
@@ -561,12 +561,12 @@ void security_cfg(void)
 			sprintf(str + strlen(str), "After %u minutes", cfg.sys_pass_timeout);
 		} else
 			SAFECOPY(str, "N/A");
-		sprintf(opt[i++],"%-33.33s%s","Prompt for System Password", str);
-		sprintf(opt[i++],"%-33.33s%s","Allow Sysop Access"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Prompt for System Password", str);
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Allow Sysop Access"
 			,(cfg.sys_misc & SM_R_SYSOP) ? "Yes" : "No");
-		sprintf(opt[i++],"%-33.33s%s","Allow Login by Real Name"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Allow Login by Real Name"
 			,(!(cfg.uq&UQ_ALIASES) || cfg.sys_login & LOGIN_REALNAME) ? "Yes" : "No");
-		sprintf(opt[i++],"%-33.33s%s","Allow Login by User Number"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Allow Login by User Number"
 			,(cfg.sys_login & LOGIN_USERNUM) ? "Yes" : "No");
 
 		SAFEPRINTF(str,"%s Password"
@@ -580,15 +580,15 @@ void security_cfg(void)
 			SAFECOPY(tmp,"No");
 		if(cfg.sys_misc&SM_PWEDIT)
 			sprintf(tmp + strlen(tmp), ", %u chars minimum", cfg.min_pwlen);
-		sprintf(opt[i++],"%-33.33s%s",str,tmp);
-		sprintf(opt[i++],"%-33.33s%s","Always Prompt for Password"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s",str,tmp);
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Always Prompt for Password"
 			,cfg.sys_login & LOGIN_PWPROMPT ? "Yes":"No");
-		sprintf(opt[i++],"%-33.33s%s","Display/Log Passwords Locally"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Display/Log Passwords Locally"
 			,cfg.sys_misc&SM_ECHO_PW ? "Yes" : "No");
 
-		sprintf(opt[i++],"%-33.33s%u","Days to Preserve Deleted Users"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%u","Days to Preserve Deleted Users"
 			,cfg.sys_deldays);
-		sprintf(opt[i++],"%-33.33s%s","Maximum Days of User Inactivity"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Maximum Days of User Inactivity"
 			,cfg.sys_autodel ? ultoa(cfg.sys_autodel,tmp,10) : "Unlimited");
 		if(cfg.sys_misc&SM_CLOSED)
 			SAFECOPY(str, "No");
@@ -598,8 +598,8 @@ void security_cfg(void)
 			else
 				SAFECOPY(str, "Yes");
 		}
-		sprintf(opt[i++],"%-33.33s%s","Open to New Users", str);
-		sprintf(opt[i++],"%-33.33s%s","User Expires When Out-of-time"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Open to New Users", str);
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","User Expires When Out-of-time"
 			,cfg.sys_misc&SM_TIME_EXP ? "Yes" : "No");
 
 		strcpy(opt[i++],"Security Level Values...");
@@ -869,7 +869,7 @@ void security_cfg(void)
 				while(1) {
 					for(i=0;i<100;i++) {
 						byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
-						sprintf(opt[i],"%-2d    %5d %5d "
+						snprintf(opt[i],MAX_OPLN,"%-2d    %5d %5d "
 							"%5d %5d %5d %5d %6s %7s %2u",i
 							,cfg.level_timeperday[i],cfg.level_timepercall[i]
 							,cfg.level_callsperday[i],cfg.level_emailperday[i]
@@ -904,22 +904,22 @@ void security_cfg(void)
 					while(1) {
 						sprintf(str,"Security Level %d Values",i);
 						j=0;
-						sprintf(opt[j++],"%-22.22s%-5u","Time Per Day"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%-5u","Time Per Day"
 							,cfg.level_timeperday[i]);
-						sprintf(opt[j++],"%-22.22s%-5u","Time Per Call"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%-5u","Time Per Call"
 							,cfg.level_timepercall[i]);
-						sprintf(opt[j++],"%-22.22s%-5u","Calls Per Day"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%-5u","Calls Per Day"
 							,cfg.level_callsperday[i]);
-						sprintf(opt[j++],"%-22.22s%-5u","Email Per Day"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%-5u","Email Per Day"
 							,cfg.level_emailperday[i]);
-						sprintf(opt[j++],"%-22.22s%-5u","Posts Per Day"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%-5u","Posts Per Day"
 							,cfg.level_postsperday[i]);
-						sprintf(opt[j++],"%-22.22s%-5u","Lines Per Message"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%-5u","Lines Per Message"
 							,cfg.level_linespermsg[i]);
 						byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
-						sprintf(opt[j++],"%-22.22s%-6s","Free Credits Per Day"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%-6s","Free Credits Per Day"
 							,tmp);
-						sprintf(opt[j++],"%-22.22s%s %u","Expire To"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%s %u","Expire To"
 							,cfg.level_misc[i]&LEVEL_EXPTOVAL ? "Validation Set"
 								: "Level"
 							,cfg.level_misc[i]&(LEVEL_EXPTOVAL|LEVEL_EXPTOLVL) ?
@@ -999,10 +999,10 @@ void security_cfg(void)
 								break;
 							case 7:
 								j=0;
-								sprintf(opt[j++],"Default Expired Level "
+								snprintf(opt[j++],MAX_OPLN,"Default Expired Level "
 									"(Currently %u)",cfg.expired_level);
-								sprintf(opt[j++],"Specific Level");
-								sprintf(opt[j++],"Quick-Validation Set");
+								snprintf(opt[j++],MAX_OPLN,"Specific Level");
+								snprintf(opt[j++],MAX_OPLN,"Quick-Validation Set");
 								opt[j][0]=0;
 								j=0;
 								sprintf(str,"Level %u Expires To",i);
@@ -1041,18 +1041,18 @@ void security_cfg(void)
 				done=0;
 				while(!done) {
 					i=0;
-					sprintf(opt[i++],"%-27.27s%u","Level",cfg.expired_level);
-					sprintf(opt[i++],"%-27.27s%s","Flag Set #1 to Remove"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%u","Level",cfg.expired_level);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Flag Set #1 to Remove"
 						,u32toaf(cfg.expired_flags1,str));
-					sprintf(opt[i++],"%-27.27s%s","Flag Set #2 to Remove"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Flag Set #2 to Remove"
 						,u32toaf(cfg.expired_flags2,str));
-					sprintf(opt[i++],"%-27.27s%s","Flag Set #3 to Remove"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Flag Set #3 to Remove"
 						,u32toaf(cfg.expired_flags3,str));
-					sprintf(opt[i++],"%-27.27s%s","Flag Set #4 to Remove"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Flag Set #4 to Remove"
 						,u32toaf(cfg.expired_flags4,str));
-					sprintf(opt[i++],"%-27.27s%s","Exemptions to Remove"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Exemptions to Remove"
 						,u32toaf(cfg.expired_exempt,str));
-					sprintf(opt[i++],"%-27.27s%s","Restrictions to Add"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Restrictions to Add"
 						,u32toaf(cfg.expired_rest,str));
 					opt[i][0]=0;
 					uifc.helpbuf=
@@ -1159,7 +1159,7 @@ void security_cfg(void)
 				k=0;
 				while(1) {
 					for(i=0;i<10;i++)
-						sprintf(opt[i],"%d  SL: %-2d  F1: %s"
+						snprintf(opt[i],MAX_OPLN,"%d  SL: %-2d  F1: %s"
 							,i,cfg.val_level[i],u32toaf(cfg.val_flags1[i],str));
 					opt[i][0]=0;
 					i=0;
@@ -1182,22 +1182,22 @@ void security_cfg(void)
 						break;
 					while(1) {
 						j=0;
-						sprintf(opt[j++],"%-22.22s%u","Level",cfg.val_level[i]);
-						sprintf(opt[j++],"%-22.22s%s","Flag Set #1"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%u","Level",cfg.val_level[i]);
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%s","Flag Set #1"
 							,u32toaf(cfg.val_flags1[i],tmp));
-						sprintf(opt[j++],"%-22.22s%s","Flag Set #2"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%s","Flag Set #2"
 							,u32toaf(cfg.val_flags2[i],tmp));
-						sprintf(opt[j++],"%-22.22s%s","Flag Set #3"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%s","Flag Set #3"
 							,u32toaf(cfg.val_flags3[i],tmp));
-						sprintf(opt[j++],"%-22.22s%s","Flag Set #4"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%s","Flag Set #4"
 							,u32toaf(cfg.val_flags4[i],tmp));
-						sprintf(opt[j++],"%-22.22s%s","Exemptions"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%s","Exemptions"
 							,u32toaf(cfg.val_exempt[i],tmp));
-						sprintf(opt[j++],"%-22.22s%s","Restrictions"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%s","Restrictions"
 							,u32toaf(cfg.val_rest[i],tmp));
-						sprintf(opt[j++],"%-22.22s%u days","Extend Expiration"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%u days","Extend Expiration"
 							,cfg.val_expire[i]);
-						sprintf(opt[j++],"%-22.22s%u","Additional Credits"
+						snprintf(opt[j++],MAX_OPLN,"%-22.22s%u","Additional Credits"
 							,cfg.val_cdt[i]);
 						opt[j][0]=0;
 
@@ -1441,14 +1441,14 @@ void cfg_notify(void)
 			SAFEPRINTF(str, "User #%u", cfg.valuser);
 		else
 			SAFECOPY(str, "Nobody");
-		sprintf(opt[i++],"%-23.23s%s","New User Feedback", str);
+		snprintf(opt[i++],MAX_OPLN,"%-23.23s%s","New User Feedback", str);
 		if(cfg.erruser)
 			SAFEPRINTF(str, "User #%u", cfg.erruser);
 		else
 			SAFECOPY(str, "Nobody");
-		sprintf(opt[i++],"%-23.23s%s","Error Notifications", str);
+		snprintf(opt[i++],MAX_OPLN,"%-23.23s%s","Error Notifications", str);
 		if(cfg.erruser)
-			sprintf(opt[i++],"%-23.23s%s","Error Level", errLevelStringList[cfg.errlevel]);
+			snprintf(opt[i++],MAX_OPLN,"%-23.23s%s","Error Level", errLevelStringList[cfg.errlevel]);
 		opt[i][0] = '\0';
 		uifc.helpbuf=
 			"`System Operator Notifications:`\n"
@@ -1515,49 +1515,49 @@ void newuser_qwk_opts(void)
 	;
 	while(1) {
 		int i = 0;
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include QWKE Extensions"
 			,(cfg.new_qwk & QWK_EXT) ? "Yes" : "No");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include Ctrl-A Codes"
 			,(cfg.new_qwk & QWK_RETCTLA) ? "Yes" : (cfg.new_qwk & QWK_EXPCTLA) ? "Expand" : "No");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include UTF-8 Characters"
 			,(cfg.new_qwk & QWK_UTF8) ? "Yes" : "No");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include New Files List"
 			,(cfg.new_qwk & QWK_FILES) ? "Yes" : "No");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include File Attachments"
 			,(cfg.new_qwk & QWK_ATTACH) ? "Yes" : "No");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include Messages From Self"
 			,(cfg.new_qwk & QWK_BYSELF) ? "Yes" : "No");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include E-mail Messages"
 			,(cfg.new_qwk & QWK_ALLMAIL) ? "All" : (cfg.new_qwk & QWK_EMAIL) ? "Unread" : "No");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Delete Downloaded E-mail"
 			,(cfg.new_qwk & QWK_DELMAIL) ? "Yes" : "No");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include Index Files"
 			,(cfg.new_qwk & QWK_NOINDEX) ? "No" : "Yes");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include Control Files"
 			,(cfg.new_qwk & QWK_NOCTRL) ? "No" : "Yes");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include Time Zone Kludges"
 			,(cfg.new_qwk & QWK_TZ) ? "Yes" : "No");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include Via/Routing Kludges"
 			,(cfg.new_qwk & QWK_VIA) ? "Yes" : "No");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include Message-ID Kludges"
 			,(cfg.new_qwk & QWK_MSGID) ? "Yes" : "No");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include HEADERS.DAT File"
 			,(cfg.new_qwk & QWK_HEADERS) ? "Yes" : "No");
-		sprintf(opt[i++],"%-27.27s %s"
+		snprintf(opt[i++],MAX_OPLN,"%-27.27s %s"
 			,"Include VOTING.DAT File"
 			,(cfg.new_qwk & QWK_VOTING) ? "Yes" : "No");
 		opt[i][0] = '\0';
@@ -1651,12 +1651,12 @@ void sys_cfg(void)
 	SAFECOPY(sys_pass, cfg.sys_pass);
 	while(1) {
 		i=0;
-		sprintf(opt[i++],"%-33.33s%s","BBS Name",cfg.sys_name);
-		sprintf(opt[i++],"%-33.33s%s","Location",cfg.sys_location);
-		sprintf(opt[i++],"%-33.33s%s %s","Local Time Zone"
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","BBS Name",cfg.sys_name);
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Location",cfg.sys_location);
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s %s","Local Time Zone"
 			,smb_zonestr(cfg.sys_timezone,NULL)
 			,SMB_TZ_HAS_DST(cfg.sys_timezone) && cfg.sys_misc&SM_AUTO_DST ? "(Auto-DST)" : "");
-		sprintf(opt[i++],"%-33.33s%s","Operator",cfg.sys_op);
+		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Operator",cfg.sys_op);
 
 		strcpy(opt[i++],"Notifications...");
 		strcpy(opt[i++],"Toggle Options...");
@@ -1884,37 +1884,37 @@ void sys_cfg(void)
 				done=0;
 				while(!done) {
 					i=0;
-					sprintf(opt[i++],"%-27.27s%u","Level",cfg.new_level);
-					sprintf(opt[i++],"%-27.27s%s","Flag Set #1"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%u","Level",cfg.new_level);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Flag Set #1"
 						,u32toaf(cfg.new_flags1,str));
-					sprintf(opt[i++],"%-27.27s%s","Flag Set #2"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Flag Set #2"
 						,u32toaf(cfg.new_flags2,str));
-					sprintf(opt[i++],"%-27.27s%s","Flag Set #3"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Flag Set #3"
 						,u32toaf(cfg.new_flags3,str));
-					sprintf(opt[i++],"%-27.27s%s","Flag Set #4"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Flag Set #4"
 						,u32toaf(cfg.new_flags4,str));
-					sprintf(opt[i++],"%-27.27s%s","Exemptions"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Exemptions"
 						,u32toaf(cfg.new_exempt,str));
-					sprintf(opt[i++],"%-27.27s%s","Restrictions"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Restrictions"
 						,u32toaf(cfg.new_rest,str));
-					sprintf(opt[i++],"%-27.27s%s","Expiration Days"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Expiration Days"
 						,ultoa(cfg.new_expire,str,10));
 
 					u32toac(cfg.new_cdt,str,',');
-					sprintf(opt[i++],"%-27.27s%s","Credits",str);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Credits",str);
 					u32toac(cfg.new_min,str,',');
-					sprintf(opt[i++],"%-27.27s%s","Minutes",str);
-					sprintf(opt[i++],"%-27.27s%s","Editor"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Minutes",str);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Editor"
 						,cfg.new_xedit);
-					sprintf(opt[i++],"%-27.27s%s","Command Shell"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Command Shell"
 						,cfg.new_shell >= cfg.total_shells ? "<invalid>" : cfg.shell[cfg.new_shell]->code);
 					if(cfg.new_prot!=' ')
 						sprintf(str,"%c",cfg.new_prot);
 					else
 						strcpy(str,"None");
-					sprintf(opt[i++],"%-27.27s%s","Download Protocol",str);
-					sprintf(opt[i++],"%-27.27s%hu","Days of New Messages", cfg.new_msgscan_init);
-					sprintf(opt[i++],"%-27.27s%s", "Gender Options", cfg.new_genders);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Download Protocol",str);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%hu","Days of New Messages", cfg.new_msgscan_init);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s", "Gender Options", cfg.new_genders);
 					strcpy(opt[i++],"Default Toggles...");
 					strcpy(opt[i++],"QWK Packet Settings...");
 					opt[i][0]=0;
@@ -2072,7 +2072,7 @@ void sys_cfg(void)
 							break;
 						case 11:
 							for(i=0;i<cfg.total_shells && i<MAX_OPTS;i++)
-								sprintf(opt[i],"%-.*s", LEN_CODE, cfg.shell[i]->code);
+								snprintf(opt[i],MAX_OPLN,"%-.*s", LEN_CODE, cfg.shell[i]->code);
 							opt[i][0]=0;
 							i=cfg.new_shell;
 							uifc.helpbuf=
@@ -2400,48 +2400,48 @@ void sys_cfg(void)
 				done=0;
 				while(!done) {
 					i=0;
-					sprintf(opt[i++],"%-27.27s%s","New User Magic Word",cfg.new_magic);
-					sprintf(opt[i++],"%-27.27s%s","Data Directory"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","New User Magic Word",cfg.new_magic);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Data Directory"
 						,cfg.data_dir);
-					sprintf(opt[i++],"%-27.27s%s","Logs Directory"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Logs Directory"
 						,cfg.logs_dir);
-					sprintf(opt[i++],"%-27.27s%s","Exec Directory"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Exec Directory"
 						,cfg.exec_dir);
-					sprintf(opt[i++],"%-27.27s%s","Mods Directory"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Mods Directory"
 						,cfg.mods_dir);
-					sprintf(opt[i++],"%-27.27s%s","Input SIF Questionnaire"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Input SIF Questionnaire"
 						,cfg.new_sif);
-					sprintf(opt[i++],"%-27.27s%s","Output SIF Questionnaire"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Output SIF Questionnaire"
 						,cfg.new_sof);
 					u32toac(cfg.cdt_per_dollar,str,',');
-					sprintf(opt[i++],"%-27.27s%s","Credits Per Dollar",str);
-					sprintf(opt[i++],"%-27.27s%u","Minutes Per 100K Credits"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Credits Per Dollar",str);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%u","Minutes Per 100K Credits"
 						,cfg.cdt_min_value);
-					sprintf(opt[i++],"%-27.27s%s","Maximum Number of Minutes"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Maximum Number of Minutes"
 						,cfg.max_minutes ? ultoa(cfg.max_minutes,tmp,10) : "Unlimited");
-					sprintf(opt[i++],"%-27.27s%u","Warning Days Till Expire"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%u","Warning Days Till Expire"
 						,cfg.sys_exp_warn);
-					sprintf(opt[i++],"%-27.27s%u","Last Displayable Node"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%u","Last Displayable Node"
 						,cfg.sys_lastnode);
-					sprintf(opt[i++],"%-27.27s%s","Phone Number Format"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Phone Number Format"
 						,cfg.sys_phonefmt);
-					sprintf(opt[i++],"%-27.27s%s","Sysop Chat Override"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Sysop Chat Override"
 						,cfg.sys_chat_arstr);
 					if(cfg.user_backup_level)
 						sprintf(str,"%hu",cfg.user_backup_level);
 					else
 						strcpy(str,"None");
-					sprintf(opt[i++],"%-27.27s%s","User Database Backups",str);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","User Database Backups",str);
 					if(cfg.mail_backup_level)
 						sprintf(str,"%hu",cfg.mail_backup_level);
 					else
 						strcpy(str,"None");
-					sprintf(opt[i++],"%-27.27s%s","Mail Database Backups",str);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Mail Database Backups",str);
 					if(cfg.config_backup_level)
 						sprintf(str,"%hu",cfg.config_backup_level);
 					else
 						strcpy(str,"None");
-					sprintf(opt[i++],"%-27.27s%s","Configuration Backups",str);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Configuration Backups",str);
 					if(cfg.max_log_size && cfg.max_logs_kept) {
 						SAFEPRINTF2(str, "%s bytes, keep %hu"
 							,byte_count_to_str(cfg.max_log_size, tmp, sizeof(tmp))
@@ -2449,18 +2449,18 @@ void sys_cfg(void)
 					} else {
 						SAFECOPY(str, "Unlimited");
 					}
-					sprintf(opt[i++],"%-27.27s%s","Maximum Log File Size", str);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Maximum Log File Size", str);
 					if(cfg.max_getkey_inactivity)
 						duration_to_vstr(cfg.max_getkey_inactivity, str, sizeof(str));
 					else
 						SAFECOPY(str, "Unlimited");
-					sprintf(opt[i++],"%-27.27s%s","Maximum User Inactivity", str);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Maximum User Inactivity", str);
 					if(cfg.inactivity_warn)
 						SAFEPRINTF(str, "%u percent", cfg.inactivity_warn);
 					else
 						SAFECOPY(str, "Disabled");
-					sprintf(opt[i++],"%-27.27s%s","User Inactivity Warning", str);
-					sprintf(opt[i++],"%-27.27s%"PRIX32,"Control Key Pass-through"
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","User Inactivity Warning", str);
+					snprintf(opt[i++],MAX_OPLN,"%-27.27s%"PRIX32,"Control Key Pass-through"
 						,cfg.ctrlkey_passthru);
 					opt[i][0]=0;
 					uifc.helpbuf=
@@ -2831,34 +2831,34 @@ void sys_cfg(void)
 				done=0;
 				while(!done) {
 					i=0;
-					sprintf(opt[i++],"%-16.16s%s","Login",cfg.login_mod);
-					sprintf(opt[i++],"%-16.16s%s","Logon",cfg.logon_mod);
-					sprintf(opt[i++],"%-16.16s%s","Sync",cfg.sync_mod);
-					sprintf(opt[i++],"%-16.16s%s","Logoff",cfg.logoff_mod);
-					sprintf(opt[i++],"%-16.16s%s","Logout",cfg.logout_mod);
-					sprintf(opt[i++],"%-16.16s%s","New User",cfg.newuser_mod);
-					sprintf(opt[i++],"%-16.16s%s","Expired User",cfg.expire_mod);
-					sprintf(opt[i++],"%-16.16s%s","Auto Message",cfg.automsg_mod);
-					sprintf(opt[i++],"%-16.16s%s","Send Feedback",cfg.feedback_mod);
-					sprintf(opt[i++],"%-16.16s%s","Chat Section",cfg.chatsec_mod);
-					sprintf(opt[i++],"%-16.16s%s","Text Section",cfg.textsec_mod);
-					sprintf(opt[i++],"%-16.16s%s","Xtrn Section",cfg.xtrnsec_mod);
-					sprintf(opt[i++],"%-16.16s%s","Pre Xtrn",cfg.prextrn_mod);
-					sprintf(opt[i++],"%-16.16s%s","Post Xtrn",cfg.postxtrn_mod);
-					sprintf(opt[i++],"%-16.16s%s","Read Mail",cfg.readmail_mod);
-					sprintf(opt[i++],"%-16.16s%s","Scan Msgs",cfg.scanposts_mod);
-					sprintf(opt[i++],"%-16.16s%s","Scan Subs",cfg.scansubs_mod);
-					sprintf(opt[i++],"%-16.16s%s","List Msgs",cfg.listmsgs_mod);
-					sprintf(opt[i++],"%-16.16s%s","List Logons",cfg.logonlist_mod);
-					sprintf(opt[i++],"%-16.16s%s","List Users",cfg.userlist_mod);
-					sprintf(opt[i++],"%-16.16s%s","List Nodes",cfg.nodelist_mod);
-					sprintf(opt[i++],"%-16.16s%s","Who's Online",cfg.whosonline_mod);
-					sprintf(opt[i++],"%-16.16s%s","Private Msg",cfg.privatemsg_mod);
-					sprintf(opt[i++],"%-16.16s%s","Scan Dirs",cfg.scandirs_mod);
-					sprintf(opt[i++],"%-16.16s%s","List Files",cfg.listfiles_mod);
-					sprintf(opt[i++],"%-16.16s%s","View File Info",cfg.fileinfo_mod);
-					sprintf(opt[i++],"%-16.16s%s","Batch Transfer",cfg.batxfer_mod);
-					sprintf(opt[i++],"%-16.16s%s","Temp Transfer",cfg.tempxfer_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Login",cfg.login_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Logon",cfg.logon_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Sync",cfg.sync_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Logoff",cfg.logoff_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Logout",cfg.logout_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","New User",cfg.newuser_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Expired User",cfg.expire_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Auto Message",cfg.automsg_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Send Feedback",cfg.feedback_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Chat Section",cfg.chatsec_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Text Section",cfg.textsec_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Xtrn Section",cfg.xtrnsec_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Pre Xtrn",cfg.prextrn_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Post Xtrn",cfg.postxtrn_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Read Mail",cfg.readmail_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Scan Msgs",cfg.scanposts_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Scan Subs",cfg.scansubs_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","List Msgs",cfg.listmsgs_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","List Logons",cfg.logonlist_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","List Users",cfg.userlist_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","List Nodes",cfg.nodelist_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Who's Online",cfg.whosonline_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Private Msg",cfg.privatemsg_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Scan Dirs",cfg.scandirs_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","List Files",cfg.listfiles_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","View File Info",cfg.fileinfo_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Batch Transfer",cfg.batxfer_mod);
+					snprintf(opt[i++],MAX_OPLN,"%-16.16s%s","Temp Transfer",cfg.tempxfer_mod);
 					opt[i][0]=0;
 					uifc.helpbuf=
 						"`Loadable Modules:`\n"

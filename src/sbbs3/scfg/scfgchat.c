@@ -31,7 +31,7 @@ void page_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_pages && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-40.40s %-.20s",cfg.page[i]->cmd,cfg.page[i]->arstr);
+			snprintf(opt[i],MAX_OPLN,"%-40.40s %-.20s",cfg.page[i]->cmd,cfg.page[i]->arstr);
 		opt[i][0]=0;
 		j=WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT;
 		if(cfg.total_pages)
@@ -113,12 +113,12 @@ void page_cfg()
 		done=0;
 		while(!done) {
 			k=0;
-			sprintf(opt[k++],"%-27.27s%s","Command Line",cfg.page[i]->cmd);
-			sprintf(opt[k++],"%-27.27s%s","Access Requirements",cfg.page[i]->arstr);
-			sprintf(opt[k++],"%-27.27s%s","I/O Method", io_method(cfg.page[i]->misc));
-			sprintf(opt[k++],"%-27.27s%s","Native Executable"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Command Line",cfg.page[i]->cmd);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Access Requirements",cfg.page[i]->arstr);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","I/O Method", io_method(cfg.page[i]->misc));
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Native Executable"
 				,cfg.page[i]->misc&XTRN_NATIVE ? "Yes" : "No");
-			sprintf(opt[k++],"%-27.27s%s","Use Shell to Execute"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Use Shell to Execute"
 				,cfg.page[i]->misc&XTRN_SH ? "Yes" : "No");
 			opt[k][0]=0;
 			sprintf(str,"Sysop Chat Pager #%d",i+1);
@@ -212,7 +212,7 @@ void chan_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_chans && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-25s",cfg.chan[i]->name);
+			snprintf(opt[i],MAX_OPLN,"%-25s",cfg.chan[i]->name);
 		opt[i][0]=0;
 		j=WIN_ACT|WIN_SAV|WIN_BOT|WIN_RHT;
 		if(cfg.total_chans)
@@ -312,18 +312,18 @@ void chan_cfg()
 		done=0;
 		while(!done) {
 			k=0;
-			sprintf(opt[k++],"%-27.27s%s","Name",cfg.chan[i]->name);
-			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.chan[i]->code);
-			sprintf(opt[k++],"%-27.27s%"PRIu32,"Cost in Credits",cfg.chan[i]->cost);
-			sprintf(opt[k++],"%-27.27s%.40s","Access Requirements"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Name",cfg.chan[i]->name);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Internal Code",cfg.chan[i]->code);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%"PRIu32,"Cost in Credits",cfg.chan[i]->cost);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%.40s","Access Requirements"
 				,cfg.chan[i]->arstr);
-			sprintf(opt[k++],"%-27.27s%s","Password Protection"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Password Protection"
 				,cfg.chan[i]->misc&CHAN_PW ? "Yes" : "No");
-			sprintf(opt[k++],"%-27.27s%s","Guru Joins When Empty"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Guru Joins When Empty"
 				,cfg.chan[i]->misc&CHAN_GURU ? "Yes" : "No");
-			sprintf(opt[k++],"%-27.27s%s","Channel Guru"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Channel Guru"
 				,cfg.chan[i]->guru<cfg.total_gurus ? cfg.guru[cfg.chan[i]->guru]->name : "");
-			sprintf(opt[k++],"%-27.27s%s","Channel Action Set"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Channel Action Set"
 				,cfg.chan[i]->actset < cfg.total_actsets ? cfg.actset[cfg.chan[i]->actset]->name : "INVALID!");
 			opt[k][0]=0;
 			uifc.helpbuf=
@@ -446,7 +446,7 @@ void chan_cfg()
 	;
 					k=0;
 					for(j=0;j<cfg.total_gurus && j<MAX_OPTS;j++)
-						sprintf(opt[j],"%-25s",cfg.guru[j]->name);
+						snprintf(opt[j],MAX_OPLN,"%-25s",cfg.guru[j]->name);
 					opt[j][0]=0;
 					k=uifc.list(WIN_SAV|WIN_RHT,0,0,25,&guru_dflt,0
 						,"Available Chat Gurus",opt);
@@ -463,7 +463,7 @@ void chan_cfg()
 	;
 					k=0;
 					for(j=0;j<cfg.total_actsets && j<MAX_OPTS;j++)
-						sprintf(opt[j],"%-25s",cfg.actset[j]->name);
+						snprintf(opt[j],MAX_OPLN,"%-25s",cfg.actset[j]->name);
 					opt[j][0]=0;
 					k=uifc.list(WIN_SAV|WIN_RHT,0,0,25,&j,0
 						,"Available Chat Action Sets",opt);
@@ -488,7 +488,7 @@ void chatact_cfg(uint setnum)
 	while(1) {
 		for(i=0,j=0;i<cfg.total_chatacts && j<MAX_OPTS;i++)
 			if(cfg.chatact[i]->actset==setnum) {
-				sprintf(opt[j],"%-*.*s %s",LEN_CHATACTCMD,LEN_CHATACTCMD
+				snprintf(opt[j],MAX_OPLN,"%-*.*s %s",LEN_CHATACTCMD,LEN_CHATACTCMD
 					,cfg.chatact[i]->cmd,cfg.chatact[i]->out);
 				chatnum[j++]=i; 
 			}
@@ -619,7 +619,7 @@ void guru_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_gurus && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-25s",cfg.guru[i]->name);
+			snprintf(opt[i],MAX_OPLN,"%-25s",cfg.guru[i]->name);
 		opt[i][0]=0;
 		j=WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT;
 		if(cfg.total_gurus)
@@ -717,9 +717,9 @@ void guru_cfg()
 		done=0;
 		while(!done) {
 			k=0;
-			sprintf(opt[k++],"%-27.27s%s","Guru Name",cfg.guru[i]->name);
-			sprintf(opt[k++],"%-27.27s%s","Guru Internal Code",cfg.guru[i]->code);
-			sprintf(opt[k++],"%-27.27s%.40s","Access Requirements",cfg.guru[i]->arstr);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Guru Name",cfg.guru[i]->name);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Guru Internal Code",cfg.guru[i]->code);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%.40s","Access Requirements",cfg.guru[i]->arstr);
 			opt[k][0]=0;
 			uifc.helpbuf=
 				"`Guru Configuration:`\n"
@@ -792,7 +792,7 @@ void actsets_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_actsets && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-25s",cfg.actset[i]->name);
+			snprintf(opt[i],MAX_OPLN,"%-25s",cfg.actset[i]->name);
 		opt[i][0]=0;
 		j=WIN_ACT|WIN_RHT|WIN_BOT|WIN_SAV;
 		if(cfg.total_actsets)
@@ -874,8 +874,8 @@ void actsets_cfg()
 		done=0;
 		while(!done) {
 			k=0;
-			sprintf(opt[k++],"%-27.27s%s","Action Set Name",cfg.actset[i]->name);
-			sprintf(opt[k++],"%-27.27s","Configure Chat Actions...");
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Action Set Name",cfg.actset[i]->name);
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s","Configure Chat Actions...");
 			opt[k][0]=0;
 			uifc.helpbuf=
 				"`Chat Action Set Configuration:`\n"
