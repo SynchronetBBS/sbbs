@@ -13,6 +13,10 @@ o New statistics file formats
   - DSTSEDIT (daily stats editor) goes away: just edit the dsts.ini file
 o Baja: Make !INCLUDE directives filename case-insensitive
   - some old command shells/mods wouldn't compile on *nix systems otherwise
+o Increase maximum length of configured file/directory paths and command-lines
+  from 63 to 100 characters
+o Internal codes (prefixes and suffixes) have doubled in maximum length
+  from 8 to 16 characters (or 32 characters for prefixed-codes)
 
 Security
 ~~~~~~~~
@@ -66,7 +70,7 @@ o New text.dat strings for received Fido and Internet mail
     The first string (suppressed with %.0s) is an optional date/time stamp.
     This also deprecates (removes support for) the [mail] NewMailNotice and
     ForwardNotice keys in sbbs.ini
- 
+
 Windows
 ~~~~~~
 o Synchronet runs on Windows XP again
@@ -131,7 +135,6 @@ o File Directory->Toggle->Template for New replaced with File Library->
 o New File Library options:
   Upload Requirements, Download Requirements, Operator Requirements, Exemption
   Requirements, Auto-Add Sub-directories, Virtual Sub-directories
-o Internal codes (prefixes and suffixes) have doubled in maximum length
 o Add "Native" option for QWKnet call-out Command-lines
 o Add an 'enabled' property for QWKnet hubs, defaults to true
 o Move the QWKnet hub pack and unpack commands to an "Advanced" sub-menu since
@@ -151,7 +154,7 @@ o Command-shells can be written entirely in JavaScript, no .bin stub needed
 o New property: file_area.web_vpath_prefix
 o file_area.min_diskspace is in bytes now, not kilobytes
 o file-metadata-object (return value of FileBase.get()).vpath
-o system methods for vetting filenames (e.g. for upload by users)
+o New system methods for vetting filenames (e.g. for upload by users)
   - illegal_filename() - check if contains illegal chars/sequences
   - safest_filename() - check if contains only safest chars
   - allowed_filename() - check if meets criteria from SCFG->File Options
@@ -167,6 +170,7 @@ o New User.mail_settings property
 o New User.close() method
 o Add 'fidonet_addr' property to msg_area.sub[]
 o New global function: rmfiles() - remove files and sub-dirs, recursively
+o New global function: strip_ctrl_a() - remove Ctrl-A sequences from string
 o New bbs.batch_clear() method
 o New bbs.chat_sec() method
 o New bbs.sync() method
@@ -178,6 +182,7 @@ o New system.find_login_id() method
 o Allow system.matchuserdata() to search deleted user records
 o New property: system.login_settings
 o New property: system.mail_settings
+o New property: system.guru
 o New console properties:
   - line_delay
   - max_getkey_inactivity
@@ -219,6 +224,8 @@ o Socket inactivity watchdog now supported and configurable with separate
     but is reset upon received TCP traffic of any kind (even Telnet NOP/GA)
 o Progress-update displays are now optimized for slow (e.g. modem) connections
 o Basic PETSCII output column/line counting support (for auto-pause)
+o All input is translated for terminal idiosyncrasies (e.g. DEL<->BackSpace
+  and PETSCII) in the terminal server's input thread
 o Displayed Instant Messages (notifications and telegrams) are now stored
   and historic messages viewable via ;msgs command and 'V' from the ^P prompt
 o New display file naming (*.cXX.[asc|msg|ans|rip|seq]) where XX is the
@@ -320,6 +327,10 @@ o Minimum disk space more universally enforced and no longer limited to 65535K
 o Better access enforcement to files in batch download queues
 o Remove defunct files from batch download queue during logon
 o Store/reuse file download throughput (in CPS), for transfer estimates/ETA
+o User-to-user file transfer recipients were required to have read/view access
+  to the "User" directory - this was in error since v3.19, users don't
+  normally have access to list the files in the user-to-user ("User")
+  directory, for good reason (these files are supposed to be private)
 
 Message Bases/Areas
 ~~~~~~~~~~~~~~~~~~~
@@ -332,7 +343,15 @@ o Fix erroneous filtering of vote messages by age
   e.g. !Filtering QWK message from (null) due to age: 19321 days
 o Fix: Include blank lines in messages edited with internal editor
 o Don't save draft messages upon disconnect for Guest or "no one" (user #0)
+o Ignore trailing white-space from message subjects before hashing
+  Use new chksmb -S option to ignore resulting Subject CRC mismatch errors
 o Improved MIME/QP-encoded message text parsing
+  (including MIME non-quoted "boundary" values)
+o Saving changes to an existing message header can increase the required
+  header block allocation (i.e. if new header fields are added or extended)
+  by moving the header if necessary in the .shd file, thus eliminating the old
+  "illegal header length increase" error that could occur when modifying an
+  existing message header
 
 SBBSecho
 ~~~~~~~~
