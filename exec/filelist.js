@@ -1,4 +1,5 @@
 // List files in one or more Synchronet v3.19 file base directories
+// Note: '-strip' option requires v3.20 or later
 
 load("file_size.js");
 load("string.js");
@@ -23,6 +24,14 @@ function archive_date(file)
 	for(var i = 0; i < list.length; i++)
 		t = Math.max(list[i].time, t);
 	return t;
+}
+
+function is_user_accessible_dir(dir)
+{
+	if(user.number === 0)
+		return true;
+	return user.compare_ars(file_area.dir[dir].ars)
+		&& user.compare_ars(file_area.dir[dir].download_ars);
 }
 
 var sort_prop = "name";
@@ -73,6 +82,9 @@ for(var i = 0; i < argc; i++) {
 			writeln("  -i              perform case-insensitive global sorting");
 			writeln("  -reverse        reverse the sort order");
 			writeln("  -json[=spaces]  use JSON formatted output");
+			writeln("  -utf8           use UTF-8 encoded output (instead of CP437)");
+			writeln("  -strip          strip Ctrl-A (attribute) sequences from output");
+			writeln("  -user=<name>    specify user to use for directory access checks");
 			writeln("  -new=<days>     include new files uploaded in past <days>");
 			writeln("  -p=<list>       specify comma-separated list of property names to print");
 			writeln("  -cdt            include credit value instead of file size");
@@ -98,8 +110,11 @@ for(var i = 0; i < argc; i++) {
 				alert("Library not found: " + lib);
 				exit(1);
 			}
-			for(var j = 0; j < file_area.lib[lib].dir_list.length; j++)
-				dir_list.push(file_area.lib[lib].dir_list[j].code);
+			for(var j = 0; j < file_area.lib[lib].dir_list.length; j++) {
+				var dir = file_area.lib[lib].dir_list[j].code;
+				if(is_user_accessible_dir(dir))
+					dir_list.push(dir);
+			}
 			options.auto = true;
 			continue;
 		}
@@ -123,6 +138,12 @@ for(var i = 0; i < argc; i++) {
 		if(opt.indexOf("sort=") == 0) {
 			sort_prop = opt.slice(5);
 			options.sort = true;
+			continue;
+		}
+		if(opt.indexOf("user=") == 0) {
+			user.number = system.matchuser(opt.slice(5));
+			if(user.number < 1)
+				alert("Invalid user specified: " + opt.slice(5));
 			continue;
 		}
 		if(opt == "i") {
@@ -181,8 +202,10 @@ for(var i = 0; i < argc; i++) {
 			continue;
 		}
 		if(opt == "all") {
-			for(var dir in file_area.dir)
-				dir_list.push(dir);
+			for(var dir in file_area.dir) {
+				if(is_user_accessible_dir(dir))
+					dir_list.push(dir);
+			}
 			continue;
 		}
 		options[opt] = true;
@@ -349,8 +372,13 @@ for(var i = 0; i < file_list.length; i++) {
 	output.push(list_file(file, fmt, props));
 }
 
-for(var i in output)
+for(var i in output) {
+	if(options.utf8)
+		output[i] = utf8_encode(output[i]);
+	if(options.strip)
+		output[i] = strip_ctrl_a(output[i]);
 	writeln(output[i]);
+}
 
 function archive_contents(path, list)
 {
