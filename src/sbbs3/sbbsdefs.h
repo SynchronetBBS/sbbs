@@ -90,8 +90,8 @@
 #define MAX_TEXTDAT_ITEM_LEN	2000
 
 
-#define LEN_DIR		63		/* Maximum length of directory paths		*/
-#define LEN_CMD		63		/* Maximum length of command lines			*/
+#define LEN_DIR		100		/* Maximum length of directory paths		*/
+#define LEN_CMD		100		/* Maximum length of command lines			*/
 
 #define LEN_CODE	16		/* Maximum length of internal codes			*/
 #define LEN_QWKID	8		/* Maximum length of QWK-ID					*/

@@ -2817,7 +2817,7 @@ long getlastmsg(uint subnum, uint32_t *ptr, /* unused: */time_t *t)
 		bail(1);
 		return -1;
 	}
-	sprintf(smbfile.file,"%s%s",scfg.sub[subnum]->data_dir,scfg.sub[subnum]->code);
+	SAFEPRINTF2(smbfile.file,"%s%s",scfg.sub[subnum]->data_dir,scfg.sub[subnum]->code);
 	smbfile.retry_time=scfg.smb_retry_time;
 	if((i=smb_open(&smbfile))!=SMB_SUCCESS) {
 		lprintf(LOG_ERR,"ERROR %d (%s) line %d opening %s",i,smbfile.last_error,__LINE__,smbfile.file);
@@ -5950,7 +5950,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			}
 
 			if(smb[cur_smb].shd_fp==NULL) { 	/* Currently closed */
-				sprintf(smb[cur_smb].file,"%s%s",scfg.sub[cfg.area[i].sub]->data_dir
+				SAFEPRINTF2(smb[cur_smb].file,"%s%s",scfg.sub[cfg.area[i].sub]->data_dir
 					,scfg.sub[cfg.area[i].sub]->code);
 				smb[cur_smb].retry_time=scfg.smb_retry_time;
 				if((result=smb_open(&smb[cur_smb]))!=SMB_SUCCESS) {

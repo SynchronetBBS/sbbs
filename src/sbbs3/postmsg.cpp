@@ -421,9 +421,9 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 
 	if(!SMB_IS_OPEN(smb)) {
 		if(smb->subnum==INVALID_SUB)
-			sprintf(smb->file,"%smail",cfg->data_dir);
+			SAFEPRINTF(smb->file,"%smail",cfg->data_dir);
 		else
-			sprintf(smb->file,"%s%s",cfg->sub[smb->subnum]->data_dir,cfg->sub[smb->subnum]->code);
+			SAFEPRINTF2(smb->file,"%s%s",cfg->sub[smb->subnum]->data_dir,cfg->sub[smb->subnum]->code);
 		smb->retry_time=cfg->smb_retry_time;
 		if((i=smb_open(smb))!=SMB_SUCCESS)
 			return(i);

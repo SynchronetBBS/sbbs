@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 			continue;
 		fprintf(stdout,"%-*s  %s\n"
 			,LEN_GSNAME,cfg.grp[cfg.sub[i]->grp]->sname,cfg.sub[i]->lname);
-		sprintf(smb.file,"%s%s",cfg.sub[i]->data_dir,cfg.sub[i]->code);
+		SAFEPRINTF2(smb.file,"%s%s",cfg.sub[i]->data_dir,cfg.sub[i]->code);
 		smb.retry_time=30;
 		smb.subnum=i;
 		if((j=smb_open(&smb))!=0) {

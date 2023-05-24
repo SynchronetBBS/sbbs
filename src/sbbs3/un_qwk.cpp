@@ -290,7 +290,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if(lastsub!=INVALID_SUB)
 				smb_close(&smb);
 			lastsub=INVALID_SUB;
-			sprintf(smb.file,"%s%s",cfg.sub[j]->data_dir,cfg.sub[j]->code);
+			SAFEPRINTF2(smb.file,"%s%s",cfg.sub[j]->data_dir,cfg.sub[j]->code);
 			smb.retry_time=cfg.smb_retry_time;
 			smb.subnum=j;
 			if((k=smb_open(&smb))!=0) {
