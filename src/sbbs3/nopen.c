@@ -98,11 +98,9 @@ FILE* fnopen(int* fd, const char* str, int access)
 BOOL ftouch(const char* fname)
 {
 	int file;
-	struct utimbuf ut;
 
 	/* update the time stamp */
-	ut.actime = ut.modtime = time(NULL);
-	if(utime(fname, &ut)==0)
+	if(utime(fname, NULL)==0)
 		return TRUE;
 
 	/* create the file */

@@ -127,7 +127,6 @@ void semfile_list_free(str_list_t* filelist)
 BOOL semfile_signal(const char* fname, const char* text)
 {
 	int file;
-	struct utimbuf ut;
 	size_t textlen = 0;
 	ssize_t wrlen = 0;
 #if !defined(NO_SOCKET_SUPPORT)
@@ -143,6 +142,5 @@ BOOL semfile_signal(const char* fname, const char* text)
 	close(file);
 
 	/* update the time stamp */
-	ut.actime = ut.modtime = time(NULL);
-	return utime(fname, &ut)==0 && wrlen == (ssize_t)textlen;
+	return utime(fname, NULL)==0 && wrlen == (ssize_t)textlen;
 }

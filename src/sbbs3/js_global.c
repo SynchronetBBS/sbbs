@@ -3406,6 +3406,7 @@ js_utime(JSContext *cx, uintN argc, jsval *arglist)
 	int32			actime;
 	int32			modtime;
 	struct utimbuf	ut;
+	struct utimbuf*	tp = NULL;
 	jsrefcount		rc;
 	BOOL			ret;
 
@@ -3421,11 +3422,8 @@ js_utime(JSContext *cx, uintN argc, jsval *arglist)
 	if(fname==NULL)
 		return(JS_TRUE);
 
-	/* use current time as default */
-	ut.actime = ut.modtime = time(NULL);
-
 	if(argc>1) {
-		actime=modtime=(int32_t)ut.actime;
+		actime=modtime=time32(NULL);
 		if(!JS_ValueToInt32(cx,argv[1],&actime)) {
 			free(fname);
 			return JS_FALSE;
@@ -3438,10 +3436,11 @@ js_utime(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		ut.actime=actime;
 		ut.modtime=modtime;
+		tp = &ut;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	ret=utime(fname,&ut)==0;
+	ret=utime(fname, tp)==0;
 	free(fname);
 	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(ret));
