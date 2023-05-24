@@ -1938,7 +1938,7 @@ main(int argc, char **argv)
 	if ((txtinfo.currmode == screen_to_ciolib(settings.startup_mode))
 	    || ((settings.startup_mode == SCREEN_MODE_CURRENT) && (txtinfo.currmode == C80))) {
 		sf = getscaling();
-		if (((sf > 0) && (sf != settings.scaling_factor))) {
+		if (((sf > 0.0) && (sf != settings.scaling_factor))) {
 			char       inipath[MAX_PATH + 1];
 			FILE      *inifile;
 			str_list_t inicontents;
@@ -1951,8 +1951,9 @@ main(int argc, char **argv)
 			else {
 				inicontents = strListInit();
 			}
-			if ((sf > 0) && (sf != settings.scaling_factor))
+			if ((sf > 0.0) && (sf != settings.scaling_factor)) {
 				iniSetFloat(&inicontents, "SyncTERM", "ScalingFactor", sf, &ini_style);
+			}
 			if ((inifile = fopen(inipath, "w")) != NULL) {
 				iniWriteFile(inifile, inicontents);
 				fclose(inifile);

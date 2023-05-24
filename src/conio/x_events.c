@@ -481,14 +481,16 @@ static void resize_window()
 	pthread_mutex_lock(&vstatlock);
 	bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
 	if (width == vstat.winwidth && height == vstat.winheight) {
-		vstat.scaling = x_cvstat.scaling = bitmap_double_mult_inside(width, height);
+		x_cvstat.scaling = bitmap_double_mult_inside(width, height);
+		vstat.scaling = x_cvstat.scaling;
 		pthread_mutex_unlock(&vstatlock);
 		resize_xim();
 		return;
 	}
 	x_cvstat.winwidth = vstat.winwidth;
 	x_cvstat.winheight = vstat.winheight;
-	vstat.scaling = x_cvstat.scaling = bitmap_double_mult_inside(width, height);
+	x_cvstat.scaling = bitmap_double_mult_inside(width, height);
+	vstat.scaling = x_cvstat.scaling;
 	pthread_mutex_unlock(&vstatlock);
 	x11.XResizeWindow(dpy, win, width, height);
 	resize_xim();
@@ -859,16 +861,21 @@ static int x11_event(XEvent *ev)
 		case ConfigureNotify: {
 			bool resize = false;
 
-			if (x11_window_xpos != ev->xconfigure.x || x11_window_ypos != ev->xconfigure.y) {
-				x11_window_xpos=ev->xconfigure.x;
-				x11_window_ypos=ev->xconfigure.y;
+			if (ev->xconfigure.window == win) {
+				if (x11_window_xpos != ev->xconfigure.x || x11_window_ypos != ev->xconfigure.y) {
+					x11_window_xpos=ev->xconfigure.x;
+					x11_window_ypos=ev->xconfigure.y;
+				}
+				pthread_mutex_lock(&vstatlock);
+				if (ev->xconfigure.width != vstat.winwidth || ev->xconfigure.height != vstat.winheight) {
+					// XWayland on ChromeOS appears to send a 1x1 resize event early on for unknown reasons... inore it.
+					if (ev->xconfigure.width != 1 && ev->xconfigure.height != 1)
+						resize = true;
+				}
+				pthread_mutex_unlock(&vstatlock);
+				if (resize)
+					handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
 			}
-			pthread_mutex_lock(&vstatlock);
-			if (ev->xconfigure.width != vstat.winwidth || ev->xconfigure.height != vstat.winheight)
-				resize = true;
-			pthread_mutex_unlock(&vstatlock);
-			if (resize)
-				handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
 			break;
 		}
 		case NoExpose:

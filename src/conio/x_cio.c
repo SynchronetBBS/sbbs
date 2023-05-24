@@ -554,7 +554,7 @@ void x_setscaling(double newval)
 
 double x_getscaling(void)
 {
-	int ret;
+	double ret;
 
 	pthread_mutex_lock(&vstatlock);
 	ret = vstat.scaling;
