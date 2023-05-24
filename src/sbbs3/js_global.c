@@ -1103,6 +1103,40 @@ js_strip_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_strip_ctrl_a(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		buf = NULL;
+	JSString*	js_str;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if(!js_argc(cx, argc, 1))
+		return JS_FALSE;
+
+	if(JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL);
+	HANDLE_PENDING(cx, buf);
+	if(buf == NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	remove_ctrl_a(buf, buf);
+	JS_RESUMEREQUEST(cx, rc);
+
+	js_str = JS_NewStringCopyZ(cx, buf);
+	free(buf);
+	if(js_str == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	return JS_TRUE;
+}
+
+static JSBool
 js_strip_ansi(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -4862,9 +4896,13 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,310
 	},		
 	{"strip_ctrl",		js_strip_ctrl,		1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("Strip control characters from string, returns modified string")
+	,JSDOCSTR("Strip all control characters and Ctrl-A (attribute) sequences from string, returns modified string")
 	,310
 	},		
+	{"strip_ctrl_a",	js_strip_ctrl_a,	1,	JSTYPE_STRING,	JSDOCSTR("text")
+	,JSDOCSTR("Strip all Ctrl-A (attribute) sequences from string, returns modified string")
+	,320
+	},
 	{"strip_ansi",		js_strip_ansi,		1,	JSTYPE_STRING,	JSDOCSTR("text")
 	,JSDOCSTR("Strip all ANSI terminal control sequences from string, returns modified string")
 	,31802
