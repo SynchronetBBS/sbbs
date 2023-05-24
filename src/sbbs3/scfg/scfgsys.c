@@ -124,7 +124,7 @@ int edit_sys_id(int page, int total)
 			"\n"
 			"The maximum length of the ID is eight characters and cannot contain\n"
 			"spaces or other invalid DOS filename characters.  This ID should not\n"
-			"begin with a number.\n" 
+			"begin with a number.\n"
 			"\n"
 			"In a QWK packet network, each system must have a unique BBS ID.\n"
 		;
@@ -158,7 +158,7 @@ static int configure_dst(int page, int total)
 		"If your system is using a U.S. standard time zone, and you would like\n"
 		"to have the daylight saving time `flag` automatically toggled for you,\n"
 		"set this option to ~Automatic~ (recommended).\n"
-		"\n"			
+		"\n"
 		"The ~DST~ `flag` is used for display purposes only (e.g. to display \"PDT\"\n"
 		"instead of \"PST\" and calculate the correct offset from UTC), it does not\n"
 		"actually change the time on your computer system(s) for you.\n"
@@ -772,7 +772,7 @@ void security_cfg(void)
 					;
 					uifc.input(WIN_MID,0,0,"Maximum Days Between New Password"
 						,str,5,K_NUMBER|K_EDIT);
-					cfg.sys_pwdays=atoi(str); 
+					cfg.sys_pwdays=atoi(str);
 				}
 				else if(i==1 && cfg.sys_pwdays) {
 					cfg.sys_pwdays=0;
@@ -877,7 +877,7 @@ void security_cfg(void)
 							,tmp
 							,cfg.level_misc[i]&LEVEL_EXPTOVAL ? "Val Set" : "Level"
 							,cfg.level_misc[i]&(LEVEL_EXPTOVAL|LEVEL_EXPTOLVL) ?
-								cfg.level_expireto[i] : cfg.expired_level); 
+								cfg.level_expireto[i] : cfg.expired_level);
 					}
 					opt[i][0]=0;
 					i=0;
@@ -1013,7 +1013,7 @@ void security_cfg(void)
 								if(j==0) {
 									cfg.level_misc[i]&=
 										~(LEVEL_EXPTOLVL|LEVEL_EXPTOVAL);
-									break; 
+									break;
 								}
 								if(j==1) {
 									cfg.level_misc[i]&=~LEVEL_EXPTOVAL;
@@ -1023,7 +1023,7 @@ void security_cfg(void)
 										,ultoa(cfg.level_expireto[i],tmp,10),2
 										,K_EDIT|K_NUMBER);
 									cfg.level_expireto[i]=atoi(tmp);
-									break; 
+									break;
 								}
 								cfg.level_misc[i]&=~LEVEL_EXPTOLVL;
 								cfg.level_misc[i]|=LEVEL_EXPTOVAL;
@@ -1033,8 +1033,8 @@ void security_cfg(void)
 									,K_EDIT|K_NUMBER);
 								cfg.level_expireto[i]=atoi(tmp);
 								break;
-						} 
-					} 
+						}
+					}
 				}
 				break;
 			case __COUNTER__:	/* Expired Account Values */
@@ -1151,8 +1151,8 @@ void security_cfg(void)
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Restriction Flags",str,26
 								,K_EDIT|K_UPPER|K_ALPHA);
 							cfg.expired_rest=aftou32(str);
-							break; 
-						} 
+							break;
+						}
 				}
 				break;
 			case __COUNTER__:	/* Quick-Validation Values */
@@ -1281,11 +1281,11 @@ void security_cfg(void)
 									,ultoa(cfg.val_cdt[i],tmp,10),10
 									,K_NUMBER|K_EDIT);
 								cfg.val_cdt[i]=atol(tmp);
-								break; 
-						} 
-					} 
+								break;
+						}
+					}
 				}
-				break; 
+				break;
 		}
 	}
 }
@@ -1375,7 +1375,7 @@ int edit_sys_newuser_fback_policy(int page, int total)
 		"is sent, e.g. `1` for user number one.\n"
 		"\n"
 		"This feature can be disabled by setting this value to `0`, allowing new\n"
-		"users to register and logon without sending validation feedback.\n" 
+		"users to register and logon without sending validation feedback.\n"
 	;
 	if(page)
 		mode = wiz_help(page, total, uifc.helpbuf);
@@ -1494,9 +1494,9 @@ void cfg_notify(void)
 				if(i>=0 && i<=LOG_ERR)
 					cfg.errlevel=i;
 				break;
-		} 
+		}
 	}
-} 
+}
 
 void newuser_qwk_opts(void)
 {
@@ -1707,25 +1707,25 @@ void sys_cfg(void)
 				done=0;
 				while(!done) {
 					i=0;
-					sprintf(opt[i++],"%-33.33s%s","Allow User Aliases"
+					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Allow User Aliases"
 						,cfg.uq&UQ_ALIASES ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","Allow Time Banking"
+					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Allow Time Banking"
 						,cfg.sys_misc&SM_TIMEBANK ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","Allow Credit Conversions"
+					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Allow Credit Conversions"
 						,cfg.sys_misc&SM_NOCDTCVT ? "No" : "Yes");
-					sprintf(opt[i++],"%-33.33s%s","Short Sysop Page"
+					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Short Sysop Page"
 						,cfg.sys_misc&SM_SHRTPAGE ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","Include Sysop in Statistics"
+					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Include Sysop in Statistics"
 						,cfg.sys_misc&SM_SYSSTAT ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","Use Location in User Lists"
+					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Use Location in User Lists"
 						,cfg.sys_misc&SM_LISTLOC ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","Military (24 hour) Time Format"
+					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Military (24 hour) Time Format"
 						,cfg.sys_misc&SM_MILITARY ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","European Date Format (DD/MM/YY)"
+					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","European Date Format (DD/MM/YY)"
 						,cfg.sys_misc&SM_EURODATE ? "Yes" : "No");
-					sprintf(opt[i++],"%-33.33s%s","Display Sys Info During Logon"
+					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Display Sys Info During Logon"
 						,cfg.sys_misc&SM_NOSYSINFO ? "No" : "Yes");
-					sprintf(opt[i++],"%-33.33s%s","Display Node List During Logon"
+					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Display Node List During Logon"
 						,cfg.sys_misc&SM_NONODELIST ? "No" : "Yes");
 					opt[i][0]=0;
 					uifc.helpbuf=
@@ -1877,7 +1877,7 @@ void sys_cfg(void)
 								cfg.sys_misc|=SM_NONODELIST;
 							}
 							break;
-						} 
+						}
 					}
 				break;
 			case 6:    /* New User Values */
@@ -2050,7 +2050,7 @@ void sys_cfg(void)
 						case 10:
 							if(!cfg.total_xedits) {
 								uifc.msg("No External Editors Configured");
-								break; 
+								break;
 							}
 							strcpy(opt[0],"Internal");
 							for(i=1;i<=cfg.total_xedits;i++)
@@ -2143,55 +2143,55 @@ void sys_cfg(void)
 							j=0;
 							while(1) {
 								i=0;
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Expert Menu Mode"
 									,cfg.new_misc&EXPERT ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Screen Pause"
 									,cfg.new_misc&UPAUSE ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Spinning Cursor"
 									,cfg.new_misc&SPIN ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Clear Screen"
 									,cfg.new_misc&CLRSCRN ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Ask For New Scan"
 									,cfg.new_misc&ASK_NSCAN ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Ask For Your Msg Scan"
 									,cfg.new_misc&ASK_SSCAN ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Automatic New File Scan"
 									,cfg.new_misc&ANFSCAN ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Remember Current Sub-board"
 									,cfg.new_misc&CURSUB ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Batch Download File Flag"
 									,cfg.new_misc&BATCHFLAG ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Extended File Descriptions"
 									,cfg.new_misc&EXTDESC ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Hot Keys"
 									,cfg.new_misc&COLDKEYS ? "No":"Yes");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Auto Hang-up After Xfer"
 									,cfg.new_misc&AUTOHANG ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Multinode Chat Echo"
 									,cfg.new_chat & CHAT_ECHO ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Multinode Chat Actions"
 									,cfg.new_chat & CHAT_ACTION ? "Yes":"No");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Pageable for Chat"
 									,cfg.new_chat & CHAT_NOPAGE ? "No":"Yes");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Node Activity Messages"
 									,cfg.new_chat & CHAT_NOACT ? "No":"Yes");
-								sprintf(opt[i++],"%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 									,"Split-Screen Private Chat"
 									,cfg.new_chat & CHAT_SPLITP ? "Yes":"No");
 								opt[i][0]=0;
@@ -2270,61 +2270,61 @@ void sys_cfg(void)
 				j=0;
 				while(1) {
 					i=0;
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Real Name"
 						,cfg.uq&UQ_REALNAME ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Force Unique Real Name"
 						,cfg.uq&UQ_DUPREAL ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Force Upper/Lower Case"
 						,cfg.uq&UQ_NOUPRLWR ? "No":"Yes");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Company Name"
 						,cfg.uq&UQ_COMPANY ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Chat Handle / Call Sign"
 						,cfg.uq&UQ_HANDLE ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Force Unique Handle / Call Sign"
 						,cfg.uq&UQ_DUPHAND ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"E-mail/NetMail Address"
 						,cfg.uq&UQ_NONETMAIL ? "No":"Yes");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Force Unique E-mail/NetMail Address"
 						,cfg.uq&UQ_DUPNETMAIL ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Sex (Gender)"
 						,cfg.uq&UQ_SEX ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Birthday"
 						,cfg.uq&UQ_BIRTH ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Address and Zip Code"
 						,cfg.uq&UQ_ADDRESS ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Location"
 						,cfg.uq&UQ_LOCATION ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Require Comma in Location"
 						,cfg.uq&UQ_NOCOMMAS ? "No":"Yes");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Phone Number"
 						,cfg.uq&UQ_PHONE ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Allow EX-ASCII in Answers"
 						,cfg.uq&UQ_NOEXASC ? "No":"Yes");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"External Editor"
 						,cfg.uq&UQ_XEDIT ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Command Shell"
 						,cfg.uq&UQ_CMDSHELL ? "Yes":"No");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Default Settings"
 						,cfg.uq&UQ_NODEF ? "No":"Yes");
-					sprintf(opt[i++],"%-27.27s %-3.3s"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 						,"Color Terminal"
 						,cfg.uq&UQ_COLORTERM ? "Yes":"No");
 					opt[i][0]=0;
@@ -2506,7 +2506,7 @@ void sys_cfg(void)
 							if(uifc.input(WIN_MID|WIN_SAV,0,9,"Data Directory"
 								,str,sizeof(cfg.data_dir)-1,K_EDIT)>0) {
 								backslash(str);
-								SAFECOPY(cfg.data_dir,str); 
+								SAFECOPY(cfg.data_dir,str);
 							}
 							break;
 						case 2:
@@ -2521,7 +2521,7 @@ void sys_cfg(void)
 							if(uifc.input(WIN_MID|WIN_SAV,0,9,"Logs Directory"
 								,str,sizeof(cfg.logs_dir)-1,K_EDIT)>0) {
 								backslash(str);
-								SAFECOPY(cfg.logs_dir,str); 
+								SAFECOPY(cfg.logs_dir,str);
 							}
 							break;
 						case 3:
@@ -2543,7 +2543,7 @@ void sys_cfg(void)
 							if(uifc.input(WIN_MID|WIN_SAV,0,9,"Exec Directory"
 								,str,sizeof(cfg.exec_dir)-1,K_EDIT)>0) {
 								backslash(str);
-								SAFECOPY(cfg.exec_dir,str); 
+								SAFECOPY(cfg.exec_dir,str);
 							}
 							break;
 						case 4:
@@ -2567,7 +2567,7 @@ void sys_cfg(void)
 							if(uifc.input(WIN_MID|WIN_SAV,0,9,"Mods Directory"
 								,str,sizeof(cfg.mods_dir)-1,K_EDIT)>0) {
 								backslash(str);
-								SAFECOPY(cfg.mods_dir,str); 
+								SAFECOPY(cfg.mods_dir,str);
 							}
 							break;
 						case 5:
@@ -3018,10 +3018,10 @@ void sys_cfg(void)
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Temporary File Transfer Module"
 								,cfg.tempxfer_mod, sizeof(cfg.tempxfer_mod)-1, K_EDIT);
 							break;
-					} 
+					}
 				}
 				break;
 
-		} 
+		}
 	}
 }

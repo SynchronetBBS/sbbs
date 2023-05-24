@@ -707,7 +707,7 @@ void tevents_cfg()
 					j=0;
 					while(1) {
 						for(k=0;k<7;k++)
-							sprintf(opt[k],"%-30s %3s"
+							snprintf(opt[k], MAX_OPLN, "%-30s %3s"
 								,wday[k],(cfg.event[i]->days&(1<<k)) ? "Yes":"No");
 						strcpy(opt[k++],"All");
 						strcpy(opt[k++],"None");
@@ -1512,18 +1512,18 @@ void xtrn_cfg(uint section)
 				case __COUNTER__:
 					k=0;
 					strcpy(opt[k++],"None");
-					sprintf(opt[k++],"%-15s %s","Synchronet","XTRN.DAT");
-					sprintf(opt[k++],"%-15s %s","WWIV","CHAIN.TXT");
-					sprintf(opt[k++],"%-15s %s","GAP","DOOR.SYS");
-					sprintf(opt[k++],"%-15s %s","RBBS/QuickBBS","DORINFO#.DEF");
-					sprintf(opt[k++],"%-15s %s","Wildcat","CALLINFO.BBS");
-					sprintf(opt[k++],"%-15s %s","PCBoard","PCBOARD.SYS");
-					sprintf(opt[k++],"%-15s %s","SpitFire","SFDOORS.DAT");
-					sprintf(opt[k++],"%-15s %s","MegaMail","UTIDOOR.TXT");
-					sprintf(opt[k++],"%-15s %s","Solar Realms","DOORFILE.SR");
-					sprintf(opt[k++],"%-15s %s","RBBS/QuickBBS","DORINFO1.DEF");
-					sprintf(opt[k++],"%-15s %s","TriBBS","TRIBBS.SYS");
-					sprintf(opt[k++],"%-15s %s","Mystic","DOOR32.SYS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Synchronet","XTRN.DAT");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","WWIV","CHAIN.TXT");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","GAP","DOOR.SYS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","RBBS/QuickBBS","DORINFO#.DEF");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Wildcat","CALLINFO.BBS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","PCBoard","PCBOARD.SYS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","SpitFire","SFDOORS.DAT");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","MegaMail","UTIDOOR.TXT");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Solar Realms","DOORFILE.SR");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","RBBS/QuickBBS","DORINFO1.DEF");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","TriBBS","TRIBBS.SYS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Mystic","DOOR32.SYS");
 					opt[k][0]=0;
 					k=cfg.xtrn[i]->type;
 					uifc.helpbuf=
@@ -1630,21 +1630,21 @@ void xtrn_cfg(uint section)
 							sprintf(str,"%u minutes",cfg.xtrn[i]->textra);
 						else
 							strcpy(str,"None");
-						sprintf(opt[k++],"%-25.25s%s","Extra Time",str);
+						snprintf(opt[k++], MAX_OPLN, "%-25.25s%s","Extra Time",str);
 						if(cfg.xtrn[i]->maxtime)
 							sprintf(str,"%u minutes",cfg.xtrn[i]->maxtime);
 						else
 							strcpy(str,"None");
-						sprintf(opt[k++],"%-25.25s%s","Maximum Time",str);
-						sprintf(opt[k++],"%-25.25s%s","Suspended (Free) Time"
+						snprintf(opt[k++], MAX_OPLN, "%-25.25s%s","Maximum Time",str);
+						snprintf(opt[k++], MAX_OPLN, "%-25.25s%s","Suspended (Free) Time"
 							,cfg.xtrn[i]->misc&FREETIME ? "Yes" : "No");
-						sprintf(opt[k++],"%-25.25s%s","Monitor Time Left"
+						snprintf(opt[k++], MAX_OPLN, "%-25.25s%s","Monitor Time Left"
 							,cfg.xtrn[i]->misc&XTRN_CHKTIME ? "Yes" : "No");
 						if(cfg.xtrn[i]->max_inactivity)
 							duration_to_vstr(cfg.xtrn[i]->max_inactivity, str, sizeof(str));
 						else
 							SAFECOPY(str, "None");
-						sprintf(opt[k++],"%-25.25s%s","Maximum Inactivity", str);
+						snprintf(opt[k++], MAX_OPLN, "%-25.25s%s","Maximum Inactivity", str);
 						opt[k][0]=0;
 						uifc.helpbuf=
 							"`Online Program Time Options:`\n"
@@ -2242,18 +2242,18 @@ void xedit_cfg()
 				case 15:
 					k=0;
 					strcpy(opt[k++],"None");
-					sprintf(opt[k++],"%-15s %s","Synchronet","XTRN.DAT");
-					sprintf(opt[k++],"%-15s %s","WWIV","CHAIN.TXT");
-					sprintf(opt[k++],"%-15s %s","GAP","DOOR.SYS");
-					sprintf(opt[k++],"%-15s %s","RBBS/QuickBBS","DORINFO#.DEF");
-					sprintf(opt[k++],"%-15s %s","Wildcat","CALLINFO.BBS");
-					sprintf(opt[k++],"%-15s %s","PCBoard","PCBOARD.SYS");
-					sprintf(opt[k++],"%-15s %s","SpitFire","SFDOORS.DAT");
-					sprintf(opt[k++],"%-15s %s","MegaMail","UTIDOOR.TXT");
-					sprintf(opt[k++],"%-15s %s","Solar Realms","DOORFILE.SR");
-					sprintf(opt[k++],"%-15s %s","RBBS/QuickBBS","DORINFO1.DEF");
-					sprintf(opt[k++],"%-15s %s","TriBBS","TRIBBS.SYS");
-					sprintf(opt[k++],"%-15s %s","Mystic","DOOR32.SYS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Synchronet","XTRN.DAT");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","WWIV","CHAIN.TXT");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","GAP","DOOR.SYS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","RBBS/QuickBBS","DORINFO#.DEF");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Wildcat","CALLINFO.BBS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","PCBoard","PCBOARD.SYS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","SpitFire","SFDOORS.DAT");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","MegaMail","UTIDOOR.TXT");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Solar Realms","DOORFILE.SR");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","RBBS/QuickBBS","DORINFO1.DEF");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","TriBBS","TRIBBS.SYS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Mystic","DOOR32.SYS");
 					opt[k][0]=0;
 					k=cfg.xedit[i]->type;
 					uifc.helpbuf=

@@ -63,13 +63,13 @@ static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
 
 	while(1) {
 		int i = 0;
-		sprintf(opt[i++], "%-30s%u ms", "Delay", login_attempt->delay);
-		sprintf(opt[i++], "%-30s%u ms", "Throttle", login_attempt->throttle);
-		sprintf(opt[i++], "%-30s%s", "Hack Log Threshold", threshold(login_attempt->hack_threshold));
-		sprintf(opt[i++], "%-30s%s", "Temporary Ban Threshold", threshold(login_attempt->tempban_threshold));
-		sprintf(opt[i++], "%-30s%s", "Temporary Ban Duration"
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Delay", login_attempt->delay);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Throttle", login_attempt->throttle);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Hack Log Threshold", threshold(login_attempt->hack_threshold));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Temporary Ban Threshold", threshold(login_attempt->tempban_threshold));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Temporary Ban Duration"
 			,duration_to_vstr(login_attempt->tempban_duration, tmp, sizeof(tmp)));
-		sprintf(opt[i++], "%-30s%s", "Auto-filter Threshold", threshold(login_attempt->filter_threshold));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-filter Threshold", threshold(login_attempt->filter_threshold));
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
@@ -125,11 +125,11 @@ static void js_startup_cfg(js_startup_t* js)
 
 	while(1) {
 		int i = 0;
-		sprintf(opt[i++], "%-20s%s bytes", "Heap Size", byte_count_to_str(js->max_bytes, str, sizeof(str)));
-		sprintf(opt[i++], "%-20s%u ticks", "Time Limit", js->time_limit);
-		sprintf(opt[i++], "%-20s%u ticks", "GC Interval ", js->gc_interval);
-		sprintf(opt[i++], "%-20s%u ticks", "Yield Interval", js->yield_interval);
-		sprintf(opt[i++], "%-20s%s", "Load Path", js->load_path);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s bytes", "Heap Size", byte_count_to_str(js->max_bytes, str, sizeof(str)));
+		snprintf(opt[i++], MAX_OPLN, "%-20s%u ticks", "Time Limit", js->time_limit);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%u ticks", "GC Interval ", js->gc_interval);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%u ticks", "Yield Interval", js->yield_interval);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Load Path", js->load_path);
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
@@ -203,13 +203,13 @@ static void global_cfg(void)
 
 	while(1) {
 		int i = 0;
-		sprintf(opt[i++], "%-40s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
-		sprintf(opt[i++], "%-40s%s", "TLS Error Level", iniLogLevelStringList()[startup.tls_error_level]);
-		sprintf(opt[i++], "%-40s%s", "Network Interfaces (IPv4/6)", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
-		sprintf(opt[i++], "%-40s%s", "Outbound Interface (IPv4)", IPv4AddressToStr(startup.outgoing4.s_addr, tmp, sizeof(tmp)));
-		sprintf(opt[i++], "%-40s%s", "Bind Retry Count", threshold(startup.bind_retry_count));
-		sprintf(opt[i++], "%-40s%s", "Bind Retry Delay", vduration(startup.bind_retry_delay));
-		sprintf(opt[i++], "%-40s%s", "Semaphore File Check Interval", vduration(startup.sem_chk_freq));
+		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
+		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "TLS Error Level", iniLogLevelStringList()[startup.tls_error_level]);
+		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "Network Interfaces (IPv4/6)", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
+		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "Outbound Interface (IPv4)", IPv4AddressToStr(startup.outgoing4.s_addr, tmp, sizeof(tmp)));
+		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "Bind Retry Count", threshold(startup.bind_retry_count));
+		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "Bind Retry Delay", vduration(startup.bind_retry_delay));
+		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "Semaphore File Check Interval", vduration(startup.sem_chk_freq));
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
@@ -341,40 +341,40 @@ static void termsrvr_cfg(void)
 
 	while(1) {
 		int i = 0;
-		sprintf(opt[i++], "%-30s%s", "Enabled", enabled ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
-		sprintf(opt[i++], "%-30s%u", "First Node", startup.first_node);
-		sprintf(opt[i++], "%-30s%u", "Last Node", startup.last_node);
-		sprintf(opt[i++], "%-30s%s", "DOS Program Support", startup.options & BBS_OPT_NO_DOS ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "SSH Support", startup.options & BBS_OPT_ALLOW_SSH ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "SSH Interfaces"
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", enabled ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "First Node", startup.first_node);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Last Node", startup.last_node);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "DOS Program Support", startup.options & BBS_OPT_NO_DOS ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Support", startup.options & BBS_OPT_ALLOW_SSH ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Interfaces"
 			,startup.options & BBS_OPT_ALLOW_SSH ? strListCombine(startup.ssh_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
-		sprintf(opt[i++], "%-30s%u", "SSH Port", startup.ssh_port);
-		sprintf(opt[i++], "%-30s%s", "SSH Connect Timeout"
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "SSH Port", startup.ssh_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Connect Timeout"
 			,startup.options & BBS_OPT_ALLOW_SSH ? vduration(startup.ssh_connect_timeout) : "N/A");
-		sprintf(opt[i++], "%-30s%s", "Telnet Support", startup.options & BBS_OPT_NO_TELNET ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "Telnet Interfaces"
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Telnet Support", startup.options & BBS_OPT_NO_TELNET ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Telnet Interfaces"
 			,startup.options & BBS_OPT_NO_TELNET ? "N/A" : strListCombine(startup.telnet_interfaces, tmp, sizeof(tmp), ", "));
-		sprintf(opt[i++], "%-30s%u", "Telnet Port", startup.telnet_port);
-		sprintf(opt[i++], "%-30s%s", "Telnet Command Debug"
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Telnet Port", startup.telnet_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Telnet Command Debug"
 			,startup.options & BBS_OPT_NO_TELNET ? "N/A" : startup.options & BBS_OPT_DEBUG_TELNET ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Telnet Send Go-Aheads"
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Telnet Send Go-Aheads"
 			,startup.options & BBS_OPT_NO_TELNET ? "N/A" : startup.options & BBS_OPT_NO_TELNET_GA ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "RLogin Support", startup.options & BBS_OPT_ALLOW_RLOGIN ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "RLogin Interfaces"
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "RLogin Support", startup.options & BBS_OPT_ALLOW_RLOGIN ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "RLogin Interfaces"
 			,startup.options & BBS_OPT_ALLOW_RLOGIN ? strListCombine(startup.rlogin_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
-		sprintf(opt[i++], "%-30s%u", "RLogin Port", startup.rlogin_port);
-		sprintf(opt[i++], "%-30s%u", "40 Column PETSCII Port", startup.pet40_port);
-		sprintf(opt[i++], "%-30s%u", "80 Column PETSCII Port", startup.pet80_port);
-		sprintf(opt[i++], "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
-		sprintf(opt[i++], "%-30s%s", "Max Login Inactivity", vduration(startup.max_login_inactivity));
-		sprintf(opt[i++], "%-30s%s", "Max New User Inactivity", vduration(startup.max_newuser_inactivity));
-		sprintf(opt[i++], "%-30s%s", "Max User Inactivity", vduration(startup.max_session_inactivity));
-		sprintf(opt[i++], "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
-		sprintf(opt[i++], "%-30s%s", "Execute Timed Events", startup.options & BBS_OPT_NO_EVENTS ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "Execute QWK-related Events"
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "RLogin Port", startup.rlogin_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "40 Column PETSCII Port", startup.pet40_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "80 Column PETSCII Port", startup.pet80_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Login Inactivity", vduration(startup.max_login_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max New User Inactivity", vduration(startup.max_newuser_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max User Inactivity", vduration(startup.max_session_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Execute Timed Events", startup.options & BBS_OPT_NO_EVENTS ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Execute QWK-related Events"
 			,startup.options & BBS_OPT_NO_EVENTS ? "N/A" : startup.options & BBS_OPT_NO_QWK_EVENTS ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		if(!enabled)
 			i = 1;
 		opt[i][0] = '\0';
@@ -590,39 +590,39 @@ static void websrvr_cfg(void)
 
 	while(1) {
 		int i = 0;
-		sprintf(opt[i++], "%-30s%s", "Enabled", enabled ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
-		sprintf(opt[i++], "%-30s%s", "HTTP Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
-		sprintf(opt[i++], "%-30s%u", "HTTP Port", startup.port);
-		sprintf(opt[i++], "%-30s%s", "HTTPS Support", startup.options & WEB_OPT_ALLOW_TLS ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "HTTPS Interfaces"
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", enabled ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "HTTP Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "HTTP Port", startup.port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "HTTPS Support", startup.options & WEB_OPT_ALLOW_TLS ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "HTTPS Interfaces"
 			,startup.options & WEB_OPT_ALLOW_TLS ? strListCombine(startup.tls_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
-		sprintf(opt[i++], "%-30s%u", "HTTPS Port", startup.tls_port);
-		sprintf(opt[i++], "%-30s%s", "SSJS File Extension", startup.ssjs_ext);
-		sprintf(opt[i++], "%-30s%s", "Index Filenames", strListCombine(startup.index_file_name, tmp, sizeof(tmp), ", "));
-		sprintf(opt[i++], "%-30s%s", "Content Root Directory", startup.root_dir);
-		sprintf(opt[i++], "%-30s%s", "Error Sub-directory", startup.error_dir);
-		sprintf(opt[i++], "%-30s%s", "Strict Transport Security", startup.options & WEB_OPT_HSTS_SAFE ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Virtual Host Support", startup.options & WEB_OPT_VIRTUAL_HOSTS ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "HTTPS Port", startup.tls_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSJS File Extension", startup.ssjs_ext);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Index Filenames", strListCombine(startup.index_file_name, tmp, sizeof(tmp), ", "));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Content Root Directory", startup.root_dir);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Error Sub-directory", startup.error_dir);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Strict Transport Security", startup.options & WEB_OPT_HSTS_SAFE ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Virtual Host Support", startup.options & WEB_OPT_VIRTUAL_HOSTS ? "Yes" : "No");
 		SAFECOPY(str, startup.logfile_base);
 		if(*str == '\0')
 			SAFEPRINTF(str, "[%slogs/http-*]", cfg.logs_dir);
-		sprintf(opt[i++], "%-30s%s", "Access Logging", startup.options & WEB_OPT_HTTP_LOGGING ? str : strDisabled);
-		sprintf(opt[i++], "%-30s%s", "Max Clients", maximum(startup.max_clients));
-		sprintf(opt[i++], "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
-		sprintf(opt[i++], "%-30s%s", "Filebase Index Script", startup.file_index_script);
-		sprintf(opt[i++], "%-30s%s", "Filebase VPath Prefix", startup.file_vpath_prefix);
-		sprintf(opt[i++], "%-30s%s", "Filebase VPath for VHosts", startup.file_vpath_for_vhosts ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Authentication Methods", startup.default_auth_list);
-		sprintf(opt[i++], "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
-		sprintf(opt[i++], "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Access Logging", startup.options & WEB_OPT_HTTP_LOGGING ? str : strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase Index Script", startup.file_index_script);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase VPath Prefix", startup.file_vpath_prefix);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase VPath for VHosts", startup.file_vpath_for_vhosts ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Authentication Methods", startup.default_auth_list);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		bool cgi_enabled = !(startup.options & WEB_OPT_NO_CGI);
-		sprintf(opt[i++], "%-30s%s", "CGI Support",  cgi_enabled ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Support",  cgi_enabled ? "Yes" : "No");
 		if(cgi_enabled) {
-			sprintf(opt[i++], "%-30s%s", "CGI Directory", startup.cgi_dir);
-			sprintf(opt[i++], "%-30s%s", "CGI File Extensions", strListCombine(startup.cgi_ext, tmp, sizeof(tmp), ", "));
-			sprintf(opt[i++], "%-30s%s", "CGI Default Content-Type", startup.default_cgi_content);
-			sprintf(opt[i++], "%-30s%s", "CGI Max Inactivity", vduration(startup.max_cgi_inactivity));
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Directory", startup.cgi_dir);
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI File Extensions", strListCombine(startup.cgi_ext, tmp, sizeof(tmp), ", "));
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Default Content-Type", startup.default_cgi_content);
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Max Inactivity", vduration(startup.max_cgi_inactivity));
 		}
 		if(!enabled)
 			i = 1;
@@ -853,22 +853,22 @@ static void ftpsrvr_cfg(void)
 
 	while(1) {
 		int i = 0;
-		sprintf(opt[i++], "%-30s%s", "Enabled", enabled ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
-		sprintf(opt[i++], "%-30s%s", "Network Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
-		sprintf(opt[i++], "%-30s%u, Data: %u", "Control Port", startup.port, startup.port - 1);
-		sprintf(opt[i++], "%-30s%s", "Passive Interface (IPv4)"
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", enabled ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Network Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u, Data: %u", "Control Port", startup.port, startup.port - 1);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Passive Interface (IPv4)"
 			,startup.options & FTP_OPT_LOOKUP_PASV_IP ? "<automatic>" : IPv4AddressToStr(startup.pasv_ip_addr.s_addr, tmp, sizeof(tmp)));
-		sprintf(opt[i++], "%-30s%u - %u", "Passive Port Range", startup.pasv_port_low, startup.pasv_port_high);
-		sprintf(opt[i++], "%-30s%s", "Auto-generate Index File", startup.options & FTP_OPT_INDEX_FILE ? startup.index_file_name : strDisabled);
-		sprintf(opt[i++], "%-30s%s", "QWK Message Packet Transfers", startup.options & FTP_OPT_ALLOW_QWK ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "QWK Message Packet Timeout", startup.options & FTP_OPT_ALLOW_QWK ? vduration(startup.qwk_timeout) : "N/A");
-		sprintf(opt[i++], "%-30s%s", "Max Clients", maximum(startup.max_clients));
-		sprintf(opt[i++], "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
-		sprintf(opt[i++], "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
-		sprintf(opt[i++], "%-30s%s", "Sysop File System Access", startup.options & FTP_OPT_NO_LOCAL_FSYS ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "Allow Bounce Transfers", startup.options & FTP_OPT_ALLOW_BOUNCE ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u - %u", "Passive Port Range", startup.pasv_port_low, startup.pasv_port_high);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-generate Index File", startup.options & FTP_OPT_INDEX_FILE ? startup.index_file_name : strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "QWK Message Packet Transfers", startup.options & FTP_OPT_ALLOW_QWK ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "QWK Message Packet Timeout", startup.options & FTP_OPT_ALLOW_QWK ? vduration(startup.qwk_timeout) : "N/A");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Sysop File System Access", startup.options & FTP_OPT_NO_LOCAL_FSYS ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Allow Bounce Transfers", startup.options & FTP_OPT_ALLOW_BOUNCE ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		if(!enabled)
 			i = 1;
 		opt[i][0] = '\0';
@@ -1022,16 +1022,16 @@ static void sendmail_cfg(mail_startup_t* startup)
 
 	while(1) {
 		int i = 0;
-		sprintf(opt[i++], "%-30s%s", "Enabled", startup->options & MAIL_OPT_NO_SENDMAIL ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "Rescan Interval", vduration(startup->rescan_frequency));
-		sprintf(opt[i++], "%-30s%s", "Connect Timeout", vduration(startup->connect_timeout));
-		sprintf(opt[i++], "%-30s%s", "Auto-exempt Recipients", startup->options & MAIL_OPT_NO_AUTO_EXEMPT ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%u", "Max Delivery Attempts", startup->max_delivery_attempts);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", startup->options & MAIL_OPT_NO_SENDMAIL ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Rescan Interval", vduration(startup->rescan_frequency));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Connect Timeout", vduration(startup->connect_timeout));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-exempt Recipients", startup->options & MAIL_OPT_NO_AUTO_EXEMPT ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Max Delivery Attempts", startup->max_delivery_attempts);
 		bool applicable = startup->options & MAIL_OPT_RELAY_TX;
-		sprintf(opt[i++], "%-30s%s", "Delivery Method", applicable ? "Relay" : "Direct");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Delivery Method", applicable ? "Relay" : "Direct");
 		if(applicable) {
-			sprintf(opt[i++], "%-30s%s", "Relay Server Address", startup->relay_server);
-			sprintf(opt[i++], "%-30s%u", "Relay Server TCP Port", startup->relay_port);
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Relay Server Address", startup->relay_server);
+			snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Relay Server TCP Port", startup->relay_port);
 			if(startup->options & MAIL_OPT_RELAY_AUTH_PLAIN)
 				p = "Plain";
 			else if(startup->options & MAIL_OPT_RELAY_AUTH_LOGIN)
@@ -1040,10 +1040,10 @@ static void sendmail_cfg(mail_startup_t* startup)
 				p = "CRAM-MD5";
 			else
 				p = "None";
-			sprintf(opt[i++], "%-30s%s", "Relay Server Authentication", p);
+			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Relay Server Authentication", p);
 			if(startup->options & (MAIL_OPT_RELAY_AUTH_PLAIN | MAIL_OPT_RELAY_AUTH_LOGIN | MAIL_OPT_RELAY_AUTH_CRAM_MD5)) {
-				sprintf(opt[i++], "%-30s%s", "Relay Server Username", startup->relay_user);
-				sprintf(opt[i++], "%-30s%s", "Relay Server Password", startup->relay_pass);
+				snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Relay Server Username", startup->relay_user);
+				snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Relay Server Password", startup->relay_pass);
 			}
 		}
 		if(startup->options & MAIL_OPT_NO_SENDMAIL)
@@ -1170,34 +1170,34 @@ static void mailsrvr_cfg(void)
 
 	while(1) {
 		int i = 0;
-		sprintf(opt[i++], "%-30s%s", "Enabled", enabled ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
-		sprintf(opt[i++], "%-30s%s", "SMTP Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
-		sprintf(opt[i++], "%-30s%u", "SMTP Port", startup.smtp_port);
-		sprintf(opt[i++], "%-30s%s", "Submission Support", startup.options & MAIL_OPT_USE_SUBMISSION_PORT ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%u", "Submission Port", startup.submission_port);
-		sprintf(opt[i++], "%-30s%s", "Submission/TLS Support", startup.options & MAIL_OPT_TLS_SUBMISSION ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%u", "Submission/TLS Port", startup.submissions_port);
-		sprintf(opt[i++], "%-30s%s", "POP3 Support", startup.options & MAIL_OPT_ALLOW_POP3 ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "POP3 Interfaces"
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", enabled ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SMTP Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "SMTP Port", startup.smtp_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Submission Support", startup.options & MAIL_OPT_USE_SUBMISSION_PORT ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Submission Port", startup.submission_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Submission/TLS Support", startup.options & MAIL_OPT_TLS_SUBMISSION ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Submission/TLS Port", startup.submissions_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3 Support", startup.options & MAIL_OPT_ALLOW_POP3 ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3 Interfaces"
 			,startup.options & (MAIL_OPT_ALLOW_POP3 | MAIL_OPT_TLS_POP3)
 				? strListCombine(startup.pop3_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
-		sprintf(opt[i++], "%-30s%u", "POP3 Port", startup.pop3_port);
-		sprintf(opt[i++], "%-30s%s", "POP3/TLS Support", startup.options & MAIL_OPT_TLS_POP3 ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%u", "POP3/TLS Port", startup.pop3s_port);
-		sprintf(opt[i++], "%-30s%s", "Max Clients", maximum(startup.max_clients));
-		sprintf(opt[i++], "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
-		sprintf(opt[i++], "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
-		sprintf(opt[i++], "%-30s%s", "Max Recipients Per Message", maximum(startup.max_recipients));
-		sprintf(opt[i++], "%-30s%s", "Max Messages Waiting", maximum(startup.max_msgs_waiting));
-		sprintf(opt[i++], "%-30s%s bytes", "Max Receive Message Size", byte_count_to_str(startup.max_msg_size, tmp, sizeof(tmp)));
-		sprintf(opt[i++], "%-30s%s", "Default Recipient", startup.default_user);
-		sprintf(opt[i++], "%-30s%s", "Receive By User Number", startup.options & MAIL_OPT_ALLOW_RX_BY_NUMBER ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Receive By Sysop Aliases", startup.options & MAIL_OPT_ALLOW_SYSOP_ALIASES ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Notify Local Recipients", startup.options & MAIL_OPT_NO_NOTIFY ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "Allow Users to Relay Mail", startup.options & MAIL_OPT_ALLOW_RELAY ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "Check Headers against DNSBL", startup.options & MAIL_OPT_DNSBL_CHKRECVHDRS ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "POP3 Port", startup.pop3_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3/TLS Support", startup.options & MAIL_OPT_TLS_POP3 ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "POP3/TLS Port", startup.pop3s_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Recipients Per Message", maximum(startup.max_recipients));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Messages Waiting", maximum(startup.max_msgs_waiting));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s bytes", "Max Receive Message Size", byte_count_to_str(startup.max_msg_size, tmp, sizeof(tmp)));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Default Recipient", startup.default_user);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Receive By User Number", startup.options & MAIL_OPT_ALLOW_RX_BY_NUMBER ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Receive By Sysop Aliases", startup.options & MAIL_OPT_ALLOW_SYSOP_ALIASES ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Local Recipients", startup.options & MAIL_OPT_NO_NOTIFY ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Allow Users to Relay Mail", startup.options & MAIL_OPT_ALLOW_RELAY ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Check Headers against DNSBL", startup.options & MAIL_OPT_DNSBL_CHKRECVHDRS ? "Yes" : "No");
 		if(startup.options & MAIL_OPT_DNSBL_REFUSE)
 			p = "Refuse Session";
 		else if(startup.options & MAIL_OPT_DNSBL_IGNORE)
@@ -1206,10 +1206,10 @@ static void mailsrvr_cfg(void)
 			p = "Refuse Mail";
 		else
 			p = "Tag Mail";
-		sprintf(opt[i++], "%-30s%s%s", "DNS-Blacklisted Servers", startup.options & MAIL_OPT_DNSBL_THROTTLE ? "Throttle and " : "", p);
-		sprintf(opt[i++], "%-30s%s", "Hash DNS-Blacklisted Msgs", startup.options & MAIL_OPT_DNSBL_SPAMHASH ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Kill SPAM When Read", startup.options & MAIL_OPT_KILL_READ_SPAM ? "Yes": "No");
-		sprintf(opt[i++], "%-30s%s", "SendMail Thread...", startup.options & MAIL_OPT_NO_SENDMAIL ? strDisabled : "");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s%s", "DNS-Blacklisted Servers", startup.options & MAIL_OPT_DNSBL_THROTTLE ? "Throttle and " : "", p);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Hash DNS-Blacklisted Msgs", startup.options & MAIL_OPT_DNSBL_SPAMHASH ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Kill SPAM When Read", startup.options & MAIL_OPT_KILL_READ_SPAM ? "Yes": "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SendMail Thread...", startup.options & MAIL_OPT_NO_SENDMAIL ? strDisabled : "");
 		if(!enabled)
 			i = 1;
 		opt[i][0] = '\0';
@@ -1461,11 +1461,11 @@ static void services_cfg(void)
 
 	while(1) {
 		int i = 0;
-		sprintf(opt[i++], "%-30s%s", "Enabled", enabled ? "Yes" : "No");
-		sprintf(opt[i++], "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
-		sprintf(opt[i++], "%-30s%s", "Network Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
-		sprintf(opt[i++], "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
-		sprintf(opt[i++], "%-30s%s", "Configuration File", startup.services_ini);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", enabled ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Network Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Configuration File", startup.services_ini);
 		if(!enabled)
 			i = 1;
 		opt[i][0] = '\0';
@@ -1575,11 +1575,11 @@ void server_cfg(void)
 
 		int i = 0;
 		strcpy(opt[i++], "Global Settings");
-		sprintf(opt[i++], "%-20s%s", "Terminal Server", run_bbs ? "" : strDisabled);
-		sprintf(opt[i++], "%-20s%s", "Web Server", run_web ? "" : strDisabled);
-		sprintf(opt[i++], "%-20s%s", "FTP Server", run_ftp ? "" : strDisabled);
-		sprintf(opt[i++], "%-20s%s", "Mail Server", run_mail ? "" : strDisabled);
-		sprintf(opt[i++], "%-20s%s", "Services Server", run_services ? "" : strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Terminal Server", run_bbs ? "" : strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Web Server", run_web ? "" : strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "FTP Server", run_ftp ? "" : strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Mail Server", run_mail ? "" : strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Services Server", run_services ? "" : strDisabled);
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=

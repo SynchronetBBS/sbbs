@@ -45,7 +45,7 @@ char* vdir_name_desc[] = {
 	NULL
 };
 
-static char* up_pct_help = 
+static char* up_pct_help =
 	"`Percentage of Credits to Credit Uploader on Upload:`\n"
 	"\n"
 	"This is the percentage of a file's credit value that is given to users\n"
@@ -208,7 +208,7 @@ static bool new_lib(unsigned new_libnum)
 
 	for (unsigned u = cfg.total_libs; u > new_libnum; u--)
 		cfg.lib[u] = cfg.lib[u - 1];
-	
+
 	if (new_libnum != cfg.total_libs) {	/* Inserting library? Renumber (higher) existing libs */
 		for (unsigned j = 0; j < cfg.total_dirs; j++) {
 			if (cfg.dir[j]->lib >= new_libnum && cfg.dir[j]->lib != CUT_LIBNUM)
@@ -276,7 +276,7 @@ BOOL create_raw_dir_list(const char* list_file)
 	if((fp=fopen(list_file,"w"))==NULL) {
 		SAFEPRINTF2(path,"Create Failure (%u): %s", errno, list_file);
 		uifc.msg(path);
-		return(FALSE); 
+		return(FALSE);
 	}
 	backslash(path);
 	uifc.pop("Scanning Directories...");
@@ -340,7 +340,7 @@ void xfer_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_libs && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-*s %5u", LEN_GLNAME, cfg.lib[i]->lname, dirs_in_lib(i));
+			snprintf(opt[i], MAX_OPLN, "%-*s %5u", LEN_GLNAME, cfg.lib[i]->lname, dirs_in_lib(i));
 		opt[i][0]=0;
 		j=WIN_ACT|WIN_CHE|WIN_ORG;
 		if(cfg.total_libs)
@@ -500,25 +500,25 @@ void xfer_cfg()
 		done=0;
 		while(!done) {
 			j=0;
-			sprintf(opt[j++],"%-27.27s%s","Long Name",cfg.lib[libnum]->lname);
-			sprintf(opt[j++],"%-27.27s%s","Short Name",cfg.lib[libnum]->sname);
-			sprintf(opt[j++],"%-27.27s%s","Internal Code Prefix",cfg.lib[libnum]->code_prefix);
-			sprintf(opt[j++],"%-27.27s%s","Parent Directory"
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s","Long Name",cfg.lib[libnum]->lname);
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s","Short Name",cfg.lib[libnum]->sname);
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s","Internal Code Prefix",cfg.lib[libnum]->code_prefix);
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s","Parent Directory"
 				,cfg.lib[libnum]->parent_path);
-			sprintf(opt[j++],"%-27.27s%s","Access Requirements"
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s","Access Requirements"
 				,cfg.lib[libnum]->arstr);
-			sprintf(opt[j++],"%-27.27s%s","Upload Requirements"
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s","Upload Requirements"
 				,cfg.lib[libnum]->ul_arstr);
-			sprintf(opt[j++],"%-27.27s%s","Download Requirements"
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s","Download Requirements"
 				,cfg.lib[libnum]->dl_arstr);
-			sprintf(opt[j++],"%-27.27s%s","Operator Requirements"
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s","Operator Requirements"
 				,cfg.lib[libnum]->op_arstr);
-			sprintf(opt[j++],"%-27.27s%s","Exemption Requirements"
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s","Exemption Requirements"
 				,cfg.lib[libnum]->ex_arstr);
-			sprintf(opt[j++],"%-27.27s%s","Auto-Add Sub-directories"
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s","Auto-Add Sub-directories"
 				,cfg.lib[libnum]->parent_path[0] ? (cfg.lib[libnum]->misc&LIB_DIRS ? "Yes":"No") : "N/A");
-			sprintf(opt[j++],"%-27.27s%s","Sort Library By Directory", area_sort_desc[cfg.lib[libnum]->sort]);
-			sprintf(opt[j++],"%-27.27s%s","Virtual Sub-directories", vdir_name_desc[cfg.lib[libnum]->vdir_name]);
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s","Sort Library By Directory", area_sort_desc[cfg.lib[libnum]->sort]);
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s","Virtual Sub-directories", vdir_name_desc[cfg.lib[libnum]->vdir_name]);
 			strcpy(opt[j++],"Export Areas...");
 			strcpy(opt[j++],"Import Areas...");
 			strcpy(opt[j++],"Directory Defaults...");
@@ -848,7 +848,7 @@ void xfer_cfg()
 					}
 					if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 						uifc.msg("Open Failure");
-						break; 
+						break;
 					}
 					uifc.pop("Importing Areas...");
 					char duplicate_code[LEN_CODE+1]="";
@@ -972,8 +972,8 @@ void xfer_cfg()
 							while(!feof(stream)
 								&& strcmp(str,"***END-OF-DIR***")) {
 								if(!fgets(str,sizeof(str),stream)) break;
-								truncsp(str); 
-							} 
+								truncsp(str);
+							}
 						}
 
 						if(tmpdir.lname[0] == 0)
@@ -1048,9 +1048,9 @@ void xfer_cfg()
 						cfg.dir[j]->lib = libnum;
 						if(j==cfg.total_dirs) {
 							cfg.dir[j]->misc=tmpdir.misc;
-							cfg.total_dirs++; 
+							cfg.total_dirs++;
 						}
-						uifc.changes=1; 
+						uifc.changes=1;
 					}
 					fclose(stream);
 					if(ported && cfg.lib[libnum]->sort)
@@ -1079,55 +1079,55 @@ void dir_toggle_options(dir_t* dir)
 
 	while(1) {
 		int n=0;
-		sprintf(opt[n++],"%-30.30s%s","Check for File Existence"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Check for File Existence"
 			,dir->misc&DIR_FCHK ? "Yes":"No");
 		strcpy(str,"Slow Media Device");
 		if(dir->seqdev) {
 			sprintf(tmp," #%u",dir->seqdev);
 			strcat(str,tmp);
 		}
-		sprintf(opt[n++],"%-30.30s%s",str
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s",str
 			,dir->seqdev ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Force Content Ratings"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Force Content Ratings"
 			,dir->misc&DIR_RATE ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Upload Date in Listings"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Upload Date in Listings"
 			,dir->misc&DIR_ULDATE ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Multiple File Numberings"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Multiple File Numberings"
 			,dir->misc&DIR_MULT ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Search for Duplicates"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Search for Duplicates"
 			,dir->misc&DIR_DUPES ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Search for New Files"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Search for New Files"
 			,dir->misc&DIR_NOSCAN ? "No":"Yes");
-		sprintf(opt[n++],"%-30.30s%s","Search for Auto-ADDFILES"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Search for Auto-ADDFILES"
 			,dir->misc&DIR_NOAUTO ? "No":"Yes");
-		sprintf(opt[n++],"%-30.30s%s","Import FILE_ID.DIZ"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Import FILE_ID.DIZ"
 			,dir->misc&DIR_DIZ ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Free Downloads"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Free Downloads"
 			,dir->misc&DIR_FREE ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Free Download Time"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Free Download Time"
 			,dir->misc&DIR_TFREE ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Deduct Upload Time"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Deduct Upload Time"
 			,dir->misc&DIR_ULTIME ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Credit Uploads"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Credit Uploads"
 			,dir->misc&DIR_CDTUL ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Credit Downloads"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Credit Downloads"
 			,dir->misc&DIR_CDTDL ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Credit with Minutes"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Credit with Minutes"
 			,dir->misc&DIR_CDTMIN ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Download Notifications"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Download Notifications"
 			,dir->misc&DIR_QUIET ? "No":"Yes");
-		sprintf(opt[n++],"%-30.30s%s","Anonymous Uploads"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Anonymous Uploads"
 			,dir->misc&DIR_ANON ? dir->misc&DIR_AONLY
 			? "Only":"Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Purge by Last Download"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Purge by Last Download"
 			,dir->misc&DIR_SINCEDL ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Mark Moved Files as New"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Mark Moved Files as New"
 			,dir->misc&DIR_MOVENEW ? "Yes":"No");
-		sprintf(opt[n++],"%-30.30s%s","Include Transfers In Stats"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Include Transfers In Stats"
 			,dir->misc&DIR_NOSTAT ? "No":"Yes");
-		sprintf(opt[n++],"%-30.30s%s","Calculate/Store Hash of Files"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Calculate/Store Hash of Files"
 			,dir->misc&DIR_NOHASH ? "No":"Yes");
-		sprintf(opt[n++],"%-30.30s%s","Allow File Tagging"
+		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Allow File Tagging"
 			,dir->misc&DIR_FILETAGS ? "Yes" : "No");
 		opt[n][0]=0;
 		uifc.helpbuf=
@@ -1466,10 +1466,10 @@ void dir_toggle_options(dir_t* dir)
 					,"Send Download Notifications",uifcYesNoOpts);
 				if(n==1 && !(dir->misc&DIR_QUIET)) {
 					dir->misc|=DIR_QUIET;
-					uifc.changes=1; 
+					uifc.changes=1;
 				} else if(n==0 && dir->misc&DIR_QUIET){
 					dir->misc&=~DIR_QUIET;
-					uifc.changes=1; 
+					uifc.changes=1;
 				}
 				break;
 			case 16:
@@ -1560,10 +1560,10 @@ void dir_toggle_options(dir_t* dir)
 					,uifcYesNoOpts);
 				if(n==1 && !(dir->misc&DIR_NOSTAT)) {
 					dir->misc|=DIR_NOSTAT;
-					uifc.changes=1; 
+					uifc.changes=1;
 				} else if(n==0 && dir->misc&DIR_NOSTAT){
 					dir->misc&=~DIR_NOSTAT;
-					uifc.changes=1; 
+					uifc.changes=1;
 				}
 				break;
 			case 20:
@@ -1583,10 +1583,10 @@ void dir_toggle_options(dir_t* dir)
 					,uifcYesNoOpts);
 				if(n==0 && dir->misc&DIR_NOHASH) {
 					dir->misc &= ~DIR_NOHASH;
-					uifc.changes=1; 
+					uifc.changes=1;
 				} else if(n==1 && !(dir->misc&DIR_NOHASH)){
 					dir->misc |= DIR_NOHASH;
-					uifc.changes=1; 
+					uifc.changes=1;
 				}
 				break;
 			case 21:
@@ -1602,14 +1602,14 @@ void dir_toggle_options(dir_t* dir)
 				if(!n && !(dir->misc & DIR_FILETAGS)) {
 					uifc.changes = TRUE;
 					dir->misc |= DIR_FILETAGS;
-					break; 
+					break;
 				}
 				if(n==1 && (dir->misc&DIR_FILETAGS)) {
 					uifc.changes = TRUE;
-					dir->misc &= ~DIR_FILETAGS; 
+					dir->misc &= ~DIR_FILETAGS;
 				}
 				break;
-		} 
+		}
 	}
 }
 
@@ -1869,20 +1869,20 @@ void dir_cfg(uint libnum)
 				SAFECOPY(area_tag, cfg.dir[i]->area_tag);
 			else
 				SAFEPRINTF(area_tag, "[%s]", dir_area_tag(&cfg, cfg.dir[i], tmp, sizeof(tmp)));
-			sprintf(opt[n++],"%-27.27s%s","Long Name",cfg.dir[i]->lname);
-			sprintf(opt[n++],"%-27.27s%s","Short Name",cfg.dir[i]->sname);
-			sprintf(opt[n++],"%-27.27s%s%s","Internal Code"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Long Name",cfg.dir[i]->lname);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Short Name",cfg.dir[i]->sname);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s%s","Internal Code"
 				,cfg.lib[cfg.dir[i]->lib]->code_prefix, cfg.dir[i]->code_suffix);
-			sprintf(opt[n++],"%-27.27s%s","FidoNet Area Tag",area_tag);
-			sprintf(opt[n++],"%-27.27s%s","Access Requirements"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","FidoNet Area Tag",area_tag);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Access Requirements"
 				,cfg.dir[i]->arstr);
-			sprintf(opt[n++],"%-27.27s%s","Upload Requirements"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Upload Requirements"
 				,cfg.dir[i]->ul_arstr);
-			sprintf(opt[n++],"%-27.27s%s","Download Requirements"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Download Requirements"
 				,cfg.dir[i]->dl_arstr);
-			sprintf(opt[n++],"%-27.27s%s","Operator Requirements"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Operator Requirements"
 				,cfg.dir[i]->op_arstr);
-			sprintf(opt[n++],"%-27.27s%s","Exemption Requirements"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Exemption Requirements"
 				,cfg.dir[i]->ex_arstr);
 			SAFECOPY(path, cfg.dir[i]->path);
 			if(!path[0]) {
@@ -1902,22 +1902,22 @@ void dir_cfg(uint libnum)
 				SAFECOPY(str, path);
 			else
 				SAFEPRINTF(str, "[%s]", path);
-			sprintf(opt[n++],"%-27.27s%s","Transfer File Path"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Transfer File Path"
 				,str);
 			if(cfg.dir[i]->maxfiles)
 				sprintf(str, "%u", cfg.dir[i]->maxfiles);
 			else
 				SAFECOPY(str, "Unlimited");
-			sprintf(opt[n++],"%-27.27s%s","Maximum Number of Files"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Maximum Number of Files"
 				,str);
 			if(cfg.dir[i]->maxage)
 				sprintf(str,"Enabled (%u days old)",cfg.dir[i]->maxage);
 			else
 				strcpy(str,"Disabled");
-			sprintf(opt[n++],"%-27.27s%s","Purge by Age",str);
-			sprintf(opt[n++],"%-27.27s%u%%","Credit on Upload"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Purge by Age",str);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%u%%","Credit on Upload"
 				,cfg.dir[i]->up_pct);
-			sprintf(opt[n++],"%-27.27s%u%%","Credit on Download"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%u%%","Credit on Download"
 				,cfg.dir[i]->dn_pct);
 			strcpy(opt[n++],"Toggle Options...");
 			strcpy(opt[n++],"Advanced Options...");
@@ -1980,7 +1980,7 @@ void dir_cfg(uint libnum)
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf=0; 
+						uifc.helpbuf=0;
 					}
 					break;
 				case 3:
@@ -2057,19 +2057,19 @@ void dir_cfg(uint libnum)
 			case 15:
 				while(1) {
 					n=0;
-					sprintf(opt[n++],"%-27.27s%s","Extensions Allowed"
+					snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Extensions Allowed"
 						,cfg.dir[i]->exts);
 					if(!cfg.dir[i]->data_dir[0])
 						sprintf(str,"[%sdirs/]",cfg.data_dir);
 					else
 						strcpy(str,cfg.dir[i]->data_dir);
-					sprintf(opt[n++],"%-27.27s%s","Data Directory"
+					snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Data Directory"
 						,str);
-					sprintf(opt[n++],"%-27.27s%s","Upload Semaphore File"
+					snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Upload Semaphore File"
 						,cfg.dir[i]->upload_sem);
-					sprintf(opt[n++],"%-27.27s%s","Sort Value and Direction"
+					snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Sort Value and Direction"
 						,file_sort_desc[cfg.dir[i]->sort]);
-					sprintf(opt[n++],"%-27.27sNow %u / Was %u","Directory Index", i, cfg.dir[i]->dirnum);
+					snprintf(opt[n++], MAX_OPLN, "%-27.27sNow %u / Was %u","Directory Index", i, cfg.dir[i]->dirnum);
 					opt[n][0]=0;
 					uifc.helpbuf=
 						"`Directory Advanced Options:`\n"
@@ -2106,15 +2106,15 @@ void dir_cfg(uint libnum)
 									cfg.dir[i]->sort = n;
 									uifc.changes = TRUE;
 								}
-								break; 
+								break;
 							case 4:
 								uifc.msg("This value cannot be changed.");
 								break;
-						} 
+						}
 					}
 				break;
-			} 
-		} 
+			}
+		}
 	}
 }
 
@@ -2129,28 +2129,28 @@ void dir_defaults_cfg(dir_t* dir)
 			sprintf(str, "%u", dir->maxfiles);
 		else
 			SAFECOPY(str, "Unlimited");
-		sprintf(opt[n++],"%-27.27s%s","Maximum Number of Files"
+		snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Maximum Number of Files"
 			,str);
 		if(dir->maxage)
 			sprintf(str,"Enabled (%u days old)",dir->maxage);
 		else
 			strcpy(str,"Disabled");
-		sprintf(opt[n++],"%-27.27s%s","Purge by Age",str);
-		sprintf(opt[n++],"%-27.27s%u%%","Credit on Upload"
+		snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Purge by Age",str);
+		snprintf(opt[n++], MAX_OPLN, "%-27.27s%u%%","Credit on Upload"
 			,dir->up_pct);
-		sprintf(opt[n++],"%-27.27s%u%%","Credit on Download"
+		snprintf(opt[n++], MAX_OPLN, "%-27.27s%u%%","Credit on Download"
 			,dir->dn_pct);
-		sprintf(opt[n++],"%-27.27s%s","Extensions Allowed"
+		snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Extensions Allowed"
 			,dir->exts);
 		if(!dir->data_dir[0])
 			sprintf(str,"[%sdirs/]",cfg.data_dir);
 		else
 			strcpy(str, dir->data_dir);
-		sprintf(opt[n++],"%-27.27s%s","Data Directory"
+		snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Data Directory"
 			,str);
-		sprintf(opt[n++],"%-27.27s%s","Upload Semaphore File"
+		snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Upload Semaphore File"
 			,dir->upload_sem);
-		sprintf(opt[n++],"%-27.27s%s","Sort Value and Direction"
+		snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Sort Value and Direction"
 			,file_sort_desc[dir->sort]);
 		strcpy(opt[n++],"Toggle Options...");
 		strcpy(opt[n++],"Clone Settings");
@@ -2218,7 +2218,7 @@ void dir_defaults_cfg(dir_t* dir)
 					dir->sort = n;
 					uifc.changes = TRUE;
 				}
-				break; 
+				break;
 			case 8:
 				dir_toggle_options(dir);
 				break;

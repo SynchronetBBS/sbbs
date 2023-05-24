@@ -138,7 +138,7 @@ void sub_cfg(uint grpnum)
 	uint i,subnum[MAX_OPTS+1];
 	static sub_t savsub;
 
-	char* sub_long_name_help = 
+	char* sub_long_name_help =
 		"`Sub-board Long Name:`\n"
 		"\n"
 		"This is a description of the message sub-board which is displayed in all\n"
@@ -187,7 +187,7 @@ void sub_cfg(uint grpnum)
 				int len = 0;
 				opt[j][0] = 0;
 				if(cfg.sub[subnum[0]]->qwkconf)
-					len += sprintf(opt[j], "%-5u ", cfg.sub[i]->qwkconf);
+					len += snprintf(opt[j], MAX_OPLN, "%-5u ", cfg.sub[i]->qwkconf);
 				char* name = cfg.sub[i]->lname;
 				int name_len = LEN_SLNAME;
 				switch(cfg.grp[grpnum]->sort) {
@@ -209,7 +209,7 @@ void sub_cfg(uint grpnum)
 				len += sprintf(opt[j] + strlen(opt[j]), "%s", str);
 				if(len > maxlen)
 					maxlen = len;
-				j++; 
+				j++;
 			}
 		subnum[j]=cfg.total_subs;
 		opt[j][0]=0;
@@ -281,7 +281,7 @@ void sub_cfg(uint grpnum)
 				uifc.helpbuf=invalid_code;
 				uifc.msg(strInvalidCode);
 				uifc.helpbuf=0;
-				continue; 
+				continue;
 			}
 
 			if (!new_sub(subnum[i], grpnum, /* pasted_sub: */NULL, /* misc: */0))
@@ -294,7 +294,7 @@ void sub_cfg(uint grpnum)
 			if(strchr(str,'.') && strchr(str,' ')==NULL)
 				SAFECOPY(cfg.sub[subnum[i]]->newsgroup,str);
 			uifc.changes = TRUE;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_DEL || msk == MSK_CUT) {
 			if (msk == MSK_DEL) {
@@ -328,18 +328,18 @@ void sub_cfg(uint grpnum)
 				savsub = *cfg.sub[subnum[i]];
 			remove_sub(&cfg, subnum[i], msk == MSK_CUT);
 			uifc.changes = TRUE;
-			continue; 
+			continue;
 		}
 		if(msk==MSK_COPY) {
 			savsub=*cfg.sub[subnum[i]];
 			cut_qhub_sub = NULL;
-			continue; 
+			continue;
 		}
 		if(msk == MSK_PASTE) {
 			if (!new_sub(subnum[i], grpnum, &savsub, /* misc: */0))
 				continue;
 			uifc.changes = TRUE;
-			continue; 
+			continue;
 		}
 		i=subnum[i];
 		j=0;
@@ -356,38 +356,38 @@ void sub_cfg(uint grpnum)
 				SAFECOPY(newsgroup_name, cfg.sub[i]->newsgroup);
 			else
 				SAFEPRINTF(newsgroup_name, "[%s]", sub_newsgroup_name(&cfg, cfg.sub[i], tmp, sizeof(tmp)));
-			sprintf(opt[n++],"%-27.27s%s","Long Name",cfg.sub[i]->lname);
-			sprintf(opt[n++],"%-27.27s%s","Short Name",cfg.sub[i]->sname);
-			sprintf(opt[n++],"%-27.27s%s","QWK Name",cfg.sub[i]->qwkname);
-			sprintf(opt[n++],"%-27.27s%s%s","Internal Code"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Long Name",cfg.sub[i]->lname);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Short Name",cfg.sub[i]->sname);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","QWK Name",cfg.sub[i]->qwkname);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s%s","Internal Code"
 				,cfg.grp[cfg.sub[i]->grp]->code_prefix, cfg.sub[i]->code_suffix);
-			sprintf(opt[n++],"%-27.27s%s","Newsgroup Name", newsgroup_name);
-			sprintf(opt[n++],"%-27.27s%s","FidoNet Area Tag", area_tag);
-			sprintf(opt[n++],"%-27.27s%s","Access Requirements"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Newsgroup Name", newsgroup_name);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","FidoNet Area Tag", area_tag);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Access Requirements"
 				,cfg.sub[i]->arstr);
-			sprintf(opt[n++],"%-27.27s%s","Reading Requirements"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Reading Requirements"
 				,cfg.sub[i]->read_arstr);
-			sprintf(opt[n++],"%-27.27s%s","Posting Requirements"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Posting Requirements"
 				,cfg.sub[i]->post_arstr);
-			sprintf(opt[n++],"%-27.27s%s","Operator Requirements"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Operator Requirements"
 				,cfg.sub[i]->op_arstr);
-			sprintf(opt[n++],"%-27.27s%s","Moderated Posting User"
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Moderated Posting User"
 				,cfg.sub[i]->mod_arstr);
 			if(cfg.sub[i]->maxmsgs)
 				sprintf(str, "%"PRIu32, cfg.sub[i]->maxmsgs);
 			else
 				strcpy(str, "Unlimited");
-			sprintf(opt[n++],"%-27.27s%s","Maximum Messages", str);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Maximum Messages", str);
 			if(cfg.sub[i]->maxage)
 				sprintf(str,"Enabled (%u days old)",cfg.sub[i]->maxage);
 			else
 				strcpy(str,"Disabled");
-			sprintf(opt[n++],"%-27.27s%s","Purge by Age",str);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Purge by Age",str);
 			if(cfg.sub[i]->maxcrcs)
 				sprintf(str,"Enabled (%"PRIu32" message CRCs)",cfg.sub[i]->maxcrcs);
 			else
 				strcpy(str,"Disabled");
-			sprintf(opt[n++],"%-27.27s%s","Duplicate Checking",str);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Duplicate Checking",str);
 
 			strcpy(opt[n++],"Toggle Options...");
 			strcpy(opt[n++],"Network Options...");
@@ -464,7 +464,7 @@ void sub_cfg(uint grpnum)
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf=0; 
+						uifc.helpbuf=0;
 					}
 					break;
 				case 4:
@@ -580,56 +580,56 @@ void sub_cfg(uint grpnum)
 				case 14:
 					while(1) {
 						n=0;
-						sprintf(opt[n++],"%-30.30s%s","Allow Private Posts"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Allow Private Posts"
 							,cfg.sub[i]->misc&SUB_PRIV ? cfg.sub[i]->misc&SUB_PONLY
 							? "Only":"Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Allow Anonymous Posts"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Allow Anonymous Posts"
 							,cfg.sub[i]->misc&SUB_ANON ? cfg.sub[i]->misc&SUB_AONLY
 							? "Only":"Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Post Using Real Names"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Post Using Real Names"
 							,cfg.sub[i]->misc&SUB_NAME ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Users Can Edit Posts"
-							,cfg.sub[i]->misc&SUB_EDIT ? cfg.sub[i]->misc&SUB_EDITLAST 
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Users Can Edit Posts"
+							,cfg.sub[i]->misc&SUB_EDIT ? cfg.sub[i]->misc&SUB_EDITLAST
 							? "Last" : "Yes" : "No");
-						sprintf(opt[n++],"%-30.30s%s","Users Can Delete Posts"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Users Can Delete Posts"
 							,cfg.sub[i]->misc&SUB_DEL ? cfg.sub[i]->misc&SUB_DELLAST
 							? "Last" : "Yes" : "No");
-						sprintf(opt[n++],"%-30.30s%s","Default On for New Scan"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Default On for New Scan"
 							,cfg.sub[i]->misc&SUB_NSDEF ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Forced On for New Scan"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Forced On for New Scan"
 							,cfg.sub[i]->misc&SUB_FORCED ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Default On for Your Scan"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Default On for Your Scan"
 							,cfg.sub[i]->misc&SUB_SSDEF ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Public 'To' User"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Public 'To' User"
 							,cfg.sub[i]->misc&SUB_TOUSER ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Allow Message Voting"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Allow Message Voting"
 							,cfg.sub[i]->misc&SUB_NOVOTING ? "No":"Yes");
-						sprintf(opt[n++],"%-30.30s%s","Allow Message Quoting"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Allow Message Quoting"
 							,cfg.sub[i]->misc&SUB_QUOTE ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Allow Message Tagging"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Allow Message Tagging"
 							,cfg.sub[i]->misc&SUB_MSGTAGS ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Suppress User Signatures"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Suppress User Signatures"
 							,cfg.sub[i]->misc&SUB_NOUSERSIG ? "Yes":"No");
-						sprintf(opt[n++],"%-30.30s%s","Permanent Operator Msgs"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Permanent Operator Msgs"
 							,cfg.sub[i]->misc&SUB_SYSPERM ? "Yes":"No");
 	#if 0 /* this is not actually implemented (yet?) */
-						sprintf(opt[n++],"%-30.30s%s","Kill Read Messages"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Kill Read Messages"
 							,cfg.sub[i]->misc&SUB_KILL ? "Yes"
 							: (cfg.sub[i]->misc&SUB_KILLP ? "Pvt" : "No"));
 	#endif
-						sprintf(opt[n++],"%-30.30s%s","Compress Messages (LZH)"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Compress Messages (LZH)"
 							,cfg.sub[i]->misc&SUB_LZH ? "Yes" : "No");
-						sprintf(opt[n++],"%-30.30s%s","Apply Markup Codes"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Apply Markup Codes"
 							,cfg.sub[i]->pmode&P_MARKUP ? ((cfg.sub[i]->pmode&P_HIDEMARKS)  ? "Hide" : "Yes") : "No");
-						sprintf(opt[n++],"%-30.30s%s","Extra Attribute Codes"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Extra Attribute Codes"
 							,cfg.sub[i]->pmode&P_NOXATTRS ? "No" : "Yes");
-						sprintf(opt[n++],"%-30.30s%s","Word-wrap Messages"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Word-wrap Messages"
 							,cfg.sub[i]->n_pmode&P_WORDWRAP ? "No" : "Yes");
-						sprintf(opt[n++],"%-30.30s%s","Auto-detect UTF-8 Msgs"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Auto-detect UTF-8 Msgs"
 							,cfg.sub[i]->pmode&P_AUTO_UTF8 ? "Yes" : "No");
-						sprintf(opt[n++],"%-30.30s%s","Expand @-codes in Sysop Msgs"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Expand @-codes in Sysop Msgs"
 							,cfg.sub[i]->pmode&P_NOATCODES ? "No" : "Yes");
-						sprintf(opt[n++],"%-30.30s%s","Template for New Subs"
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Template for New Subs"
 							,cfg.sub[i]->misc&SUB_TEMPLATE ? "Yes" : "No");
 
 						opt[n][0]=0;
@@ -647,7 +647,7 @@ void sub_cfg(uint grpnum)
 							case __COUNTER__:
 								if(cfg.sub[i]->misc&SUB_PONLY)
 									n=2;
-								else 
+								else
 									n=(cfg.sub[i]->misc&SUB_PRIV) ? 0:1;
 								strcpy(opt[0],"Yes");
 								strcpy(opt[1],"No");
@@ -670,23 +670,23 @@ void sub_cfg(uint grpnum)
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc&=~SUB_PONLY;
 									cfg.sub[i]->misc|=SUB_PRIV;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_PRIV) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc&=~SUB_PRIV;
-									break; 
+									break;
 								}
 								if(n==2 && (cfg.sub[i]->misc&(SUB_PRIV|SUB_PONLY))
 									!=(SUB_PRIV|SUB_PONLY)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=(SUB_PRIV|SUB_PONLY); 
+									cfg.sub[i]->misc|=(SUB_PRIV|SUB_PONLY);
 								}
 								break;
 							case __COUNTER__:
 								if(cfg.sub[i]->misc&SUB_AONLY)
 									n=2;
-								else 
+								else
 									n=(cfg.sub[i]->misc&SUB_ANON) ? 0:1;
 								strcpy(opt[0],"Yes");
 								strcpy(opt[1],"No");
@@ -709,17 +709,17 @@ void sub_cfg(uint grpnum)
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc&=~SUB_AONLY;
 									cfg.sub[i]->misc|=SUB_ANON;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&(SUB_ANON|SUB_AONLY)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc&=~(SUB_ANON|SUB_AONLY);
-									break; 
+									break;
 								}
 								if(n==2 && (cfg.sub[i]->misc&(SUB_ANON|SUB_AONLY))
 									!=(SUB_ANON|SUB_AONLY)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=(SUB_ANON|SUB_AONLY); 
+									cfg.sub[i]->misc|=(SUB_ANON|SUB_AONLY);
 								}
 								break;
 							case __COUNTER__:
@@ -738,11 +738,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_NAME)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_NAME;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_NAME) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_NAME; 
+									cfg.sub[i]->misc&=~SUB_NAME;
 								}
 								break;
 							case __COUNTER__:
@@ -772,7 +772,7 @@ void sub_cfg(uint grpnum)
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_EDIT;
 									cfg.sub[i]->misc&=~SUB_EDITLAST;
-									break; 
+									break;
 								}
 								if(n==1 /* no */
 									&& cfg.sub[i]->misc&(SUB_EDIT|SUB_EDITLAST)
@@ -793,7 +793,7 @@ void sub_cfg(uint grpnum)
 							case __COUNTER__:
 								if(cfg.sub[i]->misc&SUB_DELLAST)
 									n=2;
-								else 
+								else
 									n=(cfg.sub[i]->misc&SUB_DEL) ? 0:1;
 
 								strcpy(opt[0],"Yes");
@@ -818,17 +818,17 @@ void sub_cfg(uint grpnum)
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc&=~SUB_DELLAST;
 									cfg.sub[i]->misc|=SUB_DEL;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_DEL) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc&=~SUB_DEL;
-									break; 
+									break;
 								}
 								if(n==2 && (cfg.sub[i]->misc&(SUB_DEL|SUB_DELLAST))
 									!=(SUB_DEL|SUB_DELLAST)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=(SUB_DEL|SUB_DELLAST); 
+									cfg.sub[i]->misc|=(SUB_DEL|SUB_DELLAST);
 								}
 								break;
 							case __COUNTER__:
@@ -846,11 +846,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_NSDEF)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_NSDEF;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_NSDEF) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_NSDEF; 
+									cfg.sub[i]->misc&=~SUB_NSDEF;
 								}
 								break;
 							case __COUNTER__:
@@ -869,11 +869,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_FORCED)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_FORCED;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_FORCED) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_FORCED; 
+									cfg.sub[i]->misc&=~SUB_FORCED;
 								}
 								break;
 							case __COUNTER__:
@@ -891,11 +891,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_SSDEF)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_SSDEF;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_SSDEF) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_SSDEF; 
+									cfg.sub[i]->misc&=~SUB_SSDEF;
 								}
 								break;
 							case __COUNTER__:
@@ -914,11 +914,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_TOUSER)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_TOUSER;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_TOUSER) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_TOUSER; 
+									cfg.sub[i]->misc&=~SUB_TOUSER;
 								}
 								break;
 							case __COUNTER__:
@@ -936,11 +936,11 @@ void sub_cfg(uint grpnum)
 								if(!n && (cfg.sub[i]->misc&SUB_NOVOTING)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc ^= SUB_NOVOTING;
-									break; 
+									break;
 								}
 								if(n==1 && !(cfg.sub[i]->misc&SUB_NOVOTING)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc ^= SUB_NOVOTING; 
+									cfg.sub[i]->misc ^= SUB_NOVOTING;
 								}
 								break;
 							case __COUNTER__:
@@ -958,11 +958,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_QUOTE)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_QUOTE;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_QUOTE) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_QUOTE; 
+									cfg.sub[i]->misc&=~SUB_QUOTE;
 								}
 								break;
 							case __COUNTER__:
@@ -980,11 +980,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_MSGTAGS)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_MSGTAGS;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_MSGTAGS) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_MSGTAGS; 
+									cfg.sub[i]->misc&=~SUB_MSGTAGS;
 								}
 								break;
 							case __COUNTER__:
@@ -1002,11 +1002,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_NOUSERSIG)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_NOUSERSIG;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_NOUSERSIG) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_NOUSERSIG; 
+									cfg.sub[i]->misc&=~SUB_NOUSERSIG;
 								}
 								break;
 							case __COUNTER__:
@@ -1025,11 +1025,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_SYSPERM)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_SYSPERM;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_SYSPERM) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_SYSPERM; 
+									cfg.sub[i]->misc&=~SUB_SYSPERM;
 								}
 								break;
 	#if 0 /* This is not actually implemented (yet?) */
@@ -1057,17 +1057,17 @@ void sub_cfg(uint grpnum)
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_KILL;
 									cfg.sub[i]->misc&=~SUB_KILLP;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&(SUB_KILL|SUB_KILLP)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~(SUB_KILL|SUB_KILLP); 
+									cfg.sub[i]->misc&=~(SUB_KILL|SUB_KILLP);
 								}
 								if(n==2 && !(cfg.sub[i]->misc&SUB_KILLP)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_KILLP;
 									cfg.sub[i]->misc&=~SUB_KILL;
-									break; 
+									break;
 								}
 								break;
 	#endif
@@ -1093,11 +1093,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_LZH)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_LZH;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_LZH) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_LZH; 
+									cfg.sub[i]->misc&=~SUB_LZH;
 								}
 								break;
 							case __COUNTER__:
@@ -1246,35 +1246,35 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_TEMPLATE)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_TEMPLATE;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_TEMPLATE) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_TEMPLATE; 
+									cfg.sub[i]->misc&=~SUB_TEMPLATE;
 								}
 								break;
-							} 
+							}
 						}
 					break;
 				case 15:
 					while(1) {
 						n=0;
-						sprintf(opt[n++],"%-27.27s%s","Append Tag/Origin Line"
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Append Tag/Origin Line"
 							,cfg.sub[i]->misc&SUB_NOTAG ? "No":"Yes");
-						sprintf(opt[n++],"%-27.27s%s","Export ASCII Only"
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Export ASCII Only"
 							,cfg.sub[i]->misc&SUB_ASCII ? "Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","Gate Between Net Types"
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Gate Between Net Types"
 							,cfg.sub[i]->misc&SUB_GATE ? "Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","QWK Networked"
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","QWK Networked"
 							,cfg.sub[i]->misc&SUB_QNET ? "Yes":"No");
-						sprintf(opt[n++],"QWK Tagline");
-						sprintf(opt[n++],"%-27.27s%s","Internet (UUCP/NNTP)"
+						snprintf(opt[n++], MAX_OPLN, "QWK Tagline");
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Internet (UUCP/NNTP)"
 							,cfg.sub[i]->misc&SUB_INET ? "Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","FidoNet EchoMail"
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","FidoNet EchoMail"
 							,cfg.sub[i]->misc&SUB_FIDO ? "Yes":"No");
-						sprintf(opt[n++],"%-27.27s%s","FidoNet Address"
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","FidoNet Address"
 							,smb_faddrtoa(&cfg.sub[i]->faddr,tmp));
-						sprintf(opt[n++],"EchoMail Origin Line");
+						snprintf(opt[n++], MAX_OPLN, "EchoMail Origin Line");
 						opt[n][0]=0;
 						uifc.helpbuf=
 							"`Sub-board Network Options:`\n"
@@ -1303,11 +1303,11 @@ void sub_cfg(uint grpnum)
 								if(!n && cfg.sub[i]->misc&SUB_NOTAG) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc&=~SUB_NOTAG;
-									break; 
+									break;
 								}
 								if(n==1 && !(cfg.sub[i]->misc&SUB_NOTAG)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_NOTAG; 
+									cfg.sub[i]->misc|=SUB_NOTAG;
 								}
 								break;
 							case 1:
@@ -1326,11 +1326,11 @@ void sub_cfg(uint grpnum)
 								if(n && cfg.sub[i]->misc&SUB_ASCII) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc&=~SUB_ASCII;
-									break; 
+									break;
 								}
 								if(!n && !(cfg.sub[i]->misc&SUB_ASCII)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_ASCII; 
+									cfg.sub[i]->misc|=SUB_ASCII;
 								}
 								break;
 							case 2:
@@ -1358,11 +1358,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_GATE)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_GATE;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_GATE) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_GATE; 
+									cfg.sub[i]->misc&=~SUB_GATE;
 								}
 								break;
 							case 3:
@@ -1383,11 +1383,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_QNET)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_QNET;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_QNET) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_QNET; 
+									cfg.sub[i]->misc&=~SUB_QNET;
 								}
 								break;
 							case 4:
@@ -1418,11 +1418,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_INET)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_INET;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_INET) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_INET; 
+									cfg.sub[i]->misc&=~SUB_INET;
 								}
 								break;
 							case 6:
@@ -1440,11 +1440,11 @@ void sub_cfg(uint grpnum)
 								if(!n && !(cfg.sub[i]->misc&SUB_FIDO)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_FIDO;
-									break; 
+									break;
 								}
 								if(n==1 && cfg.sub[i]->misc&SUB_FIDO) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_FIDO; 
+									cfg.sub[i]->misc&=~SUB_FIDO;
 								}
 								break;
 							case 7:
@@ -1463,7 +1463,7 @@ void sub_cfg(uint grpnum)
 								for(n=0; n<cfg.total_faddrs && n<MAX_OPTS; n++) {
 									if(memcmp(&cfg.sub[i]->faddr, &cfg.faddr[n], sizeof(cfg.faddr[n])) == 0)
 										k = i;
-									strcpy(opt[n], smb_faddrtoa(&cfg.faddr[n],NULL)); 
+									strcpy(opt[n], smb_faddrtoa(&cfg.faddr[n],NULL));
 								}
 								opt[n][0]=0;
 								n = uifc.list(WIN_RHT|WIN_SAV|WIN_ACT|WIN_INSACT, 0, 0, 0, &k, NULL, "FidoNet Address", opt);
@@ -1486,7 +1486,7 @@ void sub_cfg(uint grpnum)
 								uifc.input(WIN_MID|WIN_SAV,0,0,"",cfg.sub[i]->origline
 									,sizeof(cfg.sub[i]->origline)-1,K_EDIT);
 								break;
-						} 
+						}
 					}
 					break;
 				case 16:
@@ -1496,9 +1496,9 @@ void sub_cfg(uint grpnum)
 							sprintf(str,"Static (%u)",cfg.sub[i]->qwkconf);
 						else
 							strcpy(str,"Dynamic");
-						sprintf(opt[n++],"%-27.27s%s","QWK Conference Number"
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","QWK Conference Number"
 							,str);
-						sprintf(opt[n++],"%-27.27s%s","Storage Method"
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Storage Method"
 							,cfg.sub[i]->misc&SUB_HYPER ? "Hyper Allocation"
 							: cfg.sub[i]->misc&SUB_FAST ? "Fast Allocation"
 							: "Self-packing");
@@ -1506,10 +1506,10 @@ void sub_cfg(uint grpnum)
 							sprintf(str,"%ssubs/",cfg.data_dir);
 						else
 							strcpy(str,cfg.sub[i]->data_dir);
-						sprintf(opt[n++],"%-27.27s%s","Storage Directory",str);
-						sprintf(opt[n++],"%-27.27s%s","Semaphore File",cfg.sub[i]->post_sem);
-						sprintf(opt[n++],"%-27.27s%u","Pointer File Index",cfg.sub[i]->ptridx);
-						sprintf(opt[n++],"%-27.27sNow %u / Was %u","Sub-board Index", i, cfg.sub[i]->subnum);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Storage Directory",str);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Semaphore File",cfg.sub[i]->post_sem);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%u","Pointer File Index",cfg.sub[i]->ptridx);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27sNow %u / Was %u","Sub-board Index", i, cfg.sub[i]->subnum);
 						opt[n][0]=0;
 						uifc.helpbuf=
 							"`Sub-board Advanced Options:`\n"
@@ -1577,7 +1577,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc|=SUB_HYPER;
 									cfg.sub[i]->misc&=~SUB_FAST;
 									cfg.sub[i]->misc|=SUB_HDRMOD;
-									break; 
+									break;
 								}
 								if(!n)
 									break;
@@ -1597,7 +1597,7 @@ void sub_cfg(uint grpnum)
 										,cfg.grp[cfg.sub[i]->grp]->code_prefix
 										,cfg.sub[i]->code_suffix);
 									strlwr(str2);
-									delfiles(str,str2, /* keep: */0); 
+									delfiles(str,str2, /* keep: */0);
 								}
 
 								if(cfg.sub[i]->misc&SUB_HYPER)
@@ -1606,12 +1606,12 @@ void sub_cfg(uint grpnum)
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc|=SUB_FAST;
 									cfg.sub[i]->misc&=~SUB_HYPER;
-									break; 
+									break;
 								}
 								if(n==2 && cfg.sub[i]->misc&(SUB_FAST|SUB_HYPER)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc&=~(SUB_FAST|SUB_HYPER);
-									break; 
+									break;
 								}
 								break;
 							case 2:
@@ -1623,7 +1623,7 @@ void sub_cfg(uint grpnum)
 								;
 								uifc.input(WIN_MID|WIN_SAV,0,17,"Directory"
 									,cfg.sub[i]->data_dir,sizeof(cfg.sub[i]->data_dir)-1,K_EDIT);
-								break; 
+								break;
 							case 3:
 								uifc.helpbuf=
 									"`Sub-board Semaphore File:`\n"
@@ -1634,7 +1634,7 @@ void sub_cfg(uint grpnum)
 								;
 								uifc.input(WIN_MID|WIN_SAV,0,17,"Semaphore File"
 									,cfg.sub[i]->post_sem,sizeof(cfg.sub[i]->post_sem)-1,K_EDIT);
-								break; 
+								break;
 							case 4:
 								uifc.helpbuf=
 									"`Sub-board Pointer Index:`\n"
@@ -1653,10 +1653,10 @@ void sub_cfg(uint grpnum)
 								uifc.msg("This value cannot be changed.");
 								break;
 
-						} 
+						}
 					}
 					break;
-			} 
-		} 
+			}
+		}
 	}
 }

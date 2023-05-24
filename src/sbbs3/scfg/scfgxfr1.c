@@ -81,32 +81,32 @@ void xfer_opts()
 
 	while(1) {
 		i=0;
-		sprintf(opt[i++],"%-33.33s%s","Min Bytes Free Disk Space"
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Min Bytes Free Disk Space"
 			,byte_count_to_str(cfg.min_dspace, str, sizeof(str)));
-		sprintf(opt[i++],"%-33.33s%u","Max Files in Batch UL Queue"
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u","Max Files in Batch UL Queue"
 			,cfg.max_batup);
-		sprintf(opt[i++],"%-33.33s%u","Max Files in Batch DL Queue"
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u","Max Files in Batch DL Queue"
 			,cfg.max_batdn);
-		sprintf(opt[i++],"%-33.33s%u","Max Users in User Transfers"
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u","Max Users in User Transfers"
 			,cfg.max_userxfer);
-		sprintf(opt[i++],"%-33.33s%u%%","Default Credit on Upload"
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u%%","Default Credit on Upload"
 			,cfg.cdt_up_pct);
-		sprintf(opt[i++],"%-33.33s%u%%","Default Credit on Download"
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u%%","Default Credit on Download"
 			,cfg.cdt_dn_pct);
 		if(cfg.leech_pct)
 			sprintf(str,"%u%% after %u seconds"
 				,cfg.leech_pct,cfg.leech_sec);
 		else
 			strcpy(str,"<disabled>");
-		sprintf(opt[i++],"%-33.33s%s","Leech Protocol Detection",str);
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Leech Protocol Detection",str);
 		if(cfg.file_misc & FM_SAFEST)
 			SAFECOPY(str, "Safest Subset");
 		else
 			SAFEPRINTF2(str, "Most %s, %scluding Spaces"
 				,cfg.file_misc & FM_EXASCII ? "CP437" : "ASCII"
 				,cfg.file_misc & FM_SPACES ? "In" : "Ex");
-		sprintf(opt[i++], "%-33.33s%u characters", "Allowed Filename Length", cfg.filename_maxlen);
-		sprintf(opt[i++], "%-33.33s%s", "Allowed Filename Characters", str);
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u characters", "Allowed Filename Length", cfg.filename_maxlen);
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Allowed Filename Characters", str);
 		strcpy(opt[i++],"Viewable Files...");
 		strcpy(opt[i++],"Testable Files...");
 		strcpy(opt[i++],"Download Events...");
@@ -330,7 +330,7 @@ void xfer_opts()
 			case __COUNTER__: 	/* Viewable file types */
 				while(1) {
 					for(i=0;i<cfg.total_fviews && i<MAX_OPTS;i++)
-						sprintf(opt[i],"%-*s %-40s", MAX_FILEEXT_LEN, cfg.fview[i]->ext, cfg.fview[i]->cmd);
+						snprintf(opt[i], MAX_OPLN, "%-*s %-40s", MAX_FILEEXT_LEN, cfg.fview[i]->ext, cfg.fview[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_fviews<MAX_OPTS)
@@ -363,10 +363,10 @@ void xfer_opts()
 						cfg.total_fviews--;
 						while(i<cfg.total_fviews) {
 							cfg.fview[i]=cfg.fview[i+1];
-							i++; 
+							i++;
 						}
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if(msk == MSK_INS) {
 						if((cfg.fview=(fview_t **)realloc(cfg.fview
@@ -374,17 +374,17 @@ void xfer_opts()
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fviews+1);
 							cfg.total_fviews=0;
 							bail(1);
-							continue; 
+							continue;
 						}
 						if(!cfg.total_fviews) {
 							if((cfg.fview[0]=(fview_t *)malloc(
 								sizeof(fview_t)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fview_t));
-								continue; 
+								continue;
 							}
 							memset(cfg.fview[0],0,sizeof(fview_t));
 							strcpy(cfg.fview[0]->ext,"*");
-							strcpy(cfg.fview[0]->cmd,"?archive list %f"); 
+							strcpy(cfg.fview[0]->cmd,"?archive list %f");
 						}
 						else {
 							for(j=cfg.total_fviews;j>i;j--)
@@ -392,37 +392,37 @@ void xfer_opts()
 							if((cfg.fview[i]=(fview_t *)malloc(
 								sizeof(fview_t)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fview_t));
-								continue; 
+								continue;
 							}
 							if(i>=cfg.total_fviews)
 								j=i-1;
 							else
 								j=i+1;
-							*cfg.fview[i]=*cfg.fview[j]; 
+							*cfg.fview[i]=*cfg.fview[j];
 						}
 						cfg.total_fviews++;
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if(msk == MSK_COPY) {
 						savfview=*cfg.fview[i];
-						continue; 
+						continue;
 					}
 					if(msk == MSK_PASTE) {
 						*cfg.fview[i]=savfview;
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if (msk != 0)
 						continue;
 					done=0;
 					while(!done) {
 						j=0;
-						sprintf(opt[j++],"%-22.22s%s","File Extension"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","File Extension"
 							,cfg.fview[i]->ext);
-						sprintf(opt[j++],"%-22.22s%-40s","Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%-40s","Command Line"
 							,cfg.fview[i]->cmd);
-						sprintf(opt[j++],"%-22.22s%s","Access Requirements"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Access Requirements"
 							,cfg.fview[i]->arstr);
 						opt[j][0]=0;
 						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
@@ -458,15 +458,15 @@ void xfer_opts()
 								sprintf(str,"Viewable File Type %s"
 									,cfg.fview[i]->ext);
 								getar(str,cfg.fview[i]->arstr);
-								break; 
-						} 
-					} 
+								break;
+						}
+					}
 				}
 				break;
 			case __COUNTER__:    /* Testable file types */
 				while(1) {
 					for(i=0;i<cfg.total_ftests && i<MAX_OPTS;i++)
-						sprintf(opt[i],"%-*s %-40s", MAX_FILEEXT_LEN, cfg.ftest[i]->ext, cfg.ftest[i]->cmd);
+						snprintf(opt[i], MAX_OPLN, "%-*s %-40s", MAX_FILEEXT_LEN, cfg.ftest[i]->ext, cfg.ftest[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_ftests<MAX_OPTS)
@@ -488,10 +488,10 @@ void xfer_opts()
 						cfg.total_ftests--;
 						while(i<cfg.total_ftests) {
 							cfg.ftest[i]=cfg.ftest[i+1];
-							i++; 
+							i++;
 						}
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if(msk == MSK_INS) {
 						if((cfg.ftest=(ftest_t **)realloc(cfg.ftest
@@ -499,18 +499,18 @@ void xfer_opts()
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_ftests+1);
 							cfg.total_ftests=0;
 							bail(1);
-							continue; 
+							continue;
 						}
 						if(!cfg.total_ftests) {
 							if((cfg.ftest[0]=(ftest_t *)malloc(
 								sizeof(ftest_t)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ftest_t));
-								continue; 
+								continue;
 							}
 							memset(cfg.ftest[0],0,sizeof(ftest_t));
 							strcpy(cfg.ftest[0]->ext,"ZIP");
 							strcpy(cfg.ftest[0]->cmd,"%@unzip -tqq %f");
-							strcpy(cfg.ftest[0]->workstr,"Testing ZIP Integrity..."); 
+							strcpy(cfg.ftest[0]->workstr,"Testing ZIP Integrity...");
 						}
 						else {
 
@@ -519,39 +519,39 @@ void xfer_opts()
 							if((cfg.ftest[i]=(ftest_t *)malloc(
 								sizeof(ftest_t)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ftest_t));
-								continue; 
+								continue;
 							}
 							if(i>=cfg.total_ftests)
 								j=i-1;
 							else
 								j=i+1;
-							*cfg.ftest[i]=*cfg.ftest[j]; 
+							*cfg.ftest[i]=*cfg.ftest[j];
 						}
 						cfg.total_ftests++;
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if(msk == MSK_COPY) {
 						savftest=*cfg.ftest[i];
-						continue; 
+						continue;
 					}
 					if(msk == MSK_PASTE) {
 						*cfg.ftest[i]=savftest;
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if (msk != 0)
 						continue;
 					done=0;
 					while(!done) {
 						j=0;
-						sprintf(opt[j++],"%-22.22s%s","File Extension"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","File Extension"
 							,cfg.ftest[i]->ext);
-						sprintf(opt[j++],"%-22.22s%-40s","Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%-40s","Command Line"
 							,cfg.ftest[i]->cmd);
-						sprintf(opt[j++],"%-22.22s%s","Working String"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Working String"
 							,cfg.ftest[i]->workstr);
-						sprintf(opt[j++],"%-22.22s%s","Access Requirements"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Access Requirements"
 							,cfg.ftest[i]->arstr);
 						opt[j][0]=0;
 						uifc.helpbuf = testable_files_help;
@@ -592,15 +592,15 @@ void xfer_opts()
 							case 3:
 								sprintf(str,"Testable File Type %s",cfg.ftest[i]->ext);
 								getar(str,cfg.ftest[i]->arstr);
-								break; 
-						} 
-					} 
+								break;
+						}
+					}
 				}
 				break;
 			case __COUNTER__:    /* Download Events */
 				while(1) {
 					for(i=0;i<cfg.total_dlevents && i<MAX_OPTS;i++)
-						sprintf(opt[i],"%-*s %-40s", MAX_FILEEXT_LEN, cfg.dlevent[i]->ext, cfg.dlevent[i]->cmd);
+						snprintf(opt[i], MAX_OPLN, "%-*s %-40s", MAX_FILEEXT_LEN, cfg.dlevent[i]->ext, cfg.dlevent[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_dlevents<MAX_OPTS)
@@ -637,10 +637,10 @@ void xfer_opts()
 						cfg.total_dlevents--;
 						while(i<cfg.total_dlevents) {
 							cfg.dlevent[i]=cfg.dlevent[i+1];
-							i++; 
+							i++;
 						}
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if(msk == MSK_INS) {
 						if((cfg.dlevent=(dlevent_t **)realloc(cfg.dlevent
@@ -648,18 +648,18 @@ void xfer_opts()
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_dlevents+1);
 							cfg.total_dlevents=0;
 							bail(1);
-							continue; 
+							continue;
 						}
 						if(!cfg.total_dlevents) {
 							if((cfg.dlevent[0]=(dlevent_t *)malloc(
 								sizeof(dlevent_t)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(dlevent_t));
-								continue; 
+								continue;
 							}
 							memset(cfg.dlevent[0],0,sizeof(dlevent_t));
 							strcpy(cfg.dlevent[0]->ext,"ZIP");
 							strcpy(cfg.dlevent[0]->cmd,"%@zip -z %f < %zzipmsg.txt");
-							strcpy(cfg.dlevent[0]->workstr,"Adding ZIP Comment..."); 
+							strcpy(cfg.dlevent[0]->workstr,"Adding ZIP Comment...");
 						}
 						else {
 
@@ -668,39 +668,39 @@ void xfer_opts()
 							if((cfg.dlevent[i]=(dlevent_t *)malloc(
 								sizeof(dlevent_t)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(dlevent_t));
-								continue; 
+								continue;
 							}
 							if(i>=cfg.total_dlevents)
 								j=i-1;
 							else
 								j=i+1;
-							*cfg.dlevent[i]=*cfg.dlevent[j]; 
+							*cfg.dlevent[i]=*cfg.dlevent[j];
 						}
 						cfg.total_dlevents++;
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if(msk == MSK_COPY) {
 						savdlevent=*cfg.dlevent[i];
-						continue; 
+						continue;
 					}
 					if(msk == MSK_PASTE) {
 						*cfg.dlevent[i]=savdlevent;
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if (msk != 0)
 						continue;
 					done=0;
 					while(!done) {
 						j=0;
-						sprintf(opt[j++],"%-22.22s%s","File Extension"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","File Extension"
 							,cfg.dlevent[i]->ext);
-						sprintf(opt[j++],"%-22.22s%-40s","Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%-40s","Command Line"
 							,cfg.dlevent[i]->cmd);
-						sprintf(opt[j++],"%-22.22s%s","Working String"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Working String"
 							,cfg.dlevent[i]->workstr);
-						sprintf(opt[j++],"%-22.22s%s","Access Requirements"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Access Requirements"
 							,cfg.dlevent[i]->arstr);
 						opt[j][0]=0;
 						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
@@ -740,15 +740,15 @@ void xfer_opts()
 							case 3:
 								sprintf(str,"Download Event %s",cfg.dlevent[i]->ext);
 								getar(str,cfg.dlevent[i]->arstr);
-								break; 
-						} 
-					} 
+								break;
+						}
+					}
 				}
 				break;
 			case __COUNTER__:	 /* Extractable file types */
 				while(1) {
 					for(i=0;i<cfg.total_fextrs && i<MAX_OPTS;i++)
-						sprintf(opt[i],"%-*s %-40s"
+						snprintf(opt[i], MAX_OPLN, "%-*s %-40s"
 							,MAX_FILEEXT_LEN, cfg.fextr[i]->ext, cfg.fextr[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;  /* save cause size can change */
@@ -779,10 +779,10 @@ void xfer_opts()
 						cfg.total_fextrs--;
 						while(i<cfg.total_fextrs) {
 							cfg.fextr[i]=cfg.fextr[i+1];
-							i++; 
+							i++;
 						}
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if(msk == MSK_INS) {
 						if((cfg.fextr=(fextr_t **)realloc(cfg.fextr
@@ -790,17 +790,17 @@ void xfer_opts()
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fextrs+1);
 							cfg.total_fextrs=0;
 							bail(1);
-							continue; 
+							continue;
 						}
 						if(!cfg.total_fextrs) {
 							if((cfg.fextr[0]=(fextr_t *)malloc(
 								sizeof(fextr_t)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fextr_t));
-								continue; 
+								continue;
 							}
 							memset(cfg.fextr[0],0,sizeof(fextr_t));
 							strcpy(cfg.fextr[0]->ext,"ZIP");
-							strcpy(cfg.fextr[0]->cmd,"%@unzip -Cojqq %f %s -d %g"); 
+							strcpy(cfg.fextr[0]->cmd,"%@unzip -Cojqq %f %s -d %g");
 						}
 						else {
 
@@ -809,37 +809,37 @@ void xfer_opts()
 							if((cfg.fextr[i]=(fextr_t *)malloc(
 								sizeof(fextr_t)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fextr_t));
-								continue; 
+								continue;
 							}
 							if(i>=cfg.total_fextrs)
 								j=i-1;
 							else
 								j=i+1;
-							*cfg.fextr[i]=*cfg.fextr[j]; 
+							*cfg.fextr[i]=*cfg.fextr[j];
 						}
 						cfg.total_fextrs++;
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if(msk == MSK_COPY) {
 						savfextr=*cfg.fextr[i];
-						continue; 
+						continue;
 					}
 					if(msk == MSK_PASTE) {
 						*cfg.fextr[i]=savfextr;
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if (msk != 0)
 						continue;
 					done=0;
 					while(!done) {
 						j=0;
-						sprintf(opt[j++],"%-22.22s%s","File Extension"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","File Extension"
 							,cfg.fextr[i]->ext);
-						sprintf(opt[j++],"%-22.22s%-40s","Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%-40s","Command Line"
 							,cfg.fextr[i]->cmd);
-						sprintf(opt[j++],"%-22.22s%s","Access Requirements"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Access Requirements"
 							,cfg.fextr[i]->arstr);
 						opt[j][0]=0;
 						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
@@ -875,15 +875,15 @@ void xfer_opts()
 								sprintf(str,"Extractable File Type %s"
 									,cfg.fextr[i]->ext);
 								getar(str,cfg.fextr[i]->arstr);
-								break; 
-						} 
-					} 
+								break;
+						}
+					}
 				}
 				break;
 			case __COUNTER__:	 /* Compressible file types */
 				while(1) {
 					for(i=0;i<cfg.total_fcomps && i<MAX_OPTS;i++)
-						sprintf(opt[i],"%-*s %-40s",MAX_FILEEXT_LEN, cfg.fcomp[i]->ext, cfg.fcomp[i]->cmd);
+						snprintf(opt[i], MAX_OPLN, "%-*s %-40s",MAX_FILEEXT_LEN, cfg.fcomp[i]->ext, cfg.fcomp[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_fcomps<MAX_OPTS)
@@ -913,10 +913,10 @@ void xfer_opts()
 						cfg.total_fcomps--;
 						while(i<cfg.total_fcomps) {
 							cfg.fcomp[i]=cfg.fcomp[i+1];
-							i++; 
+							i++;
 						}
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if(msk == MSK_INS) {
 						if((cfg.fcomp=(fcomp_t **)realloc(cfg.fcomp
@@ -924,17 +924,17 @@ void xfer_opts()
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fcomps+1);
 							cfg.total_fcomps=0;
 							bail(1);
-							continue; 
+							continue;
 						}
 						if(!cfg.total_fcomps) {
 							if((cfg.fcomp[0]=(fcomp_t *)malloc(
 								sizeof(fcomp_t)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fcomp_t));
-								continue; 
+								continue;
 							}
 							memset(cfg.fcomp[0],0,sizeof(fcomp_t));
 							strcpy(cfg.fcomp[0]->ext,"ZIP");
-							strcpy(cfg.fcomp[0]->cmd,"%@zip -jD %f %s"); 
+							strcpy(cfg.fcomp[0]->cmd,"%@zip -jD %f %s");
 						}
 						else {
 							for(j=cfg.total_fcomps;j>i;j--)
@@ -942,37 +942,37 @@ void xfer_opts()
 							if((cfg.fcomp[i]=(fcomp_t *)malloc(
 								sizeof(fcomp_t)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fcomp_t));
-								continue; 
+								continue;
 							}
 							if(i>=cfg.total_fcomps)
 								j=i-1;
 							else
 								j=i+1;
-							*cfg.fcomp[i]=*cfg.fcomp[j]; 
+							*cfg.fcomp[i]=*cfg.fcomp[j];
 						}
 						cfg.total_fcomps++;
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if(msk == MSK_COPY) {
 						savfcomp=*cfg.fcomp[i];
-						continue; 
+						continue;
 					}
 					if(msk == MSK_PASTE) {
 						*cfg.fcomp[i]=savfcomp;
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if (msk != 0)
 						continue;
 					done=0;
 					while(!done) {
 						j=0;
-						sprintf(opt[j++],"%-22.22s%s","File Extension"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","File Extension"
 							,cfg.fcomp[i]->ext);
-						sprintf(opt[j++],"%-22.22s%-40s","Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%-40s","Command Line"
 							,cfg.fcomp[i]->cmd);
-						sprintf(opt[j++],"%-22.22s%s","Access Requirements"
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Access Requirements"
 							,cfg.fcomp[i]->arstr);
 						opt[j][0]=0;
 						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
@@ -1008,15 +1008,15 @@ void xfer_opts()
 								sprintf(str,"Compressible File Type %s"
 									,cfg.fcomp[i]->ext);
 								getar(str,cfg.fcomp[i]->arstr);
-								break; 
-						} 
-					} 
+								break;
+						}
+					}
 				}
 				break;
 			case __COUNTER__:	/* Transfer protocols */
 				while(1) {
 					for(i=0;i<cfg.total_prots && i<MAX_OPTS;i++)
-						sprintf(opt[i],"%c  %s"
+						snprintf(opt[i], MAX_OPLN, "%c  %s"
 							,cfg.prot[i]->mnemonic,cfg.prot[i]->name);
 					opt[i][0]=0;
 					uifc_winmode_t wmode = WIN_RHT|WIN_ACT|WIN_SAV;	/* WIN_SAV because size can change */
@@ -1052,10 +1052,10 @@ void xfer_opts()
 						cfg.total_prots--;
 						while(i<cfg.total_prots) {
 							cfg.prot[i]=cfg.prot[i+1];
-							i++; 
+							i++;
 						}
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if(msk == MSK_INS) {
 						if((cfg.prot=(prot_t **)realloc(cfg.prot
@@ -1063,13 +1063,13 @@ void xfer_opts()
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_prots+1);
 							cfg.total_prots=0;
 							bail(1);
-							continue; 
+							continue;
 						}
 						if(!cfg.total_prots) {
 							if((cfg.prot[0]=(prot_t *)malloc(
 								sizeof(prot_t)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(prot_t));
-								continue; 
+								continue;
 							}
 							memset(cfg.prot[0],0,sizeof(prot_t));
 							cfg.prot[0]->mnemonic='?';
@@ -1079,51 +1079,51 @@ void xfer_opts()
 							if((cfg.prot[i]=(prot_t *)malloc(
 								sizeof(prot_t)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(prot_t));
-								continue; 
+								continue;
 							}
 							if(i>=cfg.total_prots)
 								j=i-1;
 							else
 								j=i+1;
-							*cfg.prot[i]=*cfg.prot[j]; 
+							*cfg.prot[i]=*cfg.prot[j];
 						}
 						cfg.total_prots++;
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if(msk == MSK_COPY) {
 						savprot=*cfg.prot[i];
-						continue; 
+						continue;
 					}
 					if(msk == MSK_PASTE) {
 						*cfg.prot[i]=savprot;
 						uifc.changes=1;
-						continue; 
+						continue;
 					}
 					if (msk != 0)
 						continue;
 					done=0;
 					while(!done) {
 						j=0;
-						sprintf(opt[j++],"%-30.30s%c","Mnemonic (Command Key)"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%c","Mnemonic (Command Key)"
 							,cfg.prot[i]->mnemonic);
-						sprintf(opt[j++],"%-30.30s%-40s","Protocol Name"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%-40s","Protocol Name"
 							,cfg.prot[i]->name);
-						sprintf(opt[j++],"%-30.30s%-40s","Access Requirements"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%-40s","Access Requirements"
 							,cfg.prot[i]->arstr);
-						sprintf(opt[j++],"%-30.30s%-40s","Upload Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%-40s","Upload Command Line"
 							,cfg.prot[i]->ulcmd);
-						sprintf(opt[j++],"%-30.30s%-40s","Download Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%-40s","Download Command Line"
 							,cfg.prot[i]->dlcmd);
-						sprintf(opt[j++],"%-30.30s%-40s","Batch Upload Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%-40s","Batch Upload Command Line"
 							,cfg.prot[i]->batulcmd);
-						sprintf(opt[j++],"%-30.30s%-40s","Batch Download Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%-40s","Batch Download Command Line"
 							,cfg.prot[i]->batdlcmd);
-						sprintf(opt[j++],"%-30.30s%s",   "Native Executable/Script"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s",   "Native Executable/Script"
 							,cfg.prot[i]->misc&PROT_NATIVE ? "Yes" : "No");
-						sprintf(opt[j++],"%-30.30s%s",	 "Supports DSZLOG"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s",	 "Supports DSZLOG"
 							,cfg.prot[i]->misc&PROT_DSZLOG ? "Yes":"No");
-						sprintf(opt[j++],"%-30.30s%s",	 "Socket I/O"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s",	 "Socket I/O"
 							,cfg.prot[i]->misc&PROT_SOCKET ? "Yes":"No");
 						opt[j][0]=0;
 						wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
@@ -1193,9 +1193,9 @@ void xfer_opts()
 								if((l==0 && !(cfg.prot[i]->misc&PROT_NATIVE))
 									|| (l==1 && cfg.prot[i]->misc&PROT_NATIVE)) {
 									cfg.prot[i]->misc^=PROT_NATIVE;
-									uifc.changes=1; 
+									uifc.changes=1;
 								}
-								break; 
+								break;
 							case 8:
 								l=cfg.prot[i]->misc&PROT_DSZLOG ? 0:1;
 								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
@@ -1203,9 +1203,9 @@ void xfer_opts()
 								if((l==0 && !(cfg.prot[i]->misc&PROT_DSZLOG))
 									|| (l==1 && cfg.prot[i]->misc&PROT_DSZLOG)) {
 									cfg.prot[i]->misc^=PROT_DSZLOG;
-									uifc.changes=1; 
+									uifc.changes=1;
 								}
-								break; 
+								break;
 							case 9:
 								l=cfg.prot[i]->misc&PROT_SOCKET ? 0:1l;
 								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
@@ -1213,13 +1213,13 @@ void xfer_opts()
 								if((l==0 && !(cfg.prot[i]->misc&PROT_SOCKET))
 									|| (l==1 && cfg.prot[i]->misc&PROT_SOCKET)) {
 									cfg.prot[i]->misc^=PROT_SOCKET;
-									uifc.changes=1; 
+									uifc.changes=1;
 								}
-								break; 
-						} 
-					} 
+								break;
+						}
+					}
 				}
 				break;
-		} 
+		}
 	}
 }

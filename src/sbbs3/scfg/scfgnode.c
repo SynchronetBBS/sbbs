@@ -68,7 +68,7 @@ void node_menu()
 	while(1) {
 		SAFECOPY(cfg.filename, cfg_filename);
 		for(i=0;i<cfg.sys_nodes;i++)
-			sprintf(opt[i],"Node %d",i+1);
+			snprintf(opt[i], MAX_OPLN, "Node %d",i+1);
 		opt[i][0]=0;
 		j=WIN_ORG|WIN_ACT|WIN_INSACT|WIN_DELACT;
 		if(cfg.sys_nodes>1)
@@ -203,8 +203,8 @@ void node_cfg()
 
 	while(1) {
 		i=0;
-		sprintf(opt[i++],"%-27.27s%s","Phone Number",cfg.node_phone);
-		sprintf(opt[i++],"%-27.27s%s","Logon Requirements",cfg.node_arstr);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Phone Number",cfg.node_phone);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Logon Requirements",cfg.node_arstr);
 		strcpy(opt[i++],"Toggle Options...");
 		strcpy(opt[i++],"Advanced Options...");
 		opt[i][0]=0;
@@ -243,11 +243,11 @@ void node_cfg()
 				done=0;
 				while(!done) {
 					i=0;
-					sprintf(opt[i++],"%-27.27s%s","Allow 8-bit Remote Logins"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Allow 8-bit Remote Logins"
 						,cfg.node_misc&NM_7BITONLY ? "No":"Yes");
-					sprintf(opt[i++],"%-27.27s%s","Spinning Pause Prompt"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Spinning Pause Prompt"
 						,cfg.node_misc&NM_NOPAUSESPIN ? "No":"Yes");
-					sprintf(opt[i++],"%-27.27s%s","Keep Node File Open"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Keep Node File Open"
 						,cfg.node_misc&NM_CLOSENODEDAB ? "No":"Yes");
 
 					opt[i][0]=0;
@@ -331,9 +331,9 @@ void node_cfg()
 				done=0;
 				while(!done) {
 					i=0;
-					sprintf(opt[i++],"%-27.27s%s","Daily Event",cfg.node_daily);
-					sprintf(opt[i++],"%-27.27s%s","Node Directory",cfg.node_path[cfg.node_num-1]);
-					sprintf(opt[i++],"%-27.27s%s","Text Directory",cfg.text_dir);
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Daily Event",cfg.node_daily);
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Node Directory",cfg.node_path[cfg.node_num-1]);
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Text Directory",cfg.text_dir);
 					opt[i][0]=0;
 					uifc.helpbuf=
 						"`Node Advanced Options:`\n"

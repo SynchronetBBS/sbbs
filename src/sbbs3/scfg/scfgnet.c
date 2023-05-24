@@ -163,26 +163,26 @@ void mqtt_cfg()
 
 	while(1) {
 		int i=0;
-		sprintf(opt[i++], "%-20s%s", "Enabled", cfg.mqtt.enabled ? "Yes" : "No");
-		sprintf(opt[i++], "%-20s%s", "Broker Address", cfg.mqtt.broker_addr);
-		sprintf(opt[i++], "%-20s%u", "Broker Port", cfg.mqtt.broker_port);
-		sprintf(opt[i++], "%-20s%s", "Username", cfg.mqtt.username);
-		sprintf(opt[i++], "%-20s%s", "Password", cfg.mqtt.password);
-		sprintf(opt[i++], "%-20s%u seconds", "Keep-alive", cfg.mqtt.keepalive);
-		sprintf(opt[i++], "%-20s%s", "Protocol Version", mqttVersion[cfg.mqtt.protocol_version - 3]);
-		sprintf(opt[i++], "%-20s%s", "Publish Verbosity", cfg.mqtt.verbose ? "High" : "Low");
-		sprintf(opt[i++], "%-20s%s", "Publish QOS", mqttQOS[cfg.mqtt.publish_qos]);
-		sprintf(opt[i++], "%-20s%s", "Subscribe QOS", mqttQOS[cfg.mqtt.subscribe_qos]);
-		sprintf(opt[i++], "%-20s%s", "Log Level", logLevelStringList[cfg.mqtt.log_level]);
-		sprintf(opt[i++], "%-20s%s", "TLS (encryption)", mqttTlsMode[cfg.mqtt.tls.mode]);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Enabled", cfg.mqtt.enabled ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Broker Address", cfg.mqtt.broker_addr);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%u", "Broker Port", cfg.mqtt.broker_port);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Username", cfg.mqtt.username);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Password", cfg.mqtt.password);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%u seconds", "Keep-alive", cfg.mqtt.keepalive);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Protocol Version", mqttVersion[cfg.mqtt.protocol_version - 3]);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Publish Verbosity", cfg.mqtt.verbose ? "High" : "Low");
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Publish QOS", mqttQOS[cfg.mqtt.publish_qos]);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Subscribe QOS", mqttQOS[cfg.mqtt.subscribe_qos]);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Log Level", logLevelStringList[cfg.mqtt.log_level]);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "TLS (encryption)", mqttTlsMode[cfg.mqtt.tls.mode]);
 		if(cfg.mqtt.tls.mode == MQTT_TLS_CERT) {
-			sprintf(opt[i++], "%-20s%s", "CA Cert", cfg.mqtt.tls.cafile);
-			sprintf(opt[i++], "%-20s%s", "Client Cert", cfg.mqtt.tls.certfile);
-			sprintf(opt[i++], "%-20s%s", "Key File", cfg.mqtt.tls.keyfile);
-			sprintf(opt[i++], "%-20s%s", "Key File Password", cfg.mqtt.tls.keypass);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "CA Cert", cfg.mqtt.tls.cafile);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Client Cert", cfg.mqtt.tls.certfile);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Key File", cfg.mqtt.tls.keyfile);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Key File Password", cfg.mqtt.tls.keypass);
 		} else if(cfg.mqtt.tls.mode == MQTT_TLS_PSK) {
-			sprintf(opt[i++], "%-20s%s", "Key", cfg.mqtt.tls.psk);
-			sprintf(opt[i++], "%-20s%s", "Identity", cfg.mqtt.tls.identity);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Key", cfg.mqtt.tls.psk);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Identity", cfg.mqtt.tls.identity);
 		}
 		opt[i][0]=0;
 		uifc.helpbuf =
@@ -453,7 +453,7 @@ void net_cfg()
 					case 0:
 						while(1) {
 							for(i=0;i<cfg.total_qhubs && i<MAX_OPTS;i++)
-								sprintf(opt[i],"%-8.8s  %s"
+								snprintf(opt[i],MAX_OPLN,"%-8.8s  %s"
 									,cfg.qhub[i]->id
 									,cfg.qhub[i]->enabled ? cfg.qhub[i]->call : "<DISABLED>");
 							opt[i][0]=0;
@@ -531,41 +531,41 @@ void net_cfg()
 					sprintf(tmp + strlen(tmp), "%s%s", j ? ", " : "", smb_faddrtoa(&cfg.faddr[j], NULL));
 				if(j < cfg.total_faddrs)
 					strcat(tmp, ", ...");
-				sprintf(opt[i++],"%-33.33s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 					,"System Addresses",tmp);
-				sprintf(opt[i++],"%-33.33s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 					,"Default Origin Line", cfg.origline);
-				sprintf(opt[i++],"%-33.33s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 					,"NetMail Semaphore",cfg.netmail_sem);
-				sprintf(opt[i++],"%-33.33s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 					,"EchoMail Semaphore",cfg.echomail_sem);
-				sprintf(opt[i++],"%-33.33s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 					,"NetMail Directory",cfg.netmail_dir);
-				sprintf(opt[i++],"%-33.33s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 					,"Allow Sending of NetMail"
 					,cfg.netmail_misc&NMAIL_ALLOW ? "Yes":"No");
-				sprintf(opt[i++],"%-33.33s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 					,"Allow File Attachments"
 					,cfg.netmail_misc&NMAIL_FILE ? "Yes":"No");
-				sprintf(opt[i++],"%-33.33s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 					,"Send NetMail Using Alias"
 					,cfg.netmail_misc&NMAIL_ALIAS ? "Yes":"No");
-				sprintf(opt[i++],"%-33.33s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 					,"NetMail Defaults to Crash"
 					,cfg.netmail_misc&NMAIL_CRASH ? "Yes":"No");
-				sprintf(opt[i++],"%-33.33s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 					,"NetMail Defaults to Direct"
 					,cfg.netmail_misc&NMAIL_DIRECT ? "Yes":"No");
-				sprintf(opt[i++],"%-33.33s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 					,"NetMail Defaults to Hold"
 					,cfg.netmail_misc&NMAIL_HOLD ? "Yes":"No");
-				sprintf(opt[i++],"%-33.33s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 					,"Kill NetMail After Sent"
 					,cfg.netmail_misc&NMAIL_KILL ? "Yes":"No");
-				sprintf(opt[i++],"%-33.33s%"PRIu32
+				snprintf(opt[i++], MAX_OPLN, "%-33.33s%"PRIu32
 					,"Cost to Send NetMail",cfg.netmail_cost);
 				if(cfg.total_faddrs > 1)
-					sprintf(opt[i++],"%-33.33s%s"
+					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s"
 						,"Choose NetMail Source Address"
 						,cfg.netmail_misc&NMAIL_CHSRCADDR ? "Yes":"No");
 				opt[i][0]=0;
@@ -601,7 +601,7 @@ void net_cfg()
 									strcpy(str,"Main");
 								else
 									sprintf(str,"AKA %u",i);
-								sprintf(opt[i],"%-8.8s %16s"
+								snprintf(opt[i],MAX_OPLN,"%-8.8s %16s"
 									,str,smb_faddrtoa(&cfg.faddr[i],tmp));
 							}
 							opt[i][0]=0;
@@ -893,25 +893,25 @@ void net_cfg()
 			done=0;
 			while(!done) {
 				i=0;
-				sprintf(opt[i++],"%-27.27s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-27.27s%s"
 					,"System Address",cfg.sys_inetaddr);
-				sprintf(opt[i++],"%-27.27s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-27.27s%s"
 					,"Inbound E-mail Semaphore",cfg.smtpmail_sem);
-				sprintf(opt[i++],"%-27.27s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-27.27s%s"
 					,"Outbound E-mail Semaphore",cfg.inetmail_sem);
-				sprintf(opt[i++],"%-27.27s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-27.27s%s"
 					,"Allow Sending of E-mail"
 					,cfg.inetmail_misc&NMAIL_ALLOW ? "Yes":"No");
-				sprintf(opt[i++],"%-27.27s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-27.27s%s"
 					,"Allow File Attachments"
 					,cfg.inetmail_misc&NMAIL_FILE ? "Yes":"No");
-				sprintf(opt[i++],"%-27.27s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-27.27s%s"
 					,"Send E-mail Using Alias"
 					,cfg.inetmail_misc&NMAIL_ALIAS ? "Yes":"No");
-				sprintf(opt[i++],"%-27.27s%s"
+				snprintf(opt[i++], MAX_OPLN, "%-27.27s%s"
 					,"Kill E-mail After Sent"
 					,cfg.inetmail_misc&NMAIL_KILL ? "Yes":"No");
-				sprintf(opt[i++],"%-27.27s%"PRIu32
+				snprintf(opt[i++], MAX_OPLN, "%-27.27s%"PRIu32
 					,"Cost to Send E-mail",cfg.inetmail_cost);
 				opt[i][0]=0;
 				uifc.helpbuf=
@@ -1076,8 +1076,8 @@ void qhub_adv_edit(qhub_t* qhub)
 
 	while(1) {
 		i=0;
-		sprintf(opt[i++], "%-27.27s%s", "Pack Command Line", qhub->pack);
-		sprintf(opt[i++], "%-27.27s%s", "Unpack Command Line", qhub->unpack);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Pack Command Line", qhub->pack);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Unpack Command Line", qhub->unpack);
 		opt[i][0] = 0;
 		sprintf(str,"%s Advanced Options", qhub->id);
 		uifc.helpbuf="`QWK Network Hub Advanced Options`\n"
@@ -1127,31 +1127,31 @@ void qhub_edit(int num)
 
 	while(!done) {
 		i=0;
-		sprintf(opt[i++],"%-27.27s%s","Hub System ID",cfg.qhub[num]->id);
-		sprintf(opt[i++],"%-27.27s%s","Enabled", cfg.qhub[num]->enabled ? "Yes":"No");
-		sprintf(opt[i++],"%-27.27s%s","Archive Format",cfg.qhub[num]->fmt);
-		sprintf(opt[i++],"%-27.27s%s","Call-out Command Line",cfg.qhub[num]->call);
-		sprintf(opt[i++],"%-27.27s%s","Native Call-out Command",cfg.qhub[num]->misc&QHUB_NATIVE ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Hub System ID",cfg.qhub[num]->id);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Enabled", cfg.qhub[num]->enabled ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Archive Format",cfg.qhub[num]->fmt);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Call-out Command Line",cfg.qhub[num]->call);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Native Call-out Command",cfg.qhub[num]->misc&QHUB_NATIVE ? "Yes":"No");
 		if(cfg.qhub[num]->node == NODE_ANY)
 			SAFECOPY(str, "Any");
 		else
 			SAFEPRINTF(str, "%u", cfg.qhub[num]->node);
-		sprintf(opt[i++],"%-27.27s%s","Call-out Node", str);
-		sprintf(opt[i++],"%-27.27s%s","Call-out Days",daystr(cfg.qhub[num]->days));
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Call-out Node", str);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Call-out Days",daystr(cfg.qhub[num]->days));
 		if(cfg.qhub[num]->freq) {
 			sprintf(str,"%u times a day",1440/cfg.qhub[num]->freq);
-			sprintf(opt[i++],"%-27.27s%s","Call-out Frequency",str);
+			snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Call-out Frequency",str);
 		}
 		else {
 			sprintf(str,"%2.2u:%2.2u",cfg.qhub[num]->time/60,cfg.qhub[num]->time%60);
-			sprintf(opt[i++],"%-27.27s%s","Call-out Time",str);
+			snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Call-out Time",str);
 		}
-		sprintf(opt[i++],"%-27.27s%s","Include Kludge Lines", cfg.qhub[num]->misc&QHUB_NOKLUDGES ? "No":"Yes");
-		sprintf(opt[i++],"%-27.27s%s","Include VOTING.DAT File", cfg.qhub[num]->misc&QHUB_NOVOTING ? "No":"Yes");
-		sprintf(opt[i++],"%-27.27s%s","Include HEADERS.DAT File", cfg.qhub[num]->misc&QHUB_NOHEADERS ? "No":"Yes");
-		sprintf(opt[i++],"%-27.27s%s","Include UTF-8 Characters", cfg.qhub[num]->misc&QHUB_UTF8 ? "Yes":"No");
-		sprintf(opt[i++],"%-27.27s%s","Extended (QWKE) Packets", cfg.qhub[num]->misc&QHUB_EXT ? "Yes":"No");
-		sprintf(opt[i++],"%-27.27s%s","Exported Ctrl-A Codes"
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Include Kludge Lines", cfg.qhub[num]->misc&QHUB_NOKLUDGES ? "No":"Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Include VOTING.DAT File", cfg.qhub[num]->misc&QHUB_NOVOTING ? "No":"Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Include HEADERS.DAT File", cfg.qhub[num]->misc&QHUB_NOHEADERS ? "No":"Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Include UTF-8 Characters", cfg.qhub[num]->misc&QHUB_UTF8 ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Extended (QWKE) Packets", cfg.qhub[num]->misc&QHUB_EXT ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Exported Ctrl-A Codes"
 			,cfg.qhub[num]->misc&QHUB_EXPCTLA ? "Expand" : cfg.qhub[num]->misc&QHUB_RETCTLA ? "Leave in" : "Strip");
 		strcpy(opt[i++],"Advanced Options...");
 		strcpy(opt[i++],"Import Conferences...");
@@ -1289,7 +1289,7 @@ void qhub_edit(int num)
 				j=0;
 				while(1) {
 					for(i=0;i<7;i++)
-						sprintf(opt[i],"%s        %s"
+						snprintf(opt[i],MAX_OPLN,"%s        %s"
 							,wday[i],(cfg.qhub[num]->days&(1<<i)) ? "Yes":"No");
 					opt[i][0]=0;
 					uifc.helpbuf=
@@ -1438,7 +1438,7 @@ void qhub_sub_edit(uint num)
 		for(j=0;j<cfg.qhub[num]->subs;j++) {
 			if(cfg.qhub[num]->sub[j] == NULL)
 				continue;
-			sprintf(opt[opts++],"%-5u %-*.*s %-*.*s"
+			snprintf(opt[opts++],MAX_OPLN,"%-5u %-*.*s %-*.*s"
 				,cfg.qhub[num]->conf[j]
 				,LEN_GSNAME,LEN_GSNAME
 				,cfg.grp[cfg.qhub[num]->sub[j]->grp]->sname
@@ -1519,15 +1519,15 @@ void qhub_sub_edit(uint num)
 		l=0;
 		while(1) {
 			n=0;
-			sprintf(opt[n++],"%-22.22s%.*s %.*s"
+			snprintf(opt[n++],MAX_OPLN,"%-22.22s%.*s %.*s"
 				,"Sub-board"
 				,LEN_GSNAME
 				,cfg.grp[cfg.qhub[num]->sub[j]->grp]->sname
 				,LEN_SSNAME
 				,cfg.qhub[num]->sub[j]->sname);
-			sprintf(opt[n++],"%-22.22s%u"
+			snprintf(opt[n++],MAX_OPLN,"%-22.22s%u"
 				,"Conference Number",cfg.qhub[num]->conf[j]);
-			sprintf(opt[n++],"%-22.22s%s"
+			snprintf(opt[n++],MAX_OPLN,"%-22.22s%s"
 				,"Ctrl-A Codes",cfg.qhub[num]->mode[j]==QHUB_STRIP ?
 				"Strip out" : cfg.qhub[num]->mode[j]==QHUB_RETCTLA ?
 				"Leave in" : "Expand to ANSI");
