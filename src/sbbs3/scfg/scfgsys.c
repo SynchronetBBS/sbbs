@@ -1651,12 +1651,12 @@ void sys_cfg(void)
 	SAFECOPY(sys_pass, cfg.sys_pass);
 	while(1) {
 		i=0;
-		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","BBS Name",cfg.sys_name);
-		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Location",cfg.sys_location);
-		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s %s","Local Time Zone"
+		snprintf(opt[i++],MAX_OPLN,"%-20s%s","BBS Name",cfg.sys_name);
+		snprintf(opt[i++],MAX_OPLN,"%-20s%s","Location",cfg.sys_location);
+		snprintf(opt[i++],MAX_OPLN,"%-20s%s %s","Local Time Zone"
 			,smb_zonestr(cfg.sys_timezone,NULL)
 			,SMB_TZ_HAS_DST(cfg.sys_timezone) && cfg.sys_misc&SM_AUTO_DST ? "(Auto-DST)" : "");
-		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Operator",cfg.sys_op);
+		snprintf(opt[i++],MAX_OPLN,"%-20s%s","Operator",cfg.sys_op);
 
 		strcpy(opt[i++],"Notifications...");
 		strcpy(opt[i++],"Toggle Options...");

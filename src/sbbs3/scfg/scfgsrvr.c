@@ -203,13 +203,13 @@ static void global_cfg(void)
 
 	while(1) {
 		int i = 0;
-		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
-		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "TLS Error Level", iniLogLevelStringList()[startup.tls_error_level]);
-		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "Network Interfaces (IPv4/6)", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
-		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "Outbound Interface (IPv4)", IPv4AddressToStr(startup.outgoing4.s_addr, tmp, sizeof(tmp)));
-		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "Bind Retry Count", threshold(startup.bind_retry_count));
-		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "Bind Retry Delay", vduration(startup.bind_retry_delay));
-		snprintf(opt[i++], MAX_OPLN, "%-40s%s", "Semaphore File Check Interval", vduration(startup.sem_chk_freq));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "TLS Error Level", iniLogLevelStringList()[startup.tls_error_level]);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Network Interfaces (IPv4/6)", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Outbound Interface (IPv4)", IPv4AddressToStr(startup.outgoing4.s_addr, tmp, sizeof(tmp)));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Bind Retry Count", threshold(startup.bind_retry_count));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Bind Retry Delay", vduration(startup.bind_retry_delay));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Sem File Check Interval", vduration(startup.sem_chk_freq));
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
