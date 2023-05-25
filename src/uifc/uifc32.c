@@ -583,6 +583,8 @@ static void timedisplay(BOOL force)
 	struct tm gm;
 	int old_hold;
 
+	if(api->scrn_width < 80)
+		return;
 	now=time(NULL);
 	localtime_r(&now, &gm);
 	if(force || savemin != gm.tm_min || difftime(now,savetime)>=60) {
