@@ -1,7 +1,4 @@
 /* Modern implementation of UIFC (user interface) library based on uifc.c */
-// vi: tabstop=4
-
-/* $Id: uifc32.c,v 1.268 2020/08/16 20:37:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -656,6 +641,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 	int	optheight=0;
 	int gotkey;
 	uchar	hclr,lclr,bclr,cclr,lbclr;
+	BOOL shadow = api->scrn_width >= 80;
 
 	if(cur==NULL) cur=&tmpcur;
 	api->exit_flags = 0;
@@ -691,6 +677,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 		rbrdrwidth=0;
 		tbrdrwidth=0;
 		bbrdrwidth=0;
+		shadow = FALSE;
 	}
 	/* Count the options */
 	while (option != NULL && opts < MAX_OPTS) {
@@ -741,14 +728,17 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 		else if(width<5)
 			width=5;
 	}
-	if(width>(s_right+1)-s_left) {
-		width=(s_right+1)-s_left;
-		if(title_len>(width-hbrdrsize-2)) {
-			*(title+width-hbrdrsize-2-3)='.';
-			*(title+width-hbrdrsize-2-2)='.';
-			*(title+width-hbrdrsize-2-1)='.';
-			*(title+width-hbrdrsize-2)=0;
-			title_len=strlen(title);
+	if(left + width>(s_right+1)-s_left) {
+		left = 0;
+		if(width>(s_right+1)-s_left) {
+			width=(s_right+1)-s_left;
+			if(title_len>(width-hbrdrsize-2)) {
+				*(title+width-hbrdrsize-2-3)='.';
+				*(title+width-hbrdrsize-2-2)='.';
+				*(title+width-hbrdrsize-2-1)='.';
+				*(title+width-hbrdrsize-2)=0;
+				title_len=strlen(title);
+			}
 		}
 	}
 	if(mode&WIN_L2R)
@@ -810,8 +800,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 					&& sav[api->savnum].bar==bar) {
 				if((sav[api->savnum].left!=s_left+left
 					|| sav[api->savnum].top!=s_top+top
-					|| sav[api->savnum].right!=s_left+left+width+1
-					|| sav[api->savnum].bot!=s_top+top+height)) { /* dimensions have changed */
+					|| sav[api->savnum].right!=s_left+left+width+(shadow*2)-1
+					|| sav[api->savnum].bot!=s_top+top+height-(!shadow))) { /* dimensions have changed */
 					vmem_puttext(sav[api->savnum].left,sav[api->savnum].top,sav[api->savnum].right,sav[api->savnum].bot
 						,(void *)sav[api->savnum].buf);	/* put original window back */
 					FREE_AND_NULL(sav[api->savnum].buf);
@@ -823,14 +813,14 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							uifc_mouse_enable();
 						return(-1);
 					}
-					vmem_gettext(s_left+left,s_top+top,s_left+left+width+1
-						,s_top+top+height,(void *)sav[api->savnum].buf);	  /* save again */
-					sav[api->savnum].left=s_left+left;
-					sav[api->savnum].top=s_top+top;
-					sav[api->savnum].right=s_left+left+width+1;
-					sav[api->savnum].bot=s_top+top+height;
-					sav[api->savnum].cur=cur;
-					sav[api->savnum].bar=bar;
+					win_t* s = &sav[api->savnum];
+					s->left = s_left+left;
+					s->top = s_top+top;
+					s->right = s_left+left+width+(shadow*2)-1;
+					s->bot = s_top+top+height-(!shadow);
+					s->cur = cur;
+					s->bar = bar;
+					vmem_gettext(s->left, s->top, s->right, s->bot, (void*)s->buf); /* save again */
 				}
 			}
 			else {
@@ -848,14 +838,14 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 					uifc_mouse_enable();
 				return(-1);
 			}
-			vmem_gettext(s_left+left,s_top+top,s_left+left+width+1
-				,s_top+top+height,(void *)sav[api->savnum].buf);
-			sav[api->savnum].left=s_left+left;
-			sav[api->savnum].top=s_top+top;
-			sav[api->savnum].right=s_left+left+width+1;
-			sav[api->savnum].bot=s_top+top+height;
-			sav[api->savnum].cur=cur;
-			sav[api->savnum].bar=bar;
+			win_t* s = &sav[api->savnum];
+			s->left = s_left+left;
+			s->top = s_top+top;
+			s->right = s_left+left+width+(shadow*2)-1;
+			s->bot = s_top+top+height-(!shadow);
+			s->cur = cur;
+			s->bar = bar;
+			vmem_gettext(s->left,s->top, s->right, s->bot, (void *)s->buf);
 		}
 	}
 
@@ -1028,8 +1018,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 			textattr(hclr|(bclr<<4));
 		}
 
-		if(!(mode&WIN_NOBRDR)) {
-			/* Shadow */
+		if(shadow) {
 			if(api->bclr==BLUE) {
 				vmem_gettext(s_left+left+width,s_top+top+1,s_left+left+width+1
 					,s_top+top+height-1,shade);
@@ -1895,6 +1884,7 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 	int s_bottom=api->scrn_len-3;
 	int hbrdrsize=2;
 	int tbrdrwidth=1;
+	BOOL shadow = api->scrn_width >= 80;
 
 	reset_dynamic();
 
@@ -1909,6 +1899,7 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 		hbrdrsize=0;
 		tbrdrwidth=0;
 		height=1;
+		shadow = FALSE;
 	}
 
 	prompt=strdup(inprompt==NULL ? "":inprompt);
@@ -1935,8 +1926,8 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 	if(top<0)
 		top=0;
 	if(mode&WIN_SAV)
-		vmem_gettext(s_left+left,s_top+top,s_left+left+width+1
-			,s_top+top+height,save_buf);
+		vmem_gettext(s_left+left,s_top+top,s_left+left+width+(shadow*2)-1
+			,s_top+top+height+(!shadow),save_buf);
 	if(mode&WIN_ORG) { /* Clear around menu */
 		if(top)
 			vmem_puttext(1,2,api->scrn_width,s_top+top-1,blk_scrn);
@@ -2013,8 +2004,7 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 	vmem_puttext(s_left+left,s_top+top,s_left+left+width-1
 		,s_top+top+height-1,in_win);
 
-	if(!(mode&WIN_NOBRDR)) {
-		/* Shadow */
+	if(shadow) {
 		if(api->bclr==BLUE) {
 			vmem_gettext(s_left+left+width,s_top+top+1,s_left+left+width+1
 				,s_top+top+(height-1),shade);
@@ -2036,8 +2026,8 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 	textattr(api->lclr|(api->bclr<<4));
 	i=ugetstr(s_left+left+plen+offset,s_top+top+tbrdrwidth,iwidth,str,max,kmode,NULL);
 	if(mode&WIN_SAV)
-		vmem_puttext(s_left+left,s_top+top,s_left+left+width+1
-			,s_top+top+height,save_buf);
+		vmem_puttext(s_left+left,s_top+top,s_left+left+width+(shadow*2)-1
+			,s_top+top+height+(!shadow),save_buf);
 	free(prompt);
 	return(i);
 }

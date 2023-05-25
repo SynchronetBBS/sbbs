@@ -165,8 +165,8 @@
 typedef int64_t uifc_winmode_t; 
 
 #define SCRN_TOP	3
-#define SCRN_LEFT	5
-#define SCRN_RIGHT 	((int)api->scrn_width-4)
+#define SCRN_LEFT	(api->scrn_width < 80 ? 1 : 5)
+#define SCRN_RIGHT 	((int)api->scrn_width-(api->scrn_width < 80 ? 0 : 4))
 
 								/* Bits in 'mode' for getkey and getstr     */
 #define K_UPPER 	(1L<<0) 	/* Converts all letters to upper case		*/
