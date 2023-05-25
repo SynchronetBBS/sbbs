@@ -786,7 +786,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 					for(j=api->savnum-1; j>i; j--) {
 						/* Restore old screens */
 						vmem_puttext(sav[j].left,sav[j].top,sav[j].right,sav[j].bot
-							,(void *)sav[j].buf);	/* put original window back */
+							,sav[j].buf);	/* put original window back */
 						FREE_AND_NULL(sav[j].buf);
 					}
 					api->savnum=i;
@@ -803,7 +803,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 					|| sav[api->savnum].right!=s_left+left+width+(shadow*2)-1
 					|| sav[api->savnum].bot!=s_top+top+height-(!shadow))) { /* dimensions have changed */
 					vmem_puttext(sav[api->savnum].left,sav[api->savnum].top,sav[api->savnum].right,sav[api->savnum].bot
-						,(void *)sav[api->savnum].buf);	/* put original window back */
+						,sav[api->savnum].buf);	/* put original window back */
 					FREE_AND_NULL(sav[api->savnum].buf);
 					if ((sav[api->savnum].buf = malloc((width + 3) * (height + 2) * sizeof(struct vmem_cell)))==NULL) {
 						cprintf("UIFC line %d: error allocating %u bytes."
@@ -820,7 +820,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 					s->bot = s_top+top+height-(!shadow);
 					s->cur = cur;
 					s->bar = bar;
-					vmem_gettext(s->left, s->top, s->right, s->bot, (void*)s->buf); /* save again */
+					vmem_gettext(s->left, s->top, s->right, s->bot, s->buf); /* save again */
 				}
 			}
 			else {
@@ -845,7 +845,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 			s->bot = s_top+top+height-(!shadow);
 			s->cur = cur;
 			s->bar = bar;
-			vmem_gettext(s->left,s->top, s->right, s->bot, (void *)s->buf);
+			vmem_gettext(s->left,s->top, s->right, s->bot, s->buf);
 		}
 	}
 
@@ -1150,7 +1150,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							if(sav[api->savnum].buf != NULL)
 								vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
 									,sav[api->savnum].right,sav[api->savnum].bot
-									,(void *)sav[api->savnum].buf);
+									,sav[api->savnum].buf);
 							if(!(api->mode&UIFC_NHM))
 								uifc_mouse_enable();
 							FREE_AND_NULL(sav[api->savnum].buf);
@@ -1560,7 +1560,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								if(sav[api->savnum].buf != NULL)
 									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
 										,sav[api->savnum].right,sav[api->savnum].bot
-										,(void *)sav[api->savnum].buf);
+										,sav[api->savnum].buf);
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							return((*cur)|MSK_EDIT);
@@ -1591,7 +1591,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								if(sav[api->savnum].buf != NULL)
 									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
 										,sav[api->savnum].right,sav[api->savnum].bot
-										,(void *)sav[api->savnum].buf);
+										,sav[api->savnum].buf);
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							if(!opts) {
@@ -1613,7 +1613,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								if (sav[api->savnum].buf != NULL)
 									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
 										,sav[api->savnum].right,sav[api->savnum].bot
-										,(void *)sav[api->savnum].buf);
+										,sav[api->savnum].buf);
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							return((*cur)|MSK_DEL);
@@ -1734,7 +1734,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								if (sav[api->savnum].buf != NULL)
 									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
 										,sav[api->savnum].right,sav[api->savnum].bot
-										,(void *)sav[api->savnum].buf);
+										,sav[api->savnum].buf);
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							if(mode&WIN_XTR && (*cur)==opts-1)
@@ -1757,7 +1757,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								if (sav[api->savnum].buf != NULL)
 									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
 										,sav[api->savnum].right,sav[api->savnum].bot
-										,(void *)sav[api->savnum].buf);
+										,sav[api->savnum].buf);
 								FREE_AND_NULL(sav[api->savnum].buf);
 							}
 							return(-1);
