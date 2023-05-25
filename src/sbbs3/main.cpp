@@ -1481,11 +1481,11 @@ extern "C" BOOL js_CreateCommonObjects(JSContext* js_cx
 			break;
 
 		/* MsgBase Class */
-		if(js_CreateMsgBaseClass(js_cx, *glob, cfg)==NULL)
+		if(js_CreateMsgBaseClass(js_cx, *glob)==NULL)
 			break;
 
 		/* FileBase Class */
-		if(js_CreateFileBaseClass(js_cx, *glob, node_cfg)==NULL)
+		if(js_CreateFileBaseClass(js_cx, *glob)==NULL)
 			break;
 
 		/* File Class */
@@ -1497,7 +1497,7 @@ extern "C" BOOL js_CreateCommonObjects(JSContext* js_cx
 			break;
 
 		/* User class */
-		if(js_CreateUserClass(js_cx, *glob, cfg)==NULL)
+		if(js_CreateUserClass(js_cx, *glob)==NULL)
 			break;
 
 		/* COM Class */

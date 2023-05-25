@@ -1855,7 +1855,7 @@ static char* filebase_sort_prop_desc[] = {
 };
 #endif
 
-JSObject* js_CreateFileBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
+JSObject* js_CreateFileBaseClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	obj;
 	JSObject*	constructor;

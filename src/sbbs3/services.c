@@ -195,7 +195,7 @@ static ulong active_clients(void)
 	ulong i;
 	ulong total_clients=0;
 
-	for(i=0;i<services;i++) 
+	for(i=0;i<services;i++)
 		total_clients += protected_uint32_value(service[i].clients);
 
 	return(total_clients);
@@ -272,7 +272,7 @@ static int close_socket(SOCKET sock)
 
 	shutdown(sock,SHUT_RDWR);	/* required on Unix */
 	result=closesocket(sock);
-	if(startup!=NULL && startup->socket_open!=NULL) 
+	if(startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata,FALSE);
 	if(result!=0)
 		lprintf(LOG_WARNING,"%04d !ERROR %d closing socket: %s",sock, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)));
@@ -381,7 +381,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	/* Password */
 	if(argc > 1) {
 		JSVALUE_TO_ASTRING(cx, argv[1], pass, LEN_PASS+2, NULL);
-		if(pass==NULL) 
+		if(pass==NULL)
 			return(JS_FALSE);
 	}
 	rc=JS_SUSPENDREQUEST(cx);
@@ -434,7 +434,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if(inc_logons) {
 		client->user.logons++;
 		client->user.ltoday++;
-	}	
+	}
 
 	putuserdat(&scfg,&client->user);
 	if(client->subscan==NULL) {
@@ -779,7 +779,7 @@ js_client_remove(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-static JSContext* 
+static JSContext*
 js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, JSObject** glob)
 {
 	JSContext*	js_cx;
@@ -820,7 +820,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		}
 
 		/* User Class */
-		if(js_CreateUserClass(js_cx, *glob, &scfg)==NULL) 
+		if(js_CreateUserClass(js_cx, *glob)==NULL)
 			break;
 
 		/* Socket Class */
@@ -828,11 +828,11 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 			break;
 
 		/* MsgBase Class */
-		if(js_CreateMsgBaseClass(js_cx, *glob, &scfg)==NULL)
+		if(js_CreateMsgBaseClass(js_cx, *glob)==NULL)
 			break;
 
 		/* FileBase Class */
-		if(js_CreateFileBaseClass(js_cx, *glob, &scfg)==NULL)
+		if(js_CreateFileBaseClass(js_cx, *glob)==NULL)
 			break;
 
 		/* File Class */
@@ -860,10 +860,10 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 			break;
 
 		/* user-specific objects */
-		if(!js_CreateUserObjects(js_cx, *glob, &scfg, /*user: */NULL, service_client->client, NULL, service_client->subscan)) 
+		if(!js_CreateUserObjects(js_cx, *glob, &scfg, /*user: */NULL, service_client->client, NULL, service_client->subscan))
 			break;
 
-		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, server_host_name(), SOCKLIB_DESC)==NULL) 
+		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, server_host_name(), SOCKLIB_DESC)==NULL)
 			break;
 
 		if(service_client->service->js_server_props.version[0]==0) {
@@ -921,7 +921,7 @@ js_OperationCallback(JSContext *cx)
 		return(JS_FALSE);
 	}
 
-	/* Terminated? */ 
+	/* Terminated? */
 	if(client->callback.auto_terminate && terminated) {
 		JS_ReportWarning(cx,"Terminated");
 		client->callback.counter=0;
@@ -1108,7 +1108,7 @@ static void js_service_thread(void* arg)
 
 #if 0	/* Need to export from SBBS.DLL */
 	identity=NULL;
-	if(service->options&BBS_OPT_GET_IDENT 
+	if(service->options&BBS_OPT_GET_IDENT
 		&& startup->options&BBS_OPT_GET_IDENT) {
 		identify(&service_client, service->port, str, sizeof(str)-1);
 		identity=strrchr(str,':');
@@ -1171,7 +1171,7 @@ static void js_service_thread(void* arg)
 	val = BOOLEAN_TO_JSVAL(JS_FALSE);
 	JS_SetProperty(js_cx, js_glob, "logged_in", &val);
 
-	if(service->options&SERVICE_OPT_UDP 
+	if(service->options&SERVICE_OPT_UDP
 		&& service_client.udp_buf != NULL
 		&& service_client.udp_len > 0) {
 		datagram = JS_NewStringCopyN(js_cx, (char*)service_client.udp_buf, service_client.udp_len);
@@ -1305,7 +1305,7 @@ static void js_static_service_thread(void* arg)
 		JS_SetProperty(js_cx, js_glob, "logged_in", &val);
 
 		JS_SetOperationCallback(js_cx, js_OperationCallback);
-	
+
 		if((js_script=JS_CompileFile(js_cx, js_glob, spath))==NULL)  {
 			if(service->log_level >= LOG_ERR)
 				lprintf(LOG_ERR,"!JavaScript FAILED to compile script (%s)",spath);
@@ -1406,7 +1406,7 @@ static void native_static_service_thread(void* arg)
 	else
 		SAFECOPY(cmd,inst.service->cmd);
 	SAFEPRINTF(fullcmd,cmd,socket_dup);
-	
+
 	do {
 		system(fullcmd);
 	} while(!inst.service->terminated && inst.service->options&SERVICE_OPT_STATIC_LOOP);
@@ -1457,7 +1457,7 @@ static void native_service_thread(void* arg)
 			,socket, service->protocol, host_name, client.addr);
 #if	0 /* gethostbyaddr() is apparently not (always) thread-safe
 	     and getnameinfo() doesn't return alias information */
-		for(i=0;host!=NULL && host->h_aliases!=NULL 
+		for(i=0;host!=NULL && host->h_aliases!=NULL
 			&& host->h_aliases[i]!=NULL;i++)
 			lprintf(LOG_INFO,"%04d %s HostAlias: %s"
 				,socket, service->protocol, host->h_aliases[i]);
@@ -1476,7 +1476,7 @@ static void native_service_thread(void* arg)
 
 #if 0	/* Need to export from SBBS.DLL */
 	identity=NULL;
-	if(service->options&BBS_OPT_GET_IDENT 
+	if(service->options&BBS_OPT_GET_IDENT
 		&& startup->options&BBS_OPT_GET_IDENT) {
 		identify(&service_client, service->port, str, sizeof(str)-1);
 		identity=strrchr(str,':');
@@ -1715,10 +1715,10 @@ static void cleanup(int code)
 
 	update_clients();
 
-#ifdef _WINSOCKAPI_	
+#ifdef _WINSOCKAPI_
 	if(WSAInitialized) {
 		char err[128];
-		if(WSACleanup()!=0) 
+		if(WSACleanup()!=0)
 			lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d: %s",ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)));
 		WSAInitialized = FALSE;
 	}
@@ -2136,7 +2136,7 @@ void services_thread(void* arg)
 						continue;
 #else
 			/* Setup select() parms */
-			FD_ZERO(&socket_set);	
+			FD_ZERO(&socket_set);
 			high_socket=0;
 			for(i=0;i<(int)services;i++) {
 				if(service[i].options&SERVICE_OPT_STATIC)
@@ -2263,7 +2263,7 @@ void services_thread(void* arg)
 							continue;
 						}
 
-					} else { 
+					} else {
 						/* TCP */
 						if((client_socket=accept(service[i].set->socks[j].sock
 							,(struct sockaddr *)&client_addr, &client_addr_len))==INVALID_SOCKET) {
@@ -2271,7 +2271,7 @@ void services_thread(void* arg)
 								lprintf(LOG_NOTICE,"%04d %s socket closed while listening"
 									,service[i].set->socks[j].sock, service[i].protocol);
 							else
-								lprintf(LOG_WARNING,"%04d %s !ERROR %d accepting connection: %s" 
+								lprintf(LOG_WARNING,"%04d %s !ERROR %d accepting connection: %s"
 									,service[i].set->socks[j].sock, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 	#ifdef _WIN32
 							if(WSAGetLastError()==WSAENOBUFS)	/* recycle (re-init WinSock) on this error */
@@ -2280,7 +2280,7 @@ void services_thread(void* arg)
 							continue;
 						}
 						if(startup->socket_open!=NULL)	/* Callback, increments socket counter */
-							startup->socket_open(startup->cbdata,TRUE);	
+							startup->socket_open(startup->cbdata,TRUE);
 					}
 					inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 
@@ -2389,13 +2389,13 @@ void services_thread(void* arg)
 
 		/* Wait for Static Service Threads to terminate */
 		total_running=0;
-		for(i=0;i<(int)services;i++) 
+		for(i=0;i<(int)services;i++)
 			total_running+=service[i].running;
 		if(total_running) {
 			lprintf(LOG_INFO,"0000 Waiting for %lu static services to terminate",total_running);
 			while(1) {
 				total_running=0;
-				for(i=0;i<(int)services;i++) 
+				for(i=0;i<(int)services;i++)
 					total_running+=service[i].running;
 				if(!total_running)
 					break;

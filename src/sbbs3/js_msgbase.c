@@ -2183,7 +2183,7 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} while(0);
 
-	smb_unlockmsghdr(&(p->smb), &msg); 
+	smb_unlockmsghdr(&(p->smb), &msg);
 	smb_freemsgmem(&msg);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -3451,7 +3451,7 @@ static struct JSPropertySpec js_msgbase_static_properties[] = {
 	{0}
 };
 
-JSObject* js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
+JSObject* js_CreateMsgBaseClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	obj;
 	JSObject*	constructor;

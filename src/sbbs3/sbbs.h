@@ -1415,8 +1415,8 @@ extern "C" {
 													,const char* name, client_t* client, SOCKET sock, CRYPT_CONTEXT session);
 #endif
 	/* js_user.c */
-	DLLEXPORT JSObject*	js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cfg);
-	DLLEXPORT JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg
+	DLLEXPORT JSObject*	js_CreateUserClass(JSContext* cx, JSObject* parent);
+	DLLEXPORT JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent
 													,char* name, user_t* user, client_t* client, BOOL global_user);
 	DLLEXPORT JSBool	js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, client_t* client, const char* web_file_vpath_prefix
@@ -1436,12 +1436,12 @@ extern "C" {
 													,user_t* user, client_t* client);
 
 	/* js_msgbase.c */
-	DLLEXPORT JSObject* js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg);
+	DLLEXPORT JSObject* js_CreateMsgBaseClass(JSContext* cx, JSObject* parent);
 	DLLEXPORT BOOL		js_ParseMsgHeaderObject(JSContext* cx, JSObject* hdrobj, smbmsg_t*);
 	DLLEXPORT BOOL		js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* hdrobj, smb_t**, smbmsg_t**, post_t**);
 
 	/* js_filebase.c */
-	DLLEXPORT JSObject* js_CreateFileBaseClass(JSContext*, JSObject* parent, scfg_t*);
+	DLLEXPORT JSObject* js_CreateFileBaseClass(JSContext*, JSObject* parent);
 
 	/* js_socket.c */
 	DLLEXPORT JSObject* js_CreateSocketClass(JSContext* cx, JSObject* parent);

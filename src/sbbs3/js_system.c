@@ -456,18 +456,18 @@ static jsSyncPropertySpec js_system_properties[] = {
 	{	"expired_flags3",			SYS_PROP_EXPIRED_FLAGS3	,SYSOBJ_FLAGS,	310  },
 	{	"expired_flags4",			SYS_PROP_EXPIRED_FLAGS4	,SYSOBJ_FLAGS,	310  },
 	{	"expired_restrictions",		SYS_PROP_EXPIRED_REST	,SYSOBJ_FLAGS,	310  },
-	{	"expired_exemptions",		SYS_PROP_EXPIRED_EXEMPT	,SYSOBJ_FLAGS,	310  },	
+	{	"expired_exemptions",		SYS_PROP_EXPIRED_EXEMPT	,SYSOBJ_FLAGS,	310  },
 
 	/* directories */
-	{	"node_dir",					SYS_PROP_NODE_DIR		,SYSOBJ_FLAGS,	310  },	
+	{	"node_dir",					SYS_PROP_NODE_DIR		,SYSOBJ_FLAGS,	310  },
 #endif
-	{	"ctrl_dir",					SYS_PROP_CTRL_DIR		,SYSOBJ_FLAGS,	310  },	
-	{	"data_dir",					SYS_PROP_DATA_DIR		,SYSOBJ_FLAGS,	310  },	
-	{	"text_dir",					SYS_PROP_TEXT_DIR		,SYSOBJ_FLAGS,	310  },	
-	{	"temp_dir",					SYS_PROP_TEMP_DIR		,SYSOBJ_FLAGS,	310  },	
-	{	"exec_dir",					SYS_PROP_EXEC_DIR		,SYSOBJ_FLAGS,	310  },	
-	{	"mods_dir",					SYS_PROP_MODS_DIR		,SYSOBJ_FLAGS,	310  },	
-	{	"logs_dir",					SYS_PROP_LOGS_DIR		,SYSOBJ_FLAGS,	310  },	
+	{	"ctrl_dir",					SYS_PROP_CTRL_DIR		,SYSOBJ_FLAGS,	310  },
+	{	"data_dir",					SYS_PROP_DATA_DIR		,SYSOBJ_FLAGS,	310  },
+	{	"text_dir",					SYS_PROP_TEXT_DIR		,SYSOBJ_FLAGS,	310  },
+	{	"temp_dir",					SYS_PROP_TEMP_DIR		,SYSOBJ_FLAGS,	310  },
+	{	"exec_dir",					SYS_PROP_EXEC_DIR		,SYSOBJ_FLAGS,	310  },
+	{	"mods_dir",					SYS_PROP_MODS_DIR		,SYSOBJ_FLAGS,	310  },
+	{	"logs_dir",					SYS_PROP_LOGS_DIR		,SYSOBJ_FLAGS,	310  },
 
 	/* filenames */
 	{	"devnull",					SYS_PROP_DEVNULL		,SYSOBJ_FLAGS,	311  },
@@ -1518,7 +1518,7 @@ js_get_node_message(JSContext *cx, uintN argc, jsval *arglist)
 	scfg_t* cfg = sys->cfg;
 
 	node_num=cfg->node_num;
-	if(argc) 
+	if(argc)
 		JS_ValueToInt32(cx,argv[0],&node_num);
 	if(node_num<1)
 		node_num=1;
@@ -1772,7 +1772,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 
 	if(i==0) {
-		userobj=js_CreateUserObject(cx, obj, cfg, NULL, &user, /* client: */NULL, /* global_user: */FALSE);
+		userobj=js_CreateUserObject(cx, obj, NULL, &user, /* client: */NULL, /* global_user: */FALSE);
 		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(userobj));
 	} else
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(i));
@@ -1917,7 +1917,7 @@ js_chksyspass(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-static JSBool 
+static JSBool
 js_chkname(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
@@ -2694,7 +2694,7 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 		if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 			return JS_FALSE;
 
-		if((newobj=JS_NewArrayObject(cx, 0, NULL))==NULL) 
+		if((newobj=JS_NewArrayObject(cx, 0, NULL))==NULL)
 			return(JS_FALSE);
 
 		if(!JS_SetParent(cx, newobj, obj))
