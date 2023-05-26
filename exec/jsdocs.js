@@ -366,6 +366,7 @@ if(js.global.CryptCert != undefined) {
 		document_object("CryptCert",ccert, "class");
 	}
 }
+if(js.global.MQTT !== undefined) document_object("MQTT", new MQTT, "class");
 f.writeln("</ol>");
 
 f.write(body);
