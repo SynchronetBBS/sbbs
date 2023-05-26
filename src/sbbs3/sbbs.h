@@ -1507,6 +1507,7 @@ extern "C" {
 	/* js_cryptcert.c */
 	DLLEXPORT JSObject* js_CreateCryptCertClass(JSContext* cx, JSObject* parent);
 
+	DLLEXPORT JSObject* js_CreateMQTTClass(JSContext*, JSObject* parent);
 #endif
 
 #ifdef SBBS /* These aren't exported */

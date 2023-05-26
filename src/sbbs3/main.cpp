@@ -1516,6 +1516,10 @@ extern "C" BOOL js_CreateCommonObjects(JSContext* js_cx
 		if(js_CreateCryptCertClass(js_cx, *glob)==NULL)
 			break;
 
+#if defined USE_MOSQUITTO
+		if(js_CreateMQTTClass(js_cx, *glob) == NULL)
+			break;
+#endif
 		/* Area Objects */
 		if(!js_CreateUserObjects(js_cx, *glob, cfg, /* user: */NULL, client, startup == NULL ? NULL :startup->web_file_vpath_prefix, /* subscan: */NULL))
 			break;

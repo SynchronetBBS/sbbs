@@ -51,6 +51,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/js_internal$(OFILE)\
 			$(MTOBJODIR)/js_msg_area$(OFILE)\
 			$(MTOBJODIR)/js_msgbase$(OFILE)\
+			$(MTOBJODIR)/js_mqtt$(OFILE)\
 			$(MTOBJODIR)/js_filebase$(OFILE)\
 			$(MTOBJODIR)/js_queue$(OFILE)\
 			$(MTOBJODIR)/js_request$(OFILE)\
