@@ -395,6 +395,12 @@ pty_connect(struct bbslist *bbs)
 	ts.c_oflag = TTYDEF_OFLAG;
 	ts.c_lflag = TTYDEF_LFLAG;
 	ts.c_cflag = TTYDEF_CFLAG;
+#ifdef VTIME
+	ts.c_cc[VTIME] = CTIME;
+#endif
+#ifdef VMIN
+	ts.c_cc[VMIN] = CMIN;
+#endif
 #ifdef VEOF
 	ts.c_cc[VEOF] = CEOF;
 #endif
