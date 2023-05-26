@@ -8,8 +8,6 @@
 #include <sys/wait.h> // WEXITSTATUS
 #include <unistd.h>   /* _POSIX_VDISABLE - needed when termios.h is broken */
 
-#define TTYDEFCHARS   // needed for ttydefchars definition
-
 #if defined(__FreeBSD__)
  #include <libutil.h> // forkpty()
 #elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DARWIN__)
@@ -120,16 +118,6 @@
 #endif
 #ifndef TTYDEF_CFLAG
  #define TTYDEF_CFLAG (CREAD | CS8 | HUPCL)
-#endif
-#if defined(__QNX__) || defined(__solaris__) || defined(__NetBSD__) || defined(__HAIKU__)
-static cc_t ttydefchars[NCCS] = {
-	CEOF, CEOL, CEOL, CERASE, CWERASE, CKILL, CREPRINT,
-	CERASE2, CINTR, CQUIT, CSUSP, CDSUSP, CSTART, CSTOP, CLNEXT,
-	CDISCARD, CMIN, CTIME, CSTATUS
- #ifndef __solaris__
-	, _POSIX_VDISABLE
- #endif
-};
 #endif
 
 #include <stdlib.h>
@@ -407,7 +395,60 @@ pty_connect(struct bbslist *bbs)
 	ts.c_oflag = TTYDEF_OFLAG;
 	ts.c_lflag = TTYDEF_LFLAG;
 	ts.c_cflag = TTYDEF_CFLAG;
-	memcpy(ts.c_cc, ttydefchars, sizeof(ts.c_cc));
+#ifdef VEOF
+	ts.c_cc[VEOF] = CEOF;
+#endif
+#ifdef VEOL
+	ts.c_cc[VEOL] = CEOL;
+#endif
+#ifdef VEOL2
+	ts.c_cc[VEOL] = CEOL;
+#endif
+#ifdef VERASE
+	ts.c_cc[VERASE] = CTRL('h');
+#endif
+#ifdef VWERASE
+	ts.c_cc[VWERASE] = CWERASE;
+#endif
+#ifdef VINTR
+	ts.c_cc[VINTR] = CINTR;
+#endif
+#ifdef VKILL
+	ts.c_cc[VKILL] = CKILL;
+#endif
+#ifdef VQUIT
+	ts.c_cc[VQUIT] = CQUIT;
+#endif
+#ifdef VSTART
+	ts.c_cc[VSTART] = CSTART;
+#endif
+#ifdef VSTOP
+	ts.c_cc[VSTOP] = CSTOP;
+#endif
+#ifdef VSUSP
+	ts.c_cc[VSUSP] = CSUSP;
+#endif
+#ifdef VREPRINT
+	ts.c_cc[VREPRINT] = CREPRINT;
+#endif
+#ifdef VDISCARD
+	ts.c_cc[VDISCARD] = CDISCARD;
+#endif
+#ifdef VLNEXT
+	ts.c_cc[VLNEXT] = CLNEXT;
+#endif
+#ifdef VEOL2
+	ts.c_cc[VEOL2] = CEOL;
+#endif
+#ifdef VERASE2
+	ts.c_cc[VERASE2] = CTRL(h);
+#endif
+#ifdef VDSUSP
+	ts.c_cc[VDSUSP] = CDSUSP;
+#endif
+#ifdef VSTATUS
+	ts.c_cc[VSTATUS] = CSTATUS;
+#endif
 	cfsetspeed(&ts, 115200);
 
 	get_term_win_size(&cols, &rows, &pixelc, &pixelr, &bbs->nostatus);
