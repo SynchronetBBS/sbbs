@@ -38,7 +38,11 @@
  #define CEOF CTRL('d')
 #endif
 #ifndef CEOL
- #define CEOL 0xff /* XXX avoid _POSIX_VDISABLE */
+ #ifndef _POSIX_VDISABLE
+  #define CEOL 0xff /* XXX avoid _POSIX_VDISABLE */
+ #else
+  #define CEOL _POSIX_VDISABLE
+ #endif
 #endif
 #ifndef CERASE
  #define CERASE 0177
@@ -101,6 +105,14 @@
 #endif
 #ifndef CFLUSH
  #define CFLUSH CDISCARD
+#endif
+
+#ifndef CSWTC
+ #ifndef _POSIX_VDISABLE
+  #define CSWTC 0xff /* XXX avoid _POSIX_VDISABLE */
+ #else
+  #define CSWTC _POSIX_VDISABLE
+ #endif
 #endif
 
 #ifndef TTYDEF_IFLAG
@@ -400,6 +412,12 @@ pty_connect(struct bbslist *bbs)
 #endif
 #ifdef VMIN
 	ts.c_cc[VMIN] = CMIN;
+#endif
+#ifdef VSWTCH
+	ts.c_cc[VSWTCH] = CSWTCH;
+#endif
+#ifdef VSWTC
+	ts.c_cc[VSWTC] = CSWTC;
 #endif
 #ifdef VEOF
 	ts.c_cc[VEOF] = CEOF;
