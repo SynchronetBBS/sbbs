@@ -1415,6 +1415,7 @@ main(int argc, char **argv)
 	    "\tinitc=\\E]4;%p1%d;rgb\\:%p2%{255}%*%{1000}%/%2.2X/%p3%{255}%*%{1000}%/%2.2X/%p4%{255}%*%{1000}%/%2.2X\\E\\\\,\n"
 	    "\tsetab=\\E[%?%p1%{8}%<%t4%p1%d%e%p1%{16}%<%t10%p1%{8}%-%d%e48;5;%p1%d%;m,\n"
 	    "\tsetaf=\\E[%?%p1%{8}%<%t3%p1%d%e%p1%{16}%<%t9%p1%{8}%-%d%e38;5;%p1%d%;m,\n"
+	    "\tuse=syncterm,\n"
 	    "syncterm-24|SyncTERM 80x25,\n"
 	    "\tlines#24,use=syncterm,\n"
 	    "syncterm-25|SyncTERM No Status Line,\n"
