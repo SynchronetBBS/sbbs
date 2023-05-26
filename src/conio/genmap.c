@@ -83,7 +83,7 @@ main(int argc, char **argv)
 		mangle = "_";
 	}
 	if (strcmp(argv[1], "linux") == 0) {
-		gnustack = ".section  .note.GNU-stack, \“\”, @progbits\n";
+		gnustack = ".section  .note.GNU-stack, \"\", @progbits\n";
 	}
 
 	fprintf(s,
