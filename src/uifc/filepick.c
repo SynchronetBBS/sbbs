@@ -197,7 +197,7 @@ void display_current_path(uifcapi_t *api, char *path)
 	api->printf(SCRN_LEFT+2, SCRN_TOP+height-2, api->lclr|(api->bclr<<4), "%-*s", width, dpath);
 }
 
-int mousetofield(int currfield, int opts, int height, int width, int listheight, int listwidth, int *dcur, int *dbar, int *fcur, int *fbar)
+int mousetofield(uifcapi_t* api, int currfield, int opts, int height, int width, int listheight, int listwidth, int *dcur, int *dbar, int *fcur, int *fbar)
 {
 	int newfield;
 	int bardif;
@@ -462,7 +462,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					if(i==-3842)	/* Backtab */
 						fieldmove=-1;
 					if(i==-2-CIO_KEY_MOUSE)
-						currfield=mousetofield(currfield, opts, height, width, api->list_height, listwidth, &dircur, &dirbar, &filecur, &filebar);
+						currfield=mousetofield(api,currfield, opts, height, width, api->list_height, listwidth, &dircur, &dirbar, &filecur, &filebar);
 					if(i>=0) {
 						FREE_AND_NULL(lastpath);
 						lastpath=strdup(cpath);
@@ -503,7 +503,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					if(i==-3842 || i==-2-CIO_KEY_LEFT)	/* Backtab */
 						fieldmove=-1;
 					if(i==-2-CIO_KEY_MOUSE)
-						currfield=mousetofield(currfield, opts, height, width, api->list_height, listwidth, &dircur, &dirbar, &filecur, &filebar);
+						currfield=mousetofield(api,currfield, opts, height, width, api->list_height, listwidth, &dircur, &dirbar, &filecur, &filebar);
 					break;
 				case CURRENT_PATH:
 					FREE_AND_NULL(tmplastpath);
@@ -552,7 +552,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 						}
 					}
 					if(i==CIO_KEY_MOUSE)
-						currfield=mousetofield(currfield, opts, height, width, api->list_height, listwidth, &dircur, &dirbar, &filecur, &filebar);
+						currfield=mousetofield(api,currfield, opts, height, width, api->list_height, listwidth, &dircur, &dirbar, &filecur, &filebar);
 					if(i==3840)
 						fieldmove=-1;
 					else {
@@ -642,7 +642,7 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 					p=strdup(cmsk);
 					api->getstrxy(SCRN_LEFT+8, SCRN_TOP+height-3, width-7, cmsk, sizeof(cmsk)-1, K_EDIT|K_TABEXIT|K_MOUSEEXIT, &i);
 					if(i==CIO_KEY_MOUSE)
-						currfield=mousetofield(currfield, opts, height, width, api->list_height, listwidth, &dircur, &dirbar, &filecur, &filebar);
+						currfield=mousetofield(api,currfield, opts, height, width, api->list_height, listwidth, &dircur, &dirbar, &filecur, &filebar);
 					if(i==ESC || i==CIO_KEY_QUIT || (api->exit_flags & UIFC_XF_QUIT)) {
 						FREE_AND_NULL(p);
 						retval=fp->files=0;
