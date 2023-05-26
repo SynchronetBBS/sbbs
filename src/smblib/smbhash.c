@@ -406,6 +406,7 @@ uint16_t smb_name_crc(const char* name)
 		return(0xffff);
 
 	strlwr(str);
+	truncsp(str);
 	crc=crc16(str,0	/* auto-length */);
 	free(str);
 
