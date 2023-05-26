@@ -463,7 +463,7 @@ void tevents_cfg()
 			"\n"
 			"To configure an event, select it and hit ~ ENTER ~.\n"
 		;
-		i=uifc.list(j,0,0,45,&dflt,&bar,"Timed Events",opt);
+		i=uifc.list(j,0,0,0,&dflt,&bar,"Timed Events",opt);
 		if((signed)i==-1)
 			return;
 		int msk = i & MSK_ON;

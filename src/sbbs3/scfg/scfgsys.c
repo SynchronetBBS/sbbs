@@ -1176,7 +1176,7 @@ void security_cfg(void)
 						"User command and select from this quick-validation list to change a\n"
 						"user's security values with very few key-strokes.\n"
 					;
-					i=uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&quick_dflt,0
+					i=uifc.list(WIN_L2R|WIN_BOT|WIN_ACT|WIN_SAV,0,0,0,&quick_dflt,0
 						,"Quick-Validation Values",opt);
 					if(i==-1)
 						break;
@@ -1561,7 +1561,7 @@ void newuser_qwk_opts(void)
 			,"Include VOTING.DAT File"
 			,(cfg.new_qwk & QWK_VOTING) ? "Yes" : "No");
 		opt[i][0] = '\0';
-		switch(uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0, &cur, &bar
+		switch(uifc.list(WIN_BOT|WIN_SAV,0,0,0, &cur, &bar
 			,"QWK Message Packet Settings",opt)) {
 			case -1:
 				return;
@@ -1673,7 +1673,7 @@ void sys_cfg(void)
 			"entire BBS and the Synchronet Terminal Server in particular.\n"
 		;
 		uifc.changes = memcmp(&saved_cfg, &cfg, sizeof(saved_cfg)) != 0;
-		switch(uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,72,&sys_dflt,0
+		switch(uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,0,&sys_dflt,0
 			,"System Configuration",opt)) {
 			case -1:
 				i=save_changes(WIN_MID);
@@ -1924,7 +1924,7 @@ void sys_cfg(void)
 						"This menu allows you to determine the default values (settings,\n"
 						"security) assigned to newly-created user accounts.\n"
 					;
-					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&new_dflt,0
+					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT|WIN_SAV,0,0,0,&new_dflt,0
 						,"New User Values",opt)) {
 						case -1:
 							done=1;
@@ -2195,7 +2195,7 @@ void sys_cfg(void)
 									,"Split-Screen Private Chat"
 									,cfg.new_chat & CHAT_SPLITP ? "Yes":"No");
 								opt[i][0]=0;
-								j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0, &newtog_cur, &newtog_bar
+								j=uifc.list(WIN_BOT|WIN_SAV,0,0,0, &newtog_cur, &newtog_bar
 									,"Default Toggle Options",opt);
 								if(j==-1)
 									break;
@@ -2328,7 +2328,7 @@ void sys_cfg(void)
 						,"Color Terminal"
 						,cfg.uq&UQ_COLORTERM ? "Yes":"No");
 					opt[i][0]=0;
-					j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0, &uq_cur, &uq_bar
+					j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,0,0,0, &uq_cur, &uq_bar
 						,"New User Questions/Prompts",opt);
 					if(j==-1)
 						break;
@@ -2468,7 +2468,7 @@ void sys_cfg(void)
 						"\n"
 						"Care should be taken when modifying any of the options listed here.\n"
 					;
-					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,60,&adv_dflt,&adv_bar
+					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT|WIN_SAV,0,0,0,&adv_dflt,&adv_bar
 						,"Advanced Options",opt)) {
 						case -1:
 							done=1;
@@ -2899,7 +2899,7 @@ void sys_cfg(void)
 						"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
 						"      in your `exec` or `mods` directories.\n"
 					;
-					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,50,&mod_dflt,&mod_bar
+					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT|WIN_SAV,0,0,0,&mod_dflt,&mod_bar
 						,"Loadable Modules",opt)) {
 
 						case -1:

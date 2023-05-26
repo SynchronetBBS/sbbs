@@ -1138,7 +1138,7 @@ void dir_toggle_options(dir_t* dir)
 			"The available options from this menu can all be toggled between two or\n"
 			"more states, such as `Yes` and `No`.\n"
 		;
-		n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,0,&dflt,&bar,"Toggle Options",opt);
+		n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,0,0,0,&dflt,&bar,"Toggle Options",opt);
 		if(n==-1)
 			break;
 		switch(n) {

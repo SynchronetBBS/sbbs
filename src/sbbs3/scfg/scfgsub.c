@@ -639,7 +639,7 @@ void sub_cfg(uint grpnum)
 							"This menu allows you to toggle certain options for the selected\n"
 							"sub-board between two or more settings, such as `Yes` and `No`.\n"
 						;
-						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,1,0,&tog_dflt, &tog_bar
+						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,0,0,0,&tog_dflt, &tog_bar
 							,"Toggle Options",opt);
 						if(n==-1)
 							break;
