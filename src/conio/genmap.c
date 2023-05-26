@@ -61,6 +61,7 @@ main(int argc, char **argv)
 	char path[1024];
 	char *mangle = "";
 	char *section = ".rodata";
+	char *gnustack = "";
 
 	if (argc != 3) {
 		fprintf(stderr, "Usage: %s <os> <path>\n", argv[0]);
@@ -81,16 +82,19 @@ main(int argc, char **argv)
 		section = "__TEXT,__const";
 		mangle = "_";
 	}
+	if (strcmp(argv[1], "linux") == 0) {
+		gnustack = ".section  .note.GNU-stack, \“\”, @progbits\n";
+	}
 
 	fprintf(s,
-	    ".section %s\n"
+	    "%s.section %s\n"
 	    ".global %sr2y\n"
 	    ".global %sy2r\n"
 	    ".align  4\n"
 	    "%sr2y:\n"
 	    "	.incbin \"%s/r2y.bin\"\n"
 	    "%sy2r:\n"
-	    "	.incbin \"%s/y2r.bin\"\n", section, mangle, mangle, mangle, argv[2], mangle, argv[2]);
+	    "	.incbin \"%s/y2r.bin\"\n", gnustack, section, mangle, mangle, mangle, argv[2], mangle, argv[2]);
 	fprintf(h,
 	    "#ifndef RGBMAP_H\n"
 	    "#define RGBMAP_H\n"
