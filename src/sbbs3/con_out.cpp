@@ -173,7 +173,7 @@ unsigned char cp437_to_petscii(unsigned char ch)
 		case '\1':		return '@';
 		case '\x10':	return '>';
 		case '\x11':	return '<';
-		case '\x18':	
+		case '\x18':
 		case '\x1e':	return PETSCII_UPARROW;
 		case '\x19':
 		case '\x1f':	return 'V';
@@ -312,7 +312,7 @@ int sbbs_t::petscii_to_ansibbs(unsigned char ch)
 		case PETSCII_REVERSE_OFF:	return attr(curatr >> 4);
 		case PETSCII_FLASH_ON:		return attr(curatr | BLINK);
 		case PETSCII_FLASH_OFF:		return attr(curatr & ~BLINK);
-		default:					
+		default:
 			if(ch&0x80)				return bprintf("#%3d", ch);
 			return outchar(ch);
 		case PETSCII_UPPERLOWER:
@@ -854,7 +854,7 @@ void sbbs_t::line_feed(int count)
 	for(int i = 0; i < count; i++) {
 		if(term_supports(PETSCII))
 			outcom(PETSCII_DOWN);
-		else 
+		else
 			outcom('\n');
 	}
 	inc_row(count);
@@ -864,7 +864,7 @@ void sbbs_t::newline(int count)
 {
 	if(count < 1)
 		return;
-	for(int i = 0; i < count; i++) { 
+	for(int i = 0; i < count; i++) {
 		outchar('\r');
 		outchar('\n');
 	}
