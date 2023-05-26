@@ -465,7 +465,7 @@ pty_connect(struct bbslist *bbs)
 	ts.c_cc[VEOL2] = CEOL;
 #endif
 #ifdef VERASE2
-	ts.c_cc[VERASE2] = CTRL(h);
+	ts.c_cc[VERASE2] = CTRL('h');
 #endif
 #ifdef VDSUSP
 	ts.c_cc[VDSUSP] = CDSUSP;
