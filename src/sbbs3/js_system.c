@@ -60,6 +60,8 @@ enum {
 	,SYS_PROP_NODES
 	,SYS_PROP_LASTNODE
 
+	,SYS_PROP_MQTT_ENABLED
+
 	,SYS_PROP_NEW_PASS
 	,SYS_PROP_NEW_MAGIC
 	,SYS_PROP_NEW_LEVEL
@@ -171,6 +173,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SYS_PROP_LASTNODE:
 			*vp = INT_TO_JSVAL(cfg->sys_lastnode);
+			break;
+		case SYS_PROP_MQTT_ENABLED:
+			*vp = BOOLEAN_TO_JSVAL(cfg->mqtt.enabled);
 			break;
 		case SYS_PROP_PWDAYS:
 			*vp = INT_TO_JSVAL(cfg->sys_pwdays);
@@ -432,6 +437,8 @@ static jsSyncPropertySpec js_system_properties[] = {
 	{	"last_node",				SYS_PROP_LASTNODE,	SYSOBJ_FLAGS,		310  },
 	{	"lastnode",					SYS_PROP_LASTNODE,	JSPROP_READONLY,	310  }, /* alias */
 
+	{	"mqtt_enabled",				SYS_PROP_MQTT_ENABLED,	SYSOBJ_FLAGS,	320	},
+
 	{	"newuser_password",			SYS_PROP_NEW_PASS		,SYSOBJ_FLAGS,	310  },
 	{	"newuser_magic_word",		SYS_PROP_NEW_MAGIC		,SYSOBJ_FLAGS,	310  },
 	{	"newuser_level",			SYS_PROP_NEW_LEVEL		,SYSOBJ_FLAGS,	310  },
@@ -492,8 +499,8 @@ static char* sys_prop_desc[] = {
 	,"Operator is available for chat"
 	,"Default Guru (AI) name"
 	,"System QWK-ID (for QWK packets)"
-	,"Settings bitfield (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
-	,"Login control settings bitfield (see <tt>LOGIN_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"Settings bit-flags (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"Login control settings bit-flags (see <tt>LOGIN_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"Internet address (host or domain name)"
 	,"Location (city, state)"
 	,"Timezone (use <i>system.zonestr()</i> to get string representation)"
@@ -506,14 +513,16 @@ static char* sys_prop_desc[] = {
 	,"Last user record number in user database (includes deleted and inactive user records)"
 	,"Name of last user to logoff"
 	,"Amount of free disk space (in bytes)"
-	,"Amount of free disk space (in kilobytes)"
+	,"Amount of free disk space (in kibibytes)"
 
 	,"Total number of BBS nodes"
 	,"Last displayable node number"
 
-	,"New user password"
-	,"New user magic word"
-	,"New user level"
+	,"MQTT support (connection to MQTT broker) is enabled"
+
+	,"New user password (NUP, optional)"
+	,"New user magic word (optional)"
+	,"New user security level"
 	,"New user flag set #1"
 	,"New user flag set #2"
 	,"New user flag set #3"
@@ -522,14 +531,14 @@ static char* sys_prop_desc[] = {
 	,"New user exemption flags"
 	,"New user credits"
 	,"New user extra minutes"
-	,"New user command shell"
-	,"New user external editor"
-	,"New user settings"
-	,"New user file transfer protocol (command key)"
+	,"New user default command shell"
+	,"New user default external editor"
+	,"New user default settings"
+	,"New user default file transfer protocol (command key)"
 	,"New user expiration days"
-	,"New user questions bitfield (see <tt>UQ_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"New user questions/prompts (see <tt>UQ_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 
-	,"Expired user level"
+	,"Expired user security level"
 	,"Expired user flag set #1"
 	,"Expired user flag set #2"
 	,"Expired user flag set #3"
@@ -538,7 +547,7 @@ static char* sys_prop_desc[] = {
 	,"Expired user exemption flags"
 
 	/* directories */
-	,"Node directory"
+	,"Current node directory"
 	,"Control file directory"
 	,"Data file directory"
 	,"Text file directory"
@@ -2316,9 +2325,9 @@ static char* node_prop_desc[] = {
 	,"Current user action (see <tt>nodedefs.js</tt>)"
 	,"Current user number"
 	,"Connection speed (<tt>0xffff</tt> = Telnet or RLogin)"
-	,"Miscellaneous bitfield (see <tt>nodedefs.js</tt>)"
-	,"Auxillary value"
-	,"Extended auxillary value"
+	,"Miscellaneous bit-flags (see <tt>nodedefs.js</tt>)"
+	,"Auxiliary value"
+	,"Extended auxiliary value"
 	,"Node directory"
 	,NULL
 };
