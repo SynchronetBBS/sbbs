@@ -133,6 +133,7 @@ char *usage="\nusage: chksmb [-opts] <filespec.SHD>\n"
 			"       t - don't check translation strings\n"
 			"       i - don't check message IDs\n"
 			"       S - don't check subject CRCs\n"
+			"       N - don't check to/from name CRCs\n"
 			"       e - display extended info on corrupted msgs\n";
 
 int main(int argc, char **argv)
@@ -146,6 +147,7 @@ int main(int argc, char **argv)
 				,lzhmsg,extinfo=FALSE,msgerr;
 	BOOL		chk_msgids = TRUE;
 	BOOL		chk_subjcrc = TRUE;
+	BOOL		chk_namecrc = TRUE;
 	uint16_t	xlat;
 	uint32_t	m;
 	ulong		l,n,size,total=0,orphan,deleted,headers
@@ -215,6 +217,9 @@ int main(int argc, char **argv)
 						break;
 					case 'S':
 						chk_subjcrc = FALSE;
+						break;
+					case 'N':
+						chk_namecrc = FALSE;
 						break;
 					case 't':
 						chkxlat=FALSE;
@@ -601,7 +606,7 @@ int main(int argc, char **argv)
 							,msg.from_ext,msg.idx.from);
 					fromcrc++;
 				}
-				if(!(smb.status.attr & SMB_EMAIL)
+				if(chk_namecrc && !(smb.status.attr & SMB_EMAIL)
 					&& (msg.hdr.type == SMB_MSG_TYPE_NORMAL || msg.hdr.type == SMB_MSG_TYPE_POLL)
 					&& msg.idx.from!=smb_name_crc(msg.from)) {
 					fprintf(stderr,"%sFrom CRC mismatch\n",beep);
@@ -623,7 +628,7 @@ int main(int argc, char **argv)
 							,msg.to_ext,msg.idx.to);
 					tocrc++;
 				}
-				if(!(smb.status.attr & SMB_EMAIL)
+				if(chk_namecrc && !(smb.status.attr & SMB_EMAIL)
 					&& (msg.hdr.type == SMB_MSG_TYPE_NORMAL || msg.hdr.type == SMB_MSG_TYPE_POLL)
 					&& msg.to_ext==NULL && msg.idx.to!=smb_name_crc(msg.to)) {
 					fprintf(stderr,"%sTo CRC mismatch\n",beep);
@@ -780,7 +785,7 @@ int main(int argc, char **argv)
 		headers++;
 		if(msgerr && extinfo) {
 			printf("\n");
-			printf("%-20s %s\n","message base",smb.file);
+			printf("%-16s %s\n","message base",smb.file);
 			smb_dump_msghdr(stdout,&msg);
 			printf("\n");
 		}
