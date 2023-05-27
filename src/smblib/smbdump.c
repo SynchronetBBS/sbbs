@@ -23,18 +23,22 @@
 #include <string.h>		/* strcat */
 #include "smblib.h"
 
-static char *binstr(uchar *buf, uint16_t length)
+static char *binstr(uchar *buf, uint16_t length, char* str)
 {
-	static char str[512];
 	int i;
 
 	str[0]=0;
 	for(i=0;i<length;i++)
-		if(buf[i] && (buf[i]<' ' || buf[i]>=0x7f) 
+		if(buf[i] && (buf[i]<' ' || buf[i]>=0x7f)
 			&& buf[i]!='\r' && buf[i]!='\n' && buf[i]!='\t')
 			break;
-	if(i==length)		/* not binary */
+	if(i==length) {		/* not binary */
+		if(length > 0 && buf[length - 1] == ' ') {
+			sprintf(str, "'%s'", buf);
+			return str;
+		}
 		return((char*)buf);
+	}
 	for(i=0;i<length;i++) {
 		sprintf(str+strlen(str),"%02X ",buf[i]);
 		if(i>=100) {
@@ -48,7 +52,7 @@ static char *binstr(uchar *buf, uint16_t length)
 
 str_list_t smb_msghdr_str_list(smbmsg_t* msg)
 {
-	char tmp[128];
+	char tmp[512];
 	int i;
 	time_t	tt;
 	str_list_t list = strListInit();
@@ -102,7 +106,7 @@ str_list_t smb_msghdr_str_list(smbmsg_t* msg)
 			default:
 				strListAppendFormat(&list, HFIELD_NAME_FMT "%s"
 					,smb_hfieldtype(msg->hfield[i].type)
-					,binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length));
+					,binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length,tmp));
 				break;
 		}
 	}
