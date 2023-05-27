@@ -26,7 +26,7 @@
 
 static char* file_area_prop_desc[] = {
 	 "Minimum amount of available disk space (in bytes) required for user uploads to be allowed"
-	,"File area settings (bitfield) - see <tt>FM_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	,"File area settings (bit-flags) - see <tt>FM_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"Web file virtual path prefix <i>(introduced in v3.19c)</i>"
 	,NULL
 };
@@ -63,7 +63,7 @@ static char* dir_prop_desc[] = {
 	,"Allowed file extensions (comma delimited)"
 	,"Upload semaphore file"
 	,"Directory data storage location"
-	,"Toggle options (bitfield)"
+	,"Toggle options (bit-flags)"
 	,"Sequential (slow storage) device number"
 	,"Sort order (see <tt>FileBase.SORT</tt> for valid values)"
 	,"Configured maximum number of files"

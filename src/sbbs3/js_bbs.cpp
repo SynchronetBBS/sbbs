@@ -156,8 +156,8 @@ enum {
 
 #ifdef BUILD_JSDOCS
 	static const char* bbs_prop_desc[] = {
-	 "System status bitfield (see <tt>SS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
-	,"Startup options bitfield (see <tt>BBS_OPT_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	 "System status bit-flags (see <tt>SS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"Startup options bit-flags (see <tt>BBS_OPT_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"Answer time, in <i>time_t</i> format"
 	,"Logon time, in <i>time_t</i> format"
 	,"Time from which user's time left is calculated, in <i>time_t</i> format"
@@ -172,7 +172,7 @@ enum {
 	,"Last node number (of this instance of Synchronet)"
 
 	,"Current node number"
-	,"Current node settings bitfield (see <tt>NM_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"Current node settings bit-flags (see <tt>NM_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"Current node status value (see <tt>nodedefs.js</tt> for valid values)"
 	,"Current node error counter"
 	,"Current node action (see <tt>nodedefs.js</tt> for valid values)"
@@ -4594,7 +4594,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt> or search_string] [,mode=<tt>FL_NONE</tt>]")
 	,JSDOCSTR("List files in the specified file directory, "
 		"optionally specifying a file specification (wildcards) or a description search string, "
-		"and <i>mode</i> (bitfield)")
+		"and <i>mode</i> (bit-flags)")
 	,310
 	},
 	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt>] [,mode=<tt>FI_INFO</tt>]")
@@ -4603,7 +4603,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	},
 	{"post_msg",		js_post_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>WM_NONE</tt>] [,object reply_header]")
 	,JSDOCSTR("Post a message in the specified message sub-board (number or internal code) "
-		"with optional <i>mode</i> (bitfield)<br>"
+		"with optional <i>mode</i> (bit-flags)<br>"
 		"If <i>reply_header</i> is specified (a header object returned from <i>MsgBase.get_msg_header()</i>), that header "
 		"will be used for the in-reply-to header fields.")
 	,313
@@ -4617,7 +4617,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,31802
 	},
 	{"show_msg",		js_show_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("object header [,mode=<tt>P_NONE</tt>] ")
-	,JSDOCSTR("Show a message's header and body (text) with optional print <i>mode</i> (bitfield)<br>"
+	,JSDOCSTR("Show a message's header and body (text) with optional print <i>mode</i> (bit-flags)<br>"
 		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
 	,31702
 	},

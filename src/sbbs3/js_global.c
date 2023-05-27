@@ -5055,7 +5055,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	JSDOCSTR("path/pattern [,flags=<tt>GLOB_MARK</tt>]")
 	,JSDOCSTR("Returns an array of directory entries, "
 		"<i>pattern</i> is the path and filename or wildcards to search for (e.g. '/subdir/*.txt'), "
-		"<i>flags</i> is a bitfield of optional <tt>glob</tt> flags (default is <tt>GLOB_MARK</tt>)")
+		"<i>flags</i> is a set of optional <tt>glob</tt> bit-flags (default is <tt>GLOB_MARK</tt>)")
 	,310
 	},
 	{"dir_freespace",	js_freediskspace,	2,	JSTYPE_NUMBER,	JSDOCSTR("directory [,unit_size=<tt>1</tt>]")

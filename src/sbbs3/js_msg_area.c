@@ -26,9 +26,9 @@
 #ifdef BUILD_JSDOCS
 
 static char* msg_area_prop_desc[] = {
-	  "Message area settings (bitfield) - see <tt>MM_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	 ,"FidoNet NetMail settings (bitfield) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	 ,"Internet NetMail settings (bitfield) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	  "Message area settings (bit-flags) - see <tt>MM_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	 ,"FidoNet NetMail settings (bit-flags) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	 ,"Internet NetMail settings (bit-flags) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,NULL
 };
 
@@ -65,7 +65,7 @@ static char* msg_sub_prop_desc[] = {
 	,"FidoNet node address"
 	,"FidoNet origin line"
 	,"QWK Network tagline"
-	,"Toggle options (bitfield) - see <tt>SUB_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	,"Toggle options (bit-flags) - see <tt>SUB_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"Index into message scan configuration/pointer file"
 	,"QWK conference number"
 	,"Configured maximum number of message CRCs to store (for dupe checking)"
@@ -80,7 +80,7 @@ static char* msg_sub_prop_desc[] = {
 	,"User has operator access to this sub-board"
 	,"User's posts are moderated"
 	,"User's current new message scan pointer (highest-read message number)"
-	,"User's message scan configuration (bitfield) - see <tt>SCAN_CFG_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	,"User's message scan configuration (bit-flags) - see <tt>SCAN_CFG_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"User's last-read message number"
 	,"Number of messages currently posted to this sub-board <i>(introduced in v3.18c)</i>"
 	,NULL

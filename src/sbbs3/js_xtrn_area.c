@@ -50,7 +50,7 @@ static char* xtrn_prog_prop_desc[] = {
 	,"Startup directory"
 	,"Access requirements"
 	,"Execution requirements"
-	,"Toggle options (bitfield)"
+	,"Toggle options (bit-flags)"
 	,"Drop file type"
 	,"Event type (0=none)"
 	,"Extra time given to users running this program"
@@ -69,13 +69,13 @@ static char* event_prop_desc[] = {
 	,"Node number"
 	,"Time to execute (minutes since midnight)"
 	,"Frequency to execute"
-	,"Days of week to execute (bitfield)"
-	,"Days of month to execute (bitfield)"
-	,"Months of year to execute (bitfield)"
+	,"Days of week to execute (bit-flags)"
+	,"Days of month to execute (bit-flags)"
+	,"Months of year to execute (bit-flags)"
 	,"Date/time of last run (in time_t format)"
 	,"Date/time of next run (in time_t format)"
 	,"Error log level"
-	,"Toggle options (bitfield)"
+	,"Toggle options (bit-flags)"
 	,NULL
 };
 
@@ -84,7 +84,7 @@ static char* xedit_prop_desc[] = {
 	 "Name"
 	,"Command-line"
 	,"Access requirements"
-	,"Toggle options (bitfield)"
+	,"Toggle options (bit-flags)"
 	,"Drop file type"
 	,NULL
 };
