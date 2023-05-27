@@ -40,8 +40,8 @@ static void js_finalize_mqtt(JSContext* cx, JSObject* obj)
 	if((p = (private_t*)JS_GetPrivate(cx,obj)) == NULL)
 		return;
 
-
 	if(p->handle != NULL) {
+		mosquitto_disconnect(p->handle);
 		mosquitto_loop_stop(p->handle, /* force: */true);
 		mosquitto_destroy(p->handle);
 	}
