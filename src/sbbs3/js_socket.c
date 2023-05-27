@@ -2543,9 +2543,9 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SOCK_PROP_FAMILY:
 			if(p->sock != INVALID_SOCKET) {
+				JS_RESUMEREQUEST(cx, rc);
 				if(getsockname(p->sock, &addr.addr, &len)!=0)
 					return(JS_FALSE);
-				JS_RESUMEREQUEST(cx, rc);
 				*vp = INT_TO_JSVAL(addr.addr.sa_family);
 				rc=JS_SUSPENDREQUEST(cx);
 			}
