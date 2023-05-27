@@ -25,6 +25,7 @@
 
 typedef struct
 {
+	int	retval;
 	mqtt_handle_t	handle;
 	struct mqtt_cfg cfg;
 
@@ -63,8 +64,8 @@ static JSBool js_disconnect(JSContext* cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	int result = mosquitto_disconnect(p->handle);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result == MOSQ_ERR_SUCCESS));
+	p->retval = mosquitto_disconnect(p->handle);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MOSQ_ERR_SUCCESS));
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -118,6 +119,8 @@ static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 	}
 	mosquitto_int_option(p->handle, MOSQ_OPT_PROTOCOL_VERSION, p->cfg.protocol_version);
 	mosquitto_username_pw_set(p->handle, *username ? username : NULL, *password ? password : NULL);
+	p->retval = MOSQ_ERR_SUCCESS;
+
 	if(p->cfg.tls.mode == MQTT_TLS_CERT) {
 		char* certfile = NULL;
 		char* keyfile = NULL;
@@ -125,31 +128,28 @@ static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 			certfile = p->cfg.tls.certfile;
 			keyfile = p->cfg.tls.keyfile;
 		}
-		int result = mosquitto_tls_set(p->handle,
+		p->retval = mosquitto_tls_set(p->handle,
 			p->cfg.tls.cafile,
 			NULL, // capath
 			certfile,
 			keyfile,
 			pw_callback);
-		if(result != MOSQ_ERR_SUCCESS)
-			return result;
 	}
 	else if(p->cfg.tls.mode == MQTT_TLS_PSK) {
-		int result = mosquitto_tls_psk_set(p->handle,
+		p->retval = mosquitto_tls_psk_set(p->handle,
 			p->cfg.tls.psk,
 			p->cfg.tls.identity,
 			NULL // ciphers (default)
 			);
-		if(result != MOSQ_ERR_SUCCESS)
-			return result;
 	}
-	int result = mosquitto_connect_bind(p->handle,
-		broker_addr,
-		broker_port,
-		p->cfg.keepalive,
-		/* bind_address */NULL);
+	if(p->retval == MOSQ_ERR_SUCCESS)
+		p->retval = mosquitto_connect_bind(p->handle,
+			broker_addr,
+			broker_port,
+			p->cfg.keepalive,
+			/* bind_address */NULL);
 
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result == MOSQ_ERR_SUCCESS));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MOSQ_ERR_SUCCESS));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
@@ -197,7 +197,7 @@ static JSBool js_publish(JSContext* cx, uintN argc, jsval *arglist)
 	++argn;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	int result = mosquitto_publish_v5(p->handle,
+	p->retval = mosquitto_publish_v5(p->handle,
 		/* mid: */NULL,
 		/* topic: */topic,
 		/* payloadlen */len,
@@ -206,7 +206,7 @@ static JSBool js_publish(JSContext* cx, uintN argc, jsval *arglist)
 		retain,
 		/* properties */NULL);
 
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result == MOSQ_ERR_SUCCESS));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->retval == MOSQ_ERR_SUCCESS));
 	free(data);
 	free(topic);
 	JS_RESUMEREQUEST(cx, rc);
@@ -216,7 +216,10 @@ static JSBool js_publish(JSContext* cx, uintN argc, jsval *arglist)
 
 /* Properites */
 enum {
-	 MQTT_PROP_BROKER_ADDR
+	 MQTT_PROP_ERROR
+	,MQTT_PROP_ERROR_STR
+	,MQTT_PROP_LIB
+	,MQTT_PROP_BROKER_ADDR
 	,MQTT_PROP_BROKER_PORT
 	,MQTT_PROP_USERNAME
 	,MQTT_PROP_PASSWORD
@@ -234,7 +237,10 @@ enum {
 
 #ifdef BUILD_JSDOCS
 static char* com_prop_desc[] = {
-	 "IP address or hostname of MQTT broker to connect to, by default"
+	 "Result (error value) of last MQTT library function call - <small>READ ONLY</small>"
+	,"Result description of last MQTT library function call - <small>READ ONLY</small>"
+	,"MQTT library name and version - <small>READ ONLY</small>"
+	,"IP address or hostname of MQTT broker to connect to, by default"
 	,"TCP port number of MQTT broker to connect to, by default"
 	,"Username to use when authenticating with MQTT broker, by default"
 	,"Password to use when authenticating with MQTT broker, by default"
@@ -343,6 +349,26 @@ static JSBool js_mqtt_get(JSContext* cx, JSObject* obj, jsid id, jsval *vp)
 	rc = JS_SUSPENDREQUEST(cx);
 
 	switch(tiny) {
+		case MQTT_PROP_ERROR:
+			*vp = INT_TO_JSVAL(p->retval);
+			break;
+		case MQTT_PROP_ERROR_STR:
+			JS_RESUMEREQUEST(cx, rc);
+			if((js_str = JS_NewStringCopyZ(cx, mosquitto_strerror(p->retval))) == NULL)
+				return JS_FALSE;
+			*vp = STRING_TO_JSVAL(js_str);
+			rc = JS_SUSPENDREQUEST(cx);
+			break;
+		case MQTT_PROP_LIB:
+		{
+			char str[128];
+			JS_RESUMEREQUEST(cx, rc);
+			if((js_str = JS_NewStringCopyZ(cx, mqtt_libver(str, sizeof str))) == NULL)
+				return JS_FALSE;
+			*vp = STRING_TO_JSVAL(js_str);
+			rc = JS_SUSPENDREQUEST(cx);
+			break;
+		}
 		case MQTT_PROP_BROKER_ADDR:
 			JS_RESUMEREQUEST(cx, rc);
 			if((js_str = JS_NewStringCopyZ(cx, p->cfg.broker_addr)) == NULL)
@@ -427,10 +453,14 @@ static JSBool js_mqtt_get(JSContext* cx, JSObject* obj, jsid id, jsval *vp)
 	return JS_TRUE;
 }
 
-#define MQTT_PROP_FLAGS JSPROP_ENUMERATE
+#define MQTT_PROP_FLAGS	JSPROP_ENUMERATE
+#define MQTT_PROP_ROFLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
 static jsSyncPropertySpec js_mqtt_properties[] = {
 /*		 name				,tinyid					,flags,				ver	*/
+	{	"error"				,MQTT_PROP_ERROR		,MQTT_PROP_ROFLAGS,	320 },
+	{	"error_str"			,MQTT_PROP_ERROR_STR	,MQTT_PROP_ROFLAGS,	320 },
+	{	"library"			,MQTT_PROP_LIB			,MQTT_PROP_ROFLAGS,	320 },
 	{	"broker_addr"		,MQTT_PROP_BROKER_ADDR	,MQTT_PROP_FLAGS,	320 },
 	{	"broker_port"		,MQTT_PROP_BROKER_PORT	,MQTT_PROP_FLAGS,	320 },
 	{	"username"			,MQTT_PROP_USERNAME		,MQTT_PROP_FLAGS,	320 },
