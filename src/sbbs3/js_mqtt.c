@@ -35,6 +35,7 @@ typedef struct
 static void js_finalize_mqtt(JSContext* cx, JSObject* obj)
 {
 	private_t* p;
+	struct mosquitto_message* msg;
 
 	if((p = (private_t*)JS_GetPrivate(cx,obj)) == NULL)
 		return;
@@ -44,6 +45,8 @@ static void js_finalize_mqtt(JSContext* cx, JSObject* obj)
 		mosquitto_loop_stop(p->handle, /* force: */true);
 		mosquitto_destroy(p->handle);
 	}
+	while((msg = msgQueueRead(&p->q, /* timeout: */0)) != NULL)
+		mosquitto_message_free(&msg);
 	msgQueueFree(&p->q);
 	free(p);
 
