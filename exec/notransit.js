@@ -1,10 +1,10 @@
 /* notransit.js */
 
-/* Removes MSG_INTRANSIT attribute from messages in mail database */
+/* Removes MSG_INTRANSIT attribute from messages in mail (or other) msgbase */
 
 load("sbbsdefs.js");
 
-mail = new MsgBase("mail");
+mail = new MsgBase(argv[0] || "mail");
 if(!mail.open()) {
 	alert(mail.last_error);
 	exit();
@@ -12,8 +12,8 @@ if(!mail.open()) {
 var total_msgs = mail.total_msgs;
 var removed = 0;
 for(i=0;i<total_msgs;i++) {
-	hdr = mail.get_msg_header(	/* by_offset:		*/	true, 
-								/* offset:			*/	i, 
+	hdr = mail.get_msg_header(	/* by_offset:		*/	true,
+								/* offset:			*/	i,
 								/* expand_fields:	*/	false);
 	printf("#%lu from: %-30s %08lx\r\n",hdr.number,hdr.from,hdr.netattr);
 	if(hdr && hdr.netattr&MSG_INTRANSIT) {
