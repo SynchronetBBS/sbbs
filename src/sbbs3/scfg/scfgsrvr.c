@@ -1195,6 +1195,7 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Receive By User Number", startup.options & MAIL_OPT_ALLOW_RX_BY_NUMBER ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Receive By Sysop Aliases", startup.options & MAIL_OPT_ALLOW_SYSOP_ALIASES ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Local Recipients", startup.options & MAIL_OPT_NO_NOTIFY ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Offline Recipients", startup.options & MAIL_OPT_NO_NOTIFY ? "N/A" : (startup.notify_offline_users ? "Yes" : "No"));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Allow Users to Relay Mail", startup.options & MAIL_OPT_ALLOW_RELAY ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Check Headers against DNSBL", startup.options & MAIL_OPT_DNSBL_CHKRECVHDRS ? "Yes" : "No");
@@ -1331,15 +1332,18 @@ static void mailsrvr_cfg(void)
 				startup.options ^= MAIL_OPT_NO_NOTIFY;
 				break;
 			case 23:
-				startup.options ^= MAIL_OPT_ALLOW_RELAY;
+				startup.notify_offline_users = !startup.notify_offline_users;
 				break;
 			case 24:
-				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
+				startup.options ^= MAIL_OPT_ALLOW_RELAY;
 				break;
 			case 25:
-				startup.options ^= MAIL_OPT_DNSBL_CHKRECVHDRS;
+				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			case 26:
+				startup.options ^= MAIL_OPT_DNSBL_CHKRECVHDRS;
+				break;
+			case 27:
 				i = 0;
 				strcpy(opt[i++], "Refuse Session");
 				strcpy(opt[i++], "Silently Ignore");
@@ -1375,13 +1379,13 @@ static void mailsrvr_cfg(void)
 				else
 					startup.options &= ~MAIL_OPT_DNSBL_THROTTLE;
 				break;
-			case 27:
+			case 28:
 				startup.options ^= MAIL_OPT_DNSBL_SPAMHASH;
 				break;
-			case 28:
+			case 29:
 				startup.options ^= MAIL_OPT_KILL_READ_SPAM;
 				break;
-			case 29:
+			case 30:
 				sendmail_cfg(&startup);
 				break;
 			default:

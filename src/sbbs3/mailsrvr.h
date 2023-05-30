@@ -68,6 +68,7 @@ typedef struct {
 
 	/* Misc */
 	int		tls_error_level;		/* Cap the severity of TLS error log messages */
+	BOOL	notify_offline_users;
 
 	/* Relay Server */
     char	relay_server[128];

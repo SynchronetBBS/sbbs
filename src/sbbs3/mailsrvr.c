@@ -3996,14 +3996,7 @@ static void smtp_thread(void* arg)
 							,sender, sender_addr, reverse_path, str));
 
 					if(!(startup->options&MAIL_OPT_NO_NOTIFY) && usernum) {
-						if(newmsg.idx.to)
-							for(i=1;i<=scfg.sys_nodes;i++) {
-								getnodedat(&scfg, i, &node, FALSE, NULL);
-								if(node.useron==usernum
-									&& (node.status==NODE_INUSE || node.status==NODE_QUIET))
-									break;
-							}
-						if(!newmsg.idx.to || i<=scfg.sys_nodes) {
+						if(!newmsg.idx.to || startup->notify_offline_users || is_user_online(&scfg, usernum)) {
 							p=sender_addr;
 							if(stricmp(sender, sender_addr) == 0) {
 								if((p = strchr(sender_addr, '@')) == NULL)
