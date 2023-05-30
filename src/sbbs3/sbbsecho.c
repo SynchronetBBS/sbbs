@@ -3175,7 +3175,7 @@ enum {
 };
 
 /****************************************************************************/
-/* Coverts a FidoNet message into a Synchronet message						*/
+/* Converts a FidoNet message into a Synchronet message						*/
 /* Returns 0 on success, 1 dupe, 2 filtered, 3 empty, 4 too-old				*/
 /* or other SMB error														*/
 /****************************************************************************/
@@ -5828,7 +5828,11 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				break;
 			}
 
-			hdr.attr&=~FIDO_LOCAL;	/* Strip local bit, obviously not created locally */
+			int16_t org_attr = hdr.attr;
+			hdr.attr &= ~(FIDO_LOCAL | FIDO_INTRANS);	// Strip unexpected attributes
+			if(hdr.attr != org_attr)
+				lprintf(LOG_WARNING, "Sanitized message attributes (%04X->%04X) at offset %ld of packet: %s"
+					,org_attr, hdr.attr, (long)(msg_offset - sizeof(pkdmsg)), packet);
 
 			if(strncmp(fmsgbuf, "AREA:", 5) != 0) {					/* Netmail */
 				(void)fseeko(fidomsg, msg_offset, SEEK_SET);
