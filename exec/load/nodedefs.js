@@ -1,8 +1,4 @@
-/* nodedefs.js */
-
-/* Synchronet node.dab file constants definitions - (mostly bit-fields) */
-
-/* $Id: nodedefs.js,v 1.13 2020/08/01 22:06:51 rswindell Exp $ */
+/* Synchronet node.dab file constants definitions - (mostly bit-flags) */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -39,7 +23,7 @@
  								/* Legal values for Node.status				*/
 								/********************************************/
 var   NODE_WFC			    =0;	/* Waiting for Caller/Connection			*/
-var   NODE_LOGON            =1;	/* at logon prompt							*/
+var   NODE_LOGON            =1;	/* at login prompt							*/
 var   NODE_NEWUSER          =2;	/* New user applying						*/
 var   NODE_INUSE            =3;	/* In Use									*/
 var   NODE_QUIET            =4;	/* In Use - quiet mode						*/
@@ -55,7 +39,7 @@ var   NODE_LAST_STATUS	    =11;/* Must be last (anyone using this?)		*/
 								/********************************************/
 var NodeStatus		=[			/* Node.status value descriptions			*/
 	 "Waiting for connection"	/********************************************/
-	,"At logon prompt"
+	,"At login prompt"
 	,"New user"
 	,"In-use"
 	,"Waiting for connection"
