@@ -330,8 +330,11 @@ gdi_handle_wm_paint(HWND hwnd)
 	pthread_mutex_lock(&off_lock);
 	if (st == CIOLIB_SCALING_INTERNAL)
 		BitBlt(winDC, xoff, yoff, dwidth, dheight, memDC, 0, 0, SRCCOPY);
-	else
+	else {
+		SetStretchBltMode(winDC, HALFTONE);
+		SetBrushOrgEx(winDC, 0, 0, NULL);
 		StretchBlt(winDC, xoff, yoff, dwidth, dheight, memDC, 0, 0, sw, sh, SRCCOPY);
+	}
 	// Clear around image
 	if (xoff > 0) {
 		BitBlt(winDC, 0, 0, xoff - 1, h, memDC, 0, 0, BLACKNESS);
