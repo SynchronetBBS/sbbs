@@ -56,7 +56,6 @@ var exclude_dirs = [
 	"src/crt",
 	"src/doors",
 	"src/odoors",
-	"src/sbbs2",
 	"src/syncterm",
 	"src/ZuulTerm"
 	];
@@ -78,10 +77,15 @@ if(platform=="win32") {
 	archive_cmd="tar --exclude=*output.txt --exclude=" + exclude_dirs.join(" --exclude=") +
 		" --exclude=3rdp/win32.release" +
 		" --exclude-vcs" +
-		" --exclude-vcs-ignores" +
 		" --dereference" +
 		" -czvf " + archive + " *";
 	cleanup="rm -r -f "
+	var f = new File(temp_dir + "/src/build/localdefs.mk");
+	if(!f.open("w"))
+		throw new Error("Error " + f.error + " opening " + f.name);
+	f.writeln("GIT=NO");
+	f.writeln("RELEASE=1");
+	f.close();
 }
 
 var builds
@@ -108,7 +112,7 @@ if(platform=="win32") {
 	builds.push(["src/sbbs3/useredit"	,"build.bat"
 																,"> " + build_output]);
 } else {	/* Unix */
-	builds.unshift(["src/sbbs3"			,"make git_branch.h git_hash.h"]);
+	builds.unshift(["src/sbbs3"			,"make GIT=yes gitinfo"]);
 	builds.push(["src/sbbs3"			,"cov-build --dir ../../cov-int make RELEASE=1 all" ,"2> " + build_output]);
 	builds.push(["src/sbbs3"			,"make RELEASE=1 gtkutils"	,"2> " + build_output]);
 }
@@ -288,15 +292,16 @@ if(platform=="win32") {
 	cmd_line = "pax -s :.*/::p -wzf " + archive + " " + nix_dist.join(" ");
 }
 
-log(LOG_INFO, "Executing: " + cmd_line);
-system.exec(cmd_line);
+if(!js.terminated) {
+	log(LOG_INFO, "Executing: " + cmd_line);
+	system.exec(cmd_line);
 
-dest = file_area.dir["sbbs"].path+archive;
+	dest = file_area.dir["sbbs"].path+archive;
 
-log(LOG_INFO,format("Copying %s to %s",archive,dest));
-if(!file_copy(archive,dest))
-	log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
-
+	log(LOG_INFO,format("Copying %s to %s",archive,dest));
+	if(!file_copy(archive,dest))
+		log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
+}
 bail(0);
 /* end */
 
