@@ -1253,7 +1253,7 @@ dellines(struct cterminal * cterm, int lines)
 		return;
 	SCR_XY(&sx, &sy);
 	MOVETEXT(minx, sy + lines, maxx, maxy, minx, sy);
-	for(i = TERM_MAXY - lines; i <= TERM_MAXY; i++) {
+	for(i = TERM_MAXY - lines + 1; i <= TERM_MAXY; i++) {
 		cterm_gotoxy(cterm, TERM_MINX, i);
 		cterm_clreol(cterm);
 	}
