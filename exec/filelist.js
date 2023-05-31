@@ -34,6 +34,7 @@ function is_user_accessible_dir(dir)
 		&& user.compare_ars(file_area.dir[dir].download_ars);
 }
 
+var out = js.global.stdout ? stdout : console;
 var sort_prop = "name";
 var exclude_list = [];
 var options = { sort: false, case_sensitive: true };
@@ -81,6 +82,7 @@ for(var i = 0; i < argc; i++) {
 			writeln("  -sort[=prop]    enable/configure file sorting");
 			writeln("  -i              perform case-insensitive global sorting");
 			writeln("  -reverse        reverse the sort order");
+			writeln("  -out=<file>     write output to specified filename (rather than stdout)");
 			writeln("  -json[=spaces]  use JSON formatted output");
 			writeln("  -utf8           use UTF-8 encoded output (instead of CP437)");
 			writeln("  -strip          strip Ctrl-A (attribute) sequences from output");
@@ -144,6 +146,14 @@ for(var i = 0; i < argc; i++) {
 			user.number = system.matchuser(opt.slice(5));
 			if(user.number < 1)
 				alert("Invalid user specified: " + opt.slice(5));
+			continue;
+		}
+		if(opt.indexOf("out=") == 0) {
+			out = new File(opt.slice(4));
+			if(!out.open("w")) {
+				alert("Error " + out.error + " opening " + out.name);
+				exit(1);
+			}
 			continue;
 		}
 		if(opt == "i") {
@@ -281,8 +291,10 @@ for(var i = 0; i < dir_list.length; i++) {
 		var list = base.get_list(filespec, detail, since, options.sort);
 		for(var j = 0; j < list.length; j++) {
 			list[j].dir = dir_code;
-			if(list[j].extdesc)
+			if(list[j].extdesc) {
 				list[j].extdesc = "\n" + truncsp(list[j].extdesc);
+				js.flatten_string(list[j].extdesc);
+			}
 			if(options.adate)
 				list[j].time = archive_date(base.get_path(list[j]));
 			if(options.cdt)
@@ -339,9 +351,11 @@ if(options.reverse)
 
 log("Formatting " + file_list.length + " files for output...");
 if(fmt == "json") {
-	writeln(JSON.stringify(file_list, null, json_space));
+	out.writeln(JSON.stringify(file_list, null, json_space));
 	exit(0);
 }
+var total_files = 0;
+var bytes = 0;
 var output = [];
 dir_code = undefined;
 for(var i = 0; i < file_list.length; i++) {
@@ -354,6 +368,7 @@ for(var i = 0; i < file_list.length; i++) {
 		case "object":
 			if(excluded(file.name))
 				continue;
+			bytes += file.size;
 			break;
 		default:
 			throw new Error(typeof file);
@@ -370,6 +385,7 @@ for(var i = 0; i < file_list.length; i++) {
 			, "-------------------------------------------------------------------------------"));
 	}
 	output.push(list_file(file, fmt, props));
+	++total_files;
 }
 
 for(var i in output) {
@@ -377,8 +393,12 @@ for(var i in output) {
 		output[i] = utf8_encode(output[i]);
 	if(options.strip)
 		output[i] = strip_ctrl_a(output[i]);
-	writeln(output[i]);
+	out.writeln(output[i]);
 }
+if(bytes)
+	out.writeln(format("%s bytes in %u files", file_size_str(bytes), total_files));
+else if(total_files)
+	out.writeln(format("%u files", total_files));
 
 function archive_contents(path, list)
 {
