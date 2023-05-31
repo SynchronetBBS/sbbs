@@ -2343,8 +2343,11 @@ bool fread_fmsghdr(fmsghdr_t* hdr, FILE* fp)
 	if(fread(hdr, sizeof(fmsghdr_t), 1, fp) != 1)
 		return false;
 	TERMINATE(hdr->from);
+	truncsp(hdr->from);
 	TERMINATE(hdr->to);
+	truncsp(hdr->to);
 	TERMINATE(hdr->subj);
+	truncsp(hdr->subj);
 	TERMINATE(hdr->time);
 	return true;
 }
@@ -5325,6 +5328,7 @@ char* freadstr(FILE* fp, char* str, size_t maxlen)
 		return NULL;
 
 	str[maxlen-1]=0;	/* Force terminator */
+	truncsp(str);
 
 	return(str);
 }
