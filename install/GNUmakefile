@@ -56,7 +56,7 @@ SBBSUSER	?= $(USER)
 SBBSGROUP	?= $(GROUP)
 SBBSCHOWN	:= $(SBBSUSER):$(SBBSGROUP)
 
-SBBSDIR	?=	$(shell pwd)
+SBBSDIR	?=	$(shell /bin/pwd)
 export SBBSDIR
 REPODIR		= $(SBBSDIR)/repo
 

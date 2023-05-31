@@ -10,7 +10,7 @@ ifdef STATIC
 endif
 
 # Set up LD_RUN_PATH for run-time locating of the .so files
-PWD :=  $(shell pwd)
+PWD :=  $(shell /bin/pwd)
 LD_RUN_PATH :=  .
 export LD_RUN_PATH
 
