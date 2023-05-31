@@ -2527,6 +2527,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											if (cterm->mouse_state_change)
 												cterm->mouse_state_change(seq->param_int[i], 1, cterm->mouse_state_change_cbdata);
 											break;
+										case 2004:
+											cterm->extattr |= CTERM_EXTATTR_BRACKETPASTE;
+											break;
 									}
 								}
 								if (updfg || updbg) {
@@ -2601,6 +2604,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										case 1015:
 											if (cterm->mouse_state_change)
 												cterm->mouse_state_change(seq->param_int[i], 0, cterm->mouse_state_change_cbdata);
+											break;
+										case 2004:
+											cterm->extattr &= ~(CTERM_EXTATTR_BRACKETPASTE);
 											break;
 									}
 								}

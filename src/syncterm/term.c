@@ -3572,16 +3572,28 @@ do_paste(void)
 		setfont(oldfont, false, 1);
 		free(p2);
 		if (p != NULL) {
+			if (cterm->extattr & CTERM_EXTATTR_BRACKETPASTE)
+				conn_send("\x1b[200~", 6, 0);
 			for (p2 = p; *p2; p2++) {
 				if (*p2 == '\n') {
                                         /* If previous char was not \r, send a \r */
 					if ((p2 == p) || (*(p2 - 1) != '\r'))
 						conn_send("\r", 1, 0);
 				}
+				else if (*p2 == '\x1b') {
+					// If we're using bracked paste, strip paste end sequence
+					// TODO: Do we generally want to disable all ESC chars?
+					if (strcmp(p2, "\x1b[201~") == 0)
+						p2 += 5;
+					else
+						conn_send(p2, 1, 0);
+				}
 				else {
 					conn_send(p2, 1, 0);
 				}
 			}
+			if (cterm->extattr & CTERM_EXTATTR_BRACKETPASTE)
+				conn_send("\x1b[201~", 6, 0);
 			free(p);
 		}
 	}

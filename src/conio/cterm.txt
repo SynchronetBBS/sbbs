@@ -901,6 +901,8 @@ CSI ? Ps... h (DECSET)
 	1015 -  URXVT encoded extended coordinates
 	     (Not supported by SyncTERM)
 	     SOURCE: xterm
+	2004 - Set bracketed paste mode
+	     SOURCE: xterm (https://invisible-island.net/xterm/xterm-paste64.html)
 
 CSI Pn j (HPB)
 	Character Position Backward
@@ -996,6 +998,8 @@ CSI ? Ps... l (DECRST)
 	1015 -  Disable URXVT encoded extended coordinates
 	     (Not supported by SyncTERM)
 	     SOURCE: xterm
+	2004 - Disable bracketed paste mode
+	     SOURCE: xterm (https://invisible-island.net/xterm/xterm-paste64.html)
 
 CSI Ps... m (SGR)
 	Select Graphic Rendition
