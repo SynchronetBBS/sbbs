@@ -91,6 +91,7 @@ while(bbs.online && !(console.aborted)) {
 				console.aborted = false;
 				break;
 			}
+			log("Sending Telegram to: " + str);
 			var node_num = parseInt(str, 10);
 			var user_num;
 			if(node_num > 0) {
@@ -110,6 +111,7 @@ while(bbs.online && !(console.aborted)) {
 				user_num = bbs.finduser(str);
 				if(!user_num) {
 					write(bbs.text(UnknownUser));
+					console.aborted = false;
 					break;
 				}
 			}
