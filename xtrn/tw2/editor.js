@@ -343,7 +343,7 @@ function SectorEdit()
 
 	if(sec>0 && sec <seclen) {
 		var sector=db.read(Settings.DB,'sectors.'+sec,LOCK_READ);
-		EditProperties(sector, SectorProperties);
+		LockedEditProperties(sector, SectorProperties);
 		db.write(Settings.DB,'sectors.'+sec,sector,LOCK_WRITE);
 	}
 }
