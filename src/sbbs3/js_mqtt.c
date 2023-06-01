@@ -333,6 +333,7 @@ enum {
 	,MQTT_PROP_KEEPALIVE
 	,MQTT_PROP_PROT_VER
 	,MQTT_PROP_PUB_QOS
+	,MQTT_PROP_SUB_QOS
 	,MQTT_PROP_TLS_MODE
 	,MQTT_PROP_TLS_CAFILE
 	,MQTT_PROP_TLS_CERTFILE
@@ -356,6 +357,7 @@ static char* com_prop_desc[] = {
 	,"Seconds of time to keep inactive connection alive"
 	,"Protocol version number (3 = 3.1.0, 4 = 3.1.1, 5 = 5.0)"
 	,"Quality Of Service (QOS) value to use when publishing, by default"
+	,"Quality Of Service (QOS) value to use when subscribing, by default"
 	,"TLS (encryption) mode"
 	,"TLS Certificate Authority (CA) certificate (file path)"
 	,"TLS Client certificate (file path)"
@@ -413,6 +415,11 @@ static JSBool js_mqtt_set(JSContext* cx, JSObject* obj, jsid id, JSBool strict, 
 			if(!JS_ValueToInt32(cx, *vp, &i))
 				return JS_FALSE;
 			p->cfg.publish_qos = i;
+			break;
+		case MQTT_PROP_SUB_QOS:
+			if(!JS_ValueToInt32(cx, *vp, &i))
+				return JS_FALSE;
+			p->cfg.subscribe_qos = i;
 			break;
 		case MQTT_PROP_TLS_MODE:
 			if(!JS_ValueToInt32(cx, *vp, &i))
@@ -513,6 +520,9 @@ static JSBool js_mqtt_get(JSContext* cx, JSObject* obj, jsid id, jsval *vp)
 		case MQTT_PROP_PUB_QOS:
 			*vp = INT_TO_JSVAL(p->cfg.publish_qos);
 			break;
+		case MQTT_PROP_SUB_QOS:
+			*vp = INT_TO_JSVAL(p->cfg.subscribe_qos);
+			break;
 		case MQTT_PROP_TLS_MODE:
 			*vp = INT_TO_JSVAL(p->cfg.tls.mode);
 			break;
@@ -585,6 +595,7 @@ static jsSyncPropertySpec js_mqtt_properties[] = {
 	{	"keepalive"			,MQTT_PROP_KEEPALIVE	,MQTT_PROP_FLAGS,	320 },
 	{	"protocol_version"	,MQTT_PROP_PROT_VER		,MQTT_PROP_FLAGS,	320 },
 	{	"publish_qos"		,MQTT_PROP_PUB_QOS		,MQTT_PROP_FLAGS,	320 },
+	{	"subscribe_qos"		,MQTT_PROP_SUB_QOS		,MQTT_PROP_FLAGS,	320 },
 	{	"tls_mode"			,MQTT_PROP_TLS_MODE		,MQTT_PROP_FLAGS,	320 },
 	{	"tls_ca_cert"		,MQTT_PROP_TLS_CAFILE	,MQTT_PROP_FLAGS,	320 },
 	{	"tls_client_cert"	,MQTT_PROP_TLS_CERTFILE	,MQTT_PROP_FLAGS,	320 },
@@ -621,7 +632,8 @@ static jsSyncMethodSpec js_mqtt_functions[] = {
 	{"read",		js_read,		0, 	JSTYPE_STRING
 		,JSDOCSTR("[timeout=0] [,bool verbpose=false]")
 		,JSDOCSTR("Read next message, optionally waiting for <i>timeout</i> milliseconds, "
-			"returns an object when <i>verbose</i> is <tt>true</tt>")
+			"returns an object instead of a string when <i>verbose</i> is <tt>true</tt>. "
+			"Returns <i>false</i> when no message is available.")
 		,320
 	},
 	{0}
