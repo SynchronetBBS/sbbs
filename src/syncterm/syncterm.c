@@ -61,11 +61,15 @@ static const KNOWNFOLDERID FOLDERID_ProgramData = {
 #if !(defined __BORLANDC__ || defined _MSC_VER)
  #include <stdbool.h>
 #else
+#ifndef bool
  #define bool int
+#endif
+#if !(defined false && defined true)
 enum {
 	false,
 	true
 };
+#endif
 
 #endif
 
