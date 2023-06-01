@@ -102,7 +102,7 @@ svdm-windows:
     paths:
       - "src/vdmodem/Release/*.exe"
 
-.syncterm-msvc:
+syncterm-msvc:
   tags: [Windows]
   stage: build
   extends: .rules
