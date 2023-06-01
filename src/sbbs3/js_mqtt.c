@@ -42,7 +42,7 @@ static void js_finalize_mqtt(JSContext* cx, JSObject* obj)
 
 	if(p->handle != NULL) {
 		mosquitto_disconnect(p->handle);
-		mosquitto_loop_stop(p->handle, /* force: */true);
+		mosquitto_loop_stop(p->handle, /* force: */false);
 		mosquitto_destroy(p->handle);
 	}
 	while((msg = msgQueueRead(&p->q, /* timeout: */0)) != NULL)
