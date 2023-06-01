@@ -707,13 +707,23 @@ static JSBool js_mqtt_constructor(JSContext* cx, uintN argc, jsval *arglist)
 	p->cfg = scfg->mqtt;
 	p->handle = mosquitto_new(client_id, /* clean_session: */true, /* userdata: */p);
 	free(client_id);
+	if(p->handle == NULL) {
+		JS_ReportError(cx, "mosquitto_new failure (errno=%d)", errno);
+		free(p);
+		return JS_FALSE;
+	}
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
 		free(p);
 		return JS_FALSE;
 	}
 	mosquitto_message_callback_set(p->handle, mqtt_message_received);
-	mosquitto_loop_start(p->handle);
+	int result = mosquitto_loop_start(p->handle);
+	if(result != MOSQ_ERR_SUCCESS) {
+		JS_ReportError(cx, "mosquitto_loop_start error %d", result);
+		free(p);
+		return JS_FALSE;
+	}
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for MQTT communications",320);
