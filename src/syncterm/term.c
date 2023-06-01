@@ -3583,7 +3583,7 @@ do_paste(void)
 				else if (*p2 == '\x1b') {
 					// If we're using bracked paste, strip paste end sequence
 					// TODO: Do we generally want to disable all ESC chars?
-					if (strcmp(p2, "\x1b[201~") == 0)
+					if (strcmp((char*)p2, "\x1b[201~") == 0)
 						p2 += 5;
 					else
 						conn_send(p2, 1, 0);
