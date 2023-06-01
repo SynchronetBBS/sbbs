@@ -44,6 +44,27 @@ function WarpDistance(other)
 	));
 }
 
+function Closest(notsix)
+{
+	var j;
+	var md = 2;
+	var ms = -1;
+	var td;
+
+	for (j in universe) {
+		if (universe[j].X === this.X && universe[j].X === this.X && universe[j].X === this.X)
+			continue;
+		td = this.WDistance(universe[j]);
+		if (td < md) {
+			if (notsix == false || universe[j].Warps.length < 6) {
+				md = td;
+				ms = j;
+			}
+		}
+	}
+	return ms;
+}
+
 function CubicSector(x,y,z)
 {
 	this.X=x;				// -1 to 1
@@ -58,6 +79,7 @@ function CubicSector(x,y,z)
 	this.Al=Math.acos(this.Z/this.R);	// Altitude from galactic plane (Radians)
 	this.Distance=SectorDistance;
 	this.WDistance=WarpDistance;
+	this.Closest=Closest;
 }
 
 function SphereSector(R, Al, Az)
@@ -110,6 +132,8 @@ var totalwarps=0;
 for(i in universe) {
 	universe[i].Warps=[];
 	for(j in universe) {
+		if (universe[i].Warps.length >= 6)
+			break;
 		if(i==j)
 			continue;
 		if(universe[i].WDistance(universe[j]) <= wr) {
@@ -118,15 +142,69 @@ for(i in universe) {
 		}
 	}
 }
+// Fix unreachable sectors
+var closest;
+for (i in universe) {
+	var found = false;
+	for (j in universe) {
+		for (k in universe[j].Warps) {
+			if (universe[j].Warps[k] === i) {
+				found = true;
+				break;
+			}
+		}
+		if (found)
+			break;
+	}
+	if (!found) {
+		closest = universe[i].Closest(true);
+		if (closest !== -1) {
+			universe[closest].Warps.push(i);
+			totalwarps++;
+		}
+	}
+}
+// Fix unleavable sectors
+for (i in universe) {
+	if (universe[i].Warps.length == 0) {
+		closest = universe[i].Closest(false);
+		universe[i].Warps.push(closest);
+		totalwarps++;
+	}
+}
 log("Average warps per sector: "+(totalwarps/sectors));
 log("Total Warps: "+totalwarps);
 
 // Check for one-way warps
 var oneways=0;
+var mostwarps=0;
 for(i in universe) {
 	for(j in universe[i].Warps) {
 		if(!universe[universe[i].Warps[j]].Warps.some(function(a,b,c) { return(a==i) } ))
 			oneways++;
 	}
+	if (universe[i].Warps.length > mostwarps)
+		mostwarps = universe[i].Warps.length;
 }
 log("One-way warps: "+oneways+" ("+parseInt(oneways/totalwarps*100)+"%)");
+log("Most warps from a sector: "+mostwarps);
+var f = new File(js.exec_dir+"/new_sector_map.js");
+log("Writing to "+f.name);
+if (f.open("w")) {
+	f.writeln("var sector_map=[");
+	for(i in universe) {
+		for (j in universe[i].Warps)
+			universe[i].Warps[j]++;
+		f.writeln("\t{");
+		f.writeln("\t\tSector:"+(parseInt(i, 10)+1)+",");
+		f.writeln("\t\tWarps:["+universe[i].Warps.join(',')+"],");
+		f.writeln("\t\tX:"+universe[i].X+", Y:"+universe[i].Y+", Z:"+universe[i].Z);
+		f.writeln("\t},");
+	}
+	f.writeln('];');
+	f.close();
+}
+else {
+	log("Unable to open file!");
+}
+log("Done!");
