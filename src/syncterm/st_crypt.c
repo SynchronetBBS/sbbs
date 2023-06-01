@@ -1,11 +1,12 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-#include <stdio.h> /* NULL */
 #ifdef _WIN32
+ #define WIN32_LEAN_AND_MEAN
  #include <stdlib.h>
 #else
  #include <unistd.h> /* _exit() */
 #endif
+#include <stdio.h> /* NULL */
 #include <xp_dl.h>
 
 #include "st_crypt.h"
