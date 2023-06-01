@@ -1417,7 +1417,7 @@ main(int argc, char **argv)
 	     * detail.  The names for the extended capabilities here were introduced by vim
 	     * in January 2017, but used internally.  In 2023, vim patch 9.0.1117 is needed
 	     * to work with this change. */
-	    "\tBD=\\E[?2004l,BE=\\E[?2004h,PE=\\E[201~,PS=\\E[200~,"
+	    "\tBD=\\E[?2004l,BE=\\E[?2004h,PE=\\E[201~,PS=\\E[200~,\n"
 	    "syncterm-bitmap|SyncTERM in Bitmap Mode,\n"
 	    "\tccc,\n"
 	    "\tcolors#256,pairs#65535,\n"
