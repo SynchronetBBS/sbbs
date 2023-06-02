@@ -551,7 +551,7 @@ static int init_window()
     /* Create window, but defer setting a size and GC. */
 	XSetWindowAttributes wa = {0};
 	wincmap = x11.XCreateColormap(dpy, DefaultRootWindow(dpy), visual, AllocNone);
-	x11.InstallColormap(dpy, wincmap);
+	x11.XInstallColormap(dpy, wincmap);
 	wa.colormap = wincmap;
 	wa.background_pixel = black;
 	wa.border_pixel = black;
