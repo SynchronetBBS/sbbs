@@ -566,8 +566,10 @@ static int init_window()
 	    w, h, 2, depth, InputOutput, visual, CWColormap | CWBorderPixel | CWBackPixel, &wa);
 
 	classhints=x11.XAllocClassHint();
-	if (classhints)
-		classhints->res_name = classhints->res_class = "CIOLIB";
+	if (classhints) {
+		classhints->res_name = ciolib_initial_program_name;
+		classhints->res_class = "CIOLIB";
+	}
 	wmhints=x11.XAllocWMHints();
 	wmhints->flags = 0;
 	if(wmhints) {

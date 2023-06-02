@@ -92,6 +92,7 @@ CIOLIBEXPORT int ciolib_initial_mode = C80;
 CIOLIBEXPORT enum ciolib_scaling ciolib_initial_scaling_type = CIOLIB_SCALING_INTERNAL;
 CIOLIBEXPORT const void * ciolib_initial_icon = syncicon64;
 CIOLIBEXPORT size_t ciolib_initial_icon_width = SYNCICON64_WIDTH;
+CIOLIBEXPORT const char *ciolib_initial_program_name = "CIOLIB";
 CIOLIBEXPORT const uint32_t *ciolib_r2yptr;
 CIOLIBEXPORT const uint32_t *ciolib_y2rptr;
 
