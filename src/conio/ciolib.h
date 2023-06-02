@@ -417,6 +417,8 @@ CIOLIBEXPORTVAR int ciolib_initial_window_width;
 CIOLIBEXPORTVAR double ciolib_initial_scaling;
 CIOLIBEXPORTVAR int ciolib_initial_mode;
 CIOLIBEXPORTVAR enum ciolib_scaling ciolib_initial_scaling_type;
+CIOLIBEXPORTVAR const void * ciolib_initial_icon;
+CIOLIBEXPORTVAR size_t ciolib_initial_icon_width;
 CIOLIBEXPORTVAR const uint32_t *ciolib_r2yptr;
 CIOLIBEXPORTVAR const uint32_t *ciolib_y2rptr;
 

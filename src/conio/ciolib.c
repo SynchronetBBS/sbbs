@@ -90,6 +90,8 @@ CIOLIBEXPORT int ciolib_initial_window_width = -1;
 CIOLIBEXPORT double ciolib_initial_scaling = 0;
 CIOLIBEXPORT int ciolib_initial_mode = C80;
 CIOLIBEXPORT enum ciolib_scaling ciolib_initial_scaling_type = CIOLIB_SCALING_INTERNAL;
+CIOLIBEXPORT const void * ciolib_initial_icon = syncicon64;
+CIOLIBEXPORT size_t ciolib_initial_icon_width = 64;
 CIOLIBEXPORT const uint32_t *ciolib_r2yptr;
 CIOLIBEXPORT const uint32_t *ciolib_y2rptr;
 

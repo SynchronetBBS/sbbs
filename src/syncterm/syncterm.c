@@ -1558,6 +1558,8 @@ main(int argc, char **argv)
 	vparams[cvmode].charheight = settings.custom_fontheight;
 	vparams[cvmode].aspect_width = settings.custom_aw;
 	vparams[cvmode].aspect_height = settings.custom_ah;
+	ciolib_initial_icon = syncterm_icon.pixel_data;
+	ciolib_initial_icon_width = syncterm_icon.width;
 	ciolib_initial_scaling = settings.scaling_factor;
 	ciolib_mode = settings.output_mode;
 	if (settings.startup_mode != SCREEN_MODE_CURRENT)

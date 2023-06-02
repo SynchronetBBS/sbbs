@@ -408,6 +408,84 @@ static void map_window()
 	return;
 }
 
+static void
+set_icon(const void *data, size_t width, XWMHints *hints)
+{
+	const uint32_t *idata = data;
+	Pixmap opm = icn;
+	Pixmap opmm = icn_mask;
+	XGCValues gcv = {
+		.function = GXcopy,
+		.foreground = black | 0xff000000,
+		.background = white
+	};
+	int x,y,i;
+	GC igc, imgc;
+	bool fail = false;
+	unsigned short tmp;
+	XColor fg;
+	bool sethints = (hints != NULL);
+
+	icn = x11.XCreatePixmap(dpy, DefaultRootWindow(dpy), width, width, depth);
+	igc = x11.XCreateGC(dpy, icn, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
+	icn_mask = x11.XCreatePixmap(dpy, DefaultRootWindow(dpy), width, width, 1);
+	imgc = x11.XCreateGC(dpy, icn_mask, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
+	fail = (!icn) || (!icn_mask);
+	if (!fail) {
+		for (x = 0, i = 0; x < width; x++) {
+			for (y = 0; y < width; y++) {
+				if (idata[i] & 0xff000000) {
+					tmp = (idata[i] & 0xff);
+					fg.red = tmp << 8 | tmp;
+					tmp = (idata[i] & 0xff00) >> 8;
+					fg.green = tmp << 8 | tmp;
+					tmp = (idata[i] & 0xff0000) >> 16;
+					fg.blue = tmp << 8 | tmp;
+					fg.flags = DoRed | DoGreen | DoBlue;
+					if (x11.XAllocColor(dpy, wincmap, &fg) == 0)
+						fail = true;
+					else {
+						x11.XSetForeground(dpy, igc, fg.pixel);
+						x11.XDrawPoint(dpy, icn, igc, y, x);
+						x11.XSetForeground(dpy, imgc, white);
+						x11.XDrawPoint(dpy, icn_mask, imgc, y, x);
+					}
+					if (fail)
+						break;
+				}
+				else {
+					x11.XSetForeground(dpy, imgc, black);
+					x11.XDrawPoint(dpy, icn_mask, imgc, y, x);
+				}
+				i++;
+			}
+			if (fail)
+				break;
+		}
+	}
+	if (!fail) {
+		if (!hints)
+			hints = x11.XGetWMHints(dpy, win);
+		if (!hints)
+			hints = x11.XAllocWMHints();
+		if (hints) {
+			hints->flags |= IconPixmapHint | IconMaskHint;
+			hints->icon_pixmap = icn;
+			hints->icon_mask = icn_mask;
+			if (sethints) {
+				x11.XSetWMHints(dpy, win, hints);
+				x11.XFree(hints);
+			}
+			if (opm)
+				x11.XFreePixmap(dpy, opm);
+			if (opmm)
+				x11.XFreePixmap(dpy, opmm);
+		}
+	}
+	x11.XFreeGC(dpy, igc);
+	x11.XFreeGC(dpy, imgc);
+}
+
 /* Get a connection to the X server and create the window. */
 static int init_window()
 {
@@ -479,10 +557,12 @@ static int init_window()
 	if (classhints)
 		classhints->res_name = classhints->res_class = "CIOLIB";
 	wmhints=x11.XAllocWMHints();
+	wmhints->flags = 0;
 	if(wmhints) {
 		wmhints->initial_state=NormalState;
-		wmhints->flags = (StateHint/* | IconPixmapHint | IconMaskHint*/ | InputHint);
+		wmhints->flags |= (StateHint | InputHint);
 		wmhints->input = True;
+		set_icon(ciolib_initial_icon, ciolib_initial_icon_width, wmhints);
 		x11.XSetWMProperties(dpy, win, NULL, NULL, 0, 0, NULL, wmhints, classhints);
 		x11.XFree(wmhints);
 	}
@@ -1537,82 +1617,15 @@ void x11_event_thread(void *args)
 							x11.XBell(dpy, 100);
 							break;
 						case X11_LOCAL_SETICON: {
-#if 0
 							// This doesn't work on ChromeOS, presumably because XWayland sucks.
 							Atom wmicon = x11.XInternAtom(dpy, "_NET_WM_ICON", False);
 							if (wmicon) {
 								x11.XChangeProperty(dpy, win, wmicon, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)lev.data.icon_data, lev.data.icon_data[0] * lev.data.icon_data[1] + 2);
 								x11.XFlush(dpy);
 							}
+							set_icon(&lev.data.icon_data[2], lev.data.icon_data[0], NULL);
 							free(lev.data.icon_data);
 							break;
-#else
-							Pixmap opm = icn;
-							Pixmap opmm = icn_mask;
-							XGCValues gcv = {
-								.function = GXcopy,
-								.foreground = black | 0xff000000,
-								.background = white
-							};
-							icn = x11.XCreatePixmap(dpy, DefaultRootWindow(dpy), lev.data.icon_data[0], lev.data.icon_data[1], depth);
-							GC igc = x11.XCreateGC(dpy, icn, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
-							icn_mask = x11.XCreatePixmap(dpy, DefaultRootWindow(dpy), lev.data.icon_data[0], lev.data.icon_data[1], 1);
-							GC imgc = x11.XCreateGC(dpy, icn_mask, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
-							int x,y,i;
-							bool fail = (!icn) || (!icn_mask);
-							if (!fail) {
-								for (x = 0, i = 2; x < lev.data.icon_data[0]; x++) {
-									for (y = 0; y < lev.data.icon_data[1]; y++) {
-										XColor fg = {0};
-										unsigned short tmp;
-										if (lev.data.icon_data[i] & 0xff000000) {
-											tmp = (lev.data.icon_data[i] & 0xff0000) >> 16;
-											fg.red = tmp << 8 | tmp;
-											tmp = (lev.data.icon_data[i] & 0xff00) >> 8;
-											fg.green = tmp << 8 | tmp;
-											tmp = (lev.data.icon_data[i] & 0xff);
-											fg.blue = tmp << 8 | tmp;
-											fg.flags = DoRed | DoGreen | DoBlue;
-											if (x11.XAllocColor(dpy, wincmap, &fg) == 0)
-												fail = true;
-											else {
-												x11.XSetForeground(dpy, igc, fg.pixel);
-												x11.XDrawPoint(dpy, icn, igc, y, x);
-												x11.XSetForeground(dpy, imgc, white);
-												x11.XDrawPoint(dpy, icn_mask, imgc, y, x);
-											}
-											if (fail)
-												break;
-										}
-										else {
-											x11.XSetForeground(dpy, imgc, black);
-											x11.XDrawPoint(dpy, icn_mask, imgc, y, x);
-										}
-										i++;
-									}
-									if (fail)
-										break;
-								}
-							}
-							if (!fail) {
-								XWMHints *hints = x11.XGetWMHints(dpy, win);
-								if (!hints)
-									hints = x11.XAllocWMHints();
-								if (hints) {
-									hints->flags |= IconPixmapHint | IconMaskHint;
-									hints->icon_pixmap = icn;
-									hints->icon_mask = icn_mask;
-									x11.XSetWMHints(dpy, win, hints);
-									x11.XFree(hints);
-									if (opm)
-										x11.XFreePixmap(dpy, opm);
-									if (opmm)
-										x11.XFreePixmap(dpy, opmm);
-								}
-							}
-							x11.XFreeGC(dpy, igc);
-							x11.XFreeGC(dpy, imgc);
-#endif
 						}
 						case X11_LOCAL_MOUSEPOINTER: {
 							unsigned shape = UINT_MAX;
