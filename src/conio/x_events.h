@@ -62,6 +62,7 @@ struct x11 {
 	int	(*XCloseDisplay)	(Display*);
 	Window	(*XCreateSimpleWindow)	(Display*, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long);
 	GC		(*XCreateGC)	(Display*, Drawable, unsigned long, XGCValues*);
+	int		(*XFreeGC)	(Display*, GC);
 	int		(*XSelectInput)	(Display*, Window, long);
 	int		(*XStoreName)	(Display*, Window, _Xconst char*);
 	Window	(*XGetSelectionOwner)	(Display*, Atom);
@@ -102,6 +103,8 @@ struct x11 {
 	int (*XDefineCursor)(Display *display, Window w, Cursor cursor);
 	int (*XFreeCursor)(Display *display, Cursor cursor);
 	Status (*XGetGeometry)(Display *, Drawable, Window *, int *, int *, unsigned int *, unsigned int *, unsigned int *, unsigned int *);
+	XWMHints *(*XGetWMHints)(Display *, Window);
+	int (*XSetWMHints)(Display *, Window, XWMHints *);
 #ifndef DefaultDepth
 	int (*DefaultDepth)(Display *, int);
 #endif
