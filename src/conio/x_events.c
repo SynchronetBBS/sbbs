@@ -428,6 +428,15 @@ set_icon(const void *data, size_t width, XWMHints *hints)
 	XColor fg;
 	bool sethints = (hints == NULL);
 
+	// This is literally the wost possible way to create a pixmap. :)
+	/*
+	 * This whole mess was added to get the icon working on ChromeOS...
+	 * as it happens, ChromeOS doesn't actually use the X11 icons at
+	 * all for anything ever.  Instead it does some weird hackery in
+	 * the icon theme and pulls the icon files out to the host.
+	 * Leaving this here though since it is marginally "better" aside
+	 * from the insane method to create a Pixmap.
+	 */
 	icn = x11.XCreatePixmap(dpy, DefaultRootWindow(dpy), width, width, depth);
 	igc = x11.XCreateGC(dpy, icn, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
 	icn_mask = x11.XCreatePixmap(dpy, DefaultRootWindow(dpy), width, width, 1);
@@ -542,6 +551,7 @@ static int init_window()
     /* Create window, but defer setting a size and GC. */
 	XSetWindowAttributes wa = {0};
 	wincmap = x11.XCreateColormap(dpy, DefaultRootWindow(dpy), visual, AllocNone);
+	x11.InstallColormap(dpy, wincmap);
 	wa.colormap = wincmap;
 	wa.background_pixel = black;
 	wa.border_pixel = black;
@@ -1619,7 +1629,6 @@ void x11_event_thread(void *args)
 							x11.XBell(dpy, 100);
 							break;
 						case X11_LOCAL_SETICON: {
-							// This doesn't work on ChromeOS, presumably because XWayland sucks.
 							Atom wmicon = x11.XInternAtom(dpy, "_NET_WM_ICON", False);
 							if (wmicon) {
 								x11.XChangeProperty(dpy, win, wmicon, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)lev.data.icon_data, lev.data.icon_data[0] * lev.data.icon_data[1] + 2);

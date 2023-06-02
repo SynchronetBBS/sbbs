@@ -91,7 +91,7 @@ CIOLIBEXPORT double ciolib_initial_scaling = 0;
 CIOLIBEXPORT int ciolib_initial_mode = C80;
 CIOLIBEXPORT enum ciolib_scaling ciolib_initial_scaling_type = CIOLIB_SCALING_INTERNAL;
 CIOLIBEXPORT const void * ciolib_initial_icon = syncicon64;
-CIOLIBEXPORT size_t ciolib_initial_icon_width = 64;
+CIOLIBEXPORT size_t ciolib_initial_icon_width = SYNCICON64_WIDTH;
 CIOLIBEXPORT const uint32_t *ciolib_r2yptr;
 CIOLIBEXPORT const uint32_t *ciolib_y2rptr;
 
@@ -545,7 +545,7 @@ CIOLIBEXPORT int initciolib(int mode)
 			cio_textinfo.normattr=LIGHTGRAY;
 			break;
 	}
-	ciolib_seticon(syncicon64, SYNCICON64_WIDTH);
+	ciolib_seticon(ciolib_initial_icon, ciolib_initial_icon_width);
 	ciolib_textattr(cio_textinfo.normattr);
 
 	_beginthread(ciolib_mouse_thread,0,NULL);

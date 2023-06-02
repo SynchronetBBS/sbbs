@@ -433,6 +433,10 @@ int x_init(void)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XInstallColormap=xp_dlsym(dl,XInstallColormap))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
 	if((x11.XAllocClassHint=xp_dlsym(dl,XAllocClassHint))==NULL) {
 		xp_dlclose(dl);
 		return(-1);

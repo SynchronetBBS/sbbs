@@ -91,6 +91,7 @@ struct x11 {
 	Window (*XCreateWindow)(Display *display, Window parent, int x, int y, unsigned int width, unsigned int height, unsigned int border_width, int depth, 
                        unsigned int class, Visual *visual, unsigned long valuemask, XSetWindowAttributes *attributes);
 	Colormap (*XCreateColormap)(Display *display, Window w, Visual *visual, int alloc);
+	int (*XInstallColormap)(Display *, Colormap);
 	XClassHint *(*XAllocClassHint)(void);
 	int (*XSetForeground)(Display *display, GC gc, unsigned long foreground);
 	char *(*XSetLocaleModifiers)(char *modifier_list);
