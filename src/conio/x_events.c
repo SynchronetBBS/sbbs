@@ -383,6 +383,8 @@ static void map_window()
 	}
 
 	bitmap_get_scaled_win_size(x_cvstat.scaling, &sh->base_width, &sh->base_height, 0, 0);
+	sh->width = sh->base_width;
+	sh->height = sh->base_height;
 	bitmap_get_scaled_win_size(1.0, &sh->min_width, &sh->min_height, 0, 0);
 	pthread_mutex_unlock(&vstatlock);
 
@@ -395,7 +397,7 @@ static void map_window()
 		sh->min_aspect.y = sh->max_aspect.y = sh->min_height;
 	}
 
-	sh->flags = USSize | PMinSize | PSize | PAspect | PMaxSize;
+	sh->flags = PMinSize | PSize | PAspect | PMaxSize | PBaseSize;
 
 	x11.XSetWMNormalHints(dpy, win, sh);
 	pthread_mutex_lock(&vstatlock);
