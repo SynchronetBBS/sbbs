@@ -424,7 +424,7 @@ set_icon(const void *data, size_t width, XWMHints *hints)
 	bool fail = false;
 	unsigned short tmp;
 	XColor fg;
-	bool sethints = (hints != NULL);
+	bool sethints = (hints == NULL);
 
 	icn = x11.XCreatePixmap(dpy, DefaultRootWindow(dpy), width, width, depth);
 	igc = x11.XCreateGC(dpy, icn, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
