@@ -3505,7 +3505,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								case 2:
 									CURR_XY(&col, &row);
-									cterm_gotoxy(cterm, CURR_MINX, row);
+									GOTOXY(CURR_MINX, row);
 									CLREOL();
 									GOTOXY(col, row);
 									break;

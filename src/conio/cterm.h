@@ -122,7 +122,7 @@ struct cterminal {
 #define CTERM_EXTATTR_ORIGINMODE	0x0002
 #define CTERM_EXTATTR_SXSCROLL		0x0004
 #define CTERM_EXTATTR_DECLRMM		0x0008
-#define CTERM_EXTATTR_BRACKETPASTE      0x0016
+#define CTERM_EXTATTR_BRACKETPASTE      0x0010
 	int					save_xpos;		// Saved position (for later restore)
 	int					save_ypos;
 	int					sequence;		// An escape sequence is being parsed
