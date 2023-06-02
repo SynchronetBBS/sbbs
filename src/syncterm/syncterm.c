@@ -1384,6 +1384,7 @@ main(int argc, char **argv)
 	int               default_hidepopups = -1;
 	int               default_nostatus = -1;
 	const char        syncterm_termcap[] = "\n# terminfo database entry for SyncTERM\n"
+	    "# compile with tic -x to get the user-defined capabilities for vim (bracketed pasted)\n"
 	    "syncterm|SyncTERM,\n"
 
             // cwin maybe?  Or just left/right and top/bottom margins?
