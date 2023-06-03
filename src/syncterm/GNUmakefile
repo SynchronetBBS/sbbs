@@ -151,11 +151,11 @@ install: $(SYNCTERM) syncterm.1.gz installdirs
 
 dpkgdirs:
 	@echo Creating dpkg directories
-	${QUIET}-mkdir -p dpkg/usr/bin
-	${QUIET}-mkdir -p dpkg/usr/share/applications
-	${QUIET}-mkdir -p dpkg/usr/share/doc/syncterm
-	${QUIET}-mkdir -p dpkg/usr/share/icons/hicolor/64x64/apps
-	${QUIET}-mkdir -p dpkg/usr/share/man/man1
+	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/bin
+	${QUIET}-mkdir -p dpkg${DESTDIR}${DESKTOPDIR}
+	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/doc/syncterm
+	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/64x64/apps
+	${QUIET}-mkdir -p dpkg${DESTDIR}${MANPREFIX}/share/man/man1
 	${QUIET}-mkdir -p dpkg/DEBIAN
 
 dpkg-control: dpkg-control.in
@@ -168,12 +168,12 @@ changelog.gz: CHANGES
 
 dpkg: $(SYNCTERM) syncterm.1.gz dpkg-control dpkgdirs changelog.gz
 	@echo Creating $@
-	${QUIET}${INSTALL_EXE} ${SYNCTERM} dpkg/usr/bin
-	${QUIET}${INSTALL_DATA} syncterm.png dpkg/usr/share/icons/hicolor/64x64/apps
-	${QUIET}${INSTALL_DATA} syncterm.desktop dpkg/usr/share/applications
-	${QUIET}${INSTALL_DATA} syncterm.1.gz dpkg/usr/share/man/man1
-	${QUIET}${INSTALL_DATA} LICENCE dpkg/usr/share/doc/syncterm/copyright
-	${QUIET}${INSTALL_DATA} changelog.gz dpkg/usr/share/doc/syncterm
+	${QUIET}${INSTALL_EXE} ${SYNCTERM} dpkg${DESTDIR}${PREFIX}/bin
+	${QUIET}${INSTALL_DATA} syncterm.png dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/64x64/apps
+	${QUIET}${INSTALL_DATA} syncterm.desktop dpkg${DESTDIR}${DESKTOPDIR}
+	${QUIET}${INSTALL_DATA} syncterm.1.gz dpkg${DESTDIR}${MANPREFIX}/share/man/man1
+	${QUIET}${INSTALL_DATA} LICENCE dpkg${DESTDIR}${PREFIX}/share/doc/syncterm/copyright
+	${QUIET}${INSTALL_DATA} changelog.gz dpkg${DESTDIR}${PREFIX}/share/doc/syncterm
 	${QUIET}${INSTALL_DATA} dpkg-control dpkg/DEBIAN/control
 	${QUIET}dpkg-deb --root-owner-group -b dpkg syncterm.deb
 
