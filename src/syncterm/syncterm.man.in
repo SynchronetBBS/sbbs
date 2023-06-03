@@ -7,6 +7,14 @@ syncterm \- BBS terminal program
 \fBSyncTERM\fP is a terminal program designed specifically for connecting to
 a Bulletin Board System (\fBBBS\fP)
 .SS Options
+.IP \fB\-4\fP
+Only resolve IPv4 addresses
+.IP \fB\-6\fP
+Only resolve IPv6 addresses
+.IP \fB\-b\fIpath/to/list\fR
+Specify an alternative BBS list path
+.IP \fB\-c\fP
+Hide the status line
 .IP \fB\-e\fIdly\fR
 Specify the "escape delay" in milliseconds for curses(3) mode. Since curses
 uses the escape key for its own purposes, using the escape key for other
@@ -96,17 +104,15 @@ chosen, a value of 50 is used.
 Specifies the default scheme for \fIURL\fP to be telnet://
 .IP \fB\-r\fP
 Specifies the default scheme for \fIURL\fP to be rlogin://
-.IP \fB\-r\fP
+.IP \fB\-h\fP
 Specifies the default scheme for \fIURL\fP to be ssh://
-.IP \fB\-4\fP
-Only resolve IPv4 addresses
-.IP \fB\-6\fP
-Only resolve IPv6 addresses
 .IP \fB\-s\fP
 Run in "safe mode" which disables the modification of local files such as the
 dialing list.
 .IP \fB\-T\fP
 When this is the ONLY argument, dumps terminfo entry to stdout and exits.
+.IP \fB\-v\fP
+When this is the ONLY argument, dumps version info and build date to stdout and exits.
 .SH RUN-TIME LINKING
 For some features, specifically SDL support, and X11 support,
 run-time linking is employed using dlopen(). Using this, it is possible to

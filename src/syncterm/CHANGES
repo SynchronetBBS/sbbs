@@ -20,6 +20,7 @@ Add a native (GDI) Windows mode (prefered over SDL mode)
 Improve startup behaviour on Windows
 Allow hardware scaling in X11, GDI, and SDL modes
 Support XTerm Bracketed Paste
+Add -b and -n command-line options for BBS list and INI file respectively
 
 Version 1.1
 -----------
