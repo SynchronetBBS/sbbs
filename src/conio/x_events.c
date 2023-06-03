@@ -663,7 +663,7 @@ static void resize_window()
 	x_cvstat.winheight = height;
 	x_cvstat.scaling = bitmap_double_mult_inside(width, height);
 	pthread_mutex_unlock(&vstatlock);
-	x11.XResizeWindow(dpy, win, width, height));
+	x11.XResizeWindow(dpy, win, width, height);
 	resize_xim();
 
 	return;
