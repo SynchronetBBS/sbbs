@@ -1561,6 +1561,7 @@ main(int argc, char **argv)
 	ciolib_initial_icon_width = syncterm_icon.width;
 	ciolib_initial_scaling = settings.scaling_factor;
 	ciolib_initial_program_name = "syncterm";
+	ciolib_initial_program_class = "SyncTERM";
 	ciolib_mode = settings.output_mode;
 	if (settings.startup_mode != SCREEN_MODE_CURRENT)
 		text_mode = screen_to_ciolib(settings.startup_mode);
