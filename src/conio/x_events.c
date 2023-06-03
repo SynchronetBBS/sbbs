@@ -593,6 +593,13 @@ static int init_window()
 		x11.XSetWMProperties(dpy, win, NULL, NULL, 0, 0, NULL, wmhints, classhints);
 		x11.XFree(wmhints);
 	}
+
+	Atom pid_atom = x11.XInternAtom(dpy, "_NET_WM_PID", False);
+	if (pid_atom != None) {
+		unsigned long pid_l = getpid();
+		x11.XChangeProperty(dpy, win, pid_atom, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&pid_l, 1);
+	}
+
 	im = x11.XOpenIM(dpy, NULL, "CIOLIB", "CIOLIB");
 	if (im != NULL) {
 		ic = x11.XCreateIC(im, XNClientWindow, win, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, NULL);
