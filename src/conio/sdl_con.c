@@ -258,8 +258,8 @@ static int sdl_user_func_ret(int func, ...)
 	while(1) {
 		switch(func) {
 			case SDL_USEREVENT_SETVIDMODE:
-				ev.user.data1 = (void *)va_arg(argptr, int);
-				ev.user.data2 = (void *)va_arg(argptr, int);
+				ev.user.data1 = (void *)(intptr_t)va_arg(argptr, int);
+				ev.user.data2 = (void *)(intptr_t)va_arg(argptr, int);
 				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)!=1)
 					YIELD();
 				break;

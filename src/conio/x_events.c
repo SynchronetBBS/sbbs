@@ -581,8 +581,8 @@ static int init_window()
 
 	classhints=x11.XAllocClassHint();
 	if (classhints) {
-		classhints->res_name = ciolib_initial_program_name;
-		classhints->res_class = ciolib_initial_program_class;
+		classhints->res_name = (char *)ciolib_initial_program_name;
+		classhints->res_class = (char *)ciolib_initial_program_class;
 	}
 	wmhints=x11.XAllocWMHints();
 	wmhints->flags = 0;
