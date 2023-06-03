@@ -65,7 +65,8 @@ bool x_internal_scaling = true;
 
 /* Sets the atom to be used for copy/paste operations */
 #define CONSOLE_CLIPBOARD	XA_PRIMARY
-static Atom WM_DELETE_WINDOW=0;
+static Atom WM_DELETE_WINDOW = None;
+static Atom _NET_WM_PING = None;
 
 static Display *dpy=NULL;
 static Window win;
@@ -611,6 +612,7 @@ static int init_window()
 		x11.XFree(classhints);
 
 	WM_DELETE_WINDOW = x11.XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+	_NET_WM_PING = x11.XInternAtom(dpy, "_NET_WM_PING", False);
 
 	gcv.function = GXcopy;
 	gcv.foreground = black | 0xff000000;
@@ -623,7 +625,14 @@ static int init_window()
 		     | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask);
 
 	x11.XStoreName(dpy, win, "SyncConsole");
-	x11.XSetWMProtocols(dpy, win, &WM_DELETE_WINDOW, 1);
+	Atom protos[2];
+	int i = 0;
+	if (WM_DELETE_WINDOW != None)
+		protos[i++] = WM_DELETE_WINDOW;
+	if (_NET_WM_PING != None)
+		protos[i++] = _NET_WM_PING;
+	if (i)
+		x11.XSetWMProtocols(dpy, win, protos, i);
 
 	return(0);
 }
@@ -1040,9 +1049,13 @@ static int x11_event(XEvent *ev)
 		return 0;
 	switch (ev->type) {
 		case ClientMessage:
-			if (ev->xclient.format == 32 && ev->xclient.data.l[0] == WM_DELETE_WINDOW) {
+			if (ev->xclient.format == 32 && ev->xclient.data.l[0] == WM_DELETE_WINDOW && WM_DELETE_WINDOW != None) {
 				uint16_t key=CIO_KEY_QUIT;
 				write(key_pipe[1], &key, 2);
+			}
+			else if(ev->xclient.format == 32 && ev->xclient.data.l[0] == _NET_WM_PING && _NET_WM_PING != None) {
+				ev->xclient.window = DefaultRootWindow(dpy);
+				x11.XSendEvent(dpy, ev->xclient.window, False, SubstructureNotifyMask | SubstructureRedirectMask, ev);
 			}
 			break;
 		/* Graphics related events */
