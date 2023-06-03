@@ -2196,9 +2196,11 @@ void input_thread(void *arg)
 // to eliminate any stale data from the previous passthru session
 void sbbs_t::passthru_socket_activate(bool activate)
 {
+	time_t timeout = time(NULL) + 60;
+
 	if(activate) {
 		BOOL rd = FALSE;
-		while(socket_check(client_socket_dup, &rd, /* wr_p */NULL, /* timeout */0) && rd) {
+		while(socket_check(client_socket_dup, &rd, /* wr_p */NULL, /* timeout */0) && rd && time(NULL) < timeout) {
 			char ch;
 			if(recv(client_socket_dup, &ch, sizeof(ch), /* flags: */0) != sizeof(ch))
 				break;
@@ -2215,7 +2217,7 @@ void sbbs_t::passthru_socket_activate(bool activate)
 
 		do { // Allow time for the passthru_thread to move any pending socket data to the outbuf
 			SLEEP(100); // Before the node_thread starts sending its own data to the outbuf
-		} while(RingBufFull(&outbuf));
+		} while(RingBufFull(&outbuf) && time(NULL) < timeout);
 	}
 	passthru_socket_active = activate;
 }
