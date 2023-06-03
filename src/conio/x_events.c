@@ -427,6 +427,7 @@ set_icon(const void *data, size_t width, XWMHints *hints)
 	unsigned short tmp;
 	XColor fg;
 	bool sethints = (hints == NULL);
+	unsigned long lasti, lastim;
 
 	// This is literally the wost possible way to create a pixmap. :)
 	/*
@@ -446,26 +447,37 @@ set_icon(const void *data, size_t width, XWMHints *hints)
 		for (x = 0, i = 0; x < width; x++) {
 			for (y = 0; y < width; y++) {
 				if (idata[i] & 0xff000000) {
-					tmp = (idata[i] & 0xff);
-					fg.red = tmp << 8 | tmp;
-					tmp = (idata[i] & 0xff00) >> 8;
-					fg.green = tmp << 8 | tmp;
-					tmp = (idata[i] & 0xff0000) >> 16;
-					fg.blue = tmp << 8 | tmp;
-					fg.flags = DoRed | DoGreen | DoBlue;
-					if (x11.XAllocColor(dpy, wincmap, &fg) == 0)
-						fail = true;
+					if (VisualIsRGB8)
+						fg.pixel = idata[i] & 0xffffff;
 					else {
-						x11.XSetForeground(dpy, igc, fg.pixel);
-						x11.XDrawPoint(dpy, icn, igc, y, x);
-						x11.XSetForeground(dpy, imgc, white);
-						x11.XDrawPoint(dpy, icn_mask, imgc, y, x);
+						tmp = (idata[i] & 0xff);
+						fg.red = tmp << 8 | tmp;
+						tmp = (idata[i] & 0xff00) >> 8;
+						fg.green = tmp << 8 | tmp;
+						tmp = (idata[i] & 0xff0000) >> 16;
+						fg.blue = tmp << 8 | tmp;
+						fg.flags = DoRed | DoGreen | DoBlue;
+						if (x11.XAllocColor(dpy, wincmap, &fg) == 0)
+							fail = true;
 					}
 					if (fail)
 						break;
+					if (lasti != fg.pixel) {
+						x11.XSetForeground(dpy, igc, fg.pixel);
+						lasti = fg.pixel;
+					}
+					x11.XDrawPoint(dpy, icn, igc, y, x);
+					if (lastim != white) {
+						x11.XSetForeground(dpy, imgc, white);
+						lastim = white;
+					}
+					x11.XDrawPoint(dpy, icn_mask, imgc, y, x);
 				}
 				else {
-					x11.XSetForeground(dpy, imgc, black);
+					if (lastim != black) {
+						x11.XSetForeground(dpy, imgc, black);
+						lastim = black;
+					}
 					x11.XDrawPoint(dpy, icn_mask, imgc, y, x);
 				}
 				i++;
@@ -512,6 +524,7 @@ static int init_window()
 	if (dpy == NULL) {
 		return(-1);
 	}
+	x11.XSynchronize(dpy, False);
 
 #ifdef WITH_XRENDER
 	if (xrender_found && x11.XRenderQueryVersion(dpy, &major, &minor) == 0)
