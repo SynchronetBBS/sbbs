@@ -428,7 +428,7 @@ set_icon(const void *data, size_t width, XWMHints *hints)
 	unsigned short tmp;
 	XColor fg;
 	bool sethints = (hints == NULL);
-	unsigned long lasti, lastim;
+	unsigned long lasti = ULONG_MAX, lastim = ULONG_MAX;
 
 	// This is literally the wost possible way to create a pixmap. :)
 	/*
