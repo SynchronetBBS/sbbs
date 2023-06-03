@@ -53,3 +53,7 @@ gmake CC=emcc VERBOSE=please AR=emar RANLIB=emranlib RELEASE=1 CXX=emc++ os=emsc
 
 Release builds of jsdoor (not related at all)
 gmake jsdoor NO_LD_RUN_PATH=dumbass CC=mingw32-gcc VERBOSE=please AR=mingw32-ar AS=mingw32-as RANLIB=mingw32-ranlib RELEASE=1 CXX=mingw32-g++ WINDRES=mingw32-windres JSLIBDIR=../../3rdp/win32.release/mozjs/bin/ JSINCLUDE=../../3rdp/win32.release/mozjs/include/ JSLIB=mozjs
+
+Building a dpkg for a Debian-like OS
+gmake RELEASE=1 PREFIX=/usr dpkg
+
