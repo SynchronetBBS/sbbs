@@ -314,7 +314,7 @@ void xprogs_cfg()
 		strcpy(opt[i++],"Fixed Events");
 		strcpy(opt[i++],"Timed Events");
 		strcpy(opt[i++],"Native Program List");
-		strcpy(opt[i++],"External Editors");
+		strcpy(opt[i++],"Message Editors");
 		strcpy(opt[i++],"Global Hot Key Events");
 		strcpy(opt[i++],"Online Programs (Doors)");
 		opt[i][0]=0;
@@ -1778,9 +1778,9 @@ void xedit_cfg()
 		if(savxedit.name[0])
 			j|=WIN_PASTE | WIN_PASTEXTR;
 		uifc.helpbuf=
-			"`External Editors:`\n"
+			"`Message Editors:`\n"
 			"\n"
-			"This is a list of the configured external editors.\n"
+			"This is a list of the configured external message editors.\n"
 			"\n"
 			"To add an editor, select the desired location and hit ~ INS ~.\n"
 			"\n"
@@ -1788,28 +1788,28 @@ void xedit_cfg()
 			"\n"
 			"To configure an editor, select it and hit ~ ENTER ~.\n"
 		;
-		i=uifc.list(j,0,0,45,&dflt,&bar,"External Editors",opt);
+		i=uifc.list(j,0,0,45,&dflt,&bar,"Message Editors",opt);
 		if((signed)i==-1)
 			return;
 		int msk = i & MSK_ON;
 		i &= MSK_OFF;
 		if(msk == MSK_INS) {
 			uifc.helpbuf=
-				"`External Editor Name:`\n"
+				"`Message Editor Name:`\n"
 				"\n"
-				"This is the name or description of the external editor.\n"
+				"This is the name or description of the message editor.\n"
 			;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"External Editor Name",str,40
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Message Editor Name",str,40
 				,0)<1)
 				continue;
 			SAFECOPY(code,str);
 			prep_code(code,/* prefix: */NULL);
 			uifc.helpbuf=
-				"`External Editor Internal Code:`\n"
+				"`Message Editor Internal Code:`\n"
 				"\n"
-				"This is the internal code for the external editor.\n"
+				"This is the internal code for the external message editor.\n"
 			;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"External Editor Internal Code",code,8
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Message Editor Internal Code",code,8
 				,K_UPPER|K_EDIT|K_NOSPACE)<1)
 				continue;
 			if(!code_ok(code)) {
@@ -1906,7 +1906,7 @@ void xedit_cfg()
 				,dropfile(cfg.xedit[i]->type,cfg.xedit[i]->misc));
 			opt[k][0]=0;
 			uifc.helpbuf=
-				"`External Editor Configuration:`\n"
+				"`Message Editor Configuration:`\n"
 				"\n"
 				"This menu allows you to change the settings for the selected external\n"
 				"message editor. External message editors are very common on BBSs. Some\n"
@@ -1935,21 +1935,21 @@ void xedit_cfg()
 					break;
 				case 0:
 					uifc.helpbuf=
-						"`External Editor Name:`\n"
+						"`Message Editor Name:`\n"
 						"\n"
-						"This is the name or description of the external editor.\n"
+						"This is the name or description of the message editor.\n"
 					;
 					SAFECOPY(str,cfg.xedit[i]->name);
-					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"External Editor Name"
+					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Message Editor Name"
 						,cfg.xedit[i]->name,sizeof(cfg.xedit[i]->name)-1,K_EDIT))
 						SAFECOPY(cfg.xedit[i]->name,str);
 					break;
 				case 1:
 					SAFECOPY(str,cfg.xedit[i]->code);
 					uifc.helpbuf=
-						"`External Editor Internal Code:`\n"
+						"`Message Editor Internal Code:`\n"
 						"\n"
-						"Every external editor must have its own unique internal code for\n"
+						"Every message editor must have its own unique internal code for\n"
 						"Synchronet to reference it by.  It is helpful if this code is an\n"
 						"abbreviation of the name.\n"
 					;
@@ -1965,7 +1965,7 @@ void xedit_cfg()
 					break;
 			   case 2:
 					uifc.helpbuf=
-						"`External Editor Command Line:`\n"
+						"`Message Editor Command Line:`\n"
 						"\n"
 						"This is the command line to execute when using this editor.\n"
 						SCFG_CMDLINE_PREFIX_HELP
@@ -1975,7 +1975,7 @@ void xedit_cfg()
 						,cfg.xedit[i]->rcmd,sizeof(cfg.xedit[i]->rcmd)-1,K_EDIT);
 					break;
 				case 3:
-					sprintf(str,"%s External Editor",cfg.xedit[i]->name);
+					sprintf(str,"%s Message Editor",cfg.xedit[i]->name);
 					getar(str,cfg.xedit[i]->arstr);
 					break;
 				case 4:
@@ -2133,7 +2133,7 @@ void xedit_cfg()
 					uifc.helpbuf=
 						"`Editor Information File:`\n"
 						"\n"
-						"If this external editor uses the QuickBBS style MSGTMP interface, set\n"
+						"If this message editor uses the QuickBBS style MSGTMP interface, set\n"
 						"this option to ~QuickBBS MSGINF/MSGTMP~, otherwise set to ~WWIV EDITOR.INF/RESULT.ED~.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Editor Information Files"
@@ -2155,7 +2155,7 @@ void xedit_cfg()
 					uifc.helpbuf=
 						"`Expand Line Feeds to Carriage Return/Line Feed Pairs:`\n"
 						"\n"
-						"If this external editor saves new lines as a single line feed character\n"
+						"If this message editor saves new lines as a single line feed character\n"
 						"instead of a carriage return/line feed pair, set this option to `Yes`.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Expand LF to CRLF"
@@ -2204,7 +2204,7 @@ void xedit_cfg()
 					uifc.helpbuf=
 						"`Strip FidoNet Kludge Lines From Messages:`\n"
 						"\n"
-						"If this external editor adds FidoNet Kludge lines to the message text,\n"
+						"If this message editor adds FidoNet Kludge lines to the message text,\n"
 						"set this option to `Yes` to strip those lines from the message.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -2259,7 +2259,7 @@ void xedit_cfg()
 					uifc.helpbuf=
 						"`External Program BBS Drop File Type:`\n"
 						"\n"
-						"If this external editor requires a specific BBS data (drop) file\n"
+						"If this message editor requires a specific BBS data (drop) file\n"
 						"format, select the file format from the list.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
