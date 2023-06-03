@@ -16,6 +16,9 @@ Prefer X11 mode over SDL mode
 Fix scrolling with left/right margins
 Resumed ZModem ETA estimation fix
 Support PPM graphics
+Add a native (GDI) Windows mode (prefered over SDL mode)
+Improve startup behaviour on Windows
+Support XTerm Bracketed Paste
 
 Version 1.1
 -----------
