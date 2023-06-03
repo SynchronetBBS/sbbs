@@ -789,6 +789,7 @@ local_draw_rect(struct rectlist *rect)
 		dh = source->h;
 	}
 	else {
+		source = NULL;
 		cleft = w;
 		ctop = h;
 		source_data = rect->data;
@@ -892,14 +893,18 @@ local_draw_rect(struct rectlist *rect)
 	if (x_internal_scaling || xrender_found == false) {
 		if (last == NULL)
 			x11.XPutImage(dpy, win, gc, xim, 0, 0, xoff, yoff, source->w, source->h);
-		else
+		else {
 			release_buffer(last);
+			last = NULL;
+		}
 	}
 	else {
 #ifdef WITH_XRENDER
 		bitmap_drv_free_rect(rect);
-		if (last != NULL)
+		if (last != NULL) {
 			release_buffer(last);
+			last = NULL;
+		}
 		x11.XPutImage(dpy, xrender_pm, gc, xim, 0, 0, 0, 0, dw, dh);
 		x11.XRenderComposite(dpy, PictOpSrc, xrender_src_pict, 0, xrender_dst_pict, 
 				0, 0, 0, 0, 0, 0,
