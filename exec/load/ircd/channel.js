@@ -368,7 +368,7 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 				continue;
 			}
 
-			if (MODE[i].list) {
+			if (MODE[i].list && c.list[i] !== undefined) {
 				for (j in c.list[i][true]) {
 					if (chan.is_str_member_of_chanmode_list(i,c.list[i][true][j])) {
 						continue;
