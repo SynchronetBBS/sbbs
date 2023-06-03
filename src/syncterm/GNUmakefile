@@ -76,7 +76,7 @@ ifdef DEBUG
 else
  INSTALL_EXE	?=	install -s
 endif
-INSTALL_DATA	?=	install -m 0444
+INSTALL_DATA	?=	install -m 0644
 
 ifeq ($(os),win32)
  OBJS	+= $(MTOBJODIR)$(DIRSEP)comio_win32$(OFILE) \
@@ -129,10 +129,12 @@ ifeq ($(os),darwin)
 endif
 
 syncterm.man: syncterm.man.in
-	sed -E -e 's|%%DESTDIR%%|${DESTDIR}|g' -e 's|%%PREFIX%%|${PREFIX}|g' < syncterm.man.in > syncterm.man
+	@echo Creating $@
+	${QUIET}sed -E -e 's|%%DESTDIR%%|${DESTDIR}|g' -e 's|%%PREFIX%%|${PREFIX}|g' < syncterm.man.in > syncterm.man
 
 syncterm.1.gz: syncterm.man
-	gzip < syncterm.man > syncterm.1.gz
+	@echo Creating $@
+	${QUIET}gzip -9n < syncterm.man > syncterm.1.gz
 
 installdirs:
 	-mkdir -p ${DESTDIR}${PREFIX}/bin
@@ -146,6 +148,34 @@ install: $(SYNCTERM) syncterm.1.gz installdirs
 	${INSTALL_DATA} syncterm.png ${DESTDIR}${PREFIX}/share/icons/hicolor/64x64/apps
 	${INSTALL_DATA} syncterm.desktop ${DESTDIR}${DESKTOPDIR}
 	${INSTALL_DATA} syncterm.1.gz ${DESTDIR}${MANPREFIX}/man/man1
+
+dpkgdirs:
+	@echo Creating dpkg directories
+	${QUIET}-mkdir -p dpkg/usr/bin
+	${QUIET}-mkdir -p dpkg/usr/share/applications
+	${QUIET}-mkdir -p dpkg/usr/share/doc/syncterm
+	${QUIET}-mkdir -p dpkg/usr/share/icons/hicolor/64x64/apps
+	${QUIET}-mkdir -p dpkg/usr/share/man/man1
+	${QUIET}-mkdir -p dpkg/DEBIAN
+
+dpkg-control: dpkg-control.in
+	@echo Creating $@
+	${QUIET}sed -E -e "s|%%ARCH%%|$(shell dpkg-architecture -q DEB_BUILD_ARCH)|g" < dpkg-control.in > dpkg-control
+
+changelog.gz: CHANGES
+	@echo Creating $@
+	${QUIET}gzip -9n < CHANGES > changelog.gz
+
+dpkg: $(SYNCTERM) syncterm.1.gz dpkg-control dpkgdirs changelog.gz
+	@echo Creating $@
+	${QUIET}${INSTALL_EXE} ${SYNCTERM} dpkg/usr/bin
+	${QUIET}${INSTALL_DATA} syncterm.png dpkg/usr/share/icons/hicolor/64x64/apps
+	${QUIET}${INSTALL_DATA} syncterm.desktop dpkg/usr/share/applications
+	${QUIET}${INSTALL_DATA} syncterm.1.gz dpkg/usr/share/man/man1
+	${QUIET}${INSTALL_DATA} LICENCE dpkg/usr/share/doc/syncterm/copyright
+	${QUIET}${INSTALL_DATA} changelog.gz dpkg/usr/share/doc/syncterm
+	${QUIET}${INSTALL_DATA} dpkg-control dpkg/DEBIAN/control
+	${QUIET}dpkg-deb --root-owner-group -b dpkg syncterm.deb
 
 devel: tags cscope.out
 
@@ -166,3 +196,14 @@ cscope.files::
 	echo ../hash/crc16.h >> cscope.files
 	echo ../hash/crc32.c >> cscope.files
 	echo ../hash/crc32.h >> cscope.files
+
+syncterm-clean:
+	rm -rf dpkg
+	${DELETE} syncterm.deb
+	${DELETE} syncterm.man
+	${DELETE} syncterm.1.gz
+	${DELETE} syncterm.1
+	${DELETE} dpkg-control
+	${DELETE} changelog.gz
+
+clean: syncterm-clean

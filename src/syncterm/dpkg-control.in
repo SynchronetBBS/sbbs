@@ -1,0 +1,11 @@
+Package: syncterm
+Version: 1.2b
+Maintainer: Deuce <shurd@sasktel.net>
+Architecture: %%ARCH%%
+Description: ANSI Terminal for BBSs
+ SyncTERM is a telnet/SSH/RLogin/Serial/Pty terminal intended for use
+ with BBS systems.  It implementes ANSI in such a way as to be
+ compatible with BBS software rather than a VT emulator.
+Depends: libc6,libncursesw6,libtinfo6
+Priority: optional
+Section: comm
