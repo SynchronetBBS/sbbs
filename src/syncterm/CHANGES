@@ -18,6 +18,7 @@ Resumed ZModem ETA estimation fix
 Support PPM graphics
 Add a native (GDI) Windows mode (prefered over SDL mode)
 Improve startup behaviour on Windows
+Allow hardware scaling in X11, GDI, and SDL modes
 Support XTerm Bracketed Paste
 
 Version 1.1
