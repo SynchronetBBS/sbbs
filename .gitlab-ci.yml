@@ -36,6 +36,19 @@ sexpots-linux:
     paths:
       - "src/sexpots/*.exe.release/*"
 
+syncterm-linux-deb:
+  tags: [Linux]
+  image: gcc
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncterm
+    - make RELEASE=1 PREFIX=/usr dpkg
+  artifacts:
+    name: syncterm-linux-x64-deb
+    paths:
+      - "src/syncterm/syncterm*.deb"
+
 syncterm-linux:
   tags: [Linux]
   image: gcc
