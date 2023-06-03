@@ -1827,11 +1827,15 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 			ns = ls;
 			break;
 		}
+		if (w == maxwidth)
+			break;
 		if ((maxheight > 0) && (h > maxheight)) {
 			mult--;
 			ns = ls;
 			break;
 		}
+		if (h == maxheight)
+			break;
 		bs = ((int64_t)w * w) + ((int64_t)h * h);
 		ls = ns;
 		ns = bs;

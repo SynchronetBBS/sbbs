@@ -642,9 +642,16 @@ static void resize_window()
 {
 	int width = x_cvstat.scrnwidth * x_cvstat.scaling;
 	int height = x_cvstat.scrnheight * x_cvstat.scaling;
+	int max_width, max_height;
 
 	pthread_mutex_lock(&vstatlock);
 	bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
+	if (x11_get_maxsize(&max_width, &max_height)) {
+		if (width > max_width || height > max_height) {
+			x_cvstat.scaling = bitmap_double_mult_inside(max_width, max_height);
+			bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
+		}
+	}
 	if (width == vstat.winwidth && height == vstat.winheight) {
 		x_cvstat.scaling = bitmap_double_mult_inside(width, height);
 		vstat.scaling = x_cvstat.scaling;
@@ -652,12 +659,11 @@ static void resize_window()
 		resize_xim();
 		return;
 	}
-	x_cvstat.winwidth = vstat.winwidth;
-	x_cvstat.winheight = vstat.winheight;
+	x_cvstat.winwidth = width;
+	x_cvstat.winheight = height;
 	x_cvstat.scaling = bitmap_double_mult_inside(width, height);
-	vstat.scaling = x_cvstat.scaling;
 	pthread_mutex_unlock(&vstatlock);
-	x11.XResizeWindow(dpy, win, width, height);
+	x11.XResizeWindow(dpy, win, width, height));
 	resize_xim();
 
 	return;
@@ -667,6 +673,7 @@ static void init_mode_internal(int mode)
 {
 	int mw, mh;
 	int ow, oh;
+	double os;
 
 	x11_get_maxsize(&mw, &mh);
 	pthread_mutex_lock(&vstatlock);
@@ -676,10 +683,13 @@ static void init_mode_internal(int mode)
 	}
 	ow = vstat.winwidth;
 	oh = vstat.winheight;
+	os = vstat.scaling;
 	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
 	x_cvstat = vstat;
+	x_cvstat.scaling = bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
 	vstat.winwidth = ow;
 	vstat.winheight = oh;
+	vstat.scaling = os;
 	pthread_mutex_unlock(&vstatlock);
 	resize_window();
 	pthread_mutex_lock(&vstatlock);
@@ -709,7 +719,6 @@ static void check_scaling(void)
 static int init_mode(int mode)
 {
 	init_mode_internal(mode);
-	resize_window();
 	bitmap_drv_request_pixels();
 
 	sem_post(&mode_set);
