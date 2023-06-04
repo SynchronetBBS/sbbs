@@ -57,7 +57,7 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 #include "git_hash.h"
 
 /* gets is dangerous */
-#define gets(str)  fgets((str), sizeof(str), stdin)
+#define gets(str)  if(fgets((str), sizeof(str), stdin) == NULL) memset(str, 0, sizeof(str))
 
 #define CHSIZE_FP(fp,size)	if(chsize(fileno(fp),size)) printf("chsize failed!\n");
 
@@ -251,7 +251,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		to=to_address;
 	if(to==NULL) {
 		printf("To User Name: ");
-		fgets(str,sizeof(str),stdin); 
+		gets(str);
 	} else
 		SAFECOPY(str,to);
 	truncsp(str);
@@ -1157,11 +1157,13 @@ void packmsgs(ulong packable)
 		return; 
 	}
 	fseek(smb.shd_fp,0L,SEEK_SET);
-	fread(&hdr,1,sizeof(smbhdr_t),smb.shd_fp);
+	if(fread(&hdr,1,sizeof(smbhdr_t),smb.shd_fp) < 1)
+		return;
 	fwrite(&hdr,1,sizeof(smbhdr_t),tmp_shd);
 	fwrite(&(smb.status),1,sizeof(smbstatus_t),tmp_shd);
 	for(l=sizeof(smbhdr_t)+sizeof(smbstatus_t);l<smb.status.header_offset;l++) {
-		fread(&ch,1,1,smb.shd_fp);			/* copy additional base header records */
+		if(fread(&ch,1,1,smb.shd_fp) < 1)		/* copy additional base header records */
+			return;
 		fwrite(&ch,1,1,tmp_shd); 
 	}
 	total=0;
@@ -1243,7 +1245,8 @@ void packmsgs(ulong packable)
 
 			n=smb_datblocks(m);
 			for(m=0;m<n;m++) {
-				fread(buf,1,SDT_BLOCK_LEN,smb.sdt_fp);
+				if(fread(buf,1,SDT_BLOCK_LEN,smb.sdt_fp) < 1)
+					return;
 				if(!m && *(ushort *)buf!=XLAT_NONE && *(ushort *)buf!=XLAT_LZH) {
 					printf("\nUnsupported translation type (%04X)\n"
 						,*(ushort *)buf);

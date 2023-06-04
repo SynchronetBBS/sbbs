@@ -2865,7 +2865,7 @@ static void smtp_thread(void* arg)
 	BOOL		telegram=FALSE;
 	BOOL		forward=FALSE;
 	BOOL		no_forward=FALSE;
-	BOOL		auth_login;
+	BOOL		auth_login=FALSE;
 	BOOL		routed=FALSE;
 	BOOL		dnsbl_recvhdr;
 	BOOL		msg_handled;

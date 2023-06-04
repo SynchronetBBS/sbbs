@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 	int 		i,j,mode=0,cmd=0,o_mode,max_age=0;
 	ushort		smm,sbl;
 	uint32_t	*crc=NULL,curcrc,total_crcs=0,l;
-	FILE		*route,*users,*nodes;
+	FILE		*route=NULL,*users=NULL,*nodes=NULL;
 	time_t		now;
 	smbmsg_t	msg;
 	const char*	revision = "1.26";

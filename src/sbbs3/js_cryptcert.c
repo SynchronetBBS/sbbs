@@ -1556,7 +1556,7 @@ static JSBool
 js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval idval;
-	jsint tiny;
+	jsint tiny = -1;
 	struct js_cryptcert_private_data* p;
 
 	if ((p=(struct js_cryptcert_private_data *)JS_GetPrivate(cx,obj))==NULL) {
@@ -2334,7 +2334,7 @@ static JSBool
 js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
 	jsval idval;
-	jsint tiny;
+	jsint tiny = -1;
 	struct js_cryptcert_private_data* p;
 
 	if ((p=(struct js_cryptcert_private_data *)JS_GetPrivate(cx,obj))==NULL) {

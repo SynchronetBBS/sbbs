@@ -181,7 +181,7 @@ struct codepages cpages[] = {
 int main(int argc, char **argv)
 {
 	FILE *f;
-	int i, j, k, l;
+	int i, j, k, l = -1;
 	struct sauce sauce;
 	char *buf;
 	char *cpp;

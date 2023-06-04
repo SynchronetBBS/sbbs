@@ -114,6 +114,7 @@ BOOL fmutex(const char* fname, const char* text, long max_age)
 {
 	int file;
 	time_t t;
+	BOOL result = TRUE;
 #if !defined(NO_SOCKET_SUPPORT)
 	char hostname[128];
 	if(text==NULL && gethostname(hostname,sizeof(hostname))==0)
@@ -127,9 +128,9 @@ BOOL fmutex(const char* fname, const char* text, long max_age)
 	if((file=open(fname,O_CREAT|O_WRONLY|O_EXCL,DEFFILEMODE))<0)
 		return FALSE;
 	if(text!=NULL)
-		write(file,text,strlen(text));
+		result = write(file,text,strlen(text)) >= 0;
 	close(file);
-	return TRUE;
+	return result;
 }
 
 BOOL fcompare(const char* fn1, const char* fn2)

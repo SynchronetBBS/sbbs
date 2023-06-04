@@ -2390,6 +2390,7 @@ enum {
 static JSBool js_file_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
 	jsval idval;
+	int			result;
 	int32		i=0;
 	uint32		u=0;
     jsint       tiny;
@@ -2448,8 +2449,12 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				if(!JS_ValueToECMAUint32(cx, *vp, &u))
 					return(JS_FALSE);
 				rc=JS_SUSPENDREQUEST(cx);
-				chsize(fileno(p->fp), u);
+				result = chsize(fileno(p->fp), u);
 				JS_RESUMEREQUEST(cx, rc);
+				if(result != 0) {
+					JS_ReportError(cx, "Error %d changing file size", errno);
+					return JS_FALSE;
+				}
 			}
 			break;
 		case FILE_PROP_ATTRIBUTES:

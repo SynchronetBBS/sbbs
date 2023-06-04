@@ -165,7 +165,7 @@ BOOL getstats(scfg_t* cfg, uint node, stats_t* stats)
 		if((file=nopen(path,O_RDONLY))==-1) {
 			return(FALSE); 
 		}
-		read(file, &legacy_stats, sizeof(legacy_stats));
+		int rd = read(file, &legacy_stats, sizeof(legacy_stats));
 		close(file);
 
 		stats->date     = LE_INT(legacy_stats.date);
@@ -181,7 +181,7 @@ BOOL getstats(scfg_t* cfg, uint node, stats_t* stats)
 		stats->etoday   = LE_INT(legacy_stats.etoday);
 		stats->ftoday   = LE_INT(legacy_stats.ftoday);
 		stats->nusers   = LE_INT(legacy_stats.nusers);
-		return TRUE;
+		return rd == sizeof(legacy_stats);
 	}
 	result = fread_dstats(fp, stats);
 	fclose(fp);

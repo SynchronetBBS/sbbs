@@ -100,7 +100,7 @@ int sbbs_t::listfiles(const uint dirnum, const char *filespec, FILE* tofile, con
 	}
 
 	m = 0; // current file index
-	file_t* f;
+	file_t* f = NULL;
 	while(online) {
 		if(found<0)
 			found=0;

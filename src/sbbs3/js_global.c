@@ -257,7 +257,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	JSContext*	exec_cx=cx;
 	JSBool		success;
 	JSBool		background=JS_FALSE;
-	background_data_t* bg;
+	background_data_t* bg = NULL;
 	jsrefcount	rc;
 	jsrefcount	brc;
 	size_t		len;
@@ -3778,7 +3778,7 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 	struct pollfd *fds;
 	int poll_timeout = 0;
 	nfds_t nfds;
-	short events;
+	short events = 0;
 	int scount;
 	int k;
 #else

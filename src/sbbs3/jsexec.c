@@ -576,13 +576,14 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 	printf("%s (Y/n)? ", cstr);
 	free(cstr);
 	cooked_tty();
-	fgets(instr,sizeof(instr),stdin);
+	p=fgets(instr,sizeof(instr),stdin);
 	raw_tty();
 	JS_RESUMEREQUEST(cx, rc);
 
-	p=instr;
-	SKIP_WHITESPACE(p);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(tolower(*p)!='n'));
+	if(p != NULL) {
+		SKIP_WHITESPACE(p);
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(tolower(*p)!='n'));
+	}
 	return(JS_TRUE);
 }
 
@@ -609,13 +610,14 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 	printf("%s (N/y)? ", cstr);
 	free(cstr);
 	cooked_tty();
-	fgets(instr,sizeof(instr),stdin);
+	p = fgets(instr,sizeof(instr),stdin);
 	raw_tty();
 	JS_RESUMEREQUEST(cx, rc);
 
-	p=instr;
-	SKIP_WHITESPACE(p);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(tolower(*p)!='y'));
+	if(p != NULL) {
+		SKIP_WHITESPACE(p);
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(tolower(*p)!='y'));
+	}
 	return(JS_TRUE);
 }
 
@@ -1248,7 +1250,10 @@ int main(int argc, char **argv, char** env)
 	get_ini_values(ini, /* section (global): */NULL, &cb);
 #endif
 
-	getcwd(orig_cwd, sizeof(orig_cwd));
+	if(getcwd(orig_cwd, sizeof(orig_cwd)) == NULL) {
+		fprintf(stderr, "Error %d (%s) getting cwd\n", errno, strerror(errno));
+		return do_bail(1);
+	}
 	backslash(orig_cwd);
 #ifdef JSDOOR
  	SAFECOPY(scfg.ctrl_dir, orig_cwd);

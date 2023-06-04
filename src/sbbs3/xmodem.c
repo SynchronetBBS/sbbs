@@ -174,10 +174,10 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 {
 	uchar		block_num;				/* Block number received in header	*/
 	uchar		block_inv;
-	uchar		chksum,calc_chksum;
+	uchar		chksum=0,calc_chksum;
 	int			i,eot=0,can=0;
 	uint		b,errors;
-	uint16_t	crc,calc_crc;
+	uint16_t	crc=0,calc_crc;
 
 	lprintf(xm, LOG_DEBUG, "Requesting data block %u", expected_block_num);
 	for(errors=0;errors<=xm->max_errors && is_connected(xm);errors++) {

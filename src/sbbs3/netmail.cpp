@@ -70,7 +70,6 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	long	length,l;
 	faddr_t src_addr;
 	faddr_t dest_addr;
-	char*	net_addr;
 	uint16_t net_type = NET_NONE;
 	smbmsg_t msg;
 	memset(&msg, 0, sizeof(msg));
@@ -111,16 +110,15 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	}
 	lookup_netuser(to);
 
-	net_addr = to;
-	net_type = smb_netaddr_type(net_addr);
+	net_type = smb_netaddr_type(to);
 
-	lprintf(LOG_DEBUG, "parsed net type of '%s' is %s", net_addr, smb_nettype((enum smb_net_type)net_type));
+	lprintf(LOG_DEBUG, "parsed net type of '%s' is %s", to, smb_nettype((enum smb_net_type)net_type));
 	if(net_type == NET_QWK) {
 		if(mode&WM_FILE) {
 			bputs(text[EmailFilesNotAllowed]);
 			mode&=~WM_FILE;
 		}
-		return qnetmail(net_addr, subj, mode, resmb, remsg);
+		return qnetmail(to, subj, mode, resmb, remsg);
 	}
 	if(net_type == NET_INTERNET) {
 		if(!(cfg.inetmail_misc&NMAIL_ALLOW)) {
@@ -133,11 +131,10 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 		}
 		return inetmail(to, subj, mode, resmb, remsg, cc_list);
 	}
-	SAFECOPY(to, net_addr);
 	p=strrchr(to,'@');      /* Find '@' in name@addr */
 	if(p==NULL || net_type != NET_FIDO) {
 		if(!(sys_status&SS_ABORT))
-			bprintf(text[InvalidNetMailAddr], net_addr);
+			bprintf(text[InvalidNetMailAddr], to);
 		return false; 
 	}
 	if(!cfg.total_faddrs || (!SYSOP && !(cfg.netmail_misc&NMAIL_ALLOW))) {

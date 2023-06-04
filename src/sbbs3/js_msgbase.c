@@ -1586,7 +1586,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 			client_t	*client=NULL;
 			user_t		*user=NULL;
 			jsval		cov;
-			ushort		aliascrc,namecrc,sysop=crc16("sysop",0);
+			ushort		aliascrc=0,namecrc=0,sysop=crc16("sysop",0);
 
 			/* dig a client object out of the global object */
 			if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "client", &cov)

@@ -391,10 +391,14 @@ BOOL do_setuid(BOOL force)
 
 	pthread_mutex_lock(&setid_mutex);
 
-	if(getegid()!=old_gid)
-		setregid(-1,old_gid);
-	if(geteuid()!=old_gid)
-		setreuid(-1,old_uid);
+	if(getegid()!=old_gid) {
+		if(setregid(-1,old_gid) != 0)
+			lputs(LOG_ERR, "!setregid FAILED");
+	}
+	if(geteuid()!=old_gid) {
+		if(setreuid(-1,old_uid) != 0)
+			lputs(LOG_ERR, "!setreuid FAILED");
+	}
 	if(getgid() != new_gid || getegid() != new_gid) {
 		if(setregid(new_gid,new_gid))
 		{
@@ -2059,8 +2063,8 @@ int main(int argc, char** argv)
                     _echo_on(); /* turn on echoing so user can see what they type */
 #endif
 					printf("Command line: ");
-					fgets(str,sizeof(str),stdin);
-					system(str);
+					if(fgets(str,sizeof(str),stdin) != NULL)
+						printf("Result: %d\n", system(str));
 #ifdef __unix__
 	                _echo_off(); /* turn off echoing - failsafe */
 #endif

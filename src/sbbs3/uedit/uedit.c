@@ -1918,7 +1918,10 @@ int main(int argc, char** argv)  {
 		if(fp!=NULL)
 			fclose(fp);
 	}
-	chdir(bbs_startup.ctrl_dir);
+	if(chdir(bbs_startup.ctrl_dir) != 0) {
+		fprintf(stderr, "Error %d (%s) changing directory to %s\n", errno, strerror(errno), bbs_startup.ctrl_dir);
+		exit(1);
+	}
 
 	/* Read .cfg files here */
     memset(&cfg,0,sizeof(cfg));

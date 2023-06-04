@@ -4235,16 +4235,17 @@ bool write_to_pkts(const char *fbuf, area_t area, const fidoaddr_t* faddr, const
 	return pkts_written > 0;
 }
 
-int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inbound)
+bool pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inbound)
 {
 	char path[MAX_PATH+1];
 	char* fmsgbuf;
 	int i,file;
 	ulong l;
+	bool result = true;
 
 	if((fmsgbuf=getfmsg(fidomsg,&l))==NULL) {
 		lprintf(LOG_ERR,"ERROR line %d netmail allocation",__LINE__);
-		return(-1);
+		return false;
 	}
 
 	if(!l && cfg.kill_empty_netmail)
@@ -4255,7 +4256,7 @@ int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inbo
 			lprintf(LOG_ERR, "Error %u (%s) line %d creating directory: %s"
 				,errno, strerror(errno), __LINE__, scfg.netmail_dir);
 			free(fmsgbuf);
-			return -2;
+			return false;
 		}
 		for(i=1;i;i++) {
 			SAFEPRINTF2(path, "%s%u.msg", scfg.netmail_dir, i);
@@ -4263,18 +4264,18 @@ int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inbo
 				break;
 			if(terminated) {
 				free(fmsgbuf);
-				return 1;
+				return false;
 			}
 		}
 		if(!i) {
 			lprintf(LOG_WARNING,"Too many netmail messages");
 			free(fmsgbuf);
-			return(-1);
+			return false;
 		}
 		if((file=nopen(path,O_WRONLY|O_CREAT))==-1) {
 			lprintf(LOG_ERR,"ERROR %u (%s) line %d creating %s",errno,strerror(errno),__LINE__,path);
 			free(fmsgbuf);
-			return(-1);
+			return false;
 		}
 		if(hdr->attr&FIDO_FILE) {	/* File attachment (only a single file supported) */
 			char fname[FIDO_SUBJ_LEN];
@@ -4286,15 +4287,17 @@ int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inbo
 			lprintf(LOG_DEBUG, "%s Removing attributes: %04hX", info, (uint16_t)(hdr->attr&remove_attrs));
 			hdr->attr &= ~remove_attrs;
 		}
-		(void)write(file,hdr,sizeof(fmsghdr_t));
-		(void)write(file,fmsgbuf,l+1); /* Write the '\0' terminator too */
+		if(write(file,hdr,sizeof(fmsghdr_t)) != sizeof(fmsghdr_t))
+			result = false;
+		if(write(file,fmsgbuf,l+1) != l+1) /* Write the '\0' terminator too */
+			result = false;
 		close(file);
 		printf("%s", path);
 		lprintf(LOG_INFO,"%s Exported to %s",info,path);
 	}
 	free(fmsgbuf);
 
-	return(0);
+	return result;
 }
 
 
@@ -5311,7 +5314,7 @@ int export_netmail(void)
 
 char* freadstr(FILE* fp, char* str, size_t maxlen)
 {
-	int		ch;
+	int		ch = EOF;
 	size_t	rd=0;
 	size_t	len=0;
 
@@ -5551,7 +5554,8 @@ void pack_netmail(void)
 		const char* newpkt="";
 		if(filelength(file) < sizeof(fpkthdr_t)) {
 			newpkt="new ";
-			chsize(file,0);
+			if(chsize(file,0) != 0)
+				lprintf(LOG_ERR, "ERROR %u (%s) truncating %s", errno, strerror(errno), packet);
 			rewind(stream);
 			new_pkthdr(&pkthdr, getsysfaddr(addr), addr, nodecfg);
 			(void)fwrite(&pkthdr,sizeof(pkthdr),1,stream);

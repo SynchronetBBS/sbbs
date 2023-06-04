@@ -72,8 +72,10 @@ void sbbs_t::multinodechat(int channel)
 			errormsg(WHERE,ERR_ALLOC,str,(size_t)filelength(file)+1);
 			return;
 		}
-		(void)read(file,gurubuf,(size_t)filelength(file));
-		gurubuf[filelength(file)]=0;
+		if(read(file,gurubuf,(size_t)filelength(file)) < 1)
+			*gurubuf = '\0';
+		else
+			gurubuf[filelength(file)]=0;
 		close(file);
 	}
 	usrs=0;
@@ -227,8 +229,10 @@ void sbbs_t::multinodechat(int channel)
 								,(size_t)filelength(file)+1);
 							break;
 						}
-						(void)read(file,gurubuf,(size_t)filelength(file));
-						gurubuf[filelength(file)]=0;
+						if(read(file,gurubuf,(size_t)filelength(file)) < 1)
+							*gurubuf = '\0';
+						else
+							gurubuf[filelength(file)]=0;
 						close(file);
 					}
 					preusrs=usrs;
@@ -823,8 +827,10 @@ void sbbs_t::privchat(bool forced, int node_num)
 		return;
 	}
 	memset(p,0,PCHAT_LEN);
-	write(in,p,PCHAT_LEN);
-	write(out,p,PCHAT_LEN);
+	if(write(in,p,PCHAT_LEN) != PCHAT_LEN)
+		errormsg(WHERE, ERR_WRITE, inpath, PCHAT_LEN);
+	if(write(out,p,PCHAT_LEN) != PCHAT_LEN)
+		errormsg(WHERE, ERR_WRITE, outpath, PCHAT_LEN);
 	free(p);
 	lseek(in,0L,SEEK_SET);
 	lseek(out,0L,SEEK_SET);
@@ -980,7 +986,10 @@ void sbbs_t::privchat(bool forced, int node_num)
 				continue;
 			}
 
-			(void)read(out,&c,1);
+			if(read(out,&c,1) < 1) {
+				lprintf(LOG_ERR, "Error reading char from %s", outpath);
+				continue;
+			}
 			(void)lseek(out,-1L,SEEK_CUR);
 			if(!c)		/* hasn't wrapped */
 				wr = write(out,&ch,1);
@@ -1088,7 +1097,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 				}
 			}
 			ch=0;
-			if(write(in,&ch,1) != 1)
+			if((wr = write(in,&ch,1)) != 1)
 				lprintf(LOG_ERR, "write of NUL to %s returned %d", inpath, wr);
 
 			if(!(sys_status&SS_SPLITP))

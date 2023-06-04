@@ -1332,7 +1332,8 @@ static int receive_files(char** fname_list, int fnames)
 			fflush(fp);
 			if(file_bytes < filelength(fileno(fp))) {
 				lprintf(LOG_INFO,"Truncating file to %"PRIu64" bytes", file_bytes);
-				chsize(fileno(fp),(ulong)file_bytes);	/* <--- 4GB limit */
+				if(chsize(fileno(fp),(off_t)file_bytes) != 0)
+					lprintf(LOG_ERR, "ERROR %d setting file size", errno);
 			} else
 				file_bytes = filelength(fileno(fp));
 		}

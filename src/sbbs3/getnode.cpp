@@ -256,7 +256,7 @@ int sbbs_t::getnmsg(bool clearline)
 		errormsg(WHERE,ERR_READ,str,length);
 		return(errno); 
 	}
-	chsize(file,0L);
+	int retval = chsize(file,0L);
 	close(file);
 	buf[length]=0;
 
@@ -267,7 +267,7 @@ int sbbs_t::getnmsg(bool clearline)
 	putmsg(buf,P_NOATCODES);
 	free(buf);
 
-	return(0);
+	return retval;
 }
 
 /****************************************************************************/

@@ -54,7 +54,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	ulong	dupes=0;
 	ulong	errors=0;
 	time_t	start;
-	time_t	startsub;
+	time_t	startsub = 0;
 	DIR*	dir;
 	DIRENT*	dirent;
 	FILE*	qwk;

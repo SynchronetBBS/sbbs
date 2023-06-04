@@ -3727,7 +3727,8 @@ static BOOL check_request(http_session_t * session)
 			if(!stat(str,&sb)) {
 				/* Read access.ars file */
 				if((file=fopen(str,"r"))!=NULL) {
-					fgets(session->req.ars,sizeof(session->req.ars),file);
+					if(fgets(session->req.ars,sizeof(session->req.ars),file) == NULL)
+						SAFECOPY(session->req.ars,"LEVEL 90");
 					fclose(file);
 				}
 				else  {
@@ -3927,7 +3928,7 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 	int result;
 	char *path = strdup(orig_path);
 	ulong val;
-	SOCKET sock;
+	SOCKET sock = INVALID_SOCKET;
 
 	if (*path == '/'||  *path == '.' || strncmp(path, "unix:", 5) == 0) {
 #if defined(_WIN32) && !defined(UDS_SUPPORT)
@@ -7333,7 +7334,8 @@ void web_server(void* arg)
 					,client_socket, host_ip, startup->max_clients);
 				if (!len_503)
 					len_503 = strlen(error_503);
-				sendsocket(client_socket, error_503, len_503);
+				if(sendsocket(client_socket, error_503, len_503) != len_503)
+					lprintf(LOG_ERR, "%04d FAILED sending error 503", client_socket);
 				close_socket(&client_socket);
 				continue;
             }

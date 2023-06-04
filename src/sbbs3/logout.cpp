@@ -166,27 +166,28 @@ void sbbs_t::logout()
 /****************************************************************************/
 /* Detailed usage stats for each logon                                      */
 /****************************************************************************/
-void sbbs_t::logofflist()
+bool sbbs_t::logofflist()
 {
     char str[256];
     int file;
     struct tm tm, tm_now;
 
 	if(localtime_r(&now,&tm_now)==NULL)
-		return;
+		return false;
 	if(localtime_r(&logontime,&tm)==NULL)
-		return;
+		return false;
 	SAFEPRINTF4(str,"%slogs/%2.2d%2.2d%2.2d.lol",cfg.logs_dir,tm.tm_mon+1,tm.tm_mday
 		,TM_YEAR(tm.tm_year));
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
-		return; 
+		return false;
 	}
 	safe_snprintf(str,sizeof(str),"%-*.*s %-2u %-8.8s %2.2u:%2.2u %2.2u:%2.2u %3u %2u %2u %2u %2u "
 		"%2u %2u\r\n",LEN_ALIAS,LEN_ALIAS,useron.alias,cfg.node_num,connection
 		,tm.tm_hour,tm.tm_min,tm_now.tm_hour,tm_now.tm_min
 		,(int)(now-logontime)/60,posts_read,logon_posts,logon_emails
 		,logon_fbacks,logon_uls,logon_dls);
-	write(file,str,strlen(str));
+	int wr = write(file,str,strlen(str));
 	close(file);
+	return wr == strlen(str);
 }

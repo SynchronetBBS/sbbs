@@ -4365,7 +4365,8 @@ void node_thread(void* arg)
 		sbbs->catsyslog(/* Crash: */FALSE);
 	else {
 		rewind(sbbs->logfile_fp);
-		chsize(fileno(sbbs->logfile_fp), 0);
+		if(chsize(fileno(sbbs->logfile_fp), 0) != 0)
+			sbbs->errormsg(WHERE, "truncating", "logfile", 0);
 	}
 
 	sbbs->getnodedat(sbbs->cfg.node_num,&node,1);

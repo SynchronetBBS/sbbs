@@ -1083,7 +1083,8 @@ bool extract_diz(scfg_t* cfg, file_t* f, str_list_t diz_fnames, char* path, size
 	char cmd[512];
 	for(i = 0; diz_fnames[i] != NULL; i++) {
 		safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]);
-		system(cmdstr(cfg, /* user: */NULL, fextr->cmd, archive, diz_fnames[i], cmd, sizeof(cmd)));
+		if(system(cmdstr(cfg, /* user: */NULL, fextr->cmd, archive, diz_fnames[i], cmd, sizeof(cmd))) != 0)
+			continue;
 		if(fexistcase(path))
 			return true;
 	}
