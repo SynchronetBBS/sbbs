@@ -930,7 +930,8 @@ void sbbs_t::maindflts(user_t* user)
 				break;
 			case 'E':
 				if(noyes(text[UseExternalEditorQ])) {
-					putuserstr(user->number, USER_XEDIT, nulstr);
+					if(!(sys_status & SS_ABORT))
+						putuserstr(user->number, USER_XEDIT, nulstr);
 					break; 
 				}
 				if(user->xedit)
