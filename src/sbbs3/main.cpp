@@ -366,13 +366,13 @@ int close_socket(SOCKET sock)
 }
 
 /* TODO: IPv6 */
-u_long resolve_ip(char *addr)
+in_addr_t resolve_ip(char *addr)
 {
 	HOSTENT*	host;
 	char*		p;
 
 	if(*addr==0)
-		return((u_long)INADDR_NONE);
+		return INADDR_NONE;
 
 	for(p=addr;*p;p++)
 		if(*p!='.' && !IS_DIGIT(*p))
@@ -380,10 +380,10 @@ u_long resolve_ip(char *addr)
 	if(!(*p))
 		return(inet_addr(addr));
 	if((host=gethostbyname(addr))==NULL)
-		return((u_long)INADDR_NONE);
+		return INADDR_NONE;
 	if(host->h_addr_list[0] == NULL)
-		return (u_long)INADDR_NONE;
-	return(*((ulong*)host->h_addr_list[0]));
+		return INADDR_NONE;
+	return *((in_addr_t*)host->h_addr_list[0]);
 }
 
 } /* extern "C" */

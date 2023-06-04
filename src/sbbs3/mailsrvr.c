@@ -917,7 +917,7 @@ static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smb
 	return(retval);
 }
 
-static u_long resolve_ip(const char *inaddr)
+static in_addr_t resolve_ip(const char *inaddr)
 {
 	char*		p;
 	char*		addr;
@@ -932,7 +932,7 @@ static u_long resolve_ip(const char *inaddr)
 	}
 
 	if(*addr==0)
-		return((u_long)INADDR_NONE);
+		return INADDR_NONE;
 
 	for(p=addr;*p;p++)
 		if(*p!='.' && !IS_DIGIT(*p))
@@ -941,12 +941,12 @@ static u_long resolve_ip(const char *inaddr)
 		return(inet_addr(addr));
 
 	if((host=gethostbyname(inaddr))==NULL)
-		return((u_long)INADDR_NONE);
+		return INADDR_NONE;
 
 	if(host->h_addr_list[0] == NULL)
-		return (u_long)INADDR_NONE;
+		return INADDR_NONE;
 
-	return(*((ulong*)host->h_addr_list[0]));
+	return *((in_addr_t*)host->h_addr_list[0]);
 }
 
 /****************************************************************************/
@@ -1768,10 +1768,10 @@ static void pop3_thread(void* arg)
 	}
 }
 
-static ulong rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, const char* rbl_addr)
+static in_addr_t rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, const char* rbl_addr)
 {
 	char		name[256];
-	DWORD		mail_addr;
+	in_addr_t	mail_addr;
 	HOSTENT*	host;
 	struct in_addr dnsbl_result;
 	unsigned char	*addr6;
@@ -1839,7 +1839,7 @@ static ulong rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, cons
 	if(host->h_addr_list[0] == NULL)
 		return 0;
 
-	dnsbl_result.s_addr = *((ulong*)host->h_addr_list[0]);
+	dnsbl_result.s_addr = *((in_addr_t*)host->h_addr_list[0]);
 	lprintf(LOG_INFO,"%04d %s DNSBL Query: %s resolved to: %s"
 		,sock,prot,name,inet_ntoa(dnsbl_result));
 

@@ -1523,7 +1523,7 @@ extern "C" {
 	SOCKET	open_socket(int domain, int type, const char* protocol);
 	SOCKET	accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen);
 	int		close_socket(SOCKET);
-	u_long	resolve_ip(char *addr);
+	in_addr_t resolve_ip(char *addr);
 
 	char *	readtext(int *line, FILE *stream, int dflt);
 

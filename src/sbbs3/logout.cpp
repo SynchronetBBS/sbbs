@@ -189,5 +189,5 @@ bool sbbs_t::logofflist()
 		,logon_fbacks,logon_uls,logon_dls);
 	int wr = write(file,str,strlen(str));
 	close(file);
-	return wr == strlen(str);
+	return wr == (int)strlen(str);
 }
