@@ -781,19 +781,25 @@ static void resize_window()
 	int max_width, max_height;
 
 	pthread_mutex_lock(&vstatlock);
-	bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
-	if (x11_get_maxsize(&max_width, &max_height)) {
-		if (width > max_width || height > max_height) {
-			x_cvstat.scaling = bitmap_double_mult_inside(max_width, max_height);
-			bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
-		}
+	if (fullscreen) {
+		// TODO: Position window correctly...
+		fullscreen_geometry(NULL, NULL, &width, &height);
 	}
-	if (width == vstat.winwidth && height == vstat.winheight) {
-		x_cvstat.scaling = bitmap_double_mult_inside(width, height);
-		vstat.scaling = x_cvstat.scaling;
-		pthread_mutex_unlock(&vstatlock);
-		resize_xim();
-		return;
+	else {
+		bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
+		if (x11_get_maxsize(&max_width, &max_height)) {
+			if (width > max_width || height > max_height) {
+				x_cvstat.scaling = bitmap_double_mult_inside(max_width, max_height);
+				bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
+			}
+		}
+		if (width == vstat.winwidth && height == vstat.winheight) {
+			x_cvstat.scaling = bitmap_double_mult_inside(width, height);
+			vstat.scaling = x_cvstat.scaling;
+			pthread_mutex_unlock(&vstatlock);
+			resize_xim();
+			return;
+		}
 	}
 	x_cvstat.winwidth = width;
 	x_cvstat.winheight = height;
@@ -917,6 +923,7 @@ local_draw_rect(struct rectlist *rect)
 	// Scale...
 	pthread_mutex_lock(&vstatlock);
 	if (x_cvstat.winwidth != vstat.winwidth || x_cvstat.winheight != vstat.winheight) {
+		bitmap_drv_free_rect(rect);
 		pthread_mutex_unlock(&vstatlock);
 		return;
 	}
@@ -1070,6 +1077,10 @@ static void handle_resize_event(int width, int height)
 	bool resize = false;
 	double new_scaling;
 
+	if (fullscreen) {
+		fullscreen = false;
+		resize = true;
+	}
 	pthread_mutex_lock(&vstatlock);
 	vstat.winwidth = width;
 	vstat.winheight = height;
