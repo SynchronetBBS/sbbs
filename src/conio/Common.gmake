@@ -83,6 +83,14 @@ ifndef NO_X
   CIOLIB-MT_CFLAGS += $(shell pkg-config xrender --cflags)
   CIOLIB-MT_CFLAGS += -DWITH_XRENDER
  endif
+ ifeq ($(shell pkg-config xinerama --exists && echo YES), YES)
+  CIOLIB-MT_CFLAGS += $(shell pkg-config xinerama --cflags)
+  CIOLIB-MT_CFLAGS += -DWITH_XINERAMA
+ endif
+ ifeq ($(shell pkg-config xrandr --exists && echo YES), YES)
+  CIOLIB-MT_CFLAGS += $(shell pkg-config xrandr --cflags)
+  CIOLIB-MT_CFLAGS += -DWITH_XRANDR
+ endif
 endif
 
 # Find SDL headers!

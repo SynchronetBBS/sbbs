@@ -9,6 +9,12 @@
 #ifdef WITH_XRENDER
 #include <X11/extensions/Xrender.h>
 #endif
+#ifdef WITH_XINERAMA
+#include <X11/extensions/Xinerama.h>
+#endif
+#ifdef WITH_XRANDR
+#include <X11/extensions/Xrandr.h>
+#endif
 
 enum x11_local_events {
 	 X11_LOCAL_SETMODE
@@ -106,6 +112,7 @@ struct x11 {
 	Status (*XGetGeometry)(Display *, Drawable, Window *, int *, int *, unsigned int *, unsigned int *, unsigned int *, unsigned int *);
 	XWMHints *(*XGetWMHints)(Display *, Window);
 	int (*XSetWMHints)(Display *, Window, XWMHints *);
+	Bool (*XTranslateCoordinates)(Display *, Window, Window, int, int, int *, int *, Window *);
 #ifndef DefaultDepth
 	int (*DefaultDepth)(Display *, int);
 #endif
@@ -121,6 +128,17 @@ struct x11 {
 	XRenderPictFormat *(*XRenderFindVisualFormat)(Display *dpy, _Xconst Visual *visual);
 	Status (*XRenderQueryVersion)(Display *, int *, int *);
 	void (*XRenderSetPictureFilter)(Display *, Picture, const char *, XFixed *, int);
+#endif
+#ifdef WITH_XINERAMA
+	Bool (*XineramaQueryVersion)(Display *, int *, int *);
+	XineramaScreenInfo *(*XineramaQueryScreens)(Display *, int *);
+#endif
+#ifdef WITH_XRANDR
+	Bool (*XRRQueryVersion)(Display *, int *, int *);
+	XRRScreenResources *(*XRRGetScreenResources)(Display *, Window);
+	XRRCrtcInfo *(*XRRGetCrtcInfo)(Display *, XRRScreenResources *, RRCrtc);
+	void (*XRRFreeCrtcInfo)(XRRCrtcInfo *crtcInfo);
+	void (*XRRFreeScreenResources)(XRRScreenResources *resources);
 #endif
 	Atom utf8;
 	Atom targets;
@@ -148,6 +166,8 @@ extern int x11_window_ypos;
 extern int x11_initialized;
 extern struct video_stats x_cvstat;
 extern bool xrender_found;
+extern bool xinerama_found;
+extern bool xrandr_found;
 extern bool x_internal_scaling;
 
 void x11_event_thread(void *args);

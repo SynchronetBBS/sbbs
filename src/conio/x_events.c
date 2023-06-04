@@ -57,6 +57,8 @@ int	terminate = 0;
 Atom	copybuf_format;
 Atom	pastebuf_format;
 bool xrender_found;
+bool xinerama_found;
+bool xrandr_found;
 bool x_internal_scaling = true;
 
 /*
@@ -95,6 +97,7 @@ static Pixmap xrender_pm = None;
 static Picture xrender_src_pict = None;
 static Picture xrender_dst_pict = None;
 #endif
+static bool fullscreen;
 
 /* Array of Graphics Contexts */
 static GC gc;
@@ -216,6 +219,128 @@ static struct {
 };
 
 static bool
+fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
+{
+	Window root;
+	Window cr;
+	uint64_t dummy;
+	unsigned int rw, rh;
+	int wx, wy;
+#if defined(WITH_XRANDR) || defined(WITH_XINERAMA)
+	int cx, cy;
+#endif
+#ifdef WITH_XRANDR
+	static XRRScreenResources *xrrsr = NULL;
+	XRRCrtcInfo *xrrci = NULL;
+	int searched = 0;
+	bool found;
+#endif
+#ifdef WITH_XINERAMA
+	int i;
+	int nscrn;
+	XineramaScreenInfo *xsi;
+#endif
+
+	if (win == 0)
+		return false;
+
+	if (x11.XGetGeometry(dpy, win, (void *)&root, &wx, &wy, &rw, &rh, (void *)&dummy, (void *)&dummy) == 0)
+		return false;
+
+#if defined(WITH_XRANDR) || defined(WITH_XINERAMA)
+	x11.XTranslateCoordinates(dpy, win, root, wx, wy, &cx, &cy, &cr);
+	cx += rw / 2;
+	cy += rh / 2;
+#endif
+
+#ifdef WITH_XRANDR
+	// We likely don't actually need Ximerama... this is always better and almost certainly present
+	if (xrandr_found) {
+		searched = 0;
+		found = false;
+		while (searched < 10 && found == false) {
+			searched++;
+			if (xrrsr == NULL)
+				xrrsr = x11.XRRGetScreenResources(dpy, root);
+			if (xrrsr == NULL)
+				break;
+			for (i = 0; i < xrrsr->ncrtc; i++) {
+				if (xrrci != NULL)
+					x11.XRRFreeCrtcInfo(xrrci);
+				xrrci = x11.XRRGetCrtcInfo(dpy, xrrsr, xrrsr->crtcs[i]);
+				if (xrrci == NULL) {
+					x11.XRRFreeScreenResources(xrrsr);
+					xrrsr = NULL;
+					break;
+				}
+				if (cx >= xrrci->x && cx < xrrci->x + xrrci->width
+				    && cy >= xrrci->y && cy < xrrci->y + xrrci->height) {
+					found = true;
+					break;
+				}
+			}
+		}
+		if (xrrsr != NULL && !found) {
+			if (xrrci != NULL)
+				x11.XRRFreeCrtcInfo(xrrci);
+			xrrci = x11.XRRGetCrtcInfo(dpy, xrrsr, xrrsr->crtcs[0]);
+			if (xrrci != NULL)
+				found = true;
+		}
+		if (found) {
+			if (x_org)
+				*x_org = xrrci->x;
+			if (y_org)
+				*y_org = xrrci->y;
+			if (width)
+				*width = xrrci->width;
+			if (height)
+				*height = xrrci->height;
+			if (xrrci != NULL)
+				x11.XRRFreeCrtcInfo(xrrci);
+			return true;
+		}
+		if (xrrci != NULL)
+			x11.XRRFreeCrtcInfo(xrrci);
+	}
+#endif
+#ifdef WITH_XINERAMA
+	if (xinerama_found) {
+		// NOTE: Xinerama is limited to a short for the entire screen dimensions.
+		if ((xsi = x11.XineramaQueryScreens(dpy, &nscrn)) != NULL && nscrn != 0) {
+			for (i = 0; i < nscrn; i++) {
+				if (cx >= xsi[i].x_org && cx < xsi[i].x_org + xsi[i].width
+				    && cy >= xsi[i].y_org && cy < xsi[i].y_org + xsi[i].height) {
+					break;
+				}
+			}
+			if (i == nscrn)
+				i = 0;
+			if (x_org)
+				*x_org = xsi[i].x_org;
+			if (y_org)
+				*y_org = xsi[i].y_org;
+			if (width)
+				*width = xsi[i].width;
+			if (height)
+				*height = xsi[i].height;
+			x11.XFree(xsi);
+			return true;
+		}
+	}
+#endif
+	if (x_org)
+		*x_org = 0;
+	if (y_org)
+		*y_org = 0;
+	if (width)
+		*width = rw;
+	if (height)
+		*height = rh;
+	return true;
+}
+
+static bool
 x11_get_maxsize(int *w, int *h)
 {
 	int i;
@@ -227,46 +352,45 @@ x11_get_maxsize(int *w, int *h)
 	unsigned long nir;
 	unsigned long bytes_left = 4;
 	Window root = DefaultRootWindow(dpy);
-	unsigned int rw, rh;
-	uint64_t dummy;
 	unsigned char *prop;
 
 	if (dpy == NULL)
 		return false;
-	// First, try to get _NET_WORKAREA...
-	if (x11.workarea == None) {
-		x11.workarea = x11.XInternAtom(dpy, "_NET_WORKAREA", True);
+	if (fullscreen) {
+		return fullscreen_geometry(NULL, NULL, w, h);
 	}
-	if (x11.workarea != None) {
-		for (i = 0, offset = 0; bytes_left; i++) {
-			if (x11.XGetWindowProperty(dpy, root, x11.workarea, offset, 4, False, XA_CARDINAL, &atr, &afr, &nir, &bytes_left, &prop) != Success)
-				break;
-			if (atr != XA_CARDINAL)
-				break;
-			if (nir > 0)
-				offset += nir;
-			ret = (long *)prop;
-			if (nir >= 3) {
-				if (ret[2] > maxw)
-					maxw = ret[2];
+	else {
+		// First, try to get _NET_WORKAREA...
+		if (x11.workarea == None) {
+			x11.workarea = x11.XInternAtom(dpy, "_NET_WORKAREA", True);
+		}
+		if (x11.workarea != None) {
+			for (i = 0, offset = 0; bytes_left; i++) {
+				if (x11.XGetWindowProperty(dpy, root, x11.workarea, offset, 4, False, XA_CARDINAL, &atr, &afr, &nir, &bytes_left, &prop) != Success)
+					break;
+				if (atr != XA_CARDINAL)
+					break;
+				if (nir > 0)
+					offset += nir;
+				ret = (long *)prop;
+				if (nir >= 3) {
+					if (ret[2] > maxw)
+						maxw = ret[2];
+				}
+				if (nir >= 4) {
+					if (ret[3] > maxh)
+						maxh = ret[3];
+				}
+				x11.XFree(prop);
 			}
-			if (nir >= 4) {
-				if (ret[3] > maxh)
-					maxh = ret[3];
-			}
-			x11.XFree(prop);
 		}
 	}
 
-	// Couldn't get work area, get size of root window instead. :(
+	// Couldn't get work area, get size of screen instead. :(
 	if (maxw == 0 || maxh == 0) {
-		if (x11.XGetGeometry(dpy, root, (void *)&dummy, (void *)&dummy, (void *)&dummy, &rw, &rh, (void *)&dummy, (void *)&dummy)) {
-			if (rw > maxw)
-				maxw = rw;
-			if (rh > maxh)
-				maxh = rh;
-		}
+		fullscreen_geometry(NULL, NULL, &maxw, &maxh);
 	}
+
 	if (maxw != 0 && maxh != 0) {
 		*w = maxw;
 		*h = maxh;
@@ -279,34 +403,36 @@ static void
 resize_pictures(void)
 {
 #ifdef WITH_XRENDER
-	if (xrender_pf == NULL)
-		xrender_pf = x11.XRenderFindStandardFormat(dpy, PictStandardRGB24);
-	if (xrender_pf == NULL)
-		xrender_pf = x11.XRenderFindVisualFormat(dpy, visual);
-	if (xrender_pf == NULL)
-		xrender_pf = x11.XRenderFindVisualFormat(dpy, DefaultVisual(dpy, DefaultScreen(dpy)));
+	if (xrender_found) {
+		if (xrender_pf == NULL)
+			xrender_pf = x11.XRenderFindStandardFormat(dpy, PictStandardRGB24);
+		if (xrender_pf == NULL)
+			xrender_pf = x11.XRenderFindVisualFormat(dpy, visual);
+		if (xrender_pf == NULL)
+			xrender_pf = x11.XRenderFindVisualFormat(dpy, DefaultVisual(dpy, DefaultScreen(dpy)));
 
-	if (xrender_pm != None)
-		x11.XFreePixmap(dpy, xrender_pm);
-	xrender_pm = x11.XCreatePixmap(dpy, win, x_cvstat.scrnwidth, x_cvstat.scrnheight, depth);
+		if (xrender_pm != None)
+			x11.XFreePixmap(dpy, xrender_pm);
+		xrender_pm = x11.XCreatePixmap(dpy, win, x_cvstat.scrnwidth, x_cvstat.scrnheight, depth);
 
-	if (xrender_src_pict != None)
-		x11.XRenderFreePicture(dpy, xrender_src_pict);
-	if (xrender_dst_pict != None)
-		x11.XRenderFreePicture(dpy, xrender_dst_pict);
-	XRenderPictureAttributes pa;
-	xrender_src_pict = x11.XRenderCreatePicture(dpy, xrender_pm, xrender_pf, 0, &pa);
-	xrender_dst_pict = x11.XRenderCreatePicture(dpy, win, xrender_pf, 0, &pa);
-	x11.XRenderSetPictureFilter(dpy, xrender_src_pict, "best", NULL, 0);
+		if (xrender_src_pict != None)
+			x11.XRenderFreePicture(dpy, xrender_src_pict);
+		if (xrender_dst_pict != None)
+			x11.XRenderFreePicture(dpy, xrender_dst_pict);
+		XRenderPictureAttributes pa;
+		xrender_src_pict = x11.XRenderCreatePicture(dpy, xrender_pm, xrender_pf, 0, &pa);
+		xrender_dst_pict = x11.XRenderCreatePicture(dpy, win, xrender_pf, 0, &pa);
+		x11.XRenderSetPictureFilter(dpy, xrender_src_pict, "best", NULL, 0);
 
-	pthread_mutex_lock(&vstatlock);
-	XTransform transform_matrix = {{
-	  {XDoubleToFixed((double)vstat.scrnwidth / vstat.winwidth), XDoubleToFixed(0), XDoubleToFixed(0)},
-	  {XDoubleToFixed(0), XDoubleToFixed((double)vstat.scrnheight / vstat.winheight), XDoubleToFixed(0)},
-	  {XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1.0)}  
-	}};
-	pthread_mutex_unlock(&vstatlock);
-	x11.XRenderSetPictureTransform(dpy, xrender_src_pict, &transform_matrix);
+		pthread_mutex_lock(&vstatlock);
+		XTransform transform_matrix = {{
+		  {XDoubleToFixed((double)vstat.scrnwidth / vstat.winwidth), XDoubleToFixed(0), XDoubleToFixed(0)},
+		  {XDoubleToFixed(0), XDoubleToFixed((double)vstat.scrnheight / vstat.winheight), XDoubleToFixed(0)},
+		  {XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1.0)}
+		}};
+		pthread_mutex_unlock(&vstatlock);
+		x11.XRenderSetPictureTransform(dpy, xrender_src_pict, &transform_matrix);
+	}
 #endif
 }
 
@@ -532,6 +658,14 @@ static int init_window()
 #ifdef WITH_XRENDER
 	if (xrender_found && x11.XRenderQueryVersion(dpy, &major, &minor) == 0)
 		xrender_found = false;
+#endif
+#ifdef WITH_XINERAMA
+	if (xinerama_found && x11.XineramaQueryVersion(dpy, &major, &minor) == 0)
+		xinerama_found = false;
+#endif
+#ifdef WITH_XRANDR
+	if (xrandr_found && x11.XRRQueryVersion(dpy, &major, &minor) == 0)
+		xrandr_found = false;
 #endif
 
 	xfd = ConnectionNumber(dpy);
@@ -782,6 +916,10 @@ local_draw_rect(struct rectlist *rect)
 
 	// Scale...
 	pthread_mutex_lock(&vstatlock);
+	if (x_cvstat.winwidth != vstat.winwidth || x_cvstat.winheight != vstat.winheight) {
+		pthread_mutex_unlock(&vstatlock);
+		return;
+	}
 	bitmap_get_scaled_win_size(vstat.scaling, &w, &h, vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
 	if (w < rect->rect.width || h < rect->rect.height) {
@@ -903,7 +1041,7 @@ local_draw_rect(struct rectlist *rect)
 	}
 	if (x_internal_scaling || xrender_found == false) {
 		if (last == NULL)
-			x11.XPutImage(dpy, win, gc, xim, 0, 0, xoff, yoff, source->w, source->h);
+			x11.XPutImage(dpy, win, gc, xim, 0, 0, xoff, yoff, cleft, ctop);
 		else {
 			release_buffer(last);
 			last = NULL;
@@ -1331,6 +1469,9 @@ static int x11_event(XEvent *ev)
 					
 							case XK_Return:
 							case XK_KP_Enter:
+								if (ev->xkey.state & Mod1Mask) {
+									// ALT-Enter, toggle full-screen
+								}
 								scan = 28;
 								goto docode;
 
