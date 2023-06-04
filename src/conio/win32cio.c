@@ -624,7 +624,6 @@ int win32_showmouse(void)
 
 void win32_textmode(int mode)
 {
-	int		i;
 	HANDLE	h;
 	COORD	sz;
 	SMALL_RECT	rc;
