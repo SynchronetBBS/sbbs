@@ -3717,8 +3717,10 @@ static void smtp_thread(void* arg)
 					subnum=INVALID_SUB;
 					continue;
 				}
-				fread(msgbuf,(size_t)length,1,msgtxt);
-				msgbuf[length]=0;	/* ASCIIZ */
+				if(fread(msgbuf,(size_t)length,1,msgtxt) != 1)
+					*msgbuf = '\0';
+				else
+					msgbuf[length]=0;	/* ASCIIZ */
 
 				/* Do external JavaScript processing here? */
 
