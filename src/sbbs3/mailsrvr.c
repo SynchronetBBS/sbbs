@@ -1833,6 +1833,9 @@ static ulong rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, cons
 	if((host=gethostbyname(name))==NULL)
 		return(0);
 
+	if(host->h_addr_list[0] == NULL)
+		return 0;
+
 	dnsbl_result.s_addr = *((ulong*)host->h_addr_list[0]);
 	lprintf(LOG_INFO,"%04d %s DNSBL Query: %s resolved to: %s"
 		,sock,prot,name,inet_ntoa(dnsbl_result));
