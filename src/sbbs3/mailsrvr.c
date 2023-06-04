@@ -943,6 +943,9 @@ static u_long resolve_ip(const char *inaddr)
 	if((host=gethostbyname(inaddr))==NULL)
 		return((u_long)INADDR_NONE);
 
+	if(host->h_addr_list[0] == NULL)
+		return (u_long)INADDR_NONE;
+
 	return(*((ulong*)host->h_addr_list[0]));
 }
 
