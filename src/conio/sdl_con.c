@@ -663,8 +663,25 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 	if(keyval==0xa600 && vs != NULL) {
 		fullscreen=!fullscreen;
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
-		sdl.SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 		update_cvstat(vs);
+		sdl.SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+		if (!fullscreen) {
+			int w, h;
+
+			// Get current window size
+			sdl.GetWindowSize(win, &w, &h);
+			// Limit to max window size if available
+			SDL_Rect r;
+			if (sdl.GetDisplayUsableBounds(0, &r) == 0) {
+				if (w > r.w)
+					w = r.w;
+				if (h > r.h)
+					h = r.h;
+			}
+			// Set size based on current max
+			vs->scaling = bitmap_double_mult_inside(w, h);
+			bitmap_get_scaled_win_size(vs->scaling, &vs->winwidth, &vs->winheight, w, h);
+		}
 		setup_surfaces(vs);
 		return;
 	}
