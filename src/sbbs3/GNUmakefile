@@ -89,10 +89,11 @@ ifeq ($(os),linux)
   CON_LIBS += -lsystemd
  endif
 endif
-ifeq ($(shell test -f /usr/include/mosquitto.h && echo "yes"),yes)
+ifeq ($(shell pkg-config libmosquitto --exists && echo "yes"),yes)
  CFLAGS += -DUSE_MOSQUITTO
- CON_LIBS += -lmosquitto
- JS_LIBS += -lmosquitto
+ CFLAGS += $(shell pkg-config libmosquitto --cflags)
+ CON_LIBS += $(shell pkg-config libmosquitto --libs)
+ JS_LIBS += $(shell pkg-config libmosquitto --libs)
 endif
 
 include sbbsdefs.mk
