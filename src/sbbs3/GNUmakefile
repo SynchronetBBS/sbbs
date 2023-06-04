@@ -89,11 +89,13 @@ ifeq ($(os),linux)
   CON_LIBS += -lsystemd
  endif
 endif
-ifeq ($(shell pkg-config libmosquitto --exists && echo "yes"),yes)
- CFLAGS += -DUSE_MOSQUITTO
- CFLAGS += $(shell pkg-config libmosquitto --cflags)
- CON_LIBS += $(shell pkg-config libmosquitto --libs)
- JS_LIBS += $(shell pkg-config libmosquitto --libs)
+ifneq ($(os), win32)
+ ifeq ($(shell pkg-config libmosquitto --exists && echo "yes"),yes)
+  CFLAGS += -DUSE_MOSQUITTO
+  CFLAGS += $(shell pkg-config libmosquitto --cflags)
+  CON_LIBS += $(shell pkg-config libmosquitto --libs)
+  JS_LIBS += $(shell pkg-config libmosquitto --libs)
+ endif
 endif
 
 include sbbsdefs.mk
