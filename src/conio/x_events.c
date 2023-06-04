@@ -69,6 +69,12 @@ bool x_internal_scaling = true;
 #define CONSOLE_CLIPBOARD	XA_PRIMARY
 static Atom WM_DELETE_WINDOW = None;
 static Atom _NET_WM_PING = None;
+static Atom _NET_WM_STATE = None;
+static const long _NET_WM_STATE_REMOVE = 0;
+static const long _NET_WM_STATE_ADD = 1;
+static Atom _NET_WM_STATE_FULLSCREEN = None;
+static Atom _NET_WM_STATE_MAXIMIZED_VERT = None;
+static Atom _NET_WM_STATE_MAXIMIZED_HORZ = None;
 
 static Display *dpy=NULL;
 static Window win;
@@ -98,6 +104,8 @@ static Picture xrender_src_pict = None;
 static Picture xrender_dst_pict = None;
 #endif
 static bool fullscreen;
+static Window parent;
+static Window root;
 
 /* Array of Graphics Contexts */
 static GC gc;
@@ -351,12 +359,12 @@ x11_get_maxsize(int *w, int *h)
 	long *ret;
 	unsigned long nir;
 	unsigned long bytes_left = 4;
-	Window root = DefaultRootWindow(dpy);
 	unsigned char *prop;
 
 	if (dpy == NULL)
 		return false;
 	if (fullscreen) {
+		// TODO: We may not need this if we can wait for ConfigurNotify on fullscreen...
 		return fullscreen_geometry(NULL, NULL, w, h);
 	}
 	else {
@@ -368,8 +376,10 @@ x11_get_maxsize(int *w, int *h)
 			for (i = 0, offset = 0; bytes_left; i++) {
 				if (x11.XGetWindowProperty(dpy, root, x11.workarea, offset, 4, False, XA_CARDINAL, &atr, &afr, &nir, &bytes_left, &prop) != Success)
 					break;
-				if (atr != XA_CARDINAL)
+				if (atr != XA_CARDINAL) {
+					x11.XFree(prop);
 					break;
+				}
 				if (nir > 0)
 					offset += nir;
 				ret = (long *)prop;
@@ -388,6 +398,7 @@ x11_get_maxsize(int *w, int *h)
 
 	// Couldn't get work area, get size of screen instead. :(
 	if (maxw == 0 || maxh == 0) {
+		// We could just use root window size here...
 		fullscreen_geometry(NULL, NULL, &maxw, &maxh);
 	}
 
@@ -567,9 +578,9 @@ set_icon(const void *data, size_t width, XWMHints *hints)
 	 * Leaving this here though since it is marginally "better" aside
 	 * from the insane method to create a Pixmap.
 	 */
-	icn = x11.XCreatePixmap(dpy, DefaultRootWindow(dpy), width, width, depth);
+	icn = x11.XCreatePixmap(dpy, root, width, width, depth);
 	igc = x11.XCreateGC(dpy, icn, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
-	icn_mask = x11.XCreatePixmap(dpy, DefaultRootWindow(dpy), width, width, 1);
+	icn_mask = x11.XCreatePixmap(dpy, root, width, width, 1);
 	imgc = x11.XCreateGC(dpy, icn_mask, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
 	fail = (!icn) || (!icn_mask);
 	if (!fail) {
@@ -700,7 +711,9 @@ static int init_window()
 
     /* Create window, but defer setting a size and GC. */
 	XSetWindowAttributes wa = {0};
-	wincmap = x11.XCreateColormap(dpy, DefaultRootWindow(dpy), visual, AllocNone);
+	root = DefaultRootWindow(dpy);
+	parent = root;
+	wincmap = x11.XCreateColormap(dpy, root, visual, AllocNone);
 	x11.XInstallColormap(dpy, wincmap);
 	wa.colormap = wincmap;
 	wa.background_pixel = black;
@@ -712,7 +725,7 @@ static int init_window()
 	vstat.winheight = x_cvstat.winheight = h;
 	vstat.scaling = x_cvstat.scaling;
 	pthread_mutex_unlock(&vstatlock);
-	win = x11.XCreateWindow(dpy, DefaultRootWindow(dpy), 0, 0,
+	win = x11.XCreateWindow(dpy, parent, 0, 0,
 	    w, h, 2, depth, InputOutput, visual, CWColormap | CWBorderPixel | CWBackPixel, &wa);
 
 	classhints=x11.XAllocClassHint();
@@ -749,6 +762,10 @@ static int init_window()
 
 	WM_DELETE_WINDOW = x11.XInternAtom(dpy, "WM_DELETE_WINDOW", False);
 	_NET_WM_PING = x11.XInternAtom(dpy, "_NET_WM_PING", False);
+	_NET_WM_STATE = x11.XInternAtom(dpy, "_NET_WM_STATE", False);
+	_NET_WM_STATE_FULLSCREEN = x11.XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+	_NET_WM_STATE_MAXIMIZED_VERT = x11.XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+	_NET_WM_STATE_MAXIMIZED_HORZ = x11.XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
 
 	gcv.function = GXcopy;
 	gcv.foreground = black | 0xff000000;
@@ -773,40 +790,79 @@ static int init_window()
 	return(0);
 }
 
-/* Resize the window. This function is called after a mode change. */
-static void resize_window()
+static bool
+send_fullscreen(bool set)
 {
-	int width = x_cvstat.scrnwidth * x_cvstat.scaling;
-	int height = x_cvstat.scrnheight * x_cvstat.scaling;
-	int max_width, max_height;
+	static bool last = false;
+	XEvent ev = {0};
+	bool ret = false;
 
-	pthread_mutex_lock(&vstatlock);
-	if (fullscreen) {
-		// TODO: Position window correctly...
-		fullscreen_geometry(NULL, NULL, &width, &height);
-	}
-	else {
-		bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
-		if (x11_get_maxsize(&max_width, &max_height)) {
-			if (width > max_width || height > max_height) {
-				x_cvstat.scaling = bitmap_double_mult_inside(max_width, max_height);
-				bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
+	if (_NET_WM_STATE != None && _NET_WM_STATE_FULLSCREEN != None) {
+		if (last != set) {
+			ev.xclient.type = ClientMessage;
+			ev.xclient.serial = 0; // Populated by XSendEvent
+			ev.xclient.send_event = True; // Populated by XSendEvent
+			ev.xclient.display = dpy;
+			ev.xclient.window = win;
+			ev.xclient.message_type = _NET_WM_STATE;
+			ev.xclient.format = 32;
+			memset(&ev.xclient.data.l, 0, sizeof(ev.xclient.data.l));
+			ev.xclient.data.l[0] = set ? _NET_WM_STATE_ADD : _NET_WM_STATE_REMOVE;
+			ev.xclient.data.l[1] = _NET_WM_STATE_FULLSCREEN;
+			ev.xclient.data.l[3] = 1;
+			ret = x11.XSendEvent(dpy, root, False, SubstructureNotifyMask | SubstructureRedirectMask, &ev) != 0;
+			if (ret) {
+				x11.XFlush(dpy);
+				last = set;
 			}
 		}
+		else
+			ret = true;
+	}
+	return ret;
+}
+
+/* Resize the window. This function is called after a mode change. */
+// It's also called after scaling is changed!
+static void resize_window()
+{
+	int width;
+	int height;
+	int max_width, max_height;
+	bool resize;
+	double new_scaling;
+
+	pthread_mutex_lock(&vstatlock);
+	if (fullscreen && send_fullscreen(true)) {
+	}
+	else {
+		send_fullscreen(false);
+		fullscreen = false;
+		new_scaling = x_cvstat.scaling;
+		bitmap_get_scaled_win_size(new_scaling, &width, &height, 0, 0);
+		if (x11_get_maxsize(&max_width, &max_height)) {
+			if (width > max_width || height > max_height) {
+				new_scaling = bitmap_double_mult_inside(max_width, max_height);
+				bitmap_get_scaled_win_size(new_scaling, &width, &height, 0, 0);
+			}
+		}
+		new_scaling = bitmap_double_mult_inside(width, height);
 		if (width == vstat.winwidth && height == vstat.winheight) {
-			x_cvstat.scaling = bitmap_double_mult_inside(width, height);
-			vstat.scaling = x_cvstat.scaling;
-			pthread_mutex_unlock(&vstatlock);
-			resize_xim();
+			if (new_scaling != vstat.scaling) {
+				vstat.scaling = x_cvstat.scaling = new_scaling;
+				pthread_mutex_unlock(&vstatlock);
+				resize_xim();
+			}
+			else
+				pthread_mutex_unlock(&vstatlock);
 			return;
 		}
+		resize = new_scaling != vstat.scaling;
+		x_cvstat.scaling = vstat.scaling;
+		if (resize)
+			x11.XResizeWindow(dpy, win, width, height);
 	}
-	x_cvstat.winwidth = width;
-	x_cvstat.winheight = height;
-	x_cvstat.scaling = bitmap_double_mult_inside(width, height);
 	pthread_mutex_unlock(&vstatlock);
-	x11.XResizeWindow(dpy, win, width, height);
-	resize_xim();
 
 	return;
 }
@@ -1074,39 +1130,20 @@ local_draw_rect(struct rectlist *rect)
 
 static void handle_resize_event(int width, int height)
 {
-	bool resize = false;
-	double new_scaling;
-
-	if (fullscreen) {
-		fullscreen = false;
-		resize = true;
-	}
 	pthread_mutex_lock(&vstatlock);
-	vstat.winwidth = width;
-	vstat.winheight = height;
-	new_scaling = bitmap_double_mult_inside(width, height);
-	if (new_scaling != vstat.scaling) {
-		x_cvstat.scaling = new_scaling;
-		resize = true;
+	if (fullscreen) {
+		if ((width != x_cvstat.winwidth || height != x_cvstat.winheight)) {
+			fullscreen = false;
+  		}
 	}
-	if (new_scaling > 16) {
-		new_scaling = 16;
-		pthread_mutex_lock(&scalinglock);
-		pthread_mutex_unlock(&scalinglock);
-		x_cvstat.scaling = new_scaling;
-		resize = true;
-	}
+	x_cvstat.winwidth = vstat.winwidth = width;
+	x_cvstat.winheight = vstat.winheight = height;
+	vstat.scaling = bitmap_double_mult_inside(width, height);
+	if (vstat.scaling > 16)
+		vstat.scaling = 16;
+	x_cvstat.scaling = vstat.scaling;
 	pthread_mutex_unlock(&vstatlock);
-	/*
-	 * We only need to resize if the width/height are not even multiples,
-	 * or if the two axis don't scale the same way.
-	 * Otherwise, we can simply resend everything
-	 */
-	if (resize) {
-		resize_window();
-	}
-	else
-		resize_xim();
+	resize_xim();
 	bitmap_drv_request_pixels();
 }
 
@@ -1208,29 +1245,73 @@ xlat_mouse_xy(int *x, int *y)
 	return true;
 }
 
+bool
+is_maximized(void)
+{
+	bool is = false;
+	Atom atr;
+	int afr;
+	Atom *ret;
+	unsigned long nir;
+	unsigned long bytes_left = 4;
+	unsigned char *prop;
+	size_t offset;
+
+	if (_NET_WM_STATE != None) {
+		for (offset = 0; bytes_left; offset += nir) {
+			if (x11.XGetWindowProperty(dpy, win, _NET_WM_STATE, offset, 1, False, XA_ATOM, &atr, &afr, &nir, &bytes_left, &prop) != Success)
+				break;
+			if (atr != XA_ATOM) {
+				x11.XFree(prop);
+				break;
+			}
+			ret = (Atom *)prop;
+			if (*ret == _NET_WM_STATE_MAXIMIZED_VERT || *ret == _NET_WM_STATE_MAXIMIZED_HORZ)
+				is = true;
+			x11.XFree(prop);
+			if (is)
+				break;
+		}
+	}
+	return is;
+}
+
 static int x11_event(XEvent *ev)
 {
 	if (x11.XFilterEvent(ev, win))
 		return 0;
 	switch (ev->type) {
+		case ReparentNotify:
+			parent = ev->xreparent.parent;
+			break;
 		case ClientMessage:
 			if (ev->xclient.format == 32 && ev->xclient.data.l[0] == WM_DELETE_WINDOW && WM_DELETE_WINDOW != None) {
 				uint16_t key=CIO_KEY_QUIT;
 				write(key_pipe[1], &key, 2);
 			}
 			else if(ev->xclient.format == 32 && ev->xclient.data.l[0] == _NET_WM_PING && _NET_WM_PING != None) {
-				ev->xclient.window = DefaultRootWindow(dpy);
+				ev->xclient.window = root;
 				x11.XSendEvent(dpy, ev->xclient.window, False, SubstructureNotifyMask | SubstructureRedirectMask, ev);
 			}
 			break;
 		/* Graphics related events */
 		case ConfigureNotify: {
 			bool resize = false;
+			int ax, ay;
+			Window cr;
 
+			// TODO: Maybe we care about parent events?
 			if (ev->xconfigure.window == win) {
-				if (x11_window_xpos != ev->xconfigure.x || x11_window_ypos != ev->xconfigure.y) {
-					x11_window_xpos=ev->xconfigure.x;
-					x11_window_ypos=ev->xconfigure.y;
+				// TODO: Verify this hack...
+				if (ev->xconfigure.above != None)
+					x11.XTranslateCoordinates(dpy, ev->xconfigure.window, root, ev->xconfigure.x, ev->xconfigure.y, &ax, &ay, &cr);
+				else {
+					ax = ev->xconfigure.x;
+					ay = ev->xconfigure.y;
+				}
+				if ((x11_window_xpos != ax || x11_window_ypos != ay)) {
+					x11_window_xpos = ax;
+					x11_window_ypos = ay;
 				}
 				pthread_mutex_lock(&vstatlock);
 				if (ev->xconfigure.width != vstat.winwidth || ev->xconfigure.height != vstat.winheight) {
@@ -1482,6 +1563,8 @@ static int x11_event(XEvent *ev)
 							case XK_KP_Enter:
 								if (ev->xkey.state & Mod1Mask) {
 									// ALT-Enter, toggle full-screen
+									fullscreen = !fullscreen;
+									resize_window();
 								}
 								scan = 28;
 								goto docode;
@@ -1532,7 +1615,7 @@ static int x11_event(XEvent *ev)
 								nlock = 1;
 							case XK_Left:
 							case XK_KP_Left:
-								if (ev->xkey.state & Mod1Mask) {
+								if (ev->xkey.state & Mod1Mask && !is_maximized()) {
 									double fval;
 									double ival;
 									fval = modf(x_cvstat.scaling, &ival);
@@ -1561,7 +1644,7 @@ static int x11_event(XEvent *ev)
 							case XK_Right:
 							case XK_KP_Right:
 								scan = 77;
-								if (ev->xkey.state & Mod1Mask) {
+								if (ev->xkey.state & Mod1Mask && !is_maximized()) {
 									double ival;
 									modf(x_cvstat.scaling, &ival);
 									if (ival < 1.0)

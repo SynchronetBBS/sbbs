@@ -113,6 +113,9 @@ struct x11 {
 	XWMHints *(*XGetWMHints)(Display *, Window);
 	int (*XSetWMHints)(Display *, Window, XWMHints *);
 	Bool (*XTranslateCoordinates)(Display *, Window, Window, int, int, int *, int *, Window *);
+	int (*XChangeWindowAttributes)(Display *, Window, unsigned long, XSetWindowAttributes *);
+	int (*XConfigureWindow)(Display *, Window, unsigned int, XWindowChanges *);
+	int (*XMoveWindow)(Display *, Window, int, int);
 #ifndef DefaultDepth
 	int (*DefaultDepth)(Display *, int);
 #endif
