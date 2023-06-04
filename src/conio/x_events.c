@@ -243,6 +243,8 @@ x11_get_maxsize(int *w, int *h)
 				break;
 			if (atr != XA_CARDINAL)
 				break;
+			if (nir > 0)
+				offset += nir;
 			ret = (long *)prop;
 			if (nir >= 3) {
 				if (ret[2] > maxw)
