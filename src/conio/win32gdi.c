@@ -28,6 +28,7 @@ static bool init_success;
 static enum ciolib_scaling stype;
 static bool fullscreen;
 static float window_scaling;
+static LONG window_left, window_top;
 
 #define WM_USER_INVALIDATE WM_USER
 #define WM_USER_SETSIZE (WM_USER + 1)
@@ -320,6 +321,9 @@ gdi_handle_wm_paint(HWND hwnd)
 	if (maximized || fullscreen) {
 		xoff = (w - dwidth) / 2;
 		yoff = (h - dheight) / 2;
+	}
+	else {
+		xoff = yoff = 0;
 	}
 	pthread_mutex_unlock(&off_lock);
 	winDC = BeginPaint(hwnd, &ps);
@@ -704,6 +708,11 @@ magic_message(MSG msg)
 									if (hm) {
 										MONITORINFO mi = {sizeof(mi)};
 										if (GetMonitorInfo(hm, &mi)) {
+											WINDOWINFO wi;
+											if (GetWindowInfo(win, &wi)) {
+												window_left = wi.rcWindow.left;
+												window_top = wi.rcWindow.top;
+											}
 											pthread_mutex_lock(&vstatlock);
 											window_scaling = vstat.scaling;
 											// TODO: Save pos as well...
@@ -724,6 +733,7 @@ magic_message(MSG msg)
 									bitmap_get_scaled_win_size(window_scaling, &w, &h, 0, 0);
 									SetWindowLongPtr(win, GWL_STYLE, style);
 									PostMessageW(win, WM_USER_SETSIZE, w, h);
+									PostMessageW(win, WM_USER_SETPOS, window_left, window_top);
 								}
 							}
 							gdi_add_key(keyval[i].ALT);
