@@ -1723,6 +1723,7 @@ main(int argc, char **argv)
 #endif
 	if (initciolib(ciolib_mode))
 		return 1;
+	setname("SyncTERM");
 	if (settings.blocky)
 		cio_api.options |= CONIO_OPT_BLOCKY_SCALING;
 	else

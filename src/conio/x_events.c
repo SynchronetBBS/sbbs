@@ -52,10 +52,10 @@ sem_t	mode_set;
 int x11_window_xpos;
 int x11_window_ypos;
 int x11_initialized=0;
-sem_t	event_thread_complete;
-int	terminate = 0;
+static sem_t	event_thread_complete;
+static int	terminate = 0;
 Atom	copybuf_format;
-Atom	pastebuf_format;
+static Atom	pastebuf_format;
 bool xrender_found;
 bool xinerama_found;
 bool xrandr_found;
@@ -65,16 +65,82 @@ bool x_internal_scaling = true;
  * Local variables
  */
 
+enum UsedAtom {
+	// UTF8_STRING: https://www.pps.jussieu.fr/~jch/software/UTF8_STRING/UTF8_STRING.text
+	ATOM_UTF8_STRING,
+	// ICCM: https://x.org/releases/X11R7.6/doc/xorg-docs/specs/ICCCM/icccm.html
+	ATOM_TARGETS,
+	ATOM_WM_CLASS,
+	ATOM_WM_DELETE_WINDOW,
+	// EWMH: https://specifications.freedesktop.org/wm-spec/wm-spec-1.3.html
+	ATOM__NET_FRAME_EXTENTS,
+	ATOM__NET_SUPPORTED,
+	ATOM__NET_SUPPORTING_WM_CHECK,
+	ATOM__NET_WM_DESKTOP,
+	ATOM__NET_WM_ICON,
+	ATOM__NET_WM_ICON_NAME,
+	ATOM__NET_WM_NAME,
+	ATOM__NET_WM_PID,
+	ATOM__NET_WM_PING,
+	ATOM__NET_WM_STATE,
+	ATOM__NET_WM_STATE_FULLSCREEN,
+	ATOM__NET_WM_STATE_MAXIMIZED_VERT,
+	ATOM__NET_WM_STATE_MAXIMIZED_HORZ,
+	ATOM__NET_WM_WINDOW_TYPE,
+	ATOM__NET_WM_WINDOW_TYPE_NORMAL,
+	ATOM__NET_WORKAREA,
+	ATOMCOUNT
+};
+
+enum AtomStandard {
+	UTF8_ATOM,
+	ICCM_ATOM,
+	EWMH_ATOM
+};
+
+static uint32_t supported_standards;
+
+#define XA_UTF8_STRING (0x10000000UL)
+
+static struct AtomDef {
+	const char * const name;
+	const enum AtomStandard standard;
+	Atom req_type;
+	const int format;
+	Atom atom;
+	bool supported;
+} SupportedAtoms[ATOMCOUNT] = {
+	// UTF8_STRING: https://www.pps.jussieu.fr/~jch/software/UTF8_STRING/UTF8_STRING.text
+	{"UTF8_STRING", UTF8_ATOM, None, 0, None, false},
+	// ICCM: https://x.org/releases/X11R7.6/doc/xorg-docs/specs/ICCCM/icccm.html
+	{"TARGETS", ICCM_ATOM, XA_ATOM, 32, None, false},
+	{"WM_CLASS", ICCM_ATOM, XA_STRING, 8, None, false},
+	{"WM_DELETE_WINDOW", ICCM_ATOM, None, 0, None, false},
+	// EWMH: https://specifications.freedesktop.org/wm-spec/wm-spec-1.3.html
+	{"_NET_FRAME_EXTENTS", EWMH_ATOM, XA_CARDINAL, 32, None, false},
+	{"_NET_SUPPORTED", EWMH_ATOM, XA_ATOM, 32, None, false},
+	{"_NET_SUPPORTING_WM_CHECK", EWMH_ATOM, XA_WINDOW, 32, None, false},
+	{"_NET_WM_DESKTOP", EWMH_ATOM, XA_CARDINAL, 32, None, false},
+	{"_NET_WM_ICON", EWMH_ATOM, XA_CARDINAL, 32, None, false},
+	{"_NET_WM_ICON_NAME", EWMH_ATOM, XA_UTF8_STRING, 8, None, false},
+	{"_NET_WM_NAME", EWMH_ATOM, XA_UTF8_STRING, 8, None, false},
+	{"_NET_WM_PID", EWMH_ATOM, XA_CARDINAL, 32, None, false},
+	{"_NET_WM_PING", EWMH_ATOM, None, 0, None, false},
+	{"_NET_WM_STATE", EWMH_ATOM, XA_ATOM, 32, None, false},
+	{"_NET_WM_STATE_FULLSCREEN", EWMH_ATOM, None, 0, None, false},
+	{"_NET_WM_STATE_MAXIMIZED_VERT", EWMH_ATOM, None, 0, None, false},
+	{"_NET_WM_STATE_MAXIMIZED_HORZ", EWMH_ATOM, None, 0, None, false},
+	{"_NET_WM_WINDOW_TYPE", EWMH_ATOM, XA_ATOM, 32, None, false},
+	{"_NET_WM_WINDOW_TYPE_NORMAL", EWMH_ATOM, None, 0, None, false},
+	{"_NET_WORKAREA", EWMH_ATOM, XA_CARDINAL, 4, None, false},
+};
+
+#define A(name) SupportedAtoms[ATOM_ ## name].atom
+
 /* Sets the atom to be used for copy/paste operations */
 #define CONSOLE_CLIPBOARD	XA_PRIMARY
-static Atom WM_DELETE_WINDOW = None;
-static Atom _NET_WM_PING = None;
-static Atom _NET_WM_STATE = None;
 static const long _NET_WM_STATE_REMOVE = 0;
 static const long _NET_WM_STATE_ADD = 1;
-static Atom _NET_WM_STATE_FULLSCREEN = None;
-static Atom _NET_WM_STATE_MAXIMIZED_VERT = None;
-static Atom _NET_WM_STATE_MAXIMIZED_HORZ = None;
 
 static Display *dpy=NULL;
 static Window win;
@@ -226,6 +292,124 @@ static struct {
     {	0x8600, 0x5888, 0x8a00, 0x8c00 }, /* key 88 - F12 */
 };
 
+static struct AtomDef *
+get_atom_def(Atom atom)
+{
+	enum UsedAtom a;
+
+	for (a = 0; a < ATOMCOUNT; a++) {
+		if (SupportedAtoms[a].atom == atom)
+			return &SupportedAtoms[a];
+	}
+
+	return NULL;
+}
+
+static void
+initialize_atoms(void)
+{
+	enum UsedAtom a;
+	Atom atr;
+	int afr;
+	unsigned long nir;
+	unsigned long bytes_left = 4;
+	unsigned char *prop = NULL;
+	Window w;
+	Atom atom;
+	struct AtomDef *ad;
+	long offset;
+
+	supported_standards |= (1 << UTF8_ATOM);
+	supported_standards |= (1 << ICCM_ATOM);
+
+	for (a = 0; a < ATOMCOUNT; a++) {
+		SupportedAtoms[a].atom = x11.XInternAtom(dpy, (char *)SupportedAtoms[a].name, False);
+	}
+
+	if (A(UTF8_STRING) == None)
+		supported_standards &= ~(1 << UTF8_ATOM);
+
+	if (supported_standards & (1 << UTF8_ATOM)) {
+		if (x11.XGetWindowProperty(dpy, root, A(_NET_SUPPORTING_WM_CHECK), 0, 1, False, XA_WINDOW, &atr, &afr, &nir, &bytes_left, &prop) == Success) {
+			if (atr == XA_WINDOW) {
+				if (nir == 1) {
+					w = *(Window *)prop;
+					x11.XFree(prop);
+					prop = NULL;
+					if (x11.XGetWindowProperty(dpy, w, A(_NET_SUPPORTING_WM_CHECK), 0, 1, False, XA_WINDOW, &atr, &afr, &nir, &bytes_left, &prop) == Success) {
+						if (atr == XA_WINDOW) {
+							if (nir == 1) {
+								if (w == *(Window *)prop) {
+									supported_standards |= (1 << EWMH_ATOM);
+								}
+							}
+						}
+					}
+				}
+			}
+			if (prop != NULL)
+				x11.XFree(prop);
+		}
+	}
+
+	if (!(supported_standards & (1 << EWMH_ATOM))) {
+		for (a = 0; a < ATOMCOUNT; a++) {
+			if (SupportedAtoms[a].standard == EWMH_ATOM)
+				SupportedAtoms[a].atom = None;
+		}
+	}
+	else {
+		for (offset = 0, bytes_left = 1; bytes_left; offset += nir) {
+			if (x11.XGetWindowProperty(dpy, root, A(_NET_SUPPORTED), offset, 1, False, XA_ATOM, &atr, &afr, &nir, &bytes_left, &prop) != Success)
+				break;
+			if (atr != XA_ATOM) {
+				x11.XFree(prop);
+				break;
+			}
+			atom = *(Atom *)prop;
+			x11.XFree(prop);
+			if (atom != None) {
+				ad = get_atom_def(atom);
+				if (ad != NULL)
+					ad->supported = true;
+			}
+		}
+		for (a = 0; a < ATOMCOUNT; a++) {
+			if (SupportedAtoms[a].atom != None) {
+				if (SupportedAtoms[a].standard != EWMH_ATOM)
+					SupportedAtoms[a].supported = true;
+				if (!SupportedAtoms[a].supported) {
+					SupportedAtoms[a].atom = None;
+				}
+			}
+		}
+	}
+
+	for (a = 0; a < ATOMCOUNT; a++) {
+		if (SupportedAtoms[a].req_type == XA_UTF8_STRING) {
+			if (A(UTF8_STRING) == None) {
+				SupportedAtoms[a].supported = false;
+				SupportedAtoms[a].atom = None;
+			}
+			else {
+				SupportedAtoms[a].req_type = A(UTF8_STRING);
+			}
+		}
+	}
+}
+
+static bool
+set_win_property(enum UsedAtom atom, Atom type, int format, int action, const void *value, int count)
+{
+	struct AtomDef *ad = &SupportedAtoms[atom];
+
+	if (ad->atom == None)
+		return false;
+	if (!(supported_standards & (1 << ad->standard)))
+		return false;
+	return (x11.XChangeProperty(dpy, win, ad->atom, type, format, action, (unsigned char *)value, count) != 0);
+}
+
 static bool
 fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
 {
@@ -358,8 +542,9 @@ x11_get_maxsize(int *w, int *h)
 	int afr;
 	long *ret;
 	unsigned long nir;
-	unsigned long bytes_left = 4;
+	unsigned long bytes_left;
 	unsigned char *prop;
+	long desktop = -1;
 
 	if (dpy == NULL)
 		return false;
@@ -369,29 +554,54 @@ x11_get_maxsize(int *w, int *h)
 	}
 	else {
 		// First, try to get _NET_WORKAREA...
-		if (x11.workarea == None) {
-			x11.workarea = x11.XInternAtom(dpy, "_NET_WORKAREA", True);
+		if (A(_NET_WM_DESKTOP) != None && win != 0) {
+			if (x11.XGetWindowProperty(dpy, win, A(_NET_WM_DESKTOP), 0, 1, False, XA_CARDINAL, &atr, &afr, &nir, &bytes_left, &prop) == Success) {
+				if (atr == XA_CARDINAL && afr == 32 && nir > 0) {
+					desktop = *(long *)prop;
+				}
+				x11.XFree(prop);
+			}
 		}
-		if (x11.workarea != None) {
-			for (i = 0, offset = 0; bytes_left; i++) {
-				if (x11.XGetWindowProperty(dpy, root, x11.workarea, offset, 4, False, XA_CARDINAL, &atr, &afr, &nir, &bytes_left, &prop) != Success)
+		if (A(_NET_WORKAREA) != None) {
+			for (i = 0, offset = 0, bytes_left = 1; bytes_left; i++, offset += nir) {
+				if (x11.XGetWindowProperty(dpy, root, A(_NET_WORKAREA), offset, 4, False, XA_CARDINAL, &atr, &afr, &nir, &bytes_left, &prop) != Success)
 					break;
 				if (atr != XA_CARDINAL) {
 					x11.XFree(prop);
 					break;
 				}
-				if (nir > 0)
-					offset += nir;
 				ret = (long *)prop;
-				if (nir >= 3) {
-					if (ret[2] > maxw)
-						maxw = ret[2];
+				if (desktop == -1) {
+					if (nir >= 3) {
+						if (ret[2] > maxw)
+							maxw = ret[2];
+					}
+					if (nir >= 4) {
+						if (ret[3] > maxh)
+							maxh = ret[3];
+					}
 				}
-				if (nir >= 4) {
-					if (ret[3] > maxh)
+				else if (desktop == i) {
+					if (nir >= 3)
+						maxw = ret[2];
+					if (nir >= 4)
 						maxh = ret[3];
+					x11.XFree(prop);
+					break;
 				}
 				x11.XFree(prop);
+			}
+		}
+		if (maxw > 0 && maxh > 0) {
+			if (A(_NET_FRAME_EXTENTS) != None && win != 0) {
+				if (x11.XGetWindowProperty(dpy, win, A(_NET_FRAME_EXTENTS), 0, 4, False, XA_CARDINAL, &atr, &afr, &nir, &bytes_left, &prop) == Success) {
+					if (atr == XA_CARDINAL && afr == 32 && nir == 4) {
+						ret = (long *)prop;
+						maxw -= ret[0] + ret[1];
+						maxh -= ret[2] + ret[3];
+					}
+					x11.XFree(prop);
+				}
 			}
 		}
 	}
@@ -659,11 +869,14 @@ static int init_window()
 	int mw, mh;
 	int screen;
 	int major, minor;
+	unsigned long pid_l;
+	Atom a;
 
 	dpy = x11.XOpenDisplay(NULL);
 	if (dpy == NULL) {
 		return(-1);
 	}
+	root = DefaultRootWindow(dpy);
 	x11.XSynchronize(dpy, False);
 
 #ifdef WITH_XRENDER
@@ -680,9 +893,7 @@ static int init_window()
 #endif
 
 	xfd = ConnectionNumber(dpy);
-	x11.utf8 = x11.XInternAtom(dpy, "UTF8_STRING", False);
-	x11.targets = x11.XInternAtom(dpy, "TARGETS", False);
-	x11.workarea = x11.XInternAtom(dpy, "_NET_WORKAREA", True);
+	initialize_atoms();
 
 	screen = DefaultScreen(dpy);
 #ifdef DefaultVisual
@@ -709,9 +920,8 @@ static int init_window()
 	black=BlackPixel(dpy, DefaultScreen(dpy));
 	white=WhitePixel(dpy, DefaultScreen(dpy));
 
-    /* Create window, but defer setting a size and GC. */
+	/* Create window, but defer setting a size and GC. */
 	XSetWindowAttributes wa = {0};
-	root = DefaultRootWindow(dpy);
 	parent = root;
 	wincmap = x11.XCreateColormap(dpy, root, visual, AllocNone);
 	x11.XInstallColormap(dpy, wincmap);
@@ -743,12 +953,13 @@ static int init_window()
 		x11.XSetWMProperties(dpy, win, NULL, NULL, 0, 0, NULL, wmhints, classhints);
 		x11.XFree(wmhints);
 	}
+	set_win_property(A(_NET_WM_ICON), XA_CARDINAL, 32, PropModeReplace, ciolib_initial_icon, ciolib_initial_icon_width * ciolib_initial_icon_width);
 
-	Atom pid_atom = x11.XInternAtom(dpy, "_NET_WM_PID", False);
-	if (pid_atom != None) {
-		unsigned long pid_l = getpid();
-		x11.XChangeProperty(dpy, win, pid_atom, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&pid_l, 1);
-	}
+	pid_l = getpid();
+	set_win_property(ATOM__NET_WM_PID, XA_CARDINAL, 32, PropModeReplace, &pid_l, 1);
+	a = A(_NET_WM_WINDOW_TYPE_NORMAL);
+	if (a != None)
+		set_win_property(ATOM__NET_WM_WINDOW_TYPE, XA_ATOM, 32, PropModeReplace, &a, 1);
 
 	im = x11.XOpenIM(dpy, NULL, "CIOLIB", "CIOLIB");
 	if (im != NULL) {
@@ -759,13 +970,6 @@ static int init_window()
 
 	if (classhints)
 		x11.XFree(classhints);
-
-	WM_DELETE_WINDOW = x11.XInternAtom(dpy, "WM_DELETE_WINDOW", False);
-	_NET_WM_PING = x11.XInternAtom(dpy, "_NET_WM_PING", False);
-	_NET_WM_STATE = x11.XInternAtom(dpy, "_NET_WM_STATE", False);
-	_NET_WM_STATE_FULLSCREEN = x11.XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
-	_NET_WM_STATE_MAXIMIZED_VERT = x11.XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT", False);
-	_NET_WM_STATE_MAXIMIZED_HORZ = x11.XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
 
 	gcv.function = GXcopy;
 	gcv.foreground = black | 0xff000000;
@@ -780,10 +984,10 @@ static int init_window()
 	x11.XStoreName(dpy, win, "SyncConsole");
 	Atom protos[2];
 	int i = 0;
-	if (WM_DELETE_WINDOW != None)
-		protos[i++] = WM_DELETE_WINDOW;
-	if (_NET_WM_PING != None)
-		protos[i++] = _NET_WM_PING;
+	if (A(WM_DELETE_WINDOW) != None)
+		protos[i++] = A(WM_DELETE_WINDOW);
+	if (A(_NET_WM_PING) != None)
+		protos[i++] = A(_NET_WM_PING);
 	if (i)
 		x11.XSetWMProtocols(dpy, win, protos, i);
 
@@ -797,18 +1001,18 @@ send_fullscreen(bool set)
 	XEvent ev = {0};
 	bool ret = false;
 
-	if (_NET_WM_STATE != None && _NET_WM_STATE_FULLSCREEN != None) {
+	if (A(_NET_WM_STATE) != None && A(_NET_WM_STATE_FULLSCREEN) != None) {
 		if (last != set) {
 			ev.xclient.type = ClientMessage;
 			ev.xclient.serial = 0; // Populated by XSendEvent
 			ev.xclient.send_event = True; // Populated by XSendEvent
 			ev.xclient.display = dpy;
 			ev.xclient.window = win;
-			ev.xclient.message_type = _NET_WM_STATE;
+			ev.xclient.message_type = A(_NET_WM_STATE);
 			ev.xclient.format = 32;
 			memset(&ev.xclient.data.l, 0, sizeof(ev.xclient.data.l));
 			ev.xclient.data.l[0] = set ? _NET_WM_STATE_ADD : _NET_WM_STATE_REMOVE;
-			ev.xclient.data.l[1] = _NET_WM_STATE_FULLSCREEN;
+			ev.xclient.data.l[1] = A(_NET_WM_STATE_FULLSCREEN);
 			ev.xclient.data.l[3] = 1;
 			ret = x11.XSendEvent(dpy, root, False, SubstructureNotifyMask | SubstructureRedirectMask, &ev) != 0;
 			if (ret) {
@@ -1257,16 +1461,16 @@ is_maximized(void)
 	unsigned char *prop;
 	size_t offset;
 
-	if (_NET_WM_STATE != None) {
+	if (A(_NET_WM_STATE) != None) {
 		for (offset = 0; bytes_left; offset += nir) {
-			if (x11.XGetWindowProperty(dpy, win, _NET_WM_STATE, offset, 1, False, XA_ATOM, &atr, &afr, &nir, &bytes_left, &prop) != Success)
+			if (x11.XGetWindowProperty(dpy, win, A(_NET_WM_STATE), offset, 1, False, XA_ATOM, &atr, &afr, &nir, &bytes_left, &prop) != Success)
 				break;
 			if (atr != XA_ATOM) {
 				x11.XFree(prop);
 				break;
 			}
 			ret = (Atom *)prop;
-			if (*ret == _NET_WM_STATE_MAXIMIZED_VERT || *ret == _NET_WM_STATE_MAXIMIZED_HORZ)
+			if (*ret == A(_NET_WM_STATE_MAXIMIZED_VERT) || *ret == A(_NET_WM_STATE_MAXIMIZED_HORZ))
 				is = true;
 			x11.XFree(prop);
 			if (is)
@@ -1285,13 +1489,20 @@ static int x11_event(XEvent *ev)
 			parent = ev->xreparent.parent;
 			break;
 		case ClientMessage:
-			if (ev->xclient.format == 32 && ev->xclient.data.l[0] == WM_DELETE_WINDOW && WM_DELETE_WINDOW != None) {
+			if (ev->xclient.format == 32 && ev->xclient.data.l[0] == A(WM_DELETE_WINDOW) && A(WM_DELETE_WINDOW) != None) {
 				uint16_t key=CIO_KEY_QUIT;
 				write(key_pipe[1], &key, 2);
 			}
-			else if(ev->xclient.format == 32 && ev->xclient.data.l[0] == _NET_WM_PING && _NET_WM_PING != None) {
+			else if(ev->xclient.format == 32 && ev->xclient.data.l[0] == A(_NET_WM_PING) && A(_NET_WM_PING) != None) {
 				ev->xclient.window = root;
 				x11.XSendEvent(dpy, ev->xclient.window, False, SubstructureNotifyMask | SubstructureRedirectMask, ev);
+			}
+			break;
+		case PropertyNotify:
+			if (A(_NET_FRAME_EXTENTS) != None) {
+				if (ev->xproperty.atom != A(_NET_FRAME_EXTENTS))
+					break;
+				map_window();
 			}
 			break;
 		/* Graphics related events */
@@ -1360,7 +1571,7 @@ static int x11_event(XEvent *ev)
 					x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, 0, True, AnyPropertyType, &pastebuf_format, &format, &len, &bytes_left, (unsigned char **)(&pastebuf));
 					if(bytes_left > 0 && format==8) {
 						x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, bytes_left, True, AnyPropertyType, &pastebuf_format, &format, &len, &dummy, (unsigned char **)&pastebuf);
-						if (x11.utf8 && pastebuf_format == x11.utf8) {
+						if (A(UTF8_STRING) && pastebuf_format == A(UTF8_STRING)) {
 							char *opb = pastebuf;
 							pastebuf = (char *)utf8_to_cp(CIOLIB_ISO_8859_1, (uint8_t *)pastebuf, '?', strlen(pastebuf), NULL);
 							if (pastebuf == NULL)
@@ -1378,7 +1589,7 @@ static int x11_event(XEvent *ev)
 				/* Set paste buffer */
 				sem_post(&pastebuf_set);
 				sem_wait(&pastebuf_used);
-				if (x11.utf8 && pastebuf_format == x11.utf8)
+				if (A(UTF8_STRING) && pastebuf_format == A(UTF8_STRING))
 					free(pastebuf);
 				else
 					x11.XFree(pastebuf);
@@ -1394,8 +1605,6 @@ static int x11_event(XEvent *ev)
 
 				req=&(ev->xselectionrequest);
 				pthread_mutex_lock(&copybuf_mutex);
-				if (x11.targets == 0)
-					x11.targets = x11.XInternAtom(dpy, "TARGETS", False);
 				respond.xselection.property=None;
 				if(copybuf!=NULL) {
 					if(req->target==XA_STRING) {
@@ -1406,18 +1615,15 @@ static int x11_event(XEvent *ev)
 							free(cpstr);
 						}
 					}
-					else if(req->target == x11.utf8) {
-						x11.XChangeProperty(dpy, req->requestor, req->property, x11.utf8, 8, PropModeReplace, (uint8_t *)copybuf, strlen((char *)copybuf));
+					else if(req->target == A(UTF8_STRING)) {
+						x11.XChangeProperty(dpy, req->requestor, req->property, A(UTF8_STRING), 8, PropModeReplace, (uint8_t *)copybuf, strlen((char *)copybuf));
 						respond.xselection.property=req->property;
 					}
-					else if(req->target == x11.targets) {
-						if (x11.utf8 == 0)
-							x11.utf8 = x11.XInternAtom(dpy, "UTF8_STRING", False);
-
-						supported[count++] = x11.targets;
+					else if(req->target == A(TARGETS)) {
+						supported[count++] = A(TARGETS);
 						supported[count++] = XA_STRING;
-						if (x11.utf8)
-							supported[count++] = x11.utf8;
+						if (A(UTF8_STRING))
+							supported[count++] = A(UTF8_STRING);
 						x11.XChangeProperty(dpy, req->requestor, req->property, XA_ATOM, 32, PropModeReplace, (unsigned char *)supported, count);
 						respond.xselection.property=req->property;
 					}
@@ -1867,10 +2073,12 @@ void x11_event_thread(void *args)
 							break;
 						case X11_LOCAL_SETNAME:
 							x11.XSetIconName(dpy, win, lev.data.name);
+							set_win_property(A(_NET_WM_ICON_NAME), A(UTF8_STRING), 8, PropModeReplace, lev.data.name, strlen(lev.data.name));
 							x11.XFlush(dpy);
 							break;
 						case X11_LOCAL_SETTITLE:
 							x11.XStoreName(dpy, win, lev.data.title);
+							set_win_property(A(_NET_WM_NAME), A(UTF8_STRING), 8, PropModeReplace, lev.data.name, strlen(lev.data.name));
 							x11.XFlush(dpy);
 							break;
 						case X11_LOCAL_COPY:
@@ -1895,7 +2103,7 @@ void x11_event_thread(void *args)
 									FREE_AND_NULL(pastebuf);
 								}
 								else if(sowner!=None) {
-									x11.XConvertSelection(dpy, CONSOLE_CLIPBOARD, x11.utf8 ? x11.utf8 : XA_STRING, x11.utf8 ? x11.utf8 : XA_STRING, win, CurrentTime);
+									x11.XConvertSelection(dpy, CONSOLE_CLIPBOARD, A(UTF8_STRING) ? A(UTF8_STRING) : XA_STRING, A(UTF8_STRING) ? A(UTF8_STRING) : XA_STRING, win, CurrentTime);
 								}
 								else {
 									/* Set paste buffer */
@@ -1915,12 +2123,10 @@ void x11_event_thread(void *args)
 							x11.XBell(dpy, 100);
 							break;
 						case X11_LOCAL_SETICON: {
-							Atom wmicon = x11.XInternAtom(dpy, "_NET_WM_ICON", False);
-							if (wmicon) {
-								x11.XChangeProperty(dpy, win, wmicon, XA_CARDINAL, 32, PropModeReplace, (unsigned char *)lev.data.icon_data, lev.data.icon_data[0] * lev.data.icon_data[1] + 2);
-								x11.XFlush(dpy);
-							}
+							// TODO: set_icon() is obsolete... delete
 							set_icon(&lev.data.icon_data[2], lev.data.icon_data[0], NULL);
+							set_win_property(A(_NET_WM_ICON), XA_CARDINAL, 32, PropModeReplace, lev.data.icon_data, lev.data.icon_data[0] * lev.data.icon_data[1] + 2);
+							x11.XFlush(dpy);
 							free(lev.data.icon_data);
 							break;
 						}

@@ -143,9 +143,6 @@ struct x11 {
 	void (*XRRFreeCrtcInfo)(XRRCrtcInfo *crtcInfo);
 	void (*XRRFreeScreenResources)(XRRScreenResources *resources);
 #endif
-	Atom utf8;
-	Atom targets;
-	Atom workarea;
 };
 
 extern int local_pipe[2];			/* Used for passing local events */
@@ -159,11 +156,8 @@ extern char 	*pastebuf;
 extern sem_t	pastebuf_set;
 extern sem_t	pastebuf_used;
 extern Atom	copybuf_format;
-extern Atom	pastebuf_format;
 extern sem_t	init_complete;
 extern sem_t	mode_set;
-extern sem_t	event_thread_complete;
-extern int terminate;
 extern int x11_window_xpos;
 extern int x11_window_ypos;
 extern int x11_initialized;
