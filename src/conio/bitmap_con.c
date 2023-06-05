@@ -97,7 +97,8 @@ static struct rectlist *free_rects;
 static pthread_mutex_t free_rect_lock;
 static bool throttled;
 static int outstanding_rects;
-#define MAX_OUTSTANDING 1
+// win32gdi requires two rects...
+#define MAX_OUTSTANDING 2
 
 /* The read lock must be held here. */
 #define PIXEL_OFFSET(screen, x, y)	( (y)*(screen).screenwidth+(x) )
