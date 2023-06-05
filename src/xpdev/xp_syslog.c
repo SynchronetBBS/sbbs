@@ -19,13 +19,13 @@ static int log_opts=LOG_CONS;
 static char syslog_tag[33]="undefined";
 static int default_facility=LOG_USER;
 
-static u_long resolve_ip(char *addr)
+static in_addr_t resolve_ip(char *addr)
 {
 	HOSTENT*        host;
 	char*           p;
 
 	if(*addr==0)
-		return((u_long)INADDR_NONE);
+		return INADDR_NONE;
 
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
@@ -33,8 +33,10 @@ static u_long resolve_ip(char *addr)
 	if(!(*p))
 		return(inet_addr(addr));
 	if((host=gethostbyname(addr))==NULL)
-		return((u_long)INADDR_NONE);
-	return(*((ulong*)host->h_addr_list[0]));
+		return INADDR_NONE;
+	if(host->h_addr_list == NULL)
+		return INADDR_NONE;
+	return *((in_addr_t*)host->h_addr_list[0]);
 }
 
 void xp_set_loghost(const char *hostname)
