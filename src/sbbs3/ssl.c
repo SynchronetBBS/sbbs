@@ -218,12 +218,15 @@ bool get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const ch
 			}
 		}
 		if (emsg) {
-			asprintf(estr, "%s '%s' (%d) %s", crypt_lstr(level), emsg, status, action);
+			if(asprintf(estr, "%s '%s' (%d) %s", crypt_lstr(level), emsg, status, action) < 0)
+				*estr = '\0';
 			if (allocated)
 				free_crypt_attrstr(emsg);
 		}
-		else
-			asprintf(estr, "%s (%d) %s", crypt_lstr(level), status, action);
+		else {
+			if(asprintf(estr, "%s (%d) %s", crypt_lstr(level), status, action) < 0)
+				*estr = '\0';
+		}
 	}
 	return false;
 }

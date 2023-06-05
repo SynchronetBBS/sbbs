@@ -96,7 +96,8 @@ char *loadmsgtail(smbmsg_t* msg)
 			continue;
 		fseek(smb.sdt_fp,msg->hdr.offset+msg->dfield[i].offset
 			,SEEK_SET);
-		fread(&xlat,2,1,smb.sdt_fp);
+		if(fread(&xlat,2,1,smb.sdt_fp) != 1)
+			xlat = XLAT_NONE;
 		if(xlat!=XLAT_NONE) 		/* no translations supported */
 			continue;
 		length=msg->dfield[i].length-2;

@@ -93,7 +93,7 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 	long		ported = 0;
 	int			total_qwk_confs = 0;
 	int			read_qwk_confs = 0;
-	int			qwk_confnum;
+	int			qwk_confnum = -1;
 	size_t		grpname_len = strlen(cfg.grp[grpnum]->sname);
 	char		duplicate_code[LEN_CODE+1]="";
 	uint		duplicate_codes = 0;	// consecutive duplicate codes
@@ -124,8 +124,10 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 					break;
 			}
 			str[0] = 0;
-			fgets(str,sizeof(str),stream);
-			total_qwk_confs = atoi(str) + 1;
+			if(fgets(str,sizeof(str),stream) == NULL)
+				total_qwk_confs = 0;
+			else
+				total_qwk_confs = atoi(str) + 1;
 			break;
 		case IMPORT_LIST_TYPE_ECHOSTATS:
 			new_sub_misc = SUB_FIDO;

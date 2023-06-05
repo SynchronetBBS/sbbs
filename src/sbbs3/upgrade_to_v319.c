@@ -32,13 +32,30 @@ scfg_t scfg;
 BOOL overwrite_existing_files=TRUE;
 ini_style_t style = { 25, NULL, NULL, " = ", NULL };
 
+ssize_t my_write(int fd, const void* buf, size_t count)
+{
+	ssize_t wr = write(fd, buf, count);
+	if(wr != count)
+		perror("writing file");
+	return wr;
+}
+
+ssize_t my_read(int fd, void* buf, size_t count)
+{
+	ssize_t rd = read(fd, buf, count);
+	if(rd != count)
+		perror("reading file");
+	return rd;
+}
+
 BOOL overwrite(const char* path)
 {
 	char	str[128];
 
 	if(!overwrite_existing_files && fexist(path)) {
 		printf("\n%s already exists, overwrite? ",path);
-		fgets(str,sizeof(str),stdin);
+		if(fgets(str,sizeof(str),stdin) == NULL)
+			*str = '\0';
 		if(toupper(*str)!='Y')
 			return(FALSE);
 	}
@@ -428,8 +445,8 @@ BOOL putfileixb(scfg_t* cfg, oldfile_t* f)
 	
 	lseek(file,l+11+3,SEEK_SET);
 
-	write(file,&f->dateuled,4);
-	write(file,&f->datedled,4);
+	my_write(file,&f->dateuled,4);
+	my_write(file,&f->datedled,4);
 
 	close(file);
 
@@ -457,7 +474,7 @@ void getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 	if((file=openextdesc(cfg, dirnum))==-1)
 		return;
 	lseek(file,(datoffset/F_LEN)*F_EXBSIZE,SEEK_SET);
-	read(file,ext,F_EXBSIZE);
+	my_read(file,ext,F_EXBSIZE);
 	close(file);
 }
 
@@ -465,7 +482,7 @@ void getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 void fgetextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext, int file)
 {
 	lseek(file,(datoffset/F_LEN)*F_EXBSIZE,SEEK_SET);
-	read(file,ext,F_EXBSIZE);
+	my_read(file,ext,F_EXBSIZE);
 }
 
 void putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
@@ -481,9 +498,9 @@ void putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 		return;
 	lseek(file,0L,SEEK_END);
 	while(filelength(file)<(long)(datoffset/F_LEN)*F_EXBSIZE)
-		write(file,nulbuf,sizeof(nulbuf));
+		my_write(file,nulbuf,sizeof(nulbuf));
 	lseek(file,(datoffset/F_LEN)*F_EXBSIZE,SEEK_SET);
-	write(file,ext,F_EXBSIZE);
+	my_write(file,ext,F_EXBSIZE);
 	close(file);
 }
 
@@ -511,7 +528,7 @@ int update_uldate(scfg_t* cfg, oldfile_t* f)
 	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
 		fname[i]=fname[i+1];
 	for(l=0;l<length;l+=F_IXBSIZE) {
-		read(file,str,F_IXBSIZE);      /* Look for the filename in the IXB file */
+		my_read(file,str,F_IXBSIZE);      /* Look for the filename in the IXB file */
 		str[11]=0;
 		if(!stricmp(fname,str)) break; 
 	}
@@ -520,7 +537,7 @@ int update_uldate(scfg_t* cfg, oldfile_t* f)
 		return(-2); 
 	}
 	lseek(file,l+14,SEEK_SET);
-	write(file,&f->dateuled,4);
+	my_write(file,&f->dateuled,4);
 	close(file);
 
 	/*******************************************/
@@ -530,7 +547,7 @@ int update_uldate(scfg_t* cfg, oldfile_t* f)
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
 		return(errno);
 
-	write(file,&f->dateuled,4);
+	my_write(file,&f->dateuled,4);
 	close(file); 
 	return(0);
 }

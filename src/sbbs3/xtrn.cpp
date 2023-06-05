@@ -1694,7 +1694,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if(mode&EX_BG)	/* background execution, detach child */
 		{
 			lprintf(LOG_INFO,"Detaching external process");
-			daemon(TRUE,FALSE);
+			if(daemon(TRUE,FALSE) != 0)
+				lprintf(LOG_ERR, "!ERROR %d (%s) daemonizing: %s", errno, strerror(errno), argv[0]);
    	    }
 
 		if(!(mode&EX_NOLOG)) {
@@ -1740,8 +1741,10 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 			/* Input */
 			if(mode&EX_STDIN && RingBufFull(&inbuf)) {
-				if((wr=RingBufRead(&inbuf,buf,sizeof(buf)))!=0)
-					write(in_pipe[1],buf,wr);
+				if((wr=RingBufRead(&inbuf,buf,sizeof(buf)))!=0) {
+					if(write(in_pipe[1],buf,wr) != wr)
+						lprintf(LOG_ERR, "ERROR %d writing to pipe", errno);
+				}
 			}
 
 			bp=buf;

@@ -451,8 +451,10 @@ void sbbs_t::create_sif_dat(char *siffile, char *datfile)
 		errormsg(WHERE,ERR_OPEN,datfile,O_WRONLY|O_TRUNC|O_CREAT);
 		return; 
 	}
-	write(file,buf,strlen(buf));
+	int wr = write(file,buf,strlen(buf));
 	close(file);
+	if(wr < 0)
+		errormsg(WHERE, ERR_WRITE, datfile, strlen(buf));
 	free(buf);
 }
 
@@ -479,7 +481,9 @@ void sbbs_t::read_sif_dat(char *siffile, char *datfile)
 		errormsg(WHERE,ERR_ALLOC,datfile,length);
 		return; 
 	}
-	read(file,buf,length);
+	length = read(file,buf,length);
+	if(length < 0)
+		length = 0;
 	close(file);
 	sof(siffile,buf,length);
 	free(buf);

@@ -417,7 +417,8 @@ int view_log(char *filename, char *title)
 		if((buffile=sopen(filename,O_RDONLY,SH_DENYWR))>=0) {
 			j=filelength(buffile);
 			if(j >= 0 && (buf=(char *)malloc(j+1))!=NULL) {
-				read(buffile,buf,j);
+				if(read(buffile,buf,j) != j)
+					j = 0;
 				close(buffile);
 				*(buf+j)=0;
 				uifc.showbuf(WIN_MID,0,0,76,uifc.scrn_len-2,title,buf,NULL,NULL);

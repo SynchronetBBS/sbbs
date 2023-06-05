@@ -261,13 +261,15 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 	printf("Adding %s to %s %s\n\n"
 		,listpath,scfg.lib[scfg.dir[dirnum]->lib]->sname,scfg.dir[dirnum]->sname);
 
-	fgets(nextline,255,stream);
+	if(fgets(nextline,255,stream) == NULL)
+		*nextline = '\0';
 	do {
 		char fdesc[LEN_FDESC + 1] = {0};
 		memset(ext, 0, sizeof(ext));
 		SAFECOPY(curline,nextline);
 		nextline[0]=0;
-		fgets(nextline,255,stream);
+		if(fgets(nextline,255,stream) == NULL)
+			*nextline = '\0';
 		truncsp(curline);
 		if(curline[0]<=' ' || (mode&ASCII_ONLY && (uchar)curline[0]>=0x7e))
 			continue;
@@ -362,7 +364,8 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 					SAFECAT(ext,"\r\n");
 				}
 				nextline[0]=0;
-				fgets(nextline,255,stream);
+				if(fgets(nextline,255,stream) == NULL)
+					*nextline = '\0';
 			}
 		}
 

@@ -73,7 +73,7 @@ const char* fmsgattr_str(uint16_t attr)
 int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 {
 	int			ch,lastch;
-	char		buf[128];
+	uint16_t	terminator = 0xffff;
 	char		to[FIDO_NAME_LEN];
 	char		from[FIDO_NAME_LEN];
 	char		subj[FIDO_SUBJ_LEN];
@@ -89,11 +89,15 @@ int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 		return(-1);
 	}
 
-	fseek(fp,-2L,SEEK_END);
-	fread(buf,sizeof(BYTE),sizeof(buf),fp);
-	if(memcmp(buf,"\x00\x00",2)) {
-		fprintf(stderr,"%s !Packet missing terminating nulls: %02X %02X\n"
-			,fname,buf[0],buf[1]);
+	fseek(fp, -(sizeof terminator), SEEK_END);
+	if(fread(&terminator, sizeof terminator, 1, fp) != 1) {
+		fprintf(stderr,"%s !Error %d (%s) reading terminating nulls"
+			,fname, errno, strerror(errno));
+		return errno;
+	}
+	if(terminator != FIDO_PACKET_TERMINATOR) {
+		fprintf(stderr,"%s !Packet missing terminating nulls: %04X\n"
+			,fname, terminator);
 //		return(-2);
 	}
 

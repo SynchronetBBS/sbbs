@@ -1,8 +1,4 @@
-/* chat.c */
-
 /* Synchronet for *nix sysop chat routines */
-
-/* $Id: chat.c,v 1.21 2019/08/31 22:33:26 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -169,8 +153,11 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	drawchatwin(boxch,usrname,cfg->sys_op);
 
 	memset(p,0,PCHAT_LEN);
-	write(in,p,PCHAT_LEN);
-	write(out,p,PCHAT_LEN);
+	if(write(in,p,PCHAT_LEN) != PCHAT_LEN || write(out,p,PCHAT_LEN) != PCHAT_LEN) {
+		close(in);
+		close(out);
+		return __LINE__;
+	}
 	lseek(in,0,SEEK_SET);
 	lseek(out,0,SEEK_SET);
 
@@ -226,7 +213,8 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 					if(ch) {
 						chatchar(&uwin,ch);
 						ch=0;
-						write(in,&ch,1);
+						if(write(in,&ch,1) != 1)
+							perror("reading chat in");
 						continue;
 					}
 					break;

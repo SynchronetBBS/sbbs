@@ -30,8 +30,8 @@
 extern "C" {
 #endif
 
-int		nopen(const char* str, int access);
-FILE *	fnopen(int* file, const char* str, int access);
+int		nopen(const char* str, uint access);
+FILE *	fnopen(int* file, const char* str, uint access);
 BOOL	ftouch(const char* fname);
 BOOL	fmutex(const char* fname, const char* text, long max_age);
 BOOL	fcompare(const char* fn1, const char* fn2);

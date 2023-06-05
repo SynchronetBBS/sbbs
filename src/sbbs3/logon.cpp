@@ -33,6 +33,7 @@ bool sbbs_t::logon()
 {
 	char	str[256],c;
 	char 	tmp[512];
+	char	path[MAX_PATH+1];
 	uint	i,j,mailw,mailr;
 	int		kmode;
 	uint	totallogons;
@@ -460,10 +461,10 @@ bool sbbs_t::logon()
 
 	if(thisnode.status!=NODE_QUIET && (!REALSYSOP || cfg.sys_misc&SM_SYSSTAT)) {
 		int file;
-		safe_snprintf(str, sizeof(str), "%slogon.lst",cfg.data_dir);
-		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
-			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT|O_APPEND);
-			return(false); 
+		safe_snprintf(path, sizeof(path), "%slogon.lst",cfg.data_dir);
+		if((file=nopen(path,O_WRONLY|O_CREAT|O_APPEND))==-1) {
+			errormsg(WHERE,ERR_OPEN,path,O_RDWR|O_CREAT|O_APPEND);
+			return(false);
 		}
 		getuserstr(&cfg, useron.number, USER_NOTE, useron.note, sizeof(useron.note));
 		getuserstr(&cfg, useron.number, USER_LOCATION, useron.location, sizeof(useron.location));
@@ -472,8 +473,10 @@ bool sbbs_t::logon()
 			,cfg.sys_misc&SM_LISTLOC ? useron.location : useron.note
 			,tm.tm_hour,tm.tm_min
 			,connection,useron.ltoday > 999 ? 999 : useron.ltoday);
-		write(file,str,strlen(str));
-		close(file); 
+		int wr = write(file,str,strlen(str));
+		close(file);
+		if(wr < 0)
+			errormsg(WHERE, ERR_WRITE, path, strlen(str));
 	}
 
 	if(cfg.sys_logon[0]) {				/* execute system logon event */

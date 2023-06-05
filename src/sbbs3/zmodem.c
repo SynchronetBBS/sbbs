@@ -659,7 +659,7 @@ int zmodem_send_zeof(zmodem_t* zm)
 
 int zmodem_recv_raw(zmodem_t* zm)
 {
-	int c;
+	int c = NOINP;
 	unsigned attempt;
 
 	for(attempt=0; attempt < zm->recv_timeout; attempt++) {

@@ -30,7 +30,7 @@
 /* attempted file is already open or denying access  for some other reason. */
 /* All files are opened in BINARY mode.										*/
 /****************************************************************************/
-int nopen(const char* str, int access)
+int nopen(const char* str, uint access)
 {
 	int file,share,count=0;
 
@@ -58,7 +58,7 @@ int nopen(const char* str, int access)
 /* This function performs an nopen, but returns a file stream with a buffer */
 /* allocated.																*/
 /****************************************************************************/
-FILE* fnopen(int* fd, const char* str, int access)
+FILE* fnopen(int* fd, const char* str, uint access)
 {
 	char*	mode;
 	int		file;

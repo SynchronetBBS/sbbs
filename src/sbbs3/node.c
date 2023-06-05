@@ -236,8 +236,10 @@ static char* extended_status(int num, char* str)
 	if(nodeexb < 0)
 		return "No extended status file open";
 	lseek(nodeexb, num * 128, SEEK_SET);
-	read(nodeexb, str, 128);
-	str[127] = 0;
+	if(read(nodeexb, str, 128) != 128)
+		*str = '\0';
+	else
+		str[127] = 0;
 	return str;
 }
 

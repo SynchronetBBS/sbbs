@@ -67,7 +67,8 @@ void sort_index(smb_t* smb)
 		,(int(*)(const void*, const void*))compare_index);
 
 	rewind(smb->sid_fp);
-	chsize(fileno(smb->sid_fp),0L);			/* Truncate the index */
+	if(chsize(fileno(smb->sid_fp),0L) != 0)			/* Truncate the index */
+		perror("truncating index");
 
 	printf("\nRe-writing index... \n");
 	smb->status.total_msgs=l;
@@ -163,13 +164,16 @@ int fixsmb(char* sub)
 		}
 
 		rewind(smb.sha_fp);
-		chsize(fileno(smb.sha_fp),0L);		/* Truncate the header allocation file */
+		if(chsize(fileno(smb.sha_fp),0L) != 0)		/* Truncate the header allocation file */
+			perror("truncating sha file");
 		rewind(smb.sda_fp);
-		chsize(fileno(smb.sda_fp),0L);		/* Truncate the data allocation file */
+		if(chsize(fileno(smb.sda_fp),0L) != 0)		/* Truncate the data allocation file */
+			perror("truncating sda file");
 	}
 
 	rewind(smb.sid_fp);
-	chsize(fileno(smb.sid_fp),0L);			/* Truncate the index */
+	if(chsize(fileno(smb.sid_fp),0L) != 0)		/* Truncate the index */
+		perror("truncating sid file");
 
 	if(renumber || rehash) {
 		printf("Truncating hash file (due to renumbering/rehashing)\n");
@@ -177,7 +181,8 @@ int fixsmb(char* sub)
 			printf("smb_open_hash returned %d: %s\n", i, smb.last_error);
 			exit(1);
 		}
-		chsize(fileno(smb.hash_fp),0L);
+		if(chsize(fileno(smb.hash_fp),0L) != 0)
+			perror("truncating hash file");
 	}
 
 	if(!(smb.status.attr&SMB_HYPERALLOC)) {

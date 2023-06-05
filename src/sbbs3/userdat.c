@@ -100,7 +100,8 @@ uint matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 		return 0;
 	}
 	for(l = 0; l < length; l += sizeof(dat)) {
-		(void)fread(dat,sizeof(dat),1,stream);
+		if(fread(dat,sizeof(dat),1,stream) != 1)
+			break;
 		for(c=0;c<LEN_ALIAS;c++)
 			if(dat[c]==ETX) break;
 		dat[c]=0;
@@ -232,9 +233,9 @@ BOOL del_lastuser(scfg_t* cfg)
 		close(file);
 		return(FALSE);
 	}
-	chsize(file, (long)length - USER_RECORD_LINE_LEN);
+	int result = chsize(file, (long)length - USER_RECORD_LINE_LEN);
 	close(file);
-	return(TRUE);
+	return result == 0;
 }
 
 /****************************************************************************/
@@ -835,7 +836,8 @@ char* username(scfg_t* cfg, int usernumber, char *name)
 		return(name);
 	}
 	(void)lseek(file,(long)((long)(usernumber-1)*(LEN_ALIAS+2)),SEEK_SET);
-	(void)read(file,name,LEN_ALIAS);
+	if(read(file,name,LEN_ALIAS) != LEN_ALIAS)
+		memset(name, ETX, LEN_ALIAS);
 	close(file);
 	for(c=0;c<LEN_ALIAS;c++)
 		if(name[c]==ETX) break;
@@ -866,8 +868,12 @@ int putusername(scfg_t* cfg, int number, const char *name)
 
 	/* Truncate corrupted name.dat */
 	total_users=lastuser(cfg);
-	if(length/(LEN_ALIAS+2) > total_users)
-		chsize(file,(long)(total_users*(LEN_ALIAS+2)));
+	if(length/(LEN_ALIAS+2) > total_users) {
+		if(chsize(file,(long)(total_users*(LEN_ALIAS+2))) != 0) {
+			close(file);
+			return -4;
+		}
+	}
 
 	if(length && length%(LEN_ALIAS+2)) {
 		close(file);
@@ -878,7 +884,8 @@ int putusername(scfg_t* cfg, int number, const char *name)
 		memset(str,ETX,LEN_ALIAS);
 		(void)lseek(file,0L,SEEK_END);
 		while((length = filelength(file)) >= 0 && length < ((long)number*(LEN_ALIAS+2)))	// Shouldn't this be (number-1)?
-			(void)write(file,str,(LEN_ALIAS+2));
+			if(write(file,str,(LEN_ALIAS+2)) != LEN_ALIAS+2)
+				break;
 	}
 	(void)lseek(file,(long)(((long)number-1)*(LEN_ALIAS+2)),SEEK_SET);
 	putrec(str,0,LEN_ALIAS,name);
@@ -1227,7 +1234,8 @@ char* getnodeext(scfg_t* cfg, int num, char* buf)
 	if((f = opennodeext(cfg)) < 1)
 		return "";
 	(void)lseek(f, (num-1) * 128, SEEK_SET);
-	(void)read(f, buf, 128);
+	if(read(f, buf, 128) != 128)
+		memset(buf, 0, 128);
 	close(f);
 	buf[127] = 0;
 	return buf;
@@ -1597,12 +1605,11 @@ char* readsmsg(scfg_t* cfg, int usernumber)
 		close(file);
 		return(NULL);
 	}
-	if(read(file,buf,length)!=length) {
+	if(read(file,buf,length)!=length || chsize(file, 0) != 0) {
 		close(file);
 		free(buf);
 		return(NULL);
 	}
-	chsize(file,0L);
 	close(file);
 	buf[length]=0;
 	strip_invalid_attr(buf);
@@ -1610,8 +1617,12 @@ char* readsmsg(scfg_t* cfg, int usernumber)
 	SAFEPRINTF2(str, "%smsgs/%4.4u.last.msg", cfg->data_dir, usernumber);
 	backup(str, 19, /* rename: */true);
 	if((file = nopen(str, O_WRONLY|O_CREAT|O_APPEND)) != -1) {
-		(void)write(file, buf, length);
+		int wr = write(file, buf, length);
 		close(file);
+		if(wr != length) {
+			free(buf);
+			return NULL;
+		}
 	}
 
 	return(buf);	/* caller must free */
@@ -1647,12 +1658,11 @@ char* getnmsg(scfg_t* cfg, int node_num)
 		close(file);
 		return(NULL);
 	}
-	if(read(file,buf,length)!=length) {
+	if(read(file,buf,length)!=length || chsize(file, 0) != 0) {
 		close(file);
 		free(buf);
 		return(NULL);
 	}
-	chsize(file,0L);
 	close(file);
 	buf[length]=0;
 
@@ -3049,7 +3059,8 @@ int newuserdat(scfg_t* cfg, user_t* user)
 		}
 		last=(long)filelength(file)/(LEN_ALIAS+2);	   /* total users */
 		while(unum<=last) {
-			fread(str,LEN_ALIAS+2,1,stream);
+			if(fread(str,LEN_ALIAS+2,1,stream) != 1)
+				memset(str, ETX, LEN_ALIAS);
 			for(c=0;c<LEN_ALIAS;c++)
 				if(str[c]==ETX) break;
 			str[c]=0;
@@ -3884,9 +3895,12 @@ BOOL getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*progress)(
 			progress(cbdata, i, cfg->total_subs);
 		if(length>=(cfg->sub[i]->ptridx+1)*10L) {
 			fseek(stream,(long)cfg->sub[i]->ptridx*10L,SEEK_SET);
-			fread(&subscan[i].ptr,sizeof(subscan[i].ptr),1,stream);
-			fread(&subscan[i].last,sizeof(subscan[i].last),1,stream);
-			fread(&subscan[i].cfg,sizeof(subscan[i].cfg),1,stream);
+			if(fread(&subscan[i].ptr,sizeof(subscan[i].ptr),1,stream) != 1)
+				break;
+			if(fread(&subscan[i].last,sizeof(subscan[i].last),1,stream) != 1)
+				break;
+			if(fread(&subscan[i].cfg,sizeof(subscan[i].cfg),1,stream) != 1)
+				break;
 		}
 		subscan[i].sav_ptr=subscan[i].ptr;
 		subscan[i].sav_last=subscan[i].last;

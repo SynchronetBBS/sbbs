@@ -2056,7 +2056,7 @@ int umsgf(char* fmt, ...)
 	char* buf = NULL;
 
 	va_start(va, fmt);
-    vasprintf(&buf, fmt, va);
+    retval = vasprintf(&buf, fmt, va);
     va_end(va);
 	if(buf != NULL) {
 		retval = umsg(buf);
@@ -2070,7 +2070,8 @@ static int yesno(int dflt, char* fmt, va_list va)
 	int retval;
 	char* buf = NULL;
 
-    vasprintf(&buf, fmt, va);
+    if(vasprintf(&buf, fmt, va) < 0)
+		return dflt;
 	if(buf == NULL)
 		return dflt;
 	retval = ulist(WIN_SAV|WIN_MID,0,0,0,&dflt,0,buf,api->yesNoOpts);

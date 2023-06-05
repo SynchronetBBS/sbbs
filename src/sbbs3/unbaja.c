@@ -352,11 +352,19 @@ char *getvar(long name)
 	return(varname);
 }
 
+size_t my_fread(void* buf, size_t size, size_t n, FILE* fp)
+{
+	size_t result = fread(buf, size, n, fp);
+	if(result != n)
+		perror("reading file");
+	return result;
+}
+
 void write_var(FILE *bin, char *src)
 {
 	int32_t lng;
 
-	fread(&lng, 1, 4, bin);
+	my_fread(&lng, 1, 4, bin);
 	sprintf(strchr(src,0),"%s ",getvar(lng));
 }
 
@@ -366,7 +374,7 @@ void write_cstr(FILE *bin, char *src)
 	char* p;
 
 	strcat(src,"\"");
-	while(fread(&ch,1,1,bin)==1) {
+	while(my_fread(&ch,1,1,bin)==1) {
 		if(ch==0)
 			break;
 		if((p=c_escape_char(ch))!=NULL)
@@ -383,7 +391,7 @@ void write_lng(FILE *bin, char *src)
 {
 	int32_t lng;
 
-	fread(&lng,4,1,bin);
+	my_fread(&lng,4,1,bin);
 	sprintf(strchr(src,0),"%"PRId32" ",lng);
 }
 
@@ -391,7 +399,7 @@ void write_short(FILE *bin, char *src)
 {
 	int16_t sht;
 
-	fread(&sht,2,1,bin);
+	my_fread(&sht,2,1,bin);
 	sprintf(strchr(src,0),"%d ",sht);
 }
 
@@ -399,7 +407,7 @@ void write_ushort(FILE *bin, char *src)
 {
 	uint16_t sht;
 
-	fread(&sht,2,1,bin);
+	my_fread(&sht,2,1,bin);
 	sprintf(strchr(src,0),"%d ",sht);
 }
 
@@ -407,7 +415,7 @@ void write_ch(FILE *bin, char *src)
 {
 	char ch;
 
-	fread(&ch,1,1,bin);
+	my_fread(&ch,1,1,bin);
 	sprintf(strchr(src,0),"%c ",ch);
 }
 
@@ -415,14 +423,14 @@ void write_uchar(FILE *bin, char *src)
 {
 	uchar uch;
 
-	fread(&uch,1,1,bin);
+	my_fread(&uch,1,1,bin);
 	sprintf(strchr(src,0),"%u ",uch);
 }
 
 void write_logic(FILE *bin, char *src)
 {
 	char ch;
-	fread(&ch,1,1,bin);
+	my_fread(&ch,1,1,bin);
 	if(ch==LOGIC_TRUE)
 		strcat(src,"TRUE ");
 	else
@@ -432,7 +440,7 @@ void write_logic(FILE *bin, char *src)
 int write_key(FILE *bin, char *src, int keyset)
 {
 	uchar uch;
-	fread(&uch,1,1,bin);
+	my_fread(&uch,1,1,bin);
 	if(uch==0 && keyset)
 		return(uch);
 	if(uch==CS_DIGIT)
@@ -590,7 +598,7 @@ void eol(char *src)
 						if(usevar) {		 \
 							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
-							fread(buf,1,1,bin); \
+							my_fread(buf,1,1,bin); \
 						} else {				 \
 							write_uchar(bin,src);  \
 						}					 \
@@ -601,7 +609,7 @@ void eol(char *src)
 						if(usevar) {		 \
 							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
-							fread(buf,2,1,bin); \
+							my_fread(buf,2,1,bin); \
 						} else {				 \
 							write_short(bin,src);  \
 						}					 \
@@ -613,7 +621,7 @@ void eol(char *src)
 						if(usevar) {		 \
 							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
-							fread(buf,4,1,bin); \
+							my_fread(buf,4,1,bin); \
 						} else {				 \
 							write_lng(bin,src);  \
 						}					 \
@@ -626,7 +634,7 @@ void eol(char *src)
 						if(usevar) {		 \
 							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
-							fread(buf,1,1,bin); \
+							my_fread(buf,1,1,bin); \
 						} else {				 \
 							write_uchar(bin,src);		 \
 						}					 \
@@ -638,7 +646,7 @@ void eol(char *src)
 						if(usevar) {		 \
 							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
-							fread(buf,2,1,bin); \
+							my_fread(buf,2,1,bin); \
 						} else {				 \
 							write_short(bin,src);  \
 						}					 \
@@ -650,7 +658,7 @@ void eol(char *src)
 						if(usevar) {		 \
 							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
-							fread(buf,1,1,bin); \
+							my_fread(buf,1,1,bin); \
 						} else {				 \
 							write_uchar(bin,src);  \
 						}					 \
@@ -663,9 +671,9 @@ void eol(char *src)
 							if(usevar) {		 \
 								sprintf(strchr(src,0),"%s ",getvar(var)); \
 								usevar=FALSE;	 \
-								fread(buf,2,1,bin); \
+								my_fread(buf,2,1,bin); \
 							} else {				 \
-								fread(&ush, 2, 1, bin); \
+								my_fread(&ush, 2, 1, bin); \
 								if(ush)					\
 									sprintf(strchr(src,0),"%u ",ush);  \
 							}					 \
@@ -678,7 +686,7 @@ void eol(char *src)
 							if(usevar) {		 \
 								sprintf(strchr(src,0),"%s ",getvar(var)); \
 								usevar=FALSE;	 \
-								fread(buf,2,1,bin); \
+								my_fread(buf,2,1,bin); \
 							} else {				 \
 								write_ushort(bin,src);  \
 							}					 \
@@ -690,7 +698,7 @@ void eol(char *src)
 							if(usevar) {		 \
 								sprintf(strchr(src,0),"%s ",getvar(var)); \
 								usevar=FALSE;	 \
-								fread(buf,2,1,bin); \
+								my_fread(buf,2,1,bin); \
 							} else {				 \
 								write_ushort(bin,src);  \
 							}					 \
@@ -703,7 +711,7 @@ void eol(char *src)
 							if(usevar) {		 \
 								sprintf(strchr(src,0),"%s ",getvar(var)); \
 								usevar=FALSE;	 \
-								fread(buf,2,1,bin); \
+								my_fread(buf,2,1,bin); \
 							} else {				 \
 								write_ushort(bin,src);  \
 							}					 \
@@ -715,7 +723,7 @@ void eol(char *src)
 						if(usevar) {		 \
 							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
-							fread(buf,4,1,bin); \
+							my_fread(buf,4,1,bin); \
 						} else {				 \
 							write_lng(bin,src);  \
 						}					 \
@@ -726,7 +734,7 @@ void eol(char *src)
 						if(usevar) {		 \
 							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
-							fread(buf,4,1,bin); \
+							my_fread(buf,4,1,bin); \
 						} else {				 \
 							write_lng(bin,src);  \
 						}					 \
@@ -738,7 +746,7 @@ void eol(char *src)
 						if(usevar) {		 \
 							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
-							fread(buf,2,1,bin); \
+							my_fread(buf,2,1,bin); \
 						} else {				 \
 							write_short(bin,src);  \
 						}					 \
@@ -750,7 +758,7 @@ void eol(char *src)
 						if(usevar) {		 \
 							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
-							fread(buf,4,1,bin); \
+							my_fread(buf,4,1,bin); \
 						} else {				 \
 							write_lng(bin,src);  \
 						}					 \
@@ -763,7 +771,7 @@ void eol(char *src)
 							if(usevar) {		 \
 								sprintf(strchr(src,0),"%s ",getvar(var)); \
 								usevar=FALSE;	 \
-								fread(buf,4,1,bin); \
+								my_fread(buf,4,1,bin); \
 							} else {				 \
 								write_lng(bin,src);  \
 							}					 \
@@ -776,7 +784,7 @@ void eol(char *src)
 							if(usevar) {		 \
 								sprintf(strchr(src,0),"%s ",getvar(var)); \
 								usevar=FALSE;	 \
-								fread(buf,1,1,bin); \
+								my_fread(buf,1,1,bin); \
 							} else {				 \
 								write_uchar(bin,src);  \
 							}					 \
@@ -789,7 +797,7 @@ void eol(char *src)
 						if(usevar) {		 \
 							sprintf(strchr(src,0),"%s ",getvar(var)); \
 							usevar=FALSE;	 \
-							fread(buf,1,1,bin); \
+							my_fread(buf,1,1,bin); \
 						} else {				 \
 							write_ch(bin,src);  \
 						}					 \
@@ -1341,7 +1349,7 @@ void decompile(FILE *bin, FILE *srcfile)
 	while(1) {
 		currpos=ftell(bin);
 
-		if(fread(&uch,1,1,bin)!=1) {
+		if(my_fread(&uch,1,1,bin)!=1) {
 			if(redo)
 				break;
 			redo=TRUE;
@@ -1355,11 +1363,11 @@ void decompile(FILE *bin, FILE *srcfile)
 		switch(uch) {
 			case CS_USE_INT_VAR:
 				usevar=TRUE;
-				fread(&var,4,1,bin);
-				fread(&buf,2,1,bin);	/* offset/length */
+				my_fread(&var,4,1,bin);
+				my_fread(&buf,2,1,bin);	/* offset/length */
 				continue;
 			case CS_VAR_INSTRUCTION:
-				fread(&uch,1,1,bin);
+				my_fread(&uch,1,1,bin);
 				switch(uch) {
 					case SHOW_VARS:
 						WRITE_NAME("SHOW_VARS");
@@ -1376,7 +1384,7 @@ void decompile(FILE *bin, FILE *srcfile)
 							WRITE_NAME("LPRINTF");
 						}
 						write_cstr(bin,src);
-						fread(&uch, 1, 1, bin);
+						my_fread(&uch, 1, 1, bin);
 						for(i=0; i<uch; i++) {
 							write_var(bin,src);
 						}
@@ -1420,7 +1428,7 @@ void decompile(FILE *bin, FILE *srcfile)
 						WRITE_NAME("SPRINTF");
 						write_var(bin,src);
 						write_cstr(bin,src);
-						fread(&uch, 1, 1, bin);
+						my_fread(&uch, 1, 1, bin);
 						for(i=0; i<uch; i++) {
 							write_var(bin,src);
 						}
@@ -1532,7 +1540,7 @@ void decompile(FILE *bin, FILE *srcfile)
 						CHVAR("RECEIVE_FILE_VIA");
 					case TELNET_GATE_STR:				/* TELNET_GATE reverses argument order */
 						WRITE_NAME("TELNET_GATE");
-						fread(&lng,4,1,bin);
+						my_fread(&lng,4,1,bin);
 						write_cstr(bin,src);
 						if(usevar) {
 							sprintf(strchr(src,0),"%s ",getvar(var));
@@ -1544,8 +1552,8 @@ void decompile(FILE *bin, FILE *srcfile)
 						break;
 					case TELNET_GATE_VAR:				/* TELNET_GATE reverses argument order */
 						WRITE_NAME("TELNET_GATE");
-						fread(&lng,4,1,bin);
-						fread(&lng2, 1, 4, bin);
+						my_fread(&lng,4,1,bin);
+						my_fread(&lng2, 1, 4, bin);
 						sprintf(strchr(src,0),"%s ",getvar(lng2));
 						if(usevar) {
 							sprintf(strchr(src,0),"%s ",getvar(var));
@@ -1682,7 +1690,7 @@ void decompile(FILE *bin, FILE *srcfile)
 			case CS_GETCHAR:
 				NONE("GETCHAR");
 			case CS_ONE_MORE_BYTE:
-				fread(&uch,1,1,bin);
+				my_fread(&uch,1,1,bin);
 				switch(uch) {
 					case CS_ONLINE:
 						NONE("ONLINE");
@@ -1743,7 +1751,7 @@ void decompile(FILE *bin, FILE *srcfile)
 			case CS_MULTINODE_CHAT:
 				MUCH("MULTINODE_CHAT");
 			case CS_TWO_MORE_BYTES:
-				fread(&uch,1,1,bin);
+				my_fread(&uch,1,1,bin);
 				switch(uch) {
 					case CS_USER_EVENT:
 						MUCH("USER_EVENT");
@@ -1752,14 +1760,14 @@ void decompile(FILE *bin, FILE *srcfile)
 				}
 				break;
 			case CS_GOTO:
-				fread(&ush,2,1,bin);
+				my_fread(&ush,2,1,bin);
 				labels[ush]=TRUE;
 				WRITE_NAME("GOTO");
 				sprintf(strchr(src,0),"label_%04x ",ush);
 				eol(src);
 				break;
 			case CS_CALL:
-				fread(&ush,2,1,bin);
+				my_fread(&ush,2,1,bin);
 				labels[ush]=TRUE;
 				WRITE_NAME("CALL");
 				sprintf(strchr(src,0),"label_%04x ",ush);
@@ -1847,7 +1855,7 @@ void decompile(FILE *bin, FILE *srcfile)
 			case CS_COMPARE_KEYS:
 				KEYS("COMPARE_KEYS");
 			case CS_STR_FUNCTION:
-				fread(&uch,1,1,bin);
+				my_fread(&uch,1,1,bin);
 				switch(uch) {
 					case CS_LOGIN:
 						STR("LOGIN");
@@ -1856,13 +1864,13 @@ void decompile(FILE *bin, FILE *srcfile)
 					default:
 						printf("ERROR!  Unknown string instruction: %02x%02X\n",CS_STR_FUNCTION,uch);
 						ch=0;
-						while(ch) fread(&ch,1,1,bin);
+						while(ch) my_fread(&ch,1,1,bin);
 				}
 				break;
 			case CS_COMPARE_ARS:
-				fread(&uch,1,1,bin);
+				my_fread(&uch,1,1,bin);
 				if((p=(char *)malloc(uch)) != NULL) {
-					fread(p,uch,1,bin);
+					my_fread(p,uch,1,bin);
 					WRITE_NAME("COMPARE_ARS");
 					sprintf(strchr(src,0),"%s\n",decompile_ars((uchar*)p,uch));
 					free(p);
@@ -1889,7 +1897,7 @@ void decompile(FILE *bin, FILE *srcfile)
 				indenteol=1;
 				LNG("CASE");
 			case CS_NET_FUNCTION:
-				fread(&uch,1,1,bin);
+				my_fread(&uch,1,1,bin);
 				switch(uch) {
 					case CS_SOCKET_OPEN:
 						VAR("SOCKET_OPEN");
@@ -1937,7 +1945,7 @@ void decompile(FILE *bin, FILE *srcfile)
 				}
 				break;
 			case CS_FIO_FUNCTION:
-				fread(&uch,1,1,bin);
+				my_fread(&uch,1,1,bin);
 				switch(uch) {
 					case FIO_OPEN:
 						MVARUSTSTR("FOPEN");
@@ -1961,7 +1969,7 @@ void decompile(FILE *bin, FILE *srcfile)
 						WRITE_NAME("FSET_POS");
 						write_var(bin,src);
 						write_lng(bin,src);
-						fread(&ush,2,1,bin);
+						my_fread(&ush,2,1,bin);
 						if(ush==SEEK_CUR)
 							strcat(src,"CUR ");
 						else if(ush==SEEK_END)
@@ -1974,7 +1982,7 @@ void decompile(FILE *bin, FILE *srcfile)
 						WRITE_NAME("FSET_POS");
 						write_var(bin,src);
 						write_var(bin,src);
-						fread(&ush,2,1,bin);
+						my_fread(&ush,2,1,bin);
 						if(ush==SEEK_CUR)
 							strcat(src,"CUR ");
 						else if(ush==SEEK_END)
@@ -1999,7 +2007,7 @@ void decompile(FILE *bin, FILE *srcfile)
 						WRITE_NAME("FPRINTF");
 						write_var(bin,src);
 						write_cstr(bin,src);
-						fread(&uch, 1, 1, bin);
+						my_fread(&uch, 1, 1, bin);
 						for(i=0; i<uch; i++) {
 							write_var(bin,src);
 						}

@@ -118,7 +118,11 @@ int main(int argc,char **argv)
 		fprintf(stderr,"!ERROR loading configuration files: %s\n",str);
 		return(1);
 	}
-	(void)chdir(cfg.ctrl_dir);
+	if(chdir(cfg.ctrl_dir) != 0) {
+		fprintf(stderr, "ERROR %d (%s) changing directory to: %s"
+			,errno, strerror(errno), cfg.ctrl_dir);
+		return EXIT_FAILURE;
+	}
 
 	lputs("\n");
 

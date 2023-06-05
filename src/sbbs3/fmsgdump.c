@@ -109,7 +109,10 @@ int msgdump(FILE* fp, const char* fname)
 		return __COUNTER__;
 	}
 	fseek(fp, sizeof(hdr), SEEK_SET);
-	fread(body, len, 1, fp);
+	if(fread(body, len, 1, fp) != 1) {
+		perror("reading body text");
+		return __COUNTER__;
+	}
 	fprintf(bodyfp, "\n-start of message text-\n");
 	char* p = body;
 	while(*p && p < body + len) {

@@ -119,7 +119,8 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 			p+=sprintf(p,"%s/%u",terminal, cur_rate);
 		p++;	// Add NULL
 		l=p-(char*)buf;
-		(void)sendsocket(remote_socket,(char*)buf,l);
+		if(sendsocket(remote_socket,(char*)buf,l) != (ssize_t)l)
+			lprintf(LOG_WARNING, "Error %d sending %lu bytes to server: %s", ERROR_VALUE, l, destaddr);
 		mode|=TG_NOLF;	/* Send LF (to remote host) when Telnet client sends CRLF (when not in binary mode) */
 	}
 

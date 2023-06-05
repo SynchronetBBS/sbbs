@@ -149,7 +149,9 @@ bool sbbs_t::unpack_rep(char* repfile)
 		remove(fname);
 	}
 
-	fread(block,QWK_BLOCK_LEN,1,rep);
+	if(fread(block,QWK_BLOCK_LEN,1,rep) != 1)
+		errormsg(WHERE, ERR_READ, repfile, QWK_BLOCK_LEN);
+
 	if(strnicmp((char *)block,cfg.sys_id,strlen(cfg.sys_id))) {
 		iniFreeStringList(headers);
 		iniFreeStringList(voting);

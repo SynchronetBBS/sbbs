@@ -1014,10 +1014,12 @@ void sbbs_t::moduserdat(uint xtrnnum)
 		fexistcase(path);
 		if((file=nopen(path,O_RDONLY))!=-1) {
 			lseek(file,361,SEEK_SET);
-			read(file,&useron.flags1,4); /* Flags */
+			if(read(file,&useron.flags1,4) != 4) /* Flags */
+				errormsg(WHERE, ERR_READ, path, 4);
 			putuserflags(useron.number, USER_FLAGS1, useron.flags1);
 			lseek(file,373,SEEK_SET);
-			read(file,&i,2);			/* SecLvl */
+			if(read(file,&i,2) != 2)		/* SecLvl */
+				errormsg(WHERE, ERR_READ, path, 2);
 			if(i<SYSOP_LEVEL) {
 				useron.level=(uint8_t)i;
 				putuserdec32(useron.number, USER_LEVEL, useron.level); 
@@ -1099,17 +1101,26 @@ void sbbs_t::moduserdat(uint xtrnnum)
 		fexistcase(path);
 		if((file=nopen(path,O_RDONLY))!=-1) {
 			lseek(file,39,SEEK_SET);
-			read(file,&c,1);
+			if(read(file,&c,1) != 1)
+				c = 0;
 			if(c==1) {	 /* file has been updated */
 				lseek(file,105,SEEK_CUR);	/* read security level */
-				read(file,&i,2);
+				if(read(file,&i,2) != 2) {
+					close(file);
+					errormsg(WHERE, ERR_READ, path, 2);
+					return;
+				}
 				i = LE_INT(i);
 				if(i<SYSOP_LEVEL) {
 					useron.level=(uint8_t)i;
 					putuserdec32(useron.number, USER_LEVEL, useron.level); 
 				}
 				lseek(file,75,SEEK_CUR);	/* read in expiration date */
-				read(file,&i,2);			/* convert from julian to unix */
+				if(read(file,&i,2) != 2) {	/* convert from julian to unix */
+					close(file);
+					errormsg(WHERE, ERR_READ, path, 2);
+					return;
+				}
 				i = LE_INT(i);
 				useron.expire=(time32_t)juliantounix(i);
 				putuserdatetime(useron.number, USER_EXPIRE, useron.expire); 
@@ -1146,7 +1157,8 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				putuserdec32(useron.number, USER_LEVEL, useron.level); 
 			} 
 		}
-		fgets(str,81,stream);		 /* was transfer level, now ignored */
+		if(fgets(str,81,stream)	== NULL) /* was transfer level, now ignored */
+			*str = '\0';
 		if(fgets(str,81,stream)) {		/* flags #1 */
 			if(strchr(str,'-'))         /* remove flags */
 				useron.flags1&=~aftou32(str);

@@ -56,6 +56,8 @@ struct xpmapping* xpmap(const char *filename, enum xpmap_type type)
 			mflags=MAP_PRIVATE;
 			mprot=PROT_READ|PROT_WRITE;
 			break;
+		default:
+			return NULL;
 	}
 
 	fd=open(filename, oflags);

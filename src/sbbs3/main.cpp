@@ -56,7 +56,7 @@ const char* server_abbrev = "term";
 		int result = cryptDestroySession(session);
 
 		if(result != 0)
-			lprintf(LOG_ERR, "%04d SSH Error %d destroying Cryptlib Session %d from line %d"
+			lprintf(LOG_ERR, "%04d SSH ERROR %d destroying Cryptlib Session %d from line %d"
 				, sock, result, session, line);
 		else {
 			uint32_t remain = protected_uint32_adjust_fetch(&ssh_sessions, -1);
@@ -2144,9 +2144,11 @@ void input_thread(void *arg)
 
 		if(sbbs->passthru_socket_active == true) {
 			BOOL writable = FALSE;
-			if(socket_check(sbbs->passthru_socket, NULL, &writable, 1000) && writable)
-				(void)sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr);
-			else
+			if(socket_check(sbbs->passthru_socket, NULL, &writable, 1000) && writable) {
+				if(sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr) != wr)
+					lprintf(LOG_ERR, "Node %d ERROR %d writing to passthru socket"
+						,sbbs->cfg.node_num, ERROR_VALUE);
+			} else
 				lprintf(LOG_WARNING, "Node %d could not write to passthru socket (writable=%d)"
 					, sbbs->cfg.node_num, (int)writable);
 			continue;
@@ -2523,10 +2525,12 @@ void output_thread(void* arg)
 						,node, result, errno, i, spy_topic);
 			}
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
-				(void)sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
+				if(sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i) != i)
+					lprintf(LOG_ERR, "%s ERROR %d writing to spy socket", node, ERROR_VALUE);
 #ifdef __unix__
 			if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
-				(void)sendsocket(uspy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
+				if(sendsocket(uspy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i) != i)
+					lprintf(LOG_ERR, "%s ERROR %d writing to UNIX spy socket", node, ERROR_VALUE);
 #endif
 		}
 
@@ -2666,7 +2670,8 @@ void event_thread(void* arg)
 			if(filelength(file)<(int)(sizeof(time32_t)*(i+1))) {
 				sbbs->lprintf(LOG_WARNING,"Initializing last run time for event: %s"
 					,sbbs->cfg.event[i]->code);
-				write(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last));
+				if(write(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last)) != sizeof sbbs->cfg.event[i]->last)
+					sbbs->errormsg(WHERE, ERR_WRITE, str, 4);
 			} else {
 				if(read(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last))!=sizeof(sbbs->cfg.event[i]->last))
 					sbbs->errormsg(WHERE,ERR_READ,str,sizeof(time32_t));
@@ -2675,8 +2680,8 @@ void event_thread(void* arg)
 			if(sbbs->cfg.event[i]->misc&EVENT_INIT)
 				sbbs->cfg.event[i]->last=-1;
 		}
-		lastprepack=0;
-		read(file,&lastprepack,sizeof(lastprepack));	/* expected to fail first time */
+		if(read(file,&lastprepack,sizeof(lastprepack)) != sizeof lastprepack)	/* expected to fail first time */
+			lastprepack = 0;
 		close(file);
 	}
 
@@ -2690,7 +2695,8 @@ void event_thread(void* arg)
 			if(filelength(file)<(int)(sizeof(time32_t)*(i+1))) {
 				sbbs->lprintf(LOG_WARNING,"Initializing last call-out time for QWKnet hub: %s"
 					,sbbs->cfg.qhub[i]->id);
-				write(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last));
+				if(write(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last)) != sizeof sbbs->cfg.qhub[i]->last)
+					sbbs->errormsg(WHERE, ERR_WRITE, str, 4);
 			} else {
 				if(read(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last))!=sizeof(sbbs->cfg.qhub[i]->last))
 					sbbs->errormsg(WHERE,ERR_READ,str,sizeof(sbbs->cfg.qhub[i]->last));
@@ -2870,7 +2876,8 @@ void event_thread(void* arg)
 					break;
 				}
 				lseek(file,(int)sbbs->cfg.total_events*4L,SEEK_SET);
-				write(file,&lastprepack,sizeof(lastprepack));
+				if(write(file,&lastprepack,sizeof(lastprepack)) != sizeof lastprepack)
+					sbbs->errormsg(WHERE, ERR_WRITE, str, sizeof lastprepack);
 				close(file);
 
 				remove(semfile);
@@ -3014,7 +3021,10 @@ void event_thread(void* arg)
 					sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr=0;
 					if(file!=-1) {
 						lseek(file,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]->subnum]->ptridx*sizeof(int32_t),SEEK_SET);
-						read(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr,sizeof(sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr));
+						if(read(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr
+							,sizeof(sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr)) !=
+							 sizeof(sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr))
+							sbbs->errormsg(WHERE, ERR_READ, str, sizeof(uint32_t));
 					}
 				}
 				if(file!=-1)
@@ -3030,12 +3040,14 @@ void event_thread(void* arg)
 							while(filelength(file)<
 								sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]->subnum]->ptridx*4L) {
 								l32=l;
-								write(file,&l32,4);		/* initialize ptrs to null */
+								if(write(file,&l32,4) != 4)		/* initialize ptrs to null */
+									sbbs->errormsg(WHERE, ERR_WRITE, str, 4);
 							}
 							lseek(file
 								,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]->subnum]->ptridx*sizeof(int32_t)
 								,SEEK_SET);
-							write(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr,sizeof(sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr));
+							if(write(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr,sizeof(sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr)) != sizeof sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr)
+								sbbs->errormsg(WHERE, ERR_WRITE, str, 4);
 						}
 						close(file);
 					}
@@ -3049,7 +3061,8 @@ void event_thread(void* arg)
 					break;
 				}
 				lseek(file,sizeof(time32_t)*i,SEEK_SET);
-				write(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last));
+				if(write(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last)) != sizeof sbbs->cfg.qhub[i]->last)
+					sbbs->errormsg(WHERE, ERR_WRITE, str, 4);
 				close(file);
 
 				if(sbbs->cfg.qhub[i]->call[0]) {
@@ -3129,7 +3142,8 @@ void event_thread(void* arg)
 								continue;
 							}
 							lseek(file,(int)i*4L,SEEK_SET);
-							read(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last));
+							if(read(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last)) != sizeof sbbs->cfg.event[i]->last)
+								sbbs->errormsg(WHERE, ERR_READ, str, 4);
 							close(file);
 							if(now-sbbs->cfg.event[i]->last<(60*60))	/* event is done */
 								break;
@@ -3263,7 +3277,8 @@ void event_thread(void* arg)
 						break;
 					}
 					lseek(file,(int)i*4L,SEEK_SET);
-					write(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last));
+					if(write(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last)) != sizeof sbbs->cfg.event[i]->last)
+						sbbs->errormsg(WHERE, ERR_WRITE, str, 4);
 					close(file);
 
 					if(sbbs->cfg.event[i]->node != NODE_ANY
@@ -3811,10 +3826,12 @@ void sbbs_t::spymsg(const char* msg)
 	}
 
 	if(cfg.node_num && spy_socket[cfg.node_num-1]!=INVALID_SOCKET)
-		(void)sendsocket(spy_socket[cfg.node_num-1],str,strlen(str));
+		if(sendsocket(spy_socket[cfg.node_num-1],str,strlen(str)) < 1)
+			lprintf(LOG_ERR, "Node %d ERROR %d writing to spy socket", cfg.node_num, ERROR_VALUE);
 #ifdef __unix__
 	if(cfg.node_num && uspy_socket[cfg.node_num-1]!=INVALID_SOCKET)
-		(void)sendsocket(uspy_socket[cfg.node_num-1],str,strlen(str));
+		if(sendsocket(uspy_socket[cfg.node_num-1],str,strlen(str)) < 1)
+			lprintf(LOG_ERR, "Node %d ERROR %d writing to spy socket", cfg.node_num, ERROR_VALUE);
 #endif
 }
 
@@ -5211,7 +5228,8 @@ NO_SSH:
 			for(i=first_node;i<=last_node;i++)  {
 				if(&uspy_cb[i-1] == ts_cb) {
 					if(node_socket[i-1]==INVALID_SOCKET)
-						read(uspy_socket[i-1],str,sizeof(str));
+						if(read(uspy_socket[i-1],str,sizeof(str)) < 1)
+							*str = '\0';
 					if(!socket_check(uspy_socket[i-1],NULL,NULL,0)) {
 						lprintf(LOG_NOTICE,"Spy socket for node %d disconnected",i);
 						close_socket(uspy_socket[i-1]);

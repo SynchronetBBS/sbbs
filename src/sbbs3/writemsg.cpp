@@ -238,8 +238,10 @@ int sbbs_t::process_edited_file(const char* src, const char* dest, int mode, uns
 	}
 
 	memset(buf,0,len+1);
-	fread(buf,len,sizeof(char),fp);
+	int rd = fread(buf,len,1,fp);
 	fclose(fp);
+	if(rd != 1)
+		return -4;
 
 	if((fp=fopen(dest,"wb"))!=NULL) {
 		len=process_edited_text(buf, fp, mode, lines, maxlines);
@@ -261,6 +263,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 {
 	char	str[256],quote[128],c,*buf,*p,*tp
 				,useron_level;
+	char	path[MAX_PATH+1];
 	char	msgtmp[MAX_PATH+1];
 	char	tagfile[MAX_PATH+1];
 	char	draft_desc[128];
@@ -325,15 +328,17 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		/* Quote entire message to MSGTMP or INPUT.MSG */
 
 		if(useron_xedit && cfg.xedit[useron_xedit-1]->misc&QUOTEALL) {
-			quotes_fname(useron_xedit, str, sizeof(str));
-			if((stream=fnopen(NULL,str,O_RDONLY))==NULL) {
-				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
+			quotes_fname(useron_xedit, path, sizeof(path));
+			if((stream=fnopen(NULL,path,O_RDONLY))==NULL) {
+				errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
 				free(buf);
-				return(false); 
+				return(false);
 			}
 			if(cfg.xedit[useron_xedit - 1]->type == XTRN_WWIV) { // 2 lines of metadata
-				fgets(str, sizeof(str), stream);
-				fgets(str, sizeof(str), stream);
+				if(fgets(str, sizeof(str), stream) == NULL)
+					errormsg(WHERE, ERR_READ, path, sizeof(str));
+				if(fgets(str, sizeof(str), stream) == NULL)
+					errormsg(WHERE, ERR_READ, path, sizeof(str));
 			}
 			if((file=nopen(msgtmp,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 				errormsg(WHERE,ERR_OPEN,msgtmp,O_WRONLY|O_CREAT|O_TRUNC);
@@ -347,8 +352,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 					break;
 				quotestr(str);
 				SAFEPRINTF2(tmp,quote_fmt,cols-4,str);
-				write(file,tmp,strlen(tmp));
-				linesquoted++; 
+				if(write(file,tmp,strlen(tmp)) > 0)
+					linesquoted++;
 			}
 			fclose(stream);
 			close(file); 
@@ -360,16 +365,18 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			;
 
 		else if(yesno(text[QuoteMessageQ])) {
-			quotes_fname(useron_xedit, str, sizeof(str));
-			if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
-				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
+			quotes_fname(useron_xedit, path, sizeof(path));
+			if((stream=fnopen(&file,path,O_RDONLY))==NULL) {
+				errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
 				free(buf);
 				return(false); 
 			}
 
 			if(useron_xedit > 0 && cfg.xedit[useron_xedit - 1]->type == XTRN_WWIV) { // 2 lines of metadata
-				fgets(str, sizeof(str), stream);
-				fgets(str, sizeof(str), stream);
+				if(fgets(str, sizeof(str), stream) == NULL)
+					errormsg(WHERE, ERR_READ, path, sizeof(str));
+				if(fgets(str, sizeof(str), stream) == NULL)
+					errormsg(WHERE, ERR_READ, path, sizeof(str));
 			}
 
 			if((file=nopen(msgtmp,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
@@ -400,8 +407,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 							break;
 						quotestr(str);
 						SAFEPRINTF2(tmp,quote_fmt,cols-4,str);
-						write(file,tmp,strlen(tmp));
-						linesquoted++; 
+						if(write(file,tmp,strlen(tmp)) > 0)
+							linesquoted++;
 					}
 					break; 
 				}
@@ -444,8 +451,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 								break;
 							quotestr(str);
 							SAFEPRINTF2(tmp,quote_fmt,cols-4,str);
-							write(file,tmp,strlen(tmp));
-							linesquoted++;
+							if(write(file,tmp,strlen(tmp)) > 0)
+								linesquoted++;
 							j++; 
 						} 
 					}
@@ -453,8 +460,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 						if(fgets(str,sizeof(str),stream)) {
 							quotestr(str);
 							SAFEPRINTF2(tmp,quote_fmt,cols-4,str);
-							write(file,tmp,strlen(tmp));
-							linesquoted++; 
+							if(write(file,tmp,strlen(tmp)) > 0)
+								linesquoted++;
 						} 
 					}
 					p=strchr(p,',');
@@ -680,7 +687,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				length=(long)filelength(file);
 				l=length>(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-1
 					? (cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-1 : length;
-				read(file,buf,l);
+				if(read(file,buf,l) != l)
+					l = 0;
 				buf[l]=0;
 				close(file);
 				// remove(msgtmp);
@@ -1702,7 +1710,12 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 	setvbuf(instream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
 	fseeko(smb->sdt_fp,offset,SEEK_SET);
 	xlat=XLAT_NONE;
-	fwrite(&xlat,2,1,smb->sdt_fp);
+	if(fwrite(&xlat,2,1,smb->sdt_fp) != 1) {
+		errormsg(WHERE, ERR_WRITE, smb->file, 2);
+		smb_unlocksmbhdr(smb);
+		smb_freemsgdat(smb,offset,length,1);
+		return false;
+	}
 	x=SDT_BLOCK_LEN-2;				/* Don't read/write more than 255 */
 	while(!feof(instream)) {
 		memset(buf,0,x);
@@ -1711,7 +1724,12 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 			break;
 		if(j>1 && (j!=x || feof(instream)) && buf[j-1]==LF && buf[j-2]==CR)
 			buf[j-1]=buf[j-2]=0;	/* Convert to NULL */
-		fwrite(buf,j,1,smb->sdt_fp);
+		if(fwrite(buf,j,1,smb->sdt_fp) != 1) {
+			errormsg(WHERE, ERR_WRITE, smb->file, j);
+			smb_unlocksmbhdr(smb);
+			smb_freemsgdat(smb,offset,length,1);
+			return false;
+		}
 		x=SDT_BLOCK_LEN; 
 	}
 	fflush(smb->sdt_fp);
@@ -1733,7 +1751,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	uint i;
 	int newgrp,newsub,storage;
 	off_t offset;
-	ulong length;
+	uint length;
 	smbmsg_t	newmsg=*msg;
 	smb_t		newsmb;
 
@@ -1755,7 +1773,11 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	}
 
 	fseek(smb.sdt_fp,msg->hdr.offset,SEEK_SET);
-	fread(buf,length,1,smb.sdt_fp);
+	if(fread(buf,length,1,smb.sdt_fp) != 1) {
+		free(buf);
+		errormsg(WHERE, ERR_READ, smb.file, length);
+		return false;
+	}
 
 	SAFEPRINTF2(newsmb.file,"%s%s",cfg.sub[newsub]->data_dir,cfg.sub[newsub]->code);
 	newsmb.retry_time=cfg.smb_retry_time;
@@ -1819,9 +1841,16 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	newmsg.hdr.version=smb_ver();
 
 	fseeko(newsmb.sdt_fp,offset,SEEK_SET);
-	fwrite(buf,length,1,newsmb.sdt_fp);
+	int wr = fwrite(buf,length,1,newsmb.sdt_fp);
 	fflush(newsmb.sdt_fp);
 	free(buf);
+
+	if(wr != 1) {
+		errormsg(WHERE, ERR_WRITE, newsmb.file, length);
+		smb_close(&newsmb);
+		smb_freemsg_dfields(&newsmb,&newmsg,1);
+		return false;
+	}
 
 	i=smb_addmsghdr(&newsmb,&newmsg,storage);	// calls smb_unlocksmbhdr() 
 	smb_close(&newsmb);

@@ -22,26 +22,30 @@
 #include "sbbs.h"
 #include "qwk.h"
 
-static void pt_zone_kludge(const fmsghdr_t* hdr,int fido)
+static bool pt_zone_kludge(const fmsghdr_t* hdr,int fido)
 {
 	char str[256];
 
 	sprintf(str,"\1INTL %hu:%hu/%hu %hu:%hu/%hu\r"
 		,hdr->destzone,hdr->destnet,hdr->destnode
 		,hdr->origzone,hdr->orignet,hdr->orignode);
-	write(fido,str,strlen(str));
+	if(write(fido,str,strlen(str)) < 1)
+		return false;
 
 	if(hdr->destpoint) {
 		sprintf(str,"\1TOPT %hu\r"
 			,hdr->destpoint);
-		write(fido,str,strlen(str)); 
+		if(write(fido,str,strlen(str)) < 1)
+			return false;
 	}
 
 	if(hdr->origpoint) {
 		sprintf(str,"\1FMPT %hu\r"
 			,hdr->origpoint);
-		write(fido,str,strlen(str)); 
+		if(write(fido,str,strlen(str)) < 1)
+			return false;
 	}
+	return true;
 }
 
 /****************************************************************************/
@@ -293,7 +297,11 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 		errormsg(WHERE,ERR_ALLOC,str,length);
 		return(false); 
 	}
-	read(file,buf,length);
+	if(read(file,buf,length) != length) {
+		close(file);
+		errormsg(WHERE, ERR_READ, str, length);
+		return false;
+	}
 	close(file);
 
 	smb_net_type_t nettype = NET_FIDO;
@@ -867,13 +875,18 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_EXCL);
 		return; 
 	}
-	write(fido,&hdr,sizeof(hdr));
+	if(write(fido,&hdr,sizeof(hdr)) != sizeof hdr) {
+		free(qwkbuf);
+		errormsg(WHERE, ERR_WRITE, str, sizeof hdr);
+		return;
+	}
 
 	pt_zone_kludge(&hdr,fido);
 
 	if(cfg.netmail_misc&NMAIL_DIRECT) {
 		sprintf(str,"\1FLAGS DIR\r\n");
-		write(fido,str,strlen(str)); 
+		if(write(fido,str,strlen(str)) < 1)
+			errormsg(WHERE, ERR_WRITE, str, 0);
 	}
 
 	l = QWK_BLOCK_LEN + kludge_hdrlen;
@@ -888,12 +901,14 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		else if(qwkbuf[l]!=LF) {
 			if(qwkbuf[l]==QWK_NEWLINE) /* QWK cr/lf char converted to hard CR */
 				qwkbuf[l]=CR;
-			write(fido,(char *)qwkbuf+l,1); 
+			if(write(fido,(char *)qwkbuf+l,1) != 1)
+				errormsg(WHERE, ERR_WRITE, "fidonet netmail", 1);
 		}
 		l++;
 	}
 	l=0;
-	write(fido,(BYTE*)&l,sizeof(BYTE));	/* Null terminator */
+	if(write(fido,(BYTE*)&l,sizeof(BYTE)) != sizeof(BYTE))	/* Null terminator */
+		errormsg(WHERE, ERR_WRITE, "fidonet netmail", sizeof(BYTE));
 	close(fido);
 	free((char *)qwkbuf);
 	if(cfg.netmail_sem[0])		/* update semaphore file */
@@ -1378,7 +1393,8 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 
 	fseeko(smb.sdt_fp,offset,SEEK_SET);
 	xlat=XLAT_NONE;
-	fwrite(&xlat,2,1,smb.sdt_fp);
+	if(fwrite(&xlat,2,1,smb.sdt_fp) != 1)
+		errormsg(WHERE, ERR_WRITE, smb.file, 2);
 	x=SDT_BLOCK_LEN-2;				/* Don't read/write more than 255 */
 	while(!feof(instream)) {
 		memset(buf,0,x);
@@ -1387,7 +1403,8 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 			break;
 		if(j>1 && (j!=x || feof(instream)) && buf[j-1]==LF && buf[j-2]==CR)
 			buf[j-1]=buf[j-2]=0;
-		fwrite(buf,j,1,smb.sdt_fp);
+		if(fwrite(buf,j,1,smb.sdt_fp) != 1)
+			errormsg(WHERE, ERR_WRITE, smb.file, j);
 		x=SDT_BLOCK_LEN; 
 	}
 	fflush(smb.sdt_fp);

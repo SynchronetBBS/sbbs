@@ -522,7 +522,8 @@ void xp_randomize(void)
 
 #if defined(HAS_DEV_URANDOM) && defined(URANDOM_DEV)
 	if((rf=open(URANDOM_DEV, O_RDONLY))!=-1) {
-		read(rf, &seed, sizeof(seed));
+		if(read(rf, &seed, sizeof(seed)) != sizeof seed)
+			seed = UINT_MAX;
 		close(rf);
 	}
 	else {

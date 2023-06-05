@@ -128,7 +128,11 @@ int main(int argc, char **argv)
 	backslash(cfg.ctrl_dir);
 
 	load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str));
-	(void)chdir(cfg.ctrl_dir);
+	if(chdir(cfg.ctrl_dir) != 0) {
+		fprintf(stderr, "ERROR %d (%s) changing directory to: %s"
+			,errno, strerror(errno), cfg.ctrl_dir);
+		return EXIT_FAILURE;
+	}
 
 	dirnum=libnum=-1;
 	if(argv[1][0]=='*')

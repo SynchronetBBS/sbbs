@@ -1408,7 +1408,10 @@ static void native_static_service_thread(void* arg)
 	SAFEPRINTF(fullcmd,cmd,socket_dup);
 
 	do {
-		system(fullcmd);
+		int result = system(fullcmd);
+		if(result != 0)
+			lprintf(LOG_ERR, "%04d %s '%s' returned %d"
+				,inst.socket, inst.service->protocol, fullcmd, result);
 	} while(!inst.service->terminated && inst.service->options&SERVICE_OPT_STATIC_LOOP);
 
 	thread_down();
@@ -1541,7 +1544,10 @@ static void native_service_thread(void* arg)
 		SAFECOPY(cmd,service->cmd);
 	SAFEPRINTF(fullcmd,cmd,socket_dup);
 
-	system(fullcmd);
+	int result = system(fullcmd);
+	if(result != 0)
+		lprintf(LOG_ERR, "%04d %s '%s' returned %d"
+			,socket, service->protocol, fullcmd, result);
 
 	ulong remain = protected_uint32_adjust(&service->clients, -1);
 	update_clients();
