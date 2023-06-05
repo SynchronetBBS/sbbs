@@ -1203,6 +1203,7 @@ local_draw_rect(struct rectlist *rect)
 	int w, h;
 	int dw, dh;
 	uint32_t *source_data;
+	bool internal_scaling = x_internal_scaling;
 
 	if (x_cvstat.scrnwidth != rect->rect.width || x_cvstat.scrnheight != rect->rect.height || xim == NULL) {
 		bitmap_drv_free_rect(rect);
@@ -1222,7 +1223,7 @@ local_draw_rect(struct rectlist *rect)
 		bitmap_drv_free_rect(rect);
 		return;
 	}
-	if (x_internal_scaling) {
+	if (internal_scaling) {
 		source = do_scale(rect, w, h);
 		bitmap_drv_free_rect(rect);
 		if (source == NULL)
@@ -1314,7 +1315,7 @@ local_draw_rect(struct rectlist *rect)
 			}
 			idx++;
 		}
-		if (x_internal_scaling) {
+		if (internal_scaling) {
 			/* This line was changed */
 			// TODO: Previously this did one update per display line...
 			if (last && cright >= 0 && (cbottom != y || y == source->h - 1)) {
@@ -1327,6 +1328,8 @@ local_draw_rect(struct rectlist *rect)
 			}
 		}
 	}
+	if (!internal_scaling)
+		bitmap_drv_free_rect(rect);
 
 	// TODO: We really only need to do this once after changing resolution...
 	if (xoff > 0 || yoff > 0) {
@@ -1335,7 +1338,7 @@ local_draw_rect(struct rectlist *rect)
 		x11.XFillRectangle(dpy, win, gc, xoff+xim->width, yoff, w, yoff + xim->height);
 		x11.XFillRectangle(dpy, win, gc, 0, yoff + xim->height, w, h);
 	}
-	if (x_internal_scaling || xrender_found == false) {
+	if (internal_scaling || xrender_found == false) {
 		if (last == NULL)
 			x11.XPutImage(dpy, win, gc, xim, 0, 0, xoff, yoff, cleft, ctop);
 		else {
@@ -1344,12 +1347,11 @@ local_draw_rect(struct rectlist *rect)
 		}
 	}
 	else {
-#ifdef WITH_XRENDER
-		bitmap_drv_free_rect(rect);
 		if (last != NULL) {
 			release_buffer(last);
 			last = NULL;
 		}
+#ifdef WITH_XRENDER
 		x11.XPutImage(dpy, xrender_pm, gc, xim, 0, 0, 0, 0, dw, dh);
 		x11.XRenderComposite(dpy, PictOpSrc, xrender_src_pict, 0, xrender_dst_pict, 
 				0, 0, 0, 0, 0, 0,
