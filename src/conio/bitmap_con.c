@@ -461,15 +461,17 @@ static struct rectlist *alloc_full_rect(struct bitmap_screen *screen, bool allow
 	pthread_mutex_unlock(&free_rect_lock);
 
 	ret = malloc(sizeof(struct rectlist));
-	ret->next = NULL;
-	ret->throttle = allow_throttle;
-	ret->rect.x = 0;
-	ret->rect.y = 0;
-	ret->rect.width = screen->screenwidth;
-	ret->rect.height = screen->screenheight;
-	ret->data = malloc(ret->rect.width * ret->rect.height * sizeof(ret->data[0]));
-	if (ret->data == NULL)
-		FREE_AND_NULL(ret);
+	if (ret) {
+		ret->next = NULL;
+		ret->throttle = allow_throttle;
+		ret->rect.x = 0;
+		ret->rect.y = 0;
+		ret->rect.width = screen->screenwidth;
+		ret->rect.height = screen->screenheight;
+		ret->data = malloc(ret->rect.width * ret->rect.height * sizeof(ret->data[0]));
+		if (ret->data == NULL)
+			FREE_AND_NULL(ret);
+	}
 	pthread_mutex_lock(&free_rect_lock);
 	if (allow_throttle) {
 		if (ret)

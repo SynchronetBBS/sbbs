@@ -533,10 +533,8 @@ int x_init(void)
 	}
 #ifdef WITH_XRENDER
 	xrender_found = true;
-	if ((dl2 = xp_dlopen(libnames2,RTLD_LAZY,1)) == NULL) {
-		xp_dlclose(dl2);
+	if ((dl2 = xp_dlopen(libnames2,RTLD_LAZY,1)) == NULL)
 		xrender_found = false;
-	}
 	if (xrender_found && ((x11.XRenderFindStandardFormat = xp_dlsym(dl2, XRenderFindStandardFormat)) == NULL)) {
 		xp_dlclose(dl2);
 		xrender_found = false;
@@ -572,10 +570,8 @@ int x_init(void)
 #endif
 #ifdef WITH_XINERAMA
 	xinerama_found = true;
-	if ((dl3 = xp_dlopen(libnames3,RTLD_LAZY,1)) == NULL) {
-		xp_dlclose(dl3);
+	if ((dl3 = xp_dlopen(libnames3,RTLD_LAZY,1)) == NULL)
 		xinerama_found = false;
-	}
 	if (xinerama_found && ((x11.XineramaQueryVersion = xp_dlsym(dl3, XineramaQueryVersion)) == NULL)) {
 		xp_dlclose(dl3);
 		xinerama_found = false;
@@ -587,10 +583,8 @@ int x_init(void)
 #endif
 #ifdef WITH_XRANDR
 	xrandr_found = true;
-	if ((dl4 = xp_dlopen(libnames4,RTLD_LAZY,2)) == NULL) {
-		xp_dlclose(dl4);
+	if ((dl4 = xp_dlopen(libnames4,RTLD_LAZY,2)) == NULL)
 		xrandr_found = false;
-	}
 	if (xinerama_found && ((x11.XRRQueryVersion = xp_dlsym(dl4, XRRQueryVersion)) == NULL)) {
 		xp_dlclose(dl4);
 		xrandr_found = false;
@@ -617,21 +611,81 @@ int x_init(void)
 
 	if(sem_init(&pastebuf_set, 0, 0)) {
 		xp_dlclose(dl);
+#ifdef WITH_XRENDER
+		if (xrender_found)
+			xp_dlclose(dl2);
+		xrender_found = false;
+#endif
+#ifdef WITH_XINERAMA
+		if (xinerama_found)
+			xp_dlclose(dl3);
+		xinerama_found = false;
+#endif
+#ifdef WITH_XRANDR
+		if (xrandr_found)
+			xp_dlclose(dl4);
+		xrandr_found = false;
+#endif
 		return(-1);
 	}
 	if(sem_init(&pastebuf_used, 0, 0)) {
 		xp_dlclose(dl);
+#ifdef WITH_XRENDER
+		if (xrender_found)
+			xp_dlclose(dl2);
+		xrender_found = false;
+#endif
+#ifdef WITH_XINERAMA
+		if (xinerama_found)
+			xp_dlclose(dl3);
+		xinerama_found = false;
+#endif
+#ifdef WITH_XRANDR
+		if (xrandr_found)
+			xp_dlclose(dl4);
+		xrandr_found = false;
+#endif
 		sem_destroy(&pastebuf_set);
 		return(-1);
 	}
 	if(sem_init(&init_complete, 0, 0)) {
 		xp_dlclose(dl);
+#ifdef WITH_XRENDER
+		if (xrender_found)
+			xp_dlclose(dl2);
+		xrender_found = false;
+#endif
+#ifdef WITH_XINERAMA
+		if (xinerama_found)
+			xp_dlclose(dl3);
+		xinerama_found = false;
+#endif
+#ifdef WITH_XRANDR
+		if (xrandr_found)
+			xp_dlclose(dl4);
+		xrandr_found = false;
+#endif
 		sem_destroy(&pastebuf_set);
 		sem_destroy(&pastebuf_used);
 		return(-1);
 	}
 	if(sem_init(&mode_set, 0, 0)) {
 		xp_dlclose(dl);
+#ifdef WITH_XRENDER
+		if (xrender_found)
+			xp_dlclose(dl2);
+		xrender_found = false;
+#endif
+#ifdef WITH_XINERAMA
+		if (xinerama_found)
+			xp_dlclose(dl3);
+		xinerama_found = false;
+#endif
+#ifdef WITH_XRANDR
+		if (xrandr_found)
+			xp_dlclose(dl4);
+		xrandr_found = false;
+#endif
 		sem_destroy(&pastebuf_set);
 		sem_destroy(&pastebuf_used);
 		sem_destroy(&init_complete);
@@ -640,6 +694,21 @@ int x_init(void)
 
 	if(pthread_mutex_init(&copybuf_mutex, 0)) {
 		xp_dlclose(dl);
+#ifdef WITH_XRENDER
+		if (xrender_found)
+			xp_dlclose(dl2);
+		xrender_found = false;
+#endif
+#ifdef WITH_XINERAMA
+		if (xinerama_found)
+			xp_dlclose(dl3);
+		xinerama_found = false;
+#endif
+#ifdef WITH_XRANDR
+		if (xrandr_found)
+			xp_dlclose(dl4);
+		xrandr_found = false;
+#endif
 		sem_destroy(&pastebuf_set);
 		sem_destroy(&pastebuf_used);
 		sem_destroy(&init_complete);
@@ -651,6 +720,21 @@ int x_init(void)
 	sem_wait(&init_complete);
 	if(!x11_initialized) {
 		xp_dlclose(dl);
+#ifdef WITH_XRENDER
+		if (xrender_found)
+			xp_dlclose(dl2);
+		xrender_found = false;
+#endif
+#ifdef WITH_XINERAMA
+		if (xinerama_found)
+			xp_dlclose(dl3);
+		xinerama_found = false;
+#endif
+#ifdef WITH_XRANDR
+		if (xrandr_found)
+			xp_dlclose(dl4);
+		xrandr_found = false;
+#endif
 		sem_destroy(&pastebuf_set);
 		sem_destroy(&pastebuf_used);
 		sem_destroy(&init_complete);

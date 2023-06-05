@@ -1869,14 +1869,16 @@ all_done:
 		struct ciolib_pixels px;
 
 		px.pixels = malloc(sizeof(px.pixels[0])*cterm->sx_width*cterm->sx_height*cterm->sx_iv*cterm->sx_ih);
-		px.height = cterm->sx_height;
-		px.width = cterm->sx_width;
-		for (i = 0; i<cterm->sx_height*cterm->sx_iv; i++) {
-			for (j = 0; j < cterm->sx_width*cterm->sx_ih; j++)
-				px.pixels[i*cterm->sx_width*cterm->sx_ih + j] = cterm->sx_bg;
+		if (px.pixels) {
+			px.height = cterm->sx_height;
+			px.width = cterm->sx_width;
+			for (i = 0; i<cterm->sx_height*cterm->sx_iv; i++) {
+				for (j = 0; j < cterm->sx_width*cterm->sx_ih; j++)
+					px.pixels[i*cterm->sx_width*cterm->sx_ih + j] = cterm->sx_bg;
+			}
+			setpixels(cterm->sx_x, cterm->sx_y, cterm->sx_x + cterm->sx_width - 1, cterm->sx_y + cterm->sx_height - 1, 0, 0, 0, 0, &px, NULL);
+			free(px.pixels);
 		}
-		setpixels(cterm->sx_x, cterm->sx_y, cterm->sx_x + cterm->sx_width - 1, cterm->sx_y + cterm->sx_height - 1, 0, 0, 0, 0, &px, NULL);
-		free(px.pixels);
 	}
 
 	if (cterm->extattr & CTERM_EXTATTR_SXSCROLL) {

@@ -975,8 +975,8 @@ static int init_window()
 		classhints->res_class = (char *)ciolib_initial_program_class;
 	}
 	wmhints=x11.XAllocWMHints();
-	wmhints->flags = 0;
 	if(wmhints) {
+		wmhints->flags = 0;
 		wmhints->initial_state=NormalState;
 		wmhints->flags |= (StateHint | InputHint);
 		wmhints->input = True;

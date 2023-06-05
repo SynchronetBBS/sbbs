@@ -67,14 +67,24 @@ main(int argc, char **argv)
 		fprintf(stderr, "Usage: %s <os> <path>\n", argv[0]);
 		return EXIT_FAILURE;
 	}
+	if (strlen(argv[2]) > sizeof(path) - 10)
+		return EXIT_FAILURE;
 	sprintf(path, "%s/rgbmap.s", argv[2]);
 	s = fopen(path, "w");
+	if (s == NULL)
+		return EXIT_FAILURE;
 	sprintf(path, "%s/rgbmap.h", argv[2]);
 	h = fopen(path, "w");
+	if (h == NULL)
+		return EXIT_FAILURE;
 	sprintf(path, "%s/r2y.bin", argv[2]);
 	r = fopen(path, "wb");
+	if (r == NULL)
+		return EXIT_FAILURE;
 	sprintf(path, "%s/y2r.bin", argv[2]);
 	y = fopen(path, "wb");
+	if (y == NULL)
+		return EXIT_FAILURE;
 	init_r2y();
 	if (strcmp(argv[1], "win32") == 0)
 		mangle = "_";
