@@ -69,6 +69,7 @@ enum UsedAtom {
 	// UTF8_STRING: https://www.pps.jussieu.fr/~jch/software/UTF8_STRING/UTF8_STRING.text
 	ATOM_UTF8_STRING,
 	// ICCM: https://x.org/releases/X11R7.6/doc/xorg-docs/specs/ICCCM/icccm.html
+	ATOM_CLIPBOARD,
 	ATOM_TARGETS,
 	ATOM_WM_CLASS,
 	ATOM_WM_DELETE_WINDOW,
@@ -113,6 +114,7 @@ static struct AtomDef {
 	// UTF8_STRING: https://www.pps.jussieu.fr/~jch/software/UTF8_STRING/UTF8_STRING.text
 	{"UTF8_STRING", UTF8_ATOM, None, 0, None, false},
 	// ICCM: https://x.org/releases/X11R7.6/doc/xorg-docs/specs/ICCCM/icccm.html
+	{"CLIPBOARD", ICCM_ATOM, XA_ATOM, 32, None, false},
 	{"TARGETS", ICCM_ATOM, XA_ATOM, 32, None, false},
 	{"WM_CLASS", ICCM_ATOM, XA_STRING, 8, None, false},
 	{"WM_DELETE_WINDOW", ICCM_ATOM, None, 0, None, false},
@@ -138,7 +140,6 @@ static struct AtomDef {
 #define A(name) SupportedAtoms[ATOM_ ## name].atom
 
 /* Sets the atom to be used for copy/paste operations */
-#define CONSOLE_CLIPBOARD	XA_PRIMARY
 static const long _NET_WM_STATE_REMOVE = 0;
 static const long _NET_WM_STATE_ADD = 1;
 
@@ -172,6 +173,8 @@ static Picture xrender_dst_pict = None;
 static bool fullscreen;
 static Window parent;
 static Window root;
+static char *wm_wm_name;
+static Atom copy_paste_selection = XA_PRIMARY;
 
 /* Array of Graphics Contexts */
 static GC gc;
@@ -336,11 +339,28 @@ initialize_atoms(void)
 					w = *(Window *)prop;
 					x11.XFree(prop);
 					prop = NULL;
-					if (x11.XGetWindowProperty(dpy, w, A(_NET_SUPPORTING_WM_CHECK), 0, 1, False, XA_WINDOW, &atr, &afr, &nir, &bytes_left, &prop) == Success) {
+					if (x11.XGetWindowProperty(dpy, w, A(_NET_SUPPORTING_WM_CHECK), 0, 1, False, AnyPropertyType, &atr, &afr, &nir, &bytes_left, &prop) == Success) {
 						if (atr == XA_WINDOW) {
 							if (nir == 1) {
 								if (w == *(Window *)prop) {
 									supported_standards |= (1 << EWMH_ATOM);
+								}
+							}
+						}
+					}
+					if (prop != NULL)
+						x11.XFree(prop);
+					if (x11.XGetWindowProperty(dpy, w, A(_NET_WM_NAME), 0, 0, False, AnyPropertyType, &atr, &afr, &nir, &bytes_left, &prop) == Success) {
+						if (prop != NULL)
+							x11.XFree(prop);
+						if (afr == 8) {
+							if (wm_wm_name != NULL)
+								free(wm_wm_name);
+							wm_wm_name = malloc(bytes_left + 1);
+							if (x11.XGetWindowProperty(dpy, w, A(_NET_WM_NAME), 0, bytes_left, False, AnyPropertyType, &atr, &afr, &nir, &bytes_left, &prop) == Success) {
+								if (afr == 8) {
+									memcpy(wm_wm_name, prop, nir);
+									wm_wm_name[nir] = 0;
 								}
 							}
 						}
@@ -395,6 +415,15 @@ initialize_atoms(void)
 				SupportedAtoms[a].req_type = A(UTF8_STRING);
 			}
 		}
+	}
+
+	/*
+	 * ChromeOS doesn't do anything reasonable with PRIMARY...
+	 * Hack in use of CLIPBOARD instead.
+	 */
+	if (wm_wm_name != NULL && strcmp(wm_wm_name, "Sommelier") == 0) {
+		if (A(CLIPBOARD) != None)
+			copy_paste_selection = A(CLIPBOARD);
 	}
 }
 
@@ -1553,7 +1582,7 @@ static int x11_event(XEvent *ev)
 
 				req=&(ev->xselectionclear);
 				pthread_mutex_lock(&copybuf_mutex);
-				if(req->selection==CONSOLE_CLIPBOARD)
+				if(req->selection==copy_paste_selection)
 					FREE_AND_NULL(copybuf);
 				pthread_mutex_unlock(&copybuf_mutex);
 			}
@@ -1563,7 +1592,7 @@ static int x11_event(XEvent *ev)
 				int format;
 				unsigned long len, bytes_left, dummy;
 
-				if(ev->xselection.selection != CONSOLE_CLIPBOARD)
+				if(ev->xselection.selection != copy_paste_selection)
 					break;
 				if(ev->xselection.requestor!=win)
 					break;
@@ -2082,13 +2111,13 @@ void x11_event_thread(void *args)
 							x11.XFlush(dpy);
 							break;
 						case X11_LOCAL_COPY:
-							x11.XSetSelectionOwner(dpy, CONSOLE_CLIPBOARD, win, CurrentTime);
+							x11.XSetSelectionOwner(dpy, copy_paste_selection, win, CurrentTime);
 							break;
 						case X11_LOCAL_PASTE: 
 							{
 								Window sowner=None;
 
-								sowner=x11.XGetSelectionOwner(dpy, CONSOLE_CLIPBOARD);
+								sowner=x11.XGetSelectionOwner(dpy, copy_paste_selection);
 								if(sowner==win) {
 									/* Get your own primary selection */
 									if(copybuf==NULL)
@@ -2103,7 +2132,7 @@ void x11_event_thread(void *args)
 									FREE_AND_NULL(pastebuf);
 								}
 								else if(sowner!=None) {
-									x11.XConvertSelection(dpy, CONSOLE_CLIPBOARD, A(UTF8_STRING) ? A(UTF8_STRING) : XA_STRING, A(UTF8_STRING) ? A(UTF8_STRING) : XA_STRING, win, CurrentTime);
+									x11.XConvertSelection(dpy, copy_paste_selection, A(UTF8_STRING) ? A(UTF8_STRING) : XA_STRING, A(UTF8_STRING) ? A(UTF8_STRING) : XA_STRING, win, CurrentTime);
 								}
 								else {
 									/* Set paste buffer */
