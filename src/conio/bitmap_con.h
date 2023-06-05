@@ -1,6 +1,8 @@
 #ifndef BITMAP_CON_H
 #define BITMAP_CON_H
 
+#include <stdbool.h>
+
 #include "vidmodes.h"
 #include "threadwrap.h"
 
