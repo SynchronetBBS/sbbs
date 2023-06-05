@@ -1335,10 +1335,15 @@ local_draw_rect(struct rectlist *rect)
 
 	// TODO: We really only need to do this once after changing resolution...
 	if (xoff > 0 || yoff > 0) {
-		x11.XFillRectangle(dpy, win, gc, 0, 0, w, yoff);
-		x11.XFillRectangle(dpy, win, gc, 0, yoff, xoff, yoff + xim->height);
-		x11.XFillRectangle(dpy, win, gc, xoff+xim->width, yoff, w, yoff + xim->height);
-		x11.XFillRectangle(dpy, win, gc, 0, yoff + xim->height, w, h);
+		if (yoff != 0) {
+			x11.XFillRectangle(dpy, win, gc, 0, 0, w, yoff);
+		}
+		if (xoff != 0) {
+			x11.XFillRectangle(dpy, win, gc, 0, yoff, xoff, yoff + ctop);
+		}
+		// These clean up odd-numbered widths,
+		x11.XFillRectangle(dpy, win, gc, xoff + cleft, yoff, w, yoff + ctop);
+		x11.XFillRectangle(dpy, win, gc, 0, yoff + ctop, w, h);
 	}
 	if (internal_scaling || xrender_found == false) {
 		if (last == NULL)
