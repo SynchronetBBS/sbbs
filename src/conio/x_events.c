@@ -982,7 +982,7 @@ static int init_window()
 		x11.XSetWMProperties(dpy, win, NULL, NULL, 0, 0, NULL, wmhints, classhints);
 		x11.XFree(wmhints);
 	}
-	set_win_property(A(_NET_WM_ICON), XA_CARDINAL, 32, PropModeReplace, ciolib_initial_icon, ciolib_initial_icon_width * ciolib_initial_icon_width);
+	set_win_property(ATOM__NET_WM_ICON, XA_CARDINAL, 32, PropModeReplace, ciolib_initial_icon, ciolib_initial_icon_width * ciolib_initial_icon_width);
 
 	pid_l = getpid();
 	set_win_property(ATOM__NET_WM_PID, XA_CARDINAL, 32, PropModeReplace, &pid_l, 1);
@@ -2104,12 +2104,12 @@ void x11_event_thread(void *args)
 							break;
 						case X11_LOCAL_SETNAME:
 							x11.XSetIconName(dpy, win, lev.data.name);
-							set_win_property(A(_NET_WM_ICON_NAME), A(UTF8_STRING), 8, PropModeReplace, lev.data.name, strlen(lev.data.name));
+							set_win_property(ATOM__NET_WM_ICON_NAME, A(UTF8_STRING), 8, PropModeReplace, lev.data.name, strlen(lev.data.name));
 							x11.XFlush(dpy);
 							break;
 						case X11_LOCAL_SETTITLE:
 							x11.XStoreName(dpy, win, lev.data.title);
-							set_win_property(A(_NET_WM_NAME), A(UTF8_STRING), 8, PropModeReplace, lev.data.name, strlen(lev.data.name));
+							set_win_property(ATOM__NET_WM_NAME, A(UTF8_STRING), 8, PropModeReplace, lev.data.name, strlen(lev.data.name));
 							x11.XFlush(dpy);
 							break;
 						case X11_LOCAL_COPY:
@@ -2156,7 +2156,7 @@ void x11_event_thread(void *args)
 						case X11_LOCAL_SETICON: {
 							// TODO: set_icon() is obsolete... delete
 							set_icon(&lev.data.icon_data[2], lev.data.icon_data[0], NULL);
-							set_win_property(A(_NET_WM_ICON), XA_CARDINAL, 32, PropModeReplace, lev.data.icon_data, lev.data.icon_data[0] * lev.data.icon_data[1] + 2);
+							set_win_property(ATOM__NET_WM_ICON, XA_CARDINAL, 32, PropModeReplace, lev.data.icon_data, lev.data.icon_data[0] * lev.data.icon_data[1] + 2);
 							x11.XFlush(dpy);
 							free(lev.data.icon_data);
 							break;
