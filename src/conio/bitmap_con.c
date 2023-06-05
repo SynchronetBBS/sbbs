@@ -93,8 +93,11 @@ static struct bitmap_callbacks callbacks;
 static unsigned char *font[4];
 static int force_redraws=0;
 static int force_cursor=0;
-struct rectlist *free_rects;
-pthread_mutex_t free_rect_lock;
+static struct rectlist *free_rects;
+static pthread_mutex_t free_rect_lock;
+static bool throttled;
+static int outstanding_rects;
+#define MAX_OUTSTANDING 1
 
 /* The read lock must be held here. */
 #define PIXEL_OFFSET(screen, x, y)	( (y)*(screen).screenwidth+(x) )
@@ -419,17 +422,31 @@ static void request_redraw(void)
 /*
  * Called with the screen lock held
  */
-static struct rectlist *alloc_full_rect(struct bitmap_screen *screen)
+static struct rectlist *alloc_full_rect(struct bitmap_screen *screen, bool allow_throttle)
 {
 	struct rectlist * ret;
 
 	pthread_mutex_lock(&free_rect_lock);
+	if (allow_throttle) {
+		if (throttled) {
+			pthread_mutex_unlock(&free_rect_lock);
+			return NULL;
+		}
+		if (outstanding_rects >= MAX_OUTSTANDING) {
+			throttled = true;
+			pthread_mutex_unlock(&free_rect_lock);
+			return NULL;
+		}
+	}
 	while (free_rects) {
 		if (free_rects->rect.width == screen->screenwidth && free_rects->rect.height == screen->screenheight) {
 			ret = free_rects;
 			free_rects = free_rects->next;
 			ret->next = NULL;
 			ret->rect.x = ret->rect.y = 0;
+			ret->throttle = allow_throttle;
+			if (allow_throttle)
+				outstanding_rects++;
 			pthread_mutex_unlock(&free_rect_lock);
 			return ret;
 		}
@@ -444,6 +461,7 @@ static struct rectlist *alloc_full_rect(struct bitmap_screen *screen)
 
 	ret = malloc(sizeof(struct rectlist));
 	ret->next = NULL;
+	ret->throttle = allow_throttle;
 	ret->rect.x = 0;
 	ret->rect.y = 0;
 	ret->rect.width = screen->screenwidth;
@@ -451,6 +469,12 @@ static struct rectlist *alloc_full_rect(struct bitmap_screen *screen)
 	ret->data = malloc(ret->rect.width * ret->rect.height * sizeof(ret->data[0]));
 	if (ret->data == NULL)
 		FREE_AND_NULL(ret);
+	pthread_mutex_lock(&free_rect_lock);
+	if (allow_throttle) {
+		if (ret)
+			outstanding_rects++;
+	}
+	pthread_mutex_unlock(&free_rect_lock);
 	return ret;
 }
 
@@ -472,7 +496,7 @@ static struct rectlist *get_full_rectangle_locked(struct bitmap_screen *screen)
 
 	// TODO: Some sort of caching here would make things faster...?
 	if(callbacks.drawrect) {
-		rect = alloc_full_rect(screen);
+		rect = alloc_full_rect(screen, true);
 		if (!rect)
 			return rect;
 		for (pos = 0; pos < sz; pos++)
@@ -715,14 +739,26 @@ static void blinker_thread(void *data)
 		}
 		// TODO: Maybe we can optimize the blink_changed forced update?
 		if (screen->update_pixels || curs_changed || blink_changed || lfc) {
-			// If the other screen is update_pixels == 2, clear it.
-			if (ncscreen->update_pixels == 2)
-				ncscreen->update_pixels = 0;
 			rect = get_full_rectangle_locked(screen);
-			screen->update_pixels = 0;
-			pthread_mutex_unlock(&screenlock);
-			cb_drawrect(rect);
-			cb_flush();
+			/*
+			 * TODO: It would be more effective to wait when we're bing throttled
+			 *       and make up for cursor/blink based on elapsed time, but that's
+			 *       getting complicated enough that I don't want do do a quick
+			 *       hack for it.  Ideally this would be done as part of pegging
+			 *       the blink rate to the wall clock rather than the free-running
+			 *       sleep-based method it currently uses.
+			 */
+			if (rect) {
+				// If the other screen is update_pixels == 2, clear it.
+				if (ncscreen->update_pixels == 2)
+					ncscreen->update_pixels = 0;
+				screen->update_pixels = 0;
+				pthread_mutex_unlock(&screenlock);
+				cb_drawrect(rect);
+				cb_flush();
+			}
+			else
+				pthread_mutex_unlock(&screenlock);
 		}
 		else {
 			pthread_mutex_unlock(&screenlock);
@@ -1597,12 +1633,12 @@ static int init_screens(int *width, int *height)
 	screenb.update_pixels = 1;
 	bitmap_drv_free_rect(screena.rect);
 	bitmap_drv_free_rect(screenb.rect);
-	screena.rect = alloc_full_rect(&screena);
+	screena.rect = alloc_full_rect(&screena, false);
 	if (screena.rect == NULL) {
 		pthread_mutex_unlock(&screenlock);
 		return(-1);
 	}
-	screenb.rect = alloc_full_rect(&screenb);
+	screenb.rect = alloc_full_rect(&screenb, false);
 	if (screenb.rect == NULL) {
 		bitmap_drv_free_rect(screena.rect);
 		screena.rect = NULL;
@@ -1910,6 +1946,12 @@ void bitmap_drv_free_rect(struct rectlist *rect)
 	if (rect == NULL)
 		return;
 	pthread_mutex_lock(&free_rect_lock);
+	if (rect->throttle) {
+		outstanding_rects--;
+		if (outstanding_rects < MAX_OUTSTANDING && throttled) {
+			throttled = false;
+		}
+	}
 	rect->next = free_rects;
 	free_rects = rect;
 	pthread_mutex_unlock(&free_rect_lock);

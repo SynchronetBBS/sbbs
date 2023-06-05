@@ -15,6 +15,7 @@ struct rectlist {
 	struct rectangle rect;
 	uint32_t *data;
 	struct rectlist *next;
+	bool throttle;
 };
 
 extern struct video_stats vstat;
