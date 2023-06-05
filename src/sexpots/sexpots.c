@@ -881,22 +881,24 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 
 /****************************************************************************/
 /****************************************************************************/
-u_long resolve_ip(const char *addr)
+in_addr_t resolve_ip(const char *addr)
 {
 	HOSTENT*	host;
 	const char*	p;
 
 	if(*addr==0)
-		return((u_long)INADDR_NONE);
+		return INADDR_NONE;
 
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
 			break;
 	if(!(*p))
 		return(inet_addr(addr));
-	if((host=gethostbyname(addr))==NULL) 
-		return((u_long)INADDR_NONE);
-	return(*((ulong*)host->h_addr_list[0]));
+	if((host=gethostbyname(addr))==NULL)
+		return INADDR_NONE;
+	if(host->h_addr_list == NULL)
+		return INADDR_NONE;
+	return *((in_addr_t*)host->h_addr_list[0]);
 }
 
 /****************************************************************************/
