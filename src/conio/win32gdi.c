@@ -18,6 +18,7 @@ static HANDLE wch;
 static bool maximized = false;
 static uint16_t winxpos, winypos;
 static const DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_VISIBLE;
+static const DWORD fs_style = WS_POPUP | WS_VISIBLE;
 static HCURSOR cursor;
 static HANDLE init_sem;
 static int xoff, yoff;
@@ -25,6 +26,8 @@ static int dwidth = 640;
 static int dheight = 480;
 static bool init_success;
 static enum ciolib_scaling stype;
+static bool fullscreen;
+static float window_scaling;
 
 #define WM_USER_INVALIDATE WM_USER
 #define WM_USER_SETSIZE (WM_USER + 1)
@@ -208,7 +211,8 @@ gdi_handle_wm_size(WPARAM wParam, LPARAM lParam)
 	vstat.scaling = bitmap_double_mult_inside(w, h);
 	bitmap_get_scaled_win_size(vstat.scaling, &w, &h, 0, 0);
 	if (w != vstat.winwidth || h != vstat.winheight) {
-		gdi_setwinsize(w, h);
+		if (!(fullscreen || maximized))
+			gdi_setwinsize(w, h);
 	}
 	pthread_mutex_unlock(&vstatlock);
 
@@ -313,7 +317,7 @@ gdi_handle_wm_paint(HWND hwnd)
 		data = list->data;
 	}
 	pthread_mutex_lock(&off_lock);
-	if (maximized) {
+	if (maximized || fullscreen) {
 		xoff = (w - dwidth) / 2;
 		yoff = (h - dheight) / 2;
 	}
@@ -337,7 +341,7 @@ gdi_handle_wm_paint(HWND hwnd)
 	}
 	// Clear around image
 	if (xoff > 0) {
-		BitBlt(winDC, 0, 0, xoff - 1, h, memDC, 0, 0, BLACKNESS);
+		BitBlt(winDC, 0, 0, xoff, h, memDC, 0, 0, BLACKNESS);
 		BitBlt(winDC, xoff + dwidth, 0, w, h, memDC, 0, 0, BLACKNESS);
 	}
 	else {
@@ -345,7 +349,7 @@ gdi_handle_wm_paint(HWND hwnd)
 			BitBlt(winDC, dwidth, 0, w, h, memDC, 0, 0, BLACKNESS);
 	}
 	if (yoff > 0) {
-		BitBlt(winDC, 0, 0, w, yoff - 1, memDC, 0, 0, BLACKNESS);
+		BitBlt(winDC, 0, 0, w, yoff, memDC, 0, 0, BLACKNESS);
 		BitBlt(winDC, 0, yoff + dheight, w, h, memDC, 0, 0, BLACKNESS);
 	}
 	else {
@@ -601,7 +605,8 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			r.right = wParam;
 			r.bottom = lParam;
 			pthread_mutex_unlock(&vstatlock);
-			AdjustWindowRect(&r, style, FALSE);
+			if (!fullscreen)
+				AdjustWindowRect(&r, style, FALSE);
 			SetWindowPos(win, NULL, 0, 0, r.right - r.left, r.bottom - r.top, SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
 			return true;
 		case WM_USER_SETPOS:
@@ -617,7 +622,7 @@ gdi_snap(bool grow)
 {
 	int mw, mh;
 
-	if (maximized)
+	if (maximized || fullscreen)
 		return;
 	gdi_get_monitor_size(&mw, &mh);
 	UnadjustWindowSize(&mw, &mh);
@@ -691,6 +696,35 @@ magic_message(MSG msg)
 							}
 							else if (keyval[i].VirtualKeyCode == VK_RIGHT) {
 								gdi_snap(true);
+							}
+							else if (keyval[i].VirtualKeyCode == VK_RETURN) {
+								fullscreen = !fullscreen;
+								if (fullscreen) {
+									HMONITOR hm = MonitorFromWindow(win, MONITOR_DEFAULTTONEAREST);
+									if (hm) {
+										MONITORINFO mi = {sizeof(mi)};
+										if (GetMonitorInfo(hm, &mi)) {
+											pthread_mutex_lock(&vstatlock);
+											window_scaling = vstat.scaling;
+											// TODO: Save pos as well...
+											pthread_mutex_unlock(&vstatlock);
+											SetWindowLongPtr(win, GWL_STYLE, fs_style);
+											PostMessageW(win, WM_USER_SETPOS, mi.rcMonitor.left, mi.rcMonitor.top);
+											PostMessageW(win, WM_USER_SETSIZE, mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top);
+										}
+										else
+											fullscreen = false;
+									}
+									else
+										fullscreen = false;
+								}
+								else {
+									int w, h;
+
+									bitmap_get_scaled_win_size(window_scaling, &w, &h, 0, 0);
+									SetWindowLongPtr(win, GWL_STYLE, style);
+									PostMessageW(win, WM_USER_SETSIZE, w, h);
+								}
 							}
 							gdi_add_key(keyval[i].ALT);
 							return true;
