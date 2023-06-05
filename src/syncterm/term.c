@@ -2689,7 +2689,7 @@ read_pbm(const char *fn, bool bitmap)
 {
 	uintmax_t             width;
 	uintmax_t             height;
-	uintmax_t             maxval;
+	uintmax_t             maxval = 0;
 	uintmax_t             overflow;
 	FILE                 *f = fopen(fn, "rb");
 	struct ciolib_mask   *mret = NULL;
@@ -3612,7 +3612,7 @@ doterm(struct bbslist *bbs)
 	BYTE              zrqinit[] = {ZDLE, ZHEX, '0', '0', 0};  /* for Zmodem auto-downloads */
 	BYTE              zrinit[] = {ZDLE, ZHEX, '0', '1', 0};   /* for Zmodem auto-uploads */
 	BYTE              zrqbuf[sizeof(zrqinit)];
-	int               inch;
+	int               inch = NOINP;
 	long double       nextchar = 0;
 	long double       lastchar = 0;
 	long double       thischar = 0;
