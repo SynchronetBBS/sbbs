@@ -653,6 +653,8 @@ static void
 resize_pictures(void)
 {
 #ifdef WITH_XRENDER
+	int iw, ih;
+
 	if (xrender_found) {
 		if (xrender_pf == NULL)
 			xrender_pf = x11.XRenderFindStandardFormat(dpy, PictStandardRGB24);
@@ -673,14 +675,14 @@ resize_pictures(void)
 		xrender_src_pict = x11.XRenderCreatePicture(dpy, xrender_pm, xrender_pf, 0, &pa);
 		xrender_dst_pict = x11.XRenderCreatePicture(dpy, win, xrender_pf, 0, &pa);
 		x11.XRenderSetPictureFilter(dpy, xrender_src_pict, "best", NULL, 0);
-
 		pthread_mutex_lock(&vstatlock);
+		bitmap_get_scaled_win_size(vstat.scaling, &iw, &ih, 0, 0);
+		pthread_mutex_unlock(&vstatlock);
 		XTransform transform_matrix = {{
-		  {XDoubleToFixed((double)vstat.scrnwidth / vstat.winwidth), XDoubleToFixed(0), XDoubleToFixed(0)},
-		  {XDoubleToFixed(0), XDoubleToFixed((double)vstat.scrnheight / vstat.winheight), XDoubleToFixed(0)},
+		  {XDoubleToFixed((double)vstat.scrnwidth / iw), XDoubleToFixed(0), XDoubleToFixed(0)},
+		  {XDoubleToFixed(0), XDoubleToFixed((double)vstat.scrnheight / ih), XDoubleToFixed(0)},
 		  {XDoubleToFixed(0), XDoubleToFixed(0), XDoubleToFixed(1.0)}
 		}};
-		pthread_mutex_unlock(&vstatlock);
 		x11.XRenderSetPictureTransform(dpy, xrender_src_pict, &transform_matrix);
 	}
 #endif
@@ -1354,7 +1356,7 @@ local_draw_rect(struct rectlist *rect)
 #ifdef WITH_XRENDER
 		x11.XPutImage(dpy, xrender_pm, gc, xim, 0, 0, 0, 0, dw, dh);
 		x11.XRenderComposite(dpy, PictOpSrc, xrender_src_pict, 0, xrender_dst_pict, 
-				0, 0, 0, 0, 0, 0,
+				0, 0, 0, 0, xoff, yoff,
 				cleft, ctop);
 #else
 		fprintf(stderr, "External scaling enabled without XRender support compiled in!\n");
