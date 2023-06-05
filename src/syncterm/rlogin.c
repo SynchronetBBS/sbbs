@@ -144,7 +144,7 @@ rlogin_connect(struct bbslist *bbs)
 	if (bbs->conn_type == CONN_TYPE_MBBS_GHOST) {
 		char sbuf[180];
 		char rbuf[10];
-		int  idx, ret;
+		int  idx, ret = -1;
 
                 /* Check to make sure GHost is actually listening */
 		sendsocket(rlogin_sock, "\r\nMBBS: PING\r\n", 14);
