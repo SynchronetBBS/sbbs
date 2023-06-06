@@ -23,8 +23,37 @@ sbbs-linux:
       - "src/sbbs3/*.lib.release/*"
       - "src/sbbs3/*/*.exe.release/*"
 
+sbbs-raspian:
+  tags: [RaspberryPi]
+  image: gcc
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sbbs3
+    - make RELEASE=1 all
+    - make RELEASE=1 gtkutils
+  artifacts:
+    name: sbbs-linux-x64
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+      - "src/sbbs3/*.lib.release/*"
+      - "src/sbbs3/*/*.exe.release/*"
+
 sexpots-linux:
   tags: [Linux]
+  image: gcc
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sexpots
+    - make RELEASE=1
+  artifacts:
+    name: sexpots-linux-x64
+    paths:
+      - "src/sexpots/*.exe.release/*"
+
+sexpots-raspian:
+  tags: [RaspberryPi]
   image: gcc
   stage: build
   extends: .rules
@@ -195,6 +224,19 @@ syncdraw-freebsd:
 
 syncdraw-linux:
   tags: [Linux]
+  image: gcc
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncdraw
+    - make RELEASE=1
+  artifacts:
+    name: syncdraw-linux-x64
+    paths:
+      - "src/syncdraw/*.exe.release/*"
+
+syncdraw-raspian:
+  tags: [RaspberryPi]
   image: gcc
   stage: build
   extends: .rules
