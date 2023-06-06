@@ -153,6 +153,13 @@ ifdef DEBUG
   CFLAGS	+=	-fprofile-arcs -ftest-coverage
   LDFLAGS	+=	-fprofile-arcs -ftest-coverage
  endif
+ ifdef FORTIFY
+  CFLAGS += -D_FORTIFY_SOURCE=3 -O1
+ endif
+ ifdef SANITIZE
+  CFLAGS += -fsanitize=undefined,address
+  LDFLAGS += -fsanitize=undefined,address
+ endif
 else
  ifdef USE_UPROFILE
   CFLAGS	+=	-fprofile-use
