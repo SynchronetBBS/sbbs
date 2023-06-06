@@ -219,13 +219,13 @@ bool get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const ch
 		}
 		if (emsg) {
 			if(asprintf(estr, "%s '%s' (%d) %s", crypt_lstr(level), emsg, status, action) < 0)
-				*estr = '\0';
+				*estr = NULL;
 			if (allocated)
 				free_crypt_attrstr(emsg);
 		}
 		else {
 			if(asprintf(estr, "%s (%d) %s", crypt_lstr(level), status, action) < 0)
-				*estr = '\0';
+				*estr = NULL;
 		}
 	}
 	return false;
