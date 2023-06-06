@@ -211,7 +211,7 @@ void x11_mouse_thread(void *data)
 	}
 }
 
-int x_init(void)
+int x_initciolib(int mode)
 {
 	dll_handle	dl;
 	const char *libnames[]={"X11",NULL};
@@ -716,7 +716,7 @@ int x_init(void)
 		return(-1);
 	}
 
-	_beginthread(x11_event_thread,1<<16,NULL);
+	_beginthread(x11_event_thread,1<<16,(void *)(intptr_t)mode);
 	sem_wait(&init_complete);
 	if(!x11_initialized) {
 		xp_dlclose(dl);
@@ -743,7 +743,7 @@ int x_init(void)
 		return(-1);
 	}
 	_beginthread(x11_mouse_thread,1<<16,NULL);
-	cio_api.options |= CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
+	cio_api.options |= CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON | CONIO_OPT_EXTERNAL_SCALING;
 	return(0);
 }
 

@@ -1927,6 +1927,8 @@ change_settings(int connected)
 				    "        Uses the Xlib library directly for graphical output.  This is\n"
 				    "        the graphical mode most likely to work when using X11.  This\n"
 				    "        mode supports font changes.\n\n"
+				    "~ X11 Fullscreen ~\n"
+				    "        As above, but starts in full-screen mode rather than a window\n\n"
 #endif
 #ifdef _WIN32
 				    "~ Win32 Console ~\n"

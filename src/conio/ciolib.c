@@ -281,7 +281,7 @@ static int try_x_init(int mode)
 	}
 #endif
 
-	if(!x_init()) {
+	if(!x_initciolib(mode)) {
 		cio_api.mode=CIOLIB_MODE_X;
 		cio_api.mouse=1;
 		cio_api.puttext=bitmap_puttext;
@@ -502,6 +502,7 @@ CIOLIBEXPORT int initciolib(int mode)
 			break;
 
 		case CIOLIB_MODE_X:
+		case CIOLIB_MODE_X_FULLSCREEN:
 #ifndef NO_X
 			try_x_init(mode);
 #endif

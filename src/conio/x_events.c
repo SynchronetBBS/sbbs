@@ -33,6 +33,9 @@
 #include "x_cio.h"
 #include "utf8_codepages.h"
 
+static bool send_fullscreen(bool set);
+static void resize_window();
+
 /*
  * Exported variables 
  */
@@ -175,6 +178,8 @@ static Window parent;
 static Window root;
 static char *wm_wm_name;
 static Atom copy_paste_selection = XA_PRIMARY;
+static bool map_pending = true;
+static int pending_width, pending_height, pending_xpos, pending_ypos;
 
 /* Array of Graphics Contexts */
 static GC gc;
@@ -756,7 +761,8 @@ static void map_window()
 
 	if (x11_get_maxsize(&sh->max_width,&sh->max_height)) {
 		pthread_mutex_lock(&vstatlock);
-		bitmap_get_scaled_win_size(bitmap_double_mult_inside(sh->max_width, sh->max_height), &sh->max_width, &sh->max_height, sh->max_width, sh->max_height);
+		if (!fullscreen)
+			bitmap_get_scaled_win_size(bitmap_double_mult_inside(sh->max_width, sh->max_height), &sh->max_width, &sh->max_height, sh->max_width, sh->max_height);
 	}
 	else {
 		pthread_mutex_lock(&vstatlock);
@@ -784,7 +790,8 @@ static void map_window()
 	pthread_mutex_lock(&vstatlock);
 	vstat.scaling = x_cvstat.scaling;
 	pthread_mutex_unlock(&vstatlock);
-	x11.XMapWindow(dpy, win);
+	if (map_pending)
+		x11.XMapWindow(dpy, win);
 
 	x11.XFree(sh);
 
@@ -991,6 +998,9 @@ static int init_window()
 	a = A(_NET_WM_WINDOW_TYPE_NORMAL);
 	if (a != None)
 		set_win_property(ATOM__NET_WM_WINDOW_TYPE, XA_ATOM, 32, PropModeReplace, &a, 1);
+	a = A(_NET_WM_STATE_FULLSCREEN);
+	if (a != None)
+		set_win_property(ATOM__NET_WM_STATE, XA_ATOM, 32, PropModeReplace, &a, 1);
 
 	im = x11.XOpenIM(dpy, NULL, "CIOLIB", "CIOLIB");
 	if (im != NULL) {
@@ -1069,12 +1079,15 @@ static void resize_window()
 
 	pthread_mutex_lock(&vstatlock);
 	if (fullscreen && send_fullscreen(true)) {
+		cio_api.mode = CIOLIB_MODE_X_FULLSCREEN;
 	}
 	else {
 		send_fullscreen(false);
 		fullscreen = false;
+		cio_api.mode = CIOLIB_MODE_X;
 		new_scaling = x_cvstat.scaling;
 		bitmap_get_scaled_win_size(new_scaling, &width, &height, 0, 0);
+		// TODO: If we're in fullscreen mode, we don't get the decoration sizes...
 		if (x11_get_maxsize(&max_width, &max_height)) {
 			if (width > max_width || height > max_height) {
 				new_scaling = bitmap_double_mult_inside(max_width, max_height);
@@ -1184,7 +1197,6 @@ static int video_init()
 	bitmap_drv_init_mode(vstat.mode, NULL, NULL, 0, 0);
 	x_cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
-	init_mode_internal(x_cvstat.mode);
 
 	return(0);
 }
@@ -1370,12 +1382,13 @@ local_draw_rect(struct rectlist *rect)
 	last = source;
 }
 
-static void handle_resize_event(int width, int height)
+static void handle_resize_event(int width, int height, bool map)
 {
 	pthread_mutex_lock(&vstatlock);
-	if (fullscreen) {
+	if (fullscreen && !map) {
 		if ((width != x_cvstat.winwidth || height != x_cvstat.winheight)) {
 			fullscreen = false;
+			cio_api.mode = CIOLIB_MODE_X;
   		}
 	}
 	x_cvstat.winwidth = vstat.winwidth = width;
@@ -1518,6 +1531,23 @@ is_maximized(void)
 	return is;
 }
 
+static void
+handle_configuration(int x, int y, int w, int h, bool map)
+{
+	bool resize = false;
+
+	if ((x11_window_xpos != x || x11_window_ypos != y)) {
+		x11_window_xpos = x;
+		x11_window_ypos = y;
+	}
+	pthread_mutex_lock(&vstatlock);
+	if (w != vstat.winwidth || h != vstat.winheight)
+		resize = true;
+	pthread_mutex_unlock(&vstatlock);
+	if (resize)
+		handle_resize_event(w, h, map);
+}
+
 static int x11_event(XEvent *ev)
 {
 	if (x11.XFilterEvent(ev, win))
@@ -1545,7 +1575,6 @@ static int x11_event(XEvent *ev)
 			break;
 		/* Graphics related events */
 		case ConfigureNotify: {
-			bool resize = false;
 			int ax, ay;
 			Window cr;
 
@@ -1558,22 +1587,24 @@ static int x11_event(XEvent *ev)
 					ax = ev->xconfigure.x;
 					ay = ev->xconfigure.y;
 				}
-				if ((x11_window_xpos != ax || x11_window_ypos != ay)) {
-					x11_window_xpos = ax;
-					x11_window_ypos = ay;
+				if (map_pending) {
+					pending_xpos = ax;
+					pending_ypos = ay;
+					pending_width = ev->xconfigure.width;
+					pending_height = ev->xconfigure.height;
 				}
-				pthread_mutex_lock(&vstatlock);
-				if (ev->xconfigure.width != vstat.winwidth || ev->xconfigure.height != vstat.winheight) {
-					// XWayland on ChromeOS appears to send a 1x1 resize event early on for unknown reasons... inore it.
-					if (ev->xconfigure.width != 1 && ev->xconfigure.height != 1)
-						resize = true;
+				else {
+					handle_configuration(ax, ay, ev->xconfigure.width, ev->xconfigure.height, false);
 				}
-				pthread_mutex_unlock(&vstatlock);
-				if (resize)
-					handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
 			}
 			break;
 		}
+		case MapNotify:
+			if (map_pending) {
+				map_pending = false;
+				handle_configuration(pending_xpos, pending_ypos, pending_width, pending_height, true);
+			}
+			break;
 		case NoExpose:
 			break;
 		case GraphicsExpose:
@@ -2040,8 +2071,11 @@ void x11_event_thread(void *args)
 	fd_set fdset;
 	XEvent ev;
 	static struct timeval tv;
+	int mode = (int)(intptr_t)args;
 
 	SetThreadName("X11 Events");
+	if (mode == CIOLIB_MODE_X_FULLSCREEN)
+		fullscreen = true;
 	if(video_init()) {
 		sem_post(&init_complete);
 		return;

@@ -1077,7 +1077,7 @@ gdi_init(int mode)
 
 		cio_api.mode=CIOLIB_MODE_GDI;
 		FreeConsole();
-		cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON;
+		cio_api.options |= CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON | CONIO_OPT_EXTERNAL_SCALING;
 		return(0);
 	}
 	CloseHandle(rch);

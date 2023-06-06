@@ -103,7 +103,7 @@ char *usage =
     "-iX =  set interface mode to X (default=auto) where X is one of:\n"
     "       S[W|F] = SDL surface mode W for windowed and F for fullscreen\n"
 #ifdef __unix__
-    "       X = X11 mode\n"
+    "       X[W|F] = X11 mode W for windowed and F for fullscreen\n"
     "       C = Curses mode\n"
     "       I = Curses mode with forced ASCII charset\n"
     "       F = Curses mode with forced IBM charset\n"
@@ -759,14 +759,15 @@ char *output_types[] = {
 	, "ANSI"
 #if defined(__unix__) && !defined(NO_X)
 	, "X11"
+	, "X11 Fullscreen"
 #endif
 #ifdef _WIN32
 	, "Win32 Console",
 	"Win32 Console Fullscreen"
 #endif
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
-	, "SDL",
-	"SDL Fullscreen"
+	, "SDL"
+	, "SDL Fullscreen"
 #endif
 #if defined(WITH_GDI)
 	, "GDI"
@@ -783,6 +784,7 @@ int   output_map[] = {
 	, CIOLIB_MODE_ANSI
 #if defined(__unix__) && !defined(NO_X)
 	, CIOLIB_MODE_X
+	, CIOLIB_MODE_X_FULLSCREEN
 #endif
 #ifdef _WIN32
 	, CIOLIB_MODE_CONIO,
@@ -805,6 +807,7 @@ char *output_descrs[] = {
 	"Curses using US-ASCII",
 	"ANSI",
 	"X11",
+	"X11 Fullscreen",
 	"Win32 Console",
 	"Win32 Console Fullscreen",
 	"SDL",
@@ -820,6 +823,7 @@ char *output_enum[] = {
 	"CursesAscii",
 	"ANSI",
 	"X11",
+	"X11Fullscreen",
 	"WinConsole",
 	"WinConsoleFullscreen",
 	"SDL",
@@ -1628,7 +1632,15 @@ main(int argc, char **argv)
 							ciolib_mode = CIOLIB_MODE_CURSES_ASCII;
 							break;
 						case 'X':
-							ciolib_mode = CIOLIB_MODE_X;
+							switch (toupper(argv[i][3])) {
+								case 0:
+								case 'W':
+									ciolib_mode = CIOLIB_MODE_X;
+									break;
+								case 'F':
+									ciolib_mode = CIOLIB_MODE_X_FULLSCREEN;
+									break;
+							}
 							break;
 						case 'W':
 							ciolib_mode = CIOLIB_MODE_CONIO;
