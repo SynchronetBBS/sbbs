@@ -115,6 +115,20 @@ syncterm-msvc:
     paths:
       - "src/syncterm/Release/*.exe"
 
+sbbs-freebsd-noskeeters:
+  tags: [FreeBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sbbs3
+    - gmake RELEASE=1 WITHOUT_MOSQUITTO=1 all
+  artifacts:
+    name: sbbs-freebsd-amd64
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+      - "src/sbbs3/*.lib.release/*"
+      - "src/sbbs3/*/*.exe.release/*"
+
 sbbs-freebsd:
   tags: [FreeBSD]
   stage: build
