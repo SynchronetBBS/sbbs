@@ -19,6 +19,7 @@ static bool maximized = false;
 static uint16_t winxpos, winypos;
 static const DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_VISIBLE;
 static const DWORD fs_style = WS_POPUP | WS_VISIBLE;
+#define STYLE (fullscreen ? fs_style : style)
 static HCURSOR cursor;
 static HANDLE init_sem;
 static int xoff, yoff;
@@ -65,6 +66,8 @@ static pthread_mutex_t off_lock;
 static pthread_mutex_t stypelock;
 
 // Internal implementation
+
+static bool get_monitor_size_pos(int *w, int *h, int *xpos, int *ypos);
 
 static LPWSTR
 utf8_to_utf16(const uint8_t *str8, int buflen)
@@ -181,7 +184,9 @@ UnadjustWindowSize(int *w, int *h)
 	RECT r = {0};
 	bool ret;
 
-	ret = AdjustWindowRect(&r, style, FALSE);
+	if (fullscreen)
+		return true;
+	ret = AdjustWindowRect(&r, STYLE, FALSE);
 	if (ret) {
 		*w += r.left - r.right;
 		*h += r.top - r.bottom;
@@ -482,17 +487,42 @@ gdi_handle_activate(HWND hwnd, WPARAM wParam)
 }
 
 static bool
-gdi_get_monitor_size(int *w, int *h)
+get_monitor_size_pos(int *w, int *h, int *xpos, int *ypos)
 {
+	bool primary = false;
+	bool ret = false;
 	HMONITOR mon;
 	MONITORINFO mi;
-	bool ret;
 
-	mon = MonitorFromWindow(win, MONITOR_DEFAULTTOPRIMARY);
-	mi.cbSize = sizeof(mi);
-	ret = GetMonitorInfoW(mon, &mi);
-	*w = mi.rcWork.right - mi.rcWork.left;
-	*h = mi.rcWork.bottom - mi.rcWork.top;
+	if (!primary && win == NULL)
+		primary = true;
+	mon = MonitorFromWindow(win, primary ? MONITOR_DEFAULTTOPRIMARY : MONITOR_DEFAULTTONEAREST);
+	if (mon) {
+		mi.cbSize = sizeof(mi);
+		ret = GetMonitorInfoW(mon, &mi);
+		if (ret) {
+			if (fullscreen) {
+				if (w)
+					*w = mi.rcMonitor.right - mi.rcMonitor.left;
+				if (h)
+					*h = mi.rcMonitor.bottom - mi.rcMonitor.top;
+				if (xpos)
+					*xpos = mi.rcMonitor.left;
+				if (ypos)
+					*ypos = mi.rcMonitor.top;
+			}
+			else {
+				if (w)
+					*w = mi.rcWork.right - mi.rcWork.left;
+				if (h)
+					*h = mi.rcWork.bottom - mi.rcWork.top;
+				if (xpos)
+					*xpos = mi.rcWork.left;
+				if (ypos)
+						*ypos = mi.rcWork.top;
+			}
+		}
+	}
 	return ret;
 }
 
@@ -505,7 +535,7 @@ handle_wm_getminmaxinfo(MINMAXINFO *inf)
 	double mult;
 	RECT r;
 
-	gdi_get_monitor_size(&monw, &monh);
+	get_monitor_size_pos(&monw, &monh, NULL, NULL);
 	maxw = monw;
 	maxh = monh;
 	UnadjustWindowSize(&maxw, &maxh);
@@ -519,7 +549,7 @@ handle_wm_getminmaxinfo(MINMAXINFO *inf)
 	r.left = 0;
 	r.right = maxw;
 	r.bottom = maxh;
-	AdjustWindowRect(&r, style, FALSE);
+	AdjustWindowRect(&r, STYLE, FALSE);
 	inf->ptMaxTrackSize.x = r.right - r.left;
 	inf->ptMaxTrackSize.y = r.bottom - r.top;
 	inf->ptMaxSize.x = inf->ptMaxTrackSize.x;
@@ -531,7 +561,7 @@ handle_wm_getminmaxinfo(MINMAXINFO *inf)
 	r.left = 0;
 	r.right = minw;
 	r.bottom = minh;
-	AdjustWindowRect(&r, style, FALSE);
+	AdjustWindowRect(&r, STYLE, FALSE);
 	inf->ptMinTrackSize.x = r.right - r.left;
 	inf->ptMinTrackSize.y = r.bottom - r.top;
 
@@ -609,8 +639,7 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			r.right = wParam;
 			r.bottom = lParam;
 			pthread_mutex_unlock(&vstatlock);
-			if (!fullscreen)
-				AdjustWindowRect(&r, style, FALSE);
+			AdjustWindowRect(&r, STYLE, FALSE);
 			SetWindowPos(win, NULL, 0, 0, r.right - r.left, r.bottom - r.top, SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
 			return true;
 		case WM_USER_SETPOS:
@@ -628,7 +657,7 @@ gdi_snap(bool grow)
 
 	if (maximized || fullscreen)
 		return;
-	gdi_get_monitor_size(&mw, &mh);
+	get_monitor_size_pos(&mw, &mh, NULL, NULL);
 	UnadjustWindowSize(&mw, &mh);
 	pthread_mutex_lock(&vstatlock);
 	bitmap_snap(grow, mw, mh);
@@ -642,7 +671,7 @@ gdi_snap(bool grow)
 #define WMOD_SHIFT    8
 #define WMOD_LSHIFT  16
 #define WMOD_RSHIFT  32
-bool
+static bool
 magic_message(MSG msg)
 {
 	static uint8_t mods = 0;
@@ -716,7 +745,7 @@ magic_message(MSG msg)
 											pthread_mutex_lock(&vstatlock);
 											window_scaling = vstat.scaling;
 											pthread_mutex_unlock(&vstatlock);
-											SetWindowLongPtr(win, GWL_STYLE, fs_style);
+											SetWindowLongPtr(win, GWL_STYLE, STYLE);
 											PostMessageW(win, WM_USER_SETPOS, mi.rcMonitor.left, mi.rcMonitor.top);
 											PostMessageW(win, WM_USER_SETSIZE, mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top);
 										}
@@ -730,7 +759,7 @@ magic_message(MSG msg)
 									int w, h;
 
 									bitmap_get_scaled_win_size(window_scaling, &w, &h, 0, 0);
-									SetWindowLongPtr(win, GWL_STYLE, style);
+									SetWindowLongPtr(win, GWL_STYLE, STYLE);
 									PostMessageW(win, WM_USER_SETSIZE, w, h);
 									PostMessageW(win, WM_USER_SETPOS, window_left, window_top);
 								}
@@ -773,9 +802,14 @@ gdi_thread(void *arg)
 	MSG  msg;
 	RECT r;
 	ATOM cl;
+	int wx = CW_USEDEFAULT;
+	int wy = CW_USEDEFAULT;
+	int mode = (int)arg;
 
 	SetThreadName("GDI Events");
 
+	if (mode == CIOLIB_MODE_GDI_FULLSCREEN)
+		fullscreen = true;
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc   = gdi_WndProc;
 	// This is actually required or the link will fail (it can be overwritten though)
@@ -797,6 +831,13 @@ gdi_thread(void *arg)
 	pthread_mutex_lock(&vstatlock);
 	if (ciolib_initial_scaling != 0) {
 		bitmap_get_scaled_win_size(ciolib_initial_scaling, &vstat.winwidth, &vstat.winheight, 0, 0);
+		vstat.scaling = ciolib_initial_scaling;
+	}
+	if (fullscreen) {
+		if (get_monitor_size_pos(&vstat.winwidth, &vstat.winheight, &wx, &wy))
+			vstat.scaling = bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
+		else
+			fullscreen = false;
 	}
 	stype = ciolib_initial_scaling_type;
 	// Now make the inside of the window the size we want (sigh)
@@ -804,12 +845,16 @@ gdi_thread(void *arg)
 	r.right = vstat.winwidth;
 	r.bottom = vstat.winheight;
 	pthread_mutex_unlock(&vstatlock);
-	AdjustWindowRect(&r, style, FALSE);
-	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", style, CW_USEDEFAULT, SW_SHOWNORMAL, r.right - r.left, r.bottom - r.top, NULL, NULL, NULL, NULL);
+	AdjustWindowRect(&r, STYLE, FALSE);
+	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", STYLE, wx, wy, r.right - r.left, r.bottom - r.top, NULL, NULL, NULL, NULL);
 	if (win == NULL)
 		goto fail;
 	// No failing after this...
 	init_success = true;
+	if (fullscreen)
+		cio_api.mode = CIOLIB_MODE_GDI_FULLSCREEN;
+	else
+		cio_api.mode = CIOLIB_MODE_GDI;
 	ReleaseSemaphore(init_sem, 1, NULL);
 
 	while (GetMessage(&msg, NULL, 0, 0)) {
@@ -875,9 +920,13 @@ gdi_textmode(int mode)
 	}
 
 	pthread_mutex_lock(&vstatlock);
-	gdi_get_monitor_size(&mw, &mh);
+	get_monitor_size_pos(&mw, &mh, NULL, NULL);
 	UnadjustWindowSize(&mw, &mh);
 	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
+	if (fullscreen) {
+		vstat.winwidth = mw;
+		vstat.winheight = mh;
+	}
 	gdi_setwinsize(vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
 	bitmap_drv_request_pixels();
@@ -1067,11 +1116,11 @@ gdi_init(int mode)
 	else if (SetProcessDPIAware) {
 		SetProcessDPIAware();
 	}
-	_beginthread(gdi_mouse_thread, 0, NULL);
-	_beginthread(gdi_thread, 0, NULL);
+	_beginthread(gdi_thread, 0, (void *)(intptr_t)mode);
 	WaitForSingleObject(init_sem, INFINITE);
 	CloseHandle(init_sem);
 	if (init_success) {
+		_beginthread(gdi_mouse_thread, 0, NULL);
 		gdi_textmode(ciolib_initial_mode);
 
 		cio_api.mode=CIOLIB_MODE_GDI;
@@ -1158,7 +1207,10 @@ gdi_setwinposition(int x, int y)
 void
 gdi_setwinsize(int w, int h)
 {
-	PostMessageW(win, WM_USER_SETSIZE, w, h);
+	if (fullscreen)
+		window_scaling = bitmap_double_mult_inside(w, h);
+	else
+		PostMessageW(win, WM_USER_SETSIZE, w, h);
 }
 
 double
@@ -1177,10 +1229,15 @@ gdi_setscaling(double newval)
 {
 	int w, h;
 
-	pthread_mutex_lock(&vstatlock);
-	bitmap_get_scaled_win_size(newval, &w, &h, 0, 0);
-	pthread_mutex_unlock(&vstatlock);
-	gdi_setwinsize(w, h);
+	if (fullscreen) {
+		window_scaling = newval;
+	}
+	else {
+		pthread_mutex_lock(&vstatlock);
+		bitmap_get_scaled_win_size(newval, &w, &h, 0, 0);
+		pthread_mutex_unlock(&vstatlock);
+		gdi_setwinsize(w, h);
+	}
 }
 
 enum ciolib_scaling

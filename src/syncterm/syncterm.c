@@ -101,17 +101,18 @@ char *usage =
     "-e# =  set escape delay to #msec\n"
     "-h  =  use SSH mode if URL does not include the scheme\n"
     "-iX =  set interface mode to X (default=auto) where X is one of:\n"
-    "       S[W|F] = SDL surface mode W for windowed and F for fullscreen\n"
-#ifdef __unix__
-    "       X[W|F] = X11 mode W for windowed and F for fullscreen\n"
-    "       C = Curses mode\n"
-    "       I = Curses mode with forced ASCII charset\n"
-    "       F = Curses mode with forced IBM charset\n"
-#else
-    "       W = Win32 console (text) mode\n"
-    "       G = Win32 GDI (graphics) mode\n"
-#endif
     "       A = ANSI mode\n"
+#ifdef __unix__
+    "       C = Curses mode\n"
+    "       F = Curses mode with forced IBM charset\n"
+    "       I = Curses mode with forced ASCII charset\n"
+    "       S[W|F] = SDL surface mode W for windowed and F for fullscreen\n"
+    "       X[W|F] = X11 mode W for windowed and F for fullscreen\n"
+#else
+    "       G[W|F] = Win32 GDI (graphics) mode W for windowed and F for fullscreen\n"
+    "       S[W|F] = SDL surface mode W for windowed and F for fullscreen\n"
+    "       W = Win32 console (text) mode\n"
+#endif
     "-l# =  set screen lines to # (default=auto-detect)\n"
     "-n/path/to/ini = specify a config ini path\n"
     "-q  =  Quiet mode (Hide various popups such as this during a connect)\n"
@@ -771,15 +772,16 @@ char *output_types[] = {
 #endif
 #if defined(WITH_GDI)
 	, "GDI"
+	, "GDI Fullscreen"
 #endif
 	, NULL
 };
 int   output_map[] = {
 	CIOLIB_MODE_AUTO
 #ifdef __unix__
-	, CIOLIB_MODE_CURSES,
-	CIOLIB_MODE_CURSES_IBM,
-	CIOLIB_MODE_CURSES_ASCII
+	, CIOLIB_MODE_CURSES
+	, CIOLIB_MODE_CURSES_IBM
+	, CIOLIB_MODE_CURSES_ASCII
 #endif
 	, CIOLIB_MODE_ANSI
 #if defined(__unix__) && !defined(NO_X)
@@ -787,16 +789,16 @@ int   output_map[] = {
 	, CIOLIB_MODE_X_FULLSCREEN
 #endif
 #ifdef _WIN32
-	, CIOLIB_MODE_CONIO,
-	CIOLIB_MODE_CONIO_FULLSCREEN
+	, CIOLIB_MODE_CONIO
+	, CIOLIB_MODE_CONIO_FULLSCREEN
 #endif
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
-	, CIOLIB_MODE_SDL,
-	CIOLIB_MODE_SDL_FULLSCREEN
+	, CIOLIB_MODE_SDL
+	, CIOLIB_MODE_SDL_FULLSCREEN
 #endif
 #ifdef WITH_GDI
-	, CIOLIB_MODE_GDI,
-	CIOLIB_MODE_GDI
+	, CIOLIB_MODE_GDI
+	, CIOLIB_MODE_GDI_FULLSCREEN
 #endif
 	, 0
 };
@@ -813,6 +815,7 @@ char *output_descrs[] = {
 	"SDL",
 	"SDL Fullscreen",
 	"GDI",
+	"GDI Fullscreen",
 	NULL
 };
 
@@ -829,6 +832,7 @@ char *output_enum[] = {
 	"SDL",
 	"SDLFullscreen",
 	"GDI",
+	"GDIFullscreen",
 	NULL
 };
 
@@ -1626,7 +1630,15 @@ main(int argc, char **argv)
 							ciolib_mode = CIOLIB_MODE_CURSES_IBM;
 							break;
 						case 'G':
-							ciolib_mode = CIOLIB_MODE_GDI;
+							switch (toupper(argv[i][3])) {
+								case 0:
+								case 'W':
+									ciolib_mode = CIOLIB_MODE_GDI;
+									break;
+								case 'F':
+									ciolib_mode = CIOLIB_MODE_GDI_FULLSCREEN;
+									break;
+							}
 							break;
 						case 'I':
 							ciolib_mode = CIOLIB_MODE_CURSES_ASCII;

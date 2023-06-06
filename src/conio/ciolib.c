@@ -521,6 +521,7 @@ CIOLIBEXPORT int initciolib(int mode)
 
 #if defined(WITH_GDI)
 		case CIOLIB_MODE_GDI:
+		case CIOLIB_MODE_GDI_FULLSCREEN:
 			try_gdi_init(mode);
 			break;
 #endif

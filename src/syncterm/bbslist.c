@@ -1911,7 +1911,7 @@ change_settings(int connected)
 #ifdef __unix__
 				    "~ Curses ~\n"
 				    "        Use text output using the Curses library.  This mode should work\n"
-				    "        from any terminal, however, high and low ASCII will not work\n"
+				    "        from any terminal, however, high and low ASCII may not work\n"
 				    "        correctly.\n\n"
 				    "~ Curses on cp437 Device ~\n"
 				    "        As above, but assumes that the current terminal is configured to\n"
@@ -1925,8 +1925,7 @@ change_settings(int connected)
 #if defined(__unix__) && !defined(NO_X)
 				    "~ X11 ~\n"
 				    "        Uses the Xlib library directly for graphical output.  This is\n"
-				    "        the graphical mode most likely to work when using X11.  This\n"
-				    "        mode supports font changes.\n\n"
+				    "        the graphical mode most likely to work when using X11.\n\n"
 				    "~ X11 Fullscreen ~\n"
 				    "        As above, but starts in full-screen mode rather than a window\n\n"
 #endif
@@ -1936,14 +1935,18 @@ change_settings(int connected)
 				    "        affect the look of the output and some low ASCII characters are\n"
 				    "        not displayable.  When in a window, blinking text is displayed\n"
 				    "        with a high-intensity background rather than blinking.  In\n"
-				    "        full-screen mode, blinking works correctly.\n\n"
+				    "        full-screen mode (where available), blinking works correctly.\n\n"
 #endif
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 				    "~ SDL ~\n"
 				    "        Makes use of the SDL graphics library for graphical output.\n"
-				    "        This output mode allows switching to full-screen mode but is\n"
-				    "        otherwise identical to X11 mode.\n\n"
 				    "~ SDL Fullscreen ~\n"
+				    "        As above, but starts in full-screen mode rather than a window\n\n"
+#endif
+#if defined(WITH_GDI)
+				    "~ GDI ~\n"
+				    "        Native Windows graphics library for graphical output.\n"
+				    "~ GDI Fullscreen ~\n"
 				    "        As above, but starts in full-screen mode rather than a window\n\n"
 #endif
 				;
