@@ -2428,22 +2428,22 @@ void sys_cfg(void)
 					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Sysop Chat Override"
 						,cfg.sys_chat_arstr);
 					if(cfg.user_backup_level)
-						sprintf(str,"%hu",cfg.user_backup_level);
+						sprintf(str,"%u",cfg.user_backup_level);
 					else
 						strcpy(str,"None");
 					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","User Database Backups",str);
 					if(cfg.mail_backup_level)
-						sprintf(str,"%hu",cfg.mail_backup_level);
+						sprintf(str,"%u",cfg.mail_backup_level);
 					else
 						strcpy(str,"None");
 					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Mail Database Backups",str);
 					if(cfg.config_backup_level)
-						sprintf(str,"%hu",cfg.config_backup_level);
+						sprintf(str,"%u",cfg.config_backup_level);
 					else
 						strcpy(str,"None");
 					snprintf(opt[i++],MAX_OPLN,"%-27.27s%s","Configuration Backups",str);
 					if(cfg.max_log_size && cfg.max_logs_kept) {
-						SAFEPRINTF2(str, "%s bytes, keep %hu"
+						SAFEPRINTF2(str, "%s bytes, keep %u"
 							,byte_count_to_str(cfg.max_log_size, tmp, sizeof(tmp))
 							,cfg.max_logs_kept);
 					} else {
