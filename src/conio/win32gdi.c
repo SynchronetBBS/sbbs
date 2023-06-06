@@ -715,7 +715,6 @@ magic_message(MSG msg)
 											}
 											pthread_mutex_lock(&vstatlock);
 											window_scaling = vstat.scaling;
-											// TODO: Save pos as well...
 											pthread_mutex_unlock(&vstatlock);
 											SetWindowLongPtr(win, GWL_STYLE, fs_style);
 											PostMessageW(win, WM_USER_SETPOS, mi.rcMonitor.left, mi.rcMonitor.top);
@@ -1167,7 +1166,6 @@ gdi_getscaling(void)
 {
 	int ret;
 
-	// TODO: I hate having nested locks like this. :(
 	pthread_mutex_lock(&vstatlock);
 	ret = bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
@@ -1190,7 +1188,6 @@ gdi_getscaling_type(void)
 {
 	enum ciolib_scaling ret;
 
-	// TODO: I hate having nested locks like this. :(
 	pthread_mutex_lock(&stypelock);
 	ret = stype;
 	pthread_mutex_unlock(&stypelock);
