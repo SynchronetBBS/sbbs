@@ -89,7 +89,7 @@ int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 		return(-1);
 	}
 
-	fseek(fp, -(sizeof terminator), SEEK_END);
+	fseek(fp, -(int)(sizeof terminator), SEEK_END);
 	if(fread(&terminator, sizeof terminator, 1, fp) != 1) {
 		fprintf(stderr,"%s !Error %d (%s) reading terminating nulls"
 			,fname, errno, strerror(errno));
