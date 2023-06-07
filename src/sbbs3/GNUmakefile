@@ -91,7 +91,7 @@ ifeq ($(os),linux)
 endif
 ifndef WITHOUT_MOSQUITTO
  ifneq ($(os), win32)
-  ifeq ($(shell pkg-config 'libmosquitto >= 2' --exists && echo "yes"),yes)
+  ifeq ($(shell pkg-config 'libmosquitto >= 1.6.9' --exists && echo "yes"),yes)
    CFLAGS += -DUSE_MOSQUITTO
    CFLAGS += $(shell pkg-config libmosquitto --cflags)
    CON_LIBS += $(shell pkg-config libmosquitto --libs)
