@@ -116,6 +116,8 @@ struct x11 {
 	int (*XChangeWindowAttributes)(Display *, Window, unsigned long, XSetWindowAttributes *);
 	int (*XConfigureWindow)(Display *, Window, unsigned int, XWindowChanges *);
 	int (*XMoveWindow)(Display *, Window, int, int);
+	Status (*XGetWMNormalHints)(Display*, Window, XSizeHints*, long*);
+	int (*XMoveResizeWindow)(Display*, Window, int, int, unsigned int, unsigned int);
 #ifndef DefaultDepth
 	int (*DefaultDepth)(Display *, int);
 #endif

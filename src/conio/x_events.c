@@ -174,6 +174,7 @@ static Picture xrender_src_pict = None;
 static Picture xrender_dst_pict = None;
 #endif
 static bool fullscreen;
+static bool fullscreen_pending;
 static Window parent;
 static Window root;
 static char *wm_wm_name;
@@ -756,6 +757,7 @@ static void map_window()
 		fprintf(stderr, "Could not get XSizeHints structure");
 		exit(1);
 	}
+	sh->flags = 0;
 
 	if (x11_get_maxsize(&sh->max_width,&sh->max_height)) {
 		pthread_mutex_lock(&vstatlock);
@@ -766,11 +768,18 @@ static void map_window()
 		pthread_mutex_lock(&vstatlock);
 		bitmap_get_scaled_win_size(7.0, &sh->max_width, &sh->max_height, 0, 0);
 	}
+	sh->flags |= PMaxSize;
 
 	bitmap_get_scaled_win_size(x_cvstat.scaling, &sh->base_width, &sh->base_height, 0, 0);
+	sh->flags |= PBaseSize;
+
 	sh->width = sh->base_width;
 	sh->height = sh->base_height;
+	sh->flags |= PSize;
+
 	bitmap_get_scaled_win_size(1.0, &sh->min_width, &sh->min_height, 0, 0);
+	sh->flags |= PMinSize;
+
 	pthread_mutex_unlock(&vstatlock);
 
 	if (x_cvstat.aspect_width != 0 && x_cvstat.aspect_height != 0) {
@@ -781,8 +790,7 @@ static void map_window()
 		sh->min_aspect.x = sh->max_aspect.x = sh->min_width;
 		sh->min_aspect.y = sh->max_aspect.y = sh->min_height;
 	}
-
-	sh->flags = PMinSize | PSize | PAspect | PMaxSize | PBaseSize;
+	sh->flags |= PAspect;
 
 	x11.XSetWMNormalHints(dpy, win, sh);
 	pthread_mutex_lock(&vstatlock);
@@ -996,7 +1004,17 @@ static int init_window()
 	a = A(_NET_WM_WINDOW_TYPE_NORMAL);
 	if (a != None)
 		set_win_property(ATOM__NET_WM_WINDOW_TYPE, XA_ATOM, 32, PropModeReplace, &a, 1);
-	a = A(_NET_WM_STATE_FULLSCREEN);
+	/*
+	 * NOTE: Setting this before mapping the window is not something
+	 *       that is specified in the EWMH, but it works on at least
+	 *       xfwm4 and marco... and I think it would be insane to
+	 *       implement _NET_WM_STATE_FULLSCREEN and *not* support
+	 *       this.
+	 */
+	if (fullscreen)
+		a = A(_NET_WM_STATE_FULLSCREEN);
+	else
+		a = None;
 	if (a != None)
 		set_win_property(ATOM__NET_WM_STATE, XA_ATOM, 32, PropModeReplace, &a, 1);
 
@@ -1017,7 +1035,7 @@ static int init_window()
 	gc=x11.XCreateGC(dpy, win, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
 
 	x11.XSelectInput(dpy, win, KeyReleaseMask | KeyPressMask |
-		     ExposureMask | ButtonPressMask
+		     ExposureMask | ButtonPressMask | PropertyChangeMask
 		     | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask);
 
 	x11.XStoreName(dpy, win, "SyncConsole");
@@ -1053,6 +1071,8 @@ send_fullscreen(bool set)
 			ev.xclient.data.l[0] = set ? _NET_WM_STATE_ADD : _NET_WM_STATE_REMOVE;
 			ev.xclient.data.l[1] = A(_NET_WM_STATE_FULLSCREEN);
 			ev.xclient.data.l[3] = 1;
+			if (set)
+				fullscreen_pending = true;
 			ret = x11.XSendEvent(dpy, root, False, SubstructureNotifyMask | SubstructureRedirectMask, &ev) != 0;
 			if (ret) {
 				x11.XFlush(dpy);
@@ -1383,7 +1403,7 @@ local_draw_rect(struct rectlist *rect)
 static void handle_resize_event(int width, int height, bool map)
 {
 	pthread_mutex_lock(&vstatlock);
-	if (fullscreen && !map) {
+	if (fullscreen && !map && !fullscreen_pending) {
 		if ((width != x_cvstat.winwidth || height != x_cvstat.winheight)) {
 			fullscreen = false;
 			cio_api.mode = CIOLIB_MODE_X;
@@ -1468,8 +1488,8 @@ xlat_mouse_xy(int *x, int *y)
 	return true;
 }
 
-bool
-is_maximized(void)
+static bool
+net_wm_state_is_cb(bool (*cb)(Atom))
 {
 	bool is = false;
 	Atom atr;
@@ -1489,7 +1509,8 @@ is_maximized(void)
 				break;
 			}
 			ret = (Atom *)prop;
-			if (*ret == A(_NET_WM_STATE_MAXIMIZED_VERT) || *ret == A(_NET_WM_STATE_MAXIMIZED_HORZ))
+			if (cb(*ret))
+			if (*ret == A(_NET_WM_STATE_FULLSCREEN))
 				is = true;
 			x11.XFree(prop);
 			if (is)
@@ -1497,6 +1518,34 @@ is_maximized(void)
 		}
 	}
 	return is;
+}
+
+static bool
+is_maximized_cb(Atom a)
+{
+	if (a != None && (a == A(_NET_WM_STATE_MAXIMIZED_VERT) || a == A(_NET_WM_STATE_MAXIMIZED_HORZ)))
+		return true;
+	return false;
+}
+
+static bool
+is_fullscreen_cb(Atom a)
+{
+	if (a != None && a == A(_NET_WM_STATE_FULLSCREEN))
+		return true;
+	return false;
+}
+
+static bool
+is_maximized(void)
+{
+	return net_wm_state_is_cb(is_maximized_cb);
+}
+
+static bool
+is_fullscreen(void)
+{
+	return net_wm_state_is_cb(is_fullscreen_cb);
 }
 
 static void
@@ -1518,6 +1567,8 @@ handle_configuration(int x, int y, int w, int h, bool map)
 
 static int x11_event(XEvent *ev)
 {
+	int x, y, w, h;
+
 	if (x11.XFilterEvent(ev, win))
 		return 0;
 	switch (ev->type) {
@@ -1536,9 +1587,21 @@ static int x11_event(XEvent *ev)
 			break;
 		case PropertyNotify:
 			if (A(_NET_FRAME_EXTENTS) != None) {
-				if (ev->xproperty.atom != A(_NET_FRAME_EXTENTS))
-					break;
-				map_window();
+				if (ev->xproperty.atom == A(_NET_FRAME_EXTENTS))
+					map_window();
+			}
+			if (A(_NET_WM_STATE) != None) {
+				if (ev->xproperty.atom == A(_NET_WM_STATE)) {
+					if (fullscreen_pending && is_fullscreen()) {
+						fullscreen_pending = false;
+						if (fullscreen_geometry(&x, &y, &w, &h)) {
+							if (x_cvstat.winwidth != w || x_cvstat.winheight != h) {
+								x_cvstat.winwidth = w;
+								x_cvstat.winheight = h;
+							}
+						}
+					}
+				}
 			}
 			break;
 		/* Graphics related events */
