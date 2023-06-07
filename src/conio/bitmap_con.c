@@ -1726,7 +1726,13 @@ bitmap_get_scaled_win_size(double scale, int *w, int *h, int maxwidth, int maxhe
 
 	if (maxwidth == 0 && maxheight == 0)
 		return bitmap_get_scaled_win_size_nomax(scale, w, h);
+	if (maxwidth < vstat.scrnwidth)
+		maxwidth = vstat.scrnwidth;
+	if (maxheight < vstat.scrnheight)
+		maxheight = vstat.scrnheight;
 	max = bitmap_double_mult_inside(maxwidth, maxheight);
+	if (max < 1.0)
+		max = 1.0;
 	if (scale < 1.0)
 		scale = 1.0;
 	if (scale > max)

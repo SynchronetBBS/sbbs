@@ -572,6 +572,19 @@ int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	return(1);
 }
 
+static void
+sdl_bughack_minsize(int w, int h, bool new)
+{
+	static int lw = -1;
+	static int lh = -1;
+
+	if ((!new) && w == lw && h == lh)
+		return;
+	lw = w;
+	lh = h;
+	sdl.SetWindowMinimumSize(win, w, h);
+}
+
 static void setup_surfaces(struct video_stats *vs)
 {
 	int		flags=0;
@@ -581,6 +594,7 @@ static void setup_surfaces(struct video_stats *vs)
 	int idealh;
 	int idealmw;
 	int idealmh;
+	int new_win = false;
 
 	if(fullscreen)
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -599,6 +613,7 @@ static void setup_surfaces(struct video_stats *vs)
 
 	if (win == NULL) {
 		// SDL2: This is slow sometimes... not sure why.
+		new_win = true;
 		if (sdl.CreateWindowAndRenderer(vs->winwidth, vs->winheight, flags, &win, &renderer) == 0) {
 			sdl.GetWindowSize(win, &idealw, &idealh);
 			vs->winwidth = idealw;
@@ -621,7 +636,7 @@ static void setup_surfaces(struct video_stats *vs)
 		}
 	}
 	else {
-		sdl.SetWindowMinimumSize(win, idealmw, idealmh);
+		sdl_bughack_minsize(idealmw, idealmh, false);
 		sdl.SetWindowSize(win, idealw, idealh);
 		sdl.GetWindowSize(win, &idealw, &idealh);
 		vs->winwidth = idealw;
@@ -643,7 +658,7 @@ static void setup_surfaces(struct video_stats *vs)
 		vstat.winheight = vs->winheight;
 		pthread_mutex_unlock(&vstatlock);
 	}
-	sdl.SetWindowMinimumSize(win, idealmw, idealmh);
+	sdl_bughack_minsize(idealmw, idealmh, new_win);
 
 	if(win!=NULL) {
 		bitmap_drv_request_pixels();
