@@ -715,7 +715,6 @@ static void resize_xim(void)
 				release_buffer(last);
 				last = NULL;
 			}
-			x11.XFillRectangle(dpy, win, gc, 0, 0, width, height);
 			return;
 		}
 #ifdef XDestroyImage
@@ -730,7 +729,6 @@ static void resize_xim(void)
 	}
 	xim = x11.XCreateImage(dpy, visual, depth, ZPixmap, 0, NULL, width, height, 32, 0);
 	xim->data=(char *)calloc(1, xim->bytes_per_line*xim->height);
-	x11.XFillRectangle(dpy, win, gc, 0, 0, width, height);
 }
 
 /* Swiped from FreeBSD libc */
@@ -1404,9 +1402,10 @@ static void handle_resize_event(int width, int height, bool map)
 
 static void expose_rect(int x, int y, int width, int height)
 {
-	int sx,sy,ex,ey;
 	int xoff=0, yoff=0;
-	int w, h, s;
+	int w, h;
+	int sw, sh;
+	double s;
 
 	if (xim == NULL) {
 		fprintf(stderr, "Exposing NULL xim!\n");
@@ -1416,57 +1415,26 @@ static void expose_rect(int x, int y, int width, int height)
 	w = vstat.winwidth;
 	h = vstat.winheight;
 	s = vstat.scaling;
+	bitmap_get_scaled_win_size(s, &sw, &sh, 0, 0);
 	pthread_mutex_unlock(&vstatlock);
-	xoff = (w - xim->width) / 2;
+	xoff = (w - sw) / 2;
 	if (xoff < 0)
 		xoff = 0;
-	yoff = (h - xim->height) / 2;
+	yoff = (h - sh) / 2;
 	if (yoff < 0)
 		yoff = 0;
 
-	if (xoff > 0 || yoff > 0) {
-		if (x < xoff || y < yoff || x + width > xoff + xim->width || y + height > yoff + xim->height) {
-			x11.XFillRectangle(dpy, win, gc, 0, 0, w, yoff);
-			x11.XFillRectangle(dpy, win, gc, 0, yoff, xoff, yoff + xim->height);
-			x11.XFillRectangle(dpy, win, gc, xoff+xim->width, yoff, w, yoff + xim->height);
-			x11.XFillRectangle(dpy, win, gc, 0, yoff + xim->height, w, h);
-		}
-	}
-
-	sx = (x - xoff) / s;
-	sy = (y - yoff) / s;
-	if (sx < 0)
-		sx = 0;
-	if (sy < 0)
-		sy = 0;
-
-	ex=(x-xoff)+width-1;
-	ey=(y-yoff)+height-1;
-	if (ex < 0)
-		ex = 0;
-	if (ey < 0)
-		ey = 0;
-	if ((ex + 1) % s) {
-		ex += s - (ex % s);
-	}
-	if ((ey + 1) % s) {
-		ey += s - (ey % s);
-	}
-	ex = ex / s;
-	ey = ey / s;
+	x11.XFillRectangle(dpy, win, gc, 0, 0, w, yoff);
+	x11.XFillRectangle(dpy, win, gc, 0, yoff, xoff, yoff + sh);
+	x11.XFillRectangle(dpy, win, gc, xoff + sw, yoff, w, yoff + sh);
+	x11.XFillRectangle(dpy, win, gc, 0, yoff + sh, w, h);
 
 	/* Since we're exposing, we *have* to redraw */
 	if (last) {
 		release_buffer(last);
 		last = NULL;
-		bitmap_drv_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
 	}
-	else {
-		// Do nothing...
-		if (sx == ex || sy == ey)
-			return;
-		bitmap_drv_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
-	}
+	bitmap_drv_request_pixels();
 }
 
 static bool
