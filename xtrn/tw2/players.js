@@ -601,6 +601,9 @@ function DeletePlayer(player)
 	var i;
 	var sector;
 
+	if (player == undefined)
+		return;
+
 	/* Delete player */
 	player.ReInit();
 	player.UserNumber=0;
