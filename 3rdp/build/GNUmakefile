@@ -35,6 +35,10 @@ ifneq ($(os),darwin)
   endif
  endif
 endif
+# Blacklist some machines...
+ifeq ($(machine),armv7)
+ JS_CONFIGURE_ARGS += '--disable-tracejit'
+endif
 
 JS_CONFIGURE_ENV += 'CXXFLAGS=$(CXXFLAGS)'
 
