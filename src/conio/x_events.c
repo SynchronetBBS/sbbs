@@ -824,6 +824,7 @@ static void map_window()
 		sh->min_aspect.x = sh->max_aspect.x = sh->min_width;
 		sh->min_aspect.y = sh->max_aspect.y = sh->min_height;
 	}
+
 	sh->flags |= PAspect;
 
 	x11.XSetWMNormalHints(dpy, win, sh);
@@ -1025,9 +1026,10 @@ static int init_window()
 	if(wmhints) {
 		wmhints->flags = 0;
 		wmhints->initial_state=NormalState;
-		wmhints->flags |= (StateHint | InputHint);
 		wmhints->input = True;
+		wmhints->flags |= (StateHint | InputHint);
 		set_icon(ciolib_initial_icon, ciolib_initial_icon_width, wmhints);
+		// TODO: We could get the window/icon name right at the start...
 		x11.XSetWMProperties(dpy, win, NULL, NULL, 0, 0, NULL, wmhints, classhints);
 		x11.XFree(wmhints);
 	}
@@ -1052,7 +1054,7 @@ static int init_window()
 	if (a != None)
 		set_win_property(ATOM__NET_WM_STATE, XA_ATOM, 32, PropModeReplace, &a, 1);
 
-	im = x11.XOpenIM(dpy, NULL, "CIOLIB", "CIOLIB");
+	im = x11.XOpenIM(dpy, NULL, classhints ? classhints->res_name : "CIOLIB", classhints ? classhints->res_class : "CIOLIB");
 	if (im != NULL) {
 		ic = x11.XCreateIC(im, XNClientWindow, win, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, NULL);
 		if (ic)
@@ -1169,9 +1171,8 @@ static void resize_window()
 	}
 	resize = new_scaling != vstat.scaling;
 	x_cvstat.scaling = vstat.scaling;
-	if (resize) {
+	if (resize)
 		x11.XResizeWindow(dpy, win, width, height);
-	}
 	pthread_mutex_unlock(&vstatlock);
 
 	return;
@@ -1653,9 +1654,8 @@ static int x11_event(XEvent *ev)
 							x_cvstat.winheight = h;
 							if (resize)
 								x11.XMoveResizeWindow(dpy, win, saved_xpos, saved_ypos, w, h);
-							else {
+							else
 								x11.XMoveWindow(dpy, win, saved_xpos, saved_ypos);
-							}
 						}
 					}
 				}
