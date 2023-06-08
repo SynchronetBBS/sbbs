@@ -68,7 +68,7 @@ bool x_internal_scaling = true;
 enum UsedAtom {
 	// UTF8_STRING: https://www.pps.jussieu.fr/~jch/software/UTF8_STRING/UTF8_STRING.text
 	ATOM_UTF8_STRING,
-	// ICCM: https://x.org/releases/X11R7.6/doc/xorg-docs/specs/ICCCM/icccm.html
+	// ICCCM: https://x.org/releases/X11R7.6/doc/xorg-docs/specs/ICCCM/icccm.html
 	ATOM_CLIPBOARD,
 	ATOM_TARGETS,
 	ATOM_WM_CLASS,
@@ -95,7 +95,7 @@ enum UsedAtom {
 
 enum AtomStandard {
 	UTF8_ATOM,
-	ICCM_ATOM,
+	ICCCM_ATOM,
 	EWMH_ATOM
 };
 
@@ -113,11 +113,11 @@ static struct AtomDef {
 } SupportedAtoms[ATOMCOUNT] = {
 	// UTF8_STRING: https://www.pps.jussieu.fr/~jch/software/UTF8_STRING/UTF8_STRING.text
 	{"UTF8_STRING", UTF8_ATOM, None, 0, None, false},
-	// ICCM: https://x.org/releases/X11R7.6/doc/xorg-docs/specs/ICCCM/icccm.html
-	{"CLIPBOARD", ICCM_ATOM, XA_ATOM, 32, None, false},
-	{"TARGETS", ICCM_ATOM, XA_ATOM, 32, None, false},
-	{"WM_CLASS", ICCM_ATOM, XA_STRING, 8, None, false},
-	{"WM_DELETE_WINDOW", ICCM_ATOM, None, 0, None, false},
+	// ICCCM: https://x.org/releases/X11R7.6/doc/xorg-docs/specs/ICCCM/icccm.html
+	{"CLIPBOARD", ICCCM_ATOM, XA_ATOM, 32, None, false},
+	{"TARGETS", ICCCM_ATOM, XA_ATOM, 32, None, false},
+	{"WM_CLASS", ICCCM_ATOM, XA_STRING, 8, None, false},
+	{"WM_DELETE_WINDOW", ICCCM_ATOM, None, 0, None, false},
 	// EWMH: https://specifications.freedesktop.org/wm-spec/wm-spec-1.3.html
 	{"_NET_FRAME_EXTENTS", EWMH_ATOM, XA_CARDINAL, 32, None, false},
 	{"_NET_SUPPORTED", EWMH_ATOM, XA_ATOM, 32, None, false},
@@ -329,7 +329,7 @@ initialize_atoms(void)
 	long offset;
 
 	supported_standards |= (1 << UTF8_ATOM);
-	supported_standards |= (1 << ICCM_ATOM);
+	supported_standards |= (1 << ICCCM_ATOM);
 
 	for (a = 0; a < ATOMCOUNT; a++) {
 		SupportedAtoms[a].atom = x11.XInternAtom(dpy, (char *)SupportedAtoms[a].name, False);
