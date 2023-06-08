@@ -1760,7 +1760,7 @@ main(int argc, char **argv)
 
 	gettextinfo(&txtinfo);
 	if ((txtinfo.screenwidth < 40) || (txtinfo.screenheight < 24)) {
-		fputs("Window too small, must be at least 80x24\n", stderr);
+		fputs("Window too small, must be at least 40x24\n", stderr);
 		return 1;
 	}
 

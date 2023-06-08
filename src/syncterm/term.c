@@ -326,10 +326,10 @@ cleanup:
 }
 
 void
-update_status(struct bbslist *bbs, int speed, int ooii_mode)
+update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 {
-	char nbuf[LIST_NAME_MAX + 10 + 11 + 1]; /*
-                                                 * Room for "Name (Logging) (115300)" and terminator
+	char nbuf[LIST_NAME_MAX + 10 + 11 + 7 + 10 + 6 + 1]; /*
+                                                 * Room for "Name (Logging) (115300) (DrWy) (OOTerm2) (INV)" and terminator
                                                  * SAFE and Logging should me be possible.
                                                  */
 	int               oldscroll;
@@ -342,6 +342,7 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	char              sep;
 	int               oldfont_norm;
 	int               oldfont_bright;
+	int               calcwidth;
 
 	if (term.nostatus)
 		return;
@@ -409,12 +410,20 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode)
 			strcat(nbuf, " (OOTerm2)");
 			break;
 	}
+	if (ata_inv)
+		strcat(nbuf, " (INV)");
 	ciolib_setcolour(11, 4);
 	switch (cio_api.mode) {
 		case CIOLIB_MODE_CURSES:
 		case CIOLIB_MODE_CURSES_IBM:
 		case CIOLIB_MODE_ANSI:
-			if (timeon > 359999) {
+			if (term.width < 80) {
+				cprintf(" %-30.30s %c %-6.6s ",
+				    nbuf,
+				    sep,
+				    conn_types[bbs->conn_type]);
+			}
+			else if (timeon > 359999) {
 				cprintf(" %-29.29s %c %-6.6s %c Connected: Too Long %c CTRL-S for menu ",
 				    nbuf,
 				    sep,
@@ -435,7 +444,14 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode)
 			}
 			break;
 		default:
-			if (timeon > 359999) {
+			if (term.width < 80) {
+				cprintf(" %-30.30s %c %-6.6s %*s",
+				    nbuf,
+				    sep,
+				    conn_types[bbs->conn_type],
+				    term.width - 40, "");
+			}
+			else if (timeon > 359999) {
 				cprintf(" %-30.30s %c %-6.6s %c Connected: Too Long %c "ALT_KEY_NAME3CH "-Z for menu ",
 				    nbuf,
 				    sep,
@@ -457,7 +473,7 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode)
 			}
 			break; /*    1+29     +3    +6    +3    +11        +3+3+2        +3    +6    +4  +5 */
 	}
-	if (wherex() >= 80)
+	if (wherex() - term.y + 1 >= term.width)
 		clreol();
 	_wscroll = oldscroll;
 	setfont(oldfont_norm, 0, 1);
@@ -3648,6 +3664,7 @@ doterm(struct bbslist *bbs)
 	recv_byte_buffer_len = recv_byte_buffer_pos = 0;
 	struct mouse_state ms = {0};
 	int                speedwatch = 0;
+	bool atascii_inverse = false;
 
 	freepixels(pixmap_buffer[0]);
 	freepixels(pixmap_buffer[1]);
@@ -3709,7 +3726,7 @@ doterm(struct bbslist *bbs)
 		if (!term.nostatus) {
 			update_status(bbs,
 			    (bbs->conn_type == CONN_TYPE_SERIAL || bbs->conn_type == CONN_TYPE_SERIAL_NORTS) ? bbs->bpsrate : speed,
-			    ooii_mode);
+			    ooii_mode, atascii_inverse);
 		}
 		for (remain = count_data_waiting() /* Hack for connection check */ + (!is_connected(NULL)); remain;
 		    remain--) {
@@ -4224,7 +4241,8 @@ doterm(struct bbslist *bbs)
                                 /* Translate keys to ATASCII */
 				switch (key) {
 					case '\r':
-					case '\n':
+					case '\n': // 0x9b
+					case 155:
 						ch[0] = 155;
 						conn_send(ch, 1, 0);
 						break;
@@ -4253,13 +4271,14 @@ doterm(struct bbslist *bbs)
 						ch[0] = 127;
 						conn_send(ch, 1, 0);
 						break;
-					case 96: /* No backtick */
+					case 96: /* Backtick toggles inverse */
+						atascii_inverse = !atascii_inverse;
 						break;
 					default:
 						if (key < 256) {
                                                         /* ASCII Translation */
 							if (key < 123) {
-								ch[0] = key;
+								ch[0] = key + (atascii_inverse ? 128 : 0);
 								conn_send(ch, 1, 0);
 							}
 						}

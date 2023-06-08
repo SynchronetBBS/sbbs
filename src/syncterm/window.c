@@ -37,10 +37,6 @@ get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostat
 	}
 	if (!*nostatus)
 		(*height)--;
-	if (*height < 24) {
-		*height = 24;
-		*nostatus = 1;
-	}
 
 	if (vmode == -1) {
 		if (pixelw)

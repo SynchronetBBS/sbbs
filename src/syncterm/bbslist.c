@@ -3291,7 +3291,5 @@ get_term_size(struct bbslist *bbs, int *cols, int *rows)
 		*rows = vparams[cmode].rows;
 		if (!bbs->nostatus)
 			(*rows)--;
-		if (*rows < 24)
-			*rows = 24;
 	}
 }
