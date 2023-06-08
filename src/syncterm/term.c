@@ -342,7 +342,6 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	char              sep;
 	int               oldfont_norm;
 	int               oldfont_bright;
-	int               calcwidth;
 
 	if (term.nostatus)
 		return;
@@ -4267,8 +4266,16 @@ doterm(struct bbslist *bbs)
 						ch[0] = 30;
 						conn_send(ch, 1, 0);
 						break;
+					case CIO_KEY_IC:
+						ch[0] = 255;
+						conn_send(ch, 1, 0);
+						break;
 					case '\t':
 						ch[0] = 127;
+						conn_send(ch, 1, 0);
+						break;
+					case '|':
+						ch[0] = 124 + (atascii_inverse ? 128 : 0);
 						conn_send(ch, 1, 0);
 						break;
 					case 96: /* Backtick toggles inverse */
@@ -4279,6 +4286,10 @@ doterm(struct bbslist *bbs)
                                                         /* ASCII Translation */
 							if (key < 123) {
 								ch[0] = key + (atascii_inverse ? 128 : 0);
+								conn_send(ch, 1, 0);
+							}
+							else if (key > 252 && key < 256) {
+								ch[0] = key;
 								conn_send(ch, 1, 0);
 							}
 						}
