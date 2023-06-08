@@ -33,7 +33,6 @@
 #include "x_cio.h"
 #include "utf8_codepages.h"
 
-static bool send_fullscreen(bool set);
 static void resize_window();
 
 /*
@@ -52,8 +51,6 @@ sem_t	pastebuf_set;
 sem_t	pastebuf_used;
 sem_t	init_complete;
 sem_t	mode_set;
-int x11_window_xpos;
-int x11_window_ypos;
 int x11_initialized=0;
 static sem_t	event_thread_complete;
 static int	terminate = 0;
@@ -180,7 +177,10 @@ static Window root;
 static char *wm_wm_name;
 static Atom copy_paste_selection = XA_PRIMARY;
 static bool map_pending = true;
-static int pending_width, pending_height, pending_xpos, pending_ypos;
+static int pending_width, pending_height;
+static int saved_xpos = -1, saved_ypos = -1;
+static int saved_width = -1, saved_height = -1;
+static double saved_scaling = 0.0;
 
 /* Array of Graphics Contexts */
 static GC gc;
@@ -568,6 +568,37 @@ fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
 }
 
 static bool
+get_frame_extents(int *l, int *r, int *t, int *b)
+{
+	long *extents;
+	unsigned char *prop;
+	unsigned long nir;
+	unsigned long bytes_left;
+	Atom atr;
+	int afr;
+	bool ret = false;
+
+	if (A(_NET_FRAME_EXTENTS) != None && win != 0) {
+		if (x11.XGetWindowProperty(dpy, win, A(_NET_FRAME_EXTENTS), 0, 4, False, XA_CARDINAL, &atr, &afr, &nir, &bytes_left, &prop) == Success) {
+			if (atr == XA_CARDINAL && afr == 32 && nir == 4) {
+				extents = (long *)prop;
+				if (l)
+					*l = extents[0];
+				if (r)
+					*r = extents[1];
+				if (t)
+					*t = extents[2];
+				if (b)
+					*b = extents[3];
+				ret = true;
+			}
+			x11.XFree(prop);
+		}
+	}
+	return ret;
+}
+
+static bool
 x11_get_maxsize(int *w, int *h)
 {
 	int i;
@@ -580,12 +611,18 @@ x11_get_maxsize(int *w, int *h)
 	unsigned long bytes_left;
 	unsigned char *prop;
 	long desktop = -1;
+	int l, r, t, b;
 
 	if (dpy == NULL)
 		return false;
 	if (fullscreen) {
-		// TODO: We may not need this if we can wait for ConfigurNotify on fullscreen...
-		return fullscreen_geometry(NULL, NULL, w, h);
+		pthread_mutex_lock(&vstatlock);
+		if (w)
+			*w = vstat.winwidth;
+		if (h)
+			*h = vstat.winheight;
+		pthread_mutex_unlock(&vstatlock);
+		return true;
 	}
 	else {
 		// First, try to get _NET_WORKAREA...
@@ -628,15 +665,9 @@ x11_get_maxsize(int *w, int *h)
 			}
 		}
 		if (maxw > 0 && maxh > 0) {
-			if (A(_NET_FRAME_EXTENTS) != None && win != 0) {
-				if (x11.XGetWindowProperty(dpy, win, A(_NET_FRAME_EXTENTS), 0, 4, False, XA_CARDINAL, &atr, &afr, &nir, &bytes_left, &prop) == Success) {
-					if (atr == XA_CARDINAL && afr == 32 && nir == 4) {
-						ret = (long *)prop;
-						maxw -= ret[0] + ret[1];
-						maxh -= ret[2] + ret[3];
-					}
-					x11.XFree(prop);
-				}
+			if (get_frame_extents(&l, &r, &t, &b)) {
+				maxw -= l + r;
+				maxh -= t + b;
 			}
 		}
 	}
@@ -759,23 +790,26 @@ static void map_window()
 	}
 	sh->flags = 0;
 
-	if (x11_get_maxsize(&sh->max_width,&sh->max_height)) {
-		pthread_mutex_lock(&vstatlock);
-		if (!fullscreen)
+	if (!fullscreen && !fullscreen_pending) {
+		if (x11_get_maxsize(&sh->max_width,&sh->max_height)) {
+			pthread_mutex_lock(&vstatlock);
 			bitmap_get_scaled_win_size(bitmap_double_mult_inside(sh->max_width, sh->max_height), &sh->max_width, &sh->max_height, sh->max_width, sh->max_height);
+		}
+		else {
+			pthread_mutex_lock(&vstatlock);
+			bitmap_get_scaled_win_size(7.0, &sh->max_width, &sh->max_height, 0, 0);
+		}
+		sh->flags |= PMaxSize;
+
+		bitmap_get_scaled_win_size(x_cvstat.scaling, &sh->base_width, &sh->base_height, 0, 0);
+		sh->flags |= PBaseSize;
+
+		sh->width = sh->base_width;
+		sh->height = sh->base_height;
+		sh->flags |= PSize;
 	}
-	else {
+	else
 		pthread_mutex_lock(&vstatlock);
-		bitmap_get_scaled_win_size(7.0, &sh->max_width, &sh->max_height, 0, 0);
-	}
-	sh->flags |= PMaxSize;
-
-	bitmap_get_scaled_win_size(x_cvstat.scaling, &sh->base_width, &sh->base_height, 0, 0);
-	sh->flags |= PBaseSize;
-
-	sh->width = sh->base_width;
-	sh->height = sh->base_height;
-	sh->flags |= PSize;
 
 	bitmap_get_scaled_win_size(1.0, &sh->min_width, &sh->min_height, 0, 0);
 	sh->flags |= PMinSize;
@@ -1052,14 +1086,14 @@ static int init_window()
 }
 
 static bool
-send_fullscreen(bool set)
+send_fullscreen(bool set, int x, int y)
 {
-	static bool last = false;
 	XEvent ev = {0};
 	bool ret = false;
+	int l, t;
 
 	if (A(_NET_WM_STATE) != None && A(_NET_WM_STATE_FULLSCREEN) != None) {
-		if (last != set) {
+		if (fullscreen != set) {
 			ev.xclient.type = ClientMessage;
 			ev.xclient.serial = 0; // Populated by XSendEvent
 			ev.xclient.send_event = True; // Populated by XSendEvent
@@ -1071,12 +1105,23 @@ send_fullscreen(bool set)
 			ev.xclient.data.l[0] = set ? _NET_WM_STATE_ADD : _NET_WM_STATE_REMOVE;
 			ev.xclient.data.l[1] = A(_NET_WM_STATE_FULLSCREEN);
 			ev.xclient.data.l[3] = 1;
-			if (set)
-				fullscreen_pending = true;
+			fullscreen_pending = true;
+			if (set) {
+				saved_xpos = x;
+				saved_ypos = y;
+				if (get_frame_extents(&l, NULL, &t, NULL)) {
+					saved_xpos -= l;
+					saved_ypos -= t;
+				}
+				pthread_mutex_lock(&vstatlock);
+				saved_width = vstat.winwidth;
+				saved_height = vstat.winheight;
+				saved_scaling = vstat.scaling;
+				pthread_mutex_unlock(&vstatlock);
+			}
 			ret = x11.XSendEvent(dpy, root, False, SubstructureNotifyMask | SubstructureRedirectMask, &ev) != 0;
 			if (ret) {
 				x11.XFlush(dpy);
-				last = set;
 			}
 		}
 		else
@@ -1095,38 +1140,37 @@ static void resize_window()
 	bool resize;
 	double new_scaling;
 
+	/*
+	 * Don't allow resizing the window when we're in fullscreen mode
+	 * or we're transitioning to/from fullscreen modes
+	 */
+	if (fullscreen || fullscreen_pending)
+		return;
 	pthread_mutex_lock(&vstatlock);
-	if (fullscreen && send_fullscreen(true)) {
-		cio_api.mode = CIOLIB_MODE_X_FULLSCREEN;
+	cio_api.mode = CIOLIB_MODE_X;
+	new_scaling = x_cvstat.scaling;
+	bitmap_get_scaled_win_size(new_scaling, &width, &height, 0, 0);
+	if (x11_get_maxsize(&max_width, &max_height)) {
+		if (width > max_width || height > max_height) {
+			new_scaling = bitmap_double_mult_inside(max_width, max_height);
+			bitmap_get_scaled_win_size(new_scaling, &width, &height, 0, 0);
+		}
 	}
-	else {
-		send_fullscreen(false);
-		fullscreen = false;
-		cio_api.mode = CIOLIB_MODE_X;
-		new_scaling = x_cvstat.scaling;
-		bitmap_get_scaled_win_size(new_scaling, &width, &height, 0, 0);
-		// TODO: If we're in fullscreen mode, we don't get the decoration sizes...
-		if (x11_get_maxsize(&max_width, &max_height)) {
-			if (width > max_width || height > max_height) {
-				new_scaling = bitmap_double_mult_inside(max_width, max_height);
-				bitmap_get_scaled_win_size(new_scaling, &width, &height, 0, 0);
-			}
+	new_scaling = bitmap_double_mult_inside(width, height);
+	if (width == vstat.winwidth && height == vstat.winheight) {
+		if (new_scaling != vstat.scaling) {
+			vstat.scaling = x_cvstat.scaling = new_scaling;
+			pthread_mutex_unlock(&vstatlock);
+			resize_xim();
 		}
-		new_scaling = bitmap_double_mult_inside(width, height);
-		if (width == vstat.winwidth && height == vstat.winheight) {
-			if (new_scaling != vstat.scaling) {
-				vstat.scaling = x_cvstat.scaling = new_scaling;
-				pthread_mutex_unlock(&vstatlock);
-				resize_xim();
-			}
-			else
-				pthread_mutex_unlock(&vstatlock);
-			return;
-		}
-		resize = new_scaling != vstat.scaling;
-		x_cvstat.scaling = vstat.scaling;
-		if (resize)
-			x11.XResizeWindow(dpy, win, width, height);
+		else
+			pthread_mutex_unlock(&vstatlock);
+		return;
+	}
+	resize = new_scaling != vstat.scaling;
+	x_cvstat.scaling = vstat.scaling;
+	if (resize) {
+		x11.XResizeWindow(dpy, win, width, height);
 	}
 	pthread_mutex_unlock(&vstatlock);
 
@@ -1191,17 +1235,12 @@ static int init_mode(int mode)
 
 static int video_init()
 {
-	/* If we are running under X, get a connection to the X server and create
-	   an empty window of size (1, 1). It makes a couple of init functions a
-	   lot easier. */
-
 	pthread_mutex_lock(&vstatlock);
 	x_internal_scaling = (ciolib_initial_scaling_type == CIOLIB_SCALING_INTERNAL);
 	if (ciolib_initial_scaling != 0.0)
 		x_cvstat.scaling = vstat.scaling = ciolib_initial_scaling;
 	if (x_cvstat.scaling < 1.0 || vstat.scaling < 1.0)
 		x_cvstat.scaling = vstat.scaling = 1.0;
-	/* Initialize mode 3 (text, 80x25, 16 colors) */
 	if(load_vmode(&vstat, ciolib_initial_mode)) {
 		pthread_mutex_unlock(&vstatlock);
 		return(-1);
@@ -1403,12 +1442,6 @@ local_draw_rect(struct rectlist *rect)
 static void handle_resize_event(int width, int height, bool map)
 {
 	pthread_mutex_lock(&vstatlock);
-	if (fullscreen && !map && !fullscreen_pending) {
-		if ((width != x_cvstat.winwidth || height != x_cvstat.winheight)) {
-			fullscreen = false;
-			cio_api.mode = CIOLIB_MODE_X;
-  		}
-	}
 	x_cvstat.winwidth = vstat.winwidth = width;
 	x_cvstat.winheight = vstat.winheight = height;
 	vstat.scaling = bitmap_double_mult_inside(width, height);
@@ -1549,14 +1582,10 @@ is_fullscreen(void)
 }
 
 static void
-handle_configuration(int x, int y, int w, int h, bool map)
+handle_configuration(int w, int h, bool map)
 {
 	bool resize = false;
 
-	if ((x11_window_xpos != x || x11_window_ypos != y)) {
-		x11_window_xpos = x;
-		x11_window_ypos = y;
-	}
 	pthread_mutex_lock(&vstatlock);
 	if (w != vstat.winwidth || h != vstat.winheight)
 		resize = true;
@@ -1567,6 +1596,7 @@ handle_configuration(int x, int y, int w, int h, bool map)
 
 static int x11_event(XEvent *ev)
 {
+	bool resize;
 	int x, y, w, h;
 
 	if (x11.XFilterEvent(ev, win))
@@ -1587,17 +1617,44 @@ static int x11_event(XEvent *ev)
 			break;
 		case PropertyNotify:
 			if (A(_NET_FRAME_EXTENTS) != None) {
-				if (ev->xproperty.atom == A(_NET_FRAME_EXTENTS))
+				if (ev->xproperty.atom == A(_NET_FRAME_EXTENTS)) {
 					map_window();
+				}
 			}
 			if (A(_NET_WM_STATE) != None) {
 				if (ev->xproperty.atom == A(_NET_WM_STATE)) {
-					if (fullscreen_pending && is_fullscreen()) {
-						fullscreen_pending = false;
-						if (fullscreen_geometry(&x, &y, &w, &h)) {
-							if (x_cvstat.winwidth != w || x_cvstat.winheight != h) {
-								x_cvstat.winwidth = w;
-								x_cvstat.winheight = h;
+					fullscreen_pending = false;
+					if (is_fullscreen()) {
+						if (!fullscreen) {
+							fullscreen = true;
+							if (fullscreen_geometry(&x, &y, &w, &h)) {
+								if (x_cvstat.winwidth != w || x_cvstat.winheight != h) {
+									x_cvstat.winwidth = w;
+									x_cvstat.winheight = h;
+								}
+							}
+						}
+					}
+					else {
+						resize = false;
+						if (fullscreen) {
+							fullscreen = false;
+							x_cvstat.scaling = saved_scaling;
+							pthread_mutex_lock(&vstatlock);
+							/*
+							 * Mode may have changed while in fullscreen... recalculate scaling to
+							 * fit inside the old window size
+							 */
+							bitmap_get_scaled_win_size(saved_scaling, &w, &h, saved_width, saved_height);
+							if (w != vstat.winwidth || h != vstat.winheight)
+								resize = true;
+							pthread_mutex_unlock(&vstatlock);
+							x_cvstat.winwidth = w;
+							x_cvstat.winheight = h;
+							if (resize)
+								x11.XMoveResizeWindow(dpy, win, saved_xpos, saved_ypos, w, h);
+							else {
+								x11.XMoveWindow(dpy, win, saved_xpos, saved_ypos);
 							}
 						}
 					}
@@ -1606,26 +1663,22 @@ static int x11_event(XEvent *ev)
 			break;
 		/* Graphics related events */
 		case ConfigureNotify: {
-			int ax, ay;
-			Window cr;
-
-			// TODO: Maybe we care about parent events?
+			/*
+			 * NOTE: The x/y values in the event are relative to root of send_event is true, and
+			 * relative to the parent (which is the above member) if send_event is false.  Trying
+			 * to translate from parent to root in here is a bad idea as there's a race condition.
+			 * Basically, if we care about the x/y pos, we should not use it when send_event is
+			 * false... if that happens, the position is unknown and we would need to explicitly
+			 * query it, or wait for some other event (key, mouse, etc) to give us a root-relative
+			 * value.
+			 */
 			if (ev->xconfigure.window == win) {
-				// TODO: Verify this hack...
-				if (ev->xconfigure.above != None)
-					x11.XTranslateCoordinates(dpy, ev->xconfigure.window, root, ev->xconfigure.x, ev->xconfigure.y, &ax, &ay, &cr);
-				else {
-					ax = ev->xconfigure.x;
-					ay = ev->xconfigure.y;
-				}
 				if (map_pending) {
-					pending_xpos = ax;
-					pending_ypos = ay;
 					pending_width = ev->xconfigure.width;
 					pending_height = ev->xconfigure.height;
 				}
 				else {
-					handle_configuration(ax, ay, ev->xconfigure.width, ev->xconfigure.height, false);
+					handle_configuration(ev->xconfigure.width, ev->xconfigure.height, false);
 				}
 			}
 			break;
@@ -1633,7 +1686,7 @@ static int x11_event(XEvent *ev)
 		case MapNotify:
 			if (map_pending) {
 				map_pending = false;
-				handle_configuration(pending_xpos, pending_ypos, pending_width, pending_height, true);
+				handle_configuration(pending_width, pending_height, true);
 			}
 			break;
 		case NoExpose:
@@ -1869,8 +1922,7 @@ static int x11_event(XEvent *ev)
 							case XK_KP_Enter:
 								if (ev->xkey.state & Mod1Mask) {
 									// ALT-Enter, toggle full-screen
-									fullscreen = !fullscreen;
-									resize_window();
+									send_fullscreen(!fullscreen, ev->xkey.x_root - ev->xkey.x, ev->xkey.y_root - ev->xkey.y);
 								}
 								scan = 28;
 								goto docode;

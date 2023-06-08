@@ -160,8 +160,6 @@ extern sem_t	pastebuf_used;
 extern Atom	copybuf_format;
 extern sem_t	init_complete;
 extern sem_t	mode_set;
-extern int x11_window_xpos;
-extern int x11_window_ypos;
 extern int x11_initialized;
 extern struct video_stats x_cvstat;
 extern bool xrender_found;

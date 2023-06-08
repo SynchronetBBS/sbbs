@@ -182,22 +182,6 @@ char *x_getcliptext(void)
 	return(ret);
 }
 
-int x_get_window_info(int *width, int *height, int *xpos, int *ypos)
-{
-	pthread_mutex_lock(&vstatlock);
-	if(width)
-		*width=vstat.winwidth;
-	if(height)
-		*height=vstat.winheight;
-	pthread_mutex_unlock(&vstatlock);
-	if(xpos)
-		*xpos=x11_window_xpos;
-	if(ypos)
-		*ypos=x11_window_ypos;
-	
-	return(1);
-}
-
 /* Mouse event/keyboard thread */
 void x11_mouse_thread(void *data)
 {

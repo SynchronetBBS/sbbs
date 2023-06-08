@@ -308,7 +308,6 @@ static int try_x_init(int mode)
 		cio_api.settitle=x_settitle;
 		cio_api.copytext=x_copytext;
 		cio_api.getcliptext=x_getcliptext;
-		cio_api.get_window_info=x_get_window_info;
 		cio_api.setscaling=x_setscaling;
 		cio_api.getscaling=x_getscaling;
 		cio_api.seticon=x_seticon;
