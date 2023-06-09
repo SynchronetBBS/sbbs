@@ -1270,21 +1270,26 @@ clear2bol(struct cterminal * cterm)
 
 	CURR_XY(&x, &y);
 	buf = malloc(x * sizeof(*buf));
-	for(i = 0; i < x; i++) {
-		if (i > 0)
-			buf[i] = buf[0];
-		else {
-			buf[i].ch = ' ';
-			buf[i].legacy_attr = cterm->attr;
-			buf[i].fg = cterm->fg_color;
-			buf[i].bg = cterm->bg_color;
-			buf[i].font = ciolib_attrfont(cterm->attr);
+	if (buf) {
+		for(i = 0; i < x; i++) {
+			if (i > 0)
+				buf[i] = buf[0];
+			else {
+				buf[i].ch = ' ';
+				buf[i].legacy_attr = cterm->attr;
+				buf[i].fg = cterm->fg_color;
+				buf[i].bg = cterm->bg_color;
+				buf[i].font = ciolib_attrfont(cterm->attr);
+			}
 		}
+		coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &x, &y);
+		coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &minx, NULL);
+		vmem_puttext(minx, y, x, y, buf);
+		free(buf);
 	}
-	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &x, &y);
-	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &minx, NULL);
-	vmem_puttext(minx, y, x, y, buf);
-	free(buf);
+	else {
+		fprintf(stderr, "malloc() in clear2bol()\n");
+	}
 }
 
 void
@@ -1682,15 +1687,38 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 				return;
 			if (cterm->sx_pixels == NULL) {
 				cterm->sx_pixels = malloc(sizeof(struct ciolib_pixels));
-				cterm->sx_pixels->pixels = malloc(sizeof(cterm->sx_pixels->pixels[0]) * cterm->sx_iv * ti.screenwidth * vparams[vmode].charwidth * 6);
-				cterm->sx_pixels->pixelsb = NULL;
-				cterm->sx_pixels->width = ti.screenwidth * vparams[vmode].charwidth;
-				cterm->sx_pixels->height = cterm->sx_iv * 6;
-				cterm->sx_mask = malloc(sizeof(struct ciolib_mask));
-				cterm->sx_mask->width = cterm->sx_pixels->width;
-				cterm->sx_mask->height = cterm->sx_pixels->height;
-				cterm->sx_mask->bits = malloc((cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
-				memset(cterm->sx_mask->bits, 0, (cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
+				if (cterm->sx_pixels != NULL) {
+					cterm->sx_pixels->pixels = malloc(sizeof(cterm->sx_pixels->pixels[0]) * cterm->sx_iv * ti.screenwidth * vparams[vmode].charwidth * 6);
+					if (cterm->sx_pixels->pixels != NULL) {
+						cterm->sx_pixels->pixelsb = NULL;
+						cterm->sx_pixels->width = ti.screenwidth * vparams[vmode].charwidth;
+						cterm->sx_pixels->height = cterm->sx_iv * 6;
+						cterm->sx_mask = malloc(sizeof(struct ciolib_mask));
+						if (cterm->sx_mask != NULL) {
+							cterm->sx_mask->width = cterm->sx_pixels->width;
+							cterm->sx_mask->height = cterm->sx_pixels->height;
+							cterm->sx_mask->bits = malloc((cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
+							if (cterm->sx_mask->bits != NULL)
+								memset(cterm->sx_mask->bits, 0, (cterm->sx_iv * 6 * ti.screenwidth * vparams[vmode].charwidth * 6 + 7)/8);
+							else {
+								FREE_AND_NULL(cterm->sx_mask);
+								free(cterm->sx_pixels->pixels);
+								FREE_AND_NULL(cterm->sx_pixels);
+							}
+						}
+						else {
+							free(cterm->sx_pixels->pixels);
+							FREE_AND_NULL(cterm->sx_pixels);
+						}
+					}
+					else {
+						FREE_AND_NULL(cterm->sx_pixels);
+					}
+				}
+			}
+			if (cterm->sx_pixels == NULL) {
+				fprintf(stderr, "Error allocating memory for sixel data\n");
+				return;
 			}
 			if (cterm->sx_x == cterm->sx_left && cterm->sx_height && cterm->sx_width && cterm->sx_first_pass) {
 				/* Fill in the background of the line */
@@ -1878,6 +1906,9 @@ all_done:
 			}
 			setpixels(cterm->sx_x, cterm->sx_y, cterm->sx_x + cterm->sx_width - 1, cterm->sx_y + cterm->sx_height - 1, 0, 0, 0, 0, &px, NULL);
 			free(px.pixels);
+		}
+		else {
+			fprintf(stderr, "Error allocating memory for sixel data\n");
 		}
 	}
 

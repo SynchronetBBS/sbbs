@@ -708,11 +708,14 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 			return;
 		}
 		if((sdl_keynext+2==sdl_key) && keyval > 0xff) {
-			if(keyval==CIO_KEY_MOUSE)
+			if(keyval==CIO_KEY_MOUSE) {
 				sdl_pending_mousekeys+=2;
-			else
+				pthread_mutex_unlock(&sdl_keylock);
+			}
+			else {
+				pthread_mutex_unlock(&sdl_keylock);
 				beep();
-			pthread_mutex_unlock(&sdl_keylock);
+			}
 			return;
 		}
 		sdl_keybuf[sdl_keynext++]=keyval & 0xff;

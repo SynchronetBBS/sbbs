@@ -1264,7 +1264,7 @@ local_draw_rect(struct rectlist *rect)
 {
 	int x, y, xoff = 0, yoff = 0;
 	unsigned int r, g, b;
-	unsigned long pixel;
+	unsigned long pixel = 0;
 	int cleft;
 	int cright = -100;
 	int ctop;
