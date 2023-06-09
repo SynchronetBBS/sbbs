@@ -577,23 +577,23 @@ int x_initciolib(int mode)
 	xrandr_found = true;
 	if ((dl4 = xp_dlopen(libnames4,RTLD_LAZY,2)) == NULL)
 		xrandr_found = false;
-	if (xinerama_found && ((x11.XRRQueryVersion = xp_dlsym(dl4, XRRQueryVersion)) == NULL)) {
+	if (xrandr_found && ((x11.XRRQueryVersion = xp_dlsym(dl4, XRRQueryVersion)) == NULL)) {
 		xp_dlclose(dl4);
 		xrandr_found = false;
 	}
-	if (xinerama_found && ((x11.XRRGetScreenResources = xp_dlsym(dl4, XRRGetScreenResources)) == NULL)) {
+	if (xrandr_found && ((x11.XRRGetScreenResources = xp_dlsym(dl4, XRRGetScreenResources)) == NULL)) {
 		xp_dlclose(dl4);
 		xrandr_found = false;
 	}
-	if (xinerama_found && ((x11.XRRGetCrtcInfo = xp_dlsym(dl4, XRRGetCrtcInfo)) == NULL)) {
+	if (xrandr_found && ((x11.XRRGetCrtcInfo = xp_dlsym(dl4, XRRGetCrtcInfo)) == NULL)) {
 		xp_dlclose(dl4);
 		xrandr_found = false;
 	}
-	if (xinerama_found && ((x11.XRRFreeCrtcInfo = xp_dlsym(dl4, XRRFreeCrtcInfo)) == NULL)) {
+	if (xrandr_found && ((x11.XRRFreeCrtcInfo = xp_dlsym(dl4, XRRFreeCrtcInfo)) == NULL)) {
 		xp_dlclose(dl4);
 		xrandr_found = false;
 	}
-	if (xinerama_found && ((x11.XRRFreeScreenResources = xp_dlsym(dl4, XRRFreeScreenResources)) == NULL)) {
+	if (xrandr_found && ((x11.XRRFreeScreenResources = xp_dlsym(dl4, XRRFreeScreenResources)) == NULL)) {
 		xp_dlclose(dl4);
 		xrandr_found = false;
 	}
