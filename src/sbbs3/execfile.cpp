@@ -27,7 +27,7 @@ int sbbs_t::exec_file(csi_t *csi)
 {
 	char	str[256],ch;
 	int		s;
-	uint 	i,j,x,y;
+	int 	i,j,x,y;
 	file_t	f;
 
 	switch(*(csi->ip++)) {
@@ -109,7 +109,7 @@ int sbbs_t::exec_file(csi_t *csi)
 
 			ch=getkey(K_UPPER);
 			outchar(ch);
-			if((ch&0xf)*10U<=usrdirs[curlib] && (ch&0xf) && usrlibs) {
+			if((ch&0xf)*10<=usrdirs[curlib] && (ch&0xf) && usrlibs) {
 				i=(ch&0xf)*10;
 				ch=getkey(K_UPPER);
 				if(!IS_DIGIT(ch) && ch!=CR) {
@@ -161,7 +161,7 @@ int sbbs_t::exec_file(csi_t *csi)
 
 			ch=getkey(K_UPPER);
 			outchar(ch);
-			if((ch&0xf)*10U<=usrlibs && (ch&0xf)) {
+			if((ch&0xf)*10<=usrlibs && (ch&0xf)) {
 				i=(ch&0xf)*10;
 				ch=getkey(K_UPPER);
 				if(!IS_DIGIT(ch) && ch!=CR) {

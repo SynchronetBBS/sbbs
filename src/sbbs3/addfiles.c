@@ -530,7 +530,7 @@ int main(int argc, char **argv)
 	long l;
 	smb_t	smb;
 	file_t	f;
-	uint dirnum = INVALID_DIR;
+	int dirnum = INVALID_DIR;
 
 	fprintf(stderr,"\nADDFILES v%s-%s %s/%s - Adds Files to Synchronet "
 		"Filebase\n"

@@ -224,7 +224,7 @@ BOOL native_executable(scfg_t* cfg, const char* cmdline, int mode)
 	char	str[MAX_PATH+1];
 	char	name[64];
 	char	base[64];
-	unsigned i;
+	int		i;
 
 	if(mode&EX_NATIVE)
 		return true;

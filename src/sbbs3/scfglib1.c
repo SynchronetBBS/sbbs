@@ -295,13 +295,13 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	}
 
 	str_list_t shell_list = iniGetParsedSectionList(sections, "shell:");
-	cfg->total_shells = (uint16_t)strListCount(shell_list);
+	cfg->total_shells = strListCount(shell_list);
 
 	if((cfg->shell=(shell_t **)malloc(sizeof(shell_t *)*cfg->total_shells))==NULL)
 		return allocerr(error, maxerrlen, fname, "shells", sizeof(shell_t *)*cfg->total_shells);
 
 	cfg->new_shell = 0;
-	for(uint i=0; i<cfg->total_shells; i++) {
+	for(int i=0; i<cfg->total_shells; i++) {
 		if((cfg->shell[i]=(shell_t *)malloc(sizeof(shell_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "shell", sizeof(shell_t));
 		memset(cfg->shell[i],0,sizeof(shell_t));
@@ -370,12 +370,12 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/******************/
 
 	str_list_t grp_list = iniGetParsedSectionList(sections, "grp:");
-	cfg->total_grps = (uint16_t)strListCount(grp_list);
+	cfg->total_grps = strListCount(grp_list);
 
 	if((cfg->grp=(grp_t **)malloc(sizeof(grp_t *)*cfg->total_grps))==NULL)
 		return allocerr(error, maxerrlen, fname, "groups", sizeof(grp_t *)*cfg->total_grps);
 
-	for(uint i=0; i<cfg->total_grps; i++) {
+	for(int i=0; i<cfg->total_grps; i++) {
 
 		const char* name = grp_list[i];
 		if((cfg->grp[i]=(grp_t *)malloc(sizeof(grp_t)))==NULL)
@@ -396,7 +396,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/**********************/
 
 	str_list_t sub_list = iniGetParsedSectionList(sections, "sub:");
-	cfg->total_subs = (uint16_t)strListCount(sub_list);
+	cfg->total_subs = strListCount(sub_list);
 
 	if((cfg->sub=(sub_t **)malloc(sizeof(sub_t *)*cfg->total_subs))==NULL)
 		return allocerr(error, maxerrlen, fname, "subs", sizeof(sub_t *)*cfg->total_subs);
@@ -478,17 +478,17 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***********/
 	section = iniGetParsedSection(sections, "fidonet", /* cut: */TRUE);
 	str_list_t faddr_list = iniGetStringList(section, NULL, "addr_list", ",", "");
-	cfg->total_faddrs = (uint16_t)strListCount(faddr_list);
+	cfg->total_faddrs = strListCount(faddr_list);
 
 	if((cfg->faddr=(faddr_t *)malloc(sizeof(faddr_t)*cfg->total_faddrs))==NULL)
 		return allocerr(error, maxerrlen, fname, "fido_addrs", sizeof(faddr_t)*cfg->total_faddrs);
 
-	for(uint i=0;i<cfg->total_faddrs;i++)
+	for(int i=0;i<cfg->total_faddrs;i++)
 		cfg->faddr[i] = smb_atofaddr(NULL, faddr_list[i]);
 	iniFreeStringList(faddr_list);
 
 	// Sanity-check each sub's FidoNet-style address
-	for(uint i = 0; i < cfg->total_subs; i++)
+	for(int i = 0; i < cfg->total_subs; i++)
 		cfg->sub[i]->faddr = *nearest_sysfaddr(cfg, &cfg->sub[i]->faddr);
 
 	SAFECOPY(cfg->origline, iniGetString(section, NULL, "default_origin", "", value));
@@ -502,7 +502,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/* QWKnet */
 	/**********/
 	str_list_t qhub_list = iniGetParsedSectionList(sections, "qhub:");
-	cfg->total_qhubs = (uint16_t)strListCount(qhub_list);
+	cfg->total_qhubs = strListCount(qhub_list);
 
 	if((cfg->qhub=(qhub_t **)malloc(sizeof(qhub_t *)*cfg->total_qhubs))==NULL)
 		return allocerr(error, maxerrlen, fname, "qhubs", sizeof(qhub_t*)*cfg->total_qhubs);
@@ -679,7 +679,7 @@ void make_data_dirs(scfg_t* cfg)
 int getdirnum(scfg_t* cfg, const char* code)
 {
 	char fullcode[LEN_EXTCODE + 1];
-	size_t i;
+	int i;
 
 	if(code == NULL || *code == '\0')
 		return -1;
@@ -709,7 +709,7 @@ int getlibnum(scfg_t* cfg, const char* code)
 int getsubnum(scfg_t* cfg, const char* code)
 {
 	char fullcode[LEN_EXTCODE + 1];
-	size_t i;
+	int i;
 
 	if(code == NULL || *code == '\0')
 		return -1;
@@ -818,7 +818,7 @@ BOOL is_valid_xtrnsec(scfg_t* cfg, int secnum)
 
 uint nearest_sysfaddr_index(scfg_t* cfg, faddr_t* addr)
 {
-	uint i;
+	int i;
 	uint nearest = 0;
 	int min = INT_MAX;
 
@@ -846,8 +846,8 @@ uint nearest_sysfaddr_index(scfg_t* cfg, faddr_t* addr)
 
 faddr_t* nearest_sysfaddr(scfg_t* cfg, faddr_t* addr)
 {
-	uint i = nearest_sysfaddr_index(cfg, addr);
-	if(i >= cfg->total_faddrs)
+	int i = nearest_sysfaddr_index(cfg, addr);
+	if(i < 0 || i >= cfg->total_faddrs)
 		return addr;
 	return &cfg->faddr[i];
 }

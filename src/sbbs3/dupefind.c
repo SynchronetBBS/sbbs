@@ -90,7 +90,7 @@ int main(int argc,char **argv)
 	uint32_t **fcrc,*foundcrc;
 	ulong total_found=0L;
 	ulong g;
-	uint i,j,k,h,start_lib=0,end_lib=0,found=-1;
+	int i,j,start_lib=0,end_lib=0,found=-1;
 	scfg_t cfg;
 
 	setvbuf(stdout,NULL,_IONBF,0);
@@ -180,13 +180,13 @@ int main(int argc,char **argv)
 		lprintf("Scanning %s %s\n",cfg.lib[cfg.dir[i]->lib]->sname,cfg.dir[i]->sname);
 		if(fcrc[i] == NULL)
 			continue;
-		for(k=1;k<fcrc[i][0];k++) {
+		for(uint k=1;k<fcrc[i][0];k++) {
 			for(j=i+1;j<cfg.total_dirs;j++) {
 				if(cfg.dir[j]->lib<start_lib || cfg.dir[j]->lib>end_lib)
 					continue;
 				if(fcrc[j] == NULL)
 					continue;
-				for(h=1;h<fcrc[j][0];h++) {
+				for(uint h=1;h<fcrc[j][0];h++) {
 					if(fcrc[i][k]==fcrc[j][h]) {
 						if(found!=k) {
 							found=k;

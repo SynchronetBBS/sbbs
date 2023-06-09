@@ -376,7 +376,7 @@ void sbbs_t::qwk_sec()
 	char 	tmp[512];
 	int		error;
 	int 	s;
-	uint	i;
+	int		i;
 	uint	msgcnt;
 	uint32_t* sav_ptr;
 
@@ -590,7 +590,7 @@ void sbbs_t::qwk_sec()
 				i=0;
 			bprintf(text[FiTransferTime],sectostr(i,tmp));
 			CRLF;
-			if(!(useron.exempt&FLAG('T')) && i>timeleft) {
+			if(!(useron.exempt&FLAG('T')) && (uint)i>timeleft) {
 				bputs(text[NotEnoughTimeToDl]);
 				break;
 			}
@@ -674,7 +674,7 @@ void sbbs_t::qwk_sec()
 	free(sav_ptr);
 }
 
-void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
+void sbbs_t::qwksetptr(int subnum, char *buf, int reset)
 {
 	int			l;
 	uint32_t	last;
@@ -705,10 +705,10 @@ void sbbs_t::qwksetptr(uint subnum, char *buf, int reset)
 /****************************************************************************/
 /* Process a QWK Config line												*/
 /****************************************************************************/
-void sbbs_t::qwkcfgline(char *buf,uint subnum)
+void sbbs_t::qwkcfgline(char *buf, int subnum)
 {
 	char	str[128];
-	uint 	x,y;
+	int 	x,y;
 	int		l;
 	uint	qwk=useron.qwk;
 	file_t f = {{}};
@@ -924,7 +924,7 @@ bool sbbs_t::set_qwk_flag(uint flag)
 /****************************************************************************/
 uint sbbs_t::resolve_qwkconf(uint n, int hubnum)
 {
-	uint	j,k;
+	int	j,k;
 
 	if(hubnum >= 0 && hubnum < cfg.total_qhubs) {
 		for(j=0;j<cfg.qhub[hubnum]->subs;j++)

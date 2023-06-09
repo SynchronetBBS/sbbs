@@ -197,7 +197,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 	jsval		val;
 	jsint		lib_index;
 	jsint		dir_index;
-	uint		l,d;
+	int			l,d;
 	char*		name=NULL;
 	struct js_file_area_priv *p;
 

@@ -33,7 +33,7 @@ BOOL sbbs_t::newuser()
 {
 	char	c,str[512];
 	char 	tmp[512];
-	uint	i;
+	int		i;
 	long	kmode;
 	bool	usa;
 

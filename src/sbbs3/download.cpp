@@ -389,7 +389,7 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 {
 	char	keys[128];
 	char	ch;
-	size_t	i;
+	int		i;
 	int		error;
 	bool	result;
 

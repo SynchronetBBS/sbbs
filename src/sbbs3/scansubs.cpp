@@ -29,7 +29,8 @@ void sbbs_t::scansubs(int mode)
 	char	keys[32];
 	char	ch,str[256] = "";
 	char 	tmp[512];
-	uint	i=0,found=0;
+	int		i=0;
+	uint	found=0;
 	uint	subs_scanned=0;
 	bool	subj_only=false;
 
@@ -137,10 +138,11 @@ void sbbs_t::scanallsubs(int mode)
 {
 	char	str[256] = "";
 	char 	tmp[512];
-	uint	i,j,found=0;
-	uint	subs_scanned=0;
+	int		i,j;
+	uint	found=0;
+	int		subs_scanned=0;
 	uint*	sub;
-	uint	total_subs=0;
+	int		total_subs=0;
 	bool	subj_only=false;
 
 	if(cfg.scansubs_mod[0] && !scansubs_inside) {
@@ -241,7 +243,7 @@ void sbbs_t::scanallsubs(int mode)
 void sbbs_t::new_scan_ptr_cfg()
 {
 	char	keys[32];
-	uint	i,j;
+	int		i,j;
 	int		s;
 	uint32_t	l;
 	time_t	t;
@@ -404,7 +406,7 @@ void sbbs_t::new_scan_cfg(uint misc)
 {
 	char	keys[32];
 	int		s;
-	uint	i,j;
+	int		i,j;
 	uint	t;
 
 	while(online) {

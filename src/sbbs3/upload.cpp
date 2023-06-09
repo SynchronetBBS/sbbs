@@ -31,7 +31,7 @@ bool sbbs_t::uploadfile(file_t* f)
 	char	str[MAX_PATH+1] = "";
 	char	ext[LEN_EXTDESC + 1] = "";
 	char	tmp[MAX_PATH+1];
-    uint	i;
+    int		i;
     off_t	length;
 	FILE*	stream;
 
@@ -120,9 +120,9 @@ bool sbbs_t::uploadfile(file_t* f)
 	bool hashed = hashfile(&cfg, f);
 	bputs(text[HashedFile]);
 	if(hashed) {
-		for(uint i=0, k=0; i < usrlibs; i++) {
+		for(int i=0, k=0; i < usrlibs; i++) {
 			progress(text[Scanning], i, usrlibs);
-			for(uint j=0; j < usrdirs[i]; j++,k++) {
+			for(int j=0; j < usrdirs[i]; j++,k++) {
 				if(cfg.dir[usrdir[i][j]]->misc&DIR_DUPES
 					&& findfile(&cfg, usrdir[i][j], /* filename: */NULL, f)) {
 					bprintf(text[FileAlreadyOnline], f->name);
@@ -199,7 +199,7 @@ bool sbbs_t::uploadfile(file_t* f)
 	return true;
 }
 
-bool sbbs_t::okay_to_upload(uint dirnum)
+bool sbbs_t::okay_to_upload(int dirnum)
 {
 	char str[MAX_PATH + 1];
 	char path[MAX_PATH + 1];
@@ -228,14 +228,14 @@ bool sbbs_t::okay_to_upload(uint dirnum)
 /****************************************************************************/
 /* Uploads files                                                            */
 /****************************************************************************/
-bool sbbs_t::upload(uint dirnum)
+bool sbbs_t::upload(int dirnum)
 {
 	char	descbeg[25]={""},descend[25]={""}
 				,fname[MAX_FILENAME_LEN + 1],keys[256],ch,*p;
 	char	str[MAX_PATH+1];
 	char	path[MAX_PATH+1];
 	char 	tmp[512];
-    uint	i,j,k;
+    int		i,j,k;
 	file_t	f = {{}};
 	str_list_t dest_user_list = NULL;
 
@@ -492,7 +492,7 @@ bool sbbs_t::upload(uint dirnum)
 /* the files that aren't in the database.                                   */
 /* Returns 1 if the user aborted, 0 if not.                                 */
 /****************************************************************************/
-bool sbbs_t::bulkupload(uint dirnum)
+bool sbbs_t::bulkupload(int dirnum)
 {
     char	str[MAX_PATH+1];
 	char	path[MAX_PATH+1];
@@ -559,7 +559,7 @@ bool sbbs_t::recvfile(char *fname, char prot, bool autohang)
 {
 	char	keys[32];
 	char	ch;
-	size_t	i;
+	int		i;
 	bool	result=false;
 
 	if(prot)

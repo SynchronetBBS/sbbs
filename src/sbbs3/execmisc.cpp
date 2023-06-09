@@ -52,7 +52,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 {
 	char	str[512],tmp[512],buf[1025],ch,op,*p,**pp,**pp1,**pp2;
 	ushort	w;
-	uint 	i=0,j;
+	int 	i=0,j;
 	long	l;
 	int32_t	*lp=NULL,*lp1=NULL,*lp2=NULL;
 	void	*vp;
@@ -904,7 +904,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					i=*(csi->ip++);
 					if(!pp || !*pp)
 						return(0);
-					if(strlen(*pp)>=i)
+					if((int)strlen(*pp)>=i)
 						memmove(*pp,*pp+i,strlen(*pp)+1);
 					return(0);
 
@@ -1100,10 +1100,10 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 				case FIO_CLOSE:
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					if(lp && (uint)*lp<csi->files) {
+					if(lp && *lp<csi->files) {
 						csi->logic=fclose(csi->file[*lp]);
 						csi->file[*lp]=NULL; 
-						if((uint)*lp==(csi->files-1))
+						if(*lp==(csi->files-1))
 							csi->files--;
 					}
 					else
@@ -1112,7 +1112,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 				case FIO_FLUSH:
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					if(lp && (uint)*lp<csi->files)
+					if(lp && *lp<csi->files)
 						csi->logic=fflush(csi->file[*lp]);
 					else
 						csi->logic=LOGIC_FALSE;
@@ -1138,7 +1138,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					}
 					if(i>sizeof(buf)-1)
 						i=sizeof(buf)-1;
-					if(!lp1 || (uint)*lp1>=csi->files || (!pp && !lp2))
+					if(!lp1 || *lp1>=csi->files || (!pp && !lp2))
 						return(0);
 					if(pp) {
 						if(i<1) {
@@ -1171,7 +1171,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						lp2=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 					csi->logic=LOGIC_FALSE;
-					if(!lp1 || (uint)*lp1>=csi->files || feof(csi->file[*lp1]) || (!pp && !lp2))
+					if(!lp1 || *lp1>=csi->files || feof(csi->file[*lp1]) || (!pp && !lp2))
 						return(0);
 					csi->logic=LOGIC_TRUE;
 					for(i=0;i<sizeof(buf)-1;i++) {
@@ -1213,7 +1213,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					}
 					if(i>sizeof(buf)-1)
 						i=sizeof(buf)-1;
-					if(!lp1 || (uint)*lp1>=csi->files || (!pp && !lp2) || (pp && !*pp))
+					if(!lp1 || *lp1>=csi->files || (!pp && !lp2) || (pp && !*pp))
 						return(0);
 					if(pp) {
 						j=strlen(*pp);
@@ -1239,7 +1239,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip+=4;
 					lp2=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					if(lp1 && (uint)*lp1<csi->files && lp2)
+					if(lp1 && *lp1<csi->files && lp2)
 						*lp2=(uint32_t)filelength(fileno(csi->file[*lp1]));
 					return(0);
 				case FIO_GET_TIME:
@@ -1247,7 +1247,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip+=4;
 					lp2=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					if(lp1 && (uint)*lp1<csi->files && lp2) 
+					if(lp1 && *lp1<csi->files && lp2) 
 						*lp2=(int32_t)filetime(fileno(csi->file[*lp1]));
 					return(0);
 				case FIO_SET_TIME:
@@ -1266,7 +1266,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 					csi->logic=LOGIC_FALSE;
-					if(lp && (uint)*lp<csi->files)
+					if(lp && *lp<csi->files)
 						if(ftell(csi->file[*lp])>=filelength(fileno(csi->file[*lp])))
 							csi->logic=LOGIC_TRUE;
 					return(0);
@@ -1275,7 +1275,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip+=4;
 					lp2=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					if(lp1 && (uint)*lp1<csi->files && lp2)
+					if(lp1 && *lp1<csi->files && lp2)
 						*lp2=(uint32_t)ftell(csi->file[*lp1]);
 					return(0);
 				case FIO_SEEK:
@@ -1298,7 +1298,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					}
 					i=*(short *)csi->ip;
 					csi->ip+=2;
-					if(lp1 && (uint)*lp1<csi->files)
+					if(lp1 && *lp1<csi->files)
 						if(fseek(csi->file[*lp1],l,i)!=-1)
 							csi->logic=LOGIC_TRUE;
 					return(0);
@@ -1317,7 +1317,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							return(0);
 						l=*lp2; 
 					}
-					if(lp1 && (uint)*lp1<csi->files) {
+					if(lp1 && *lp1<csi->files) {
 						fflush(csi->file[*lp1]);
 						csi->logic=!lock(fileno(csi->file[*lp1]),ftell(csi->file[*lp1]),l); 
 					}
@@ -1337,7 +1337,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							return(0);
 						l=*lp2; 
 					}
-					if(lp1 && (uint)*lp1<csi->files) {
+					if(lp1 && *lp1<csi->files) {
 						fflush(csi->file[*lp1]);
 						csi->logic=!unlock(fileno(csi->file[*lp1]),ftell(csi->file[*lp1]),l); 
 					}
@@ -1357,14 +1357,14 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							return(0);
 						l=*lp2; 
 					}
-					if(lp1 && (uint)*lp1<csi->files)
+					if(lp1 && *lp1<csi->files)
 						csi->logic=chsize(fileno(csi->file[*lp1]),l);
 					return(0);
 				case FIO_PRINTF:
 					lp1=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 					p=format_string(this, csi);
-					if(lp1 && (uint)*lp1<csi->files) {
+					if(lp1 && *lp1<csi->files) {
 						cmdstr(p,path,csi->str,str);
 						fwrite(str,1,strlen(str),csi->file[*lp1]); 
 					}
@@ -1465,7 +1465,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					pp=getstrvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 					csi->logic=LOGIC_FALSE;
-					if(pp && lp && (uint)*lp<csi->dirs) {
+					if(pp && lp && *lp<csi->dirs) {
 						de=readdir(csi->dir[*lp]);
 						if(de!=NULL) {
 							csi->logic=LOGIC_TRUE;
@@ -1476,7 +1476,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 				case REWIND_DIR:
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					if(lp && (uint)*lp<csi->dirs) {
+					if(lp && *lp<csi->dirs) {
 						rewinddir(csi->dir[*lp]);
 						csi->logic=LOGIC_TRUE; 
 					} else
@@ -1485,10 +1485,10 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 				case CLOSE_DIR:
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					if(lp && (uint)*lp<csi->dirs && closedir(csi->dir[*lp])==0) {
+					if(lp && *lp<csi->dirs && closedir(csi->dir[*lp])==0) {
 						csi->logic=LOGIC_TRUE;
 						csi->dir[*lp]=NULL;
-						if((uint)*lp==(csi->dirs-1))
+						if(*lp==(csi->dirs-1))
 							csi->dirs--;
 					} else
 						csi->logic=LOGIC_FALSE;

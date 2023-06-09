@@ -43,7 +43,7 @@ char *utos(char *str)
 
 static bool code_prefix_exists(const char* prefix)
 {
-	size_t i;
+	int i;
 
 	for(i=0; i < cfg.total_grps; i++)
 		if(cfg.grp[i]->code_prefix[0] && stricmp(cfg.grp[i]->code_prefix, prefix) == 0)
@@ -51,7 +51,7 @@ static bool code_prefix_exists(const char* prefix)
 	return false;
 }
 
-static bool new_grp(unsigned new_grpnum)
+static bool new_grp(int new_grpnum)
 {
 	grp_t* new_group = malloc(sizeof(grp_t));
 	if (new_group == NULL) {
@@ -68,11 +68,11 @@ static bool new_grp(unsigned new_grpnum)
 	}
 	cfg.grp = new_grp_list;
 
-	for (unsigned u = cfg.total_grps; u > new_grpnum; u--)
+	for (int u = cfg.total_grps; u > new_grpnum; u--)
 		cfg.grp[u] = cfg.grp[u - 1];
 
 	if (new_grpnum != cfg.total_grps) {	/* Inserting group? Renumber (higher) existing groups */
-		for (unsigned j = 0; j < cfg.total_subs; j++) {
+		for (int j = 0; j < cfg.total_subs; j++) {
 			if (cfg.sub[j]->grp >= new_grpnum && cfg.sub[j]->grp != CUT_GROUPNUM)
 				cfg.sub[j]->grp++;
 		}
@@ -83,7 +83,7 @@ static bool new_grp(unsigned new_grpnum)
 }
 
 // Return number of imported (including over-written) subs or negative on error
-long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
+long import_msg_areas(enum import_list_type type, FILE* stream, int grpnum
 	, int min_confnum, int max_confnum, qhub_t* qhub, const char* pkt_orig, faddr_t* faddr, uint32_t misc
 	, long* added)
 {
@@ -354,7 +354,7 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 				SAFECOPY(tmpsub.lname, tmpsub.sname);
 		}
 
-		uint j;
+		int j;
 		int attempts = 0;	// attempts to generate a unique internal code
 		if(stricmp(tmpsub.code_suffix, duplicate_code) == 0)
 			attempts = ++duplicate_codes;
@@ -443,11 +443,11 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 	return ported;
 }
 
-unsigned subs_in_group(unsigned grpnum)
+int subs_in_group(int grpnum)
 {
-	unsigned total = 0;
+	int total = 0;
 
-	for(unsigned u=0; u<cfg.total_subs; u++)
+	for(int u=0; u<cfg.total_subs; u++)
 		if(cfg.sub[u]->grp == grpnum)
 			total++;
 

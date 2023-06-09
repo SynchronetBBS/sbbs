@@ -90,7 +90,7 @@ enum import_list_type determine_msg_list_type(const char* path)
 
 uint group_num_from_name(const char* name)
 {
-	uint u;
+	int u;
 
 	for(u=0; u<cfg.total_grps; u++)
 		if(stricmp(cfg.grp[u]->sname, name) == 0)
@@ -400,7 +400,7 @@ int main(int argc, char **argv)
 
 	const char* import = NULL;
 	const char* grpname = NULL;
-	unsigned int grpnum = 0;
+	int grpnum = 0;
 	faddr_t faddr = {0};
 	uint32_t misc = 0;
 	for(i=1;i<argc;i++) {
@@ -1038,7 +1038,7 @@ void txt_cfg()
 	static int txt_dflt,bar;
 	char str[128],code[128],done=0;
 	int j,k;
-	uint i,u;
+	int i,u;
 	static txtsec_t savtxtsec;
 
 	while(1) {
@@ -1222,7 +1222,8 @@ void shell_cfg()
 	static int shell_dflt,shell_bar;
 	char str[128],code[128],done=0;
 	int j,k;
-	uint i,u;
+	int i;
+	uint u;
 	static shell_t savshell;
 
 	while(1) {

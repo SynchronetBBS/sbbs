@@ -25,8 +25,7 @@ void page_cfg()
 	static int dflt,bar;
 	char str[81],done=0;
 	int j,k;
-	uint i;
-	uint u;
+	int i,u;
 	static page_t savpage;
 
 	while(1) {
@@ -207,7 +206,8 @@ void chan_cfg()
 	static int chan_dflt,chan_bar,opt_dflt,guru_dflt;
 	char str[128],code[128],done=0;
 	int j,k;
-	uint i,u;
+	int i;
+	uint u;
 	static chan_t savchan;
 
 	while(1) {
@@ -482,7 +482,7 @@ void chatact_cfg(uint setnum)
 	static int chatact_dflt,chatact_bar;
 	char str[128],cmd[128],out[128];
 	int j;
-	uint i,n,chatnum[MAX_OPTS+1];
+	int i,n,chatnum[MAX_OPTS+1];
 	static chatact_t savchatact;
 
 	while(1) {
@@ -614,7 +614,7 @@ void guru_cfg()
 	static int guru_dflt,guru_bar,opt_dflt;
 	char str[128],code[128],done=0;
 	int j,k;
-	uint i,u;
+	int i,u;
 	static guru_t savguru;
 
 	while(1) {
@@ -787,7 +787,7 @@ void actsets_cfg()
     static int actset_dflt,actset_bar,opt_dflt;
     char str[81];
     int j,k,done;
-    uint i,u;
+    int i,u;
     static actset_t savactset;
 
 	while(1) {

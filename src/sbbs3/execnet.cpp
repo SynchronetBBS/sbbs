@@ -47,7 +47,7 @@ int sbbs_t::exec_net(csi_t* csi)
 {
 	char	str[512],rsp[512],buf[1025],ch,*p,**pp,**pp1,**pp2;
 	ushort	w;
-	uint 	i;
+	int 	i;
 	BOOL	rd;
 	int32_t	*lp,*lp1,*lp2;
 	time_t	start;

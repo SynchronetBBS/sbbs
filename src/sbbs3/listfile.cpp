@@ -33,12 +33,12 @@ int extdesclines(char *str);
 /* list the directory header.                                                */
 /* Returns -1 if the listing was aborted, otherwise total files listed		 */
 /*****************************************************************************/
-int sbbs_t::listfiles(const uint dirnum, const char *filespec, FILE* tofile, const int mode)
+int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, const int mode)
 {
 	char	hdr[256],letter='A';
 	uchar	flagprompt=0;
 	int		c, d;
-	uint	i,j;
+	int		i,j;
 	int		found=0,lastbat=0,disp;
 	size_t	m=0;
 	int		anchor=0,next;
@@ -83,7 +83,7 @@ int sbbs_t::listfiles(const uint dirnum, const char *filespec, FILE* tofile, con
 		return 0;
 	}
 
-	for(i = 0; i < file_count; i++) {
+	for(size_t i = 0; i < file_count; i++) {
 		size_t len = strlen(file_list[i].name);
 		if(len > longest)
 			longest = len;
@@ -343,7 +343,7 @@ int sbbs_t::listfiles(const uint dirnum, const char *filespec, FILE* tofile, con
 /* Prints one file's information on a single line                           */
 /* Return 1 if displayed, 0 otherwise										*/
 /****************************************************************************/
-bool sbbs_t::listfile(file_t* f, const  uint dirnum, const char *search, const char letter, size_t namelen)
+bool sbbs_t::listfile(file_t* f, const  int dirnum, const char *search, const char letter, size_t namelen)
 {
 	char	*ptr;
 	bool	exist = true;
@@ -460,13 +460,15 @@ bool sbbs_t::listfile(file_t* f, const  uint dirnum, const char *search, const c
 /* Returns -1 if 'Q' or Ctrl-C, 0 if skip, 1 if [Enter], 2 otherwise        */
 /* or 3, backwards. 														*/
 /****************************************************************************/
-int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const uint total
+int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 							,const int totalfiles)
 {
 	char	ch,str[256],*p,remcdt=0,remfile=0;
 	int		c, d;
 	char 	path[MAX_PATH + 1];
-	uint	i,j,ml=0,md=0,udir,ulib;
+	int		i,j;
+	uint	ml=0,md=0;
+	int		udir,ulib;
 
 	for(ulib=0;ulib<usrlibs;ulib++)
 		if(usrlib[ulib]==cfg.dir[smb->dirnum]->lib)
@@ -732,13 +734,13 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const uint total
 /* action depending on 'mode.'                                              */
 /* Returns number of files matching filespec that were found                */
 /****************************************************************************/
-int sbbs_t::listfileinfo(const uint dirnum, const char *filespec, const int mode)
+int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 {
 	char	str[MAX_PATH + 1],path[MAX_PATH + 1],dirpath[MAX_PATH + 1],done=0,ch;
 	char 	tmp[512];
 	int		error;
 	int		found=0;
-    uint	i,j;
+    int		i,j;
     size_t	m;
     file_t*	f;
 

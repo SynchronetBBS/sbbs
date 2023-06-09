@@ -31,7 +31,7 @@ void sbbs_t::batchmenu()
 	char 	tmp[512];
 	char	keys[32];
 	BOOL	sort = -1;
-	uint	i,n,xfrprot,xfrdir;
+	int		i,n,xfrprot,xfrdir;
     int64_t	totalcdt,totalsize;
 	str_list_t ini;
 	str_list_t filenames;
@@ -242,7 +242,7 @@ BOOL sbbs_t::start_batch_download()
 	char 	path[MAX_PATH+1];
 	char	list[1024] = "";
 	int		error;
-    uint	i,xfrprot;
+    int		i,xfrprot;
 
 	if(useron.rest&FLAG('D')) {     /* Download restriction */
 		bputs(text[R_Download]);
@@ -587,7 +587,7 @@ void sbbs_t::batch_upload()
 		if(mv(src, dest, /* copy: */false))
 			continue;
 
-		uint x,y;
+		int x,y;
 		for(x=0;x<usrlibs;x++) {
 			progress(text[SearchingForDupes], x, usrlibs);
 			for(y=0;y<usrdirs[x];y++)
@@ -654,7 +654,7 @@ void sbbs_t::batch_add_list(char *list)
     char	str[1024];
 	char	path[MAX_PATH + 1];
 	int		file;
-	uint	i,j,k;
+	int		i,j,k;
     FILE *	stream;
 	file_t	f;
 

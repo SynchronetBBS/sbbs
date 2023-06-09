@@ -1499,7 +1499,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 /****************************************************************************/
 bool sbbs_t::user_event(user_event_t event)
 {
-    uint	i;
+    int		i;
 	bool	success=false;
 
 	for(i=0;i<cfg.total_xtrns;i++) {

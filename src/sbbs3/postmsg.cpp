@@ -64,7 +64,7 @@ static uchar* findsig(char* msgbuf)
 /* Posts a message on sub-board number 'subnum'								*/
 /* Returns true if posted, false if not.                                    */
 /****************************************************************************/
-bool sbbs_t::postmsg(uint subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
+bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 {
 	char	str[256];
 	char	title[LEN_TITLE+1] = "";
@@ -361,11 +361,11 @@ bool sbbs_t::postmsg(uint subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	return(true);
 }
 
-extern "C" void signal_sub_sem(scfg_t* cfg, uint subnum)
+extern "C" void signal_sub_sem(scfg_t* cfg, int subnum)
 {
 	char str[MAX_PATH+1];
 
-	if(subnum==INVALID_SUB || subnum>=cfg->total_subs)	/* e-mail? */
+	if(!is_valid_subnum(cfg, subnum))
 		return;
 
 	/* signal semaphore files */

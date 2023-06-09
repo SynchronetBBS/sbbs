@@ -3383,7 +3383,7 @@ bool sbbs_t::init()
 	char		tmp[128];
 	char		tmp2[128];
 	int			result;
-	uint		i,j,k,l;
+	int			i,j,k,l;
 	node_t		node;
 	socklen_t	addr_len;
 	union xp_sockaddr	addr;
@@ -3541,23 +3541,23 @@ bool sbbs_t::init()
 
 		usrgrp_total = cfg.total_grps;
 
-		if((cursub=(uint *)malloc(sizeof(uint)*usrgrp_total))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "cursub", sizeof(uint)*usrgrp_total);
+		if((cursub=(int *)malloc(sizeof(int)*usrgrp_total))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "cursub", sizeof(int)*usrgrp_total);
 			return(false);
 		}
 
-		if((usrgrp=(uint *)malloc(sizeof(uint)*usrgrp_total))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrgrp", sizeof(uint)*usrgrp_total);
+		if((usrgrp=(int *)malloc(sizeof(int)*usrgrp_total))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrgrp", sizeof(int)*usrgrp_total);
 			return(false);
 		}
 
-		if((usrsubs=(uint *)malloc(sizeof(uint)*usrgrp_total))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrsubs", sizeof(uint)*usrgrp_total);
+		if((usrsubs=(int *)malloc(sizeof(int)*usrgrp_total))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrsubs", sizeof(int)*usrgrp_total);
 			return(false);
 		}
 
-		if((usrsub=(uint **)calloc(usrgrp_total,sizeof(uint *)))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrsub", sizeof(uint)*usrgrp_total);
+		if((usrsub=(int **)calloc(usrgrp_total,sizeof(int *)))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrsub", sizeof(int)*usrgrp_total);
 			return(false);
 		}
 	}
@@ -3568,7 +3568,7 @@ bool sbbs_t::init()
 		}
 	}
 
-	for(i=l=0;i<(uint)cfg.total_grps;i++) {
+	for(i=l=0;i<cfg.total_grps;i++) {
 		for(j=k=0;j<cfg.total_subs;j++)
 			if(cfg.sub[j]->grp==i)
 				k++;	/* k = number of subs per grp[i] */
@@ -3576,8 +3576,8 @@ bool sbbs_t::init()
 	}
 	if(l)
 		for(i=0;i<cfg.total_grps;i++)
-			if((usrsub[i]=(uint *)malloc(sizeof(uint)*l))==NULL) {
-				errormsg(WHERE, ERR_ALLOC, "usrsub[x]", sizeof(uint)*l);
+			if((usrsub[i]=(int *)malloc(sizeof(int)*l))==NULL) {
+				errormsg(WHERE, ERR_ALLOC, "usrsub[x]", sizeof(int)*l);
 				return(false);
 			}
 
@@ -3585,23 +3585,23 @@ bool sbbs_t::init()
 
 		usrlib_total = cfg.total_libs;
 
-		if((curdir=(uint *)malloc(sizeof(uint)*usrlib_total))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "curdir", sizeof(uint)*usrlib_total);
+		if((curdir=(int *)malloc(sizeof(int)*usrlib_total))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "curdir", sizeof(int)*usrlib_total);
 			return(false);
 		}
 
-		if((usrlib=(uint *)malloc(sizeof(uint)*usrlib_total))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrlib", sizeof(uint)*usrlib_total);
+		if((usrlib=(int *)malloc(sizeof(int)*usrlib_total))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrlib", sizeof(int)*usrlib_total);
 			return(false);
 		}
 
-		if((usrdirs=(uint *)malloc(sizeof(uint)*usrlib_total))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrdirs", sizeof(uint)*usrlib_total);
+		if((usrdirs=(int *)malloc(sizeof(uint)*usrlib_total))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrdirs", sizeof(int)*usrlib_total);
 			return(false);
 		}
 
-		if((usrdir=(uint **)calloc(usrlib_total,sizeof(uint *)))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrdir", sizeof(uint)*usrlib_total);
+		if((usrdir=(int **)calloc(usrlib_total,sizeof(int *)))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrdir", sizeof(int)*usrlib_total);
 			return(false);
 		}
 	}
@@ -3615,8 +3615,8 @@ bool sbbs_t::init()
 	if(l) {
 		l++;	/* for temp dir */
 		for(i=0;i<cfg.total_libs;i++)
-			if((usrdir[i]=(uint *)malloc(sizeof(uint)*l))==NULL) {
-				errormsg(WHERE, ERR_ALLOC, "usrdir[x]", sizeof(uint)*l);
+			if((usrdir[i]=(int *)malloc(sizeof(int)*l))==NULL) {
+				errormsg(WHERE, ERR_ALLOC, "usrdir[x]", sizeof(int)*l);
 				return(false);
 			}
 	}
@@ -3638,7 +3638,7 @@ bool sbbs_t::init()
 //****************************************************************************
 sbbs_t::~sbbs_t()
 {
-	uint i;
+	int i;
 
 	useron.number = 0;
 

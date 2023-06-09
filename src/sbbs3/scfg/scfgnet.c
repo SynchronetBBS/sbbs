@@ -51,7 +51,7 @@ bool new_qhub(unsigned new_qhubnum)
 	return true;
 }
 
-bool new_qhub_sub(qhub_t* qhub, unsigned subnum, sub_t* sub, unsigned confnum)
+bool new_qhub_sub(qhub_t* qhub, int subnum, sub_t* sub, unsigned confnum)
 {
 	if((qhub->sub=realloc(qhub->sub, sizeof(*qhub->sub)*(qhub->subs+1)))==NULL
 		|| (qhub->conf=(ushort *)realloc(qhub->conf, sizeof(*qhub->conf)*(qhub->subs+1)))==NULL
@@ -59,7 +59,7 @@ bool new_qhub_sub(qhub_t* qhub, unsigned subnum, sub_t* sub, unsigned confnum)
 		/* ToDo: report error */
 		return false;
 	}
-	for(unsigned u = qhub->subs; u > subnum; u--) {
+	for(int u = qhub->subs; u > subnum; u--) {
 		qhub->sub[u]=qhub->sub[u-1];
 		qhub->conf[u]=qhub->conf[u-1];
 		qhub->mode[u]=qhub->mode[u-1];

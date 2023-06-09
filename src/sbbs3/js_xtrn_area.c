@@ -298,7 +298,7 @@ JSBool js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 	jsval		val;
 	jsuint		sec_index;
 	jsuint		prog_index;
-	uint		l,d;
+	int			l,d;
 	char*		name=NULL;
 	struct js_xtrn_area_priv *p;
 

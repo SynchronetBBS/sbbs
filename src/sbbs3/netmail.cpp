@@ -174,7 +174,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	i = nearest_sysfaddr_index(&cfg, &dest_addr);
 
 	if((cfg.netmail_misc&NMAIL_CHSRCADDR) && cfg.total_faddrs > 1) {
-		for(uint j=0; j < cfg.total_faddrs; j++)
+		for(int j=0; j < cfg.total_faddrs; j++)
 			uselect(/* add: */TRUE, j, text[OriginFidoAddr], smb_faddrtoa(&cfg.faddr[j], tmp), /* ar: */NULL);
 		int choice = uselect(/* add: */FALSE, /* default: */i, NULL, NULL, NULL);
 		if(choice < 0)

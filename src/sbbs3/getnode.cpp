@@ -434,7 +434,7 @@ static char* node_connection_desc(sbbs_t* sbbs, ushort conn, char* str)
 /****************************************************************************/
 void sbbs_t::printnodedat(uint number, node_t* node)
 {
-    uint	i;
+    int		i;
     char	hour,mer[3];
 	char 	tmp[512];
 

@@ -301,7 +301,7 @@ BOOL write_main_cfg(scfg_t* cfg)
 	}
 
 	/* Command Shells */
-	for(uint i=0; i<cfg->total_shells; i++) {
+	for(int i=0; i<cfg->total_shells; i++) {
 		SAFEPRINTF(name, "shell:%s", cfg->shell[i]->code);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "name", cfg->shell[i]->name, NULL);
@@ -361,7 +361,7 @@ BOOL write_msgs_cfg(scfg_t* cfg)
 
 	/* Message Groups */
 
-	for(uint i=0;i<cfg->total_grps;i++) {
+	for(int i=0;i<cfg->total_grps;i++) {
 		SAFEPRINTF(name, "grp:%s", cfg->grp[i]->sname);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "description", cfg->grp[i]->lname, NULL);
@@ -374,8 +374,8 @@ BOOL write_msgs_cfg(scfg_t* cfg)
 
 	/* Message Sub-boards */
 
-	for(unsigned grp = 0; grp < cfg->total_grps; grp++) {
-		for(uint i=0; i<cfg->total_subs; i++) {
+	for(int grp = 0; grp < cfg->total_grps; grp++) {
+		for(int i=0; i<cfg->total_subs; i++) {
 			if(cfg->sub[i]->lname[0] == 0
 				|| cfg->sub[i]->sname[0] == 0
 				|| cfg->sub[i]->code_suffix[0] == 0)
@@ -480,7 +480,7 @@ BOOL write_msgs_cfg(scfg_t* cfg)
 		const char* name = "FidoNet";
 		str_list_t section = strListInit();
 		str_list_t addr_list = strListInit();
-		for(uint i=0; i<cfg->total_faddrs; i++)
+		for(int i=0; i<cfg->total_faddrs; i++)
 			strListPush(&addr_list, smb_faddrtoa(&cfg->faddr[i], tmp));
 		iniSetStringList(&section, name, "addr_list", ",", addr_list, NULL);
 		strListFree(&addr_list);
@@ -498,7 +498,7 @@ BOOL write_msgs_cfg(scfg_t* cfg)
 	}
 
 	/* QWKnet Config */
-	for(uint i=0; i<cfg->total_qhubs; i++) {
+	for(int i=0; i<cfg->total_qhubs; i++) {
 		SAFEPRINTF(name, "qhub:%s", cfg->qhub[i]->id);
 		str_list_t section = strListInit();
 		iniSetBool(&section, name, "enabled", cfg->qhub[i]->enabled, NULL);
@@ -636,7 +636,7 @@ BOOL write_file_cfg(scfg_t* cfg)
 
 	/* Extractable File Types */
 
-	for(uint i=0; i<cfg->total_fextrs; i++) {
+	for(int i=0; i<cfg->total_fextrs; i++) {
 		SAFEPRINTF(name, "extractor:%u", i);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "extension", cfg->fextr[i]->ext, NULL);
@@ -648,7 +648,7 @@ BOOL write_file_cfg(scfg_t* cfg)
 
 	/* Compressable File Types */
 
-	for(uint i=0; i<cfg->total_fcomps; i++) {
+	for(int i=0; i<cfg->total_fcomps; i++) {
 		SAFEPRINTF(name, "compressor:%u", i);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "extension", cfg->fcomp[i]->ext, NULL);
@@ -660,7 +660,7 @@ BOOL write_file_cfg(scfg_t* cfg)
 
 	/* Viewable File Types */
 
-	for(uint i=0; i<cfg->total_fviews; i++) {
+	for(int i=0; i<cfg->total_fviews; i++) {
 		SAFEPRINTF(name, "viewer:%u", i);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "extension", cfg->fview[i]->ext, NULL);
@@ -672,7 +672,7 @@ BOOL write_file_cfg(scfg_t* cfg)
 
 	/* Testable File Types */
 
-	for(uint i=0; i<cfg->total_ftests; i++) {
+	for(int i=0; i<cfg->total_ftests; i++) {
 		SAFEPRINTF(name, "tester:%u", i);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "extension", cfg->ftest[i]->ext, NULL);
@@ -685,7 +685,7 @@ BOOL write_file_cfg(scfg_t* cfg)
 
 	/* Download Events */
 
-	for(uint i=0; i<cfg->total_dlevents; i++) {
+	for(int i=0; i<cfg->total_dlevents; i++) {
 		SAFEPRINTF(name, "dlevent:%u", i);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "extension", cfg->dlevent[i]->ext, NULL);
@@ -698,7 +698,7 @@ BOOL write_file_cfg(scfg_t* cfg)
 
 	/* File Transfer Protocols */
 
-	for(uint i=0; i<cfg->total_prots; i++) {
+	for(int i=0; i<cfg->total_prots; i++) {
 		char str[128];
 		SAFEPRINTF(name, "protocol:%u", i);
 		str_list_t section = strListInit();
@@ -717,7 +717,7 @@ BOOL write_file_cfg(scfg_t* cfg)
 
 	/* File Libraries */
 
-	for(uint i=0; i<cfg->total_libs; i++) {
+	for(int i=0; i<cfg->total_libs; i++) {
 		SAFEPRINTF(name, "lib:%s", cfg->lib[i]->sname);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "description", cfg->lib[i]->lname, NULL);
@@ -745,8 +745,8 @@ BOOL write_file_cfg(scfg_t* cfg)
 	/* File Directories */
 
 	unsigned int dirnum = 0;	/* New directory numbering (as saved) */
-	for (uint j = 0; j < cfg->total_libs; j++) {
-		for (uint i = 0; i < cfg->total_dirs; i++) {
+	for (int j = 0; j < cfg->total_libs; j++) {
+		for (int i = 0; i < cfg->total_dirs; i++) {
 			if (cfg->dir[i]->lname[0] == 0
 				|| cfg->dir[i]->sname[0] == 0
 				|| cfg->dir[i]->code_suffix[0] == 0)
@@ -803,7 +803,7 @@ BOOL write_file_cfg(scfg_t* cfg)
 
 	/* Text File Sections */
 
-	for(uint i=0; i<cfg->total_txtsecs; i++) {
+	for(int i=0; i<cfg->total_txtsecs; i++) {
 		char str[LEN_CODE + 1];
 #if 1
 		SAFECOPY(str,cfg->txtsec[i]->code);
@@ -845,21 +845,21 @@ BOOL write_chat_cfg(scfg_t* cfg)
 	backup(inipath, cfg->config_backup_level, TRUE);
 
 	str_list_t ini = strListInit();
-	for(uint i=0; i<cfg->total_gurus; i++) {
+	for(int i=0; i<cfg->total_gurus; i++) {
 		SAFEPRINTF(section, "guru:%s", cfg->guru[i]->code);
 		iniSetString(&ini, section, "name", cfg->guru[i]->name, NULL);
 		iniSetString(&ini, section, "ars", cfg->guru[i]->arstr, NULL);
 	}
 
-	for(uint i=0; i<cfg->total_actsets; i++) {
+	for(int i=0; i<cfg->total_actsets; i++) {
 		SAFEPRINTF(section, "actions:%s", cfg->actset[i]->name);
-		for(uint j=0; j<cfg->total_chatacts; j++) {
+		for(int j=0; j<cfg->total_chatacts; j++) {
 			if(cfg->chatact[j]->actset == i)
 				iniSetString(&ini, section, cfg->chatact[j]->cmd, cfg->chatact[j]->out, NULL);
 		}
 	}
 
-	for(uint i=0; i<cfg->total_chans; i++) {
+	for(int i=0; i<cfg->total_chans; i++) {
 		SAFEPRINTF(section, "chan:%s", cfg->chan[i]->code);
 		iniSetString(&ini, section, "actions", cfg->actset[cfg->chan[i]->actset]->name, NULL);
 		iniSetString(&ini, section, "name", cfg->chan[i]->name, NULL);
@@ -869,7 +869,7 @@ BOOL write_chat_cfg(scfg_t* cfg)
 		iniSetHexInt(&ini, section, "settings", cfg->chan[i]->misc, NULL);
 	}
 
-	for(uint i=0; i<cfg->total_pages; i++) {
+	for(int i=0; i<cfg->total_pages; i++) {
 		SAFEPRINTF(section, "pager:%u", i);
 		iniSetString(&ini, section, "cmd", cfg->page[i]->cmd, NULL);
 		iniSetString(&ini, section, "ars", cfg->page[i]->arstr, NULL);
@@ -902,7 +902,7 @@ BOOL write_xtrn_cfg(scfg_t* cfg)
 	backup(inipath, cfg->config_backup_level, TRUE);
 
 	str_list_t ini = strListInit();
-	for(uint i=0; i<cfg->total_xedits; i++) {
+	for(int i=0; i<cfg->total_xedits; i++) {
 		SAFEPRINTF(name, "editor:%s", cfg->xedit[i]->code);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "name", cfg->xedit[i]->name, NULL);
@@ -916,7 +916,7 @@ BOOL write_xtrn_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	for(uint i=0; i<cfg->total_xtrnsecs; i++) {
+	for(int i=0; i<cfg->total_xtrnsecs; i++) {
 		SAFEPRINTF(name, "sec:%s", cfg->xtrnsec[i]->code);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "name", cfg->xtrnsec[i]->name, NULL);
@@ -925,8 +925,8 @@ BOOL write_xtrn_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	for(uint sec=0; sec<cfg->total_xtrnsecs; sec++) {
-		for(uint i=0; i<cfg->total_xtrns; i++) {
+	for(int sec=0; sec<cfg->total_xtrnsecs; sec++) {
+		for(int i=0; i<cfg->total_xtrns; i++) {
 			if(cfg->xtrn[i]->name[0] == 0
 				|| cfg->xtrn[i]->code[0] == 0)
 				continue;
@@ -952,7 +952,7 @@ BOOL write_xtrn_cfg(scfg_t* cfg)
 		}
 	}
 
-	for(uint i=0; i<cfg->total_events; i++) {
+	for(int i=0; i<cfg->total_events; i++) {
 		SAFEPRINTF(name, "event:%s", cfg->event[i]->code);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "cmd", cfg->event[i]->cmd, NULL);
@@ -969,12 +969,12 @@ BOOL write_xtrn_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	for(uint i=0; i<cfg->total_natvpgms; i++) {
+	for(int i=0; i<cfg->total_natvpgms; i++) {
 		SAFEPRINTF(name, "native:%s", cfg->natvpgm[i]->name);
 		iniAddSection(&ini, name, NULL);
 	}
 
-	for(uint i=0; i<cfg->total_hotkeys; i++) {
+	for(int i=0; i<cfg->total_hotkeys; i++) {
 		SAFEPRINTF(name, "hotkey:%u", cfg->hotkey[i]->key);
 		iniSetString(&ini, name, "cmd", cfg->hotkey[i]->cmd, NULL);
 	}

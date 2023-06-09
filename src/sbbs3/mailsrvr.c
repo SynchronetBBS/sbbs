@@ -2875,7 +2875,7 @@ static void smtp_thread(void* arg)
 	BOOL		routed=FALSE;
 	BOOL		dnsbl_recvhdr;
 	BOOL		msg_handled;
-	uint		subnum=INVALID_SUB;
+	int			subnum=INVALID_SUB;
 	FILE*		msgtxt=NULL;
 	char		msgtxt_fname[MAX_PATH+1];
 	char		newtxt_fname[MAX_PATH+1];

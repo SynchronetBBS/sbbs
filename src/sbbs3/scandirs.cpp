@@ -29,7 +29,7 @@ void sbbs_t::scandirs(int mode)
 	char	keys[32];
 	char	ch,str[256]="";
 	int		s;
-	uint	i,k;
+	int		i,k;
 
 	if(cfg.scandirs_mod[0] && !scandirs_inside) {
 		char cmdline[256];
@@ -112,7 +112,7 @@ void sbbs_t::scanalldirs(int mode)
 {
 	char	str[256]="";
 	int		s;
-	uint	i,j,k,d;
+	int		i,j,k,d;
 
 	if(cfg.scandirs_mod[0] && !scandirs_inside) {
 		char cmdline[256];

@@ -41,7 +41,7 @@
 int sbbs_t::exec_msg(csi_t *csi)
 {
 	char	str[256],ch;
-	uint	i,j;
+	int		i,j;
 	
 	switch(*(csi->ip++)) {
 
@@ -120,7 +120,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 
 			ch=getkey(K_UPPER);
 			outchar(ch);
-			if(usrgrps && (ch&0xf)*10U<=usrsubs[curgrp] && (ch&0xf)) {
+			if(usrgrps && (ch&0xf)*10<=usrsubs[curgrp] && (ch&0xf)) {
 				i=(ch&0xf)*10;
 				ch=getkey(K_UPPER);
 				if(!IS_DIGIT(ch) && ch!=CR) {
@@ -157,7 +157,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 					ungetkey(ch, /* insert: */true);
 				return(0); 
 			}
-			if((uint)(ch&0xf)<=usrsubs[curgrp] && (ch&0xf) && usrgrps)
+			if((ch&0xf)<=usrsubs[curgrp] && (ch&0xf) && usrgrps)
 				cursub[curgrp]=(ch&0xf)-1;
 			return(0);
 
@@ -172,7 +172,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 
 			ch=getkey(K_UPPER);
 			outchar(ch);
-			if((ch&0xf)*10U<=usrgrps && (ch&0xf)) {
+			if((ch&0xf)*10<=usrgrps && (ch&0xf)) {
 				i=(ch&0xf)*10;
 				ch=getkey(K_UPPER);
 				if(!IS_DIGIT(ch) && ch!=CR) {
@@ -193,7 +193,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 					ungetkey(ch, /* insert: */true);
 				return(0); 
 			}
-			if((uint)(ch&0xf)<=usrgrps && (ch&0xf))
+			if((ch&0xf)<=usrgrps && (ch&0xf))
 				curgrp=(ch&0xf)-1;
 			if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
 				ungetkey(ch, /* insert: */true);

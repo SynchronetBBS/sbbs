@@ -465,8 +465,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 								// Bits in user.mail
 #define MAIL_LM_MODE	(LM_REVERSE)
 
-#define INVALID_DIR ((uint)-1)	/* Invalid directory value					*/
-#define INVALID_SUB ((uint)-1)	/* Invalid sub-board value					*/
+#define INVALID_DIR (-1)	/* Invalid directory value					*/
+#define INVALID_SUB (-1)	/* Invalid sub-board value					*/
 
 #define KEY_BUFSIZE 1024	/* Size of keyboard input buffer				*/
 #define LINE_BUFSIZE 512	/* Size of line output buffer					*/

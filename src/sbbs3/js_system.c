@@ -627,7 +627,7 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	jsval idval;
     jsint       tiny;
 	stats_t		stats;
-	uint		i;
+	int			i;
 	ulong		l;
 	jsrefcount	rc;
 
@@ -2595,7 +2595,7 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 #ifndef JSDOOR
 	JSObject*	newobj;
 	JSObject*	nodeobj;
-	uint		i;
+	int			i;
 #endif
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {

@@ -92,7 +92,7 @@ char* ftn_msgid(sub_t *sub, smbmsg_t* msg, char* msgid, size_t maxlen)
 /****************************************************************************/
 /* Return a general purpose (RFC-822) message-ID							*/
 /****************************************************************************/
-char* get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg, char* msgid, size_t maxlen)
+char* get_msgid(scfg_t* cfg, int subnum, smbmsg_t* msg, char* msgid, size_t maxlen)
 {
 	char*	host;
 
@@ -113,7 +113,7 @@ char* get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg, char* msgid, size_t max
 		}
 	}
 
-	if(subnum>=cfg->total_subs)
+	if(!is_valid_subnum(cfg, subnum))
 		safe_snprintf(msgid,maxlen
 			,"<%08lX.%lu@%s>"
 			,msg_time(msg)

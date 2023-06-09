@@ -22,7 +22,7 @@
 
 static sub_t** cut_qhub_sub;
 
-bool new_sub(unsigned new_subnum, unsigned group_num, sub_t* pasted_sub, long misc)
+bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc)
 {
 	sub_t* new_subboard;
 	if ((new_subboard = (sub_t *)malloc(sizeof(*new_subboard))) == NULL) {
@@ -41,7 +41,7 @@ bool new_sub(unsigned new_subnum, unsigned group_num, sub_t* pasted_sub, long mi
 	new_subboard->maxmsgs = 500;
 
 	/* Use last sub in group (if exists) as a template for new subs */
-	for (unsigned u = 0; u < cfg.total_subs; u++) {
+	for (int u = 0; u < cfg.total_subs; u++) {
 		if(cfg.sub[u]->grp == group_num) {
 			*new_subboard = *cfg.sub[u];
 			new_subboard->misc &= ~SUB_TEMPLATE;
@@ -78,7 +78,7 @@ bool new_sub(unsigned new_subnum, unsigned group_num, sub_t* pasted_sub, long mi
 	cfg.sub = new_sub_list;
 
 	/* Move higher numbered subs (for inserting) */
-	for (unsigned u = cfg.total_subs; u > new_subnum; u--)
+	for (int u = cfg.total_subs; u > new_subnum; u--)
 		cfg.sub[u] = cfg.sub[u - 1];
 
 
@@ -89,13 +89,13 @@ bool new_sub(unsigned new_subnum, unsigned group_num, sub_t* pasted_sub, long mi
 	return true;
 }
 
-void remove_sub(scfg_t* cfg, unsigned subnum, bool cut)
+void remove_sub(scfg_t* cfg, int subnum, bool cut)
 {
 	sub_t* sub = cfg->sub[subnum];
 	if(cut)
 		cut_qhub_sub = NULL;
 	// Remove the sub-board from any QWKnet hub sub-boards
-	for (unsigned q = 0; q < cfg->total_qhubs; q++) {
+	for (int q = 0; q < cfg->total_qhubs; q++) {
 		for (unsigned s = 0; s < cfg->qhub[q]->subs; s++) {
 			if (cfg->qhub[q]->sub[s] == sub) {
 				if(cut && cut_qhub_sub == NULL)
@@ -106,7 +106,7 @@ void remove_sub(scfg_t* cfg, unsigned subnum, bool cut)
 	}
 	FREE_AND_NULL(cfg->sub[subnum]);
 	--cfg->total_subs;
-	for (unsigned i = subnum; i < cfg->total_subs; i++)
+	for (int i = subnum; i < cfg->total_subs; i++)
 		cfg->sub[i] = cfg->sub[i + 1];
 }
 
@@ -128,14 +128,14 @@ static int prev_subnum(sub_t* sub)
 	return sub->subnum;
 }
 
-void sub_cfg(uint grpnum)
+void sub_cfg(int grpnum)
 {
 	static int dflt,tog_dflt,tog_bar,opt_dflt,net_dflt,adv_dflt,bar;
 	char str[128],str2[128],done=0,code[128];
 	char path[MAX_PATH+1];
 	char data_dir[MAX_PATH+1];
 	int j,m,n;
-	uint i,subnum[MAX_OPTS+1];
+	int i,subnum[MAX_OPTS+1];
 	static sub_t savsub;
 
 	char* sub_long_name_help =

@@ -599,22 +599,22 @@ public:
 	size_t 	logcol = 1; 		/* Current column of log file */
 	uint 	criterrs = 0;		/* Critical error counter */
 
-	uint 	curgrp = 0;				/* Current group */
-	uint	*cursub = nullptr;		/* Current sub-board for each group */
-	uint	curlib = 0; 			/* Current library */
-	uint	*curdir = nullptr;		/* Current directory for each library */
-	uint 	*usrgrp = nullptr;		/* Real group numbers */
-	uint	usrgrps = 0;			/* Number groups this user has access to */
-	uint	usrgrp_total = 0;		/* Total number of groups */
-	uint 	*usrlib = nullptr;		/* Real library numbers */
-	uint	usrlibs = 0;			/* Number of libs this user can access */
-	uint	usrlib_total = 0;		/* Total number of libraries */
-	uint 	**usrsub = nullptr;		/* Real sub numbers */
-	uint	*usrsubs = nullptr;		/* Num of subs with access for each grp */
-	uint 	**usrdir = nullptr;		/* Real dir numbers */
-	uint	*usrdirs = nullptr;		/* Num of dirs with access for each lib */
-	uint	cursubnum = INVALID_SUB;	/* For ARS */
-	uint	curdirnum = INVALID_DIR;	/* For ARS */
+	int 	curgrp = 0;				/* Current group */
+	int*	cursub = nullptr;		/* Current sub-board for each group */
+	int		curlib = 0; 			/* Current library */
+	int*	curdir = nullptr;		/* Current directory for each library */
+	int*	usrgrp = nullptr;		/* Real group numbers */
+	int		usrgrps = 0;			/* Number groups this user has access to */
+	int		usrgrp_total = 0;		/* Total number of groups */
+	int	*	usrlib = nullptr;		/* Real library numbers */
+	int		usrlibs = 0;			/* Number of libs this user can access */
+	int		usrlib_total = 0;		/* Total number of libraries */
+	int**	usrsub = nullptr;		/* Real sub numbers */
+	int*	usrsubs = nullptr;		/* Num of subs with access for each grp */
+	int**	usrdir = nullptr;		/* Real dir numbers */
+	int*	usrdirs = nullptr;		/* Num of dirs with access for each lib */
+	int		cursubnum = INVALID_SUB;	/* For ARS */
+	int		curdirnum = INVALID_DIR;	/* For ARS */
 	uint 	timeleft = 60 * 10;	/* Number of seconds user has left online */
 
 	char 	*comspec = nullptr;	/* Pointer to environment variable COMSPEC */
@@ -632,10 +632,10 @@ public:
 	file_t*	current_file = nullptr;
 
 			/* Global command shell variables */
-	uint	global_str_vars = 0;
+	int		global_str_vars = 0;
 	char **	global_str_var = nullptr;
 	uint32_t *	global_str_var_name = nullptr;
-	uint	global_int_vars = 0;
+	int		global_int_vars = 0;
 	int32_t *	global_int_var = nullptr;
 	uint32_t *	global_int_var_name = nullptr;
 	char *	sysvar_p[MAX_SYSVARS]{};
@@ -696,20 +696,21 @@ public:
 
 	uint	finduser(const char* str, bool silent_failure = false);
 
-	int 	sub_op(uint subnum);
-	bool	can_view_deleted_msgs(uint subnum);
-
-	int		dir_op(uint dirnum);
+	int 	sub_op(int subnum);
+	bool	can_view_deleted_msgs(int subnum);
+	int		dir_op(int dirnum);
+	bool	is_valid_subnum(int subnum) { return ::is_valid_subnum(&cfg, subnum); }
+	bool	is_valid_dirnum(int dirnum) { return ::is_valid_dirnum(&cfg, dirnum); }
 
 	void	getmsgptrs(void);
 	void	putmsgptrs(void);
 	void	reinit_msg_ptrs(void);
 	void	getusrsubs(void);
 	void	getusrdirs(void);
-	uint	getusrsub(uint subnum);
-	uint	getusrgrp(uint subnum);
-	uint	getusrdir(uint dirnum);
-	uint	getusrlib(uint dirnum);
+	int		getusrsub(int subnum);
+	int		getusrgrp(int subnum);
+	int		getusrdir(int dirnum);
+	int		getusrlib(int dirnum);
 
 	bool	putuserstr(int usernumber, enum user_field, const char *str);
 	bool	putuserdatetime(int usernumber, enum user_field, time_t t);
@@ -748,15 +749,15 @@ public:
 	char*	ultoac(uint32_t, char*, char sep=',');
 	char*	u64toac(uint64_t, char*, char sep=',');
 
-	void	subinfo(uint subnum);
-	void	dirinfo(uint dirnum);
+	void	subinfo(int subnum);
+	void	dirinfo(int dirnum);
 	bool	trashcan(const char *insearch, const char *name);
 	void	time_bank(void);
 	void	change_user(void);
 
 	/* writemsg.cpp */
 	void	automsg(void);
-	bool	writemsg(const char *str, const char *top, char *subj, int mode, uint subnum
+	bool	writemsg(const char *str, const char *top, char *subj, int mode, int subnum
 				,const char *to, const char* from, const char** editor=NULL, const char** charset=NULL);
 	char*	quotes_fname(int xedit, char* buf, size_t len);
 	char*	msg_tmp_fname(int xedit, char* fname, size_t len);
@@ -774,16 +775,16 @@ public:
 	bool	quotemsg(smb_t*, smbmsg_t*, bool tails = false);
 	bool	editmsg(smb_t*, smbmsg_t*);
 	void	editor_inf(int xeditnum, const char *to, const char* from, const char *subj, int mode
-				,uint subnum, const char* tagfile);
+				,int subnum, const char* tagfile);
 	bool	copyfattach(uint to, uint from, const char* subj);
-	bool	movemsg(smbmsg_t* msg, uint subnum);
+	bool	movemsg(smbmsg_t* msg, int subnum);
 	int		process_edited_text(char* buf, FILE* stream, int mode, unsigned* lines, unsigned maxlines);
 	int		process_edited_file(const char* src, const char* dest, int mode, unsigned* lines, unsigned maxlines);
 	void	editor_info_to_msg(smbmsg_t*, const char* editor, const char* charset);
 	char	editor_details[128]{};
 
 	/* postmsg.cpp */
-	bool	postmsg(uint subnum, int wm_mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
+	bool	postmsg(int subnum, int wm_mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
 
 	/* mail.cpp */
 	int		delmail(uint usernumber,int which);
@@ -800,9 +801,9 @@ public:
 	char	msghdr_utf8_text[128]{};
 	const char* msghdr_field(const smbmsg_t*, const char* str, char* buf = NULL, bool can_utf8 = false);
 	char	msgghdr_field_cp437_str[128]{};
-	uint	getlastmsg(uint subnum, uint32_t *ptr, time_t *t);
-	time_t	getmsgtime(uint subnum, uint ptr);
-	uint	getmsgnum(uint subnum, time_t t);
+	uint	getlastmsg(int subnum, uint32_t *ptr, time_t *t);
+	time_t	getmsgtime(int subnum, uint ptr);
+	int		getmsgnum(int subnum, time_t t);
 	void	download_msg_attachments(smb_t*, smbmsg_t*, bool del);
 
 	/* readmail.cpp */
@@ -934,6 +935,7 @@ public:
 	struct mouse_hotspot* pause_hotspot = nullptr;
 	struct mouse_hotspot* add_hotspot(struct mouse_hotspot*);
 	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
+	struct mouse_hotspot* add_hotspot(int num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
 	struct mouse_hotspot* add_hotspot(uint num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
 	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
 	void	clear_hotspots(void);
@@ -997,16 +999,16 @@ public:
 	int		text_sec(void);						/* Text sections */
 
 	/* readmsgs.cpp */
-	post_t* loadposts(uint32_t *posts, uint subnum, uint ptr, int mode, uint *unvalidated_num, uint32_t* visible=NULL);
-	int		scanposts(uint subnum, int mode, const char* find);	/* Scan sub-board */
+	post_t* loadposts(uint32_t *posts, int subnum, uint ptr, int mode, uint *unvalidated_num, uint32_t* visible=NULL);
+	int		scanposts(int subnum, int mode, const char* find);	/* Scan sub-board */
 	bool	scanposts_inside = false;
-	int		listsub(uint subnum, int mode, int start, const char* search);
-	int		listmsgs(uint subnum, int mode, post_t* post, int start, int posts, bool reading = true);
-	int		searchposts(uint subnum, post_t* post, int start, int msgs, const char* find);
-	int		showposts_toyou(uint subnum, post_t* post, uint start, int posts, int mode=0);
+	int		listsub(int subnum, int mode, int start, const char* search);
+	int		listmsgs(int subnum, int mode, post_t* post, int start, int posts, bool reading = true);
+	int		searchposts(int subnum, post_t* post, int start, int msgs, const char* find);
+	int		showposts_toyou(int subnum, post_t* post, uint start, int posts, int mode=0);
 	void	show_thread(uint32_t msgnum, post_t* post, unsigned curmsg, int thread_depth = 0, uint64_t reply_mask = 0);
 	void	dump_msghdr(smbmsg_t*);
-	uchar	msg_listing_flag(uint subnum, smbmsg_t*, post_t*);
+	uchar	msg_listing_flag(int subnum, smbmsg_t*, post_t*);
 	int64_t get_start_msgnum(smb_t*, int next=0);
 
 	/* chat.cpp */
@@ -1024,7 +1026,7 @@ public:
 	bool	sysop_page(void);
 	bool	guru_page(void);
 	void	privchat(bool forced=false, int node_num=0);
-	bool	chan_access(uint cnum);
+	bool	chan_access(int cnum);
 	int		getnodetopage(int all, int telegram);
 
 	/* main.cpp */
@@ -1047,10 +1049,10 @@ public:
 
 	/* upload.cpp */
 	bool	uploadfile(file_t* f);
-	bool	okay_to_upload(uint dirnum);
-	bool	upload(uint dirnum);
+	bool	okay_to_upload(int dirnum);
+	bool	upload(int dirnum);
 	char	upload_lastdesc[LEN_FDESC+1]{};
-	bool	bulkupload(uint dirnum);
+	bool	bulkupload(int dirnum);
 
 	/* download.cpp */
 	void	data_transfer_begin(void);
@@ -1085,13 +1087,13 @@ public:
 	int		delfiles(const char *inpath, const char *spec, size_t keep = 0);
 
 	/* listfile.cpp */
-	bool	listfile(file_t*, uint dirnum, const char *search, const char letter, size_t namelen);
-	int		listfiles(uint dirnum, const char *filespec, FILE* tofile, int mode);
+	bool	listfile(file_t*, int dirnum, const char *search, const char letter, size_t namelen);
+	int		listfiles(int dirnum, const char *filespec, FILE* tofile, int mode);
 	bool	listfiles_inside = false;
-	int		listfileinfo(uint dirnum, const char *filespec, int mode);
+	int		listfileinfo(int dirnum, const char *filespec, int mode);
 	bool	listfileinfo_inside = false;
 	void	listfiletofile(file_t*, FILE*);
-	int		batchflagprompt(smb_t*, file_t* bf[], uint row[], uint total, int totalfiles);
+	int		batchflagprompt(smb_t*, file_t* bf[], uint row[], int total, int totalfiles);
 
 	/* bat_xfer.cpp */
 	void	batchmenu(void);
@@ -1150,8 +1152,8 @@ public:
 	}* qwknode = nullptr;
 	void	update_qwkroute(char *via);
 	void	qwk_success(uint msgcnt, char bi, char prepack);
-	void	qwksetptr(uint subnum, char *buf, int reset);
-	void	qwkcfgline(char *buf,uint subnum);
+	void	qwksetptr(int subnum, char *buf, int reset);
+	void	qwkcfgline(char *buf,int subnum);
 	bool	set_qwk_flag(uint flag);
 	uint	resolve_qwkconf(uint confnum, int hubnum=-1);
 	struct msg_filters {
@@ -1261,7 +1263,7 @@ extern "C" {
 	DLLEXPORT int		votemsg(scfg_t*, smb_t*, smbmsg_t*, const char* msgfmt, const char* votefmt);
 	DLLEXPORT int		postpoll(scfg_t*, smb_t*, smbmsg_t*);
 	DLLEXPORT int		closepoll(scfg_t*, smb_t*, uint32_t msgnum, const char* username);
-	DLLEXPORT void		signal_sub_sem(scfg_t*, uint subnum);
+	DLLEXPORT void		signal_sub_sem(scfg_t*, int subnum);
 	DLLEXPORT int		msg_client_hfields(smbmsg_t*, client_t*);
 	DLLEXPORT int		notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
 
@@ -1429,7 +1431,7 @@ extern "C" {
 	DLLEXPORT JSObject* js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, client_t* client, subscan_t* subscan);
 	DLLEXPORT BOOL		js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg
-													,JSObject* subobj, uint subnum);
+													,JSObject* subobj, int subnum);
 
 	/* js_xtrn_area.c */
 	DLLEXPORT JSObject* js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg

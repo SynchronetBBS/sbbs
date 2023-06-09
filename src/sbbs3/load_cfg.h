@@ -41,9 +41,9 @@ DLLEXPORT int 		md(const char *path);
 DLLEXPORT void		pathify(char*);
 DLLEXPORT void		init_vdir(scfg_t*, dir_t*);
 DLLEXPORT int		smb_storage_mode(scfg_t*, smb_t*);
-DLLEXPORT int		smb_open_sub(scfg_t*, smb_t*, unsigned int subnum);
-DLLEXPORT BOOL		smb_init_dir(scfg_t*, smb_t*, unsigned int dirnum);
-DLLEXPORT int		smb_open_dir(scfg_t*, smb_t*, unsigned int dirnum);
+DLLEXPORT int		smb_open_sub(scfg_t*, smb_t*, int subnum);
+DLLEXPORT BOOL		smb_init_dir(scfg_t*, smb_t*, int dirnum);
+DLLEXPORT int		smb_open_dir(scfg_t*, smb_t*, int dirnum);
 
 #ifdef __cplusplus
 }

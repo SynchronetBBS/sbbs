@@ -92,17 +92,17 @@ struct js_msg_area_priv {
 	user_t		*user;
 	client_t	*client;
 	subscan_t	*subscan;
-	uint		subnum;
+	int			subnum;
 };
 
-BOOL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, uint subnum)
+BOOL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, int subnum)
 {
 	char		str[128];
 	JSString*	js_str;
 	jsval		val;
 	sub_t*		sub;
 
-	if(subnum==INVALID_SUB || subnum>=cfg->total_subs)
+	if(!is_valid_subnum(cfg, subnum))
 		return(FALSE);
 
 	sub=cfg->sub[subnum];
@@ -408,7 +408,7 @@ JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 	jsval		val;
 	jsint		grp_index;
 	jsint		sub_index;
-	uint		l,d;
+	int			l,d;
 	char*		name=NULL;
 	struct js_msg_area_priv *p;
 

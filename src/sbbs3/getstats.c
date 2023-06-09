@@ -25,6 +25,7 @@
 #include "ini_file.h"
 #include "xpendian.h"
 #include "xpdatetime.h"
+#include "scfglib.h"
 
 // dsts.ini (Daily Statistics) keys:
 #define strStatsDate			"Date"
@@ -310,12 +311,12 @@ void parse_cstats(str_list_t record, stats_t* stats)
 /****************************************************************************/
 /* Returns the number of files in the directory 'dirnum'                    */
 /****************************************************************************/
-int getfiles(scfg_t* cfg, uint dirnum)
+int getfiles(scfg_t* cfg, int dirnum)
 {
 	char path[MAX_PATH + 1];
 	off_t l;
 
-	if(dirnum >= cfg->total_dirs)	/* out of range */
+	if(!is_valid_dirnum(cfg, dirnum))
 		return 0;
 	SAFEPRINTF2(path, "%s%s.sid", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
 	l = flength(path);
@@ -327,8 +328,10 @@ int getfiles(scfg_t* cfg, uint dirnum)
 /****************************************************************************/
 /* Returns total number of posts in a sub-board 							*/
 /****************************************************************************/
-uint getposts(scfg_t* cfg, uint subnum)
+uint getposts(scfg_t* cfg, int subnum)
 {
+	if(!is_valid_subnum(cfg, subnum))
+		return 0;
 	if(cfg->sub[subnum]->misc & SUB_NOVOTING) {
 		char path[MAX_PATH + 1];
 		off_t l;

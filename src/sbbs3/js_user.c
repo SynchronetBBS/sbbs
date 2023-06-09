@@ -1149,7 +1149,7 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	uint32	bytes=0;
 	jsrefcount	rc;
 	scfg_t*		scfg;
-	uint dirnum=INVALID_DIR;
+	int dirnum=INVALID_DIR;
 	char*	fname = NULL;
 
 	scfg=JS_GetRuntimePrivate(JS_GetRuntime(cx));

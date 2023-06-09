@@ -178,7 +178,7 @@ static int prev_dirnum(dir_t* dir)
 
 static bool code_prefix_exists(const char* prefix)
 {
-	size_t i;
+	int i;
 
 	for(i=0; i < cfg.total_libs; i++)
 		if(cfg.lib[i]->code_prefix[0] && stricmp(cfg.lib[i]->code_prefix, prefix) == 0)
@@ -186,7 +186,7 @@ static bool code_prefix_exists(const char* prefix)
 	return false;
 }
 
-static bool new_lib(unsigned new_libnum)
+static bool new_lib(int new_libnum)
 {
 	lib_t* new_library = malloc(sizeof(lib_t));
 	if (new_library == NULL) {
@@ -206,11 +206,11 @@ static bool new_lib(unsigned new_libnum)
 	}
 	cfg.lib = new_lib_list;
 
-	for (unsigned u = cfg.total_libs; u > new_libnum; u--)
+	for (int u = cfg.total_libs; u > new_libnum; u--)
 		cfg.lib[u] = cfg.lib[u - 1];
 
 	if (new_libnum != cfg.total_libs) {	/* Inserting library? Renumber (higher) existing libs */
-		for (unsigned j = 0; j < cfg.total_dirs; j++) {
+		for (int j = 0; j < cfg.total_dirs; j++) {
 			if (cfg.dir[j]->lib >= new_libnum && cfg.dir[j]->lib != CUT_LIBNUM)
 				cfg.dir[j]->lib++;
 		}
@@ -286,11 +286,11 @@ BOOL create_raw_dir_list(const char* list_file)
 	return(TRUE);
 }
 
-unsigned dirs_in_lib(unsigned libnum)
+int dirs_in_lib(int libnum)
 {
-	unsigned total = 0;
+	int total = 0;
 
-	for(unsigned u = 0; u < cfg.total_dirs; u++)
+	for(int u = 0; u < cfg.total_dirs; u++)
 		if(cfg.dir[u]->lib == libnum)
 			total++;
 	return total;
@@ -302,7 +302,7 @@ void xfer_cfg()
 	char str[256], done=0, *p;
 	char tmp_code[MAX_PATH+1];
 	int file,j,k,q;
-	uint i;
+	int i;
 	long ported,added;
 	static lib_t savlib;
 	dir_t tmpdir;
@@ -1613,13 +1613,13 @@ void dir_toggle_options(dir_t* dir)
 	}
 }
 
-void dir_cfg(uint libnum)
+void dir_cfg(int libnum)
 {
 	static int dflt,bar,adv_dflt,opt_dflt;
 	char str[128],str2[128],code[128],path[MAX_PATH+1],done=0;
 	char data_dir[MAX_PATH+1];
 	int j,n;
-	uint i,dirnum[MAX_OPTS+1];
+	int i,dirnum[MAX_OPTS+1];
 	static dir_t savdir;
 
 	char* dir_long_name_help =
@@ -2234,7 +2234,7 @@ void dir_defaults_cfg(dir_t* dir)
 					,"Clone Default Settings into All of Library"
 					,uifcYesNoOpts);
 				if(n==0) {
-					for(uint j=0;j<cfg.total_dirs;j++) {
+					for(int j=0;j<cfg.total_dirs;j++) {
 						if(cfg.dir[j]->lib != dir->lib)
 							continue;
 						uifc.changes=1;

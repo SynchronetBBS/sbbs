@@ -252,7 +252,7 @@ static const char* getpath(scfg_t* cfg, const char* path)
 const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool centered, JSObject* obj)
 {
 	char*	tp = NULL;
-	uint	i;
+	int		i;
 	uint	ugrp;
 	uint	usub;
 	long	l;

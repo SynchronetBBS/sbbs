@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 DLLEXPORT char *	ftn_msgid(sub_t*, smbmsg_t*, char* msgid, size_t);
-DLLEXPORT char *	get_msgid(scfg_t*, uint subnum, smbmsg_t*, char* msgid, size_t);
+DLLEXPORT char *	get_msgid(scfg_t*, int subnum, smbmsg_t*, char* msgid, size_t);
 DLLEXPORT char *	get_replyid(scfg_t*, smb_t*, smbmsg_t*, char* msgid, size_t maxlen);
 DLLEXPORT uint32_t	get_new_msg_number(smb_t*);
 DLLEXPORT BOOL		add_msg_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);

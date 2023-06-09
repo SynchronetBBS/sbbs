@@ -520,7 +520,7 @@ int smb_storage_mode(scfg_t* cfg, smb_t* smb)
 {
 	if(smb == NULL || smb->subnum == INVALID_SUB || (smb->status.attr&SMB_EMAIL))
 		return (cfg->sys_misc&SM_FASTMAIL) ? SMB_FASTALLOC : SMB_SELFPACK;
-	if(smb->subnum >= cfg->total_subs)
+	if(!is_valid_subnum(cfg, smb->subnum))
 		return (smb->status.attr&SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_FASTALLOC;
 	if(cfg->sub[smb->subnum]->misc&SUB_HYPER) {
 		smb->status.attr |= SMB_HYPERALLOC;
@@ -533,12 +533,12 @@ int smb_storage_mode(scfg_t* cfg, smb_t* smb)
 
 /* Open Synchronet Message Base and create, if necessary (e.g. first time opened) */
 /* If return value is not SMB_SUCCESS, sub-board is not left open */
-int smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
+int smb_open_sub(scfg_t* cfg, smb_t* smb, int subnum)
 {
 	int retval;
 	smbstatus_t smb_status = {0};
 
-	if(subnum != INVALID_SUB && subnum >= cfg->total_subs)
+	if(subnum != INVALID_SUB && !is_valid_subnum(cfg, subnum))
 		return SMB_FAILURE;
 	memset(smb, 0, sizeof(smb_t));
 	if(subnum == INVALID_SUB) {
@@ -567,9 +567,9 @@ int smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
 	return retval;
 }
 
-BOOL smb_init_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
+BOOL smb_init_dir(scfg_t* cfg, smb_t* smb, int dirnum)
 {
-	if(dirnum >= cfg->total_dirs)
+	if(!is_valid_dirnum(cfg, dirnum))
 		return FALSE;
 	memset(smb, 0, sizeof(smb_t));
 	SAFEPRINTF2(smb->file, "%s%s", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
@@ -577,7 +577,7 @@ BOOL smb_init_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
 	return TRUE;
 }
 
-int smb_open_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
+int smb_open_dir(scfg_t* cfg, smb_t* smb, int dirnum)
 {
 	int retval;
 

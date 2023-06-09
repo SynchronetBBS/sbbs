@@ -1276,17 +1276,17 @@ bool area_is_valid(uint areanum)
 
 uint find_sysfaddr(faddr_t addr)
 {
-	unsigned u;
+	int i;
 
-	for(u=0; u < scfg.total_faddrs; u++) {
-		if(memcmp(&scfg.faddr[u], &addr, sizeof(addr)) == 0)
+	for(i=0; i < scfg.total_faddrs; i++) {
+		if(memcmp(&scfg.faddr[i], &addr, sizeof(addr)) == 0)
 			break;
 	}
 
-	return u;
+	return i;
 }
 
-bool sysfaddr_is_valid(uint faddr_num)
+bool sysfaddr_is_valid(int faddr_num)
 {
 	return faddr_num < scfg.total_faddrs;
 }
@@ -2815,7 +2815,7 @@ long getlastmsg(uint subnum, uint32_t *ptr, /* unused: */time_t *t)
 
 	if(ptr) (*ptr)=0;
 	ZERO_VAR(smbfile);
-	if(subnum>=scfg.total_subs) {
+	if(!is_valid_subnum(&scfg, subnum)) {
 		lprintf(LOG_ERR,"ERROR line %d getlastmsg %d",__LINE__,subnum);
 		bail(1);
 		return -1;
@@ -3761,7 +3761,7 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 				}
 			}
 
-			for(u=0;u<scfg.total_faddrs;u++) {				/* Add AKAs to SEEN-BYs */
+			for(int u=0;u<scfg.total_faddrs;u++) {				/* Add AKAs to SEEN-BYs */
 				strcpy(seenby," ");
 				if(foreign_zone(addr.zone, scfg.faddr[u].zone) || scfg.faddr[u].point)
 					continue;
@@ -4687,7 +4687,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 		if(!cfg.area[area].links)
 			continue;
 		int subnum = cfg.area[area].sub;
-		if(subnum < 0 || subnum >= scfg.total_subs)	/* Don't scan pass-through areas */
+		if(!is_valid_subnum(&scfg, subnum))	/* Don't scan pass-through areas */
 			continue;
 		if(nodecfg != NULL ) { 		/* Skip areas not meant for this address */
 			if(!area_is_linked(area,&nodecfg->addr))
@@ -5107,7 +5107,7 @@ bool retoss_bad_echomail(void)
 		}
 
 		uint areanum = find_area(badmsg.ftn_area);
-		if(!area_is_valid(areanum) || cfg.area[areanum].sub >= scfg.total_subs) {
+		if(!area_is_valid(areanum) || !is_valid_subnum(&scfg, cfg.area[areanum].sub)) {
 			smb_unlockmsghdr(&badsmb,&badmsg);
 			smb_freemsgmem(&badmsg);
 			continue;
@@ -6481,7 +6481,7 @@ int main(int argc, char **argv)
 			,cfg.area[cfg.badecho].sub == INVALID_SUB ? "INVALID_SUB" : scfg.sub[cfg.area[cfg.badecho].sub]->code);
 
 	if(cfg.auto_add_subs) {
-		for(unsigned subnum = 0; subnum < scfg.total_subs; subnum++) {
+		for(int subnum = 0; subnum < scfg.total_subs; subnum++) {
 			if(cfg.badecho >=0 && cfg.area[cfg.badecho].sub == subnum)
 				continue;	/* No need to auto-add the badecho sub */
 			if(!(scfg.sub[subnum]->misc&SUB_FIDO))

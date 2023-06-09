@@ -21,19 +21,19 @@
 
 #include "sbbs.h"
 
-int sbbs_t::sub_op(uint subnum)
+int sbbs_t::sub_op(int subnum)
 {
 	return(is_user_subop(&cfg, subnum, &useron, &client));
 }
 
-bool sbbs_t::can_view_deleted_msgs(uint subnum)
+bool sbbs_t::can_view_deleted_msgs(int subnum)
 {
 	if((cfg.sys_misc & SM_SYSVDELM) == 0) // No one can view deleted msgs
 		return false;
 	return (cfg.sys_misc & SM_USRVDELM) || sub_op(subnum);
 }
 
-uchar sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg, post_t* post)
+uchar sbbs_t::msg_listing_flag(int subnum, smbmsg_t* msg, post_t* post)
 {
 	if(msg->hdr.attr&MSG_DELETE)						return '-';
 	if((stricmp(msg->to,useron.alias)==0 || stricmp(msg->to,useron.name)==0)
@@ -52,7 +52,7 @@ uchar sbbs_t::msg_listing_flag(uint subnum, smbmsg_t* msg, post_t* post)
 	return ' ';
 }
 
-int sbbs_t::listmsgs(uint subnum, int mode, post_t *post, int start, int posts, bool reading)
+int sbbs_t::listmsgs(int subnum, int mode, post_t *post, int start, int posts, bool reading)
 {
 	smbmsg_t msg;
 	int listed=0;
@@ -98,7 +98,7 @@ void sbbs_t::dump_msghdr(smbmsg_t* msg)
 /* visible is the number of visible posts to the user (not all included in	*/
 /* returned array)															*/
 /****************************************************************************/
-post_t * sbbs_t::loadposts(uint32_t *posts, uint subnum, uint ptr, int mode, uint *unvalidated_num, uint32_t* visible)
+post_t * sbbs_t::loadposts(uint32_t *posts, int subnum, uint ptr, int mode, uint *unvalidated_num, uint32_t* visible)
 {
 	ushort aliascrc,namecrc,sysop;
 	int i,skip;
@@ -392,7 +392,7 @@ void sbbs_t::show_thread(uint32_t msgnum, post_t* post, unsigned curmsg, int thr
 /* Returns 0 if normal completion, 1 if aborted.                            */
 /* Called from function main_sec                                            */
 /****************************************************************************/
-int sbbs_t::scanposts(uint subnum, int mode, const char *find)
+int sbbs_t::scanposts(int subnum, int mode, const char *find)
 {
 	char	str[256],str2[256],do_find=true,mismatches=0
 			,done=0,domsg=1,*buf;
@@ -1617,7 +1617,7 @@ int sbbs_t::scanposts(uint subnum, int mode, const char *find)
 /* Displays msg header information only (no body text)						*/
 /* Returns number of messages found/displayed.                              */
 /****************************************************************************/
-int sbbs_t::listsub(uint subnum, int mode, int start, const char* search)
+int sbbs_t::listsub(int subnum, int mode, int start, const char* search)
 {
 	int 	i;
 	uint32_t	posts;
@@ -1679,7 +1679,7 @@ int sbbs_t::listsub(uint subnum, int mode, int start, const char* search)
 /* title). 'msgs' is the total number of valid messages.                    */
 /* Returns number of messages found.                                        */
 /****************************************************************************/
-int sbbs_t::searchposts(uint subnum, post_t *post, int start, int posts
+int sbbs_t::searchposts(int subnum, post_t *post, int start, int posts
 	, const char *search)
 {
 	char*	buf;
@@ -1721,7 +1721,7 @@ int sbbs_t::searchposts(uint subnum, post_t *post, int start, int posts
 /* Will search the messages pointed to by 'msg' for message to the user on  */
 /* Returns number of messages found.                                        */
 /****************************************************************************/
-int sbbs_t::showposts_toyou(uint subnum, post_t *post, uint start, int posts, int mode)
+int sbbs_t::showposts_toyou(int subnum, post_t *post, uint start, int posts, int mode)
 {
 	char	str[128];
 	ushort	namecrc,aliascrc,sysop;

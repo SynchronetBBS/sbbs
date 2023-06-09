@@ -74,7 +74,7 @@ static bool new_timed_event(unsigned new_event_num)
 	return true;
 }
 
-static bool new_external_program_section(unsigned new_section_num)
+static bool new_external_program_section(int new_section_num)
 {
 	xtrnsec_t* new_xtrnsec = malloc(sizeof(*new_xtrnsec));
 	if (new_xtrnsec == NULL) {
@@ -90,9 +90,9 @@ static bool new_external_program_section(unsigned new_section_num)
 		return false;
 	}
 	cfg.xtrnsec = new_xtrnsec_list;
-	for (unsigned u = cfg.total_xtrnsecs; u > new_section_num; u--)
+	for (int u = cfg.total_xtrnsecs; u > new_section_num; u--)
 		cfg.xtrnsec[u] = cfg.xtrnsec[u - 1];
-	for (unsigned j = 0; j < cfg.total_xtrns; j++) {
+	for (int j = 0; j < cfg.total_xtrns; j++) {
 		if (cfg.xtrn[j]->sec >= new_section_num && cfg.xtrn[j]->sec != CUT_XTRNSEC_NUM)
 			cfg.xtrn[j]->sec++;
 	}
@@ -435,7 +435,7 @@ void tevents_cfg()
 	static int dflt,dfltopt,bar;
 	char str[81],done=0,*p;
 	int j,k;
-	uint i;
+	int i;
 	static event_t savevent;
 
 	while(1) {
@@ -1062,12 +1062,12 @@ void choose_io_method(uint32_t* misc)
 	}
 }
 
-void xtrn_cfg(uint section)
+void xtrn_cfg(int section)
 {
 	static int ext_dflt,ext_bar,sub_bar,opt_dflt,time_dflt;
 	char str[128],code[128],done=0;
 	int j,k;
-	uint i,xtrnnum[MAX_OPTS+1];
+	int i,xtrnnum[MAX_OPTS+1];
 	static xtrn_t savxtrn;
 
 	while(1) {
@@ -1763,7 +1763,7 @@ void xedit_cfg()
 	static int dflt,dfltopt,bar;
 	char str[81],code[81],done=0;
 	int j,k;
-	uint i;
+	int i;
 	static xedit_t savxedit;
 
 	while(1) {
@@ -2296,7 +2296,7 @@ int natvpgm_cfg()
 	static int dflt,bar;
 	char str[81];
 	int j;
-	uint i,u;
+	int i,u;
 #define NATIVE_PROGRAM_NAME_NOTE	"\n`Note:` If a file extension (e.g. `.exe`) is included in the filename,\n" \
 									"      all command-lines must also include the file extension."
 	char* native_program_name_help =
@@ -2377,11 +2377,11 @@ int natvpgm_cfg()
 	return(0);
 }
 
-static uint progs_in_sec(uint sec)
+static int progs_in_sec(int sec)
 {
-	uint total = 0;
+	int total = 0;
 
-	for(uint i = 0; i < cfg.total_xtrns; ++i)
+	for(int i = 0; i < cfg.total_xtrns; ++i)
 		if(cfg.xtrn[i]->sec == sec)
 			++total;
 	return total;
@@ -2392,7 +2392,7 @@ void xtrnsec_cfg()
 	static int xtrnsec_dflt,xtrnsec_bar,xtrnsec_opt;
 	char str[128],code[128],done=0;
 	int j,k;
-	uint i;
+	int i;
 	static xtrnsec_t savxtrnsec;
 
 	while(1) {
@@ -2501,7 +2501,7 @@ void xtrnsec_cfg()
 			if (!new_external_program_section(xtrnsec_num))
 				continue;
 			/* Restore previously cut xtrns to newly-pasted xtrn_sec */
-			for (unsigned u = 0; u < cfg.total_xtrns; u++)
+			for (int u = 0; u < cfg.total_xtrns; u++)
 				if (cfg.xtrn[u]->sec == CUT_XTRNSEC_NUM)
 					cfg.xtrn[u]->sec = xtrnsec_num;
 			*cfg.xtrnsec[xtrnsec_num]=savxtrnsec;
@@ -2596,8 +2596,7 @@ void hotkey_cfg(void)
 	static int dflt,dfltopt,bar;
 	char str[81],done=0;
 	int j,k;
-	uint i;
-	uint u;
+	int i,u;
 	static hotkey_t savhotkey;
 
 	while(1) {

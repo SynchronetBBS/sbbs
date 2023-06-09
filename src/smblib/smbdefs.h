@@ -686,8 +686,8 @@ typedef struct {				/* Message/File base */
 
 	/* Private member variables (not initialized by or used by smblib) */
 	union {
-		uint32_t	subnum;		/* Sub-board number */
-		uint32_t	dirnum;		/* Directory number */
+		int32_t	subnum;			/* Sub-board number */
+		int32_t	dirnum;			/* Directory number */
 	};
 	union {
 		uint32_t	msgs;		/* Number of messages loaded (for user) */

@@ -34,7 +34,8 @@ bool sbbs_t::logon()
 	char	str[256],c;
 	char 	tmp[512];
 	char	path[MAX_PATH+1];
-	uint	i,j,mailw,mailr;
+	int		i,j;
+	uint	mailw,mailr;
 	int		kmode;
 	uint	totallogons;
 	node_t	node;

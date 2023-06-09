@@ -38,7 +38,7 @@
 
  /****************************************************************************/
 /****************************************************************************/
-bool findfile(scfg_t* cfg, uint dirnum, const char *filename, file_t* file)
+bool findfile(scfg_t* cfg, int dirnum, const char *filename, file_t* file)
 {
 	smb_t smb;
 
@@ -62,7 +62,7 @@ time_t newfiletime(smb_t* smb)
 	return fdate(str);
 }
 
-time_t dir_newfiletime(scfg_t* cfg, uint dirnum)
+time_t dir_newfiletime(scfg_t* cfg, int dirnum)
 {
 	smb_t smb;
 
@@ -368,7 +368,7 @@ void freefiles(file_t* filelist, size_t count)
 	free(filelist);
 }
 
-bool loadfile(scfg_t* cfg, uint dirnum, const char* filename, file_t* file, enum file_detail detail)
+bool loadfile(scfg_t* cfg, int dirnum, const char* filename, file_t* file, enum file_detail detail)
 {
 	smb_t smb;
 
@@ -553,7 +553,7 @@ bool updatefile(scfg_t* cfg, file_t* file)
 	return result == SMB_SUCCESS;
 }
 
-bool removefile(scfg_t* cfg, uint dirnum, const char* filename)
+bool removefile(scfg_t* cfg, int dirnum, const char* filename)
 {
 	smb_t smb;
 

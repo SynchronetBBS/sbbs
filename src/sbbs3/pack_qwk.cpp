@@ -34,7 +34,8 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	char	error[256];
 	char*	fname;
 	int 	mode;
-	uint	i,j,k,conf;
+	int		i,j,k;
+	uint	conf;
 	int		l,size,msgndx,ex;
 	uint32_t posts;
 	uint32_t mailmsgs=0;
@@ -710,7 +711,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		}
 		SAFEPRINTF(str,"%sQWK/BLT-*",cfg.text_dir);
 		glob(str,0,NULL,&g);
-		for(i=0;i<(uint)g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
+		for(size_t i=0;i<g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
 			fname=getfname(g.gl_pathv[i]);
 			char* fext = getfext(fname);
 			if(IS_DIGIT(fname[4]) && fext != NULL && IS_DIGIT(*(fext + 1))) {

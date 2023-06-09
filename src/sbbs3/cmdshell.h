@@ -644,7 +644,7 @@ typedef struct {					/* Command shell image */
 	SOCKET	socket[MAX_SOCKETS];	/* Open socket descriptors */
 	int32_t	socket_error;			/* Last socket error */
 
-	uint	str_vars,				/* Total number of string variables */
+	int		str_vars,				/* Total number of string variables */
 			int_vars,				/* Total number of integer variables */
 			files,					/* Open files */
 			dirs,					/* Open directories */

@@ -343,7 +343,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_SUB:
-				if((equal && cursubnum!=i) || (!equal && cursubnum<i))
+				if((equal && cursubnum!=(int)i) || (!equal && cursubnum<(int)i))
 					result=_not;
 				else
 					result=!_not;
@@ -380,7 +380,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_DIR:
-				if((equal && curdirnum!=i) || (!equal && curdirnum<i))
+				if((equal && curdirnum!=(int)i) || (!equal && curdirnum<(int)i))
 					result=_not;
 				else
 					result=!_not;
@@ -737,7 +737,7 @@ bool sbbs_t::chk_ar(const uchar *ar, user_t* user, client_t* client)
 /****************************************************************************/
 void sbbs_t::getusrsubs()
 {
-    uint i,j,k,l;
+    int i,j,k,l;
 
 	for(j=0,i=0;i<cfg.total_grps;i++) {
 		if(!chk_ar(cfg.grp[i]->ar,&useron,&client))
@@ -766,7 +766,7 @@ void sbbs_t::getusrsubs()
 /****************************************************************************/
 void sbbs_t::getusrdirs()
 {
-    uint i,j,k,l;
+    int i,j,k,l;
 
 	if(useron.rest&FLAG('T')) {
 		usrlibs=0;
@@ -793,11 +793,11 @@ void sbbs_t::getusrdirs()
 	while(curdir[curlib]>=usrdirs[curlib] && curdir[curlib]) curdir[curlib]--;
 }
 
-uint sbbs_t::getusrgrp(uint subnum)
+int sbbs_t::getusrgrp(int subnum)
 {
-	uint	ugrp;
+	int	ugrp;
 
-	if(subnum==INVALID_SUB)
+	if(!is_valid_subnum(subnum))
 		return(0);
 
 	if(usrgrps<=0)
@@ -810,10 +810,10 @@ uint sbbs_t::getusrgrp(uint subnum)
 	return(ugrp+1);
 }
 
-uint sbbs_t::getusrsub(uint subnum)
+int sbbs_t::getusrsub(int subnum)
 {
-	uint	usub;
-	uint	ugrp;
+	int	usub;
+	int	ugrp;
 
 	ugrp = getusrgrp(subnum);
 	if(ugrp<=0)
@@ -826,11 +826,11 @@ uint sbbs_t::getusrsub(uint subnum)
 	return(usub+1);
 }
 
-uint sbbs_t::getusrlib(uint dirnum)
+int sbbs_t::getusrlib(int dirnum)
 {
-	uint	ulib;
+	int	ulib;
 
-	if(dirnum == INVALID_DIR)
+	if(!is_valid_dirnum(dirnum))
 		return 0;
 
 	if(usrlibs <= 0)
@@ -843,10 +843,10 @@ uint sbbs_t::getusrlib(uint dirnum)
 	return ulib+1;
 }
 
-uint sbbs_t::getusrdir(uint dirnum)
+int sbbs_t::getusrdir(int dirnum)
 {
-	uint	udir;
-	uint	ulib;
+	int	udir;
+	int	ulib;
 
 	ulib = getusrlib(dirnum);
 	if(ulib <= 0)
@@ -860,7 +860,7 @@ uint sbbs_t::getusrdir(uint dirnum)
 }
 
 
-int sbbs_t::dir_op(uint dirnum)
+int sbbs_t::dir_op(int dirnum)
 {
 	return is_user_dirop(&cfg, dirnum, &useron, &client);
 }

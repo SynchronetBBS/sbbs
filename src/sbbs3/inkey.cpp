@@ -132,7 +132,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 {
 	char	str[512];
 	char 	tmp[512];
-	uint	i,j;
+	int		i,j;
 
 	if(ch==TERM_KEY_ABORT) {  /* Ctrl-C Abort */
 		sys_status|=SS_ABORT;
@@ -647,6 +647,17 @@ struct mouse_hotspot* sbbs_t::add_hotspot(char cmd, bool hungry, int minx, int m
 	spot.cmd[0] = cmd;
 	spot.minx = minx < 0 ? column : minx;
 	spot.maxx = maxx < 0 ? column : maxx;
+	spot.y = y;
+	spot.hungry = hungry;
+	return add_hotspot(&spot);
+}
+
+struct mouse_hotspot* sbbs_t::add_hotspot(int num, bool hungry, int minx, int maxx, int y)
+{
+	struct mouse_hotspot spot = {};
+	SAFEPRINTF(spot.cmd, "%d\r", num);
+	spot.minx = minx;
+	spot.maxx = maxx;
 	spot.y = y;
 	spot.hungry = hungry;
 	return add_hotspot(&spot);

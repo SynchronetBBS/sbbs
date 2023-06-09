@@ -662,7 +662,7 @@ bool sbbs_t::sysop_page(void)
 /****************************************************************************/
 /* Returns 1 if user online has access to channel "channum"                 */
 /****************************************************************************/
-bool sbbs_t::chan_access(uint cnum)
+bool sbbs_t::chan_access(int cnum)
 {
 
 	if(!cfg.total_chans || cnum>=cfg.total_chans || !chk_ar(cfg.chan[cnum]->ar,&useron,&client)) {

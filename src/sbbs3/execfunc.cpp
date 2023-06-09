@@ -27,7 +27,7 @@ int sbbs_t::exec_function(csi_t *csi)
 	char	str[256];
 	uchar*	p;
 	int		s;
-	uint 	i,j,k;
+	int 	i,j,k;
 	long	l;
 	node_t	node;
 	struct	tm tm;

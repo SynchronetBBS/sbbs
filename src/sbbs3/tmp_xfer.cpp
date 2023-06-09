@@ -42,7 +42,7 @@ uint sbbs_t::create_filelist(const char *name, int mode)
 {
     char	str[256];
 	FILE*	fp;
-	uint	i,j,d;
+	int		i,j,d;
 	int		l,k;
 
 	if(online == ON_REMOTE)

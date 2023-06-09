@@ -258,7 +258,7 @@ int sbbs_t::process_edited_file(const char* src, const char* dest, int mode, uns
 /* message and 'title' is the title (70chars max) for the message.          */
 /* 'dest' contains a text description of where the message is going.        */
 /****************************************************************************/
-bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, uint subnum
+bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, int subnum
 	,const char *to, const char* from, const char** editor, const char** charset)
 {
 	char	str[256],quote[128],c,*buf,*p,*tp
@@ -308,7 +308,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 	(void)removecase(msgtmp);
 	SAFEPRINTF(tagfile,"%seditor.tag",cfg.temp_dir);
 	(void)removecase(tagfile);
-	SAFEPRINTF(draft_desc, "draft.%s.msg", subnum >= cfg.total_subs ? "mail" : cfg.sub[subnum]->code);
+	SAFEPRINTF(draft_desc, "draft.%s.msg", subnum == INVALID_SUB ? "mail" : cfg.sub[subnum]->code);
 	SAFEPRINTF3(draft, "%suser/%04u.%s", cfg.data_dir, useron.number, draft_desc);
 
 	bool draft_restored = false;
@@ -807,7 +807,7 @@ void quotestr(char *str)
 /****************************************************************************/
 /****************************************************************************/
 void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const char *subj, int mode
-	,uint subnum, const char* tagfile)
+	,int subnum, const char* tagfile)
 {
 	char	path[MAX_PATH+1];
 	FILE*	fp;
@@ -1745,10 +1745,10 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 /****************************************************************************/
 /* Moves a message from one message base to another 						*/
 /****************************************************************************/
-bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
+bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 {
 	char str[256],*buf;
-	uint i;
+	int i;
 	int newgrp,newsub,storage;
 	off_t offset;
 	uint length;

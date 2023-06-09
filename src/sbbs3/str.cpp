@@ -785,7 +785,7 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 /****************************************************************************/
 /* Displays information about sub-board subnum								*/
 /****************************************************************************/
-void sbbs_t::subinfo(uint subnum)
+void sbbs_t::subinfo(int subnum)
 {
 	char str[MAX_PATH+1];
 
@@ -809,7 +809,7 @@ void sbbs_t::subinfo(uint subnum)
 /****************************************************************************/
 /* Displays information about transfer directory dirnum 					*/
 /****************************************************************************/
-void sbbs_t::dirinfo(uint dirnum)
+void sbbs_t::dirinfo(int dirnum)
 {
 	char str[MAX_PATH+1];
 
@@ -860,7 +860,7 @@ char* sbbs_t::datestr(time_t t)
 void sbbs_t::sys_info()
 {
 	char	tmp[128];
-	uint	i;
+	int	i;
 	stats_t stats;
 
 	bputs(text[SiHdr]);

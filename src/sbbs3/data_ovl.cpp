@@ -49,7 +49,7 @@ void sbbs_t::putmsgptrs()
 
 void sbbs_t::reinit_msg_ptrs()
 {
-	for(uint i = 0; i < cfg.total_subs; ++i) {
+	for(int i = 0; i < cfg.total_subs; ++i) {
 		subscan[i].ptr = subscan[i].sav_ptr;
 		subscan[i].last = subscan[i].sav_last;
 	}

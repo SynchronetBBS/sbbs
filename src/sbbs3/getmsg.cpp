@@ -248,7 +248,7 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 {
 	char*	txt;
-	BOOL	is_sub = is_valid_subnum(&cfg, smb->subnum);
+	BOOL	is_sub = is_valid_subnum(smb->subnum);
 
 	if(is_sub) {
 		if((msg->hdr.type == SMB_MSG_TYPE_NORMAL && post != NULL && (post->upvotes || post->downvotes))
@@ -524,7 +524,7 @@ bool sbbs_t::msgtotxt(smb_t* smb, smbmsg_t* msg, const char *fname, bool header,
 /****************************************************************************/
 /* Returns message number posted at or after time							*/
 /****************************************************************************/
-uint sbbs_t::getmsgnum(uint subnum, time_t t)
+int sbbs_t::getmsgnum(int subnum, time_t t)
 {
     int			i;
 	smb_t		smb;
@@ -551,7 +551,7 @@ uint sbbs_t::getmsgnum(uint subnum, time_t t)
 /****************************************************************************/
 /* Returns the time of the message number pointed to by 'ptr'               */
 /****************************************************************************/
-time_t sbbs_t::getmsgtime(uint subnum, uint ptr)
+time_t sbbs_t::getmsgtime(int subnum, uint ptr)
 {
 	int 		i;
 	smb_t		smb;
@@ -626,7 +626,7 @@ time_t sbbs_t::getmsgtime(uint subnum, uint ptr)
 /* Returns the total number of msgs in the sub-board and sets 'ptr' to the  */
 /* number of the last message in the sub (0) if no messages.				*/
 /****************************************************************************/
-uint sbbs_t::getlastmsg(uint subnum, uint32_t *ptr, time_t *t)
+uint sbbs_t::getlastmsg(int subnum, uint32_t *ptr, time_t *t)
 {
 	int 		i;
 	uint		total;
@@ -637,7 +637,7 @@ uint sbbs_t::getlastmsg(uint subnum, uint32_t *ptr, time_t *t)
 		(*ptr)=0;
 	if(t)
 		(*t)=0;
-	if(subnum>=cfg.total_subs)
+	if(!is_valid_subnum(subnum))
 		return(0);
 
 	ZERO_VAR(smb);

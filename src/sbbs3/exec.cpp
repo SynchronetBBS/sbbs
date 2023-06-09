@@ -26,7 +26,7 @@
 
 char ** sbbs_t::getstrvar(csi_t *bin, uint32_t name)
 {
-	uint i;
+	int i;
 
 	if(sysvar_pi>=MAX_SYSVARS) sysvar_pi=0;
 	switch(name) {
@@ -111,7 +111,7 @@ char ** sbbs_t::getstrvar(csi_t *bin, uint32_t name)
 
 int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 {
-	uint i;
+	int i;
 
 	if(sysvar_li>=MAX_SYSVARS) sysvar_li=0;
 	switch(name) {
@@ -442,7 +442,7 @@ void sbbs_t::clearvars(csi_t *bin)
 
 void sbbs_t::freevars(csi_t *bin)
 {
-	uint i;
+	int i;
 
 	if(bin->str_var) {
 		for(i=0;i<bin->str_vars;i++)

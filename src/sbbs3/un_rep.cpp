@@ -36,7 +36,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	char	inbox[MAX_PATH+1];
 	char	block[QWK_BLOCK_LEN];
 	int 	file;
-	uint	i,j,k,lastsub=INVALID_SUB;
+	int		i,j,k,lastsub=INVALID_SUB;
 	uint	blocks;
 	int		usernum;
 	long	l,size;

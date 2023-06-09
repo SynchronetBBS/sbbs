@@ -125,15 +125,15 @@ void sys_cfg(void);
 void net_cfg(void);
 void msgs_cfg(void);
 void msg_opts(void);
-void sub_cfg(uint grpnum);
+void sub_cfg(int grpnum);
 void xfer_cfg(void);
 void xfer_opts(void);
 void libs_cfg(void);
-void dir_cfg(uint libnum);
+void dir_cfg(int libnum);
 void xprogs_cfg(void);
 void fevents_cfg(void);
 void tevents_cfg(void);
-void xtrn_cfg(uint section);
+void xtrn_cfg(int section);
 void swap_cfg(void);
 void xtrnsec_cfg(void);
 int  natvpgm_cfg(void);
@@ -163,12 +163,12 @@ void reencrypt_keys(const char* old_pass, const char* new_pass);
 int code_ok(char *str);
 int  bits(long l);
 void getar(char *desc, char *ar);
-bool new_sub(unsigned new_subnum, unsigned group_num, sub_t* pasted_sub, long misc);
-bool new_qhub_sub(qhub_t*, unsigned qsubnum, sub_t*, unsigned confnum);
-void remove_sub(scfg_t*, unsigned subnum, bool cut);
+bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc);
+bool new_qhub_sub(qhub_t*, int qsubnum, sub_t*, unsigned confnum);
+void remove_sub(scfg_t*, int subnum, bool cut);
 void sort_subs(int grpnum);
 void sort_dirs(int libnum);
-unsigned subs_in_group(unsigned grpnum);
+int subs_in_group(int grpnum);
 char random_code_char(void);
 const char* io_method(uint32_t mode);
 void choose_io_method(uint32_t* misc);
@@ -185,7 +185,7 @@ BOOL save_file_cfg(scfg_t*);
 BOOL save_chat_cfg(scfg_t*);
 BOOL save_xtrn_cfg(scfg_t*);
 
-long import_msg_areas(enum import_list_type, FILE*, unsigned grpnum, int min_confnum, int max_confnum
+long import_msg_areas(enum import_list_type, FILE*, int grpnum, int min_confnum, int max_confnum
 	, qhub_t*, const char* pkt_orig, faddr_t* faddr, uint32_t misc, long* added);
 
 /* Prepare a string to be used as an internal code; Note: use the return value, Luke */

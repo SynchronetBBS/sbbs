@@ -391,59 +391,59 @@ typedef struct
 	char			filename[MAX_PATH + 1]; // last-loaded cfg file path/name
 
 	grp_t			**grp;				/* Each message group */
-	uint16_t		total_grps; 		/* Total number of groups */
+	int				total_grps; 		/* Total number of groups */
 	sub_t			**sub;				/* Each message sub */
-	uint16_t		total_subs; 		/* Total number of subs */
+	int				total_subs; 		/* Total number of subs */
 	lib_t			**lib;				/* Each library */
-	uint16_t		total_libs; 		/* Total number of libraries */
+	int				total_libs; 		/* Total number of libraries */
 	dir_t			**dir;				/* Each message directory */
-	uint16_t		total_dirs; 		/* Total number of directories */
+	int				total_dirs; 		/* Total number of directories */
 	txtsec_t 		**txtsec;			/* Each text section */
-	uint16_t		total_txtsecs;		/* Total number of text sections */
+	int				total_txtsecs;		/* Total number of text sections */
 	xtrnsec_t		**xtrnsec;			/* Each external section */
-	uint16_t		total_xtrnsecs; 	/* Total number of external sections */
+	int				total_xtrnsecs; 	/* Total number of external sections */
 	xtrn_t			**xtrn; 			/* Each external program */
-	uint16_t		total_xtrns;		/* Total number of externals */
+	int				total_xtrns;		/* Total number of externals */
 	prot_t			**prot; 			/* Each Transfer Protocol */
-	uint16_t		total_prots;		/* Total Transfer Protocols */
+	int				total_prots;		/* Total Transfer Protocols */
 	fextr_t			**fextr;			/* Each extractable file type */
-	uint16_t		total_fextrs;		/* Total extractable file types */
+	int				total_fextrs;		/* Total extractable file types */
 	fcomp_t			**fcomp;			/* Each compressable file type */
-	uint16_t		total_fcomps;		/* Total */
+	int				total_fcomps;		/* Total */
 	fview_t			**fview;			/* Each veiwable file type */
-	uint16_t		total_fviews;		/* Total viewable file types */
+	int				total_fviews;		/* Total viewable file types */
 	ftest_t			**ftest;			/* Each testable file type */
-	uint16_t		total_ftests;		/* Total testable file types */
+	int				total_ftests;		/* Total testable file types */
 	xedit_t			**xedit;			/* Each external editor */
-	uint16_t		total_xedits;		/* Total external editors */
+	int				total_xedits;		/* Total external editors */
 	qhub_t			**qhub; 			/* QWK network hubs */
-	uint16_t		total_qhubs;		/* Total qwk network hubs */
+	int				total_qhubs;		/* Total qwk network hubs */
 	phub_t			**phub; 			/* PostLink/PCRelay network hubs */
-	uint16_t		total_phubs;		/* Total PostLink/PCRelay hubs */
+	int				total_phubs;		/* Total PostLink/PCRelay hubs */
 	chan_t			**chan; 			/* Each chat channel */
-	uint16_t		total_chans;		/* Total number of chat channels */
+	int				total_chans;		/* Total number of chat channels */
 	chatact_t		**chatact;			/* Chat action commands */
-	uint16_t		total_chatacts;     /* Total number of action commands */
+	int				total_chatacts;     /* Total number of action commands */
 	actset_t 		**actset;			/* Name of action set */
-	uint16_t		total_actsets;		/* Total number of action sets */
+	int				total_actsets;		/* Total number of action sets */
 	page_t			**page; 			/* External chat page */
-	uint16_t		total_pages;		/* Total number of external pages */
+	int				total_pages;		/* Total number of external pages */
 	event_t			**event;			/* Timed events */
-	uint16_t		total_events;		/* Total number of timed events */
+	int				total_events;		/* Total number of timed events */
 	dlevent_t		**dlevent;			/* Download events */
-	uint16_t		total_dlevents; 	/* Total download events */
+	int				total_dlevents; 	/* Total download events */
 	faddr_t			*faddr; 			/* FidoNet addresses */
-	uint16_t		total_faddrs;		/* Total number of fido addresses */
+	int				total_faddrs;		/* Total number of fido addresses */
 	swap_t			**swap; 			/* Swapping externals */
-	uint16_t		total_swaps;		/* Total number of non-swap xtrns */
+	int				total_swaps;		/* Total number of non-swap xtrns */
 	natvpgm_t 		**natvpgm;			/* Native (not MS-DOS) Programs */
-	uint16_t		total_natvpgms; 	/* Total number of native pgms */
+	int				total_natvpgms; 	/* Total number of native pgms */
 	guru_t			**guru; 			/* Gurus */
-	uint16_t		total_gurus;		/* Total number of guru files */
+	int				total_gurus;		/* Total number of guru files */
 	shell_t			**shell;			/* Command shells */
-	uint16_t		total_shells;		/* Total number of command shells */
+	int				total_shells;		/* Total number of command shells */
 	hotkey_t		**hotkey;			/* Global hot keys */
-	uint16_t		total_hotkeys;		/* Total number of global hot keys */
+	int				total_hotkeys;		/* Total number of global hot keys */
 
 										/* COM port registers: */
 	uint16_t		com_base,			/* COM base address */
@@ -566,9 +566,9 @@ typedef struct
 	char			mods_dir[LEN_DIR+1];
 	char			logs_dir[LEN_DIR+1];
 	char			node_path[MAX_NODES][LEN_DIR+1]; /* paths to all node dirs */
-	uint			sysop_dir;			/* Destination for uploads to sysop */
-	uint			user_dir;			/* Directory for user to user xfers */
-	uint			upload_dir; 		/* Directory where all uploads go */
+	int				sysop_dir;			/* Destination for uploads to sysop */
+	int				user_dir;			/* Directory for user to user xfers */
+	int				upload_dir; 		/* Directory where all uploads go */
 	uint16_t		leech_pct;			/* Leech detection percentage */
 	uint16_t		leech_sec;			/* Minimum seconds before possible leech */
 	uint32_t		netmail_cost;		/* Cost in credits to send netmail */
