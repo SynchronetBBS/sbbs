@@ -1631,6 +1631,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 					    &ini_style);
 				}
 				iniSetEnum(&inifile, itemname, "RIP", rip_versions, item->rip, &ini_style);
+				break;
 			case 18:
 				item->force_lcf	= !item->force_lcf;
 				changed = 1;
