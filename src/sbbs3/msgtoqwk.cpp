@@ -24,7 +24,7 @@
 #include "utf8.h"
 #include "cp437defs.h"
 
-#define MAX_MSGNUM	0x7FFFFFUL	// only 7 (decimal) digits allowed for msg num 
+#define MAX_MSGNUM	0x7FFFFFUL	// only 7 (decimal) digits allowed for msg num
 
 /****************************************************************************/
 /* Converts message 'msg' to QWK format, writing to file 'qwk_fp'.          */
@@ -48,7 +48,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 	struct	tm	tm;
 	smbmsg_t	remsg;
 	time_t	tt;
-	uint	subnum = smb->subnum;
+	int		subnum = smb->subnum;
 
 	get_msgid(&cfg, subnum, msg, msgid, sizeof(msgid));
 	offset=(int)ftell(qwk_fp);
@@ -189,7 +189,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 			fprintf(hdrs,"%s: %s\n",smb_hfieldtype(RECIPIENTNETADDR),smb_netaddrstr(&msg->to_net,tmp));
 
 		/* FidoNet */
-		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOAREA,NULL))!=NULL)	
+		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOAREA,NULL))!=NULL)
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
 		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOSEENBY,NULL))!=NULL)
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
@@ -199,11 +199,11 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
 		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOREPLYID,NULL))!=NULL)
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
-		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOPID,NULL))!=NULL)	
+		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOPID,NULL))!=NULL)
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
-		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOFLAGS,NULL))!=NULL)	
+		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOFLAGS,NULL))!=NULL)
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
-		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOTID,NULL))!=NULL)	
+		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOTID,NULL))!=NULL)
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
 		if((p=(char*)smb_get_hfield(msg,hfield_type=FIDOCHARSET,NULL))!=NULL)
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
@@ -215,11 +215,11 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 					,(char*)msg->hfield_dat[i]);
 
 		/* Synchronet */
-		if((p=(char*)smb_get_hfield(msg,hfield_type=SMB_EDITOR,NULL))!=NULL)	
+		if((p=(char*)smb_get_hfield(msg,hfield_type=SMB_EDITOR,NULL))!=NULL)
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
-		if((p=(char*)smb_get_hfield(msg,hfield_type=SMB_COLUMNS,NULL))!=NULL)	
+		if((p=(char*)smb_get_hfield(msg,hfield_type=SMB_COLUMNS,NULL))!=NULL)
 			fprintf(hdrs,"%s: %u\n", smb_hfieldtype(hfield_type), *(uint8_t*)p);
-		if((p=(char*)smb_get_hfield(msg,hfield_type=SMB_TAGS,NULL))!=NULL)	
+		if((p=(char*)smb_get_hfield(msg,hfield_type=SMB_TAGS,NULL))!=NULL)
 			fprintf(hdrs,"%s: %s\n", smb_hfieldtype(hfield_type), p);
 
 		/* USENET */
@@ -258,7 +258,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 
 	if(msg->hdr.type == SMB_MSG_TYPE_NORMAL) {
 		/* QWKE compatible kludges */
-		if(msg->from_net.addr && (uint)subnum==INVALID_SUB && !(mode&QM_TO_QNET)) {
+		if(msg->from_net.addr && subnum==INVALID_SUB && !(mode&QM_TO_QNET)) {
 			if(msg->from_net.type==NET_FIDO)
 				sprintf(from,"%.128s@%.128s"
 					,msg->from,smb_faddrtoa((faddr_t *)msg->from_net.addr,tmp));
@@ -268,13 +268,13 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 				sprintf(from,"%.128s@%.128s",msg->from,(char*)msg->from_net.addr);
 		}
 		if(msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)
-			SAFECOPY(from,text[Anonymous]); 
+			SAFECOPY(from,text[Anonymous]);
 		else if((mode&QM_EXT) && strlen(from) > QWK_HFIELD_LEN) {
 			size+=fprintf(qwk_fp,"From: %.128s%c", from, qwk_newline);
-			SAFECOPY(from,msg->from); 
-		} 
+			SAFECOPY(from,msg->from);
+		}
 
-		if(msg->to_net.addr && (uint)subnum==INVALID_SUB) {
+		if(msg->to_net.addr && subnum==INVALID_SUB) {
 			if(msg->to_net.type==NET_FIDO)
 				sprintf(to,"%.128s@%s",msg->to,smb_faddrtoa((faddr_t *)msg->to_net.addr,tmp));
 			else if(msg->to_net.type==NET_INTERNET)
@@ -288,10 +288,10 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 						size+=fprintf(qwk_fp,"%.128s@%.128s%c",msg->to,p,qwk_newline);
 					}
 					else
-						sprintf(to,"%.128s",msg->to); 
+						sprintf(to,"%.128s",msg->to);
 				}
 				else
-					sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr); 
+					sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr);
 			}
 			else
 				sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr);
@@ -301,7 +301,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 			if(msg->to_net.type==NET_QWK)
 				SAFECOPY(to,"NETMAIL");
 			else
-				SAFECOPY(to,msg->to); 
+				SAFECOPY(to,msg->to);
 		}
 		if((mode&QM_EXT) && strlen(subj) > QWK_HFIELD_LEN)
 			size+=fprintf(qwk_fp,"Subject: %.128s%c", subj, qwk_newline);
@@ -309,8 +309,8 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 		if(msg->from_net.type==NET_QWK && mode&QM_VIA && !msg->forwarded)
 			size+=fprintf(qwk_fp,"@VIA: %s%c"
 				,(char*)msg->from_net.addr,qwk_newline);
-	
-		if(mode&QM_MSGID && (uint)subnum!=INVALID_SUB) {
+
+		if(mode&QM_MSGID && subnum!=INVALID_SUB) {
 			size+=fprintf(qwk_fp,"@MSGID: %s%c"
 				,msgid,qwk_newline);
 
@@ -346,7 +346,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 				size+=fprintf(qwk_fp,"Forwarded from %s on %s%c",p
 					,timestr(*(time32_t *)msg->hfield_dat[i])
 					,qwk_newline);
-			} 
+			}
 		}
 
 		for(l=0;buf[l];l++) {
@@ -359,7 +359,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 					tear=0;
 				if(tearwatch==4) {			/* watch for LF---LF */
 					tear=1;
-					tearwatch=0; 
+					tearwatch=0;
 				}
 				else if(!tearwatch)
 					tearwatch=1;
@@ -367,36 +367,36 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 					tearwatch=0;
 				if(l && buf[l-1]=='\r')		/* Replace CRLF with funky char */
 					ch=qwk_newline;			/* but leave sole LF alone */
-				fputc(ch,qwk_fp);		  
+				fputc(ch,qwk_fp);
 				size++;
-				continue; 
+				continue;
 			}
 
 			if(ch=='\r') {					/* Ignore CRs */
 				if(tearwatch<4) 			/* LF---CRLF is okay */
 					tearwatch=0;			/* LF-CR- is not okay */
-				continue; 
+				continue;
 			}
 
 			if(ch==' ' && tearwatch==4) {	/* watch for "LF--- " */
 				tear=1;
-				tearwatch=0; 
+				tearwatch=0;
 			}
 
 			if(ch=='-') {                   /* watch for "LF---" */
 				if(l==0 || (tearwatch && tearwatch<4))
 					tearwatch++;
 				else
-					tearwatch=0; 
+					tearwatch=0;
 			}
 			else
 				tearwatch=0;
 
-			if((uint)subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_ASCII) {
+			if(subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_ASCII) {
 				if(ch<' ' && ch!=1)
 					ch='.';
 				else if((uchar)ch>0x7f)
-					ch=exascii_to_ascii_char(ch); 
+					ch=exascii_to_ascii_char(ch);
 			}
 
 			if(ch==qwk_newline)					/* funky char */
@@ -464,29 +464,29 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 							break;
 						case '6':
 							SAFECOPY(str,ansi(BG_CYAN));
-							break; 
+							break;
 						case '7':
 							SAFECOPY(str,ansi(BG_LIGHTGRAY));
 							break;
 					}
 					if(str[0])
 						size+=fwrite(str,sizeof(char),strlen(str),qwk_fp);
-					continue; 
+					continue;
 				} 						/* End Expand */
 				if(mode&QM_RETCTLA && valid_ctrl_a_attr(ch)) {
 					fputc(CTRL_A,qwk_fp);
 					fputc(ch,qwk_fp);
-					size+=2L; 
+					size+=2L;
 				}
-				continue; 
+				continue;
 			} 							/* End of Ctrl-A shit */
 			fputc(ch,qwk_fp);
-			size++; 
+			size++;
 		}
 
 		if(ch!=qwk_newline) {
 			fputc(qwk_newline,qwk_fp); 		/* make sure it ends in newline */
-			size++; 
+			size++;
 		}
 
 		if(mode&QM_TAGLINE && !(cfg.sub[subnum]->misc&SUB_NOTAG)) {
@@ -511,7 +511,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 
 		while(size%QWK_BLOCK_LEN) {				 /* Pad with spaces */
 			size++;
-			fputc(' ',qwk_fp); 
+			fputc(' ',qwk_fp);
 		}
 	}
 	free(buf);

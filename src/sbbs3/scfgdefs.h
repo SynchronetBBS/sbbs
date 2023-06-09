@@ -119,7 +119,7 @@ typedef struct {							/* Transfer Library Information */
 				dl_ar[LEN_ARSTR+1],
 				ex_ar[LEN_ARSTR+1],
 				op_ar[LEN_ARSTR+1];
-	uint32_t	offline_dir;				/* Offline file directory */
+	int			offline_dir;				/* Offline file directory */
 	uint32_t	misc;						/* Miscellaneous bits */
 	enum area_sort sort;
 	enum vdir_name vdir_name;

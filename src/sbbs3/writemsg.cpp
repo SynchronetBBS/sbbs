@@ -52,8 +52,8 @@ char* sbbs_t::msg_tmp_fname(int xedit, char* path, size_t len)
 char* sbbs_t::quotes_fname(int xedit, char *path, size_t len)
 {
 	safe_snprintf(path, len, "%sQUOTES.TXT", cfg.node_dir);
-	if(xedit 
-		&& chk_ar(cfg.xedit[xedit-1]->ar, &useron, &client) 
+	if(xedit
+		&& chk_ar(cfg.xedit[xedit-1]->ar, &useron, &client)
 		&& (cfg.xedit[xedit-1]->misc&XTRN_LWRCASE))
 		strlwr(getfname(path));
 	return path;
@@ -81,7 +81,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 
 	if((fp=fopen(fname,"wb"))==NULL) {
 		errormsg(WHERE,ERR_OPEN,fname,0);
-		return false; 
+		return false;
 	}
 
 	if(useron_xedit > 0 && cfg.xedit[useron_xedit - 1]->type == XTRN_WWIV)
@@ -131,7 +131,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 			free(wrapped);
 		} else
 			fputs(buf,fp);
-		smb_freemsgtxt(buf); 
+		smb_freemsgtxt(buf);
 		result = true;
 	} else if(smb_getmsgdatlen(msg)>2)
 		errormsg(WHERE,ERR_READ,smb->file,smb_getmsgdatlen(msg));
@@ -170,7 +170,7 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 			&& cfg.xedit[useron_xedit-1]->misc&EXPANDLF) {
 			len+=fwrite(crlf,1,2,stream);
 			i++;
-			continue; 
+			continue;
 		}
 		if(buf[l] == CTRL_A) {
 			/* Strip FidoNet Kludge Lines? */
@@ -204,7 +204,7 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 			buf[l+1]='+';
 		if(buf[l]==LF)
 			i++;
-		fputc(buf[l],stream); 
+		fputc(buf[l],stream);
 		len++;
 	}
 
@@ -297,7 +297,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		==NULL) {
 		errormsg(WHERE,ERR_ALLOC,fname
 			,(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN) +1);
-		return(false); 
+		return(false);
 	}
 
 	if(mode&WM_NETMAIL ||
@@ -322,7 +322,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 	}
 	else if(mode&WM_QUOTE && !(useron.rest&FLAG('J'))
 		&& ((mode&(WM_EMAIL|WM_NETMAIL) && cfg.sys_misc&SM_QUOTE_EM)
-		|| (!(mode&(WM_EMAIL|WM_NETMAIL)) && (uint)subnum!=INVALID_SUB
+		|| (!(mode&(WM_EMAIL|WM_NETMAIL)) && subnum!=INVALID_SUB
 			&& cfg.sub[subnum]->misc&SUB_QUOTE))) {
 
 		/* Quote entire message to MSGTMP or INPUT.MSG */
@@ -344,7 +344,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				errormsg(WHERE,ERR_OPEN,msgtmp,O_WRONLY|O_CREAT|O_TRUNC);
 				free(buf);
 				fclose(stream);
-				return(false); 
+				return(false);
 			}
 
 			while(!feof(stream) && !ferror(stream)) {
@@ -356,7 +356,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 					linesquoted++;
 			}
 			fclose(stream);
-			close(file); 
+			close(file);
 		}
 
 		/* Quote nothing to MSGTMP or INPUT.MSG automatically */
@@ -369,7 +369,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			if((stream=fnopen(&file,path,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
 				free(buf);
-				return(false); 
+				return(false);
 			}
 
 			if(useron_xedit > 0 && cfg.xedit[useron_xedit - 1]->type == XTRN_WWIV) { // 2 lines of metadata
@@ -383,7 +383,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				errormsg(WHERE,ERR_OPEN,msgtmp,O_WRONLY|O_CREAT|O_TRUNC);
 				free(buf);
 				fclose(stream);
-				return(false); 
+				return(false);
 			}
 
 			l=(long)ftell(stream);			/* l now points to start of message */
@@ -396,7 +396,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 					fclose(stream);
 					close(file);
 					free(buf);
-					return(false); 
+					return(false);
 				}
 				if(!i && linesquoted)
 					break;
@@ -410,7 +410,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 						if(write(file,tmp,strlen(tmp)) > 0)
 							linesquoted++;
 					}
-					break; 
+					break;
 				}
 				if(quote[0]==list_key()) {
 					fseek(stream,l,SEEK_SET);
@@ -422,9 +422,9 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 							break;
 						quotestr(str);
 						bprintf(P_AUTO_UTF8, "%4d: %.*s\r\n", i, (int)cols-7, str);
-						i++; 
+						i++;
 					}
-					continue; 
+					continue;
 				}
 
 				if(!IS_DIGIT(quote[0]))
@@ -442,7 +442,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 						if(!fgets(tmp,sizeof(tmp),stream))
 							break;
 						j++; /* skip beginning */
-					}		
+					}
 					tp=strchr(p,'-');   /* tp for temp pointer */
 					if(tp) {		 /* range */
 						i=atoi(tp+1);
@@ -453,8 +453,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 							SAFEPRINTF2(tmp,quote_fmt,cols-4,str);
 							if(write(file,tmp,strlen(tmp)) > 0)
 								linesquoted++;
-							j++; 
-						} 
+							j++;
+						}
 					}
 					else {			/* one line */
 						if(fgets(str,sizeof(str),stream)) {
@@ -462,16 +462,16 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 							SAFEPRINTF2(tmp,quote_fmt,cols-4,str);
 							if(write(file,tmp,strlen(tmp)) > 0)
 								linesquoted++;
-						} 
+						}
 					}
 					p=strchr(p,',');
 					// if(!p) p=strchr(p,' ');  02/05/96 huh?
-				} 
+				}
 			}
 
 			fclose(stream);
-			close(file); 
-		} 
+			close(file);
+		}
 	}
 	else {
 		(void)removecase(quotes_fname(useron_xedit, str, sizeof(str)));
@@ -479,7 +479,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 
 	if(!online || sys_status&SS_ABORT) {
 		free(buf);
-		return(false); 
+		return(false);
 	}
 
 	if(!(mode&(WM_EXTDESC|WM_SUBJ_RO))) {
@@ -487,10 +487,10 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 
 		if(mode&WM_FILE) {
 			CRLF;
-			bputs(text[Filename]); 
+			bputs(text[Filename]);
 		}
 		else {
-			bputs(text[SubjectPrompt]); 
+			bputs(text[SubjectPrompt]);
 		}
 		max_title_len=cols-column-1;
 		if(max_title_len > LEN_TITLE)
@@ -500,7 +500,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		if(!getstr(subj,max_title_len,mode&WM_FILE ? K_LINE|K_TRIM : K_LINE|K_EDIT|K_AUTODEL|K_TRIM)
 			&& useron_level && useron.logons) {
 			free(buf);
-			return(false); 
+			return(false);
 		}
 		if((mode&WM_FILE) && !checkfname(subj)) {
 			free(buf);
@@ -518,7 +518,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 
 	if(!online || sys_status&SS_ABORT) {
 		free(buf);
-		return(false); 
+		return(false);
 	}
 
 	editor_details[0] = 0;
@@ -544,7 +544,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			c=getkey(0);
 			if(sys_status&SS_ABORT) {  /* Ctrl-C */
 				free(buf);
-				return(false); 
+				return(false);
 			}
 			if((c==ESC || c==CTRL_A) && useron.rest&FLAG('A')) /* ANSI restriction */
 				continue;
@@ -553,11 +553,11 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			if(!(console&CON_RAW_IN))	/* Ctrl-Z was hit */
 				break;
 			outchar(c);
-			buf[l++]=c; 
+			buf[l++]=c;
 		}
 		buf[l]=0;
 		if(l==(ulong)cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)
-			bputs(text[OutOfBytes]); 
+			bputs(text[OutOfBytes]);
 	}
 
 	else if(useron_xedit) {
@@ -580,13 +580,13 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		if(cfg.xedit[useron_xedit-1]->type) {
 			gettimeleft();
 			xtrndat(mode&WM_ANON ? text[Anonymous]:from,cfg.node_dir,cfg.xedit[useron_xedit-1]->type
- 			   ,timeleft,cfg.xedit[useron_xedit-1]->misc); 
+ 			   ,timeleft,cfg.xedit[useron_xedit-1]->misc);
 		}
 
 		if(cfg.xedit[useron_xedit-1]->misc&XTRN_STDIO) {
 			ex_mode|=EX_STDIO;
 			if(cfg.xedit[useron_xedit-1]->misc&WWIVCOLOR)
-				ex_mode|=EX_WWIV; 
+				ex_mode|=EX_WWIV;
 		}
 		if(cfg.xedit[useron_xedit-1]->misc&XTRN_NATIVE)
 			ex_mode|=EX_NATIVE;
@@ -598,7 +598,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				(void)removecase(msgtmp);
 			else {
 				qlen=(long)flength(msgtmp);
-				qtime=(long)fdate(msgtmp); 
+				qtime=(long)fdate(msgtmp);
 			}
 		}
 
@@ -610,7 +610,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		int result = external(cmd, ex_mode, cfg.node_dir);
 		smb.subnum = savsubnum;
 		lprintf(LOG_DEBUG, "'%s' returned %d", cmd, result);
-		rioctl(IOSM|PAUSE|ABORT); 
+		rioctl(IOSM|PAUSE|ABORT);
 
 		checkline();
 		if(!online && (flength(msgtmp) > 0) && (useron.number > 0) && !(useron.rest & FLAG('G'))) { // save draft message due to disconnection
@@ -625,7 +625,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		if(result != EXIT_SUCCESS || !fexistcase(msgtmp) || !online
 			|| (linesquoted && qlen==flength(msgtmp) && qtime==fdate(msgtmp))) {
 			free(buf);
-			return(false); 
+			return(false);
 		}
 		SAFEPRINTF(str,"%sRESULT.ED",cfg.node_dir);
 		if(!(mode&(WM_EXTDESC|WM_FILE))
@@ -652,7 +652,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		if((file=nopen(msgtmp,O_RDONLY))==-1) {
 			errormsg(WHERE,ERR_OPEN,msgtmp,O_RDONLY);
 			free(buf);
-			return(false); 
+			return(false);
 		}
 		length=(long)filelength(file);
 		if(length < 0) {
@@ -664,7 +664,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		/* truncate if too big */
 		if(length>(long)((cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-(l+1))) {
 			length=(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-(l+1);
-			bputs(text[OutOfBytes]); 
+			bputs(text[OutOfBytes]);
 		}
 		long rd = read(file,buf+l,length);
 		close(file);
@@ -674,7 +674,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			return false;
 		}
 		// remove(msgtmp); 	   /* no need to save the temp input file */
-		buf[l+length]=0; 
+		buf[l+length]=0;
 	}
 	else {
 
@@ -692,7 +692,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				buf[l]=0;
 				close(file);
 				// remove(msgtmp);
-			} 
+			}
 		}
 		if(!(msgeditor((char *)buf,mode&WM_NOTOP ? nulstr : top, subj, cfg.level_linespermsg[useron_level], MAX_LINE_LEN))) {
 			if(!online) {
@@ -706,8 +706,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				}
 			}
 			free(buf);	/* Assertion here Dec-17-2003, think I fixed in block above (rev 1.52) */
-			return(false); 
-		} 
+			return(false);
+		}
 	}
 
 	now=time(NULL);
@@ -716,7 +716,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 	if((stream=fnopen(NULL,fname,O_WRONLY|O_CREAT|O_TRUNC))==NULL) {
 		errormsg(WHERE,ERR_OPEN,fname,O_WRONLY|O_CREAT|O_TRUNC);
 		free(buf);
-		return(false); 
+		return(false);
 	}
 	l=process_edited_text(buf,stream,mode,&lines,cfg.level_linespermsg[useron_level]);
 	if(editor_details[0] && editor != NULL)
@@ -792,7 +792,7 @@ void sbbs_t::editor_info_to_msg(smbmsg_t* msg, const char* editor, const char* c
 
 	if(!str_is_ascii(msg->subj) && utf8_str_is_valid(msg->subj))
 		msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
-}  
+}
 
 /****************************************************************************/
 /****************************************************************************/
@@ -821,7 +821,7 @@ void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const ch
 		(void)removecase(path);
 		if((fp=fopen(path,"wb"))==NULL) {
 			errormsg(WHERE,ERR_OPEN,path,O_WRONLY|O_CREAT|O_TRUNC);
-			return; 
+			return;
 		}
 		fprintf(fp,"%s\r\n%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n"
 			,mode&WM_ANON ? text[Anonymous]:from,to,subj,1
@@ -841,7 +841,7 @@ void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const ch
 		(void)removecase(path);
 		if((fp=fopen(path,"wb"))==NULL) {
 			errormsg(WHERE,ERR_OPEN,path,O_WRONLY|O_CREAT|O_TRUNC);
-			return; 
+			return;
 		}
 		fprintf(fp,"%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n%u\r\n"
 			,subj
@@ -870,7 +870,7 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-		return; 
+		return;
 	}
 	flen=(long)filelength(file);
 	if(flen < 0) {
@@ -882,38 +882,38 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 	if((buf=(char *)malloc(flen))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,flen);
-		return; 
+		return;
 	}
 	if(read(file,buf,flen)!=flen) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,flen);
 		free(buf);
-		return; 
+		return;
 	}
 	close(file);
 	if((stream=fnopen(&file,str,O_WRONLY|O_TRUNC))==NULL) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_TRUNC);
 		free(buf);
-		return; 
+		return;
 	}
 	for(i=0;l<flen && i<skip;l++) {
 		fputc(buf[l],stream);
 		if(buf[l]==LF)
-			i++; 
+			i++;
 	}
 	while(l<flen) {
 		if(!strncmp((char *)buf+l,str2,slen)) {
 			for(i=0;i<num && l<flen;i++) {
 				while(l<flen && buf[l]!=LF) l++;
-				l++; 
-			} 
+				l++;
+			}
 		}
 		else {
 			for(i=0;i<num && l<flen;i++) {
 				while(l<flen && buf[l]!=LF) fputc(buf[l++],stream);
-				fputc(buf[l++],stream); 
-			} 
-		} 
+				fputc(buf[l++],stream);
+			}
+		}
 	}
 	fclose(stream);
 	free((char *)buf);
@@ -938,11 +938,11 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 	}
 
 	rioctl(IOCM|ABORT);
-	rioctl(IOCS|ABORT); 
+	rioctl(IOCS|ABORT);
 
 	if((str = strListDivide(NULL, buf, "\n")) == NULL) {
 		errormsg(WHERE,ERR_ALLOC,"msgeditor",strlen(buf));
-		return(0); 
+		return(0);
 	}
 	lines = strListCount(str);
 	while(lines > maxlines)
@@ -957,7 +957,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 		for(i=0; i < (cols-1); i++) {
 			if(i%EDIT_TABSIZE || !i)
 				outchar('-');
-			else 
+			else
 				outchar('+');
 		}
 		CRLF;
@@ -966,7 +966,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 	for(line=0;line<lines && !msgabort();line++) { /* display lines in buf */
 		putmsg(str[line], pmode);
 		cleartoeol();  /* delete to end of line */
-		CRLF; 
+		CRLF;
 	}
 	sync();
 	rioctl(IOSM|ABORT);
@@ -1020,7 +1020,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 			carriage_return();
 			cursor_up();
 			cleartoeol();
-			line--; 
+			line--;
 			continue;
 		}
 		if(console&CON_DELETELINE) {
@@ -1058,13 +1058,13 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 					lines--;
 					while(i<(int)lines) {
 						str[i]=str[i+1];
-						i++; 
+						i++;
 					}
 					str[i] = NULL;
 					if(line>lines)
-						line=lines; 
+						line=lines;
 				}
-				continue; 
+				continue;
 			}
 			else if(toupper(strin[1])=='I') {	/* insert a line before number x */
 				lines = strListCount(str);
@@ -1077,7 +1077,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 					bputs(text[InvalidLineNumber]);
 				else {
 					strListInsert(&str, "", i);
-					line=++lines; 
+					line=++lines;
 				}
 				continue;
 			}
@@ -1090,7 +1090,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				if(i==-1) { /* /E means edit last line */
 					i=lines-1;
 					j|=K_WRAP;	/* wrap when editing last line */
-				}    
+				}
 				if(i>=(int)lines || i<0)
 					bputs(text[InvalidLineNumber]);
 				else {
@@ -1098,7 +1098,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 					getstr(strin, cols-1 ,j);
 					strListReplace(str, i, strin);
 				}
-				continue; 
+				continue;
 			}
 			else if(!stricmp(strin,"/CLR")) {
 				bputs(text[MsgCleared]);
@@ -1106,7 +1106,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				line=0;
 				lines=0;
 				putmsg(top, pmode);
-				continue; 
+				continue;
 			}
 			else if(toupper(strin[1])=='L') {   /* list message */
 				bool linenums = false;
@@ -1116,24 +1116,24 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				attr(LIGHTGRAY);
 				putmsg(top, pmode);
 				if(str[0] == NULL) {
-					continue; 
+					continue;
 				}
 				j=atoi(strin+2);
 				if(j) j--;  /* start from line j */
 				while(str[j] != NULL && !msgabort()) {
 					if(linenums) { /* line numbers */
 						SAFEPRINTF3(tmp,"%3d: %-.*s", j+1, (int)(cols-6), str[j]);
-						putmsg(tmp, pmode); 
+						putmsg(tmp, pmode);
 					}
 					else
 						putmsg(str[j], pmode);
 					cleartoeol();  /* delete to end of line */
 					CRLF;
-					j++; 
+					j++;
 				}
 				line = j;
 				sync();
-				continue; 
+				continue;
 			}
 			else if(!stricmp(strin,"/S")) { /* Save */
 				break;
@@ -1143,19 +1143,19 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 					bputs(text[SubjectPrompt]);
 					getstr(title,LEN_TITLE,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 					sync();
-					CRLF; 
+					CRLF;
 				}
-				continue; 
+				continue;
 			}
 			else if(!stricmp(strin,"/?")) {
 				menu("editor"); /* User Editor Commands */
 				sync();
-				continue; 
+				continue;
 			}
 			else if(!stricmp(strin,"/ATTR"))    {
 				menu("attr");   /* User ANSI Commands */
 				sync();
-				continue; 
+				continue;
 			}
 			else if(!stricmp(strin, "/UPLOAD")) {
 				upload:
@@ -1266,7 +1266,7 @@ bool sbbs_t::editfile(char *fname, uint maxlines)
 		if(cfg.xedit[useron_xedit-1]->misc&XTRN_STDIO) {
 			mode|=EX_STDIO;
 			if(cfg.xedit[useron_xedit-1]->misc&WWIVCOLOR)
-				mode|=EX_WWIV; 
+				mode|=EX_WWIV;
 		}
 		CLS;
 		rioctl(IOCM|PAUSE|ABORT);
@@ -1278,18 +1278,18 @@ bool sbbs_t::editfile(char *fname, uint maxlines)
 				,path, l, lines);
 			logline(LOG_NOTICE,nulstr,str);
 		}
-		rioctl(IOSM|PAUSE|ABORT); 
-		return true; 
+		rioctl(IOSM|PAUSE|ABORT);
+		return true;
 	}
 	if((buf=(char *)malloc((maxlines*MAX_LINE_LEN) + 1))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,nulstr, (maxlines*MAX_LINE_LEN) + 1);
-		return false; 
+		return false;
 	}
 	if((file=nopen(fname,O_RDONLY))!=-1) {
 		length=(long)filelength(file);
 		if(length < 0 || length>(long)maxlines*MAX_LINE_LEN) {
 			close(file);
-			free(buf); 
+			free(buf);
 			attr(cfg.color[clr_err]);
 			bprintf("\7\r\nFile size (%lu bytes) is larger than %lu (maxlines: %u).\r\n"
 				,length, (ulong)maxlines*MAX_LINE_LEN, maxlines);
@@ -1299,24 +1299,24 @@ bool sbbs_t::editfile(char *fname, uint maxlines)
 			close(file);
 			free(buf);
 			errormsg(WHERE,ERR_READ,fname,length);
-			return false; 
+			return false;
 		}
 		buf[length]=0;
-		close(file); 
+		close(file);
 	}
 	else {
 		buf[0]=0;
-		bputs(text[NewFile]); 
+		bputs(text[NewFile]);
 	}
 	if(!msgeditor(buf,nulstr,/* title: */(char*)nulstr, maxlines, MAX_LINE_LEN)) {
 		free(buf);
-		return false; 
+		return false;
 	}
 	bputs(text[Saving]);
 	if((stream=fnopen(NULL,fname,O_CREAT|O_WRONLY|O_TRUNC))==NULL) {
 		errormsg(WHERE,ERR_OPEN,fname,O_CREAT|O_WRONLY|O_TRUNC);
 		free(buf);
-		return false; 
+		return false;
 	}
 	l=process_edited_text(buf,stream,/* mode: */WM_EDIT,&lines,maxlines);
 	bprintf(text[SavedNBytes],l,lines);
@@ -1364,7 +1364,7 @@ bool sbbs_t::copyfattach(uint to, uint from, const char* subj)
 		}
 		if(!p)
 			break;
-		tp=p+1; 
+		tp=p+1;
 	}
 	return result;
 }
@@ -1401,7 +1401,7 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 
 	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt&FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);
-		return false; 
+		return false;
 	}
 	if(useron.rest&FLAG('F')) {
 		bputs(text[R_Forward]);
@@ -1466,7 +1466,7 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 			if(*fulladdr == '\0') {
 				bprintf(text[InvalidNetMailAddr], addr);
 				smb_freemsgmem(&msg);
-				return false; 
+				return false;
 			}
 			addr = fulladdr;
 			SAFEPRINTF(str, "%u", usernumber);
@@ -1509,7 +1509,7 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 		}
 		if(!online || msgabort()) {
 			smb_freemsgmem(&msg);
-			return false; 
+			return false;
 		}
 	} else {
 		if(*comment)
@@ -1593,12 +1593,12 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 				&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
 				SAFEPRINTF2(str,text[EmailNodeMsg],cfg.node_num,useron.alias);
 				putnmsg(&cfg,i,str);
-				break; 
-			} 
+				break;
+			}
 		}
 		if(i>cfg.sys_nodes) {	/* User wasn't online, so leave short msg */
 			SAFEPRINTF(str,text[UserSentYouMail],useron.alias);
-			putsmsg(&cfg,usernumber,str); 
+			putsmsg(&cfg,usernumber,str);
 		}
 	} else {
 		if(net_type == NET_FIDO && cfg.netmail_sem[0])
@@ -1666,7 +1666,7 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 			return false;
 		}
 		if((i=smb_freemsg_dfields(smb,msg,1))!=SMB_SUCCESS)
-			errormsg(WHERE,ERR_WRITE,smb->file,i,smb->last_error); 
+			errormsg(WHERE,ERR_WRITE,smb->file,i,smb->last_error);
 	}
 
 	msg->dfield[0].type=TEXT_BODY;				/* Make one single data field */
@@ -1676,12 +1676,12 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 		for(x=1;x<msg->hdr.total_dfields;x++) { 	/* Clear the other data fields */
 			msg->dfield[x].type=UNUSED; 			/* so we leave the header length */
 			msg->dfield[x].length=0;				/* unchanged */
-			msg->dfield[x].offset=0; 
+			msg->dfield[x].offset=0;
 		}
 	}
 
 	if(smb->status.attr&SMB_HYPERALLOC)
-		offset=smb_hallocdat(smb); 
+		offset=smb_hallocdat(smb);
 	else {
 		if(is_msg
 			&& ((smb->subnum!=INVALID_SUB && cfg.sub[smb->subnum]->misc&SUB_FAST)
@@ -1730,7 +1730,7 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 			smb_freemsgdat(smb,offset,length,1);
 			return false;
 		}
-		x=SDT_BLOCK_LEN; 
+		x=SDT_BLOCK_LEN;
 	}
 	fflush(smb->sdt_fp);
 	fclose(instream);
@@ -1769,7 +1769,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 	length=smb_getmsgdatlen(msg);
 	if((buf=(char *)malloc(length))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,smb.file,length);
-		return(false); 
+		return(false);
 	}
 
 	fseek(smb.sdt_fp,msg->hdr.offset,SEEK_SET);
@@ -1785,7 +1785,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 	if((i=smb_open(&newsmb))!=SMB_SUCCESS) {
 		free(buf);
 		errormsg(WHERE,ERR_OPEN,newsmb.file,i,newsmb.last_error);
-		return(false); 
+		return(false);
 	}
 
 	if(filelength(fileno(newsmb.shd_fp))<1) {	 /* Create it if it doesn't exist */
@@ -1797,44 +1797,44 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 			free(buf);
 			smb_close(&newsmb);
 			errormsg(WHERE,ERR_CREATE,newsmb.file,i,newsmb.last_error);
-			return(false); 
-		} 
+			return(false);
+		}
 	}
 
 	if((i=smb_locksmbhdr(&newsmb))!=SMB_SUCCESS) {
 		free(buf);
 		smb_close(&newsmb);
 		errormsg(WHERE,ERR_LOCK,newsmb.file,i,newsmb.last_error);
-		return(false); 
+		return(false);
 	}
 
 	if((i=smb_getstatus(&newsmb))!=SMB_SUCCESS) {
 		free(buf);
 		smb_close(&newsmb);
 		errormsg(WHERE,ERR_READ,newsmb.file,i,newsmb.last_error);
-		return(false); 
+		return(false);
 	}
 
 	if(newsmb.status.attr&SMB_HYPERALLOC) {
 		offset=smb_hallocdat(&newsmb);
-		storage=SMB_HYPERALLOC; 
+		storage=SMB_HYPERALLOC;
 	}
 	else {
 		if((i=smb_open_da(&newsmb))!=SMB_SUCCESS) {
 			free(buf);
 			smb_close(&newsmb);
 			errormsg(WHERE,ERR_OPEN,newsmb.file,i,newsmb.last_error);
-			return(false); 
+			return(false);
 		}
 		if(cfg.sub[newsub]->misc&SUB_FAST) {
 			offset=smb_fallocdat(&newsmb,length,1);
-			storage=SMB_FASTALLOC; 
+			storage=SMB_FASTALLOC;
 		}
 		else {
 			offset=smb_allocdat(&newsmb,length,1);
-			storage=SMB_SELFPACK; 
+			storage=SMB_SELFPACK;
 		}
-		smb_close_da(&newsmb); 
+		smb_close_da(&newsmb);
 	}
 
 	newmsg.hdr.offset=(uint32_t)offset;
@@ -1852,13 +1852,13 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 		return false;
 	}
 
-	i=smb_addmsghdr(&newsmb,&newmsg,storage);	// calls smb_unlocksmbhdr() 
+	i=smb_addmsghdr(&newsmb,&newmsg,storage);	// calls smb_unlocksmbhdr()
 	smb_close(&newsmb);
 
 	if(i) {
 		errormsg(WHERE,ERR_WRITE,newsmb.file,i,newsmb.last_error);
 		smb_freemsg_dfields(&newsmb,&newmsg,1);
-		return(false); 
+		return(false);
 	}
 
 	bprintf("\r\nMoved to %s %s\r\n\r\n"
@@ -1922,8 +1922,8 @@ ushort sbbs_t::chmsgattr(const smbmsg_t* msg)
 				attr^=MSG_REPLIED;
 				break;
 			default:
-				return(attr); 
-		} 
+				return(attr);
+		}
 	}
 	return(attr);
 }

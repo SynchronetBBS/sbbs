@@ -40,7 +40,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	uint	blocks;
 	int		usernum;
 	long	l,size;
-	ulong	n;
+	int		n;
 	ulong	ex;
 	ulong	tmsgs = 0;
 	ulong	dupes = 0;
@@ -67,7 +67,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		bputs(text[QWKReplyNotReceived]);
 		logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
 		logline(LOG_NOTICE,nulstr,"REP file not received");
-		return(false); 
+		return(false);
 	}
 	long file_count = extract_files_from_archive(rep_fname
 		,/* outdir: */cfg.temp_dir
@@ -98,7 +98,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			bputs(text[QWKExtractionFailed]);
 			logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
 			logline(LOG_NOTICE,nulstr,"Extraction failed");
-			return(false); 
+			return(false);
 		}
 	}
 	SAFEPRINTF2(msg_fname,"%s%s.msg",cfg.temp_dir,cfg.sys_id);
@@ -106,11 +106,11 @@ bool sbbs_t::unpack_rep(char* repfile)
 		bputs(text[QWKReplyNotReceived]);
 		logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
 		logline(LOG_NOTICE,nulstr,"MSG file not received");
-		return(false); 
+		return(false);
 	}
 	if((rep=fnopen(&file,msg_fname,O_RDONLY))==NULL) {
 		errormsg(WHERE,ERR_OPEN,msg_fname,O_RDONLY);
-		return(false); 
+		return(false);
 	}
 	size=(long)filelength(file);
 
@@ -159,7 +159,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		bputs(text[QWKReplyNotReceived]);
 		logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
 		logline(LOG_NOTICE,nulstr,"Incorrect QWK BBS ID");
-		return(false); 
+		return(false);
 	}
 	/********************/
 	/* Process messages */
@@ -232,22 +232,22 @@ bool sbbs_t::unpack_rep(char* repfile)
 			if(msg.to!=NULL) {
 				if(stricmp(msg.to,"NETMAIL")==0) {  /* QWK to FidoNet NetMail */
 					qwktonetmail(rep,block,NULL,0);
-					continue; 
+					continue;
 				}
 				if(strchr(msg.to,'@')) {
 					qwktonetmail(rep,block,msg.to,0);
-					continue; 
+					continue;
 				}
 				if(!stricmp(msg.to,"SBBS")) {    /* to SBBS, config stuff */
 					qwkcfgline(msg.subj,INVALID_SUB);
-					continue; 
+					continue;
 				}
 			}
 
 			if(useron.etoday>=cfg.level_emailperday[useron.level] && !(useron.exempt&FLAG('M'))
 				&& !(useron.rest&FLAG('Q'))) {
 				bputs(text[TooManyEmailsToday]);
-				continue; 
+				continue;
 			}
 			usernum=0;
 			if(msg.to!=NULL) {
@@ -259,17 +259,17 @@ bool sbbs_t::unpack_rep(char* repfile)
 			}
 			if(!usernum) {
 				bputs(text[UnknownUser]);
-				continue; 
+				continue;
 			}
 			if(usernum==1 && useron.rest&FLAG('S')) {
 				bprintf(text[R_Feedback],cfg.sys_op);
-				continue; 
+				continue;
 			}
 
 			if((getusermisc(&cfg, usernum) & NETMAIL) && (cfg.sys_misc & SM_FWDTONET)) {
 				getuserstr(&cfg, usernum, USER_NETMAIL, str, sizeof(str));
 				qwktonetmail(rep,block,str,0);
-				continue; 
+				continue;
 			}
 
 			SAFEPRINTF(smb.file,"%smail",cfg.data_dir);
@@ -277,14 +277,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 			if(lastsub!=INVALID_SUB) {
 				smb_close(&smb);
-				lastsub=INVALID_SUB; 
+				lastsub=INVALID_SUB;
 			}
 
 			smb.subnum=INVALID_SUB;
 			if((k=smb_open(&smb))!=0) {
 				errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
 				errors++;
-				continue; 
+				continue;
 			}
 
 			if(!filelength(fileno(smb.shd_fp))) {
@@ -296,22 +296,22 @@ bool sbbs_t::unpack_rep(char* repfile)
 					smb_close(&smb);
 					errormsg(WHERE,ERR_CREATE,smb.file,k,smb.last_error);
 					errors++;
-					continue; 
-				} 
+					continue;
+				}
 			}
 
 			if((k=smb_locksmbhdr(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_LOCK,smb.file,k,smb.last_error);
 				errors++;
-				continue; 
+				continue;
 			}
 
 			if((k=smb_getstatus(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_READ,smb.file,k,smb.last_error);
 				errors++;
-				continue; 
+				continue;
 			}
 
 			smb_unlocksmbhdr(&smb);
@@ -341,14 +341,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 							SAFEPRINTF2(str,text[EmailNodeMsg]
 								,cfg.node_num,msg.from);
 							putnmsg(&cfg,k,str);
-							break; 
-						} 
+							break;
+						}
 					}
 				}
 				if(cfg.node_num==0 || k>cfg.sys_nodes) {
 					SAFEPRINTF(str,text[UserSentYouMail],msg.from);
-					putsmsg(&cfg,usernum,str); 
-				} 
+					putsmsg(&cfg,usernum,str);
+				}
 				tmsgs++;
 			} else {
 				if(dupe)
@@ -367,7 +367,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				SAFEPRINTF(str,"Invalid QWK conference number %ld", confnum);
 				logline(LOG_NOTICE,"P!",str);
 				errors++;
-				continue; 
+				continue;
 			}
 
 			/* if posting, add to new-scan config for QWKnet nodes automatically */
@@ -377,7 +377,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			if(msg.to!=NULL) {
 				if(stricmp(msg.to,"SBBS")==0) {	/* to SBBS, config stuff */
 					qwkcfgline(msg.subj,n);
-					continue; 
+					continue;
 				}
 			}
 
@@ -388,14 +388,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 					continue;
 				sprintf(str,"%-25.25s","ADD");          /* Add to new-scan? */
 				if(!strnicmp((char *)block+71,str,25))	/* don't allow post */
-					continue; 
+					continue;
 			}
 #endif
 
 			if(useron.rest&FLAG('Q') && !(cfg.sub[n]->misc&SUB_QNET)) {
 				bputs(text[CantPostOnSub]);
 				logline(LOG_NOTICE,"P!","Attempted to post QWK message on non-QWKnet sub");
-				continue; 
+				continue;
 			}
 
 			uint reason = CantPostOnSub;
@@ -403,14 +403,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 				bputs(text[reason]);
 				SAFEPRINTF2(str, "QWK Post not allowed, reason = %u (%s)", reason, text[reason]);
 				logline(LOG_NOTICE, "P!", str);
-				continue; 
+				continue;
 			}
 
 			if((block[0]=='*' || block[0]=='+')
 				&& !(cfg.sub[n]->misc&SUB_PRIV)) {
 				bputs(text[PrivatePostsNotAllowed]);
 				logline(LOG_NOTICE,"P!","QWK Private post attempt");
-				continue; 
+				continue;
 			}
 
 			if(block[0]=='*' || block[0]=='+'           /* Private post */
@@ -418,8 +418,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 				if(msg.to==NULL || !msg.to[0]
 					|| stricmp(msg.to,"All")==0) {		/* to blank */
 					bputs(text[NoToUser]);				/* or all */
-					continue; 
-				} 
+					continue;
+				}
 			}
 
 #if 0	/* This stuff isn't really necessary anymore */
@@ -446,7 +446,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				if((j=smb_open(&smb))!=0) {
 					errormsg(WHERE,ERR_OPEN,smb.file,j,smb.last_error);
 					errors++;
-					continue; 
+					continue;
 				}
 
 				if(!filelength(fileno(smb.shd_fp))) {
@@ -459,8 +459,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 						lastsub=INVALID_SUB;
 						errormsg(WHERE,ERR_CREATE,smb.file,j,smb.last_error);
 						errors++;
-						continue; 
-					} 
+						continue;
+					}
 				}
 
 				if((j=smb_locksmbhdr(&smb))!=0) {
@@ -468,17 +468,17 @@ bool sbbs_t::unpack_rep(char* repfile)
 					lastsub=INVALID_SUB;
 					errormsg(WHERE,ERR_LOCK,smb.file,j,smb.last_error);
 					errors++;
-					continue; 
+					continue;
 				}
 				if((j=smb_getstatus(&smb))!=0) {
 					smb_close(&smb);
 					lastsub=INVALID_SUB;
 					errormsg(WHERE,ERR_READ,smb.file,j,smb.last_error);
 					errors++;
-					continue; 
+					continue;
 				}
 				smb_unlocksmbhdr(&smb);
-				lastsub=n; 
+				lastsub=n;
 			}
 
 			bool dupe = false;

@@ -44,7 +44,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	char	inbox[MAX_PATH+1];
 	uchar	block[QWK_BLOCK_LEN];
 	int 	k,file;
-	uint	i,j,n,lastsub=INVALID_SUB;
+	int		i,j,n,lastsub=INVALID_SUB;
 	int		usernum;
 	uint	blocks;
 	long	l,size,misc;
@@ -91,17 +91,17 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		i=external(cmdstr(cfg.qhub[hubnum]->unpack,packet,ALLFILES,NULL),EX_OFFLINE);
 		if(i) {
 			errormsg(WHERE,ERR_EXEC,cmdstr(cfg.qhub[hubnum]->unpack,packet,ALLFILES,NULL),i);
-			return(false); 
+			return(false);
 		}
 	}
 	SAFEPRINTF(str,"%sMESSAGES.DAT",cfg.temp_dir);
 	if(!fexistcase(str)) {
 		lprintf(LOG_WARNING,"%s doesn't contain MESSAGES.DAT (%s)",packet,str);
-		return(false); 
+		return(false);
 	}
 	if((qwk=fnopen(&file,str,O_RDONLY))==NULL) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-		return(false); 
+		return(false);
 	}
 	size=(long)filelength(file);
 
@@ -174,7 +174,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				,blocks, l+116, packet);
 			errors++;
 			blocks=1;
-			continue; 
+			continue;
 		}
 
 		if(!qwk_new_msg(n, &msg,(char*)block,/* offset: */l,headers,/* parse_sender_hfields: */true)) {
@@ -186,11 +186,11 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			lprintf(LOG_INFO,"QWK NetMail from %s to %s", cfg.qhub[hubnum]->id, msg.to);
 			if(!stricmp(msg.to,"NETMAIL")) {  /* QWK to FidoNet NetMail */
 				qwktonetmail(qwk,(char *)block,NULL,hubnum+1);
-				continue; 
+				continue;
 			}
 			if(strchr(msg.to,'@')) {
 				qwktonetmail(qwk,(char *)block,msg.to,hubnum+1);
-				continue; 
+				continue;
 			}
 			usernum=atoi(msg.to);
 			if(usernum && usernum>lastuser(&cfg))
@@ -199,14 +199,14 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				usernum=matchuser(&cfg,msg.to,TRUE /* sysop_alias */);
 			if(!usernum) {
 				lprintf(LOG_NOTICE,"!QWK NetMail from %s to UNKNOWN USER: %s", cfg.qhub[hubnum]->id, msg.to);
-				continue; 
+				continue;
 			}
 
 			misc = getusermisc(&cfg, usernum);
 			if(misc&NETMAIL && cfg.sys_misc&SM_FWDTONET) {
 				getuserstr(&cfg, usernum, USER_NETMAIL, str, sizeof(str));
 				qwktonetmail(qwk,(char*)block,str,hubnum+1);
-				continue; 
+				continue;
 			}
 
 			smb_stack(&smb,SMB_STACK_PUSH);
@@ -217,7 +217,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
 				smb_stack(&smb,SMB_STACK_POP);
 				errors++;
-				continue; 
+				continue;
 			}
 			if(!filelength(fileno(smb.shd_fp))) {
 				smb.status.max_crcs=cfg.mail_maxcrcs;
@@ -229,22 +229,22 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 					errormsg(WHERE,ERR_CREATE,smb.file,k,smb.last_error);
 					smb_stack(&smb,SMB_STACK_POP);
 					errors++;
-					continue; 
-				} 
+					continue;
+				}
 			}
 			if((k=smb_locksmbhdr(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_LOCK,smb.file,k,smb.last_error);
 				smb_stack(&smb,SMB_STACK_POP);
 				errors++;
-				continue; 
+				continue;
 			}
 			if((k=smb_getstatus(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_READ,smb.file,k,smb.last_error);
 				smb_stack(&smb,SMB_STACK_POP);
 				errors++;
-				continue; 
+				continue;
 			}
 			smb_unlocksmbhdr(&smb);
 			bool dupe=false;
@@ -296,7 +296,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if((k=smb_open(&smb))!=0) {
 				errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
 				errors++;
-				continue; 
+				continue;
 			}
 			if(!filelength(fileno(smb.shd_fp))) {
 				smb.status.max_crcs=cfg.sub[j]->maxcrcs;
@@ -307,23 +307,23 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 					smb_close(&smb);
 					errormsg(WHERE,ERR_CREATE,smb.file,k,smb.last_error);
 					errors++;
-					continue; 
-				} 
+					continue;
+				}
 			}
 			if((k=smb_locksmbhdr(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_LOCK,smb.file,k,smb.last_error);
 				errors++;
-				continue; 
+				continue;
 			}
 			if((k=smb_getstatus(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_READ,smb.file,k,smb.last_error);
 				errors++;
-				continue; 
+				continue;
 			}
 			smb_unlocksmbhdr(&smb);
-			lastsub=j; 
+			lastsub=j;
 		}
 
 		bool dupe = false;

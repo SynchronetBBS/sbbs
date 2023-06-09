@@ -100,7 +100,7 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 
 	ch=kbincom(timeout);
 
-	if(sys_status&SS_SYSPAGE) 
+	if(sys_status&SS_SYSPAGE)
 		sbbs_beep(400 + sbbs_random(800), ch == NOINP ? 100 : 10);
 
 	if(ch == NOINP) {
@@ -111,7 +111,7 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 
 	if(cfg.node_misc&NM_7BITONLY
 		&& (!(sys_status&SS_USERON) || term_supports(NO_EXASCII)))
-		ch&=0x7f; 
+		ch&=0x7f;
 
 	getkey_last_activity = time(NULL);
 
@@ -138,7 +138,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 		sys_status|=SS_ABORT;
 		if(mode&K_SPIN) /* back space once if on spinning cursor */
 			backspace();
-		return(0); 
+		return(0);
 	}
 	if(ch==CTRL_Z && !(mode&(K_MSG|K_GETSTR))
 		&& action!=NODE_PCHT) {	 /* Ctrl-Z toggle raw input mode */
@@ -163,7 +163,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 		hotkey_inside &= ~(1<<ch);
 		if(action!=NODE_MAIN && action!=NODE_XFER)
 			return(CTRL_Z);
-		return(0); 
+		return(0);
 	}
 
 	if(console&CON_RAW_IN)	 /* ignore ctrl-key commands if in raw mode */
@@ -188,7 +188,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if(!(sys_status&SS_SPLITP)) {
 				saveline();
 				attr(LIGHTGRAY);
-				CRLF; 
+				CRLF;
 			}
 			if(cfg.hotkey[i]->cmd[0]=='?') {
 				if(js_hotkey_cx == NULL) {
@@ -200,7 +200,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 				external(cmdstr(cfg.hotkey[i]->cmd,nulstr,nulstr,tmp),0);
 			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
-				restoreline(); 
+				restoreline();
 			}
 			lncntr=0;
 			hotkey_inside &= ~(1<<ch);
@@ -211,7 +211,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 	switch(ch) {
 		case CTRL_O:	/* Ctrl-O toggles pause temporarily */
 			console^=CON_PAUSEOFF;
-			return(0); 
+			return(0);
 		case CTRL_P:	/* Ctrl-P Private node-node comm */
 			if(!(sys_status&SS_USERON))
 				break;;
@@ -223,18 +223,18 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if(!(sys_status&SS_SPLITP)) {
 				saveline();
 				attr(LIGHTGRAY);
-				CRLF; 
+				CRLF;
 			}
 			nodesync(); 	/* read any waiting messages */
 			nodemsg();		/* send a message */
 			sync();
 			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
-				restoreline(); 
+				restoreline();
 			}
 			lncntr=0;
 			hotkey_inside &= ~(1<<ch);
-			return(0); 
+			return(0);
 
 		case CTRL_U:	/* Ctrl-U Users online */
 			if(!(sys_status&SS_USERON))
@@ -247,17 +247,17 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if(!(sys_status&SS_SPLITP)) {
 				saveline();
 				attr(LIGHTGRAY);
-				CRLF; 
+				CRLF;
 			}
 			whos_online(true); 	/* list users */
 			sync();
 			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
-				restoreline(); 
+				restoreline();
 			}
 			lncntr=0;
 			hotkey_inside &= ~(1<<ch);
-			return(0); 
+			return(0);
 		case CTRL_T: /* Ctrl-T Time information */
 			if(sys_status&SS_SPLITP)
 				return(ch);
@@ -283,7 +283,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			restoreline();
 			lncntr=0;
 			hotkey_inside &= ~(1<<ch);
-			return(0); 
+			return(0);
 		case CTRL_K:  /*  Ctrl-K Control key menu */
 			if(sys_status&SS_SPLITP)
 				return(ch);
@@ -305,7 +305,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			restoreline();
 			lncntr=0;
 			hotkey_inside &= ~(1<<ch);
-			return(0); 
+			return(0);
 		case ESC:
 			i=kbincom((mode&K_GETSTR) ? 3000:1000);
 			if(i==NOINP)		// timed-out waiting for '['
@@ -313,7 +313,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			ch=i;
 			if(ch!='[') {
 				ungetkey(ch, /* insert: */true);
-				return(ESC); 
+				return(ESC);
 			}
 			i=j=0;
 			autoterm|=ANSI; 			/* <ESC>[x means they have ANSI */
@@ -321,7 +321,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if(sys_status&SS_USERON && useron.misc&AUTOTERM && !(useron.misc&ANSI)
 				&& useron.number) {
 				useron.misc|=ANSI;
-				putuserrec(&cfg,useron.number,U_MISC,8,ultoa(useron.misc,str,16)); 
+				putuserrec(&cfg,useron.number,U_MISC,8,ultoa(useron.misc,str,16));
 			}
 #endif
 			while(i<10 && j<30) {		/* up to 3 seconds */
@@ -402,14 +402,14 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 						for(j = i; j > 0; j--)
 							ungetkey(str[j - 1], /* insert: */true);
 						ungetkey('[', /* insert: */true);
-						return(ESC); 
+						return(ESC);
 					}
 					if(button == 0x22)  // Right-click
 						return handle_ctrlkey(TERM_KEY_ABORT, mode);
 					return 0;
 				}
 				if(i == 0 && ch == '<' && mouse_mode != MOUSE_MODE_OFF) {
-					while(i < sizeof(str) - 1) {
+					while(i < (int)sizeof(str) - 1) {
 						int byte = kbincom(100);
 						if(byte == NOINP) {
 							lprintf(LOG_DEBUG, "Timeout waiting for mouse report character (%d)", i);
@@ -479,7 +479,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 							ungetkey(str[j - 1], /* insert: */true);
 						ungetkey('<', /* insert: */true);
 						ungetkey('[', /* insert: */true);
-						return(ESC); 
+						return(ESC);
 					}
 					if(ch == 'M' && button == 2)  // Right-click
 						return handle_ctrlkey(TERM_KEY_ABORT, mode);
@@ -531,7 +531,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 					for(j = i; j > 0; j--)
 						ungetkey(str[j - 1], /* insert: */true);
 					ungetkey('[', /* insert: */true);
-					return(ESC); 
+					return(ESC);
 				}
 				if(ch=='R') {       /* cursor position report */
 					if(mode&K_ANSI_CPR && i) {	/* auto-detect rows */
@@ -547,15 +547,15 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 								update_nodeterm();
 						}
 					}
-					return(0); 
+					return(0);
 				}
-				str[i++]=ch; 
+				str[i++]=ch;
 			}
 
 			for(j = i; j > 0; j--)
 				ungetkey(str[j - 1], /* insert: */true);
 			ungetkey('[', /* insert: */true);
-			return(ESC); 
+			return(ESC);
 	}
 	return(ch);
 }

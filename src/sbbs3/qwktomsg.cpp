@@ -55,7 +55,7 @@ static bool qwk_parse_header_list(sbbs_t* sbbs, uint confnum, smbmsg_t* msg, str
 
 	if((p=iniPopKey(headers,ROOT_SECTION,smb_hfieldtype(hfield_type=RECIPIENT),value))!=NULL) {
 		if(parse_recipient_hfields)
-			smb_hfield_str(msg,hfield_type,p);		
+			smb_hfield_str(msg,hfield_type,p);
 	}
 
 	/* Recipient net address and type */
@@ -202,7 +202,7 @@ bool sbbs_t::qwk_new_msg(uint confnum, smbmsg_t* msg, char* hdrblk, int offset, 
 		smb_hfield_str(msg,RECIPIENT,strip_ctrl(to, to));
 
 	if(parse_sender_hfields && msg->from==NULL) {
-		sprintf(str,"%25.25s",hdrblk+46);  
+		sprintf(str,"%25.25s",hdrblk+46);
 		truncsp(str);
 		smb_hfield_str(msg,SENDER,strip_ctrl(str, str));
 	}
@@ -238,7 +238,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 	ushort		xlat=XLAT_NONE;
 	int			dupechk_hashes=SMB_HASH_SOURCE_DUPE;
 	str_list_t	kludges;
-	uint		subnum = smb->subnum;
+	int			subnum = smb->subnum;
 
 	*dupe = false;
 	if(subnum!=INVALID_SUB
@@ -275,7 +275,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_MSG_ID);
 
 		sprintf(str,"%u",touser);
-		smb_hfield_str(msg,RECIPIENTEXT,str); 
+		smb_hfield_str(msg,RECIPIENTEXT,str);
 	} else {
 
 		if(cfg.sub[subnum]->misc&SUB_LZH)
@@ -288,7 +288,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 
 	if((qwkbuf=(char *)calloc(blocks, QWK_BLOCK_LEN))==NULL) { // over-allocate for NULL termination
 		errormsg(WHERE,ERR_ALLOC,"QWK msg buf",(blocks-1)*QWK_BLOCK_LEN);
-		return(false); 
+		return(false);
 	}
 
 	if(fread(qwkbuf,QWK_BLOCK_LEN,blocks-1,qwk_fp) != blocks-1) {
@@ -301,7 +301,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 	if((body=(char *)malloc((blocks-1L)*QWK_BLOCK_LEN*2L))==NULL) {
 		free(qwkbuf);
 		errormsg(WHERE,ERR_ALLOC,"QWK msg body",(blocks-1L)*QWK_BLOCK_LEN*2L);
-		return(false); 
+		return(false);
 	}
 
 	taillen=0;
@@ -309,7 +309,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 		free(qwkbuf);
 		free(body);
 		errormsg(WHERE,ERR_ALLOC,"QWK msg tail",(blocks-1L)*QWK_BLOCK_LEN*2L);
-		return(false); 
+		return(false);
 	}
 
 	kludges=strListInit();
@@ -321,11 +321,11 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 	for(k=0;k<(blocks-1)*QWK_BLOCK_LEN;k++) {
 		if(qwkbuf[k]==0)
 			continue;
-		if(bodylen==0 
-			&& (qwkbuf[k]=='@' 
+		if(bodylen==0
+			&& (qwkbuf[k]=='@'
 				|| ((fromhub || (useron.qwk&QWK_EXT) || subnum==INVALID_SUB)
-					&& (strnicmp(qwkbuf+k,"To:",3)==0 
-					||  strnicmp(qwkbuf+k,"From:",5)==0 
+					&& (strnicmp(qwkbuf+k,"To:",3)==0
+					||  strnicmp(qwkbuf+k,"From:",5)==0
 					||  strnicmp(qwkbuf+k,"Subject:",8)==0)))) {
 			if((p=strchr(qwkbuf+k, '\r'))==NULL
 				&& (p=strchr(qwkbuf+k, qwk_newline))==NULL) {
@@ -344,7 +344,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 			strcpy(tail,"--- ");	/* DO NOT USE SAFECOPY */
 			taillen=4;
 			col++;
-			continue; 
+			continue;
 		}
 		if(qwkbuf[k]==qwk_newline) {		/* expand QWK_NEWLINE to crlf */
 			if(!bodylen && !taillen)		/* Ignore blank lines at top of message */
@@ -357,16 +357,16 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 			col=0;
 			if(taillen) {
 				tail[taillen++]=CR;
-				tail[taillen++]=LF; 
+				tail[taillen++]=LF;
 			}
 			else {
 				body[bodylen++]=CR;
-				body[bodylen++]=LF; 
+				body[bodylen++]=LF;
 			}
-			continue; 
+			continue;
 		}
 		/* beep restrict */
-		if(!fromhub && qwkbuf[k]==BEL && useron.rest&FLAG('B'))   
+		if(!fromhub && qwkbuf[k]==BEL && useron.rest&FLAG('B'))
 			continue;
 		/* ANSI restriction */
 		if(!fromhub && (qwkbuf[k]==CTRL_A || qwkbuf[k]==ESC)
@@ -384,8 +384,8 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 		if(taillen)
 			tail[taillen++]=qwkbuf[k];
 		else
-			body[bodylen++]=qwkbuf[k]; 
-	} 
+			body[bodylen++]=qwkbuf[k];
+	}
 	free(qwkbuf);
 
 	while(bodylen && body[bodylen-1]==' ') bodylen--; /* remove trailing spaces */
@@ -407,18 +407,18 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 				strListFree(&kludges);
 				free(body);
 				free(tail);
-				return(false); 
+				return(false);
 			}
 			SAFEPRINTF2(str,"%s/%s"
 				,fromhub ? cfg.qhub[fromhub-1]->id : useron.alias,p);
 			strupr(str);
-			update_qwkroute(str); 
+			update_qwkroute(str);
 		}
 		else {
 			if(fromhub)
 				SAFECOPY(str,cfg.qhub[fromhub-1]->id);
 			else
-				SAFECOPY(str,useron.alias); 
+				SAFECOPY(str,useron.alias);
 		}
 		/* From network type & address: */
 		strupr(str);
@@ -428,7 +428,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 	} else {
 		sprintf(str,"%u",useron.number);
 		smb_hfield_str(msg,SENDEREXT,str);
-		if((uint)subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME)
+		if(subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME)
 			SAFECOPY(from,useron.name);
 		else
 			SAFECOPY(from,useron.alias);
@@ -451,7 +451,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 	if((p=iniGetValue(kludges,ROOT_SECTION,"@TZ",NULL,NULL)) != NULL) {
 		if(!fromhub)
 			set_qwk_flag(QWK_TZ);
-		msg->hdr.when_written.zone=(short)ahtoul(p); 
+		msg->hdr.when_written.zone=(short)ahtoul(p);
 	}
 	if((p=iniGetValue(kludges,ROOT_SECTION,"@REPLYTO",NULL,NULL)) != NULL) {
 		if(msg->replyto==NULL)
@@ -501,18 +501,18 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 		if(!fromhub) {
 			if(subnum==INVALID_SUB) {
 				SAFEPRINTF(str,"duplicate e-mail attempt (%s)", smb->last_error);
-				logline(LOG_NOTICE,"E!",str); 
+				logline(LOG_NOTICE,"E!",str);
 			} else {
 				SAFEPRINTF3(str,"duplicate message attempt in %s %s (%s)"
 					,cfg.grp[cfg.sub[subnum]->grp]->sname
 					,cfg.sub[subnum]->lname
 					,smb->last_error);
-				logline(LOG_NOTICE,"P!",str); 
+				logline(LOG_NOTICE,"P!",str);
 			}
 		}
 		*dupe=true;
 	}
-	else 
+	else
 		errormsg(WHERE,ERR_WRITE,smb->file,i,smb->last_error);
 
 	free(body);
