@@ -575,7 +575,8 @@ connected:
 		ioctlsocket(sock, FIONBIO, &nonblock);
 		if (!socket_recvdone(sock, 0)) {
 			int keepalives = true;
-			setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepalives, sizeof(keepalives));
+			if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepalives, sizeof(keepalives)))
+				fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
 
 			if (!bbs->hidepopups)
 				uifc.pop(NULL);

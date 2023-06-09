@@ -63,7 +63,8 @@ telnets_connect(struct bbslist *bbs)
 	}
 
         /* we need to disable Nagle on the socket. */
-	setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off));
+	if (setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)))
+		fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);

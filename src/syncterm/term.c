@@ -2386,8 +2386,10 @@ get_cache_fn_subdir(struct bbslist *bbs, char *fn, size_t fnsz, const char *subd
 		return ret;
 	strcat(fn, subdir);
 	backslash(fn);
-	if (!isdir(fn))
-		mkpath(fn);
+	if (!isdir(fn)) {
+		if (mkpath(fn))
+			return 0;
+	}
 	if (!isdir(fn))
 		return 0;
 	return 1;
