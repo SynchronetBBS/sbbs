@@ -273,8 +273,6 @@ bitmap_vmem_puttext_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fil
 			|| sy < 1
 			|| ex < 1
 			|| ey < 1
-			|| sx > cio_textinfo.screenwidth
-			|| sy > cio_textinfo.screenheight
 			|| sx > ex
 			|| sy > ey
 			|| ex > cio_textinfo.screenwidth
@@ -882,17 +880,29 @@ static int update_from_vmem(int force)
 /**********************/
 int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 {
-	int x, y;
+	size_t x, y;
 	int ret = 1;
 	uint16_t *buf = fill;
 	struct vstat_vmem *vmem_ptr;
 	struct vmem_cell *vc;
 
+	if (sx < 1
+	    || sy < 1
+	    || ex < 1
+	    || ey < 1
+	    || sx > ex
+	    || sy > ey
+	    || ex > cio_textinfo.screenwidth
+	    || ey > cio_textinfo.screenheight
+	    || fill==NULL) {
+		return(0);
+	}
+
 	pthread_mutex_lock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
-	for(y=sy-1;y<ey;y++) {
-		for(x=sx-1;x<ex;x++) {
-			vc = set_vmem_cell(vmem_ptr, y*cio_textinfo.screenwidth+x, *(buf++), 0x00ffffff, 0x00ffffff);
+	for (y = sy - 1; y < ey; y++) {
+		for (x = sx - 1; x < ex; x++) {
+			vc = set_vmem_cell(vmem_ptr, y * cio_textinfo.screenwidth + x, *(buf++), 0x00ffffff, 0x00ffffff);
 			bitmap_draw_one_char(vc, x+1, y+1);
 		}
 	}
@@ -1264,8 +1274,8 @@ void bitmap_clreol(void)
 
 void bitmap_clrscr(void)
 {
-	int x,y;
-	WORD fill=(cio_textinfo.attribute<<8)|' ';
+	size_t x, y;
+	WORD fill = (cio_textinfo.attribute << 8) | ' ';
 	struct vstat_vmem *vmem_ptr;
 	struct vmem_cell *vc;
 	int rows, cols;
@@ -1274,9 +1284,9 @@ void bitmap_clrscr(void)
 	vmem_ptr = get_vmem(&vstat);
 	rows = vstat.rows;
 	cols = vstat.cols;
-	for(y = cio_textinfo.wintop-1; y < cio_textinfo.winbottom && y < rows; y++) {
-		for(x=cio_textinfo.winleft-1; x<cio_textinfo.winright && x < cols; x++) {
-			vc = set_vmem_cell(vmem_ptr, y*cio_textinfo.screenwidth+x, fill, ciolib_fg, ciolib_bg);
+	for (y = cio_textinfo.wintop - 1; y < cio_textinfo.winbottom && y < rows; y++) {
+		for (x = cio_textinfo.winleft - 1; x < cio_textinfo.winright && x < cols; x++) {
+			vc = set_vmem_cell(vmem_ptr, y * cio_textinfo.screenwidth + x, fill, ciolib_fg, ciolib_bg);
 			bitmap_draw_one_char(vc, x+1, y+1);
 		}
 	}

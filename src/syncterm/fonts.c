@@ -370,7 +370,7 @@ font_management(void)
 				struct text_info  ti;
 
 				gettextinfo(&ti);
-				savbuf = alloca((ti.screenheight - 2) * ti.screenwidth * sizeof(*savbuf));
+				savbuf = alloca((ti.screenheight - 2U) * ti.screenwidth * sizeof(*savbuf));
 				if (savbuf == NULL) {
 					uifc.helpbuf = "malloc() has failed.  Available Memory is dangerously low.";
 					uifc.msg("malloc() failure.");

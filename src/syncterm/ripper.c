@@ -15084,7 +15084,7 @@ draw_glyph(uint8_t ch)
 			fk = htons(*(uint16_t *)(&fd[off + amiga_font->kernOffset + (ch - amiga_font->first) * 2]));
 		voff = (amiga_font->height - amiga_font->baseline - 1) << doubled;
 		for (i = 0; i < amiga_font->height; i++) {
-			pd = &fd[off + amiga_font->dataOffset + i * amiga_font->modulo];
+			pd = &fd[off + amiga_font->dataOffset + (size_t)i * amiga_font->modulo];
 			pd += (bitoff >> 3);
 			currbit = 7 - (bitoff & 0x07);
 			for (j = 0; j < width; j++) {
