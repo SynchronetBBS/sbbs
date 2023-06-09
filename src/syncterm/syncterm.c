@@ -1391,6 +1391,9 @@ main(int argc, char **argv)
 	double sf;
 	int               default_hidepopups = -1;
 	int               default_nostatus = -1;
+	unsigned char     saved_red = dac_default[3].red;
+	unsigned char     saved_green = dac_default[3].green;
+	unsigned char     saved_blue = dac_default[3].blue;
 	const char        syncterm_termcap[] = "\n# terminfo database entry for SyncTERM\n"
 	    "# compile with tic -x to get the user-defined capabilities for vim (bracketed pasted)\n"
 	    "syncterm|SyncTERM,\n"
@@ -1908,8 +1911,16 @@ main(int argc, char **argv)
 			}
 			load_font_files();
 			setfont(find_font_id(bbs->font), true, 1);
+			if (bbs->yellow_is_yellow) {
+				dac_default[3].red = dac_default[1].red;
+				dac_default[3].green = dac_default[2].green;
+				dac_default[3].blue = dac_default[0].blue;
+			}
 			if (doterm(bbs))
 				quitting = true;
+			dac_default[3].red = saved_red;
+			dac_default[3].green = saved_green;
+			dac_default[3].blue = saved_blue;
 			fake_mode = -1;
 			setvideoflags(0);
 

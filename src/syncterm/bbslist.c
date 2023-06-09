@@ -196,6 +196,12 @@ static struct sort_order_info sort_order[] = {
 		sizeof(((struct bbslist *)NULL)->force_lcf)
 	},
 	{
+		"Yellow Is Yellow",
+		0,
+		offsetof(struct bbslist, yellow_is_yellow),
+		sizeof(((struct bbslist *)NULL)->yellow_is_yellow)
+	},
+	{
 		NULL,
 		0,
 		0,
@@ -763,6 +769,7 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	entry->hidepopups = iniGetBool(section, NULL, "HidePopups", false);
 	entry->rip = iniGetEnum(section, NULL, "RIP", rip_versions, RIP_VERSION_NONE);
 	entry->force_lcf = iniGetBool(section, NULL, "ForceLCF", false);
+	entry->yellow_is_yellow = iniGetBool(section, NULL, "YellowIsYellow", false);
 	iniGetString(section, NULL, "DownloadPath", home, entry->dldir);
 	iniGetString(section, NULL, "UploadPath", home, entry->uldir);
 
@@ -1030,7 +1037,7 @@ get_rip_version(int oldver, int *changed)
 int
 edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault)
 {
-	char       opt[19][69]; /* 21=Holds number of menu items, 80=Number of columns */
+	char       opt[21][69]; /* 21=Holds number of menu items, 80=Number of columns */
 	char      *opts[(sizeof(opt) / sizeof(opt[0])) + 1];
 	int        changed = 0;
 	int        copt = 0, i, j;
@@ -1115,6 +1122,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		sprintf(opt[i++], "Hide Popups       %s", item->hidepopups ? "Yes" : "No");
 		sprintf(opt[i++], "RIP               %s", rip_versions[item->rip]);
 		sprintf(opt[i++], "Force LCF Mode    %s", item->force_lcf ? "Yes" : "No");
+		sprintf(opt[i++], "Yellow is Yellow  %s", item->yellow_is_yellow ? "Yes" : "No");
 		opt[i][0] = 0;
 		uifc.changes = 0;
 
@@ -1156,6 +1164,9 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 			    "        Enable/Disable RIP modes\n\n"
 			    "~ Force LCF Mode ~\n"
 			    "        Force Last Column Flag mode as used in VT terminals\n\n"
+			    "~ Yellow Is Yellow ~\n"
+			    "        Make the dark yellow colour actually yellow instead of the brown\n"
+			    "        used in IBM CGA monitors\n\n"
 			;
 		}
 		else {
@@ -1200,6 +1211,9 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 			    "        Enable/Disable RIP modes\n\n"
 			    "~ Force LCF Mode ~\n"
 			    "        Force Last Column Flag mode as used in VT terminals\n\n"
+			    "~ Yellow Is Yellow ~\n"
+			    "        Make the dark yellow colour actually yellow instead of the brown\n"
+			    "        used in IBM CGA monitors\n\n"
 			;
 		}
 		i = uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &copt, &bar,
@@ -1637,6 +1651,11 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				changed = 1;
 				iniSetBool(&inifile, itemname, "ForceLCF", item->force_lcf, &ini_style);
 				break;
+			case 19:
+				item->yellow_is_yellow = !item->yellow_is_yellow;
+				changed = 1;
+				iniSetBool(&inifile, itemname, "YellowIsYellow", item->yellow_is_yellow, &ini_style);
+				break;
 		}
 		if (uifc.changes)
 			changed = 1;
@@ -1691,6 +1710,7 @@ add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetEnum(&inifile, bbs->name, "RIP", rip_versions, bbs->rip, &ini_style);
 	iniSetString(&inifile, bbs->name, "Comment", bbs->comment, &ini_style);
 	iniSetBool(&inifile, bbs->name, "ForceLCF", bbs->force_lcf, &ini_style);
+	iniSetBool(&inifile, bbs->name, "YellowIsYellow", bbs->yellow_is_yellow, &ini_style);
 	if ((listfile = fopen(listpath, "w")) != NULL) {
 		iniWriteFile(listfile, inifile);
 		fclose(listfile);

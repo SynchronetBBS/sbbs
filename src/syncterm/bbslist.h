@@ -139,6 +139,7 @@ struct bbslist {
 	int                flow_control;
 	char               comment[1024];
 	bool               force_lcf;
+	bool               yellow_is_yellow;
 };
 
 extern char *music_names[];
