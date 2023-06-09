@@ -1876,7 +1876,7 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 	ns = bs;
 	while (ns < os) {
 		mult++;
-		bitmap_get_scaled_win_size(mult, &w, &h, maxwidth, maxheight);
+		bitmap_get_scaled_win_size(mult, &w, &h, 0, 0);
 		if ((maxwidth > 0) && (w > maxwidth)) {
 			mult--;
 			ns = ls;
@@ -1902,6 +1902,7 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 	bitmap_get_scaled_win_size(mult, &w, &h, maxwidth, maxheight);
 	vstat.winwidth = w;
 	vstat.winheight = h;
+	vstat.scaling = mult;
 
 	return(0);
 }

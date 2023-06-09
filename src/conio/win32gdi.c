@@ -926,6 +926,7 @@ gdi_textmode(int mode)
 	if (fullscreen) {
 		vstat.winwidth = mw;
 		vstat.winheight = mh;
+		vstat.scaling = bitmap_double_mult_inside(mw, mh);
 	}
 	gdi_setwinsize(vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);

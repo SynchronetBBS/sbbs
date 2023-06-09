@@ -1169,7 +1169,8 @@ static void resize_window()
 			pthread_mutex_unlock(&vstatlock);
 		return;
 	}
-	resize = new_scaling != vstat.scaling;
+	bitmap_get_scaled_win_size(new_scaling, &width, &height, 0, 0);
+	resize = new_scaling != vstat.scaling || width != vstat.winwidth || height != vstat.winheight;
 	x_cvstat.scaling = vstat.scaling;
 	if (resize)
 		x11.XResizeWindow(dpy, win, width, height);
@@ -1195,7 +1196,6 @@ static void init_mode_internal(int mode)
 	os = vstat.scaling;
 	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
 	x_cvstat = vstat;
-	x_cvstat.scaling = bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
 	vstat.winwidth = ow;
 	vstat.winheight = oh;
 	vstat.scaling = os;
