@@ -113,7 +113,8 @@ struct cterminal {
 
 	/* emulation state */
 	int					started;		// Indicates that conio functions are being called
-	int					c64reversemode;	// Commodore 64 reverse mode state
+	bool					c64reversemode;	// Commodore 64 reverse mode state
+	bool negative;
 	unsigned char		attr;			// Current attribute
 	uint32_t			fg_color;
 	uint32_t			bg_color;
@@ -164,6 +165,10 @@ struct cterminal {
 	char				*bg_tc_str;
 	int					*tabs;
 	int					tab_count;
+	uint32_t last_column_flag;
+#define CTERM_LCF_SET 1
+#define CTERM_LCF_ENABLED 2
+#define CTERM_LCF_FORCED 4
 
 	/* Sixel state */
 	int					sixel;			// Sixel status

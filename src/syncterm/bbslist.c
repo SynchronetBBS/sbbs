@@ -178,6 +178,24 @@ static struct sort_order_info sort_order[] = {
 		sizeof(((struct bbslist *)NULL)->rip)
 	},
 	{
+		"Flow Control",
+		0,
+		offsetof(struct bbslist, flow_control),
+		sizeof(((struct bbslist *)NULL)->flow_control)
+	},
+	{
+		"Comment",
+		SORT_ORDER_STRING,
+		offsetof(struct bbslist, comment),
+		sizeof(((struct bbslist *)NULL)->comment)
+	},
+	{
+		"Force LCF",
+		0,
+		offsetof(struct bbslist, force_lcf),
+		sizeof(((struct bbslist *)NULL)->force_lcf)
+	},
+	{
 		NULL,
 		0,
 		0,
@@ -744,6 +762,7 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	entry->nostatus = iniGetBool(section, NULL, "NoStatus", false);
 	entry->hidepopups = iniGetBool(section, NULL, "HidePopups", false);
 	entry->rip = iniGetEnum(section, NULL, "RIP", rip_versions, RIP_VERSION_NONE);
+	entry->force_lcf = iniGetBool(section, NULL, "ForceLCF", false);
 	iniGetString(section, NULL, "DownloadPath", home, entry->dldir);
 	iniGetString(section, NULL, "UploadPath", home, entry->uldir);
 
@@ -1095,6 +1114,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		sprintf(opt[i++], "Font              %s", item->font);
 		sprintf(opt[i++], "Hide Popups       %s", item->hidepopups ? "Yes" : "No");
 		sprintf(opt[i++], "RIP               %s", rip_versions[item->rip]);
+		sprintf(opt[i++], "Force LCF Mode    %s", item->force_lcf ? "Yes" : "No");
 		opt[i][0] = 0;
 		uifc.changes = 0;
 
@@ -1132,6 +1152,10 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 			    "        Select font to use for the entry\n\n"
 			    "~ Hide Popups ~\n"
 			    "        Hide all popup dialogs (i.e., Connecting, Disconnected, etc.)\n\n"
+			    "~ RIP ~\n"
+			    "        Enable/Disable RIP modes\n\n"
+			    "~ Force LCF Mode ~\n"
+			    "        Force Last Column Flag mode as used in VT terminals\n\n"
 			;
 		}
 		else {
@@ -1172,6 +1196,10 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 			    "        Select font to use for the entry\n\n"
 			    "~ Hide Popups ~\n"
 			    "        Hide all popup dialogs (i.e., Connecting, Disconnected, etc.)\n\n"
+			    "~ RIP ~\n"
+			    "        Enable/Disable RIP modes\n\n"
+			    "~ Force LCF Mode ~\n"
+			    "        Force Last Column Flag mode as used in VT terminals\n\n"
 			;
 		}
 		i = uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &copt, &bar,
@@ -1603,6 +1631,11 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 					    &ini_style);
 				}
 				iniSetEnum(&inifile, itemname, "RIP", rip_versions, item->rip, &ini_style);
+			case 18:
+				item->force_lcf	= !item->force_lcf;
+				changed = 1;
+				iniSetBool(&inifile, itemname, "ForceLCF", item->force_lcf, &ini_style);
+				break;
 		}
 		if (uifc.changes)
 			changed = 1;
@@ -1656,6 +1689,7 @@ add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetBool(&inifile, bbs->name, "HidePopups", bbs->hidepopups, &ini_style);
 	iniSetEnum(&inifile, bbs->name, "RIP", rip_versions, bbs->rip, &ini_style);
 	iniSetString(&inifile, bbs->name, "Comment", bbs->comment, &ini_style);
+	iniSetBool(&inifile, bbs->name, "ForceLCF", bbs->force_lcf, &ini_style);
 	if ((listfile = fopen(listpath, "w")) != NULL) {
 		iniWriteFile(listfile, inifile);
 		fclose(listfile);

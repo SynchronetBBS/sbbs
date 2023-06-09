@@ -138,6 +138,7 @@ struct bbslist {
 	int                rip;
 	int                flow_control;
 	char               comment[1024];
+	bool               force_lcf;
 };
 
 extern char *music_names[];

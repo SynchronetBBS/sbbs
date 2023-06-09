@@ -10071,6 +10071,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	int                   cols = 80;
 	int                   rows = 43;
 	void                 *nvmem;
+	uint32_t lcf;
 
 	hold_update = 0;
 	cterm->logfile = NULL;
@@ -10117,6 +10118,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	clrscr();
 	get_term_win_size(&term.width, &term.height, NULL, NULL, &term.nostatus);
 	term.width = cols;
+	lcf = cterm->last_column_flag;
 	cterm = cterm_init(rows + (term.nostatus ? 0 : -1),
 	        cols,
 	        oldcterm.x,
@@ -10125,6 +10127,8 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	        oldcterm.backwidth,
 	        oldcterm.scrollback,
 	        oldcterm.emulation);
+	if (lcf & CTERM_LCF_FORCED)
+		cterm->last_column_flag = CTERM_LCF_FORCED | CTERM_LCF_SET;
 	cterm->apc_handler = oldcterm.apc_handler;
 	cterm->apc_handler_data = oldcterm.apc_handler_data;
 	cterm->mouse_state_change = oldcterm.mouse_state_change;

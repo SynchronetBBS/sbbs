@@ -2124,7 +2124,7 @@ static void save_extended_colour_seq(struct cterminal *cterm, int fg, struct esc
 	}
 }
 
-static void parse_extended_colour(struct esc_seq *seq, int *i, struct cterminal *cterm, int fg)
+static void parse_extended_colour(struct esc_seq *seq, int *i, struct cterminal *cterm, bool fg)
 {
 	struct sub_params sub = {0};
 	uint32_t nc;
@@ -2377,6 +2377,63 @@ skypix_color(struct cterminal *cterm, int color)
 	return color;
 }
 
+static void
+clear_lcf(struct cterminal *cterm)
+{
+	cterm->last_column_flag &= ~CTERM_LCF_SET;
+}
+
+static void
+set_negative(struct cterminal *cterm, bool on)
+{
+	unsigned char bg;
+	unsigned char fg;
+	uint32_t tmp_colour;
+
+	// TODO: This one is great...
+	if (on != cterm->negative) {
+		bg = cterm->attr & 0x70;
+		fg = cterm->attr & 0x07;
+		cterm->attr &= 0x88;
+		cterm->attr |= (bg >> 4);
+		cterm->attr |= (fg << 4);
+		tmp_colour = cterm->fg_color;
+		cterm->fg_color = cterm->bg_color;
+		cterm->bg_color = tmp_colour;
+		cterm->negative = on;
+	}
+}
+
+static void
+set_attr(struct cterminal *cterm, unsigned char colour, bool bg)
+{
+	if (bg) {
+		cterm->attr &= 0x8F;
+		cterm->attr |= ((colour & 0x07) << 4);
+	}
+	else {
+		cterm->attr &= 0xF8;
+		cterm->attr |= (colour & 0x07);
+	}
+	attr2palette(cterm->attr, bg ? NULL : &cterm->fg_color, bg ? &cterm->bg_color : NULL);
+	if (bg)
+		FREE_AND_NULL(cterm->bg_tc_str);
+	else
+		FREE_AND_NULL(cterm->fg_tc_str);
+}
+
+static void
+set_fgattr(struct cterminal *cterm, unsigned char colour)
+{
+	set_attr(cterm, colour, false ^ cterm->negative);
+}
+
+static void
+set_bgattr(struct cterminal *cterm, unsigned char colour)
+{
+	set_attr(cterm, colour, true ^ cterm->negative);
+}
+
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed, char last)
 {
 	char	*p;
@@ -2475,6 +2532,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								for (i=0; i<seq->param_count; i++) {
 									switch(seq->param_int[i]) {
 										case 6:
+											clear_lcf(cterm);
 											cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
 											setwindow(cterm);
 											break;
@@ -2536,14 +2594,36 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								}
 								if (updfg || updbg) {
 									attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL, updbg ? &cterm->bg_color : NULL);
-									if (updfg)
-										FREE_AND_NULL(cterm->fg_tc_str);
-									if (updbg)
-										FREE_AND_NULL(cterm->bg_tc_str);
+									if (updfg) {
+										if (cterm->negative)
+											FREE_AND_NULL(cterm->bg_tc_str);
+										else
+											FREE_AND_NULL(cterm->fg_tc_str);
+									}
+									if (updbg) {
+										if (cterm->negative)
+											FREE_AND_NULL(cterm->fg_tc_str);
+										else
+											FREE_AND_NULL(cterm->bg_tc_str);
+									}
 								}
 							}
-							else if(!strcmp(seq->param_str,"=255"))
-								cterm->doorway_mode=1;
+							else if(seq->param_str[0] == '=' && parse_parameters(seq)) {
+								for (i=0; i<seq->param_count; i++) {
+									switch(seq->param_int[i]) {
+										case 4:
+											cterm->last_column_flag |= CTERM_LCF_ENABLED;
+											cterm->last_column_flag &= ~(CTERM_LCF_SET);
+											break;
+										case 5:
+											cterm->last_column_flag |= CTERM_LCF_FORCED | CTERM_LCF_ENABLED;
+											break;
+										case 255:
+											cterm->doorway_mode=0;
+											break;
+									}
+								}
+							}
 							break;
 						case 'l':
 							if (seq->param_str[0] == '?' && parse_parameters(seq)) {
@@ -2553,10 +2633,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								for (i=0; i<seq->param_count; i++) {
 									switch(seq->param_int[i]) {
 										case 6:
+											clear_lcf(cterm);
 											cterm->extattr &= ~CTERM_EXTATTR_ORIGINMODE;
 											setwindow(cterm);
 											break;
 										case 7:
+											clear_lcf(cterm);
 											cterm->extattr &= ~(CTERM_EXTATTR_AUTOWRAP);
 											break;
 										case 25:
@@ -2614,14 +2696,33 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								}
 								if (updfg || updbg) {
 									attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL, updbg ? &cterm->bg_color : NULL);
-									if (updfg)
-										FREE_AND_NULL(cterm->fg_tc_str);
-									if (updbg)
-										FREE_AND_NULL(cterm->bg_tc_str);
+									if (updfg) {
+										if (cterm->negative)
+											FREE_AND_NULL(cterm->bg_tc_str);
+										else
+											FREE_AND_NULL(cterm->fg_tc_str);
+									}
+									if (updbg) {
+										if (cterm->negative)
+											FREE_AND_NULL(cterm->fg_tc_str);
+										else
+											FREE_AND_NULL(cterm->bg_tc_str);
+									}
 								}
 							}
-							else if(!strcmp(seq->param_str,"=255"))
-								cterm->doorway_mode=0;
+							else if(seq->param_str[0] == '=' && parse_parameters(seq)) {
+								for (i=0; i<seq->param_count; i++) {
+									switch(seq->param_int[i]) {
+										case 4:
+											if ((cterm->last_column_flag & CTERM_LCF_FORCED) == 0)
+												cterm->last_column_flag = 0;
+											break;
+										case 255:
+											cterm->doorway_mode=0;
+											break;
+									}
+								}
+							}
 							break;
 						case 'n':	/* Query (extended) state information */
 							if (seq->param_str[0] == '=' && parse_parameters(seq)) {
@@ -3111,10 +3212,18 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								}
 								if (updfg || updbg) {
 									attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL, updbg ? &cterm->bg_color : NULL);
-									if (updfg)
-										FREE_AND_NULL(cterm->fg_tc_str);
-									if (updbg)
-										FREE_AND_NULL(cterm->bg_tc_str);
+									if (updfg) {
+										if (cterm->negative)
+											FREE_AND_NULL(cterm->bg_tc_str);
+										else
+											FREE_AND_NULL(cterm->fg_tc_str);
+									}
+									if (updbg) {
+										if (cterm->negative)
+											FREE_AND_NULL(cterm->fg_tc_str);
+										else
+											FREE_AND_NULL(cterm->bg_tc_str);
+									}
 								}
 							}
 							break;
@@ -3378,6 +3487,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				else {
 					switch(seq->final_byte) {
 						case '@':	/* Insert Char */
+							clear_lcf(cterm);
 							TERM_XY(&i, &j);
 							if (i < TERM_MINX || i > TERM_MAXX || j < TERM_MINY || j > TERM_MAXY)
 								break;
@@ -3397,6 +3507,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							cterm_gotoxy(cterm, i, j);
 							break;
 						case 'A':	/* Cursor Up */
+							clear_lcf(cterm);
 						case 'k':	/* Line Position Backward */
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
@@ -3404,6 +3515,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							adjust_currpos(cterm, 0, 0 - seq->param_int[0], 0);
 							break;
 						case 'B':	/* Cursor Down */
+							clear_lcf(cterm);
 						case 'e':	/* Line Position Forward */
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
@@ -3411,6 +3523,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							adjust_currpos(cterm, 0, seq->param_int[0], 0);
 							break;
 						case 'a':	/* Character Position Forward */
+							clear_lcf(cterm);
 						case 'C':	/* Cursor Right */
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
@@ -3418,6 +3531,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							adjust_currpos(cterm, seq->param_int[0], 0, 0);
 							break;
 						case 'j':	/* Character Position Backward */
+							clear_lcf(cterm);
 						case 'D':	/* Cursor Left */
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
@@ -3445,8 +3559,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								GOTOXY(col, row);
 							}
 							break;
-						case 'f':	/* Character And Line Position */
 						case 'H':	/* Cursor Position */
+						case 'f':	/* Character And Line Position */
+							clear_lcf(cterm);
 							seq_default(seq, 0, 1);
 							seq_default(seq, 1, 1);
 							row=seq->param_int[0];
@@ -3463,6 +3578,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							break;
 						case 'I':	/* Cursor Forward Tabulation */
 						case 'Y':	/* Cursor Line Tabulation */
+							clear_lcf(cterm);
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
 								break;
@@ -3470,6 +3586,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								do_tab(cterm);
 							break;
 						case 'J':	/* Erase In Page */
+							clear_lcf(cterm);
 							seq_default(seq, 0, 0);
 							switch(seq->param_int[0]) {
 								case 0:
@@ -3497,6 +3614,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							}
 							break;
 						case 'K':	/* Erase In Line */
+							clear_lcf(cterm);
 							seq_default(seq, 0, 0);
 							switch(seq->param_int[0]) {
 								case 0:
@@ -3557,6 +3675,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						case 'O':	/* TODO? Erase In Area */
 							break;
 						case 'P':	/* Delete char */
+							clear_lcf(cterm);
 							seq_default(seq, 0, 1);
 							TERM_XY(&col, &row);
 							if (col < TERM_MINX || col > TERM_MAXX || row < TERM_MINY || row > TERM_MAXY)
@@ -3595,6 +3714,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						case 'W':	/* TODO? Cursor Tabulation Control */
 							break;
 						case 'X':	/* Erase Character */
+							clear_lcf(cterm);
 							seq_default(seq, 0, 1);
 							i=seq->param_int[0];
 							CURR_XY(&col, &row);
@@ -3698,6 +3818,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							for (i=0; i < seq->param_count; i++) {
 								switch(seq->param_int[i]) {
 									case 0:
+										set_negative(cterm, false);
 										cterm->attr=ti.normattr;
 										attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
 										FREE_AND_NULL(cterm->fg_tc_str);
@@ -3707,7 +3828,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										if (!cterm->skypix)
 											cterm->attr|=8;
 										if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
-											attr2palette(cterm->attr, &cterm->fg_color, NULL);
+											attr2palette(cterm->attr, cterm->negative ? NULL : &cterm->fg_color, cterm->negative ? &cterm->fg_color : NULL);
 											FREE_AND_NULL(cterm->fg_tc_str);
 										}
 										break;
@@ -3715,7 +3836,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										if (!cterm->skypix)
 											cterm->attr&=247;
 										if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
-											attr2palette(cterm->attr, &cterm->fg_color, NULL);
+											attr2palette(cterm->attr, cterm->negative ? NULL : &cterm->fg_color, cterm->negative ? &cterm->fg_color : NULL);
 											FREE_AND_NULL(cterm->fg_tc_str);
 										}
 										break;
@@ -3726,153 +3847,97 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										if (!cterm->skypix)
 											cterm->attr|=128;
 										if (flags & CIOLIB_VIDEO_BGBRIGHT) {
-											attr2palette(cterm->attr, NULL, &cterm->bg_color);
+											attr2palette(cterm->attr, cterm->negative ? &cterm->bg_color : NULL, cterm->negative ? NULL : &cterm->bg_color);
 											FREE_AND_NULL(cterm->bg_tc_str);
 										}
 										break;
 									case 7:
-										j=cterm->attr&112;
-										cterm->attr = (cterm->attr << 4) & 0x70;
-										cterm->attr |= j>>4;
-										attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
-										FREE_AND_NULL(cterm->fg_tc_str);
-										FREE_AND_NULL(cterm->bg_tc_str);
+										set_negative(cterm, true);
 										break;
 									case 8:
-										j=cterm->attr&112;
-										cterm->attr&=112;
+										j = cterm->attr & 112;
+										cterm->attr &= 112;
 										cterm->attr |= j>>4;
-										attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+										// TODO: Negative image mode problem.
+										cterm->fg_color = cterm->bg_color;
 										FREE_AND_NULL(cterm->fg_tc_str);
-										FREE_AND_NULL(cterm->bg_tc_str);
+										if (cterm->bg_tc_str != NULL)
+											cterm->fg_tc_str = strdup(cterm->bg_tc_str);
 										break;
 									case 22:
+										// TODO: Negative image mode problem.
 										cterm->attr &= 0xf7;
 										if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
-											attr2palette(cterm->attr, &cterm->fg_color, NULL);
+											attr2palette(cterm->attr, cterm->negative ? NULL : &cterm->fg_color, cterm->negative ? &cterm->fg_color : NULL);
 											FREE_AND_NULL(cterm->fg_tc_str);
 										}
 										break;
 									case 25:
+										// TODO: Negative image mode problem.
 										cterm->attr &= 0x7f;
 										if (flags & CIOLIB_VIDEO_BGBRIGHT) {
-											attr2palette(cterm->attr, NULL, &cterm->bg_color);
+											attr2palette(cterm->attr, cterm->negative ? &cterm->bg_color : NULL, cterm->negative ? NULL : &cterm->bg_color);
 											FREE_AND_NULL(cterm->bg_tc_str);
 										}
 										break;
 									case 27:
-										i=cterm->attr&7;
-										j=cterm->attr&112;
-										cterm->attr &= 136;
-										cterm->attr |= j>>4;
-										cterm->attr |= i<<4;
-										attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
-										FREE_AND_NULL(cterm->fg_tc_str);
-										FREE_AND_NULL(cterm->bg_tc_str);
+										set_negative(cterm, false);
 										break;
 									case 30:
-										cterm->attr&=248;
-										cterm->attr |= skypix_color(cterm, 0);
-										attr2palette(cterm->attr, &cterm->fg_color, NULL);
-										FREE_AND_NULL(cterm->fg_tc_str);
+										set_fgattr(cterm, skypix_color(cterm, BLACK));
 										break;
 									case 31:
-										cterm->attr&=248;
-										cterm->attr |= skypix_color(cterm, 4);
-										attr2palette(cterm->attr, &cterm->fg_color, NULL);
-										FREE_AND_NULL(cterm->fg_tc_str);
+										set_fgattr(cterm, skypix_color(cterm, RED));
 										break;
 									case 32:
-										cterm->attr&=248;
-										cterm->attr |= skypix_color(cterm, 2);
-										attr2palette(cterm->attr, &cterm->fg_color, NULL);
-										FREE_AND_NULL(cterm->fg_tc_str);
+										set_fgattr(cterm, skypix_color(cterm, GREEN));
 										break;
 									case 33:
-										cterm->attr&=248;
-										cterm->attr |= skypix_color(cterm, 6);
-										attr2palette(cterm->attr, &cterm->fg_color, NULL);
-										FREE_AND_NULL(cterm->fg_tc_str);
+										set_fgattr(cterm, skypix_color(cterm, BROWN));
 										break;
 									case 34:
-										cterm->attr&=248;
-										cterm->attr |= skypix_color(cterm, 1);
-										attr2palette(cterm->attr, &cterm->fg_color, NULL);
-										FREE_AND_NULL(cterm->fg_tc_str);
+										set_fgattr(cterm, skypix_color(cterm, BLUE));
 										break;
 									case 35:
-										cterm->attr&=248;
-										cterm->attr |= skypix_color(cterm, 5);
-										attr2palette(cterm->attr, &cterm->fg_color, NULL);
-										FREE_AND_NULL(cterm->fg_tc_str);
+										set_fgattr(cterm, skypix_color(cterm, MAGENTA));
 										break;
 									case 36:
-										cterm->attr&=248;
-										cterm->attr |= skypix_color(cterm, 3);
-										attr2palette(cterm->attr, &cterm->fg_color, NULL);
-										FREE_AND_NULL(cterm->fg_tc_str);
+										set_fgattr(cterm, skypix_color(cterm, CYAN));
 										break;
 									case 38:
-										parse_extended_colour(seq, &i, cterm, 1);
+										parse_extended_colour(seq, &i, cterm, true ^ cterm->negative);
 										break;
 									case 37:
 									case 39:
-										cterm->attr&=248;
-										cterm->attr |= skypix_color(cterm, 7);
-										attr2palette(cterm->attr, &cterm->fg_color, NULL);
-										FREE_AND_NULL(cterm->fg_tc_str);
+										set_fgattr(cterm, skypix_color(cterm, LIGHTGRAY));
 										break;
 									case 49:
 									case 40:
-										cterm->attr&=143;
-										cterm->attr |= skypix_color(cterm, 0) << 4;
-										attr2palette(cterm->attr, NULL, &cterm->bg_color);
-										FREE_AND_NULL(cterm->bg_tc_str);
+										set_bgattr(cterm, skypix_color(cterm, BLACK));
 										break;
 									case 41:
-										cterm->attr&=143;
-										cterm->attr |= skypix_color(cterm, 4) << 4;
-										attr2palette(cterm->attr, NULL, &cterm->bg_color);
-										FREE_AND_NULL(cterm->bg_tc_str);
+										set_bgattr(cterm, skypix_color(cterm, RED));
 										break;
 									case 42:
-										cterm->attr&=143;
-										cterm->attr |= skypix_color(cterm, 2) << 4;
-										attr2palette(cterm->attr, NULL, &cterm->bg_color);
-										FREE_AND_NULL(cterm->bg_tc_str);
+										set_bgattr(cterm, skypix_color(cterm, GREEN));
 										break;
 									case 43:
-										cterm->attr&=143;
-										cterm->attr |= skypix_color(cterm, 6) << 4;
-										attr2palette(cterm->attr, NULL, &cterm->bg_color);
-										FREE_AND_NULL(cterm->bg_tc_str);
+										set_bgattr(cterm, skypix_color(cterm, BROWN));
 										break;
 									case 44:
-										cterm->attr&=143;
-										cterm->attr |= skypix_color(cterm, 1) << 4;
-										attr2palette(cterm->attr, NULL, &cterm->bg_color);
-										FREE_AND_NULL(cterm->bg_tc_str);
+										set_bgattr(cterm, skypix_color(cterm, BLUE));
 										break;
 									case 45:
-										cterm->attr&=143;
-										cterm->attr |= skypix_color(cterm, 5) << 4;
-										attr2palette(cterm->attr, NULL, &cterm->bg_color);
-										FREE_AND_NULL(cterm->bg_tc_str);
+										set_bgattr(cterm, skypix_color(cterm, MAGENTA));
 										break;
 									case 46:
-										cterm->attr&=143;
-										cterm->attr |= skypix_color(cterm, 3) << 4;
-										attr2palette(cterm->attr, NULL, &cterm->bg_color);
-										FREE_AND_NULL(cterm->bg_tc_str);
+										set_bgattr(cterm, skypix_color(cterm, CYAN));
 										break;
 									case 47:
-										cterm->attr&=143;
-										cterm->attr |= skypix_color(cterm, 7) << 4;
-										attr2palette(cterm->attr, NULL, &cterm->bg_color);
-										FREE_AND_NULL(cterm->bg_tc_str);
+										set_bgattr(cterm, skypix_color(cterm, LIGHTGRAY));
 										break;
 									case 48:
-										parse_extended_colour(seq, &i, cterm, 0);
+										parse_extended_colour(seq, &i, cterm, false ^ cterm->negative);
 										break;
 								}
 							}
@@ -3918,6 +3983,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						case 'q': /* ToDo?  VT100 keyboard lights, cursor style, protection */
 							break;
 						case 'r': /* Scrolling reigon */
+							clear_lcf(cterm);
 							seq_default(seq, 0, 1);
 							seq_default(seq, 1, cterm->height);
 							row = seq->param_int[0];
@@ -3955,9 +4021,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								uint32_t *c = NULL;
 								uint32_t nc;
 
-								if (seq->param_int[0] == 0)
+								if ((seq->param_int[0] == 0) ^ cterm->negative)
 									c = &cterm->bg_color;
-								else if (seq->param_int[0] == 1)
+								else if ((seq->param_int[0] == 1) ^ cterm->negative)
 									c = &cterm->fg_color;
 								if (c == NULL)
 									break;
@@ -3988,12 +4054,14 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				}
 				break;
 			case 'E':	// Next Line
+				clear_lcf(cterm);
 				adjust_currpos(cterm, INT_MIN, 1, 1);
 				break;
 			case 'H':
 				insert_tabstop(cterm, WHEREX());
 				break;
 			case 'M':	// Previous line
+				clear_lcf(cterm);
 				adjust_currpos(cterm, 0, -1, 1);
 				break;
 			case 'P':	// Device Control String - DCS
@@ -4068,8 +4136,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 													strcat(tmp, ";1");
 												if (cterm->attr & 128)
 													strcat(tmp, ";5");
+												if (cterm->negative)
+													strcat(tmp, ";7");
 												if (cterm->fg_tc_str == NULL) {
-													switch (cterm->attr & 7) {
+													switch ((cterm->attr >> (cterm->negative ? 4 : 0)) & 7) {
 														case 0:
 															strcat(tmp, ";30");
 															break;
@@ -4094,7 +4164,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 													}
 												}
 												if (cterm->bg_tc_str == NULL) {
-													switch ((cterm->attr >> 4) & 7) {
+													switch ((cterm->attr >> (cterm->negative ? 0 : 4)) & 7) {
 														case 1:
 															strcat(tmp, ";44");
 															break;
@@ -4294,7 +4364,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 }
 
 static void
-c64_set_reverse(struct cterminal *cterm, int on)
+c64_set_reverse(struct cterminal *cterm, bool on)
 {
 	if (on != cterm->c64reversemode)
 		cterm->c64reversemode = on;
@@ -4351,7 +4421,8 @@ cterm_reset(struct cterminal *cterm)
 	cterm->setfont_result = CTERM_NO_SETFONT_REQUESTED;
 	cterm->saved_mode = 0;
 	cterm->saved_mode_mask = 0;
-	cterm->c64reversemode = 0;
+	cterm->negative = false;
+	cterm->c64reversemode = false;
 	gettextinfo(&ti);
 	switch (ti.currmode) {
 		case C64_40X25:
@@ -4364,6 +4435,10 @@ cterm_reset(struct cterminal *cterm)
 			break;
 	}
 	attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+	if (cterm->last_column_flag & CTERM_LCF_FORCED)
+		cterm->last_column_flag &= ~(CTERM_LCF_SET);
+	else
+		cterm->last_column_flag &= ~(CTERM_LCF_SET | CTERM_LCF_ENABLED);
 	cterm->doorway_mode = 0;
 	cterm->doorway_char = 0;
 	FREE_AND_NULL(cterm->fg_tc_str);
@@ -4467,6 +4542,7 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 	cterm->log=CTERM_LOG_NONE;
 	cterm->logfile=NULL;
 	cterm->emulation=emulation;
+	cterm->last_column_flag = 0;
 	cterm_reset(cterm);
 	if(cterm->scrollback!=NULL)
 		memset(cterm->scrollback, 0, cterm->backwidth * cterm->backlines * sizeof(*cterm->scrollback));
@@ -4536,7 +4612,11 @@ advance_char(struct cterminal *cterm, int *x, int *y, int move)
 		return;
 	}
 	else {
-		if(*y == bm && (*x == rm || *x == CURR_MAXX)) {
+		if((*x == rm || *x == CURR_MAXX) && ((cterm->last_column_flag & (CTERM_LCF_ENABLED | CTERM_LCF_SET)) == CTERM_LCF_ENABLED)) {
+			cterm->last_column_flag |= CTERM_LCF_SET;
+			GOTOXY(*x, *y);
+		}
+		else if(*y == bm && (*x == rm || *x == CURR_MAXX)) {
 			cond_scrollup(cterm);
 			move = 1;
 			*x = lm;
@@ -4586,6 +4666,7 @@ ctputs(struct cterminal *cterm, char *buf)
 	for (p = buf; *p; p++) {
 		switch(*p) {
 			case '\r':
+				clear_lcf(cterm);
 				*p = 0;
 				CPUTS(outp);
 				outp = p + 1;
@@ -4593,6 +4674,7 @@ ctputs(struct cterminal *cterm, char *buf)
 				CURR_XY(&cx, &cy);
 				break;
 			case '\n':
+				clear_lcf(cterm);
 				*p = 0;
 				CPUTS(outp);
 				outp = p + 1;
@@ -4600,6 +4682,7 @@ ctputs(struct cterminal *cterm, char *buf)
 				CURR_XY(&cx, &cy);
 				break;
 			case '\b':
+				clear_lcf(cterm);
 				*p=0;
 				CPUTS(outp);
 				outp = p + 1;
@@ -4609,6 +4692,7 @@ ctputs(struct cterminal *cterm, char *buf)
 			case 7:		/* Bell */
 				break;
 			case '\t':
+				clear_lcf(cterm);
 				*p=0;
 				CPUTS(outp);
 				outp=p+1;
@@ -4616,6 +4700,12 @@ ctputs(struct cterminal *cterm, char *buf)
 				CURR_XY(&cx, &cy);
 				break;
 			default:
+				if ((cterm->last_column_flag & (CTERM_LCF_ENABLED | CTERM_LCF_SET)) == (CTERM_LCF_ENABLED | CTERM_LCF_SET)) {
+					if (cx == cterm->right_margin || cx == CURR_MAXX) {
+						advance_char(cterm, &cx, &cy, 0);
+						clear_lcf(cterm);
+					}
+				}
 				if (cx == cterm->right_margin || cx == CURR_MAXX) {
 					char ch;
 					ch = *(p + 1);
@@ -5353,7 +5443,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 
 							/* Movement */
 							case 13:	/* "\r\n" and disabled reverse. */
-								c64_set_reverse(cterm, 0);
+								c64_set_reverse(cterm, false);
 								/* Fall-through */
 							case 141:
 								adjust_currpos(cterm, INT_MIN, 0, 0);
@@ -5452,10 +5542,10 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 								}
 								break;
 							case 18:	/* Reverse mode on */
-								c64_set_reverse(cterm, 1);
+								c64_set_reverse(cterm, true);
 								break;
 							case 146:	/* Reverse mode off */
-								c64_set_reverse(cterm, 0);
+								c64_set_reverse(cterm, false);
 								break;
 
 							/* Extras */

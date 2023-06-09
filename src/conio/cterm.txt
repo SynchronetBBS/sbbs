@@ -21,6 +21,14 @@ different actual hardware VT terminals.  Luckily, everything
 is on the internet now, so you can see the details and results
 here: https://github.com/mattiase/wraptest
 
+This is implemented as described in STD-070 and can be enabled
+using CSI = 4 h or disabled using CSI = 4 l.  Note however that
+when it is set in this way, it is cleared by a reset (RIS) so
+if something will be sending arbitrary sequences (such as a
+door) it should be re-enabled on return.  It can also be set
+using CSI = 5 h, but when set in this manner, it CANNOT be
+cleared using a sequence.
+
 Control characters:
 
 0x00 - NUL:
@@ -780,7 +788,7 @@ CSI Pn e (VPR)
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn1 ; Pn2 (HVP)
+CSI Pn1 ; Pn2 f (HVP)
 	Character and Line Position
 	Defaults: Pn1 = 1  Pn2 = 1
 	Moves the cursor to the Pn2th column of the Pn1th line.
@@ -802,6 +810,18 @@ CSI = 255 h (BCSET)
 	Enable DoorWay Mode
 
 	SOURCE: BANSI.TXT
+
+CSI = 0 h (CTELCF)
+	NON-STANDARD EXTENSION
+	Enable Last Column Flag mode
+
+	SOURCE: CTerm
+
+CSI = 1 h (CTFLCF)
+	NON-STANDARD EXTENSION
+	Force Last Column Flag mode
+
+	SOURCE: CTerm
 
 CSI ? Ps... h (DECSET)
 	NON-STANDARD EXTENSION
@@ -928,6 +948,12 @@ CSI = 255 l (BCRST)
 
 	SOURCE: BANSI.TXT
 
+CSI = 0 l (CTDLCF)
+	NON-STANDARD EXTENSION
+	Disable Last Column Flag mode
+
+	SOURCE: CTerm
+
 CSI ? Ps... l (DECRST)
 	NON-STANDARD EXTENSION
 	Reset Mode
@@ -1020,7 +1046,7 @@ CSI Ps... m (SGR)
 	     colour.
 	22 - Normal intensity                           X        X
 	25 - Steady (Not blinking)                 X                X
-	27 - Positive Image - Reverses FG and BG           X  X  X  X
+	27 - Positive Image - Restores FG and BG           X  X  X  X
 	     NOTE: This should be a separate
 	           attribute than 7 but this
 	           implementation makes them equal
@@ -1133,6 +1159,14 @@ CSI = Ps n (CTSMRR)
 	CSI = 3 ; pH ; pW n
 	Where pH is the height of a character cell in pixels, and pW is
 	the width of a character cell in pixels.
+
+	When Ps is 4, CTerm will respond with a Mode Report of the form
+	CSI = 4 ; pF n
+	Where pF is 1 if LCF mode is enabled, and 0 if it is disabled.
+
+	When Ps is 5, CTerm will respond with a Mode Report of the form
+	CSI = 5 ; pF n
+	Where pF is 1 if LCF mode is forced, and 0 if it is not.
 
 	SOURCE: CTerm only.
 

@@ -3698,6 +3698,8 @@ doterm(struct bbslist *bbs)
 	        get_emulation(bbs));
 	if (!cterm)
 		return false;
+	if (bbs->force_lcf)
+		cterm->last_column_flag = (CTERM_LCF_FORCED | CTERM_LCF_ENABLED);
 	cterm->apc_handler = apc_handler;
 	cterm->apc_handler_data = bbs;
 	cterm->mouse_state_change = mouse_state_change;
