@@ -37,6 +37,7 @@
 #include <stdio.h>	/* FILE* */
 #include <link_list.h>
 #include <semwrap.h>
+#include <stdbool.h>
 #include "ciolib.h"
 
 typedef enum {
