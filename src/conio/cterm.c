@@ -3539,6 +3539,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							break;
 						case 'A':	/* Cursor Up */
 							clear_lcf(cterm);
+							// Fall-through
 						case 'k':	/* Line Position Backward */
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
@@ -3547,6 +3548,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							break;
 						case 'B':	/* Cursor Down */
 							clear_lcf(cterm);
+							// Fall-through
 						case 'e':	/* Line Position Forward */
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
@@ -3555,6 +3557,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							break;
 						case 'a':	/* Character Position Forward */
 							clear_lcf(cterm);
+							// Fall-through
 						case 'C':	/* Cursor Right */
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
@@ -3563,6 +3566,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							break;
 						case 'j':	/* Character Position Backward */
 							clear_lcf(cterm);
+							// Fall-through
 						case 'D':	/* Cursor Left */
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
