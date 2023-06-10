@@ -323,7 +323,7 @@ bool sbbs_t::checkprotresult(prot_t* prot, int error, file_t* f)
 
 	getfilepath(&cfg, f, fpath);
 	if(!checkprotresult(prot, error, fpath)) {
-		if(f->dir<cfg.total_dirs)
+		if(f->dir >= 0 && f->dir<cfg.total_dirs)
 			SAFEPRINTF4(str,"attempted to download %s (%s) from %s %s"
 				,f->name,ultoac((ulong)f->size,tmp)
 				,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
