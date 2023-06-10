@@ -1185,7 +1185,7 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(scfg,p);
-	if(fname != NULL && dirnum != INVALID_DIR && dirnum < scfg->total_dirs) {
+	if(fname != NULL && is_valid_dirnum(scfg, dirnum)) {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_downloaded_file(scfg, p->user, p->client, dirnum, fname, bytes)));
 	} else {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_downloaded(scfg, p->user, files, bytes)));
