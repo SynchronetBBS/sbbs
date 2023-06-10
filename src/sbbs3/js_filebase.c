@@ -1207,7 +1207,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	if(file.name != NULL) {
 		if((extdesc == NULL	|| use_diz_always == true)
-			&& file.dir < scfg->total_dirs
+			&& is_valid_dirnum(scfg, file.dir)
 			&& (scfg->dir[file.dir]->misc & DIR_DIZ)) {
 			get_diz(scfg, &file, &extdesc);
 		}
@@ -1282,7 +1282,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 		&& (p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_extdesc)) == SMB_SUCCESS) {
 		p->smb_result = parse_file_properties(cx, fileobj, &file, &extdesc, &metadata);
 		if((extdesc == NULL	|| use_diz_always == true)
-			&& file.dir < scfg->total_dirs
+			&& is_valid_dirnum(scfg, file.dir)
 			&& (scfg->dir[file.dir]->misc & DIR_DIZ)) {
 			get_diz(scfg, &file, &extdesc);
 		}
@@ -1820,7 +1820,7 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 
 	p->smb.dirnum = getdirnum(scfg, base);
-	if(p->smb.dirnum < scfg->total_dirs) {
+	if(is_valid_dirnum(scfg, p->smb.dirnum)) {
 		safe_snprintf(p->smb.file, sizeof(p->smb.file), "%s%s"
 			,scfg->dir[p->smb.dirnum]->data_dir, scfg->dir[p->smb.dirnum]->code);
 	} else { /* unknown code */
