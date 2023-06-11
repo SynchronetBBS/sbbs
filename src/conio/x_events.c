@@ -527,8 +527,6 @@ fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
 				x11.XRRFreeCrtcInfo(xrrci);
 			return true;
 		}
-		if (xrrci != NULL)
-			x11.XRRFreeCrtcInfo(xrrci);
 	}
 #endif
 #ifdef WITH_XINERAMA

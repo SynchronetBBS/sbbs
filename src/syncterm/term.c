@@ -2369,8 +2369,10 @@ get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz)
 	backslash(fn);
 	strcat(fn, bbs->name);
 	backslash(fn);
-	if (!isdir(fn))
-		mkpath(fn);
+	if (!isdir(fn)) {
+		if (mkpath(fn))
+			return 0;
+	}
 	if (!isdir(fn))
 		return 0;
 	return 1;
@@ -3314,7 +3316,10 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 		p = strrchr(fn, '/');
 		if (p) {
 			*p = 0;
-			mkpath(fn);
+			if (mkpath(fn)) {
+				free(buf);
+				return;
+			}
 			*p = '/';
 		}
 		f = fopen(fn, "wb");
