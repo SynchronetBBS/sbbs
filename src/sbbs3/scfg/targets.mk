@@ -9,6 +9,7 @@ all:		xpdev-mt \
 		ciolib-mt \
 		smblib \
 		encode \
+		hash \
 		$(EXEODIR) \
 		$(MTOBJODIR) \
 		$(SCFG)
