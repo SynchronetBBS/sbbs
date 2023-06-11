@@ -99,7 +99,7 @@
 		#define O_BINARY	0		/* all files in binary mode on Unix */
 		#endif
 		#undef	O_DENYNONE
-		#define O_DENYNONE  (1<<31)	/* req'd for Baja/nopen compatibility */
+		#define O_DENYNONE  (1U<<31)	/* req'd for Baja/nopen compatibility */
 
 		#define SH_DENYNO	2          /* no locks */
 		#ifdef F_SANEWRLCKNO
