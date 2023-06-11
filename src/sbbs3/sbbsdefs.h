@@ -165,7 +165,7 @@
 #define SM_NOCDTCVT		(1<<28)	// No credit to minute conversions allowed	
 #define SM_DELEMAIL		(1<<29)	// Physically remove deleted e-mail immed.	
 #define SM_USRVDELM		(1<<30)	// Users can see deleted msgs				
-#define SM_SYSVDELM		(1<<31)	// Sysops can see deleted msgs				
+#define SM_SYSVDELM		(1U<<31)// Sysops can see deleted msgs
 
 								// Bit flags for scfg_t.login
 #define LOGIN_USERNUM	(1<<0)	// Allow logins by user number
