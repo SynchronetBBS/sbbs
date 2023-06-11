@@ -339,7 +339,7 @@ static BOOL winsock_startup(void)
 static int do_bail(int code)
 {
 #if defined(_WINSOCKAPI_)
-	if(WSAInitialized && WSACleanup()!=0) 
+	if(WSAInitialized && WSACleanup()!=0)
 		lprintf(LOG_ERR,"!WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
@@ -746,7 +746,7 @@ static jsSyncMethodSpec js_global_functions[] = {
     {"write",           js_write,           0},
     {"writeln",         js_writeln,         0},
     {"print",           js_writeln,         0},
-    {"printf",          jse_printf,         1},	
+    {"printf",          jse_printf,         1},
 	{"alert",			js_alert,			1},
 	{"prompt",			js_prompt,			1},
 	{"confirm",			js_confirm,			1},
@@ -984,7 +984,7 @@ long js_exec(const char *fname, const char* buf, char** args)
 
 		if(!fexistcase(path)) {
 			lprintf(LOG_ERR,"!Module file (%s) doesn't exist",path);
-			return(-1); 
+			return(-1);
 		}
 
 		if((fp=fopen(path,"r"))==NULL) {
@@ -1429,6 +1429,7 @@ int main(int argc, char **argv, char** env)
 					// fall-through
 				case '?':
 					usage();
+					iniFreeStringList(ini);
 					return(do_bail(1));
 			}
 			continue;
@@ -1449,7 +1450,7 @@ int main(int argc, char **argv, char** env)
 	if(module==NULL && js_buf==NULL && isatty(fileno(stdin))) {
 		fprintf(stderr,"\n!No JavaScript module-name or expression specified\n");
 		usage();
-		return(do_bail(1)); 
+		return(do_bail(1));
 	}
 
 	banner(statfp);
@@ -1542,7 +1543,7 @@ int main(int argc, char **argv, char** env)
 		fprintf(statfp,"JavaScript: Destroying context\n");
 		JS_DestroyContext(js_cx);
 		fprintf(statfp,"JavaScript: Destroying runtime\n");
-		jsrt_Release(js_runtime);	
+		jsrt_Release(js_runtime);
 
 	} while((recycled || loop) && !terminated);
 
