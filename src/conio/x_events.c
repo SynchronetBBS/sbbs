@@ -1249,10 +1249,7 @@ static int video_init()
 	if(init_window())
 		return(-1);
 	bitmap_drv_init(x11_drawrect, x11_flush);
-	pthread_mutex_lock(&vstatlock);
-	bitmap_drv_init_mode(vstat.mode, NULL, NULL, 0, 0);
-	x_cvstat = vstat;
-	pthread_mutex_unlock(&vstatlock);
+	init_mode_internal(ciolib_initial_mode);
 
 	return(0);
 }
