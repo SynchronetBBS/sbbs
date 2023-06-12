@@ -359,8 +359,7 @@ static BOOL do_seteuid(BOOL to_new)
 	pthread_mutex_unlock(&setid_mutex);
 
 	if(!result) {
-		lputs(LOG_ERR,"!seteuid FAILED");
-		lputs(LOG_ERR,strerror(errno));
+		lprintf(LOG_ERR,"!seteuid FAILED with error %d (%s)", errno, strerror(errno));
 	}
 	return result;
 }
@@ -393,31 +392,26 @@ BOOL do_setuid(BOOL force)
 
 	if(getegid()!=old_gid) {
 		if(setregid(-1,old_gid) != 0)
-			lputs(LOG_ERR, "!setregid FAILED");
+			lprintf(LOG_ERR, "!setregid FAILED with error %d (%s)", errno, strerror(errno));
 	}
 	if(geteuid()!=old_gid) {
 		if(setreuid(-1,old_uid) != 0)
-			lputs(LOG_ERR, "!setreuid FAILED");
+			lprintf(LOG_ERR, "!setreuid FAILED with error %d (%s)", errno, strerror(errno));
 	}
 	if(getgid() != new_gid || getegid() != new_gid) {
-		if(setregid(new_gid,new_gid))
-		{
-			lputs(LOG_ERR,"!setgid FAILED");
-			lputs(LOG_ERR,strerror(errno));
+		if(setregid(new_gid,new_gid)) {
+			lprintf(LOG_ERR,"!setgid FAILED with error %d (%s)", errno, strerror(errno));
 			result=FALSE;
 		}
 	}
 
 	if(getuid() != new_uid || geteuid() != new_uid) {
 		if(initgroups(new_uid_name, new_gid)) {
-			lputs(LOG_ERR,"!initgroups FAILED");
-			lputs(LOG_ERR,strerror(errno));
+			lprintf(LOG_ERR,"!initgroups FAILED with error %d (%s)", errno, strerror(errno));
 			result=FALSE;
 		}
-		if(setreuid(new_uid,new_uid))
-		{
-			lputs(LOG_ERR,"!setuid FAILED");
-			lputs(LOG_ERR,strerror(errno));
+		if(setreuid(new_uid,new_uid)) {
+			lprintf(LOG_ERR,"!setuid FAILED with error %d (%s)", errno, strerror(errno));
 			result=FALSE;
 		}
 	}
@@ -492,8 +486,7 @@ static int linux_keepcaps(void)
 	 */
 	if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) < 0) {
 		if (errno != EINVAL) {
-			lputs(LOG_ERR,"linux_keepcaps FAILED");
-			lputs(LOG_ERR,strerror(errno));
+			lprintf(LOG_ERR,"linux_keepcaps FAILED with error %d (%s)", errno, strerror(errno));
 		}
         return(-1);
 	}
@@ -1774,8 +1767,7 @@ int main(int argc, char** argv)
 		whoami();
 		if(list_caps() && linux_initialprivs()) {
 			if(linux_keepcaps() < 0) {
-				lputs(LOG_ERR,"linux_keepcaps() FAILED");
-				lputs(LOG_ERR,strerror(errno));
+				lprintf(LOG_ERR,"linux_keepcaps() FAILED with error %d (%s)", errno, strerror(errno));
 			}
 			else {
 				if(!change_user()) {
@@ -1783,8 +1775,7 @@ int main(int argc, char** argv)
 				}
 				else {
 					if(!linux_minprivs()) {
-						lputs(LOG_ERR,"linux_minprivs() FAILED");
-						lputs(LOG_ERR,strerror(errno));
+						lprintf(LOG_ERR,"linux_minprivs() FAILED with error %d (%s)", errno, strerror(errno));
 					}
 					else {
 						capabilities_set=TRUE;
