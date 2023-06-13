@@ -316,8 +316,15 @@ static void recycle_all()
 }
 
 #ifdef __unix__
+pthread_once_t setid_mutex_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t setid_mutex;
-static BOOL setid_mutex_initialized=0;
+
+static void
+init_setuid_mutex(void)
+{
+	pthread_mutex_init(&setid_mutex, NULL);
+}
+
 /**********************************************************
 * Change uid of the calling process to the user if specified
 * **********************************************************/
@@ -334,11 +341,7 @@ static BOOL do_seteuid(BOOL to_new)
 	if(old_uid==new_uid && old_gid==new_gid)
 		return(TRUE);		/* do nothing */
 
-	if(!setid_mutex_initialized) {
-		pthread_mutex_init(&setid_mutex,NULL);
-		setid_mutex_initialized=TRUE;
-	}
-
+	pthread_once(&setid_mutex_once, init_setuid_mutex);
 	pthread_mutex_lock(&setid_mutex);
 
 	if(to_new) {
@@ -383,11 +386,7 @@ BOOL do_setuid(BOOL force)
 	if(old_uid==new_uid && old_gid==new_gid)
 		return(TRUE);		/* do nothing */
 
-	if(!setid_mutex_initialized) {
-		pthread_mutex_init(&setid_mutex,NULL);
-		setid_mutex_initialized=TRUE;
-	}
-
+	pthread_once(&setid_mutex_once, init_setuid_mutex);
 	pthread_mutex_lock(&setid_mutex);
 
 	if(getegid()!=old_gid) {
