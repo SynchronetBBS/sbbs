@@ -1605,7 +1605,7 @@ x11_event(XEvent *ev)
 		case ClientMessage:
 			if (ev->xclient.format == 32 && ev->xclient.data.l[0] == A(WM_DELETE_WINDOW) && A(WM_DELETE_WINDOW) != None) {
 				uint16_t key=CIO_KEY_QUIT;
-				if (write(key_pipe[1], &key, 2) != 2)
+				if (write(key_pipe[1], &key, 2) == -1)
 					return false;
 			}
 			else if(ev->xclient.format == 32 && ev->xclient.data.l[0] == A(_NET_WM_PING) && A(_NET_WM_PING) != None) {
@@ -1898,7 +1898,7 @@ x11_event(XEvent *ev)
 								else
 									ch = cpchar_from_unicode_cpoint(getcodepage(), wbuf[i], 0);
 								if (ch) {
-									if (write(key_pipe[1], &ch, 1) != 1)
+									if (write(key_pipe[1], &ch, 1) == -1)
 										return false;
 								}
 							}
@@ -2109,7 +2109,7 @@ x11_event(XEvent *ev)
 							uint16_t key=scan;
 							if (key < 128)
 								key = cpchar_from_unicode_cpoint(getcodepage(), key, key);
-							if(write(key_pipe[1], &key, (scan&0xff)?1:2) < 1)
+							if(write(key_pipe[1], &key, (scan&0xff)?1:2) == -1)
 								return false;
 						}
 						break;
