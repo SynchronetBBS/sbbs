@@ -2,7 +2,7 @@
  * This file contains ONLY the functions that are called from the
  * event thread.
  */
- 
+
 #include <math.h>
 #include <unistd.h>
 #include <stdbool.h>
@@ -36,7 +36,7 @@
 static void resize_window();
 
 /*
- * Exported variables 
+ * Exported variables
  */
 
 int local_pipe[2];			/* Used for passing local events */
@@ -1425,7 +1425,7 @@ local_draw_rect(struct rectlist *rect)
 		}
 #ifdef WITH_XRENDER
 		x11.XPutImage(dpy, xrender_pm, gc, xim, 0, 0, 0, 0, dw, dh);
-		x11.XRenderComposite(dpy, PictOpSrc, xrender_src_pict, 0, xrender_dst_pict, 
+		x11.XRenderComposite(dpy, PictOpSrc, xrender_src_pict, 0, xrender_dst_pict,
 				0, 0, 0, 0, xoff, yoff,
 				cleft, ctop);
 #else
@@ -1604,7 +1604,8 @@ static int x11_event(XEvent *ev)
 		case ClientMessage:
 			if (ev->xclient.format == 32 && ev->xclient.data.l[0] == A(WM_DELETE_WINDOW) && A(WM_DELETE_WINDOW) != None) {
 				uint16_t key=CIO_KEY_QUIT;
-				write(key_pipe[1], &key, 2);
+				if(write(key_pipe[1], &key, 2) != 2)
+					return errno;
 			}
 			else if(ev->xclient.format == 32 && ev->xclient.data.l[0] == A(_NET_WM_PING) && A(_NET_WM_PING) != None) {
 				ev->xclient.window = root;
@@ -1896,7 +1897,8 @@ static int x11_event(XEvent *ev)
 								else
 									ch = cpchar_from_unicode_cpoint(getcodepage(), wbuf[i], 0);
 								if (ch) {
-									write(key_pipe[1], &ch, 1);
+									if(write(key_pipe[1], &ch, 1) != 1)
+										return errno;
 								}
 							}
 							break;
@@ -1912,7 +1914,7 @@ static int x11_event(XEvent *ev)
 							case XK_ISO_Left_Tab:
 								scan = 15;
 								goto docode;
-					
+
 							case XK_Return:
 							case XK_KP_Enter:
 								if (ev->xkey.state & Mod1Mask) {
@@ -2081,7 +2083,7 @@ static int x11_event(XEvent *ev)
 							default:
 								if (ks < ' ' || ks > '~')
 									break;
-								scan = Ascii2Scan[ks]; 
+								scan = Ascii2Scan[ks];
 								docode:
 								if (nlock)
 									scan |= 0x100;
@@ -2106,7 +2108,8 @@ static int x11_event(XEvent *ev)
 							uint16_t key=scan;
 							if (key < 128)
 								key = cpchar_from_unicode_cpoint(getcodepage(), key, key);
-							write(key_pipe[1], &key, (scan&0xff)?1:2);
+							if(write(key_pipe[1], &key, (scan&0xff)?1:2) < 1)
+								return errno;
 						}
 						break;
 				}
@@ -2173,7 +2176,7 @@ void x11_event_thread(void *args)
 		check_scaling();
 
 		tv.tv_sec=0;
-		tv.tv_usec=54925; /* was 54925 (was also 10) */ 
+		tv.tv_usec=54925; /* was 54925 (was also 10) */
 
 		/*
 		 * Handle any events just sitting around...
@@ -2234,7 +2237,7 @@ void x11_event_thread(void *args)
 						case X11_LOCAL_COPY:
 							x11.XSetSelectionOwner(dpy, copy_paste_selection, win, CurrentTime);
 							break;
-						case X11_LOCAL_PASTE: 
+						case X11_LOCAL_PASTE:
 							{
 								Window sowner=None;
 
