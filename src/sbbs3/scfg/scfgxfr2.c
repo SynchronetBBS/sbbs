@@ -24,7 +24,7 @@
 #define CUT_LIBNUM	USHRT_MAX
 #define ADDFILES_HELP "Help adding files to directories, see `http://wiki.synchro.net/faq:files`"
 
-void dir_defaults_cfg(dir_t*);
+void dir_defaults_cfg(int libnum);
 
 char* file_sort_desc[] = {
 	"Name Ascending (case-insensitive)",
@@ -1061,7 +1061,7 @@ void xfer_cfg()
 					break;
 
 				case __COUNTER__:
-					dir_defaults_cfg(&cfg.lib[libnum]->dir_defaults);
+					dir_defaults_cfg(libnum);
 					break;
 
 				case __COUNTER__:
@@ -2118,10 +2118,11 @@ void dir_cfg(int libnum)
 	}
 }
 
-void dir_defaults_cfg(dir_t* dir)
+void dir_defaults_cfg(int libnum)
 {
 	static int dflt;
 	char str[128];
+	dir_t* dir = &cfg.lib[libnum]->dir_defaults;
 
 	while(1) {
 		int n = 0;
@@ -2235,7 +2236,7 @@ void dir_defaults_cfg(dir_t* dir)
 					,uifcYesNoOpts);
 				if(n==0) {
 					for(int j=0;j<cfg.total_dirs;j++) {
-						if(cfg.dir[j]->lib != dir->lib)
+						if(cfg.dir[j]->lib != libnum)
 							continue;
 						uifc.changes=1;
 						cfg.dir[j]->misc		= dir->misc;
