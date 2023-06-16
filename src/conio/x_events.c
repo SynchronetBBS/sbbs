@@ -327,7 +327,6 @@ initialize_atoms(void)
 	Atom atom;
 	struct AtomDef *ad;
 	long offset;
-	const char *evar;
 
 	supported_standards |= (1 << UTF8_ATOM);
 	supported_standards |= (1 << ICCCM_ATOM);
@@ -425,15 +424,10 @@ initialize_atoms(void)
 	}
 
 	/*
-	 * Wayland sucks, use CLIPBOARD instead of PRIMARY
-	 * This will annoy users in Wayland environments where
-	 * PRIMARY is properly supported (apparently GNOME)
-	 * but GNOME is why I'm not writing a Wayland bakend
-	 * right now anyway (no server-side decorations) so
-	 * they can suck it.
+	 * ChromeOS doesn't do anything reasonable with PRIMARY...
+	 * Hack in use of CLIPBOARD instead.
 	 */
-	evar = getenv("XDG_SESSION_TYPE");
-	if (evar && strcmp(evar, "wayland")) {
+	if (wm_wm_name != NULL && strcmp(wm_wm_name, "Sommelier") == 0) {
 		if (A(CLIPBOARD) != None)
 			copy_paste_selection = A(CLIPBOARD);
 	}
