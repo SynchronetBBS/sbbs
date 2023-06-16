@@ -866,8 +866,7 @@
 ""                                                      709 NodeActionListFiles
 ""                                                      710 NodeActionLoggingOn
 ""                                                      711 NodeActionLocalChat
-"\1h%s\1n\1g \1(%u\1) %u %c in multinode chat"\              712 NodeActionMultiChat
-	"%.0s%.0s%.0s channel %u"
+""				       	                712 NodeActionMultiChat
 ""                                                      713 NodeActionGuruChat
 ""                                                      714 NodeActionChatSec
 ""                                                      715 NodeActionSysopAct
@@ -1047,3 +1046,4 @@
 "\1_\1w\1hCalculating file's hash values @ELLIPSIS@\1n"    861 HashingFile
 "\1[\1>"                                                   862 HashedFile
 "New User Validation"                                      863 NewUserValEmailSubj
+"\7\7\7"                                                   864 InactivityAlert
