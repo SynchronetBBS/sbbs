@@ -37,6 +37,7 @@
 #include "genwrap.h"	/* stricmp */
 #include "filewrap.h"	/* lock/unlock/sopen */
 #include "getctrl.h"
+#include "str_util.h"	// strip_ctrl()
 
 enum {
 	 MODE_LIST
@@ -240,6 +241,7 @@ static char* extended_status(int num, char* str)
 		*str = '\0';
 	else
 		str[127] = 0;
+	strip_ctrl(str, str);
 	return str;
 }
 

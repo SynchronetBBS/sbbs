@@ -152,6 +152,7 @@ UNBAJA_OBJS = \
 			$(OBJODIR)/unbaja$(OFILE)
 
 NODE_OBJS = $(OBJODIR)/node$(OFILE) \
+            $(OBJODIR)/str_util$(OFILE) \
             $(OBJODIR)/getctrl$(OFILE)
 
 FIXSMB_OBJS = \
