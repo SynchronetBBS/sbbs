@@ -1,11 +1,12 @@
 #!/bin/sh
-make -C conio clean $@
-make -C sbbs3 clean $@
-make -C sbbs3/scfg clean $@
-make -C sbbs3/uedit clean $@
-make -C sbbs3/umonitor clean $@
-make -C smblib clean $@
-make -C uifc clean $@
-make -C xpdev clean $@
-make -C encode clean $@
-make -C hash clean $@
+DIR=$(dirname $0)
+make -C $DIR/conio clean $@
+make -C $DIR/sbbs3 clean $@
+make -C $DIR/sbbs3/scfg clean $@
+make -C $DIR/sbbs3/uedit clean $@
+make -C $DIR/sbbs3/umonitor clean $@
+make -C $DIR/smblib clean $@
+make -C $DIR/uifc clean $@
+make -C $DIR/xpdev clean $@
+make -C $DIR/encode clean $@
+make -C $DIR/hash clean $@
