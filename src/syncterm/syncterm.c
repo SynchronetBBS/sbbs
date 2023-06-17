@@ -1198,7 +1198,8 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 	if (!shared) {
 		if (((home == NULL) || (strlen(home) > MAX_PATH - 32))) { /* $HOME just too damn big */
 			if ((type == SYNCTERM_DEFAULT_TRANSFER_PATH) || (type == SYNCTERM_PATH_CACHE)) {
-				getcwd(fn, fnlen);
+				if(getcwd(fn, fnlen) == NULL)
+					return NULL;
 				backslash(fn);
 				if (type == SYNCTERM_PATH_CACHE) {
 					strcat(fn, "cache");
@@ -1539,8 +1540,7 @@ main(int argc, char **argv)
 	    "\tcols#132,lines#60,use=syncterm-bitmap,\n";
 
 	if ((argc == 2) && (strcmp(argv[1], "-T") == 0)) {
-		write(STDOUT_FILENO, syncterm_termcap, strlen(syncterm_termcap));
-		return 0;
+		return write(STDOUT_FILENO, syncterm_termcap, strlen(syncterm_termcap)) > 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 	}
 	if ((argc == 2) && (strcmp(argv[1], "-v") == 0)) {
 		fprintf(stdout, "%s\n", syncterm_version);
