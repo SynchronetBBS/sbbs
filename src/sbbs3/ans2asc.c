@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>		/* strcmp */
 #include "sauce.h"
+#include "genwrap.h"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -45,6 +46,7 @@ static void print_usage(const char* prog)
 	fprintf(stderr,"  -clear          insert a clear screen code at beginning of output file\n");
 	fprintf(stderr,"  -pause          append a pause (hit a key) code to end of output file\n");
 	fprintf(stderr,"  -space          use space characters for cursor-right movement/alignment\n");
+	fprintf(stderr,"  -esc            use C-style string literal escaping of control and CP437 chars\n");
 	fprintf(stderr,"  -delay <int>    insert a 1/10th second delay code at output byte interval\n");
 	fprintf(stderr,"                  (lower interval values result in more delays, slower display)\n");
 }
@@ -57,6 +59,7 @@ int main(int argc, char **argv)
 	FILE *out=stdout;
 	bool ice=false;
 	bool normal=false;
+	bool encode=false;
 	int cols=0;
 	int column=0;
 	int delay=0;
@@ -64,10 +67,11 @@ int main(int argc, char **argv)
 	int pause=0;
 	int space=0;
 	int newline=0;
+	char* ctrl_a = "\1";
 
 	if(argc<2) {
 		print_usage(argv[0]);
-		return(0); 
+		return(0);
 	}
 
 	for(i=1; i<argc; i++)  {
@@ -94,6 +98,10 @@ int main(int argc, char **argv)
 				normal = true;
 			else if(strcmp(argv[i], "-newline") == 0)
 				newline++;
+			else if(strcmp(argv[i], "-esc") == 0) {
+				encode = true;
+				ctrl_a = "\\x01";
+			}
 			else if(IS_DIGIT(argv[i][1]))
 				cols = atoi(argv[i] + 1);
 			else {
@@ -103,7 +111,7 @@ int main(int argc, char **argv)
 		} else if(in==stdin) {
 			if((in=fopen(argv[i],"rb"))==NULL) {
 				perror(argv[i]);
-				return(1); 
+				return(1);
 			}
 		} else if(out==stdout) {
 			if((out=fopen(argv[i],"wb"))==NULL) {
@@ -124,7 +132,7 @@ int main(int argc, char **argv)
 	const char* cond_newline = normal ? "\1+\1N\1/\1-" : "\1/";
 
 	if(clear)
-		fprintf(out,"\1N\1L");
+		fprintf(out,"%sN%sL", ctrl_a, ctrl_a);
 	esc=0;
 	while((ch=fgetc(in))!=EOF && ch != CTRL_Z) {
 		if(ch=='[' && esc) {    /* ANSI escape sequence */
@@ -149,10 +157,10 @@ int main(int argc, char **argv)
 						if(IS_DIGIT(ch)) {	/* 3 digits */
 							n[ni]*=10;
 							n[ni]+=ch&0xf;
-							ch=fgetc(in); 
-						} 
+							ch=fgetc(in);
+						}
 					}
-					ni++; 
+					ni++;
 				}
 				if(ch==';')
 					continue;
@@ -167,23 +175,23 @@ int main(int argc, char **argv)
 					case 'f':
 					case 'H':
 						if(n[0]<=1 && n[1]<=1)			/* home cursor */
-							fputs("\1'", out);
+							fprintf(out, "%s'", ctrl_a);
 						column = 0;
 						break;
 					case 'J':
 						if(n[0]==2) 					/* clear screen */
-							fputs("\1L",out);           /* ctrl-aL */
+							fprintf(out, "%sL", ctrl_a);
 						else if(n[0]==0)				/* clear to EOS */
-							fputs("\1J",out);           /* ctrl-aJ */
+							fprintf(out, "%sJ", ctrl_a);
 						column = 0;
 						break;
 					case 'K':
-						fputs("\1>",out);               /* clear to eol */
+						fprintf(out, "%s>", ctrl_a);	/* clear to eol */
 						column = cols ? (cols - 1) : 79;
 						break;
 					case 'm':
 						for(i=0;i<ni;i++) {
-							fputc(1,out);				/* ctrl-ax */
+							fprintf(out, ctrl_a);		/* ctrl-ax */
 							switch(n[i]) {
 								case 0:
 								case 2: 				/* no attribute */
@@ -246,74 +254,90 @@ int main(int argc, char **argv)
 									break;
 								case 47:
 									fputc('7',out);
-									break; 
+									break;
 								default:
 									fprintf(stderr,"Unsupported ANSI color code: %u\n", (unsigned int)n[i]);
 									break;
-							} 
+							}
 						}
 						break;
 					case 'B':	/* cursor down */
 						while(n[0]) {
-							fprintf(out,"\1]");	/* linefeed */
+							fprintf(out,"%s]", ctrl_a);	/* linefeed */
 							n[0]--;
 						}
 						break;
 					case 'C':	/* cursor right */
 						if(space)
 							fprintf(out, "%*s", n[0], " ");
-						else
-							fprintf(out,"\1%c",0x7f+n[0]);
+						else {
+							if(encode)
+								fprintf(out, "%s\\x%02X", ctrl_a, 0x7f + n[0]);
+							else
+								fprintf(out,"%s%c", ctrl_a, 0x7f+n[0]);
+						}
 						column += n[0];
 						break;
 					case 'D':	/* cursor left */
 						column -= n[0];
 						if(n[0] >= column)
-							fprintf(out,"\1[");
+							fprintf(out,"%s[", ctrl_a);
 						else
 							while(n[0]) {
-								fprintf(out,"\1<");
+								fprintf(out,"%s<", ctrl_a);
 								n[0]--;
 							}
 						break;
 					default:
 						fprintf(stderr,"Unsupported ANSI code '%c' (0x%02X)\r\n",ch,ch);
-						break; 
+						break;
 				}
-				break; 
+				break;
 			}	/* end of while */
 			esc=0;
-			continue; 
+			continue;
 		} 	/* end of ANSI expansion */
 		if(ch=='\x1b')
 			esc=1;
 		else {
 			esc=0;
-			switch(ch) {
-				case '\r':
-				case '\n':
-					fputc(ch,out);
-					column = 0;
-					break;
-				default:
-					if(cols && column >= cols) {
-						fprintf(out, "%s", cond_newline);	// Conditional-newline
+			if(encode) {
+				if(ch < ' ' || ch >= 0x7f) {
+					char* p = c_escape_char(ch);
+					if(p == NULL)
+						fprintf(out, "\\x%02X", ch);
+					else
+						fprintf(out, "%s", p);
+				}
+				else
+					fputc(ch, out);
+			} else {
+				switch(ch) {
+					case '\r':
+					case '\n':
+						fputc(ch,out);
 						column = 0;
-					}
-					fputc(ch,out);
-					column++;
-					break;
+						break;
+					default:
+						if(cols && column >= cols) {
+							fprintf(out, "%s", cond_newline);	// Conditional-newline
+							column = 0;
+						}
+						fputc(ch,out);
+						column++;
+						break;
+				}
 			}
 			if(delay && (ftell(out)%delay)==0)
-				fprintf(out,"\1,");
-		} 
+				fprintf(out,"%s,", ctrl_a);
+		}
 		if(column < 0)
 			column = 0;
 	}
 	while(newline--)
 		fprintf(out,"\r\n");
 	if(pause)
-		fprintf(out,"\1p");
+		fprintf(out,"%sp", ctrl_a);
 	return(0);
 }
 
