@@ -161,7 +161,7 @@ ifdef DEBUG
   CFLAGS += -D_FORTIFY_SOURCE=3 -O1
  endif
  ifdef SANITIZE
-  CFLAGS += -fsanitize=undefined,address
+  CFLAGS += -fsanitize=undefined,address -fno-omit-frame-pointer
   LDFLAGS += -fsanitize=undefined,address
  endif
 else
