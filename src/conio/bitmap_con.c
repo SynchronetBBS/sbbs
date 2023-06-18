@@ -610,7 +610,7 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 					}
 					else
 						fb = 0;
-					
+
 				}
 			}
 			fbb = fb & (0x80 >> (fdx & 7));
@@ -844,10 +844,10 @@ static int update_from_vmem(int force)
 	vmem_ptr = get_vmem(&vstat);
 	cols = vstat.cols;
 
-	/* 
+	/*
 	 * Now we go through each character seeing if it's changed (or force is set)
 	 * We combine updates into rectangles by lines...
-	 * 
+	 *
 	 * First, in the same line, we build this_rect.
 	 * At the end of the line, if this_rect is the same width as the screen,
 	 * we add it to last_rect.
@@ -1931,7 +1931,7 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 	vstat.flags = VIDMODES_FLAG_PALETTE_VMEM;
 	pthread_mutex_lock(&screenlock);
 	for (i = 0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++) {
-		palette[i] = (0xff << 24) | (dac_default[i].red << 16) | (dac_default[i].green << 8) | dac_default[i].blue;
+		palette[i] = (0xffU << 24) | (dac_default[i].red << 16) | (dac_default[i].green << 8) | dac_default[i].blue;
 	}
 	pthread_mutex_unlock(&screenlock);
 	pthread_mutex_unlock(&vstatlock);
