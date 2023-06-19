@@ -1539,7 +1539,6 @@ net_wm_state_is_cb(bool (*cb)(Atom))
 			}
 			ret = (Atom *)prop;
 			if (cb(*ret))
-			if (*ret == A(_NET_WM_STATE_FULLSCREEN))
 				is = true;
 			x11.XFree(prop);
 			if (is)
