@@ -571,6 +571,8 @@ char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes, BOOL is_utf
 	struct paragraph *paragraphs;
 	BOOL		has_crs;
 
+	if (oldlen < 1)
+		oldlen = 79;
 	paragraphs = word_unwrap(inbuf, oldlen, handle_quotes, &has_crs, is_utf8);
 	if (paragraphs == NULL)
 		return NULL;
