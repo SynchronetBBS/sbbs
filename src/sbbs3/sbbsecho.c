@@ -955,6 +955,9 @@ bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_
 
 	if(pkt_type == PKT_TYPE_2_2) {
 		hdr->type2_2.subversion = 2;	/* 2.2 */
+		hdr->type2_2.origpoint = orig.point;
+		hdr->type2_2.destpoint = dest.point;
+		memset(hdr->type2_2.reserved, 0, sizeof(hdr->type2_2.reserved));
 		strncpy((char*)hdr->type2_2.origdomn,zone_domain(orig.zone),sizeof(hdr->type2_2.origdomn));
 		strncpy((char*)hdr->type2_2.destdomn,zone_domain(dest.zone),sizeof(hdr->type2_2.destdomn));
 		return true;
