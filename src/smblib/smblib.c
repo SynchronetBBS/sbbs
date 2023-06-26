@@ -190,7 +190,7 @@ int smb_lock(smb_t* smb)
 			if(time(NULL)-start>=(time_t)smb->retry_time) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)
 					,"%s %d '%s' creating %s", __FUNCTION__
-					,get_errno(),STRERROR(get_errno()),path);
+					,get_errno(),strerror(get_errno()),path);
 				return(SMB_ERR_LOCK);
 			}
 		SLEEP(smb->retry_delay);
@@ -207,7 +207,7 @@ int smb_unlock(smb_t* smb)
 	if(remove(path)!=0) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s %d '%s' removing %s", __FUNCTION__
-			,get_errno(),STRERROR(get_errno()),path);
+			,get_errno(),strerror(get_errno()),path);
 		return(SMB_ERR_DELETE);
 	}
 	return(SMB_SUCCESS);
@@ -243,7 +243,7 @@ int smb_trunchdr(smb_t* smb)
 		if(get_errno()!=EACCES && get_errno()!=EAGAIN) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' changing header file size", __FUNCTION__
-				,get_errno(),STRERROR(get_errno()));
+				,get_errno(),strerror(get_errno()));
 			return(SMB_ERR_WRITE);
 		}
 		if(!start)
@@ -315,7 +315,7 @@ int smb_getstatus(smb_t* smb)
 	if(fseek(smb->shd_fp,sizeof(smbhdr_t),SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s %d '%s' seeking to %d in header file", __FUNCTION__
-			,get_errno(),STRERROR(get_errno()), (int)sizeof(smbhdr_t));
+			,get_errno(),strerror(get_errno()), (int)sizeof(smbhdr_t));
 		return(SMB_ERR_SEEK);
 	}
 	i=smb_fread(smb,&(smb->status),sizeof(smbstatus_t),smb->shd_fp);
@@ -341,7 +341,7 @@ int smb_putstatus(smb_t* smb)
 	if(fseek(smb->shd_fp,sizeof(smbhdr_t),SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s %d '%s' seeking to %d in header file", __FUNCTION__
-			,get_errno(),STRERROR(get_errno()), (int)sizeof(smbhdr_t));
+			,get_errno(),strerror(get_errno()), (int)sizeof(smbhdr_t));
 		return(SMB_ERR_SEEK);
 	}
 	i=fwrite(&(smb->status),1,sizeof(smbstatus_t),smb->shd_fp);
@@ -365,7 +365,7 @@ int smb_unlocksmbhdr(smb_t* smb)
 		}
 		if(unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t))!=0) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"%s %d '%s' unlocking message base header", __FUNCTION__,get_errno(),STRERROR(get_errno()));
+				,"%s %d '%s' unlocking message base header", __FUNCTION__,get_errno(),strerror(get_errno()));
 			return(SMB_ERR_UNLOCK);
 		}
 		smb->locked=FALSE;
@@ -472,7 +472,7 @@ int smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 			if(fseek(smb->sid_fp,byte_offset,SEEK_SET)) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)
 					,"%s %d '%s' seeking to offset %d (byte %u) in index file", __FUNCTION__
-					,get_errno(),STRERROR(get_errno())
+					,get_errno(),strerror(get_errno())
 					,(int)msg->idx_offset,byte_offset);
 				return(SMB_ERR_SEEK);
 			}
@@ -500,7 +500,7 @@ int smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 		if(fseek(smb->sid_fp,l*idxreclen,SEEK_SET)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' seeking to offset %u (byte %u) in index file", __FUNCTION__
-				,get_errno(),STRERROR(get_errno())
+				,get_errno(),strerror(get_errno())
 				,l,(uint)(l*idxreclen));
 			return(SMB_ERR_SEEK);
 		}
@@ -574,7 +574,7 @@ int smb_getfirstidx(smb_t* smb, idxrec_t *idx)
 	if(fseek(smb->sid_fp,0,SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s %d '%s' seeking to beginning of index file", __FUNCTION__
-			,get_errno(),STRERROR(get_errno()));
+			,get_errno(),strerror(get_errno()));
 		return(SMB_ERR_SEEK);
 	}
 	if(smb_fread(smb,idx,sizeof(*idx),smb->sid_fp)!=sizeof(*idx)) {
@@ -607,7 +607,7 @@ int smb_getlastidx(smb_t* smb, idxrec_t *idx)
 	if(fseeko(smb->sid_fp,length-idxreclen,SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s %d '%s' seeking to %u in index file", __FUNCTION__
-			,get_errno(),STRERROR(get_errno())
+			,get_errno(),strerror(get_errno())
 			,(unsigned)(length-sizeof(idxrec_t)));
 		return(SMB_ERR_SEEK);
 	}
@@ -989,7 +989,7 @@ int smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		if(fseek(smb->shd_fp,msg->idx.offset,SEEK_SET) != 0) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' seeking to offset %u in header file", __FUNCTION__
-				,get_errno(),STRERROR(get_errno())
+				,get_errno(),strerror(get_errno())
 				,(uint)msg->idx.offset);
 			return(SMB_ERR_SEEK);
 		}
@@ -1512,7 +1512,7 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 		if(get_errno()!=EACCES && get_errno()!=EAGAIN) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' opening %s", __FUNCTION__
-				,get_errno(),STRERROR(get_errno()),str);
+				,get_errno(),strerror(get_errno()),str);
 			return(SMB_ERR_OPEN);
 		}
 		if(!start)
@@ -1549,7 +1549,7 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 			free(buf);
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' reading %" PRIdOFF " bytes", __FUNCTION__
-				,get_errno(),STRERROR(get_errno()),length);
+				,get_errno(),strerror(get_errno()),length);
 			return(SMB_ERR_READ);
 		}
 
@@ -1582,7 +1582,7 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 	if(wr!=sizeof(crc)) {	
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s %d '%s' writing %d bytes", __FUNCTION__
-			,get_errno(),STRERROR(get_errno()),(int)sizeof(crc));
+			,get_errno(),strerror(get_errno()),(int)sizeof(crc));
 		return(SMB_ERR_WRITE);
 	}
 
@@ -1809,7 +1809,7 @@ uint16_t smb_voted_already(smb_t* smb, uint32_t msgnum, const char* name, enum s
 	if(fseek(smb->sid_fp,0,SEEK_SET)) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error)
 			,"%s %d '%s' seeking to beginning of index file", __FUNCTION__
-			,get_errno(), STRERROR(get_errno()));
+			,get_errno(), strerror(get_errno()));
 		return SMB_ERR_SEEK;
 	}
 	memset(&msg, 0, sizeof(msg));
@@ -1864,7 +1864,7 @@ int smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 	if(fseek(smb->sid_fp,msg->idx_offset*idxreclen,SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s %d '%s' seeking to %u in index file", __FUNCTION__
-			,get_errno(),STRERROR(get_errno())
+			,get_errno(),strerror(get_errno())
 			,(unsigned)(msg->idx_offset*idxreclen));
 		return(SMB_ERR_SEEK);
 	}
@@ -1872,7 +1872,7 @@ int smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 		if(!fwrite(&msg->file_idx, sizeof(msg->file_idx), 1, smb->sid_fp)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' writing index", __FUNCTION__
-				,get_errno(),STRERROR(get_errno()));
+				,get_errno(),strerror(get_errno()));
 			return(SMB_ERR_WRITE);
 		}
 	} else {
@@ -1909,7 +1909,7 @@ int smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 	if(fseek(smb->shd_fp,msg->idx.offset,SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s %d '%s' seeking to %u in header file", __FUNCTION__
-			,get_errno(),STRERROR(get_errno()), (uint)msg->idx.offset);
+			,get_errno(),strerror(get_errno()), (uint)msg->idx.offset);
 		return(SMB_ERR_SEEK);
 	}
 	/* Verify that the number of blocks required to stored the actual 
@@ -1929,7 +1929,7 @@ int smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 		if(fseeko(smb->shd_fp, old_msg.idx.offset, SEEK_SET) != 0) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' seeking to %u in header file (to delete)", __FUNCTION__
-				,get_errno(),STRERROR(get_errno()), (uint)msg->idx.offset);
+				,get_errno(),strerror(get_errno()), (uint)msg->idx.offset);
 			return(SMB_ERR_SEEK);
 		}
 		old_msg.hdr.attr |= MSG_DELETE;

@@ -542,7 +542,7 @@ int ftp_remove(SOCKET sock, int line, const char* fname, const char* username)
 
 	if(fexist(fname) && (ret=remove(fname))!=0) {
 		if(fexist(fname))	// In case there was a race condition (other host deleted file first)
-			lprintf(LOG_ERR,"%04d <%s> !ERROR %d (%s) (line %d) removing file: %s", sock, username, errno, STRERROR(errno), line, fname);
+			lprintf(LOG_ERR,"%04d <%s> !ERROR %d (%s) (line %d) removing file: %s", sock, username, errno, strerror(errno), line, fname);
 	}
 	return ret;
 }

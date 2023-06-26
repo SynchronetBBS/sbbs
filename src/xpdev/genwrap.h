@@ -264,8 +264,6 @@ DLLEXPORT char*		truncsp_lines(char* str);
 /* Truncate new-line chars off end of string */
 DLLEXPORT char*		truncnl(char* str);
 
-#define STRERROR(x)		strerror(x)
-
 /* Re-entrant version of strerror() */
 DLLEXPORT char*		safe_strerror(int errnum, char* buf, size_t buflen);
 

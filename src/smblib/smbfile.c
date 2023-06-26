@@ -147,7 +147,7 @@ int smb_open_fp(smb_t* smb, FILE** fp, int share)
 		if(get_errno()!=EACCES && get_errno()!=EAGAIN) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' opening %s", __FUNCTION__
-				,get_errno(),STRERROR(get_errno()),path);
+				,get_errno(),strerror(get_errno()),path);
 			return(SMB_ERR_OPEN);
 		}
 		if(!start)
@@ -164,7 +164,7 @@ int smb_open_fp(smb_t* smb, FILE** fp, int share)
 	if((*fp=fdopen(file,"r+b"))==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s %d '%s' fdopening %s (%d)", __FUNCTION__
-			,get_errno(),STRERROR(get_errno()),path,file);
+			,get_errno(),strerror(get_errno()),path,file);
 		close(file);
 		return(SMB_ERR_OPEN); 
 	}

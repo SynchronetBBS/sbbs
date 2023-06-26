@@ -988,7 +988,7 @@ long js_exec(const char *fname, const char* buf, char** args)
 		}
 
 		if((fp=fopen(path,"r"))==NULL) {
-			lprintf(LOG_ERR,"!Error %d (%s) opening %s",errno,STRERROR(errno),path);
+			lprintf(LOG_ERR,"!Error %d (%s) opening %s",errno,strerror(errno),path);
 			return(-1);
 		}
 	}
