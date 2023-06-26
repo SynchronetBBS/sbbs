@@ -942,6 +942,11 @@ public:
 	void	scroll_hotspots(int count);
 	void	set_mouse(int mode);
 
+	// Thread-safe std/socket errno description getters
+	char	strerror_buf[256]{};
+	const char* strerror(int errnum) { return safe_strerror(errnum, strerror_buf, sizeof strerror_buf); }
+	const char* socket_strerror(int errnum) { return ::socket_strerror(errnum, strerror_buf, sizeof strerror_buf); }
+
 	/* prntfile.cpp */
 	bool	printfile(const char* fname, int mode, int org_cols = 0, JSObject* obj = NULL);
 	bool	printtail(const char* fname, int lines, int mode, int org_cols = 0, JSObject* obj = NULL);
