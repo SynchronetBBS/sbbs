@@ -137,7 +137,8 @@ int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 				,pkthdr.type2plus.destzone, dest.zone);
 	} else if(pkthdr.type2_2.subversion==2) {					/* Type 2.2 Packet Header (FSC-45) */
 		fprintf(stdout,"2.2 (prod: %02X, rev: %u)", pkthdr.type2_2.prodcode, pkthdr.type2_2.prodrev);
-		dest.point=pkthdr.type2_2.destpoint; 
+		orig.point=pkthdr.type2_2.origpoint;
+		dest.point=pkthdr.type2_2.destpoint;
 		memcpy(orig.domain, pkthdr.type2_2.origdomn, sizeof(pkthdr.type2_2.origdomn));
 		memcpy(dest.domain, pkthdr.type2_2.destdomn, sizeof(pkthdr.type2_2.destdomn));
 	} else
