@@ -51,9 +51,9 @@ static socket_option_t socket_options[] = {
 #endif
 #endif
 
-	{ "REUSEADDR",			0,				SOL_SOCKET,		SO_REUSEADDR		},	
+	{ "REUSEADDR",			0,				SOL_SOCKET,		SO_REUSEADDR		},
 #ifdef SO_REUSEPORT	/* BSD */
-	{ "REUSEPORT",			0,				SOL_SOCKET,		SO_REUSEPORT		},	
+	{ "REUSEPORT",			0,				SOL_SOCKET,		SO_REUSEPORT		},
 #endif
 #ifdef SO_EXCLUSIVEADDRUSE /* WinSock */
 	{ "EXCLUSIVEADDRUSE",	0,				SOL_SOCKET,		SO_EXCLUSIVEADDRUSE },
@@ -63,7 +63,7 @@ static socket_option_t socket_options[] = {
 	{ "BROADCAST",			SOCK_DGRAM,		SOL_SOCKET,		SO_BROADCAST		},
 	{ "OOBINLINE",			SOCK_STREAM,	SOL_SOCKET,		SO_OOBINLINE		},
 
-#ifdef SO_ACCEPTCONN											
+#ifdef SO_ACCEPTCONN
 	{ "ACCEPTCONN",			SOCK_STREAM,	SOL_SOCKET,		SO_ACCEPTCONN		},
 #endif
 #ifdef SO_PRIORITY		/* Linux */
@@ -84,44 +84,44 @@ static socket_option_t socket_options[] = {
 
 	/* IPPROTO-level socket options */
 	{ "TCP_NODELAY",		SOCK_STREAM,	IPPROTO_TCP,	TCP_NODELAY			},
-	/* The following are platform-specific */					
-#ifdef TCP_MAXSEG											
+	/* The following are platform-specific */
+#ifdef TCP_MAXSEG
 	{ "TCP_MAXSEG",			SOCK_STREAM,	IPPROTO_TCP,	TCP_MAXSEG			},
-#endif															
-#ifdef TCP_CORK													
+#endif
+#ifdef TCP_CORK
 	{ "TCP_CORK",			SOCK_STREAM,	IPPROTO_TCP,	TCP_CORK			},
-#endif															
-#ifdef TCP_KEEPIDLE												
+#endif
+#ifdef TCP_KEEPIDLE
 	{ "TCP_KEEPIDLE",		SOCK_STREAM,	IPPROTO_TCP,	TCP_KEEPIDLE		},
-#endif															
-#ifdef TCP_KEEPINTVL											
+#endif
+#ifdef TCP_KEEPINTVL
 	{ "TCP_KEEPINTVL",		SOCK_STREAM,	IPPROTO_TCP,	TCP_KEEPINTVL		},
-#endif															
-#ifdef TCP_KEEPCNT												
+#endif
+#ifdef TCP_KEEPCNT
 	{ "TCP_KEEPCNT",		SOCK_STREAM,	IPPROTO_TCP,	TCP_KEEPCNT			},
-#endif															
+#endif
 #ifdef TCP_KEEPALIVE	/* SunOS */
 	{ "TCP_KEEPALIVE",		SOCK_STREAM,	IPPROTO_TCP,	TCP_KEEPALIVE		},
-#endif															
-#ifdef TCP_SYNCNT												
+#endif
+#ifdef TCP_SYNCNT
 	{ "TCP_SYNCNT",			SOCK_STREAM,	IPPROTO_TCP,	TCP_SYNCNT			},
-#endif															
-#ifdef TCP_LINGER2												
+#endif
+#ifdef TCP_LINGER2
 	{ "TCP_LINGER2",		SOCK_STREAM,	IPPROTO_TCP,	TCP_LINGER2			},
-#endif														
-#ifdef TCP_DEFER_ACCEPT										
+#endif
+#ifdef TCP_DEFER_ACCEPT
 	{ "TCP_DEFER_ACCEPT",	SOCK_STREAM,	IPPROTO_TCP,	TCP_DEFER_ACCEPT	},
-#endif															
-#ifdef TCP_WINDOW_CLAMP											
+#endif
+#ifdef TCP_WINDOW_CLAMP
 	{ "TCP_WINDOW_CLAMP",	SOCK_STREAM,	IPPROTO_TCP,	TCP_WINDOW_CLAMP	},
-#endif														
-#ifdef TCP_QUICKACK											
+#endif
+#ifdef TCP_QUICKACK
 	{ "TCP_QUICKACK",		SOCK_STREAM,	IPPROTO_TCP,	TCP_QUICKACK		},
-#endif						
-#ifdef TCP_NOPUSH			
+#endif
+#ifdef TCP_NOPUSH
 	{ "TCP_NOPUSH",			SOCK_STREAM,	IPPROTO_TCP,	TCP_NOPUSH			},
-#endif						
-#ifdef TCP_NOOPT			
+#endif
+#ifdef TCP_NOOPT
 	{ "TCP_NOOPT",			SOCK_STREAM,	IPPROTO_TCP,	TCP_NOOPT			},
 #endif
 #if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
@@ -231,7 +231,7 @@ off_t recvfilesocket(int sock, int file, off_t *offset, off_t count)
 	 * returns number ob bytes written and sets offset
 	 * to the new offset
 	 */
-	 
+
 	char*	buf;
 	ssize_t	rd;
 	ssize_t	wr;
@@ -240,7 +240,7 @@ off_t recvfilesocket(int sock, int file, off_t *offset, off_t count)
 		errno=ERANGE;
 		return(-1);
 	}
-		
+
 	if((buf=(char*)malloc((size_t)count))==NULL) {
 		errno=ENOMEM;
 		return(-1);
@@ -388,7 +388,7 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	if(i==SOCKET_ERROR)
 		return(FALSE);
 
-	if(i==0) 
+	if(i==0)
 		return(TRUE);
 
 	if(wr_p!=NULL && FD_ISSET(sock,wr_set_p)) {
@@ -399,7 +399,7 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 
 	if(rd_p !=NULL || wr_p==NULL)  {
 		rd=recv(sock,&ch,1,MSG_PEEK);
-		if(rd==1 
+		if(rd==1
 			|| (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE)) {
 			if(rd_p!=NULL)
 				*rd_p=TRUE;
@@ -616,7 +616,7 @@ union xp_sockaddr* inet_ptoaddr(const char *addr_str, union xp_sockaddr *addr, s
     hints.ai_flags = AI_NUMERICHOST|AI_PASSIVE;
     if(getaddrinfo(addr_str, NULL, &hints, &res))
         return NULL;
-    
+
     for(cur = res; cur; cur = cur->ai_next) {
         if(cur->ai_addr->sa_family == AF_INET6)
             break;
@@ -728,6 +728,16 @@ DLLEXPORT void set_socket_errno(int err)
 	WSASetLastError(err);
 #else
 	errno = err;
+#endif
+}
+
+DLLEXPORT int get_socket_errrno(void)
+{
+#if defined(_WINSOCKAPI_)
+	int wsa_error = WSAGetLastError();
+	return wsa_error >= WSABASEERR ? wsa_error - WSABASEERR : wsa_error;
+#else
+	return errno;
 #endif
 }
 
