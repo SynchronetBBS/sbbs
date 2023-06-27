@@ -1983,7 +1983,7 @@ get_hexstr(char *str, char *end, char *out)
 static void parse_macro_string(struct cterminal *cterm, bool finish)
 {
 	char *p = cterm->strbuf;
-	char *end;
+	char *end = NULL;
 	int i;
 
 	if (cterm->strbuflen == 0) {
@@ -2127,16 +2127,20 @@ static void save_extended_colour_seq(struct cterminal *cterm, int fg, struct esc
 
 	switch (count) {
 		case 1:
-			asprintf(str, "%s", seq->param[seqoff]);
+			if(asprintf(str, "%s", seq->param[seqoff]) < 0)
+				*str = NULL;
 			break;
 		case 2:
-			asprintf(str, "%s;%s", seq->param[seqoff], seq->param[seqoff+1]);
+			if(asprintf(str, "%s;%s", seq->param[seqoff], seq->param[seqoff+1]) < 0)
+				*str = NULL;
 			break;
 		case 3:
-			asprintf(str, "%s;%s;%s", seq->param[seqoff], seq->param[seqoff+1], seq->param[seqoff+2]);
+			if(asprintf(str, "%s;%s;%s", seq->param[seqoff], seq->param[seqoff+1], seq->param[seqoff+2]) < 0)
+				*str = NULL;
 			break;
 		case 5:
-			asprintf(str, "%s;%s;%s;%s;%s", seq->param[seqoff], seq->param[seqoff+1], seq->param[seqoff+2], seq->param[seqoff+3], seq->param[seqoff+4]);
+			if(asprintf(str, "%s;%s;%s;%s;%s", seq->param[seqoff], seq->param[seqoff+1], seq->param[seqoff+2], seq->param[seqoff+3], seq->param[seqoff+4]) < 0)
+				*str = NULL;
 			break;
 	}
 }
