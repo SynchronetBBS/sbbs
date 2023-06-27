@@ -1,5 +1,3 @@
-/* $Id: cterm.c,v 1.313 2020/06/27 00:04:45 deuce Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,20 +11,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -677,7 +663,7 @@ scr_maxy(struct cterminal *cterm, enum cterm_coordinates coord)
 #define CURR_MAXY	((cterm->extattr & CTERM_EXTATTR_ORIGINMODE) ? TERM_MAXY : ABS_MAXY)
 
 static void
-coord_conv_xy(struct cterminal *cterm, enum cterm_coordinates from_coord, 
+coord_conv_xy(struct cterminal *cterm, enum cterm_coordinates from_coord,
     enum cterm_coordinates to_coord, int *x, int *y)
 {
 	if (from_coord == to_coord)
@@ -3367,7 +3353,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							delete_tabstop(cterm, seq->param_int[0]);
 						}
 					}
-					/* 
+					/*
 					 * END OF STANDARD CONTROL FUNCTIONS
 					 * AFTER THIS IS ALL PRIVATE EXTENSIONS
 					 */
@@ -3475,9 +3461,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								    (seq->param_int[2] <= seq->param_int[4]) &&
 								    (seq->param_int[3] <= seq->param_int[5]) &&
 								    (pix = getpixels(
-								      (seq->param_int[3] - 1 + cterm->x - 1)*vparams[vmode].charwidth, 
-								      (seq->param_int[2] - 1 + cterm->y - 1)*vparams[vmode].charheight, 
-								      (seq->param_int[5] + cterm->x - 1)*vparams[vmode].charwidth - 1, 
+								      (seq->param_int[3] - 1 + cterm->x - 1)*vparams[vmode].charwidth,
+								      (seq->param_int[2] - 1 + cterm->y - 1)*vparams[vmode].charheight,
+								      (seq->param_int[5] + cterm->x - 1)*vparams[vmode].charwidth - 1,
 								      (seq->param_int[4] + cterm->y - 1)*vparams[vmode].charheight - 1, true)) != NULL) {
 									crc = crc16((void *)pix->pixels, sizeof(pix->pixels[0])*pix->width*pix->height);
 									good = 1;
@@ -4009,7 +3995,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							break;
 						case 'o': /* ToDo?  Define Area Qualification */
 							break;
-						/* 
+						/*
 						 * END OF STANDARD CONTROL FUNCTIONS
 						 * AFTER THIS IS ALL PRIVATE EXTENSIONS
 						 */
@@ -4944,7 +4930,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 			palette[i] += palette_offset;
 		set_modepalette(palette);
 	}
-	
+
 	/* Deedle up the fonts */
 	orig_fonts[0] = getfont(1);
 	orig_fonts[1] = getfont(2);
@@ -5054,7 +5040,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 							break;
 						case CTERM_STRING_SOS:
 							/* Anything but SOS or ST (ESC X or ESC \) */
-							if ((ch[0] == 'X' || ch[0] == '\\') && 
+							if ((ch[0] == 'X' || ch[0] == '\\') &&
 							    cterm->strbuf && cterm->strbuflen &&
 							    cterm->strbuf[cterm->strbuflen-1] == '\x1b') {
 								cterm->strbuflen--;
