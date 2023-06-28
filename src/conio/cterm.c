@@ -2045,6 +2045,8 @@ all_done:
 		size_t mlen = 0;
 		char *out;
 
+		if (end == NULL)
+			return;
 		// First, calculate the required length...
 		for (p = cterm->strbuf; p <= end;) {
 			if (*p == '!') {
