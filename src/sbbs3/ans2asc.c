@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 						break;
 					case 'm':
 						for(i=0;i<ni;i++) {
-							fprintf(out, ctrl_a);		/* ctrl-ax */
+							fprintf(out, "%s", ctrl_a);		/* ctrl-ax */
 							switch(n[i]) {
 								case 0:
 								case 2: 				/* no attribute */
