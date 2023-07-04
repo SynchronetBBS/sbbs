@@ -1538,7 +1538,7 @@ net_wm_state_is_cb(bool (*cb)(Atom))
 				break;
 			}
 			ret = (Atom *)prop;
-			if (nir == sizeof(Atom) && cb(*ret))
+			if (cb(*ret))
 				is = true;
 			x11.XFree(prop);
 			if (is)
