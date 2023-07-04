@@ -216,7 +216,7 @@ term_setattr(int attr)
 static void
 readInPix(char codeCh, int ooii_mode)
 {
-	int fptr;
+	int fptr = 0;
 
 	term_clearscreen();
 	term_gotoxy(1, 1);
