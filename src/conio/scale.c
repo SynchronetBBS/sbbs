@@ -853,7 +853,7 @@ interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newh
 	memcpy(nline, src + width, width * sizeof(*tline));
 	for (y = 0; y < newheight; y++) {
 		const int yposi = ypos;
-		const uint16_t weight = ypos * 65536;
+		const uint16_t weight = ((uint32_t)(ypos * 65536)) & 0xffff;
 		if (yposi != last_yposi) {
 			ywn += width;
 			last_yposi = yposi;
