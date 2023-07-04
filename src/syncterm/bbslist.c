@@ -234,7 +234,7 @@ char                         *rate_names[] = {
 };
 int                           rates[] = {300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 115200, 0};
 
-static char                  *rip_versions[] = {"Off", "RIPv1", "RIPv3"};
+static char                  *rip_versions[] = {"Off", "RIPv1", "RIPv3", NULL};
 
 static char                  *fc_names[] = {"RTS/CTS", "XON/XOFF", "RTS/CTS and XON/XOFF", "None", NULL};
 static char                  *fc_enum[] = {"RTSCTS", "XONXOFF", "RTSCTS_XONXOFF", "None", NULL};
