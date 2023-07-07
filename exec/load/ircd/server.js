@@ -807,6 +807,30 @@ function Server_Work(cmdline) {
 			p[0] = origin.nick;
 		origin.quit(p[0]);
 		break;
+	case "RAKILL":
+		if (!p[1])
+			break;
+
+		if (!origin.uline) {
+			umode_notice(USERMODE_OPER,"Notice",format(
+				"Non-U:Lined server %s trying to utilize RAKILL.",
+				origin.nick
+			));
+			break;
+		}
+
+		this.bcast_to_servers_raw(format(
+			":%s RAKILL %s %s",
+			origin.nick,
+			p[0],
+			p[1]
+		));
+
+		k = p[1] + "@" + p[0];
+		if (!isklined(k))
+			break;
+		remove_kline(k);
+		break;
 	case "SERVER":
 		if (!p[2])
 			break;
