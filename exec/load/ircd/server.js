@@ -301,7 +301,7 @@ function Server_Work(cmdline) {
 		));
 		break;
 	case "INVITE":
-		if (!p[1] || origin.server)
+		if (!p[1] || p[2] === undefined || origin.server)
 			break;
 		tmp = Channels[p[2].toUpperCase()];
 		if (!tmp)
