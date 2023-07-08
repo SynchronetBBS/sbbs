@@ -2774,25 +2774,18 @@ function accept_new_socket() {
 		return false;
 	}
 
-	// Start of RBL check
-	// We don't account for not being able to access to dns server.
-	const res=checkip(sock.remote_ip_address)
-	log(LOG_DEBUG,"RES is " +res);
-	if (res === undefined) {
-		log(LOG_DEBUG,"!ERROR Socket has an invalid IP address: "+sock.remote_ip_address+"  Closing.");
-		sock.close();
-		return false;
-	} else if (res !== 'NXDOMAIN') {
+	// Start of DNSBL check
+	const dnsbl_result = check_dnsbl(sock.remote_ip_address, 'dnsbl.dronebl.org');
+	if (dnsbl_result) {
 		sock.send(format(
-			":%s 463 * :This IP is not welcome. Visit http://dronebl.org/lookup?ip="+sock.remote_ip_address+"&network=Synchronet for more information.",
+			":%s 463 * :Your IP address is not welcome. Visit http://dronebl.org/lookup?ip="+sock.remote_ip_address+"&network=Synchronet for more information.",
 			ServerName
 		));
-		log(LOG_DEBUG,"Blocking "+sock.remote_ip_address+"  Closing.");
+		log(LOG_NOTICE, format("DNS-Blocked IP address %s resolves to %s", sock.remote_ip_address, dnsbl_result));
 		sock.close();
 		return false;
 	}
-	// End of RBL check
-
+	// End of DNSBL check
 
 	if (IP_Banned(sock.remote_ip_address)) {
 		sock.send(format(
@@ -3087,8 +3080,7 @@ function StatsM() {
 }
 
 
-function checkip(ip) {
-	const rbl='dnsbl.dronebl.org';
+function check_dnsbl(ip, rbl) {
 	m = ip.match(/^(?:::ffff:)?([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$/i);
 	if (m !== null) {
 		// IPv4 Address
@@ -3129,5 +3121,5 @@ function checkip(ip) {
 		});
 
 	}
-	return resolve_ip(qstr) || 'NXDOMAIN';
+	return resolve_ip(qstr);
 }
