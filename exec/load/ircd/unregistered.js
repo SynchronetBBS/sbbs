@@ -315,11 +315,11 @@ function Unregistered_Quit(msg) {
 	else
 		log(LOG_INFO, format('[UNREG] QUIT ("%s")', msg));
 	this.socket.clearOn("read", this.socket.callback_id);
-	this.socket.close();
 	log(LOG_NOTICE,format(
 		"%04u Connection closed.",
 		this.socket.descriptor
 	));
+	this.socket.close();
 	if (   typeof this.cline === 'object'
 		&& YLines[this.ircclass].connfreq > 0
 		&& this.cline.port > 0
