@@ -2774,6 +2774,26 @@ function accept_new_socket() {
 		return false;
 	}
 
+	// Start of RBL check
+	// We don't account for not being able to access to dns server.
+	const res=checkip(sock.remote_ip_address)
+	log(LOG_DEBUG,"RES is " +res);
+	if (res === undefined) {
+		log(LOG_DEBUG,"!ERROR Socket has an invalid IP address: "+sock.remote_ip_address+"  Closing.");
+		sock.close();
+		return false;
+	} else if (res !== 'NXDOMAIN') {
+		sock.send(format(
+			":%s 463 * :This IP is not welcome. Visit http://dronebl.org/lookup?ip="+sock.remote_ip_address+"&network=Synchronet for more information.",
+			ServerName
+		));
+		log(LOG_DEBUG,"Blocking "+sock.remote_ip_address+"  Closing.");
+		sock.close();
+		return false;
+	}
+	// End of RBL check
+
+
 	if (IP_Banned(sock.remote_ip_address)) {
 		sock.send(format(
 			":%s 465 * :You've been banned from this server.\r\n",
@@ -3066,3 +3086,48 @@ function StatsM() {
 	this.executions = 0;
 }
 
+
+function checkip(ip) {
+	const rbl='dnsbl.dronebl.org';
+	m = ip.match(/^(?:::ffff:)?([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$/i);
+	if (m !== null) {
+		// IPv4 Address
+		if (parseInt(m[1], 10) > 255 || parseInt(m[2], 10) > 255 || parseInt(m[3], 10) > 255 || parseInt(m[4], 10) > 255)
+			return false;
+		qstr = m[4] + '.' + m[3] + '.' + m[2] + '.' + m[1] + '.' + rbl;
+	}
+	else {
+		a = ip.split(/:/);
+		if (a.length < 3 || a.length > 8)
+			return false;
+		if (ip.search(/^[a-fA-F0-9:]+$/) != 0)
+			return false;
+		a.forEach(function(piece, idx, arr) {
+			if (piece !== '') {
+				while (piece.length < 4)
+					piece = '0'+piece;
+			}
+			arr[idx] = piece;
+		});
+		if (a[0] == '')
+			a[0] = '0000';
+		if (a[a.length - 1] == '')
+			a[a.length] = '0000';
+		while (a.length < 8) {
+			fillpos = a.indexOf('');
+			if (fillpos === -1)
+				return false;
+			a.splice(fillpos, 0, '0000');
+		}
+		fillpos = a.indexOf('');
+		if (fillpos != -1)
+			a.splice(fillpos, 1, '0000');
+		a.reverse();
+		qstr = '';
+		a.forEach(function(piece) {
+			qstr += piece[3] + '.' + piece[2] + '.' + piece[1] + '.' + piece[0] + '.' + rbl;
+		});
+
+	}
+	return resolve_ip(qstr) || 'NXDOMAIN';
+}
