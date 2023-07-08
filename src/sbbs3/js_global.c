@@ -5167,12 +5167,12 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"gethostbyname",	js_resolve_ip,		1,	JSTYPE_ALIAS },
 	{"resolve_ip",		js_resolve_ip,		1,	JSTYPE_STRING,	JSDOCSTR("hostname [,array=<tt>false</tt>]")
 	,JSDOCSTR("Resolve IP address of specified hostname (AKA gethostbyname).  If <i>array</i> is true (added in 3.17), will return "
-	"an array of all addresses rather than just the first one (upon success).")
+	"an array of all addresses rather than just the first one (upon success).  Returns <tt>null</tt> if unable to resolve address.")
 	,311
 	},
 	{"gethostbyaddr",	js_resolve_host,	1,	JSTYPE_ALIAS },
 	{"resolve_host",	js_resolve_host,	1,	JSTYPE_STRING,	JSDOCSTR("ip_address")
-	,JSDOCSTR("Resolve hostname of specified IP address (AKA gethostbyaddr)")
+	,JSDOCSTR("Resolve hostname of specified IP address (AKA gethostbyaddr).  Returns <tt>null</tt> if unable to resolve address.")
 	,311
 	},
 	{"netaddr_type",	js_netaddr_type,	1,	JSTYPE_NUMBER,	JSDOCSTR("email_address")
