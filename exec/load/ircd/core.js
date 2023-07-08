@@ -2775,15 +2775,17 @@ function accept_new_socket() {
 	}
 
 	// Start of DNSBL check
-	const dnsbl_result = check_dnsbl(sock.remote_ip_address, 'dnsbl.dronebl.org');
-	if (dnsbl_result) {
-		sock.send(format(
-			":%s 463 * :Your IP address is not welcome. Visit http://dronebl.org/lookup?ip="+sock.remote_ip_address+"&network=Synchronet for more information.",
-			ServerName
-		));
-		log(LOG_NOTICE, format("DNS-Blocked IP address %s resolves to %s", sock.remote_ip_address, dnsbl_result));
-		sock.close();
-		return false;
+	if(!dnsbl_exempt(sock.remote_ip_address)) {
+		const dnsbl_result = check_dnsbl(sock.remote_ip_address, 'dnsbl.dronebl.org');
+		if (dnsbl_result) {
+			sock.send(format(
+				":%s 463 * :Your IP address is not welcome. Visit http://dronebl.org/lookup?ip="+sock.remote_ip_address+"&network=Synchronet for more information.",
+				ServerName
+			));
+			log(LOG_NOTICE, format("DNS-Blocked IP address %s resolves to %s", sock.remote_ip_address, dnsbl_result));
+			sock.close();
+			return false;
+		}
 	}
 	// End of DNSBL check
 
@@ -3079,6 +3081,15 @@ function StatsM() {
 	this.executions = 0;
 }
 
+function dnsbl_exempt(ip) {
+	if(ip.indexOf("192.168.") == 0)
+		return true;
+	if(ip.indexOf("10.") == 0)
+		return true;
+	if(ip.indexOf("127.") == 0)
+		return true;
+	return false;
+}
 
 function check_dnsbl(ip, rbl) {
 	m = ip.match(/^(?:::ffff:)?([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$/i);
