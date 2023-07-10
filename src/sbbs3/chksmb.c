@@ -138,7 +138,7 @@ char *usage="\nusage: chksmb [-opts] <filespec.SHD>\n"
 
 int main(int argc, char **argv)
 {
-	char		str[128],*p,*s,*beep="";
+	char		str[128],*p,*beep="";
 	char		from[26];
 	char*		body;
 	char*		tail;
@@ -245,9 +245,8 @@ int main(int argc, char **argv)
 
 	ZERO_VAR(smb);
 	SAFECOPY(smb.file,argv[x]);
-	p=strrchr(smb.file,'.');
-	s=strrchr(smb.file,'\\');
-	if(p>s) *p=0;
+	p = getfext(smb.file);
+	if(p != NULL && stricmp(p, ".shd") == 0) *p=0;
 
 	SAFEPRINTF(str, "%s.shd", smb.file);
 	if(!fexist(str)) {
