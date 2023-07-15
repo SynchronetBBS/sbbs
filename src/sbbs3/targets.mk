@@ -110,9 +110,9 @@ install: all
 
 .PHONY: symlinks
 symlinks: all
-	ln -sfr $(EXEODIR)/* $(SBBSEXEC)
-	ln -sfr $(LIBODIR)/* $(SBBSEXEC)
-	ln -sfr */$(EXEODIR)/* $(SBBSEXEC)
+	ln -sf `realpath $(EXEODIR)/*` $(SBBSEXEC)
+	ln -sf `realpath $(LIBODIR)/*` $(SBBSEXEC)
+	ln -sf `realpath */$(EXEODIR)/*` $(SBBSEXEC)
 endif
 
 .PHONY: FORCE
