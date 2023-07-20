@@ -54,6 +54,8 @@
  *                            character (they can just be a list of the attribute characters).
  * 2023-05-14 Eric Oulashin   Version 1.35
  *                            Refactored the code for reading the configuration file
+ * 2023-07-16 Eric Oulashin   Version 1.36
+ *                            Possible fix for not allowing to change sub-board if the first group is empty
 */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -97,8 +99,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.35";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-05-14";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.36";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-07-16";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -165,6 +167,17 @@ else if (typeof(argv[1]) == "string")
 // it to let the user choose a message area.
 if (executeThisScript)
 {
+	// Starting with the user's current messsage group, find the first message group with sub-boards.
+	// If there are none, output an error message and exit.
+	//var firstGrpIdxWithSubBoards = findNextGrpIdxWithSubBoards(0);
+	var firstGrpIdxWithSubBoards = findNextGrpIdxWithSubBoards(-1);
+	if (firstGrpIdxWithSubBoards < 0)
+	{
+		console.clear("\x01n");
+		console.print("\1y\1hThere are no message sub-boards available.\r\n\1p");
+		exit(0);
+	}
+
 	// When exiting this script, make sure to set the ctrl key pasthru back to what it was originally
 	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 	console.ctrlkey_passthru = "+ACGKLOPQRTUVWXYZ_"; // So that control key combinations only get caught by this script
@@ -176,7 +189,8 @@ if (executeThisScript)
 	// here just in case, and change the user's message area
 	// here.  Otherwise, if choosing the message group first,
 	// SelectMsgArea() will change the user's sub-board.
-	var msgGroupIdx = (gChooseMsgGrpOnStartup ? 0/*null*/ : +bbs.curgrp);
+	//var msgGroupIdx = (gChooseMsgGrpOnStartup ? firstGrpIdxWithSubBoards/*null*/ : +bbs.curgrp);
+	var msgGroupIdx = +bbs.curgrp; // Default to the user's current message group
 	if (!gChooseMsgGrpOnStartup)
 		msgAreaChooser.BuildSubBoardPrintfInfoForGrp(msgGroupIdx);
 	var chosenIdx = msgAreaChooser.SelectMsgArea(gChooseMsgGrpOnStartup, msgGroupIdx);
@@ -569,13 +583,19 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 		return;
 	else if (level == 1)
 	{
-		if (typeof(pGrpIdx) !== "number")
-			return;
+		// If there are no sub-boards in the given group index, then see if there's a next group with
+		// sub-boards (and wrap around)
 		if (msg_area.grp_list[pGrpIdx].sub_list.length == 0)
 		{
-			console.clear("\1n");
-			console.print("\1y\1hThere are no sub-boards in " + msg_area.grp_list[pGrpIdx].description + ".\r\n\1p");
-			return;
+			var nextGrpIdx = findNextGrpIdxWithSubBoards(pGrpIdx);
+			if (nextGrpIdx > -1 && msg_area.grp_list[nextGrpIdx].sub_list.length > 0)
+				pGrpIdx = nextGrpIdx;
+			else
+			{
+				console.clear("\1n");
+				console.print("\1y\1hThere are no sub-boards available.\r\n\1p");
+				return;
+			}
 		}
 	}
 	// 2: Choose a sub-board within a message group
@@ -587,7 +607,7 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 		if (msg_area.grp_list[pGrpIdx].sub_list.length == 0)
 		{
 			console.clear("\1n");
-			console.print("\1y\1hThere are no sub-boards in " + file_area.lib_list[pLibIdx].description + ".\r\n\1p");
+			console.print("\1y\1hThere are no sub-boards in " + msg_area.grp_list[pGrpIdx].description + ".\r\n\1p");
 			return;
 		}
 	}
@@ -3548,4 +3568,36 @@ function attrCodeStr(pAttrCodeCharStr)
 			str += "\x01" + currentChar;
 	}
 	return str;
+}
+
+// Finds the index of a message group AFTER the given group index which contains
+// sub-boards.  If there are none, this will return -1.
+//
+// Parameters:
+//  pGrpIdx: An index of a message group; this function will start searching AFTER this one
+//
+// Return value: An index of a message group after the given group index that contains sub-boards,
+//               or -1 if there are none
+function findNextGrpIdxWithSubBoards(pGrpIdx)
+{
+	if (typeof(pGrpIdx) !== "number")
+		return -1;
+	var nextGrpIdx = -1;
+	if (pGrpIdx < msg_area.grp_list.length - 1)
+	{
+		for (var i = pGrpIdx + 1; i < msg_area.grp_list.length && nextGrpIdx == -1; ++i)
+		{
+			if (msg_area.grp_list[i].sub_list.length > 0)
+				nextGrpIdx = i;
+		}
+	}
+	if (nextGrpIdx == -1 && pGrpIdx > 0)
+	{
+		for (var i = 0; i < pGrpIdx && nextGrpIdx == -1; ++i)
+		{
+			if (msg_area.grp_list[i].sub_list.length > 0)
+				nextGrpIdx = i;
+		}
+	}
+	return nextGrpIdx;
 }
