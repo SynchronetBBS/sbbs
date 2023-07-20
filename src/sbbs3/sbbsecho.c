@@ -1793,6 +1793,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 		if(rename(outpath,cfg.areafile))		   /* Rename new AREAS.BBS file */
 			lprintf(LOG_ERR,"ERROR line %d renaming %s to %s",__LINE__,outpath,cfg.areafile);
 	}
+	remove(outpath); // expected to fail (file does not exist) much of the time
 }
 
 bool add_sub_to_arealist(sub_t* sub, fidoaddr_t uplink)
