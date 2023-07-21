@@ -390,6 +390,8 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 					path[0]=0;
 				JS_RESUMEREQUEST(cx, rc);
 			}
+			if (*path == '\0')
+				SAFECOPY(path, cmd);
 		}
 	}
 	free(cmd);
