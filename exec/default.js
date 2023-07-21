@@ -195,7 +195,10 @@ while(bbs.online && !js.terminated) {
 		cmd = console.getstr();
 		if(cmd == '!')
 			cmd = last_str_cmd;
-		js.exec("str_cmds.js", {}, cmd);
+		var script = system.mods_dir + "str_cmds.js";
+		if(!file_exists(script))
+			script = system.exec_dir + "str_cmds.js";
+		js.exec(script, {}, cmd);
 		last_str_cmd = cmd;
 		continue;
 	}
@@ -243,10 +246,13 @@ while(bbs.online && !js.terminated) {
 		if(menu_cmd.eval)
 			eval(menu_cmd.eval);
 		if(menu_cmd.exec) {
+			var script = system.mods_dir + menu_cmd.exec;
+			if(!file_exists(script))
+				script = system.exec_dir + menu_cmd.exec;
 			if(menu_cmd.args)
-				js.exec.apply(null, [menu_cmd.exec, {}].concat(menu_cmd.args));
+				js.exec.apply(null, [script, {}].concat(menu_cmd.args));
 			else
-				js.exec(menu_cmd.exec, {});
+				js.exec(script, {});
 		}
 	}
 }
