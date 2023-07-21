@@ -2,6 +2,10 @@ Revision History for Digital Distortion Archive Viewer
 ======================================================
 Version  Date         Description
 -------  ----         -----------
+1.04     2022-05-16   Updated to use the new Archive class in Synchronet 3.19.
+                      Now has built-in support for the same archive types that
+                      Synchronet has built-in (zip, 7z, tgz, etc.). Other
+                      archive types can still be configured.
 1.03     2009-12-20   Updated DDArcViewer.js to be able to handle command-line
                       parameters with spaces in them as single parameters,
                       thanks to a function posted by Tracker1 of The Roughnecks
