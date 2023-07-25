@@ -599,10 +599,7 @@ uint sbbs_t::logonstats()
 	struct tm tm, update_tm;
 
 	sys_status&=~SS_DAILY;
-	if(!getstats(&cfg, 0, &stats)) {
-		errormsg(WHERE, ERR_READ, "system stats");
-		return 0;
-	}
+	getstats(&cfg, 0, &stats);
 
 	now=time(NULL);
 	if(stats.date > now+(24L*60L*60L)) /* More than a day in the future? */
