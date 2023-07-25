@@ -3359,17 +3359,6 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	for (i = 0; (jsuint)i < set->sock_count; ++i) {
-		char error[256] = "";
-		if (set_socket_options(scfg, set->socks[i].sock, protocol, error, sizeof(error)) != 0) {
-			JS_ReportError(cx, "Error (%s) setting socket options (for %s) on socket %d"
-				,error, protocol, set->socks[i].sock);
-			free(protocol);
-			free(set);
-			return JS_FALSE;
-		}
-	}
-
 	obj=JS_NewObject(cx, &js_socket_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 
