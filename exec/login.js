@@ -2,6 +2,8 @@
 
 // Login module for Synchronet BBS v3.1
 
+"use strict";
+
 load("sbbsdefs.js");
 
 var options;
@@ -41,14 +43,14 @@ for(var c=0; c < options.login_prompts; c++) {
 	// Display login prompt
 	const legacy_login_prompt = "NN: \x01[";
 	const legacy_password_prompt = "PW: \x01[";
-	var str = "\1n\1h\1cEnter \1wUser Name";
+	var str = "\x01n\x01h\x01cEnter \x01wUser Name";
 	if(system.login_settings & LOGIN_USERNUM)
-		str += "\1c or \1wNumber";
+		str += "\x01c or \x01wNumber";
 	if(!(system.settings&SYS_CLOSED))
-		str += "\1c or '\1yNew\1c'";
+		str += "\x01c or '\x01yNew\x01c'";
 	if(guest)
-		str += "\1c or '\1yGuest\1c'";
-	str += "\r\nLogin: \1w";
+		str += "\x01c or '\x01yGuest\x01c'";
+	str += "\r\nLogin: \x01w";
 	console.print("\r\n"
 		+ legacy_login_prompt
 		+ word_wrap(str, console.screen_columns-1).trimRight());
@@ -73,7 +75,7 @@ for(var c=0; c < options.login_prompts; c++) {
 	   continue;
 	}
 	// Continue normal login (prompting for password)
-	if(bbs.login(str, legacy_password_prompt + "\1n\1c\1hPassword: \1w")) {
+	if(bbs.login(str, legacy_password_prompt + "\x01n\x01c\x01hPassword: \x01w")) {
 		bbs.logon();
 		exit();
 	}
@@ -86,8 +88,8 @@ for(var c=0; c < options.login_prompts; c++) {
 	var usernum = system.matchuser(str);
 	if(usernum) {
 		system.put_telegram(usernum,
-			format("\1n\1h%s %s \1rFailed login attempt\1c\r\n" +
-				"from %s [%s] via %s (TCP port %u)\1n\r\n"
+			format("\x01n\x01h%s %s \x01rFailed login attempt\x01c\r\n" +
+				"from %s [%s] via %s (TCP port %u)\x01n\r\n"
 				,system.timestr(), system.zonestr()
 				,client.host_name, client.ip_address
 				,client.protocol, client.port));
@@ -99,7 +101,7 @@ for(var c=0; c < options.login_prompts; c++) {
 				&& !console.noyes("Email your password to you")) {
 				var email_addr = u.netmail;
 				if(options.confirm_email_address !== false) {
-					console.print("\1n\1c\1hPlease confirm your Internet e-mail address: \1y");
+					console.print("\x01n\x01c\x01hPlease confirm your Internet e-mail address: \x01y");
 					var email_addr = console.getstr(LEN_NETMAIL);
 				}
 				if(email_addr.toLowerCase() == u.netmail.toLowerCase()) {
@@ -129,9 +131,9 @@ for(var c=0; c < options.login_prompts; c++) {
 						msgtxt += "Password Last Modified: " + system.datestr(u.security.password_date) + "\r\n";
 
 						if(msgbase.save_msg(hdr, msgtxt)) {
-							console.print("\r\n\1n\1h\1mAccount Information Emailed Successfully\r\n");
+							console.print("\r\n\x01n\x01h\x01mAccount Information Emailed Successfully\r\n");
 							system.put_telegram(usernum, 
-								format("\1n\1h%s %s \1rEmailed account info\1c\r\nto \1w%s\1n\r\n"
+								format("\x01n\x01h%s %s \x01rEmailed account info\x01c\r\nto \x01w%s\x01n\r\n"
 									,system.timestr(), system.zonestr()
 									,u.netmail));
 							log(LOG_NOTICE, "Account information (i.e. password) e-mailed to: " + u.netmail);
