@@ -1855,7 +1855,7 @@ const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
 		haik8_table, sizeof(haik8_table) / sizeof(haik8_table[0]),
 		haik8_unicode_table, cp437_ext_table},
 	// 20
-	{"ATASCII", CIOLIB_ATASCII, ftstr_to_utf8, utf8_to_cpstr, ft_from_unicode_cpoint, ft_cpoint_from_cptable,  ft_cpoint_from_cptable_ext, 
+	{"ATASCII", CIOLIB_ATASCII, ftstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, ft_cpoint_from_cptable,  ft_cpoint_from_cptable_ext,
 		atascii_table, sizeof(atascii_table) / sizeof(atascii_table[0]),
 		atascii_unicode_table, atascii_ext_table},
 	{"PETSCIIU", CIOLIB_PETSCIIU, ftstr_to_utf8, utf8_to_cpstr, ft_from_unicode_cpoint, ft_cpoint_from_cptable,  cpoint_from_cptable_ext, 
