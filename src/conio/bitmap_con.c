@@ -1689,6 +1689,8 @@ bitmap_get_scaled_win_size_nomax(double scale, int *w, int *h)
 
 	if (scale < 1.0)
 		scale = 1.0;
+	if (ciolib_r2yptr == NULL || ciolib_y2rptr == NULL)
+		scale = floor(scale);
 	*w = lround(vstat.scrnwidth * scale);
 	*h = lround(vstat.scrnheight * scale);
 	if (wc)
@@ -1717,6 +1719,8 @@ bitmap_double_mult_inside(int maxwidth, int maxheight)
 	// TODO: Allow below 1.0?
 	if (mult < 1.0)
 		mult = 1.0;
+	if (ciolib_r2yptr == NULL || ciolib_y2rptr == NULL)
+		mult = floor(mult);
 	return mult;
 }
 
