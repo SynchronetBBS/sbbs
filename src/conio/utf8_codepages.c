@@ -1478,6 +1478,9 @@ cmptab(const void *key, const void *entry)
 	return 1;
 }
 
+/*
+ * ASCII is unchanged, no mapping attempted.
+ */
 static uint8_t
 cptable_from_unicode_cpoint(uint32_t cpoint, char unmapped, const struct codepage_def *cpdef)
 {
@@ -1488,6 +1491,24 @@ cptable_from_unicode_cpoint(uint32_t cpoint, char unmapped, const struct codepag
 	mapped = bsearch(&cpoint, cpdef->cp_table, cpdef->cp_table_sz, sizeof(cpdef->cp_table[0]), cmptab);
 	if (mapped == NULL)
 		return unmapped;
+	return mapped->cpchar;
+}
+
+/*
+ * Fallback table... tries mapping first, ASCII that doesn't map is
+ * returned unchanged.
+ */
+static uint8_t
+fb_cptable_from_unicode_cpoint(uint32_t cpoint, char unmapped, const struct codepage_def *cpdef)
+{
+	struct ciolib_cpmap *mapped;
+
+	mapped = bsearch(&cpoint, cpdef->cp_table, cpdef->cp_table_sz, sizeof(cpdef->cp_table[0]), cmptab);
+	if (mapped == NULL) {
+		if (cpoint < 128)
+			return cpoint;
+		return unmapped;
+	}
 	return mapped->cpchar;
 }
 
@@ -1667,6 +1688,10 @@ error:
 	return NULL;
 }
 
+/*
+ * Full table... all unicode -> codepage translations must be in the
+ * table.  For non-ascii codepages.
+ */
 static uint8_t
 ft_from_unicode_cpoint(uint32_t cpoint, char unmapped, const struct codepage_def *cpdef)
 {
@@ -1855,7 +1880,7 @@ const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
 		haik8_table, sizeof(haik8_table) / sizeof(haik8_table[0]),
 		haik8_unicode_table, cp437_ext_table},
 	// 20
-	{"ATASCII", CIOLIB_ATASCII, ftstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, ft_cpoint_from_cptable,  ft_cpoint_from_cptable_ext,
+	{"ATASCII", CIOLIB_ATASCII, ftstr_to_utf8, utf8_to_cpstr, fb_cptable_from_unicode_cpoint, ft_cpoint_from_cptable,  ft_cpoint_from_cptable_ext,
 		atascii_table, sizeof(atascii_table) / sizeof(atascii_table[0]),
 		atascii_unicode_table, atascii_ext_table},
 	{"PETSCIIU", CIOLIB_PETSCIIU, ftstr_to_utf8, utf8_to_cpstr, ft_from_unicode_cpoint, ft_cpoint_from_cptable,  cpoint_from_cptable_ext, 
