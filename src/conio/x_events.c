@@ -1291,8 +1291,8 @@ local_draw_rect(struct rectlist *rect)
 	// Scale...
 	pthread_mutex_lock(&vstatlock);
 	if (x_cvstat.winwidth != vstat.winwidth || x_cvstat.winheight != vstat.winheight) {
-		bitmap_drv_free_rect(rect);
 		pthread_mutex_unlock(&vstatlock);
+		bitmap_drv_free_rect(rect);
 		return;
 	}
 	bitmap_get_scaled_win_size(vstat.scaling, &w, &h, vstat.winwidth, vstat.winheight);
