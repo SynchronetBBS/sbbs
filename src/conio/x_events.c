@@ -1234,10 +1234,21 @@ static int init_mode(int mode)
 
 static int video_init()
 {
+	int w, h;
+
 	pthread_mutex_lock(&vstatlock);
 	x_internal_scaling = (ciolib_initial_scaling_type == CIOLIB_SCALING_INTERNAL);
-	if (ciolib_initial_scaling != 0.0)
+	if (ciolib_initial_scaling != 0.0) {
+		if (ciolib_initial_scaling < 1.0) {
+			if (x11_get_maxsize(&w, &h)) {
+				ciolib_initial_scaling = bitmap_double_mult_inside(w, h);
+			}
+			else {
+				ciolib_initial_scaling = 1.0;
+			}
+		}
 		x_cvstat.scaling = vstat.scaling = ciolib_initial_scaling;
+	}
 	if (x_cvstat.scaling < 1.0 || vstat.scaling < 1.0)
 		x_cvstat.scaling = vstat.scaling = 1.0;
 	if(load_vmode(&vstat, ciolib_initial_mode)) {

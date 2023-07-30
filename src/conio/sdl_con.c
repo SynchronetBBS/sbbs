@@ -355,6 +355,16 @@ static int sdl_init_mode(int mode, bool init)
 		h = 0;
 	}
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height, w, h);
+	if (ciolib_initial_scaling < 1.0) {
+		if (w != 0 && h != 0) {
+			w *= ciolib_initial_scaling;
+			h *= ciolib_initial_scaling;
+			ciolib_initial_scaling = bitmap_double_mult_inside(w, h);
+		}
+		else {
+			ciolib_initial_scaling = 1.0;
+		}
+	}
 	if (init) {
 		internal_scaling = (ciolib_initial_scaling_type == CIOLIB_SCALING_INTERNAL);
 		if (ciolib_initial_scaling) {

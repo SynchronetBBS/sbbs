@@ -830,6 +830,16 @@ gdi_thread(void *arg)
 		goto fail;
 	pthread_mutex_lock(&vstatlock);
 	if (ciolib_initial_scaling != 0) {
+		if (ciolib_internal_scaling < 1.0) {
+			if (get_monitor_size_pos(&vstat.winwidth, &vstat.winheight, &wx, &wy)) {
+				vstat.winwidth *= ciolib_internal_scaling;
+				vstat.winheight *= ciolib_internal_scaling;
+				ciolib_initial_scaling = bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
+			}
+			else {
+				ciolib_initial_scaling = 1.0;
+			}
+		}
 		bitmap_get_scaled_win_size(ciolib_initial_scaling, &vstat.winwidth, &vstat.winheight, 0, 0);
 		vstat.scaling = ciolib_initial_scaling;
 	}
