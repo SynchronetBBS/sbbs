@@ -33,6 +33,12 @@
  * 2023-05-15 Eric Oulashin     Version 1.85
  *                              Internal: Refactored readColorConfig() in _DCTStuff.js and _IceStuff.js.
  *                              Removed the readValueSettingConfigFile() function.
+ * 2023-06-09 Eric Oulashin     Version 1.86 Beta
+ *                              Started refactoring the re-wrapping of quote lines to
+ *                              work better for the various quote prefixes used in
+ *                              various messages.
+ * 2023-07-26 Eric Oulashin     Version 1.86
+ *                              Releasing this version
  */
 
 "use strict";
@@ -104,7 +110,7 @@ const SPELL_CHECK_PAUSE_MS = 1000;
 // Exit if the Synchronet version is below the minimum.
 if (system.version_num < 31500) // 3.15 for user.is_sysop
 {
-	console.print("\x01n");
+	console.attributes = "N";
 	console.crlf();
 	console.print("\x01n\x01h\x01y\x01i* Warning:\x01n\x01h\x01w " + EDITOR_PROGRAM_NAME);
 	console.print(" " + "requires version \x01g3.15\x01w or");
@@ -130,8 +136,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.85";
-var EDITOR_VER_DATE = "2023-05-15";
+var EDITOR_VERSION = "1.86";
+var EDITOR_VER_DATE = "2023-07-26";
 
 
 // Program variables
@@ -177,7 +183,7 @@ var gQuoteLineColor = "\x01n\x01c";          // The text color for quote lines
 var gTextInsertColorShiftIndexPlusOne = true;
 
 // gQuotePrefix contains the text to prepend to quote lines.
-// gQuotePrefix will later be updated to include the "To" user's
+// gQuotePrefix will later be updated to include the message sender's
 // initials or first 2 letters of their username.
 var gQuotePrefix = " > ";
 
@@ -360,6 +366,7 @@ fpGlobalScreenVarsSetup();
 // Message display & edit variables
 var gInsertMode = "INS";       // Insert (INS) or overwrite (OVR) mode
 var gQuoteLines = [];          // Array of quote lines loaded from file, if in quote mode
+// Some boolean values for whether any of the quote lines had certain color codes in them.
 var gUserHasOpenedQuoteWindow = false; // Whether or not the user has opened the quote line selection window
 var gQuoteLinesTopIndex = 0;   // Index of the first displayed quote line
 var gQuoteLinesIndex = 0;      // Index of the current quote line
@@ -611,6 +618,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 				for (var i = blockIdxes.allBlocks[blockIdx].start; i < blockIdxes.allBlocks[blockIdx].end; ++i)
 				{
 					var newTextLine = new TextLine(gEditLines[i].text, gEditLines[i].hardNewlineEnd, gEditLines[i].isQuoteLine);
+					newTextLine.attrs = gEditLines[i].attrs;
 					// If the message has attribute codes, ensure quote blocks start with a normal attribute
 					if (msgHasAttrCodes && i == blockIdxes.allBlocks[blockIdx].start)
 						newTextLine.attrs[0] = "\x01n";
@@ -731,7 +739,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 				msgContents = syncAttrCodesToANSI(msgContents);
 		}
 
-		console.print("\x01n");
+		console.attributes = "N";
 		console.crlf();
 		console.print("\x01n" + gConfigSettings.genColors.msgWillBePostedHdr + "Your message will be posted into the following area(s):");
 		console.crlf();
@@ -832,7 +840,7 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 				console.crlf();
 			}
 		}
-		console.print("\x01n");
+		console.attributes = "N";
 		console.crlf();
 	}
 
@@ -967,14 +975,23 @@ function readQuoteOrMessageFile()
 				// Only use textLine if it's actually a string.
 				if (typeof(textLine) === "string")
 				{
+					// Convert any color/attribute codes from other BBS software to Synchronet attribute codes
+					textLine = convertAttrsToSyncPerSysCfg(textLine, true);
+					// TODO: I'd like to comment this out & leave attribute codes in the quote lines,
+					// but that's currently causing wrapTextLinesForQuoting() to not find prefixes
+					// properly & not wrap properly
 					textLine = strip_ctrl(textLine);
 					// If the line has only whitespace and/or > characters,
 					// then make the line blank before putting it into
 					// gQuoteLines.
 					if (/^[\s>]+$/.test(textLine))
 						textLine = "";
+					// Add the quote line to gQuotelines
+					gQuoteLines.push(textLine);
+					/*
 					// If the quote line length is within the user's terminal width, then add it as-is.
-					if (textLine.length <= console.screen_columns-1)
+					//if (textLine.length <= console.screen_columns-1)
+					if (console.strlen(textLine) <= console.screen_columns-1)
 						gQuoteLines.push(textLine);
 					else
 					{
@@ -989,6 +1006,7 @@ function readQuoteOrMessageFile()
 						for (var i = 0; i < wrappedLines.length; ++i)
 							gQuoteLines.push(wrappedLines[i]);
 					}
+					*/
 				}
 			}
 		}
@@ -998,16 +1016,16 @@ function readQuoteOrMessageFile()
 			while (!inputFile.eof)
 			{
 				textLine = new TextLine();
-				textLine.text = inputFile.readln(2048);
-				if (typeof(textLine.text) == "string")
-					textLine.text = strip_ctrl(textLine.text);
+				var textLineFromFile = inputFile.readln(2048);
+				if (typeof(textLineFromFile) == "string")
+					textLine.setText(strip_ctrl(textLineFromFile));
 				else
-					textLine.text = "";
+					textLine.setText("");
 				textLine.hardNewlineEnd = true;
 				// If there would still be room on the line for at least
 				// 1 more character, then add a space to the end of the
 				// line.
-				if (textLine.text.length < console.screen_columns-1)
+				if (textLine.screenLength() < console.screen_columns-1)
 					textLine.text += " ";
 				gEditLines.push(textLine);
 			}
@@ -1133,7 +1151,7 @@ function doEditLoop()
 		{
 			case ABORT_KEY:
 				// Before aborting, ask they user if they really want to abort.
-				console.print("\x01n"); // To avoid problems with background colors
+				console.attributes = "N"; // To avoid problems with background colors
 				if (promptYesNo("Abort message", false, "Abort", false, false))
 				{
 					returnCode = 1; // Aborted
@@ -1726,7 +1744,7 @@ function doEditLoop()
 				doUserSettings(curpos, true);
 				break;
 			case CHANGE_SUBJECT_KEY:
-				console.print("\x01n");
+				console.attributes = "N";
 				console.gotoxy(gSubjPos.x, gSubjPos.y);
 				var subj = console.getstr(gSubjScreenLen, K_LINE|K_NOCRLF|K_NOSPIN|K_TRIM);
 				if (subj.length > 0)
@@ -1824,8 +1842,7 @@ function doEditLoop()
 					{
 						// Append a blank line and then append the tagline to the message
 						gEditLines.push(new TextLine());
-						var newLine = new TextLine();
-						newLine.text = taglineRetObj.tagline;
+						var newLine = new TextLine(taglineRetObj.tagline);
 						gEditLines.push(newLine);
 						reAdjustTextLines(gEditLines, gEditLines.length-1, gEditLines.length, gEditWidth, gConfigSettings.allowColorSelection);
 					}
@@ -2887,8 +2904,7 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 	// If the setting to re-wrap quote lines is enabled, then do it.
 	// We're re-wrapping the quote lines here in case the user changes their
 	// setting for prefixing quote lines with author initials.
-	// wrapQuoteLines() will also prefix the quote lines with author's
-	// initials if configured to do so.
+	// The quote prefix (optionally with author's initials) are passed to dd_wrap_lines().
 	// If not configured to re-wrap quote lines, then if configured to
 	// prefix quote lines with author's initials, then we need to
 	// prefix them here with gQuotePrefix.
@@ -2944,10 +2960,7 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 			var maxQuoteLineLength = console.screen_columns - 1;
 			setQuotePrefix();
 			if (gConfigSettings.reWrapQuoteLines)
-			{
-				wrapQuoteLines(gUserSettings.useQuoteLineInitials, gUserSettings.indentQuoteLinesWithInitials,
-				               gUserSettings.trimSpacesFromQuoteLines, maxQuoteLineLength);
-			}
+				gQuoteLines = wrapTextLinesForQuoting(gQuoteLines, gQuotePrefix, gUserSettings.indentQuoteLinesWithInitials, gUserSettings.trimSpacesFromQuoteLines, maxQuoteLineLength);
 			else if (gUserSettings.useQuoteLineInitials)
 			{
 				var maxQuoteLineWidth = maxQuoteLineLength - gQuotePrefix.length;
@@ -3148,10 +3161,12 @@ function getQuoteTextLine(pIndex, pMaxWidth)
 	var textLine = "";
 	if ((pIndex >= 0) && (pIndex < gQuoteLines.length))
 	{
-		if (gUserSettings.useQuoteLineInitials)
+		//if (gUserSettings.useQuoteLineInitials)
+		if (gConfigSettings.reWrapQuoteLines)
 		{
+			// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
 			if ((gQuoteLines[pIndex] != null) && (gQuoteLines[pIndex].length > 0))
-				textLine = gQuoteLines[pIndex].substr(0, pMaxWidth-1);
+				textLine = substrWithAttrCodes(gQuoteLines[pIndex], 0, pMaxWidth-1);
 		}
 		else
 		{
@@ -3357,7 +3372,7 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 	var clearRemainingScreenLines = (pClearRemainingScreenRows != null ? pClearRemainingScreenRows : true);
 	if (clearRemainingScreenLines && (screenLine <= endScreenRow))
 	{
-		console.print("\x01n");
+		console.attributes = "N";
 		var screenLineBackup = screenLine; // So we can move the cursor back
 		clearMsgAreaToBottom(incrementLineBeforeClearRemaining ? screenLine+1 : screenLine, pIgnoreEditAreaBuffer);
 		// Move the cursor back to the end of the current text line.
@@ -3446,7 +3461,7 @@ function displayMessageRectangle(pX, pY, pWidth, pHeight, pEditLinesIndex, pClea
 			console.print("\x01n" + gQuoteLineColor);
 		// If the previous line was a quote line, then output the appropriate attribute codes for this line
 		else if (editLinesIndex > 0 && isQuoteLine(gEditLines, editLinesIndex-1))
-			console.print("\x01n");
+			console.attributes = "N";
 		// Otherwise, get all attribute codes from the lines before this one and output them
 		else
 			console.print("\x01n" + getAllEditLineAttrsUntilLineIdx(editLinesIndex));
@@ -3668,7 +3683,7 @@ function displayProgramInfoBox()
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+10);
 	printf(boxWidthFillFormatStr, "");
 
-	console.print("\x01n");
+	console.attributes = "N";
 	// Wait for a keypress
 	getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
 	// Erase the info box
@@ -3761,16 +3776,8 @@ function getWordLength(pEditLinesIndex, pTextLineIndex)
 function insertLineIntoMsg(pInsertLineIndex, pString, pHardNewline, pIsQuoteLine)
 {
 	var insertedBelow = false;
-
 	// Create the new text line
-	var line = new TextLine();
-	line.text = pString;
-	line.hardNewlineEnd = false;
-	if ((pHardNewline != null) && (typeof(pHardNewline) != "undefined"))
-		line.hardNewlineEnd = pHardNewline;
-	if ((pIsQuoteLine != null) && (typeof(pIsQuoteLine) != "undefined"))
-		line.isQuoteLine = pIsQuoteLine;
-
+	var line = new TextLine(pString, pHardNewline, pIsQuoteLine);
 	// If the current message line is empty, insert the quote line above
 	// the current line.  Otherwise, insert the quote line below the
 	// current line.
@@ -3790,7 +3797,6 @@ function insertLineIntoMsg(pInsertLineIndex, pString, pHardNewline, pIsQuoteLine
 		gEditLines[pInsertLineIndex].hardNewlineEnd = true;
 		insertedBelow = true;
 	}
-
 	return insertedBelow;
 }
 
@@ -4275,10 +4281,13 @@ function doSpellCheck(pCurpos, pConfirmSpellcheck)
 		var nonQuoteBlockIdxes = findNonQuoteBlockIndexes(gEditLines);
 		for (var i = 0; i < nonQuoteBlockIdxes.length; ++i)
 		{
-			var textLines = [];
+			// Create a string with the new section of text after fixes and line-wrap it.
+			var nonQuoteBlockText = "";
 			for (var lineIdx = nonQuoteBlockIdxes[i].start; lineIdx < nonQuoteBlockIdxes[i].end; ++lineIdx)
-				textLines.push(gEditLines[lineIdx].text);
-			var numLinesDiff = wrapTextLines(textLines, 0, textLines.length, console.screen_columns-1);
+				nonQuoteBlockText += gEditLines[lineIdx].text + "\n";
+			var textLines = lfexpand(word_wrap(nonQuoteBlockText, console.screen_columns-1, null, false)).split("\r\n");
+			textLines.pop(); // Remove the last empty line which was added due to the split as done above
+			var numLinesDiff = textLines.length - (nonQuoteBlockIdxes[i].end-nonQuoteBlockIdxes[i].start);
 			// If lines were added, then splice in text lines into gEditLines where
 			// appropriate.  If lines were removed, then remove lines from gEditLines.
 			if (numLinesDiff > 0)
@@ -4291,7 +4300,7 @@ function doSpellCheck(pCurpos, pConfirmSpellcheck)
 			var endLineIdx = nonQuoteBlockIdxes[i].end + numLinesDiff;
 			var wrappedLineIdx = 0;
 			for (var lineIdx = nonQuoteBlockIdxes[i].start; lineIdx < endLineIdx; ++lineIdx)
-				gEditLines[lineIdx].text = textLines[wrappedLineIdx++];
+				gEditLines[lineIdx].setText(textLines[wrappedLineIdx++]);
 		}
 	}
 	// Scroll to the end of the message and put the cursor at the end of the last
@@ -4432,7 +4441,7 @@ function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
 				{
 					var firstLinePart = gEditLines[pEditLineIdx].text.substr(0, wordIdxInLine);
 					var endLinePart = gEditLines[pEditLineIdx].text.substr(wordIdxInLine+currentWord.length);
-					gEditLines[pEditLineIdx].text = firstLinePart + wordCorrectRetObj.newWord + endLinePart;
+					gEditLines[pEditLineIdx].setText(firstLinePart + wordCorrectRetObj.newWord + endLinePart);
 					retObj.fixedWord = true;
 				}
 			}
@@ -4563,7 +4572,7 @@ function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
 	console.print(VERTICAL_SINGLE);
 	console.gotoxy(txtBoxX+txtBoxWidth-1, txtBoxY+1);
 	console.print(VERTICAL_SINGLE);
-	console.print("\x01n");
+	console.attributes = "N";
 
 	// Go to the middle row for user input
 	var inputX = txtBoxX + 1;
@@ -4847,7 +4856,7 @@ function displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight)
    var selBoxInnerHeight = selBoxLowerRight.y - selBoxUpperLeft.y - 1;
    var lineLen = 0;
    var screenRow = selBoxUpperLeft.y+1;
-   console.print("\x01n");
+   console.attributes = "N";
    for (var i = 0; (i < displayCrossPostHelp.helpLines.length) && (screenRow < selBoxLowerRight.y); ++i)
    {
       console.gotoxy(selBoxUpperLeft.x+1, screenRow++);
@@ -4867,7 +4876,7 @@ function displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight)
    if (screenRow < selBoxLowerRight.y)
    {
       var printfStr = "%-" + selBoxInnerWidth + "s";
-      console.print("\x01n");
+      console.attributes = "N";
       for (; screenRow < selBoxLowerRight.y; ++screenRow)
       {
          console.gotoxy(selBoxUpperLeft.x+1, screenRow);
@@ -5412,7 +5421,7 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 		// Before returning, write spaces for the length specified so that the
 		// screen is updated correctly.  Also, output a normal attribute first
 		// to ensure there isn't a background color for the spaces.
-		console.print("\x01n");
+		console.attributes = "N";
 		for (var i = 0; i < length; ++i)
 			console.print(" ");
 		printf(gTextAttrs);
@@ -6107,17 +6116,6 @@ function writeTaglineToMsgTaglineFile(pTagline, pTaglineFilename)
 	var taglineFile = new File(pTaglineFilename);
 	if (taglineFile.open("w"))
 	{
-		// If we wanted to wrap the tagline to 79 characters, it could be
-		// done as follows:
-		/*
-		var taglineArray = [];
-		taglineArray.push(""); // Leave a blank line between the signature & tagline
-		taglineArray.push(pTagline);
-		wrapTextLines(taglineArray, 0, taglineArray.length, 79);
-		// Write the tagline strings to the file
-		for (var i = 0; i < taglineArray.length; ++i)
-			taglineFile.writeln(taglineArray[i]);
-		*/
 		// Write the tagline to the file, with a blank line before it for spacing.
 		taglineFile.writeln("");
 		taglineFile.writeln(pTagline);
@@ -6202,7 +6200,7 @@ function letUserUploadMessageFile(pCurpos)
 	var uploadedMessage = false;
 	if (promptYesNo("Upload a mesage", true, "Upload message", true, true))
 	{
-		console.print("\x01n");
+		console.attributes = "N";
 		console.gotoxy(1, console.screen_rows);
 		console.crlf();
 		var msgFilename = system.node_dir + "uploadedMsg.txt";
