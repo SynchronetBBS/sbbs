@@ -5,6 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.36     2023-07-21   Message area chooser fix for not allowing to change sub-
+                      board if the first group is empty. File area chooser fix:
+                      When using directory collapsing mode with the lightbar
+                      interface, it now exits when the user chooses their same
+                      file directory instead of continuing the menu input loop.
 1.35     2023-05-14   File area chooser fix: Displays correct file counts in
                       directories when using directory name collapsing.
                       Both: Internal refactor for the code that reads the

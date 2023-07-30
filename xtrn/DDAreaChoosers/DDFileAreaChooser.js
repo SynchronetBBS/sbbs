@@ -52,6 +52,10 @@
  * 2023-05-14 Eric Oulashin   Version 1.35
  *                            Refactored the configuration reading code.
  *                            Fix: Displays correct file counts in directories when using directory name collapsing
+ * 2023-07-21 Eric Oulashin   Version 1.36
+ *                            Fix for directory collapsing mode with the lightbar interface: It now exits
+ *                            when the user chooses their same file directory instead of continuing the
+ *                            menu input loop.
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -92,8 +96,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.35";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-05-14";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.36";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-07-21";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -1059,8 +1063,8 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 	// 3: Choose a subdirectory within a directory, for directory name collapsing
 	else if ((level == 2) || (level == 3))
 	{
-		if (typeof(pLibIdx) != "number")
-			return;
+		// If there are no directories in the given library index, then see if there's a next library with
+		// directories (and wrap around)
 		if (file_area.lib_list[pLibIdx].dir_list.length == 0)
 		{
 			console.clear("\x01n");
@@ -1386,27 +1390,36 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 				// enabled)
 				var dirCodeBackup = bbs.curdir_code;
 				var chosenFileDirIdx = this.SelectFileArea_Lightbar(level+1, chosenIdx, null, true);
-				if (chosenFileDirIdx > -1)
+				// chosenFileDirIdx could actually be a boolean and could be false (returned
+				// when pLevel is 3 and the user chose a directory), so check its type and
+				// act accordingly.
+				var retValType = typeof(chosenFileDirIdx);
+				if (retValType === "boolean")
+					continueOn = chosenFileDirIdx;
+				else if (retValType === "number")
 				{
-					// Set the current file directory
-					if (this.useDirCollapsing)
-						bbs.curdir_code = this.lib_list[chosenIdx].dir_list[chosenFileDirIdx].code;
-					else
-						bbs.curdir_code = file_area.lib_list[chosenIdx].dir_list[chosenFileDirIdx].code;
-					continueOn = false;
-				}
-				else
-				{
-					// If the dir changed (probably at level 3 because directory
-					// collapsing is enabled), then exit here.
-					if (bbs.curdir_code != dirCodeBackup)
+					if (chosenFileDirIdx > -1)
+					{
+						// Set the current file directory
+						if (this.useDirCollapsing)
+							bbs.curdir_code = this.lib_list[chosenIdx].dir_list[chosenFileDirIdx].code;
+						else
+							bbs.curdir_code = file_area.lib_list[chosenIdx].dir_list[chosenFileDirIdx].code;
 						continueOn = false;
+					}
 					else
 					{
-						// A file directory was not chosen, so we'll have to re-draw
-						// the header and key help line
-						displayListHdrLines(level, this, pLibIdx, pDirIdx);
-						this.WriteKeyHelpLine();
+						// If the dir changed (probably at level 3 because directory
+						// collapsing is enabled), then exit here.
+						if (bbs.curdir_code != dirCodeBackup)
+							continueOn = false;
+						else
+						{
+							// A file directory was not chosen, so we'll have to re-draw
+							// the header and key help line
+							displayListHdrLines(level, this, pLibIdx, pDirIdx);
+							this.WriteKeyHelpLine();
+						}
 					}
 				}
 			}
@@ -1427,10 +1440,12 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 						if (chosenSubdirIdx > -1)
 						{
 							// Set the current file directory
-							// TODO: This doesn't seem to be exiting, it's just
-							// going back to the library menu
 							bbs.curdir_code = this.lib_list[pLibIdx].dir_list[chosenIdx].subdir_list[chosenSubdirIdx].code;
 							continueOn = false;
+							// Return a false here so that after this function is called by itself when
+							// pLevel is 2, it will know that a sub-board has been chosen and will set
+							// continueOn to false so that the loop won't continue from there.
+							return false;
 						}
 						else
 						{
@@ -2826,3 +2841,35 @@ function attrCodeStr(pAttrCodeCharStr)
 	return str;
 }
 
+// Finds the index of a file library AFTER the given library index which contains
+// directories.  If there are none, this will return -1.
+//
+// Parameters:
+//  pLibIdx: An index of a file library; this function will start searching AFTER this one
+//
+// Return value: An index of a file library after the given group index that contains directories,
+//               or -1 if there are none
+function findNextLibIdxWithDirs(pLibIdx)
+{
+	if (typeof(pLibIdx) !== "number")
+		return -1;
+	var nextLibIdx = -1;
+	//file_area.lib_list[pLibIdx].dir_list
+	if (pLibIdx < file_area.lib_list.length - 1)
+	{
+		for (var i = pLibIdx + 1; i < file_area.lib_list.length && nextLibIdx == -1; ++i)
+		{
+			if (file_area.lib_list[i].dir_list.length > 0)
+				nextLibIdx = i;
+		}
+	}
+	if (nextLibIdx == -1 && pLibIdx > 0)
+	{
+		for (var i = 0; i < pLibIdx && nextLibIdx == -1; ++i)
+		{
+			if (file_area.lib_list[i].dir_list.length > 0)
+				nextLibIdx = i;
+		}
+	}
+	return nextLibIdx;
+}
