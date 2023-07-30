@@ -35,11 +35,11 @@
  #undef CIOLIB_EXPORTS
 #endif
 
+#define BITMAP_CIOLIB_DRIVER
 #include "ciolib.h"
 #include "x_cio.h"
 #include "x_events.h"
 
-#define BITMAP_CIOLIB_DRIVER
 #include "bitmap_con.h"
 
 #include "x_cio.h"
@@ -733,6 +733,9 @@ void x11_drawrect(struct rectlist *data)
 	if(x11_initialized) {
 		ev.data.rect=data;
 		write_event(&ev);
+	}
+	else {
+		bitmap_drv_free_rect(data);
 	}
 }
 
