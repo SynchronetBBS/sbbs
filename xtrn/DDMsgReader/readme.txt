@@ -752,6 +752,11 @@ The convention for the setting names in the theme configuration file is that
 setting names ending in 'Text' are for whole text strings, and the setting
 names that don't end in 'Text' are for colors.
 
+Note that if one of the strings has a space at the end, a : must be used
+instead of a = to separate the setting name from the value.  The value can also
+be inside double-quotes.  See the following for more information:
+https://wiki.synchro.net/config:ini_files#string_literals
+
 Setting                              Description
 -------                              -----------
 headerMsgGroupTextColor              Color for the header line in the message
