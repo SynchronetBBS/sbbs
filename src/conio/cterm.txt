@@ -1033,43 +1033,58 @@ CSI Ps... m (SGR)
 	Sets or clears one or more text attributes.  Unlimited parameters are
 	supported and are applied in received order.  The following are
 	supported:
-	                                        Blink Bold FG BG TF TB (Modified)
-	0 -  Default attribute, white on black     X    X  X  X  X  X
-	1 -  Bright Intensity                           X        X
-	2 -  Dim intensity                              X        X
-	5 -  Blink (By definition, slow blink)     X                X
-	6 -  Blink (By definition, fast blink)     X                X
-	     NOTE: Both blinks are the same speed.
-	7 -  Negative Image - Reverses FG and BG           X  X  X  X
-	8 -  Concealed characters, sets the                X     X  X
-	     foreground colour to the background
-	     colour.
-	22 - Normal intensity                           X        X
-	25 - Steady (Not blinking)                 X                X
-	27 - Positive Image - Restores FG and BG           X  X  X  X
-	     NOTE: This should be a separate
-	           attribute than 7 but this
-	           implementation makes them equal
-	30 - Black foreground                              X     X
-	31 - Red foreground                                X     X
-	32 - Green foreground                              X     X
-	33 - Yellow foreground                             X     X
-	34 - Blue foreground                               X     X
-	35 - Magenta foreground                            X     X
-	36 - Cyan foreground                               X     X
-	37 - White foreground                              X     X
-	38 - Extended Foreground (see notes)                     X
-	39 - Default foreground (same as white)	           X     X
-	40 - Black background                                 X     X
-	41 - Red background                                   X     X
-	42 - Green background                                 X     X
-	43 - Yellow background                                X     X
-	44 - Blue background                                  X     X
-	45 - Magenta background                               X     X
-	46 - Cyan background                                  X     X
-	47 - White background                                 X     X
-	48 - Extended Background (see notes)                        X
-	49 - Default background (same as black)               X     X
+	                                         Blink Bold FG BG TF TB (Modified)
+	0 -   Default attribute, white on black     X    X  X  X  X  X
+	1 -   Bright Intensity                           X        X
+	2 -   Dim intensity                              X        X
+	5 -   Blink (By definition, slow blink)     X                X
+	6 -   Blink (By definition, fast blink)     X                X
+	      NOTE: Both blinks are the same speed.
+	7 -   Negative Image - Reverses FG and BG           X  X  X  X
+	8 -   Concealed characters, sets the                X     X  X
+	      foreground colour to the background
+	      colour.
+	22 -  Normal intensity                           X        X
+	25 -  Steady (Not blinking)                 X                X
+	27 -  Positive Image - Restores FG and BG           X  X  X  X
+	      NOTE: This should be a separate
+	            attribute than 7 but this
+	            implementation makes them equal
+	30 -  Black foreground                              X     X
+	31 -  Red foreground                                X     X
+	32 -  Green foreground                              X     X
+	33 -  Yellow foreground                             X     X
+	34 -  Blue foreground                               X     X
+	35 -  Magenta foreground                            X     X
+	36 -  Cyan foreground                               X     X
+	37 -  White foreground                              X     X
+	38 -  Extended Foreground (see notes)                     X
+	39 -  Default foreground (same as white)	           X     X
+	40 -  Black background                                 X     X
+	41 -  Red background                                   X     X
+	42 -  Green background                                 X     X
+	43 -  Yellow background                                X     X
+	44 -  Blue background                                  X     X
+	45 -  Magenta background                               X     X
+	46 -  Cyan background                                  X     X
+	47 -  White background                                 X     X
+	48 -  Extended Background (see notes)                        X
+	49 -  Default background (same as black)               X     X
+	91 -  Bright Red foreground                      X  X     X
+	92 -  Bright Green foreground                    X  X     X
+	93 -  Bright Yellow foreground                   X  X     X
+	94 -  Bright Blue foreground                     X  X     X
+	95 -  Bright Magenta foreground                  X  X     X
+	96 -  Bright Cyan foreground                     X  X     X
+	97 -  Bright White foreground                    X  X     X
+	100 - Bright Black background               X          X     X
+	101 - Bright Red background                 X          X     X
+	102 - Bright Green background               X          X     X
+	103 - Bright Yellow background              X          X     X
+	104 - Bright Blue background                X          X     X
+	105 - Bright Magenta background             X          X     X
+	106 - Bright Cyan background                X          X     X
+	107 - Bright White background               X          X     X
 
 	All others are ignored.
 
@@ -1079,6 +1094,12 @@ CSI Ps... m (SGR)
 	BG indicates the background colour.
 	TF indicates that the Tru Colour foreground is changed.
 	TB indicates that the Tru Colour background is changed.
+
+	NOTE: For 90-97, there is no effect unless bright foreground colours
+	are enabled.
+
+	NOTE: For 100-107, there is no effect unless bright background colours
+	are enabled.
 
 	NOTE: For 38 and 48, two additional formats are supported, a palette
 	selection and a direct colour selection.

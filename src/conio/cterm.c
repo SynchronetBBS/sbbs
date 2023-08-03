@@ -2457,6 +2457,30 @@ set_bgattr(struct cterminal *cterm, unsigned char colour)
 	set_attr(cterm, colour, true ^ cterm->negative);
 }
 
+static void
+set_bright_fg(struct cterminal *cterm, unsigned char colour, int flags)
+{
+	if (!(flags & CIOLIB_VIDEO_NOBRIGHT)) {
+		set_fgattr(cterm, colour);
+		if (!cterm->skypix)
+			cterm->attr|=8;
+		attr2palette(cterm->attr, cterm->negative ? NULL : &cterm->fg_color, cterm->negative ? &cterm->fg_color : NULL);
+		FREE_AND_NULL(cterm->fg_tc_str);
+	}
+}
+
+static void
+set_bright_bg(struct cterminal *cterm, unsigned char colour, int flags)
+{
+	if (flags & CIOLIB_VIDEO_BGBRIGHT) {
+		set_attr(cterm, colour, true ^ cterm->negative);
+		if (!cterm->skypix)
+			cterm->attr|=128;
+		attr2palette(cterm->attr, cterm->negative ? &cterm->bg_color : NULL, cterm->negative ? NULL : &cterm->bg_color);
+		FREE_AND_NULL(cterm->bg_tc_str);
+	}
+}
+
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed, char last)
 {
 	char	*p;
@@ -3965,6 +3989,54 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										break;
 									case 48:
 										parse_extended_colour(seq, &i, cterm, false ^ cterm->negative);
+										break;
+									case 90:
+										set_bright_fg(cterm, BLACK, flags);
+										break;
+									case 91:
+										set_bright_fg(cterm, RED, flags);
+										break;
+									case 92:
+										set_bright_fg(cterm, GREEN, flags);
+										break;
+									case 93:
+										set_bright_fg(cterm, BROWN, flags);
+										break;
+									case 94:
+										set_bright_fg(cterm, BLUE, flags);
+										break;
+									case 95:
+										set_bright_fg(cterm, MAGENTA, flags);
+										break;
+									case 96:
+										set_bright_fg(cterm, CYAN, flags);
+										break;
+									case 97:
+										set_bright_fg(cterm, LIGHTGRAY, flags);
+										break;
+									case 100:
+										set_bright_bg(cterm, BLACK, flags);
+										break;
+									case 101:
+										set_bright_bg(cterm, RED, flags);
+										break;
+									case 102:
+										set_bright_bg(cterm, GREEN, flags);
+										break;
+									case 103:
+										set_bright_bg(cterm, BROWN, flags);
+										break;
+									case 104:
+										set_bright_bg(cterm, BLUE, flags);
+										break;
+									case 105:
+										set_bright_bg(cterm, MAGENTA, flags);
+										break;
+									case 106:
+										set_bright_bg(cterm, CYAN, flags);
+										break;
+									case 107:
+										set_bright_bg(cterm, LIGHTGRAY, flags);
 										break;
 								}
 							}
