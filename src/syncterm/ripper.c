@@ -16356,6 +16356,11 @@ rip_getch(void)
 	hold_update = oldhold;
 	return ch;
 #else
-	return getch();
+	int                ch;
+
+	ch = getch();
+	if ((ch == 0) || (ch == 0xe0))
+		ch |= getch() << 8;
+	return ch;
 #endif
 }
