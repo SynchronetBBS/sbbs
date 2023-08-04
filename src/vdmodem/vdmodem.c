@@ -41,7 +41,7 @@
 #include "git_hash.h"
 
 #define TITLE "Synchronet Virtual DOS Modem for Windows"
-#define VERSION "0.3"
+#define VERSION "0.4"
 
 bool external_socket;
 union xp_sockaddr addr;
@@ -637,7 +637,7 @@ char* dial(struct modem* modem, const char* number)
 	hints.ai_family = address_family(/* for listen: */false);
 	hints.ai_socktype=SOCK_STREAM;
 	hints.ai_protocol=IPPROTO_TCP;
-	dprintf("%s %d calling getaddrinfo", __FILE__, __LINE__);
+	dprintf("line %d: calling getaddrinfo", __LINE__);
 	SAFEPRINTF(portnum, "%hu", port);
 	int result = getaddrinfo(host, portnum, &hints, &res);
 	if(result != 0) {
@@ -659,7 +659,7 @@ char* dial(struct modem* modem, const char* number)
 			ioctlsocket(sock, FIONBIO, &nonblock);
 		}
 
-		dprintf("%s %d calling connect", __FILE__, __LINE__);
+		dprintf("line %d: calling connect", __LINE__);
 		if(connect(sock, cur->ai_addr, cur->ai_addrlen)) {
 			switch(ERROR_VALUE) {
 				case EINPROGRESS:
@@ -679,7 +679,7 @@ char* dial(struct modem* modem, const char* number)
 						}
 						else {
 							if (kbhit()) {
-								dprintf("%s %d kbhit", __FILE__, __LINE__);
+								dprintf("line %d: kbhit", __LINE__);
 								closesocket(sock);
 								sock = INVALID_SOCKET;
 								return response(modem, NO_CARRIER);
@@ -697,7 +697,7 @@ connected:
 		}
 	}
 	if (sock == INVALID_SOCKET) {
-		dprintf("%s %d invalid hostname?", __FILE__, __LINE__);
+		dprintf("line %d: invalid hostname?", __LINE__);
 		return response(modem, NO_ANSWER);
 	}
 
@@ -707,11 +707,13 @@ connected:
 	ioctlsocket(sock, FIONBIO, &nonblock);
 	setsockopts(sock);
 	if(socket_recvdone(sock, 0)) {
-		dprintf("%s %d socket_recvdone", __FILE__, __LINE__);
+		dprintf("line %d: socket_recvdone", __LINE__);
+		closesocket(sock);
+		sock=INVALID_SOCKET;
 		return response(modem, NO_CARRIER);
 	}
 
-	dprintf("%s %d connected!", __FILE__, __LINE__);
+	dprintf("line %d: connected!", __LINE__);
 	int keepalives = TRUE;
 	setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepalives, sizeof(keepalives));
 	ZERO_VAR(telnet);
