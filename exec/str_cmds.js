@@ -441,7 +441,10 @@ function str_cmds(str)
 				str=str.substr(3);
 				writeln("");
 				try {	// May throw on parseInt()
-					bbs.spy(parseInt(get_nodenum(str)));
+					if(system.mqtt_enabled)
+						js.exec('mqtt_spy.js', this, parseInt(get_nodenum(str)));
+					else
+						bbs.spy(parseInt(get_nodenum(str)));
 					write("\1n\r\nSpy session complete.\r\n");
 				}
 				catch (e) {}
