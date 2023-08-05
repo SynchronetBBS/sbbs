@@ -1,5 +1,7 @@
 // Spy on a terminal server node using MQTT
 
+// usage: mqtt_spy <node_num> [char_set]
+
 require("key_defs.js", "CTRL_C");
 require("nodedefs.js", "NodeStatus");
 
@@ -34,6 +36,19 @@ function get_ansi_seq()
 	return null;
 }
 
+var my_charset = js.global.console ? console.charset : argv[1] || 'CP437';
+var node_charset;
+function output(str)
+{
+	if(my_charset != node_charset) {
+		if(node_charset == 'UTF-8')
+			str = utf8_decode(str);
+		else if(my_charset == 'UTF-8')
+			str = utf8_encode(str);
+	}
+	write(str);
+}
+
 if(argc < 1) {
 	alert("Node number not specified");
 	exit(0);
@@ -48,6 +63,7 @@ if(node_num < 1 || node_num > system.nodes || isNaN(node_num)
 var in_topic = format("sbbs/%s/node/%u/input", system.qwk_id, node_num);
 var out_topic = format("sbbs/%s/node/%u/output", system.qwk_id, node_num);
 var status_topic = format("sbbs/%s/node/%u/status", system.qwk_id, node_num);
+var terminal_topic = format("sbbs/%s/node/%u/terminal", system.qwk_id, node_num);
 var mqtt = new MQTT();
 if(!mqtt.connect()) {
 	alert("Connect error: " + mqtt.error_str);
@@ -62,19 +78,26 @@ if(!mqtt.subscribe(out_topic)) {
 	alert(format("Subscribe to '%s' error: %s", out_topic, mqtt.error_str));
 	exit(1);
 }
+if(!mqtt.subscribe(terminal_topic)) {
+	alert(format("Subscribe to '%s' error: %s", terminal_topic, mqtt.error_str));
+	exit(1);
+}
 print("*** Synchronet MQTT Spy on Node " + node_num + ": Ctrl-C to Abort ***\r\n");
 
 while(!js.terminated) {
 	var msg = mqtt.read(/* timeout: */10, /* verbose: */true);
 	if(msg) {
 		if(msg.topic == out_topic)
-			write(msg.data);
+			output(msg.data);
 		else if(msg.topic == status_topic) {
 			var new_status = parseInt(msg.data, 10);
 			if(new_status != node_status) {
 				node_status = new_status;
 				print("\r\nNew node status: " + NodeStatus[node_status]);
 			}
+		}
+		else if(msg.topic == terminal_topic) {
+			node_charset = msg.data.split('\t')[4];
 		}
 	}
 	if(js.global.console) {
