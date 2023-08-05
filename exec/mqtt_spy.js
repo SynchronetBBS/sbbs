@@ -117,7 +117,8 @@ while(!js.terminated) {
 				else
 					key = get_ansi_seq();
 			}
-			mqtt.publish(in_topic, key);
+			if(key)
+				mqtt.publish(in_topic, key);
 		}
 	}
 }
