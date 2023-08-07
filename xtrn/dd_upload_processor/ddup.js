@@ -9,18 +9,16 @@
  * BBS: Digital Distortion
  * BBS address: digdist.bbsindex.com
  *
- * Date           Author               Description
+ * Date       Author            Version  Description
  * 2009-12-25-
- * 2009-12-28 Eric Oulashin     Initial development
- * 2009-12-29 Eric Oulashin     Version 1.00
- *                                            Initial public release
- * 2022-06-08 Eric Oulashin     Version 1.01
- *                                            Made fixes to get the scanner functionality working properly in Linux
- * 2022-06-11 Eric Oulashin     Version 1.02
- *                                            Improved file/dir permissions more: Set file permissions too after extracting
- *                                            an archive so that they're all readable.
- * 2022-06-11 Eric Oulashin     Version 1.03
- *                                            Removed the chmod stuff, as it is actually not needed.
+ * 2009-12-28 Eric Oulashin              Initial development
+ * 2009-12-29 Eric Oulashin     1.00     Initial public release
+ * 2022-06-08 Eric Oulashin     1.01     Made fixes to get the scanner functionality working properly in Linux
+ * 2022-06-11 Eric Oulashin     1.02     Improved file/dir permissions more: Set file permissions after extracting
+ *                                       an archive so that they're all readable.
+ * 2022-06-11 Eric Oulashin     1.03     Removed the chmod stuff, as it is actually not needed.
+ * 2023-08-06 Eric Oulashin     1.04     Now uses Synchronet's built-in archiver (added in Synchronet 3.19),
+ *                                       if available, to extract archives.
  */
 
 /* Command-line arguments:
@@ -48,8 +46,8 @@ gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
 load(gStartupPath + "ddup_cleanup.js");
 
 // Version information
-var gDDUPVersion = "1.03";
-var gDDUPVerDate = "2022-06-11";
+var gDDUPVersion = "1.04";
+var gDDUPVerDate = "2023-08-06";
 
 // Store whether or not this is running in Windows
 var gRunningInWindows = /^WIN/.test(system.platform.toUpperCase());
@@ -822,78 +820,104 @@ function fixPathSlashes(pPath)
 // Return value: A blank string on success, or an error message on failure.
 function extractFileToDir(pFilename, pWorkDir)
 {
-   // If pFilename doesn't exist, then return with an error.
-   if (typeof(pFilename) != "string")
-      return ("Invalid filename specified.");
-   if (pFilename.length == 0)
-      return ("No filename specified.");
-   if (!file_exists(pFilename))
-      return ("The specified file does not exist.");
+	// If pFilename doesn't exist, then return with an error.
+	if (typeof(pFilename) != "string")
+		return ("Invalid filename specified.");
+	if (pFilename.length == 0)
+		return ("No filename specified.");
+	if (!file_exists(pFilename))
+		return ("The specified file does not exist.");
 
-   // If pWorkDir is blank, then return with an error.
-   if (typeof(pWorkDir) != "string")
-      return ("Unknown argument specified for the work directory.");
-   if (pWorkDir.length == 0)
-      return ("No work directory specified.");
+	// If pWorkDir is blank, then return with an error.
+	if (typeof(pWorkDir) != "string")
+		return ("Unknown argument specified for the work directory.");
+	if (pWorkDir.length == 0)
+		return ("No work directory specified.");
 
-   // If pWorkDir ends with a slash, remove it.
-   if ((/\/$/.test(pWorkDir)) || (/\\$/.test(pWorkDir)))
-      pWorkDir = pWorkDir.substr(0, pWorkDir.length-1);
+	// If pWorkDir ends with a slash, remove it.
+	if ((/\/$/.test(pWorkDir)) || (/\\$/.test(pWorkDir)))
+		pWorkDir = pWorkDir.substr(0, pWorkDir.length-1);
 
-   // If the work directory doesn't exist, then return with
-   // an error.
-   // Note: file_exists() doesn't seem to work properly with directories.
-   //if (!file_exists(pWorkDir))
-   //   return ("The work directory doesn't exist.");
+	// If the work directory doesn't exist, then return with
+	// an error.
+	// Note: file_exists() doesn't seem to work properly with directories.
+	//if (!file_exists(pWorkDir))
+	//   return ("The work directory doesn't exist.");
 
-   var filenameExt = getFilenameExtension(pFilename);
-   // Return with errors if there are problems.
-   if (filenameExt.length == 0)
-      return ("Can't extract (no file extension).");
-   if (typeof(gFileTypeCfg[filenameExt]) == "undefined")
-      return ("Can't extract " + getFilenameFromPath(pFilename) + " (I don't know how).");
-   if (gFileTypeCfg[filenameExt].extractCmd == "")
-      return ("Can't extract " + getFilenameFromPath(pFilename) + " (I don't know how).");
+	var filenameExt = getFilenameExtension(pFilename);
+	// Return with errors if there are problems.
+	if (filenameExt.length == 0)
+		return ("Can't extract (no file extension).");
+	if (typeof(gFileTypeCfg[filenameExt]) == "undefined")
+		return ("Can't extract " + getFilenameFromPath(pFilename) + " (I don't know how).");
+	if (gFileTypeCfg[filenameExt].extractCmd == "")
+		return ("Can't extract " + getFilenameFromPath(pFilename) + " (I don't know how).");
 
-   var retval = "";
+	var retval = "";
 
-   // Extract the file to the work directory.
-   var extractCmd = gFileTypeCfg[filenameExt].extractCmd.replace("%FILENAME%", "\"" + fixPathSlashes(pFilename) + "\"");
-   extractCmd = extractCmd.replace("%FILESPEC% ", "");
-   extractCmd = extractCmd.replace("%TO_DIR%", "\"" + fixPathSlashes(pWorkDir) + "\"");
-   var retCode = system.exec(extractCmd);
-   if (retCode != 0)
-      return ("Extract failed with exit code " + retCode);
-   //   For each file in the work directory:
-   //     If the file has an extract command
-   //        Extract it to a subdir in the temp dir
-   //        Delete the archive
-   var files = directory(pWorkDir + "/*");
-   for (var i in files)
-   {
-      // If the file has an extract command, then extract it to a
-      // temp directory in the work directory.
-      filenameExt = getFilenameExtension(files[i]);
-      if ((typeof(gFileTypeCfg[filenameExt]) != "undefined") &&
-          ((gFileTypeCfg[filenameExt].extractCmd != "")))
-      {
-         // Create the temp directory and extract the file there.
-         var workDir = pWorkDir + "/" + getFilenameFromPath(files[i] + "_temp");
-         if (mkdir(workDir))
-            retval = extractFileToDir(files[i], workDir);
-         else
-            retval = "Unable to create a temporary directory.";
+	// Extract the file to the work directory.
+	// If the Archive class is available (added in Synchronet 3.19), then
+	// use it to extract the archive.  Otherwise, use the configured external
+	// archiver command to extract it.
+	var builtInExtractSucceeded = false;
+	if (typeof(Archive) === "function")
+	{
+		var arcFilenameFixed = fixPathSlashes(pFilename);
+		var arcFile = new Archive(arcFilenameFixed);
+		try
+		{
+			// Extract with path information (trust the archive that any
+			// filename characters are okay).  If we don't extract with
+			// path information, then Synchronet may reject some filenames
+			// due to certain characters in the filename.
+			var numFilesExtracted = arcFile.extract(pWorkDir, true);
+			builtInExtractSucceeded = true;
+			if (user.is_sysop) console.print("\x01n\r\n\x01gExtracted with Synchronet's built-in Archive support\x01n\r\n\r\n"); // Temporary
+		}
+		catch (e)
+		{
+			// Synchronet's internal archiver was unable to extract it.
+			log(LOG_ERR, "DD Upload Processor: Synchronet internal archiver failed to extract " + arcFilenameFixed + ": " + e);
+		}
+	}
+	if (!builtInExtractSucceeded)
+	{
+		var extractCmd = gFileTypeCfg[filenameExt].extractCmd.replace("%FILENAME%", "\"" + fixPathSlashes(pFilename) + "\"");
+		extractCmd = extractCmd.replace("%FILESPEC% ", "");
+		extractCmd = extractCmd.replace("%TO_DIR%", "\"" + fixPathSlashes(pWorkDir) + "\"");
+		var retCode = system.exec(extractCmd);
+		if (retCode != 0)
+			return ("Extract failed with exit code " + retCode);
+	}
+	//   For each file in the work directory:
+	//     If the file has an extract command
+	//        Extract it to a subdir in the temp dir
+	//        Delete the archive
+	var files = directory(pWorkDir + "/*");
+	for (var i in files)
+	{
+		// If the file has an extract command, then extract it to a
+		// temp directory in the work directory.
+		filenameExt = getFilenameExtension(files[i]);
+		if ((typeof(gFileTypeCfg[filenameExt]) != "undefined") && ((gFileTypeCfg[filenameExt].extractCmd != "")))
+		{
+			// Create the temp directory and extract the file there.
+			var workDir = pWorkDir + "/" + getFilenameFromPath(files[i] + "_temp");
+			if (mkdir(workDir))
+				retval = extractFileToDir(files[i], workDir);
+			else
+				retval = "Unable to create a temporary directory.";
 
-         // If there was no problem, then delete the archive file.  Otherwise,
-         // stop going through the list of files.
-         if (retval.length == 0)
-            file_remove(files[i]);
-         else
-            break;
-      }
-   }
+			// If there was no problem, then delete the archive file.  Otherwise,
+			// stop going through the list of files.
+			if (retval.length == 0)
+				file_remove(files[i]);
+			else
+				break;
+		}
+	}
 
-   return retval;
+	return retval;
 }
 
 // This function executes an OS command and returns its output as an
