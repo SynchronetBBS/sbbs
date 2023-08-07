@@ -1,12 +1,13 @@
                    Digital Distortion Upload Processor
-                              Version 1.03
-                        Release date: 2022-06-11
+                              Version 1.04
+                        Release date: 2023-08-06
 
                                   by
 
                              Eric Oulashin
                      Sysop of Digital Distortion BBS
-                 BBS internet address: digdist.bbsindex.com
+                 BBS internet address: digdist.synchro.net
+                       AKA digitaldistortionbbs.com
                      Email: eric.oulashin@gmail.com
 
 
@@ -42,9 +43,12 @@ to scan uploaded files, with the added ability to extract compressed files
 in order to scan the files inside the compressed file.
 
 File formats can be specified and configured via a configuration file,
-including extraction commands for compressed files.  In addition, the
-virus scan command can be configured in the main configuration file,
-which should allow for the use of any virus scanner, as long as it is a
+including extraction commands for compressed files. Synchronet's built-in
+archive support (added in Synchronet 3.19) will be used, if available, to
+extract archive files. Otherwise, extract commands for archive file types can
+be configured in the archive file type configuration file (ddup_file_types.cfg).
+In addition, the virus scan command can be configured in the main configuration
+file, which should allow for the use of any virus scanner, as long as it is a
 command-line scanner (no GUI) and is able to take a subdirectory as a
 command-line parameter.
 
@@ -76,10 +80,18 @@ uploaded file to be rejected.
 
 3. Archive File Software
 ========================
-Digital Distortion Upload Processor comes with configuration settings to
-use various archivers to handle extraction of ZIP, 7Z (7-Zip), RAR, ARJ, MSI,
-TAR, GZ, TGZ, and TAR.GZ archives.  If you want to use other archiver programs,
-you will need to update the configuration to modify the commands used.
+Digital Distortion Upload Processor will (try to) use Synchronet's built-in
+archive support (if available) to extract archive files. If that fails, it will
+fall back on a configured command-line to extract the archive (if configured).
+Synchronet's built-in archive support will take precedence over any configured
+extraction command (that is, if Synchronet itself is able to extract the
+archive, any configured extraction command for that archive file type will not
+be uesd).
+
+Configuration settings to use various archivers to handle extraction of ZIP, 7Z
+(7-Zip), RAR, ARJ, MSI, TAR, GZ, TGZ, and TAR.GZ archives.  If you want to use
+other archiver programs, you will need to update the configuration to modify the
+commands used.
 
 The file format configuration file included with this script includes
 extraction command lines (specified by an EXTRACT setting) for various
