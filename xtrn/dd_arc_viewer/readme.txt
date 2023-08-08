@@ -1,6 +1,6 @@
                     Digital Distortion Archive Viewer
-                              Version 1.04
-                        Release date: 2022-05-16
+                              Version 1.05
+                        Release date: 2023-08-08
 
                                   by
 
@@ -280,8 +280,11 @@ folows:
 
 setting=value
 
-where "setting" is the behavior setting or color, and "value" is the corresponding
-value for the setting/color.  The colors are Synchronet color codes.
+where "setting" is the behavior setting or color, and "value" is the
+corresponding value for the setting/color.  The colors are Synchronet color
+codes. The control character is not needed for the color codes; for sample, to
+set a color of high-intensity green, you could use "gh" (or "ngh" if you want
+to ensure that the normal attribute gets set first).
 
 Also, comments are allowed in the configuration file.  Comments begin with a
 semicolon (;).

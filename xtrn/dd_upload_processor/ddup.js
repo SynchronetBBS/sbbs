@@ -9,16 +9,23 @@
  * BBS: Digital Distortion
  * BBS address: digdist.bbsindex.com
  *
- * Date       Author            Version  Description
+ * Date       Author            Description
  * 2009-12-25-
- * 2009-12-28 Eric Oulashin              Initial development
- * 2009-12-29 Eric Oulashin     1.00     Initial public release
- * 2022-06-08 Eric Oulashin     1.01     Made fixes to get the scanner functionality working properly in Linux
- * 2022-06-11 Eric Oulashin     1.02     Improved file/dir permissions more: Set file permissions after extracting
- *                                       an archive so that they're all readable.
- * 2022-06-11 Eric Oulashin     1.03     Removed the chmod stuff, as it is actually not needed.
- * 2023-08-06 Eric Oulashin     1.04     Now uses Synchronet's built-in archiver (added in Synchronet 3.19),
- *                                       if available, to extract archives.
+ * 2009-12-28 Eric Oulashin     Initial development
+ * 2009-12-29 Eric Oulashin     Version 1.00
+ *                              Initial public release
+ * 2022-06-08 Eric Oulashin     Version 1.01
+                                Made fixes to get the scanner functionality working properly in Linux
+ * 2022-06-11 Eric Oulashin     Version 1.02
+ *                              Improved file/dir permissions more: Set file permissions after extracting
+ *                              an archive so that they're all readable.
+ * 2022-06-11 Eric Oulashin     Version 1.03
+ *                              Removed the chmod stuff, as it is actually not needed.
+ * 2023-08-06 Eric Oulashin     Version 1.04
+ *                              Now uses Synchronet's built-in archiver (added in Synchronet 3.19),
+ *                              if available, to extract archives.
+ * 2023-08-07 Eric Oulashin     Version 1.05
+ *                              Internal refactor of how the configuration files are read
  */
 
 /* Command-line arguments:
@@ -46,8 +53,8 @@ gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
 load(gStartupPath + "ddup_cleanup.js");
 
 // Version information
-var gDDUPVersion = "1.04";
-var gDDUPVerDate = "2023-08-06";
+var gDDUPVersion = "1.05";
+var gDDUPVerDate = "2023-08-07";
 
 // Store whether or not this is running in Windows
 var gRunningInWindows = /^WIN/.test(system.platform.toUpperCase());
@@ -96,14 +103,14 @@ else
 
 // Make sure the slashes in the filename are correct for the platform.
 if (gFileToScan.length > 0)
-   gFileToScan = fixPathSlashes(gFileToScan);
+	gFileToScan = fixPathSlashes(gFileToScan);
 
 // A filename must be specified as the first argument, so give an error and return
 // if not.
 if (gFileToScan.length == 0)
 {
-   console.print("\1n\1y\1hError: \1n\1cNo filename specified to process.\r\n\1p");
-   exit(1);
+	console.print("\1n\1y\1hError: \1n\1cNo filename specified to process.\r\n\1p");
+	exit(1);
 }
 
 // Create the global configuration objects.
@@ -151,33 +158,33 @@ exit(main());
 // Return value: An integer to return upon script exit.
 function main()
 {
-   // Output the program name & version information
-   console.print("\1n\r\n\1c\1hD\1n\1cigital \1hD\1n\1cistortion \1hU\1n\1cpload \1hP\1n\1crocessor \1w\1hv\1n\1g" +
-                 gDDUPVersion);
-   // Originally I had this script output the version date, but now I'm not sure
-   // if I want to do that..
-   //console.print(" \1w\1h(\1b" + gDDUPVerDate + "\1w)");
-   console.print("\1n");
-   console.crlf();
+	// Output the program name & version information
+	console.print("\1n\r\n\1c\1hD\1n\1cigital \1hD\1n\1cistortion \1hU\1n\1cpload \1hP\1n\1crocessor \1w\1hv\1n\1g" +
+	              gDDUPVersion);
+	// Originally I had this script output the version date, but now I'm not sure
+	// if I want to do that..
+	//console.print(" \1w\1h(\1b" + gDDUPVerDate + "\1w)");
+	console.attributes = "N";
+	console.crlf();
 
-   // Process the file
-   var exitCode = processFile(gFileToScan);
-   // Depending on the exit code, display a success or failure message.
-   console.crlf();
-   if (exitCode == 0)
-      console.print(gOKStr + " \1n\1b\1hScan successful - The file passed.\r\n");
-   else
-      console.print(gFailStr + " \1n\1y\1hScan failed!\r\n");
+	// Process the file
+	var exitCode = processFile(gFileToScan);
+	// Depending on the exit code, display a success or failure message.
+	console.crlf();
+	if (exitCode == 0)
+		console.print(gOKStr + " \1n\1b\1hScan successful - The file passed.\r\n");
+	else
+		console.print(gFailStr + " \1n\1y\1hScan failed!\r\n");
 
-   // If the option to pause at the end is enabled, then prompt the user for
-   // a keypress.
-   if (gGenCfg.pauseAtEnd)
-   {
-      console.print("\1n\1w\1hPress any key to continue:\1n");
-      console.getkey(K_NOECHO);
-   }
+	// If the option to pause at the end is enabled, then prompt the user for
+	// a keypress.
+	if (gGenCfg.pauseAtEnd)
+	{
+		console.print("\1n\1w\1hPress any key to continue:\1n");
+		console.getkey(K_NOECHO);
+	}
 
-   return exitCode;
+	return exitCode;
 }
 
 
@@ -200,17 +207,17 @@ function main()
 //               "always fail": Don't scan the file, and assume it's bad
 function ScannableFile(pExtension, pExtractCmd, pScanOption)
 { 
-   this.extension = "";      // The archive filename extension
-   this.extractCmd = "";     // The command to extract the archive (if applicable)
-   this.scanOption = "scan"; // The scan option ("scan", "always pass", "always fail")
+	this.extension = "";      // The archive filename extension
+	this.extractCmd = "";     // The command to extract the archive (if applicable)
+	this.scanOption = "scan"; // The scan option ("scan", "always pass", "always fail")
 
-   // If the parameters are valid, then use them to set the object properties.
-   if ((pExtension != null) && (pExtension != undefined) && (typeof(pExtension) == "string"))
-      this.extension = pExtension;
-   if ((pExtractCmd != null) && (pExtractCmd != undefined) && (typeof(pExtractCmd) == "string"))
-      this.extractCmd = pExtractCmd;
-   if ((pScanOption != null) && (pScanOption != undefined) && (typeof(pScanOption) == "string"))
-      this.scanOption = pScanOption;
+	// If the parameters are valid, then use them to set the object properties.
+	if ((pExtension != null) && (typeof(pExtension) == "string"))
+		this.extension = pExtension;
+	if ((pExtractCmd != null) && (typeof(pExtractCmd) == "string"))
+		this.extractCmd = pExtractCmd;
+	if ((pScanOption != null) && (typeof(pScanOption) == "string"))
+		this.scanOption = pScanOption;
 }
 
 
@@ -223,12 +230,12 @@ function ScannableFile(pExtension, pExtractCmd, pScanOption)
 // in the DOVE-Net Synchronet Discussion sub-board on December 20, 2009.
 function fixArgs(input)
 {
-   var patt1 = /\"[^\"]*\"|\S+/g;
-   var patt2 = /^\"?([^\"]*)\"?$/;
-   return input.join(' ').match(patt1).map(function(item)
-   {
-     return item.replace(patt2, "$1")
-   });
+	var patt1 = /\"[^\"]*\"|\S+/g;
+	var patt2 = /^\"?([^\"]*)\"?$/;
+	return input.join(' ').match(patt1).map(function(item)
+	{
+		return item.replace(patt2, "$1")
+	});
 }
 
 // Scans a file.
@@ -243,7 +250,7 @@ function processFile(pFilename)
 	// Display the program header stuff - The name of the file being scanned
 	// and the status header line
 	var justFilename = getFilenameFromPath(pFilename);
-	console.print("\1n\1w\1hScanning \1b" + justFilename.substr(0, 70));
+	console.print("\1n\1w\1hScanning \1b" + justFilename);
 	console.print("\1n\r\n\1b\1" + "7                             File Scan Status                                  \1n\r\n");
 
 	// If the skipScanIfSysop option is enabled and the user is a sysop,
@@ -305,6 +312,7 @@ function processFile(pFilename)
 				{
 					// Extract the file to the work directory
 					printf(gStatusPrintfStr, "\1m\1h", "Extracting the file...");
+					console.crlf();
 					var errorStr = extractFileToDir(pFilename, workDir);
 					if (errorStr.length == 0)
 					{
@@ -399,90 +407,86 @@ function processFile(pFilename)
 //                          file scan.
 function scanFilesInDir(pDir)
 {
-   // If pDir is unspecified, then just return.
-   if (typeof(pDir) != "string")
-   {
-      var retObj = new Object();
-      retObj.cmdOutput = new Array();
-      retObj.returnCode = -1;
-      return retObj;
-   }
-   if (pDir.length == 0)
-   {
-      var retObj = new Object();
-      retObj.cmdOutput = new Array();
-      retObj.returnCode = -2;
-      return retObj;
-   }
-   // Also, just return if gGenCfg.scanCmd is blank.
-   if (gGenCfg.scanCmd.length == 0)
-   {
-      var retObj = new Object();
-      retObj.cmdOutput = new Array();
-      retObj.returnCode = -3;
-      return retObj;
-   }
+	var retObj = {
+		cmdOutput: [],
+		returnCode: 0
+	};
 
-   // If the filename has a trailing slash, remove it.
-   if ((/\/$/.test(pDir)) || (/\\$/.test(pDir)))
-      pDir = pDir.substr(0, pDir.length-1);
+	// If pDir is unspecified, then just return.
+	if (typeof(pDir) != "string")
+	{
+		retObj.returnCode = -1;
+		return retObj;
+	}
+	if (pDir.length == 0)
+	{
+		retObj.returnCode = -2;
+		return retObj;
+	}
+	// Also, just return if gGenCfg.scanCmd is blank.
+	if (gGenCfg.scanCmd.length == 0)
+	{
+		retObj.returnCode = -3;
+		return retObj;
+	}
 
-   var retObj = null;  // Will be used to capture the return from the scan commands
+	// If the filename has a trailing slash, remove it.
+	if ((/\/$/.test(pDir)) || (/\\$/.test(pDir)))
+		pDir = pDir.substr(0, pDir.length-1);
 
-   // If the virus scan command contains %FILESPEC%, then
-   // replace %FILESPEC% with pDir and run the scan command.
-   if (gGenCfg.scanCmd.indexOf("%FILESPEC%") > -1)
-   {
-      var scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(pDir) + "\"");
-      retObj = runExternalCmdWithOutput(scanCmd);
+	// If the virus scan command contains %FILESPEC%, then
+	// replace %FILESPEC% with pDir and run the scan command.
+	if (gGenCfg.scanCmd.indexOf("%FILESPEC%") > -1)
+	{
+		var scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(pDir) + "\"");
+		retObj = runExternalCmdWithOutput(scanCmd);
 
-      // This is old code, for scanning each file individually (slow):
-      /*
-      // Get a list of the files, and scan them.
-      var files = directory(pDir + "/*");
-      if (files.length > 0)
-      {
-         var scanCmd = null; // Will be used for the scan commands (string)
-         var counter = 0;    // Loop variable
-         for (var i in files)
-         {
-            // If the file is a directory, then recurse into it.  Otherwise,
-            // scan the file using the configured scan command.
-            if (file_isdir(files[i]))
-               retObj = scanFilesInDir(files[i]);
-            else
-            {
-               scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(files[i]) + "\"");
-               // Run the scan command and capture its output, in case the scan fails.
-               retObj = runExternalCmdWithOutput(scanCmd);
-            }
-   
-            // If there's a problem, then stop going through the list of files.
-            if (retObj.returnCode != 0)
-               break;
-         }
-      }
-      else
-      {
-         // There are no files.  So create retObj with default settings
-         // for a good result.
-         retObj = new Object();
-         retObj.returnCode = 0;
-         retObj.cmdOutput = new Array();
-      }
-      */
-   }
-   else
-   {
-      // gGenCfg.scanCmd doesn't contain %FILESPEC%, so set up
-      // retObj with a non-zero return code (for failure)
-      retObj = new Object();
-      retObj.returnCode = -4;
-      retObj.cmdOutput = new Array();
-      retObj.cmdOutput.push("The virus scanner is not set up correctly.");
-   }
+		// This is old code, for scanning each file individually (slow):
+		/*
+		// Get a list of the files, and scan them.
+		var files = directory(pDir + "/*");
+		if (files.length > 0)
+		{
+			var scanCmd = null; // Will be used for the scan commands (string)
+			var counter = 0;    // Loop variable
+			for (var i in files)
+			{
+				// If the file is a directory, then recurse into it.  Otherwise,
+				// scan the file using the configured scan command.
+				if (file_isdir(files[i]))
+					retObj = scanFilesInDir(files[i]);
+				else
+				{
+					scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(files[i]) + "\"");
+					// Run the scan command and capture its output, in case the scan fails.
+					retObj = runExternalCmdWithOutput(scanCmd);
+				}
 
-   return retObj;
+				// If there's a problem, then stop going through the list of files.
+				if (retObj.returnCode != 0)
+					break;
+			}
+		}
+		else
+		{
+			// There are no files.  So create retObj with default settings
+			// for a good result.
+			retObj = {
+				returnCode: 0,
+				cmdOutput = []
+			};
+		}
+		*/
+	}
+	else
+	{
+		// gGenCfg.scanCmd doesn't contain %FILESPEC%, so set up
+		// retObj with a non-zero return code (for failure)
+		retObj.returnCode = -4;
+		retObj.cmdOutput.push("The virus scanner is not set up correctly.");
+	}
+
+	return retObj;
 }
 
 // Reads the configuration file and returns an object containing the
@@ -494,156 +498,70 @@ function scanFilesInDir(pDir)
 // Return value: Boolean - Whether or not the configuration was read.
 function ReadConfigFile(pCfgFilePath)
 {
-   // Read the file type settings.
-   var fileTypeSettingsRead = false;
-   var fileTypeCfgFile = new File(pCfgFilePath + "ddup_file_types.cfg");
-   if (fileTypeCfgFile.open("r"))
-   {
-      if (fileTypeCfgFile.length > 0)
-      {
-         fileTypeSettingsRead = true;
-         // Read each line from the config file and set the
-         // various options.
-         var pos = 0;               // Index of = in the file lines
-         var fileLine = "";
-         var filenameExt = "";      // Archive filename extension
-         var option = "";           // Configuration option
-         var optionValue = "";      // Configuration option value
-         var optionValueUpper;      // Upper-cased configuration option value
-         var scannableFile = null;  // Will be used to create & store scannable file options
-         while (!fileTypeCfgFile.eof)
-         {
-            // Read the line from the config file, look for a =, and
-            // if found, read the option & value and set them
-            // in cfgObj.
-            fileLine = fileTypeCfgFile.readln(1024);
+	// Read the file type settings.
+	var fileTypeSettingsRead = false;
+	var fileTypeCfgFile = new File(pCfgFilePath + "ddup_file_types.cfg");
+	if (fileTypeCfgFile.open("r"))
+	{
+		if (fileTypeCfgFile.length > 0)
+		{
+			var allFileTypeCfg = fileTypeCfgFile.iniGetAllObjects();
+			fileTypeSettingsRead = true;
+			for (var i = 0; i < allFileTypeCfg.length; ++i)
+			{
+				var filenameExt = allFileTypeCfg[i].name; // Filename extension
+				var scannableFile = new ScannableFile(filenameExt, "", "scan");
+				for (var prop in allFileTypeCfg[i])
+				{
+					var propUpper = prop.toUpperCase();
+					if (propUpper === "EXTRACT")
+						scannableFile.extractCmd = allFileTypeCfg[i][prop];
+					else if (propUpper === "SCANOPTION")
+						scannableFile.scanOption = allFileTypeCfg[i][prop];
+				}
+				gFileTypeCfg[filenameExt] = scannableFile;
+			}
+		}
+		fileTypeCfgFile.close();
+	}
 
-            // fileLine should be a string, but I've seen some cases
-            // where it isn't, so check its type.
-            if (typeof(fileLine) != "string")
-               continue;
+	// Read the general configuration
+	var genSettingsRead = false;
+	var genCfgFile = new File(pCfgFilePath + "ddup.cfg");
+	if (genCfgFile.open("r"))
+	{
+		if (genCfgFile.length > 0)
+		{
+			var settingsObj = genCfgFile.iniGetObject();
+			genSettingsRead = true;
+			for (var prop in settingsObj)
+			{
+				// Set the appropriate value in the settings object.
+				var settingUpper = prop.toUpperCase();
+				if (settingUpper == "SCANCMD")
+					gGenCfg.scanCmd = settingsObj[prop];
+				else if (settingUpper == "SKIPSCANIFSYSOP")
+				{
+					if (typeof(settingsObj[prop]) === "string")
+						gGenCfg.skipScanIfSysop = (settingsObj[prop].toUpperCase() == "YES");
+					else if (typeof(settingsObj[prop]) === "boolean")
+						gGenCfg.skipScanIfSysop = settingsObj[prop];
+				}
+				else if (settingUpper == "PAUSEATEND")
+				{
+					if (typeof(settingsObj[prop]) === "string")
+					{
+						var valueUpper = settingsObj[prop].toUpperCase();
+						gGenCfg.pauseAtEnd = (valueUpper == "YES" || valueUpper == "TRUE");
+					}
+					else if (typeof(settingsObj[prop]) === "boolean")
+						gGenCfg.pauseAtEnd = settingsObj[prop];
+				}
+			}
+		}
+	}
 
-            // If the line is blank or starts with with a semicolon
-            // (the comment character), then skip it.
-            if ((fileLine.length == 0) || (fileLine.substr(0, 1) == ";"))
-               continue;
-
-            // Look for a file extension in square brackets ([ and ]).
-            // If found, then set filenameExt and continue onto the next line.
-            // Note: This regular expression allows whitespace around the [...].
-            if (/^\s*\[.*\]\s*$/.test(fileLine))
-            {
-               var startIndex = fileLine.indexOf("[") + 1;
-               var endIndex = fileLine.lastIndexOf("]");
-               var ext = fileLine.substr(startIndex, endIndex-startIndex).toUpperCase();
-               // If the filename extension is different than the last one
-               // we've seen, then:
-               // 1. If scannableFile is not null, then add it to gScannableFileTypes.
-               // 2. Create a new one (referenced as scannableFile).
-               if (ext != filenameExt)
-               {
-                  if ((scannableFile != null) && (scannableFile != undefined) &&
-                      (filenameExt.length > 0))
-                  {
-                     gFileTypeCfg[filenameExt] = scannableFile;
-                  }
-                  filenameExt = ext;
-                  scannableFile = new ScannableFile(ext, "", "scan");
-               }
-               continue;
-            }
-
-            // If filenameExt is blank, then continue onto the next line.
-            if (filenameExt.length == 0)
-               continue;
-
-            // If we're here, then filenameExt is set, and this is a valid
-            // line to process.
-            // Look for an = in the line, and if found, split into
-            // option & value.
-            pos = fileLine.indexOf("=");
-            if (pos > -1)
-            {
-               // Extract the option & value, trimming leading & trailing spaces.
-               option = trimSpaces(fileLine.substr(0, pos), true, false, true).toUpperCase();
-               optionValue = trimSpaces(fileLine.substr(pos+1), true, false, true);
-
-               if (option == "EXTRACT")
-                  scannableFile.extractCmd = optionValue;
-               else if (option == "SCANOPTION")
-                  scannableFile.scanOption = optionValue;
-            }
-         }
-      }
-
-      fileTypeCfgFile.close();
-   }
-
-   // Read the general program configuration
-   var genSettingsRead = false;
-   var genCfgFile = new File(pCfgFilePath + "ddup.cfg");
-   if (genCfgFile.open("r"))
-   {
-      if (genCfgFile.length > 0)
-      {
-         genSettingsRead = true;
-         var fileLine = null;     // A line read from the file
-         var equalsPos = 0;       // Position of a = in the line
-         var commentPos = 0;      // Position of the start of a comment
-         var setting = null;      // A setting name (string)
-         var settingUpper = null; // Upper-case setting name
-         var value = null;        // A value for a setting (string)
-         while (!genCfgFile.eof)
-         {
-            // Read the next line from the config file.
-            fileLine = genCfgFile.readln(1024);
-
-            // fileLine should be a string, but I've seen some cases
-            // where it isn't, so check its type.
-            if (typeof(fileLine) != "string")
-               continue;
-
-            // If the line starts with with a semicolon (the comment
-            // character) or is blank, then skip it.
-            if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-               continue;
-
-            // If the line has a semicolon anywhere in it, then remove
-            // everything from the semicolon onward.
-            commentPos = fileLine.indexOf(";");
-            if (commentPos > -1)
-               fileLine = fileLine.substr(0, commentPos);
-
-            // Look for an equals sign, and if found, separate the line
-            // into the setting name (before the =) and the value (after the
-            // equals sign).
-            equalsPos = fileLine.indexOf("=");
-            if (equalsPos > 0)
-            {
-               // Read the setting & value, and trim leading & trailing spaces.
-               setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-               settingUpper = setting.toUpperCase();
-               value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
-
-               // Skip this one if the value is blank.
-               if (value.length == 0)
-                  continue;
-
-               // Set the appropriate value in the settings object.
-               if (settingUpper == "SCANCMD")
-                  gGenCfg.scanCmd = value;
-               else if (settingUpper == "SKIPSCANIFSYSOP")
-                  gGenCfg.skipScanIfSysop = (value.toUpperCase() == "YES");
-               else if (settingUpper == "PAUSEATEND")
-                  gGenCfg.pauseAtEnd = (value.toUpperCase() == "YES");
-            }
-         }
-
-         genCfgFile.close();
-      }
-   }
-
-   return (fileTypeSettingsRead && genSettingsRead);
+	return (fileTypeSettingsRead && genSettingsRead);
 }
 
 // Removes multiple, leading, and/or trailing spaces
@@ -872,7 +790,6 @@ function extractFileToDir(pFilename, pWorkDir)
 			// due to certain characters in the filename.
 			var numFilesExtracted = arcFile.extract(pWorkDir, true);
 			builtInExtractSucceeded = true;
-			if (user.is_sysop) console.print("\x01n\r\n\x01gExtracted with Synchronet's built-in Archive support\x01n\r\n\r\n"); // Temporary
 		}
 		catch (e)
 		{

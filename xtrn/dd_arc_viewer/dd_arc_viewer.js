@@ -83,6 +83,9 @@
  * 2022-05-17 Eric Oulashin     When extracting an archive with Synchronet's
  *                              internal archiver, extracts with path information
  *                              to trust that filename characters are safe.
+ * 2023-08-08 Eric Oulashin     Version 1.05
+ *                              Refactored how the configuration files are loaded.
+ *                              Colors in dd_arc_viewer.cfg no longer need the control character.
  */
 
 "use strict";
@@ -115,8 +118,8 @@ load(gStartupPath + "dd_arc_viewer_cleanup.js");
 
 
 // Version information
-var gDDArcViewerVersion = "1.04";
-var gDDArcViewerVerDate = "2022-05-14";
+var gDDArcViewerVersion = "1.05";
+var gDDArcViewerVerDate = "2023-08-08";
 var gDDArcViewerProgName = "Digital Distortion Archive Viewer";
 
 
@@ -232,7 +235,6 @@ if (!configFileRead)
 }
 
 
-// Now, the fun begins..
 
 // gRootWorkDir will containing the name of the root work directory.  This
 // is where we'll extract the archive.
@@ -328,85 +330,37 @@ function ReadConfig(pCfgFilePath)
 	{
 		if (fileTypeCfgFile.length > 0)
 		{
+			var allFileTypeCfg = fileTypeCfgFile.iniGetAllObjects();
 			fileTypeSettingsRead = true;
-			// Read each line from the config file and set the
-			// various options.
-			var pos = 0;               // Index of = in the file lines
-			var fileLine = "";
-			var filenameExt = "";      // Archive filename extension
-			var option = "";           // Configuration option
-			var optionValue = "";      // Configuration option value
-			var optionValueUpper;      // Upper-cased configuration option value
-			var viewableFile = null;   // Will be used to create & store viewable archive options
-			while (!fileTypeCfgFile.eof)
+			for (var i = 0; i < allFileTypeCfg.length; ++i)
 			{
-				// Read the line from the config file, look for a =, and
-				// if found, read the option & value and set them
-				// in cfgObj.
-				fileLine = fileTypeCfgFile.readln(1024);
-
-				// fileLine should be a string, but I've seen some cases
-				// where it isn't, so check its type.
-				if (typeof(fileLine) != "string")
-					continue;
-
-				// If the line is blank or starts with with a semicolon
-				// (the comment character), then skip it.
-				if ((fileLine.length == 0) || (fileLine.substr(0, 1) == ";"))
-					continue;
-
-				// Look for a file extension in square brackets ([ and ]).
-				// If found, then set filenameExt and continue onto the next line.
-				// Note: This regular expression allows whitespace around the [...].
-				if (/^\s*\[.*\]\s*$/.test(fileLine))
+				var filenameExt = allFileTypeCfg[i].name; // Filename extension
+				var viewableFile = new ViewableFile();
+				viewableFile.extension = filenameExt;
+				for (var prop in allFileTypeCfg[i])
 				{
-					var startIndex = fileLine.indexOf("[") + 1;
-					var endIndex = fileLine.lastIndexOf("]");
-					var ext = fileLine.substr(startIndex, endIndex-startIndex).toUpperCase();
-					// If the filename extension is different than the last one
-					// we've seen, then:
-					// 1. If viewableFile is not null, then add it to gViewableFileTypes.
-					// 2. Create a new one (referenced as viewableFile).
-					if (ext != filenameExt)
+					var propUpper = prop.toUpperCase();
+					if (propUpper == "VIEW")
+						viewableFile.viewCmd = allFileTypeCfg[i][prop];
+					else if (propUpper == "EXTRACT")
+						viewableFile.extractCmd = allFileTypeCfg[i][prop];
+					else if (propUpper == "ISTEXT")
 					{
-						if ((viewableFile != null) && (viewableFile != undefined) && (filenameExt.length > 0))
+						if (typeof(allFileTypeCfg[i][prop]) === "string")
 						{
-							gViewableFileTypes[filenameExt] = viewableFile;
+							var valueUpper = allFileTypeCfg[i][prop].toUpperCase();
+							viewableFile.isText = (valueUpper == "YES" || valueUpper == "TRUE");
 						}
-						filenameExt = ext;
-						viewableFile = new ViewableFile();
-						viewableFile.extension = ext;
+						else if (typeof(allFileTypeCfg[i][prop]) === "boolean")
+							viewableFile.isText = allFileTypeCfg[i][prop];
 					}
-					continue;
 				}
-
-				// If filenameExt is blank, then continue onto the next line.
-				if (filenameExt.length == 0)
-					continue;
-
-				// If we're here, then filenameExt is set, and this is a valid
-				// line to process.
-				// Look for an = in the line, and if found, split into
-				// option & value.
-				pos = fileLine.indexOf("=");
-				if (pos > -1)
-				{
-					// Extract the option & value, trimming leading & trailing spaces.
-					option = trimSpaces(fileLine.substr(0, pos), true, false, true).toUpperCase();
-					optionValue = trimSpaces(fileLine.substr(pos+1), true, false, true);
-
-					if (option == "VIEW")
-						viewableFile.viewCmd = optionValue;
-					else if (option == "EXTRACT")
-						viewableFile.extractCmd = optionValue;
-					else if (option == "ISTEXT")
-						viewableFile.isText = (optionValue.toUpperCase() == "YES");
-				}
+				gViewableFileTypes[filenameExt] = viewableFile;
 			}
 		}
-
 		fileTypeCfgFile.close();
 	}
+
 	// Read the extractable and viewable file configuration from the Synchronet
 	// configuration and add any that we haven't seen in dd_arc_viewer_file_types.cfg
 	var SCFGFileCmds = getFileExtractAndViewCmdsFromSCFG();
@@ -436,93 +390,55 @@ function ReadConfig(pCfgFilePath)
 	{
 		if (genCfgFile.length > 0)
 		{
+			var behaviorSettings = genCfgFile.iniGetObject("BEHAVIOR");
+			var colorSettings = genCfgFile.iniGetObject("COLORS");
 			genSettingsRead = true;
-			var settingsMode = "";
-			var fileLine = null;     // A line read from the file
-			var equalsPos = 0;       // Position of a = in the line
-			var commentPos = 0;      // Position of the start of a comment
-			var setting = null;      // A setting name (string)
-			var settingUpper = null; // Upper-case setting name
-			var value = null;        // A value for a setting (string)
-			while (!genCfgFile.eof)
+
+			// General/behavior settings
+			for (var prop in behaviorSettings)
 			{
-				// Read the next line from the config file.
-				fileLine = genCfgFile.readln(1024);
-
-				// fileLine should be a string, but I've seen some cases
-				// where it isn't, so check its type.
-				if (typeof(fileLine) != "string")
-					continue;
-
-				// If the line starts with with a semicolon (the comment
-				// character) or is blank, then skip it.
-				if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-					continue;
-
-				// If in the "behavior" section, then set the behavior-related variables.
-				if (fileLine.toUpperCase() == "[BEHAVIOR]")
+				var propUpper = prop.toUpperCase();
+				if (propUpper == "INTERFACESTYLE")
 				{
-					settingsMode = "behavior";
-					continue;
-				}
-				else if (fileLine.toUpperCase() == "[COLORS]")
-				{
-					settingsMode = "colors";
-					continue;
-				}
-
-				// If settingsMode is blank, then skip this line.
-				if (settingsMode.length == 0)
-					continue;
-
-				// If the line has a semicolon anywhere in it, then remove
-				// everything from the semicolon onward.
-				commentPos = fileLine.indexOf(";");
-				if (commentPos > -1)
-					fileLine = fileLine.substr(0, commentPos);
-
-				// Look for an equals sign, and if found, separate the line
-				// into the setting name (before the =) and the value (after the
-				// equals sign).
-				equalsPos = fileLine.indexOf("=");
-				if (equalsPos > 0)
-				{
-					// Read the setting & value, and trim leading & trailing spaces.
-					setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-					settingUpper = setting.toUpperCase();
-					value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true).toUpperCase();
-
-					if (settingsMode == "behavior")
+					var valueUpper = behaviorSettings[prop].toUpperCase();
+					// Ensure that the first character is uppercase and the
+					// rest is lower-case.
+					if ((valueUpper == "LIGHTBAR") || (valueUpper == "TRADITIONAL"))
 					{
-						// Skip this one if the value is blank.
-						if (value.length == 0)
-							continue;
-
-						// Set the appropriate value in the settings object.
-						if (settingUpper == "INTERFACESTYLE")
-						{
-							// Ensure that the first character is uppercase and the
-							// rest is lower-case.
-							if ((value == "LIGHTBAR") || (value == "TRADITIONAL"))
-							{
-								gGenConfig.interfaceStyle = value.substr(0, 1).toUpperCase()
-								                          + value.substr(1).toLowerCase();
-							}
-						}
-						else if (settingUpper == "INPUTTIMEOUTMS")
-							gGenConfig.inputTimeoutMS = +value;
-						else if (settingUpper == "MAXARCFILESIZE")
-							gGenConfig.maxArcFileSize = sizeStrToBytes(value);
-						else if (settingUpper == "MAXTEXTFILESIZE")
-							gGenConfig.maxTextFileSize = sizeStrToBytes(value);
+						gGenConfig.interfaceStyle = behaviorSettings[prop].substr(0, 1).toUpperCase()
+						                          + behaviorSettings[prop].substr(1).toLowerCase();
 					}
-					else if (settingsMode == "colors")
-						gGenConfig.colors[setting] = value;
 				}
+				else if (propUpper == "INPUTTIMEOUTMS")
+				{
+					var timeoutMSInt = parseInt(behaviorSettings[prop]);
+					if (!isNaN(timeoutMSInt) && timeoutMSInt > 0)
+						gGenConfig.inputTimeoutMS = timeoutMSInt;
+				}
+				else if (propUpper == "MAXARCFILESIZE")
+					gGenConfig.maxArcFileSize = sizeStrToBytes(behaviorSettings[prop]);
+				else if (propUpper == "MAXTEXTFILESIZE")
+					gGenConfig.maxTextFileSize = sizeStrToBytes(behaviorSettings[prop]);
 			}
 
-			genCfgFile.close();
+			// Color settings
+			var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');
+			for (var prop in gGenConfig.colors)
+			{
+				if (colorSettings.hasOwnProperty(prop))
+				{
+					// Make sure the value is a string (for attrCodeStr() etc; in some cases, such as a background attribute of 4, it will be a number)
+					var value = colorSettings[prop].toString();
+					// If the value doesn't have any control characters, then add the control character
+					// before attribute characters
+					if (!/\x01/.test(value))
+						value = attrCodeStr(value);
+					if (onlySyncAttrsRegexWholeWord.test(value))
+						gGenConfig.colors[prop] = value;
+				}
+			}
 		}
+		genCfgFile.close();
 	}
 
 	return (fileTypeSettingsRead && genSettingsRead);
@@ -1207,9 +1123,9 @@ function writeFileListHeader(pFilename)
 	if (writeFileListHeader.topHelp3 == undefined)
 	{
 		writeFileListHeader.topHelp3 = gGenConfig.colors.headerSeparatorLine
-							   + charStr(HORIZONTAL_SINGLE, 4) + " " + charStr(HORIZONTAL_SINGLE, 8) + " "
-							   + charStr(HORIZONTAL_SINGLE, 10) + " " + charStr(HORIZONTAL_SINGLE, 5) + " "
-							   + charStr(HORIZONTAL_SINGLE, console.screen_columns - 32);
+		                             + charStr(HORIZONTAL_SINGLE, 4) + " " + charStr(HORIZONTAL_SINGLE, 8) + " "
+		                             + charStr(HORIZONTAL_SINGLE, 10) + " " + charStr(HORIZONTAL_SINGLE, 5) + " "
+		                             + charStr(HORIZONTAL_SINGLE, console.screen_columns - 32);
 		// Add line characters to the end of the screen.
 		//for (var x = 30; x < console.screen_columns - 2; ++x)
 		//	writeFileListHeader.topHelp3 += HORIZONTAL_SINGLE;
@@ -2336,5 +2252,29 @@ function charStr(pChar, pNumTimes)
 	var str = "";
 	for (var i = 0; i < pNumTimes; ++i)
 		str += pChar;
+	return str;
+}
+
+// Given a string of attribute characters, this function inserts the control code
+// in front of each attribute character and returns the new string.
+//
+// Parameters:
+//  pAttrCodeCharStr: A string of attribute characters (i.e., "YH" for yellow high)
+//
+// Return value: A string with the control character inserted in front of the attribute characters
+function attrCodeStr(pAttrCodeCharStr)
+{
+	if (typeof(pAttrCodeCharStr) !== "string")
+		return "";
+
+	var str = "";
+	// See this page for Synchronet color attribute codes:
+	// http://wiki.synchro.net/custom:ctrl-a_codes
+	for (var i = 0; i < pAttrCodeCharStr.length; ++i)
+	{
+		var currentChar = pAttrCodeCharStr.charAt(i);
+		if (/[krgybmcwKRGYBMCWHhIiEeFfNn01234567]/.test(currentChar))
+			str += "\x01" + currentChar;
+	}
 	return str;
 }
