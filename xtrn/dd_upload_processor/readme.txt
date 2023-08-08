@@ -233,7 +233,7 @@ to the following:
 |--------------------------------------------------------------|
 | |File Extension        ZIP                                   |
 | |Command Line          ?ddup.js %f                           |
-| |Working String        Scanning arrchive file for viruses... |
+| |Working String        Scanning archive file for viruses...  |
 | |Access Requirements                                         |
 +--------------------------------------------------------------+
 
