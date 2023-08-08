@@ -2,6 +2,8 @@ Revision History for Digital Distortion Upload Processor
 ========================================================
 Version  Date         Description
 -------  ----         -----------
+1.05     2023-08-07   Internal refactor of how the configuration files are
+                      read. Behavior is the same.
 1.04     2023-08-06   Now uses Synchronet's built-in archiver (added in
                       Synchronet 3.19), if available, to extract archives.
 1.03     2022-06-11   Removed the chmod updates because they're actually not
