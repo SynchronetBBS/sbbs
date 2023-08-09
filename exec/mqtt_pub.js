@@ -62,9 +62,8 @@ for(var i = 0; i < argc; ++i) {
 			break;
 		case '?':
 		case 'help':
-			usage();
 		default:
-			options[argv[i].slice(1)] = true;
+			usage();
 			break;
 	}
 }
