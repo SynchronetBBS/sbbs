@@ -1472,6 +1472,7 @@ int main(int argc, char **argv, char** env)
 		fprintf(errfp,"!ERROR loading configuration files: %s\n",error);
 		if(require_cfg)
 			return(do_bail(1));
+		prep_dir(scfg.ctrl_dir, scfg.exec_dir, sizeof(scfg.exec_dir));
 	}
 	SAFECOPY(scfg.temp_dir,"../temp");
 #endif
