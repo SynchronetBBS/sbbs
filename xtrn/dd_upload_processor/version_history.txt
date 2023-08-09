@@ -2,6 +2,9 @@ Revision History for Digital Distortion Upload Processor
 ========================================================
 Version  Date         Description
 -------  ----         -----------
+1.06     2023-08-08   When a virus scan fails, the scan output is written to the
+                      system log (as a warning) rather than to the user's
+                      console session.
 1.05     2023-08-07   Internal refactor of how the configuration files are
                       read. Behavior is the same.
 1.04     2023-08-06   Now uses Synchronet's built-in archiver (added in

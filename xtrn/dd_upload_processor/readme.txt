@@ -1,6 +1,6 @@
                    Digital Distortion Upload Processor
-                              Version 1.05
-                        Release date: 2023-08-07
+                              Version 1.06
+                        Release date: 2023-08-08
 
                                   by
 
