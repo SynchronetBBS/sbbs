@@ -4,9 +4,11 @@
 "use strict";
 
 var mqtt = new MQTT;
-var topic;
+var topic = '';
 var msg;
 var retain = false;
+const bbs_prefix = "sbbs/" + system.qwk_id + "/";
+const host_prefix = bbs_prefix + "host/" + system.local_host_name + "/";
 
 function usage()
 {
@@ -16,6 +18,8 @@ function usage()
 	print("  -q  QoS value to use, default: " + mqtt.publish_qos);
 	print("  -r  Retain message");
 	print("  -t  Topic to publish message to (required)");
+	print("  -B  Prefix the topic with " + bbs_prefix);
+	print("  -H  Prefix the topic with " + host_prefix);
 	print("  -m  Message text to publish");
 	print("  -n  send a null (zero length) message");
 	exit(0);
@@ -26,6 +30,12 @@ for(var i = 0; i < argc; ++i) {
 	while(arg[0] === '-')
 		arg = arg.substring(1);
 	switch(arg) {
+		case 'B':
+			topic = bbs_prefix;
+			break;
+		case 'H':
+			topic = host_prefix;
+			break;
 		case 'h':
 			mqtt.broker_addr = argv[++i];
 			break;
@@ -45,7 +55,7 @@ for(var i = 0; i < argc; ++i) {
 			retain = true;
 			break;
 		case 't':
-			topic = argv[++i];
+			topic += argv[++i];
 			break;
 		case 'v':
 			verbose = true;
@@ -64,11 +74,8 @@ if(!mqtt.connect()) {
 	alert(format("Error (%s) connecting to %s:%u", mqtt.error_str, mqtt.broker_addr, mqtt.broker_port));
 	exit(1);
 }
-//prompt("hit enter");
 
 if(!mqtt.publish(retain, topic, msg)) {
 	alert(format("Error (%s) publishing to %s", mqtt.error_str, topic));
 	exit(1);
 }
-
-//prompt("hit enter");
