@@ -26,6 +26,9 @@
  *                              if available, to extract archives.
  * 2023-08-07 Eric Oulashin     Version 1.05
  *                              Internal refactor of how the configuration files are read
+ * 2023-08-08 Eric Oulashin     Version 1.06
+ *                              When a virus scan fails, the scan output is written to the system
+ *                              log (as a warning) rather than to the user's console session.
  */
 
 /* Command-line arguments:
@@ -53,8 +56,8 @@ gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
 load(gStartupPath + "ddup_cleanup.js");
 
 // Version information
-var gDDUPVersion = "1.05";
-var gDDUPVerDate = "2023-08-07";
+var gDDUPVersion = "1.06";
+var gDDUPVerDate = "2023-08-08";
 
 // Store whether or not this is running in Windows
 var gRunningInWindows = /^WIN/.test(system.platform.toUpperCase());
@@ -325,12 +328,10 @@ function processFile(pFilename)
 						else
 						{
 							console.print(gFailStrWithNewline);
-							console.print("\1n\1y\1hVirus scan failed.(1)  Scan output:\1n\r\n");
+							console.print("\1n\1y\1hVirus scan failed.\1n\r\n");
+							log(LOG_WARNING, format("File (%s) uploaded by %s failed virus scan:", pFilename, user.alias));
 							for (var index = 0; index < retObj.cmdOutput.length; ++index)
-							{
-								console.print(retObj.cmdOutput[index]);
-								console.crlf();
-							}
+								log(LOG_WARNING, retObj.cmdOutput[index]);
 						}
 					}
 					else
@@ -357,12 +358,10 @@ function processFile(pFilename)
 				else
 				{
 					console.print(gFailStrWithNewline);
-					console.print("\1n\1y\1hVirus scan failed.(2)  Scan output:\1n\r\n");
+					console.print("\1n\1y\1hVirus scan failed.\1n\r\n");
+					log(LOG_WARNING, format("File (%s) uploaded by %s failed virus scan:", pFilename, user.alias));
 					for (var index = 0; index < retObj.cmdOutput.length; ++index)
-					{
-						console.print(retObj.cmdOutput[index]);
-						console.crlf();
-					}
+						log(LOG_WARNING, retObj.cmdOutput[index]);
 				}
 			}
 		}
@@ -381,12 +380,10 @@ function processFile(pFilename)
 		else
 		{
 			console.print(gFailStrWithNewline);
-			console.print("\1n\1y\1hVirus scan failed.(3)  Scan output:\1n\r\n");
+			console.print("\1n\1y\1hVirus scan failed.\1n\r\n");
+			log(LOG_WARNING, format("File (%s) uploaded by %s failed virus scan:", pFilename, user.alias));
 			for (var index = 0; index < retObj.cmdOutput.length; ++index)
-			{
-				console.print(retObj.cmdOutput[index]);
-				console.crlf();
-			}
+				log(LOG_WARNING, retObj.cmdOutput[index]);
 		}
 	}
 
