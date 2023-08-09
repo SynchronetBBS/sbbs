@@ -179,24 +179,24 @@ void xfer_opts()
 				cfg.max_userxfer=atoi(tmp);
 				break;
 			case __COUNTER__:
-	uifc.helpbuf=
-		"`Default Percentage of Credits to Credit Uploader on Upload:`\n"
-		"\n"
-		"This is the default setting that will be used when new file\n"
-		"directories are created.\n"
-	;
+				uifc.helpbuf=
+					"`Default Percentage of Credits to Credit Uploader on Upload:`\n"
+					"\n"
+					"This is the default setting that will be used when new file\n"
+					"directories are created.\n"
+				;
 				uifc.input(WIN_MID,0,0
 					,"Default Percentage of Credits to Credit Uploader on Upload"
 					,ultoa(cfg.cdt_up_pct,tmp,10),4,K_EDIT|K_NUMBER);
 				cfg.cdt_up_pct=atoi(tmp);
 				break;
 			case __COUNTER__:
-	uifc.helpbuf=
-		"`Default Percentage of Credits to Credit Uploader on Download:`\n"
-		"\n"
-		"This is the default setting that will be used when new file\n"
-		"directories are created.\n"
-	;
+				uifc.helpbuf=
+					"`Default Percentage of Credits to Credit Uploader on Download:`\n"
+					"\n"
+					"This is the default setting that will be used when new file\n"
+					"directories are created.\n"
+				;
 				uifc.input(WIN_MID,0,0
 					,"Default Percentage of Credits to Credit Uploader on Download"
 					,ultoa(cfg.cdt_dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
