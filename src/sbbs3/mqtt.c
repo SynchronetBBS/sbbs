@@ -482,6 +482,14 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 	if(mqtt->startup->type == SERVER_TERM) {
 		bbs_startup_t* bbs_startup = (bbs_startup_t*)mqtt->startup;
 		for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
+			mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/input", i);
+			if(strcmp(msg->topic, topic) != 0)
+				continue;
+			if(bbs_startup->node_inbuf != NULL && bbs_startup->node_inbuf[i - 1] != NULL)
+				RingBufWrite(bbs_startup->node_inbuf[i - 1], msg->payload, msg->payloadlen);
+			return;
+		}
+		for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/status", i)) == 0) {
 				set_node_status(mqtt->cfg, i, mqtt_message_value(msg, 0));
 				return;
@@ -510,14 +518,6 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 				set_node_rerun(mqtt->cfg, i, mqtt_message_value(msg, TRUE));
 				return;
 			}
-		}
-		for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
-			mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/input", i);
-			if(strcmp(msg->topic, topic) != 0)
-				continue;
-			if(bbs_startup->node_inbuf != NULL && bbs_startup->node_inbuf[i - 1] != NULL)
-				RingBufWrite(bbs_startup->node_inbuf[i - 1], msg->payload, msg->payloadlen);
-			return;
 		}
 	}
 	if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_HOST, topic, sizeof(topic), "recycle")) == 0
