@@ -86,6 +86,13 @@ DLLEXPORT int	putsmsg(scfg_t*, int usernumber, char *strin);
 DLLEXPORT char* getnmsg(scfg_t*, int node_num);
 DLLEXPORT int	putnmsg(scfg_t*, int num, char *strin);
 DLLEXPORT int	getnodeclient(scfg_t*, uint number, client_t*, time_t*);
+DLLEXPORT BOOL	set_node_lock(scfg_t*, int node_num, BOOL);
+DLLEXPORT BOOL	set_node_interrupt(scfg_t*, int node_num, BOOL);
+DLLEXPORT BOOL	set_node_down(scfg_t*, int node_num, BOOL);
+DLLEXPORT BOOL	set_node_rerun(scfg_t*, int node_num, BOOL);
+DLLEXPORT BOOL	set_node_status(scfg_t*, int node_num, enum node_status);
+DLLEXPORT BOOL	set_node_misc(scfg_t*, int node_num, uint);
+DLLEXPORT BOOL	set_node_errors(scfg_t*, int node_num, uint);
 
 DLLEXPORT uint	finduserstr(scfg_t*, uint usernumber, enum user_field, const char *str
 					,BOOL del, BOOL next, void (*progress)(void*, int, int), void* cbdata);

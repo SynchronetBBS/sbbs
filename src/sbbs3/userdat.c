@@ -1146,6 +1146,109 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node, BOOL closeit, int file)
 }
 
 /****************************************************************************/
+/****************************************************************************/
+BOOL set_node_status(scfg_t* cfg, int nodenum, enum node_status status)
+{
+	node_t node;
+	int file;
+
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
+		return FALSE;
+	node.status = status;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+BOOL set_node_misc(scfg_t* cfg, int nodenum, uint misc)
+{
+	node_t node;
+	int file;
+
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
+		return FALSE;
+	node.misc = misc;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+BOOL set_node_lock(scfg_t* cfg, int nodenum, BOOL set)
+{
+	node_t node;
+	int file;
+
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
+		return FALSE;
+	if(set)
+		node.misc |= NODE_LOCK;
+	else
+		node.misc &= ~NODE_LOCK;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+BOOL set_node_interrupt(scfg_t* cfg, int nodenum, BOOL set)
+{
+	node_t node;
+	int file;
+
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
+		return FALSE;
+	if(set)
+		node.misc |= NODE_INTR;
+	else
+		node.misc &= ~NODE_INTR;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+BOOL set_node_down(scfg_t* cfg, int nodenum, BOOL set)
+{
+	node_t node;
+	int file;
+
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
+		return FALSE;
+	if(set)
+		node.misc |= NODE_DOWN;
+	else
+		node.misc &= ~NODE_DOWN;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+BOOL set_node_rerun(scfg_t* cfg, int nodenum, BOOL set)
+{
+	node_t node;
+	int file;
+
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
+		return FALSE;
+	if(set)
+		node.misc |= NODE_RRUN;
+	else
+		node.misc &= ~NODE_RRUN;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+BOOL set_node_errors(scfg_t* cfg, int nodenum, uint errors)
+{
+	node_t node;
+	int file;
+
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
+		return FALSE;
+	node.errors = errors;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+}
+
+/****************************************************************************/
 /* Packs the password 'pass' into 5bit ASCII inside node_t. 32bits in 		*/
 /* node.extaux, and the other 8bits in the upper byte of node.aux			*/
 /****************************************************************************/
