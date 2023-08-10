@@ -25,6 +25,7 @@
 #include "startup.h"
 #include "xpdatetime.h"
 #include "date_str.h"
+#include "userdat.h"
 
 const char* server_type_desc(enum server_type type)
 {
@@ -473,6 +474,36 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 	if(mqtt->startup->type == SERVER_TERM) {
 		bbs_startup_t* bbs_startup = (bbs_startup_t*)mqtt->startup;
 		for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
+			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/status", i)) == 0) {
+				set_node_status(mqtt->cfg, i, strtoul(msg->payload, NULL, 0));
+				return;
+			}
+			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/errors", i)) == 0) {
+				set_node_errors(mqtt->cfg, i, strtoul(msg->payload, NULL, 0));
+				return;
+			}
+			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/misc", i)) == 0) {
+				set_node_misc(mqtt->cfg, i, strtoul(msg->payload, NULL, 0));
+				return;
+			}
+			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/lock", i)) == 0) {
+				set_node_lock(mqtt->cfg, i, TRUE);
+				return;
+			}
+			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/intr", i)) == 0) {
+				set_node_interrupt(mqtt->cfg, i, TRUE);
+				return;
+			}
+			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/down", i)) == 0) {
+				set_node_down(mqtt->cfg, i, TRUE);
+				return;
+			}
+			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/rerun", i)) == 0) {
+				set_node_rerun(mqtt->cfg, i, TRUE);
+				return;
+			}
+		}
+		for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
 			mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/input", i);
 			if(strcmp(msg->topic, topic) != 0)
 				continue;
@@ -542,6 +573,7 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 		char str[128];
 		for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
 			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/input", i);
+			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/set/#", i);
 		}
 	}
 	mqtt_pub_noval(mqtt, TOPIC_SERVER, "recycle");
