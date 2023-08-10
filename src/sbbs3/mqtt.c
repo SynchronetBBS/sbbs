@@ -466,6 +466,14 @@ static int lprintf(int (*lputs)(int level, const char* str), int level, const ch
 }
 
 #ifdef USE_MOSQUITTO
+
+static ulong mqtt_message_value(const struct mosquitto_message* msg, ulong deflt)
+{
+	if(msg->payloadlen < 1)
+		return deflt;
+	return strtoul(msg->payload, NULL, 0);
+}
+
 static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const struct mosquitto_message* msg)
 {
 	char topic[128];
@@ -475,31 +483,31 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 		bbs_startup_t* bbs_startup = (bbs_startup_t*)mqtt->startup;
 		for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/status", i)) == 0) {
-				set_node_status(mqtt->cfg, i, strtoul(msg->payload, NULL, 0));
+				set_node_status(mqtt->cfg, i, mqtt_message_value(msg, 0));
 				return;
 			}
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/errors", i)) == 0) {
-				set_node_errors(mqtt->cfg, i, strtoul(msg->payload, NULL, 0));
+				set_node_errors(mqtt->cfg, i, mqtt_message_value(msg, 0));
 				return;
 			}
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/misc", i)) == 0) {
-				set_node_misc(mqtt->cfg, i, strtoul(msg->payload, NULL, 0));
+				set_node_misc(mqtt->cfg, i, mqtt_message_value(msg, 0));
 				return;
 			}
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/lock", i)) == 0) {
-				set_node_lock(mqtt->cfg, i, TRUE);
+				set_node_lock(mqtt->cfg, i, mqtt_message_value(msg, TRUE));
 				return;
 			}
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/intr", i)) == 0) {
-				set_node_interrupt(mqtt->cfg, i, TRUE);
+				set_node_interrupt(mqtt->cfg, i, mqtt_message_value(msg, TRUE));
 				return;
 			}
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/down", i)) == 0) {
-				set_node_down(mqtt->cfg, i, TRUE);
+				set_node_down(mqtt->cfg, i, mqtt_message_value(msg, TRUE));
 				return;
 			}
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/rerun", i)) == 0) {
-				set_node_rerun(mqtt->cfg, i, TRUE);
+				set_node_rerun(mqtt->cfg, i, mqtt_message_value(msg, TRUE));
 				return;
 			}
 		}
