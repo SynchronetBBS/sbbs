@@ -207,7 +207,7 @@ void chan_cfg()
 	char str[128],code[128],done=0;
 	int j,k;
 	int i;
-	uint u;
+	int u;
 	static chan_t savchan;
 
 	while(1) {

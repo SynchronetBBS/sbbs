@@ -1223,7 +1223,7 @@ void shell_cfg()
 	char str[128],code[128],done=0;
 	int j,k;
 	int i;
-	uint u;
+	int u;
 	static shell_t savshell;
 
 	while(1) {
