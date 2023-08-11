@@ -519,6 +519,33 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 				return;
 			}
 		}
+		if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "exec")) == 0) {
+			for(int i = 0; i < mqtt->cfg->total_events; i++) {
+				if(stricmp(mqtt->cfg->event[i]->code, msg->payload) != 0)
+					continue;
+				if(mqtt->cfg->event[i]->node != NODE_ANY
+					&& (mqtt->cfg->event[i]->node < bbs_startup->first_node || mqtt->cfg->event[i]->node > bbs_startup->last_node)
+					&& !(mqtt->cfg->event[i]->misc&EVENT_EXCL))
+					break;	// ignore non-exclusive events for other instances
+				if(!(mqtt->cfg->event[i]->misc & EVENT_DISABLED))
+					mqtt->cfg->event[i]->last = -1;
+				break;
+			}
+			return;
+		}
+		if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "call")) == 0) {
+			for(int i = 0; i < mqtt->cfg->total_qhubs; i++) {
+				if(stricmp(mqtt->cfg->qhub[i]->id, msg->payload) != 0)
+					continue;
+				if(mqtt->cfg->qhub[i]->node != NODE_ANY
+					&& (mqtt->cfg->qhub[i]->node < bbs_startup->first_node || mqtt->cfg->qhub[i]->node > bbs_startup->last_node))
+					break;
+				if(mqtt->cfg->qhub[i]->enabled)
+					mqtt->cfg->qhub[i]->last = -1;
+				break;
+			}
+			return;
+		}
 	}
 	if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_HOST, topic, sizeof(topic), "recycle")) == 0
 		|| strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_SERVER, topic, sizeof(topic), "recycle")) == 0) {
@@ -583,6 +610,8 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/input", i);
 			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/set/#", i);
 		}
+		mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "exec");
+		mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "call");
 	}
 	mqtt_pub_noval(mqtt, TOPIC_SERVER, "recycle");
 	mqtt_pub_noval(mqtt, TOPIC_SERVER, "client");
