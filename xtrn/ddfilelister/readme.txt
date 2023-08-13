@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.11
-                           Release date: 2023-05-14
+                                 Version 2.12
+                           Release date: 2023-08-12
 
                                      by
 
@@ -209,6 +209,23 @@ Main configuration file (DDMsgReader.cfg)
 -----------------------------------------
 Setting                               Description
 -------                               -----------
+interfaceStyle                        The user interface style to use: lightbar
+                                      or traditional. Lightbar requires ANSI
+                                      support in the user's terminal; if the
+                                      user's terminal doesn't support ANSI,
+                                      ddfilelister will fall back to a
+                                      traditional user interface.
+
+traditionalUseSyncStock               If using the traditional user interface,
+                                      whether or not to use Synchronet's stock
+                                      file lister instead of ddfilelister. Valid
+                                      values are true and false. If true,
+                                      ddfilelister won't be used at all, and
+                                      instead, Synchronet's stock file lister
+                                      will be used. If false and interfaceStyle
+                                      is traditional, ddfilelister's traditional
+                                      user interface will be used.
+
 sortOrder                             String: The file sort order to use.
                                       Valid values are:
                                       NATURAL: Natural sort order (same as DATE_A)
@@ -292,17 +309,34 @@ fileAreaDesc                         The file library/directory description for
 fileAreaNumItems                     The number of directories/files for
                                      'normal' colors (for moving a file)
 
-fileAreaMenuHighlightBkg              The file area entry background color for
-                                      'highlight' colors (for moving a file)
+fileAreaMenuHighlightBkg             The file area entry background color for
+                                     'highlight' colors (for moving a file)
 
-fileAreaNumHighlight                  The file library/directory number for
-                                      'highlight' colors (for moving a file)
+fileAreaNumHighlight                 The file library/directory number for
+                                     'highlight' colors (for moving a file)
 
-fileAreaDescHighlight                 The file library/directory description for
-                                      'highlight' colors (for moving a file)
+fileAreaDescHighlight                The file library/directory description for
+                                     'highlight' colors (for moving a file)
 
 fileAreaNumItemsHighlight            The number of directories/files for
                                      'highlight' colors (for moving a file)
+
+Color settings for the traditional (non-lightbar) user interface:
+
+fileAreaMenuBorderTrad               The color of the file area menu border (for
+                                     moving a file)
+
+fileNormalBkgTrad                    The file area entry background color for
+                                     'normal' colors (for moving a file)
+
+listNumTrad                          The color for file lists in the traditional
+                                     interface
+
+fileAreaDescTrad                     The file library/directory description for
+                                     'normal' colors (for moving a file)
+
+fileAreaNumItemsTrad                 The number of directories/files for
+                                     'normal' colors (for moving a file)
 
 
 5. Strings used from text.dat

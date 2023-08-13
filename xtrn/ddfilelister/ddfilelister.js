@@ -72,48 +72,13 @@
  *                              characters, without the control character.
  *
  *                              Future work: Actual support for a traditional/non-lightbar user interface
+ * 2023-07-29 Eric Oulashin     Version 2.12 Beta
+ *                              Started working on implementing a traditional/non-lightbar UI
+ * 2023-08-12 Eric Oulashin     Version 2.12
+ *                              Releasing this version
 */
 
 "use strict";
-
-if (typeof(require) === "function")
-{
-	require("sbbsdefs.js", "K_UPPER");
-	require('key_defs.js', 'KEY_UP');
-	require("text.js", "Email"); // Text string definitions (referencing text.dat)
-	require("dd_lightbar_menu.js", "DDLightbarMenu");
-	require("frame.js", "Frame");
-	require("scrollbar.js", "ScrollBar");
-	require("mouse_getkey.js", "mouse_getkey");
-	require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
-}
-else
-{
-	load("sbbsdefs.js");
-	load('key_defs.js');
-	load("text.js"); // Text string definitions (referencing text.dat)
-	load("dd_lightbar_menu.js");
-	load("frame.js");
-	load("scrollbar.js");
-	load("mouse_getkey.js");
-	load("attr_conv.js");
-}
-
-
-/*
-Configured in SCFG->System->Loadable Modules:
-Scan Dirs:      User scans one or more directories for (e.g. new) files
-List Files:     User lists files within a file directory
-View File Info: User views detailed information on files in a directory
-
-This addresses/fixes feature request #521 for Nightfox
-
-Will need to document the mode argument bit values on the wiki, but
-it's the usual suspects: FL_* for scandirs and listfiles and FI_* for
-fileinfo. The scandirs_mod will be passed an extra bool (0/1) arg that
-indicates whether or not the user is scanning *all* directories.
-*/
-
 
 // This script requires Synchronet version 3.19 or newer.
 // If the Synchronet version is below the minimum, then exit.
@@ -133,9 +98,19 @@ if (system.version_num < 31900)
 	exit();
 }
 
+
+require("sbbsdefs.js", "K_UPPER");
+require('key_defs.js', 'KEY_UP');
+require("text.js", "Email"); // Text string definitions (referencing text.dat)
+require("dd_lightbar_menu.js", "DDLightbarMenu");
+require("frame.js", "Frame");
+require("scrollbar.js", "ScrollBar");
+require("mouse_getkey.js", "mouse_getkey");
+require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
+
 // Lister version information
-var LISTER_VERSION = "2.11";
-var LISTER_DATE = "2023-05-14";
+var LISTER_VERSION = "2.12";
+var LISTER_DATE = "2023-08-12";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -192,7 +167,7 @@ var gColors = {
 	confirmFileActionWindowBorder: "\x01r",
 	confirmFileActionWindowWindowTitle: "\x01g",
 
-	fileAreaMenuBorder: "\x01b",
+	fileAreaMenuBorder: "\x01b", // File move menu for lightbar interface
 	fileNormalBkg: "\x01" + "4",
 	fileAreaNum: "\x01w",
 	fileAreaDesc: "\x01w",
@@ -201,7 +176,13 @@ var gColors = {
 	fileAreaMenuHighlightBkg: "\x01" + "7",
 	fileAreaNumHighlight: "\x01b",
 	fileAreaDescHighlight: "\x01b",
-	fileAreaNumItemsHighlight: "\x01b"
+	fileAreaNumItemsHighlight: "\x01b",
+
+	fileAreaMenuBorderTrad: "\x01b", // File move menu for traditional interface
+	fileNormalBkgTrad: "\x01n\x01w",
+	listNumTrad: "\x01g\x01h",
+	fileAreaDescTrad: "\x01c",
+	fileAreaNumItemsTrad: "\x01b\x01h"
 };
 
 
@@ -214,6 +195,11 @@ var HELP = 5;
 var QUIT = 6;
 var FILE_MOVE = 7;   // Sysop action
 var FILE_DELETE = 8; // Sysop action
+
+var NEXT_PAGE = 9;
+var PREV_PAGE = 10;
+var FIRST_PAGE = 11;
+var LAST_PAGE = 12;
 
 // Search/list modes
 var MODE_LIST_DIR = 1;
@@ -254,6 +240,10 @@ var gPauseAfterViewingFile = true;
 // terminal supports ANSI)
 var gUseLightbarInterface = true;
 
+// If using the traditional interface, whether to use Synchronet's stock
+// file lister instead of ddfilelister
+var gTraditionalUseSyncStock = false;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Script execution code
 
@@ -274,10 +264,9 @@ readConfigFile();
 // Parse command-line arguments (which sets program options)
 parseArgs(argv);
 
-// If the user's terminal doesn't support ANSI, then just call the standard Synchronet
-// file list function and exit now
-// TODO: Add support in this script for a traditional/non-lightbar user interface
-if (!console.term_supports(USER_ANSI) || !gUseLightbarInterface)
+// If set to use the traditional (non-lightbar) UI and if set to use the Synchronet
+// stock file lister, then do so instead of using ddfilelister's traditional UI
+if ((!gUseLightbarInterface || !console.term_supports(USER_ANSI)) && gTraditionalUseSyncStock)
 {
 	var exitCode = 0;
 	if (gScriptMode == MODE_SEARCH_FILENAME || gScriptMode == MODE_SEARCH_DESCRIPTION || gScriptMode == MODE_NEW_FILE_SEARCH)
@@ -302,7 +291,7 @@ if (listPopRetObj.exitNow)
 if (gFileList.length == 0)
 {
 	console.crlf();
-	console.print("\x01n\x01c");
+	console.attributes = "NC";
 	if (gScriptMode == MODE_LIST_DIR)
 	{
 		if (gFilespec == "*" || gFilespec == "*.*")
@@ -312,184 +301,407 @@ if (gFileList.length == 0)
 	}
 	else
 		console.print("No files were found.");
-	console.print("\x01n");
+	console.attributes = "N";
 	console.crlf();
 	console.pause();
 	exit(0);
 }
 
-
+// Construct and display the menu/command bar at the bottom of the screen
+var fileMenuBar = new DDFileMenuBar({ x: 1, y: console.screen_rows });
 // Clear the screen and display the header lines
 console.clear("\x01n");
 if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
-	displayFileLibAndDirHeader();
-// Construct and display the menu/command bar at the bottom of the screen
-var fileMenuBar = new DDFileMenuBar({ x: 1, y: console.screen_rows });
-fileMenuBar.writePromptLine();
-// Create the file list menu
+	displayFileLibAndDirHeader(false, null, !gUseLightbarInterface || !console.term_supports(USER_ANSI));
+// Create the file list menu (must be done after displayFileLibAndDirHeader() when using ANSI and lightbar)
 var gFileListMenu = createFileListMenu(fileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL);
-// In a loop, show the file list menu, allowing the user to scroll the file list,
-// and respond to user input until the user decides to quit.
-gFileListMenu.Draw({});
-// If using extended descriptions, write the first file's description on the screen
-if (extendedDescEnabled())
-	displayFileExtDescOnMainScreen(0);
-var continueDoingFileList = true;
-var drawFileListMenu = false; // For screen refresh optimization
-while (continueDoingFileList)
+if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 {
-	// Clear the menu's selected item indexes so it's 'fresh' for this round
-	for (var prop in gFileListMenu.selectedItemIndexes)
-		delete gFileListMenu.selectedItemIndexes[prop];
-	var actionRetObj = null;
-	var currentActionVal = null;
-	var userChoice = gFileListMenu.GetVal(drawFileListMenu, gFileListMenu.selectedItemIndexes);
-	drawFileListMenu = false; // For screen refresh optimization
-	var lastUserInputUpper = gFileListMenu.lastUserInput != null ? gFileListMenu.lastUserInput.toUpperCase() : null;
-	if (lastUserInputUpper == null || lastUserInputUpper == "Q")
-		continueDoingFileList = false;
-	else if (lastUserInputUpper == KEY_LEFT)
-		fileMenuBar.decrementMenuItemAndRefresh();
-	else if (lastUserInputUpper == KEY_RIGHT)
-		fileMenuBar.incrementMenuItemAndRefresh();
-	else if (lastUserInputUpper == KEY_ENTER)
+	fileMenuBar.writePromptLine();
+	// In a loop, show the file list menu, allowing the user to scroll the file list,
+	// and respond to user input until the user decides to quit.
+	gFileListMenu.Draw({});
+	// If using extended descriptions, write the first file's description on the screen
+	if (extendedDescEnabled())
+		displayFileExtDescOnMainScreen(0);
+	var continueDoingFileList = true;
+	var drawFileListMenu = false; // For screen refresh optimization
+	while (continueDoingFileList)
 	{
-		currentActionVal = fileMenuBar.getCurrentSelectedAction();
-		fileMenuBar.setCurrentActionCode(currentActionVal);
-		actionRetObj = doAction_ANSI(currentActionVal, gFileList, gFileListMenu);
-	}
-	// Allow the delete key as a special key for sysops to delete the selected file(s). Also allow backspace
-	// due to some terminals returning backspace for delete.
-	else if (lastUserInputUpper == KEY_DEL || lastUserInputUpper == KEY_BACKSPACE)
-	{
-		if (user.is_sysop)
-		{
-			fileMenuBar.setCurrentActionCode(FILE_DELETE, true);
-			actionRetObj = doAction_ANSI(FILE_DELETE, gFileList, gFileListMenu);
-			currentActionVal = FILE_DELETE;
-		}
-	}
-	else
-	{
-		currentActionVal = fileMenuBar.getActionFromChar(lastUserInputUpper, false);
-		fileMenuBar.setCurrentActionCode(currentActionVal, true);
-		actionRetObj = doAction_ANSI(currentActionVal, gFileList, gFileListMenu);
-	}
-	// If an action was done (actionRetObj is not null), then look at actionRetObj and
-	// do what's needed.  Note that quit (for the Q key) is already handled.
-	if (actionRetObj != null)
-	{
-		if (actionRetObj.exitNow)
+		// Clear the menu's selected item indexes so it's 'fresh' for this round
+		for (var prop in gFileListMenu.selectedItemIndexes)
+			delete gFileListMenu.selectedItemIndexes[prop];
+		var actionRetObj = null;
+		var currentActionVal = null;
+		var userChoice = gFileListMenu.GetVal(drawFileListMenu, gFileListMenu.selectedItemIndexes);
+		drawFileListMenu = false; // For screen refresh optimization
+		var lastUserInputUpper = gFileListMenu.lastUserInput != null ? gFileListMenu.lastUserInput.toUpperCase() : null;
+		if (lastUserInputUpper == null || lastUserInputUpper == "Q")
 			continueDoingFileList = false;
+		else if (lastUserInputUpper == KEY_LEFT)
+			fileMenuBar.decrementMenuItemAndRefresh();
+		else if (lastUserInputUpper == KEY_RIGHT)
+			fileMenuBar.incrementMenuItemAndRefresh();
+		else if (lastUserInputUpper == KEY_ENTER)
+		{
+			currentActionVal = fileMenuBar.getCurrentSelectedAction();
+			fileMenuBar.setCurrentActionCode(currentActionVal);
+			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+		}
+		// Allow the delete key as a special key for sysops to delete the selected file(s). Also allow backspace
+		// due to some terminals returning backspace for delete.
+		else if (lastUserInputUpper == KEY_DEL || lastUserInputUpper == KEY_BACKSPACE)
+		{
+			if (user.is_sysop)
+			{
+				fileMenuBar.setCurrentActionCode(FILE_DELETE, true);
+				actionRetObj = doAction(FILE_DELETE, gFileList, gFileListMenu);
+				currentActionVal = FILE_DELETE;
+			}
+		}
 		else
 		{
-			if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
-			{
-				if (actionRetObj.reDrawHeaderTextOnly)
-				{
-					console.print("\x01n");
-					displayFileLibAndDirHeader(true); // Will move the cursor where it needs to be
-				}
-				else if (actionRetObj.reDrawListerHeader)
-				{
-					console.print("\x01n");
-					console.gotoxy(1, 1);
-					displayFileLibAndDirHeader();
-				}
-			}
-			if (actionRetObj.reDrawCmdBar) // Could call fileMenuBar.constructPromptText(); if needed
-				fileMenuBar.writePromptLine();
-			var redrewPartOfFileListMenu = false;
-			// If we are to re-draw the main screen content, then
-			// enable the flag to draw the file list menu on the next
-			// GetVal(); also, if extended descriptions are being shown,
-			// write the current file's extended description too.
-			if (actionRetObj.reDrawMainScreenContent)
-			{
-				drawFileListMenu = true;
-				if (extendedDescEnabled())
-					displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx);
-			}
+			currentActionVal = fileMenuBar.getActionFromChar(lastUserInputUpper, false);
+			fileMenuBar.setCurrentActionCode(currentActionVal, true);
+			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+		}
+		// If an action was done (actionRetObj is not null), then look at actionRetObj and
+		// do what's needed.  Note that quit (for the Q key) is already handled.
+		if (actionRetObj != null)
+		{
+			if (actionRetObj.exitNow)
+				continueDoingFileList = false;
 			else
 			{
-				// If there is partial redraw information available, then use it
-				// to re-draw that part of the main screen
-				if (actionRetObj.fileListPartialRedrawInfo != null)
+				if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
 				{
-					drawFileListMenu = false;
-					var startX = actionRetObj.fileListPartialRedrawInfo.absStartX;
-					var startY = actionRetObj.fileListPartialRedrawInfo.absStartY;
-					var width = actionRetObj.fileListPartialRedrawInfo.width;
-					var height = actionRetObj.fileListPartialRedrawInfo.height;
-					refreshScreenMainContent(startX, startY, width, height, true);
-					actionRetObj.refreshedSelectedFilesAlready = true;
-					redrewPartOfFileListMenu = true;
+					if (actionRetObj.reDrawHeaderTextOnly)
+					{
+						console.attributes = "N";
+						displayFileLibAndDirHeader(true, null, gFileListMenu.numberedMode); // Will move the cursor where it needs to be
+					}
+					else if (actionRetObj.reDrawListerHeader)
+					{
+						console.attributes = "N";
+						console.gotoxy(1, 1);
+						displayFileLibAndDirHeader(false, null, gFileListMenu.numberedMode);
+					}
+				}
+				if (actionRetObj.reDrawCmdBar) // Could call fileMenuBar.constructPromptText(); if needed
+					fileMenuBar.writePromptLine();
+				var redrewPartOfFileListMenu = false;
+				// If we are to re-draw the main screen content, then
+				// enable the flag to draw the file list menu on the next
+				// GetVal(); also, if extended descriptions are being shown,
+				// write the current file's extended description too.
+				if (actionRetObj.reDrawMainScreenContent)
+				{
+					drawFileListMenu = true;
+					if (extendedDescEnabled())
+						displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx);
 				}
 				else
 				{
-					// Partial screen re-draw information was not returned.
-					continueDoingFileList = actionRetObj.continueFileLister;
-					drawFileListMenu = actionRetObj.reDrawMainScreenContent;
-					// If displaying extended descriptions and the user deleted some files, then
-					// refresh the file description area to erase the delete confirmation text
-					if (extendedDescEnabled()/* && currentActionVal == FILE_DELETE*/)
+					// If there is partial redraw information available, then use it
+					// to re-draw that part of the main screen
+					if (actionRetObj.fileListPartialRedrawInfo != null)
 					{
-						if (actionRetObj.hasOwnProperty("filesDeleted") && actionRetObj.filesDeleted)
+						drawFileListMenu = false;
+						var startX = actionRetObj.fileListPartialRedrawInfo.absStartX;
+						var startY = actionRetObj.fileListPartialRedrawInfo.absStartY;
+						var width = actionRetObj.fileListPartialRedrawInfo.width;
+						var height = actionRetObj.fileListPartialRedrawInfo.height;
+						refreshScreenMainContent(startX, startY, width, height, true);
+						actionRetObj.refreshedSelectedFilesAlready = true;
+						redrewPartOfFileListMenu = true;
+					}
+					else
+					{
+						// Partial screen re-draw information was not returned.
+						continueDoingFileList = actionRetObj.continueFileLister;
+						drawFileListMenu = actionRetObj.reDrawMainScreenContent;
+						// If displaying extended descriptions and the user deleted some files, then
+						// refresh the file description area to erase the delete confirmation text
+						if (extendedDescEnabled()/* && currentActionVal == FILE_DELETE*/)
 						{
-							var numFiles = gFileListMenu.NumItems();
-							if (numFiles > 0 && gFileListMenu.selectedItemIdx >= 0 && gFileListMenu.selectedItemIdx < numFiles)
-								displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx);
-						}
-						else
-						{
-							var firstLine = startY + gFileListMenu.pos.y;
-							var lastLine = console.screen_rows - 1;
-							var width = console.screen_columns - gFileListMenu.size.width - 1;
-							displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx, firstLine, lastLine, width);
+							if (actionRetObj.hasOwnProperty("filesDeleted") && actionRetObj.filesDeleted)
+							{
+								var numFiles = gFileListMenu.NumItems();
+								if (numFiles > 0 && gFileListMenu.selectedItemIdx >= 0 && gFileListMenu.selectedItemIdx < numFiles)
+									displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx);
+							}
+							else
+							{
+								var firstLine = startY + gFileListMenu.pos.y;
+								var lastLine = console.screen_rows - 1;
+								var width = console.screen_columns - gFileListMenu.size.width - 1;
+								displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx, firstLine, lastLine, width);
+							}
 						}
 					}
 				}
-			}
-			// Remove checkmarks from any selected files in the file menu.
-			// For efficiency, we'd probably only do this if not re-drawing the wohle
-			// menu, but that's not working for now.
-			if (!actionRetObj.refreshedSelectedFilesAlready && /*!drawFileListMenu &&*/ gFileListMenu.numSelectedItemIndexes() > 0)
-			{
-				var bottomItemIdx = gFileListMenu.GetBottomItemIdx();
-				var redrawTopY = -1;
-				var redrawBottomY = -1;
-				if (actionRetObj.fileListPartialRedrawInfo != null)
+				// Remove checkmarks from any selected files in the file menu.
+				// For efficiency, we'd probably only do this if not re-drawing the wohle
+				// menu, but that's not working for now.
+				if (!actionRetObj.refreshedSelectedFilesAlready && /*!drawFileListMenu &&*/ gFileListMenu.numSelectedItemIndexes() > 0)
 				{
-					redrawTopY = actionRetObj.fileListPartialRedrawInfo.absStartY;
-					redrawBottomY = actionRetObj.fileListPartialRedrawInfo.height + height - 1;
-				}
-				for (var idx in gFileListMenu.selectedItemIndexes)
-				{
-					var idxNum = +idx;
-					if (idxNum >= gFileListMenu.topItemIdx && idxNum <= bottomItemIdx)
+					var bottomItemIdx = gFileListMenu.GetBottomItemIdx();
+					var redrawTopY = -1;
+					var redrawBottomY = -1;
+					if (actionRetObj.fileListPartialRedrawInfo != null)
 					{
-						var drawItem = true;
-						if (redrawTopY > -1 && redrawBottomY > redrawTopY)
+						redrawTopY = actionRetObj.fileListPartialRedrawInfo.absStartY;
+						redrawBottomY = actionRetObj.fileListPartialRedrawInfo.height + height - 1;
+					}
+					for (var idx in gFileListMenu.selectedItemIndexes)
+					{
+						var idxNum = +idx;
+						if (idxNum >= gFileListMenu.topItemIdx && idxNum <= bottomItemIdx)
 						{
-							var screenRowForItem = gFileListMenu.ScreenRowForItem(idxNum);
-							drawItem = (screenRowForItem < redrawTopY || screenRowForItem > redrawBottomY)
+							var drawItem = true;
+							if (redrawTopY > -1 && redrawBottomY > redrawTopY)
+							{
+								var screenRowForItem = gFileListMenu.ScreenRowForItem(idxNum);
+								drawItem = (screenRowForItem < redrawTopY || screenRowForItem > redrawBottomY)
+							}
+							if (drawItem)
+							{
+								var isSelected = (idxNum == gFileListMenu.selectedItemIdx);
+								gFileListMenu.WriteItemAtItsLocation(idxNum, isSelected, false);
+							}
+							else
+								console.print("\x01n\r\nNot drawing idx " + idxNum + "\r\n\x01p");
 						}
-						if (drawItem)
-						{
-							var isSelected = (idxNum == gFileListMenu.selectedItemIdx);
-							gFileListMenu.WriteItemAtItsLocation(idxNum, isSelected, false);
-						}
-						else
-							console.print("\x01n\r\nNot drawing idx " + idxNum + "\r\n\x01p");
 					}
 				}
+				// If part of the file list menu was re-drawn (partially, not completely), move the cursor
+				// to the lower-right corner of the screen so that it's out of the way
+				if (redrewPartOfFileListMenu)
+					console.gotoxy(console.screen_columns-1, console.screen_rows);
 			}
-			// If part of the file list menu was re-drawn (partially, not completely), move the cursor
-			// to the lower-right corner of the screen so that it's out of the way
-			if (redrewPartOfFileListMenu)
-				console.gotoxy(console.screen_columns-1, console.screen_rows);
 		}
 	}
+}
+else
+{
+	// Traditional UI
+	var exitCode = 0;
+
+	console.crlf();
+
+	// An array containing text descriptions for all files, which may include
+	// multiple lines for files with an extended description (if enabled)
+	var allFileInfoLines = [];
+	for (var i = 0; i < gFileList.length; ++i)
+		allFileInfoLines = allFileInfoLines.concat(getFileInfoLineArrayForTraditionalUI(gFileList, i));
+
+	// Number of files per page, assuming 1-line descriptions; 3 lines for top
+	// header and 1 line for bottom key help line
+	var numLinesPerPage = console.screen_rows - 4;
+	var topItemIdx = 0;
+	var topItemIndexForLastPage = allFileInfoLines.length - numLinesPerPage;
+
+	// Allowed keys for user input
+	var validOptionKeys = "IVBDMNPFLQ?" + KEY_PAGEDN + KEY_PAGEUP + KEY_HOME + KEY_END;
+	if (user.is_sysop)
+		validOptionKeys += KEY_DEL + KEY_BACKSPACE;
+	// If the user's terminal supports ANSI, then also allow left, right, and enter (option navigation & selection)
+	if (console.term_supports(USER_ANSI))
+		validOptionKeys += KEY_LEFT + KEY_RIGHT + KEY_ENTER;
+
+	// User input loop
+	var continueOn = true;
+	var drawDirHeaderLines = false;
+	var drawMenu = true;
+	var refreshWholePromptLine = true;
+	while (continueOn)
+	{
+		if (drawDirHeaderLines && (gListBehavior & FL_NO_HDR) != FL_NO_HDR)
+		{
+			if (console.term_supports(USER_ANSI))
+				console.clear("\x01n");
+			displayFileLibAndDirHeader(false, null, true);
+			console.crlf();
+		}
+		if (drawMenu)
+		{
+			// Draw the current page of items
+			console.line_counter = 0;
+			var lastItemIdx = topItemIdx + numLinesPerPage - 1;
+			for (var i = topItemIdx; i <= lastItemIdx; ++i)
+			{
+				console.print(allFileInfoLines[i]);
+				console.crlf();
+			}
+		}
+
+		if (refreshWholePromptLine || drawMenu)
+			fileMenuBar.pos = console.getxy();
+		if (refreshWholePromptLine)
+			fileMenuBar.writePromptLine();
+		var userInput = console.getkeys(validOptionKeys, -1, K_UPPER|K_NOECHO|K_NOSPIN|K_NOCRLF).toString();
+		// If the user pressed the enter key, change userInput to the key
+		// corresponding to what we'd expect for that option
+		if (userInput == KEY_ENTER)
+		{
+			//currentActionVal = fileMenuBar.getCurrentSelectedAction();
+			switch (fileMenuBar.getCurrentSelectedAction())
+			{
+				case NEXT_PAGE:
+					userInput = KEY_PAGEDN;
+					break;
+				case PREV_PAGE:
+					userInput = KEY_PAGEUP;
+					break;
+				case FIRST_PAGE:
+					userInput = "F";
+					break;
+				case LAST_PAGE:
+					userInput = "L";
+					break;
+			}
+		}
+		// Check action based on the user's last input
+		if (userInput == KEY_LEFT)
+		{
+			fileMenuBar.decrementMenuItemAndRefresh();
+			drawDirHeaderLines = false;
+			drawMenu = false;
+			refreshWholePromptLine = false;
+		}
+		else if (userInput == KEY_RIGHT)
+		{
+			fileMenuBar.incrementMenuItemAndRefresh();
+			drawDirHeaderLines = false;
+			drawMenu = false;
+			refreshWholePromptLine = false;
+		}
+		else if (userInput == KEY_ENTER)
+		{
+			drawDirHeaderLines = true;
+			drawMenu = true;
+			refreshWholePromptLine = true;
+			currentActionVal = fileMenuBar.getCurrentSelectedAction();
+			fileMenuBar.setCurrentActionCode(currentActionVal);
+			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+		}
+		// Allow the delete key as a special key for sysops to delete the selected file(s). Also allow backspace
+		// due to some terminals returning backspace for delete.
+		else if (userInput == KEY_DEL || userInput == KEY_BACKSPACE)
+		{
+			if (user.is_sysop)
+			{
+				drawDirHeaderLines = true;
+				drawMenu = true;
+				refreshWholePromptLine = true;
+				fileMenuBar.setCurrentActionCode(FILE_DELETE, true);
+				actionRetObj = doAction(FILE_DELETE, gFileList, gFileListMenu);
+				currentActionVal = FILE_DELETE;
+			}
+			else
+			{
+				drawDirHeaderLines = false;
+				drawMenu = false;
+				refreshWholePromptLine = false;
+			}
+		}
+		else if (userInput == "Q")
+			continueOn = false;
+		else if (userInput == "N" || userInput == KEY_PAGEDN)
+		{
+			// Next page
+			if (topItemIdx < topItemIndexForLastPage)
+			{
+				topItemIdx += numLinesPerPage;
+				if (topItemIdx > topItemIndexForLastPage)
+					topItemIdx = topItemIndexForLastPage;
+				drawDirHeaderLines = true;
+				drawMenu = true;
+				refreshWholePromptLine = true;
+			}
+			else
+			{
+				drawDirHeaderLines = false;
+				drawMenu = false;
+				refreshWholePromptLine = false;
+			}
+			currentActionVal = NEXT_PAGE;
+			//fileMenuBar.setCurrentActionCode(NEXT_PAGE, !refreshWholePromptLine);
+			fileMenuBar.setCurrentActionCode(NEXT_PAGE, true);
+		}
+		else if (userInput == "P" || userInput == KEY_PAGEUP)
+		{
+			// Previous page
+			if (topItemIdx > 0)
+			{
+				topItemIdx -= numLinesPerPage;
+				if (topItemIdx < 0)
+					topItemIdx = 0;
+				drawDirHeaderLines = true;
+				drawMenu = true;
+				refreshWholePromptLine = true;
+			}
+			else
+			{
+				drawDirHeaderLines = false;
+				drawMenu = false;
+				refreshWholePromptLine = false;
+			}
+			currentActionVal = PREV_PAGE;
+			//fileMenuBar.setCurrentActionCode(PREV_PAGE, !refreshWholePromptLine);
+			fileMenuBar.setCurrentActionCode(PREV_PAGE, true);
+		}
+		else if (userInput == "F" || userInput == KEY_HOME)
+		{
+			// First page
+			if (topItemIdx > 0)
+			{
+				topItemIdx = 0;
+				drawDirHeaderLines = true;
+				drawMenu = true;
+				refreshWholePromptLine = true;
+			}
+			else
+			{
+				drawDirHeaderLines = false;
+				drawMenu = false;
+				refreshWholePromptLine = false;
+			}
+			currentActionVal = FIRST_PAGE;
+			//fileMenuBar.setCurrentActionCode(FIRST_PAGE, !refreshWholePromptLine);
+			fileMenuBar.setCurrentActionCode(FIRST_PAGE, true);
+		}
+		else if (userInput == "L" || userInput == KEY_END)
+		{
+			// Last page
+			if (topItemIdx < topItemIndexForLastPage)
+			{
+				topItemIdx = topItemIndexForLastPage;
+				drawDirHeaderLines = true;
+				drawMenu = true;
+				refreshWholePromptLine = true;
+			}
+			else
+			{
+				drawDirHeaderLines = false;
+				drawMenu = false;
+				refreshWholePromptLine = false;
+			}
+			currentActionVal = LAST_PAGE;
+			//fileMenuBar.setCurrentActionCode(LAST_PAGE, !refreshWholePromptLine);
+			fileMenuBar.setCurrentActionCode(LAST_PAGE, true);
+		}
+		else
+		{
+			drawDirHeaderLines = true;
+			drawMenu = true;
+			refreshWholePromptLine = true;
+			currentActionVal = fileMenuBar.getActionFromChar(userInput, false);
+			fileMenuBar.setCurrentActionCode(currentActionVal, true);
+			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+		}
+	}
+	exit(exitCode);
 }
 
 
@@ -498,7 +710,8 @@ while (continueDoingFileList)
 ///////////////////////////////////////////////////////////////////////////////
 // Functions: File actions
 
-// Performs a specified file action based on an action code. For the ANSI user interface.
+// Performs a specified file action based on an action code.
+// This works for both the lightbar/ANSI and traditional/non-lightbar UI
 //
 // Parameters:
 //  pActionCode: A code specifying an action to do.  Must be one of the global
@@ -508,25 +721,42 @@ while (continueDoingFileList)
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function doAction_ANSI(pActionCode, pFileList, pFileListMenu)
+function doAction(pActionCode, pFileList, pFileListMenu)
 {
 	if (typeof(pActionCode) !== "number")
 		return getDefaultActionRetObj();
+	if (pActionCode < 0)
+		return getDefaultActionRetObj();
 
-	var fileMetadata = pFileList[pFileListMenu.selectedItemIdx];
+	// If not using the ANSI interface, then prompt the user for the file number
+	// (for options that need one)
+	var useANSIInterface = gUseLightbarInterface && console.term_supports(USER_ANSI);
+	var fileIdx = pFileListMenu.selectedItemIdx;
+	if (!useANSIInterface && pActionCode != QUIT && pActionCode != HELP && pActionCode != NEXT_PAGE && pActionCode != PREV_PAGE)
+	{
+		var numMenuItems = pFileListMenu.NumItems();
+		console.attributes = "N";
+		console.crlf();
+		console.print("\x01cFile # (\x01h1-" + numMenuItems + "\x01n\x01c)\x01h\x01g: \x01g");
+		fileIdx = console.getnum(numMenuItems, 1) - 1;
+		pFileListMenu.selectedItemIdx = fileIdx;
+		console.attributes = "N";
+	}
+
+	var fileMetadata = pFileList[fileIdx];
 
 	var retObj = null;
 	switch (pActionCode)
 	{
 		case FILE_VIEW_INFO:
-			retObj = showFileInfo_ANSI(fileMetadata);
+			retObj = useANSIInterface ? showFileInfo_ANSI(fileMetadata) : showFileInfo_noANSI(fileMetadata);
 			break;
 		case FILE_VIEW:
-			retObj = viewFile_ANSI(fileMetadata);
+			retObj = viewFile(fileMetadata);
 			break;
 		case FILE_ADD_TO_BATCH_DL:
 			if (userCanDownloadFromFileArea_ShowErrorIfNot(fileMetadata.dirCode))
-				retObj = addSelectedFilesToBatchDLQueue_ANSI(fileMetadata, pFileList);
+				retObj = addSelectedFilesToBatchDLQueue(fileMetadata, pFileList);
 			else
 			{
 				retObj = getDefaultActionRetObj();
@@ -538,7 +768,7 @@ function doAction_ANSI(pActionCode, pFileList, pFileListMenu)
 			break;
 		case FILE_DOWNLOAD_SINGLE:
 			if (userCanDownloadFromFileArea_ShowErrorIfNot(fileMetadata.dirCode) && pFileListMenu.selectedItemIdx >= 0 && pFileListMenu.selectedItemIdx < pFileListMenu.NumItems())
-				retObj = letUserDownloadSelectedFile_ANSI(fileMetadata);
+				retObj = letUserDownloadSelectedFile(fileMetadata);
 			else
 			{
 				retObj = getDefaultActionRetObj();
@@ -557,11 +787,11 @@ function doAction_ANSI(pActionCode, pFileList, pFileListMenu)
 			break;
 		case FILE_MOVE: // Sysop action
 			if (user.is_sysop)
-				retObj = chooseFilebaseAndMoveFileToOtherFilebase_ANSI(pFileList, pFileListMenu);
+				retObj = chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu);
 			break;
 		case FILE_DELETE: // Sysop action
 			if (user.is_sysop)
-				retObj = confirmAndRemoveFilesFromFilebase_ANSI(pFileList, pFileListMenu);
+				retObj = confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu);
 			break;
 	}
 
@@ -603,7 +833,7 @@ function getDefaultActionRetObj()
 	};
 }
 
-// Shows extended information about a file to the user.
+// Shows extended information about a file to the user (ANSI version).
 //
 // Parameters:
 //  pFileMetadata: The file metadata object for the file to view information about
@@ -757,6 +987,128 @@ function showFileInfo_ANSI(pFileMetadata)
 
 	return retObj;
 }
+// Shows extended information about a file to the user (non-ANSI/traditional version).
+//
+// Parameters:
+//  pFileMetadata: The file metadata object for the file to view information about
+//
+// Return value: An object with values to indicate status & screen refresh actions; see
+//               getDefaultActionRetObj() for details.
+function showFileInfo_noANSI(pFileMetadata)
+{
+	var retObj = getDefaultActionRetObj();
+
+	// pFileList[pFileListMenu.selectedItemIdx] has a file metadata object without
+	// extended information.  Get a metadata object with extended information so we
+	// can display the extended description.
+	// The metadata object in pFileList should have a dirCode added by this script.
+	var dirCode = gDirCode;
+	if (pFileMetadata.hasOwnProperty("dirCode"))
+		dirCode = pFileMetadata.dirCode;
+	var fileMetadata = null;
+	if (extendedDescEnabled())
+		fileMetadata = pFileMetadata;
+	else
+		fileMetadata = getFileInfoFromFilebase(dirCode, pFileMetadata.name, FileBase.DETAIL.EXTENDED);
+
+	console.print("\x01n\x01wFilename:\r\n");
+	console.print(gColors.filename + fileMetadata.name +  "\x01n\x01w\r\n");
+	console.print("Size: " + gColors.fileSize + getFileSizeStr(fileMetadata.size, 99999) + "\x01n\x01w\r\n");
+	console.print("Timestamp: " + gColors.fileTimestamp + strftime("%Y-%m-%d %H:%M:%S", fileMetadata.time) + "\x01n\x01w\r\n");
+	console.crlf();
+
+	// File library/directory information
+	var libIdx = file_area.dir[dirCode].lib_index;
+	var dirIdx = file_area.dir[dirCode].index;
+	var libDesc = file_area.lib_list[libIdx].description;
+	var dirDesc =  file_area.dir[dirCode].description;
+	console.print("\x01c\x01hLib\x01g: \x01n\x01c" + libDesc + "\x01n\x01w\r\n");
+	console.print("\x01c\x01hDir\x01g: \x01n\x01c" + dirDesc + "\x01n\x01w\r\n");
+	console.crlf();
+
+	// fileMetadata should have extdDesc, but check just in case
+	var fileDesc = "";
+	if (fileMetadata.hasOwnProperty("extdesc") && fileMetadata.extdesc.length > 0)
+		fileDesc = fileMetadata.extdesc;
+	else
+		fileDesc = fileMetadata.desc;
+	// It's possible for fileDesc to be undefined (due to extDesc or desc being undefined),
+	// so make sure it's a string.
+	// Also, if it's a string, reformat certain types of strings that don't look good in a
+	// Frame object
+	if (typeof(fileDesc) === "string")
+	{
+		// Check to see if it starts with a normal attribute and remove if so,
+		// since that seems to cause problems with displaying the description in a Frame object.  This
+		// may be a kludge, and perhaps there's a better solution..
+		fileDesc = fileDesc.replace(/^\x01[nN]/, "");
+		// Fix line endings if necessary
+		fileDesc = lfexpand(fileDesc);
+	}
+	else
+		fileDesc = "";
+	// This might be overkill, but just in case, convert any non-Synchronet
+	// attribute codes to Synchronet attribute codes in the description.
+	if (!fileMetadata.hasOwnProperty("attrsConverted"))
+	{
+		fileDesc = convertAttrsToSyncPerSysCfg(fileDesc);
+		fileMetadata.attrsConverted = true;
+		if (fileMetadata.hasOwnProperty("extdesc"))
+			fileMetadata.extdesc = fileDesc;
+		else
+			fileMetadata.desc = fileDesc;
+	}
+
+	console.print(gColors.desc);
+	if (fileDesc.length > 0)
+		console.print("Description:\r\n" + fileDesc); // Don't want to use strip_ctrl(fileDesc)
+	else
+		console.print("No description available");
+	console.crlf();
+	// # of times downloaded and last downloaded date/time
+	var fieldFormatStr = "\x01n\x01c\x01h%s\x01g:\x01n\x01c %s\x01n\r\n";
+	var timesDownloaded = fileMetadata.hasOwnProperty("times_downloaded") ? fileMetadata.times_downloaded : 0;
+	printf(fieldFormatStr, "Times downloaded", timesDownloaded);
+	if (fileMetadata.hasOwnProperty("last_downloaded"))
+		printf(fieldFormatStr, "Last downloaded", strftime("%Y-%m-%d %H:%M", fileMetadata.last_downloaded));
+	// Some more fields for the sysop
+	if (user.is_sysop)
+	{
+		var sysopFields = [ "from", "cost", "added"];
+		for (var sI = 0; sI < sysopFields.length; ++sI)
+		{
+			var prop = sysopFields[sI];
+			if (fileMetadata.hasOwnProperty(prop))
+			{
+				if (typeof(fileMetadata[prop]) === "string" && fileMetadata[prop].length == 0)
+					continue;
+				var propName = prop.charAt(0).toUpperCase() + prop.substr(1);
+				var infoValue = "";
+				if (prop == "added")
+					infoValue = strftime("%Y-%m-%d %H:%M:%S", fileMetadata.added);
+				else
+					infoValue = fileMetadata[prop].toString();
+				printf(fieldFormatStr, propName, infoValue);
+				console.attributes = "NW";
+			}
+		}
+	}
+	console.attributes = "NW";
+	console.crlf();
+
+	// Construct the file list redraw info.  Note that the X and Y are relative
+	// to the file list menu, not absolute screen coordinates.
+	retObj.fileListPartialRedrawInfo = {
+		startX: 1,
+		startY: 1,
+		absStartX: 1,
+		absStartY: 1,
+		width: 0,
+		height: 0
+	};
+
+	return retObj;
+}
 // Splits a string on a given string and then re-combines the string with \r\n (carriage return & newline)
 // at the end of each line
 //
@@ -785,14 +1137,15 @@ function splitStrAndCombineWithRN(pStr, pSplitStr)
 	return newStr;
 }
 
-// Lets the user view a file.
+// Lets the user view a file.  Note that this function works for both the ANSI/lightbar
+// and traditional user interface.
 //
 // Parameters:
 //  pFileMetadata: The file metadata object for the file to view
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function viewFile_ANSI(pFileMetadata)
+function viewFile(pFileMetadata)
 {
 	var retObj = getDefaultActionRetObj();
 
@@ -806,16 +1159,19 @@ function viewFile_ANSI(pFileMetadata)
 	}
 	else
 	{
-		displayMsg("Failed to open the filebase!", true, true);
+		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+			displayMsg("Failed to open the filebase!", true, true);
+		else
+			console.print("\x01n" + gColors.errorMessage + "Failed to open the filebase!\x01n\r\n\x01p");
 		return retObj;
 	}
 
 	// View the file
 	console.gotoxy(1, console.screen_rows);
-	console.print("\x01n");
+	console.attributes = "N";
 	console.crlf();
 	var successfullyViewed = bbs.view_file(fullyPathedFilename);
-	console.print("\x01n");
+	console.attributes = "N";
 	if (gPauseAfterViewingFile || !successfullyViewed)
 		console.pause();
 
@@ -825,7 +1181,8 @@ function viewFile_ANSI(pFileMetadata)
 	return retObj;
 }
 
-// Allows the user to add their selected file to their batch downloaded queue
+// Allows the user to add their selected file to their batch downloaded queue. Note that this can work
+// with both the ANSI/lightbar interface or traditional interface.
 //
 // Parameters:
 //  pFileMetadata: The file metadata object for the file
@@ -833,7 +1190,7 @@ function viewFile_ANSI(pFileMetadata)
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function addSelectedFilesToBatchDLQueue_ANSI(pFileMetadata, pFileList)
+function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 {
 	var retObj = getDefaultActionRetObj();
 	if (!userCanDownloadFromFileArea_ShowErrorIfNot(pFileMetadata.dirCode))
@@ -859,7 +1216,7 @@ function addSelectedFilesToBatchDLQueue_ANSI(pFileMetadata, pFileList)
 	}
 	// Note that confirmFileActionWithUser() will re-draw the parts of the file
 	// list menu that are necessary.
-	var addFilesConfirmed = confirmFileActionWithUser(filenames, "Batch DL add", false);
+	var addFilesConfirmed = addFilesConfirmed = confirmFileActionWithUser(filenames, "Batch DL add", false);
 	retObj.refreshedSelectedFilesAlready = true;
 	if (addFilesConfirmed)
 	{
@@ -869,7 +1226,10 @@ function addSelectedFilesToBatchDLQueue_ANSI(pFileMetadata, pFileList)
 		var batchDLFile = new File(batchDLFilename);
 		if (batchDLFile.open(batchDLFile.exists ? "r+" : "w+"))
 		{
-			displayMsg("Adding file(s) to batch DL queue..", false, false);
+			if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+				displayMsg("Adding file(s) to batch DL queue..", false, false);
+			else
+				console.print("\x01n\x01cAdding file(s) to batch DL queue..\x01n\r\n");
 			for (var i = 0; i < metadataObjects.length; ++i)
 			{
 				// If the file isn't in the user's batch DL queue already, then add it.
@@ -903,108 +1263,170 @@ function addSelectedFilesToBatchDLQueue_ANSI(pFileMetadata, pFileList)
 			batchDLFile.close();
 		}
 
-		// Frame location & size for batch DL queue stats or filenames that failed
-		var frameUpperLeftX = gFileListMenu.pos.x + 2;
-		var frameUpperLeftY = gFileListMenu.pos.y + 2;
-		var frameWidth = console.screen_columns - 4; // Used to be gFileListMenu.size.width - 4;
-		var frameInnerWidth = frameWidth - 2; // Without borders
-		var frameHeight = 8;
-
-		// If there were no failures, then show a success message & prompt the user if they
-		// want to download their batch queue.  Otherwise, show the filenames that failed to
-		// get added.
-		if (filenamesFailed.length == 0)
+		// For ANSI/lightbar: Show a message box
+		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 		{
-			displayMsg("Your batch DL queue was sucessfully updated", false, true);
-			// Prompt if the user wants to download their batch queue
-			if (bbs.batch_dnload_total > 0)
+			// Frame location & size for batch DL queue stats or filenames that failed
+			var frameUpperLeftX = gFileListMenu.pos.x + 2;
+			var frameUpperLeftY = gFileListMenu.pos.y + 2;
+			var frameWidth = console.screen_columns - 4; // Used to be gFileListMenu.size.width - 4;
+			var frameInnerWidth = frameWidth - 2; // Without borders
+			var frameHeight = 8;
+
+			// If there were no failures, then show a success message & prompt the user if they
+			// want to download their batch queue.  Otherwise, show the filenames that failed to
+			// get added.
+			if (filenamesFailed.length == 0)
 			{
-				// Clear most of the screen area so the user has focus on the batch DL queue stats
-				var fullLineFormatStr = "%" + console.screen_columns + "s";
-				var leftFormatStr = "%" + frameUpperLeftX + "s";
-				var rightFormatStr = "%" + +(frameUpperLeftX+frameWidth-1) + "s";
-				var lastFrameRow = frameUpperLeftY + frameHeight - 1;
-				var lastRow = console.screen_rows - 1;
-				console.print("\x01n");
-				for (var screenRow = gNumHeaderLinesDisplayed+1; screenRow <= lastRow; ++screenRow)
+				displayMsg("Your batch DL queue was sucessfully updated", false, true);
+				// Prompt if the user wants to download their batch queue
+				if (bbs.batch_dnload_total > 0)
 				{
-					console.gotoxy(1, screenRow);
-					if (screenRow < frameUpperLeftY || screenRow > lastFrameRow)
-						printf(fullLineFormatStr, "");
-					else
+					// Clear most of the screen area so the user has focus on the batch DL queue stats
+					var fullLineFormatStr = "%" + console.screen_columns + "s";
+					var leftFormatStr = "%" + frameUpperLeftX + "s";
+					var rightFormatStr = "%" + +(frameUpperLeftX+frameWidth-1) + "s";
+					var lastFrameRow = frameUpperLeftY + frameHeight - 1;
+					var lastRow = console.screen_rows - 1;
+					console.attributes = "N";
+					for (var screenRow = gNumHeaderLinesDisplayed+1; screenRow <= lastRow; ++screenRow)
 					{
-						printf(leftFormatStr, "");
-						console.gotoxy(frameUpperLeftX+frameWidth, screenRow);
-						printf(rightFormatStr, "");
+						console.gotoxy(1, screenRow);
+						if (screenRow < frameUpperLeftY || screenRow > lastFrameRow)
+							printf(fullLineFormatStr, "");
+						else
+						{
+							printf(leftFormatStr, "");
+							console.gotoxy(frameUpperLeftX+frameWidth, screenRow);
+							printf(rightFormatStr, "");
+						}
+					}
+
+					// Build a frame with batch DL queue stats and prompt the user if they want to
+					// download their batch DL queue
+					var frameTitle = "Download your batch queue (Y/N)?";
+					// \x01cFiles: \x01h1 \x01n\x01c(\x01h100 \x01n\x01cMax)  Credits: 0  Bytes: \x01h2,228,254 \x01n\x01c Time: 00:09:40
+					// Note: The maximum number of allowed files in the batch download queue doesn't seem to
+					// be available to JavaScript.
+					var totalQueueSize = batchDLQueueStats.totalSize + pFileMetadata.size;
+					var totalQueueCost = batchDLQueueStats.totalCost + pFileMetadata.cost;
+					var queueStats = "\x01n\x01cFiles: \x01h" + batchDLQueueStats.numFilesInQueue + "  \x01n\x01cCredits: \x01h"
+								   + totalQueueCost + "\x01n\x01c  Bytes: \x01h" + numWithCommas(totalQueueSize) + "\x01n\x01w\r\n";
+					for (var i = 0; i < batchDLQueueStats.filenames.length; ++i)
+					{
+						queueStats += shortenFilename(batchDLQueueStats.filenames[i].filename, frameInnerWidth, false) + "\r\n";
+						queueStats += batchDLQueueStats.filenames[i].desc.substr(0, frameInnerWidth) + "\r\n";
+						if (i < batchDLQueueStats.filenames.length-1)
+							queueStats += "\r\n";
+					}
+					var additionalQuitKeys = "yYnN";
+					var lastUserInput = displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth,
+																		   frameHeight, gColors.batchDLInfoWindowBorder,
+																		   frameTitle, gColors.batchDLInfoWindowTitle,
+																		   queueStats, additionalQuitKeys);
+					// The main screen content (file list & extended description if applicable)
+					// will need to be redrawn after this.
+					retObj.reDrawMainScreenContent = true;
+					// If the user chose to download their file queue, then send it to the user.
+					// And the lister headers will need to be re-drawn as well.
+					if (lastUserInput.toUpperCase() == "Y")
+					{
+						retObj.reDrawListerHeader = true;
+						retObj.reDrawCmdBar = true;
+						console.attributes = "N";
+						console.gotoxy(1, console.screen_rows);
+						console.crlf();
+						bbs.batch_download();
+						// If the user is still online (chose not to hang up after transfer),
+						// then pause so that the user can see the batch download status
+						if (bbs.online > 0)
+							console.pause();
 					}
 				}
-
-				// Build a frame with batch DL queue stats and prompt the user if they want to
-				// download their batch DL queue
-				var frameTitle = "Download your batch queue (Y/N)?";
-				// \x01cFiles: \x01h1 \x01n\x01c(\x01h100 \x01n\x01cMax)  Credits: 0  Bytes: \x01h2,228,254 \x01n\x01c Time: 00:09:40
-				// Note: The maximum number of allowed files in the batch download queue doesn't seem to
-				// be available to JavaScript.
-				var totalQueueSize = batchDLQueueStats.totalSize + pFileMetadata.size;
-				var totalQueueCost = batchDLQueueStats.totalCost + pFileMetadata.cost;
-				var queueStats = "\x01n\x01cFiles: \x01h" + batchDLQueueStats.numFilesInQueue + "  \x01n\x01cCredits: \x01h"
-				               + totalQueueCost + "\x01n\x01c  Bytes: \x01h" + numWithCommas(totalQueueSize) + "\x01n\x01w\r\n";
-				for (var i = 0; i < batchDLQueueStats.filenames.length; ++i)
-				{
-					queueStats += shortenFilename(batchDLQueueStats.filenames[i].filename, frameInnerWidth, false) + "\r\n";
-					queueStats += batchDLQueueStats.filenames[i].desc.substr(0, frameInnerWidth) + "\r\n";
-					if (i < batchDLQueueStats.filenames.length-1)
-						queueStats += "\r\n";
-				}
-				var additionalQuitKeys = "yYnN";
+			}
+			else
+			{
+				eraseMsgBoxScreenArea();
+				// Build a frame object to show the names of the files that failed to be added to the
+				// user's batch DL queue
+				var frameTitle = "Failed to add these files to batch DL queue";
+				var fileListStr = "\x01n\x01w";
+				for (var i = 0; i < filenamesFailed.length; ++i)
+					fileListStr += shortenFilename(filenamesFailed[i], frameInnerWidth, false) + "\r\n";
 				var lastUserInput = displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth,
-				                                                       frameHeight, gColors.batchDLInfoWindowBorder,
-				                                                       frameTitle, gColors.batchDLInfoWindowTitle,
-				                                                       queueStats, additionalQuitKeys);
-				// The main screen content (file list & extended description if applicable)
-				// will need to be redrawn after this.
-				retObj.reDrawMainScreenContent = true;
-				// If the user chose to download their file queue, then send it to the user.
-				// And the lister headers will need to be re-drawn as well.
-				if (lastUserInput.toUpperCase() == "Y")
-				{
-					retObj.reDrawListerHeader = true;
-					retObj.reDrawCmdBar = true;
-					console.print("\x01n");
-					console.gotoxy(1, console.screen_rows);
-					console.crlf();
-					bbs.batch_download();
-					// If the user is still online (chose not to hang up after transfer),
-					// then pause so that the user can see the batch download status
-					if (bbs.online > 0)
-						console.pause();
-				}
+																	   frameHeight, gColors.batchDLInfoWindowBorder,
+																	   frameTitle, gColors.batchDLInfoWindowTitle,
+																	   fileListStr, "");
+				// Add the file list redraw info.  Note that the X and Y are relative
+				// to the file list menu, not absolute screen coordinates.
+				// To make the list refresh info to return to the main script loop
+				retObj.fileListPartialRedrawInfo = {
+					startX: 3,
+					startY: 3,
+					absStartX: gFileListMenu.pos.x + 3 - 1, // 1-based
+					absStartY: gFileListMenu.pos.y + 3 - 1, // 1-based
+					width: frameWidth + 1,
+					height: frameHeight
+				};
 			}
 		}
 		else
 		{
-			eraseMsgBoxScreenArea();
-			// Build a frame object to show the names of the files that failed to be added to the
-			// user's batch DL queue
-			var frameTitle = "Failed to add these files to batch DL queue";
-			var fileListStr = "\x01n\x01w";
-			for (var i = 0; i < filenamesFailed.length; ++i)
-				fileListStr += shortenFilename(filenamesFailed[i], frameInnerWidth, false) + "\r\n";
-			var lastUserInput = displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth,
-																   frameHeight, gColors.batchDLInfoWindowBorder,
-																   frameTitle, gColors.batchDLInfoWindowTitle,
-																   fileListStr, "");
-			// Add the file list redraw info.  Note that the X and Y are relative
-			// to the file list menu, not absolute screen coordinates.
-			// To make the list refresh info to return to the main script loop
-			retObj.fileListPartialRedrawInfo = {
-				startX: 3,
-				startY: 3,
-				absStartX: gFileListMenu.pos.x + 3 - 1, // 1-based
-				absStartY: gFileListMenu.pos.y + 3 - 1, // 1-based
-				width: frameWidth + 1,
-				height: frameHeight
-			};
+			// Traditional UI
+			retObj.fileListPartialRedrawInfo = null;
+			// If there were no failures, then show a success message & prompt the user if they
+			// want to download their batch queue.  Otherwise, show the filenames that failed to
+			// get added.
+			if (filenamesFailed.length == 0)
+			{
+				console.attributes = "N";
+				console.print("Your batch DL queue was sucessfully updated");
+				console.crlf();
+				// Prompt if the user wants to download their batch queue
+				if (bbs.batch_dnload_total > 0)
+				{
+					// Output the user's file queue
+					// \x01cFiles: \x01h1 \x01n\x01c(\x01h100 \x01n\x01cMax)  Credits: 0  Bytes: \x01h2,228,254 \x01n\x01c Time: 00:09:40
+					// Note: The maximum number of allowed files in the batch download queue doesn't seem to
+					// be available to JavaScript.
+					var totalQueueSize = batchDLQueueStats.totalSize + pFileMetadata.size;
+					var totalQueueCost = batchDLQueueStats.totalCost + pFileMetadata.cost;
+					console.print("\x01cFiles: \x01h" + batchDLQueueStats.numFilesInQueue + "  \x01n\x01cCredits: \x01h"
+					               + totalQueueCost + "\x01n\x01c  Bytes: \x01h" + numWithCommas(totalQueueSize) + "\x01n");
+					console.crlf();
+					for (var i = 0; i < batchDLQueueStats.filenames.length; ++i)
+					{
+						console.print(batchDLQueueStats.filenames[i].filename + "\r\n");
+						console.print(batchDLQueueStats.filenames[i].desc + "\r\n");
+						if (i < batchDLQueueStats.filenames.length-1)
+							console.crlf();
+					}
+					// Prompt the user whether they want to download their file queue; send it to the user
+					// if they choose to do so.
+					if (console.yesno("Download your batch queue (Y/N)"))
+					{
+						retObj.reDrawListerHeader = true;
+						retObj.reDrawCmdBar = true;
+						console.attributes = "N";
+						bbs.batch_download();
+						// If the user is still online (chose not to hang up after transfer),
+						// then pause so that the user can see the batch download status
+						if (bbs.online > 0)
+							console.pause();
+					}
+				}
+			}
+			else
+			{
+				// Show the names of the files that failed to be added to the user's batch DL queue
+				console.attributes = "N";
+				console.print(gColors.errorMessage + "Failed to add these files to batch DL queue:\x01n\r\n");
+				console.attributes = "NW";
+				for (var i = 0; i < filenamesFailed.length; ++i)
+					console.print(filenamesFailed[i] + "\r\n");
+				console.pause();
+				console.line_counter = 0;
+			}
 		}
 	}
 
@@ -1068,14 +1490,15 @@ function getUserDLQueueStats()
 	return retObj;
 }
 
-// Lets the user download the currently selected file on the file list menu
+// Lets the user download the currently selected file on the file list. This works with both the
+// ANSi/lightbar UI and traditional UI.
 //
 // Parameters:
 //  pFileMetadata: The file metadata object for the file to download
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function letUserDownloadSelectedFile_ANSI(pFileMetadata)
+function letUserDownloadSelectedFile(pFileMetadata)
 {
 	var retObj = getDefaultActionRetObj();
 	console.attributes = "N";
@@ -1152,6 +1575,13 @@ function displayHelpScreen()
 	printf(printfStr, "V", "View the file");
 	printf(printfStr, "B", "Flag the selected file(s) for batch download");
 	printf(printfStr, "D", "Download the highlighted (selected) file");
+	if (!gUseLightbarInterface)
+	{
+		printf(printfStr, "N/PageDn", "Show the next page of files");
+		printf(printfStr, "P/Pageup", "Show the previous page of files");
+		printf(printfStr, "F/Home", "Show the first page of files");
+		printf(printfStr, "L/End", "Show the last page of files");
+	}
 	if (user.is_sysop)
 	{
 		printf(printfStr, "M", "Move the file(s) to another directory");
@@ -1159,7 +1589,7 @@ function displayHelpScreen()
 	}
 	printf(printfStr, "?", "Show this help screen");
 	printf(printfStr, "Q", "Quit back to the BBS");
-	console.print("\x01n");
+	console.attributes = "N";
 	console.crlf();
 	//console.pause();
 
@@ -1177,7 +1607,7 @@ function displayHelpScreen()
 //
 // Return value: An object with values to indicate status & screen refresh actions; see
 //               getDefaultActionRetObj() for details.
-function chooseFilebaseAndMoveFileToOtherFilebase_ANSI(pFileList, pFileListMenu)
+function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 {
 	var retObj = getDefaultActionRetObj();
 
@@ -1200,7 +1630,6 @@ function chooseFilebaseAndMoveFileToOtherFilebase_ANSI(pFileList, pFileListMenu)
 	if (!moveFilesConfirmed)
 		return retObj;
 
-
 	// Create a file library menu for the user to choose a file library (and then directory)
 	var fileLibMenu = createFileLibMenu();
 	// For screen refresh purposes, construct the file list redraw info.  Note that the X and Y are relative
@@ -1214,8 +1643,14 @@ function chooseFilebaseAndMoveFileToOtherFilebase_ANSI(pFileList, pFileListMenu)
 		width: fileLibMenu.size.width + 1,
 		height: fileLibMenu.size.height + 1 // + 1 because of the label above the menu
 	};
-	console.gotoxy(fileLibMenu.pos.x, fileLibMenu.pos.y-1);
-	printf("\x01n\x01c\x01h|\x01n\x01c%-" + +(fileLibMenu.size.width-1) + "s\x01n", "Choose a destination area");
+	var chooseAreaText = "Choose a destination area";
+	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+	{
+		console.gotoxy(fileLibMenu.pos.x, fileLibMenu.pos.y-1);
+		printf("\x01n\x01c\x01h|\x01n\x01c%-" + +(fileLibMenu.size.width-1) + "s\x01n", chooseAreaText);
+	}
+	else
+		printf("\x01n\x01c%-" + +(fileLibMenu.size.width-1) + "s\x01n\r\n", chooseAreaText);
 	// Prompt the user which directory to move the file to
 	var chosenDirCode = null;
 	var continueOn = true;
@@ -1227,6 +1662,8 @@ function chooseFilebaseAndMoveFileToOtherFilebase_ANSI(pFileList, pFileListMenu)
 			// The file dir menu will be created at the same position & with the same size
 			// as the file library menu
 			var fileDirMenu = createFileDirMenu(chosenLibIdx);
+			if (!gUseLightbarInterface)
+				printf("\x01n%sDirectories of %s:\r\n", gColors.fileAreaDescTrad, file_area.lib_list[chosenLibIdx].description);
 			chosenDirCode = fileDirMenu.GetVal();
 			if (typeof(chosenDirCode) === "string")
 			{
@@ -1242,6 +1679,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase_ANSI(pFileList, pFileListMenu)
 		else
 			continueOn = false;
 	}
+
 	// If the user chose a directory, then move the file there.
 	if (typeof(chosenDirCode) === "string" && chosenDirCode.length > 0)
 	{
@@ -1344,15 +1782,11 @@ function chooseFilebaseAndMoveFileToOtherFilebase_ANSI(pFileList, pFileListMenu)
 			}
 		}
 		// Display a success/fail message
+		//displayMsgs(pMsgArray, pIsError, pWaitAndErase)
 		if (moveAllSucceeded)
-		{
-			var msg = "Successfully moved the file(s) to " + destLibAndDirDesc;
-			displayMsg(msg, false, true);
-		}
+			displayMsg("Successfully moved the file(s) to " + destLibAndDirDesc, false, true);
 		else
-		{
 			displayMsg("Failed to move the file(s)!", true, true);
-		}
 		// After moving the files, if there are no more files (in the directory or otherwise),
 		// say so and exit now.
 		if (gScriptMode == MODE_LIST_DIR && file_area.dir[gDirCode].files == 0)
@@ -1376,6 +1810,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase_ANSI(pFileList, pFileListMenu)
 }
 
 // Allows the user to remove the selected file(s) from the filebase.  Only for sysops!
+// This works with both the ANSI/Lightbar UI and the traditional UI.
 //
 // Parameters:
 //  pFileList: The list of file metadata objects from the file directory
@@ -1386,7 +1821,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase_ANSI(pFileList, pFileListMenu)
 //               returned will have the following additional properties:
 //               filesDeleted: Boolean - Whether or not files were actually deleted (after
 //                             confirmation)
-function confirmAndRemoveFilesFromFilebase_ANSI(pFileList, pFileListMenu)
+function confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu)
 {
 	var retObj = getDefaultActionRetObj();
 	retObj.filesDeleted = false;
@@ -1607,6 +2042,14 @@ function DDFileMenuBar(pPos)
 		//this.cmdArray.push(new DDFileMenuBarItem("Del", 0, FILE_DELETE));
 		this.cmdArray.push(new DDFileMenuBarItem("DEL", 0, FILE_DELETE, KEY_DEL));
 	}
+	//DDFileMenuBarItem(pItemText, pPos, pRetCode, pHotkeyOverride)
+	if (!gUseLightbarInterface || !console.term_supports(USER_ANSI))
+	{
+		this.cmdArray.push(new DDFileMenuBarItem("Next", 0, NEXT_PAGE, KEY_PAGEDN));
+		this.cmdArray.push(new DDFileMenuBarItem("Prev", 0, PREV_PAGE, KEY_PAGEUP));
+		this.cmdArray.push(new DDFileMenuBarItem("First", 0, FIRST_PAGE));
+		this.cmdArray.push(new DDFileMenuBarItem("Last", 0, LAST_PAGE));
+	}
 	this.cmdArray.push(new DDFileMenuBarItem("?", 0, HELP));
 	this.cmdArray.push(new DDFileMenuBarItem("Quit", 0, QUIT));
 
@@ -1668,7 +2111,8 @@ function DDFileMenuBar_getItemTextFromIdx(pIdx)
 function DDFileMenuBar_writePromptLine()
 {
 	// Place the cursor at the defined location, then write the prompt text
-	console.gotoxy(this.pos.x, this.pos.y);
+	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		console.gotoxy(this.pos.x, this.pos.y);
 	console.print(this.promptText);
 }
 // For the DDFileMenuBar class: Refreshes 2 items in the command bar text line
@@ -1685,13 +2129,16 @@ function DDFileMenuBar_refreshWithNewAction(pCmdIdx)
 	// Refresh the prompt area for the previous index with regular colors
 	// Re-draw the last item text with regular colors
 	var itemText = this.getItemTextFromIdx(this.currentCommandIdx);
-	console.gotoxy(this.cmdArray[this.currentCommandIdx].pos, this.pos.y);
-	console.print("\x01n" + this.getDDFileMenuBarItemText(itemText, false, false));
-	// Draw the new item text with selected colors
-	itemText = this.getItemTextFromIdx(pCmdIdx);
-	console.gotoxy(this.cmdArray[pCmdIdx].pos, this.pos.y);
-	console.print("\x01n" + this.getDDFileMenuBarItemText(itemText, true, false));
-	console.gotoxy(this.pos.x+strip_ctrl(this.promptText).length-1, this.pos.y);
+	if (console.term_supports(USER_ANSI))
+	{
+		console.gotoxy(this.cmdArray[this.currentCommandIdx].pos, this.pos.y);
+		console.print("\x01n" + this.getDDFileMenuBarItemText(itemText, false, false));
+		// Draw the new item text with selected colors
+		itemText = this.getItemTextFromIdx(pCmdIdx);
+		console.gotoxy(this.cmdArray[pCmdIdx].pos, this.pos.y);
+		console.print("\x01n" + this.getDDFileMenuBarItemText(itemText, true, false));
+		console.gotoxy(this.pos.x+strip_ctrl(this.promptText).length-1, this.pos.y);
+	}
 
 	this.lastCommandIdx = this.currentCommandIdx;
 	this.currentCommandIdx = pCmdIdx;
@@ -2128,7 +2575,8 @@ function doFrameInputLoop(pFrame, pScrollbar, pFrameContentStr, pAdditionalQuitK
 //  pTextOnly: Only draw the library & directory text (no decoration or other text).
 //             This is optional & defaults to false.
 //  pDirCodeOverride: Optional string: If this is valid, this will be used for the library & directory name
-function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride)
+//  pNumberedMode: Boolean - Whether or not the menu/list has numbers in front of the file info items
+function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride, pNumberedMode)
 {
 	// If the behavior flags include no header, then just return immediately
 	if ((gListBehavior & FL_NO_HDR) == FL_NO_HDR)
@@ -2187,10 +2635,13 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride)
 	// Library line
 	if (textOnly)
 	{
-		console.gotoxy(6, 1);
-		console.print("\x01n" + libText);
-		console.gotoxy(6, 2);
-		console.print("\x01n" + dirText);
+		if (console.term_supports(USER_ANSI))
+		{
+			console.gotoxy(6, 1);
+			console.print("\x01n" + libText);
+			console.gotoxy(6, 2);
+			console.print("\x01n" + dirText);
+		}
 	}
 	else
 	{
@@ -2206,11 +2657,11 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride)
 		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT +
 					  "\x01g\x01hLister \x01n\x01w");
 		console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
-		console.print("\x01n");
+		console.attributes = "N";
 
 		// List header
 		console.crlf();
-		displayListHdrLine(false);
+		displayListHdrLine(false, pNumberedMode);
 
 		if (dispHdrFirstRun)
 		{
@@ -2223,14 +2674,21 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride)
 //
 // Parameters:
 //  pMoveToLocationFirst: Boolean - Whether to move the cursor to the required location first.
-function displayListHdrLine(pMoveToLocationFirst)
+//  pNumberedMode: Boolean - Whether or not the menu/list has numbers in front of the file info items
+function displayListHdrLine(pMoveToLocationFirst, pNumberedMode)
 {
 	if (pMoveToLocationFirst && console.term_supports(USER_ANSI))
 		console.gotoxy(1, 3);
 	var filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
 	var fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1;
 	var descLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart + 1;
-	var formatStr = "\x01n\x01w\x01h%-" + filenameLen + "s %" + fileSizeLen + "s %-"
+	var numItemsLen = gFileList.length.toString().length;
+	if (pNumberedMode)
+		descLen -= (numItemsLen+1);
+	var formatStr = "\x01n\x01w\x01h";
+	if (pNumberedMode)
+		formatStr += format("%" + numItemsLen + "s ", "#");
+	formatStr += "%-" + filenameLen + "s %" + fileSizeLen + "s %-"
 	              + +(descLen-7) + "s\x01n\x01w%5s\x01n";
 	var listHdrEndText = THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1;
 	printf(formatStr, "Filename", "Size", "Description", listHdrEndText);
@@ -2257,13 +2715,24 @@ function createFileListMenu(pQuitKeys)
 		menuWidth = gListIdxes.fileSizeEnd + 1;
 	var menuHeight = console.screen_rows - (startRow-1) - 1;
 	var fileListMenu = new DDLightbarMenu(1, startRow, menuWidth, menuHeight);
-	// TODO: Add support for a traditional/non-lightbar user interface
-	//fileListMenu.allowANSI = gUseLightbarInterface;
-	fileListMenu.scrollbarEnabled = true;
 	fileListMenu.borderEnabled = false;
-	fileListMenu.multiSelect = true;
 	fileListMenu.ampersandHotkeysInItems = false;
 	fileListMenu.wrapNavigation = false;
+	fileListMenu.colors.itemNumColor = gColors.listNumTrad; // For numbered mode, if non-lightbar
+	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+	{
+		fileListMenu.allowANSI = true;
+		fileListMenu.scrollbarEnabled = true;
+		fileListMenu.multiSelect = true;
+		fileListMenu.numberedMode = false;
+	}
+	else
+	{
+		fileListMenu.allowANSI = false;
+		fileListMenu.scrollbarEnabled = false;
+		fileListMenu.multiSelect = false;
+		fileListMenu.numberedMode = true;
+	}
 
 	fileListMenu.extdDescEnabled = extendedDescEnabled();
 
@@ -2328,7 +2797,7 @@ function createFileListMenu(pQuitKeys)
 			if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
 			{
 				var originalCurPos = console.getxy();
-				displayFileLibAndDirHeader(true, gFileList[pIdx].dirCode);
+				displayFileLibAndDirHeader(true, gFileList[pIdx].dirCode, gFileListMenu.numberedMode);
 				console.gotoxy(originalCurPos);
 			}
 		}
@@ -2391,11 +2860,12 @@ function createFileLibMenu()
 	// Create the menu object
 	var startRow = gNumHeaderLinesDisplayed + 4;
 	var fileLibMenu = new DDLightbarMenu(5, startRow, console.screen_columns - 10, console.screen_rows - startRow - 5);
-	fileLibMenu.scrollbarEnabled = true;
+	fileLibMenu.scrollbarEnabled = gUseLightbarInterface && console.term_supports(USER_ANSI);
 	fileLibMenu.borderEnabled = true;
 	fileLibMenu.multiSelect = false;
 	fileLibMenu.ampersandHotkeysInItems = false;
 	fileLibMenu.wrapNavigation = false;
+	fileLibMenu.allowANSI = gUseLightbarInterface && console.term_supports(USER_ANSI);
 
 	// Add additional keypresses for quitting the menu's input loop.
 	// Q: Quit
@@ -2418,7 +2888,10 @@ function createFileLibMenu()
 		--menuInnerWidth;
 	// Allow 2 for spaces
 	fileLibMenu.libDescLen = menuInnerWidth - fileLibMenu.libNumLen - fileLibMenu.numDirsLen - 2;
-	fileLibMenu.libFormatStr = "%" + fileLibMenu.libNumLen + "d %-" + fileLibMenu.libDescLen + "s %" + fileLibMenu.numDirsLen + "d";
+	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		fileLibMenu.libFormatStr = "%" + fileLibMenu.libNumLen + "d %-" + fileLibMenu.libDescLen + "s %" + fileLibMenu.numDirsLen + "d";
+	else
+		fileLibMenu.libFormatStr = "%-" + fileLibMenu.libDescLen + "s %" + fileLibMenu.numDirsLen + "d";
 
 	// Colors and their indexes
 	fileLibMenu.borderColor = gColors.fileAreaMenuBorder;
@@ -2428,23 +2901,50 @@ function createFileLibMenu()
 	var descEnd = descStart + fileLibMenu.libDescLen;
 	var numDirsStart = descEnd;
 	//var numDirsEnd = numDirsStart + fileLibMenu.numDirsLen;
+	// Selected colors (for lightbar interface)
 	fileLibMenu.SetColors({
-		itemColor: [{start: libNumStart, end: libNumEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNum},
-		            {start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaDesc},
-		            {start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNumItems}],
 		selectedItemColor: [{start: libNumStart, end: libNumEnd, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumHighlight},
 		                    {start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaDescHighlight},
 		                    {start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumItemsHighlight}]
 	});
+	// Non-selected item colors
+	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+	{
+		fileLibMenu.SetColors({
+			itemColor: [{start: libNumStart, end: libNumEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNum},
+						{start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaDesc},
+						{start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNumItems}]
+		});
+	}
+	else
+	{
+		fileLibMenu.colors.itemNumColor = gColors.listNumTrad;
+		descStart = 0;
+		descEnd = descStart + fileLibMenu.libDescLen;
+		numDirsStart = descEnd;
+		fileLibMenu.SetColors({
+			itemColor: [{start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileNormalBkgTrad + gColors.fileAreaDescTrad},
+						{start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileNormalBkgTrad + gColors.fileAreaNumItemsTrad}]
+		});
+	}
 
 	fileLibMenu.topBorderText = "\x01y\x01hFile Libraries";
 	// Define the menu function for getting an item
 	fileLibMenu.GetItem = function(pIdx) {
 		var menuItemObj = this.MakeItemWithRetval(pIdx);
-		menuItemObj.text = format(this.libFormatStr,
-		                          pIdx + 1,//file_area.lib_list[pIdx].number + 1,
-								  file_area.lib_list[pIdx].description.substr(0, this.libDescLen),
-								  file_area.lib_list[pIdx].dir_list.length);
+		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		{
+			menuItemObj.text = format(this.libFormatStr,
+			                          pIdx + 1,//file_area.lib_list[pIdx].number + 1,
+			                          file_area.lib_list[pIdx].description.substr(0, this.libDescLen),
+			                          file_area.lib_list[pIdx].dir_list.length);
+		}
+		else
+		{
+			menuItemObj.text = format(this.libFormatStr,
+			                          file_area.lib_list[pIdx].description.substr(0, this.libDescLen),
+			                          file_area.lib_list[pIdx].dir_list.length);
+		}
 		return menuItemObj;
 	}
 
@@ -2487,11 +2987,12 @@ function createFileDirMenu(pLibIdx)
 	//DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// Create the menu object
 	var fileDirMenu = new DDLightbarMenu(5, startRow, console.screen_columns - 10, console.screen_rows - startRow - 5);
-	fileDirMenu.scrollbarEnabled = true;
+	fileDirMenu.scrollbarEnabled = gUseLightbarInterface && console.term_supports(USER_ANSI);
 	fileDirMenu.borderEnabled = true;
 	fileDirMenu.multiSelect = false;
 	fileDirMenu.ampersandHotkeysInItems = false;
 	fileDirMenu.wrapNavigation = false;
+	fileDirMenu.allowANSI = gUseLightbarInterface && console.term_supports(USER_ANSI);
 
 	// Add additional keypresses for quitting the menu's input loop.
 	// Q: Quit
@@ -2515,7 +3016,10 @@ function createFileDirMenu(pLibIdx)
 		--menuInnerWidth;
 	// Allow 2 for spaces
 	fileDirMenu.dirDescLen = menuInnerWidth - fileDirMenu.dirNumLen - fileDirMenu.numFilesLen - 2;
-	fileDirMenu.dirFormatStr = "%" + fileDirMenu.dirNumLen + "d %-" + fileDirMenu.dirDescLen + "s %" + fileDirMenu.numFilesLen + "d";
+	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		fileDirMenu.dirFormatStr = "%" + fileDirMenu.dirNumLen + "d %-" + fileDirMenu.dirDescLen + "s %" + fileDirMenu.numFilesLen + "d";
+	else
+		fileDirMenu.dirFormatStr = "%-" + fileDirMenu.dirDescLen + "s %" + fileDirMenu.numFilesLen + "d";
 
 	// Colors and their indexes
 	fileDirMenu.borderColor = gColors.fileAreaMenuBorder;
@@ -2525,24 +3029,52 @@ function createFileDirMenu(pLibIdx)
 	var descEnd = descStart + fileDirMenu.dirDescLen;
 	var numDirsStart = descEnd;
 	//var numDirsEnd = numDirsStart + fileDirMenu.numDirsLen;
+	// Selected colors (for lightbar interface)
 	fileDirMenu.SetColors({
-		itemColor: [{start: dirNumStart, end: dirNumEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNum},
-		            {start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaDesc},
-		            {start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNumItems}],
 		selectedItemColor: [{start: dirNumStart, end: dirNumEnd, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumHighlight},
 		                    {start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaDescHighlight},
 		                    {start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumItemsHighlight}]
 	});
+	// Non-selected item colors
+	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+	{
+		fileDirMenu.SetColors({
+			itemColor: [{start: dirNumStart, end: dirNumEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNum},
+						{start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaDesc},
+						{start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNumItems}]
+		});
+	}
+	else
+	{
+		fileDirMenu.colors.itemNumColor = gColors.listNumTrad;
+		descStart = 0;
+		descEnd = descStart + fileDirMenu.dirDescLen;
+		numDirsStart = descEnd;
+		fileDirMenu.SetColors({
+			itemColor: [{start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileNormalBkgTrad + gColors.fileAreaDescTrad},
+						{start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileNormalBkgTrad + gColors.fileAreaNumItemsTrad}]
+		});
+	}
 
 	fileDirMenu.topBorderText = "\x01y\x01h" + ("File directories of " + file_area.lib_list[pLibIdx].description).substr(0, fileDirMenu.size.width-2);
 	// Define the menu function for ggetting an item
 	fileDirMenu.GetItem = function(pIdx) {
 		// Return the internal code for the directory for the item
 		var menuItemObj = this.MakeItemWithRetval(file_area.lib_list[this.libIdx].dir_list[pIdx].code);
-		menuItemObj.text = format(this.dirFormatStr,
-		                          pIdx + 1,//file_area.lib_list[this.libIdx].dir_list[pIdx].number + 1,
-								  file_area.lib_list[this.libIdx].dir_list[pIdx].description.substr(0, this.dirDescLen),
-								  file_area.lib_list[this.libIdx].dir_list[pIdx].files);
+		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		{
+			menuItemObj.text = format(this.dirFormatStr,
+			                          pIdx + 1,//file_area.lib_list[this.libIdx].dir_list[pIdx].number + 1,
+			                          file_area.lib_list[this.libIdx].dir_list[pIdx].description.substr(0, this.dirDescLen),
+			                          file_area.lib_list[this.libIdx].dir_list[pIdx].files);
+		}
+		else
+		{
+			menuItemObj.text = format(this.dirFormatStr,
+			                          file_area.lib_list[this.libIdx].dir_list[pIdx].description.substr(0, this.dirDescLen),
+			                          file_area.lib_list[this.libIdx].dir_list[pIdx].files);
+
+		}
 		return menuItemObj;
 	}
 
@@ -2765,26 +3297,41 @@ function displayMsgs(pMsgArray, pIsError, pWaitAndErase)
 
 	var waitAndErase = (typeof(pWaitAndErase) === "boolean" ? pWaitAndErase : true);
 
-	// Draw the box border, then write the messages
-	var title = pIsError ? "Error" : "Message";
-	var titleColor = pIsError ? gColors.errorMessage : gColors.successMessage;
-	drawBorder(gErrorMsgBoxULX, gErrorMsgBoxULY, gErrorMsgBoxWidth, gErrorMsgBoxHeight,
-	           gColors.errorBoxBorder, "single", title, titleColor, "");
-	var msgColor = "\x01n" + (pIsError ? gColors.errorMessage : gColors.successMessage);
-	var innerWidth = gErrorMsgBoxWidth - 2;
-	var msgFormatStr = msgColor + "%-" + innerWidth + "s\x01n";
-	for (var i = 0; i < pMsgArray.length; ++i)
+	if (gUseLightbarInterface)
 	{
-		console.gotoxy(gErrorMsgBoxULX+1, gErrorMsgBoxULY+1);
-		printf(msgFormatStr, pMsgArray[i].substr(0, innerWidth));
+		// Draw the box border, then write the messages
+		var title = pIsError ? "Error" : "Message";
+		var titleColor = pIsError ? gColors.errorMessage : gColors.successMessage;
+		drawBorder(gErrorMsgBoxULX, gErrorMsgBoxULY, gErrorMsgBoxWidth, gErrorMsgBoxHeight,
+				   gColors.errorBoxBorder, "single", title, titleColor, "");
+		var msgColor = "\x01n" + (pIsError ? gColors.errorMessage : gColors.successMessage);
+		var innerWidth = gErrorMsgBoxWidth - 2;
+		var msgFormatStr = msgColor + "%-" + innerWidth + "s\x01n";
+		for (var i = 0; i < pMsgArray.length; ++i)
+		{
+			console.gotoxy(gErrorMsgBoxULX+1, gErrorMsgBoxULY+1);
+			printf(msgFormatStr, pMsgArray[i].substr(0, innerWidth));
+			if (waitAndErase)
+			{
+				// Wait for the error wait duration
+				mswait(gErrorMsgWaitMS);
+			}
+		}
+		if (waitAndErase)
+			eraseMsgBoxScreenArea();
+	}
+	else
+	{
+		console.attributes = "N";
+		var msgColor = "\x01n" + (pIsError ? gColors.errorMessage : gColors.successMessage);
+		for (var i = 0; i < pMsgArray.length; ++i)
+			console.print(msgColor + pMsgArray[i] + "\r\n");
 		if (waitAndErase)
 		{
 			// Wait for the error wait duration
 			mswait(gErrorMsgWaitMS);
 		}
 	}
-	if (waitAndErase)
-		eraseMsgBoxScreenArea();
 }
 function displayMsg(pMsg, pIsError, pWaitAndErase)
 {
@@ -2797,7 +3344,7 @@ function eraseMsgBoxScreenArea()
 {
 	// Refresh the list header line and have the file list menu refresh itself over
 	// the error message window
-	displayListHdrLine(true);
+	displayListHdrLine(true, gFileListMenu.numberedMode);
 	// This used to call gFileListMenu.DrawPartialAbs
 	refreshScreenMainContent(gErrorMsgBoxULX, gErrorMsgBoxULY+1, gErrorMsgBoxWidth, gErrorMsgBoxHeight-2);
 }
@@ -2928,10 +3475,11 @@ function drawSeparatorLine(pX, pY, pWidth)
 	console.print("\x01n\x01g\x01h");
 	for (var i = 0; i < width; ++i)
 		console.print(HORIZONTAL_SINGLE);
-	console.print("\x01n");
+	console.attributes = "N";
 }
 
-// Confirms with the user to perform an action with a file or set of files
+// Confirms with the user to perform an action with a file or set of files. Note that this
+// can work with both the ANSI/lightbar or traditional UI.
 //
 // Parameters:
 //  pFilenames: An array of filenames (as strings), or a string containing a filename
@@ -2957,40 +3505,62 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 	else if (numFilenames == 1)
 	{
 		var filename = (typeof(pFilenames) === "string" ? pFilenames : pFilenames[0]);
-		drawSeparatorLine(1, console.screen_rows-2, console.screen_columns-1);
-		console.gotoxy(1, console.screen_rows-1);
-		console.cleartoeol("\x01n");
-		console.gotoxy(1, console.screen_rows-1);
+		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		{
+			drawSeparatorLine(1, console.screen_rows-2, console.screen_columns-1);
+			console.gotoxy(1, console.screen_rows-1);
+			console.cleartoeol("\x01n");
+			console.gotoxy(1, console.screen_rows-1);
+		}
 		var shortFilename = shortenFilename(filename, Math.floor(console.screen_columns/2), false);
 		if (pDefaultYes)
 			actionConfirmed = console.yesno(pActionName + " " + shortFilename);
 		else
 			actionConfirmed = !console.noyes(pActionName + " " + shortFilename);
-		// Refresh the main screen content, to erase the confirmation prompt
-		refreshScreenMainContent(1, console.screen_rows-2, console.screen_columns, 2, true);
+		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		{
+			// Refresh the main screen content, to erase the confirmation prompt
+			refreshScreenMainContent(1, console.screen_rows-2, console.screen_columns, 2, true);
+		}
 	}
 	else
 	{
-		// Construct & draw a frame with the file list & display the frame to confirm with the
-		// user to delete the files
-		var frameUpperLeftX = gFileListMenu.pos.x + 2;
-		var frameUpperLeftY = gFileListMenu.pos.y + 2;
-		//var frameWidth = gFileListMenu.size.width - 4;
-		var frameWidth = console.screen_columns - 4;
-		var frameHeight = 10;
-		var frameTitle = pActionName + " files? (Y/N)";
-		var additionalQuitKeys = "yYnN";
-		var frameInnerWidth = frameWidth - 2; // Without borders; for filename lengths
-		var fileListStr = "\x01n\x01w";
-		for (var i = 0; i < pFilenames.length; ++i)
-			fileListStr += shortenFilename(pFilenames[i], frameInnerWidth, false) + "\r\n";
-		var lastUserInput = displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth,
-		                                                       frameHeight, gColors.confirmFileActionWindowBorder,
-		                                                       frameTitle, gColors.confirmFileActionWindowWindowTitle,
-		                                                       fileListStr, additionalQuitKeys);
-		actionConfirmed = (lastUserInput.toUpperCase() == "Y");
-		// Refresh the main screen content, to erase the confirmation window
-		refreshScreenMainContent(frameUpperLeftX, frameUpperLeftY, frameWidth, frameHeight, true);
+		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		{
+			// Construct & draw a frame with the file list & display the frame to confirm with the
+			// user
+			var frameUpperLeftX = gFileListMenu.pos.x + 2;
+			var frameUpperLeftY = gFileListMenu.pos.y + 2;
+			//var frameWidth = gFileListMenu.size.width - 4;
+			var frameWidth = console.screen_columns - 4;
+			var frameHeight = 10;
+			var frameTitle = pActionName + " files? (Y/N)";
+			var additionalQuitKeys = "yYnN";
+			var frameInnerWidth = frameWidth - 2; // Without borders; for filename lengths
+			var fileListStr = "\x01n\x01w";
+			for (var i = 0; i < pFilenames.length; ++i)
+				fileListStr += shortenFilename(pFilenames[i], frameInnerWidth, false) + "\r\n";
+			var lastUserInput = displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth,
+																   frameHeight, gColors.confirmFileActionWindowBorder,
+																   frameTitle, gColors.confirmFileActionWindowWindowTitle,
+																   fileListStr, additionalQuitKeys);
+			actionConfirmed = (lastUserInput.toUpperCase() == "Y");
+			// Refresh the main screen content, to erase the confirmation window
+			refreshScreenMainContent(frameUpperLeftX, frameUpperLeftY, frameWidth, frameHeight, true);
+		}
+		else
+		{
+			// Traditional UI
+			// Write the file list
+			console.attributes = "NW";
+			for (var i = 0; i < pFilenames.length; ++i)
+				console.print(pFilenames[i] + "\r\n");
+			// Confirm with the user
+			if (pDefaultYes)
+				actionConfirmed = console.yesno(pActionName + " files");
+			else
+				actionConfirmed = !console.noyes(pActionName + " files");
+		}
 	}
 
 	return actionConfirmed;
@@ -3024,51 +3594,72 @@ function readConfigFile()
 		var settingsObj = cfgFile.iniGetObject();
 		cfgFile.close();
 
-		if (typeof(settingsObj["sortOrder"]) === "string")
+		for (var prop in settingsObj)
 		{
-			var valueUpper = settingsObj.sortOrder.toUpperCase();
-			if (valueUpper == "NATURAL")
-				gFileSortOrder = FileBase.SORT.NATURAL;
-			else if (valueUpper == "NAME_AI")
-				gFileSortOrder = FileBase.SORT.NAME_AI;
-			else if (valueUpper == "NAME_DI")
-				gFileSortOrder = FileBase.SORT.NAME_DI;
-			else if (valueUpper == "NAME_AS")
-				gFileSortOrder = FileBase.SORT.NAME_AS;
-			else if (valueUpper == "NAME_DS")
-				gFileSortOrder = FileBase.SORT.NAME_DS;
-			else if (valueUpper == "DATE_A")
-				gFileSortOrder = FileBase.SORT.DATE_A;
-			else if (valueUpper == "DATE_D")
-				gFileSortOrder = FileBase.SORT.DATE_D;
-			else if (valueUpper == "ULTIME")
-				gFileSortOrder = SORT_FL_ULTIME;
-			else if (valueUpper == "DLTIME")
-				gFileSortOrder = SORT_FL_DLTIME;
-			else // Default
-				gFileSortOrder = FileBase.SORT.NATURAL;
-		}
-		if (typeof(settingsObj["pauseAfterViewingFile"]) === "boolean")
-			gPauseAfterViewingFile = settingsObj.pauseAfterViewingFile;
-		if (typeof(settingsObj["useLightbarInterface"]) === "boolean")
-			gUseLightbarInterface = settingsObj.useLightbarInterface;
-		if (typeof(settingsObj["themeFilename"]) === "string")
-		{
-			// First look for the theme config file in the sbbs/mods
-			// directory, then sbbs/ctrl, then the same directory as
-			// this script.
-			themeFilename = system.mods_dir + settingsObj.themeFilename;
-			if (!file_exists(themeFilename))
-				themeFilename = system.ctrl_dir + settingsObj.themeFilename;
-			if (!file_exists(themeFilename))
-				themeFilename = startupPath + settingsObj.themeFilename;
+			var propUpper = prop.toUpperCase();
+			if (propUpper == "INTERFACESTYLE")
+			{
+				if (typeof(settingsObj[prop]) === "string")
+					gUseLightbarInterface = (settingsObj[prop].toUpperCase() == "LIGHTBAR");
+			}
+			else if (propUpper == "TRADITIONALUSESYNCSTOCK")
+			{
+				typeof(settingsObj[prop]) === "boolean"
+					gTraditionalUseSyncStock = settingsObj[prop];
+			}
+			else if (propUpper == "SORTORDER")
+			{
+				if (typeof(settingsObj[prop]) === "string")
+				{
+					var valueUpper = settingsObj[prop].toUpperCase();
+					if (valueUpper == "NATURAL")
+						gFileSortOrder = FileBase.SORT.NATURAL;
+					else if (valueUpper == "NAME_AI")
+						gFileSortOrder = FileBase.SORT.NAME_AI;
+					else if (valueUpper == "NAME_DI")
+						gFileSortOrder = FileBase.SORT.NAME_DI;
+					else if (valueUpper == "NAME_AS")
+						gFileSortOrder = FileBase.SORT.NAME_AS;
+					else if (valueUpper == "NAME_DS")
+						gFileSortOrder = FileBase.SORT.NAME_DS;
+					else if (valueUpper == "DATE_A")
+						gFileSortOrder = FileBase.SORT.DATE_A;
+					else if (valueUpper == "DATE_D")
+						gFileSortOrder = FileBase.SORT.DATE_D;
+					else if (valueUpper == "ULTIME")
+						gFileSortOrder = SORT_FL_ULTIME;
+					else if (valueUpper == "DLTIME")
+						gFileSortOrder = SORT_FL_DLTIME;
+					else // Default
+						gFileSortOrder = FileBase.SORT.NATURAL;
+				}
+			}
+			else if (propUpper == "PAUSEAFTERVIEWINGFILE")
+			{
+				if (typeof(settingsObj[prop]) === "boolean")
+					gPauseAfterViewingFile = settingsObj[prop];
+			}
+			else if (propUpper == "THEMEFILENAME")
+			{
+				if (typeof(settingsObj[prop]) === "string")
+				{
+					// First look for the theme config file in the sbbs/mods
+					// directory, then sbbs/ctrl, then the same directory as
+					// this script.
+					themeFilename = system.mods_dir + settingsObj[prop];
+					if (!file_exists(themeFilename))
+						themeFilename = system.ctrl_dir + settingsObj[prop];
+					if (!file_exists(themeFilename))
+						themeFilename = startupPath + settingsObj[prop];
+				}
+			}
 		}
 	}
 	else
 	{
 		// Was unable to read the configuration file.  Output a warning to the user
 		// that defaults will be used and to notify the sysop.
-		console.print("\x01n");
+		console.attributes = "N";
 		console.crlf();
 		console.print("\x01w\x01hUnable to open the configuration file: \x01y" + cfgFilename);
 		console.crlf();
@@ -3110,7 +3701,7 @@ function readConfigFile()
 		{
 			// Was unable to read the theme file.  Output a warning to the user
 			// that defaults will be used and to notify the sysop.
-			console.print("\x01n");
+			console.attributes = "N";
 			console.crlf();
 			console.print("\x01w\x01hUnable to open the theme file: \x01y" + themeFilename);
 			console.crlf();
@@ -3460,11 +4051,11 @@ function populateFileList(pSearchMode)
 			userInputDLA = "A";
 		else
 		{
-			console.print("\x01n");
+			console.attributes = "N";
 			console.crlf();
 			//console.print("\r\n\x01c\x01hFind Text in File Descriptions (no wildcards)\x01n\r\n");
 			console.mnemonics(bbs.text(DirLibOrAll));
-			console.print("\x01n");
+			console.attributes = "N";
 			userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
 		}
 		var searchDescription = "";
@@ -3523,12 +4114,12 @@ function populateFileList(pSearchMode)
 			userInputDLA = "A";
 		else
 		{
-			console.print("\x01n");
+			console.attributes = "N";
 			console.crlf();
 			console.mnemonics(bbs.text(DirLibOrAll));
 			var validInputOptions = "DLA";
 			userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
-			console.print("\x01n");
+			console.attributes = "N";
 			console.crlf();
 		}
 		if (userInputDLA == "D" || userInputDLA == "L" || userInputDLA == "A")
@@ -3565,7 +4156,7 @@ function populateFileList(pSearchMode)
 			console.print(dirErrors[i]);
 			console.crlf();
 		}
-		console.print("\x01n");
+		console.attributes = "N";
 		console.pause();
 		retObj.exitNow = true;
 		retObj.exitCode = 1;
@@ -3894,7 +4485,9 @@ function searchDirGroupOrAll(pSearchOption, pDirSearchFn)
 function extendedDescEnabled()
 {
 	var userExtDescEnabled = ((user.settings & USER_EXTDESC) == USER_EXTDESC);
-	return userExtDescEnabled && console.screen_columns >= 80;
+	// TODO: If the traditional (non-lightbar) is enabled and/or the user's terminal doesn't support ANSI, or
+	// the user's terminal width is less than 80, this will cause the lister to not use extended file descriptions
+	return userExtDescEnabled && console.screen_columns >= 80 && gUseLightbarInterface && console.term_supports(USER_ANSI);
 }
 
 // Displays a file's extended description on the main screen, next to the
@@ -3963,7 +4556,7 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	if (typeof(pEndScreenRow) === "number" && pEndScreenRow > firstScreenRow && pStartScreenRow <= lastScreenRow)
 		lastScreenRow = pEndScreenRow;
 	var fileDescArray = fileDesc.split("\r\n");
-	console.print("\x01n");
+	console.attributes = "N";
 	// screenRowNum is to keep track of the row on the screen where the
 	// description line would be placed, in case the start row is after that
 	var screenRowNum = firstScreenRow;
@@ -3994,13 +4587,13 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	// If there is room, shoe the file date on the next line
 	if (screenRowForPrinting <= lastScreenRow && fileMetadata.hasOwnProperty("time"))
 	{
-		console.print("\x01n");
+		console.attributes = "N";
 		console.gotoxy(startX, screenRowForPrinting++);
 		var dateStr = "Date: " + strftime("%Y-%m-%d", fileMetadata.time);
 		printf("%-" + maxDescLen + "s", dateStr.substr(0, maxDescLen));
 	}
 	// Clear the rest of the lines to the bottom of the list area
-	console.print("\x01n");
+	console.attributes = "N";
 	while (screenRowForPrinting <= lastScreenRow)
 	{
 		console.gotoxy(startX, screenRowForPrinting++);
@@ -4167,5 +4760,120 @@ function attrCodeStr(pAttrCodeCharStr)
 		if (/[krgybmcwKRGYBMCWHhIiEeFfNn01234567]/.test(currentChar))
 			str += "\x01" + currentChar;
 	}
+	return str;
+}
+
+// Returns the number of lines to be displayed for all file information
+// (accounting for multi-line descriptions if multi-line descriptions are enabled)
+//
+// Parameters: 
+//  pFileList: An array of file metadata objects
+//
+// Return value: The total number of lines to be displayed for all files (accounting for
+//               possible multi-line descriptions if enabled)
+function numFileInfoLines(pFileList)
+{
+	if ((user.settings & USER_EXTDESC) == USER_EXTDESC)
+	{
+		var totalNumLines = 0;
+		for (var i = 0; i < pFileList; ++i)
+			totalNumLines += getExtdFileDescArray(pFileList, i).length;
+		return totalNumLines;
+	}
+	else
+		return pFileList.length;
+}
+
+// Gets an array of formatted strings with file information for the traditional UI,
+// with a number before the file information (for a numbered list). If extended
+// descriptions are not enabled, there will only be 1 string; if extended descriptions
+// are enabled, there could be more than 1 string in the array.
+//
+// Parameters: 
+//  pFileList: An array of file metadata objects
+//  pIdx: The index of the file information to display
+//  pCRAtEnd: Optional boolean - Whether or not to output a CRLF after displaying the file info line(s)
+function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx)
+{
+	if (!Array.isArray(pFileList) || typeof(pIdx) !== "number" || pIdx < 0 || pIdx > pFileList.length)
+		return [];
+
+	var filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
+	var fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1;
+	var numItemsLen = gFileList.length.toString().length;
+	var descLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart - (numItemsLen+2);
+	var formatStr = "\x01n" + gColors.listNumTrad + "%" + numItemsLen + "d \x01n" + gColors.filename + "%-" + filenameLen + "s \x01n"
+				  + gColors.fileSize + "%" + fileSizeLen + "s \x01n" + gColors.desc + "%-" + descLen + "s\x01n";
+	var formatStrExtdDescLines = "\x01n" + charStr(" ", numItemsLen+filenameLen+fileSizeLen+3) + "%-" + descLen + "s\x01n";
+
+	var userExtDescEnabled = ((user.settings & USER_EXTDESC) == USER_EXTDESC);
+	var descLines;
+	if (userExtDescEnabled)
+		descLines = getExtdFileDescArray(pFileList, pIdx);
+	else
+		descLines = [ pFileList[pIdx].desc.replace(/\r$/, "").replace(/\n$/, "").replace(/\r\n$/, "") ];
+	if (descLines.length == 0)
+		descLines.push("");
+
+	var filename = shortenFilename(pFileList[pIdx].name, filenameLen, true);
+	// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
+	var fileInfoLines = [];
+	fileInfoLines.push(format(formatStr, pIdx+1, filename, getFileSizeStr(pFileList[pIdx].size, fileSizeLen), substrWithAttrCodes(descLines[0], 0, descLen)));
+	if (userExtDescEnabled)
+	{
+		for (var i = 1; i < descLines.length; ++i)
+			fileInfoLines.push(format(formatStrExtdDescLines, substrWithAttrCodes(descLines[i], 0, descLen)));
+	}
+	return fileInfoLines;
+}
+
+// Gets an array of text lines with a file's extended description. To be used only if
+// the user has extended file descriptions enabled.
+//
+// Parameters: 
+//  pFileList: An array of file metadata objects
+//  pIdx: The index of the file information to display
+//
+// Return value: An array of strings containing the file's extended description, if available;
+//               if not available, the array will containin the non-extended description.
+function getExtdFileDescArray(pFileList, pIdx)
+{
+	if (!Array.isArray(pFileList) || typeof(pIdx) !== "number" || pIdx < 0 || pIdx > pFileList.length)
+		return [];
+
+	var extdDesc = "";
+	if (pFileList[pIdx].hasOwnProperty("extdesc"))
+		extdDesc = pFileList[pIdx].extdesc;
+	else
+	{
+		var dirCode = (pFileList[pIdx].hasOwnProperty("dirCode") ? pFileList[pIdx].dirCode : gDirCode);
+		var fileMetadata = getFileInfoFromFilebase(dirCode, pFileList[pIdx].name, FileBase.DETAIL.EXTENDED);
+		if (fileMetadata.hasOwnProperty("extdesc"))
+			extdDesc = fileMetadata.extdesc;
+	}
+	if (extdDesc.length == 0)
+		extdDesc = pFileList[pIdx].desc;
+	var descLines = lfexpand(extdDesc).split("\r\n");
+	// Splitting as above can result in an extra empty last line
+	if (descLines[descLines.length-1].length == 0)
+		descLines.pop();
+	return descLines;
+}
+
+// Returns a string with a character repeated a given number of times
+//
+// Parameters:
+//  pChar: The character to repeat in the string
+//  pNumTimes: The number of times to repeat the character
+//
+// Return value: A string with the given character repeated the given number of times
+function charStr(pChar, pNumTimes)
+{
+	if (typeof(pChar) !== "string" || pChar.length == 0 || typeof(pNumTimes) !== "number" || pNumTimes < 1)
+		return "";
+
+	var str = "";
+	for (var i = 0; i < pNumTimes; ++i)
+		str += pChar;
 	return str;
 }

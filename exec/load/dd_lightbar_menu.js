@@ -1007,7 +1007,7 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar,
 				if (writeTheItem)
 				{
 					console.gotoxy(curPos.x, curPos.y++);
-					console.print("\x01n");
+					console.attributes = "N";
 					if (this.numberedMode)
 						printf(numberFormatStr, "");
 					var itemText = addAttrsToString(format(itemFormatStr, ""), this.colors.itemColor);
@@ -1018,7 +1018,7 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar,
 	}
 	else
 	{
-		// The user's terminal doesn't support ANSI
+		// ANSI mode disabled, or the user's terminal doesn't support ANSI
 		var numberedModeBackup = this.numberedMode;
 		this.numberedMode = true;
 		var itemLen = this.size.width;
@@ -1027,7 +1027,7 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar,
 		this.itemNumLen = numMenuItems.toString().length;
 		itemLen -= this.itemNumLen;
 		--itemLen; // Have a space for separation between the numbers and items
-		console.print("\x01n");
+		console.attributes = "N";
 		for (var i = 0; i < numMenuItems; ++i)
 		{
 			var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
@@ -1513,6 +1513,8 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 		// If in numbered mode, prepend the item number to the front of the item text.
 		if (this.numberedMode)
 		{
+			if (this.itemNumLen == 0)
+				this.itemNumLen = numItems.toString().length;
 			var numColor = "\x01n" + this.colors.itemNumColor;
 			if (typeof(pHighlight) === "boolean")
 				numColor = (pHighlight ? this.colors.highlightedItemNumColor : this.colors.itemNumColor);
@@ -1528,7 +1530,7 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 function DDLightbarMenu_Erase()
 {
 	var formatStr = "%" + this.size.width + "s"; // For use with printf()
-	console.print("\x01n");
+	console.attributes = "N";
 	var curPos = { x: this.pos.x, y: this.pos.y };
 	for (var i = 0; i < this.size.height; ++i)
 	{
@@ -1665,13 +1667,13 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	if (this.callOnItemNavOnStartup && typeof(this.OnItemNav) === "function")
 		this.OnItemNav(0, this.selectedItemIdx);
 
+	var selectedItemIndexes = { }; // For multi-select mode
+	if (typeof(pSelectedItemIndexes) == "object")
+		selectedItemIndexes = pSelectedItemIndexes;
 	if (this.ANSISupported())
 	{
 		// User input loop
 		var userChoices = null; // For multi-select mode
-		var selectedItemIndexes = { }; // For multi-select mode
-		if (typeof(pSelectedItemIndexes) == "object")
-			selectedItemIndexes = pSelectedItemIndexes;
 		var retVal = null; // For single-choice mode
 		// mouseInputOnly_continue specifies whether to continue to the
 		// next iteration if the mouse was clicked & there's no need to
@@ -3416,26 +3418,31 @@ function getDefaultMenuItem() {
 //
 // Parameters:
 //  pStr: The string to perform the substring on
-//  pLen: The length of the substring
+//  pLen: Optional: The length of the substring. If not specified, the rest of the string will be used.
 //
 // Return value: A substring of the string according to the parameters
 function substrWithAttrCodes(pStr, pStartIdx, pLen)
 {
-	if (typeof(pStr) != "string")
+	if (typeof(pStr) !== "string")
 		return "";
-	if (typeof(pStartIdx) != "number")
+	if (typeof(pStartIdx) !== "number")
 		return "";
-	if (typeof(pLen) != "number")
-		return "";
+	var len = typeof(pLen) === "number" ? pLen : console.strlen(pStr)-pStartIdx;
 	if ((pStartIdx <= 0) && (pLen >= console.strlen(pStr)))
 		return pStr;
+	var startIdx = 0;
+	var screenLen = console.strlen(pStr);
+	if (typeof(pStartIdx) === "number" && pStartIdx >= 0 && pStartIdx < screenLen)
+		startIdx = pStartIdx;
+	var len = 0;
+	if (typeof(pLen) === "number" && pLen <= screenLen - startIdx)
+		len = pLen;
 
 	// Find the real start index.  If there are Synchronet attribute 
-	var startIdx = printedToRealIdxInStr(pStr, pStartIdx);
+	startIdx = printedToRealIdxInStr(pStr, startIdx);
 	if (startIdx < 0)
 		return "";
 	// Find the actual length of the string to get
-	var len = pLen;
 	var printableCharCount = 0;
 	var syncAttrCount = 0;
 	var syncAttrRegexWholeWord = /^\x01[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i;
