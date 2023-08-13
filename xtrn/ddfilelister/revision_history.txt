@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.12     2023-08-12   ddfilelister now has its own implementation of a
+                      traditional (non-lightbar) user interface. It can still
+                      optionally fall back on Synchronet's stock file lister
+                      if the user's terminal doesn't support ANSI, if desired.
 2.11     2023-05-14   The theme configuration file can now just contain the
                       attribute characters, without the control character.
                       Code: Refactored the function that reads the configuration
