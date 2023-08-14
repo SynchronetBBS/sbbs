@@ -76,6 +76,10 @@
  *                              Started working on implementing a traditional/non-lightbar UI
  * 2023-08-12 Eric Oulashin     Version 2.12
  *                              Releasing this version
+ * 2023-08-13 Eric Oulashin     Version 2.13
+ *                              Refactor for printing file info for traditional UI. Fixes for
+ *                              quitting certain actions for traditional UI. Prints selected action
+ *                              for traditional UI.
 */
 
 "use strict";
@@ -109,8 +113,8 @@ require("mouse_getkey.js", "mouse_getkey");
 require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 // Lister version information
-var LISTER_VERSION = "2.12";
-var LISTER_DATE = "2023-08-12";
+var LISTER_VERSION = "2.13";
+var LISTER_DATE = "2023-08-13";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -491,9 +495,10 @@ else
 
 	// An array containing text descriptions for all files, which may include
 	// multiple lines for files with an extended description (if enabled)
+	var formatInfo = getTraditionalFileInfoFormatInfo();
 	var allFileInfoLines = [];
 	for (var i = 0; i < gFileList.length; ++i)
-		allFileInfoLines = allFileInfoLines.concat(getFileInfoLineArrayForTraditionalUI(gFileList, i));
+		allFileInfoLines = allFileInfoLines.concat(getFileInfoLineArrayForTraditionalUI(gFileList, i, formatInfo));
 
 	// Number of files per page, assuming 1-line descriptions; 3 lines for top
 	// header and 1 line for bottom key help line
@@ -507,7 +512,7 @@ else
 		validOptionKeys += KEY_DEL + KEY_BACKSPACE;
 	// If the user's terminal supports ANSI, then also allow left, right, and enter (option navigation & selection)
 	if (console.term_supports(USER_ANSI))
-		validOptionKeys += KEY_LEFT + KEY_RIGHT + KEY_ENTER;
+		validOptionKeys += KEY_LEFT + KEY_RIGHT + KEY_UP + KEY_DOWN + KEY_ENTER;
 
 	// User input loop
 	var continueOn = true;
@@ -607,6 +612,40 @@ else
 		}
 		else if (userInput == "Q")
 			continueOn = false;
+		else if (userInput == KEY_UP)
+		{
+			// One line up
+			if (topItemIdx > 0)
+			{
+				--topItemIdx;
+				drawDirHeaderLines = true;
+				drawMenu = true;
+				refreshWholePromptLine = true;
+			}
+			else
+			{
+				drawDirHeaderLines = false;
+				drawMenu = false;
+				refreshWholePromptLine = false;
+			}
+		}
+		else if (userInput == KEY_DOWN)
+		{
+			// One line down
+			if (topItemIdx < topItemIndexForLastPage)
+			{
+				++topItemIdx;
+				drawDirHeaderLines = true;
+				drawMenu = true;
+				refreshWholePromptLine = true;
+			}
+			else
+			{
+				drawDirHeaderLines = false;
+				drawMenu = false;
+				refreshWholePromptLine = false;
+			}
+		}
 		else if (userInput == "N" || userInput == KEY_PAGEDN)
 		{
 			// Next page
@@ -734,13 +773,22 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 	var fileIdx = pFileListMenu.selectedItemIdx;
 	if (!useANSIInterface && pActionCode != QUIT && pActionCode != HELP && pActionCode != NEXT_PAGE && pActionCode != PREV_PAGE)
 	{
+		console.crlf();
+		console.print(getActionStr(pActionCode) + "\x01n");
+		console.crlf();
 		var numMenuItems = pFileListMenu.NumItems();
 		console.attributes = "N";
 		console.crlf();
 		console.print("\x01cFile # (\x01h1-" + numMenuItems + "\x01n\x01c)\x01h\x01g: \x01g");
-		fileIdx = console.getnum(numMenuItems, 1) - 1;
-		pFileListMenu.selectedItemIdx = fileIdx;
+		var userInput = console.getnum(numMenuItems);
 		console.attributes = "N";
+		if (userInput >= 1 && userInput <= numMenuItems)
+		{
+			fileIdx = userInput - 1;
+			pFileListMenu.selectedItemIdx = fileIdx;
+		}
+		else // User chose to quit (via Q, 0, or not entering a number)
+			return getDefaultActionRetObj();
 	}
 
 	var fileMetadata = pFileList[fileIdx];
@@ -798,6 +846,67 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 	return retObj;
 }
 
+// Returns a string representing an action code, for relevant actions (not necessarily all actions)
+//
+// Parameters:
+//  pActionCode: A code specifying an action to do.  Must be one of the global
+//               action codes.
+//
+// Return value: A string representing the action code
+function getActionStr(pActionCode)
+{
+	var actionCodeStr = "";
+	switch (pActionCode)
+	{
+		case FILE_VIEW_INFO:
+			actionCodeStr = "View File Info";
+			break;
+		case FILE_VIEW:
+			actionCodeStr = "View File";
+			break;
+		case FILE_ADD_TO_BATCH_DL:
+			actionCodeStr = "Add File To Batch DL";
+			break;
+		case FILE_DOWNLOAD_SINGLE:
+			actionCodeStr = "Download File";
+			break;
+		case FILE_MOVE:
+			actionCodeStr = "Move File";
+			break;
+		case FILE_DELETE:
+			actionCodeStr = "Remove File";
+			break;
+	}
+	return applyColorsToWords(actionCodeStr, "\x01c\x01h", "\x01c");
+}
+// Given a string, applies one color to the first character in each word and another color to
+// the rest of the letters in each word. Returns the modified string.
+function applyColorsToWords(pStr, pFirstCharColor, pNextCharsColor)
+{
+	if (typeof(pStr) !== "string")
+		return "";
+	if (typeof(pFirstCharColor) !== "string" || typeof(pNextCharsColor) !== "string")
+		return pStr;
+	if (pStr.length == 0)
+		return "";
+
+	var updatedStr = "";
+	var words = pStr.split(" ");
+	for (var i = 0; i < words.length; ++i)
+	{
+		if (words[i].length > 0)
+		{
+			updatedStr += "\x01n" + pFirstCharColor + words[i].charAt(0);
+			if (words[i].length > 1)
+				updatedStr += "\x01n" + pNextCharsColor + words[i].substr(1);
+			updatedStr += " ";
+		}
+		else
+			updatedStr += " ";
+	}
+	return updatedStr;
+}
+
 // Returns an object for use for returning from performing a file action,
 // with default values.
 //
@@ -843,6 +952,8 @@ function getDefaultActionRetObj()
 function showFileInfo_ANSI(pFileMetadata)
 {
 	var retObj = getDefaultActionRetObj();
+	if (pFileMetadata == undefined || typeof(pFileMetadata) !== "object")
+		return retObj;
 
 	// The width of the frame to display the file info (including borders).  This
 	// is declared early so that it can be used for string length adjustment.
@@ -997,6 +1108,8 @@ function showFileInfo_ANSI(pFileMetadata)
 function showFileInfo_noANSI(pFileMetadata)
 {
 	var retObj = getDefaultActionRetObj();
+	if (pFileMetadata == undefined || typeof(pFileMetadata) !== "object")
+		return retObj;
 
 	// pFileList[pFileListMenu.selectedItemIdx] has a file metadata object without
 	// extended information.  Get a metadata object with extended information so we
@@ -1148,6 +1261,8 @@ function splitStrAndCombineWithRN(pStr, pSplitStr)
 function viewFile(pFileMetadata)
 {
 	var retObj = getDefaultActionRetObj();
+	if (pFileMetadata == undefined || typeof(pFileMetadata) !== "object")
+		return retObj;
 
 	// Open the filebase & get the fully pathed filename
 	var fullyPathedFilename = "";
@@ -4792,19 +4907,11 @@ function numFileInfoLines(pFileList)
 // Parameters: 
 //  pFileList: An array of file metadata objects
 //  pIdx: The index of the file information to display
-//  pCRAtEnd: Optional boolean - Whether or not to output a CRLF after displaying the file info line(s)
-function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx)
+//  pFormatInfo: An object containing format information returned by getTraditionalFileInfoFormatInfo()
+function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 {
 	if (!Array.isArray(pFileList) || typeof(pIdx) !== "number" || pIdx < 0 || pIdx > pFileList.length)
 		return [];
-
-	var filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
-	var fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1;
-	var numItemsLen = gFileList.length.toString().length;
-	var descLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart - (numItemsLen+2);
-	var formatStr = "\x01n" + gColors.listNumTrad + "%" + numItemsLen + "d \x01n" + gColors.filename + "%-" + filenameLen + "s \x01n"
-				  + gColors.fileSize + "%" + fileSizeLen + "s \x01n" + gColors.desc + "%-" + descLen + "s\x01n";
-	var formatStrExtdDescLines = "\x01n" + charStr(" ", numItemsLen+filenameLen+fileSizeLen+3) + "%-" + descLen + "s\x01n";
 
 	var userExtDescEnabled = ((user.settings & USER_EXTDESC) == USER_EXTDESC);
 	var descLines;
@@ -4815,16 +4922,32 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx)
 	if (descLines.length == 0)
 		descLines.push("");
 
-	var filename = shortenFilename(pFileList[pIdx].name, filenameLen, true);
+	var filename = shortenFilename(pFileList[pIdx].name, pFormatInfo.filenameLen, true);
 	// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
 	var fileInfoLines = [];
-	fileInfoLines.push(format(formatStr, pIdx+1, filename, getFileSizeStr(pFileList[pIdx].size, fileSizeLen), substrWithAttrCodes(descLines[0], 0, descLen)));
+	fileInfoLines.push(format(pFormatInfo.formatStr, pIdx+1, filename, getFileSizeStr(pFileList[pIdx].size, pFormatInfo.fileSizeLen), substrWithAttrCodes(descLines[0], 0, pFormatInfo.descLen)));
 	if (userExtDescEnabled)
 	{
 		for (var i = 1; i < descLines.length; ++i)
-			fileInfoLines.push(format(formatStrExtdDescLines, substrWithAttrCodes(descLines[i], 0, descLen)));
+			fileInfoLines.push(format(pFormatInfo.formatStrExtdDescLines, substrWithAttrCodes(descLines[i], 0, pFormatInfo.descLen)));
 	}
 	return fileInfoLines;
+}
+// Helper for getFileInfoLineArrayForTraditionalUI(): Returns an object containing formatting information
+// for displaying information about files for the traditional UI
+function getTraditionalFileInfoFormatInfo()
+{
+	var fileInfoFormatInfo = {
+		filenameLen: gListIdxes.filenameEnd - gListIdxes.filenameStart,
+		fileSizeLen: gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1,
+		numItemsLen: gFileList.length.toString().length
+	};
+	fileInfoFormatInfo.descLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart - (fileInfoFormatInfo.numItemsLen+2);
+	fileInfoFormatInfo.formatStr = "\x01n" + gColors.listNumTrad + "%" + fileInfoFormatInfo.numItemsLen + "d \x01n" + gColors.filename + "%-" + fileInfoFormatInfo.filenameLen + "s \x01n"
+				  + gColors.fileSize + "%" + fileInfoFormatInfo.fileSizeLen + "s \x01n" + gColors.desc + "%-" + fileInfoFormatInfo.descLen + "s\x01n";
+	var leadingSpaceLen = fileInfoFormatInfo.numItemsLen + fileInfoFormatInfo.filenameLen + fileInfoFormatInfo.fileSizeLen + 3;
+	fileInfoFormatInfo.formatStrExtdDescLines = "\x01n" + charStr(" ", leadingSpaceLen) + "%-" + fileInfoFormatInfo.descLen + "s\x01n";
+	return fileInfoFormatInfo;
 }
 
 // Gets an array of text lines with a file's extended description. To be used only if
