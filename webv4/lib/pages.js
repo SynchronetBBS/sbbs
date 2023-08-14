@@ -263,5 +263,7 @@ function writePage(page) {
 	var ini = getWebCtrl(pp.replace(file_getname(page), ''));
 	if ((typeof ini === "boolean" && !ini) || webCtrlTest(ini, page)) {
 		write(getPage(page));
-	}
+	} else {
+        write('<div class="alert alert-danger"><h3>You do not have access to this page</h3></div>'); // TODOX Translate
+    }
 }
