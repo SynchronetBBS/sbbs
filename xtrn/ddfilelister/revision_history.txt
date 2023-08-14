@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.13     2023-08-13   Fixes for quitting certain actions for traditional UI.
+                      Prints selected action for traditional UI. Refactor for
+                      printing file info for traditional UI (internal code
+                      change).
 2.12     2023-08-12   ddfilelister now has its own implementation of a
                       traditional (non-lightbar) user interface. It can still
                       optionally fall back on Synchronet's stock file lister
