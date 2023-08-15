@@ -39,6 +39,8 @@
  *                              various messages.
  * 2023-07-26 Eric Oulashin     Version 1.86
  *                              Releasing this version
+ * 2023-08-15 Eric Oulashin     Version 1.87
+ *                              Improvement to paragraph/line breaks in quote line wrapping
  */
 
 "use strict";
@@ -136,8 +138,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.86";
-var EDITOR_VER_DATE = "2023-07-26";
+var EDITOR_VERSION = "1.87";
+var EDITOR_VER_DATE = "2023-08-15";
 
 
 // Program variables
