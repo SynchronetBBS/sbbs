@@ -2903,10 +2903,28 @@ function wrapTextLinesForQuoting(pTextLines, pQuotePrefix, pIndentQuoteLines, pT
 						if (!nextLineIsBlank)
 							nextLineIsOriginOrTearLine = msgLineIsTearLineOrOriginLine(nextLineTrimmed);
 					}
+					// Get the length of the current line (if it needs wrapping, then wrap it & get the
+					// length of the last line after wrapping), so that if that length is short, we might
+					// put a CRLF at the end to signify the end of the paragraph/section
+					var lineLength = 0;
+					var currentLineScreenLen = console.strlen(pTextLines[textLineIdx]);
+					if (currentLineScreenLen < console.screen_columns - 1)
+						lineLength = currentLineScreenLen;
+					else
+					{
+						var currentLine = pTextLines[textLineIdx];
+						if (trimSpacesFromQuoteLines)
+							currentLine = currentLine.trim();
+						var paragraphLines = lfexpand(word_wrap(currentLine, console.screen_columns-1, null, true)).split("\r\n");
+						paragraphLines.pop(); // There will be an extra empty line at the end; remove it
+						lineLength = console.strlen(paragraphLines[paragraphLines.length-1]);
+					}
+					// Put a CRLF at the end in certain conditions
 					if (nextLineIsOriginOrTearLine)
 						sectionText += "\r\n";
 					// Append a CRLF if the line isn't blank and its length is less than 85% of the user's terminal width
-					else if (numLinesInSection > 1 && !nextLineIsBlank && console.strlen(pTextLines[textLineIdx]) < Math.floor(console.screen_columns * 0.85))
+					//else if (numLinesInSection > 1 && !nextLineIsBlank && console.strlen(pTextLines[textLineIdx]) < Math.floor(console.screen_columns * 0.85))
+					else if (numLinesInSection > 1 && !nextLineIsBlank && lineLength < Math.floor(console.screen_columns * 0.85))
 						sectionText += "\r\n";
 					else if (nextLineIsBlank)
 						sectionText += "\r\n";
