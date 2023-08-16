@@ -1,0 +1,52 @@
+<!--NO_SIDEBAR:Node Spy-->
+
+<?
+    // Ensure the user is a sysop to avoid normal users from spying
+    if (!user.is_sysop) {
+?>
+        <div class="alert alert-danger"><h3>You must be a SysOp to view the node spy</h3></div> <!-- TODOX Translate -->
+<?    
+        exit();
+    }
+
+    // Load fTelnet-related files
+    load(settings.web_lib + 'ftelnet.js');
+    load('ftelnethelper.js');
+?>
+
+<style>
+    .fTelnetStatusBar { display : none !important; }                       /* Don't show the status bar, we only want to use fTelnet for display purposes not connect purposes */
+    div.active { background-color: #ddd; padding-bottom: 15px; }           /* Highlight the div that has keyboard focus */
+    label.normal { font-weight: normal !important; margin-bottom: 0 !important; } /* Sanely format the label elements */
+    
+    /* Introduce a col-xl-6 to display two columns on large screens -- allows seeing all 4 of my nodes at once */
+    .col-xl-6 {
+        position: relative;
+        min-height: 1px;
+        padding-right: 15px;
+        padding-left: 15px;
+    }
+    @media (min-width: 1600px) {
+        .col-xl-6 { 
+            float: left;
+            width: 50%; 
+        }
+    }
+</style>
+
+<h1 align="center">Node Spy</h1>
+
+<? loadComponent('mqtt.xjs'); ?>
+
+<!-- Multiple fTelnet instances (one per node) will be added to this wrapper div -->
+<div id="ClientsWrapper"></div>
+
+<script id="fTelnetScript" src="<? write(get_url()); ?>"></script>
+<script src="./js/utf8_cp437.js"></script>
+
+<script>
+    // Set javascript variables for system variables referenced by nodespy.js
+    var system_nodes = <? write(system.nodes); ?>;
+    var system_qwk_id = '<? write(system.qwk_id); ?>';
+</script>
+<script src="./js/nodespy.js"></script>
