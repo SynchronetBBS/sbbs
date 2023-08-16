@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.75     2023-08-16   Made some changes to allow easy searching of personal
+                      email with command-line arguments.
 1.74     2023-04-29   Settings for users being able to read deleted messages now
                       applies to personal email. Also, allows reading messages
                       that are marked for deletion in addition to just seeing
