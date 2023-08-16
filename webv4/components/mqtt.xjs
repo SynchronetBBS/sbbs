@@ -1,0 +1,165 @@
+<?
+    // Ensure the user is a sysop, mqtt broker handles sensitive info that should not be available to non-sysop users
+    // (Ideally the page loading this component will check for SysOp status, but it's included here to be super safe)
+    if (!user.is_sysop) {
+?>
+        <!-- TODOZ Translate -->
+        <div class="alert alert-danger"><h3>You must be a SysOp to use MQTT-based features.</h3></div>
+<?
+        exit();
+    }
+
+    var request = require({}, settings.web_lib + 'request.js', 'request');
+    
+    // Check for form posting back mqtt ports
+    var mqtt_post_error = '';
+    if (request.get_param('mqtt_ws_port') && request.get_param('mqtt_wss_port')) {
+        var new_ws_port = parseInt(request.get_param('mqtt_ws_port'), 10);
+        var new_wss_port = parseInt(request.get_param('mqtt_wss_port'), 10);
+
+        if ((new_ws_port >= 1) && (new_ws_port <= 65535) && (new_wss_port >= 1) && (new_wss_port <= 65535)) {
+            var f = new File(system.ctrl_dir + 'modopts.ini');
+            f.open("r+");
+            f.iniSetValue('web', 'mqtt_ws_port', new_ws_port);
+            f.iniSetValue('web', 'mqtt_wss_port', new_wss_port);
+            f.close();
+
+            settings.mqtt_ws_port = new_ws_port;
+            settings.mqtt_wss_port = new_wss_port;
+        } else {
+            mqtt_post_error = 'ERROR: Ports must be in the range of 1 to 65535';
+        }
+    }
+
+    // Read mqtt settings
+    var f = new File(system.ctrl_dir + 'main.ini');
+    f.open("r");
+    var broker_addr = f.iniGetValue('MQTT', 'Broker_addr', 'localhost');
+    var broker_enabled = f.iniGetValue('MQTT', 'Enabled', false);
+    var broker_password = f.iniGetValue('MQTT', 'Password', '');
+    var broker_username = f.iniGetValue('MQTT', 'Username', '');
+    var broker_ws_port = settings.mqtt_ws_port;
+    var broker_wss_port = settings.mqtt_wss_port;
+    f.close();
+    
+    // Abort if the mqtt broker is not enabled
+    if (!broker_enabled) {
+?>
+        <!-- TODOZ Translate -->
+        <div class="alert alert-danger"><h3>You must enable the MQTT broker in SCFG -> Networks -> MQTT before you can use the node spy</h3></div>
+<?
+        exit();
+    }
+    
+    // Display configuration form if mqtt ws/wss ports are not set yet
+    if (!broker_ws_port || !broker_wss_port) {
+?>
+        <!-- TODOZ Translate -->
+        <div class="container">
+            <div class="col-lg-6 col-lg-offset-3 col-md-7 col-md-offset-3 col-sm-9 col-sm-offset-2">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3>Missing MQTT port settings</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p>Please provide the WebSocket ports your MQTT server is listening on:</p>
+
+                        <form method="POST" class="form-horizontal">
+                            <? if (mqtt_post_error) { ?>
+                                <div class="alert alert-danger"><? write(mqtt_post_error); ?></div>
+                            <? } ?>
+
+                            <div class="form-group">
+                                <label for="mqtt_ws_port" class="col-sm-3 control-label">WS:// port</label>
+                                <div class="col-sm-9">
+                                    <input type="text" id="mqtt_ws_port" name="mqtt_ws_port" class="form-control" value="<? write(broker_ws_port === undefined ? '' : broker_ws_port); ?>" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="mqtt_wss_port" class="col-sm-3 control-label">WSS:// port</label>
+                                <div class="col-sm-9">
+                                    <input type="text" id="mqtt_wss_port" name="mqtt_wss_port" class="form-control" value="<? write(broker_wss_port === undefined ? '' : broker_wss_port); ?>" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="col-sm-offset-3 col-sm-9">
+                                    <button class="btn btn-primary">Submit</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="panel-footer">
+                        <p>
+                            Alternatively, you can edit <strong><? write(system.ctrl_dir + 'modopts.ini'); ?></strong> and add <strong>mqtt_ws_port</strong> and 
+                            <strong>mqtt_wss_port</strong> keys to the <strong>[web]</strong> section.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+<?
+        exit();
+    }
+?>
+
+
+
+<!-- A hidden-by-default div with a message shown when ws:// connections fail -->
+<!-- TODOZ Translate -->
+<div class="alert alert-danger" id="mqtt-ws-reconnecting-message" style="display: none;">
+    <p class="lead">
+        Looks like your browser is having troubles connecting to the MQTT server over ws://.  A few common causes:
+    </p>
+
+    <ul>
+        <li>The MQTT broker is offline.</li>
+        <li>The wrong hostname was specified in SCFG -> Networks -> MQTT (currently=<? write(broker_addr); ?>).</li>
+        <li>The wrong port was specified for the mqtt_ws_port setting in modopts.ini (currently=<? write(broker_ws_port); ?>).</li>
+        <li>A firewall is blocking the connection from your current location.</li>
+    </ul>
+
+    <p>
+        Double-check your settings and try reloading this page.
+    </p>
+</div>
+
+<!-- A hidden-by-default div witha message sown when wss:// connections fail -->
+<!-- TODOZ Translate -->
+<div class="alert alert-danger" id="mqtt-wss-reconnecting-message" style="display: none;">
+    <p class="lead">
+        Looks like your browser is having troubles connecting to the MQTT server over wss://.  A few common causes:
+    </p>
+
+    <ul>
+        <li>The MQTT broker is offline.</li>
+        <li>The wrong hostname was specified in SCFG -> Networks -> MQTT (currently=<? write(broker_addr); ?>).</li>
+        <li>The wrong port was specified for the mqtt_wss_port setting in modopts.ini (currently=<? write(broker_wss_port); ?>).</li>
+        <li>The SSL cert has expired.</li>
+        <li>You're connecting to the broker via a hostname not found in the SSL cert.</li>
+        <li>You're connecting to the broker via an IP address.</li>
+        <li>A firewall is blocking the connection from your current location.</li>
+    </ul>
+    
+    <p>
+        You can click the link below to try accessing the MQTT broker in a new tab/window, which might shed some light on what is going wrong, 
+        and the in the case of an untrusted cert, allow you to accept it (e.g. by clicking Proceed in Chrome):<br />
+        <a href="" id="mqtt-wss-reconnecting-link" target="_blank">Access the MQTT server</a>
+    </p>
+</div>
+
+
+
+<script src="https://unpkg.com/mqtt@5.0.2/dist/mqtt.min.js"></script>
+
+<script>
+    // Set javascript variables for system variables referenced by mqtt.js
+    var system_qwk_id = '<? write(system.qwk_id); ?>';
+    var broker_addr = '<? write(broker_addr); ?>';
+    var broker_password = '<? write(broker_password); ?>';
+    var broker_username = '<? write(broker_username); ?>';
+    var broker_ws_port = <? write(broker_ws_port); ?>;
+    var broker_wss_port = <? write(broker_wss_port); ?>;
+</script>
+<script src="./js/mqtt.js"></script>
