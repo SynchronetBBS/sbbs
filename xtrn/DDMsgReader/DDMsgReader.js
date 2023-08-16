@@ -135,6 +135,9 @@
  *                              Settings for users being able to read deleted messages now applies to
  *                              personal email. Also, allows reading messages that are marked for deletion
  *                              in addition to just seeing them in the message list.
+ * 2023-08-16 Eric Oulashin     Version 1.75
+ *                              Made some changes to allow easy searching of personal email with
+ *                              command-line arguments.
  */
 
 "use strict";
@@ -241,8 +244,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.74";
-var READER_DATE = "2023-05-13";
+var READER_VERSION = "1.75";
+var READER_DATE = "2023-08-16";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -729,6 +732,7 @@ if (gDoDDMR)
 	console.attributes = "N";
 }
 
+exit();
 // End of script execution.  Functions below:
 
 // Generates an internal enhanced reader header line for the 'To' user.
@@ -1029,7 +1033,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		searchingSubBoardText: "\x01n\x01cSearching \x01h%s\x01n\x01c...",
 		scanningSubBoardText: "\x01n\x01cScanning \x01h%s\x01n\x01c...",
 		noMessagesInSubBoardText: "\x01n\x01h\x01bThere are no messages in the area \x01w%s\x01b.",
-		noSearchResultsInSubBoardText: "\x01n\x01h\x01bNo messages were found in the area \x01w%s\x01b with the given search criteria.",
+		noSearchResultsInSubBoardText: "\x01n\x01h\x01bNo messages were found in \x01w%s\x01b with the given search criteria.",
 		msgScanCompleteText: "\x01n\x01h\x01cM\x01n\x01cessage scan complete\x01h\x01g.\x01n",
 		invalidMsgNumText: "\x01n\x01y\x01hInvalid message number: %d",
 		readMsgNumPromptText: "\x01n\x01g\x01h\x01i* \x01n\x01cRead message #: \x01h",
@@ -2034,7 +2038,9 @@ function DigDistMsgReader_SearchMsgScan(pSearchModeStr, pTxtToSearch, pSubCode)
 		console.mnemonics(bbs.text(SubGroupOrAll));
 		scanScopeChar = console.getkeys("SGAC").toString();
 	}
-	if (scanScopeChar.length > 0)
+	if (pSubCode == "mail") // Searching personal email
+		this.SearchMessages(pSearchModeStr, pSubCode, null, pTxtToSearch, true); // Skip/ignore scan config checks
+	else if (scanScopeChar.length > 0)
 		this.SearchMessages(pSearchModeStr, null, scanScopeChar, pTxtToSearch, true); // Skip/ignore scan config checks
 	else
 	{
@@ -2326,7 +2332,10 @@ function DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs(pCloseMsgbaseAn
 			if (this.readingPersonalEmail)
 			{
 				//console.print(replaceAtCodesInStr(this.text.noPersonalEmailText));
-				console.putmsg(this.text.noPersonalEmailText);
+				if (this.searchType == SEARCH_NONE)
+					console.putmsg(this.text.noPersonalEmailText);
+				else
+					printf("\x01n" + this.text.noSearchResultsInSubBoardText, "Personal E-Mail");
 			}
 			else
 			{
@@ -8468,7 +8477,7 @@ function DigDistMsgReader_ReadConfigFile()
 			// Set any text strings specified
 			for (var prop in this.text)
 			{
-				if (typeof(themeSettingsObj[prop]) === "string")
+				if (typeof(themeSettingsObj[prop]) === "string" && themeSettingsObj[prop].length > 0)
 				{
 					// Replace any instances of "\x01" with the Synchronet
 					// attribute control character
@@ -17831,6 +17840,7 @@ function parseArgs(argv)
 	// keyword search and from name search.
 	if (argVals.hasOwnProperty("personalemail") && argVals.personalemail)
 	{
+		argVals.subboard = "mail";
 		// If a search type is specified, only allow keyword search & from name
 		// search
 		if (argVals.hasOwnProperty("search"))

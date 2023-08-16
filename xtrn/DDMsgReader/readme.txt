@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.74
-                           Release date: 2023-04-25
+                                 Version 1.75
+                           Release date: 2023-08-16
 
                                      by
 
@@ -473,6 +473,13 @@ common message operations.
 
 - Read sent personal email:
 ?../xtrn/DDMsgReader/DDMsgReader.js -personalEmailSent -startMode=read
+
+- Search personal email with a keyword, and start with the message list:
+?../xtrn/DDMsgReader/DDMsgReader.js -search=keyword_search -personalEmail -startMode=list
+
+Alternately, for searching personal email with a keyword, you can specify -subBoard=mail
+instead of -personalEmail:
+?../xtrn/DDMsgReader/DDMsgReader.js -search=keyword_search -subBoard=mail -startMode=list
 
 
 Text customization using text.dat
