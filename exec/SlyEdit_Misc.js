@@ -2865,6 +2865,9 @@ function wrapTextLinesForQuoting(pTextLines, pQuotePrefix, pIndentQuoteLines, pT
 		}
 
 		// Build a long string containing the current section's text
+		var arbitaryLongLineLen = 120; // An arbitrary line length (for determining when to add a CRLF)
+		var mostOfConsoleWidth = Math.floor(console.screen_columns * 0.85); // For checking when to add a CRLF
+		var halfConsoleWidth = Math.floor(console.screen_columns * 0.5); // For checking when to add a CRLF
 		var sectionText = "";
 		for (var textLineIdx = msgSections[i].begLineIdx; textLineIdx <= msgSections[i].endLineIdx; ++textLineIdx)
 		{
@@ -2921,15 +2924,15 @@ function wrapTextLinesForQuoting(pTextLines, pQuotePrefix, pIndentQuoteLines, pT
 							lineLastLength = console.strlen(paragraphLines[paragraphLines.length-1]);
 					}
 					// Put a CRLF at the end in certain conditions
-					if (nextLineIsOriginOrTearLine)
+					var lineScreenLen = console.strlen(pTextLines[textLineIdx]);
+					if (nextLineIsOriginOrTearLine || nextLineIsBlank)
 						sectionText += "\r\n";
 					// Append a CRLF if the line isn't blank and its length is less than 85% of the user's terminal width
-					//else if (numLinesInSection > 1 && !nextLineIsBlank && console.strlen(pTextLines[textLineIdx]) < Math.floor(console.screen_columns * 0.85))
-					// ..and also if the text line is originally over 120 characters (a bit arbitrary, but if a line is that long, then
+					// ..and if the text line length is originally longer than an arbitrary length (bit arbitrary, but if a line is that long, then
 					// it's probably its own paragraph
-					else if (numLinesInSection > 1 && !nextLineIsBlank && lineLastLength < Math.floor(console.screen_columns * 0.85) && console.strlen(pTextLines[textLineIdx]) > 120)
+					else if (lineScreenLen > arbitaryLongLineLen && numLinesInSection > 1 && !nextLineIsBlank && lineLastLength <= mostOfConsoleWidth)
 						sectionText += "\r\n";
-					else if (nextLineIsBlank)
+					else if (lineScreenLen <= halfConsoleWidth && !nextLineIsBlank)
 						sectionText += "\r\n";
 					else
 						sectionText += " ";
