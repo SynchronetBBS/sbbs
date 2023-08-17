@@ -29,6 +29,7 @@ static void read_dir_defaults_cfg(scfg_t* cfg, str_list_t ini, dir_t* dir)
 {
 	char	value[INI_MAX_VALUE_LEN];
 
+	SAFECOPY(dir->data_dir, iniGetString(ini, NULL, "data_dir", "", value));
 	SAFECOPY(dir->upload_sem, iniGetString(ini, NULL, "upload_sem", "", value));
 	SAFECOPY(dir->exts, iniGetString(ini, NULL, "extensions", "", value));
 
@@ -296,7 +297,6 @@ BOOL read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		SAFECOPY(cfg->dir[i]->lname, iniGetString(section, NULL, "description", code, value));
 		SAFECOPY(cfg->dir[i]->sname, iniGetString(section, NULL, "name", code, value));
-		SAFECOPY(cfg->dir[i]->data_dir, iniGetString(section, NULL, "data_dir", "", value));
 
 		if(!stricmp(cfg->dir[i]->sname,"SYSOP"))			/* Sysop upload directory */
 			cfg->sysop_dir=i;
