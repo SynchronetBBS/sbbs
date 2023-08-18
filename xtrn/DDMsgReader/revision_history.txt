@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.76     2023-08-18   Fix for "Message header has 'expanded fields'" error when
+                      updating message header attributes in certain conditions
 1.75     2023-08-16   Made some changes to allow easy searching of personal
                       email with command-line arguments.
 1.74     2023-04-29   Settings for users being able to read deleted messages now
