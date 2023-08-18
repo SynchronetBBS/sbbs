@@ -46,7 +46,10 @@ function output(str)
 		else if(my_charset == 'UTF-8')
 			str = utf8_encode(str);
 	}
-	write(str);
+	if(js.global.console)
+		console.write(str);
+	else
+		write(str);
 }
 
 if(argc < 1) {
