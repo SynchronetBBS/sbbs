@@ -138,6 +138,9 @@
  * 2023-08-16 Eric Oulashin     Version 1.75
  *                              Made some changes to allow easy searching of personal email with
  *                              command-line arguments.
+ * 2023-08-18 Eric Oulashin     Version 1.76
+ *                              Fix for "Message header has 'expanded fields'" error when updating message
+ *                              header attributes in certain conditions
  */
 
 "use strict";
@@ -244,8 +247,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.75";
-var READER_DATE = "2023-08-16";
+var READER_VERSION = "1.76";
+var READER_DATE = "2023-08-18";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1747,43 +1750,43 @@ function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pApply, 
 	var applyAttr = (typeof(pApply) === "boolean" ? pApply : true);
 	var subCode = (typeof(pSubBoardCode) === "string" ? pSubBoardCode : this.subBoardCode);
 	var writeHdrToMsgbase = (typeof(pWriteHdrToMsgbase) === "boolean" ? pWriteHdrToMsgbase : true);
-	var msgbase = new MsgBase(subCode);
-	var continueOn = true;
-	if (writeHdrToMsgbase)
-		continueOn = msgbase.open();
-	if (continueOn)
+	if (this.msgSearchHdrs.hasOwnProperty(subCode))
 	{
-		if (this.msgSearchHdrs.hasOwnProperty(subCode))
+		var msgNum = pMsgIndex + 1;
+		if (typeof(pAttrib) != "undefined")
 		{
-			var msgNum = pMsgIndex + 1;
-			if (typeof(pAttrib) != "undefined")
+			if (this.msgSearchHdrs[this.subBoardCode].indexed.hasOwnProperty(pMsgIndex))
 			{
-				if (this.msgSearchHdrs[this.subBoardCode].indexed.hasOwnProperty(pMsgIndex))
+				if (applyAttr)
+					this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr | pAttrib;
+				else
+					this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr ^ pAttrib;
+				if (writeHdrToMsgbase)
 				{
-					if (applyAttr)
-						this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr | pAttrib;
-					else
-						this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr ^ pAttrib;
-					if (writeHdrToMsgbase)
-					{
-						var msgOffsetFromHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].offset;
-						msgbase.put_msg_header(true, msgOffsetFromHdr, this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex]);
-					}
-				}
-			}
-			else
-			{
-				var msgHeader = this.GetMsgHdrByIdx(pMsgIndex);
-				if (this.msgSearchHdrs[this.subBoardCode].indexed.hasOwnProperty(pMsgIndex))
-				{
-					this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex] = msgHeader;
-					if (writeHdrToMsgbase)
-						msgbase.put_msg_header(true, msgHeader.offset, msgHeader);
+					// Using applyAttrsInMsgHdrInMessagbase(), which loads the header without
+					// expanded fields and saves the attributes with that header.
+					var msgNumFromHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].number;
+					applyAttrsInMsgHdrInMessagbase(pSubBoardCode, msgNumFromHdr, this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex].attr);
 				}
 			}
 		}
-		if (writeHdrToMsgbase)
-			msgbase.close();
+		else
+		{
+			var msgHeader = this.GetMsgHdrByIdx(pMsgIndex);
+			if (this.msgSearchHdrs[this.subBoardCode].indexed.hasOwnProperty(pMsgIndex))
+			{
+				this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex] = msgHeader;
+				if (writeHdrToMsgbase)
+				{
+					var msgbase = new MsgBase(subCode);
+					if (msgbase.open())
+					{
+						msgbase.put_msg_header(true, msgHeader.offset, msgHeader);
+						msgbase.close();
+					}
+				}
+			}
+		}
 	}
 }
 
