@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.76
-                           Release date: 2023-08-18
+                                 Version 1.77
+                           Release date: 2023-08-20
 
                                      by
 
@@ -747,8 +747,12 @@ quickUserValSetIndex                  The index of the quick-validation set to
                                       quickUserValSetIndex can be set to
                                       something invalid (like -1) to have a menu
                                       of the quick-validation sets displayed for
-                                      you to choose from
-one.
+                                      you to choose from one.
+
+saveAllHdrsWhenSavingMsgToBBSPC       For the sysop, whether to save all message
+                                      headers when saving a message to the BBS
+                                      PC. This could be a boolean (true/false)
+                                      or the string "ask" to prompt every time
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings

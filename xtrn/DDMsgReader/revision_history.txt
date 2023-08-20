@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.77     2023-07-20   Including all message headers when saving a message (sysop
+                      only) is now optional.
 1.76     2023-08-18   Fix for "Message header has 'expanded fields'" error when
                       updating message header attributes in certain conditions
 1.75     2023-08-16   Made some changes to allow easy searching of personal
