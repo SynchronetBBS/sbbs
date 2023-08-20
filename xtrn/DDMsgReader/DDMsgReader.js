@@ -141,6 +141,9 @@
  * 2023-08-18 Eric Oulashin     Version 1.76
  *                              Fix for "Message header has 'expanded fields'" error when updating message
  *                              header attributes in certain conditions
+ * 2023-08-20 Eric Oulashin     Version 1.77
+ *                              Including all message headers when saving a message (sysop only) is now
+ *                              optional.
  */
 
 "use strict";
@@ -247,8 +250,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.76";
-var READER_DATE = "2023-08-18";
+var READER_VERSION = "1.77";
+var READER_DATE = "2023-08-20";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1158,6 +1161,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// An index of a quick-validation set for the sysop to apply to a user when reading their message, or
 	// an invalid index (such as -1) to show a menu of quick-validation values
 	this.quickUserValSetIndex = -1;
+
+	// For the sysop, whether to save all message headers when saving a message to the BBS
+	// PC. This could be a boolean (true/false) or the string "ask" to prompt every time
+	this.saveAllHdrsWhenSavingMsgToBBSPC = false;
 
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
@@ -5688,10 +5695,10 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					console.print("\x01n\x01cFilename:\x01h");
 					var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
 					var filename = console.getstr(inputLen, K_NOCRLF);
-					console.print("\x01n");
+					console.attributes = "N";
 					if (filename.length > 0)
 					{
-						var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename);
+						var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename, promptPos);
 						console.gotoxy(promptPos);
 						console.cleartoeol("\x01n");
 						console.gotoxy(promptPos);
@@ -8436,6 +8443,8 @@ function DigDistMsgReader_ReadConfigFile()
 			if (!file_exists(themeFilename))
 				themeFilename = gStartupPath + settingsObj.themeFilename;
 		}
+		if (settingsObj.hasOwnProperty("saveAllHdrsWhenSavingMsgToBBSPC"))
+			this.saveAllHdrsWhenSavingMsgToBBSPC = settingsObj["saveAllHdrsWhenSavingMsgToBBSPC"];
 	}
 	else
 	{
@@ -14708,11 +14717,15 @@ function DigDistMsgReader_MakeLightbarIndexedModeMenu(pNumMsgsWidth, pNumNewMsgs
 // Parameters:
 //  pMsgHdr: The header object for the message
 //  pFilename: The name of the file to write the message to
+//  pPromptPos: Optional - An object containing x & y coordinates for the prompot position,
+//              if using the ANSI interfce. If this is a valid object with x & y, this
+//              will be used for cursor positioning before prompting to save all message
+//              headers (if applicable).
 //
 // Return value: An object containing the following properties:
 //               succeeded: Boolean - Whether or not the file was successfully written
 //               errorMsg: String - On failure, will contain the reason it failed
-function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename)
+function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename, pPromptPos)
 {
 	// Sanity checking
 	if (typeof(pMsgHdr) !== "object")
@@ -14741,9 +14754,43 @@ function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename)
 		var messageSaveFile = new File(pFilename);
 		if (messageSaveFile.open("w"))
 		{
-			// Write the header information to the file
-			for (var i = 0; i < hdrLines.length; ++i)
-				messageSaveFile.writeln(hdrLines[i]);
+			var writeAllHeaders = false;
+			if (typeof(this.saveAllHdrsWhenSavingMsgToBBSPC) === "boolean")
+				writeAllHeaders = this.saveAllHdrsWhenSavingMsgToBBSPC;
+			else if (typeof(this.saveAllHdrsWhenSavingMsgToBBSPC) === "string" && this.saveAllHdrsWhenSavingMsgToBBSPC.toUpperCase() == "ASK")
+			{
+				console.attributes = "N";
+				if (typeof(pPromptPos) === "object" && pPromptPos.hasOwnProperty("x") && pPromptPos.hasOwnProperty("y"))
+				{
+					console.gotoxy(pPromptPos);
+					console.cleartoeol("\x01n");
+					console.gotoxy(pPromptPos);
+				}
+				writeAllHeaders = !console.noyes("Write all headers to saved message");
+			}
+
+			if (writeAllHeaders)
+			{
+				// Write all header information to the file
+				for (var i = 0; i < hdrLines.length; ++i)
+					messageSaveFile.writeln(hdrLines[i]);
+			}
+			else
+			{
+				// Write to, from, subjetc, etc. to the file
+				if (this.subBoardCode == "mail")
+					messageSaveFile.writeln("From " +  pMsgHdr.from + "'s personal email");
+				else
+				{
+					var line = format("From sub-board: %s, %s",
+					                  msg_area.grp_list[msg_area.sub[this.subBoardCode].grp_index].description,
+					                  msg_area.sub[this.subBoardCode].description);
+					messageSaveFile.writeln(line);
+				}
+				messageSaveFile.writeln("From: " + pMsgHdr.from);
+				messageSaveFile.writeln("To: " + pMsgHdr.to);
+				messageSaveFile.writeln("Subject: " + pMsgHdr.subject);
+			}
 			messageSaveFile.writeln("===============================");
 
 			// If the message body has ANSI, then use the Graphic object to strip it
