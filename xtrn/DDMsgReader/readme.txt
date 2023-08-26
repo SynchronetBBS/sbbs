@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.77
-                           Release date: 2023-08-20
+                                 Version 1.77a
+                           Release date: 2023-08-26
 
                                      by
 
