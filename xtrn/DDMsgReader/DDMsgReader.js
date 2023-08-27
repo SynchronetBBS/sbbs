@@ -144,6 +144,8 @@
  * 2023-08-20 Eric Oulashin     Version 1.77
  *                              Including all message headers when saving a message (sysop only) is now
  *                              optional.
+ * 2023-08-26 Eric Oulashin     Version 1.77a
+ *                              When saving a message on the local BBS PC without all the headers, the date is now included
  */
 
 "use strict";
@@ -250,8 +252,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.77";
-var READER_DATE = "2023-08-20";
+var READER_VERSION = "1.77a";
+var READER_DATE = "2023-08-26";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -14779,7 +14781,13 @@ function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename, pPromptPos)
 			{
 				// Write to, from, subjetc, etc. to the file
 				if (this.subBoardCode == "mail")
-					messageSaveFile.writeln("From " +  pMsgHdr.from + "'s personal email");
+				{
+					if (!msgIsToCurrentUserByName(pMsgHdr))
+					{
+						messageSaveFile.writeln("From " +  pMsgHdr.to + "'s personal email");
+						messageSaveFile.writeln("=======================");
+					}
+				}
 				else
 				{
 					var line = format("From sub-board: %s, %s",
@@ -14790,6 +14798,15 @@ function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename, pPromptPos)
 				messageSaveFile.writeln("From: " + pMsgHdr.from);
 				messageSaveFile.writeln("To: " + pMsgHdr.to);
 				messageSaveFile.writeln("Subject: " + pMsgHdr.subject);
+				// Message time
+				var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(pMsgHdr);
+				var dateTimeStr = "";
+				if (msgWrittenLocalTime != -1)
+					dateTimeStr = strftime("%a, %d %b %Y %H:%M:%S", msgWrittenLocalTime);
+				else
+					dateTimeStr = pMsgHdr.date.replace(/ [-+][0-9]+$/, "");
+				messageSaveFile.writeln("Date: " + dateTimeStr);
+
 			}
 			messageSaveFile.writeln("===============================");
 
@@ -17703,7 +17720,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 //               deleted.
 function msgIsToUserByNum(pMsgHdr, pUserNum)
 {
-	if (typeof(pMsgHdr) != "object")
+	if (typeof(pMsgHdr) !== "object")
 		return false;
 	// Return false if the message is marked as deleted and the user can't read deleted messages
 	if (((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
@@ -17721,6 +17738,16 @@ function msgIsToUserByNum(pMsgHdr, pUserNum)
 	else
 		msgIsToUser = (pMsgHdr.to_ext == userNum);
 	return msgIsToUser;
+}
+
+// Returns whether or not a message header is to the current logged-in user by name, alias, or handle
+function msgIsToCurrentUserByName(pMsgHdr)
+{
+	if (typeof(pMsgHdr) !== "object" || !pMsgHdr.hasOwnProperty("to"))
+		return false;
+
+	var msgToUpper = pMsgHdr.to.toUpperCase();
+	return (msgToUpper == user.name.toUpperCase() || msgToUpper == user.alias.toUpperCase() || msgToUpper == user.handle.toUpperCase());
 }
 
 // Returns whether or not a message is from the current user (either the current
