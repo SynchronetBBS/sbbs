@@ -482,8 +482,6 @@ static void mqtt_connect_callback(struct mosquitto* mosq, void* cbdata, int rc)
 			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "exec");
 			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "call");
 		}
-		mqtt_pub_noval(mqtt, TOPIC_SERVER, "recycle");
-		mqtt_pub_noval(mqtt, TOPIC_SERVER, "client");
 		mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "recycle");
 		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "recycle");
 	}
@@ -611,6 +609,7 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 				result = mqtt_connect(mqtt, /* bind_address: */NULL);
 				if(result == MQTT_SUCCESS) {
 					lprintf(lputs, LOG_INFO, "MQTT broker-connect (%s:%d) successful", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
+					mqtt_pub_noval(mqtt, TOPIC_SERVER, "client");
 				} else {
 					lprintf(lputs, LOG_ERR, "MQTT broker-connect (%s:%d) failure: %d", cfg->mqtt.broker_addr, cfg->mqtt.broker_port, result);
 					mqtt_close(mqtt);
