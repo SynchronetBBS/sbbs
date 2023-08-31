@@ -2467,7 +2467,7 @@ void bail(int code)
 
 		sbbs_get_ini_fname(cfg.filename, cfg.ctrl_dir);
 
-		fp = iniOpenFile(cfg.filename, /* for_modify? */false);
+		fp = iniOpenFile(cfg.filename, /* for_modify? */true);
 		if(fp == NULL)
 			uifc.msgf("Error opening %s", cfg.filename);
 		else {
