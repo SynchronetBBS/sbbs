@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.78     2023-08-30   Bug fix for going to a specific message in the message
+                      list (especially for lightbar mode)
 1.77a    2023-08-26   When saving a message on the local BBS PC without all the
                       headers, the date is now included
 1.77     2023-08-20   Including all message headers when saving a message (sysop
