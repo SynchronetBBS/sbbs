@@ -146,6 +146,8 @@
  *                              optional.
  * 2023-08-26 Eric Oulashin     Version 1.77a
  *                              When saving a message on the local BBS PC without all the headers, the date is now included
+ * 2023-08-30 Eric Oulashin     Version 1.78
+ *                              Bug fix for going to a specific message in the message list (especially for lightbar mode)
  */
 
 "use strict";
@@ -252,8 +254,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.77a";
-var READER_DATE = "2023-08-26";
+var READER_VERSION = "1.78";
+var READER_DATE = "2023-08-30";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -3466,7 +3468,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 							var returnObj = this.EditExistingMsg(msgNum-1);
 						else
 						{
-							console.print("\x01n\r\n\x01h\x01yThat message isn't editable.\n");
+							console.print("\x01n\r\n\x01h\x01yThat message isn't editable.\x01n");
 							console.crlf();
 							console.pause();
 						}
@@ -3479,7 +3481,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 				}
 			}
 			// G: Go to a specific message by # (place that message on the top)
-			else if (retvalObj.userInput == "G")
+			else if (retvalObj.userInput == this.msgListKeys.goToMsg)
 			{
 				var msgNum = this.PromptForMsgNum(curpos, "\x01n" + replaceAtCodesInStr(this.text.goToMsgNumPromptText), false, ERROR_PAUSE_WAIT_MS, false);
 				if (msgNum > 0)
@@ -3743,6 +3745,11 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 	// Create a DDLightbarMenu for the message list and list messages
 	// and let the user choose one
 	var msgListMenu = this.CreateLightbarMsgListMenu();
+	// numMessages & numMessagesPerPage are used with msgListMenu.CalcPageForItemAndSetTopItemIdx() when
+	// going to a specific message. They're optional, but it can be faster to get them just once instead of
+	// every time.
+	var numMessages = msgListMenu.NumItems();
+	var numMessagesPerPage = msgListMenu.GetNumItemsPerPage();
 	var msgHeader = null;
 	var drawMenu = true;
 	var continueOn = true;
@@ -3948,7 +3955,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			else
 				drawMenu = false; // No need to re-draw the menu
 		}
-		// G: Go to a specific message by # (highlight or place that message on the top)
+		// G: Go to a specific message by # (highlight or place that message on the top, or in the page if can't put it on top)
 		else if (lastUserInputUpper == this.msgListKeys.goToMsg)
 		{
 			// Move the cursor to the bottom of the screen and
@@ -3974,6 +3981,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					{
 						this.lightbarListSelectedMsgIdx = chosenMsgIndex;
 						msgListMenu.selectedItemIdx = this.lightbarListSelectedMsgIdx;
+						msgListMenu.CalcPageForItemAndSetTopItemIdx(numMessagesPerPage, numMessages);
 					}
 					else
 					{
@@ -9327,43 +9335,42 @@ function DigDistMsgReader_PromptForMsgNum(pCurPos, pPromptText, pClearToEOLAfter
 	                   pCurPos.hasOwnProperty("y") && (typeof(pCurPos.y) == "number"));
 	var useCurPos = (console.term_supports(USER_ANSI) && curPosValid);
 
-   var msgNum = 0;
-   var promptCount = 0;
-   var lastErrorLen = 0; // The length of the last error message
-   var promptTextLen = console.strlen(pPromptText);
-   var continueAskingMsgNum = false;
-   do
-   {
-      ++promptCount;
-      msgNum = 0;
-      if (promptTextLen > 0)
-         console.print(pPromptText);
-      if (pClearToEOLAfterPrompt && useCurPos)
-      {
-         // The first time the user is being prompted, clear the line to the
-         // end of the line.  For subsequent times, clear the line from the
-         // prompt text length to the error text length;
-         if (promptCount == 1)
-            console.cleartoeol("\x01n");
-         else
-         {
-            if (lastErrorLen > promptTextLen)
-            {
-               console.print("\x01n");
-               console.gotoxy(pCurPos.x+promptTextLen, pCurPos.y);
-               var clearLen = lastErrorLen - promptTextLen;
-               for (var counter = 0; counter < clearLen; ++counter)
-                  console.print(" ");
-            }
-         }
-         console.gotoxy(pCurPos.x+promptTextLen, pCurPos.y);
-      }
-      msgNum = console.getnum(this.HighestMessageNum());
-      // If the message number is invalid, then output an error message.
-      if (msgNum != 0)
-      {
-         if (!this.IsValidMessageNum(msgNum))
-         {
+	var msgNum = 0;
+	var promptCount = 0;
+	var lastErrorLen = 0; // The length of the last error message
+	var promptTextLen = console.strlen(pPromptText);
+	var continueAskingMsgNum = false;
+	do
+	{
+		++promptCount;
+		msgNum = 0;
+		if (promptTextLen > 0)
+			console.print(pPromptText);
+		if (pClearToEOLAfterPrompt && useCurPos)
+		{
+			// The first time the user is being prompted, clear the line to the
+			// end of the line.  For subsequent times, clear the line from the
+			// prompt text length to the error text length;
+			if (promptCount == 1)
+				console.cleartoeol("\x01n");
+			else
+			{
+				if (lastErrorLen > promptTextLen)
+				{
+					console.print("\x01n");
+					console.gotoxy(pCurPos.x + promptTextLen, pCurPos.y);
+					var clearLen = lastErrorLen - promptTextLen;
+					printf("%-*s", clearLen, "");
+				}
+			}
+			console.gotoxy(pCurPos.x + promptTextLen, pCurPos.y);
+		}
+		msgNum = console.getnum(this.NumMessages()); // this.HighestMessageNum()
+		// If the message number is invalid, then output an error message.
+		if (msgNum != 0)
+		{
+			if (!this.IsValidMessageNum(msgNum) && msgNum != -1) // msgNum would be -1 if the user pressed Q to quit
+			{
 				// Output an error message that the message number is invalid
 				if (useCurPos)
 				{
@@ -9373,8 +9380,8 @@ function DigDistMsgReader_PromptForMsgNum(pCurPos, pPromptText, pClearToEOLAfter
 					// message number to read - I don't want this to clear the whole line
 					// because that would erase the scrollbar character on the right.
 					writeWithPause(pCurPos.x, pCurPos.y,
-					               "\x01n" + replaceAtCodesInStr(format(this.text.invalidMsgNumText, msgNum)) + "\x01n",
-					               pErrorPauseTimeMS, "\x01n", true);
+						"\x01n" + replaceAtCodesInStr(format(this.text.invalidMsgNumText, msgNum)) + "\x01n",
+						pErrorPauseTimeMS, "\x01n", true);
 					console.gotoxy(pCurPos);
 				}
 				else
@@ -9387,17 +9394,16 @@ function DigDistMsgReader_PromptForMsgNum(pCurPos, pPromptText, pClearToEOLAfter
 				// Set msgNum back to 0 to signify that the user didn't enter a (valid)
 				// message number.
 				msgNum = 0;
-            lastErrorLen = 24 + msgNum.toString().length;
-            continueAskingMsgNum = pRepeat;
-         }
-         else
-            continueAskingMsgNum = false;
-      }
-      else
-         continueAskingMsgNum = false;
-   }
-   while (continueAskingMsgNum)
-   return msgNum;
+				lastErrorLen = 24 + msgNum.toString().length;
+				continueAskingMsgNum = pRepeat;
+			}
+			else
+				continueAskingMsgNum = false;
+		}
+		else
+			continueAskingMsgNum = false;
+	} while (continueAskingMsgNum);
+	return msgNum;
 }
 
 // For the DigDistMsgReader class: Looks for complex @-code strings in a text line and
