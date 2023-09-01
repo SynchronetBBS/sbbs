@@ -1522,16 +1522,14 @@ function IRCClient_do_stats(statschar) {
 }
 
 function IRCClient_do_users() {
-	var i, u;
-	var usersshown = false;
+	var i, u, usersshown;
 
 	this.numeric(392,':UserID                    Terminal  Host');
 	usersshown=0;
 	for (i in system.node_list) {
 		if(system.node_list[i].status == NODE_INUSE) {
 			u=new User(system.node_list[i].useron);
-			this.numeric(393,format(':%-25s %-9s %-30s',u.alias,'Node'+node,
-				u.host_name));
+			this.numeric(393,format(':%-25s %-9s %-30s',u.alias,'Node'+i,u.host_name));
 			usersshown++;
 		}
 	}
