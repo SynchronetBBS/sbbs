@@ -31,6 +31,7 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>		/* isdigit */
+#include <stdbool.h>
 
 /* Synchronet-specific */
 #include "sbbsdefs.h"
@@ -38,6 +39,8 @@
 #include "filewrap.h"	/* lock/unlock/sopen */
 #include "getctrl.h"
 #include "str_util.h"	// strip_ctrl()
+#define NO_SOCKET_SUPPORT
+#include "ini_file.h"
 
 enum {
 	 MODE_LIST
@@ -445,7 +448,6 @@ void printnodedat(int number, node_t node)
 	}
 	if(node.errors)
 		printf(" %d error%c",node.errors, node.errors>1 ? 's' : '\0' );
-	printf("\n");
 }
 
 
@@ -454,7 +456,7 @@ void printnodedat(int number, node_t node)
 /****************************/
 int main(int argc, char **argv)
 {
-	char str[256],ctrl_dir[41],debug=0;
+	char str[256],ctrl_dir[MAX_PATH + 1],debug=0;
 	int sys_nodes,node_num=0,onoff=0;
 	int i,j,mode=0,misc;
 	int	modify=0;
@@ -462,12 +464,10 @@ int main(int argc, char **argv)
 	int pause=0;
 	long value=0;
 	node_t node;
+	bool verbose = false;
+	str_list_t key_list = strListInit();
 
-	char		revision[16];
-
-	sscanf("$Revision: 1.34 $", "%*s %s", revision);
-
-	printf("\nSynchronet Node Display/Control Utility v%s\n\n", revision);
+	printf("\nSynchronet Node Display/Control Utility v%s\n\n", VERSION);
 
 	if(sizeof(node_t)!=SIZEOF_NODE_T) {
 		printf("COMPILER ERROR: sizeof(node_t)=%" XP_PRIsize_t "u instead of %d\n"
@@ -476,28 +476,33 @@ int main(int argc, char **argv)
 	}
 
 	if(argc<2) {
-		printf("usage: node [-debug] [action [on|off]] [node numbers] [...]"
+		printf("usage: node [-v[key]] [-debug] [action [on|off]] [node numbers] [...]"
 			"\n\n");
-		printf("actions (default is list):\n\n");
-		printf("list        = list status\n");
-		printf("anon        = anonymous user\n");
-		printf("lock        = locked\n");
-		printf("intr        = interrupt\n");
-		printf("down        = shut-down\n");
-		printf("rerun       = rerun\n");
-		printf("event       = run event\n");
-		printf("nopage      = page disable\n");
-		printf("noalerts    = activity alerts disable\n");
-		printf("status=#    = set status value\n");
-		printf("              %d = Waiting for connection\n", NODE_WFC);
-		printf("              %d = Offline\n", NODE_OFFLINE);
-		printf("useron=#    = set useron number\n");
-		printf("action=#    = set action value\n");
-		printf("errors=#    = set error counter\n");
-		printf("conn=#      = set connection value\n");
-		printf("misc=#      = set misc value\n");
-		printf("aux=#       = set aux value\n");
-		printf("extaux=#    = set extended aux value\n");
+		printf("actions (default action is 'list'):\n\n");
+		printf("    list        = list status\n");
+		printf("    anon        = anonymous user\n");
+		printf("    lock        = locked\n");
+		printf("    intr        = interrupt\n");
+		printf("    down        = shut-down\n");
+		printf("    rerun       = rerun\n");
+		printf("    event       = run event\n");
+		printf("    nopage      = page disable\n");
+		printf("    noalerts    = activity alerts disable\n");
+		printf("    status=#    = set status value\n");
+		printf("                  %d = Waiting for connection\n", NODE_WFC);
+		printf("                  %d = Offline\n", NODE_OFFLINE);
+		printf("    useron=#    = set useron number\n");
+		printf("    action=#    = set action value\n");
+		printf("    errors=#    = set error counter\n");
+		printf("    conn=#      = set connection value\n");
+		printf("    misc=#      = set misc value\n");
+		printf("    aux=#       = set aux value\n");
+		printf("    extaux=#    = set extended aux value\n");
+		printf("\n");
+		printf("options:\n\n");
+		printf("    -debug      = display numeric values of each node record field\n");
+		printf("    -v[key]     = view a connected-client key value (default: all)\n");
+		printf("                  (may be used multiple times to display multiple keys)\n");
 		exit(0);
 	}
 
@@ -532,7 +537,11 @@ int main(int argc, char **argv)
 				loop=1;
 			if(!stricmp(argv[i],"-PAUSE"))
 				pause=1;
-
+			if(strncmp(argv[i], "-v", 2) == 0) {
+				verbose = true;
+				if(argv[i][2])
+					strListPush(&key_list, argv[i] + 2);
+			}
 			else if(!stricmp(argv[i],"LOCK"))
 				mode=MODE_LOCK;
 			else if(!stricmp(argv[i],"ANON"))
@@ -659,15 +668,36 @@ int main(int argc, char **argv)
 						if(modify)
 							putnodedat(j,node);
 						printnodedat(j,node);
+						if(verbose && NODE_CLIENT_CONNECTED(node.status)) {
+							char client_path[MAX_PATH + 1];
+							snprintf(client_path, sizeof(client_path), "%s../node%u/client.ini", ctrl_dir, j);
+							FILE* fp = iniOpenFile(client_path, /* modify: */false);
+							if(fp != NULL) {
+								str_list_t ini = iniReadFile(fp);
+								iniCloseFile(fp);
+								if(key_list[0] == NULL) {
+									for(int k = 0; ini[k] != NULL; ++k) {
+										printf("\n\t%s", ini[k]);
+									}
+								} else {
+									for(int k = 0; key_list[k] != NULL; ++k) {
+										printf("\n\t%s=%s"
+											, key_list[k], iniGetString(ini, NULL, key_list[k], NULL, NULL));
+									}
+								}
+								iniFreeStringList(ini);
+							}
+						}
+						printf("\n");
 						if(debug) {
-							printf("status=%u\n",node.status);
-							printf("errors=%u\n",node.errors);
-							printf("action=%d\n",node.action);
-							printf("useron=%u\n",node.useron);
-							printf("conn=%u\n",node.connection);
-							printf("misc=%u\n",node.misc);
-							printf("aux=%u\n",node.aux);
-							printf("extaux=%"PRIu32"\n",node.extaux); 
+							printf("\tstatus=%u\n",node.status);
+							printf("\terrors=%u\n",node.errors);
+							printf("\taction=%d\n",node.action);
+							printf("\tuseron=%u\n",node.useron);
+							printf("\tconn=%u\n",node.connection);
+							printf("\tmisc=%u\n",node.misc);
+							printf("\taux=%u\n",node.aux);
+							printf("\textaux=%"PRIu32"\n",node.extaux); 
 						}  /* debug */
 
 					} /* if(!node_num) */

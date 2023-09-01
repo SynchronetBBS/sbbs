@@ -45,6 +45,8 @@ enum node_status {                  /* Node Status */
 
 #define NODE_INVALID_STATUS	0xff	/* Invalid status value */
 
+#define NODE_CLIENT_CONNECTED(s) ((s) >= NODE_LOGON && (s) <= NODE_QUIET)
+
                                     /* Bit values for node.misc */
 #define NODE_ANON   (1<<0)          /* Anonymous User */
 #define NODE_LOCK   (1<<1)          /* Locked for sysops only */
