@@ -346,7 +346,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 			return(JS_FALSE);
 		}
 	}
-	else {
+	if(js_scope == NULL) {
 		free(cmd);
 		free(startup_dir);
 		JS_ReportError(cx, "Invalid Scope");
