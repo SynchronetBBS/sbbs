@@ -13,6 +13,8 @@ load('scrollbar.js');
 load('inputline.js');
 load(js.startup_dir + 'mrc-session.js');
 
+js.time_limit=0;
+
 var input_state = 'chat';
 
 var show_nicks = false;
