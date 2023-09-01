@@ -13,6 +13,7 @@ load('scrollbar.js');
 load('inputline.js');
 load(js.startup_dir + 'mrc-session.js');
 
+js.on_exit("js.time_limit = " + js.time_limit);
 js.time_limit=0;
 
 var input_state = 'chat';
@@ -377,7 +378,6 @@ function main() {
         }
         yield();
     }
-
 }
 
 main();
