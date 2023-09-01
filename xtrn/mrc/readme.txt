@@ -24,6 +24,7 @@ setup differs.
     Port=5000
     Options=STATIC | LOOP
     Command=../xtrn/mrc/mrc-connector.js
+    JavaScriptTimeLimit=0
 
 - In SCFG, add a new External Program with the following options, leaving all
   other options at their default values:
@@ -32,6 +33,12 @@ setup differs.
     Internal Code: MRC
     Start-up Directory: /sbbs/xtrn/mrc
     Command Line: ?mrc-client.js
+
+- If you want to run from the chat menu instead of via a door, copy chat_sec.js to
+  /sbbs/mods and edit accordingly, adding the following and don't forget to add the
+  key to be used to the "keys" variable.
+
+     bbs.exec("?../xtrn/mrc/mrc-client.js",null,"/sbbs/xtrn/mrc/");	
 
 - Your services and BBS threads should automatically recycle once they are free
   to do so, but you may want to restart your BBS now to force these changes to
