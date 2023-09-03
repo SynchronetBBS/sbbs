@@ -68,7 +68,7 @@ endif
 #
 CFLAGS	+=	-fPIC
 LDFLAGS	+=	-fPIC
-CFLAGS	+=	-O2 -L${LIBDIR} -I../xpdev
+CFLAGS	+=	-O2 -L${LIBDIR} -I../xpdev -shared
 ifeq ($(OS),Darwin)
  CFLAGS		+=	-D__unix__
  LDFLAGS	:=	$(CFLAGS) -dynamiclib -single_module
@@ -86,7 +86,7 @@ endif
 #
 # Link flags.
 #
-LDFLAGS	+=	-L../xpdev/$(LD).$(os).lib.$(BUILDTYPE)
+LDFLAGS	+=	-L../xpdev/$(LD).$(os).x64.lib.$(BUILDTYPE)
 #
 #------------------------------------------------------------------------------
 #
