@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.14     2023-09-02   Fix for the lightbar interface: When erasing the file info
+                      window, the file date is not shown on a duplicate line if
+                      the file date is already showing in the description area
+                      (i.e., for a 1-line file description)
 2.13     2023-08-13   Fixes for quitting certain actions for traditional UI.
                       Prints selected action for traditional UI. Refactor for
                       printing file info for traditional UI (internal code

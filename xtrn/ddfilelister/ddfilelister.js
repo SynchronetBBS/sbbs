@@ -80,6 +80,11 @@
  *                              Refactor for printing file info for traditional UI. Fixes for
  *                              quitting certain actions for traditional UI. Prints selected action
  *                              for traditional UI.
+ * 2023-09-02 Eric Oulashin     Version 2.14
+ *                              Fix for the lightbar interface: When erasing the file info window,
+ *                              the file date is not shown on a duplicate line if the file date is
+ *                              already showing in the description area (i.e., for a 1-line file
+ *                              description)
 */
 
 "use strict";
@@ -113,8 +118,8 @@ require("mouse_getkey.js", "mouse_getkey");
 require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 // Lister version information
-var LISTER_VERSION = "2.13";
-var LISTER_DATE = "2023-08-13";
+var LISTER_VERSION = "2.14";
+var LISTER_DATE = "2023-09-02";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -373,6 +378,27 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 		// do what's needed.  Note that quit (for the Q key) is already handled.
 		if (actionRetObj != null)
 		{
+			/*
+			// Temporary
+			if (user.is_sysop)
+			{
+				console.print("\x01n\r\n\r\n");
+				for (var prop in actionRetObj)
+				{
+					console.print(prop + ":");
+					if (typeof(actionRetObj[prop]) === "object")
+					{
+						console.crlf();
+						for (var objProp in actionRetObj[prop])
+							console.print(" " + objProp + ": " + actionRetObj[prop][objProp] + "\r\n");
+					}
+					else
+						console.print(" " + actionRetObj[prop] + "\r\n");
+				}
+				console.pause();
+			}
+			// End Temporary
+			*/
 			if (actionRetObj.exitNow)
 				continueDoingFileList = false;
 			else
@@ -992,8 +1018,8 @@ function showFileInfo_ANSI(pFileMetadata)
 	var dirIdx = file_area.dir[dirCode].index;
 	var libDesc = file_area.lib_list[libIdx].description;
 	var dirDesc =  file_area.dir[dirCode].description;
-	fileInfoStr += "\x01c\x01hLib\x01g: \x01n\x01c" + libDesc.substr(0, frameInnerWidth-5) + "\x01n\x01w\r\n";
-	fileInfoStr += "\x01c\x01hDir\x01g: \x01n\x01c" + dirDesc.substr(0, frameInnerWidth-5) + "\x01n\x01w\r\n";
+	fileInfoStr += format("\x01c\x01h%s\x01g: \x01n\x01c%s\x01n\x01w\r\n", "Lib", libDesc.substr(0, frameInnerWidth-5));
+	fileInfoStr += format("\x01c\x01h%s\x01g: \x01n\x01c%s\x01n\x01w\r\n", "Dir", dirDesc.substr(0, frameInnerWidth-5));
 	fileInfoStr += "\r\n";
 
 	// fileMetadata should have extdDesc, but check just in case
@@ -4699,8 +4725,9 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 		if (screenRowForPrinting > lastScreenRow)
 			break;
 	}
-	// If there is room, shoe the file date on the next line
-	if (screenRowForPrinting <= lastScreenRow && fileMetadata.hasOwnProperty("time"))
+	// If there is room (and we're not below the file date already), shoe the file date on the next line
+	var belowDescriptionDate = (pStartScreenRow > gFileListMenu.pos.y + fileDescArray.length);
+	if (!belowDescriptionDate && screenRowForPrinting <= lastScreenRow && fileMetadata.hasOwnProperty("time"))
 	{
 		console.attributes = "N";
 		console.gotoxy(startX, screenRowForPrinting++);
