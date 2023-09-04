@@ -36,6 +36,7 @@ var FFrameOpCode = 0;
 var FFramePayloadLength = 0;
 var FFramePayloadReceived = 0;
 var FServerSocket = null;
+var FWebSocketDataQueue = '';
 var FWebSocketHeader = {};
 var FWebSocketState = WEBSOCKET_NEED_PACKET_START;
 var ipFile;
@@ -173,13 +174,15 @@ function CalculateWebSocketKey(InLine) {
 
 function GetFromServer() {
     var Result = [];
-    var InByte = 0;
+    var InStr = '';
     
-    while (FServerSocket.data_waiting && (Result.length <= 4096)) {
-        InByte =  FServerSocket.recvBin(1);
-		Result.push(InByte);
+    if (FServerSocket.data_waiting) {
+        InStr = FServerSocket.recv(4096);
+        for (var i = 0; i < InStr.length; i++) {
+            Result.push(InStr.charCodeAt(i));
+        }
     }
-    
+   
     return Result;
 }
 
@@ -194,7 +197,7 @@ function GetFromWebSocketClient() {
 }
 
 function GetFromWebSocketClientDraft0() {
-    var Result = [];
+    var Result = '';
     var InByte = 0;
     var InByte2 = 0;
     var InByte3 = 0;
@@ -217,16 +220,16 @@ function GetFromWebSocketClientDraft0() {
                 } else {
                     // Check if the byte needs to be UTF-8 decoded
                     if (InByte < 128) {
-                        Result.push(InByte);
+                        Result += String.fromCharCode(InByte);
                     } else if ((InByte > 191) && (InByte < 224)) {
                         // Handle UTF-8 decode
                         InByte2 = client.socket.recvBin(1);
-                        Result.push(((InByte & 31) << 6) | (InByte2 & 63));
+                        Result += String.fromCharCode(((InByte & 31) << 6) | (InByte2 & 63));
                     } else {
                         // Handle UTF-8 decode (should never need this, but included anyway)
                         InByte2 = client.socket.recvBin(1);
                         InByte3 = client.socket.recvBin(1);
-                        Result.push(((InByte & 15) << 12) | ((InByte2 & 63) << 6) | (InByte3 & 63));
+                        Result += String.fromCharCode(((InByte & 15) << 12) | ((InByte2 & 63) << 6) | (InByte3 & 63));
                     }
                 }
                 break;
@@ -237,12 +240,12 @@ function GetFromWebSocketClientDraft0() {
 }
 
 function GetFromWebSocketClientVersion7() {
-	var Result = [];
+	var Result = '';
 	var InByte = 0;
 	var InByte2 = 0;
 	var InByte3 = 0;
 
-    while (client.socket.data_waiting) {
+    while (client.socket.data_waiting && (Result.length <= 4096)) {
         // Check what the client packet state is
         switch (FWebSocketState) {
             case WEBSOCKET_NEED_PACKET_START:
@@ -313,23 +316,42 @@ function GetFromWebSocketClientVersion7() {
                 FWebSocketState = (FFramePayloadLength > 0 ? WEBSOCKET_DATA : WEBSOCKET_NEED_PACKET_START); // NB: Might not be any data to read, so check for payload length before setting state
 				break;
             case WEBSOCKET_DATA:
-				InByte = client.socket.recvBin(1);
-                if (FFrameMasked) InByte ^= FFrameMask[FFramePayloadReceived++ % 4];
+                var BytesToRead = FFramePayloadLength - FWebSocketDataQueue.length;
+                var InStr = client.socket.recv(BytesToRead);
+                if (InStr) {
+                    if (InStr.length != BytesToRead) {
+                        // Didn't get the whole websocket data packet this read, so queue up the latest read, then return the data we have so far
+                        log(LOG_DEBUG, 'Asked for ' + BytesToRead + ' but got ' + InStr.length + ', queuing for a subsequent read');
+                        FWebSocketDataQueue += InStr;
+                        return Result;
+                    }
 
-				// Check if the byte needs to be UTF-8 decoded
-				if ((InByte & 0x80) === 0) {
-					Result.push(InByte);
-				} else if ((InByte & 0xE0) === 0xC0) {
-					// Handle UTF-8 decode
-					InByte2 = client.socket.recvBin(1);
-                    if (FFrameMasked) InByte2 ^= FFrameMask[FFramePayloadReceived++ % 4];
-					Result.push(((InByte & 31) << 6) | (InByte2 & 63));
-				} else {
-					log(LOG_DEBUG, "GetFromWebSocketClientVersion7 Byte out of range: " + InByte);
-				}
+                    // Prepend the queued text, if we have any
+                    if (FWebSocketDataQueue.length > 0) {
+                        InStr = FWebSocketDataQueue + InStr;
+                    }
 
-				// Check if we've received the full payload
-				if (FFramePayloadReceived === FFramePayloadLength) FWebSocketState = WEBSOCKET_NEED_PACKET_START;
+                    for (var i = 0; i < InStr.length; i++) {
+                        InByte = InStr.charCodeAt(i);
+                        if (FFrameMasked) InByte ^= FFrameMask[FFramePayloadReceived++ % 4];
+
+                        // Check if the byte needs to be UTF-8 decoded
+                        if ((InByte & 0x80) === 0) {
+                            Result += String.fromCharCode(InByte);
+                        } else if ((InByte & 0xE0) === 0xC0) {
+                            // Handle UTF-8 decode
+                            InByte2 = InStr.charCodeAt(++i);
+                            if (FFrameMasked) InByte2 ^= FFrameMask[FFramePayloadReceived++ % 4];
+                            Result += String.fromCharCode(((InByte & 31) << 6) | (InByte2 & 63));
+                        } else {
+                            log(LOG_DEBUG, "GetFromWebSocketClientVersion7 Byte out of range: " + InByte);
+                        }
+                    }
+
+                    // Finished the data packet, so reset variables
+                    FWebSocketDataQueue = '';
+                    FWebSocketState = WEBSOCKET_NEED_PACKET_START;
+                }
                 break;
         }
     }
@@ -360,9 +382,10 @@ function ParsePathHeader() {
     return Result;
 }
 
-function SendToServer(AData) {
-    for (var i = 0; i < AData.length; i++) {
-        FServerSocket.sendBin(AData[i], 1);
+function SendToServer(AStr) {
+    var bytesSent = FServerSocket.send(AStr);
+    if (bytesSent != AStr.length) {
+        log(LOG_ERR, 'SendToServer only sent ' + bytesSent + ' of ' + AStr.length + ' bytes');
     }
 }
 
@@ -402,16 +425,16 @@ function SendToWebSocketClientDraft0(AData) {
 
 function SendToWebSocketClientVersion7(AData) {
 	if (AData.length > 0) {
-		var ToSend = [];
+		var ToSend = '';
 
     	for (var i = 0; i < AData.length; i++) {
 	        // Check if the byte needs to be UTF-8 encoded
 	        if ((AData[i] & 0xFF) <= 127) {
-				ToSend.push(AData[i]);
+				ToSend += String.fromCharCode(AData[i]);
 	        } else if (((AData[i] & 0xFF) >= 128) && ((AData[i] & 0xFF) <= 2047)) {
 	            // Handle UTF-8 encode
-	            ToSend.push((AData[i] >> 6) | 192);
-	            ToSend.push((AData[i] & 63) | 128);
+	            ToSend += String.fromCharCode((AData[i] >> 6) | 192);
+	            ToSend += String.fromCharCode((AData[i] & 63) | 128);
 	        } else {
 				log(LOG_DEBUG, "SendToWebSocketClientVersion7 Byte out of range: " + AData[i]);
 			}
@@ -431,11 +454,12 @@ function SendToWebSocketClientVersion7(AData) {
             client.socket.sendBin(0, 4);
             client.socket.sendBin(ToSend.length, 4);
 		}
-        
-		for (var i = 0; i < ToSend.length; i++) {
-			client.socket.sendBin(ToSend[i] & 0xFF, 1);
-		}
-	}
+
+        var bytesSent = client.socket.send(ToSend);
+        if (bytesSent != ToSend.length) {
+            log(LOG_ERR, 'SendToWebSocketClientVersion7 only sent ' + bytesSent + ' of ' + ToSend.length + ' bytes');
+        }
+    }
 }
 
 function ShakeHands() {
