@@ -338,7 +338,7 @@ void xfer_opts()
 					if(cfg.total_fviews)
 						i|=WIN_DEL|WIN_COPY|WIN_CUT;
 					if(savfview.cmd[0])
-						i|=WIN_PASTE;
+						i|=WIN_PASTE | WIN_PASTEXTR;
 					uifc.helpbuf=
 						"`Viewable File Types:`\n"
 						"\n"
@@ -409,6 +409,11 @@ void xfer_opts()
 						continue;
 					}
 					if(msk == MSK_PASTE) {
+						if((cfg.fview = (fview_t**)new_item(cfg.fview, sizeof(fview_t), i, &cfg.total_fviews)) == NULL) {
+							errormsg(WHERE, ERR_ALLOC, "fviews", sizeof(fview_t) * (cfg.total_fviews + 1));
+							cfg.total_fviews = 0;
+							bail(1);
+						}
 						*cfg.fview[i]=savfview;
 						uifc.changes=1;
 						continue;
@@ -474,7 +479,7 @@ void xfer_opts()
 					if(cfg.total_ftests)
 						i|=WIN_DEL|WIN_COPY|WIN_CUT;
 					if(savftest.cmd[0])
-						i|=WIN_PASTE;
+						i|=WIN_PASTE | WIN_PASTEXTR;
 					uifc.helpbuf = testable_files_help;
 					i=uifc.list(i,0,0,50,&ftest_dflt,&ftest_bar,"Testable File Types",opt);
 					if(i==-1)
@@ -536,6 +541,11 @@ void xfer_opts()
 						continue;
 					}
 					if(msk == MSK_PASTE) {
+						if((cfg.ftest = (ftest_t**)new_item(cfg.ftest, sizeof(ftest_t), i, &cfg.total_ftests)) == NULL) {
+							errormsg(WHERE, ERR_ALLOC, "ftests", sizeof(ftest_t) * (cfg.total_ftests + 1));
+							cfg.total_ftests = 0;
+							bail(1);
+						}
 						*cfg.ftest[i]=savftest;
 						uifc.changes=1;
 						continue;
@@ -608,7 +618,7 @@ void xfer_opts()
 					if(cfg.total_dlevents)
 						i|=WIN_DEL|WIN_COPY|WIN_CUT;
 					if(savdlevent.cmd[0])
-						i|=WIN_PASTE;
+						i|=WIN_PASTE | WIN_PASTEXTR;
 					uifc.helpbuf=
 						"`Download Events:`\n"
 						"\n"
@@ -685,6 +695,11 @@ void xfer_opts()
 						continue;
 					}
 					if(msk == MSK_PASTE) {
+						if((cfg.dlevent = (dlevent_t**)new_item(cfg.dlevent, sizeof(dlevent_t), i, &cfg.total_dlevents)) == NULL) {
+							errormsg(WHERE, ERR_ALLOC, "dlevents", sizeof(dlevent_t) * (cfg.total_dlevents + 1));
+							cfg.total_dlevents = 0;
+							bail(1);
+						}
 						*cfg.dlevent[i]=savdlevent;
 						uifc.changes=1;
 						continue;
@@ -757,7 +772,7 @@ void xfer_opts()
 					if(cfg.total_fextrs)
 						i|=WIN_DEL|WIN_COPY|WIN_CUT;
 					if(savfextr.cmd[0])
-						i|=WIN_PASTE;
+						i|=WIN_PASTE | WIN_PASTEXTR;
 					uifc.helpbuf=
 						"`Extractable File Types:`\n"
 						"\n"
@@ -826,6 +841,11 @@ void xfer_opts()
 						continue;
 					}
 					if(msk == MSK_PASTE) {
+						if((cfg.fextr = (fextr_t**)new_item(cfg.fextr, sizeof(fextr_t), i, &cfg.total_fextrs)) == NULL) {
+							errormsg(WHERE, ERR_ALLOC, "fextrs", sizeof(fextr_t) * (cfg.total_fextrs + 1));
+							cfg.total_fextrs = 0;
+							bail(1);
+						}
 						*cfg.fextr[i]=savfextr;
 						uifc.changes=1;
 						continue;
@@ -891,7 +911,7 @@ void xfer_opts()
 					if(cfg.total_fcomps)
 						i|=WIN_DEL|WIN_COPY|WIN_CUT;
 					if(savfcomp.cmd[0])
-						i|=WIN_PASTE;
+						i|=WIN_PASTE | WIN_PASTEXTR;
 					uifc.helpbuf=
 						"`Compressible File Types:`\n"
 						"\n"
@@ -959,6 +979,11 @@ void xfer_opts()
 						continue;
 					}
 					if(msk == MSK_PASTE) {
+						if((cfg.fcomp = (fcomp_t**)new_item(cfg.fcomp, sizeof(fcomp_t), i, &cfg.total_fcomps)) == NULL) {
+							errormsg(WHERE, ERR_ALLOC, "fcomps", sizeof(fcomp_t) * (cfg.total_fcomps + 1));
+							cfg.total_fcomps = 0;
+							bail(1);
+						}
 						*cfg.fcomp[i]=savfcomp;
 						uifc.changes=1;
 						continue;
@@ -1025,7 +1050,7 @@ void xfer_opts()
 					if(cfg.total_prots)
 						wmode |= WIN_DEL|WIN_COPY|WIN_CUT;
 					if(savprot.mnemonic)
-						wmode |= WIN_PASTE;
+						wmode |= WIN_PASTE | WIN_PASTEXTR;
 					uifc.helpbuf=
 						"`File Transfer Protocols:`\n"
 						"\n"
@@ -1096,6 +1121,11 @@ void xfer_opts()
 						continue;
 					}
 					if(msk == MSK_PASTE) {
+						if((cfg.prot = (prot_t**)new_item(cfg.prot, sizeof(prot_t), i, &cfg.total_prots)) == NULL) {
+							errormsg(WHERE, ERR_ALLOC, "prots", sizeof(prot_t) * (cfg.total_prots + 1));
+							cfg.total_prots=0;
+							bail(1);
+						}
 						*cfg.prot[i]=savprot;
 						uifc.changes=1;
 						continue;

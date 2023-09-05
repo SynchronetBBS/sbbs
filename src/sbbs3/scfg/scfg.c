@@ -2436,6 +2436,23 @@ int lprintf(int level, char *fmt, ...)
     return(0);
 }
 
+void** new_item(void* list[], size_t size, int index, int* total)
+{
+	void** p;
+	void* item;
+
+	if((item = calloc(size, 1)) == NULL)
+		return NULL;
+	if((p = realloc(list, size * ((*total) + 1))) == NULL)
+		return NULL;
+	list = p;
+	for(int i = *total; i > index; --i)
+		list[i] = list[i - 1];
+	list[index] = item;
+	++(*total);
+	return list;
+}
+
 void bail(int code)
 {
     if(code) {
