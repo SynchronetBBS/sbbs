@@ -312,9 +312,9 @@ static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf
 				return total;
 			return ret;
 		}
-		if ((!(flags & MSG_WAITALL)) || p->nonblocking)
-			return ret;
 		total += ret;
+		if ((!(flags & MSG_WAITALL)) || p->nonblocking)
+			return total;
 		if(total>=(ptrdiff_t)len)
 			return total;
 		len-=ret;
