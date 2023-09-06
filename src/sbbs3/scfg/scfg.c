@@ -2436,8 +2436,9 @@ int lprintf(int level, char *fmt, ...)
     return(0);
 }
 
-void** new_item(void* list[], size_t size, int index, int* total)
+void* new_item(void* lp, size_t size, int index, int* total)
 {
+	void** list = lp;
 	void** p;
 	void* item;
 

@@ -163,7 +163,7 @@ void reencrypt_keys(const char* old_pass, const char* new_pass);
 int code_ok(char *str);
 int  bits(long l);
 void getar(char *desc, char *ar);
-void** new_item(void* list[], size_t size, int index, int* total);
+void* new_item(void* list, size_t size, int index, int* total);
 bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc);
 bool new_qhub_sub(qhub_t*, int qsubnum, sub_t*, unsigned confnum);
 void remove_sub(scfg_t*, int subnum, bool cut);
