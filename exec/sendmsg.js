@@ -31,7 +31,7 @@ do {
 		alert("Invalid HELO response: " + rsp);
 		break;
 	}
-	sock.send("SOML FROM: "+user.email+"\r\n");
+	sock.send("SOML FROM: "+ (user.number ? user.email : system.operator) +"\r\n");
 	if(Number((rsp=sock.recvline()).slice(0,3))!=250) {
 		alert("Invalid SOML response: " + rsp);
 		break;
