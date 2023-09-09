@@ -22,7 +22,7 @@ After=syslog.target network-online.target
 
 [Service]
 Type=forking
-NotifyAccess=main
+NotifyAccess=all
 Environment=SBBSCTRL=/sbbs/ctrl
 User=sbbs
 Group=sbbs
