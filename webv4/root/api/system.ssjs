@@ -1,5 +1,6 @@
 require('sbbsdefs.js', 'SYS_CLOSED');
 require('nodedefs.js', 'NODE_WFC');
+require("presence_lib.js", 'extended_status');
 var settings = load('modopts.js', 'web') || { web_directory: '../webv4' };
 
 load(settings.web_directory + '/lib/init.js');
@@ -42,7 +43,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') && http_re
 					a.push({
 						node: i,
 						status: format(NodeStatus[c.status], c.aux, c.extaux),
-						action: format(NodeAction[c.action], c.aux, c.extaux),
+						action: node_status(c, user.is_sysop, {exclude_username: true, exclude_connection: true}, i),
 						user: usr.alias,
 						connection: usr.connection
 					});

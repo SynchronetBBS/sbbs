@@ -1,3 +1,5 @@
+require("presence_lib.js", 'extended_status');
+
 var last_run = 0;
 var frequency = 15;
 
@@ -80,10 +82,11 @@ function scan() {
                 };
             } else {
                 usr.number = e.useron;
+
                 return {
                     node: i + 1,
                     status: format(NodeStatus[e.status], e.aux, e.extaux),
-                    action: format(NodeAction[e.action], e.aux, e.extaux),
+                    action: node_status(e, user.is_sysop, {exclude_username: true, exclude_connection: true}, i),
                     user: (e.misc & NODE_ANON) && !user.is_sysop ? "Anonymous" : usr.alias,
                     connection : NodeConnectionProper[e.connection] ? NodeConnectionProper[e.connection] : (e.connection + ' bps')
                 };
