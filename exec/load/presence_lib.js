@@ -138,7 +138,7 @@ function extended_status(num)
 	f.position = num * 128;
 	var str = f.read(128);
 	f.close();
-	return str;
+	return truncsp(str);
 }
 
 // Returns a string describing the node status, suitable for printing on a single line
@@ -148,11 +148,13 @@ function extended_status(num)
 // options values supported/used:
 // .include_age
 // .include_gender
+// .exclude_username
 // .username_prefix
 // .status_prefix
 // .age_prefix
 // .gender_prefix
 // .gender_separator
+// .exclude_connection
 // .connection_prefix
 // .errors_prefix
 function node_status(node, is_sysop, options, num)
@@ -174,12 +176,14 @@ function node_status(node, is_sysop, options, num)
 			}
 			var user = new User(node.useron);
 
-			if(options.username_prefix)
-				output += options.username_prefix;
-			if(js.global.bbs && (misc&NODE_ANON) && !is_sysop)
-				output += bbs.text(UNKNOWN_USER);
-			else
-				output += user.alias;
+			if (!options.exclude_username) {
+				if(options.username_prefix)
+					output += options.username_prefix;
+				if(js.global.bbs && (misc&NODE_ANON) && !is_sysop)
+					output += bbs.text(UNKNOWN_USER);
+				else
+					output += user.alias;
+			}
 			if(options.status_prefix)
 				output += options.status_prefix;
 			output += user_age_and_gender(user, options);
@@ -201,9 +205,11 @@ function node_status(node, is_sysop, options, num)
 					output += format(NodeAction[node.action], node.aux);
 					break;
 			}
-			if(options.connection_prefix)
-				output += options.connection_prefix;
-			output += node_connection_desc(node);
+			if (!options.exclude_connection) {
+				if(options.connection_prefix)
+					output += options.connection_prefix;
+				output += node_connection_desc(node);
+			}
 			break;
 		}
 		case NODE_LOGON:
