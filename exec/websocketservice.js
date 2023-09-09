@@ -23,11 +23,16 @@ load("sbbsdefs.js");
 load("ftelnethelper.js");
 load("sha1.js");
 
-// Global constants
+// State flags
 const WEBSOCKET_NEED_PACKET_START   = 0;
 const WEBSOCKET_NEED_PAYLOAD_LENGTH = 1;
 const WEBSOCKET_NEED_MASKING_KEY	= 2;
 const WEBSOCKET_DATA                = 3;
+
+// Frame types
+const WEBSOCKET_FRAME_UNKNOWN = 0;
+const WEBSOCKET_FRAME_TEXT    = 1;
+const WEBSOCKET_FRAME_BINARY  = 2;
 
 // Global variables
 var FFrameMask = [];
@@ -35,10 +40,12 @@ var FFrameMasked = false;
 var FFrameOpCode = 0;
 var FFramePayloadLength = 0;
 var FFramePayloadReceived = 0;
+var FFrameType = WEBSOCKET_FRAME_UNKNOWN;
 var FServerSocket = null;
 var FWebSocketDataQueue = '';
 var FWebSocketHeader = {};
 var FWebSocketState = WEBSOCKET_NEED_PACKET_START;
+var FWebSocketSubProtocol = '';
 var ipFile;
 
 // Main line
@@ -118,14 +125,20 @@ try {
             
                 // Check if the client sent anything
                 ClientData = GetFromWebSocketClient();
-                if (ClientData.length > 0) {
+                if (ClientData === null) {
+                    // null ClientData means the client socket is no longer connected, or a close frame was received
+                    break;
+                } else if (ClientData.length > 0) {
                     SendToServer(ClientData);
                     DoYield = false;
                 }
                 
                 // Check if the server sent anything
                 ServerData = GetFromServer();
-                if (ServerData.length > 0) {
+                if (ServerData === null) {
+                    // null ServerData means the server socket is no longer connected
+                    break;
+                } else if (ServerData.length > 0) {
                     SendToWebSocketClient(ServerData);
                     DoYield = false;
                 }    
@@ -173,6 +186,8 @@ function CalculateWebSocketKey(InLine) {
 }
 
 function GetFromServer() {
+    if (!FServerSocket.is_connected) return null;
+
     var Result = [];
     var InStr = '';
     
@@ -187,6 +202,8 @@ function GetFromServer() {
 }
 
 function GetFromWebSocketClient() {
+    if (!client.socket.is_connected) return null;
+
     switch (FWebSocketHeader['Version']) {
         case 0: return GetFromWebSocketClientDraft0();
 		case 7: 
@@ -252,20 +269,19 @@ function GetFromWebSocketClientVersion7() {
 				// Next byte will give us the opcode, and also tell is if the message is fragmented
 				FFrameOpCode = client.socket.recvBin(1) & 0x0F;
                 switch (FFrameOpCode) {
-                    case 0: // Continuation frame 
-                    case 1: // Text frame
+                    case 0: // Continuation frame, keep same opcode as previous frame
                         break;
-                        
+
+                    case 1: // Text frame
                     case 2: // Binary frame
-                        log(LOG_DEBUG, "Client sent a binary frame, which is unsupported");
-                        client.socket.close();
-                        return [];
+                        FFrameType = FFrameOpCode;
+                        break;
 
                     case 8: // Close frame
                         log(LOG_DEBUG, "Client sent a close frame");
                         // TODO Protocol says to respond with a close frame
                         client.socket.close();
-                        return [];
+                        return null;
                         
                     case 9: // Ping frame
                         log(LOG_DEBUG, "Client setnt a ping frame");
@@ -277,9 +293,7 @@ function GetFromWebSocketClientVersion7() {
                         break;
                         
                     default: // Reserved or unknown frame
-                        log(LOG_DEBUG, "Client sent a reserved/unknown frame: " + FFrameOpCode);
-                        client.socket.close();
-                        return [];
+                        throw new Error('Client sent a reserved/unknown frame: ' + FFrameOpCode);
                 }
 
                 // If we get here, we want to move on to the next state
@@ -331,21 +345,31 @@ function GetFromWebSocketClientVersion7() {
                         InStr = FWebSocketDataQueue + InStr;
                     }
 
-                    for (var i = 0; i < InStr.length; i++) {
-                        InByte = InStr.charCodeAt(i);
-                        if (FFrameMasked) InByte ^= FFrameMask[FFramePayloadReceived++ % 4];
+                    if (FFrameType == WEBSOCKET_FRAME_TEXT) {
+                        for (var i = 0; i < InStr.length; i++) {
+                            InByte = InStr.charCodeAt(i);
+                            if (FFrameMasked) InByte ^= FFrameMask[FFramePayloadReceived++ % 4];
 
-                        // Check if the byte needs to be UTF-8 decoded
-                        if ((InByte & 0x80) === 0) {
-                            Result += String.fromCharCode(InByte);
-                        } else if ((InByte & 0xE0) === 0xC0) {
-                            // Handle UTF-8 decode
-                            InByte2 = InStr.charCodeAt(++i);
-                            if (FFrameMasked) InByte2 ^= FFrameMask[FFramePayloadReceived++ % 4];
-                            Result += String.fromCharCode(((InByte & 31) << 6) | (InByte2 & 63));
-                        } else {
-                            log(LOG_DEBUG, "GetFromWebSocketClientVersion7 Byte out of range: " + InByte);
+                            // Check if the byte needs to be UTF-8 decoded
+                            if ((InByte & 0x80) === 0) {
+                                Result += String.fromCharCode(InByte);
+                            } else if ((InByte & 0xE0) === 0xC0) {
+                                // Handle UTF-8 decode
+                                InByte2 = InStr.charCodeAt(++i);
+                                if (FFrameMasked) InByte2 ^= FFrameMask[FFramePayloadReceived++ % 4];
+                                Result += String.fromCharCode(((InByte & 31) << 6) | (InByte2 & 63));
+                            } else {
+                                throw new Error('GetFromWebSocketClientVersion7 Byte out of range: ' + InByte);
+                            }
                         }
+                    } else if (FFrameType === WEBSOCKET_FRAME_BINARY) {
+                        for (var i = 0; i < InStr.length; i++) {
+                            InByte = InStr.charCodeAt(i);
+                            if (FFrameMasked) InByte ^= FFrameMask[FFramePayloadReceived++ % 4];
+                            Result += String.fromCharCode(InByte);
+                        }
+                    } else {
+                        throw new Error('GetFromWebSocketClientVersion7 Invalid frame type: ' + FFrameType);
                     }
 
                     // Finished the data packet, so reset variables
@@ -383,13 +407,19 @@ function ParsePathHeader() {
 }
 
 function SendToServer(AStr) {
+    if (!FServerSocket.is_connected) return;
+    if (AStr.length == 0) return;
+
     var bytesSent = FServerSocket.send(AStr);
     if (bytesSent != AStr.length) {
-        log(LOG_ERR, 'SendToServer only sent ' + bytesSent + ' of ' + AStr.length + ' bytes');
+        throw new Error('SendToServer only sent ' + bytesSent + ' of ' + AStr.length + ' bytes');
     }
 }
 
 function SendToWebSocketClient(AData) {
+    if (!client.socket.is_connected) return;
+    if (AData.length == 0) return;
+
     switch (FWebSocketHeader['Version']) {
         case 0: 
 			SendToWebSocketClientDraft0(AData); 
@@ -415,7 +445,7 @@ function SendToWebSocketClientDraft0(AData) {
             client.socket.sendBin((AData[i] >> 6) | 192, 1);
             client.socket.sendBin((AData[i] & 63) | 128, 1);
         } else {
-            log(LOG_DEBUG, "SendToWebSocketClientDraft0 Byte out of range: " + AData[i]);
+            throw new Error('SendToWebSocketClientDraft0 Byte out of range: ' + AData[i]);
         }
     }
 
@@ -424,41 +454,46 @@ function SendToWebSocketClientDraft0(AData) {
 }
 
 function SendToWebSocketClientVersion7(AData) {
-	if (AData.length > 0) {
-		var ToSend = '';
+    var ToSend = '';
 
-    	for (var i = 0; i < AData.length; i++) {
-	        // Check if the byte needs to be UTF-8 encoded
-	        if ((AData[i] & 0xFF) <= 127) {
-				ToSend += String.fromCharCode(AData[i]);
-	        } else if (((AData[i] & 0xFF) >= 128) && ((AData[i] & 0xFF) <= 2047)) {
-	            // Handle UTF-8 encode
-	            ToSend += String.fromCharCode((AData[i] >> 6) | 192);
-	            ToSend += String.fromCharCode((AData[i] & 63) | 128);
-	        } else {
-				log(LOG_DEBUG, "SendToWebSocketClientVersion7 Byte out of range: " + AData[i]);
-			}
-	    }
-
-		client.socket.sendBin(0x81, 1);
-		if (ToSend.length <= 125) {
-			client.socket.sendBin(ToSend.length, 1);
-		} else if (ToSend.length <= 65535) {
-			client.socket.sendBin(126, 1);
-			client.socket.sendBin(ToSend.length, 2);
-		} else {
-            // NOTE: client.socket.sendBin(ToSend.length, 8); didn't work, so this
-            //       modification limits the send to 2^32 bytes (probably not an issue)
-            //       Probably should look into a proper fix at some point though
-            client.socket.sendBin(127, 1);
-            client.socket.sendBin(0, 4);
-            client.socket.sendBin(ToSend.length, 4);
-		}
-
-        var bytesSent = client.socket.send(ToSend);
-        if (bytesSent != ToSend.length) {
-            log(LOG_ERR, 'SendToWebSocketClientVersion7 only sent ' + bytesSent + ' of ' + ToSend.length + ' bytes');
+    if (FWebSocketSubProtocol === 'binary') {
+        for (var i = 0; i < AData.length; i++) {
+            ToSend += String.fromCharCode(AData[i]);
         }
+        client.socket.sendBin(0x82, 1);
+    } else {
+        for (var i = 0; i < AData.length; i++) {
+            // Check if the byte needs to be UTF-8 encoded
+            if ((AData[i] & 0xFF) <= 127) {
+                ToSend += String.fromCharCode(AData[i]);
+            } else if (((AData[i] & 0xFF) >= 128) && ((AData[i] & 0xFF) <= 2047)) {
+                // Handle UTF-8 encode
+                ToSend += String.fromCharCode((AData[i] >> 6) | 192);
+                ToSend += String.fromCharCode((AData[i] & 63) | 128);
+            } else {
+                throw new Error('SendToWebSocketClientVersion7 Byte out of range: ' + AData[i]);
+            }
+        }
+        client.socket.sendBin(0x81, 1);
+    }
+
+    if (ToSend.length <= 125) {
+        client.socket.sendBin(ToSend.length, 1);
+    } else if (ToSend.length <= 65535) {
+        client.socket.sendBin(126, 1);
+        client.socket.sendBin(ToSend.length, 2);
+    } else {
+        // NOTE: client.socket.sendBin(ToSend.length, 8); didn't work, so this
+        //       modification limits the send to 2^32 bytes (probably not an issue)
+        //       Probably should look into a proper fix at some point though
+        client.socket.sendBin(127, 1);
+        client.socket.sendBin(0, 4);
+        client.socket.sendBin(ToSend.length, 4);
+    }
+
+    var bytesSent = client.socket.send(ToSend);
+    if (bytesSent != ToSend.length) {
+        throw new Error('SendToWebSocketClientVersion7 only sent ' + bytesSent + ' of ' + ToSend.length + ' bytes');
     }
 }
 
@@ -623,7 +658,19 @@ function ShakeHandsVersion7() {
 					   "Upgrade: websocket\r\n" +
 					   "Connection: Upgrade\r\n" +
 					   "Sec-WebSocket-Accept: " + Encoded + "\r\n";
-		if ('SubProtocol' in FWebSocketHeader) Response += "Sec-WebSocket-Protocol: plain\r\n"; // Only sub-protocol we support
+		if ('SubProtocol' in FWebSocketHeader) {
+            if (FWebSocketHeader['SubProtocol'].indexOf('binary') >= 0) {
+                FWebSocketSubProtocol = 'binary';
+            } else if (FWebSocketHeader['SubProtocol'].indexOf('plain') >= 0) {
+                FWebSocketSubProtocol = 'plain';
+            } else {
+                log(LOG_ERR, 'No supported SubProtocols found ("binary" and "plain" are only supported options');
+                return false;
+            }
+
+            log(LOG_DEBUG, 'Selecting "' + FWebSocketSubProtocol + '" SubProtocol');
+            Response += "Sec-WebSocket-Protocol: " + FWebSocketSubProtocol + "\r\n";
+        }
 		Response += "\r\n";
 		
 		// Send the response and return
