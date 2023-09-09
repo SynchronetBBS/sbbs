@@ -475,9 +475,10 @@ static void mqtt_connect_callback(struct mosquitto* mosq, void* cbdata, int rc)
 	if (rc == MQTT_SUCCESS) {
 		if(mqtt->startup->type == SERVER_TERM) {
 			bbs_startup_t* bbs_startup = (bbs_startup_t*)mqtt->startup;
-			for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
+			for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; ++i) {
 				mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/input", i);
 				mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/set/#", i);
+				mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "node/%d/msg", i);
 			}
 			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "exec");
 			mqtt_subscribe(mqtt, TOPIC_BBS, str, sizeof(str), "call");
@@ -510,6 +511,10 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 			return;
 		}
 		for(int i = bbs_startup->first_node; i <= bbs_startup->last_node; i++) {
+			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/msg", i)) == 0) {
+				putnmsg(mqtt->cfg, i, msg->payload);
+				return;
+			}
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/status", i)) == 0) {
 				set_node_status(mqtt->cfg, i, mqtt_message_value(msg, 0));
 				return;
