@@ -2024,7 +2024,8 @@ bool sbbs_t::select_editor(void)
 	if(useron.xedit) useron.xedit--;
 	if((i=uselect(0,useron.xedit,0,0,0))>=0) {
 		useron.xedit=i+1;
-		putuserstr(useron.number, USER_XEDIT, cfg.xedit[i]->code); 
+		if(useron.number > 0)
+			putuserstr(useron.number, USER_XEDIT, cfg.xedit[i]->code); 
 		return(true);
 	}
 	return(false);
