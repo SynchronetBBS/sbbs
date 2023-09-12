@@ -419,18 +419,8 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	user->rows = strtoul(field[USER_ROWS], NULL, 0);
 	user->cols = strtoul(field[USER_COLS], NULL, 0);
 
-	for(int i = 0; i < cfg->total_xedits; i++) {
-		if(stricmp(field[USER_XEDIT], cfg->xedit[i]->code) == 0) {
-			user->xedit = i + 1;
-			break;
-		}
-	}
-	for(int i=0; i < cfg->total_shells; i++) {
-		if(stricmp(field[USER_SHELL], cfg->shell[i]->code) == 0) {
-			user->shell = i;
-			break;
-		}
-	}
+	user->xedit = getxeditnum(cfg, field[USER_XEDIT]);
+	user->shell = getshellnum(cfg, field[USER_SHELL]);
 
 	SAFECOPY(user->tmpext, field[USER_TMPEXT]);
 	user->prot = *field[USER_PROT];

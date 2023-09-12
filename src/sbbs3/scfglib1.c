@@ -791,6 +791,30 @@ int getchatactset(scfg_t* cfg, const char* name)
 	return i;
 }
 
+// Returns 0 (internal editor) or 1-based external editor index
+int getxeditnum(scfg_t* cfg, const char* code)
+{
+	int i;
+
+	for(i = 0; i < cfg->total_xedits; ++i) {
+		if(stricmp(cfg->xedit[i]->code, code) == 0)
+			return i + 1;
+	}
+	return 0;
+}
+
+// Returns 0 (first shell) if shell code isn't valid
+int getshellnum(scfg_t* cfg, const char* code)
+{
+	int i;
+
+	for(i = 0; i < cfg->total_shells; ++i) {
+		if(stricmp(cfg->shell[i]->code, code) == 0)
+			return i;
+	}
+	return 0;
+}
+
 BOOL is_valid_dirnum(scfg_t* cfg, int dirnum)
 {
 	return (dirnum >= 0) && (cfg != NULL) && (dirnum < cfg->total_dirs);

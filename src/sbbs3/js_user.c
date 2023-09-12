@@ -574,9 +574,11 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			putuserstr(scfg, p->user->number, USER_CURXTRN, str);
 			break;
 		case USER_PROP_XEDIT:
+			p->user->xedit = getxeditnum(scfg, str);
 			putuserstr(scfg, p->user->number, USER_XEDIT, str);
 			break;
 		case USER_PROP_SHELL:
+			p->user->shell = getshellnum(scfg, str);
 			putuserstr(scfg, p->user->number, USER_SHELL, str);
 			break;
 		case USER_PROP_MISC:

@@ -63,6 +63,8 @@ int		getgrpnum_from_name(scfg_t*, const char* name);
 int		getxtrnsec(scfg_t*, const char* code);
 int		getgurunum(scfg_t*, const char* code);
 int		getchatactset(scfg_t*, const char* name);
+int		getxeditnum(scfg_t*, const char* code);
+int		getshellnum(scfg_t*, const char* code);
 
 DLLEXPORT BOOL	is_valid_dirnum(scfg_t*, int);
 DLLEXPORT BOOL	is_valid_libnum(scfg_t*, int);
