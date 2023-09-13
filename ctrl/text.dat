@@ -584,7 +584,7 @@
 "\1h\1bUser Settings for \1w%s #%d\1b:\r\n\r\n"                474 UserDefaultsHdr
 "\1n\1b[\1h\1wT\1n\1b] \1hTerminal Mode                \1n\1b\1\\: \1c%s\r\n"   475 UserDefaultsTerminal
 "\1n\1b[\1h\1wE\1n\1b] \1hExternal Editor              \1n\1b\1\\: \1c%s\r\n"   476 UserDefaultsXeditor
-"\1n\1b[\1h\1wL\1n\1b] \1hTerminal Dimensions          \1n\1b\1\\: \1c%s %s\r\n" 477 UserDefaultsRows
+"\1n\1b[\1h\1wL\1n\1b] \1hTerminal Dimensions          \1n\1b\1\\: \1c%s, %s\r\n" 477 UserDefaultsRows
 "\1n\1b[\1h\1wX\1n\1b] \1hExpert Menu Mode             \1n\1b: \1c%s\r\n"   478 UserDefaultsMenuMode
 "\1n\1b[\1h\1wP\1n\1b] \1hScreen Pause                 \1n\1b: \1c%s\r\n"   479 UserDefaultsPause
 "\1n\1b[\1h\1wH\1n\1b] \1hHot Keys                     \1n\1b: \1c%s\r\n"   480 UserDefaultsHotKey
@@ -1047,3 +1047,4 @@
 "\1[\1>"                                                   862 HashedFile
 "New User Validation"                                      863 NewUserValEmailSubj
 "\7\7\7"                                                   864 InactivityAlert
+"None"                                                     865 None
