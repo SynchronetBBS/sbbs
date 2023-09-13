@@ -216,6 +216,7 @@ bool sbbs_t::logon()
 
 	gettimeleft();
 
+	// TODO: GUEST accounts
 	/* Inform the user of what's in their batch upload queue */
 	{
 		str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_UPLOAD);
