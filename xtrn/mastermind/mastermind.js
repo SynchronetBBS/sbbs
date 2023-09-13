@@ -3,25 +3,31 @@
 require("sbbsdefs.js", "K_NONE");
 require("mouse_getkey.js", "mouse_getkey");
 
+const author = 'Ree';
 const debug = true;
 const peg_colours = [DARKGRAY, LIGHTBLUE, WHITE];
 const piece_colours = [DARKGRAY, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE];
-const program_version = 'Mastermind v23.09.12';
+const program_name = 'Mastermind';
+const program_version = '23.09.12';
+const tear_line = '\r\n--- ' + js.exec_file + ' v' + program_version + '\r\n';
+const winner_subject = program_name + ' Winner';
+const winners_list = js.exec_dir + "winners.jsonl";
 
 var answer;
 var current_colour;
 var current_column;
-var current_row;
+var game = { version: program_version, name: user.alias };
 var game_over;
 var guesses;
-var start_time;
+
+var data_sub = load({}, 'syncdata.js').find(debug ? 'localdata' : 'syncdata');
 
 if (js.global.bbs === undefined)
-	json_lines = load({}, "json_lines.js");
+	var json_lines = load({}, 'json_lines.js');
 else {
 	var json_lines = bbs.mods.json_lines;
 	if (!json_lines) {
-		json_lines = load(bbs.mods.json_lines = {}, "json_lines.js");
+		json_lines = load(bbs.mods.json_lines = {}, 'json_lines.js');
     }
 }
 
@@ -34,7 +40,7 @@ function add_hotspots() {
 
 // Check to see if we ran out of guesses
 function check_lost() {
-    if (current_row === 9) {
+    if (game.row === 9) {
         game_over = true;
         set_message('Game Over, You Lose!');
         draw_answer();
@@ -44,30 +50,40 @@ function check_lost() {
 // Check to see if all four pegs are black
 function check_won() {
     for (var i = 0; i < 4; i++) {
-        if (guesses[current_row].peg[i] !== 1) {
+        if (guesses[game.row].peg[i] !== 1) {
             return false;
         }
     }
 
+    game.end = time();
     game_over = true;
     set_message('Congratulations, You Win!');
     draw_answer();
 
-    // Save the high score
-    var end_time = time()
-    var duration = end_time - start_time;
+    // Save high score to filesystem
+    var result = json_lines.add(winners_list, game);
+    if (result !== true) {
+        alert(result);
+    }
 
-    // Save high score
-    if (!debug) {
-        // TODOX
-        //using (RMSQLiteConnection DB = new RMSQLiteConnection("HighScores.sqlite", false)) {
-        //    string SQL = "";
-        //    SQL = "INSERT INTO HighScores (PlayerName, Seconds, RecordDate) VALUES (";
-        //    SQL += DB.AddVarCharParameter(Door.DropInfo.Alias) + ", ";
-        //    SQL += DB.AddIntParameter((int)TS.TotalSeconds) + ", ";
-        //    SQL += DB.AddDateTimeParameter(StartTime) + ") ";
-        //    DB.ExecuteNonQuery(SQL);
-        //}
+    // Save high score to data_sub
+    if (data_sub) {
+        var msgbase = new MsgBase(data_sub);
+        var hdr = { 
+            to: program_name,
+            from: user.alias,
+            subject: winner_subject
+        };
+        game.md5 = md5_calc(JSON.stringify(game));
+        game.name = undefined;
+        var body = lfexpand(JSON.stringify(game, null, 1));
+        body += tear_line;
+        if(!msgbase.save_msg(hdr, body)) {
+			msg = 'Error saving exception-message to: ' + data_sub;
+            alert(msg);
+            log(LOG_ERR, msg);
+        }
+        msgbase.close();
     }
 
     return true;
@@ -99,19 +115,19 @@ function draw_colour(highlight) {
 // Draw the pegs for the current line }
 function draw_pegs() {
     for (var i = 0; i < 4; i++) {
-        console.gotoxy(14 + i, 22 - (current_row * 2));
-        console.attributes = peg_colours[guesses[current_row].peg[i]];
+        console.gotoxy(14 + i, 22 - (game.row * 2));
+        console.attributes = peg_colours[guesses[game.row].peg[i]];
         console.write('\xFE');
     }
 }
 
 // Highlight the currently selected piece
 function draw_piece(highlight) {
-    console.gotoxy(3 + (current_column * 2), 22 - (current_row * 2));
+    console.gotoxy(3 + (current_column * 2), 22 - (game.row * 2));
     console.attributes = highlight ? LIGHTGRAY : BLACK;
     console.write(highlight ? '[ ]' : '   ');
-    console.gotoxy(4 + (current_column * 2), 22 - (current_row * 2));
-    console.attributes = piece_colours[guesses[current_row].piece[current_column]];
+    console.gotoxy(4 + (current_column * 2), 22 - (game.row * 2));
+    console.attributes = piece_colours[guesses[game.row].piece[current_column]];
     console.write('\xDB');
 }
 
@@ -167,7 +183,7 @@ function handle_board_click(x, y) {
     if (new_column === -1) {
         return false;
     }
-    if (y !== 22 - (current_row * 2)) {
+    if (y !== 22 - (game.row * 2)) {
         return false;
     }
 
@@ -200,7 +216,7 @@ function handle_colour_click(x, y) {
 
 function main() {
     new_game();
-    set_message('Welcome to ' + program_version);
+    set_message('Welcome to ' + program_name + ' v' + program_version);
 
     mouse_enable(true);
 
@@ -272,6 +288,7 @@ function main() {
                 if (debug) {
                     draw_answer();
                     set_message('Cheater!!!');
+                    game.cheat = true;
                 }
                 break;
 
@@ -351,13 +368,14 @@ function move_piece(offset) {
 function new_game() {
     current_colour = 1;
     current_column = 0;
-    current_row = 0;
+    game.cheat = undefined;
+    game.row = 0;
+    game.start = time();
     game_over = false;
     guesses = [];
     for (var i = 0; i < 10; i++) {
         guesses[i] = { peg: [0, 0, 0, 0], piece: [0, 0, 0, 0] };
     }
-    start_time = time();
 
     redraw_screen();
     generate_answer();
@@ -365,7 +383,7 @@ function new_game() {
 
 // Place the currently selected colour at the current place on the board
 function place_piece() {
-    guesses[current_row].piece[current_column] = current_colour;
+    guesses[game.row].piece[current_column] = current_colour;
     move_piece(+1);
 }
 
@@ -405,11 +423,11 @@ function set_message(message) {
 // Submit the current line for validation/scoring
 function submit_guess() {
     if (validate_guess()) {
-        var temp_line = guesses[current_row];
+        var temp_line = guesses[game.row];
         var black = get_black_pegs(temp_line);
         var white = get_white_pegs(temp_line, black);
 
-        guesses[current_row].peg = temp_line.peg;
+        guesses[game.row].peg = temp_line.peg;
         draw_pegs();
         
         if (!check_won()) {
@@ -423,7 +441,7 @@ function submit_guess() {
             set_message('You Scored ' + black.toString() + ' Black Peg' + (black === 1 ? '' : 's') + ' and ' + white.toString() + ' White Peg' + (white === 1 ? '' : 's'));
             draw_piece(false);
             current_column = 0;
-            current_row++;
+            game.row++;
             draw_piece(true);
         }
     }
@@ -433,12 +451,12 @@ function submit_guess() {
 // It isn't if there are duplicate or blank pieces
 function validate_guess() {
     for (var i = 0; i < 4; i++) {
-        if (guesses[current_row].piece[i] === 0) {
+        if (guesses[game.row].piece[i] === 0) {
             set_message('You Must Pick Four Colours');
             return false;
         }
         for (var j = 0; j < 4; j++) {
-            if ((guesses[current_row].piece[i] === guesses[current_row].piece[j]) && (i !== j)) {
+            if ((guesses[game.row].piece[i] === guesses[game.row].piece[j]) && (i !== j)) {
                 set_message('You Must Pick Four Unique Colours');
                 return false;
             }
@@ -456,4 +474,21 @@ try {
         console.crlf();
     }
     alert(msg);
+    log(LOG_ERR, msg);
+
+    if (data_sub && (user.alias != author)) {
+		var msgbase = new MsgBase(data_sub);
+		var hdr = { 
+			to: author,
+			from: user.alias || system.operator,
+			subject: program_name,
+		};
+		msg += tear_line;
+		if(!msgbase.save_msg(hdr, msg)) {
+			msg = 'Error saving exception-message to: ' + data_sub;
+            alert(msg);
+            log(LOG_ERR, msg);
+        }
+		msgbase.close();
+	}    
 }
