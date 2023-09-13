@@ -89,8 +89,71 @@ function check_won() {
     return true;
 }
 
+function compare_won_game(g1, g2) {
+    var c1 = g1.cheat ? 1 : 0;
+    var c2 = g2.cheat ? 1 : 0;
+    var cheat = c1 - c2;
+    if (cheat) {
+        return cheat;
+    }
+
+	var row = g1.row - g2.row;
+	if (row) {
+		return row;
+    }
+
+	return (g1.end - g1.start) - (g2.end - g2.start);
+}
+
+// A non-destructive console.center() replacement
+function console_center(text) {
+	console.right((console.screen_columns - console.strlen(text)) / 2);
+	console.print(text);
+	console.crlf();
+}
+
 function display_high_scores() {
-    // TODOX Display the high scores
+	console.attributes = LIGHTGRAY;
+	console.clear();
+	console.aborted = false;
+	console.attributes = YELLOW|BG_BLUE|BG_HIGH;
+	console.center(' ' + program_name + ' Top 20 Winners ');
+	console.attributes = LIGHTGRAY;
+
+	var list = get_winners();
+	if (!list.length) {
+		alert('No winners yet!');
+	} else {
+        console.attributes = WHITE;
+        console.print(' ##  User                     System          Row  Time       Date       \r\n');
+        for(var i = 0; i < list.length && i < 20 && !console.aborted; i++) {
+            var game = list[i];
+            if (i & 1) {
+                console.attributes = LIGHTGREEN;
+            } else {
+                console.attributes = BG_GREEN;
+            }
+            
+            var duration = game.end - game.start;
+            var endDate = new Date(game.end * 1000);
+            
+            console.print(format(' %02u  %-25.25s%-15.15s %02u   %s  %04u/%02u/%02u  %s\x01>\r\n'
+                ,i + 1
+                ,game.name
+                ,game.net_addr ? ('@'+game.net_addr) : 'Local'
+                ,game.row + 1
+                ,format("%02u:%06.3f", Math.floor(duration / 60), duration % 60)
+                ,endDate.getFullYear()
+                ,endDate.getMonth() + 1
+                ,endDate.getDate()
+                ,game.cheat ? 'CHEAT' : ''
+            ));
+        }
+        console.attributes = LIGHTGRAY;
+    }
+
+    console.pause();
+    console.aborted = false;
 }
 
 // Draw the answer line
@@ -172,6 +235,81 @@ function get_white_pegs(temp_line, black) {
         }
     }
     return result;
+}
+
+function get_winners() {
+	var list = json_lines.get(winners_list);
+	if (typeof list != 'object') {
+		list = [];
+    }
+
+	/* TODOX if(options.sub) {
+		var msgbase = new MsgBase(options.sub);
+		if(msgbase.get_index !== undefined && msgbase.open()) {
+			var to_crc = crc16_calc(title.toLowerCase());
+			var winner_crc = crc16_calc(winner_subject.toLowerCase());
+			var highscores_crc = crc16_calc(highscores_subject.toLowerCase());
+			var index = msgbase.get_index();
+			for(var i = 0; index && i < index.length; i++) {
+				var idx = index[i];
+				if((idx.attr&MSG_DELETE) || idx.to != to_crc)
+					continue;
+				if(idx.subject != winner_crc && idx.subject != highscores_crc)
+					continue;
+				var hdr = msgbase.get_msg_header(true, idx.offset);
+				if(!hdr)
+					continue;
+				if(!hdr.from_net_type || hdr.to != title)
+					continue;
+				if(hdr.subject != winner_subject && hdr.subject != highscores_subject)
+					continue;
+				var body = msgbase.get_msg_body(hdr, false, false, false);
+				if(!body)
+					continue;
+				body = body.split("\n===", 1)[0];
+				body = body.split("\n---", 1)[0];
+				var obj;
+				try {
+					obj = JSON.parse(strip_ctrl(body));
+				} catch(e) {
+					log(LOG_INFO, title + " " + e + ": "  + options.sub + " msg " + hdr.number);
+					continue;
+				}
+				if(!obj.md5)	// Ignore old test messages
+					continue;
+				if(idx.subject == highscores_crc && !obj.game)
+					continue;
+				obj.name = hdr.from;
+				var md5 = obj.md5;
+				obj.md5 = undefined;
+				var calced = md5_calc(JSON.stringify(idx.subject == winner_crc ? obj : obj.game));
+				if(calced == md5) {
+					if(idx.subject == winner_crc) {
+						obj.net_addr = hdr.from_net_addr;	// Not included in MD5 sum
+						if(!list_contains(list, obj))
+							list.push(obj);
+					} else {
+						for(var j = 0; j < obj.game.length; j++) {
+							var game = obj.game[j];
+							game.net_addr = hdr.from_net_addr;
+							if(!list_contains(list, game))
+								list.push(game);
+						}
+					}
+				} else {
+					log(LOG_INFO, title +
+						" MD5 not " + calced +
+						" in: "  + options.sub +
+						" msg " + hdr.number);
+				}
+			}
+			msgbase.close();
+		}
+	} */
+
+	list.sort(compare_won_game);
+			
+	return list;
 }
 
 function handle_board_click(x, y) {
@@ -329,8 +467,7 @@ function main() {
     display_high_scores();
 }
 
-function mouse_enable(enable)
-{
+function mouse_enable(enable) {
 	const mouse_passthru = CON_MOUSE_CLK_PASSTHRU | CON_MOUSE_REL_PASSTHRU;
 	if (enable) {
 		console.status |= mouse_passthru;
