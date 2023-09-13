@@ -4,7 +4,7 @@ require('sbbsdefs.js', 'K_NONE');
 require('mouse_getkey.js', 'mouse_getkey');
 
 const author = 'Ree';
-const debug = true;
+const debug = false;
 const peg_colours = [DARKGRAY, LIGHTBLUE, WHITE];
 const piece_colours = [DARKGRAY, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE];
 const program_name = 'Mastermind';
@@ -16,7 +16,7 @@ const winners_list = js.exec_dir + 'winners.jsonl';
 var answer;
 var current_colour;
 var current_column;
-var game = { version: program_version, name: user.alias };
+var game = { version: program_version };
 var game_over;
 var guesses;
 
@@ -60,12 +60,6 @@ function check_won() {
     set_message('Congratulations, You Win!');
     draw_answer();
 
-    // Save high score to filesystem
-    var result = json_lines.add(winners_list, game);
-    if (result !== true) {
-        alert(result);
-    }
-
     // Save high score to data_sub
     if (data_sub) {
         var msgbase = new MsgBase(data_sub);
@@ -74,6 +68,7 @@ function check_won() {
             from: user.alias,
             subject: winner_subject
         };
+        game.name = user.alias;
         game.md5 = md5_calc(JSON.stringify(game));
         game.name = undefined;
         var body = lfexpand(JSON.stringify(game, null, 1));
@@ -86,6 +81,13 @@ function check_won() {
         msgbase.close();
     }
 
+    // Save high score to filesystem
+    game.name = user.alias;
+    var result = json_lines.add(winners_list, game);
+    if (result !== true) {
+        alert(result);
+    }
+    
     return true;
 }
 
@@ -117,7 +119,7 @@ function display_high_scores() {
 	console.clear();
 	console.aborted = false;
 	console.attributes = YELLOW|BG_BLUE|BG_HIGH;
-	console.center(' ' + program_name + ' Top 20 Winners ');
+	console_center(' ' + program_name + ' Top 20 Winners ');
 	console.attributes = LIGHTGRAY;
 
 	var list = get_winners();
@@ -142,7 +144,7 @@ function display_high_scores() {
                 ,game.name
                 ,game.net_addr ? ('@'+game.net_addr) : 'Local'
                 ,game.row + 1
-                ,format("%02u:%06.3f", Math.floor(duration / 60), duration % 60)
+                ,format('%02u:%06.3f', Math.floor(duration / 60), duration % 60)
                 ,endDate.getFullYear()
                 ,endDate.getMonth() + 1
                 ,endDate.getDate()
@@ -243,69 +245,50 @@ function get_winners() {
 		list = [];
     }
 
-	/* TODOX if(options.sub) {
-		var msgbase = new MsgBase(options.sub);
-		if(msgbase.get_index !== undefined && msgbase.open()) {
-			var to_crc = crc16_calc(title.toLowerCase());
+	if (data_sub) {
+		var msgbase = new MsgBase(data_sub);
+		if (msgbase.get_index !== undefined && msgbase.open()) {
+			var to_crc = crc16_calc(program_name.toLowerCase());
 			var winner_crc = crc16_calc(winner_subject.toLowerCase());
-			var highscores_crc = crc16_calc(highscores_subject.toLowerCase());
 			var index = msgbase.get_index();
-			for(var i = 0; index && i < index.length; i++) {
+			for (var i = 0; index && i < index.length; i++) {
 				var idx = index[i];
-				if((idx.attr&MSG_DELETE) || idx.to != to_crc)
+				if ((idx.attr & MSG_DELETE) || (idx.to !== to_crc) || (idx.subject !== winner_crc)) {
 					continue;
-				if(idx.subject != winner_crc && idx.subject != highscores_crc)
-					continue;
+                }
 				var hdr = msgbase.get_msg_header(true, idx.offset);
-				if(!hdr)
+				if (!hdr || (!hdr.from_net_type && !debug) || (hdr.to !== program_name) || (hdr.subject !== winner_subject)) {
 					continue;
-				if(!hdr.from_net_type || hdr.to != title)
-					continue;
-				if(hdr.subject != winner_subject && hdr.subject != highscores_subject)
-					continue;
+                }
 				var body = msgbase.get_msg_body(hdr, false, false, false);
-				if(!body)
+				if (!body) {
 					continue;
-				body = body.split("\n===", 1)[0];
-				body = body.split("\n---", 1)[0];
+                }
+				body = body.split('\n===', 1)[0];
+				body = body.split('\n---', 1)[0];
 				var obj;
 				try {
 					obj = JSON.parse(strip_ctrl(body));
-				} catch(e) {
-					log(LOG_INFO, title + " " + e + ": "  + options.sub + " msg " + hdr.number);
+				} catch (e) {
+					log(LOG_INFO, program_name + ' ' + e + ': '  + data_sub + ' msg ' + hdr.number);
 					continue;
 				}
-				if(!obj.md5)	// Ignore old test messages
-					continue;
-				if(idx.subject == highscores_crc && !obj.game)
-					continue;
 				obj.name = hdr.from;
 				var md5 = obj.md5;
 				obj.md5 = undefined;
-				var calced = md5_calc(JSON.stringify(idx.subject == winner_crc ? obj : obj.game));
-				if(calced == md5) {
-					if(idx.subject == winner_crc) {
-						obj.net_addr = hdr.from_net_addr;	// Not included in MD5 sum
-						if(!list_contains(list, obj))
-							list.push(obj);
-					} else {
-						for(var j = 0; j < obj.game.length; j++) {
-							var game = obj.game[j];
-							game.net_addr = hdr.from_net_addr;
-							if(!list_contains(list, game))
-								list.push(game);
-						}
-					}
+                var calced = md5_calc(JSON.stringify(obj));
+				if (calced === md5) {
+                    obj.net_addr = hdr.from_net_addr;	// Not included in MD5 sum
+                    if (!list_contains(list, obj)) {
+                        list.push(obj);
+                    }
 				} else {
-					log(LOG_INFO, title +
-						" MD5 not " + calced +
-						" in: "  + options.sub +
-						" msg " + hdr.number);
+					log(LOG_INFO, program_name + ' MD5 mismatch, got ' + calced + ', expected ' + md5 + ', in: '  + data_sub + ' msg ' + hdr.number);
 				}
 			}
 			msgbase.close();
 		}
-	} */
+	}
 
 	list.sort(compare_won_game);
 			
@@ -350,6 +333,21 @@ function handle_colour_click(x, y) {
     }
 
     return true;
+}
+
+function list_contains(list, obj)
+{
+	var match = false;
+	for (var i = 0; i < list.length && !match; i++) {
+		match = true;
+		for (var p in obj) {
+			if (list[i][p] !== obj[p]) {
+				match = false;
+				break;
+			}
+		}
+	}
+	return match;
 }
 
 function main() {
