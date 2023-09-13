@@ -191,10 +191,12 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 		int result;
 		char sub[128];
 		mqtt_topic(mqtt, depth, sub, sizeof(sub), "log/%d", level);
-		char timestamp[32];
 		mosquitto_property* props = NULL;
-		time_to_isoDateTimeStr(time(NULL), xpTimeZone_local(), timestamp, sizeof(timestamp));
-		mosquitto_property_add_string_pair(&props, MQTT_PROP_USER_PROPERTY, "time", timestamp);
+		if(mqtt->cfg->mqtt.protocol_version >= 5) {
+			char timestamp[32];
+			time_to_isoDateTimeStr(time(NULL), xpTimeZone_local(), timestamp, sizeof(timestamp));
+			mosquitto_property_add_string_pair(&props, MQTT_PROP_USER_PROPERTY, "time", timestamp);
+		}
 		result = mosquitto_publish_v5(mqtt->handle,
 			/* mid: */NULL,
 			/* topic: */sub,
@@ -205,9 +207,11 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 			/* properties */props);
 		if(result == MQTT_SUCCESS) {
 			mqtt_topic(mqtt, depth, sub, sizeof(sub), "log");
-			char lvl[32];
-			sprintf(lvl, "%d", level);
-			mosquitto_property_add_string_pair(&props, MQTT_PROP_USER_PROPERTY, "level", lvl);
+			if(mqtt->cfg->mqtt.protocol_version >= 5) {
+				char lvl[32];
+				sprintf(lvl, "%d", level);
+				mosquitto_property_add_string_pair(&props, MQTT_PROP_USER_PROPERTY, "level", lvl);
+			}
 			result = mosquitto_publish_v5(mqtt->handle,
 				/* mid: */NULL,
 				/* topic: */sub,
