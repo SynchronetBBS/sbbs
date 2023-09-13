@@ -1,17 +1,17 @@
-"use strict";
+'use strict';
 
-require("sbbsdefs.js", "K_NONE");
-require("mouse_getkey.js", "mouse_getkey");
+require('sbbsdefs.js', 'K_NONE');
+require('mouse_getkey.js', 'mouse_getkey');
 
 const author = 'Ree';
 const debug = true;
 const peg_colours = [DARKGRAY, LIGHTBLUE, WHITE];
 const piece_colours = [DARKGRAY, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE];
 const program_name = 'Mastermind';
-const program_version = '23.09.12';
+const program_version = '23.09.13';
 const tear_line = '\r\n--- ' + js.exec_file + ' v' + program_version + '\r\n';
 const winner_subject = program_name + ' Winner';
-const winners_list = js.exec_dir + "winners.jsonl";
+const winners_list = js.exec_dir + 'winners.jsonl';
 
 var answer;
 var current_colour;
@@ -261,7 +261,7 @@ function main() {
 
         switch (ch) {
             case '':
-                // Must have a case for '' or " is not a valid choice!" will be displayed
+                // Must have a case for '' or ' is not a valid choice!' will be displayed
                 break;
 
             case KEY_DOWN:
@@ -308,7 +308,7 @@ function main() {
                 break;
 
             case 'Q':
-                // Must have a case for 'Q' or "Q is not a valid choice!" will be displayed
+                // Must have a case for 'Q' or 'Q is not a valid choice!' will be displayed
                 break; 
 
             case ' ':
