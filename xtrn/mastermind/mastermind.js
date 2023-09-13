@@ -25,6 +25,13 @@ else {
     }
 }
 
+function add_hotspots() {
+    console.clear_hotspots();
+    console.add_hotspot('H', false, 51, 69, 16); // High Scores List
+    console.add_hotspot('N', false, 51, 61, 17); // New Game
+    console.add_hotspot('Q', false, 63, 69, 17); // Quit
+}
+
 // Check to see if we ran out of guesses
 function check_lost() {
     if (current_row === 9) {
@@ -377,6 +384,7 @@ function redraw_guesses() {
 
 function redraw_screen() {
     console.printfile(js.exec_dir + 'main.ans');
+    add_hotspots();
     redraw_guesses();
     draw_piece(true);
     draw_colour(true);
