@@ -867,6 +867,9 @@ public:
 	void	cond_blankline() { if(column > 0) newline(); if(lastlinelen) newline(); }
 	void	cond_contline() { if(column > 0 && cols < TERM_COLS_DEFAULT) bputs(text[LongLineContinuationPrefix]); }
 	int		term_supports(int cmp_flags=0);
+	char*	term_rows(user_t*, char* str, size_t);
+	char*	term_cols(user_t*, char* str, size_t);
+	char*	term_type(user_t*, int term, char* str, size_t);
 	const char* term_type(int term_supports = -1);
 	const char* term_charset(int term_supports = -1);
 	bool	update_nodeterm(void);
