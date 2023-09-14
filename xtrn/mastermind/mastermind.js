@@ -11,6 +11,7 @@ const program_name = 'Mastermind';
 const program_version = '23.09.13';
 const tear_line = '\r\n--- ' + js.exec_file + ' v' + program_version + '\r\n';
 const winner_subject = program_name + ' Winner';
+const winner_to = js.exec_file;
 const winners_list = js.exec_dir + 'winners.jsonl';
 
 var answer;
@@ -64,7 +65,7 @@ function check_won() {
     if (data_sub) {
         var msgbase = new MsgBase(data_sub);
         var hdr = { 
-            to: program_name,
+            to: winner_to,
             from: user.alias,
             subject: winner_subject
         };
@@ -248,7 +249,7 @@ function get_winners() {
 	if (data_sub) {
 		var msgbase = new MsgBase(data_sub);
 		if (msgbase.get_index !== undefined && msgbase.open()) {
-			var to_crc = crc16_calc(program_name.toLowerCase());
+			var to_crc = crc16_calc(winner_to.toLowerCase());
 			var winner_crc = crc16_calc(winner_subject.toLowerCase());
 			var index = msgbase.get_index();
 			for (var i = 0; index && i < index.length; i++) {
@@ -257,7 +258,7 @@ function get_winners() {
 					continue;
                 }
 				var hdr = msgbase.get_msg_header(true, idx.offset);
-				if (!hdr || (!hdr.from_net_type && !debug) || (hdr.to !== program_name) || (hdr.subject !== winner_subject)) {
+				if (!hdr || (!hdr.from_net_type && !debug) || (hdr.to !== winner_to) || (hdr.subject !== winner_subject)) {
 					continue;
                 }
 				var body = msgbase.get_msg_body(hdr, false, false, false);
@@ -616,7 +617,7 @@ try {
 		var hdr = { 
 			to: author,
 			from: user.alias || system.operator,
-			subject: program_name,
+			subject: program_name + ' v' + program_version,
 		};
 		msg += tear_line;
 		if(!msgbase.save_msg(hdr, msg)) {
