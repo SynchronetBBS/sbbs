@@ -788,15 +788,8 @@ void sbbs_t::maindflts(user_t* user)
 			bprintf(text[UserDefaultsQuiet]
 				,user->misc&QUIET ? text[On] : text[Off]);
 		}
-		SAFECOPY(str, text[None]);
-		for(i=0;i<cfg.total_prots;i++) {
-			if(user->prot==cfg.prot[i]->mnemonic) {
-				SAFECOPY(str,cfg.prot[i]->name);
-				break;
-			}
-		}
 		add_hotspot('Z');
-		bprintf(text[UserDefaultsProtocol],str
+		bprintf(text[UserDefaultsProtocol], protname(user->prot)
 			,user->misc&AUTOHANG ? "(Auto-Hangup)":nulstr);
 		add_hotspot('W');
 		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))

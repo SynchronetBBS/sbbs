@@ -1303,3 +1303,12 @@ char* sbbs_t::u64toac(uint64_t val, char* str, char sep)
 {
 	return ::u64toac(val, str, sep);
 }
+
+const char* sbbs_t::protname(char prot)
+{
+	for(int i=0; i < cfg.total_prots; ++i) {
+		if(prot == cfg.prot[i]->mnemonic)
+			return cfg.prot[i]->name;
+	}
+	return text[None];
+}

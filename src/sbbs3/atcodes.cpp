@@ -655,6 +655,9 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 		safe_snprintf(str, maxlen, "%c", useron.prot);
 		return str;
 	}
+	if(strcmp(sp, "PROTNAME") == 0)
+		return protname(useron.prot);
+
 	if(strcmp(sp, "SEX") == 0) {
 		safe_snprintf(str, maxlen, "%c", useron.sex);
 		return str;
