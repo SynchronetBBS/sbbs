@@ -199,16 +199,13 @@ function draw_piece(highlight) {
 
 // Generate a random answer
 function generate_answer() {
-    var available_colours = [ 0, 1, 2, 3, 4, 5, 6 ];
-
-    // Pick four unique colours (no repeats)
+    // Pick four colours (repeats allowed)
+    // 4 unique colours = 360 permutations, 4 with repeats allowed = 1296 permutations, 4 with repeats and blanks allowed = 2401 permutations
+    // So maybe introduce an easy, medium, and hard mode?
     answer = [];
     for (var i = 0; i < 4; i++) {
-        do {
-            answer[i] = random(available_colours.length);
-        } while (available_colours[answer[i]] === 0);
-        
-        available_colours[answer[i]] = 0;
+        // -1 then +1 is to exclude the first item in the piece_colours array, which is a non-colour
+        answer[i] = random(piece_colours.length - 1) + 1;
     }
 }
 
