@@ -31,6 +31,7 @@ var current_column;
 var game = { version: program_version };
 var game_over;
 var guesses;
+var last_message = '';
 
 var data_sub = load({}, 'syncdata.js').find(debug ? 'localdata' : 'syncdata');
 
@@ -130,7 +131,7 @@ function display_high_scores() {
 	console.attributes = LIGHTGRAY;
 	console.clear();
 	console.aborted = false;
-	console.attributes = YELLOW|BG_BLUE|BG_HIGH;
+	console.attributes = WHITE|BG_BLUE;
 	console_center(' ' + program_name + ' Top 20 Winners ');
 	console.attributes = LIGHTGRAY;
 
@@ -143,9 +144,9 @@ function display_high_scores() {
         for(var i = 0; i < list.length && i < 20 && !console.aborted; i++) {
             var game = list[i];
             if (i & 1) {
-                console.attributes = LIGHTGREEN;
+                console.attributes = YELLOW;
             } else {
-                console.attributes = BG_GREEN;
+                console.attributes = BG_BROWN;
             }
             
             var duration = game.end - game.start;
@@ -369,8 +370,12 @@ function list_contains(list, obj)
 }
 
 function main() {
+    // Call new_game to draw screen and init variables, but then flag as game_over so user has to hit N to start (and we get an accurate game duration)
     new_game();
-    set_message('Welcome to ' + program_name + ' v' + program_version);
+    draw_colour(false);
+    draw_piece(false);
+    set_message('Welcome to ' + program_name + ' v' + program_version + '.  Press N to begin.');
+    game_over = true;
 
     mouse_enable(true);
 
@@ -408,8 +413,8 @@ function main() {
 			}
 		}
 
-        // If game is over, only New and Quit are allowed
-        if (game_over && (ch !== 'N') && (ch !== 'Q')) {
+        // If game is over, only High Scores, New, and Quit are allowed
+        if (game_over && (ch !== 'H') && (ch !== 'N') && (ch !== 'Q')) {
             continue;
         }
 
@@ -568,11 +573,14 @@ function redraw_screen() {
     console.printfile(js.exec_dir + 'main.ans');
     add_hotspots();
     redraw_guesses();
-    draw_piece(true);
-    draw_colour(true);
+    draw_piece(!game_over);
+    draw_colour(!game_over);
+    set_message(last_message);
 }
 
 function set_message(message) {
+    last_message = message;
+
     message = ' ' + message;
     if (message.length > message_width) {
         message = message.substring(0, message_width);
