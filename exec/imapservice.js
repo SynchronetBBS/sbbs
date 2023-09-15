@@ -647,130 +647,134 @@ function handle_command(command, args, defs)
 
 function parse_command(line)
 {
-	function execute_line(args) {
-		if(args.length >= 2) {
-			command=args[1].toUpperCase();
-			args.splice(1,1);
-			if(handle_command(command, args, any_state_command_handlers))
-				return;
-			switch(state) {
-				case UnAuthenticated:
-					if(handle_command(command, args, unauthenticated_command_handlers))
-						return;
-					break;
-				case Authenticated:
-					if(handle_command(command, args, authenticated_command_handlers))
-						return;
-					break;
-				case Selected:
-					if(handle_command(command, args, selected_command_handlers))
-						return;
-					if(handle_command(command, args, authenticated_command_handlers))
-						return;
-					break;
-			}
-		}
-		// Ignore empty lines (Seamonkey sends these...)
-		if (args.length > 0)
-			tagged(args[0], "BAD", "Bad dog, no cookie.");
-	}
-
-	function parse_line() {
-		var at_start=true;
-		var	in_quote=false;
-		var paren_depth=0;
-		var string_len;
-		var args=[];
-		var pos;
-
-		function parse_atom() {
-			var ret='';
-
-			while(line.length) {
-				switch(line.charAt(0)) {
-					case ')':
-						return(ret);
-					case ' ':
-						line=line.substr(1);
-						return(ret);
-					default:
-						ret += line.charAt(0);
-						line=line.substr(1);
+	try {
+		function execute_line(args) {
+			if(args.length >= 2) {
+				command=args[1].toUpperCase();
+				args.splice(1,1);
+				if(handle_command(command, args, any_state_command_handlers))
+					return;
+				switch(state) {
+					case UnAuthenticated:
+						if(handle_command(command, args, unauthenticated_command_handlers))
+							return;
+						break;
+					case Authenticated:
+						if(handle_command(command, args, authenticated_command_handlers))
+							return;
+						break;
+					case Selected:
+						if(handle_command(command, args, selected_command_handlers))
+							return;
+						if(handle_command(command, args, authenticated_command_handlers))
+							return;
 						break;
 				}
 			}
-			return(ret);
+			// Ignore empty lines (Seamonkey sends these...)
+			if (args.length > 0)
+				tagged(args[0], "BAD", "Bad dog, no cookie.");
 		}
 
-		function parse_string()
-		{
-			var ret='';
+		function parse_line() {
+			var at_start=true;
+			var	in_quote=false;
+			var paren_depth=0;
+			var string_len;
+			var args=[];
+			var pos;
 
-			if (line.search(/^{([0-9]+)}$/) !== 0)
-				throw new Error('invalid string literal ('+line+'), aborting');
-			line=line.replace(/^{([0-9]+)}$/, "$1");
-			client.socket.send("+ Give me more of that good stuff\r\n");
-			var len = parseInt(line);
-			if(len) {
-				ret=client.socket.recv(len);
-				if (ret === null)
-					throw new Error('recv() of ' + len + ' bytes returned null');
-				if (ret.length !== len)
-					throw new Error('recv() of ' + len + ' bytes returned a string with ' + ret.length + ' instead.');
-				line=client.socket.recvline(10240, 1800);
-			}
-			else {
-				line = undefined;
-			}
-			return(ret);
-		}
+			function parse_atom() {
+				var ret='';
 
-		function parse_quotedstring() {
-			var ret='';
-	
-			line=line.substr(1);	// Remove leading "
-			while(line.length) {
+				while(line.length) {
+					switch(line.charAt(0)) {
+						case ')':
+							return(ret);
+						case ' ':
+							line=line.substr(1);
+							return(ret);
+						default:
+							ret += line.charAt(0);
+							line=line.substr(1);
+							break;
+					}
+				}
+				return(ret);
+			}
+
+			function parse_string()
+			{
+				var ret='';
+
+				if (line.search(/^{([0-9]+)}$/) !== 0)
+					throw new Error('invalid string literal ('+line+'), aborting');
+				line=line.replace(/^{([0-9]+)}$/, "$1");
+				client.socket.send("+ Give me more of that good stuff\r\n");
+				var len = parseInt(line);
+				if(len) {
+					ret=client.socket.recv(len);
+					if (ret === null)
+						throw new Error('recv() of ' + len + ' bytes returned null');
+					if (ret.length !== len)
+						throw new Error('recv() of ' + len + ' bytes returned a string with ' + ret.length + ' instead.');
+					line=client.socket.recvline(10240, 1800);
+				}
+				else {
+					line = undefined;
+				}
+				return(ret);
+			}
+
+			function parse_quotedstring() {
+				var ret='';
+		
+				line=line.substr(1);	// Remove leading "
+				while(line.length) {
+					switch(line.charAt(0)) {
+						case '"':
+							line=line.substr(1);
+							return(ret);
+						default:
+							ret += line.charAt(0);
+							line=line.substr(1);
+							break;
+					}
+				}
+				return(ret);
+			}
+
+			while(line) {
 				switch(line.charAt(0)) {
 					case '"':
+						args.push(parse_quotedstring());
+						break;
+					case ')':
 						line=line.substr(1);
-						return(ret);
+						return(args);
+					case '(':
+						line=line.substr(1);
+						args.push(parse_line());
+						break;
+					case '{':
+						args.push(parse_string());
+						break;
+					case ' ':
+						line=line.substr(1);
+						break;
 					default:
-						ret += line.charAt(0);
-						line=line.substr(1);
+						args.push(parse_atom());
 						break;
 				}
 			}
-			return(ret);
+			return(args);
 		}
 
-		while(line) {
-			switch(line.charAt(0)) {
-				case '"':
-					args.push(parse_quotedstring());
-					break;
-				case ')':
-					line=line.substr(1);
-					return(args);
-				case '(':
-					line=line.substr(1);
-					args.push(parse_line());
-					break;
-				case '{':
-					args.push(parse_string());
-					break;
-				case ' ':
-					line=line.substr(1);
-					break;
-				default:
-					args.push(parse_atom());
-					break;
-			}
-		}
-		return(args);
+		send_updates();
+		return(execute_line(parse_line()));
+	} catch(error) {
+		log(LOG_WARNING, "Exception during command parsing: " + error);
 	}
-
-	send_updates();
-	return(execute_line(parse_line()));
 }
 
 // Command handling functions
