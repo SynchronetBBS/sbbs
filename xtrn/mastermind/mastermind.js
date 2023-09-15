@@ -24,12 +24,12 @@ const row_offset_y = 2;
 const tear_line = '\r\n--- ' + js.exec_file + ' v' + program_version + '\r\n';
 const winner_subject = program_name + ' Winner';
 const winner_to = js.exec_file;
-const winners_list = js.exec_dir + 'winners.jsonl';
+const winners_list = js.exec_dir + 'winners' + (debug ? '-debug' : '') + '.jsonl';
 
 var answer;
 var current_colour;
 var current_column;
-var game = { version: program_version, debug: debug };
+var game = { version: program_version };
 var game_over;
 var guesses;
 var last_message = '';
@@ -140,7 +140,7 @@ function display_high_scores() {
 	} else {
         console.attributes = WHITE;
         console.print(' ##  User                     System          Level  Row  Time       Date       \r\n');
-        for(var i = 0; i < list.length && i < 20 && !console.aborted; i++) {
+        for (var i = 0; i < list.length && i < 20 && !console.aborted; i++) {
             var game = list[i];
             if (i & 1) {
                 console.attributes = YELLOW;
