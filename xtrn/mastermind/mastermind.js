@@ -460,14 +460,35 @@ function main() {
 
             case 'N':
                 if (game_over) { 
-                    new_game(); 
+                    new_game();
+                    set_message('New game started.  Good luck!');
                 } else { 
-                    set_message('Finish This Game First!'); 
+                    var saved_message = last_message;
+                    set_message('Are you sure you want to start a new game? [y/N] ');
+                    ch = console.inkey(K_NONE, 5000);
+                    if (ch.toUpperCase() === 'Y') {
+                        new_game();
+                        set_message('New game started.  Good luck!');
+                    } else {
+                        ch = '';
+                        set_message(saved_message);
+                    }
                 }
                 break;
 
             case 'Q':
-                // Must have a case for 'Q' or 'Q is not a valid choice!' will be displayed
+                // Prompt to quit if in middle of game
+                if (!game_over) {
+                    var saved_message = last_message;
+                    set_message('Are you sure you want to quit? [y/N] ');
+                    ch = console.inkey(K_NONE, 5000);
+                    if (ch.toUpperCase() === 'Y') {
+                        ch = 'Q';
+                    } else {
+                        ch = '';
+                        set_message(saved_message);
+                    }
+                }
                 break; 
 
             case ' ':
