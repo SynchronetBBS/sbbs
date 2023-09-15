@@ -399,10 +399,8 @@ function list_contains(list, obj)
 function main() {
     // Call new_game to draw screen and init variables, but then flag as game_over so user has to hit N to start (and we get an accurate game duration)
     new_game(0);
-    draw_colour(false);
-    draw_piece(false);
-    set_message('Welcome to ' + program_name + ' v' + program_version + '.  Press N to begin.');
     game_over = true;
+    set_message('Welcome to ' + program_name + ' v' + program_version + '.  Press N to begin.');
 
     mouse_enable(true);
 
@@ -593,11 +591,8 @@ function new_game(level) {
         guesses[i] = { peg: [null, null, null, null], piece: [null, null, null, null] };
     }
 
-    redraw_screen();
     generate_answer(level);
-    if (debug && (level > 0)) {
-        draw_answer();
-    }
+    redraw_screen();
 }
 
 // Place the currently selected colour at the current place on the board
@@ -634,9 +629,14 @@ function redraw_screen() {
     console.printfile(js.exec_dir + 'main.ans');
     add_hotspots();
     redraw_guesses();
-    if (!game_over) {
-        draw_piece(true);
-        draw_colour(true);
+    if (game.level > 0) {
+        if (game_over || debug) {
+            draw_answer();
+        }
+        if (!game_over) {
+            draw_piece(true);
+            draw_colour(true);
+        }
     }
     set_message(last_message);
 }
