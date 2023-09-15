@@ -905,16 +905,15 @@ void sbbs_t::maindflts(user_t* user)
 				putusermisc(user->number, user->misc);
 				break;
 			case 'E':
-				if(noyes(text[UseExternalEditorQ])) {
+				if((!user->xedit && noyes(text[UseExternalEditorQ]))
+					|| (user->xedit && !yesno(text[UseExternalEditorQ]))) {
 					if(!(sys_status & SS_ABORT))
 						putuserstr(user->number, USER_XEDIT, nulstr);
 					break; 
 				}
-				if(user->xedit)
-					user->xedit--;
 				for(i=0;i<cfg.total_xedits;i++)
 					uselect(1,i,text[ExternalEditorHeading],cfg.xedit[i]->name, cfg.xedit[i]->ar);
-				if((i=uselect(0,user->xedit,0,0,0))>=0)
+				if((i=uselect(0,user->xedit ? user->xedit-1:0,0,0,0))>=0)
 					putuserstr(user->number, USER_XEDIT, cfg.xedit[i]->code);
 				break;
 			case 'K':   /* Command shell */
