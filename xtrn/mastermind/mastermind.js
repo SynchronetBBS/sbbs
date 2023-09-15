@@ -48,9 +48,9 @@ else {
 
 function add_hotspots() {
     console.clear_hotspots();
-    console.add_hotspot('H', false, 51, 69, 16); // High Scores List
-    console.add_hotspot('N', false, 51, 61, 17); // New Game
-    console.add_hotspot('Q', false, 63, 69, 17); // Quit
+    console.add_hotspot('H', false, 21, 39, 10); // High Scores List
+    console.add_hotspot('N', false, 21, 31, 11); // New Game
+    console.add_hotspot('Q', false, 21, 32, 12); // Quit
 }
 
 // Check to see if we ran out of guesses
