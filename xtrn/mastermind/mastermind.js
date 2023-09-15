@@ -10,13 +10,14 @@ const colour_offset_x = 4;
 const colour_origin = { x: 23, y: 20 };
 const colour_width = 2;
 const debug = true;
+const level_names = ['Unknown', 'Easy', 'Normal', 'Hard'];
 const message_origin = { x: 21, y: 24 };
 const message_width = 79 - message_origin.y + 1;
 const peg_colours = [BLACK, BLACK, WHITE];
-const peg_origin = { x: 14, y: 23 };
-const piece_colours = [BLACK, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE];
+const peg_origin = { x: 4, y: 23 };
+const piece_colours = [LIGHTRED, YELLOW, LIGHTGREEN, LIGHTCYAN, BLACK, WHITE, LIGHTMAGENTA];
 const piece_offset_x = 2;
-const piece_origin = { x: 4, y: 23 };   
+const piece_origin = { x: 11, y: 23 };   
 const program_name = 'Mastermind';
 const program_version = '23.09.14';
 const row_offset_y = 2;
@@ -28,7 +29,7 @@ const winners_list = js.exec_dir + 'winners.jsonl';
 var answer;
 var current_colour;
 var current_column;
-var game = { version: program_version };
+var game = { version: program_version, debug: debug };
 var game_over;
 var guesses;
 var last_message = '';
@@ -105,14 +106,12 @@ function check_won() {
 }
 
 function compare_won_game(g1, g2) {
-    var c1 = g1.cheat ? 1 : 0;
-    var c2 = g2.cheat ? 1 : 0;
-    var cheat = c1 - c2;
-    if (cheat) {
-        return cheat;
+	var level = g2.level - g1.level;
+	if (level) {
+		return level;
     }
 
-	var row = g1.row - g2.row;
+    var row = g1.row - g2.row;
 	if (row) {
 		return row;
     }
@@ -140,7 +139,7 @@ function display_high_scores() {
 		alert('No winners yet!');
 	} else {
         console.attributes = WHITE;
-        console.print(' ##  User                     System          Row  Time       Date       \r\n');
+        console.print(' ##  User                     System          Level  Row  Time       Date       \r\n');
         for(var i = 0; i < list.length && i < 20 && !console.aborted; i++) {
             var game = list[i];
             if (i & 1) {
@@ -151,17 +150,22 @@ function display_high_scores() {
             
             var duration = game.end - game.start;
             var endDate = new Date(game.end * 1000);
+
+            // Games before the level system was added were equivalent to Easy
+            if (game.level === undefined) {
+                game.level = 1;
+            }
             
-            console.print(format(' %02u  %-25.25s%-15.15s %02u   %s  %04u/%02u/%02u  %s\x01>\r\n'
+            console.print(format(' %02u  %-25.25s%-15.15s %s   %02u   %s  %04u/%02u/%02u\x01>\r\n'
                 ,i + 1
                 ,game.name
                 ,game.net_addr ? ('@'+game.net_addr) : 'Local'
+                ,level_names[game.level].substring(0, 4)
                 ,game.row + 1
                 ,format('%02u:%06.3f', Math.floor(duration / 60), duration % 60)
                 ,endDate.getFullYear()
                 ,endDate.getMonth() + 1
                 ,endDate.getDate()
-                ,game.cheat ? 'CHEAT' : ''
             ));
         }
         console.attributes = LIGHTGRAY;
@@ -194,7 +198,7 @@ function draw_pegs() {
     for (var i = 0; i < 4; i++) {
         console.gotoxy(peg_origin.x + i, peg_origin.y - (game.row * row_offset_y));
         console.attributes = peg_colours[guesses[game.row].peg[i]] | BG_BROWN;
-        if (guesses[game.row].peg[i] === 0) {
+        if (guesses[game.row].peg[i] === null) {
             console.write('\xFA');
         } else {
             console.write('\xFE');
@@ -209,22 +213,40 @@ function draw_piece(highlight) {
     console.write(highlight ? '[ ]' : '   ');
     console.gotoxy(piece_origin.x + (piece_offset_x * current_column), piece_origin.y - (game.row * row_offset_y));
     console.attributes = piece_colours[guesses[game.row].piece[current_column]] | BG_BROWN;
-    if (guesses[game.row].piece[current_column] === 0) {
-        console.write('\xFE');
+    if (guesses[game.row].piece[current_column] === null) {
+        console.write('\xF9');
     } else {
         console.write('\xDB');
     }
 }
 
 // Generate a random answer
-function generate_answer() {
-    // Pick four colours (repeats allowed)
-    // 4 unique colours = 360 permutations, 4 with repeats allowed = 1296 permutations, 4 with repeats and blanks allowed = 2401 permutations
-    // So maybe introduce an easy, medium, and hard mode?
+function generate_answer(level) {
+    // Pick four colours
+    // Level 1 requires unique colours (360 permutations)
+    // Level 2 allows duplicates (1296 permutations)
+    // Level 3 adds a seventh colour (2401 permutations)
+
+    var available_colours = [0, 1, 2, 3, 4, 5];
+    if (level === 3) {
+        available_colours.push(6);
+    }
+
     answer = [];
     for (var i = 0; i < 4; i++) {
-        // -1 then +1 is to exclude the first item in the piece_colours array, which is a non-colour
-        answer[i] = random(piece_colours.length - 1) + 1;
+        var next_colour = -1;
+        while (next_colour === -1) {
+            var j = random(available_colours.length);
+            next_colour = available_colours[j];
+            
+            // Level 1 does not allow duplicates
+            if (level === 1) {
+                if (answer.indexOf(next_colour) >= 0) {
+                    next_colour = -1;
+                }
+            }
+        }
+        answer[i] = next_colour;
     }
 }
 
@@ -371,7 +393,7 @@ function list_contains(list, obj)
 
 function main() {
     // Call new_game to draw screen and init variables, but then flag as game_over so user has to hit N to start (and we get an accurate game duration)
-    new_game(2);
+    new_game(0);
     draw_colour(false);
     draw_piece(false);
     set_message('Welcome to ' + program_name + ' v' + program_version + '.  Press N to begin.');
@@ -443,14 +465,6 @@ function main() {
                 move_colour(-1);
                 break;
 
-            case 'A':
-                if (debug) {
-                    draw_answer();
-                    set_message('Cheater!!!');
-                    game.cheat = true;
-                }
-                break;
-
             case 'H':
                 mouse_enable(false);
                 display_high_scores();
@@ -480,8 +494,9 @@ function main() {
                         case '1':
                         case '2':
                         case '3':
-                            new_game(parseInt(ch));
-                            set_message('New level ' + ch + ' game started.  Good luck!');
+                            var level = parseInt(ch);
+                            new_game(level);
+                            set_message('New ' + level_names[level] + ' game started.  Good luck!');
                             break;
 
                         default:
@@ -535,13 +550,15 @@ function mouse_enable(enable) {
 
 // Move the current colour up or down (negative = up, positive = down)
 function move_colour(offset) {
+    var max_colour = game.level === 3 ? 6 : 5;
+
     draw_colour(false);
     current_colour = current_colour + offset;
-    if (current_colour > 6) {
-        current_colour = 1;
+    if (current_colour > max_colour) {
+        current_colour = 0;
     }
-    if (current_colour < 1) {
-        current_colour = 6;
+    if (current_colour < 0) {
+        current_colour = max_colour;
     }
     draw_colour(true);
 }
@@ -560,20 +577,22 @@ function move_piece(offset) {
 }
 
 function new_game(level) {
-    current_colour = 1;
+    current_colour = 0;
     current_column = 0;
-    game.cheat = undefined;
     game.level = level;
     game.row = 0;
     game.start = time();
     game_over = false;
     guesses = [];
     for (var i = 0; i < 10; i++) {
-        guesses[i] = { peg: [0, 0, 0, 0], piece: [0, 0, 0, 0] };
+        guesses[i] = { peg: [null, null, null, null], piece: [null, null, null, null] };
     }
 
     redraw_screen();
-    generate_answer();
+    generate_answer(level);
+    if (debug && (level > 0)) {
+        draw_answer();
+    }
 }
 
 // Place the currently selected colour at the current place on the board
@@ -588,8 +607,8 @@ function redraw_guesses() {
             // Draw piece
             console.gotoxy(piece_origin.x + (piece_offset_x * current_column), piece_origin.y - (row_offset_y * y));
             console.attributes = piece_colours[guesses[y].piece[x]] | BG_BROWN;
-            if (guesses[y].piece[x] === 0) {
-                console.write('\xFE');
+            if (guesses[y].piece[x] === null) {
+                console.write('\xF9');
             } else {
                 console.write('\xDB');
             }
@@ -597,7 +616,7 @@ function redraw_guesses() {
             // Draw peg
             console.gotoxy(peg_origin.x + x, peg_origin.y - (row_offset_y * y));
             console.attributes = peg_colours[guesses[y].peg[x]] | BG_BROWN;
-            if (guesses[y].peg[x] === 0) {
+            if (guesses[y].peg[x] === null) {
                 console.write('\xFA');
             } else {
                 console.write('\xFE');
@@ -664,14 +683,19 @@ function submit_guess() {
 // It isn't if there are duplicate or blank pieces
 function validate_guess() {
     for (var i = 0; i < 4; i++) {
-        if (guesses[game.row].piece[i] === 0) {
+        // Ensure four colours were selected
+        if (guesses[game.row].piece[i] === null) {
             set_message('You Must Pick Four Colours');
             return false;
         }
-        for (var j = 0; j < 4; j++) {
-            if ((guesses[game.row].piece[i] === guesses[game.row].piece[j]) && (i !== j)) {
-                set_message('You Must Pick Four Unique Colours');
-                return false;
+
+        // For level 1, ensure four unique colours were selected
+        if (game.level === 1) {
+            for (var j = 0; j < 4; j++) {
+                if ((guesses[game.row].piece[i] === guesses[game.row].piece[j]) && (i !== j)) {
+                    set_message('You Must Pick Four Unique Colours');
+                    return false;
+                }
             }
         }
     }
