@@ -1,4 +1,3 @@
-// TODOX Win game, then view high scores, then redraw board doesn't work right
 // TODOX Black and white pegs not working when duplicates (ie red red green green, guess 4 red = 2 black + 2 white)
 'use strict';
 
@@ -611,7 +610,7 @@ function redraw_guesses() {
     for (var y = 0; y < 10; y++) {
         for (var x = 0; x < 4; x++) {
             // Draw piece
-            console.gotoxy(piece_origin.x + (piece_offset_x * current_column), piece_origin.y - (row_offset_y * y));
+            console.gotoxy(piece_origin.x + (piece_offset_x * x), piece_origin.y - (row_offset_y * y));
             console.attributes = piece_colours[guesses[y].piece[x]] | BG_BROWN;
             if (guesses[y].piece[x] === null) {
                 console.write('\xF9');
@@ -635,8 +634,10 @@ function redraw_screen() {
     console.printfile(js.exec_dir + 'main.ans');
     add_hotspots();
     redraw_guesses();
-    draw_piece(!game_over);
-    draw_colour(!game_over);
+    if (!game_over) {
+        draw_piece(true);
+        draw_colour(true);
+    }
     set_message(last_message);
 }
 
