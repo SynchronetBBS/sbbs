@@ -341,17 +341,22 @@ function get_winners() {
 	return list;
 }
 
-// TODOX New locations for mouse clicks
 function handle_board_click(x, y) {
-    // First/bottom row is 4x22, 6x22, 8x22, 10x22
+    // First/bottom row is 11x23, 13x23, 15x23, 17x23
     // Then each subsequent row is two rows up
+    var piece_columns = [];
+    for (var i = 0; i < 4; i++) {
+        piece_columns[i] = piece_origin.x + (piece_offset_x * i);
+    }
 
-    // Confirm x and y coordinates correspond to a board position on the current row
-    var new_column = [4, 6, 8, 10].indexOf(x);
-    if (new_column === -1) {
+    // Confirm click was on current row
+    if (y !== piece_origin.y - (game.row * row_offset_y)) {
         return false;
     }
-    if (y !== 22 - (game.row * 2)) {
+
+    // Confirm click was in a piece column
+    var new_column = piece_columns.indexOf(x);
+    if (new_column === -1) {
         return false;
     }
 
