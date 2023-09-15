@@ -1,3 +1,4 @@
+// TODOX Pick a new answer if they guessed it on the first try...only want high scores for skill, not luck
 'use strict';
 
 require('sbbsdefs.js', 'K_NONE');
@@ -20,10 +21,10 @@ const piece_names = ['Red', 'Yellow', 'Green', 'Blue', 'Black', 'White', 'Magent
 const piece_offset_x = 2;
 const piece_origin = { x: 11, y: 23 };   
 const program_name = 'Mastermind';
-const program_version = '23.09.14';
+const program_version = '23.09.15';
 const row_offset_y = 2;
 const tear_line = '\r\n--- ' + js.exec_file + ' v' + program_version + '\r\n';
-const winner_subject = program_name + ' Winner';
+const winner_subject = program_name + ' Winner' + (debug ? ' (debug mode)' : '');
 const winner_to = js.exec_file;
 const winners_list = js.exec_dir + 'winners' + (debug ? '-debug' : '') + '.jsonl';
 
@@ -35,7 +36,7 @@ var game_over;
 var guesses;
 var last_message = '';
 
-var data_sub = load({}, 'syncdata.js').find(debug ? 'localdata' : 'syncdata');
+var data_sub = load({}, 'syncdata.js').find();
 
 if (js.global.bbs === undefined)
 	var json_lines = load({}, 'json_lines.js');
