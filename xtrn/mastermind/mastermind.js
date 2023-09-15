@@ -371,7 +371,7 @@ function list_contains(list, obj)
 
 function main() {
     // Call new_game to draw screen and init variables, but then flag as game_over so user has to hit N to start (and we get an accurate game duration)
-    new_game();
+    new_game(2);
     draw_colour(false);
     draw_piece(false);
     set_message('Welcome to ' + program_name + ' v' + program_version + '.  Press N to begin.');
@@ -459,22 +459,37 @@ function main() {
                 break;
 
             case 'N':
-                if (game_over) { 
-                    new_game();
-                    set_message('New game started.  Good luck!');
-                } else { 
-                    var saved_message = last_message;
+                var saved_message = last_message;
+
+                if (!game_over) { 
                     set_message('Are you sure you want to start a new game? [y/N] ');
                     ch = console.inkey(K_NONE, 5000);
                     if (ch.toUpperCase() === 'Y') {
-                        new_game();
-                        set_message('New game started.  Good luck!');
+                        ch = 'N'; // Restore the N for New Game
                     } else {
                         ch = '';
                         set_message(saved_message);
                     }
                 }
-                break;
+
+                // If we still want to start a new game, prompt for level
+                if (ch === 'N') {
+                    set_message('What level?  1) Easy, 2) Normal, 3) Hard  [123] ');
+                    ch = console.inkey(K_NONE, 10000);
+                    switch (ch) {
+                        case '1':
+                        case '2':
+                        case '3':
+                            new_game(parseInt(ch));
+                            set_message('New level ' + ch + ' game started.  Good luck!');
+                            break;
+
+                        default:
+                            set_message(saved_message);
+                            break;
+                    }
+                }
+            break;
 
             case 'Q':
                 // Prompt to quit if in middle of game
@@ -544,10 +559,11 @@ function move_piece(offset) {
     draw_piece(true);
 }
 
-function new_game() {
+function new_game(level) {
     current_colour = 1;
     current_column = 0;
     game.cheat = undefined;
+    game.level = level;
     game.row = 0;
     game.start = time();
     game_over = false;
