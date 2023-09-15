@@ -518,9 +518,10 @@ function main() {
                     console.add_hotspot('1', false, 34, 40, 23);
                     console.add_hotspot('2', false, 43, 51, 23);
                     console.add_hotspot('3', false, 54, 60, 23);
+                    console.add_hotspot('A', false, 63, 70, 23);
 
-                    set_message('What level?  1) Easy, 2) Normal, 3) Hard ');
-                    ch = mouse_getkeys('123');
+                    set_message('What level?  1) Easy, 2) Normal, 3) Hard, A) Abort ');
+                    ch = mouse_getkeys('123A');
                     switch (ch) {
                         case '1':
                         case '2':
