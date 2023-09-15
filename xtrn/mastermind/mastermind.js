@@ -1,4 +1,3 @@
-// TODOX Pick a new answer if they guessed it on the first try...only want high scores for skill, not luck
 'use strict';
 
 require('sbbsdefs.js', 'K_NONE');
@@ -719,6 +718,15 @@ function submit_guess() {
             temp_answer[i] = answer[i];
         }
         var black = get_black_pegs(temp_line, temp_answer);
+        if ((game.row === 0) && (black === 4)) {
+            // Don't allow winning on the first row -- we want high scores with skill, not dumb luck
+            generate_answer(game.level);
+            if (debug) {
+                draw_answer();
+            }
+            submit_guess();
+            return;
+        }
         var white = get_white_pegs(temp_line, temp_answer, black);
 
         guesses[game.row].peg = temp_line.peg;
