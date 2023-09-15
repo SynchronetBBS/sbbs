@@ -1,4 +1,3 @@
-// TODOX Black and white pegs not working when duplicates (ie red red green green, guess 4 red = 2 black + 2 white)
 'use strict';
 
 require('sbbsdefs.js', 'K_NONE');
@@ -255,27 +254,29 @@ function generate_answer(level) {
     }
 }
 
-// Check temp_line against the answer, looking for right colour in right spot
+// Check temp_line against temp_answer, looking for right colour in right spot
 // Returns the number of black/blue pegs that should be placed
-function get_black_pegs(temp_line) {
+function get_black_pegs(temp_line, temp_answer) {
     var result = 0;
     for (var i = 0; i < 4; i++) {
-        if (temp_line.piece[i] === answer[i]) {
+        if (temp_line.piece[i] === temp_answer[i]) {
             temp_line.peg[result++] = 1;
+            temp_answer[i] = -1;
         }
     }
     return result;
 }
 
-// Check temp_line against the answer, looking for right colour in wrong spot
+// Check temp_line against temp_answer, looking for right colour in wrong spot
 // Returns the number of white pegs that should be placed
-function get_white_pegs(temp_line, black) {
+function get_white_pegs(temp_line, temp_answer, black) {
     var result = 0;
     if (black < 4) {
         for (var i = 0; i < 4; i++) {
             for (var j = 0; j < 4; j++) {
-                if ((temp_line.piece[i] === answer[j]) && (i !== j)) {
+                if ((temp_line.piece[i] === temp_answer[j]) && (i !== j)) {
                     temp_line.peg[black + result++] = 2;
+                    temp_answer[j] = -1;
                 }
             }
         }
@@ -662,9 +663,14 @@ function set_message(message) {
 // Submit the current line for validation/scoring
 function submit_guess() {
     if (validate_guess()) {
-        var temp_line = guesses[game.row];
-        var black = get_black_pegs(temp_line);
-        var white = get_white_pegs(temp_line, black);
+        var temp_line = { piece: [null, null, null, null], peg: [null, null, null, null] };
+        var temp_answer = [];
+        for (var i = 0; i < 4; i++) {
+            temp_line.piece[i] = guesses[game.row].piece[i];
+            temp_answer[i] = answer[i];
+        }
+        var black = get_black_pegs(temp_line, temp_answer);
+        var white = get_white_pegs(temp_line, temp_answer, black);
 
         guesses[game.row].peg = temp_line.peg;
         draw_pegs();
