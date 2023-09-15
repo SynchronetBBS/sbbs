@@ -495,20 +495,31 @@ function main() {
                 var saved_message = last_message;
 
                 if (!game_over) { 
-                    set_message('Are you sure you want to start a new game? [y/N] ');
-                    ch = console.inkey(K_NONE, 5000);
-                    if (ch.toUpperCase() === 'Y') {
+                    console.clear_hotspots();
+                    console.add_hotspot('Y', false, 66, 68, 23);
+                    console.add_hotspot('N', false, 72, 73, 23);
+
+                    set_message('Are you sure you want to start a new game? [ Yes / No ] ');
+                    ch = mouse_getkeys('NY');
+                    if (ch === 'Y') {
                         ch = 'N'; // Restore the N for New Game
                     } else {
                         ch = '';
                         set_message(saved_message);
                     }
+
+                    add_hotspots();
                 }
 
                 // If we still want to start a new game, prompt for level
                 if (ch === 'N') {
-                    set_message('What level?  1) Easy, 2) Normal, 3) Hard  [123] ');
-                    ch = console.inkey(K_NONE, 10000);
+                    console.clear_hotspots();
+                    console.add_hotspot('1', false, 34, 40, 23);
+                    console.add_hotspot('2', false, 43, 51, 23);
+                    console.add_hotspot('3', false, 54, 60, 23);
+
+                    set_message('What level?  1) Easy, 2) Normal, 3) Hard ');
+                    ch = mouse_getkeys('123');
                     switch (ch) {
                         case '1':
                         case '2':
@@ -516,27 +527,36 @@ function main() {
                             var level = parseInt(ch);
                             new_game(level);
                             set_message('New ' + level_names[level] + ' game started.  Good luck!');
+                            last_message = ''; // We don't want to re-draw this message on a re-paint (ie if you hit Quit then No it would be weird to see "New game started" restored)
                             break;
 
                         default:
                             set_message(saved_message);
                             break;
                     }
+
+                    add_hotspots();
                 }
-            break;
+                break;
 
             case 'Q':
                 // Prompt to quit if in middle of game
                 if (!game_over) {
+                    console.clear_hotspots();
+                    console.add_hotspot('Y', false, 54, 56, 23);
+                    console.add_hotspot('N', false, 60, 61, 23);
+
                     var saved_message = last_message;
-                    set_message('Are you sure you want to quit? [y/N] ');
-                    ch = console.inkey(K_NONE, 5000);
-                    if (ch.toUpperCase() === 'Y') {
+                    set_message('Are you sure you want to quit? [ Yes / No ] ');
+                    ch = mouse_getkeys('NY');
+                    if (ch === 'Y') {
                         ch = 'Q';
                     } else {
                         ch = '';
                         set_message(saved_message);
                     }
+
+                    add_hotspots();
                 }
                 break; 
 
@@ -564,6 +584,18 @@ function mouse_enable(enable) {
 		console.status |= mouse_passthru;
     } else {
 		console.status &= ~mouse_passthru;
+    }
+}
+
+function mouse_getkeys(keys) {
+    console.clearkeybuffer();
+
+    while (bbs.online) {
+        var mk = mouse_getkey(K_NONE, 1000, true);
+        var ch = mk.key.toUpperCase();
+        if ((ch !== '') && (keys.indexOf(ch) !== -1)) {
+            return ch;
+        }
     }
 }
 
