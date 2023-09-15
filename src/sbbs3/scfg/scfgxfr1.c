@@ -917,7 +917,7 @@ void xfer_opts()
 						"\n"
 						"List of external compression methods available by file type/extension.\n"
 						"\n"
-						"Support for creating archives of common formats (i.e. `zip`, `7z`, `tgz`, `tbz`)\n"
+						"Support for creating archives of common formats (i.e. `zip`, `7z`, `tgz`)\n"
 						"is built-into Synchronet (requires no external program), however may be\n"
 						"extended via external compression/archive programs configured here."
 					;
