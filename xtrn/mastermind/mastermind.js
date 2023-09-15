@@ -1,3 +1,5 @@
+// TODOX Win game, then view high scores, then redraw board doesn't work right
+// TODOX Black and white pegs not working when duplicates (ie red red green green, guess 4 red = 2 black + 2 white)
 'use strict';
 
 require('sbbsdefs.js', 'K_NONE');
@@ -83,6 +85,9 @@ function check_won() {
             subject: winner_subject
         };
         game.name = user.alias;
+        if (debug) {
+            log(LOG_DEBUG, JSON.stringify(game));
+        }
         game.md5 = md5_calc(JSON.stringify(game));
         game.name = undefined;
         var body = lfexpand(JSON.stringify(game, null, 1));
@@ -96,6 +101,7 @@ function check_won() {
     }
 
     // Save high score to filesystem
+    game.md5 = undefined;
     game.name = user.alias;
     var result = json_lines.add(winners_list, game);
     if (result !== true) {
