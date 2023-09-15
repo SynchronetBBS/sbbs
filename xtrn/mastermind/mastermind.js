@@ -16,6 +16,7 @@ const message_width = 79 - message_origin.y + 1;
 const peg_colours = [BLACK, BLACK, WHITE];
 const peg_origin = { x: 4, y: 23 };
 const piece_colours = [LIGHTRED, YELLOW, LIGHTGREEN, LIGHTCYAN, BLACK, WHITE, LIGHTMAGENTA];
+const piece_names = ['Red', 'Yellow', 'Green', 'Blue', 'Black', 'White', 'Magenta'];
 const piece_offset_x = 2;
 const piece_origin = { x: 11, y: 23 };   
 const program_name = 'Mastermind';
@@ -361,25 +362,32 @@ function handle_board_click(x, y) {
     return true;
 }
 
-// TODOX New locations for mouse clicks
 function handle_colour_click(x, y) {
-    // 32x9 and 33x9 are the cells for green
-    // Then each subsequent colour is one row down
+    // 23x20 and 24x20 are the cells for the first colour
+    // Then each subsequent colour is to the right
 
-    // Confirm x and y coordinate correspond to a colour
-    if ((x < 32) || (x > 33)) {
+    // Easy check, must be on the right vertical row to be a colour click
+    if (y !== colour_origin.y) {
         return false;
     }
-    if ((y < 9) || (y > 14)) {
-        return false;
-    }
-    
-    var new_colour = y - 8; // For example 9 = green, minus 8 = 1, which is the piece_colours index for green
-    if (new_colour !== current_colour) {
-        move_colour(new_colour - current_colour);
+
+    // Harder check, must be on one of the two horizontal colour columns
+    for (var i = 0; i < piece_colours.length; i++) {
+        var colour_x1 = colour_origin.x + (colour_offset_x * i);
+        var colour_x2 = colour_x1 + 1;
+        if ((x >= colour_x1) && (x <= colour_x2)) {
+            if ((i == piece_colours.length - 1) && game.level !== 3) {
+                set_message(piece_names[i] + ' is only available in Hard mode');
+                return false;
+            } else {
+                move_colour(i - current_colour);
+                return true;
+            }
+        }
     }
 
-    return true;
+    // Must not have been on a colour
+    return false;
 }
 
 function list_contains(list, obj)
@@ -416,14 +424,16 @@ function main() {
 			} else {
 				switch(mk.mouse.button) {
 					case 0:
-                        // Left click on colour or row should set colour or move position
-                        if (handle_colour_click(mk.mouse.x, mk.mouse.y)) {
-                            // Clicking a colour should set a piece of that colour in the current position
-                            // handle_colour_click will set the new colour, so we just need to fake an ENTER keypress to place it
-                            ch = '\r';
-                        } else if (handle_board_click(mk.mouse.x, mk.mouse.y)) {
-                            // Clicking the board should move to the new position
-                            // handle_board_click will set the new position, so nothing to do here
+                        if (!game_over) {
+                            // Left click on colour or row should set colour or move position
+                            if (handle_colour_click(mk.mouse.x, mk.mouse.y)) {
+                                // Clicking a colour should set a piece of that colour in the current position
+                                // handle_colour_click will set the new colour, so we just need to fake an ENTER keypress to place it
+                                ch = '\r';
+                            } else if (handle_board_click(mk.mouse.x, mk.mouse.y)) {
+                                // Clicking the board should move to the new position
+                                // handle_board_click will set the new position, so nothing to do here
+                            }
                         }
 						break;
 					case 1:
