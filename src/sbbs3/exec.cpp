@@ -2021,8 +2021,7 @@ bool sbbs_t::select_editor(void)
 
 	for(i=0;i<cfg.total_xedits;i++)
 		uselect(1,i,text[ExternalEditorHeading],cfg.xedit[i]->name,cfg.xedit[i]->ar);
-	if(useron.xedit) useron.xedit--;
-	if((i=uselect(0,useron.xedit,0,0,0))>=0) {
+	if((i=uselect(0,useron.xedit ? (useron.xedit-1):0,0,0,0))>=0) {
 		useron.xedit=i+1;
 		if(useron.number > 0)
 			putuserstr(useron.number, USER_XEDIT, cfg.xedit[i]->code); 
