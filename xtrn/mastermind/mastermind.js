@@ -3,12 +3,23 @@
 require('sbbsdefs.js', 'K_NONE');
 require('mouse_getkey.js', 'mouse_getkey');
 
+const answer_offset_x = 4;
+const answer_origin = { x: 4, y: 3 };
 const author = 'Ree';
-const debug = false;
-const peg_colours = [DARKGRAY, LIGHTBLUE, WHITE];
-const piece_colours = [DARKGRAY, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE];
+const colour_offset_x = 4;
+const colour_origin = { x: 23, y: 20 };
+const colour_width = 2;
+const debug = true;
+const message_origin = { x: 21, y: 24 };
+const message_width = 79 - message_origin.y + 1;
+const peg_colours = [BLACK, BLACK, WHITE];
+const peg_origin = { x: 14, y: 23 };
+const piece_colours = [BLACK, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE];
+const piece_offset_x = 2;
+const piece_origin = { x: 4, y: 23 };   
 const program_name = 'Mastermind';
-const program_version = '23.09.13';
+const program_version = '23.09.14';
+const row_offset_y = 2;
 const tear_line = '\r\n--- ' + js.exec_file + ' v' + program_version + '\r\n';
 const winner_subject = program_name + ' Winner';
 const winner_to = js.exec_file;
@@ -162,7 +173,7 @@ function display_high_scores() {
 // Draw the answer line
 function draw_answer() {
     for (var i = 0; i < 4; i++) {
-        console.gotoxy(4 + (i * 4), 2);
+        console.gotoxy(answer_origin.x + (answer_offset_x * i), answer_origin.y);
         console.attributes = piece_colours[answer[i]];
         console.write('\xDB\xDB');
     }
@@ -170,31 +181,38 @@ function draw_answer() {
 
 // Highlight the currently selected colour
 function draw_colour(highlight) {
-    console.gotoxy(32, 8 + current_colour);
-    console.attributes = piece_colours[current_colour];
-    if (highlight) {
-        console.attributes |= BG_LIGHTGRAY;
-    }
-    console.write('\xFE\xFE');
+    console.gotoxy(colour_origin.x + (colour_offset_x * current_colour) - 1, colour_origin.y);
+    console.attributes = LIGHTGRAY;
+    console.write(highlight ? '[' : ' ');
+    console.right(colour_width);
+    console.write(highlight ? ']' : ' ');
 }
 
-// Draw the pegs for the current line }
+// Draw the pegs for the current line
 function draw_pegs() {
     for (var i = 0; i < 4; i++) {
-        console.gotoxy(14 + i, 22 - (game.row * 2));
-        console.attributes = peg_colours[guesses[game.row].peg[i]];
-        console.write('\xFE');
+        console.gotoxy(peg_origin.x + i, peg_origin.y - (game.row * row_offset_y));
+        console.attributes = peg_colours[guesses[game.row].peg[i]] | BG_BROWN;
+        if (guesses[game.row].peg[i] === 0) {
+            console.write('\xFA');
+        } else {
+            console.write('\xFE');
+        }
     }
 }
 
 // Highlight the currently selected piece
 function draw_piece(highlight) {
-    console.gotoxy(3 + (current_column * 2), 22 - (game.row * 2));
-    console.attributes = highlight ? LIGHTGRAY : BLACK;
+    console.gotoxy(piece_origin.x + (piece_offset_x * current_column) - 1, piece_origin.y - (game.row * row_offset_y));
+    console.attributes = (highlight ? LIGHTGRAY : BLACK) | BG_BROWN;
     console.write(highlight ? '[ ]' : '   ');
-    console.gotoxy(4 + (current_column * 2), 22 - (game.row * 2));
-    console.attributes = piece_colours[guesses[game.row].piece[current_column]];
-    console.write('\xDB');
+    console.gotoxy(piece_origin.x + (piece_offset_x * current_column), piece_origin.y - (game.row * row_offset_y));
+    console.attributes = piece_colours[guesses[game.row].piece[current_column]] | BG_BROWN;
+    if (guesses[game.row].piece[current_column] === 0) {
+        console.write('\xFE');
+    } else {
+        console.write('\xDB');
+    }
 }
 
 // Generate a random answer
@@ -293,6 +311,7 @@ function get_winners() {
 	return list;
 }
 
+// TODOX New locations for mouse clicks
 function handle_board_click(x, y) {
     // First/bottom row is 4x22, 6x22, 8x22, 10x22
     // Then each subsequent row is two rows up
@@ -313,6 +332,7 @@ function handle_board_click(x, y) {
     return true;
 }
 
+// TODOX New locations for mouse clicks
 function handle_colour_click(x, y) {
     // 32x9 and 33x9 are the cells for green
     // Then each subsequent colour is one row down
@@ -523,12 +543,23 @@ function place_piece() {
 function redraw_guesses() {
     for (var y = 0; y < 10; y++) {
         for (var x = 0; x < 4; x++) {
-            console.gotoxy(4 + (x * 2), 22 - (y * 2));
-            console.attributes = piece_colours[guesses[y].piece[x]];
-            console.write('\xDB');
-            console.gotoxy(14 + x, 22 - (y * 2));
-            console.attributes = peg_colours[guesses[y].peg[x]];
-            console.write('\xFE');
+            // Draw piece
+            console.gotoxy(piece_origin.x + (piece_offset_x * current_column), piece_origin.y - (row_offset_y * y));
+            console.attributes = piece_colours[guesses[y].piece[x]] | BG_BROWN;
+            if (guesses[y].piece[x] === 0) {
+                console.write('\xFE');
+            } else {
+                console.write('\xDB');
+            }
+
+            // Draw peg
+            console.gotoxy(peg_origin.x + x, peg_origin.y - (row_offset_y * y));
+            console.attributes = peg_colours[guesses[y].peg[x]] | BG_BROWN;
+            if (guesses[y].peg[x] === 0) {
+                console.write('\xFA');
+            } else {
+                console.write('\xFE');
+            }
         }
     }
 }
@@ -542,15 +573,19 @@ function redraw_screen() {
 }
 
 function set_message(message) {
-    if (message.length > 54) {
-        message = message.substring(0, 54);
+    message = ' ' + message;
+    if (message.length > message_width) {
+        message = message.substring(0, message_width);
+    } else {
+        while (message.length < message_width) {
+            message += ' ';
+        }
     }
 
-    console.attributes = BG_BLUE | WHITE;
-    console.gotoxy(26, 22);
-    console.write('                                                      ');
-    console.gotoxy(26, 22);
+    console.attributes = BLACK | BG_LIGHTGRAY;
+    console.gotoxy(message_origin.x, message_origin.y);
     console.write(message);
+    console.attributes = LIGHTGRAY;
 }
 
 // Submit the current line for validation/scoring
