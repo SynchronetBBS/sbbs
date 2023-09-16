@@ -891,7 +891,12 @@ var unauthenticated_command_handlers = {
 				}
 				client.socket.send("+\r\n");
 				line=client.socket.recvline(10240, 1800);
-				args=base64_decode(line).split(/\x00/);
+				line=base64_decode(line);
+				if(!line) {
+					tagged("NO", "Wrong format");
+					return;
+				}
+				args=line.split(/\x00/);
 				if(args === null || (!login(args[1],args[2]))) {
 					tagged(tag, "NO", "No AUTH for you.");
 					return;
@@ -904,7 +909,12 @@ var unauthenticated_command_handlers = {
 				challenge = '<'+random(2147483647)+"."+time()+"@"+system.host_name+'>';
 				client.socket.send("+ "+base64_encode(challenge)+"\r\n");
 				line=client.socket.recvline(10240, 1800);
-				args=base64_decode(line).split(/ /);
+				line=base64_decode(line);
+				if(!line) {
+					tagged("NO", "Wrong format");
+					return;
+				}
+				args=line.split(/ /);
 				un = system.matchuser(args[0], false);
 				if (un == 0) {
 					tagged(tag, "NO", "No AUTH for you.");
