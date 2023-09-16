@@ -5,6 +5,7 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.37     2023-09-16   Header line bug fix
 1.36     2023-07-21   Message area chooser fix for not allowing to change sub-
                       board if the first group is empty. File area chooser fix:
                       When using directory collapsing mode with the lightbar

@@ -56,6 +56,10 @@
  *                            Refactored the code for reading the configuration file
  * 2023-07-16 Eric Oulashin   Version 1.36
  *                            Possible fix for not allowing to change sub-board if the first group is empty
+ * 2023-09-11 Eric Oulashin   Version 1.37 Beta
+ *                            Area change header display bug fix
+ * 2023-09-16 Eric Oulashin   Version 1.37
+ *                            Releasing this version
 */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -87,10 +91,10 @@ else
 // Exit if the Synchronet version is below the minimum.
 if (system.version_num < 31400)
 {
-	var message = "\1n\1h\1y\1i* Warning:\1n\1h\1w Digital Distortion Message Area Chooser "
-	             + "requires version \1g3.14\1w or\r\n"
-	             + "higher of Synchronet.  This BBS is using version \1g" + system.version
-	             + "\1w.  Please notify the sysop.";
+	var message = "\x01n\x01h\x01y\x01i* Warning:\x01n\x01h\x01w Digital Distortion Message Area Chooser "
+	             + "requires version \x01g3.14\x01w or\r\n"
+	             + "higher of Synchronet.  This BBS is using version \x01g" + system.version
+	             + "\x01w.  Please notify the sysop.";
 	console.crlf();
 	console.print(message);
 	console.crlf();
@@ -99,8 +103,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.36";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-07-16";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.37";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-09-16";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -174,7 +178,7 @@ if (executeThisScript)
 	if (firstGrpIdxWithSubBoards < 0)
 	{
 		console.clear("\x01n");
-		console.print("\1y\1hThere are no message sub-boards available.\r\n\1p");
+		console.print("\x01y\x01hThere are no message sub-boards available.\r\n\x01p");
 		exit(0);
 	}
 
@@ -209,26 +213,26 @@ function DDMsgAreaChooser()
 	// usage) used for the message group/sub-board lists.
 	// Colors for the file & message area lists
 	this.colors = {
-		areaNum: "\1n\1w\1h",
-		desc: "\1n\1c",
-		numItems: "\1b\1h",
-		header: "\1n\1y\1h",
-		subBoardHeader: "\1n\1g",
-		areaMark: "\1g\1h",
-		latestDate: "\1n\1g",
-		latestTime: "\1n\1m",
+		areaNum: "\x01n\x01w\x01h",
+		desc: "\x01n\x01c",
+		numItems: "\x01b\x01h",
+		header: "\x01n\x01y\x01h",
+		subBoardHeader: "\x01n\x01g",
+		areaMark: "\x01g\x01h",
+		latestDate: "\x01n\x01g",
+		latestTime: "\x01n\x01m",
 		// Highlighted colors (for lightbar mode)
-		bkgHighlight: "\1" + "4", // Blue background
-		areaNumHighlight: "\1w\1h",
-		descHighlight: "\1c",
-		dateHighlight: "\1w\1h",
-		timeHighlight: "\1w\1h",
-		numItemsHighlight: "\1w\1h",
+		bkgHighlight: "\x01" + "4", // Blue background
+		areaNumHighlight: "\x01w\x01h",
+		descHighlight: "\x01c",
+		dateHighlight: "\x01w\x01h",
+		timeHighlight: "\x01w\x01h",
+		numItemsHighlight: "\x01w\x01h",
 		// Lightbar help line colors
-		lightbarHelpLineBkg: "\1" + "7",
-		lightbarHelpLineGeneral: "\1b",
-		lightbarHelpLineHotkey: "\1r",
-		lightbarHelpLineParen: "\1m"
+		lightbarHelpLineBkg: "\x01" + "7",
+		lightbarHelpLineGeneral: "\x01b",
+		lightbarHelpLineHotkey: "\x01r",
+		lightbarHelpLineParen: "\x01m"
 	};
 
 	// showImportDates is a boolean to specify whether or not to display the
@@ -270,8 +274,8 @@ function DDMsgAreaChooser()
 	// Set the function pointers for the object
 	this.ReadConfigFile = DDMsgAreaChooser_ReadConfigFile;
 	this.WriteKeyHelpLine = DDMsgAreaChooser_writeKeyHelpLine;
-	this.WriteGrpListHdrLine = DDMsgAreaChooser_writeGrpListTopHdrLine;
-	this.WriteSubBrdListHdr1Line = DMsgAreaChooser_writeSubBrdListHdr1Line;
+	this.WriteGrpListHdrLine = DDMsgAreaChooser_WriteGrpListHdrLine;
+	this.WriteSubBrdListHdr1Line = DMsgAreaChooser_WriteSubBrdListHdr1Line;
 	this.SelectMsgArea = DDMsgAreaChooser_SelectMsgArea;
 	this.SelectMsgArea_Lightbar = DDMsgAreaChooser_SelectMsgArea_Lightbar;
 	this.CreateLightbarMsgGrpMenu = DDMsgAreaChooser_CreateLightbarMsgGrpMenu;
@@ -318,16 +322,16 @@ function DDMsgAreaChooser()
 
 	// printf strings for various things
 	// Message group information (printf strings)
-	this.msgGrpListPrintfStr = "\1n " + this.colors.areaNum + "%" + this.areaNumLen
+	this.msgGrpListPrintfStr = "\x01n " + this.colors.areaNum + "%" + this.areaNumLen
 	                         + "d " + this.colors.desc + "%-"
 	                         + this.msgGrpDescLen + "s " + this.colors.numItems
 	                         + "%" + this.numItemsLen + "d";
-	this.msgGrpListHilightPrintfStr = "\1n" + this.colors.bkgHighlight + " "
-	                                + "\1n" + this.colors.bkgHighlight
+	this.msgGrpListHilightPrintfStr = "\x01n" + this.colors.bkgHighlight + " "
+	                                + "\x01n" + this.colors.bkgHighlight
 	                                + this.colors.areaNumHighlight + "%" + this.areaNumLen
-	                                + "d \1n" + this.colors.bkgHighlight
+	                                + "d \x01n" + this.colors.bkgHighlight
 	                                + this.colors.descHighlight + "%-"
-	                                + this.msgGrpDescLen + "s \1n" + this.colors.bkgHighlight
+	                                + this.msgGrpDescLen + "s \x01n" + this.colors.bkgHighlight
 	                                + this.colors.numItemsHighlight + "%" + this.numItemsLen
 	                                + "d";
 	// Message group list header (printf string)
@@ -339,76 +343,76 @@ function DDMsgAreaChooser()
 	if (this.showDatesInSubBoardList)
 		this.subBoardListHdrPrintfStr += " %-19s";
 	// Lightbar mode key help line
-	this.lightbarKeyHelpText = "\1n" + this.colors.lightbarHelpLineHotkey
+	this.lightbarKeyHelpText = "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + UP_ARROW
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + DOWN_ARROW
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "PgUp"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + "/"
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "Dn"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "HOME"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "END"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "F"
-	              + "\1n" + this.colors.lightbarHelpLineParen
+	              + "\x01n" + this.colors.lightbarHelpLineParen
 	              + this.colors.lightbarHelpLineBkg + ")"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + "irst pg, "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "L"
-	              + "\1n" + this.colors.lightbarHelpLineParen
+	              + "\x01n" + this.colors.lightbarHelpLineParen
 	              + this.colors.lightbarHelpLineBkg + ")"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + "ast pg, "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "#"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "CTRL-F"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "/"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 	              + this.colors.lightbarHelpLineBkg + "N"
-	              + "\1n" + this.colors.lightbarHelpLineGeneral
+	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
-	              + "\1n" + this.colors.lightbarHelpLineHotkey
+	              + "\x01n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + "Q"
-				  + "\1n" + this.colors.lightbarHelpLineParen
+				  + "\x01n" + this.colors.lightbarHelpLineParen
 				  + this.colors.lightbarHelpLineBkg + ")"
-				  + "\1n" + this.colors.lightbarHelpLineGeneral
+				  + "\x01n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + "uit, "
-				  + "\1n" + this.colors.lightbarHelpLineHotkey
+				  + "\x01n" + this.colors.lightbarHelpLineHotkey
 				  + this.colors.lightbarHelpLineBkg + "?";
 	// Pad the lightbar key help text on either side to center it on the screen
 	// (but leave off the last character to avoid screen drawing issues)
 	var helpTextLen = console.strlen(this.lightbarKeyHelpText);
 	var helpTextStartCol = (console.screen_columns/2) - (helpTextLen/2);
-	this.lightbarKeyHelpText = "\1n" + this.colors.lightbarHelpLineBkg
+	this.lightbarKeyHelpText = "\x01n" + this.colors.lightbarHelpLineBkg
 	                         + format("%" + +(helpTextStartCol) + "s", "")
-							 + this.lightbarKeyHelpText + "\1n"
+							 + this.lightbarKeyHelpText + "\x01n"
 							 + this.colors.lightbarHelpLineBkg;
 	var numTrailingChars = console.screen_columns - (helpTextStartCol+helpTextLen) - 1;
-	this.lightbarKeyHelpText += format("%" + +(numTrailingChars) + "s", "") + "\1n";
+	this.lightbarKeyHelpText += format("%" + +(numTrailingChars) + "s", "") + "\x01n";
 	// this.subBoardListPrintfInfo will be an array of printf strings
 	// for the sub-boards in the message groups.  The index is the
 	// message group index.  The sub-board printf information is created
@@ -437,7 +441,7 @@ function DDMsgAreaChooser_writeKeyHelpLine()
 //             not passed, then it won't be used.
 //  pPageNum: The page number.  This is optional; if this is not passed,
 //            then it won't be used.
-function DDMsgAreaChooser_writeGrpListTopHdrLine(pNumPages, pPageNum)
+function DDMsgAreaChooser_WriteGrpListHdrLine(pNumPages, pPageNum)
 {
 	var descStr = "Description";
 	if ((typeof(pPageNum) === "number") && (typeof(pNumPages) === "number"))
@@ -447,7 +451,7 @@ function DDMsgAreaChooser_writeGrpListTopHdrLine(pNumPages, pPageNum)
 	else if ((typeof(pPageNum) !== "number") && (typeof(pNumPages) === "number"))
 		descStr += "    (" + pNumPages + (pNumPages == 1 ? " page)" : " pages)");
 	printf(this.msgGrpListHdrPrintfStr, "Group#", descStr, "# Sub-Boards");
-	console.cleartoeol("\1n");
+	console.cleartoeol("\x01n");
 }
 
 // For the DDMsgAreaChooser class: Outputs the first header line to appear
@@ -461,10 +465,10 @@ function DDMsgAreaChooser_writeGrpListTopHdrLine(pNumPages, pPageNum)
 //             not passed, then it won't be used.
 //  pPageNum: The page number.  This is optional; if this is not passed,
 //            then it won't be used.
-function DMsgAreaChooser_writeSubBrdListHdr1Line(pGrpIndex, pSubIndex, pNumPages, pPageNum)
+function DMsgAreaChooser_WriteSubBrdListHdr1Line(pGrpIndex, pSubIndex, pNumPages, pPageNum)
 {
 	var descLen = 25;
-	var descFormatStr = "\1n" + this.colors.subBoardHeader + "Sub-boards of \1h%-" + descLen + "s     \1n"
+	var descFormatStr = "\x01n" + this.colors.subBoardHeader + "Sub-boards of \x01h%-" + descLen + "s     \x01n"
 	                  + this.colors.subBoardHeader;
 	if ((typeof(pPageNum) === "number") && (typeof(pNumPages) === "number"))
 		descFormatStr += "(Page " + pPageNum + " of " + pNumPages + ")";
@@ -488,7 +492,7 @@ function DMsgAreaChooser_writeSubBrdListHdr1Line(pGrpIndex, pSubIndex, pNumPages
 	else
 		desc = msg_area.grp_list[pGrpIndex].description;
 	printf(descFormatStr, desc.substr(0, descLen));
-	console.cleartoeol("\1n");
+	console.cleartoeol("\x01n");
 }
 
 // For the DDMsgAreaChooser class: Lets the user choose a message group and
@@ -550,7 +554,9 @@ function DDMsgAreaChooser_DisplayListHdrLines(pScreenRow, pChooseGroup, pGrpIdx,
 		// Write the list header lines
 		this.WriteSubBrdListHdr1Line(pGrpIdx);
 		if (typeof(pScreenRow) === "number")
-			console.gotoxy(1, pScreenRow+2);
+			console.gotoxy(1, pScreenRow+1);
+		else
+			console.crlf();
 		if (this.showDatesInSubBoardList)
 			printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + numItemsText, "Latest date & time");
 		else
@@ -574,8 +580,8 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 	// choose one.
 	if (msg_area.grp_list.length == 0)
 	{
-		console.clear("\1n");
-		console.print("\1y\1hThere are no message groups.\r\n\1p");
+		console.clear("\x01n");
+		console.print("\x01y\x01hThere are no message groups.\r\n\x01p");
 		return;
 	}
 	var level = (typeof(pLevel) === "number" ? pLevel : 1);
@@ -592,8 +598,8 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 				pGrpIdx = nextGrpIdx;
 			else
 			{
-				console.clear("\1n");
-				console.print("\1y\1hThere are no sub-boards available.\r\n\1p");
+				console.clear("\x01n");
+				console.print("\x01y\x01hThere are no sub-boards available.\r\n\x01p");
 				return;
 			}
 		}
@@ -606,8 +612,8 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 			return;
 		if (msg_area.grp_list[pGrpIdx].sub_list.length == 0)
 		{
-			console.clear("\1n");
-			console.print("\1y\1hThere are no sub-boards in " + msg_area.grp_list[pGrpIdx].description + ".\r\n\1p");
+			console.clear("\x01n");
+			console.print("\x01y\x01hThere are no sub-boards in " + msg_area.grp_list[pGrpIdx].description + ".\r\n\x01p");
 			return;
 		}
 	}
@@ -615,8 +621,8 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 	var chooseGroup = (pLevel == 1);
 
 	// Clear the screen, write the header, help line, and list header(s)
-	console.clear("\1n");
-	this.DisplayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, pGrpIdx);
+	console.clear("\x01n");
+	this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, chooseGroup, pGrpIdx);
 	this.WriteKeyHelpLine();
 
 	// Create the menu and do the user input loop
@@ -645,7 +651,7 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 		else if ((lastUserInputUpper == "/") || (lastUserInputUpper == CTRL_F)) // Start of find
 		{
 			console.gotoxy(1, console.screen_rows);
-			console.cleartoeol("\1n");
+			console.cleartoeol("\x01n");
 			console.gotoxy(1, console.screen_rows);
 			var promptText = "Search: ";
 			console.print(promptText);
@@ -799,9 +805,9 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 			this.ShowHelpScreen(true, true);
 			console.pause();
 			// Refresh the screen
-			console.clear("\1n");
+			console.clear("\x01n");
 			this.DisplayAreaChgHdr(1);
-			this.DisplayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, pGrpIdx);
+			this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, chooseGroup, pGrpIdx);
 			this.WriteKeyHelpLine();
 		}
 		// If the user entered a numeric digit, then treat it as
@@ -814,7 +820,7 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 			// Move the cursor to the bottom of the screen and
 			// prompt the user for the message number.
 			console.gotoxy(1, console.screen_rows);
-			console.clearline("\1n");
+			console.clearline("\x01n");
 			var itemPromptWord = "";
 			if (this.useSubCollapsing)
 			{
@@ -827,7 +833,7 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 			}
 			else
 				itemPromptWord = (level == 1 ? "group" : "sub-board");
-			printf("\1cChoose %s #: \1h", itemPromptWord);
+			printf("\x01cChoose %s #: \x01h", itemPromptWord);
 			var userInput = console.getnum(msgAreaMenu.NumItems());
 			if (userInput > 0)
 				chosenIdx = userInput - 1;
@@ -835,7 +841,7 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 			{
 				// The user didn't make a selection.  So, we need to refresh
 				// the screen due to everything being moved up one line.
-				this.DisplayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, pGrpIdx);
+				this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, chooseGroup, pGrpIdx);
 				this.WriteKeyHelpLine();
 			}
 		}
@@ -851,7 +857,7 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 				// Show a "Loading..." text in case there are many sub-boards in
 				// the chosen message group
 				console.crlf();
-				console.print("\1nLoading...");
+				console.print("\x01nLoading...");
 				console.line_counter = 0; // To prevent a pause before the message list comes up
 				// Ensure that the sub-board printf information is created for
 				// the chosen message group.
@@ -872,7 +878,7 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 				{
 					// A message sub-board was not chosen, so we'll have to re-draw
 					// the header and key help line
-					this.DisplayListHdrLines(this.areaChangeHdrLines.length, chooseGroup, pGrpIdx);
+					this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, chooseGroup, pGrpIdx);
 					this.WriteKeyHelpLine();
 				}
 			}
@@ -1029,7 +1035,7 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 	subBoardListIdxes.timeStart = subBoardListIdxes.dateEnd;
 	// Set timeEnd to -1 to let the whole rest of the lines be colored
 	subBoardListIdxes.timeEnd = -1;
-	var listStartRow = this.areaChangeHdrLines.length + 3; // or + 2?
+	var listStartRow = this.areaChangeHdrLines.length + 3; // or + 3?
 	var subBoardMenuHeight = console.screen_rows - listStartRow;
 	var subBoardMenu = new DDLightbarMenu(1, listStartRow, console.screen_columns, subBoardMenuHeight);
 	subBoardMenu.scrollbarEnabled = true;
@@ -1250,8 +1256,8 @@ function DDMsgAreaChooser_SelectMsgArea_Traditional(pChooseGroup)
 	// choose one.
 	if (msg_area.grp_list.length == 0)
 	{
-		console.clear("\1n");
-		console.print("\1y\1hThere are no message groups.\r\n\1p");
+		console.clear("\x01n");
+		console.print("\x01y\x01hThere are no message groups.\r\n\x01p");
 		return;
 	}
 
@@ -1270,13 +1276,13 @@ function DDMsgAreaChooser_SelectMsgArea_Traditional(pChooseGroup)
 			// commands in there that could cause weird things to happen.
 			bbs.command_str = "";
 
-			console.clear("\1n");
+			console.clear("\x01n");
 			this.DisplayAreaChgHdr(1);
 			if (this.areaChangeHdrLines.length > 0)
 				console.crlf();
 			this.ListMsgGrps(grpSearchText);
 			console.crlf();
-			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c, or [\1h" + +(usersCurrentIdxVals.grpIdx+1) + "\1n\1c]: \1h");
+			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c, or [\x01h" + +(usersCurrentIdxVals.grpIdx+1) + "\x01n\x01c]: \x01h");
 			// Accept Q (quit), / or CTRL_F (Search) or a file library number
 			selectedGrp = console.getkeys("Q/" + CTRL_F, msg_area.grp_list.length);
 
@@ -1290,7 +1296,7 @@ function DDMsgAreaChooser_SelectMsgArea_Traditional(pChooseGroup)
 			else if ((selectedGrp.toString() == "/") || (selectedGrp.toString() == CTRL_F))
 			{
 				console.crlf();
-				var searchPromptText = "\1n\1c\1hSearch\1g: \1n";
+				var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
 				console.print(searchPromptText);
 				var searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
 				if (searchText.length > 0)
@@ -1312,7 +1318,7 @@ function DDMsgAreaChooser_SelectMsgArea_Traditional(pChooseGroup)
 					if (selectedGrp-1 != usersCurrentIdxVals.grpIdx)
 						defaultSubBoard = 1;
 
-					console.clear("\1n");
+					console.clear("\x01n");
 					var selectSubRetVal = this.SelectSubBoard_Traditional(selectedGrp-1, defaultSubBoard-1);
 					// If the user chose a directory, then set the user's
 					// message sub-board and quit the message group loop.
@@ -1367,9 +1373,9 @@ function DDMsgAreaChooser_SelectSubBoard_Traditional(pGrpIdx, pDefaultSubBoardId
 		this.ListSubBoardsInMsgGroup(pGrpIdx, null, defaultSubBoardIdx, searchText);
 		console.crlf();
 		if (defaultSubBoardIdx >= 0)
-			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c, or [\1h" + +(defaultSubBoardIdx+1) + "\1n\1c]: \1h");
+			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c, or [\x01h" + +(defaultSubBoardIdx+1) + "\x01n\x01c]: \x01h");
 		else
-			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c: \1h");
+			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c: \x01h");
 		// Accept Q (quit) or a sub-board number
 		var selectedSubBoard = console.getkeys("Q/" + CTRL_F, msg_area.grp_list[pGrpIdx].sub_list.length);
 
@@ -1388,10 +1394,10 @@ function DDMsgAreaChooser_SelectSubBoard_Traditional(pGrpIdx, pDefaultSubBoardId
 		{
 			// Search
 			console.crlf();
-			var searchPromptText = "\1n\1c\1hSearch\1g: \1n";
+			var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
 			console.print(searchPromptText);
 			searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-			console.print("\1n");
+			console.attributes = "N";
 			console.crlf();
 			if (searchText.length > 0)
 				defaultSubBoardIdx = -1;
@@ -1422,7 +1428,7 @@ function DDMsgAreaChooser_SelectSubBoard_Traditional(pGrpIdx, pDefaultSubBoardId
 				else // An area wasn't chosen
 				{
 					continueOn = true;
-					console.clear("\1n");
+					console.clear("\x01n");
 				}
 			}
 			else
@@ -1465,14 +1471,14 @@ function DDMsgAreaChooser_SelectSubSubWithinSub_Traditional(pGrpIdx, pSubIdx)
 		return retObj;
 	if ((pSubIdx < 0) || (pSubIdx >= this.group_list[pGrpIdx].sub_list.length))
 	{
-		console.clear("\1n");
-		console.print("\1y\1hThere are no sub-boards in this message group.\r\n\1p");
+		console.clear("\x01n");
+		console.print("\x01y\x01hThere are no sub-boards in this message group.\r\n\x01p");
 		return retObj;
 	}
 	if (this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length == 0)
 	{
-		console.clear("\1n");
-		console.print("\1y\1hThere are no sub-subboards in this sub-board.\r\n\1p");
+		console.clear("\x01n");
+		console.print("\x01y\x01hThere are no sub-subboards in this sub-board.\r\n\x01p");
 		return retObj;
 	}
 
@@ -1497,7 +1503,7 @@ function DDMsgAreaChooser_SelectSubSubWithinSub_Traditional(pGrpIdx, pSubIdx)
 	var continueOn = false;
 	do
 	{
-		console.clear("\1n");
+		console.clear("\x01n");
 		this.DisplayAreaChgHdr(1);
 		if (this.areaChangeHdrLines.length > 0)
 			console.crlf();
@@ -1507,9 +1513,9 @@ function DDMsgAreaChooser_SelectSubSubWithinSub_Traditional(pGrpIdx, pSubIdx)
 		// message group list
 		this.ListSubBoardsInMsgGroup(pGrpIdx, pSubIdx, defaultSubSubNum, searchText);
 		if (defaultSubSubNum >= 1)
-			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c, or [\1h" + defaultSubSubNum + "\1n\1c]: \1h");
+			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c, or [\x01h" + defaultSubSubNum + "\x01n\x01c]: \x01h");
 		else
-			console.print("\1n\1b\1hþ \1n\1cWhich, \1hQ\1n\1cuit, \1hCTRL-F\1n\1c, \1h/\1n\1c: \1h");
+			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c: \x01h");
 		// Accept Q (quit), / or CTRL_F to search, or a file sub-board number
 		var selectedSubSubNum = console.getkeys("Q/" + CTRL_F, this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length);
 
@@ -1523,10 +1529,10 @@ function DDMsgAreaChooser_SelectSubSubWithinSub_Traditional(pGrpIdx, pSubIdx)
 		{
 			// Search
 			console.crlf();
-			var searchPromptText = "\1n\1c\1hSearch\1g: \1n";
+			var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
 			console.print(searchPromptText);
 			searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-			console.print("\1n");
+			console.attributes = "N";
 			console.crlf();
 			if (searchText.length > 0)
 				defaultSubSubNum = -1;
@@ -1558,7 +1564,7 @@ function DDMsgAreaChooser_ListMsgGrps_Traditional(pSearchText)
 {
 	// Print the header
 	this.WriteGrpListHdrLine();
-	console.print("\1n");
+	console.attributes = "N";
 
 	var searchText = (typeof(pSearchText) == "string" ? pSearchText.toUpperCase() : "");
 
@@ -1636,7 +1642,7 @@ function DDMsgAreaChooser_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pSubIdx
 		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + itemsHdrStr, "Latest date & time");
 	else
 		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + itemsHdrStr);
-	console.print("\1n");
+	console.attributes = "N";
 
 	// Make the search text uppercase for case-insensitive matching
 	var searchTextUpper = (typeof(pSearchText) == "string" ? pSearchText.toUpperCase() : "");
@@ -1790,7 +1796,7 @@ function DDMsgAreaChooser_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pSubIdx
 				if (subBoardArray[i].subBoardNum == highlightIndex)
 					showSubBoardMark = ((grpIndex == msg_area.sub[bbs.cursub_code].grp_index) && (highlightIndex == subBoardArray[i].subBoardIdx));
 			}
-			console.print(showSubBoardMark ? "\1n" + this.colors.areaMark + "*" : " ");
+			console.print(showSubBoardMark ? "\x01n" + this.colors.areaMark + "*" : " ");
 			if (this.showDatesInSubBoardList)
 			{
 				printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardArray[i].subBoardNum+1),
@@ -1867,7 +1873,7 @@ function DDMsgAreaChooser_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pSubIdx
 				}
 				else
 					showSubBoardMark = (subBoardNum == highlightIndex);
-				console.print(showSubBoardMark ? "\1n" + this.colors.areaMark + "*" : " ");
+				console.print(showSubBoardMark ? "\x01n" + this.colors.areaMark + "*" : " ");
 				var lengthsObj = this.GetSubNameLenAndNumMsgsLen(grpIndex);
 				if (this.showDatesInSubBoardList)
 				{
@@ -2033,7 +2039,7 @@ function DDMsgAreaChooser_GetSubBoardInfo(pGrpIdx, pSubIdx, pSubSubIdx)
 //  pHighlight: Boolean - Whether or not to write the line highlighted.
 function DDMsgAreaChooser_writeMsgGroupLine(pGrpIndex, pHighlight)
 {
-	console.print("\1n");
+	console.attributes = "N";
 	// Write the highlight background color if pHighlight is true.
 	if (pHighlight)
 		console.print(this.colors.bkgHighlight);
@@ -2047,7 +2053,7 @@ function DDMsgAreaChooser_writeMsgGroupLine(pGrpIndex, pHighlight)
 	       +(pGrpIndex+1),
 	       msg_area.grp_list[pGrpIndex].description.substr(0, this.msgGrpDescLen),
 	       msg_area.grp_list[pGrpIndex].sub_list.length);
-	console.cleartoeol("\1n");
+	console.cleartoeol("\x01n");
 }
 
 //////////////////////////////////////////////////
@@ -2064,7 +2070,7 @@ function DDMsgAreaChooser_writeMsgGroupLine(pGrpIndex, pHighlight)
 
 function DDMsgAreaChooser_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 {
-	var subBoardLine = "\1n";
+	var subBoardLine = "\x01n";
 	// Write the highlight background color if pHighlight is true.
 	if (pHighlight)
 		subBoardLine += this.colors.bkgHighlight;
@@ -2197,19 +2203,19 @@ function DDMsgAreaChooser_ReadConfigFile()
 function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 {
 	if (pClearScreen)
-		console.clear("\1n");
+		console.clear("\x01n");
 	else
-		console.print("\1n");
-	console.center("\1c\1hDigital Distortion Message Area Chooser");
+		console.attributes = "N";
+	console.center("\x01c\x01hDigital Distortion Message Area Chooser");
 	var lineStr = "";
 	for (var i = 0; i < 39; ++i)
 		lineStr += HORIZONTAL_SINGLE;
 	console.attributes = "HK";
 	console.center(lineStr);
-	console.center("\1n\1cVersion \1g" + DD_MSG_AREA_CHOOSER_VERSION +
-	               " \1w\1h(\1b" + DD_MSG_AREA_CHOOSER_VER_DATE + "\1w)");
+	console.center("\x01n\x01cVersion \x01g" + DD_MSG_AREA_CHOOSER_VERSION +
+	               " \x01w\x01h(\x01b" + DD_MSG_AREA_CHOOSER_VER_DATE + "\x01w)");
 	console.crlf();
-	console.print("\1n\1cFirst, a listing of message groups is displayed.  One can be chosen by typing");
+	console.print("\x01n\x01cFirst, a listing of message groups is displayed.  One can be chosen by typing");
 	console.crlf();
 	console.print("its number.  Then, a listing of sub-boards within that message group will be");
 	console.crlf();
@@ -2219,29 +2225,29 @@ function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 	if (pLightbar)
 	{
 		console.crlf();
-		console.print("\1n\1cThe lightbar interface also allows up & down navigation through the lists:");
+		console.print("\x01n\x01cThe lightbar interface also allows up & down navigation through the lists:");
 		console.crlf();
 		console.attributes = "HK";
 		for (var i = 0; i < 74; ++i)
 			console.print(HORIZONTAL_SINGLE);
 		console.crlf();
-		console.print("\1n\1c\1hUp arrow\1n\1c: Move the cursor up one line");
+		console.print("\x01n\x01c\x01hUp arrow\x01n\x01c: Move the cursor up one line");
 		console.crlf();
-		console.print("\1hDown arrow\1n\1c: Move the cursor down one line");
+		console.print("\x01hDown arrow\x01n\x01c: Move the cursor down one line");
 		console.crlf();
-		console.print("\1hENTER\1n\1c: Select the current group/sub-board");
+		console.print("\x01hENTER\x01n\x01c: Select the current group/sub-board");
 		console.crlf();
-		console.print("\1hHOME\1n\1c: Go to the first item on the screen");
+		console.print("\x01hHOME\x01n\x01c: Go to the first item on the screen");
 		console.crlf();
-		console.print("\1hEND\1n\1c: Go to the last item on the screen");
+		console.print("\x01hEND\x01n\x01c: Go to the last item on the screen");
 		console.crlf();
-		console.print("\1hPageUp\1n\1c/\1hPageDown\1n\1c: Go to the previous/next page");
+		console.print("\x01hPageUp\x01n\x01c/\x01hPageDown\x01n\x01c: Go to the previous/next page");
 		console.crlf();
-		console.print("\1hF\1n\1c/\1hL\1n\1c: Go to the first/last page");
+		console.print("\x01hF\x01n\x01c/\x01hL\x01n\x01c: Go to the first/last page");
 		console.crlf();
-		console.print("\1h/\1n\1c or \1hCtrl-F\1n\1c: Find by name/description");
+		console.print("\x01h/\x01n\x01c or \x01hCtrl-F\x01n\x01c: Find by name/description");
 		console.crlf();
-		console.print("\1hN\1n\1c: Next search result (after a find)");
+		console.print("\x01hN\x01n\x01c: Next search result (after a find)");
 		console.crlf();
 	}
 
@@ -2252,9 +2258,9 @@ function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 	for (var i = 0; i < 29; ++i)
 		console.print(HORIZONTAL_SINGLE);
 	console.crlf();
-	console.print("\1n\1c\1h?\1n\1c: Show this help screen");
+	console.print("\x01n\x01c\x01h?\x01n\x01c: Show this help screen");
 	console.crlf();
-	console.print("\1hQ\1n\1c: Quit");
+	console.print("\x01hQ\x01n\x01c: Quit");
 	console.crlf();
 }
 
@@ -2295,24 +2301,24 @@ function DDMsgAreaChooser_BuildSubBoardPrintfInfoForGrp(pGrpIndex)
 			                                                 + this.colors.latestDate + "%" + this.dateLen + "s "
 			                                                 + this.colors.latestTime + "%" + this.timeLen + "s";
 		}
-		this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr = "\1n" + this.colors.bkgHighlight
-		                                                          + " " + "\1n"
+		this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr = "\x01n" + this.colors.bkgHighlight
+		                                                          + " " + "\x01n"
 		                                                          + this.colors.bkgHighlight
 		                                                          + this.colors.areaNumHighlight
-		                                                          + "%" + this.areaNumLen + "d \1n"
+		                                                          + "%" + this.areaNumLen + "d \x01n"
 		                                                          + this.colors.bkgHighlight
 		                                                          + this.colors.descHighlight + "%-"
-		                                                          + this.subBoardListPrintfInfo[pGrpIndex].nameLen + "s \1n"
+		                                                          + this.subBoardListPrintfInfo[pGrpIndex].nameLen + "s \x01n"
 		                                                          + this.colors.bkgHighlight
 		                                                          + this.colors.numItemsHighlight + "%"
 		                                                          + this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen + "d";
 		if (this.showDatesInSubBoardList)
 		{
-			this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr += " \1n"
+			this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr += " \x01n"
 			                                                          + this.colors.bkgHighlight
-			                                                          + this.colors.dateHighlight + "%" + this.dateLen + "s \1n"
+			                                                          + this.colors.dateHighlight + "%" + this.dateLen + "s \x01n"
 			                                                          + this.colors.bkgHighlight
-			                                                          + this.colors.timeHighlight + "%" + this.timeLen + "s\1n";
+			                                                          + this.colors.timeHighlight + "%" + this.timeLen + "s\x01n";
 		}
 	}
 }
@@ -2343,7 +2349,7 @@ function DDMsgAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 		var clearRowsFirst = (typeof(pClearRowsFirst) == "boolean" ? pClearRowsFirst : true);
 		if (clearRowsFirst)
 		{
-			console.print("\1n");
+			console.attributes = "N";
 			for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
 			{
 				console.gotoxy(screenX, screenY++);
@@ -2358,7 +2364,7 @@ function DDMsgAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 			console.gotoxy(screenX, screenY++);
 			console.print(this.areaChangeHdrLines[hdrFileIdx]);
 			//console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
-			//console.cleartoeol("\1n"); // Shouldn't do this, as it resets color attributes
+			//console.cleartoeol("\x01n"); // Shouldn't do this, as it resets color attributes
 		}
 	}
 	else
@@ -2369,7 +2375,7 @@ function DDMsgAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 		{
 			console.print(this.areaChangeHdrLines[hdrFileIdx]);
 			//console.putmsg(this.areaChangeHdrLines[hdrFileIdx]);
-			//console.cleartoeol("\1n"); // Shouldn't do this, as it resets color attributes
+			//console.cleartoeol("\x01n"); // Shouldn't do this, as it resets color attributes
 			console.crlf();
 		}
 	}
@@ -2384,9 +2390,9 @@ function DDMsgAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 function DDMsgAreaChooser_WriteLightbarKeyHelpErrorMsg(pErrorMsg, pRefreshHelpLine)
 {
 	console.gotoxy(1, console.screen_rows);
-	console.cleartoeol("\1n");
+	console.cleartoeol("\x01n");
 	console.gotoxy(1, console.screen_rows);
-	console.print("\1y\1h" + pErrorMsg + "\1n");
+	console.print("\x01y\x01h" + pErrorMsg + "\x01n");
 	mswait(ERROR_WAIT_MS);
 	if (pRefreshHelpLine)
 		this.WriteKeyHelpLine();
@@ -2654,9 +2660,9 @@ function getNumMsgsInSubBoard(pSubCode)
 // Inputs a keypress from the user and handles some ESC-based
 // characters such as PageUp, PageDown, and ESC.  If PageUp
 // or PageDown are pressed, this function will return the
-// string "\1PgUp" (KEY_PAGE_UP) or "\1Pgdn" (KEY_PAGE_DOWN),
-// respectively.  Also, F1-F5 will be returned as "\1F1"
-// through "\1F5", respectively.
+// string "\x01PgUp" (KEY_PAGE_UP) or "\x01Pgdn" (KEY_PAGE_DOWN),
+// respectively.  Also, F1-F5 will be returned as "\x01F1"
+// through "\x01F5", respectively.
 // Thanks goes to Psi-Jack for the original impementation
 // of this function.
 //
@@ -2691,19 +2697,19 @@ function getKeyWithESCChars(pGetKeyMode)
 				switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
 				{
 					case 'P':
-						userInput = "\1F1";
+						userInput = "\x01F1";
 						break;
 					case 'Q':
-						userInput = "\1F2";
+						userInput = "\x01F2";
 						break;
 					case 'R':
-						userInput = "\1F3";
+						userInput = "\x01F3";
 						break;
 					case 'S':
-						userInput = "\1F4";
+						userInput = "\x01F4";
 						break;
 					case 't':
-						userInput = "\1F5";
+						userInput = "\x01F5";
 						break;
 				}
 			default:
@@ -2726,11 +2732,11 @@ function getKeyWithESCChars(pGetKeyMode)
 function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 {
 	if (typeof(pFilenameBase) != "string")
-		return new Array();
+		return [];
 
 	var maxNumLines = (typeof(pMaxNumLines) === "number" ? pMaxNumLines : -1);
 
-	var txtFileLines = new Array();
+	var txtFileLines = [];
 	// See if there is a header file that is made for the user's terminal
 	// width (areaChgHeader-<width>.ans/asc).  If not, then just go with
 	// msgHeader.ans/asc.
@@ -3089,7 +3095,7 @@ function getStrWithTimeout(pMode, pMaxLength, pTimeout)
 	if (((mode & K_LINE) == K_LINE) && (maxWidth > 0) && console.term_supports(USER_ANSI))
 	{
 		var curPos = console.getxy();
-		printf("\1n\1w\1h\1" + "4%" + maxWidth + "s", "");
+		printf("\x01n\x01w\x01h\x01" + "4%" + maxWidth + "s", "");
 		console.gotoxy(curPos);
 		setNormalAttrAtEnd = true;
 	}
@@ -3127,7 +3133,7 @@ function getStrWithTimeout(pMode, pMaxLength, pTimeout)
 	} while(userKey.length > 0);
 
 	if (setNormalAttrAtEnd)
-		console.print("\1n");
+		console.attributes = "N";
 
 	return inputStr;
 }

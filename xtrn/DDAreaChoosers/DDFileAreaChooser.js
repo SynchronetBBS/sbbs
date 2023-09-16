@@ -56,6 +56,10 @@
  *                            Fix for directory collapsing mode with the lightbar interface: It now exits
  *                            when the user chooses their same file directory instead of continuing the
  *                            menu input loop.
+ * 2023-09-12 Eric Oulashin   Version 1.37 Beta
+ *                            Area change header line bug fix
+ * 2023-09-16 Eric Oulashin   Version 1.37
+ *                            Releasing this version
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -96,8 +100,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.36";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-07-21";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.37";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-09-16";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -236,7 +240,7 @@ function DDFileAreaChooser()
 	this.ListFileLibs_Traditional = DDFileAreaChooser_ListFileLibs_Traditional;
 	this.ListDirsInFileLib_Traditional = DDFileAreaChooser_ListDirsInFileLib_Traditional;
 	this.ListSubdirsInFileDir_Traditional = DDFileAreaChooser_ListSubdirsInFileDir_Traditional;
-	this.WriteLibListHdrLine = DDFileAreaChooser_WriteLibListTopHdrLine;
+	this.WriteLibListHdrLine = DDFileAreaChooser_WriteLibListHdrLine;
 	this.WriteDirListHdr1Line = DDFileAreaChooser_WriteDirListHdr1Line;
 	// Lightbar-specific functions
 	this.SelectFileArea_Lightbar = DDFileAreaChooser_SelectFileArea_Lightbar;
@@ -613,7 +617,7 @@ function DDFileAreaChooser_SelectDirWithinFileLib_Traditional(pLibIdx, pSelected
 			var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
 			console.print(searchPromptText);
 			searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-			console.print("\x01n");
+			console.attributes = "N";
 			console.crlf();
 			if (searchText.length > 0)
 				defaultDirNum = -1;
@@ -725,7 +729,7 @@ function DDFileAreaChooser_SelectSubdirWithinDir_Traditional(pLibIdx, pDirIdx)
 			var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
 			console.print(searchPromptText);
 			searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-			console.print("\x01n");
+			console.attributes = "N";
 			console.crlf();
 			if (searchText.length > 0)
 				defaultSubdirNum = -1;
@@ -790,7 +794,7 @@ function DDFileAreaChooser_ListFileLibs_Traditional(pSearchText)
 	// Print the list header
 	printf(this.fileLibListHdrPrintfStr, "Lib #", "Description", "# Dirs");
 	console.crlf();
-	console.print("\x01n");
+	console.attributes = "N";
 	// Print the information for each file library
 	var numDirsListed = 0;
 	var printIt = true;
@@ -858,7 +862,7 @@ function DDFileAreaChooser_ListDirsInFileLib_Traditional(pLibIndex, pMarkIndex, 
 	console.crlf();
 	printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Items");
 	console.crlf();
-	console.print("\x01n");
+	console.attributes = "N";
 	var numDirsListed = 0;
 	var printIt = true;
 	var lib_list = (this.useDirCollapsing ? this.lib_list : file_area.lib_list);
@@ -938,7 +942,7 @@ function DDFileAreaChooser_ListSubdirsInFileDir_Traditional(pLibIndex, pDirIndex
 	console.crlf();
 	printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Items");
 	console.crlf();
-	console.print("\x01n");
+	console.attributes = "N";
 	var numDirsListed = 0;
 	var printIt = true;
 	for (var i = 0; i < this.lib_list[libIndex].dir_list[pDirIndex].subdir_list.length; ++i)
@@ -974,7 +978,7 @@ function DDFileAreaChooser_ListSubdirsInFileDir_Traditional(pLibIndex, pDirIndex
 //             not passed, then it won't be used.
 //  pPageNum: The page number.  This is optional; if this is not passed,
 //            then it won't be used.
-function DDFileAreaChooser_WriteLibListTopHdrLine(pNumPages, pPageNum)
+function DDFileAreaChooser_WriteLibListHdrLine(pNumPages, pPageNum)
 {
 	var descStr = "Description";
 	if ((typeof(pPageNum) == "number") && (typeof(pNumPages) == "number"))
@@ -1081,9 +1085,11 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 		this.BuildFileDirPrintfInfoForLib(pLibIdx);
 
 	// Displays the header & header lines above the list
-	function displayListHdrLines(pLevel, pAreaChooser, pLibIdx, pDirIdx, pNumPages, pPageNum)
+	function displayListHdrLines(pLevel, pAreaChooser, pLibIdx, pDirIdx, pNumPages, pPageNum, pClearScrFirst)
 	{
-		console.clear("\x01n");
+		var clearScrFirst = (typeof(pClearScrFirst) === "boolean" ? pClearScrFirst : true);
+		if (clearScrFirst)
+			console.clear("\x01n");
 		pAreaChooser.DisplayAreaChgHdr(1);
 		console.gotoxy(1, pAreaChooser.areaChangeHdrLines.length+1);
 		if (pLevel == 1)
@@ -1105,8 +1111,8 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 		}
 	}
 
-	// Clear the screen, write the header, help line, and library/dir list header(s)
-	displayListHdrLines(level, this, pLibIdx, pDirIdx);
+	// Clear the screen, & write the key help line at the bottom of the screen
+	console.clear("\x01n");
 	this.WriteKeyHelpLine();
 
 	// Create the menu and do the uesr input loop
@@ -1129,6 +1135,7 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 	// Let the user choose a group, and also respond to other user choices
 	while (continueOn)
 	{
+		displayListHdrLines(level, this, pLibIdx, pDirIdx, null, null, false);
 		chosenIdx = -1;
 		var returnedMenuIdx = fileAreaMenu.GetVal(drawMenu);
 		drawMenu = true;
@@ -1830,7 +1837,7 @@ function DDFileAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 	if (pClearScreen)
 		console.clear("\x01n");
 	else
-		console.print("\x01n");
+		console.attributes = "N";
 	console.center("\x01c\x01hDigital Distortion File Area Chooser");
 	var lineStr = "";
 	for (var i = 0; i < 36; ++i)
@@ -2027,7 +2034,7 @@ function DDFileAreaChooser_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 		var clearRowsFirst = (typeof(pClearRowsFirst) == "boolean" ? pClearRowsFirst : true);
 		if (clearRowsFirst)
 		{
-			console.print("\x01n");
+			console.attributes = "N";
 			for (var hdrFileIdx = 0; hdrFileIdx < this.areaChangeHdrLines.length; ++hdrFileIdx)
 			{
 				console.gotoxy(screenX, screenY++);
@@ -2611,7 +2618,7 @@ function getStrWithTimeout(pMode, pMaxLength, pTimeout)
 	} while(userKey.length > 0);
 
 	if (setNormalAttrAtEnd)
-		console.print("\x01n");
+		console.attributes = "N";
 
 	return inputStr;
 }
