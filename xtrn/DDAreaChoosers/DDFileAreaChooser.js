@@ -60,6 +60,8 @@
  *                            Area change header line bug fix
  * 2023-09-16 Eric Oulashin   Version 1.37
  *                            Releasing this version
+ * 2023-09-17 Eric Oulashin   Version 1.38
+ *                            Bug fix: Searching was stuck if using directory name collapsing
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -100,8 +102,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.37";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-09-16";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.38";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-09-17";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -256,6 +258,7 @@ function DDFileAreaChooser()
 	this.DisplayAreaChgHdr = DDFileAreaChooser_DisplayAreaChgHdr;
 	this.WriteLightbarKeyHelpErrorMsg = DDFileAreaChooser_WriteLightbarKeyHelpErrorMsg;
 	this.SetUpLibListWithCollapsedDirs = DDFileAreaChooser_SetUpLibListWithCollapsedDirs;
+	this.FindFileDirIdxFromText = DDFileAreaChooser_FindFileDirIdxFromText;
 	this.GetGreatestNumFiles = DDFileAreaChooser_GetGreatestNumFiles;
 
 	// Read the settings from the config file.
@@ -1168,13 +1171,13 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 				switch (level)
 				{
 					case 1:
-						idx = findFileLibIdxFromText(searchText, fileAreaMenu.selectedItemIdx);
+						idx = findFileLibIdxFromText(searchText, fileAreaMenu.selectedItemIdx, level, pDirIdx);
 						break;
 					case 2:
-						idx = findFileDirIdxFromText(pLibIdx, searchText, fileAreaMenu.selectedItemIdx+1);
+						idx = this.FindFileDirIdxFromText(pLibIdx, searchText, fileAreaMenu.selectedItemIdx+1, level, pDirIdx);
 						break;
 					case 3:
-						// TODO
+						idx = this.FindFileDirIdxFromText(pLibIdx, searchText, 0, level, pDirIdx);
 						break;
 				}
 				lastSearchFoundIdx = idx;
@@ -1202,10 +1205,10 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 							idx = findFileLibIdxFromText(searchText, 0);
 							break;
 						case 2:
-							idx = findFileDirIdxFromText(pLibIdx, searchText, 0);
+							idx = this.FindFileDirIdxFromText(pLibIdx, searchText, 0, level, pDirIdx);
 							break;
 						case 3:
-							// TODO
+							idx = this.FindFileDirIdxFromText(pLibIdx, searchText, 0, level, pDirIdx);
 							break;
 					}
 					lastSearchFoundIdx = idx;
@@ -1255,7 +1258,7 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 						idx = findFileLibIdxFromText(searchText, lastSearchFoundIdx+1);
 						break;
 					case 2:
-						idx = findFileDirIdxFromText(pLibIdx, searchText, lastSearchFoundIdx+1);
+						idx = this.FindFileDirIdxFromText(pLibIdx, searchText, lastSearchFoundIdx+1, level, pDirIdx);
 						break;
 					case 3:
 						// TODO
@@ -1290,7 +1293,7 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 							idx = findFileLibIdxFromText(searchText, 0);
 							break;
 						case 2:
-							idx = findFileDirIdxFromText(pLibIdx, searchText, 0);
+							idx = this.FindFileDirIdxFromText(pLibIdx, searchText, 0, level, pDirIdx);
 							break;
 						case 3:
 							// TODO
@@ -2239,6 +2242,122 @@ function DDFileAreaChooser_SetUpLibListWithCollapsedDirs()
 	}
 }
 
+// For the DDFileAreaChooser class: Finds a file directory index with search text, matching either the name or
+// description, case-insensitive.
+//
+// Parameters:
+//  pGrpIdx: The index of the file library
+//  pSearchText: The name/description text to look for
+//  pStartItemIdx: The item index to start at.  Defaults to 0
+//  pLevel: Level (only if using directory collapsing): 2 = directories, and 3 = subdirectories
+//  pDirIdx: If level 3 (subdirs), this specifies the directory index
+//
+// Return value: The index of the file directory, or -1 if not found
+function DDFileAreaChooser_FindFileDirIdxFromText(pLibIdx, pSearchText, pStartItemIdx, pLevel, pDirIdx)
+{
+	if (typeof(pLibIdx) != "number")
+		return -1;
+	if (typeof(pSearchText) != "string")
+		return -1;
+
+	var fileDirIdx = -1;
+
+	var startIdx = (typeof(pStartItemIdx) == "number" ? pStartItemIdx : 0);
+
+	// Temporary
+	//if (user.is_sysop) console.print("\x01n\r\npDir collapsing: " + this.useDirCollapsing + "; Level, pDirIdx: " + pLevel + ", " + pDirIdx + "\r\n\x01p");
+	// End Temporary
+
+	// Go through the message group list and look for a match
+	var searchTextUpper = pSearchText.toUpperCase();
+	var continueOn = true;
+	if (this.useDirCollapsing)
+	{
+		if (typeof(pDirIdx) !== "number")
+			return -1;
+		if (pDirIdx < 0 || pDirIdx >= this.lib_list[pLibIdx].dir_list.length)
+			return -1;
+		if (typeof(pLevel) === "number")
+		{
+			if (pLevel == 2)
+			{
+				if ((startIdx < 0) || (startIdx >= this.lib_list[pLibIdx].dir_list.length))
+					startIdx = 0;
+				while (continueOn && fileDirIdx == -1)
+				{
+					for (var i = startIdx; i < this.lib_list[pLibIdx].dir_list.length; ++i)
+					{
+						if ((this.lib_list[pLibIdx].dir_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
+							(this.lib_list[pLibIdx].dir_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
+						{
+							fileDirIdx = i;
+							continueOn = false;
+							break;
+						}
+					}
+					if (fileDirIdx == -1)
+					{
+						if (startIdx > 0)
+							startIdx = 0;
+						else
+							continueOn = false;
+					}
+				}
+			}
+			else if (pLevel == 3)
+			{
+				if ((startIdx < 0) || (startIdx >= this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length))
+					startIdx = 0;
+				while (continueOn && fileDirIdx == -1)
+				{
+					for (var i = startIdx; i < this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length; ++i)
+					{
+						if ((this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
+						{
+							fileDirIdx = i;
+							continueOn = false;
+							break;
+						}
+					}
+					if (fileDirIdx == -1)
+					{
+						if (startIdx > 0)
+							startIdx = 0;
+						else
+							continueOn = false;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		if ((startIdx < 0) || (startIdx >= file_area.lib_list[pLibIdx].dir_list.length))
+			startIdx = 0;
+		while (continueOn && fileDirIdx == -1)
+		{
+			for (var i = startIdx; i < file_area.lib_list[pLibIdx].dir_list.length; ++i)
+			{
+				if ((file_area.lib_list[pLibIdx].dir_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
+					(file_area.lib_list[pLibIdx].dir_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
+				{
+					fileDirIdx = i;
+					break;
+				}
+			}
+			if (fileDirIdx == -1)
+			{
+				if (startIdx > 0)
+					startIdx = 0;
+				else
+					continueOn = false;
+			}
+		}
+	}
+
+	return fileDirIdx;
+}
+
 // Removes multiple, leading, and/or trailing spaces
 // The search & replace regular expressions used in this
 // function came from the following URL:
@@ -2785,43 +2904,6 @@ function findFileLibIdxFromText(pSearchText, pStartItemIdx)
 	}
 
 	return libIdx;
-}
-
-// Finds a file directory index with search text, matching either the name or
-// description, case-insensitive.
-//
-// Parameters:
-//  pGrpIdx: The index of the file library
-//  pSearchText: The name/description text to look for
-//  pStartItemIdx: The item index to start at.  Defaults to 0
-//
-// Return value: The index of the file directory, or -1 if not found
-function findFileDirIdxFromText(pLibIdx, pSearchText, pStartItemIdx)
-{
-	if (typeof(pLibIdx) != "number")
-		return -1;
-	if (typeof(pSearchText) != "string")
-		return -1;
-
-	var fileDirIdx = -1;
-
-	var startIdx = (typeof(pStartItemIdx) == "number" ? pStartItemIdx : 0);
-	if ((startIdx < 0) || (startIdx > file_area.lib_list[pLibIdx].dir_list.length))
-		startIdx = 0;
-
-	// Go through the message group list and look for a match
-	var searchTextUpper = pSearchText.toUpperCase();
-	for (var i = startIdx; i < file_area.lib_list[pLibIdx].dir_list.length; ++i)
-	{
-		if ((file_area.lib_list[pLibIdx].dir_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
-		    (file_area.lib_list[pLibIdx].dir_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
-		{
-			fileDirIdx = i;
-			break;
-		}
-	}
-
-	return fileDirIdx;
 }
 
 // Given a string of attribute characters, this function inserts the control code
