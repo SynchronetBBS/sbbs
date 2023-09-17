@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
                                  Version 2.15
-                           Release date: 2023-09-16
+                           Release date: 2023-09-17
 
                                      by
 
@@ -238,6 +238,11 @@ sortOrder                             String: The file sort order to use.
 
 pauseAfterViewingFile                 Whether or not to pause after viewing a
                                       file
+									  
+blankNFilesListedStrIfLoadableModule  When used as a loadable module, whether or
+                                      not to blank out the "# Files Listed"
+                                      string (from text.dat) so that Synchronet
+                                      won't display it after the lister exits
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
@@ -346,3 +351,6 @@ Synchronet's ctrl directory):
 - DirLibOrAll (622)
 - FileSpecStarDotStar (199)
 - SearchStringPrompt (76)
+- NFilesListed (168): This string will be blanked if the file lister is used as
+  a loadable module and the blankNFilesListedStrIfLoadableModule configuration
+  setting is true
