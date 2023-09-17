@@ -85,6 +85,10 @@
  *                              the file date is not shown on a duplicate line if the file date is
  *                              already showing in the description area (i.e., for a 1-line file
  *                              description)
+ * 2023-09-16 Eric Oulashin     Version 2.15
+ *                              Fix for "Empty directory" message after quitting (the lister must
+ *                              exit with the number of files listed).  Also, updates for filename
+ *                              searching, and help screen now should always pause.
 */
 
 "use strict";
@@ -118,8 +122,8 @@ require("mouse_getkey.js", "mouse_getkey");
 require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 // Lister version information
-var LISTER_VERSION = "2.14";
-var LISTER_DATE = "2023-09-02";
+var LISTER_VERSION = "2.15";
+var LISTER_DATE = "2023-09-16";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -323,7 +327,7 @@ console.clear("\x01n");
 if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
 	displayFileLibAndDirHeader(false, null, !gUseLightbarInterface || !console.term_supports(USER_ANSI));
 // Create the file list menu (must be done after displayFileLibAndDirHeader() when using ANSI and lightbar)
-var gFileListMenu = createFileListMenu(fileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL);
+var gFileListMenu = createFileListMenu(fileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL/* + CTRL_C*/);
 if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 {
 	fileMenuBar.writePromptLine();
@@ -345,7 +349,7 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 		var userChoice = gFileListMenu.GetVal(drawFileListMenu, gFileListMenu.selectedItemIndexes);
 		drawFileListMenu = false; // For screen refresh optimization
 		var lastUserInputUpper = gFileListMenu.lastUserInput != null ? gFileListMenu.lastUserInput.toUpperCase() : null;
-		if (lastUserInputUpper == null || lastUserInputUpper == "Q")
+		if (lastUserInputUpper == null || lastUserInputUpper == "Q" || console.aborted)
 			continueDoingFileList = false;
 		else if (lastUserInputUpper == KEY_LEFT)
 			fileMenuBar.decrementMenuItemAndRefresh();
@@ -511,12 +515,16 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 			}
 		}
 	}
+
+	// Move the cursor to the last line on the screen and do a CRLF, because when used as a loadable
+	// module, Synchronet will output a CRLF and output the number of files listed.
+	console.attributes = "N";
+	console.gotoxy(1, console.screen_rows);
+	//console.crlf();
 }
 else
 {
 	// Traditional UI
-	var exitCode = 0;
-
 	console.crlf();
 
 	// An array containing text descriptions for all files, which may include
@@ -561,7 +569,10 @@ else
 			var lastItemIdx = topItemIdx + numLinesPerPage - 1;
 			for (var i = topItemIdx; i <= lastItemIdx; ++i)
 			{
-				console.print(allFileInfoLines[i]);
+				if (i < allFileInfoLines.length)
+					console.print(allFileInfoLines[i]);
+				//else
+				//	printf("%-*s", console.screen_columns, ""); // Ensure the line is blank
 				console.crlf();
 			}
 		}
@@ -589,6 +600,9 @@ else
 					break;
 				case LAST_PAGE:
 					userInput = "L";
+					break;
+				case QUIT:
+					continueOn = false;
 					break;
 			}
 		}
@@ -636,7 +650,7 @@ else
 				refreshWholePromptLine = false;
 			}
 		}
-		else if (userInput == "Q")
+		else if (userInput == "Q" || console.aborted)
 			continueOn = false;
 		else if (userInput == KEY_UP)
 		{
@@ -766,10 +780,11 @@ else
 			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 		}
 	}
-	exit(exitCode);
 }
 
-
+// The exit code needs to be the number of files listed (this is important if this
+// script is used as a loadable module).
+exit(gFileList.length);
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1732,7 +1747,7 @@ function displayHelpScreen()
 	printf(printfStr, "Q", "Quit back to the BBS");
 	console.attributes = "N";
 	console.crlf();
-	//console.pause();
+	console.pause();
 
 	retObj.reDrawListerHeader = true;
 	retObj.reDrawMainScreenContent = true;
@@ -3999,9 +4014,11 @@ function parseArgs(argv)
 	{
 		// Check for arguments as if this was run by Synchronet as a loadable module
 		// (for either Scan Dirs or List Files)
+		//The 'S' option calls bbs.scan_dirs() which is expected to do the prompting for the string (filename/pattern) and then call filelist mod for each directory
 
 		/*
-		// bbs.list_files() & bbs.scan_dirs()
+		// Bits in mode for bbs.scan_dirs()
+		// bbs.list_files() & bbs.list_file_info()
 		//********************************************
 		var FL_NONE			=0;			// No special behavior
 		var FL_ULTIME		=(1<<0);	// List files by upload time
@@ -4021,6 +4038,9 @@ function parseArgs(argv)
 			return false;
 		else
 			gListBehavior = FLBehavior;
+		// If the 'no header' option was passed, then disable that
+		if ((gListBehavior & FL_NO_HDR) == FL_NO_HDR)
+			gListBehavior &= ~FL_NO_HDR;
 		scriptRanAsLoadableModule = true;
 
 		// Default gScriptmode to MODE_LIST_DIR; for FLBehavior as FL_NONE, no special behavior
@@ -4718,7 +4738,7 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 			console.print(descLine);
 			var remainingLen = maxDescLen - lineTextLength;
 			if (remainingLen > 0)
-				printf("%" + remainingLen + "s", "");
+				printf("%-*s", remainingLen, "");
 		}
 		// Stop printing the description lines when we reach the last line on
 		// the screen where we want to print.

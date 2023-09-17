@@ -1800,7 +1800,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				continue;
 
 			// Take the appropriate action based on the user's last input/keypress
-			if ((this.lastUserInput == KEY_ESC) || (this.QuitKeysIncludes(this.lastUserInput)))
+			if ((this.lastUserInput == KEY_ESC) || (this.QuitKeysIncludes(this.lastUserInput)) || console.aborted)
 			{
 				// Only exit if there was not a no-action mouse click
 				// TODO: Is this logic good and clean?

@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.14
-                           Release date: 2023-09-02
+                                 Version 2.15
+                           Release date: 2023-09-16
 
                                      by
 
@@ -119,16 +119,15 @@ Loadable Module setup
 Note: This only works in Synchronet 3.20 (built from February 25, 2020) and
 newer.
 
-As a loadable module, ddfilelister.js works for the Scan Dirs and List Files
-options.  These options are available in SCFG > System > Loadable Modules.
+As a loadable module, ddfilelister.js works for the List Files option. It's best
+NOT to use ddfilelister for the Scan Dirs option.  These options are available
+in SCFG > System > Loadable Modules.
 If you have ddfilelister.js in your mods directory or other standard directory,
 you can specify the settings as follows:
-  Scan Dirs           ddfilelister.js
   List Files          ddfilelister.js
 
 If you keep ddfilelister.js in sbbs/xtrn/ddfilelister, you can specify it as
 follows:
-  Scan Dirs           ../xtrn/ddfilelister/ddfilelister.js
   List Files          ../xtrn/ddfilelister/ddfilelister.js
 
 
