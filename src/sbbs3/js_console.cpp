@@ -1554,11 +1554,6 @@ js_uselect(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if(!argc) {
-		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->uselect(0,0,NULL,NULL,NULL)));
-		return(JS_TRUE);
-	}
-
 	for(i=0;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
 			if(!JS_ValueToInt32(cx,argv[i],&num)) {
@@ -1601,7 +1596,10 @@ js_uselect(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->uselect(1, num, title, item, ar)));
+	if(title == NULL)
+		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->uselect(false, num, title, item, ar)));
+	else
+		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->uselect(true, num, title, item, ar)));
 	free(title);
 	free(item);
 	free(ar);
@@ -2475,7 +2473,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,310
 	},
 	{"uselect",			js_uselect,			0, JSTYPE_NUMBER,	JSDOCSTR("[number, title, item] [,ars]")
-	,JSDOCSTR("User selection menu, call for each item, then with no args to display select menu")
+	,JSDOCSTR("User selection menu, first call for each item, then finally with no args (or just the default item number) to display select menu")
 	,312
 	},
 	{"saveline",		js_saveline,		0, JSTYPE_BOOLEAN,	JSDOCSTR("")
