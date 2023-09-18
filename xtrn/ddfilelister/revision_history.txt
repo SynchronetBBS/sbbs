@@ -5,12 +5,16 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-2.15     2023-09-16   Fix for "Empty directory" message after quitting (the
+2.15     2023-09-17   Fix for "Empty directory" message after quitting (the
                       lister must exit with the number of files listed).  Also,
                       updates for filename searching. Also, note ddfilelister is
                       best NOT to be used for the Scan Dirs loadable module
                       option (only for List Files), and the help screen should
-                      now always pause at the end.
+                      now always pause at the end. Also, New configuration
+                      option: blankNFilesListedStrIfLoadableModule, If true
+                      (default), then when started as a loadable module, replace
+                      the "# Files Listed" text with an empty string so that it
+                      won't be displayed after exit.
 2.14     2023-09-02   Fix for the lightbar interface: When erasing the file info
                       window, the file date is not shown on a duplicate line if
                       the file date is already showing in the description area

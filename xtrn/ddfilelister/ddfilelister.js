@@ -89,6 +89,10 @@
  *                              Fix for "Empty directory" message after quitting (the lister must
  *                              exit with the number of files listed).  Also, updates for filename
  *                              searching, and help screen now should always pause.
+ * 2023-09-17 Eric Oulashin     New configuration option: blankNFilesListedStrIfLoadableModule,
+ *                              If true (default), then when started as a loadable module, replace the
+ *                              "# Files Listed" text with an empty string so that it won't be displayed
+ *                              after exit
 */
 
 "use strict";
@@ -108,7 +112,7 @@ if (system.version_num < 31900)
 		console.crlf();
 		console.pause();
 	}
-	exit();
+	exit(0);
 }
 
 
@@ -123,7 +127,7 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 // Lister version information
 var LISTER_VERSION = "2.15";
-var LISTER_DATE = "2023-09-16";
+var LISTER_DATE = "2023-09-17";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -270,6 +274,11 @@ var gSearchVerbose = false;
 
 // When called as a lodable module, one of the options is to scan all dirs
 var gScanAllDirs = false;
+
+// Setting from the configuration file: When used as a loadable module, whether
+// or not to blank out the "# Files Listed" string (from text.dat) so that
+// Synchronet won't display it after the lister exits
+var gBlankNFilesListedStrIfLoadableModule = true;
 
 // Read the configuration file and set the settings
 readConfigFile();
@@ -3795,6 +3804,11 @@ function readConfigFile()
 				if (typeof(settingsObj[prop]) === "boolean")
 					gPauseAfterViewingFile = settingsObj[prop];
 			}
+			else if (propUpper == "BLANKNFILESLISTEDSTRIFLOADABLEMODULE")
+			{
+				if (typeof(settingsObj[prop]) === "boolean")
+					gBlankNFilesListedStrIfLoadableModule = settingsObj[prop];
+			}
 			else if (propUpper == "THEMEFILENAME")
 			{
 				if (typeof(settingsObj[prop]) === "string")
@@ -4032,6 +4046,10 @@ function parseArgs(argv)
 		// There must be either 2 or 3 arguments
 		if (argv.length < 2)
 			return false;
+		// If gBlankNFilesListedStrIfLoadableModule is true, replace the "# Files Listed" text with an
+		// empty string so that it won't be displayed after exit
+		if (gBlankNFilesListedStrIfLoadableModule)
+			bbs.replace_text(NFilesListed, "");
 		// The 2nd argument is the mode/behavior bits in either case
 		var FLBehavior = parseInt(argv[1]);
 		if (isNaN(FLBehavior))
