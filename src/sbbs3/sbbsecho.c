@@ -755,7 +755,7 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 	if(findstr(searchstr,flo_filename))	/* file already in FLO file */
 		return 0;
 	if((fp=fopen(flo_filename,"a"))==NULL) {
-		lprintf(LOG_ERR,"ERROR %u (%s) opening %s",errno, strerror(errno), flo_filename);
+		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening FLO file: %s",errno, strerror(errno), __LINE__, flo_filename);
 		return -1;
 	}
 	fprintf(fp,"%s\n",searchstr);
@@ -1046,7 +1046,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 	}
 	startmsg=i+1;
 	if((fp=fnopen(NULL,fname,O_RDWR|O_CREAT))==NULL) {
-		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,fname);
+		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening netmail: %s",errno,strerror(errno),__LINE__,fname);
 		return(-1);
 	}
 
@@ -1410,7 +1410,7 @@ void netmail_arealist(enum arealist_type type, fidoaddr_t addr, const char* to)
 							,nodecfg->keys[x])) {
 							FILE* fp;
 							if((fp=fopen(cfg.listcfg[u].listpath,"r"))==NULL) {
-								lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s"
+								lprintf(LOG_ERR,"ERROR %u (%s) line %d opening listpath: %s"
 									,errno,strerror(errno),__LINE__,cfg.listcfg[u].listpath);
 								match=1;
 								break;
@@ -1482,7 +1482,7 @@ int check_elists(const char *areatag, fidoaddr_t addr)
 					if(!stricmp(cfg.listcfg[u].keys[k]
 						,nodecfg->keys[x])) {
 						if((stream=fopen(cfg.listcfg[u].listpath,"r"))==NULL) {
-							lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s"
+							lprintf(LOG_ERR,"ERROR %u (%s) line %d opening listpath: %s"
 								,errno,strerror(errno),__LINE__,cfg.listcfg[u].listpath);
 							quit=1;
 							break;
@@ -1550,7 +1550,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 		return;
 	}
 	if((afilein=fopen(cfg.areafile,"r"))==NULL) {
-		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,cfg.areafile);
+		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening areafile: %s",errno,strerror(errno),__LINE__,cfg.areafile);
 		fclose(afileout);
 		fclose(nmfile);
 		return;
@@ -1818,7 +1818,7 @@ bool add_sub_to_arealist(sub_t* sub, fidoaddr_t uplink)
 
 		fp = fopen(cfg.areafile, fexist(cfg.areafile) ? "r+" : "w+");
 		if(fp == NULL) {
-			lprintf(LOG_ERR, "Error %d opening %s", errno, cfg.areafile);
+			lprintf(LOG_ERR, "Error %d (%s) line %d opening areafile: %s", errno, strerror(errno), __LINE__, cfg.areafile);
 			return false;
 		}
 		/* Make sure the line we add is on a line of its own: */
@@ -2392,7 +2392,7 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 	}
 	SAFEPRINTF(bundle_list_filename,"%sbbsecho.bundles",cfg.outbound);
 	if((stream=fnopen(&file,bundle_list_filename,O_RDWR|O_CREAT))==NULL) {
-		lprintf(LOG_ERR,"ERROR %u (%s) opening %s",errno,strerror(errno),bundle_list_filename);
+		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,bundle_list_filename);
 		return(1);
 	}
 
@@ -2827,7 +2827,7 @@ long getlastmsg(uint subnum, uint32_t *ptr, /* unused: */time_t *t)
 	SAFEPRINTF2(smbfile.file,"%s%s",scfg.sub[subnum]->data_dir,scfg.sub[subnum]->code);
 	smbfile.retry_time=scfg.smb_retry_time;
 	if((i=smb_open(&smbfile))!=SMB_SUCCESS) {
-		lprintf(LOG_ERR,"ERROR %d (%s) line %d opening %s",i,smbfile.last_error,__LINE__,smbfile.file);
+		lprintf(LOG_ERR,"ERROR %d (%s) line %d opening msgbase: %s",i,smbfile.last_error,__LINE__,smbfile.file);
 		return -1;
 	}
 
@@ -4385,7 +4385,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		SAFEPRINTF(email->file,"%smail",scfg.data_dir);
 		email->retry_time=scfg.smb_retry_time;
 		if((i=smb_open(email))!=SMB_SUCCESS) {
-			lprintf(LOG_ERR,"ERROR %d (%s) line %d opening %s",i,email->last_error,__LINE__,email->file);
+			lprintf(LOG_ERR,"ERROR %d (%s) line %d opening mailbase: %s",i,email->last_error,__LINE__,email->file);
 			bail(1);
 			return -1;
 		}
@@ -5052,7 +5052,7 @@ bool retoss_bad_echomail(void)
 	smb_t badsmb;
 	int retval = smb_open_sub(&scfg, &badsmb, badsub);
 	if(retval != SMB_SUCCESS) {
-		lprintf(LOG_ERR,"ERROR %d (%s) line %d opening %s", retval, badsmb.last_error,__LINE__
+		lprintf(LOG_ERR,"ERROR %d (%s) line %d opening badmail: %s", retval, badsmb.last_error,__LINE__
 			,badsmb.file);
 		return false;
 	}
@@ -5145,7 +5145,7 @@ bool retoss_bad_echomail(void)
 			smb_t smb;
 			retval = smb_open_sub(&scfg, &smb, subnum);
 			if(retval != SMB_SUCCESS) {
-				lprintf(LOG_ERR,"ERROR %d (%s) line %d opening %s", retval, smb.last_error,__LINE__
+				lprintf(LOG_ERR,"ERROR %d (%s) line %d opening msgbase: %s", retval, smb.last_error,__LINE__
 					,smb.file);
 				smb_unlockmsghdr(&badsmb,&badmsg);
 				smb_freemsgmem(&badmsg);
@@ -5213,7 +5213,7 @@ int export_netmail(void)
 		sprintf(email->file,"%smail",scfg.data_dir);
 		email->retry_time=scfg.smb_retry_time;
 		if((i=smb_open(email))!=SMB_SUCCESS) {
-			lprintf(LOG_ERR,"ERROR %d (%s) line %d opening %s",i,email->last_error,__LINE__,email->file);
+			lprintf(LOG_ERR,"ERROR %d (%s) line %d opening mailbase: %s",i,email->last_error,__LINE__,email->file);
 			return i;
 		}
 	}
@@ -5348,7 +5348,7 @@ bool netmail_sent(const char* fname)
 	if(cfg.delete_netmail)
 		return delfile(fname, __LINE__);
 	if((fp=fopen(fname, "r+b")) == NULL) {
-		lprintf(LOG_ERR, "ERROR %d (%s) opening %s", errno, strerror(errno), fname);
+		lprintf(LOG_ERR, "ERROR %d (%s) opening netmail: %s", errno, strerror(errno), fname);
 		return false;
 	}
 	if(!fread_fmsghdr(&hdr,fp)) {
@@ -5402,7 +5402,7 @@ void pack_netmail(void)
 		SAFECOPY(path,g.gl_pathv[f]);
 
 		if((fidomsg=fnopen(&fmsg,path,O_RDWR))==NULL) {
-			lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,path);
+			lprintf(LOG_ERR,"ERROR %u (%s) line %d opening netmail: %s",errno,strerror(errno),__LINE__,path);
 			continue;
 		}
 		if(filelength(fmsg)<sizeof(fmsghdr_t)) {
@@ -6366,7 +6366,7 @@ int main(int argc, char **argv)
 
 		backup(cfg.logfile, cfg.max_logs_kept, /* rename: */true);
 		if((fidologfile = fopen(cfg.logfile,"a")) == NULL) {
-			fprintf(stderr,"ERROR %u (%s) line %d opening %s\n", errno, strerror(errno), __LINE__, cfg.logfile);
+			fprintf(stderr,"ERROR %u (%s) line %d opening logfile: %s\n", errno, strerror(errno), __LINE__, cfg.logfile);
 			bail(1);
 			return -1;
 		}
@@ -6630,7 +6630,7 @@ int main(int argc, char **argv)
 			SAFECOPY(path,g.gl_pathv[f]);
 
 			if((fidomsg=fnopen(&fmsg,path,O_RDWR))==NULL) {
-				lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s",errno,strerror(errno),__LINE__,path);
+				lprintf(LOG_ERR,"ERROR %u (%s) line %d opening netmail: %s",errno,strerror(errno),__LINE__,path);
 				continue;
 			}
 			if(filelength(fmsg)<sizeof(fmsghdr_t)) {
