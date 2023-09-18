@@ -4049,7 +4049,10 @@ function parseArgs(argv)
 		// If gBlankNFilesListedStrIfLoadableModule is true, replace the "# Files Listed" text with an
 		// empty string so that it won't be displayed after exit
 		if (gBlankNFilesListedStrIfLoadableModule)
+		{
 			bbs.replace_text(NFilesListed, "");
+			js.on_exit("bbs.revert_text(NFilesListed);");
+		}
 		// The 2nd argument is the mode/behavior bits in either case
 		var FLBehavior = parseInt(argv[1]);
 		if (isNaN(FLBehavior))
