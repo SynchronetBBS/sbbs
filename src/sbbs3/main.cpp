@@ -5490,6 +5490,12 @@ NO_SSH:
 			if(sbbs->getnodedat(i,&node,1)!=0)
 				continue;
 			if(node.status==NODE_WFC) {
+				if(node_socket[i - 1] != INVALID_SOCKET) {
+					lprintf(LOG_CRIT, "%04d !Node %d status is WFC, but the node socket (%d) and thread are still in use!"
+						,client_socket, i, node_socket[i - 1]);
+					sbbs->putnodedat(i, &node);
+					continue;
+				}
 				node.status=NODE_LOGON;
 #ifdef USE_CRYPTLIB
 				if(ssh)
