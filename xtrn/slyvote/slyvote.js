@@ -184,6 +184,8 @@
  * 2023-05-13 Eric Oulashin     Version 1.13
  *                              Fix for error when quitting/aborting out of choosing a
  *                              different sub-board. Refactored ReadConfigFile().
+ * 2023-09-20 Eric Oulashin     Version 1.14
+ *                              Fixed poll voting for single-answer polls
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -255,8 +257,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.13";
-var SLYVOTE_DATE = "2023-05-13";
+var SLYVOTE_VERSION = "1.14";
+var SLYVOTE_DATE = "2023-09-20";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -396,7 +398,7 @@ if (gSlyVoteCfg.cfgReadError.length > 0)
 {
 	log(LOG_ERR, "SlyVote: Error reading slyvote.cfg");
 	bbs.log_str("SlyVote: Error reading slyvote.cfg");
-	console.print("\x01n");
+	console.attributes = "N";
 	console.crlf();
 	console.print("\x01h\x01y* Error reading slyvote.cfg\x01n");
 	console.crlf();
@@ -418,7 +420,7 @@ if (Object.keys(gSlyVoteCfg.msgGroups).length > 0)
 }
 if (!subBoardsConfigured)
 {
-	console.print("\x01n");
+	console.attributes = "N";
 	console.crlf();
 	console.print("\x01cThere are no sub-boards configured.\x01n");
 	console.crlf();
@@ -471,7 +473,7 @@ else
 }
 // Output a "loading..." text, in case it takes a while to count the polls in
 // the current sub-board
-console.print("\x01n");
+console.attributes = "N";
 console.crlf();
 var subBoardName = msg_area.sub[gSubBoardCode].grp_name + ": " + msg_area.sub[gSubBoardCode].description;
 console.print("\x01gLoading SlyVote (counting polls in \x01c" + subBoardName + "\x01g)...\x01n");
@@ -809,7 +811,7 @@ function DoMainMenu()
 			var curSubCodeBackup = bbs.cursub_code;
 			bbs.cursub_code = gSubBoardCode;
 			// Let the user post a poll
-			console.print("\x01n");
+			console.attributes = "N";
 			console.gotoxy(1, console.screen_rows);
 			bbs.exec("?postpoll.js");
 			// Restore the user's sub-board
@@ -866,7 +868,7 @@ function ChooseVotePoll(pLetUserChoose)
 	var nextProgramState = VOTING_ON_A_POLL;
 	// Clear the screen between the top & bottom borders
 	var formatStr = "%" + console.screen_columns + "s";
-	console.print("\x01n");
+	console.attributes = "N";
 	for (var posY = gMessageRow; posY < gBottomBorderRow; ++posY)
 	{
 		console.gotoxy(1, posY);
@@ -891,7 +893,7 @@ function ChooseVotePoll(pLetUserChoose)
 			console.print("You have already voted on all polls in this sub-board, or all polls are closed");
 		else
 			console.print("There are no polls to vote on in this sub-board");
-		console.print("\x01n");
+		console.attributes = "N";
 		console.crlf();
 		console.pause();
 		return MAIN_MENU;
@@ -907,7 +909,7 @@ function ChooseVotePoll(pLetUserChoose)
 	}
 
 	// Draw the columns to frame the voting polls
-	console.print("\x01n");
+	console.attributes = "N";
 	var pleaseSelectTextRow = 6;
 	var listTopRow = pleaseSelectTextRow + 2;
 	var drawColRetObj = DrawVoteColumns(listTopRow);
@@ -940,7 +942,7 @@ function ChooseVotePoll(pLetUserChoose)
 			var pleaseSectPollText = "\x01n\x01c\x01hP\x01n\x01clease select a poll to vote on (\x01hESC\x01n\x01g=\x01cReturn)\x01n";
 			console.gotoxy(18, pleaseSelectTextRow);
 			console.print(pleaseSectPollText);
-			console.print("\x01n");
+			console.attributes = "N";
 			var chosenMsgNum = pollsMenu.GetVal(drawPollsMenu);
 			if (chosenMsgNum != null)
 			{
@@ -1050,7 +1052,7 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 				console.gotoxy(numChoicesCol, numChoicesRow);
 				console.print(numChoicesPossibleText);
 				// Output up to the first 3 poll comment lines
-				//console.print("\x01n");
+				//console.attributes = "N";
 				var i = 0;
 				var commentStartRow = pStartRow - 3;
 				for (var row = commentStartRow; (row < commentStartRow+3) && (i < pollTextAndOpts.commentLines.length); ++row)
@@ -1085,7 +1087,7 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 				var firstLineEraseLength = 0;
 				if (userChoice != null)
 				{
-					// Allow multiple choices for userChoice.
+					// Allow multiple choices for userChoice, if it's a multi-choice poll.
 					var voteRetObj;
 					if (optionsMenu.multiSelect)
 					{
@@ -1095,7 +1097,7 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 						voteRetObj = VoteOnPoll(pSubBoardCode, msgbase, msgHdr, user, userVotes, true);
 					}
 					else
-						voteRetObj = VoteOnPoll(pSubBoardCode, msgbase, msgHdr, user, userChoice, true);
+						voteRetObj = VoteOnPoll(pSubBoardCode, msgbase, msgHdr, user, (1 << (userChoice-1)), true);
 					// If there was an error, then show it.  Otherwise, show a success message.
 					//var firstLineEraseLength = pollSubject.length;
 					console.gotoxy(1, subjectRow);
@@ -1119,7 +1121,7 @@ function DisplayPollOptionsAndVote(pSubBoardCode, pMsgNum, pStartCol, pStartRow,
 					retObj.userExited = true;
 
 				// Before returning, erase the comment lines from the screen
-				console.print("\x01n");
+				console.attributes = "N";
 				console.gotoxy(1, subjectRow);
 				printf("%" + firstLineEraseLength + "s", "");
 				console.gotoxy(numChoicesCol, numChoicesRow);
@@ -1739,7 +1741,7 @@ function GetPollTextAndOpts(pMsgHdr)
 //  pMsgbase: The MessageBase object for the sub-board being used for voting
 //  pMsgHdr: The header of the mesasge being voted on
 //  pUser: The user object representing the user voting on the poll
-//  pUserVoteNumber: Optional - A number inputted by the user representing their vote.
+//  pUserVoteBitfield: Optional - A bitfield of votes from choice(s) inputted by the user representing their vote.
 //                   If this is not passed in or is null, etc., then this function will
 //                   prompt the user for their vote with a traditional user interface.
 //  pRemoveNLsFromVoteText: Optional boolean - Whether or not to remove newlines
@@ -1755,7 +1757,7 @@ function GetPollTextAndOpts(pMsgHdr)
 //               mnemonicsRequiredForErrorMsg: Boolean - Whether or not mnemonics is required to print the error message
 //               updatedHdr: The updated message header containing vote information.
 //                           If something went wrong, this will be null.
-function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pRemoveNLsFromVoteText)
+function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteBitfield, pRemoveNLsFromVoteText)
 {
 	var retObj = {
 		BBSHasVoteFunction: (typeof(pMsgbase.vote_msg) === "function"),
@@ -1885,8 +1887,8 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 	{
 		if (pMsgHdr.hasOwnProperty("field_list"))
 		{
-			var userInputNum = 0;
-			if (typeof(pUserVoteNumber) != "number")
+			var voteResponse = 0;
+			if (typeof(pUserVoteBitfield) != "number")
 			{
 				console.clear("\x01n");
 				var selectHdr = processBBSTextDatText(bbs.text(BallotHdr));
@@ -1938,9 +1940,9 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 							{
 								if (console.yesno(confirmText))
 								{
-									userInputNum = 0;
+									voteResponse = 0;
 									for (var i = 0; i < voteNumbers.length; ++i)
-										userInputNum |= (1 << (voteNumbers[i]-1));
+										voteResponse |= (1 << (voteNumbers[i]-1));
 								}
 								else
 									retObj.userQuit = true;
@@ -1958,20 +1960,22 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteNumber, pR
 					selectPromptText = selectPromptText.replace(/%[uU]/, 1).replace(/%[dD]/, 1);
 					console.mnemonics(selectPromptText);
 					var maxNum = optionNum - 1;
-					userInputNum = console.getnum(maxNum);
+					var userInputNum = console.getnum(maxNum);
 					if (userInputNum == -1) // The user chose Q to quit
 						retObj.userQuit = true;
-					console.print("\x01n");
+					else
+						voteResponse = (1 << (userInputNum-1));
+					console.attributes = "N";
 				}
 			}
 			else
-				userInputNum = pUserVoteNumber;
+				voteResponse = pUserVoteBitfield;
 			//if (userInputNum == 0) // The user just pressed enter to choose the default
 			//	userInputNum = 1;
 			if (!retObj.userQuit)
 			{
 				voteMsgHdr.attr = MSG_VOTE;
-				voteMsgHdr.votes = userInputNum;
+				voteMsgHdr.votes = voteResponse;
 			}
 		}
 	}
@@ -2002,7 +2006,7 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	if (clearScr)
 		console.clear("\x01n");
 	else
-		console.print("\x01n");
+		console.attributes = "N";
 
 	// Borders and stylized SlyVote text
 	DisplayTopScreenBorder();
@@ -2039,7 +2043,7 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	console.gotoxy(numPollsTextX, 11);
 	console.print(numPollsText);
 	// Write the SlyVote version centered
-	console.print("\x01n");
+	console.attributes = "N";
 	var fieldWidth = 28;
 	console.gotoxy(41, 14);
 	console.print(CenterText("\x01n\x01hSlyVote v\x01c" + SLYVOTE_VERSION.replace(".", "\x01b.\x01c") + "\x01n", fieldWidth));
@@ -2071,10 +2075,10 @@ function DisplayTopScreenBorder()
 		DisplayTopScreenBorder.borderText += "\x01n\x01b" + MID_BLOCK;
 	}
 
-	console.print("\x01n");
+	console.attributes = "N";
 	//console.crlf();
 	console.print(DisplayTopScreenBorder.borderText);
-	console.print("\x01n");
+	console.attributes = "N";
 	//console.crlf();
 }
 
@@ -2098,13 +2102,13 @@ function DisplaySlyVoteText()
 					];
 	}
 
-	console.print("\x01n");
+	console.attributes = "N";
 	for (var i = 0; i < DisplaySlyVoteText.slyVoteTextLines.length; ++i)
 	{
 		console.print(DisplaySlyVoteText.slyVoteTextLines[i]);
 		console.crlf();
 	}
-	console.print("\x01n");
+	console.attributes = "N";
 }
 
 function DisplayVerAndRegBorders()
@@ -2126,13 +2130,13 @@ function DisplayVerAndRegBorders()
 
 	var curPos = { x: 40, y: 13 };
 	console.gotoxy(curPos.x, curPos.y++);
-	console.print("\x01n");
+	console.attributes = "N";
 	for (var i = 0; i < DisplayVerAndRegBorders.borderLines.length; ++i)
 	{
 		console.print(DisplayVerAndRegBorders.borderLines[i]);
 		console.gotoxy(curPos.x, curPos.y++);
 	}
-	console.print("\x01n");
+	console.attributes = "N";
 }
 
 function DisplayBottomScreenBorder()
@@ -2142,10 +2146,10 @@ function DisplayBottomScreenBorder()
 		DisplayBottomScreenBorder.borderText = " " + strRepeat("\x01n\x01b" + UPPER_CENTER_BLOCK + "\x01h" + TALL_UPPER_MID_BLOCK + "\x01c" + LOWER_CENTER_BLOCK + "\x01b" + TALL_UPPER_MID_BLOCK, 19);
 		DisplayBottomScreenBorder.borderText += "\x01n\x01b" + UPPER_CENTER_BLOCK;
 	}
-	console.print("\x01n");
+	console.attributes = "N";
 	//console.crlf();
 	console.print(DisplayBottomScreenBorder.borderText);
-	console.print("\x01n");
+	console.attributes = "N";
 	//console.crlf();
 }
 
@@ -2358,7 +2362,7 @@ function ViewVoteResults(pSubBoardCode)
 					gAvatar.draw(pollMsgHdrs[currentMsgIdx].from_ext, pollMsgHdrs[currentMsgIdx].from, pollMsgHdrs[currentMsgIdx].from_net_addr, /* above: */true, /* right-justified: */true);
 					console.attributes = 0;	// Clear the background attribute as the next line might scroll, filling with BG attribute
 				}
-				console.print("\x01n");
+				console.attributes = "N";
 			}
 			var msgBodyText = GetMsgBody(msgbase, pollMsgHdrs[currentMsgIdx], pSubBoardCode, user);
 			if (msgBodyText == null)
@@ -2581,7 +2585,7 @@ function ViewVoteResults(pSubBoardCode)
 							{
 								continueOn = false;
 								console.gotoxy(1, console.screen_rows);
-								console.print("\x01n");
+								console.attributes = "N";
 								console.crlf();
 								console.print("\x01nThere are no more polls.\x01n");
 								console.crlf();
@@ -3461,7 +3465,7 @@ function PromptForMsgNum(pMaxNum, pCurPos, pPromptText, pClearToEOLAfterPrompt)
 			{
 				if (lastErrorLen > promptTextLen)
 				{
-					console.print("\x01n");
+					console.attributes = "N";
 					console.gotoxy(pCurPos.x+promptTextLen, pCurPos.y);
 					var clearLen = lastErrorLen - promptTextLen;
 					printf("\x01n%" + clearLen + "s", "");
