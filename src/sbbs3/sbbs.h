@@ -748,6 +748,7 @@ public:
 	char	cmdstr_output[512]{};
 	char*	ultoac(uint32_t, char*, char sep=',');
 	char*	u64toac(uint64_t, char*, char sep=',');
+	const char* protname(char prot);
 
 	void	subinfo(int subnum);
 	void	dirinfo(int dirnum);
@@ -867,6 +868,9 @@ public:
 	void	cond_blankline() { if(column > 0) newline(); if(lastlinelen) newline(); }
 	void	cond_contline() { if(column > 0 && cols < TERM_COLS_DEFAULT) bputs(text[LongLineContinuationPrefix]); }
 	int		term_supports(int cmp_flags=0);
+	char*	term_rows(user_t*, char* str, size_t);
+	char*	term_cols(user_t*, char* str, size_t);
+	char*	term_type(user_t*, int term, char* str, size_t);
 	const char* term_type(int term_supports = -1);
 	const char* term_charset(int term_supports = -1);
 	bool	update_nodeterm(void);
@@ -954,7 +958,7 @@ public:
 	bool	random_menu(const char *code, int mode = 0, JSObject* obj = NULL);
 	bool	menu_exists(const char *code, const char* ext=NULL, char* realpath=NULL);
 
-	int		uselect(int add, uint n, const char *title, const char *item, const uchar *ar);
+	int		uselect(bool add, uint n, const char *title, const char *item, const uchar *ar);
 	uint	uselect_total = 0, uselect_num[500]{};
 
 	int		mselect(const char *title, str_list_t list, unsigned max_selections, const char* item_fmt, const char* selected_str, const char* unselected_str, const char* prompt_fmt);

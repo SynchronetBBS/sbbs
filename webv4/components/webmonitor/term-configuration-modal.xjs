@@ -1,0 +1,61 @@
+<div class="modal fade" id="termModal" tabindex="-1" role="dialog" aria-labelledby="termModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="termModalLabel">Terminal Server Configuration</h4>
+            </div>
+            <div class="modal-body" id="termModalLoading">
+                <h1 align="center">Loading...</h1>
+                <!-- TODOZ Maybe a nice loading image? -->
+            </div>
+            <div class="modal-body" id="termModalBody" style="display: none;">
+                <ul class="nav nav-tabs">
+                    <li class="active"><a href="#termGeneralTab" data-toggle="tab">General</a></li>
+                    <li><a href="#termTelnetTab" data-toggle="tab">Telnet</a></li>
+                    <li><a href="#termRLoginTab" data-toggle="tab">RLogin</a></li>
+                    <li><a href="#termSSHTab" data-toggle="tab">SSH</a></li>
+                    <li><a href="#termSoundTab" data-toggle="tab">Sound</a></li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade active in" id="termGeneralTab">
+                        <table class="table">
+                            <tr>
+                                <td width="50%">
+                                    <div>First Node<br /><input type="text" id="termFirstNode" class="form-control" value="1" style="width: 100px;" /></div>
+                                    <div>Last Node<br /><input type="text" id="termLastNode" class="form-control" value="4" style="width: 100px;" /></div>
+                                    <div>Max Concurrent Connections (0=no limit)<br /><input type="text" id="termMaxConcurrentConnections" class="form-control" value="N/A" style="width: 100px;" /></div>
+                                </td>
+                                <td width="50%">
+                                    <div class="checkbox"><label><input type="checkbox" id="termAutoStart"> Auto Startup</label></div>
+                                    <div class="checkbox"><label><input type="checkbox" id="termXTRN_MINIMIZED"> Minimize Externals</label></div>
+                                    <div class="checkbox"><label><input type="checkbox" id="termYES_EVENTS"> Events Enabled</label></div>
+                                    <div class="checkbox disabled"><label><input type="checkbox" id="termEventsLogFile" disabled="disabled"> Log Events to Disk</label></div>
+                                    <div class="checkbox"><label><input type="checkbox" id="termYES_QWK_EVENTS"> QWK Message Events</label></div>
+                                    <div class="checkbox"><label><input type="checkbox" id="termYES_DOS"> DOS Program Support</label></div>
+                                    <div class="checkbox"><label><input type="checkbox" id="termYES_HOST_LOOKUP"> Hostname Lookup</label></div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="tab-pane fade" id="termTelnetTab">
+                        <p>TODOX Telnet</p>
+                    </div>
+                    <div class="tab-pane fade" id="termRLoginTab">
+                        <p>TODOX RLogin</p>
+                    </div>
+                    <div class="tab-pane fade" id="termSSHTab">
+                        <p>TODOX SSH</p>
+                    </div>
+                    <div class="tab-pane fade" id="termSoundTab">
+                        <p>TODOX Sound</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="termSaveChanges" style="display: none;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>

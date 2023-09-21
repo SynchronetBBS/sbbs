@@ -647,130 +647,134 @@ function handle_command(command, args, defs)
 
 function parse_command(line)
 {
-	function execute_line(args) {
-		if(args.length >= 2) {
-			command=args[1].toUpperCase();
-			args.splice(1,1);
-			if(handle_command(command, args, any_state_command_handlers))
-				return;
-			switch(state) {
-				case UnAuthenticated:
-					if(handle_command(command, args, unauthenticated_command_handlers))
-						return;
-					break;
-				case Authenticated:
-					if(handle_command(command, args, authenticated_command_handlers))
-						return;
-					break;
-				case Selected:
-					if(handle_command(command, args, selected_command_handlers))
-						return;
-					if(handle_command(command, args, authenticated_command_handlers))
-						return;
-					break;
-			}
-		}
-		// Ignore empty lines (Seamonkey sends these...)
-		if (args.length > 0)
-			tagged(args[0], "BAD", "Bad dog, no cookie.");
-	}
-
-	function parse_line() {
-		var at_start=true;
-		var	in_quote=false;
-		var paren_depth=0;
-		var string_len;
-		var args=[];
-		var pos;
-
-		function parse_atom() {
-			var ret='';
-
-			while(line.length) {
-				switch(line.charAt(0)) {
-					case ')':
-						return(ret);
-					case ' ':
-						line=line.substr(1);
-						return(ret);
-					default:
-						ret += line.charAt(0);
-						line=line.substr(1);
+	try {
+		function execute_line(args) {
+			if(args.length >= 2) {
+				command=args[1].toUpperCase();
+				args.splice(1,1);
+				if(handle_command(command, args, any_state_command_handlers))
+					return;
+				switch(state) {
+					case UnAuthenticated:
+						if(handle_command(command, args, unauthenticated_command_handlers))
+							return;
+						break;
+					case Authenticated:
+						if(handle_command(command, args, authenticated_command_handlers))
+							return;
+						break;
+					case Selected:
+						if(handle_command(command, args, selected_command_handlers))
+							return;
+						if(handle_command(command, args, authenticated_command_handlers))
+							return;
 						break;
 				}
 			}
-			return(ret);
+			// Ignore empty lines (Seamonkey sends these...)
+			if (args.length > 0)
+				tagged(args[0], "BAD", "Bad dog, no cookie.");
 		}
 
-		function parse_string()
-		{
-			var ret='';
+		function parse_line() {
+			var at_start=true;
+			var	in_quote=false;
+			var paren_depth=0;
+			var string_len;
+			var args=[];
+			var pos;
 
-			if (line.search(/^{([0-9]+)}$/) !== 0)
-				throw new Error('invalid string literal ('+line+'), aborting');
-			line=line.replace(/^{([0-9]+)}$/, "$1");
-			client.socket.send("+ Give me more of that good stuff\r\n");
-			var len = parseInt(line);
-			if(len) {
-				ret=client.socket.recv(len);
-				if (ret === null)
-					throw new Error('recv() of ' + len + ' bytes returned null');
-				if (ret.length !== len)
-					throw new Error('recv() of ' + len + ' bytes returned a string with ' + ret.length + ' instead.');
-				line=client.socket.recvline(10240, 1800);
-			}
-			else {
-				line = undefined;
-			}
-			return(ret);
-		}
+			function parse_atom() {
+				var ret='';
 
-		function parse_quotedstring() {
-			var ret='';
-	
-			line=line.substr(1);	// Remove leading "
-			while(line.length) {
+				while(line.length) {
+					switch(line.charAt(0)) {
+						case ')':
+							return(ret);
+						case ' ':
+							line=line.substr(1);
+							return(ret);
+						default:
+							ret += line.charAt(0);
+							line=line.substr(1);
+							break;
+					}
+				}
+				return(ret);
+			}
+
+			function parse_string()
+			{
+				var ret='';
+
+				if (line.search(/^{([0-9]+)}$/) !== 0)
+					throw new Error('invalid string literal ('+line+'), aborting');
+				line=line.replace(/^{([0-9]+)}$/, "$1");
+				client.socket.send("+ Give me more of that good stuff\r\n");
+				var len = parseInt(line);
+				if(len) {
+					ret=client.socket.recv(len);
+					if (ret === null)
+						throw new Error('recv() of ' + len + ' bytes returned null');
+					if (ret.length !== len)
+						throw new Error('recv() of ' + len + ' bytes returned a string with ' + ret.length + ' instead.');
+					line=client.socket.recvline(10240, 1800);
+				}
+				else {
+					line = undefined;
+				}
+				return(ret);
+			}
+
+			function parse_quotedstring() {
+				var ret='';
+		
+				line=line.substr(1);	// Remove leading "
+				while(line.length) {
+					switch(line.charAt(0)) {
+						case '"':
+							line=line.substr(1);
+							return(ret);
+						default:
+							ret += line.charAt(0);
+							line=line.substr(1);
+							break;
+					}
+				}
+				return(ret);
+			}
+
+			while(line) {
 				switch(line.charAt(0)) {
 					case '"':
+						args.push(parse_quotedstring());
+						break;
+					case ')':
 						line=line.substr(1);
-						return(ret);
+						return(args);
+					case '(':
+						line=line.substr(1);
+						args.push(parse_line());
+						break;
+					case '{':
+						args.push(parse_string());
+						break;
+					case ' ':
+						line=line.substr(1);
+						break;
 					default:
-						ret += line.charAt(0);
-						line=line.substr(1);
+						args.push(parse_atom());
 						break;
 				}
 			}
-			return(ret);
+			return(args);
 		}
 
-		while(line) {
-			switch(line.charAt(0)) {
-				case '"':
-					args.push(parse_quotedstring());
-					break;
-				case ')':
-					line=line.substr(1);
-					return(args);
-				case '(':
-					line=line.substr(1);
-					args.push(parse_line());
-					break;
-				case '{':
-					args.push(parse_string());
-					break;
-				case ' ':
-					line=line.substr(1);
-					break;
-				default:
-					args.push(parse_atom());
-					break;
-			}
-		}
-		return(args);
+		send_updates();
+		return(execute_line(parse_line()));
+	} catch(error) {
+		log(LOG_WARNING, "Exception during command parsing: " + error);
 	}
-
-	send_updates();
-	return(execute_line(parse_line()));
 }
 
 // Command handling functions
@@ -887,7 +891,12 @@ var unauthenticated_command_handlers = {
 				}
 				client.socket.send("+\r\n");
 				line=client.socket.recvline(10240, 1800);
-				args=base64_decode(line).split(/\x00/);
+				line=base64_decode(line);
+				if(!line) {
+					tagged("NO", "Wrong format");
+					return;
+				}
+				args=line.split(/\x00/);
 				if(args === null || (!login(args[1],args[2]))) {
 					tagged(tag, "NO", "No AUTH for you.");
 					return;
@@ -900,7 +909,12 @@ var unauthenticated_command_handlers = {
 				challenge = '<'+random(2147483647)+"."+time()+"@"+system.host_name+'>';
 				client.socket.send("+ "+base64_encode(challenge)+"\r\n");
 				line=client.socket.recvline(10240, 1800);
-				args=base64_decode(line).split(/ /);
+				line=base64_decode(line);
+				if(!line) {
+					tagged("NO", "Wrong format");
+					return;
+				}
+				args=line.split(/ /);
 				un = system.matchuser(args[0], false);
 				if (un == 0) {
 					tagged(tag, "NO", "No AUTH for you.");
@@ -1851,250 +1865,254 @@ function do_search(args, uid)
 	var result=[];
 	var offsets=index.offsets;
 
-	function get_func(args)
-	{
-		var next1,next2;
-		var tmp;
-	
-		switch(args.shift().toUpperCase()) {
-			case 'ALL':
-				type="idx";
-				search=(function(idx) { return true; });
-				break;
-			case 'ANSWERED':
-				type="idx";
-				search=(function(idx) { if(base.subnum==-1 && (idx.attr & MSG_REPLIED)) return true; return false; });
-				break;
-			case 'BODY':
-				type="body";
-				search=(eval("function(body) { return(body.indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
-				break;
-			case 'DELETED':
-				type="idx";
-				search=(function(idx) { if(idx.attr & MSG_DELETE) return true; return false; });
-				break;
-			case 'DRAFT':
-				type="idx";
-				search=(function(idx) { return false; });
-				break;
-			case 'FLAGGED':
-				type="idx";
-				search=(function(idx) { if(idx.attr & MSG_VALIDATED) return true; return false; });
-				break;
-			case 'FROM':
-				type="hdr";
-				search=(eval("function(hdr) { return(hdr.get_from().toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
-				break;
-			case 'KEYWORD':
-				type="hdr";
-				search=(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return true; return false;}"));
-				break;
-			case 'NEW':
-				type="idx";
-				search=(eval("function(idx) { if((idx.number > orig_ptrs[base.subnum]) && (idx.attr & MSG_READ)==0) return true; return false; }"));
-				break;
-			case 'OLD':
-				type="idx";
-				search=(eval("function(idx) { if(idx.number <= orig_ptrs[base.subnum]) return true; return false; }"));
-				break;
-			case 'RECENT':
-				type="idx";
-				search=(eval("function(idx) { if(idx.number > orig_ptrs[base.subnum]) return true; return false; }"));
-				break;
-			case 'SEEN':
-				type="idx";
-				search=(function(idx) { if(idx.attr & MSG_READ) return true; return false });
-				break;
-			case 'SUBJECT':
-				type="hdr";
-				search=(eval("function(hdr) { return(hdr.subject.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
-				break;
-			case 'TO':
-				type="hdr";
-				search=(eval("function(hdr) { return(hdr.to.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
-				break;
-			case 'UID':
-				type="idx";
-				search=(eval("function(idx) { var good_uids="+parse_seq_set(args.shift(), true).toSource()+"; var i; for(i in good_uids) { if(good_uids[i]==idx.number) return true; } return false; }"));
-				break;
-			case 'UNANSWERED':
-				type="idx";
-				search=(function(idx) { if(base.subnum==-1 && (idx.attr & MSG_REPLIED)) return false; return true; });
-				break;
-			case 'UNDELETED':
-				type="idx";
-				search=(function(idx) { if(idx.attr & MSG_DELETE) return false; return true; });
-				break;
-			case 'UNDRAFT':
-				type="idx";
-				search=(function(idx) { return true; });
-				break;
-			case 'UNFLAGGED':
-				type="idx";
-				search=(function(idx) { if(idx.attr & MSG_VALIDATED) return false; return true; });
-				break;
-			case 'UNKEYWORD':
-				type="hdr";
-				search=(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return false; return true;}"));
-				break;
-			case 'BEFORE':
-				type="hdr";
-				search=(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(hdr.when_imported_time < before) return true; return false; }"));
-				break;
-			case 'ON':
-				type="hdr";
-				search=(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(hdr.when_imported_time) == on) return true; return false; }"));
-				break;
-			case 'SINCE':
-				type="hdr";
-				search=(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(hdr.when_imported_time > since && datestr(hdr.when_imported_time) != since_str) return true; return false; }"));
-				break;
-			case 'SENTBEFORE':
-				type="hdr";
-				search=(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(parse_rfc822_date(hdr.date) < before) return true; return false; }"));
-				break;
-			case 'SENTON':
-				type="hdr";
-				search=(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(parse_rfc822_date(hdr.date)) == on) return true; return false; }"));
-				break;
-			case 'SENTSINCE':
-				type="hdr";
-				search=(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(parse_rfc822_date(hdrdate) > since && datestr(parse_rfc822_date(hdr.date)) != since_str) return true; return false; }"));
-				break;
-			case 'HEADER':
-				type="hdr";
-				search=(eval("function(hdr) { var hname="+args.shift().toLowerCase().toSource()+"; var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+"; var hdrs=hdr.parse_headers(); var i; for(i in hdrs[hname]) if(hdrs[hname][i].search(match)==0) return true; return false;}"));
-				break;
-			case 'LARGER':
-				type="all";
-				search=(eval("function(idx,hdr,body) { var min="+parseInt(args.shift(),10)+"; if(body.length + hdr.get_rfc822_header().length > min) return true; return false;}"));
-				break;
-			case 'SMALLER':
-				type="all";
-				search=(eval("function(idx,hdr,body) { var max="+parseInt(args.shift(),10)+"; if(body.length + hdr.get_rfc822_header().length < max) return true; return false;}"));
-				break;
-			case 'CC':
-				type="hdr";
-				search=(eval("function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+"; var hdrs=hdr.parse_headers(); var i; if(hdrs.cc == undefined) return false; for(i in hdrs.cc) if(hdrs.cc[i].search(match)==0) return true; return false;}"));
-				break;
-			case 'BCC':
-				type="hdr";
-				search=(eval("function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+"; var hdrs=hdr.parse_headers(); var i; if(hdrs.bcc == undefined) return false; for(i in hdrs.bcc) if(hdrs.bcc[i].search(match)==0) return true; return false;}"));
-				break;
-			case 'TEXT':
-				type="all";
-				search=(eval("function(idx,hdr,body) { var str="+args.shift().toSource()+"; if(hdr.get_rfc822_header().indexOf(str)!=-1) return true; if(body.indexOf(str)!=-1) return true; return false}"));
-				break;
-			case 'NOT':
-				next1=get_func(args);
-				type=next1[0];
-				search=(eval("function(x) { return !"+next1[1].toSource()+"(x)}"));
-				break;
-			case 'OR':
-				next1=get_func(args);
-				next2=get_func(args);
-				if(next1[0]==next1[1]) {
+	try {
+		function get_func(args)
+		{
+			var next1,next2;
+			var tmp;
+		
+			switch(args.shift().toUpperCase()) {
+				case 'ALL':
+					type="idx";
+					search=(function(idx) { return true; });
+					break;
+				case 'ANSWERED':
+					type="idx";
+					search=(function(idx) { if(base.subnum==-1 && (idx.attr & MSG_REPLIED)) return true; return false; });
+					break;
+				case 'BODY':
+					type="body";
+					search=(eval("function(body) { return(body.indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+					break;
+				case 'DELETED':
+					type="idx";
+					search=(function(idx) { if(idx.attr & MSG_DELETE) return true; return false; });
+					break;
+				case 'DRAFT':
+					type="idx";
+					search=(function(idx) { return false; });
+					break;
+				case 'FLAGGED':
+					type="idx";
+					search=(function(idx) { if(idx.attr & MSG_VALIDATED) return true; return false; });
+					break;
+				case 'FROM':
+					type="hdr";
+					search=(eval("function(hdr) { return(hdr.get_from().toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+					break;
+				case 'KEYWORD':
+					type="hdr";
+					search=(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return true; return false;}"));
+					break;
+				case 'NEW':
+					type="idx";
+					search=(eval("function(idx) { if((idx.number > orig_ptrs[base.subnum]) && (idx.attr & MSG_READ)==0) return true; return false; }"));
+					break;
+				case 'OLD':
+					type="idx";
+					search=(eval("function(idx) { if(idx.number <= orig_ptrs[base.subnum]) return true; return false; }"));
+					break;
+				case 'RECENT':
+					type="idx";
+					search=(eval("function(idx) { if(idx.number > orig_ptrs[base.subnum]) return true; return false; }"));
+					break;
+				case 'SEEN':
+					type="idx";
+					search=(function(idx) { if(idx.attr & MSG_READ) return true; return false });
+					break;
+				case 'SUBJECT':
+					type="hdr";
+					search=(eval("function(hdr) { return(hdr.subject.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+					break;
+				case 'TO':
+					type="hdr";
+					search=(eval("function(hdr) { return(hdr.to.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+					break;
+				case 'UID':
+					type="idx";
+					search=(eval("function(idx) { var good_uids="+parse_seq_set(args.shift(), true).toSource()+"; var i; for(i in good_uids) { if(good_uids[i]==idx.number) return true; } return false; }"));
+					break;
+				case 'UNANSWERED':
+					type="idx";
+					search=(function(idx) { if(base.subnum==-1 && (idx.attr & MSG_REPLIED)) return false; return true; });
+					break;
+				case 'UNDELETED':
+					type="idx";
+					search=(function(idx) { if(idx.attr & MSG_DELETE) return false; return true; });
+					break;
+				case 'UNDRAFT':
+					type="idx";
+					search=(function(idx) { return true; });
+					break;
+				case 'UNFLAGGED':
+					type="idx";
+					search=(function(idx) { if(idx.attr & MSG_VALIDATED) return false; return true; });
+					break;
+				case 'UNKEYWORD':
+					type="hdr";
+					search=(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return false; return true;}"));
+					break;
+				case 'BEFORE':
+					type="hdr";
+					search=(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(hdr.when_imported_time < before) return true; return false; }"));
+					break;
+				case 'ON':
+					type="hdr";
+					search=(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(hdr.when_imported_time) == on) return true; return false; }"));
+					break;
+				case 'SINCE':
+					type="hdr";
+					search=(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(hdr.when_imported_time > since && datestr(hdr.when_imported_time) != since_str) return true; return false; }"));
+					break;
+				case 'SENTBEFORE':
+					type="hdr";
+					search=(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(parse_rfc822_date(hdr.date) < before) return true; return false; }"));
+					break;
+				case 'SENTON':
+					type="hdr";
+					search=(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(parse_rfc822_date(hdr.date)) == on) return true; return false; }"));
+					break;
+				case 'SENTSINCE':
+					type="hdr";
+					search=(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(parse_rfc822_date(hdrdate) > since && datestr(parse_rfc822_date(hdr.date)) != since_str) return true; return false; }"));
+					break;
+				case 'HEADER':
+					type="hdr";
+					search=(eval("function(hdr) { var hname="+args.shift().toLowerCase().toSource()+"; var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+"; var hdrs=hdr.parse_headers(); var i; for(i in hdrs[hname]) if(hdrs[hname][i].search(match)==0) return true; return false;}"));
+					break;
+				case 'LARGER':
+					type="all";
+					search=(eval("function(idx,hdr,body) { var min="+parseInt(args.shift(),10)+"; if(body.length + hdr.get_rfc822_header().length > min) return true; return false;}"));
+					break;
+				case 'SMALLER':
+					type="all";
+					search=(eval("function(idx,hdr,body) { var max="+parseInt(args.shift(),10)+"; if(body.length + hdr.get_rfc822_header().length < max) return true; return false;}"));
+					break;
+				case 'CC':
+					type="hdr";
+					search=(eval("function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+"; var hdrs=hdr.parse_headers(); var i; if(hdrs.cc == undefined) return false; for(i in hdrs.cc) if(hdrs.cc[i].search(match)==0) return true; return false;}"));
+					break;
+				case 'BCC':
+					type="hdr";
+					search=(eval("function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+"; var hdrs=hdr.parse_headers(); var i; if(hdrs.bcc == undefined) return false; for(i in hdrs.bcc) if(hdrs.bcc[i].search(match)==0) return true; return false;}"));
+					break;
+				case 'TEXT':
+					type="all";
+					search=(eval("function(idx,hdr,body) { var str="+args.shift().toSource()+"; if(hdr.get_rfc822_header().indexOf(str)!=-1) return true; if(body.indexOf(str)!=-1) return true; return false}"));
+					break;
+				case 'NOT':
+					next1=get_func(args);
 					type=next1[0];
-					search=(eval("function(x) { return ("+next1[1].toSource()+"(x)||"+next2[1].toSource()+"(x))}"));
-				}
-				else {
-					// Needs to be all (sigh)
-					type='all';
-					tmp="function(idx,hdr,body) { return ("+next1[1].toSource();
-					switch(next1[0]) {
-						case 'idx':
-						case 'hdr':
-						case 'body':
-							tmp += '('+next1[0]+')';
-							break;
-						case 'all':
-							tmp += '(idx,hdr,body)';
-							break;
+					search=(eval("function(x) { return !"+next1[1].toSource()+"(x)}"));
+					break;
+				case 'OR':
+					next1=get_func(args);
+					next2=get_func(args);
+					if(next1[0]==next1[1]) {
+						type=next1[0];
+						search=(eval("function(x) { return ("+next1[1].toSource()+"(x)||"+next2[1].toSource()+"(x))}"));
 					}
-					tmp += '||'+next2[1].toSource();
-					switch(next2[0]) {
-						case 'idx':
-						case 'hdr':
-						case 'body':
-							tmp += '('+next2[0]+')';
-							break;
-						case 'all':
-							tmp += '(idx,hdr,body)';
-							break;
+					else {
+						// Needs to be all (sigh)
+						type='all';
+						tmp="function(idx,hdr,body) { return ("+next1[1].toSource();
+						switch(next1[0]) {
+							case 'idx':
+							case 'hdr':
+							case 'body':
+								tmp += '('+next1[0]+')';
+								break;
+							case 'all':
+								tmp += '(idx,hdr,body)';
+								break;
+						}
+						tmp += '||'+next2[1].toSource();
+						switch(next2[0]) {
+							case 'idx':
+							case 'hdr':
+							case 'body':
+								tmp += '('+next2[0]+')';
+								break;
+							case 'all':
+								tmp += '(idx,hdr,body)';
+								break;
+						}
+						tmp += ')}';
+						search=eval(tmp);
 					}
-					tmp += ')}';
-					search=eval(tmp);
+					break;
+				default:
+					type="idx";
+					search=(function(idx) { return false; });
+			}
+			return([type,search]);
+		}
+
+		if(typeof(args[0]) == 'string'
+			&& args[0].search(/^(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?,)*(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?)$/)==0) {
+			offsets=parse_seq_set(args.shift(), false);
+		}
+
+		while(args.length) {
+			i=get_func(args);
+			search_set[i[0]].push(i[1]);
+		}
+
+		for(i in offsets) {
+			failed=false;
+			idx=index.idx[offsets[i]];
+			if(search_set.idx.length > 0) {
+				for(j in search_set.idx) {
+					if(search_set.idx[j](idx)==false)
+						failed=true;
 				}
+				if(failed)
+					continue;
+			}
+			if(search_set.hdr.length > 0 || search_set.all.length > 0) {
+				hdr=base.get_msg_header(idx.number, /* expand_fields: */false);
+				if(hdr==null) {
+					log("Unable to get header for idx.number");
+					continue;
+				}
+				for(j in search_set.hdr) {
+					if(search_set.hdr[j](hdr)==false)
+						failed=true;
+				}
+				if(failed)
+					continue;
+			}
+			if(search_set.body.length > 0 || search_set.all.length > 0) {
+				body=base.get_msg_body(idx.number,true,true,true).toUpperCase();
+				if(body==null) {
+					log("Unable to get body for idx.number");
+					continue;
+				}
+				for(j in search_set.body) {
+					if(search_set.body[j](body)==false)
+						failed=true;
+				}
+				if(failed)
+					continue;
+			}
+			if(search_set.all.length > 0) {
+				for(j in search_set.all) {
+					if(search_set.all[j](idx,hdr,body)==false)
+						failed=true;
+				}
+				if(failed)
+					continue;
+			}
+			if(!failed)
+				result.push(uid?idx.number:idx.offset);
+			if (!client.socket.is_connected)
 				break;
-			default:
-				type="idx";
-				search=(function(idx) { return false; });
 		}
-		return([type,search]);
-	}
 
-	if(typeof(args[0]) == 'string'
-		&& args[0].search(/^(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?,)*(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?)$/)==0) {
-		offsets=parse_seq_set(args.shift(), false);
+		untagged("SEARCH "+result.join(" "));
+	} catch(error) {
+		log(LOG_WARNING, "Exception during search: " + error);
 	}
-
-	while(args.length) {
-		i=get_func(args);
-		search_set[i[0]].push(i[1]);
-	}
-
-	for(i in offsets) {
-		failed=false;
-		idx=index.idx[offsets[i]];
-		if(search_set.idx.length > 0) {
-			for(j in search_set.idx) {
-				if(search_set.idx[j](idx)==false)
-					failed=true;
-			}
-			if(failed)
-				continue;
-		}
-		if(search_set.hdr.length > 0 || search_set.all.length > 0) {
-			hdr=base.get_msg_header(idx.number, /* expand_fields: */false);
-			if(hdr==null) {
-				log("Unable to get header for idx.number");
-				continue;
-			}
-			for(j in search_set.hdr) {
-				if(search_set.hdr[j](hdr)==false)
-					failed=true;
-			}
-			if(failed)
-				continue;
-		}
-		if(search_set.body.length > 0 || search_set.all.length > 0) {
-			body=base.get_msg_body(idx.number,true,true,true).toUpperCase();
-			if(body==null) {
-				log("Unable to get body for idx.number");
-				continue;
-			}
-			for(j in search_set.body) {
-				if(search_set.body[j](body)==false)
-					failed=true;
-			}
-			if(failed)
-				continue;
-		}
-		if(search_set.all.length > 0) {
-			for(j in search_set.all) {
-				if(search_set.all[j](idx,hdr,body)==false)
-					failed=true;
-			}
-			if(failed)
-				continue;
-		}
-		if(!failed)
-			result.push(uid?idx.number:idx.offset);
-		if (!client.socket.is_connected)
-			break;
-	}
-
-	untagged("SEARCH "+result.join(" "));
 }
 
 var selected_command_handlers = {

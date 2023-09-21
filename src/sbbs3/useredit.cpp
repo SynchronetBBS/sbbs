@@ -721,31 +721,14 @@ void sbbs_t::maindflts(user_t* user)
 	while(online) {
 		CLS;
 		getuserdat(&cfg,user);
-		if(user->rows != TERM_ROWS_AUTO)
-			rows = user->rows;
-		if(user->cols != TERM_COLS_AUTO)
-			cols = user->cols;
 		bprintf(text[UserDefaultsHdr],user->alias,user->number);
 		if(user == &useron)
 			update_nodeterm();
 		long term = (user == &useron) ? term_supports() : user->misc;
-		if(term&PETSCII)
-			safe_snprintf(str,sizeof(str),"%sCBM/PETSCII"
-							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr);
-		else
-			safe_snprintf(str,sizeof(str),"%s%s / %s %s%s%s"
-							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
-							,term_charset(term)
-							,term_type(term)
-							,term&COLOR ? (term&ICE_COLOR ? text[TerminalIceColor] : text[TerminalColor]) : text[TerminalMonochrome]
-							,term&MOUSE ? text[TerminalMouse] : ""
-							,term&SWAP_DELETE ? "DEL=BS" : nulstr);
 		add_hotspot('T');
-		bprintf(text[UserDefaultsTerminal], truncsp(str));
-		safe_snprintf(str, sizeof(str), "%s%d %s,", user->cols ? nulstr:text[TerminalAutoDetect], cols, text[TerminalColumns]);
-		safe_snprintf(tmp, sizeof(tmp), "%s%d %s", user->rows ? nulstr:text[TerminalAutoDetect], rows, text[TerminalRows]);
+		bprintf(text[UserDefaultsTerminal], term_type(user, term, str, sizeof str));
 		add_hotspot('L');
-		bprintf(text[UserDefaultsRows], str, tmp);
+		bprintf(text[UserDefaultsRows], term_cols(user, str, sizeof str), term_rows(user, tmp, sizeof tmp));
 		if(cfg.total_shells>1) {
 			add_hotspot('K');
 			bprintf(text[UserDefaultsCommandSet]
@@ -754,7 +737,7 @@ void sbbs_t::maindflts(user_t* user)
 		if(cfg.total_xedits) {
 			add_hotspot('E');
 			bprintf(text[UserDefaultsXeditor]
-				,user->xedit ? cfg.xedit[user->xedit-1]->name : "None");
+				,user->xedit ? cfg.xedit[user->xedit-1]->name : text[None]);
 		}
 		add_hotspot('A');
 		bprintf(text[UserDefaultsArcType]
@@ -805,15 +788,8 @@ void sbbs_t::maindflts(user_t* user)
 			bprintf(text[UserDefaultsQuiet]
 				,user->misc&QUIET ? text[On] : text[Off]);
 		}
-		SAFECOPY(str,"None");
-		for(i=0;i<cfg.total_prots;i++) {
-			if(user->prot==cfg.prot[i]->mnemonic) {
-				SAFECOPY(str,cfg.prot[i]->name);
-				break;
-			}
-		}
 		add_hotspot('Z');
-		bprintf(text[UserDefaultsProtocol],str
+		bprintf(text[UserDefaultsProtocol], protname(user->prot)
 			,user->misc&AUTOHANG ? "(Auto-Hangup)":nulstr);
 		add_hotspot('W');
 		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))
@@ -929,16 +905,15 @@ void sbbs_t::maindflts(user_t* user)
 				putusermisc(user->number, user->misc);
 				break;
 			case 'E':
-				if(noyes(text[UseExternalEditorQ])) {
+				if((!user->xedit && noyes(text[UseExternalEditorQ]))
+					|| (user->xedit && !yesno(text[UseExternalEditorQ]))) {
 					if(!(sys_status & SS_ABORT))
 						putuserstr(user->number, USER_XEDIT, nulstr);
 					break; 
 				}
-				if(user->xedit)
-					user->xedit--;
 				for(i=0;i<cfg.total_xedits;i++)
 					uselect(1,i,text[ExternalEditorHeading],cfg.xedit[i]->name, cfg.xedit[i]->ar);
-				if((i=uselect(0,user->xedit,0,0,0))>=0)
+				if((i=uselect(0,user->xedit ? user->xedit-1:0,0,0,0))>=0)
 					putuserstr(user->number, USER_XEDIT, cfg.xedit[i]->code);
 				break;
 			case 'K':   /* Command shell */

@@ -1,0 +1,68 @@
+<?
+    var server_panels = ['ftp', 'mail', 'srvc', 'term', 'web'];
+
+    // Read the modopts setting that controls what panels should appear in each quadrant
+    var panels = settings['webmonitor_quadrant_' + argv[0]];
+
+    // If there isn't a modopts setting for this quadrant, use the default
+    if (!panels) {
+        switch (argv[0]) {
+            case 'bottom_left':
+                panels = 'term,events';
+                break;
+            case 'bottom_right':
+                panels = 'srvc,web,ftp,documentation';
+                break;
+            case 'top_left':
+                panels = 'nodes,recent-visitors,statistics';
+                break;
+            case 'top_right':
+                panels = 'clients,mail';
+                break;
+        }
+    }
+
+    // Split the comma-separated string into an array we'll loop through later
+    panels = panels.split(',');
+
+    // Convert the panel name into a description (eg term into Terminal Server)
+    function get_panel_description(name) {
+        switch (name) {
+            case 'clients': return 'Clients';
+            case 'documentation': return 'Documentation';
+            case 'events': return 'Events';
+            case 'ftp': return 'FTP Server';
+            case 'mail': return 'Mail';
+            case 'nodes': return 'Nodes';
+            case 'recent-visitors': return 'Recent Visitors';
+            case 'srvc': return 'Services';
+            case 'statistics': return 'Statistics';
+            case 'term': return 'Terminal Server';
+            case 'web': return 'Web Server';
+            default: return name;
+        }
+    }
+?>
+
+<ul class="nav nav-tabs">
+    <?
+        // Loop through the panel list to build the list of tabs
+        for (var i = 0; i < panels.length; i++) {
+            var className = i == 0 ? 'active' : '';
+            var badge = panels[i] === 'clients' ? ' <span class="badge" id="' + panels[i] + 'CounterBadge">0</span>' : '';
+            write('<li class="' + className + '"><a href="#' + panels[i] + 'Tab" data-toggle="tab">' + get_panel_description(panels[i]) + badge + '</a></li>');
+        }
+    ?>
+</ul>
+<div class="tab-content">
+    <?
+        // Loop through the panel list to load the proper component panels
+        for (var i = 0; i < panels.length; i++) {
+            if (server_panels.includes(panels[i])) {
+                load(xjs_compile(settings.web_components + 'webmonitor/server-panel.xjs'), panels[i], get_panel_description(panels[i]), i == 0 ? 'active in' : '');
+            } else {
+                load(xjs_compile(settings.web_components + 'webmonitor/' + panels[i] + '-panel.xjs'), i == 0 ? 'active in' : '');
+            }
+        }
+    ?>
+</div>            

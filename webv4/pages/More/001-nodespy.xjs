@@ -1,13 +1,7 @@
 <!--NO_SIDEBAR:Node Spy-->
 
 <?
-    // Ensure the user is a sysop to avoid normal users from spying
-    if (!user.is_sysop) {
-?>
-        <div class="alert alert-danger"><h3>You must be a SysOp to view the node spy</h3></div> <!-- TODOX Translate -->
-<?    
-        exit();
-    }
+    load(xjs_compile(settings.web_components + 'sysop-required.xjs'));
 
     // Load fTelnet-related files
     load(settings.web_lib + 'ftelnet.js');
@@ -36,7 +30,7 @@
 
 <h1 align="center">Node Spy</h1>
 
-<? loadComponent('mqtt.xjs'); ?>
+<? load(xjs_compile(settings.web_components + 'mqtt.xjs')); ?>
 
 <!-- Multiple fTelnet instances (one per node) will be added to this wrapper div -->
 <div id="ClientsWrapper"></div>

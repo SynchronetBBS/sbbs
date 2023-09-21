@@ -875,6 +875,7 @@ enum {
 	,HashedFile
 	,NewUserValEmailSubj
 	,InactivityAlert
+	,None
 
 	,TOTAL_TEXT
 };

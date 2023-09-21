@@ -3381,7 +3381,6 @@ bool sbbs_t::init()
 {
 	char		str[MAX_PATH+1];
 	char		tmp[128];
-	char		tmp2[128];
 	int			result;
 	int			i,j,k,l;
 	node_t		node;
@@ -3502,16 +3501,10 @@ bool sbbs_t::init()
 
 		if(filelength(fileno(logfile_fp))) {
 			log(crlf);
-			now=time(NULL);
-			struct tm tm;
-			localtime_r(&now,&tm);
 			time_t ftime = fdate(str);
-			safe_snprintf(str,sizeof(str),"%s  %s %s %02d %u  "
+			safe_snprintf(str,sizeof(str),
 				"End of preexisting log entry (possible crash on %.24s)"
-				,hhmmtostr(&cfg,&tm,tmp)
-				,wday[tm.tm_wday]
-				,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900
-				,ctime_r(&ftime, tmp2));
+				,ctime_r(&ftime, tmp));
 			logline(LOG_NOTICE,"L!",str);
 			log(crlf);
 			catsyslog(TRUE);
@@ -5497,6 +5490,12 @@ NO_SSH:
 			if(sbbs->getnodedat(i,&node,1)!=0)
 				continue;
 			if(node.status==NODE_WFC) {
+				if(node_socket[i - 1] != INVALID_SOCKET) {
+					lprintf(LOG_CRIT, "%04d !Node %d status is WFC, but the node socket (%d) and thread are still in use!"
+						,client_socket, i, node_socket[i - 1]);
+					sbbs->putnodedat(i, &node);
+					continue;
+				}
 				node.status=NODE_LOGON;
 #ifdef USE_CRYPTLIB
 				if(ssh)

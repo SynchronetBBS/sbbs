@@ -1,0 +1,15 @@
+<div class="tab-pane fade webmonitor-panel <? write(argv[0]); ?>" id="eventsTab">
+    <div class="webmonitor-scrolling-wrapper" id="eventsTableWrapper">    
+        <table class="table table-bordered table-condensed table-hover">
+            <thead>
+                <tr>
+                    <th>Date/Time</th>
+                    <th>Level</th>
+                    <th>Message</th>
+                </tr>
+            </thead>
+            <tbody id="eventsLog">
+            </tbody>
+        </table>
+    </div>
+</div>

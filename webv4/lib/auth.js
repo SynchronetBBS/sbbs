@@ -1,4 +1,5 @@
 require('sbbsdefs.js', 'SYS_CLOSED');
+var request = require({}, settings.web_lib + 'request.js', 'request');
 
 function randomString(length) {
 	var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split('');
@@ -9,6 +10,14 @@ function randomString(length) {
 		str += chars[rn];
 	}
 	return str;
+}
+
+function getCsrfToken() {
+	if (is_user()) {
+		return getSessionValue(user.number, 'csrf_token');
+	} else {
+		return undefined;
+	}
 }
 
 function getSession(un) {
@@ -48,6 +57,31 @@ function setCookie(usr, sessionKey) {
 	}
 }
 
+function validateCsrfToken() {
+	try {
+		// Check for CSRF token (in header or query data)
+		var input_token = null;
+		if (http_request.header['x-csrf-token']) {
+			input_token = http_request.header['x-csrf-token'];
+		} else if (request.has_param('csrf_token')) {
+			input_token = request.get_param('csrf_token');
+		}
+
+		// If we didn't find an input token, then validation fails
+		if (!input_token) {
+			return false;
+		}
+
+		// If we did find an input token, confirm it matches the token stored in the user's session
+		return input_token === getCsrfToken();
+	} catch (error) {
+		// In case of error, return false to avoid allowing CSRF when one shouldn't be allowed
+		log(LOG_ERR, 'auth.js validateCsrfToken error: ' + error);
+		return false;
+	}
+}
+
+
 function validateSession(cookies) {
 
 	var usr = new User(0);
@@ -75,6 +109,12 @@ function validateSession(cookies) {
 		setSessionValue(usr.number, 'ip_address', client.ip_address);
 		if (session.session_start === undefined || time() - parseInt(session.session_start, 10) > settings.timeout) {
 			setSessionValue(usr.number, 'session_start', time());
+			
+			// Generate a csrf token.  Minimum recommended is 128 bits of entropy, and 43 characters of 0-9A-Za-z should equal 256 bits of entropy
+			// according to this formula: log2(62^43) -- https://www.wolframalpha.com/input?i=log2%2862%5E43%29
+			// (62 refers to the fact that there are 62 characters to choose from in the 0-9A-Za-z set)
+			setSessionValue(usr.number, 'csrf_token', randomString(43))
+			
 			if(!usr.is_sysop || (system.settings&SYS_SYSSTAT)) {
 				load({}, 'logonlist_lib.js').add({ node: 'Web' });
 			}

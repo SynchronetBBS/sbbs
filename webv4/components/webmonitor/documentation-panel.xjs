@@ -1,0 +1,37 @@
+<div class="tab-pane fade webmonitor-panel <? write(argv[0]); ?>" id="documentationTab">
+    <div class="webmonitor-scrolling-wrapper"> 
+        <h3>Enabling the Configure buttons</h3>
+        <p>
+            By default, the configure buttons are not enabled.  This is because it's still an experimental feature and not recommended
+            for use yet.  But if you'd like to test it out, <strong>and have backed up your sbbs.ini first</strong>, you can enable
+            the configure buttons by adding this key/value to the [web] section of ctrl/modopts.ini:
+        </p>
+        <ul>
+            <li>webmonitor_configuration_enabled=true</li>
+        </ul>
+        <p class="small">NB: Only one tab of the Terminal Server Configuration is functional right now.</p>
+
+        <h3>Customizing the panel layout</h3>
+        <p>
+            By default, my preferred layout is used for the panels on the Web Monitor interface.  
+            If you'd like to restore the default SBBSCTRL layout of the panels, you can edit your ctrl/modopts.ini and add these keys/values to the [web] section:
+        </p>
+        <ul>
+            <li>webmonitor_quadrant_top_left=nodes,clients,statistics</li>
+            <li>webmonitor_quadrant_top_right=mail</li>
+            <li>webmonitor_quadrant_bottom_left=term,events</li>
+            <li>webmonitor_quadrant_bottom_right=srvc,ftp,web</li>
+        </ul>
+        <p>
+            Of course you can customize the layout by changing the order of the values, or even moving them to a different quadrant.  And if you want
+            to hide a panel, just don't include it as a value in any of the four keys.
+        </p>
+        <p>
+            You may want to also include "documentation" as a value at the end of one of the four keys, just in case this panel is updated with new
+            information in the future.
+        </p>
+        <p>
+            There's also a new "recent-visitors" panel that you should account for if you're going to customize the four keys.
+        </p>
+    </div>
+</div>

@@ -10,14 +10,30 @@ function read_sections(f, prefix)
 
 function read_main_ini(filename)
 {
-}
-
-function read_msgs_ini(filename)
-{
+	var f = new File(filename);
+	if(!f.open("r"))
+		throw new Error("Error " + f.error + " opening " + f.name);
+	var obj = f.iniGetObject();
+	obj.newuser = f.iniGetObject("newuser");
+	obj.expired = f.iniGetObject("expired");
+	obj.mqtt = f.iniGetObject("MQTT");
+	obj.module = f.iniGetObject("module");
+	obj.shell = read_sections(f, "shell:");
+	return obj;
 }
 
 function read_file_ini(filename)
 {
+	var f = new File(filename);
+	if(!f.open("r"))
+		throw new Error("Error " + f.error + " opening " + f.name);
+	var obj = f.iniGetObject();
+	obj.extractor = read_sections(f, "extractor:");
+	obj.compressor = read_sections(f, "compressor:");
+	obj.viewer = read_sections(f, "viewer:");
+	obj.tester = read_sections(f, "tester:");
+	obj.protocol = read_sections(f, "protocol:");
+	return obj;
 }
 
 function find_xtrn_sec(obj, code)
@@ -33,7 +49,7 @@ function read_xtrn_ini(filename)
 {
 	var f = new File(filename);
 	if(!f.open("r"))
-		throw "Error " + f.error + " opening " + f.name;
+		throw new Error("Error " + f.error + " opening " + f.name);
 	var obj = {};
 	obj.event = read_sections(f, "event:");
 	obj.editor = read_sections(f, "editor:");
@@ -48,7 +64,7 @@ function read_xtrn_ini(filename)
 			var seccode = item.code.substring(0, i);
 			var secnum = find_xtrn_sec(obj, seccode);
 			if(secnum < 0)
-				throw "Invalid xtrn prog sec name: " + seccode;
+				throw new Error("Invalid xtrn prog sec name: " + seccode);
 			item.sec = secnum;
 			item.code = item.code.substring(i + 1);
 		}
@@ -72,12 +88,12 @@ function write_xtrn_ini(filename, obj)
 	file_backup(filename, backup_level);
 	var f = new File(filename);
 	if(!f.open(f.exists ? 'r+' : 'w+'))
-		throw "Error " + f.error + " opening/creating " + f.name;
+		throw new Error("Error " + f.error + " opening/creating " + f.name);
 	
 	for(var i = 0; obj.prog && i < obj.prog.length; i++) {
 		var item = obj.prog[i];
 		if(obj.sec[item.sec] === undefined)
-			throw "Invalid section number: " + item.sec;
+			throw new Error("Invalid section number: " + item.sec);
 		item.code = obj.sec[item.sec].code + ":" + item.code;
 	}
 	write_sections(f, obj.event, "event:");
@@ -88,47 +104,42 @@ function write_xtrn_ini(filename, obj)
 	return true;
 }
 
-function read_chat_ini(filename)
-{
-}
-
 function read(filename, struct)
 {
 	if(struct)
-		throw "struct argument not supported";
+		throw new Error("struct argument not supported");
 	switch(file_getname(filename)) {
 		case "main.ini":
 			return read_main_ini(filename);
 		case "msgs.ini":
-			return read_msgs_ini(filename);
+			throw new Error("reading msgs.ini not yet supported");
 		case "file.ini":
 			return read_file_ini(filename);
 		case "xtrn.ini":
 			return read_xtrn_ini(filename);
 		case "chat.ini":
-			return read_chat_ini(filename);
+			throw new Error("reading chat.ini not yet supported");
 	}
-	throw "unsupported filename: " + filename;
+	throw new Error("unsupported filename: " + filename);
 }
 
 function write(filename, struct, obj)
 {
 	if(struct)
-		throw "struct argument not supported";
+		throw new Error("struct argument not supported");
 	switch(file_getname(filename)) {
 		case "main.ini":
-			return write_main_ini(filename, obj);
+			throw new Error("writing main.ini not yet supported");
 		case "msgs.ini":
-			return write_msgs_ini(filename, obj);
+			throw new Error("writing msgs.ini not yet supported");
 		case "file.ini":
-			return write_file_ini(filename, obj);
+			throw new Error("writing file.ini not yet supported");
 		case "xtrn.ini":
 			return write_xtrn_ini(filename, obj);
 		case "chat.ini":
-			return write_chat_ini(filename, obj);
+			throw new Error("writing chat.ini not yet supported");
 	}
-	throw "unsupported filename: " + filename;
-	
+	throw new Error("unsupported filename: " + filename);
 }
 
 this;

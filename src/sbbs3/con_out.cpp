@@ -513,8 +513,44 @@ int sbbs_t::term_supports(int cmp_flags)
 	return(cmp_flags ? ((flags&cmp_flags)==cmp_flags) : (flags&TERM_FLAGS));
 }
 
+char* sbbs_t::term_rows(user_t* user, char* str, size_t size)
+{
+	if(user->rows != TERM_ROWS_AUTO)
+		rows = user->rows;
+	safe_snprintf(str, size, "%s%d %s", user->rows ? nulstr:text[TerminalAutoDetect], rows, text[TerminalRows]);
+	return str;
+}
+
+char* sbbs_t::term_cols(user_t* user, char* str, size_t size)
+{
+	if(user->cols != TERM_COLS_AUTO)
+		cols = user->cols;
+	safe_snprintf(str, size, "%s%d %s", user->cols ? nulstr:text[TerminalAutoDetect], cols, text[TerminalColumns]);
+	return str;
+}
+
 /****************************************************************************/
-/* Returns description of the terminal type									*/
+/* Returns verbose description of the terminal type	configuration for user	*/
+/****************************************************************************/
+char* sbbs_t::term_type(user_t* user, int term, char* str, size_t size)
+{
+	if(term & PETSCII)
+		safe_snprintf(str, size, "%sCBM/PETSCII"
+						,(user->misc & AUTOTERM) ? text[TerminalAutoDetect] : nulstr);
+	else
+		safe_snprintf(str, size, "%s%s / %s %s%s%s"
+						,(user->misc & AUTOTERM) ? text[TerminalAutoDetect] : nulstr
+						,term_charset(term)
+						,term_type(term)
+						,(term & COLOR) ? (term&ICE_COLOR ? text[TerminalIceColor] : text[TerminalColor]) : text[TerminalMonochrome]
+						,(term & MOUSE) ? text[TerminalMouse] : ""
+						,(term & SWAP_DELETE) ? "DEL=BS" : nulstr);
+	truncsp(str);
+	return str;
+}
+
+/****************************************************************************/
+/* Returns short description of the terminal type							*/
 /****************************************************************************/
 const char* sbbs_t::term_type(int term)
 {

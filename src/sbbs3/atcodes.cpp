@@ -555,11 +555,108 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 	if(strcmp(sp, "NETMAIL") == 0)
 		return useron.netmail;
 
+	if(strcmp(sp, "TERMTYPE") == 0)
+		return term_type(&useron, term_supports(), str, maxlen);
+
+	if(strcmp(sp, "TERMROWS") == 0)
+		return term_rows(&useron, str, maxlen);
+
+	if(strcmp(sp, "TERMCOLS") == 0)
+		return term_cols(&useron, str, maxlen);
+
+	if(strcmp(sp, "AUTOTERM") == 0)
+		return (useron.misc & AUTOTERM) ? text[On] : text[Off];
+
+	if(strcmp(sp, "ANSI") == 0)
+		return (useron.misc & ANSI) ? text[On] : text[Off];
+
+	if(strcmp(sp, "ASCII") == 0)
+		return (useron.misc & NO_EXASCII) ? text[On] : text[Off];
+
+	if(strcmp(sp, "COLOR") == 0)
+		return (useron.misc & COLOR) ? text[On] : text[Off];
+
+	if(strcmp(sp, "ICE") == 0)
+		return (useron.misc & ICE_COLOR) ? text[On] : text[Off];
+
+	if(strcmp(sp, "RIP") == 0)
+		return (useron.misc & RIP) ? text[On] : text[Off];
+
+	if(strcmp(sp, "PETSCII") == 0)
+		return (useron.misc & PETSCII) ? text[On] : text[Off];
+
+	if(strcmp(sp, "SWAPDEL") == 0)
+		return (useron.misc & SWAP_DELETE) ? text[On] : text[Off];
+
+	if(strcmp(sp, "UTF8") == 0)
+		return (useron.misc & UTF8) ? text[On] : text[Off];
+
+	if(strcmp(sp, "MOUSE") == 0)
+		return (useron.misc & MOUSE) ? text[On] : text[Off];
+
+	if(strcmp(sp, "UPAUSE") == 0)
+		return (useron.misc & UPAUSE) ? text[On] : text[Off];
+
+	if(strcmp(sp, "SPIN") == 0)
+		return (useron.misc & SPIN) ? text[On] : text[Off];
+
+	if(strcmp(sp, "PAUSESPIN") == 0)
+		return (useron.misc & NOPAUSESPIN) ? text[Off] : text[On];
+
+	if(strcmp(sp, "EXPERT") == 0)
+		return (useron.misc & EXPERT) ? text[On] : text[Off];
+
+	if(strcmp(sp, "HOTKEYS") == 0)
+		return (useron.misc & COLDKEYS) ? text[Off] : text[On]; 
+
+	if(strcmp(sp, "MSGCLS") == 0)
+		return (useron.misc & CLRSCRN) ? text[On] : text[Off];
+
 	if(strcmp(sp, "FWD") == 0)
 		return (useron.misc & NETMAIL) ? text[On] : text[Off];
 
+	if(strcmp(sp, "REMSUBS") == 0)
+		return (useron.misc & CURSUB) ? text[On] : text[Off];
+
+	if(strcmp(sp, "FILEDESC") == 0)
+		return (useron.misc & EXTDESC) ? text[On] : text[Off];
+
+	if(strcmp(sp, "FILEFLAG") == 0)
+		return (useron.misc & BATCHFLAG) ? text[On] : text[Off];
+
+	if(strcmp(sp, "AUTOHANG") == 0)
+		return (useron.misc & AUTOHANG) ? text[On] : text[Off];
+
+	if(strcmp(sp, "AUTOLOGON") == 0)
+		return (useron.misc & AUTOLOGON) ? text[On] : text[Off];
+
+	if(strcmp(sp, "QUIET") == 0)
+		return (useron.misc & QUIET) ? text[On] : text[Off];
+
+	if(strcmp(sp, "ASKNSCAN") == 0)
+		return (useron.misc & ASK_NSCAN) ? text[On] : text[Off];
+
+	if(strcmp(sp, "ASKSSCAN") == 0)
+		return (useron.misc & ASK_SSCAN) ? text[On] : text[Off];
+
+	if(strcmp(sp, "ANFSCAN") == 0)
+		return (useron.misc & ANFSCAN) ? text[On] : text[Off];
+
+	if(strcmp(sp, "EDITOR") == 0)
+		return (useron.xedit < 1 || useron.xedit >= cfg.total_xedits) ? text[None] : cfg.xedit[useron.xedit - 1]->name;
+
+	if(strcmp(sp, "SHELL") == 0)
+		return cfg.shell[useron.shell]->name;
+
 	if(strcmp(sp, "TMP") == 0)
 		return useron.tmpext;
+
+	if(strcmp(sp, "PROT") == 0) {
+		safe_snprintf(str, maxlen, "%c", useron.prot);
+		return str;
+	}
+	if(strcmp(sp, "PROTNAME") == 0)
+		return protname(useron.prot);
 
 	if(strcmp(sp, "SEX") == 0) {
 		safe_snprintf(str, maxlen, "%c", useron.sex);

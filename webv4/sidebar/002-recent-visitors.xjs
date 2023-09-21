@@ -13,7 +13,7 @@
     <? ll.reverse().forEach(function (e) { ?>
         <li class="list-group-item striped">
             <strong>
-                <? write(e.user.alias); ?>
+                <? write(e.user.alias.replace(/</g, '&lt;')); ?>
             </strong>
             <br>
             <em>
@@ -23,7 +23,7 @@
             <? if (e.user.location != '') { ?>
                 <? locale.write('label_location', 'sidebar_recent_visitors'); ?>
                 <strong>
-                    <? write(e.user.location); ?>
+                    <? write(e.user.location.replace(/</g, '&lt;')); ?>
                 </strong>
             <? } ?>
             <? locale.write('label_connection', 'sidebar_recent_visitors'); ?>

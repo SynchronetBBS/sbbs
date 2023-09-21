@@ -1,0 +1,28 @@
+<?
+    var serverType = argv[0];
+    var serverDescription = argv[1];
+    var classNames = argv[2];
+?>
+
+<div class="tab-pane fade webmonitor-panel <? write(classNames); ?>" id="<? write(serverType); ?>Tab">
+    <div class="webmonitor-toolbar-buttons">
+        <button class="btn btn-default xbtn-sm" id="<? write(serverType); ?>StatusButton">Status: Unknown</button>
+        <button class="btn btn-default xbtn-sm webmonitor-recycle" data-server="<? write(serverType); ?>" data-toggle="tooltip" data-placement="bottom" title="Recycle <? write(serverDescription); ?>"><span class="glyphicon glyphicon-off"></span></button>
+        <button class="btn btn-default xbtn-sm" id="<? write(serverType); ?>ConfigureButton" data-toggle="tooltip" data-placement="bottom" title="Configure <? write(serverDescription); ?>"><span class="glyphicon glyphicon-wrench"></span></button>
+        <div class="checkbox pull-right"><label><input type="checkbox" id="<? write(serverType); ?>AutoScroll" checked="checked"> Autoscroll</label></div>
+    </div>
+    <div class="clearfix"></div>
+    <div class="webmonitor-scrolling-wrapper-with-buttons" id="<? write(serverType); ?>TableWrapper">
+        <table class="table table-bordered table-condensed table-hover">
+            <thead>
+                <tr>
+                    <th>Date/Time</th>
+                    <th>Level</th>
+                    <th>Message</th>
+                </tr>
+            </thead>
+            <tbody id="<? write(serverType); ?>Log">
+            </tbody>
+        </table>
+    </div>
+</div>

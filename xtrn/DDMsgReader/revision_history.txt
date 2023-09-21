@@ -5,6 +5,7 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.79     2023-09-20   Fixed poll voting for single-answer polls
 1.78     2023-08-30   Bug fix for going to a specific message in the message
                       list (especially for lightbar mode)
 1.77a    2023-08-26   When saving a message on the local BBS PC without all the
