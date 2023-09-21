@@ -1,0 +1,62 @@
+<!--NO_SIDEBAR:Web Monitor-->
+
+<? 
+    load(xjs_compile(settings.web_components + 'sysop-required.xjs')); 
+    load(xjs_compile(settings.web_components + 'mqtt.xjs'));
+?>
+
+<style>
+    div.webmonitor-panel {
+        height: 400px;
+    }
+    div.webmonitor-scrolling-wrapper {
+        height: 400px;
+        overflow-y: scroll;
+    }
+    div.webmonitor-scrolling-wrapper-with-buttons {
+        height: 356px;
+        overflow-y: scroll;
+    }
+    div.webmonitor-toolbar-buttons {
+        padding: 5px 0;
+    }
+    div.modal-body input[type=text] {
+        margin-bottom: 10px;
+    }
+    tr .visible-hover {
+        display: none;
+    }
+    tr:hover .visible-hover {
+        display: inline-block;
+    }
+</style>
+
+<div id="webmonitor">
+    <div class="row">
+        <div class="col-md-6">
+            <? load(xjs_compile(settings.web_components + 'webmonitor/quadrant.xjs'), 'top_left'); ?>
+        </div>
+        <div class="col-md-6">
+            <? load(xjs_compile(settings.web_components + 'webmonitor/quadrant.xjs'), 'top_right'); ?>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <? load(xjs_compile(settings.web_components + 'webmonitor/quadrant.xjs'), 'bottom_left'); ?>
+        </div>
+        <div class="col-md-6">
+            <? load(xjs_compile(settings.web_components + 'webmonitor/quadrant.xjs'), 'bottom_right'); ?>
+        </div>
+    </div>
+</div>
+
+<? load(xjs_compile(settings.web_components + 'webmonitor/term-configuration-modal.xjs')); ?>
+
+<script>
+    // Set javascript variables for system variables referenced by webmonitor.js
+    var csrf_token = '<? write(getCsrfToken()); ?>';
+    var webmonitor_configuration_enabled = <? write(settings.webmonitor_configuration_enabled); ?>;
+    var system_local_host_name = '<? write(system.local_host_name); ?>';
+    var system_qwk_id = '<? write(system.qwk_id); ?>';
+</script>
+<script src="./js/webmonitor.js"></script>

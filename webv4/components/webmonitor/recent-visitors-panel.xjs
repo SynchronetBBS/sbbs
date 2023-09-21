@@ -1,0 +1,41 @@
+<?
+    var logonlist_lib = load({}, 'logonlist_lib.js');
+    var ll = logonlist_lib.get(-10);
+?>
+
+<div class="tab-pane fade webmonitor-panel <? write(argv[0]); ?>" id="recent-visitorsTab">
+    <div class="webmonitor-scrolling-wrapper" id="recent-visitorsTableWrapper">    
+        <table class="table table-bordered table-condensed table-hover table-striped">
+            <thead>
+                <tr>
+                    <th>Date/Time</th>
+                    <th>Alias</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Location</th>
+                    <th>Protocol</th>
+                </tr>
+            </thead>
+            <tbody id="recent-visitorsTable">
+<? 
+                if (Array.isArray(ll)) { 
+                    ll.forEach(function (e) { 
+?>
+                        <tr>
+                            <td><? write(new Date(e.time * 1000).toLocaleString()); ?></td>
+                            <td><? write(e.user.alias.replace(/</g, '&lt;')); ?></td>
+                            <td><? write(e.user.name.replace(/</g, '&lt;')); ?></td>
+                            <td><? write(e.user.netmail.replace(/</g, '&lt;')); ?></td>
+                            <td><? write(e.user.location.replace(/</g, '&lt;')); ?></td>
+                            <td><? write(e.user.connection); ?></td>
+                        </tr>
+<? 
+                    });
+                } else {
+                    write('<tr><td colspan="6" align="center">No recent visitors to display</td></tr>');
+                }
+?>
+            </tbody>
+        </table>
+    </div>
+</div>
