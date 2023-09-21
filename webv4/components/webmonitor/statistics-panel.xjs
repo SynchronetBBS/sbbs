@@ -1,0 +1,5 @@
+<div class="tab-pane fade webmonitor-panel <? write(argv[0]); ?>" id="statisticsTab">
+    <div class="webmonitor-scrolling-wrapper"> 
+        <h3>TODOX: Display statistics</h3>
+    </div>
+</div>

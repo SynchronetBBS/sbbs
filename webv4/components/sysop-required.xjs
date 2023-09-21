@@ -1,0 +1,10 @@
+<?
+    // Ensure the user is a sysop to avoid normal users from accessing the page this component is embedded on
+    if (!user.is_sysop) {
+?>
+        <!-- TODOZ Translate -->
+        <div class="alert alert-danger"><h3>You must be a SysOp to view this page.</h3></div>
+<?    
+        exit();
+    }
+?>

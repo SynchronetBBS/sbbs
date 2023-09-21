@@ -8,7 +8,7 @@ function mqtt_connect(topics, message_callback, log_callback) {
         username: broker_username,
         password: broker_password,
         protocolId: 'MQTT',
-        protocolVersion: 4,
+        protocolVersion: 5,
         clean: true,
         reconnectPeriod: 5000,
         connectTimeout: 30 * 1000,
