@@ -19,6 +19,7 @@ function read_main_ini(filename)
 	obj.mqtt = f.iniGetObject("MQTT");
 	obj.module = f.iniGetObject("module");
 	obj.shell = read_sections(f, "shell:");
+	f.close();
 	return obj;
 }
 
@@ -33,6 +34,7 @@ function read_file_ini(filename)
 	obj.viewer = read_sections(f, "viewer:");
 	obj.tester = read_sections(f, "tester:");
 	obj.protocol = read_sections(f, "protocol:");
+	f.close();
 	return obj;
 }
 
@@ -69,6 +71,7 @@ function read_xtrn_ini(filename)
 			item.code = item.code.substring(i + 1);
 		}
 	}
+	f.close();
 	return obj;
 }
 
@@ -101,6 +104,7 @@ function write_xtrn_ini(filename, obj)
 	write_sections(f, obj.sec, "sec:");
 	write_sections(f, obj.prog, "prog:");
 	write_sections(f, obj.native, "native:");
+	f.close();
 	return true;
 }
 

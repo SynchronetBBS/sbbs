@@ -251,6 +251,7 @@ function get_domain(zone)
 				continue;
 			if(typeof zones == 'number') {
 				if(zone == zones) {
+					file.close();
 					return netname;
 				}
 				continue;
@@ -258,6 +259,7 @@ function get_domain(zone)
 			zones = zones.split(',');
 			for(var j = 0; j < zones.length; j++) {
 				if(zone == zones[j]) {
+					file.close();
 					return netname;
 				}
 			}
@@ -265,6 +267,7 @@ function get_domain(zone)
 		file.close();
 		return result;
 	}
+	file.close();
 	return "";
 }
 
@@ -638,6 +641,7 @@ if(!msgs_ini.iniGetObject("grp:" + netname)
 			? (netname.toUpperCase() + "_") : network.areatag_prefix
 	});
 }
+msgs_ini.close();
 
 /*********************/
 /* DOWNLOAD ECHOLIST */
