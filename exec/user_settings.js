@@ -44,21 +44,24 @@ function display_menu(thisuser) {
 			break;
 		}
 	}
+	var protname = bbs.text(None);
 	for (var i = 0; i < file_cfg.protocol.length; i++) {
 		if (String(file_cfg.protocol[i].key) === String(thisuser.download_protocol)) {
-			const protname = file_cfg.protocol[i].name;
+			protname = file_cfg.protocol[i].name;
 			break;
 		}
 	}
 	console.clear();
-	console.putmsg(format(bbs.text(UserDefaultsHdr),thisuser.name,thisuser.number));
+	console.putmsg(format(bbs.text(UserDefaultsHdr),thisuser.alias,thisuser.number));
 	console.add_hotspot('T');
 	console.putmsg(format(bbs.text(UserDefaultsTerminal)
-		,termdesc.type(true, thisuser.number == user.number ? undefined : thisuer)));
+		,termdesc.type(true, thisuser.number == user.number ? undefined : thisuser)));
 	console.add_hotspot('L');
 	console.putmsg(format(bbs.text(UserDefaultsRows), termdesc.columns(true,user), termdesc.rows(true,user)));
-	console.add_hotspot('K');
-	console.putmsg(format(bbs.text(UserDefaultsCommandSet), cmdshell));
+	if(main_cfg.shell.length > 1) {
+		console.add_hotspot('K');
+		console.putmsg(format(bbs.text(UserDefaultsCommandSet), cmdshell));
+	}
 	console.add_hotspot('E');
 	console.putmsg(format(bbs.text(UserDefaultsXeditor), (thisuser.editor ? xtrn_area.editor[thisuser.editor].name:'None')));
 	console.add_hotspot('A');
@@ -68,7 +71,7 @@ function display_menu(thisuser) {
 	console.add_hotspot('P');
 	console.putmsg(format(bbs.text(UserDefaultsPause), on_or_off(thisuser.settings&USER_PAUSE)));
 	console.add_hotspot('H');
-	console.putmsg(format(bbs.text(UserDefaultsHotKey), on_or_off(thisuser.settings&USER_COLDKEYS)));
+	console.putmsg(format(bbs.text(UserDefaultsHotKey), on_or_off(!(thisuser.settings&USER_COLDKEYS))));
 	console.add_hotspot('S');
 	console.putmsg(format(bbs.text(UserDefaultsCursor), curspin));
 	console.add_hotspot('C');
@@ -86,30 +89,28 @@ function display_menu(thisuser) {
 	console.putmsg(format(bbs.text(UserDefaultsNetMail), on_or_off(thisuser.settings&USER_NETMAIL),thisuser.netmail));
 	console.add_hotspot('M');
 	if(bbs.startup_options&BBS_OPT_AUTO_LOGON && thisuser.security.exemptions&UFLAG_V) {
+		console.add_hotspot('I');
 		console.putmsg(format(bbs.text(UserDefaultsAutoLogon), on_or_off(thisuser.security.exceptions&UFLAG_V)));
-		console.add_hotspot('V');
 	}
 
 	if(thisuser.security.exemptions&UFLAG_Q) {
-		console.putmsg(format(bbs.text(UserDefaultsQuiet), on_or_off(thisuser.settings&USER_QUIET)));
 		console.add_hotspot('D');
+		console.putmsg(format(bbs.text(UserDefaultsQuiet), on_or_off(thisuser.settings&USER_QUIET)));
 	}
 
-	console.putmsg(format(bbs.text(UserDefaultsProtocol), protname + ' ',thisuser.settings&USER_AUTOHANG ? "(Auto-Hangup)":''));
 	console.add_hotspot('Z');
-	console.putmsg(bbs.text(UserDefaultsPassword));
+	console.putmsg(format(bbs.text(UserDefaultsProtocol), protname + ' ',thisuser.settings&USER_AUTOHANG ? "(Auto-Hangup)":''));
 	console.add_hotspot('W');
-	console.putmsg(bbs.text(UserDefaultsWhich));
+	console.putmsg(bbs.text(UserDefaultsPassword));
 	console.add_hotspot('Q');
+	console.putmsg(bbs.text(UserDefaultsWhich));
 }
 
 var cfglib = load({}, "cfglib.js");
 var file_cfg = cfglib.read("file.ini");
 var main_cfg = cfglib.read("main.ini");
 
-var thisuser = user;
-if (typeof(argv) !== 'undefined' && argv.length>0)
-	thisuser = new User(argv[0]);
+var thisuser = new User(argv[0] || user.number);
 
 const userSigFilename = system.data_dir + "user" + format("%04d.sig", thisuser.number);
 const PETSCII_DELETE = '\x14';
