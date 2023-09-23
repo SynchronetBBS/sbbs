@@ -35,66 +35,67 @@ function on_or_off(on)
 	return bbs.text(on ? On : Off);
 }
 
-function display_menu(user) {
-	const curspin = user.settings & USER_SPIN ? bbs.text(On) : user.settings & USER_NOPAUSESPIN ? bbs.text(Off) : "Pause Prompt Only";
+function display_menu(thisuser) {
+	const curspin = thisuser.settings & USER_SPIN ? bbs.text(On) : thisuser.settings & USER_NOPAUSESPIN ? bbs.text(Off) : "Pause Prompt Only";
 	var disp_strings = { spin: curspin };
 	for (var i = 0; i < main_cfg.shell.length; i++) {
-		if (main_cfg.shell[i].code === user.command_shell.toUpperCase()) {
+		if (main_cfg.shell[i].code === thisuser.command_shell.toUpperCase()) {
 			const cmdshell = main_cfg.shell[i].name;
 			break;
 		}
 	}
 	for (var i = 0; i < file_cfg.protocol.length; i++) {
-		if (String(file_cfg.protocol[i].key) === String(user.download_protocol)) {
+		if (String(file_cfg.protocol[i].key) === String(thisuser.download_protocol)) {
 			const protname = file_cfg.protocol[i].name;
 			break;
 		}
 	}
 	console.clear();
-	console.putmsg(format(bbs.text(UserDefaultsHdr),user.name,user.number));
+	console.putmsg(format(bbs.text(UserDefaultsHdr),thisuser.name,thisuser.number));
 	console.add_hotspot('T');
-	console.putmsg(format(bbs.text(UserDefaultsTerminal), termdesc.type(true,user)));
+	console.putmsg(format(bbs.text(UserDefaultsTerminal)
+		,termdesc.type(true, thisuser.number == user.number ? undefined : thisuer)));
 	console.add_hotspot('L');
 	console.putmsg(format(bbs.text(UserDefaultsRows), termdesc.columns(true,user), termdesc.rows(true,user)));
 	console.add_hotspot('K');
 	console.putmsg(format(bbs.text(UserDefaultsCommandSet), cmdshell));
 	console.add_hotspot('E');
-	console.putmsg(format(bbs.text(UserDefaultsXeditor), (user.editor ? xtrn_area.editor[user.editor].name:'None')));
+	console.putmsg(format(bbs.text(UserDefaultsXeditor), (thisuser.editor ? xtrn_area.editor[thisuser.editor].name:'None')));
 	console.add_hotspot('A');
-	console.putmsg(format(bbs.text(UserDefaultsArcType), user.temp_file_ext));
+	console.putmsg(format(bbs.text(UserDefaultsArcType), thisuser.temp_file_ext));
 	console.add_hotspot('X');
-	console.putmsg(format(bbs.text(UserDefaultsMenuMode), on_or_off(user.settings&USER_EXPERT)));
+	console.putmsg(format(bbs.text(UserDefaultsMenuMode), on_or_off(thisuser.settings&USER_EXPERT)));
 	console.add_hotspot('P');
-	console.putmsg(format(bbs.text(UserDefaultsPause), on_or_off(user.settings&USER_PAUSE)));
+	console.putmsg(format(bbs.text(UserDefaultsPause), on_or_off(thisuser.settings&USER_PAUSE)));
 	console.add_hotspot('H');
-	console.putmsg(format(bbs.text(UserDefaultsHotKey), on_or_off(user.settings&USER_COLDKEYS)));
+	console.putmsg(format(bbs.text(UserDefaultsHotKey), on_or_off(thisuser.settings&USER_COLDKEYS)));
 	console.add_hotspot('S');
 	console.putmsg(format(bbs.text(UserDefaultsCursor), curspin));
 	console.add_hotspot('C');
-	console.putmsg(format(bbs.text(UserDefaultsCLS), on_or_off(user.settings&USER_CLRSCRN)));
+	console.putmsg(format(bbs.text(UserDefaultsCLS), on_or_off(thisuser.settings&USER_CLRSCRN)));
 	console.add_hotspot('N');
-	console.putmsg(format(bbs.text(UserDefaultsAskNScan), on_or_off(user.settings&USER_ASK_NSCAN)));
+	console.putmsg(format(bbs.text(UserDefaultsAskNScan), on_or_off(thisuser.settings&USER_ASK_NSCAN)));
 	console.add_hotspot('Y');
-	console.putmsg(format(bbs.text(UserDefaultsAskSScan), on_or_off(user.settings&USER_ASK_SSCAN)));
+	console.putmsg(format(bbs.text(UserDefaultsAskSScan), on_or_off(thisuser.settings&USER_ASK_SSCAN)));
 	console.add_hotspot('F');
-	console.putmsg(format(bbs.text(UserDefaultsANFS), on_or_off(user.settings&USER_ANFSCAN)));
+	console.putmsg(format(bbs.text(UserDefaultsANFS), on_or_off(thisuser.settings&USER_ANFSCAN)));
 	console.add_hotspot('R');
-	console.putmsg(format(bbs.text(UserDefaultsRemember), on_or_off(user.settings&USER_CURSUB)));
+	console.putmsg(format(bbs.text(UserDefaultsRemember), on_or_off(thisuser.settings&USER_CURSUB)));
 	console.add_hotspot('B');
-	console.putmsg(format(bbs.text(UserDefaultsBatFlag), on_or_off(user.settings&USER_BATCHFLAG)));
-	console.putmsg(format(bbs.text(UserDefaultsNetMail), on_or_off(user.settings&USER_NETMAIL),user.netmail));
+	console.putmsg(format(bbs.text(UserDefaultsBatFlag), on_or_off(thisuser.settings&USER_BATCHFLAG)));
+	console.putmsg(format(bbs.text(UserDefaultsNetMail), on_or_off(thisuser.settings&USER_NETMAIL),thisuser.netmail));
 	console.add_hotspot('M');
-	if(bbs.startup_options&BBS_OPT_AUTO_LOGON && user.security.exemptions&UFLAG_V) {
-		console.putmsg(format(bbs.text(UserDefaultsAutoLogon), on_or_off(user.security.exceptions&UFLAG_V)));
+	if(bbs.startup_options&BBS_OPT_AUTO_LOGON && thisuser.security.exemptions&UFLAG_V) {
+		console.putmsg(format(bbs.text(UserDefaultsAutoLogon), on_or_off(thisuser.security.exceptions&UFLAG_V)));
 		console.add_hotspot('V');
 	}
 
-	if(user.security.exemptions&UFLAG_Q) {
-		console.putmsg(format(bbs.text(UserDefaultsQuiet), on_or_off(user.settings&USER_QUIET)));
+	if(thisuser.security.exemptions&UFLAG_Q) {
+		console.putmsg(format(bbs.text(UserDefaultsQuiet), on_or_off(thisuser.settings&USER_QUIET)));
 		console.add_hotspot('D');
 	}
 
-	console.putmsg(format(bbs.text(UserDefaultsProtocol), protname + ' ',user.settings&USER_AUTOHANG ? "(Auto-Hangup)":''));
+	console.putmsg(format(bbs.text(UserDefaultsProtocol), protname + ' ',thisuser.settings&USER_AUTOHANG ? "(Auto-Hangup)":''));
 	console.add_hotspot('Z');
 	console.putmsg(bbs.text(UserDefaultsPassword));
 	console.add_hotspot('W');
