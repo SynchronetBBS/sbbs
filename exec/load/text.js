@@ -871,7 +871,8 @@ var HashingFile=861;
 var HashedFile=862;
 var NewUserValEmailSubj=863;
 var InactivityAlert=864;
+var None=865;
 
-var TOTAL_TEXT=865;
+var TOTAL_TEXT=866;
 
 this;
