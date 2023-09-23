@@ -122,8 +122,8 @@ function display_menu(thisuser) {
 		,thisuser.settings & USER_AUTOHANG ? "(Auto-Hangup)" : ''));
 	console.add_hotspot('W');
 	console.putmsg(bbs.text(UserDefaultsPassword));
-	console.add_hotspot('Q');
 	console.putmsg(bbs.text(UserDefaultsWhich));
+	console.add_hotspot('Q');
 }
 
 var cfglib = load({}, "cfglib.js");
