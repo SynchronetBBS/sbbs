@@ -24,6 +24,7 @@
 
 "use strict";
 
+console.clear();
 require("sbbsdefs.js", 'USER_EXPERT');
 require("userdefs.js", 'USER_SPIN');
 require("text.js", 'UserDefaultsTerminal');
@@ -86,8 +87,8 @@ function display_menu(thisuser) {
 	console.putmsg(format(bbs.text(UserDefaultsRemember), on_or_off(thisuser.settings&USER_CURSUB)));
 	console.add_hotspot('B');
 	console.putmsg(format(bbs.text(UserDefaultsBatFlag), on_or_off(thisuser.settings&USER_BATCHFLAG)));
-	console.putmsg(format(bbs.text(UserDefaultsNetMail), on_or_off(thisuser.settings&USER_NETMAIL),thisuser.netmail));
 	console.add_hotspot('M');
+	console.putmsg(format(bbs.text(UserDefaultsNetMail), on_or_off(thisuser.settings&USER_NETMAIL),thisuser.netmail));
 	if(bbs.startup_options&BBS_OPT_AUTO_LOGON && thisuser.security.exemptions&UFLAG_V) {
 		console.add_hotspot('I');
 		console.putmsg(format(bbs.text(UserDefaultsAutoLogon), on_or_off(thisuser.security.exceptions&UFLAG_V)));
