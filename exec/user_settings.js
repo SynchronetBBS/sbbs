@@ -1,4 +1,4 @@
-// default user settings
+// user settings
 // A javascript replacement for the built in settings which
 // will allow a sysop to do a bit more configuration and
 // add or remove options as they wish.
@@ -30,76 +30,71 @@ require("text.js", 'UserDefaultsTerminal');
 require("nodedefs.js", 'NODE_CHAT');
 var termdesc = load("termdesc.js");
 
-for(var i=474;i<495;i++)
-	bbs.revert_text(i);
-
 function on_or_off(on)
 {
 	return bbs.text(on ? On : Off);
 }
 
-
-
-function parsemenu() {
-	const curspin = useron.settings & USER_SPIN ? bbs.text(On) : useron.settings & USER_NOPAUSESPIN ? bbs.text(Off) : "Pause Prompt Only";
+function display_menu(user) {
+	const curspin = user.settings & USER_SPIN ? bbs.text(On) : user.settings & USER_NOPAUSESPIN ? bbs.text(Off) : "Pause Prompt Only";
 	var disp_strings = { spin: curspin };
 	for (var i = 0; i < main_cfg.shell.length; i++) {
-		if (main_cfg.shell[i].code === useron.command_shell.toUpperCase()) {
+		if (main_cfg.shell[i].code === user.command_shell.toUpperCase()) {
 			const cmdshell = main_cfg.shell[i].name;
 			break;
 		}
 	}
 	for (var i = 0; i < file_cfg.protocol.length; i++) {
-		if (String(file_cfg.protocol[i].key) === String(useron.download_protocol)) {
+		if (String(file_cfg.protocol[i].key) === String(user.download_protocol)) {
 			const protname = file_cfg.protocol[i].name;
 			break;
 		}
 	}
 	console.clear();
-	console.putmsg(format(bbs.text(UserDefaultsHdr),useron.name,useron.number));
+	console.putmsg(format(bbs.text(UserDefaultsHdr),user.name,user.number));
 	console.add_hotspot('T');
-	console.putmsg(format(bbs.text(UserDefaultsTerminal), termdesc.type(true,useron)));
+	console.putmsg(format(bbs.text(UserDefaultsTerminal), termdesc.type(true,user)));
 	console.add_hotspot('L');
-	console.putmsg(format(bbs.text(UserDefaultsRows), termdesc.columns(true,useron), termdesc.rows(true,useron)));
+	console.putmsg(format(bbs.text(UserDefaultsRows), termdesc.columns(true,user), termdesc.rows(true,user)));
 	console.add_hotspot('K');
 	console.putmsg(format(bbs.text(UserDefaultsCommandSet), cmdshell));
 	console.add_hotspot('E');
-	console.putmsg(format(bbs.text(UserDefaultsXeditor), (useron.editor ? xtrn_area.editor[useron.editor].name:'None')));
+	console.putmsg(format(bbs.text(UserDefaultsXeditor), (user.editor ? xtrn_area.editor[user.editor].name:'None')));
 	console.add_hotspot('A');
-	console.putmsg(format(bbs.text(UserDefaultsArcType), useron.temp_file_ext));
+	console.putmsg(format(bbs.text(UserDefaultsArcType), user.temp_file_ext));
 	console.add_hotspot('X');
-	console.putmsg(format(bbs.text(UserDefaultsMenuMode), on_or_off(useron.settings&USER_EXPERT)));
+	console.putmsg(format(bbs.text(UserDefaultsMenuMode), on_or_off(user.settings&USER_EXPERT)));
 	console.add_hotspot('P');
-	console.putmsg(format(bbs.text(UserDefaultsPause), on_or_off(useron.settings&USER_PAUSE)));
+	console.putmsg(format(bbs.text(UserDefaultsPause), on_or_off(user.settings&USER_PAUSE)));
 	console.add_hotspot('H');
-	console.putmsg(format(bbs.text(UserDefaultsHotKey), on_or_off(useron.settings&USER_COLDKEYS)));
+	console.putmsg(format(bbs.text(UserDefaultsHotKey), on_or_off(user.settings&USER_COLDKEYS)));
 	console.add_hotspot('S');
 	console.putmsg(format(bbs.text(UserDefaultsCursor), curspin));
 	console.add_hotspot('C');
-	console.putmsg(format(bbs.text(UserDefaultsCLS), on_or_off(useron.settings&USER_CLRSCRN)));
+	console.putmsg(format(bbs.text(UserDefaultsCLS), on_or_off(user.settings&USER_CLRSCRN)));
 	console.add_hotspot('N');
-	console.putmsg(format(bbs.text(UserDefaultsAskNScan), on_or_off(useron.settings&USER_ASK_NSCAN)));
+	console.putmsg(format(bbs.text(UserDefaultsAskNScan), on_or_off(user.settings&USER_ASK_NSCAN)));
 	console.add_hotspot('Y');
-	console.putmsg(format(bbs.text(UserDefaultsAskSScan), on_or_off(useron.settings&USER_ASK_SSCAN)));
+	console.putmsg(format(bbs.text(UserDefaultsAskSScan), on_or_off(user.settings&USER_ASK_SSCAN)));
 	console.add_hotspot('F');
-	console.putmsg(format(bbs.text(UserDefaultsANFS), on_or_off(useron.settings&USER_ANFSCAN)));
+	console.putmsg(format(bbs.text(UserDefaultsANFS), on_or_off(user.settings&USER_ANFSCAN)));
 	console.add_hotspot('R');
-	console.putmsg(format(bbs.text(UserDefaultsRemember), on_or_off(useron.settings&USER_CURSUB)));
+	console.putmsg(format(bbs.text(UserDefaultsRemember), on_or_off(user.settings&USER_CURSUB)));
 	console.add_hotspot('B');
-	console.putmsg(format(bbs.text(UserDefaultsBatFlag), on_or_off(useron.settings&USER_BATCHFLAG)));
-	console.putmsg(format(bbs.text(UserDefaultsNetMail), on_or_off(useron.settings&USER_NETMAIL),useron.netmail));
+	console.putmsg(format(bbs.text(UserDefaultsBatFlag), on_or_off(user.settings&USER_BATCHFLAG)));
+	console.putmsg(format(bbs.text(UserDefaultsNetMail), on_or_off(user.settings&USER_NETMAIL),user.netmail));
 	console.add_hotspot('M');
-	if(bbs.startup_options&BBS_OPT_AUTO_LOGON && useron.security.exemptions&UFLAG_V) {
-		console.putmsg(format(bbs.text(UserDefaultsAutoLogon), on_or_off(useron.security.exceptions&UFLAG_V)));
+	if(bbs.startup_options&BBS_OPT_AUTO_LOGON && user.security.exemptions&UFLAG_V) {
+		console.putmsg(format(bbs.text(UserDefaultsAutoLogon), on_or_off(user.security.exceptions&UFLAG_V)));
 		console.add_hotspot('V');
 	}
 
-	if(useron.security.exemptions&UFLAG_Q) {
-		console.putmsg(format(bbs.text(UserDefaultsQuiet), on_or_off(useron.settings&USER_QUIET)));
+	if(user.security.exemptions&UFLAG_Q) {
+		console.putmsg(format(bbs.text(UserDefaultsQuiet), on_or_off(user.settings&USER_QUIET)));
 		console.add_hotspot('D');
 	}
 
-	console.putmsg(format(bbs.text(UserDefaultsProtocol), protname + ' ',useron.settings&USER_AUTOHANG ? "(Auto-Hangup)":''));
+	console.putmsg(format(bbs.text(UserDefaultsProtocol), protname + ' ',user.settings&USER_AUTOHANG ? "(Auto-Hangup)":''));
 	console.add_hotspot('Z');
 	console.putmsg(bbs.text(UserDefaultsPassword));
 	console.add_hotspot('W');
@@ -110,32 +105,31 @@ function parsemenu() {
 var cfglib = load({}, "cfglib.js");
 var file_cfg = cfglib.read("file.ini");
 var main_cfg = cfglib.read("main.ini");
-bbs.node_action = NODE_DFLT;
 
+var thisuser = user;
 if (typeof(argv) !== 'undefined' && argv.length>0)
-	var useron = new User(argv[0]);
-else
-	var useron = user;
+	thisuser = new User(argv[0]);
 
-const userSigFilename = system.data_dir + "user" + format("%04d.sig", useron.number);
+const userSigFilename = system.data_dir + "user" + format("%04d.sig", thisuser.number);
 const PETSCII_DELETE = '\x14';
 const PETSCII_UPPERLOWER = '\x1d';
 
 while(bbs.online && !js.terminated) {
+	bbs.node_action = NODE_DFLT;
 	bbs.nodesync();
 	console.aborted = false;
-	parsemenu();
+	display_menu(thisuser);
 
 	var keys = 'ABCFHKLNPQRSTXYZ?\r';
-	if(useron.security.exemptions&UFLAG_Q)
+	if(thisuser.security.exemptions&UFLAG_Q)
 		keys += 'D';
 	if(Object.getOwnPropertyNames(xtrn_area.editor).length > 0)
 		keys += 'E';
-	if(bbs.startup_options&BBS_OPT_AUTO_LOGON && useron.security.exemptions&UFLAG_V)
+	if(bbs.startup_options&BBS_OPT_AUTO_LOGON && thisuser.security.exemptions&UFLAG_V)
 		keys += 'I';
 	if(system.settings&SYS_FWDTONET)
 		keys += 'M';
-	if(system.settings&SYS_PWEDIT && !(useron.security.restrictions&UFLAG_G))
+	if(system.settings&SYS_PWEDIT && !(thisuser.security.restrictions&UFLAG_G))
 		keys += 'W';
 
 	switch(console.getkeys(keys, K_UPPER)) {
@@ -143,34 +137,34 @@ while(bbs.online && !js.terminated) {
 			var defaultext = 0;
 			var archivetypes = [ "zip", "7z", "tgz" ];
 			for (var code in file_cfg.compressor) {
-				if(useron.compare_ars(file_cfg.compressor[code].ars) && archivetypes.indexOf(file_cfg.compressor[code].extension) === -1)
+				if(thisuser.compare_ars(file_cfg.compressor[code].ars) && archivetypes.indexOf(file_cfg.compressor[code].extension) === -1)
 					archivetypes.push(file_cfg.compressor[code].extension);
 			}
 					
 			for(var i=0; i<archivetypes.length; i++) {
                                 console.uselect(i,bbs.text(ArchiveTypeHeading),archivetypes[i]);
-				if(archivetypes[i] === useron.temp_file_ext)
+				if(archivetypes[i] === thisuser.temp_file_ext)
 					defaultext = i;
 			}
                         if((i=console.uselect(defaultext))>=0)
-                                useron.temp_file_ext = archivetypes[i];
+                                thisuser.temp_file_ext = archivetypes[i];
 			if(console.aborted)
 				console.aborted = false;
 			break;
 		case 'B':
-			useron.settings ^= USER_BATCHFLAG;
+			thisuser.settings ^= USER_BATCHFLAG;
 			break;
 		case 'C':
-			useron.settings ^= USER_CLRSCRN;
+			thisuser.settings ^= USER_CLRSCRN;
 			break;
 		case 'D':
-			useron.settings ^= USER_QUIET;
+			thisuser.settings ^= USER_QUIET;
 			break;
 		case 'E':
 			if(console.noyes(bbs.text(UseExternalEditorQ))) {
 				if(console.aborted)
 					break;
-				useron.editor = '';
+				thisuser.editor = '';
 			}
 			else {
 				var editors=[];
@@ -179,130 +173,130 @@ while(bbs.online && !js.terminated) {
 					editors.push(code);
 				for(var i=0; i<editors.length; i++) {
 					console.uselect(i,bbs.text(ExternalEditorHeading),xtrn_area.editor[editors[i]].name,xtrn_area.editor[editors[i]].ars);
-					if(editors[i] === useron.editor)
+					if(editors[i] === thisuser.editor)
 						defaulteditor = i;
 				}
 				if((i=console.uselect(defaulteditor))>=0)
-					useron.editor = editors[i];
+					thisuser.editor = editors[i];
 			}
 			break;
 		case 'F':
-			useron.settings ^= USER_ANFSCAN;
+			thisuser.settings ^= USER_ANFSCAN;
 			break;
 		case 'H':
-			useron.settings ^= USER_COLDKEYS;
+			thisuser.settings ^= USER_COLDKEYS;
 			break;
 		case 'I':
-			useron.settings ^= USER_AUTOLOGON;
+			thisuser.settings ^= USER_AUTOLOGON;
 			break;
 		case 'K':
 			var defaultshell=0;
 			for (var i=0; i<main_cfg.shell.length; i++) {
-				if(!useron.compare_ars(main_cfg.shell[i].ars))
+				if(!thisuser.compare_ars(main_cfg.shell[i].ars))
 					continue;
 				console.uselect(i,bbs.text(CommandShellHeading),main_cfg.shell[i].name,main_cfg.shell[i].ars);
 				if(main_cfg.shell[i].code === user.command_shell.toUpperCase())
 					defaultshell=i;
 			}
 			if((i=console.uselect(defaultshell))>=0) {
-				useron.command_shell = main_cfg.shell[i].code;
+				thisuser.command_shell = main_cfg.shell[i].code;
 			}
 			break;
 		case 'L':
 			console.putmsg(bbs.text(HowManyColumns));
-			useron.screen_columns = console.getnum(999,0);
+			thisuser.screen_columns = console.getnum(999,0);
 			console.putmsg(bbs.text(HowManyRows));
-			useron.screen_rows = console.getnum(999,0);
-			if (user.number === useron.number)
+			thisuser.screen_rows = console.getnum(999,0);
+			if (user.number === thisuser.number)
 				console.getdimensions();
 			break;
 		case 'M':
 			console.putmsg(bbs.text(EnterNetMailAddress));
-			var email = console.getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE|K_TRIM)
+			var email = console.getstr(thisuser.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE|K_TRIM)
 			if(email === "" || email === null || console.aborted) {
 				break;
 			}
-			useron.netmail = email;
+			thisuser.netmail = email;
 			
-			if(useron.netmail.length > 0 && (system.settings & SYS_FWDTONET) && bbs.text(ForwardMailQ).length > 0 && console.yesno(bbs.text(ForwardMailQ)))
-				useron.settings |= USER_NETMAIL;
+			if(thisuser.netmail.length > 0 && (system.settings & SYS_FWDTONET) && bbs.text(ForwardMailQ).length > 0 && console.yesno(bbs.text(ForwardMailQ)))
+				thisuser.settings |= USER_NETMAIL;
 			else
-				useron.settings &= ~USER_NETMAIL;
+				thisuser.settings &= ~USER_NETMAIL;
 			break;
 		case 'N':
-			useron.settings ^= USER_ASK_NSCAN;
+			thisuser.settings ^= USER_ASK_NSCAN;
 			break;
 		case 'P':
-			useron.settings ^= USER_PAUSE;
+			thisuser.settings ^= USER_PAUSE;
 			break;
 		case 'R':
-			useron.settings ^= USER_CURSUB;
+			thisuser.settings ^= USER_CURSUB;
 			break;
 		case 'S':
-			useron.settings ^= USER_SPIN;
-			if(!(useron.settings&USER_SPIN)) {
+			thisuser.settings ^= USER_SPIN;
+			if(!(thisuser.settings&USER_SPIN)) {
 				if(console.yesno(bbs.text(SpinningCursorOnPauseQ)))
-					useron.settings &= ~USER_NOPAUSESPIN;
+					thisuser.settings &= ~USER_NOPAUSESPIN;
 				else
-					useron.settings |= USER_NOPAUSESPIN;
+					thisuser.settings |= USER_NOPAUSESPIN;
 			}
 			break;
 		case 'T':
 			if(console.yesno(bbs.text(AutoTerminalQ))) {
-				useron.settings |= USER_AUTOTERM;
-				useron.settings &= ~(USER_ANSI|USER_RIP|USER_WIP|USER_HTML|USER_PETSCII|USER_UTF8);
+				thisuser.settings |= USER_AUTOTERM;
+				thisuser.settings &= ~(USER_ANSI|USER_RIP|USER_WIP|USER_HTML|USER_PETSCII|USER_UTF8);
 			}
 			else
-				useron.settings &= ~USER_AUTOTERM;
+				thisuser.settings &= ~USER_AUTOTERM;
 			if(console.aborted)
 				break;
-			if(!(useron.settings&USER_AUTOTERM)) {
+			if(!(thisuser.settings&USER_AUTOTERM)) {
 				if(!console.noyes(bbs.text(Utf8TerminalQ)))
-					useron.settings |= USER_UTF8;
+					thisuser.settings |= USER_UTF8;
 				else
-					useron.settings &= ~USER_UTF8;
+					thisuser.settings &= ~USER_UTF8;
 				if(console.yesno(bbs.text(AnsiTerminalQ))) {
-					useron.settings |= USER_ANSI;
-					useron.settings &= ~USER_PETSCII;
-				} else if(!(useron.settings&USER_UTF8)) {
-					useron.settings &= ~(USER_ANSI|USER_COLOR|USER_ICE_COLOR);
+					thisuser.settings |= USER_ANSI;
+					thisuser.settings &= ~USER_PETSCII;
+				} else if(!(thisuser.settings&USER_UTF8)) {
+					thisuser.settings &= ~(USER_ANSI|USER_COLOR|USER_ICE_COLOR);
 					if(!console.noyes(bbs.text(PetTerminalQ)))
-						useron.settings |= USER_PETSCII|USER_COLOR;
+						thisuser.settings |= USER_PETSCII|USER_COLOR;
 					else
-						useron.settings &= ~USER_PETSCII;
+						thisuser.settings &= ~USER_PETSCII;
 				}
 			}
 			if(console.aborted)
 				break;
-			var term = (user.number == useron.number) ? console.term_supports() : useron.settings;
+			var term = (user.number == thisuser.number) ? console.term_supports() : thisuser.settings;
 			
 			if(term&(USER_AUTOTERM|USER_ANSI) && !(term&USER_PETSCII)) {
-				useron.settings |= USER_COLOR;
-				useron.settings &= ~USER_ICE_COLOR;
-				if((useron.settings&USER_AUTOTERM) || console.yesno(bbs.text(ColorTerminalQ))) {
+				thisuser.settings |= USER_COLOR;
+				thisuser.settings &= ~USER_ICE_COLOR;
+				if((thisuser.settings&USER_AUTOTERM) || console.yesno(bbs.text(ColorTerminalQ))) {
 					if(!(console.status&(CON_BLINK_FONT|CON_HBLINK_FONT))
 						&& !console.noyes(bbs.text(IceColorTerminalQ)))
-						useron.settings |= USER_ICE_COLOR;
+						thisuser.settings |= USER_ICE_COLOR;
 				} else
-					useron.settings &= ~USER_COLOR;
+					thisuser.settings &= ~USER_COLOR;
 			}
 			if(console.aborted)
 				break;
 			if(term&USER_ANSI) {
 				if(bbs.text(MouseTerminalQ) && console.yesno(bbs.text(MouseTerminalQ)))
-					useron.settings |= USER_MOUSE;
+					thisuser.settings |= USER_MOUSE;
 				else
-					useron.settings &= ~USER_MOUSE;
+					thisuser.settings &= ~USER_MOUSE;
 			}
 			if(console.aborted)
 				break;
 			if(!(term&USER_PETSCII)) {
 				if(!(term&USER_UTF8) && !console.yesno(bbs.text(ExAsciiTerminalQ)))
-					useron.settings |= USER_NO_EXASCII;
+					thisuser.settings |= USER_NO_EXASCII;
 				else
-					useron.settings &= ~USER_NO_EXASCII;
-				useron.settings &= ~USER_SWAP_DELETE;
-				while(bbs.text(HitYourBackspaceKey) && !(useron.settings&(USER_PETSCII|USER_SWAP_DELETE)) && bbs.online) {
+					thisuser.settings &= ~USER_NO_EXASCII;
+				thisuser.settings &= ~USER_SWAP_DELETE;
+				while(bbs.text(HitYourBackspaceKey) && !(thisuser.settings&(USER_PETSCII|USER_SWAP_DELETE)) && bbs.online) {
 					console.putmsg(bbs.text(HitYourBackspaceKey));
 					var key = console.getkey(K_CTRLKEYS);
 					console.putmsg(format(bbs.text(CharacterReceivedFmt), ascii(key), ascii(key)));
@@ -310,11 +304,11 @@ while(bbs.online && !js.terminated) {
 						break;
 					if(key == '\x7f') {
 						if(bbs.text(SwapDeleteKeyQ) || console.yesno(bbs.text(SwapDeleteKeyQ)))
-							useron.settings |= USER_SWAP_DELETE;
+							thisuser.settings |= USER_SWAP_DELETE;
 					}
 					else if(key == PETSCII_DELETE) {
 						console.autoterm |= USER_PETSCII;
-						useron.settings |= USER_PETSCII;
+						thisuser.settings |= USER_PETSCII;
 						console.putbyte(PETSCII_UPPERLOWER);
 						console.putmsg(bbs.text(PetTerminalDetected));
 					}
@@ -324,11 +318,11 @@ while(bbs.online && !js.terminated) {
 			}
 			if(console.aborted)
 				break;
-			if(!(useron.settings&USER_AUTOTERM) && (term&(USER_ANSI|USER_NO_EXASCII)) == USER_ANSI) {
+			if(!(thisuser.settings&USER_AUTOTERM) && (term&(USER_ANSI|USER_NO_EXASCII)) == USER_ANSI) {
 				if(!console.noyes(bbs.text(RipTerminalQ)))
-					useron.settings |= USER_RIP;
+					thisuser.settings |= USER_RIP;
 				else
-					useron.settings &= ~USER_RIP; 
+					thisuser.settings &= ~USER_RIP;
 			}
 			if(console.aborted)
 				break;
@@ -340,7 +334,7 @@ while(bbs.online && !js.terminated) {
 				var str = console.getstr(LEN_PASS*2,K_UPPER);
 				console.status &= ~(CON_R_ECHOX|CON_L_ECHOX);
 				bbs.user_sync();
-				if(str !== useron.security.password) {
+				if(str !== thisuser.security.password) {
 					console.putmsg(bbs.text(WrongPassword));
 					break;
 				}
@@ -359,7 +353,7 @@ while(bbs.online && !js.terminated) {
 					console.putmsg(bbs.text(WrongPassword));
 					break;
 				}
-				useron.security.password = str;
+				thisuser.security.password = str;
 				console.putmsg(bbs.text(PasswordChanged));
 				log(LOG_NOTICE,'changed password');
 			}
@@ -377,16 +371,16 @@ while(bbs.online && !js.terminated) {
 			}
 			break;
 		case 'X':
-			useron.settings ^= USER_EXPERT;
+			thisuser.settings ^= USER_EXPERT;
 			break;
 		case 'Y':
-			useron.settings ^= USER_ASK_SSCAN;
+			thisuser.settings ^= USER_ASK_SSCAN;
 			break;
 		case 'Z':
 			var c=0;
 			var keylist = 'Q';
 			for (var code in file_cfg.protocol) {
-				if(!useron.compare_ars(file_cfg.protocol[code].ars) || file_cfg.protocol[code].dlcmd.length === 0)
+				if(!thisuser.compare_ars(file_cfg.protocol[code].ars) || file_cfg.protocol[code].dlcmd.length === 0)
 					continue;
 				console.putmsg(format(bbs.text(TransferProtLstFmt),String(file_cfg.protocol[code].key),file_cfg.protocol[code].name));
 
@@ -399,11 +393,11 @@ while(bbs.online && !js.terminated) {
 			var kp = console.getkeys(keylist);
 			if(kp==='Q' || console.aborted)
 				break;
-			useron.download_protocol = kp;
+			thisuser.download_protocol = kp;
 			if(console.yesno(bbs.text(HangUpAfterXferQ)))
-				useron.settings |=USER_AUTOHANG;
+				thisuser.settings |=USER_AUTOHANG;
 			else
-				useron.settings &=~USER_AUTOHANG;
+				thisuser.settings &=~USER_AUTOHANG;
 			break;
 		case 'Q':
 		case '\r':
