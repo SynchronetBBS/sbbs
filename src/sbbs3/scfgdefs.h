@@ -610,6 +610,7 @@ typedef struct
 	char			privatemsg_mod[LEN_CMD+1];
 	char			logonlist_mod[LEN_CMD+1];
 	char			userlist_mod[LEN_CMD+1];
+	char			usercfg_mod[LEN_CMD+1];
     char			prextrn_mod[LEN_CMD+1];			/* External Program pre-execution module */
     char			postxtrn_mod[LEN_CMD+1];		/* External Program post-execution module */
 	char			tempxfer_mod[LEN_CMD+1];

@@ -718,6 +718,12 @@ void sbbs_t::maindflts(user_t* user)
 	int		i;
 
 	action=NODE_DFLT;
+	if (cfg.usercfg_mod[0]) {
+		char cmdline[256];
+		snprintf(cmdline, sizeof(cmdline), "%s %u", cfg.usercfg_mod, user->number);
+		exec_bin(cmdline, &main_csi);
+		return;
+	}
 	while(online) {
 		CLS;
 		getuserdat(&cfg,user);

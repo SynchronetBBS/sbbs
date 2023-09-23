@@ -238,6 +238,7 @@ BOOL write_main_cfg(scfg_t* cfg)
 		iniSetString(&ini, name, "logon", cfg->logon_mod, NULL);
 		iniSetString(&ini, name, "logoff", cfg->logoff_mod, NULL);
 		iniSetString(&ini, name, "newuser", cfg->newuser_mod, NULL);
+		iniSetString(&ini, name, "usercfg", cfg->usercfg_mod, NULL);
 		iniSetString(&ini, name, "login", cfg->login_mod, NULL);
 		iniSetString(&ini, name, "logout", cfg->logout_mod, NULL);
 		iniSetString(&ini, name, "sync", cfg->sync_mod, NULL);
