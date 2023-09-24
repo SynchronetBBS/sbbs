@@ -38,7 +38,7 @@ function on_or_off(on)
 
 function display_menu(thisuser) {
 	const curspin = (thisuser.settings & USER_SPIN) ? bbs.text(On)
-		: (thisuser.settings & USER_NOPAUSESPIN) ? bbs.text(Off) : "Pause Prompt Only";
+		: (thisuser.settings & USER_NOPAUSESPIN) ? bbs.text(Off) : "Pause Prompt " + bbs.text(Only);
 	for (var i = 0; i < main_cfg.shell.length; i++) {
 		if (main_cfg.shell[i].code === thisuser.command_shell.toUpperCase()) {
 			const cmdshell = main_cfg.shell[i].name;
