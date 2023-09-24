@@ -3198,8 +3198,14 @@ void event_thread(void* arg)
 								break;
 							sbbs->lprintf(LOG_DEBUG,"Waiting for node %d (status=%d)"
 								,j, node.status);
+							if (now - start > (60 * 60) && node_socket[j - 1] != INVALID_SOCKET) {
+								sbbs->lprintf(LOG_WARNING, "!TIRED of waiting for node %d to become inactive (status=%d), closing socket %d"
+									,j, node.status, node_socket[j - 1]);
+								close_socket(node_socket[j - 1]);
+								node_socket[j - 1] = INVALID_SOCKET;
+							}
 							if(now-start>(90*60)) {
-								sbbs->lprintf(LOG_WARNING,"!TIMEOUT waiting for node %d to become inactive (status=%d)"
+								sbbs->lprintf(LOG_WARNING,"!TIMEOUT waiting for node %d to become inactive (status=%d), aborting wait"
 									,j, node.status);
 								break;
 							}
