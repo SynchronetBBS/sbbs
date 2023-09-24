@@ -59,6 +59,7 @@ for(var i = 0; i < argc; i++) {
 			writeln("                  (default: " + default_excludes.join(',') + ")");
 			writeln("  -diz            always extract/use description in archive");
 			writeln("  -update         update existing file entries (default is to skip them)");
+			writeln("  -readd          re-add existing file entries (so they appears as newly-uploaded");
 			writeln("  -date[=fmt]     include today's date in description");
 			writeln("  -fdate[=fmt]    include file's date in description");
 			writeln("  -adate[=fmt]    include newest archived file date in description");
@@ -246,7 +247,7 @@ for(var d = 0; d < dir_list.length; d++) {
 				file.md5 = hash.md5;
 				file.sha1 = hash.sha1;
 			}
-			if(!filebase.update(file.name, file, options.diz)) {
+			if(!filebase.update(file.name, file, options.diz, options.readd)) {
 				alert("Error " + filebase.last_error + " updating " + file.name);
 			} else {
 				writeln("Updated " + file.name);
