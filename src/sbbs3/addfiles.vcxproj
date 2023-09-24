@@ -159,17 +159,6 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\smblib\smblib.vcxproj">
-      <Project>{d674842b-2f41-42cb-9426-b3c4b0682574}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\xpdev\xpdev.vcxproj">
-      <Project>{7428a1e8-56b7-4868-9c0e-29d031689feb}</Project>
-    </ProjectReference>
-    <ProjectReference Include="load_cfg.vcxproj">
-      <Project>{08fc395f-bc60-499d-9ce9-170ed718bb94}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

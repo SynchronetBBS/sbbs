@@ -24,7 +24,7 @@
 
 int main(int argc, char** argv)
 {
-	fprintf(stderr, "\nThe 'delfiles' utility has been deprecated and replaced by 'delfiles.js'\n");
+	fprintf(stderr, "\nThe Synchronet DELFILES utility has been deprecated and replaced by 'delfiles.js'\n");
 	fprintf(stderr, "\nSee https://wiki.synchro.net/module:delfiles for details\n");
 	return EXIT_FAILURE;
 }

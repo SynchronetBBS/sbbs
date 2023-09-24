@@ -24,7 +24,7 @@
 
 int main(int argc, char** argv)
 {
-	fprintf(stderr, "\nThe 'addfiles' utility has been deprecated and replaced by 'addfiles.js'\n");
+	fprintf(stderr, "\nThe Synchronet ADDFILES utility has been deprecated and replaced by 'addfiles.js'\n");
 	fprintf(stderr, "\nSee https://wiki.synchro.net/module:addfiles for details\n");
 	return EXIT_FAILURE;
 }
