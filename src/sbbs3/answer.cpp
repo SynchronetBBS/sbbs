@@ -466,7 +466,7 @@ bool sbbs_t::answer()
 		&& !(cfg.sys_misc&SM_CLOSED) 
 		&& !find_login_id(&cfg, rlogin_name)
 		&& !::trashcan(&cfg, rlogin_name, "name")) {
-		lprintf(LOG_INFO, "%s !UNKNOWN specified username: '%s', starting new user signup", client.protocol,rlogin_name);
+		lprintf(LOG_INFO, "%s !UNKNOWN specified username: '%s', starting new user sign-up", client.protocol,rlogin_name);
 		bprintf("%s: %s\r\n", text[UNKNOWN_USER], rlogin_name);
 		newuser();
 	}
