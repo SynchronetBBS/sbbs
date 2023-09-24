@@ -7,6 +7,7 @@ OBJS	=	\
 			$(MTOBJODIR)$(DIRSEP)getctrl$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)load_cfg$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)readtext$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)text_id$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)text_defaults$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)msgdate$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE) \

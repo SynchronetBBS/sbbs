@@ -5,6 +5,7 @@ OBJS	:=	\
 			$(MTOBJODIR)/getctrl$(OFILE) \
 			$(MTOBJODIR)/load_cfg$(OFILE) \
 			$(MTOBJODIR)/readtext$(OFILE) \
+			$(MTOBJODIR)/text_id$(OFILE) \
 			$(MTOBJODIR)/text_defaults$(OFILE) \
 			$(MTOBJODIR)/nopen$(OFILE) \
 			$(MTOBJODIR)/scfglib1$(OFILE) \

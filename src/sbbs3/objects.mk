@@ -305,6 +305,7 @@ LOAD_CFG_OBJS = \
 			$(OBJODIR)/getctrl$(OFILE) \
 			$(OBJODIR)/load_cfg$(OFILE) \
 			$(OBJODIR)/readtext$(OFILE) \
+			$(OBJODIR)/text_id$(OFILE) \
 			$(OBJODIR)/text_defaults$(OFILE) \
 			$(OBJODIR)/scfglib1$(OFILE) \
 			$(OBJODIR)/scfglib2$(OFILE) \
