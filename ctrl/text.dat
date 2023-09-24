@@ -498,13 +498,12 @@
 "\1r\1h\1iThat's your current password!\1n"                 409 PasswordNotChanged
 "\1r\1h\1iYou call that a password?\1n"                     410 PasswordInvalid
 "\1r\1h\1iThat password is too obvious!\1n"                 411 PasswordObvious
-"\r\n\1nA) IBM (or compatible)\r\nB) Apple\r\nC) "\      412 ComputerTypeMenu
-	"Macintosh\r\nD) Amiga\r\nE) Other\r\n\r\n"
-"\1_\1y\1hPrimary Computer: \1n"                            413 ComputerTypePrompt
-"Apple"                                                 414 ComputerTypeB
-"Macintosh"                                             415 ComputerTypeC
-"Amiga"                                                 416 ComputerTypeD
-"Other"                                                 417 ComputerTypeE
+"UNUSED412"                                                 412 Unused412
+"UNUSED413"                                                 413 Unused413
+"UNUSED414"                                                 414 Unused414
+"UNUSED415"                                                 415 Unused415
+"UNUSED416"                                                 416 Unused416
+"UNUSED417"                                                 417 Unused417
 "\7\r\nNo user data defined.\r\n"                       418 NoUserData
 "\1r\1h\xAE\xAE\xAE \1iDELETED\1n\1r\1h \xAF\xAF\xAF\r\n"    419 Deleted
 "\1b\1h\xAE\xAE\xAE \1iINACTIVE\1n\1b\1h \xAF\xAF\xAF\r\n"   420 Inactive
