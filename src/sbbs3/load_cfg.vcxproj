@@ -110,6 +110,7 @@
     <ClCompile Include="scfglib2.c" />
     <ClCompile Include="str_util.c" />
     <ClCompile Include="text_defaults.c" />
+    <ClCompile Include="text_id.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
