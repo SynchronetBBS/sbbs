@@ -25,6 +25,7 @@
 #include "nopen.h"
 #include "datewrap.h"
 #include "text.h"	/* TOTAL_TEXT */
+#include "ini_file.h"
 #ifdef USE_CRYPTLIB
 #include "cryptlib.h"
 #endif
@@ -37,6 +38,15 @@ int 	lprintf(int level, const char *fmt, ...);	/* log output */
 /* readtext.c */
 char *	readtext(long *line, FILE *stream, long dflt);
 
+int get_text_num(const char* id)
+{
+	int i;
+	for (i = 0; i < TOTAL_TEXT; ++i)
+		if (strcmp(text_id[i], id) == 0)
+			break;
+	return i;
+}
+
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
 /****************************************************************************/
@@ -44,7 +54,7 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 {
 	int		i;
 	long	line=0L;
-	FILE 	*instream;
+	FILE*	fp;
 	char	str[256];
 
 	if(cfg->size!=sizeof(scfg_t)) {
@@ -90,16 +100,16 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 		free_text(text);
 
 		SAFEPRINTF(str,"%stext.dat",cfg->ctrl_dir);
-		if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
+		if((fp=fnopen(NULL,str,O_RDONLY))==NULL) {
 			safe_snprintf(error, maxerrlen,"%d opening %s",errno,str);
 			return(FALSE); 
 		}
 		for(i=0;i<TOTAL_TEXT;i++)
-			if((text[i]=readtext(&line,instream,i))==NULL) {
+			if((text[i]=readtext(&line,fp,i))==NULL) {
 				i--;
 				break;
 			}
-		fclose(instream);
+		fclose(fp);
 
 		if(i<TOTAL_TEXT) {
 			safe_snprintf(error, maxerrlen,"line %d: Less than TOTAL_TEXT (%u) strings defined in %s."
@@ -107,6 +117,31 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 				,TOTAL_TEXT,str);
 			return(FALSE); 
 		}
+
+		SAFEPRINTF(str, "%stext.ini", cfg->ctrl_dir);
+		if ((fp = fnopen(NULL, str, O_RDONLY)) != NULL) {
+			BOOL success = TRUE;
+			str_list_t ini = iniReadFile(fp);
+			fclose(fp);
+			named_string_t** list = iniGetNamedStringList(ini, ROOT_SECTION);
+			for (i = 0; list != NULL && list[i] != NULL; ++i) {
+				int n = get_text_num(list[i]->name);
+				if (n >= TOTAL_TEXT) {
+					safe_snprintf(error, maxerrlen, "%s text ID (%s) not recognized"
+						,str
+						,list[i]->name);
+					success = FALSE;
+					break;
+				}
+				free(text[n]);
+				text[n] = strdup(list[i]->value);
+			}
+			iniFreeNamedStringList(list);
+			iniFreeStringList(ini);
+			if (!success)
+				return FALSE;
+		}
+
 		cfg->text = text;
 	}
 

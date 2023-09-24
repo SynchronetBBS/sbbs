@@ -165,6 +165,7 @@ int main(int argc, char **argv)
 	int				i=0;
 	FILE			*text_h;
 	FILE			*text_js;
+	FILE			*text_id;
 	FILE			*text_defaults_c;
 
 	if(argc > 1)
@@ -186,12 +187,17 @@ int main(int argc, char **argv)
 	fputs("\n",text_h);
 	fputs("/****************************************************************************/\n",text_h);
 	fputs("/* Macros for elements of the array of pointers (text[]) to static text		*/\n",text_h);
-	fputs("/* Auto-generated from CTRL\\TEXT.DAT										*/\n",text_h);
+	fputs("/* Auto-generated from ctrl/text.dat 										*/\n",text_h);
 	fputs("/****************************************************************************/\n",text_h);
 	fputs("\n",text_h);
 	fputs("#ifndef _TEXT_H\n",text_h);
 	fputs("#define _TEXT_H\n",text_h);
 	fputs("\n",text_h);
+	fputs("extern\n", text_h);
+	fputs("#ifdef __cplusplus\n", text_h);
+	fputs("\"C\"\n", text_h);
+	fputs("#endif\n", text_h);
+	fputs("const char* const text_id[];\n\n", text_h);
 	fputs("enum {\n",text_h);
 
 	if(argc > 2)
@@ -225,6 +231,12 @@ int main(int argc, char **argv)
 	fputs("#include \"text_defaults.h\"\n",text_defaults_c);
 	fputs("\n",text_defaults_c);
 	fputs("const char * const text_defaults[TOTAL_TEXT]={\n",text_defaults_c);
+	if ((text_id = fopen("text_id.c", "w")) == NULL) {
+		fprintf(stderr, "Can't open text_id.c!\n");
+		return __LINE__;
+	}
+	fprintf(text_id, "// Synchronet text.dat string identifiers\n\n");
+	fprintf(text_id, "const char* const text_id[]={\n");
 	do {
 		i++;
 		p=readtext(text_dat, &comment);
@@ -241,6 +253,7 @@ int main(int argc, char **argv)
 			}
 			fprintf(text_h, "\t%c%s\n", i==1?' ':',', macro);
 			fprintf(text_js, "var %s=%d;\n", macro, i);
+			fprintf(text_id, "\t%c\"%s\"\n", i == 1 ? ' ' : ',', macro);
 			fprintf(text_defaults_c, "\t%c%s // %s\n", i==1?' ':',', cstr, comment);
 		}
 	} while(p != NULL);
@@ -258,6 +271,8 @@ int main(int argc, char **argv)
 	fclose(text_js);
 	fputs("};\n",text_defaults_c);
 	fclose(text_defaults_c);
+	fputs("};\n", text_id);
+	fclose(text_id);
 
 	return 0;
 }

@@ -728,6 +728,7 @@ public:
 	bool	gettimeleft_inside = false;
 
 	/* str.cpp */
+	const char* gettext(const char* id);
 	char*	server_host_name(void);
 	char*	timestr(time_t);
 	char*	datestr(time_t);

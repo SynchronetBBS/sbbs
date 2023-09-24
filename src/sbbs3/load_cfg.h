@@ -34,6 +34,7 @@ extern "C" {
 DLLEXPORT BOOL		load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, size_t);
 DLLEXPORT void		free_cfg(scfg_t* cfg);
 DLLEXPORT void		free_text(char* text[]);
+DLLEXPORT int		get_text_num(const char* id);
 DLLEXPORT ushort	sys_timezone(scfg_t* cfg);
 DLLEXPORT char *	prep_dir(const char* base, char* dir, size_t buflen);
 DLLEXPORT char *	prep_code(char *str, const char* prefix);

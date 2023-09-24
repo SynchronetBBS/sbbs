@@ -22,6 +22,15 @@
 #include "sbbs.h"
 #include "dat_rec.h"
 
+const char* sbbs_t::gettext(const char* id)
+{
+	// TODO: hash/cache results
+	int i = get_text_num(id);
+	if(i >= 0 && i < TOTAL_TEXT)
+		return text[i];
+	return NULL;
+}
+
 /****************************************************************************/
 /* Lists all users who have access to the current sub.                      */
 /****************************************************************************/

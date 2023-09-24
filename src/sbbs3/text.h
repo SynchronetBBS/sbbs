@@ -10,6 +10,12 @@
 #ifndef _TEXT_H
 #define _TEXT_H
 
+extern
+#ifdef __cplusplus
+"C"
+#endif
+const char* const text_id[]; 
+
 enum {
 	 MsgSubj
 	,MsgAttr
@@ -422,12 +428,12 @@ enum {
 	,PasswordNotChanged
 	,PasswordInvalid
 	,PasswordObvious
-	,ComputerTypeMenu
-	,ComputerTypePrompt
-	,ComputerTypeB
-	,ComputerTypeC
-	,ComputerTypeD
-	,ComputerTypeE
+	,Unused412
+	,Unused413
+	,Unused414
+	,Unused415
+	,Unused416
+	,Unused417
 	,NoUserData
 	,Deleted
 	,Inactive
