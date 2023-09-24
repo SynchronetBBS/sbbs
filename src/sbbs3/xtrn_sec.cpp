@@ -903,7 +903,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		 * the "Real Name" line.  This line will be used in the
 		 * future for BRE's "dupe-checking" feature.
 		 */
-		safe_snprintf(str, sizeof(str), "%s\n%d\n%d\n%u\n%u\n%u\n%u\n%s\n"
+		safe_snprintf(str, sizeof(str), "%s\n%d \n%d\n%u\n%u\n%u\n%u\n%s\n"
 			,name								// Complete name or handle of user
 			,INT_TO_BOOL(term & ANSI)			// ANSI status:  1 = yes, 0 = no, -1 = don't know
 			,!INT_TO_BOOL(term & NO_EXASCII)	// IBM Graphic characters:  1 = yes, 0 = no, -1 = unknown
