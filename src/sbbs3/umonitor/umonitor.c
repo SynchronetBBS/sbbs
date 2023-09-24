@@ -898,21 +898,27 @@ int main(int argc, char** argv)  {
 	boxch.tr=(char)187;
 	boxch.bl=(char)200;
 	boxch.br=(char)188;
+
+	str_list_t arg_list = strListInit();
 	for(i=1;i<argc;i++) {
 		if(strcmp(argv[i], "-insert") == 0) {
 			uifc.insert_mode = TRUE;
+			strListAppendFormat(&arg_list, "'%s'", argv[i]);
 			continue;
 		}
 		if(argv[i][0]=='-')
 			switch(toupper(argv[i][1])) {
 				case 'C':
 					uifc.mode|=UIFC_COLOR;
+					strListAppendFormat(&arg_list, "'%s'", argv[i]);
 					break;
-					case 'L':
+				case 'L':
 					uifc.scrn_len=atoi(argv[i]+2);
+					strListAppendFormat(&arg_list, "'%s'", argv[i]);
 					break;
 				case 'E':
 					uifc.esc_delay=atoi(argv[i]+2);
+					strListAppendFormat(&arg_list, "'%s'", argv[i]);
 					break;
 				case 'S':
 					idle_sleep=atoi(argv[i]+2);
@@ -944,6 +950,7 @@ int main(int argc, char** argv)  {
 						default:
 							goto USAGE;
 					}
+					strListAppendFormat(&arg_list, "'%s'", argv[i]);
 					break;
 				default:
 USAGE:
@@ -969,6 +976,9 @@ USAGE:
 					exit(0);
 			}
 	}
+
+	char args[1024];
+	strListJoin(arg_list, args, sizeof args, " ");
 
 #ifdef SIGPIPE
 	signal(SIGPIPE, SIG_IGN);
@@ -1113,39 +1123,19 @@ USAGE:
 						done=1;
 						break;
 					case 0:
-						sprintf(str,"%sscfg ",cfg.exec_dir);
-						for(j=1; j<argc; j++) {
-							strcat(str,"'");
-							strcat(str,argv[j]);
-							strcat(str,"' ");
-						}
+						snprintf(str, sizeof str, "%sscfg %s", cfg.exec_dir, args);
 						do_cmd(str);
 						break;
 					case 1:
-						sprintf(str,"%sechocfg ",cfg.exec_dir);
-						for(j=1; j<argc; j++) {
-							strcat(str,"'");
-							strcat(str,argv[j]);
-							strcat(str,"' ");
-						}
+						snprintf(str, sizeof str, "%sechocfg %s", cfg.exec_dir, args);
 						do_cmd(str);
 						break;
 					case 2:
-						sprintf(str,"%suedit ",cfg.exec_dir);
-						for(j=1; j<argc; j++) {
-							strcat(str,"'");
-							strcat(str,argv[j]);
-							strcat(str,"' ");
-						}
+						snprintf(str, sizeof str, "%suedit %s", cfg.exec_dir, args);
 						do_cmd(str);
 						break;
 					case 3:
-						sprintf(str,"%ssyncterm ",cfg.exec_dir);
-						for(j=1; j<argc; j++) {
-							strcat(str,"'");
-							strcat(str,argv[j]);
-							strcat(str,"' ");
-						}
+						snprintf(str, sizeof str, "%ssyncterm %s", cfg.exec_dir, args);
 						do_cmd(str);
 						break;
 					case 4:
@@ -1302,12 +1292,7 @@ USAGE:
 					switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&i,0,"Node Options",opt))  {
 
 						case 0:  /* Edit Users */
-							sprintf(str,"%suedit %d",cfg.exec_dir,node.useron);
-							for(j=1; j<argc; j++) {
-							  strcat(str,"'");
-							  strcat(str,argv[j]);
-							  strcat(str,"' ");
-							}
+							snprintf(str, sizeof str, "%suedit %d %s", cfg.exec_dir, node.useron, args);
 							do_cmd(str);
 							break;
 
