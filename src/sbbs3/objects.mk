@@ -189,15 +189,7 @@ ECHOCFG_OBJS = \
 			$(UIFC_OBJS) \
 			$(MTOBJODIR)/nopen$(OFILE)
 
-ADDFILES_OBJS = 	$(LOAD_CFG_OBJS) \
-			$(OBJODIR)/addfiles$(OFILE) \
-			$(OBJODIR)/date_str$(OFILE) \
-			$(OBJODIR)/dat_rec$(OFILE) \
-			$(OBJODIR)/userdat$(OFILE) \
-			$(OBJODIR)/msgdate$(OFILE) \
-			$(OBJODIR)/filedat$(OFILE) \
-			$(OBJODIR)/getstats$(OFILE) \
-			$(OBJODIR)/sauce$(OFILE)
+ADDFILES_OBJS =		$(OBJODIR)/addfiles$(OFILE)
 
 FILELIST_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/filelist$(OFILE) \
@@ -270,13 +262,7 @@ SLOG_OBJS = \
 			$(OBJODIR)/slog$(OFILE) \
 			$(OBJODIR)/nopen$(OFILE)
 
-DELFILES_OBJS = 	$(LOAD_CFG_OBJS) \
-			$(OBJODIR)/delfiles$(OFILE) \
-			$(OBJODIR)/filedat$(OFILE) \
-			$(OBJODIR)/sauce$(OFILE) \
-			$(OBJODIR)/userdat$(OFILE) \
-			$(OBJODIR)/getstats$(OFILE) \
-			$(OBJODIR)/dat_rec$(OFILE)
+DELFILES_OBJS = 	$(OBJODIR)/delfiles$(OFILE)
 
 DUPEFIND_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/dupefind$(OFILE)
