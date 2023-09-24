@@ -326,6 +326,7 @@ void sbbs_t::useredit(int usernumber)
 				editfile(str);
 				break;
 			case 'I':
+				lncntr = 0;
 				maindflts(&user);
 				break;
 			case 'J':   /* Edit Minutes */
