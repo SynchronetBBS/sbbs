@@ -1,4 +1,4 @@
-/* Synchronet message base (SMB) validity checker */
+/* Synchronet message/file base (SMB) validity checker */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -126,8 +126,8 @@ char *usage="\nusage: chksmb [-opts] <filespec.SHD>\n"
 			"\n"
 			" opts:\n"
 			"       b - beep on error\n"
-			"       s - stop after errored message base\n"
-			"       p - pause after errored messsage base\n"
+			"       s - stop after errored message/file base\n"
+			"       p - pause after errored messsage/file base\n"
 			"       h - don't check hash file\n"
 			"       a - don't check allocation files\n"
 			"       t - don't check translation strings\n"
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 	hash_t**	hashes;
 	time_t		now=time(NULL);
 
-	fprintf(stderr,"\nCHKSMB v3.20-%s %s/%s SMBLIB %s - Check Synchronet Message Base\n"
+	fprintf(stderr,"\nCHKSMB v3.20-%s %s/%s SMBLIB %s - Check Synchronet Message/File Base\n"
 		,PLATFORM_DESC, GIT_BRANCH, GIT_HASH, smb_lib_ver());
 
 	if(argc<2) {
@@ -262,6 +262,8 @@ int main(int argc, char **argv)
 		errors++;
 		continue;
 	}
+
+	const char* base_type = (smb.status.attr & SMB_FILE_DIRECTORY) ? "File" : "Message";
 
 	/* File size sanity checks here: */
 
@@ -422,11 +424,11 @@ int main(int argc, char **argv)
 			if(idx->number == msg.hdr.number)
 				continue;
 			if(idx->offset > l && idx->offset < l + (smb_hdrblocks(msg.hdr.length) * SHD_BLOCK_LEN)) {
-				fprintf(stderr,"%sMessage header overlap\n", beep);
+				fprintf(stderr,"%s%s header overlap\n", base_type, beep);
 				msgerr=TRUE;
 				if(extinfo)
-					printf("MSGERR: Header for message #%lu overlaps with message #%lu\n"
-						,(ulong)idxrec[n].number, (ulong)msg.hdr.number);
+					printf("ERR: Header for %s #%lu overlaps with #%lu\n"
+						,base_type, (ulong)idxrec[n].number, (ulong)msg.hdr.number);
 				hdr_overlap++;
 				break;
 			}
@@ -484,8 +486,8 @@ int main(int argc, char **argv)
 		}
 
 		if(msg.hdr.type != smb_msg_type(msg.hdr.attr)) {
-			fprintf(stderr,"%sMessage type mismatch (%d, expected %d)\n"
-				,beep, msg.hdr.type, smb_msg_type(msg.hdr.attr));
+			fprintf(stderr,"%s%s type mismatch (%d, expected %d)\n"
+				,beep, base_type, msg.hdr.type, smb_msg_type(msg.hdr.attr));
 			msgerr=TRUE;
 			types++;
 		}
@@ -551,7 +553,7 @@ int main(int argc, char **argv)
 		else {
 			actdatblocks+=smb_datblocks(data_length);
 			if(msg.hdr.number>smb.status.last_msg) {
-				fprintf(stderr,"%sOut-Of-Range message number\n",beep);
+				fprintf(stderr,"%sOut-Of-Range %s number\n",beep, base_type);
 				msgerr=TRUE;
 				if(extinfo)
 					printf("MSGERR: Header number (%"PRIu32") greater than last (%"PRIu32")\n"
@@ -654,7 +656,7 @@ int main(int argc, char **argv)
 				}
 			}
 			if(msg.hdr.number==0) {
-				fprintf(stderr,"%sZero message number\n",beep);
+				fprintf(stderr,"%sZero %s number\n",beep, base_type);
 				msgerr=TRUE;
 				if(extinfo)
 					printf("MSGERR: Header number is zero (invalid)\n");
@@ -663,7 +665,7 @@ int main(int argc, char **argv)
 			if(number) {
 				for(m=0;m<headers;m++)
 					if(number[m] && msg.hdr.number==number[m]) {
-						fprintf(stderr,"%sDuplicate message number\n",beep);
+						fprintf(stderr,"%sDuplicate %s number\n",beep, base_type);
 						msgerr=TRUE;
 						if(extinfo)
 							printf("MSGERR: Header number (%"PRIu32") duplicated\n"
@@ -784,7 +786,7 @@ int main(int argc, char **argv)
 		headers++;
 		if(msgerr && extinfo) {
 			printf("\n");
-			printf("%-16s %s\n","message base",smb.file);
+			printf("%-16s %s\n",(smb.status.attr & SMB_FILE_DIRECTORY) ? "file base":"message base",smb.file);
 			smb_dump_msghdr(stdout,&msg);
 			printf("\n");
 		}
@@ -850,7 +852,7 @@ int main(int argc, char **argv)
 		}
 		for(m=0;m<l;m++)
 			if(number[m]==idx.number) {
-				fprintf(stderr,"%sDuplicate message number\n",beep);
+				fprintf(stderr,"%sDuplicate %s number\n",beep, base_type);
 				dupenum++;
 				break;
 			}
@@ -866,12 +868,12 @@ int main(int argc, char **argv)
 			break;
 		}
 		if(idx.number==0) {
-			fprintf(stderr,"%sZero message number\n",beep);
+			fprintf(stderr,"%sZero %s number\n",beep, base_type);
 			idxzeronum++;
 			break;
 		}
 		if(idx.number>smb.status.last_msg) {
-			fprintf(stderr,"%sOut-Of-Range message number\n",beep);
+			fprintf(stderr,"%sOut-Of-Range %s number\n",beep, base_type);
 			idxnumerr++;
 			break;
 		}
@@ -890,7 +892,7 @@ int main(int argc, char **argv)
 			fprintf(stderr,"#%-5lu (%06lX) 2nd Pass ",number[m],offset[m]);
 			for(n=0;n<m;n++)
 				if(number[m] && number[n] && number[m]<number[n]) {
-					fprintf(stderr,"%sMisordered message number\n",beep);
+					fprintf(stderr,"%sMisordered %s number\n",beep, base_type);
 					misnumbered++;
 					number[n]=0;
 					break;
@@ -917,7 +919,7 @@ int main(int argc, char **argv)
 			if(!fread(&hash,sizeof(hash),1,smb.hash_fp))
 				break;
 			if(hash.number==0 || hash.number > smb.status.last_msg)
-				fprintf(stderr,"\r%sInvalid message number (%u > %u)\n", beep, hash.number, smb.status.last_msg), badhash++, print_hash(&hash);
+				fprintf(stderr,"\r%sInvalid %s number (%u > %u)\n", beep, base_type, hash.number, smb.status.last_msg), badhash++, print_hash(&hash);
 			else if(hash.time < 0x40000000 || hash.time > (ulong)now + (60 * 60))
 				fprintf(stderr,"\r%sInvalid time (0x%08"PRIX32")\n", beep, hash.time), badhash++, print_hash(&hash);
 			else if(hash.length < 1 || hash.length > 1024*1024*1024)
@@ -1129,7 +1131,7 @@ int main(int argc, char **argv)
 			,"Overlapping Headers"
 			,hdr_overlap);
 
-	printf("\n%s Message Base ",smb.file);
+	printf("\n%s %s Base ",smb.file, base_type);
 	if(/* (headers-deleted)!=smb.status.total_msgs || */
 		total!=smb.status.total_msgs
 		|| (headers-deleted)!=total-delidx
@@ -1176,7 +1178,7 @@ int main(int argc, char **argv)
 	}
 
 	if(errors)
-		printf("\n'fixsmb' can be used to repair many message base problems.\n");
+		printf("\n'fixsmb' can be used to repair many message/file base problems.\n");
 
 	return(errors);
 }
