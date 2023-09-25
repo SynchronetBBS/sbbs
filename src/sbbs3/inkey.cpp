@@ -152,9 +152,9 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 		CRLF;
 		bputs(text[RawMsgInputModeIsNow]);
 		if(console&CON_RAW_IN)
-			bputs(text[OFF]);
+			bputs(text[Off]);
 		else
-			bputs(text[ON]);
+			bputs(text[On]);
 		console^=CON_RAW_IN;
 		CRLF;
 		CRLF;

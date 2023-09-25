@@ -291,7 +291,7 @@ void sbbs_t::multinodechat(int channel)
 						useron.chat^=CHAT_ACTION;
 						bprintf("\r\nAction commands are now %s\r\n"
 							,useron.chat&CHAT_ACTION
-							? text[ON]:text[OFF]);
+							? text[On]:text[Off]);
 						putuserchat(useron.number, useron.chat);
 						break;
 					case 'C':   /* List of action commands */
@@ -314,7 +314,7 @@ void sbbs_t::multinodechat(int channel)
 						useron.chat^=CHAT_ECHO;
 						bprintf(text[EchoIsNow]
 							,useron.chat&CHAT_ECHO
-							? text[ON]:text[OFF]);
+							? text[On]:text[Off]);
 						putuserchat(useron.number, useron.chat);
 						break;
 					case 'L':	/* list nodes */
@@ -645,7 +645,7 @@ bool sbbs_t::sysop_page(void)
 		else {
 			sys_status^=SS_SYSPAGE;
 			bprintf(text[SysopPageIsNow]
-				,sys_status&SS_SYSPAGE ? text[ON] : text[OFF]);
+				,sys_status&SS_SYSPAGE ? text[On] : text[Off]);
 			nosound();
 		}
 		if(!(sys_status&SS_SYSPAGE))

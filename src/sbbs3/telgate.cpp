@@ -167,7 +167,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 								mode^=TG_ECHO;
 								bprintf(text[EchoIsNow]
 									,mode&TG_ECHO
-									? text[ON]:text[OFF]);
+									? text[On]:text[Off]);
 								continue;
 							case 'L':
 								whos_online(true);
