@@ -6,8 +6,8 @@ require('mouse_getkey.js', 'mouse_getkey');
 const answer_offset = { x: 0, y: 3 };
 const answer_origin = { x: 70, y: 9 };
 const author = 'Ree';
-const colour_offset_x = 4;
-const colour_origin = { x: 23, y: 20 };
+const colour_offset = { x: 0, y: 2 };
+const colour_origin = { x: 3, y: 9 };
 const colour_width = 2;
 const debug = true;
 const level_names = ['Unknown', 'Easy', 'Normal', 'Hard'];
@@ -193,11 +193,11 @@ function draw_answer() {
 
 // Highlight the currently selected colour
 function draw_colour(highlight) {
-    console.gotoxy(colour_origin.x + (colour_offset_x * current_colour) - 1, colour_origin.y);
-    console.attributes = LIGHTGRAY;
-    console.write(highlight ? '[' : ' ');
-    console.right(colour_width);
-    console.write(highlight ? ']' : ' ');
+    console.attributes = piece_colours[current_colour] | (highlight ? BG_LIGHTGRAY : 0);
+    console.gotoxy(colour_origin.x + (colour_offset.x * current_colour) - 1, colour_origin.y + (colour_offset.y * current_colour));
+    console.write(' \xDC\xDC ');
+    console.gotoxy(colour_origin.x + (colour_offset.x * current_colour) - 1, colour_origin.y + (colour_offset.y * current_colour) + 1);
+    console.write(' \xDF\xDF ');
 }
 
 // Draw the pegs for the current line
@@ -370,19 +370,16 @@ function handle_board_click(x, y) {
 }
 
 function handle_colour_click(x, y) {
-    // 23x20 and 24x20 are the cells for the first colour
-    // Then each subsequent colour is to the right
-
-    // Easy check, must be on the right vertical row to be a colour click
-    if (y !== colour_origin.y) {
+    // Easy check, must be on the right column to be a colour click
+    if ((x !== colour_origin.x) && (x !== colour_origin.x + 1)) {
         return false;
     }
 
-    // Harder check, must be on one of the two horizontal colour columns
+    // Harder check, must be on a colour row
     for (var i = 0; i < piece_colours.length; i++) {
-        var colour_x1 = colour_origin.x + (colour_offset_x * i);
-        var colour_x2 = colour_x1 + 1;
-        if ((x >= colour_x1) && (x <= colour_x2)) {
+        var colour_y1 = colour_origin.y + (colour_offset.y * i);
+        var colour_y2 = colour_y1 + 1;
+        if ((y >= colour_y1) && (y <= colour_y2)) {
             if ((i == piece_colours.length - 1) && game.level !== 3) {
                 set_message(piece_names[i] + ' is only available in Hard mode');
                 return false;
