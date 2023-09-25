@@ -41,7 +41,7 @@ function uReplace(str) {
 
 function getCacheName(url, addr) {
 	const cfn = format('wttr.in_%s%s.ans', url, addr || '').replace(/[^0-9a-z\.]+/ig, '_');
-	return system.temp_path + cfn;
+	return system.temp_dir + cfn;
 }
 
 function readCache(url, addr, ttl) {
