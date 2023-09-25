@@ -39,7 +39,7 @@ if(user.security.restrictions & UFLAG_C) {
 
 function on_or_off(on)
 {
-	return bbs.text(on ? ON : OFF);
+	return bbs.text(on ? On : Off);
 }
 
 // Set continue point for main menu commands
