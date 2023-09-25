@@ -11,17 +11,18 @@ const colour_origin = { x: 3, y: 9 };
 const colour_width = 2;
 const debug = true;
 const level_names = ['Unknown', 'Easy', 'Normal', 'Hard'];
+const max_guesses = 12;
 const message_origin = { x: 21, y: 24 };
 const message_width = 79 - message_origin.y + 1;
 const peg_colours = [BLACK, BLACK, WHITE];
 const peg_origin = { x: 4, y: 23 };
 const piece_colours = [LIGHTRED, YELLOW, LIGHTGREEN, LIGHTCYAN, DARKGRAY, WHITE, LIGHTMAGENTA];
 const piece_names = ['Red', 'Yellow', 'Green', 'Blue', 'Black', 'White', 'Magenta'];
-const piece_offset_x = 2;
-const piece_origin = { x: 11, y: 23 };   
+const piece_offset = { x: 0, y: 3 };
+const piece_origin = { x: 9, y: 9 };   
 const program_name = 'Mastrmind';
 const program_version = '23.09.24';
-const row_offset_y = 2;
+const row_offset_x = 5;
 const tear_line = '\r\n--- ' + js.exec_file + ' v' + program_version + '\r\n';
 const winner_subject = program_name + ' Winner' + (debug ? ' (debug mode)' : '');
 const winner_to = js.exec_file;
@@ -203,7 +204,7 @@ function draw_colour(highlight) {
 // Draw the pegs for the current line
 function draw_pegs() {
     for (var i = 0; i < 4; i++) {
-        console.gotoxy(peg_origin.x + i, peg_origin.y - (game.row * row_offset_y));
+        console.gotoxy(peg_origin.x + i, peg_origin.y - (game.row * row_offset_x));
         console.attributes = peg_colours[guesses[game.row].peg[i]] | BG_BROWN;
         if (guesses[game.row].peg[i] === null) {
             console.write('\xFA');
@@ -215,16 +216,12 @@ function draw_pegs() {
 
 // Highlight the currently selected piece
 function draw_piece(highlight) {
-    console.gotoxy(piece_origin.x + (piece_offset_x * current_column) - 1, piece_origin.y - (game.row * row_offset_y));
-    console.attributes = (highlight ? LIGHTGRAY : BLACK) | BG_BROWN;
-    console.write(highlight ? '[ ]' : '   ');
-    console.gotoxy(piece_origin.x + (piece_offset_x * current_column), piece_origin.y - (game.row * row_offset_y));
-    console.attributes = piece_colours[guesses[game.row].piece[current_column]] | BG_BROWN;
-    if (guesses[game.row].piece[current_column] === null) {
-        console.write('\xF9');
-    } else {
-        console.write('\xDB');
-    }
+    var isEmpty = guesses[game.row].piece[current_column] === null;
+    console.attributes = (isEmpty ? BLACK : piece_colours[guesses[game.row].piece[current_column]]) | (highlight ? BG_LIGHTGRAY : BG_BROWN);
+    console.gotoxy(piece_origin.x + (piece_offset.x * current_column) + (game.row * row_offset_x) - 1, piece_origin.y + (piece_offset.y * current_column));
+    console.write(isEmpty ? ' \xC9\xBB ' : ' \xDC\xDC ');
+    console.gotoxy(piece_origin.x + (piece_offset.x * current_column) + (game.row * row_offset_x) - 1, piece_origin.y + (piece_offset.y * current_column) + 1);
+    console.write(isEmpty ? ' \xC8\xBC ' : ' \xDF\xDF ');
 }
 
 // Generate a random answer
@@ -343,16 +340,15 @@ function get_winners() {
 	return list;
 }
 
+// TODOX Needs fixing
 function handle_board_click(x, y) {
-    // First/bottom row is 11x23, 13x23, 15x23, 17x23
-    // Then each subsequent row is two rows up
     var piece_columns = [];
     for (var i = 0; i < 4; i++) {
         piece_columns[i] = piece_origin.x + (piece_offset_x * i);
     }
 
     // Confirm click was on current row
-    if (y !== piece_origin.y - (game.row * row_offset_y)) {
+    if (y !== piece_origin.y - (game.row * row_offset_x)) {
         return false;
     }
 
@@ -635,7 +631,7 @@ function new_game(level) {
     game.start = time();
     game_over = false;
     guesses = [];
-    for (var i = 0; i < 10; i++) {
+    for (var i = 0; i < max_guesses; i++) {
         guesses[i] = { peg: [null, null, null, null], piece: [null, null, null, null] };
     }
 
@@ -650,25 +646,24 @@ function place_piece() {
 }
 
 function redraw_guesses() {
-    for (var y = 0; y < 10; y++) {
-        for (var x = 0; x < 4; x++) {
+    for (var row = 0; row < max_guesses; row++) {
+        for (var column = 0; column < 4; column++) {
             // Draw piece
-            console.gotoxy(piece_origin.x + (piece_offset_x * x), piece_origin.y - (row_offset_y * y));
-            console.attributes = piece_colours[guesses[y].piece[x]] | BG_BROWN;
-            if (guesses[y].piece[x] === null) {
-                console.write('\xF9');
-            } else {
-                console.write('\xDB');
-            }
-
+            var isEmpty = guesses[row].piece[column] === null;
+            console.attributes = (isEmpty ? BLACK : piece_colours[guesses[row].piece[column]]) | BG_BROWN;
+            console.gotoxy(piece_origin.x + (piece_offset.x * column) + (row_offset_x * row) - 1, piece_origin.y + (piece_offset.y * column));
+            console.write(isEmpty ? ' \xC9\xBB ' : ' \xDC\xDC ');
+            console.gotoxy(piece_origin.x + (piece_offset.x * column) + (row_offset_x * row) - 1, piece_origin.y + (piece_offset.y * column) + 1);
+            console.write(isEmpty ? ' \xC8\xBC ' : ' \xDF\xDF ');
+        
             // Draw peg
-            console.gotoxy(peg_origin.x + x, peg_origin.y - (row_offset_y * y));
+            /*console.gotoxy(peg_origin.x + x, peg_origin.y - (row_offset_x * y));
             console.attributes = peg_colours[guesses[y].peg[x]] | BG_BROWN;
             if (guesses[y].peg[x] === null) {
                 console.write('\xFA');
             } else {
                 console.write('\xFE');
-            }
+            }*/
         }
     }
 }
