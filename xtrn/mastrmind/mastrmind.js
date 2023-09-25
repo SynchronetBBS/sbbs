@@ -15,7 +15,8 @@ const max_guesses = 12;
 const message_origin = { x: 21, y: 24 };
 const message_width = 79 - message_origin.y + 1;
 const peg_colours = [BLACK, BLACK, WHITE];
-const peg_origin = { x: 4, y: 23 };
+const peg_offset = { x: 5, y: 0 };
+const peg_origin = { x: 9, y: 21 };
 const piece_colours = [LIGHTRED, YELLOW, LIGHTGREEN, LIGHTCYAN, DARKGRAY, WHITE, LIGHTMAGENTA];
 const piece_names = ['Red', 'Yellow', 'Green', 'Blue', 'Black', 'White', 'Magenta'];
 const piece_offset = { x: 0, y: 3 };
@@ -203,10 +204,17 @@ function draw_colour(highlight) {
 
 // Draw the pegs for the current line
 function draw_pegs() {
+    draw_pegs_at(game.row);
+}
+
+function draw_pegs_at(row) {
     for (var i = 0; i < 4; i++) {
-        console.gotoxy(peg_origin.x + i, peg_origin.y - (game.row * row_offset_x));
-        console.attributes = peg_colours[guesses[game.row].peg[i]] | BG_BROWN;
-        if (guesses[game.row].peg[i] === null) {
+        var x_offset = i % 2;
+        var y_offset = Math.floor(i / 2);
+
+        console.attributes = peg_colours[guesses[row].peg[i]] | BG_BROWN;
+        console.gotoxy(peg_origin.x + x_offset + (peg_offset.x * row), peg_origin.y + y_offset + (peg_offset.y * row));
+        if (guesses[row].peg[i] === null) {
             console.write('\xFA');
         } else {
             console.write('\xFE');
@@ -654,16 +662,8 @@ function redraw_guesses() {
         for (var column = 0; column < 4; column++) {
             // Draw piece
             draw_piece_at(column, row, false);
-        
-            // Draw peg
-            /*console.gotoxy(peg_origin.x + x, peg_origin.y - (row_offset_x * y));
-            console.attributes = peg_colours[guesses[y].peg[x]] | BG_BROWN;
-            if (guesses[y].peg[x] === null) {
-                console.write('\xFA');
-            } else {
-                console.write('\xFE');
-            }*/
         }
+        draw_pegs_at(row);
     }
 }
 
