@@ -216,11 +216,15 @@ function draw_pegs() {
 
 // Highlight the currently selected piece
 function draw_piece(highlight) {
-    var isEmpty = guesses[game.row].piece[current_column] === null;
-    console.attributes = (isEmpty ? BLACK : piece_colours[guesses[game.row].piece[current_column]]) | (highlight ? BG_LIGHTGRAY : BG_BROWN);
-    console.gotoxy(piece_origin.x + (piece_offset.x * current_column) + (game.row * row_offset_x) - 1, piece_origin.y + (piece_offset.y * current_column));
+    draw_piece_at(current_column, game.row, highlight);
+}
+
+function draw_piece_at(column, row, highlight) {
+    var isEmpty = guesses[row].piece[column] === null;
+    console.attributes = (isEmpty ? BLACK : piece_colours[guesses[row].piece[column]]) | (highlight ? BG_LIGHTGRAY : BG_BROWN);
+    console.gotoxy(piece_origin.x + (piece_offset.x * column) + (row * row_offset_x) - 1, piece_origin.y + (piece_offset.y * column));
     console.write(isEmpty ? ' \xC9\xBB ' : ' \xDC\xDC ');
-    console.gotoxy(piece_origin.x + (piece_offset.x * current_column) + (game.row * row_offset_x) - 1, piece_origin.y + (piece_offset.y * current_column) + 1);
+    console.gotoxy(piece_origin.x + (piece_offset.x * column) + (row * row_offset_x) - 1, piece_origin.y + (piece_offset.y * column) + 1);
     console.write(isEmpty ? ' \xC8\xBC ' : ' \xDF\xDF ');
 }
 
@@ -649,12 +653,7 @@ function redraw_guesses() {
     for (var row = 0; row < max_guesses; row++) {
         for (var column = 0; column < 4; column++) {
             // Draw piece
-            var isEmpty = guesses[row].piece[column] === null;
-            console.attributes = (isEmpty ? BLACK : piece_colours[guesses[row].piece[column]]) | BG_BROWN;
-            console.gotoxy(piece_origin.x + (piece_offset.x * column) + (row_offset_x * row) - 1, piece_origin.y + (piece_offset.y * column));
-            console.write(isEmpty ? ' \xC9\xBB ' : ' \xDC\xDC ');
-            console.gotoxy(piece_origin.x + (piece_offset.x * column) + (row_offset_x * row) - 1, piece_origin.y + (piece_offset.y * column) + 1);
-            console.write(isEmpty ? ' \xC8\xBC ' : ' \xDF\xDF ');
+            draw_piece_at(column, row, false);
         
             // Draw peg
             /*console.gotoxy(peg_origin.x + x, peg_origin.y - (row_offset_x * y));
