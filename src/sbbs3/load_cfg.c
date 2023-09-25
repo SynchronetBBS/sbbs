@@ -41,6 +41,8 @@ char *	readtext(long *line, FILE *stream, long dflt);
 int get_text_num(const char* id)
 {
 	int i;
+	if (isdigit(*id))
+		return atoi(id);
 	for (i = 0; i < TOTAL_TEXT; ++i)
 		if (strcmp(text_id[i], id) == 0)
 			break;
