@@ -38,11 +38,16 @@ int 	lprintf(int level, const char *fmt, ...);	/* log output */
 /* readtext.c */
 char *	readtext(long *line, FILE *stream, long dflt);
 
+// Returns 0-based text string index
 int get_text_num(const char* id)
 {
 	int i;
-	if (isdigit(*id))
-		return atoi(id);
+	if (isdigit(*id)) {
+		i = atoi(id);
+		if (i < 1)
+			return TOTAL_TEXT;
+		return i - 1;
+	}
 	for (i = 0; i < TOTAL_TEXT; ++i)
 		if (strcmp(text_id[i], id) == 0)
 			break;
