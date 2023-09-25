@@ -3,8 +3,8 @@
 require('sbbsdefs.js', 'K_NONE');
 require('mouse_getkey.js', 'mouse_getkey');
 
-const answer_offset_x = 4;
-const answer_origin = { x: 4, y: 3 };
+const answer_offset = { x: 0, y: 3 };
+const answer_origin = { x: 70, y: 9 };
 const author = 'Ree';
 const colour_offset_x = 4;
 const colour_origin = { x: 23, y: 20 };
@@ -15,7 +15,7 @@ const message_origin = { x: 21, y: 24 };
 const message_width = 79 - message_origin.y + 1;
 const peg_colours = [BLACK, BLACK, WHITE];
 const peg_origin = { x: 4, y: 23 };
-const piece_colours = [LIGHTRED, YELLOW, LIGHTGREEN, LIGHTCYAN, BLACK, WHITE, LIGHTMAGENTA];
+const piece_colours = [LIGHTRED, YELLOW, LIGHTGREEN, LIGHTCYAN, DARKGRAY, WHITE, LIGHTMAGENTA];
 const piece_names = ['Red', 'Yellow', 'Green', 'Blue', 'Black', 'White', 'Magenta'];
 const piece_offset_x = 2;
 const piece_origin = { x: 11, y: 23 };   
@@ -183,9 +183,11 @@ function display_high_scores() {
 // Draw the answer line
 function draw_answer() {
     for (var i = 0; i < 4; i++) {
-        console.gotoxy(answer_origin.x + (answer_offset_x * i), answer_origin.y);
-        console.attributes = piece_colours[answer[i]];
-        console.write('\xDB\xDB');
+        console.attributes = piece_colours[answer[i]] | BG_BROWN;
+        console.gotoxy(answer_origin.x + (answer_offset.x * i), answer_origin.y + (answer_offset.y * i));
+        console.write(' \xDC\xDC ');
+        console.gotoxy(answer_origin.x + (answer_offset.x * i), answer_origin.y + (answer_offset.y * i) + 1);
+        console.write(' \xDF\xDF ');
     }
 }
 
