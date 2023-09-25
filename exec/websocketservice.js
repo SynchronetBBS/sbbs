@@ -93,7 +93,7 @@ try {
 		log(LOG_DEBUG, "Connecting to " + TargetHostname + ":" + TargetPort);
         if (FServerSocket.connect(TargetHostname, TargetPort)) {
 
-            ipFile = new File(system.temp_path + 'sbbs-ws-' + FServerSocket.local_port + '.ip');
+            ipFile = new File(system.temp_dir + 'sbbs-ws-' + FServerSocket.local_port + '.ip');
             if (ipFile.open('w')) {
                 ipFile.write(client.ip_address);
                 ipFile.close();
