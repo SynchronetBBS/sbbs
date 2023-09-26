@@ -356,23 +356,28 @@ function get_winners() {
 	return list;
 }
 
-function handle_board_click(x, y) {
-    return false; // TODOX Needs fixing
-
-    var piece_columns = [];
-    for (var i = 0; i < 4; i++) {
-        piece_columns[i] = piece_origin.x + (piece_offset.x * i);
+function handle_board_click(column, row) {
+    // Confirm click was on current row
+    var minX = piece_origin.y + (game.row * row_offset_x);
+    var maxX = minX + 1;
+    if ((column !== minX) && (column !== maxX)) {
+        log(LOG_ERR, minX, maxX, column);
+        return false;
     }
 
-    // Confirm click was on current row
-    if (y !== piece_origin.y - (game.row * row_offset_x)) {
-        return false;
+    // Confirm click was on a piece position in the row
+    var piece_columns = [];
+    for (var i = 0; i < 4; i++) {
+        piece_columns[i] = piece_origin.y + (piece_offset.y * i);
     }
 
     // Confirm click was in a piece column
-    var new_column = piece_columns.indexOf(x);
+    var new_column = piece_columns.indexOf(row);
     if (new_column === -1) {
-        return false;
+        new_column = piece_columns.indexOf(row - 1);
+        if (new_column === -1) {
+            return false;
+        }
     }
 
     if (new_column !== current_column) {
