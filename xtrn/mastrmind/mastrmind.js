@@ -361,7 +361,6 @@ function handle_board_click(column, row) {
     var minX = piece_origin.y + (game.row * row_offset_x);
     var maxX = minX + 1;
     if ((column !== minX) && (column !== maxX)) {
-        log(LOG_ERR, minX, maxX, column);
         return false;
     }
 
