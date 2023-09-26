@@ -63,6 +63,13 @@ enum {
 	,CON_PROP_OUTBUF_SPACE
 	,CON_PROP_KEYBUF_LEVEL
 	,CON_PROP_KEYBUF_SPACE
+	,CON_PROP_YES_KEY
+	,CON_PROP_NO_KEY
+	,CON_PROP_QUIT_KEY
+	,CON_PROP_ALL_KEY
+	,CON_PROP_LIST_KEY
+	,CON_PROP_NEXT_KEY
+	,CON_PROP_PREV_KEY
 
 	,CON_PROP_OUTPUT_RATE
 };
@@ -73,7 +80,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	jsval		idval;
 	int32		val;
     jsint       tiny;
-	JSString*	js_str;
+	JSString*	js_str = NULL;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, obj, &js_console_class))==NULL)
@@ -125,18 +132,15 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CON_PROP_TERMINAL:
 			if((js_str=JS_NewStringCopyZ(cx, sbbs->terminal))==NULL)
 				return(JS_FALSE);
-			*vp = STRING_TO_JSVAL(js_str);
-			return(JS_TRUE);
+			break;
 		case CON_PROP_TERM_TYPE:
 			if((js_str=JS_NewStringCopyZ(cx, sbbs->term_type()))==NULL)
 				return(JS_FALSE);
-			*vp = STRING_TO_JSVAL(js_str);
-			return(JS_TRUE);
+			break;
 		case CON_PROP_CHARSET:
 			if((js_str=JS_NewStringCopyZ(cx, sbbs->term_charset()))==NULL)
 				return(JS_FALSE);
-			*vp = STRING_TO_JSVAL(js_str);
-			return(JS_TRUE);
+			break;
 		case CON_PROP_CTERM_VERSION:
 			val=sbbs->cterm_version;
 			break;
@@ -168,13 +172,11 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CON_PROP_WORDWRAP:
 			if((js_str=JS_NewStringCopyZ(cx, sbbs->wordwrap))==NULL)
 				return(JS_FALSE);
-			*vp = STRING_TO_JSVAL(js_str);
-			return(JS_TRUE);
+			break;
 		case CON_PROP_QUESTION:
 			if((js_str=JS_NewStringCopyZ(cx, sbbs->question))==NULL)
 				return(JS_FALSE);
-			*vp = STRING_TO_JSVAL(js_str);
-			return(JS_TRUE);
+			break;
 		case CON_PROP_CTRLKEY_PASSTHRU:
 			val=sbbs->cfg.ctrlkey_passthru;
 			break;
@@ -200,11 +202,43 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = sbbs->keybuf_space();
 			break;
 
+		case CON_PROP_YES_KEY:
+			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[Yes], 1)) == NULL)
+				return JS_FALSE;
+			break;
+		case CON_PROP_NO_KEY:
+			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[No], 1)) == NULL)
+				return JS_FALSE;
+			break;
+		case CON_PROP_QUIT_KEY:
+			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[Quit], 1)) == NULL)
+				return JS_FALSE;
+			break;
+		case CON_PROP_ALL_KEY:
+			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[All], 1)) == NULL)
+				return JS_FALSE;
+			break;
+		case CON_PROP_LIST_KEY:
+			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[List], 1)) == NULL)
+				return JS_FALSE;
+			break;
+		case CON_PROP_NEXT_KEY:
+			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[Next], 1)) == NULL)
+				return JS_FALSE;
+			break;
+		case CON_PROP_PREV_KEY:
+			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[Previous], 1)) == NULL)
+				return JS_FALSE;
+			break;
+
 		default:
 			return(JS_TRUE);
 	}
 
-	*vp = INT_TO_JSVAL(val);
+	if(js_str != NULL)
+		*vp = STRING_TO_JSVAL(js_str);
+	else
+		*vp = INT_TO_JSVAL(val);
 
 	return(JS_TRUE);
 }
@@ -393,6 +427,13 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{	"output_rate"		,CON_PROP_OUTPUT_RATE		,JSPROP_ENUMERATE, 31702},
 	{	"keyboard_buffer_level",CON_PROP_KEYBUF_LEVEL	,JSPROP_ENUMERATE|JSPROP_READONLY, 31800},
 	{	"keyboard_buffer_space",CON_PROP_KEYBUF_SPACE	,JSPROP_ENUMERATE|JSPROP_READONLY, 31800},
+	{	"yes_key"			,CON_PROP_YES_KEY			,JSPROP_ENUMERATE|JSPROP_READONLY, 32000},
+	{	"no_key"			,CON_PROP_NO_KEY			,JSPROP_ENUMERATE|JSPROP_READONLY, 32000},
+	{	"quit_key"			,CON_PROP_QUIT_KEY			,JSPROP_ENUMERATE|JSPROP_READONLY, 32000},
+	{	"all_key"			,CON_PROP_ALL_KEY			,JSPROP_ENUMERATE|JSPROP_READONLY, 32000},
+	{	"list_key"			,CON_PROP_LIST_KEY			,JSPROP_ENUMERATE|JSPROP_READONLY, 32000},
+	{	"next_key"			,CON_PROP_NEXT_KEY			,JSPROP_ENUMERATE|JSPROP_READONLY, 32000},
+	{	"prev_key"			,CON_PROP_PREV_KEY			,JSPROP_ENUMERATE|JSPROP_READONLY, 32000},
 	{0}
 };
 
@@ -443,6 +484,13 @@ static const char* con_prop_desc[] = {
 	,"Emulated serial data output rate, in bits-per-second (0 = unlimited)"
 	,"Number of characters currently in the keyboard input buffer (from <tt>ungetstr</tt>) - <small>READ ONLY</small>"
 	,"Number of character spaces available in the keyboard input buffer - <small>READ ONLY</small>"
+	,"Key associated with a positive acknowledgment (e.g. 'Y') - <small>READ ONLY</small>"
+	,"Key associated with a negative acknowledgment (e.g. 'N') - <small>READ ONLY</small>"
+	,"Key associated with a exiting a menu (e.g. 'Q') - <small>READ ONLY</small>"
+	,"Key associated with selecting all available options (e.g. 'A') - <small>READ ONLY</small>"
+	,"Key associated with listing all available options (e.g. 'L') - <small>READ ONLY</small>"
+	,"Key associated with selecting next available option (e.g. 'N') - <small>READ ONLY</small>"
+	,"Key associated with selecting previous available option (e.g. 'P') - <small>READ ONLY</small>"
 	,NULL
 };
 #endif

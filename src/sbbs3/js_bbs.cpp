@@ -1706,6 +1706,33 @@ js_atcode(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_expand_atcodes(JSContext* cx, uintN argc, jsval* arglist)
+{
+	jsval* argv = JS_ARGV(cx, arglist);
+	sbbs_t* sbbs;
+	char	result[256] = "";
+	char*	instr;
+	jsrefcount	rc;
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+
+	if (!js_argc(cx, argc, 1))
+		return JS_FALSE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], instr, NULL);
+	if (instr == NULL)
+		return JS_FALSE;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	sbbs->expand_atcodes(instr, result, sizeof result);
+	free(instr);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, result)));
+
+	return JS_TRUE;
+}
 
 static JSBool
 js_logkey(JSContext *cx, uintN argc, jsval *arglist)
@@ -4386,18 +4413,25 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Returns @-code value, specified <i>code</i> string does not include @ character delimiters")
 	,310
 	},
+	{"expand_atcodes",	js_expand_atcodes,	1,	JSTYPE_STRING,	JSDOCSTR("string")
+	,JSDOCSTR("Returns string with @-code expanded values (formatting and some @-codes are not supported)")
+	,320
+	},
 	/* text.dat */
-	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("line_number")
-	,JSDOCSTR("Returns specified text string from text.dat")
+	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("index_number")
+	,JSDOCSTR("Returns current text string (specified via 1-based string index number)"
+		"from text.dat/text.ini or replacement text or <i>null</i> upon error<br>"
+		"<i>New in v3.20:</i> Use <tt>bbs.text.<i>ID</i><tt> to obtain a text string index number from its corresponding ID (name)"
+	)
 	,310
 	},
-	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("line_number, text")
-	,JSDOCSTR("Replaces specified text string in memory")
+	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("index_number, text")
+	,JSDOCSTR("Replaces specified text.dat/text.ini string in memory")
 	,310
 	},
-	{"revert_text",		js_revert_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[line_number=<i>all</i>]")
-	,JSDOCSTR("Reverts specified text string to original text string; "
-		"if <i>line_number</i> unspecified, reverts all text lines")
+	{"revert_text",		js_revert_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[index_number=<i>all</i>]")
+	,JSDOCSTR("Reverts specified text string to original text.dat/text.ini string; "
+		"if <i>index_number</i> unspecified, reverts all text lines")
 	,310
 	},
 	{"load_text",		js_load_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename")
@@ -4884,6 +4918,8 @@ JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)
 
 	if((mods=JS_DefineObject(cx, obj, "mods", NULL, NULL ,JSPROP_ENUMERATE))==NULL)
 		return(NULL);
+
+	js_CreateTextProperties(cx, obj);
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,mods,"Global repository for 3rd party modifications",312);

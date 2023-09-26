@@ -768,7 +768,7 @@ char *u32toaf(uint32_t l,char *str)
 /****************************************************************************/
 /* Returns the actual attribute code from a string of ATTR characters       */
 /****************************************************************************/
-uint attrstr(char *str)
+uint attrstr(const char *str)
 {
 	int atr;
 	ulong l=0;

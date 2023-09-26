@@ -333,7 +333,7 @@ void sbbs_t::new_scan_ptr_cfg()
 			}
 			if(s==-1 || !s || s==quit_key())
 				break;
-			if(s==*text[AllKey]) {    /* The entire group */
+			if(s == all_key()) {    /* The entire group */
 				mnemonics(text[SetMsgPtrPrompt]);
 				SAFEPRINTF2(keys, "%s%c", text[DateLastKeys], quit_key());
 				s=getkeys(keys, 9999);

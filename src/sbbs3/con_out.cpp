@@ -701,8 +701,7 @@ int sbbs_t::outchar(char ch)
 		return 0;
 
 	if((console&CON_R_ECHOX) && (uchar)ch>=' ' && outchar_esc == ansiState_none) {
-		ch=text[YNQP][3];
-		if(text[YNQP][2]==0 || ch==0) ch='X';
+		ch = *text[PasswordChar];
 	}
 	if(ch==FF)
 		clearscreen(term);

@@ -249,8 +249,9 @@ static const char* getpath(scfg_t* cfg, const char* path)
 	return path;
 }
 
-const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool centered, JSObject* obj)
+const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode, bool centered, JSObject* obj)
 {
+	char	tmp[128];
 	char*	tp = NULL;
 	int		i;
 	uint	ugrp;
@@ -692,12 +693,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 	}
 
 	if(strncmp(sp, "DATE:", 5) == 0 || strncmp(sp, "TIME:", 5) == 0) {
-		sp += 5;
-		c_unescape_str(sp);
+		SAFECOPY(tmp, sp + 5);
+		c_unescape_str(tmp);
 		now = time(NULL);
 		memset(&tm, 0, sizeof(tm));
 		localtime_r(&now, &tm);
-		strftime(str, maxlen, sp, &tm);
+		strftime(str, maxlen, tmp, &tm);
 		return str;
 	}
 
@@ -871,12 +872,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 	}
 
 	if(strncmp(sp, "FILL:", 5) == 0) {
-		sp += 5;
+		SAFECOPY(tmp, sp + 5);
 		int margin = centered ? column : 1;
 		if(margin < 1) margin = 1;
-		c_unescape_str(sp);
-		while(*sp && online && column < cols - margin)
-			bputs(sp, P_TRUNCATE);
+		c_unescape_str(tmp);
+		while(*tmp && online && column < cols - margin)
+			bputs(tmp, P_TRUNCATE);
 		return nulstr;
 	}
 
@@ -1012,14 +1013,14 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 		return format_birthdate(&cfg, useron.birth, str, maxlen);
 
 	if(strncmp(sp, "BDATE:", 6) == 0 || strncmp(sp, "BIRTH:", 6) == 0) {
-		sp += 6;
-		c_unescape_str(sp);
+		SAFECOPY(tmp, sp + 6);
+		c_unescape_str(tmp);
 		memset(&tm,0,sizeof(tm));
 		tm.tm_year = getbirthyear(useron.birth) - 1900;
 		tm.tm_mon = getbirthmonth(&cfg, useron.birth) - 1;
 		tm.tm_mday = getbirthday(&cfg, useron.birth);
 		mktime(&tm);
-		strftime(str, maxlen, sp, &tm);
+		strftime(str, maxlen, tmp, &tm);
 		return str;
 	}
 
@@ -1043,12 +1044,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 		return(unixtodstr(&cfg,useron.pwmod,str));
 
 	if(strncmp(sp, "PWDATE:", 7) == 0) {
-		sp += 7;
-		c_unescape_str(sp);
+		SAFECOPY(tmp, sp + 7);
+		c_unescape_str(tmp);
 		memset(&tm, 0, sizeof(tm));
 		time_t date = useron.pwmod;
 		localtime_r(&date, &tm);
-		strftime(str, maxlen, sp, &tm);
+		strftime(str, maxlen, tmp, &tm);
 		return str;
 	}
 
@@ -1061,12 +1062,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 		return(unixtodstr(&cfg,useron.firston,str));
 
 	if(strncmp(sp, "SINCE:", 6) == 0) {
-		sp += 6;
-		c_unescape_str(sp);
+		SAFECOPY(tmp, sp + 6);
+		c_unescape_str(tmp);
 		memset(&tm, 0, sizeof(tm));
 		time_t date = useron.firston;
 		localtime_r(&date, &tm);
-		strftime(str, maxlen, sp, &tm);
+		strftime(str, maxlen, tmp, &tm);
 		return str;
 	}
 
@@ -1135,12 +1136,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 		return(unixtodstr(&cfg,useron.laston,str));
 
 	if(strncmp(sp, "LASTON:", 7) == 0) {
-		sp += 7;
-		c_unescape_str(sp);
+		SAFECOPY(tmp, sp + 7);
+		c_unescape_str(tmp);
 		memset(&tm, 0, sizeof(tm));
 		time_t date = useron.laston;
 		localtime_r(&date, &tm);
-		strftime(str, maxlen, sp, &tm);
+		strftime(str, maxlen, tmp, &tm);
 		return str;
 	}
 
@@ -1165,12 +1166,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 		return(unixtodstr(&cfg,useron.firston,str));
 
 	if(strncmp(sp, "FIRSTON:", 8) == 0) {
-		sp += 8;
-		c_unescape_str(sp);
+		SAFECOPY(tmp, sp + 8);
+		c_unescape_str(tmp);
 		memset(&tm, 0, sizeof(tm));
 		time_t date = useron.firston;
 		localtime_r(&date, &tm);
-		strftime(str, maxlen, sp, &tm);
+		strftime(str, maxlen, tmp, &tm);
 		return str;
 	}
 
@@ -1343,12 +1344,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 		return(unixtodstr(&cfg,(time32_t)ns_time,str));
 
 	if(strncmp(sp, "LASTNEW:", 8) == 0) {
-		sp += 8;
-		c_unescape_str(sp);
+		SAFECOPY(tmp, sp + 8);
+		c_unescape_str(tmp);
 		memset(&tm, 0, sizeof(tm));
 		time_t date = ns_time;
 		localtime_r(&date, &tm);
-		strftime(str, maxlen, sp, &tm);
+		strftime(str, maxlen, tmp, &tm);
 		return str;
 	}
 
@@ -1415,12 +1416,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 	if(strncmp(sp, "EXPDATE:", 8) == 0) {
 		if(!useron.expire)
 			return nulstr;
-		sp += 8;
-		c_unescape_str(sp);
+		SAFECOPY(tmp, sp + 8);
+		c_unescape_str(tmp);
 		memset(&tm, 0, sizeof(tm));
 		time_t date = useron.expire;
 		localtime_r(&date, &tm);
-		strftime(str, maxlen, sp, &tm);
+		strftime(str, maxlen, tmp, &tm);
 		return str;
 	}
 
@@ -1578,10 +1579,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 	}
 
 	if(!strncmp(sp,"GOTOXY:",7)) {
-		tp=strchr(sp,',');
-		if(tp!=NULL) {
-			tp++;
-			cursor_xy(atoi(sp+7),atoi(tp));
+		const char* cp=strchr(sp,',');
+		if(cp!=NULL) {
+			cp++;
+			cursor_xy(atoi(sp+7),atoi(cp));
 		}
 		return(nulstr);
 	}
@@ -1887,7 +1888,6 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 		if(current_msg->from_ext!=NULL)
 			safe_snprintf(str,maxlen,"%s #%s",current_msg_from,current_msg->from_ext);
 		else if(current_msg->from_net.addr != NULL) {
-			char tmp[128];
 			safe_snprintf(str,maxlen,"%s (%s)",current_msg_from
 				,smb_netaddrstr(&current_msg->from_net,tmp));
 		} else
@@ -2191,3 +2191,29 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, int* pmode, bool 
 
 	return gettext(sp);
 }
+
+char* sbbs_t::expand_atcodes(const char* src, char* buf, size_t size)
+{
+	char* dst = buf;
+	char* end = dst + size;
+
+	while (*src != '\0' && dst < end) {
+		if (*src == '@') {
+			char str[32];
+			SAFECOPY(str, src + 1);
+			char* at = strchr(str, '@');
+			const char* sp = strchr(str, ' ');
+			if (at != NULL && (sp == NULL || sp > at)) {
+				char tmp[128];
+				*at = '\0';
+				src += strlen(str) + 2;
+				dst += strlcpy(dst, atcode(str, tmp, sizeof tmp, NULL, false, NULL), end - dst);
+				continue;
+			}
+		}
+		*(dst++) = *(src++);
+	}
+	*dst = '\0';
+	return buf;
+}
+

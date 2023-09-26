@@ -526,13 +526,15 @@ public:
 	/*********************************/
 	/* Color Configuration Variables */
 	/*********************************/
-	char 	*text[TOTAL_TEXT]{};			/* Text from ctrl\text.dat */
-	char 	*text_sav[TOTAL_TEXT]{};		/* Text from ctrl\text.dat */
-	char	yes_key(void) { return toupper(text[YNQP][0]); }
-	char	no_key(void) { return toupper(text[YNQP][1]); }
-	char	quit_key(void) { return toupper(text[YNQP][2]); }
-	char	all_key(void) { return toupper(text[AllKey][0]); }
-	char	list_key(void) { return toupper(text[ListKey][0]); }
+	char 	*text[TOTAL_TEXT]{};			/* Text from text.dat/text.ini */
+	char 	*text_sav[TOTAL_TEXT]{};		/* Text from text.dat/text.ini */
+	char	yes_key(void) { return toupper(*text[Yes]); }
+	char	no_key(void) { return toupper(*text[No]); }
+	char	quit_key(void) { return toupper(*text[Quit]); }
+	char	all_key(void) { return toupper(*text[All]); }
+	char	list_key(void) { return toupper(*text[List]); }
+	char	next_key(void) { return toupper(*text[Next]); }
+	char	prev_key(void) { return toupper(*text[Previous]); }
 
 	char 	dszlog[127]{};	/* DSZLOG environment variable */
     int     keybuftop=0, keybufbot=0;    /* Keyboard input buffer pointers (for ungetkey) */
@@ -968,7 +970,8 @@ public:
 
 	/* atcodes.cpp */
 	int		show_atcode(const char *code, JSObject* obj = NULL);
-	const char*	atcode(char* sp, char* str, size_t maxlen, int* pmode = NULL, bool centered = false, JSObject* obj = NULL);
+	const char*	atcode(const char* sp, char* str, size_t maxlen, int* pmode = NULL, bool centered = false, JSObject* obj = NULL);
+	char* expand_atcodes(const char* src, char* buf, size_t size);
 
 	/* getnode.cpp */
 	int		getsmsg(int usernumber, bool clearline = false);
@@ -1420,6 +1423,7 @@ extern "C" {
 													,scfg_t* cfg, time_t uptime
 													,char* host_name
 													,char* socklib_desc);
+	DLLEXPORT JSBool	js_CreateTextProperties(JSContext* cx, JSObject* parent);
 
 	/* js_client.c */
 #ifdef USE_CRYPTLIB

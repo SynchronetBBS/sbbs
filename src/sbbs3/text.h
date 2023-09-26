@@ -4,7 +4,7 @@
 
 /****************************************************************************/
 /* Macros for elements of the array of pointers (text[]) to static text		*/
-/* Auto-generated from CTRL\TEXT.DAT										*/
+/* Auto-generated from ctrl/text.dat 										*/
 /****************************************************************************/
 
 #ifndef _TEXT_H
@@ -14,7 +14,7 @@ extern
 #ifdef __cplusplus
 "C"
 #endif
-const char* const text_id[]; 
+const char* const text_id[];
 
 enum {
 	 MsgSubj
@@ -156,8 +156,8 @@ enum {
 	,SubPtrLstFmt
 	,WhichOrAll
 	,RawMsgInputModeIsNow
-	,OFF
-	,ON
+	,Unused140 /* was OFF */
+	,Unused141 /* was ON */
 	,PagingUser
 	,SystemStatsHdr
 	,NodeStatsHdr
@@ -736,7 +736,7 @@ enum {
 	,NodeActionPrivateChat
 	,NodeActionPaging
 	,NodeActionRetrieving
-	,YNQP /* (Yes/No/Quit/Password chars) */
+	,Unused720 /* Used to be YNQP */
 	,ViewSignatureQ
 	,DeleteSignatureQ
 	,CreateEditSignatureQ
@@ -869,9 +869,9 @@ enum {
 	,DateLastKeys
 	,DirLibKeys
 	,SubGroupKeys
-	,AllKey
+	,Unused853
 	,All
-	,ListKey
+	,List
 	,InternetMailReceived
 	,InternetMailForwarded
 	,FidoNetMailReceived
@@ -882,6 +882,13 @@ enum {
 	,NewUserValEmailSubj
 	,InactivityAlert
 	,None
+	,Which
+	,Next
+	,Previous
+	,Quit
+	,Language
+	,LANG
+	,PasswordChar
 
 	,TOTAL_TEXT
 };

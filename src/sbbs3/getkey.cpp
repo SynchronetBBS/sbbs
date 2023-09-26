@@ -173,25 +173,28 @@ char sbbs_t::getkey(int mode)
 /****************************************************************************/
 /* Outputs a string highlighting characters preceded by a tilde             */
 /****************************************************************************/
-void sbbs_t::mnemonics(const char *str)
+void sbbs_t::mnemonics(const char *instr)
 {
     const char *ctrl_a_codes;
     size_t l;
 
-	if(!strchr(str,'~')) {
-		mnestr=str;
-		bputs(str);
+	if(!strchr(instr,'~')) {
+		mnestr= instr;
+		bputs(instr);
 		return; 
 	}
-	ctrl_a_codes=strchr(str,1);
+	ctrl_a_codes=strchr(instr,1);
 	if(!ctrl_a_codes) {
-		if(str[0]=='@' && str[strlen(str)-1]=='@' && !strchr(str,' ')) {
-			mnestr=str;
-			bputs(str);
+		const char* last = lastchar(instr);
+		if(instr[0] == '@' && *last == '@' && strchr(instr + 1, '@') == last && strchr(instr, ' ') == NULL) {
+			mnestr= instr;
+			bputs(instr);
 			return; 
 		}
 		attr(cfg.color[clr_mnelow]); 
 	}
+	char str[256];
+	expand_atcodes(instr, str, sizeof str);
 	l=0L;
 	int term = term_supports();
 
@@ -235,13 +238,6 @@ void sbbs_t::mnemonics(const char *str)
 					break;
 				ctrl_a(str[l++]);
 			} else {
-				if(str[l] == '@') {
-					int i = show_atcode(str + l);
-					if(i) {
-						l += i;
-						continue;
-					}
-				}
 				outchar(str[l++]);
 			}
 		} 

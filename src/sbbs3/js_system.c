@@ -2296,8 +2296,8 @@ static jsSyncMethodSpec js_system_functions[] = {
 		"returns <i>true</i> on success")
 	,315
 	},
-	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("number")
-	,JSDOCSTR("Returns specified text string from text.dat (like <tt>bbs.text()</tt>) or returns <i>null</i> upon error")
+	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("index_number")
+	,JSDOCSTR("Returns specified text string (see <tt>bbs.text()</tt> for details)")
 	,31802
 	},
 	{0}
@@ -2761,6 +2761,22 @@ static void js_system_finalize(JSContext *cx, JSObject *obj)
 	JS_SetPrivate(cx, obj, NULL);
 }
 
+JSBool js_CreateTextProperties(JSContext* cx, JSObject* parent)
+{
+	jsval val;
+
+	if (!JS_GetProperty(cx, parent, "text", &val))
+		return JS_FALSE;
+
+	JSObject* text = JSVAL_TO_OBJECT(val);
+	for (int i = 0; i < TOTAL_TEXT; ++i) {
+		val = INT_TO_JSVAL(i + 1);
+		if(!JS_SetProperty(cx, text, text_id[i], &val))
+			return JS_FALSE;
+	}
+	return JS_TRUE;
+}
+
 JSClass js_system_class = {
      "System"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
@@ -2818,6 +2834,8 @@ JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
 	val=DOUBLE_TO_JSVAL((double)uptime);
 	if(!JS_SetProperty(cx, sysobj, "uptime", &val))
 		return(NULL);
+
+	js_CreateTextProperties(cx, sysobj);
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,sysobj,"Global system-related properties and methods",310);
