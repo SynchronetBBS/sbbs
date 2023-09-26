@@ -1,3 +1,9 @@
+// Add to credits portion:
+//  - Minesweeper (lots of code copied from it)
+//  - http://patorjk.com/software/taag/#p=display&f=ANSI%20Shadow&t=Mastrmind (for the fonts)
+//  - http://codelobe.com/tools/cp437-converter (for converting the fonts from unicode to cp437)
+// TODO:
+//  - Initial message saying Press N to begin should be clickable
 'use strict';
 
 require('sbbsdefs.js', 'K_NONE');
@@ -50,9 +56,7 @@ else {
 
 function add_hotspots() {
     console.clear_hotspots();
-    console.add_hotspot('H', false, 21, 39, 10); // High Scores List
-    console.add_hotspot('N', false, 21, 31, 11); // New Game
-    console.add_hotspot('Q', false, 21, 32, 12); // Quit
+    console.add_hotspot('H', false, 1, 4, 23); // Help
 }
 
 // Check to see if we ran out of guesses
@@ -352,11 +356,12 @@ function get_winners() {
 	return list;
 }
 
-// TODOX Needs fixing
 function handle_board_click(x, y) {
+    return false; // TODOX Needs fixing
+
     var piece_columns = [];
     for (var i = 0; i < 4; i++) {
-        piece_columns[i] = piece_origin.x + (piece_offset_x * i);
+        piece_columns[i] = piece_origin.x + (piece_offset.x * i);
     }
 
     // Confirm click was on current row
@@ -421,9 +426,11 @@ function main() {
     // Call new_game to draw screen and init variables, but then flag as game_over so user has to hit N to start (and we get an accurate game duration)
     new_game(0);
     game_over = true;
-    set_message('Welcome to ' + program_name + ' v' + program_version + '.  Press N to begin.');
-
+    
     mouse_enable(true);
+
+    console.add_hotspot('N', false, 49, 65, 6);
+    set_message('Welcome to ' + program_name + ' v' + program_version + '.  Press N to begin.');
 
     do {
         var mk = mouse_getkey(K_NONE, 1000, true);
@@ -503,8 +510,8 @@ function main() {
 
                 if (!game_over) { 
                     console.clear_hotspots();
-                    console.add_hotspot('Y', false, 66, 68, 23);
-                    console.add_hotspot('N', false, 72, 73, 23);
+                    console.add_hotspot('Y', false, 58, 60, 6);
+                    console.add_hotspot('N', false, 64, 65, 6);
 
                     set_message('Are you sure you want to start a new game? [ Yes / No ] ');
                     ch = mouse_getkeys('NY');
@@ -521,10 +528,10 @@ function main() {
                 // If we still want to start a new game, prompt for level
                 if (ch === 'N') {
                     console.clear_hotspots();
-                    console.add_hotspot('1', false, 34, 40, 23);
-                    console.add_hotspot('2', false, 43, 51, 23);
-                    console.add_hotspot('3', false, 54, 60, 23);
-                    console.add_hotspot('A', false, 63, 70, 23);
+                    console.add_hotspot('1', false, 29, 35, 6);
+                    console.add_hotspot('2', false, 38, 46, 6);
+                    console.add_hotspot('3', false, 49, 55, 6);
+                    console.add_hotspot('A', false, 58, 65, 6);
 
                     set_message('What level?  1) Easy, 2) Normal, 3) Hard, A) Abort ');
                     ch = mouse_getkeys('123A');
@@ -551,8 +558,8 @@ function main() {
                 // Prompt to quit if in middle of game
                 if (!game_over) {
                     console.clear_hotspots();
-                    console.add_hotspot('Y', false, 54, 56, 23);
-                    console.add_hotspot('N', false, 60, 61, 23);
+                    console.add_hotspot('Y', false, 52, 54, 6);
+                    console.add_hotspot('N', false, 58, 59, 6);
 
                     var saved_message = last_message;
                     set_message('Are you sure you want to quit? [ Yes / No ] ');
