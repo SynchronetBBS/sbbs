@@ -12,8 +12,8 @@ const colour_width = 2;
 const debug = true;
 const level_names = ['Unknown', 'Easy', 'Normal', 'Hard'];
 const max_guesses = 12;
-const message_origin = { x: 21, y: 24 };
-const message_width = 79 - message_origin.y + 1;
+const message_origin = { x: 7, y: 7 };
+const message_width = 70;
 const peg_colours = [BLACK, BLACK, WHITE];
 const peg_offset = { x: 5, y: 0 };
 const peg_origin = { x: 9, y: 21 };
@@ -22,7 +22,7 @@ const piece_names = ['Red', 'Yellow', 'Green', 'Blue', 'Black', 'White', 'Magent
 const piece_offset = { x: 0, y: 3 };
 const piece_origin = { x: 9, y: 9 };   
 const program_name = 'Mastrmind';
-const program_version = '23.09.24';
+const program_version = '23.09.26';
 const row_offset_x = 5;
 const tear_line = '\r\n--- ' + js.exec_file + ' v' + program_version + '\r\n';
 const winner_subject = program_name + ' Winner' + (debug ? ' (debug mode)' : '');
@@ -686,16 +686,15 @@ function redraw_screen() {
 function set_message(message) {
     last_message = message;
 
-    message = ' ' + message;
-    if (message.length > message_width) {
-        message = message.substring(0, message_width);
-    } else {
-        while (message.length < message_width) {
-            message += ' ';
-        }
+    while (message.length < message_width) {
+        message = ' ' + message + ' ';
     }
 
-    console.attributes = BLACK | BG_LIGHTGRAY;
+    if (message.length > message_width) {
+        message = message.substring(0, message_width);
+    }
+
+    console.attributes = YELLOW;
     console.gotoxy(message_origin.x, message_origin.y);
     console.write(message);
     console.attributes = LIGHTGRAY;
