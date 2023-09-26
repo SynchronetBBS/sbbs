@@ -5121,10 +5121,9 @@ NO_SSH:
 	recycle_semfiles = semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
 	clear_attempts_semfiles = semfile_list_init(scfg.ctrl_dir,"clear", server_abbrev);
 	semfile_list_add(&recycle_semfiles,startup->ini_fname);
-	SAFEPRINTF(str,"%stext.dat",scfg.ctrl_dir);
-	semfile_list_add(&recycle_semfiles,str);
-	SAFEPRINTF(str,"%sattr.cfg",scfg.ctrl_dir);
-	semfile_list_add(&recycle_semfiles,str);
+	strListAppendFormat(&recycle_semfiles, "%stext.dat", scfg.ctrl_dir);
+	strListAppendFormat(&recycle_semfiles, "%stext.ini", scfg.ctrl_dir);
+	strListAppendFormat(&recycle_semfiles, "%sattr.cfg", scfg.ctrl_dir);
 	if(!initialized)
 		semfile_list_check(&initialized,shutdown_semfiles);
 	semfile_list_check(&initialized,recycle_semfiles);
