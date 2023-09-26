@@ -54,7 +54,7 @@
 	"\1h%s\1n\r\n"
 "\1n\1m\r\nMail forwarded to \1h%s\1n\r\n"                    041 Forwarded
 "\1b\1hAuto message by: \1c%s\1b on %s\1n\r\n\r\n"            042 AutoMsgBy
-"\r\nAuto Message - ~Read, ~Write, or ~Quit: "          043 AutoMsg
+"\r\nAuto Message - ~Read, ~Write, or ~@Quit@: "          043 AutoMsg
 "\1n\r\nYou can't write to the auto-message.\r\n"        044 R_AutoMsg
 "\1n\r\nYou have no %s.\r\n"                           045 NoMailWaiting
 "\1_\r\n\1q\1g\1hMail Waiting (%s first):\r\n\r\n"     046 MailWaitingLstHdr
@@ -112,18 +112,18 @@
 "\r\n\r\nNo text file sections available.\r\n"          080 NoTextSections
 "\1l\1_\1c\1hGeneral Text File Sections:\r\n\r\n"           081 TextSectionLstHdr
 "\1n\1c<\1h%d\1n\1c> %s\r\n"                                082 TextSectionLstFmt
-"\1_\r\n\1cWhich or \1h~Q\1n\1cuit: \1h"                      083 WhichTextSection
+"\1_\r\n\1c@Which@ or \1h~Q\1n\1cuit: \1h"                      083 WhichTextSection
 "\1l\1_\1c\1h%s Files:\r\n\r\n"                             084 TextFilesLstHdr
 "\1c\1h%3d: \1n\1c%s"                                      085 TextFilesLstFmt
-"\r\nWhich, ~Add, ~Remove, ~Edit, or ~Quit: "           086 WhichTextFileSysop
-"\1_\r\n\1n\1cWhich or \1h~Q\1n\1cuit: \1h"                    087 WhichTextFile
+"\r\n@Which@, ~Add, ~Remove, ~Edit, or ~@Quit@: "           086 WhichTextFileSysop
+"\1_\r\n\1n\1c@Which@ or \1h~Q\1n\1cuit: \1h"                    087 WhichTextFile
 "\1_\r\n\1y\1hBefore which file [last]: \1n"            088 AddTextFileBeforeWhich
 "\r\nPath and filename (no path indicates "\            089 AddTextFilePath
 	"%stext/%s/filename):\r\n"
 "Description:\r\n"                                      090 AddTextFileDesc
-"\1_\r\n\1y\1hRemove which: \1n"                            091 RemoveWhichTextFile
+"\1_\r\n\1y\1hRemove @Which@: \1n"                            091 RemoveWhichTextFile
 "Delete %s"                                             092 DeleteTextFileQ
-"\1_\r\n\1y\1hEdit which: \1n"                              093 EditWhichTextFile
+"\1_\r\n\1y\1hEdit @Which@: \1n"                              093 EditWhichTextFile
 "\r\nSearch all groups for new messages"                094 NScanAllGrpsQ
 "\r\nSearch all groups for un-read messages to you"     095 SScanAllGrpsQ
 "\r\nAre you sure"                                      096 AreYouSureQ
@@ -161,21 +161,21 @@
 "\r\n\1q\1_\1g\1hMessage Groups\1n\1g                    "\     127 GrpLstHdr
 	"                        Sub-boards\r\n\r\n\1h"
 "\1n\1g[\1h%u\1n\1g] %-40s %12s \1h%4u\r\n"                  128 GrpLstFmt
-"\r\nGroup to configure new message scan or ~Quit: "    129 NScanCfgWhichGrp
-"\r\nGroup to configure your message scan or ~Quit: "   130 SScanCfgWhichGrp
+"\r\nGroup to configure new message scan or ~@Quit@: "    129 NScanCfgWhichGrp
+"\r\nGroup to configure your message scan or ~@Quit@: "   130 SScanCfgWhichGrp
 "\1l\1-\1gSub-boards of \1h%s:\r\n\r\n\1h"                   131 CfgSubLstHdr
 "\1n\1g[\1h%d\1n\1g] %-40.40s  \1h%s\r\n"                    132 CfgSubLstFmt
 "\1l\1_\1g\1hMessage Groups:\r\n\r\n"                       133 CfgGrpLstHdr
 "\1n\1g[\1h%d\1n\1g] %s\1h\r\n"                              134 CfgGrpLstFmt
 "\r\nSub-board to toggle new message scan"\             135 NScanCfgWhichSub
-	", ~All, or ~Quit: "
+	", ~@All@, or ~@Quit@: "
 "\r\nSub-board to toggle your message scan"\            136 SScanCfgWhichSub
-	", ~All, or ~Quit: "
+	", ~@All@, or ~@Quit@: "
 "\1n\1g[\1h%d\1n\1g] %-40.40s  \1h\1c%s\r\n"                  137 SubPtrLstFmt
-"\r\nSet new-scan pointer for which, ~All, or ~Quit: "  138 WhichOrAll
+"\r\nSet new-scan pointer for @Which@, ~@All@, or ~@Quit@: "  138 WhichOrAll
 "\r\nRaw Input/Output Mode is now: \1h"                 139 RawMsgInputModeIsNow
-"OFF"                                                   140 OFF
-"ON"                                                    141 ON
+"OFF"                                                   140 Unused140 /* was OFF */
+"ON"                                                    141 Unused141 /* was ON */
 "\r\n\1n\1mPaging \1h%s #%u\1n\1m for private chat\r\n" 142 PagingUser
 "\r\n\1-\1gSystem Statistics:\r\n\r\n\1n"                  143 SystemStatsHdr
 "\r\n\1-\1gNode #%d Statistics:\r\n\r\n\1n"                144 NodeStatsHdr
@@ -273,8 +273,8 @@
 " [%d/%d]"                                              224 FileOneOfTwo
 "\r\n\1-\1gEnter a description now.\r\n: "                225 EnterDescNow
 "No description given."                                 226 NoDescription
-"\r\nProtocol or ~Quit: "                               227 ProtocolOrQuit
-"\r\nProtocol, ~Batch or ~Quit: "                       228 ProtocolBatchOrQuit
+"\r\nProtocol or ~@Quit@: "                               227 ProtocolOrQuit
+"\r\nProtocol, ~Batch or ~@Quit@: "                       228 ProtocolBatchOrQuit
 "\r\n\7\1r\1h\1iBatch upload queue is full.\1n\r\n"         229 BatchUlQueueIsFull
 "\r\n\1n\1m\1h%s \1n\1madded to batch upload queue"\         230 FileAddedToUlQueue
 	"\1c - Files: \1h%u \1n\1c(\1h%u\1n\1c Max)\r\n"
@@ -286,8 +286,8 @@
 	"\1w~E\1yxtended info, "\
 	"\1w~V\1yiew file, "\
 	"\1w~Q\1yuit, \1w~P\1yrev or [~Next]: \1w"
-"\r\n~Quit or [~Next]: "                                233 QuitOrNext
-"~Remove, ~Move, ~Edit, ~Desc, ~View, ~Quit, ~Prev or [~Next]: " 234 RExemptRemoveFilePrompt
+"\r\n~@Quit@ or [~Next]: "                                233 QuitOrNext
+"~Remove, ~Move, ~Edit, ~Desc, ~View, ~@Quit@, ~Prev or [~Next]: " 234 RExemptRemoveFilePrompt
 "\1n(%d) %s\r\n"                                         235 MoveToLibLstFmt
 "\1_\r\n\1y\1hLibrary [%d]: \1n"                            236 MoveToLibPrompt
 "\1n(%d) %s\r\n"                                         237 MoveToDirLstFmt
@@ -295,8 +295,8 @@
 "%s moved to %s %s.\r\n"                                239 MovedFile
 "\r\nClose file record"                                 240 CloseFileRecordQ
 "~Remove, ~Credits, ~File only, ~Move, ~Edit, "\        241 SysopRemoveFilePrompt
-	"~Desc, ~View, ~Quit, ~Prev or [~Next]: "
-"~Remove, ~Edit, ~Desc, ~View, ~Quit, ~Prev or [~Next]: "   242 UserRemoveFilePrompt
+	"~Desc, ~View, ~@Quit@, ~Prev or [~Next]: "
+"~Remove, ~Edit, ~Desc, ~View, ~@Quit@, ~Prev or [~Next]: "   242 UserRemoveFilePrompt
 "\r\n\1n\1r\1hFile does not exist: \1c%s\1n\r\n"        243 FileDoesNotExist
 "\7\r\n\1r\1h\1iCouldn't remove '%s'.\1n\r\n"               244 CouldntRemoveFile
 "Delete file"                                           245 DeleteFileQ
@@ -319,7 +319,7 @@
 "\r\n\1w\1hYou only have %s credits.\r\n"                 261 YouOnlyHaveNCredits
 "\r\nYou don't have enough credits.\r\n"                262 NotEnoughCredits
 "\r\n\1w\1hNot enough time left to transfer.\r\n"         263 NotEnoughTimeToDl
-"\r\nProtocol, ~Batch, ~Quit, or [~Next]: "             264 ProtocolBatchQuitOrNext
+"\r\nProtocol, ~Batch, ~@Quit@, or [~Next]: "             264 ProtocolBatchQuitOrNext
 "\r\nBulk Upload %s %s Directory\r\n"\                  265 BulkUpload
 	"(Enter '-' for description to skip file):\r\n"
 "\1_\1y\1h%-12s\1w%7uk\1b:"                             266 BulkUploadDescPrompt
@@ -352,7 +352,7 @@
 "\1_\1y\1hExtract from: \1n"                                288 ExtractFrom
 "\r\nUnextractable file type.\r\n"                      289 UnextractableFile
 "\r\nFile not found.\r\n"                               290 FileNotFound
-"\r\n~Extract file(s), ~View archive, or ~Quit: "       291 ExtractFilesPrompt
+"\r\n~Extract file(s), ~View archive, or ~@Quit@: "       291 ExtractFilesPrompt
 "\1_\1?\1y\1hTemp Directory: \1n"                        292 TempDirPrompt
 "\1n\r\n%s not created yet.\r\n"\                        293 TempFileNotCreatedYet
 	"\r\nUse the \1hA\1n command to create it.\r\n"
@@ -467,7 +467,7 @@
 	"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
 	"\xc4\xc4\xc4\xc4\xc4\xc4 "
 "\1h\1c%3u \xb3 \1n\1c%-32.32s\1h "                        383 XtrnProgLstFmt
-"\r\n\1-\1cWhich or \1h~Q\1n\1cuit: \1h"                      384 WhichXtrnProg
+"\r\n\1-\1c@Which@ or \1h~Q\1n\1cuit: \1h"                 384 WhichXtrnProg
 "\r\n%s is currently running %s on node %d.\r\n"\       385 UserRunningXtrn
 	"\r\nTry again later.\r\n\r\n"
 "Remove node lock"                                      386 RemoveNodeLockQ
@@ -601,7 +601,7 @@
 "\1n\1b[\1h\1wA\1n\1b] \1hTemporary/QWK Archive Type   \1n\1b: \1c%s\r\n"   492 UserDefaultsArcType
 "\1n\1b[\1h\1wZ\1n\1b] \1hDefault Download Protocol    \1n\1b\1\\: \1c%s "\ 493 UserDefaultsProtocol
 	"\1b%s\r\n"
-"\r\n\1n\1h\1bWhich or [\1wQ\1b]uit: \1c"                   494 UserDefaultsWhich
+"\r\n\1n\1h\1b@Which@ or [\1wQ\1b] to @Quit@: \1c"      494 UserDefaultsWhich
 "On"                                                    495 On
 "Off"                                                   496 Off
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yTerminal rows "\       497 HowManyRows
@@ -612,7 +612,7 @@
 	"(Example: user@domain)\r\n : "
 "\1n\1l\1gSelect \1h%s\1n\1g:\r\n\r\n"                        501 SelectItemHdr
 "\1g\1h%3d: \1n\1g%s\r\n"                                   502 SelectItemFmt
-"\r\nWhich, ~Quit or [%u]: "                            503 SelectItemWhich
+"\r\n@Which@, ~@Quit@ or [%u]: "                              503 SelectItemWhich
 "\1_\1w\1h\r\n\r\n%s is here...\r\n\r\n\1n"                 504 SysopIsHere
 "\r\n\1_\1w\1hEnd of chat.\r\n\r\n\1n"                      505 EndOfChat
 "\r\n\1_\1y\1hChat: \1n"                                    506 ChatPrompt
@@ -766,8 +766,8 @@
 "\1n\1?\1mSending NetMail To: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"\  619 NetMailing
 	"              From: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"
 "Remove this sub-board from your new-scan list"         620 RemoveFromNewScanQ
-"\r\n~Sub-board: @SUB@, ~Group: @GRP@, or ~All: "       621 SubGroupOrAll
-"\r\n~Directory: @DIR@, ~Library: @LIB@, or ~All: "     622 DirLibOrAll
+"\r\n~Sub-board: @SUB@, ~Group: @GRP@, or ~@All@: "       621 SubGroupOrAll
+"\r\n~Directory: @DIR@, ~Library: @LIB@, or ~@All@: "     622 DirLibOrAll
 "\r\n\1_\1y\1hEnter path: "                                623 EnterPath
 "\1?Display extended file information"                 624 DisplayExtendedFileInfoQ
 "\r\nDisplay Subjects Only"                             625 DisplaySubjectsOnlyQ
@@ -798,10 +798,10 @@
 "\1n\1y\1h%s\1n\1c sent you a file.\r\n"                   649 UserSentYouFile
 "\1n\1y\1h%s\1n\1c read your E-mail on %s.\r\n"              650 UserReadYourMail
 "\1_\1w\1hNode %2d: \1g%s\1n\1g read your E-mail.\r\n"       651 UserReadYourMailNodeMsg
-"\r\nWhich, ~Quit, or [%u]: "                           652 JoinWhichGrp
-"\r\nWhich, ~Quit, or [%u]: "                           653 JoinWhichSub
-"\r\nWhich, ~Quit, or [%u]: "                           654 JoinWhichLib
-"\r\nWhich, ~Quit, or [%u]: "                           655 JoinWhichDir
+"\r\n@Which@, ~@Quit@, or [%u]: "                           652 JoinWhichGrp
+"\r\n@Which@, ~@Quit@, or [%u]: "                           653 JoinWhichSub
+"\r\n@Which@, ~@Quit@, or [%u]: "                           654 JoinWhichLib
+"\r\n@Which@, ~@Quit@, or [%u]: "                           655 JoinWhichDir
 "\1l\1-\1gDirectories of \1h%s:\r\n\r\n\1h"                  656 CfgDirLstHdr
 " \1n\1g(\1h%d\1n\1g) %s\1h\r\n"                              657 CfgDirLstFmt
 "\1l\1_\1g\1hFile Libraries:\r\n\r\n"                       658 CfgLibLstHdr
@@ -873,7 +873,7 @@
 ""                                                      717 NodeActionPrivateChat
 ""                                                      718 NodeActionPaging
 ""                                                      719 NodeActionRetrieving
-"YNQ*"                                                  720 YNQP /* (Yes/No/Quit/Password chars) */
+"YNQ*"                                                  720 Unused720 /* Used to be YNQP */
 "View signature"                                        721 ViewSignatureQ
 "Delete signature"                                      722 DeleteSignatureQ
 "Create/Edit signature"                                 723 CreateEditSignatureQ
@@ -909,7 +909,7 @@
 "\1n\1b[\1h\1wP\1n\1b] \1hInclude Message Path (@VIA)  \1n\1b: \1c%s\r\n"	753 QWKSettingsVIA
 "\1n\1b[\1h\1wM\1n\1b] \1hInclude Message/Reply IDs    \1n\1b: \1c%s\r\n"	754 QWKSettingsMsgID
 "\1n\1b[\1h\1wX\1n\1b] \1hExtended (QWKE) Packet Format\1n\1b: \1c%s\r\n"	755 QWKSettingsExtended
-"\r\n\1n\1h\1bWhich or [\1wQ\1b]uit: \1c"                   	756 QWKSettingsWhich
+"\r\n\1n\1h\1b@Which@ or [\1wQ\1b]uit: \1c"                   	756 QWKSettingsWhich
 "\1n\r\nSorry, you can't edit this message.\r\n"	757 CantEditMsg
 "\1n\r\nSorry, you can't delete message #%u.\r\n"	758 CantDeleteMsg
 "\1n\r\nSorry, you can't read messages on %s %s\r\n"	759 CantReadSub
@@ -957,7 +957,7 @@
 "\r\n\1h\1rSorry, you've already voted on this.\r\n" 780 VotedAlready
 "\r\n\1h\1rSorry, you're not allowed to vote.\r\n" 781 R_Voting
 "\1n\1b[\1h\1wV\1n\1b] \1hInclude VOTING.DAT File      \1n\1b: \1c%s\r\n"	782 QWKSettingsVoting
-"\r\nVote for message: ~Up, ~Down, or ~Quit: "               783 VoteMsgUpDownOrQuit
+"\r\nVote for message: ~Up, ~Down, or ~@Quit@: "               783 VoteMsgUpDownOrQuit
 "\r\n\xb3 \1bMsg \1n\1b: \1h\1cVoted Up %u times%s and Down %u times%s (Score: %d)"          784 MsgVotes
 "\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1cUp\1n\1m-voted your message: \1n\1h%s\r\n" 785 MsgUpVoteNotice
 "\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1rDown\1n\1m-voted your message: \1n\1h%s\r\n" 786 MsgDownVoteNotice
@@ -967,7 +967,7 @@
 " \251"                                 790 PollAnswerChecked
 "\1n\1l\1gBallot for \1h%s\r\n\r\n"     791 BallotHdr
 "\1n\1c\1h%2u\1n\1c: %-*.*s \1h%s\r\n"  792 BallotAnswerFmt
-"\r\nToggle which vote (up to %u), ~Quit or [Cast]: "           793 BallotVoteWhich
+"\r\nToggle @Which@ vote (up to %u), ~@Quit@ or [Cast]: "           793 BallotVoteWhich
 "Only"									794 Only
 "\1n\1h\1c\r\nSPAM Visibility is now: \1w"	795 SPAMVisibilityIsNow
 "\r\nTo vote in this poll, hit ~V now.\r\n" 796 VoteInThisPollNow
@@ -1028,14 +1028,14 @@
 "\1[\1n\1mQWK NetMail sent to \1h%s (%s)\1n\r\n"           846 QWKNetMailSent
 "Messages to you only"                                     847 MsgsToYouOnlyQ
 "To You Only"                                              848 ToYouOnly
-"\r\nEnter number of messages from end, ~Date, ~Quit, or"\ 849 SetMsgPtrPrompt
+"\r\nEnter number of messages from end, ~Date, ~@Quit@, or"\ 849 SetMsgPtrPrompt
 					" [Last Message]: "
 "DL"                                                       850 DateLastKeys
 "DL"                                                       851 DirLibKeys
 "SG"                                                       852 SubGroupKeys
-"A"                                                        853 AllKey
+"A"                                                        853 Unused853
 "All"                                                      854 All
-"L"                                                        855 ListKey
+"List"                                                     855 List
 "%.0s\1n\1mNew e-mail from \1h%s \1n<\1h%s\1n>\r\n"        856 InternetMailReceived
 "\1n\1mand it was automatically forwarded to: \1h%s\1n\r\n" 857 InternetMailForwarded
 "%.0s\1n\1h\1m%s \1n\1msent you NetMail%s from \1h%s\1n\r\n" 858 FidoNetMailReceived
@@ -1047,3 +1047,10 @@
 "New User Validation"                                      863 NewUserValEmailSubj
 "\7\7\7"                                                   864 InactivityAlert
 "None"                                                     865 None
+"Which"                                                    866 Which
+"Next"                                                     867 Next
+"Prev"                                                     868 Previous
+"Quit"                                                     869 Quit
+"Language"                                                 870 Language
+"English"                                                  871 LANG
+"*"                                                        872 PasswordChar
