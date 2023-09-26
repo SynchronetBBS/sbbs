@@ -70,8 +70,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>sbbsexec</TargetName>
-    <IncludePath>c:\Program Files (x86)\Windows Kits\10\Include\$(TargetUniversalCRTVersion)\shared;c:\Program Files (x86)\Windows Kits\10\Include\$(TargetUniversalCRTVersion)\um;$(IncludePath)</IncludePath>
-    <LibraryPath>c:\Program Files (x86)\Windows Kits\10\Lib\$(TargetUniversalCRTVersion)\um\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>c:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared;c:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um;$(IncludePath)</IncludePath>
+    <LibraryPath>c:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x86;$(LibraryPath)</LibraryPath>
     <OutDir>.\msvc.win32.dll.release\</OutDir>
     <IntDir>.\msvc.win32.release\sbbsexec\</IntDir>
   </PropertyGroup>
