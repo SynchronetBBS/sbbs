@@ -9,8 +9,8 @@ object ServicesForm: TServicesForm
   DragKind = dkDock
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -10
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Microsoft Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   OnHide = FormHide
@@ -131,7 +131,7 @@ object ServicesForm: TServicesForm
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWhite
     Font.Height = -12
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Microsoft Sans Serif'
     Font.Style = []
     HideScrollBars = False
     ParentFont = False

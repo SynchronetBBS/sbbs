@@ -14,7 +14,7 @@ object CtrlPathDialog: TCtrlPathDialog
   DesignSize = (
     473
     114)
-  PixelsPerInch = 120
+  PixelsPerInch = 96
   TextHeight = 16
   object Bevel1: TBevel
     Left = 10

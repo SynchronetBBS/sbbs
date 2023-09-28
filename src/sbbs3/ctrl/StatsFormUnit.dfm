@@ -12,8 +12,8 @@ object StatsForm: TStatsForm
   DragMode = dmAutomatic
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
-  Font.Height = -10
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Microsoft Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   OnHide = FormHide
@@ -26,13 +26,7 @@ object StatsForm: TStatsForm
     Height = 143
     Caption = 'Today'
     Color = clBtnFace
-    Font.Charset = ANSI_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -12
-    Font.Name = 'MS Sans Serif'
-    Font.Style = []
     ParentColor = False
-    ParentFont = False
     TabOrder = 0
     object LogonsTodayLabel: TLabel
       Left = 7

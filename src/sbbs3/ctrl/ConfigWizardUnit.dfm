@@ -9,12 +9,12 @@ object ConfigWizard: TConfigWizard
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -13
-  Font.Name = 'MS Sans Serif'
+  Font.Name = 'Microsoft Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
   OnShow = FormShow
-  PixelsPerInch = 120
+  PixelsPerInch = 96
   TextHeight = 16
   object Shape1: TShape
     Left = 0
@@ -599,7 +599,7 @@ object ConfigWizard: TConfigWizard
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
         Font.Height = -15
-        Font.Name = 'MS Sans Serif'
+        Font.Name = 'Microsoft Sans Serif'
         Font.Style = [fsBold]
         ParentFont = False
       end
@@ -1084,7 +1084,7 @@ object ConfigWizard: TConfigWizard
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
         Font.Height = -15
-        Font.Name = 'MS Sans Serif'
+        Font.Name = 'Microsoft Sans Serif'
         Font.Style = [fsBold]
         ParentFont = False
       end
@@ -1136,7 +1136,7 @@ object ConfigWizard: TConfigWizard
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
         Font.Height = -15
-        Font.Name = 'MS Sans Serif'
+        Font.Name = 'Microsoft Sans Serif'
         Font.Style = [fsBold]
         ParentFont = False
       end

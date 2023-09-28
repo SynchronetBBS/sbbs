@@ -9,8 +9,8 @@ object WebForm: TWebForm
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Microsoft Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   PixelsPerInch = 96
@@ -152,7 +152,7 @@ object WebForm: TWebForm
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWhite
     Font.Height = -12
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Microsoft Sans Serif'
     Font.Style = []
     HideScrollBars = False
     ParentFont = False

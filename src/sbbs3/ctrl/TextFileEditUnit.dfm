@@ -8,7 +8,7 @@ object TextFileEditForm: TTextFileEditForm
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -13
-  Font.Name = 'MS Sans Serif'
+  Font.Name = 'Microsoft Sans Serif'
   Font.Style = []
   Icon.Data = {
     0000010001002020100000000000E80200001600000028000000200000004000
@@ -39,7 +39,7 @@ object TextFileEditForm: TTextFileEditForm
   OldCreateOrder = False
   Position = poDefaultPosOnly
   OnShow = FormShow
-  PixelsPerInch = 120
+  PixelsPerInch = 96
   TextHeight = 16
   object Panel: TPanel
     Left = 0
@@ -106,7 +106,7 @@ object TextFileEditForm: TTextFileEditForm
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -15
-    Font.Name = 'Courier'
+    Font.Name = 'Microsoft Sans Serif'
     Font.Style = []
     HideSelection = False
     ParentFont = False
@@ -269,7 +269,7 @@ object TextFileEditForm: TTextFileEditForm
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -13
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Microsoft Sans Serif'
     Font.Style = []
     MinFontSize = 0
     MaxFontSize = 0

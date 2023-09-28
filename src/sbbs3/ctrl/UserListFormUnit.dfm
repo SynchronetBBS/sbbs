@@ -6,11 +6,6 @@ object UserListForm: TUserListForm
   BorderIcons = [biSystemMenu, biMaximize]
   Caption = 'Synchronet User List'
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -10
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
   FormStyle = fsStayOnTop
   OldCreateOrder = False
   Position = poDefault

@@ -8,14 +8,14 @@ object PreviewForm: TPreviewForm
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -14
-  Font.Name = 'MS Sans Serif'
+  Font.Name = 'Microsoft Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   PopupMenu = PopupMenu
   Position = poDefaultPosOnly
   OnClose = FormClose
   OnShow = FormShow
-  PixelsPerInch = 120
+  PixelsPerInch = 96
   TextHeight = 16
   object PopupMenu: TPopupMenu
     Left = 144

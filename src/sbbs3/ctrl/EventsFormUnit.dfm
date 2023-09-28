@@ -8,11 +8,6 @@ object EventsForm: TEventsForm
   DefaultMonitor = dmPrimary
   DragKind = dkDock
   DragMode = dmAutomatic
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -10
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
   OldCreateOrder = False
   OnHide = FormHide
   PixelsPerInch = 96
@@ -27,7 +22,7 @@ object EventsForm: TEventsForm
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWhite
     Font.Height = -12
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Microsoft Sans Serif'
     Font.Style = []
     HideScrollBars = False
     ParentFont = False

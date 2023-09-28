@@ -10,8 +10,8 @@ object FtpForm: TFtpForm
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -10
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -12
+  Font.Name = 'Microsoft Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   OnHide = FormHide
@@ -147,7 +147,7 @@ object FtpForm: TFtpForm
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWhite
     Font.Height = -12
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Microsoft Sans Serif'
     Font.Style = []
     HideScrollBars = False
     ParentFont = False

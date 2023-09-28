@@ -6,7 +6,11 @@ object PropertiesDlg: TPropertiesDlg
   ClientHeight = 234
   ClientWidth = 352
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Microsoft Sans Serif'
+  Font.Style = []
   OldCreateOrder = True
   Position = poScreenCenter
   ShowHint = True
@@ -723,7 +727,7 @@ object PropertiesDlg: TPropertiesDlg
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -13
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Microsoft Sans Serif'
     Font.Style = []
     MinFontSize = 0
     MaxFontSize = 0

@@ -6,11 +6,6 @@ object ServicesCfgDlg: TServicesCfgDlg
   ClientHeight = 245
   ClientWidth = 286
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -10
-  Font.Name = 'MS Sans Serif'
-  Font.Style = []
   Icon.Data = {
     0000010001002020100000000000E80200001600000028000000200000004000
     0000010004000000000080020000000000000000000000000000000000000000
@@ -36,6 +31,11 @@ object ServicesCfgDlg: TServicesCfgDlg
     000FF800000FFC00001FFE00001FE0000001C000000180000001800000018000
     00018000000180000001FC00001FFC00001FFE00001FFC00000FF800000FF800
     001FF800003FFC180C7FFE380EFFFFF80FFFFFF80FFFFFF80FFFFFFFFFFF}
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Microsoft Sans Serif'
+  Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
   OnClose = FormClose

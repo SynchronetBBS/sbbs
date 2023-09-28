@@ -6,7 +6,11 @@ object FtpCfgDlg: TFtpCfgDlg
   ClientHeight = 245
   ClientWidth = 286
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Microsoft Sans Serif'
+  Font.Style = []
   OldCreateOrder = True
   Position = poScreenCenter
   OnShow = FormShow
