@@ -299,8 +299,10 @@ static void log_msg(TRichEdit* Log, log_msg_t* msg)
 		Line += " [x" + AnsiString(msg->repeated + 1) + "]";
     Log->SelLength=0;
 	Log->SelStart=-1;
-    Log->SelAttributes->Assign(
-        MainForm->LogAttributes(msg->level, Log->Color, Log->Font));
+	TTextAttributes* attr = Log->SelAttributes;
+    TFont* font = MainForm->LogAttributes(msg->level, Log->Color, Log->Font);
+	attr->Color = font->Color;
+	attr->Style = font->Style;
 	Log->Lines->Add(Line);
 }
 
@@ -1555,8 +1557,6 @@ void __fastcall TMainForm::ReadFont(AnsiString subkey, TFont* Font)
         Font->Name=Registry->ReadString("Name");
     if(Registry->ValueExists("Color"))
         Font->Color=StringToColor(Registry->ReadString("Color"));
-    if(Registry->ValueExists("Height"))
-        Font->Height=Registry->ReadInteger("Height");
     if(Registry->ValueExists("Size"))
         Font->Size=Registry->ReadInteger("Size");
 
@@ -1579,7 +1579,6 @@ void __fastcall TMainForm::WriteFont(AnsiString subkey, TFont* Font)
     }
     Registry->WriteString("Name",Font->Name);
     Registry->WriteString("Color",ColorToString(Font->Color));
-    Registry->WriteInteger("Height",Font->Height);
     Registry->WriteInteger("Size",Font->Size);
     Registry->WriteInteger("Style",FontStyleToInt(Font));
 
@@ -2300,7 +2299,6 @@ void __fastcall TMainForm::ImportFont(TMemIniFile* IniFile, const char* section,
 {
     Font->Name=IniFile->ReadString(section,prefix + "Name",Font->Name);
     Font->Color=StringToColor(IniFile->ReadString(section,prefix + "Color",ColorToString(Font->Color)));
-    Font->Height=IniFile->ReadInteger(section,prefix + "Height",Font->Height);
     Font->Size=IniFile->ReadInteger(section,prefix + "Size", Font->Size);
     IntToFontStyle(IniFile->ReadInteger(section,prefix + "Style",FontStyleToInt(Font)),Font);
 }
@@ -2309,7 +2307,6 @@ void __fastcall TMainForm::ExportFont(TMemIniFile* IniFile, const char* section,
 {
     IniFile->WriteString(section,prefix+"Name",Font->Name);
     IniFile->WriteString(section,prefix+"Color",ColorToString(Font->Color));
-    IniFile->WriteInteger(section,prefix+"Height",Font->Height);
     IniFile->WriteInteger(section,prefix+"Size",Font->Size);
     IniFile->WriteInteger(section,prefix+"Style",FontStyleToInt(Font));
 }
