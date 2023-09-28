@@ -3,7 +3,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <_PropertySheetDisplayName>Console Input/Output (CONIO) Library</_PropertySheetDisplayName>
+    <_PropertySheetDisplayName>Console Input/Output (CONIO) Library with SDL</_PropertySheetDisplayName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
