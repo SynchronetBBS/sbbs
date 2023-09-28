@@ -763,7 +763,7 @@ int main(int argc, char **argv)
 						"       F = Curses mode with forced IBM charset\n"
 						"       I = Curses mode with forced ASCII charset\n"
 #else
-						"       W = Win32 native mode\n"
+						"       W = Win32 console mode\n"
 #endif
 						"       A = ANSI mode\n"
 						"       D = standard input/output/door mode\n"
