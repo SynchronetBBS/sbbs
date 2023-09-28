@@ -800,8 +800,8 @@ void security_cfg(void)
 				uifc.helpbuf=
 					"`Display/Log Passwords Locally:`\n"
 					"\n"
-					"If you want to passwords to be displayed locally and/or logged to disk\n"
-					"(e.g. when there's a failed login attempt), set this option to `Yes`.\n"
+					"If you want attempted passwords to be displayed locally and/or logged to\n"
+					"disk (e.g. when there's a failed login attempt), set this option to `Yes`.\n"
 					"\n"
 					"For elevated security, set this option to `No`.\n"
 				;
