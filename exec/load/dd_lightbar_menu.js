@@ -3434,9 +3434,6 @@ function substrWithAttrCodes(pStr, pStartIdx, pLen)
 	var screenLen = console.strlen(pStr);
 	if (typeof(pStartIdx) === "number" && pStartIdx >= 0 && pStartIdx < screenLen)
 		startIdx = pStartIdx;
-	var len = 0;
-	if (typeof(pLen) === "number" && pLen <= screenLen - startIdx)
-		len = pLen;
 
 	// Find the real start index.  If there are Synchronet attribute 
 	startIdx = printedToRealIdxInStr(pStr, startIdx);
