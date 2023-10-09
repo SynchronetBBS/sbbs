@@ -198,6 +198,15 @@ To add additional key characters as quit keys (in addition to ESC), call
 AddAdditionalQuitKeys() with a string of characters.  For example:
 lbMenu.AddAdditionalQuitKeys("qQ");
 
+To clear the additional quit keys: ClearAdditionalQuitKeys()
+lbMenu.ClearAdditionalQuitKeys();
+
+Similarly for additional PageUp keys: AddAdditionalPageUpKeys and ClearAdditionalPageUpKeys
+For additional PageDown: AddAdditionalPageDownKeys and ClearAdditionalPageDownKeys
+For additional first page (like HOME): AddAdditionalFirstPageKeys and ClearAdditionalFirstPageKeys
+For additional last page (like END): AddAdditionalLastPageKeys and ClearAdditionalLastPageKeys
+
+
 To enable the border and set top and bottom border text:
 lbMenu.borderEnabled = true;
 lbMenu.topBorderText = "Options";
@@ -469,6 +478,10 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.numberedMode = false;
 	this.itemNumLen = 0; // For the length of the item numbers in numbered mode
 	this.additionalQuitKeys = ""; // A string of additional keys besides ESC to quit out of the menu
+	this.additionalPageUpKeys = ""; // A string of additional keys besides PageUp for page up
+	this.additionalPageDnKeys = ""; // A string of additional keys besides PageDown for page down
+	this.additionalFirstPageKeys = ""; // A string of additional keys besides HOME for going to the first page
+	this.additionalLastPageKeys = ""; // A string of additional keys besides END for going to the last page
 	this.additionalSelectItemKeys = ""; // A string of additional keys to select any item
 	this.topBorderText = ""; // Text to display in the top border
 	this.bottomBorderText = ""; // Text to display in the bottom border
@@ -553,6 +566,18 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.AddAdditionalQuitKeys = DDLightbarMenu_AddAdditionalQuitKeys;
 	this.QuitKeysIncludes = DDLightbarMenu_QuitKeysIncludes;
 	this.ClearAdditionalQuitKeys = DDLightbarMenu_ClearAdditionalQuitKeys;
+	this.AddAdditionalPageUpKeys = DDLightbarMenu_AddAdditionalPageUpKeys;
+	this.PageUpKeysIncludes = DDLightbarMenu_PageUpKeysIncludes;
+	this.ClearAdditionalPageUpKeys = DDLightbarMenu_ClearAdditionalPageUpKeys;
+	this.AddAdditionalPageDownKeys = DDLightbarMenu_AddAdditionalPageDownKeys;
+	this.PageDownKeysIncludes = DDLightbarMenu_PageDownKeysIncludes;
+	this.ClearAdditionalPageDownKeys = DDLightbarMenu_ClearAdditionalPageDownKeys;
+	this.AddAdditionalFirstPageKeys = DDLightbarMenu_AddAdditionalFirstPageKeys;
+	this.FirstPageKeysIncludes = DDLightbarMenu_FirstPageKeysIncludes;
+	this.ClearAdditionalFirstPageKeys = DDLightbarMenu_ClearAdditionalFirstPageKeys;
+	this.AddAdditionalLastPageKeys = DDLightbarMenu_AddAdditionalLastPageKeys;
+	this.LastPageKeysIncludes = DDLightbarMenu_LastPageKeysIncludes;
+	this.ClearAdditionalLastPageKeys = DDLightbarMenu_ClearAdditionalLastPageKeys;
 	this.AddAdditionalSelectItemKeys = DDLightbarMenu_AddAdditionalSelectItemKeys;
 	this.SelectItemKeysIncludes = DDLightbarMenu_SelectItemKeysIncludes;
 	this.ClearAdditionalSelectItemKeys = DDLightbarMenu_ClearAdditionalSelectItemKeys;
@@ -1031,7 +1056,10 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar,
 		for (var i = 0; i < numMenuItems; ++i)
 		{
 			var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
-			console.print(this.GetItemText(i, itemLen, false, showMultiSelectMark) + "\x01n");
+			var itemText = this.GetItemText(i, itemLen, false, showMultiSelectMark);
+			// TODO: It seems the text must be shortened by 3 less than the console width or else
+			// it behaves like there's an extra CRLF
+			console.print(substrWithAttrCodes(itemText, 0, console.screen_columns-3) + "\x01n");
 			console.crlf();
 		}
 		this.numberedMode = numberedModeBackup;
@@ -1195,6 +1223,16 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 	var height = pHeight;
 	if (height > (this.size.height - pStartY + 1))
 		height = (this.size.height - pStartY + 1);
+	/*
+	// Temporary
+	if (user.is_sysop)
+	{
+		console.print("\x01n\r\n");
+		printf("DrawPartial 1 - X, Y, width, height: %d, %d; %d, %d\r\n", pStartX, pStartY, width, height);
+		console.pause();
+	}
+	// End Temporary
+	*/
 
 	var selectedItemIndexes = { }; // For multi-select mode
 	if (typeof(pSelectedItemIndexes) == "object")
@@ -1311,6 +1349,16 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 	// Write the menu items
 	if (writeMenuItems)
 	{
+		/*
+		// Temporary
+		if (user.is_sysop)
+		{
+			console.print("\x01n\r\n");
+			console.print("itemTxtStartIdx: " + itemTxtStartIdx + ", itemLen: " + itemLen + "\r\n");
+			console.pause();
+		}
+		// End Temporary
+		*/
 		var blankItemTextFormatStr = "\x01n%" + itemLen + "s";
 		for (var lineNum = pStartY + this.pos.y - 1; lineNum <= lastLineNum; ++lineNum)
 		{
@@ -1331,7 +1379,8 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 			if (this.borderEnabled) --itemIdx;
 			var highlightItem = itemIdx == this.selectedItemIdx;
 			var itemText = this.GetItemText(itemIdx, null, highlightItem, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-			var shortenedText = substrWithAttrCodes(itemText, itemTxtStartIdx, itemLen);
+			//var shortenedText = substrWithAttrCodes(itemText, itemTxtStartIdx, itemLen);
+			var shortenedText = substrWithAttrCodes(itemText, itemTxtStartIdx, itemLen, true);
 			// If shortenedText is empty (perhaps there's no menu item for this line),
 			// then make shortenedText consist of all spaces at the proper length
 			if (shortenedText.length == 0)
@@ -1362,6 +1411,16 @@ function DDLightbarMenu_DrawPartialAbs(pStartX, pStartY, pWidth, pHeight, pSelec
 	var width = pWidth;
 	var startX = pStartX - this.pos.x + 1;
 	var startY = pStartY - this.pos.y + 1;
+	/*
+	// Temporary
+	if (user.is_sysop)
+	{
+		console.print("\x01n\r\n");
+		printf("Here 1 - X, Y, width, height: %d, %d; %d, %d\r\n", startX, startY, width, height);
+		console.pause();
+	}
+	// End Temporary
+	*/
 	if (startX < 1)
 	{
 		var XDiff = 1 - startX;
@@ -1374,6 +1433,16 @@ function DDLightbarMenu_DrawPartialAbs(pStartX, pStartY, pWidth, pHeight, pSelec
 		startY += YDiff;
 		height -= YDiff;
 	}
+	/*
+	// Temporary
+	if (user.is_sysop)
+	{
+		console.print("\x01n\r\n");
+		printf("Here 2 - X, Y, width, height: %d, %d; %d, %d\r\n", startX, startY, width, height);
+		console.pause();
+	}
+	// End Temporary
+	*/
 	this.DrawPartial(startX, startY, width, height, pSelectedItemIndexes);
 }
 
@@ -1510,8 +1579,8 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 		var currentTextLen = itemTextDisplayableLen(itemText, this.ampersandHotkeysInItems);
 		if (currentTextLen < itemLen)
 			itemText += format("%" + +(itemLen-currentTextLen) + "s", ""); // Append spaces to the end of itemText
-		// If in numbered mode, prepend the item number to the front of the item text.
-		if (this.numberedMode)
+		// If in numbered mode and the item is selectable, prepend the item number to the front of the item text.
+		if (this.numberedMode && menuItem.isSelectable)
 		{
 			if (this.itemNumLen == 0)
 				this.itemNumLen = numItems.toString().length;
@@ -1790,9 +1859,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				}
 			}
 			else // this.mouseEnabled is false
-			{
 				this.lastUserInput = getKeyWithESCChars(inputMode, this.inputTimeoutMS);
-			}
 
 			// If no further input processing needs to be done due to a mouse click
 			// action, then continue to the next loop iteration.
@@ -1800,7 +1867,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				continue;
 
 			// Take the appropriate action based on the user's last input/keypress
-			if ((this.lastUserInput == KEY_ESC) || (this.QuitKeysIncludes(this.lastUserInput)) || console.aborted)
+			if ((this.lastUserInput == KEY_ESC) || this.QuitKeysIncludes(this.lastUserInput) || console.aborted)
 			{
 				// Only exit if there was not a no-action mouse click
 				// TODO: Is this logic good and clean?
@@ -1823,18 +1890,18 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				this.DoKeyUp(selectedItemIndexes, numItems);
 			else if ((this.lastUserInput == KEY_DOWN) || (this.lastUserInput == KEY_RIGHT))
 				this.DoKeyDown(selectedItemIndexes, numItems);
-			else if (this.lastUserInput == KEY_PAGEUP)
+			else if (this.lastUserInput == KEY_PAGEUP || this.PageUpKeysIncludes(this.lastUserInput))
 				this.DoPageUp(selectedItemIndexes, numItems);
-			else if (this.lastUserInput == KEY_PAGEDN)
+			else if (this.lastUserInput == KEY_PAGEDN || this.PageDownKeysIncludes(this.lastUserInput))
 				this.DoPageDown(selectedItemIndexes, numItems);
-			else if (this.lastUserInput == KEY_HOME)
+			else if (this.lastUserInput == KEY_HOME || this.FirstPageKeysIncludes(this.lastUserInput))
 			{
 				// Go to the first item in the list
 				var firstSelectableItemIdx = this.FindSelectableItemForward(0, false);
 				if (this.selectedItemIdx > firstSelectableItemIdx)
 					this.NavMenuForNewSelectedItemTop(firstSelectableItemIdx, this.GetNumItemsPerPage(), numItems, selectedItemIndexes);
 			}
-			else if (this.lastUserInput == KEY_END)
+			else if (this.lastUserInput == KEY_END || this.LastPageKeysIncludes(this.lastUserInput))
 			{
 				// Go to the last item in the list
 				var lastSelectableItem = this.FindSelectableItemBackward(numItems-1, false);
@@ -2677,7 +2744,8 @@ function DDLightbarMenu_CalcPageForItemAndSetTopItemIdx(pNumItemsPerPage, pNumIt
 //  pAdditionalQuitKeys: A string of key characters
 function DDLightbarMenu_AddAdditionalQuitKeys(pAdditionalQuitKeys)
 {
-	this.additionalQuitKeys += pAdditionalQuitKeys;
+	if (typeof(pAdditionalQuitKeys) === "string")
+		this.additionalQuitKeys += pAdditionalQuitKeys;
 }
 
 // Returns whether or not the additional quit keys array contains a given
@@ -2697,6 +2765,70 @@ function DDLightbarMenu_QuitKeysIncludes(pKey)
 function DDLightbarMenu_ClearAdditionalQuitKeys()
 {
 	this.additionalQuitKeys = "";
+}
+
+function DDLightbarMenu_AddAdditionalPageUpKeys(pAdditionalKeys)
+{
+	if (typeof(pAdditionalKeys) === "string")
+		this.additionalPageUpKeys += pAdditionalKeys;
+}
+
+function DDLightbarMenu_PageUpKeysIncludes(pKey)
+{
+	return (this.additionalPageUpKeys.indexOf(pKey) > -1);
+}
+
+function DDLightbarMenu_ClearAdditionalPageUpKeys()
+{
+	this.additionalPageUpKeys = "";
+}
+
+function DDLightbarMenu_AddAdditionalPageDownKeys(pAdditionalKeys)
+{
+	if (typeof(pAdditionalKeys) === "string")
+		this.additionalPageDnKeys += pAdditionalKeys;
+}
+
+function DDLightbarMenu_PageDownKeysIncludes(pKey)
+{
+	return (this.additionalPageDnKeys.indexOf(pKey) > -1);
+}
+
+function DDLightbarMenu_ClearAdditionalPageDownKeys()
+{
+	this.additionalPageDnKeys = "";
+}
+
+function DDLightbarMenu_AddAdditionalFirstPageKeys(pAdditionalKeys)
+{
+	if (typeof(pAdditionalKeys) === "string")
+		this.additionalFirstPageKeys += pAdditionalKeys;
+}
+
+function DDLightbarMenu_FirstPageKeysIncludes(pKey)
+{
+	return (this.additionalFirstPageKeys.indexOf(pKey) > -1);
+}
+
+function DDLightbarMenu_ClearAdditionalFirstPageKeys()
+{
+	this.additionalFirstPageKeys = "";
+}
+
+function DDLightbarMenu_AddAdditionalLastPageKeys(pAdditionalKeys)
+{
+	if (typeof(pAdditionalKeys) === "string")
+		this.additionalLastPageKeys += pAdditionalKeys;
+}
+
+function DDLightbarMenu_LastPageKeysIncludes(pKey)
+{
+	return (this.additionalLastPageKeys.indexOf(pKey) > -1);
+}
+
+function DDLightbarMenu_ClearAdditionalLastPageKeys()
+{
+	this.additionalLastPageKeys = "";
 }
 
 // Adds additional key characters to select any item.  The keys will be case-sensitive.
@@ -3434,55 +3566,155 @@ function substrWithAttrCodes(pStr, pStartIdx, pLen)
 	var screenLen = console.strlen(pStr);
 	if (typeof(pStartIdx) === "number" && pStartIdx >= 0 && pStartIdx < screenLen)
 		startIdx = pStartIdx;
-	var len = 0;
-	if (typeof(pLen) === "number" && pLen <= screenLen - startIdx)
-		len = pLen;
 
-	// Find the real start index.  If there are Synchronet attribute 
-	startIdx = printedToRealIdxInStr(pStr, startIdx);
-	if (startIdx < 0)
-		return "";
-	// Find the actual length of the string to get
-	var printableCharCount = 0;
-	var syncAttrCount = 0;
-	var syncAttrRegexWholeWord = /^\x01[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i;
-	var i = startIdx;
-	while ((printableCharCount < pLen) && (i < pStr.length))
+	// Find the actual start & end indexes, considering (not counting) attribute codes,
+	// and return the substring including any applicable attributes from the string
+	var actualStartIdx = findIdxConsideringAttrs(pStr, startIdx);
+	var actualEndIdx = findIdxConsideringAttrs(pStr, startIdx+len+1) + 1; // Initially tried just startIdx+len without the +1
+	return getAttrsBeforeStrIdx(pStr, actualStartIdx) + pStr.substring(actualStartIdx, actualEndIdx);
+}
+// Helper for substrWithAttrCodes(): Maps a 'visual' character index in a string to its
+// actual index within the string, considering any attribute codes in the string.
+//
+// Parameters:
+//  pStr: A string
+//  pIndex: The index of a character as displayed on the screen, to be mapped to actual string index
+//
+// Return value: The character index mapped to the actual index within the string, considering attribute codes
+function findIdxConsideringAttrs(pStr, pIndex)
+{
+	if (typeof(pStr) !== "string" || pStr.length == 0)
+		return 0;
+	if (typeof(pIndex) !== "number" || pIndex < 0)
+		return 0;
+
+	var printableLen = console.strlen(pStr);
+	var index = (pIndex >= printableLen ? printableLen - 1 : pIndex);
+
+	var actualIdx = 0;
+	var numTimesUpdated = 0;
+	for (var i = 0; i < pStr.length && numTimesUpdated <= index; ++i)
 	{
-		if (syncAttrRegexWholeWord.test(pStr.substr(i, 2)))
+		// If this character is the attribute control character, skip it along with
+		// the next character
+		if (pStr.charAt(i) == "\x01")
 		{
-			++syncAttrCount;
-			i += 2;
+			++i;
+			continue;
+		}
+		actualIdx = i;
+		++numTimesUpdated;
+	}
+	// Alternate implementation:
+	/*
+	var previousChar = "";
+	var syncAttrLen = 0;
+	var numTimesUpdated = 0;
+	for (var i = 0; i < pStr.length && numTimesUpdated <= index; ++i)
+	{
+		// If this character is the attribute control character, skip it along with
+		// the next character
+		var currentChar = pStr.charAt(i);
+		if (currentChar == "\x01")
+			syncAttrLen = 1;
+		else if (previousChar == "\x01")
+			++syncAttrLen;
+		else
+			syncAttrLen = 0;
+		if (syncAttrLen == 0)
+		{
+			actualIdx = i;
+			++numTimesUpdated;
+		}
+		previousChar = currentChar;
+	}
+	*/
+	return actualIdx;
+}
+// Helper for substrWithAttrCodes(): Returns a string with any Synchronet color/attribute
+// codes found in a string before a given index.
+//
+// Parameters:
+//  pStr: The string to search in
+//  pIdx: The index in the string to search before
+//
+// Return value: A string containing any Synchronet attribute codes found before
+//               the given index in the given string
+function getAttrsBeforeStrIdx(pStr, pIdx)
+{
+	if (typeof(pStr) !== "string")
+		return "";
+	if (typeof(pIdx) !== "number")
+		return "";
+	if (pIdx < 0)
+		return "";
+
+	var idx = (pIdx < pStr.length ? pIdx : pStr.length-1);
+	var attrStartIdx = strIdxOfSyncAttrBefore(pStr, idx, true, false);
+	var attrEndIdx = strIdxOfSyncAttrBefore(pStr, idx, false, false); // Start of 2-character code
+	var attrsStr = "";
+	if ((attrStartIdx > -1) && (attrEndIdx > -1))
+		attrsStr = pStr.substring(attrStartIdx, attrEndIdx+2);
+	return attrsStr;
+}
+
+// Returns the index of the first Synchronet attribute code before a given index
+// in a string.
+//
+// Parameters:
+//  pStr: The string to search in
+//  pIdx: The index to search back from
+//  pSeriesOfAttrs: Optional boolean - Whether or not to look for a series of
+//                  attributes.  Defaults to false (look for just one attribute).
+//  pOnlyInWord: Optional boolean - Whether or not to look only in the current word
+//               (with words separated by whitespace).  Defaults to false.
+//
+// Return value: The index of the first Synchronet attribute code before the given
+//               index in the string, or -1 if there is none or if the parameters
+//               are invalid
+function strIdxOfSyncAttrBefore(pStr, pIdx, pSeriesOfAttrs, pOnlyInWord)
+{
+	if (typeof(pStr) != "string")
+		return -1;
+	if (typeof(pIdx) != "number")
+		return -1;
+	if ((pIdx < 0) || (pIdx >= pStr.length))
+		return -1;
+
+	var seriesOfAttrs = (typeof(pSeriesOfAttrs) == "boolean" ? pSeriesOfAttrs : false);
+	var onlyInWord = (typeof(pOnlyInWord) == "boolean" ? pOnlyInWord : false);
+
+	var attrCodeIdx = pStr.lastIndexOf("\x01", pIdx-1);
+	if (attrCodeIdx > -1)
+	{
+		// If we are to only check the current word, then continue only if
+		// there isn't a space between the attribute code and the given index.
+		if (onlyInWord)
+		{
+			if (pStr.lastIndexOf(" ", pIdx-1) >= attrCodeIdx)
+				attrCodeIdx = -1;
+		}
+	}
+	if (attrCodeIdx > -1)
+	{
+		var syncAttrRegexWholeWord = /^\x01[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i;
+		if (syncAttrRegexWholeWord.test(pStr.substr(attrCodeIdx, 2)))
+		{
+			if (seriesOfAttrs)
+			{
+				for (var i = attrCodeIdx - 2; i >= 0; i -= 2)
+				{
+					if (syncAttrRegexWholeWord.test(pStr.substr(i, 2)))
+						attrCodeIdx = i;
+					else
+						break;
+				}
+			}
 		}
 		else
-		{
-			++printableCharCount;
-			++i;
-		}
+			attrCodeIdx = -1;
 	}
-	len += (syncAttrCount * 2);
-	var shortenedStr = pStr.substr(startIdx, len);
-	// Include any attribute codes that might appear before the start index
-	// in the string
-	var attrIdx = pStr.lastIndexOf("\x01", startIdx);
-	if (attrIdx >= 0)
-	{
-		var attrStartIdx = -1;
-		// Generate a string of all Synchronet attributes at the found location
-		for (var i = attrIdx; i >= 0; i -= 2)
-		{
-			if (syncAttrRegexWholeWord.test(pStr.substr(i, 2)))
-				attrStartIdx = i;
-			else
-				break;
-		}
-		if (attrStartIdx > -1)
-		{
-			var attrStr = pStr.substring(attrStartIdx, attrIdx+2);
-			shortenedStr = attrStr + shortenedStr;
-		}
-	}
-	return shortenedStr;
+	return attrCodeIdx;
 }
 
 // Converts a 'printed' index in a string to its real index in the string
