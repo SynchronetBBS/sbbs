@@ -60,6 +60,9 @@
  *                            Area change header display bug fix
  * 2023-09-16 Eric Oulashin   Version 1.37
  *                            Releasing this version
+ * 2023-10-07 Eric Oulashin   Version 1.38
+ *                            Fix for name collapsing mode with the lightbar interface: No longer gets stuck
+ *                            in a loop when choosing a sub-board.
 */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -103,8 +106,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.37";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-09-16";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.38";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-10-07";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -585,8 +588,9 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 		return;
 	}
 	var level = (typeof(pLevel) === "number" ? pLevel : 1);
-	if ((level < 1) || (level > 3))
+	if (level < 1 || level > 3)
 		return;
+
 	else if (level == 1)
 	{
 		// If there are no sub-boards in the given group index, then see if there's a next group with
@@ -618,7 +622,7 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 		}
 	}
 
-	var chooseGroup = (pLevel == 1);
+	var chooseGroup = (level == 1);
 
 	// Clear the screen, write the header, help line, and list header(s)
 	console.clear("\x01n");
@@ -639,7 +643,6 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 		var returnedMenuIdx = msgAreaMenu.GetVal(drawMenu);
 		drawMenu = true;
 		var lastUserInputUpper = (typeof(msgAreaMenu.lastUserInput) === "string" ? msgAreaMenu.lastUserInput.toUpperCase() : "");
-		//if (user.is_sysop) console.print("\x01n\r\nlastUserInputUpper: " + lastUserInputUpper + ":\r\n\x01p"); // Temporary
 		if (typeof(returnedMenuIdx) === "number")
 			chosenIdx = returnedMenuIdx;
 		// If userChoice is not a number, then it should be null in this case,
@@ -865,7 +868,13 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 				var defaultSubIdx = chosenIdx == bbs.curgrp ? bbs.cursub : 0;
 				var subCodeBackup = bbs.cursub_code;
 				var chosenSubBoardIdx = this.SelectMsgArea_Lightbar(2, chosenIdx, defaultSubIdx);
-				if (typeof(chosenSubBoardIdx) === "number" && chosenSubBoardIdx > -1)
+				// chosenSubBoardIdx could actually be a boolean and could be false (returned
+				// when pLevel is 3 and the user chose a sub-board), so check its type and
+				// act accordingly.
+				var retValType = typeof(chosenSubBoardIdx);
+				if (retValType === "boolean")
+					continueOn = chosenSubBoardIdx;
+				else if (typeof(chosenSubBoardIdx) === "number" && chosenSubBoardIdx > -1)
 				{
 					// Set the current sub-board
 					if (this.useSubCollapsing)
@@ -876,10 +885,17 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 				}
 				else
 				{
-					// A message sub-board was not chosen, so we'll have to re-draw
-					// the header and key help line
-					this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, chooseGroup, pGrpIdx);
-					this.WriteKeyHelpLine();
+					// If the sub-board changed (probably at level 3 because name
+					// collapsing is enabled), then exit here.
+					if (bbs.cursub_code != subCodeBackup)
+						continueOn = false;
+					else
+					{
+						// A message sub-board was not chosen, so we'll have to re-draw
+						// the header and key help line
+						this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, chooseGroup, pGrpIdx);
+						this.WriteKeyHelpLine();
+					}
 				}
 			}
 			else if (level == 2) // Choosing a sub-board
@@ -898,8 +914,14 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 						if (chosenSubSubBoardIdx > -1)
 						{
 							// Set the current message sub-board
+							//bbs.cursub_code = this.group_list[pGrpIdx].sub_list[chosenIdx].sub_subboard_list[chosenSubSubBoardIdx].code;
 							bbs.cursub_code = this.group_list[pGrpIdx].sub_list[chosenIdx].sub_subboard_list[chosenSubSubBoardIdx].code;
 							continueOn = false;
+							//return chosenSubSubBoardIdx;
+							// Return a false here so that after this function is called by itself when
+							// pLevel is 2, it will know that a sub-board has been chosen and will set
+							// continueOn to false so that the loop won't continue from there.
+							return false;
 						}
 						else
 						{
@@ -917,7 +939,9 @@ function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
 					return chosenIdx; // Return the chosen file directory index
 			}
 			else if (level == 3)
+			{
 				return chosenIdx; // Return the chosen subdirectory index
+			}
 		}
 	}
 }
