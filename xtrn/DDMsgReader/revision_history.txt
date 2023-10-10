@@ -5,6 +5,25 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.80     2023-10-10   Improved speed of new-to-you scans, and to an extent
+                      (hopefully) overall speed
+                      Bug fix: Setting reverseListOrder to "ask" in the .cfg
+                      file works properly again.
+                      Bug fix: When listing messages in reverse order, the
+                      selected menu index (for lightbar mode) is now correct.
+                      Bug fix: If the user is allowed to read deleted messages,
+                      then allow the left & right arrow keys to to the next or
+                      previous message if it's deleted.
+                      Small fixes for indexed scanning mode.
+                      New: For personal email, unread emails will have an
+                      'unread' message indicator in the message list as a U
+                      between the message number and the 'from' name.
+                      New user setting: "Quit from reader to message list":
+                      When enabled, quitting from reader mode goes to the
+                      message list instead of exiting out of DDMsgReader fully.
+                      New user setting: Enter/selection from indexed mode menu
+                      shows message list (instead of going into reader mode)
+                      New user setting: List messages in reverse order
 1.79     2023-09-20   Fixed poll voting for single-answer polls
 1.78     2023-08-30   Bug fix for going to a specific message in the message
                       list (especially for lightbar mode)

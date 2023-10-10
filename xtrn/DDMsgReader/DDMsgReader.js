@@ -150,11 +150,29 @@
  *                              Bug fix for going to a specific message in the message list (especially for lightbar mode)
  * 2023-09-20 Eric Oulashin     Version 1.79
  *                              Fixed poll voting for single-answer polls
+ * 2023-09-22 Eric Oulashin     Version 1.80 beta
+ *                              Improved speed of new-to-you scans, and to an extent (hopefully) overall speed
+ *                              Bug fix: Setting reverseListOrder to "ask" in the .cfg file works properly again.
+ *                              Bug fix: When listing messages in reverse order, the selected menu index
+ *                              (for lightbar mode) is now correct.
+ *                              Bug fix: If the user is allowed to read deleted messages, then allow
+ *                              the left & right arrow keys to to the next/previous message if it's deleted.
+ *                              Small fixes for indexed scanning mode.
+ *                              New: For personal email, unread emails will have an 'unread' message indicator
+ *                              in the message list as a U between the message number and the 'from' name.
+ *                              New user setting: "Quit from reader to message list": When enabled,
+ *                              quitting from reader mode goes to the message list instead of exiting
+ *                              out of DDMsgReader fully.
+ *                              New user setting: Enter/selection from indexed mode menu shows message list
+ *                              (instead of going into reader mode)
+ *                              New user setting: List messages in reverse order
+ * 2023-10-10 Eric Oulashin     Version 1.80
+ *                              Releasing this version
  */
 
 "use strict";
 
-// TODO: To make the new-to-you scan faster, Digital Man said checking messagebas.last_msg against the user's new
+// TODO: To make the new-to-you scan faster, Digital Man said checking messagebase.last_msg against the user's new
 // scan pointer for that sub is the optimization to do
 
 // TODO: In the message list, add the ability to search with / similar to my area chooser.
@@ -259,8 +277,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.79";
-var READER_DATE = "2023-09-20";
+var READER_VERSION = "1.80";
+var READER_DATE = "2023-10-10";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -364,11 +382,12 @@ var DOT_CHAR = "\xF9";
 var CHECK_CHAR = "\xFB";
 var THIN_RECTANGLE_LEFT = "\xDD";
 var THIN_RECTANGLE_RIGHT = "\xDE";
+
 var BLOCK1 = "\xB0"; // Dimmest block
 var BLOCK2 = "\xB1";
 var BLOCK3 = "\xB2";
 var BLOCK4 = "\xDB"; // Brightest block
-var MID_BLOCK = "\xDC";
+var MID_BLOCK = ascii(220);
 var TALL_UPPER_MID_BLOCK = "\xFE";
 var UPPER_CENTER_BLOCK = "\xDF";
 var LOWER_CENTER_BLOCK = "\xDC";
@@ -861,7 +880,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.PromptForMsgNum = DigDistMsgReader_PromptForMsgNum;
 	this.ParseMsgAtCodes = DigDistMsgReader_ParseMsgAtCodes;
 	this.ReplaceMsgAtCodeFormatStr = DigDistMsgReader_ReplaceMsgAtCodeFormatStr;
-	this.FindNextNonDeletedMsgIdx = DigDistMsgReader_FindNextNonDeletedMsgIdx;
+	this.FindNextReadableMsgIdx = DigDistMsgReader_FindNextReadableMsgIdx;
 	this.ChangeSubBoard = DigDistMsgReader_ChangeSubBoard;
 	this.EnhancedReaderChangeSubBoard = DigDistMsgReader_EnhancedReaderChangeSubBoard;
 	this.ReplyToMsg = DigDistMsgReader_ReplyToMsg;
@@ -870,7 +889,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.DisplayEnhancedMsgHdr = DigDistMsgReader_DisplayEnhancedMsgHdr;
 	this.DisplayAreaChgHdr = DigDistMsgReader_DisplayAreaChgHdr;
 	this.DisplayEnhancedReaderWholeScrollbar = DigDistMsgReader_DisplayEnhancedReaderWholeScrollbar;
-	this.UpdateEnhancedReaderScollbar = DigDistMsgReader_UpdateEnhancedReaderScollbar;
+	this.UpdateEnhancedReaderScrollbar = DigDistMsgReader_UpdateEnhancedReaderScrollbar;
 	this.MessageIsDeleted = DigDistMsgReader_MessageIsDeleted;
 	this.MessageIsLastFromUser = DigDistMsgReader_MessageIsLastFromUser;
 	this.DisplayEnhReaderError = DigDistMsgReader_DisplayEnhReaderError;
@@ -1011,10 +1030,6 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// Whether or not to use the scrolling interface when reading a message
 	// (will only be used for ANSI terminals).
 	this.scrollingReaderInterface = true;
-
-	// reverseListOrder stores whether or not to arrange the message list descending
-	// by date.
-	this.reverseListOrder = false;
 
 	// displayBoardInfoInHeader specifies whether or not to display
 	// the message group and sub-board lines in the header at the
@@ -1189,16 +1204,22 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		if (pScriptArgs.hasOwnProperty("usernum") && user.is_sysop)
 			this.personalMailUserNum = pScriptArgs.usernum;
 	}
-	// Read the settings from the config file
-	this.cfgFileSuccessfullyRead = false;
-	this.ReadConfigFile();
 	this.userSettings = {
 		twitList: [],
 		// Whether or not to use the scrollbar in the enhanced message reader
 		useEnhReaderScrollbar: true,
-		// Whether or not to use indexed reader mode for doing a newscan
-		useIndexedModeForNewscan: false
+		// Whether or not to use indexed mode for doing a newscan
+		useIndexedModeForNewscan: false,
+		// Whether or not to list messages in reverse order
+		listMessagesInReverse: false,
+		// Whether or not quitting from the reader goes to the message list (instead of exiting altogether)
+		quitFromReaderGoesToMsgList: false,
+		// Whether or not the enter key in the indexed newscan menu shows the message list (rather than going to reader mode)
+		enterFromIndexMenuShowsMsgList: false
 	};
+	// Read the settings from the config file (some settings could set user settings)
+	this.cfgFileSuccessfullyRead = false;
+	this.ReadConfigFile();
 	this.ReadUserSettingsFile(false);
 	// Set any other values specified by the command-line parameters
 	// Reader start mode - Read or list mode
@@ -1598,7 +1619,11 @@ function DigDistMsgReader_SetSubBoardCode(pSubCode)
 // For the DigDistMsgReader class: Populates the hdrsForCurrentSubBoard
 // array with message headers from the current sub-board.  Filters out
 // messages that are deleted, unvalidated, private, and voting messages.
-function DigDistMsgReader_PopulateHdrsForCurrentSubBoard()
+//
+// Parameters:
+//  pStartIdx: Optional - The index of the first message to retrieve. Only used if pEndIdx is also valid.
+//  pEndIdx: Optional - One past the index of the last message to retrieve. Only used if pStartIdx is also valid.
+function DigDistMsgReader_PopulateHdrsForCurrentSubBoard(pStartIdx, pEndIdx)
 {
 	if (this.subBoardCode == "mail")
 	{
@@ -1613,11 +1638,25 @@ function DigDistMsgReader_PopulateHdrsForCurrentSubBoard()
 	{
 		// First get all headers in a temporary array, then filter them into
 		// this.hdrsForCurrentSubBoard.
-		// Note: get_all_msg_headers() was added in Synchronet 3.16.  DDMsgReader requires a minimum
-		// of 3.18, so we're okay to use it.
-		// The first parameter is whether to include votes (the parameter was introduced in Synchronet 3.17+).
-		// We used to pass false here.
-		tmpHdrs = msgbase.get_all_msg_headers(true);
+		if (typeof(pStartIdx) === "number" && pStartIdx >= 0 && typeof(pEndIdx) === "number" && pEndIdx <= msgbase.total_msgs)
+		{
+			tmpHdrs = {};
+			for (var i = pStartIdx; i < pEndIdx; ++i)
+			{
+				// Get message header by index; Don't expand fields, include votes
+				var msgHdr = msgbase.get_msg_header(true, i, false, true);
+				if (msgHdr != null)
+					tmpHdrs[msgHdr.number] = msgHdr;
+			}
+		}
+		else
+		{
+			// Note: get_all_msg_headers() was added in Synchronet 3.16.  DDMsgReader requires a minimum
+			// of 3.18, so we're okay to use it.
+			// The first parameter is whether to include votes (the parameter was introduced in Synchronet 3.17+).
+			// We used to pass false here.
+			tmpHdrs = msgbase.get_all_msg_headers(true, false); // Include votes, don't expand fields
+		}
 		msgbase.close();
 	}
 
@@ -1713,37 +1752,13 @@ function DigDistMsgReader_GetMsgIdx(pHdrOrMsgNum)
 			msgIdx = this.hdrsForCurrentSubBoardByMsgNum[msgNum];
 		else
 		{
-			msgIdx = msgNumToIdxFromMsgbase(this.subBoardCode, msgNum);
+			msgIdx = absMsgNumToIdx(this.subBoardCode, msgNum);
 			if (msgIdx != -1)
 				this.hdrsForCurrentSubBoardByMsgNum[msgNum] = msgIdx;
 		}
 	}
 	else
-		msgIdx = msgNumToIdxFromMsgbase(this.subBoardCode, msgNum);
-	return msgIdx;
-}
-
-// Given a sub-board code and message number, this function gets the index
-// of that message from the Synchronet messagebase.  Returns -1 if not found.
-//
-// Parameters:
-//  pSubCode: The sub-board code
-//  pMsgNum: The message number
-//
-// Return value: The index of the message, or -1 if not found.
-function msgNumToIdxFromMsgbase(pSubCode, pMsgNum)
-{
-	var msgIdx = -1;
-
-	var msgbase = new MsgBase(pSubCode);
-	if (msgbase.open())
-	{
-		var msgHdr =  msgbase.get_msg_header(false, pMsgNum, false);
-		if (msgHdr != null)
-			msgIdx = msgHdr.offset;
-		msgbase.close();
-	}
-
+		msgIdx = absMsgNumToIdx(this.subBoardCode, msgNum);
 	return msgIdx;
 }
 
@@ -1789,7 +1804,7 @@ function DigDistMsgReader_RefreshSearchResultMsgHdr(pMsgIndex, pAttrib, pApply, 
 		else
 		{
 			var msgHeader = this.GetMsgHdrByIdx(pMsgIndex);
-			if (this.msgSearchHdrs[this.subBoardCode].indexed.hasOwnProperty(pMsgIndex))
+			if (msgHeader != null && this.msgSearchHdrs[this.subBoardCode].indexed.hasOwnProperty(pMsgIndex))
 			{
 				this.msgSearchHdrs[this.subBoardCode].indexed[pMsgIndex] = msgHeader;
 				if (writeHdrToMsgbase)
@@ -2116,6 +2131,8 @@ function DigDistMsgReader_ClearSearchData()
 //  pInitialModeOverride: Optional (numeric) to override the initial mode in this
 //                        function (READER_MODE_READ or READER_MODE_LIST).  If not
 //                        specified, defaults to this.startMode.
+//  pOutputSubBoardPopulationMsgs: Optional (boolean): Whether or not to output sub-board
+//                                 population messages
 //
 // Return value: An object with the following properties:
 //               stoppedReading: Boolean - Whether or not the user stopped reading.
@@ -2124,7 +2141,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
                                              pAllowChgArea, pReturnOnNextAreaNav,
                                              pPauseOnNoMsgSrchResults,
                                              pPromptToGoNextIfNoResults,
-                                             pInitialModeOverride)
+                                             pInitialModeOverride, pOutputSubBoardPopulationMsgs)
 {
 	var retObj = {
 		stoppedReading: false
@@ -2166,17 +2183,8 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 	// specified.  If there are no messages to read in the current sub-board, then
 	// just return.
 	var pauseOnNoSearchResults = (typeof(pPauseOnNoMsgSrchResults) == "boolean" ? pPauseOnNoMsgSrchResults : true);
-	/*
-	// TODO: If doing a new-to-you scan, then maybe this could be optimized
-	if (this.searchType == SEARCH_TO_USER_NEW_SCAN)
-	{
-		var subCode = pSubBoardCode != null ? pSubBoardCode : this.subBoardCode;
-		// Temporary
-		//if (user.is_sysop) console.print("\x01nNew-to-user scan for " + subCode + "\r\n");
-		// End Temporary
-	}
-	*/
-	if (!this.PopulateHdrsIfSearch_DispErrorIfNoMsgs(true, true, pauseOnNoSearchResults))
+	var outputPopulateHdrsMsgs = (typeof(pOutputSubBoardPopulationMsgs) === "boolean" ? pOutputSubBoardPopulationMsgs : true);
+	if (!this.PopulateHdrsIfSearch_DispErrorIfNoMsgs(true, outputPopulateHdrsMsgs, pauseOnNoSearchResults))
 	{
 		retObj.stoppedReading = false;
 		return retObj;
@@ -2455,7 +2463,8 @@ function searchTypeRequiresSearchText(pSearchType)
 //                  scope: "S" for sub-board, "G" for group, or "A" for all.
 //                  If this is not specified, the user will be prompted for the
 //                  scan scope.
-function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar)
+//  pOutputMessages: Optional boolean: Whether or not to output scan status messages. Defaults to true.
+function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar, pOutputMessages)
 {
 	var scanScopeChar = "";
 	if ((typeof(pScanScopeChar) == "string") && /^[SGA]$/.test(pScanScopeChar))
@@ -2472,13 +2481,14 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 		{
 			console.crlf();
 			//console.print(replaceAtCodesInStr(this.text.msgScanAbortedText));
-			//console.crlf();
 			console.putmsg(this.text.msgScanAbortedText);
 			console.crlf();
 			console.pause();
 			return;
 		}
 	}
+	
+	var outputMessages = (typeof(pOutputMessages) === "boolean" ? pOutputMessages : true);
 
 	// Do some logging if verbose logging is enabled
 	if (gCmdLineArgVals.verboselogging)
@@ -2562,13 +2572,17 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 		this.setSubBoardCode(subBoardsToScan[subCodeIdx]); // Needs to be set before getting the last read/scan pointer index
 		if (msg_area.sub[this.subBoardCode].can_read && ((msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
 		{
-			// If running a new message scan (not new-to-you or search), output which sub-board that is currently being scanned
-			if (pScanMode == SCAN_NEW || pScanMode == SCAN_BACK)
+			// If we are to output status messages, then do so and 
+			if (outputMessages)
 			{
-				var statusText = format(this.text.scanningSubBoardText, subBoardGrpAndName(this.subBoardCode));
-				console.print("\x01n" + replaceAtCodesAndRemoveCRLFs(statusText) + "\x01n");
-				console.crlf();
-				console.line_counter = 0; // Prevent pausing for screen output and when displaying a message
+				// If we're running a new message scan, then output which sub-board that is currently being scanned
+				if (pScanMode == SCAN_NEW || pScanMode == SCAN_BACK || pScanMode == SCAN_UNREAD)
+				{
+					var statusText = format(this.text.scanningSubBoardText, subBoardGrpAndName(this.subBoardCode));
+					console.print("\x01n" + replaceAtCodesAndRemoveCRLFs(statusText) + "\x01n");
+					console.crlf();
+					console.line_counter = 0; // Prevent pausing for screen output and when displaying a message
+				}
 			}
 
 			var grpIndex = msg_area.sub[this.subBoardCode].grp_index;
@@ -2580,16 +2594,19 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 			var msgbase = new MsgBase(this.subBoardCode);
 			if (msgbase.open())
 			{
-				// Get a filtered list of messages for this sub-board
-				this.PopulateHdrsForCurrentSubBoard();
-
 				//this.setSubBoardCode(subBoardsToScan[subCodeIdx]); // Needs to be set before getting the last read/scan pointer index
 
+				// TODO: This commented-out section of code may be redundant and no longer necessary.
+				// Perhaps this should be refactored?  GetScanPtrMsgIdx() and FindNextReadableMsgIdx()
+				// may be relying on the fact that we poulate an array of cached message headers,
+				// filtered where deleted & unreadable ones are removed, so scan_ptr and last_read may
+				// not be quite accurate when we're using our cached header arrays.
+				/*
 				// If the current sub-board contains only deleted messages,
 				// or if the user has already read the last message in this
 				// sub-board, then skip it.
 				var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
-				var nonDeletedMsgsExist = (this.FindNextNonDeletedMsgIdx(scanPtrMsgIdx-1, true) > -1);
+				var readableMsgsExist = (this.FindNextReadableMsgIdx(scanPtrMsgIdx-1, true) > -1);
 				var userHasReadLastMessage = false;
 				if (this.subBoardCode != "mail")
 				{
@@ -2604,13 +2621,15 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 						}
 					}
 				}
-				if (!nonDeletedMsgsExist || userHasReadLastMessage)
+				if (!readableMsgsExist || userHasReadLastMessage)
 				{
 					if (msgbase != null)
 						msgbase.close();
 					continue;
 				}
+				*/
 
+				var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
 				// In the switch cases below, bbs.curgrp and bbs.cursub are
 				// temporarily changed the user's sub-board to the current
 				// sub-board so that certain @-codes (such as @GRP-L@, etc.)
@@ -2625,7 +2644,21 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 						// the scan pointer index is -1 (one unread message) or if it points to
 						// a message within the number of messages in the sub-board.
 						var totalNumMsgs = msgbase.total_msgs;
-						if ((totalNumMsgs > 0) && ((scanPtrMsgIdx == -1) || (scanPtrMsgIdx < totalNumMsgs-1)))
+						// If the user's scan_ptr for the sub-board isn't the 'last message' special value,
+						// then check the user's scan_ptr against the message number of the last readable
+						// message (i.e., the last message in the sub-board could be a vote header, which
+						// isn't readable)
+						var scanPtrBeforeLastReadableMsg = false;
+						if (!subBoardScanPtrIsLatestMsgSpecialVal(this.subBoardCode))
+						{
+							var lastReadableMsgHdr = getLastReadableMsgHdrInMsgbase(msgbase, this.subBoardCode);
+							if (lastReadableMsgHdr != null)
+								scanPtrBeforeLastReadableMsg = (msg_area.sub[this.subBoardCode].scan_ptr < lastReadableMsgHdr.number);
+							else
+								scanPtrBeforeLastReadableMsg = (msg_area.sub[this.subBoardCode].scan_ptr < msgbase.last_msg);
+						}
+						//if ((totalNumMsgs > 0) && ((scanPtrMsgIdx == -1) || (scanPtrMsgIdx < totalNumMsgs-1)))
+						if (totalNumMsgs > 0 && scanPtrBeforeLastReadableMsg)
 						{
 							bbs.curgrp = grpIndex;
 							bbs.cursub = subIndex;
@@ -2639,7 +2672,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 							// the user to change to a different message area, don't pause
 							// when there's no search results in a sub-board, and return
 							// instead of going to the next sub-board via navigation.
-							var readRetObj = this.ReadOrListSubBoard(null, startMsgIdx, false, true, false);
+							var readRetObj = this.ReadOrListSubBoard(null, startMsgIdx, false, true, false, null, null, false);
 							// If the user stopped reading & decided to quit, then exit the
 							// message scan loops.
 							if (readRetObj.stoppedReading)
@@ -2659,7 +2692,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 						// in a sub-board, and return instead of going to the next
 						// sub-board via navigation.
 						this.searchType = SEARCH_TO_USER_CUR_MSG_AREA;
-						var readRetObj = this.ReadOrListSubBoard(null, 0, false, true, false);
+						var readRetObj = this.ReadOrListSubBoard(null, 0, false, true, false, null, null, false);
 						// If the user stopped reading & decided to quit, then exit the
 						// message scan loops.
 						if (readRetObj.stoppedReading)
@@ -2678,13 +2711,17 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 						// in a sub-board, and return instead of going to the next
 						// sub-board via navigation.
 						this.searchType = SEARCH_TO_USER_NEW_SCAN;
-						var readRetObj = this.ReadOrListSubBoard(null, 0, false, true, false);
-						// If the user stopped reading & decided to quit, then exit the
-						// message scan loops.
-						if (readRetObj.stoppedReading)
+						var anyUnreadToUser = anyUnreadMsgsToUserWithMsgbase(msgbase, this.subBoardCode);
+						if (anyUnreadToUser)
 						{
-							continueNewScan = false;
-							userAborted = true;
+							var readRetObj = this.ReadOrListSubBoard(null, 0, false, true, false, null, null, false);
+							// If the user stopped reading & decided to quit, then exit the
+							// message scan loops.
+							if (readRetObj.stoppedReading)
+							{
+								continueNewScan = false;
+								userAborted = true;
+							}
 						}
 						break;
 					default:
@@ -2879,15 +2916,15 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 	if ((testMsgHdr == null) || (((testMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs()))
 	{
 		// First try going forward
-		var nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(msgIndex, true);
+		var readableMsgIdx = this.FindNextReadableMsgIdx(msgIndex, true);
 		// If a non-deleted message was not found, then try going backward.
-		if (nonDeletedMsgIdx == -1)
-			nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(msgIndex, false);
+		if (readableMsgIdx == -1)
+			readableMsgIdx = this.FindNextReadableMsgIdx(msgIndex, false);
 		// If a non-deleted message was found, then set msgIndex to it.
 		// Otherwise, tell the user there are no messages in this sub-board
 		// and return.
-		if (nonDeletedMsgIdx > -1)
-			msgIndex = nonDeletedMsgIdx;
+		if (readableMsgIdx > -1)
+			msgIndex = readableMsgIdx;
 		else
 		{
 			console.clear("\x01n");
@@ -2944,9 +2981,9 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 			// If the user's next action in the last iteration was to go to the
 			// previous message, then go backwards; otherwise, go forward.
 			if (previousNextAction == ACTION_GO_PREVIOUS_MSG)
-				msgIndex = this.FindNextNonDeletedMsgIdx(msgIndex, false);
+				msgIndex = this.FindNextReadableMsgIdx(msgIndex, false);
 			else
-				msgIndex = this.FindNextNonDeletedMsgIdx(msgIndex, true);
+				msgIndex = this.FindNextReadableMsgIdx(msgIndex, true);
 			continueOn = ((msgIndex >= 0) && (msgIndex < this.NumMessages()));
 		}
 		else if (readMsgRetObj.nextAction == ACTION_QUIT) // Quit
@@ -3030,14 +3067,14 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 		else if (readMsgRetObj.nextAction == ACTION_GO_FIRST_MSG) // Go to the first message
 		{
 			// Go to the first message that's not marked as deleted.  This passes -1 as the
-			// starting message index because FindNextNonDeletedMsgIdx() will increment it
+			// starting message index because FindNextReadableMsgIdx() will increment it
 			// before searching in order to find the "next" message.
-			msgIndex = this.FindNextNonDeletedMsgIdx(-1, true);
+			msgIndex = this.FindNextReadableMsgIdx(-1, true);
 		}
 		else if (readMsgRetObj.nextAction == ACTION_GO_LAST_MSG) // Go to the last message
 		{
 			// Go to the last message that's not marked as deleted
-			msgIndex = this.FindNextNonDeletedMsgIdx(this.NumMessages(), false);
+			msgIndex = this.FindNextReadableMsgIdx(this.NumMessages(), false);
 		}
 		else if (readMsgRetObj.nextAction == ACTION_CHG_MSG_AREA) // Change message area, if allowed
 		{
@@ -3068,16 +3105,16 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 					if ((testMsgHdr == null) || (((testMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs()))
 					{
 						// First try going forward
-						var nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(msgIndex, true);
+						var readableMsgIdx = this.FindNextReadableMsgIdx(msgIndex, true);
 						// If a non-deleted message was not found, then try going backward.
-						if (nonDeletedMsgIdx == -1)
-							nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(msgIndex, false);
+						if (readableMsgIdx == -1)
+							readableMsgIdx = this.FindNextReadableMsgIdx(msgIndex, false);
 						// If a non-deleted message was found, then set msgIndex to it.
 						// Otherwise, return.
 						// Note: If there are no messages in the chosen sub-board at all,
 						// then the error would have already been shown.
-						if (nonDeletedMsgIdx > -1)
-							msgIndex = nonDeletedMsgIdx;
+						if (readableMsgIdx > -1)
+							msgIndex = readableMsgIdx;
 						else
 						{
 							if (this.NumMessages() != 0)
@@ -3150,19 +3187,6 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 			}
 			else
 			{
-				// If this.reverseListOrder is the string "ASK", the user will be prompted
-				// on the last line of the screen for whether they want to list the
-				// messages in reverse order.  So, erase the help line on the bottom of
-				// the screen.
-				if ((typeof(this.reverseListOrder) == "string") && (this.reverseListOrder.toUpperCase() == "ASK"))
-				{
-					if (this.scrollingReaderInterface && console.term_supports(USER_ANSI))
-					{
-						console.gotoxy(1, console.screen_rows);
-						console.cleartoeol("\x01n");
-					}
-				}
-
 				// List messages
 				var listRetObj = this.ListMessages(null, pAllowChgArea);
 				// If the user wants to quit, then stop the input loop.
@@ -3258,14 +3282,6 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pAllowChgSubBoard)
 	// mode.  This adds the delete and edit keys if the user is allowed to delete & edit
 	// messages.
 	this.SetMsgListPauseTextAndLightbarHelpLine();
-
-	// If this.reverseListOrder is the string "ASK", prompt the user for whether
-	// they want to list the messages in reverse order.
-	if ((typeof(this.reverseListOrder) == "string") && (this.reverseListOrder.toUpperCase() == "ASK"))
-	{
-		if (numMessages(bbs.cursub_code) > 0)
-			this.reverseListOrder = !console.noyes("\x01n\x01cList in reverse (newest on top)");
-	}
 
 	// List the messages using the lightbar or traditional interface, depending on
 	// what this.msgListUseLightbarListInterface is set to.  The lightbar interface requires ANSI.
@@ -3371,7 +3387,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 		console.gotoxy(curpos);
 		// Prompt the user whether or not to continue or to read a message
 		// (by message number).
-		if (this.reverseListOrder)
+		if (this.userSettings.listMessagesInReverse)
 			retvalObj = this.PromptContinueOrReadMsg((this.tradListTopMsgIdx == this.NumMessages()-1), lastScreen, allowChgSubBoard);
 		else
 			retvalObj = this.PromptContinueOrReadMsg((this.tradListTopMsgIdx == 0), lastScreen, allowChgSubBoard);
@@ -3390,7 +3406,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 			// this.tradListTopMsgIdx in order to do so.
 			if (retvalObj.userInput == "P")
 			{
-				if (this.reverseListOrder)
+				if (this.userSettings.listMessagesInReverse)
 				{
 					this.tradListTopMsgIdx += this.tradMsgListNumLines;
 					// If we go past the beginning, then we need to reset
@@ -3412,7 +3428,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 			// this.tradListTopMsgIdx appropriately.
 			else if (retvalObj.userInput == "N")
 			{
-				if (this.reverseListOrder)
+				if (this.userSettings.listMessagesInReverse)
 					this.tradListTopMsgIdx -= this.tradMsgListNumLines;
 				else
 					this.tradListTopMsgIdx += this.tradMsgListNumLines;
@@ -3420,7 +3436,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 			// First page
 			else if (retvalObj.userInput == "F")
 			{
-				if (this.reverseListOrder)
+				if (this.userSettings.listMessagesInReverse)
 					this.tradListTopMsgIdx = this.NumMessages() - 1;
 				else
 					this.tradListTopMsgIdx = 0;
@@ -3428,7 +3444,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 			// Last page
 			else if (retvalObj.userInput == "L")
 			{
-				if (this.reverseListOrder)
+				if (this.userSettings.listMessagesInReverse)
 				{
 					this.tradListTopMsgIdx = (this.NumMessages() % this.tradMsgListNumLines) - 1;
 					// If this.tradListTopMsgIdx is now invalid (below 0), then adjust it
@@ -3479,8 +3495,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 						// The message header could have the "isBogus" property, for instance, if
 						// it's a vote message (introduced in Synchronet 3.17).
 						var tmpMsgHdr = this.GetMsgHdrByIdx(msgNum-1);
-						var hdrIsBogus = (tmpMsgHdr.hasOwnProperty("isBogus") ? tmpMsgHdr.isBogus : false);
-						if (!hdrIsBogus)
+						if (tmpMsgHdr != null)
 							var returnObj = this.EditExistingMsg(msgNum-1);
 						else
 						{
@@ -3788,10 +3803,14 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			// The user choice a message to read
 			this.lightbarListSelectedMsgIdx = msgListMenu.selectedItemIdx;
 			msgHeader = this.GetMsgHdrByIdx(this.lightbarListSelectedMsgIdx, this.showScoresInMsgList);
-			this.PrintMessageInfo(msgHeader, true, this.lightbarListSelectedMsgIdx+1);
+			// TODO: Is this commented-out code necessary?  In indexed newscan mode, when reading a
+			// message, then switching to the list, then selecting a message to read, this is re-printing
+			// the message info line from the message list and it's appearing over the help line at the
+			// bottom of the screen.
+			//if (msgHeader != null)
+			//	this.PrintMessageInfo(msgHeader, true, this.lightbarListSelectedMsgIdx+1);
 			console.gotoxy(this.lightbarListCurPos); // Make sure the cursor is still in the right place
-			var hdrIsBogus = (msgHeader.hasOwnProperty("isBogus") ? msgHeader.isBogus : false);
-			if (!hdrIsBogus)
+			if (msgHeader != null)
 			{
 				// Allow the user to read the current message.
 				var readMsg = true;
@@ -3873,8 +3892,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				// it's a vote message (introduced in Synchronet 3.17).
 				//GetMsgHdrByIdx(pMsgIdx, pExpandFields)
 				var tmpMsgHdr = this.GetMsgHdrByIdx(+(userInput-1), false);
-				var hdrIsBogus = (tmpMsgHdr.hasOwnProperty("isBogus") ? tmpMsgHdr.isBogus : false);
-				if (!hdrIsBogus)
+				if (tmpMsgHdr != null)
 				{
 					// Confirm with the user whether to read the message
 					var readMsg = true;
@@ -3953,8 +3971,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				// The message header could have the "isBogus" property, for instance, if
 				// it's a vote message (introduced in Synchronet 3.17).
 				var tmpMsgHdr = this.GetMsgHdrByIdx(this.lightbarListSelectedMsgIdx, false);
-				var hdrIsBogus = (tmpMsgHdr.hasOwnProperty("isBogus") ? tmpMsgHdr.isBogus : false);
-				if (!hdrIsBogus)
+				if (tmpMsgHdr != null)
 				{
 					// Ask the user if they really want to edit the message
 					console.gotoxy(1, console.screen_rows);
@@ -4104,7 +4121,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			DisplayHelpLine(this.msgListLightbarModeHelpLine);
 		}
 		// Ctrl-D: Batch delete (for selected messages)
-		else if (lastUserInputUpper == CTRL_D)
+		else if (lastUserInputUpper == this.msgListKeys.batchDelete) // CTRL_D
 		{
 			if (this.CanDelete() || this.CanDeleteLastMsg())
 			{
@@ -4116,7 +4133,14 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 
 					// The PromptAndDeleteOrUndeleteSelectedMessages() method will prompt the user for confirmation
 					// to delete the message and then delete it if confirmed.
-					this.PromptAndDeleteOrUndeleteSelectedMessages({ x: 1, y: console.screen_rows}, true);
+					var delSuccessful = this.PromptAndDeleteOrUndeleteSelectedMessages({ x: 1, y: console.screen_rows}, true);
+					// If successfully deleted, have the menu draw only the check character column in the
+					// next iteration
+					if (delSuccessful)
+					{
+						this.selectedMessages = {};
+						drawMenu = true;
+					}
 
 					// In case all messages were deleted, if the user can't view deleted messages,
 					// show an appropriate message and don't continue listing messages.
@@ -4299,6 +4323,12 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 		additionalQuitKeys += this.msgListKeys.editMsg;
 	msgListMenu.AddAdditionalQuitKeys(additionalQuitKeys);
 
+	// Add additional keypresses for PageUp, PageDown, HOME (first page), and END (last page)
+	msgListMenu.AddAdditionalPageUpKeys("Pp"); // Previous page
+	msgListMenu.AddAdditionalPageDownKeys("Nn"); // Next page
+	msgListMenu.AddAdditionalFirstPageKeys("Ff"); // First page
+	msgListMenu.AddAdditionalLastPageKeys("Ll"); // Last page
+
 	// Change the menu's NumItems() and GetItem() function to reference
 	// the message list in this object rather than add the menu items
 	// to the menu
@@ -4306,9 +4336,10 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 	msgListMenu.NumItems = function() {
 		return this.msgReader.NumMessages();
 	};
+	msgListMenu.readingPersonalEmail = this.subBoardCode.toLowerCase() == "mail";
 	msgListMenu.GetItem = function(pItemIndex) {
 		var menuItemObj = this.MakeItemWithRetval(-1);
-		var itemIdx = (this.msgReader.reverseListOrder ? this.msgReader.NumMessages() - pItemIndex - 1 : pItemIndex);
+		var itemIdx = (this.msgReader.userSettings.listMessagesInReverse ? this.msgReader.NumMessages() - pItemIndex - 1 : pItemIndex);
 		// In order to get vote score information (displayed if the user's terminal is wide
 		// enough), the 2nd parameter to GetMsgHdrByIdx() should be true.
 		var msgHdr = this.msgReader.GetMsgHdrByIdx(itemIdx, this.msgReader.showScoresInMsgList);
@@ -4320,33 +4351,35 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 			menuItemObj.retval = msgHdr.number;
 			if (this.msgReader.subBoardCode != "mail")
 				menuItemObj.useAltColors = userHandleAliasNameMatch(msgHdr.to);
-			// If the message is marked as deleted, ensure the correct color is used
-			// for the mark character in the menu
+			// For any indicator character next to the message, prioritize deleted, then selected,
+			// then unread, then attachments
+			// First, to ensure the correct status character color is used, copy the menu item colors
+			// in any of these cases; then change the attributes for the 2nd color (selected).
+			if (this.msgReader.MessageIsSelected(this.msgReader.subBoardCode, pItemIndex) || (msgHdr.attr & MSG_DELETE) == MSG_DELETE || (msgHdr.attr & MSG_READ) == 0 || msgHdrHasAttachmentFlag(msgHdr))
+			{
+				menuItemObj.itemColor = [];
+				for (var i = 0; i < this.colors.itemColor.length; ++i)
+					menuItemObj.itemColor.push(this.colors.itemColor[i]);
+				menuItemObj.itemSelectedColor = [];
+				for (var i = 0; i < this.colors.selectedItemColor.length; ++i)
+					menuItemObj.itemSelectedColor.push(this.colors.selectedItemColor[i]);
+			}
+			// Change the color
+			// Deleted
 			if ((msgHdr.attr & MSG_DELETE) == MSG_DELETE)
 			{
-				var fromColor = this.msgReader.colors.msgListFromColor;
-				var toColor = this.msgReader.colors.msgListToColor;
-				var subjColor = this.msgReader.colors.msgListSubjectColor;
-				if ((this.msgReader.subBoardCode != "mail") && (userHandleAliasNameMatch(msgHdr.to)))
-				{
-					fromColor = this.msgReader.colors.msgListToUserFromColor;
-					toColor = this.msgReader.colors.msgListToUserToColor;
-					subjColor = this.msgReader.colors.msgListToUserSubjectColor;
-				}
-				menuItemObj.itemColor = [{start: msgListIdxes.msgNumStart, end: msgListIdxes.msgNumEnd, attrs: this.msgReader.colors.msgListMsgNumColor},
-				                         {start: msgListIdxes.selectMarkStart, end: msgListIdxes.selectMarkEnd, attrs: "\x01r\x01h\x01i"},
-				                         {start: msgListIdxes.fromNameStart, end: msgListIdxes.fromNameEnd, attrs: fromColor},
-				                         {start: msgListIdxes.toNameStart, end: msgListIdxes.toNameEnd, attrs: toColor},
-				                         {start: msgListIdxes.subjStart, end: msgListIdxes.subjEnd, attrs: subjColor},
-				                         {start: msgListIdxes.dateStart, end: msgListIdxes.dateEnd, attrs: this.msgReader.colors.msgListDateColor},
-				                         {start: msgListIdxes.timeStart, end: msgListIdxes.timeEnd, attrs: this.msgReader.colors.msgListTimeColor}];
-				menuItemObj.itemSelectedColor = [{start: msgListIdxes.msgNumStart, end: msgListIdxes.msgNumEnd, attrs: this.msgReader.colors.msgListMsgNumHighlightColor},
-				                                 {start: msgListIdxes.selectMarkStart, end: msgListIdxes.selectMarkEnd, attrs: "\x01r\x01h\x01i" + this.msgReader.colors.msgListHighlightBkgColor},
-				                                 {start: msgListIdxes.fromNameStart, end: msgListIdxes.fromNameEnd, attrs: this.msgReader.colors.msgListFromHighlightColor},
-				                                 {start: msgListIdxes.toNameStart, end: msgListIdxes.toNameEnd, attrs: this.msgReader.colors.msgListToHighlightColor},
-				                                 {start: msgListIdxes.subjStart, end: msgListIdxes.subjEnd, attrs: this.msgReader.colors.msgListSubjHighlightColor},
-				                                 {start: msgListIdxes.dateStart, end: msgListIdxes.dateEnd, attrs: this.msgReader.colors.msgListDateHighlightColor},
-				                                 {start: msgListIdxes.timeStart, end: msgListIdxes.timeEnd, attrs: this.msgReader.colors.msgListTimeHighlightColor}];
+				if (menuItemObj.itemColor.length >= 2)
+					menuItemObj.itemColor[1].attrs = "\x01r\x01h\x01i";
+				if (menuItemObj.itemSelectedColor.length >= 2)
+					menuItemObj.itemSelectedColor[1].attrs = "\x01r\x01h\x01i" + this.msgReader.colors.msgListHighlightBkgColor;
+			}
+			// Selected, unread, or has attachments
+			else if (this.msgReader.MessageIsSelected(this.msgReader.subBoardCode, pItemIndex) || (msgHdr.attr & MSG_READ) == 0 || msgHdrHasAttachmentFlag(msgHdr))
+			{
+				if (menuItemObj.itemColor.length >= 2)
+					menuItemObj.itemColor[1].attrs = "\x01n" + this.msgReader.colors.selectedMsgMarkColor;
+				if (menuItemObj.itemSelectedColor.length >= 2)
+					menuItemObj.itemSelectedColor[1].attrs = "\x01n" + this.msgReader.colors.selectedMsgMarkColor + this.msgReader.colors.msgListHighlightBkgColor;
 			}
 		}
 		return menuItemObj;
@@ -4424,9 +4457,12 @@ function DigDistMsgReader_CreateLightbarMsgGrpMenu()
 	};
 
 	// Set the currently selected item to the current group
+	msgGrpMenu.SetSelectedItemIdx(msg_area.sub[this.subBoardCode].grp_index);
+	/*
 	msgGrpMenu.selectedItemIdx = msg_area.sub[this.subBoardCode].grp_index;
 	if (msgGrpMenu.selectedItemIdx >= msgGrpMenu.topItemIdx+msgGrpMenu.GetNumItemsPerPage())
 		msgGrpMenu.topItemIdx = msgGrpMenu.selectedItemIdx - msgGrpMenu.GetNumItemsPerPage() + 1;
+	*/
 
 	return msgGrpMenu;
 }
@@ -4509,14 +4545,20 @@ function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx)
 	// Set the currently selected item to the current group
 	if (msg_area.sub[this.subBoardCode].grp_index == pGrpIdx)
 	{
+		subBoardMenu.SetSelectedItemIdx(msg_area.sub[this.subBoardCode].index);
+		/*
 		subBoardMenu.selectedItemIdx = msg_area.sub[this.subBoardCode].index;
 		if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
 			subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
+		*/
 	}
 	else
 	{
+		subBoardMenu.SetSelectedItemIdx(0);
+		/*
 		subBoardMenu.selectedItemIdx = 0;
 		subBoardMenu.topItemIdx = 0;
+		*/
 	}
 
 	return subBoardMenu;
@@ -4524,8 +4566,11 @@ function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx)
 // For the DigDistMsgLister class: Adjusts lightbar menu indexes for a message list menu
 function DigDistMsgReader_AdjustLightbarMsgListMenuIdxes(pMsgListMenu)
 {
+	pMsgListMenu.SetSelectedItemIdx(this.lightbarListSelectedMsgIdx);
+	/*
 	pMsgListMenu.selectedItemIdx = this.lightbarListSelectedMsgIdx;
 	pMsgListMenu.topItemIdx = this.lightbarListTopMsgIdx;
+	*/
 
 	// In the DDLightbarMenu class, the top index on the last page should
 	// allow for displaying a full page of items.  So if
@@ -4622,11 +4667,14 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 	// To access one of these, use brackets; i.e., msgHeader['to']
 	if (highlight)
 	{
-		// For any indicator character next to the message, prioritize selected, then deleted, then attachments
+		// For any indicator character next to the message, prioritize selected, then deleted,
+		// then unread, then attachments
 		if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
 			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + CHECK_CHAR + "\x01n";
 		else if (msgDeleted)
 			msgIndicatorChar = "\x01n\x01r\x01h\x01i" + this.colors.msgListHighlightBkgColor + "*\x01n";
+		else if (this.readingPersonalEmail && (pMsgHeader.attr & MSG_READ) == 0)
+			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + "U\x01n";
 		else if (msgHdrHasAttachmentFlag(pMsgHeader))
 			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + "A\x01n";
 		var fromName = pMsgHeader.from;
@@ -4644,22 +4692,25 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		}
 		else
 		{
-			msgHdrStr += format(format(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
+			msgHdrStr += format(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
 			       fromName.substr(0, this.FROM_LEN),
 			       pMsgHeader.to.substr(0, this.TO_LEN),
 			       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
-			       sDate, sTime));
+			       sDate, sTime);
 		}
 	}
 	else
 	{
-		// For any indicator character next to the message, prioritize selected, then deleted, then attachments
+		// For any indicator character next to the message, prioritize selected, then deleted,
+		// then unread, then attachments
 		if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
 			msgIndicatorChar = "\x01n" +  this.colors.selectedMsgMarkColor + CHECK_CHAR + "\x01n";
 		else if (msgDeleted)
 			msgIndicatorChar = "\x01n\x01r\x01h\x01i*\x01n";
+		else if (this.readingPersonalEmail && (pMsgHeader.attr & MSG_READ) == 0)
+			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + "U\x01n";
 		else if (msgHdrHasAttachmentFlag(pMsgHeader))
-			msgIndicatorChar = "\x01n" +  this.colors.selectedMsgMarkColor + "A\x01n";
+			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + "A\x01n";
 
 		// Determine whether to use the normal, "to-user", or "from-user" format string.
 		// The differences are the colors.  Then, output the message information line.
@@ -4777,7 +4828,7 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pAllowChgSubBoar
 	// If the user didn't press CTRL-L, allow the keys in allowedKeys or a number from 1
 	// to the highest message number.
 	userInput = console.getkey(K_NOECHO);
-	if (userInput != CTRL_D)
+	if (userInput != this.enhReaderKeys.batchDelete) // CTRL_D
 	{
 		console.ungetstr(userInput);
 		userInput = console.getkeys(allowedKeys, this.HighestMessageNum()).toString();
@@ -4798,8 +4849,7 @@ function DigDistMsgReader_PromptContinueOrReadMsg(pStart, pEnd, pAllowChgSubBoar
 			// The message header could have the "isBogus" property, for instance, if
 			// it's a vote message (introduced in Synchronet 3.17).
 			var tmpMsgHdr = this.GetMsgHdrByIdx(+(userInput-1), false);
-			var hdrIsBogus = (tmpMsgHdr.hasOwnProperty("isBogus") ? tmpMsgHdr.isBogus : false);
-			if (!hdrIsBogus)
+			if (tmpMsgHdr != null)
 			{
 				// Confirm with the user whether to read the message
 				var readMsg = true;
@@ -4922,6 +4972,19 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	retObj.msgNotReadable = !isReadableMsgHdr(msgHeader, this.subBoardCode);
 	if (retObj.msgNotReadable)
 		return retObj;
+	
+	// Mark the message as read if it was written to the current user
+	if (userHandleAliasNameMatch(msgHeader.to) && ((msgHeader.attr & MSG_READ) == 0))
+	{
+		// Using applyAttrsInMsgHdrInMessagbase(), which loads the header without
+		// expanded fields and saves the attributes with that header.
+		var saveRetObj = applyAttrsInMsgHdrInMessagbase(this.subBoardCode, msgHeader.number, MSG_READ);
+		if (this.SearchTypePopulatesSearchResults() && saveRetObj.saveSucceeded)
+			this.RefreshHdrInSavedArrays(pOffset, MSG_READ, true);
+	}
+
+	// Updating message pointers etc.
+	updateScanPtrAndOrLastRead(this.subBoardCode, msgHeader, this.doingMsgScan);
 
 	// Update the message list index variables so that the message list is in
 	// the right spot for the message currently being read
@@ -4962,34 +5025,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	else
 		retObj = this.ReadMessageEnhanced_Traditional(msgHeader, allowChgMsgArea, messageText, pOffset, getMsgBodyRetObj.pmode);
 
-	// Mark the message as read if it was written to the current user
-	if (userNameHandleAliasMatch(msgHeader.to) && ((msgHeader.attr & MSG_READ) == 0))
-	{
-		// Using applyAttrsInMsgHdrInMessagbase(), which loads the header without
-		// expanded fields and saves the attributes with that header.
-		var saveRetObj = applyAttrsInMsgHdrInMessagbase(this.subBoardCode, msgHeader.number, MSG_READ);
-		if (this.SearchTypePopulatesSearchResults() && saveRetObj.saveSucceeded)
-			this.RefreshHdrInSavedArrays(pOffset, MSG_READ, true);
-	}
-
-	// If not reading personal email and not doing a search, then update the
-	// scan & last read message pointers.
-	if ((this.subBoardCode != "mail") && (this.searchType == SEARCH_NONE))
-	{
-		if (typeof(msg_area.sub[this.subBoardCode].scan_ptr) === "number")
-		{
-			if (msg_area.sub[this.subBoardCode].scan_ptr != 0xffffffff && msg_area.sub[this.subBoardCode].scan_ptr < msgHeader.number)
-				msg_area.sub[this.subBoardCode].scan_ptr = msgHeader.number;
-		}
-		else
-			msg_area.sub[this.subBoardCode].scan_ptr = msgHeader.number;
-		//if (msgHeader.number > GetScanPtrOrLastMsgNum(this.subBoardCode))
-		//	msg_area.sub[this.subBoardCode].scan_ptr = msgHeader.number;
-		msg_area.sub[this.subBoardCode].last_read = msgHeader.number;
-		//if (msgHeader.number > msg_area.sub[this.subBoardCode].last_read)
-		//	msg_area.sub[this.subBoardCode].last_read = msgHeader.number;
-	}
-
 	return retObj;
 }
 // Helper method for ReadMessageEnhanced() - Does the scrollable reader interface
@@ -5013,7 +5048,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		fractionToLastPage = pFractionToLastPage;
 		solidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidScrollBlocks * pFractionToLastPage);
 		if (solidBlockStartRow != solidBlockLastStartRow)
-			msgReaderObj.UpdateEnhancedReaderScollbar(solidBlockStartRow, solidBlockLastStartRow, numSolidScrollBlocks);
+			msgReaderObj.UpdateEnhancedReaderScrollbar(solidBlockStartRow, solidBlockLastStartRow, numSolidScrollBlocks);
 		solidBlockLastStartRow = solidBlockStartRow;
 		console.gotoxy(1, console.screen_rows);
 	}
@@ -5022,7 +5057,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	{
 		var infoSolidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidInfoScrollBlocks * pFractionToLastPage);
 		if (infoSolidBlockStartRow != lastInfoSolidBlockStartRow)
-			msgReaderObj.UpdateEnhancedReaderScollbar(infoSolidBlockStartRow, lastInfoSolidBlockStartRow, numInfoSolidScrollBlocks);
+			msgReaderObj.UpdateEnhancedReaderScrollbar(infoSolidBlockStartRow, lastInfoSolidBlockStartRow, numInfoSolidScrollBlocks);
 		lastInfoSolidBlockStartRow = infoSolidBlockStartRow;
 		console.gotoxy(1, console.screen_rows);
 	}
@@ -5164,10 +5199,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 			case this.enhReaderKeys.selectMessage: // Select message (for batch delete, etc.)
 				var originalCurpos = console.getxy();
 				var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
-				if (this.EnhReaderPromptYesNo("Select this message", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks, true))
-					this.ToggleSelectedMessage(this.subBoardCode, pOffset, true);
-				else
-					this.ToggleSelectedMessage(this.subBoardCode, pOffset, false);
+				var selected = this.EnhReaderPromptYesNo("Select this message", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks, true);
+				this.ToggleSelectedMessage(this.subBoardCode, pOffset, selected);
 				writeMessage = false; // No need to refresh the message
 				break;
 			case this.enhReaderKeys.batchDelete:
@@ -5525,7 +5558,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				// if we don't find one, we'll still want to return from this
 				// function (with message index -1) so that this script can go
 				// onto the previous message sub-board/group.
-				retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, false);
+				retObj.newMsgOffset = this.FindNextReadableMsgIdx(pOffset, false);
 				// As a screen redraw optimization: Only return if there is a valid new
 				// message offset or the user is allowed to change to a different sub-board.
 				// Otherwise, don't return, and don't refresh the message on the screen.
@@ -6192,7 +6225,17 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				}
 				break;
 			case this.enhReaderKeys.quit: // Quit
-				retObj.nextAction = ACTION_QUIT;
+			case KEY_ESC:
+				// Normally, if quitFromReaderGoesToMsgList is enabled, then do that
+				if (this.userSettings.quitFromReaderGoesToMsgList)
+				{
+					console.attributes = "N";
+					console.crlf();
+					console.print("Loading...");
+					retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
+				}
+				else
+					retObj.nextAction = ACTION_QUIT;
 				continueOn = false;
 				break;
 			default:
@@ -6228,11 +6271,10 @@ function DigDistMsgReader_ScrollableReaderNextReadableMessage(pOffset, pMsgInfo,
 		nextAction: ACTION_NONE
 	};
 
-	// Look for a later message that isn't marked for deletion.  Even
-	// if we don't find one, we'll still want to return from this
-	// function (with message index -1) so that this script can go
-	// onto the next message sub-board/group.
-	retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, true);
+	// Look for the next readable message.  Even if we don't find one, we'll still
+	// want to return from this function (with message index -1) so that this script
+	// can go onto the next message sub-board/group.
+	retObj.newMsgOffset = this.FindNextReadableMsgIdx(pOffset, true);
 	// Note: Unlike the left arrow key, we want to exit this method when
 	// navigating to the next message, regardless of whether or not the
 	// user is allowed to change to a different sub-board, so that processes
@@ -6696,7 +6738,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				// if we don't find one, we'll still want to return from this
 				// function (with message index -1) so that this script can go
 				// onto the previous message sub-board/group.
-				retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, false);
+				retObj.newMsgOffset = this.FindNextReadableMsgIdx(pOffset, false);
 				var goToPrevMessage = false;
 				if ((retObj.newMsgOffset > -1) || allowChgMsgArea)
 				{
@@ -6724,7 +6766,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				// if we don't find one, we'll still want to return from this
 				// function (with message index -1) so that this script can go
 				// onto the next message sub-board/group.
-				retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, true);
+				retObj.newMsgOffset = this.FindNextReadableMsgIdx(pOffset, true);
 				// Note: Unlike the left arrow key, we want to exit this method when
 				// navigating to the next message, regardless of whether or not the
 				// user is allowed to change to a different sub-board, so that processes
@@ -7148,7 +7190,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 						// in their twit list, change the message currently being viewed.
 						if (this.MsgHdrFromOrToInUserTwitlist(msgHeader))
 						{
-							var newReadableMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, true);
+							var newReadableMsgOffset = this.FindNextReadableMsgIdx(pOffset, true);
 							if (newReadableMsgOffset > -1)
 							{
 								retObj.newMsgOffset = newReadableMsgOffset;
@@ -7183,7 +7225,18 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				}
 				break;
 			case this.enhReaderKeys.quit: // Quit
-				retObj.nextAction = ACTION_QUIT;
+			case KEY_ESC:
+				// Normally, if quitFromReaderGoesToMsgList is enabled, then do that, except
+				// in indexed mode, allow going back to the indexed mode menu.
+				if (this.userSettings.quitFromReaderGoesToMsgList && !this.indexedMode)
+				{
+					console.attributes = "N";
+					console.crlf();
+					console.print("Loading...");
+					retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
+				}
+				else
+					retObj.nextAction = ACTION_QUIT;
 				continueOn = false;
 				break;
 			default:
@@ -7276,7 +7329,7 @@ function DigDistMsgReader_LookForNextOrPriorNonDeletedMsg(pOffset)
 	// Look for a later message that isn't marked for deletion.
 	// If none is found, then look for a prior message that isn't
 	// marked for deletion.
-	retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, true);
+	retObj.newMsgOffset = this.FindNextReadableMsgIdx(pOffset, true);
 	if (retObj.newMsgOffset > -1)
 	{
 		retObj.continueInputLoop = false;
@@ -7285,7 +7338,7 @@ function DigDistMsgReader_LookForNextOrPriorNonDeletedMsg(pOffset)
 	else
 	{
 		// No later message found, so look for a prior message.
-		retObj.newMsgOffset = this.FindNextNonDeletedMsgIdx(pOffset, false);
+		retObj.newMsgOffset = this.FindNextReadableMsgIdx(pOffset, false);
 		if (retObj.newMsgOffset > -1)
 		{
 			retObj.continueInputLoop = false;
@@ -7401,12 +7454,12 @@ function DigDistMsgReader_GoToPrevSubBoardForEnhReader(pAllowChgMsgArea, pPrompt
 					else
 					{
 						// Look for the last message not marked as deleted
-						var nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(this.NumMessages(), false);
+						var readableMsgIdx = this.FindNextReadableMsgIdx(this.NumMessages(), false);
 						// If a non-deleted message was found, then set retObj.msgIndex to it.
 						// Otherwise, tell the user there are no messages in this sub-board
 						// and return.
-						if (nonDeletedMsgIdx > -1)
-							retObj.msgIndex = nonDeletedMsgIdx;
+						if (readableMsgIdx > -1)
+							retObj.msgIndex = readableMsgIdx;
 						else
 							retObj.msgIndex = this.NumMessages() - 1; // Shouldn't get here
 						var newLastRead = this.IdxToAbsMsgNum(retObj.msgIndex);
@@ -7540,15 +7593,15 @@ function DigDistMsgReader_GoToNextSubBoardForEnhReader(pAllowChgMsgArea, pPrompt
 					{
 						// Set the index of the message to display - Look for the
 						// first message not marked as deleted
-						var nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(this.NumMessages()-1, true);
+						var readableMsgIdx = this.FindNextReadableMsgIdx(this.NumMessages()-1, true);
 						// If a non-deleted message was found, then set retObj.msgIndex to it.
 						// Otherwise, tell the user there are no messages in this sub-board
 						// and return.
-						if (nonDeletedMsgIdx > -1)
+						if (readableMsgIdx > -1)
 						{
-							retObj.msgIndex = nonDeletedMsgIdx;
+							retObj.msgIndex = readableMsgIdx;
 							retObj.changedMsgArea = true;
-							var newLastRead = this.IdxToAbsMsgNum(nonDeletedMsgIdx);
+							var newLastRead = this.IdxToAbsMsgNum(readableMsgIdx);
 							if (newLastRead > -1)
 								msg_area.sub[this.subBoardCode].last_read = newLastRead;
 						}
@@ -7636,9 +7689,9 @@ function DigDistMsgReader_SetUpTraditionalMsgListVars()
 			lastReadMsgIdx = 0;
 	}
 	var pageNum = findPageNumOfItemNum(lastReadMsgIdx+1, this.tradMsgListNumLines, this.NumMessages(),
-									   this.reverseListOrder);
+									   this.userSettings.listMessagesInReverse);
 	this.CalcTraditionalMsgListTopIdx(pageNum);
-	if (!this.reverseListOrder && (this.tradListTopMsgIdx > lastReadMsgIdx))
+	if (!this.userSettings.listMessagesInReverse && (this.tradListTopMsgIdx > lastReadMsgIdx))
 		this.tradListTopMsgIdx -= this.tradMsgListNumLines;
 }
 
@@ -7668,10 +7721,10 @@ function DigDistMsgReader_SetUpLightbarMsgListVars()
 		}
 	}
 	var pageNum = findPageNumOfItemNum(lastReadMsgIdx+1, this.lightbarMsgListNumLines, this.NumMessages(),
-	                                   this.reverseListOrder);
+	                                   this.userSettings.listMessagesInReverse);
 	this.CalcLightbarMsgListTopIdx(pageNum);
 	var initialCursorRow = 0;
-	if (this.reverseListOrder)
+	if (this.userSettings.listMessagesInReverse)
 		initialCursorRow = this.lightbarMsgListStartScreenRow+(this.lightbarListTopMsgIdx-lastReadMsgIdx);
 	else
 	{
@@ -7679,7 +7732,14 @@ function DigDistMsgReader_SetUpLightbarMsgListVars()
 			this.lightbarListTopMsgIdx -= this.lightbarMsgListNumLines;
 		initialCursorRow = this.lightbarMsgListStartScreenRow+(lastReadMsgIdx-this.lightbarListTopMsgIdx);
 	}
-	this.lightbarListSelectedMsgIdx = lastReadMsgIdx;
+	if (this.userSettings.listMessagesInReverse)
+	{
+		this.lightbarListSelectedMsgIdx = this.NumMessages() - lastReadMsgIdx - 1;
+		if (this.lightbarListSelectedMsgIdx < 0)
+			this.lightbarListSelectedMsgIdx = 0;
+	}
+	else
+		this.lightbarListSelectedMsgIdx = lastReadMsgIdx;
 	this.lightbarListCurPos = { x: 1, y: initialCursorRow };
 }
 
@@ -7753,7 +7813,7 @@ function DigDistMsgReader_ListScreenfulOfMessages(pTopIndex, pMaxLines)
 
 	var curpos = console.getxy();
 	var msgIndex = 0;
-	if (this.reverseListOrder)
+	if (this.userSettings.listMessagesInReverse)
 	{
 		var endIndex = pTopIndex - pMaxLines + 1; // The index of the last message to display
 		for (msgIndex = pTopIndex; (msgIndex >= 0) && (msgIndex >= endIndex); --msgIndex)
@@ -7928,6 +7988,7 @@ function DigDistMsgReader_DisplayTraditionalMsgListHelp(pDisplayHeader, pChgSubB
 	console.print("\x01n" + this.colors.tradInterfaceHelpScreenColor + "  1,2,3\r\n");
 	console.print("\x01n" + this.colors.tradInterfaceHelpScreenColor + "  1 2 3\r\n");
 	console.print("\x01n" + this.colors.tradInterfaceHelpScreenColor + "  1,2,10-20\r\n");
+	console.print("\x01n\x01h\x01cCTRL-U" + this.colors.tradInterfaceHelpScreenColor + ": Change your user settings\r\n");
 	console.print("\x01n\x01h\x01cCTRL-D" + this.colors.tradInterfaceHelpScreenColor + ": Batch delete selected messages\r\n");
 	console.print("\x01n\x01h\x01cQ" + this.colors.tradInterfaceHelpScreenColor + ": Quit\r\n");
 	if (this.indexedMode)
@@ -8026,6 +8087,7 @@ function DigDistMsgReader_DisplayLightbarMsgListHelp(pDisplayHeader, pChgSubBoar
 	console.print("\x01n\x01h\x01cSpacebar" + this.colors.tradInterfaceHelpScreenColor + ": Select message (for batch delete, etc.)\r\n");
 	console.print("\x01n\x01h\x01cCTRL-A" + this.colors.tradInterfaceHelpScreenColor + ": Select/de-select all messages\r\n");
 	console.print("\x01n\x01h\x01cCTRL-D" + this.colors.tradInterfaceHelpScreenColor + ": Batch delete selected messages\r\n");
+	console.print("\x01n\x01h\x01cCTRL-U" + this.colors.tradInterfaceHelpScreenColor + ": Change your user settings\r\n");
 	console.print("\x01n\x01h\x01cQ" + this.colors.tradInterfaceHelpScreenColor + ": Quit\r\n");
 	if (this.indexedMode)
 		console.print(" Currently in indexed mode; quitting will quit back to the index list.\r\n");
@@ -8046,8 +8108,10 @@ function DigDistMsgReader_DisplayMessageListNotesHelp()
 	                         this.colors["tradInterfaceHelpScreenColor"], "\x01n\x01k\x01h")
 	console.print(this.colors["tradInterfaceHelpScreenColor"]);
 	console.print("If a message has been marked for deletion, it will appear with a blinking\r\n");
-	console.print("red asterisk (\x01n\x01h\x01r\x01i*" + "\x01n" + this.colors["tradInterfaceHelpScreenColor"] + ") in");
-	console.print(" after the message number in the message list.");
+	console.print("red asterisk (\x01n\x01h\x01r\x01i*" + "\x01n" + this.colors.tradInterfaceHelpScreenColor + ") in");
+	console.print(" after the message number in the message list.\r\n");
+	console.print("For a message written to you, a U between the message number and 'from' name\r\n");
+	console.print("means the message is unread.");
 }
 // For the DigDistMsgReader Class: Sets the traditional UI pause prompt text
 // strings, sLightbarModeHelpLine, the text string for the lightbar help line,
@@ -8407,14 +8471,6 @@ function DigDistMsgReader_ReadConfigFile()
 			this.quickUserValSetIndex = numberVal;
 		if (settingsObj.hasOwnProperty("listInterfaceStyle") && typeof(settingsObj.listInterfaceStyle) === "string")
 			this.msgListUseLightbarListInterface = (settingsObj.listInterfaceStyle.toUpperCase() == "LIGHTBAR");
-		if (settingsObj.hasOwnProperty("reverseListOrder"))
-		{
-			var valType = typeof(settingsObj.reverseListOrder);
-			if (valType === "boolean")
-				this.reverseListOrder = settingsObj.reverseListOrder;
-			else if (valType === "string")
-				this.reverseListOrder = (settingsObj.reverseListOrder.toUpperCase() == "ASK");
-		}
 		if (typeof(settingsObj["readerInterfaceStyle"]) === "string")
 			this.scrollingReaderInterface = (settingsObj.readerInterfaceStyle.toUpperCase() == "SCROLLABLE");
 		if (typeof(settingsObj["readerInterfaceStyleForANSIMessages"]) === "string")
@@ -8469,8 +8525,13 @@ function DigDistMsgReader_ReadConfigFile()
 			if (!file_exists(themeFilename))
 				themeFilename = gStartupPath + settingsObj.themeFilename;
 		}
-		if (settingsObj.hasOwnProperty("saveAllHdrsWhenSavingMsgToBBSPC"))
-			this.saveAllHdrsWhenSavingMsgToBBSPC = settingsObj["saveAllHdrsWhenSavingMsgToBBSPC"];
+		if (typeof(settingsObj["saveAllHdrsWhenSavingMsgToBBSPC"]) === "boolean")
+			this.saveAllHdrsWhenSavingMsgToBBSPC = settingsObj.saveAllHdrsWhenSavingMsgToBBSPC;
+		// User setting defaults
+		if (typeof(settingsObj["reverseListOrder"] === "boolean"))
+			this.userSettings.listMessagesInReverse = settingsObj.reverseListOrder;
+		if (typeof(settingsObj["useIndexedModeForNewscan"]) === "boolean")
+			this.userSettings.useIndexedModeForNewscan = settingsObj.useIndexedModeForNewscan;
 	}
 	else
 	{
@@ -8590,10 +8651,20 @@ function DigDistMsgReader_ReadUserSettingsFile(pOnlyTwitlist)
 		var userSettingsFile = new File(gUserSettingsFilename);
 		if (userSettingsFile.open("r"))
 		{
-			//var behavior = userSettingsFile.iniGetObject("BEHAVIOR");
 			this.userSettings.useEnhReaderScrollbar = userSettingsFile.iniGetValue("BEHAVIOR", "useEnhReaderScrollbar", true);
 			this.userSettings.useIndexedModeForNewscan = userSettingsFile.iniGetValue("BEHAVIOR", "useIndexedModeForNewscan", false);
+			this.userSettings.listMessagesInReverse = userSettingsFile.iniGetValue("BEHAVIOR", "listMessagesInReverse", false);
+			this.userSettings.quitFromReaderGoesToMsgList = userSettingsFile.iniGetValue("BEHAVIOR", "quitFromReaderGoesToMsgList", false);
+			this.userSettings.enterFromIndexMenuShowsMsgList = userSettingsFile.iniGetValue("BEHAVIOR", "enterFromIndexMenuShowsMsgList", false);
+			//var behavior = userSettingsFile.iniGetObject("BEHAVIOR");
 			userSettingsFile.close();
+			/*
+			for (var prop in behavior)
+			{
+				var propUpper = prop.toUpperCase();
+				//if (propUpper == "USEENHREADERSCROLLBAR" && typeof(behavior[prop]) === "boolean")
+			}
+			*/
 		}
 	}
 }
@@ -8610,6 +8681,9 @@ function DigDistMsgReader_WriteUserSettingsFile()
 	{
 		userSettingsFile.iniSetValue("BEHAVIOR", "useEnhReaderScrollbar", this.userSettings.useEnhReaderScrollbar);
 		userSettingsFile.iniSetValue("BEHAVIOR", "useIndexedModeForNewscan", this.userSettings.useIndexedModeForNewscan);
+		userSettingsFile.iniSetValue("BEHAVIOR", "listMessagesInReverse", this.userSettings.listMessagesInReverse);
+		userSettingsFile.iniSetValue("BEHAVIOR", "quitFromReaderGoesToMsgList", this.userSettings.quitFromReaderGoesToMsgList);
+		userSettingsFile.iniSetValue("BEHAVIOR", "enterFromIndexMenuShowsMsgList", this.userSettings.enterFromIndexMenuShowsMsgList);
 		userSettingsFile.close();
 		writeSucceeded = true;
 	}
@@ -8649,10 +8723,17 @@ function DigDistMsgReader_EditExistingMsg(pMsgIndex)
 	// Only let the user edit the message if they're a sysop or
 	// if they wrote the message.
 	var msgHeader = this.GetMsgHdrByIdx(pMsgIndex, false, msgbase);
+	if (msgHeader == null)
+	{
+		console.print("\x01n\x01h\x01wInvalid message header\x01n");
+		console.crlf();
+		console.pause();
+		return returnObj;
+	}
 	if (!user.is_sysop && (msgHeader.from != user.name) && (msgHeader.from != user.alias) && (msgHeader.from != user.handle))
 	{
 		console.print("\x01n\x01h\x01wCannot edit message #\x01y" + +(pMsgIndex+1) +
-		              " \x01wbecause it's not yours or you're not a sysop.");
+		              " \x01wbecause it's not yours or you're not a sysop.\x01n");
 		console.crlf();
 		console.pause();
 		returnObj.userCannotEdit = true;
@@ -8702,8 +8783,7 @@ function DigDistMsgReader_EditExistingMessageOldWay(pMsgbase, pOrigMsgHdr, pMsgI
 	//var originalMsgBody = pMsgbase.get_msg_body(true, pMsgIndex, false, false, true, true);
 	var originalMsgBody;
 	var tmpMsgHdr = this.GetMsgHdrByIdx(pMsgIndex, false, pMsgbase);
-	var msgHdrIsBogus = (tmpMsgHdr.hasOwnProperty("isBogus") ? tmpMsgHdr.isBogus : false);
-	if (msgHdrIsBogus)
+	if (tmpMsgHdr == null)
 		originalMsgBody = pMsgbase.get_msg_body(true, pMsgIndex, false, false, true, true);
 	else
 		originalMsgBody = pMsgbase.get_msg_body(false, tmpMsgHdr.number, false, false, true, true);
@@ -8993,7 +9073,7 @@ function DigDistMsgReader_NumMessages(pMsgbase, pCheckDeletedAttributes)
 		var totalNumMsgs = msgbase.total_msgs;
 		for (var msgIdx = 0; msgIdx < totalNumMsgs; ++msgIdx)
 		{
-			if (isReadableMsgHdr(msgbase.get_msg_header(true, msgIdx, false), this.subBoardCode))
+			if (isReadableMsgHdr(msgbase.get_msg_index(true, msgIdx, false), this.subBoardCode))
 				++numMsgs;
 		}
 	}
@@ -9006,7 +9086,7 @@ function DigDistMsgReader_NumMessages(pMsgbase, pCheckDeletedAttributes)
 		for (var msgIdx = 0; msgIdx < originalNumMsgs; ++msgIdx)
 		{
 			msgHdr = this.GetMsgHdrByIdx(msgIdx);
-			if ((msgHdr.attr & MSG_DELETE) == MSG_DELETE)
+			if (msgHdr == null || (msgHdr.attr & MSG_DELETE) == MSG_DELETE)
 			{
 				--numMsgs;
 				if (numMsgs < 0)
@@ -9040,7 +9120,7 @@ function DigDistMsgReader_NonDeletedMessagesExist()
 		for (var msgIdx = 0; (msgIdx < numMsgs) && !messagesExist; ++msgIdx)
 		{
 			msgHdr = this.GetMsgHdrByIdx(msgIdx);
-			if ((msgHdr.attr & MSG_DELETE) == 0)
+			if (msgHdr != null && (msgHdr.attr & MSG_DELETE) == 0)
 			{
 				messagesExist = true;
 				break;
@@ -9114,8 +9194,7 @@ function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx, pExpandFields, pMsgbase)
 	var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
 
 	var msgHdr = null;
-	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
-	    (this.msgSearchHdrs[this.subBoardCode].indexed.length > 0))
+	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) && (this.msgSearchHdrs[this.subBoardCode].indexed.length > 0))
 	{
 		if ((pMsgIdx >= 0) && (pMsgIdx < this.msgSearchHdrs[this.subBoardCode].indexed.length))
 		{
@@ -9137,8 +9216,6 @@ function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx, pExpandFields, pMsgbase)
 	}
 	else
 		msgHdr = getHdrFromMsgbase(pMsgbase, this.subBoardCode, true, pMsgIdx, pExpandFields);
-	if (msgHdr == null)
-		msgHdr = getBogusMsgHdr();
 	return msgHdr;
 }
 
@@ -9178,8 +9255,6 @@ function DigDistMsgReader_GetMsgHdrByMsgNum(pMsgNum, pExpandFields)
 			msgbase.close();
 		}
 	}
-	if (msgHdr == null)
-		msgHdr = getBogusMsgHdr();
 	return msgHdr;
 }
 
@@ -9203,8 +9278,6 @@ function DigDistMsgReader_GetMsgHdrByAbsoluteNum(pMsgNum, pExpandFields, pGetVot
 		msgHdr = msgbase.get_msg_header(false, pMsgNum, expandFields, getVoteInfo);
 		msgbase.close();
 	}
-	if (msgHdr == null)
-		msgHdr = getBogusMsgHdr();
 	return msgHdr;
 }
 function DumpMsgHdr(pSubCode, pMsgNum, pExpandFields, pGetVoteInfo)
@@ -9233,14 +9306,7 @@ function DumpMsgHdr(pSubCode, pMsgNum, pExpandFields, pGetVoteInfo)
 // Return value: The message's index.  On error, returns -1.
 function DigDistMsgReader_AbsMsgNumToIdx(pMsgNum)
 {
-	var msgIdx = -1;
-	var msgbase = new MsgBase(this.subBoardCode);
-	if (msgbase.open())
-	{
-		msgIdx = absMsgNumToIdx(msgbase, pMsgNum);
-		msgbase.close();
-	}
-	return msgIdx;
+	return absMsgNumToIdx(this.subBoardCode, pMsgNum);
 }
 
 // For the DigDistMsgReader class: Takes a message index and returns
@@ -9260,66 +9326,6 @@ function DigDistMsgReader_IdxToAbsMsgNum(pMsgIdx)
 		msgbase.close();
 	}
 	return msgIdx;
-}
-
-// This function takes an absolute message number for a given messagebase objectand
-// and returns the message index (offset).  On error, returns -1.
-//
-// Parameters:
-//  pMsgbase: The messagebase object from which to retrieve the message header
-//  pMsgNum: The absolute message number
-//
-// Return value: The message's index, or -1 on error.
-function absMsgNumToIdx(pMsgbase, pMsgNum)
-{
-	if ((pMsgbase == null) || (typeof(pMsgbase) != "object"))
-		return -1;
-	if (!pMsgbase.is_open)
-		return -1;
-
-	if (typeof(pMsgNum) != "number")
-		return -1;
-	
-	var messageIdx = 0;
-	// If pMsgNum is 0xffffffff (0xffffffff, or ~0), that is a special value
-	// for the user's scan_ptr meaning it should point to the latest message
-	// in the messagebase.
-	if (pMsgNum == 0xffffffff)
-		messageIdx = pMsgbase.total_msgs - 1; // Or this.NumMessages() - 1 but can't because this isn't a class member function
-	else
-	{
-		var msgHdr = pMsgbase.get_msg_header(false, pMsgNum, false);
-		if ((msgHdr == null) && gCmdLineArgVals.verboselogging)
-		{
-			writeToSysAndNodeLog("Message area " + pMsgbase.cfg.code + ": Tried to get message header for absolute message number " +
-			                     pMsgNum + " but got a null header object.");
-		}
-		messageIdx = (msgHdr != null ? msgHdr.offset : -1);
-	}
-	return messageIdx;
-}
-
-// Takes a message index and returns the message's absolute message number.
-//
-// Parameters:
-//  pMsgbase: The messagebase object from which to retrieve the message header
-//  pMsgIdx: The message index
-//
-// Return value: The absolue message number, or -1 on error.
-function idxToAbsMsgNum(pMsgbase, pMsgIdx)
-{
-	if ((pMsgbase == null) || (typeof(pMsgbase) != "object"))
-		return -1;
-	if (!pMsgbase.is_open)
-		return -1;
-
-	var msgHdr = pMsgbase.get_msg_header(true, pMsgIdx, false);
-	if ((msgHdr == null) && gCmdLineArgVals.verboselogging)
-	{
-		writeToSysAndNodeLog("Tried to get message header for message offset " +
-		                     pMsgIdx + " but got a null header object.");
-	}
-	return (msgHdr != null ? msgHdr.number : -1);
 }
 
 // Prompts the user for a message number and keeps repeating if they enter and
@@ -9797,16 +9803,19 @@ function findDashJustifyIndex(pAtCodeStr)
 }
 
 // Finds the offset (index) of the next message prior to or after a given offset
-// that is not marked as deleted.  If none is found, the return value will be -1.
+// that is readable (not marked as deleted or the user can read deleted messages,
+// etc.).  If none is found, the return value will be -1.
 //
 // Parameters:
 //  pOffset: The message offset to search prior/after
 //  pForward: Boolean - Whether or not to search forward (true) or backward (false).
 //            If this is not specified, the default will be true (forward).
+//  pUseCachedHdrs: Optional boolean - Whether or not to use the cached message headers
+//                  (which are filtered with deleted messages removed, etc). Defaults to true.
 //
 // Return value: The index of the next message prior/later that is not marked
 //               as deleted, or -1 if none is found.
-function DigDistMsgReader_FindNextNonDeletedMsgIdx(pOffset, pForward)
+function DigDistMsgReader_FindNextReadableMsgIdx(pOffset, pForward, pUseCachedHdrs)
 {
 	// Sanity checking for the parameters & other things
 	if (typeof(pOffset) != "number")
@@ -9816,35 +9825,62 @@ function DigDistMsgReader_FindNextNonDeletedMsgIdx(pOffset, pForward)
 	if (!msgbase.open())
 		return -1;
 
+	var useCachedHdrs = (typeof(pUseCachedHdrs) === "boolean" ? pUseCachedHdrs : true);
 	var newMsgIdx = -1;
 	if (searchForward)
 	{
-		// Search forward for a message that isn't marked for deletion.
-		var numOfMessages = this.NumMessages(msgbase);
-		if (pOffset < numOfMessages - 1)
+		// Search forward for a message that isn't marked for deletion (and check if the user
+		// can read deleted messages)
+		if (useCachedHdrs)
 		{
-			var hdrIsBogus;
-			for (var messageIdx = pOffset+1; (messageIdx < numOfMessages) && (newMsgIdx == -1); ++messageIdx)
+			var numOfMessages = this.NumMessages(msgbase);
+			if (pOffset < numOfMessages - 1)
 			{
-				var nextMsgHdr = this.GetMsgHdrByIdx(messageIdx, false, msgbase);
-				hdrIsBogus = (nextMsgHdr.hasOwnProperty("isBogus") ? nextMsgHdr.isBogus : false);
-				if ((nextMsgHdr != null) && !hdrIsBogus && ((nextMsgHdr.attr & MSG_DELETE) == 0))
-					newMsgIdx = messageIdx;
+				var hdrIsBogus;
+				for (var messageIdx = pOffset+1; (messageIdx < numOfMessages) && (newMsgIdx == -1); ++messageIdx)
+				{
+					var nextMsgHdr = this.GetMsgHdrByIdx(messageIdx, false, msgbase);
+					if (nextMsgHdr != null && !isVoteHdr(nextMsgHdr))
+					{
+						var canRead = true;
+						if ((nextMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+							canRead = canViewDeletedMsgs();
+						if (canRead)
+							newMsgIdx = messageIdx;
+					}
+				}
 			}
+		}
+		else
+		{
+			// TODO
 		}
 	}
 	else
 	{
-		// Search backward for a message that isn't marked for deletion.
+		// Search backward for a message that isn't marked for deletion (and check if the user
+		// can read deleted messages)
 		if (pOffset > 0)
 		{
-			var hdrIsBogus;
-			for (var messageIdx = pOffset-1; (messageIdx >= 0) && (newMsgIdx == -1); --messageIdx)
+			if (useCachedHdrs)
 			{
-				var prevMsgHdr = this.GetMsgHdrByIdx(messageIdx, false, msgbase);
-				hdrIsBogus = (prevMsgHdr.hasOwnProperty("isBogus") ? prevMsgHdr.isBogus : false);
-				if ((prevMsgHdr != null) && !hdrIsBogus && ((prevMsgHdr.attr & MSG_DELETE) == 0))
-					newMsgIdx = messageIdx;
+				var hdrIsBogus;
+				for (var messageIdx = pOffset-1; (messageIdx >= 0) && (newMsgIdx == -1); --messageIdx)
+				{
+					var prevMsgHdr = this.GetMsgHdrByIdx(messageIdx, false, msgbase);
+					if (prevMsgHdr != null && !isVoteHdr(prevMsgHdr))
+					{
+						var canRead = true;
+						if ((prevMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
+							canRead = canViewDeletedMsgs();
+						if (canRead)
+							newMsgIdx = messageIdx;
+					}
+				}
+			}
+			else
+			{
+				// TODO
 			}
 		}
 	}
@@ -10401,7 +10437,7 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	                    "\x01h\x01cPageUp\x01g/\x01cPageDown  \x01g: \x01n\x01cScroll up\x01g/\x01cdown a page in the message",
 	                    "\x01h\x01cHOME             \x01g: \x01n\x01cGo to the top of the message",
 	                    "\x01h\x01cEND              \x01g: \x01n\x01cGo to the bottom of the message"];
-	keyHelpLines.push("\x01h\x01cCtrl-U           \x01g: \x01n\x01cUser settings (including personal twit list)");
+	keyHelpLines.push("\x01h\x01cCtrl-U           \x01g: \x01n\x01cChange your user settings");
 	if (user.is_sysop)
 	{
 		keyHelpLines.push("\x01h\x01cDEL              \x01g: \x01n\x01cDelete the current message");
@@ -10510,7 +10546,7 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	// For the set of enhanced header lines, choose the regular set or the set with
 	// the highlighted 'to' user, dependin on whether the message was written to the
 	// logged-in (reading) user.
-	var enhMsgHdrLines = (userNameHandleAliasMatch(pMsgHdr.to) ? this.enhMsgHeaderLinesToReadingUser : this.enhMsgHeaderLines);
+	var enhMsgHdrLines = (userHandleAliasNameMatch(pMsgHdr.to) ? this.enhMsgHeaderLinesToReadingUser : this.enhMsgHeaderLines);
 	if (enhMsgHdrLines == null)
 		return;
 	if ((enhMsgHdrLines.length == 0) || (this.enhMsgHeaderWidth == 0))
@@ -10665,38 +10701,38 @@ function DigDistMsgReader_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 //  pNumSolidBlocks: The number of solid/bright blocks to write
 function DigDistMsgReader_DisplayEnhancedReaderWholeScrollbar(pSolidBlockStartRow, pNumSolidBlocks)
 {
-   //console.attributes = "N";
-   var numSolidBlocksWritten = 0;
-   var wroteBrightBlockColor = false;
-   var wroteDimBlockColor = false;
-   for (var screenY = this.msgAreaTop; screenY <= this.msgAreaBottom; ++screenY)
-   {
-      console.gotoxy(this.msgAreaRight+1, screenY);
-      if ((screenY >= pSolidBlockStartRow) && (numSolidBlocksWritten < pNumSolidBlocks))
-      {
-         if (!wroteBrightBlockColor)
-         {
-            //console.print("\x01h\x01w");
-			console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
-            wroteBrightBlockColor = true;
-            wroteDimBlockColor = false;
-         }
-         //console.print(BLOCK2);
-		 console.print(this.text.scrollbarScrollBlockChar);
-         ++numSolidBlocksWritten;
-      }
-      else
-      {
-         if (!wroteDimBlockColor)
-         {
-            //console.print("\x01h\x01k");
-			console.print("\x01n" + this.colors.scrollbarBGColor);
-            wroteDimBlockColor = true;
-         }
-         //console.print(BLOCK1);
-		 console.print(this.text.scrollbarBGChar);
-      }
-   }
+	//console.attributes = "N";
+	var numSolidBlocksWritten = 0;
+	var wroteBrightBlockColor = false;
+	var wroteDimBlockColor = false;
+	for (var screenY = this.msgAreaTop; screenY <= this.msgAreaBottom; ++screenY)
+	{
+		console.gotoxy(this.msgAreaRight+1, screenY);
+		if ((screenY >= pSolidBlockStartRow) && (numSolidBlocksWritten < pNumSolidBlocks))
+		{
+			if (!wroteBrightBlockColor)
+			{
+				//console.print("\x01h\x01w");
+				console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
+				wroteBrightBlockColor = true;
+				wroteDimBlockColor = false;
+			}
+			console.print(BLOCK2);
+			//console.print(this.text.scrollbarScrollBlockChar); // TODO: This doesn't seem to be working
+			++numSolidBlocksWritten;
+		}
+		else
+		{
+			if (!wroteDimBlockColor)
+			{
+				//console.print("\x01h\x01k");
+				console.print("\x01n" + this.colors.scrollbarBGColor);
+				wroteDimBlockColor = true;
+			}
+			console.print(BLOCK1);
+			//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
+		}
+	}
 }
 
 // For the DigDistMsgReader class: Updates the scrollbar for a message, for use
@@ -10707,7 +10743,7 @@ function DigDistMsgReader_DisplayEnhancedReaderWholeScrollbar(pSolidBlockStartRo
 //  pNewStartRow: The new (current) start row for solid/bright blocks
 //  pOldStartRow: The old start row for solid/bright blocks
 //  pNumSolidBlocks: The number of solid/bright blocks
-function DigDistMsgReader_UpdateEnhancedReaderScollbar(pNewStartRow, pOldStartRow, pNumSolidBlocks)
+function DigDistMsgReader_UpdateEnhancedReaderScrollbar(pNewStartRow, pOldStartRow, pNumSolidBlocks)
 {
    // Calculate the difference in the start row.  If the difference is positive,
    // then the solid block section has moved down; if the diff is negative, the
@@ -10727,8 +10763,8 @@ function DigDistMsgReader_UpdateEnhancedReaderScollbar(pNewStartRow, pOldStartRo
          for (var screenY = pOldStartRow; screenY <= oldLastRow; ++screenY)
          {
             console.gotoxy(this.msgAreaRight+1, screenY);
-            //console.print(BLOCK1);
-			console.print(this.text.scrollbarBGChar);
+            console.print(BLOCK1);
+			//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
          }
          // Write solid blocks in the new locations
          //console.print("\x01w");
@@ -10736,8 +10772,8 @@ function DigDistMsgReader_UpdateEnhancedReaderScollbar(pNewStartRow, pOldStartRo
          for (var screenY = pNewStartRow; screenY <= newLastRow; ++screenY)
          {
             console.gotoxy(this.msgAreaRight+1, screenY);
-            //console.print(BLOCK2);
-			console.print(this.text.scrollbarScrollBlockChar);
+            console.print(BLOCK2);
+			//console.print(this.text.scrollbarScrollBlockChar);  // TODO: This doesn't seem to be working
          }
       }
       else
@@ -10749,8 +10785,8 @@ function DigDistMsgReader_UpdateEnhancedReaderScollbar(pNewStartRow, pOldStartRo
          for (var screenY = pOldStartRow; screenY < pNewStartRow; ++screenY)
          {
             console.gotoxy(this.msgAreaRight+1, screenY);
-            //console.print(BLOCK1);
-			console.print(this.text.scrollbarBGChar);
+            console.print(BLOCK1);
+			//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
          }
          // Write bright blocks on the bottom
          //console.print("\x01w");
@@ -10758,8 +10794,8 @@ function DigDistMsgReader_UpdateEnhancedReaderScollbar(pNewStartRow, pOldStartRo
          for (var screenY = oldLastRow+1; screenY <= newLastRow; ++screenY)
          {
             console.gotoxy(this.msgAreaRight+1, screenY);
-            //console.print(BLOCK2);
-			console.print(this.text.scrollbarScrollBlockChar);
+            console.print(BLOCK2);
+			//console.print(this.text.scrollbarScrollBlockChar); // TODO: This doesn't seem to be working
          }
       }
    }
@@ -10775,8 +10811,8 @@ function DigDistMsgReader_UpdateEnhancedReaderScollbar(pNewStartRow, pOldStartRo
          for (var screenY = pOldStartRow; screenY <= oldLastRow; ++screenY)
          {
             console.gotoxy(this.msgAreaRight+1, screenY);
-            //console.print(BLOCK1);
-			console.print(this.text.scrollbarBGChar);
+            console.print(BLOCK1);
+			//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
          }
          // Write solid blocks in the new locations
          //console.print("\x01w");
@@ -10784,8 +10820,8 @@ function DigDistMsgReader_UpdateEnhancedReaderScollbar(pNewStartRow, pOldStartRo
          for (var screenY = pNewStartRow; screenY <= newLastRow; ++screenY)
          {
             console.gotoxy(this.msgAreaRight+1, screenY);
-            //console.print(BLOCK2);
-			console.print(this.text.scrollbarScrollBlockChar);
+            console.print(BLOCK2);
+			//console.print(this.text.scrollbarScrollBlockChar); // TODO: This doesn't seem to be working
          }
       }
       else
@@ -10798,8 +10834,8 @@ function DigDistMsgReader_UpdateEnhancedReaderScollbar(pNewStartRow, pOldStartRo
          for (var screenY = pNewStartRow; screenY < endRow; ++screenY)
          {
             console.gotoxy(this.msgAreaRight+1, screenY);
-            //console.print(BLOCK2);
-			console.print(this.text.scrollbarScrollBlockChar);
+            console.print(BLOCK2);
+			//console.print(this.text.scrollbarScrollBlockChar); // TODO: This doesn't seem to be working
          }
          // Write dim blocks on the bottom
          //console.print("\x01k");
@@ -10808,8 +10844,8 @@ function DigDistMsgReader_UpdateEnhancedReaderScollbar(pNewStartRow, pOldStartRo
          for (var screenY = pNewStartRow+pNumSolidBlocks; screenY < endRow; ++screenY)
          {
             console.gotoxy(this.msgAreaRight+1, screenY);
-            //console.print(BLOCK1);
-			console.print(this.text.scrollbarBGChar);
+            console.print(BLOCK1);
+			//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
          }
       }
    }
@@ -10867,14 +10903,14 @@ function DigDistMsgReader_MessageIsLastFromUser(pOffset)
 				// is, then look for the last message posted by the logged-in user and
 				// if found, see if that message has the same offset as the offset
 				// passed in.
-				var msgHdr = msgbase.get_msg_header(true, pOffset, false);
-				if (userHandleAliasNameMatch(msgHdr["to"]))
+				var msgHdr = msgbase.get_msg_index(true, pOffset, false);
+				if (userHandleAliasNameMatch(msgHdr.to))
 				{
 					var lastMsgOffsetFromUser = -1;
 					for (var msgOffset = msgbase.total_msgs-1; (msgOffset >= pOffset) && (lastMsgOffsetFromUser == -1); --msgOffset)
 					{
-						msgHdr = msgbase.get_msg_header(true, msgOffset, false);
-						if (userHandleAliasNameMatch(msgHdr["to"]))
+						msgHdr = msgbase.get_msg_index(true, msgOffset, false);
+						if (userHandleAliasNameMatch(msgHdr.to))
 							lastMsgOffsetFromUser = msgOffset;
 					}
 					// See if the passed-in offset is the last message we found from
@@ -11110,6 +11146,11 @@ function DigDistMsgReader_PromptAndDeleteOrUndeleteMessage(pOffset, pPromptLoc, 
 
 	var msgNum = pOffset + 1;
 	var msgHeader = this.GetMsgHdrByIdx(pOffset, false, msgbase);
+	if (msgHeader == null)
+	{
+		msgbase.close();
+		return false;
+	}
 
 	var errorMessage = "";
 	var continueOn = false;
@@ -12032,19 +12073,24 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				if (subBoardInfo.numPosts > 0)
 				{
 					var msgIdx = msgBase.total_msgs-1;
-					msgHeader = msgBase.get_msg_header(true, msgIdx, false);
+					msgHeader = msgBase.get_msg_index(true, msgIdx, false);
 					while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code) && (msgIdx >= 0))
-					  msgHeader = msgBase.get_msg_header(true, --msgIdx, true);
-					if (this.msgAreaList_lastImportedMsg_showImportTime)
-						subBoardInfo.newestPostDate = msgHeader.when_imported_time;
-					else
+						msgHeader = msgBase.get_msg_index(true, --msgIdx, true);
+					if (msgHeader != null)
+						msgHeader = msgBase.get_msg_header(true, msgIdx, false);
+					if (msgHeader != null)
 					{
-						//subBoardInfo.newestPostDate = msgHeader.when_written_time;
-						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(msgHeader);
-						if (msgWrittenLocalTime != -1)
-							subBoardInfo.newestPostDate = msgWrittenTimeToLocalBBSTime(msgHeader);
+						if (this.msgAreaList_lastImportedMsg_showImportTime)
+							subBoardInfo.newestPostDate = msgHeader.when_imported_time;
 						else
-							subBoardInfo.newestPostDate = msgHeader.when_written_time;
+						{
+							//subBoardInfo.newestPostDate = msgHeader.when_written_time;
+							var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+							if (msgWrittenLocalTime != -1)
+								subBoardInfo.newestPostDate = msgWrittenTimeToLocalBBSTime(msgHeader);
+							else
+								subBoardInfo.newestPostDate = msgHeader.when_written_time;
+						}
 					}
 				}
 			}
@@ -12136,29 +12182,34 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				if (numMsgs > 0)
 				{
 					var msgIdx = msgBase.total_msgs-1;
-					msgHeader = msgBase.get_msg_header(true, msgIdx, false);
+					msgHeader = msgBase.get_msg_index(true, msgIdx, false);
 					while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code) && (msgIdx >= 0))
-					  msgHeader = msgBase.get_msg_header(true, --msgIdx, true);
-					// Construct the date & time strings of the latest post
-					if (this.msgAreaList_lastImportedMsg_showImportTime)
+					  msgHeader = msgBase.get_msg_index(true, --msgIdx, true);
+					if (msgHeader != null)
+						msgHeader = msgBase.get_msg_header(true, msgIdx, false);
+					if (msgHeader != null)
 					{
-						newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
-						newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
-					}
-					else
-					{
-						//newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-						//newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
-						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(msgHeader);
-						if (msgWrittenLocalTime != -1)
+						// Construct the date & time strings of the latest post
+						if (this.msgAreaList_lastImportedMsg_showImportTime)
 						{
-							newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalTime);
-							newestDate.time = strftime("%H:%M:%S", msgWrittenLocalTime);
+							newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
+							newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
 						}
 						else
 						{
-							newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-							newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+							//newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+							//newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+							var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+							if (msgWrittenLocalTime != -1)
+							{
+								newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalTime);
+								newestDate.time = strftime("%H:%M:%S", msgWrittenLocalTime);
+							}
+							else
+							{
+								newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+								newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+							}
 						}
 					}
 				}
@@ -12272,43 +12323,52 @@ function DigDistMsgReader_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 	var msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
 	if (msgBase.open())
 	{
-		var newestDate = {}; // For storing the date of the newest post
+		// For storing the date of the newest post
+		var newestDate = {
+			date: "",
+			time: ""
+		};
 		// Get the date & time when the last message was imported.
-		//numReadableMsgs(pMsgbase, pSubBoardCode)
 		//var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
 		var numMsgs = msgBase.total_msgs;
 		if (numMsgs > 0)
 		{
-			// Get the header of the last message in the sub-board
+			// Get the header of the last readable message in the sub-board. This uses
+			// get_msg_index to get message indexes to quickly check to see if it's
+			// readable, then when a readable one is found, this uses get_msg_header
+			// to get the full header with the properties needed.
 			var msgHeader = null;
 			var msgOffset = msgBase.total_msgs - 1;
-			while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code) && (msgOffset >= 0))
-				msgHeader = msgBase.get_msg_header(true, --msgOffset, true);
-			// Construct the date & time strings of the latest post
-			if (this.msgAreaList_lastImportedMsg_showImportTime)
+			while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code) && msgOffset >= 0)
+				msgHeader = msgBase.get_msg_index(true, msgOffset--, false);
+			if (msgHeader != null)
+				msgHeader = msgBase.get_msg_header(true, msgOffset, false, false);
+			if (msgHeader != null)
 			{
-				newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
-				newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
-			}
-			else
-			{
-				//newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-				//newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
-				var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(msgHeader);
-				if (msgWrittenLocalTime != -1)
+				// Construct the date & time strings of the latest post
+				if (this.msgAreaList_lastImportedMsg_showImportTime)
 				{
-					newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalTime);
-					newestDate.time = strftime("%H:%M:%S", msgWrittenLocalTime);
+					newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
+					newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
 				}
 				else
 				{
-					newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-					newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+					//newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+					//newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+					var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+					if (msgWrittenLocalTime != -1)
+					{
+						newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalTime);
+						newestDate.time = strftime("%H:%M:%S", msgWrittenLocalTime);
+					}
+					else
+					{
+						newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
+						newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
+					}
 				}
 			}
 		}
-		else
-			newestDate.date = newestDate.time = "";
 
 		// Print the sub-board information line.
 		subBoardStr += (currentSub ? this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
@@ -13235,7 +13295,7 @@ function DigDistMsgReader_GetLastReadMsgIdxAndNum(pMailStartFromFirst)
 			// message index to the last index in this.hdrsForCurrentSubBoard.length.
 			if (retObj.lastReadMsgIdx == -1)
 			{
-				var msgIdxAccordingToMsgbase = absMsgNumToIdx(msgbase, msg_area.sub[this.subBoardCode].last_read);
+				var msgIdxAccordingToMsgbase = absMsgNumToIdxWithMsgbaseObj(msgbase, msg_area.sub[this.subBoardCode].last_read);
 				if ((this.hdrsForCurrentSubBoard.length > 0) && (msgIdxAccordingToMsgbase >= this.hdrsForCurrentSubBoard.length))
 				{
 					retObj.lastReadMsgIdx = this.hdrsForCurrentSubBoard.length - 1;
@@ -13249,12 +13309,12 @@ function DigDistMsgReader_GetLastReadMsgIdxAndNum(pMailStartFromFirst)
 			if ((retObj.lastReadMsgIdx < 0) || (retObj.lastReadMsgIdx >= msgbase.total_msgs))
 			{
 				// Look for the first message not marked as deleted
-				var nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(0, true);
+				var readableMsgIdx = this.FindNextReadableMsgIdx(0, true);
 				// If a non-deleted message was found, then set the last read
 				// pointer to it.
-				if (nonDeletedMsgIdx > -1)
+				if (readableMsgIdx > -1)
 				{
-					var newLastRead = this.IdxToAbsMsgNum(nonDeletedMsgIdx);
+					var newLastRead = this.IdxToAbsMsgNum(readableMsgIdx);
 					if (newLastRead > -1)
 						msg_area.sub[this.subBoardCode].last_read = newLastRead;
 					else
@@ -13284,24 +13344,23 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 	// the user hasn't read messages in the sub-board yet.  In that case,
 	// just use 0.  Otherwise, get the user's scan pointer message index.
 	var msgIdx = 0;
-	// Check for 4294967295 (0xffffffff, or ~0): That is a special value
-	// for the user's scan_ptr meaning it should point to the latest message
-	// in the messagebase.
-	if (msg_area.sub[this.subBoardCode].scan_ptr != 0xffffffff)
+	// If the user's scan_ptr for the sub-board isn't the 'last message'
+	// special value, then use it
+	if (!subBoardScanPtrIsLatestMsgSpecialVal(this.subBoardCode))
 		msgIdx = this.GetMsgIdx(msg_area.sub[this.subBoardCode].scan_ptr);
 	// Sanity checking for msgIdx
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
-		if ((msgIdx < 0) || (msgIdx >= msgbase.total_msgs) || (msg_area.sub[this.subBoardCode].scan_ptr == 0xffffffff))
+		if ((msgIdx < 0) || (msgIdx >= msgbase.total_msgs) || subBoardScanPtrIsLatestMsgSpecialVal(this.subBoardCode))
 		{
 			msgIdx = -1;
 			// Look for the first message not marked as deleted
-			var nonDeletedMsgIdx = this.FindNextNonDeletedMsgIdx(0, true);
+			var readableMsgIdx = this.FindNextReadableMsgIdx(0, true);
 			// If a non-deleted message was found, then set the scan pointer to it.
-			if (nonDeletedMsgIdx > -1)
+			if (readableMsgIdx > -1)
 			{
-				var newLastRead = this.IdxToAbsMsgNum(nonDeletedMsgIdx);
+				var newLastRead = this.IdxToAbsMsgNum(readableMsgIdx);
 				if (newLastRead > -1)
 					msg_area.sub[this.subBoardCode].scan_ptr = newLastRead;
 				else
@@ -13403,7 +13462,7 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 					for (var messageIdx = pMsgHdr.offset+1; (messageIdx < numOfMessages) && (nextMsgOffset == -1); ++messageIdx)
 					{
 						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-						if (((nextMsgHdr.attr & MSG_DELETE) == 0) && (typeof(nextMsgHdr.thread_id) == "number") && (nextMsgHdr.thread_id == pMsgHdr.thread_id))
+						if (nextMsgHdr != null && ((nextMsgHdr.attr & MSG_DELETE) == 0) && (typeof(nextMsgHdr.thread_id) == "number") && (nextMsgHdr.thread_id == pMsgHdr.thread_id))
 							nextMsgOffset = nextMsgHdr.offset;
 					}
 				}
@@ -13414,7 +13473,7 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 					for (var messageIdx = this.GetMsgIdx(pMsgHdr.number)+1; (messageIdx < numOfMessages) && (nextMsgOffset == -1); ++messageIdx)
 					{
 						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-						if ((((nextMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (typeof(nextMsgHdr.thread_id) == "number") && (nextMsgHdr.thread_id == pMsgHdr.thread_id))
+						if (nextMsgHdr != null && (((nextMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (typeof(nextMsgHdr.thread_id) == "number") && (nextMsgHdr.thread_id == pMsgHdr.thread_id))
 						{
 							//nextMsgOffset = nextMsgHdr.offset;
 							nextMsgOffset = this.GetMsgIdx(nextMsgHdr.number);
@@ -13499,7 +13558,7 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 					for (var messageIdx = pMsgHdr.offset+1; (messageIdx < numOfMessages) && (nextMsgOffset == -1); ++messageIdx)
 					{
 						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-						if (msgHdrMatch(nextMsgHdr))
+						if (nextMsgHdr != null && msgHdrMatch(nextMsgHdr))
 							nextMsgOffset = nextMsgHdr.offset;
 					}
 				}
@@ -13510,7 +13569,7 @@ function DigDistMsgReader_FindThreadNextOffset(pMsgHdr, pThreadType, pPositionCu
 					for (var messageIdx = this.GetMsgIdx(pMsgHdr.number)+1; (messageIdx < numOfMessages) && (nextMsgOffset == -1); ++messageIdx)
 					{
 						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-						if (msgHdrMatch(nextMsgHdr))
+						if (nextMsgHdr != null && msgHdrMatch(nextMsgHdr))
 						{
 							//nextMsgOffset = nextMsgHdr.offset;
 							nextMsgOffset = this.GetMsgIdx(nextMsgHdr.number);
@@ -13593,7 +13652,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 					for (var messageIdx = pMsgHdr.offset-1; (messageIdx >= 0) && (nextMsgOffset == -1); --messageIdx)
 					{
 						prevMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-						if (((prevMsgHdr.attr & MSG_DELETE) == 0) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
+						if (prevMsgHdr != null && ((prevMsgHdr.attr & MSG_DELETE) == 0) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
 							nextMsgOffset = prevMsgHdr.offset;
 					}
 				}
@@ -13604,7 +13663,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 					for (var messageIdx = this.GetMsgIdx(pMsgHdr.number)-1; (messageIdx >= 0) && (nextMsgOffset == -1); --messageIdx)
 					{
 						prevMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-						if ((((prevMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
+						if (prevMsgHdr != null && (((prevMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
 						{
 							//nextMsgOffset = prevMsgHdr.offset;
 							nextMsgOffset = this.GetMsgIdx(prevMsgHdr.number);
@@ -13666,7 +13725,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 						for (var messageIdx = pMsgHdr.offset-1; (messageIdx >= 0) && (nextMsgOffset == -1); --messageIdx)
 						{
 							var prevMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-							if (((prevMsgHdr.attr & MSG_DELETE) == 0) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
+							if (prevMsgHdr != null && ((prevMsgHdr.attr & MSG_DELETE) == 0) && (typeof(prevMsgHdr.thread_id) == "number") && (prevMsgHdr.thread_id == pMsgHdr.thread_id))
 								nextMsgOffset = prevMsgHdr.offset;
 						}
 					}
@@ -13742,7 +13801,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 					for (var messageIdx = pMsgHdr.offset-1; (messageIdx >= 0) && (nextMsgOffset == -1); --messageIdx)
 					{
 						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-						if (msgHdrMatch(nextMsgHdr))
+						if (prevMsgHdr != null && msgHdrMatch(nextMsgHdr))
 							nextMsgOffset = nextMsgHdr.offset;
 					}
 				}
@@ -13753,7 +13812,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 					for (var messageIdx = this.GetMsgIdx(pMsgHdr.number)-1; (messageIdx >= 0) && (nextMsgOffset == -1); --messageIdx)
 					{
 						nextMsgHdr = this.GetMsgHdrByIdx(messageIdx);
-						if (msgHdrMatch(nextMsgHdr))
+						if (nextMsgHdr != null && msgHdrMatch(nextMsgHdr))
 						{
 							//nextMsgOffset = nextMsgHdr.offset;
 							nextMsgOffset = this.GetMsgIdx(nextMsgHdr.number);
@@ -13791,7 +13850,7 @@ function DigDistMsgReader_FindThreadPrevOffset(pMsgHdr, pThreadType, pPositionCu
 //  pPageNum: A page number (1-based)
 function DigDistMsgReader_CalcTraditionalMsgListTopIdx(pPageNum)
 {
-   if (this.reverseListOrder)
+   if (this.userSettings.listMessagesInReverse)
       this.tradListTopMsgIdx = this.NumMessages() - (this.tradMsgListNumLines * (pPageNum-1)) - 1;
    else
       this.tradListTopMsgIdx = (this.tradMsgListNumLines * (pPageNum-1));
@@ -13804,7 +13863,7 @@ function DigDistMsgReader_CalcTraditionalMsgListTopIdx(pPageNum)
 //  pPageNum: A page number (1-based)
 function DigDistMsgReader_CalcLightbarMsgListTopIdx(pPageNum)
 {
-	if (this.reverseListOrder)
+	if (this.userSettings.listMessagesInReverse)
 		this.lightbarListTopMsgIdx = this.NumMessages() - (this.lightbarMsgListNumLines * (pPageNum-1)) - 1;
 	else
 	{
@@ -13829,7 +13888,7 @@ function DigDistMsgReader_CalcMsgListScreenIdxVarsFromMsgNum(pMsgNum)
 	var numItemsPerPage = this.tradMsgListNumLines;
 	if (this.msgListUseLightbarListInterface && canDoHighASCIIAndANSI())
 		numItemsPerPage = this.lightbarMsgListNumLines;
-	var newPageNum = findPageNumOfItemNum(pMsgNum, numItemsPerPage, this.NumMessages(), this.reverseListOrder);
+	var newPageNum = findPageNumOfItemNum(pMsgNum, numItemsPerPage, this.NumMessages(), this.userSettings.listMessagesInReverse);
 	this.CalcTraditionalMsgListTopIdx(newPageNum);
 	this.CalcLightbarMsgListTopIdx(newPageNum);
 	this.lightbarListSelectedMsgIdx = pMsgNum - 1;
@@ -14045,18 +14104,34 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 
 	// Add the options to the option box
 	const checkIdx = 48;
-	const ENH_SCROLLBAR_OPT_INDEX = optionBox.addTextItem("Scrollbar in reader                            [ ]");
+	const optionFormatStr = "%-" + (checkIdx-1) + "s[ ]";
+	const ENH_SCROLLBAR_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Scrollbar in reader"));
 	if (this.userSettings.useEnhReaderScrollbar)
 		optionBox.chgCharInTextItem(ENH_SCROLLBAR_OPT_INDEX, checkIdx, CHECK_CHAR);
 
-	const INDEXED_MODE_NEWSCAN_OPT_INDEX = optionBox.addTextItem("Use indexed mode for newscan                   [ ]");
+	const LIST_MESSAGES_IN_REVERSE_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "List messages in reverse"));
+	if (this.userSettings.listMessagesInReverse)
+		optionBox.chgCharInTextItem(LIST_MESSAGES_IN_REVERSE_OPT_INDEX, checkIdx, CHECK_CHAR);
+
+	const INDEXED_MODE_NEWSCAN_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Use indexed mode for newscan"));
 	if (this.userSettings.useIndexedModeForNewscan)
 		optionBox.chgCharInTextItem(INDEXED_MODE_NEWSCAN_OPT_INDEX, checkIdx, CHECK_CHAR);
+
+	const INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Index menu: Enter shows message list"));
+	if (this.userSettings.enterFromIndexMenuShowsMsgList)
+		optionBox.chgCharInTextItem(INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_INDEX, checkIdx, CHECK_CHAR);
+
+	const READER_QUIT_TO_MSG_LIST_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Quit from reader to message list"));
+	if (this.userSettings.quitFromReaderGoesToMsgList)
+		optionBox.chgCharInTextItem(READER_QUIT_TO_MSG_LIST_OPT_INDEX, checkIdx, CHECK_CHAR);
 
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = {};
 	optionToggles[ENH_SCROLLBAR_OPT_INDEX] = this.userSettings.useEnhReaderScrollbar;
+	optionToggles[LIST_MESSAGES_IN_REVERSE_OPT_INDEX] = this.userSettings.listMessagesInReverse;
 	optionToggles[INDEXED_MODE_NEWSCAN_OPT_INDEX] = this.userSettings.useIndexedModeForNewscan;
+	optionToggles[INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_INDEX] = this.userSettings.enterFromIndexMenuShowsMsgList;
+	optionToggles[READER_QUIT_TO_MSG_LIST_OPT_INDEX] = this.userSettings.quitFromReaderGoesToMsgList;
 
 	// Other actions
 	var USER_TWITLIST_OPT_INDEX = optionBox.addTextItem("Personal twit list");
@@ -14085,8 +14160,17 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 					case ENH_SCROLLBAR_OPT_INDEX:
 						this.readerObj.userSettings.useEnhReaderScrollbar = !this.readerObj.userSettings.useEnhReaderScrollbar;
 						break;
+					case LIST_MESSAGES_IN_REVERSE_OPT_INDEX:
+						this.readerObj.userSettings.listMessagesInReverse = !this.readerObj.userSettings.listMessagesInReverse;
+						break;
 					case INDEXED_MODE_NEWSCAN_OPT_INDEX:
 						this.readerObj.userSettings.useIndexedModeForNewscan = !this.readerObj.userSettings.useIndexedModeForNewscan;
+						break;
+					case INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_INDEX:
+						this.readerObj.userSettings.enterFromIndexMenuShowsMsgList = !this.readerObj.userSettings.enterFromIndexMenuShowsMsgList;
+						break;
+					case READER_QUIT_TO_MSG_LIST_OPT_INDEX:
+						this.readerObj.userSettings.quitFromReaderGoesToMsgList = !this.readerObj.userSettings.quitFromReaderGoesToMsgList;
 						break;
 					default:
 						break;
@@ -14172,13 +14256,22 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 		userTwitListChanged: false
 	};
 
-	console.crlf();
-	console.print("\x01n\x01c\x01hU\x01n\x01cser \x01hS\x01n\x01cettings\x01n\r\n");
-	console.print("\x01c\x01h1\x01g: \x01n\x01c\x01hU\x01n\x01cse \x01hI\x01n\x01cndexed \x01hm\x01n\x01code \x01hf\x01n\x01cor \x01hn\x01n\x01cewscan\x01n\r\n");
-	console.print("\x01c\x01h2\x01g: \x01n\x01c\x01hP\x01n\x01cersonal \x01ht\x01n\x01cwit list\x01n\r\n");
-	var USER_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM = 1;
-	var USER_TWITLIST_OPT_NUM = 2;
+	var LIST_MESSAGES_IN_REVERSE_OPT_NUM = 1;
+	var USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM = 2;
+	var INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM = 3;
+	var READER_QUIT_TO_MSG_LIST_OPT_NUM = 4;
+	var USER_TWITLIST_OPT_NUM = 5;
 	var HIGHEST_CHOICE_NUM = USER_TWITLIST_OPT_NUM;
+
+	console.crlf();
+	var wordFirstCharAttrs = "\x01c\x01h";
+	var wordRemainingAttrs = "\x01c";
+	console.print(colorFirstCharAndRemainingCharsInWords("User Settings", wordFirstCharAttrs, wordRemainingAttrs) + "\r\n");
+	printTradUserSettingOption(LIST_MESSAGES_IN_REVERSE_OPT_NUM, "List messages in reverse", wordFirstCharAttrs, wordRemainingAttrs);
+	printTradUserSettingOption(USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM, "Use Indexed mode for newscan", wordFirstCharAttrs, wordRemainingAttrs);
+	printTradUserSettingOption(INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM, "Index: Selection shows message list", wordFirstCharAttrs, wordRemainingAttrs);
+	printTradUserSettingOption(READER_QUIT_TO_MSG_LIST_OPT_NUM, "Quitting From reader goes to message list", wordFirstCharAttrs, wordRemainingAttrs);
+	printTradUserSettingOption(USER_TWITLIST_OPT_NUM, "Personal twit list", wordFirstCharAttrs, wordRemainingAttrs);
 	console.crlf();
 	console.print("\x01cYour choice (\x01hQ\x01n\x01c: Quit)\x01h: \x01g");
 	var userChoiceNum = console.getnum(HIGHEST_CHOICE_NUM);
@@ -14190,10 +14283,25 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	var userSettingsChanged = false;
 	switch (userChoiceNum)
 	{
-		case USER_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM:
+		case LIST_MESSAGES_IN_REVERSE_OPT_NUM:
+			var oldListMsgsInReverseSetting = this.userSettings.listMessagesInReverse;
+			this.userSettings.listMessagesInReverse = !console.noyes("List messages in reverse");
+			userSettingsChanged = (this.userSettings.listMessagesInReverse != oldListMsgsInReverseSetting);
+			break;
+		case USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM:
 			var oldIndexedModeNewscanSetting = this.userSettings.useIndexedModeForNewscan;
 			this.userSettings.useIndexedModeForNewscan = !console.noyes("Use indexed mode for newscan-all");
 			userSettingsChanged = (this.userSettings.useIndexedModeForNewscan != oldIndexedModeNewscanSetting);
+			break;
+		case INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM:
+			var oldIndexedModeEnterShowsMsgListSetting = this.userSettings.enterFromIndexMenuShowsMsgList;
+			this.userSettings.enterFromIndexMenuShowsMsgList = !console.noyes("Index menu: Show message list with enter");
+			userSettingsChanged = (this.userSettings.enterFromIndexMenuShowsMsgList != oldIndexedModeEnterShowsMsgListSetting);
+			break;
+		case READER_QUIT_TO_MSG_LIST_OPT_NUM:
+			var oldReaderQuitSetting = this.userSettings.quitFromReaderGoesToMsgList;
+			this.userSettings.quitFromReaderGoesToMsgList = !console.noyes("Quit key from reader: Go to the message list (rather than exit)");
+			userSettingsChanged = (this.userSettings.quitFromReaderGoesToMsgList != oldReaderQuitSetting);
 			break;
 		case USER_TWITLIST_OPT_NUM:
 			console.editfile(gUserTwitListFilename);
@@ -14219,23 +14327,48 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 
 	return retObj;
 }
+// Helper for DigDistMsgReader_DoUserSettings_Traditional: Returns a string where for each word,
+// the first letter will have one set of Synchronet attributes applied and the remainder of the word
+// will have another set of Synchronet attributes applied
+function colorFirstCharAndRemainingCharsInWords(pStr, pWordFirstCharAttrs, pWordRemainderAttrs)
+{
+	if (typeof(pStr) !== "string" || pStr.length == 0)
+		return "";
+	if (typeof(pWordFirstCharAttrs) !== "string" || typeof(pWordRemainderAttrs) !== "string")
+		return pStr;
+
+	var wordsArray = pStr.split(" ");
+	for (var i = 0; i < wordsArray.length; ++i)
+	{
+		if (wordsArray[i] != " ")
+			wordsArray[i] = "\x01n" + pWordFirstCharAttrs + wordsArray[i].substr(0, 1) + "\x01n" + pWordRemainderAttrs + wordsArray[i].substr(1);
+	}
+	return wordsArray.join(" ");
+}
+
+// Helper for DigDistMsgReader_DoUserSettings_Traditional: Returns a string where for each word,
+// the first letter will have one set of Synchronet attributes applied and the remainder of the word
+// will have another set of Synchronet attributes applied
+function printTradUserSettingOption(pOptNum, pStr, pWordFirstCharAttrs, pWordRemainderAttrs)
+{
+	printf("\x01c\x01h%d\x01g: %s\r\n", pOptNum, colorFirstCharAndRemainingCharsInWords(pStr, pWordFirstCharAttrs, pWordRemainderAttrs));
+}
 
 ///////////////////////////////////////////////////////////////
 // Stuff for indexed reader mode
 
-// For the DigDistMsgReader class: Starts indexed mode
+// For the DigDistMsgReader class: Starts indexed mode. For a new scan, displays
+// a menu of sub-boards with the number of new messages etc.
 //
 // Parameters:
 //  pScanScope: Numeric - Whether to scan the current sub-board, group, or all.
 //              This would be SCAN_SCOPE_SUB_BOARD, SCAN_SCOPE_GROUP, or SCAN_SCOPE_ALL.
 function DigDistMsgReader_DoIndexedMode(pScanScope)
 {
-	// GitLab issue for DDMsgReader "Indexed" reader mode:
-	// https://gitlab.synchro.net/main/sbbs/-/issues/354
-	
 	var scanScope = (isValidScanScopeVal(pScanScope) ? pScanScope : SCAN_SCOPE_ALL);
 
 	this.indexedMode = true;
+	this.doingMsgScan = true;
 
 	// msgHdrsCache is used to prevent long loading again when loading a sub-board
 	// a 2nd time or later. Only if this.enableIndexedModeMsgListCache is true.
@@ -14250,8 +14383,12 @@ function DigDistMsgReader_DoIndexedMode(pScanScope)
 		// Let the user choose a sub-board, and if their choice is valid,
 		// let them read the sub-board.
 		var indexRetObj = this.IndexedModeChooseSubBoard(clearScreenForMenu, drawMenu, writeBottomHelpLine, pScanScope);
-		if (typeof(indexRetObj.chosenSubCode) === "string" && msg_area.sub.hasOwnProperty(indexRetObj.chosenSubCode))
+		var userChoseAValidSubBoard = (typeof(indexRetObj.chosenSubCode) === "string" && msg_area.sub.hasOwnProperty(indexRetObj.chosenSubCode));
+		if (userChoseAValidSubBoard)
 		{
+			// Ensure we draw the index menu & help line in the next iteration
+			drawMenu = true;
+			writeBottomHelpLine = true;
 			this.subBoardCode = indexRetObj.chosenSubCode;
 			if (!this.enableIndexedModeMsgListCache || !msgHdrsCache.hasOwnProperty(indexRetObj.chosenSubCode))
 			{
@@ -14273,33 +14410,60 @@ function DigDistMsgReader_DoIndexedMode(pScanScope)
 			var startIdx = numMessages - indexRetObj.numNewMsgs;
 			if (startIdx < 0)
 				startIdx = numMessages - 1;
-			// Let the user read the sub-board
-			// pSubBoardCode, pStartingMsgOffset, pReturnOnMessageList, pAllowChgArea, pReturnOnNextAreaNav,
-			// pPromptToGoToNextAreaIfNoSearchResults
-			var readRetObj = this.ReadMessages(indexRetObj.chosenSubCode, startIdx, false, false, true, false);
-			// Update the text for the current menu item to ensure the message numbers are up to date
-			var currentMenuItem = this.indexedModeMenu.GetItem(this.indexedModeMenu.selectedItemIdx);
-			var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(indexRetObj.chosenSubCode);
-			currentMenuItem.text = itemInfo.itemText;
-			currentMenuItem.retval.numNewMsgs = itemInfo.numNewMsgs;
-			// If enabled, store the message headers for this sub-board as a cache for performance
-			if (this.enableIndexedModeMsgListCache)
+			// If the user chose to view the message list, display the message list to let the user
+			// choose a message to read. Otherwise, start reader mode.
+			if (indexRetObj.viewMsgList)
 			{
-				msgHdrsCache[indexRetObj.chosenSubCode] = {
-					hdrsForCurrentSubBoard: this.hdrsForCurrentSubBoard,
-					hdrsForCurrentSubBoardByMsgNum: this.hdrsForCurrentSubBoardByMsgNum
-				};
+				var listRetObj = this.ListMessages(indexRetObj.chosenSubCode, false);
+				// If the user chose a message from the list, let the user read starting with that message
+				if (listRetObj.selectedMsgOffset > -1)
+				{
+					var readRetObj = this.ReadMessages(indexRetObj.chosenSubCode, listRetObj.selectedMsgOffset, false, false, true, false);
+					// Update the text for the current menu item to ensure the message numbers are up to date
+					var currentMenuItem = this.indexedModeMenu.GetItem(this.indexedModeMenu.selectedItemIdx);
+					var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(indexRetObj.chosenSubCode);
+					currentMenuItem.text = itemInfo.itemText;
+					currentMenuItem.retval.numNewMsgs = itemInfo.numNewMsgs;
+					// If enabled, store the message headers for this sub-board as a cache for performance
+					if (this.enableIndexedModeMsgListCache)
+					{
+						msgHdrsCache[indexRetObj.chosenSubCode] = {
+							hdrsForCurrentSubBoard: this.hdrsForCurrentSubBoard,
+							hdrsForCurrentSubBoardByMsgNum: this.hdrsForCurrentSubBoardByMsgNum
+						};
+					}
+				}
 			}
-			/*
-			switch (readRetObj.lastAction)
+			else
 			{
-				case ACTION_QUIT:
-					//continueOn = false;
-					break;
-				default:
-					break;
+				// Let the user read the sub-board
+				// pSubBoardCode, pStartingMsgOffset, pReturnOnMessageList, pAllowChgArea, pReturnOnNextAreaNav,
+				// pPromptToGoToNextAreaIfNoSearchResults
+				var readRetObj = this.ReadMessages(indexRetObj.chosenSubCode, startIdx, false, false, true, false);
+				// Update the text for the current menu item to ensure the message numbers are up to date
+				var currentMenuItem = this.indexedModeMenu.GetItem(this.indexedModeMenu.selectedItemIdx);
+				var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(indexRetObj.chosenSubCode);
+				currentMenuItem.text = itemInfo.itemText;
+				currentMenuItem.retval.numNewMsgs = itemInfo.numNewMsgs;
+				// If enabled, store the message headers for this sub-board as a cache for performance
+				if (this.enableIndexedModeMsgListCache)
+				{
+					msgHdrsCache[indexRetObj.chosenSubCode] = {
+						hdrsForCurrentSubBoard: this.hdrsForCurrentSubBoard,
+						hdrsForCurrentSubBoardByMsgNum: this.hdrsForCurrentSubBoardByMsgNum
+					};
+				}
+				/*
+				switch (readRetObj.lastAction)
+				{
+					case ACTION_QUIT:
+						//continueOn = false;
+						break;
+					default:
+						break;
+				}
+				*/
 			}
-			*/
 		}
 		else
 		{
@@ -14355,6 +14519,7 @@ function DigDistMsgReader_DoIndexedMode(pScanScope)
 	}
 
 	this.indexedMode = false;
+	this.doingMsgScan = false;
 }
 
 // For indexed mode: Displays any sub-boards with new messages and lets the user choose one
@@ -14369,11 +14534,14 @@ function DigDistMsgReader_DoIndexedMode(pScanScope)
 // Return value: An object containing the following values:
 //               chosenSubCode: The user's chosen sub-board code; if none selected, this will be null
 //               numNewMsgs: The number of new messages in the chosen sub-board
+//               viewMsgList: Whether or not to view the message list instead of going to reader mode
+//               lastUserInput: The last keypress entered by the user
 function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDisplayHelpLine, pScanScope)
 {
 	var retObj = {
 		chosenSubCode: null,
 		numNewMsgs: 0,
+		viewMsgList: false, // To view the message list instead of reader mode
 		lastUserInput: ""
 	};
 
@@ -14383,19 +14551,31 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 
 	var scanScope = (isValidScanScopeVal(pScanScope) ? pScanScope : SCAN_SCOPE_ALL);
 
-	// Note: DDlightbarMenu now supports non-ANSI terminals with a more traditional UI
+	// Note: DDlightbarMenu supports non-ANSI terminals with a more traditional UI
 	// of listing the items and letting the user choose one by typing its number.
 
 	// Set text widths for the menu items
 	var newMsgWidthObj = findWidestNumMsgsAndNumNewMsgs(scanScope);
 	var numMsgsWidth = newMsgWidthObj.widestNumMsgs;
 	var numNewMsgsWidth = newMsgWidthObj.widestNumNewMsgs;
+	// Ensure the column widths for the last few columns (after description) are wide enough
+	// to fit the labels
+	if (numMsgsWidth < 5) // "Total"
+		numMsgsWidth = 5;
+	if (numNewMsgsWidth < 3) // "New"
+		numNewMsgsWidth = 3;
 	var lastPostDateWidth = 10;
 	this.indexedModeItemDescWidth = console.screen_columns - numMsgsWidth - numNewMsgsWidth - lastPostDateWidth - 4;
+	var usingTradInterface = !this.msgListUseLightbarListInterface || !console.term_supports(USER_ANSI);
+	if (usingTradInterface)
+		this.indexedModeItemDescWidth -= 3;
 	this.indexedModeSubBoardMenuFormatStrNumbers = "%-" + this.indexedModeItemDescWidth + "s %" + numMsgsWidth + "d %" + numNewMsgsWidth + "d %" + lastPostDateWidth + "s";
 	if (typeof(this.indexedModeMenu) !== "object")
 		this.indexedModeMenu = this.MakeLightbarIndexedModeMenu(numMsgsWidth, numNewMsgsWidth, lastPostDateWidth, this.indexedModeItemDescWidth, this.indexedModeSubBoardMenuFormatStrNumbers);
-
+	else
+		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = this.indexedModeMenu.selectedItemIdx;
+	// Ensure the menu is clear, and (re-)populate the menu with sub-board information w/ # of new messages in each, etc.
+	this.indexedModeMenu.RemoveAllItems();
 	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
 	{
 		// If scanning the user's current group or sub-board and this is the wrong group, then skip this group.
@@ -14405,6 +14585,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 		var grpNameItemAddedToMenu = false;
 		for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
 		{
+			// Skip sub-boards that the user can't read or doesn't have configured for newscans
 			if (!msg_area.grp_list[grpIdx].sub_list[subIdx].can_read)
 				continue;
 			if ((msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW) == 0)
@@ -14420,9 +14601,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 				var grpDesc = msg_area.grp_list[grpIdx].name;
 				if (msg_area.grp_list[grpIdx].name != msg_area.grp_list[grpIdx].description)
 					grpDesc += " - " + msg_area.grp_list[grpIdx].description;
-				var menuItemText = "\x01n\x01b";
-				for (var i = 0; i < 5; ++i)
-					menuItemText += HORIZONTAL_SINGLE;
+				var menuItemText = "\x01n\x01b" + charStr(HORIZONTAL_SINGLE, 5);
 				menuItemText += "\x01y\x01h ";
 				menuItemText += grpDesc;
 				var menuItemLen = console.strlen(menuItemText);
@@ -14432,6 +14611,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 					var numChars = this.indexedModeMenu.size.width - menuItemLen - 1;
 					menuItemText += charStr(HORIZONTAL_SINGLE, numChars);
 				}
+				menuItemText = skipsp(truncsp(menuItemText)); // Trim leading & trailing whitespace
 				this.indexedModeMenu.Add(menuItemText, null, null, false); // Not selectable
 				grpNameItemAddedToMenu = true;
 			}
@@ -14442,6 +14622,36 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 				numNewMsgs: itemInfo.numNewMsgs
 			});
 		}
+	}
+	// If we've saved the index of the selected item in the menu, then set it back in the menu, if it's
+	// valid.  This is done because the list of items is cleared each time this function is called.
+	if (typeof(DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx) === "number")
+	{
+		if (DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx >= 0 &&
+		    DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx < this.indexedModeMenu.NumItems())
+		{
+			this.indexedModeMenu.SetSelectedItemIdx(DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx);
+			// If the indexed menu has more items than will fit on the screen & isn't on the last
+			// page, then set the top item index to one before the selected index (if >0) or the
+			// same as the selected item index.
+			var selectedItemIsFirst = this.indexedModeMenu.selectedItemIdx == this.indexedModeMenu.topItemIdx;
+			var selectedItemOnLastPage = DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx >= this.indexedModeMenu.GetTopItemIdxOfLastPage();
+			var moreThanOneScreenfulOfItems = this.indexedModeMenu.NumItems() > console.screen_columns - 2;
+			// Checking if the selected item index is on the first page
+			var numItems = this.indexedModeMenu.NumItems();
+			var numItemsPerPage = this.indexedModeMenu.GetNumItemsPerPage();
+			var lastItemIdxForFirstPage = (numItems > numItemsPerPage ? numItemsPerPage - 1 : numItems - 1);
+			var selectedItemIsOnFirstPage = (this.indexedModeMenu.selectedItemIdx >= 0 && this.indexedModeMenu.selectedItemIdx <= lastItemIdxForFirstPage);
+			if (!selectedItemIsFirst && !selectedItemOnLastPage && moreThanOneScreenfulOfItems && !selectedItemIsOnFirstPage)
+			{
+				if (this.indexedModeMenu.selectedItemIdx > 0)
+					this.indexedModeMenu.topItemIdx = this.indexedModeMenu.selectedItemIdx - 1;
+				else
+					this.indexedModeMenu.topItemIdx = this.indexedModeMenu.selectedItemIdx;
+			}
+		}
+		else
+			DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = 0;
 	}
 
 	// Clear the screen, if desired
@@ -14461,20 +14671,38 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 		console.attributes = "N";
 	}
 
-	// Show the menu and let the user make a choice
+	// Output a header above the menu
 	if (usingANSI)
 		console.gotoxy(1, 1);
-	var dateWidth = (this.indexedModeMenu.CanShowAllItemsInWindow() ? lastPostDateWidth : lastPostDateWidth-1);
-	var formatStrStrs = "%-" + (this.indexedModeItemDescWidth-1) + "s %" + numMsgsWidth + "s %" + numNewMsgsWidth + "s %" + dateWidth + "s";
+	var descWidthForHdr = this.indexedModeItemDescWidth;
+	var maxScreenWidth = console.screen_columns - 3; // 3 spaces
+	var currentTotalColWidth = descWidthForHdr + numMsgsWidth + numNewMsgsWidth + lastPostDateWidth;
+	if (currentTotalColWidth < maxScreenWidth)
+		descWidthForHdr += (maxScreenWidth - currentTotalColWidth - 1);
+	var formatStrStrs = "%-" + descWidthForHdr + "s %" + numMsgsWidth + "s %" + numNewMsgsWidth + "s %" + lastPostDateWidth + "s";
 	printf(formatStrStrs, "Description", "Total", "New", "Last Post");
 	console.attributes = "N";
-	if (!usingANSI) console.crlf();
+	if (!usingANSI)
+		console.crlf();
 	var menuRetval = this.indexedModeMenu.GetVal(drawMenu);
+	// Show the menu and get the user's choice
 	retObj.lastUserInput = this.indexedModeMenu.lastUserInput;
 	if (menuRetval != null)
 	{
 		retObj.chosenSubCode = menuRetval.subCode;
 		retObj.numNewMsgs = menuRetval.numNewMsgs;
+		// If the user has the option enabled to view the message list when pressing enter here,
+		// then allow that.
+		if (this.userSettings.enterFromIndexMenuShowsMsgList)
+			retObj.viewMsgList = true;
+	}
+	else if (this.indexedModeMenu.lastUserInput == "m" || this.indexedModeMenu.lastUserInput == "M")
+	{
+		// Message list for the highlighted sub-board
+		var highlightedItem = this.indexedModeMenu.GetItem(this.indexedModeMenu.selectedItemIdx);
+		retObj.chosenSubCode = highlightedItem.retval.subCode;
+		retObj.numNewMsgs = highlightedItem.retval.numNewMsgs;
+		retObj.viewMsgList = true;
 	}
 	console.attributes = "N";
 	return retObj;
@@ -14526,13 +14754,21 @@ function DigDistMsgReader_MakeIndexedModeHelpLine()
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`PgUp`" + "\x1b[V" + "@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "/"
-	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`Dn`" + KEY_PAGEDN + "@"
+	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`P`" + "\x1b[V" + "@"
+	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
+	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`PgDn`" + KEY_PAGEDN + "@"
+	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "/"
+	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`N`" + "\x1b[V" + "@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`ENTER`" + KEY_ENTER + "@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`HOME`" + KEY_HOME + "@"
+	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "/"
+	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`F`" + "\x1b[V" + "@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`END`" + KEY_END + "@"
+	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "/"
+	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`L`" + "\x1b[V" + "@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`Ctrl-U`" + CTRL_U + "@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
@@ -14541,7 +14777,7 @@ function DigDistMsgReader_MakeIndexedModeHelpLine()
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "uit, "
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`?`?@";
 	// Add spaces so that the text is centered on the screen
-	var helpLineLen = 49; // 41 without Ctrl-U
+	var helpLineLen = 60;
 	var leftSideNumChars = Math.floor(console.screen_columns / 2) - Math.floor(helpLineLen / 2);
 	var rightSideNumChars = leftSideNumChars;
 	var totalNumChars = leftSideNumChars + rightSideNumChars + helpLineLen;
@@ -14570,12 +14806,14 @@ function DigDistMsgReader_ShowIndexedListHelp()
 		console.crlf();
 		displayTextWithLineBelow("Summary of the keyboard commands:", false, this.colors.tradInterfaceHelpScreenColor, "\x01k\x01h");
 		console.print(this.colors.tradInterfaceHelpScreenColor);
-		console.print("\x01n\x01h\x01cDown arrow" + this.colors.tradInterfaceHelpScreenColor + ": Move the cursor down/select the next message\r\n");
-		console.print("\x01n\x01h\x01cUp arrow" + this.colors.tradInterfaceHelpScreenColor + ": Move the cursor up/select the previous message\r\n");
-		console.print("\x01n\x01h\x01cPageDown" + this.colors.tradInterfaceHelpScreenColor + ": Go to the next page\r\n");
-		console.print("\x01n\x01h\x01cPageUp" + this.colors.tradInterfaceHelpScreenColor + ": Go to the previous page\r\n");
-		console.print("\x01n\x01h\x01cHOME" + this.colors.tradInterfaceHelpScreenColor + ": Go to the first item\r\n");
-		console.print("\x01n\x01h\x01cEND" + this.colors.tradInterfaceHelpScreenColor + ": Go to the last item\r\n");
+		console.print("\x01n\x01h\x01cDown arrow" + this.colors.tradInterfaceHelpScreenColor + ": Move the cursor down/select the next sub-board\r\n");
+		console.print("\x01n\x01h\x01cUp arrow" + this.colors.tradInterfaceHelpScreenColor + ": Move the cursor up/select the previous sub-board\r\n");
+		console.print("\x01n\x01h\x01cPageDown \x01n\x01cor \x01hN" + this.colors.tradInterfaceHelpScreenColor + ": Go to the next page\r\n");
+		console.print("\x01n\x01h\x01cPageUp \x01n\x01cor \x01hP" + this.colors.tradInterfaceHelpScreenColor + ": Go to the previous page\r\n");
+		console.print("\x01n\x01h\x01cHOME \x01n\x01cor \x01hF" + this.colors.tradInterfaceHelpScreenColor + ": Go to the first item\r\n");
+		console.print("\x01n\x01h\x01cEND \x01n\x01cor \x01hL" + this.colors.tradInterfaceHelpScreenColor + ": Go to the last item\r\n");
+		console.print("\x01n\x01h\x01cENTER" + this.colors.tradInterfaceHelpScreenColor + ": Read the sub-board\r\n");
+		console.print("\x01n\x01h\x01cM" + this.colors.tradInterfaceHelpScreenColor + ": Show message list for the sub-board\r\n");
 		console.print("\x01n\x01h\x01cCtrl-U" + this.colors.tradInterfaceHelpScreenColor + ": User settings\r\n");
 		console.print("\x01n\x01h\x01cQ" + this.colors.tradInterfaceHelpScreenColor + ": Quit\r\n");
 		//console.print("\x01n\x01h\x01c?" + this.colors.tradInterfaceHelpScreenColor + ": Show this help screen\r\n");
@@ -14658,38 +14896,39 @@ function getLatestPostTimestampAndNumNewMsgs(pSubCode)
 		// scan_ptr: user's current new message scan pointer (highest-read message number)
 		if (typeof(msg_area.sub[pSubCode].scan_ptr) === "number")
 		{
-			var lastNonDeletedMsgHdr = GetLastNonDeletedMsgHdr(pSubCode);
-			if (lastNonDeletedMsgHdr != null)
+			var lastReadableMsgHdr = getLastReadableMsgHdrInSubBoard(pSubCode);
+			if (lastReadableMsgHdr != null)
 			{
-				// Check for 4294967295 (0xffffffff, or ~0): That is a special value
-				// for the user's scan_ptr meaning it should point to the latest message
-				// in the messagebase.
-				if (msg_area.sub[pSubCode].scan_ptr != 0xffffffff)
+				// If the user's scan_ptr for the sub-board isn't the 'last message'
+				// special value, then use it
+				if (!subBoardScanPtrIsLatestMsgSpecialVal(pSubCode))
 				{
-					retObj.numNewMsgs = lastNonDeletedMsgHdr.number - msg_area.sub[pSubCode].scan_ptr;
-					/*
-					// Count the number of readable messages after scan_ptr up to lastNonDeletedMsgHdr.
-					var scan
-					// First, get the message number and go from there.
-					var scanPtrMsgHdr = msgbase.get_msg_header(false, msg_area.sub[pSubCode].scan_ptr, false);
-					if (scanPtrMsgHdr != null)
+					// Count the number of readable messages after scan_ptr up to the last read message.
+					// If both index objects are null, then calculate this via the last readable message
+					// number and the scan pointer.
+					var scanPtrMsgIndex = msgbase.get_msg_index(false, msg_area.sub[pSubCode].scan_ptr, false);
+					//var lastMsgIndex = msgbase.get_msg_index(false, msgbase.last_msg, false);
+					//if (scanPtrMsgIndex != null && lastMsgIndex != null)
+					if (scanPtrMsgIndex != null)
 					{
-						for (var msgOffset = lastNonDeletedMsgHdr.offset + 1; msgOffset <= scanPtrMsgHdr.offset; ++msgOffset)
+						//for (var i = scanPtrMsgIndex.offset; i < lastMsgIndex.offset; ++i)
+						for (var i = scanPtrMsgIndex.offset; i < lastReadableMsgHdr.offset; ++i)
 						{
-							var msgHdr = msgbase.get_msg_header(true, msgOffset, true);
-							if (isReadableMsgHdr(msgHdr, pSubCode))
+							var msgIndex = msgbase.get_msg_index(true, i, false);
+							if (msgIndex != null && isReadableMsgHdr(msgIndex, pSubCode))
 								++retObj.numNewMsgs;
 						}
 					}
-					*/
+					else
+						retObj.numNewMsgs = lastReadableMsgHdr.number - msg_area.sub[pSubCode].scan_ptr;
 				}
 			}
 		}
 		else if (typeof(msg_area.sub[pSubCode].last_read) === "number")
 		{
-			var lastNonDeletedMsgHdr = GetLastNonDeletedMsgHdr(pSubCode);
-			if (lastNonDeletedMsgHdr != null)
-				retObj.numNewMsgs = lastNonDeletedMsgHdr.number - msg_area.sub[pSubCode].last_read;
+			var lastReadableMsgHdr = getLastReadableMsgHdrInSubBoard(pSubCode);
+			if (lastReadableMsgHdr != null)
+				retObj.numNewMsgs = lastReadableMsgHdr.number - msg_area.sub[pSubCode].last_read;
 		}
 		else
 			retObj.numNewMsgs = msg_area.sub[pSubCode].posts;
@@ -14744,11 +14983,18 @@ function DigDistMsgReader_MakeLightbarIndexedModeMenu(pNumMsgsWidth, pNumNewMsgs
 	indexedModeMenu.multiSelect = false;
 	indexedModeMenu.ampersandHotkeysInItems = false;
 	indexedModeMenu.wrapNavigation = false;
-	indexedModeMenu.allowANSI = this.msgListUseLightbarListInterface;
+	indexedModeMenu.allowANSI = this.msgListUseLightbarListInterface && console.term_supports(USER_ANSI);
 
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
-	indexedModeMenu.AddAdditionalQuitKeys("Qq?" + CTRL_U); // Ctrl-U for user settings
+	// TODO: Include Mm to allow the user to view the message list instead of read it from the indexed menu
+	indexedModeMenu.AddAdditionalQuitKeys("QqMm?" + CTRL_U); // Ctrl-U for user settings
+
+	// Add additional keypresses for PageUp, PageDown, HOME (first page), and END (last page)
+	indexedModeMenu.AddAdditionalPageUpKeys("Pp"); // Previous page
+	indexedModeMenu.AddAdditionalPageDownKeys("Nn"); // Next page
+	indexedModeMenu.AddAdditionalFirstPageKeys("Ff"); // First page
+	indexedModeMenu.AddAdditionalLastPageKeys("Ll"); // Last page
 
 	return indexedModeMenu;
 }
@@ -14903,8 +15149,8 @@ function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename, pPromptPos)
 function DigDistMsgReader_ToggleSelectedMessage(pSubCode, pMsgIdx, pSelected)
 {
 	// Sanity checking
-	if (typeof(pSubCode) != "string") return;
-	if (typeof(pMsgIdx) != "number") return;
+	if (typeof(pSubCode) !== "string") return;
+	if (typeof(pMsgIdx) !== "number") return;
 
 	// If the 'selected message' object doesn't have the sub code index,
 	// then add it.
@@ -16340,10 +16586,10 @@ function DigDistMsgReader_RefreshMsgAreaRectangle(pTxtLines, pTopLineIdx, pTopLe
 		if (txtLineIdx < pTxtLines.length)
 		{
 			// Get the text attributes up to the current point and output them
-			console.print(getAllEditLineAttrsUntilLineIdx(pTxtLines, txtLineIdx, true, txtLineStartIdx));
+			//console.print(getAllEditLineAttrsUntilLineIdx(pTxtLines, txtLineIdx, true, txtLineStartIdx));
 			// Get the section of line (and make sure it can fill the needed width), and print it
-			// Note: substrWithAttrCodes(pStr, pStartIdx, pLen) is defined in dd_lightbar_menu.js
-			var lineText = substrWithAttrCodes(pTxtLines[txtLineIdx], txtLineStartIdx, pWidth);
+			// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
+			var lineText = substrWithAttrCodes(pTxtLines[txtLineIdx].replace(/[\r\n]+/g, ""), txtLineStartIdx, pWidth);
 			var printableTxtLen = console.strlen(lineText);
 			if (printableTxtLen < pWidth)
 				lineText += format("\x01n%*s", pWidth - printableTxtLen, "");
@@ -16524,6 +16770,9 @@ function getDefaultColors()
 		// Selected message marker color
 		selectedMsgMarkColor: "\x01n\x01w\x01h",
 
+		// Unread personal email message marker color
+		unreadMsgMarkColor: "\x01n\x01w\x01h\x01i",
+
 		// Colors for the indexed mode sub-board menu:
 		indexMenuDesc: "\x01n\x01w",
 		indexMenuTotalMsgs: "\x01n\x01w",
@@ -16653,11 +16902,11 @@ function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 	//pString = pString.replace(/(^\s*)|(\s*$)/gi,"");
 
 	if (leading)
-		pString = pString.replace(/(^\s*)/gi,"");
+		pString = skipsp(pString); //pString.replace(/(^\s*)/gi,"");
 	if (multiple)
 		pString = pString.replace(/[ ]{2,}/gi," ");
 	if (trailing)
-		pString = pString.replace(/(\s*$)/gi,"");
+		pString = truncsp(pString); //pString.replace(/(\s*$)/gi,"");
 
 	return pString;
 }
@@ -17004,7 +17253,7 @@ function numMsgsInSubBoard(pSubBoardCode, pIncludeDeleted)
          // as deleted.
          for (var msgIdx = 0; msgIdx < msgbase.total_msgs; ++msgIdx)
          {
-            var msgHdr = msgbase.get_msg_header(true, msgIdx, false);
+            var msgHdr = msgbase.get_msg_index(true, msgIdx, false);
             if ((msgHdr != null) && (((msgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()))
                ++numMessages;
          }
@@ -17084,27 +17333,75 @@ function shortenStrWithAttrCodes(pStr, pNewLength, pFromLeft)
 	return strCopy;
 }
 
-// Returns whether a given name matches the logged-in user's handle, alias, or
-// name.
+// Returns whether a given name or CRC16 value matches the logged-in user's
+// handle, alias, or name.
 //
 // Parameters:
-//  pName: A name to match against the logged-in user
+//  pNameOrCRC16: A name (string) to match against the logged-in user, or a CRC16 (number)
+//                to match against the logged-in user
 //
 // Return value: Boolean - Whether or not the given name matches the logged-in
 //               user's handle, alias, or name
-function userHandleAliasNameMatch(pName)
+function userHandleAliasNameMatch(pNameOrCRC16)
 {
-	if (typeof(pName) != "string")
+	var checkByCRC16 = (typeof(pNameOrCRC16) === "number");
+	if (!checkByCRC16 && typeof(pNameOrCRC16) !== "string")
 		return false;
 
 	var userMatch = false;
-	var nameUpper = pName.toUpperCase();
-	if (user.handle.length > 0)
-		userMatch = (nameUpper.indexOf(user.handle.toUpperCase()) > -1);
-	if (!userMatch && (user.alias.length > 0))
-		userMatch = (nameUpper.indexOf(user.alias.toUpperCase()) > -1);
-	if (!userMatch && (user.name.length > 0))
-		userMatch = (nameUpper.indexOf(user.name.toUpperCase()) > -1);
+	if (checkByCRC16)
+	{
+		if (user.handle.length > 0)
+		{
+			if (userHandleAliasNameMatch.userHandleCRC16 === undefined)
+				userHandleAliasNameMatch.userHandleCRC16 = crc16_calc(user.handle.toLowerCase());
+			userMatch = (userHandleAliasNameMatch.userHandleCRC16 == pNameOrCRC16);
+		}
+		if (!userMatch && (user.alias.length > 0))
+		{
+			if (userHandleAliasNameMatch.userAliasCRC16 === undefined)
+				userHandleAliasNameMatch.userAliasCRC16 = crc16_calc(user.alias.toLowerCase());
+			userMatch = (userHandleAliasNameMatch.userAliasCRC16 == pNameOrCRC16);
+		}
+		if (!userMatch && (user.name.length > 0))
+		{
+			if (userHandleAliasNameMatch.userNameCRC16 === undefined)
+				userHandleAliasNameMatch.userNameCRC16 = crc16_calc(user.name.toLowerCase());
+			userMatch = (userHandleAliasNameMatch.userNameCRC16 == pNameOrCRC16);
+		}
+	}
+	else
+	{
+		if (pNameOrCRC16 != "")
+		{
+			var nameUpper = pNameOrCRC16.toUpperCase();
+			// If the name starts & ends with the same quote character, then remove the
+			// quote characters.
+			var firstChar = nameUpper.charAt(0);
+			var lastChar = nameUpper.charAt(nameUpper.length-1);
+			if ((firstChar == "\"" && lastChar == "\"") ||(firstChar == "'" && lastChar == "'"))
+				nameUpper = nameUpper.substring(1, nameUpper.length-1);
+			
+			if (user.handle.length > 0)
+			{
+				if (userHandleAliasNameMatch.userHandleUpper === undefined)
+					userHandleAliasNameMatch.userHandleUpper = user.handle.toUpperCase();
+				userMatch = (nameUpper.indexOf(userHandleAliasNameMatch.userHandleUpper) > -1);
+			}
+			if (!userMatch && (user.alias.length > 0))
+			{
+				if (userHandleAliasNameMatch.userAliasUpper === undefined)
+					userHandleAliasNameMatch.userAliasUpper = user.alias.toUpperCase();
+				userMatch = (nameUpper.indexOf(userHandleAliasNameMatch.userAliasUpper) > -1);
+			}
+			if (!userMatch && (user.name.length > 0))
+			{
+				if (userHandleAliasNameMatch.userNameUpper === undefined)
+					userHandleAliasNameMatch.userNameUpper = user.name.toUpperCase();
+				userMatch = (nameUpper.indexOf(userHandleAliasNameMatch.userNameUpper) > -1);
+			}
+		}
+	}
 	return userMatch;
 }
 
@@ -17619,7 +17916,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 				// See if the message is not marked as deleted and the 'To' name
 				// matches the user's handle, alias, and/or username.
-				return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && userNameHandleAliasMatch(pMsgHdr.to));
+				return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && userHandleAliasNameMatch(pMsgHdr.to));
 			}
 			break;
 		case SEARCH_TO_USER_NEW_SCAN:
@@ -17628,6 +17925,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 		case SEARCH_TO_USER_NEW_SCAN_ALL:
 			if (pSubCode != "mail")
 			{
+				/*
 				// If pStartIndex or pEndIndex aren't specified, then set
 				// startMsgIndex to the scan pointer and endMsgIndex to one
 				// past the index of the last message in the sub-board
@@ -17640,8 +17938,8 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 						                     subBoardGrpAndName(pSubCode) + " -- Scan pointer: " +
 						                     msg_area.sub[pSubCode].scan_ptr);
 					}
-					//startMsgIndex = absMsgNumToIdx(msgbase, msg_area.sub[pSubCode].last_read);
-					startMsgIndex = absMsgNumToIdx(msgbase, GetScanPtrOrLastMsgNum(pSubCode));
+					//startMsgIndex = absMsgNumToIdxWithMsgbaseObj(msgbase, msg_area.sub[pSubCode].last_read);
+					startMsgIndex = absMsgNumToIdxWithMsgbaseObj(msgbase, GetScanPtrOrLastMsgNum(pSubCode));
 					if (startMsgIndex == -1)
 					{
 						msg_area.sub[pSubCode].scan_ptr = 0;
@@ -17650,7 +17948,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 					else
 					{
 						// If this message has been read, then start at the next message.
-						var startMsgHeader = msgbase.get_msg_header(true, startMsgIndex, false);
+						var startMsgHeader = msgbase.get_msg_index(true, startMsgIndex, false);
 						if (startMsgHeader == null)
 							++startMsgIndex;
 						else
@@ -17662,29 +17960,64 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 				}
 				if (typeof(pEndIndex) != "number")
 					endMsgIndex = (msgbase.total_msgs > 0 ? msgbase.total_msgs : 0);
+				*/
+				// For the new-to-you scan faster, check messages to the user from the user's new scan pointer to
+				// messagebase.last_msg
+				// scan_ptr (not last_read?)
+				if (typeof(msg_area.sub[pSubCode].scan_ptr) === "number")
+					startMsgIndex = absMsgNumToIdxWithMsgbaseObj(msgbase, msg_area.sub[pSubCode].scan_ptr);
+				else if (typeof(pStartIndex) === "number")
+					startMsgIndex = pStartIndex;
+				else
+					startMsgIndex = 0;
+				endMsgIndex = absMsgNumToIdxWithMsgbaseObj(msgbase, msgbase.last_msg) + 1;
+				if (endMsgIndex == 0) // Not valid
+					endMsgIndex = msgbase.total_msgs;
 			}
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 				// Note: This assumes pSubBoardCode is not "mail" (personal mail).
 				// See if the message 'To' name matches the user's handle, alias,
 				// and/or username and is not marked as deleted and is unread.
-				return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && ((pMsgHdr.attr & MSG_READ) == 0) && userNameHandleAliasMatch(pMsgHdr.to));
+				return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && ((pMsgHdr.attr & MSG_READ) == 0) && userHandleAliasNameMatch(pMsgHdr.to));
 			}
 			break;
 		case SEARCH_MSG_NEWSCAN:
 		case SEARCH_MSG_NEWSCAN_CUR_SUB:
 		case SEARCH_MSG_NEWSCAN_CUR_GRP:
 		case SEARCH_MSG_NEWSCAN_ALL:
+			/*
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 				// Note: This assumes pSubBoardCode is not "mail" (personal mail).
 				// Get the offset of the last read message and compare it with the
 				// offset of the given message header
-				var lastReadMsgHdr = pMsgBase.get_msg_header(false, msg_area.sub[pSubBoardCode].last_read, false);
+				var lastReadMsgHdr = pMsgBase.get_msg_index(false, msg_area.sub[pSubBoardCode].last_read, false);
 				var lastReadMsgOffset = 0;
 				if (lastReadMsgHdr != null)
-					lastReadMsgOffset = msgNumToIdxFromMsgbase(pSubBoardCode, lastReadMsgHdr.number);
+					lastReadMsgOffset = absMsgNumToIdx(pSubBoardCode, lastReadMsgHdr.number);
 				if (lastReadMsgOffset < 0)
 					lastReadMsgOffset = 0;
-				return (msgNumToIdxFromMsgbase(pSubBoardCode, pMsgHdr.number) > lastReadMsgOffset);
+				return (absMsgNumToIdx(pSubBoardCode, pMsgHdr.number) > lastReadMsgOffset);
+			}
+			*/
+			if (typeof(msg_area.sub[pSubCode].scan_ptr) === "number")
+				startMsgIndex = absMsgNumToIdxWithMsgbaseObj(msgbase, msg_area.sub[pSubCode].scan_ptr);
+			else if (typeof(pStartIndex) === "number")
+				startMsgIndex = pStartIndex;
+			else
+				startMsgIndex = 0;
+			endMsgIndex = absMsgNumToIdxWithMsgbaseObj(msgbase, msgbase.last_msg) + 1;
+			// TODO: Is this matchFn really needed?
+			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
+				// Note: This assumes pSubBoardCode is not "mail" (personal mail).
+				// Get the offset of the last read message and compare it with the
+				// offset of the given message header
+				var lastReadMsgHdr = pMsgBase.get_msg_index(false, msg_area.sub[pSubBoardCode].last_read, false);
+				var lastReadMsgOffset = 0;
+				if (lastReadMsgHdr != null)
+					lastReadMsgOffset = absMsgNumToIdx(pSubBoardCode, lastReadMsgHdr.number);
+				if (lastReadMsgOffset < 0)
+					lastReadMsgOffset = 0;
+				return (absMsgNumToIdx(pSubBoardCode, pMsgHdr.number) > lastReadMsgOffset);
 			}
 			break;
 	}
@@ -17736,8 +18069,6 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 			for (var msgIdx = startMsgIndex; msgIdx < endMsgIndex; ++msgIdx)
 			{
 				var msgHeader = msgbase.get_msg_header(true, msgIdx, false);
-				// I've seen situations where the message header object is null for
-				// some reason, so check that before running the search function.
 				if (msgHeader != null)
 				{
 					if (matchFn(pSearchString, msgHeader, msgbase, pSubCode))
@@ -17746,8 +18077,97 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 			}
 		}
 	}
+	else
+	{
+		// There is no match function - Get all message headers between the start & end indexes
+	}
 	msgbase.close();
 	return msgHeaders;
+}
+
+// Tries to look up a message index (offset) with a given message number.
+// On error, returns -1.
+//
+// Parameters:
+//  pMsgbase: The messagebase object from which to retrieve the message header
+//  pMsgNum: The absolute message number
+//
+// Return value: The message's index, or -1 on error.
+function absMsgNumToIdxWithMsgbaseObj(pMsgbase, pMsgNum)
+{
+	if ((pMsgbase == null) || (typeof(pMsgbase) != "object"))
+		return -1;
+	if (!pMsgbase.is_open)
+		return -1;
+
+	if (typeof(pMsgNum) != "number")
+		return -1;
+	
+	var messageIdx = 0;
+	// If pMsgNum is the 'last number' special value, then use the last message
+	// number in the messagebase.
+	if (msgNumIsLatestMsgSpecialVal(pMsgNum))
+		messageIdx = pMsgbase.total_msgs - 1; // Or this.NumMessages() - 1 but can't because this isn't a class member function
+	else
+	{
+		var msgHdr = pMsgbase.get_msg_index(false, pMsgNum, false);
+		if ((msgHdr == null) && gCmdLineArgVals.verboselogging)
+		{
+			writeToSysAndNodeLog("Message area " + pMsgbase.cfg.code + ": Tried to get message header for absolute message number " +
+			                     pMsgNum + " but got a null header object.");
+		}
+		messageIdx = (msgHdr != null ? msgHdr.offset : -1);
+	}
+	return messageIdx;
+}
+// Tries to look up a message index (offset) with a given message number.
+// On error, returns -1.
+//
+// Parameters:
+//  pSubCodeOrMsgbase: The internal sub-board code of the messagebase to check, or
+//                     an already-open messagebase object
+//  pMsgNum: The absolute message number
+//
+// Return value: The message's index, or -1 on error.
+function absMsgNumToIdx(pSubCodeOrMsgbase, pMsgNum)
+{
+	var typename = typeof(pSubCodeOrMsgbase);
+	if (typename === "string")
+	{
+		var msgOffset = -1;
+		var msgbase = new MsgBase(pSubCodeOrMsgbase);
+		if (msgbase.open())
+		{
+			msgOffset = absMsgNumToIdxWithMsgbaseObj(msgbase, pMsgNum);
+			msgbase.close();
+		}
+		return msgOffset;
+	}
+	else if (typename === "object")
+		return absMsgNumToIdxWithMsgbaseObj(msgbase, pMsgNum);
+}
+
+// Takes a message index and returns the message's absolute message number.
+//
+// Parameters:
+//  pMsgbase: The messagebase object from which to retrieve the message header
+//  pMsgIdx: The message index
+//
+// Return value: The absolue message number, or -1 on error.
+function idxToAbsMsgNum(pMsgbase, pMsgIdx)
+{
+	if ((pMsgbase == null) || (typeof(pMsgbase) != "object"))
+		return -1;
+	if (!pMsgbase.is_open)
+		return -1;
+
+	var msgHdr = pMsgbase.get_msg_index(true, pMsgIdx, false);
+	if ((msgHdr == null) && gCmdLineArgVals.verboselogging)
+	{
+		writeToSysAndNodeLog("Tried to get message header for message offset " +
+		                     pMsgIdx + " but got a null header object.");
+	}
+	return (msgHdr != null ? msgHdr.number : -1);
 }
 
 // Returns whether or not a message is to the current user (either the current
@@ -17784,13 +18204,67 @@ function msgIsToUserByNum(pMsgHdr, pUserNum)
 }
 
 // Returns whether or not a message header is to the current logged-in user by name, alias, or handle
-function msgIsToCurrentUserByName(pMsgHdr)
+function msgIsToCurrentUserByName(pMsgHdrOrIdx)
 {
-	if (typeof(pMsgHdr) !== "object" || !pMsgHdr.hasOwnProperty("to"))
+	if (typeof(pMsgHdrOrIdx) !== "object" || !pMsgHdrOrIdx.hasOwnProperty("to"))
+		return false;
+	// Return false if the message is marked as deleted and the user can't read deleted messages
+	if (((pMsgHdrOrIdx.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
 		return false;
 
-	var msgToUpper = pMsgHdr.to.toUpperCase();
-	return (msgToUpper == user.name.toUpperCase() || msgToUpper == user.alias.toUpperCase() || msgToUpper == user.handle.toUpperCase());
+	return userHandleAliasNameMatch(pMsgHdrOrIdx.to);
+}
+
+// Checks to see if there are any unread messages to the current
+// logged-in user in a sub-board
+//
+// Parameters:
+//  pMsgbase: An opened MessageBase object for the sub-board
+//  pSubCode: The internal code of the sub-board of the opened messagebase
+//
+// Return value: Boolean - Whether or not there are any unread messages to the current logged-in user
+function anyUnreadMsgsToUserWithMsgbase(pMsgbase, pSubCode)
+{
+	if (typeof(pMsgbase) !== "object")
+		return false;
+
+	var unreadMsgsToUserFound = false;
+	if (typeof(msg_area.sub[pSubCode].scan_ptr) === "number" && !msgNumIsLatestMsgSpecialVal(msg_area.sub[pSubCode].scan_ptr))
+	{
+		var startMsgIdx = absMsgNumToIdxWithMsgbaseObj(pMsgbase, msg_area.sub[pSubCode].scan_ptr);
+		var endMsgIdx = absMsgNumToIdxWithMsgbaseObj(pMsgbase, pMsgbase.last_msg) + 1;
+		if (endMsgIdx == 0) // Not valid
+			endMsgIdx = pMsgbase.total_msgs;
+		// Check for any messages to the user between the start & end indexes
+		for (var i = startMsgIdx; i < endMsgIdx; ++i)
+		{
+			var msgHeader = pMsgbase.get_msg_index(true, i, false);
+			if (msgHeader != null && (msgHeader.attr & MSG_READ) == 0 && msgIsToCurrentUserByName(msgHeader))
+			{
+				unreadMsgsToUserFound = true;
+				break;
+			}
+		}
+	}
+	return unreadMsgsToUserFound;
+}
+// Checks to see if there are any unread messages to the current
+// logged-in user in a sub-board
+//
+// Parameters:
+//  pSuBCode: The internal code of the sub-board to check
+//
+// Return value: Boolean - Whether or not there are any unread messages to the current logged-in user
+function anyUnreadMsgsToUser(pSubCode)
+{
+	var unreadMsgsToUserFound = false;
+	var msgbase = new MsgBase(pSubCode);
+	if (msgbase.open())
+	{
+		unreadMsgsToUserFound = anyUnreadMsgsToUserWithMsgbase(msgbase, pSubCode);
+		msgbase.close();
+	}
+	return unreadMsgsToUserFound;
 }
 
 // Returns whether or not a message is from the current user (either the current
@@ -18299,22 +18773,6 @@ function subBoardGrpAndName(pSubBoardCode)
 	}
 
 	return subBoardGrpAndName;
-}
-
-// Returns whether a given string matches the current user's name, handle, or alias.
-// Does a case-insensitive match.
-//
-// Parameters:
-//  pStr: The string to match against the user's name/handle/alias
-//
-// Return value: Boolean - Whether or not the string matches the current user's name,
-//               handle, or alias
-function userNameHandleAliasMatch(pStr)
-{
-	if (typeof(pStr) != "string")
-		return false;
-	var strUpper = pStr.toUpperCase();
-	return ((strUpper == user.name.toUpperCase()) || (strUpper == user.handle.toUpperCase()) || (strUpper == user.alias.toUpperCase()));
 }
 
 // Writes a log message to the system log (using LOG_INFO log level) and to the
@@ -18904,24 +19362,25 @@ function getBogusMsgHdr(pSubject)
 }
 
 // Returns whether a message is readable to the user, based on its
-// header and the sub-board code.
+// header and the sub-board code. This also checks pMsgHdrOrIdx for
+// null; if it's null, this function will return false.
 //
 // Parameters:
-//  pMsgHdr: The header object for the message
+//  pMsgHdrOrIdx: The header or index object for the message
 //  pSubBoardCode: The internal code for the sub-board the message is in
 //
 // Return value: Boolean - Whether or not the message is readable for the user
-function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
+function isReadableMsgHdr(pMsgHdrOrIdx, pSubBoardCode)
 {
-	if (pMsgHdr === null)
+	if (pMsgHdrOrIdx === null)
 		return false;
 	// Let the sysop see unvalidated messages and private messages but not other users.
 	if (!user.is_sysop)
 	{
 		if (pSubBoardCode != "mail")
 		{
-			if ((msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0)) ||
-			    (((pMsgHdr.attr & MSG_PRIVATE) == MSG_PRIVATE) && !userHandleAliasNameMatch(pMsgHdr.to)))
+			if ((msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdrOrIdx.attr & MSG_VALIDATED) == 0)) ||
+			    (((pMsgHdrOrIdx.attr & MSG_PRIVATE) == MSG_PRIVATE) && !userHandleAliasNameMatch(pMsgHdrOrIdx.to)))
 			{
 				return false;
 			}
@@ -18929,18 +19388,18 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 	}
 	// If the message is deleted, determine whether it should be viewable, based
 	// on the system settings.
-	if (((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
+	if (((pMsgHdrOrIdx.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
 		return false;
 	// The message voting and poll variables were added in sbbsdefs.js for
 	// Synchronet 3.17.  Make sure they're defined before referencing them.
 	if (typeof(MSG_UPVOTE) != "undefined")
 	{
-		if ((pMsgHdr.attr & MSG_UPVOTE) == MSG_UPVOTE)
+		if ((pMsgHdrOrIdx.attr & MSG_UPVOTE) == MSG_UPVOTE)
 			return false;
 	}
 	if (typeof(MSG_DOWNVOTE) != "undefined")
 	{
-		if ((pMsgHdr.attr & MSG_DOWNVOTE) == MSG_DOWNVOTE)
+		if ((pMsgHdrOrIdx.attr & MSG_DOWNVOTE) == MSG_DOWNVOTE)
 			return false;
 	}
 	// Don't include polls as being unreadable messages - They just need to have
@@ -18948,11 +19407,57 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 	/*
 	if (typeof(MSG_POLL) != "undefined")
 	{
-		if ((pMsgHdr.attr & MSG_POLL) == MSG_POLL)
+		if ((pMsgHdrOrIdx.attr & MSG_POLL) == MSG_POLL)
 			return false;
 	}
 	*/
 	return true;
+}
+
+// Returns the header of the last readable message in a messagbase.  If none is found,
+// this will return null.
+//
+// Parameters:
+//  pMsgbase: An open MessageBase object
+//  pSubBoardCode: The internal code of the messagebase sub-board
+//
+// Return value: The header of the last readable message in the messagebase. If none is
+//               found, this will be null.
+function getLastReadableMsgHdrInMsgbase(pMsgbase, pSubBoardCode)
+{
+	var hdrOfLastReadableMsg = null;
+	if (pMsgbase.is_open)
+	{
+		var numMsgs = pMsgbase.total_msgs;
+		for (var i = numMsgs - 1; i >= 0; --i)
+		{
+			if (isReadableMsgHdr(pMsgbase.get_msg_index(true, i, false), pSubBoardCode))
+			{
+				hdrOfLastReadableMsg = pMsgbase.get_msg_header(true, i, false, false);
+				break;
+			}
+		}
+	}
+	return hdrOfLastReadableMsg;
+}
+// Returns the header of the last readable message in a messagbase (temporarily opens
+// the sub-board).  If none is found, this will return null.
+//
+// Parameters:
+//  pSubBoardCode: The internal code of the messagebase sub-board
+//
+// Return value: The header of the last readable message in the messagebase. If none is
+//               found, this will be null.
+function getLastReadableMsgHdrInSubBoard(pSubBoardCode)
+{
+	var msgHdr = null;
+	var msgbase = new MsgBase(pSubBoardCode);
+	if (msgbase.open())
+	{
+		msgHdr = getLastReadableMsgHdrInMsgbase(msgbase, pSubBoardCode);
+		msgbase.close();
+	}
+	return msgHdr;
 }
 
 // Returns the number of readable messages in a sub-board.
@@ -18981,13 +19486,9 @@ function numReadableMsgs(pMsgbase, pSubBoardCode)
 	}
 	else
 	{
-		var msgHeader;
 		for (var i = 0; i < pMsgbase.total_msgs; ++i)
 		{
-			msgHeader = msgBase.get_msg_header(true, i, false);
-			if (msgHeader == null)
-				continue;
-			else if (isReadableMsgHdr(msgHeader, pSubBoardCode))
+			if (isReadableMsgHdr(msgBase.get_msg_index(true, i, false), pSubBoardCode))
 				++numMsgs;
 		}
 	}
@@ -19035,8 +19536,7 @@ function toggleVoteMsgsDeleted(pMsgbase, pMsgNum, pMsgID, pDoDelete, pIsEmailSub
 				continue;
 			// If this header is a vote header and its thread_back or reply_id matches the given message,
 			// then we can delete this message.
-			var isVoteMsg = (((msgHdrs[msgHdrsProp].attr & MSG_VOTE) == MSG_VOTE) || ((msgHdrs[msgHdrsProp].attr & MSG_UPVOTE) == MSG_UPVOTE) || ((msgHdrs[msgHdrsProp].attr & MSG_DOWNVOTE) == MSG_DOWNVOTE));
-			if (isVoteMsg && (msgHdrs[msgHdrsProp].thread_back == pMsgNum) || (msgHdrs[msgHdrsProp].reply_id == pMsgID))
+			if (isVoteHdr(msgHdrs[msgHdrsProp]) && (msgHdrs[msgHdrsProp].thread_back == pMsgNum) || (msgHdrs[msgHdrsProp].reply_id == pMsgID))
 			{
 				++retObj.numVoteMsgs;
 				var msgWasAffected = false;
@@ -19064,6 +19564,34 @@ function toggleVoteMsgsDeleted(pMsgbase, pMsgNum, pMsgID, pDoDelete, pIsEmailSub
 	}
 
 	return retObj;
+}
+
+// Returns whether the user's scan_ptr for a sub-board is 4294967295
+// (0xffffffff, or ~0). That is a special value for the user's scan_ptr
+// meaning it should point to the latest message in the messagebase.
+//
+// Parameters:
+//  pSubCode: The internal code of a sub-board
+//
+// Return value: Whether or not the user's scan_ptr for the sub-board is that special value
+function subBoardScanPtrIsLatestMsgSpecialVal(pSubCode)
+{
+	if (typeof(msg_area.sub[pSubCode].scan_ptr) === "number")
+		return msgNumIsLatestMsgSpecialVal(msg_area.sub[pSubCode].scan_ptr);
+	else
+		return false;
+}
+// Returns whether a message number is  4294967295 (0xffffffff, or ~0). That is
+// a special value for a message number meaning it should point to the latest
+// message in the messagebase.
+//
+// Parameters:
+//  pMsgNum: A message number
+//
+// Return value: Whether or not the given message number is the special value
+function msgNumIsLatestMsgSpecialVal(pMsgNum)
+{
+	return (pMsgNum == 0xffffffff);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -19966,8 +20494,8 @@ function strWithToUserColor(pStr, pToUserColor)
 }
 
 // Gets the value of the user's current scan_ptr in a sub-board, or if it's
-// 0xffffffff, returns the message number of the last readable message in
-// the sub-board (this is the message number, not the index).
+// the 'last message' special value, returns the message number of the last
+// readable message in the sub-board (this is the message number, not the index).
 //
 // Parameters:
 //  pSubCode: A sub-board internal code
@@ -19977,43 +20505,19 @@ function strWithToUserColor(pStr, pToUserColor)
 function GetScanPtrOrLastMsgNum(pSubCode)
 {
 	var msgNumToReturn = 0;
-	// Check for 4294967295 (0xffffffff, or ~0): That is a special value
-	// for the user's scan_ptr meaning it should point to the latest message
-	// in the messagebase.
-	if (msg_area.sub[pSubCode].scan_ptr != 0xffffffff)
+	// If the user's scan_ptr for the sub-board isn't the 'last message'
+	// special value, then use it; otherwise, use the latest readable
+	// message number.
+	if (!subBoardScanPtrIsLatestMsgSpecialVal(pSubCode))
 		msgNumToReturn = msg_area.sub[pSubCode].scan_ptr;
 	else
 	{
-		var lastNonDeletedMsgHdr = GetLastNonDeletedMsgHdr(pSubCode);
-		if (lastNonDeletedMsgHdr != null)
-			msgNumToReturn = lastNonDeletedMsgHdr.number;
+		var lastReadableMsgHdr = getLastReadableMsgHdrInSubBoard(pSubCode);
+		if (lastReadableMsgHdr != null)
+			msgNumToReturn = lastReadableMsgHdr.number;
 	}
 
 	return msgNumToReturn;
-}
-
-// Returns the last non-deleted message header in a sub-board, if available
-//
-// Parameters:
-//  pSubCode: A sub-board internal code
-//
-// Return value: The header of the last non-deleted message in the sub-board, or null if there is none
-function GetLastNonDeletedMsgHdr(pSubCode)
-{
-	var lastReadableMsgHdr = null;
-	var msgbase = new MsgBase(pSubCode);
-	if (msgbase.open())
-	{
-		var numMsgs = msgbase.total_msgs;
-		for (var msgIdx = numMsgs - 1; msgIdx >= 0 && lastReadableMsgHdr == null; --msgIdx)
-		{
-			var msgHdr = msgbase.get_msg_header(true, msgIdx);
-			if ((msgHdr != null) && ((msgHdr.attr & MSG_DELETE) == 0))
-				lastReadableMsgHdr = msgHdr;
-		}
-		msgbase.close();
-	}
-	return lastReadableMsgHdr;
 }
 
 // Returns whether a message header has one of the attachment flags
@@ -20381,6 +20885,55 @@ function canViewDeletedMsgs()
 	var sysopVDM = ((system.settings & SYS_SYSVDELM) == SYS_SYSVDELM);
 	return (usersVDM || (user.is_sysop && sysopVDM));
 }
+
+// Returns whether or not a message header is a vote header
+//
+// Parameters:
+//  pMsgHdrOrIndex: A message header or index object
+//
+// Return value: Boolean - Whether or not the header is a vote header
+function isVoteHdr(pMsgHdrOrIndex)
+{
+	if (typeof(pMsgHdrOrIndex) !== "object" || !pMsgHdrOrIndex.hasOwnProperty("attr"))
+		return false;
+	return (((pMsgHdrOrIndex.attr & MSG_VOTE) == MSG_VOTE) || ((pMsgHdrOrIndex.attr & MSG_UPVOTE) == MSG_UPVOTE) || ((pMsgHdrOrIndex.attr & MSG_DOWNVOTE) == MSG_DOWNVOTE));
+}
+
+// Updates scan_ptr and/or last_read for a sub-board
+//
+// Parameters:
+//  pSubCode: The internal code for the sub-board being read
+//  pMsgHdr: A message header or index object (the message number will be used)
+//  pDoingMsgScan: Boolean - Whether or not a scan is being done
+function updateScanPtrAndOrLastRead(pSubCode, pMsgHdr, pDoingMsgScan)
+{
+	// If not reading personal email, then update the scan & last read message pointers.
+	if (pSubCode != "mail")
+	{
+		if (pDoingMsgScan)
+		{
+			if (typeof(msg_area.sub[pSubCode].scan_ptr) === "number")
+			{
+				if (!msgNumIsLatestMsgSpecialVal(msg_area.sub[pSubCode].scan_ptr) && msg_area.sub[pSubCode].scan_ptr < pMsgHdr.number)
+					msg_area.sub[pSubCode].scan_ptr = pMsgHdr.number;
+			}
+			else
+				msg_area.sub[pSubCode].scan_ptr = pMsgHdr.number;
+			//if (pMsgHdr.number > GetScanPtrOrLastMsgNum(pSubCode))
+			//	msg_area.sub[pSubCode].scan_ptr = pMsgHdr.number;
+
+			if (pMsgHdr.number > msg_area.sub[pSubCode].last_read)
+				msg_area.sub[pSubCode].last_read = pMsgHdr.number;
+		}
+		else
+		{
+			msg_area.sub[pSubCode].last_read = pMsgHdr.number;
+			//if (pMsgHdr.number > msg_area.sub[pSubCode].last_read)
+			//	msg_area.sub[pSubCode].last_read = pMsgHdr.number;
+		}
+	}
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 // ChoiceScrollbox stuff (this was copied from SlyEdit_Misc.js; maybe there's a better way to do this)
