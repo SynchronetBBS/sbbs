@@ -172,11 +172,6 @@
 
 "use strict";
 
-// TODO: To make the new-to-you scan faster, Digital Man said checking messagebase.last_msg against the user's new
-// scan pointer for that sub is the optimization to do
-
-// TODO: In the message list, add the ability to search with / similar to my area chooser.
-
 
 /* Command-line arguments (in -arg=val format, or -arg format to enable an
    option):
@@ -8877,13 +8872,18 @@ function DigDistMsgReader_EditExistingMessageOldWay(pMsgbase, pOrigMsgHdr, pMsgI
 // their last message).
 function DigDistMsgReader_CanDelete()
 {
+	// Deleting messages is allowed if the user is the sysop or reading personal email.
+	// If not, check the sub-board configuration.
 	var canDelete = user.is_sysop || this.readingPersonalEmail;
-	var msgbase = new MsgBase(this.subBoardCode);
-	if (msgbase.open())
+	if (!canDelete)
 	{
-		if (msgbase.cfg != null)
-			canDelete = canDelete || ((msgbase.cfg.settings & SUB_DEL) == SUB_DEL);
-		msgbase.close();
+		var msgbase = new MsgBase(this.subBoardCode);
+		if (msgbase.open())
+		{
+			if (msgbase.cfg != null)
+				canDelete = canDelete || ((msgbase.cfg.settings & SUB_DEL) == SUB_DEL);
+			msgbase.close();
+		}
 	}
 	return canDelete;
 }
@@ -8891,13 +8891,17 @@ function DigDistMsgReader_CanDelete()
 // the last message they posted in the sub-board.
 function DigDistMsgReader_CanDeleteLastMsg()
 {
+	// Sysops can delete the last message by default. If not, check the sub-board configuration.
 	var canDelete = user.is_sysop;
-	var msgbase = new MsgBase(this.subBoardCode);
-	if (msgbase.open())
+	if (!canDelete)
 	{
-		if (msgbase.cfg != null)
-			canDelete = canDelete || ((msgbase.cfg.settings & SUB_DELLAST) == SUB_DELLAST);
-		msgbase.close();
+		var msgbase = new MsgBase(this.subBoardCode);
+		if (msgbase.open())
+		{
+			if (msgbase.cfg != null)
+				canDelete = canDelete || ((msgbase.cfg.settings & SUB_DELLAST) == SUB_DELLAST);
+			msgbase.close();
+		}
 	}
 	return canDelete;
 }
@@ -8905,13 +8909,17 @@ function DigDistMsgReader_CanDeleteLastMsg()
 // messages.
 function DigDistMsgReader_CanEdit()
 {
+	// Sysops can edit by default. If not, check the sub-board configuration.
 	var canEdit = user.is_sysop;
-	var msgbase = new MsgBase(this.subBoardCode);
-	if (msgbase.open())
+	if (!canEdit)
 	{
-		if (msgbase.cfg != null)
-			canEdit = canEdit || ((msgbase.cfg.settings & SUB_EDIT) == SUB_EDIT);
-		msgbase.close();
+		var msgbase = new MsgBase(this.subBoardCode);
+		if (msgbase.open())
+		{
+			if (msgbase.cfg != null)
+				canEdit = canEdit || ((msgbase.cfg.settings & SUB_EDIT) == SUB_EDIT);
+			msgbase.close();
+		}
 	}
 	return canEdit;
 }
@@ -8919,13 +8927,18 @@ function DigDistMsgReader_CanEdit()
 // is enabled.
 function DigDistMsgReader_CanQuote()
 {
+	// Sysops and users reading personal email can quote by default.
+	// If not, check the sub-board configuration.
 	var canQuote = this.readingPersonalEmail || user.is_sysop;
-	var msgbase = new MsgBase(this.subBoardCode);
-	if (msgbase.open())
+	if (!canQuote)
 	{
-		if (msgbase.cfg != null)
-			canQuote = canQuote || ((msgbase.cfg.settings & SUB_QUOTE) == SUB_QUOTE);
-		msgbase.close();
+		var msgbase = new MsgBase(this.subBoardCode);
+		if (msgbase.open())
+		{
+			if (msgbase.cfg != null)
+				canQuote = canQuote || ((msgbase.cfg.settings & SUB_QUOTE) == SUB_QUOTE);
+			msgbase.close();
+		}
 	}
 	return canQuote;
 }
@@ -21869,14 +21882,14 @@ function getExternalEditorQuoteWrapCfgFromSCFG(pEditorCode)
 // Return value: The new string
 function chgCharInStr(pStr, pCharIndex, pNewText)
 {
-   if (typeof(pStr) != "string")
-      return "";
-   if ((pCharIndex < 0) || (pCharIndex >= pStr.length))
-      return pStr;
-   if (typeof(pNewText) != "string")
-      return pStr;
+	if (typeof(pStr) != "string")
+		return "";
+	if ((pCharIndex < 0) || (pCharIndex >= pStr.length))
+		return pStr;
+	if (typeof(pNewText) != "string")
+		return pStr;
 
-   return (pStr.substr(0, pCharIndex) + pNewText + pStr.substr(pCharIndex+1));
+	return (pStr.substr(0, pCharIndex) + pNewText + pStr.substr(pCharIndex+1));
 }
 
 // Given a string of attribute characters, this function inserts the control code
