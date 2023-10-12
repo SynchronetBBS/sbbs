@@ -19,137 +19,6 @@
  * Date       Author            Description
  * 2014-09-13 Eric Oulashin     Started (based on my message lister script)
  * ... Comments trimmed ...
- * 2022-03-14 Eric Oulashin     Version 1.47
- *                              Updated to make DDMsgReader can be called directly as a
- *                              loadable module by Synchronet (work started on March 8).
- *                              Also, refactored to use attr_conv.js and removed the
- *                              attribute conversion functions from this script.
- * 2022-03-23 Eric Oulashin     Version 1.47a
- *                              Now calls bbs.edit_msg() to edit an existing message (if
- *                              that function exists - It was added in Synchronet 3.18).
- * 2022-06-12 Eric Oulashin     Version 1.48
- *                              Improved display of ANSI messages via the use of the Graphic object
- * 2022-06-13 Eric Oulashin     Version 1.49
- *                              Refactor: Simplified saving a message to BBS machine for sysop
- *                              (as-is, less processing); removed attachment stuff for pre-Synchronet
- *                              3.17; moved hasSyncAttrCodes() to attr_conv.js because that's where it
- *                              needs to be.
- * 2022-06-13 Eric Oulashin     Version 1.50
- *                              When doing a text search, it now ignores the user scan configuration for
- *                              sub-boards, to ensure it will show any results of the text search.
- * 2022-07-05 Eric Oulashin     Version 1.51
- *                              Graphic is now only used when using the scrollable interface. Also,
- *                              when creating the Graphic, now subtracting 1 from the reading area height
- *                              to avoid making the Graphic one line too tall to avoid unnecessary scrolling.
- *                              When saving messages with ANSI codes, Graphic is only used if the message has
- *                              any ASCII drawing characters. (not sure if this really matters much though).
- *                              Also, applied "use strict" and made some changes as necessary.
- * 2022-07-09 Eric Oulashin     Version 1.52
- *                              Mouse click support for the bottom help lines in scrollable mode
- *                              (thanks to help from Nelgin)
- * 2022-07-18 Eric Oulashin     Version 1.53
- *                              Deleted messages can now be un-marked for deletion from the message
- *                              list with the U key (if the user has delete permissions). Also, the reader now
- *                              honors the system setting for whether users can view deleted messages.
- * 2022-08-06 Eric Oulashin     Version 1.54
- *                              Users now have a personal twit list (configurable via Ctrl-U, user settings).
- * 2022-09-23 Eric Oulashin     Version 1.55
- *                              Refactored how email replies are done (passing the header to the appropriate
- *                              functions, not using ungetstr() when prompting for the message subject)
- * 2022-11-25 Eric Oulashin     Version 1.56
- *                              Fixed bug startup mode for scanning all groups for un-read messages to you where
- *                              the reader was bringing up personal email instead.
- * 2022-12-02 Eric Oulashin     Version 1.57
- *                              @-codes were only expanded when reading personal mail; now, DDMsgReader
- *                              also checks to make sure the sender is a sysop.  Also, used putmsg() in
- *                              place of this script's own @-message parsing when displaying some of the
- *                              configured text strings.
- * 2022-12-12 Eric Oulashin     Fix for "assignment to undeclared variable" error in GetMsgSubBrdLine();
- *                              appeared when changing to a different message area from the reader
- * 2012-12-14 Eric Oulashin     Version 1.58
- *                              When writing QUOTES.TXT, quote lines are now wrapped if the user's
- *                              external editor configuration is configured to do so.
- * 2022-12-29 Eric Oulashin     Version 1.59
- *                              For Synchronet above 3.20, read the external editor quote wrap setting
- *                              from xtrn.ini.  Below version 3.20, read it from xtrn.cnf.
- *                              Also, there's a new user setting to toggle whether or not to use the scrollbar
- *                              in the scrolling reader. Currently there is no alternate progress displayed
- *                              if not using the scrollbar, but that is planned for a future update.
- * 2023-01-20 Eric Oulashin     Version 1.60
- *                              DDMsgReader can now optionally convert Y-style MCI attribute codes to
- *                              to Synchronet attribute codes, with the new configuration setting
- *                              convertYStyleMCIAttrsToSync (true/false). Requires the updated attr_conv.js
- *                              in sbbs/exec/load.
- * 2023-01-22 Eric Oulashin     Version 1.61
- *                              Fix: When replying to an email with an unknown sender (empty),
- *                              no longer gives the error "Invalid user field: 0"; also, if the sender is
- *                              unknown, prompts the user for a user name/number/email address to send
- *                              the reply to.
- * 2023-01-30 Eric Oulashin     Version 1.62
- *                              (Hopefully) Improved display of ANSI messages which would previously look
- *                              bad with empty lines evrey other line
- * 2023-02-01 Eric Oulashin     Version 1.63
- *                              Fix for reading colors from the theme file. Also, the theme file now
- *                              no longer needs the control character for color codes.
- * 2023-02-09 Eric Oulashin     Version 1.64
- *                              When reading personal email (received or sent), now makes use of the
- *                              loadable module 2nd command-line argument, which specifies the user number.
- *                              When deleting a user, the sysop might be prompted whether to read that
- *                              user's email.
- * 2023-02-24 Eric Oulashin     Version 1.65
- *                              Ctrl-C can now be used to cancel message scans. Output from the scan
- *                              is now word-wrapped to the terminal width.
- * 2023-03-02 Eric Oulashin     Version 1.66
- *                              Now allows editing the subject when forwarding a message
- * 2023-03-09 Eric Oulashin     Version 1.67
- *                              Fixes for time zone alignment & list key help for wide terminals
- * 2023-03-15 Eric Oulashin     Version 1.68
- *                              Makes use of console.aborted when displaying help screens
- *                              so that screen updates work better after pausing output.
- *                              Also, when running a new message scan (not new-to-you), the current
- *                              sub-board being scanned is now outputted.
- * 2023-03-24 Eric Oulashin     Version 1.69
- *                              Bug fix for deleting multiple selected messages: When updating message
- *                              headers in the cached arrays, don't try to save them back to the database,
- *                              because that was already done (this avoids a 'header has expanded fields' error).
- * 2023-04-04 Eric Oulashin     Version 1.70
- *                              Added "indexed" reader mode, which lists sub-boards with total and
- *                              number of new/unread messages and lets the user read messages in those
- *                              sub-boards.
- *                              Also, utf-8 characters should now be converted properfly for non utf-8 terminals.
- * 2023-04-07 Eric Oulashin     Version 1.71
- *                              Ctrl-C is now supported for message searches to abort the search. A
- *                              new configurable string was added for this situation: msgSearchAbortedText
- * 2023-04-16 Eric Oulashin     Version 1.72
- *                              Added a quick-validation hotkey, Ctrl-Q, for sysops to use to apply a
- *                              quick-validation set to a user when reading their message. Quick-Validation
- *                              sets are configured in SCFG > System > Security Options > Quick-Validation Values.
- * 2023-04-17 Eric Oulashin     Version 1.73
- *                              Bug fix: When getting header lines to view, ensure the header lines
- *                              are not too wide for the user's terminal. Header lines that are too
- *                              long will be split into no more than 2 lines.
- * 2023-04-25 Eric Oulashin     Version 1.73a
- *                              Refactored the functions for getting message header lines. Also, now
- *                              all message header information is retrieved.
- * 2023-05-13 Eric Oulashin     Version 1.74
- *                              Settings for users being able to read deleted messages now applies to
- *                              personal email. Also, allows reading messages that are marked for deletion
- *                              in addition to just seeing them in the message list.
- * 2023-08-16 Eric Oulashin     Version 1.75
- *                              Made some changes to allow easy searching of personal email with
- *                              command-line arguments.
- * 2023-08-18 Eric Oulashin     Version 1.76
- *                              Fix for "Message header has 'expanded fields'" error when updating message
- *                              header attributes in certain conditions
- * 2023-08-20 Eric Oulashin     Version 1.77
- *                              Including all message headers when saving a message (sysop only) is now
- *                              optional.
- * 2023-08-26 Eric Oulashin     Version 1.77a
- *                              When saving a message on the local BBS PC without all the headers, the date is now included
- * 2023-08-30 Eric Oulashin     Version 1.78
- *                              Bug fix for going to a specific message in the message list (especially for lightbar mode)
- * 2023-09-20 Eric Oulashin     Version 1.79
- *                              Fixed poll voting for single-answer polls
  * 2023-09-22 Eric Oulashin     Version 1.80 beta
  *                              Improved speed of new-to-you scans, and to an extent (hopefully) overall speed
  *                              Bug fix: Setting reverseListOrder to "ask" in the .cfg file works properly again.
@@ -168,6 +37,8 @@
  *                              New user setting: List messages in reverse order
  * 2023-10-10 Eric Oulashin     Version 1.80
  *                              Releasing this version
+ * 2023-10-11 Eric Oulashin     Version 1.81
+ *                              Updated permission check functions (speed improvement)
  */
 
 "use strict";
@@ -272,8 +143,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.80";
-var READER_DATE = "2023-10-10";
+var READER_VERSION = "1.81";
+var READER_DATE = "2023-10-11";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -8876,15 +8747,7 @@ function DigDistMsgReader_CanDelete()
 	// If not, check the sub-board configuration.
 	var canDelete = user.is_sysop || this.readingPersonalEmail;
 	if (!canDelete)
-	{
-		var msgbase = new MsgBase(this.subBoardCode);
-		if (msgbase.open())
-		{
-			if (msgbase.cfg != null)
-				canDelete = canDelete || ((msgbase.cfg.settings & SUB_DEL) == SUB_DEL);
-			msgbase.close();
-		}
-	}
+		canDelete = Boolean(msg_area.sub[this.subBoardCode].settings & SUB_DEL);
 	return canDelete;
 }
 // For the DigDistMsgReader Class: Returns whether or not the user can delete
@@ -8893,16 +8756,8 @@ function DigDistMsgReader_CanDeleteLastMsg()
 {
 	// Sysops can delete the last message by default. If not, check the sub-board configuration.
 	var canDelete = user.is_sysop;
-	if (!canDelete)
-	{
-		var msgbase = new MsgBase(this.subBoardCode);
-		if (msgbase.open())
-		{
-			if (msgbase.cfg != null)
-				canDelete = canDelete || ((msgbase.cfg.settings & SUB_DELLAST) == SUB_DELLAST);
-			msgbase.close();
-		}
-	}
+	if (!canDelete && !this.readingPersonalEmail)
+		canDelete = Boolean(msg_area.sub[this.subBoardCode].settings & SUB_DELLAST);
 	return canDelete;
 }
 // For the DigDistMsgReader Class: Returns whether or not the user can edit
@@ -8911,16 +8766,8 @@ function DigDistMsgReader_CanEdit()
 {
 	// Sysops can edit by default. If not, check the sub-board configuration.
 	var canEdit = user.is_sysop;
-	if (!canEdit)
-	{
-		var msgbase = new MsgBase(this.subBoardCode);
-		if (msgbase.open())
-		{
-			if (msgbase.cfg != null)
-				canEdit = canEdit || ((msgbase.cfg.settings & SUB_EDIT) == SUB_EDIT);
-			msgbase.close();
-		}
-	}
+	if (!canEdit && !this.readingPersonalEmail)
+		canEdit = Boolean(msg_area.sub[this.subBoardCode].settings & SUB_EDIT);
 	return canEdit;
 }
 // For the DigDistMsgReader Class: Returns whether or not message quoting
@@ -8929,17 +8776,9 @@ function DigDistMsgReader_CanQuote()
 {
 	// Sysops and users reading personal email can quote by default.
 	// If not, check the sub-board configuration.
-	var canQuote = this.readingPersonalEmail || user.is_sysop;
+	var canQuote = user.is_sysop || this.readingPersonalEmail;
 	if (!canQuote)
-	{
-		var msgbase = new MsgBase(this.subBoardCode);
-		if (msgbase.open())
-		{
-			if (msgbase.cfg != null)
-				canQuote = canQuote || ((msgbase.cfg.settings & SUB_QUOTE) == SUB_QUOTE);
-			msgbase.close();
-		}
-	}
+		canQuote = Boolean(msg_area.sub[this.subBoardCode].settings & SUB_QUOTE);
 	return canQuote;
 }
 
