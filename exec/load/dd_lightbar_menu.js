@@ -3560,6 +3560,8 @@ function substrWithAttrCodes(pStr, pStartIdx, pLen)
 	if (typeof(pStartIdx) !== "number")
 		return "";
 	var len = typeof(pLen) === "number" ? pLen : console.strlen(pStr)-pStartIdx;
+	if (len <= 0)
+		return "";
 	if ((pStartIdx <= 0) && (pLen >= console.strlen(pStr)))
 		return pStr;
 	var startIdx = 0;
