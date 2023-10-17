@@ -613,12 +613,19 @@ BOOL modem_send(COM_HANDLE com_handle, const char* str)
 			if(ch!='^' && ch>='@')	/* ^^ to send an '^' char to the modem */
 				ch-='@';
 		}
-		if(!comWriteByte(com_handle,ch))
-			return FALSE;
+		if(!comWriteByte(com_handle,ch)) {
+			YIELD();
+			if(!comWriteByte(com_handle,ch))
+				return FALSE;
+		}
 	}
 	SLEEP(100);
 	comPurgeInput(com_handle);
-	return comWriteByte(com_handle, '\r');
+	if(!comWriteByte(com_handle, '\r')) {
+		YIELD();
+		return comWriteByte(com_handle, '\r');
+	}
+	return TRUE;
 }
 
 /****************************************************************************/
