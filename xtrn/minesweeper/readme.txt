@@ -118,7 +118,7 @@ Command-line arguments supported:
 
 The ctrl/modopts.ini may contain a [minesweeper] section. The following
 options are supported (with default values):
-    sub = syncdata
+    sub = dove-syncdata
     timelimit = 60
     timewarn = 5
     winners = 20
