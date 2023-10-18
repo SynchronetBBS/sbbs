@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.39     2023-10-17   Message area chooser only: Should now be faster when
+                      finding the timestamp of the latest readable message
 1.38     2023-10-07   Message area chooser fix for name collapsing mode with the
                       lightbar interface: No longer gets stuck in a loop when
                       choosing a sub-board. The message area chooser version

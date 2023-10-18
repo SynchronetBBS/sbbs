@@ -63,7 +63,11 @@
  * 2023-10-07 Eric Oulashin   Version 1.38
  *                            Fix for name collapsing mode with the lightbar interface: No longer gets stuck
  *                            in a loop when choosing a sub-board.
-*/
+ * 2023-10-17 Eric Oulashin   Version 1.39
+ *                            Faster searching for the latest readable message header
+ *                            (for getting the latest message timesamp), using
+ *                            get_msg_index() rather than get_msg_header().
+ */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
 
@@ -106,8 +110,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.38";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-10-07";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.39";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-10-17";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -1124,6 +1128,8 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 					var subDesc = this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].description;
 					var numItems = 0;
 					var lastMsgPostTimestamp = 0;
+					if (this.areaChooser.showDatesInSubBoardList)
+						lastMsgPostTimestamp = getLatestMsgTime(this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].code);
 					var subSubBoardListExists = false;
 					if (Array.isArray(this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].sub_subboard_list) && this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].sub_subboard_list.length > 0)
 					{
@@ -1135,12 +1141,6 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 					var msgBase = new MsgBase(this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].code);
 					if (msgBase.open())
 					{
-						if (this.areaChooser.showDatesInSubBoardList)
-						{
-							var latestMsgHdr = getLatestMsgHdrWithMsgbase(msgBase, 100); // One of the last 100 messages should be readable
-							if (latestMsgHdr != null)
-								lastMsgPostTimestamp = latestMsgHdr.when_written_time; // when_imported_time
-						}
 						if (!subSubBoardListExists)
 						{
 							// There is no sub-subboard list, so this is just a regular sub-board.
@@ -2915,24 +2915,25 @@ function getBogusMsgHdr(pSubject)
 }
 
 // Returns whether a message is readable to the user, based on its
-// header and the sub-board code.
+// header and the sub-board code. This also checks pMsgHdrOrIdx for
+// null; if it's null, this function will return false.
 //
 // Parameters:
-//  pMsgHdr: The header object for the message
+//  pMsgHdrOrIdx: The header or index object for the message
 //  pSubBoardCode: The internal code for the sub-board the message is in
 //
 // Return value: Boolean - Whether or not the message is readable for the user
-function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
+function isReadableMsgHdr(pMsgHdrOrIdx, pSubBoardCode)
 {
-	if (pMsgHdr === null)
+	if (pMsgHdrOrIdx === null)
 		return false;
 	// Let the sysop see unvalidated messages and private messages but not other users.
-	if (gIsSysop)
+	if (!user.is_sysop)
 	{
 		if (pSubBoardCode != "mail")
 		{
-			if ((msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0)) ||
-			    (((pMsgHdr.attr & MSG_PRIVATE) == MSG_PRIVATE) && !userHandleAliasNameMatch(pMsgHdr.to)))
+			if ((msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdrOrIdx.attr & MSG_VALIDATED) == 0)) ||
+			    (((pMsgHdrOrIdx.attr & MSG_PRIVATE) == MSG_PRIVATE) && !userHandleAliasNameMatch(pMsgHdrOrIdx.to)))
 			{
 				return false;
 			}
@@ -2940,31 +2941,18 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 	}
 	// If the message is deleted, determine whether it should be viewable, based
 	// on the system settings.
-	if ((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE)
-	{
-		// If the user is a sysop, check whether sysops can view deleted messages.
-		// Otherwise, check whether users can view deleted messages.
-		if (gIsSysop)
-		{
-			if ((system.settings & SYS_SYSVDELM) == 0)
-				return false;
-		}
-		else
-		{
-			if ((system.settings & SYS_USRVDELM) == 0)
-				return false;
-		}
-	}
+	if (((pMsgHdrOrIdx.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
+		return false;
 	// The message voting and poll variables were added in sbbsdefs.js for
 	// Synchronet 3.17.  Make sure they're defined before referencing them.
 	if (typeof(MSG_UPVOTE) != "undefined")
 	{
-		if ((pMsgHdr.attr & MSG_UPVOTE) == MSG_UPVOTE)
+		if ((pMsgHdrOrIdx.attr & MSG_UPVOTE) == MSG_UPVOTE)
 			return false;
 	}
 	if (typeof(MSG_DOWNVOTE) != "undefined")
 	{
-		if ((pMsgHdr.attr & MSG_DOWNVOTE) == MSG_DOWNVOTE)
+		if ((pMsgHdrOrIdx.attr & MSG_DOWNVOTE) == MSG_DOWNVOTE)
 			return false;
 	}
 	// Don't include polls as being unreadable messages - They just need to have
@@ -2972,7 +2960,7 @@ function isReadableMsgHdr(pMsgHdr, pSubBoardCode)
 	/*
 	if (typeof(MSG_POLL) != "undefined")
 	{
-		if ((pMsgHdr.attr & MSG_POLL) == MSG_POLL)
+		if ((pMsgHdrOrIdx.attr & MSG_POLL) == MSG_POLL)
 			return false;
 	}
 	*/
@@ -3045,27 +3033,75 @@ function numReadableMsgs(pMsgbase, pSubBoardCode)
 	*/
 }
 
-// Returns whether a given name matches the logged-in user's handle, alias, or
-// name.
+// Returns whether a given name or CRC16 value matches the logged-in user's
+// handle, alias, or name.
 //
 // Parameters:
-//  pName: A name to match against the logged-in user
+//  pNameOrCRC16: A name (string) to match against the logged-in user, or a CRC16 (number)
+//                to match against the logged-in user
 //
 // Return value: Boolean - Whether or not the given name matches the logged-in
 //               user's handle, alias, or name
-function userHandleAliasNameMatch(pName)
+function userHandleAliasNameMatch(pNameOrCRC16)
 {
-	if (typeof(pName) != "string")
+	var checkByCRC16 = (typeof(pNameOrCRC16) === "number");
+	if (!checkByCRC16 && typeof(pNameOrCRC16) !== "string")
 		return false;
 
 	var userMatch = false;
-	var nameUpper = pName.toUpperCase();
-	if (user.handle.length > 0)
-		userMatch = (nameUpper.indexOf(user.handle.toUpperCase()) > -1);
-	if (!userMatch && (user.alias.length > 0))
-		userMatch = (nameUpper.indexOf(user.alias.toUpperCase()) > -1);
-	if (!userMatch && (user.name.length > 0))
-		userMatch = (nameUpper.indexOf(user.name.toUpperCase()) > -1);
+	if (checkByCRC16)
+	{
+		if (user.handle.length > 0)
+		{
+			if (userHandleAliasNameMatch.userHandleCRC16 === undefined)
+				userHandleAliasNameMatch.userHandleCRC16 = crc16_calc(user.handle.toLowerCase());
+			userMatch = (userHandleAliasNameMatch.userHandleCRC16 == pNameOrCRC16);
+		}
+		if (!userMatch && (user.alias.length > 0))
+		{
+			if (userHandleAliasNameMatch.userAliasCRC16 === undefined)
+				userHandleAliasNameMatch.userAliasCRC16 = crc16_calc(user.alias.toLowerCase());
+			userMatch = (userHandleAliasNameMatch.userAliasCRC16 == pNameOrCRC16);
+		}
+		if (!userMatch && (user.name.length > 0))
+		{
+			if (userHandleAliasNameMatch.userNameCRC16 === undefined)
+				userHandleAliasNameMatch.userNameCRC16 = crc16_calc(user.name.toLowerCase());
+			userMatch = (userHandleAliasNameMatch.userNameCRC16 == pNameOrCRC16);
+		}
+	}
+	else
+	{
+		if (pNameOrCRC16 != "")
+		{
+			var nameUpper = pNameOrCRC16.toUpperCase();
+			// If the name starts & ends with the same quote character, then remove the
+			// quote characters.
+			var firstChar = nameUpper.charAt(0);
+			var lastChar = nameUpper.charAt(nameUpper.length-1);
+			if ((firstChar == "\"" && lastChar == "\"") ||(firstChar == "'" && lastChar == "'"))
+				nameUpper = nameUpper.substring(1, nameUpper.length-1);
+			
+			if (user.handle.length > 0)
+			{
+				if (userHandleAliasNameMatch.userHandleUpper === undefined)
+					userHandleAliasNameMatch.userHandleUpper = user.handle.toUpperCase();
+				userMatch = (nameUpper.indexOf(userHandleAliasNameMatch.userHandleUpper) > -1);
+			}
+			if (!userMatch && (user.alias.length > 0))
+			{
+				if (userHandleAliasNameMatch.userAliasUpper === undefined)
+					userHandleAliasNameMatch.userAliasUpper = user.alias.toUpperCase();
+				userMatch = (nameUpper.indexOf(userHandleAliasNameMatch.userAliasUpper) > -1);
+			}
+			if (!userMatch && (user.name.length > 0))
+			{
+				if (userHandleAliasNameMatch.userNameUpper === undefined)
+					userHandleAliasNameMatch.userNameUpper = user.name.toUpperCase();
+				userMatch = (nameUpper.indexOf(userHandleAliasNameMatch.userNameUpper) > -1);
+			}
+		}
+	}
 	return userMatch;
 }
 
@@ -3297,20 +3333,16 @@ function calcPageNumAndTopPageIdx(pItemIdx, pNumItemsPerPage)
 //
 // Paramters:
 //  pSubCode: The internal code of the message sub-board
-//  pNumMsgsToCheck: The number of messages to check at the end of the sub-board.
-//                   This is optional and if omitted, all messages will be
-//                   checked (from the last message) for the latest readable
-//                   message header.
 //
 // Return value: The message header of the latest readable message.  If
 //               none is found, this will be null.
-function getLatestMsgHdr(pSubCode, pNumMsgsToCheck)
+function getLatestMsgHdr(pSubCode)
 {
 	var msgHdr = null;
 	var msgBase = new MsgBase(pSubCode);
 	if (msgBase.open())
 	{
-		msgHdr = getLatestMsgHdrWithMsgbase(msgBase, pNumMsgsToCheck);
+		msgHdr = getLatestMsgHdrWithMsgbase(msgBase, pSubCode);
 		msgBase.close();
 	}
 	delete msgBase; // Free some memory?
@@ -3321,41 +3353,26 @@ function getLatestMsgHdr(pSubCode, pNumMsgsToCheck)
 //
 // Paramters:
 //  pMsgbase: A MsgBase object for the sub-board, already opened
-//  pNumMsgsToCheck: The number of messages to check at the end of the sub-board.
-//                   This is optional and if omitted, all messages will be
-//                   checked (from the last message) for the latest readable
-//                   message header.
+//  pSubCode: The internal code of the sub-board
 //
 // Return value: The message header of the latest readable message.  If
 //               none is found, this will be null.
-function getLatestMsgHdrWithMsgbase(pMsgbase, pNumMsgsToCheck)
+function getLatestMsgHdrWithMsgbase(pMsgbase, pSubCode)
 {
 	if (typeof(pMsgbase) !== "object")
 		return null;
 	if (!pMsgbase.is_open)
 		return null;
 
-	var msgHdr = null;
-	var numMsgsToCheck = (typeof(pNumMsgsToCheck) === "number" ? pNumMsgsToCheck : 0);
-
-	// Look through the last numMsgsToCheck headers to find the latest
-	// readable message header
-	var numMsgs = pMsgbase.total_msgs;
-	var firstMsgIdx = 0;
-	if (numMsgsToCheck >= 1)
-		firstMsgIdx = numMsgs - numMsgsToCheck;
-	else
-		firstMsgIdx = 0;
-	if (firstMsgIdx < 0)
-		firstMsgIdx = 0;
-	for (var i = numMsgs - 1; (i >= firstMsgIdx) && (msgHdr == null); --i)
-	{
-		var msgHeader = pMsgbase.get_msg_header(true, i, true);
-		if (isReadableMsgHdr(msgHeader, pMsgbase.cfg.code))
-			msgHdr = msgHeader;
-	}
-
-	return msgHdr;
+	// Look through the message headers to find the latest readable one
+	var msgHdrToReturn = null;
+	var msgIdx = pMsgbase.total_msgs-1;
+	var msgHeader = pMsgbase.get_msg_index(true, msgIdx, false);
+	while (!isReadableMsgHdr(msgHeader, pSubCode) && (msgIdx >= 0))
+		msgHeader = pMsgbase.get_msg_index(true, --msgIdx, true);
+	if (msgHeader != null)
+		msgHdrToReturn = pMsgbase.get_msg_header(true, msgIdx, false);
+	return msgHdrToReturn;
 }
 
 // Gets the time of the latest post in a sub-board.
@@ -3371,28 +3388,21 @@ function getLatestMsgTime(pSubCode)
 
 	var latestPostTime = 0;
 
-	var numMsgs = 0;
 	var msgBase = new MsgBase(pSubCode);
 	if (msgBase.open())
 	{
-		numMsgs = numReadableMsgs(msgBase, pSubCode);
-		msgBase.close();
-	}
-	delete msgBase; // Free some memory?
-	if (numMsgs > 0)
-	{
-		// Get the latest post time from this sub-board & compare it to retObj.newestTime and
-		// set if necessary
-		var msgHeader = getLatestMsgHdr(pSubCode);
-		if (msgHeader === null)
-			msgHeader = getBogusMsgHdr();
-		if (this.showImportDates)
-			latestPostTime = msgHeader.when_imported_time;
-		else
+		var msgIdx = msgBase.total_msgs-1;
+		var msgHeader = msgBase.get_msg_index(true, msgIdx, false);
+		while (!isReadableMsgHdr(msgHeader, pSubCode) && (msgIdx >= 0))
+			msgHeader = msgBase.get_msg_index(true, --msgIdx, true);
+		if (msgHeader != null)
 		{
+			msgHeader = msgBase.get_msg_header(true, msgIdx, false);
 			var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
 			latestPostTime = msgWrittenLocalBBSTime != -1 ? msgWrittenLocalBBSTime : msgHeader.when_written_time;
 		}
+
+		msgBase.close();
 	}
 
 	return latestPostTime;
