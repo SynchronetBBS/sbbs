@@ -946,8 +946,14 @@ function Server_Work(cmdline) {
 			for (i in j) {
 				k = new SJOIN_Nick(j[i]);
 				n = Users[k.nick.toUpperCase()];
-				if (!n)
+				if (!n) {
+					umode_notice(USERMODE_OPER,"Notice",format(
+						"Server %s trying to SJOIN non-existent nick %s before processing.",
+						this.nick,
+						k.nick
+					));
 					continue;
+				}
 
 				if (!n.channels[tmp.nam.toUpperCase()]) {
 					tmp.users[n.id] = n;
