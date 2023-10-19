@@ -943,6 +943,7 @@ function Server_Work(cmdline) {
 				break;
 			}
 
+			var valid_nicks = "";
 			for (i in j) {
 				k = new SJOIN_Nick(j[i]);
 				n = Users[k.nick.toUpperCase()];
@@ -997,18 +998,17 @@ function Server_Work(cmdline) {
 					}
 				}
 
-				j[i] = format("%s%s%s",
+				if (valid_nicks != "")
+					valid_nicks += " ";
+
+				valid_nicks += format("%s%s%s",
 					k.isop ? "@" : "",
 					k.isvoice ? "+" : "",
 					k.nick
 				);
 			}
 
-			var a = 0;
-			for (i in tmp.users) {
-				a++;
-			}
-			if (a == 0) {
+			if (valid_nicks == "") {
 				umode_notice(USERMODE_OPER,"Notice",format(
 					"Server %s trying to SJOIN zero-member channel %s post-processing.",
 						this.nick,
@@ -1027,7 +1027,7 @@ function Server_Work(cmdline) {
 					tmp.created,
 					tmp.nam,
 					tmp.chanmode(true /* pass args */),
-					j.join(" ")
+					valid_nicks
 				)
 			);
 		} else { /* User single SJOIN */
