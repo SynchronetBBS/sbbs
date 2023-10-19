@@ -1004,11 +1004,11 @@ function Server_Work(cmdline) {
 				);
 			}
 
-			j = 0;
+			var a = 0;
 			for (i in tmp.users) {
-				j++;
+				a++;
 			}
-			if (j == 0) {
+			if (a == 0) {
 				umode_notice(USERMODE_OPER,"Notice",format(
 					"Server %s trying to SJOIN zero-member channel %s post-processing.",
 						this.nick,
