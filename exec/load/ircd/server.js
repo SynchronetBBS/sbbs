@@ -1004,6 +1004,20 @@ function Server_Work(cmdline) {
 				);
 			}
 
+			j = 0;
+			for (i in tmp.users) {
+				j++;
+			}
+			if (j == 0) {
+				umode_notice(USERMODE_OPER,"Notice",format(
+					"Server %s trying to SJOIN zero-member channel %s post-processing.",
+						this.nick,
+						tmp.nam
+				));
+				delete Channels[p[1].toUpperCase()];
+				break;
+			}
+
 			if (tmp.created > parseInt(p[0]))
 				tmp.created = parseInt(p[0]);
 
