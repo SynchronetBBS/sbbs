@@ -1008,13 +1008,18 @@ function Server_Work(cmdline) {
 				);
 			}
 
-			if (valid_nicks == "") {
+			if (!true_array_len(tmp.users)) {
 				umode_notice(USERMODE_OPER,"Notice",format(
 					"Server %s trying to SJOIN zero-member channel %s post-processing.",
 						this.nick,
 						tmp.nam
 				));
 				delete Channels[p[1].toUpperCase()];
+				umode_notice(USERMODE_OPER,"Debug",format(
+					"typeof %s is %s",
+					p[1],
+					typeof Channels[p[1].toUpperCase()]
+				));
 				break;
 			}
 
