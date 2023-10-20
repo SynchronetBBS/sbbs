@@ -118,13 +118,16 @@ Command-line arguments supported:
 
 The ctrl/modopts.ini may contain a [minesweeper] section. The following
 options are supported (with default values):
-    sub = syncdata
+    sub = <auto-detected syncdata sub-code>
     timelimit = 60
     timewarn = 5
     winners = 20
     difficulty = 1
     selector = 0
     highlight = true
+
+Note: there is no need to create these keys in your modopts.ini file unless
+you have a need to over-ride the default behavior.
 
 The user's choice of the following settings is saved to their user properties
 file (data/user/*.ini) and used for future game plays:
