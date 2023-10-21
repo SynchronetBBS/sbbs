@@ -924,7 +924,9 @@ int main(int argc, char **argv)
 	"of nodes, by using the `ALL` wildcard word.\n"
 	"\n"
 	"The hexadecimal numbers in parentheses are provided as an aide when\n"
-	"correlating FidoNet files and BSO directories with node numbers."
+	"correlating FidoNet files and BSO directories with node numbers.\n"
+	"\n"
+	"An exclamation mark denotes passive (inactive) nodes.\n";
 	;
 
 					for(u=0;u<cfg.nodecfgs;u++) {
@@ -935,8 +937,9 @@ int main(int argc, char **argv)
 							else
 								sprintf(hexaddr, "(.%03X)", cfg.nodecfg[u].addr.zone);
 						}
-						snprintf(opt[u], MAX_OPLN-1, "%-16s %-10s  %s"
+						snprintf(opt[u], MAX_OPLN-1, "%-16s %-10s %c%s"
 							,faddrtoa(&cfg.nodecfg[u].addr), hexaddr
+							,cfg.nodecfg[u].passive ? '!' : ' '
 							,cfg.nodecfg[u].name[0] ? cfg.nodecfg[u].name : cfg.nodecfg[u].comment);
 					}
 					opt[u][0]=0;
