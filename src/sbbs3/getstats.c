@@ -163,8 +163,10 @@ BOOL getstats(scfg_t* cfg, uint node, stats_t* stats)
 		} legacy_stats;
 
 		SAFEPRINTF(path,"%sdsts.dab",node ? cfg->node_path[node-1] : cfg->ctrl_dir);
+		if(!fexistcase(path))
+			return TRUE;
 		if((file=nopen(path,O_RDONLY))==-1) {
-			return(FALSE); 
+			return(FALSE);
 		}
 		int rd = read(file, &legacy_stats, sizeof(legacy_stats));
 		close(file);
