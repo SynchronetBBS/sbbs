@@ -252,6 +252,7 @@ int main(int argc, char **argv)
 				fprintf(stderr,"Mismatch! %s has %ld... should be %d\n", comment, lno, i);
 			}
 			fprintf(text_h, "\t%c%s\n", i==1?' ':',', macro);
+			truncstr(macro, " \t");
 			fprintf(text_js, "var %s=%d;\n", macro, i);
 			fprintf(text_id, "\t%c\"%s\"\n", i == 1 ? ' ' : ',', macro);
 			fprintf(text_defaults_c, "\t%c%s // %s\n", i==1?' ':',', cstr, comment);
