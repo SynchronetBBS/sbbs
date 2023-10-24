@@ -1193,7 +1193,7 @@ function Server_Work(cmdline) {
 			tmp.topic
 		),false /*bcast*/);
 		this.bcast_to_servers_raw(format(
-			":%s TOPIC %s %s %d :%s",
+			":%s TOPIC %s %s %lu :%s",
 			origin.nick,
 			tmp.nam,
 			p[1],
