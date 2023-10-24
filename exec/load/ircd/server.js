@@ -420,26 +420,47 @@ function Server_Work(cmdline) {
 		));
 		break;
 	case "MODE":
-		if (typeof p[1] === undefined)
-			break;
-		if (p[0][0] != "#") { /* Setting a user mode */
-			tmp = origin.setusermode(p[1]);
-			if (tmp) {
-				this.bcast_to_servers_raw(format(
-					":%s MODE %s %s",
-					origin.nick,
-					origin.nick,
-					tmp
-				));
-			}
+		if (typeof p[1] === undefined) {
+			umode_notice(USERMODE_OPER,"Notice",format(
+				"Origin %s sent MODE without enough arguments.",
+				this.nick
+			));
 			break;
 		}
-		/* Setting a channel mode */
-		tmp = Channels[p[0].toUpperCase()];
-		if (!tmp)
+		/* Detect TS-style MODE and stuff the real TS in j */
+		j = parseInt(p[0]);
+		if (p[0] == j) {
+			if (!this.hub)
+				j = Epoch();
+			p.shift();
+		}
+		if (p[0][0] == "#") {
+			/* Setting a channel mode */
+			tmp = Channels[p[0].toUpperCase()];
+			if (!tmp) {
+				umode_notice(USERMODE_OPER,"Notice",format(
+					"Origin %s sent MODE with invalid channel %s",
+					this.nick,
+					p[0]
+				));
+				break;
+			}
+			if (!j)
+				j = tmp.created;
+			p.shift();
+			origin.set_chanmode(tmp,p,j);
 			break;
-		p.shift();
-		origin.set_chanmode(tmp,p,parseInt(p[1]));
+		}
+		/* Setting a user mode */
+		tmp = origin.setusermode(p[1]);
+		if (tmp) {
+			this.bcast_to_servers_raw(format(
+				":%s MODE %s %s",
+				origin.nick,
+				origin.nick,
+				tmp
+			));
+		}
 		break;
 	case "MOTD":
 		if (!p[0] || origin.server)
