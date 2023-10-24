@@ -1184,7 +1184,7 @@ function Server_Work(cmdline) {
 			break;
 		if (p[3] == tmp.topic)
 			break;
-		tmp.topictime = this.hub ? p[2] : Epoch();
+		tmp.topictime = this.hub ? parseInt(p[2]) : Epoch();
 		tmp.topic = p[3];
 		tmp.topicchangedby = p[1];
 		origin.bcast_to_channel(tmp, format(
