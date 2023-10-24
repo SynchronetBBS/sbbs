@@ -1015,11 +1015,6 @@ function Server_Work(cmdline) {
 						tmp.nam
 				));
 				delete Channels[p[1].toUpperCase()];
-				umode_notice(USERMODE_OPER,"Debug",format(
-					"typeof %s is %s",
-					p[1],
-					typeof Channels[p[1].toUpperCase()]
-				));
 				break;
 			}
 
