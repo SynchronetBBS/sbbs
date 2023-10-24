@@ -430,10 +430,10 @@ function Server_Work(cmdline) {
 		/* Detect TS-style MODE and stuff the real TS in j */
 		j = parseInt(p[0]);
 		if (p[0] == j) {
-			if (!this.hub)
-				j = Epoch();
 			p.shift();
 		}
+		if (!this.hub)
+			j = Epoch();
 		if (p[0][0] == "#") {
 			/* Setting a channel mode */
 			tmp = Channels[p[0].toUpperCase()];
