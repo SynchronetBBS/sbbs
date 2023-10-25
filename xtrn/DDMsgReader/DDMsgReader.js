@@ -39,6 +39,8 @@
  *                              Releasing this version
  * 2023-10-11 Eric Oulashin     Version 1.81
  *                              Updated permission check functions (speed improvement)
+ * 2023-10-18 Eric Oulashin     Version 1.82
+ *                              Fix for # posts and missing dates in sub-board list when changing sub-board
  */
 
 "use strict";
@@ -143,8 +145,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.81";
-var READER_DATE = "2023-10-11";
+var READER_VERSION = "1.82";
+var READER_DATE = "2023-10-18";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4387,6 +4389,14 @@ function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx)
 	// respond to these keys
 	subBoardMenu.AddAdditionalQuitKeys("nNqQ ?0123456789/" + CTRL_F);
 
+	// Add the sub-board items to the menu
+	for (var subIdx = 0; subIdx < msg_area.grp_list[pGrpIdx].sub_list.length; ++subIdx)
+	{
+		var itemText = this.GetMsgSubBoardLine(pGrpIdx, subIdx, false);
+		subBoardMenu.Add(strip_ctrl(itemText), subIdx);
+	}
+	// Alternately, we could change the menu's NumItems() and GetItem():
+	/*
 	// Change the menu's NumItems() and GetItem() function to reference
 	// the message list in this object rather than add the menu items
 	// to the menu
@@ -4407,6 +4417,7 @@ function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx)
 
 		return menuItemObj;
 	};
+	*/
 
 	// Set the currently selected item to the current group
 	if (msg_area.sub[this.subBoardCode].grp_index == pGrpIdx)
@@ -12170,66 +12181,15 @@ function DigDistMsgReader_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 	// Use the highlight background color if pHighlight is true.
 	if (pHighlight)
 		subBoardStr += this.colors.areaChooserMsgAreaBkgHighlightColor;
-	// Open the current sub-board with the msgBase object (so that we can get
-	// the date & time of the last imporeted message).
-	var msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
-	if (msgBase.open())
-	{
-		// For storing the date of the newest post
-		var newestDate = {
-			date: "",
-			time: ""
-		};
-		// Get the date & time when the last message was imported.
-		//var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
-		var numMsgs = msgBase.total_msgs;
-		if (numMsgs > 0)
-		{
-			// Get the header of the last readable message in the sub-board. This uses
-			// get_msg_index to get message indexes to quickly check to see if it's
-			// readable, then when a readable one is found, this uses get_msg_header
-			// to get the full header with the properties needed.
-			var msgHeader = null;
-			var msgOffset = msgBase.total_msgs - 1;
-			while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code) && msgOffset >= 0)
-				msgHeader = msgBase.get_msg_index(true, msgOffset--, false);
-			if (msgHeader != null)
-				msgHeader = msgBase.get_msg_header(true, msgOffset, false, false);
-			if (msgHeader != null)
-			{
-				// Construct the date & time strings of the latest post
-				if (this.msgAreaList_lastImportedMsg_showImportTime)
-				{
-					newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
-					newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
-				}
-				else
-				{
-					//newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-					//newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
-					var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(msgHeader);
-					if (msgWrittenLocalTime != -1)
-					{
-						newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalTime);
-						newestDate.time = strftime("%H:%M:%S", msgWrittenLocalTime);
-					}
-					else
-					{
-						newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-						newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
-					}
-				}
-			}
-		}
 
-		// Print the sub-board information line.
-		subBoardStr += (currentSub ? this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
-		subBoardStr += format((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
-		                      +(pSubIndex+1),
-		                      msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
-		                      numMsgs, newestDate.date, newestDate.time);
-		msgBase.close();
-	}
+	var subBoardInfo = getSubBoardInfo(pGrpIndex, pSubIndex, this.msgAreaList_lastImportedMsg_showImportTime);
+	var latestDateStr = strftime("%Y-%m-%d", subBoardInfo.newestTime);
+	var latestTimeStr = strftime("%H:%M:%S", subBoardInfo.newestTime);
+	subBoardStr += (currentSub ? this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
+	subBoardStr += format((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
+						  +(pSubIndex+1),
+						  msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
+						  subBoardInfo.numItems, latestDateStr, latestTimeStr);
 	return subBoardStr;
 }
 
@@ -19321,30 +19281,29 @@ function getLastReadableMsgHdrInSubBoard(pSubBoardCode)
 // Return value: The number of readable messages in the sub-board
 function numReadableMsgs(pMsgbase, pSubBoardCode)
 {
-	if ((pMsgbase === null) || !pMsgbase.is_open)
-		return 0;
-
-	var numMsgs = 0;
-	if (typeof(pMsgbase.get_all_msg_headers) === "function")
+	// The posts property in msg_area.sub[sub_code] and msg_area.grp_list.sub_list is the number
+	// of posts excluding vote posts
+	if (typeof(msg_area.sub[pSubBoardCode].posts) === "number")
+		return msg_area.sub[pSubBoardCode].posts;
+	else if ((pMsgbase !== null) && pMsgbase.is_open)
 	{
-		var msgHdrs = pMsgbase.get_all_msg_headers(true);
-		for (var msgHdrsProp in msgHdrs)
+		// Just return the total number of messages..  This isn't accurate, but it's fast.
+		return pMsgbase.total_msgs;
+	}
+	else if (pMsgbase === null)
+	{
+		var numMsgs = 0;
+		var msgBase = new MsgBase(pSubBoardCode);
+		if (msgBase.open())
 		{
-			if (msgHdrs[msgHdrsProp] == null)
-				continue;
-			else if (isReadableMsgHdr(msgHdrs[msgHdrsProp], pSubBoardCode))
-				++numMsgs;
+			// Just return the total number of messages..  This isn't accurate, but it's fast.
+			numMsgs = msgBase.total_msgs;
+			msgBase.close();
 		}
+		return numMsgs;
 	}
 	else
-	{
-		for (var i = 0; i < pMsgbase.total_msgs; ++i)
-		{
-			if (isReadableMsgHdr(msgBase.get_msg_index(true, i, false), pSubBoardCode))
-				++numMsgs;
-		}
-	}
-	return numMsgs;
+		return 0;
 }
 
 // Marks or unmarks vote messages as deleted (messages that have voting response data for a message with
@@ -22225,6 +22184,110 @@ function clearScreenRectangle(pX, pY, pWidth, pHeight)
 	}
 }
 
+
+// With a group & sub-board index, this function gets the date
+// & time of the latest posted message from a sub-board (or group of sub-boards, if using
+// sub-board name collapsing).  This function also gets the description of the sub-board (or
+// group of sub-boards if using sub-board name collapsing).
+//
+// Parameters:
+//  pGrpIdx: The index of the message group
+//  pSubIdx: The index of the sub-board in the message group (if using
+//           sub-board name collapsing, this could be the index of a set
+//           of sub-subboards).
+//  pShowImportTime: Boolean - Whether or not to use import time. If false, this will use the
+//                   message written time.
+//
+// Return value: An object containing the following properties:
+//               desc: The description of the sub-board (or group of sub-subboards if using name collapsing)
+//               numItems: The number of messages in the sub-board or number of sub-subboards in the group,
+//                         if using sub-board name collapsing
+//               subCode: The internal code of the sub-board (this will be an empty string if it's a group of sub-subboards)
+//               newestTime: A value containing the date & time of the newest post in the sub-board or group of sub-boards
+function getSubBoardInfo(pGrpIdx, pSubIdx, pShowImportTime)
+{
+	var retObj = {
+		desc: "",
+		numItems: 0,
+		subCode: "",
+		newestTime: 0
+	};
+
+	var showImportTime = (typeof(pShowImportTime) === "boolean" ? pShowImportTime : false);
+
+	retObj.desc = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].description;
+	retObj.subCode = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code;
+	// Get the number of messages in the sub-board
+	var numMsgs = numReadableMsgs(null, msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
+	if (numMsgs > 0)
+	{
+		retObj.numItems = numMsgs;
+		//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
+		var msgHeader = getLatestMsgHdr(retObj.subCode);
+		if (msgHeader != null)
+		{
+			// Set the newest post time
+			if (showImportTime)
+				retObj.newestTime = msgHeader.when_imported_time;
+			else
+			{
+				var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
+				if (msgWrittenLocalBBSTime != -1)
+					retObj.newestTime = msgWrittenLocalBBSTime;
+				else
+					retObj.newestTime = msgHeader.when_written_time;
+			}
+		}
+	}
+
+	return retObj;
+}
+
+// Gets the header of the latest readable message in a sub-board,
+// given a number of messages to look at.
+//
+// Paramters:
+//  pSubCode: The internal code of the message sub-board
+//
+// Return value: The message header of the latest readable message.  If
+//               none is found, this will be null.
+function getLatestMsgHdr(pSubCode)
+{
+	var msgHdr = null;
+	var msgBase = new MsgBase(pSubCode);
+	if (msgBase.open())
+	{
+		msgHdr = getLatestMsgHdrWithMsgbase(msgBase, pSubCode);
+		msgBase.close();
+	}
+	return msgHdr;
+}
+// Gets the header of the latest readable message in a sub-board,
+// given a number of messages to look at.
+//
+// Paramters:
+//  pMsgbase: A MsgBase object for the sub-board, already opened
+//  pSubCode: The internal code of the sub-board
+//
+// Return value: The message header of the latest readable message.  If
+//               none is found, this will be null.
+function getLatestMsgHdrWithMsgbase(pMsgbase, pSubCode)
+{
+	if (typeof(pMsgbase) !== "object")
+		return null;
+	if (!pMsgbase.is_open)
+		return null;
+
+	// Look through the message headers to find the latest readable one
+	var msgHdrToReturn = null;
+	var msgIdx = pMsgbase.total_msgs-1;
+	var msgHeader = pMsgbase.get_msg_index(true, msgIdx, false);
+	while (!isReadableMsgHdr(msgHeader, pSubCode) && (msgIdx >= 0))
+		msgHeader = pMsgbase.get_msg_index(true, --msgIdx, true);
+	if (msgHeader != null)
+		msgHdrToReturn = pMsgbase.get_msg_header(true, msgIdx, false);
+	return msgHdrToReturn;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////
 
