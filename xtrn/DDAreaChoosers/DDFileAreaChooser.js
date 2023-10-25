@@ -62,6 +62,10 @@
  *                            Releasing this version
  * 2023-09-17 Eric Oulashin   Version 1.38
  *                            Bug fix: Searching was stuck if using directory name collapsing
+ * 2023-10-24 Eric Oulashin   Version 1.40
+ *                            Directory name collapsing: Fix for incorrect subdir assignment.
+ *                            Also, won't collapse if the name before the separator is the same as
+ *                            the file library description.
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -102,8 +106,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.38";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-09-17";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.40";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-10-24";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -2090,50 +2094,6 @@ function DDFileAreaChooser_WriteLightbarKeyHelpErrorMsg(pErrorMsg, pRefreshHelpL
 // the file directory collapse separator
 function DDFileAreaChooser_SetUpLibListWithCollapsedDirs()
 {
-	// Returns a default object for a file library
-	function defaultFileLibObj()
-	{
-		return {
-			index: 0,
-			number: 0,
-			name: "",
-			description: "",
-			ars: 0,
-			dir_list: []
-		};
-	}
-
-	// Returns a default object for a file directory.  It can potentially
-	// contain its own list of subdirectories.
-	function defaultFileDirObj()
-	{
-		return {
-			index: 0,
-			number: 0,
-			lib_index: 0,
-			lib_number: 0,
-			lib_name: 0,
-			code: "",
-			name: "",
-			lib_name: "",
-			description: "",
-			ars: 0,
-			settings: 0,
-			subdir_list: []
-		};
-	}
-
-	function dirObjFromOfficialDir(pLibIdx, pDirIdx)
-	{
-		var dirObj = defaultFileDirObj();
-		for (var prop in dirObj)
-		{
-			if (prop != "subdir_list") // Doesn't exist in the official dir objects
-				dirObj[prop] = file_area.lib_list[pLibIdx].dir_list[pDirIdx][prop];
-		}
-		return dirObj;
-	}
-
 	if (this.lib_list.length == 0)
 	{
 		// Copy some of the information from file_area.lib_list
@@ -2153,9 +2113,16 @@ function DDFileAreaChooser_SetUpLibListWithCollapsedDirs()
 			var numDirsWithSeparator = 0;
 			for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
 			{
+				// Check to see if the name before the separator is the same as the
+				// file library name, and only count it if it's not.
 				var dirDesc = file_area.lib_list[libIdx].dir_list[dirIdx].description;
-				if (dirDesc.indexOf(this.dirCollapseSeparator) > -1)
-					++numDirsWithSeparator;
+				var sepIdx = dirDesc.indexOf(this.dirCollapseSeparator);
+				if (sepIdx > 1)
+				{
+					var dirDescBeforeSep = file_area.lib_list[libIdx].dir_list[dirIdx].description.substr(0, sepIdx);
+					if (dirDescBeforeSep != file_area.lib_list[libIdx].dir_list[dirIdx].name)
+						++numDirsWithSeparator;
+				}
 			}
 			// Whether or not to use directory collapsing for this file library
 			var collapseThisLib = (numDirsWithSeparator > 0 && numDirsWithSeparator < file_area.lib_list[libIdx].dir_list.length);
@@ -2203,32 +2170,50 @@ function DDFileAreaChooser_SetUpLibListWithCollapsedDirs()
 					var sepIdx = dirDesc.indexOf(this.dirCollapseSeparator);
 					if (sepIdx > -1)
 					{
+						// dirDesc here will now be the shortened middle one before the separator character
 						dirDesc = truncsp(dirDesc.substr(0, sepIdx));  // Remove trailing whitespace
-						// If it has been seen more than once, then the description should
-						// be the prefix description
-						if (dirDescs[dirDesc] > 1)
+						// If the directory description before the name separator character is different
+						// from the file library name, then add it with sub-subdirectories
+						if (dirDesc != file_area.lib_list[libIdx].name)
 						{
-							var addedDirIdx = libObj.dir_list.length - 1;
-							if (!addedPrefixDescriptionDirs.hasOwnProperty(dirDesc))
+							// If it has been seen more than once, then the description should
+							// be the prefix description
+							if (dirDescs[dirDesc] > 1)
 							{
-								// Add it to dir_list
-								libObj.dir_list.push(dirObjFromOfficialDir(libIdx, dirIdx));
-								addedDirIdx = libObj.dir_list.length - 1;
-								libObj.dir_list[addedDirIdx].description = dirDesc;
-								addedPrefixDescriptionDirs[dirDesc] = true;
+								// Find the file directory with a description matching dirDesc
+								var addedDirIdx = -1; //libObj.dir_list.length - 1;
+								for (var i = 0; i < libObj.dir_list.length && addedDirIdx == -1; ++i)
+								{
+									if (libObj.dir_list[i].description == dirDesc)
+										addedDirIdx = i;
+								}
+								if (!addedPrefixDescriptionDirs.hasOwnProperty(dirDesc))
+								{
+									// Add it to dir_list
+									libObj.dir_list.push(dirObjFromOfficialDir(libIdx, dirIdx));
+									addedDirIdx = libObj.dir_list.length - 1;
+									libObj.dir_list[addedDirIdx].description = dirDesc;
+									addedPrefixDescriptionDirs[dirDesc] = true;
+								}
+								// Add the subdirectory to the directory's subdirectory list
+								// Using skipsp() to strip leading whitespace
+								subdirDesc = skipsp(file_area.lib_list[libIdx].dir_list[dirIdx].description.substr(sepIdx+1));
+								libObj.dir_list[addedDirIdx].subdir_list.push({
+									description: subdirDesc,
+									code: file_area.lib_list[libIdx].dir_list[dirIdx].code,
+									index: file_area.lib_list[libIdx].dir_list[dirIdx].index,
+									lib_index: file_area.lib_list[libIdx].dir_list[dirIdx].lib_index
+								});
 							}
-							// Add the subdirectory to the directory's subdirectory list
-							// Using skipsp() to strip leading whitespace
-							subdirDesc = skipsp(file_area.lib_list[libIdx].dir_list[dirIdx].description.substr(sepIdx+1));
-							libObj.dir_list[addedDirIdx].subdir_list.push({
-								description: subdirDesc,
-								code: file_area.lib_list[libIdx].dir_list[dirIdx].code,
-								index: file_area.lib_list[libIdx].dir_list[dirIdx].index,
-								lib_index: file_area.lib_list[libIdx].dir_list[dirIdx].lib_index
-							});
+							else // Add it with the full description
+								libObj.dir_list.push(dirObjFromOfficialDir(libIdx, dirIdx));
 						}
-						else // Add it with the full description
+						else
+						{
+							// The directory name before the name separator character is the same as the file
+							// library name. Add it as its own single subdirectory.
 							libObj.dir_list.push(dirObjFromOfficialDir(libIdx, dirIdx));
+						}
 					}
 					if (dirDescs.hasOwnProperty(dirDesc))
 						dirDescs[dirDescs] += 1;
@@ -2240,6 +2225,48 @@ function DDFileAreaChooser_SetUpLibListWithCollapsedDirs()
 			this.lib_list.push(libObj);
 		}
 	}
+}
+// Returns a default object for a file library
+function defaultFileLibObj()
+{
+	return {
+		index: 0,
+		number: 0,
+		name: "",
+		description: "",
+		ars: 0,
+		dir_list: []
+	};
+}
+
+// Returns a default object for a file directory.  It can potentially
+// contain its own list of subdirectories.
+function defaultFileDirObj()
+{
+	return {
+		index: 0,
+		number: 0,
+		lib_index: 0,
+		lib_number: 0,
+		lib_name: 0,
+		code: "",
+		name: "",
+		lib_name: "",
+		description: "",
+		ars: 0,
+		settings: 0,
+		subdir_list: []
+	};
+}
+function dirObjFromOfficialDir(pLibIdx, pDirIdx)
+{
+	var dirObj = defaultFileDirObj();
+	for (var prop in dirObj)
+	{
+		if (prop != "subdir_list") // Doesn't exist in the official dir objects
+			dirObj[prop] = file_area.lib_list[pLibIdx].dir_list[pDirIdx][prop];
+	}
+	return dirObj;
 }
 
 // For the DDFileAreaChooser class: Finds a file directory index with search text, matching either the name or
