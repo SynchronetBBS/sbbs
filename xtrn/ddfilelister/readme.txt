@@ -109,7 +109,7 @@ for example.
 One way to install ddfilelister.js is to run it directly from your command
 shell.  Also, as of Synchronet 3.20 (built on February 25, 2023 and newer),
 there are a couple of loadable module options in SCFG for file operations;
-ddfilelister.js can be used as a loadable module for  Scan Dirs and List Files.
+ddfilelister.js can be used as a loadable module for List Files.
 The advantage of having ddfilelister.js set up as a loadable module is that
 ddfilelister.js will be used from standard command shells and using the standard
 file list/search commands/functions.
