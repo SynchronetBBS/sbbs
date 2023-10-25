@@ -67,6 +67,10 @@
  *                            Faster searching for the latest readable message header
  *                            (for getting the latest message timesamp), using
  *                            get_msg_index() rather than get_msg_header().
+ * 2023-10-24 Eric Oulashin   Version 1.40
+ *                            Sub-board name collapsing: Fix for incorrect sub-subboard assignment.
+ *                            Also, won't collapse if the name before the separator is the same as
+ *                            the message group description.
  */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -110,8 +114,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.39";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-10-17";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.40";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-10-24";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -2426,50 +2430,6 @@ function DDMsgAreaChooser_WriteLightbarKeyHelpErrorMsg(pErrorMsg, pRefreshHelpLi
 // the sub-board collapse separator
 function DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards()
 {
-	// Returns a default object for a message group
-	function defaultMsgGrpObj()
-	{
-		return {
-			index: 0,
-			number: 0,
-			name: "",
-			description: "",
-			ars: 0,
-			sub_list: []
-		};
-	}
-
-	// Returns a default object for a message sub-board.  It can potentially
-	// contain its own list of sub-boards within the original subboard.
-	function defaultSubBoardObj()
-	{
-		return {
-			index: 0,
-			number: 0,
-			grp_index: 0,
-			grp_number: 0,
-			grp_name: 0,
-			code: "",
-			name: "",
-			grp_name: "",
-			description: "",
-			ars: 0,
-			settings: 0,
-			sub_subboard_list: []
-		};
-	}
-
-	function subBoardObjFromOfficialSubBoard(pGrpIdx, pSubIdx)
-	{
-		var subObj = defaultSubBoardObj();
-		for (var prop in subObj)
-		{
-			if (prop != "sub_subboard_list") // Doesn't exist in the official dir objects
-				subObj[prop] = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx][prop];
-		}
-		return subObj;
-	}
-
 	if (this.group_list.length == 0)
 	{
 		// Copy some of the information from msg_area.grp_list
@@ -2482,33 +2442,39 @@ function DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards()
 			// the collapse separator have the same prefix.
 			// dirDescs is an object indexed by sub-board description,
 			// and the value will be how many times it was seen.
-			var subBoardDescs = {};
 			// First, count the number of sub-boards that have the separator.
 			// If all of the group's sub-boards have the separator, then we
 			// won't collapse the sub-boards.
 			var numSubBoardsWithSeparator = 0;
 			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
 			{
-				var subBoardDesc = msg_area.grp_list[grpIdx].sub_list[subIdx].description;
-				if (subBoardDesc.indexOf(this.subCollapseSeparator) > -1)
-					++numSubBoardsWithSeparator;
+				// Check to see if the name before the separator is the same as the
+				// message group name, and only count it if it's not.
+				var sepIdx = msg_area.grp_list[grpIdx].sub_list[subIdx].description.indexOf(this.subCollapseSeparator);
+				if (sepIdx > -1)
+				{
+					var subBoardDescBeforeSep = msg_area.grp_list[grpIdx].sub_list[subIdx].description.substr(0, sepIdx);
+					if (subBoardDescBeforeSep != msg_area.grp_list[grpIdx].name)
+						++numSubBoardsWithSeparator;
+				}
 			}
 			// Whether or not to use sub-board collapsing for this group
 			var collapseThisGroup = (numSubBoardsWithSeparator > 0 && numSubBoardsWithSeparator < msg_area.grp_list[grpIdx].sub_list.length);
 			// Go through and build  the group list
+			var subDescs = {};
 			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
 			{
 				var subBoardDesc = msg_area.grp_list[grpIdx].sub_list[subIdx].description;
 				if (collapseThisGroup)
 				{
-					var sepIdx = subBoardDesc.indexOf(this.subCollapseSeparator);
+					var sepIdx = msg_area.grp_list[grpIdx].sub_list[subIdx].description.indexOf(this.subCollapseSeparator);
 					if (sepIdx > -1)
 						subBoardDesc = truncsp(subBoardDesc.substr(0, sepIdx));  // Remove trailing whitespace
 				}
-				if (subBoardDescs.hasOwnProperty(subBoardDesc))
-					subBoardDescs[subBoardDesc] += 1;
+				if (subDescs.hasOwnProperty(subBoardDesc))
+					subDescs[subBoardDesc] += 1;
 				else
-					subBoardDescs[subBoardDesc] = 1;
+					subDescs[subBoardDesc] = 1;
 			}
 
 			// Create an initial file group object for this file group (except
@@ -2521,7 +2487,7 @@ function DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards()
 			}
 
 			// Go through the dirs in this group again.  For each sub-board:
-			// If its whole description exists in subBoardDescs, then just add it to
+			// If its whole description exists in subDescs, then just add it to
 			// the sub_list array.  Otherwise:
 			// If a collapse seprator exists, then split on that and see if the
 			// prefix was seen more than once.  If so, then add the separate
@@ -2532,51 +2498,126 @@ function DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards()
 			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
 			{
 				var subBoardDesc = msg_area.grp_list[grpIdx].sub_list[subIdx].description;
-				if (subBoardDescs.hasOwnProperty(subBoardDesc))
+				if (subDescs.hasOwnProperty(subBoardDesc))
 					msgGrpObj.sub_list.push(subBoardObjFromOfficialSubBoard(grpIdx, subIdx));
 				else
 				{
-					var subSubDirDesc = "";
-					var sepIdx = subBoardDesc.indexOf(this.subCollapseSeparator);
+					var sepIdx = msg_area.grp_list[grpIdx].sub_list[subIdx].description.indexOf(this.subCollapseSeparator);
 					if (sepIdx > -1)
 					{
-						subBoardDesc = truncsp(subBoardDesc.substr(0, sepIdx));  // Remove trailing whitespace
-						// If it has been seen more than once, then the description should
-						// be the prefix description
-						if (subBoardDescs[subBoardDesc] > 1)
+						// subBoardDesc here will now be the shortened middle one before the separator character
+						subBoardDesc = truncsp(msg_area.grp_list[grpIdx].sub_list[subIdx].description.substr(0, sepIdx));  // Remove trailing whitespace
+						// If the sub-board description before the name separator character is different
+						// from the message group name, then add it with sub-subboards
+						if (subBoardDesc != msg_area.grp_list[grpIdx].name)
 						{
-							var addedSubIdx = msgGrpObj.sub_list.length - 1;
-							if (!addedPrefixDescriptionDirs.hasOwnProperty(subBoardDesc))
+							// If it has been seen more than once, then the description should
+							// be the prefix description
+							if (subDescs[subBoardDesc] > 1)
 							{
-								// Add it to sub_list
-								msgGrpObj.sub_list.push(subBoardObjFromOfficialSubBoard(grpIdx, subIdx));
-								addedSubIdx = msgGrpObj.sub_list.length - 1;
-								msgGrpObj.sub_list[addedSubIdx].description = subBoardDesc;
-								addedPrefixDescriptionDirs[subBoardDesc] = true;
+								// Find the sub-board with a description matching subBoardDesc
+								var addedSubIdx = -1; // msgGrpObj.sub_list.length - 1;
+								for (var i = 0; i < msgGrpObj.sub_list.length && addedSubIdx == -1; ++i)
+								{
+									if (msgGrpObj.sub_list[i].description == subBoardDesc)
+										addedSubIdx = i;
+								}
+								if (!addedPrefixDescriptionDirs.hasOwnProperty(subBoardDesc))
+								{
+									// Add it to sub_list
+									msgGrpObj.sub_list.push(subBoardObjFromOfficialSubBoard(grpIdx, subIdx));
+									addedSubIdx = msgGrpObj.sub_list.length - 1;
+									msgGrpObj.sub_list[addedSubIdx].description = subBoardDesc;
+									addedPrefixDescriptionDirs[subBoardDesc] = true;
+								}
+								// Add the sub-subboard to the sub-board's sub-subboard list
+								// Using skipsp() to strip leading whitespace
+								var subSubBoardDesc = skipsp(msg_area.grp_list[grpIdx].sub_list[subIdx].description.substr(sepIdx+1));
+								msgGrpObj.sub_list[addedSubIdx].sub_subboard_list.push({
+									description: subSubBoardDesc,
+									code: msg_area.grp_list[grpIdx].sub_list[subIdx].code,
+									index: msg_area.grp_list[grpIdx].sub_list[subIdx].index,
+									grp_index: msg_area.grp_list[grpIdx].sub_list[subIdx].grp_index
+								});
 							}
-							// Add the sub-subboard to the sub-board's sub-subboard list
-							// Using skipsp() to strip leading whitespace
-							subSubDirDesc = skipsp(msg_area.grp_list[grpIdx].sub_list[subIdx].description.substr(sepIdx+1));
-							msgGrpObj.sub_list[addedSubIdx].sub_subboard_list.push({
-								description: subSubDirDesc,
-								code: msg_area.grp_list[grpIdx].sub_list[subIdx].code,
-								index: msg_area.grp_list[grpIdx].sub_list[subIdx].index,
-								grp_index: msg_area.grp_list[grpIdx].sub_list[subIdx].grp_index
-							});
+							else // Add it with the full description
+								msgGrpObj.sub_list.push(subBoardObjFromOfficialSubBoard(grpIdx, subIdx));
 						}
-						else // Add it with the full description
+						else
+						{
+							// The sub-board name before the name separator character is the same as the message
+							// group name. Add it as its own single sub-board.
 							msgGrpObj.sub_list.push(subBoardObjFromOfficialSubBoard(grpIdx, subIdx));
+						}
 					}
-					if (subBoardDescs.hasOwnProperty(subBoardDesc))
-						subBoardDescs[subBoardDescs] += 1;
+					if (subDescs.hasOwnProperty(subBoardDesc))
+						subDescs[subDescs] += 1;
 					else
-						subBoardDescs[subBoardDescs] = 1;
+						subDescs[subDescs] = 1;
 				}
 			}
 
 			this.group_list.push(msgGrpObj);
 		}
 	}
+}
+// Returns a default object for a message group
+function defaultMsgGrpObj()
+{
+	return {
+		index: 0,
+		number: 0,
+		name: "",
+		description: "",
+		ars: 0,
+		sub_list: []
+	};
+}
+
+// Returns a default object for a message sub-board.  It can potentially
+// contain its own list of sub-boards within the original subboard.
+function defaultSubBoardObj()
+{
+	/*
+	return {
+		index: 0,
+		number: 0,
+		grp_index: 0,
+		grp_number: 0,
+		grp_name: 0,
+		code: "",
+		name: "",
+		grp_name: "",
+		description: "",
+		ars: 0,
+		settings: 0,
+		sub_subboard_list: []
+	};
+	*/
+	var obj = new Object();
+	obj.index = 0;
+	obj.number = 0;
+	obj.grp_index = 0;
+	obj.grp_number = 0;
+	obj.grp_name = 0;
+	obj.code = "";
+	obj.name = "";
+	obj.grp_name = "";
+	obj.description = "";
+	obj.ars = 0;
+	obj.settings = 0;
+	obj.sub_subboard_list = []
+	return obj;
+}
+function subBoardObjFromOfficialSubBoard(pGrpIdx, pSubIdx)
+{
+	var subObj = defaultSubBoardObj();
+	for (var prop in subObj)
+	{
+		if (prop != "sub_subboard_list" && msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].hasOwnProperty(prop)) // Doesn't exist in the official dir objects
+			subObj[prop] = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx][prop];
+	}
+	return subObj;
 }
 
 // Removes multiple, leading, and/or trailing spaces.

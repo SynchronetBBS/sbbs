@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.40     2023-10-24   Name collapsing: Fix for incorrect subboard/directory
+                      assignment.  Also, won't collapse if the name before the
+                      separator is the same as the message group description.
 1.39     2023-10-17   Message area chooser only: Should now be faster when
                       finding the timestamp of the latest readable message
 1.38     2023-10-07   Message area chooser fix for name collapsing mode with the
