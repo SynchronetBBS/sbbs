@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.83     2023-10-25   Personal emails to the sysop received as "sysop" (or
+                      starting with "sysop") are now correctly identified and
+                      marked as read when read
 1.82     2023-10-18   Fix for # posts and missing dates in sub-board list when
                       changing sub-board
 1.81     2023-10-11   Updated permission check functions (speed improvement)

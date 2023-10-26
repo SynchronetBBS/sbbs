@@ -41,6 +41,9 @@
  *                              Updated permission check functions (speed improvement)
  * 2023-10-18 Eric Oulashin     Version 1.82
  *                              Fix for # posts and missing dates in sub-board list when changing sub-board
+ * 2023-10-25 Eric Oulashin     Version 1.83
+ *                              Personal emails to the sysop received as "sysop" (or starting with "sysop")
+ *                              are now correctly identified and marked as read when read
  */
 
 "use strict";
@@ -145,8 +148,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.82";
-var READER_DATE = "2023-10-18";
+var READER_VERSION = "1.83";
+var READER_DATE = "2023-10-25";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -255,7 +258,7 @@ var BLOCK1 = "\xB0"; // Dimmest block
 var BLOCK2 = "\xB1";
 var BLOCK3 = "\xB2";
 var BLOCK4 = "\xDB"; // Brightest block
-var MID_BLOCK = ascii(220);
+var MID_BLOCK = ascii(254);
 var TALL_UPPER_MID_BLOCK = "\xFE";
 var UPPER_CENTER_BLOCK = "\xDF";
 var LOWER_CENTER_BLOCK = "\xDC";
@@ -4851,7 +4854,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		return retObj;
 	
 	// Mark the message as read if it was written to the current user
-	if (userHandleAliasNameMatch(msgHeader.to) && ((msgHeader.attr & MSG_READ) == 0))
+	var personalEmailToCurrentSysopUser = this.readingPersonalEmail && user.is_sysop && msgHeader.to.toUpperCase().indexOf("SYSOP") == 0;
+	if (((msgHeader.attr & MSG_READ) == 0) && (userHandleAliasNameMatch(msgHeader.to) || personalEmailToCurrentSysopUser))
 	{
 		// Using applyAttrsInMsgHdrInMessagbase(), which loads the header without
 		// expanded fields and saves the attributes with that header.
