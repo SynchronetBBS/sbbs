@@ -26,11 +26,6 @@
 /* Standard library headers */
 /****************************/
 
-#if defined(__cplusplus)
-	#include <string>
-	#include <unordered_map>
-#endif
-
 /***************/
 /* OS-specific */
 /***************/
@@ -381,6 +376,9 @@ typedef struct js_callback {
 
 /* Synchronet Node Instance class definition */
 #if defined(__cplusplus) && defined(JAVASCRIPT)
+
+#include <string>
+#include <unordered_map>
 
 struct mouse_hotspot {		// Mouse hot-spot
 	char	cmd[128];
