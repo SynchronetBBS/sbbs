@@ -586,7 +586,7 @@
 "\1n\1b[\1h\1wL\1n\1b] \1hTerminal Dimensions          \1n\1b\1\\: \1c%s, %s\r\n" 477 UserDefaultsRows
 "\1n\1b[\1h\1wX\1n\1b] \1hExpert Menu Mode             \1n\1b: \1c%s\r\n"   478 UserDefaultsMenuMode
 "\1n\1b[\1h\1wP\1n\1b] \1hScreen Pause                 \1n\1b: \1c%s\r\n"   479 UserDefaultsPause
-"\1n\1b[\1h\1wH\1n\1b] \1hHot Keys                     \1n\1b: \1c%s\r\n"   480 UserDefaultsHotKey
+""                                                                          480 UserDefaultsHotKey
 "\1n\1b[\1h\1wS\1n\1b] \1hSpinning Cursor              \1n\1b\1\\: \1c%s\r\n"   481 UserDefaultsCursor
 "\1n\1b[\1h\1wC\1n\1b] \1hClear Screen Between Messages\1n\1b: \1c%s\r\n"   482 UserDefaultsCLS
 "\1n\1b[\1h\1wN\1n\1b] \1hAsk For New Message/File Scan\1n\1b: \1c%s\r\n"   483 UserDefaultsAskNScan
@@ -1053,4 +1053,5 @@
 "Quit"                                                     869 Quit
 "Language"                                                 870 Language
 "English"                                                  871 LANG
-"*"                                                        872 PasswordChar
+"\1n\1b[\1h\1wI\1n\1b] \1h%-29s\1n\1b: \1c%s\r\n"          872 UserDefaultsLanguage
+"*"                                                        873 PasswordChar
