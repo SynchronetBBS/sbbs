@@ -916,6 +916,7 @@ typedef struct {						/* Users information */
 	char	alias[LEN_ALIAS+1], 		/* Alias */
 			name[LEN_NAME+1],			/* Name - Real */
 			handle[LEN_HANDLE+1],		/* Chat handle */
+			lang[4],					/* Language code (1-3 chars or blank for default) */
 			comp[LEN_HOST+1],			/* Hostname */
 			note[LEN_NOTE+1],			/* Public notice about this user */
 			address[LEN_ADDRESS+1], 	/* Street Address */

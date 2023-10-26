@@ -888,6 +888,7 @@ enum {
 	,Quit
 	,Language
 	,LANG
+	,UserDefaultsLanguage
 	,PasswordChar
 
 	,TOTAL_TEXT

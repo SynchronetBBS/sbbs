@@ -638,3 +638,68 @@ int smb_open_dir(scfg_t* cfg, smb_t* smb, int dirnum)
 	}
 	return SMB_SUCCESS;
 }
+
+int get_lang_count(scfg_t* cfg)
+{
+	char path[MAX_PATH + 1];
+	glob_t g;
+	int count;
+
+	snprintf(path, sizeof path, "%stext.*.ini", cfg->ctrl_dir);
+	if (glob(path, GLOB_MARK, NULL, &g) != 0)
+		return 1;
+
+	count = g.gl_pathc + 1;
+	globfree(&g);
+	return count;
+}
+
+str_list_t get_lang_list(scfg_t* cfg)
+{
+	str_list_t list = strListInit();
+	char path[MAX_PATH + 1];
+	glob_t g;
+	const int prefix_len = strlen(cfg->ctrl_dir) + 5; // strlen("text.")
+
+	strListPush(&list, ""); // default is blank
+
+	snprintf(path, sizeof path, "%stext.*.ini", cfg->ctrl_dir);
+	if (glob(path, GLOB_MARK, NULL, &g) != 0)
+		return list;
+
+	for (size_t i = 0; i < g.gl_pathc; ++i) {
+		SAFECOPY(path, g.gl_pathv[i] + prefix_len);
+		char* p = strchr(path, '.');
+		if (p != NULL)
+			*p = '\0';
+		strListPush(&list, path);
+	}
+	globfree(&g);
+	return list;
+}
+
+str_list_t get_lang_desc_list(scfg_t* cfg, char* text[])
+{
+	str_list_t list = strListInit();
+	char path[MAX_PATH + 1];
+	char value[INI_MAX_VALUE_LEN];
+	glob_t g;
+
+	strListPush(&list, text[LANG]);
+
+	snprintf(path, sizeof path, "%stext.*.ini", cfg->ctrl_dir);
+	if (glob(path, GLOB_MARK, NULL, &g) != 0)
+		return list;
+
+	for (size_t i = 0; i < g.gl_pathc; ++i) {
+		FILE* fp = iniOpenFile(g.gl_pathv[i], /* for_modify */FALSE);
+		if (fp == NULL)
+			continue;
+		char* p = iniReadString(fp, ROOT_SECTION, "LANG", NULL, value);
+		if(p != NULL)
+			strListPush(&list, p);
+		iniCloseFile(fp);
+	}
+	globfree(&g);
+	return list;
+}

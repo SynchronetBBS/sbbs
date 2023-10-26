@@ -40,6 +40,7 @@ enum {
 	,USER_PROP_ALIAS
 	,USER_PROP_NAME
 	,USER_PROP_HANDLE
+	,USER_PROP_LANG
 	,USER_PROP_NOTE
 	,USER_PROP_IPADDR
 	,USER_PROP_COMP
@@ -167,6 +168,9 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case USER_PROP_HANDLE:
 			s=p->user->handle;
+			break;
+		case USER_PROP_LANG:
+			s = p->user->lang;
 			break;
 		case USER_PROP_NOTE:
 			s=p->user->note;
@@ -493,6 +497,10 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			SAFECOPY(p->user->handle,str);
 			putuserstr(scfg, p->user->number, USER_HANDLE, str);
 			break;
+		case USER_PROP_LANG:
+			SAFECOPY(p->user->lang, str);
+			putuserstr(scfg, p->user->number, USER_LANG, str);
+			break;
 		case USER_PROP_NOTE:
 			SAFECOPY(p->user->note,str);
 			putuserstr(scfg, p->user->number, USER_NOTE, str);
@@ -796,8 +804,9 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{	"alias"				,USER_PROP_ALIAS 		,USER_PROP_FLAGS,		310},
 	{	"name"				,USER_PROP_NAME		 	,USER_PROP_FLAGS,		310},
 	{	"handle"			,USER_PROP_HANDLE	 	,USER_PROP_FLAGS,		310},
-	{	"ip_address"		,USER_PROP_IPADDR	 	,USER_PROP_FLAGS,		310},
+	{	"lang"				,USER_PROP_LANG			,USER_PROP_FLAGS,		320},
 	{	"note"				,USER_PROP_NOTE		 	,USER_PROP_FLAGS,		310},
+	{	"ip_address"		,USER_PROP_IPADDR	 	,USER_PROP_FLAGS,		310},
 	{	"host_name"			,USER_PROP_COMP		 	,USER_PROP_FLAGS,		310},
 	{	"computer"			,USER_PROP_COMP		 	,USER_PROP_FLAGS,		310},
 	{	"comment"			,USER_PROP_COMMENT	 	,USER_PROP_FLAGS,		310},
@@ -843,8 +852,9 @@ static char* user_prop_desc[] = {
 	,"Alias/name"
 	,"Real name"
 	,"Chat handle"
+	,"Language code (blank, if default, e.g. English)"
+	,"Sysop note"
 	,"IP address last logged on from"
-	,"Sysop note (AKA ip_address on 3.16 and before)"
 	,"Host name last logged on from"
 	,"AKA host_name"
 	,"Sysop's comment"

@@ -52,6 +52,8 @@ bool sbbs_t::logon()
 	client.usernum = useron.number;
 	client_on(client_socket,&client,TRUE /* update */);
 
+	load_user_text();
+
 #ifdef JAVASCRIPT
 	js_create_user_objects(js_cx, js_glob);
 #endif

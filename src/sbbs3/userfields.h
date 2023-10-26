@@ -100,8 +100,9 @@ enum user_field {
 	USER_EXPIRE,
 	USER_LEECH,
 
-	// Misc
+	// Misc:
 	USER_MAIL,
+	USER_LANG,
 
 	// Last:
 	USER_FIELD_COUNT

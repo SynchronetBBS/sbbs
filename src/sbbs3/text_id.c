@@ -872,5 +872,6 @@ const char* const text_id[]={
 	,"Quit"
 	,"Language"
 	,"LANG"
+	,"UserDefaultsLanguage"
 	,"PasswordChar"
 };

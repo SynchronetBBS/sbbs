@@ -714,6 +714,7 @@ int sbbs_t::searchdn(char *search,int usernum)
 /****************************************************************************/
 void sbbs_t::maindflts(user_t* user)
 {
+	char	keys[32];
 	char	str[256],ch;
 	char 	tmp[512];
 	int		i;
@@ -729,97 +730,133 @@ void sbbs_t::maindflts(user_t* user)
 		CLS;
 		getuserdat(&cfg,user);
 		bprintf(text[UserDefaultsHdr],user->alias,user->number);
-		if(user == &useron)
+		if(user == &useron) {
 			update_nodeterm();
-		long term = (user == &useron) ? term_supports() : user->misc;
-		add_hotspot('T');
-		bprintf(text[UserDefaultsTerminal], term_type(user, term, str, sizeof str));
-		add_hotspot('L');
-		bprintf(text[UserDefaultsRows], term_cols(user, str, sizeof str), term_rows(user, tmp, sizeof tmp));
-		if(cfg.total_shells>1) {
-			add_hotspot('K');
-			bprintf(text[UserDefaultsCommandSet]
-				,cfg.shell[user->shell]->name);
+			load_user_text();
 		}
-		if(cfg.total_xedits) {
+		SAFECOPY(keys, "Q\r");
+		long term = (user == &useron) ? term_supports() : user->misc;
+		if(*text[UserDefaultsTerminal]) {
+			add_hotspot('T');
+			SAFECAT(keys, "T");
+			bprintf(text[UserDefaultsTerminal], term_type(user, term, str, sizeof str));
+		}
+		if(*text[UserDefaultsRows]) {
+			add_hotspot('L');
+			SAFECAT(keys, "L");
+			bprintf(text[UserDefaultsRows], term_cols(user, str, sizeof str), term_rows(user, tmp, sizeof tmp));
+		}
+		if(*text[UserDefaultsCommandSet] && cfg.total_shells>1) {
+			add_hotspot('K');
+			SAFECAT(keys, "K");
+			bprintf(text[UserDefaultsCommandSet], cfg.shell[user->shell]->name);
+		}
+		if(*text[UserDefaultsLanguage] && get_lang_count(&cfg) > 1) {
+			add_hotspot('I');
+			SAFECAT(keys, "I");
+			bprintf(text[UserDefaultsLanguage], text[Language], text[LANG]);
+		}
+		if(*text[UserDefaultsXeditor] && cfg.total_xedits) {
 			add_hotspot('E');
+			SAFECAT(keys, "E");
 			bprintf(text[UserDefaultsXeditor]
 				,user->xedit ? cfg.xedit[user->xedit-1]->name : text[None]);
 		}
-		add_hotspot('A');
-		bprintf(text[UserDefaultsArcType]
-			,user->tmpext);
-		add_hotspot('X');
-		bprintf(text[UserDefaultsMenuMode]
-			,user->misc&EXPERT ? text[On] : text[Off]);
-		add_hotspot('P');
-		bprintf(text[UserDefaultsPause]
-			,user->misc&UPAUSE ? text[On] : text[Off]);
-		add_hotspot('H');
-		bprintf(text[UserDefaultsHotKey]
-			,user->misc&COLDKEYS ? text[Off] : text[On]);
-		add_hotspot('S');
-		bprintf(text[UserDefaultsCursor]
-			,user->misc&SPIN ? text[On] : user->misc&NOPAUSESPIN ? text[Off] : "Pause Prompt Only");
-		add_hotspot('C');
-		bprintf(text[UserDefaultsCLS]
-			,user->misc&CLRSCRN ? text[On] : text[Off]);
-		add_hotspot('N');
-		bprintf(text[UserDefaultsAskNScan]
-			,user->misc&ASK_NSCAN ? text[On] : text[Off]);
-		add_hotspot('Y');
-		bprintf(text[UserDefaultsAskSScan]
-			,user->misc&ASK_SSCAN ? text[On] : text[Off]);
-		add_hotspot('F');
-		bprintf(text[UserDefaultsANFS]
-			,user->misc&ANFSCAN ? text[On] : text[Off]);
-		add_hotspot('R');
-		bprintf(text[UserDefaultsRemember]
-			,user->misc&CURSUB ? text[On] : text[Off]);
-		add_hotspot('B');
-		bprintf(text[UserDefaultsBatFlag]
-			,user->misc&BATCHFLAG ? text[On] : text[Off]);
-		if(cfg.sys_misc&SM_FWDTONET) {
+		if(*text[UserDefaultsArcType]) {
+			add_hotspot('A');
+			SAFECAT(keys, "A");
+			bprintf(text[UserDefaultsArcType]
+				, user->tmpext);
+		}
+		if(*text[UserDefaultsMenuMode]) {
+			add_hotspot('X');
+			SAFECAT(keys, "X");
+			bprintf(text[UserDefaultsMenuMode]
+				, user->misc & EXPERT ? text[On] : text[Off]);
+		}
+		if(*text[UserDefaultsPause]) {
+			add_hotspot('P');
+			SAFECAT(keys, "P");
+			bprintf(text[UserDefaultsPause]
+				, user->misc & UPAUSE ? text[On] : text[Off]);
+		}
+		if(*text[UserDefaultsHotKey]) {
+			add_hotspot('H');
+			SAFECAT(keys, "H");
+			bprintf(text[UserDefaultsHotKey]
+				, user->misc & COLDKEYS ? text[Off] : text[On]);
+		}
+		if(*text[UserDefaultsCursor]) {
+			add_hotspot('S');
+			SAFECAT(keys, "S");
+			bprintf(text[UserDefaultsCursor]
+				, user->misc & SPIN ? text[On] : user->misc & NOPAUSESPIN ? text[Off] : "Pause Prompt Only");
+		}
+		if(*text[UserDefaultsCLS]) {
+			add_hotspot('C');
+			SAFECAT(keys, "C");
+			bprintf(text[UserDefaultsCLS]
+				, user->misc & CLRSCRN ? text[On] : text[Off]);
+		}
+		if(*text[UserDefaultsAskNScan]) {
+			add_hotspot('N');
+			SAFECAT(keys, "N");
+			bprintf(text[UserDefaultsAskNScan]
+				, user->misc & ASK_NSCAN ? text[On] : text[Off]);
+		}
+		if(*text[UserDefaultsAskSScan]) {
+			add_hotspot('Y');
+			SAFECAT(keys, "Y");
+			bprintf(text[UserDefaultsAskSScan]
+				, user->misc & ASK_SSCAN ? text[On] : text[Off]);
+		}
+		if(*text[UserDefaultsANFS]) {
+			add_hotspot('F');
+			SAFECAT(keys, "F");
+			bprintf(text[UserDefaultsANFS]
+				, user->misc & ANFSCAN ? text[On] : text[Off]);
+		}
+		if(*text[UserDefaultsRemember]) {
+			add_hotspot('R');
+			SAFECAT(keys, "R");
+			bprintf(text[UserDefaultsRemember]
+				, user->misc & CURSUB ? text[On] : text[Off]);
+		}
+		if(*text[UserDefaultsBatFlag]) {
+			add_hotspot('B');
+			SAFECAT(keys, "B");
+			bprintf(text[UserDefaultsBatFlag]
+				, user->misc & BATCHFLAG ? text[On] : text[Off]);
+		}
+		if(*text[UserDefaultsNetMail] && (cfg.sys_misc & SM_FWDTONET)) {
 			add_hotspot('M');
+			SAFECAT(keys, "M");
 			bprintf(text[UserDefaultsNetMail]
 				,user->misc&NETMAIL ? text[On] : text[Off]
 				,user->netmail);
 		}
-		if(startup->options&BBS_OPT_AUTO_LOGON && user->exempt&FLAG('V')) {
-			add_hotspot('I');
-			bprintf(text[UserDefaultsAutoLogon]
-			,user->misc&AUTOLOGON ? text[On] : text[Off]);
-		}
-		if(user->exempt&FLAG('Q') || user->misc&QUIET) {
+		if(*text[UserDefaultsQuiet] && (user->exempt&FLAG('Q') || user->misc&QUIET)) {
 			add_hotspot('D');
+			SAFECAT(keys, "D");
 			bprintf(text[UserDefaultsQuiet]
 				,user->misc&QUIET ? text[On] : text[Off]);
 		}
-		add_hotspot('Z');
-		bprintf(text[UserDefaultsProtocol], protname(user->prot)
-			,user->misc&AUTOHANG ? "(Auto-Hangup)":nulstr);
-		add_hotspot('W');
-		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))
+		if(*text[UserDefaultsProtocol]) {
+			add_hotspot('Z');
+			SAFECAT(keys, "Z");
+			bprintf(text[UserDefaultsProtocol], protname(user->prot)
+				, user->misc & AUTOHANG ? "(Auto-Hangup)" : nulstr);
+		}
+		if(*text[UserDefaultsPassword] && (cfg.sys_misc & SM_PWEDIT) && !(user->rest & FLAG('G'))) {
+			add_hotspot('W');
+			SAFECAT(keys, "W");
 			bputs(text[UserDefaultsPassword]);
+		}
 
 		sync();
 		bputs(text[UserDefaultsWhich]);
-		SAFECOPY(str,"HTBALPRSYFNCQXZ\r");
-		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))
-			strcat(str,"W");
-		if(user->exempt&FLAG('Q') || user->misc&QUIET)
-			strcat(str,"D");
-		if(cfg.total_xedits)
-			strcat(str,"E");
-		if(cfg.sys_misc&SM_FWDTONET)
-			strcat(str,"M");
-		if(startup->options&BBS_OPT_AUTO_LOGON && user->exempt&FLAG('V'))
-			strcat(str,"I");
-		if(cfg.total_shells>1)
-			strcat(str,"K");
-
 		add_hotspot('Q');
-		ch=(char)getkeys(str,0);
+		ch=(char)getkeys(keys,0);
 		switch(ch) {
 			case 'T':
 				if(yesno(text[AutoTerminalQ])) {
@@ -929,6 +966,24 @@ void sbbs_t::maindflts(user_t* user)
 				if((i=uselect(0,user->shell,0,0,0))>=0)
 					putuserstr(user->number, USER_SHELL, cfg.shell[i]->code);
 				break;
+			case 'I':	/* Language */
+			{
+				str_list_t lang = get_lang_list(&cfg);
+				for (i = 0; lang[i] != NULL; i++)
+					if (stricmp(lang[i], user->lang) == 0)
+						break;
+				if (lang[i] == NULL)
+					i = 0;
+				str_list_t desc = get_lang_desc_list(&cfg, text_sav);
+				int j;
+				for (j = 0; desc[j] != NULL; j++)
+					uselect(true, j, text[Language], desc[j], /* ar: */NULL);
+				if ((j = uselect(false, i, NULL, NULL, NULL)) >= 0)
+					putuserstr(user->number, USER_LANG, lang[j]);
+				strListFree(&lang);
+				strListFree(&desc);
+				break;
+			}
 			case 'A':
 			{
 				str_list_t ext_list = strListDup((str_list_t)supported_archive_formats);
@@ -1017,10 +1072,6 @@ void sbbs_t::maindflts(user_t* user)
 				break;
 			case 'D':
 				user->misc^=QUIET;
-				putusermisc(user->number, user->misc);
-				break;
-			case 'I':
-				user->misc^=AUTOLOGON;
 				putusermisc(user->number, user->misc);
 				break;
 			case 'W':

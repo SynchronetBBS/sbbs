@@ -248,6 +248,12 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 	const char *next= "msg";
 	const char *last = "asc";
 
+	if (*useron.lang != '\0' && strchr(code, '/') == NULL) {
+		snprintf(path, sizeof path, "%s/%s", useron.lang, code);
+		if (menu(path, mode | P_NOERROR, obj))
+			return true;
+	}
+
 	if(strcspn(code, "*?") != strlen(code))
 		return random_menu(code, mode, obj);
 

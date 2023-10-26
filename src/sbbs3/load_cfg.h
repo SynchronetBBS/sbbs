@@ -31,11 +31,14 @@
 extern "C" {
 #endif
 
-DLLEXPORT BOOL		load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, size_t);
-DLLEXPORT void		free_cfg(scfg_t* cfg);
+DLLEXPORT BOOL		load_cfg(scfg_t*, char* text[], BOOL prep, BOOL req_node, char* error, size_t);
+DLLEXPORT void		free_cfg(scfg_t*);
 DLLEXPORT void		free_text(char* text[]);
 DLLEXPORT int		get_text_num(const char* id);
-DLLEXPORT ushort	sys_timezone(scfg_t* cfg);
+DLLEXPORT int		get_lang_count(scfg_t*);
+DLLEXPORT str_list_t get_lang_list(scfg_t*);
+DLLEXPORT str_list_t get_lang_desc_list(scfg_t*, char* text[]);
+DLLEXPORT ushort	sys_timezone(scfg_t*);
 DLLEXPORT char *	prep_dir(const char* base, char* dir, size_t buflen);
 DLLEXPORT char *	prep_code(char *str, const char* prefix);
 DLLEXPORT int 		md(const char *path);

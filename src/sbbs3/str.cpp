@@ -32,6 +32,70 @@ const char* sbbs_t::gettext(const char* id)
 }
 
 /****************************************************************************/
+/* Somewhat copied from load_cfg()											*/
+/****************************************************************************/
+bool sbbs_t::replace_text(const char* path)
+{
+	FILE* fp;
+
+	if ((fp = fnopen(NULL, path, O_RDONLY)) != NULL) {
+		bool success = true;
+		str_list_t ini = iniReadFile(fp);
+		fclose(fp);
+		named_string_t** list = iniGetNamedStringList(ini, ROOT_SECTION);
+		for (size_t i = 0; list != NULL && list[i] != NULL; ++i) {
+			int n = get_text_num(list[i]->name);
+			if (n >= TOTAL_TEXT) {
+				lprintf(LOG_ERR, "%s text ID (%s) not recognized"
+					, path
+					, list[i]->name);
+				success = false;
+				break;
+			}
+			if (text[n] != text_sav[n] && text[n] != nulstr)
+				free(text[n]);
+			if (list[i]->value == '\0')
+				text[n] = (char *)nulstr;
+			else
+				text[n] = strdup(list[i]->value);
+			text_replaced[n] = true;
+		}
+		iniFreeNamedStringList(list);
+		iniFreeStringList(ini);
+		return success;
+	}
+	return false;
+}
+
+/****************************************************************************/
+/* Only reverts text that was replaced via replace_text()					*/
+/****************************************************************************/
+void sbbs_t::revert_text(void)
+{
+	for (size_t i = 0; i < TOTAL_TEXT; ++i) {
+		if (text_replaced[i]) {
+			if (text[i] != text_sav[i] && text[i] != nulstr)
+				free(text[i]);
+			text[i] = text_sav[i];
+			text_replaced[i] = false;
+		}
+	}
+}
+
+/****************************************************************************/
+/* Users can have their own language setting, make that current				*/
+/****************************************************************************/
+bool sbbs_t::load_user_text(void)
+{
+	revert_text();
+	if (*useron.lang == '\0')
+		return true;
+	char path[MAX_PATH + 1];
+	safe_snprintf(path, sizeof path, "%stext.%s.ini", cfg.ctrl_dir, useron.lang);
+	return replace_text(path);
+}
+
+/****************************************************************************/
 /* Lists all users who have access to the current sub.                      */
 /****************************************************************************/
 void sbbs_t::userlist(int mode)

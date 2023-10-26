@@ -528,6 +528,7 @@ public:
 	/*********************************/
 	char 	*text[TOTAL_TEXT]{};			/* Text from text.dat/text.ini */
 	char 	*text_sav[TOTAL_TEXT]{};		/* Text from text.dat/text.ini */
+	bool	text_replaced[TOTAL_TEXT]{};
 	char	yes_key(void) { return toupper(*text[Yes]); }
 	char	no_key(void) { return toupper(*text[No]); }
 	char	quit_key(void) { return toupper(*text[Quit]); }
@@ -731,6 +732,9 @@ public:
 
 	/* str.cpp */
 	const char* gettext(const char* id);
+	bool	load_user_text(void);
+	bool	replace_text(const char* path);
+	void	revert_text(void);
 	char*	server_host_name(void);
 	char*	timestr(time_t);
 	char*	datestr(time_t);

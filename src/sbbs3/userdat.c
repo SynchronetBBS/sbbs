@@ -398,6 +398,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	SAFECOPY(user->alias, field[USER_ALIAS]);
 	SAFECOPY(user->name, field[USER_NAME]);
 	SAFECOPY(user->handle, field[USER_HANDLE]);
+	SAFECOPY(user->lang, field[USER_LANG]);
 	SAFECOPY(user->note, field[USER_NOTE]);
 	SAFECOPY(user->ipaddr, field[USER_IPADDR]);
 	SAFECOPY(user->comp, field[USER_HOST]);
@@ -613,6 +614,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	format_datetime(user->pwmod, pwmod, sizeof(pwmod));
 	format_datetime(user->expire, expire, sizeof(expire));
 
+	// NOTE: order must match enum user_field definition (in userfields.h)
 	int len = snprintf(userdat, USER_RECORD_LEN,
 		"%u\t"	// USER_ID
 		"%s\t"	// USER_ALIAS
@@ -677,6 +679,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		"%s\t"	// USER_EXPIRE
 		"%u\t"	// USER_LEECH
 		"%x\t"	// USER_MAIL
+		"%s\t"	// USER_LANG
 		,user->number
 		,user->alias
 		,user->name
@@ -740,6 +743,7 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		,expire
 		,(uint)user->leech
 		,user->mail
+		,user->lang
 	);
 	if(len > USER_RECORD_LEN || len < 0) // truncated?
 		return FALSE;
