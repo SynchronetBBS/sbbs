@@ -26,6 +26,10 @@
 /* Standard library headers */
 /****************************/
 
+#if defined(__cplusplus)
+	#include <unordered_map>
+#endif
+
 /***************/
 /* OS-specific */
 /***************/
@@ -523,12 +527,13 @@ public:
 	size_t	batup_total();
 	size_t	batdn_total();
 
-	/*********************************/
-	/* Color Configuration Variables */
-	/*********************************/
+	/********************************/
+	/* Text Configuration Variables */
+	/********************************/
 	char 	*text[TOTAL_TEXT]{};			/* Text from text.dat/text.ini */
 	char 	*text_sav[TOTAL_TEXT]{};		/* Text from text.dat/text.ini */
 	bool	text_replaced[TOTAL_TEXT]{};
+	std::unordered_map<std::string, int> text_id_map{};
 	char	yes_key(void) { return toupper(*text[Yes]); }
 	char	no_key(void) { return toupper(*text[No]); }
 	char	quit_key(void) { return toupper(*text[Quit]); }
@@ -731,7 +736,8 @@ public:
 	bool	gettimeleft_inside = false;
 
 	/* str.cpp */
-	const char* gettext(const char* id);
+	int		get_text_num(const char* id);
+	const char* get_text(const char* id);
 	bool	load_user_text(void);
 	bool	replace_text(const char* path);
 	void	revert_text(void);

@@ -22,9 +22,37 @@
 #include "sbbs.h"
 #include "dat_rec.h"
 
-const char* sbbs_t::gettext(const char* id)
+/****************************************************************************/
+// Returns 0-based text string index
+// Caches the result
+/****************************************************************************/
+int sbbs_t::get_text_num(const char* id)
 {
-	// TODO: hash/cache results
+	int i;
+	if (isdigit(*id)) {
+		i = atoi(id);
+		if (i < 1)
+			return TOTAL_TEXT;
+		return i - 1;
+	}
+	auto index = text_id_map.find(id);
+	if (index != text_id_map.end())
+		i = index->second;
+	else {
+		for (i = 0; i < TOTAL_TEXT; ++i) {
+			if (strcmp(text_id[i], id) == 0) {
+				text_id_map[id] = i;
+				break;
+			}
+		}
+	}
+	return i;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+const char* sbbs_t::get_text(const char* id)
+{
 	int i = get_text_num(id);
 	if(i >= 0 && i < TOTAL_TEXT)
 		return text[i];

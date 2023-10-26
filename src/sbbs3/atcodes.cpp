@@ -920,7 +920,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		if(i >= 1 && i <= TOTAL_TEXT)
 			return text[i - 1];
 		else
-			return gettext(sp + 5);
+			return get_text(sp + 5);
 	}
 
 	/* NOSTOP */
@@ -2189,7 +2189,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		}
 	}
 
-	return gettext(sp);
+	return get_text(sp);
 }
 
 char* sbbs_t::expand_atcodes(const char* src, char* buf, size_t size)
