@@ -54,7 +54,7 @@ bool sbbs_t::replace_text(const char* path)
 			}
 			if (text[n] != text_sav[n] && text[n] != nulstr)
 				free(text[n]);
-			if (list[i]->value == '\0')
+			if (*list[i]->value == '\0')
 				text[n] = (char *)nulstr;
 			else
 				text[n] = strdup(list[i]->value);
