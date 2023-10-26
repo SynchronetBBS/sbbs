@@ -27,6 +27,7 @@
 /****************************/
 
 #if defined(__cplusplus)
+	#include <string>
 	#include <unordered_map>
 #endif
 
