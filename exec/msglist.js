@@ -980,6 +980,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				for(var i in list)
 					list[i].flagged = flagged;
 				break;
+			case CTRL_D:
 			case KEY_DEL:
 				if(!list[current])
 					break;
@@ -1035,6 +1036,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 						case '-':
 							current--;
 							break;
+						case CTRL_D:
 						case KEY_DEL:
 							if(msgbase.cfg && !msg_area.sub[msgbase.cfg.code].is_operator)
 								break;
