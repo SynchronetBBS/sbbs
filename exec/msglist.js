@@ -350,7 +350,7 @@ function list_msg(msg, digits, selected, sort, msg_ctrl, exclude, is_operator)
 	var color_mask = msg_ctrl ? 7 : 0xff;
 	
 	console_color(color&color_mask, selected);
-	printf("%-*u%c", digits, msg.num, msg.flagged ? 251 : ' ');
+	printf("%-*u%c", digits, msg.num, msg.flagged ? 251 : msg.attr & MSG_DELETE ? '-' : ' ');
 	color = LIGHTMAGENTA;
 	if(color_cfg.column[1] != undefined)
 		color = color_cfg.column[1];
@@ -834,32 +834,34 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 		printf("%-*s ", digits, "#");
 		console.add_hotspot(CTRL_T);
 		printf("%-*s ", LEN_ALIAS, sort=="from" ? "FROM" : "From");
-		for(var i = 0; i < list_formats[list_format].length; i++) {
-			var prop = list_formats[list_format][i];
-			if(exclude_heading.indexOf(prop) >= 0)
-				continue;
-			var fmt = "%-*.*s";
-			var heading = columnHeading(prop);
-			var last_column = (i == (list_formats[list_format].length - 1));
-			if(last_column) {
-				if(i > 0)
-					fmt = "%*.*s";
-			} else {
-				if(i > 0 && max_len(prop) >= heading.length)
-					console.print(" ");
+		if(console.screen_columns >= 80) {
+			for(var i = 0; i < list_formats[list_format].length; i++) {
+				var prop = list_formats[list_format][i];
+				if(exclude_heading.indexOf(prop) >= 0)
+					continue;
+				var fmt = "%-*.*s";
+				var heading = columnHeading(prop);
+				var last_column = (i == (list_formats[list_format].length - 1));
+				if(last_column) {
+					if(i > 0)
+						fmt = "%*.*s";
+				} else {
+					if(i > 0 && max_len(prop) >= heading.length)
+						console.print(" ");
+				}
+				var cols_remain = console.screen_columns - console.current_column - 1;
+				var len = cols_remain;
+				if(!last_column) {
+					len = Math.min(max_len(prop), cols_remain);
+					len = Math.max(heading.length, len);
+				}
+				console.add_hotspot(ascii(ascii(CTRL_U) + i));
+	//			console.add_hotspot(CTRL_U);
+				printf(fmt
+					,len
+					,len
+					,sort==prop ? heading.toUpperCase() : heading);
 			}
-			var cols_remain = console.screen_columns - console.current_column - 1;
-			var len = cols_remain;
-			if(!last_column) {
-				len = Math.min(max_len(prop), cols_remain);
-				len = Math.max(heading.length, len);
-			}
-			console.add_hotspot(ascii(ascii(CTRL_U) + i));
-//			console.add_hotspot(CTRL_U);
-			printf(fmt
-				,len
-				,len
-				,sort==prop ? heading.toUpperCase() : heading);
 		}
 		console.cleartoeol();
 		console.crlf();
@@ -967,6 +969,10 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 		if(console.term_supports(USER_ANSI))
 			fmt += ", Hm/End/\x18\x19/PgUpDn";
 		fmt += ", ~Quit or [~View] ~?";
+		if(console.screen_columns < 64) {
+			for(var i = 0; i < cmds.length; i++)
+				cmds[i] = cmds[i].substring(0, 2);
+		}
 		console.mnemonics(cmds.join(", ") + format(fmt, list_formats.length-1));
 		console.cleartoeol();
 		bbs.nodesync(/* clearline: */false);
