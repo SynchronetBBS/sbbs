@@ -68,7 +68,6 @@ function IRC_Server() {
 	this.server_chan_info=IRCClient_server_chan_info;
 	this.server_info=IRCClient_server_info;
 	this.synchronize=IRCClient_synchronize;
-	this.reintroduce_nick=IRCClient_reintroduce_nick;
 	this.finalize_server_connect=IRCClient_finalize_server_connect;
 	// Global Functions
 	this.check_timeout=IRCClient_check_timeout;
@@ -398,7 +397,7 @@ function Server_Work(cmdline) {
 					this.nick,
 					tmp.nick
 				));
-				this.reintroduce_nick(tmp);
+				this.quit("Non-Hub kill denied.");
 			}
 		}
 		break;
@@ -427,13 +426,8 @@ function Server_Work(cmdline) {
 			));
 			break;
 		}
-		/* Detect TS-style MODE and stuff the real TS in j */
-		j = parseInt(p[0]);
-		if (p[0] == j) {
+		if (parseInt(p[0]) == j)
 			p.shift();
-		}
-		if (!this.hub)
-			j = Epoch();
 		if (p[0][0] == "#") {
 			/* Setting a channel mode */
 			tmp = Channels[p[0].toUpperCase()];
@@ -448,7 +442,7 @@ function Server_Work(cmdline) {
 			if (!j)
 				j = tmp.created;
 			p.shift();
-			origin.set_chanmode(tmp,p,j);
+			origin.set_chanmode(tmp,p);
 			break;
 		}
 		/* Setting a user mode */
@@ -499,34 +493,16 @@ function Server_Work(cmdline) {
 					));
 					break;
 				}
-				if (tmp.created > parseInt(p[2]) && (this.hub || !Enforcement)) {
-					/* We're on the wrong side. */
+				if (Enforcement) {
 					tmp.numeric(436, tmp.nick + " :Nickname Collision KILL.");
-					this.bcast_to_servers(format(
-						"KILL %s :Nickname Collision.",
+					server_bcast_to_servers(format(
+						":%s KILL %s :Nickname Collision.",
+						ServerName,
 						tmp.nick
 					));
 					tmp.quit("Nickname Collision",true);
-					break;
 				}
-				if (!this.hub && Enforcement) {
-					gnotice(format(
-						"Server %s trying to collide nick %s forwards. Reversing.",
-						this.nick,
-						tmp.nick
-					));
-					this.ircout(format(
-						"KILL %s :Inverse Nickname Collision.",
-						p[0]
-					));
-					this.reintroduce_nick(tmp);
-					break;
-				}
-				if (this.hub) {
-					/* Our TS greater than what was passed to us. */
-					/* Other side should nuke on our behalf. */
-					break;
-				}
+				break;
 			}
 			if (!this.hub) {
 				if (!this.check_nickname(p[0],true)) {
@@ -635,30 +611,12 @@ function Server_Work(cmdline) {
 			tmp = Users[p[0].toUpperCase()];
 			if (tmp && tmp.nick.toUpperCase() != origin.nick.toUpperCase()) {
 				gnotice(format(
-					"Server %s trying to collide via NICK changeover: %s -> %s",
+					"Server %s trying to collide via NICK changeover: %s -> %s, doing SQUIT",
 					this.nick,
 					origin.nick,
 					p[0]
 				));
-				if (Enforcement) {
-					server_bcast_to_servers(format(
-						"KILL %s :Bogus nickname changeover.",
-						origin.nick
-					));
-					origin.quit("Bogus nickname changeover.");
-					this.ircout(format(
-						"KILL %s :Bogus nickname changeover.",
-						p[0]
-					));
-					this.reintroduce_nick(tmp);
-				} else {
-					this.quit(format(
-						"Server %s trying to collide via NICK changeover: %s -> %s",
-						this.nick,
-						origin.nick,
-						p[0]
-					));
-				}
+				this.quit("Attempted collide via NICK");
 				break;
 			}
 			if (origin.check_nickname(p[0]) < 1) {
@@ -935,9 +893,6 @@ function Server_Work(cmdline) {
 		if (!p[1] || p[1][0] != "#")
 			break;
 
-		if (!this.hub)
-			p[0] = Epoch();
-
 		tmp = Channels[p[1].toUpperCase()];
 		if (!tmp) {
 			Channels[p[1].toUpperCase()] = new Channel(p[1].toUpperCase());
@@ -986,37 +941,18 @@ function Server_Work(cmdline) {
 					), false /*bcast*/);
 				}
 
-				if (tmp.created >= parseInt(p[0])) { /* They have TS superiority */
-					if (k.isop)
-						tmp.modelist[CHANMODE_OP][n.id] = n.id;
-					if (k.isvoice)
-						tmp.modelist[CHANMODE_VOICE][n.id] = n.id;
-					if (k.isop || k.isvoice) {
-						origin.bcast_to_channel(tmp, format(
-							"MODE %s +%s%s %s",
-							tmp.nam,
-							k.isop ? "o" : "",
-							k.isvoice ? "v" : "",
-							n.nick
-						), false /*bcast*/);
-					}
-				} else { /* We have TS superiority */
-					if (k.isop) {
-						k.isop = false;
-						this.rawout(format(":%s MODE %s -o %s",
-							ServerName,
-							tmp.nam,
-							n.nick
-						));
-					}
-					if (k.isvoice) {
-						k.isvoice = false;
-						this.rawout(format(":%s MODE %s -v %s",
-							ServerName,
-							tmp.nam,
-							n.nick
-						));
-					}
+				if (k.isop)
+					tmp.modelist[CHANMODE_OP][n.id] = n.id;
+				if (k.isvoice)
+					tmp.modelist[CHANMODE_VOICE][n.id] = n.id;
+				if (k.isop || k.isvoice) {
+					origin.bcast_to_channel(tmp, format(
+						"MODE %s +%s%s %s",
+						tmp.nam,
+						k.isop ? "o" : "",
+						k.isvoice ? "v" : "",
+						n.nick
+					), false /*bcast*/);
 				}
 
 				if (valid_nicks != "")
@@ -1512,52 +1448,30 @@ function IRCClient_server_nick_info(sni_client) {
 	}
 }
 
-function IRCClient_reintroduce_nick(nick) {
-	if (Enforcement) {
-		log(LOG_DEBUG, "Trying to reintroduce nick while Enforcement mode is off.");
-		return 0;
-	}
+function IRCClient_server_chan_info(sni_chan) {
+	var i, u;
 
-	this.server_nick_info(nick);
-
-	for (uchan in nick.channels) {
-		var chan = nick.channels[uchan];
-		var cmodes = "";
-		if (chan.modelist[CHANMODE_OP][nick.id])
-			cmodes += "@";
-		if (chan.modelist[CHANMODE_VOICE][nick.id])
-			cmodes += "+";
-		this.rawout(
-			format("SJOIN %lu %s %s :%s%s",
-				chan.created,
-				chan.nam,
-				chan.chanmode(true),
-				cmodes,
-				nick.nick
-			)
-		);
-		if (chan.topic) {
-			this.rawout(
-				format("TOPIC %s %s %s :%s",
-					chan.nam,
-					chan.topicchangedby,
-					chan.topictime,
-					chan.topic
-				)
-			);
+	for (i in sni_chan.users) {
+		u = sni_chan.users[i];
+		this.rawout(format(":%s JOIN %s",
+			u.nick,
+			sni_chan.nam
+		));
+		if (sni_chan.modelist[CHANMODE_OP][u.id]) {
+			this.rawout(format(":%s MODE %s +o %s",
+				ServerName,
+				sni_chan.nam,
+				u.nick
+			));
+		}
+		if (sni_chan.modelist[CHANMODE_VOICE][u.id]) {
+			this.rawout(format(":%s MODE %s +v %s",
+				ServerName,
+				sni_chan.nam,
+				u.nick
+			));
 		}
 	}
-}
-
-function IRCClient_server_chan_info(sni_chan) {
-	var i;
-
-	this.rawout(format("SJOIN %lu %s %s :%s",
-			sni_chan.created,
-			sni_chan.nam,
-			sni_chan.chanmode(true),
-			sni_chan.occupants()
-	));
 	var modecounter=0;
 	var modestr="+";
 	var modeargs="";

@@ -245,7 +245,7 @@ function ChanMode(chan,user) {
 	this.affect_mode_list = ChanMode_affect_mode_list;
 }
 
-function IRCClient_set_chanmode(chan,cm_args,ts) {
+function IRCClient_set_chanmode(chan,cm_args) {
 	var c, i, j;
 	var add;
 	var final_modestr = "";
@@ -347,53 +347,6 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 		}
 		if (mode_counter == MAX_MODES)
 			break;
-	}
-
-	/* If we have TS supremacy (that is, if this server has a channel
-	   TS less than the incoming channel TS), then we invert the modes
-	   sent to us if they're not part of the channel object already. */
-	if (ts > chan.created) {
-		for (i in MODE) {
-
-			if (MODE[i].state && (chan.mode&i) && (c.addbits&i)) {
-				continue;
-			}
-
-			if (MODE[i].state && !(chan.mode&i) && (c.addbits&i)) {
-				this.ircout(format("MODE %lu %s %s",
-					chan.created,
-					chan.nam,
-					"-" + MODE[i].modechar
-				));
-				continue;
-			}
-
-			if (MODE[i].list && c.list[i] !== undefined) {
-				for (j in c.list[i][true]) {
-					if (chan.is_str_member_of_chanmode_list(i,c.list[i][true][j])) {
-						continue;
-					}
-					this.ircout(format("MODE %lu %s %s",
-						chan.created,
-						chan.nam,
-						"-" + MODE[i].modechar + " " + c.list[i][true][j]
-					));
-				}
-				for (j in c.list[i][false]) {
-					if (chan.is_str_member_of_chanmode_list(i,c.list[i][false][j])) {
-						this.ircout(format("MODE %lu %s %s",
-							chan.created,
-							chan.nam,
-							"+" + MODE[i].modechar + " " + c.list[i][false][j]
-						));
-					}
-				}
-			}
-
-		}
-
-		/* We end processing here if we're inverting modes from a TS violation */
-		return;
 	}
 
 	/* Now we run through all the mode toggles and construct our lists for
@@ -656,9 +609,8 @@ function IRCClient_do_join(chan_name,join_key) {
 		}
 		if (chan_name[0] != "&") {
 			this.bcast_to_servers_raw(
-				format(":%s SJOIN %lu %s",
+				format(":%s JOIN %s",
 					this.nick,
-					chan.created,
 					chan.nam
 				)
 			);
@@ -670,22 +622,24 @@ function IRCClient_do_join(chan_name,join_key) {
 		chan.users[this.id] = this;
 		var str="JOIN :" + chan.nam;
 		var create_op = "";
+		if (chan_name[0] != "&") {
+			this.bcast_to_servers_raw(
+				format(":%s JOIN %s",
+					this.nick,
+					chan.nam
+				)
+			);
+		}
 		if (this.local) {
 			this.originatorout(str,this);
 			create_op = "@";
 			chan.modelist[CHANMODE_OP][this.id] = this;
-		}
-		if (chan_name[0] != "&") {
-			this.bcast_to_servers_raw(
-				format(":%s SJOIN %lu %s %s :%s%s",
+			this.bcast_to_servers_raw(format(
+					":%s MODE %s +o %s",
 					ServerName,
-					chan.created,
 					chan.nam,
-					chan.chanmode(),
-					create_op,
 					this.nick
-				)
-			);
+			));
 		}
 	}
 	if (this.invited.toUpperCase() == chan.nam.toUpperCase())
