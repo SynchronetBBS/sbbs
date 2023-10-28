@@ -893,7 +893,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			console.attributes = msg_ctrl ? color_cfg.preview_separator_active : color_cfg.preview_separator_inactive;
 			while(console.current_column < digits - 1)
 				write(options.preview_separator || default_separator);
-			write(options.preview_label || "\xd9 Preview");
+			write(options.preview_label || (console.screen_columns < 80 ? "\xd9" : "\xd9 Preview"));
 			var offset = pagesize + 4;
 			if(text) {
 				if(text.length) {
@@ -908,7 +908,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 					var max = Math.min(console.screen_rows - offset, text.length);
 					if(msg_line + max > text.length)
 						msg_line = text.length - max;
-					write(format(options.preview_lines_fmt || " lines %u-%u"
+					write(format(options.preview_lines_fmt || " Lines %u-%u"
 						, msg_line + 1, msg_line + max));
 					if(max < text.length)
 						write(format(options.preview_total_lines_fmt || " of %u", text.length));
