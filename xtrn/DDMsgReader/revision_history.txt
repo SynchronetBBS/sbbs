@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.84     2023-10-26   Fix in reader mode for refreshing the message area after
+                      closing another window (necessary with recent changes to
+                      substrWithAttrCodes())
 1.83     2023-10-25   Personal emails to the sysop received as "sysop" (or
                       starting with "sysop") are now correctly identified and
                       marked as read when read
