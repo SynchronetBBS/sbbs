@@ -19,6 +19,29 @@
 
 */
 
+/* Various permissions that can be set on an O:Line */
+const OLINE_CAN_REHASH		=(1<<0);	/* r */
+const OLINE_CAN_RESTART		=(1<<1);	/* R */
+const OLINE_CAN_DIE			=(1<<2);	/* D */
+const OLINE_CAN_GLOBOPS		=(1<<3);	/* g */
+const OLINE_CAN_WALLOPS		=(1<<4);	/* w */
+const OLINE_CAN_LOCOPS		=(1<<5);	/* l */
+const OLINE_CAN_LSQUITCON	=(1<<6);	/* c */
+const OLINE_CAN_GSQUITCON	=(1<<7);	/* C */
+const OLINE_CAN_LKILL		=(1<<8);	/* k */
+const OLINE_CAN_GKILL		=(1<<9);	/* K */
+const OLINE_CAN_KLINE		=(1<<10);	/* b */
+const OLINE_CAN_UNKLINE		=(1<<11);	/* B */
+const OLINE_CAN_LGNOTICE	=(1<<12);	/* n */
+const OLINE_CAN_GGNOTICE	=(1<<13);	/* N */
+const OLINE_IS_ADMIN		=(1<<14);	/* A */
+/* Synchronet IRCd doesn't have umode +a	RESERVED */
+const OLINE_CAN_UMODEC		=(1<<16);	/* c */
+const OLINE_CAN_CHATOPS		=(1<<19);	/* s */
+const OLINE_CHECK_SYSPASSWD	=(1<<20);	/* S */
+const OLINE_CAN_EVAL		=(1<<21);	/* x */
+const OLINE_IS_GOPER		=(1<<22);	/*  "big O" */
+
 function parse_nline_flags(flags) {
 	var i;
 	var nline_flags = 0;
@@ -142,10 +165,7 @@ function parse_oline_flags(flags) {
 	return oline_flags;
 }
 
-function Read_Config_File() {
-	var i;
-
-	/* All of these variables are global. */
+function Clear_Config_Globals() {
 	Admin1 = "";
 	Admin2 = "";
 	Admin3 = "";
@@ -170,7 +190,12 @@ function Read_Config_File() {
 	ZLines = [];
 	Die_Password = "";
 	Restart_Password = "";
-	/* End of global variables */
+}
+
+function Read_Config_File() {
+	var i;
+
+	Clear_Config_Globals();
 
 	var fname="";
 	if (Config_Filename && Config_Filename.length) {
@@ -195,12 +220,13 @@ function Read_Config_File() {
 		file_handle.close();
 	} else {
 		log(LOG_NOTICE, "Couldn't open configuration file! Proceeding with defaults.");
+		load_config_defaults();
 	}
 
 	Time_Config_Read = Epoch();
 	Scan_For_Banned_Clients();
 
-	YLines[0] = new YLine(120,600,1,5050000); /* Default IRC class */
+	YLines[0] = new YLine(120,600,100,1000000); /* Hardcoded class for fallback */
 }
 
 function ini_sections() {
@@ -270,6 +296,51 @@ function ini_Hub(arg, ini) {
 		"*", /* servermask permitted */
 		arg /* servername */
 	));
+}
+
+function load_config_defaults() {
+	/*** M:Line ***/
+	ServerName = format("%s.synchro.net", system.qwk_id.toLowerCase());
+	ServerDesc = system.name;
+	Default_Port = 6667;
+	/*** A:Line ***/
+	Admin1 = format("%s (%s)", system.name, system.qwk_id);
+	Admin2 = system.version_notice;
+	Admin3 = format("Sysop- <sysop@%s>", system.host_name);
+	/*** Y:Line *** ping freq, connect freq, max clients, max sendq bytes */
+	/* Class 1: Internet users */
+	YLines[1] = new YLine(120,0,100,1000000);
+	/* Class 2: BBS users */
+	YLines[2] = new YLine(30,0,100,1000000);
+	/* Class 10: IRC operators */
+	YLines[10] = new YLine(400,0,10,2000000);
+	/* Class 30: Leaf -> Hub Servers */
+	YLines[30] = new YLine(60,300,1,15000000);
+	/* Class 40: Hub -> Hub Servers */
+	YLines[40] = new YLine(90,60,10,20000000);
+	/* Class 50: Hub -> QWK Authenticator */
+	YLines[50] = new YLine(90,60,1,20000000);
+	/*** I:Line *** mask, password, hostmask, port, class */
+	ILines.push(new ILine("*@127.0.0.1", null, "*@*", null, 2));
+	ILines.push(new ILine("*@::1", null, "*@*", null, 2));
+	ILines.push(new ILine("*@*", null, "*@*", null, 1));
+	/*** O:Line *** mask, password, name, flags, class */
+	OLines.push(new OLine(format("*@%s", ServerName), "*", "Sysop", parse_oline_flags("OS"), 10));
+	/*** U:Line ***/
+	ULines.push("services.synchro.net");
+	ULines.push("stats.synchro.net");
+	/*** K:Line *** deliberately empty by default */
+	/*** Z:Line *** deprecated and combined with above */
+	/*** Q:Line ***/
+	QLines.push(new QLine("*Serv", "Reserved for Services"));
+	QLines.push(new QLine("Global", "Reserved for Services"));
+	QLines.push(new QLine("IRCOp*", "Reserved for IRC Operators"));
+	QLines.push(new QLine("Sysop", "Reserved for Sysop"));
+	/*** H:Line ***/
+	HLines.push(new HLine("*", "vert.synchro.net"));
+	HLines.push(new HLine("*", "cvs.synchro.net"));
+	HLines.push(new HLine("*", "hub.synchro.net"));
+	/*** P:Line *** deliberately empty by default */
 }
 
 function read_ini_config(conf) {
@@ -424,3 +495,69 @@ function read_conf_config(conf) {
 	}
 }
 
+function CLine(host,password,servername,port,ircclass) {
+	this.host = host;
+	this.password = password;
+	this.servername = servername;
+	this.port = port;
+	this.ircclass = ircclass;
+	if (   YLines[ircclass].connfreq > 0
+		&& parseInt(port) > 0
+		&& !Servers[servername.toLowerCase()]
+	) {
+		Reset_Autoconnect(this, 1 /* connect immediately */);
+	}
+}
+
+function HLine(allowedmask,servername) {
+	this.allowedmask = allowedmask;
+	this.servername = servername;
+}
+
+function ILine(ipmask,password,hostmask,port,ircclass) {
+	this.ipmask = ipmask;
+	this.password = password;
+	this.hostmask = hostmask;
+	this.port = port;
+	this.ircclass = ircclass;
+}
+
+function KLine(hostmask,reason,type) {
+	this.hostmask = hostmask;
+	this.reason = reason;
+	this.type = type;
+}
+
+function NLine(host,password,servername,flags,ircclass) {
+	this.host = host;
+	this.password = password;
+	this.servername = servername;
+	this.flags = flags;
+	this.ircclass = ircclass;
+}
+
+function OLine(hostmask,password,nick,flags,ircclass) {
+	this.hostmask = hostmask;
+	this.password = password;
+	this.nick = nick;
+	this.flags = flags;
+	this.ircclass = ircclass;
+}
+
+function QLine(nick,reason) {
+	this.nick = nick;
+	this.reason = reason;
+}
+
+function YLine(pingfreq,connfreq,maxlinks,sendq) {
+	this.pingfreq = pingfreq;
+	this.connfreq = connfreq;
+	this.maxlinks = maxlinks;
+	this.sendq = sendq;
+	this.active = 0;
+}
+
+function ZLine(ipmask,reason) {
+	this.ipmask = ipmask;
+	this.reason = reason;
+}
