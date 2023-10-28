@@ -71,6 +71,9 @@
  *                            Sub-board name collapsing: Fix for incorrect sub-subboard assignment.
  *                            Also, won't collapse if the name before the separator is the same as
  *                            the message group description.
+ * 2023-10-27 Eric Oulashin   Version 1.41
+ *                            Lightbar mode: When using name collapisng, ensure the menu item for
+ *                            the appropriate subgroup is selected.
  */
 
 // TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
@@ -114,8 +117,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.40";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-10-24";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.41";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-10-27";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -1177,16 +1180,35 @@ function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
 			// Set the currently selected item.  If the current sub-board is in this list,
 			// then set the selected item to that; otherwise, the selected item should be
 			// the first sub-board.
+			var selectedItemIdxWasSet = false;
 			if (msg_area.sub[bbs.cursub_code].grp_index == pGrpIdx)
 			{
+				//if (user.is_sysop) console.print("\x01n\r\nHere 1\r\n\x01p"); // Temporary
 				if ((pSubIdx >= 0) && (pSubIdx < this.group_list[pGrpIdx].sub_list.length))
 				{
 					var subSubsValid = Array.isArray(this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list) && this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length > 0;
 					if (!subSubsValid && bbs.cursub_code == this.group_list[pGrpIdx].sub_list[pSubIdx].code)
 					{
+						//if (user.is_sysop) console.print("\x01n\r\nHere 3\r\n\x01p"); // Temporary
 						subBoardMenu.selectedItemIdx = pSubIdx;
 						if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
 							subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
+					}
+				}
+			}
+			// If the selected item wasn't set, then check whether the current sub-board
+			// is within any of the sub-subboards for the subgroups in the group, and set
+			// it if so.
+			if (!selectedItemIdxWasSet)
+			{
+				for (var subIdx = 0; subIdx < this.group_list[pGrpIdx].sub_list.length; ++subIdx)
+				{
+					if (this.CurrentSubBoardIsInSubSubsForSub(pGrpIdx, subIdx))
+					{
+						subBoardMenu.selectedItemIdx = subIdx;
+						if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
+							subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
+						break;
 					}
 				}
 			}
