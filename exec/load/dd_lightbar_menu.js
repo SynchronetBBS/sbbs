@@ -3572,7 +3572,12 @@ function substrWithAttrCodes(pStr, pStartIdx, pLen)
 	// Find the actual start & end indexes, considering (not counting) attribute codes,
 	// and return the substring including any applicable attributes from the string
 	var actualStartIdx = findIdxConsideringAttrs(pStr, startIdx);
-	var actualEndIdx = findIdxConsideringAttrs(pStr, startIdx+len+1) + 1; // Initially tried just startIdx+len without the +1
+	var actualEndIdx = findIdxConsideringAttrs(pStr, startIdx+len+1);
+	// With the actual start & end indexes, make sure we'll get the string
+	// length desired; if not, adjust actualEndIdx;
+	var lenWithActualIndexes = actualEndIdx - actualStartIdx;
+	if (actualEndIdx-actualStartIdx < len)
+		actualEndIdx += len - lenWithActualIndexes;
 	return getAttrsBeforeStrIdx(pStr, actualStartIdx) + pStr.substring(actualStartIdx, actualEndIdx);
 }
 // Helper for substrWithAttrCodes(): Maps a 'visual' character index in a string to its
