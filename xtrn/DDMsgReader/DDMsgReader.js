@@ -44,6 +44,10 @@
  * 2023-10-25 Eric Oulashin     Version 1.83
  *                              Personal emails to the sysop received as "sysop" (or starting with "sysop")
  *                              are now correctly identified and marked as read when read
+ * 2023-10-26 Eric Oulashin     Version 1.84
+ *                              Fix in reader mode for refreshing the message area after
+ *                              closing another window (necessary with recent changes to
+ *                              substrWithAttrCodes())
  */
 
 "use strict";
@@ -148,8 +152,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.83";
-var READER_DATE = "2023-10-25";
+var READER_VERSION = "1.84";
+var READER_DATE = "2023-10-26";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -16401,15 +16405,20 @@ function DigDistMsgReader_RefreshMsgAreaRectangle(pTxtLines, pTopLineIdx, pTopLe
 		// text line.  Otherwise, output an empty string.
 		if (txtLineIdx < pTxtLines.length)
 		{
-			// Get the text attributes up to the current point and output them
-			//console.print(getAllEditLineAttrsUntilLineIdx(pTxtLines, txtLineIdx, true, txtLineStartIdx));
-			// Get the section of line (and make sure it can fill the needed width), and print it
-			// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
-			var lineText = substrWithAttrCodes(pTxtLines[txtLineIdx].replace(/[\r\n]+/g, ""), txtLineStartIdx, pWidth);
-			var printableTxtLen = console.strlen(lineText);
-			if (printableTxtLen < pWidth)
-				lineText += format("\x01n%*s", pWidth - printableTxtLen, "");
-			console.print(lineText);
+			if (txtLineStartIdx < console.strlen(pTxtLines[txtLineIdx]))
+			{
+				// Get the text attributes up to the current point and output them
+				//console.print(getAllEditLineAttrsUntilLineIdx(pTxtLines, txtLineIdx, true, txtLineStartIdx));
+				// Get the section of line (and make sure it can fill the needed width), and print it
+				// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
+				var lineText = substrWithAttrCodes(pTxtLines[txtLineIdx].replace(/[\r\n]+/g, ""), txtLineStartIdx, pWidth);
+				var printableTxtLen = console.strlen(lineText);
+				if (printableTxtLen < pWidth)
+					lineText += format("\x01n%*s", pWidth - printableTxtLen, "");
+				console.print(lineText);
+			}
+			else // The start index is beyond the length of the string, so print an empty string
+				printf(emptyFormatStr, "");
 		}
 		else // We've printed all the remaining text lines, so now print an empty string.
 			printf(emptyFormatStr, "");
