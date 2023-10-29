@@ -1139,7 +1139,7 @@ static jsSyncMethodSpec js_functions[] = {
 	,JSDOCSTR("Pop-up (or down) a message. Pop-down by passing no <i>text</i> argument.")
 	,314
 	},
-	{"input",			js_uifc_input,		0,	JSTYPE_STRING,	JSDOCSTR("[number mode] [,number left] [,number top] [,string default] [,number maxlen] [,number kmode]")
+	{"input",			js_uifc_input,		0,	JSTYPE_STRING,	JSDOCSTR("[number mode] [,number left] [,number top] [,string prompt] [,string default] [,number maxlen [,number kmode]]")
 	,JSDOCSTR("Prompt for a string input")
 	,314
 	},
