@@ -1140,7 +1140,15 @@ static jsSyncMethodSpec js_functions[] = {
 	,314
 	},
 	{"input",			js_uifc_input,		0,	JSTYPE_STRING,	JSDOCSTR("[number mode] [,number left] [,number top] [,string prompt] [,string default] [,number maxlen [,number kmode]]")
-	,JSDOCSTR("Prompt for a string input")
+	,JSDOCSTR("Prompt for a string input.<br>"
+		"<tt>mode</tt> is an optional combination of <tt>WIN_</tt> mode flags from <tt>uifcdefs.js</tt>.<br>"
+		"<tt>left</tt> and <tt>top</tt> are optional window offsets to display the input dialog box.<br>"
+		"<tt>prompt</tt> is an optional text string to display as part of the string input dialog box.<br>"
+		"<tt>default</tt> is an optional original text string that the user can edit (requires the <tt>K_EDIT kmode</tt> flag).<br>"
+		"<tt>maxlen</tt> is an optional maximium input string length (default is 40 characters).<br>"
+		"<tt>kmode</tt> is an optional combination of <tt>K_</tt> mode flags from either <tt>sbbsdefs.js</tt> or <tt>uifcdefs.js</tt>.<br>"
+		"Return value is the new/edited string or <tt>undefined</tt> if editing was aborted (e.g. via ESC key)."
+	)
 	,314
 	},
 	{"list",			js_uifc_list,		0,	JSTYPE_NUMBER,	JSDOCSTR("[number mode,] string title, array options [,uifc.list.CTX object]")
