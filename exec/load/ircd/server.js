@@ -426,7 +426,7 @@ function Server_Work(cmdline) {
 			));
 			break;
 		}
-		if (parseInt(p[0]) == j)
+		if (parseInt(p[0]) == p[0])
 			p.shift();
 		if (p[0][0] == "#") {
 			/* Setting a channel mode */
@@ -439,13 +439,18 @@ function Server_Work(cmdline) {
 				));
 				break;
 			}
-			if (!j)
-				j = tmp.created;
 			p.shift();
 			origin.set_chanmode(tmp,p);
 			break;
 		}
 		/* Setting a user mode */
+		if (typeof origin.setusermode !== 'function') {
+			umode_notice(USERMODE_OPER,"Notice",format(
+				"Server %s sent non-channel MODE from invalid origin.",
+				this.nick
+			));
+			break;
+		}
 		tmp = origin.setusermode(p[1]);
 		if (tmp) {
 			this.bcast_to_servers_raw(format(
@@ -1475,6 +1480,17 @@ function IRCClient_server_chan_info(sni_chan) {
 	var modecounter=0;
 	var modestr="+";
 	var modeargs="";
+	for (i in MODE) {
+		if (MODE[i].state && (sni_chan.mode & i))
+			modestr += MODE[i].modechar;
+	}
+	if (modestr != "+") {
+		this.ircout(format("MODE %s %s",
+			sni_chan.nam,
+			modestr
+		));
+	}
+	modestr = "+";
 	for (i in sni_chan.modelist[CHANMODE_BAN]) {
 		modecounter++;
 		modestr += "b";
