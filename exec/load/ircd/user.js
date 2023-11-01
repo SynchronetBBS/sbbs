@@ -287,7 +287,7 @@ function User_Work(cmdline) {
 	case "MODE":
 		if (!p[0])
 			break;
-		if (!p[1]) { /* User requesting info only */
+		if (typeof p[1] === 'undefined') { /* User requesting info only */
 			if ((p[0][0] == "#") || (p[0][0] == "&")) {
 				tmp = Channels[p[0].toUpperCase()];
 				if (!tmp) {
@@ -313,6 +313,8 @@ function User_Work(cmdline) {
 				break;
 			}
 		} else { /* Mode flags were passed */
+			if (parseInt(p[0]) == p[0])
+				p.shift();
 			if ((p[0][0] == "#") || (p[0][0] == "&")) {
 				tmp = Channels[p[0].toUpperCase()];
 				if (!tmp) {
@@ -320,7 +322,7 @@ function User_Work(cmdline) {
 					break;
 				}
 				p.shift();
-				this.set_chanmode(tmp, p, tmp.created);
+				this.set_chanmode(tmp, p);
 			} else if (p[0].toUpperCase() == this.nick.toUpperCase()) {
 				this.setusermode(p[1]);
 			} else {
