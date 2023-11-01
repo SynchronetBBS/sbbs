@@ -10,11 +10,12 @@ const screen_mode = argv[0];
 if(!uifc.init("Example UIFC App", screen_mode))
 	throw new Error("UIFC init error");
 
-uifc.help_text = "~This~ is the `help` text";
+uifc.help_text = "~This~ is some `help` text.\n\nMultiple lines supported.";
 const main_ctx = new uifc.list.CTX;
 const sub_ctx1 = new uifc.list.CTX; 
 const sub_ctx2 = new uifc.list.CTX; 
 var str = "default string value";
+var list = [];
 while(!js.terminated) {
 	const max_str_len = 20;
 	const win_mode = WIN_ORG | WIN_MID | WIN_ACT;
@@ -24,6 +25,7 @@ while(!js.terminated) {
 		"Sub-menu 1",
 		"Sub-menu 2",
 		"Pop-up message",
+		"Edit list",
 		"uifc dump"
 		];
 	var result = uifc.list(win_mode, "Main Menu", items, main_ctx);
@@ -52,6 +54,9 @@ while(!js.terminated) {
 			uifc.pop();
 			break;
 		case 5:
+			edit_list(list);
+			break;
+		case 6:
 			uifc.showbuf(WIN_MID, "uifc dump", JSON.stringify(uifc, null, 4));
 			break;
 			
@@ -91,6 +96,50 @@ function sub_sub_menu()
 			break;
 		uifc.msg("result = " + result);
 	}
-}	
+}
+
+function edit_list(list)
+{
+	var ctx = new uifc.list.CTX;
+	var clipboard;
+	while(!js.terminated) {
+		var win_mode = WIN_SAV | WIN_ACT | WIN_MID | WIN_INS | WIN_INSACT | WIN_XTR;
+		if(list.length)
+			win_mode |= WIN_EDIT | WIN_DEL | WIN_COPY | WIN_CUT;
+		if(clipboard)
+			win_mode |= WIN_PASTE | WIN_PASTEXTR;
+		var result = uifc.list(win_mode, "Edit list", list, ctx);
+		if(result == -1 || result === false)
+			break;
+		var index = result & MSK_OFF;
+		if(result & MSK_ON) {
+			switch(result & MSK_ON) {
+				case MSK_DEL:
+					list.splice(index, 1);
+					break;
+				case MSK_INS:
+					var str = uifc.input(WIN_SAV, "New item");
+					if(str)
+						list.splice(index, 0, str);
+					break;
+				case MSK_EDIT:
+					var str = uifc.input(WIN_SAV, "Edit item", list[index], 20, K_EDIT);
+					if(str)
+						list[index] = str;
+					break;
+				case MSK_COPY:
+					clipboard = list[index];
+					break;
+				case MSK_CUT:
+					clipboard = list.splice(index, 1);
+					break;
+				case MSK_PASTE:
+					list.splice(index, 0, clipboard);
+					break;
+			}
+			continue;
+		}
+	}
+}
 
 uifc.bail();
