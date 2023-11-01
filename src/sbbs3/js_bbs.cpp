@@ -1477,6 +1477,7 @@ js_text(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	uint32		i=0;
 	sbbs_t*		sbbs;
+	bool		dflt = false;
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
@@ -1486,10 +1487,12 @@ js_text(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc && JSVAL_IS_NUMBER(argv[0])) {
 		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
 			return JS_FALSE;
+		if(JSVAL_IS_BOOLEAN(argv[1]))
+			dflt = JSVAL_TO_BOOLEAN(argv[1]);
 	}
 
 	if(i > 0 && i <= TOTAL_TEXT) {
-		JSString* js_str = JS_NewStringCopyZ(cx, sbbs->text[i - 1]);
+		JSString* js_str = JS_NewStringCopyZ(cx, dflt ? sbbs->text_sav[i - 1] : sbbs->text[i - 1]);
 		if(js_str==NULL)
 			return(JS_FALSE);
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
@@ -1641,6 +1644,25 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 
 	fclose(stream);
+	JS_RESUMEREQUEST(cx, rc);
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_load_user_text(JSContext* cx, uintN argc, jsval* arglist)
+{
+	jsval* argv = JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+	bool		result;
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return(JS_FALSE);
+
+	rc = JS_SUSPENDREQUEST(cx);
+	result = sbbs->load_user_text();
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -4418,10 +4440,13 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,320
 	},
 	/* text.dat */
-	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("index_number")
+	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("index_number [,default_text=<i>false</i>]")
 	,JSDOCSTR("Returns current text string (specified via 1-based string index number)"
-		"from text.dat/text.ini or replacement text or <i>null</i> upon error<br>"
-		"<i>New in v3.20:</i> Use <tt>bbs.text.<i>ID</i><tt> to obtain a text string index number from its corresponding ID (name)"
+		"from text.dat/text.ini or replacement text or <i>null</i> upon error"
+		"<p>"
+		"<i>New in v3.20:</i><br>"
+		"Use <tt>bbs.text.<i>ID</i><tt> to obtain a text string index number from its corresponding ID (name).<br>"
+		"The <tt>default_text</tt> argument can be used to get a default langage (text.dat) string value."
 	)
 	,310
 	},
@@ -4435,8 +4460,12 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	{"load_text",		js_load_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename")
-	,JSDOCSTR("load an alternate text.dat from ctrl directory, automatically appends '.dat' to basefilename")
+	,JSDOCSTR("Load an alternate text.dat from ctrl directory, automatically appends '.dat' to basefilename")
 	,310
+	},
+	{"load_user_text",	js_load_user_text,	0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
+	,JSDOCSTR("Load text string from the user's selected language (ctrl/text.*.ini) file")
+	,320
 	},
 	/* procedures */
 	{"newuser",			js_newuser,			0,	JSTYPE_VOID,	JSDOCSTR("")
