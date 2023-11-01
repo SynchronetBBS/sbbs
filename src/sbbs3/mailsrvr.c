@@ -3113,9 +3113,9 @@ static void smtp_thread(void* arg)
 				sockprintf(socket,client.protocol,session
 					,"550 Mail from %s refused due to listing at %s"
 					,dnsbl_ip, dnsbl);
-				mail_close_socket(&socket, &session);
 				lprintf(LOG_NOTICE,"%04d %s !REFUSED SESSION from blacklisted server (%lu total)"
 					,socket, client.protocol, ++stats.sessions_refused);
+				mail_close_socket(&socket, &session);
 				thread_down();
 				(void)protected_uint32_adjust(&active_clients, -1);
 				update_clients();
