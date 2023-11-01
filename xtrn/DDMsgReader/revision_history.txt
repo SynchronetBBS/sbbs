@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.85     2023-11-01   Mark personal email as read if the user is just reading
+                      personal email
 1.84     2023-10-26   Fix in reader mode for refreshing the message area after
                       closing another window (necessary with recent changes to
                       substrWithAttrCodes())
