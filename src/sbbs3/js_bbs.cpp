@@ -1652,7 +1652,6 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_load_user_text(JSContext* cx, uintN argc, jsval* arglist)
 {
-	jsval* argv = JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 	bool		result;
