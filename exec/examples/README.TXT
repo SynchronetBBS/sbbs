@@ -6,7 +6,7 @@ intended to be used as examples for creating your own scripts which
 utilize the Synchronet Object Model and/or the libaries included in the
 Synchronet exec/load directory.
 
-Additional (new) example scripts will be added in this directory in CVS
+Additional (new) example scripts will be added in this directory
 (rather than exec).
 
 -Rob
