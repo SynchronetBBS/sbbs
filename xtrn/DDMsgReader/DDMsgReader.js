@@ -48,6 +48,8 @@
  *                              Fix in reader mode for refreshing the message area after
  *                              closing another window (necessary with recent changes to
  *                              substrWithAttrCodes())
+ * 2023-11-01 Eric Oulashin     Version 1.85
+ *                              Mark personal email as read if the user is just reading personal email
  */
 
 "use strict";
@@ -152,8 +154,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.84";
-var READER_DATE = "2023-10-26";
+var READER_VERSION = "1.85";
+var READER_DATE = "2023-11-01";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4856,10 +4858,9 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	retObj.msgNotReadable = !isReadableMsgHdr(msgHeader, this.subBoardCode);
 	if (retObj.msgNotReadable)
 		return retObj;
-	
-	// Mark the message as read if it was written to the current user
-	var personalEmailToCurrentSysopUser = this.readingPersonalEmail && user.is_sysop && msgHeader.to.toUpperCase().indexOf("SYSOP") == 0;
-	if (((msgHeader.attr & MSG_READ) == 0) && (userHandleAliasNameMatch(msgHeader.to) || personalEmailToCurrentSysopUser))
+
+	// Mark the message as read if reading personal email or if it was written to the current user
+	if (this.readingPersonalEmail || ((msgHeader.attr & MSG_READ) == 0) && (userHandleAliasNameMatch(msgHeader.to)))
 	{
 		// Using applyAttrsInMsgHdrInMessagbase(), which loads the header without
 		// expanded fields and saves the attributes with that header.
@@ -4867,6 +4868,9 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		if (this.SearchTypePopulatesSearchResults() && saveRetObj.saveSucceeded)
 			this.RefreshHdrInSavedArrays(pOffset, MSG_READ, true);
 	}
+	// For personal email, if we wanted to really check that it was written to the current sysop user:
+	//var personalEmailToCurrentSysopUser = this.readingPersonalEmail && user.is_sysop && msgHeader.to.toUpperCase().indexOf("SYSOP") == 0;
+	//if (((msgHeader.attr & MSG_READ) == 0) && (userHandleAliasNameMatch(msgHeader.to) || personalEmailToCurrentSysopUser))
 
 	// Updating message pointers etc.
 	updateScanPtrAndOrLastRead(this.subBoardCode, msgHeader, this.doingMsgScan);
