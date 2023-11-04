@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 		perror(path);
 		return __LINE__;
 	}
-	if((text_h=fopen("text.h", "w"))==NULL) {
+	if((text_h=fopen("text.h", "wb"))==NULL) {
 		perror("text.h");
 		return __LINE__;
 	}
@@ -207,7 +207,7 @@ int main(int argc, char **argv)
 	if(p==NULL)
 		p = "/sbbs/exec";
 	SAFEPRINTF(path,"%s/load/text.js",p);
-	if((text_js=fopen(path, "w"))==NULL) {
+	if((text_js=fopen(path, "wb"))==NULL) {
 		perror(path);
 		return __LINE__;
 	}
@@ -220,7 +220,7 @@ int main(int argc, char **argv)
 	fputs("/* Auto-generated from ctrl/text.dat											*/\n",text_js);
 	fputs("/****************************************************************************/\n",text_js);
 	fputs("\n",text_js);
-	if((text_defaults_c=fopen("text_defaults.c","w"))==NULL) {
+	if((text_defaults_c=fopen("text_defaults.c","wb"))==NULL) {
 		fprintf(stderr,"Can't open text_defaults.c!\n");
 		return __LINE__;
 	}
@@ -231,7 +231,7 @@ int main(int argc, char **argv)
 	fputs("#include \"text_defaults.h\"\n",text_defaults_c);
 	fputs("\n",text_defaults_c);
 	fputs("const char * const text_defaults[TOTAL_TEXT]={\n",text_defaults_c);
-	if ((text_id = fopen("text_id.c", "w")) == NULL) {
+	if ((text_id = fopen("text_id.c", "wb")) == NULL) {
 		fprintf(stderr, "Can't open text_id.c!\n");
 		return __LINE__;
 	}
