@@ -3030,6 +3030,14 @@ function isReadableMsgHdr(pMsgHdrOrIdx, pSubBoardCode)
 	return true;
 }
 
+// Returns whether the logged-in user can view deleted messages.
+function canViewDeletedMsgs()
+{
+	var usersVDM = ((system.settings & SYS_USRVDELM) == SYS_USRVDELM);
+	var sysopVDM = ((system.settings & SYS_SYSVDELM) == SYS_SYSVDELM);
+	return (usersVDM || (user.is_sysop && sysopVDM));
+}
+
 // Returns the number of readable messages in a sub-board.
 //
 // Parameters:
