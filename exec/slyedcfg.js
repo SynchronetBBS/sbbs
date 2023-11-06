@@ -25,9 +25,33 @@ var gHelpWrapWidth = uifc.screen_width - 10;
 // Read the SlyEdit configuration file
 var gCfgInfo = readSlyEditCfgFile();
 
-// Show the main menu and go from there
-doMainMenu();
-
+// Show the main menu and go from there.
+// This is in a loop so that if the user aborts from confirming to save
+// settings, they'll return to the main menu.
+var anyOptionChanged = false;
+var continueOn = true;
+while (continueOn)
+{
+	anyOptionChanged = doMainMenu(anyOptionChanged) || anyOptionChanged;
+	// If any configuration option changed, prompt the user & save if the user wants to
+	if (anyOptionChanged)
+	{
+		var userChoice = promptYesNo("Save configuration?", true, WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC);
+		if (typeof(userChoice) === "boolean")
+		{
+			if (userChoice)
+			{
+				if (saveSlyEditCfgFile())
+					uifc.msg("Changes were successfully saved (to mods dir)");
+				else
+					uifc.msg("Failed to save settings!");
+			}
+			continueOn = false;
+		}
+	}
+	else
+		continueOn = false;
+}
 
 
 ///////////////////////////////////////////////////////////
@@ -36,8 +60,7 @@ doMainMenu();
 function doMainMenu()
 {
 	// Create a CTX to specify the current selected item index
-	if (doMainMenu.ctx == undefined)
-		doMainMenu.ctx = uifc.list.CTX();
+	var ctx = uifc.list.CTX();
 	var helpText = "Behavior: Behavior settings\r\nIce Colors: Ice-related color settings\r\nDCT Colors: DCT-related color settings";
 	// Selection
 	var winMode = WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC;
@@ -47,8 +70,8 @@ function doMainMenu()
 	while (continueOn && !js.terminated)
 	{
 		uifc.help_text = word_wrap(helpText, gHelpWrapWidth);
-		var selection = uifc.list(winMode, menuTitle, ["Behavior", "Ice Colors", "DCT Colors"], doMainMenu.ctx);
-		doMainMenu.ctx.cur = selection; // Remember the current selected item
+		var selection = uifc.list(winMode, menuTitle, ["Behavior", "Ice Colors", "DCT Colors"], ctx);
+		ctx.cur = selection; // Remember the current selected item
 		switch (selection)
 		{
 			case -1: // ESC
@@ -65,19 +88,7 @@ function doMainMenu()
 				break;
 		}
 	}
-	
-	// If any configuration option changed, prompt the user & save if the user wants to
-	if (anyOptionChanged)
-	{
-		var userChoice = promptYesNo("Save configuration?", true, WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC);
-		if (typeof(userChoice) === "boolean" && userChoice)
-		{
-			if (saveSlyEditCfgFile())
-				uifc.msg("Changes were successfully saved (to mods dir)");
-			else
-				uifc.msg("Failed to save settings!");
-		}
-	}
+	return anyOptionChanged;
 }
 
 // Allows the user to change behavior settings.
@@ -112,8 +123,9 @@ function doBehaviorMenu()
 		"taglinePrefix",
 		"dictionaryFilenames"
 	];
-	// Menu item text for the toggle options:
-	var toggleOptItems = [
+	// Menu item text for the options:
+	var optionStrs = [
+		// Toggle options:
 		"Display end info screen",
 		"Enable user input timeout",
 		"Re-wrap quote lines",
@@ -127,20 +139,34 @@ function doBehaviorMenu()
 		"Enable taglines",
 		"Shuffle taglines",
 		"Double-quotes around tag lines",
-		"Allow/enable spell check"
+		"Allow/enable spell check",
+		// Other options:
+		"User input timeout (MS)",
+		"Enable text replacements",
+		"Tagline filename",
+		"Tagline prefix",
+		"Dictionary filenames"
 	];
 	// Build the array of items to be displayed on the menu
 	var menuItems = [];
 	// Toggle (on/off) settings
-	for (var i = 0; i < 14; ++i)
-		menuItems.push(formatCfgMenuText(itemTextMaxLen, toggleOptItems[i], gCfgInfo.cfgSections.BEHAVIOR[cfgOptProps[i]]));
+	var optionIdx = 0
+	for (; optionIdx < 14; ++optionIdx)
+		menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx], gCfgInfo.cfgSections.BEHAVIOR[cfgOptProps[optionIdx]]));
 	// Text input settings, etc.
-	menuItems.push(formatCfgMenuText(itemTextMaxLen, "User input timeout (MS)", gCfgInfo.cfgSections.BEHAVIOR.inputTimeoutMS));
+	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.inputTimeoutMS));
 	// Text replacements can be a boolean true/false or "regex"
-	menuItems.push(formatCfgMenuText(itemTextMaxLen, "Enable text replacements", getTxtReplacementsVal()));
-	menuItems.push(formatCfgMenuText(itemTextMaxLen, "Tagline filename", gCfgInfo.cfgSections.BEHAVIOR.tagLineFilename));
-	menuItems.push(formatCfgMenuText(itemTextMaxLen, "Tagline prefix", gCfgInfo.cfgSections.BEHAVIOR.taglinePrefix));
-	menuItems.push("Dictionary filenames"); // dictionaryFilenames
+	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], getTxtReplacementsVal()));
+	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.tagLineFilename));
+	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.taglinePrefix));
+	//menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.dictionaryFilenames.substr(0,30)));
+	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.dictionaryFilenames));
+
+	// A dictionary of help text for each option, indexed by the option name from the configuration file
+	if (doBehaviorMenu.optHelp == undefined)
+		doBehaviorMenu.optHelp = getOptionHelpText();
+	if (doBehaviorMenu.mainScreenHelp == undefined)
+		doBehaviorMenu.mainScreenHelp = getBehaviorScreenHelp(doBehaviorMenu.optHelp, cfgOptProps);
 
 	// Create a CTX to specify the current selected item index
 	if (doBehaviorMenu.ctx == undefined)
@@ -152,59 +178,20 @@ function doBehaviorMenu()
 	var continueOn = true;
 	while (continueOn && !js.terminated)
 	{
-		uifc.help_text = getBehaviorScreenHelp();
+		uifc.help_text = doBehaviorMenu.mainScreenHelp;
 		var optionMenuSelection = uifc.list(winMode, menuTitle, menuItems, doBehaviorMenu.ctx);
 		doBehaviorMenu.ctx.cur = optionMenuSelection; // Remember the current selected item
-		switch (optionMenuSelection)
+		if (optionMenuSelection == -1) // ESC
+			continueOn = false;
+		else
 		{
-			case -1: // ESC
-				continueOn = false;
-				break;
-			// 0-13 are boolean values
-			case 0:
-			case 1:
-			case 2:
-			case 3:
-			case 4:
-			case 5:
-			case 6:
-			case 7:
-			case 8:
-			case 9:
-			case 10:
-			case 11:
-			case 12:
-			case 13:
-				gCfgInfo.cfgSections.BEHAVIOR[cfgOptProps[optionMenuSelection]] = !gCfgInfo.cfgSections.BEHAVIOR[cfgOptProps[optionMenuSelection]];
-				anyOptionChanged = true;
-				menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, toggleOptItems[optionMenuSelection], gCfgInfo.cfgSections.BEHAVIOR[cfgOptProps[optionMenuSelection]]);
-				// With a separate window to prompt for toggling the item:
-				/*
-				if (inputCfgObjBoolean(cfgOptProps[optionMenuSelection], toggleOptItems[optionMenuSelection]))
-				{
-					anyOptionChanged = true;
-					menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, toggleOptItems[optionMenuSelection], gCfgInfo.cfgSections.BEHAVIOR[cfgOptProps[optionMenuSelection]]);
-				}
-				*/
-				break;
-			case 14: // User input timeout (MS)
-				uifc.help_text = "The user inactivity timeout, in milliseconds";
-				var userInput = uifc.input(WIN_MID, "User input timeout (MS)", gCfgInfo.cfgSections.BEHAVIOR.inputTimeoutMS.toString(), 0, K_NUMBER|K_EDIT);
-				if (typeof(userInput) === "string" && userInput.length > 0)
-				{
-					var value = parseInt(userInput);
-					if (!isNaN(value) && value > 0 && gCfgInfo.cfgSections.BEHAVIOR.inputTimeoutMS != value)
-					{
-						gCfgInfo.cfgSections.BEHAVIOR.inputTimeoutMS = value;
-						anyOptionChanged = true;
-						menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, "User input timeout (MS)", value);
-					}
-				}
-				break;
-			case 15: // Enable text replacements (yes/no/regex)
-				var helpText = "Whether or not to enable text replacements (AKA macros). Can be ";
-				helpText += "true, false, or 'regex' to use regular expressions.";
-				uifc.help_text = word_wrap(helpText, gHelpWrapWidth);
+			var optName = cfgOptProps[optionMenuSelection];
+			var itemType = typeof(gCfgInfo.cfgSections.BEHAVIOR[optName]);
+			uifc.help_text = doBehaviorMenu.optHelp[optName];
+			if (optName == "enableTextReplacements")
+			{
+				// Enable text replacements - This is above boolean because this
+				// could be mistaken for a boolean if it's true or false
 				// Store the current value wo we can see if it changes
 				var valBackup = gCfgInfo.cfgSections.BEHAVIOR.enableTextReplacements;
 				// Prompt the user
@@ -213,7 +200,7 @@ function doBehaviorMenu()
 					ctx.cur = gCfgInfo.cfgSections.BEHAVIOR.enableTextReplacements ? 0 : 1;
 				else if (gCfgInfo.cfgSections.BEHAVIOR.enableTextReplacements.toLowerCase() === "regex")
 					ctx.cur = 2;
-				var txtReplacementsSelection = uifc.list(winMode, "Enable text replacements", ["Yes", "No", "Regex"], ctx);
+				var txtReplacementsSelection = uifc.list(winMode, optionStrs[optionMenuSelection], ["Yes", "No", "Regex"], ctx);
 				switch (txtReplacementsSelection)
 				{
 					case 0:
@@ -231,35 +218,59 @@ function doBehaviorMenu()
 					anyOptionChanged = true;
 					menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, "Enable text replacements", getTxtReplacementsVal());
 				}
-				break;
-			case 16: // Tagline filename
-				var helpText = "The name of the file where tag lines are stored. This file is loaded from the sbbs ctrl directory.";
-				uifc.help_text = word_wrap(helpText, gHelpWrapWidth);
-				var userInput = uifc.input(WIN_MID, "Tagline filename", gCfgInfo.cfgSections.BEHAVIOR.tagLineFilename, 60, K_EDIT);
+			}
+			else if (itemType === "boolean")
+			{
+				gCfgInfo.cfgSections.BEHAVIOR[optName] = !gCfgInfo.cfgSections.BEHAVIOR[optName];
+				anyOptionChanged = true;
+				menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, optionStrs[optionMenuSelection], gCfgInfo.cfgSections.BEHAVIOR[optName]);
+			}
+			else if (itemType === "number")
+			{
+				var promptStr = optionStrs[optionMenuSelection];
+				var initialVal = gCfgInfo.cfgSections.BEHAVIOR[optName].toString();
+				var minVal = 1;
+				var userInput = uifc.input(WIN_MID, promptStr, initialVal, 0, K_NUMBER|K_EDIT);
+				if (typeof(userInput) === "string" && userInput.length > 0)
+				{
+					var value = parseInt(userInput);
+					if (!isNaN(value) && value >= minVal && gCfgInfo.cfgSections.BEHAVIOR[optName] != value)
+					{
+						gCfgInfo.cfgSections.BEHAVIOR[optName] = value;
+						anyOptionChanged = true;
+						menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, optionStrs[optionMenuSelection], gCfgInfo.cfgSections.BEHAVIOR[optName]);
+					}
+				}
+			}
+			else if (optName == "tagLineFilename")
+			{
+				// Tagline filename
+				var userInput = uifc.input(WIN_MID, optionStrs[optionMenuSelection], gCfgInfo.cfgSections.BEHAVIOR.tagLineFilename, 60, K_EDIT);
 				if (typeof(userInput) === "string" && userInput != gCfgInfo.cfgSections.BEHAVIOR.tagLineFilename)
 				{
 					gCfgInfo.cfgSections.BEHAVIOR.tagLineFilename = userInput;
 					anyOptionChanged = true;
 					menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, "Tagline filename", userInput);
 				}
-				break;
-			case 17: // Tagline prefix
-				var helpText = "Text to add to the front of a tagline when adding it to the message. This ";
-				helpText += "can be blank (nothing after the =) if no prefix is desired.";
-				uifc.help_text = word_wrap(helpText, gHelpWrapWidth);
-				var userInput = uifc.input(WIN_MID, "Tagline prefix", gCfgInfo.cfgSections.BEHAVIOR.taglinePrefix, 0, K_EDIT);
+			}
+			else if (optName == "taglinePrefix")
+			{
+				// Tagline prefix
+				var userInput = uifc.input(WIN_MID, optionStrs[optionMenuSelection], gCfgInfo.cfgSections.BEHAVIOR.taglinePrefix, 0, K_EDIT);
 				if (typeof(userInput) === "string" && userInput != gCfgInfo.cfgSections.BEHAVIOR.taglinePrefix)
 				{
 					gCfgInfo.cfgSections.BEHAVIOR.tagLineFilename = userInput;
 					anyOptionChanged = true;
 					menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, "Tagline prefix", userInput);
 				}
-				break;
-			case 18: // Dictionary filenames
+			}
+			else if (optName == "dictionaryFilenames")
+			{
+				// Dictionary filenames
 				var userInput = promptDictionaries();
 				anyOptionChanged = (userInput != gCfgInfo.cfgSections.BEHAVIOR.dictionaryFilenames);
 				gCfgInfo.cfgSections.BEHAVIOR.dictionaryFilenames = userInput;
-				break;
+			}
 		}
 	}
 
@@ -529,64 +540,85 @@ function promptYesNo(pQuestion, pInitialVal, pWinMode)
 ///////////////////////////////////////////////////
 // Help text functions
 
+// Returns a dictionary of help text, indexed by the option name from the configuration file
+function getOptionHelpText()
+{
+	var optionHelpText = {};
+	optionHelpText["displayEndInfoScreen"] = "Display end info screen: Whether or not to display editor info when exiting";
+
+	optionHelpText["userInputTimeout"] = "User input timeout: Whether or not to enable user inactivity timeout";
+
+	optionHelpText["reWrapQuoteLines"] = "Re-wrap quote lines: If true, quote lines will be re-wrapped so that they are complete ";
+	optionHelpText["reWrapQuoteLines"] += "but still look good when quoted.  If this option is disabled, then quote lines will ";
+	optionHelpText["reWrapQuoteLines"] += "simply be trimmed to fit into the message.";
+
+	optionHelpText["useQuoteLineInitials"] = "Use author initials in quoted lines: Whether or not to prefix the quote ";
+	optionHelpText["useQuoteLineInitials"] += "lines with the last author's initials. Users can change this for themselves too.";
+
+	optionHelpText["indentQuoteLinesWithInitials"] = "Indent quoted lines with author initials: When prefixing quote lines with the last author's initials, ";
+	optionHelpText["indentQuoteLinesWithInitials"] += "whether or not to indent the quote lines with a space. Users can change this for themselves too.";
+
+	optionHelpText["allowEditQuoteLines"] = "Allow editing quote lines: Whether or not to allow editing quote lines";
+
+	optionHelpText["allowUserSettings"] = "Allow user settings: Whether or not to allow users to change their user settings.";
+
+	optionHelpText["allowColorSelection"] = "Allow color selection: Whether or not to let the user change the text color";
+
+	optionHelpText["saveColorsAsANSI"] = "Save colors as ANSI: Whether or not to save message color/attribute codes as ANSI ";
+	optionHelpText["saveColorsAsANSI"] += "(if not, they will be saved as Synchronet attribute codes)";
+
+	optionHelpText["allowCrossPosting"] = "Allow cross-posting: Whether or not to allow cross-posting to multiple sub-boards";
+
+	optionHelpText["enableTaglines"] = "Enable taglines: Whether or not to enable the option to add a tagline.";
+
+	optionHelpText["shuffleTaglines"] = "Shuffle taglines: Whether or not to shuffle (randomize) the list of taglines when they are ";
+	optionHelpText["shuffleTaglines"] += "displayed for the user to choose from";
+
+	optionHelpText["quoteTaglines"] = "Double-quotes around tag lines: Whether or not to add double-quotes around taglines";
+
+	optionHelpText["allowSpellCheck"] = "Allow/enable spell check: Whether or not to allow spell check";
+
+	optionHelpText["inputTimeoutMS"] = "User input timeout (MS): The user inactivity timeout, in milliseconds";
+
+	optionHelpText["enableTextReplacements"] = "Enable text replacements: Whether or not to enable text replacements (AKA macros). Can be ";
+	optionHelpText["enableTextReplacements"] += "true, false, or 'regex' to use regular expressions.";
+
+	optionHelpText["tagLineFilename"] = "Tagline filename: The name of the file where tag lines are stored. This file is loaded ";
+	optionHelpText["tagLineFilename"] += "from the sbbs ctrl directory.";
+
+	optionHelpText["taglinePrefix"] = "Tagline prefix: Text to add to the front of a tagline when adding it to the message. This ";
+	optionHelpText["taglinePrefix"] += "can be blank (nothing after the =) if no prefix is desired.";
+
+	optionHelpText["dictionaryFilenames"] = "Dictionary filenames: These are dictionaries to use for spell check.  ";
+	optionHelpText["dictionaryFilenames"] += "The dictionary filenames are in the format dictionary_<language>.txt, where ";
+	optionHelpText["dictionaryFilenames"] += "<language> is the language name.  The dictionary files are located in either ";
+	optionHelpText["dictionaryFilenames"] += "sbbs/mods, sbbs/ctrl, or the same directory as SlyEdit. Users can change ";
+	optionHelpText["dictionaryFilenames"] += "this for themselves too.";
+
+	// Word-wrap the help text items
+	for (var prop in optionHelpText)
+		optionHelpText[prop] = word_wrap(optionHelpText[prop], gHelpWrapWidth);
+
+	return optionHelpText;
+}
+
 // Returns help text for the behavior configuration screen
-function getBehaviorScreenHelp()
+//
+// Parameters:
+//  pOptionHelpText: An object of help text for each option, indexed by the option name from the configuration file
+//  pCfgOptProps: An array specifying the properties to include in the help text and their order
+//
+// Return value: Help text for the behavior options screen
+function getBehaviorScreenHelp(pOptionHelpText, pCfgOptProps)
 {
 	if (getBehaviorScreenHelp.help == undefined)
 	{
 		getBehaviorScreenHelp.help = "This screen allows you to configure behavior options for SlyEdit.\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Display end info screen: Whether or not to display editor info when exiting\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "User input timeout: Whether or not to enable user inactivity timeout\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Re-wrap quote lines: If true, quote lines will be re-wrapped so that they are complete ";
-		getBehaviorScreenHelp.help += "but still look good when quoted.  If this option is disabled, then quote lines will ";
-		getBehaviorScreenHelp.help += "simply be trimmed to fit into the message.\r\n\r\n";
-		
-		getBehaviorScreenHelp.help += "Use author initials in quoted lines: Whether or not to prefix the quote ";
-		getBehaviorScreenHelp.help += "lines with the last author's initials. Users can change this for themselves too.\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Indent quoted lines with author initials: When prefixing quote lines with the last author's initials, ";
-		getBehaviorScreenHelp.help += "whether or not to indent the quote lines with a space. Users can change this for themselves too.\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Allow editing quote lines: Whether or not to allow editing quote lines\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Allow user settings: Whether or not to allow users to change their user settings.\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Allow color selection: Whether or not to let the user change the text color\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Save colors as ANSI: Whether or not to save message color/attribute codes as ANSI ";
-		getBehaviorScreenHelp.help += "(if not, they will be saved as Synchronet attribute codes)\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Allow cross-posting: Whether or not to allow cross-posting to multiple sub-boards\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Enable taglines: Whether or not to enable the option to add a tagline.\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Shuffle taglines: Whether or not to shuffle (randomize) the list of taglines when they are ";
-		getBehaviorScreenHelp.help += "displayed for the user to choose from\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Double-quotes around tag lines: Whether or not to add double-quotes around taglines\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Allow/enable spell check: Whether or not to allow spell check\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "User input timeout (MS): The user inactivity timeout, in milliseconds\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Enable text replacements: Whether or not to enable text replacements (AKA macros). Can be ";
-		getBehaviorScreenHelp.help += "true, false, or 'regex' to use regular expressions.\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Tagline filename: The name of the file where tag lines are stored. This file is loaded ";
-		getBehaviorScreenHelp.help += "from the sbbs ctrl directory.\r\n\r\n";
-
-		getBehaviorScreenHelp.help += "Tagline prefix: Text to add to the front of a tagline when adding it to the message. This ";
-		getBehaviorScreenHelp.help += "can be blank (nothing after the =) if no prefix is desired.\r\n\r\n";
-
-		getBehaviorScreenHelp.help +=  "Dictionary filenames: These are dictionaries to use for spell check.  ";
-		getBehaviorScreenHelp.help += "The dictionary filenames are in the format dictionary_<language>.txt, where ";
-		getBehaviorScreenHelp.help += "<language> is the language name.  The dictionary files are located in either ";
-		getBehaviorScreenHelp.help += "sbbs/mods, sbbs/ctrl, or the same directory as SlyEdit. Users can change ";
-		getBehaviorScreenHelp.help += "this for themselves too.";
-
+		for (var i = 0; i < pCfgOptProps.length; ++i)
+		{
+			var optName = pCfgOptProps[i];
+			getBehaviorScreenHelp.help += pOptionHelpText[optName] + "\r\n\r\n";
+		}
 		getBehaviorScreenHelp.help = word_wrap(getBehaviorScreenHelp.help, gHelpWrapWidth);
 	}
 	return getBehaviorScreenHelp.help;
@@ -720,10 +752,8 @@ function readSlyEditCfgFile()
 // Return value: Boolean - Whether or not the save fully succeeded
 function saveSlyEditCfgFile()
 {
-	var saveSucceeded = false;
-
 	// If SlyEdit.cfg doesn't exist in the sbbs/mods directory, then copy it
-	// from sbbs/ctrl
+	// from sbbs/ctrl to sbbs/mods
 	// gCfgInfo.cfgFilename contains the full path & filename of the configuration
 	// file
 	var originalCfgFilename = "";
@@ -734,185 +764,26 @@ function saveSlyEditCfgFile()
 	var modsSlyEditCfgFilename = system.mods_dir + gSlyEdCfgFileName;
 	var modsSlyEditCfgFileExists = file_exists(modsSlyEditCfgFilename);
 	if (!modsSlyEditCfgFileExists && file_exists(originalCfgFilename))
-		modsSlyEditCfgFileExists = file_copy(originalCfgFilename, modsSlyEditCfgFilename);
-
-	var cfgFile = new File(modsSlyEditCfgFilename);
-	if (modsSlyEditCfgFileExists)
 	{
-		if (cfgFile.open("r+")) // Reading and writing (file must exist)
-		{
-			for (var settingName in gCfgInfo.cfgSections.BEHAVIOR)
-				cfgFile.iniSetValue("BEHAVIOR", settingName, gCfgInfo.cfgSections.BEHAVIOR[settingName]);
-			for (var settingName in gCfgInfo.cfgSections.ICE_COLORS)
-				cfgFile.iniSetValue("ICE_COLORS", settingName, gCfgInfo.cfgSections.ICE_COLORS[settingName]);
-			for (var settingName in gCfgInfo.cfgSections.DCT_COLORS)
-				cfgFile.iniSetValue("DCT_COLORS", settingName, gCfgInfo.cfgSections.DCT_COLORS[settingName]);
-
-			cfgFile.close();
-			saveSucceeded = true;
-		}
+		if (!file_copy(originalCfgFilename, modsSlyEditCfgFilename))
+			return false;
 	}
-	else
-	{
-		// Creae a new SlyEdit.cfg in sbbs/mods
-		if (cfgFile.open("w"))
-		{
-			saveSucceeded = true;
-			// Behavior section
-			if (!cfgFile.writeln("[BEHAVIOR]"))
-				saveSucceeded = false;
-			for (var settingName in gCfgInfo.cfgSections.BEHAVIOR)
-			{
-				// Write any comments for this setting
-				var comments = getIniFileCommentsForOpt(settingName, "BEHAVIOR");
-				for (var i = 0; i < comments.length; ++i)
-				{
-					if (!cfgFile.writeln(comments[i]))
-						saveSucceeded = false;
-				}
-				// Write the setting
-				var settingLine = settingName + "=" + gCfgInfo.cfgSections.BEHAVIOR[settingName];
-				if (!cfgFile.writeln(settingLine))
-					saveSucceeded = false;
-			}
-			// ICE_COLORS section
-			if (!cfgFile.writeln("[ICE_COLORS]"))
-				saveSucceeded = false;
-			for (var settingName in gCfgInfo.cfgSections.ICE_COLORS)
-			{
-				// Write any comments for this setting
-				var comments = getIniFileCommentsForOpt(settingName, "ICE_COLORS");
-				for (var i = 0; i < comments.length; ++i)
-				{
-					if (!cfgFile.writeln(comments[i]))
-						saveSucceeded = false;
-				}
-				// Write the setting
-				var settingLine = settingName + "=" + gCfgInfo.cfgSections.ICE_COLORS[settingName];
-				if (!cfgFile.writeln(settingLine))
-					saveSucceeded = false;
-			}
-			// DCT_COLORS section
-			if (!cfgFile.writeln("[DCT_COLORS]"))
-				saveSucceeded = false;
-			for (var settingName in gCfgInfo.cfgSections.DCT_COLORS)
-			{
-				// Write any comments for this setting
-				var comments = getIniFileCommentsForOpt(settingName, "DCT_COLORS");
-				for (var i = 0; i < comments.length; ++i)
-				{
-					if (!cfgFile.writeln(comments[i]))
-						saveSucceeded = false;
-				}
-				// Write the setting
-				var settingLine = settingName + "=" + gCfgInfo.cfgSections.DCT_COLORS[settingName];
-				if (!cfgFile.writeln(settingLine))
-					saveSucceeded = false;
-			}
 
-			cfgFile.close();
-		}
+	// Open the configuration file and save the current settings to it
+	var saveSucceeded = false;
+	var cfgFile = new File(modsSlyEditCfgFilename);
+	if (cfgFile.open("r+")) // Reading and writing (file must exist)
+	{
+		for (var settingName in gCfgInfo.cfgSections.BEHAVIOR)
+			cfgFile.iniSetValue("BEHAVIOR", settingName, gCfgInfo.cfgSections.BEHAVIOR[settingName]);
+		for (var settingName in gCfgInfo.cfgSections.ICE_COLORS)
+			cfgFile.iniSetValue("ICE_COLORS", settingName, gCfgInfo.cfgSections.ICE_COLORS[settingName]);
+		for (var settingName in gCfgInfo.cfgSections.DCT_COLORS)
+			cfgFile.iniSetValue("DCT_COLORS", settingName, gCfgInfo.cfgSections.DCT_COLORS[settingName]);
+
+		cfgFile.close();
+		saveSucceeded = true;
 	}
 
 	return saveSucceeded;
-}
-
-// Returns an array of INI file comments for a particular option (and section name)
-function getIniFileCommentsForOpt(pOptName, pSectionName)
-{
-	var commentLines = [];
-	if (pSectionName == "BEHAVIOR")
-	{
-		if (pOptName == "reWrapQuoteLines")
-		{
-			commentLines.push("; If the reWrapQuoteLines option is set to true, quote lines will be re-wrapped");
-			commentLines.push("; so that they are complete but still look good when quoted.  If this option is");
-			commentLines.push("; disabled, then quote lines will simply be trimmed to fit into the message.");
-		}
-		else if (pOptName == "allowColorSelection")
-			commentLines.push("; Whether or not to let the user change the text color");
-		else if (pOptName == "saveColorsAsANSI")
-		{
-			commentLines.push("; Whether or not to save message color/attribute codes as ANSI (if not, they");
-			commentLines.push("; will be saved as Synchronet attribute codes)");
-		}
-		else if (pOptName == "allowCrossPosting")
-			commentLines.push("; Whether or not to allow cross-posting");
-		else if (pOptName == "enableTextReplacements")
-		{
-			commentLines.push("; Whether or not to enable text replacements (AKA macros).");
-			commentLines.push("; enableTextReplacements can have one of the following values:");
-			commentLines.push("; false : Text replacement is disabled");
-			commentLines.push("; true  : Text replacement is enabled and performed as literal search and replace");
-			commentLines.push("; regex : Text replacement is enabled using regular expressions");
-		}
-		else if (pOptName == "tagLineFilename")
-			commentLines.push("; The name of the file where tag lines are stored");
-		else if (pOptName == "taglinePrefix")
-		{
-			commentLines.push("; Text to add to the front of a tagline when adding it to the message.");
-			commentLines.push("; This can be blank (nothing after the =) if no prefix is desired.");
-		}
-		else if (pOptName == "quoteTaglines")
-			commentLines.push("; Whether or not to add double-quotes around taglines");
-		else if (pOptName == "shuffleTaglines")
-		{
-			commentLines.push("; Whether or not to shuffle (randomize) the list of taglines when they are");
-			commentLines.push("; displayed for the user to choose from");
-		}
-		else if (pOptName == "allowUserSettings")
-			commentLines.push("; Whether or not to allow users to change their user settings.");
-		//; The following settings serve as defaults for the user settings, which
-		//; each user can change for themselves:
-		else if (pOptName == "useQuoteLineInitials")
-		{
-			commentLines.push("; Whether or not to prefix the quote lines with the last author's initials");
-			commentLines.push("; This also has a user option that takes precedence over this setting.");
-		}
-		else if (pOptName == "indentQuoteLinesWithInitials")
-		{
-			commentLines.push("; When prefixing quote lines with the last author's initials, whether or not");
-			commentLines.push("; to indent the quote lines with a space.");
-			commentLines.push("; This also has a user option that takes precedence over this setting.");
-		}
-		else if (pOptName == "enableTaglines")
-		{
-			commentLines.push("; Whether or not to enable the option to add a tagline");
-			commentLines.push("; This also has a user option that takes precedence over this setting.");
-		}
-		else if (pOptName == "allowEditQuoteLine")
-		{
-			commentLines.push("; Whether or not to allow editing quote lines");
-			commentLines.push("; This also has a user option that takes precedence over this setting.");
-		}
-		else if (pOptName == "allowSpellCheck")
-		{
-			commentLines.push("; Whether or not to allow spell check");
-			commentLines.push("; This also has a user option that takes precedence over this setting.");
-		}
-		else if (pOptName == "dictionaryFilenames")
-		{
-			commentLines.push("; Dictionary filenames (used for spell check): This is a comma-separated list of");
-			commentLines.push("; dictionary filenames.  The dictionary filenames are in the format");
-			commentLines.push("; dictionary_<language>.txt, where <language> is the language name.  In this");
-			commentLines.push("; list, the filenames can be in that format, or just <language>.txt, or just");
-			commentLines.push("; <language>.  Leave blank to use all dictionary files that exist on the");
-			commentLines.push("; system.  The dictionary files are located in either sbbs/mods, sbbs/ctrl, or");
-			commentLines.push("; the same directory as SlyEdit.");
-			commentLines.push("; This also has a user option that takes precedence over this setting.");
-		}
-	}
-	else if (pSectionName == "ICE_COLORS")
-	{
-		if (pOptName == "ThemeFilename")
-			commentLines.push("; The filename of the theme file (no leading path necessary)");
-		else if (pOptName == "menuOptClassicColors")
-			commentLines.push("; Whether or not to use all classic IceEdit colors (true/false)");
-	}
-	else if (pSectionName == "DCT_COLORS")
-	{
-		if (pOptName == "ThemeFilename")
-			commentLines.push("; The filename of the theme file (no leading path necessary)");
-	}
-	return commentLines;
 }
