@@ -1,5 +1,3 @@
-/* $Id: js_cryptcert.c,v 1.8 2018/02/26 07:05:10 deuce Exp $ */
-
 // Cyrptlib Certificates...
 
 #include "sbbs.h"
