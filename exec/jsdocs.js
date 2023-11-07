@@ -106,6 +106,8 @@ function document_methods(name,obj,type)
 			,func
 			,obj._method_list[method].args
 			));
+		if(obj._method_list[method].args.indexOf("tt>") >= 0)
+			alert(obj._method_list[method].name + " args contains tt tag");
 		if(!min_ver && obj._method_list[method].ver)
 			docwriteln("<td>" + verstr(obj._method_list[method].ver));
 		docwriteln("<td>" + obj._method_list[method].desc);
@@ -158,7 +160,7 @@ function properties_header(name, obj, type)
 	docwriteln("Name".fontcolor("white"));
 	docwriteln("<th align=left width=100>");
 	docwriteln("Type".fontcolor("white"));
-	if(!min_ver && obj._property_ver_list && obj._property_ver_list.length) {
+	if(!min_ver && obj._property_list !== undefined) {
 		docwriteln("<th align=left width=50>");
 		docwriteln("Ver".fontcolor("white"));
 	}
@@ -169,26 +171,23 @@ function properties_header(name, obj, type)
 function document_properties(name, obj, type)
 {
 	var prop_name;
-	var count=0;
 	var prop;
-	var prop_num;
 	var prop_hdr=false;
-	var p;
+	
+	if(obj._property_list === undefined) {
+		alert(name + "._property_list is undefined");
+	}
 
 	if (type === undefined)
 		type = typeof(obj);
-	p=0;
+	var p = 0;
 	for(prop in obj) {
-		prop_num=count++;
 
-		if(min_ver && (!obj._property_ver_list || !obj._property_ver_list[prop_num])) {
-			p++;
-			continue;
-		}
-		if(obj._property_ver_list 
-			&& (obj._property_ver_list[prop_num] < min_ver 
-			||  obj._property_ver_list[prop_num] > max_ver)) {
-			p++;
+		var info = {};
+		if(obj._property_list && obj._property_list[prop])
+			info = obj._property_list[prop];
+		
+		if(info.ver < min_ver || info.ver > max_ver) {
 			continue;
 		}
 
@@ -211,18 +210,20 @@ function document_properties(name, obj, type)
 				continue;
 			}
 		} 
+		if(info.desc === undefined && obj._property_desc_list) {
+			info.desc = obj._property_desc_list[p];
+			p++;
+		}
 		if(!prop_hdr) {
 			properties_header(name, obj);
 			prop_hdr=true;
 		}
 		docwrite("<tr valign=top>");
 		docwriteln("<td>" + prop.bold() + "<td>" + typeof(obj[prop]) );
-		if(!min_ver && obj._property_ver_list)
+		if(obj._property_list && !min_ver)
 			docwriteln("<td>" 
-				+ (obj._property_ver_list[p] ? verstr(obj._property_ver_list[p]) : "N/A"));
-		if(obj._property_desc_list!=undefined)
-			docwriteln("<td>" + obj._property_desc_list[p]);
-		p++;
+				+ (info.ver ? verstr(info.ver) : "N/A"));
+		docwriteln("<td>" + (info.desc === undefined ? "" : info.desc));
 		total_properties++;
 	}
 }
@@ -284,13 +285,18 @@ f.writeln("<font face=arial,helvetica>");
 f.writeln("<h1>Synchronet JavaScript Object Model Reference</h1>");
 f.printf("Generated for <b>Synchronet v%s</b>, compiled %s\n"
 		 ,system.full_version.replace(/ Debug/,""),system.compiled_when);
-f.writeln("<br><font size=-1>");
+f.writeln("<ul><li style='display:list-item'>");
 if(min_ver)
 	f.writeln("Includes Properties and Methods added or substantially modified in Synchronet v" + verstr(min_ver) + " only.");
 else
 	f.writeln("Property and Method version numbers (when available) indicate the Synchronet version when the " +
 		  "item was added or modified.");
-f.writeln("</font>");
+f.writeln("<li style='display:list-item'>Optional method arguments are specified in <tt>[brackets]</tt> in the 'Usage' column.");
+f.writeln("<li style='display:list-item'>method argument <i>types</i> (e.g. bool, string, number, object), " +
+	"when significant, are specified in <tt><i>italics</i></tt> in the 'Usage' column.");
+f.writeln("<li style='display:list-item'>Methods documented as returning 'void' will always return <tt>undefined</tt>");
+f.writeln("<li style='display:list-item'>Methods documented as returning 'undefined' may return multiple different value types");
+f.writeln("</ul>");
 
 f.writeln("<ol type=square>");
 
@@ -298,12 +304,12 @@ object_header("global"		,js.global);
 f.writeln("<ul>");
 document_methods("global"	,js.global);
 properties_header("global"	,js.global);
-docwriteln("<tr><td>" + "argc".bold() + "<td>number<td>N/A<td>count of arguments passed to the script</td>");
-docwriteln("<tr><td>" + "argv".bold() + "<td>array<td>N/A<td>array of argument strings (argv.length == argc)</td>");
-docwriteln("<tr><td>" + "errno".bold() + "<td>number<td>3.10h<td>last system error number</td>");
-docwriteln("<tr><td>" + "errno_str".bold() + "<td>string<td>3.10h<td>description of last system error</td>");
-docwriteln("<tr><td>" + "socket_errno".bold() + "<td>number<td>3.13a<td>last socket-related error number (same as <i>errno</i> on Unix platforms)</td>");
-docwriteln("<tr><td>" + "socket_errno_str".bold() + "<td>string<td>3.18a<td>description of last socket-related error (same as <i>errno_str</i> on Unix platforms)</td>");
+docwriteln("<tr><td>" + "argc".bold() + "<td>number<td>N/A<td>Count of arguments passed to the script</td>");
+docwriteln("<tr><td>" + "argv".bold() + "<td>array<td>N/A<td>Array of argument strings (argv.length == argc)</td>");
+docwriteln("<tr><td>" + "errno".bold() + "<td>number<td>3.10h<td>Last system error number</td>");
+docwriteln("<tr><td>" + "errno_str".bold() + "<td>string<td>3.10h<td>Description of last system error</td>");
+docwriteln("<tr><td>" + "socket_errno".bold() + "<td>number<td>3.13a<td>Last socket-related error number (same as <i>errno</i> on Unix platforms)</td>");
+docwriteln("<tr><td>" + "socket_errno_str".bold() + "<td>string<td>3.18a<td>Description of last socket-related error (same as <i>errno_str</i> on Unix platforms)</td>");
 f.writeln("</ul>");
 
 document_object("js"		,js);
