@@ -525,7 +525,7 @@ js_DescribeSyncConstructor(JSContext* cx, JSObject* obj, const char* str)
 #ifdef BUILD_JSDOCS
 
 static const char* method_array_name = "_method_list";
-static const char* propver_array_name = "_property_ver_list";
+static const char* property_array_name = "_property_list";
 
 /*
  * from jsatom.c:
@@ -550,19 +550,16 @@ JSBool
 js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
 {
 	uint		i;
-	int		ver;
+	int			ver;
 	jsval		val;
-	jsuint		len=0;
+	JSString*	js_str;
 	JSObject*	array;
+	JSObject*	prop;
 
-	if((array=JS_NewArrayObject(cx, 0, NULL))==NULL)
+	if((array=JS_NewObject(cx, NULL, NULL, obj))==NULL)
 		return(JS_FALSE);
 
-	if(!JS_DefineProperty(cx, obj, propver_array_name, OBJECT_TO_JSVAL(array)
-		,NULL,NULL,JSPROP_READONLY))
-		return(JS_FALSE);
-
-	for(i=0;props[i].name;i++) {
+	for(i=0; props[i].name != NULL; ++i) {
 		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 			if(!JS_DefinePropertyWithTinyId(cx, obj, /* Never reserve any "slots" for properties */
 			    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
@@ -572,16 +569,29 @@ js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
 			if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
 				return(JS_FALSE);
 		}
-		if(props[i].flags&JSPROP_ENUMERATE) {	/* No need to version invisible props */
-			if((ver=props[i].ver) < 10000)		/* auto convert 313 to 31300 */
-				ver*=100;
-			val = INT_TO_JSVAL(ver);
-			if(!JS_SetElement(cx, array, len++, &val))
-				return(JS_FALSE);
+		if (!(props[i].flags & JSPROP_ENUMERATE))	/* No need to document invisible props */
+			continue;
+
+		prop = JS_NewObject(cx, NULL, NULL, array);
+		if (prop == NULL)
+			return JS_FALSE;
+
+		if((ver=props[i].ver) < 10000)		/* auto convert 313 to 31300 */
+			ver*=100;
+		val = INT_TO_JSVAL(ver);
+		JS_SetProperty(cx, prop, "ver", &val);
+
+		if (props[i].desc != NULL) {
+			if ((js_str = JS_NewStringCopyZ(cx, props[i].desc)) == NULL)
+				return JS_FALSE;
+			val = STRING_TO_JSVAL(js_str);
+			JS_SetProperty(cx, prop, "desc", &val);
 		}
+		if (!JS_DefineProperty(cx, array, props[i].name, OBJECT_TO_JSVAL(prop), NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE))
+			return JS_FALSE;
 	}
 
-	return(JS_TRUE);
+	return JS_DefineProperty(cx, obj, property_array_name, OBJECT_TO_JSVAL(array), NULL, NULL, JSPROP_READONLY);
 }
 
 JSBool
@@ -589,7 +599,7 @@ js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 {
 	int			i;
 	jsuint		len=0;
-	int		ver;
+	int			ver;
 	jsval		val;
 	JSObject*	method;
 	JSObject*	method_array;
@@ -601,16 +611,16 @@ js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 	if(JS_GetProperty(cx,obj,method_array_name,&val) && val!=JSVAL_VOID) {
 		method_array=JSVAL_TO_OBJECT(val);
 		// If the first item is already in the list, don't do anything.
-		if(!JS_GetArrayLength(cx, method_array, &len))
+		if (!JS_GetArrayLength(cx, method_array, &len))
 			return(JS_FALSE);
-		for(i=0; i<(int)len; i++) {
-			if(JS_GetElement(cx, method_array, i, &val)!=JS_TRUE || val == JSVAL_VOID)
+		for (i = 0; i < (int)len; i++) {
+			if (JS_GetElement(cx, method_array, i, &val) != JS_TRUE || val == JSVAL_VOID)
 				continue;
 			JS_GetProperty(cx, JSVAL_TO_OBJECT(val), "name", &val);
 			JSVALUE_TO_RASTRING(cx, val, str, &str_len, NULL);
-			if(str==NULL)
+			if (str == NULL)
 				continue;
-			if(strcmp(str, funcs[0].name)==0)
+			if (strcmp(str, funcs[0].name) == 0)
 				return(JS_TRUE);
 		}
 	}
@@ -618,11 +628,11 @@ js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 		if((method_array=JS_NewArrayObject(cx, 0, NULL))==NULL)
 			return(JS_FALSE);
 		if(!JS_DefineProperty(cx, obj, method_array_name, OBJECT_TO_JSVAL(method_array)
-				, NULL, NULL, 0))
+			, NULL, NULL, 0))
 			return(JS_FALSE);
 	}
 
-	for(i=0;funcs[i].name;i++) {
+	for(i=0; funcs[i].name != NULL; ++i) {
 
 		if(!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
 			return(JS_FALSE);
@@ -630,12 +640,11 @@ js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 		if(funcs[i].type==JSTYPE_ALIAS)
 			continue;
 
-		method = JS_NewObject(cx, NULL, NULL, method_array);	/* exception here June-7-2003 */
-
+		method = JS_NewObject(cx, NULL, NULL, method_array);
 		if(method==NULL)
 			return(JS_FALSE);
 
-		if(funcs[i].name!=NULL) {
+		if (funcs[i].name!=NULL) {
 			if((js_str=JS_NewStringCopyZ(cx,funcs[i].name))==NULL)
 				return(JS_FALSE);
 			val = STRING_TO_JSVAL(js_str);
@@ -1199,54 +1208,59 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static jsSyncMethodSpec js_global_functions[] = {
-	{"log",				js_log,				1,	JSTYPE_STRING,	JSDOCSTR("[level,] value [,value]")
+	{"log",				js_log,				1,	JSTYPE_STRING,	JSDOCSTR("[<i>number</i> level=LOG_INFO,] value [,value]")
 	,JSDOCSTR("Add a line of text to the server and/or system log, "
 		"<i>values</i> are typically string constants or variables, "
-		"<i>level</i> is the debug level/priority (default: <tt>LOG_INFO</tt>)")
+		"<i>level</i> is the severity of the message to be logged, one of the globally-defined values, in decreasing severity:<br>"
+		"<tt>LOG_EMERG, LOG_ALERT, LOG_CRIT, LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, and LOG_DEBUG</tt> (default: <tt>LOG_INFO</tt>)")
 	,311
 	},
-	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[count]")
-	,JSDOCSTR("Read up to count characters from input stream")
+	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[count=128]")
+	,JSDOCSTR("Read up to <tt>count</tt> characters from input stream and return as a string or <tt>undefined</tt> upon error")
 	,311
 	},
-	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[count]")
-	,JSDOCSTR("Read a single line, up to count characters, from input stream")
+	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[count=128]")
+	,JSDOCSTR("Read a single line, up to <tt>count</tt> characters, from input stream and return as a string or <tt>undefined</tt> upon error")
 	,311
 	},
 	{"write",			js_write,			0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
-	,JSDOCSTR("Send one or more values (typically strings) to the server output")
+	,JSDOCSTR("Send one or more values (typically strings) to the output stream")
 	,311
 	},
-	{"write_raw",			js_write_raw,			0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
-	,JSDOCSTR("Send a stream of bytes (possibly containing NULLs or special control code sequences) to the server output")
+	{"write_raw",		js_write_raw,			0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
+	,JSDOCSTR("Send a stream of bytes (possibly containing NUL or special control code sequences) to the output stream")
 	,314
 	},
 	{"print",			js_writeln,			0,	JSTYPE_ALIAS },
     {"writeln",         js_writeln,         0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
-	,JSDOCSTR("Send a line of text to the console or event log with automatic line termination (CRLF), "
+	,JSDOCSTR("Send a line of text to the output stream with automatic line termination (CRLF), "
 		"<i>values</i> are typically string constants or variables (AKA print)")
 	,311
 	},
-    {"printf",          js_printf,          1,	JSTYPE_STRING,	JSDOCSTR("string format [,value][,value]")
-	,JSDOCSTR("Print a formatted string - <small>CAUTION: for experienced C programmers ONLY</small>")
+    {"printf",          js_printf,          1,	JSTYPE_STRING,	JSDOCSTR("<i>string</i> format [,value][,value]")
+	,JSDOCSTR("Send a C-style formatted string of text to the output stream")
 	,310
 	},
 	{"alert",			js_alert,			1,	JSTYPE_VOID,	JSDOCSTR("value")
-	,JSDOCSTR("Print an alert message (ala client-side JS)")
+	,JSDOCSTR("Send an alert message (ala client-side JS) to the output stream")
 	,310
 	},
-	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[text] [,value] [,mode=K_EDIT]")
-	,JSDOCSTR("Displays a prompt (<i>text</i>) and returns a string of user input (ala client-side JS)")
+	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[<i>string</i> text] [,<i>string</i> value] [,<i>number</i> k_mode=K_EDIT]")
+	,JSDOCSTR("Display a prompt (<tt>text</tt>) and return a string of user input (ala client-side JS) or <tt>null</tt> upon no-input<br>"
+		"<tt>value</tt> is an optional default string to be edited (used with the <tt>k_mode K_EDIT</tt> flag)<br>"
+		"See <tt>sbbsdefs.js</tt> for all valid <tt>K_</tt> (keyboard-input) mode flags.")
 	,310
 	},
 	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
-	,JSDOCSTR("Displays a Yes/No prompt and returns <i>true</i> or <i>false</i> "
-		"based on user's confirmation (ala client-side JS, <i>true</i> = yes)")
+	,JSDOCSTR("Display a Yes/No prompt and return <tt>true</tt> or <tt>false</tt> "
+		"based on user's confirmation (ala client-side JS, <tt>true</tt> = yes)<br>"
+		"see also <tt>console.yesno()<tt>")
 	,310
 	},
 	{"deny",			js_deny,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
-	,JSDOCSTR("Displays a No/Yes prompt and returns <i>true</i> or <i>false</i> "
-		"based on user's denial (<i>true</i> = no)")
+	,JSDOCSTR("Display a No/Yes prompt and returns <tt>true</tt> or <tt>false</tt> "
+		"based on user's denial (<tt>true</tt> = no)<br>"
+		"see also <tt>console.noyes()<tt>")
 	,31501
 	},
     {0}

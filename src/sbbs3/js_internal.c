@@ -181,61 +181,79 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 static jsSyncPropertySpec js_properties[] = {
 /*		 name,				tinyid,						flags,		ver	*/
 
-	{	"version",			PROP_VERSION,		PROP_FLAGS,			311 },
-	{	"auto_terminate",	PROP_AUTO_TERMINATE,JSPROP_ENUMERATE,	311 },
-	{	"terminated",		PROP_TERMINATED,	JSPROP_ENUMERATE,	311 },
-	{	"branch_counter",	PROP_COUNTER,		0,					311 },
-	{	"counter",			PROP_COUNTER,		JSPROP_ENUMERATE,	316 },
-	{	"branch_limit",		PROP_TIME_LIMIT,	0,					311 },
-	{	"time_limit",		PROP_TIME_LIMIT,	JSPROP_ENUMERATE,	316 },
-	{	"yield_interval",	PROP_YIELD_INTERVAL,JSPROP_ENUMERATE,	311 },
-	{	"gc_interval",		PROP_GC_INTERVAL,	JSPROP_ENUMERATE,	311 },
-	{	"gc_attempts",		PROP_GC_ATTEMPTS,	PROP_FLAGS,			311 },
+	{	"version",			PROP_VERSION,		PROP_FLAGS,			311
+		,JSDOCSTR("JavaScript engine version information (AKA system.js_version) - <small>READ ONLY</small>")
+	},
+	{	"auto_terminate",	PROP_AUTO_TERMINATE,JSPROP_ENUMERATE,	311
+		,JSDOCSTR("Set to <i>false</i> to disable the automatic termination of the script upon external request")
+	},
+	{	"terminated",		PROP_TERMINATED,	JSPROP_ENUMERATE,	311
+		,JSDOCSTR("Termination has been requested (stop execution as soon as possible)")
+	},
+	{	"branch_counter",	PROP_COUNTER,		0,					311
+		,JSDOCSTR("alias")
+	},
+	{	"counter",			PROP_COUNTER,		JSPROP_ENUMERATE,	316
+		,JSDOCSTR("Number of operation callbacks performed in this runtime")
+	},
+	{	"branch_limit",		PROP_TIME_LIMIT,	0,					311
+		,JSDOCSTR("alias")
+	},
+	{	"time_limit",		PROP_TIME_LIMIT,	JSPROP_ENUMERATE,	316
+		,JSDOCSTR("Maximum number of operation callbacks, used for infinite-loop detection (0=disabled)")
+	},
+	{	"yield_interval",	PROP_YIELD_INTERVAL,JSPROP_ENUMERATE,	311
+		,JSDOCSTR("Interval of periodic time-slice yields (lower number=higher frequency, 0=disabled)")
+	},
+	{	"gc_interval",		PROP_GC_INTERVAL,	JSPROP_ENUMERATE,	311
+		,JSDOCSTR("Interval of periodic garbage collection attempts (lower number=higher frequency, 0=disabled)")
+	},
+	{	"gc_attempts",		PROP_GC_ATTEMPTS,	PROP_FLAGS,			311
+		,JSDOCSTR("Number of garbage collections attempted in this runtime - <small>READ ONLY </small>")
+	},
 #ifdef jscntxt_h___
-	{	"gc_counter",		PROP_GC_COUNTER,	PROP_FLAGS,			311 },
-	{	"gc_last_bytes",	PROP_GC_LASTBYTES,	PROP_FLAGS,			311 },
-	{	"bytes",			PROP_BYTES,			PROP_FLAGS,			311 },
-	{	"max_bytes",		PROP_MAXBYTES,		JSPROP_ENUMERATE,	311 },
+	{	"gc_counter",		PROP_GC_COUNTER,	PROP_FLAGS,			311
+		,JSDOCSTR("Number of garbage collections performed in this runtime - <small>READ ONLY</small>")
+	},
+	{	"gc_last_bytes",	PROP_GC_LASTBYTES,	PROP_FLAGS,			311
+		,JSDOCSTR("Number of heap bytes in use after last garbage collection - <small>READ ONLY</small>")
+	},
+	{	"bytes",			PROP_BYTES,			PROP_FLAGS,			311
+		,JSDOCSTR("Number of heap bytes currently in use - <small>READ ONLY</small>")
+	},
+	{	"max_bytes",		PROP_MAXBYTES,		JSPROP_ENUMERATE,	311
+		,JSDOCSTR("Maximum number of bytes available for heap")
+	},
 #endif
-	{	"global",			PROP_GLOBAL,		PROP_FLAGS,			314 },
-	{	"options",			PROP_OPTIONS,		PROP_FLAGS,			31802 },
-	{	"do_callbacks",		PROP_KEEPGOING,		JSPROP_ENUMERATE,			31900 },
+	{	"global",			PROP_GLOBAL,		PROP_FLAGS,			314
+		,JSDOCSTR("Global (top level) object - <small>READ ONLY</small>")
+	},
+	{	"options",			PROP_OPTIONS,		PROP_FLAGS,			31802
+		,JSDOCSTR("Option flags - <small>READ ONLY</small>")
+	},
+	{	"do_callbacks",		PROP_KEEPGOING,		JSPROP_ENUMERATE,	31900
+		,JSDOCSTR("Do callbacks after script finishes running")
+	},
 	{0}
 };
 
 #ifdef BUILD_JSDOCS
 static char* prop_desc[] = {
-	 "JavaScript engine version information (AKA system.js_version)"
-	,"Set to <i>false</i> to disable the automatic termination of the script upon external request"
-	,"Termination has been requested (stop execution as soon as possible)"
-	,"Number of operation callbacks performed in this runtime"
-	,"Maximum number of operation callbacks, used for infinite-loop detection (0=disabled)"
-	,"Interval of periodic time-slice yields (lower number=higher frequency, 0=disabled)"
-	,"Interval of periodic garbage collection attempts (lower number=higher frequency, 0=disabled)"
-	,"Number of garbage collections attempted in this runtime - <small>READ ONLY</small>"
-#ifdef jscntxt_h___
-	,"Number of garbage collections performed in this runtime - <small>READ ONLY</small>"
-	,"Number of heap bytes in use after last garbage collection - <small>READ ONLY</small>"
-	,"Number of heap bytes currently in use - <small>READ ONLY</small>"
-	,"Maximum number of bytes available for heap"
-#endif
-	,"Global (top level) object - <small>READ ONLY</small>"
-	,"Option flags - <small>READ ONLY</small>"
-	,"Do callbacks after script finishes running"
 	/* New properties go here... */
-	,"load() search path array.<br>For relative load paths (e.g. not beginning with '/' or '\\'), "
-		"the path is assumed to be a sub-directory of the (configurable) mods or exec directories "
-		"and is searched accordingly. "
-		"So, by default, load(\"somefile.js\") will search in this order:<br>"
-		"mods/load/somefile.js<br>"
-		"exec/load/somefile.js<br>"
-		"mods/somefile.js<br>"
-		"exec/somefile.js<br>"
-	,"Full path and filename of JS file executed"
+	"Full path and filename of JS file executed"
 	,"JS filename executed (with no path)"
 	,"Directory of executed JS file"
 	,"Either the configured startup directory in SCFG (for externals) or the cwd when jsexec is started"
 	,"Global scope for this script"
+	,"<tt>load()</tt> search path array.<br>For relative load paths (e.g. not beginning with '/' or '\\'), "
+		"the path is assumed to be a sub-directory of the (configurable) mods or exec directories "
+		"and is searched accordingly.<br>"
+		"So, by default, <tt>load(\"somefile.js\")</tt> will search in this order:<tt><ol>"
+		"<li>mods/load/somefile.js"
+		"<li>exec/load/somefile.js"
+		"<li>mods/somefile.js"
+		"<li>exec/somefile.js"
+		"</ol></tt>"
 	,NULL
 };
 #endif
@@ -684,7 +702,7 @@ static JSBool js_getsize(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject* tmp_obj;
 
 	if(!JSVAL_IS_OBJECT(argv[0])) {
-		JS_ReportError(cx, "get_size() error!  Parameter is not an object.");
+		JS_ReportError(cx, "Parameter is not an object.");
 		return(JS_FALSE);
 	}
 	tmp_obj=JSVAL_TO_OBJECT(argv[0]);
@@ -699,7 +717,7 @@ static JSBool js_flatten(JSContext *cx, uintN argc, jsval *arglist)
 	jsval	*argv=JS_ARGV(cx, arglist);
 
 	if(!JSVAL_IS_STRING(argv[0])) {
-		JS_ReportError(cx, "get_size() error!  Parameter is not a string.");
+		JS_ReportError(cx, "Parameter is not a string.");
 		return(JS_FALSE);
 	}
 	JS_FlattenString(cx, JSVAL_TO_STRING(argv[0]));
@@ -1439,9 +1457,9 @@ static jsSyncMethodSpec js_functions[] = {
 	,JSDOCSTR("Evaluate a JavaScript string in its own (secure) context, returning the result")
 	,311
 	},		
-	{"gc",				js_gc,				0,	JSTYPE_VOID,	JSDOCSTR("forced=<tt>true</tt>")
+	{"gc",				js_gc,				0,	JSTYPE_VOID,	JSDOCSTR("forced=true")
 	,JSDOCSTR("Perform a garbage collection operation (freeing memory for unused allocated objects), "
-		"if <i>forced</i> is <i>true</i> (the default) a garbage collection is always performed, "
+		"if <i>forced</i> is <tt>true</tt> (the default) a garbage collection is always performed, "
 		"otherwise it is only performed if deemed appropriate by the JavaScript engine")
 	,311
 	},
@@ -1449,25 +1467,25 @@ static jsSyncMethodSpec js_functions[] = {
 	,JSDOCSTR("Add a string to evaluate/execute (LIFO stack) upon script's termination (e.g. call of <tt>exit()</tt>)")
 	,313
 	},
-	{"report_error",	js_report_error,	1,	JSTYPE_VOID,	JSDOCSTR("error [,fatal=<tt>false</tt>]")
+	{"report_error",	js_report_error,	1,	JSTYPE_VOID,	JSDOCSTR("error [,fatal=false]")
 	,JSDOCSTR("Report an error using the standard JavaScript error reporting mechanism "
 	"(including script filename and line number), "
-	"if <i>fatal</i> is <i>true</i>, immediately terminates script")
+	"if <i>fatal</i> is <tt>true</tt>, immediately terminates script")
 	,313
 	},
-	{"get_parent",		js_get_parent,		1,	JSTYPE_OBJECT,	JSDOCSTR("object")
-	,JSDOCSTR("Return the parent of the specified object")
+	{"get_parent",		js_get_parent,		1,	JSTYPE_OBJECT,	JSDOCSTR("<i>object</i> child")
+	,JSDOCSTR("Return the parent of the specified child object")
 	,314
 	},
 	{"get_size",		js_getsize,			1,	JSTYPE_NUMBER,	JSDOCSTR("[object]")
 	,JSDOCSTR("Return the size in bytes the object uses in memory (forces GC) ")
 	,316
 	},
-	{"flatten_string",	js_flatten,			1,	JSTYPE_VOID,	JSDOCSTR("[string]")
+	{"flatten_string",	js_flatten,			1,	JSTYPE_VOID,	JSDOCSTR("<i>string</i> value")
 	,JSDOCSTR("Flatten a string, optimizing allocated memory used for concatenated strings")
 	,316
 	},
-	{"exec",	js_execfile,			1,	JSTYPE_NUMBER,	JSDOCSTR("filename [,startup_dir], <i>object</i> scope [,...]")
+	{"exec",	js_execfile,			1,	JSTYPE_NUMBER,	JSDOCSTR("<i>string</i> filename [,<i>string</i> startup_dir], <i>object</i> scope [,...]")
 	,JSDOCSTR("Execute a script within the specified <i>scope</i>.  The main difference between this method "
 	"and <tt>load()</tt> is that scripts invoked in this way can call <tt>exit()</tt> without terminating the caller.  If it does, any "
 	"<tt>on_exit()</tt> handlers will be evaluated in the script's scope when the script exits. <br>"
@@ -1502,12 +1520,12 @@ static jsSyncMethodSpec js_functions[] = {
 	,JSDOCSTR("Remove listeners added with <tt>js.addEventListener()</tt>.  <tt>id</tt> can be a string or an id returned by <tt>addEventListener()</tt>.  This does not remove already triggered callbacks from the run queue.")
 	,31900
 	},
-	{"dispatchEvent",	js_dispatchEvent,	1,	JSTYPE_VOID,	JSDOCSTR("eventName [,thisObj]")
+	{"dispatchEvent",	js_dispatchEvent,	1,	JSTYPE_VOID,	JSDOCSTR("eventName [,<i>object</i> thisObj]")
 	,JSDOCSTR("Add all listeners of eventName to the end of the run queue.  If <tt>thisObj</tt> is passed, specifies <tt>this</tt> in the callback (the <tt>js</tt> object is used otherwise).")
 	,31900
 	},
 	{"setImmediate",	js_setImmediate,	1,	JSTYPE_VOID,	JSDOCSTR("callback [,thisObj]")
-	,JSDOCSTR("Adds <tt>callback</tt> to the end of the run queue, where it will be called after all pending events are processed")
+	,JSDOCSTR("Add <tt>callback</tt> to the end of the run queue, where it will be called after all pending events are processed")
 	,31900
 	},
 	{0}

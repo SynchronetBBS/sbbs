@@ -2241,23 +2241,23 @@ static char* socket_prop_desc[] = {
 	/* Regular properties */
 	 "Error status for the last socket operation that failed - <small>READ ONLY</small>"
 	,"Error description for the last socket operation that failed - <small>READ ONLY</small>"
-	,"<i>true</i> if socket is in a connected state - <small>READ ONLY</small>"
-	,"<i>true</i> if socket can accept written data - Setting to false will shutdown the write end of the socket."
+	,"<tt>true</tt> if socket is in a connected state - <small>READ ONLY</small>"
+	,"<tt>true</tt> if socket can accept written data - Setting to false will shutdown the write end of the socket."
 	,"Alias for is_writeable"
-	,"<i>true</i> if data is waiting to be read from socket - <small>READ ONLY</small>"
+	,"<tt>true</tt> if data is waiting to be read from socket - <small>READ ONLY</small>"
 	,"Number of bytes waiting to be read - TLS sockets will never return more than 1 - <small>READ ONLY</small>"
 	,"Enable debug logging"
 	,"Socket descriptor (advanced uses only)"
-	,"Use non-blocking operation (default is <i>false</i>)"
+	,"Use non-blocking operation (default is <tt>false</tt>)"
 	,"Local IP address (string in dotted-decimal format)"
 	,"Local TCP or UDP port number"
 	,"Remote IP address (string in dotted-decimal format)"
 	,"Remote TCP or UDP port number"
 	,"Socket type, <tt>SOCK_STREAM</tt> (TCP) or <tt>SOCK_DGRAM</tt> (UDP)"
 	,"Socket protocol family, <tt>PF_INET</tt> (IPv4) or <tt>PF_INET6</tt> (IPv6)"
-	,"<i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i>"
-	,"Set to <i>true</i> to enable SSL as a client on the socket"
-	,"Set to <i>true</i> to enable SSL as a server on the socket"
+	,"<tt>true</tt> if binary data is to be sent in Network Byte Order (big end first), default is <tt>true</tt>"
+	,"Set to <tt>true</tt> to enable SSL as a client on the socket"
+	,"Set to <tt>true</tt> to enable SSL as a server on the socket"
 
 	/* statically-defined properties: */
 	,"Array of socket option names supported by the current platform"
@@ -2605,7 +2605,7 @@ static jsSyncMethodSpec js_socket_functions[] = {
 		"optionally specifying a network interface (via <i>ip_address</i>)")
 	,311
 	},
-	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout=<tt>10.0</tt>]")
+	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout=10.0]")
 	,JSDOCSTR("Connect to a remote port (number or service name) on the specified host (IP address or host name)"
 	", default <i>timeout</i> value is <i>10.0</i> (seconds)")
 	,311
@@ -2638,33 +2638,33 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	,310
 	},
 	{"writeBin",	js_sendbin,		1,	JSTYPE_ALIAS },
-	{"sendBin",		js_sendbin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value [,bytes=<tt>4</tt>]")
+	{"sendBin",		js_sendbin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value [,bytes=4]")
 	,JSDOCSTR("Send a binary integer over the socket, default number of bytes is 4 (32-bits)")
 	,311
 	},
 	{"read",		js_recv,		1,	JSTYPE_ALIAS },
-	{"recv",		js_recv,		1,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>, [timeout_sec=<tt>120</tt>]]")
+	{"recv",		js_recv,		1,	JSTYPE_STRING,	JSDOCSTR("[maxlen=512, [timeout_sec=120]]")
 	,JSDOCSTR("Receive a string, default maxlen is 512 characters (AKA read)")
 	,310
 	},
-	{"peek",		js_peek,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>]")
+	{"peek",		js_peek,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=512]")
 	,JSDOCSTR("Receive a string, default maxlen is 512 characters, leaves string in receive buffer (TLS sockets will never return more than one byte)")
 	,310
 	},
 	{"readline",	js_recvline,	0,	JSTYPE_ALIAS },
 	{"readln",		js_recvline,	0,	JSTYPE_ALIAS },
-	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>] [,timeout=<tt>30.0</tt>]")
+	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=512] [,timeout=30]")
 	,JSDOCSTR("Receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds (AKA readline and readln)")
 	,310
 	},
-	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[binary=<tt>false</tt>] [,maxlen=<tt>512</tt> or int_size=<tt>4</tt>]")
+	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[binary=false] [,maxlen=512 or int_size=4]")
 	,JSDOCSTR("Receive data (string or integer) from a socket (typically UDP)"
 	"<p>returns object with <i>ip_address</i> and <i>port</i> of sender along with <i>data</i> properties"
-	"<p><i>binary</i> defaults to <i>false</i>, <i>maxlen</i> defaults to 512 chars, <i>int_size</i> defaults to 4 bytes (32-bits)")
+	"<p><i>binary</i> defaults to <tt>false</tt>, <i>maxlen</i> defaults to 512 chars, <i>int_size</i> defaults to 4 bytes (32-bits)")
 	,311
 	},
 	{"readBin",		js_recvbin,		0,	JSTYPE_ALIAS },
-	{"recvBin",		js_recvbin,		0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes=<tt>4</tt>]")
+	{"recvBin",		js_recvbin,		0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes=4]")
 	,JSDOCSTR("Receive a binary integer from the socket, default number of bytes is 4 (32-bits)")
 	,311
 	},
@@ -2678,21 +2678,21 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	"(see <tt>sockopts</tt> in <tt>sockdefs.js</tt>) or number")
 	,310
 	},
-	{"ioctl",		js_ioctlsocket,	1,	JSTYPE_NUMBER,	JSDOCSTR("command [,argument=<tt>0</tt>]")
+	{"ioctl",		js_ioctlsocket,	1,	JSTYPE_NUMBER,	JSDOCSTR("command [,argument=0]")
 	,JSDOCSTR("Send socket IOCTL (advanced)")
 	,310
 	},
-	{"poll",		js_poll,		1,	JSTYPE_NUMBER,	JSDOCSTR("[timeout=<tt>0</tt>] [,write=<tt>false</tt>]")
+	{"poll",		js_poll,		1,	JSTYPE_NUMBER,	JSDOCSTR("[timeout=0] [,write=false]")
 	,JSDOCSTR("Poll socket for read or write ability (default is <i>read</i>), "
 	"default timeout value is 0.0 seconds (immediate timeout)")
 	,310
 	},
 	{"on",		js_on,		2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), callback")
-	,JSDOCSTR("Execute callback whenever socket is readable/writable.  Returns an id to be passed to js.clearOn()")
+	,JSDOCSTR("Execute callback whenever socket is readable/writable.  Returns an id to be passed to <tt>js.clearOn()</tt>")
 	,31900
 	},
 	{"once",	js_once,	2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), callback")
-	,JSDOCSTR("Execute callback next time socket is readable/writable  Returns and id to be passed to js.clearOnce()")
+	,JSDOCSTR("Execute callback next time socket is readable/writable  Returns and id to be passed to <tt>js.clearOnce()</tt>")
 	,31900
 	},
 	{"clearOn",	js_clearOn,	2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), id")

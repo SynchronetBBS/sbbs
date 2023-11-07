@@ -1,5 +1,3 @@
-/* $Id: js_cryptkeyset.c,v 1.5 2018/02/23 11:40:14 deuce Exp $ */
-
 // Cyrptlib Keyset...
 
 #include "sbbs.h"
@@ -393,11 +391,11 @@ static jsSyncMethodSpec js_cryptkeyset_functions[] = {
 	,316
 	},
 	{"get_private_key",	js_get_private_key,	0,	JSTYPE_OBJECT,	"label, password"
-	,JSDOCSTR("Returns a CryptContext from the private key with <label> encrypted with &lt;password&gt;.")
+	,JSDOCSTR("Return a CryptContext from the private key with <label> encrypted with &lt;password&gt;.")
 	,316
 	},
 	{"get_public_key",	js_get_public_key,	0,	JSTYPE_OBJECT,	"label"
-	,JSDOCSTR("Returns a CryptCert from the public key with &lt;label&gt;.")
+	,JSDOCSTR("Return a CryptCert from the public key with &lt;label&gt;.")
 	,316
 	},
 	{0}
@@ -498,7 +496,7 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for storing CryptContext keys",31601);
 	js_DescribeSyncConstructor(cx,obj,"To create a new CryptKeyset object: "
-		"var c = new CryptKeyset('<i>filename</i>' [ <i>opts = CryptKeyset.KEYOPT.NONE</i> ])</tt><br> "
+		"<tt>var c = new CryptKeyset('<i>filename</i>' [ <i>opts = CryptKeyset.KEYOPT.NONE</i> ])</tt><br> "
 		"where <i>filename</i> is the name of the file to create, and <i>opts</i> "
 		"is a value from CryptKeyset.KEYOPT"
 		);

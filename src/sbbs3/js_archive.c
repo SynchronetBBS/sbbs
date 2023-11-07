@@ -559,48 +559,48 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 
 static jsSyncMethodSpec js_archive_functions[] = {
 	{ "create",		js_create,		1,	JSTYPE_NUMBER
-		,JSDOCSTR("[string format] [,boolean with_path=false] [,array file_list]")
+		,JSDOCSTR("[<i>string</i> format] [,<i>bool</i> with_path=false] [,<i>array</i> file_list]")
 		,JSDOCSTR("Create an archive of the specified format (e.g. 'zip', '7z', 'tgz').<br>"
 			"Returns the number of files archived.<br>"
 			"Will throw exception upon error.")
 		,31900
 	},
 	{ "read",		js_read,		1,	JSTYPE_STRING
-		,JSDOCSTR("string path/filename")
+		,JSDOCSTR("<i>string</i> path/filename")
 		,JSDOCSTR("Read and return the contents of the specified archived text file.")
 		,31900
 	},
 	{ "extract",	js_extract,		1,	JSTYPE_NUMBER
-		,JSDOCSTR("output_directory [,boolean with_path=false] [,boolean overwrite=true] [,number max_files=0] [,string file/pattern [...]] [,boolean recurse=false]")
+		,JSDOCSTR("output_directory [,<i>bool</i> with_path=false] [,<i>bool</i> overwrite=true] [,<i>number</i> max_files=0] [,<i>string</i> file/pattern [...]] [,<i>bool</i> recurse=false]")
 		,JSDOCSTR("Extract files from an archive to specified output directory.<br>"
 			"Returns the number of files extracted.<br>"
 			"Will throw exception upon error.")
 		,31900
 	},
 	{ "list",		js_list,		1,	JSTYPE_ARRAY
-		,JSDOCSTR("[,boolean hash=false] [,string file/pattern]")
-		,JSDOCSTR("Get list of archive contents as an array of objects.<br>"
-			"Archived object properties:<br>"
-			"<ol>"
-			"<li>string <tt>type</tt> - item type: 'file', 'link', or 'directory'"
-			"<li>string <tt>name</tt> - item path/name"
-			"<li>string <tt>path</tt> - source path"
-			"<li>string <tt>symlink</tt>"
-			"<li>string <tt>hardlink</tt>"
-			"<li>number <tt>size</tt> - item size in bytes"
-			"<li>number <tt>time</tt> - modification date/time in time_t format"
-			"<li>number <tt>mode</tt> - permissions/mode flags"
-			"<li>string <tt>user</tt> - owner name"
-			"<li>string <tt>group</tt> - owner group"
-			"<li>string <tt>format</tt> - archive format"
-			"<li>string <tt>compression</tt> - compression method"
-			"<li>string <tt>fflags</tt>"
-			"<li>number <tt>crc16</tt> - 16-bit CRC, when hash is true and type is file"
-			"<li>number <tt>crc32</tt> - 32-bit CRC, when hash is true and type is file"
-			"<li>string <tt>md5</tt> - hexadecimal MD-5 sum, when hash is true and type is file"
-			"<li>string <tt>sha1</tt> - hexadecimal SHA-1 sum, when hash is true and type is file"
-			"</ol>"
-			"When <tt>hash</tt> is <tt>true</tt>, calculates and returns hash/digest values of files in stored archive.")
+		,JSDOCSTR("[,<i>bool</i> hash=false] [,<i>string</i> file/pattern]")
+		,JSDOCSTR("Get list of archive contents as an array of objects, optionally filtered by a specified path/filename pattern."
+			"<p>Archived object properties:<table>"
+			"<tr><th align=left>Name<th align=left>Type<th align=left>Description"
+			"<tr><td><tt>type</tt><td>string<td>Item type: 'file', 'link', or 'directory'"
+			"<tr><td><tt>name</tt><td>string<td>Item path/name"
+			"<tr><td><tt>path</tt><td>string<td>Source path"
+			"<tr><td><tt>symlink</tt><td>string"
+			"<tr><td><tt>hardlink</tt><td>string"
+			"<tr><td><tt>size</tt><td>number<td>Item size in bytes"
+			"<tr><td><tt>time</tt><td>number<td>Modification date/time in time_t format"
+			"<tr><td><tt>mode</tt><td>number<td>Permissions/mode flags"
+			"<tr><td><tt>user</tt><td>string<td>Owner name"
+			"<tr><td><tt>group</tt><td>string<td>Owner group"
+			"<tr><td><tt>format</tt><td>string<td>Archive format"
+			"<tr><td><tt>compression</tt><td>string<td>Compression method"
+			"<tr><td><tt>fflags</tt><td>string"
+			"<tr><td><tt>crc16</tt><td>number<td>16-bit CRC, when <i>hash</i> is true and <tt>type</tt> is 'file'"
+			"<tr><td><tt>crc32</tt><td>number<td>32-bit CRC, when <i>hash</i> is true and <tt>type</tt> is 'file'"
+			"<tr><td><tt>md5</tt><td>string<td>Hexadecimal MD-5 sum, when <i>hash</i> is true and <tt>type</tt> is 'file'"
+			"<tr><td><tt>sha1</tt><td>string<td>Hexadecimal SHA-1 sum, when <i>hash</i> is true and <tt>type</tt> is 'file'"
+			"</table>"
+			"<p>When the <tt>hash</tt> parameter is <tt>true</tt>, calculates and returns hash/digest values of files in stored archive.")
 		,31900
 	},
 	{0}

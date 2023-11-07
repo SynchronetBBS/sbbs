@@ -27,22 +27,22 @@
 
 static char* xtrn_sec_prop_desc[] = {
 
-	 "Index into sec_list array (or -1 if not in index) <i>(introduced in v3.12)</i>"
+	 "Index into sec_list array (or -1 if not in index)"
 	,"Unique number for this external program section"
 	,"External program section internal code"
 	,"External program section name"
 	,"External program section access requirements"
-	,"User has sufficient access to enter this section <i>(introduced in v3.15)</i>"
+	,"User has sufficient access to enter this section"
 	,NULL
 };
 
 static char* xtrn_prog_prop_desc[] = {
 
-	 "Index into prog_list array (or -1 if not in index) <i>(introduced in v3.12)</i>"
+	 "Index into prog_list array (or -1 if not in index)"
 	,"Program number"
-	,"Program section index <i>(introduced in v3.12)</i>"
+	,"Program section index"
 	,"Program section number"
-	,"Program section internal code <i>(introduced in v3.12)</i>"
+	,"Program section internal code"
 	,"Internal code"
 	,"Name"
 	,"Command-line"

@@ -292,24 +292,24 @@ static JSClass js_uifc_getstrxy_ctx_class = {
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/
 	,JS_PropertyStub		/* delProperty	*/
-	,js_getstrxy_ctx_get		/* getProperty	*/
-	,js_getstrxy_ctx_set		/* setProperty	*/
+	,js_getstrxy_ctx_get	/* getProperty	*/
+	,js_getstrxy_ctx_set	/* setProperty	*/
 	,JS_EnumerateStub		/* enumerate	*/
 	,JS_ResolveStub			/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
 	,js_getstrxy_ctx_finalize	/* finalize		*/
 };
 static jsSyncPropertySpec js_uifc_list_class_properties[] = {
-/*       name               ,tinyid                 ,flags,             ver */
-    {   "cur"		,PROP_CUR 				,JSPROP_ENUMERATE,  317 },
-    {   "bar"  		      ,PROP_BAR    				,JSPROP_ENUMERATE,  317 },
-    {   "left" 		      ,PROP_LEFT    				,JSPROP_ENUMERATE,  31802 },
-    {   "top"  		      ,PROP_TOP    				,JSPROP_ENUMERATE,  31802 },
-    {   "width"		      ,PROP_WIDTH    				,JSPROP_ENUMERATE,  31802 },
+/*       name			,tinyid                 ,flags,             ver */
+    {   "cur"			,PROP_CUR 				,JSPROP_ENUMERATE,  317 },
+    {   "bar"			,PROP_BAR    			,JSPROP_ENUMERATE,  317 },
+    {   "left"			,PROP_LEFT    			,JSPROP_ENUMERATE,  31802 },
+    {   "top"			,PROP_TOP    			,JSPROP_ENUMERATE,  31802 },
+    {   "width"			,PROP_WIDTH    			,JSPROP_ENUMERATE,  31802 },
     {0}
 };
 static jsSyncPropertySpec js_uifc_showbuf_class_properties[] = {
-/*       name               ,tinyid                 ,flags,             ver */
+/*       name           ,tinyid                 ,flags,             ver */
     {   "cur"           ,PROP_CUR    ,JSPROP_ENUMERATE,  31802 },
     {   "bar"           ,PROP_BAR    ,JSPROP_ENUMERATE,  31802 },
     {   "left"          ,PROP_LEFT   ,JSPROP_ENUMERATE,  31802 },
@@ -319,7 +319,7 @@ static jsSyncPropertySpec js_uifc_showbuf_class_properties[] = {
     {0}
 };
 static jsSyncPropertySpec js_uifc_getstrxy_class_properties[] = {
-/*       name               ,tinyid                 ,flags,             ver */
+/*       name           ,tinyid                 ,flags,             ver */
     {   "lastkey"		,PROP_LASTKEY 				,JSPROP_ENUMERATE,  31802 },
     {0}
 };
@@ -543,20 +543,20 @@ static jsSyncPropertySpec js_properties[] = {
 };
 #ifdef BUILD_JSDOCS
 static char* uifc_prop_desc[] = {
-	 "uifc has been initialized"
-	,"current mode bits (see uifcdefs.js)"
-	,"a change has occurred in an input call.  You are expected to set this to false before calling the input if you care about it."
-	,"save buffer depth (advanced)"
-	,"current screen length"
-	,"current screen width"
-	,"when WIN_FIXEDHEIGHT is set, specifies the height used by a list method"
-	,"delay before a single ESC char is parsed and assumed to not be an ANSI sequence (advanced)"
-	,"text that will be displayed if F1 is pressed"
-	,"background colour"
-	,"frame colour"
-	,"text colour"
-	,"inverse colour"
-	,"lightbar colour"
+	 "UIFC library has been successfully initialized"
+	,"Current mode flags (see <tt>uifcdefs.js</tt>)"
+	,"A change has occurred in an input call.  You are expected to set this to false before calling the input if you care about it."
+	,"Save buffer depth (advanced)"
+	,"Current screen length"
+	,"Current screen width"
+	,"When <tt>WIN_FIXEDHEIGHT</tt> mode flag is set, specifies the height used by a list method"
+	,"Delay before a single ESC char is parsed and assumed to not be an ANSI sequence (advanced)"
+	,"Text that will be displayed when F1 or '?' keys are pressed"
+	,"Background colour"
+	,"Frame colour"
+	,"Text colour"
+	,"Inverse colour"
+	,"Lightbar colour"
 	,NULL
 };
 #endif
@@ -1122,11 +1122,11 @@ js_finalize(JSContext *cx, JSObject *obj)
 	JS_SetPrivate(cx,obj,NULL);
 }
 static jsSyncMethodSpec js_functions[] = {
-	{"init",            js_uifc_init,       1,	JSTYPE_BOOLEAN,	JSDOCSTR("string title [, string interface_mode]")
-	,JSDOCSTR("Initialize.  <tt>interface_mode</tt> is a string representing the desired console mode, one of 'STDIO', 'AUTO', "
-		"'X', 'CURSES', 'ANSI', 'CONIO', or 'SDL'."
-		"<p>"
-		"Return value is <tt>true</tt> upon successful UIFC library initialization, <tt>false</tt> upon error."
+	{"init",            js_uifc_init,       1,	JSTYPE_BOOLEAN,	JSDOCSTR("<i>string</i> title [,<i>string</i> interface_mode]")
+	,JSDOCSTR("Initialize the UIFC library with the specified application/script title (e.g. name and maybe version).<br>"
+		"<tt>interface_mode</tt> is a string representing the desired console mode, one of 'STDIO', 'AUTO', "
+		"'X', 'CURSES', 'ANSI', 'CONIO', or 'SDL' (see <tt>conio.init()</tt> for details).<br>"
+		"Return <tt>true</tt> upon successful UIFC library initialization, <tt>false</tt> upon error."
 	)
 	,314
 	},
@@ -1134,65 +1134,66 @@ static jsSyncMethodSpec js_functions[] = {
 	,JSDOCSTR("Uninitialize the UIFC library")
 	,314
 	},
-	{"msg",				js_uifc_msg,		1,	JSTYPE_VOID,	JSDOCSTR("string text")
+	{"msg",				js_uifc_msg,		1,	JSTYPE_VOID,	JSDOCSTR("<i>string</i> text")
 	,JSDOCSTR("Print a short text message and wait for user acknowledgment")
 	,314
 	},
-	{"pop",				js_uifc_pop,		1,	JSTYPE_VOID,	JSDOCSTR("[string text]")
+	{"pop",				js_uifc_pop,		1,	JSTYPE_VOID,	JSDOCSTR("[<i>string</i> text]")
 	,JSDOCSTR("Pop-up (or down) a short text message. Pop-down by passing no <i>text</i> argument.")
 	,314
 	},
-	{"input",			js_uifc_input,		0,	JSTYPE_STRING,	JSDOCSTR("[number mode] [,number left] [,number top] [,string prompt] [,string default] [,number maxlen [,number kmode]]")
+	{"input",			js_uifc_input,		0,	JSTYPE_STRING,	JSDOCSTR("[<i>number</i> mode] [,<i>number</i> left] [,<i>number</i> top] [,<i>string</i> prompt] [,<i>string</i> default] [,<i>number</i> maxlen [,<i>number</i> k_mode]]")
 	,JSDOCSTR("Prompt for a string input.<br>"
 		"<tt>mode</tt> is an optional combination of <tt>WIN_</tt> mode flags from <tt>uifcdefs.js</tt>.<br>"
 		"<tt>left</tt> and <tt>top</tt> are optional window offsets to display the input dialog box.<br>"
 		"<tt>prompt</tt> is an optional text string to display as part of the string input dialog box.<br>"
-		"<tt>default</tt> is an optional original text string that the user can edit (requires the <tt>K_EDIT kmode</tt> flag).<br>"
-		"<tt>maxlen</tt> is an optional maximium input string length (default is 40 characters).<br>"
-		"<tt>kmode</tt> is an optional combination of <tt>K_</tt> mode flags from either <tt>sbbsdefs.js</tt> or <tt>uifcdefs.js</tt>."
+		"<tt>default</tt> is an optional original text string that the user can edit (requires the <tt>K_EDIT k_mode</tt> flag).<br>"
+		"<tt>maxlen</tt> is an optional maximum input string length (default is 40 characters).<br>"
+		"<tt>k_mode</tt> is an optional combination of <tt>K_</tt> mode flags from either <tt>sbbsdefs.js</tt> or <tt>uifcdefs.js</tt>."
 		"<p>"
-		"Return value is the new/edited string or <tt>undefined</tt> if editing was aborted (e.g. via ESC key press)."
+		"Return the new/edited string or <tt>undefined</tt> if editing was aborted (e.g. via ESC key press)."
 	)
 	,314
 	},
-	{"list",			js_uifc_list,		0,	JSTYPE_NUMBER,	JSDOCSTR("[number mode,] string title, array options [,uifc.list.CTX object]")
+	{"list",			js_uifc_list,		0,	JSTYPE_NUMBER,	JSDOCSTR("[<i>number</i> mode,] <i>string</i> title, <i>array</i> options [,<i>uifc.list.CTX</i> ctx]")
 	,JSDOCSTR("Select from a list of displayed options.<br>"
 		"<tt>title</tt> is the brief description of the list (menu) to be displayed in the list heading.<br>"
 		"<tt>options</tt> is an array of items (typically strings) that comprise the displayed list.<br>"
-		"The <tt>CTX</tt> (context) object can be created using <tt>new uifc.list.CTX()</tt> and if the same object is passed in successive calls, allows <tt>WIN_SAV</tt> to work correctly.<br>"
-		"The context object has the following properties and optional arguments to its constructor:<br><tt>cur, bar, top, left, width</tt>"
+		"The <tt>CTX</tt> (context) object can be created using <tt>new uifc.list.CTX</tt> and if the same object is passed in successive calls, allows <tt>WIN_SAV</tt> to work correctly.<br>"
+		"The context object has the following properties (<i>numbers</i>):<br><tt>cur, bar, top, left, width</tt>"
 		"<p>"
-		"Return value is <tt>-1</tt> if list is aborted (e.g. via ESC key press), <tt>false</tt> upon error (e.g. no option array provided),<br>"
-		"or the 0-based numeric index of the option selected by the user. Other negative values may be returned in advanced modes/use-cases (e.g. copy/paste)"
+		"Return <tt>-1</tt> if list is aborted (e.g. via ESC key press), <tt>false</tt> upon error (e.g. no option array provided), "
+		"or the 0-based numeric index of the option selected by the user.<br>"
+		"Other negative values may be returned in advanced modes/use-cases (e.g. copy/paste), see <tt>MSK_</tt> and related <tt>WIN_</tt> constants/comments in <tt>uifcdefs.js</tt> for details."
 	)
 	,314
 	},
 	{"showhelp",			js_uifc_showhelp,	0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("Shows the current help text")
+	,JSDOCSTR("Show the current help text")
 	,317
 	},
-	{"scrn",			js_uifc_scrn,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("string text")
+	{"scrn",			js_uifc_scrn,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("<i>string</i> text")
 	,JSDOCSTR("Fill the screen with the appropriate background attribute.  string is the title for the application banner.")
 	,31802
 	},
-	{"showbuf",			js_uifc_showbuf,	7,	JSTYPE_VOID,	JSDOCSTR("number mode, string title, string helpbuf [,uifc.showbuf.CTX object]")
-	,JSDOCSTR("Shows a scrollable text buffer - optionally parsing \"help markup codes\"<br>"
-		"The context object can be created using <tt>new uifc.showbuf.CTX()</tt> and if the same object is passed, allows <tt>WIN_SAV</tt> to work correctly.<br>"
-		"The context object has the following properties and optional arguments to its constructor:<br><tt>cur, bar, top, left, width, height</tt>")
+	{"showbuf",			js_uifc_showbuf,	7,	JSTYPE_VOID,	JSDOCSTR("<i>number</i> mode, <i>string</i> title, <i>string</i> helpbuf [,<i>uifc.showbuf.CTX</i> ctx]")
+	,JSDOCSTR("Show a scrollable text buffer - optionally parsing \"help markup codes\"<br>"
+		"The context object can be created using <tt>new uifc.showbuf.CTX</tt> and if the same object is passed, allows <tt>WIN_SAV</tt> to work correctly.<br>"
+		"The context object has the following properties (<i>numbers</i>):<br><tt>cur, bar, top, left, width, height</tt>")
 	,31802
 	},
-	{"timedisplay",			js_uifc_timedisplay,	0,	JSTYPE_VOID,	JSDOCSTR("[bool force = false]")
-	,JSDOCSTR("Updates time in upper right corner of screen with current time in ASCII/Unix format")
+	{"timedisplay",			js_uifc_timedisplay,	0,	JSTYPE_VOID,	JSDOCSTR("[<i>bool<i/> force = false]")
+	,JSDOCSTR("Update time in upper right corner of screen with current time in ASCII/Unix format")
 	,31802
 	},
-	{"bottomline",			js_uifc_bottomline,	1,	JSTYPE_VOID,	JSDOCSTR("number mode")
-	,JSDOCSTR("Displays the bottom line using the WIN_* mode flags")
+	{"bottomline",			js_uifc_bottomline,	1,	JSTYPE_VOID,	JSDOCSTR("<i>number</i> mode")
+	,JSDOCSTR("Display the bottom line using the <tt>WIN_*</tt> mode flags")
 	,31802
 	},
-	{"getstrxy",			js_uifc_getstrxy,	7,	JSTYPE_STRING,	JSDOCSTR("number left, number top, number width, number max, number mode[, string original][, uifc.getstrxy.CTX object]")
+	{"getstrxy",			js_uifc_getstrxy,	7,	JSTYPE_STRING,	JSDOCSTR("<i>number</i> left, <i>number</i> top, <i>number</i> width, <i>number</i> max, <i>number</i> mode [,<i>string</i> original][, <i>uifc.getstrxy.CTX</i> ctx]")
 	,JSDOCSTR("String input/exit box at a specified position"
-		"The context object can be created using <tt>new uifc.showbuf.CTX()</tt> and if the same object is passed, allows <tt>WIN_SAV</tt> to work correctly.<br>"
-		"The context object has the following properties: <tt>lastkey</tt>")
+		"The context object can be created using <tt>new uifc.showbuf.CTX</tt> and if the same object is passed, allows <tt>WIN_SAV</tt> to work correctly.<br>"
+		"The context object has the following properties: <i>number</i> <tt>lastkey</tt>")
 	,31802
 	},
 	{0}

@@ -1391,14 +1391,14 @@ static jsSyncMethodSpec js_user_functions[] = {
 	,31800
 	},
 	{"get_time_left",	js_get_time_left,	1,	JSTYPE_NUMBER,	JSDOCSTR("start_time")
-	,JSDOCSTR("Returns the user's available remaining time online, in seconds,<br>"
+	,JSDOCSTR("Return the user's available remaining time online, in seconds, "
 	"based on the passed <i>start_time</i> value (in time_t format)<br>"
 	"Note: this method does not account for pending forced timed events<br>"
 	"Note: for the pre-defined user object on the BBS, you almost certainly want bbs.get_time_left() instead.")
 	,31401
 	},
 	{"close",			js_user_close,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("Close the <tt>user.tab</tt> file, if open. The file will be auto-reopened if necessary.")
+	,JSDOCSTR("Close the <tt>user.tab</tt> file, if open. The file will be automatically reopened if necessary.")
 	,31902
 	},
 	{0}

@@ -3109,58 +3109,59 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,JSDOCSTR("Close message base (if open)")
 	,310
 	},
-	{"get_msg_header",	js_get_msg_header,	4, JSTYPE_OBJECT,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset_or_id [,expand_fields=<tt>true</tt>] [,include_votes=<tt>false</tt>]")
-	,JSDOCSTR("Returns a specific message header, <i>null</i> on failure. "
-	"<br><i>New in v3.12:</i> Pass <i>false</i> for the <i>expand_fields</i> argument (default: <i>true</i>) "
+	{"get_msg_header",	js_get_msg_header,	4, JSTYPE_OBJECT
+	,JSDOCSTR("[<i>bool</i> by_offset=false,] <i>number</i> number_or_offset or <i>string</i> id [,<i>bool</i> expand_fields=true] [,<i>bool</i> include_votes=false]")
+	,JSDOCSTR("Return a specific message header, <i>null</i> on failure. "
+	"<br>Pass <i>false</i> for the <i>expand_fields</i> argument (default: <i>true</i>) "
 	"if you will be re-writing the header later with <i>put_msg_header()</i>"
 	"<br>"
 	"Additional read-only header properties: <i>mime_version</i>, <i>content_type</i>, and <i>is_utf8</i>"
 	)
 	,312
 	},
-	{"get_all_msg_headers", js_get_all_msg_headers, 1, JSTYPE_OBJECT, JSDOCSTR("[include_votes=<tt>false</tt>] [,expand_fields=<tt>true</tt>]")
-	,JSDOCSTR("Returns an object (associative array) of all message headers \"indexed\" by message number.<br>"
+	{"get_all_msg_headers", js_get_all_msg_headers, 1, JSTYPE_OBJECT, JSDOCSTR("[<i>bool</i> include_votes=false] [,<i>bool</i> expand_fields=true]")
+	,JSDOCSTR("Return an object (associative array) of all message headers \"indexed\" by message number.<br>"
 	"Message headers returned by this function include additional properties: <tt>upvotes</tt>, <tt>downvotes</tt> and <tt>total_votes</tt>.<br>"
 	"Vote messages are excluded by default.")
 	,316
 	},
-	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[by_offset=<tt>false</tt>,] [number_or_offset_or_id,] object header")
+	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[<i>bool</i> by_offset=false,] [<i>number</i> number_or_offset or <i>string</i> id,] <i>object</i> header")
 	,JSDOCSTR("Modify an existing message header (must have been 'got' without expanded fields)")
 	,310
 	},
-	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset_or_id_or_header [,strip_ctrl_a=<tt>false</tt>] "
-		"[,dot_stuffing=<tt>false</tt>] [,include_tails=<tt>true</tt>] [,plain_text=<tt>false</tt>]")
-	,JSDOCSTR("Returns the entire body text of a specific message as a single String, <i>null</i> on failure. "
-	"The default behavior is to leave Ctrl-A codes intact, do not stuff dots (e.g. per RFC-821), and to include tails (if any) in the "
-		"returned body text. When <i>plain_text</i> is true, only the first plain-text portion of a multi-part MIME encoded message body is returned. "
-		"The first argument (following the optional <i>by_offset</i> boolean) must be either a number (message number or index-offset), string (message-ID), or object (message header). "
-		"The <i>by_offfset</i> (<tt>true</tt>) argument should only be passed when the argument following it is the numeric index-offset of the message to be "
-		"retrieved. By default (<i>by_offset</i>=<tt>false</tt>), a numeric argument would be interpreted as the message <i>number</i> to be retrieved."
-		"<br>"
+	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[<i>bool</i> by_offset=false,] <i>number</i> number_or_offset or <i>string</i> id or <i>object</i> header [,<i>bool</i> strip_ctrl_a=false] "
+		"[,<i>bool</i> dot_stuffing=false] [,<i>bool</i> include_tails=true] [,<i>bool</i> plain_text=false]")
+	,JSDOCSTR("Return the entire body text of a specific message as a single string or <i>null</i> on failure.<br>"
+		"The default behavior is to leave Ctrl-A codes intact, do not stuff dots (e.g. per RFC-821), and to include tails (if any) in the "
+		"returned body text.<br>"
+		"When <i>plain_text</i> is true, only the first plain-text portion of a multi-part MIME encoded message body is returned.<br>"
+		"The first argument (following the optional <i>by_offset</i> boolean) must be either a number (message number or index-offset), string (message-ID), or object (message header).<br>"
+		"The <i>by_offset</i> (<tt>true</tt>) argument should only be passed when the argument following it is the numeric index-offset of the message to be retrieved.<br>"
+		"By default (<i>by_offset</i>=<tt>false</tt>), a numeric argument would be interpreted as the message <i>number</i> to be retrieved.<br>"
 		"After reading a multi-part MIME-encoded message, new header properties may be available: <i>text_charset</i> and <i>text_subtype</i>."
 	)
 	,310
 	},
-	{"get_msg_tail",	js_get_msg_tail,	2, JSTYPE_STRING,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset_or_id_or_header [,strip_ctrl_a]=<tt>false</tt>")
-	,JSDOCSTR("Returns the tail text of a specific message, <i>null</i> on failure")
+	{"get_msg_tail",	js_get_msg_tail,	2, JSTYPE_STRING,	JSDOCSTR("[<i>bool</i> by_offset=false,] <i>number</i> number_or_offset or <i>string</i> id or <i>object</i> header [,<i>bool</i> strip_ctrl_a=false]")
+	,JSDOCSTR("Return the tail text of a specific message, <i>null</i> on failure")
 	,310
 	},
-	{"get_msg_index",	js_get_msg_index,	3, JSTYPE_OBJECT,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset, [include_votes=<tt>false</tt>]")
-	,JSDOCSTR("Returns a specific message index record, <i>null</i> on failure. "
-	"The index object will contain the following properties:<br>"
+	{"get_msg_index",	js_get_msg_index,	3, JSTYPE_OBJECT,	JSDOCSTR("[<i>bool</i> by_offset=false,] <i>number</i> number_or_offset, [<i>bool</i> include_votes=false]")
+	,JSDOCSTR("Return a specific message index record, <i>null</i> on failure."
+	"<p>The <i>index</i> object will contain the following properties:<br>"
 	"<table>"
 	"<tr><td align=top><tt>attr</tt><td>Attribute bit-flags"
 	"<tr><td align=top><tt>time</tt><td>Date/time imported (in time_t format)"
 	"<tr><td align=top><tt>number</tt><td>Message number"
 	"<tr><td align=top><tt>offset</tt><td>Record number in index file"
 	"</table>"
-	"Indexes of regular messages will contain the following additional properties:<br>"
+	"<p>Indexes of regular messages will contain the following additional properties:<br>"
 	"<table>"
 	"<tr><td align=top><tt>subject</tt><td>CRC-16 of lowercase message subject"
 	"<tr><td align=top><tt>to</tt><td>CRC-16 of lowercase recipient's name (or user number if e-mail)"
 	"<tr><td align=top><tt>from</tt><td>CRC-16 of lowercase sender's name (or user number if e-mail)"
 	"</table>"
-	"Indexes of vote messages will contain the following additional properties:<br>"
+	"<p>Indexes of vote messages will contain the following additional properties:<br>"
 	"<table>"
 	"<tr><td align=top><tt>vote</tt><td>vote value"
 	"<tr><td align=top><tt>remsg</tt><td>number of message this vote is in response to"
@@ -3174,12 +3175,12 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 		"This is the fastest method of obtaining a list of all message index records.")
 	,31702
 	},
-	{"remove_msg",		js_remove_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("[by_offset=<tt>false</tt>,] number_or_offset_or_id")
+	{"remove_msg",		js_remove_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("[<i>bool</i> by_offset=false,] <i>number</i> number_or_offset or <i>string</i> id")
 	,JSDOCSTR("Mark message for deletion")
 	,311
 	},
-	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("object header [,client=<i>none</i>] [,body_text=<tt>\"\"</tt>] [,array rcpt_list=<i>none</i>]")
-	,JSDOCSTR("Create a new message in message base, the <i>header</i> object may contain the following properties:<br>"
+	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("<i>object</i> header [,<i>object</i> client=<i>none</i>] [,body_text=\"\"] [,<i>array</i> rcpt_list=<i>none</i>]")
+	,JSDOCSTR("Create a new message in message base.<p>The <i>header</i> object may contain the following properties:<br>"
 	"<table>"
 	"<tr><td align=top><tt>subject</tt><td>Message subject <i>(required)</i>"
 	"<tr><td align=top><tt>to</tt><td>Recipient's name <i>(required)</i>"
@@ -3249,20 +3250,20 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td align=top><tt>field_list[].data</tt><td>Other SMB header fields (data)"
 	"<tr><td align=top><tt>can_read</tt><td>true if the current user can read this validated or unmoderated message"
 	"</table>"
-	"<br><i>New in v3.12:</i> "
+	"<br>"
 	"The optional <i>client</i> argument is an instance of the <i>Client</i> class to be used for the "
-	"security log header fields (e.g. sender IP address, hostname, protocol, and port).  As of version 3.16c, the "
-	"global client object will be used if this is omitted."
-	"<br><br><i>New in v3.12:</i> "
+	"security log header fields (e.g. sender IP address, hostname, protocol, and port). The "
+	"global client object will be used if this parameter is omitted."
+	"<br><br>"
 	"The optional <i>rcpt_list</i> is an array of objects that specifies multiple recipients "
-	"for a single message (e.g. bulk e-mail). Each object in the array may include the following header properties "
+	"for a single message (e.g. bulk e-mail). Each recipient object in the array may include the following header properties "
 	"(described above): <br>"
 	"<i>to</i>, <i>to_ext</i>, <i>to_org</i>, <i>to_net_type</i>, <i>to_net_addr</i>, and <i>to_agent</i>"
 	)
 	,312
 	},
-	{"vote_msg",		js_vote_msg,		1, JSTYPE_BOOLEAN,	JSDOCSTR("object header")
-	,JSDOCSTR("Create a new vote in message base, the <i>header</i> object should contain the following properties:<br>"
+	{"vote_msg",		js_vote_msg,		1, JSTYPE_BOOLEAN,	JSDOCSTR("<i>object</i> header")
+	,JSDOCSTR("Create a new vote in message base.<p>The <i>header</i> object should contain the following properties:<br>"
 	"<table>"
 	"<tr><td align=top><tt>from</tt><td>Sender's name <i>(required)</i>"
 	"<tr><td align=top><tt>from_ext</tt><td>Sender's user number (if applicable)"
@@ -3275,8 +3276,8 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	)
 	,317
 	},
-	{"add_poll",		js_add_poll,		1, JSTYPE_BOOLEAN,	JSDOCSTR("object header")
-	,JSDOCSTR("Create a new poll in message base, the <i>header</i> object should contain the following properties:<br>"
+	{"add_poll",		js_add_poll,		1, JSTYPE_BOOLEAN,	JSDOCSTR("<i>object</i> header")
+	,JSDOCSTR("Create a new poll in message base.<p>The <i>header</i> object should contain the following properties:<br>"
 	"<table>"
 	"<tr><td align=top><tt>subject</tt><td>Polling question <i>(required)</i>"
 	"<tr><td align=top><tt>from</tt><td>Sender's name <i>(required)</i>"
@@ -3292,10 +3293,10 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,317
 	},
 	{"how_user_voted",		js_how_user_voted,		2, JSTYPE_NUMBER,	JSDOCSTR("message number, user name or alias")
-	,JSDOCSTR("Returns 0 for no votes, 1 for an up-vote, 2 for a down-vote, or in the case of a poll-response: a bit-field of votes.")
+	,JSDOCSTR("Return 0 for no votes, 1 for an up-vote, 2 for a down-vote, or in the case of a poll-response: a bit-field of votes.")
 	,317
 	},
-	{"dump_msg_header",		js_dump_msg_header,		1,	JSTYPE_ARRAY,	JSDOCSTR("object header")
+	{"dump_msg_header",		js_dump_msg_header,		1,	JSTYPE_ARRAY,	JSDOCSTR("<i>object</i> header")
 		,JSDOCSTR("Dump a message header object to an array of strings for diagnostic uses")
 		,31702
 	},

@@ -1599,9 +1599,9 @@ static char* filebase_prop_desc[] = {
 	,"Delay between file base open/lock retries (in milliseconds)"
 	,"First file number - <small>READ ONLY</small>"
 	,"Last file number - <small>READ ONLY</small>"
-	,"Timestamp of last file - <small>READ ONLY</small>"
+	,"Time-stamp of last file - <small>READ ONLY</small>"
 	,"Total number of files - <small>READ ONLY</small>"
-	,"Timestamp of file base index (only writable when file base is closed)"
+	,"Time-stamp of file base index (only writable when file base is closed)"
 	,"Maximum number of files before expiration - <small>READ ONLY</small>"
 	,"Maximum age (in days) of files to store - <small>READ ONLY</small>"
 	,"File base attributes - <small>READ ONLY</small>"
@@ -1623,7 +1623,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"get",				js_get_file,		2, JSTYPE_OBJECT
-		,JSDOCSTR("filename or file-meta-object [,detail=FileBase.DETAIL.NORM]")
+		,JSDOCSTR("<i>string</i> filename or <i>object</i> file-meta-object [,<i>number</i> detail=FileBase.DETAIL.NORM]")
 		,JSDOCSTR("Get a file metadata object or <tt>null</tt> on failure. "
 			"The file-meta-object may contain the following properties (depending on <i>detail</i> value):<br>"
 			"<table>"
@@ -1645,7 +1645,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 			"<tr><td align=top><tt>cost</tt><td>File credit value (0=free)"
 			"<tr><td align=top><tt>time</tt><td>File modification date/time (in time_t format)"
 			"<tr><td align=top><tt>added</tt><td>Date/time file was uploaded/imported (in time_t format)"
-			"<tr><td align=top><tt>last_downlaoded</tt><td>Date/time file was last downloaded (in time_t format) or 0=never"
+			"<tr><td align=top><tt>last_downloaded</tt><td>Date/time file was last downloaded (in time_t format) or 0=never"
 			"<tr><td align=top><tt>times_downloaded</tt><td>Total number of times file has been downloaded"
 			"<tr><td align=top><tt>crc16</tt><td>16-bit CRC of file contents"
 			"<tr><td align=top><tt>crc32</tt><td>32-bit CRC of file contents"
@@ -1657,7 +1657,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"get_list",		js_get_file_list,	4, JSTYPE_ARRAY
-		,JSDOCSTR("[filespec] [,detail=FileBase.DETAIL.NORM] [,since-time=0] [,sort=true [,order]]")
+		,JSDOCSTR("[<i>string</i> filespec] [,<i>number</i> detail=FileBase.DETAIL.NORM] [,<i>number</i> since-time=0] [,<i>bool</i> sort=true [,<i>number</i> order]]")
 		,JSDOCSTR("Get a list (array) of file metadata objects"
 			", the default sort order is the sysop-configured order or <tt>FileBase.SORT.NAME_AI</tt>"
 			)
@@ -1665,43 +1665,43 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	},
 	{"get_name",		js_get_file_name,	1, JSTYPE_STRING
 		,JSDOCSTR("path/filename")
-		,JSDOCSTR("Returns index-formatted (e.g. shortened) version of filename without path (file base does not have to be open)")
+		,JSDOCSTR("Return index-formatted (e.g. shortened) version of filename without path (file base does not have to be open)")
 		,31900
 	},
 	{"get_names",		js_get_file_names,	3, JSTYPE_ARRAY
-		,JSDOCSTR("[filespec] [,since-time=0] [,sort=true [,order]]")
+		,JSDOCSTR("[<i>string</i> filespec] [,<i>number</i> since-time=0] [,<i>bool</i> sort=true [,<i>number</i> order]]")
 		,JSDOCSTR("Get a list of index-formatted (e.g. shortened) filenames (strings) from file base index"
 			", the default sort order is the sysop-configured order or <tt>FileBase.SORT.NAME_AI</tt>")
 		,31900
 	},
 	{"get_path",		js_get_file_path,	1, JSTYPE_STRING
-		,JSDOCSTR("filename or file-meta-object")
+		,JSDOCSTR("<i>string</i> filename or <i>object</i> file-meta-object")
 		,JSDOCSTR("Get the full path to the local file")
 		,31900
 	},
 	{"get_size",		js_get_file_size,	1, JSTYPE_NUMBER
-		,JSDOCSTR("filename or file-meta-object")
+		,JSDOCSTR("<i>string</i> filename or <i>object</i> file-meta-object")
 		,JSDOCSTR("Get the size of the local file, in bytes, or -1 if it does not exist")
 		,31900
 	},
 	{"get_time",		js_get_file_time,	1, JSTYPE_NUMBER
-		,JSDOCSTR("filename or file-meta-object")
+		,JSDOCSTR("<i>string</i> filename or <i>object</i> file-meta-object")
 		,JSDOCSTR("Get the modification date/time stamp of the local file")
 		,31900
 	},
 	{"add",				js_add_file,		1, JSTYPE_BOOLEAN
-		,JSDOCSTR("file-meta-object [,use_diz_always=false] [,object client=none]")
+		,JSDOCSTR("<i>object</i> file-meta-object [,<i>bool</i> use_diz_always=false] [,<i>object</i> client=none]")
 		,JSDOCSTR("Add a file to the file base, returning <tt>true</tt> on success or <tt>false</tt> upon failure.")
 		,31900
 	},
 	{"remove",			js_remove_file,		2, JSTYPE_BOOLEAN
-		,JSDOCSTR("filename [,delete=false]")
+		,JSDOCSTR("filename [,<i>bool</i> delete=false]")
 		,JSDOCSTR("Remove an existing file from the file base and optionally delete file"
 				", may throw exception on errors (e.g. file remove failure)")
 		,31900
 	},
 	{"update",			js_update_file,		3, JSTYPE_BOOLEAN
-		,JSDOCSTR("filename, file-meta-object [,use_diz_always=false] [,readd_always=false]")
+		,JSDOCSTR("filename, <i>object</i> file-meta-object [,<i>bool</i> use_diz_always=false] [,<i>bool</i> readd_always=false]")
 		,JSDOCSTR("Update an existing file in the file base"
 				", may throw exception on errors (e.g. file rename failure)")
 		,31900
@@ -1712,7 +1712,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"hash",			js_hash_file,		1, JSTYPE_OBJECT
-		,JSDOCSTR("filename_or_fullpath")
+		,JSDOCSTR("<i>string</i> filename_or_fullpath")
 		,JSDOCSTR("Calculate hashes of a file's contents (file base does not have to be open)")
 		,31900
 	},
@@ -1722,8 +1722,8 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"format_name",		js_format_file_name,1, JSTYPE_STRING
-		,JSDOCSTR("path/filename [,number size=12] [,boolean pad=false]")
-		,JSDOCSTR("Returns formatted (e.g. shortened) version of filename without path (file base does not have to be open) for display")
+		,JSDOCSTR("path/filename [,<i>number</i> size=12] [,<i>bool</i> pad=false]")
+		,JSDOCSTR("Return formatted (e.g. shortened) version of filename without path (file base does not have to be open) for display")
 		,31900
 	},
 	{0}

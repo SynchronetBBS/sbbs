@@ -1334,6 +1334,7 @@ extern "C" {
 		int             tinyid;
 		uint8_t         flags;
 		int				ver;		/* version added/modified */
+		const char*		desc;		/* description */
 	} jsSyncPropertySpec;
 
 	typedef struct {

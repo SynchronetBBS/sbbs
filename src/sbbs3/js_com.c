@@ -514,10 +514,10 @@ enum {
 #ifdef BUILD_JSDOCS
 static char* com_prop_desc[] = {
 	 "Error status for the last COM operation that failed - <small>READ ONLY</small>"
-	,"<i>true</i> if port is in a connected state - <small>READ ONLY</small>"
+	,"<tt>true</tt> if port is in a connected state - <small>READ ONLY</small>"
 	,"Enable debug logging"
 	,"COM handle (advanced uses only)"
-	,"<i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i>"
+	,"<tt>true</tt> if binary data is to be sent in Network Byte Order (big end first), default is <tt>true</tt>"
 	,"COM port Baud rate"
 	,"Device name"
 	,"Data Terminal Ready"
@@ -713,23 +713,23 @@ static jsSyncMethodSpec js_com_functions[] = {
 	,315
 	},
 	{"writeBin",	js_sendbin,		1,	JSTYPE_ALIAS },
-	{"sendBin",		js_sendbin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value [,bytes=<tt>4</tt>]")
+	{"sendBin",		js_sendbin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value [,bytes=4]")
 	,JSDOCSTR("Send a binary integer over the port, default number of bytes is 4 (32-bits)")
 	,315
 	},
 	{"read",		js_recv,		1,	JSTYPE_ALIAS },
-	{"recv",		js_recv,		1,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt> [,timeout=<tt>30</tt>]]")
+	{"recv",		js_recv,		1,	JSTYPE_STRING,	JSDOCSTR("[maxlen=512 [,timeout=30]]")
 	,JSDOCSTR("Receive a string, default maxlen is 512 characters, default timeout is 30 seconds (AKA read)")
 	,315
 	},
 	{"readline",	js_recvline,	0,	JSTYPE_ALIAS },
 	{"readln",		js_recvline,	0,	JSTYPE_ALIAS },
-	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<tt>512</tt>] [,timeout=<tt>30.0</tt>]")
+	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=512] [,timeout=30.0]")
 	,JSDOCSTR("Receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds (AKA readline and readln)")
 	,315
 	},
 	{"readBin",		js_recvbin,		0,	JSTYPE_ALIAS },
-	{"recvBin",		js_recvbin,		0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes=<tt>4</tt> [,timeout=<tt>30</tt>]")
+	{"recvBin",		js_recvbin,		0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes=4 [,timeout=30]")
 	,JSDOCSTR("Receive a binary integer from the port, default number of bytes is 4 (32-bits), default timeout is 30 seconds")
 	,315
 	},
@@ -816,7 +816,7 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for serial port communications",31501);
 	js_DescribeSyncConstructor(cx,obj,"To create a new COM object: "
-		"var c = new COM('<i>device</i>')</tt><br>"
+		"<tt>var c = new COM('<i>device</i>')</tt><br>"
 		"where <i>device</i> = <tt>COMx</tt> (e.g. COM1) for Win32 or <tt>/dev/ttyXY</tt> for *nix (e.g. /dev/ttyu0)"
 		);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", com_prop_desc, JSPROP_READONLY);

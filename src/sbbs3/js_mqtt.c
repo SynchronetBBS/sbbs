@@ -610,8 +610,8 @@ static jsSyncPropertySpec js_mqtt_properties[] = {
 
 static jsSyncMethodSpec js_mqtt_functions[] = {
 	{"connect",		js_connect,   	0,	JSTYPE_BOOLEAN
-		,JSDOCSTR("[string broker_address] [,number broker_port] [,string username] [,string password]")
-		,JSDOCSTR("Connect to an MQTT broker")
+		,JSDOCSTR("[<i>string</i> broker_address] [,<i>number</i> broker_port] [,<i>string</i> username] [,<i>string</i> password]")
+		,JSDOCSTR("Connect to an MQTT broker, by default (i.e. no arguments provided), the broker configured in SCFG->Networks->MQTT")
 		,320
 	},
 	{"disconnect",	js_disconnect,	0,	JSTYPE_VOID
@@ -620,20 +620,20 @@ static jsSyncMethodSpec js_mqtt_functions[] = {
 		,320
 	},
 	{"publish",		js_publish,		4,	JSTYPE_BOOLEAN
-		,JSDOCSTR("[bool retain=false,] [number qos,] topic, data")
+		,JSDOCSTR("[<i>bool</i> retain=false,] [<i></i>number qos,] topic, data")
 		,JSDOCSTR("Publish a string to specified topic")
 		,320
 	},
 	{"subscribe",	js_subscribe,	2,	JSTYPE_BOOLEAN
-		,JSDOCSTR("[number qos,] topic")
+		,JSDOCSTR("[<i>number</i> qos,] topic")
 		,JSDOCSTR("Subscribe to specified topic at (optional) QOS level")
 		,320
 	},
 	{"read",		js_read,		0, 	JSTYPE_STRING
-		,JSDOCSTR("[timeout=0] [,bool verbpose=false]")
+		,JSDOCSTR("[<i>number</i> timeout=0] [,<i>bool</i> verbose=false]")
 		,JSDOCSTR("Read next message, optionally waiting for <i>timeout</i> milliseconds, "
 			"returns an object instead of a string when <i>verbose</i> is <tt>true</tt>. "
-			"Returns <i>false</i> when no message is available.")
+			"Returns <tt>false</tt> when no message is available.")
 		,320
 	},
 	{0}
@@ -740,7 +740,7 @@ static JSBool js_mqtt_constructor(JSContext* cx, uintN argc, jsval *arglist)
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for MQTT communications",320);
 	js_DescribeSyncConstructor(cx,obj,"To create a new MQTT object: "
-		"var mqtt = new MQTT([client_id])</tt><br>"
+		"<tt>var mqtt = new MQTT([<i>client_id</i>])</tt><br>"
 		);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", com_prop_desc, JSPROP_READONLY);
 #endif

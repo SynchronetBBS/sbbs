@@ -27,33 +27,33 @@
 static char* file_area_prop_desc[] = {
 	 "Minimum amount of available disk space (in bytes) required for user uploads to be allowed"
 	,"File area settings (bit-flags) - see <tt>FM_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	,"Web file virtual path prefix <i>(introduced in v3.19c)</i>"
+	,"Web file virtual path prefix"
 	,NULL
 };
 
 static char* lib_prop_desc[] = {
-	 "Index into lib_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
+	 "Index into lib_list array (or -1 if not in array)"
 	,"Unique number for this library"
 	,"Name"
 	,"Description"
 	,"Access requirements"
 	,"Virtual directory name (for FTP or HTTP access)"
-	,"User has sufficient access to this library's directories <i>(introduced in v3.18)</i>"
-	,"Internal code prefix (for directories) <i>(introduced in v3.18c)</i>"
+	,"User has sufficient access to this library's directories"
+	,"Internal code prefix (for directories)"
 	,NULL
 };
 
 static char* dir_prop_desc[] = {
 
-	 "Index into dir_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
+	 "Index into dir_list array (or -1 if not in array)"
 	,"Unique number for this directory"
-	,"Library index <i>(introduced in v3.12)</i>"
+	,"Library index"
 	,"Library number"
-	,"Library name <i>(introduced in v3.12)</i>"
+	,"Library name"
 	,"Directory internal code"
 	,"Directory name"
 	,"Directory description"
-	,"Directory area tag for file echoes <i>(introduced in v3.19)</i>"
+	,"Directory area tag for file echoes"
 	,"Directory file storage location"
 	,"Directory access requirements"
 	,"Directory upload requirements"
@@ -72,16 +72,16 @@ static char* dir_prop_desc[] = {
 	,"Percent of file size awarded uploader in credits upon subsequent downloads"
 	,"Virtual directory name (for FTP or HTTP access)"
 	,"Virtual path (for FTP or HTTP access)"
-	,"Number of files currently in this directory <i>(introduced in v3.18c)</i>"
-	,"Timestamp of file base index of this directory <i>(introduced in v3.19)</i>"
-	,"User has sufficient access to view this directory (e.g. list files) <i>(introduced in v3.18)</i>"
+	,"Number of files currently in this directory"
+	,"Time-stamp of file base index of this directory"
+	,"User has sufficient access to view this directory (e.g. list files)"
 	,"User has sufficient access to upload files to this directory"
 	,"User has sufficient access to download files from this directory"
 	,"User is exempt from download credit costs (or the directory is configured for free downloads)"
 	,"User has operator access to this directory"
-	,"Directory is for offline storage <i>(introduced in v3.14)</i>"
-	,"Directory is for uploads only <i>(introduced in v3.14)</i>"
-	,"Directory is for uploads to sysop only <i>(introduced in v3.14)</i>"
+	,"Directory is for off-line storage"
+	,"Directory is for uploads only"
+	,"Directory is for uploads to sysop only"
 	,NULL
 };
 #endif

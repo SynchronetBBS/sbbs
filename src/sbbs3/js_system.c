@@ -407,171 +407,219 @@ static jsSyncPropertySpec js_system_properties[] = {
 /*		 name,						tinyid,				flags,				ver	*/
 
 #ifndef JSDOOR
-	{	"name",						SYS_PROP_NAME,		SYSOBJ_FLAGS,		310  },
-	{	"operator",					SYS_PROP_OP,		SYSOBJ_FLAGS,		310  },
-	{	"operator_available",		SYS_PROP_OP_AVAIL,	JSPROP_ENUMERATE,	31801  },
-	{	"guru",						SYS_PROP_GURU,		SYSOBJ_FLAGS,		32000 },
-	{	"qwk_id",					SYS_PROP_ID,		SYSOBJ_FLAGS,		310  },
-	{	"settings",					SYS_PROP_MISC,		JSPROP_ENUMERATE,	310  },
-	{	"login_settings",			SYS_PROP_LOGIN,		JSPROP_ENUMERATE,	32000  },
+	{	"name",						SYS_PROP_NAME,		SYSOBJ_FLAGS,		310
+		,JSDOCSTR("BBS name")
+	},
+	{	"operator",					SYS_PROP_OP,		SYSOBJ_FLAGS,		310
+		,JSDOCSTR("Operator name")
+	},
+	{	"operator_available",		SYS_PROP_OP_AVAIL,	JSPROP_ENUMERATE,	31801
+		,JSDOCSTR("Operator is available for chat")
+	},
+	{	"guru",						SYS_PROP_GURU,		SYSOBJ_FLAGS,		32000
+		,JSDOCSTR("Default Guru (AI) name")
+	},
+	{	"qwk_id",					SYS_PROP_ID,		SYSOBJ_FLAGS,		310
+		,JSDOCSTR("System QWK-ID (for QWK packets)")
+	},
+	{	"settings",					SYS_PROP_MISC,		JSPROP_ENUMERATE,	310
+		,JSDOCSTR("Settings bit-flags (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)")
+	},
+	{	"login_settings",			SYS_PROP_LOGIN,		JSPROP_ENUMERATE,	32000
+		,JSDOCSTR("Login control settings bit-flags (see <tt>LOGIN_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)")
+	},
 	{	"inetaddr",					SYS_PROP_INETADDR,	JSPROP_READONLY,	310  },	/* alias */
-	{	"inet_addr",				SYS_PROP_INETADDR,	SYSOBJ_FLAGS,		311  },
-	{	"location",					SYS_PROP_LOCATION,	SYSOBJ_FLAGS,		310  },
-	{	"timezone",					SYS_PROP_TIMEZONE,	SYSOBJ_FLAGS,		310  },
-	{	"pwdays",					SYS_PROP_PWDAYS,	SYSOBJ_FLAGS,		310  },
-	{	"min_password_length",		SYS_PROP_MINPWLEN,	SYSOBJ_FLAGS,		31702  },
-	{	"max_password_length",		SYS_PROP_MAXPWLEN,	SYSOBJ_FLAGS,		31702  },
-	{	"deldays",					SYS_PROP_DELDAYS,	SYSOBJ_FLAGS,		310  },
-	{	"autodel",					SYS_PROP_AUTODEL,	SYSOBJ_FLAGS,		31702  },
+	{	"inet_addr",				SYS_PROP_INETADDR,	SYSOBJ_FLAGS,		311
+		,JSDOCSTR("Internet address (host or domain name)")
+	},
+	{	"location",					SYS_PROP_LOCATION,	SYSOBJ_FLAGS,		310
+		,JSDOCSTR("Location (city, state)")
+	},
+	{	"timezone",					SYS_PROP_TIMEZONE,	SYSOBJ_FLAGS,		310
+		,JSDOCSTR("Timezone (use <i>system.zonestr()</i> to get string representation)")
+	},
+	{	"pwdays",					SYS_PROP_PWDAYS,	SYSOBJ_FLAGS,		310
+		,JSDOCSTR("Days between forced user password changes (<tt>0</tt>=<i>never</i>)")
+	},
+	{	"min_password_length",		SYS_PROP_MINPWLEN,	SYSOBJ_FLAGS,		31702
+		,JSDOCSTR("Minimum number of characters in user passwords")
+	},
+	{	"max_password_length",		SYS_PROP_MAXPWLEN,	SYSOBJ_FLAGS,		31702
+		,JSDOCSTR("Maximum number of characters in user passwords")
+	},
+	{	"deldays",					SYS_PROP_DELDAYS,	SYSOBJ_FLAGS,		310
+		,JSDOCSTR("Days to preserve deleted user records, record will not be reused/overwritten during this period")
+	},
+	{	"autodel",					SYS_PROP_AUTODEL,	SYSOBJ_FLAGS,		31702
+		,JSDOCSTR("Days of user inactivity before auto-deletion (<tt>0</tt>=<i>disabled</i>), N/A to P-exempt users")
+	},
 
-	{	"last_user",				SYS_PROP_LASTUSER		,SYSOBJ_FLAGS,	311  },
+	{	"last_user",				SYS_PROP_LASTUSER		,SYSOBJ_FLAGS,	311
+		,JSDOCSTR("Last user record number in user database (includes deleted and inactive user records)")
+	},
 	{	"lastuser",					SYS_PROP_LASTUSER	,JSPROP_READONLY,	311  }, /* alias */
-	{	"last_useron",				SYS_PROP_LASTUSERON		,SYSOBJ_FLAGS,	310  },
+	{	"last_useron",				SYS_PROP_LASTUSERON		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Name of last user to logoff")
+	},
 	{	"lastuseron",				SYS_PROP_LASTUSERON	,JSPROP_READONLY,	310  }, /* alias */
 #endif
-	{	"freediskspace",			SYS_PROP_FREEDISKSPACE	,SYSOBJ_FLAGS,	310  },
-	{	"freediskspacek",			SYS_PROP_FREEDISKSPACEK	,SYSOBJ_FLAGS,	310  },
+	{	"freediskspace",			SYS_PROP_FREEDISKSPACE	,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Amount of free disk space (in bytes)")
+	},
+	{	"freediskspacek",			SYS_PROP_FREEDISKSPACEK	,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Amount of free disk space (in kibibytes)")
+	},
 
 #ifndef JSDOOR
-	{	"nodes",					SYS_PROP_NODES,		SYSOBJ_FLAGS,		310  },
-	{	"last_node",				SYS_PROP_LASTNODE,	SYSOBJ_FLAGS,		310  },
+	{	"nodes",					SYS_PROP_NODES,		SYSOBJ_FLAGS,		310
+		,JSDOCSTR("Total number of Terminal Server nodes")
+	},
+	{	"last_node",				SYS_PROP_LASTNODE,	SYSOBJ_FLAGS,		310
+		,JSDOCSTR("Last displayable node number")
+	},
 	{	"lastnode",					SYS_PROP_LASTNODE,	JSPROP_READONLY,	310  }, /* alias */
 
-	{	"mqtt_enabled",				SYS_PROP_MQTT_ENABLED,	SYSOBJ_FLAGS,	320	},
+	{	"mqtt_enabled",				SYS_PROP_MQTT_ENABLED,	SYSOBJ_FLAGS,	320
+		,JSDOCSTR("MQTT support (connection to MQTT broker) is enabled")
+	},
 
-	{	"newuser_password",			SYS_PROP_NEW_PASS		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_magic_word",		SYS_PROP_NEW_MAGIC		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_level",			SYS_PROP_NEW_LEVEL		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_flags1",			SYS_PROP_NEW_FLAGS1		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_flags2",			SYS_PROP_NEW_FLAGS2		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_flags3",			SYS_PROP_NEW_FLAGS3		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_flags4",			SYS_PROP_NEW_FLAGS4		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_restrictions",		SYS_PROP_NEW_REST		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_exemptions",		SYS_PROP_NEW_EXEMPT		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_credits",			SYS_PROP_NEW_CDT		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_minutes",			SYS_PROP_NEW_MIN		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_command_shell",	SYS_PROP_NEW_SHELL		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_editor",			SYS_PROP_NEW_XEDIT		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_settings",			SYS_PROP_NEW_MISC		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_download_protocol",SYS_PROP_NEW_PROT		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_expiration_days",	SYS_PROP_NEW_EXPIRE		,SYSOBJ_FLAGS,	310  },
-	{	"newuser_questions",		SYS_PROP_NEW_UQ			,SYSOBJ_FLAGS,	310  },
+	{	"newuser_password",			SYS_PROP_NEW_PASS		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user password (NUP, optional)")
+	},
+	{	"newuser_magic_word",		SYS_PROP_NEW_MAGIC		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user magic word (optional)")
+	},
+	{	"newuser_level",			SYS_PROP_NEW_LEVEL		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user security level")
+	},
+	{	"newuser_flags1",			SYS_PROP_NEW_FLAGS1		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user flag set #1")
+	},
+	{	"newuser_flags2",			SYS_PROP_NEW_FLAGS2		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user flag set #2")
+	},
+	{	"newuser_flags3",			SYS_PROP_NEW_FLAGS3		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user flag set #3")
+	},
+	{	"newuser_flags4",			SYS_PROP_NEW_FLAGS4		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user flag set #4")
+	},
+	{	"newuser_restrictions",		SYS_PROP_NEW_REST		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user restriction flags")
+	},
+	{	"newuser_exemptions",		SYS_PROP_NEW_EXEMPT		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user exemption flags")
+	},
+	{	"newuser_credits",			SYS_PROP_NEW_CDT		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user credits")
+	},
+	{	"newuser_minutes",			SYS_PROP_NEW_MIN		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user extra minutes")
+	},
+	{	"newuser_command_shell",	SYS_PROP_NEW_SHELL		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user default command shell")
+	},
+	{	"newuser_editor",			SYS_PROP_NEW_XEDIT		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user default external editor")
+	},
+	{	"newuser_settings",			SYS_PROP_NEW_MISC		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user default settings")
+	},
+	{	"newuser_download_protocol",SYS_PROP_NEW_PROT		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user default file transfer protocol (command key)")
+	},
+	{	"newuser_expiration_days",	SYS_PROP_NEW_EXPIRE		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user expiration days")
+	},
+	{	"newuser_questions",		SYS_PROP_NEW_UQ			,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("New user questions/prompts (see <tt>UQ_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)")
+	},
 
-	{	"expired_level",			SYS_PROP_EXPIRED_LEVEL	,SYSOBJ_FLAGS,	310  },
-	{	"expired_flags1",			SYS_PROP_EXPIRED_FLAGS1	,SYSOBJ_FLAGS,	310  },
-	{	"expired_flags2",			SYS_PROP_EXPIRED_FLAGS2	,SYSOBJ_FLAGS,	310  },
-	{	"expired_flags3",			SYS_PROP_EXPIRED_FLAGS3	,SYSOBJ_FLAGS,	310  },
-	{	"expired_flags4",			SYS_PROP_EXPIRED_FLAGS4	,SYSOBJ_FLAGS,	310  },
-	{	"expired_restrictions",		SYS_PROP_EXPIRED_REST	,SYSOBJ_FLAGS,	310  },
-	{	"expired_exemptions",		SYS_PROP_EXPIRED_EXEMPT	,SYSOBJ_FLAGS,	310  },
+	{	"expired_level",			SYS_PROP_EXPIRED_LEVEL	,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Expired user security level")
+	},
+	{	"expired_flags1",			SYS_PROP_EXPIRED_FLAGS1	,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Expired user flag set #1")
+	},
+	{	"expired_flags2",			SYS_PROP_EXPIRED_FLAGS2	,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Expired user flag set #2")
+	},
+	{	"expired_flags3",			SYS_PROP_EXPIRED_FLAGS3	,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Expired user flag set #3")
+	},
+	{	"expired_flags4",			SYS_PROP_EXPIRED_FLAGS4	,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Expired user flag set #4")
+	},
+	{	"expired_restrictions",		SYS_PROP_EXPIRED_REST	,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Expired user restriction flags")
+	},
+	{	"expired_exemptions",		SYS_PROP_EXPIRED_EXEMPT	,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Expired user exemption flags")
+	},
 
 	/* directories */
-	{	"node_dir",					SYS_PROP_NODE_DIR		,SYSOBJ_FLAGS,	310  },
+	{	"node_dir",					SYS_PROP_NODE_DIR		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Current node directory")
+	},
 #endif
-	{	"ctrl_dir",					SYS_PROP_CTRL_DIR		,SYSOBJ_FLAGS,	310  },
-	{	"data_dir",					SYS_PROP_DATA_DIR		,SYSOBJ_FLAGS,	310  },
-	{	"text_dir",					SYS_PROP_TEXT_DIR		,SYSOBJ_FLAGS,	310  },
-	{	"temp_dir",					SYS_PROP_TEMP_DIR		,SYSOBJ_FLAGS,	310  },
-	{	"exec_dir",					SYS_PROP_EXEC_DIR		,SYSOBJ_FLAGS,	310  },
-	{	"mods_dir",					SYS_PROP_MODS_DIR		,SYSOBJ_FLAGS,	310  },
-	{	"logs_dir",					SYS_PROP_LOGS_DIR		,SYSOBJ_FLAGS,	310  },
+	{	"ctrl_dir",					SYS_PROP_CTRL_DIR		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Control file directory")
+	},
+	{	"data_dir",					SYS_PROP_DATA_DIR		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Data file directory")
+	},
+	{	"text_dir",					SYS_PROP_TEXT_DIR		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Text file directory")
+	},
+	{	"temp_dir",					SYS_PROP_TEMP_DIR		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Temporary file directory")
+	},
+	{	"exec_dir",					SYS_PROP_EXEC_DIR		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Executable file directory")
+	},
+	{	"mods_dir",					SYS_PROP_MODS_DIR		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Modified modules directory (optional)")
+	},
+	{	"logs_dir",					SYS_PROP_LOGS_DIR		,SYSOBJ_FLAGS,	310
+		,JSDOCSTR("Log file directory")
+	},
 
 	/* filenames */
-	{	"devnull",					SYS_PROP_DEVNULL		,SYSOBJ_FLAGS,	311  },
-	{	"temp_path",				SYS_PROP_TEMP_PATH		,SYSOBJ_FLAGS,	312	 },
-	{	"cmd_shell",				SYS_PROP_CMD_SHELL		,SYSOBJ_FLAGS,	314	 },
+	{	"devnull",					SYS_PROP_DEVNULL		,SYSOBJ_FLAGS,	311
+		,JSDOCSTR("Platform-specific \"null\" device filename")
+	},
+	{	"temp_path",				SYS_PROP_TEMP_PATH		,SYSOBJ_FLAGS,	312
+		,JSDOCSTR("Platform-specific temporary file directory")
+	},
+	{	"cmd_shell",				SYS_PROP_CMD_SHELL		,SYSOBJ_FLAGS,	314
+		,JSDOCSTR("Platform-specific command processor/shell")
+	},
 
 	/* clock access */
-	{	"clock_ticks",				SYS_PROP_CLOCK			,SYSOBJ_FLAGS,	311  },
-	{	"clock_ticks_per_second",	SYS_PROP_CLOCK_PER_SEC	,SYSOBJ_FLAGS,	311  },
-	{	"timer",					SYS_PROP_TIMER			,SYSOBJ_FLAGS,	314	 },
+	{	"clock_ticks",				SYS_PROP_CLOCK			,SYSOBJ_FLAGS,	311
+		,JSDOCSTR("Amount of elapsed time in clock 'ticks'")
+	},
+	{	"clock_ticks_per_second",	SYS_PROP_CLOCK_PER_SEC	,SYSOBJ_FLAGS,	311
+		,JSDOCSTR("Number of clock ticks per second")
+	},
+	{	"timer",					SYS_PROP_TIMER			,SYSOBJ_FLAGS,	314
+		,JSDOCSTR("High-resolution timer, in seconds (fractional seconds supported)")
+	},
 
-	{	"local_host_name",			SYS_PROP_LOCAL_HOSTNAME	,SYSOBJ_FLAGS,	311  },
-	{	"name_servers",			SYS_PROP_NAME_SERVERS,SYSOBJ_FLAGS,	31802  },
+	{	"local_host_name",			SYS_PROP_LOCAL_HOSTNAME	,SYSOBJ_FLAGS,	311
+		,JSDOCSTR("Private host name that uniquely identifies this system on the local network")
+	},
+	{	"name_servers",				SYS_PROP_NAME_SERVERS	,SYSOBJ_FLAGS,	31802
+		,JSDOCSTR("Array of nameservers in use by the system")
+	},
 	/* last */
 	{0}
 };
 
 #ifdef BUILD_JSDOCS
 static char* sys_prop_desc[] = {
-	 "BBS name"
-	,"Operator name"
-	,"Operator is available for chat"
-	,"Default Guru (AI) name"
-	,"System QWK-ID (for QWK packets)"
-	,"Settings bit-flags (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
-	,"Login control settings bit-flags (see <tt>LOGIN_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
-	,"Internet address (host or domain name)"
-	,"Location (city, state)"
-	,"Timezone (use <i>system.zonestr()</i> to get string representation)"
-	,"Days between forced user password changes (<tt>0</tt>=<i>never</i>)"
-	,"Minimum number of characters in user passwords"
-	,"Maximum number of characters in user passwords"
-	,"Days to preserve deleted user records, record will not be reused/overwritten during this period"
-	,"Days of user inactivity before auto-deletion (<tt>0</tt>=<i>disabled</i>), N/A to P-exempt users"
-
-	,"Last user record number in user database (includes deleted and inactive user records)"
-	,"Name of last user to logoff"
-	,"Amount of free disk space (in bytes)"
-	,"Amount of free disk space (in kibibytes)"
-
-	,"Total number of BBS nodes"
-	,"Last displayable node number"
-
-	,"MQTT support (connection to MQTT broker) is enabled"
-
-	,"New user password (NUP, optional)"
-	,"New user magic word (optional)"
-	,"New user security level"
-	,"New user flag set #1"
-	,"New user flag set #2"
-	,"New user flag set #3"
-	,"New user flag set #4"
-	,"New user restriction flags"
-	,"New user exemption flags"
-	,"New user credits"
-	,"New user extra minutes"
-	,"New user default command shell"
-	,"New user default external editor"
-	,"New user default settings"
-	,"New user default file transfer protocol (command key)"
-	,"New user expiration days"
-	,"New user questions/prompts (see <tt>UQ_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
-
-	,"Expired user security level"
-	,"Expired user flag set #1"
-	,"Expired user flag set #2"
-	,"Expired user flag set #3"
-	,"Expired user flag set #4"
-	,"Expired user restriction flags"
-	,"Expired user exemption flags"
-
-	/* directories */
-	,"Current node directory"
-	,"Control file directory"
-	,"Data file directory"
-	,"Text file directory"
-	,"Temporary file directory"
-	,"Executable file directory"
-	,"Modified modules directory (optional)"
-	,"Log file directory"
-
-	/* filenames */
-	,"Platform-specific \"null\" device filename"
-	,"Platform-specific temporary file directory"
-	,"Platform-specific command processor/shell"
-
-	/* clock */
-	,"Amount of elapsed time in clock 'ticks'"
-	,"Number of clock ticks per second"
-	,"High-resolution timer, in seconds (fractional seconds supported)"
-
-	,"Private host name that uniquely identifies this system on the local network"
-	,"Array of nameservers in use by the system"
-	/* INSERT new tabled properties here */
-
 	/* Manually created (non-tabled) properties */
-	,"Public host name that uniquely identifies this system on the Internet (usually the same as <i>system.inet_addr</i>)"
+	 "Public host name that uniquely identifies this system on the Internet (usually the same as <i>system.inet_addr</i>)"
 	,"Socket library version information"
 	,"Time/date system was brought online (in time_t format)"
 	,"Synchronet full version information (e.g. '3.10k Beta Debug')"
@@ -2146,27 +2194,27 @@ js_text(JSContext *cx, uintN argc, jsval *arglist)
 static jsSyncMethodSpec js_system_functions[] = {
 #ifndef JSDOOR
 	{"username",		js_username,		1,	JSTYPE_STRING,	JSDOCSTR("user_number")
-	,JSDOCSTR("Returns name of user in specified user record <i>number</i>, or empty string if not found")
+	,JSDOCSTR("Return name of user in specified user record <i>number</i>, or empty string if not found")
 	,311
 	},
 	{"alias",			js_alias,			1,	JSTYPE_STRING,	JSDOCSTR("alias")
-	,JSDOCSTR("Returns name of user that matches alias (if found in <tt>ctrl/alias.cfg</tt>)")
+	,JSDOCSTR("Return name of user that matches alias (if found in <tt>ctrl/alias.cfg</tt>)")
 	,310
 	},
 	{"find_login_id",	js_find_login_id,	1,	JSTYPE_NUMBER,	JSDOCSTR("user-id")
 	,JSDOCSTR("Find a user's login ID (alias, real name, or number), returns matching user record number or 0 if not found")
 	,32000
 	},
-	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("username [,sysop_alias=<tt>true</tt>]")
+	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("username [,sysop_alias=true]")
 	,JSDOCSTR("Exact user name matching, returns number of user whose name/alias matches <i>username</i> "
 		" or 0 if not found, matches well-known sysop aliases by default")
 	,310
 	},
-	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_NUMBER,	JSDOCSTR("field, data [,match_del=<tt>false</tt>] [,usernumber, match_next=<tt>false</tt>]")
-	,JSDOCSTR("Search user database for data in a specific field (see <tt>U_*</tt> in <tt>sbbsdefs.js</tt>), "
-		"if <i>match_del</i> is <tt>true</tt>, deleted user records are searched, "
+	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_NUMBER,	JSDOCSTR("field, data [,<i>bool</i> match_del=false] [,<i>number</i> usernumber, <i>bool</i> match_next=false]")
+	,JSDOCSTR("Search user database for data in a specific field (see <tt>U_*</tt> in <tt>sbbsdefs.js</tt>).<br>"
+		"If <i>match_del</i> is <tt>true</tt>, deleted user records are searched, "
 		"returns first matching user record number, optional <i>usernumber</i> specifies user record to skip, "
-		"or record at which to begin searching if optional <i>match_next</i> is <tt>true</tt>")
+		"or record at which to begin searching if optional <i>match_next</i> is <tt>true</tt>.")
 	,310
 	},
 #endif
@@ -2174,7 +2222,7 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("Search <tt>text/<i>basename</i>.can</tt> for pseudo-regexp")
 	,310
 	},
-	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename or array of strings, find_string")
+	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename or <i>array</i> of strings, find_string")
 	,JSDOCSTR("Search any trashcan/filter file or array of pattern strings (in <tt>*.can</tt> format) for <i>find_string</i>")
 	,310
 	},
@@ -2224,11 +2272,11 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,310
 	},
 	{"get_telegram",	js_get_telegram,	1,	JSTYPE_STRING,	JSDOCSTR("user_number")
-	,JSDOCSTR("Returns any short text messages waiting for the specified user")
+	,JSDOCSTR("Return any short text messages waiting for the specified user")
 	,311
 	},
 	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number, message_text")
-	,JSDOCSTR("Sends a user a short text message, delivered immediately or during next logon")
+	,JSDOCSTR("Send a user a short text message, delivered immediately or during next logon")
 	,310
 	},
 	{"notify",			js_notify,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number, subject [,message_text]")
@@ -2237,9 +2285,8 @@ static jsSyncMethodSpec js_system_functions[] = {
 	},
 	{"newuser",			js_new_user,		1,	JSTYPE_ALIAS },
 	{"new_user",		js_new_user,		1,	JSTYPE_OBJECT,	JSDOCSTR("name/alias [,client object]")
-	,JSDOCSTR("Creates a new user record, returns a new <a href=#User>User</a> object representing the new user account, on success.<br>"
-	"returns an numeric error code on failure (optional <i>client</i> object argument added in v3.15a.  As of 3.16c, the global "
-	"client object is used if the argument is omitted)")
+	,JSDOCSTR("Create a new user record, returns a new <a href=#User>User</a> object representing the new user account, on success.<br>"
+	"returns an numeric error code on failure")
 	,310
 	},
 	{"del_user",		js_del_user,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number")
@@ -2248,32 +2295,32 @@ static jsSyncMethodSpec js_system_functions[] = {
 	},
 #endif
 	{"exec",			js_sys_exec,		0,	JSTYPE_NUMBER,	JSDOCSTR("command-line")
-	,JSDOCSTR("Executes a native system/shell command-line, returns <i>0</i> on success")
+	,JSDOCSTR("Execute a native system/shell command-line, returns <i>0</i> on success")
 	,311
 	},
 	{"popen",			js_popen,			0,	JSTYPE_ARRAY,	JSDOCSTR("command-line")
-	,JSDOCSTR("Executes a native system/shell command-line, returns array of captured output lines on success "
+	,JSDOCSTR("Execute a native system/shell command-line, returns array of captured output lines on success "
 		"(<b>only functional on UNIX systems</b>)")
 	,311
 	},
 #ifndef JSDOOR
 	{"check_syspass",	js_chksyspass,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("password")
-	,JSDOCSTR("Compares the supplied <i>password</i> against the system password and returns <i>true</i> if it matches")
+	,JSDOCSTR("Compare the supplied <i>password</i> against the system password and returns <tt>true</tt> if it matches")
 	,311
 	},
 	{"check_name",		js_chkname,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("name/alias")
-	,JSDOCSTR("Checks that the provided name/alias string is suitable for a new user account, "
-		"returns <i>true</i> if it is valid")
+	,JSDOCSTR("Check that the provided name/alias string is suitable for a new user account, "
+		"returns <tt>true</tt> if it is valid")
 	,315
 	},
 	{"check_filename",	js_chkfname,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
 	,JSDOCSTR("Verify that the specified <i>filename</i> string is legal and allowed for upload by users "
-		"(based on system configuration and filter files), returns <i>true</i> if the filename is allowed")
+		"(based on system configuration and filter files), returns <tt>true</tt> if the filename is allowed")
 	,31902
 	},
 	{"allowed_filename", js_allowed_fname,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
 	,JSDOCSTR("Verify that the specified <i>filename</i> string is allowed for upload by users "
-		"(based on system configuration), returns <i>true</i> if the filename is allowed")
+		"(based on system configuration), returns <tt>true</tt> if the filename is allowed")
 	,31902
 	},
 	{"safest_filename",	js_safest_fname,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
@@ -2282,22 +2329,22 @@ static jsSyncMethodSpec js_system_functions[] = {
 	},
 	{"illegal_filename", js_illegal_fname,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
 	,JSDOCSTR("Check if the specified <i>filename</i> string contains illegal characters or sequences, "
-		"returns <i>true</i> if it is an illegal filename")
+		"returns <tt>true</tt> if it is an illegal filename")
 	,31902
 	},
 #endif
 	{"check_pid",		js_chkpid,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("process-ID")
-	,JSDOCSTR("Checks that the provided process ID is a valid executing process on the system, "
-		"returns <i>true</i> if it is valid")
+	,JSDOCSTR("Check that the provided process ID is a valid executing process on the system, "
+		"returns <tt>true</tt> if it is valid")
 	,315
 	},
 	{"terminate_pid",	js_killpid,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("process-ID")
-	,JSDOCSTR("Terminates executing process on the system with the specified process ID, "
-		"returns <i>true</i> on success")
+	,JSDOCSTR("Terminate executing process on the system with the specified process ID, "
+		"returns <tt>true</tt> on success")
 	,315
 	},
 	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("index_number")
-	,JSDOCSTR("Returns specified text string (see <tt>bbs.text()</tt> for details)")
+	,JSDOCSTR("Return specified text string (see <tt>bbs.text()</tt> for details)")
 	,31802
 	},
 	{0}
@@ -2727,7 +2774,7 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 	#ifdef BUILD_JSDOCS
 			if(i==0) {
-				js_DescribeSyncObject(cx,nodeobj,"BBS node listing",310);
+				js_DescribeSyncObject(cx,nodeobj,"Terminal Server node listing",310);
 				js_CreateArrayOfStrings(cx, nodeobj, "_property_desc_list", node_prop_desc, JSPROP_READONLY);
 			}
 	#endif

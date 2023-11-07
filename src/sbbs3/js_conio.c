@@ -1,8 +1,4 @@
-/* js_conio.c */
-
 /* Synchronet "conio" (console IO) object */
-
-/* $Id: js_conio.c,v 1.38 2020/04/12 20:30:48 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -1029,7 +1013,7 @@ js_conio_ungetmouse(JSContext *cx, uintN argc, jsval *arglist)
 static jsSyncMethodSpec js_functions[] = {
 	{"init",			js_conio_init,			1
 		,JSTYPE_BOOLEAN,JSDOCSTR("[mode]")
-		,JSDOCSTR("Initializes the conio library and creates a window if needed.  "
+		,JSDOCSTR("Initialize the conio library and creates a window if needed.  "
 				"Mode is a string with one of the following values:<br>"
 				"<table><tr><td>\"AUTO\" (default)</td><td>Automatically select the \"best\" output mode.</td></tr><tr><td>"
 				"<tr><td>\"ANSI\"</td><td>Use ANSI escape sequences directly</td></tr><tr><td>"
@@ -1047,7 +1031,7 @@ static jsSyncMethodSpec js_functions[] = {
 	},
 	{"suspend",			js_conio_suspend,		0
 		,JSTYPE_VOID,JSDOCSTR("")
-		,JSDOCSTR("Suspends conio in CONIO or CURSES modes so the terminal can be used for other things."),315
+		,JSDOCSTR("Suspend conio in CONIO or CURSES modes so the terminal can be used for other things."),315
 	},
 	{"clreol",			js_conio_clreol,		0
 		,JSTYPE_VOID,JSDOCSTR("")
@@ -1055,51 +1039,51 @@ static jsSyncMethodSpec js_functions[] = {
 	},
 	{"clrscr",			js_conio_clrscr,		0
 		,JSTYPE_VOID,JSDOCSTR("")
-		,JSDOCSTR("Clears the screen"),315
+		,JSDOCSTR("Clear the screen"),315
 	},
 	{"wscroll",			js_conio_wscroll,		0
 		,JSTYPE_VOID,JSDOCSTR("")
-		,JSDOCSTR("Scrolls the currently defined window up by one line."),315
+		,JSDOCSTR("Scroll the currently defined window up by one line."),315
 	},
 	{"delline",			js_conio_delline,		0
 		,JSTYPE_VOID,JSDOCSTR("")
-		,JSDOCSTR("Deletes the current line and moves lines below up by one line."),315
+		,JSDOCSTR("Delete the current line and moves lines below up by one line."),315
 	},
 	{"insline",			js_conio_insline,		0
 		,JSTYPE_VOID,JSDOCSTR("")
-		,JSDOCSTR("Inserts a new blank line on the current line and scrolls lines below down to make room."),315
+		,JSDOCSTR("Insert a new blank line on the current line and scrolls lines below down to make room."),315
 	},
 	{"normvideo",		js_conio_normvideo,		0
 		,JSTYPE_VOID,JSDOCSTR("")
-		,JSDOCSTR("Sets the current attribute to \"normal\" (light grey on black)"),315
+		,JSDOCSTR("Set the current attribute to \"normal\" (light grey on black)"),315
 	},
 	{"getch",			js_conio_getch,			0
 		,JSTYPE_NUMBER,JSDOCSTR("")
-		,JSDOCSTR("Waits for and returns a character from the user.  Extended keys are returned as two characters."),315
+		,JSDOCSTR("Wait for and returns a character from the user.  Extended keys are returned as two characters."),315
 	},
 	{"getche",			js_conio_getche,		0
 		,JSTYPE_NUMBER,JSDOCSTR("")
-		,JSDOCSTR("Waits for a character from the user, then echos it.  Extended keys can not be returned and are lost."),315
+		,JSDOCSTR("Wait for a character from the user, then echos it.  Extended keys can not be returned and are lost."),315
 	},
 	{"beep",			js_conio_beep,			0
 		,JSTYPE_VOID,JSDOCSTR("")
-		,JSDOCSTR("Beeps."),315
+		,JSDOCSTR("Beep."),315
 	},
 	{"getfont",			js_conio_getfont,		1
 		,JSTYPE_NUMBER,JSDOCSTR("fnum")
-		,JSDOCSTR("Returns the current font ID or -1 if fonts aren't supported."),315
+		,JSDOCSTR("Return the current font ID or -1 if fonts aren't supported."),315
 	},
 	{"hidemouse",		js_conio_hidemouse,		0
 		,JSTYPE_NUMBER,JSDOCSTR("")
-		,JSDOCSTR("Hides the mouse cursor.  Returns -1 if it cannot be hidden."),315
+		,JSDOCSTR("Hide the mouse cursor.  Returns -1 if it cannot be hidden."),315
 	},
 	{"showmouse",		js_conio_showmouse,		0
 		,JSTYPE_NUMBER,JSDOCSTR("")
-		,JSDOCSTR("Shows the mouse cursor.  Returns -1 if it cannot be shown."),315
+		,JSDOCSTR("Show the mouse cursor.  Returns -1 if it cannot be shown."),315
 	},
 	{"setcursortype",	js_conio_setcursortype,	1
 		,JSTYPE_VOID,JSDOCSTR("type")
-		,JSDOCSTR("Sets the cursor type.  Legal values:<br>"
+		,JSDOCSTR("Set the cursor type.  Legal values:<br>"
 			"<table><tr><td>0</td><td>No cursor</td></tr>"
 			"<tr><td>1</td><td>Solid cursor (fills whole cell)</td></tr>"
 			"<tr><td>2</td><td>Normal cursor</td></tr></table>"
@@ -1107,35 +1091,35 @@ static jsSyncMethodSpec js_functions[] = {
 	},
 	{"gotoxy",			js_conio_gotoxy,		2
 		,JSTYPE_VOID,JSDOCSTR("x, y")
-		,JSDOCSTR("Moves the cursor to the given x/y position."),315
+		,JSDOCSTR("Move the cursor to the given x/y position."),315
 	},
 	{"putch",			js_conio_putch,			1
 		,JSTYPE_NUMBER,JSDOCSTR("charcode")
-		,JSDOCSTR("Puts the character with the specified ASCII character on the screen and advances the cursor.  Returns the character code passed in."),315
+		,JSDOCSTR("Put the character with the specified ASCII character on the screen and advances the cursor.  Returns the character code passed in."),315
 	},
 	{"ungetch",			js_conio_ungetch,		1
 		,JSTYPE_NUMBER,JSDOCSTR("charcode")
-		,JSDOCSTR("Pushes the specified charcode into the input buffer.  The next getch() call will get this character."),315
+		,JSDOCSTR("Push the specified charcode into the input buffer.  The next getch() call will get this character."),315
 	},
 	{"loadfont",		js_conio_loadfont,		1
 		,JSTYPE_VOID,JSDOCSTR("filename")
-		,JSDOCSTR("Loads the filename as the current font.  Returns -1 on failure."),315
+		,JSDOCSTR("Load the filename as the current font.  Returns -1 on failure."),315
 	},
 	{"settitle",		js_conio_settitle,		1
 		,JSTYPE_VOID,JSDOCSTR("title")
-		,JSDOCSTR("Sets the window title if possible."),315
+		,JSDOCSTR("Set the window title if possible."),315
 	},
 	{"setname",			js_conio_setname,		1
 		,JSTYPE_VOID,JSDOCSTR("name")
-		,JSDOCSTR("Sets the application name.  In some modes, this overwrites the window title."),315
+		,JSDOCSTR("Set the application name.  In some modes, this overwrites the window title."),315
 	},
 	{"cputs",			js_conio_cputs,			1
 		,JSTYPE_VOID,JSDOCSTR("string")
-		,JSDOCSTR("Outputs string to the console."),315
+		,JSDOCSTR("Output string to the console."),315
 	},
 	{"setfont",			js_conio_setfont,		2
 		,JSTYPE_NUMBER,JSDOCSTR("font [, force, fnum]")
-		,JSDOCSTR("Sets a current font to the specified font.  If force is set, will change video modes if the current one callot use the specified font.  fnum selects which current font to change:<br>"
+		,JSDOCSTR("Set a current font to the specified font.  If force is set, will change video modes if the current one callot use the specified font.  fnum selects which current font to change:<br>"
 			"<table><tr><td>0</td><td>Default font</td></tr>"
 			"<tr><td>1</td><td>Main font</td></tr>"
 			"<tr><td>2</td><td>First alternate font</td></tr>"
@@ -1146,27 +1130,27 @@ static jsSyncMethodSpec js_functions[] = {
 	},
 	{"getpass",			js_conio_getpass,		1
 		,JSTYPE_STRING,JSDOCSTR("prompt")
-		,JSDOCSTR("Prompts for a password, and waits for it to be entered.  Characters are not echoed to the screen."),315
+		,JSDOCSTR("Prompt for a password, and waits for it to be entered.  Characters are not echoed to the screen."),315
 	},
 	{"window",			js_conio_window,		4
 		,JSTYPE_VOID,JSDOCSTR("start_x, start_y, end_x, end_y")
-		,JSDOCSTR("Sets the current window."),315
+		,JSDOCSTR("Set the current window."),315
 	},
 	{"cgets",			js_conio_cgets,			1
 		,JSTYPE_VOID,JSDOCSTR("max_len")
-		,JSDOCSTR("Inputs a string, echoing as it's typed, with the specified max_len (up to 255)."),315
+		,JSDOCSTR("Input a string, echoing as it's typed, with the specified max_len (up to 255)."),315
 	},
 	{"movetext",		js_conio_movetext,		6
 		,JSTYPE_VOID,JSDOCSTR("start_x, start_y, end_x, end_y, dest_x, dest_y")
-		,JSDOCSTR("Copies the specified screen contents to dest_x/dest_y."),315
+		,JSDOCSTR("Copy the specified screen contents to dest_x/dest_y."),315
 	},
 	{"puttext",			js_conio_puttext,		5
 		,JSTYPE_BOOLEAN,JSDOCSTR("start_x, start_y, end_x, end_y, bytes")
-		,JSDOCSTR("Puts the contents of the bytes array onto the screen filling the specified rectange.  The array is a sequences if integers between 0 and 255 specifying first the ascii character code, then the attribute for that character."),315
+		,JSDOCSTR("Put the contents of the bytes array onto the screen filling the specified rectange.  The array is a sequences if integers between 0 and 255 specifying first the ascii character code, then the attribute for that character."),315
 	},
 	{"gettext",			js_conio_gettext,		4
 		,JSTYPE_ARRAY,JSDOCSTR("start_x, start_y, end_x, end_y")
-		,JSDOCSTR("Returns an array containing the characters and attributes for the specified rectangle."),315
+		,JSDOCSTR("Return an array containing the characters and attributes for the specified rectangle."),315
 	},
 	{0}
 };
@@ -1218,21 +1202,21 @@ static char* conio_prop_desc[] = {
 	"Enables direct video writes (does nothing)",
 	"Do not update the screen when characters are printed",
 	"Calling puttext() (and some other things implemented using it) can move the cursor position",
-	"The current video mode",
-	"",
+	"The current video mode - <small>READ ONLY</small>",
+	"Mouse enabled (1) or disabled (0) - <small>READ ONLY</small>",
 	"Delay in MS after getting an escape character before assuming it is not part of a sequence.  For curses and ANSI modes",
 	"Current text attribute",
-	"True if a keystroke is pending",
+	"True if a keystroke is pending - <small>READ ONLY</small>",
 	"Current x position on the screen",
 	"Current y position on the screen",
 	"Current text mode",
-	"Left column of current window",
-	"Top row of current window",
-	"Right column of current window",
-	"Bottom row of current window",
-	"Width of the screen",
-	"Height of the screen",
-	"Atrribute considered \"normal\"",
+	"Left column of current window - <small>READ ONLY</small>",
+	"Top row of current window - <small>READ ONLY</small>",
+	"Right column of current window - <small>READ ONLY</small>",
+	"Bottom row of current window - <small>READ ONLY</small>",
+	"Width of the screen - <small>READ ONLY</small>",
+	"Height of the screen - <small>READ ONLY</small>",
+	"Attribute considered \"normal\" - <small>READ ONLY</small>",
 	"Background colour",
 	"Foreground colour",
 	"Text in the clipboard",

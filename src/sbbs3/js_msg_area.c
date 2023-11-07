@@ -33,28 +33,28 @@ static char* msg_area_prop_desc[] = {
 };
 
 static char* msg_grp_prop_desc[] = {
-	 "Index into grp_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
+	 "Index into grp_list array (or -1 if not in array)"
 	,"Unique number for this message group"
 	,"Group name"
 	,"Group description"
 	,"Group access requirements"
-	,"User has sufficient access to list this group's sub-boards <i>(introduced in v3.18)</i>"
-	,"Internal code prefix (for sub-boards) <i>(introduced in v3.18c)</i>"
+	,"User has sufficient access to list this group's sub-boards"
+	,"Internal code prefix (for sub-boards)"
 	,NULL
 };
 
 static char* msg_sub_prop_desc[] = {
 
-	 "Index into sub_list array (or -1 if not in array) <i>(introduced in v3.12)</i>"
-	,"Group's index into grp_list array <i>(introduced in v3.12)</i>"
+	 "Index into sub_list array (or -1 if not in array)</i>"
+	,"Group's index into grp_list array</i>"
 	,"Unique number for this sub-board"
 	,"Group number"
-	,"Group name <i>(introduced in v3.12)</i>"
+	,"Group name</i>"
 	,"Sub-board internal code"
 	,"Sub-board name"
 	,"Sub-board description"
 	,"QWK conference name"
-	,"Area tag for FidoNet-style echoes, a.k.a. EchoTag <i>(introduced in v3.19)</i>"
+	,"Area tag for FidoNet-style echoes, a.k.a. EchoTag"
 	,"Newsgroup name (as configured or dynamically generated)"
 	,"Sub-board access requirements"
 	,"Sub-board reading requirements"
@@ -82,7 +82,7 @@ static char* msg_sub_prop_desc[] = {
 	,"User's current new message scan pointer (highest-read message number)"
 	,"User's message scan configuration (bit-flags) - see <tt>SCAN_CFG_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"User's last-read message number"
-	,"Number of messages currently posted to this sub-board <i>(introduced in v3.18c)</i>"
+	,"Number of messages currently posted to this sub-board"
 	,NULL
 };
 #endif

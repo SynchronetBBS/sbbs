@@ -264,11 +264,11 @@ enum {
 #ifdef BUILD_JSDOCS
 static char* queue_prop_desc[] = {
 	 "Name of the queue (if it has one)"
-	,"<i>true</i> if data is waiting to be read from queue"
+	,"<tt>true</tt> if data is waiting to be read from queue"
 	,"Number of values in the read queue"
 	,"Number of values in the write queue"
-	,"<i>true</i> if current thread is the owner/creator of the queue"
-	,"<i>true</i> if the owner of the queue has detached from the queue"
+	,"<tt>true</tt> if current thread is the owner/creator of the queue"
+	,"<tt>true</tt> if the owner of the queue has detached from the queue"
 	,NULL
 };
 #endif
@@ -335,18 +335,18 @@ static jsSyncPropertySpec js_queue_properties[] = {
 };
 
 static jsSyncMethodSpec js_queue_functions[] = {
-	{"poll",		js_poll,		1,	JSTYPE_UNDEF,	"[timeout=<tt>0</tt>]"
+	{"poll",		js_poll,		1,	JSTYPE_UNDEF,	"[<i>number</i> timeout=0]"
 	,JSDOCSTR("Wait for any value to be written to the queue for up to <i>timeout</i> milliseconds "
-		"(default: <i>0</i>), returns <i>true</i> or the <i>name</i> (string) of "
-		"the value waiting (if it has one), or <i>false</i> if no values are waiting")
+		"(default: <i>0</i>), returns <tt>true</tt> or the <i>name</i> (string) of "
+		"the value waiting (if it has one), or <tt>false</tt> if no values are waiting")
 	,312
 	},
-	{"read",		js_read,		1,	JSTYPE_UNDEF,	"[string name] or [timeout=<tt>0</tt>]"
+	{"read",		js_read,		1,	JSTYPE_UNDEF,	"[<i>string</i> name] or [<i>number</i>timeout=0]"
 	,JSDOCSTR("Read a value from the queue, if <i>name</i> not specified, reads next value "
 		"from the bottom of the queue (waiting up to <i>timeout</i> milliseconds)")
 	,313
 	},
-	{"peek",		js_peek,		1,	JSTYPE_UNDEF,	"[timeout=<tt>0</tt>]"
+	{"peek",		js_peek,		1,	JSTYPE_UNDEF,	"[<i>number</i> timeout=0]"
 	,JSDOCSTR("Peek at the value at the bottom of the queue, "
 		"wait up to <i>timeout</i> milliseconds for any value to be written "
 		"(default: <i>0</i>)")

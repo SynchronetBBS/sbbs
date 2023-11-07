@@ -4431,31 +4431,31 @@ js_select_user(JSContext *cx, uintN argc, jsval *arglist)
 
 static jsSyncMethodSpec js_bbs_functions[] = {
 	{"atcode",			js_atcode,			1,	JSTYPE_STRING,	JSDOCSTR("code_string")
-	,JSDOCSTR("Returns @-code value, specified <i>code</i> string does not include @ character delimiters")
+	,JSDOCSTR("Return @-code value, specified <i>code</i> string does not include @ character delimiters")
 	,310
 	},
 	{"expand_atcodes",	js_expand_atcodes,	1,	JSTYPE_STRING,	JSDOCSTR("string")
-	,JSDOCSTR("Returns string with @-code expanded values (formatting and some @-codes are not supported)")
+	,JSDOCSTR("Return string with @-code expanded values (formatting and some @-codes are not supported)")
 	,320
 	},
 	/* text.dat */
-	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("index_number [,default_text=<i>false</i>]")
-	,JSDOCSTR("Returns current text string (specified via 1-based string index number)"
+	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("index_number [,<i>bool</i> default_text=false]")
+	,JSDOCSTR("Return current text string (specified via 1-based string index number)"
 		"from text.dat/text.ini or replacement text or <i>null</i> upon error"
 		"<p>"
 		"<i>New in v3.20:</i><br>"
-		"Use <tt>bbs.text.<i>ID</i><tt> to obtain a text string index number from its corresponding ID (name).<br>"
-		"The <tt>default_text</tt> argument can be used to get a default langage (text.dat) string value."
+		"Use <tt>bbs.text.<i>ID</i></tt> to obtain a text string index number from its corresponding ID (name).<br>"
+		"The <tt>default_text</tt> argument can be used to get a <i>default</i> language (i.e. <tt>text.dat</tt> file) string value."
 	)
 	,310
 	},
 	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("index_number, text")
-	,JSDOCSTR("Replaces specified text.dat/text.ini string in memory")
+	,JSDOCSTR("Replace specified text.dat/text.ini string in memory")
 	,310
 	},
-	{"revert_text",		js_revert_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[index_number=<i>all</i>]")
-	,JSDOCSTR("Reverts specified text string to original text.dat/text.ini string; "
-		"if <i>index_number</i> unspecified, reverts all text lines")
+	{"revert_text",		js_revert_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[<i>number</i> index=<i>all</i>]")
+	,JSDOCSTR("Revert specified text string to original <tt>text.dat/text.ini</tt> string; "
+		"if <i>index</i> unspecified, reverts all text lines")
 	,310
 	},
 	{"load_text",		js_load_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename")
@@ -4468,7 +4468,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	},
 	/* procedures */
 	{"newuser",			js_newuser,			0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("Interactive new user procedure")
+	,JSDOCSTR("Initiate interactive new user registration procedure")
 	,310
 	},
 	{"login",			js_login,			4,	JSTYPE_BOOLEAN,	JSDOCSTR("user_name [,password_prompt] [,user_password] [,system_password]")
@@ -4477,26 +4477,26 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	{"logon",			js_logon,			0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("Interactive user-logon procedure")
+	,JSDOCSTR("Initiate interactive user-logon procedure")
 	,310
 	},
-	{"logoff",			js_logoff,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[prompt=<i>true</i>]")
-	,JSDOCSTR("Interactive user-logoff procedure, pass <i>false</i> for <i>prompt</i> argument to avoid yes/no prompt, returns <i>false</i> if denied logoff, "
+	{"logoff",			js_logoff,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[prompt=true]")
+	,JSDOCSTR("Initiate interactive user-logoff procedure, pass <tt>false</tt> for <i>prompt</i> argument to avoid yes/no prompt, returns <tt>false</tt> if denied logoff, "
 		"hangs-up (disconnects) upon completion of logoff")
 	,315
 	},
 	{"logout",			js_logout,			0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("Non-interactive user-logout procedure, invoked implicitly upon user-disconnect. Only invoke this method to force a logout without a disconnect.")
+	,JSDOCSTR("Initiate non-interactive user-logout procedure, invoked implicitly upon user-disconnect. Only invoke this method to force a logout without a disconnect.")
 	,310
 	},
 	{"hangup",			js_hangup,			0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("Hangup (disconnect) the connected user/client immediately")
+	,JSDOCSTR("Hang-up (disconnect) the connected user/client immediately")
 	,310
 	},
 	{"node_sync",		js_nodesync,		1,	JSTYPE_ALIAS },
-	{"nodesync",		js_nodesync,		1,	JSTYPE_VOID,	JSDOCSTR("[clear-line=<i>false</i>]")
+	{"nodesync",		js_nodesync,		1,	JSTYPE_VOID,	JSDOCSTR("[clear-line=false]")
 	,JSDOCSTR("Synchronize with node database, checks for messages, interruption, etc. (AKA node_sync), "
-	"clears the current console line if there's a message to print when <i>clear-line</i> is <i>true</i>.")
+	"clears the current console line if there's a message to print when <i>clear-line</i> is <tt>true</tt>.")
 	,310
 	},
 	{"auto_msg",		js_automsg,			0,	JSTYPE_VOID,	JSDOCSTR("")
@@ -4598,16 +4598,16 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Display system statistics")
 	,310
 	},
-	{"node_stats",		js_node_stats,		0,	JSTYPE_VOID,	JSDOCSTR("[node_number=<i>current</i>]")
+	{"node_stats",		js_node_stats,		0,	JSTYPE_VOID,	JSDOCSTR("[<i>number</i> node=<i>current</i>]")
 	,JSDOCSTR("Display current (or specified) node statistics")
 	,310
 	},
-	{"list_users",		js_userlist,		0,	JSTYPE_VOID,	JSDOCSTR("[mode=<tt>UL_ALL</tt>]")
+	{"list_users",		js_userlist,		0,	JSTYPE_VOID,	JSDOCSTR("[mode=UL_ALL]")
 	,JSDOCSTR("Display user list"
 	"(see <tt>UL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> values)")
 	,310
 	},
-	{"edit_user",		js_useredit,		0,	JSTYPE_VOID,	JSDOCSTR("[user_number=<i>current</i>]")
+	{"edit_user",		js_useredit,		0,	JSTYPE_VOID,	JSDOCSTR("[<i>number</i> user=<i>current</i>]")
 	,JSDOCSTR("Enter the user editor")
 	,310
 	},
@@ -4619,17 +4619,17 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Display the logon list (optionally passing arguments to the logon list module)")
 	,310
 	},
-	{"read_mail",		js_readmail,		0,	JSTYPE_NUMBER,	JSDOCSTR("[which=<tt>MAIL_YOUR</tt>] [,user_number=<i>current</i>] [,loadmail_mode=<tt>0</tt>]")
+	{"read_mail",		js_readmail,		0,	JSTYPE_NUMBER,	JSDOCSTR("[<i>number</i> which=MAIL_YOUR] [,<i>number</i> user=<i>current</i>] [,<i>number</i> loadmail_mode=0]")
 	,JSDOCSTR("Read private e-mail"
 	"(see <tt>MAIL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>which</i> values), returns user-modified loadmail_mode value")
 	,310
 	},
-	{"email",			js_email,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("to_user_number [,mode=<tt>WM_EMAIL</tt>] [,top=<i>none</i>] [,subject=<i>none</i>] [,object reply_header]")
-	,JSDOCSTR("Send private e-mail to a local user (<i>reply_header</i> added in v3.17c)")
+	{"email",			js_email,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("<i>number</i> to_user [,<i>number</i> mode=WM_EMAIL] [,<i>string</i> top=none] [,<i>string</i> subject=none] [,<i>object</i> reply_header]")
+	,JSDOCSTR("Send private e-mail to a local user")
 	,310
 	},
-	{"netmail",			js_netmail,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[string address or array of addresses] [,mode=<tt>WM_NONE</tt>] [,subject=<i>none</i>] [,object reply_header]")
-	,JSDOCSTR("Send private netmail (<i>reply_header</i> added in v3.17c, <i>array of addresses</i> added in v3.18a)")
+	{"netmail",			js_netmail,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[<i>string</i> address or <i>array</i> of addresses] [,<i>number</i> mode=WM_NONE] [,<i>string</i> subject=none] [,<i>object</i> reply_header]")
+	,JSDOCSTR("Send private netmail")
 	,310
 	},
 	{"bulk_mail",		js_bulkmail,		0,	JSTYPE_VOID,	JSDOCSTR("[ars]")
@@ -4645,55 +4645,55 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 		"specified by number or internal code")
 	,310
 	},
-	{"export_filelist",	js_export_filelist,	2,	JSTYPE_NUMBER,	JSDOCSTR("filename [,mode=<tt>FL_NONE</tt>]")
+	{"export_filelist",	js_export_filelist,	2,	JSTYPE_NUMBER,	JSDOCSTR("filename [,<i>number</i> mode=FL_NONE]")
 	,JSDOCSTR("Export list of files to a text file, optionally specifying a file list mode (e.g. <tt>FL_ULTIME</tt>), returning the number of files listed")
 	,319
 	},
-	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt> or search_string] [,mode=<tt>FL_NONE</tt>]")
+	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,<i>string</i> filespec=\"*.*\" or search_string] [,<i>number</i> mode=FL_NONE]")
 	,JSDOCSTR("List files in the specified file directory, "
 		"optionally specifying a file specification (wildcards) or a description search string, "
 		"and <i>mode</i> (bit-flags)")
 	,310
 	},
-	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt>] [,mode=<tt>FI_INFO</tt>]")
+	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,<i>string</i> filespec=\"*.*\"] [,<i>number</i> mode=FI_INFO]")
 	,JSDOCSTR("List extended file information for files in the specified file directory")
 	,310
 	},
-	{"post_msg",		js_post_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>WM_NONE</tt>] [,object reply_header]")
+	{"post_msg",		js_post_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,<i>number</i> mode=WM_NONE] [,<i>object</i> reply_header]")
 	,JSDOCSTR("Post a message in the specified message sub-board (number or internal code) "
 		"with optional <i>mode</i> (bit-flags)<br>"
 		"If <i>reply_header</i> is specified (a header object returned from <i>MsgBase.get_msg_header()</i>), that header "
 		"will be used for the in-reply-to header fields.")
 	,313
 	},
-	{"forward_msg",		js_forward_msg,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("object header, string to [,string subject] [,string comment]")
+	{"forward_msg",		js_forward_msg,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("<i>object</i> header, <i>string</i> to [,<i>string</i> subject] [,<i>string</i> comment]")
 	,JSDOCSTR("Forward a message")
 	,31802
 	},
-	{"edit_msg",		js_edit_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("object header")
+	{"edit_msg",		js_edit_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("<i>object</i> header")
 	,JSDOCSTR("Edit a message")
 	,31802
 	},
-	{"show_msg",		js_show_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("object header [,mode=<tt>P_NONE</tt>] ")
+	{"show_msg",		js_show_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("<i>object</i> header [,<i>number</i> mode=P_NONE] ")
 	,JSDOCSTR("Show a message's header and body (text) with optional print <i>mode</i> (bit-flags)<br>"
 		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
 	,31702
 	},
-	{"show_msg_header",	js_show_msg_header,	1,	JSTYPE_VOID,	JSDOCSTR("object header [,subject] [,from] [,to]")
+	{"show_msg_header",	js_show_msg_header,	1,	JSTYPE_VOID,	JSDOCSTR("<i>object</i> header [,<i>string</i> subject] [,<i>string</i> from] [,<i>string</i> to]")
 	,JSDOCSTR("Show a message's header (only)<br>"
 		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
 	,31702
 	},
-	{"download_msg_attachments", js_download_msg_attachments, 1, JSTYPE_VOID, JSDOCSTR("object header")
+	{"download_msg_attachments", js_download_msg_attachments, 1, JSTYPE_VOID, JSDOCSTR("<i>object</i> header")
 	,JSDOCSTR("Prompt the user to download each of the message's file attachments (if there are any)<br>"
 		"<i>header</i> must be a header object returned from <i>MsgBase.get_msg_header()</i>)")
 	,31702
 	},
-	{"change_msg_attr", js_change_msg_attr, 1, JSTYPE_NUMBER, JSDOCSTR("object header")
+	{"change_msg_attr", js_change_msg_attr, 1, JSTYPE_NUMBER, JSDOCSTR("<i>object</i> header")
 	,JSDOCSTR("Prompt the user to modify the specified message header attributes")
 	,31702
 	},
-	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	JSDOCSTR("[type=<tt>SCAN_CFG_NEW</tt>]")
+	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	JSDOCSTR("[<i>number</i> type=SCAN_CFG_NEW]")
 	,JSDOCSTR("Configure message scan "
 		"(<i>type</i> is either <tt>SCAN_CFG_NEW</tt> or <tt>SCAN_CFG_TOYOU</tt>)")
 	,310
@@ -4711,30 +4711,30 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,320
 	},
 	{"reload_msg_scan",	js_reload_msg_scan,	0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("Re-loads message scan configuration and pointers from userbase")
+	,JSDOCSTR("Re-load message scan configuration and pointers from userbase")
 	,320
 	},
-	{"scan_subs",		js_scansubs,		0,	JSTYPE_VOID,	JSDOCSTR("[mode=<tt>SCAN_NEW</tt>] [,all=<tt>false</tt>]")
+	{"scan_subs",		js_scansubs,		0,	JSTYPE_VOID,	JSDOCSTR("[<i>number</i> mode=SCAN_NEW] [,<i>bool</i> all=false]")
 	,JSDOCSTR("Scan sub-boards for messages")
 	,310
 	},
-	{"scan_dirs",		js_scandirs,		0,	JSTYPE_VOID,	JSDOCSTR("[mode=<tt>FL_NONE</tt>] [,all=<tt>false</tt>]")
+	{"scan_dirs",		js_scandirs,		0,	JSTYPE_VOID,	JSDOCSTR("[<i>number</i> mode=FL_NONE] [,<i>bool<?i> all=false]")
 	,JSDOCSTR("Scan directories for files")
 	,310
 	},
 	{"scan_posts",		js_scanposts,		1,	JSTYPE_ALIAS },
-	{"scan_msgs",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_READ</tt>] [,find]")
+	{"scan_msgs",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board=<i>current</i>] [,<i>number</i> mode=SCAN_READ] [,<i>string</i> find]")
 	,JSDOCSTR("Scan messages in the specified message sub-board (number or internal code), "
 		"optionally search for 'find' string (AKA scan_posts)")
 	,310
 	},
-	{"list_msgs",		js_listmsgs,		1,	JSTYPE_NUMBER,	JSDOCSTR("[sub-board=<i>current</i>] [,mode=<tt>SCAN_INDEX</tt>] [,message_number=<tt>0</tt>] [,find]")
+	{"list_msgs",		js_listmsgs,		1,	JSTYPE_NUMBER,	JSDOCSTR("[sub-board=<i>current</i>] [,<i>number</i> mode=SCAN_INDEX] [,<i>number</i> message_number=0] [,<i>string</i> find]")
 	,JSDOCSTR("List messages in the specified message sub-board (number or internal code), "
 		"optionally search for 'find' string, returns number of messages listed")
 	,314
 	},
 	/* menuing */
-	{"menu",			js_menu,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename [,mode=<tt>P_NONE</tt>] [,object scope]")
+	{"menu",			js_menu,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename [,<i>number</i> mode=P_NONE] [,<i>object</i> scope]")
 	,JSDOCSTR("Display a menu file from the text/menu directory.<br>"
 	"See <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.<br>"
 	"When <i>scope</i> is specified, <tt>@JS:property@</tt> codes will expand the referenced property names.<br>"
@@ -4742,10 +4742,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	{"menu_exists",		js_menu_exists,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename")
-	,JSDOCSTR("Returns true if the referenced menu file exists (i.e. in the text/menu directory)")
+	,JSDOCSTR("Return true if the referenced menu file exists (i.e. in the text/menu directory)")
 	,31700
 	},
-	{"log_key",			js_logkey,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("key [,comma=<tt>false</tt>]")
+	{"log_key",			js_logkey,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("key [,comma=false]")
 	,JSDOCSTR("Log key to node.log (comma optional)")
 	,310
 	},
@@ -4763,7 +4763,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	/* xtrn programs/modules */
-	{"exec",			js_exec,			2,	JSTYPE_NUMBER,	JSDOCSTR("cmdline [,mode=<tt>EX_NONE</tt>] [,startup_dir]")
+	{"exec",			js_exec,			2,	JSTYPE_NUMBER,	JSDOCSTR("cmdline [,<i>number</i> mode=EX_NONE] [,<i>string</i> startup_dir]")
 	,JSDOCSTR("Execute a program, optionally changing current directory to <i>startup_dir</i> "
 	"(see <tt>EX_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags.)")
 	,310
@@ -4777,18 +4777,19 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	"(see <tt>EVENT_*</tt> in <tt>sbbsdefs.js</tt> for valid values)")
 	,310
 	},
-	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("address[:port] [,mode=<tt>TG_NONE</tt>] [,timeout=<tt>10</tt>]")
+	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("address[:port] [,<i>number</i> mode=TG_NONE] [,<i>number</i> timeout=10]")
 	,JSDOCSTR("External Telnet gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags).")
 	,310
 	},
-	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("address[:port] [,client-user-name=<tt>user.alias</tt>, server-user-name=<tt>user.name</tt>, terminal=<tt>console.terminal</tt>] [,mode=<tt>TG_NONE</tt>]  [,timeout=<tt>10</tt>]")
+	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_BOOLEAN
+	,JSDOCSTR("address[:port] [,<i>string</i> client-user-name=<i>user.alias</i>, <i>string</i> server-user-name=<i>user.name</i>, <i>string</i> terminal=<i>console.terminal</i>] [,<i>number</i> mode=TG_NONE]  [,<i>number</i> timeout=10]")
 	,JSDOCSTR("External RLogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags).")
 	,316
 	},
 	/* security */
 	{"check_filename",	js_checkfname,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
 	,JSDOCSTR("Verify that the specified <i>filename</i> string is legal and allowed for upload "
-		"(based on system configuration), returns <i>true</i> if the filename is allowed.<br>"
+		"(based on system configuration), returns <tt>true</tt> if the filename is allowed.<br>"
 		"Note: Will display <tt>text/badfile.msg</tt> for matching filenames, if it exists.")
 	,31902
 	},
@@ -4803,7 +4804,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	},
 	/* chat/node stuff */
 	{"page_sysop",		js_pagesysop,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("Page the sysop for chat, returns <i>false</i> if the sysop could not be paged")
+	,JSDOCSTR("Page the sysop for chat, returns <tt>false</tt> if the sysop could not be paged")
 	,310
 	},
 	{"page_guru",		js_pageguru,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
@@ -4818,23 +4819,23 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Use the private inter-node message prompt")
 	,310
 	},
-	{"private_chat",	js_private_chat,	0,	JSTYPE_VOID,	JSDOCSTR("[local=<i>false</i>]")
-	,JSDOCSTR("Enter private inter-node chat, or local sysop chat (if <i>local</i>=<i>true</i>)")
+	{"private_chat",	js_private_chat,	0,	JSTYPE_VOID,	JSDOCSTR("[local=false]")
+	,JSDOCSTR("Enter private inter-node chat, or local sysop chat (if <i>local</i>=<tt>true</tt>)")
 	,310
 	},
-	{"get_node_message",js_get_node_message,1,	JSTYPE_VOID,	JSDOCSTR("[clearline=<i>false</i>]")
+	{"get_node_message",js_get_node_message,1,	JSTYPE_VOID,	JSDOCSTR("[<i>bool</i> clear-line=false]")
 	,JSDOCSTR("Receive and display an inter-node message")
 	,310
 	},
-	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("[node_number] [,text]")
+	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("[<i>number</i> node_number] [,text]")
 	,JSDOCSTR("Send an inter-node message (specify a <i>node_number</i> value of <tt>-1</tt> for 'all active nodes')")
 	,31700
 	},
-	{"get_telegram",	js_get_telegram,	2,	JSTYPE_VOID,	JSDOCSTR("[user_number=<i>current</i>], [clearline=<i>false</i>]")
+	{"get_telegram",	js_get_telegram,	2,	JSTYPE_VOID,	JSDOCSTR("[<i>number</i> user_number=<i>current</i>], [<i>bool</i> clear-line=false]")
 	,JSDOCSTR("Receive and display waiting telegrams for specified (or current) user")
 	,310
 	},
-	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("[user_number] [,text]")
+	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("[<i>number</i> user_number] [,text]")
 	,JSDOCSTR("Send a telegram (short multi-line stored message) to a user")
 	,31700
 	},
@@ -4846,21 +4847,21 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("List active nodes only (who's online)")
 	,310
 	},
-	{"spy",				js_spy,				1,	JSTYPE_VOID,	JSDOCSTR("node_number")
+	{"spy",				js_spy,				1,	JSTYPE_VOID,	JSDOCSTR("<i>number</i> node")
 	,JSDOCSTR("Spy on a node")
 	,310
 	},
 	/* misc */
-	{"cmdstr",			js_cmdstr,			1,	JSTYPE_STRING,	JSDOCSTR("command_string [,fpath=<tt>\"\"</tt>] [,fspec=<tt>\"\"</tt>]")
+	{"cmdstr",			js_cmdstr,			1,	JSTYPE_STRING,	JSDOCSTR("command_string [,<i>string</i> fpath=\"\"] [,<i>string</i> fspec=\"\"]")
 	,JSDOCSTR("Return expanded command string using Synchronet command-line specifiers")
 	,310
 	},
 	/* input */
 	{"get_filespec",	js_getfilespec,		0,	JSTYPE_STRING,	JSDOCSTR("")
-	,JSDOCSTR("Returns a file specification input by the user (optionally with wildcards)")
+	,JSDOCSTR("Return a file specification input by the user (optionally with wildcards)")
 	,310
 	},
-	{"get_newscantime",	js_getnstime,		1,	JSTYPE_NUMBER,	JSDOCSTR("time=<i>current</i>")
+	{"get_newscantime",	js_getnstime,		1,	JSTYPE_NUMBER,	JSDOCSTR("[<i>number</i> time=<i>current</i>]")
 	,JSDOCSTR("Confirm or change a new-scan time, returns the new new-scan time value (<i>time_t</i> format)")
 	,310
 	},
@@ -4881,7 +4882,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Verify the current user online meets the specified Access Requirements String")
 	,315
 	},
-	{"select_node",		js_select_node,		1,	JSTYPE_NUMBER,	JSDOCSTR("all_is_an_option=<i>false</i>")
+	{"select_node",		js_select_node,		1,	JSTYPE_NUMBER,	JSDOCSTR("<i>bool</i> all_is_an_option=false")
 	,JSDOCSTR("Choose an active node to interact with.<br>Returns the selected node number, 0 (for none) or -1 for 'All'.")
 	,31700
 	},

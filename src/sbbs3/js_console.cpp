@@ -448,7 +448,7 @@ static const char* con_prop_desc[] = {
 	,"Length of last line sent to terminal (before a carriage-return or line-wrap)"
 	,"Duration of delay (in milliseconds) before each line-feed character is sent to the terminal"
 	,"Current display attributes (set with number or string value)"
-	,"Set to <i>true</i> if the terminal cursor is already at the top of the screen - <small>READ ONLY</small>"
+	,"<tt>true</tt> if the terminal cursor is already at the top of the screen - <small>READ ONLY</small>"
 	,"Number of remote terminal screen rows (in lines)"
 	,"Number of remote terminal screen columns (in character cells)"
 	,"Current tab stop interval (tab size), in columns"
@@ -469,12 +469,12 @@ static const char* con_prop_desc[] = {
 	,"Current yes/no question (set by yesno and noyes)"
 	,"Cursor position offset for use with <tt>getstr(K_USEOFFSET)</tt>"
 	,"Control key pass-through bit-mask, set bits represent control key combinations "
-		"<i>not</i> handled by <tt>inkey()</tt> method "
+		"<i>not</i> handled by <tt>inkey()</tt> method.<br> "
 		"This may optionally be specified as a string of characters. "
-		"The format of this string is [+-][@-_]. If neither plus nor minus is "
+		"The format of this string is [+-][@-_].<br>If neither plus nor minus is "
 		"the first character, the value will be replaced by one constructed "
-		"from the string. A + indicates that characters following will be "
-		"added to the set, and a - indicates they should be removed. "
+		"from the string.<br>A + indicates that characters following will be "
+		"added to the set, and a - indicates they should be removed.<br>"
 		"ex: <tt>console.ctrlkey_passthru=\"-UP+AB\"</tt> will clear CTRL-U and "
 		"CTRL-P and set CTRL-A and CTRL-B."
 	,"Number of bytes currently in the input buffer (from the remote client) - <small>READ ONLY</small>"
@@ -2390,34 +2390,34 @@ js_flush(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static jsSyncMethodSpec js_console_functions[] = {
-	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[mode=<tt>K_NONE</tt>] [,timeout=<tt>0</tt>]")
+	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[k_mode=K_NONE] [,timeout=0]")
 	,JSDOCSTR("Get a single key with optional <i>timeout</i> in milliseconds (defaults to 0, for no wait).<br>"
-		"Returns an empty string (or <tt>null</tt> when the <tt>K_NUL</tt> mode flag is used) if there is no input (e.g. timeout occurs).<br>"
-		"See <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.")
+		"Returns an empty string (or <tt>null</tt> when the <tt>K_NUL</tt> <i>k_mode</i> flag is used) if there is no input (e.g. timeout occurs).<br>"
+		"See <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>k_mode</i> flags.")
 	,311
 	},
-	{"getkey",			js_getkey,			0, JSTYPE_STRING,	JSDOCSTR("[mode=<tt>K_NONE</tt>]")
+	{"getkey",			js_getkey,			0, JSTYPE_STRING,	JSDOCSTR("[k_mode=K_NONE]")
 	,JSDOCSTR("Get a single key, with wait.<br>"
-		"See <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.")
+		"See <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>k_mode</i> flags.")
 	,310
 	},
-	{"getstr",			js_getstr,			0, JSTYPE_STRING,	JSDOCSTR("[string] [,maxlen=<tt>128</tt>] [,mode=<tt>K_NONE</tt>] [,history[]]")
+	{"getstr",			js_getstr,			0, JSTYPE_STRING,	JSDOCSTR("[<i>string</i> default_value] [,<i>number</i> maxlen=128] [,<i>number</i> k_mode=K_NONE] [,<i>array</i> history[]]")
 	,JSDOCSTR("Get a text string from the user.<br>"
-		"See <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.<br>"
-		"<i>history[]</i>, added in v3.17, allows a command history (string array) to be recalled using the up/down arrow keys."
+		"See <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>k_mode</i> flags.<br>"
+		"<i>history[]</i> allows a command history (array of strings) to be recalled using the up/down arrow keys."
 		)
 	,310
 	},
-	{"getnum",			js_getnum,			0, JSTYPE_NUMBER,	JSDOCSTR("[maxnum[, default]]")
+	{"getnum",			js_getnum,			0, JSTYPE_NUMBER,	JSDOCSTR("[<i>number</i> maxnum [,<i>number</i> default]]")
 	,JSDOCSTR("Get a number between 1 and <i>maxnum</i> from the user with a default value of <i>default</i>")
 	,310
 	},
-	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	JSDOCSTR("[keys] [,maxnum] [,mode=<tt>K_UPPER</tt>]")
+	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	JSDOCSTR("[<i>string</i> keys] [,<i>number></i> maxnum] [,<i>number</i> k_mode=K_UPPER]")
 	,JSDOCSTR("Get one key from of a list of valid command <i>keys</i> (any key, if not specified), "
 		"or a number between 1 and <i>maxnum</i>")
 	,310
 	},
-	{"gettemplate",		js_gettemplate,		1, JSTYPE_STRING,	JSDOCSTR("format [,string] [,mode=<tt>0</tt>]")
+	{"gettemplate",		js_gettemplate,		1, JSTYPE_STRING,	JSDOCSTR("<i>string</i> format [,<i>string</i> default_value] [,<i>number</i> k_mode=K_NONE]")
 	,JSDOCSTR("Get an input string based on specified template")
 	,310
 	},
@@ -2425,21 +2425,21 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("Put one or more characters in the keyboard input buffer")
 	,310
 	},
-	{"yesno",			js_yesno,			2, JSTYPE_BOOLEAN,	JSDOCSTR("question [,mode = P_NONE]")
-	,JSDOCSTR("YES/no question - returns <i>true</i> if 'yes' is selected")
+	{"yesno",			js_yesno,			2, JSTYPE_BOOLEAN,	JSDOCSTR("question [,<i>number</i> p_mode=P_NONE]")
+	,JSDOCSTR("YES/no question - returns <tt>true</tt> if 'yes' is selected")
 	,310
 	},
-	{"noyes",			js_noyes,			2, JSTYPE_BOOLEAN,	JSDOCSTR("question [,mode = P_NONE]")
-	,JSDOCSTR("NO/yes question - returns <i>true</i> if 'no' is selected")
+	{"noyes",			js_noyes,			2, JSTYPE_BOOLEAN,	JSDOCSTR("question [,<i>number</i> p_mode=P_NONE]")
+	,JSDOCSTR("NO/yes question - returns <tt>true</tt> if 'no' is selected")
 	,310
 	},
 	{"mnemonics",		js_mnemonics,		1, JSTYPE_VOID,		JSDOCSTR("text")
 	,JSDOCSTR("Print a mnemonics string, command keys highlighted with tilde (~) characters")
 	,310
 	},
-	{"clear",           js_clear,			0, JSTYPE_VOID,		JSDOCSTR("[attribute] [,autopause=<tt>true</tt>]")
+	{"clear",           js_clear,			0, JSTYPE_VOID,		JSDOCSTR("[<i>string</i> or <i>number</i> attribute] [,<i>bool</i> autopause=true]")
 	,JSDOCSTR("Clear screen and home cursor, "
-		"optionally (in v3.13b+) setting current attribute first")
+		"optionally setting current attribute first")
 	,310
 	},
 	{"home",            js_cursor_home,		0, JSTYPE_VOID,		JSDOCSTR("")
@@ -2448,28 +2448,28 @@ static jsSyncMethodSpec js_console_functions[] = {
 	},
 	{"clearline",       js_clearline,		0, JSTYPE_VOID,		JSDOCSTR("[attribute]")
 	,JSDOCSTR("Clear current line, "
-		"optionally (in v3.13b+) setting current attribute first")
+		"optionally setting current attribute first")
 	,310
 	},
 	{"cleartoeol",      js_cleartoeol,		0, JSTYPE_VOID,		JSDOCSTR("[attribute]")
 	,JSDOCSTR("Clear to end-of-line, "
-		"optionally (in v3.13b+) setting current attribute first")
+		"optionally setting current attribute first")
 	,311
 	},
-	{"crlf",            js_crlf,			0, JSTYPE_VOID,		JSDOCSTR("[count=<tt>1</tt>]")
+	{"crlf",            js_crlf,			0, JSTYPE_VOID,		JSDOCSTR("[count=1]")
 	,JSDOCSTR("Output <i>count</i> number of carriage-return/line-feed pairs (new-lines)")
 	,310
 	},
-	{"pause",			js_pause,			0, JSTYPE_BOOLEAN,	JSDOCSTR("[set_abort=true]")
-	,JSDOCSTR("Display pause prompt and wait for key hit, returns <i>false</i> if user responded with Quit/Abort key.<br>"
+	{"pause",			js_pause,			0, JSTYPE_BOOLEAN,	JSDOCSTR("[<i>bool</i> set_abort=true]")
+	,JSDOCSTR("Display pause prompt and wait for key hit, returns <tt>false</tt> if user responded with Quit/Abort key.<br>"
 		"Passing <tt>false</tt> for the <i>set_abort</i> argument will prevent the ''console.aborted'' flag from being set by this method.")
 	,310
 	},
-	{"beep",			js_beep,			1, JSTYPE_VOID,		JSDOCSTR("[count=<tt>1</tt>]")
+	{"beep",			js_beep,			1, JSTYPE_VOID,		JSDOCSTR("[count=1]")
 	,JSDOCSTR("Beep for <i>count</i> number of times (default count is 1)")
 	,311
 	},
-	{"print",			js_print,			1, JSTYPE_VOID,		JSDOCSTR("[value [,value][...]] or [string [,mode=<tt>P_NONE</tt>]]")
+	{"print",			js_print,			1, JSTYPE_VOID,		JSDOCSTR("[value [,value][...]] or [<i>string</i> text [,<i>number</i> p_mode=P_NONE]]")
 	,JSDOCSTR("Display one or more values as strings (supports Ctrl-A codes, Telnet-escaping, auto-screen pausing, etc.).<br>"
 		"Supports a limited set of <tt>P_*</tt> flags, e.g. <tt>P_PETSCII</tt> and <tt>P_UTF8</tt>."
 	)
@@ -2483,10 +2483,10 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("Display one or more values as raw strings followed by a single carriage-return/line-feed pair (new-line)")
 	,315
 	},
-	{"putmsg",			js_putmsg,			1, JSTYPE_VOID,		JSDOCSTR("text [,mode=<tt>P_NONE</tt>] [,orig_columns=0] [,object scope]")
+	{"putmsg",			js_putmsg,			1, JSTYPE_VOID,		JSDOCSTR("text [,<i>number</i> p_mode=P_NONE] [,<i>number</i> orig_columns=0] [,<i>object</i> scope]")
 	,JSDOCSTR("Display message text (Ctrl-A codes, @-codes, pipe codes, etc.).<br> "
-		"See <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.<br>"
-		"When <tt>P_WORDWRAP</tt> mode flag is specified, <i>orig_columns</i> specifies the original text column width, if known.<br>"
+		"See <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for <i>p_mode</i> flags.<br>"
+		"When <tt>P_WORDWRAP</tt> p_mode flag is specified, <i>orig_columns</i> specifies the original text column width, if known.<br>"
 		"When <i>scope</i> is specified, <tt>@JS:property@</tt> codes will expand the referenced property names.")
 	,310
 	},
@@ -2502,26 +2502,26 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("Display a progress indication bar, updated every <i>interval</i> milliseconds")
 	,31902
 	},
-	{"strlen",			js_strlen,			1, JSTYPE_NUMBER,	JSDOCSTR("text [,mode=<tt>P_NONE</tt>]")
+	{"strlen",			js_strlen,			1, JSTYPE_NUMBER,	JSDOCSTR("text [,p_mode=P_NONE]")
 	,JSDOCSTR("Returns the printed-length (number of columns) of the specified <i>text</i>, accounting for Ctrl-A codes")
 	,310
 	},
-	{"printfile",		js_printfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename [,mode=<tt>P_NONE</tt>] [,orig_columns=0] [,object scope]")
-	,JSDOCSTR("Print a message text file with optional mode.<br>"
-		"When <tt>P_WORDWRAP</tt> mode flag is specified, <i>orig_columns</i> specifies the original text column width, if known.<br>"
+	{"printfile",		js_printfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename [,<i>number</i> p_mode=P_NONE] [,<i>number</i> orig_columns=0] [,<i>object</i> scope]")
+	,JSDOCSTR("Print a message text file with optional print mode.<br>"
+		"When <tt>P_WORDWRAP</tt> p_mode flag is specified, <i>orig_columns</i> specifies the original text column width, if known.<br>"
 		"When <i>scope</i> is specified, <tt>@JS:property@</tt> codes will expand the referenced property names.")
 	,310
 	},
-	{"printtail",		js_printtail,		2, JSTYPE_BOOLEAN,		JSDOCSTR("filename, lines [,mode=<tt>P_NONE</tt>] [,orig_columns=0] [,object scope]")
-	,JSDOCSTR("Print the last <i>n</i> lines of file with optional mode, original column width, and scope.")
+	{"printtail",		js_printtail,		2, JSTYPE_BOOLEAN,		JSDOCSTR("filename, <i>number</i> lines [,<i>number</i> p_mode=P_NONE] [,<i>number</i> orig_columns=0] [,<i>object</i> scope]")
+	,JSDOCSTR("Print the last <i>n</i> lines of file with optional print mode, original column width, and scope.")
 	,310
 	},
 	{"editfile",		js_editfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename")
 	,JSDOCSTR("Edit/create a text file using the user's preferred message editor")
 	,310
 	},
-	{"uselect",			js_uselect,			0, JSTYPE_NUMBER,	JSDOCSTR("[number, title, item] [,ars]")
-	,JSDOCSTR("User selection menu, first call for each item, then finally with no args (or just the default item number) to display select menu")
+	{"uselect",			js_uselect,			0, JSTYPE_NUMBER,	JSDOCSTR("[<i>number</i> index, title, item] [,ars]")
+	,JSDOCSTR("User selection menu, first call for each item, then finally with no args (or just the default item index number) to display select menu")
 	,312
 	},
 	{"saveline",		js_saveline,		0, JSTYPE_BOOLEAN,	JSDOCSTR("")
@@ -2551,29 +2551,29 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,311
 	},
 	{"ansi_gotoxy",		js_gotoxy,			1, JSTYPE_ALIAS },
-	{"gotoxy",			js_gotoxy,			1, JSTYPE_VOID,		JSDOCSTR("[x,y] or [object { x,y }]")
+	{"gotoxy",			js_gotoxy,			1, JSTYPE_VOID,		JSDOCSTR("[x,y] or [<i>object</i> { x,y }]")
 	,JSDOCSTR("Move cursor to a specific screen coordinate (ANSI or PETSCII, 1-based values), "
 	"arguments can be separate x and y coordinates or an object with x and y properties "
 	"(like that returned from <tt>console.getxy()</tt>)")
 	,311
 	},
 	{"ansi_up",			js_cursor_up,		0, JSTYPE_ALIAS },
-	{"up",				js_cursor_up,		0, JSTYPE_VOID,		JSDOCSTR("[rows=<tt>1</tt>]")
+	{"up",				js_cursor_up,		0, JSTYPE_VOID,		JSDOCSTR("[rows=1]")
 	,JSDOCSTR("Move cursor up one or more rows")
 	,311
 	},
 	{"ansi_down",		js_cursor_down,		0, JSTYPE_ALIAS },
-	{"down",			js_cursor_down,		0, JSTYPE_VOID,		JSDOCSTR("[rows=<tt>1</tt>]")
+	{"down",			js_cursor_down,		0, JSTYPE_VOID,		JSDOCSTR("[rows=1]")
 	,JSDOCSTR("Move cursor down one or more rows")
 	,311
 	},
 	{"ansi_right",		js_cursor_right,	0, JSTYPE_ALIAS },
-	{"right",			js_cursor_right,	0, JSTYPE_VOID,		JSDOCSTR("[columns=<tt>1</tt>]")
+	{"right",			js_cursor_right,	0, JSTYPE_VOID,		JSDOCSTR("[columns=1]")
 	,JSDOCSTR("Move cursor right one or more columns")
 	,311
 	},
 	{"ansi_left",		js_cursor_left,		0, JSTYPE_ALIAS },
-	{"left",			js_cursor_left,		0, JSTYPE_VOID,		JSDOCSTR("[columns=<tt>1</tt>]")
+	{"left",			js_cursor_left,		0, JSTYPE_VOID,		JSDOCSTR("[columns=1]")
 	,JSDOCSTR("Move cursor left one or more columns")
 	,311
 	},
@@ -2589,17 +2589,17 @@ static jsSyncMethodSpec js_console_functions[] = {
 		"and returns the coordinates as an object (with <tt>x</tt> and <tt>y</tt> properties) or <tt>false</tt> on failure")
 	,311
 	},
-	{"lock_input",		js_lock_input,		1, JSTYPE_VOID,		JSDOCSTR("[lock=<tt>true</tt>]")
+	{"lock_input",		js_lock_input,		1, JSTYPE_VOID,		JSDOCSTR("[lock=true]")
 	,JSDOCSTR("Lock the user input thread (allowing direct client socket access)")
 	,310
 	},
-	{"telnet_cmd",		js_telnet_cmd,		3, JSTYPE_BOOLEAN,		JSDOCSTR("command [,option=<tt>0</tt>] [,timeout=<tt>0</tt>]")
+	{"telnet_cmd",		js_telnet_cmd,		3, JSTYPE_BOOLEAN,		JSDOCSTR("command [,option=0] [,timeout=0]")
 	,JSDOCSTR("Send Telnet command (with optional command option) to remote client"
-		", if the optional timeout is specified (in milliseconds, added in v3.17), then an acknowledgment will be expected and"
+		", if the optional timeout is specified (in milliseconds), then an acknowledgment will be expected and"
 		" the return value will indicate whether or not one was received")
 	,317
 	},
-	{"handle_ctrlkey",	js_handle_ctrlkey,	1, JSTYPE_BOOLEAN,	JSDOCSTR("key [,mode=<tt>K_NONE</tt>]")
+	{"handle_ctrlkey",	js_handle_ctrlkey,	1, JSTYPE_BOOLEAN,	JSDOCSTR("key [,k_mode=K_NONE]")
 	,JSDOCSTR("Call internal control key handler for specified control key, returns <tt>true</tt> if handled")
 	,311
 	},
@@ -2613,11 +2613,11 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("Update the node's <tt>terminal.ini</tt> file to match the current terminal settings")
 	,31802
 	},
-	{"backspace",		js_backspace,		0, JSTYPE_VOID,		JSDOCSTR("[count=<tt>1</tt>]")
+	{"backspace",		js_backspace,		0, JSTYPE_VOID,		JSDOCSTR("[count=1]")
 	,JSDOCSTR("Send a destructive backspace sequence")
 	,315
 	},
-	{"creturn",			js_creturn,			0, JSTYPE_VOID,		JSDOCSTR("[count=<tt>1</tt>]")
+	{"creturn",			js_creturn,			0, JSTYPE_VOID,		JSDOCSTR("[count=1]")
 	,JSDOCSTR("Send a carriage return sequence")
 	,31700
 	},
@@ -2625,7 +2625,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("Clear keyboard input buffer")
 	,315
 	},
-	{"getbyte",			js_getbyte,			1, JSTYPE_NUMBER,	JSDOCSTR("[timeout=<tt>0</tt>]")
+	{"getbyte",			js_getbyte,			1, JSTYPE_NUMBER,	JSDOCSTR("[timeout=0]")
 	,JSDOCSTR("Returns an unprocessed input byte from the remote terminal "
 		"with optional <i>timeout</i> in milliseconds (defaults to 0, for no wait), "
 		"returns <i>null</i> on failure (timeout)")
@@ -2635,8 +2635,8 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("Sends an unprocessed byte value to the remote terminal")
 	,31700
 	},
-	{"add_hotspot",		js_add_hotspot,		1,	JSTYPE_VOID,	JSDOCSTR("cmd [,bool hungry=<tt>true</tt>] [,min_x] [,max_x] [,y]")
-		,JSDOCSTR("Adds a mouse hot-spot (a clickable screen area that generates keyboard input)")
+	{"add_hotspot",		js_add_hotspot,		1,	JSTYPE_VOID,	JSDOCSTR("cmd [,<i>bool</i> hungry=true] [,min_x] [,max_x] [,y]")
+		,JSDOCSTR("Adds a mouse hot-spot (a click-able screen area that generates keyboard input)")
 		,31800
 		},
 	{"clear_hotspots",	js_clear_hotspots,		0,	JSTYPE_VOID,	JSDOCSTR("")
