@@ -1383,7 +1383,7 @@ function IRCClient_synchronize() {
 		this.nick
 	));
 
-	this.rawout("BURST"); // warn of impending synchronization
+	this.rawout("BURST");
 	for (i in Servers) {
 		if (Servers[i].id != this.id)
 			this.server_info(Servers[i]);
@@ -1412,7 +1412,7 @@ function IRCClient_synchronize() {
 			));
 		}
 	}
-	this.rawout("BURST 0"); /* burst completed. */
+	this.rawout("BURST 0");
 
 	gnotice(format(
 		"%s has processed topic burst (synched to network data).",
@@ -1478,12 +1478,8 @@ function IRCClient_server_chan_info(sni_chan) {
 		}
 	}
 	var modecounter=0;
-	var modestr="+";
 	var modeargs="";
-	for (i in MODE) {
-		if (MODE[i].state && (sni_chan.mode & i))
-			modestr += MODE[i].modechar;
-	}
+	var modestr = sni_chan.chanmode(true /* show args */);
 	if (modestr != "+") {
 		this.ircout(format("MODE %s %s",
 			sni_chan.nam,
