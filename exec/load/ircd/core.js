@@ -235,6 +235,11 @@ function Automatic_Server_Connect() {
 	if (   Servers[this.servername.toLowerCase()]
 		|| YLines[this.ircclass].active >= YLines[this.ircclass].maxlinks
 	) {
+		umode_notice(USERMODE_ROUTING,"Routing",format(
+			"Deferring connection to %s (%s) because Y:Line maxlinks limit exceeded.",
+			this.servername,
+			this.host
+		));
 		this.next_connect = js.setTimeout(
 			Automatic_Server_Connect,
 			YLines[this.ircclass].connfreq * 1000,
@@ -244,6 +249,11 @@ function Automatic_Server_Connect() {
 	}
 
 	if (Outbound_Connect_in_Progress) {
+		umode_notice(USERMODE_ROUTING,"Routing",format(
+			"Deferring connection to %s (%s) because I'm already connecting to something else.",
+			this.servername,
+			this.host
+		));
 		this.next_connect = js.setTimeout(
 			Automatic_Server_Connect,
 			10000,
@@ -286,6 +296,11 @@ function handle_outbound_server_connect() {
 		Unregistered[id].server = true; /* Avoid recvq limitation */
 		Unregistered[id].ircclass = this.cline.ircclass;
 		Unregistered[id].cline = this.cline;
+		log(LOG_DEBUG,format("Connected outbound server %s (%s) C:Line class is %u",
+			this.cline.servername,
+			this.cline.host,
+			Unregistered[id].ircclass
+		));
 		this.callback_id = this.on("read", Socket_Recv);
 		return true;
 	}
