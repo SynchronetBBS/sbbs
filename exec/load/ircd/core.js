@@ -2817,7 +2817,7 @@ function accept_new_socket() {
 		count = 0;
 		for (i in RBL) {
 			count++;
-			sock.send(format(":%s NOTICE * :Performing RBL check %u of %u.  Please stand by.",
+			sock.send(format(":%s NOTICE * :Performing RBL check %u of %u.  Please stand by.\r\n",
 				ServerName,
 				count,
 				num_rbls
@@ -2825,7 +2825,7 @@ function accept_new_socket() {
 			dnsbl_result = check_dnsbl(sock.remote_ip_address, RBL[i]);
 			if (dnsbl_result) {
 				sock.send(format(
-					":%s 463 * :Your IP address is on an RBL.  Connection denied.",
+					":%s 463 * :Your IP address is on an RBL.  Connection denied.\r\n",
 					ServerName
 				));
 				log(LOG_NOTICE, format(

@@ -236,19 +236,21 @@ function Read_Config_File() {
 function ini_sections() {
 	this.Info = ini_Info;
 	this.Port = ini_Port;
-	this.ConnectClass = ini_ConnectClass;
+	this.Class = ini_Class;
 	this.Allow = ini_Allow;
 	this.Operator = ini_Operator;
 	this.Services = ini_Services;
 	this.Ban = ini_Ban;
 	this.Restrict = ini_Restrict;
+	this.RBL = ini_RBL;
+	this.Server = ini_Server;
 	this.Hub = ini_Hub;
 }
 
 function ini_Info(arg, ini) {
 	ServerName = format("%s.synchro.net", system.qwk_id.toLowerCase());
-	if (ini.Hostname)
-		ServerName = ini.Hostname;
+	if (ini.ServerName)
+		ServerName = ini.ServerName;
 	ServerDesc = system.name;
 	if (ini.Description)
 		ServerDesc = ini.Description;
@@ -413,7 +415,71 @@ function ini_Ban(arg, ini) {
 function ini_Hub(arg, ini) {
 	HLines.push(new HLine(
 		"*", /* servermask permitted */
-		ini.Server /* servername */
+		ini.Servername /* servername */
+	));
+}
+
+/* Former C:Line and N:Line */
+function ini_Server(arg, ini) {
+	var ircclass, port;
+
+	if (!ini.Servername || !ini.Hostname || !ini.Port || !ini.Password || !ini.Class) {
+		log(LOG_WARNING,format(
+			"!WARNING Missing information from Server:%s. Section ignored.",
+			arg
+		));
+		return;
+	}
+
+	port = parseInt(ini.Port);
+	if (port != ini.Port) {
+		log(LOG_WARNING,format(
+			"!WARNING Malformed port in Server:%s. Using 6667.",
+			arg
+		));
+		port = 6667;
+	}
+
+	ircclass = parseInt(ini.Class);
+	if (ircclass != ini.Class) {
+		log(LOG_WARNING,format(
+			"!WARNING Malformed IRC Class in Server:%s.  Using default class of 0.",
+			arg
+		));
+		ircclass = 0;
+	}
+
+	if (ini_false_true(ini.Hub))
+		HLines.push(new HLine("*", ini.Servername));
+
+	CLines.push(new CLine(
+		ini.Hostname,
+		ini.Password,
+		ini.Servername,
+		port,
+		ircclass
+	));
+	NLines.push(new NLine(
+		ini.Hostname,
+		ini.Password,
+		ini.Servername,
+		parse_nline_flags(ini.Flags),
+		ircclass
+	));
+}
+
+/* Former Q:Lines */
+function ini_Restrict(arg, ini) {
+	if (!ini.Mask) {
+		log(LOG_WARNING,format(
+			"!WARNING Missing Mask from Restrict:%s. Section ignored.",
+			arg
+		));
+		return;
+	}
+	QLines.push(new QLine(
+		ini.Mask,
+		ini.Reason ? ini.Reason : "No reason provided."
 	));
 }
 
@@ -483,9 +549,9 @@ function read_ini_config(conf) {
 			continue;
 		if (!ini_true_false(i.enabled) || !ini_true_false(i.Enabled))
 			continue;
-		s = i.name.split(":");
+		s = ini[i].name.split(":");
 		if (typeof Sections[s[0]] === 'function')
-			Sections[s[0]](s[1], i);
+			Sections[s[0]](s[1], ini[i]);
 	}
 }
 
@@ -522,6 +588,8 @@ function ini_int_min_max(str, min, max, def, desc) {
 }
 
 function ini_false_true(str) {
+	if (typeof str === "boolean")
+		return str;
 	if (typeof str !== "string")
 		return false;
 	str = str.toUpperCase();
@@ -536,6 +604,8 @@ function ini_false_true(str) {
 }
 
 function ini_true_false(str) {
+	if (typeof str === "boolean")
+		return str;
 	if (typeof str !== "string")
 		return true;
 	str = str.toUpperCase();

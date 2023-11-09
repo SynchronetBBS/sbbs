@@ -1277,11 +1277,22 @@ function Reset_Autoconnect(cline, freq) {
 	if (typeof cline !== 'object')
 		throw "Reset_Autoconnect() called without cline object.";
 
+	log(LOG_DEBUG,format(
+		"Reset_Autoconnect() for %s on port %u.",
+		cline.servername,
+		cline.port
+	));
+
 	if (cline.next_connect)
 		js.clearTimeout(cline.next_connect);
 
-	if (!cline.port || Servers[cline.servername.toLowerCase()])
+	if (!cline.port || Servers[cline.servername.toLowerCase()]) {
+		log(LOG_DEBUG,format(
+			"Reset_Autoconnect() cancelled for %s because no port or server exists.",
+			cline.servername
+		));
 		return false;
+	}
 
 	cline.next_connect = js.setTimeout(
 		Automatic_Server_Connect,
