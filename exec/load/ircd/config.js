@@ -300,7 +300,7 @@ function ini_Class(arg, ini) {
 
 	YLines[ircclass] = new YLine(
 		ini_int_min_max(ini.PingFrequency, 1, 999, 60, format("PingFrequency IRC class %u",ircclass)),
-		ini_int_min_max(ini.ConnectFrequency, 1, 9999, 60, format("ConnectFrequency IRC class %u",ircclass)),
+		ini_int_min_max(ini.ConnectFrequency, 0, 9999, 60, format("ConnectFrequency IRC class %u",ircclass)),
 		ini_int_min_max(ini.Maximum, 1, 99999, 100, format("Maximum IRC class %u",ircclass)),
 		ini_int_min_max(ini.SendQ, 2048, 999999999, 1000000, format("SendQ IRC class %u",ircclass))
 	);
