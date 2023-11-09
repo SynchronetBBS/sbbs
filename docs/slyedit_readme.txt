@@ -1,5 +1,5 @@
                          SlyEdit message editor
-                              Version 1.86
+                              Version 1.87
                         Release date: 2023-08-15
 
                                   by
@@ -239,8 +239,22 @@ Ctrl-O       : Import a file                ¦ Ctrl-X  : Export to file
 =====================
 The configuration file, SlyEdit.cfg, is split up into 3 sections -
 Behavior, Ice colors, and DCT colors.  These sections are designated
-by [BEHAVIOR], [ICE_COLORS], and [DCT_COLORS], respectively.  These
-settings are described below:
+by [BEHAVIOR], [ICE_COLORS], and [DCT_COLORS], respectively.
+
+To help with configuration, there is a menu-driven configuration script in
+sbbs/exec called slyedcfg.js. To run it, open a command prompt in the sbbs/exec
+directory and run it with this command:
+jsexec slyedcfg
+
+Alternately, you can specify the .js filename extension if you want to:
+jsexec slyedcfg.js
+
+The configuration script will copy your SlyEdit configuration file to your
+sbbs/mods directory to help prevent it from being accidentally overridden when
+doing an update from the Synchronet source repository. SlyEdit will pick up its
+configuration from sbbs/mods if the configuration file is there.
+
+The configuration settings are described below:
 
 Behavior settings
 -----------------

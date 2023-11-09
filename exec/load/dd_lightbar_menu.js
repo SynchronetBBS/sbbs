@@ -1057,9 +1057,9 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar,
 		{
 			var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
 			var itemText = this.GetItemText(i, itemLen, false, showMultiSelectMark);
-			// TODO: It seems the text must be shortened by 3 less than the console width or else
-			// it behaves like there's an extra CRLF
-			console.print(substrWithAttrCodes(itemText, 0, console.screen_columns-3) + "\x01n");
+			// TODO: Once, it seemed the text must be shortened by 3 less than the console width or else
+			// it behaves like there's an extra CRLF, but 2 should be correct.
+			console.print(substrWithAttrCodes(itemText, 0, console.screen_columns-2) + "\x01n");
 			console.crlf();
 		}
 		this.numberedMode = numberedModeBackup;
@@ -2125,6 +2125,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			console.print("\x01n\x01c\x01hY\x01n\x01cour \x01hC\x01n\x01choice\x01h\x01g: \x01c");
 			console.attributes = "N";
 			var userEnteredItemNum = console.getnum(numItems);
+			this.lastUserInput = userEnteredItemNum.toString();
 			if (!console.aborted && userEnteredItemNum > 0)
 			{
 				if (this.ItemIsSelectable(userEnteredItemNum-1))
