@@ -50,6 +50,14 @@
  *                              substrWithAttrCodes())
  * 2023-11-01 Eric Oulashin     Version 1.85
  *                              Mark personal email as read if the user is just reading personal email
+ * 2023-11-09 Eric Oulashin     Version 1.86
+ *                              New feature: For indexed mode, when choosing a sub-board, the R key
+ *                              can be used to mark all messages as read in the sub-board.
+ *                              Fix: For continuous newscan or browse newscan (SCAN_BACK),
+ *                              call the stock Synchronet behavior (DDMsgReader did this previously,
+ *                              as DDMsgReader doesn't implement those yet).
+ *                              Fix: In the message list, to-user alternate colors weren't being used
+ *                              unless the message was read. The correct colors are used again.
  */
 
 "use strict";
@@ -154,8 +162,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.85";
-var READER_DATE = "2023-11-01";
+var READER_VERSION = "1.86";
+var READER_DATE = "2023-11-09";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1045,6 +1053,14 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		quit: "Q",
 		showHelp: "?"
 	};
+	// Keys for the indexed mode menu
+	this.indexedModeMenuKeys = {
+		quit: "Q",
+		showMsgList: "M",
+		markAllRead: "R",
+		help: "?",
+		userSettings: CTRL_U,
+	};
 
 	// Whether or not to display avatars
 	this.displayAvatars = true;
@@ -1358,7 +1374,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// For indexed mode
 	this.DoIndexedMode = DigDistMsgReader_DoIndexedMode;
 	this.IndexedModeChooseSubBoard = DigDistMsgReader_IndexedModeChooseSubBoard;
-	this.MakeLightbarIndexedModeMenu = DigDistMsgReader_MakeLightbarIndexedModeMenu;
+	this.CreateLightbarIndexedModeMenu = DigDistMsgReader_CreateLightbarIndexedModeMenu;
 	this.GetIndexedModeSubBoardMenuItemTextAndInfo = DigDistMsgReader_GetIndexedModeSubBoardMenuItemTextAndInfo;
 	this.MakeIndexedModeHelpLine = DigDistMsgReader_MakeIndexedModeHelpLine;
 	this.ShowIndexedListHelp = DigDistMsgReader_ShowIndexedListHelp;
@@ -4209,6 +4225,7 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 	// Change the menu's NumItems() and GetItem() function to reference
 	// the message list in this object rather than add the menu items
 	// to the menu
+	msgListMenu.msgListIdxes = msgListIdxes;
 	msgListMenu.msgReader = this; // Add this object to the menu object
 	msgListMenu.NumItems = function() {
 		return this.msgReader.NumMessages();
@@ -4226,20 +4243,42 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 			// the last parameter to return the string instead
 			menuItemObj.text = strip_ctrl(this.msgReader.PrintMessageInfo(msgHdr, false, itemIdx+1, true));
 			menuItemObj.retval = msgHdr.number;
+			var msgIsToUser = userHandleAliasNameMatch(msgHdr.to);
+			var msgIsFromUser = userHandleAliasNameMatch(msgHdr.from);
 			if (this.msgReader.subBoardCode != "mail")
-				menuItemObj.useAltColors = userHandleAliasNameMatch(msgHdr.to);
+				menuItemObj.useAltColors = msgIsToUser;
 			// For any indicator character next to the message, prioritize deleted, then selected,
-			// then unread, then attachments
+			// then unread, then attachments.
 			// First, to ensure the correct status character color is used, copy the menu item colors
 			// in any of these cases; then change the attributes for the 2nd color (selected).
-			if (this.msgReader.MessageIsSelected(this.msgReader.subBoardCode, pItemIndex) || (msgHdr.attr & MSG_DELETE) == MSG_DELETE || (msgHdr.attr & MSG_READ) == 0 || msgHdrHasAttachmentFlag(msgHdr))
+			// Having the separate printf strings for regular, to-user, and from-user are a bit
+			// bit pointless now that coloring & alternate coloring is done via DDLightbarMenu
+			if (this.msgReader.MessageIsSelected(this.msgReader.subBoardCode, pItemIndex) || Boolean(msgHdr.attr & MSG_DELETE) || !Boolean(msgHdr.attr & MSG_READ) || msgHdrHasAttachmentFlag(msgHdr))
 			{
 				menuItemObj.itemColor = [];
-				for (var i = 0; i < this.colors.itemColor.length; ++i)
-					menuItemObj.itemColor.push(this.colors.itemColor[i]);
+				var colorSet = this.colors.itemColor;
+				var selectedColorSet = this.colors.selectedItemColor;
+				if (msgIsToUser)
+				{
+					colorSet = this.colors.altItemColor;
+					selectedColorSet = this.colors.altSelectedItemColor;
+				}
+				else if (msgIsFromUser)
+				{
+					colorSet = [{start: this.msgListIdxes.msgNumStart, end: this.msgListIdxes.msgNumEnd, attrs: this.msgReader.colors.msgListFromUserMsgNumColor},
+					            {start: this.msgListIdxes.selectMarkStart, end: this.msgListIdxes.selectMarkEnd, attrs: this.msgReader.colors.selectedMsgMarkColor},
+					            {start: this.msgListIdxes.fromNameStart, end: this.msgListIdxes.fromNameEnd, attrs: this.msgReader.colors.msgListFromUserFromColor},
+					            {start: this.msgListIdxes.toNameStart, end: this.msgListIdxes.toNameEnd, attrs: this.msgReader.colors.msgListFromUserToColor},
+					            {start: this.msgListIdxes.subjStart, end: this.msgListIdxes.subjEnd, attrs: this.msgReader.colors.msgListFromUserSubjectColor},
+					            {start: this.msgListIdxes.dateStart, end: this.msgListIdxes.dateEnd, attrs: this.msgReader.colors.msgListFromUserDateColor},
+					            {start: this.msgListIdxes.timeStart, end: this.msgListIdxes.timeEnd, attrs: this.msgReader.colors.msgListFromUserTimeColor}];
+					selectedColorSet = this.colors.altSelectedItemColor;
+				}
+				for (var i = 0; i < colorSet.length; ++i)
+					menuItemObj.itemColor.push(colorSet[i]);
 				menuItemObj.itemSelectedColor = [];
-				for (var i = 0; i < this.colors.selectedItemColor.length; ++i)
-					menuItemObj.itemSelectedColor.push(this.colors.selectedItemColor[i]);
+				for (var i = 0; i < selectedColorSet.length; ++i)
+					menuItemObj.itemSelectedColor.push(selectedColorSet[i]);
 			}
 			// Change the color
 			// Deleted
@@ -4600,8 +4639,7 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 
 		// Determine whether to use the normal, "to-user", or "from-user" format string.
 		// The differences are the colors.  Then, output the message information line.
-		var toNameUpper = pMsgHeader.to.toUpperCase();
-		var msgToUser = ((toNameUpper == user.alias.toUpperCase()) || (toNameUpper == user.name.toUpperCase()) || (toNameUpper == user.handle.toUpperCase()));
+		var msgToUser = userHandleAliasNameMatch(pMsgHeader.to);
 		var fromNameUpper = pMsgHeader.from.toUpperCase();
 		var msgIsFromUser = ((fromNameUpper == user.alias.toUpperCase()) || (fromNameUpper == user.name.toUpperCase()) || (fromNameUpper == user.handle.toUpperCase()));
 		var formatStr = ""; // Format string for printing the message information
@@ -14292,7 +14330,7 @@ function DigDistMsgReader_DoIndexedMode(pScanScope)
 		else
 		{
 			// On ? keypress, show the help screen. Otherwise, quit.
-			if (indexRetObj.lastUserInput == "?")
+			if (indexRetObj.lastUserInput == this.indexedModeMenuKeys.help)
 			{
 				this.ShowIndexedListHelp();
 				drawMenu = true;
@@ -14300,7 +14338,7 @@ function DigDistMsgReader_DoIndexedMode(pScanScope)
 				writeBottomHelpLine = true;
 			}
 			// Ctrl-U: User settings
-			else if (indexRetObj.lastUserInput == CTRL_U)
+			else if (indexRetObj.lastUserInput == this.indexedModeMenuKeys.userSettings)
 			{
 				drawMenu = false;
 				clearScreenForMenu = false;
@@ -14370,13 +14408,50 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	};
 
 	var clearScreen = (typeof(pClearScreen) === "boolean" ? pClearScreen : true);
-	var drawMenu = (typeof(pDrawMenu) === "boolean" ? pDrawMenu : true);
 	var displayHelpLine = (typeof(pDisplayHelpLine) === "boolean" ? pDisplayHelpLine : true);
 
 	var scanScope = (isValidScanScopeVal(pScanScope) ? pScanScope : SCAN_SCOPE_ALL);
 
 	// Note: DDlightbarMenu supports non-ANSI terminals with a more traditional UI
 	// of listing the items and letting the user choose one by typing its number.
+	// If we are to use the traditional interface, the menu will be in numbered mode,
+	// so we'll need to account for the width of the number of items in the menu.
+	var usingTradInterface = !this.msgListUseLightbarListInterface || !console.term_supports(USER_ANSI);
+	var numberedModeItemNumWidth = 0;
+	if (usingTradInterface)
+	{
+		// Count the number of items that we'll add to the menu
+		var numItems = 0;
+		for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
+		{
+			// If scanning the user's current group or sub-board and this is the wrong group, then skip this group.
+			if ((scanScope == SCAN_SCOPE_GROUP || scanScope == SCAN_SCOPE_SUB_BOARD) && bbs.curgrp != grpIdx)
+				continue;
+
+			var grpNameItemAddedToMenu = false;
+			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
+			{
+				// Skip sub-boards that the user can't read or doesn't have configured for newscans
+				if (!msg_area.grp_list[grpIdx].sub_list[subIdx].can_read)
+					continue;
+				if ((msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW) == 0)
+					continue;
+				// If scanning the user's current sub-board and this is the wrong sub-board, then
+				// skip this sub-board (the other groups should have been skipped in the outer loop).
+				if (scanScope == SCAN_SCOPE_SUB_BOARD && bbs.cursub != subIdx)
+					continue;
+				// Count the item for the group separator (if not added), as well as the item itself
+				if (!grpNameItemAddedToMenu)
+				{
+					++numItems;
+					grpNameItemAddedToMenu = true;
+				}
+				++numItems;
+			}
+		}
+		if (numItems > 0)
+			numberedModeItemNumWidth = numItems.toString().length;
+	}
 
 	// Set text widths for the menu items
 	var newMsgWidthObj = findWidestNumMsgsAndNumNewMsgs(scanScope);
@@ -14390,16 +14465,17 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 		numNewMsgsWidth = 3;
 	var lastPostDateWidth = 10;
 	this.indexedModeItemDescWidth = console.screen_columns - numMsgsWidth - numNewMsgsWidth - lastPostDateWidth - 4;
-	var usingTradInterface = !this.msgListUseLightbarListInterface || !console.term_supports(USER_ANSI);
 	if (usingTradInterface)
-		this.indexedModeItemDescWidth -= 3;
-	this.indexedModeSubBoardMenuFormatStrNumbers = "%-" + this.indexedModeItemDescWidth + "s %" + numMsgsWidth + "d %" + numNewMsgsWidth + "d %" + lastPostDateWidth + "s";
+		this.indexedModeItemDescWidth -= (numberedModeItemNumWidth+1);
+	this.indexedModeSubBoardMenuSubBoardFormatStr = "%-" + this.indexedModeItemDescWidth + "s %" + numMsgsWidth + "d %" + numNewMsgsWidth + "d %" + lastPostDateWidth + "s";
 	if (typeof(this.indexedModeMenu) !== "object")
-		this.indexedModeMenu = this.MakeLightbarIndexedModeMenu(numMsgsWidth, numNewMsgsWidth, lastPostDateWidth, this.indexedModeItemDescWidth, this.indexedModeSubBoardMenuFormatStrNumbers);
+		this.indexedModeMenu = this.CreateLightbarIndexedModeMenu(numMsgsWidth, numNewMsgsWidth, lastPostDateWidth, this.indexedModeItemDescWidth, this.indexedModeSubBoardMenuSubBoardFormatStr);
 	else
 		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = this.indexedModeMenu.selectedItemIdx;
 	// Ensure the menu is clear, and (re-)populate the menu with sub-board information w/ # of new messages in each, etc.
+	// Also, build an array of sub-board codes for each menu item.
 	this.indexedModeMenu.RemoveAllItems();
+	var subBoardCodes = [];
 	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
 	{
 		// If scanning the user's current group or sub-board and this is the wrong group, then skip this group.
@@ -14508,25 +14584,68 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	console.attributes = "N";
 	if (!usingANSI)
 		console.crlf();
-	var menuRetval = this.indexedModeMenu.GetVal(drawMenu);
-	// Show the menu and get the user's choice
-	retObj.lastUserInput = this.indexedModeMenu.lastUserInput;
-	if (menuRetval != null)
+
+	// Indexed mode menu input loop
+	var continueOn = true;
+	var drawMenu = (typeof(pDrawMenu) === "boolean" ? pDrawMenu : true);
+	while (continueOn)
 	{
-		retObj.chosenSubCode = menuRetval.subCode;
-		retObj.numNewMsgs = menuRetval.numNewMsgs;
-		// If the user has the option enabled to view the message list when pressing enter here,
-		// then allow that.
-		if (this.userSettings.enterFromIndexMenuShowsMsgList)
+		var menuRetval = this.indexedModeMenu.GetVal(drawMenu);
+		// Show the menu and get the user's choice
+		retObj.lastUserInput = this.indexedModeMenu.lastUserInput;
+		var lastUserInputUpper = this.indexedModeMenu.lastUserInput.toUpperCase();
+		if (menuRetval != null)
+		{
+			retObj.chosenSubCode = menuRetval.subCode;
+			retObj.numNewMsgs = menuRetval.numNewMsgs;
+			// If the user has the option enabled to view the message list when pressing enter here,
+			// then allow that.
+			if (this.userSettings.enterFromIndexMenuShowsMsgList)
+				retObj.viewMsgList = true;
+			continueOn = false;
+		}
+		else if (lastUserInputUpper == this.indexedModeMenuKeys.quit || retObj.lastUserInput == KEY_ESC)
+			continueOn = false;
+		else if (lastUserInputUpper == this.indexedModeMenuKeys.showMsgList)
+		{
+			// Message list for the highlighted sub-board
+			var highlightedItem = this.indexedModeMenu.GetItem(this.indexedModeMenu.selectedItemIdx);
+			retObj.chosenSubCode = highlightedItem.retval.subCode;
+			retObj.numNewMsgs = highlightedItem.retval.numNewMsgs;
 			retObj.viewMsgList = true;
-	}
-	else if (this.indexedModeMenu.lastUserInput == "m" || this.indexedModeMenu.lastUserInput == "M")
-	{
-		// Message list for the highlighted sub-board
-		var highlightedItem = this.indexedModeMenu.GetItem(this.indexedModeMenu.selectedItemIdx);
-		retObj.chosenSubCode = highlightedItem.retval.subCode;
-		retObj.numNewMsgs = highlightedItem.retval.numNewMsgs;
-		retObj.viewMsgList = true;
+			continueOn = false;
+		}
+		else if (lastUserInputUpper == this.indexedModeMenuKeys.markAllRead)
+		{
+			// Mark all read in the sub-board
+			var highlightedItem = this.indexedModeMenu.GetItem(this.indexedModeMenu.selectedItemIdx);
+			if (subBoardNewscanAllRead(highlightedItem.retval.subCode))
+			{
+				// Update the item in the indexed mode menu
+				var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(highlightedItem.retval.subCode);
+				var menuItem = this.indexedModeMenu.MakeItemWithRetval({
+					subCode: highlightedItem.retval.subCode,
+					numNewMsgs: itemInfo.numNewMsgs
+				});
+				menuItem.text = itemInfo.itemText;
+				this.indexedModeMenu.items[this.indexedModeMenu.selectedItemIdx] = menuItem;
+				this.indexedModeMenu.WriteItemAtItsLocation(this.indexedModeMenu.selectedItemIdx, true, true);
+			}
+			drawMenu = false; // No need to re-draw the whole menu
+		}
+		else if (lastUserInputUpper == this.indexedModeMenuKeys.userSettings)
+		{
+			// The calling function will do the user settings dialog
+			continueOn = false;
+			retObj.lastUserInput = this.indexedModeMenuKeys.userSettings;
+		}
+		else if (lastUserInputUpper == this.indexedModeMenuKeys.help)
+		{
+			// The calling function will show the help screen and re-drawe
+			// the bottom help line below the menu
+			continueOn = false;
+			retObj.lastUserInput = this.indexedModeMenuKeys.help;
+		}
 	}
 	console.attributes = "N";
 	return retObj;
@@ -14547,7 +14666,7 @@ function DigDistMsgReader_GetIndexedModeSubBoardMenuItemTextAndInfo(pSubCode)
 		numNewMsgs: 0
 	};
 
-	if (typeof(this.indexedModeSubBoardMenuFormatStrNumbers) !== "string" || typeof(this.indexedModeItemDescWidth) !== "number")
+	if (typeof(this.indexedModeSubBoardMenuSubBoardFormatStr) !== "string" || typeof(this.indexedModeItemDescWidth) !== "number")
 		return retObj;
 
 	// posts: number of messages currently posted to this sub-board (introduced in v3.18c)
@@ -14559,7 +14678,7 @@ function DigDistMsgReader_GetIndexedModeSubBoardMenuItemTextAndInfo(pSubCode)
 	if (msg_area.sub[pSubCode].name !== msg_area.sub[pSubCode].description)
 		subDesc += " - " + msg_area.sub[pSubCode].description;
 	subDesc = subDesc.substr(0, this.indexedModeItemDescWidth);
-	retObj.itemText = format(this.indexedModeSubBoardMenuFormatStrNumbers, subDesc, totalNumMsgsInSub, latestPostInfo.numNewMsgs, lastPostDate);
+	retObj.itemText = format(this.indexedModeSubBoardMenuSubBoardFormatStr, subDesc, totalNumMsgsInSub, latestPostInfo.numNewMsgs, lastPostDate);
 	retObj.numNewMsgs = latestPostInfo.numNewMsgs;
 	return retObj;
 }
@@ -14627,20 +14746,23 @@ function DigDistMsgReader_ShowIndexedListHelp()
 	console.crlf();
 	if (console.term_supports(USER_ANSI) && this.msgListUseLightbarListInterface)
 	{
+		var formatStr = "\x01n\x01h\x01c%15s" + this.colors.tradInterfaceHelpScreenColor + ": %s\r\n";
+		var formatStr2 = "\x01n\x01h\x01c%10s \x01n\x01cor \x01h%s" + this.colors.tradInterfaceHelpScreenColor + ": %s\r\n";
 		console.crlf();
 		displayTextWithLineBelow("Summary of the keyboard commands:", false, this.colors.tradInterfaceHelpScreenColor, "\x01k\x01h");
 		console.print(this.colors.tradInterfaceHelpScreenColor);
-		console.print("\x01n\x01h\x01cDown arrow" + this.colors.tradInterfaceHelpScreenColor + ": Move the cursor down/select the next sub-board\r\n");
-		console.print("\x01n\x01h\x01cUp arrow" + this.colors.tradInterfaceHelpScreenColor + ": Move the cursor up/select the previous sub-board\r\n");
-		console.print("\x01n\x01h\x01cPageDown \x01n\x01cor \x01hN" + this.colors.tradInterfaceHelpScreenColor + ": Go to the next page\r\n");
-		console.print("\x01n\x01h\x01cPageUp \x01n\x01cor \x01hP" + this.colors.tradInterfaceHelpScreenColor + ": Go to the previous page\r\n");
-		console.print("\x01n\x01h\x01cHOME \x01n\x01cor \x01hF" + this.colors.tradInterfaceHelpScreenColor + ": Go to the first item\r\n");
-		console.print("\x01n\x01h\x01cEND \x01n\x01cor \x01hL" + this.colors.tradInterfaceHelpScreenColor + ": Go to the last item\r\n");
-		console.print("\x01n\x01h\x01cENTER" + this.colors.tradInterfaceHelpScreenColor + ": Read the sub-board\r\n");
-		console.print("\x01n\x01h\x01cM" + this.colors.tradInterfaceHelpScreenColor + ": Show message list for the sub-board\r\n");
-		console.print("\x01n\x01h\x01cCtrl-U" + this.colors.tradInterfaceHelpScreenColor + ": User settings\r\n");
-		console.print("\x01n\x01h\x01cQ" + this.colors.tradInterfaceHelpScreenColor + ": Quit\r\n");
-		//console.print("\x01n\x01h\x01c?" + this.colors.tradInterfaceHelpScreenColor + ": Show this help screen\r\n");
+		printf(formatStr, "Down arrow", "Move the cursor down/select the next sub-board");
+		printf(formatStr, "Up arrow", "Move the cursor up/select the previous sub-board");
+		printf(formatStr2, "PageDown", "N", "Go to the next page");
+		printf(formatStr2, "PageUp", "P", "Go to the previous page");
+		printf(formatStr2, "HOME", "F", "Go to the first item");
+		printf(formatStr2, "END", "L", "Go to the last item");
+		printf(formatStr, "ENTER", "Read the sub-board");
+		printf(formatStr, "R", "Mark all read");
+		printf(formatStr, "M", "Show message list for the sub-board");
+		printf(formatStr, "Ctrl-U", "User settings");
+		printf(formatStr, "Q", "Quit");
+		//printf(formatStr, "?", "Show this help screen");
 	}
 	console.pause();
 	console.aborted = false;
@@ -14763,8 +14885,8 @@ function getLatestPostTimestampAndNumNewMsgs(pSubCode)
 	return retObj;
 }
 
-// Makes the DDLightbarMenu object for indexed reader mode
-function DigDistMsgReader_MakeLightbarIndexedModeMenu(pNumMsgsWidth, pNumNewMsgsWidth, pLastPostDateWidth, pDescWidth)
+// Creates the DDLightbarMenu object for indexed reader mode
+function DigDistMsgReader_CreateLightbarIndexedModeMenu(pNumMsgsWidth, pNumNewMsgsWidth, pLastPostDateWidth, pDescWidth)
 {
 	// Start & end indexes for the selectable items
 	var indexMenuIdxes = {
@@ -14812,7 +14934,17 @@ function DigDistMsgReader_MakeLightbarIndexedModeMenu(pNumMsgsWidth, pNumNewMsgs
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
 	// TODO: Include Mm to allow the user to view the message list instead of read it from the indexed menu
-	indexedModeMenu.AddAdditionalQuitKeys("QqMm?" + CTRL_U); // Ctrl-U for user settings
+	indexedModeMenu.AddAdditionalQuitKeys();
+	for (var key in this.indexedModeMenuKeys)
+	{
+		if (/[a-zA-Z]/.test(this.indexedModeMenuKeys[key]))
+		{
+			indexedModeMenu.AddAdditionalQuitKeys(this.indexedModeMenuKeys[key].toLowerCase());
+			indexedModeMenu.AddAdditionalQuitKeys(this.indexedModeMenuKeys[key].toUpperCase());
+		}
+		else
+			indexedModeMenu.AddAdditionalQuitKeys(this.indexedModeMenuKeys[key]);
+	}
 
 	// Add additional keypresses for PageUp, PageDown, HOME (first page), and END (last page)
 	indexedModeMenu.AddAdditionalPageUpKeys("Pp"); // Previous page
@@ -16224,6 +16356,9 @@ function DigDistMsgReader_RecalcMsgListWidthsAndFormatStrs(pMsgNumLen)
 	// Note: Constructing these strings must be done after reading the configuration
 	// file in order for the configured colors to be used
 
+	// TODO: Having the separate printf strings for regular, to-user, and from-user
+	// are a bit pointless now that coloring & alternate coloring is done via
+	// DDLightbarMenu
 	this.sMsgListHdrFormatStr = "";
 	this.sMsgInfoFormatStr = "";
 	this.sMsgInfoToUserFormatStr = "";
@@ -18206,7 +18341,7 @@ function parseArgs(argv)
 	// First, test the arguments to see if they're in a format as called by
 	// Synchronet for loadable modules
 	argVals = parseLoadableModuleArgs(argv);
-	if (argVals.loadableModule)
+	if (argVals.loadableModule || argVals.continuousNewScan || argVals.newScanBack)
 		return argVals;
 
 	// Go through argv looking for strings in the format -arg=val and parse them
@@ -18333,18 +18468,26 @@ function parseLoadableModuleArgs(argv)
 		argVals.loadableModule = true;
 		var scanAllSubs = (argv[0] == "1");
 		var scanMode = +(argv[1]);
-		if ((scanMode & SCAN_NEW) == SCAN_NEW)
+		//if ((scanMode & SCAN_NEW) == SCAN_NEW)
+		if (Boolean(scanMode & SCAN_NEW))
 		{
 			// Newscan
-			// TODO: SCAN_CONST and SCAN_BACK could be used along with SCAN_NEW
-			// SCAN_CONST: Continuous message scanning
-			// SCAN_BACK: Display most recent message if none new
 			argVals.search = "new_msg_scan";
 			argVals.suppresssearchtypetext = true;
 			if (scanAllSubs)
 				argVals.search = "new_msg_scan_all";
+			// TODO: SCAN_CONT and SCAN_BACK could be used along with SCAN_NEW
+			// SCAN_CONT: Continuous message scanning
+			// SCAN_BACK: Display most recent message if none new
+			if (Boolean(scanMode & SCAN_CONT) || Boolean(scanMode & SCAN_BACK))
+			{
+				// Stock Synchronet functionality for continuous & back newscan
+				bbs.scan_subs(scanMode, scanAllSubs);
+				argVals.exitNow = true;
+			}
 		}
-		else if (((scanMode & SCAN_TOYOU) == SCAN_TOYOU) || ((scanMode & SCAN_UNREAD) == SCAN_UNREAD))
+		//else if (((scanMode & SCAN_TOYOU) == SCAN_TOYOU) || ((scanMode & SCAN_UNREAD) == SCAN_UNREAD))
+		else if (Boolean(scanMode & SCAN_TOYOU) || Boolean(scanMode & SCAN_UNREAD))
 		{
 			// Scan for messages posted to you/new messages posted to you
 			argVals.startmode = "read";
@@ -18353,14 +18496,14 @@ function parseLoadableModuleArgs(argv)
 			if (scanAllSubs)
 				argVals.search = "to_user_new_scan_all";
 		}
-		else if ((scanMode & SCAN_FIND) == SCAN_FIND)
+		else if (Boolean(scanMode & SCAN_FIND))
 		{
 			argVals.search = "keyword_search";
 			argVals.startmode = "list";
 		}
 		else
 		{
-			// Stock Synchronet functionality.  Includes SCAN_CONST and SCAN_BACK.
+			// Stock Synchronet functionality.  Includes SCAN_CONT and SCAN_BACK.
 			bbs.scan_subs(scanMode, scanAllSubs);
 			argVals.exitNow = true;
 		}
@@ -22304,6 +22447,49 @@ function getLatestMsgHdrWithMsgbase(pMsgbase, pSubCode)
 	if (msgHeader != null)
 		msgHdrToReturn = pMsgbase.get_msg_header(true, msgIdx, false);
 	return msgHdrToReturn;
+}
+
+// For a sub-board, updates the user's newscan pointers for a sub-board so
+// that there are no more new messages, and marks any messages written to
+// the user as read.
+//
+// Parameters:
+//  pSubCode: The internal code for the sub-board
+//
+// Return value: Boolean - Whether or not this function was successful
+function subBoardNewscanAllRead(pSubCode)
+{
+	if (pSubCode == "mail")
+		return false;
+
+	var wasSuccessful = true;
+	var msgbase = new MsgBase(pSubCode);
+	if (msgbase.open())
+	{
+		msg_area.sub[pSubCode].scan_ptr = msgbase.last_msg;
+		msg_area.sub[pSubCode].last_read = msgbase.last_msg;
+
+		// Mark any unread messages to the user as read
+		var indexRecords = msgbase.get_index();
+		for (var i = 0; i < indexRecords.length; ++i)
+		{
+			if (msgIsToCurrentUserByName(indexRecords[i]) && !Boolean(indexRecords[i].attr & MSG_READ))
+			{
+				var msgHdr = msgbase.get_msg_header(false, indexRecords[i].number, false);
+				if (msgHdr != null)
+				{
+					msgHdr.attr |= MSG_READ;
+					if (!msgbase.put_msg_header(false, indexRecords[i].number, msgHdr))
+						wasSuccessful = false;
+				}
+			}
+		}
+
+		msgbase.close();
+	}
+	else
+		wasSuccessful = false;
+	return wasSuccessful;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
