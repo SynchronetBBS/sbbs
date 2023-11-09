@@ -131,6 +131,7 @@ var QLines = [];	/* [Q]uarantined (reserved) nicknames */
 var ULines = [];	/* Servers allowed to send unchecked MODE amongst other things */
 var YLines = [];	/* Defines what user & server objects get what settings */
 var ZLines = [];	/* IP based bans */
+var RBL = [];		/* RBL's */
 
 /** Begin executing code **/
 

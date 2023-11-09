@@ -2766,9 +2766,7 @@ function IRCClient_finalize_server_connect(states) {
 }
 
 function accept_new_socket() {
-	var unreg_obj;
-	var id;
-	var sock;
+	var unreg_obj, id, sock, num_rbls, count, i, dnsbl_result;
 
 	sock = this.accept();
 
@@ -2805,21 +2803,6 @@ function accept_new_socket() {
 		return false;
 	}
 
-	// Start of DNSBL check
-	if(!dnsbl_exempt(sock.remote_ip_address)) {
-		const dnsbl_result = check_dnsbl(sock.remote_ip_address, 'dnsbl.dronebl.org');
-		if (dnsbl_result) {
-			sock.send(format(
-				":%s 463 * :Your IP address is not welcome. Visit http://dronebl.org/lookup?ip="+sock.remote_ip_address+"&network=Synchronet for more information.",
-				ServerName
-			));
-			log(LOG_NOTICE, format("DNS-Blocked IP address %s resolves to %s", sock.remote_ip_address, dnsbl_result));
-			sock.close();
-			return false;
-		}
-	}
-	// End of DNSBL check
-
 	if (IP_Banned(sock.remote_ip_address)) {
 		sock.send(format(
 			":%s 465 * :You've been banned from this server.\r\n",
@@ -2827,6 +2810,34 @@ function accept_new_socket() {
 		));
 		sock.close();
 		return false;
+	}
+
+	num_rbls = true_array_len(RBL);
+	if(!dnsbl_exempt(sock.remote_ip_address)) {
+		count = 0;
+		for (i in RBL) {
+			count++;
+			sock.send(format(":%s NOTICE * :Performing RBL check %u of %u.  Please stand by.",
+				ServerName,
+				count,
+				num_rbls
+			));
+			dnsbl_result = check_dnsbl(sock.remote_ip_address, RBL[i]);
+			if (dnsbl_result) {
+				sock.send(format(
+					":%s 463 * :Your IP address is on an RBL.  Connection denied.",
+					ServerName
+				));
+				log(LOG_NOTICE, format(
+					"DNS-Blocked IP address %s resolves to %s from RBL %s",
+					sock.remote_ip_address,
+					dnsbl_result,
+					RBL[i]
+				));
+				sock.close();
+				return false;
+			}
+		}
 	}
 
 	if (server.client_add !== undefined) {

@@ -14,6 +14,9 @@
  https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
 
  Anything that handles manipulating the IRCd configuration.
+ 
+ BE AWARE that this file is loaded directly by programs other than the
+ IRCd, for example the UIFC interface for making config changes.
 
  Copyright 2003-2023 Randy Sommerfeld <cyan@synchro.net>
 
@@ -188,6 +191,7 @@ function Clear_Config_Globals() {
 	ULines = [];
 	YLines = [];
 	ZLines = [];
+	RBL = [];
 	Die_Password = "";
 	Restart_Password = "";
 }
@@ -230,7 +234,7 @@ function Read_Config_File() {
 }
 
 function ini_sections() {
-	this.IRCdInfo = ini_IRCdInfo;
+	this.Info = ini_Info;
 	this.Port = ini_Port;
 	this.ConnectClass = ini_ConnectClass;
 	this.Allow = ini_Allow;
@@ -241,61 +245,187 @@ function ini_sections() {
 	this.Hub = ini_Hub;
 }
 
-function ini_IRCdInfo(arg, ini) {
-	ServerName=ini.Hostname;
-	ServerDesc=ini.Info;
-	Admin1=ini.Admin1;
-	Admin2=ini.Admin2;
-	Admin3=ini.Admin3;
+function ini_Info(arg, ini) {
+	ServerName = format("%s.synchro.net", system.qwk_id.toLowerCase());
+	if (ini.Hostname)
+		ServerName = ini.Hostname;
+	ServerDesc = system.name;
+	if (ini.Description)
+		ServerDesc = ini.Description;
+	Admin1 = format("%s (%s)", system.name, system.qwk_id);
+	if (ini.Admin1)
+		Admin1 = ini.Admin1;
+	Admin2 = system.version_notice;
+	if (ini.Admin2)
+		Admin2 = ini.Admin2;
+	Admin3 = format("Sysop- <sysop@%s>", system.host_name);
+	if (ini.Admin3)
+		Admin3 = ini.Admin3;
 }
 
-/* Former M:Line */
+/* Former M:Line and P:Line combined into one */
 function ini_Port(arg, ini) {
-	Default_Port = arg;
+	var port = parseInt(arg);
+	if (port != arg) {
+		log(LOG_WARNING,format(
+			"!WARNING Possible malformed port number in .ini: %s vs %u - section ignored.",
+			arg,
+			port
+		));
+		return;
+	}
+	if (ini_false_true(ini.Default)) {
+		Default_Port = arg;
+		return;
+	}
+	PLines.push(arg);
+	return;
 }
 
 /* Former Y:Line */
-function ini_ConnectClass(arg, ini) {
-	YLines[arg] = new YLine(
-		parseInt(ini.PingFrequency),
-		parseInt(ini.ConnectFrequency),
-		parseInt(ini.Maximum),
-		parseInt(ini.SendQ)
+/* Eventually it'd be nice to move to named classes instead of numbers. */
+function ini_Class(arg, ini) {
+	var ircclass = parseInt(arg);
+
+	if (ircclass != arg) {
+		log(LOG_WARNING,format(
+			"!WARNING Possible malformed IRC class in .ini: %s vs %u - section ignored.",
+			arg,
+			ircclass
+		));
+		return;
+	}
+
+	YLines[ircclass] = new YLine(
+		ini_int_min_max(ini.PingFrequency, 1, 999, 60, format("PingFrequency IRC class %u",ircclass)),
+		ini_int_min_max(ini.ConnectFrequency, 1, 9999, 60, format("ConnectFrequency IRC class %u",ircclass)),
+		ini_int_min_max(ini.Maximum, 1, 99999, 100, format("Maximum IRC class %u",ircclass)),
+		ini_int_min_max(ini.SendQ, 2048, 999999999, 1000000, format("SendQ IRC class %u",ircclass))
 	);
 }
 
 /* Former I:Line */
 function ini_Allow(arg, ini) {
+	var ircclass;
+
+	if (!ini.Mask.match("[@]")) {
+		log(LOG_WARNING,
+			"!WARNING Malformed mask in Allow section. Proper format is user@hostname but usually *@*"
+		);
+		return;
+	}
+
+	ircclass = parseInt(ini.Class);
+	if (ircclass != ini.Class) {
+		log(LOG_WARNING,format(
+			"!WARNING No IRC class or malformed IRC class in Allow:%s. Using class of 0.",
+			arg
+		));
+		ircclass = 0;
+	}
+
 	ILines[arg] = new ILine(
 		ini.Mask,
 		null, /* password */
 		ini.Mask, /* hostmask */
 		null, /* port */
-		0 /* irc class */
+		ircclass
 	);
 }
 
 /* Former O:Line */
 function ini_Operator(arg, ini) {
+	var ircclass;
+
+	if (!ini.Nick || !ini.Mask || !ini.Password || !ini.Flags || !ini.Class) {
+		log(LOG_WARNING,format(
+			"!WARNING Missing information from Operator:%s. Section ignored.",
+			arg
+		));
+		return;
+	}
+
+	if (!ini.Mask.match("[@]")) {
+		log(LOG_WARNING,format(
+			"!WARNING Malformed mask in Operator:%s. Proper format is user@hostname with wildcards.",
+			arg
+		));
+		return;
+	}
+
+	ircclass = parseInt(ini.Class);
+	if (ircclass != ini.Class) {
+		log(LOG_WARNING,format(
+			"!WARNING Malformed IRC Class in Operator:%s. Proceeding with Class 0.",
+			arg
+		));
+		ircclass = 0;
+	}
+
+	OLines.push(new OLine(
+		ini.Mask,
+		ini.Password,
+		ini.Nick,
+		parse_oline_flags(ini.Flags),
+		ircclass
+	));
+
+	return;
 }
 
 /* Former U:Line */
 function ini_Services(arg, ini) {
+	if (ini.Server)
+		ULines.push(ini.Server);
+	return;
 }
 
 /* Former K:Line & Z:Line */
 function ini_Ban(arg, ini) {
-}
+	var kline_mask;
 
-function ini_Restrict(arg, ini) {
+	if (!ini.Mask) {
+		log(LOG_WARNING,format(
+			"!WARNING No mask provided in Ban:%s. Ignoring.",
+			arg
+		));
+		return;
+	}
+
+	kline_mask = create_ban_mask(ini.Mask, true /* kline */);
+	if (!kline_mask) {
+		log(LOG_WARNING,format(
+			"!WARNING Invalid ban mask %s Ignoring.",
+			ini.Mask
+		));
+		return;
+	}
+
+	KLines.push(new KLine(
+		kline_mask,
+		ini.Reason ? ini.Reason : "No reason provided.",
+		"K" /* ban type: K, A, or Z. */
+	));	
 }
 
 /* Former H:Line */
+/* Servermasks are deprecated */
 function ini_Hub(arg, ini) {
 	HLines.push(new HLine(
 		"*", /* servermask permitted */
-		arg /* servername */
+		ini.Server /* servername */
 	));
+}
+
+function ini_RBL(arg, ini) {
+	if (!ini.Hostname) {
+		log(LOG_WARNING,format(
+			"!WARNING No Hostname in RBL:%s. Ignoring.",
+			arg
+		));
+		return;
+	}
+	RBL.push(ini.Hostname);
 }
 
 function load_config_defaults() {
@@ -348,12 +478,77 @@ function read_ini_config(conf) {
 	var Sections = new ini_sections();
 	var i, s;
 
-	for (var i in ini) {
+	for (i in ini) {
+		if (ini_false_true(i.disabled) || ini_false_true(i.Disabled))
+			continue;
+		if (!ini_true_false(i.enabled) || !ini_true_false(i.Enabled))
+			continue;
 		s = i.name.split(":");
 		if (typeof Sections[s[0]] === 'function')
 			Sections[s[0]](s[1], i);
 	}
 }
+
+function ini_int_min_max(str, min, max, def, desc) {
+	var input = parseInt(str);
+	if (input != str) {
+		log(LOG_WARNING,format(
+			"!WARNING Malformed value (%s vs. %u) in %s. Using default of %u.",
+			str,
+			input,
+			desc,
+			def
+		));
+		return def;
+	}
+	if (!input || (input < min)) {
+		log(LOG_WARNING,format(
+			"!WARNING Value %u too low in %s. Using default of %u.",
+			input,
+			desc,
+			def
+		));
+		return def;
+	}
+	if (input > max) {
+		log(LOG_WARNING,format(
+			"!WARNING Value %u too high in %s. Consider lowering it.",
+			input,
+			desc,
+			def
+		));
+	}
+	return input;
+}
+
+function ini_false_true(str) {
+	if (typeof str !== "string")
+		return false;
+	str = str.toUpperCase();
+	switch (str[0]) {
+		case "1":
+		case "Y":
+		case "T":
+			return true;
+		default:
+			return false;
+	}
+}
+
+function ini_true_false(str) {
+	if (typeof str !== "string")
+		return true;
+	str = str.toUpperCase();
+	switch (str[0]) {
+		case "0":
+		case "N":
+		case "F":
+			return false;
+		default:
+			return true;
+	}
+}
+
 
 function read_conf_config(conf) {
 	var conf_line, arg, i;
