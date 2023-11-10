@@ -1524,6 +1524,16 @@ function IRCClient_do_stats(statschar) {
 				));
 			}
 			break;
+		case "Q":
+		case "q":
+			for (i in QLines) {
+				this.numeric(217, format(
+					"Q %s * * * * :%s",
+					QLines[i].nick,
+					QLines[i].reason ? QLines[i].reason : "No Reason"
+				));
+			}
+			break;
 		case "U":
 			for (i in ULines) {
 				this.numeric(246, format(
