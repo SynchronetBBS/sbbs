@@ -567,7 +567,7 @@ function ini_int_min_max(str, min, max, def, desc) {
 		));
 		return def;
 	}
-	if (!input || (input < min)) {
+	if (input < min) {
 		log(LOG_WARNING,format(
 			"!WARNING Value %u too low in %s. Using default of %u.",
 			input,

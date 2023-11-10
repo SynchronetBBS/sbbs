@@ -309,8 +309,8 @@ function User_Work(cmdline) {
 				break;
 			}
 		} else { /* Mode flags were passed */
-			if (parseInt(p[0]) == p[0])
-				p.shift();
+			if (parseInt(p[1]) == p[1])
+				p.splice(1,1);
 			if ((p[0][0] == "#") || (p[0][0] == "&")) {
 				tmp = Channels[p[0].toUpperCase()];
 				if (!tmp) {

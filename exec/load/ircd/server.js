@@ -426,8 +426,8 @@ function Server_Work(cmdline) {
 			));
 			break;
 		}
-		if (parseInt(p[0]) == p[0])
-			p.shift();
+		if (parseInt(p[1]) == p[1])
+			p.splice(1,1);
 		if (p[0][0] == "#") {
 			/* Setting a channel mode */
 			tmp = Channels[p[0].toUpperCase()];

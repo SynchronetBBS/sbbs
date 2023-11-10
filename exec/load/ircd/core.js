@@ -1539,7 +1539,7 @@ function IRCClient_do_stats(statschar) {
 		case "y":
 			for (i in YLines) {
 				this.numeric(218,format(
-					"Y %s %s %s %s %s",
+					"Y %s %u %u %u %u",
 					i,
 					YLines[i].pingfreq,
 					YLines[i].connfreq,

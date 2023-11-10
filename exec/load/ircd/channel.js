@@ -276,7 +276,7 @@ function IRCClient_set_chanmode(chan,cm_args) {
 				break;
 			case "b":
 				if(add && (cm_args.length<=mode_args_counter)) {
-					c.addbits|=CHANMODE_BAN;//list bans
+					c.addbits|=CHANMODE_BAN; /* list bans */
 					break;
 				}
 				c.tweaktmpmodelist(CHANMODE_BAN,add,cm_args[mode_args_counter]);
@@ -477,7 +477,7 @@ function IRCClient_set_chanmode(chan,cm_args) {
 					mode_output += final_args[0][i];
 					break;
 				}
-			case "b": // only modes with arguments
+			case "b": /* only modes with arguments */
 			case "k":
 			case "l":
 			case "o":
