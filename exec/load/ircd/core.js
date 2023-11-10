@@ -288,8 +288,11 @@ function handle_outbound_server_connect() {
 
 	if (this.is_connected) {
 		umode_notice(USERMODE_ROUTING,"Routing","Connected!  Sending info...");
+		log(LOG_DEBUG,format("->[UNREG]: PASS %s :TS", this.cline.password));
 		this.send(format("PASS %s :TS\r\n", this.cline.password));
+		log(LOG_DEBUG,format("->[UNREG]: CAPAB %s", SERVER_CAPAB));
 		this.send("CAPAB " + SERVER_CAPAB + "\r\n");
+		log(LOG_DEBUG,format("->[UNREG]: SERVER %s 1 :%s", ServerName, ServerDesc));
 		this.send("SERVER " + ServerName + " 1 :" + ServerDesc +"\r\n");
 		id = Generate_ID();
 		Unregistered[id] = new Unregistered_Client(id,this);
