@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.85
-                           Release date: 2023-11-01
+                                 Version 1.86
+                           Release date: 2023-11-09
 
                                      by
 
@@ -178,10 +178,18 @@ Digital Distortion Message Reader is comprised of the following files:
 
 2. DDMsgReader.cfg        The reader configuration file
 
-3. DefaultTheme.cfg       The default theme file containing colors & some
+3. ddmr_cfg.js            A menu-driven configuration script to help with
+                          changing configuration options. You can run it at a
+                          command prompt in the DDMsgReader directory with the
+                          following command:
+                          jsexec ddmr_cfg
+                          Alternately (with the filename extension):
+                          jsexec ddmr_cfg.js
+
+4. DefaultTheme.cfg       The default theme file containing colors & some
                           configurable text strings used in the reader
 
-4. ddmr_lm.js             Loadable module script for setup in SCFG (only needed
+5. ddmr_lm.js             Loadable module script for setup in SCFG (only needed
                           for Synchronet 3.19 and earlier, or Synchronet built
                           before 2023-02-20)
 
@@ -572,9 +580,21 @@ user avatar.
 6. Configuration file & color/text theme configuration file
 ===========================================================
 Digital Distortion Message Reader allows changing some settings, colors, and
-some of the text via configuration files.  The configuration files are plain
-text and can be edited with any text editor.  These are the configuration files
-used by Digital Distortion Message Reader:
+some of the text via configuration files.
+
+Also, ddmr_cfg.js is a menu-driven configuration script to help with changing
+configuration options. You can run it at a command prompt in the DDMsgReader
+directory with the following command:
+jsexec ddmr_cfg
+Alternately (with the filename extension):
+jsexec ddmr_cfg.js
+
+If you have DDMsgReader in the standard location (xtrn/DDMsgReader), ddmr_cfg
+will copy the configuration file to your sbbs/mods directory to help prevent it
+from being accidentally overridden by updating the standard Synchronet files.
+
+The configuration files are plain text and can be edited with any text editor.
+These are the configuration files used by Digital Distortion Message Reader:
 - DDMsgReader.cfg: The main configuration file
 - DefaultTheme.cfg: Defines colors & some text strings used in the reader.
   The name of this file can be specified in DDMsgReader.cfg, so that alternate
