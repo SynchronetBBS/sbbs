@@ -232,11 +232,11 @@ for(var d = 0; d < dir_list.length; d++) {
 			continue;
 		}
 		if(options.date)
-			file.desc = datestr(time()) + " " + file.desc;
+			file.desc = datestr(time()) + " " + (file.desc || "");
 		else if(options.fdate)
-			file.desc = datestr(file_date(path)) + " " + file.desc;
+			file.desc = datestr(file_date(path)) + " " + (file.desc || "");
 		else if(options.adate)
-			file.desc = datestr(archive_date(path)) + " " + file.desc;
+			file.desc = datestr(archive_date(path)) + " " + (file.desc || "");
 		file.cost = file_size(path);
 		if(exists) {
 			var hash = filebase.hash(file.name);
