@@ -16,10 +16,11 @@ if(!options.inactive_hangup)
 if(options.guest === undefined)
 	options.guest = true;
 
-// The following 2 lines are only required for "Re-login" capability
-bbs.logout();
-system.node_list[bbs.node_num-1].status = NODE_LOGON;
-
+if(bbs.sys_status & SS_USERON) {
+	// The following 2 lines are only required for "Re-login" capability
+	bbs.logout();
+	system.node_list[bbs.node_num-1].status = NODE_LOGON;
+}
 var guest = options.guest && system.matchuser("guest");
 
 if(!bbs.online)
