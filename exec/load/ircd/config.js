@@ -451,9 +451,17 @@ function ini_Hub(arg, ini) {
 function ini_Server(arg, ini) {
 	var ircclass, port;
 
-	if (!ini.Servername || !ini.Hostname || !ini.Port || !ini.Password || !ini.Class) {
+	if (!ini.Servername || !ini.Hostname || !ini.Class) {
 		log(LOG_WARNING,format(
-			"!WARNING Missing information from Server:%s. Section ignored.",
+			"!WARNING Missing information from [Server:%s], Section ignored.",
+			arg
+		));
+		return;
+	}
+
+	if ((!ini.InboundPassword || !ini.OutboundPassword) && !ini.Password) {
+		log(LOG_WARNING,format(
+			"!WARNING No password provided for [Server:%s], Section ignored.",
 			arg
 		));
 		return;
@@ -462,16 +470,17 @@ function ini_Server(arg, ini) {
 	port = parseInt(ini.Port);
 	if (port != ini.Port) {
 		log(LOG_WARNING,format(
-			"!WARNING Malformed port in Server:%s. Using 6667.",
-			arg
+			"!WARNING Malformed or missing port in [Server:%s], Using %u.",
+			arg,
+			Default_Port
 		));
-		port = 6667;
+		port = Default_Port;
 	}
 
 	ircclass = parseInt(ini.Class);
 	if (ircclass != ini.Class) {
 		log(LOG_WARNING,format(
-			"!WARNING Malformed IRC Class in Server:%s.  Using default class of 0.",
+			"!WARNING Malformed IRC Class in [Server:%s], Using default class of 0.",
 			arg
 		));
 		ircclass = 0;
@@ -482,14 +491,14 @@ function ini_Server(arg, ini) {
 
 	CLines.push(new CLine(
 		ini.Hostname,
-		ini.Password,
+		ini.OutboundPassword ? ini.OutboundPassword : ini.Password,
 		ini.Servername,
 		port,
 		ircclass
 	));
 	NLines.push(new NLine(
 		ini.Hostname,
-		ini.Password,
+		ini.InboundPassword ? ini.InboundPassword : ini.Password,
 		ini.Servername,
 		parse_nline_flags(ini.Flags),
 		ircclass
