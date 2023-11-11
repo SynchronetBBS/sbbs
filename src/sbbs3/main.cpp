@@ -1320,11 +1320,15 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 
 	lprintf(LOG_DEBUG,"JavaScript: Creating %s runtime: %u bytes"
 		,desc, startup->js.max_bytes);
-	if((*runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__)) == NULL)
+	if((*runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__))==NULL) {
+		lprintf(LOG_NOTICE, "Failed to created new JavaScript runtime");
 		return NULL;
+	}
 
-    if((js_cx = JS_NewContext(*runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+    if((js_cx = JS_NewContext(*runtime, JAVASCRIPT_CONTEXT_STACK))==NULL) {
+		lprintf(LOG_NOTICE, "Failed to create new JavaScript context");
 		return NULL;
+	}
 	JS_SetOptions(js_cx, startup->js.options);
 	JS_BEGINREQUEST(js_cx);
 
@@ -2670,7 +2674,7 @@ void event_thread(void* arg)
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
 		if((sbbs->js_cx = sbbs->js_init(&sbbs->js_runtime, &sbbs->js_glob, "event")) == NULL) /* This must be done in the context of the events thread */
-			sbbs->lprintf(LOG_ERR,"!JavaScript Initialization FAILURE");
+			sbbs->lprintf(LOG_CRIT,"!JavaScript Initialization FAILURE");
 	}
 #endif
 
@@ -4229,7 +4233,7 @@ void node_thread(void* arg)
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
 		if((sbbs->js_cx = sbbs->js_init(&sbbs->js_runtime, &sbbs->js_glob, "node")) == NULL) /* This must be done in the context of the node thread */
-			lprintf(LOG_ERR,"Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
+			lprintf(LOG_CRIT,"Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
 	}
 #endif
 
