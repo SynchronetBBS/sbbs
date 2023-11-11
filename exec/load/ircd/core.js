@@ -1448,7 +1448,7 @@ function IRCClient_do_stats(statschar) {
 		case "c":
 			for (i in CLines) {
 				this.numeric(213,format(
-					"C %s * %s %s %s",
+					"C %s * %s %s %u",
 					CLines[i].host,
 					CLines[i].servername,
 					CLines[i].port ? CLines[i].port : "*",
@@ -1456,7 +1456,7 @@ function IRCClient_do_stats(statschar) {
 				));
 				if (NLines[i]) {
 					this.numeric(214,format(
-						"N %s * %s %s %s",
+						"N %s * %s %s %u",
 						NLines[i].host,
 						NLines[i].servername,
 						NLines[i].flags,
@@ -1479,7 +1479,7 @@ function IRCClient_do_stats(statschar) {
 		case "i":
 			for (i in ILines) {
 				this.numeric(215,format(
-					"I %s * %s %s %s",
+					"I %s * %s %s %u",
 					ILines[i].ipmask,
 					ILines[i].hostmask,
 					ILines[i].port ? ILines[i].port : "*",

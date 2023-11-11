@@ -250,8 +250,8 @@ function ini_sections() {
 }
 
 function ini_Info(arg, ini) {
-	if (ini.ServerName)
-		ServerName = ini.ServerName;
+	if (ini.Servername)
+		ServerName = ini.Servername;
 	if (ini.Description)
 		ServerDesc = ini.Description;
 	if (ini.Admin1)
@@ -305,12 +305,13 @@ function ini_Class(arg, ini) {
 
 /* Former I:Line */
 function ini_Allow(arg, ini) {
-	var ircclass;
+	var ircclass, masks, i;
 
-	if (!ini.Mask.match("[@]")) {
-		log(LOG_WARNING,
-			"!WARNING Malformed mask in Allow section. Proper format is user@hostname but usually *@*"
-		);
+	if (!ini.Mask) {
+		log(LOG_WARNING,format(
+			"!WARNING No mask found in [Allow:%s], ignoring this section.",
+			arg
+		))
 		return;
 	}
 
@@ -323,18 +324,30 @@ function ini_Allow(arg, ini) {
 		ircclass = 0;
 	}
 
-	ILines[arg] = new ILine(
-		ini.Mask,
-		null, /* password */
-		ini.Mask, /* hostmask */
-		null, /* port */
-		ircclass
-	);
+	masks = ini.Mask.split(",");
+
+	for (i in masks) {
+		if (!masks[i].match("[@]")) {
+			log(LOG_WARNING,format(
+				"!WARNING Malformed mask in [Allow:%s]: %s. Ignoring.",
+				arg,
+				masks[i]
+			));
+			continue;
+		}
+		ILines.push(new ILine(
+			masks[i],
+			null, /* password */
+			masks[i], /* hostmask */
+			null, /* port */
+			ircclass
+		));
+	}
 }
 
 /* Former O:Line */
 function ini_Operator(arg, ini) {
-	var ircclass;
+	var ircclass, masks, i;
 
 	if (!ini.Nick || !ini.Mask || !ini.Password || !ini.Flags || !ini.Class) {
 		log(LOG_WARNING,format(
@@ -361,27 +374,39 @@ function ini_Operator(arg, ini) {
 		ircclass = 0;
 	}
 
-	OLines.push(new OLine(
-		ini.Mask,
-		ini.Password,
-		ini.Nick,
-		parse_oline_flags(ini.Flags),
-		ircclass
-	));
+	masks = ini.Mask.split(",");
+
+	for (i in masks) {
+		if (!masks[i].match("[@]")) {
+			log(LOG_WARNING,format(
+				"!WARNING Malformed mask in [Operator:%s] %s. Ignored.",
+				arg,
+				masks[i]
+			));
+			continue;
+		}
+		OLines.push(new OLine(
+			masks[i],
+			ini.Password,
+			ini.Nick,
+			parse_oline_flags(ini.Flags),
+			ircclass
+		));
+	}
 
 	return;
 }
 
 /* Former U:Line */
 function ini_Services(arg, ini) {
-	if (ini.Server)
-		ULines.push(ini.Server);
+	if (ini.Servername)
+		ULines.push(ini.Servername);
 	return;
 }
 
 /* Former K:Line & Z:Line */
 function ini_Ban(arg, ini) {
-	var kline_mask;
+	var kline_mask, masks, i;
 
 	if (!ini.Mask) {
 		log(LOG_WARNING,format(
@@ -391,20 +416,26 @@ function ini_Ban(arg, ini) {
 		return;
 	}
 
-	kline_mask = create_ban_mask(ini.Mask, true /* kline */);
-	if (!kline_mask) {
-		log(LOG_WARNING,format(
-			"!WARNING Invalid ban mask %s Ignoring.",
-			ini.Mask
-		));
-		return;
-	}
+	masks = ini.Mask.split(",");
 
-	KLines.push(new KLine(
-		kline_mask,
-		ini.Reason ? ini.Reason : "No reason provided.",
-		"K" /* ban type: K, A, or Z. */
-	));	
+	for (i in masks) {
+		kline_mask = create_ban_mask(masks[i], true /* kline */);
+
+		if (!kline_mask) {
+			log(LOG_WARNING,format(
+					"!WARNING Invalid ban mask in [Ban:%s] %s Ignoring.",
+					arg,
+					masks[i]
+			));
+			continue;
+		}
+
+		KLines.push(new KLine(
+			kline_mask,
+			ini.Reason ? ini.Reason : "No reason provided.",
+			"K" /* ban type: K, A, or Z. */
+		));	
+	}
 }
 
 /* Former H:Line */
@@ -467,6 +498,8 @@ function ini_Server(arg, ini) {
 
 /* Former Q:Lines */
 function ini_Restrict(arg, ini) {
+	var masks, i;
+
 	if (!ini.Mask) {
 		log(LOG_WARNING,format(
 			"!WARNING Missing Mask from Restrict:%s. Section ignored.",
@@ -474,10 +507,15 @@ function ini_Restrict(arg, ini) {
 		));
 		return;
 	}
-	QLines.push(new QLine(
-		ini.Mask,
-		ini.Reason ? ini.Reason : "No reason provided."
-	));
+
+	masks = ini.Mask.split(",");
+
+	for (i in masks) {
+		QLines.push(new QLine(
+			masks[i],
+			ini.Reason ? ini.Reason : "No reason provided."
+		));
+	}
 }
 
 function ini_RBL(arg, ini) {
