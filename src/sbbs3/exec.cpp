@@ -555,8 +555,7 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 		js_glob = this->js_glob;
 
 	if(js_cx==NULL) {
-		errormsg(WHERE,ERR_CHK,"JavaScript support",0);
-		errormsg(WHERE,ERR_EXEC,cmd,0);
+		errormsg(WHERE,ERR_EXEC,cmd,0, "JavaScript context==NULL");
 		return -1;
 	}
 
@@ -719,15 +718,18 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 // Execute a JS Module in its own temporary JS runtime and context
 int sbbs_t::js_execxtrn(const char *cmd, const char* startup_dir)
 {
+	int result = -1;
 	JSRuntime* js_runtime;
 	JSObject* js_glob;
 	JSContext* js_cx = js_init(&js_runtime, &js_glob, "XtrnModule");
-	js_create_user_objects(js_cx, js_glob);
-	int result = js_execfile(cmd, startup_dir, js_glob, js_cx, js_glob);
-	JS_BEGINREQUEST(js_cx);
-	JS_RemoveObjectRoot(js_cx, &js_glob);
-	JS_ENDREQUEST(js_cx);
-	JS_DestroyContext(js_cx);
+	if(js_cx != NULL) {
+		js_create_user_objects(js_cx, js_glob);
+		result = js_execfile(cmd, startup_dir, js_glob, js_cx, js_glob);
+		JS_BEGINREQUEST(js_cx);
+		JS_RemoveObjectRoot(js_cx, &js_glob);
+		JS_ENDREQUEST(js_cx);
+		JS_DestroyContext(js_cx);
+	}
 	jsrt_Release(js_runtime);
 	return result;
 }
