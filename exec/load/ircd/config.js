@@ -223,9 +223,11 @@ function Read_Config_File() {
 			read_conf_config(file_handle);
 		file_handle.close();
 	} else {
-		log(LOG_NOTICE, "Couldn't open configuration file! Proceeding with defaults.");
-		load_config_defaults();
+		log(LOG_NOTICE, "Couldn't open configuration file! Proceeding with defaults only.");
 	}
+
+	if (true_array_len(ILines) < 1)
+		log(LOG_WARNING, "!WARNING Nobody appears to be allowed to connect - configure in [Allow]");
 
 	Time_Config_Read = Epoch();
 	Scan_For_Banned_Clients();
@@ -248,19 +250,14 @@ function ini_sections() {
 }
 
 function ini_Info(arg, ini) {
-	ServerName = format("%s.synchro.net", system.qwk_id.toLowerCase());
 	if (ini.ServerName)
 		ServerName = ini.ServerName;
-	ServerDesc = system.name;
 	if (ini.Description)
 		ServerDesc = ini.Description;
-	Admin1 = format("%s (%s)", system.name, system.qwk_id);
 	if (ini.Admin1)
 		Admin1 = ini.Admin1;
-	Admin2 = system.version_notice;
 	if (ini.Admin2)
 		Admin2 = ini.Admin2;
-	Admin3 = format("Sysop- <sysop@%s>", system.host_name);
 	if (ini.Admin3)
 		Admin3 = ini.Admin3;
 }
@@ -504,24 +501,8 @@ function load_config_defaults() {
 	Admin2 = system.version_notice;
 	Admin3 = format("Sysop- <sysop@%s>", system.host_name);
 	/*** Y:Line *** ping freq, connect freq, max clients, max sendq bytes */
-	/* Class 1: Internet users */
-	YLines[1] = new YLine(120,0,100,1000000);
-	/* Class 2: BBS users */
-	YLines[2] = new YLine(30,0,100,1000000);
-	/* Class 10: IRC operators */
-	YLines[10] = new YLine(400,0,10,2000000);
-	/* Class 30: Leaf -> Hub Servers */
-	YLines[30] = new YLine(60,300,1,15000000);
-	/* Class 40: Hub -> Hub Servers */
-	YLines[40] = new YLine(90,60,10,20000000);
-	/* Class 50: Hub -> QWK Authenticator */
-	YLines[50] = new YLine(90,60,1,20000000);
+	YLines[0] = new YLine(120,600,100,1000000);
 	/*** I:Line *** mask, password, hostmask, port, class */
-	ILines.push(new ILine("*@127.0.0.1", null, "*@*", null, 2));
-	ILines.push(new ILine("*@::1", null, "*@*", null, 2));
-	ILines.push(new ILine("*@*", null, "*@*", null, 1));
-	/*** O:Line *** mask, password, name, flags, class */
-	OLines.push(new OLine(format("*@%s", ServerName), "*", "Sysop", parse_oline_flags("OS"), 10));
 	/*** U:Line ***/
 	ULines.push("services.synchro.net");
 	ULines.push("stats.synchro.net");
@@ -543,6 +524,8 @@ function read_ini_config(conf) {
 	var ini = conf.iniGetAllObjects();
 	var Sections = new ini_sections();
 	var i, s;
+
+	load_config_defaults();
 
 	for (i in ini) {
 		if (ini_false_true(i.disabled) || ini_false_true(i.Disabled))
@@ -622,6 +605,8 @@ function ini_true_false(str) {
 
 function read_conf_config(conf) {
 	var conf_line, arg, i;
+
+	load_config_defaults();
 
 	function fancy_split(line) {
 		var ret = [];
