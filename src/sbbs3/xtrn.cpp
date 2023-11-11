@@ -1128,22 +1128,22 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	truncstr(str," ");
     SAFECOPY(fname,getfname(str));
 
-	sprintf(fullpath,"%s%s",startup_dir,fname);
+	snprintf(fullpath, sizeof fullpath, "%s%s",startup_dir,fname);
 	if(startup_dir!=NULL && cmdline[0]!='/' && cmdline[0]!='.' && fexist(fullpath))
-		sprintf(fullcmdline,"%s%s",startup_dir,cmdline);
+		snprintf(fullcmdline, sizeof fullcmdline, "%s%s",startup_dir,cmdline);
 	else
 		SAFECOPY(fullcmdline,cmdline);
 
  	if(native) { // Native (not MS-DOS) external
 
 		// Current environment passed to child process
-		sprintf(dszlog,"%sPROTOCOL.LOG",cfg.node_dir);
+		snprintf(dszlog, sizeof dszlog, "%sPROTOCOL.LOG",cfg.node_dir);
 		setenv("DSZLOG",dszlog,1); 		/* Makes the DSZ LOG active */
 		setenv("SBBSNODE",cfg.node_dir,1);
 		setenv("SBBSCTRL",cfg.ctrl_dir,1);
 		setenv("SBBSDATA",cfg.data_dir,1);
 		setenv("SBBSEXEC",cfg.exec_dir,1);
-		sprintf(str,"%u",cfg.node_num);
+		snprintf(str, sizeof str, "%u",cfg.node_num);
 		setenv("SBBSNNUM",str,1);
 
 		/* date/time env vars */
@@ -1151,13 +1151,13 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		struct	tm tm;
 		if(localtime_r(&now, &tm) == NULL)
 			memset(&tm, 0, sizeof(tm));
-		sprintf(str," %02u", tm.tm_mday);
+		snprintf(str, sizeof str, " %02u", tm.tm_mday);
 		setenv("DAY", str, /* overwrite */TRUE);
 		setenv("WEEKDAY", wday[tm.tm_wday], /* overwrite */TRUE);
 		setenv("MONTHNAME", mon[tm.tm_mon], /* overwrite */TRUE);
-		sprintf(str, "%02u", tm.tm_mon + 1);
+		snprintf(str, sizeof str, "%02u", tm.tm_mon + 1);
 		setenv("MONTH", str, /* overwrite */TRUE);
-		sprintf(str,"%u", 1900 + tm.tm_year);
+		snprintf(str, sizeof str, "%u", 1900 + tm.tm_year);
 		if(setenv("YEAR", str, /* overwrite */TRUE) != 0)
 			errormsg(WHERE,ERR_WRITE,"environment",0);
 
@@ -1177,7 +1177,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 		FILE * doscmdrc;
 
-		sprintf(str,"%s.doscmdrc",cfg.node_dir);
+		snprintf(str, sizeof str, "%s.doscmdrc",cfg.node_dir);
 		if((doscmdrc=fopen(str,"w+"))==NULL)  {
 			errormsg(WHERE,ERR_CREATE,str,0);
 			return(-1);
@@ -1209,7 +1209,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 		fclose(doscmdrc);
 		SAFECOPY(str,fullcmdline);
-		sprintf(fullcmdline,"%s -F %s",startup->dosemu_path,str);
+		snprintf(fullcmdline, sizeof fullcmdline, "%s -F %s",startup->dosemu_path,str);
 
 #elif defined(__linux__)
 
@@ -1464,7 +1464,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 		/* Attempt to keep dosemu from prompting for a disclaimer. */
 
-		sprintf(str, "%s/.dosemu", cfg.ctrl_dir);
+		snprintf(str, sizeof str, "%s/.dosemu", cfg.ctrl_dir);
 		if (!isdir(str)) {
 			if(mkdir(str, 0755) != 0) {
 				errormsg(WHERE,ERR_MKDIR, str, 0755);
@@ -2065,7 +2065,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,ultoa(cfg.com_base,str,16), avail);
                     break;
                 case 'V':   /* Synchronet Version */
-                    sprintf(str,"%s%c",VERSION,REVISION);
+                    snprintf(str, sizeof str, "%s%c",VERSION,REVISION);
 					strncat(cmd,str, avail);
                     break;
                 case 'W':   /* Columns (width) */
@@ -2112,11 +2112,11 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
 
                 case '#':   /* Node number (same as SBBSNNUM environment var) */
-                    sprintf(str,"%d",cfg.node_num);
+                    snprintf(str, sizeof str, "%d",cfg.node_num);
                     strncat(cmd,str, avail);
                     break;
                 case '*':
-                    sprintf(str,"%03d",cfg.node_num);
+                    snprintf(str, sizeof str, "%03d",cfg.node_num);
                     strncat(cmd,str, avail);
                     break;
                 case '$':   /* Credits */
@@ -2147,7 +2147,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 					break;
                 default:    /* unknown specification */
                     if(IS_DIGIT(instr[i])) {
-                        sprintf(str,"%0*d",instr[i]&0xf,useron.number);
+                        snprintf(str, sizeof str, "%0*d",instr[i]&0xf,useron.number);
                         strncat(cmd,str, avail); }
                     break; }
             j=strlen(cmd); }
