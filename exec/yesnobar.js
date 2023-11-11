@@ -10,6 +10,11 @@ while(console.question.substring(0, 2) == "\r\n") {
 	console.question = console.question.substring(2);
 }
 
+if(console.question.substring(0, 2) == "\x01\?") {
+	console.print(console.question.substring(0, 2));
+	console.question = console.question.substring(2);
+}
+
 console.putmsg("\x01n\x01b\x01h[\x01c@CHECKMARK@\x01b] \x01y@QUESTION->@? @CLEAR_HOT@");
 var affirm = true;
 while(bbs.online && !js.terminated) {
