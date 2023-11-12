@@ -93,9 +93,22 @@
  *                              If true (default), then when started as a loadable module, replace the
  *                              "# Files Listed" text with an empty string so that it won't be displayed
  *                              after exit
+ * 2023-11-11 Eric Oulashin     Version 2.15a
+ *                              On start, if console.aborted is true (due to the user pressing Ctrl-C, etc.),
+ *                              then return -1 to stop a file scan in progress.
 */
 
 "use strict";
+
+//js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+//console.ctrlkey_passthru |= (1<<3); // Ctrl-C
+//console.ctrlkey_passthru = "+C";
+//console.ctrlkey_passthru = "-C";
+
+
+// If the search action has been aborted, then return -1
+if (console.aborted)
+	exit(-1);
 
 // This script requires Synchronet version 3.19 or newer.
 // If the Synchronet version is below the minimum, then exit.
@@ -125,9 +138,10 @@ require("scrollbar.js", "ScrollBar");
 require("mouse_getkey.js", "mouse_getkey");
 require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
+
 // Lister version information
-var LISTER_VERSION = "2.15";
-var LISTER_DATE = "2023-09-17";
+var LISTER_VERSION = "2.15a";
+var LISTER_DATE = "2023-11-11";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -284,7 +298,7 @@ var gBlankNFilesListedStrIfLoadableModule = true;
 readConfigFile();
 
 // Parse command-line arguments (which sets program options)
-parseArgs(argv);
+var gRunningAsLoadableModule = parseArgs(argv);
 
 // If set to use the traditional (non-lightbar) UI and if set to use the Synchronet
 // stock file lister, then do so instead of using ddfilelister's traditional UI
@@ -307,25 +321,29 @@ var gFileList = [];
 // filename length and terminal width.
 var listPopRetObj = populateFileList(gScriptMode);
 if (listPopRetObj.exitNow)
-	exit(listPopRetObj.exitCode);
+	exit(0); // listPopRetObj.exitCode
 
-// If there are no files, then say so and exit.
+// If there are no files, then say so (if not running as a loadable module) and exit.
+console.line_counter = 0;
 if (gFileList.length == 0)
 {
-	console.crlf();
-	console.attributes = "NC";
-	if (gScriptMode == MODE_LIST_DIR)
+	if (!gRunningAsLoadableModule)
 	{
-		if (gFilespec == "*" || gFilespec == "*.*")
-			console.print("There are no files in the directory.");
+		console.crlf();
+		console.attributes = "NC";
+		if (gScriptMode == MODE_LIST_DIR)
+		{
+			if (gFilespec == "*" || gFilespec == "*.*")
+				console.print("There are no files in the directory.");
+			else
+				console.print("No files in the directory were found matching " + gFilespec);
+		}
 		else
-			console.print("No files in the directory were found matching " + gFilespec);
+			console.print("No files were found.");
+		console.attributes = "N";
+		console.crlf();
+		//console.pause();
 	}
-	else
-		console.print("No files were found.");
-	console.attributes = "N";
-	console.crlf();
-	console.pause();
 	exit(0);
 }
 
@@ -391,27 +409,6 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 		// do what's needed.  Note that quit (for the Q key) is already handled.
 		if (actionRetObj != null)
 		{
-			/*
-			// Temporary
-			if (user.is_sysop)
-			{
-				console.print("\x01n\r\n\r\n");
-				for (var prop in actionRetObj)
-				{
-					console.print(prop + ":");
-					if (typeof(actionRetObj[prop]) === "object")
-					{
-						console.crlf();
-						for (var objProp in actionRetObj[prop])
-							console.print(" " + objProp + ": " + actionRetObj[prop][objProp] + "\r\n");
-					}
-					else
-						console.print(" " + actionRetObj[prop] + "\r\n");
-				}
-				console.pause();
-			}
-			// End Temporary
-			*/
 			if (actionRetObj.exitNow)
 				continueDoingFileList = false;
 			else
