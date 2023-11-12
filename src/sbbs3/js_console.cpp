@@ -1197,12 +1197,11 @@ js_cleartoeol(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
-js_crlf(JSContext *cx, uintN argc, jsval *arglist)
+js_newline(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
-	int32		i;
 	int32		count=1;
 
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
@@ -1216,13 +1215,65 @@ js_crlf(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	for(i=0;i<count;i++) {
-		sbbs->outchar(CR);
-		sbbs->outchar(LF);
-	}
+	sbbs->newline(count);
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }
+
+static JSBool
+js_cond_newline(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	sbbs->cond_newline();
+	JS_RESUMEREQUEST(cx, rc);
+    return JS_TRUE;
+}
+
+static JSBool
+js_cond_blankline(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	sbbs->cond_blankline();
+	JS_RESUMEREQUEST(cx, rc);
+    return JS_TRUE;
+}
+
+static JSBool
+js_cond_contline(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	sbbs->cond_contline();
+	JS_RESUMEREQUEST(cx, rc);
+    return JS_TRUE;
+}
+
 
 static JSBool
 js_pause(JSContext *cx, uintN argc, jsval *arglist)
@@ -2456,9 +2507,23 @@ static jsSyncMethodSpec js_console_functions[] = {
 		"optionally setting current attribute first")
 	,311
 	},
-	{"crlf",            js_crlf,			0, JSTYPE_VOID,		JSDOCSTR("[count=1]")
-	,JSDOCSTR("Output <i>count</i> number of carriage-return/line-feed pairs (new-lines)")
+	{"crlf",            js_newline,			0, JSTYPE_ALIAS },
+	{"newline",         js_newline,			0, JSTYPE_VOID,		JSDOCSTR("[count=1]")
+	,JSDOCSTR("Output <i>count</i> number of new-line sequences (e.g. carriage-return/line-feed pairs), AKA <tt>crlf()</tt>")
 	,310
+	},
+	{"cond_newline",	js_cond_newline,	0,	JSTYPE_VOID,	JSDOCSTR("")
+	,JSDOCSTR("Output a new-line sequence only if the current cursor position is beyond left-most column of the terminal screen")
+	,320
+	},
+	{"cond_blankline",	js_cond_blankline,	0,	JSTYPE_VOID,	JSDOCSTR("")
+	,JSDOCSTR("Output a new-line sequence followed by a second new-line sequence only if necessary to create a visible blank link")
+	,320
+	},
+	{"cond_contline",	js_cond_contline,	0,	JSTYPE_VOID,	JSDOCSTR("")
+	,JSDOCSTR("Output a text continuation line (i.e. the <i>LongLineContinuationPrefix</i> text string) "
+		"only if the current cursor position is beyond left-most column of a narrow (< 80 column) terminal screen")
+	,320
 	},
 	{"pause",			js_pause,			0, JSTYPE_BOOLEAN,	JSDOCSTR("[<i>bool</i> set_abort=true]")
 	,JSDOCSTR("Display pause prompt and wait for key hit, returns <tt>false</tt> if user responded with Quit/Abort key.<br>"
