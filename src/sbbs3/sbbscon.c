@@ -169,13 +169,15 @@ static const char* telnet_usage  = "Terminal server settings:\n\n"
 							"\tta         enable auto-logon via IP address\n"
 							"\ttd         enable Telnet command debug output\n"
 							"\ttq         disable QWK events\n"
-							"\tt-         disable Terminal server\n"
+							"\tt<+|->     enable or disable Terminal server\n"
+							"\tt!         run Terminal server only\n"
 							;
 static const char* ftp_usage  = "FTP server settings:\n"
 							"\n"
 							"\tfp<port>   set FTP server port\n"
 							"\tfo<value>  set FTP server options value (advanced)\n"
-							"\tf-         disable FTP server\n"
+							"\tf<+|->     enable or disable FTP server\n"
+							"\tf!         run FTP server only\n"
 							;
 static const char* mail_usage  = "Mail server settings:\n"
 							"\n"
@@ -185,20 +187,23 @@ static const char* mail_usage  = "Mail server settings:\n"
 							"\tmd<addr>   set DNS server address for MX-record lookups\n"
 							"\tmo<value>  set Mail server options value (advanced)\n"
 							"\tma         allow SMTP relays from authenticated users\n"
-							"\tm-         disable Mail server (entirely)\n"
+							"\tm<+|->     enable or disable Mail server (entirely)\n"
 							"\tmp-        disable POP3 server\n"
 							"\tms-        disable SendMail thread\n"
+							"\tm!         run Mail server only\n"
 							;
 static const char* services_usage  = "Services settings:\n"
 							"\n"
 							"\tso<value>  set Services option value (advanced)\n"
-							"\ts-         disable Services (no services module)\n"
+							"\ts<+|->     enable or disable Services server\n"
+							"\ts!         run Services server only\n"
 							;
 static const char* web_usage  = "Web server settings:\n"
 							"\n"
 							"\twp<port>   set HTTP server port\n"
 							"\two<value>  set Web server option value (advanced)\n"
-							"\tw-         disable Web server\n"
+							"\tw<+|->     enable or disable Web server\n"
+							"\tw!         run Web server only\n"
 							;
 
 static bool server_running(enum server_type type)
@@ -1391,6 +1396,15 @@ int main(int argc, char** argv)
 #endif
 			case 'T':	/* Terminal server settings */
 				switch(toupper(*(arg++))) {
+					case '!':
+						run_ftp=FALSE;
+						run_mail=FALSE;
+						run_web=FALSE;
+						run_services=FALSE;
+						// Fall-through
+					case '+':
+						run_bbs=TRUE;
+						break;
 					case '-':
 						run_bbs=FALSE;
 						break;
@@ -1433,6 +1447,15 @@ int main(int argc, char** argv)
 				break;
 			case 'F':	/* FTP */
 				switch(toupper(*(arg++))) {
+					case '!':
+						run_bbs=FALSE;
+						run_mail=FALSE;
+						run_services=FALSE;
+						run_web=FALSE;
+						// fall-through
+					case '+':
+						run_ftp=TRUE;
+						break;
 					case '-':
 						run_ftp=FALSE;
 						break;
@@ -1449,6 +1472,15 @@ int main(int argc, char** argv)
 				break;
 			case 'M':	/* Mail */
 				switch(toupper(*(arg++))) {
+					case '!':
+						run_bbs=FALSE;
+						run_ftp=FALSE;
+						run_services=FALSE;
+						run_web=FALSE;
+						// fall-through
+					case '+':
+						run_mail=TRUE;
+						break;
 					case '-':
 						run_mail=FALSE;
 						break;
@@ -1505,6 +1537,15 @@ int main(int argc, char** argv)
 				break;
 			case 'S':	/* Services */
 				switch(toupper(*(arg++))) {
+					case '!':
+						run_bbs=FALSE;
+						run_ftp=FALSE;
+						run_mail=FALSE;
+						run_web=FALSE;
+						// fall-through
+					case '+':
+						run_services=TRUE;
+						break;
 					case '-':
 						run_services=FALSE;
 						break;
@@ -1518,6 +1559,15 @@ int main(int argc, char** argv)
 				break;
 			case 'W':	/* Web server */
 				switch(toupper(*(arg++))) {
+					case '!':
+						run_bbs=FALSE;
+						run_ftp=FALSE;
+						run_mail=FALSE;
+						run_services=FALSE;
+						// fall-through
+					case '+':
+						run_web=TRUE;
+						break;
 					case '-':
 						run_web=FALSE;
 						break;
