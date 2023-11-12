@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.15a    2023-11-11   On start, if console.aborted is true (due to the user
+                      pressing Ctrl-C, etc.), then return -1 to stop a file
+                      scan in progress.
 2.15     2023-09-17   Fix for "Empty directory" message after quitting (the
                       lister must exit with the number of files listed).  Also,
                       updates for filename searching. Also, note ddfilelister is
