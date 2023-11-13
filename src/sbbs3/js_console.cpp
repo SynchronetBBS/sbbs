@@ -2082,6 +2082,27 @@ js_creturn(JSContext *cx, uintN argc, jsval *arglist)
     return(JS_TRUE);
 }
 
+static JSBool
+js_linefeed(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+	int32		val=1;
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return(JS_FALSE);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	if(argc) {
+		if(!JS_ValueToInt32(cx, argv[0], &val))
+			return JS_FALSE;
+	}
+	rc=JS_SUSPENDREQUEST(cx);
+	sbbs->line_feed(val);
+	JS_RESUMEREQUEST(cx, rc);
+    return(JS_TRUE);
+}
 
 static JSBool
 js_clearkeybuf(JSContext *cx, uintN argc, jsval *arglist)
@@ -2683,8 +2704,12 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,315
 	},
 	{"creturn",			js_creturn,			0, JSTYPE_VOID,		JSDOCSTR("[count=1]")
-	,JSDOCSTR("Send a carriage return sequence")
+	,JSDOCSTR("Send carriage-return (or equivalent) character(s) - moving the cursor to the left-most screen column")
 	,31700
+	},
+	{"linefeed",		js_linefeed,		0, JSTYPE_VOID,		JSDOCSTR("[count=1]")
+	,JSDOCSTR("Send line-feed (or equivalent) character(s) - moving the cursor down one or more screen rows")
+	,320
 	},
 	{"clearkeybuffer",	js_clearkeybuf,		0, JSTYPE_VOID,		JSDOCSTR("")
 	,JSDOCSTR("Clear keyboard input buffer")
