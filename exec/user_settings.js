@@ -190,12 +190,6 @@ function display_menu(thisuser)
 		console.putmsg(format(bbs.text(bbs.text.UserDefaultsNetMail)
 			,on_or_off(thisuser.settings & USER_NETMAIL), thisuser.netmail));
 	}
-	if ((bbs.startup_options & BBS_OPT_AUTO_LOGON)
-		&& (thisuser.security.exemptions & UFLAG_V)) {
-		console.add_hotspot('I');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsAutoLogon)
-			,on_or_off(thisuser.security.exceptions & UFLAG_V)));
-	}
 	if (bbs.text(bbs.text.UserDefaultsQuiet).length
 		&& (thisuser.security.exemptions & UFLAG_Q)) {
 		keys += 'D';
@@ -420,7 +414,7 @@ while(bbs.online && !js.terminated) {
 			if (console.aborted)
 				break;
 			if (term & USER_ANSI) {
-				if (bbs.text(bbs.text.MouseTerminalQ) && console.yesno(bbs.text(bbs.text.MouseTerminalQ)))
+				if (bbs.text(bbs.text.MouseTerminalQ).length && console.yesno(bbs.text(bbs.text.MouseTerminalQ)))
 					thisuser.settings |= USER_MOUSE;
 				else
 					thisuser.settings &= ~USER_MOUSE;
@@ -433,7 +427,7 @@ while(bbs.online && !js.terminated) {
 				else
 					thisuser.settings &= ~USER_NO_EXASCII;
 				thisuser.settings &= ~USER_SWAP_DELETE;
-				while(bbs.text(bbs.text.HitYourBackspaceKey)
+				while(bbs.text(bbs.text.HitYourBackspaceKey).length
 					&& !(thisuser.settings & (USER_PETSCII | USER_SWAP_DELETE))
 					&& bbs.online) {
 					console.putmsg(bbs.text(bbs.text.HitYourBackspaceKey));
@@ -442,7 +436,7 @@ while(bbs.online && !js.terminated) {
 					if (key == '\b')
 						break;
 					if (key == '\x7f') {
-						if (bbs.text(bbs.text.SwapDeleteKeyQ) || console.yesno(bbs.text(bbs.text.SwapDeleteKeyQ)))
+						if (bbs.text(bbs.text.SwapDeleteKeyQ).length || console.yesno(bbs.text(bbs.text.SwapDeleteKeyQ)))
 							thisuser.settings |= USER_SWAP_DELETE;
 					}
 					else if (key == PETSCII_DELETE) {
