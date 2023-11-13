@@ -1451,7 +1451,7 @@ function IRCClient_do_stats(statschar) {
 					"C %s * %s %u %u",
 					CLines[i].host,
 					CLines[i].servername,
-					CLines[i].port ? CLines[i].port : "*",
+					CLines[i].port ? CLines[i].port : 0,
 					CLines[i].ircclass
 				));
 				if (NLines[i]) {
