@@ -1448,7 +1448,7 @@ function IRCClient_do_stats(statschar) {
 		case "c":
 			for (i in CLines) {
 				this.numeric(213,format(
-					"C %s * %s %s %u",
+					"C %s * %s %u %u",
 					CLines[i].host,
 					CLines[i].servername,
 					CLines[i].port ? CLines[i].port : "*",
