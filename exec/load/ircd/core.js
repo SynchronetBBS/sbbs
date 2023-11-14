@@ -2757,7 +2757,7 @@ function IRCClient_finalize_server_connect(states) {
 	var pass_sent = false;
 
 	HCC_Counter++;
-	gnotice(format("Link established with %s (%s:%u), Sock (%s:%u), Class %u.",
+	gnotice(format("Link established with %s (%s), Sock (%s:%u), Class %u.",
 		this.nick,
 		this.hostname,
 		this.socket.remote_ip_address,

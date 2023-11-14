@@ -575,9 +575,9 @@ function read_ini_config(conf) {
 	load_config_defaults();
 
 	for (i in ini) {
-		if (ini_false_true(i.disabled) || ini_false_true(i.Disabled))
+		if (ini_false_true(ini[i].disabled) || ini_false_true(ini[i].Disabled))
 			continue;
-		if (!ini_true_false(i.enabled) || !ini_true_false(i.Enabled))
+		if (!ini_true_false(ini[i].enabled) || !ini_true_false(ini[i].Enabled))
 			continue;
 		s = ini[i].name.split(":");
 		if (typeof Sections[s[0]] === 'function')
