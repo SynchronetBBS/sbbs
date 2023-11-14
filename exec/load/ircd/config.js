@@ -197,7 +197,7 @@ function Clear_Config_Globals() {
 }
 
 function Read_Config_File() {
-	var i;
+	var i, c;
 
 	Clear_Config_Globals();
 
@@ -233,6 +233,12 @@ function Read_Config_File() {
 	Scan_For_Banned_Clients();
 
 	YLines[0] = new YLine(120,600,100,1000000); /* Hardcoded class for fallback */
+
+	for (i in CLines) {
+		c = CLines[i];
+		if ((YLines[c.ircclass].connfreq > 0) && c.port && !Servers[c.servername.toLowerCase()])
+			Reset_Autoconnect(c, 1 /* connect immediately */);
+	}
 }
 
 function ini_sections() {
@@ -468,14 +474,8 @@ function ini_Server(arg, ini) {
 	}
 
 	port = parseInt(ini.Port);
-	if (port != ini.Port) {
-		log(LOG_WARNING,format(
-			"!WARNING Malformed or missing port in [Server:%s], Using %u.",
-			arg,
-			Default_Port
-		));
-		port = Default_Port;
-	}
+	if (port != ini.Port)
+		port = 0;
 
 	ircclass = parseInt(ini.Class);
 	if (ircclass != ini.Class) {
@@ -798,12 +798,6 @@ function CLine(host,password,servername,port,ircclass) {
 	this.servername = servername;
 	this.port = port;
 	this.ircclass = ircclass;
-	if (   YLines[ircclass].connfreq > 0
-		&& parseInt(port) > 0
-		&& !Servers[servername.toLowerCase()]
-	) {
-		Reset_Autoconnect(this, 1 /* connect immediately */);
-	}
 }
 
 function HLine(allowedmask,servername) {
