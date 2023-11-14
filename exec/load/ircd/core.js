@@ -2803,6 +2803,27 @@ function IRCClient_finalize_server_connect(states) {
 	this.synchronize();
 }
 
+function RBL_Listed_According_to_Config(rbl_object, dns_reply) {
+	var i;
+
+	if (rbl_object.good) {
+		for (i in rbl_object.good) {
+			if (dns_reply == rbl_object.good[i])
+				return false;
+		}
+	} else if (rbl_object.bad) {
+		for (i in rbl_object.bad) {
+			if (dns_reply == rbl_object.bad[i])
+				return true;
+		}
+	} else if (dns_reply) {
+		return true;
+	}
+
+	/* not listed by default */
+	return false;
+}
+
 function accept_new_socket() {
 	var unreg_obj, id, sock, num_rbls, count, i, dnsbl_result;
 
@@ -2860,8 +2881,8 @@ function accept_new_socket() {
 				count,
 				num_rbls
 			));
-			dnsbl_result = check_dnsbl(sock.remote_ip_address, RBL[i]);
-			if (dnsbl_result) {
+			dnsbl_result = check_dnsbl(sock.remote_ip_address, RBL[i].hostname);
+			if (RBL_Listed_According_to_Config(RBL[i], dnsbl_result)) {
 				sock.send(format(
 					":%s 463 * :Your IP address is on an RBL.  Connection denied.\r\n",
 					ServerName
@@ -2870,7 +2891,7 @@ function accept_new_socket() {
 					"DNS-Blocked IP address %s resolves to %s from RBL %s",
 					sock.remote_ip_address,
 					dnsbl_result,
-					RBL[i]
+					RBL[i].hostname
 				));
 				sock.close();
 				return false;

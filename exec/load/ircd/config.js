@@ -548,7 +548,7 @@ function ini_RBL(arg, ini) {
 		));
 		return;
 	}
-	RBL.push(ini.Hostname);
+	RBL.push(new RBL_Config_Object(ini.Hostname, ini.GoodResponses, ini.BadResponses));
 }
 
 function load_config_defaults() {
@@ -864,4 +864,10 @@ function YLine(pingfreq,connfreq,maxlinks,sendq) {
 function ZLine(ipmask,reason) {
 	this.ipmask = ipmask;
 	this.reason = reason;
+}
+
+function RBL_Config_Object(hostname, good, bad) {
+	this.hostname = hostname;
+	this.good = this.good ? good.split(",") : "";
+	this.bad = this.bad ? bad.split(",") : "";
 }
