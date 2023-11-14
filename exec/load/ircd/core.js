@@ -287,7 +287,15 @@ function handle_outbound_server_connect() {
 	Outbound_Connect_in_Progress = false;
 
 	if (this.is_connected) {
-		umode_notice(USERMODE_ROUTING,"Routing","Connected!  Sending info...");
+		umode_notice(USERMODE_ROUTING,"Routing",format(
+			"Connected to %s (%s:%u), Sock (%s:%u), Class %u. Sending handshake.",
+			this.cline.servername,
+			this.cline.host,
+			this.cline.port,
+			this.remote_ip_address,
+			this.remote_port,
+			this.cline.ircclass
+		));
 		log(LOG_DEBUG,format("->[UNREG]: PASS %s :TS", this.cline.password));
 		this.send(format("PASS %s :TS\r\n", this.cline.password));
 		log(LOG_DEBUG,format("->[UNREG]: CAPAB %s", SERVER_CAPAB));
