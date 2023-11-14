@@ -470,6 +470,9 @@ function QWK_Master_Authentication(qwkid) {
 function Register_Unregistered_Local_Server(unreg, p, nline) {
 	var i, s;
 
+	if (typeof Servers[p[0].toLowerCase()] !== 'undefined')
+		throw "Trying to overwrite existing server in Register_Unregistered_Local_Server()";
+
 	Servers[p[0].toLowerCase()] = new IRC_Server();
 	s = Servers[p[0].toLowerCase()];
 	Local_Servers[p[0].toLowerCase()] = s;
