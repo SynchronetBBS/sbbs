@@ -1223,7 +1223,6 @@ js_newline(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_cond_newline(JSContext *cx, uintN argc, jsval *arglist)
 {
-	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -1241,7 +1240,6 @@ js_cond_newline(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_cond_blankline(JSContext *cx, uintN argc, jsval *arglist)
 {
-	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -1259,7 +1257,6 @@ js_cond_blankline(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_cond_contline(JSContext *cx, uintN argc, jsval *arglist)
 {
-	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
