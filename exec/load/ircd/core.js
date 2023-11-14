@@ -2754,24 +2754,41 @@ function IRCClient_check_timeout() {
 
 function IRCClient_finalize_server_connect(states) {
 	var i;
+	var pass_sent = false;
 
 	HCC_Counter++;
-	gnotice(format("Link with %s (%s) established, states: %s",
+	gnotice(format("Link established with %s (%s:%u), Sock (%s:%u), Class %u.",
 		this.nick,
 		this.hostname,
-		states
+		this.socket.remote_ip_address,
+		this.socket.remote_port,
+		this.ircclass
 	));
 	if (server.client_update !== undefined)
 		server.client_update(this.socket, this.nick, this.hostname);
 	if (!this.socket.outbound) {
 		for (i in CLines) {
-			if(wildmatch(this.nick,CLines[i].servername)) {
+			if (this.nick == CLines[i].servername) {
 				this.rawout(format(
 					"PASS %s :%s",
 					CLines[i].password,
 					states
 				));
+				pass_sent = true;
 				break;
+			}
+		}
+		/* FIXME: Might want to have this behaviour able to be toggled on/off globally */
+		if (!pass_sent) {
+			for (i in CLines) {
+				if(wildmatch(this.nick,CLines[i].servername)) {
+					this.rawout(format(
+						"PASS %s :%s",
+						CLines[i].password,
+						states
+					));
+					break;
+				}
 			}
 		}
 		this.rawout("CAPAB " + SERVER_CAPAB);
