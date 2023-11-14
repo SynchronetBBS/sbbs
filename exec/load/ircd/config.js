@@ -868,6 +868,6 @@ function ZLine(ipmask,reason) {
 
 function RBL_Config_Object(hostname, good, bad) {
 	this.hostname = hostname;
-	this.good = this.good ? good.split(",") : "";
-	this.bad = this.bad ? bad.split(",") : "";
+	this.good = good ? good.split(",") : "";
+	this.bad = bad ? bad.split(",") : "";
 }
