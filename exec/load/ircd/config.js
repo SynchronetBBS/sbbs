@@ -241,6 +241,16 @@ function Read_Config_File() {
 	}
 }
 
+function HLine_Exists(str) {
+	var i;
+
+	for (i in HLines) {
+		if (HLines[i].servername.toLowerCase() == str.toLowerCase())
+			return true;
+	}
+	return false;
+}
+
 function ini_sections() {
 	this.Info = ini_Info;
 	this.Port = ini_Port;
@@ -447,10 +457,13 @@ function ini_Ban(arg, ini) {
 /* Former H:Line */
 /* Servermasks are deprecated */
 function ini_Hub(arg, ini) {
+	if (HLine_Exists(ini.Servername))
+		return;
 	HLines.push(new HLine(
 		"*", /* servermask permitted */
 		ini.Servername /* servername */
 	));
+	return;
 }
 
 /* Former C:Line and N:Line */
@@ -486,7 +499,7 @@ function ini_Server(arg, ini) {
 		ircclass = 0;
 	}
 
-	if (ini_false_true(ini.Hub))
+	if (ini_false_true(ini.Hub) && !HLine_Exists(ini.Servername))
 		HLines.push(new HLine("*", ini.Servername));
 
 	CLines.push(new CLine(
