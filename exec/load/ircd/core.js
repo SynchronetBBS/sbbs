@@ -2756,7 +2756,7 @@ function IRCClient_finalize_server_connect(states) {
 	var i;
 
 	HCC_Counter++;
-	gnotice(format("Link with %s [unknown@%s] established, states: %s",
+	gnotice(format("Link with %s (%s) established, states: %s",
 		this.nick,
 		this.hostname,
 		states
