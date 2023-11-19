@@ -5,7 +5,6 @@
 
 "use strict";
 
-require("text.js", "DownloadBatchQ");
 require("sbbsdefs.js", "USER_EXPERT");
 require("gettext.js", "gettext");
 
@@ -89,14 +88,14 @@ function show_grps()
 		return;
 	if(bbs.menu("grps", P_NOERROR))
 		return;
-	console.print(bbs.text(GrpLstHdr));
+	console.print(bbs.text(bbs.text.GrpLstHdr));
 	for(var i=0; i < msg_area.grp_list.length && !console.aborted; i++) {
 		if(i == bbs.curgrp)
 			console.print('*');
 		else console.print(' ');
 		if(i<9) console.print(' ');
 		console.add_hotspot(i+1);
-		console.print(format(bbs.text(GrpLstFmt), i+1
+		console.print(format(bbs.text(bbs.text.GrpLstFmt), i+1
 			,msg_area.grp_list[i].description, "", msg_area.grp_list[i].sub_list.length));
 	}
 }
@@ -108,11 +107,11 @@ function show_subs(grp)
 	if(bbs.menu("subs" + msg_area.grp_list[grp].number, P_NOERROR))
 		return;
 	console.crlf();
-	console.print(format(bbs.text(SubLstHdr), msg_area.grp_list[grp].description));
+	console.print(format(bbs.text(bbs.text.SubLstHdr), msg_area.grp_list[grp].description));
 	for(var i=0; i < usrsubs[grp] && !console.aborted; ++i) {
 		if(i==cursub[grp]) console.print('*');
 		else console.print(' ');
-		var str = format(bbs.text(SubLstFmt),i+1
+		var str = format(bbs.text(bbs.text.SubLstFmt),i+1
 			,msg_area.grp_list[grp].sub_list[i].description, ""
 			,msg_area.grp_list[grp].sub_list[i].posts);
 		if(i<9) console.print(' ');
@@ -130,7 +129,7 @@ function select_msg_area()
 		var j=0;
 		if(usrgrps > 1) {
 			show_grps();
-			console.mnemonics(format(bbs.text(JoinWhichGrp), bbs.curgrp + 1));
+			console.mnemonics(format(bbs.text(bbs.text.JoinWhichGrp), bbs.curgrp + 1));
 			j=console.getnum(usrgrps);
 			console.clear_hotspots();
 			if(j==-1)
@@ -141,7 +140,7 @@ function select_msg_area()
 				j--;
 		}
 		show_subs(j);
-		console.mnemonics(format(bbs.text(JoinWhichSub), cursub[j]+1));
+		console.mnemonics(format(bbs.text(bbs.text.JoinWhichSub), cursub[j]+1));
 		i=console.getnum(usrsubs[j]);
 		console.clear_hotspots();
 		if(i==-1) {
@@ -167,14 +166,14 @@ function show_libs()
 		return;
 	if(bbs.menu("libs", P_NOERROR))
 		return;
-	console.print(bbs.text(LibLstHdr));
+	console.print(bbs.text(bbs.text.LibLstHdr));
 	for(var i=0; i < file_area.lib_list.length && !console.aborted; i++) {
 		if(i == bbs.curlib)
 			console.print('*');
 		else console.print(' ');
 		if(i<9) console.print(' ');
 		console.add_hotspot(i+1);
-		console.print(format(bbs.text(LibLstFmt), i+1
+		console.print(format(bbs.text(bbs.text.LibLstFmt), i+1
 			,file_area.lib_list[i].description, "", file_area.lib_list[i].dir_list.length));
 	}
 }
@@ -186,11 +185,11 @@ function show_dirs(lib)
 	if(bbs.menu("dirs" + file_area.lib_list[lib].number, P_NOERROR))
 		return;
 	console.crlf();
-	console.print(format(bbs.text(DirLstHdr), file_area.lib_list[lib].description));
+	console.print(format(bbs.text(bbs.text.DirLstHdr), file_area.lib_list[lib].description));
 	for(var i=0; i < usrdirs[lib] && !console.aborted; ++i) {
 		if(i==curdir[lib]) console.print('*');
 		else console.print(' ');
-		var str = format(bbs.text(DirLstFmt),i+1
+		var str = format(bbs.text(bbs.text.DirLstFmt),i+1
 			,file_area.lib_list[lib].dir_list[i].description, ""
 			,file_area.lib_list[lib].dir_list[i].files);
 		if(i<9) console.print(' ');
@@ -209,7 +208,7 @@ function select_file_area()
 		var j=0;
 		if(usrlibs > 1) {
 			show_libs();
-			console.mnemonics(format(bbs.text(JoinWhichGrp), bbs.curlib + 1));
+			console.mnemonics(format(bbs.text(bbs.text.JoinWhichGrp), bbs.curlib + 1));
 			j=console.getnum(usrlibs);
 			console.clear_hotspots();
 			if(j==-1)
@@ -220,7 +219,7 @@ function select_file_area()
 				j--;
 		}
 		show_dirs(j);
-		console.mnemonics(format(bbs.text(JoinWhichDir), curdir[j]+1));
+		console.mnemonics(format(bbs.text(bbs.text.JoinWhichDir), curdir[j]+1));
 		i=console.getnum(usrdirs[j]);
 		console.clear_hotspots();
 		if(i==-1) {
@@ -350,9 +349,9 @@ function list_files()
 	if(result < 0)
 		return;
 	if(result == 0)
-		console.print(bbs.text(EmptyDir));
+		console.print(bbs.text(bbs.text.EmptyDir));
 	else
-		console.print(format(bbs.text(NFilesListed), result));
+		console.print(format(bbs.text(bbs.text.NFilesListed), result));
 }
 
 function view_file_info(mode)
@@ -362,7 +361,7 @@ function view_file_info(mode)
 		return;
 	if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, mode)) {
 		var s=0;
-		console.putmsg(bbs.text(SearchingAllDirs));
+		console.putmsg(bbs.text(bbs.text.SearchingAllDirs));
 		for(var i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
 			if(i!=bbs.curdir &&
 					(s=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, mode))!=0) {
@@ -371,7 +370,7 @@ function view_file_info(mode)
 				}
 			}
 		}
-		console.putmsg(bbs.text(SearchingAllLibs));
+		console.putmsg(bbs.text(bbs.text.SearchingAllLibs));
 		for(var i=0; i<file_area.lib_list.length; i++) {
 			if(i==bbs.curlib)
 				continue;
@@ -392,7 +391,7 @@ function view_files()
 	if(!str)
 		return;
 	if(!bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FL_VIEW)) {
-		console.putmsg(bbs.text(SearchingAllDirs));
+		console.putmsg(bbs.text(bbs.text.SearchingAllDirs));
 		for(var i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
 			if(i==bbs.curdir)
 				continue;
@@ -401,7 +400,7 @@ function view_files()
 		}
 		if(i<file_area.lib_list[bbs.curlib].dir_list.length)
 			return;
-		console.putmsg(bbs.text(SearchingAllLibs));
+		console.putmsg(bbs.text(bbs.text.SearchingAllLibs));
 		for(var i=0; i<file_area.lib_list.length; i++) {
 			if(i==bbs.curlib)
 				continue;
@@ -483,7 +482,7 @@ function lib_down()
 
 function logoff(fast)
 {
-	if(bbs.batch_dnload_total && console.yesno(bbs.text(DownloadBatchQ)))
+	if(bbs.batch_dnload_total && console.yesno(bbs.text(bbs.text.DownloadBatchQ)))
 		bbs.batch_download();
 	else {
 		if(fast)
@@ -513,7 +512,7 @@ function upload_file()
 function upload_user_file()
 {
 	if(file_area.user_dir == undefined)
-		console.print(bbs.text(NoUserDir));
+		console.print(bbs.text(bbs.text.NoUserDir));
 	else
 		bbs.upload_file(file_area.user_dir.number);
 }
@@ -521,14 +520,14 @@ function upload_user_file()
 function upload_sysop_file()
 {
 	if(file_area.sysop_dir == undefined)
-		console.print(bbs.text(NoSysopDir));
+		console.print(bbs.text(bbs.text.NoSysopDir));
 	else
 		bbs.upload_file(file_area.sysop_dir.number);
 }
 
 function download_files()
 {
-	if(bbs.batch_dnload_total && console.yesno(bbs.text(DownloadBatchQ))) {
+	if(bbs.batch_dnload_total && console.yesno(bbs.text(bbs.text.DownloadBatchQ))) {
 		bbs.batch_download();
 		return;
 	}
@@ -539,10 +538,10 @@ function download_files()
 function download_user_files()
 {
 	if(file_area.user_dir == undefined)
-		console.print(bbs.text(NoUserDir));
+		console.print(bbs.text(bbs.text.NoUserDir));
 	else {
 		if(!bbs.list_file_info(file_area.user_dir, FI_USERXFER))
-			console.print(bbs.text(NoFilesForYou));
+			console.print(bbs.text(bbs.text.NoFilesForYou));
 	}
 }
 
