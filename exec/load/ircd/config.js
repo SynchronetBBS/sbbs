@@ -308,13 +308,14 @@ function Read_Config_File() {
 
 	YLines[0] = new YLine(120,600,100,1000000); /* Hardcoded class for fallback */
 
-	if (!IRCDCFG) {
-		Scan_For_Banned_Clients();
-		for (i in CLines) {
-			c = CLines[i];
-			if ((YLines[c.ircclass].connfreq > 0) && c.port && !Servers[c.servername.toLowerCase()])
-				Reset_Autoconnect(c, 1 /* connect immediately */);
-		}
+	if (IRCDCFG_Editor)
+		return;
+
+	Scan_For_Banned_Clients();
+	for (i in CLines) {
+		c = CLines[i];
+		if ((YLines[c.ircclass].connfreq > 0) && c.port && !Servers[c.servername.toLowerCase()])
+			Reset_Autoconnect(c, 1 /* connect immediately */);
 	}
 }
 

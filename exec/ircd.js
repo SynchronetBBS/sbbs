@@ -68,6 +68,8 @@ const MAX_REALNAME = 50;      /* Maximum length of users real name field */
 const SERVER_UPTIME = system.timer;
 const SERVER_UPTIME_STRF = strftime("%a %b %d %Y at %H:%M:%S %Z",Epoch());
 
+const IRCDCFG_Editor = false;
+
 /*** Global Objects, Arrays and Variables - Always in Mixed_Case ***/
 
 /* Global Objects */
