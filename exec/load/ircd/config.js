@@ -283,9 +283,15 @@ function Read_Config_File() {
 		else
 			fname=system.ctrl_dir + Config_Filename;
 	} else {
-		fname=system.ctrl_dir + "ircd." + system.local_host_name + ".conf";
+		fname=system.ctrl_dir + "ircd." + system.local_host_name + ".ini";
+		if(!file_exists(fname))
+			fname=system.ctrl_dir + "ircd." + system.local_host_name + ".conf";
+		if(!file_exists(fname))
+			fname=system.ctrl_dir + "ircd." + system.host_name + ".ini";
 		if(!file_exists(fname))
 			fname=system.ctrl_dir + "ircd." + system.host_name + ".conf";
+		if(!file_exists(fname))
+			fname=system.ctrl_dir + "ircd.ini";
 		if(!file_exists(fname))
 			fname=system.ctrl_dir + "ircd.conf";
 	}
