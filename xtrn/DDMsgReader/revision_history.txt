@@ -5,6 +5,26 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.87     2023-11-18   Possible speed improvement when loading messages.
+                      New: User setting to only show new messages in a newscan
+                      (defaults to true/enabled)
+                      In the message list, there is now an additional space
+                      before the 'from' name, in case one of the status
+                      characters is a letter (this should look better).
+                      New: In lightbar mode, the indexed newscan menu can
+                      optionally 'snap' to the next sub-board with new messages
+                      when showing/returning to the menu
+                      Fix: When listing personal email, messages to the user
+                      were written with the to-user color wuen unread. Now the
+                      regular colors are always used (since all of a user's
+                      personal emails are 'to' them).
+                      Fix: For indexed newscan, if there are no sub-boards
+                      selected for scan in the user's newscan configuration,
+                      then output a message and exit. Otherwise, it would end
+                      up in an infinite loop.
+                      Updated how user settings are loaded, to ensure that
+                      default user settings from DDMsgReader.cfg actually get
+                      set properly in the user settings.
 1.86     2023-11-09   New feature: For indexed mode, when choosing a sub-board,
                       the R key can be used to mark all messages as read in the
                       sub-board.
