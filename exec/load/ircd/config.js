@@ -45,6 +45,81 @@ const OLINE_CHECK_SYSPASSWD	=(1<<20);	/* S */
 const OLINE_CAN_EVAL		=(1<<21);	/* x */
 const OLINE_IS_GOPER		=(1<<22);	/*  "big O" */
 
+function Epoch() {
+	return parseInt(new Date().getTime()/1000);
+}
+
+function true_array_len(my_array) {
+	var i;
+	var counter = 0;
+	for (i in my_array) {
+		counter++;
+	}
+	return counter;
+}
+
+function create_ban_mask(str,kline) {
+	var tmp_banstr = new Array;
+	tmp_banstr[0] = "";
+	tmp_banstr[1] = "";
+	tmp_banstr[2] = "";
+	var i;
+	var bchar_counter = 0;
+	var part_counter = 0; // BAN: 0!1@2 KLINE: 0@1
+	var regexp="[A-Za-z\{\}\`\^\_\|\\]\\[\\\\0-9\-.*?\~:]";
+	var finalstr;
+	for (i in str) {
+		if (str[i].match(regexp)) {
+			tmp_banstr[part_counter] += str[i];
+			bchar_counter++;
+		} else if ((str[i] == "!") && (part_counter == 0) &&
+			   !kline) {
+			part_counter = 1;
+			bchar_counter = 0;
+		} else if ((str[i] == "@") && (part_counter == 1) &&
+			   !kline) {
+			part_counter = 2;
+			bchar_counter = 0;
+		} else if ((str[i] == "@") && (part_counter == 0)) {
+			if (kline) {
+				part_counter = 1;
+			} else {
+				tmp_banstr[1] = tmp_banstr[0];
+				tmp_banstr[0] = "*";
+				part_counter = 2;
+			}
+			bchar_counter = 0;
+		}
+	}
+	if (!tmp_banstr[0] && !tmp_banstr[1] && !tmp_banstr[2])
+		return 0;
+	if (tmp_banstr[0].match(/[.]/) && !tmp_banstr[1] && !tmp_banstr[2]) {
+		if (kline)
+			tmp_banstr[1] = tmp_banstr[0];
+		else
+			tmp_banstr[2] = tmp_banstr[0];
+		tmp_banstr[0] = "";
+	}
+	if (!tmp_banstr[0])
+		tmp_banstr[0] = "*";
+	if (!tmp_banstr[1])
+		tmp_banstr[1] = "*";
+	if (!tmp_banstr[2] && !kline)
+		tmp_banstr[2] = "*";
+	if (kline)
+		finalstr = tmp_banstr[0].slice(0,10) + "@" + tmp_banstr[1].slice(0,80);
+	else
+		finalstr = format("%s!%s@%s",
+			tmp_banstr[0].slice(0,MAX_NICKLEN),
+			tmp_banstr[1].slice(0,10),
+			tmp_banstr[2].slice(0,80)
+		);
+		while (finalstr.match(/[*][*]/)) {
+			finalstr=finalstr.replace(/[*][*]/g,"*");
+		}
+	return finalstr;
+}
+
 function parse_nline_flags(flags) {
 	var i;
 	var nline_flags = 0;
@@ -230,14 +305,16 @@ function Read_Config_File() {
 		log(LOG_WARNING, "!WARNING Nobody appears to be allowed to connect - configure in [Allow]");
 
 	Time_Config_Read = Epoch();
-	Scan_For_Banned_Clients();
 
 	YLines[0] = new YLine(120,600,100,1000000); /* Hardcoded class for fallback */
 
-	for (i in CLines) {
-		c = CLines[i];
-		if ((YLines[c.ircclass].connfreq > 0) && c.port && !Servers[c.servername.toLowerCase()])
-			Reset_Autoconnect(c, 1 /* connect immediately */);
+	if (!IRCDCFG) {
+		Scan_For_Banned_Clients();
+		for (i in CLines) {
+			c = CLines[i];
+			if ((YLines[c.ircclass].connfreq > 0) && c.port && !Servers[c.servername.toLowerCase()])
+				Reset_Autoconnect(c, 1 /* connect immediately */);
+		}
 	}
 }
 
