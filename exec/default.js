@@ -9,6 +9,7 @@ require("sbbsdefs.js", "K_UPPER");
 require("userdefs.js", "UFLAG_T");
 require("nodedefs.js", "NODE_MAIN");
 require("key_defs.js", "KEY_UP");
+require("gettext.js", "gettext");
 require("text.js", "Pause");
 bbs.revert_text(Pause);
 load("termsetup.js");
@@ -22,7 +23,7 @@ const main_menu = {
 	file: "main",
 	eval: 'bbs.main_cmds++',
 	node_action: NODE_MAIN,
-	prompt: "\x01-\x01c\xfe \x01b\x01hMain \x01n\x01c\xfe \x01h" + time_code +
+	prompt: "\x01-\x01c\xfe \x01b\x01h" + gettext("Main") + " \x01n\x01c\xfe \x01h" + time_code +
 		" \x01n\x01c[\x01h@GN@\x01n\x01c] @GRP@\x01\\ [\x01h@SN@\x01n\x01c] @SUB@: \x01n",
 	num_input: shell.get_sub_num,
 	slash_num_input: shell.get_grp_num,
@@ -30,14 +31,14 @@ const main_menu = {
 	 'A': { eval: 'bbs.auto_msg()' },
 	'/A': { exec: 'avatar_chooser.js'
 			,ars: 'ANSI and not GUEST'
-			,err: '\r\nSorry, only regular users with ANSI terminals can do that.\r\n' },
+			,err: '\r\n' + gettext("Sorry, only regular users with ANSI terminals can do that.") + '\r\n' },
 	 'B': { eval: 'bbs.scan_subs(SCAN_BACK)'
-			,msg: '\r\n\x01c\x01hBrowse/New Message Scan\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("Browse/New Message Scan") + '\r\n' },
 	 'C': { eval: 'bbs.chat_sec()' },
 	 'D': { eval: 'bbs.user_config(); exit()' },
 	 'E': { exec: 'email_sec.js' },
 	 'F': { eval: 'bbs.scan_subs(SCAN_FIND)'
-			,msg: '\r\n\x01c\x01hFind Text in Messages\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("Find Text in Messages") + '\r\n' },
 	'/F': { eval: 'bbs.scan_subs(SCAN_FIND, /* all */true)' },
 	 'G': { eval: 'bbs.text_sec()' },
 	 'I': { eval: 'shell.main_info()' },
@@ -46,7 +47,7 @@ const main_menu = {
 	'/L': { eval: 'bbs.list_nodes()' },
 	 'M': { eval: 'bbs.time_bank()' },
 	 'N': { eval: 'bbs.scan_subs(SCAN_NEW)'
-			,msg: '\r\n\x01c\x01hNew Message Scan\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("New Message Scan") + '\r\n' },
 	'/N': { eval: 'bbs.scan_subs(SCAN_NEW, /* all */true)' },
 	 'O': { eval: 'shell.logoff(/* fast: */false)' },
 	'/O': { eval: 'shell.logoff(/* fast: */true)' },
@@ -55,7 +56,7 @@ const main_menu = {
 	 'Q': { eval: 'bbs.qwk_sec()' },
 	 'R': { eval: 'bbs.scan_msgs()' },
 	 'S': { eval: 'bbs.scan_subs(SCAN_TOYOU)'
-			,msg: '\r\n\x01c\x01hScan for Messages Posted to You\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("Scan for Messages Posted to You") + '\r\n' },
 	'/S': { eval: 'bbs.scan_subs(SCAN_TOYOU, /* all */true)' },
 	 'U': { eval: 'shell.list_users()' },
 	'/U': { eval: 'bbs.list_users(UL_ALL)' },
@@ -64,15 +65,15 @@ const main_menu = {
 	 'W': { eval: 'bbs.whos_online()' },
 	 'X': { eval: 'bbs.xtrn_sec()' },
 	 'Z': { eval: 'bbs.scan_subs(SCAN_NEW | SCAN_CONT)'
-			,msg: '\r\n\x01c\x01hContinuous New Message Scan\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("Continuous New Message Scan") + '\r\n' },
 	'/Z': { eval: 'bbs.scan_subs(SCAN_NEW | SCAN_CONT, /* all */true)' },
 	 '*': { eval: 'shell.show_subs(bbs.curgrp)' },
 	'/*': { eval: 'shell.show_grps()' },
 	 '&': { exec: 'msgscancfg.js' },
 	 '!': { eval: 'bbs.menu("sysmain")'
 			,ars: 'SYSOP or EXEMPT Q or I or N' },
-	 '#': {  msg: '\r\n\x01c\x01hType the actual number, not the symbol.\r\n' },
-	'/#': {  msg: '\r\n\x01c\x01hType the actual number, not the symbol.\r\n' },
+	 '#': {  msg: '\r\n\x01c\x01h' + gettext("Type the actual number, not the symbol.") + '\r\n' },
+	'/#': {  msg: '\r\n\x01c\x01h' + gettext("Type the actual number, not the symbol.") + '\r\n' },
 	},
 	nav: {
 	'\r': { },
@@ -101,7 +102,7 @@ const file_menu = {
 	file: "transfer",
 	eval: 'bbs.file_cmds++',
 	node_action: NODE_XFER,
-	prompt: "\x01-\x01c\xfe \x01b\x01hFile \x01n\x01c\xfe \x01h" + time_code +
+	prompt: "\x01-\x01c\xfe \x01b\x01h" + gettext("File") + " \x01n\x01c\xfe \x01h" + time_code +
 		" \x01n\x01c(\x01h@LN@\x01n\x01c) @LIB@\x01\\ (\x01h@DN@\x01n\x01c) @DIR@: \x01n",
 	num_input: shell.get_dir_num,
 	slash_num_input: shell.get_lib_num,
@@ -109,46 +110,46 @@ const file_menu = {
 	 'B': { eval: 'bbs.batch_menu()' },
 	 'C': { eval: 'bbs.chat_sec()' },
 	 'D': { eval: 'shell.download_files()'
-			,msg: '\r\n\x01c\x01hDownload File(s)\r\n'
+			,msg: '\r\n\x01c\x01h' + gettext("Download File(s)") + '\r\n'
 			,ars: 'REST NOT D' },
 	'/D': { eval: 'shell.download_user_files()'
-			,msg: '\r\n\x01c\x01hDownload File(s) from User(s)\r\n'
+			,msg: '\r\n\x01c\x01h' + gettext("Download File(s) from User(s)") + '\r\n'
 			,ars: 'REST NOT D' },
 	 'E': { eval: 'shell.view_file_info(FI_INFO)'
-			,msg: '\r\n\x01c\x01hList Extended File Information\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("List Extended File Information") + '\r\n' },
 	 'F': { eval: 'bbs.scan_dirs(FL_FINDDESC);'
-			,msg: '\r\n\x01c\x01hFind Text in File Descriptions (no wildcards)\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("Find Text in File Descriptions (no wildcards)") + '\r\n' },
 	'/F': { eval: 'bbs.scan_dirs(FL_FINDDESC, /* all: */true);' },
 	 'I': { eval: 'shell.file_info()' },
 	 'J': { eval: 'shell.select_file_area()' },
 	 'L': { eval: 'shell.list_files()' },
 	'/L': { eval: 'bbs.list_nodes()' },
 	 'N': { eval: 'bbs.scan_dirs(FL_ULTIME)'
-			,msg: '\r\n\x01c\x01hNew File Scan\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("New File Scan") + '\r\n' },
 	'/N': { eval: 'bbs.scan_dirs(FL_ULTIME, /* all */true)' },
 	 'O': { eval: 'shell.logoff(/* fast: */false)' },
 	'/O': { eval: 'shell.logoff(/* fast: */true)' },
 	 'R': { eval: 'shell.view_file_info(FI_REMOVE)'
-			,msg: '\r\n\x01c\x01hRemove/Edit File(s)\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("Remove/Edit File(s)") + '\r\n' },
 	 'S': { eval: 'bbs.scan_dirs(FL_NO_HDR)'
-			,msg: '\r\n\x01c\x01hSearch for Filename(s)\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("Search for Filename(s)") + '\r\n' },
 	'/S': { eval: 'bbs.scan_dirs(FL_NO_HDR, /* all */true) ' },
 	 'T': { eval: 'bbs.temp_xfer()' },
 	 'U': { eval: 'shell.upload_file()'
-			,msg: '\r\n\x01c\x01hUpload File\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("Upload File") + '\r\n' },
 	'/U': { eval: 'shell.upload_user_file()'
-			,msg: '\r\n\x01c\x01hUpload File to User\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("Upload File to User") + '\r\n' },
 	 'V': { eval: 'shell.view_files()'
-			,msg: '\r\n\x01c\x01hView File(s)\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("View File(s)") + '\r\n' },
 	 'W': { eval: 'bbs.whos_online()' },
 	 'Z': { eval: 'shell.upload_sysop_file()'
-			,msg: '\r\n\x01c\x01hUpload File to Sysop\r\n' },
+			,msg: '\r\n\x01c\x01h' + gettext("Upload File to Sysop") + '\r\n' },
 	 '*': { eval: 'shell.show_dirs(bbs.curlib)' },
 	'/*': { eval: 'shell.show_libs()' },
 	 '&': { exec: 'filescancfg.js' },
 	 '!': { eval: 'bbs.menu("sysxfer")' },
-	 '#': {  msg: '\r\n\x01c\x01hType the actual number, not the symbol.\r\n' },
-	'/#': {  msg: '\r\n\x01c\x01hType the actual number, not the symbol.\r\n' },
+	 '#': {  msg: '\r\n\x01c\x01h' + gettext("Type the actual number, not the symbol.") + '\r\n' },
+	'/#': {  msg: '\r\n\x01c\x01h' + gettext("Type the actual number, not the symbol.") + '\r\n' },
 	},
 	nav: {
 	'\r': { },
@@ -232,9 +233,9 @@ while(bbs.online && !js.terminated) {
 	}
 	var menu_cmd = menu.command[cmd];
 	if(!menu_cmd) {
-		console.print("\r\n\x01c\x01hUnrecognized command.");
+		console.print("\r\n\x01c\x01h" + gettext("Unrecognized command."));
 		if(user.settings & USER_EXPERT)
-			console.print(" Hit '\x01i" + help_key + "\x01n\x01c\x01h' for a menu.");
+			console.print(" " + gettext("Hit") + " '\x01i" + help_key + "\x01n\x01c\x01h' " + gettext("for a menu."));
 		console.crlf();
 		continue;
 	}

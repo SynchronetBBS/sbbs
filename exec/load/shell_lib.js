@@ -7,6 +7,7 @@
 
 require("text.js", "DownloadBatchQ");
 require("sbbsdefs.js", "USER_EXPERT");
+require("gettext.js", "gettext");
 
 // Build list of current subs/dirs in each group/library
 // This hack is required because the 'bbs' object doesn't expose the current
@@ -244,7 +245,7 @@ function main_info()
 		if(!(user.settings & USER_EXPERT))
 			bbs.menu("maininfo");
 		bbs.nodesync();
-		console.print("\r\n\x01y\x01hInfo: \x01n");
+		console.print("\r\n\x01y\x01h"+ gettext("Info") + ": \x01n");
 		var key = console.getkeys("?QISVY\r");
 		bbs.log_key(key);
 		switch(key) {
@@ -290,7 +291,7 @@ function file_info()
 		if(!(user.settings & USER_EXPERT))
 			bbs.menu("xferinfo");
 		bbs.nodesync();
-		console.print("\r\n\x01y\x01hInfo: \x01n");
+		console.print("\r\n\x01y\x01h" + gettext("Info") + ": \x01n");
 		key=console.getkeys("?TYDUQ\r");
 		bbs.log_key(key);
 
@@ -325,9 +326,9 @@ function file_info()
 
 function list_users()
 {
-	console.print("\r\n\x01c\x01hList Users\r\n");
-	console.mnemonics("\r\n~Logons Today, ~Yesterday, ~Sub-board, or ~All: ");
-	switch(console.getkeys("LSAY\r")) {
+	console.print("\r\n\x01c\x01h" + "List Users" + "\r\n");
+	console.mnemonics("\r\n~" + gettext("Logons Today") + ", ~" + gettext("Yesterday") + ", ~" + gettext("Sub-board") + ", " + gettext("or") + " ~@All@: ");
+	switch(console.getkeys("LSY\r" + console.all_key)) {
 	case 'L':
 		bbs.list_logons();
 		break;
@@ -337,7 +338,7 @@ function list_users()
 	case 'S':
 		bbs.list_users(UL_SUB);
 		break;
-	case 'A':
+	case console.all_key:
 		bbs.list_users(UL_ALL);
 		break;
 	}
