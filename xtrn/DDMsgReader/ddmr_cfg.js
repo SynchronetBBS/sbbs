@@ -542,7 +542,7 @@ function getOptionHelpText()
 	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "menu in lightbar mode, whether or not to 'snap' the selected item to the next ";
 	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "sub-board with new messages upon displaying or returning to the indexed newscan ";
 	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "sub-board menu. This is a default for a user setting that users can toggle ";
-	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "for themselves".
+	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "for themselves";
 	
 	optionHelpText["newscanOnlyShowNewMsgs"] = "During a newscan, only show new messages (default for a user setting): Whether or not ";
 	optionHelpText["newscanOnlyShowNewMsgs"] += "to only show new messages when the user is doing a newscan. Users can toggle this as ";
