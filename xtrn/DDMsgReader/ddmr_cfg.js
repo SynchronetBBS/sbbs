@@ -57,15 +57,15 @@ while (continueOn)
 			if (userChoice)
 			{
 				var saveRetObj = saveDDMsgReaderCfgFile();
-				if (saveRetObj.saveSucceeded)
-				{
-					var msg = "Changes were successfully saved"; 
-					if (saveRetObj.savedToModsDir)
-						msg += " (saved to the mods dir)";
-					uifc.msg(msg);
-				}
-				else
+				// Show an error if failed to save the settings.  If succeeded, only show
+				// a message if settings were saved to the mods directory.
+				if (!saveRetObj.saveSucceeded)
 					uifc.msg("Failed to save settings!");
+				else
+				{
+					if (saveRetObj.savedToModsDir)
+						uifc.msg("Changes were successfully saved (to the mods dir)");
+				}
 			}
 			continueOn = false;
 		}
@@ -111,6 +111,8 @@ function doMainMenu()
 		"quickUserValSetIndex", // Number (can be -1)
 		"saveAllHdrsWhenSavingMsgToBBSPC", // Boolean
 		"useIndexedModeForNewscan", // Boolean
+		"indexedModeMenuSnapToFirstWithNew", // Boolean
+		"newscanOnlyShowNewMsgs", // Boolean
 		"themeFilename" // String
 	];
 	// Strings for the options to display on the menu
@@ -139,6 +141,8 @@ function doMainMenu()
 		"Quick User Val Set Index",
 		"Save All Headers When Saving Message To BBS PC",
 		"Use Indexed Mode For Newscan",
+		"Index menu: Snap to sub-boards w/ new messages",
+		"During a newscan, only show new messages",
 		"Theme Filename"
 	];
 	// Build an array of formatted string to be displayed on the menu
@@ -533,6 +537,16 @@ function getOptionHelpText()
 	optionHelpText["useIndexedModeForNewscan"] += "a menu showing each sub-board and the number of new messages and total messages in each. When disabled, ";
 	optionHelpText["useIndexedModeForNewscan"] += "the reader will do a traditional newscan where it will scan through the sub-boards and go into reader ";
 	optionHelpText["useIndexedModeForNewscan"] += "mode when there are new messages in a sub-board.";
+	
+	optionHelpText["indexedModeMenuSnapToFirstWithNew"] = "Index menu: Snap to sub-boards w/ new messages: For the indexed newscan sub-board ";
+	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "menu in lightbar mode, whether or not to 'snap' the selected item to the next ";
+	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "sub-board with new messages upon displaying or returning to the indexed newscan ";
+	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "sub-board menu. This is a default for a user setting that users can toggle ";
+	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "for themselves".
+	
+	optionHelpText["newscanOnlyShowNewMsgs"] = "During a newscan, only show new messages (default for a user setting): Whether or not ";
+	optionHelpText["newscanOnlyShowNewMsgs"] += "to only show new messages when the user is doing a newscan. Users can toggle this as ";
+	optionHelpText["newscanOnlyShowNewMsgs"] += "they like.";
 
 	optionHelpText["themeFilename"] = "Theme filename: The name of a file for a color theme to use";
 
@@ -556,7 +570,8 @@ function getMainHelp(pOptionHelpText, pCfgOptProps)
 	for (var i = 0; i < pCfgOptProps.length; ++i)
 	{
 		var optName = pCfgOptProps[i];
-		helpText += pOptionHelpText[optName] + "\r\n\r\n";
+		//helpText += pOptionHelpText[optName] + "\r\n\r\n";
+		helpText += pOptionHelpText[optName] + "\r\n";
 	}
 	return word_wrap(helpText, gHelpWrapWidth);
 }
