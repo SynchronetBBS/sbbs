@@ -320,6 +320,14 @@ function Read_Config_File() {
 	Scan_For_Banned_Clients();
 	for (i in CLines) {
 		c = CLines[i];
+		if (!YLines[c.ircclass]) {
+			log(LOG_WARNING, format(
+				"!WARNING IRC Class %u defined for server %s doesn't exist. Using Class 0.",
+				c.ircclass,
+				c.servername
+			));
+			c.ircclass = 0;
+		}
 		if ((YLines[c.ircclass].connfreq > 0) && c.port && !Servers[c.servername.toLowerCase()])
 			Reset_Autoconnect(c, 1 /* connect immediately */);
 	}
