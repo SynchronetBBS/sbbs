@@ -288,7 +288,10 @@ function formatCfgMenuText(pItemTextMaxLen, pItemText, pVal)
 	if (valType === "boolean")
 		value = pVal ? "Yes" : "No";
 	else
-		value = pVal.toString();
+	{
+		if (typeof(pVal) !== "undefined")
+			value = pVal.toString();
+	}
 	return format(formatCfgMenuText.formatStr, pItemText.substr(0, pItemTextMaxLen), value);
 }
 
