@@ -713,7 +713,6 @@ void guru_cfg()
 		}
 		if (msk != 0)
 			continue;
-		j=0;
 		done=0;
 		while(!done) {
 			k=0;
@@ -870,7 +869,6 @@ void actsets_cfg()
 		if (msk != 0)
 			continue;
 
-		j=0;
 		done=0;
 		while(!done) {
 			k=0;
