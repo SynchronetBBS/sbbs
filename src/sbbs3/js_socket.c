@@ -27,6 +27,10 @@
 #include "multisock.h"
 #include "ssl.h"
 
+#define TLS_ERROR_LEVEL	LOG_WARNING // It'd be nice if this was configurable
+
+// TODO: All log output (lprintf calls) go to the terminal server's lprintf (!)
+
 #ifdef JAVASCRIPT
 
 static void dbprintf(BOOL error, js_socket_private_t* p, char* fmt, ...);
@@ -95,6 +99,8 @@ static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE a
 		sprintf(action, "setting attribute %d", attr);
 		get_crypt_error_string(ret, session, &estr, action, &level);
 		if (estr) {
+			if (level < TLS_ERROR_LEVEL)
+				level = TLS_ERROR_LEVEL;
 			lprintf(level, "TLS %s", estr);
 			free_crypt_attrstr(estr);
 		}
@@ -113,6 +119,8 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 		sprintf(action, "setting attribute string %d", attr);
 		get_crypt_error_string(ret, session, &estr, "setting attribute string", &level);
 		if (estr) {
+			if (level < TLS_ERROR_LEVEL)
+				level = TLS_ERROR_LEVEL;
 			lprintf(level, "TLS %s", estr);
 			free_crypt_attrstr(estr);
 		}
@@ -124,6 +132,8 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 	int GCES_level;                                                                      \
 	get_crypt_error_string(status, pdata->session, &estr, action, &GCES_level); \
 	if (estr) {                                                                          \
+		if (GCES_level < TLS_ERROR_LEVEL)												 \
+			GCES_level = TLS_ERROR_LEVEL;												 \
 		lprintf(GCES_level, "%04d TLS %s", p->sock, estr);                               \
 		free_crypt_attrstr(estr);                                                                  \
 	}                                                                                    \
@@ -131,8 +141,10 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 
 #define GCESH(status, socket, handle, estr, action) do {                                     \
 	int GCESH_level;                                                                     \
-	get_crypt_error_string(status, handle, &estr, action, &GCESH_level);        \
+	get_crypt_error_string(status, handle, &estr, action, &GCESH_level);				 \
 	if (estr) {                                                                          \
+		if (GCESH_level < TLS_ERROR_LEVEL)												 \
+			GCESH_level = TLS_ERROR_LEVEL;										         \
 		lprintf(GCESH_level, "%04d TLS %s", socket, estr);                               \
 		free_crypt_attrstr(estr);                                                                  \
 	}                                                                                    \
