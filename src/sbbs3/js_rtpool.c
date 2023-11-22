@@ -32,10 +32,11 @@ JSRuntime * jsrt_GetNew(int maxbytes, unsigned long timeout, const char *filenam
 	if(!initialized) {
 		initialized=TRUE;
 		pthread_mutex_init(&jsrt_mutex, NULL);
+		pthread_mutex_lock(&jsrt_mutex);
 		listInit(&rt_list, 0);
 		_beginthread(trigger_thread, TRIGGER_THREAD_STACK_SIZE, NULL);
-	}
-	pthread_mutex_lock(&jsrt_mutex);
+	} else
+		pthread_mutex_lock(&jsrt_mutex);
 	ret=JS_NewRuntime(maxbytes);
 	listPushNode(&rt_list, ret);
 	pthread_mutex_unlock(&jsrt_mutex);
