@@ -415,7 +415,7 @@ public:
 	CRYPT_SESSION	ssh_session=-1;
 #endif
 	int		session_channel=-1;
-	std::atomic<bool> ssh_mode = false;
+	std::atomic<bool> ssh_mode{false};
 	SOCKET	passthru_socket=INVALID_SOCKET;
 	bool	passthru_socket_active = false;
 	void	passthru_socket_activate(bool);
@@ -468,7 +468,7 @@ public:
 	uchar	telnet_cmd[64]{};
 	uint	telnet_cmdlen = 0;
 	uint	telnet_cmds_received = 0;
-	std::atomic<uint> telnet_mode = 0;
+	std::atomic<uint> telnet_mode{0};
 	/* 	input_thread() writes to these variables: */
 	uchar	telnet_last_rxch = 0;
 	char	telnet_location[128]{};
