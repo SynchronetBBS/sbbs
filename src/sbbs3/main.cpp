@@ -4556,7 +4556,7 @@ void sbbs_t::daily_maint(void)
 
 		if(!(user.misc&(DELETED|INACTIVE))
 			&& user.expire && (uint)user.expire<=(uint)now) {
-			putsmsg(&cfg,user.number,text[AccountHasExpired]);
+			putsmsg(user.number,text[AccountHasExpired]);
 			SAFEPRINTF2(str,"DAILY: %s #%u Expired",user.alias,user.number);
 			lputs(LOG_NOTICE, str);
 			if(cfg.level_misc[user.level]&LEVEL_EXPTOVAL

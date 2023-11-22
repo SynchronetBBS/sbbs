@@ -350,7 +350,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 				,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias
 				,connection
 				,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
-			putsmsg(&cfg, i, str);
+			putsmsg(i, str);
 		}
 	}
 

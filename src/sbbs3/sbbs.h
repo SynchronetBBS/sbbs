@@ -768,14 +768,18 @@ public:
 	void	time_bank(void);
 	void	change_user(void);
 
+	/* putmsg.cpp */
+	char	putmsg(const char *str, int mode, int org_cols = 0, JSObject* obj = NULL);
+	char	putmsgfrag(const char* str, int& mode, int org_cols = 0, JSObject* obj = NULL);
+	bool	putnmsg(int node_num, const char*);
+	bool	putsmsg(int user_num, const char*);
+
 	/* writemsg.cpp */
 	void	automsg(void);
 	bool	writemsg(const char *str, const char *top, char *subj, int mode, int subnum
 				,const char *to, const char* from, const char** editor=NULL, const char** charset=NULL);
 	char*	quotes_fname(int xedit, char* buf, size_t len);
 	char*	msg_tmp_fname(int xedit, char* fname, size_t len);
-	char	putmsg(const char *str, int mode, int org_cols = 0, JSObject* obj = NULL);
-	char	putmsgfrag(const char* str, int& mode, int org_cols = 0, JSObject* obj = NULL);
 	bool	msgabort(bool clear = false);
 	void	clearabort() { sys_status &= ~SS_ABORT; }
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL

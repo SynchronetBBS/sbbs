@@ -340,14 +340,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 							|| node.status==NODE_QUIET)) {
 							SAFEPRINTF2(str,text[EmailNodeMsg]
 								,cfg.node_num,msg.from);
-							putnmsg(&cfg,k,str);
+							putnmsg(k,str);
 							break;
 						}
 					}
 				}
 				if(cfg.node_num==0 || k>cfg.sys_nodes) {
 					SAFEPRINTF(str,text[UserSentYouMail],msg.from);
-					putsmsg(&cfg,usernum,str);
+					putsmsg(usernum,str);
 				}
 				tmsgs++;
 			} else {
@@ -498,7 +498,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 						,msg.from
 						,(useron.rest&FLAG('Q')) ? useron.alias : "QWK"
 						,cfg.grp[cfg.sub[n]->grp]->sname, cfg.sub[n]->lname);
-					putsmsg(&cfg, destuser, str);
+					putsmsg(destuser, str);
 				}
 				if(!(useron.rest&FLAG('Q')))
 					user_event(EVENT_POST);
@@ -607,7 +607,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			SAFEPRINTF2(fname,"%s/%s",inbox,dirent->d_name);
 			mv(str,fname,1);
 			SAFEPRINTF2(str,text[ReceivedFileViaQWK],dirent->d_name,useron.alias);
-			putsmsg(&cfg,1,str);
+			putsmsg(1,str);
 			lprintf(LOG_NOTICE, "Received file: %s", dirent->d_name);
 		}
 		if(dir!=NULL)

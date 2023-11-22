@@ -181,7 +181,7 @@ bool sbbs_t::removefcdt(file_t* f)
 		sprintf(str,"%lu minute",cdt);
 		sprintf(tmp,text[FileRemovedUserMsg]
 			,f->name,cdt ? str : text[No]);
-		putsmsg(&cfg,u,tmp);
+		putsmsg(u,tmp);
 	}
 	else {
 		if(cfg.dir[f->dir]->misc&DIR_CDTUL)
@@ -201,7 +201,7 @@ bool sbbs_t::removefcdt(file_t* f)
 		adjustuserval(&cfg, u, USER_CDT, -cdt);
 		sprintf(tmp,text[FileRemovedUserMsg]
 			,f->name,cdt ? ultoac(cdt,str) : text[No]);
-		putsmsg(&cfg,u,tmp);
+		putsmsg(u,tmp);
 	}
 
 	adjustuserval(&cfg, u, USER_ULB, -f->size);

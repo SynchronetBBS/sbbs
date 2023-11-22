@@ -552,3 +552,17 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 
 	return str[l];
 }
+
+// Write short message (telegram) to user, supports @-codes
+bool sbbs_t::putsmsg(int user_num, const char* str)
+{
+	char buf[256];
+	return ::putsmsg(&cfg, user_num, expand_atcodes(str, buf, sizeof buf)) == 0;
+}
+
+// Write short message to node in-use, supports @-codes
+bool sbbs_t::putnmsg(int node_num, const char* str)
+{
+	char buf[256];
+	return ::putnmsg(&cfg, node_num, expand_atcodes(str, buf, sizeof buf)) == 0;
+}

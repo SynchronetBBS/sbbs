@@ -143,7 +143,7 @@ void sbbs_t::telluser(smbmsg_t* msg)
 			sprintf(str
 				,text[UserReadYourMailNodeMsg]
 				,cfg.node_num,useron.alias);
-			putnmsg(&cfg,n,str);
+			putnmsg(n,str);
 			break; 
 		} 
 	}
@@ -151,7 +151,7 @@ void sbbs_t::telluser(smbmsg_t* msg)
 		now=time(NULL);
 		sprintf(str,text[UserReadYourMail]
 			,useron.alias,timestr(now));
-		putsmsg(&cfg,usernumber,str); 
+		putsmsg(usernumber,str);
 	}
 }
 

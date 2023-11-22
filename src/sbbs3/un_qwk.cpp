@@ -251,7 +251,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if(qwk_import_msg(qwk, (char *)block, blocks, hubnum+1, &smb, usernum, &msg, &dupe)) {
 				lprintf(LOG_INFO,"Imported QWK mail message from %s to %s #%u", msg.from, msg.to, usernum);
 				SAFEPRINTF(str,text[UserSentYouMail],msg.from);
-				putsmsg(&cfg,usernum,str);
+				putsmsg(usernum,str);
 				tmsgs++;
 			} else {
 				if(dupe)
@@ -337,7 +337,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 					,msg.from
 					,cfg.qhub[hubnum]->id
 					,cfg.grp[cfg.sub[j]->grp]->sname, cfg.sub[j]->lname);
-				putsmsg(&cfg, destuser, str);
+				putsmsg( destuser, str);
 			}
 		} else {
 			if(dupe)
@@ -399,7 +399,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		SAFEPRINTF2(fname,"%s/%s",inbox,dirent->d_name);
 		mv(str,fname,1 /* overwrite */);
 		sprintf(str,text[ReceivedFileViaQWK],dirent->d_name,cfg.qhub[hubnum]->id);
-		putsmsg(&cfg,1,str);
+		putsmsg(1,str);
 		lprintf(LOG_INFO,"Received file from %s: %s", cfg.qhub[hubnum]->id, dirent->d_name);
 	}
 	if(dir!=NULL)

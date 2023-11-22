@@ -326,13 +326,13 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		if(node.useron==usernumber && !(node.misc&NODE_POFF)
 			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
 			safe_snprintf(str,sizeof(str),text[EmailNodeMsg],cfg.node_num,useron.alias);
-			putnmsg(&cfg,i,str);
+			putnmsg(i,str);
 			break; 
 		} 
 	}
 	if(i>cfg.sys_nodes) {	/* User wasn't online, so leave short msg */
 		safe_snprintf(str,sizeof(str),text[UserSentYouMail],useron.alias);
-		putsmsg(&cfg,usernumber,str); 
+		putsmsg(usernumber,str);
 	}
 	return(true);
 }

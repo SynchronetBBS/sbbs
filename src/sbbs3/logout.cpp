@@ -69,7 +69,7 @@ void sbbs_t::logout()
 					SAFEPRINTF2(str,text[NodeLoggedOff],cfg.node_num
 						,thisnode.misc&NODE_ANON
 						? text[UNKNOWN_USER] : useron.alias);
-					putnmsg(&cfg,i,str); 
+					putnmsg(i, str);
 				}
 			}
 

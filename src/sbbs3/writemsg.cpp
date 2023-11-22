@@ -1592,13 +1592,13 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 			if(node.useron==usernumber && !(node.misc&NODE_POFF)
 				&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
 				SAFEPRINTF2(str,text[EmailNodeMsg],cfg.node_num,useron.alias);
-				putnmsg(&cfg,i,str);
+				putnmsg(i,str);
 				break;
 			}
 		}
 		if(i>cfg.sys_nodes) {	/* User wasn't online, so leave short msg */
 			SAFEPRINTF(str,text[UserSentYouMail],useron.alias);
-			putsmsg(&cfg,usernumber,str);
+			putsmsg(usernumber,str);
 		}
 	} else {
 		if(net_type == NET_FIDO && cfg.netmail_sem[0])
