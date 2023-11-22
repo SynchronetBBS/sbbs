@@ -864,7 +864,7 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 	if((sockobj=js_CreateSocketObject(cx, obj, "new_socket", new_socket, -1))==NULL) {
 		closesocket(new_socket);
 		JS_RESUMEREQUEST(cx, rc);
-		JS_ReportError(cx, __FUNCTION__ ": Error creating new socket object");
+		JS_ReportError(cx, "Error creating new socket object");
 		return(JS_TRUE);
 	}
 	if((new_p=(js_socket_private_t*)JS_GetPrivate(cx,sockobj))==NULL) {
@@ -942,7 +942,7 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 	jsval *argv=JS_ARGV(cx, arglist);
 
 	if (p->sock == INVALID_SOCKET) {
-		JS_ReportError(cx, __FUNCTION__ ": invalid socket");
+		JS_ReportError(cx, "invalid socket");
 		return JS_FALSE;
 	}
 
@@ -951,7 +951,7 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 	}
 
 	if (!cb->events_supported) {
-		JS_ReportError(cx, __FUNCTION__ ": events not supported");
+		JS_ReportError(cx, "events not supported");
 		return JS_FALSE;
 	}
 
@@ -966,14 +966,14 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 #else
 	if (socketpair(PF_UNIX, SOCK_STREAM, 0, sv) == -1) {
 #endif
-		JS_ReportError(cx, __FUNCTION__ ": Error %d creating socket pair", ERROR_VALUE);
+		JS_ReportError(cx, "Error %d creating socket pair", ERROR_VALUE);
 		return JS_FALSE;
 	}
 
 	// Create event
 	ev = malloc(sizeof(*ev));
 	if (ev == NULL) {
-		JS_ReportError(cx, __FUNCTION__ ": error allocating %lu bytes", sizeof(*ev));
+		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
 		closesocket(sv[0]);
 		closesocket(sv[1]);
 		return JS_FALSE;
@@ -996,7 +996,7 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 	// Start thread
 	args = malloc(sizeof(*args));
 	if (args == NULL) {
-		JS_ReportError(cx, __FUNCTION__ ": error allocating %lu bytes", sizeof(*args));
+		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*args));
 		closesocket(sv[0]);
 		closesocket(sv[1]);
 		return JS_FALSE;
@@ -1009,7 +1009,7 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 	args->port = port;
 	args->nonblocking = p->nonblocking;
 	if (args->host == NULL) {
-		JS_ReportError(cx, __FUNCTION__ ": error duplicating hostname");
+		JS_ReportError(cx, "error duplicating hostname");
 		closesocket(sv[0]);
 		closesocket(sv[1]);
 		free(args);
@@ -1303,7 +1303,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
 	HANDLE_PENDING(cx, fname);
 	if(fname==NULL) {
-		JS_ReportError(cx, __FUNCTION__ ": Failure reading filename");
+		JS_ReportError(cx, "Failure reading filename");
 		return(JS_FALSE);
 	}
 
@@ -1417,7 +1417,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if((buf=(char*)malloc(len+1))==NULL) {
-		JS_ReportError(cx, __FUNCTION__ ": Error allocating %u bytes",len+1);
+		JS_ReportError(cx, "Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
 
@@ -1524,7 +1524,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 	} else {		/* String Data */
 
 		if((buf=(char*)malloc(len+1))==NULL) {
-			JS_ReportError(cx, __FUNCTION__ ": Error allocating %u bytes",len+1);
+			JS_ReportError(cx, "Error allocating %u bytes",len+1);
 			return(JS_FALSE);
 		}
 
@@ -1549,7 +1549,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 
 
 	if((retobj=JS_NewObject(cx,NULL,NULL,obj))==NULL) {
-		JS_ReportError(cx, __FUNCTION__ ": JS_NewObject failed");
+		JS_ReportError(cx, "JS_NewObject failed");
 		return(JS_FALSE);
 	}
 
@@ -1602,7 +1602,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToInt32(cx,argv[0],&len);
 
 	if((buf=(char*)malloc(len+1))==NULL) {
-		JS_ReportError(cx, __FUNCTION__ ": Error allocating %u bytes",len+1);
+		JS_ReportError(cx, "Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1688,7 +1688,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToInt32(cx,argv[0],&len);
 
 	if((buf=(char*)malloc(len+1))==NULL) {
-		JS_ReportError(cx, __FUNCTION__ ": Error allocating %u bytes",len+1);
+		JS_ReportError(cx, "Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
 
@@ -1999,7 +1999,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 		fds = calloc(nfds, sizeof(*fds));
 		if (fds == NULL) {
 			JS_RESUMEREQUEST(cx, rc);
-			JS_ReportError(cx, __FUNCTION__ ": Error allocating %d elements of %lu bytes at %s:%d"
+			JS_ReportError(cx, "Error allocating %d elements of %lu bytes at %s:%d"
 				, nfds, sizeof(*fds), getfname(__FILE__), __LINE__);
 			return JS_FALSE;
 		}
@@ -2054,7 +2054,7 @@ js_get_callback(JSContext *cx)
 	while ((!JS_LookupProperty(cx, pscope, "js", &val) || val==JSVAL_VOID || !JSVAL_IS_OBJECT(val)) && pscope != NULL) {
 		pscope = JS_GetParent(cx, pscope);
 		if (pscope == NULL) {
-			JS_ReportError(cx, __FUNCTION__ ": Walked to global, no js object!");
+			JS_ReportError(cx, "Walked to global, no js object!");
 			return NULL;
 		}
 	}
@@ -2069,7 +2069,7 @@ js_install_one_socket_event(JSContext *cx, JSObject *obj, JSFunction *ecb, js_ca
 
 	ev = malloc(sizeof(*ev));
 	if (ev == NULL) {
-		JS_ReportError(cx, __FUNCTION__ ": error allocating %lu bytes", sizeof(*ev));
+		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
 		return;
 	}
 	ev->prev = NULL;
@@ -2966,41 +2966,41 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 	if (scfg == NULL) {
-		JS_ReportError(cx, __FUNCTION__ ": Unable to get private runtime");
+		JS_ReportError(cx, "Unable to get private runtime");
 		return JS_FALSE;
 	}
 
 	if (argc < 2) {
-			JS_ReportError(cx, __FUNCTION__ ": At least two arguments required (hostname and port)");
+			JS_ReportError(cx, "At least two arguments required (hostname and port)");
 			return JS_FALSE;
 	}
 	// Optional arguments in an object...
 	if (argc > 2) {
 		if (!JS_ValueToObject(cx, argv[2], &obj)) {
-			JS_ReportError(cx, __FUNCTION__ ": Invalid third argument");
+			JS_ReportError(cx, "Invalid third argument");
 			return JS_FALSE;
 		}
 		if (JS_GetProperty(cx, obj, "domain", &v) && !JSVAL_IS_VOID(v)) {
 			if (!JS_ValueToInt32(cx, v, &domain)) {
-				JS_ReportError(cx, __FUNCTION__ ": Invalid domain property");
+				JS_ReportError(cx, "Invalid domain property");
 				return JS_FALSE;
 			}
 		}
 		if (JS_GetProperty(cx, obj, "type", &v) && !JSVAL_IS_VOID(v)) {
 			if (!JS_ValueToInt32(cx, v, &type)) {
-				JS_ReportError(cx, __FUNCTION__ ": Invalid type property");
+				JS_ReportError(cx, "Invalid type property");
 				return JS_FALSE;
 			}
 		}
 		if (JS_GetProperty(cx, obj, "proto", &v) && !JSVAL_IS_VOID(v)) {
 			if (!JS_ValueToInt32(cx, v, &proto)) {
-				JS_ReportError(cx, __FUNCTION__ ": Invalid proto property");
+				JS_ReportError(cx, "Invalid proto property");
 				return JS_FALSE;
 			}
 		}
 		if (JS_GetProperty(cx, obj, "timeout", &v) && !JSVAL_IS_VOID(v)) {
 			if (!JS_ValueToInt32(cx, v, &timeout)) {
-				JS_ReportError(cx, __FUNCTION__ ": Invalid timeout property");
+				JS_ReportError(cx, "Invalid timeout property");
 				return JS_FALSE;
 			}
 		}
@@ -3039,16 +3039,16 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 			if (JSVAL_IS_OBJECT(v)) {
 				ao = JSVAL_TO_OBJECT(v);
 				if (ao == NULL || !JS_IsArrayObject(cx, ao)) {
-					JS_ReportError(cx, __FUNCTION__ ": Invalid bindaddrs list");
+					JS_ReportError(cx, "Invalid bindaddrs list");
 					goto fail;
 				}
 				if (!JS_GetArrayLength(cx, ao, &count)) {
-					JS_ReportError(cx, __FUNCTION__ ": Unable to get bindaddrs length");
+					JS_ReportError(cx, "Unable to get bindaddrs length");
 					goto fail;
 				}
 				for (i = 0; i < count; i++) {
 					if (!JS_GetElement(cx, ao, i, &v)) {
-						JS_ReportError(cx, __FUNCTION__ ": Invalid bindaddrs entry");
+						JS_ReportError(cx, "Invalid bindaddrs entry");
 						goto fail;
 					}
 					JSVALUE_TO_MSTRING(cx, v, host, NULL);
@@ -3056,7 +3056,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 					rc = JS_SUSPENDREQUEST(cx);
 					if (!handle_addrs(host, &addr4, &addr4len, &addr6, &addr6len)) {
 						JS_RESUMEREQUEST(cx, rc);
-						JS_ReportError(cx, __FUNCTION__ ": Unparsable bindaddrs entry");
+						JS_ReportError(cx, "Unparsable bindaddrs entry");
 						goto fail;
 					}
 					FREE_AND_NULL(host);
@@ -3069,7 +3069,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 				rc = JS_SUSPENDREQUEST(cx);
 				if (!handle_addrs(host, &addr4, &addr4len, &addr6, &addr6len)) {
 					JS_RESUMEREQUEST(cx, rc);
-					JS_ReportError(cx, __FUNCTION__ ": Unparsable bindaddrs entry");
+					JS_ReportError(cx, "Unparsable bindaddrs entry");
 					goto fail;
 				}
 				FREE_AND_NULL(host);
@@ -3081,7 +3081,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	HANDLE_PENDING(cx, host);
 	port = js_port(cx, argv[1], type);
 	if (port == 0) {
-			JS_ReportError(cx, __FUNCTION__ ": Invalid port");
+			JS_ReportError(cx, "Invalid port");
 			goto fail;
 	}
 
@@ -3184,7 +3184,7 @@ connected:
 	JS_RESUMEREQUEST(cx, rc);
 
 	if (p->sock == INVALID_SOCKET) {
-		JS_ReportError(cx, __FUNCTION__ ": Unable to connect to %s:%u", host, port);
+		JS_ReportError(cx, "Unable to connect to %s:%u", host, port);
 		goto fail;
 	}
 	ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
@@ -3275,46 +3275,46 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 	if (scfg == NULL) {
-		JS_ReportError(cx, __FUNCTION__ ": Unable to get private runtime");
+		JS_ReportError(cx, "Unable to get private runtime");
 		goto fail;
 	}
 	cb.scfg = scfg;
 	if (argc < 3) {
-		JS_ReportError(cx, __FUNCTION__ ": At least three arguments required (interfaces, port, and protocol)");
+		JS_ReportError(cx, "At least three arguments required (interfaces, port, and protocol)");
 		goto fail;
 	}
 	if (argc > 3) {
 		if (!JS_ValueToObject(cx, argv[3], &obj)) {
-			JS_ReportError(cx, __FUNCTION__ ": Invalid fourth argument");
+			JS_ReportError(cx, "Invalid fourth argument");
 			goto fail;
 		}
 		if (JS_GetProperty(cx, obj, "domain", &v) && !JSVAL_IS_VOID(v)) {
 			if (!JS_ValueToInt32(cx, v, &domain)) {
-				JS_ReportError(cx, __FUNCTION__ ": Invalid domain property");
+				JS_ReportError(cx, "Invalid domain property");
 				goto fail;
 			}
 		}
 		if (JS_GetProperty(cx, obj, "type", &v) && !JSVAL_IS_VOID(v)) {
 			if (!JS_ValueToInt32(cx, v, &type)) {
-				JS_ReportError(cx, __FUNCTION__ ": Invalid type property");
+				JS_ReportError(cx, "Invalid type property");
 				goto fail;
 			}
 		}
 		if (JS_GetProperty(cx, obj, "proto", &v) && !JSVAL_IS_VOID(v)) {
 			if (!JS_ValueToInt32(cx, v, &proto)) {
-				JS_ReportError(cx, __FUNCTION__ ": Invalid proto property");
+				JS_ReportError(cx, "Invalid proto property");
 				goto fail;
 			}
 		}
 		if (JS_GetProperty(cx, obj, "retry_count", &v) && !JSVAL_IS_VOID(v)) {
 			if (!JS_ValueToInt32(cx, v, &retry_count)) {
-				JS_ReportError(cx, __FUNCTION__ ": Invalid retry_count property");
+				JS_ReportError(cx, "Invalid retry_count property");
 				goto fail;
 			}
 		}
 		if (JS_GetProperty(cx, obj, "retry_delay", &v) && !JSVAL_IS_VOID(v)) {
 			if (!JS_ValueToInt32(cx, v, &retry_delay)) {
-				JS_ReportError(cx, __FUNCTION__ ": Invalid retry_delay property");
+				JS_ReportError(cx, "Invalid retry_delay property");
 				goto fail;
 			}
 		}
@@ -3327,13 +3327,13 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if (JSVAL_IS_OBJECT(argv[0])) {
 		obj = JSVAL_TO_OBJECT(argv[0]);
 		if (obj == NULL || !JS_IsArrayObject(cx, obj)) {
-			JS_ReportError(cx, __FUNCTION__ ": Invalid interface list");
+			JS_ReportError(cx, "Invalid interface list");
 			goto fail;
 		}
 	}
 	set = xpms_create(retry_count, retry_delay, lprintf);
 	if (set == NULL) {
-		JS_ReportError(cx, __FUNCTION__ ": Unable to create socket set");
+		JS_ReportError(cx, "Unable to create socket set");
 		goto fail;
 	}
 	if (obj == NULL) {
@@ -3342,14 +3342,14 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		rc = JS_SUSPENDREQUEST(cx);
 		if (!xpms_add(set, domain, type, proto, interface, port, protocol, ls_cb, NULL, &cb)) {
 			JS_RESUMEREQUEST(cx, rc);
-			JS_ReportError(cx, __FUNCTION__ ": Unable to add host to socket set");
+			JS_ReportError(cx, "Unable to add host to socket set");
 			goto fail;
 		}
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	else {
 		if (!JS_GetArrayLength(cx, obj, &count)) {
-			JS_ReportError(cx, __FUNCTION__ ": zero-length array");
+			JS_ReportError(cx, "zero-length array");
 			goto fail;
 		}
 		for (i = 0; (jsuint)i < count; i++) {
@@ -3363,7 +3363,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 			if (!xpms_add(set, domain, type, proto, interface, port, protocol, ls_cb, NULL, &cb)) {
 				free(interface);
 				JS_RESUMEREQUEST(cx, rc);
-				JS_ReportError(cx, __FUNCTION__ ": Unable to add host to socket set");
+				JS_ReportError(cx, "Unable to add host to socket set");
 				goto fail;
 			}
 			free(interface);
@@ -3448,12 +3448,12 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		if (from_descriptor) {
 			uint32 sock;
 			if(!JS_ValueToECMAUint32(cx,argv[i],&sock)) {
-				JS_ReportError(cx, __FUNCTION__ ": Failed to convert socket descriptor to uint32");
+				JS_ReportError(cx, "Failed to convert socket descriptor to uint32");
 				return JS_FALSE;
 			}
 			obj = js_CreateSocketObjectWithoutParent(cx, sock, -1);
 			if (obj == NULL) {
-				JS_ReportError(cx, __FUNCTION__ ": Failed to create external socket object");
+				JS_ReportError(cx, "Failed to create external socket object");
 				return JS_FALSE;
 			}
 			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
