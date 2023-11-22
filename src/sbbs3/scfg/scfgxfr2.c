@@ -229,7 +229,7 @@ static void append_dir_list(const char* parent, const char* dir, FILE* fp, int d
 
 	SAFECOPY(path,dir);
 	backslash(path);
-	strcat(path,ALLFILES);
+	SAFECAT(path,ALLFILES);
 
 	glob(path,GLOB_MARK,NULL,&g);
    	for(gi=0;gi<g.gl_pathc;gi++) {
@@ -396,7 +396,7 @@ void xfer_cfg()
 			SAFECOPY(code_prefix, short_name);
 			prep_code(code_prefix, NULL);
 			if(strlen(code_prefix) < LEN_CODE)
-				strcat(code_prefix, "_");
+				SAFECAT(code_prefix, "_");
 			uifc.helpbuf=lib_code_prefix_help;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Internal Code Prefix", code_prefix, LEN_CODE, K_EDIT|K_UPPER|K_NOSPACE) < 0)
 				continue;
@@ -828,9 +828,9 @@ void xfer_cfg()
 					else if(k==1)
 						sprintf(str,"FILEGATE.ZXX");
 					else {
-						strcpy(str,cfg.lib[libnum]->parent_path);
+						SAFECOPY(str,cfg.lib[libnum]->parent_path);
 						backslash(str);
-						strcat(str,"dirs.raw");
+						SAFECAT(str,"dirs.raw");
 					}
 					if(k==3) {
 						if(!create_raw_dir_list(str))
@@ -1083,8 +1083,8 @@ void dir_toggle_options(dir_t* dir)
 			,dir->misc&DIR_FCHK ? "Yes":"No");
 		strcpy(str,"Slow Media Device");
 		if(dir->seqdev) {
-			sprintf(tmp," #%u",dir->seqdev);
-			strcat(str,tmp);
+			SAFEPRINTF(tmp," #%u",dir->seqdev);
+			SAFECAT(str,tmp);
 		}
 		snprintf(opt[n++], MAX_OPLN, "%-30.30s%s",str
 			,dir->seqdev ? "Yes":"No");
