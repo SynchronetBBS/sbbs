@@ -5118,7 +5118,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,311
 	},
 	{"html_decode",		js_html_decode,		1,	JSTYPE_STRING,	JSDOCSTR("html")
-	,JSDOCSTR("Return a decoded HTML-encoded text string")
+	,JSDOCSTR("Return a decoded HTML-encoded text string, translating HTML character entities into CP437 character equivalents")
 	,311
 	},
 	{"word_wrap",		js_word_wrap,		1,	JSTYPE_STRING,	JSDOCSTR("text [,line_length=79 [,orig_line_length=79 [,<i>bool</i> handle_quotes=true [,<i>bool</i> is_utf8=false]]]]")
@@ -5414,13 +5414,13 @@ BOOL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods
 		free(p);
 		return(FALSE);
 	}
-
+	// TODO: Deuce, what purpose does this ReservedSlot serve?
+	// Removing this had no observable negative impact <shrug>
 	if (!JS_SetReservedSlot(cx, *glob, 0, INT_TO_JSVAL(0))) {
 		JS_RemoveObjectRoot(cx, glob);
 		free(p);
 		return(FALSE);
 	}
-
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,*glob
 		,"Top-level functions and properties (common to all servers, services, and <i>JSexec</i>)",310);
