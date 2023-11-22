@@ -523,7 +523,8 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						else
 							*pp1=(char *)realloc(*pp1,strlen(*pp2)+1);
 					}
-					strcat(*pp1,*pp2);
+					if(*pp1 != NULL)
+						strcat(*pp1,*pp2);
 					return(0);
 				case FORMAT_STR_VAR:
 					pp=getstrvar(csi,*(int32_t *)csi->ip);
