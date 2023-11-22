@@ -2444,8 +2444,10 @@ void* new_item(void* lp, size_t size, int index, int* total)
 
 	if((item = calloc(size, 1)) == NULL)
 		return NULL;
-	if((p = realloc(list, size * ((*total) + 1))) == NULL)
+	if((p = realloc(list, size * ((*total) + 1))) == NULL) {
+		free(item);
 		return NULL;
+	}
 	list = p;
 	for(int i = *total; i > index; --i)
 		list[i] = list[i - 1];
