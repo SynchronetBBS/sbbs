@@ -332,7 +332,7 @@ bool sbbs_t::noyes(const char *str, int mode)
 /****************************************************************************/
 int sbbs_t::getkeys(const char *keys, uint max, int mode)
 {
-	char	str[81];
+	char	str[81]{};
 	uchar	ch,n=0,c=0;
 	uint	i=0;
 
