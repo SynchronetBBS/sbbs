@@ -123,7 +123,7 @@ uint getsub(void)
 	static int sub_dflt,sub_bar;
 	char str[81];
 	int i,j,k;
-	uint subnum[MAX_OPTS+1];
+	uint subnum[MAX_OPTS+1] = {0};
 
 	while(1) {
 		i = getgrp("Select Message Group");
@@ -135,9 +135,9 @@ uint getsub(void)
 				subnum[k++]=j;
 			}
 		opt[k][0]=0;
-		sprintf(str,"Select %s Sub-board",cfg.grp[i]->sname);
+		snprintf(str, sizeof str, "Select %s Sub-board", cfg.grp[i]->sname);
 		j=uifc.list(WIN_RHT|WIN_BOT|WIN_SAV,0,0,45,&sub_dflt,&sub_bar,str,opt);
-		if(j==-1 || j >= cfg.total_subs)
+		if(j < 0 || j >= cfg.total_subs || j >= MAX_OPTS)
 			continue;
 		sub_dflt++;
 		sub_bar++;
