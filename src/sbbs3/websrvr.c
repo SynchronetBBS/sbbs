@@ -6171,11 +6171,12 @@ static void respond(http_session_t * session)
 			send_headers(session,session->req.status,FALSE);
 		}
 	}
-	if(session->req.send_content)  {
+	int64_t content_length = flength(session->req.physical_path);
+	if(session->req.send_content && content_length > 0)  {
 		off_t snt=0;
 		time_t start = time(NULL);
 		lprintf(LOG_INFO,"%04d Sending file: %s (%"PRIdOFF" bytes)"
-			,session->socket, session->req.physical_path, flength(session->req.physical_path));
+			,session->socket, session->req.physical_path, content_length);
 		snt=sock_sendfile(session,session->req.physical_path,session->req.range_start,session->req.range_end);
 		if(session->req.ld!=NULL) {
 			if(snt<0)
