@@ -243,6 +243,8 @@ void sbbs_t::useredit(int usernumber)
 				while(online) {
 					bprintf(text[FlagEditing], u32toaf(user.exempt,tmp));
 					c=(char)getkeys("ABCDEFGHIJKLMNOPQRSTUVWXYZ?\r",0);
+					if(c < 0)
+						break;
 					if(sys_status&SS_ABORT)
 						break;
 					if(c==CR) break;
@@ -273,6 +275,8 @@ void sbbs_t::useredit(int usernumber)
 							break; 
 					}
 					c=(char)getkeys("ABCDEFGHIJKLMNOPQRSTUVWXYZ?1234\r",0);
+					if(c < 0)
+						break;
 					if(sys_status&SS_ABORT)
 						break;
 					if(c==CR) break;
@@ -522,6 +526,8 @@ void sbbs_t::useredit(int usernumber)
 				while(online) {
 					bprintf(text[FlagEditing], u32toaf(user.rest, tmp));
 					c=(char)getkeys("ABCDEFGHIJKLMNOPQRSTUVWXYZ?\r",0);
+					if(c < 0)
+						break;
 					if(sys_status&SS_ABORT)
 						break;
 					if(c==CR) break;
@@ -1134,6 +1140,8 @@ void sbbs_t::maindflts(user_t* user)
 						strcat(str,tmp); 
 					}
 				ch=(char)getkeys(str,0);
+				if(ch < 0)
+					break;
 				if(sys_status & SS_ABORT)
 					break;
 				if(ch==quit_key())
