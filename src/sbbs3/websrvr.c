@@ -1140,7 +1140,8 @@ static void close_request(http_session_t * session)
 
 	for(i=0;i<MAX_CLEANUPS;i++) {
 		if(session->req.cleanup_file[i]!=NULL) {
-			if(!(startup->options&WEB_OPT_DEBUG_SSJS))
+			if(i != CLEANUP_SSJS_TMP_FILE
+				|| !(startup->options&WEB_OPT_DEBUG_SSJS))
 				remove(session->req.cleanup_file[i]);
 			free(session->req.cleanup_file[i]);
 		}
@@ -1148,6 +1149,15 @@ static void close_request(http_session_t * session)
 
 	smb_freefilemem(&session->file);
 	memset(&session->req,0,sizeof(session->req));
+}
+
+// Opens the response (SSJS output) file if necessary
+static bool response_file_open(http_session_t* session)
+{
+	const char* path = session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE];
+	if (session->req.fp == NULL && path != NULL)
+		session->req.fp = fopen(path, "wb");
+	return session->req.fp != NULL;
 }
 
 static int get_header_type(char *header)
@@ -3755,7 +3765,7 @@ static BOOL check_request(http_session_t * session)
 					/* Now, PathInfoIndex may have been set, so we need to re-expand the index so it will match here. */
 					if (old_path_info_index != session->req.path_info_index) {
 						// Now that we may have gotten a new filename, we need to use that to compare with.
-						strcpy(filename, getfname(session->req.physical_path));
+						SAFECOPY(filename, getfname(session->req.physical_path));
 					}
 					/* Read in per-filespec */
 					while((spec=strListPop(&specs))!=NULL) {
@@ -5296,7 +5306,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 
 	if(report==NULL) {
 		lprintf(LOG_ERR,"%04d !JavaScript: %s", session->socket, message);
-		if(session->req.fp!=NULL)
+		if(response_file_open(session))
 			fprintf(session->req.fp,"!JavaScript: %s", message);
 		return;
     }
@@ -5324,7 +5334,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 
 	lprintf(log_level,"%04d !JavaScript %s%s%s: %s, Request: %s"
 		,session->socket,warning,file,line,message, session->req.request_line);
-	if(session->req.fp!=NULL)
+	if(response_file_open(session))
 		fprintf(session->req.fp,"!JavaScript %s%s%s: %s",warning,file,line,message);
 }
 
@@ -5334,7 +5344,7 @@ static void js_writebuf(http_session_t *session, const char *buf, size_t buflen)
 		if(session->req.send_content)
 			writebuf(session,buf,buflen);
 	}
-	else
+	else if(response_file_open(session))
 		fwrite(buf,1,buflen,session->req.fp);
 }
 
@@ -5353,7 +5363,7 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, BOOL writeln)
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(session->req.fp==NULL) {
+	if(!response_file_open(session)) {
 		return(JS_FALSE);
 	}
 
@@ -6053,11 +6063,7 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 	if(script == session->req.physical_path && session->req.xjs_handler[0])
 		script = session->req.xjs_handler;
 
-	sprintf(path,"%sSBBS_SSJS.%u.%u.html",scfg.temp_dir,getpid(),session->socket);
-	if((session->req.fp=fopen(path,"wb"))==NULL) {
-		lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
-		return(FALSE);
-	}
+	snprintf(path, sizeof path, "%sSBBS_SSJS.%u.%u.html",scfg.temp_dir,getpid(),session->socket);
 	if(session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE]) {
 		if(!(startup->options&WEB_OPT_DEBUG_SSJS))
 			remove(session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE]);
