@@ -150,7 +150,8 @@
 #define O_DENYNONE		SH_DENYNO
 #endif
 
-#define CLOSE_OPEN_FILE(x)	while((x) >= 0) { close(x); (x)=-1; break; }
+#define CLOSE_OPEN_FILE(x)	do { if((x) >= 0)    { close(x);  (x) = -1;   } } while(0)
+#define FCLOSE_OPEN_FILE(x)	do { if((x) != NULL) { fclose(x); (x) = NULL; } } while(0)
 
 /**************/
 /* Prototypes */
