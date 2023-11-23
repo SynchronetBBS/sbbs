@@ -433,6 +433,8 @@ void sbbs_read_ini(
 			=iniGetShortInt(list,section,"SSHPort",22);
 		bbs->ssh_connect_timeout
 			=iniGetShortInt(list,section,"SSHConnectTimeout",10);
+		bbs->ssh_error_level
+			=iniGetLogLevel(list, section, "SSHErrorLevel", LOG_WARNING);
 		bbs->ssh_interfaces
 			=iniGetStringList(list,section,"SSHInterface",",",global_interfaces);
 
@@ -899,6 +901,8 @@ BOOL sbbs_write_ini(
 		if(!iniSetUInt16(lp,section,"SSHPort",bbs->ssh_port,&style))
 			break;
 		if(!iniSetUInteger(lp,section,"SSHConnectTimeout",bbs->ssh_connect_timeout,&style))
+			break;
+		if(!iniSetLogLevel(lp, section, "SSHErrorLevel", bbs->ssh_error_level, &style))
 			break;
 
 		if(!iniSetUInteger(lp,section,"FirstNode",bbs->first_node,&style))

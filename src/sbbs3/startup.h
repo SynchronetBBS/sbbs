@@ -127,6 +127,7 @@ typedef struct {
 	uint16_t	pet80_port;			// 80-column PETSCII terminal server
 	uint16_t	ssh_port;
 	uint16_t	ssh_connect_timeout;
+	int			ssh_error_level;
 	uint16_t	outbuf_highwater_mark;	/* output block size control */
 	uint16_t	outbuf_drain_timeout;
 	struct in_addr outgoing4;

@@ -118,6 +118,8 @@ const char* nulstr="";
 	int GCES_level;                                                      \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);\
 	if (GCES_estr) {                                                       \
+		if (GCES_level < startup->ssh_error_level)							\
+			GCES_level = startup->ssh_error_level;							 \
 		lprintf(GCES_level, "Node %d SSH %s from %s", node, GCES_estr, __FUNCTION__);             \
 		free_crypt_attrstr(GCES_estr);                                       \
 	}                                                                         \
@@ -128,6 +130,8 @@ const char* nulstr="";
 	int GCES_level;                                                      \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);\
 	if (GCES_estr) {                                                       \
+		if (GCES_level < startup->ssh_error_level)							\
+			GCES_level = startup->ssh_error_level;							 \
 		lprintf(GCES_level, "SSH %s from %s", GCES_estr, __FUNCTION__);     \
 		free_crypt_attrstr(GCES_estr);                                       \
 	}                                                                         \
@@ -138,17 +142,21 @@ const char* nulstr="";
 	int GCES_level;                                                      \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);\
 	if (GCES_estr) {                                                       \
+		if (GCES_level < startup->ssh_error_level)							\
+			GCES_level = startup->ssh_error_level;							 \
 		lprintf(GCES_level, "%04d SSH %s from %s", sock, GCES_estr, __FUNCTION__);                \
 		free_crypt_attrstr(GCES_estr);                                       \
 	}                                                                         \
 } while (0)
 
-#define GCESSTR(status, str, log_level, sess, action) do {                         \
+#define GCESSTR(status, str, sess, action) do {                         \
 	char *GCES_estr;                                                    \
 	int GCES_level;                                                      \
 	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);\
 	if (GCES_estr) {                                                       \
-		lprintf(log_level, "%s SSH %s from %s (session %d)", str, GCES_estr, __FUNCTION__, sess);                \
+		if (GCES_level < startup->ssh_error_level)							\
+			GCES_level = startup->ssh_error_level;							 \
+		lprintf(GCES_level, "%s SSH %s from %s (session %d)", str, GCES_estr, __FUNCTION__, sess);                \
 		free_crypt_attrstr(GCES_estr);                                       \
 	}                                                                         \
 } while (0)
@@ -2468,7 +2476,7 @@ void output_thread(void* arg)
 				continue;
 			}
 			if (cryptStatusError((err=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->session_channel)))) {
-				GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "setting channel");
+				GCESSTR(err, node, sbbs->ssh_session, "setting channel");
 				ssh_errors++;
 				sbbs->online=FALSE;
 				i=buftop-bufbot;	// Pretend we sent it all
@@ -2483,7 +2491,7 @@ void output_thread(void* arg)
 					sendbytes = 0x2000;
 				if(cryptStatusError((err=cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))) {
 					/* Handle the SSH error here... */
-					GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "pushing data");
+					GCESSTR(err, node, sbbs->ssh_session, "pushing data");
 					ssh_errors++;
 					sbbs->online=FALSE;
 					i=buftop-bufbot;	// Pretend we sent it all
@@ -2495,9 +2503,9 @@ void output_thread(void* arg)
 					 * what the current write timeout is.
 					 */
 					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 5)))
-						GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "setting write timeout");
+						GCESSTR(err, node, sbbs->ssh_session, "setting write timeout");
 					if(cryptStatusError((err=cryptFlushData(sbbs->ssh_session)))) {
-						GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "flushing data");
+						GCESSTR(err, node, sbbs->ssh_session, "flushing data");
 						ssh_errors++;
 						if (err != CRYPT_ERROR_TIMEOUT) {
 							sbbs->online=FALSE;
@@ -2506,7 +2514,7 @@ void output_thread(void* arg)
 					}
 					// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
 					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 0)))
-						GCESSTR(err, node, LOG_WARNING, sbbs->ssh_session, "setting write timeout");
+						GCESSTR(err, node, sbbs->ssh_session, "setting write timeout");
 				}
 			}
 			pthread_mutex_unlock(&sbbs->ssh_mutex);

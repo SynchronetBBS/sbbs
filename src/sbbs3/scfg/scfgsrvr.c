@@ -352,6 +352,7 @@ static void termsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "SSH Port", startup.ssh_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Connect Timeout"
 			,startup.options & BBS_OPT_ALLOW_SSH ? vduration(startup.ssh_connect_timeout) : "N/A");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Error Level", iniLogLevelStringList()[startup.ssh_error_level]);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Telnet Support", startup.options & BBS_OPT_NO_TELNET ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Telnet Interfaces"
 			,startup.options & BBS_OPT_NO_TELNET ? "N/A" : strListCombine(startup.telnet_interfaces, tmp, sizeof(tmp), ", "));
@@ -430,9 +431,12 @@ static void termsrvr_cfg(void)
 					startup.ssh_connect_timeout = (uint16_t)parse_duration(str);
 				break;
 			case 9:
-				startup.options ^= BBS_OPT_NO_TELNET;
+				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup.ssh_error_level, 0, "SSH Error Log Level", iniLogLevelStringList());
 				break;
 			case 10:
+				startup.options ^= BBS_OPT_NO_TELNET;
+				break;
+			case 11:
 				strListCombine(startup.telnet_interfaces, str, sizeof(str), ", ");
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Telnet Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.telnet_interfaces);
@@ -440,21 +444,21 @@ static void termsrvr_cfg(void)
 					uifc.changes = true;
 				}
 				break;
-			case 11:
+			case 12:
 				SAFEPRINTF(str, "%u", startup.telnet_port);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Telnet TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.telnet_port = atoi(str);
 				break;
-			case 12:
+			case 13:
 				startup.options ^= BBS_OPT_DEBUG_TELNET;
 				break;
-			case 13:
+			case 14:
 				startup.options ^= BBS_OPT_NO_TELNET_GA;
 				break;
-			case 14:
+			case 15:
 				startup.options ^= BBS_OPT_ALLOW_RLOGIN;
 				break;
-			case 15:
+			case 16:
 				strListCombine(startup.rlogin_interfaces, str, sizeof(str), ", ");
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "RLogin Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.rlogin_interfaces);
@@ -462,53 +466,53 @@ static void termsrvr_cfg(void)
 					uifc.changes = true;
 				}
 				break;
-			case 16:
+			case 17:
 				SAFEPRINTF(str, "%u", startup.rlogin_port);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "RLogin TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.rlogin_port = atoi(str);
 				break;
-			case 17:
+			case 18:
 				SAFEPRINTF(str, "%u", startup.pet40_port);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "40 Column CBM/PETSCII TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.pet40_port = atoi(str);
 				break;
-			case 18:
+			case 19:
 				SAFEPRINTF(str, "%u", startup.pet80_port);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "80 Column CBM/PETSCII TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.pet80_port = atoi(str);
 				break;
-			case 19:
+			case 20:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
 					startup.max_concurrent_connections = atoi(str);
 				break;
-			case 20:
+			case 21:
 				SAFECOPY(str, duration(startup.max_login_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity at Login", str, 10, K_EDIT) > 0)
 					startup.max_login_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 21:
+			case 22:
 				SAFECOPY(str, duration(startup.max_newuser_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity at New User Registration", str, 10, K_EDIT) > 0)
 					startup.max_newuser_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 22:
+			case 23:
 				SAFECOPY(str, duration(startup.max_session_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity during User Session", str, 10, K_EDIT) > 0)
 					startup.max_session_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 23:
+			case 24:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.outbuf_drain_timeout = atoi(str);
 				break;
-			case 24:
+			case 25:
 				startup.options ^= BBS_OPT_NO_EVENTS;
 				break;
-			case 25:
+			case 26:
 				startup.options ^= BBS_OPT_NO_QWK_EVENTS;
 				break;
-			case 26:
+			case 27:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			default:
