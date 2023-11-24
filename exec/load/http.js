@@ -173,9 +173,11 @@ HTTPRequest.prototype.ReadHeaders=function() {
 				this.response_headers_parsed[m[1]] = [];
 			this.response_headers_parsed[m[1]].push(m[2]);
 			var lc = m[1].toLowerCase();
-			if (this.response_headers_parsed[lc] == undefined)
-				this.response_headers_parsed[lc] = [];
-			this.response_headers_parsed[lc].push(m[2]);
+			if (lc !== m[1]) {
+				if (this.response_headers_parsed[lc] == undefined)
+					this.response_headers_parsed[lc] = [];
+				this.response_headers_parsed[lc].push(m[2]);
+			}
 		}
 	}
 };
