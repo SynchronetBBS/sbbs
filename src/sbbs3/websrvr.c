@@ -1044,7 +1044,7 @@ static void drain_outbuf(http_session_t * session)
 		return;
 	/* Force the output thread to go NOW */
 	SetEvent(session->outbuf.highwater_event);
-	/* ToDo: This should probobly timeout eventually... */
+	/* ToDo: This should probably timeout eventually... */
 	while(RingBufFull(&session->outbuf) && session->socket!=INVALID_SOCKET) {
 		SetEvent(session->outbuf.highwater_event);
 		SLEEP(1);
@@ -1135,8 +1135,7 @@ static void close_request(http_session_t * session)
 	if(session->subscan!=NULL)
 		putmsgptrs(&scfg, &session->user, session->subscan);
 
-	if(session->req.fp!=NULL)
-		fclose(session->req.fp);
+	FCLOSE_OPEN_FILE(session->req.fp);
 
 	for(i=0;i<MAX_CLEANUPS;i++) {
 		if(session->req.cleanup_file[i]!=NULL) {
@@ -1151,12 +1150,22 @@ static void close_request(http_session_t * session)
 	memset(&session->req,0,sizeof(session->req));
 }
 
-// Opens the response (SSJS output) file if necessary
-static bool response_file_open(http_session_t* session)
+// Opens the response content (SSJS output) file if necessary
+static bool content_file_open(http_session_t* session)
 {
 	const char* path = session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE];
-	if (session->req.fp == NULL && path != NULL)
-		session->req.fp = fopen(path, "wb");
+	if (session->req.fp == NULL) {
+		if (path == NULL)
+			lprintf(LOG_CRIT, "%04d %s [%s] Response file path is NULL"
+				,session->socket, session->client.protocol, session->host_ip);
+		else {
+			session->req.fp = fopen(path, "wb");
+			if (session->req.fp == NULL) {
+				lprintf(LOG_ERR, "%04d %s [%s] Error %d (%s) opening/creating %s"
+					,session->socket, session->client.protocol, session->host_ip, errno, strerror(errno), path);
+			}
+		}
+	}
 	return session->req.fp != NULL;
 }
 
@@ -2101,7 +2110,7 @@ static named_string_t** read_ini_list(char* path, char* section, char* desc
 			lprintf(LOG_DEBUG,"Read %lu %s from %s section of %s"
 				,(ulong)i,desc,section==NULL ? "root":section,path);
 	} else
-		lprintf(warn ? LOG_WARNING : LOG_DEBUG, "Error %d opening %s", errno, path);
+		lprintf(warn ? LOG_WARNING : LOG_DEBUG, "Error %d (%s) opening %s", errno, strerror(errno), path);
 	return(list);
 }
 
@@ -5306,7 +5315,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 
 	if(report==NULL) {
 		lprintf(LOG_ERR,"%04d !JavaScript: %s", session->socket, message);
-		if(response_file_open(session))
+		if(content_file_open(session))
 			fprintf(session->req.fp,"!JavaScript: %s", message);
 		return;
     }
@@ -5334,7 +5343,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 
 	lprintf(log_level,"%04d !JavaScript %s%s%s: %s, Request: %s"
 		,session->socket,warning,file,line,message, session->req.request_line);
-	if(response_file_open(session))
+	if(content_file_open(session))
 		fprintf(session->req.fp,"!JavaScript %s%s%s: %s",warning,file,line,message);
 }
 
@@ -5344,7 +5353,7 @@ static void js_writebuf(http_session_t *session, const char *buf, size_t buflen)
 		if(session->req.send_content)
 			writebuf(session,buf,buflen);
 	}
-	else if(response_file_open(session))
+	else if(content_file_open(session))
 		fwrite(buf,1,buflen,session->req.fp);
 }
 
@@ -5363,7 +5372,7 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, BOOL writeln)
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(!response_file_open(session)) {
+	if(!content_file_open(session)) {
 		return(JS_FALSE);
 	}
 
@@ -6123,11 +6132,7 @@ static BOOL exec_ssjs(http_session_t* session, char* script)  {
 	} while(0);
 
 	SAFECOPY(session->req.physical_path, path);
-	if(session->req.fp!=NULL) {
-		fclose(session->req.fp);
-		session->req.fp=NULL;
-	}
-
+	FCLOSE_OPEN_FILE(session->req.fp);
 
 	/* Read http_reply object */
 	if(!session->req.sent_headers)
@@ -6234,7 +6239,7 @@ FILE *open_post_file(http_session_t *session)
 	// Create temporary file for post data.
 	SAFEPRINTF3(path,"%sSBBS_POST.%u.%u.data",scfg.temp_dir,getpid(),session->socket);
 	if((fp=fopen(path,"wb"))==NULL) {
-		lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
+		lprintf(LOG_ERR,"%04d !ERROR %d (%s) opening/creating %s", session->socket, errno, strerror(errno), path);
 		return fp;
 	}
 	if(session->req.cleanup_file[CLEANUP_POST_DATA]) {
@@ -6245,9 +6250,9 @@ FILE *open_post_file(http_session_t *session)
 	session->req.cleanup_file[CLEANUP_POST_DATA]=strdup(path);
 	if(session->req.post_data != NULL) {
 		if(fwrite(session->req.post_data, session->req.post_len, 1, fp)!=1) {
-			lprintf(LOG_ERR,"%04d !ERROR writeing to %s", session->socket, path);
+			lprintf(LOG_ERR,"%04d !ERROR %d (%s) writing to %s", session->socket, errno, strerror(errno), path);
 			fclose(fp);
-			return(FALSE);
+			return NULL;
 		}
 		FREE_AND_NULL(session->req.post_data);
 	}
@@ -6275,7 +6280,7 @@ int read_post_data(http_session_t * session)
 				}
 				else {
 					send_error(session,__LINE__,error_500);
-					if(fp) fclose(fp);
+					FCLOSE_OPEN_FILE(fp);
 					return(FALSE);
 				}
 				if(ch_len==0)
@@ -6285,7 +6290,7 @@ int read_post_data(http_session_t * session)
 				if(s > MAX_POST_LEN) {
 					if(s > SIZE_MAX) {
 						send_error(session,__LINE__,"413 Request entity too large");
-						if(fp) fclose(fp);
+						FCLOSE_OPEN_FILE(fp);
 						return(FALSE);
 					}
 					if(fp==NULL) {
@@ -6305,7 +6310,7 @@ int read_post_data(http_session_t * session)
 					if(p==NULL) {
 						lprintf(LOG_CRIT,"%04d !ERROR Allocating %lu bytes of memory",session->socket, (ulong)session->req.post_len);
 						send_error(session,__LINE__,"413 Request entity too large");
-						if(fp) fclose(fp);
+						FCLOSE_OPEN_FILE(fp);
 						return(FALSE);
 					}
 					session->req.post_data=p;
@@ -6313,7 +6318,7 @@ int read_post_data(http_session_t * session)
 					bytes_read=recvbufsocket(session,session->req.post_data+session->req.post_len,ch_len);
 					if(!bytes_read) {
 						send_error(session,__LINE__,error_500);
-						if(fp) fclose(fp);
+						FCLOSE_OPEN_FILE(fp);
 						return(FALSE);
 					}
 					session->req.post_len+=bytes_read;
@@ -6929,7 +6934,7 @@ void http_logging_thread(void* arg)
 
 	thread_up(TRUE /* setuid */);
 
-	lprintf(LOG_INFO,"HTTP logging thread started");
+	lprintf(LOG_INFO,"Web Server access logging thread started");
 
 	while(!terminate_http_logging_thread) {
 		struct log_data *ld;
@@ -6950,7 +6955,7 @@ void http_logging_thread(void* arg)
 		if(ld==NULL) {
 			if(terminate_http_logging_thread)
 				break;
-			lprintf(LOG_ERR,"HTTP logging thread received NULL linked list log entry");
+			lprintf(LOG_ERR,"Web Server access-logging thread received NULL linked list log entry");
 			continue;
 		}
 		SAFECOPY(newfilename,base);
@@ -6961,39 +6966,35 @@ void http_logging_thread(void* arg)
 		}
 		strftime(strchr(newfilename,0),15,"%Y-%m-%d.log",&ld->completed);
 		if(logfile==NULL || strcmp(newfilename,filename)) {
-			if(logfile!=NULL)
-				fclose(logfile);
+			FCLOSE_OPEN_FILE(logfile);
 			SAFECOPY(filename,newfilename);
 			logfile=fopen(filename,"ab");
-			if(logfile)
-				lprintf(LOG_INFO,"HTTP logfile is now: %s",filename);
+			if(logfile == NULL)
+				lprintf(LOG_ERR,"Web Server error %d (%s) opening/creating access-log file %s", errno, strerror(errno), filename);
+			else
+				lprintf(LOG_INFO,"Web Server access-log file is now: %s",filename);
 		}
-		if(logfile!=NULL) {
-			if(ld->status) {
-				sprintf(sizestr,"%"PRIdOFF,ld->size);
-				strftime(timestr,sizeof(timestr),"%d/%b/%Y:%H:%M:%S %z",&ld->completed);
-				/*
-				 * In case of a termination, do no block for a lock... just discard
-				 * the output.
-				 */
-				while(lock(fileno(logfile),0,1) && !terminate_http_logging_thread) {
-					SLEEP(10);
-				}
-				fprintf(logfile,"%s %s %s [%s] \"%s\" %d %s \"%s\" \"%s\"\n"
-						,ld->hostname?(ld->hostname[0]?ld->hostname:"-"):"-"
-						,ld->ident?(ld->ident[0]?ld->ident:"-"):"-"
-						,ld->user?(ld->user[0]?ld->user:"-"):"-"
-						,timestr
-						,ld->request?(ld->request[0]?ld->request:"-"):"-"
-						,ld->status
-						,ld->size?sizestr:"-"
-						,ld->referrer?(ld->referrer[0]?ld->referrer:"-"):"-"
-						,ld->agent?(ld->agent[0]?ld->agent:"-"):"-");
-				unlock(fileno(logfile),0,1);
+		if(logfile!=NULL && ld->status) {
+			sprintf(sizestr,"%"PRIdOFF,ld->size);
+			strftime(timestr,sizeof(timestr),"%d/%b/%Y:%H:%M:%S %z",&ld->completed);
+			/*
+				* In case of a termination, do no block for a lock... just discard
+				* the output.
+				*/
+			while(lock(fileno(logfile),0,1) && !terminate_http_logging_thread) {
+				SLEEP(10);
 			}
-		}
-		else {
-			lprintf(LOG_ERR,"HTTP server failed to open logfile %s (%d)!",filename,errno);
+			fprintf(logfile,"%s %s %s [%s] \"%s\" %d %s \"%s\" \"%s\"\n"
+					,ld->hostname?(ld->hostname[0]?ld->hostname:"-"):"-"
+					,ld->ident?(ld->ident[0]?ld->ident:"-"):"-"
+					,ld->user?(ld->user[0]?ld->user:"-"):"-"
+					,timestr
+					,ld->request?(ld->request[0]?ld->request:"-"):"-"
+					,ld->status
+					,ld->size?sizestr:"-"
+					,ld->referrer?(ld->referrer[0]?ld->referrer:"-"):"-"
+					,ld->agent?(ld->agent[0]?ld->agent:"-"):"-");
+			unlock(fileno(logfile),0,1);
 		}
 		FREE_AND_NULL(ld->hostname);
 		FREE_AND_NULL(ld->ident);
@@ -7004,12 +7005,9 @@ void http_logging_thread(void* arg)
 		FREE_AND_NULL(ld->vhost);
 		FREE_AND_NULL(ld);
 	}
-	if(logfile!=NULL) {
-		fclose(logfile);
-		logfile=NULL;
-	}
+	FCLOSE_OPEN_FILE(logfile);
 	thread_down();
-	lprintf(LOG_INFO,"HTTP logging thread terminated");
+	lprintf(LOG_INFO,"Web Server access-logging thread terminated");
 
 	http_logging_thread_running=FALSE;
 }
@@ -7136,7 +7134,7 @@ void web_server(void* arg)
 			,ctime_r(&t,logstr),startup->options);
 
 		if(chdir(startup->ctrl_dir)!=0)
-			lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
+			lprintf(LOG_ERR,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), startup->ctrl_dir);
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);
