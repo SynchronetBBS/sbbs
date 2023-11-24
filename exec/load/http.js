@@ -169,10 +169,13 @@ HTTPRequest.prototype.ReadHeaders=function() {
 			this.contentlength=parseInt(m[1]);
 		m = header.match(/^(.*?):\s*(.*?)\s*$/);
 		if (m) {
-			var key = m[1].toLowerCase();
-			if (this.response_headers_parsed[key] == undefined)
-				this.response_headers_parsed[key] = [];
-			this.response_headers_parsed[key].push(m[2]);
+			if (this.response_headers_parsed[m[1]] == undefined)
+				this.response_headers_parsed[m[1]] = [];
+			this.response_headers_parsed[m[1]].push(m[2]);
+			var lc = m[1].toLowerCase();
+			if (this.response_headers_parsed[lc] == undefined)
+				this.response_headers_parsed[lc] = [];
+			this.response_headers_parsed[lc].push(m[2]);
 		}
 	}
 };
