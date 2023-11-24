@@ -106,7 +106,7 @@ if (request.has_param('call') && (http_request.method === 'GET' || http_request.
 
             case 'submit-poll-answers':
                 if (request.has_params(['sub', 'id', 'answer'])) {
-                    reply.success = submitPollAnswers(http_request.query.sub[0], http_request.query.id[0], http_request.query.answer[0]);
+                    reply.success = submitPollAnswers(http_request.query.sub[0], http_request.query.id[0], http_request.query.answer);
                 }
                 break;
 
