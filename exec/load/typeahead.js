@@ -414,7 +414,7 @@ var Typeahead = function (options) {
             case KEY_UP:
             case KEY_DOWN:
                 //if (typeof display.tree !== 'undefined') {
-                if (display.tree.items.length > 1) {
+                if (display.tree !== undefined && display.tree.items.length > 1) {
                     display.tree.getcmd(key);
                 }
                 break;
