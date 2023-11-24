@@ -169,9 +169,10 @@ HTTPRequest.prototype.ReadHeaders=function() {
 			this.contentlength=parseInt(m[1]);
 		m = header.match(/^(.*?):\s*(.*?)\s*$/);
 		if (m) {
-			if (this.response_headers_parsed[m[1]] == undefined)
-				this.response_headers_parsed[m[1]] = [];
-			this.response_headers_parsed[m[1]].push(m[2]);
+			var key = m[1].toLowerCase();
+			if (this.response_headers_parsed[key] == undefined)
+				this.response_headers_parsed[key] = [];
+			this.response_headers_parsed[key].push(m[2]);
 		}
 	}
 };
@@ -217,11 +218,11 @@ HTTPRequest.prototype.Get=function(url, referer, base) {
 	this.ReadResponse();
 	if ([301, 302, 307, 308].indexOf(this.response_code) > -1
 		&& this.follow_redirects > 0
-		&& this.response_headers_parsed.Location
-		&& this.response_headers_parsed.Location.length
+		&& this.response_headers_parsed.location
+		&& this.response_headers_parsed.location.length
 	) {
 		this.follow_redirects--;
-		return this.Get(this.response_headers_parsed.Location[0], this.url.url, this.url.url);
+		return this.Get(this.response_headers_parsed.location[0], this.url.url, this.url.url);
 	}
 	return(this.body);
 };
