@@ -86,6 +86,10 @@ function validate_message(msg) {
     );
 }
 
+function request_stats(sock){
+    mrc_send(sock, 'CLIENT', '', 'SERVER', '', '', 'STATS');
+}
+
 function client_receive(c, no_log) {
     const line = c.socket.recvline(1024, settings.timeout);
     if (!line || line == '') return;
@@ -210,6 +214,12 @@ function mrc_receive(sock) {
             mrc_send(sock, 'CLIENT', '', 'SERVER', 'ALL', '', 'IMALIVE:' + SYSTEM_NAME);
             return;
         }
+        if (message.from_user == 'SERVER' && message.body.toUpperCase().substr(0,6) == 'STATS:') {                      
+            var fMa = new File(js.exec_dir + "mrcstats.dat");
+            fMa.open("w", false);
+            fMa.write(message.body.substr(message.body.indexOf(':')+1).trim());
+            fMa.close();
+        }
         if (['', 'ALL', FROM_SITE].indexOf(message.to_site) > -1) {
             if (['', 'CLIENT', 'ALL', 'NOTME'].indexOf(message.to_user) > -1) {
                 // Forward to all clients
@@ -227,12 +237,19 @@ function main() {
 
     var mrc_sock;
     var die = false;
+    var loop = 1800;
     while (!die && !js.terminated) {
 
         yield();
         if (!mrc_sock || !mrc_sock.is_connected) {
             mrc_sock = mrc_connect(settings.server, settings.port);
             continue;
+        }
+        mswait(10);
+        loop += 1
+        if (loop > 2000) {
+            request_stats(mrc_sock);
+            loop = 0;
         }
 
         client_accept();
@@ -261,9 +278,8 @@ function main() {
                 }
             }
         });
-
+        
         mrc_receive(mrc_sock);
-
     }
 
     log(LOG_INFO, 'Disconnecting from MRC');

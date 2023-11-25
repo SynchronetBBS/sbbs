@@ -24,7 +24,6 @@ setup differs.
     Port=5000
     Options=STATIC | LOOP
     Command=../xtrn/mrc/mrc-connector.js
-    JavaScriptTimeLimit=0
 
 - In SCFG, add a new External Program with the following options, leaving all
   other options at their default values:
@@ -33,12 +32,6 @@ setup differs.
     Internal Code: MRC
     Start-up Directory: /sbbs/xtrn/mrc
     Command Line: ?mrc-client.js
-
-- If you want to run from the chat menu instead of via a door, copy chat_sec.js to
-  /sbbs/mods and edit accordingly, adding the following and don't forget to add the
-  key to be used to the "keys" variable.
-
-     bbs.exec("?../xtrn/mrc/mrc-client.js",null,"/sbbs/xtrn/mrc/");	
 
 - Your services and BBS threads should automatically recycle once they are free
   to do so, but you may want to restart your BBS now to force these changes to
@@ -83,6 +76,24 @@ mrc-client.ini:
     have a good reason for changing it.
   - The values in the [startup] section determine which room the client joins
     on startup, and whether the Message of the Day and banners are displayed.
+
+
+4) MRC Stats
+
+MRC-Connector makes requests for server stats every 20 seconds. These stats
+are displayed on the MRC-Client screen as well as stored in the mrcstats.dat 
+file for display elsewhere.
+
+The file "chat-with-mrc-stats-example.msg" is included as an exammple to 
+demonstrate how to display MRC stats on a menu file. The script file 
+"mrc-display-menu-stats.js" must be copied to the /sbbs/mods directory in order
+for this msg file to work, since it calls this script directly.
+
+If you do decide to make use of this msg file, rename it as chat.msg and copy
+it to your /sbbs/text/menu directory, replacing the old chat.msg file. Also be 
+sure to copy "chat_sec-with-mrc-example.js" to your /sbbs/mods directory and 
+rename it "chat_sec.js", in order to add M as a valid menu option for 
+Multi-Relay Chat.
 
 
 4) Support
