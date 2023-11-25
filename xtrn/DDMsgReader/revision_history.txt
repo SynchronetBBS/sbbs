@@ -5,6 +5,15 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.88     2023-11-24   New user setting/configuration option to prompt the user
+                      whether or not to delete a personal email after replying
+                      to it (defaults to false).
+                      New: Displays whether a personal email has been replied
+                      to.
+                      Fix: Now displaying message vote score in the default
+                      header again.
+                      Fix: When viewing message headers (for the sysop), now
+                      correctly shows the message attributes.
 1.87     2023-11-18   Possible speed improvement when loading messages.
                       New: User setting to only show new messages in a newscan
                       (defaults to true/enabled)

@@ -76,6 +76,13 @@
  *                              Otherwise, it would end up in an infinite loop.
  *                              Updated how user settings are loaded, to ensure that default user settings
  *                              from DDMsgReader.cfg actually get set properly in the user settings.
+ * 2023-11-23 Eric Oulashin     Version 1.88
+ *                              New user setting/configuration option to prompt the user whether or
+ *                              not to delete a personal email after replying to it (defaults to false).
+ *                              New: Displays whether a personal email has been replied to.
+ *                              Fix: Now displaying message vote score in the default header again.
+ *                              Fix: When viewing message headers (for the sysop), now correctly
+ *                              shows the message attributes.
  */
 
 "use strict";
@@ -180,8 +187,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.87";
-var READER_DATE = "2023-11-18";
+var READER_VERSION = "1.88";
+var READER_DATE = "2023-11-24";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -359,57 +366,6 @@ const POPULATE_NEWSCAN_FORCE_GET_ALL_HDRS = -2; // Get all message headers even 
 // Misc. defines
 var ERROR_WAIT_MS = 1500;
 var SEARCH_TIMEOUT_MS = 10000;
-
-// Strings for the various message attributes (used by makeAllAttrStr(),
-// makeMainMsgAttrStr(), makeAuxMsgAttrStr(), and makeNetMsgAttrStr())
-var gMainMsgAttrStrs = {
-	MSG_DELETE: "Del",
-	MSG_PRIVATE: "Priv",
-	MSG_READ: "Read",
-	MSG_PERMANENT: "Perm",
-	MSG_LOCKED: "Lock",
-	MSG_ANONYMOUS: "Anon",
-	MSG_KILLREAD: "Killread",
-	MSG_MODERATED: "Mod",
-	MSG_VALIDATED: "Valid",
-	MSG_REPLIED: "Repl",
-	MSG_NOREPLY: "NoRepl"
-};
-var gAuxMsgAttrStrs = {
-	MSG_FILEREQUEST: "Freq",
-	MSG_FILEATTACH: "Attach",
-	MSG_KILLFILE: "KillFile",
-	MSG_RECEIPTREQ: "RctReq",
-	MSG_CONFIRMREQ: "ConfReq",
-	MSG_NODISP: "NoDisp"
-};
-if (typeof(MSG_TRUNCFILE) != "undefined")
-	gAuxMsgAttrStrs.MSG_TRUNCFILE = "TruncFile";
-var gNetMsgAttrStrs = {
-	MSG_LOCAL: "FromLocal",
-	MSG_INTRANSIT: "Transit",
-	MSG_SENT: "Sent",
-	MSG_KILLSENT: "KillSent",
-	MSG_ARCHIVESENT: "ArcSent",
-	MSG_HOLD: "Hold",
-	MSG_CRASH: "Crash",
-	MSG_IMMEDIATE: "Now",
-	MSG_DIRECT: "Direct"
-};
-if (typeof(MSG_GATE) != "undefined")
-	gNetMsgAttrStrs.MSG_GATE = "Gate";
-if (typeof(MSG_ORPHAN) != "undefined")
-	gNetMsgAttrStrs.MSG_ORPHAN = "Orphan";
-if (typeof(MSG_FPU) != "undefined")
-	gNetMsgAttrStrs.MSG_FPU = "FPU";
-if (typeof(MSG_TYPELOCAL) != "undefined")
-	gNetMsgAttrStrs.MSG_TYPELOCAL = "ForLocal";
-if (typeof(MSG_TYPEECHO) != "undefined")
-	gNetMsgAttrStrs.MSG_TYPEECHO = "ForEcho";
-if (typeof(MSG_TYPENET) != "undefined")
-	gNetMsgAttrStrs.MSG_TYPENET = "ForNetmail";
-if (typeof(MSG_MIMEATTACH) != "undefined")
-	gNetMsgAttrStrs.MSG_MIMEATTACH = "MimeAttach";
 
 // A regular expression to check whether a string is an email address
 var gEmailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -1087,6 +1043,15 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		userSettings: CTRL_U,
 	};
 
+	// Message status characters for the message list
+	this.msgListStatusChars = {
+		selected: CHECK_CHAR,
+		unread: "U",
+		replied: "<",
+		attachments: "A",
+		deleted: "*"
+	};
+
 	// Whether or not to display avatars
 	this.displayAvatars = true;
 	this.rightJustifyAvatar = true;
@@ -1138,7 +1103,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		// Whether or not quitting from the reader goes to the message list (instead of exiting altogether)
 		quitFromReaderGoesToMsgList: false,
 		// Whether or not the enter key in the indexed newscan menu shows the message list (rather than going to reader mode)
-		enterFromIndexMenuShowsMsgList: false
+		enterFromIndexMenuShowsMsgList: false,
+		// When reading personal email, whether or not to propmt if the user wants to delete a message after replying to it
+		promptDelPersonalEmailAfterReply: false
 	};
 	// Read the settings from the config file (some settings could set user settings)
 	this.cfgFileSuccessfullyRead = false;
@@ -1566,7 +1533,7 @@ function DigDistMsgReader_PopulateHdrsForCurrentSubBoard(pStartIdx, pEndIdx)
 		var startIdxIsNumber = (typeof(pStartIdx) === "number");
 		// If doing a newscan but we want to get all headers anyway, then do it.
 		if (this.doingNewscan && startIdxIsNumber && pStartIdx == POPULATE_NEWSCAN_FORCE_GET_ALL_HDRS)
-			tmpHdrs = msgbase.get_all_msg_headers(false, false); // Don't include votes, don't expand fields
+			tmpHdrs = msgbase.get_all_msg_headers(true, false); // Include votes, don't expand fields
 		// If doing a newscan and the setting to only show new messages for a newscan is enabled, then
 		// only get messages from the user's scan pointer
 		else if (this.doingNewscan && (this.userSettings.newscanOnlyShowNewMsgs || (startIdxIsNumber && pStartIdx == POPULATE_MSG_HDRS_FROM_SCAN_PTR)))
@@ -1579,8 +1546,10 @@ function DigDistMsgReader_PopulateHdrsForCurrentSubBoard(pStartIdx, pEndIdx)
 				tmpHdrs = {};
 				for (var i = startMsgIdx+1; i < endMsgIdx; ++i)
 				{
-					// Get message header by index; Don't expand fields, don't include votes
-					var msgHdr = msgbase.get_msg_header(true, i, false, false);
+					//var msgHdr = msgbase.get_msg_header(true, i, false, false); // Don't expand fields, don't include votes
+					// TODO: I think we should be able to call get_msg_header() and get valid vote information,
+					// but that doesn't seem to be the case:
+					var msgHdr = msgbase.get_msg_header(true, i, false, true); // Don't expand fields, include votes
 					if (msgHdr != null)
 						tmpHdrs[msgHdr.number] = msgHdr;
 				}
@@ -1592,9 +1561,9 @@ function DigDistMsgReader_PopulateHdrsForCurrentSubBoard(pStartIdx, pEndIdx)
 			tmpHdrs = {};
 			for (var i = pStartIdx; i < pEndIdx; ++i)
 			{
-				// Get message header by index; Don't expand fields, include votes
-				//var msgHdr = msgbase.get_msg_header(true, i, false, true);
-				var msgHdr = msgbase.get_msg_header(true, i, false, false);
+				// Get message header by index
+				var msgHdr = msgbase.get_msg_header(true, i, false, true); // Don't expand fields, include vutes
+				//var msgHdr = msgbase.get_msg_header(true, i, false, false); // Don't expand fields, don't include votes
 				if (msgHdr != null)
 					tmpHdrs[msgHdr.number] = msgHdr;
 			}
@@ -1604,10 +1573,7 @@ function DigDistMsgReader_PopulateHdrsForCurrentSubBoard(pStartIdx, pEndIdx)
 			// Get all message headers
 			// Note: get_all_msg_headers() was added in Synchronet 3.16.  DDMsgReader requires a minimum
 			// of 3.18, so we're okay to use it.
-			// The first parameter is whether to include votes (the parameter was introduced in Synchronet 3.17+).
-			// We used to pass false here.
-			//tmpHdrs = msgbase.get_all_msg_headers(true, false); // Include votes, don't expand fields
-			tmpHdrs = msgbase.get_all_msg_headers(false, false); // Don't include votes, don't expand fields
+			tmpHdrs = msgbase.get_all_msg_headers(true, false); // Include votes, don't expand fields
 		}
 		msgbase.close();
 	}
@@ -3619,8 +3585,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 					var tmpMsgbase = new MsgBase(this.subBoardCode);
 					if (tmpMsgbase.open())
 					{
-						//var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
-						var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(false);
+						var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
 						tmpMsgbase.close();
 						this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpAllMsgHdrs, true);
 					}
@@ -4163,8 +4128,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				var tmpMsgbase = new MsgBase(this.subBoardCode);
 				if (tmpMsgbase.open())
 				{
-					//var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
-					var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(false);
+					var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
 					tmpMsgbase.close();
 					this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpAllMsgHdrs, true);
 				}
@@ -4324,7 +4288,7 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 			// in any of these cases; then change the attributes for the 2nd color (selected).
 			// Having the separate printf strings for regular, to-user, and from-user are a bit
 			// bit pointless now that coloring & alternate coloring is done via DDLightbarMenu
-			if (this.msgReader.MessageIsSelected(this.msgReader.subBoardCode, pItemIndex) || Boolean(msgHdr.attr & MSG_DELETE) || !Boolean(msgHdr.attr & MSG_READ) || msgHdrHasAttachmentFlag(msgHdr))
+			if (this.msgReader.MessageIsSelected(this.msgReader.subBoardCode, pItemIndex) || Boolean(msgHdr.attr & MSG_DELETE) || !Boolean(msgHdr.attr & MSG_READ) || Boolean(msgHdr.attr & MSG_REPLIED) || msgHdrHasAttachmentFlag(msgHdr))
 			{
 				menuItemObj.itemColor = [];
 				var colorSet = this.colors.itemColor;
@@ -4363,8 +4327,8 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 				if (menuItemObj.itemSelectedColor.length >= 2)
 					menuItemObj.itemSelectedColor[1].attrs = "\x01r\x01h\x01i" + this.msgReader.colors.msgListHighlightBkgColor;
 			}
-			// Selected, unread, or has attachments
-			else if (this.msgReader.MessageIsSelected(this.msgReader.subBoardCode, pItemIndex) || (msgHdr.attr & MSG_READ) == 0 || msgHdrHasAttachmentFlag(msgHdr))
+			// Selected, unread, replied, or has attachments
+			else if (this.msgReader.MessageIsSelected(this.msgReader.subBoardCode, pItemIndex) || !Boolean(msgHdr.attr & MSG_READ) || Boolean(msgHdr.attr & MSG_REPLIED) || msgHdrHasAttachmentFlag(msgHdr))
 			{
 				if (menuItemObj.itemColor.length >= 2)
 					menuItemObj.itemColor[1].attrs = "\x01n" + this.msgReader.colors.selectedMsgMarkColor;
@@ -4669,13 +4633,15 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		// For any indicator character next to the message, prioritize selected, then deleted,
 		// then unread, then attachments
 		if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
-			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + CHECK_CHAR + "\x01n";
+			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + this.msgListStatusChars.selected + "\x01n";
 		else if (msgDeleted)
-			msgIndicatorChar = "\x01n\x01r\x01h\x01i" + this.colors.msgListHighlightBkgColor + "*\x01n";
+			msgIndicatorChar = "\x01n\x01r\x01h\x01i" + this.colors.msgListHighlightBkgColor + this.msgListStatusChars.deleted + "\x01n";
 		else if (this.readingPersonalEmail && !Boolean(pMsgHeader.attr & MSG_READ))
-			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + "U\x01n";
+			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + this.msgListStatusChars.unread + "\x01n";
+		else if (this.readingPersonalEmail && Boolean(pMsgHeader.attr & MSG_REPLIED))
+			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + this.msgListStatusChars.replied + "\x01n";
 		else if (msgHdrHasAttachmentFlag(pMsgHeader))
-			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + "A\x01n";
+			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + this.msgListStatusChars.attachments + "\x01n";
 		var fromName = pMsgHeader.from;
 		// If the message was posted anonymously and the logged-in user is
 		// not the sysop, then show "Anonymous" for the 'from' name.
@@ -4703,13 +4669,15 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		// For any indicator character next to the message, prioritize selected, then deleted,
 		// then unread, then attachments
 		if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
-			msgIndicatorChar = "\x01n" +  this.colors.selectedMsgMarkColor + CHECK_CHAR + "\x01n";
+			msgIndicatorChar = "\x01n" +  this.colors.selectedMsgMarkColor + this.msgListStatusChars.selected + "\x01n";
 		else if (msgDeleted)
-			msgIndicatorChar = "\x01n\x01r\x01h\x01i*\x01n";
-		else if (this.readingPersonalEmail && (pMsgHeader.attr & MSG_READ) == 0)
-			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + "U\x01n";
+			msgIndicatorChar = "\x01n\x01r\x01h\x01i" + this.msgListStatusChars.deleted + "\x01n";
+		else if (this.readingPersonalEmail && !Boolean(pMsgHeader.attr & MSG_READ))
+			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.msgListStatusChars.unread + "\x01n";
+		else if (this.readingPersonalEmail && Boolean(pMsgHeader.attr & MSG_REPLIED))
+			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.msgListStatusChars.replied + "\x01n";
 		else if (msgHdrHasAttachmentFlag(pMsgHeader))
-			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + "A\x01n";
+			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.msgListStatusChars.attachments + "\x01n";
 
 		// Determine whether to use the normal, "to-user", or "from-user" format string.
 		// The differences are the colors.  Then, output the message information line.
@@ -6135,8 +6103,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					{
 						continueOn = false;
 						writeMessage = false;
-						//var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
-						var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(false);
+						var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
 						tmpMsgbase.close();
 						this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpAllMsgHdrs, true);
 						// If the user is currently reading a message a message by someone who is now
@@ -7185,8 +7152,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					{
 						continueOn = false;
 						writeMessage = false;
-						//var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
-						var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(false);
+						var tmpAllMsgHdrs = tmpMsgbase.get_all_msg_headers(true);
 						tmpMsgbase.close();
 						this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(tmpAllMsgHdrs, true);
 						// If the user is currently reading a message a message by someone who is now
@@ -8111,19 +8077,21 @@ function DigDistMsgReader_DisplayMessageListNotesHelp()
 	                         this.colors["tradInterfaceHelpScreenColor"], "\x01n\x01k\x01h")
 	console.print(this.colors.tradInterfaceHelpScreenColor);
 	var helpLines = [
-		"If a message has been marked for deletion, it will appear with a blinking red asterisk (\x01n\x01h\x01r\x01i*" + "\x01n" +
-		this.colors.tradInterfaceHelpScreenColor + ")  after the message number in the message list.",
-
-		"If a message has attachments, an A will appear between the message number and 'from' name.",
-
-		"Unread messages written to you will have a U between the message number and 'from' name."
+		"Between the message number and 'From' name, a message could have the following status indicators:",
+		"\x01n\x01h\x01r\x01i" + this.msgListStatusChars.deleted + "\x01n" + this.colors.tradInterfaceHelpScreenColor + ": Message has been marked for deletion",
+		this.msgListStatusChars.attachments + ": The message has attachments",
+		this.msgListStatusChars.unread + ": The message is unread",
+		this.msgListStatusChars.replied + ": You have replied to the message"
 	];
 	var wrapLen = console.screen_columns-1;
 	for (var i = 0; i < helpLines.length; ++i)
 	{
 		var wrappedLines = word_wrap(helpLines[i], wrapLen).split("\n");
 		for (var j = 0; j < wrappedLines.length; ++j)
+		{
+			if (wrappedLines[j].length == 0) continue;
 			console.print(wrappedLines[j] + "\r\n");
+		}
 	}
 }
 // For the DigDistMsgReader Class: Sets the traditional UI pause prompt text
@@ -8549,6 +8517,8 @@ function DigDistMsgReader_ReadConfigFile()
 			this.userSettings.newscanOnlyShowNewMsgs = settingsObj.newscanOnlyShowNewMsgs;
 		if (typeof(settingsObj["indexedModeMenuSnapToFirstWithNew"]) === "boolean")
 			this.userSettings.indexedModeMenuSnapToFirstWithNew = settingsObj.indexedModeMenuSnapToFirstWithNew;
+		if (typeof(settingsObj["promptDelPersonalEmailAfterReply"]) === "boolean")
+			this.userSettings.promptDelPersonalEmailAfterReply = settingsObj.promptDelPersonalEmailAfterReply;
 	}
 	else
 	{
@@ -9168,7 +9138,7 @@ function DigDistMsgReader_IsValidMessageNum(pMsgNum)
 // Parameters:
 //  pMsgIdx: The message index (0-based)
 //  pExpandFields: Whether or not to expand fields.  Defaults to false.
-//  pMsgbase: Optional - An open MsgBase object.  If not passed, the sub-board will be opened in this method.
+//  pMsgbase: Optional - An open MsgBase object.  If not passed, the sub-board coould be opened in this method.
 function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx, pExpandFields, pMsgbase)
 {
 	var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
@@ -10092,6 +10062,14 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		var privReplRetObj = this.DoPrivateReply(pMsgHdr, pMsgIdx, replyMode);
 		retObj.postSucceeded = privReplRetObj.sendSucceeded;
 		retObj.msgWasDeleted = privReplRetObj.msgWasDeleted;
+		// If the user successfully saved the message and the message wasn't deleted,
+		// then apply the 'replied' attribute to the message Header
+		if (privReplRetObj.sendSucceeded && !privReplRetObj.msgWasDeleted)
+		{
+			var saveRetObj = applyAttrsInMsgHdrInMessagbase(this.subBoardCode, pMsgHdr.number, MSG_REPLIED);
+			if (saveRetObj.saveSucceeded)
+				this.RefreshHdrInSavedArrays(pMsgIdx, MSG_REPLIED, true);
+		}
 	}
 	else
 	{
@@ -10190,7 +10168,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			// If we have cached message headers, add the user's just-posted message
 			else if (this.hdrsForCurrentSubBoard.length > 0)
 			{
-				//this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(msgbase.get_all_msg_headers(false), true);
+				//this.FilterMsgHdrsIntoHdrsForCurrentSubBoard(msgbase.get_all_msg_headers(true), true);
 				var lastMsgHdr = msgbase.get_msg_header(false, msgbase.last_msg);
 				if (msgIsFromUser(lastMsgHdr))
 				{
@@ -10381,9 +10359,10 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		}
 	}
 
-	// If the user replied to a personal email, then ask the user if they want
-	// to delete the message that was just replied to, and if so, delete it.
-	if (retObj.sendSucceeded && this.readingPersonalEmail && (typeof(pMsgIdx) == "number"))
+	// If the user replied to a personal email, and the user setting to prompt
+	// to delete the message after replying is enabled, then ask the user if
+	// they want to delete the message that was just replied to; and if so, delete it.
+	if (retObj.sendSucceeded && this.readingPersonalEmail && (typeof(pMsgIdx) == "number") && this.userSettings.promptDelPersonalEmailAfterReply)
 	{
 		// Get the delete mail confirmation text from text.dat and replace
 		// the %s with the "from" name in the message header, and use that
@@ -10596,21 +10575,49 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	else
 		dateTimeStr = pMsgHdr.date.replace(/ [-+][0-9]+$/, "");
 	
-	// If using the internal header (not loaded externally) and the message is not a poll and
-	// contains the properties total_votes and upvotes, then put some information in the header
-	// containing information about the message's voting results.
-	var msgIsAPoll = false;
-	if (typeof(MSG_POLL) != "undefined")
-		msgIsAPoll = ((pMsgHdr.attr & MSG_POLL) == MSG_POLL);
 	var enhHdrLines = enhMsgHdrLines.slice(0);
-	if (this.usingInternalEnhMsgHdr && !msgIsAPoll && pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes"))
+	// Do some things if using the internal header (not loaded externally)
+	if (this.usingInternalEnhMsgHdr)
 	{
+		// If the message is not a poll and contains the properties total_votes and upvotes,
+		// then put some information in the header containing information about the message's
+		// voting results.
 		// Only add the vote information if the total_votes value is non-zero
-		if (pMsgHdr.total_votes != 0)
+		var msgIsAPoll = false;
+		if (typeof(MSG_POLL) != "undefined")
+			msgIsAPoll = Boolean(pMsgHdr.attr & MSG_POLL);
+		// TODO: Fix the issue with not showing votes.  With this, it seems to think it has 0 votes
+		//var hdrWithVotes = getMsgHdr(this.subBoardCode, false, pMsgHdr.number, true, true);
+		/*
+		// Temporary
+		if (user.is_sysop)
+		{
+			console.print("\x01n\r\n");
+			console.print("Has total_votes prop: " + hdrWithVotes.hasOwnProperty("total_votes") + "\r\n");
+			console.print("Has upvotes prop: " + hdrWithVotes.hasOwnProperty("upvotes") + "\r\n");
+			if (hdrWithVotes.hasOwnProperty("total_votes"))
+				console.print("total_votes: " + hdrWithVotes.total_votes + "\r\n");
+			console.crlf();
+			for (var prop in hdrWithVotes)
+				console.print(prop + ": " + hdrWithVotes[prop] + "\r\n");
+			console.pause();
+		}
+		// End Temporary
+		*/
+		if (!msgIsAPoll && pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes") && pMsgHdr.total_votes != 0)
+		//if (!msgIsAPoll && hdrWithVotes.hasOwnProperty("total_votes") && hdrWithVotes.hasOwnProperty("upvotes") && hdrWithVotes.total_votes != 0)
 		{
 			var voteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
+			//var voteInfo = getMsgUpDownvotesAndScore(hdrWithVotes);
 			var voteStatsTxt = "\x01n\x01c" + RIGHT_T_SINGLE + "\x01h\x01gS\x01n\x01gcore\x01h\x01c: \x01b" + voteInfo.voteScore + " (+" + voteInfo.upvotes + ", -" + voteInfo.downvotes + ")\x01n\x01c" + LEFT_T_SINGLE;
-			enhHdrLines[6] = enhHdrLines[6].slice(0, 10) + "\x01n\x01c" + voteStatsTxt + "\x01n\x01c" + HORIZONTAL_SINGLE + "\x01h\x01k" + enhHdrLines[6].slice(17 + strip_ctrl(voteStatsTxt).length);
+			enhHdrLines[6] = enhHdrLines[6].substring(0, 10) + "\x01n\x01c" + voteStatsTxt + "\x01n\x01c" + HORIZONTAL_SINGLE + "\x01h\x01k" + enhHdrLines[6].substring(17 + strip_ctrl(voteStatsTxt).length);
+		}
+
+		// If this is a personal email that has been replied to, then
+		// put the word "Replied" toward the right of the last line
+		if (this.readingPersonalEmail && Boolean(pMsgHdr.attr & MSG_REPLIED))
+		{
+			enhHdrLines[6] = enhHdrLines[6].substr(0, enhHdrLines[6].length-17) + "\x01wReplied\x01k" + enhHdrLines[6].substr(enhHdrLines[6].length-10);
 		}
 	}
 
@@ -12512,6 +12519,8 @@ function DigDistMsgReader_GetExtdMsgHdrInfo(pSubCodeOrMsgbase, pMsgNum, pKludgeO
 		var msgbase = new MsgBase(pSubCodeOrMsgbase);
 		if (msgbase.open())
 		{
+			// TODO: I think we should be able to call get_msg_header() and get valid vote information,
+			// but that doesn't seem to be the case:
 			msgHdr = msgbase.get_msg_header(false, pMsgNum, true, true);
 			msgbase.close();
 		}
@@ -14064,7 +14073,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";
 	var optBoxWidth = ChoiceScrollbox_MinWidth();
-	var optBoxHeight = 10;
+	var optBoxHeight = 11;
 	var optBoxStartX = this.msgAreaLeft + Math.floor((this.msgAreaWidth/2) - (optBoxWidth/2));
 	if (optBoxStartX < this.msgAreaLeft)
 		optBoxStartX = this.msgAreaLeft;
@@ -14113,6 +14122,10 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 	if (this.userSettings.quitFromReaderGoesToMsgList)
 		optionBox.chgCharInTextItem(READER_QUIT_TO_MSG_LIST_OPT_INDEX, checkIdx, CHECK_CHAR);
 
+	const PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Prompt delete after reply to personal email"));
+	if (this.userSettings.promptDelPersonalEmailAfterReply)
+		optionBox.chgCharInTextItem(PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX, checkIdx, CHECK_CHAR);
+
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = {};
 	optionToggles[ENH_SCROLLBAR_OPT_INDEX] = this.userSettings.useEnhReaderScrollbar;
@@ -14122,6 +14135,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 	optionToggles[INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_OPT_INDEX] = this.userSettings.indexedModeMenuSnapToFirstWithNew;
 	optionToggles[INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_INDEX] = this.userSettings.enterFromIndexMenuShowsMsgList;
 	optionToggles[READER_QUIT_TO_MSG_LIST_OPT_INDEX] = this.userSettings.quitFromReaderGoesToMsgList;
+	optionToggles[PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX] = this.userSettings.promptDelPersonalEmailAfterReply;
 
 	// Other actions
 	var USER_TWITLIST_OPT_INDEX = optionBox.addTextItem("Personal twit list");
@@ -14167,6 +14181,9 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 						break;
 					case READER_QUIT_TO_MSG_LIST_OPT_INDEX:
 						this.readerObj.userSettings.quitFromReaderGoesToMsgList = !this.readerObj.userSettings.quitFromReaderGoesToMsgList;
+						break;
+					case PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX:
+						this.readerObj.userSettings.promptDelPersonalEmailAfterReply = !this.readerObj.userSettings.promptDelPersonalEmailAfterReply;
 						break;
 					default:
 						break;
@@ -14257,7 +14274,8 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	var USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM = 3;
 	var INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM = 4;
 	var READER_QUIT_TO_MSG_LIST_OPT_NUM = 5;
-	var USER_TWITLIST_OPT_NUM = 6;
+	var PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM = 6;
+	var USER_TWITLIST_OPT_NUM = 7;
 	var HIGHEST_CHOICE_NUM = USER_TWITLIST_OPT_NUM;
 
 	console.crlf();
@@ -14269,6 +14287,7 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	printTradUserSettingOption(USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM, "Use Indexed mode for newscan", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM, "Index: Selection shows message list", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(READER_QUIT_TO_MSG_LIST_OPT_NUM, "Quitting From reader goes to message list", wordFirstCharAttrs, wordRemainingAttrs);
+	printTradUserSettingOption(PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM, "Prompt to delete personal message after replying", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(USER_TWITLIST_OPT_NUM, "Personal twit list", wordFirstCharAttrs, wordRemainingAttrs);
 	console.crlf();
 	console.print("\x01cYour choice (\x01hQ\x01n\x01c: Quit)\x01h: \x01g");
@@ -14305,6 +14324,11 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 			var oldReaderQuitSetting = this.userSettings.quitFromReaderGoesToMsgList;
 			this.userSettings.quitFromReaderGoesToMsgList = !console.noyes("Quit key from reader: Go to the message list (rather than exit)");
 			userSettingsChanged = (this.userSettings.quitFromReaderGoesToMsgList != oldReaderQuitSetting);
+			break;
+		case PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM:
+			var oldReaderQuitSetting = this.userSettings.promptDelPersonalEmailAfterReply;
+			this.userSettings.promptDelPersonalEmailAfterReply = !console.noyes("Prompt to delete personal message after replying");
+			userSettingsChanged = (this.userSettings.promptDelPersonalEmailAfterReply != oldReaderQuitSetting);
 			break;
 		case USER_TWITLIST_OPT_NUM:
 			console.editfile(gUserTwitListFilename);
@@ -16213,8 +16237,8 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 			if (this.msgNumToIdxMap.hasOwnProperty(pMsgHdr.number))
 			{
 				var originalMsgIdx = this.msgNumToIdxMap[pMsgHdr.number];
-				//var tmpHdrs = msgbase.get_all_msg_headers(true);
-				var tmpHdrs = msgbase.get_all_msg_headers(false);
+				// Calling get_all_msg_headers() to include vote information:
+				var tmpHdrs = msgbase.get_all_msg_headers(true);
 				if (tmpHdrs.hasOwnProperty(pMsgHdr.number))
 				{
 					this.hdrsForCurrentSubBoard[originalMsgIdx] = tmpHdrs[pMsgHdr.number];
@@ -16232,6 +16256,28 @@ function DigDistMsgReader_VoteOnMessage(pMsgHdr, pRemoveNLsFromVoteText)
 					if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("tally"))
 						retObj.updatedHdr.tally = this.hdrsForCurrentSubBoard[originalMsgIdx].tally;
 				}
+				// I thought we should be able to call get_msg_header() and get valid vote information,
+				// but that doesn't seem to be the case:
+				/*
+				var hdrWithVotes = msgbase.get_msg_header(false, pMsgHdr.number, true, true);
+				if (hdrWithVotes != null)
+				{
+					this.hdrsForCurrentSubBoard[originalMsgIdx] = hdrWithVotes;
+					// Originally, this script assigned retObj.updatedHdr as follows:
+					//retObj.updatedHdr = pMsgHdr;
+					// However, after an update, there were a couple errors that total_votes and upvotes
+					// were read-only, so it wuldn't assign to them, so now we copy pMsgHdr this way:
+					retObj.updatedHdr = {};
+					for (var prop in pMsgHdr)
+						retObj.updatedHdr[prop] = pMsgHdr[prop];
+					if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("total_votes"))
+						retObj.updatedHdr.total_votes = this.hdrsForCurrentSubBoard[originalMsgIdx].total_votes;
+					if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("upvotes"))
+						retObj.updatedHdr.upvotes = this.hdrsForCurrentSubBoard[originalMsgIdx].upvotes;
+					if (this.hdrsForCurrentSubBoard[originalMsgIdx].hasOwnProperty("tally"))
+						retObj.updatedHdr.tally = this.hdrsForCurrentSubBoard[originalMsgIdx].tally;
+				}
+				*/
 			}
 		}
 		else
@@ -16475,8 +16521,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 
 				// Pass true to get_all_msg_headers() to tell it to return vote messages
 				// (the parameter was introduced in Synchronet 3.17+)
-				//var tmpHdrs = msgbase.get_all_msg_headers(true);
-				var tmpHdrs = msgbase.get_all_msg_headers(false);
+				var tmpHdrs = msgbase.get_all_msg_headers(true);
 				for (var tmpProp in tmpHdrs)
 				{
 					if (tmpHdrs[tmpProp] == null)
@@ -16577,7 +16622,7 @@ function DigDistMsgReader_RefreshMsgHdrInArrays(pMsgNum)
 		{
 			if (this.msgSearchHdrs[this.subBoardCode].indexed[i].number == pMsgNum)
 			{
-				var newMsgHdr = msgbase.get_msg_header(false, pMsgNum, true);
+				var newMsgHdr = msgbase.get_msg_header(false, pMsgNum, true, true);
 				if (newMsgHdr != null)
 					this.msgSearchHdrs[this.subBoardCode].indexed[i] = newMsgHdr;
 				break;
@@ -16588,13 +16633,23 @@ function DigDistMsgReader_RefreshMsgHdrInArrays(pMsgNum)
 	{
 		if (this.msgNumToIdxMap.hasOwnProperty(pMsgNum))
 		{
-			//var msgHdrs = msgbase.get_all_msg_headers(true);
-			var msgHdrs = msgbase.get_all_msg_headers(false);
+			// Calling get_all_msg_headers() to include vote information:
+			var msgHdrs = msgbase.get_all_msg_headers(true);
 			if (msgHdrs.hasOwnProperty(pMsgNum))
 			{
 				var msgIdx = this.msgNumToIdxMap[pMsgNum];
 				this.hdrsForCurrentSubBoard[msgIdx] = msgHdrs[pMsgNum];
 			}
+			// I thought we should be able to call get_msg_header() and get valid vote information,
+			// but that doesn't seem to be the case:
+			/*
+			var updatedMsgHdr = msgbase.get_msg_header(false, pMsgNum, true, true);
+			if (updatedMsgHdr != null)
+			{
+				var msgIdx = this.msgNumToIdxMap[pMsgNum];
+				this.hdrsForCurrentSubBoard[msgIdx] = updatedMsgHdr;
+			}
+			*/
 		}
 	}
 	msgbase.close();
@@ -18913,9 +18968,7 @@ function makeAllMsgAttrStr(pMsgHdr)
 	return msgAttrStr;
 }
 
-// Returns a string describing the main message attributes.  Makes use of the
-// gMainMsgAttrStrs object for the main message attributes and description
-// strings.
+// Returns a string describing the main message attributes.
 //
 // Parameters:
 //  pMainMsgAttrs: The bit field for the main message attributes
@@ -18925,27 +18978,42 @@ function makeAllMsgAttrStr(pMsgHdr)
 // Return value: A string describing the main message attributes
 function makeMainMsgAttrStr(pMainMsgAttrs, pIfEmptyString)
 {
-   var msgAttrStr = "";
-   if (typeof(pMainMsgAttrs) == "number")
-   {
-      for (var prop in gMainMsgAttrStrs)
-      {
-         if ((pMainMsgAttrs & prop) == prop)
-         {
-            if (msgAttrStr.length > 0)
-               msgAttrStr += ", ";
-            msgAttrStr += gMainMsgAttrStrs[prop];
-         }
-      }
-   }
-   if ((msgAttrStr.length == 0) && (typeof(pIfEmptyString) == "string"))
-	   msgAttrStr = pIfEmptyString;
-   return msgAttrStr;
+	if (makeMainMsgAttrStr.attrStrs === undefined)
+	{
+		makeMainMsgAttrStr.attrStrs = [
+			{ attr: MSG_DELETE, str: "Del" },
+			{ attr: MSG_PRIVATE, str: "Priv" },
+			{ attr: MSG_READ, str: "Read" },
+			{ attr: MSG_PERMANENT, str: "Perm" },
+			{ attr: MSG_LOCKED, str: "Lock" },
+			{ attr: MSG_ANONYMOUS, str: "Anon" },
+			{ attr: MSG_KILLREAD, str: "Killread" },
+			{ attr: MSG_MODERATED, str: "Mod" },
+			{ attr: MSG_VALIDATED, str: "Valid" },
+			{ attr: MSG_REPLIED, str: "Repl" },
+			{ attr: MSG_NOREPLY, str: "NoRepl" }
+		];
+	}
+
+	var msgAttrStr = "";
+	if (typeof(pMainMsgAttrs) == "number")
+	{
+		for (var i = 0; i < makeMainMsgAttrStr.attrStrs.length; ++i)
+		{
+			if (Boolean(pMainMsgAttrs & makeMainMsgAttrStr.attrStrs[i].attr))
+			{
+				if (msgAttrStr.length > 0)
+					msgAttrStr += ", ";
+				msgAttrStr += makeMainMsgAttrStr.attrStrs[i].str;
+			}
+		}
+	}
+	if ((msgAttrStr.length == 0) && (typeof(pIfEmptyString) == "string"))
+		msgAttrStr = pIfEmptyString;
+	return msgAttrStr;
 }
 
-// Returns a string describing auxiliary message attributes.  Makes use of the
-// gAuxMsgAttrStrs object for the auxiliary message attributes and description
-// strings.
+// Returns a string describing auxiliary message attributes.
 //
 // Parameters:
 //  pAuxMsgAttrs: The bit field for the auxiliary message attributes
@@ -18955,27 +19023,39 @@ function makeMainMsgAttrStr(pMainMsgAttrs, pIfEmptyString)
 // Return value: A string describing the auxiliary message attributes
 function makeAuxMsgAttrStr(pAuxMsgAttrs, pIfEmptyString)
 {
-   var msgAttrStr = "";
-   if (typeof(pAuxMsgAttrs) == "number")
-   {
-      for (var prop in gAuxMsgAttrStrs)
-      {
-         if ((pAuxMsgAttrs & prop) == prop)
-         {
-            if (msgAttrStr.length > 0)
-               msgAttrStr += ", ";
-            msgAttrStr += gAuxMsgAttrStrs[prop];
-         }
-      }
-   }
-   if ((msgAttrStr.length == 0) && (typeof(pIfEmptyString) == "string"))
-	   msgAttrStr = pIfEmptyString;
-   return msgAttrStr;
+	if (makeAuxMsgAttrStr.attrStrs === undefined)
+	{
+		makeAuxMsgAttrStr.attrStrs = [
+			{ attr: MSG_FILEREQUEST, str: "Freq" },
+			{ attr: MSG_FILEATTACH, str: "Attach" },
+			{ attr: MSG_KILLFILE, str: "KillFile" },
+			{ attr: MSG_RECEIPTREQ, str: "RctReq" },
+			{ attr: MSG_CONFIRMREQ, str: "ConfReq" },
+			{ attr: MSG_NODISP, str: "NoDisp" }
+		];
+		if (typeof(MSG_TRUNCFILE) === "number")
+			makeAuxMsgAttrStr.attrStrs.push({ attr: MSG_TRUNCFILE, str: "TruncFile" });
+	}
+
+	var msgAttrStr = "";
+	if (typeof(pAuxMsgAttrs) == "number")
+	{
+		for (var i = 0; i < makeAuxMsgAttrStr.attrStrs.length; ++i)
+		{
+			if (Boolean(pAuxMsgAttrs & makeAuxMsgAttrStr.attrStrs[i].attr))
+			{
+				if (msgAttrStr.length > 0)
+					msgAttrStr += ", ";
+				msgAttrStr += makeAuxMsgAttrStr.attrStrs[i].str;
+			}
+		}
+	}
+	if ((msgAttrStr.length == 0) && (typeof(pIfEmptyString) == "string"))
+		msgAttrStr = pIfEmptyString;
+	return msgAttrStr;
 }
 
-// Returns a string describing network message attributes.  Makes use of the
-// gNetMsgAttrStrs object for the network message attributes and description
-// strings.
+// Returns a string describing network message attributes.
 //
 // Parameters:
 //  pNetMsgAttrs: The bit field for the network message attributes
@@ -18985,22 +19065,51 @@ function makeAuxMsgAttrStr(pAuxMsgAttrs, pIfEmptyString)
 // Return value: A string describing the network message attributes
 function makeNetMsgAttrStr(pNetMsgAttrs, pIfEmptyString)
 {
-   var msgAttrStr = "";
-   if (typeof(pNetMsgAttrs) == "number")
-   {
-      for (var prop in gNetMsgAttrStrs)
-      {
-         if ((pNetMsgAttrs & prop) == prop)
-         {
-            if (msgAttrStr.length > 0)
-               msgAttrStr += ", ";
-            msgAttrStr += gNetMsgAttrStrs[prop];
-         }
-      }
-   }
-   if ((msgAttrStr.length == 0) && (typeof(pIfEmptyString) == "string"))
-	   msgAttrStr = pIfEmptyString;
-   return msgAttrStr;
+	if (makeNetMsgAttrStr.attrStrs === undefined)
+	{
+		makeNetMsgAttrStr.attrStrs = [
+			{ attr: MSG_LOCAL, str: "FromLocal" },
+			{ attr: MSG_INTRANSIT, str: "Transit" },
+			{ attr: MSG_SENT, str: "Sent" },
+			{ attr: MSG_KILLSENT, str: "KillSent" },
+			{ attr: MSG_ARCHIVESENT, str: "ArcSent" },
+			{ attr: MSG_HOLD, str: "Hold" },
+			{ attr: MSG_CRASH, str: "Crash" },
+			{ attr: MSG_IMMEDIATE, str: "Now" },
+			{ attr: MSG_DIRECT, str: "Direct" }
+		];
+		if (typeof(MSG_GATE) === "number")
+			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_GATE, str: "Gate" });
+		if (typeof(MSG_ORPHAN) === "number")
+			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_ORPHAN, str: "Orphan" });
+		if (typeof(MSG_FPU) === "number")
+			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_FPU, str: "FPU" });
+		if (typeof(MSG_TYPELOCAL) === "number")
+			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_TYPELOCAL, str: "ForLocal" });
+		if (typeof(MSG_TYPEECHO) === "number")
+			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_TYPEECHO, str: "ForEcho" });
+		if (typeof(MSG_TYPENET) === "number")
+			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_TYPENET, str: "ForNetmail" });
+		if (typeof(MSG_MIMEATTACH) === "number")
+			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_MIMEATTACH, str: "MimeAttach" });
+	}
+
+	var msgAttrStr = "";
+	if (typeof(pNetMsgAttrs) == "number")
+	{
+		for (var i = 0; i < makeNetMsgAttrStr.attrStrs.length; ++i)
+		{
+			if (Boolean(pNetMsgAttrs & makeNetMsgAttrStr.attrStrs[i].attr))
+			{
+				if (msgAttrStr.length > 0)
+					msgAttrStr += ", ";
+				msgAttrStr += makeNetMsgAttrStr.attrStrs[i].str;
+			}
+		}
+	}
+	if ((msgAttrStr.length == 0) && (typeof(pIfEmptyString) == "string"))
+		msgAttrStr = pIfEmptyString;
+	return msgAttrStr;
 }
 
 // Given a sub-board code, this function returns a sub-board's group and name.
@@ -19945,7 +20054,11 @@ function getHdrFromMsgbase(pMsgbase, pSubBoardCode, pByIdx, pMsgIdxOrNum, pExpan
 		if (pByIdx)
 			getMsgHdr = ((pMsgIdxOrNum >= 0) && (pMsgIdxOrNum < msgbase.total_msgs))
 		if (getMsgHdr)
+		{
+			// TODO: I think we should be able to call get_msg_header() and get valid vote information,
+			// but that doesn't seem to be the case:
 			msgHdr = msgbase.get_msg_header(pByIdx, pMsgIdxOrNum, pExpandFields, true); // Last true: Include votes
+		}
 		if (pMsgbase == null)
 			msgbase.close();
 	}
@@ -22187,7 +22300,11 @@ function getLatestPostTimeWithMsgbase(pMsgbase, pSubCode)
 		var msgIdx = pMsgbase.total_msgs - 1;
 		var msgHeader = pMsgbase.get_msg_header(true, msgIdx, false);
 		while (!isReadableMsgHdr(msgHeader, pSubCode) && (msgIdx >= 0))
-			msgHeader = pMsgbase.get_msg_header(true, --msgIdx, true);
+		{
+			// TODO: I think we should be able to call get_msg_header() and get valid vote information,
+			// but that doesn't seem to be the case:
+			msgHeader = pMsgbase.get_msg_header(true, --msgIdx, true, true);
+		}
 		if (this.msgAreaList_lastImportedMsg_showImportTime)
 			latestMsgTimestamp = msgHeader.when_imported_time;
 		else
@@ -22768,6 +22885,22 @@ function subBoardNewscanAllRead(pSubCode)
 	else
 		wasSuccessful = false;
 	return wasSuccessful;
+}
+
+// Hepler function for getting a message header: Opens a messagebase, calls
+// get_msg_header(), closes the messagebase, and returns the header
+function getMsgHdr(pSubCode, pByOffset, pNumOrOffset, pExpandFields, pIncludeVotes)
+{
+	var msgHdr = null;
+	var msgbase = new MsgBase(pSubCode);
+	if (msgbase.open())
+	{
+		var expandFields = (typeof(pExpandFields) === "boolean" ? pExpandFields : true);
+		var includeVotes = (typeof(pIncludeVotes) === "boolean" ? pIncludeVotes : false);
+		msgHdr = msgbase.get_msg_header(pByOffset, pNumOrOffset, expandFields, includeVotes);
+		msgbase.close();
+	}
+	return msgHdr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
