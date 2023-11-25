@@ -31,49 +31,49 @@ f.close();
 f = undefined;
 
 const NICK_COLOURS = [
-    '\1h\1r',
-    '\1h\1g',
-    '\1h\1y',
-    '\1h\1b',
-    '\1h\1m',
-    '\1h\1c',
-    '\1h\1w',
+    '\x01h\x01r',
+    '\x01h\x01g',
+    '\x01h\x01y',
+    '\x01h\x01b',
+    '\x01h\x01m',
+    '\x01h\x01c',
+    '\x01h\x01w',
     // Low colours with reasonable contrast
-    '\1n\1r',
-    '\1n\1g',
-    '\1n\1y',
-    '\1n\1m',
-    '\1n\1c',
-    '\1n\1w'
+    '\x01n\x01r',
+    '\x01n\x01g',
+    '\x01n\x01y',
+    '\x01n\x01m',
+    '\x01n\x01c',
+    '\x01n\x01w'
 ];
 
 const PIPE_COLOURS = [2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 15];
 
 function pipe_to_ctrl_a(str) {
-	str = str.replace(/\|00/g, "\1N\1K");
-	str = str.replace(/\|01/g, "\1N\1B");
-	str = str.replace(/\|02/g, "\1N\1G");
-	str = str.replace(/\|03/g, "\1N\1C");
-	str = str.replace(/\|04/g, "\1N\1R");
-	str = str.replace(/\|05/g, "\1N\1M");
-	str = str.replace(/\|06/g, "\1N\1Y");
-	str = str.replace(/\|07/g, "\1N\1W");
-	str = str.replace(/\|08/g, "\1H\1K");
-	str = str.replace(/\|09/g, "\1H\1B");
-	str = str.replace(/\|10/g, "\1H\1G");
-	str = str.replace(/\|11/g, "\1H\1C");
-	str = str.replace(/\|12/g, "\1H\1R");
-	str = str.replace(/\|13/g, "\1H\1M");
-	str = str.replace(/\|14/g, "\1H\1Y");
-	str = str.replace(/\|15/g, "\1H\1W");
-	str = str.replace(/\|16/g, "\001" + 0);
-	str = str.replace(/\|17/g, "\001" + 4);
-	str = str.replace(/\|18/g, "\001" + 2);
-	str = str.replace(/\|19/g, "\001" + 6);
-	str = str.replace(/\|20/g, "\001" + 1);
-	str = str.replace(/\|21/g, "\001" + 5);
-	str = str.replace(/\|22/g, "\001" + 3);
-	str = str.replace(/\|23/g, "\001" + 7);
+	str = str.replace(/\|00/g, "\x01N\x01K");
+	str = str.replace(/\|01/g, "\x01N\x01B");
+	str = str.replace(/\|02/g, "\x01N\x01G");
+	str = str.replace(/\|03/g, "\x01N\x01C");
+	str = str.replace(/\|04/g, "\x01N\x01R");
+	str = str.replace(/\|05/g, "\x01N\x01M");
+	str = str.replace(/\|06/g, "\x01N\x01Y");
+	str = str.replace(/\|07/g, "\x01N\x01W");
+	str = str.replace(/\|08/g, "\x01H\x01K");
+	str = str.replace(/\|09/g, "\x01H\x01B");
+	str = str.replace(/\|10/g, "\x01H\x01G");
+	str = str.replace(/\|11/g, "\x01H\x01C");
+	str = str.replace(/\|12/g, "\x01H\x01R");
+	str = str.replace(/\|13/g, "\x01H\x01M");
+	str = str.replace(/\|14/g, "\x01H\x01Y");
+	str = str.replace(/\|15/g, "\x01H\x01W");
+	str = str.replace(/\|16/g, "\x01" + 0);
+	str = str.replace(/\|17/g, "\x01" + 4);
+	str = str.replace(/\|18/g, "\x01" + 2);
+	str = str.replace(/\|19/g, "\x01" + 6);
+	str = str.replace(/\|20/g, "\x01" + 1);
+	str = str.replace(/\|21/g, "\x01" + 5);
+	str = str.replace(/\|22/g, "\x01" + 3);
+	str = str.replace(/\|23/g, "\x01" + 7);
 	return str;
 }
 
@@ -82,11 +82,10 @@ function resize_nicklist(frames, nicks) {
         return c.length > a ? c.length : a;
     }, 0)) : 0;
     frames.nicklist.moveTo(frames.top.x + frames.top.width - 1 - maxlen - 1, 2);
-    frames.nicklist_divider.moveTo(frames.nicklist.x, 2);
     frames.nicks.moveTo(frames.nicklist.x + 1, 2);
-    frames.nicklist.width = maxlen + 2;
+    frames.nicklist.width = maxlen + (show_nicks ? 2 : 1);
     frames.nicks.width = maxlen + 1;
-    frames.output.width = frames.top.width - frames.nicklist.width;
+    frames.output.width = (frames.top.width - frames.nicklist.width) + 1;
 }
 
 function redraw_nicklist(frames, nicks, colours) {
@@ -94,7 +93,7 @@ function redraw_nicklist(frames, nicks, colours) {
     if (show_nicks) {
         nicks.forEach(function (e, i) {
             frames.nicks.gotoxy(1, i + 1);
-            frames.nicks.putmsg(colours[e] + e + '\1n\1w');
+            frames.nicks.putmsg(colours[e] + e + '\x01n\x01w');
         });
     }
 }
@@ -107,13 +106,8 @@ function init_display() {
     f.output = new Frame(1, 2, 1, h - 3, BG_BLACK|LIGHTGRAY, f.top);
     f.divider = new Frame(1, h - 1, w, 1, BG_BLUE|WHITE, f.top);
     f.nicklist = new Frame(w - 2, 2, 2, h - 3, BG_BLACK|LIGHTGRAY, f.top);
-    f.nicklist_divider = new Frame(w - 2, 2, 1, h - 3, BG_BLACK|LIGHTGRAY, f.nicklist);
     f.nicks = new Frame(w - 1, 2, 1, h - 3, BG_BLACK|LIGHTGRAY, f.nicklist);
     f.input = new Frame(1, h, w, 1, BG_BLACK|WHITE, f.top);
-    for (var n = 0; n < f.nicklist_divider.height; n++) {
-        f.nicklist_divider.gotoxy(1, n + 1);
-        f.nicklist_divider.putmsg(ascii(179));
-    }
     f.output_scroll = new ScrollBar(f.output, { autohide: true });
     f.nick_scroll = new ScrollBar(f.nicks, { autohide: true });
     f.output.word_wrap = true;
@@ -121,6 +115,19 @@ function init_display() {
     f.divider.putmsg('/help');
     f.top.open();
     return f;
+}
+
+function refresh_stats(frames, stats) {
+    const activity = new Array(
+        /* 0: NUL */ "\x01H\x01KNUL", 
+        /* 1: LOW */ "\x01H\x01YLOW", 
+        /* 2: MED */ "\x01H\x01GMED", 
+        /* 3: HI  */ "\x01H\x01RHI"
+    );
+    frames.divider.clear();
+    frames.divider.putmsg(format("\x01w\x01hSTATS\x01b\x01h> \x01w\x01hBBSes \x01b\x01h[\x01w\x01h%d\x01b\x01h] \x01nRooms \x01b\x01h[\x01w\x01h%d\x01b\x01h] \x01nUsers \x01b\x01h[\x01w\x01h%d\x01b\x01h] \x01nLevel \x01b\x01h[%s\x01b\x01h]\x01n", stats[0], stats[1], stats[2], activity[Number(stats[3])]));
+    frames.divider.gotoxy(frames.divider.width - 5, 1);
+    frames.divider.putmsg('\x01w\x01h/help');    
 }
 
 function append_message(frames, msg) {
@@ -131,23 +138,27 @@ function append_message(frames, msg) {
         }
         frames.output.gotoxy(1, frames.output.height);
     }
-    frames.output.putmsg("\1k\1h" + (new Date()).toLocaleTimeString() + "\1k\1h " + msg + '\r\n');
+    frames.output.putmsg("\x01k\x01h" + getShortTime(new Date()) + "\x01n " + msg + '\r\n');
     frames.output.scroll(0, -1);
     if (input_state == 'scroll') frames.output.scrollTo(0, top);
 }
 
+function getShortTime(d) {
+    return format( "%02d:%02d", d.getHours(), d.getMinutes() );
+}
+
 function display_message(frames, msg, colour) {
     const body = pipe_to_ctrl_a(truncsp(msg.body) || '').split(' ');
-    append_message(frames, body[0] + '\1n\1w: ' + body.slice(1).join(' ') + '\1n\1w');
+    append_message(frames, body[0] + '\x01n\x01w ' + body.slice(1).join(' ') + '\x01n\x01w');
 }
 
 function display_server_message(frames, msg) {
-    append_message(frames, '\1h\1w' + pipe_to_ctrl_a(truncsp(msg) || ''));
+    append_message(frames, '\x01h\x01w' + pipe_to_ctrl_a(truncsp(msg) || ''));
 }
 
 function display_title(frames, room, title) {
     frames.title.clear();
-    frames.title.putmsg('MRC - #' + room + ' - ' + title);
+    frames.title.putmsg('MRC\x01b\x01h>\x01w\x01h #' + room + ' - ' + title);
 }
 
 function set_alias(alias) {
@@ -203,25 +214,25 @@ function main() {
     });
     session.on('help', function (cmd, help, ars) {
         if (!ars || user.compare_ars(ars)) {
-            display_server_message(frames, format('\1h\1w/\1h\1c%s \1h\1w- \1n\1w%s', cmd, help));
+            display_server_message(frames, format('\x01h\x01w/\x01h\x01c%s \x01h\x01w- \x01n\x01w%s', cmd, help));
         }
     });
     session.on('local_help', function (msg) {
-        display_server_message(frames, '\1h\1w/\1h\1cscroll \1h\1w- \1n\1wScroll the output area');
-        display_server_message(frames, '\1h\1w/\1h\1cscroll_nicks \1h\1w- \1n\1wScroll the nicklist');
-        display_server_message(frames, '\1h\1w/\1h\1cnick_prefix \1h\1w- \1n\1wSet a single-character prefix for your handle, eg. /nick_prefix @');
+        display_server_message(frames, '\x01h\x01w/\x01h\x01cscroll \x01h\x01w- \x01n\x01wScroll the output area');
+        display_server_message(frames, '\x01h\x01w/\x01h\x01cscroll_nicks \x01h\x01w- \x01n\x01wScroll the nicklist');
+        display_server_message(frames, '\x01h\x01w/\x01h\x01cnick_prefix \x01h\x01w- \x01n\x01wSet a single-character prefix for your handle, eg. /nick_prefix @');
         display_server_message(
             frames,
-            '\1h\1w/\1h\1cnick_color \1h\1w- \1n\1wSet your nick color to one of '
+            '\x01h\x01w/\x01h\x01cnick_color \x01h\x01w- \x01n\x01wSet your nick color to one of '
             + PIPE_COLOURS.reduce(function (a, c) {
                 a += format('|%02d%s ', c, c);
                 return a;
             }, '')
             + ', eg. /nick_color 11'
         );
-        display_server_message(frames, '\1h\1w/\1h\1cnick_suffix \1h\1w- \1n\1wSet an eight-character suffix for your handle, eg. /nick_suffix <poop>');
-        display_server_message(frames, '\1h\1w/\1h\1ctoggle_nicks \1h\1w- \1n\1wShow/hide the nicklist');
-        display_server_message(frames, '\1h\1w/\1h\1cquit \1n\1w- \1h\1wExit the program');
+        display_server_message(frames, '\x01h\x01w/\x01h\x01cnick_suffix \x01h\x01w- \x01n\x01wSet an eight-character suffix for your handle, eg. /nick_suffix <poop>');
+        display_server_message(frames, '\x01h\x01w/\x01h\x01ctoggle_nicks \x01h\x01w- \x01n\x01wShow/hide the nicklist');
+        display_server_message(frames, '\x01h\x01w/\x01h\x01cquit \x01n\x01w- \x01h\x01wExit the program');
     });
     session.on('message', function (msg) {
         if (msg.from_user == 'SERVER') {
@@ -242,6 +253,11 @@ function main() {
     });
     session.on('topic', function (room, topic) {
         display_title(frames, room, topic);
+    });
+    session.on('stats', function (stats) {
+        if (input_state == 'chat') {
+            refresh_stats(frames, stats);
+        }
     });
 
     if (settings.startup.motd) session.motd();
@@ -364,9 +380,7 @@ function main() {
                 } else if (user_input == '' || user_input == 'q') {
                     frames.output.scrollTo(1, frames.output.data_height - frames.output.height);
                     frames.output_scroll.cycle();
-                    frames.divider.clear();
-                    frames.divider.gotoxy(frames.divider.width - 5, 1);
-                    frames.divider.putmsg('/help');
+                    refresh_stats(frames, session.stats);
                     input_state = 'chat';
                 }
             }
@@ -378,6 +392,7 @@ function main() {
         }
         yield();
     }
+
 }
 
 main();

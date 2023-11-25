@@ -13,7 +13,8 @@ function MRC_Session(host, port, user, pass, alias) {
         output_buffer: [],
         last_ping: 0,
         last_send: 0,
-        alias: alias || user
+        alias: alias || user,
+        stats: ['-','-','-','0']
     };
 
     const callbacks = {
@@ -55,18 +56,28 @@ function MRC_Session(host, port, user, pass, alias) {
     }
 
     function handle_message(msg) {
+        var uidx;
         if (msg.from_user == 'SERVER') {
-            const params = msg.body.split(':');
-            switch (params[0]) {
+
+            const cmd = msg.body.substr(0, msg.body.indexOf(':'));          // cmd is everything left of the first colon (:)
+            const params = msg.body.substr(msg.body.indexOf(':')+1).trim(); // params are everything right of the first colon (:), including any additional colons to follow
+
+            switch (cmd) {
                 case 'BANNER':
-                    emit('banner', params[1].replace(/^\s+/, ''));
+                    emit('banner', params.replace(/^\s+/, ''));
                     break;
-                case 'ROOMTOPIC':
-                    emit('topic', params[1], params.slice(2).join(' '));
+                case 'ROOMTOPIC':                    
+                    const room = params.substr(0, params.indexOf(':'));        // room is everything left of the first colon (:)
+                    const topic = params.substr(params.indexOf(':')+1).trim(); // topic is everything right of the first colon (:), including any additional colons to follow                    
+                    emit('topic', room, topic);
                     break;
                 case 'USERLIST':
-                    state.nicks = params[1].split(',');
+                    state.nicks = params.split(',');
                     emit('nicks', state.nicks);
+                    break;
+                case 'STATS':
+                    state.stats = params.split(' ');
+                    emit('stats', state.stats);
                     break;
                 default:
                     emit('message', msg);
@@ -74,7 +85,7 @@ function MRC_Session(host, port, user, pass, alias) {
             }
         } else if (msg.to_user == 'SERVER') {
             if (msg.body == 'LOGOFF') {
-                const uidx = state.nicks.indexOf(msg.from_user);
+                uidx = state.nicks.indexOf(msg.from_user);
                 if (uidx > -1) {
                     state.nicks.splice(uidx, 1);
                     emit('nicks', state.nicks);
@@ -84,14 +95,12 @@ function MRC_Session(host, port, user, pass, alias) {
             if (msg.to_room == '' || msg.to_room == state.room) {
                 emit('message', msg);
             }
-            if (msg.to_room == state.room
-                && state.nicks.indexOf(msg.from_user) < 0
-            ) {
+            if (msg.to_room == state.room && state.nicks.indexOf(msg.from_user) < 0) {
                 send_command('USERLIST', 'ALL');
             }
         } else if (msg.to_user == 'NOTME') {
             if (msg.body.search(/left\ the\ (room|server)\.*$/ > -1)) {
-                const udix = state.nicks.indexOf(msg.from_user);
+                uidx = state.nicks.indexOf(msg.from_user);
                 if (uidx > -1) {
                     state.nicks.splice(uidx, 1);
                     emit('nicks', state.nicks);
@@ -177,7 +186,7 @@ function MRC_Session(host, port, user, pass, alias) {
         help: {
             help: 'Display this help message',
             callback: function (str) {
-                emit('help', 'List of available commands:');
+                emit('help', 'List of available commands:', '');
                 for (var c in commands) {
                     emit('help', c, commands[c].help, commands[c].ars);
                 }
@@ -208,6 +217,15 @@ function MRC_Session(host, port, user, pass, alias) {
         },
         msg: {
             help: 'Send a private message: /msg nick message goes here',
+            callback: function (str) {
+                const cmd = str.split(' ');
+                if (cmd.length > 1 && state.nicks.indexOf(cmd[0]) > -1) {
+                    this.send_private_messsage(cmd[0], cmd.slice(1).join(' '));
+                }
+            }
+        },
+        t: {                                                                       // added as shorthand for /msg
+            help: 'Shorthand for /msg: /t nick message goes here',
             callback: function (str) {
                 const cmd = str.split(' ');
                 if (cmd.length > 1 && state.nicks.indexOf(cmd[0]) > -1) {
