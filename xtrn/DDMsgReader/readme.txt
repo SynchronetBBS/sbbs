@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.87
-                           Release date: 2023-11-18
+                                 Version 1.88
+                           Release date: 2023-11-24
 
                                      by
 
@@ -798,6 +798,12 @@ indexedModeMenuSnapToFirstWithNew     For the indexed newscan sub-board menu in
                                       returning to the indexed newscan sub-board
                                       menu. This is a default for a user setting
                                       that users can toggle for themselves.
+
+
+promptDelPersonalEmailAfterReply      Default for a user setting: When reading
+                                      personal email, whether or not to propmt
+                                      the user if they want to delete a message
+                                      after replying to it
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings

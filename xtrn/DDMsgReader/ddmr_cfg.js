@@ -5,7 +5,7 @@
 // If you have DDMsgReader in a directory other than xtrn/DDMsgReader, then the changes to
 // DDMsgReader.cfg will be saved in that directory (assuming you're running ddmr_cfg.js from
 // that same directory).
-// Currently for DDMsgReader 1.87.
+// Currently for DDMsgReader 1.88.
 //
 // If you're running DDMsgReader from xtrn/DDMsgReader (the standard location) and you want
 // to save the configuration file there (rather than sbbs/mods), you can use one of the
@@ -18,7 +18,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. Message Reader 1.87 Configurator"))
+if (!uifc.init("DigDist. Message Reader 1.88 Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -113,6 +113,7 @@ function doMainMenu()
 		"useIndexedModeForNewscan", // Boolean
 		"indexedModeMenuSnapToFirstWithNew", // Boolean
 		"newscanOnlyShowNewMsgs", // Boolean
+		"promptDelPersonalEmailAfterReply", // Boolean
 		"themeFilename" // String
 	];
 	// Strings for the options to display on the menu
@@ -143,6 +144,7 @@ function doMainMenu()
 		"Use Indexed Mode For Newscan",
 		"Index menu: Snap to sub-boards w/ new messages",
 		"During a newscan, only show new messages",
+		"Personal email: Prompt to delete after reply",
 		"Theme Filename"
 	];
 	// Build an array of formatted string to be displayed on the menu
@@ -551,6 +553,10 @@ function getOptionHelpText()
 	optionHelpText["newscanOnlyShowNewMsgs"] += "to only show new messages when the user is doing a newscan. Users can toggle this as ";
 	optionHelpText["newscanOnlyShowNewMsgs"] += "they like.";
 
+	optionHelpText["promptDelPersonalEmailAfterReply"] = "Personal email: Prompt to delete after reply: When reading personal email, ";
+	optionHelpText["promptDelPersonalEmailAfterReply"] += "whether or not to propmt the user if they want to delete a message after ";
+	optionHelpText["promptDelPersonalEmailAfterReply"] +=  "replying to it. This is a defafult for a user setting.";
+
 	optionHelpText["themeFilename"] = "Theme filename: The name of a file for a color theme to use";
 
 	// Word-wrap the help text items
@@ -737,6 +743,14 @@ function readDDMsgReaderCfgFile()
 		retObj.cfgOptions.saveAllHdrsWhenSavingMsgToBBSPC = false;
 	if (!retObj.cfgOptions.hasOwnProperty("useIndexedModeForNewscan"))
 		retObj.cfgOptions.useIndexedModeForNewscan = false;
+	if (!retObj.cfgOptions.hasOwnProperty("enableIndexedModeMsgListCache"))
+		retObj.cfgOptions.enableIndexedModeMsgListCache = true;
+	if (!retObj.cfgOptions.hasOwnProperty("newscanOnlyShowNewMsgs"))
+		retObj.cfgOptions.newscanOnlyShowNewMsgs = true;
+	if (!retObj.cfgOptions.hasOwnProperty("indexedModeMenuSnapToFirstWithNew"))
+		retObj.cfgOptions.indexedModeMenuSnapToFirstWithNew = false;
+	if (!retObj.cfgOptions.hasOwnProperty("promptDelPersonalEmailAfterReply"))
+		retObj.cfgOptions.promptDelPersonalEmailAfterReply = false;
 	if (!retObj.cfgOptions.hasOwnProperty("themeFilename"))
 		retObj.cfgOptions.themeFilename = "DefaultTheme.cfg";
 
