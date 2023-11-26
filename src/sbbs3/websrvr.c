@@ -1625,9 +1625,6 @@ void http_logon(http_session_t * session, user_t *usr)
 	if(session->user.number==session->last_user_num)
 		return;
 
-	lprintf(LOG_DEBUG,"%04d %s [%s] Logon (user #%d)"
-		,session->socket, session->client.protocol, session->host_ip, session->user.number);
-
 	if(session->subscan!=NULL)
 		getmsgptrs(&scfg,&session->user,session->subscan,NULL,NULL);
 
@@ -1650,6 +1647,9 @@ void http_logon(http_session_t * session, user_t *usr)
 		mqtt_user_login(&mqtt, &session->client);
 
 	session->last_user_num=session->user.number;
+
+	lprintf(LOG_DEBUG,"%04d %s [%s] <%s> logged-in"
+		,session->socket, session->client.protocol, session->host_ip, session->username);
 }
 
 void http_logoff(http_session_t* session, SOCKET socket, int line)
@@ -1657,8 +1657,8 @@ void http_logoff(http_session_t* session, SOCKET socket, int line)
 	if(session->last_user_num<=0)
 		return;
 
-	lprintf(LOG_DEBUG,"%04d %s [%s] Logoff (user #%d) from line %d"
-		,socket, session->client.protocol, session->host_ip, session->user.number, line);
+	lprintf(LOG_DEBUG,"%04d %s [%s] <%s> logged-out from line %d"
+		,socket, session->client.protocol, session->host_ip, session->user.alias, line);
 
 	SAFECOPY(session->username,unknown);
 	if(!logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time))

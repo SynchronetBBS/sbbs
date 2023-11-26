@@ -1353,7 +1353,7 @@ static void pop3_thread(void* arg)
 		activity=FALSE;
 
 		if(startup->options&MAIL_OPT_DEBUG_POP3)
-			lprintf(LOG_INFO,"%04d %s [%s] %s logged-in %s", socket, client.protocol, host_ip, user.alias, apop ? "via APOP":"");
+			lprintf(LOG_INFO,"%04d %s [%s] <%s> logged-in %s", socket, client.protocol, host_ip, user.alias, apop ? "via APOP":"");
 #ifdef _WIN32
 		if(startup->sound.login[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
@@ -1362,14 +1362,14 @@ static void pop3_thread(void* arg)
 
 		SAFEPRINTF(smb.file,"%smail",scfg.data_dir);
 		if(smb_islocked(&smb)) {
-			lprintf(LOG_WARNING,"%04d %s <%s> !MAIL BASE LOCKED: %s",socket, client.protocol, user.alias, smb.last_error);
+			lprintf(LOG_WARNING,"%04d %s [%s] <%s> !MAIL BASE LOCKED: %s",socket, client.protocol, host_ip, user.alias, smb.last_error);
 			sockprintf(socket,client.protocol,session,"-ERR database locked, try again later");
 			break;
 		}
 		smb.retry_time=scfg.smb_retry_time;
 		smb.subnum=INVALID_SUB;
 		if((i=smb_open(&smb))!=SMB_SUCCESS) {
-			lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) opening %s", socket, client.protocol, user.alias, i, smb.last_error,smb.file);
+			lprintf(LOG_ERR,"%04d %s [%s] <%s> !ERROR %d (%s) opening %s", socket, client.protocol, host_ip, user.alias, i, smb.last_error,smb.file);
 			sockprintf(socket,client.protocol,session,"-ERR %d opening %s",i,smb.file);
 			break;
 		}
@@ -4250,7 +4250,7 @@ static void smtp_thread(void* arg)
 			client.usernum = relay_user.number;
 			client_on(socket,&client,TRUE /* update */);
 
-			lprintf(LOG_INFO,"%04d %s %s %s logged-in using %s authentication"
+			lprintf(LOG_INFO,"%04d %s %s <%s> logged-in using %s authentication"
 				,socket,client.protocol, client_id, relay_user.alias, auth_login ? "LOGIN" : "PLAIN");
 			SAFEPRINTF(client_id, "<%s>", relay_user.alias);
 			sockprintf(socket,client.protocol,session,auth_ok);
@@ -4349,7 +4349,7 @@ static void smtp_thread(void* arg)
 			client.usernum = relay_user.number;
 			client_on(socket,&client,TRUE /* update */);
 
-			lprintf(LOG_INFO,"%04d %s %s %s logged-in using CRAM-MD5 authentication"
+			lprintf(LOG_INFO,"%04d %s %s <%s> logged-in using CRAM-MD5 authentication"
 				,socket, client.protocol, client_id, relay_user.alias);
 			SAFEPRINTF(client_id, "<%s>", relay_user.alias);
 			sockprintf(socket,client.protocol,session,auth_ok);

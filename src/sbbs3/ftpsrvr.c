@@ -2564,7 +2564,7 @@ static void ctrl_thread(void* arg)
 			client.usernum = user.number;
 			client_on(sock,&client,TRUE /* update */);
 
-			lprintf(LOG_INFO,"%04d <%s> logged in (%u today, %u total)"
+			lprintf(LOG_INFO,"%04d <%s> logged-in (%u today, %u total)"
 				,sock,user.alias,user.ltoday+1, user.logons+1);
 			logintime=time(NULL);
 			timeleft=(long)gettimeleft(&scfg,&user,logintime);
@@ -4847,7 +4847,7 @@ static void ctrl_thread(void* arg)
 		if(!logoutuserdat(&scfg, &user, time(NULL), logintime))
 			lprintf(LOG_ERR,"%04d <%s> !ERROR in logoutuserdat", sock, user.alias);
 		mqtt_user_logout(&mqtt, &client, logintime);
-		lprintf(LOG_INFO,"%04d <%s> logged off", sock, user.alias);
+		lprintf(LOG_INFO,"%04d <%s> logged-out", sock, user.alias);
 #ifdef _WIN32
 		if(startup->sound.logout[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
