@@ -6960,8 +6960,14 @@ void http_logging_thread(void* arg)
 		}
 		SAFECOPY(newfilename,base);
 		if((startup->options&WEB_OPT_VIRTUAL_HOSTS) && ld->vhost!=NULL) {
-			SAFECAT(newfilename,ld->vhost);
-			if(ld->vhost[0])
+			char vhost[128];
+			SAFECOPY(vhost, ld->vhost);
+#ifdef _WIN32
+			char* p;
+			REPLACE_CHARS(vhost, ':', '!', p);
+#endif
+			SAFECAT(newfilename,vhost);
+			if(vhost[0])
 				SAFECAT(newfilename,"-");
 		}
 		strftime(strchr(newfilename,0),15,"%Y-%m-%d.log",&ld->completed);
