@@ -134,6 +134,7 @@ function MRC_Session(host, port, user, pass, alias) {
             alias: state.alias
         }) + '\r\n');
         this.send_command('USERLIST', 'ALL');
+        this.send_command('STATS', 'ALL');
     }
 
     this.disconnect = function () {

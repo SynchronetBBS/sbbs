@@ -10,13 +10,13 @@ const ACTIVITY = new Array(
     /* 3: HI  */ "\x01H\x01RHI"
 );
 const BBSES_X = 12;
-const BBSES_Y = 19;
+const BBSES_Y = 18;
 const ROOMS_X = 23;
-const ROOMS_Y = 19;
+const ROOMS_Y = 18;
 const USERS_X = 34;
-const USERS_Y = 19;
+const USERS_Y = 18;
 const LEVEL_X = 34;
-const LEVEL_Y = 18;
+const LEVEL_Y = 17;
 
 const STAT_COLOR = "\x01C\x01H";
 
@@ -47,3 +47,6 @@ console.gotoxy(USERS_X, USERS_Y);
 printf("%s%s", STAT_COLOR, users);
 console.gotoxy(LEVEL_X, LEVEL_Y);
 printf("%s%s", STAT_COLOR, level);
+
+// Put cursor at the bottom of the menu when done displaying stats
+console.gotoxy(2, 22);
