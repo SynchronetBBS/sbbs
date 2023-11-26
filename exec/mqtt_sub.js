@@ -41,12 +41,13 @@ for(var i = 0; i < argc; ++i) {
 		case '?':
 		case 'help':
 			print("options:");
-			print("  -h  MQTT broker hostname or IP address, default: " + mqtt.broker_addr);
-			print("  -p  MQTT TCP port number to use, default: " + mqtt.broker_port);
-			print("  -q  QoS value to use, default: " + mqtt.subscribe_qos);
-			print("  -N  do not append newline to printed messages");
-			print("  -t  Topic to subscribe to (can be repeated), default: " + default_topic);
-			print("  -v  Use verbose output (include topic)");
+			print("  -h    MQTT broker hostname or IP address, default: " + mqtt.broker_addr);
+			print("  -p    MQTT TCP port number to use, default: " + mqtt.broker_port);
+			print("  -q    QoS value to use, default: " + mqtt.subscribe_qos);
+			print("  -N    Do not append newline to printed messages");
+			print("  -C n  Stop after receiving 'n' (count) messages");
+			print("  -t    Topic to subscribe to (can be repeated), default: " + default_topic);
+			print("  -v    Use verbose output (include topic)");
 			print("  -json Output in JSON format (add -pretty for prettier JSON)");
 			exit(0);
 		default:
