@@ -295,7 +295,8 @@ function Read_Config_File() {
 		if(!file_exists(fname))
 			fname=system.ctrl_dir + "ircd.conf";
 	}
-	log(LOG_INFO,"Trying to read configuration from: " + fname);
+	if (!IRCDCFG_Editor)
+		log(LOG_INFO,"Trying to read configuration from: " + fname);
 	var file_handle = new File(fname);
 	if (file_handle.open("r")) {
 		if (fname.substr(fname.length-3,3) == "ini")
@@ -303,11 +304,11 @@ function Read_Config_File() {
 		else
 			read_conf_config(file_handle);
 		file_handle.close();
-	} else {
+	} else if (!IRCDCFG_Editor) {
 		log(LOG_NOTICE, "Couldn't open configuration file! Proceeding with defaults only.");
 	}
 
-	if (true_array_len(ILines) < 1)
+	if ((true_array_len(ILines) < 1) && !IRCDCFG_Editor)
 		log(LOG_WARNING, "!WARNING Nobody appears to be allowed to connect - configure in [Allow]");
 
 	Time_Config_Read = Epoch();
