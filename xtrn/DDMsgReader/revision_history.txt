@@ -5,6 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.89     2023-11-30   New: User option to toggle whether to display the email
+                      'replied' indicator (defaults to true).
+                      Fix for setting colors for the key help lines so that the
+                      background won't get un-done if the other help line colors
+                      have a N (normal) attribute.
 1.88     2023-11-24   New user setting/configuration option to prompt the user
                       whether or not to delete a personal email after replying
                       to it (defaults to false).

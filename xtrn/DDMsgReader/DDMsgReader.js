@@ -83,6 +83,11 @@
  *                              Fix: Now displaying message vote score in the default header again.
  *                              Fix: When viewing message headers (for the sysop), now correctly
  *                              shows the message attributes.
+ * 2023-11-30 Eric Oulashin     Version 1.89
+ *                              New: User option to toggle whether to display the email 'replied' indicator
+ *                              (defaults to true).
+ *                              Fix for setting colors for the key help lines so that the background
+ *                              won't get un-done if the other help line colors have a N (normal) attribute.
  */
 
 "use strict";
@@ -187,8 +192,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.88";
-var READER_DATE = "2023-11-24";
+var READER_VERSION = "1.89";
+var READER_DATE = "2023-11-30";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1105,7 +1110,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		// Whether or not the enter key in the indexed newscan menu shows the message list (rather than going to reader mode)
 		enterFromIndexMenuShowsMsgList: false,
 		// When reading personal email, whether or not to propmt if the user wants to delete a message after replying to it
-		promptDelPersonalEmailAfterReply: false
+		promptDelPersonalEmailAfterReply: false,
+		// Whether or not to display the 'replied' status character (for personal email)
+		displayMsgRepliedChar: true
 	};
 	// Read the settings from the config file (some settings could set user settings)
 	this.cfgFileSuccessfullyRead = false;
@@ -4639,7 +4646,10 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		else if (this.readingPersonalEmail && !Boolean(pMsgHeader.attr & MSG_READ))
 			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + this.msgListStatusChars.unread + "\x01n";
 		else if (this.readingPersonalEmail && Boolean(pMsgHeader.attr & MSG_REPLIED))
-			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + this.msgListStatusChars.replied + "\x01n";
+		{
+			if (this.userSettings.displayMsgRepliedChar)
+				msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + this.msgListStatusChars.replied + "\x01n";
+		}
 		else if (msgHdrHasAttachmentFlag(pMsgHeader))
 			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + this.msgListStatusChars.attachments + "\x01n";
 		var fromName = pMsgHeader.from;
@@ -4675,7 +4685,10 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		else if (this.readingPersonalEmail && !Boolean(pMsgHeader.attr & MSG_READ))
 			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.msgListStatusChars.unread + "\x01n";
 		else if (this.readingPersonalEmail && Boolean(pMsgHeader.attr & MSG_REPLIED))
-			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.msgListStatusChars.replied + "\x01n";
+		{
+			if (this.userSettings.displayMsgRepliedChar)
+				msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.msgListStatusChars.replied + "\x01n";
+		}
 		else if (msgHdrHasAttachmentFlag(pMsgHeader))
 			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.msgListStatusChars.attachments + "\x01n";
 
@@ -8080,9 +8093,10 @@ function DigDistMsgReader_DisplayMessageListNotesHelp()
 		"Between the message number and 'From' name, a message could have the following status indicators:",
 		"\x01n\x01h\x01r\x01i" + this.msgListStatusChars.deleted + "\x01n" + this.colors.tradInterfaceHelpScreenColor + ": Message has been marked for deletion",
 		this.msgListStatusChars.attachments + ": The message has attachments",
-		this.msgListStatusChars.unread + ": The message is unread",
-		this.msgListStatusChars.replied + ": You have replied to the message"
+		this.msgListStatusChars.unread + ": The message is unread"
 	];
+	if (this.userSettings.displayMsgRepliedChar)
+		helpLines.push(this.msgListStatusChars.replied + ": You have replied to the message");
 	var wrapLen = console.screen_columns-1;
 	for (var i = 0; i < helpLines.length; ++i)
 	{
@@ -8570,6 +8584,25 @@ function DigDistMsgReader_ReadConfigFile()
 					this.text[prop] = themeSettingsObj[prop].replace(/\\x01/g, "\x01");
 				}
 			}
+			// Append the hotkey help line colors with their background color, to ensure that
+			// the background always gets set for all of them (in case a 'normal' attribute
+			// appears in any of the colors)
+			// Message list
+			this.colors.lightbarMsgListHelpLineGeneralColor += this.colors.lightbarMsgListHelpLineBkgColor;
+			this.colors.lightbarMsgListHelpLineHotkeyColor += this.colors.lightbarMsgListHelpLineBkgColor;
+			this.colors.lightbarMsgListHelpLineParenColor += this.colors.lightbarMsgListHelpLineBkgColor;
+			// Area chooser
+			this.colors.lightbarAreaChooserHelpLineGeneralColor += this.colors.lightbarAreaChooserHelpLineBkgColor;
+			this.colors.lightbarAreaChooserHelpLineHotkeyColor += this.colors.lightbarAreaChooserHelpLineBkgColor;
+			this.colors.lightbarAreaChooserHelpLineParenColor += this.colors.lightbarAreaChooserHelpLineBkgColor;
+			// Reader
+			this.colors.enhReaderHelpLineGeneralColor += this.colors.enhReaderHelpLineBkgColor;
+			this.colors.enhReaderHelpLineHotkeyColor += this.colors.enhReaderHelpLineBkgColor;
+			this.colors.enhReaderHelpLineParenColor += this.colors.enhReaderHelpLineBkgColor;
+			// Indexed mode newscan
+			this.colors.lightbarIndexedModeHelpLineHotkeyColor += this.colors.lightbarIndexedModeHelpLineBkgColor;
+			this.colors.lightbarIndexedModeHelpLineGeneralColor += this.colors.lightbarIndexedModeHelpLineBkgColor;
+			this.colors.lightbarIndexedModeHelpLineParenColor += this.colors.lightbarIndexedModeHelpLineBkgColor;
 
 			// Ensure that scrollbarBGChar and scrollbarScrollBlockChar are
 			// only one character.  If they're longer, use only the first
@@ -14073,7 +14106,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";
 	var optBoxWidth = ChoiceScrollbox_MinWidth();
-	var optBoxHeight = 11;
+	var optBoxHeight = 12;
 	var optBoxStartX = this.msgAreaLeft + Math.floor((this.msgAreaWidth/2) - (optBoxWidth/2));
 	if (optBoxStartX < this.msgAreaLeft)
 		optBoxStartX = this.msgAreaLeft;
@@ -14126,6 +14159,10 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 	if (this.userSettings.promptDelPersonalEmailAfterReply)
 		optionBox.chgCharInTextItem(PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX, checkIdx, CHECK_CHAR);
 
+	const DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Display email 'replied' indicator"));
+	if (this.userSettings.displayMsgRepliedChar)
+		optionBox.chgCharInTextItem(DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX, checkIdx, CHECK_CHAR);
+
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = {};
 	optionToggles[ENH_SCROLLBAR_OPT_INDEX] = this.userSettings.useEnhReaderScrollbar;
@@ -14136,6 +14173,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 	optionToggles[INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_INDEX] = this.userSettings.enterFromIndexMenuShowsMsgList;
 	optionToggles[READER_QUIT_TO_MSG_LIST_OPT_INDEX] = this.userSettings.quitFromReaderGoesToMsgList;
 	optionToggles[PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX] = this.userSettings.promptDelPersonalEmailAfterReply;
+	optionToggles[DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX] = this.userSettings.displayMsgRepliedChar;
 
 	// Other actions
 	var USER_TWITLIST_OPT_INDEX = optionBox.addTextItem("Personal twit list");
@@ -14184,6 +14222,9 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 						break;
 					case PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX:
 						this.readerObj.userSettings.promptDelPersonalEmailAfterReply = !this.readerObj.userSettings.promptDelPersonalEmailAfterReply;
+						break;
+					case DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX:
+						this.readerObj.userSettings.displayMsgRepliedChar = !this.readerObj.userSettings.displayMsgRepliedChar;
 						break;
 					default:
 						break;
@@ -14275,7 +14316,8 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	var INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM = 4;
 	var READER_QUIT_TO_MSG_LIST_OPT_NUM = 5;
 	var PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM = 6;
-	var USER_TWITLIST_OPT_NUM = 7;
+	var DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM = 7;
+	var USER_TWITLIST_OPT_NUM = 8;
 	var HIGHEST_CHOICE_NUM = USER_TWITLIST_OPT_NUM;
 
 	console.crlf();
@@ -14288,6 +14330,7 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	printTradUserSettingOption(INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM, "Index: Selection shows message list", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(READER_QUIT_TO_MSG_LIST_OPT_NUM, "Quitting From reader goes to message list", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM, "Prompt to delete personal message after replying", wordFirstCharAttrs, wordRemainingAttrs);
+	printTradUserSettingOption(DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM, "Display email replied indicator", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(USER_TWITLIST_OPT_NUM, "Personal twit list", wordFirstCharAttrs, wordRemainingAttrs);
 	console.crlf();
 	console.print("\x01cYour choice (\x01hQ\x01n\x01c: Quit)\x01h: \x01g");
@@ -14329,6 +14372,11 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 			var oldReaderQuitSetting = this.userSettings.promptDelPersonalEmailAfterReply;
 			this.userSettings.promptDelPersonalEmailAfterReply = !console.noyes("Prompt to delete personal message after replying");
 			userSettingsChanged = (this.userSettings.promptDelPersonalEmailAfterReply != oldReaderQuitSetting);
+			break;
+		case DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM:
+			var oldDisplayRepliedCharSetting = this.userSettings.displayMsgRepliedChar;
+			this.userSettings.displayMsgRepliedChar = console.yesno("Display email 'replied' indicator");
+			userSettingsChanged = (this.userSettings.displayMsgRepliedChar != oldDisplayRepliedCharSetting);
 			break;
 		case USER_TWITLIST_OPT_NUM:
 			console.editfile(gUserTwitListFilename);
