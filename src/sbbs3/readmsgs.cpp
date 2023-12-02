@@ -710,7 +710,8 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				subscan[subnum].ptr=post[smb.curmsg].idx.number; 
 			} 
 
-			if(sub_op(subnum) && (msg.hdr.attr&(MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED) {
+			if(sub_op(subnum) && (msg.hdr.attr&(MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED
+				&& !(msg.hdr.attr & MSG_DELETE)) {
 				uint16_t msg_attr = msg.hdr.attr;
 				SAFEPRINTF2(str,text[ValidatePostQ],smb.curmsg+1,msghdr_field(&msg, msg.subj));
 				if(!noyes(str))
