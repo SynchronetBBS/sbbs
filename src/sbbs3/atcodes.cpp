@@ -2195,7 +2195,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 char* sbbs_t::expand_atcodes(const char* src, char* buf, size_t size)
 {
 	char* dst = buf;
-	char* end = dst + size;
+	char* end = dst + (size - 1);
 
 	while (*src != '\0' && dst < end) {
 		if (*src == '@') {
@@ -2207,13 +2207,17 @@ char* sbbs_t::expand_atcodes(const char* src, char* buf, size_t size)
 				char tmp[128];
 				*at = '\0';
 				src += strlen(str) + 2;
-				dst += strlcpy(dst, atcode(str, tmp, sizeof tmp, NULL, false, NULL), end - dst);
+				const char* p = atcode(str, tmp, sizeof tmp, NULL, false, NULL);
+				if(p != NULL)
+					dst += strlcpy(dst, p, end - dst);
 				continue;
 			}
 		}
 		*(dst++) = *(src++);
 	}
+	if(dst > end)
+		dst = end;
 	*dst = '\0';
+
 	return buf;
 }
-
