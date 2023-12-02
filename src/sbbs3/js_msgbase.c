@@ -1624,8 +1624,8 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 					break;
 			}
 
-			if((p->msg.idx.attr&MSG_MODERATED) && !(p->msg.idx.attr&MSG_VALIDATED)
-				&& (!is_user_subop(scfg, p->p->smb.subnum, user, client)))
+			if((p->msg.idx.attr&(MSG_MODERATED | MSG_VALIDATED | MSG_DELETE)) == MSG_MODERATED
+				&& !is_user_subop(scfg, p->p->smb.subnum, user, client))
 				break;
 
 			if(((p->p->smb.status.attr & SMB_EMAIL) == 0) && (p->msg.idx.attr&MSG_PRIVATE)) {

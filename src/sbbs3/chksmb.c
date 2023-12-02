@@ -647,7 +647,7 @@ int main(int argc, char **argv)
 						printf("MSGERR: Flagged 'in transit'\n");
 					intransit++;
 				}
-				if((msg.hdr.attr&(MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED) {
+				if((msg.hdr.attr&(MSG_MODERATED|MSG_VALIDATED|MSG_DELETE)) == MSG_MODERATED) {
 					fprintf(stderr,"%sUnvalidated\n",beep);
 					msgerr=TRUE;
 					if(extinfo)

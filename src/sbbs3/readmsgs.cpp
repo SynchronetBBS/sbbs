@@ -163,7 +163,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, int subnum, uint ptr, int mode, uint
 				continue; 
 		}
 
-		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED)) {
+		if((idx.attr&(MSG_MODERATED | MSG_VALIDATED | MSG_DELETE)) == MSG_MODERATED) {
 			if(mode&LP_REP || !sub_op(subnum))
 				break;
 		}
@@ -273,7 +273,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, int subnum, uint ptr, int mode, uint
 				continue; 
 		}
 
-		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED)) {
+		if((idx.attr&(MSG_MODERATED | MSG_VALIDATED | MSG_DELETE)) == MSG_MODERATED) {
 			if(unvalidated_num && *unvalidated_num > l)
 				*unvalidated_num=l;
 		}
@@ -710,8 +710,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				subscan[subnum].ptr=post[smb.curmsg].idx.number; 
 			} 
 
-			if(sub_op(subnum) && (msg.hdr.attr&(MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED
-				&& !(msg.hdr.attr & MSG_DELETE)) {
+			if(sub_op(subnum) && (msg.hdr.attr&(MSG_MODERATED|MSG_VALIDATED|MSG_DELETE)) == MSG_MODERATED) {
 				uint16_t msg_attr = msg.hdr.attr;
 				SAFEPRINTF2(str,text[ValidatePostQ],smb.curmsg+1,msghdr_field(&msg, msg.subj));
 				if(!noyes(str))
