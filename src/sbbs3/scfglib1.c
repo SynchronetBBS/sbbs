@@ -903,6 +903,13 @@ str_list_t trashcan_list(scfg_t* cfg, const char* name)
 	return findstr_list(trashcan_fname(cfg, name, fname, sizeof(fname)));
 }
 
+/****************************************************************************/
+char* twitlist_fname(scfg_t* cfg, char* fname, size_t maxlen)
+{
+	safe_snprintf(fname, maxlen, "%stwitlist.cfg", cfg->ctrl_dir);
+	return fname;
+}
+
 char* sub_newsgroup_name(scfg_t* cfg, sub_t* sub, char* str, size_t size)
 {
 	memset(str, 0, size);

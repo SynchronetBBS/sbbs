@@ -144,6 +144,10 @@ DLLEXPORT BOOL	is_download_free(scfg_t*, int dirnum, user_t*, client_t* client);
 DLLEXPORT BOOL	is_host_exempt(scfg_t*, const char* ip_addr, const char* host_name);
 DLLEXPORT BOOL	filter_ip(scfg_t*, const char* prot, const char* reason, const char* host
 								  ,const char* ip_addr, const char* username, const char* fname);
+DLLEXPORT BOOL	is_twit(scfg_t*, const char* name);
+DLLEXPORT BOOL	list_twit(scfg_t*, const char* name, const char* comment);
+DLLEXPORT str_list_t list_of_twits(scfg_t*);
+
 enum parsed_vpath {
 	PARSED_VPATH_NONE,
 	PARSED_VPATH_ROOT,

@@ -1189,7 +1189,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 					if(!(useron.misc&EXPERT))
 						menu("sysmscan");
 					bputs(text[OperatorPrompt]);
-					strcpy(str,"?ADCEHMQUV");
+					strcpy(str,"?ADCEHMQTUV");
 					if(SYSOP)
 						strcat(str,"SP");
 					switch(getkeys(str,0)) {
@@ -1273,6 +1273,14 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 							bputs(text[FileToWriteTo]);
 							if(getstr(str,50,K_LINE))
 								msgtotxt(&smb, &msg, str, /* header: */true, /* mode: */GETMSGTXT_ALL);
+							break;
+						case 'T':	/* Twit-list the sender */
+							domsg = false;
+							if(is_twit(&cfg, msg.from)) {
+								bprintf("\r\n%s is already twit-listed!\r\n", msg.from);
+								break;
+							}
+							list_twit(&cfg, msg.from, timestr(time(NULL)));
 							break;
 						case 'U':   /* User edit */
 							useredit(cfg.sub[subnum]->misc&SUB_NAME

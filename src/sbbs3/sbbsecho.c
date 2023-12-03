@@ -6267,8 +6267,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	SAFEPRINTF(str,"%stwitlist.cfg",scfg.ctrl_dir);
-	twit_list=findstr_list(str);
+	twit_list=list_of_twits(&scfg);
 
 	subject_can = trashcan_list(&scfg,"subject");
 

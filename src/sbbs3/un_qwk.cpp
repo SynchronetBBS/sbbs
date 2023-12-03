@@ -136,9 +136,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	msg_filters.ip_can = trashcan_list(&cfg,"ip");
 	msg_filters.host_can = trashcan_list(&cfg,"host");
 	msg_filters.subject_can = trashcan_list(&cfg,"subject");
-
-	SAFEPRINTF(fname,"%stwitlist.cfg",cfg.ctrl_dir);
-	msg_filters.twit_list = findstr_list(fname);
+	msg_filters.twit_list = list_of_twits(&cfg);
 
 	for(l=QWK_BLOCK_LEN;l<size;l+=blocks*QWK_BLOCK_LEN) {
 		if(terminated) {

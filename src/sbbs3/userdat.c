@@ -4333,3 +4333,29 @@ enum parsed_vpath parse_vpath(scfg_t* cfg, const char* vpath, user_t* user, clie
 
 	return *filename == NULL ? PARSED_VPATH_DIR : PARSED_VPATH_FULL;
 }
+
+BOOL is_twit(scfg_t* cfg, const char* name)
+{
+	char path[MAX_PATH + 1];
+	return findstr(name, twitlist_fname(cfg, path, sizeof path));
+}
+
+/* Add a name to the global twit list */
+BOOL list_twit(scfg_t* cfg, const char* name, const char* comment)
+{
+	char path[MAX_PATH + 1];
+	FILE* fp = fnopen(/* fd: */NULL, twitlist_fname(cfg, path, sizeof path), O_WRONLY | O_APPEND);
+	if(fp == NULL)
+		return FALSE;
+	if(comment != NULL)
+		fprintf(fp, "\n; %s", comment);
+	BOOL result = fprintf(fp, "\n%s\n", name) > 0;
+	fclose(fp);
+	return result;
+}
+
+str_list_t list_of_twits(scfg_t* cfg)
+{
+	char path[MAX_PATH + 1];
+	return findstr_list(twitlist_fname(cfg, path, sizeof path));
+}

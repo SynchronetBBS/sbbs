@@ -3230,7 +3230,7 @@ static void smtp_thread(void* arg)
 				stats.msgs_received++;
 
 				/* Twit-listing (sender's name and e-mail addresses) here */
-				SAFEPRINTF(path,"%stwitlist.cfg",scfg.ctrl_dir);
+				twitlist_fname(&scfg, path, sizeof path);
 				if(fexist(path) && (findstr(sender,path) || findstr(sender_addr,path))) {
 					lprintf(LOG_NOTICE,"%04d %s %s !FILTERING TWIT-LISTED SENDER: '%s' <%s> (%lu total)"
 						,socket, client.protocol, client_id, sender, sender_addr, ++stats.msgs_refused);
