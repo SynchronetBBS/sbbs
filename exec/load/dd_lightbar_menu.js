@@ -13,7 +13,7 @@ By default, this menu library does not display a border around the menu.
 If you want this library to draw a border around the menu, you can set the
 borderEnabled property to true.  Without a border, the menu gains 2
 characters of width and 2 lines of height.  If using a border, a title (text)
-can be displayed in the top border by setting the menuTitle property (it
+can be displayed in the top border by setting the topBorderText property (it
 defaults to an empty string, for no title).
 
 This script provides an object, DDLightbarMenu.  Use the DDLightbarMenu
@@ -2204,6 +2204,7 @@ function DDLightbarMenu_DoKeyUp(pSelectedItemIndexes, pNumItems)
 		// last item.
 		// If there are unselectable items above the current one, then scroll the item list up before
 		// wrapping down to the last selectable item
+		/*
 		var canWrapNav = false;
 		if (this.allowUnselectableItems && this.selectedItemIdx > 0)
 		{
@@ -2214,6 +2215,22 @@ function DDLightbarMenu_DoKeyUp(pSelectedItemIndexes, pNumItems)
 			}
 			else
 				canWrapNav = true;
+		}
+		*/
+		var canWrapNav = true;
+		if (this.allowUnselectableItems)
+		{
+			canWrapNav = false;
+			if (this.selectedItemIdx > 0)
+			{
+				if (this.topItemIdx > 0)
+				{
+					--this.topItemIdx;
+					this.Draw(selectedItemIndexes);
+				}
+				else
+					canWrapNav = true;
+			}
 		}
 		if (canWrapNav && this.wrapNavigation)
 		{
@@ -2288,6 +2305,7 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 		// then go to the first item.
 		// If there are unselectable items below the current one, then scroll the item down up before
 		// wrapping up to the first selectable item
+		/*
 		var canWrapNav = false;
 		if (this.allowUnselectableItems && this.selectedItemIdx > 0)
 		{
@@ -2303,6 +2321,27 @@ function DDLightbarMenu_DoKeyDown(pSelectedItemIndexes, pNumItems)
 			}
 			else
 				canWrapNav = true;
+		}
+		*/
+		var canWrapNav = true;
+		if (this.allowUnselectableItems)
+		{
+			canWrapNav = false;
+			if (this.selectedItemIdx > 0)
+			{
+				var topIndexForLastPage = numItems - this.GetNumItemsPerPage();
+				if (topIndexForLastPage < 0)
+					topIndexForLastPage = 0;
+				else if (topIndexForLastPage >= numItems)
+					topIndexForLastPage = numItems - 1;
+				if (this.topItemIdx < topIndexForLastPage)
+				{
+					++this.topItemIdx;
+					this.Draw(selectedItemIndexes);
+				}
+				else
+					canWrapNav = true;
+			}
 		}
 		if (canWrapNav && this.wrapNavigation)
 		{
