@@ -410,6 +410,8 @@ function ini_Class(arg, ini) {
 		ini_int_min_max(ini.Maximum, 1, 99999, 100, format("Maximum IRC class %u",ircclass)),
 		ini_int_min_max(ini.SendQ, 2048, 999999999, 1000000, format("SendQ IRC class %u",ircclass))
 	);
+	if (ini.Comment)
+		YLines[ircclass].comment = ini.Comment;
 }
 
 /* Former I:Line */
