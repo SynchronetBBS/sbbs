@@ -713,12 +713,12 @@ while(client.socket.is_connected && !quit) {
 /* Eliminate dupe loops
 			if(user.security.restrictions&UFLAG_Q && hdr!=null)
 */
-			if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED)) {
-				writeln("430 unvalidated message");
-				break;
-			}
 			if(hdr.attr&MSG_DELETE) {
 				writeln("430 deleted message");
+				break;
+			}
+			if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED)) {
+				writeln("430 unvalidated message");
 				break;
 			}
 			if(hdr.attr&MSG_PRIVATE
