@@ -1,5 +1,9 @@
 // JS version of yesnobar.src
 
+require("sbbsdefs.js", "P_NOABORT");
+
+"use strict";
+
 const yes_str = bbs.text(bbs.text.Yes);
 const yes_key = yes_str[0];
 const no_str = bbs.text(bbs.text.No);
@@ -15,7 +19,7 @@ if(console.question.substring(0, 2) == "\x01\?") {
 	console.question = console.question.substring(2);
 }
 
-console.putmsg("\x01n\x01b\x01h[\x01c@CHECKMARK@\x01b] \x01y@QUESTION->@? @CLEAR_HOT@");
+console.putmsg("\x01n\x01b\x01h[\x01c@CHECKMARK@\x01b] \x01y@QUESTION->@? @CLEAR_HOT@", P_NOABORT);
 var affirm = true;
 while(bbs.online && !js.terminated) {
 	var str;
@@ -26,7 +30,7 @@ while(bbs.online && !js.terminated) {
 	console.print(str);
 	var key = console.getkey(0).toUpperCase();
 	console.backspace(console.strlen(str));
-	console.print("\1n\1h\1>");
+	console.print("\x01n\x01h\x01>");
 	if(console.aborted) {
 		affirm = false;
 		break;
