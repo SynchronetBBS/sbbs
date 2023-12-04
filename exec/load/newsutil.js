@@ -1,9 +1,5 @@
-// newsutil.js
-
 // Generates and parses USENET news headers 
 // for use with newslink.js and nntpservice.js
-
-// $Id: newsutil.js,v 1.34 2020/06/08 03:20:37 rswindell Exp $
 
 require("mailutil.js", 'mail_get_name');
 require("smbdefs.js", 'RFC822HEADER');
@@ -215,7 +211,7 @@ function parse_news_header(hdr, line)
 }
 
 /*
- * Returns TRUE if hdr and/or body are modified
+ * Returns decoded body text
  */
 function decode_news_body(hdr, body)
 {
