@@ -251,7 +251,7 @@ char* smb_zonestr(int16_t zone, char* str)
 /****************************************************************************/
 /* Returns an ASCII string for FidoNet address 'addr'                       */
 /****************************************************************************/
-char* smb_faddrtoa(fidoaddr_t* addr, char* str)
+char* smb_faddrtoa(const fidoaddr_t* addr, char* str)
 {
 	static char buf[64];
     char point[25];

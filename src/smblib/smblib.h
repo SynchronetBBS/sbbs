@@ -243,7 +243,7 @@ SMBEXPORT int 		smb_getmsghdr_by_hash(smb_t*, smbmsg_t*, unsigned source
 SMBEXPORT char*		smb_hfieldtype(uint16_t type);
 SMBEXPORT uint16_t	smb_hfieldtypelookup(const char*);
 SMBEXPORT char*		smb_dfieldtype(uint16_t type);
-SMBEXPORT char*		smb_faddrtoa(fidoaddr_t* addr, char* outstr);
+SMBEXPORT char*		smb_faddrtoa(const fidoaddr_t* addr, char* outstr);
 SMBEXPORT char*		smb_netaddr(const net_t* net);
 SMBEXPORT char*		smb_netaddrstr(const net_t* net, char* fidoaddr_buf);
 SMBEXPORT char*		smb_nettype(enum smb_net_type);
