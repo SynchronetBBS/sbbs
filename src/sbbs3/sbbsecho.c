@@ -922,14 +922,17 @@ bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_
 	struct tm* tm;
 	time_t now = time(NULL);
 
+	memset(hdr, 0, sizeof(*hdr));
+
 	if(nodecfg != NULL) {
 		pkt_type = nodecfg->pkt_type;
-		lprintf(LOG_DEBUG, "New packet (type %s) created for linked-node: %s", pktTypeStringList[pkt_type], smb_faddrtoa(&nodecfg->addr, NULL));
+		if(nodecfg->pktpwd[0] != 0)
+			strncpy((char*)hdr->type2.password, nodecfg->pktpwd, sizeof(hdr->type2.password));
+		lprintf(LOG_DEBUG, "New %spacket (type %s) created for linked-node: %s"
+			,nodecfg->pktpwd[0] == '\0' ? "" : "password-protected ", pktTypeStringList[pkt_type], smb_faddrtoa(&nodecfg->addr, NULL));
 	}
 	else
 		lprintf(LOG_DEBUG, "New packet (type %s) created for unlinked-node: %s", pktTypeStringList[pkt_type], smb_faddrtoa(&dest, NULL));
-
-	memset(hdr, 0, sizeof(fpkthdr_t));
 
 	if((tm = localtime(&now)) != NULL) {
 		hdr->type2.year	= tm->tm_year+1900;
@@ -950,11 +953,6 @@ bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_
 	hdr->type2.pkttype	= 2;
 	hdr->type2.prodcode	= SBBSECHO_PRODUCT_CODE&0xff;
 	hdr->type2.sernum	= SBBSECHO_VERSION_MAJOR;
-
-	if(nodecfg != NULL && nodecfg->pktpwd[0] != 0) {
-		lprintf(LOG_DEBUG, "Using packet password for %s: '%s'", smb_faddrtoa(&nodecfg->addr, NULL), nodecfg->pktpwd);
-		strncpy((char*)hdr->type2.password, nodecfg->pktpwd, sizeof(hdr->type2.password));
-	}
 
 	if(pkt_type == PKT_TYPE_2)
 		return true;
