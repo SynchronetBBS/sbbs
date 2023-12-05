@@ -947,8 +947,10 @@ bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_
 	hdr->type2.prodcode	= SBBSECHO_PRODUCT_CODE&0xff;
 	hdr->type2.sernum	= SBBSECHO_VERSION_MAJOR;
 
-	if(nodecfg != NULL && nodecfg->pktpwd[0] != 0)
+	if(nodecfg != NULL && nodecfg->pktpwd[0] != 0) {
+		lprintf(LOG_DEBUG, "Using packet password for %s: '%s'", smb_faddrtoa(&nodecfg->addr, NULL), nodecfg->pktpwd);
 		strncpy((char*)hdr->type2.password, nodecfg->pktpwd, sizeof(hdr->type2.password));
+	}
 
 	if(pkt_type == PKT_TYPE_2)
 		return true;
@@ -965,7 +967,7 @@ bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_
 
 	/* 2e and 2+ */
 	if(pkt_type != PKT_TYPE_2_EXT && pkt_type != PKT_TYPE_2_PLUS) {
-		lprintf(LOG_ERR, "UNSUPPORTED PACKET TYPE: %u", pkt_type);
+		lprintf(LOG_ERR, "UNSUPPORTED PACKET TYPE for %s: %u", smb_faddrtoa(&nodecfg->addr, NULL), pkt_type);
 		return false;
 	}
 
@@ -5384,7 +5386,6 @@ void pack_netmail(void)
 	fidoaddr_t	addr;
 	addrlist_t msg_seen,msg_path;
 	area_t fakearea;
-	nodecfg_t*	nodecfg = NULL;
 
 	memset(&msg_seen,0,sizeof(msg_seen));
 	memset(&msg_path,0,sizeof(msg_path));
@@ -5479,6 +5480,7 @@ void pack_netmail(void)
 			return;
 		}
 
+		nodecfg_t* nodecfg = NULL;
 		if(addr.point != 0) {
 			nodecfg = findnodecfg(&cfg, addr, /* exact: */true);
 			if(nodecfg == NULL) {
