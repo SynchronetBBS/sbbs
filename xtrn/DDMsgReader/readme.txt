@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.89
-                           Release date: 2023-11-30
+                                 Version 1.90
+                           Release date: 2023-12-04
 
                                      by
 
@@ -154,21 +154,10 @@ When displaying a message to the user, this script will honor the attribute
 code toggles set up under Synchronet's configuration program (SCFG),
 under Message Options > Extra Attribute Codes.
 
-If a message contains ANSI codes and the scrollable reader interface is being
-used, Digital Distortion Message Reader will try to use frame.js and
-scrollbar.js if those are available on your BBS filesystem.  The reason is that
-frame.js is able to parse and display ANSI in a scrollable interface very well.
-If frame.js and scrollbar.js are not available on your BBS system, the reader
-will still display the message, but it might look garbled if it has ANSI codes.
-So for best results when reading ANSI messages,ensure that you have the latest
-frame.js and scrollbar.js in your sbbs/exec/load directory.  frame.js and
-scrollbar.js are included in Synchronet 3.16, and I believe in earlier versions
-too.  As of this writing, the latest versions of those files can be found in
-Synchronet's CVS repository at the following URLs:
-frame.js:
-http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/load/frame.js?view=log
-scrollbar.js:
-http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/load/scrollbar.js?view=log
+As the sysop, when reading a message, the hotkey Ctrl-O will show the operator
+menu. Most of the operator menu items are already available, but the operator
+menu also has the additional option to add the author of the message (the 'from'
+name) to the twit list.
 
 
 3. Installation & Setup

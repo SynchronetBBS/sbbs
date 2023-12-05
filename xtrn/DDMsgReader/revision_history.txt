@@ -5,6 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.90     2023-12-04   New: operator menu for read mode, with the option to add
+                      the author to the twit list, etc.
+                      Fix: When refreshing a rectangular area of a message, if
+                      it's a poll message, the background color for the voted
+                      responses was used for the non-selected responses.
+                      Removed the setting useScrollingInterfaceForANSIMessages.
 1.89     2023-11-30   New: User option to toggle whether to display the email
                       'replied' indicator (defaults to true).
                       Fix for setting colors for the key help lines so that the

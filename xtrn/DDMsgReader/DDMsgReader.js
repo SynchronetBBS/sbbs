@@ -88,6 +88,15 @@
  *                              (defaults to true).
  *                              Fix for setting colors for the key help lines so that the background
  *                              won't get un-done if the other help line colors have a N (normal) attribute.
+ * 2023-12-02 Eric Oulashin     Version 1.90 Beta
+  *                             New: operator menu for read mode, with the option to add the author to the
+ *                              twit list, etc.
+ *                              Fix: When refreshing a rectangular area of a message, if it's a poll message,
+ *                              the background color for the voted responses was used for the non-selected
+ *                              responses.
+ *                              Removed the setting useScrollingInterfaceForANSIMessages.
+ * 2023-12-04 Eric Oulashin     Version 1.90
+ *                              Releasing this version
  */
 
 "use strict";
@@ -192,8 +201,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.89";
-var READER_DATE = "2023-11-30";
+var READER_VERSION = "1.90";
+var READER_DATE = "2023-12-04";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -714,9 +723,13 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.WriteMsgListScreenTopHeader = DigDistMsgReader_WriteMsgListScreenTopHeader;
 	this.ReadMessageEnhanced = DigDistMsgReader_ReadMessageEnhanced;
 	this.ReadMessageEnhanced_Scrollable = DigDistMsgReader_ReadMessageEnhanced_Scrollable;
+	this.ShowHdrOrKludgeLines_Scrollable = DigDistMsgReader_ShowHdrOrKludgeLines_Scrollable;
+	this.ShowVoteInfo_Scrollable = DigDistMsgReader_ShowVoteInfo_Scrollable;
 	this.ScrollableReaderNextReadableMessage = DigDistMsgReader_ScrollableReaderNextReadableMessage;
 	this.ScrollReaderDetermineClickCoordAction = DigDistMsgReader_ScrollReaderDetermineClickCoordAction;
 	this.ReadMessageEnhanced_Traditional = DigDistMsgReader_ReadMessageEnhanced_Traditional;
+	this.ShowReadModeOpMenuAndGetSelection = DigDistMsgReader_ShowReadModeOpMenuAndGetSelection;
+	this.CreateReadModeOpMenu = DigDistMsgReader_CreateReadModeOpMenu;
 	this.EnhReaderPrepLast2LinesForPrompt = DigDistMsgReader_EnhReaderPrepLast2LinesForPrompt;
 	this.LookForNextOrPriorNonDeletedMsg = DigDistMsgReader_LookForNextOrPriorNonDeletedMsg;
 	this.PrintMessageInfo = DigDistMsgReader_PrintMessageInfo;
@@ -969,12 +982,6 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// the > key to go to the next sub-board.
 	this.doingMultiSubBoardScan = false;
 
-	// An option for using the scrollable interface for messages with ANSI
-	// content - The sysop can set this to false if the sysop thinks the
-	// scrolling ANSI interface (using frame.js and scrollbar.js) doesn't
-	// look good enough
-	this.useScrollingInterfaceForANSIMessages = true;
-
 	// Whether or not to pause (with a message) after doing a new message scan
 	this.pauseAfterNewMsgScan = true;
 
@@ -1023,6 +1030,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		userSettings: CTRL_U,
 		validateMsg: "A", // Only if the user is a sysop
 		quickValUser: CTRL_Q,
+		operatorMenu: CTRL_O,
 		threadView: "*" // TODO: Implement this
 	};
 	//if (user.is_sysop)
@@ -1499,6 +1507,17 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.pausePromptText = bbs.text(Pause);
 	if (this.pausePromptText.toUpperCase().indexOf("@EXEC:") > -1)
 		this.pausePromptText = "\x01n\x01c[ Press a key ] ";
+
+	// Menu option values to use for the operator menu for reader mode
+	this.readerOpMenuOptValues = {
+		validateMsg: 0,
+		editAuthorUserAccount: 1,
+		showHdrLines: 2,
+		showKludgeLines: 3,
+		showTallyStats: 4,
+		quickValUser: 5,
+		addAuthorToTwitList: 6
+	};
 }
 
 // For the DigDistMsgReader class: Sets the subBoardCode property and also
@@ -5106,6 +5125,25 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	var msgReaderObj = this;
 
 	var msgHasAttachments = msgHdrHasAttachmentFlag(msgHeader);
+
+	// For editing a user account. Only for the sysop.
+	function userEdit(msgHeader, pOffset, pReader)
+	{
+		console.attributes = "N";
+		console.crlf();
+		console.print("- Edit user " + msgHeader.from);
+		console.crlf();
+		var editObj = editUser(msgHeader.from);
+		if (editObj.errorMsg.length != 0)
+		{
+			console.attributes = "N";
+			console.crlf();
+			console.print("\x01y\x01h" + editObj.errorMsg + "\x01n");
+			console.crlf();
+			console.pause();
+		}
+	}
+
 	// User input loop
 	var continueOn = true;
 	while (continueOn)
@@ -5628,51 +5666,16 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 			case this.enhReaderKeys.showKludgeLines:
 				if (user.is_sysop)
 				{
-					// Save the original cursor position
-					var originalCurPos = console.getxy();
-
-					// Get an array of the extended header info/kludge lines and then
-					// allow the user to scroll through them.
-					var onlyKludgeLines = (retObj.lastKeypress == this.enhReaderKeys.showKludgeLines);
-					var extdHdrInfoLines = this.GetExtdMsgHdrInfo(this.subBoardCode, msgHeader.number, onlyKludgeLines);
-					if (extdHdrInfoLines.length > 0)
+					writeMessage = this.ShowHdrOrKludgeLines_Scrollable(retObj.lastKeypress == this.enhReaderKeys.showKludgeLines, msgHeader, msgAreaWidth, msgAreaHeight);
+					// Display the scrollbar for the message to refresh it on the screen
+					if (this.userSettings.useEnhReaderScrollbar)
 					{
-						if (this.userSettings.useEnhReaderScrollbar)
-						{
-							// Calculate information for the scrollbar for the kludge lines
-							var infoFractionShown = this.msgAreaHeight / extdHdrInfoLines.length;
-							if (infoFractionShown > 1)
-								infoFractionShown = 1.0;
-							var numInfoSolidScrollBlocks = Math.floor(this.msgAreaHeight * infoFractionShown);
-							if (numInfoSolidScrollBlocks == 0)
-								numInfoSolidScrollBlocks = 1;
-							var numNonSolidInfoScrollBlocks = this.msgAreaHeight - numInfoSolidScrollBlocks;
-							var lastInfoSolidBlockStartRow = this.msgAreaTop;
-							// Display the kludge lines and let the user scroll through them
-							this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
-						}
-						scrollTextLines(extdHdrInfoLines, 0, this.colors["msgBodyColor"], true, this.msgAreaLeft,
-						                this.msgAreaTop, msgAreaWidth, msgAreaHeight, 1, console.screen_rows,
-						                this.userSettings.useEnhReaderScrollbar, msgInfoScrollbarUpdateFn);
-						// Display the scrollbar for the message to refresh it on the screen
-						if (this.userSettings.useEnhReaderScrollbar)
-						{
-							solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
-						}
-						else
-						{
-							// TODO
-						}
-						writeMessage = true; // We want to refresh the message on the screen
+						solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
 					}
 					else
 					{
-						// There are no header/kludge lines for this message
-						var msgText = onlyKludgeLines ? this.text.noKludgeLinesForThisMsgText : this.text.noHdrLinesForThisMsgText;
-						this.DisplayEnhReaderError(replaceAtCodesInStr(msgText), msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-						console.gotoxy(originalCurPos);
-						writeMessage = false;
+						// TODO
 					}
 				}
 				else // The user is not a sysop
@@ -5770,30 +5773,17 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 			case this.enhReaderKeys.userEdit: // Edit the user who wrote the message
 				if (user.is_sysop)
 				{
-					console.attributes = "N";
-					console.crlf();
-					console.print("- Edit user " + msgHeader.from);
-					console.crlf();
-					var editObj = editUser(msgHeader.from);
-					if (editObj.errorMsg.length != 0)
-					{
-						console.attributes = "N";
-						console.crlf();
-						console.print("\x01y\x01h" + editObj.errorMsg + "\x01n");
-						console.crlf();
-						console.pause();
-					}
-
+					userEdit(msgHeader, pOffset, this);
 					// Refresh things on the screen
 					console.clear("\x01n");
 					// Display the message header and key help line again
-					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+					pReader.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+					pReader.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 					// Display the scrollbar again to refresh it on the screen
-					if (this.userSettings.useEnhReaderScrollbar)
+					if (pReader.userSettings.useEnhReaderScrollbar)
 					{
-						solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+						retObj.solidBlockStartRow = pReader.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+						pReader.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
 					}
 					else
 					{
@@ -5920,33 +5910,10 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					writeMessage = false;
 				break;
 			case this.enhReaderKeys.showVotes: // Show votes
-				// Save the original cursor position
-				var originalCurPos = console.getxy();
-				if (msgHeader.hasOwnProperty("total_votes") && msgHeader.hasOwnProperty("upvotes"))
+				var DVRetObj = this.ShowVoteInfo_Scrollable(msgHeader, msgAreaWidth, msgAreaHeight);
+				writeMessage = DVRetObj.writeMessage;
+				if (DVRetObj.hasVoteProps)
 				{
-					var voteInfo = this.GetUpvoteAndDownvoteInfo(msgHeader);
-					// Display the vote info and let the user scroll through them
-					// (the console height should be enough, but do this just in case)
-					// Calculate information for the scrollbar for the vote info lines
-					if (this.userSettings.useEnhReaderScrollbar)
-					{
-						var infoFractionShown = this.msgAreaHeight / voteInfo.length;
-						if (infoFractionShown > 1)
-							infoFractionShown = 1.0;
-						var numInfoSolidScrollBlocks = Math.floor(this.msgAreaHeight * infoFractionShown);
-						if (numInfoSolidScrollBlocks == 0)
-							numInfoSolidScrollBlocks = 1;
-						var numNonSolidInfoScrollBlocks = this.msgAreaHeight - numInfoSolidScrollBlocks;
-						var lastInfoSolidBlockStartRow = this.msgAreaTop;
-						// Display the vote info lines and let the user scroll through them
-						this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
-					}
-					else
-					{
-						// TODO
-					}
-					scrollTextLines(voteInfo, 0, this.colors["msgBodyColor"], true, this.msgAreaLeft, this.msgAreaTop, msgAreaWidth,
-					                msgAreaHeight, 1, console.screen_rows, this.userSettings.useEnhReaderScrollbar, msgInfoScrollbarUpdateFn);
 					// Display the scrollbar for the message to refresh it on the screen
 					if (this.userSettings.useEnhReaderScrollbar)
 					{
@@ -5957,13 +5924,6 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					{
 						// TODO
 					}
-					writeMessage = true; // We want to refresh the message on the screen
-				}
-				else
-				{
-					this.DisplayEnhReaderError("There is no voting information for this message", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
-					console.gotoxy(originalCurPos);
-					writeMessage = false;
 				}
 				break;
 			case this.enhReaderKeys.closePoll: // Close a poll message
@@ -6206,6 +6166,126 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					this.RefreshMsgAreaRectangle(msgInfo.messageLines, topMsgLineIdx, userSettingsRetObj.optionBoxTopLeftX, userSettingsRetObj.optionBoxTopLeftY, userSettingsRetObj.optionBoxWidth, userSettingsRetObj.optionBoxHeight);
 				}
 				break;
+			case this.enhReaderKeys.operatorMenu: // Operator menu
+				writeMessage = false;
+				if (user.is_sysop)
+				{
+					var opRetObj = this.ShowReadModeOpMenuAndGetSelection();
+					// Refresh the message area where the option menu was
+					this.RefreshMsgAreaRectangle(msgInfo.messageLines, topMsgLineIdx, opRetObj.menuTopLeftX, opRetObj.menuTopLeftY, opRetObj.menuWidth, opRetObj.menuHeight);
+					if (opRetObj.chosenOption != null)
+					{
+						switch (opRetObj.chosenOption)
+						{
+							case this.readerOpMenuOptValues.validateMsg: // Validate the message
+								if (this.subBoardCode != "mail" && msg_area.sub[this.subBoardCode].is_moderated)
+								{
+									var message = "";
+									if (this.ValidateMsg(this.subBoardCode, msgHeader.number))
+									{
+										message = "\x01n\x01cMessage validation successful";
+										// Refresh the message header in the arrays
+										this.RefreshMsgHdrInArrays(msgHeader.number);
+										// Exit out of the reader and come back to read
+										// the same message again so that the voting results
+										// are re-loaded and displayed on the screen.
+										retObj.newMsgOffset = pOffset;
+										retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+										continueOn = false;
+										this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+									}
+									else
+										message = "\x01n\x01y\x01hMessage validation failed!";
+									this.DisplayEnhReaderError(message, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+									writeMessage = true;
+								}
+								break;
+							case this.readerOpMenuOptValues.editAuthorUserAccount: // Edit the local user account
+								userEdit(msgHeader, pOffset, this);
+								// Refresh things on the screen
+								console.clear("\x01n");
+								// Display the message header and key help line again
+								pReader.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+								pReader.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+								// Display the scrollbar again to refresh it on the screen
+								if (pReader.userSettings.useEnhReaderScrollbar)
+								{
+									retObj.solidBlockStartRow = pReader.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+									pReader.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+								}
+								else
+								{
+									// TODO
+								}
+								writeMessage = true; // We want to refresh the message on the screen
+								break;
+							case this.readerOpMenuOptValues.showHdrLines: // Show header or kludge lines
+							case this.readerOpMenuOptValues.showKludgeLines:
+								writeMessage = this.ShowHdrOrKludgeLines_Scrollable(opRetObj.chosenOption == this.readerOpMenuOptValues.showKludgeLines, msgHeader, msgAreaWidth, msgAreaHeight);
+								// Display the scrollbar for the message to refresh it on the screen
+								if (this.userSettings.useEnhReaderScrollbar)
+								{
+									solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+									this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+								}
+								else
+								{
+									// TODO
+								}
+								break;
+							case this.readerOpMenuOptValues.showTallyStats: // Show tally/vote stats/info
+								var DVRetObj = this.ShowVoteInfo_Scrollable(msgHeader, msgAreaWidth, msgAreaHeight);
+								writeMessage = DVRetObj.writeMessage;
+								if (DVRetObj.hasVoteProps)
+								{
+									// Display the scrollbar for the message to refresh it on the screen
+									if (this.userSettings.useEnhReaderScrollbar)
+									{
+										solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+										this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+									}
+									else
+									{
+										// TODO
+									}
+								}
+								break;
+							case this.readerOpMenuOptValues.quickValUser: // Quick validate the user
+								var valRetObj = quickValidateLocalUser(msgHeader.from, this.scrollingReaderInterface && console.term_supports(USER_ANSI), this.quickUserValSetIndex);
+								if (valRetObj.needWholeScreenRefresh)
+								{
+									this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+									if (this.userSettings.useEnhReaderScrollbar)
+										this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+									else
+									{
+										// TODO
+									}
+									this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+								}
+								else
+								{
+									writeMessage = false; // Don't refresh the whole message
+									if (valRetObj.refreshBottomLine)
+										this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+									if (valRetObj.optionBoxTopLeftX > 0 && valRetObj.optionBoxTopLeftY > 0 && valRetObj.optionBoxWidth > 0 && valRetObj.optionBoxHeight > 0)
+										this.RefreshMsgAreaRectangle(msgInfo.messageLines, topMsgLineIdx, valRetObj.optionBoxTopLeftX, valRetObj.optionBoxTopLeftY, valRetObj.optionBoxWidth, valRetObj.optionBoxHeight);
+								}
+								break;
+							case this.readerOpMenuOptValues.addAuthorToTwitList: // Add author to twit list
+								var promptTxt = format("Add %s to twit list", msgHeader.from);
+								if (this.EnhReaderPromptYesNo(promptTxt, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks, true))
+								{
+									var statusMsg = "\x01n" + addToTwitList(msgHeader.from) ? "\x01w\x01hSuccessfully updated the twit list" : "\x01y\x01hFailed to update the twit list!"
+									writeWithPause(1, console.screen_rows, statusMsg, ERROR_PAUSE_WAIT_MS, "\x01n", true);
+									console.attributes = "N";
+									this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+								}
+								break;
+						}
+					}
+				}
+				break;
 			case this.enhReaderKeys.quit: // Quit
 			case KEY_ESC:
 				// Normally, if quitFromReaderGoesToMsgList is enabled, then do that
@@ -6226,6 +6306,114 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		}
 	}
 
+	return retObj;
+}
+// Helper method for ReadMessageEnhanced_Scrollable(): Shows header or kludge lines for the scrollable interface. For the sysop.
+function DigDistMsgReader_ShowHdrOrKludgeLines_Scrollable(pOnlyKludgeLines, msgHeader, msgAreaWidth, msgAreaHeight)
+{
+	var msgReaderObj = this;
+	// This is a scrollbar update function for use when viewing the header info/kludge lines.
+	function msgInfoScrollbarUpdateFn(pFractionToLastPage)
+	{
+		var infoSolidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidInfoScrollBlocks * pFractionToLastPage);
+		if (infoSolidBlockStartRow != lastInfoSolidBlockStartRow)
+			msgReaderObj.UpdateEnhancedReaderScrollbar(infoSolidBlockStartRow, lastInfoSolidBlockStartRow, numInfoSolidScrollBlocks);
+		lastInfoSolidBlockStartRow = infoSolidBlockStartRow;
+		console.gotoxy(1, console.screen_rows);
+	}
+
+	var writeMessage = false;
+
+	// Save the original cursor position
+	var originalCurPos = console.getxy();
+
+	// Get an array of the extended header info/kludge lines and then
+	// allow the user to scroll through them.
+	var extdHdrInfoLines = this.GetExtdMsgHdrInfo(this.subBoardCode, msgHeader.number, pOnlyKludgeLines);
+	if (extdHdrInfoLines.length > 0)
+	{
+		if (this.userSettings.useEnhReaderScrollbar)
+		{
+			// Calculate information for the scrollbar for the kludge lines
+			var infoFractionShown = this.msgAreaHeight / extdHdrInfoLines.length;
+			if (infoFractionShown > 1)
+				infoFractionShown = 1.0;
+			var numInfoSolidScrollBlocks = Math.floor(this.msgAreaHeight * infoFractionShown);
+			if (numInfoSolidScrollBlocks == 0)
+				numInfoSolidScrollBlocks = 1;
+			var numNonSolidInfoScrollBlocks = this.msgAreaHeight - numInfoSolidScrollBlocks;
+			var lastInfoSolidBlockStartRow = this.msgAreaTop;
+			// Display the kludge lines and let the user scroll through them
+			this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
+		}
+		scrollTextLines(extdHdrInfoLines, 0, this.colors["msgBodyColor"], true, this.msgAreaLeft,
+						this.msgAreaTop, msgAreaWidth, msgAreaHeight, 1, console.screen_rows,
+						this.userSettings.useEnhReaderScrollbar, msgInfoScrollbarUpdateFn);
+		writeMessage = true; // We want to refresh the message on the screen
+	}
+	else
+	{
+		// There are no header/kludge lines for this message
+		var msgText = pOnlyKludgeLines ? this.text.noKludgeLinesForThisMsgText : this.text.noHdrLinesForThisMsgText;
+		this.DisplayEnhReaderError(replaceAtCodesInStr(msgText), msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+		console.gotoxy(originalCurPos);
+	}
+
+	return writeMessage;
+}
+// For the DDMsgReader class: Shows vote/tally information, for the scrollable interface.
+function DigDistMsgReader_ShowVoteInfo_Scrollable(pMsgHeader, pMsgAreaWidth, pMsgAreaHeight)
+{
+	var msgReaderObj = this;
+	// This is a scrollbar update function for use when viewing the header info/kludge lines.
+	function msgInfoScrollbarUpdateFn(pFractionToLastPage)
+	{
+		var infoSolidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidInfoScrollBlocks * pFractionToLastPage);
+		if (infoSolidBlockStartRow != lastInfoSolidBlockStartRow)
+			msgReaderObj.UpdateEnhancedReaderScrollbar(infoSolidBlockStartRow, lastInfoSolidBlockStartRow, numInfoSolidScrollBlocks);
+		lastInfoSolidBlockStartRow = infoSolidBlockStartRow;
+		console.gotoxy(1, console.screen_rows);
+	}
+
+	var retObj = {
+		hasVoteProps: pMsgHeader.hasOwnProperty("total_votes") && pMsgHeader.hasOwnProperty("upvotes"),
+		writeMessage: false
+	};
+
+	// Save the original cursor position
+	var originalCurPos = console.getxy();
+	if (retObj.hasVoteProps)
+	{
+		var voteInfo = this.GetUpvoteAndDownvoteInfo(pMsgHeader);
+		// Display the vote info and let the user scroll through them
+		// (the console height should be enough, but do this just in case)
+		// Calculate information for the scrollbar for the vote info lines
+		if (this.userSettings.useEnhReaderScrollbar)
+		{
+			var infoFractionShown = this.pMsgAreaHeight / voteInfo.length;
+			if (infoFractionShown > 1)
+				infoFractionShown = 1.0;
+			var numInfoSolidScrollBlocks = Math.floor(this.pMsgAreaHeight * infoFractionShown);
+			if (numInfoSolidScrollBlocks == 0)
+				numInfoSolidScrollBlocks = 1;
+			var numNonSolidInfoScrollBlocks = this.pMsgAreaHeight - numInfoSolidScrollBlocks;
+			var lastInfoSolidBlockStartRow = this.msgAreaTop;
+			// Display the vote info lines and let the user scroll through them
+			this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
+		}
+		else
+		{
+			// TODO
+		}
+		scrollTextLines(voteInfo, 0, this.colors.msgBodyColor, true, this.msgAreaLeft, this.msgAreaTop, pMsgAreaWidth,
+		                pMsgAreaHeight, 1, console.screen_rows, this.userSettings.useEnhReaderScrollbar, msgInfoScrollbarUpdateFn);
+		retObj.writeMessage = true; // We want to refresh the message on the screen
+	}
+	else
+	{
+		this.DisplayEnhReaderError("There is no voting information for this message", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+		console.gotoxy(originalCurPos);
+	}
 	return retObj;
 }
 // Helper method for ReadMessageEnhanced_Scrollable(): Determines if there is a readable message after the
@@ -7119,8 +7307,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 						writeMessage = true;
 					}
 					console.crlf();
-					console.print(message);
-					console.attributes = "N";
+					console.print(message + "\x01n");
 					console.crlf();
 					console.pause();
 				}
@@ -7129,7 +7316,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				break;
 			case this.enhReaderKeys.quickValUser: // Quick-validate the user
 				if (user.is_sysop)
-					quickValidateLocalUser(msgHeader.from, this.scrollingReaderInterface && console.term_supports(USER_ANSI), this.quickUserValSetIndex);
+					quickValidateLocalUser(msgHeader.from, false, this.quickUserValSetIndex);
 				else
 					writeMessage = false;
 				break;
@@ -7206,6 +7393,125 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					writeMessage = true;
 				}
 				break;
+			case this.enhReaderKeys.operatorMenu: // Operator menu
+				if (user.is_sysop)
+				{
+					writeMessage = true;
+					writePromptText = true;
+					console.crlf();
+					console.print("\x01w\x01h== Operator menu ==\x01n");
+					console.crlf();
+					var opRetObj = this.ShowReadModeOpMenuAndGetSelection();
+					if (opRetObj.chosenOption != null)
+					{
+						switch (opRetObj.chosenOption)
+						{
+							case this.readerOpMenuOptValues.validateMsg: // Validate the message
+								if (this.subBoardCode != "mail" && msg_area.sub[this.subBoardCode].is_moderated)
+								{
+									var message = "";
+									if (this.ValidateMsg(this.subBoardCode, msgHeader.number))
+									{
+										message = "\x01n\x01cMessage validation successful";
+										// Refresh the message header in the arrays
+										this.RefreshMsgHdrInArrays(msgHeader.number);
+										// Exit out of the reader and come back to read
+										// the same message again so that the voting results
+										// are re-loaded and displayed on the screen.
+										retObj.newMsgOffset = pOffset;
+										retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
+										continueOn = false;
+									}
+									else
+										message = "\x01n\x01y\x01hMessage validation failed!";
+									console.crlf();
+									console.print(message + "\x01n");
+									console.crlf();
+									console.pause();
+								}
+								break;
+							case this.readerOpMenuOptValues.editAuthorUserAccount: // Edit author's user account
+								console.attributes = "N";
+								console.crlf();
+								console.print("- Edit user " + msgHeader.from);
+								console.crlf();
+								var editObj = editUser(msgHeader.from);
+								if (editObj.errorMsg.length != 0)
+								{
+									console.attributes = "N";
+									console.crlf();
+									console.print("\x01y\x01h" + editObj.errorMsg + "\x01n");
+									console.crlf();
+									console.pause();
+								}
+								console.attributes = "N";
+								break;
+							case this.readerOpMenuOptValues.showHdrLines: // Show header or kludge lines
+							case this.readerOpMenuOptValues.showKludgeLines:
+								console.crlf();
+								// Get an array of the extended header info/kludge lines and then
+								// display them.
+								var extdHdrInfoLines = this.GetExtdMsgHdrInfo(this.subBoardCode, msgHeader.number, (opRetObj.chosenOption == this.readerOpMenuOptValues.showKludgeLines));
+								if (extdHdrInfoLines.length > 0)
+								{
+									console.crlf();
+									for (var infoIter = 0; infoIter < extdHdrInfoLines.length; ++infoIter)
+									{
+										console.print(extdHdrInfoLines[infoIter]);
+										console.crlf();
+									}
+									console.pause();
+								}
+								else
+								{
+									// There are no kludge lines for this message
+									console.print(replaceAtCodesInStr(this.text.noKludgeLinesForThisMsgText));
+									console.crlf();
+									console.pause();
+								}
+								break;
+							case this.readerOpMenuOptValues.showTallyStats: // Show tally stats
+								if (msgHeader.hasOwnProperty("total_votes") && msgHeader.hasOwnProperty("upvotes"))
+								{
+									console.attributes = "N";
+									console.crlf();
+									var voteInfo = this.GetUpvoteAndDownvoteInfo(msgHeader);
+									for (var voteInfoIdx = 0; voteInfoIdx < voteInfo.length; ++voteInfoIdx)
+									{
+										console.print(voteInfo[voteInfoIdx]);
+										console.crlf();
+									}
+								}
+								else
+								{
+									console.print("\x01n\x01h\x01yThere is no voting information for this message\x01n");
+									console.crlf();
+								}
+								console.pause();
+								break;
+							case this.readerOpMenuOptValues.quickValUser: // Quick-validate the user
+								quickValidateLocalUser(msgHeader.from, false, this.quickUserValSetIndex);
+								break;
+							case this.readerOpMenuOptValues.addAuthorToTwitList: // Add author to twit list
+								var promptTxt = format("Add %s to twit list", msgHeader.from);
+								if (!console.noyes(promptTxt))
+								{
+									var statusMsg = "\x01n" + addToTwitList(msgHeader.from) ? "\x01w\x01hSuccessfully updated the twit list" : "\x01y\x01hFailed to update the twit list!"
+									console.print(statusMsg);
+									console.attributes = "N";
+									console.crlf();
+									console.pause();
+								}
+								break;
+						}
+					}
+				}
+				else
+				{
+					writeMessage = false;
+					writePromptText = false;
+				}
+				break;
 			case this.enhReaderKeys.quit: // Quit
 			case KEY_ESC:
 				// Normally, if quitFromReaderGoesToMsgList is enabled, then do that, except
@@ -7230,6 +7536,105 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 	}
 
 	return retObj;
+}
+
+// For the DDMsgReader class: Does the operator mode for reading.
+//
+// Return value: An object with the following properties:
+//               menuTopLeftX: The horizontal component of the upper-left corner of the operator menu (for scrollable mode)
+//               menuTopLeftY: The vertical component of the upper-left corner of the operator menu (for scrollable mode)
+//               menuWidth: The width of the operator menu (for scrollable mode)
+//               menuHeight: The height of the operator menu (for scrollable mode)
+//               chosenOption: The user's chosen option from the menu (one of this.readerOpMenuOptValues), or null
+//                             if the user quit/aborted
+//               lastUserInput: The user's last key input from the menu (empty string if there is none)
+function DigDistMsgReader_ShowReadModeOpMenuAndGetSelection()
+{
+	var retObj = {
+		menuTopLeftX: 1,
+		menuTopLeftY: 1,
+		menuWidth: 0,
+		menuHeight: 0,
+		chosenOption: null,
+		lastUserInput: ""
+	};
+
+	// This is only for the sysop
+	if (!user.is_sysop)
+		return retObj;
+
+	// If using scrollable mode, create the operator menu & display it
+
+	var opMenu = this.CreateReadModeOpMenu();
+	retObj.menuTopLeftX = opMenu.pos.x;
+	retObj.menuTopLeftY = opMenu.pos.y;
+	retObj.menuWidth = opMenu.size.width;
+	retObj.menuHeight = opMenu.size.height;
+
+	//GetVal(pDraw, pSelectedItemIndexes)
+	retObj.chosenOption = opMenu.GetVal();
+	if (typeof(opMenu.lastUserInput) === "string")
+		retObj.lastUserInput = opMenu.lastUserInput;
+	// If the user pressed one of the additional quit keys set up for the
+	// menu, make sure the chosen option is null (it should be anyway)
+	if (retObj.lastUserInput.toUpperCase() == "Q" || retObj.lastUserInput == KEY_ESC) // Quit
+		retObj.chosenOption = null;
+
+	return retObj;
+}
+
+// For the DDMsgReader class: Creates the operator menu for read mode.
+// The menu should be created each time, because the options could be different for
+// each sub-board (i.e., if the sub-board is moderated, then the 'Validate message'
+// option will be available).
+function DigDistMsgReader_CreateReadModeOpMenu()
+{
+	//var itemFormatStr = "\x01n\x01c\x01h%s\x01y";
+	// We'll add the 'Validate message' option if the sub-board isn't email and is moderated
+	var subBoardIsModerated = (this.subBoardCode != "mail" && msg_area.sub[this.subBoardCode].is_moderated);
+
+	var opMenuWidth = 35;
+	var opMenuHeight = 8;
+	if (subBoardIsModerated)
+		++opMenuHeight;
+	var opMenuX = Math.floor(console.screen_columns/2) - Math.floor(opMenuWidth/2);
+	var opMenuY = this.msgAreaTop + 2;
+	var opMenu = new DDLightbarMenu(opMenuX, opMenuY, opMenuWidth, opMenuHeight);	
+	opMenu.borderEnabled = true;
+	opMenu.allowANSI = this.scrollingReaderInterface && console.term_supports(USER_ANSI);
+	opMenu.topBorderText = "\x01n\x01w\x01hOperator menu (reader mode)";
+	if (subBoardIsModerated)
+		opMenu.Add("&A: Validate the message", this.readerOpMenuOptValues.validateMsg);
+	// If the scrollbar/ANSI interface is being used, then add the menu items with hotkey characters.
+	// Otherwise don't use the hotkey characters (the menu will use numbered mode).
+	if (opMenu.allowANSI)
+	{
+		opMenu.Add("&U: Edit author's user account", this.readerOpMenuOptValues.editAuthorUserAccount);
+		opMenu.Add("&H: Show header lines", this.readerOpMenuOptValues.showHdrLines);
+		opMenu.Add("&K: Show kludge lines", this.readerOpMenuOptValues.showKludgeLines);
+		opMenu.Add("&T: Show tally stats", this.readerOpMenuOptValues.showTallyStats);
+		opMenu.Add("&A: Quick validate the user", this.readerOpMenuOptValues.quickValUser);
+		opMenu.Add("&I: Add author to twit list", this.readerOpMenuOptValues.addAuthorToTwitList);
+		// Use cyan for the item color, and cyan with blue background for selected item color
+		opMenu.colors.itemColor = "\x01n\x01c";
+		opMenu.colors.selectedItemColor = "\x01n\x01c\x014";
+	}
+	else
+	{
+		opMenu.Add("Edit author's user account", this.readerOpMenuOptValues.editAuthorUserAccount);
+		opMenu.Add("Show header lines", this.readerOpMenuOptValues.showHdrLines);
+		opMenu.Add("Show kludge lines", this.readerOpMenuOptValues.showKludgeLines);
+		opMenu.Add("Show tally stats", this.readerOpMenuOptValues.showTallyStats);
+		opMenu.Add("Quick validate the user", this.readerOpMenuOptValues.quickValUser);
+		opMenu.Add("Add author to twit list", this.readerOpMenuOptValues.addAuthorToTwitList);
+		// Use green for the item color and high cyan for the item number color
+		opMenu.colors.itemColor = "\x01n\x01g";
+		opMenu.colors.itemNumColor = "\x01n\x01c\x01h";
+	}
+
+	opMenu.AddAdditionalQuitKeys("qQ" + this.enhReaderKeys.operatorMenu);
+
+	return opMenu;
 }
 
 // For the ReadMessageEnhanced methods: This function converts a thread navigation
@@ -8468,8 +8873,6 @@ function DigDistMsgReader_ReadConfigFile()
 			this.msgListUseLightbarListInterface = (settingsObj.listInterfaceStyle.toUpperCase() == "LIGHTBAR");
 		if (typeof(settingsObj["readerInterfaceStyle"]) === "string")
 			this.scrollingReaderInterface = (settingsObj.readerInterfaceStyle.toUpperCase() == "SCROLLABLE");
-		if (typeof(settingsObj["readerInterfaceStyleForANSIMessages"]) === "string")
-			this.useScrollingInterfaceForANSIMessages = (settingsObj.readerInterfaceStyleForANSIMessages.toUpperCase() == "SCROLLABLE");
 		if (typeof(settingsObj["displayBoardInfoInHeader"]) === "boolean")
 			this.displayBoardInfoInHeader = settingsObj.displayBoardInfoInHeader;
 		if (typeof(settingsObj["promptToContinueListingMessages"]) === "boolean")
@@ -10486,6 +10889,7 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 		keyHelpLines.push("\x01h\x01cDEL              \x01g: \x01n\x01cDelete the current message");
 		keyHelpLines.push("\x01h\x01cCtrl-S           \x01g: \x01n\x01cSave the message (to the BBS machine)");
 		keyHelpLines.push("\x01h\x01c" + this.enhReaderKeys.validateMsg + "                \x01g: \x01n\x01cValidate the message");
+		keyHelpLines.push("\x01h\x01cCtrl-O           \x01g: \x01n\x01cShow operator menu");
 		var quickValUserLine = "\x01h\x01cCtrl-Q           \x01g: \x01n\x01cQuick-validate user (must be local)";
 		if (this.quickUserValSetIndex >= 0 && this.quickUserValSetIndex < 10)
 			quickValUserLine += "; Set index: " + this.quickUserValSetIndex;
@@ -14027,7 +14431,7 @@ function DigDistMsgReader_ValidateMsg(pSubBoardCode, pMsgNum)
 		var msgHdr = msgbase.get_msg_header(false, pMsgNum, false);
 		if (msgHdr != null)
 		{
-			if ((msgHdr.attr & MSG_VALIDATED) == 0)
+			if (!Boolean(msgHdr.attr & MSG_VALIDATED))
 			{
 				msgHdr.attr |= MSG_VALIDATED;
 				validationSuccessful = msgbase.put_msg_header(false, msgHdr.number, msgHdr);
@@ -15259,7 +15663,7 @@ function DigDistMsgReader_CreateLightbarIndexedModeMenu(pNumMsgsWidth, pNumNewMs
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
 	// TODO: Include Mm to allow the user to view the message list instead of read it from the indexed menu
-	indexedModeMenu.AddAdditionalQuitKeys();
+	//indexedModeMenu.AddAdditionalQuitKeys();
 	for (var key in this.indexedModeMenuKeys)
 	{
 		if (/[a-zA-Z]/.test(this.indexedModeMenuKeys[key]))
@@ -16909,7 +17313,7 @@ function DigDistMsgReader_RefreshMsgAreaRectangle(pTxtLines, pTopLineIdx, pTopLe
 				//console.print(getAllEditLineAttrsUntilLineIdx(pTxtLines, txtLineIdx, true, txtLineStartIdx));
 				// Get the section of line (and make sure it can fill the needed width), and print it
 				// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
-				var lineText = substrWithAttrCodes(pTxtLines[txtLineIdx].replace(/[\r\n]+/g, ""), txtLineStartIdx, pWidth);
+				var lineText = "\x01n" + substrWithAttrCodes(pTxtLines[txtLineIdx].replace(/[\r\n]+/g, ""), txtLineStartIdx, pWidth);
 				var printableTxtLen = console.strlen(lineText);
 				if (printableTxtLen < pWidth)
 					lineText += format("\x01n%*s", pWidth - printableTxtLen, "");
@@ -17781,6 +18185,20 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 		lastKeypress: "",
 		topLineIdx: pTopLineIdx
 	};
+
+	/*
+	// Temporary
+	if (user.is_sysop)
+	{
+		console.print("\x01n\r\n");
+		console.print("pWidth: " + pWidth + "\r\n");
+		console.print("pHeight: " + pHeight + "\r\n");
+		console.print("pUseScrollbar: " + pUseScrollbar + "\r\n");
+		console.print("pScrollUpdateFn: " + typeof(pScrollUpdateFn) + "\r\n");
+		console.pause();
+	}
+	// End Temporary
+	*/
 
 	// Create an array of color/attribute codes for each line of
 	// text, in case there are any such codes in the text lines,
@@ -22533,7 +22951,12 @@ function quickValidateLocalUser(pUsername, pUseANSI, pQuickValSetIdx)
 			console.print(menuHdrStr);
 		}
 		else
+		{
 			retObj.needWholeScreenRefresh = true;
+			// Use green for the item color and high cyan for the item number color
+			valSetMenu.colors.itemColor = "\x01n\x01g";
+			valSetMenu.colors.itemNumColor = "\x01n\x01c\x01h";
+		}
 		quickValidationValSet = valSetMenu.GetVal();
 		displayedMenu = true;
 		console.attributes = "N";
@@ -22949,6 +23372,69 @@ function getMsgHdr(pSubCode, pByOffset, pNumOrOffset, pExpandFields, pIncludeVot
 		msgbase.close();
 	}
 	return msgHdr;
+}
+
+// Adds to the twit list.
+//
+// Parameters:
+//  pStr: A name/email or netmail address
+//
+// Return value: Boolean - Whether or not this was successful
+function addToTwitList(pStr)
+{
+	if (typeof(pStr) !== "string")
+		return false;
+
+	var wasSuccessful = true;
+	if (!entryExistsInTwitList(pStr))
+	{
+		wasSuccessful = false;
+		var twitFile = new File(system.ctrl_dir + "twitlist.cfg");
+		//if (twitFile.open(twitFile.exists ? "r+" : "w+"))
+		if (twitFile.open("a"))
+		{
+			wasSuccessful = twitFile.writeln(pStr);
+			twitFile.close();
+		}
+	}
+	return wasSuccessful;
+}
+// Returns whether an entry exists in the twit list.
+//
+// Parameters:
+//  pStr: An entry to check in the twit list
+//
+// Return value: Boolean - Whether or not the given string exists in the twit list
+function entryExistsInTwitList(pStr)
+{
+	if (typeof(pStr) !== "string")
+		return false;
+
+	var entryExists = false;
+	var twitFile = new File(system.ctrl_dir + "twitlist.cfg");
+	if (twitFile.open("r"))
+	{
+		while (!twitFile.eof && !entryExists)
+		{
+			//// Read the next line from the config file.
+			var fileLine = twitFile.readln(2048);
+			// fileLine should be a string, but I've seen some cases
+			// where for some reason it isn't.  If it's not a string,
+			// then continue onto the next line.
+			if (typeof(fileLine) != "string")
+				continue;
+			// If the line starts with with a semicolon (the comment
+			// character) or is blank, then skip it.
+			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+				continue;
+
+			// See if this line matches the given string
+			entryExists = (pStr == skipsp(truncsp(fileLine)));
+		}
+
+		twitFile.close();
+	}
+	return entryExists;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
