@@ -281,6 +281,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->delete_packets			= iniGetBool(ini, ROOT_SECTION, "DeletePackets", cfg->delete_packets);
 	cfg->delete_bad_packets		= iniGetBool(ini, ROOT_SECTION, "DeleteBadPackets", cfg->delete_bad_packets);
 	cfg->verbose_bad_packet_names = iniGetBool(ini, ROOT_SECTION, "VerboseBadPacketNames", cfg->verbose_bad_packet_names);
+	cfg->default_packet_type	= iniGetEnum(ini, ROOT_SECTION, "DefaultPacketType", pktTypeStringList, cfg->default_packet_type);
 
 	/* EchoMail options: */
 	cfg->maxbdlsize				= (ulong)iniGetBytes(ini, ROOT_SECTION, "BundleSize", 1, cfg->maxbdlsize);
@@ -579,6 +580,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailRecvAttr"	,cfg->ignore_netmail_recv_attr	,style);
 	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailLocalAttr"	,cfg->ignore_netmail_local_attr	,style);
 	iniSetString(&ini,		ROOT_SECTION, "DefaultRecipient"		,cfg->default_recipient			,style);
+	iniSetEnum(&ini,		ROOT_SECTION, "DefaultPacketType"		,pktTypeStringList, cfg->default_packet_type, style);
 
 	/******************/
 	/* BinkP Settings */

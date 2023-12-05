@@ -231,6 +231,7 @@ typedef struct {
 	bool		binkp_plainTextOnly;
 	bool		used_include;
 	bool		sort_nodelist;
+	enum pkt_type default_packet_type;		/* Default packet type to use for outgoing PKTs */
 } sbbsecho_cfg_t;
 
 extern ini_style_t sbbsecho_ini_style;

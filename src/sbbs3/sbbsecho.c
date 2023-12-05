@@ -918,12 +918,16 @@ bool parse_pkthdr(const fpkthdr_t* hdr, fidoaddr_t* orig_addr, fidoaddr_t* dest_
 
 bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_t* nodecfg)
 {
-	enum pkt_type pkt_type = PKT_TYPE_2;
+	enum pkt_type pkt_type = cfg.default_packet_type;
 	struct tm* tm;
 	time_t now = time(NULL);
 
-	if(nodecfg != NULL)
+	if(nodecfg != NULL) {
 		pkt_type = nodecfg->pkt_type;
+		lprintf(LOG_DEBUG, "New packet (type %s) created for linked-node: %s", pktTypeStringList[pkt_type], smb_faddrtoa(&nodecfg->addr, NULL));
+	}
+	else
+		lprintf(LOG_DEBUG, "New packet (type %s) created for unlinked-node: %s", pktTypeStringList[pkt_type], smb_faddrtoa(&dest, NULL));
 
 	memset(hdr, 0, sizeof(fpkthdr_t));
 
@@ -967,7 +971,7 @@ bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_
 
 	/* 2e and 2+ */
 	if(pkt_type != PKT_TYPE_2_EXT && pkt_type != PKT_TYPE_2_PLUS) {
-		lprintf(LOG_ERR, "UNSUPPORTED PACKET TYPE for %s: %u", smb_faddrtoa(&nodecfg->addr, NULL), pkt_type);
+		lprintf(LOG_ERR, "UNSUPPORTED PACKET TYPE for %s: %u", smb_faddrtoa(&dest, NULL), pkt_type);
 		return false;
 	}
 
@@ -5790,7 +5794,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			continue;
 		}
 
-		lprintf(LOG_INFO, "Importing %s (Type %s, %1.1fKB) from %s to %s"
+		lprintf(LOG_INFO, "Importing %s (type %s, %1.1fKB) from %s to %s"
 			,packet, pktTypeStringList[pkt_type], flength(packet)/1024.0
 			,smb_faddrtoa(&pkt_orig,NULL), smb_faddrtoa(&pkt_dest, str));
 

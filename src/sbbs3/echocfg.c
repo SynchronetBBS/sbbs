@@ -54,6 +54,12 @@ void bail(int code)
 static char* logLevelStringList[]
 	= {"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Informational", "Debugging", NULL};
 
+#define PACKET_TYPE_HELP_TEXT \
+	"`Type-2  ` packets are defined in FTS-0001.16 (Stone Age)\n" \
+	"`Type-2e ` packets are defined in FSC-0039.04 (Sometimes called 2+)\n" \
+	"`Type-2+ ` packets are defined in FSC-0048.02 (4D address support)\n" \
+	"`Type-2.2` packets are defined in FSC-0045.01 (5D address support)\n" \
+
 void global_settings(void)
 {
 	static int global_opt;
@@ -94,6 +100,7 @@ void global_settings(void)
 			,cfg.delete_packets ? "Yes":"No");
 		snprintf(opt[i++],MAX_OPLN-1,"%-30s %s","Incoming Bad Packets"
 			,cfg.delete_bad_packets ? "Deleted" : cfg.verbose_bad_packet_names ? "Renamed *.reason.bad" : "Renamed *.bad");
+		snprintf(opt[i++],MAX_OPLN-1,"%-30s %s", "Default Packet Type", pktTypeStringList[cfg.default_packet_type]);
 
 		sprintf(opt[i++], "%-30s %s", "BSY Mutex File Timeout", duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration)));
 		if(cfg.flo_mailer) {
@@ -120,7 +127,7 @@ void global_settings(void)
 			"    output, set this to `Debugging`. If you want less verbose logging,\n"
 			"    set to higher-severity levels to reduce the number of log messages.\n"
 			"\n"
-			"`Log Timestmap Format` defines the format of the date/time-stamps added\n"
+			"`Log Timestamp Format` defines the format of the date/time-stamps added\n"
 			"    along with each log message to the log file (e.g. sbbsecho.log).\n"
 			"    The timestamp format is defined using standard C `strftime` notation.\n"
 			"    The default format is: `" DEFAULT_LOG_TIME_FMT "`\n"
@@ -171,6 +178,9 @@ void global_settings(void)
 			"\n"
 			"`Incoming Bad Packets` can be `Deleted` or `Renamed` (*.bad) and optionally\n"
 			"    include the `reason` in the renamed packet filename (the default).\n"
+			"\n"
+			"`Default Packet Type` is the type of packets that SBBSecho will generate\n"
+			"    by default (i.e. for newly created and un-linked destination nodes).\n"
 			"\n"
 			"`BSY Mutex File Timeout` determines the maximum age of an existing\n"
 			"    mutex file (`*.bsy`) before SBBSecho will act as though the mutex\n"
@@ -343,34 +353,53 @@ void global_settings(void)
 				break;
 			}
 			case 14:
+			{
+				uifc.helpbuf=
+					"~ Default Packet Type ~\n\n"
+					"This is the packet header type that will be used in mail packets\n"
+					"by default (for newly created and un-linked nodes).\n"
+					"\n"
+					PACKET_TYPE_HELP_TEXT
+					"\n"
+					"The suggested default packet type is `Type-2+`.\n"
+				;
+				int k = cfg.default_packet_type;
+				k = uifc.list(WIN_RHT|WIN_SAV,0,0,0,&k,0, "Packet Type", pktTypeStringList);
+				if(k < 0)
+					break;
+				cfg.default_packet_type=k;
+				uifc.changes=TRUE;
+				break;
+			}
+			case 15:
 				duration_to_vstr(cfg.bsy_timeout, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "BSY Mutex File Timeout", duration, 10, K_EDIT) > 0)
 					cfg.bsy_timeout = (ulong)parse_duration(duration);
 				break;
 
-			case 15:
+			case 16:
 				duration_to_vstr(cfg.bso_lock_delay, duration, sizeof(duration));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Delay Between BSO Lock Attempts", duration, 10, K_EDIT) > 0)
 					cfg.bso_lock_delay = (ulong)parse_duration(duration);
 				break;
 
-			case 16:
+			case 17:
 				sprintf(str, "%lu", cfg.bso_lock_attempts);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum BSO Lock Attempts", str, 5, K_EDIT|K_NUMBER) > 0)
 					cfg.bso_lock_attempts = atoi(str);
 				break;
 
-			case 17:
+			case 18:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Capabilities (BinkIT)", cfg.binkp_caps, sizeof(cfg.binkp_caps)-1, K_EDIT);
 				break;
 
-			case 18:
+			case 19:
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"BinkP Sysop Name (BinkIT)", cfg.binkp_sysop, sizeof(cfg.binkp_sysop)-1, K_EDIT);
 				break;
 
-			case 19:
+			case 20:
 			{
 				int k = !cfg.binkp_plainAuthOnly;
 				strcpy(opt[0], "Plain-Password Only");
@@ -388,7 +417,7 @@ void global_settings(void)
 				break;
 			}
 
-			case 20:
+			case 21:
 			{
 				if(cfg.binkp_plainAuthOnly) {
 					uifc.msg("CRAM-MD5 authentication/encryption has been disabled globally");
@@ -425,6 +454,7 @@ static bool new_node(unsigned new_nodenum)
 	memset(&cfg.nodecfg[new_nodenum], 0, sizeof(nodecfg_t));
 	cfg.nodecfg[new_nodenum].binkp_allowPlainText = true;
 	cfg.nodecfg[new_nodenum].binkp_port = IPPORT_BINKP;
+	cfg.nodecfg[new_nodenum].pkt_type = cfg.default_packet_type;
 	return true;
 }
 
@@ -1235,10 +1265,7 @@ int main(int argc, char **argv)
 	"This is the packet header type that will be used in mail packets\n"
 	"created for this node.  SBBSecho defaults to creating `Type-2+` packets.\n"
 	"\n"
-	"`Type-2  ` packets are defined in FTS-0001.16 (Stone Age)\n"
-	"`Type-2e ` packets are defined in FSC-0039.04 (Sometimes called 2+)\n"
-	"`Type-2+ ` packets are defined in FSC-0048.02 (4D address support)\n"
-	"`Type-2.2` packets are defined in FSC-0045.01 (5D address support)\n"
+	PACKET_TYPE_HELP_TEXT
 	;
 								j=cfg.nodecfg[i].pkt_type;
 								k=uifc.list(WIN_RHT|WIN_SAV,0,0,0,&j,0,"Packet Type"
