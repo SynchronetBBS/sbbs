@@ -120,7 +120,7 @@ function capture()
             lines.length = 0;
             curline="";
         } else if(char=='\n') {
-            if(curline.length && curline.charAt(curline.length-1)=='\r')
+            while(curline.length && curline.charCodeAt(curline.length-1) < ascii(' '))
                 curline = curline.substring(0,curline.length-1);
             lines.push(curline);
             log(LOG_DEBUG, format("Captured %u lines (last: %u bytes)", lines.length, curline.length));
