@@ -765,7 +765,7 @@ function verify_bbs(bbs)
 				bbs.preview = lib.encode_preview(result.preview);
                 return true;
             }
-            log(LOG_DEBUG,"Non-Synchronet identification: " + result.hello[0]);
+            log(LOG_DEBUG,"Non-Synchronet identification: " + JSON.stringify(result.hello));
             failure.result = "non-Synchronet";
             bbs.entry.autoverify.last_failure = failure;
         }
