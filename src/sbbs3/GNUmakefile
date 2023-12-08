@@ -11,10 +11,6 @@
 # Optional build targets: dlls, utils, mono, all (default)				#
 #########################################################################
 
-ifdef SYMLINK
-$(error SYMLINK was defined and unexpected. You might mean the 'symlinks' target instead)
-endif
-
 PWD	:=	$(shell /bin/pwd)
 SRC_ROOT	?=	${PWD}/..
 include $(SRC_ROOT)/build/Common.gmake
