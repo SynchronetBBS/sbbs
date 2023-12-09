@@ -1109,11 +1109,6 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	xtrn_mode = mode;
 	lprintf(LOG_DEBUG, "Executing external: %s", cmdline);
 
-	if(startup_dir!=NULL && startup_dir[0] && !isdir(startup_dir)) {
-		errormsg(WHERE, ERR_CHK, startup_dir, 0);
-		return -1;
-	}
-
 	if(startup_dir==NULL)
 		startup_dir=nulstr;
 
@@ -1129,12 +1124,17 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
     SAFECOPY(fname,getfname(str));
 
 	snprintf(fullpath, sizeof fullpath, "%s%s",startup_dir,fname);
-	if(startup_dir!=NULL && cmdline[0]!='/' && cmdline[0]!='.' && fexist(fullpath))
+	if(cmdline[0]!='/' && cmdline[0]!='.' && fexist(fullpath))
 		snprintf(fullcmdline, sizeof fullcmdline, "%s%s",startup_dir,cmdline);
 	else
 		SAFECOPY(fullcmdline,cmdline);
 
  	if(native) { // Native (not MS-DOS) external
+
+		if(startup_dir[0] && !isdir(startup_dir)) {
+			errormsg(WHERE, ERR_CHK, startup_dir, 0);
+			return -1;
+		}
 
 		// Current environment passed to child process
 		snprintf(dszlog, sizeof dszlog, "%sPROTOCOL.LOG",cfg.node_dir);
@@ -1182,7 +1182,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			errormsg(WHERE,ERR_CREATE,str,0);
 			return(-1);
 		}
-		if(startup_dir!=NULL && startup_dir[0])
+		if(startup_dir[0])
 			fprintf(doscmdrc,"assign C: %s\n",startup_dir);
 		else
 			fprintf(doscmdrc,"assign C: .\n");
@@ -1361,7 +1361,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		fprintf(dosemubatfp,"SET PCBDIR=\\\r\n");
 
 		char gamedir[MAX_PATH+1]{};
-		if(startup_dir!=NULL && startup_dir[0]) {
+		if(startup_dir[0]) {
 			SAFECOPY(str, startup_dir);
 			*lastchar(str) = 0;
 			SAFECOPY(gamedir, getfname(str));
@@ -1641,7 +1641,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			chdir(cfg.node_dir);
 		else
 #endif
-		if(startup_dir!=NULL && startup_dir[0])
+		if(startup_dir[0])
 			if(chdir(startup_dir)!=0) {
 				errormsg(WHERE,ERR_CHDIR,startup_dir,0);
 				return(-1);
