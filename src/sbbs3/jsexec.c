@@ -844,14 +844,6 @@ static BOOL js_init(char** env)
 	memset(&startup,0,sizeof(startup));
 	SAFECOPY(startup.load_path, load_path_list);
 
-	fprintf(statfp,"%s\n",(char *)JS_GetImplementationVersion());
-
-	fprintf(statfp,"JavaScript: Creating runtime: %lu bytes\n"
-		,js_max_bytes);
-
-	if((js_runtime = jsrt_GetNew(js_max_bytes, 5000, __FILE__, __LINE__))==NULL)
-		return(FALSE);
-
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(FALSE);
 	JS_SetOptions(js_cx, js_opts);
@@ -1520,6 +1512,15 @@ int main(int argc, char **argv, char** env)
 
 	setup_debugger();
 
+	fprintf(statfp,"%s\n",(char *)JS_GetImplementationVersion());
+
+	fprintf(statfp,"JavaScript: Creating runtime: %lu bytes\n"
+		,js_max_bytes);
+
+	if((js_runtime = jsrt_GetNew(js_max_bytes, 5000, __FILE__, __LINE__)) == NULL) {
+		lprintf(LOG_ERR,"!JavaScript runtime creation failure");
+		return do_bail(1);
+	}
 	do {
 
 		if(exec_count++)
@@ -1544,10 +1545,11 @@ int main(int argc, char **argv, char** env)
 		fprintf(statfp,"\n");
 		fprintf(statfp,"JavaScript: Destroying context\n");
 		JS_DestroyContext(js_cx);
-		fprintf(statfp,"JavaScript: Destroying runtime\n");
-		jsrt_Release(js_runtime);
 
 	} while((recycled || loop) && !terminated);
+
+	fprintf(statfp,"JavaScript: Destroying runtime\n");
+	jsrt_Release(js_runtime);
 
 	iniFreeStringList(ini);
 	return(do_bail(result));
