@@ -944,6 +944,9 @@ int curs_getch(void)
 			}
 		}
 		switch(ch) {
+			case 0xe0:
+				curs_nextgetch = 0xe0;	/* Literal 0xe0 */
+				break;
 			case KEY_DOWN:            /* Down-arrow */
 				curs_nextgetch=0x50;
 				ch=0;

@@ -131,15 +131,17 @@ int spyon(char *sockname)  {
 			key=getch();
 			/* Check for control keys */
 			switch(key)  {
-				case 0:		/* Extended keys */
-				case 0xe0:
-					getch();
-					break;
 				case 3:	/* CTRL-C */
 					close(spy_sock);
 					spy_sock=INVALID_SOCKET;
 					retval=SPY_CLOSED;
 					break;
+				case 0:		/* Extended keys */
+				case 0xe0:
+					key = getch();
+					if (key != 0xe0)
+						break;
+					// Fall-through
 				default:
 					if(write(spy_sock,&key,1) != 1)
 						perror("writing to spy socket");

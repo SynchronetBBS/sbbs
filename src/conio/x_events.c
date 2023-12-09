@@ -1912,6 +1912,8 @@ x11_event(XEvent *ev)
 									ch = cpchar_from_unicode_cpoint(getcodepage(), wbuf[i], 0);
 								if (ch) {
 									// Bow to GCC
+									if (ch == 0xe0) // Double-up 0xe0
+										write(key_pipe[1], &ch, 1);
 									if (write(key_pipe[1], &ch, 1) == EXIT_SUCCESS)
 										return;
 									else
@@ -2127,6 +2129,8 @@ x11_event(XEvent *ev)
 							if (key < 128)
 								key = cpchar_from_unicode_cpoint(getcodepage(), key, key);
 							// Bow to GCC
+							if (key == 0xe0)
+								key = CIO_KEY_LITERAL_E0;
 							if (write(key_pipe[1], &key, (scan & 0xff) ? 1 : 2) != EXIT_SUCCESS)
 								return;
 							else

@@ -182,7 +182,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 					close(in);
 					in=-1;
 				}
-				if(ch==0 || ch=='\xe0') {		/* Special keys... eat 'em. */
+				if(ch==0 || ch==0xe0) {		/* Special keys... eat 'em. */
 					getch();
 				}
 			}
@@ -225,17 +225,23 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 		if(kbhit()) {
 			ch=getch();
 			switch(ch)  {
-				case 0:			/* Special Chars */
-				case '\xe0':
-					ch=0;
-					getch();
-					break;
-
 				case ESC:
 				case 3:
 					close(in);
 					in=-1;
 					continue;
+
+				case 0:			/* Special Chars */
+					ch=0;
+					getch();
+					break;
+				case 0xe0:
+					ch = getch();
+					if (ch != 0xe0) {
+						ch = 0;
+						break;
+					}
+					// Fall-through
 
 				default:
 					if(lseek(out,0,SEEK_CUR)>=PCHAT_LEN)

@@ -50,8 +50,11 @@ viewmode(void)
 			}
 		memcpy(graph_mem, &bitmap, 64000);
 		ch = getch();
-		if(ch==0 || ch==0xe0)
+		if(ch==0 || ch==0xe0) {
 			ch|=getch()<<8;
+			if (ch == CIO_KEY_LITERAL_E0)
+				ch = 0xe0;
+		}
 		switch (ch) {
 		case KEY_UP:
 			if (b > 0)

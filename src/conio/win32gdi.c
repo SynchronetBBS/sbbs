@@ -144,6 +144,8 @@ gdi_add_key(uint16_t key)
 	DWORD remain;
 	HANDLE lwch;
 
+	if (key == 0xe0)
+		key = CIO_KEY_LITERAL_E0;
 	if (key < 256) {
 		buf[0] = key;
 		remain = 1;

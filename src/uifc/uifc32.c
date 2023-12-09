@@ -196,8 +196,11 @@ int inkey(void)
 	int c;
 
 	c=getch();
-	if(!c || c==0xe0)
+	if(!c || c==0xe0) {
 		c|=(getch()<<8);
+		if (c == CIO_KEY_LITERAL_E0)
+			c = 0xe0;
+	}
 	return(c);
 }
 
@@ -390,8 +393,11 @@ void docopy(void)
 	sbufsize=screen->text_info.screenwidth * screen->text_info.screenheight * sizeof(screen->vmem[0]);
 	while(1) {
 		key=getch();
-		if(key==0 || key==0xe0)
+		if(key==0 || key==0xe0) {
 			key|=getch()<<8;
+			if (key == CIO_KEY_LITERAL_E0)
+				key = 0xe0;
+		}
 		switch(key) {
 			case CIO_KEY_MOUSE:
 				getmouse(&mevent);

@@ -31,8 +31,11 @@ inputfield(char *Str, int length, int x1, int y)
 	do {
 		gotoxy(x1 + pos + 1, y + 1);
 		ch = getch();
-		if (ch == 0 || ch == 0xe0)
+		if (ch == 0 || ch == 0xe0) {
 			ch |= getch() << 8;
+			if (ch == CIO_KEY_LITERAL_E0)
+				ch = 0xe0;
+		}
 		switch (ch) {
 		case 13:
 			break;
@@ -164,8 +167,11 @@ ShowFont(int number)
 		}
 		ShowCharacter(a + 33);
 		ch = getch();
-		if (ch == 0 || ch == 0xe0)
+		if (ch == 0 || ch == 0xe0) {
 			ch |= getch() << 8;
+			if (ch == CIO_KEY_LITERAL_E0)
+				ch = 0xe0;
+		}
 		switch (ch) {
 		case CIO_KEY_UP:
 			if ((a - 47) >= 0)
@@ -251,8 +257,11 @@ main(int argc, char **argv)
 				cprintf("kb");
 			}
 		ch = getch();
-		if (ch == 0 || ch == 0xe0)
+		if (ch == 0 || ch == 0xe0) {
 			ch |= getch() << 8;
+			if (ch == CIO_KEY_LITERAL_E0)
+				ch = 0xe0;
+		}
 		switch (ch) {
 		case 'e':
 		case 'E':

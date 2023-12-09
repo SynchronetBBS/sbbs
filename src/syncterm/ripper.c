@@ -9813,8 +9813,11 @@ do_popup(const char * const str)
 	while (ret == -1) {
 		ciomouse_addevent(CIOLIB_MOUSE_MOVE);
 		ch = getch();
-		if ((ch == 0) || (ch == 0xe0))
+		if ((ch == 0) || (ch == 0xe0)) {
 			ch |= getch() << 8;
+			if (ch == CIO_KEY_LITERAL_E0)
+				ch = 0xe0;
+		}
 		switch (ch) {
 			case CIO_KEY_MOUSE:
 				getmouse(&mevent);
@@ -16209,15 +16212,21 @@ rip_getch(void)
 	}
 	if ((rip.enabled == false) || rip_suspended) {
 		ch = getch();
-		if ((ch == 0) || (ch == 0xe0))
+		if ((ch == 0) || (ch == 0xe0)) {
 			ch |= getch() << 8;
+			if (ch == CIO_KEY_LITERAL_E0)
+				ch = 0xe0;
+		}
 		return ch;
 	}
 
 	gotoxy(wherex(), wherey());
 	ch = getch();
-	if ((ch == 0) || (ch == 0xe0))
+	if ((ch == 0) || (ch == 0xe0)) {
 		ch |= getch() << 8;
+		if (ch == CIO_KEY_LITERAL_E0)
+			ch = 0xe0;
+	}
 
 	shadow_palette();
 	if (ch == CIO_KEY_MOUSE) {
@@ -16359,8 +16368,11 @@ rip_getch(void)
 	int                ch;
 
 	ch = getch();
-	if ((ch == 0) || (ch == 0xe0))
+	if ((ch == 0) || (ch == 0xe0)) {
 		ch |= getch() << 8;
+		if (ch == CIO_KEY_LITERAL_E0)
+			ch = 0xe0;
+	}
 	return ch;
 #endif
 }

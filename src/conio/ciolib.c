@@ -591,9 +591,15 @@ CIOLIBEXPORT int ciolib_getche(void)
 				ciolib_putch(ch);
 				return(ch);
 			}
+			ch |= (ciolib_getch() << 8);
 			/* Eat extended chars - except ESC which is an abort */
-			if(ciolib_getch()==1)
-				return(EOF);
+			switch(ch) {
+				case CIO_KEY_LITERAL_E0:
+					ciolib_putch(ch);
+					return(ch);
+				case CIO_KEY_ABORTED:
+					return EOF;
+			}
 		}
 	}
 }
@@ -608,6 +614,8 @@ CIOLIBEXPORT int ciolib_ungetch(int ch)
 
 	if(ungotch)
 		return(EOF);
+	if (ch == 0xe0)
+		ch = CIO_KEY_LITERAL_E0;
 	if(cio_api.ungetch)
 		return(cio_api.ungetch(ch));
 	ungotch=ch;
@@ -675,12 +683,14 @@ CIOLIBEXPORT char * ciolib_cgets(char *str)
 
 	maxlen=*(unsigned char *)str;
 	while((ch=ciolib_getch())!='\n' && ch !='\r') {
+		if (ch == 0 || ch == 0xe0) {
+			ch |= (ciolib_getch() << 8);
+			if (ch == CIO_KEY_LITERAL_E0)
+				ch = 0xe0;
+		}
 		switch(ch) {
-			case 0:		/* Skip extended keys */
-			case 0xe0:	/* Skip extended keys */
-				if(ciolib_getche()==1)
-					goto early_return;
-				break;
+			case CIO_KEY_ABORTED:
+				goto early_return;
 			case '\b':
 				if(len==0) {
 					ciolib_putch(7);
@@ -690,14 +700,16 @@ CIOLIBEXPORT char * ciolib_cgets(char *str)
 				len--;
 				break;
 			default:
-				ciolib_putch(ch);
-				str[(len++)+2]=ch;
-				if(len==maxlen) {
-					str[len+2]=0;
-					*((unsigned char *)(str+1))=(unsigned char)len;
-					ciolib_putch('\r');
-					ciolib_putch('\n');
-					return(&str[2]);
+				if (ch <= 0xff) {
+					ciolib_putch(ch);
+					str[(len++)+2]=ch;
+					if(len==maxlen) {
+						str[len+2]=0;
+						*((unsigned char *)(str+1))=(unsigned char)len;
+						ciolib_putch('\r');
+						ciolib_putch('\n');
+						return(&str[2]);
+					}
 				}
 				break;
 		}
@@ -775,12 +787,14 @@ CIOLIBEXPORT char * ciolib_getpass(const char *prompt)
 
 	ciolib_cputs(prompt);
 	while((ch=ciolib_getch())!='\n') {
+		if (ch == 0 || ch == 0xe0) {
+			ch |= (ciolib_getch() << 8);
+			if (ch == CIO_KEY_LITERAL_E0)
+				ch = 0xe0;
+		}
 		switch(ch) {
-			case 0:		/* Skip extended keys */
-			case 0xe0:	/* Skip extended keys */
-				if(ciolib_getch()==1)
-					goto early_return;
-				break;
+			case CIO_KEY_ABORTED:
+				goto early_return;
 			case '\r':	/* Skip \r (ToDo: Should this be treeated as a \n? */
 				break;
 			case '\b':
@@ -791,10 +805,12 @@ CIOLIBEXPORT char * ciolib_getpass(const char *prompt)
 				len--;
 				break;
 			default:
-				if(len==8)
-					ciolib_putch(7);
-				else
-					pass[len++]=ch;
+				if (ch <= 0xff) {
+					if(len==8)
+						ciolib_putch(7);
+					else
+						pass[len++]=ch;
+				}
 				break;
 		}
 	}

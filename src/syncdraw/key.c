@@ -6,8 +6,11 @@ newgetch(void)
 	int             ch;
 
 	ch = getch();
-	if(ch==0 || ch==0xe0)
+	if(ch==0 || ch==0xe0) {
 		ch|=getch()<<8;
+		if (ch == CIO_KEY_LITERAL_E0)
+			ch = 0xe0;
+	}
 	/* Input translation */
 	switch(ch) {
 	case 10:

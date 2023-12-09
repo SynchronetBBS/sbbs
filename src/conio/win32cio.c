@@ -301,6 +301,8 @@ static int win32_keyboardio(int isgetch)
 					else {
 						lastch=(BYTE)input.Event.KeyEvent.uChar.AsciiChar;
 					}
+					if (lastch == 0xe0)
+						lastch = CIO_KEY_LITERAL_E0;
 				} else if(input.Event.KeyEvent.wVirtualKeyCode == VK_MENU)
 					lastch=(BYTE)input.Event.KeyEvent.uChar.AsciiChar;
 

@@ -389,8 +389,11 @@ drawline(void)
 			gotoxy( CursorX+1,CursorY + 1+1);
 		do {
 			ch = getch();
-			if(ch==0 || ch==0xe0)
+			if(ch==0 || ch==0xe0) {
 				ch|=getch()<<8;
+				if (ch == CIO_KEY_LITERAL_E0)
+					ch = 0xe0;
+			}
 		}
 		while (ch != CIO_KEY_DOWN && ch != CIO_KEY_UP && ch != CIO_KEY_LEFT && ch != CIO_KEY_RIGHT && ch != 27 && ch != CIO_KEY_MOUSE);
 		CursorHandling(ch);

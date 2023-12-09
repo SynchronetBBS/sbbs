@@ -685,6 +685,8 @@ static void setup_surfaces(struct video_stats *vs)
 /* Called from event thread only */
 static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 {
+	if (keyval == 0xe0)
+		keyval = CIO_KEY_LITERAL_E0;
 	if(keyval==0xa600 && vs != NULL) {
 		fullscreen=!fullscreen;
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
