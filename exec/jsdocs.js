@@ -294,8 +294,8 @@ else
 f.writeln("<li style='display:list-item'>Optional method arguments are specified in <tt>[brackets]</tt> in the 'Usage' column.");
 f.writeln("<li style='display:list-item'>method argument <i>types</i> (e.g. bool, string, number, object), " +
 	"when significant, are specified in <tt><i>italics</i></tt> in the 'Usage' column.");
-f.writeln("<li style='display:list-item'>Methods documented as returning 'void' will always return <tt>undefined</tt>");
-f.writeln("<li style='display:list-item'>Methods documented as returning 'undefined' may return multiple different value types");
+f.writeln("<li style='display:list-item'>Methods documented as returning 'void' will always return <tt>undefined</tt>.");
+f.writeln("<li style='display:list-item'>Methods documented as returning 'undefined' may return one of multiple value types.");
 f.writeln("</ul>");
 
 f.writeln("<ol type=square>");
@@ -344,6 +344,7 @@ if(js.global.ListeningSocket != undefined) {
 	sock.close();
 	if(sock != undefined)		document_object("ListeningSocket"	,sock, "class");
 }
+if(js.global.MQTT !== undefined) document_object("MQTT", new MQTT, "class");
 if(js.global.COM != undefined) {
 	var com;
 	if(system.platform=="Win32")
@@ -372,7 +373,6 @@ if(js.global.CryptCert != undefined) {
 		document_object("CryptCert",ccert, "class");
 	}
 }
-if(js.global.MQTT !== undefined) document_object("MQTT", new MQTT, "class");
 f.writeln("</ol>");
 
 f.write(body);
