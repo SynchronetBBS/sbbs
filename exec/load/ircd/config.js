@@ -334,6 +334,117 @@ function Read_Config_File() {
 	}
 }
 
+function Write_Config_File(fn) {
+	var f = new File(fn);
+	var c, i;
+
+	if (!f.open('w'))
+		return false;
+
+	/* [Info] */
+	f.iniSetValue("Info", "Servername", ServerName);
+	f.iniSetValue("Info", "Description", ServerDesc);
+	f.iniSetValue("Info", "Admin1", Admin1);
+	f.iniSetValue("Info", "Admin2", Admin2);
+	f.iniSetValue("Info", "Admin3", Admin3);
+
+	/* [Port] */
+	f.iniSetValue("Port:" + Default_Port, "Default", "true");
+	for (i in PLines) {
+		f.iniSetValue("Port:" + PLines[i], "Default", "false");
+	}
+
+	/* [Class] */
+	for (i in YLines) {
+		if (i == 0)
+			continue;
+		if (YLines[i].comment)
+			f.iniSetValue("Class:" + i, "Comment", YLines[i].comment);
+		f.iniSetValue("Class:" + i, "PingFrequency", YLines[i].pingfreq);
+		f.iniSetValue("Class:" + i, "ConnectFrequency", YLines[i].connfreq);
+		f.iniSetValue("Class:" + i, "Maximum", YLines[i].maxlinks);
+		f.iniSetValue("Class:" + i, "SendQ", YLines[i].sendq);
+	}
+
+	/* [Allow] */
+	c = 0;
+	for (i in ILines) {
+		c++;
+		f.iniSetValue("Allow:" + c, "Mask", ILines[i].hostmask);
+		f.iniSetValue("Allow:" + c, "Class", ILines[i].ircclass);
+	}
+
+	/* [Operator] */
+	c = 0;
+	for (i in OLines) {
+		c++;
+		f.iniSetValue("Operator:" + c, "Nick", OLines[i].nick);
+		f.iniSetValue("Operator:" + c, "Mask", OLines[i].hostmask);
+		f.iniSetValue("Operator:" + c, "Password", OLines[i].password);
+		f.iniSetValue("Operator:" + c, "Flags", OLines[i].flags);
+		f.iniSetValue("Operator:" + c, "Class", OLines[i].ircclass);
+	}
+
+	/* [Services] */
+	c = 0;
+	for (i in ULines) {
+		c++;
+		f.iniSetValue("Services:" + c, "Servername", ULines[i]);
+	}
+
+	/* [Ban] */
+	c = 0;
+	for (i in KLines) {
+		if (KLines[i].type != "K")
+			continue;
+		c++;
+		f.iniSetValue("Ban:" + c, "Hostmask", KLines[i].hostmask);
+		f.iniSetValue("Ban:" + c, "Reason", KLines[i].reason);
+	}
+
+	/* [Server] */
+	c = 0;
+	for (i in CLines) {
+		c++;
+		f.iniSetValue("Server:" + c, "Servername", CLines[i].servername);
+		f.iniSetValue("Server:" + c, "Hostname", CLines[i].host);
+		f.iniSetValue("Server:" + c, "Port", CLines[i].port);
+		f.iniSetValue("Server:" + c, "InboundPassword", NLines[i].password);
+		f.iniSetValue("Server:" + c, "OutboundPassword", CLines[i].password);
+		f.iniSetValue("Server:" + c, "Class", CLines[i].ircclass);
+		if (NLines[i].flags)
+			f.iniSetValue("Server:" + c, "Flags", NLines[i].flags);
+		f.iniSetValue(
+			"Server:" + c,
+			"Hub",
+			HLine_Exists(CLines[i].servername) ? true : false
+		);
+	}
+
+	/* [Restrict] */
+	c = 0;
+	for (i in QLines) {
+		c++;
+		f.iniSetValue("Restrict:" + c, "Mask", QLines[i].nick);
+		f.iniSetValue("Restrict:" + c, "Reason", QLines[i].reason);
+	}
+
+	/* [RBL] */
+	c = 0;
+	for (i in RBL) {
+		c++;
+		f.iniSetValue("RBL:" + c, "Hostname", RBL[i].hostname);
+		if (RBL[i].good)
+			f.iniSetValue("RBL:" + c, "GoodResponses", RBL[i].good.join(","));
+		if (RBL[i].bad)
+			f.iniSetValue("RBL:" + c, "BadResponses", RBL[i].bad.join(","));
+	}
+
+	f.close();
+
+	return true;
+}
+
 function HLine_Exists(str) {
 	var i;
 
