@@ -1,5 +1,5 @@
                                    SlyVote
-                                 Version 1.14
+                                 Version 1.15
                            Release date: 2023-09-20
 
                                      by
@@ -98,15 +98,13 @@ SlyVote is comprised of the following files:
 
 2. slyvote.cfg            The SlyVote configuration file
 
-3. dd_lightbar_menu.js    A JavaScript lightbar menu class used by SlyVote.
-                          You do not need to edit or use this file directly.
-                          You can keep this file in the SlyVote directory or
-                          copy it to your sbbs/exec/load directory if it's
-                          not already there.  This file has been added to
-                          Synchronet's CVS source code repository in
-                          sbbs/exec/load, so it may already be part of your
-                          Synchronet setup if you have updated your JavaScript
-                          files.
+3. slyv_cfg.js            A menu-driven configuration program for SlyVote. As an
+                          alternative to editing slyvote.cfg, this configurator
+                          can be run at the command prompt in the SlyVote
+                          directory with the following command:
+                          jsexec slyv_cfg
+                          Alternately:
+                          jsexec slyv_cfg.js
 
 slyvote.cfg is a plain text file, so it can be edited using any text editor.
 

@@ -186,6 +186,12 @@
  *                              different sub-board. Refactored ReadConfigFile().
  * 2023-09-20 Eric Oulashin     Version 1.14
  *                              Fixed poll voting for single-answer polls
+ * 2023-12-10 Eric Oulashin     Version 1.15
+ *                              Code refactor; no difference in functionality.
+ *                              Now uses js.exec_dir instead of the hack to find out
+ *                              what directory the script is running in.
+ *                              Now uses user.is_sysop rather than storing a global
+ *                              variable with an ARS check for "SYSOP".
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -257,16 +263,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.14";
-var SLYVOTE_DATE = "2023-09-20";
-
-// Determine the script's startup directory.
-// This code is a trick that was created by Deuce, suggested by Rob Swindell
-// as a way to detect which directory the script was executed in.  I've
-// shortened the code a little.
-var gStartupPath = '.';
-try { throw dig.dist(dist); } catch(e) { gStartupPath = e.fileName; }
-gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
+var SLYVOTE_VERSION = "1.15";
+var SLYVOTE_DATE = "2023-12-09";
 
 // Characters for display
 // Box-drawing/border characters: Single-line
@@ -361,8 +359,6 @@ var ERROR_PAUSE_WAIT_MS = 1500;
 var gBottomBorderRow = 23;
 var gMessageRow = 3;
 
-var gUserIsSysop = user.compare_ars("SYSOP");
-
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
 var DOWN_ARROW = ascii(25);
@@ -388,10 +384,10 @@ var gReaderKeys = {
 	goToLast: "L",
 	vote: "V",
 	close: "C",
+	validateMsg: "A", // Only for the sysop
 	quit: "Q"
 };
-if (gUserIsSysop)
-	gReaderKeys.validateMsg = "A";
+
 
 var gSlyVoteCfg = ReadConfigFile();
 if (gSlyVoteCfg.cfgReadError.length > 0)
@@ -1223,7 +1219,7 @@ function ReadConfigFile()
 	if (!file_exists(cfgFilename))
 		cfgFilename = file_cfgname(system.ctrl_dir, filename);
 	if (!file_exists(cfgFilename))
-		cfgFilename = file_cfgname(gStartupPath, filename);
+		cfgFilename = file_cfgname(js.exec_dir, filename);
 	var cfgFile = new File(cfgFilename);
 	if (cfgFile.open("r"))
 	{
@@ -1676,7 +1672,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 	// sysop now know to validate it.
 	if (pSubBoardCode != "mail")
 	{
-		if (gUserIsSysop && msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0))
+		if (user.is_sysop && msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0))
 		{
 			var validateNotice = "\x01n\x01h\x01yThis is an unvalidated message in a moderated area.  Press "
 							   + gReaderKeys.validateMsg + " to validate it.\r\n\x01g";
@@ -2610,7 +2606,7 @@ function ViewVoteResults(pSubBoardCode)
 			}
 			else if (scrollRetObj.lastKeypress == gReaderKeys.validateMsg)
 			{
-				if (gUserIsSysop && msg_area.sub[pSubBoardCode].is_moderated)
+				if (user.is_sysop && msg_area.sub[pSubBoardCode].is_moderated)
 				{
 					var validated = ValidateMsg(msgbase, pSubBoardCode, pollMsgHdrs[currentMsgIdx].number);
 					console.gotoxy(1, console.screen_rows-2);
@@ -3583,7 +3579,7 @@ function IsReadableMsgHdr(pMsgHdr, pSubBoardCode)
 		return false;
 
 	// Let the sysop see unvalidated messages and private messages but not other users.
-	if (!gUserIsSysop)
+	if (!user.is_sysop)
 	{
 		if ((msg_area.sub[pSubBoardCode].is_moderated && ((pMsgHdr.attr & MSG_VALIDATED) == 0)) ||
 		    (((pMsgHdr.attr & MSG_PRIVATE) == MSG_PRIVATE) && !userHandleAliasNameMatch(pMsgHdr.to)))
@@ -3711,7 +3707,7 @@ function DrawVoteColumns(pTopRow, pBottomRow, pColumnX1, pColumnX2)
 // REturen value: Boolean - Whether deleting a poll is allowed
 function PollDeleteAllowed(pMsgbase, pSubBoardCode)
 {
-	var canDelete = gUserIsSysop || (pSubBoardCode == "mail");
+	var canDelete = user.is_sysop || (pSubBoardCode == "mail");
 	if ((pMsgbase != null) && pMsgbase.is_open && (pMsgbase.cfg != null))
 		canDelete = canDelete || ((pMsgbase.cfg.settings & SUB_DEL) == SUB_DEL);
 	return canDelete;
@@ -3743,7 +3739,7 @@ function DisplayViewingResultsHelpScr(pMsgbase, pSubBoardCode)
 	                    "\x01h\x01cEND              \x01g: \x01n\x01cGo to the bottom of the text",
 						"\x01h\x01cF                \x01g: \x01n\x01cGo to the first poll",
 						"\x01h\x01cL                \x01g: \x01n\x01cGo to the last poll"];
-	if (gUserIsSysop)
+	if (user.is_sysop)
 		keyHelpLines.push("\x01h\x01cDEL              \x01g: \x01n\x01cDelete the current poll");
 	else if (PollDeleteAllowed(pMsgbase, pSubBoardCode))
 		keyHelpLines.push("\x01h\x01cDEL              \x01g: \x01n\x01cDelete the current poll (if it's yours)");
