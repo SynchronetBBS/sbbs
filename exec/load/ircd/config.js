@@ -298,7 +298,7 @@ function Read_Config_File() {
 			Config_Filename = system.ctrl_dir + "ircd.conf";
 	}
 	if (!IRCDCFG_Editor)
-		log(LOG_INFO,"Trying to read configuration from: " + fname);
+		log(LOG_INFO,"Trying to read configuration from: " + Config_Filename);
 	file_handle = new File(Config_Filename);
 	if (file_handle.open("r")) {
 		if (Config_Filename.substr(Config_Filename.length-3,3) == "ini")
