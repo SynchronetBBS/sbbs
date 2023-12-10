@@ -532,6 +532,26 @@ function Write_Config_File(fn) {
 	return true;
 }
 
+function ULine_Exists(str) {
+	var i;
+
+	for (i in ULines) {
+		if (ULines[i].toLowerCase() == str.toLowerCase())
+			return true;
+	}
+	return false;
+}
+
+function QLine_Exists(str) {
+	var i;
+
+	for (i in QLines) {
+		if (QLines[i].nick.toLowerCase() == str.toLowerCase())
+			return true;
+	}
+	return false;
+}
+
 function HLine_Exists(str) {
 	var i;
 
@@ -708,7 +728,7 @@ function ini_Operator(arg, ini) {
 
 /* Former U:Line */
 function ini_Services(arg, ini) {
-	if (ini.Servername)
+	if (ini.Servername && !ULine_Exists(ini.Servername))
 		ULines.push(ini.Servername);
 	return;
 }
@@ -826,6 +846,8 @@ function ini_Restrict(arg, ini) {
 	masks = ini.Mask.split(",");
 
 	for (i in masks) {
+		if (QLine_Exists(masks[i]))
+			continue;
 		QLines.push(new QLine(
 			masks[i],
 			ini.Reason ? ini.Reason : "No reason provided."
