@@ -1863,6 +1863,14 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			*pmode |= (current_msg->hdr.auxattr & MSG_HFIELDS_UTF8);
 		return(current_msg_to);
 	}
+	if(!strcmp(sp,"MSG_TO_FIRST") && current_msg_to!=NULL) {
+		if(pmode != NULL && current_msg != NULL)
+			*pmode |= (current_msg->hdr.auxattr & MSG_HFIELDS_UTF8);
+		safe_snprintf(str, maxlen, "%s", current_msg_to);
+		if((tp = strchr(str, ' ')) != NULL)
+			*tp = '\0';
+		return str;
+	}
 	if(!strcmp(sp,"MSG_TO_EXT") && current_msg!=NULL) {
 		if(current_msg->to_ext==NULL)
 			return(nulstr);
@@ -1900,6 +1908,15 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		if(pmode != NULL)
 			*pmode |= (current_msg->hdr.auxattr & MSG_HFIELDS_UTF8);
 		return(current_msg_from);
+	}
+	if(!strcmp(sp,"MSG_FROM_FIRST") && current_msg != NULL && current_msg_from != NULL) {
+		if(current_msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)
+			safe_snprintf(str, maxlen, "%s", text[Anonymous]);
+		else
+			safe_snprintf(str, maxlen, "%s", current_msg_from);
+		if((tp = strchr(str, ' ')) != NULL)
+			*tp = '\0';
+		return str;
 	}
 	if(!strcmp(sp,"MSG_FROM_EXT") && current_msg!=NULL) {
 		if(!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)
