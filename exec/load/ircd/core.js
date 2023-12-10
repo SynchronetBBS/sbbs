@@ -1325,7 +1325,7 @@ function IRCClient_do_info() {
 		this.hostname,
 		this.servername
 	));
-	this.numeric(371, ":--=-=-=-=-=-=-=-=-=-=-*[ The Synchronet IRCd 1.10 ]*=-=-=-=-=-=-=-=-=-=--");
+	this.numeric(371, ":--=-=-=-=-=-=-=-=-=-=-*[ The Synchronet IRCd 2.0 ]*-=-=-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":   IRCd Copyright 2003-2023 by Randy Sommerfeld <cyan@synchro.net>");
 	this.numeric(371, ":" + system.version_notice + " " + system.copyright + ".");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=-( A big thanks to the following )-=-=-=-=-=-=-=-=-=--");
