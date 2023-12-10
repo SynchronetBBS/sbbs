@@ -19,11 +19,6 @@
 
 */
 
-// Various N:Line permission bits
-const NLINE_CHECK_QWKPASSWD		=(1<<0);	// q
-const NLINE_IS_QWKMASTER		=(1<<1);	// w
-const NLINE_CHECK_WITH_QWKMASTER	=(1<<2);	// k
-
 ////////// Objects //////////
 function IRC_Server() {
 	////////// VARIABLES

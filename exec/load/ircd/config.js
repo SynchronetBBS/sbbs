@@ -45,6 +45,11 @@ const OLINE_CHECK_SYSPASSWD	=(1<<20);	/* S */
 const OLINE_CAN_EVAL		=(1<<21);	/* x */
 const OLINE_IS_GOPER		=(1<<22);	/*  "big O" */
 
+/* Part of [Server], former N:Line */
+const NLINE_CHECK_QWKPASSWD             =(1<<0);        // q
+const NLINE_IS_QWKMASTER                =(1<<1);        // w
+const NLINE_CHECK_WITH_QWKMASTER        =(1<<2);        // k
+
 function Epoch() {
 	return parseInt(new Date().getTime()/1000);
 }
@@ -332,6 +337,74 @@ function Read_Config_File() {
 		if ((YLines[c.ircclass].connfreq > 0) && c.port && !Servers[c.servername.toLowerCase()])
 			Reset_Autoconnect(c, 1 /* connect immediately */);
 	}
+}
+
+function NLine_Flags_String(bits) {
+	var str = "";
+	if (bits&NLINE_CHECK_QWKPASSWD)
+		str += "q";
+	if (bits&NLINE_IS_QWKMASTER)
+		str += "w";
+	if (bits&NLINE_CHECK_WITH_QWKMASTER)
+		str += "k";
+	return str;
+}
+
+function OLine_Flags_String(bits) {
+	var str = "";
+	if (   bits&OLINE_CAN_REHASH
+		&& bits&OLINE_CAN_GLOBOPS
+		&& bits&OLINE_CAN_WALLOPS
+		&& bits&OLINE_CAN_LOCOPS
+		&& bits&OLINE_CAN_LSQUITCON
+		&& bits&OLINE_CAN_LKILL
+		&& bits&OLINE_CAN_KLINE
+		&& bits&OLINE_CAN_UNKLINE
+		&& bits&OLINE_CAN_LGNOTICE
+		&& bits&OLINE_CAN_UMODEC
+	) {
+		str = "o";
+		if (bits&OLINE_IS_GOPER)
+			str = "O";
+	} else {
+		if (bits&OLINE_CAN_REHASH)
+			str += "r";
+		if (bits&OLINE_CAN_RESTART)
+			str += "R";
+		if (bits&OLINE_CAN_DIE)
+			str += "D";
+		if (bits&OLINE_CAN_GLOBOPS)
+			str += "g";
+		if (bits&OLINE_CAN_WALLOPS)
+			str += "w";
+		if (bits&OLINE_CAN_LOCOPS)
+			str += "l";
+		if (bits&OLINE_CAN_LSQUITCON)
+			str += "c";
+		if (bits&OLINE_CAN_GSQUITCON)
+			str += "C";
+		if (bits&OLINE_CAN_LKILL)
+			str += "k";
+		if (bits&OLINE_CAN_GKILL)
+			str += "K";
+		if (bits&OLINE_CAN_KLINE)
+			str += "b";
+		if (bits&OLINE_CAN_UNKLINE)
+			str += "B";
+		if (bits&OLINE_CAN_LGNOTICE)
+			str += "n";
+		if (bits&OLINE_CAN_GGNOTICE)
+			str += "N";
+		if (bits&OLINE_CAN_CHATOPS)
+			str += "s";
+	}
+	if (bits&OLINE_IS_ADMIN)
+		str += "A";
+	if (bits&OLINE_CAN_EVAL)
+		str += "x";
+	if (bits&OLINE_CHECK_SYSPASSWD)
+		str += "S";
+	return str;
 }
 
 function Write_Config_File(fn) {
