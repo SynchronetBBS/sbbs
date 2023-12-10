@@ -277,34 +277,31 @@ function Clear_Config_Globals() {
 }
 
 function Read_Config_File() {
-	var i, c;
+	var file_handle, i, c;
 
 	Clear_Config_Globals();
 
-	var fname="";
 	if (Config_Filename && Config_Filename.length) {
-		if(Config_Filename.indexOf('/')>=0 || Config_Filename.indexOf('\\')>=0)
-			fname=Config_Filename;
-		else
-			fname=system.ctrl_dir + Config_Filename;
+		if(!(Config_Filename.indexOf('/')>=0 || Config_Filename.indexOf('\\')>=0))
+			Config_Filename = system.ctrl_dir + Config_Filename;
 	} else {
-		fname=system.ctrl_dir + "ircd." + system.local_host_name + ".ini";
-		if(!file_exists(fname))
-			fname=system.ctrl_dir + "ircd." + system.local_host_name + ".conf";
-		if(!file_exists(fname))
-			fname=system.ctrl_dir + "ircd." + system.host_name + ".ini";
-		if(!file_exists(fname))
-			fname=system.ctrl_dir + "ircd." + system.host_name + ".conf";
-		if(!file_exists(fname))
-			fname=system.ctrl_dir + "ircd.ini";
-		if(!file_exists(fname))
-			fname=system.ctrl_dir + "ircd.conf";
+		Config_Filename = system.ctrl_dir + "ircd." + system.local_host_name + ".ini";
+		if(!file_exists(Config_Filename))
+			Config_Filename = system.ctrl_dir + "ircd." + system.local_host_name + ".conf";
+		if(!file_exists(Config_Filename))
+			Config_Filename = system.ctrl_dir + "ircd." + system.host_name + ".ini";
+		if(!file_exists(Config_Filename))
+			Config_Filename = system.ctrl_dir + "ircd." + system.host_name + ".conf";
+		if(!file_exists(Config_Filename))
+			Config_Filename = system.ctrl_dir + "ircd.ini";
+		if(!file_exists(Config_Filename))
+			Config_Filename = system.ctrl_dir + "ircd.conf";
 	}
 	if (!IRCDCFG_Editor)
 		log(LOG_INFO,"Trying to read configuration from: " + fname);
-	var file_handle = new File(fname);
+	file_handle = new File(Config_Filename);
 	if (file_handle.open("r")) {
-		if (fname.substr(fname.length-3,3) == "ini")
+		if (Config_Filename.substr(Config_Filename.length-3,3) == "ini")
 			read_ini_config(file_handle);
 		else
 			read_conf_config(file_handle);
