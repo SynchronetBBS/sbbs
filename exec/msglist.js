@@ -1766,7 +1766,7 @@ if(js.global.bbs && bbs.online) {
 	if(!userprops)
 		userprops = {};
 	if(!options.track_last_read_mail)
-		userprops.last_read_mail = undefined;
+		delete userprops.last_read_mail;
 
 	js.on_exit("console.status = " + console.status);
 	//console.status |= CON_CR_CLREOL;
