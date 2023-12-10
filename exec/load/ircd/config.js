@@ -412,54 +412,67 @@ function Write_Config_File(fn) {
 		return false;
 
 	/* [Info] */
-	f.iniSetValue("Info", "Servername", ServerName);
-	f.iniSetValue("Info", "Description", ServerDesc);
-	f.iniSetValue("Info", "Admin1", Admin1);
-	f.iniSetValue("Info", "Admin2", Admin2);
-	f.iniSetValue("Info", "Admin3", Admin3);
+	f.writeln("[Info]");
+	f.writeln(format("Servername=%s", ServerName));
+	f.writeln(format("Description=%s", ServerDesc));
+	f.writeln(format("Admin1=%s", Admin1));
+	f.writeln(format("Admin2=%s", Admin2));
+	f.writeln(format("Admin3=%s", Admin3));
+	f.writeln("");
 
 	/* [Port] */
-	f.iniSetValue("Port:" + Default_Port, "Default", "true");
+	f.writeln(format("[Port:%lu]", Default_Port));
+	f.writeln("Default=true");
+	f.writeln("");
 	for (i in PLines) {
-		f.iniSetValue("Port:" + PLines[i], "Default", "false");
+		f.writeln(format("[Port:%lu]", PLines[i]));
+		f.writeln("");
 	}
 
 	/* [Class] */
 	for (i in YLines) {
 		if (i == 0)
 			continue;
+		f.writeln(format("[Class:%lu]", i));
 		if (YLines[i].comment)
-			f.iniSetValue("Class:" + i, "Comment", YLines[i].comment);
-		f.iniSetValue("Class:" + i, "PingFrequency", YLines[i].pingfreq);
-		f.iniSetValue("Class:" + i, "ConnectFrequency", YLines[i].connfreq);
-		f.iniSetValue("Class:" + i, "Maximum", YLines[i].maxlinks);
-		f.iniSetValue("Class:" + i, "SendQ", YLines[i].sendq);
+			f.writeln(format("Comment=%s", YLines[i].comment));
+		f.writeln(format("PingFrequency=%lu", YLines[i].pingfreq));
+		f.writeln(format("ConnectFrequency=%lu", YLines[i].connfreq));
+		f.writeln(format("Maximum=%lu", YLines[i].maxlinks));
+		f.writeln(format("SendQ=%lu", YLines[i].sendq));
+		f.writeln("");
 	}
 
 	/* [Allow] */
 	c = 0;
 	for (i in ILines) {
 		c++;
-		f.iniSetValue("Allow:" + c, "Mask", ILines[i].hostmask);
-		f.iniSetValue("Allow:" + c, "Class", ILines[i].ircclass);
+		f.writeln(format("[Allow:%lu]", c));
+		f.writeln(format("Mask=%s", ILines[i].hostmask));
+		f.writeln(format("Class=%lu", ILines[i].ircclass));
+		f.writeln("");
 	}
 
 	/* [Operator] */
 	c = 0;
 	for (i in OLines) {
 		c++;
-		f.iniSetValue("Operator:" + c, "Nick", OLines[i].nick);
-		f.iniSetValue("Operator:" + c, "Mask", OLines[i].hostmask);
-		f.iniSetValue("Operator:" + c, "Password", OLines[i].password);
-		f.iniSetValue("Operator:" + c, "Flags", OLines[i].flags);
-		f.iniSetValue("Operator:" + c, "Class", OLines[i].ircclass);
+		f.writeln(format("[Operator:%lu]", c));
+		f.writeln(format("Nick=%s", OLines[i].nick));
+		f.writeln(format("Mask=%s", OLines[i].hostmask));
+		f.writeln(format("Password=%s", OLines[i].password));
+		f.writeln(format("Flags=%s", OLine_Flags_String(OLines[i].flags)));
+		f.writeln(format("Class=%lu", OLines[i].ircclass));
+		f.writeln("");
 	}
 
 	/* [Services] */
 	c = 0;
 	for (i in ULines) {
 		c++;
-		f.iniSetValue("Services:" + c, "Servername", ULines[i]);
+		f.writeln(format("[Services:%lu]", c));
+		f.writeln(format("Servername=%s", ULines[i]));
+		f.writeln("");
 	}
 
 	/* [Ban] */
@@ -468,46 +481,50 @@ function Write_Config_File(fn) {
 		if (KLines[i].type != "K")
 			continue;
 		c++;
-		f.iniSetValue("Ban:" + c, "Hostmask", KLines[i].hostmask);
-		f.iniSetValue("Ban:" + c, "Reason", KLines[i].reason);
+		f.writeln(format("[Ban:%lu]", c));
+		f.writeln(format("Hostmask=%s", KLines[i].hostmask));
+		f.writeln(format("Reason=%s", KLines[i].reason));
+		f.writeln("");
 	}
 
 	/* [Server] */
 	c = 0;
 	for (i in CLines) {
 		c++;
-		f.iniSetValue("Server:" + c, "Servername", CLines[i].servername);
-		f.iniSetValue("Server:" + c, "Hostname", CLines[i].host);
-		f.iniSetValue("Server:" + c, "Port", CLines[i].port);
-		f.iniSetValue("Server:" + c, "InboundPassword", NLines[i].password);
-		f.iniSetValue("Server:" + c, "OutboundPassword", CLines[i].password);
-		f.iniSetValue("Server:" + c, "Class", CLines[i].ircclass);
+		f.writeln(format("[Server:%lu]", c));
+		f.writeln(format("Servername=%s", CLines[i].servername));
+		f.writeln(format("Hostname=%s", CLines[i].host));
+		f.writeln(format("Port=%lu", CLines[i].port));
+		f.writeln(format("InboundPassword=%s", NLines[i].password));
+		f.writeln(format("OutboundPassword=%s", CLines[i].password));
+		f.writeln(format("Class=%lu", CLines[i].ircclass));
 		if (NLines[i].flags)
-			f.iniSetValue("Server:" + c, "Flags", NLines[i].flags);
-		f.iniSetValue(
-			"Server:" + c,
-			"Hub",
-			HLine_Exists(CLines[i].servername) ? true : false
-		);
+			f.writeln(format("Flags=%s", NLine_Flags_String(NLines[i].flags)));
+		f.writeln(format("Hub=%s",HLine_Exists(CLines[i].servername) ? true : false));
+		f.writeln("");
 	}
 
 	/* [Restrict] */
 	c = 0;
 	for (i in QLines) {
 		c++;
-		f.iniSetValue("Restrict:" + c, "Mask", QLines[i].nick);
-		f.iniSetValue("Restrict:" + c, "Reason", QLines[i].reason);
+		f.writeln(format("[Restrict:%lu]", c));
+		f.writeln(format("Mask=%s", QLines[i].nick));
+		f.writeln(format("Reason=%s", QLines[i].reason));
+		f.writeln("");
 	}
 
 	/* [RBL] */
 	c = 0;
 	for (i in RBL) {
 		c++;
-		f.iniSetValue("RBL:" + c, "Hostname", RBL[i].hostname);
+		f.writeln(format("[RBL:%lu]", c));
+		f.writeln(format("Hostname=%s", RBL[i].hostname));
 		if (RBL[i].good)
-			f.iniSetValue("RBL:" + c, "GoodResponses", RBL[i].good.join(","));
+			f.writeln(format("GoodResponses=%s", RBL[i].good.join(",")));
 		if (RBL[i].bad)
-			f.iniSetValue("RBL:" + c, "BadResponses", RBL[i].bad.join(","));
+			f.writeln(format("BadResponses=%s", RBL[i].bad.join(",")));
+		f.writeln("");
 	}
 
 	f.close();
