@@ -43,6 +43,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 {
 	char	str[256],str2[256],done=0,domsg=1
 			,*p;
+	char	fmt[256];
 	char 	tmp[512];
 	int		i;
 	uint32_t u,v;
@@ -344,10 +345,11 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				smb_getmsgidx(&smb,&msg);
 
 				if(!stricmp(str2,str))		/* Reply to sender */
-					SAFEPRINTF(str2,text[Regarding], msghdr_field(&msg, msg.subj));
+					expand_atcodes(text[Regarding], fmt, sizeof fmt);
 				else						/* Reply to other */
-					SAFEPRINTF3(str2,text[RegardingByOn], msghdr_field(&msg, msg.subj), msghdr_field(&msg, msg.from, tmp)
-						,timestr(msg.hdr.when_written.time));
+					expand_atcodes(text[RegardingByOn], fmt, sizeof fmt);
+				SAFEPRINTF3(str2, fmt, msghdr_field(&msg, msg.subj), msghdr_field(&msg, msg.from, tmp)
+					,timestr(msg.hdr.when_written.time));
 
 				p=strrchr(str,'@');
 				if(p) { 							/* name @addr */

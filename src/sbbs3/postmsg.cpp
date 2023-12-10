@@ -67,6 +67,7 @@ static uchar* findsig(char* msgbuf)
 bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 {
 	char	str[256];
+	char	fmt[256];
 	char	title[LEN_TITLE+1] = "";
 	char	top[256] = "";
 	char	touser[64] = "";
@@ -107,7 +108,8 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		if(remsg->to != NULL)
 			strListPush(&names, remsg->to);
 		msgattr=(ushort)(remsg->hdr.attr&MSG_PRIVATE);
-		sprintf(top,text[RegardingByToOn]
+		expand_atcodes(text[RegardingByToOn], fmt, sizeof fmt);
+		snprintf(top, sizeof top, fmt
 			,title
 			,from
 			,msghdr_field(remsg, remsg->to, NULL, term_supports(UTF8))
