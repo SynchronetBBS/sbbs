@@ -115,7 +115,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	char	outpath[MAX_PATH];
 	char	usrname[128] = "Unknown user";
 	char	*p;
-	char	ch;
+	int		ch;
 	time_t	now;
 	time_t	last_nodechk=0;
 	struct text_info ti;
