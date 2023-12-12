@@ -344,12 +344,17 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				msg.hdr.number=msg.idx.number;
 				smb_getmsgidx(&smb,&msg);
 
+				const char* text_str;
 				if(!stricmp(str2,str))		/* Reply to sender */
-					expand_atcodes(text[Regarding], fmt, sizeof fmt);
+					text_str = text[Regarding];
 				else						/* Reply to other */
-					expand_atcodes(text[RegardingByOn], fmt, sizeof fmt);
-				SAFEPRINTF3(str2, fmt, msghdr_field(&msg, msg.subj), msghdr_field(&msg, msg.from, tmp)
-					,timestr(msg.hdr.when_written.time));
+					text_str = text[RegardingByOn];
+				expand_atcodes(text_str, fmt, sizeof fmt, &msg);
+				if(strcmp(text_str, fmt) != 0)
+					SAFECOPY(str2, fmt);
+				else
+					SAFEPRINTF3(str2, fmt, msghdr_field(&msg, msg.subj), msghdr_field(&msg, msg.from, tmp)
+						,timestr(msg.hdr.when_written.time));
 
 				p=strrchr(str,'@');
 				if(p) { 							/* name @addr */

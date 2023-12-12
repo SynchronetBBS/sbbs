@@ -1007,10 +1007,13 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 					&& stricmp(msg.to,useron.name)
 					&& stricmp(msg.to,useron.alias))
 					break;
-				expand_atcodes(text[Regarding], fmt, sizeof fmt);
-				SAFEPRINTF2(str2, fmt
-					,msghdr_field(&msg, msg.subj)
-					,timestr(msg.hdr.when_written.time));
+				expand_atcodes(text[Regarding], fmt, sizeof fmt, &msg);
+				if(strcmp(text[Regarding], fmt) != 0)
+					SAFECOPY(str2, fmt);
+				else
+					SAFEPRINTF2(str2, fmt
+						,msghdr_field(&msg, msg.subj)
+						,timestr(msg.hdr.when_written.time));
 				if(msg.from_net.addr==NULL)
 					SAFECOPY(str,msg.from);
 				else if(msg.from_net.type==NET_FIDO)

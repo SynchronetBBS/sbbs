@@ -1845,28 +1845,28 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	/* Message header codes */
-	if(!strcmp(sp,"MSG_TO") && current_msg!=NULL && current_msg_to!=NULL) {
+	if(!strcmp(sp,"MSG_TO") && current_msg != nullptr) {
 		if(pmode != NULL)
 			*pmode |= (current_msg->hdr.auxattr & MSG_HFIELDS_UTF8);
 		if(current_msg->to_ext!=NULL)
-			safe_snprintf(str,maxlen,"%s #%s",current_msg_to,current_msg->to_ext);
+			safe_snprintf(str, maxlen, "%s #%s", current_msg_to == nullptr ? current_msg->to : current_msg_to, current_msg->to_ext);
 		else if(current_msg->to_net.addr != NULL) {
 			char tmp[128];
-			safe_snprintf(str,maxlen,"%s (%s)",current_msg_to
+			safe_snprintf(str,maxlen,"%s (%s)", current_msg_to == nullptr ? current_msg->to : current_msg_to
 				,smb_netaddrstr(&current_msg->to_net,tmp));
 		} else
-			return(current_msg_to);
+			return current_msg_to == nullptr ? current_msg->to : current_msg_to;
 		return(str);
 	}
-	if(!strcmp(sp,"MSG_TO_NAME") && current_msg_to!=NULL) {
-		if(pmode != NULL && current_msg != NULL)
+	if(!strcmp(sp,"MSG_TO_NAME") && current_msg != nullptr) {
+		if(pmode != NULL)
 			*pmode |= (current_msg->hdr.auxattr & MSG_HFIELDS_UTF8);
-		return(current_msg_to);
+		return current_msg_to == nullptr ? current_msg->to : current_msg_to;
 	}
-	if(!strcmp(sp,"MSG_TO_FIRST") && current_msg_to!=NULL) {
-		if(pmode != NULL && current_msg != NULL)
+	if(!strcmp(sp,"MSG_TO_FIRST") && current_msg != nullptr) {
+		if(pmode != NULL)
 			*pmode |= (current_msg->hdr.auxattr & MSG_HFIELDS_UTF8);
-		safe_snprintf(str, maxlen, "%s", current_msg_to);
+		safe_snprintf(str, maxlen, "%s", current_msg_to == nullptr ? current_msg->to : current_msg_to);
 		if((tp = strchr(str, ' ')) != NULL)
 			*tp = '\0';
 		return str;
@@ -1888,32 +1888,32 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 	if(!strcmp(sp,"MSG_CC") && current_msg!=NULL)
 		return(current_msg->cc_list == NULL ? nulstr : current_msg->cc_list);
-	if(!strcmp(sp,"MSG_FROM") && current_msg != NULL && current_msg_from != NULL) {
+	if(!strcmp(sp,"MSG_FROM") && current_msg != nullptr) {
 		if(current_msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)
 			return(text[Anonymous]);
 		if(pmode != NULL)
 			*pmode |= (current_msg->hdr.auxattr & MSG_HFIELDS_UTF8);
 		if(current_msg->from_ext!=NULL)
-			safe_snprintf(str,maxlen,"%s #%s",current_msg_from,current_msg->from_ext);
+			safe_snprintf(str,maxlen,"%s #%s", current_msg_from == nullptr ? current_msg->from : current_msg_from, current_msg->from_ext);
 		else if(current_msg->from_net.addr != NULL) {
-			safe_snprintf(str,maxlen,"%s (%s)",current_msg_from
+			safe_snprintf(str,maxlen,"%s (%s)", current_msg_from == nullptr ? current_msg->from : current_msg_from
 				,smb_netaddrstr(&current_msg->from_net,tmp));
 		} else
-			return(current_msg_from);
+			return current_msg_from == nullptr ? current_msg->from : current_msg_from;
 		return(str);
 	}
-	if(!strcmp(sp,"MSG_FROM_NAME") && current_msg != NULL && current_msg_from != NULL) {
+	if(!strcmp(sp,"MSG_FROM_NAME") && current_msg != nullptr) {
 		if(current_msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)
 			return(text[Anonymous]);
 		if(pmode != NULL)
 			*pmode |= (current_msg->hdr.auxattr & MSG_HFIELDS_UTF8);
-		return(current_msg_from);
+		return current_msg_from == nullptr ? current_msg->from : current_msg_from;
 	}
-	if(!strcmp(sp,"MSG_FROM_FIRST") && current_msg != NULL && current_msg_from != NULL) {
+	if(!strcmp(sp,"MSG_FROM_FIRST") && current_msg != nullptr) {
 		if(current_msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)
 			safe_snprintf(str, maxlen, "%s", text[Anonymous]);
 		else
-			safe_snprintf(str, maxlen, "%s", current_msg_from);
+			safe_snprintf(str, maxlen, "%s", current_msg_from == nullptr ? current_msg->from : current_msg_from);
 		if((tp = strchr(str, ' ')) != NULL)
 			*tp = '\0';
 		return str;
@@ -1935,10 +1935,10 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			return nulstr;
 		return(smb_nettype((enum smb_net_type)current_msg->from_net.type));
 	}
-	if(!strcmp(sp,"MSG_SUBJECT") && current_msg_subj != NULL) {
-		if(pmode != NULL && current_msg != NULL)
+	if(!strcmp(sp,"MSG_SUBJECT") && current_msg != nullptr) {
+		if(pmode != NULL)
 			*pmode |= (current_msg->hdr.auxattr & MSG_HFIELDS_UTF8);
-		return(current_msg_subj);
+		return current_msg_subj == nullptr ? current_msg->subj : current_msg_subj;
 	}
 	if(!strcmp(sp,"MSG_SUMMARY") && current_msg!=NULL)
 		return(current_msg->summary==NULL ? nulstr : current_msg->summary);
@@ -2209,11 +2209,14 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	return get_text(sp);
 }
 
-char* sbbs_t::expand_atcodes(const char* src, char* buf, size_t size)
+char* sbbs_t::expand_atcodes(const char* src, char* buf, size_t size, const smbmsg_t* msg)
 {
 	char* dst = buf;
 	char* end = dst + (size - 1);
+	const smbmsg_t* saved_msg{current_msg};
 
+	if (msg != NULL)
+		current_msg = msg;
 	while (*src != '\0' && dst < end) {
 		if (*src == '@') {
 			char str[32];
@@ -2235,6 +2238,7 @@ char* sbbs_t::expand_atcodes(const char* src, char* buf, size_t size)
 	if(dst > end)
 		dst = end;
 	*dst = '\0';
+	current_msg = saved_msg;
 
 	return buf;
 }

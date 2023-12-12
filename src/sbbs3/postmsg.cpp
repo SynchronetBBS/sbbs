@@ -108,13 +108,16 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		if(remsg->to != NULL)
 			strListPush(&names, remsg->to);
 		msgattr=(ushort)(remsg->hdr.attr&MSG_PRIVATE);
-		expand_atcodes(text[RegardingByToOn], fmt, sizeof fmt);
-		snprintf(top, sizeof top, fmt
-			,title
-			,from
-			,msghdr_field(remsg, remsg->to, NULL, term_supports(UTF8))
-			,timestr(remsg->hdr.when_written.time)
-			,smb_zonestr(remsg->hdr.when_written.zone,NULL));
+		expand_atcodes(text[RegardingByToOn], fmt, sizeof fmt, remsg);
+		if(strcmp(text[RegardingByToOn], fmt) != 0)
+			SAFECOPY(top, fmt);
+		else
+			snprintf(top, sizeof top, fmt
+				,title
+				,from
+				,msghdr_field(remsg, remsg->to, NULL, term_supports(UTF8))
+				,timestr(remsg->hdr.when_written.time)
+				,smb_zonestr(remsg->hdr.when_written.zone,NULL));
 		if(remsg->tags != NULL)
 			SAFECOPY(tags, remsg->tags);
 	}

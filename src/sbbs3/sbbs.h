@@ -985,7 +985,7 @@ public:
 	/* atcodes.cpp */
 	int		show_atcode(const char *code, JSObject* obj = NULL);
 	const char*	atcode(const char* sp, char* str, size_t maxlen, int* pmode = NULL, bool centered = false, JSObject* obj = NULL);
-	char* expand_atcodes(const char* src, char* buf, size_t size);
+	char* expand_atcodes(const char* src, char* buf, size_t size, const smbmsg_t* msg = NULL);
 
 	/* getnode.cpp */
 	int		getsmsg(int usernumber, bool clearline = false);
