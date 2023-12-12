@@ -677,7 +677,12 @@ function JSONdb (fileName, scope) {
 		if(!this.file.open("r",true))
 			return;
 		var data = this.file.readAll(this.settings.FILE_BUFFER).join('\n');
-		this.masterData.data = JSON.parse(data);
+		if(data.length > 0) {
+			this.masterData.data = JSON.parse(data);
+		}
+		else {
+			this.masterData.data = {};
+		}
 		this.file.close(); 
         this.masterShadow.data=composite_sketch(this.masterData.data);
     };
