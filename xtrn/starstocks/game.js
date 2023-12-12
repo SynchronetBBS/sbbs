@@ -411,7 +411,7 @@ function	viewHighScores()
 		{
 			console.putmsg("  " + printPadded("\1w\1h" + (hs+1) + ": ",4," ","right")); 
 			console.putmsg(printPadded("\1y\1h" + scoreList[hs].player,20," ","left"));
-			console.putmsg("\1c\1h$" + printPadded( "\1w\1h" + dollarAmount(scoreList[hs].score),18,"\1h\1k.","right"));
+			console.putmsg("\1c\1h$" + printPadded( "\1w\1h" + dollarAmount(scoreList[hs].score),20,"\1h\1k.","right"));
 			console.putmsg("\1n\1g  " + scoreList[hs].date);
 			console.crlf();
 		}
@@ -821,6 +821,11 @@ function 	quit()
 	var splash=new Graphic(80,splash_size);
 	splash.load(splash_filename);
 	splash.draw();
+	
+	console.gotoxy(1,23);
+	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
+	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
+	console.clear();
 }
 //########################## CLASSES #########################################
 
