@@ -97,6 +97,10 @@
  *                              Removed the setting useScrollingInterfaceForANSIMessages.
  * 2023-12-04 Eric Oulashin     Version 1.90
  *                              Releasing this version
+ * 2023-12-12 Eric Oulashin     Version 1.90a
+ *                              New configurable colors in the theme file for the indexed mode newscan menu:
+ *                              indexMenuSeparatorLine (sub-board separator line) and indexMenuSeparatorText
+ *                              (sub-board separator text)
  */
 
 "use strict";
@@ -201,8 +205,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.90";
-var READER_DATE = "2023-12-04";
+var READER_VERSION = "1.90a";
+var READER_DATE = "2023-12-12";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -15149,13 +15153,13 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 				var grpDesc = msg_area.grp_list[grpIdx].name;
 				if (msg_area.grp_list[grpIdx].name != msg_area.grp_list[grpIdx].description)
 					grpDesc += " - " + msg_area.grp_list[grpIdx].description;
-				var menuItemText = "\x01n\x01b" + charStr(HORIZONTAL_SINGLE, 5);
-				menuItemText += "\x01y\x01h ";
+				var menuItemText = "\x01n" + this.colors.indexMenuSeparatorLine + charStr(HORIZONTAL_SINGLE, 5);
+				menuItemText += "\x01n" + this.colors.indexMenuSeparatorText + " ";
 				menuItemText += grpDesc;
 				var menuItemLen = console.strlen(menuItemText);
 				if (menuItemLen < this.indexedModeMenu.size.width)
 				{
-					menuItemText += " \x01n\x01b";
+					menuItemText += " \x01n" + this.colors.indexMenuSeparatorLine;
 					var numChars = this.indexedModeMenu.size.width - menuItemLen - 1;
 					menuItemText += charStr(HORIZONTAL_SINGLE, numChars);
 				}
@@ -17511,6 +17515,8 @@ function getDefaultColors()
 		indexMenuTotalMsgsHighlight: "\x01w\x01h",
 		indexMenuNumNewMsgsHighlight: "\x01w\x01h",
 		indexMenuLastPostDateHighlight: "\x01w\x01h",
+		indexMenuSeparatorLine: "\x01b",
+		indexMenuSeparatorText: "\x01y\x01h",
 
 		// Colors for the indexed mode help line text:
 		// Background
