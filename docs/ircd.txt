@@ -58,6 +58,44 @@ start and stop whenever Synchronet does), or standalone with jsexec.  Many
 sysops prefer to keep their IRCd running with jsexec since then it is not
 affected by BBS restarts.  The choice is yours.
 
+[2.4] - Operator Flags
+
+	The following single-character flags determine what permissions IRC
+operators inherit after using the /OPER command.  These get very granular,
+but most sysops will want to use only "o":
+
+		r - Can use the /REHASH command
+		R - Can use the /RESTART command
+		D - Can use the /DIE command
+		g - Can use the /GLOBOPS command
+		w - Can use the /WALLOPS command
+		l - Can use the /LOCOPS command
+		s - Can use the /CHATOPS command
+		X - Can use the /EVAL command
+		c - Able to /SQUIT locally
+		C - Able to /SQUIT globally
+		k - Able to /KILL locally
+		K - Able to /KILL globally
+		b - Can use the /KLINE command
+		B - Can use the /UNKLINE command
+		n - Only able send global notices locally
+		N - Able to send global notices globally
+		A - Operator is server administrator
+		S - Operator password is the Synchronet system password
+		
+		o - An aggregate of rgwlckbBn flags
+		O - An aggregate of rgwlckbBnCKNs flags
+
+[2.5] - Server Flags
+
+	These single-character flags alter server behaviour.  Most sysops won't
+have any use for these.  They're mostly for controlling the QWK master
+behaviour.
+
+		q - Check password against QWK database
+		w - Send QWK passwords to this server for upstream authentication
+		k - Passwords received from this server go to the QWK master
+
 =======- [3] -- Linking to the Synchronet IRC Network (irc.synchro.net) -=====
 
 	1) Ensure that you have a DOVE-Net node established.  Although you
@@ -198,10 +236,27 @@ something happens at DigitalMan's house.
 left in control of DigitalMan and forward its QWK passwords up to vert in a
 cryptographically secure way.
 
-[5.1.4] - 005 Numeric is Incomplete
+[5.1.4] - QWK Uplinks
+
+	Related to the above, there exists code in the IRCd for passing passwords
+upstream to a QWK master for authentication.  Most of the code is under the
+"PASS" command in server.js, but is currently disabled.
+
+	This should be altered to send the password in a cryptographically secure
+way, and perhaps have a hashing method added so that servers can still be
+authenticated when the QWK master is offline.
+
+[5.1.5] - 005 Numeric is Incomplete
 
 	The 005 numeric has evolved a lot over the decades, and it's no longer
 complete on the Synchronet IRCd.  In particular TARGMAX= needs to be fixed.
+
+[5.1.6] - SSL Support
+
+	The IRCd does support SSL, but it is hard coded to be present on ports
+994 and 6697 only.  The groundwork has been laid in the .ini configuration to
+allow a [Port] section to specify SSL=true so that SSL support can be flipped
+on or off per port.
 
 [5.2] - Ideas for the Future
 
@@ -226,7 +281,7 @@ service that offers BBS files over IRC and DCC.
 [5.2.3] - MRC Compatibility
 
 	This is an easy one, but it will rely more on the future IRCd author
-(whover that may be) collaborating with the MRC authors to make it happen.
+(whoever that may be) collaborating with the MRC authors to make it happen.
 But it seems like an easy win for both IRC and MRC.
 
 [5.2.4] - Meaningful BBS Integration
@@ -237,7 +292,7 @@ but it's still possible to achieve the IRCd's original design goal.
 [5.2.5] - Host Cloaking
 
 	Host Cloaking is a method of obscuring a user's real hostname or IP
-address through a cryprographic hash.  For example, my /WHOIS output on
+address through a cryptographic hash.  For example, my /WHOIS output on
 DALnet looks like this:
 
 	*** [Cyan] (~cyan@e21e-3e5a-1440-d392-7fe2.7001.80b.2602.ip)
