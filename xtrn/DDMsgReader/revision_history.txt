@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.90a    2023-12-12   New configurable colors in the theme file for the indexed
+                      mode newscan menu: indexMenuSeparatorLine (sub-board
+                      separator line) and indexMenuSeparatorText (sub-board
+                      separator text)
 1.90     2023-12-04   New: operator menu for read mode, with the option to add
                       the author to the twit list, etc.
                       Fix: When refreshing a rectangular area of a message, if
