@@ -616,14 +616,14 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 				if(mqtt->handle != NULL)
 					mosquitto_connect_callback_set(mqtt->handle, mqtt_connect_callback);
 #endif
-				lprintf(lputs, LOG_DEBUG, "MQTT connecting to broker %s:%u", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
+				lprintf(lputs, LOG_INFO, "MQTT connecting to broker %s:%u", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
 				result = mqtt_connect(mqtt, /* bind_address: */NULL);
 				if(result == MQTT_SUCCESS) {
 					lprintf(lputs, LOG_INFO, "MQTT broker-connect (%s:%d) successful", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
 					mqtt_pub_noval(mqtt, TOPIC_SERVER, "client");
 				} else {
+					mqtt_shutdown(mqtt);
 					lprintf(lputs, LOG_ERR, "MQTT broker-connect (%s:%d) failure: %d", cfg->mqtt.broker_addr, cfg->mqtt.broker_port, result);
-					mqtt_close(mqtt);
 				}
 			}
 		}
