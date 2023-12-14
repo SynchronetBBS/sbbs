@@ -728,8 +728,10 @@ js_require(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (!JS_IsExceptionPending(cx)) {
 		if (!JS_HasProperty(cx, exec_obj, property, &found) || !found) {
-			JSVALUE_TO_MSTRING(cx, argv[fnarg], filename, NULL);
-			JS_ReportError(cx,"symbol '%s' not defined by script '%s'", property, filename);
+			if (TRUE) { //!js_IsTerminated(cx, exec_obj)) {
+				JSVALUE_TO_MSTRING(cx, argv[fnarg], filename, NULL);
+				JS_ReportError(cx,"symbol '%s' not defined by script '%s'", property, filename);
+			}
 			free(filename);
 			free(property);
 			return(JS_FALSE);

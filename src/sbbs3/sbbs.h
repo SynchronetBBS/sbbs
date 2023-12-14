@@ -1429,6 +1429,7 @@ extern "C" {
 	DLLEXPORT JSBool	js_CommonOperationCallback(JSContext*, js_callback_t*);
 	DLLEXPORT void		js_EvalOnExit(JSContext*, JSObject*, js_callback_t*);
 	DLLEXPORT void		js_PrepareToExecute(JSContext*, JSObject*, const char *filename, const char* startup_dir, JSObject *);
+	DLLEXPORT JSBool	js_IsTerminated(JSContext*, JSObject*);
 	DLLEXPORT char*		js_getstring(JSContext *cx, JSString *str);
 	DLLEXPORT JSBool	js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated);
 	DLLEXPORT JSBool	js_clear_event(JSContext *cx, jsval *arglist, js_callback_t *cb, enum js_event_type et, int ididx);

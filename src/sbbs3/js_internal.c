@@ -47,6 +47,20 @@ enum {
 	,PROP_KEEPGOING
 };
 
+JSBool js_IsTerminated(JSContext* cx, JSObject* obj)
+{
+	js_callback_t*	cb;
+	js_callback_t*	top_cb;
+
+	if ((cb = (js_callback_t*)JS_GetPrivate(cx,obj)) == NULL)
+		return JS_FALSE;
+	for (top_cb=cb; top_cb->bg && top_cb->parent_cb; top_cb=top_cb->parent_cb) {
+		if(top_cb->terminated && *top_cb->terminated)
+			return JS_TRUE;
+	}
+	return top_cb->terminated && *top_cb->terminated;
+}
+
 static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval idval;
