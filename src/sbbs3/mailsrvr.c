@@ -1726,8 +1726,6 @@ static bool pop3_client_thread(pop3_t* pop3)
 	smb_close(&smb);
 
 	listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
-	(void)protected_uint32_adjust(&active_clients, -1);
-	update_clients();
 	client_off(socket);
 
 	/* Must be last */
@@ -2975,13 +2973,13 @@ static bool smtp_client_thread(smtp_t* smtp)
 		}
 		smtp->session = session;
 		if ((cstat = cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
-			GCESH(cstat, client.protocol, socket, host_ip, CRYPT_UNUSED, "disabling certificate verification");
+			GCESH(cstat, client.protocol, socket, host_ip, session, "disabling certificate verification");
 			return false;
 		}
 		lock_ssl_cert();
 		if ((cstat = cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
 			unlock_ssl_cert();
-			GCESH(cstat, client.protocol, socket, host_ip, CRYPT_UNUSED, "setting private key");
+			GCESH(cstat, client.protocol, socket, host_ip, session, "setting private key");
 			return false;
 		}
 		nodelay = TRUE;
@@ -2990,18 +2988,18 @@ static bool smtp_client_thread(smtp_t* smtp)
 		ioctlsocket(socket,FIONBIO,&nb);
 		if ((cstat = cryptSetAttribute(session, CRYPT_SESSINFO_NETWORKSOCKET, socket)) != CRYPT_OK) {
 			unlock_ssl_cert();
-			GCESH(cstat, client.protocol, socket, host_ip, CRYPT_UNUSED, "setting network socket");
+			GCESH(cstat, client.protocol, socket, host_ip, session, "setting network socket");
 			return false;
 		}
 		if ((cstat = cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
 			unlock_ssl_cert();
-			GCESH(cstat, client.protocol, socket, host_ip, CRYPT_UNUSED, "setting session active");
+			GCESH(cstat, client.protocol, socket, host_ip, session, "setting session active");
 			return false;
 		}
 		unlock_ssl_cert();
 		if (startup->max_inactivity) {
 			if ((cstat = cryptSetAttribute(session, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity)) != CRYPT_OK) {
-				GCESH(cstat, client.protocol, socket, host_ip, CRYPT_UNUSED, "setting read timeout");
+				GCESH(cstat, client.protocol, socket, host_ip, session, "setting read timeout");
 				return false;
 			}
 		}
@@ -5002,8 +5000,6 @@ static bool smtp_client_thread(smtp_t* smtp)
 	js_cleanup(js_runtime, js_cx, &js_glob);
 
 	listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
-	(void)protected_uint32_adjust(&active_clients, -1);
-	update_clients();
 	client_off(socket);
 
 #ifdef _WIN32
