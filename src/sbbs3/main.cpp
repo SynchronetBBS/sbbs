@@ -2544,7 +2544,7 @@ void output_thread(void* arg)
 				RingBufWrite(startup->node_spybuf[sbbs->cfg.node_num-1],buf+bufbot,i);
 			}
 			/* Spy on the user remotely */
-			if(sbbs->cfg.mqtt.enabled) {
+			if(sbbs->cfg.mqtt.enabled && mqtt.handle != NULL) {
 				int result = mqtt_pub_message(&mqtt, TOPIC_BBS, spy_topic, buf+bufbot, i, /* retain: */false);
 				if(result != MQTT_SUCCESS)
 					lprintf(LOG_WARNING, "%s ERROR %d (%d) publishing node output (%u bytes): %s"

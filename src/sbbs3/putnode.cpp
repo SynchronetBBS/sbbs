@@ -91,7 +91,7 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 	}
 	pthread_mutex_unlock(&nodefile_mutex);
 
-	if(cfg.mqtt.enabled) {
+	if(cfg.mqtt.enabled && mqtt->handle != NULL) {
 		snprintf(str, sizeof(str), "%u\t%u\t%u\t%u\t%x\t%u\t%u\t%u"
 			,node->status
 			,node->action
