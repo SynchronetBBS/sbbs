@@ -1224,7 +1224,7 @@ js_get_index(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((idx = calloc(total_msgs, sizeof(*idx))) == NULL) {
 		JS_RESUMEREQUEST(cx, rc);
-		JS_ReportError(cx, "malloc error on line %d in %s of %s", WHERE);
+		JS_ReportError(cx, "malloc failure of %u bytes on line %d in %s of %s", total_msgs * sizeof(*idx), WHERE);
 		return JS_FALSE;
 	}
 
@@ -1899,12 +1899,12 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((post = calloc(total_msgs, sizeof(*post))) == NULL) {
 		JS_RESUMEREQUEST(cx, rc);
-		JS_ReportError(cx, "malloc error on line %d in %s of %s", WHERE);
+		JS_ReportError(cx, "malloc failure of %u bytes on line %d in %s of %s", total_msgs * sizeof(*post), WHERE);
 		return JS_FALSE;
 	}
 	if((idx = calloc(total_msgs, sizeof(*idx))) == NULL) {
 		JS_RESUMEREQUEST(cx, rc);
-		JS_ReportError(cx, "malloc error on line %d in %s of %s", WHERE);
+		JS_ReportError(cx, "malloc failure of %u bytes on line %d in %s of %s", total_msgs * sizeof(*idx), WHERE);
 		free(post);
 		return JS_FALSE;
 	}
