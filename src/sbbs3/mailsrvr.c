@@ -4078,7 +4078,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 			continue;
 		}
 		if((auth_login=(stricmp(buf,"AUTH LOGIN")==0))==TRUE
-			|| strnicmp(buf,"AUTH PLAIN",10)==0) {
+			|| strnicmp(buf,"AUTH PLAIN ",11)==0
+			|| stricmp(buf,"AUTH PLAIN")==0) {
 			char user_pass[128] = "";
 			ZERO_VAR(relay_user);
 			listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
@@ -4113,9 +4114,17 @@ static bool smtp_client_thread(smtp_t* smtp)
 				p=buf+10;
 				SKIP_WHITESPACE(p);
 				if(*p==0) {
-					lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH PLAIN argument", socket, client.protocol, client_id);
-					badlogin(socket, session, badarg_rsp, NULL, NULL, &client, &smtp->client_addr);
-					continue;
+					lprintf(LOG_DEBUG, "%04d %s %s AUTH PLAIN argument not provided, sending server challenge", socket, client.protocol, client_id);
+					// RFC 4954: Note that there is still a space following the reply code, so the complete response line is "334 "
+					sockprintf(socket, client.protocol, session, "334 ");
+					if ((rd = sockreadline(socket, client.protocol, session, buf, sizeof buf)) < 1) {
+						lprintf(LOG_WARNING, "%04d %s %s !No AUTH PLAIN response received", socket, client.protocol, client_id);
+						badlogin(socket, session, badarg_rsp, NULL, NULL, &client, &smtp->client_addr);
+						continue;
+					}
+					if(startup->options&MAIL_OPT_DEBUG_RX_RSP)
+						lprintf(LOG_DEBUG,"%04d %s %s RX: %s", socket, client.protocol, client_id, buf);
+					p = buf;
 				}
 				ZERO_VAR(tmp);
 				if(b64_decode(tmp,sizeof(tmp),p,strlen(p))<1 || str_has_ctrl(tmp)) {
