@@ -619,7 +619,7 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 				lprintf(lputs, LOG_INFO, "MQTT connecting to broker %s:%u", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
 				result = mqtt_connect(mqtt, /* bind_address: */NULL);
 				if(result == MQTT_SUCCESS) {
-					lprintf(lputs, LOG_INFO, "MQTT broker-connect (%s:%d) successful", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
+					lprintf(lputs, LOG_DEBUG, "MQTT broker-connect (%s:%d) successful", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
 					mqtt_pub_noval(mqtt, TOPIC_SERVER, "client");
 				} else {
 					mqtt_shutdown(mqtt);
