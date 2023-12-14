@@ -195,13 +195,19 @@ js_export(JSContext *cx, uintN argc, jsval *arglist)
 		js_cryptcert_error(cx, p->cert, status);
 		return JS_FALSE;
 	}
-	buf = malloc(len);
+	/*
+	 * We're adding an extra 12 bytes here because of a bug in ceryptlib.
+	 * for TEXT_CERTIFICATE, it calcilates the length as though the start
+	 * is -----BEGIN CERTIFICATE----- but uses -----BEGIN CERTIFICATE CHAIN-----
+	 * instead.  This, plus the end uses and extra 12 bytes.
+	 */
+	buf = malloc(len+12);
 	if (buf == NULL) {
 		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "Unable to allocate %d bytes\n", len);
 		return JS_FALSE;
 	}
-	status = cryptExportCert(buf, len, &len, format, p->cert);
+	status = cryptExportCert(buf, len+12, &len, format, p->cert);
 	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		JS_RESUMEREQUEST(cx, rc);
