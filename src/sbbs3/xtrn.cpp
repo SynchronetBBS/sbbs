@@ -2145,14 +2145,21 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 				case '+':	/* Real name */
 					strncat(cmd, quoted_string(useron.name, str, sizeof(str)), avail);
 					break;
+				case '-':	/* Chat handle */
+					strncat(cmd, quoted_string(useron.handle, str, sizeof(str)), avail);
+					break;
                 default:    /* unknown specification */
                     if(IS_DIGIT(instr[i])) {
                         snprintf(str, sizeof str, "%0*d",instr[i]&0xf,useron.number);
-                        strncat(cmd,str, avail); }
-                    break; }
-            j=strlen(cmd); }
+                        strncat(cmd,str, avail);
+					}
+                    break;
+			}
+            j=strlen(cmd);
+		}
         else
-            cmd[j++]=instr[i]; }
+            cmd[j++]=instr[i];
+	}
     cmd[j]=0;
 
     return(cmd);

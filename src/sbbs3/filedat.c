@@ -1343,6 +1343,10 @@ char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
 					if(user != NULL)
 						strncat(cmd, quoted_string(user->name, str, sizeof(str)), avail);
 					break;
+				case '-':	/* Chat handle */
+					if(user != NULL)
+						strncat(cmd, quoted_string(user->handle, str, sizeof(str)), avail);
+					break;
                 default:    /* unknown specification */
                     if(IS_DIGIT(instr[i]) && user!=NULL) {
                         sprintf(str,"%0*d",instr[i]&0xf,user->number);
