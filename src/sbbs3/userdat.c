@@ -3872,6 +3872,7 @@ ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const char* host_
 	,struct login_attempt_settings settings, login_attempt_t* details)
 {
 	char				ip_addr[128];
+	char				name[(LEN_ALIAS * 2) + 1];
 	list_node_t*		node;
 	login_attempt_t*	attempt;
 	BOOL				result = FALSE;
@@ -3912,8 +3913,10 @@ ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const char* host_
 	if(node == NULL)
 		return 0;
 	attempt = node->data;
+	SAFECOPY(name, attempt->user);
+	truncstr(name, "@");
 	if(((settings.tempban_threshold && (attempt->count - attempt->dupes) >= settings.tempban_threshold)
-		|| trashcan(cfg, attempt->user, "name")) && now < (time32_t)(attempt->time + settings.tempban_duration)) {
+		|| trashcan(cfg, name, "name")) && now < (time32_t)(attempt->time + settings.tempban_duration)) {
 		if(details != NULL)
 			*details = *attempt;
 		return settings.tempban_duration - (now - attempt->time);
