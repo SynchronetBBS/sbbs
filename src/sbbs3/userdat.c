@@ -3830,7 +3830,7 @@ void loginSuccess(link_list_t* list, const union xp_sockaddr* addr)
 /****************************************************************************/
 /* Returns number of *unique* login attempts (excludes consecutive dupes)	*/
 /****************************************************************************/
-ulong loginFailure(link_list_t* list, const union xp_sockaddr* addr, const char* prot, const char* user, const char* pass)
+ulong loginFailure(link_list_t* list, const union xp_sockaddr* addr, const char* prot, const char* user, const char* pass, login_attempt_t* details)
 {
 	list_node_t*		node;
 	login_attempt_t		first;
@@ -3860,9 +3860,14 @@ ulong loginFailure(link_list_t* list, const union xp_sockaddr* addr, const char*
 		SAFECOPY(attempt->pass, pass);
 	attempt->count++;
 	count = attempt->count - attempt->dupes;
-	if(node==NULL)
+	if(node==NULL) {
+		attempt->first = attempt->time;
 		listPushNodeData(list, attempt, sizeof(login_attempt_t));
+	}
 	listUnlock(list);
+
+	if (details != NULL)
+		*details = *attempt;
 
 	return count;
 }

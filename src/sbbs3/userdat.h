@@ -196,6 +196,7 @@ typedef struct {
 	union xp_sockaddr addr;	/* host with consecutive failed login attempts */
 	ulong		count;	/* number of consecutive failed login attempts */
 	ulong		dupes;	/* number of consecutive duplicate login attempts (same name and password) */
+	time32_t	first;	/* time of first attempt */
 	time32_t	time;	/* time of last attempt */
 	char		prot[32];	/* protocol used in last attempt */
 	char		user[128];
@@ -208,7 +209,7 @@ DLLEXPORT long				loginAttemptListCount(link_list_t*);
 DLLEXPORT long				loginAttemptListClear(link_list_t*);
 DLLEXPORT long				loginAttempts(link_list_t*, const union xp_sockaddr*);
 DLLEXPORT void				loginSuccess(link_list_t*, const union xp_sockaddr*);
-DLLEXPORT ulong				loginFailure(link_list_t*, const union xp_sockaddr*, const char* prot, const char* user, const char* pass);
+DLLEXPORT ulong				loginFailure(link_list_t*, const union xp_sockaddr*, const char* prot, const char* user, const char* pass, login_attempt_t*);
 DLLEXPORT ulong				loginBanned(scfg_t*, link_list_t*, SOCKET, const char* host_name, struct login_attempt_settings, login_attempt_t*);
 
 #ifdef __cplusplus

@@ -1893,11 +1893,13 @@ static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t
 {
 	char reason[128];
 	ulong count;
+	login_attempt_t attempt;
 
 	SAFEPRINTF(reason,"%s LOGIN", client->protocol);
-	count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd);
+	count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd, &attempt);
 	if (count > 1)
-		lprintf(LOG_NOTICE, "%04d %s [%s] !CONSECUTIVE UNIQUE LOGIN ATTEMPT #%lu", sock, client->protocol, client->addr, count);
+		lprintf(LOG_NOTICE, "%04d %s [%s] !CONSECUTIVE UNIQUE FAILED LOGIN ATTEMPT #%lu in %d seconds"
+			,sock, client->protocol, client->addr, count, attempt.time - attempt.first);
 	mqtt_user_login_fail(&mqtt, client, user);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		hacklog(&scfg, &mqtt, reason, user, passwd, client->host, addr);

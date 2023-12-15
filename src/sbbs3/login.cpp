@@ -133,6 +133,7 @@ void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol
 	char reason[128];
 	char host_name[128];
 	ulong count;
+	login_attempt_t attempt;
 
 	if(protocol == NULL)
 		protocol = connection;
@@ -142,9 +143,9 @@ void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol
 	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	socklen_t addr_len = sizeof(*addr);
 	SAFEPRINTF(reason,"%s LOGIN", protocol);
-	count=loginFailure(startup->login_attempt_list, addr, protocol, user, passwd);
+	count=loginFailure(startup->login_attempt_list, addr, protocol, user, passwd, &attempt);
 	if (count > 1)
-		lprintf(LOG_NOTICE, "!CONSECUTIVE UNIQUE LOGIN ATTEMPT #%lu", count);
+		lprintf(LOG_NOTICE, "!CONSECUTIVE UNIQUE FAILED LOGIN ATTEMPT #%lu in %d seconds", count, attempt.time - attempt.first);
 	mqtt_user_login_fail(mqtt, &client, user);
 	if(user!=NULL && startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		getnameinfo(&addr->addr, addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
