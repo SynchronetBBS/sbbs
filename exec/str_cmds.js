@@ -53,6 +53,8 @@ function str_cmds(str)
 		}
 	);
 
+	if(str === "")
+		return;
 	log("Invoked string command: " + str);
 	bbs.log_str(str);
 	if(str=="HELP")
