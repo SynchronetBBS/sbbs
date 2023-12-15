@@ -415,8 +415,10 @@ enum  {
 	int GCES_level;                                                                 \
 	get_crypt_error_string(status, sess->tls_sess, &GCES_estr, action, &GCES_level);\
 	if (GCES_estr) {                                                                \
-		if(GCES_level < startup->tls_error_level)                                   \
+		if (GCES_level < startup->tls_error_level)                                  \
 			GCES_level = startup->tls_error_level;                                  \
+		if (GCES_level > LOG_INFO)													\
+			GCES_level = LOG_INFO;                                                  \
 		lprintf(GCES_level, "%04d TLS %s", sess->socket, GCES_estr);                \
 		free_crypt_attrstr(GCES_estr);                                              \
 	}                                                                               \
@@ -1894,6 +1896,8 @@ static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t
 
 	SAFEPRINTF(reason,"%s LOGIN", client->protocol);
 	count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd);
+	if (count > 1)
+		lprintf(LOG_NOTICE, "%04d %s [%s] !CONSECUTIVE UNIQUE LOGIN ATTEMPT #%lu", sock, client->protocol, client->addr, count);
 	mqtt_user_login_fail(&mqtt, client, user);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		hacklog(&scfg, &mqtt, reason, user, passwd, client->host, addr);

@@ -1771,6 +1771,8 @@ static BOOL badlogin(SOCKET sock, CRYPT_SESSION sess, ulong* login_attempts
 
 	if(addr!=NULL) {
 		count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd);
+		if (count > 1)
+			lprintf(LOG_NOTICE, "%04d [%s] !CONSECUTIVE UNIQUE LOGIN ATTEMPT #%lu", sock, client->addr, count);
 		mqtt_user_login_fail(&mqtt, client, user);
 		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold)
 			ftp_hacklog("FTP LOGIN", user, passwd, client->host, addr);

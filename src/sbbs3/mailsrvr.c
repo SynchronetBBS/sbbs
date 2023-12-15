@@ -976,6 +976,8 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* resp
 	if(addr!=NULL) {
 		SAFEPRINTF(reason,"%s LOGIN", client->protocol);
 		count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd);
+		if (count > 1)
+			lprintf(LOG_NOTICE, "%04d %s [%s] !CONSECUTIVE UNIQUE LOGIN ATTEMPT #%lu", sock, client->protocol, client->addr, count);
 		mqtt_user_login_fail(&mqtt, client, user);
 		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 			hacklog(&scfg, &mqtt, reason, user, passwd, client->host, addr);
@@ -3090,14 +3092,6 @@ static bool smtp_client_thread(smtp_t* smtp)
 		return false;
 	}
 
-	if(trashcan(&scfg,host_name,"smtpspy")
-		|| trashcan(&scfg,host_ip,"smtpspy")) {
-		SAFECOPY(str, client.protocol);
-		strlwr(str);
-		SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, str);
-		spy=fopen(path,"a");
-	}
-
 	/* Initialize client display */
 	client.size=sizeof(client);
 	client.time=time32(NULL);
@@ -3117,9 +3111,18 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 	BOOL* mailproc_to_match = calloc(sizeof(*mailproc_to_match), mailproc_count);
 	if(mailproc_to_match == NULL) {
+		fclose(rcptlst);
 		lprintf(LOG_CRIT,"%04d %s !ERROR allocating memory for mailproc_to_match", socket, client.protocol);
 		sockprintf(socket,client.protocol,session,smtp_error, "malloc failure");
 		return false;
+	}
+
+	if(trashcan(&scfg,host_name,"smtpspy")
+		|| trashcan(&scfg,host_ip,"smtpspy")) {
+		SAFECOPY(str, client.protocol);
+		strlwr(str);
+		SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, str);
+		spy=fopen(path,"a");
 	}
 
 	/* SMTP session active: */
@@ -6322,7 +6325,6 @@ void mail_server(void* arg)
 					lprintf(LOG_WARNING,"%04d %s [%s] !MAXIMUM CLIENTS (%u) reached, access denied (%lu total)"
 						,client_socket, servprot, host_ip, startup->max_clients, ++stats.connections_refused);
 					sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum active clients reached");
-					mswait(3000);
 					mail_close_socket(&client_socket, &session);
 					continue;
 				}

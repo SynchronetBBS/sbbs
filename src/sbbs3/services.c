@@ -340,6 +340,8 @@ static void badlogin(SOCKET sock, char* user, char* passwd, client_t* client, un
 
 	SAFEPRINTF(reason,"%s LOGIN", client->protocol);
 	count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd);
+	if (count > 1)
+		lprintf(LOG_NOTICE, "%04d %s [%s] !CONSECUTIVE UNIQUE LOGIN ATTEMPT #%lu", sock, client->protocol, client->addr, count);
 	mqtt_user_login_fail(&mqtt, client, user);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		hacklog(&scfg, &mqtt, reason, user, passwd, client->host, addr);
