@@ -20,10 +20,16 @@
         padding-right: 15px;
         padding-left: 15px;
     }
+    .visible-xl-block {
+        display: none !important;
+    }
     @media (min-width: 1600px) {
         .col-xl-6 { 
             float: left;
             width: 50%; 
+        }
+        .visible-xl-block {
+            display: block !important;
         }
     }
 </style>

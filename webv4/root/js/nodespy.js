@@ -30,6 +30,12 @@ function create_ftelnet_instances() {
                 </div>
             `);
 
+            // Apply a clearfix after every other node div, to ensure the expected grid layout is followed even if some node divs are taller than others
+            // Addresses https://gitlab.synchro.net/main/sbbs/-/issues/683
+            if (node % 2 == 0) {
+                $('#ClientsWrapper').append('<div class="clearfix visible-xl-block"></div>');
+            }
+
             // And initialize a new fTelnet instance
             var Options = new fTelnetOptions();
             Options.AllowModernScrollback = false;
