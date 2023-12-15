@@ -978,7 +978,7 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* resp
 		SAFEPRINTF(reason,"%s LOGIN", client->protocol);
 		count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd, &attempt);
 		if (count > 1)
-			lprintf(LOG_NOTICE, "%04d %s [%s] !CONSECUTIVE UNIQUE FAILED LOGIN ATTEMPT #%lu in %d seconds"
+			lprintf(LOG_NOTICE, "%04d %s [%s] !CONSECUTIVE FAILED LOGIN ATTEMPT #%lu in %d seconds"
 				,sock, client->protocol, client->addr, count, attempt.time - attempt.first);
 		mqtt_user_login_fail(&mqtt, client, user);
 		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
@@ -989,7 +989,8 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* resp
 #endif
 		}
 		if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
-			SAFEPRINTF(reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu)", count);
+			snprintf(reason, sizeof reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %d seconds)"
+				,count, attempt.time - attempt.first);
 			filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL);
 		}
 	}
