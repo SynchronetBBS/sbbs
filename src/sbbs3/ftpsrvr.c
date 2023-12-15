@@ -1767,21 +1767,22 @@ static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, union xp
 static BOOL badlogin(SOCKET sock, CRYPT_SESSION sess, ulong* login_attempts
 	,char* user, char* passwd, client_t* client, union xp_sockaddr* addr)
 {
+	char tmp[128];
 	ulong count;
 	login_attempt_t attempt;
 
 	if(addr!=NULL) {
 		count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd, &attempt);
 		if (count > 1)
-			lprintf(LOG_NOTICE, "%04d [%s] !CONSECUTIVE FAILED LOGIN ATTEMPT #%lu in %d seconds"
-				,sock, client->addr, count, attempt.time - attempt.first);
+			lprintf(LOG_NOTICE, "%04d [%s] !CONSECUTIVE FAILED LOGIN ATTEMPT #%lu in %s"
+				,sock, client->addr, count, seconds_to_str(attempt.time - attempt.first, tmp));
 		mqtt_user_login_fail(&mqtt, client, user);
 		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold)
 			ftp_hacklog("FTP LOGIN", user, passwd, client->host, addr);
 		if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 			char reason[128];
-			snprintf(reason, sizeof reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %d seconds)"
-				,count, attempt.time - attempt.first);
+			snprintf(reason, sizeof reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
+				,count, seconds_to_str(attempt.time - attempt.first, tmp));
 			filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL);
 		}
 		if(count > *login_attempts)

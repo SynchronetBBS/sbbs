@@ -1891,6 +1891,7 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 
 static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t* client, union xp_sockaddr* addr)
 {
+	char tmp[128];
 	char reason[128];
 	ulong count;
 	login_attempt_t attempt;
@@ -1898,8 +1899,8 @@ static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t
 	SAFEPRINTF(reason,"%s LOGIN", client->protocol);
 	count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd, &attempt);
 	if (count > 1)
-		lprintf(LOG_NOTICE, "%04d %s [%s] !CONSECUTIVE FAILED LOGIN ATTEMPT #%lu in %d seconds"
-			,sock, client->protocol, client->addr, count, attempt.time - attempt.first);
+		lprintf(LOG_NOTICE, "%04d %s [%s] !CONSECUTIVE FAILED LOGIN ATTEMPT #%lu in %s"
+			,sock, client->protocol, client->addr, count, seconds_to_str(attempt.time - attempt.first, tmp));
 	mqtt_user_login_fail(&mqtt, client, user);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		hacklog(&scfg, &mqtt, reason, user, passwd, client->host, addr);
@@ -1909,8 +1910,8 @@ static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t
 #endif
 	}
 	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
-		snprintf(reason, sizeof reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %d seconds)"
-			,count, attempt.time - attempt.first);
+		snprintf(reason, sizeof reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
+			,count, seconds_to_str(attempt.time - attempt.first, tmp));
 		filter_ip(&scfg, client->protocol, reason
 			,client->host, client->addr, user, /* fname: */NULL);
 	}
