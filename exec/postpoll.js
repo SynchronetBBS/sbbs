@@ -48,8 +48,14 @@ var poll = { field_list: [] };
 if(!(poll.subject = prompt("Poll question")))
 	exit();
 
+var comments = 0;
 var comment;
-while(comment = prompt("Comment [done]")) poll.field_list.push({ type: SMB_COMMENT, data: comment});
+while(comment = prompt("Comment [done]")) {
+	if(js.global.bbs && comments >= user.limits.lines_per_message)
+		break;
+	poll.field_list.push({ type: SMB_COMMENT, data: comment});
+	comments++;
+}
 if(js.global.console && console.aborted)
 	exit(1);
 
