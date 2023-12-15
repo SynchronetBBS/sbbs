@@ -63,10 +63,10 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 			badlogin(useron.alias, str);
 			bputs(text[InvalidLogon]);	/* why does this always fail? */
 			if(cfg.sys_misc&SM_ECHO_PW) 
-				sprintf(tmp,"(%04u)  %-25s  FAILED Password attempt: '%s'"
+				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Password attempt: '%s'"
 					,0,useron.alias,str);
 			else
-				sprintf(tmp,"(%04u)  %-25s  FAILED Password attempt"
+				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Password attempt"
 					,0,useron.alias);
 			logline(LOG_NOTICE,"+!",tmp); 
 		} else {
@@ -102,10 +102,10 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 			badlogin(useron.alias, str);
 			bputs(text[InvalidLogon]);
 			if(cfg.sys_misc&SM_ECHO_PW) 
-				sprintf(tmp,"(%04u)  %-25s  FAILED Password: '%s' Attempt: '%s'"
-					,useron.number,useron.alias,useron.pass,str);
+				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Password attempt: '%s' expected: '%s'"
+					,useron.number,useron.alias,str,useron.pass);
 			else
-				sprintf(tmp,"(%04u)  %-25s  FAILED Password attempt"
+				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Password attempt"
 					,useron.number,useron.alias);
 			logline(LOG_NOTICE,"+!",tmp);
 			useron.number=0;

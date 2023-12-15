@@ -2482,9 +2482,9 @@ static void ctrl_thread(void* arg)
 			user.number = find_login_id(&scfg, user.alias);
 			if(!user.number) {
 				if(scfg.sys_misc&SM_ECHO_PW)
-					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: '%s' (password: %s)",sock,user.alias,p);
+					lprintf(LOG_NOTICE,"%04d !UNKNOWN USER: '%s' (password: %s)",sock,user.alias,p);
 				else
-					lprintf(LOG_WARNING,"%04d !UNKNOWN USER: '%s'",sock,user.alias);
+					lprintf(LOG_NOTICE,"%04d !UNKNOWN USER: '%s'",sock,user.alias);
 				if(badlogin(sock, sess, &login_attempts, user.alias, p, &client, &ftp.client_addr))
 					break;
 				continue;
@@ -2497,7 +2497,7 @@ static void ctrl_thread(void* arg)
 				continue;
 			}
 			if(user.misc&(DELETED|INACTIVE)) {
-				lprintf(LOG_WARNING,"%04d <%s> !DELETED or INACTIVE user #%d"
+				lprintf(LOG_NOTICE,"%04d <%s> !DELETED or INACTIVE user #%d"
 					,sock,user.alias,user.number);
 				user.number=0;
 				if(badlogin(sock, sess, &login_attempts, NULL, NULL, NULL, NULL))
@@ -2505,7 +2505,7 @@ static void ctrl_thread(void* arg)
 				continue;
 			}
 			if(user.rest&FLAG('T')) {
-				lprintf(LOG_WARNING,"%04d <%s> !T RESTRICTED user #%d"
+				lprintf(LOG_NOTICE,"%04d <%s> !T RESTRICTED user #%d"
 					,sock,user.alias,user.number);
 				user.number=0;
 				if(badlogin(sock, sess, &login_attempts, NULL, NULL, NULL, NULL))
@@ -2514,14 +2514,14 @@ static void ctrl_thread(void* arg)
 			}
 			if(user.ltoday>=scfg.level_callsperday[user.level]
 				&& !(user.exempt&FLAG('L'))) {
-				lprintf(LOG_WARNING,"%04d <%s> !MAXIMUM LOGONS (%d) reached for level %u"
+				lprintf(LOG_NOTICE,"%04d <%s> !MAXIMUM LOGONS (%d) reached for level %u"
 					,sock,user.alias,scfg.level_callsperday[user.level], user.level);
 				sockprintf(sock,sess,"530 Maximum logons per day reached.");
 				user.number=0;
 				continue;
 			}
 			if(user.rest&FLAG('L') && user.ltoday>=1) {
-				lprintf(LOG_WARNING,"%04d <%s> !L RESTRICTED user already on today"
+				lprintf(LOG_NOTICE,"%04d <%s> !L RESTRICTED user already on today"
 					,sock,user.alias);
 				sockprintf(sock,sess,"530 Maximum logons per day reached.");
 				user.number=0;
@@ -2549,10 +2549,10 @@ static void ctrl_thread(void* arg)
 			}
 			else if(stricmp(password,user.pass)) {
 				if(scfg.sys_misc&SM_ECHO_PW)
-					lprintf(LOG_WARNING,"%04d <%s> !FAILED Password attempt: '%s' expected '%s'"
+					lprintf(LOG_NOTICE,"%04d <%s> !FAILED Password attempt: '%s' expected '%s'"
 						,sock, user.alias, password, user.pass);
 				else
-					lprintf(LOG_WARNING,"%04d <%s> !FAILED Password attempt"
+					lprintf(LOG_NOTICE,"%04d <%s> !FAILED Password attempt"
 						,sock, user.alias);
 				user.number=0;
 				if(badlogin(sock, sess, &login_attempts, user.alias, password, &client, &ftp.client_addr))

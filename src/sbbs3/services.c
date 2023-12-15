@@ -419,7 +419,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	/* Password */
 	if(client->user.pass[0] && (pass == NULL || stricmp(client->user.pass,pass))) { /* Wrong password */
-		lprintf(LOG_WARNING,"%04d %s !INVALID PASSWORD ATTEMPT FOR USER: %s"
+		lprintf(LOG_NOTICE,"%04d %s <%s> !FAILED Password attempt"
 			,client->socket,client->service->protocol,client->user.alias);
 		badlogin(client->socket, user, pass, client->client, &client->addr);
 		JS_RESUMEREQUEST(cx, rc);

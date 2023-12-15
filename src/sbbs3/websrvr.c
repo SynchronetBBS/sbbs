@@ -2017,10 +2017,10 @@ static BOOL check_ars(http_session_t * session)
 				if(!http_checkuser(session))
 					return(FALSE);
 				if(scfg.sys_misc&SM_ECHO_PW)
-					lprintf(LOG_WARNING,"%04d !BASIC AUTHENTICATION FAILURE for user '%s' (password: %s)"
+					lprintf(LOG_WARNING,"%04d <%s> !BASIC AUTHENTICATION FAILURE (password: %s)"
 						,session->socket,session->req.auth.username,session->req.auth.password);
 				else
-					lprintf(LOG_WARNING,"%04d !BASIC AUTHENTICATION FAILURE for user '%s'"
+					lprintf(LOG_WARNING,"%04d <%s> !BASIC AUTHENTICATION FAILURE"
 						,session->socket,session->req.auth.username);
 				badlogin(session->socket, session->req.auth.username, session->req.auth.password, &session->client, &session->addr);
 				return(FALSE);
@@ -2030,8 +2030,8 @@ static BOOL check_ars(http_session_t * session)
 		{
 			char* reason="unknown";
 			if(!digest_authentication(session, auth_allowed, thisuser, &reason)) {
-				lprintf(LOG_NOTICE,"%04d !DIGEST AUTHENTICATION FAILURE (reason: %s) for user '%s'"
-						,session->socket,reason,session->req.auth.username);
+				lprintf(LOG_NOTICE,"%04d <%s> !DIGEST AUTHENTICATION FAILURE (reason: %s)"
+						,session->socket,session->req.auth.username,reason);
 				badlogin(session->socket, session->req.auth.username, "<digest>", &session->client, &session->addr);
 				return(FALSE);
 			}
@@ -5606,8 +5606,12 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 		if(stricmp(user.pass, password)) { /* Wrong password */
 			rc=JS_SUSPENDREQUEST(cx);
-			lprintf(LOG_WARNING,"%04d !INVALID PASSWORD ATTEMPT FOR USER: '%s'"
-				,session->socket,user.alias);
+			if(scfg.sys_misc&SM_ECHO_PW)
+				lprintf(LOG_NOTICE, "%04d <%s> !FAILED Password attempt: '%s' expected '%s'"
+					,session->socket,user.alias, password, user.pass);
+			else
+				lprintf(LOG_NOTICE, "%04d <%s> !FAILED Password attempt"
+					,session->socket,user.alias);
 			badlogin(session->socket, username, password, &session->client, &session->addr);
 			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);
