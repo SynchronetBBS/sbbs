@@ -101,6 +101,10 @@
  *                              New configurable colors in the theme file for the indexed mode newscan menu:
  *                              indexMenuSeparatorLine (sub-board separator line) and indexMenuSeparatorText
  *                              (sub-board separator text)
+ * 2023-12-15 Eric Oulashin     Version 1.90b
+ *                              New configurable colors in the theme file for the indexed newscan menu
+ *                              header text (indexMenuHeader), "NEW" indicator text (indexMenuNewIndicator),
+ *                              and highlighted "NEW" indicator text (indexMenuNewIndicatorHighlight)
  */
 
 "use strict";
@@ -205,8 +209,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 
 
 // Reader version information
-var READER_VERSION = "1.90a";
-var READER_DATE = "2023-12-12";
+var READER_VERSION = "1.90b";
+var READER_DATE = "2023-12-15";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -15231,8 +15235,9 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	var currentTotalColWidth = descWidthForHdr + numMsgsWidth + numNewMsgsWidth + lastPostDateWidth;
 	if (currentTotalColWidth < maxScreenWidth)
 		descWidthForHdr += (maxScreenWidth - currentTotalColWidth - 1);
-	var formatStrStrs = "%-" + descWidthForHdr + "s %" + numMsgsWidth + "s %" + numNewMsgsWidth + "s %" + lastPostDateWidth + "s";
-	printf(formatStrStrs, "Description", "Total", "New", "Last Post");
+	var indexMenuHdrFormatStr = "\x01n" + this.colors.indexMenuHeader;
+	indexMenuHdrFormatStr += "%-" + descWidthForHdr + "s %" + numMsgsWidth + "s %" + numNewMsgsWidth + "s %" + lastPostDateWidth + "s";
+	printf(indexMenuHdrFormatStr, "Description", "Total", "New", "Last Post");
 	console.attributes = "N";
 	if (!usingANSI)
 		console.crlf();
@@ -15623,7 +15628,9 @@ function DigDistMsgReader_CreateLightbarIndexedModeMenu(pNumMsgsWidth, pNumNewMs
 {
 	// Start & end indexes for the selectable items
 	var indexMenuIdxes = {
-		descStart: 0,
+		newStatusStart: 0,
+		newStatusEnd: 4,
+		descStart: 4,
 		descEnd: pDescWidth+1,
 		totalStart: pDescWidth+1,
 		totalEnd: pDescWidth+pNumMsgsWidth+2,
@@ -15643,16 +15650,19 @@ function DigDistMsgReader_CreateLightbarIndexedModeMenu(pNumMsgsWidth, pNumNewMs
 	indexedModeMenu.scrollbarEnabled = true;
 	indexedModeMenu.borderEnabled = false;
 	// Colors:
+	var newStatusHigh = "\x01n" + this.colors.indexMenuHighlightBkg + this.colors.indexMenuNewIndicatorHighlight;
 	var descHigh = "\x01n" + this.colors.indexMenuHighlightBkg + this.colors.indexMenuDescHighlight;
 	var totalMsgsHi = "\x01n" + this.colors.indexMenuHighlightBkg + this.colors.indexMenuTotalMsgsHighlight;
 	var numNewMsgsHi = "\x01n" + this.colors.indexMenuHighlightBkg + this.colors.indexMenuNumNewMsgsHighlight;
 	var lastPostDateHi = "\x01n" + this.colors.indexMenuHighlightBkg + this.colors.indexMenuLastPostDateHighlight;
 	indexedModeMenu.SetColors({
-		itemColor: [{start: indexMenuIdxes.descStart, end: indexMenuIdxes.descEnd, attrs: "\x01n" + this.colors.indexMenuDesc},
+		itemColor: [{start: indexMenuIdxes.newStatusStart, end: indexMenuIdxes.newStatusEnd, attrs: "\x01n" + this.colors.indexMenuNewIndicator},
+		            {start: indexMenuIdxes.descStart, end: indexMenuIdxes.descEnd, attrs: "\x01n" + this.colors.indexMenuDesc},
 		            {start: indexMenuIdxes.totalStart, end: indexMenuIdxes.totalEnd, attrs: "\x01n" + this.colors.indexMenuTotalMsgs},
 		            {start: indexMenuIdxes.newMsgsStart, end: indexMenuIdxes.newMsgsEnd, attrs: "\x01n" + this.colors.indexMenuNumNewMsgs},
 		            {start: indexMenuIdxes.lastPostDateStart, end: indexMenuIdxes.lastPostDateEnd, attrs: "\x01n" + this.colors.indexMenuLastPostDate}],
-		selectedItemColor: [{start: indexMenuIdxes.descStart, end: indexMenuIdxes.descEnd, attrs: descHigh},
+		selectedItemColor: [{start: indexMenuIdxes.newStatusStart, end: indexMenuIdxes.newStatusEnd, attrs: newStatusHigh},
+		                    {start: indexMenuIdxes.descStart, end: indexMenuIdxes.descEnd, attrs: descHigh},
 		                    {start: indexMenuIdxes.totalStart, end: indexMenuIdxes.totalEnd, attrs: totalMsgsHi},
 		                    {start: indexMenuIdxes.newMsgsStart, end: indexMenuIdxes.newMsgsEnd, attrs: numNewMsgsHi},
 		                    {start: indexMenuIdxes.lastPostDateStart, end: indexMenuIdxes.lastPostDateEnd, attrs: lastPostDateHi}],
@@ -17505,12 +17515,15 @@ function getDefaultColors()
 		unreadMsgMarkColor: "\x01n\x01w\x01h\x01i",
 
 		// Colors for the indexed mode sub-board menu:
+		indexMenuHeader: "\x01n\x01w",
+		indexMenuNewIndicator: "\x01n\x01w",
 		indexMenuDesc: "\x01n\x01w",
 		indexMenuTotalMsgs: "\x01n\x01w",
 		indexMenuNumNewMsgs: "\x01n\x01w",
 		indexMenuLastPostDate: "\x01b\x01h",
 		// Highlighted/selected:
 		indexMenuHighlightBkg: "\x014",
+		indexMenuNewIndicatorHighlight: "\x01w\x01h",
 		indexMenuDescHighlight: "\x01w\x01h",
 		indexMenuTotalMsgsHighlight: "\x01w\x01h",
 		indexMenuNumNewMsgsHighlight: "\x01w\x01h",
