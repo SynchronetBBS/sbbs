@@ -38,7 +38,7 @@ endif
 	@echo " 'DEBUG=1'     Build output files with debug information"
 	@echo " 'RELEASE=1'   Build output files withOUT debug information"
 	@echo " 'JSLIB=x'     Specify an alternate path to libmozjs[185].so"
-	@echo " 'JSINCLUDE=x  Specify an alternate Mozilla JS library header path"
+	@echo " 'JSINCLUDE=x' Specify an alternate Mozilla JS library header path"
 
 UTIL_LDFLAGS	:=	$(LDFLAGS)
 UTIL_LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV_LDFLAGS) $(ENCODE_LDFLAGS)
