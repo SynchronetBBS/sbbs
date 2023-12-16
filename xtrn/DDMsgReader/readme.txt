@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.90a
-                           Release date: 2023-12-12
+                                 Version 1.90b
+                           Release date: 2023-12-15
 
                                      by
 
@@ -898,6 +898,12 @@ msgListTimeHighlightColor            Message list highlighted time color (for
                                      lightbar mode)
 
  Colors for the indexed mode sub-board menu:
+indexMenuHeader                      Header text above the indexed mode menu
+
+indexMenuNewIndicator                "NEW" indicator text at the start of the
+                                     indexed mode menu sub-boards that have new
+                                     messages
+ 
 indexMenuDesc                        Indexed mode menu item description
 
 indexMenuTotalMsgs                   Indexed mode menu total number of messages
@@ -908,6 +914,10 @@ indexMenuLastPostDate                Indexed mode menu last post date
 
 indexMenuHighlightBkg                Indexed mode menu highlighted item
                                      background
+
+indexMenuNewIndicatorHighlight       Indexed mode highlighted "NEW" indicator
+                                     text at the start of the sub-boards that
+                                     have new messages
 
 indexMenuDescHighlight               Indexed mode menu highlighted description
 

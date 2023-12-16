@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.90b    2023-12-15   New configurable colors in the theme file for the indexed
+                      newscan menu header text (indexMenuHeader), "NEW"
+                      indicator text (indexMenuNewIndicator), and highlighted
+                      "NEW" indicator text (indexMenuNewIndicatorHighlight)
 1.90a    2023-12-12   New configurable colors in the theme file for the indexed
                       mode newscan menu: indexMenuSeparatorLine (sub-board
                       separator line) and indexMenuSeparatorText (sub-board
