@@ -3119,8 +3119,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 		return false;
 	}
 
-	if(trashcan(&scfg,host_name,"smtpspy")
-		|| trashcan(&scfg,host_ip,"smtpspy")) {
+	if(trashcan2(&scfg, host_ip, host_name, "smtpspy")) {
 		SAFECOPY(str, client.protocol);
 		strlwr(str);
 		SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, str);
@@ -4545,8 +4544,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			}
 
 			if(spy==NULL
-				&& (trashcan(&scfg,reverse_path,"smtpspy")
-					|| trashcan(&scfg,rcpt_addr,"smtpspy"))) {
+				&& trashcan2(&scfg,reverse_path, rcpt_addr, "smtpspy")) {
 				SAFECOPY(tmp, client.protocol);
 				strlwr(tmp);
 				SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, tmp);

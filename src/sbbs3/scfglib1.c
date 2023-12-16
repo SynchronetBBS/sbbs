@@ -889,6 +889,17 @@ BOOL trashcan(scfg_t* cfg, const char* insearchof, const char* name)
 }
 
 /****************************************************************************/
+/* Searches the file <name>.can in the TEXT directory for 2 matches			*/
+/* Returns TRUE if found in list, FALSE if not.								*/
+/****************************************************************************/
+BOOL trashcan2(scfg_t* cfg, const char* str1, const char* str2, const char* name)
+{
+	char fname[MAX_PATH+1];
+
+	return find2strs(str1, str2, trashcan_fname(cfg,name,fname,sizeof(fname)));
+}
+
+/****************************************************************************/
 char* trashcan_fname(scfg_t* cfg, const char* name, char* fname, size_t maxlen)
 {
 	safe_snprintf(fname,maxlen,"%s%s.can",cfg->text_dir,name);
