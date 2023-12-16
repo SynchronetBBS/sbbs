@@ -3207,7 +3207,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 	time32_t now=time32(NULL);
 	ulong	max_msg_age = (subnum == INVALID_SUB) ? cfg.max_netmail_age : cfg.max_echomail_age;
 
-	if(find2str_in_list(hdr->from, hdr->to, twit_list)) {
+	if(find2strs_in_list(hdr->from, hdr->to, twit_list)) {
 		lprintf(LOG_INFO,"Filtering message from %s to %s",hdr->from,hdr->to);
 		return IMPORT_FILTERED_TWIT;
 	}
