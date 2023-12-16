@@ -23,7 +23,7 @@
 #include "findstr.h"
 
 /****************************************************************************/
-/* Pattern matching string search of 'insearchof' in 'pattern'.				*/
+/* Pattern matching string search of 'search' in 'pattern'.					*/
 /* pattern matching is case-insensitive										*/
 /* patterns beginning with ';' are comments (never match)					*/
 /* patterns beginning with '!' are reverse-matched (returns FALSE if match)	*/
@@ -35,17 +35,14 @@
 BOOL findstr_in_string(const char* search, const char* pattern)
 {
 	char	buf[256];
-	char*	p;
+	char*	p = (char*)pattern;
 	char*	last;
 	const char*	splat;
 	size_t	len;
 	BOOL	found = FALSE;
 
-	if(pattern == NULL || search == NULL)
+	if(pattern == NULL)
 		return FALSE;
-
-	SAFECOPY(buf, pattern);
-	p = buf;
 
 	if(*p == ';')		/* comment */
 		return FALSE;
@@ -54,6 +51,12 @@ BOOL findstr_in_string(const char* search, const char* pattern)
 		found = TRUE;
 		p++;
 	}
+
+	if(search == NULL)
+		return found;
+
+	SAFECOPY(buf, p);
+	p = buf;
 
 	truncsp(p);
 	len = strlen(p);
@@ -98,6 +101,8 @@ static uint32_t parse_ipv4_address(const char* str)
 {
 	unsigned int byte[4];
 
+	if(str == NULL)
+		return 0;
 	if(sscanf(str, "%u.%u.%u.%u", &byte[0], &byte[1], &byte[2], &byte[3]) != 4)
 		return 0;
 	return encode_ipv4_address(byte);
@@ -129,27 +134,45 @@ static BOOL is_cidr_match(const char *p, uint32_t ip_addr, uint32_t cidr, unsign
 	return match;
 }
 
+static BOOL findstr_compare(const char* str, uint32_t ip_addr, const char* pattern)
+{
+	uint32_t cidr;
+	unsigned subnet;
+
+	if(ip_addr != 0 && (cidr = parse_cidr(pattern, &subnet)) != 0)
+		return is_cidr_match(pattern, ip_addr, cidr, subnet);
+	return findstr_in_string(str, pattern);
+}
+
 /****************************************************************************/
 /* Pattern matching string search of 'insearchof' in 'list'.				*/
 /****************************************************************************/
 BOOL findstr_in_list(const char* insearchof, str_list_t list)
 {
+	return find2strs_in_list(insearchof, NULL, list);
+}
+
+/****************************************************************************/
+/* Pattern matching string search of 'str1' or 'str2' in 'list'.			*/
+/****************************************************************************/
+BOOL find2strs_in_list(const char* str1, const char* str2, str_list_t list)
+{
 	size_t	index;
 	BOOL	found=FALSE;
 	char*	p;
-	uint32_t ip_addr, cidr;
-	unsigned subnet;
+	uint32_t ip_addr1, ip_addr2;
 
-	if(list==NULL || insearchof==NULL)
+	if(list == NULL)
 		return FALSE;
-	ip_addr = parse_ipv4_address(insearchof);
+	ip_addr1 = parse_ipv4_address(str1);
+	ip_addr2 = parse_ipv4_address(str2);
 	for(index=0; list[index]!=NULL; index++) {
 		p=list[index];
-//		SKIP_WHITESPACE(p);
-		if(ip_addr != 0 && (cidr = parse_cidr(p, &subnet)) != 0)
-			found = is_cidr_match(p, ip_addr, cidr, subnet);
-		else
-			found = findstr_in_string(insearchof,p);
+		if(*p == '\0')
+			continue;
+		found = findstr_compare(str1, ip_addr1, p);
+		if(!found && str2 != NULL)
+			found = findstr_compare(str2, ip_addr2, p);
 		if(found != (*p=='!'))
 			break;
 	}
@@ -161,29 +184,40 @@ BOOL findstr_in_list(const char* insearchof, str_list_t list)
 /****************************************************************************/
 BOOL findstr(const char* insearchof, const char* fname)
 {
+	return find2strs(insearchof, NULL, fname);
+}
+
+/****************************************************************************/
+/* Pattern matching string search of 'str1' or 'str2' in 'fname'.			*/
+/****************************************************************************/
+BOOL find2strs(const char* str1, const char* str2, const char* fname)
+{
 	char		str[256];
 	BOOL		found=FALSE;
 	FILE*		fp;
-	uint32_t	ip_addr, cidr;
-	unsigned	subnet;
+	uint32_t	ip_addr1, ip_addr2;
 
-	if(insearchof==NULL || fname==NULL || *fname == '\0')
+	if(fname == NULL || *fname == '\0')
 		return FALSE;
 
 	if((fp=fopen(fname,"r"))==NULL)
 		return FALSE; 
 
-	ip_addr = parse_ipv4_address(insearchof);
-	while(!feof(fp) && !ferror(fp) && !found) {
+	ip_addr1 = parse_ipv4_address(str1);
+	ip_addr2 = parse_ipv4_address(str2);
+	while(!feof(fp) && !ferror(fp)) {
 		if(!fgets(str,sizeof(str),fp))
 			break;
 		char* p = str;
 		SKIP_WHITESPACE(p);
+		if(*p == '\0')
+			continue;
 		c_unescape_str(p);
-		if(ip_addr !=0 && (cidr = parse_cidr(p, &subnet)) != 0)
-			found = is_cidr_match(p, ip_addr, cidr, subnet);
-		else
-			found = findstr_in_string(insearchof, p);
+		found = findstr_compare(str1, ip_addr1, p);
+		if(!found && str2 != NULL)
+			found = findstr_compare(str2, ip_addr2, p);
+		if(found != (*p=='!'))
+			break;
 	}
 
 	fclose(fp);

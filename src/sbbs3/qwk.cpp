@@ -1191,7 +1191,7 @@ bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, msg_filters filters)
 		return true;
 	}
 
-	if(findstr_in_list(msg->from, filters.twit_list) || findstr_in_list(msg->to, filters.twit_list)) {
+	if(find2strs_in_list(msg->from, msg->to, filters.twit_list)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from '%s' to '%s'"
 			,msg->from
 			,msg->to);

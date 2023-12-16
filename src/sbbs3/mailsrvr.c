@@ -1856,9 +1856,7 @@ static ulong dns_blacklisted(SOCKET sock, const char* prot, union xp_sockaddr *a
 
 	SAFEPRINTF(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
 	inet_addrtop(addr, ip, sizeof(ip));
-	if(findstr(ip,fname))
-		return(FALSE);
-	if(findstr(host_name,fname))
+	if(find2strs(ip, host_name, fname))
 		return(FALSE);
 
 	SAFEPRINTF(fname,"%sdns_blacklist.cfg", scfg.ctrl_dir);
@@ -3035,7 +3033,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			return false;
 		}
 
-		spam_block_exempt = findstr(host_ip,spam_block_exemptions) || findstr(host_name,spam_block_exemptions);
+		spam_block_exempt = find2strs(host_ip, host_name, spam_block_exemptions);
 		if(trashcan(&scfg,host_ip,"ip")
 			|| ((!spam_block_exempt) && findstr(host_ip,spam_block))) {
 			lprintf(LOG_NOTICE,"%04d %s !CLIENT IP ADDRESS BLOCKED: %s (%lu total)"
@@ -3173,7 +3171,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 				/* Twit-listing (sender's name and e-mail addresses) here */
 				twitlist_fname(&scfg, path, sizeof path);
-				if(fexist(path) && (findstr(sender,path) || findstr(sender_addr,path))) {
+				if(fexist(path) && find2strs(sender, sender_addr, path)) {
 					lprintf(LOG_NOTICE,"%04d %s %s !FILTERING TWIT-LISTED SENDER: '%s' <%s> (%lu total)"
 						,socket, client.protocol, client_id, sender, sender_addr, ++stats.msgs_refused);
 					SAFEPRINTF2(tmp,"Twit-listed sender: '%s' <%s>", sender, sender_addr);
@@ -4630,8 +4628,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 						(!(startup->options&MAIL_OPT_ALLOW_RELAY)
 							|| relay_user.number==0
 							|| relay_user.rest&(FLAG('G')|FLAG('M'))) &&
-						!findstr(host_name,relay_list) &&
-						!findstr(host_ip,relay_list)) {
+						!find2strs(host_name, host_ip, relay_list)) {
 						lprintf(LOG_NOTICE,"%04d %s %s !ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 							,socket, client.protocol, client_id, reverse_path, host_ip, p);
 						SAFEPRINTF(tmp,"Relay attempt to: %s", p);
@@ -4697,7 +4694,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				if(!chk_ar(&scfg,mailproc_list[i].ar,&relay_user,&client))
 					continue;
 
-				if(findstr_in_list(p, mailproc_list[i].to) || findstr_in_list(rcpt_addr, mailproc_list[i].to)) {
+				if(find2strs_in_list(p, rcpt_addr, mailproc_list[i].to)) {
 					mailproc_to_match[i]=TRUE;
 					if(!mailproc_list[i].passthru)
 						mailproc_match = i;

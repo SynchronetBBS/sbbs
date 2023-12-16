@@ -30,8 +30,10 @@ extern "C" {
 #endif
 
 DLLEXPORT BOOL		findstr(const char *insearch, const char *fname);
+DLLEXPORT BOOL		find2strs(const char *str1, const char* str2, const char *fname);
 DLLEXPORT BOOL		findstr_in_string(const char* insearchof, const char* pattern);
 DLLEXPORT BOOL		findstr_in_list(const char* insearchof, str_list_t list);
+DLLEXPORT BOOL		find2strs_in_list(const char* str1, const char* str2, str_list_t list);
 DLLEXPORT str_list_t findstr_list(const char* fname);
 
 #ifdef __cplusplus
