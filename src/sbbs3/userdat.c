@@ -896,7 +896,7 @@ int putusername(scfg_t* cfg, int number, const char *name)
 
 int getbirthyear(const char* birth)
 {
-	if(IS_DIGIT(birth[2]))				// CCYYMMYY format
+	if(IS_DIGIT(birth[2]))				// CCYYMMDD format
 		return DECVAL(birth[0], 1000)
 				+ DECVAL(birth[1], 100)
 				+ DECVAL(birth[2], 10)
@@ -915,7 +915,7 @@ int getbirthyear(const char* birth)
 
 int getbirthmonth(scfg_t* cfg, const char* birth)
 {
-	if(IS_DIGIT(birth[5]))				// CCYYMMYY format
+	if(IS_DIGIT(birth[5]))				// CCYYMMDD format
 		return DECVAL(birth[4], 10)	+ DECVAL(birth[5], 1);
 	if(cfg->sys_misc & SM_EURODATE) {	// DD/MM/YY format
 		return DECVAL(birth[3], 10) + DECVAL(birth[4], 1);
@@ -926,7 +926,7 @@ int getbirthmonth(scfg_t* cfg, const char* birth)
 
 int getbirthday(scfg_t* cfg, const char* birth)
 {
-	if(IS_DIGIT(birth[5]))				// CCYYMMYY format
+	if(IS_DIGIT(birth[5]))				// CCYYMMDD format
 		return DECVAL(birth[6], 10)	+ DECVAL(birth[7], 1);
 	if(cfg->sys_misc & SM_EURODATE) {	// DD/MM/YY format
 		return DECVAL(birth[0], 10) + DECVAL(birth[1], 1);
