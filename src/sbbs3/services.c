@@ -354,7 +354,7 @@ static void badlogin(SOCKET sock, char* user, char* passwd, client_t* client, un
 #endif
 	}
 	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
-		snprintf(reason, sizeof reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
+		snprintf(reason, sizeof reason, "TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
 			,count, seconds_to_str(attempt.time - attempt.first, tmp));
 		filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL);
 	}

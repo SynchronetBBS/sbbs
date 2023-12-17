@@ -161,7 +161,7 @@ void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol
 		char ipaddr[INET6_ADDRSTRLEN];
 		inet_addrtop(addr, ipaddr, sizeof(ipaddr));
 		getnameinfo(&addr->addr, addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
-		snprintf(reason, sizeof reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
+		snprintf(reason, sizeof reason, "TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
 			,count, seconds_to_str(attempt.time - attempt.first, tmp));
 		filter_ip(&cfg, protocol, reason, host_name, ipaddr, user, /* fname: */NULL);
 	}

@@ -1781,7 +1781,7 @@ static BOOL badlogin(SOCKET sock, CRYPT_SESSION sess, ulong* login_attempts
 			ftp_hacklog("FTP LOGIN", user, passwd, client->host, addr);
 		if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 			char reason[128];
-			snprintf(reason, sizeof reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
+			snprintf(reason, sizeof reason, "TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
 				,count, seconds_to_str(attempt.time - attempt.first, tmp));
 			filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL);
 		}
