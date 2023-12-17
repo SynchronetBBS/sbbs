@@ -3452,7 +3452,7 @@ bool sbbs_t::init()
 
 		addr_len=sizeof(addr);
 		if((result=getsockname(client_socket, &addr.addr, &addr_len))!=0) {
-			lprintf(LOG_ERR,"!ERROR %d (%d) getting address/port"
+			lprintf(LOG_CRIT,"!ERROR %d (%d) getting local address/port of socket"
 				,result, ERROR_VALUE);
 			return(false);
 		}
@@ -3471,8 +3471,6 @@ bool sbbs_t::init()
 			fprintf(fp, "local_port=%u\n", (uint)inet_addrport(&addr));
 			fclose(fp);
 		}
-		lprintf(LOG_INFO,"socket %u attached to local interface %s port %u"
-			,client_socket, local_addr, inet_addrport(&addr));
 		spymsg("Connected");
 	}
 
@@ -5299,14 +5297,26 @@ NO_SSH:
 			continue;
 		}
 
+
 #ifdef USE_CRYPTLIB
 		client.protocol=rlogin ? "RLogin":(ssh ? "SSH" : "Telnet");
 #else
 		client.protocol=rlogin ? "RLogin":"Telnet";
 #endif
-		lprintf(LOG_INFO,"%04d %s connection accepted from: %s port %u"
-			,client_socket, client.protocol
-			, host_ip, inet_addrport(&client_addr));
+		union xp_sockaddr local_addr;
+		memset(&local_addr, 0, sizeof(local_addr));
+		socklen_t addr_len = sizeof(local_addr);
+		if(getsockname(client_socket, (struct sockaddr *)&local_addr, &addr_len) != 0) {
+			lprintf(LOG_CRIT,"%04d %s [%s] !ERROR %d getting local address/port of socket"
+				,client_socket, client.protocol, host_ip, ERROR_VALUE);
+			close_socket(client_socket);
+			continue;
+		}
+		char local_ip[INET6_ADDRSTRLEN];
+		inet_addrtop(&local_addr, local_ip, sizeof local_ip);
+
+		lprintf(LOG_INFO,"%04d %s [%s] Connection accepted on %s port %u from port %u"
+			,client_socket, client.protocol, host_ip, local_ip, inet_addrport(&local_addr), inet_addrport(&client_addr));
 
 		if(startup->max_concurrent_connections > 0) {
 			int ip_len = strlen(host_ip)+1;
@@ -5331,11 +5341,11 @@ NO_SSH:
 		if(banned || sbbs->trashcan(host_ip,"ip")) {
 			if(banned) {
 				char ban_duration[128];
-				lprintf(LOG_NOTICE, "%04d %s !TEMPORARY BAN of %s (%lu login attempts%s%s) - remaining: %s"
+				lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts%s%s) - remaining: %s"
 					,client_socket, client.protocol, host_ip, attempted.count-attempted.dupes
 					,attempted.user[0] ? ", last: " : "", attempted.user, seconds_to_str(banned, ban_duration));
 			} else
-				lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in ip.can: %s", client_socket, client.protocol, host_ip);
+				lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in ip.can", client_socket, client.protocol, host_ip);
 			close_socket(client_socket);
 			continue;
 		}
@@ -5410,7 +5420,7 @@ NO_SSH:
 							i=cryptGetAttributeString(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE, tname, &tnamelen);
 							GCESS(i, client_socket, sbbs->ssh_session, "getting channel type");
 							if (tnamelen != 7 || strnicmp(tname, "session", 7)) {
-								lprintf(LOG_NOTICE, "%04d SSH active channel '%.*s' is not 'session', disconnecting.", client_socket, tnamelen, tname);
+								lprintf(LOG_NOTICE, "%04d SSH [%s] active channel '%.*s' is not 'session', disconnecting.", client_socket, host_ip, tnamelen, tname);
 								sbbs->badlogin(/* user: */NULL, /* passwd: */NULL, "SSH", &client_addr, /* delay: */false);
 								// Fail because there's no session.
 								ssh_failed = 3;
@@ -5422,7 +5432,7 @@ NO_SSH:
 					else {
 						GCESS(i, client_socket, sbbs->ssh_session, "getting channel id");
 						if (i == CRYPT_ERROR_PERMISSION)
-							lprintf(LOG_ERR, "!ERROR Your cryptlib build is obsolete, please update");
+							lprintf(LOG_CRIT, "!Your cryptlib build is obsolete, please update");
 					}
 					break;
 				}
@@ -5434,7 +5444,7 @@ NO_SSH:
 				}
 			}
 			if(ssh_failed) {
-				lprintf(LOG_INFO, "%04d SSH session establishment failed", client_socket);
+				lprintf(LOG_NOTICE, "%04d SSH [%s] session establishment failed", client_socket, host_ip);
 				SSH_END(client_socket);
 				close_socket(client_socket);
 				continue;
@@ -5459,12 +5469,7 @@ NO_SSH:
 
 		sbbs->autoterm=0;
 		sbbs->cols = startup->default_term_width;
-		union xp_sockaddr local_addr;
-		memset(&local_addr, 0, sizeof(local_addr));
-		socklen_t addr_len=sizeof(local_addr);
-		if(getsockname(client_socket, (struct sockaddr *)&local_addr, &addr_len) == 0
-			&& (inet_addrport(&local_addr) == startup->pet40_port
-				|| inet_addrport(&local_addr) == startup->pet80_port)) {
+		if (inet_addrport(&local_addr) == startup->pet40_port || inet_addrport(&local_addr) == startup->pet80_port) {
 			sbbs->autoterm = PETSCII;
 			sbbs->cols = inet_addrport(&local_addr) == startup->pet40_port ? 40 : 80;
 			sbbs->outcom(PETSCII_UPPERLOWER);
@@ -5478,14 +5483,14 @@ NO_SSH:
 			sbbs->bprintf("Resolving hostname...");
 			getnameinfo(&client_addr.addr, client_addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 			sbbs->putcom(crlf);
-			lprintf(LOG_INFO,"%04d %s Hostname: %s [%s]", client_socket, client.protocol, host_name, host_ip);
+			lprintf(LOG_INFO,"%04d %s [%s] Hostname: %s", client_socket, client.protocol, host_ip, host_name);
 		}
 
 		if(sbbs->trashcan(host_name,"host")) {
 			SSH_END(client_socket);
 			close_socket(client_socket);
-			lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in host.can: %s"
-				,client_socket, client.protocol, host_name);
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s"
+				,client_socket, client.protocol, host_ip, host_name);
 			continue;
 		}
 
@@ -5494,13 +5499,13 @@ NO_SSH:
 			sbbs->bprintf("Resolving identity...");
 			/* ToDo: Make ident timeout configurable */
 			if(identify(&client_addr, inet_addrport(&client_addr), str, sizeof(str)-1, /* timeout: */1)) {
-				lprintf(LOG_DEBUG,"%04d %s Ident Response: %s",client_socket, client.protocol, str);
+				lprintf(LOG_DEBUG,"%04d %s [%s] Ident Response: %s",client_socket, client.protocol, host_ip, str);
 				identity=strrchr(str,':');
 				if(identity!=NULL) {
 					identity++;	/* skip colon */
 					SKIP_WHITESPACE(identity);
 					if(*identity)
-						lprintf(LOG_INFO,"%04d %s Identity: %s",client_socket, client.protocol, identity);
+						lprintf(LOG_INFO,"%04d %s [%s] Identity: %s",client_socket, client.protocol, host_ip, identity);
 				}
 			}
 			sbbs->putcom(crlf);
@@ -5545,7 +5550,7 @@ NO_SSH:
 		}
 
 		if(i>last_node) {
-			lprintf(LOG_WARNING,"%04d %s !No nodes available for login.", client_socket, client.protocol);
+			lprintf(LOG_WARNING,"%04d %s [%s] !No nodes available for login.", client_socket, client.protocol, host_ip);
 			SAFEPRINTF(str,"%snonodes.txt",scfg.text_dir);
 			if(fexist(str))
 				sbbs->printfile(str,P_NOABORT);
@@ -5559,6 +5564,8 @@ NO_SSH:
 			close_socket(client_socket);
 			continue;
 		}
+
+		lprintf(LOG_INFO, "%04d %s [%s] Attaching to Node %d", client_socket, client.protocol, host_ip, i);
 
 		// Load the configuration files for this node, only if/when needed/updated
 		scfg_t* cfg = &node_scfg[i - 1];
@@ -5690,7 +5697,7 @@ NO_SSH:
 
 			tmp_addr_len=sizeof(tmp_addr);
 			if(getsockname(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len)) {
-				lprintf(LOG_ERR,"Node %d !ERROR %d getting passthru listener address"
+				lprintf(LOG_CRIT,"Node %d !ERROR %d getting passthru listener address/port of socket"
 					,new_node->cfg.node_num, ERROR_VALUE);
 				close_socket(tmp_sock);
 				goto NO_PASSTHRU;

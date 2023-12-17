@@ -1268,7 +1268,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 
 		addr_len = sizeof(server_addr);
 		if((result=getsockname(ctrl_sock, &server_addr.addr,&addr_len))!=0) {
-			lprintf(LOG_ERR,"%04d <%s> !DATA ERROR %d (%d) getting address/port of command socket (%u)"
+			lprintf(LOG_CRIT,"%04d <%s> !DATA ERROR %d (%d) getting address/port of command socket (%u)"
 				,ctrl_sock, user->alias,result,ERROR_VALUE,pasv_sock);
 			return;
 		}
@@ -1324,7 +1324,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 		if(startup->options&FTP_OPT_DEBUG_DATA) {
 			addr_len=sizeof(*addr);
 			if((result=getsockname(pasv_sock, &addr->addr,&addr_len))!=0)
-				lprintf(LOG_ERR,"%04d <%s> PASV !DATA ERROR %d (%d) getting address/port of passive socket (%u)"
+				lprintf(LOG_CRIT,"%04d <%s> PASV !DATA ERROR %d (%d) getting address/port of passive socket (%u)"
 					,ctrl_sock, user->alias,result,ERROR_VALUE,pasv_sock);
 			else
 				lprintf(LOG_DEBUG,"%04d <%s> PASV DATA socket %d listening on %s port %u"
@@ -2221,7 +2221,7 @@ static void ctrl_thread(void* arg)
 	/* Default data port is ctrl port-1 */
 	data_port = inet_addrport(&data_addr)-1;
 
-	lprintf(LOG_DEBUG,"%04d CTRL thread started", sock);
+	lprintf(LOG_DEBUG,"%04d Session thread started", sock);
 
 	free(arg);
 
@@ -2249,23 +2249,36 @@ static void ctrl_thread(void* arg)
 
 	inet_addrtop(&ftp.client_addr, host_ip, sizeof(host_ip));
 
-	lprintf(LOG_INFO,"%04d CTRL connection accepted from: %s port %u"
-		,sock, host_ip, inet_addrport(&ftp.client_addr));
+	union xp_sockaddr local_addr;
+	memset(&local_addr, 0, sizeof(local_addr));
+	addr_len = sizeof(local_addr);
+	if(getsockname(sock, (struct sockaddr *)&local_addr, &addr_len) != 0) {
+		lprintf(LOG_CRIT,"%04d [%s] !ERROR %d getting local address/port of socket"
+			,sock, host_ip, ERROR_VALUE);
+		ftp_close_socket(&sock,&sess,__LINE__);
+		thread_down();
+		return;
+	}
+	char local_ip[INET6_ADDRSTRLEN];
+	inet_addrtop(&local_addr, local_ip, sizeof local_ip);
+
+	lprintf(LOG_INFO,"%04d [%s] Connection accepted on %s port %u from port %u"
+		,sock, host_ip, local_ip, inet_addrport(&local_addr), inet_addrport(&ftp.client_addr));
 
 	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	if(!(startup->options&FTP_OPT_NO_HOST_LOOKUP)) {
 		getnameinfo(&ftp.client_addr.addr, sizeof(ftp.client_addr), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
-		lprintf(LOG_INFO,"%04d Hostname: %s [%s]", sock, host_name, host_ip);
+		lprintf(LOG_INFO,"%04d [%s] Hostname: %s", sock, host_ip, host_name);
 	}
 
 	ulong banned = loginBanned(&scfg, startup->login_attempt_list, sock, host_name, startup->login_attempt, &attempted);
 	if(banned || trashcan(&scfg,host_ip,"ip")) {
 		if(banned) {
 			char ban_duration[128];
-			lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%lu login attempts, last: %s) - remaining: %s"
+			lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
 				,sock, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 		} else
-			lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in ip.can: %s", sock, host_ip);
+			lprintf(LOG_NOTICE,"%04d [%s] !CLIENT BLOCKED in ip.can", sock, host_ip);
 		sockprintf(sock,sess,"550 Access denied.");
 		ftp_close_socket(&sock,&sess,__LINE__);
 		thread_down();
@@ -2273,7 +2286,7 @@ static void ctrl_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_NOTICE,"%04d !CLIENT BLOCKED in host.can: %s", sock, host_name);
+		lprintf(LOG_NOTICE,"%04d [%s] !CLIENT BLOCKED in host.can: %s", sock, host_ip, host_name);
 		sockprintf(sock,sess,"550 Access denied.");
 		ftp_close_socket(&sock,&sess,__LINE__);
 		thread_down();
@@ -2283,7 +2296,7 @@ static void ctrl_thread(void* arg)
 	/* For PASV mode */
 	addr_len=sizeof(pasv_addr);
 	if((result=getsockname(sock, &pasv_addr.addr,&addr_len))!=0) {
-		lprintf(LOG_ERR,"%04d !ERROR %d (%d) getting address/port", sock, result, ERROR_VALUE);
+		lprintf(LOG_CRIT,"%04d !ERROR %d (%d) getting address/por of socket", sock, result, ERROR_VALUE);
 		sockprintf(sock,sess,"425 Error %d getting address/port",ERROR_VALUE);
 		ftp_close_socket(&sock,&sess,__LINE__);
 		thread_down();
@@ -2973,7 +2986,7 @@ static void ctrl_thread(void* arg)
 
 			addr_len=sizeof(addr);
 			if((result=getsockname(pasv_sock, &addr.addr,&addr_len))!=0) {
-				lprintf(LOG_ERR,"%04d <%s> !PASV ERROR %d (%d) getting address/port"
+				lprintf(LOG_CRIT,"%04d <%s> !PASV ERROR %d (%d) getting address/port of socket"
 					,sock, user.alias, result, ERROR_VALUE);
 				sockprintf(sock,sess,"425 Error %d getting address/port",ERROR_VALUE);
 				ftp_close_socket(&pasv_sock,&pasv_sess,__LINE__);
@@ -4889,8 +4902,8 @@ static void ctrl_thread(void* arg)
 		int32_t	threads = thread_down();
 		update_clients();
 
-		lprintf(LOG_INFO,"%04d CTRL thread terminated (%d clients and %d threads remain, %lu served)"
-			,sock, clients, threads, served);
+		lprintf(LOG_INFO,"%04d [%s] Session thread terminated (%d clients and %d threads remain, %lu served)"
+			,sock, host_ip, clients, threads, served);
 	}
 }
 

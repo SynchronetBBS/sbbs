@@ -1042,16 +1042,15 @@ static void js_service_thread(void* arg)
 
 	socket=service_client.socket;
 	service=service_client.service;
+	inet_addrtop(&service_client.addr, client.addr, sizeof(client.addr));
 
 	if(service->log_level >= LOG_DEBUG)
-		lprintf(LOG_DEBUG,"%04d %s JavaScript service thread started", socket, service->protocol);
+		lprintf(LOG_DEBUG,"%04d %s [%s] JavaScript service thread started", socket, service->protocol, client.addr);
 
 	SetThreadName("sbbs/jsService");
 	thread_up(TRUE /* setuid */);
 	sbbs_srand();	/* Seed random number generator */
 	protected_uint32_adjust(&threads_pending_start, -1);
-
-	inet_addrtop(&service_client.addr, client.addr, sizeof(client.addr));
 
 	/* Host name lookup and filtering */
 	SAFECOPY(host_name, STR_NO_HOSTNAME);
@@ -1059,14 +1058,14 @@ static void js_service_thread(void* arg)
 		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP)) {
 		getnameinfo(&service_client.addr.addr, xp_sockaddr_len(&service_client), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 		if(service->log_level >= LOG_INFO)
-			lprintf(LOG_INFO,"%04d %s Hostname: %s [%s]"
-				,socket, service->protocol, host_name, client.addr);
+			lprintf(LOG_INFO,"%04d %s [%s] Hostname: %s"
+				,socket, service->protocol, client.addr, host_name);
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
 		if(service->log_level >= LOG_NOTICE)
-			lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in host.can: %s"
-				,socket, service->protocol, host_name);
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s"
+				,socket, service->protocol, client.addr, host_name);
 		close_socket(socket);
 		protected_uint32_adjust(&service->clients, -1);
 		thread_down();
@@ -1160,7 +1159,7 @@ static void js_service_thread(void* arg)
 	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &service_client.addr)) > 1) {
 		if(service->log_level >= LOG_DEBUG)
-			lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%lu login attempts)"
+			lprintf(LOG_DEBUG,"%04d %s [%s] Throttling suspicious connection (%lu login attempts)"
 				,socket, service->protocol, client.addr, login_attempts);
 		mswait(login_attempts*startup->login_attempt.throttle);
 	}
@@ -1215,8 +1214,8 @@ static void js_service_thread(void* arg)
 		if(service_client.subscan!=NULL)
 			putmsgptrs(&scfg, &service_client.user, service_client.subscan);
 		if(service->log_level >= LOG_INFO)
-			lprintf(LOG_INFO,"%04d %s Logging out %s"
-				,socket, service->protocol, service_client.user.alias);
+			lprintf(LOG_INFO,"%04d %s [%s] Logging out %s"
+				,socket, service->protocol, client.addr, service_client.user.alias);
 		logoutuserdat(&scfg,&service_client.user,time(NULL),service_client.logintime);
 
 #ifdef _WIN32
@@ -1238,8 +1237,8 @@ static void js_service_thread(void* arg)
 
 	thread_down();
 	if(service->log_level >= LOG_INFO)
-		lprintf(LOG_INFO,"%04d %s service thread terminated (%lu clients remain, %lu total, %lu served)"
-			,socket, service->protocol, remain, active_clients(), service->served);
+		lprintf(LOG_INFO,"%04d %s [%s] JavaScript service thread terminated (%lu clients remain, %lu total, %lu served)"
+			,socket, service->protocol, client.addr, remain, active_clients(), service->served);
 
 	client_off(socket);
 	close_socket(socket);
@@ -1346,7 +1345,7 @@ static void js_static_service_thread(void* arg)
 
 	thread_down();
 	if(service->log_level >= LOG_INFO)
-		lprintf(LOG_INFO,"%s service thread terminated (%lu clients served)"
+		lprintf(LOG_INFO,"%s static JavaScript service thread terminated (%lu clients served)"
 			, service->protocol, service->served);
 
 	xpms_destroy(service->set, close_socket_cb, service);
@@ -1422,7 +1421,7 @@ static void native_static_service_thread(void* arg)
 
 	thread_down();
 	if(inst.service->log_level >= LOG_INFO)
-		lprintf(LOG_INFO,"%04d %s service thread terminated (%lu clients served)"
+		lprintf(LOG_INFO,"%04d %s static service thread terminated (%lu clients served)"
 			,inst.socket, service->protocol, service->served);
 
 	close_socket(inst.socket);
@@ -1462,8 +1461,8 @@ static void native_service_thread(void* arg)
 	if(!(service->options&BBS_OPT_NO_HOST_LOOKUP)
 		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP)) {
 		getnameinfo(&service_client.addr.addr, xp_sockaddr_len(&service_client), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
-		lprintf(LOG_INFO,"%04d %s Hostname: %s [%s]"
-			,socket, service->protocol, host_name, client.addr);
+		lprintf(LOG_INFO,"%04d %s [%s] Hostname: %s"
+			,socket, service->protocol, client.addr, host_name);
 #if	0 /* gethostbyaddr() is apparently not (always) thread-safe
 	     and getnameinfo() doesn't return alias information */
 		for(i=0;host!=NULL && host->h_aliases!=NULL
@@ -1474,8 +1473,8 @@ static void native_service_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in host.can: %s"
-			,socket, service->protocol, host_name);
+		lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s"
+			,socket, service->protocol, client.addr, host_name);
 		close_socket(socket);
 		protected_uint32_adjust(&service->clients, -1);
 		thread_down();
@@ -2302,10 +2301,27 @@ void services_thread(void* arg)
 						continue;
 					}
 
+					union xp_sockaddr local_addr;
+					memset(&local_addr, 0, sizeof(local_addr));
+					socklen_t addr_len = sizeof(local_addr);
+					if(getsockname(client_socket, (struct sockaddr *)&local_addr, &addr_len) != 0) {
+						lprintf(LOG_CRIT,"%04d %s [%s] !ERROR %d getting local address/port of socket"
+							,client_socket, service[i].protocol, host_ip, ERROR_VALUE);
+						FREE_AND_NULL(udp_buf);
+						close_socket(client_socket);
+						continue;
+					}
+					char local_ip[INET6_ADDRSTRLEN];
+					inet_addrtop(&local_addr, local_ip, sizeof local_ip);
+
 					if(service[i].log_level >= LOG_INFO)
-						lprintf(LOG_INFO,"%04d %s connection accepted from: %s port %u"
+						lprintf(LOG_INFO,"%04d %s [%s] Connection accepted on %s port %u from port %u"
 							,client_socket
-							,service[i].protocol, host_ip, inet_addrport(&client_addr));
+							,service[i].protocol
+							,host_ip
+							,local_ip
+							,inet_addrport(&local_addr)
+							,inet_addrport(&client_addr));
 
 					if(service[i].max_clients && protected_uint32_value(service[i].clients) + 1 > service[i].max_clients) {
 						FREE_AND_NULL(udp_buf);
@@ -2320,10 +2336,10 @@ void services_thread(void* arg)
 					if(banned || trashcan(&scfg,host_ip,"ip")) {
 						if(banned) {
 							char ban_duration[128];
-							lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%lu login attempts, last: %s) - remaining: %s"
+							lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
 								,client_socket, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 						} else
-							lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in ip.can: %s"
+							lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in ip.can"
 								,client_socket, service[i].protocol, host_ip);
 						FREE_AND_NULL(udp_buf);
 						close_socket(client_socket);

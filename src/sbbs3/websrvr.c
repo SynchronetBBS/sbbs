@@ -6680,11 +6680,11 @@ void http_session_thread(void* arg)
 	if(banned || trashcan(&scfg,session.host_ip,"ip")) {
 		if(banned) {
 			char ban_duration[128];
-			lprintf(LOG_NOTICE, "%04d %s !TEMPORARY BAN of %s (%lu login attempts, last: %s) - remaining: %s"
+			lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
 				,session.socket, session.client.protocol
 				,session.host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 		} else
-			lprintf(LOG_NOTICE, "%04d %s !CLIENT BLOCKED in ip.can: %s", session.socket, session.client.protocol, session.host_ip);
+			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can", session.socket, session.client.protocol, session.host_ip);
 		close_session_socket(&session);
 		sem_wait(&session.output_thread_terminated);
 		sem_destroy(&session.output_thread_terminated);
@@ -7363,14 +7363,26 @@ void web_server(void* arg)
 				continue;
             }
 
+			union xp_sockaddr local_addr;
+			memset(&local_addr, 0, sizeof(local_addr));
+			socklen_t addr_len = sizeof(local_addr);
+			if(getsockname(client_socket, (struct sockaddr *)&local_addr, &addr_len) != 0) {
+				lprintf(LOG_CRIT,"%04d %s !ERROR %d getting local address/port of socket"
+					,client_socket, session->is_tls ? "HTTPS":"HTTP", ERROR_VALUE);
+				close_socket(&client_socket);
+				continue;
+			}
+			char local_ip[INET6_ADDRSTRLEN];
+			inet_addrtop(&local_addr, local_ip, sizeof local_ip);
+
 			host_port=inet_addrport(&client_addr);
 
 			if (acc_type != NULL && !strcmp(acc_type, "TLS"))
 				session->is_tls=TRUE;
-			lprintf(LOG_INFO,"%04d %s connection accepted from: %s port %u"
+			lprintf(LOG_INFO,"%04d %s [%s] Connection accepted on %s port %u from port %u"
 				,client_socket
 				,session->is_tls ? "HTTPS":"HTTP"
-				,host_ip, host_port);
+				,host_ip, local_ip, inet_addrport(&local_addr), host_port);
 
 			SAFECOPY(session->host_ip,host_ip);
 			memcpy(&session->addr, &client_addr, sizeof(session->addr));

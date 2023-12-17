@@ -1050,7 +1050,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 
 	socklen_t addr_len = sizeof(server_addr);
 	if((i=getsockname(socket, &server_addr.addr, &addr_len))!=0) {
-		lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) getting address/port"
+		lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) getting local address/port of socket"
 			,socket, client.protocol, i, ERROR_VALUE);
 		return false;
 	}
@@ -1059,7 +1059,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 	inet_addrtop(&server_addr, server_ip, sizeof(server_ip));
 
 	if(startup->options&MAIL_OPT_DEBUG_POP3)
-		lprintf(LOG_INFO,"%04d %s [%s] connection accepted on %s port %u from port %u"
+		lprintf(LOG_INFO,"%04d %s [%s] Connection accepted on %s port %u from port %u"
 			,socket, client.protocol, host_ip, server_ip, inet_addrport(&server_addr), inet_addrport(&pop3->client_addr));
 
 	SAFECOPY(host_name, STR_NO_HOSTNAME);
@@ -1738,7 +1738,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 	{
 		int32_t remain = thread_down();
 		if(startup->options&MAIL_OPT_DEBUG_POP3)
-			lprintf(LOG_DEBUG,"%04d %s [%s] session thread terminated (%u threads remain, %lu clients served)"
+			lprintf(LOG_DEBUG,"%04d %s [%s] Session thread terminated (%u threads remain, %lu clients served)"
 				,socket, client.protocol, host_ip, remain, ++stats.pop3_served);
 	}
 	return true;
@@ -2945,7 +2945,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	addr_len=sizeof(server_addr);
 
 	if((i=getsockname(socket, &server_addr.addr, &addr_len))!=0) {
-		lprintf(LOG_CRIT, "%04d %s !ERROR %d (%d) getting address/port"
+		lprintf(LOG_CRIT, "%04d %s !ERROR %d (%d) getting address/port of socket"
 			,socket, client.protocol, i, ERROR_VALUE);
 		return false;
 	}
