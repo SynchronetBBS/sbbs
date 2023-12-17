@@ -1122,13 +1122,13 @@ static bool pop3_client_thread(pop3_t* pop3)
 				,socket, client.protocol, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 		}
 		else
-			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT IP ADDRESS BLOCKED",socket, client.protocol, host_ip);
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in ip.can",socket, client.protocol, host_ip);
 		sockprintf(socket,client.protocol,session,"-ERR Access denied.");
 		return false;
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT HOSTNAME BLOCKED: %s"
+		lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s"
 			,socket, client.protocol, host_ip, host_name);
 		sockprintf(socket,client.protocol,session,"-ERR Access denied.");
 		return false;
@@ -3036,14 +3036,14 @@ static bool smtp_client_thread(smtp_t* smtp)
 		spam_block_exempt = find2strs(host_ip, host_name, spam_block_exemptions);
 		if(trashcan(&scfg,host_ip,"ip")
 			|| ((!spam_block_exempt) && findstr(host_ip,spam_block))) {
-			lprintf(LOG_NOTICE,"%04d %s !CLIENT IP ADDRESS BLOCKED: %s (%lu total)"
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in ip.can (%lu total)"
 				,socket, client.protocol, host_ip, ++stats.sessions_refused);
 			sockprintf(socket,client.protocol,session,"550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			return false;
 		}
 
 		if(trashcan(&scfg,host_name,"host")) {
-			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT HOSTNAME BLOCKED: %s (%lu total)"
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s (%lu total)"
 				,socket, client.protocol, host_ip, host_name, ++stats.sessions_refused);
 			sockprintf(socket,client.protocol,session,"550 CLIENT HOSTNAME BLOCKED: %s", host_name);
 			return false;
