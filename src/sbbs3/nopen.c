@@ -25,9 +25,6 @@
 #include "sockwrap.h"
 #include "nopen.h"
 
-#define FNOPEN_BUF_SIZE		(2*1024)
-#define LOOP_NOPEN	  50	/* Retries before file access denied			*/
-
 /****************************************************************************/
 /* Network open function. Opens all files DENYALL, DENYWRITE, or DENYNONE	*/
 /* depending on access, and retries LOOP_NOPEN number of times if the		*/

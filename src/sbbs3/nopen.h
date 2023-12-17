@@ -26,6 +26,9 @@
 #include <fcntl.h>			/* O_RDONLY */
 #include "gen_defs.h"		/* BOOL (switch to stdbool when we stop using BCB6) */
 
+#define FNOPEN_BUF_SIZE		(2*1024)
+#define LOOP_NOPEN	  50	/* Retries before file access denied			*/
+
 #ifdef __cplusplus
 extern "C" {
 #endif
