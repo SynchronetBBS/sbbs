@@ -3037,7 +3037,7 @@ char* alias(scfg_t* cfg, const char* name, char* buf)
 	p=(char*)name;
 
 	SAFEPRINTF(fname,"%salias.cfg",cfg->ctrl_dir);
-	if((fp=fopen(fname,"r"))==NULL)
+	if((fp = fnopen(NULL, fname, O_RDONLY)) == NULL)
 		return((char*)name);
 
 	while(!feof(fp)) {
@@ -3629,7 +3629,7 @@ BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	if(findstr(ip_addr, fname))	/* Already filtered? */
 		return(TRUE);
 
-    if((fp=fopen(fname,"a"))==NULL)
+    if((fp = fnopen(NULL, fname, O_CREAT|O_APPEND|O_WRONLY)) == NULL)
     	return(FALSE);
 
     fprintf(fp, "\n; %s %s ", prot, reason);

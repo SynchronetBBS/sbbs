@@ -21,6 +21,7 @@
 
 #include "genwrap.h"
 #include "findstr.h"
+#include "nopen.h"
 
 /****************************************************************************/
 /* Pattern matching string search of 'search' in 'pattern'.					*/
@@ -200,7 +201,7 @@ BOOL find2strs(const char* str1, const char* str2, const char* fname)
 	if(fname == NULL || *fname == '\0')
 		return FALSE;
 
-	if((fp=fopen(fname,"r"))==NULL)
+	if ((fp = fnopen(NULL, fname, O_RDONLY)) == NULL)
 		return FALSE; 
 
 	ip_addr1 = parse_ipv4_address(str1);
@@ -236,7 +237,7 @@ str_list_t findstr_list(const char* fname)
 	FILE*	fp;
 	str_list_t	list;
 
-	if((fp=fopen(fname,"r"))==NULL)
+	if ((fp = fnopen(NULL, fname, O_RDONLY)) == NULL)
 		return NULL;
 
 	list=strListReadFile(fp, NULL, /* Max line length: */255);
