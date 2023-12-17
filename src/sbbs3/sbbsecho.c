@@ -56,6 +56,7 @@
 #include "scfgsave.h"
 #include "getmail.h"
 #include "text.h"
+#include "trash.h"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -3207,12 +3208,12 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 	time32_t now=time32(NULL);
 	ulong	max_msg_age = (subnum == INVALID_SUB) ? cfg.max_netmail_age : cfg.max_echomail_age;
 
-	if(find2strs_in_list(hdr->from, hdr->to, twit_list)) {
+	if(find2strs_in_list(hdr->from, hdr->to, twit_list, NULL)) {
 		lprintf(LOG_INFO,"Filtering message from %s to %s",hdr->from,hdr->to);
 		return IMPORT_FILTERED_TWIT;
 	}
 
-	if(findstr_in_list(hdr->subj, subject_can)) {
+	if(findstr_in_list(hdr->subj, subject_can, NULL)) {
 		lprintf(LOG_INFO,"Filtering message from %s with subject: %s", hdr->from, hdr->subj);
 		return IMPORT_FILTERED_SUBJ;
 	}
@@ -3532,7 +3533,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 	}
 
 	SAFEPRINTF2(str, "%s@%s", hdr->from, smb_faddrtoa(&origaddr, NULL));
-	if(findstr_in_list(str, twit_list)) {
+	if(findstr_in_list(str, twit_list, NULL)) {
 		lprintf(LOG_INFO,"Filtering message from %s to %s", str, hdr->to);
 		smb_freemsgmem(&msg);
 		free(sbody);

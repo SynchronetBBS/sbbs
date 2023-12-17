@@ -1910,7 +1910,7 @@ static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t
 #endif
 	}
 	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
-		snprintf(reason, sizeof reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
+		snprintf(reason, sizeof reason, "TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
 			,count, seconds_to_str(attempt.time - attempt.first, tmp));
 		filter_ip(&scfg, client->protocol, reason
 			,client->host, client->addr, user, /* fname: */NULL);
@@ -6198,8 +6198,8 @@ static void respond(http_session_t * session)
 	if(session->req.send_content && content_length > 0)  {
 		off_t snt=0;
 		time_t start = time(NULL);
-		lprintf(LOG_INFO,"%04d Sending file: %s (%"PRIdOFF" bytes)"
-			,session->socket, session->req.physical_path, content_length);
+		lprintf(LOG_INFO,"%04d %s Sending file: %s (%"PRIdOFF" bytes)"
+			,session->socket, session->client.protocol, session->req.physical_path, content_length);
 		snt=sock_sendfile(session,session->req.physical_path,session->req.range_start,session->req.range_end);
 		if(session->req.ld!=NULL) {
 			if(snt<0)
@@ -6210,8 +6210,8 @@ static void respond(http_session_t * session)
 			time_t e = time(NULL) - start;
 			if(e < 1)
 				e = 1;
-			lprintf(LOG_INFO, "%04d Sent file: %s (%"PRIdOFF" bytes, %ld cps)"
-				,session->socket, session->req.physical_path, snt, (long)(snt / e));
+			lprintf(LOG_INFO, "%04d %s Sent file: %s (%"PRIdOFF" bytes, %ld cps)"
+				,session->socket, session->client.protocol, session->req.physical_path, snt, (long)(snt / e));
 			if(session->parsed_vpath == PARSED_VPATH_FULL && session->file.name != NULL) {
 				user_downloaded_file(&scfg, &session->user, &session->client, session->file.dir, session->file.name, snt);
 				mqtt_file_download(&mqtt, &session->user, &session->file, snt, &session->client);
@@ -6644,6 +6644,7 @@ void http_session_thread(void* arg)
 
 	sbbs_srand();	/* Seed random number generator */
 
+	struct trash trash;
 	char host_name[128] = "";
 	if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))  {
 		getnameinfo(&session.addr.addr, session.addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
@@ -6655,9 +6656,10 @@ void http_session_thread(void* arg)
 			&& host->h_aliases[i]!=NULL;i++)
 			lprintf(LOG_INFO,"%04d HostAlias: %s", session.socket, host->h_aliases[i]);
 #endif
-		if(host_name[0] && trashcan(&scfg, host_name,"host")) {
-			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s"
-				,session.socket, session.client.protocol, session.host_ip, host_name);
+		if(host_name[0] && trashcan2(&scfg, host_name, NULL, "host", &trash)) {
+			char details[128];
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
+				,session.socket, session.client.protocol, session.host_ip, host_name, trash_details(&trash, details, sizeof details));
 			close_session_socket(&session);
 			sem_wait(&session.output_thread_terminated);
 			sem_destroy(&session.output_thread_terminated);
@@ -6677,14 +6679,17 @@ void http_session_thread(void* arg)
 	ulong banned = loginBanned(&scfg, startup->login_attempt_list, session.socket, host_name, startup->login_attempt, &attempted);
 
 	/* host_ip wasn't defined in http_session_thread */
-	if(banned || trashcan(&scfg,session.host_ip,"ip")) {
+	if(banned || trashcan2(&scfg, session.host_ip, NULL, "ip", &trash)) {
 		if(banned) {
 			char ban_duration[128];
 			lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
 				,session.socket, session.client.protocol
 				,session.host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
-		} else
-			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can", session.socket, session.client.protocol, session.host_ip);
+		} else {
+			char details[128];
+			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s"
+				,session.socket, session.client.protocol, session.host_ip, trash_details(&trash, details, sizeof details));
+		}
 		close_session_socket(&session);
 		sem_wait(&session.output_thread_terminated);
 		sem_destroy(&session.output_thread_terminated);

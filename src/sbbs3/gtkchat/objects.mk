@@ -11,6 +11,7 @@ OBJS	:=	\
 			$(MTOBJODIR)/scfglib1$(OFILE) \
 			$(MTOBJODIR)/scfglib2$(OFILE) \
 			$(MTOBJODIR)/userdat$(OFILE) \
+			$(MTOBJODIR)/trash$(OFILE) \
 			$(MTOBJODIR)/findstr$(OFILE) \
 			$(MTOBJODIR)/getstats$(OFILE) \
 			$(MTOBJODIR)/msgdate$(OFILE) \

@@ -167,6 +167,7 @@
     <ClCompile Include="..\getstats.c" />
     <ClCompile Include="..\msgdate.c" />
     <ClCompile Include="..\sbbs_ini.c" />
+    <ClCompile Include="..\trash.c" />
     <ClCompile Include="..\userdat.c" />
     <ClCompile Include="scfg.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

@@ -1177,7 +1177,7 @@ js_findstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(list != NULL)
-		ret = findstr_in_list(str, list);
+		ret = findstr_in_list(str, list, NULL);
 	else
 		ret = findstr(str, fname);
 	free(str);

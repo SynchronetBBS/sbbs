@@ -28,6 +28,7 @@ OBJS =	$(MTOBJODIR)/scfg$(OFILE)\
 	$(MTOBJODIR)/nopen$(OFILE)\
 	$(MTOBJODIR)/dat_rec$(OFILE)\
 	$(MTOBJODIR)/userdat$(OFILE)\
+	$(MTOBJODIR)/trash$(OFILE)\
 	$(MTOBJODIR)/getstats$(OFILE)\
 	$(MTOBJODIR)/msgdate$(OFILE)\
 	$(MTOBJODIR)/date_str$(OFILE)\

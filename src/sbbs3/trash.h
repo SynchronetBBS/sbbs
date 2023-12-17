@@ -1,4 +1,4 @@
-/* Synchronet find string functions */
+/* Synchronet client/content-filtering (trashcan) functions */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -19,26 +19,33 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef _FINDSTR_H_
-#define _FINDSTR_H_
+#ifndef _TRASH_H
 
+#include <time.h>
+#include "scfgdefs.h"
 #include "str_list.h"
 #include "dllexport.h"
 
-#define FINDSTR_MAX_LINE_LEN 1000
+struct trash {
+	time_t added;
+	time_t expires;
+	char prot[32];
+	char user[64];
+	char reason[128];
+};
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-DLLEXPORT BOOL		findstr(const char *insearch, const char *fname);
-DLLEXPORT BOOL		find2strs(const char *str1, const char* str2, const char *fname, char* metadata);
-DLLEXPORT BOOL		findstr_in_string(const char* insearchof, const char* pattern);
-DLLEXPORT BOOL		findstr_in_list(const char* insearchof, str_list_t list, char* metadata);
-DLLEXPORT BOOL		find2strs_in_list(const char* str1, const char* str2, str_list_t list, char* metadata);
-DLLEXPORT str_list_t findstr_list(const char* fname);
+DLLEXPORT BOOL		trashcan(scfg_t* cfg, const char *insearch, const char *name);
+DLLEXPORT BOOL		trashcan2(scfg_t* cfg, const char* str1, const char* str2, const char *name, struct trash*);
+DLLEXPORT BOOL		trash_in_list(const char* str1, const char* str2, str_list_t list, struct trash*);
+DLLEXPORT char *	trash_details(const struct trash*, char* str, size_t);
+DLLEXPORT str_list_t trashcan_list(scfg_t* cfg, const char* name);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* Don't add anything after this line */
+
+#endif	/* Don't add anything after this line */

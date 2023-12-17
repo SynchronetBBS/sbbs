@@ -1169,7 +1169,7 @@ bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, msg_filters filters)
 		return true;
 	}
 
-	if(findstr_in_list(msg->from_ip, filters.ip_can)) {
+	if(findstr_in_list(msg->from_ip, filters.ip_can, NULL)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked IP: %s"
 			,msg->from
 			,msg->from_ip); 
@@ -1177,21 +1177,21 @@ bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, msg_filters filters)
 	}
 
 	const char* hostname=getHostNameByAddr(msg->from_host);
-	if(findstr_in_list(hostname, filters.host_can)) {
+	if(findstr_in_list(hostname, filters.host_can, NULL)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked hostname: %s"
 			,msg->from
 			,hostname); 
 		return true;
 	}
 
-	if(findstr_in_list(msg->subj, filters.subject_can)) {
+	if(findstr_in_list(msg->subj, filters.subject_can, NULL)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to filtered subject: %s"
 			,msg->from
 			,msg->subj); 
 		return true;
 	}
 
-	if(find2strs_in_list(msg->from, msg->to, filters.twit_list)) {
+	if(find2strs_in_list(msg->from, msg->to, filters.twit_list, NULL)) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from '%s' to '%s'"
 			,msg->from
 			,msg->to);
@@ -1202,7 +1202,7 @@ bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, msg_filters filters)
 		char fidoaddr[64];
 		char str[128];
 		SAFEPRINTF2(str, "%s@%s", msg->from, smb_netaddrstr(&msg->from_net, fidoaddr));
-		if(findstr_in_list(str, filters.twit_list)) {
+		if(findstr_in_list(str, filters.twit_list, NULL)) {
 			lprintf(LOG_NOTICE,"!Filtering QWK message from '%s' to '%s'"
 				,str
 				,msg->to);

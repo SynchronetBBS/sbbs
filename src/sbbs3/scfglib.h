@@ -72,10 +72,7 @@ DLLEXPORT BOOL	is_valid_subnum(scfg_t*, int);
 DLLEXPORT BOOL	is_valid_grpnum(scfg_t*, int);
 DLLEXPORT BOOL	is_valid_xtrnsec(scfg_t*, int);
 
-DLLEXPORT BOOL		trashcan(scfg_t* cfg, const char *insearch, const char *name);
-DLLEXPORT BOOL		trashcan2(scfg_t* cfg, const char* str1, const char* str2, const char *name);
 DLLEXPORT char *	trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
-DLLEXPORT str_list_t trashcan_list(scfg_t* cfg, const char* name);
 DLLEXPORT char *	twitlist_fname(scfg_t* cfg, char* fname, size_t);
 
 DLLEXPORT char *	sub_newsgroup_name(scfg_t*, sub_t*, char*, size_t);

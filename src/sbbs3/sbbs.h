@@ -287,6 +287,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "crc32.h"
 #include "telnet.h"
 #include "nopen.h"
+#include "trash.h"
 #include "text.h"
 #include "str_util.h"
 #include "findstr.h"

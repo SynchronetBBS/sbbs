@@ -35,7 +35,7 @@
 /****************************************************************************/
 BOOL findstr_in_string(const char* search, const char* pattern)
 {
-	char	buf[256];
+	char	buf[FINDSTR_MAX_LINE_LEN + 1];
 	char*	p = (char*)pattern;
 	char*	last;
 	const char*	splat;
@@ -135,28 +135,40 @@ static BOOL is_cidr_match(const char *p, uint32_t ip_addr, uint32_t cidr, unsign
 	return match;
 }
 
-static BOOL findstr_compare(const char* str, uint32_t ip_addr, const char* pattern)
+static BOOL findstr_compare(const char* str, uint32_t ip_addr, const char* pattern, char* metadata)
 {
 	uint32_t cidr;
 	unsigned subnet;
+	char buf[FINDSTR_MAX_LINE_LEN + 1];
+	char* p;
 
+	SAFECOPY(buf, pattern);
+	if((p = strchr(buf, '\t')) != NULL) {
+		*p = '\0';
+		p++;
+		if(metadata != NULL)
+			snprintf(metadata, FINDSTR_MAX_LINE_LEN, "%s", p);
+	} else {
+		if(metadata != NULL)
+			*metadata = '\0';
+	}
 	if(ip_addr != 0 && (cidr = parse_cidr(pattern, &subnet)) != 0)
 		return is_cidr_match(pattern, ip_addr, cidr, subnet);
-	return findstr_in_string(str, pattern);
+	return findstr_in_string(str, buf);
 }
 
 /****************************************************************************/
 /* Pattern matching string search of 'insearchof' in 'list'.				*/
 /****************************************************************************/
-BOOL findstr_in_list(const char* insearchof, str_list_t list)
+BOOL findstr_in_list(const char* insearchof, str_list_t list, char* metadata)
 {
-	return find2strs_in_list(insearchof, NULL, list);
+	return find2strs_in_list(insearchof, NULL, list, metadata);
 }
 
 /****************************************************************************/
 /* Pattern matching string search of 'str1' or 'str2' in 'list'.			*/
 /****************************************************************************/
-BOOL find2strs_in_list(const char* str1, const char* str2, str_list_t list)
+BOOL find2strs_in_list(const char* str1, const char* str2, str_list_t list, char* metadata)
 {
 	size_t	index;
 	BOOL	found=FALSE;
@@ -171,9 +183,9 @@ BOOL find2strs_in_list(const char* str1, const char* str2, str_list_t list)
 		p=list[index];
 		if(*p == '\0')
 			continue;
-		found = findstr_compare(str1, ip_addr1, p);
+		found = findstr_compare(str1, ip_addr1, p, metadata);
 		if(!found && str2 != NULL)
-			found = findstr_compare(str2, ip_addr2, p);
+			found = findstr_compare(str2, ip_addr2, p, metadata);
 		if(found != (*p=='!'))
 			break;
 	}
@@ -185,15 +197,15 @@ BOOL find2strs_in_list(const char* str1, const char* str2, str_list_t list)
 /****************************************************************************/
 BOOL findstr(const char* insearchof, const char* fname)
 {
-	return find2strs(insearchof, NULL, fname);
+	return find2strs(insearchof, NULL, fname, NULL);
 }
 
 /****************************************************************************/
 /* Pattern matching string search of 'str1' or 'str2' in 'fname'.			*/
 /****************************************************************************/
-BOOL find2strs(const char* str1, const char* str2, const char* fname)
+BOOL find2strs(const char* str1, const char* str2, const char* fname, char* metadata)
 {
-	char		str[256];
+	char		str[FINDSTR_MAX_LINE_LEN + 1];
 	BOOL		found=FALSE;
 	FILE*		fp;
 	uint32_t	ip_addr1, ip_addr2;
@@ -214,9 +226,9 @@ BOOL find2strs(const char* str1, const char* str2, const char* fname)
 		if(*p == '\0')
 			continue;
 		c_unescape_str(p);
-		found = findstr_compare(str1, ip_addr1, p);
+		found = findstr_compare(str1, ip_addr1, p, metadata);
 		if(!found && str2 != NULL)
-			found = findstr_compare(str2, ip_addr2, p);
+			found = findstr_compare(str2, ip_addr2, p, metadata);
 		if(found != (*p=='!'))
 			break;
 	}
@@ -240,7 +252,7 @@ str_list_t findstr_list(const char* fname)
 	if ((fp = fnopen(NULL, fname, O_RDONLY)) == NULL)
 		return NULL;
 
-	list=strListReadFile(fp, NULL, /* Max line length: */255);
+	list=strListReadFile(fp, NULL, FINDSTR_MAX_LINE_LEN);
 	strListModifyEach(list, process_findstr_item, /* cbdata: */NULL);
 
 	fclose(fp);

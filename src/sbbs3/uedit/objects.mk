@@ -17,4 +17,5 @@ OBJS	=	\
 			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)findstr$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)uedit$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)
+			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)trash$(OFILE)

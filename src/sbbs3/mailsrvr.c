@@ -990,7 +990,7 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* resp
 #endif
 		}
 		if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
-			snprintf(reason, sizeof reason, "- TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
+			snprintf(reason, sizeof reason, "TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
 				,count, seconds_to_str(attempt.time - attempt.first, tmp));
 			filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL);
 		}
@@ -1115,21 +1115,24 @@ static bool pop3_client_thread(pop3_t* pop3)
 	}
 
 	ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
-	if(banned || trashcan(&scfg,host_ip,"ip")) {
-		if(banned) {
-			char ban_duration[128];
-			lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
-				,socket, client.protocol, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
-		}
-		else
-			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in ip.can",socket, client.protocol, host_ip);
+	if(banned) {
+		char ban_duration[128];
+		lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
+			,socket, client.protocol, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 		sockprintf(socket,client.protocol,session,"-ERR Access denied.");
 		return false;
 	}
-
-	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s"
-			,socket, client.protocol, host_ip, host_name);
+	struct trash trash;
+	if(trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
+		char details[128];
+		lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in ip.can %s",socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details));
+		sockprintf(socket,client.protocol,session,"-ERR Access denied.");
+		return false;
+	}
+	if(trashcan2(&scfg, host_name, NULL, "host", &trash)) {
+		char details[128];
+		lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
+			,socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details));
 		sockprintf(socket,client.protocol,session,"-ERR Access denied.");
 		return false;
 	}
@@ -1856,7 +1859,7 @@ static ulong dns_blacklisted(SOCKET sock, const char* prot, union xp_sockaddr *a
 
 	SAFEPRINTF(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
 	inet_addrtop(addr, ip, sizeof(ip));
-	if(find2strs(ip, host_name, fname))
+	if(find2strs(ip, host_name, fname, NULL))
 		return(FALSE);
 
 	SAFEPRINTF(fname,"%sdns_blacklist.cfg", scfg.ctrl_dir);
@@ -1903,11 +1906,13 @@ static BOOL chk_email_addr(SOCKET socket, const char* prot, char* p, char* host_
 	SAFECOPY(addr,p);
 	truncstr(addr,">( ");
 
-	if(!trashcan(&scfg,addr,"email"))
+	struct trash trash;
+	if(!trashcan2(&scfg, addr, NULL, "email", &trash))
 		return(TRUE);
 
-	lprintf(LOG_NOTICE,"%04d %s [%s] !BLOCKED %s e-mail address: %s"
-		,socket, prot, host_ip, source, addr);
+	char details[128];
+	lprintf(LOG_NOTICE,"%04d %s [%s] !BLOCKED %s e-mail address: %s %s"
+		,socket, prot, host_ip, source, addr, trash_details(&trash, details, sizeof details));
 	SAFEPRINTF2(tmp,"Blocked %s e-mail address: %s", source, addr);
 	spamlog(&scfg, &mqtt, (char*)prot, "REFUSED", tmp, host_name, host_ip, to, from);
 
@@ -3033,18 +3038,25 @@ static bool smtp_client_thread(smtp_t* smtp)
 			return false;
 		}
 
-		spam_block_exempt = find2strs(host_ip, host_name, spam_block_exemptions);
-		if(trashcan(&scfg,host_ip,"ip")
-			|| ((!spam_block_exempt) && findstr(host_ip,spam_block))) {
-			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in ip.can (%lu total)"
-				,socket, client.protocol, host_ip, ++stats.sessions_refused);
+		spam_block_exempt = find2strs(host_ip, host_name, spam_block_exemptions, NULL);
+		if(!spam_block_exempt && findstr(host_ip,spam_block)) {
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in %s (%lu total)"
+				,socket, client.protocol, host_ip, spam_block, ++stats.sessions_refused);
 			sockprintf(socket,client.protocol,session,"550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			return false;
 		}
-
-		if(trashcan(&scfg,host_name,"host")) {
-			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s (%lu total)"
-				,socket, client.protocol, host_ip, host_name, ++stats.sessions_refused);
+		struct trash trash;
+		if(trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
+			char details[128];
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in ip.can %s (%lu total)"
+				,socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details), ++stats.sessions_refused);
+			sockprintf(socket,client.protocol,session,"550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
+			return false;
+		}
+		if(trashcan2(&scfg, host_name, NULL, "host", &trash)) {
+			char details[128];
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s (%lu total)"
+				,socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details), ++stats.sessions_refused);
 			sockprintf(socket,client.protocol,session,"550 CLIENT HOSTNAME BLOCKED: %s", host_name);
 			return false;
 		}
@@ -3119,7 +3131,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 		return false;
 	}
 
-	if(trashcan2(&scfg, host_ip, host_name, "smtpspy")) {
+	if(trashcan2(&scfg, host_ip, host_name, "smtpspy", NULL)) {
 		SAFECOPY(str, client.protocol);
 		strlwr(str);
 		SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, str);
@@ -3170,7 +3182,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 				/* Twit-listing (sender's name and e-mail addresses) here */
 				twitlist_fname(&scfg, path, sizeof path);
-				if(fexist(path) && find2strs(sender, sender_addr, path)) {
+				if(fexist(path) && find2strs(sender, sender_addr, path, NULL)) {
 					lprintf(LOG_NOTICE,"%04d %s %s !FILTERING TWIT-LISTED SENDER: '%s' <%s> (%lu total)"
 						,socket, client.protocol, client_id, sender, sender_addr, ++stats.msgs_refused);
 					SAFEPRINTF2(tmp,"Twit-listed sender: '%s' <%s>", sender, sender_addr);
@@ -3285,7 +3297,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 							continue;
 
 						if(mp->from!=NULL
-							&& !findstr_in_list(sender_addr, mp->from))
+							&& !findstr_in_list(sender_addr, mp->from, NULL))
 							continue;
 
 						mailcmdstr(mp->cmdline
@@ -4544,7 +4556,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			}
 
 			if(spy==NULL
-				&& trashcan2(&scfg,reverse_path, rcpt_addr, "smtpspy")) {
+				&& trashcan2(&scfg,reverse_path, rcpt_addr, "smtpspy", NULL)) {
 				SAFECOPY(tmp, client.protocol);
 				strlwr(tmp);
 				SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, tmp);
@@ -4626,7 +4638,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 						(!(startup->options&MAIL_OPT_ALLOW_RELAY)
 							|| relay_user.number==0
 							|| relay_user.rest&(FLAG('G')|FLAG('M'))) &&
-						!find2strs(host_name, host_ip, relay_list)) {
+						!find2strs(host_name, host_ip, relay_list, NULL)) {
 						lprintf(LOG_NOTICE,"%04d %s %s !ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 							,socket, client.protocol, client_id, reverse_path, host_ip, p);
 						SAFEPRINTF(tmp,"Relay attempt to: %s", p);
@@ -4692,7 +4704,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				if(!chk_ar(&scfg,mailproc_list[i].ar,&relay_user,&client))
 					continue;
 
-				if(find2strs_in_list(p, rcpt_addr, mailproc_list[i].to)) {
+				if(find2strs_in_list(p, rcpt_addr, mailproc_list[i].to, NULL)) {
 					mailproc_to_match[i]=TRUE;
 					if(!mailproc_list[i].passthru)
 						mailproc_match = i;

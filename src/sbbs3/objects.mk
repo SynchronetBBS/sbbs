@@ -96,6 +96,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/telnet$(OFILE)\
 			$(MTOBJODIR)/text_sec$(OFILE)\
 			$(MTOBJODIR)/tmp_xfer$(OFILE)\
+			$(MTOBJODIR)/trash$(OFILE)\
 			$(MTOBJODIR)/un_qwk$(OFILE)\
 			$(MTOBJODIR)/un_rep$(OFILE)\
 			$(MTOBJODIR)/upload$(OFILE)\
@@ -173,6 +174,7 @@ SBBSECHO_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/dat_rec$(OFILE) \
 			$(OBJODIR)/filedat$(OFILE) \
 			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/trash$(OFILE) \
 			$(OBJODIR)/rechocfg$(OFILE) \
 			$(OBJODIR)/msg_id$(OFILE) \
 			$(OBJODIR)/msgdate$(OFILE) \
@@ -198,13 +200,15 @@ FILELIST_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/filedat$(OFILE) \
 			$(OBJODIR)/sauce$(OFILE) \
 			$(OBJODIR)/getstats$(OFILE) \
-			$(OBJODIR)/userdat$(OFILE)
+			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/trash$(OFILE)
 
 MAKEUSER_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/makeuser$(OFILE) \
 			$(OBJODIR)/date_str$(OFILE) \
 			$(OBJODIR)/dat_rec$(OFILE) \
 			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/trash$(OFILE) \
 			$(OBJODIR)/getstats$(OFILE) \
 			$(OBJODIR)/msgdate$(OFILE)
 
@@ -278,12 +282,14 @@ UPGRADE_TO_V319_OBJS  =	$(LOAD_CFG_OBJS) \
                         $(OBJODIR)/filedat$(OFILE) \
                         $(OBJODIR)/sauce$(OFILE) \
                         $(OBJODIR)/userdat$(OFILE) \
+                        $(OBJODIR)/trash$(OFILE) \
                         $(OBJODIR)/dat_rec$(OFILE) \
 			$(OBJODIR)/getstats$(OFILE) \
 			$(OBJODIR)/upgrade_to_v319$(OFILE)
 
 UPGRADE_TO_V320_OBJS  = $(LOAD_CFG_OBJS) \
 			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/trash$(OFILE) \
 			$(OBJODIR)/dat_rec$(OFILE) \
 			$(OBJODIR)/getstats$(OFILE) \
 			$(OBJODIR)/upgrade_to_v320$(OFILE)

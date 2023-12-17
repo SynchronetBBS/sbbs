@@ -19,4 +19,5 @@ OBJS	:=	\
 			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)findstr$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)umonitor$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)
+			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)trash$(OFILE)

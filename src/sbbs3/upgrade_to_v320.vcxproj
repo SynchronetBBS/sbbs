@@ -96,6 +96,7 @@
   <ItemGroup>
     <ClCompile Include="dat_rec.c" />
     <ClCompile Include="getstats.c" />
+    <ClCompile Include="trash.c" />
     <ClCompile Include="upgrade_to_v320.c" />
     <ClCompile Include="userdat.c" />
   </ItemGroup>

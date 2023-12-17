@@ -26,6 +26,7 @@
 #include "filedat.h"
 #include "ars_defs.h"
 #include "text.h"
+#include "trash.h"
 #include "nopen.h"
 #include "datewrap.h"
 #include "date_str.h"
@@ -3599,7 +3600,7 @@ BOOL is_host_exempt(scfg_t* cfg, const char* ip_addr, const char* host_name)
 	char	exempt[MAX_PATH+1];
 
 	SAFEPRINTF2(exempt, "%s%s", cfg->ctrl_dir, strIpFilterExemptConfigFile);
-	return find2strs(ip_addr, host_name, exempt);
+	return find2strs(ip_addr, host_name, exempt, NULL);
 }
 
 /****************************************************************************/
@@ -3619,7 +3620,7 @@ BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 		return(FALSE);
 
 	SAFEPRINTF2(exempt, "%s%s", cfg->ctrl_dir, strIpFilterExemptConfigFile);
-	if(find2strs(ip_addr, host, exempt))
+	if(find2strs(ip_addr, host, exempt, NULL))
 		return(FALSE);
 
 	SAFEPRINTF(ip_can,"%sip.can",cfg->text_dir);
@@ -3640,7 +3641,15 @@ BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	if(host!=NULL)
 		fprintf(fp,"; Hostname: %s\n",host);
 
-	fprintf(fp,"%s\n",ip_addr);
+	fprintf(fp,"%s\tadded=%s\treason=%s %s\t"
+		,ip_addr
+		,time_to_isoDateTimeStr(now, xpTimeZone_local(), tstr, sizeof tstr)
+		,prot, reason);
+	if(host!=NULL)
+		fprintf(fp,"host=%s\t", host);
+	if(username!=NULL)
+		fprintf(fp,"user=%s\t", username);
+	fputc('\n', fp);
 
     fclose(fp);
 	return(TRUE);
@@ -3903,7 +3912,7 @@ ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const char* host_
 		return 0;
 
 	if(inet_addrtop(&client_addr, ip_addr, sizeof(ip_addr)) != NULL
-		&& find2strs(ip_addr, host_name, exempt))
+		&& find2strs(ip_addr, host_name, exempt, NULL))
 		return 0;
 
 	if(!listLock(list))
