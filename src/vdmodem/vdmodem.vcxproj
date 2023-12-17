@@ -171,6 +171,7 @@
   <ItemGroup>
     <ClCompile Include="..\encode\utf8.c" />
     <ClCompile Include="..\sbbs3\findstr.c" />
+    <ClCompile Include="..\sbbs3\nopen.c" />
     <ClCompile Include="..\sbbs3\str_util.c" />
     <ClCompile Include="..\sbbs3\telnet.c" />
     <ClCompile Include="vdmodem.c" />
