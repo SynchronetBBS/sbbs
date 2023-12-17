@@ -41,6 +41,10 @@
  *                              Releasing this version
  * 2023-08-15 Eric Oulashin     Version 1.87
  *                              Improvement to paragraph/line breaks in quote line wrapping
+ * 2023-12-17 Eric Oulashin     Version 1.87a
+ *                              Using the msg_area.sub object to check sub-board settings instead
+ *                              of opening the sub-board (for determining whether to post with
+ *                              real name)
  */
 
 "use strict";
@@ -138,8 +142,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.87";
-var EDITOR_VER_DATE = "2023-08-15";
+var EDITOR_VERSION = "1.87a";
+var EDITOR_VER_DATE = "2023-12-17";
 
 
 // Program variables
@@ -6154,17 +6158,10 @@ function getSignName(pSubCode, pRealNameOnlyFirst, pRealNameForEmail)
 	var useRealName = false;
 	if (typeof(pSubCode) === "string" && pSubCode != "")
 	{
-		if (pSubCode.toUpperCase() == "MAIL")
+		if (pSubCode == "mail")
 			useRealName = pRealNameForEmail;
 		else
-		{
-			var msgbase = new MsgBase(pSubCode);
-			if (msgbase.open())
-			{
-				useRealName = ((msgbase.cfg.settings & SUB_NAME) == SUB_NAME);
-				msgbase.close();
-			}
-		}
+			useRealName = Boolean(msg_area.sub[pSubCode].settings & SUB_NAME);
 	}
 	var signName = "";
 	if (useRealName)
