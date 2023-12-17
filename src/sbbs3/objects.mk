@@ -245,6 +245,7 @@ JSDOOR_OBJS = 		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/scfgsave$(OFILE)\
 			$(MTOBJODIR)/wordwrap$(OFILE)\
 			$(MTOBJODIR)/userdat$(OFILE)\
+			$(MTOBJODIR)/trash$(OFILE)\
 			$(MTOBJODIR)/msgdate$(OFILE)\
 			$(MTOBJODIR)/filedat$(OFILE)\
 			$(MTOBJODIR)/sauce$(OFILE)\
