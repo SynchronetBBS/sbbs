@@ -468,7 +468,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(client->service->log_level >= LOG_INFO)
 		lprintf(LOG_INFO,"%04d %s [%s] Logging in %s"
-			,client->socket,client->service->protocol,client->addr,client->user.alias);
+			,client->socket,client->service->protocol,client->client->addr,client->user.alias);
 
 	val = BOOLEAN_TO_JSVAL(JS_TRUE);
 	if(!JS_SetProperty(cx, obj, "logged_in", &val))
