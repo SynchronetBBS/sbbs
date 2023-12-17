@@ -26,7 +26,7 @@
 #ifndef _NODEDEFS_H
 #define _NODEDEFS_H
 
-#include "smbdefs.h"	/* uchar, ushort, ulong and _PACK */
+#include "gen_defs.h"
 #include "limits.h"
 
 enum node_status {                  /* Node Status */
