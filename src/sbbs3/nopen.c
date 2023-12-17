@@ -19,10 +19,14 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include "genwrap.h"
+#include "dirwrap.h"
 #include "filewrap.h"
 #include "sockwrap.h"
-#include "sbbsdefs.h"
 #include "nopen.h"
+
+#define FNOPEN_BUF_SIZE		(2*1024)
+#define LOOP_NOPEN	  50	/* Retries before file access denied			*/
 
 /****************************************************************************/
 /* Network open function. Opens all files DENYALL, DENYWRITE, or DENYNONE	*/
@@ -50,7 +54,7 @@ int nopen(const char* str, uint access)
     while(((file=sopen(str,access,share,DEFFILEMODE))==-1)
         && (errno==EACCES || errno==EAGAIN || errno==EDEADLOCK) && count++<LOOP_NOPEN)
         if(count)
-            mswait(100);
+            SLEEP(100);
     return(file);
 }
 
@@ -207,47 +211,4 @@ BOOL backup(const char *fname, int backup_level, BOOL ren)
 	}
 
 	return TRUE;
-}
-
-/****************************************************************************/
-/* Open a log file for append, supporting log rotation based on size		*/
-/****************************************************************************/
-FILE* fopenlog(scfg_t* cfg, const char* path)
-{
-	const int mode = O_WRONLY|O_CREAT|O_APPEND;
-	int file;
-	FILE* fp;
-
-	if((fp = fnopen(&file, path, mode)) == NULL)
-		return NULL;
-
-	if(cfg->max_log_size && cfg->max_logs_kept && filelength(file) >= (off_t)cfg->max_log_size) {
-#ifdef _WIN32 // Can't rename an open file on Windows
-		fclose(fp);
-#endif
-		backup(path, cfg->max_logs_kept, /* rename: */TRUE);
-#ifndef _WIN32
-		fclose(fp);
-#endif
-		if((fp = fnopen(NULL, path, mode)) == NULL)
-			return NULL;
-	}
-
-	return fp;
-}
-
-// Write to a log file and may close it if reached max size
-size_t fwritelog(scfg_t* cfg, void* buf, size_t size, FILE** fp)
-{
-	size_t result = fwrite(buf, 1, size, *fp);
-	if(cfg->max_log_size && ftell(*fp) >= (off_t)cfg->max_log_size) {
-		fclose(*fp);
-		*fp = NULL;
-	}
-	return result;
-}
-
-void fcloselog(FILE* fp)
-{
-	fclose(fp);
 }

@@ -24,7 +24,7 @@
 
 #include <time.h>
 
-#include "gen_defs.h"	/* uchar, ushort, uint, ulong, etc. */
+#include "smbdefs.h"
 #include "nodedefs.h"	/* node_t */
 #include "fidodefs.h"	/* fmsghdr_t, fpkthdr_t, FIDO_*, etc. */
 #include "xpbeep.h"		/* BEEP() */
@@ -46,8 +46,6 @@
 #define SBBSCTRL_DEFAULT	"/sbbs/ctrl"
 
 #define Y2K_2DIGIT_WINDOW	70
-
-#define FNOPEN_BUF_SIZE		(2*1024)
 
 #define MAX_FILENAME_LEN		64
 #define MAX_FILEEXT_LEN			15
@@ -511,7 +509,6 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SEC_CID 	  10	/* Ten second pause for caller ID				*/
 #define SEC_RING	   6	/* Maximum seconds between rings				*/
 
-#define LOOP_NOPEN	  50	/* Retries before file access denied			*/
 #define LOOP_NODEDAB  50	/* Retries on node.dab locking/unlocking		*/
 
 							/* String lengths								*/
