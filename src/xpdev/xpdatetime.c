@@ -375,8 +375,10 @@ char* xpDateTime_to_isoDateTimeStr(xpDateTime_t dt
 
 char* time_to_isoDateTimeStr(time_t t, xpTimeZone_t zone, char* str, size_t maxlen)
 {
-	snprintf(str, maxlen, "%" PRIu32 "T%06" PRIu32 "%d"
-		,time_to_isoDate(t), time_to_isoTime(t), zone);
+	char zstr[16];
+	snprintf(str, maxlen, "%" PRIu32 "T%06" PRIu32 "%s"
+		,time_to_isoDate(t), time_to_isoTime(t)
+		,xpTimeZone_to_isoTimeZoneStr(zone, "", zstr, sizeof zstr));
 	return str;
 }
 
