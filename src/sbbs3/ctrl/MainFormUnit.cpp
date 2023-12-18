@@ -2916,6 +2916,9 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         =global.login_attempt.hack_threshold ? IntToStr(global.login_attempt.hack_threshold) : AnsiString("<disabled>");
     PropertiesDlg->LoginAttemptFilterThresholdEdit->Text
         =global.login_attempt.filter_threshold ? IntToStr(global.login_attempt.filter_threshold) : AnsiString("<disabled>");
+    PropertiesDlg->LoginAttemptFilterDurationEdit->Text
+        =global.login_attempt.filter_duration ? AnsiString(duration_to_str(global.login_attempt.filter_duration, str, sizeof str))
+            : AnsiString("<infinite>");
     PropertiesDlg->LoginAttemptTempBanThresholdEdit->Text
         =global.login_attempt.tempban_threshold ? IntToStr(global.login_attempt.tempban_threshold) : AnsiString("<disabled>");
     PropertiesDlg->LoginAttemptTempBanDurationEdit->Text
@@ -2993,6 +2996,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         global.login_attempt.throttle = PropertiesDlg->LoginAttemptThrottleEdit->Text.ToIntDef(0);
         global.login_attempt.hack_threshold = PropertiesDlg->LoginAttemptHackThresholdEdit->Text.ToIntDef(0);
         global.login_attempt.filter_threshold = PropertiesDlg->LoginAttemptFilterThresholdEdit->Text.ToIntDef(0);
+        global.login_attempt.filter_duration = parse_duration(PropertiesDlg->LoginAttemptFilterDurationEdit->Text.c_str());
         global.login_attempt.tempban_threshold = PropertiesDlg->LoginAttemptTempBanThresholdEdit->Text.ToIntDef(0);
         global.login_attempt.tempban_duration = parse_duration(PropertiesDlg->LoginAttemptTempBanDurationEdit->Text.c_str());
 

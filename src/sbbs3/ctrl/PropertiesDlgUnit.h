@@ -130,6 +130,8 @@ __published:
     TLabel *ErrorSoundLabel;
     TEdit *ErrorSoundEdit;
     TButton *ErrorSoundButton;
+        TLabel *LoginAttemptFilterDurationLabel;
+        TEdit *LoginAttemptFilterDurationEdit;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TrayIconCheckBoxClick(TObject *Sender);
 	void __fastcall SourceComboBoxChange(TObject *Sender);
