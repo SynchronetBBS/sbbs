@@ -158,12 +158,12 @@ BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 		,time_to_isoDateTimeStr(now, xpTimeZone_local(), tstr, sizeof tstr)
 		,prot
 		,reason);
-	if(host!=NULL)
+	if(duration)
+		fprintf(fp,"\te=%s", time_to_isoDateTimeStr(time(NULL) + duration, xpTimeZone_local(), tstr, sizeof tstr));
+	if(host!=NULL && strcmp(host, STR_NO_HOSTNAME) != 0)
 		fprintf(fp,"\th=%s", host);
 	if(username!=NULL)
 		fprintf(fp,"\tu=%s", username);
-	if(duration)
-		fprintf(fp,"\te=%s", time_to_isoDateTimeStr(time(NULL) + duration, xpTimeZone_local(), tstr, sizeof tstr));
 	fputc('\n', fp);
 
 	fclose(fp);
