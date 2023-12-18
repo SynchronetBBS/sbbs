@@ -377,12 +377,14 @@ DLLEXPORT char		c_unescape_char_ptr(const char* str, char** endptr);
 DLLEXPORT char		c_unescape_char(char ch);
 
 /* Power-of-2 byte count string parser (e.g. "100K" returns 102400 if unit is 1) */
-DLLEXPORT int64_t	parse_byte_count(const char*, ulong unit);
+DLLEXPORT int64_t	parse_byte_count(const char*, uint64_t unit);
 DLLEXPORT double	parse_duration(const char*);
 DLLEXPORT char*		duration_to_str(double value, char* str, size_t size);
 DLLEXPORT char*		duration_to_vstr(double value, char* str, size_t size);
+DLLEXPORT char*		duration_estimate_to_str(double value, char* str, size_t size, double unit, int precision);
+DLLEXPORT char*		duration_estimate_to_vstr(double value, char* str, size_t size, double unit, int precision);
 DLLEXPORT char*		byte_count_to_str(uint64_t bytes, char* str, size_t size);
-DLLEXPORT char*		byte_estimate_to_str(uint64_t bytes, char* str, size_t size, ulong unit, int precision);
+DLLEXPORT char*		byte_estimate_to_str(uint64_t bytes, char* str, size_t size, uint64_t unit, int precision);
 
 /* Microsoft (e.g. DOS/Win32) real-time system clock API (ticks since process started) */
 typedef		clock_t				msclock_t;

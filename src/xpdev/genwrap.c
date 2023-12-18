@@ -251,7 +251,7 @@ char* c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_only)
  * 
  * Moved from ini_file.c/parseBytes()
  */
-int64_t parse_byte_count(const char* str, ulong unit)
+int64_t parse_byte_count(const char* str, uint64_t unit)
 {
 	char*	p=NULL;
 	double	bytes;
@@ -319,7 +319,7 @@ char* byte_count_to_str(uint64_t bytes, char* str, size_t size)
    with a single decimal place and a single letter multiplier/suffix.
    'unit' is the smallest divisor used.
 */
-char* byte_estimate_to_str(uint64_t bytes, char* str, size_t size, ulong unit, int precision)
+char* byte_estimate_to_str(uint64_t bytes, char* str, size_t size, uint64_t unit, int precision)
 {
 	if(bytes >= one_pebibyte)
 		safe_snprintf(str, size, "%1.*fP", precision, bytes/one_pebibyte);
@@ -420,6 +420,59 @@ char* duration_to_vstr(double value, char* str, size_t size)
 	return str;
 }
 
+/* Convert a duration estimate (in seconds) to a string
+ * with a single letter multiplier/suffix:
+ * (Y)ears, (W)eeks, (D)ays, (H)ours, (M)inutes, or (S)econds
+ */
+char* duration_estimate_to_str(double value, char* str, size_t size, double unit, int precision)
+{
+	if(value >= one_year)
+		safe_snprintf(str, size, "%1.*gY", precision, value/one_year);
+	else if(value >= one_week || unit == one_week)
+		safe_snprintf(str, size, "%1.*gW", precision, value/one_week);
+	else if(value >= one_day || unit == one_day)
+		safe_snprintf(str, size, "%1.*gD", precision, value/one_day);
+	else if(value >= one_hour || unit == one_hour)
+		safe_snprintf(str, size, "%1.*gH", precision, value/one_hour);
+	else if(value >= one_minute || unit == one_minute)
+		safe_snprintf(str, size, "%1.*gM", precision, value/one_minute);
+	else
+		safe_snprintf(str, size, "%gS",value);
+
+	return str;
+}
+
+/* Convert a duration estimate (in seconds) to a verbose string
+ * with a word clarifier / modifier:
+ * year[s], week[s], day[s], hour[s], minute[s] or second[s]
+ */
+char* duration_estimate_to_vstr(double value, char* str, size_t size, double unit, int precision)
+{
+	if(value >= one_year) {
+		value /= one_year;
+		safe_snprintf(str, size, "%1.*g year%s", precision, value, value == 1 ? "":"s");
+	}
+	else if(value >= one_week || unit == one_week) {
+		value /= one_week;
+		safe_snprintf(str, size, "%1.*g week%s", precision, value, value == 1 ? "":"s");
+	}
+	else if(value >= one_day || unit == one_day) {
+		value /= one_day;
+		safe_snprintf(str, size, "%1.*g day%s", precision, value, value == 1 ? "":"s");
+	}
+	else if(value >= one_hour || unit == one_hour) {
+		value /= one_hour;
+		safe_snprintf(str, size, "%1.*g hour%s", precision, value, value == 1 ? "":"s");
+	}
+	else if(value >= one_minute || unit == one_minute) {
+		value /= one_minute;
+		safe_snprintf(str, size, "%1.*g minute%s", precision, value, value == 1 ? "":"s");
+	}
+	else
+		safe_snprintf(str, size, "%g second%s", value, value == 1 ? "":"s");
+
+	return str;
+}
 
 /****************************************************************************/
 /* Convert ASCIIZ string to upper case										*/
