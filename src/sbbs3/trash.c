@@ -46,13 +46,13 @@ static void parse_trash_details(char* p, struct trash* trash)
 	if(list == NULL)
 		return;
 
-	trash->added = iniGetDateTime(list, ROOT_SECTION, "added", 0);
-	trash->expires = iniGetDateTime(list, ROOT_SECTION, "expires", 0);
-	if((p = iniGetValue(list, ROOT_SECTION, "prot", NULL, NULL)) != NULL)
+	trash->added = iniGetDateTime(list, ROOT_SECTION, "t", 0);
+	trash->expires = iniGetDateTime(list, ROOT_SECTION, "e", 0);
+	if((p = iniGetValue(list, ROOT_SECTION, "p", NULL, NULL)) != NULL)
 		SAFECOPY(trash->prot, p);
-	if((p = iniGetValue(list, ROOT_SECTION, "user", NULL, NULL)) != NULL)
+	if((p = iniGetValue(list, ROOT_SECTION, "u", NULL, NULL)) != NULL)
 		SAFECOPY(trash->user, p);
-	if((p = iniGetValue(list, ROOT_SECTION, "reason", NULL, NULL)) != NULL)
+	if((p = iniGetValue(list, ROOT_SECTION, "r", NULL, NULL)) != NULL)
 		SAFECOPY(trash->reason, p);
 	strListFree(&list);
 }
@@ -153,24 +153,17 @@ BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	if((fp = fnopen(NULL, fname, O_CREAT|O_APPEND|O_WRONLY)) == NULL)
 		return(FALSE);
 
-	fprintf(fp, "\n; %s %s ", prot, reason);
-	if(username != NULL)
-		fprintf(fp, "by %s ", username);
-	fprintf(fp,"on %.24s\n", ctime_r(&now, tstr));
-
-	if(host!=NULL)
-		fprintf(fp,"; Hostname: %s\n",host);
-
-	fprintf(fp,"%s\tadded=%s\tprot=%s\treason=%s\t"
+	fprintf(fp,"%s\tt=%s\tp=%s\tr=%s"
 		,ip_addr
 		,time_to_isoDateTimeStr(now, xpTimeZone_local(), tstr, sizeof tstr)
-		,prot, reason);
+		,prot
+		,reason);
 	if(host!=NULL)
-		fprintf(fp,"host=%s\t", host);
+		fprintf(fp,"\th=%s", host);
 	if(username!=NULL)
-		fprintf(fp,"user=%s\t", username);
+		fprintf(fp,"\tu=%s", username);
 	if(duration)
-		fprintf(fp,"expires=%s\t", time_to_isoDateTimeStr(time(NULL) + duration, xpTimeZone_local(), tstr, sizeof tstr));
+		fprintf(fp,"\te=%s", time_to_isoDateTimeStr(time(NULL) + duration, xpTimeZone_local(), tstr, sizeof tstr));
 	fputc('\n', fp);
 
 	fclose(fp);
