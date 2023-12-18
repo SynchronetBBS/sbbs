@@ -217,7 +217,7 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
 			Screen->Cursor=crDefault;
 	        if(h!=NULL)
 	            hostname = h->h_name;
-			filter_ip(&MainForm->cfg, prot.c_str(), "abuse", hostname
+			filter_ip(&MainForm->cfg, prot.c_str(), (AnsiString(ListItem->Caption) + " failed login attempts").c_str(), hostname
 					,ip_addr.c_str(), username.c_str(), /* filename: */NULL, /* duration: */0);
 		}
         if(ListView->Selected == NULL)
