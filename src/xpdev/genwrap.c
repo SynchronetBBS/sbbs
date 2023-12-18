@@ -427,15 +427,15 @@ char* duration_to_vstr(double value, char* str, size_t size)
 char* duration_estimate_to_str(double value, char* str, size_t size, double unit, int precision)
 {
 	if(value >= one_year)
-		safe_snprintf(str, size, "%1.*gY", precision, value/one_year);
+		safe_snprintf(str, size, "%1.*fY", precision, value/one_year);
 	else if(value >= one_week || unit == one_week)
-		safe_snprintf(str, size, "%1.*gW", precision, value/one_week);
+		safe_snprintf(str, size, "%1.*fW", precision, value/one_week);
 	else if(value >= one_day || unit == one_day)
-		safe_snprintf(str, size, "%1.*gD", precision, value/one_day);
+		safe_snprintf(str, size, "%1.*fD", precision, value/one_day);
 	else if(value >= one_hour || unit == one_hour)
-		safe_snprintf(str, size, "%1.*gH", precision, value/one_hour);
+		safe_snprintf(str, size, "%1.*fH", precision, value/one_hour);
 	else if(value >= one_minute || unit == one_minute)
-		safe_snprintf(str, size, "%1.*gM", precision, value/one_minute);
+		safe_snprintf(str, size, "%1.*fM", precision, value/one_minute);
 	else
 		safe_snprintf(str, size, "%gS",value);
 
@@ -450,23 +450,23 @@ char* duration_estimate_to_vstr(double value, char* str, size_t size, double uni
 {
 	if(value >= one_year) {
 		value /= one_year;
-		safe_snprintf(str, size, "%1.*g year%s", precision, value, value == 1 ? "":"s");
+		safe_snprintf(str, size, "%1.*f year%s", precision, value, value == 1 ? "":"s");
 	}
 	else if(value >= one_week || unit == one_week) {
 		value /= one_week;
-		safe_snprintf(str, size, "%1.*g week%s", precision, value, value == 1 ? "":"s");
+		safe_snprintf(str, size, "%1.*f week%s", precision, value, value == 1 ? "":"s");
 	}
 	else if(value >= one_day || unit == one_day) {
 		value /= one_day;
-		safe_snprintf(str, size, "%1.*g day%s", precision, value, value == 1 ? "":"s");
+		safe_snprintf(str, size, "%1.*f day%s", precision, value, value == 1 ? "":"s");
 	}
 	else if(value >= one_hour || unit == one_hour) {
 		value /= one_hour;
-		safe_snprintf(str, size, "%1.*g hour%s", precision, value, value == 1 ? "":"s");
+		safe_snprintf(str, size, "%1.*f hour%s", precision, value, value == 1 ? "":"s");
 	}
 	else if(value >= one_minute || unit == one_minute) {
 		value /= one_minute;
-		safe_snprintf(str, size, "%1.*g minute%s", precision, value, value == 1 ? "":"s");
+		safe_snprintf(str, size, "%1.*f minute%s", precision, value, value == 1 ? "":"s");
 	}
 	else
 		safe_snprintf(str, size, "%g second%s", value, value == 1 ? "":"s");
