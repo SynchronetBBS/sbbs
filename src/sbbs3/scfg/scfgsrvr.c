@@ -69,7 +69,9 @@ static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Temporary Ban Threshold", threshold(login_attempt->tempban_threshold));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Temporary Ban Duration"
 			,duration_to_vstr(login_attempt->tempban_duration, tmp, sizeof(tmp)));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-filter Threshold", threshold(login_attempt->filter_threshold));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Automatic Filter Threshold", threshold(login_attempt->filter_threshold));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Automatic Filter Duration"
+			,login_attempt->filter_duration == 0 ? "Infinite" : duration_to_vstr(login_attempt->filter_duration, tmp, sizeof(tmp)));
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
@@ -77,6 +79,12 @@ static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
 			"\n"
 			"Settings that control the throttling, logging, and subsequent filtering\n"
 			"of clients (based on IP address) that have failed login attempts.\n"
+			"\n"
+			"Temporary Bans of IP addresses (stored in memory) are `not` persistent\n"
+			"across reset or recycles of SBBS.\n"
+			"\n"
+			"Filters of IP Addresses (stored in test/ip.can file) `are` persistent\n"
+			"across resets of SBBS but may be configured to have a limited lifetime."
 		;
 		switch(uifc.list(WIN_ACT|WIN_BOT|WIN_SAV, 0, 0, 0, &cur, &bar
 			,"Failed Login Attempts",opt)) {
@@ -97,18 +105,26 @@ static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
 				break;
 			case 3:
 				SAFEPRINTF(str, "%u", login_attempt->tempban_threshold);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Temp-ban IPs of Failed Logins", str, 4, K_NUMBER|K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Temp-Ban of IPs for Failed Logins", str, 4, K_NUMBER|K_EDIT) > 0)
 					login_attempt->tempban_threshold = atoi(str);
 				break;
 			case 4:
 				SAFECOPY(str, duration(login_attempt->tempban_duration, false));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Duration of Temp-ban for Failed Logins", str, 6, K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Lifetime of Temporary-Ban of IP", str, 6, K_EDIT) > 0)
 					login_attempt->tempban_duration = (uint)parse_duration(str);
 				break;
 			case 5:
 				SAFEPRINTF(str, "%u", login_attempt->filter_threshold);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Filtering IPs of Failed Logins", str, 3, K_NUMBER|K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Threshold for Auto-Filtering of IPs for Failed Logins", str, 3, K_NUMBER|K_EDIT) > 0)
 					login_attempt->filter_threshold = atoi(str);
+				break;
+			case 6:
+				if(login_attempt->filter_duration == 0)
+					SAFECOPY(str, "Infinite");
+				else
+					SAFECOPY(str, duration(login_attempt->filter_duration, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Lifetime of Auto-Filter of IPs", str, 8, K_EDIT) > 0)
+					login_attempt->filter_duration = (uint)parse_duration(str);
 				break;
 			default:
 				uifc.changes = changes;
