@@ -51,6 +51,7 @@ struct login_attempt_settings {
 	uint	tempban_threshold;
 	uint	tempban_duration;	/* in seconds */
 	uint	filter_threshold;
+	uint	filter_duration;	/* in seconds */
 };
 
 struct startup_sound_settings {

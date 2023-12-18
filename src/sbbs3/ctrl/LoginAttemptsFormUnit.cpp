@@ -1,7 +1,5 @@
 /* Synchronet Control Panel (GUI Borland C++ Builder Project for Win32) */
 
-/* $Id: LoginAttemptsFormUnit.cpp,v 1.9 2019/02/15 06:26:05 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -213,8 +199,8 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
     	HOSTENT*	h;
 
     	AnsiString ip_addr 	= ListItem->SubItems->Strings[1];
-   	AnsiString prot 	= ListItem->SubItems->Strings[2];
-	AnsiString username = ListItem->SubItems->Strings[3];
+		AnsiString prot 	= ListItem->SubItems->Strings[2];
+		AnsiString username = ListItem->SubItems->Strings[3];
 
     	wsprintf(str,"Disallow future connections from %s"
         	,ip_addr);
@@ -223,17 +209,17 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
         if(res==IDCANCEL)
     		break;
     	if(res==IDYES) {
-		char* hostname = NULL;
+			char* hostname = NULL;
 
-	    	addr.s_addr=inet_addr(ip_addr.c_str());
-		Screen->Cursor=crHourGlass;
-	    	h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
-		Screen->Cursor=crDefault;
+			addr.s_addr=inet_addr(ip_addr.c_str());
+			Screen->Cursor=crHourGlass;
+				h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
+			Screen->Cursor=crDefault;
 	        if(h!=NULL)
 	            hostname = h->h_name;
-		filter_ip(&MainForm->cfg, prot.c_str(), "abuse", hostname
-				,ip_addr.c_str(), username.c_str(), NULL);
-	}
+			filter_ip(&MainForm->cfg, prot.c_str(), "abuse", hostname
+					,ip_addr.c_str(), username.c_str(), /* filename: */NULL, /* duration: */0);
+		}
         if(ListView->Selected == NULL)
         	break;
         ListItem=ListView->GetNextItem(ListItem,sdAll,State);

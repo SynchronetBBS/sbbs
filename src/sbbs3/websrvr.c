@@ -1913,7 +1913,7 @@ static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t
 		snprintf(reason, sizeof reason, "TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
 			,count, seconds_to_str(attempt.time - attempt.first, tmp));
 		filter_ip(&scfg, client->protocol, reason
-			,client->host, client->addr, user, /* fname: */NULL);
+			,client->host, client->addr, user, /* fname: */NULL, startup->login_attempt.filter_duration);
 	}
 	if(count>1)
 		mswait(startup->login_attempt.delay);

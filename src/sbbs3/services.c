@@ -356,7 +356,7 @@ static void badlogin(SOCKET sock, char* user, char* passwd, client_t* client, un
 	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 		snprintf(reason, sizeof reason, "TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
 			,count, seconds_to_str(attempt.time - attempt.first, tmp));
-		filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL);
+		filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL, startup->login_attempt.filter_duration);
 	}
 
 	mswait(startup->login_attempt.delay);
@@ -1062,10 +1062,13 @@ static void js_service_thread(void* arg)
 				,socket, service->protocol, client.addr, host_name);
 	}
 
-	if(trashcan(&scfg,host_name,"host")) {
-		if(service->log_level >= LOG_NOTICE)
-			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s"
-				,socket, service->protocol, client.addr, host_name);
+	struct trash trash;
+	if(trashcan2(&scfg, host_name, NULL, "host", &trash)) {
+		if(service->log_level >= LOG_NOTICE) {
+			char details[128];
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
+				,socket, service->protocol, client.addr, host_name, trash_details(&trash, details, sizeof details));
+		}
 		close_socket(socket);
 		protected_uint32_adjust(&service->clients, -1);
 		thread_down();
@@ -1472,9 +1475,11 @@ static void native_service_thread(void* arg)
 #endif
 	}
 
-	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s"
-			,socket, service->protocol, client.addr, host_name);
+	struct trash trash;
+	if(trashcan2(&scfg, host_name, NULL, "host", &trash)) {
+		char details[128];
+		lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
+			,socket, service->protocol, client.addr, host_name, trash_details(&trash, details, sizeof details));
 		close_socket(socket);
 		protected_uint32_adjust(&service->clients, -1);
 		thread_down();
@@ -2333,14 +2338,19 @@ void services_thread(void* arg)
 
 					login_attempt_t attempted;
 					ulong banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */NULL, startup->login_attempt, &attempted);
-					if(banned || trashcan(&scfg,host_ip,"ip")) {
-						if(banned) {
-							char ban_duration[128];
-							lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
-								,client_socket, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
-						} else
-							lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in ip.can"
-								,client_socket, service[i].protocol, host_ip);
+					if(banned) {
+						char ban_duration[128];
+						lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
+							,client_socket, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
+						FREE_AND_NULL(udp_buf);
+						close_socket(client_socket);
+						continue;
+					}
+					struct trash trash;
+					if(trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
+						char details[128];
+						lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in ip.can %s"
+							,client_socket, service[i].protocol, host_ip, trash_details(&trash, details, sizeof details));
 						FREE_AND_NULL(udp_buf);
 						close_socket(client_socket);
 						continue;

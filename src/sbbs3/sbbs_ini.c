@@ -60,6 +60,7 @@ static const char*	strLoginAttemptHackThreshold="LoginAttemptHackThreshold";
 static const char*	strLoginAttemptTempBanThreshold="LoginAttemptTempBanThreshold";
 static const char*	strLoginAttemptTempBanDuration="LoginAttemptTempBanDuration";
 static const char*	strLoginAttemptFilterThreshold="LoginAttemptFilterThreshold";
+static const char*	strLoginAttemptFilterDuration="LoginAttemptFilterDuration";
 static const char*	strJavaScriptMaxBytes		="JavaScriptMaxBytes";
 static const char*	strJavaScriptTimeLimit		="JavaScriptTimeLimit";
 static const char*	strJavaScriptGcInterval		="JavaScriptGcInterval";
@@ -238,8 +239,9 @@ static struct login_attempt_settings get_login_attempt_settings(str_list_t list,
 	settings.throttle			=iniGetInteger(list,section,strLoginAttemptThrottle			,global == NULL ? 1000 : global->login_attempt.throttle);
 	settings.hack_threshold		=iniGetInteger(list,section,strLoginAttemptHackThreshold	,global == NULL ? 10 : global->login_attempt.hack_threshold);
 	settings.tempban_threshold	=iniGetInteger(list,section,strLoginAttemptTempBanThreshold	,global == NULL ? 20 : global->login_attempt.tempban_threshold);
-	settings.tempban_duration	=(ulong)iniGetDuration(list,section,strLoginAttemptTempBanDuration	,global == NULL ? (10*60) : global->login_attempt.tempban_duration);
+	settings.tempban_duration	=(uint)iniGetDuration(list,section,strLoginAttemptTempBanDuration	,global == NULL ? (10*60) : global->login_attempt.tempban_duration);
 	settings.filter_threshold	=iniGetInteger(list,section,strLoginAttemptFilterThreshold	,global == NULL ? 0 : global->login_attempt.filter_threshold);
+	settings.filter_duration	=(uint)iniGetDuration(list,section,strLoginAttemptFilterDuration, global == NULL ? 0 : global->login_attempt.filter_duration);
 	return settings;
 }
 
@@ -251,6 +253,7 @@ static void set_login_attempt_settings(str_list_t* lp, const char* section, stru
 	iniSetInteger(lp,section,strLoginAttemptTempBanThreshold,settings.tempban_threshold,&style);
 	iniSetDuration(lp,section,strLoginAttemptTempBanDuration,settings.tempban_duration,&style);
 	iniSetInteger(lp,section,strLoginAttemptFilterThreshold,settings.filter_threshold,&style);
+	iniSetDuration(lp,section,strLoginAttemptFilterDuration,settings.filter_duration,&style);
 }
 
 static const struct in6_addr wildcard6;

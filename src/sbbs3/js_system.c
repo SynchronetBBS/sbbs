@@ -1459,6 +1459,7 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 	char*		ip_addr=NULL;
 	char*		from=NULL;
 	char*		fname=NULL;
+	jsint		duration = 0;
 	jsrefcount	rc;
 	BOOL		ret;
 
@@ -1469,6 +1470,10 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	for(i=0; i<argc && fname == NULL; i++) {
+		if(JSVAL_IS_NUMBER(argv[i])) {
+			JS_ValueToInt32(cx, argv[i], &duration);
+			continue;
+		}
 		if(!JSVAL_IS_STRING(argv[i]))
 			continue;
 		JSVALUE_TO_MSTRING(cx, argv[i], p, NULL);
@@ -1495,7 +1500,7 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 			fname=p;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
-	ret=filter_ip(sys->cfg,prot,reason,host,ip_addr,from,fname);
+	ret=filter_ip(sys->cfg,prot,reason,host,ip_addr,from,fname, duration);
 	free(prot);
 	free(reason);
 	free(host);
@@ -2254,7 +2259,7 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("Log a suspected hack attempt")
 	,310
 	},
-	{"filter_ip",		js_filter_ip,		4,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, reason, host, ip, username, filename]")
+	{"filter_ip",		js_filter_ip,		4,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, reason, host, ip, username, filename] [<i>number</i> duration-in-seconds]")
 	,JSDOCSTR("Add an IP address (with comment) to an IP filter file. If filename is not specified, the ip.can file is used")
 	,311
 	},

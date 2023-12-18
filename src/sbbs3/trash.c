@@ -1,4 +1,4 @@
-/* Synchronet client/content-filtering (trashcan) functions */
+/* Synchronet client/content-filtering (trashcan/twit) functions */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -21,9 +21,11 @@
 
 #include "trash.h"
 #include "datewrap.h"
+#include "xpdatetime.h"
 #include "ini_file.h"
 #include "scfglib.h"
 #include "findstr.h"
+#include "nopen.h"
 
 /****************************************************************************/
 /* Searches the file <name>.can in the TEXT directory for matches			*/
@@ -63,7 +65,10 @@ char* trash_details(const struct trash* trash, char* str, size_t max)
 	*str = '\0';
 	if(trash->added)
 		snprintf(since, sizeof since, "since %.24s", ctime_r(&trash->added, tmp));
-	snprintf(str, max, "%s%s%s", since, trash->reason[0] ? " for " : "", trash->reason);
+	snprintf(str, max, "%s%s%s%s%s"
+		,since
+		,trash->reason[0] ? " for " : "", trash->reason
+		,trash->prot[0] ? " using " : "", trash->prot);
 	return str;
 }
 
@@ -78,9 +83,11 @@ BOOL trashcan2(scfg_t* cfg, const char* str1, const char* str2, const char* name
 
 	if(!find2strs(str1, str2, trashcan_fname(cfg,name,fname,sizeof(fname)), details))
 		return FALSE;
-	parse_trash_details(details, trash);
-	if(trash->expires && trash->expires >= time(NULL))
-		return FALSE;
+	if(trash != NULL) {
+		parse_trash_details(details, trash);
+		if(trash->expires && trash->expires >= time(NULL))
+			return FALSE;
+	}
 	return TRUE;
 }
 
@@ -91,9 +98,11 @@ BOOL trash_in_list(const char* str1, const char* str2, str_list_t list, struct t
 
 	if(!find2strs_in_list(str1, str2, list, details))
 		return FALSE;
-	parse_trash_details(details, trash);
-	if(trash->expires && trash->expires >= time(NULL))
-		return FALSE;
+	if(trash != NULL) {
+		parse_trash_details(details, trash);
+		if(trash->expires && trash->expires >= time(NULL))
+			return FALSE;
+	}
 	return TRUE;
 }
 
@@ -103,4 +112,93 @@ str_list_t trashcan_list(scfg_t* cfg, const char* name)
 	char	fname[MAX_PATH+1];
 
 	return findstr_list(trashcan_fname(cfg, name, fname, sizeof(fname)));
+}
+
+/****************************************************************************/
+BOOL is_host_exempt(scfg_t* cfg, const char* ip_addr, const char* host_name)
+{
+	char	exempt[MAX_PATH+1];
+
+	SAFEPRINTF2(exempt, "%s%s", cfg->ctrl_dir, strIpFilterExemptConfigFile);
+	return find2strs(ip_addr, host_name, exempt, NULL);
+}
+
+/****************************************************************************/
+/* Add an IP address (with comment) to the IP filter/trashcan file			*/
+/****************************************************************************/
+BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* host
+					,const char* ip_addr, const char* username, const char* fname
+					,uint duration)
+{
+	char	ip_can[MAX_PATH+1];
+	char	exempt[MAX_PATH+1];
+	char	tstr[64];
+	FILE*	fp;
+	time_t	now = time(NULL);
+
+	if(ip_addr==NULL)
+		return(FALSE);
+
+	SAFEPRINTF2(exempt, "%s%s", cfg->ctrl_dir, strIpFilterExemptConfigFile);
+	if(find2strs(ip_addr, host, exempt, NULL))
+		return(FALSE);
+
+	SAFEPRINTF(ip_can,"%sip.can",cfg->text_dir);
+	if(fname==NULL)
+		fname=ip_can;
+
+	if(findstr(ip_addr, fname))	/* Already filtered? */
+		return(TRUE);
+
+	if((fp = fnopen(NULL, fname, O_CREAT|O_APPEND|O_WRONLY)) == NULL)
+		return(FALSE);
+
+	fprintf(fp, "\n; %s %s ", prot, reason);
+	if(username != NULL)
+		fprintf(fp, "by %s ", username);
+	fprintf(fp,"on %.24s\n", ctime_r(&now, tstr));
+
+	if(host!=NULL)
+		fprintf(fp,"; Hostname: %s\n",host);
+
+	fprintf(fp,"%s\tadded=%s\tprot=%s\treason=%s\t"
+		,ip_addr
+		,time_to_isoDateTimeStr(now, xpTimeZone_local(), tstr, sizeof tstr)
+		,prot, reason);
+	if(host!=NULL)
+		fprintf(fp,"host=%s\t", host);
+	if(username!=NULL)
+		fprintf(fp,"user=%s\t", username);
+	if(duration)
+		fprintf(fp,"expires=%s\t", time_to_isoDateTimeStr(time(NULL) + duration, xpTimeZone_local(), tstr, sizeof tstr));
+	fputc('\n', fp);
+
+	fclose(fp);
+	return(TRUE);
+}
+
+BOOL is_twit(scfg_t* cfg, const char* name)
+{
+	char path[MAX_PATH + 1];
+	return findstr(name, twitlist_fname(cfg, path, sizeof path));
+}
+
+/* Add a name to the global twit list */
+BOOL list_twit(scfg_t* cfg, const char* name, const char* comment)
+{
+	char path[MAX_PATH + 1];
+	FILE* fp = fnopen(/* fd: */NULL, twitlist_fname(cfg, path, sizeof path), O_WRONLY | O_APPEND);
+	if(fp == NULL)
+		return FALSE;
+	if(comment != NULL)
+		fprintf(fp, "\n; %s", comment);
+	BOOL result = fprintf(fp, "\n%s\n", name) > 0;
+	fclose(fp);
+	return result;
+}
+
+str_list_t list_of_twits(scfg_t* cfg)
+{
+	char path[MAX_PATH + 1];
+	return findstr_list(twitlist_fname(cfg, path, sizeof path));
 }

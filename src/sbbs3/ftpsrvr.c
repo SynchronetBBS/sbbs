@@ -1783,7 +1783,7 @@ static BOOL badlogin(SOCKET sock, CRYPT_SESSION sess, ulong* login_attempts
 			char reason[128];
 			snprintf(reason, sizeof reason, "TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
 				,count, seconds_to_str(attempt.time - attempt.first, tmp));
-			filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL);
+			filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL, startup->login_attempt.filter_duration);
 		}
 		if(count > *login_attempts)
 			*login_attempts=count;
@@ -2272,21 +2272,28 @@ static void ctrl_thread(void* arg)
 	}
 
 	ulong banned = loginBanned(&scfg, startup->login_attempt_list, sock, host_name, startup->login_attempt, &attempted);
-	if(banned || trashcan(&scfg,host_ip,"ip")) {
-		if(banned) {
-			char ban_duration[128];
-			lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
-				,sock, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
-		} else
-			lprintf(LOG_NOTICE,"%04d [%s] !CLIENT BLOCKED in ip.can", sock, host_ip);
+	if(banned) {
+		char ban_duration[128];
+		lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
+			,sock, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 		sockprintf(sock,sess,"550 Access denied.");
 		ftp_close_socket(&sock,&sess,__LINE__);
 		thread_down();
 		return;
 	}
 
-	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_NOTICE,"%04d [%s] !CLIENT BLOCKED in host.can: %s", sock, host_ip, host_name);
+	struct trash trash;
+	if(trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
+		char details[128];
+		lprintf(LOG_NOTICE,"%04d [%s] !CLIENT BLOCKED in ip.can %s", sock, host_ip, trash_details(&trash, details, sizeof details));
+		sockprintf(sock,sess,"550 Access denied.");
+		ftp_close_socket(&sock,&sess,__LINE__);
+		thread_down();
+		return;
+	}
+	if(trashcan2(&scfg, host_name, NULL, "host", &trash)) {
+		char details[128];
+		lprintf(LOG_NOTICE,"%04d [%s] !CLIENT BLOCKED in host.can: %s %s", sock, host_ip, host_name, trash_details(&trash, details, sizeof details));
 		sockprintf(sock,sess,"550 Access denied.");
 		ftp_close_socket(&sock,&sess,__LINE__);
 		thread_down();

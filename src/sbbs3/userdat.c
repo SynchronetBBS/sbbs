@@ -41,9 +41,6 @@
 	#define USHRT_MAX ((unsigned short)~0)
 #endif
 
-/* convenient space-saving global variables */
-static const char* strIpFilterExemptConfigFile = "ipfilter_exempt.cfg";
-
 #define VALID_CFG(cfg)	(cfg!=NULL && cfg->size==sizeof(scfg_t))
 #define VALID_USER_NUMBER(n) ((n) >= 1)
 #define VALID_USER_FIELD(n)	((n) >= 0 && (n) < USER_FIELD_COUNT)
@@ -3595,66 +3592,6 @@ BOOL is_download_free(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
 	return(chk_ar(cfg,cfg->dir[dirnum]->ex_ar,user,client));
 }
 
-BOOL is_host_exempt(scfg_t* cfg, const char* ip_addr, const char* host_name)
-{
-	char	exempt[MAX_PATH+1];
-
-	SAFEPRINTF2(exempt, "%s%s", cfg->ctrl_dir, strIpFilterExemptConfigFile);
-	return find2strs(ip_addr, host_name, exempt, NULL);
-}
-
-/****************************************************************************/
-/* Add an IP address (with comment) to the IP filter/trashcan file			*/
-/* ToDo: Move somewhere more appropriate (filter.c?)						*/
-/****************************************************************************/
-BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* host
-					   ,const char* ip_addr, const char* username, const char* fname)
-{
-	char	ip_can[MAX_PATH+1];
-	char	exempt[MAX_PATH+1];
-	char	tstr[64];
-    FILE*	fp;
-    time_t	now = time(NULL);
-
-	if(ip_addr==NULL)
-		return(FALSE);
-
-	SAFEPRINTF2(exempt, "%s%s", cfg->ctrl_dir, strIpFilterExemptConfigFile);
-	if(find2strs(ip_addr, host, exempt, NULL))
-		return(FALSE);
-
-	SAFEPRINTF(ip_can,"%sip.can",cfg->text_dir);
-	if(fname==NULL)
-		fname=ip_can;
-
-	if(findstr(ip_addr, fname))	/* Already filtered? */
-		return(TRUE);
-
-    if((fp = fnopen(NULL, fname, O_CREAT|O_APPEND|O_WRONLY)) == NULL)
-    	return(FALSE);
-
-    fprintf(fp, "\n; %s %s ", prot, reason);
-	if(username != NULL)
-		fprintf(fp, "by %s ", username);
-    fprintf(fp,"on %.24s\n", ctime_r(&now, tstr));
-
-	if(host!=NULL)
-		fprintf(fp,"; Hostname: %s\n",host);
-
-	fprintf(fp,"%s\tadded=%s\treason=%s %s\t"
-		,ip_addr
-		,time_to_isoDateTimeStr(now, xpTimeZone_local(), tstr, sizeof tstr)
-		,prot, reason);
-	if(host!=NULL)
-		fprintf(fp,"host=%s\t", host);
-	if(username!=NULL)
-		fprintf(fp,"user=%s\t", username);
-	fputc('\n', fp);
-
-    fclose(fp);
-	return(TRUE);
-}
-
 /****************************************************************************/
 /* Note: This function does not account for timed events!					*/
 /****************************************************************************/
@@ -4344,30 +4281,4 @@ enum parsed_vpath parse_vpath(scfg_t* cfg, const char* vpath, user_t* user, clie
 		return PARSED_VPATH_NONE;
 
 	return *filename == NULL ? PARSED_VPATH_DIR : PARSED_VPATH_FULL;
-}
-
-BOOL is_twit(scfg_t* cfg, const char* name)
-{
-	char path[MAX_PATH + 1];
-	return findstr(name, twitlist_fname(cfg, path, sizeof path));
-}
-
-/* Add a name to the global twit list */
-BOOL list_twit(scfg_t* cfg, const char* name, const char* comment)
-{
-	char path[MAX_PATH + 1];
-	FILE* fp = fnopen(/* fd: */NULL, twitlist_fname(cfg, path, sizeof path), O_WRONLY | O_APPEND);
-	if(fp == NULL)
-		return FALSE;
-	if(comment != NULL)
-		fprintf(fp, "\n; %s", comment);
-	BOOL result = fprintf(fp, "\n%s\n", name) > 0;
-	fclose(fp);
-	return result;
-}
-
-str_list_t list_of_twits(scfg_t* cfg)
-{
-	char path[MAX_PATH + 1];
-	return findstr_list(twitlist_fname(cfg, path, sizeof path));
 }

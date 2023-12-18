@@ -5338,14 +5338,18 @@ NO_SSH:
 
 		login_attempt_t attempted;
 		uint banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */NULL, startup->login_attempt, &attempted);
-		if(banned || sbbs->trashcan(host_ip,"ip")) {
-			if(banned) {
-				char ban_duration[128];
-				lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts%s%s) - remaining: %s"
-					,client_socket, client.protocol, host_ip, attempted.count-attempted.dupes
-					,attempted.user[0] ? ", last: " : "", attempted.user, seconds_to_str(banned, ban_duration));
-			} else
-				lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in ip.can", client_socket, client.protocol, host_ip);
+		if(banned) {
+			char ban_duration[128];
+			lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts%s%s) - remaining: %s"
+				,client_socket, client.protocol, host_ip, attempted.count-attempted.dupes
+				,attempted.user[0] ? ", last: " : "", attempted.user, seconds_to_str(banned, ban_duration));
+			close_socket(client_socket);
+			continue;
+		}
+		struct trash trash;
+		if(sbbs->trashcan(host_ip, "ip", &trash)) {
+			char details[128];
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in ip.can %s", client_socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details));
 			close_socket(client_socket);
 			continue;
 		}
@@ -5486,11 +5490,12 @@ NO_SSH:
 			lprintf(LOG_INFO,"%04d %s [%s] Hostname: %s", client_socket, client.protocol, host_ip, host_name);
 		}
 
-		if(sbbs->trashcan(host_name,"host")) {
+		if(sbbs->trashcan(host_name,"host", &trash)) {
 			SSH_END(client_socket);
 			close_socket(client_socket);
-			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s"
-				,client_socket, client.protocol, host_ip, host_name);
+			char details[128];
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
+				,client_socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details));
 			continue;
 		}
 

@@ -931,13 +931,12 @@ void sbbs_t::dirinfo(int dirnum)
 /* Returns TRUE if found in list, FALSE if not.								*/
 /* Displays bad<name>.msg in text directory if found.						*/
 /****************************************************************************/
-bool sbbs_t::trashcan(const char *insearchof, const char *name)
+bool sbbs_t::trashcan(const char *insearchof, const char *name, struct trash* trash)
 {
 	char str[MAX_PATH+1];
 	bool result;
 
-	result=::trashcan(&cfg, insearchof, name)
-		? true:false; // This is a dumb bool conversion to make BC++ happy
+	result=::trashcan2(&cfg, insearchof, name, NULL, trash);
 	if(result) {
 		sprintf(str,"%sbad%s.msg",cfg.text_dir,name);
 		if(fexistcase(str)) {
