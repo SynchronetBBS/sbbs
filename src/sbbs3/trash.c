@@ -85,7 +85,7 @@ BOOL trashcan2(scfg_t* cfg, const char* str1, const char* str2, const char* name
 		return FALSE;
 	if(trash != NULL) {
 		parse_trash_details(details, trash);
-		if(trash->expires && trash->expires >= time(NULL))
+		if(trash->expires && trash->expires <= time(NULL))
 			return FALSE;
 	}
 	return TRUE;
@@ -100,7 +100,7 @@ BOOL trash_in_list(const char* str1, const char* str2, str_list_t list, struct t
 		return FALSE;
 	if(trash != NULL) {
 		parse_trash_details(details, trash);
-		if(trash->expires && trash->expires >= time(NULL))
+		if(trash->expires && trash->expires <= time(NULL))
 			return FALSE;
 	}
 	return TRUE;
