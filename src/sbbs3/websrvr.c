@@ -6198,8 +6198,8 @@ static void respond(http_session_t * session)
 	if(session->req.send_content && content_length > 0)  {
 		off_t snt=0;
 		time_t start = time(NULL);
-		lprintf(LOG_INFO,"%04d %s Sending file: %s (%"PRIdOFF" bytes)"
-			,session->socket, session->client.protocol, session->req.physical_path, content_length);
+		lprintf(LOG_INFO,"%04d %s [%s] Sending file: %s (%"PRIdOFF" bytes)"
+			,session->socket, session->client.protocol, session->client.addr, session->req.physical_path, content_length);
 		snt=sock_sendfile(session,session->req.physical_path,session->req.range_start,session->req.range_end);
 		if(session->req.ld!=NULL) {
 			if(snt<0)
@@ -6210,8 +6210,8 @@ static void respond(http_session_t * session)
 			time_t e = time(NULL) - start;
 			if(e < 1)
 				e = 1;
-			lprintf(LOG_INFO, "%04d %s Sent file: %s (%"PRIdOFF" bytes, %ld cps)"
-				,session->socket, session->client.protocol, session->req.physical_path, snt, (long)(snt / e));
+			lprintf(LOG_INFO, "%04d %s [%s] Sent file: %s (%"PRIdOFF" bytes, %ld cps)"
+				,session->socket, session->client.protocol, session->client.addr, session->req.physical_path, snt, (long)(snt / e));
 			if(session->parsed_vpath == PARSED_VPATH_FULL && session->file.name != NULL) {
 				user_downloaded_file(&scfg, &session->user, &session->client, session->file.dir, session->file.name, snt);
 				mqtt_file_download(&mqtt, &session->user, &session->file, snt, &session->client);
