@@ -5342,7 +5342,7 @@ NO_SSH:
 			char ban_duration[128];
 			lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts%s%s) - remaining: %s"
 				,client_socket, client.protocol, host_ip, attempted.count-attempted.dupes
-				,attempted.user[0] ? ", last: " : "", attempted.user, seconds_to_str(banned, ban_duration));
+				,attempted.user[0] ? ", last: " : "", attempted.user, duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
 			close_socket(client_socket);
 			continue;
 		}

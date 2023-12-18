@@ -344,7 +344,7 @@ static void badlogin(SOCKET sock, char* user, char* passwd, client_t* client, un
 	count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd, &attempt);
 	if (count > 1)
 		lprintf(LOG_NOTICE, "%04d %s [%s] !%lu CONSECUTIVE FAILED LOGIN ATTEMPTS in %s"
-			,sock, client->protocol, client->addr, count, seconds_to_str(attempt.time - attempt.first, tmp));
+			,sock, client->protocol, client->addr, count, duration_estimate_to_vstr(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
 	mqtt_user_login_fail(&mqtt, client, user);
 	if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
 		hacklog(&scfg, &mqtt, reason, user, passwd, client->host, addr);
@@ -355,7 +355,7 @@ static void badlogin(SOCKET sock, char* user, char* passwd, client_t* client, un
 	}
 	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 		snprintf(reason, sizeof reason, "%lu CONSECUTIVE FAILED LOGIN ATTEMPTS in %s"
-			,count, seconds_to_str(attempt.time - attempt.first, tmp));
+			,count, duration_estimate_to_str(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
 		filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL, startup->login_attempt.filter_duration);
 	}
 
@@ -2341,7 +2341,8 @@ void services_thread(void* arg)
 					if(banned) {
 						char ban_duration[128];
 						lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
-							,client_socket, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
+							,client_socket, host_ip, attempted.count-attempted.dupes, attempted.user
+							,duration_estimate_to_str(banned, ban_duration, sizeof ban_duration, 1, 1));
 						FREE_AND_NULL(udp_buf);
 						close_socket(client_socket);
 						continue;

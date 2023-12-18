@@ -1775,14 +1775,14 @@ static BOOL badlogin(SOCKET sock, CRYPT_SESSION sess, ulong* login_attempts
 		count=loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd, &attempt);
 		if (count > 1)
 			lprintf(LOG_NOTICE, "%04d [%s] !%lu CONSECUTIVE FAILED LOGIN ATTEMPTS in %s"
-				,sock, client->addr, count, seconds_to_str(attempt.time - attempt.first, tmp));
+				,sock, client->addr, count, duration_estimate_to_vstr(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
 		mqtt_user_login_fail(&mqtt, client, user);
 		if(startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold)
 			ftp_hacklog("FTP LOGIN", user, passwd, client->host, addr);
 		if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
 			char reason[128];
 			snprintf(reason, sizeof reason, "%lu CONSECUTIVE FAILED LOGIN ATTEMPTS in %s"
-				,count, seconds_to_str(attempt.time - attempt.first, tmp));
+				,count, duration_estimate_to_str(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
 			filter_ip(&scfg, client->protocol, reason, client->host, client->addr, user, /* fname: */NULL, startup->login_attempt.filter_duration);
 		}
 		if(count > *login_attempts)
@@ -2275,7 +2275,8 @@ static void ctrl_thread(void* arg)
 	if(banned) {
 		char ban_duration[128];
 		lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
-			,sock, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
+			,sock, host_ip, attempted.count-attempted.dupes, attempted.user
+			,duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
 		sockprintf(sock,sess,"550 Access denied.");
 		ftp_close_socket(&sock,&sess,__LINE__);
 		thread_down();
