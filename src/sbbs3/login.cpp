@@ -146,7 +146,7 @@ void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol
 	SAFEPRINTF(reason,"%s LOGIN", protocol);
 	count=loginFailure(startup->login_attempt_list, addr, protocol, user, passwd, &attempt);
 	if (count > 1)
-		lprintf(LOG_NOTICE, "!CONSECUTIVE FAILED LOGIN ATTEMPT #%lu in %s"
+		lprintf(LOG_NOTICE, "!%lu CONSECUTIVE FAILED LOGIN ATTEMPTS in %s"
 			,count, seconds_to_str(attempt.time - attempt.first, tmp));
 	mqtt_user_login_fail(mqtt, &client, user);
 	if(user!=NULL && startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
@@ -161,7 +161,7 @@ void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol
 		char ipaddr[INET6_ADDRSTRLEN];
 		inet_addrtop(addr, ipaddr, sizeof(ipaddr));
 		getnameinfo(&addr->addr, addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
-		snprintf(reason, sizeof reason, "TOO MANY CONSECUTIVE FAILED LOGIN ATTEMPTS (%lu in %s)"
+		snprintf(reason, sizeof reason, "%lu CONSECUTIVE FAILED LOGIN ATTEMPTS in %s"
 			,count, seconds_to_str(attempt.time - attempt.first, tmp));
 		filter_ip(&cfg, protocol, reason, host_name, ipaddr, user, /* fname: */NULL, startup->login_attempt.filter_duration);
 	}
