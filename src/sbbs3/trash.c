@@ -63,8 +63,11 @@ char* trash_details(const struct trash* trash, char* str, size_t max)
 	char tmp[64];
 	char since[128] = "";
 	*str = '\0';
-	if(trash->added)
-		snprintf(since, sizeof since, "since %.24s", ctime_r(&trash->added, tmp));
+	if(trash->added) {
+		char* p = ctime_r(&trash->added, tmp);
+		if(p != NULL)
+			snprintf(since, sizeof since, "since %.20s", p + 4);
+	}
 	snprintf(str, max, "%s%s%s%s%s"
 		,since
 		,trash->reason[0] ? " for " : "", trash->reason
@@ -153,17 +156,19 @@ BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	if((fp = fnopen(NULL, fname, O_CREAT|O_APPEND|O_WRONLY)) == NULL)
 		return(FALSE);
 
-	fprintf(fp,"%s\tt=%s\tp=%s\tr=%s"
+	fprintf(fp,"%s\tt=%s"
 		,ip_addr
-		,time_to_isoDateTimeStr(now, xpTimeZone_local(), tstr, sizeof tstr)
-		,prot
-		,reason);
-	if(duration)
+		,time_to_isoDateTimeStr(now, xpTimeZone_local(), tstr, sizeof tstr));
+	if(prot != NULL && *prot != '\0')
+		fprintf(fp, "\tp=%s", prot);
+	if(reason != NULL && *reason != '\0')
+		fprintf(fp, "\tr=%s", reason);
+	if(duration > 0)
 		fprintf(fp,"\te=%s", time_to_isoDateTimeStr(time(NULL) + duration, xpTimeZone_local(), tstr, sizeof tstr));
-	if(host!=NULL && strcmp(host, STR_NO_HOSTNAME) != 0)
-		fprintf(fp,"\th=%s", host);
-	if(username!=NULL)
+	if(username != NULL && *username != '\0')
 		fprintf(fp,"\tu=%s", username);
+	if(host != NULL && *host != '\0' && strcmp(host, STR_NO_HOSTNAME) != 0)
+		fprintf(fp,"\th=%s", host);
 	fputc('\n', fp);
 
 	fclose(fp);
