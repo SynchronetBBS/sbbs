@@ -40,6 +40,7 @@
 
 #ifdef _WIN32
 
+#include <synchapi.h>
 typedef HANDLE xpevent_t;
 
 #else
