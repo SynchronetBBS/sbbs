@@ -27,6 +27,7 @@
 
 #include "LoginAttemptsFormUnit.h"
 #include "MainFormUnit.h"
+#include "CodeInputFormUnit.h"
 #include "userdat.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -189,6 +190,7 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
     int		res;
     TListItem* ListItem;
     TItemStates State;
+	static uint duration;
 
     ListItem=ListView->Selected;
     State << isSelected;
@@ -202,24 +204,29 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
 		AnsiString prot 	= ListItem->SubItems->Strings[2];
 		AnsiString username = ListItem->SubItems->Strings[3];
 
-    	wsprintf(str,"Disallow future connections from %s"
-        	,ip_addr);
-    	res=Application->MessageBox(str,"Filter IP?"
-        		,MB_YESNOCANCEL|MB_ICONQUESTION);
-        if(res==IDCANCEL)
-    		break;
-    	if(res==IDYES) {
-			char* hostname = NULL;
+		Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
+		wsprintf(str,"Disallow future connections from %s?", ip_addr);
+		CodeInputForm->Caption = str;
+		CodeInputForm->Label->Caption = "Address Filter Duration";
+		CodeInputForm->Edit->Visible = true;
+		CodeInputForm->Edit->Text = duration ? duration_to_vstr(duration, str, sizeof str) : "Infinite";
+		CodeInputForm->Edit->Hint = "'Infinite' or number of Seconds/Minutes/Hours/Days/Weeks/Years";
+		CodeInputForm->Edit->ShowHint = true;
+		res = CodeInputForm->ShowModal();
+		duration = parse_duration(CodeInputForm->Edit->Text.c_str());
+		delete CodeInputForm;
+		if(res != mrOk)
+			break;
+		char* hostname = NULL;
 
-			addr.s_addr=inet_addr(ip_addr.c_str());
-			Screen->Cursor=crHourGlass;
-				h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
-			Screen->Cursor=crDefault;
-	        if(h!=NULL)
-	            hostname = h->h_name;
-			filter_ip(&MainForm->cfg, prot.c_str(), (AnsiString(ListItem->Caption) + " failed login attempts").c_str(), hostname
-					,ip_addr.c_str(), username.c_str(), /* filename: */NULL, /* duration: */0);
-		}
+		addr.s_addr=inet_addr(ip_addr.c_str());
+		Screen->Cursor=crHourGlass;
+			h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
+		Screen->Cursor=crDefault;
+		if(h!=NULL)
+			hostname = h->h_name;
+		filter_ip(&MainForm->cfg, prot.c_str(), (AnsiString(ListItem->Caption) + " CONSECUTIVE FAILED LOGIN ATTEMPTS").c_str(), hostname
+				,ip_addr.c_str(), username.c_str(), /* filename: */NULL, duration);
         if(ListView->Selected == NULL)
         	break;
         ListItem=ListView->GetNextItem(ListItem,sdAll,State);
