@@ -341,8 +341,6 @@ void prep_cfg(scfg_t* cfg)
 	for(i=0;i<cfg->total_xedits;i++) 
 		strlwr(cfg->xedit[i]->code);
 
-	if (!cfg->prepped)
-		cfg->tls_certificate = -1;
 	cfg->prepped=TRUE;	/* data prepared for run-time, DO NOT SAVE TO DISK! */
 }
 
@@ -351,7 +349,7 @@ void free_cfg(scfg_t* cfg)
 #if defined(SBBS) && defined(USE_CRYPTLIB)
 	if(cfg->prepped) {
 		lock_ssl_cert_write();
-		if (cfg->tls_certificate != -1 && cfg->prepped) {
+		if (cfg->tls_certificate != -1) {
 			cryptDestroyContext(cfg->tls_certificate);
 			cfg->tls_certificate = -1;
 		}
