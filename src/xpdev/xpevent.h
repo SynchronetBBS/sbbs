@@ -27,7 +27,6 @@
 #endif
 
 #include "gen_defs.h"
-typedef HANDLE xpevent_t;
 #define WaitForEvent(event, ms) WaitForSingleObject(event, ms)
 
 #include <pthread.h>
