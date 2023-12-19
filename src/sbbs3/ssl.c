@@ -7,6 +7,8 @@
 #include "ssl.h"
 //#include "js_socket.h"	// TODO... move this stuff in here?
 
+int lprintf(int level, const char *fmt, ...);       /* log output */
+
 void free_crypt_attrstr(char *attr)
 {
 	free(attr);
