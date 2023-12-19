@@ -168,30 +168,30 @@ typedef int64_t uifc_winmode_t;
 #define SCRN_LEFT	(api->scrn_width < 80 ? 1 : 5)
 #define SCRN_RIGHT 	((int)api->scrn_width-(api->scrn_width < 80 ? 0 : 4))
 
-								/* Bits in 'mode' for getkey and getstr     */
-#define K_UPPER 	(1L<<0) 	/* Converts all letters to upper case		*/
-#define K_UPRLWR	(1L<<1) 	/* Upper/Lower case automatically			*/
-#define K_NUMBER	(1L<<2) 	/* Allow numbers only						*/
-#define K_WRAP		(1L<<3) 	/* Allows word wrap 						*/
-#define K_MSG		(1L<<4) 	/* Allows ANSI, ^N ^A ^G					*/
-#define K_SPIN		(1L<<5) 	/* Spinning cursor (same as SPIN)			*/
-#define K_LINE		(1L<<6) 	/* Input line (inverse color)				*/
-#define K_EDIT		(1L<<7) 	/* Edit string passed						*/
-#define K_CHAT		(1L<<8) 	/* In chat multi-chat						*/
-#define K_NOCRLF	(1L<<9) 	/* Don't print CRLF after string input      */
-#define K_ALPHA 	(1L<<10)	/* Only allow alphabetic characters 		*/
-#define K_SCANNING	(1L<<11)	/* UPC Scanner is active... return on '%'	*/
-#define K_TABEXIT	(1L<<12)	/* Return on TAB or BACKTAB			    	*/
-#define K_DECIMAL	(1L<<13)	/* Allow floating point numbers only		*/
-#define K_DEUCEEXIT	(1L<<14)	/* Return whenever Deuce wants to exit		*/
-								/* Returns on up/down/F2					*/
-#define K_MOUSEEXIT	(1L<<15)	/* Returns when mouse is clicked outside of */
-								/* Input area (NOT outside of window!)		*/
-								/* And ungets the mouse event.				*/
-#define K_PASSWORD	(1L<<16)	/* Does not display text while editing		*/
-#define K_FIND		(1L<<17)	/* Don't set the "changes" flag				*/
-#define K_TRIM		(1L<<23)	/* Don't allow leading or trailing wsp		*/
-#define K_NOSPACE	(1L<<26)	/* Don't allow any wsp chars				*/
+							/* Bits in 'mode' for getkey and getstr     */
+#define K_UPPER 	(1<<0) 	/* Converts all letters to upper case		*/
+#define K_UPRLWR	(1<<1) 	/* Upper/Lower case automatically			*/
+#define K_NUMBER	(1<<2) 	/* Allow numbers only						*/
+#define K_WRAP		(1<<3) 	/* Allows word wrap 						*/
+#define K_MSG		(1<<4) 	/* Allows ANSI, ^N ^A ^G					*/
+#define K_SPIN		(1<<5) 	/* Spinning cursor (same as SPIN)			*/
+#define K_LINE		(1<<6) 	/* Input line (inverse color)				*/
+#define K_EDIT		(1<<7) 	/* Edit string passed						*/
+#define K_CHAT		(1<<8) 	/* In chat multi-chat						*/
+#define K_NOCRLF	(1<<9) 	/* Don't print CRLF after string input      */
+#define K_ALPHA 	(1<<10)	/* Only allow alphabetic characters 		*/
+#define K_SCANNING	(1<<11)	/* UPC Scanner is active... return on '%'	*/
+#define K_TABEXIT	(1<<12)	/* Return on TAB or BACKTAB			    	*/
+#define K_DECIMAL	(1<<13)	/* Allow floating point numbers only		*/
+#define K_DEUCEEXIT	(1<<14)	/* Return whenever Deuce wants to exit		*/
+							/* Returns on up/down/F2					*/
+#define K_MOUSEEXIT	(1<<15)	/* Returns when mouse is clicked outside of */
+							/* Input area (NOT outside of window!)		*/
+							/* And ungets the mouse event.				*/
+#define K_PASSWORD	(1<<16)	/* Does not display text while editing		*/
+#define K_FIND		(1<<17)	/* Don't set the "changes" flag				*/
+#define K_TRIM		(1<<23)	/* Don't allow leading or trailing wsp		*/
+#define K_NOSPACE	(1<<26)	/* Don't allow any wsp chars				*/
 
 
 						/* Extra exit flags */
