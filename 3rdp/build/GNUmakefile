@@ -147,7 +147,6 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)/dist/cryptlib.zip $(3RDP_ROOT)/build/terminal-pa
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-moar-objects.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-remove-march.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-pthread_yield.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-check-cert-dont-modify.patch
 ifeq ($(os),win32)
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make directories
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make toolscripts

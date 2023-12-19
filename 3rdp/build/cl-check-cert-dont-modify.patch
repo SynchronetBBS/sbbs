@@ -1,3 +1,4 @@
+This patch doesn't solve the issue.
 --- session/session.c.orig	2023-12-19 14:27:12.836848000 -0500
 +++ session/session.c	2023-12-19 14:29:00.324330000 -0500
 @@ -280,14 +280,19 @@
