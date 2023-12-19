@@ -16,7 +16,7 @@ __published:	// IDE-managed Components
     TListView *ListView;
     TPopupMenu *PopupMenu;
     TMenuItem *CopyPopup;
-    TMenuItem *CopyAllPopup;
+    TMenuItem *SelectAllPopup;
     TMenuItem *RefreshPopup;
     TMenuItem *FilterIpMenuItem;
     TMenuItem *ResolveHostnameMenuItem;
@@ -28,7 +28,7 @@ __published:	// IDE-managed Components
     void __fastcall ListViewCompare(TObject *Sender, TListItem *Item1,
           TListItem *Item2, int Data, int &Compare);
     void __fastcall CopyPopupClick(TObject *Sender);
-    void __fastcall CopyAllPopupClick(TObject *Sender);
+    void __fastcall SelectAllPopupClick(TObject *Sender);
     void __fastcall RefreshPopupClick(TObject *Sender);
     void __fastcall FilterIpMenuItemClick(TObject *Sender);
     void __fastcall ResolveHostnameMenuItemClick(TObject *Sender);

@@ -157,21 +157,22 @@ static AnsiString ListItemString(TListItem* item)
 //---------------------------------------------------------------------------
 void __fastcall TLoginAttemptsForm::CopyPopupClick(TObject *Sender)
 {
-    if(ListView->Selected==NULL)
-        return;
-    Clipboard()->SetTextBuf(ListItemString(ListView->Selected).c_str());
+    AnsiString buf;
+    TItemStates State;
+    State << isSelected;
+    TListItem* ListItem = ListView->Selected;
+
+    while(ListItem != NULL) {
+        buf += ListItemString(ListItem);
+        ListItem = ListView->GetNextItem(ListItem, sdAll, State);
+    }
+    Clipboard()->SetTextBuf(buf.c_str());
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TLoginAttemptsForm::CopyAllPopupClick(TObject *Sender)
+void __fastcall TLoginAttemptsForm::SelectAllPopupClick(TObject *Sender)
 {
-    AnsiString buf;
-    int i;
-
-    for(i=0;i<ListView->Items->Count;i++)
-        buf += ListItemString(ListView->Items->Item[i]);
-
-    Clipboard()->SetTextBuf(buf.c_str());
+	ListView->SelectAll();
 }
 //---------------------------------------------------------------------------
 
@@ -189,6 +190,7 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
 	char 	str[256];
 	char	fname[MAX_PATH + 1];
     int		res;
+	bool	repeat = false;
     TListItem* ListItem;
     TItemStates State;
 	static uint duration = MainForm->global.login_attempt.filter_duration;
@@ -205,26 +207,34 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
     	AnsiString ip_addr 	= ListItem->SubItems->Strings[1];
 		AnsiString prot 	= ListItem->SubItems->Strings[2];
 		AnsiString username = ListItem->SubItems->Strings[3];
-
-		Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
-		wsprintf(str,"Disallow future connections from %s?", ip_addr);
-		CodeInputForm->Caption = str;
-		CodeInputForm->Label->Caption = "Address Filter Duration";
-		CodeInputForm->Edit->Visible = true;
-		CodeInputForm->Edit->Text = duration ? duration_to_vstr(duration, str, sizeof str) : "Infinite";
-		CodeInputForm->Edit->Hint = "'Infinite' or number of Seconds/Minutes/Hours/Days/Weeks/Years";
-		CodeInputForm->Edit->ShowHint = true;
-		CodeInputForm->CheckBox->Visible = true;
-		CodeInputForm->CheckBox->Caption = "Silent Filter";
-		CodeInputForm->CheckBox->Checked = silent;
-		CodeInputForm->CheckBox->Hint = "No messages logged when blocking this client";
-		CodeInputForm->CheckBox->ShowHint = true;
-		res = CodeInputForm->ShowModal();
-		duration = parse_duration(CodeInputForm->Edit->Text.c_str());
-		silent = CodeInputForm->CheckBox->Checked;
-		delete CodeInputForm;
-		if(res != mrOk)
-			break;
+		if(!repeat) {
+			Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
+			wsprintf(str,"Disallow future connections from %s?", ip_addr);
+			CodeInputForm->Caption = str;
+			CodeInputForm->Label->Caption = "Address Filter Duration";
+			CodeInputForm->Edit->Visible = true;
+			CodeInputForm->Edit->Text = duration ? duration_to_vstr(duration, str, sizeof str) : "Infinite";
+			CodeInputForm->Edit->Hint = "'Infinite' or number of Seconds/Minutes/Hours/Days/Weeks/Years";
+			CodeInputForm->Edit->ShowHint = true;
+			CodeInputForm->RightCheckBox->Visible = true;
+			CodeInputForm->RightCheckBox->Caption = "Silent Filter";
+			CodeInputForm->RightCheckBox->Checked = silent;
+			CodeInputForm->RightCheckBox->Hint = "No messages logged when blocking this client";
+			CodeInputForm->RightCheckBox->ShowHint = true;
+			if(ListView->SelCount > 1) {
+				CodeInputForm->LeftCheckBox->Visible = true;
+				CodeInputForm->LeftCheckBox->Caption = "All Selected";
+				CodeInputForm->LeftCheckBox->Hint = "Filter all selected addresses";
+				CodeInputForm->LeftCheckBox->ShowHint = true;
+			}
+			res = CodeInputForm->ShowModal();
+			duration = parse_duration(CodeInputForm->Edit->Text.c_str());
+			silent = CodeInputForm->RightCheckBox->Checked;
+			repeat = CodeInputForm->LeftCheckBox->Checked;
+			delete CodeInputForm;
+			if(res != mrOk)
+				break;
+		}
 		char* hostname = NULL;
 
 		addr.s_addr=inet_addr(ip_addr.c_str());

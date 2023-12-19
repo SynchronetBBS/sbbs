@@ -1,6 +1,6 @@
 object LoginAttemptsForm: TLoginAttemptsForm
-  Left = 729
-  Top = 203
+  Left = 1802
+  Top = 407
   Width = 496
   Height = 793
   BorderIcons = [biSystemMenu, biMaximize]
@@ -17,19 +17,21 @@ object LoginAttemptsForm: TLoginAttemptsForm
   OnClose = FormClose
   OnShow = FormShow
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object ListView: TListView
     Left = 0
     Top = 0
     Width = 480
-    Height = 755
+    Height = 754
     Align = alClient
     Columns = <
       item
         Caption = 'Unique Attempts'
+        Width = 58
       end
       item
         Caption = 'Duplicate Attempts'
+        Width = 58
       end
       item
         AutoSize = True
@@ -68,10 +70,10 @@ object LoginAttemptsForm: TLoginAttemptsForm
       ShortCut = 16451
       OnClick = CopyPopupClick
     end
-    object CopyAllPopup: TMenuItem
-      Caption = 'Copy All'
+    object SelectAllPopup: TMenuItem
+      Caption = 'Select All'
       ShortCut = 16449
-      OnClick = CopyAllPopupClick
+      OnClick = SelectAllPopupClick
     end
     object RefreshPopup: TMenuItem
       Caption = 'Refresh'

@@ -1,6 +1,6 @@
 object CodeInputForm: TCodeInputForm
-  Left = 569
-  Top = 374
+  Left = 1601
+  Top = 417
   BorderStyle = bsDialog
   Caption = 'Parameter Required'
   ClientHeight = 78
@@ -71,16 +71,22 @@ object CodeInputForm: TCodeInputForm
     TabOrder = 3
     Visible = False
   end
-  object CheckBox: TCheckBox
-    Left = 169
+  object RightCheckBox: TCheckBox
+    Left = 140
     Top = 44
-    Width = 74
+    Width = 107
     Height = 17
-    Alignment = taLeftJustify
-    BiDiMode = bdLeftToRight
-    Caption = 'CheckBox'
-    ParentBiDiMode = False
+    Caption = 'RightCheckBox'
     TabOrder = 4
+    Visible = False
+  end
+  object LeftCheckBox: TCheckBox
+    Left = 20
+    Top = 44
+    Width = 97
+    Height = 17
+    Caption = 'LeftCheckBox'
+    TabOrder = 5
     Visible = False
   end
 end

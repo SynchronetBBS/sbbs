@@ -43,7 +43,8 @@ __published:
 	TLabel *Label;
     TComboBox *ComboBox;
 	TEdit *Edit;
-    TCheckBox *CheckBox;
+    TCheckBox *RightCheckBox;
+    TCheckBox *LeftCheckBox;
 	void __fastcall FormShow(TObject *Sender);
 private:
 public:
