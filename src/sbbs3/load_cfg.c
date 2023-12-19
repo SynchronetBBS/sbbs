@@ -60,7 +60,7 @@ int get_text_num(const char* id)
 BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, size_t maxerrlen)
 {
 	int		i;
-	long	line=0L;
+	int		line=0;
 	FILE*	fp;
 	char	str[256];
 
