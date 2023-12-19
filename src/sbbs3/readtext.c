@@ -28,7 +28,7 @@ int lprintf(int level, const char *fmt, ...);       /* log output */
 /* Reads special TEXT.DAT printf style text lines, splicing multiple lines, */
 /* replacing escaped characters, and allocating the memory					*/
 /****************************************************************************/
-char *readtext(long *line,FILE *stream,long dflt)
+char *readtext(int *line,FILE *stream,int dflt)
 {
 	char buf[MAX_TEXTDAT_ITEM_LEN+256],str[MAX_TEXTDAT_ITEM_LEN+1],tmp[256],*p,*p2;
 	int i,j,k;
