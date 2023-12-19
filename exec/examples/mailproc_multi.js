@@ -6,6 +6,8 @@
 // to = username
 // Passthru = true
 
+require("smbdefs.js", "NET_INTERNET");
+
 var recipients = ["another@mailbox"];
 
 var rcptlst = new File(recipient_list_filename);
@@ -17,7 +19,7 @@ var list=rcptlst.iniGetAllObjects("number");
 rcptlst.close();
 
 for(var i = 0; i < recipients.length; ++i) {
-	list.push( { number: list.length, To: recipients[i], ToNetType: 2 });
+	list.push( { number: list.length, To: recipients[i], ToNetType: NET_INTERNET });
 }
 if(!rcptlst.open("w")) {
 	alert("Failed to open/create " + rcptlst.name);
