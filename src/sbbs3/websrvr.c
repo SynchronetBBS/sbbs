@@ -7243,10 +7243,10 @@ void web_server(void* arg)
 			do_cryptInit(); // Must be called by someone before lock_ssl_cert()
 			lock_ssl_cert();
 			if(scfg.tls_certificate != -1) {
-				unlock_ssl_cert();
 				// Init was already called or tls_certificate would be -1...
 				if(do_cryptInit())
 					xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", open_socket, startup->seteuid, "TLS");
+				unlock_ssl_cert();
 			}
 			else {
 				unlock_ssl_cert();

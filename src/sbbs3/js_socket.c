@@ -2369,8 +2369,10 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 											}
 										}
 										lock_ssl_cert();
-										if (scfg->tls_certificate == -1)
+										if (scfg->tls_certificate == -1) {
+											unlock_ssl_cert();
 											ret = CRYPT_ERROR_NOTAVAIL;
+										}
 										else {
 											ret = cryptSetAttribute(p->session, CRYPT_SESSINFO_PRIVATEKEY, scfg->tls_certificate);
 											if (ret != CRYPT_OK) {
@@ -2384,7 +2386,8 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 									if((ret=do_cryptAttribute(p->session, CRYPT_SESSINFO_ACTIVE, 1))!=CRYPT_OK) {
 										GCES(ret, p, estr, "setting session active");
 									}
-									unlock_ssl_cert();
+									if (tiny != SOCK_PROP_SSL_SESSION)
+										unlock_ssl_cert();
 								}
 							}
 						}
