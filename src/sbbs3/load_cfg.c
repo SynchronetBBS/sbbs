@@ -72,7 +72,6 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 
 	free_cfg(cfg);	/* free allocated config parameters */
 
-	cfg->prepped=FALSE;	/* reset prepped flag */
 	cfg->tls_certificate = -1;
 
 	if(cfg->node_num<1)
@@ -346,16 +345,17 @@ void prep_cfg(scfg_t* cfg)
 
 void free_cfg(scfg_t* cfg)
 {
-#if defined(SBBS) && defined(USE_CRYPTLIB)
 	if(cfg->prepped) {
+#if defined(SBBS) && defined(USE_CRYPTLIB)
 		lock_ssl_cert_write();
 		if (cfg->tls_certificate != -1) {
 			cryptDestroyContext(cfg->tls_certificate);
 			cfg->tls_certificate = -1;
 		}
 		unlock_ssl_cert_write();
-	}
 #endif
+		cfg->prepped = FALSE;
+	}
 	free_node_cfg(cfg);
 	free_main_cfg(cfg);
 	free_msgs_cfg(cfg);
