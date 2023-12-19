@@ -42,7 +42,7 @@
 
 #include "gen_defs.h"
 typedef HANDLE xpevent_t;
-#define WaitForEvent(event, ms) WaitForSingleObject(event, ns)
+#define WaitForEvent(event, ms) WaitForSingleObject(event, ms)
 
 #else
 
