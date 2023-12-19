@@ -363,6 +363,10 @@ CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, char **estr, int *level)
 		*estr = NULL;
 	if(!do_cryptInit())
 		return -1;
+	if (!cfg->prepped) {
+		lprintf(LOG_ERR, "TLS only available to prepped configs");
+		return -1;
+	}
 	lock_ssl_cert_write();
 	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,"ssl.cert");
 	time32_t fd = (time32_t)fdate(str);
