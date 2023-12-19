@@ -104,29 +104,29 @@
 
 #define LEN_FLAGSTR	32		/* Flag sets are 32-bits each				*/
 
-									/* User Questions (e.g. for new users)	*/
-#define UQ_ALIASES		(1L<<0) 	/* Ask for alias						*/
-#define UQ_LOCATION		(1L<<1) 	/* Ask for location 					*/
-#define UQ_ADDRESS		(1L<<2) 	/* Ask for address						*/
-#define UQ_PHONE		(1L<<3) 	/* Ask for phone number 				*/
-#define UQ_HANDLE		(1L<<4) 	/* Ask for chat handle / HAM callsign	*/
-#define UQ_DUPHAND		(1L<<5) 	/* Search for duplicate handles 		*/
-#define UQ_SEX			(1L<<6) 	/* Ask for sex :)						*/
-#define UQ_BIRTH		(1L<<7) 	/* Ask for birth date					*/
-#define UQ_UNUSED1 		(1L<<8) 	/* was UQ_COMP							*/
-#define UQ_UNUSED2		(1L<<9) 	/* was UQ_MC_COMP						*/
-#define UQ_REALNAME		(1L<<10)	/* Ask for real name					*/
-#define UQ_DUPREAL		(1L<<11)	/* Search for duplicate real names		*/
-#define UQ_COMPANY		(1L<<12)	/* Ask for company name 				*/
-#define UQ_NOEXASC		(1L<<13)	/* Don't allow ex-ASCII in user text    */
-#define UQ_CMDSHELL		(1L<<14)	/* Ask for command shell				*/
-#define UQ_XEDIT		(1L<<15)	/* Ask for external editor				*/
-#define UQ_NODEF		(1L<<16)	/* Don't ask for default settings       */
-#define UQ_NOCOMMAS		(1L<<17)	/* Do not require commas in location	*/
-#define UQ_NONETMAIL	(1L<<18)	/* Don't ask for e-mail/netmail address	*/
-#define UQ_NOUPRLWR		(1L<<19)	/* Don't force upper/lower case strings */
-#define UQ_COLORTERM	(1L<<20)	/* Ask if new user has color terminal	*/
-#define UQ_DUPNETMAIL	(1L<<21)	/* Don't allow duplicate e-mail address */
+								/* User Questions (e.g. for new users)	*/
+#define UQ_ALIASES		(1<<0) 	/* Ask for alias						*/
+#define UQ_LOCATION		(1<<1) 	/* Ask for location 					*/
+#define UQ_ADDRESS		(1<<2) 	/* Ask for address						*/
+#define UQ_PHONE		(1<<3) 	/* Ask for phone number 				*/
+#define UQ_HANDLE		(1<<4) 	/* Ask for chat handle / HAM callsign	*/
+#define UQ_DUPHAND		(1<<5) 	/* Search for duplicate handles 		*/
+#define UQ_SEX			(1<<6) 	/* Ask for sex :)						*/
+#define UQ_BIRTH		(1<<7) 	/* Ask for birth date					*/
+#define UQ_UNUSED1 		(1<<8) 	/* was UQ_COMP							*/
+#define UQ_UNUSED2		(1<<9) 	/* was UQ_MC_COMP						*/
+#define UQ_REALNAME		(1<<10)	/* Ask for real name					*/
+#define UQ_DUPREAL		(1<<11)	/* Search for duplicate real names		*/
+#define UQ_COMPANY		(1<<12)	/* Ask for company name 				*/
+#define UQ_NOEXASC		(1<<13)	/* Don't allow ex-ASCII in user text    */
+#define UQ_CMDSHELL		(1<<14)	/* Ask for command shell				*/
+#define UQ_XEDIT		(1<<15)	/* Ask for external editor				*/
+#define UQ_NODEF		(1<<16)	/* Don't ask for default settings       */
+#define UQ_NOCOMMAS		(1<<17)	/* Do not require commas in location	*/
+#define UQ_NONETMAIL	(1<<18)	/* Don't ask for e-mail/netmail address	*/
+#define UQ_NOUPRLWR		(1<<19)	/* Don't force upper/lower case strings */
+#define UQ_COLORTERM	(1<<20)	/* Ask if new user has color terminal	*/
+#define UQ_DUPNETMAIL	(1<<21)	/* Don't allow duplicate e-mail address */
 
 #define DEFAULT_NEWUSER_QS (UQ_ALIASES | UQ_LOCATION | UQ_HANDLE | UQ_DUPHAND | UQ_SEX | UQ_BIRTH \
 							| UQ_REALNAME)
@@ -206,38 +206,38 @@
 									/* (bits 8-15 default to off)				*/
 
 									/* Bit values for sub[x].misc */
-#define SUB_NOVOTING	(1L<<0)		/* No voting allowed in this sub-board */
-#define SUB_TEMPLATE	(1L<<1)		/* Use this sub as template for new subs (in this group) */
-#define SUB_MSGTAGS		(1L<<2)		/* Allow messages to be tagged (ala hashtags) */
-#define SUB_QNET		(1L<<3) 	/* Sub-board is netted via QWK network */
-#define SUB_PNET		(1L<<4) 	/* Sub-board is netted via PostLink */
-#define SUB_FIDO		(1L<<5) 	/* Sub-board is netted via FidoNet */
-#define SUB_PRIV		(1L<<6) 	/* Allow private posts on sub */
-#define SUB_PONLY		(1L<<7) 	/* Private posts only */
-#define SUB_ANON		(1L<<8) 	/* Allow anonymous posts on sub */
-#define SUB_AONLY		(1L<<9) 	/* Anonymous only */
-#define SUB_NAME		(1L<<10)	/* Must use real names */
-#define SUB_DEL 		(1L<<11)	/* Allow users to delete messages */
-#define SUB_DELLAST		(1L<<12)	/* Allow users to delete last msg only */
-#define SUB_FORCED		(1L<<13)	/* Sub-board is forced scanning */
-#define SUB_NOTAG		(1L<<14)	/* Don't add tag or origin lines */
-#define SUB_TOUSER		(1L<<15)	/* Prompt for to user on posts */
-#define SUB_ASCII		(1L<<16)	/* ASCII characters only */
-#define SUB_QUOTE		(1L<<17)	/* Allow online quoting */
-#define SUB_NSDEF		(1L<<18)	/* New-Scan on by default */
-#define SUB_INET		(1L<<19)	/* Sub-board is netted via Internet */
-#define SUB_FAST		(1L<<20)	/* Fast storage mode */
-#define SUB_KILL		(1L<<21)	/* Kill read messages automatically (NOT IMPLEMENTED) */
-#define SUB_KILLP		(1L<<22)	/* Kill read pvt messages automatically (NOT IMPLEMENTED) */
-#define SUB_SYSPERM		(1L<<23)	/* Sysop messages are permanent */
-#define SUB_GATE		(1L<<24)	/* Gateway between Network types */
-#define SUB_LZH 		(1L<<25)	/* Use LZH compression for msgs */
-#define SUB_SSDEF		(1L<<26)	/* Default ON for Scan for Your msgs */
-#define SUB_HYPER		(1L<<27)	/* Hyper allocation */
-#define SUB_EDIT		(1L<<28)	/* Users can edit message text after posting */
-#define SUB_EDITLAST	(1L<<29)	/* Users can edit last message only */
-#define SUB_NOUSERSIG	(1L<<30)	/* Suppress user signatures */
-#define SUB_HDRMOD		(1L<<31)	/* Modified sub-board header info (SCFG) */
+#define SUB_NOVOTING	(1<<0)		/* No voting allowed in this sub-board */
+#define SUB_TEMPLATE	(1<<1)		/* Use this sub as template for new subs (in this group) */
+#define SUB_MSGTAGS		(1<<2)		/* Allow messages to be tagged (ala hashtags) */
+#define SUB_QNET		(1<<3)		/* Sub-board is netted via QWK network */
+#define SUB_PNET		(1<<4) 		/* Sub-board is netted via PostLink */
+#define SUB_FIDO		(1<<5) 		/* Sub-board is netted via FidoNet */
+#define SUB_PRIV		(1<<6) 		/* Allow private posts on sub */
+#define SUB_PONLY		(1<<7) 		/* Private posts only */
+#define SUB_ANON		(1<<8) 		/* Allow anonymous posts on sub */
+#define SUB_AONLY		(1<<9) 		/* Anonymous only */
+#define SUB_NAME		(1<<10)		/* Must use real names */
+#define SUB_DEL 		(1<<11)		/* Allow users to delete messages */
+#define SUB_DELLAST		(1<<12)		/* Allow users to delete last msg only */
+#define SUB_FORCED		(1<<13)		/* Sub-board is forced scanning */
+#define SUB_NOTAG		(1<<14)		/* Don't add tag or origin lines */
+#define SUB_TOUSER		(1<<15)		/* Prompt for to user on posts */
+#define SUB_ASCII		(1<<16)		/* ASCII characters only */
+#define SUB_QUOTE		(1<<17)		/* Allow online quoting */
+#define SUB_NSDEF		(1<<18)		/* New-Scan on by default */
+#define SUB_INET		(1<<19)		/* Sub-board is netted via Internet */
+#define SUB_FAST		(1<<20)		/* Fast storage mode */
+#define SUB_KILL		(1<<21)		/* Kill read messages automatically (NOT IMPLEMENTED) */
+#define SUB_KILLP		(1<<22)		/* Kill read pvt messages automatically (NOT IMPLEMENTED) */
+#define SUB_SYSPERM		(1<<23)		/* Sysop messages are permanent */
+#define SUB_GATE		(1<<24)		/* Gateway between Network types */
+#define SUB_LZH 		(1<<25)		/* Use LZH compression for msgs */
+#define SUB_SSDEF		(1<<26)		/* Default ON for Scan for Your msgs */
+#define SUB_HYPER		(1<<27)		/* Hyper allocation */
+#define SUB_EDIT		(1<<28)		/* Users can edit message text after posting */
+#define SUB_EDITLAST	(1<<29)		/* Users can edit last message only */
+#define SUB_NOUSERSIG	(1<<30)		/* Suppress user signatures */
+#define SUB_HDRMOD		(1<<31)		/* Modified sub-board header info (SCFG) */
 
                                     /* Bit values for lib[x].misc */
 #define LIB_DIRS	(1<<0) 			/* Local directory (sub-directory of lib parent) access */
@@ -419,24 +419,24 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define XTRN_CONIO		(1<<31)		/* Intercept Windows Console I/O (Drwy)	*/
 
 									/* Bits in user.qwk 					*/
-#define QWK_FILES	(1L<<0) 		/* Include new files list				*/
-#define QWK_EMAIL	(1L<<1) 		/* Include unread e-mail				*/
-#define QWK_ALLMAIL (1L<<2) 		/* Include ALL e-mail					*/
-#define QWK_DELMAIL (1L<<3) 		/* Delete e-mail after download 		*/
-#define QWK_BYSELF	(1L<<4) 		/* Include messages from self			*/
-#define QWK_UNUSED	(1L<<5) 		/* Currently unused 					*/
-#define QWK_EXPCTLA (1L<<6) 		/* Expand ctrl-a codes to ascii 		*/
-#define QWK_RETCTLA (1L<<7) 		/* Retain ctrl-a codes					*/
-#define QWK_ATTACH	(1L<<8) 		/* Include file attachments 			*/
-#define QWK_NOINDEX (1L<<9) 		/* Do not create index files in QWK		*/
-#define QWK_TZ		(1L<<10)		/* Include "@TZ" time zone in msgs		*/
-#define QWK_VIA 	(1L<<11)		/* Include "@VIA" seen-bys in msgs		*/
-#define QWK_NOCTRL	(1L<<12)		/* No extraneous control files			*/
-#define QWK_EXT		(1L<<13)		/* QWK Extended (QWKE) format			*/
-#define QWK_MSGID	(1L<<14)		/* Include "@MSGID" in msgs				*/
-#define QWK_HEADERS	(1L<<16)		/* Include HEADERS.DAT file				*/
-#define QWK_VOTING	(1L<<17)		/* Include VOTING.DAT					*/
-#define QWK_UTF8	(1L<<18)		/* Include UTF-8 characters				*/
+#define QWK_FILES	(1<<0) 			/* Include new files list				*/
+#define QWK_EMAIL	(1<<1) 			/* Include unread e-mail				*/
+#define QWK_ALLMAIL (1<<2) 			/* Include ALL e-mail					*/
+#define QWK_DELMAIL (1<<3) 			/* Delete e-mail after download 		*/
+#define QWK_BYSELF	(1<<4) 			/* Include messages from self			*/
+#define QWK_UNUSED	(1<<5) 			/* Currently unused 					*/
+#define QWK_EXPCTLA (1<<6) 			/* Expand ctrl-a codes to ascii 		*/
+#define QWK_RETCTLA (1<<7) 			/* Retain ctrl-a codes					*/
+#define QWK_ATTACH	(1<<8) 			/* Include file attachments 			*/
+#define QWK_NOINDEX (1<<9) 			/* Do not create index files in QWK		*/
+#define QWK_TZ		(1<<10)			/* Include "@TZ" time zone in msgs		*/
+#define QWK_VIA 	(1<<11)			/* Include "@VIA" seen-bys in msgs		*/
+#define QWK_NOCTRL	(1<<12)			/* No extraneous control files			*/
+#define QWK_EXT		(1<<13)			/* QWK Extended (QWKE) format			*/
+#define QWK_MSGID	(1<<14)			/* Include "@MSGID" in msgs				*/
+#define QWK_HEADERS	(1<<16)			/* Include HEADERS.DAT file				*/
+#define QWK_VOTING	(1<<17)			/* Include VOTING.DAT					*/
+#define QWK_UTF8	(1<<18)			/* Include UTF-8 characters				*/
 
 #define QWK_DEFAULT	(QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL)
 
@@ -542,36 +542,36 @@ typedef enum {						/* Values for xtrn_t.event				*/
 
 /* NOTE: Do not change the values of the following block of defines!		*/
 
-#define DELETED 	(1L<<0) 		/* Bit values for user.misc 			*/
-#define ANSI		(1L<<1) 		/* Supports ANSI terminal emulation		*/
-#define COLOR		(1L<<2) 		/* Send color codes 					*/
-#define RIP 		(1L<<3) 		/* Supports RIP terminal emulation		*/
-#define UPAUSE		(1L<<4) 		/* Pause on every screen full			*/
-#define SPIN		(1L<<5) 		/* Spinning cursor - Same as K_SPIN		*/
-#define INACTIVE	(1L<<6) 		/* Inactive user slot					*/
-#define EXPERT		(1L<<7) 		/* Expert menu mode 					*/
-#define ANFSCAN 	(1L<<8) 		/* Auto New file scan					*/
-#define CLRSCRN 	(1L<<9) 		/* Clear screen before each message		*/
-#define QUIET		(1L<<10)		/* Quiet mode upon logon				*/
-#define BATCHFLAG	(1L<<11)		/* File list allow batch dl flags		*/
-#define NETMAIL 	(1L<<12)		/* Forward e-mail to fidonet addr		*/
-#define CURSUB		(1L<<13)		/* Remember current sub-board/dir		*/
-#define ASK_NSCAN	(1L<<14)		/* Ask for newscanning upon logon		*/
-#define NO_EXASCII	(1L<<15)		/* Don't send extended ASCII			*/
-#define ASK_SSCAN	(1L<<16)		/* Ask for messages to you at logon		*/
-#define AUTOTERM	(1L<<17)		/* Autodetect terminal type 			*/
-#define COLDKEYS	(1L<<18)		/* No hot-keys							*/
-#define EXTDESC 	(1L<<19)		/* Extended file descriptions			*/
-#define AUTOHANG	(1L<<20)		/* Auto-hang-up after transfer			*/
-#define WIP 		(1L<<21)		/* Supports WIP terminal emulation		*/
-#define AUTOLOGON	(1L<<22)		/* AutoLogon via IP						*/
-#define HTML		(1L<<23)		/* Using Zuul/HTML terminal				*/
-#define NOPAUSESPIN	(1L<<24)		/* No spinning cursor at pause prompt	*/
-#define PETSCII		(1L<<26)		/* Commodore PET/CBM terminal			*/
-#define SWAP_DELETE	(1L<<27)		/* Swap Delete and Backspace keys		*/
-#define ICE_COLOR	(1L<<28)		/* Bright background color support		*/
-#define UTF8		(1L<<29)		/* UTF-8 terminal						*/
-#define MOUSE		(1L<<31)		/* Mouse supported terminal				*/
+#define DELETED 	(1<<0) 		/* Bit values for user.misc 			*/
+#define ANSI		(1<<1) 		/* Supports ANSI terminal emulation		*/
+#define COLOR		(1<<2) 		/* Send color codes 					*/
+#define RIP 		(1<<3) 		/* Supports RIP terminal emulation		*/
+#define UPAUSE		(1<<4) 		/* Pause on every screen full			*/
+#define SPIN		(1<<5) 		/* Spinning cursor - Same as K_SPIN		*/
+#define INACTIVE	(1<<6) 		/* Inactive user slot					*/
+#define EXPERT		(1<<7) 		/* Expert menu mode 					*/
+#define ANFSCAN 	(1<<8) 		/* Auto New file scan					*/
+#define CLRSCRN 	(1<<9) 		/* Clear screen before each message		*/
+#define QUIET		(1<<10)		/* Quiet mode upon logon				*/
+#define BATCHFLAG	(1<<11)		/* File list allow batch dl flags		*/
+#define NETMAIL 	(1<<12)		/* Forward e-mail to fidonet addr		*/
+#define CURSUB		(1<<13)		/* Remember current sub-board/dir		*/
+#define ASK_NSCAN	(1<<14)		/* Ask for newscanning upon logon		*/
+#define NO_EXASCII	(1<<15)		/* Don't send extended ASCII			*/
+#define ASK_SSCAN	(1<<16)		/* Ask for messages to you at logon		*/
+#define AUTOTERM	(1<<17)		/* Autodetect terminal type 			*/
+#define COLDKEYS	(1<<18)		/* No hot-keys							*/
+#define EXTDESC 	(1<<19)		/* Extended file descriptions			*/
+#define AUTOHANG	(1<<20)		/* Auto-hang-up after transfer			*/
+#define WIP 		(1<<21)		/* Supports WIP terminal emulation		*/
+#define AUTOLOGON	(1<<22)		/* AutoLogon via IP						*/
+#define HTML		(1<<23)		/* Using Zuul/HTML terminal				*/
+#define NOPAUSESPIN	(1<<24)		/* No spinning cursor at pause prompt	*/
+#define PETSCII		(1<<26)		/* Commodore PET/CBM terminal			*/
+#define SWAP_DELETE	(1<<27)		/* Swap Delete and Backspace keys		*/
+#define ICE_COLOR	(1<<28)		/* Bright background color support		*/
+#define UTF8		(1<<29)		/* UTF-8 terminal						*/
+#define MOUSE		(1<<31)		/* Mouse supported terminal				*/
 
 #define TERM_FLAGS		(ANSI|COLOR|RIP|WIP|HTML|SWAP_DELETE|ICE_COLOR|MOUSE|CHARSET_FLAGS)
 #define CHARSET_FLAGS	(NO_EXASCII|PETSCII|UTF8)
@@ -606,59 +606,59 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define ON_LOCAL	1	 	/* Online locally								*/
 #define ON_REMOTE   2  		/* Online remotely								*/
 
-							/* Various SYSTEM parameters for sys_status		*/
-#define SS_TMPSYSOP (1L<<2)	/* Temporary Sysop Status						*/
-#define SS_USERON   (1L<<3)	/* A User is logged on to the BBS				*/
-#define SS_LCHAT    (1L<<4) /* Local chat in progress						*/
-#define SS_ANSCAP	(1L<<6) /* Capture ANSI codes too						*/
-#define SS_DAILY	(1L<<9) /* Execute System Daily Event on logoff 		*/
-#define SS_INUEDIT	(1L<<10) /* Inside Alt-Useredit section 				*/
-#define SS_ABORT	(1L<<11) /* Global abort input or output flag			*/
-#define SS_SYSPAGE	(1L<<12) /* Paging sysop								*/
-#define SS_GURUCHAT (1L<<14) /* Guru chat in progress						*/
-#define SS_EVENT	(1L<<16) /* Time shortened due to upcoming event		*/
-#define SS_PAUSEON	(1L<<17) /* Pause on, overriding user default			*/
-#define SS_PAUSEOFF (1L<<18) /* Pause off, overriding user default			*/
-#define SS_IN_CTRLP (1L<<19) /* Inside ctrl-p send node message func		*/
-#define SS_NEWUSER	(1L<<20) /* New User online 							*/
-#define SS_NEST_PF	(1L<<22) /* Nested in printfile function				*/
-#define SS_SPLITP	(1L<<24) /* Split-screen private chat					*/
-#define SS_NEWDAY	(1L<<25) /* Date changed while online					*/
-#define SS_RLOGIN	(1L<<26) /* Current login via BSD RLogin				*/
-#define SS_FILEXFER	(1L<<27) /* File transfer in progress, halt spy			*/
-#define SS_SSH		(1L<<28) /* Current login via SSH						*/
-#define SS_MOFF		(1L<<29) /* Disable automatic messages					*/
-#define SS_QWKLOGON	(1L<<30) /* QWK logon									*/
-#define SS_FASTLOGON (1<<31) /* Fast logon									*/
+								/* Various SYSTEM parameters for sys_status		*/
+#define SS_TMPSYSOP		(1<<2)	/* Temporary Sysop Status						*/
+#define SS_USERON		(1<<3)	/* A User is logged on to the BBS				*/
+#define SS_LCHAT		(1<<4)	/* Local chat in progress						*/
+#define SS_ANSCAP		(1<<6)	/* Capture ANSI codes too						*/
+#define SS_DAILY		(1<<9)	/* Execute System Daily Event on logoff 		*/
+#define SS_INUEDIT		(1<<10)	/* Inside Alt-Useredit section 				*/
+#define SS_ABORT		(1<<11) /* Global abort input or output flag			*/
+#define SS_SYSPAGE		(1<<12) /* Paging sysop								*/
+#define SS_GURUCHAT		(1<<14) /* Guru chat in progress						*/
+#define SS_EVENT		(1<<16) /* Time shortened due to upcoming event		*/
+#define SS_PAUSEON		(1<<17) /* Pause on, overriding user default			*/
+#define SS_PAUSEOFF		(1<<18) /* Pause off, overriding user default			*/
+#define SS_IN_CTRLP		(1<<19) /* Inside ctrl-p send node message func		*/
+#define SS_NEWUSER		(1<<20) /* New User online 							*/
+#define SS_NEST_PF		(1<<22) /* Nested in printfile function				*/
+#define SS_SPLITP		(1<<24) /* Split-screen private chat					*/
+#define SS_NEWDAY		(1<<25) /* Date changed while online					*/
+#define SS_RLOGIN		(1<<26) /* Current login via BSD RLogin				*/
+#define SS_FILEXFER		(1<<27) /* File transfer in progress, halt spy			*/
+#define SS_SSH			(1<<28) /* Current login via SSH						*/
+#define SS_MOFF			(1<<29) /* Disable automatic messages					*/
+#define SS_QWKLOGON		(1<<30) /* QWK logon									*/
+#define SS_FASTLOGON	(1<<31) /* Fast logon									*/
 
 								/* Bits in 'mode' for getkey and getstr     */
 #define K_NONE		0			/* Use as a place holder for no mode flags	*/
-#define K_UPPER 	(1L<<0) 	/* Converts all letters to upper case		*/
-#define K_UPRLWR	(1L<<1) 	/* Upper/Lower case automatically			*/
-#define K_NUMBER	(1L<<2) 	/* Allow numbers only						*/
-#define K_WRAP		(1L<<3) 	/* Allows word wrap 						*/
-#define K_MSG		(1L<<4) 	/* Allows ANSI, ^N ^A ^G					*/
-#define K_SPIN		(1L<<5) 	/* Spinning cursor (same as SPIN)			*/
-#define K_LINE		(1L<<6) 	/* Input line (inverse color)				*/
-#define K_EDIT		(1L<<7) 	/* Edit string passed						*/
-#define K_CHAT		(1L<<8) 	/* In chat multi-chat						*/
-#define K_NOCRLF	(1L<<9) 	/* Don't print CRLF after string input      */
-#define K_ALPHA 	(1L<<10)	/* Only allow alphabetic characters 		*/
-#define K_GETSTR	(1L<<11)	/* getkey called from getstr()				*/
-#define K_LOWPRIO	(1L<<12)	/* low priority input						*/
-#define K_NOEXASC	(1L<<13)	/* No extended ASCII allowed				*/
-#define K_E71DETECT (1L<<14)	/* Detect E-7-1 terminal type				*/
-#define K_AUTODEL	(1L<<15)	/* Auto-delete text (used with K_EDIT)		*/
-#define K_COLD		(1L<<16)	/* Possible cold key mode					*/
-#define K_NOECHO	(1L<<17)	/* Don't echo input                         */
-#define K_TAB		(1L<<18)	/* Treat TAB key as CR						*/
-#define K_LEFTEXIT	(1L<<19)	/* Allow exit by backspacing/arrowing left	*/
-#define K_USEOFFSET	(1L<<20)	/* Use getstr_offset for cursor	position	*/
-#define K_NOSPIN	(1L<<21)	/* Do not honor the user's spinning cursor	*/
-#define K_ANSI_CPR	(1L<<22)	/* Expect ANSI Cursor Position Report		*/
-#define K_TRIM		(1L<<23)	/* Trimmed white-space						*/
-#define K_CTRLKEYS	(1L<<24)	/* No control-key handling/eating in inkey()*/
-#define K_NUL		(1L<<25)	/* Return NOINP on timeout instead of '\0'	*/
+#define K_UPPER 	(1<<0) 		/* Converts all letters to upper case		*/
+#define K_UPRLWR	(1<<1) 		/* Upper/Lower case automatically			*/
+#define K_NUMBER	(1<<2) 		/* Allow numbers only						*/
+#define K_WRAP		(1<<3) 		/* Allows word wrap 						*/
+#define K_MSG		(1<<4) 		/* Allows ANSI, ^N ^A ^G					*/
+#define K_SPIN		(1<<5) 		/* Spinning cursor (same as SPIN)			*/
+#define K_LINE		(1<<6) 		/* Input line (inverse color)				*/
+#define K_EDIT		(1<<7) 		/* Edit string passed						*/
+#define K_CHAT		(1<<8) 		/* In chat multi-chat						*/
+#define K_NOCRLF	(1<<9) 		/* Don't print CRLF after string input      */
+#define K_ALPHA 	(1<<10)		/* Only allow alphabetic characters 		*/
+#define K_GETSTR	(1<<11)		/* getkey called from getstr()				*/
+#define K_LOWPRIO	(1<<12)		/* low priority input						*/
+#define K_NOEXASC	(1<<13)		/* No extended ASCII allowed				*/
+#define K_E71DETECT (1<<14)		/* Detect E-7-1 terminal type				*/
+#define K_AUTODEL	(1<<15)		/* Auto-delete text (used with K_EDIT)		*/
+#define K_COLD		(1<<16)		/* Possible cold key mode					*/
+#define K_NOECHO	(1<<17)		/* Don't echo input                         */
+#define K_TAB		(1<<18)		/* Treat TAB key as CR						*/
+#define K_LEFTEXIT	(1<<19)		/* Allow exit by backspacing/arrowing left	*/
+#define K_USEOFFSET	(1<<20)		/* Use getstr_offset for cursor	position	*/
+#define K_NOSPIN	(1<<21)		/* Do not honor the user's spinning cursor	*/
+#define K_ANSI_CPR	(1<<22)		/* Expect ANSI Cursor Position Report		*/
+#define K_TRIM		(1<<23)		/* Trimmed white-space						*/
+#define K_CTRLKEYS	(1<<24)		/* No control-key handling/eating in inkey()*/
+#define K_NUL		(1<<25)		/* Return NOINP on timeout instead of '\0'	*/
 
 								/* Bits in 'mode' for putmsg and printfile  */
 #define P_NONE		0			/* No mode flags							*/
