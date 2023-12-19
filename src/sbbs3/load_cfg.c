@@ -26,8 +26,8 @@
 #include "datewrap.h"
 #include "text.h"	/* TOTAL_TEXT */
 #include "ini_file.h"
-#ifdef USE_CRYPTLIB
-#include "cryptlib.h"
+#if defined(SBBS) && defined(USE_CRYPTLIB)
+	#include "ssl.h"
 #endif
 
 static void prep_cfg(scfg_t* cfg);
@@ -36,7 +36,7 @@ static void free_attr_cfg(scfg_t* cfg);
 int 	lprintf(int level, const char *fmt, ...);	/* log output */
 
 /* readtext.c */
-char *	readtext(long *line, FILE *stream, long dflt);
+char *	readtext(int *line, FILE *stream, long dflt);
 
 // Returns 0-based text string index
 int get_text_num(const char* id)
@@ -348,11 +348,11 @@ void prep_cfg(scfg_t* cfg)
 
 void free_cfg(scfg_t* cfg)
 {
-#ifdef USE_CRYPTLIB
+#if defined(SBBS) && defined(USE_CRYPTLIB)
 	lock_ssl_cert();
 	if (cfg->tls_certificate != -1 && cfg->prepped) {
 		cryptDestroyContext(cfg->tls_certificate);
-		cfg->tls_certificate == -1;
+		cfg->tls_certificate = -1;
 	}
 	unlock_ssl_cert();
 #endif

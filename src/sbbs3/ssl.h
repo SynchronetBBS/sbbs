@@ -1,7 +1,7 @@
 #ifndef SBBS_SSL_H
 #define SBBS_SSL_H
 
-#include "sbbs.h"	// For DLLEXPORT
+#include "dllexport.h"
 #include <cryptlib.h>
 #include "scfgdefs.h"
 #include <stdbool.h>
