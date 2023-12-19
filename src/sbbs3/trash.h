@@ -27,6 +27,7 @@
 #include "dllexport.h"
 
 #define strIpFilterExemptConfigFile "ipfilter_exempt.cfg"
+#define STR_FAILED_LOGIN_ATTEMPTS "FAILED LOGIN ATTEMPTS"
 
 struct trash {
 	time_t added;
