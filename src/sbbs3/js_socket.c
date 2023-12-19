@@ -2374,16 +2374,17 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 										else {
 											ret = cryptSetAttribute(p->session, CRYPT_SESSINFO_PRIVATEKEY, scfg->tls_certificate);
 											if (ret != CRYPT_OK) {
+												unlock_ssl_cert();
 												GCES(ret, p, estr, "setting private key");
 											}
 										}
-										unlock_ssl_cert();
 									}
 								}
 								if(ret==CRYPT_OK) {
 									if((ret=do_cryptAttribute(p->session, CRYPT_SESSINFO_ACTIVE, 1))!=CRYPT_OK) {
 										GCES(ret, p, estr, "setting session active");
 									}
+									unlock_ssl_cert();
 								}
 							}
 						}
