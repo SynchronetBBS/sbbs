@@ -349,6 +349,7 @@ void free_cfg(scfg_t* cfg)
 #if defined(SBBS) && defined(USE_CRYPTLIB)
 		lock_ssl_cert_write();
 		if (cfg->tls_certificate != -1) {
+			lprintf(LOG_INFO, "Freeing TLS private key and certificate %d", cfg->tls_certificate);
 			cryptDestroyContext(cfg->tls_certificate);
 			cfg->tls_certificate = -1;
 		}

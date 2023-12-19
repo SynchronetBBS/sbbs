@@ -377,6 +377,7 @@ CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, char **estr, int *level)
 			return ssl_context;
 		}
 		cfg->tls_cert_file_date = fd;
+		lprintf(LOG_INFO, "Destroying TLS private key and certificate %d", cfg->tls_certificate);
 		cryptDestroyContext(cfg->tls_certificate);
 		cfg->tls_certificate = -1;
 	}
@@ -440,6 +441,8 @@ CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, char **estr, int *level)
 
 	cryptKeysetClose(ssl_keyset);
 	cfg->tls_certificate = ssl_context;
+	if (cfg->tls_certificate != -1)
+		lprintf(LOG_INFO, "Created TLS private key and certificate %d", cfg->tls_certificate);
 	unlock_ssl_cert_write();
 	return ssl_context;
 
