@@ -73,7 +73,7 @@ void node_menu()
 		j=WIN_ORG|WIN_ACT|WIN_INSACT|WIN_DELACT;
 		if(cfg.sys_nodes>1)
 			j|=WIN_DEL|WIN_COPY;
-		if(cfg.sys_nodes<MAX_NODES && cfg.sys_nodes<MAX_OPTS)
+		if(cfg.sys_nodes<MAX_NODES)
 			j|=WIN_INS;
 		if(savnode)
 			j|=WIN_PASTE;
