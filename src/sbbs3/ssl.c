@@ -370,7 +370,7 @@ CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, char **estr, int *level)
 	lock_ssl_cert_write();
 	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,"ssl.cert");
 	time32_t fd = (time32_t)fdate(str);
-	if (cfg->tls_certificate != -1 || !cfg->prepped) {
+	if (cfg->tls_certificate != -1) {
 		if (fd == cfg->tls_cert_file_date) {
 			ssl_context = cfg->tls_certificate;
 			unlock_ssl_cert_write();
