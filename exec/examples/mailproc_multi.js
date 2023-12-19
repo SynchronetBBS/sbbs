@@ -6,9 +6,10 @@
 // to = username
 // Passthru = true
 
-require("smbdefs.js", "NET_INTERNET");
+// Write your additional recipients (full Internet email addresses) here:
+var recipients = ["someone@somewhere", "another@mailbox"];
 
-var recipients = ["another@mailbox"];
+require("smbdefs.js", "NET_INTERNET");
 
 var rcptlst = new File(recipient_list_filename);
 if(!rcptlst.open("r")) {
