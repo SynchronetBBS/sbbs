@@ -7238,12 +7238,19 @@ void web_server(void* arg)
 		 * Add interfaces
 		 */
 		xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "Web Server", open_socket, startup->seteuid, NULL);
-		lock_ssl_cert();
-		if(scfg.tls_certificate != -1 && startup->options&WEB_OPT_ALLOW_TLS) {
-			if(do_cryptInit())
-				xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", open_socket, startup->seteuid, "TLS");
+		if (startup->options & WEB_OPT_ALLOW_TLS) {
+			do_cryptInit(); // Must be called by someone before lock_ssl_cert()
+			lock_ssl_cert();
+			if(scfg.tls_certificate != -1) {
+				unlock_ssl_cert();
+				// Init was already called or tls_certificate would be -1...
+				if(do_cryptInit())
+					xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", open_socket, startup->seteuid, "TLS");
+			}
+			else {
+				unlock_ssl_cert();
+			}
 		}
-		unlock_ssl_cert();
 
 		listInit(&log_list,/* flags */ LINK_LIST_MUTEX|LINK_LIST_SEMAPHORE);
 		if(startup->options&WEB_OPT_HTTP_LOGGING) {
