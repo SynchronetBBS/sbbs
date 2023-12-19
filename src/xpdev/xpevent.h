@@ -26,9 +26,6 @@
 	#error Include eventwrap.h instead
 #endif
 
-#include "gen_defs.h"
-#define WaitForEvent(event, ms) WaitForSingleObject(event, ms)
-
 #include <pthread.h>
 #include "gen_defs.h"
 
