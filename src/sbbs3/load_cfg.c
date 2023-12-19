@@ -349,8 +349,12 @@ void prep_cfg(scfg_t* cfg)
 void free_cfg(scfg_t* cfg)
 {
 #ifdef USE_CRYPTLIB
-	if (cfg->tls_certificate != -1 && cfg->prepped)
+	lock_ssl_cert();
+	if (cfg->tls_certificate != -1 && cfg->prepped) {
 		cryptDestroyContext(cfg->tls_certificate);
+		cfg->tls_certificate == -1;
+	}
+	unlock_ssl_cert();
 #endif
 	free_node_cfg(cfg);
 	free_main_cfg(cfg);
