@@ -27,7 +27,9 @@
 #include <stdio.h>      // sprintf
 #include "sockwrap.h"	// closesocket
 #include "trash.h"		// filter_ip
+#include "scfglib.h"	// trashcan_fname
 #include "ClientFormUnit.h"
+#include "CodeInputFormUnit.h"
 
 void socket_open(void*, BOOL open);
 //---------------------------------------------------------------------------
@@ -87,9 +89,13 @@ void __fastcall TClientForm::CloseSocketMenuItemClick(TObject *Sender)
 void __fastcall TClientForm::FilterIpMenuItemClick(TObject *Sender)
 {
 	char 	str[256];
+	char	fname[MAX_PATH + 1];
     int		res;
     TListItem* ListItem;
     TItemStates State;
+	static uint duration = MainForm->global.login_attempt.filter_duration;
+	static bool silent;
+	static char reason[128] = "Abuse";
 
     ListItem=ListView->Selected;
     State << isSelected;
@@ -100,16 +106,42 @@ void __fastcall TClientForm::FilterIpMenuItemClick(TObject *Sender)
 	    AnsiString username = ListItem->SubItems->Strings[1];
     	AnsiString ip_addr 	= ListItem->SubItems->Strings[2];
 		AnsiString hostname = ListItem->SubItems->Strings[3];
-
-    	wsprintf(str,"Disallow future connections from %s"
-        	,ip_addr);
-    	res=Application->MessageBox(str,"Filter IP?"
-        		,MB_YESNOCANCEL|MB_ICONQUESTION);
-        if(res==IDCANCEL)
-    		break;
-    	if(res==IDYES)
-			filter_ip(&MainForm->cfg,prot.c_str(),"abuse",hostname.c_str()
-				,ip_addr.c_str(),username.c_str(), /* filename: */NULL, /* duration: */0);
+		
+		Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
+		wsprintf(str,"Disallow future connections from %s?", ip_addr);
+		CodeInputForm->Caption = str;
+		CodeInputForm->Label->Caption = "Address Filter Duration";
+		CodeInputForm->Edit->Visible = true;
+		CodeInputForm->Edit->Text = duration ? duration_to_vstr(duration, str, sizeof str) : "Infinite";
+		CodeInputForm->Edit->Hint = "'Infinite' or number of Seconds/Minutes/Hours/Days/Weeks/Years";
+		CodeInputForm->Edit->ShowHint = true;
+		CodeInputForm->CheckBox->Visible = true;
+		CodeInputForm->CheckBox->Caption = "Silent Filter";
+		CodeInputForm->CheckBox->Checked = silent;
+		CodeInputForm->CheckBox->Hint = "No messages logged when blocking this client";
+		CodeInputForm->CheckBox->ShowHint = true;
+		res = CodeInputForm->ShowModal();
+		duration = parse_duration(CodeInputForm->Edit->Text.c_str());
+		silent = CodeInputForm->CheckBox->Checked;
+		if(res != mrOk) {
+			delete CodeInputForm;
+			break;
+		}
+		CodeInputForm->Label->Caption = "Reason";
+		CodeInputForm->Edit->Text = reason;
+		CodeInputForm->Edit->Hint = "The cause or rationale for the filter";
+		CodeInputForm->CheckBox->Visible = false;
+		res = CodeInputForm->ShowModal();
+		SAFECOPY(reason, CodeInputForm->Edit->Text.c_str());
+		delete CodeInputForm;
+		if(res != mrOk)
+			break;
+		filter_ip(&MainForm->cfg,prot.c_str()
+			,reason
+			,hostname.c_str()
+			,ip_addr.c_str(),username.c_str()
+			,trashcan_fname(&MainForm->cfg, silent ? "ip-silent" : "ip", fname, sizeof fname)
+			,duration);
         if(ListView->Selected == NULL)
         	break;
         ListItem=ListView->GetNextItem(ListItem,sdAll,State);

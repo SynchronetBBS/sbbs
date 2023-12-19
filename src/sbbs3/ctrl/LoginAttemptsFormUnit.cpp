@@ -187,10 +187,12 @@ void __fastcall TLoginAttemptsForm::RefreshPopupClick(TObject *Sender)
 void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
 {
 	char 	str[256];
+	char	fname[MAX_PATH + 1];
     int		res;
     TListItem* ListItem;
     TItemStates State;
-	static uint duration;
+	static uint duration = MainForm->global.login_attempt.filter_duration;
+	static bool silent;
 
     ListItem=ListView->Selected;
     State << isSelected;
@@ -212,8 +214,14 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
 		CodeInputForm->Edit->Text = duration ? duration_to_vstr(duration, str, sizeof str) : "Infinite";
 		CodeInputForm->Edit->Hint = "'Infinite' or number of Seconds/Minutes/Hours/Days/Weeks/Years";
 		CodeInputForm->Edit->ShowHint = true;
+		CodeInputForm->CheckBox->Visible = true;
+		CodeInputForm->CheckBox->Caption = "Silent Filter";
+		CodeInputForm->CheckBox->Checked = silent;
+		CodeInputForm->CheckBox->Hint = "No messages logged when blocking this client";
+		CodeInputForm->CheckBox->ShowHint = true;
 		res = CodeInputForm->ShowModal();
 		duration = parse_duration(CodeInputForm->Edit->Text.c_str());
+		silent = CodeInputForm->CheckBox->Checked;
 		delete CodeInputForm;
 		if(res != mrOk)
 			break;
@@ -225,8 +233,10 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
 		Screen->Cursor=crDefault;
 		if(h!=NULL)
 			hostname = h->h_name;
-		filter_ip(&MainForm->cfg, prot.c_str(), (AnsiString(ListItem->Caption) + " CONSECUTIVE FAILED LOGIN ATTEMPTS").c_str(), hostname
-				,ip_addr.c_str(), username.c_str(), /* filename: */NULL, duration);
+		filter_ip(&MainForm->cfg, prot.c_str(), (AnsiString(ListItem->Caption) + " " strFailedLoginAttempts).c_str(), hostname
+				,ip_addr.c_str(), username.c_str()
+				,trashcan_fname(&MainForm->cfg, silent ? "ip-silent" : "ip", fname, sizeof fname)
+				,duration);
         if(ListView->Selected == NULL)
         	break;
         ListItem=ListView->GetNextItem(ListItem,sdAll,State);
