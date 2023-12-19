@@ -38,13 +38,9 @@
 #ifndef _XPEVENT_H_
 #define _XPEVENT_H_
 
-#ifdef _WIN32
-
 #include "gen_defs.h"
 typedef HANDLE xpevent_t;
 #define WaitForEvent(event, ms) WaitForSingleObject(event, ms)
-
-#else
 
 #include <pthread.h>
 #include "gen_defs.h"
@@ -87,7 +83,5 @@ enum {
 	,WAIT_TIMEOUT
 	,WAIT_FAILED
 };
-
-#endif
 
 #endif

@@ -3,7 +3,7 @@
 
 #include <threadwrap.h>
 #include "xpprintf.h"
-#include "xpevent.h"
+#include "eventwrap.h"
 
 #include "ssl.h"
 //#include "js_socket.h"	// TODO... move this stuff in here?
