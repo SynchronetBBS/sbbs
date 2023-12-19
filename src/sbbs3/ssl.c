@@ -3,6 +3,7 @@
 
 #include <threadwrap.h>
 #include "xpprintf.h"
+#include "xpevent.h"
 
 #include "ssl.h"
 //#include "js_socket.h"	// TODO... move this stuff in here?
@@ -235,7 +236,8 @@ bool get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const ch
 
 static pthread_once_t crypt_init_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t ssl_cert_mutex;
-static pthread_mutex_t ssl_rwlock;
+static xpevent_t ssl_cert_read_available;
+static xpevent_t ssl_cert_write_available;
 static bool cryptlib_initialized;
 
 static void do_cryptEnd(void)
@@ -256,7 +258,8 @@ static void internal_do_cryptInit(void)
 		lprintf(LOG_ERR,"cryptInit() returned %d", ret);
 	}
 	pthread_mutex_init(&ssl_cert_mutex, NULL);
-	pthread_mutex_init(&ssl_rwlock, NULL);
+	ssl_cert_read_available = CreateEvent(NULL, TRUE, TRUE, "ssl_cert_read_available");
+	ssl_cert_write_available = CreateEvent(NULL, TRUE, TRUE, "ssl_cert_write_available");
 	return;
 }
 
@@ -274,32 +277,76 @@ bool is_crypt_initialized(void)
 
 static uint32_t readers;
 static uint32_t writers;
+static uint32_t writers_waiting;
 
 void lock_ssl_cert(void)
 {
-	pthread_mutex_lock(&ssl_rwlock);
-	if (writers) {
-		pthread_mutex_unlock(&ssl_rwlock);
-		pthread_mutex_lock(&ssl_cert_mutex);
-		readers++;
-		pthread_mutex_unlock(&ssl_cert_mutex);
-	}
-	else {
-		readers++;
-		pthread_mutex_unlock(&ssl_rwlock);
-	}
+	int done = 0;
+
+	pthread_mutex_lock(&ssl_cert_mutex);
+	do {
+		done = (writers == 0 && writers_waiting == 0);
+		if (!done) {
+			pthread_mutex_unlock(&ssl_cert_mutex);
+			WaitForEvent(ssl_cert_read_available, INFINITE);
+			pthread_mutex_lock(&ssl_cert_mutex);
+		}
+	} while (!done);
+	ResetEvent(ssl_cert_write_available);
+	readers++;
+	pthread_mutex_unlock(&ssl_cert_mutex);
+}
+
+void lock_ssl_cert_write(void)
+{
+	int done;
+
+	ResetEvent(ssl_cert_read_available);
+	pthread_mutex_lock(&ssl_cert_mutex);
+	writers_waiting++;
+	do {
+		done = (readers == 0 && writers == 0);
+		if (!done) {
+			pthread_mutex_unlock(&ssl_cert_mutex);
+			WaitForEvent(ssl_cert_write_available, INFINITE);
+			pthread_mutex_lock(&ssl_cert_mutex);
+		}
+	} while(!done);
+	ResetEvent(ssl_cert_write_available);
+	writers_waiting--;
+	writers++;
+	pthread_mutex_unlock(&ssl_cert_mutex);
 }
 
 void unlock_ssl_cert(void)
 {
-	pthread_mutex_lock(&ssl_rwlock);
+	pthread_mutex_lock(&ssl_cert_mutex);
 	if (readers == 0) {
-		lprintf(LOG_ERR, "Unlocking ssl cert when it's not locked.");
+		lprintf(LOG_ERR, "Unlocking ssl cert for read when it's not locked.");
 	}
 	else {
 		readers--;
+		if (readers == 0) {
+			SetEvent(ssl_cert_write_available);
+		}
 	}
-	pthread_mutex_unlock(&ssl_rwlock);
+	pthread_mutex_unlock(&ssl_cert_mutex);
+}
+
+void unlock_ssl_cert_write(void)
+{
+	pthread_mutex_lock(&ssl_cert_mutex);
+	if (writers == 0) {
+		lprintf(LOG_ERR, "Unlocking ssl cert for write when it's not locked.");
+	}
+	else {
+		writers--;
+		SetEvent(ssl_cert_write_available);
+		if (writers_waiting == 0) {
+			SetEvent(ssl_cert_read_available);
+		}
+	}
+	pthread_mutex_unlock(&ssl_cert_mutex);
 }
 
 #define DO(action, handle, x)	get_crypt_error_string(x, handle, estr, action, level)
@@ -311,35 +358,18 @@ CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, char **estr, int *level)
 	CRYPT_CERTIFICATE	ssl_cert;
 	char				sysop_email[sizeof(cfg->sys_inetaddr)+6];
 	char				str[MAX_PATH+1];
-	int done = 0;
 
 	if (estr)
 		*estr = NULL;
 	if(!do_cryptInit())
 		return -1;
-	pthread_mutex_lock(&ssl_rwlock);
-	writers++;
-	// Lock cert mutex while we hold rwlock to ensure we have it whenever writers is non-zero.
-	pthread_mutex_lock(&ssl_cert_mutex);
-	pthread_mutex_unlock(&ssl_rwlock);
-	// Drain all the readers
-	while (!done) {
-		pthread_mutex_lock(&ssl_rwlock);
-		done = (readers == 0);
-		pthread_mutex_unlock(&ssl_rwlock);
-		if (!done) {
-			YIELD();
-		}
-	}
+	lock_ssl_cert_write();
 	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,"ssl.cert");
 	time32_t fd = (time32_t)fdate(str);
 	if (cfg->tls_certificate != -1 || !cfg->prepped) {
 		if (fd == cfg->tls_cert_file_date) {
 			ssl_context = cfg->tls_certificate;
-			pthread_mutex_lock(&ssl_rwlock);
-			writers--;
-			pthread_mutex_unlock(&ssl_rwlock);
-			pthread_mutex_unlock(&ssl_cert_mutex);
+			unlock_ssl_cert_write();
 			return ssl_context;
 		}
 		cfg->tls_cert_file_date = fd;
@@ -350,20 +380,14 @@ CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, char **estr, int *level)
 	/* Get the certificate... first try loading it from a file... */
 	if(cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_READONLY))) {
 		if(!DO("getting private key", ssl_keyset, cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass))) {
-			pthread_mutex_lock(&ssl_rwlock);
-			writers--;
-			pthread_mutex_unlock(&ssl_rwlock);
-			pthread_mutex_unlock(&ssl_cert_mutex);
+			unlock_ssl_cert_write();
 			return -1;
 		}
 	}
 	else {
 		/* Couldn't do that... create a new context and use the cert from there... */
 		if(!DO("creating SSL context", CRYPT_UNUSED,cryptCreateContext(&ssl_context, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {
-			pthread_mutex_lock(&ssl_rwlock);
-			writers--;
-			pthread_mutex_unlock(&ssl_rwlock);
-			pthread_mutex_unlock(&ssl_cert_mutex);
+			unlock_ssl_cert_write();
 			return -1;
 		}
 		if(!DO("setting label", ssl_context, cryptSetAttributeString(ssl_context, CRYPT_CTXINFO_LABEL, "ssl_cert", 8)))
@@ -412,10 +436,7 @@ CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, char **estr, int *level)
 
 	cryptKeysetClose(ssl_keyset);
 	cfg->tls_certificate = ssl_context;
-	pthread_mutex_lock(&ssl_rwlock);
-	writers--;
-	pthread_mutex_unlock(&ssl_rwlock);
-	pthread_mutex_unlock(&ssl_cert_mutex);
+	unlock_ssl_cert_write();
 	return ssl_context;
 
 failure_return_3:
@@ -425,9 +446,6 @@ failure_return_2:
 failure_return_1:
 	cryptDestroyContext(ssl_context);
 	cfg->tls_certificate = -1;
-	pthread_mutex_lock(&ssl_rwlock);
-	writers--;
-	pthread_mutex_unlock(&ssl_rwlock);
-	pthread_mutex_unlock(&ssl_cert_mutex);
+	unlock_ssl_cert_write();
 	return -1;
 }

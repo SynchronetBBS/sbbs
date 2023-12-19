@@ -43,6 +43,8 @@ DLLEXPORT bool DLLCALL is_crypt_initialized(void);
 DLLEXPORT bool DLLCALL get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const char *action, int *level);
 DLLEXPORT void lock_ssl_cert(void);
 DLLEXPORT void unlock_ssl_cert(void);
+DLLEXPORT void lock_ssl_cert_write(void);
+DLLEXPORT void unlock_ssl_cert_write(void);
 
 #if defined(__cplusplus)
 }
