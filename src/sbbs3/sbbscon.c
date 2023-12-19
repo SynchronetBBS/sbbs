@@ -224,6 +224,7 @@ static bool any_server_running()
 	return false;
 }
 
+#ifdef USE_SYSTEMD
 static bool any_server_with_state(enum server_state state)
 {
 	for(int i = 0; i < SERVER_COUNT; i++)
@@ -232,7 +233,6 @@ static bool any_server_with_state(enum server_state state)
 	return false;
 }
 
-#ifdef USE_SYSTEMD
 static void notify_systemd(const char* new_status)
 {
 	static char status[1024];

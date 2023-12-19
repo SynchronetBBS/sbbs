@@ -358,6 +358,7 @@ void mqtt_close(struct mqtt* mqtt)
 	FREE_AND_NULL(mqtt->host);
 }
 
+#ifdef USE_MOSQUITTO
 static int pw_callback(char* buf, int size, int rwflag, void* userdata)
 {
 	struct mqtt* mqtt = (struct mqtt*)userdata;
@@ -365,6 +366,7 @@ static int pw_callback(char* buf, int size, int rwflag, void* userdata)
 	strncpy(buf, mqtt->cfg->mqtt.tls.keypass, size);
 	return strlen(mqtt->cfg->mqtt.tls.keypass);
 }
+#endif
 
 int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 {
