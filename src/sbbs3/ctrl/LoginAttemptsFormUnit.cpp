@@ -233,7 +233,7 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
 		Screen->Cursor=crDefault;
 		if(h!=NULL)
 			hostname = h->h_name;
-		filter_ip(&MainForm->cfg, prot.c_str(), (AnsiString(ListItem->Caption) + " " strFailedLoginAttempts).c_str(), hostname
+		filter_ip(&MainForm->cfg, prot.c_str(), (AnsiString(ListItem->Caption) + " " STR_FAILED_LOGIN_ATTEMPTS).c_str(), hostname
 				,ip_addr.c_str(), username.c_str()
 				,trashcan_fname(&MainForm->cfg, silent ? "ip-silent" : "ip", fname, sizeof fname)
 				,duration);
