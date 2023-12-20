@@ -530,12 +530,12 @@ int add_private_key(scfg_t *cfg, CRYPT_SESSION csess)
 	}
 	ret = cryptSetAttribute(csess, CRYPT_SESSINFO_PRIVATEKEY, sess->cert);
 	if (cryptStatusOK(ret)) {
-		ret->next = sess_list;
-		ret->sess = csess;
+		sess->next = sess_list;
+		sess->sess = csess;
 		sess_list = ret;
 	}
 	else {
-		ret->next = cert_list;
+		sess->next = cert_list;
 		cert_list = ret;
 	}
 	pthread_mutex_unlock(&ssl_cert_list_mutex);
