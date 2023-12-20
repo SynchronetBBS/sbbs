@@ -5,10 +5,19 @@ require("file_size.js", "file_size_float");
 function header(title) {
 	writeln("<html lang=\"en\">");
 	writeln("<style>");
+	writeln('body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans","Liberation Sans",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"; }');
 	writeln("a:link { text-decoration: none; }");
 	writeln("a:visited { text-decoration: none; }");
 	writeln("a:hover { text-decoration: underline; }");
 	writeln("a:active { text-decoration: none; }");
+	writeln("div.table-container { overlow: auto; }");
+	writeln("table { border-collapse: collapse; }");
+	writeln("thead th { position: sticky; top: 0; background-color: white; }");
+	writeln("th { padding: .5rem; }");
+	writeln("tbody > tr { border-top: 1px solid silver; }");
+	writeln("tbody > tr:nth-child(even) { background-color: whitesmoke; }");
+	writeln("td { padding: .5rem; }");
+	writeln("@media (prefers-color-scheme: dark) { body { color: #FAFAFA; background-color: #0A0A0A; } a { color: silver; } a:visited { color: silver; } thead th { background-color: black; } tbody > tr:nth-child(even) { background-color: #2A2A2A; } tbody > tr { border-color: #1F1F1F; } }");
 	writeln("</style>");
 	writeln("<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>");
 	writeln("<title>" + system.name + " " + title + "</title>");
@@ -65,23 +74,29 @@ function dir_index(dir)
 		write("file list is null");
 		return;
 	}
+	writeln('<div class="table-container">');
 	writeln("<table>");
+	write("<thead>");
 	write("<tr align=left>");
 	write("<th>Name");
 	write("<th align=right>Size");
 	write("<th align=center>Date");
 	write("<th>Description");
 	writeln("</tr>");
+	writeln("</thead>");
+	writeln("<tbody>");
 	for(var l in list) {
 		var f = list[l];
 		write("<tr>");
-		write("<td>" + f.name.link(f.name));
-		write("<td align=right>" + file_size_float(f.size, 1, 0));
-		write("<td align=right>" + strftime("%b-%d-%y", f.time).bold());
-		write("<td>" + utf8_encode(f.desc || ""));
+		write("<td>" + f.name.link(f.name) + "</td>");
+		write("<td align=right>" + file_size_float(f.size, 1, 0) + "</td>");
+		write("<td align=right>" + strftime("%B %d, %Y", f.time).bold() + "</td>");
+		write("<td>" + utf8_encode(f.desc || "") + "</td>");
 		writeln("</tr>");
 	}
+	writeln("</tbody>");
 	writeln("</table>");
+	writeln("</div>");
 	writeln("<p>" + list.length + " files");
 }
 
