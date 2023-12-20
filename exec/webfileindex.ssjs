@@ -90,7 +90,7 @@ function dir_index(dir)
 		write("<tr>");
 		write("<td>" + f.name.link(f.name) + "</td>");
 		write("<td align=right>" + file_size_float(f.size, 1, 0) + "</td>");
-		write("<td align=right>" + strftime("%B %d, %Y", f.time).bold() + "</td>");
+		write("<td align=right>" + strftime("%b %d, %Y", f.time) + "</td>");
 		write("<td>" + utf8_encode(f.desc || "") + "</td>");
 		writeln("</tr>");
 	}
