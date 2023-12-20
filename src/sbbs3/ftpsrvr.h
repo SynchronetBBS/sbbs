@@ -29,7 +29,7 @@ typedef struct {
 	STARTUP_COMMON_ELEMENTS
 	uint16_t	port;
 	uint16_t	max_clients;
-#define FTP_DEFAULT_MAX_CLIENTS		10
+#define FTP_DEFAULT_MAX_CLIENTS		100
 	uint16_t	max_inactivity;
 #define FTP_DEFAULT_MAX_INACTIVITY	300
 	uint16_t	qwk_timeout;

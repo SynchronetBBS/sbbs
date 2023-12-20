@@ -34,7 +34,7 @@ typedef struct {
 	uint16_t	submission_port;
 	uint16_t	submissions_port;
 	uint16_t	max_clients;
-#define MAIL_DEFAULT_MAX_CLIENTS			10
+#define MAIL_DEFAULT_MAX_CLIENTS			100
 	uint16_t	max_inactivity;
 #define MAIL_DEFAULT_MAX_INACTIVITY			120
 	uint16_t	max_delivery_attempts;
