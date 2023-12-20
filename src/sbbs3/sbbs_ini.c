@@ -435,7 +435,7 @@ void sbbs_read_ini(
 		bbs->ssh_port
 			=iniGetShortInt(list,section,"SSHPort",22);
 		bbs->ssh_connect_timeout
-			=iniGetShortInt(list,section,"SSHConnectTimeout",10);
+			=(uint16_t)iniGetDuration(list,section,"SSHConnectTimeout",10);
 		bbs->ssh_error_level
 			=iniGetLogLevel(list, section, "SSHErrorLevel", LOG_WARNING);
 		bbs->ssh_interfaces
@@ -623,7 +623,7 @@ void sbbs_read_ini(
 		mail->max_msgs_waiting
 			=iniGetInteger(list,section,"MaxMsgsWaiting",MAIL_DEFAULT_MAX_MSGS_WAITING);
 		mail->connect_timeout
-			=iniGetInteger(list,section,"ConnectTimeout",MAIL_DEFAULT_CONNECT_TIMEOUT);
+			=(uint32_t)iniGetDuration(list,section,"ConnectTimeout",MAIL_DEFAULT_CONNECT_TIMEOUT);
 
 		SAFECOPY(mail->host_name
 			,iniGetString(list,section,strHostName,global->host_name,value));
@@ -787,7 +787,7 @@ void sbbs_read_ini(
 			=iniGetLogLevel(list,section, strTLSErrorLevel, global->tls_error_level);
 		web->options
 			=iniGetBitField(list,section,strOptions,web_options
-				,BBS_OPT_NO_HOST_LOOKUP | WEB_OPT_HTTP_LOGGING);
+				,BBS_OPT_NO_HOST_LOOKUP | WEB_OPT_HTTP_LOGGING | WEB_OPT_NO_CGI);
 		web->outbuf_drain_timeout
 			=iniGetUInteger(list,section,"OutbufDrainTimeout",10);
 
@@ -903,7 +903,7 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetUInt16(lp,section,"SSHPort",bbs->ssh_port,&style))
 			break;
-		if(!iniSetUInteger(lp,section,"SSHConnectTimeout",bbs->ssh_connect_timeout,&style))
+		if(!iniSetDuration(lp,section,"SSHConnectTimeout",bbs->ssh_connect_timeout,&style))
 			break;
 		if(!iniSetLogLevel(lp, section, "SSHErrorLevel", bbs->ssh_error_level, &style))
 			break;
@@ -1014,7 +1014,7 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetInteger(lp,section,strMaxConConn,ftp->max_concurrent_connections,&style))
 			break;
-		if(!iniSetUInteger(lp,section,"QwkTimeout",ftp->qwk_timeout,&style))
+		if(!iniSetDuration(lp,section,"QwkTimeout",ftp->qwk_timeout,&style))
 			break;
 		if(!iniSetBytes(lp,section,"MinFileSize",1,ftp->min_fsize,&style))
 			break;
@@ -1135,7 +1135,7 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetInteger(lp,section,"MaxMsgsWaiting",mail->max_msgs_waiting,&style))
 			break;
-		if(!iniSetInteger(lp,section,"ConnectTimeout",mail->connect_timeout,&style))
+		if(!iniSetDuration(lp,section,"ConnectTimeout",mail->connect_timeout,&style))
 			break;
 		if(!iniSetInteger(lp,section,strMaxConConn,mail->max_concurrent_connections,&style))
 			break;
