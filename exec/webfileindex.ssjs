@@ -17,7 +17,7 @@ function header(title) {
 	writeln("tbody > tr { border-top: 1px solid silver; }");
 	writeln("tbody > tr:nth-child(even) { background-color: whitesmoke; }");
 	writeln("td { padding: .5rem; }");
-	writeln("@media (prefers-color-scheme: dark) { body { color: #FAFAFA; background-color: #0A0A0A; } a { color: silver; } a:visited { color: silver; } thead th { background-color: black; } tbody > tr:nth-child(even) { background-color: #2A2A2A; } tbody > tr { border-color: #1F1F1F; } }");
+	writeln("@media (prefers-color-scheme: dark) { body { color: #FAFAFA; background-color: #0A0A0A; } a { color: #FAFAFA; font-weight: bold; } a:visited { color: #FAFAFA; font-weight: bold; } thead th { background-color: black; } tbody > tr:nth-child(even) { background-color: #2A2A2A; } tbody > tr { border-color: #1F1F1F; } }");
 	writeln("</style>");
 	writeln("<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>");
 	writeln("<title>" + system.name + " " + title + "</title>");
