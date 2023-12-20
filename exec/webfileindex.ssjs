@@ -16,11 +16,16 @@ function header(title) {
 	writeln("th { padding: .5rem; }");
 	writeln("tbody > tr { border-top: 1px solid silver; }");
 	writeln("tbody > tr:nth-child(even) { background-color: whitesmoke; }");
-	writeln("td { padding: .5rem; }");
+	writeln("td { padding: .5rem; vertical-align: top; }");
+	writeln("td.desc { cursor: pointer; }");
+	writeln("div.extdesc { margin-top: .5rem; white-space: pre; line-height: 1; font-family: monospace; overflow: hidden; }");
 	writeln("@media (prefers-color-scheme: dark) { body { color: #FAFAFA; background-color: #0A0A0A; } a { color: #FAFAFA; font-weight: bold; } a:visited { color: #FAFAFA; font-weight: bold; } thead th { background-color: black; } tbody > tr:nth-child(even) { background-color: #2A2A2A; } tbody > tr { border-color: #1F1F1F; } }");
 	writeln("</style>");
 	writeln("<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>");
 	writeln("<title>" + system.name + " " + title + "</title>");
+	writeln('<script>');
+	writeln("function showExtDesc(evt) { const ext = evt.target.querySelector('.extdesc'); if (ext.innerHTML === '') { return; } if (ext.style.display === 'none') { ext.style.display = 'block'; } else { ext.style.display = 'none'; } }");
+	writeln('</script>');
 	writeln("</head>");
 	writeln("<h1>" + system.name + " " + title + "</h1>");
 }
@@ -78,10 +83,10 @@ function dir_index(dir)
 	writeln("<table>");
 	write("<thead>");
 	write("<tr align=left>");
-	write("<th>Name");
-	write("<th align=right>Size");
-	write("<th align=center>Date");
-	write("<th>Description");
+	write("<th>Name</th>');
+	write("<th align=right>Size</th>");
+	write("<th align=center>Date</th>");
+	write("<th>Description</th>");
 	writeln("</tr>");
 	writeln("</thead>");
 	writeln("<tbody>");
@@ -91,7 +96,7 @@ function dir_index(dir)
 		write("<td>" + f.name.link(f.name) + "</td>");
 		write("<td align=right>" + file_size_float(f.size, 1, 0) + "</td>");
 		write("<td align=right>" + strftime("%b %d, %Y", f.time) + "</td>");
-		write("<td>" + utf8_encode(f.desc || "") + "</td>");
+		write('<td class="desc" onclick="showExtDesc(event)">' + utf8_encode(f.desc || '') + '<div class="extdesc" style="display: none;">' + utf8_encode(f.extdesc || '') + '</div></td>');
 		writeln("</tr>");
 	}
 	writeln("</tbody>");
