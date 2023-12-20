@@ -352,7 +352,7 @@ static void unlock_ssl_cert_write(void)
 }
 
 // TODO: Failures in get_ssl_cert() aren't logged.
-#define DO(action, handle, x)	x
+#define DO(action, handle, x)	cryptStatusOK(x)
 
 static char cert_path[INI_MAX_VALUE_LEN + 8];
 static unsigned cert_epoch;
