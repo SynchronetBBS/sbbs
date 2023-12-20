@@ -30,7 +30,7 @@ typedef struct {
 
 	STARTUP_COMMON_ELEMENTS
 	uint16_t	max_clients;
-#define WEB_DEFAULT_MAX_CLIENTS			0	/* 0=unlimited */
+#define WEB_DEFAULT_MAX_CLIENTS			100	/* 0=unlimited */
 	uint16_t	max_inactivity;
 #define WEB_DEFAULT_MAX_INACTIVITY		120	/* seconds */
 	uint16_t	max_cgi_inactivity;
