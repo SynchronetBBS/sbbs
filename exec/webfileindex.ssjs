@@ -83,7 +83,7 @@ function dir_index(dir)
 	writeln("<table>");
 	write("<thead>");
 	write("<tr align=left>");
-	write("<th>Name</th>');
+	write("<th>Name</th>");
 	write("<th align=right>Size</th>");
 	write("<th align=center>Date</th>");
 	write("<th>Description</th>");
