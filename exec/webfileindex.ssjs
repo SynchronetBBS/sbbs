@@ -10,6 +10,8 @@ function header(title) {
 	writeln("a:visited { text-decoration: none; }");
 	writeln("a:hover { text-decoration: underline; }");
 	writeln("a:active { text-decoration: none; }");
+	writeln("div.form-container { margin-bottom: .5rem; }");
+	writeln("div.form-container > form { display: inline; margin-right: .5rem; }");
 	writeln("div.table-container { overlow: auto; }");
 	writeln("table { border-collapse: collapse; }");
 	writeln("thead th { position: sticky; top: 0; background-color: white; }");
@@ -19,12 +21,15 @@ function header(title) {
 	writeln("td { padding: .5rem; vertical-align: top; }");
 	writeln("td.desc:has(div) { cursor: pointer; }");
 	writeln("div.extdesc { margin-top: .5rem; white-space: pre; line-height: 1; font-family: monospace; overflow: hidden; }");
+	writeln(".visible { visbility: visible; display: block; }");
+	writeln(".invisible { visibility: hidden; display: none; }");
 	writeln("@media (prefers-color-scheme: dark) { body { color: #FAFAFA; background-color: #0A0A0A; } a { color: #FAFAFA; font-weight: bold; } a:visited { color: #FAFAFA; font-weight: bold; } thead th { background-color: black; } tbody > tr:nth-child(even) { background-color: #2A2A2A; } tbody > tr { border-color: #1F1F1F; } }");
 	writeln("</style>");
 	writeln("<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>");
 	writeln("<title>" + system.name + " " + title + "</title>");
 	writeln('<script>');
-	writeln("function showExtDesc(evt) { const ext = evt.target.querySelector('.extdesc'); if (!ext) { return; } if (ext.style.display === 'none') { ext.style.display = 'block'; } else { ext.style.display = 'none'; } }");
+	writeln("function showExtDescs(evt) { document.querySelectorAll('div.extdesc').forEach(ext => { if (evt.target.checked) { ext.classList.remove('invisible'); ext.classList.add('visible'); } else { ext.classList.remove('visible'); ext.classList.add('invisible'); } }); }");
+	writeln("function showExtDesc(evt) { const ext = evt.target.querySelector('.extdesc'); if (!ext) { return; } if (ext.classList.contains('invisible')) { ext.classList.remove('invisible'); ext.classList.add('visible'); } else { ext.classList.remove('visible'); ext.classList.add('invisible'); } }");
 	writeln('</script>');
 	writeln("</head>");
 	writeln("<h1>" + system.name + " " + title + "</h1>");
@@ -54,17 +59,6 @@ function dir_index(dir)
 	writeln(lib.description.link(file_area.web_vpath_prefix + lib.vdir + "/") + "<br />");
 	writeln("<p>");
 	
-	writeln("<form>");  // Netscape requires this to be in a form <sigh>
-	writeln("<select onChange='if(selectedIndex>0) location=options[selectedIndex].value;'>");
-	writeln("<option>Sort...</option>");
-	for(s in sorting_description) {
-	    writeln(format("<option value='?sort=%s'>%s"
-	        ,FileBase.SORT[s]
-	        ,sorting_description[s]));
-	}
-	writeln("</select>");
-	writeln("</form>");	
-	
 	var fb = new FileBase(dir.code);
 	if(!fb.open()) {
 		write("Error " + fb.error + " opening directory: " + dir.code);
@@ -79,6 +73,20 @@ function dir_index(dir)
 		write("file list is null");
 		return;
 	}
+
+	writeln('<div class="form-container">');
+	writeln("<form>");  // Netscape requires this to be in a form <sigh>
+	writeln("<select onChange='if(selectedIndex>0) location=options[selectedIndex].value;'>");
+	writeln("<option>Sort...</option>");
+	for(s in sorting_description) {
+	    writeln(format("<option value='?sort=%s'>%s"
+	        ,FileBase.SORT[s]
+	        ,sorting_description[s]));
+	}
+	writeln("</select>");
+	writeln("</form>");	
+	writeln('<input id="show-extdescs-switch" type="checkbox" onChange="showExtDescs(event)"><label title for="show-extdescs-switch">Show extended descriptions</label>');
+	writeln('</div>');
 	writeln('<div class="table-container">');
 	writeln("<table>");
 	write("<thead>");
@@ -99,7 +107,7 @@ function dir_index(dir)
 		write('<td class="desc" onclick="showExtDesc(event)">');
 		write(utf8_encode(f.desc || ''));
 		if (f.extdesc !== undefined) {
-			write('<div class="extdesc" style="display: none;">' + utf8_encode(f.extdesc) + '</div>');
+			write('<div class="extdesc invisible">' + utf8_encode(f.extdesc) + '</div>');
 		}
 		write('</td>');
 		writeln("</tr>");
@@ -132,10 +140,10 @@ function lib_index(lib)
 function root_index()
 {
 	header("File Areas");
-    for(var l in file_area.lib_list) {
+	for(var l in file_area.lib_list) {
 		var lib = file_area.lib_list[l];
-        write(lib.description.link(lib.vdir + "/")+ "<br />");
-    }
+		write(lib.description.link(lib.vdir + "/")+ "<br />");
+	}
 }	
 
 if(http_request.virtual_path[http_request.virtual_path.length - 1] != '/') {
