@@ -286,7 +286,7 @@ static int ftp_close_socket(SOCKET* sock, CRYPT_SESSION *sess, int line)
 	int		result;
 
 	if (*sess != -1) {
-		cryptDestroySession(*sess);
+		destroy_session(*sess);
 		*sess = -1;
 	}
 
@@ -1149,13 +1149,8 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	ulong nb;
 	int status;
 	char *estr = NULL;
-	int level;
 
-	if (get_ssl_cert(&scfg, &estr, &level) == -1) {
-		if (estr) {
-			lprintf(level, "%04d TLS %s", *sock, estr);
-			free_crypt_attrstr(estr);
-		}
+	if (!ssl_sync(&scfg)) {
 		if (resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;
@@ -1168,17 +1163,15 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	}
 	if ((status = cryptSetAttribute(*sess, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
 		GCES(status, *sock, *sess, estr, "disabling certificate verification");
-		cryptDestroySession(*sess);
+		destroy_session(*sess);
 		*sess = -1;
 		if(resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;
 	}
-	lock_ssl_cert();
-	if ((status=cryptSetAttribute(*sess, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
-		unlock_ssl_cert();
+	if ((status=add_private_key(&scfg, *sess)) != CRYPT_OK) {
 		GCES(status, *sock, *sess, estr, "setting private key");
-		cryptDestroySession(*sess);
+		destroy_session(*sess);
 		*sess = -1;
 		if (resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
@@ -1189,9 +1182,8 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	nb=0;
 	ioctlsocket(*sock,FIONBIO,&nb);
 	if ((status = cryptSetAttribute(*sess, CRYPT_SESSINFO_NETWORKSOCKET, *sock)) != CRYPT_OK) {
-		unlock_ssl_cert();
 		GCES(status, *sock, *sess, estr, "setting network socket");
-		cryptDestroySession(*sess);
+		destroy_session(*sess);
 		*sess = -1;
 		if (resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
@@ -1200,11 +1192,9 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	if (resp)
 		sockprintf(*sock, -1, "234 Ready to start TLS");
 	if ((status = cryptSetAttribute(*sess, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
-		unlock_ssl_cert();
 		GCES(status, *sock, *sess, estr, "setting session active");
 		return TRUE;
 	}
-	unlock_ssl_cert();
 	if (startup->max_inactivity) {
 		if ((status = cryptSetAttribute(*sess, CRYPT_OPTION_NET_READTIMEOUT, startup->max_inactivity)) != CRYPT_OK) {
 			GCES(status, *sock, *sess, estr, "setting read timeout");
@@ -2687,7 +2677,7 @@ static void ctrl_thread(void* arg)
 				continue;
 			}
 			sockprintf(sock,sess,"200 Accepted");
-			cryptDestroySession(sess);
+			destroy_session(sess);
 			sess = -1;
 			continue;
 		}
@@ -2717,7 +2707,7 @@ static void ctrl_thread(void* arg)
 			filepos=0;
 			sockprintf(sock,sess,"220 Control session re-initialized. Ready for re-login.");
 			if (sess != -1) {
-				cryptDestroySession(sess);
+				destroy_session(sess);
 				sess = -1;
 			}
 			got_pbsz = FALSE;

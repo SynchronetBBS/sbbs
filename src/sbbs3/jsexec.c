@@ -1450,7 +1450,6 @@ int main(int argc, char **argv, char** env)
 
 #ifdef JSDOOR
 	SAFECOPY(scfg.temp_dir,"./temp");
-	scfg.tls_certificate = -1;
 	strcpy(scfg.sys_pass, "ThisIsNotHowToDoSecurity");
 	strcpy(scfg.sys_name, "JSDoor");
 	strcpy(scfg.sys_inetaddr, "example.com");

@@ -215,7 +215,7 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 	size_t i;
 
 	if(p->session != -1) {
-		cryptDestroySession(p->session);
+		destroy_session(p->session);
 		p->session=-1;
 	}
 
@@ -2287,7 +2287,6 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 	int32		i;
 	scfg_t *scfg;
 	char* estr;
-	int level;
 
 	if((p=(js_socket_private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		// Prototype access
@@ -2307,7 +2306,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			break;
 		case SOCK_PROP_DESCRIPTOR:
 			if(p->session != -1) {
-				cryptDestroySession(p->session);
+				destroy_session(p->session);
 				p->session=-1;
 			}
 			if(JS_ValueToInt32(cx,*vp,&i))
@@ -2340,7 +2339,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 				if(p->session==-1) {
 					int ret = CRYPT_ERROR_NOTINITED;
 
-					if(do_cryptInit()) {
+					if(ssl_sync(&scfg)) {
 						if((ret=cryptCreateSession(&p->session, CRYPT_UNUSED, tiny == SOCK_PROP_SSL_SESSION ? CRYPT_SESSION_SSL: CRYPT_SESSION_SSL_SERVER))==CRYPT_OK) {
 							ulong nb=0;
 							ioctlsocket(p->sock,FIONBIO,&nb);
@@ -2356,29 +2355,15 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 									p->tls_server = FALSE;
 								}
 								else {
-									scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+                                                                       scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
-									if (scfg == NULL) {
-										ret = CRYPT_ERROR_NOTAVAIL;
-									}
-									else {
-										if (get_ssl_cert(scfg, &estr, &level) == -1) {
-											if (estr) {
-												lprintf(level, "%04d %s", p->sock, estr);
-												free_crypt_attrstr(estr);
-											}
-										}
-										lock_ssl_cert();
-										if (scfg->tls_certificate == -1) {
-											unlock_ssl_cert();
-											ret = CRYPT_ERROR_NOTAVAIL;
-										}
-										else {
-											ret = cryptSetAttribute(p->session, CRYPT_SESSINFO_PRIVATEKEY, scfg->tls_certificate);
-											if (ret != CRYPT_OK) {
-												unlock_ssl_cert();
-												GCES(ret, p, estr, "setting private key");
-											}
+                                                                       if (scfg == NULL) {
+                                                                               ret = CRYPT_ERROR_NOTAVAIL;
+                                                                       }
+                                                                       else {
+										ret = add_private_key(scfg, p->session);
+										if (ret != CRYPT_OK) {
+											GCES(ret, p, estr, "setting private key");
 										}
 									}
 								}
@@ -2386,8 +2371,6 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 									if((ret=do_cryptAttribute(p->session, CRYPT_SESSINFO_ACTIVE, 1))!=CRYPT_OK) {
 										GCES(ret, p, estr, "setting session active");
 									}
-									if (tiny != SOCK_PROP_SSL_SESSION)
-										unlock_ssl_cert();
 								}
 							}
 						}
@@ -2396,7 +2379,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 					}
 					if (ret != CRYPT_OK) {
 						if (p->session != -1)
-							cryptDestroySession(p->session);
+							destroy_session(p->session);
 						p->session=-1;
 						ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
 						do_js_close(cx, p, false);
@@ -2405,7 +2388,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			}
 			else {
 				if(p->session != -1) {
-					cryptDestroySession(p->session);
+					destroy_session(p->session);
 					p->session=-1;
 					ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
 					do_js_close(cx, p, false);

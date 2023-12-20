@@ -72,8 +72,6 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 
 	free_cfg(cfg);	/* free allocated config parameters */
 
-	cfg->tls_certificate = -1;
-
 	if(cfg->node_num<1)
 		cfg->node_num=1;
 
@@ -346,15 +344,6 @@ void prep_cfg(scfg_t* cfg)
 void free_cfg(scfg_t* cfg)
 {
 	if(cfg->prepped) {
-#if defined(SBBS) && defined(USE_CRYPTLIB)
-		lock_ssl_cert_write();
-		if (cfg->tls_certificate != -1) {
-			lprintf(LOG_INFO, "Freeing TLS private key and certificate %d", cfg->tls_certificate);
-			cryptDestroyContext(cfg->tls_certificate);
-			cfg->tls_certificate = -1;
-		}
-		unlock_ssl_cert_write();
-#endif
 		cfg->prepped = FALSE;
 	}
 	free_node_cfg(cfg);

@@ -1034,7 +1034,7 @@ static int close_session_socket(http_session_t *session)
 			SLEEP(1);
 		}
 		pthread_mutex_unlock(&session->outbuf_write);
-		HANDLE_CRYPT_CALL(cryptDestroySession(session->tls_sess), session, "destroying session");
+		HANDLE_CRYPT_CALL(destroy_session(session->tls_sess), session, "destroying session");
 	}
 	return close_socket(&session->socket);
 }
@@ -6539,7 +6539,7 @@ static int close_session_no_rb(http_session_t *session)
 {
 	if (session) {
 		if (session->is_tls)
-			HANDLE_CRYPT_CALL(cryptDestroySession(session->tls_sess), session, "destroying session");
+			HANDLE_CRYPT_CALL(destroy_session(session->tls_sess), session, "destroying session");
 		return close_socket(&session->socket);
 	}
 	return 0;
@@ -6610,10 +6610,9 @@ void http_session_thread(void* arg)
 			}
 		}
 #endif
-		lock_ssl_cert();
-		if (scfg.tls_certificate != -1) {
+		if (do_cryptInit()) {
 			HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY), &session, "disabling certificate verification");
-			HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate), &session, "setting private key");
+			HANDLE_CRYPT_CALL(add_private_key(&scfg, session.tls_sess), &session, "setting private key");
 		}
 		BOOL nodelay=TRUE;
 		setsockopt(session.socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
@@ -6621,12 +6620,10 @@ void http_session_thread(void* arg)
 		//HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_MINVER_TLS12), &session, "setting TLS minver to 1.2");
 		HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_NETWORKSOCKET, session.socket), &session, "setting network socket");
 		if (!HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_ACTIVE, 1), &session, "setting session active")) {
-			unlock_ssl_cert();
 			close_session_no_rb(&session);
 			thread_down();
 			return;
 		}
-		unlock_ssl_cert();
 		HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_OPTION_NET_READTIMEOUT, 0), &session, "setting read timeout");
 	}
 
@@ -7058,9 +7055,7 @@ void web_server(void* arg)
 	char			compiler[32];
 	http_session_t *	session=NULL;
 	void			*acc_type;
-	char			*ssl_estr;
-	int				lvl;
-	int				i;
+	int			i;
 	ulong			count;
 
 	startup=(web_startup_t*)arg;
@@ -7191,16 +7186,6 @@ void web_server(void* arg)
 		lprintf(LOG_DEBUG,"Error directory: %s", error_dir);
 		lprintf(LOG_DEBUG,"CGI directory: %s", cgi_dir);
 
-		if(startup->options&WEB_OPT_ALLOW_TLS) {
-			lprintf(LOG_DEBUG,"Loading/Creating TLS certificate");
-			if (get_ssl_cert(&scfg, &ssl_estr, &lvl) == -1) {
-				if (ssl_estr) {
-					lprintf(lvl, "%s", ssl_estr);
-					free_crypt_attrstr(ssl_estr);
-				}
-			}
-		}
-
 		iniFileName(mime_types_ini,sizeof(mime_types_ini),scfg.ctrl_dir,"mime_types.ini");
 		mime_types=read_ini_list(mime_types_ini,NULL /* root section */,"MIME types"
 			,mime_types, true);
@@ -7242,17 +7227,8 @@ void web_server(void* arg)
 		 */
 		xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "Web Server", open_socket, startup->seteuid, NULL);
 		if (startup->options & WEB_OPT_ALLOW_TLS) {
-			do_cryptInit(); // Must be called by someone before lock_ssl_cert()
-			lock_ssl_cert();
-			if(scfg.tls_certificate != -1) {
-				// Init was already called or tls_certificate would be -1...
-				if(do_cryptInit())
-					xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", open_socket, startup->seteuid, "TLS");
-				unlock_ssl_cert();
-			}
-			else {
-				unlock_ssl_cert();
-			}
+			if(ssl_sync(&scfg))
+				xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", open_socket, startup->seteuid, "TLS");
 		}
 
 		listInit(&log_list,/* flags */ LINK_LIST_MUTEX|LINK_LIST_SEMAPHORE);

@@ -1096,22 +1096,19 @@ static void js_service_thread(void* arg)
 			}
 		}
 #endif
-		lock_ssl_cert();
-		if (scfg.tls_certificate != -1) {
-			HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate), &service_client, "setting private key");
+		if (ssl_sync(&scfg)) {
+			HANDLE_CRYPT_CALL(add_private_key(&scfg, service_client.tls_sess), &service_client, "setting private key");
 		}
 		BOOL nodelay=TRUE;
 		setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 
 		HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_NETWORKSOCKET, socket), &service_client, "setting network socket");
 		if (!HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_ACTIVE, 1), &service_client, "setting session active")) {
-			unlock_ssl_cert();
 			if (service_client.tls_sess != -1)
-				cryptDestroySession(service_client.tls_sess);
+				destroy_session(service_client.tls_sess);
 			js_service_failure_cleanup(service, socket);
 			return;
 		}
-		unlock_ssl_cert();
 	}
 
 #if 0	/* Need to export from SBBS.DLL */
@@ -1147,7 +1144,7 @@ static void js_service_thread(void* arg)
 			lprintf(LOG_WARNING,"%04d %s !JavaScript ERROR %s"
 				,socket, js_runtime == NULL ? "creating runtime" : "initializing context", service->protocol);
 		if (service_client.tls_sess != -1)
-			cryptDestroySession(service_client.tls_sess);
+			destroy_session(service_client.tls_sess);
 		client_off(socket);
 		close_socket(socket);
 		protected_uint32_adjust(&service->clients, -1);
@@ -1859,9 +1856,6 @@ void services_thread(void* arg)
 	time_t			initialized=0;
 	ulong			total_sockets;
 	service_client_t* client;
-	char			*ssl_estr;
-	int			level;
-	BOOL			need_cert = FALSE;
 #ifdef PREFER_POLL
 	struct pollfd *fds = NULL;
 	nfds_t nfds;
@@ -1999,11 +1993,7 @@ void services_thread(void* arg)
 					lprintf(LOG_ERR, "Option error, TLS not yet supported for static services (%s)", service[i].protocol);
 					continue;
 				}
-				lock_ssl_cert();
-				if(scfg.tls_certificate == -1) {
-					need_cert = TRUE;
-				}
-				unlock_ssl_cert();
+				ssl_sync(&scfg);
 			}
 			service[i].set=xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
 			if(service[i].set == NULL) {
@@ -2064,16 +2054,6 @@ void services_thread(void* arg)
 
 		/* signal caller that we've started up successfully */
 		set_state(SERVER_READY);
-
-		if (need_cert) {
-			if (get_ssl_cert(&scfg, &ssl_estr, &level) == -1) {
-				if (ssl_estr) {
-					lprintf(level, "No TLS certificiate %s", ssl_estr);
-					free_crypt_attrstr(ssl_estr);
-				}
-			}
-			need_cert = FALSE;
-		}
 
 		lprintf(LOG_INFO,"0000 Services thread started (%lu service sockets bound)", total_sockets);
 

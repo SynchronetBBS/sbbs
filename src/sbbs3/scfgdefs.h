@@ -629,8 +629,6 @@ typedef struct
 	char**			text;
 
 	// Run-time state information (not configuration)
-	int				tls_certificate;
-	time32_t        tls_cert_file_date;
 
 	struct mqtt_cfg mqtt;
 } scfg_t;

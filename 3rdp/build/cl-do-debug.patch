@@ -1,0 +1,124 @@
+Enables debug and adds a BN check
+--- makefile.orig	2023-12-19 16:23:32.026350000 -0500
++++ makefile	2023-12-19 16:24:02.637389000 -0500
+@@ -90,7 +90,7 @@
+ # Further cc flags are gathered dynamically at runtime via the ccopts.sh
+ # script.
+ 
+-CFLAGS			= -c -D__UNIX__ -DNDEBUG -I.
++CFLAGS			= -c -D__UNIX__ -g -I.
+ CFLAGS_DEBUG	= -c -D__UNIX__ -I. -g -O1
+ CFLAGS_DEBUGGCC	= -c -D__UNIX__ -I. -ggdb3 -fno-omit-frame-pointer -O1
+ CFLAGS_ANALYSE	= -c -D__UNIX__ -I.
+@@ -144,12 +144,12 @@
+ # removed.  The actual values are explicitly given in the rules for each non-
+ # Unix target.
+ 
+-XCFLAGS			= -c -DNDEBUG -I.
++XCFLAGS			= -c -g -I.
+ XCFLAGS_DEBUG	= -c -I. -g -O0
+ XDEFINES		= $(TARGET) OBJPATH=$(OBJPATH) CROSSCOMPILE=1
+ XLDFLAGS		= CROSSCOMPILE=1
+ 
+-XSCFLAGS		= -c -DNDEBUG -I.
++XSCFLAGS		= -c -g -I.
+ XSCFLAGS_DEBUG	= -c -I. -g -O0
+ XSDEFINES		= $(SLIBNAME) OBJPATH=$(SHARED_OBJ_PATH) CROSSCOMPILE=1
+ XSLDFLAGS		= CROSSCOMPILE=1
+@@ -1934,10 +1934,10 @@
+ #
+ # make LDFLAGS='-isysroot /Developer/SDKs/MacOSX10.5.sdk' CFLAGS='-c -isysroot \
+ # /Developer/SDKs/MacOSX10.5.sdk -Os -mmacosx-version-min=10.5 -arch ppc -arch \
+-# ppc64 -arch i386 -arch x86_64 -DOSX_UNIVERSAL_BINARY -D__UNIX__ -DNDEBUG -I.'
++# ppc64 -arch i386 -arch x86_64 -DOSX_UNIVERSAL_BINARY -D__UNIX__ -I.'
+ #
+ # make LDFLAGS='-arch i386 -arch x86_64' CFLAGS='-c -O2 -mmacosx-version-min=10.5 \
+-# -arch i386 -arch x86_64 -D__UNIX__ -DNDEBUG -I.'
++# -arch i386 -arch x86_64 -D__UNIX__ -I.'
+ #
+ #			This will also require adding $(LDFLAGS) to the dylib build rule.
+ #
+@@ -2362,7 +2362,7 @@
+ 		CFLAGS="$(XCFLAGS) -DCONFIG_DATA_LITTLEENDIAN -O2 -D__Android__ \
+ 		-D_REENTRANT -MMD -MP -MF -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ \
+ 		-D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__ -march=armv7-a -mtune=xscale \
+-		-msoft-float -mthumb -g -DNDEBUG -no-canonical-prefixes \
++		-msoft-float -mthumb -g -no-canonical-prefixes \
+ 		-fno-strict-aliasing -finline-limit=64 \
+ 		-I$(ANDROID_8D_INCLUDE_SOURCES_PATH)/include \
+ 		-I$(ANDROID_8D_INCLUDE_SOURCES_PATH)/libs/armeabi-v7a/include \
+@@ -2382,7 +2382,7 @@
+ 		CFLAGS="$(XSCFLAGS) -DCONFIG_DATA_LITTLEENDIAN -O2 -D__Android__ \
+ 		-D_REENTRANT -MMD -MP -MF -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ \
+ 		-D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__ -march=armv7-a -mtune=xscale \
+-		-msoft-float -mthumb -g -DNDEBUG -no-canonical-prefixes \
++		-msoft-float -mthumb -g -no-canonical-prefixes \
+ 		-fno-strict-aliasing -finline-limit=64 \
+ 		-I$(ANDROID_9_INCLUDE_PATH)/include \
+ 		-I$(ANDROID_9_INCLUDE_PATH)/libs/armeabi-v7a/include \
+@@ -2396,7 +2396,7 @@
+ 		CFLAGS="$(XSCFLAGS) -DCONFIG_DATA_LITTLEENDIAN -O2 -D__Android__ \
+ 		-D_REENTRANT -MMD -MP -MF -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ \
+ 		-D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__ -march=armv7-a -mtune=xscale \
+-		-msoft-float -mthumb -Os -g -DNDEBUG -no-canonical-prefixes \
++		-msoft-float -mthumb -Os -g -no-canonical-prefixes \
+ 		-fno-strict-aliasing -finline-limit=64 \
+ 		-I$(ANDROID_9_INCLUDE_PATH)/include \
+ 		-I$(ANDROID_9_INCLUDE_PATH)/libs/armeabi-v7a/include \
+@@ -2426,7 +2426,7 @@
+ 
+ # eCOS: Gnu toolchain under Unix.  For a standard install you also need
+ # to change the XCFLAGS define at the start of this makefile to
+-# XCFLAGS = -c -DNDEBUG -I. -I$(ECOS_INSTALL_DIR)/include.
++# XCFLAGS = -c -I. -I$(ECOS_INSTALL_DIR)/include.
+ 
+ target-ecos-arm:
+ 	@$(MAKE) OSNAME=ecos target-init
+@@ -2979,7 +2979,7 @@
+ 							  -mno-implicit-fp -DPPC32_fp60x -DCPU=PPC32
+ VXWORKS_GCC_PPC_1_DEFS	= $(VXWORKS_GCC_ARCH_DEFS) -DRW_MULTI_THREAD \
+ 						  -D_REENTRANT=1 -D_POSIX_THREADS -D__VXWORKS_6_2__ \
+-						  -DWITH_SOAPDEFS_H -DNDEBUG=1 -DTOOL_FAMILY=gnu \
++						  -DWITH_SOAPDEFS_H -g -DTOOL_FAMILY=gnu \
+ 						  -DTOOL=gnu -D_WRS_KERNEL -DWITH_NONAMESPACES \
+ 						  -DRW_MULTI_THREAD -DCONFIG_RANDSEED
+ VXWORKS_GCC_PATH	= $(WIND_BASE)/target/h
+@@ -3002,7 +3002,7 @@
+ 						 -D_VX_CPU=_VX_PPC32 -D_WRS_VX_SMP -D_WRS_CONFIG_SMP \
+ 						 -DWITH_NONAMESPACES -DPPC32_fp60x -DTOOL_FAMILY=gnu \
+ 						 -DTOOL=gnu -DCPU_VARIANT=_ppc603_83xx -D__VXWORKS_6_9__ \
+-						 -D__VXWORKS__ -D_REENTRANT -D_POSIX_THREADS -DNDEBUG=1 \
++						 -D__VXWORKS__ -D_REENTRANT -D_POSIX_THREADS -g \
+ 						 -D__powerpc__ -DCONFIG_DATA_BIGENDIAN
+ 
+ target-vxworks-ppc-gnu-2:
+--- ./bn/bn.h.orig	2023-12-19 17:54:36.449797000 -0500
++++ ./bn/bn.h	2023-12-19 17:54:46.729612000 -0500
+@@ -13,6 +13,7 @@
+ #else
+   #include "crypt/osconfig.h"
+ #endif /* Compiler-specific includes */
++#include "kernel/thread.h"
+ 
+ /****************************************************************************
+ *																*
+@@ -373,6 +373,7 @@
+ 	   explanation in ctx_bn.c for what this is used for */
+ 	int stack[ BN_CTX_ARRAY_SIZE ];
+ 	int stackPos;
++	THREAD_HANDLE owner;
+ 	} BN_CTX;
+ 
+ /****************************************************************************
+--- context/ctx_bn.c.orig	2019-01-23 22:07:38.000000000 -0500
++++ context/ctx_bn.c	2023-12-19 19:41:45.734499000 -0500
+@@ -655,6 +655,8 @@
+ void BN_CTX_start( INOUT BN_CTX *bnCTX )
+ 	{
+ 	assert( isWritePtr( bnCTX, sizeof( BN_CTX ) ) );
++	assert( bnCTX->stackPos == 0 || bnCTX->owner == THREAD_SELF() );
++	bnCTX->owner = THREAD_SELF();
+ 
+ 	REQUIRES_V( sanityCheckBNCTX( bnCTX ) );
+ 
+ /* Instead of the DIY recursive mutexes above it's also possible to use OS
