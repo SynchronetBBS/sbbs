@@ -73,7 +73,7 @@ function dir_index(dir)
 	var sort = http_request.query["sort"];
 	if(sort !== undefined)
 		sort = parseInt(sort[0], 10);
-	var list = fb.get_list(FileBase.DETAIL.NORM, true, sort);
+	var list = fb.get_list(FileBase.DETAIL.EXTENDED, true, sort);
 	fb.close();
 	if(!list) {
 		write("file list is null");
