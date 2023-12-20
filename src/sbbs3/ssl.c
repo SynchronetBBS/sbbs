@@ -532,11 +532,11 @@ int add_private_key(scfg_t *cfg, CRYPT_SESSION csess)
 	if (cryptStatusOK(ret)) {
 		sess->next = sess_list;
 		sess->sess = csess;
-		sess_list = ret;
+		sess_list = sess;
 	}
 	else {
 		sess->next = cert_list;
-		cert_list = ret;
+		cert_list = sess;
 	}
 	pthread_mutex_unlock(&ssl_cert_list_mutex);
 	return ret;
