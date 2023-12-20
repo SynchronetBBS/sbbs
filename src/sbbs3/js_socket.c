@@ -2339,7 +2339,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 				if(p->session==-1) {
 					int ret = CRYPT_ERROR_NOTINITED;
 
-					if(ssl_sync(&scfg)) {
+					if(ssl_sync(scfg)) {
 						if((ret=cryptCreateSession(&p->session, CRYPT_UNUSED, tiny == SOCK_PROP_SSL_SESSION ? CRYPT_SESSION_SSL: CRYPT_SESSION_SSL_SERVER))==CRYPT_OK) {
 							ulong nb=0;
 							ioctlsocket(p->sock,FIONBIO,&nb);
