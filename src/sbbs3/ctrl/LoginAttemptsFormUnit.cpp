@@ -119,7 +119,7 @@ void __fastcall TLoginAttemptsForm::ListViewCompare(TObject *Sender,
     /* Decimal compare */
     if (ColumnToSort < 2 || ColumnToSort == 6) {
         int num1, num2;
-        if(ColumnToSort==6) { /* Date */
+        if(ColumnToSort==6 && Item1->Data && Item2->Data) { /* Date */
             num1 = ((login_attempt_t*)Item1->Data)->time;
             num2 = ((login_attempt_t*)Item2->Data)->time;
         } else if(ColumnToSort==0) {
@@ -205,10 +205,7 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
     ListView->Items->BeginUpdate();
 
     while(ListItem!=NULL) {
-
-    	struct in_addr addr;
-    	HOSTENT*	h;
-
+        TListItem* NextItem = ListView->GetNextItem(ListItem,sdAll,State);
     	AnsiString ip_addr 	= ListItem->SubItems->Strings[1];
 		if(!repeat) {
 			Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
@@ -241,8 +238,9 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
         login_attempt_t* attempt = (login_attempt_t*)ListItem->Data;
         if(attempt != NULL) {
             char* hostname = NULL;
-            addr.s_addr=inet_addr(ip_addr.c_str());
-            h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
+            struct in_addr addr = {};
+            addr.s_addr = inet_addr(ip_addr.c_str());
+            HOSTENT* h = gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
             if(h!=NULL)
                 hostname = h->h_name;
             char tmp[128];
@@ -256,9 +254,7 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
                 ListItem->Delete();
             }
         }
-        if(ListView->Selected == NULL)
-        	break;
-        ListItem=ListView->GetNextItem(ListItem,sdAll,State);
+        ListItem = NextItem;
     }
     ListView->Items->EndUpdate();
     Screen->Cursor=crDefault;
@@ -327,12 +323,13 @@ void __fastcall TLoginAttemptsForm::Remove1Click(TObject *Sender)
     ListView->Items->BeginUpdate();
 
     while (ListItem != NULL) {
+        TListItem* NextItem = ListView->GetNextItem(ListItem, sdAll, State);
         login_attempt_t* attempt = (login_attempt_t*)ListItem->Data;
         if(attempt != NULL) {
             loginSuccess(&login_attempt_list, &attempt->addr);
             ListItem->Delete();
         }
-        ListItem=ListView->GetNextItem(ListItem, sdAll, State);
+        ListItem = NextItem;
     }
     ListView->Items->EndUpdate();
     Screen->Cursor=crDefault;
