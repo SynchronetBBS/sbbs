@@ -513,9 +513,6 @@ static struct cert_list *get_sess_list_entry(scfg_t *cfg, CRYPT_SESSION csess)
 	ret = cert_list;
 	if (ret) {
 		cert_list = ret->next;
-		ret->next = sess_list;
-		ret->sess = csess;
-		sess_list = ret;
 	}
 	return ret;
 }
@@ -532,6 +529,15 @@ int add_private_key(scfg_t *cfg, CRYPT_SESSION csess)
 		return CRYPT_ERROR_NOTINITED;
 	}
 	ret = cryptSetAttribute(csess, CRYPT_SESSINFO_PRIVATEKEY, sess->cert);
+	if (cryptStatusOK(ret)) {
+		ret->next = sess_list;
+		ret->sess = csess;
+		sess_list = ret;
+	}
+	else {
+		ret->next = cert_list;
+		cert_list = ret;
+	}
 	pthread_mutex_unlock(&ssl_cert_list_mutex);
 	return ret;
 }
