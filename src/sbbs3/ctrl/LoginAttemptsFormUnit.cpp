@@ -59,12 +59,14 @@ void __fastcall TLoginAttemptsForm::FillListView(TObject *Sender)
     ListView->Items->BeginUpdate();
 
     for(node=login_attempt_list.first; node!=NULL; node=node->next) {
-        attempt=(login_attempt_t*)node->data;
-        if(attempt==NULL)
+        if(node->data == NULL)
             continue;
+        if((attempt = (login_attempt_t*)malloc(sizeof(*attempt))) == NULL)
+            continue;
+        *attempt = *(login_attempt_t*)node->data;
         Item=ListView->Items->Add();
         Item->Caption=AnsiString(attempt->count-attempt->dupes);
-        Item->Data=(void*)attempt->time;
+        Item->Data=(void*)attempt;
         Item->SubItems->Add(attempt->dupes);
 		if(inet_addrtop(&attempt->addr, str, sizeof(str))==NULL)
 			strcpy(str, "<invalid address>");
@@ -118,8 +120,8 @@ void __fastcall TLoginAttemptsForm::ListViewCompare(TObject *Sender,
     if (ColumnToSort < 2 || ColumnToSort == 6) {
         int num1, num2;
         if(ColumnToSort==6) { /* Date */
-            num1=(ulong)Item1->Data;
-            num2=(ulong)Item2->Data;
+            num1 = ((login_attempt_t*)Item1->Data)->time;
+            num2 = ((login_attempt_t*)Item2->Data)->time;
         } else if(ColumnToSort==0) {
             num1=Item1->Caption.ToIntDef(0);
             num2=Item2->Caption.ToIntDef(0);
@@ -199,14 +201,15 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
     ListItem=ListView->Selected;
     State << isSelected;
 
+    Screen->Cursor=crHourGlass;
+    ListView->Items->BeginUpdate();
+
     while(ListItem!=NULL) {
 
     	struct in_addr addr;
     	HOSTENT*	h;
 
     	AnsiString ip_addr 	= ListItem->SubItems->Strings[1];
-		AnsiString prot 	= ListItem->SubItems->Strings[2];
-		AnsiString username = ListItem->SubItems->Strings[3];
 		if(!repeat) {
 			Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
 			wsprintf(str,"Disallow future connections from %s?", ip_addr);
@@ -235,22 +238,30 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
 			if(res != mrOk)
 				break;
 		}
-		char* hostname = NULL;
-
-		addr.s_addr=inet_addr(ip_addr.c_str());
-		Screen->Cursor=crHourGlass;
-			h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
-		Screen->Cursor=crDefault;
-		if(h!=NULL)
-			hostname = h->h_name;
-		filter_ip(&MainForm->cfg, prot.c_str(), (AnsiString(ListItem->Caption) + " " STR_FAILED_LOGIN_ATTEMPTS).c_str(), hostname
-				,ip_addr.c_str(), username.c_str()
+        login_attempt_t* attempt = (login_attempt_t*)ListItem->Data;
+        if(attempt != NULL) {
+            char* hostname = NULL;
+            addr.s_addr=inet_addr(ip_addr.c_str());
+            h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
+            if(h!=NULL)
+                hostname = h->h_name;
+            char tmp[128];
+            AnsiString reason = ListItem->Caption + AnsiString(" " STR_FAILED_LOGIN_ATTEMPTS " in ");
+            reason += duration_estimate_to_str(attempt->time - attempt->first, tmp, sizeof tmp, 1, 1);
+            if(filter_ip(&MainForm->cfg, attempt->prot, reason.c_str(), hostname
+				,ip_addr.c_str(), attempt->user
 				,trashcan_fname(&MainForm->cfg, silent ? "ip-silent" : "ip", fname, sizeof fname)
-				,duration);
+				,duration)) {
+                loginSuccess(&login_attempt_list, &attempt->addr);
+                ListItem->Delete();
+            }
+        }
         if(ListView->Selected == NULL)
         	break;
         ListItem=ListView->GetNextItem(ListItem,sdAll,State);
     }
+    ListView->Items->EndUpdate();
+    Screen->Cursor=crDefault;
 }
 //---------------------------------------------------------------------------
 
@@ -274,7 +285,7 @@ void __fastcall TLoginAttemptsForm::ResolveHostnameMenuItemClick(
 
        	addr.s_addr=inet_addr(ip_addr);
 		Screen->Cursor=crHourGlass;
-	    	h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
+        h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
 		Screen->Cursor=crDefault;
         if(h!=NULL)
             hostname = h->h_name;
@@ -295,6 +306,36 @@ void __fastcall TLoginAttemptsForm::ClearListMenuItemClick(TObject *Sender)
     ListView->Items->BeginUpdate();
     ListView->Items->Clear();
     ListView->Items->EndUpdate();    
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TLoginAttemptsForm::ListViewDeletion(TObject *Sender,
+      TListItem *Item)
+{
+    free(Item->Data);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TLoginAttemptsForm::Remove1Click(TObject *Sender)
+{
+    TItemStates State;
+
+    TListItem* ListItem = ListView->Selected;
+    State << isSelected;
+
+    Screen->Cursor=crHourGlass;
+    ListView->Items->BeginUpdate();
+
+    while (ListItem != NULL) {
+        login_attempt_t* attempt = (login_attempt_t*)ListItem->Data;
+        if(attempt != NULL) {
+            loginSuccess(&login_attempt_list, &attempt->addr);
+            ListItem->Delete();
+        }
+        ListItem=ListView->GetNextItem(ListItem, sdAll, State);
+    }
+    ListView->Items->EndUpdate();
+    Screen->Cursor=crDefault;
 }
 //---------------------------------------------------------------------------
 

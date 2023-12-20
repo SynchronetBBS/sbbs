@@ -61,6 +61,7 @@ object LoginAttemptsForm: TLoginAttemptsForm
     ViewStyle = vsReport
     OnColumnClick = ListViewColumnClick
     OnCompare = ListViewCompare
+    OnDeletion = ListViewDeletion
   end
   object PopupMenu: TPopupMenu
     Left = 168
@@ -91,6 +92,11 @@ object LoginAttemptsForm: TLoginAttemptsForm
     object ClearListMenuItem: TMenuItem
       Caption = 'Clear List'
       OnClick = ClearListMenuItemClick
+    end
+    object Remove1: TMenuItem
+      Caption = 'Remove'
+      ShortCut = 46
+      OnClick = Remove1Click
     end
   end
 end
