@@ -3255,9 +3255,11 @@ static enum get_fullpath get_fullpath(http_session_t * session)
 			case PARSED_VPATH_FULL:
 				return FULLPATH_VALID;
 			default:
-				if(getfname(startup->file_index_script) == startup->file_index_script)	// no path specified
-					SAFEPRINTF2(str, "%s%s", scfg.exec_dir, startup->file_index_script);
-				else
+				if(getfname(startup->file_index_script) == startup->file_index_script)	{ // no path specified
+					SAFEPRINTF2(str, "%s%s", scfg.mods_dir, startup->file_index_script);
+					if(!scfg.mods_dir[0] || !fexist(str))
+						SAFEPRINTF2(str, "%s%s", scfg.exec_dir, startup->file_index_script);
+				} else
 					SAFECOPY(str, startup->file_index_script);
 				break;
 		}
