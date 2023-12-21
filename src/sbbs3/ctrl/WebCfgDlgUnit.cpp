@@ -74,7 +74,7 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
         MaxClientsEdit->Text="infinite";
     else
         MaxClientsEdit->Text=AnsiString((int)MainForm->web_startup.max_clients);
-    MaxInactivityEdit->Text=AnsiString((int)MainForm->web_startup.max_inactivity);
+    MaxInactivityEdit->Text = duration_to_str(MainForm->web_startup.max_inactivity, str, sizeof str);
 	PortEdit->Text=AnsiString((int)MainForm->web_startup.port);
     TlsPortEdit->Text=AnsiString((int)MainForm->web_startup.tls_port);
     AutoStartCheckBox->Checked=MainForm->WebAutoStart;
@@ -94,7 +94,7 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
     ServerSideJsExtEdit->Text=AnsiString(MainForm->web_startup.ssjs_ext);
 
     CGIContentEdit->Text=AnsiString(MainForm->web_startup.default_cgi_content);
-    CGIMaxInactivityEdit->Text=AnsiString((int)MainForm->web_startup.max_cgi_inactivity);
+    CGIMaxInactivityEdit->Text = duration_to_str(MainForm->web_startup.max_cgi_inactivity, str, sizeof str);
 
     strListCombine(MainForm->web_startup.index_file_name, str, sizeof(str)-1, ",");
     IndexFileEdit->Text=AnsiString(str);
@@ -127,7 +127,7 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
     iniFreeStringList(MainForm->web_startup.tls_interfaces);
     MainForm->web_startup.tls_interfaces = strListSplitCopy(NULL, TlsInterfaceEdit->Text.c_str(), ",");
     MainForm->web_startup.max_clients=MaxClientsEdit->Text.ToIntDef(10);
-    MainForm->web_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(WEB_DEFAULT_MAX_INACTIVITY);
+    MainForm->web_startup.max_inactivity = parse_duration(MaxInactivityEdit->Text.c_str());
     MainForm->web_startup.port=PortEdit->Text.ToIntDef(IPPORT_HTTP);
     MainForm->web_startup.tls_port=TlsPortEdit->Text.ToIntDef(IPPORT_HTTPS);
     MainForm->WebAutoStart=AutoStartCheckBox->Checked;
@@ -154,7 +154,7 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
     SAFECOPY(MainForm->web_startup.default_cgi_content
         ,CGIContentEdit->Text.c_str());
     MainForm->web_startup.max_cgi_inactivity
-        =CGIMaxInactivityEdit->Text.ToIntDef(WEB_DEFAULT_MAX_CGI_INACTIVITY);
+        = parse_duration(CGIMaxInactivityEdit->Text.c_str());
 
     strListFree(&MainForm->web_startup.index_file_name);
     strListSplitCopy(&MainForm->web_startup.index_file_name,

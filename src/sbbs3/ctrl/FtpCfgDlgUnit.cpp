@@ -60,8 +60,8 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
     }
 
     MaxClientsEdit->Text=AnsiString((int)MainForm->ftp_startup.max_clients);
-    MaxInactivityEdit->Text=AnsiString((int)MainForm->ftp_startup.max_inactivity);
-    QwkTimeoutEdit->Text=AnsiString((int)MainForm->ftp_startup.qwk_timeout);
+    MaxInactivityEdit->Text = duration_to_str(MainForm->ftp_startup.max_inactivity, str, sizeof str);
+    QwkTimeoutEdit->Text = duration_to_str(MainForm->ftp_startup.qwk_timeout, str, sizeof str);
 	PortEdit->Text=AnsiString((int)MainForm->ftp_startup.port);
     AutoStartCheckBox->Checked=MainForm->FtpAutoStart;
     LogFileCheckBox->Checked=MainForm->FtpLogFile;
@@ -119,8 +119,8 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
         MainForm->ftp_startup.pasv_ip_addr.s_addr=0;
 
     MainForm->ftp_startup.max_clients=MaxClientsEdit->Text.ToIntDef(FTP_DEFAULT_MAX_CLIENTS);
-    MainForm->ftp_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(FTP_DEFAULT_MAX_INACTIVITY);
-    MainForm->ftp_startup.qwk_timeout=QwkTimeoutEdit->Text.ToIntDef(FTP_DEFAULT_QWK_TIMEOUT);
+    MainForm->ftp_startup.max_inactivity = parse_duration(MaxInactivityEdit->Text.c_str());
+    MainForm->ftp_startup.qwk_timeout = parse_duration(QwkTimeoutEdit->Text.c_str());
     MainForm->ftp_startup.port=PortEdit->Text.ToIntDef(IPPORT_FTP);
     MainForm->ftp_startup.max_concurrent_connections = MaxConConEdit->Text.ToIntDef(0);
     MainForm->FtpAutoStart=AutoStartCheckBox->Checked;

@@ -27,6 +27,7 @@
 #include "MailCfgDlgUnit.h"
 #include "TextFileEditUnit.h"
 #include "SoundCfgDlgUnit.h"
+#include "genwrap.h"
 #include <stdio.h>			// sprintf()
 #include <mmsystem.h>		// sndPlaySound()
 //---------------------------------------------------------------------
@@ -69,7 +70,7 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
         NetworkInterfaceEdit->Text=AnsiString(str);
     }
     MaxClientsEdit->Text=AnsiString(MainForm->mail_startup.max_clients);
-    MaxInactivityEdit->Text=AnsiString(MainForm->mail_startup.max_inactivity);
+    MaxInactivityEdit->Text=duration_to_str(MainForm->mail_startup.max_inactivity, str, sizeof str);
     if(MainForm->mail_startup.max_recipients == 0)
         MaxRecipientsEdit->Text="N/A";
     else
@@ -107,13 +108,13 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
         DNSServerEdit->Text=AnsiString(MainForm->mail_startup.dns_server);
     else
         DNSServerEdit->Text="<auto>";
-    ConnectTimeoutEdit->Text=AnsiString(MainForm->mail_startup.connect_timeout);
+    ConnectTimeoutEdit->Text = duration_to_str(MainForm->mail_startup.connect_timeout, str, sizeof str);
     InboundSoundEdit->Text=AnsiString(MainForm->mail_startup.inbound_sound);
     OutboundSoundEdit->Text=AnsiString(MainForm->mail_startup.outbound_sound);
     POP3SoundEdit->Text=AnsiString(MainForm->mail_startup.pop3_sound);
     DeliveryAttemptsEdit->Text
         =AnsiString(MainForm->mail_startup.max_delivery_attempts);
-    RescanFreqEdit->Text=AnsiString(MainForm->mail_startup.rescan_frequency);
+    RescanFreqEdit->Text = duration_to_str(MainForm->mail_startup.rescan_frequency, str, sizeof str);
     DefaultUserEdit->Text=AnsiString(MainForm->mail_startup.default_user);
     BLSubjectEdit->Text=AnsiString(MainForm->mail_startup.dnsbl_tag);
     BLHeaderEdit->Text=AnsiString(MainForm->mail_startup.dnsbl_hdr);
@@ -214,12 +215,12 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->mail_startup.pop3s_port=TLSPOP3PortEdit->Text.ToIntDef(IPPORT_POP3S);
     MainForm->mail_startup.relay_port=RelayPortEdit->Text.ToIntDef(IPPORT_SMTP);
     MainForm->mail_startup.max_clients=MaxClientsEdit->Text.ToIntDef(MAIL_DEFAULT_MAX_CLIENTS);
-    MainForm->mail_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(MAIL_DEFAULT_MAX_INACTIVITY);
+    MainForm->mail_startup.max_inactivity=parse_duration(MaxInactivityEdit->Text.c_str());
     MainForm->mail_startup.max_recipients=MaxRecipientsEdit->Text.ToIntDef(MAIL_DEFAULT_MAX_RECIPIENTS);
     MainForm->mail_startup.max_msg_size=parse_byte_count(MaxMsgSizeEdit->Text.c_str(), 1);
     MainForm->mail_startup.max_msgs_waiting=MaxMsgsWaitingEdit->Text.ToIntDef(0);
     MainForm->mail_startup.max_delivery_attempts=DeliveryAttemptsEdit->Text.ToIntDef(MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS);
-    MainForm->mail_startup.rescan_frequency=RescanFreqEdit->Text.ToIntDef(MAIL_DEFAULT_RESCAN_FREQUENCY);
+    MainForm->mail_startup.rescan_frequency = parse_duration(RescanFreqEdit->Text.c_str());
     MainForm->mail_startup.max_concurrent_connections=MaxConConEdit->Text.ToIntDef(0);
 
     SAFECOPY(MainForm->mail_startup.default_user
@@ -229,7 +230,7 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
             ,DNSServerEdit->Text.c_str());
     else
         MainForm->mail_startup.dns_server[0]=0;
-    MainForm->mail_startup.connect_timeout=ConnectTimeoutEdit->Text.ToIntDef(0);
+    MainForm->mail_startup.connect_timeout = parse_duration(ConnectTimeoutEdit->Text.c_str());
     SAFECOPY(MainForm->mail_startup.relay_server
         ,RelayServerEdit->Text.c_str());
     SAFECOPY(MainForm->mail_startup.relay_user
