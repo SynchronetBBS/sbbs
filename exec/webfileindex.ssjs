@@ -107,7 +107,7 @@ function dir_index(dir)
 		write('<td class="desc" onclick="showExtDesc(event)">');
 		write(utf8_encode(f.desc || ''));
 		if (f.extdesc !== undefined) {
-			write('<div class="extdesc invisible">' + utf8_encode(f.extdesc) + '</div>');
+			write('<div class="extdesc invisible">' + utf8_encode(f.extdesc.replace(/\x01\//g, "\n").replace(/\x01./g, '')) + '</div>');
 		}
 		write('</td>');
 		writeln("</tr>");
