@@ -1217,8 +1217,8 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 
 static jsSyncMethodSpec js_global_functions[] = {
 	{"log",				js_log,				1,	JSTYPE_STRING,	JSDOCSTR("[<i>number</i> level=LOG_INFO,] value [,value]")
-	,JSDOCSTR("Add a line of text to the server and/or system log, "
-		"<i>values</i> are typically string constants or variables, "
+	,JSDOCSTR("Add a line of text to the server and/or system log.<br>"
+		"<i>values</i> are typically string constants or variables (each logged as a separate log message),<br>"
 		"<i>level</i> is the severity of the message to be logged, one of the globally-defined values, in decreasing severity:<br>"
 		"<tt>LOG_EMERG, LOG_ALERT, LOG_CRIT, LOG_ERR, LOG_WARNING, LOG_NOTICE, LOG_INFO, and LOG_DEBUG</tt> (default: <tt>LOG_INFO</tt>)")
 	,311
@@ -1246,7 +1246,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,311
 	},
     {"printf",          js_printf,          1,	JSTYPE_STRING,	JSDOCSTR("<i>string</i> format [,value][,value]")
-	,JSDOCSTR("Send a C-style formatted string of text to the output stream")
+	,JSDOCSTR("Send a C-style formatted string of text to the output stream.  See also the <tt>format()</tt> function.")
 	,310
 	},
 	{"alert",			js_alert,			1,	JSTYPE_VOID,	JSDOCSTR("value")

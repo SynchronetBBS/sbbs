@@ -4925,7 +4925,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,310
 	},		
 	{"lfexpand",		js_lfexpand,		1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("Expand line-feeds (LF) to carriage-return/line-feeds (CRLF), returns modified string")
+	,JSDOCSTR("Expand sole line-feeds (LF) to carriage-return/line-feed sequences (CRLF), returns modified string")
 	,310
 	},
 	{"wildmatch",		js_wildmatch,		2,	JSTYPE_BOOLEAN, JSDOCSTR("[<i>bool</i> case_sensitive=false,] filename [,pattern='*'] [,path=false]")
@@ -5126,7 +5126,8 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"word_wrap",		js_word_wrap,		1,	JSTYPE_STRING,	JSDOCSTR("text [,line_length=79 [,orig_line_length=79 [,<i>bool</i> handle_quotes=true [,<i>bool</i> is_utf8=false]]]]")
 	,JSDOCSTR("Return a word-wrapped version of the <i>text</i> string argument optionally handing quotes magically, "
 		"<i>line_length</i> defaults to <i>79</i>, <i>orig_line_length</i> defaults to <tt>79</tt>, "
-		"<i>handle_quotes</i> defaults to <tt>true</tt>, and <i>is_utf8</i> defaults to <tt>false</tt>")
+		"<i>handle_quotes</i> defaults to <tt>true</tt>, and <i>is_utf8</i> defaults to <tt>false</tt>"
+		"<p>Note: if the original text does not contain any carriage-return (CR) characters, lines are wrapped with sole line-feed (LF) characters.")
 	,311
 	},
 	{"quote_msg",		js_quote_msg,		1,	JSTYPE_STRING,	JSDOCSTR("text [,line_length=79] [,prefix=\" > \"]")
