@@ -5785,13 +5785,13 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					// Refresh things on the screen
 					console.clear("\x01n");
 					// Display the message header and key help line again
-					pReader.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-					pReader.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+					this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+					this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 					// Display the scrollbar again to refresh it on the screen
-					if (pReader.userSettings.useEnhReaderScrollbar)
+					if (this.userSettings.useEnhReaderScrollbar)
 					{
-						retObj.solidBlockStartRow = pReader.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-						pReader.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+						retObj.solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+						this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
 					}
 					else
 					{
@@ -6209,17 +6209,18 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 								}
 								break;
 							case this.readerOpMenuOptValues.editAuthorUserAccount: // Edit the local user account
+								console.gotoxy(1, console.screen_rows);
 								userEdit(msgHeader, pOffset, this);
 								// Refresh things on the screen
 								console.clear("\x01n");
 								// Display the message header and key help line again
-								pReader.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
-								pReader.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+								this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+								this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 								// Display the scrollbar again to refresh it on the screen
-								if (pReader.userSettings.useEnhReaderScrollbar)
+								if (this.userSettings.useEnhReaderScrollbar)
 								{
-									retObj.solidBlockStartRow = pReader.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
-									pReader.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+									retObj.solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+									this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
 								}
 								else
 								{
