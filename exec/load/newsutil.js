@@ -74,6 +74,9 @@ function write_news_header(hdr,writeln)
 				case "CP866 2":
 					charset = "KOI8-R";
 					break;
+				case "LATIN-1 2":
+					charset = "ISO-8859-1";
+					break;
 				default:
 					charset = "IBM437";
 					break;
