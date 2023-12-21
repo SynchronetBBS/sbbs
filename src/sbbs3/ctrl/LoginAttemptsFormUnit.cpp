@@ -197,6 +197,7 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
     TItemStates State;
 	static uint duration = MainForm->global.login_attempt.filter_duration;
 	static bool silent;
+	static bool apply_all;
 
     ListItem=ListView->Selected;
     State << isSelected;
@@ -224,6 +225,7 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
 			if(ListView->SelCount > 1) {
 				CodeInputForm->LeftCheckBox->Visible = true;
 				CodeInputForm->LeftCheckBox->Caption = "All Selected";
+				CodeInputForm->LeftCheckBox->Checked = apply_all;
 				CodeInputForm->LeftCheckBox->Hint = "Filter all selected addresses";
 				CodeInputForm->LeftCheckBox->ShowHint = true;
 			}
@@ -231,6 +233,7 @@ void __fastcall TLoginAttemptsForm::FilterIpMenuItemClick(TObject *Sender)
 			duration = parse_duration(CodeInputForm->Edit->Text.c_str());
 			silent = CodeInputForm->RightCheckBox->Checked;
 			repeat = CodeInputForm->LeftCheckBox->Checked;
+			apply_all = repeat;
 			delete CodeInputForm;
 			if(res != mrOk)
 				break;
