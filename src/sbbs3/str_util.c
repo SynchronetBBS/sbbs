@@ -48,6 +48,10 @@ char* remove_ctrl_a(const char *str, char *dest)
 			/* convert non-destructive backspace to a destructive backspace */
 			if(str[i]=='<' && j)	
 				j--;
+			else if(str[i] == '/') { // Conditional new-line
+				dest[j++] = '\r';
+				dest[j++] = '\n';
+			}
 		}
 		else dest[j++]=str[i]; 
 	}

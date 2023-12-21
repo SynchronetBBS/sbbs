@@ -118,6 +118,9 @@ int main(int argc, char **argv)
 				case ']':
 					fputc('\n',out);
 					break;
+				case '/': // Conditional new-line
+					fprintf(out,"\r\n");
+					break;
 				case 'J':				
 					ANSI;	
 					fprintf(out,"J");	/* clear to EOS */
