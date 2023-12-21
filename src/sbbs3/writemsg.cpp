@@ -293,7 +293,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 	if(editor!=NULL)
 		*editor=NULL;
 
-	if((buf=(char*)malloc((cfg.level_linespermsg[useron_level]*MAX_LINE_LEN) + 1))
+	if((buf=(char*)malloc(strlen(top) + (cfg.level_linespermsg[useron_level]*MAX_LINE_LEN) + 1))
 		==NULL) {
 		errormsg(WHERE,ERR_ALLOC,fname
 			,(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN) +1);
@@ -530,6 +530,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 
 		bprintf(text[EnterMsgNowRaw]
 			,(ulong)cfg.level_linespermsg[useron_level]*MAX_LINE_LEN);
+		rioctl(IOFI);       // flush input buffer (e.g. stray LFs in input)
 		if(top[0] && !(mode&WM_NOTOP)) {
 			strcpy((char *)buf,top);
 			l=strlen((char *)buf);
@@ -555,6 +556,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			outchar(c);
 			buf[l++]=c;
 		}
+		console &= ~CON_RAW_IN; // Turn off raw input mode in case the input exceeded length limit
 		buf[l]=0;
 		if(l==(ulong)cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)
 			bputs(text[OutOfBytes]);
