@@ -1034,7 +1034,7 @@ static int close_session_socket(http_session_t *session)
 			SLEEP(1);
 		}
 		pthread_mutex_unlock(&session->outbuf_write);
-		HANDLE_CRYPT_CALL(destroy_session(session->tls_sess), session, "destroying session");
+		HANDLE_CRYPT_CALL(destroy_session(lprintf, session->tls_sess), session, "destroying session");
 	}
 	return close_socket(&session->socket);
 }
@@ -6539,7 +6539,7 @@ static int close_session_no_rb(http_session_t *session)
 {
 	if (session) {
 		if (session->is_tls)
-			HANDLE_CRYPT_CALL(destroy_session(session->tls_sess), session, "destroying session");
+			HANDLE_CRYPT_CALL(destroy_session(lprintf, session->tls_sess), session, "destroying session");
 		return close_socket(&session->socket);
 	}
 	return 0;
@@ -6610,9 +6610,9 @@ void http_session_thread(void* arg)
 			}
 		}
 #endif
-		if (do_cryptInit()) {
+		if (do_cryptInit(lprintf)) {
 			HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY), &session, "disabling certificate verification");
-			HANDLE_CRYPT_CALL(add_private_key(&scfg, session.tls_sess), &session, "setting private key");
+			HANDLE_CRYPT_CALL(add_private_key(&scfg, lprintf, session.tls_sess), &session, "setting private key");
 		}
 		BOOL nodelay=TRUE;
 		setsockopt(session.socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
@@ -7227,7 +7227,7 @@ void web_server(void* arg)
 		 */
 		xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "Web Server", open_socket, startup->seteuid, NULL);
 		if (startup->options & WEB_OPT_ALLOW_TLS) {
-			if(ssl_sync(&scfg))
+			if(ssl_sync(&scfg, lprintf))
 				xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", open_socket, startup->seteuid, "TLS");
 		}
 

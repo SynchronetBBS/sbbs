@@ -37,12 +37,12 @@ extern "C" {
 DLLEXPORT void DLLCALL free_crypt_attrstr(char *attr);
 DLLEXPORT char* DLLCALL get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr);
 DLLEXPORT char* DLLCALL get_crypt_error(CRYPT_HANDLE sess);
-DLLEXPORT int DLLCALL do_cryptInit(void);
+DLLEXPORT bool DLLCALL do_cryptInit(int (*lprintf)(int level, const char* fmt, ...));
 DLLEXPORT bool DLLCALL is_crypt_initialized(void);
 DLLEXPORT bool DLLCALL get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const char *action, int *level);
-DLLEXPORT int add_private_key(scfg_t *cfg, CRYPT_SESSION csess);
-DLLEXPORT int destroy_session(CRYPT_SESSION csess);
-DLLEXPORT bool ssl_sync(scfg_t *scfg);
+DLLEXPORT int add_private_key(scfg_t *cfg, int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSION csess);
+DLLEXPORT int destroy_session(int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSION csess);
+DLLEXPORT bool ssl_sync(scfg_t *scfg, int (*lprintf)(int level, const char* fmt, ...));
 
 #if defined(__cplusplus)
 }

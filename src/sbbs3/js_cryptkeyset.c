@@ -454,7 +454,7 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	JSString *fn;
 	size_t fnslen;
 
-	do_cryptInit();
+	do_cryptInit(lprintf);
 	obj=JS_NewObject(cx, &js_cryptkeyset_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 	if(argc < 1 || argc > 2) {

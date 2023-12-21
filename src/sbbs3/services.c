@@ -1096,8 +1096,8 @@ static void js_service_thread(void* arg)
 			}
 		}
 #endif
-		if (ssl_sync(&scfg)) {
-			HANDLE_CRYPT_CALL(add_private_key(&scfg, service_client.tls_sess), &service_client, "setting private key");
+		if (ssl_sync(&scfg, lprintf)) {
+			HANDLE_CRYPT_CALL(add_private_key(&scfg, lprintf, service_client.tls_sess), &service_client, "setting private key");
 		}
 		BOOL nodelay=TRUE;
 		setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
@@ -1105,7 +1105,7 @@ static void js_service_thread(void* arg)
 		HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_NETWORKSOCKET, socket), &service_client, "setting network socket");
 		if (!HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_ACTIVE, 1), &service_client, "setting session active")) {
 			if (service_client.tls_sess != -1)
-				destroy_session(service_client.tls_sess);
+				destroy_session(lprintf, service_client.tls_sess);
 			js_service_failure_cleanup(service, socket);
 			return;
 		}
@@ -1144,7 +1144,7 @@ static void js_service_thread(void* arg)
 			lprintf(LOG_WARNING,"%04d %s !JavaScript ERROR %s"
 				,socket, js_runtime == NULL ? "creating runtime" : "initializing context", service->protocol);
 		if (service_client.tls_sess != -1)
-			destroy_session(service_client.tls_sess);
+			destroy_session(lprintf, service_client.tls_sess);
 		client_off(socket);
 		close_socket(socket);
 		protected_uint32_adjust(&service->clients, -1);
@@ -1993,7 +1993,7 @@ void services_thread(void* arg)
 					lprintf(LOG_ERR, "Option error, TLS not yet supported for static services (%s)", service[i].protocol);
 					continue;
 				}
-				ssl_sync(&scfg);
+				ssl_sync(&scfg, lprintf);
 			}
 			service[i].set=xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
 			if(service[i].set == NULL) {

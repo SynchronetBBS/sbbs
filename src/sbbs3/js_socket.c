@@ -215,7 +215,7 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 	size_t i;
 
 	if(p->session != -1) {
-		destroy_session(p->session);
+		destroy_session(lprintf, p->session);
 		p->session=-1;
 	}
 
@@ -2306,7 +2306,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			break;
 		case SOCK_PROP_DESCRIPTOR:
 			if(p->session != -1) {
-				destroy_session(p->session);
+				destroy_session(lprintf, p->session);
 				p->session=-1;
 			}
 			if(JS_ValueToInt32(cx,*vp,&i))
@@ -2340,7 +2340,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 					int ret = CRYPT_ERROR_NOTINITED;
 					scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
-					if(ssl_sync(scfg)) {
+					if(ssl_sync(scfg, lprintf)) {
 						if((ret=cryptCreateSession(&p->session, CRYPT_UNUSED, tiny == SOCK_PROP_SSL_SESSION ? CRYPT_SESSION_SSL: CRYPT_SESSION_SSL_SERVER))==CRYPT_OK) {
 							ulong nb=0;
 							ioctlsocket(p->sock,FIONBIO,&nb);
@@ -2360,7 +2360,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
                                                                                ret = CRYPT_ERROR_NOTAVAIL;
                                                                        }
                                                                        else {
-										ret = add_private_key(scfg, p->session);
+										ret = add_private_key(scfg, lprintf, p->session);
 										if (ret != CRYPT_OK) {
 											GCES(ret, p, estr, "setting private key");
 										}
@@ -2378,7 +2378,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 					}
 					if (ret != CRYPT_OK) {
 						if (p->session != -1)
-							destroy_session(p->session);
+							destroy_session(lprintf, p->session);
 						p->session=-1;
 						ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
 						do_js_close(cx, p, false);
@@ -2387,7 +2387,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			}
 			else {
 				if(p->session != -1) {
-					destroy_session(p->session);
+					destroy_session(lprintf, p->session);
 					p->session=-1;
 					ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
 					do_js_close(cx, p, false);

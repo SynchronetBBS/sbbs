@@ -286,7 +286,7 @@ static int ftp_close_socket(SOCKET* sock, CRYPT_SESSION *sess, int line)
 	int		result;
 
 	if (*sess != -1) {
-		destroy_session(*sess);
+		destroy_session(lprintf, *sess);
 		*sess = -1;
 	}
 
@@ -1150,7 +1150,7 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	int status;
 	char *estr = NULL;
 
-	if (!ssl_sync(&scfg)) {
+	if (!ssl_sync(&scfg, lprintf)) {
 		if (resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;
@@ -1163,15 +1163,15 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	}
 	if ((status = cryptSetAttribute(*sess, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
 		GCES(status, *sock, *sess, estr, "disabling certificate verification");
-		destroy_session(*sess);
+		destroy_session(lprintf, *sess);
 		*sess = -1;
 		if(resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;
 	}
-	if ((status=add_private_key(&scfg, *sess)) != CRYPT_OK) {
+	if ((status=add_private_key(&scfg, lprintf, *sess)) != CRYPT_OK) {
 		GCES(status, *sock, *sess, estr, "setting private key");
-		destroy_session(*sess);
+		destroy_session(lprintf, *sess);
 		*sess = -1;
 		if (resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
@@ -1183,7 +1183,7 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	ioctlsocket(*sock,FIONBIO,&nb);
 	if ((status = cryptSetAttribute(*sess, CRYPT_SESSINFO_NETWORKSOCKET, *sock)) != CRYPT_OK) {
 		GCES(status, *sock, *sess, estr, "setting network socket");
-		destroy_session(*sess);
+		destroy_session(lprintf, *sess);
 		*sess = -1;
 		if (resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
@@ -2677,7 +2677,7 @@ static void ctrl_thread(void* arg)
 				continue;
 			}
 			sockprintf(sock,sess,"200 Accepted");
-			destroy_session(sess);
+			destroy_session(lprintf, sess);
 			sess = -1;
 			continue;
 		}
@@ -2707,7 +2707,7 @@ static void ctrl_thread(void* arg)
 			filepos=0;
 			sockprintf(sock,sess,"220 Control session re-initialized. Ready for re-login.");
 			if (sess != -1) {
-				destroy_session(sess);
+				destroy_session(lprintf, sess);
 				sess = -1;
 			}
 			got_pbsz = FALSE;

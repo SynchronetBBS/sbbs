@@ -5059,7 +5059,7 @@ void bbs_thread(void* arg)
 	if(startup->options&BBS_OPT_ALLOW_SSH) {
 		CRYPT_KEYSET	ssh_keyset;
 
-		if(!do_cryptInit()) {
+		if(!do_cryptInit(lprintf)) {
 			lprintf(LOG_ERR, "SSH cryptInit failure");
 			goto NO_SSH;
 		}
