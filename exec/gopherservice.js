@@ -13,6 +13,8 @@
 load("sbbsdefs.js");
 load("nodedefs.js");
 
+"use strict";
+
 const REVISION = "1.18";
 const GOPHER_PORT = client.socket.local_port;
 
@@ -281,9 +283,10 @@ switch(field[0]) {
 				);
 		writeln(format("0%s\tnull\tnull\tnull\r\n",msginfo));
 **/
+		var hdr_list = msgbase.get_all_msg_headers();
 		first = msgbase.first_msg;
 		for(i=msgbase.last_msg;i>=first;i--) {
-			hdr=msgbase.get_msg_header(false,i);
+			hdr = hdr_list[i];
 			if(hdr==null)
 				continue;
 			if(hdr.attr&MSG_DELETE)
