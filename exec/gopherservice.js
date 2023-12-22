@@ -84,8 +84,10 @@ if((term=request.indexOf("\t+"))>=0) {
 if(gopher_plus)
 	writeln("+-1");	// indicates '.' terminated data
 
+if(request[0] == '/')
+	request = request.slice(1);
 
-if(request=="" || request=='/') { /* "root" */
+if(request=="") { /* "root" */
 	if (msg_area.grp_list.length) {
 		writeln(prefix + 'iMessage Groups\t\tfake\t1');
 		for(g in msg_area.grp_list) {
