@@ -413,6 +413,12 @@ static CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, const c
 	ssl_sync(cfg, lprintf);
 	lock_ssl_cert_write();
 	cert_entry = malloc(sizeof(*cert_entry));
+	if(cert_entry == NULL) {
+		unlock_ssl_cert_write(lprintf);
+		free(cert_entry);
+		lprintf(LOG_CRIT, "%s line %d: FAILED TO ALLOCATE %u bytes of memory", __FUNCTION__, __LINE__, sizeof *cert_entry);
+		return -1;
+	}
 	cert_entry->sess = -1;
 	cert_entry->epoch = cert_epoch;
 	cert_entry->next = NULL;
