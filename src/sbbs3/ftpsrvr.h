@@ -71,7 +71,7 @@ static struct init_field ftp_init_fields[] = {
 #define FTP_OPT_LOOKUP_PASV_IP		(1<<9)	/* resolve public IP address for PASV response */
 #define FTP_OPT_NO_HOST_LOOKUP		(1<<11)
 #define FTP_OPT_NO_RECYCLE			(1<<27)	/* Disable recycling of server		*/
-#define FTP_OPT_MUTE				(1<<31)
+#define FTP_OPT_MUTE				(1U<<31)
 
 /* ftp_startup_t.options bits that require re-init/recycle when changed */
 #define FTP_INIT_OPTS	(0)

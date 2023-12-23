@@ -237,7 +237,7 @@
 #define SUB_EDIT		(1<<28)		/* Users can edit message text after posting */
 #define SUB_EDITLAST	(1<<29)		/* Users can edit last message only */
 #define SUB_NOUSERSIG	(1<<30)		/* Suppress user signatures */
-#define SUB_HDRMOD		(1<<31)		/* Modified sub-board header info (SCFG) */
+#define SUB_HDRMOD		(1U<<31)	/* Modified sub-board header info (SCFG) */
 
                                     /* Bit values for lib[x].misc */
 #define LIB_DIRS	(1<<0) 			/* Local directory (sub-directory of lib parent) access */
@@ -416,7 +416,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define XTRN_UART		(1<<25)		/* Enable the virtual UART driver		*/
 #define XTRN_FOSSIL		(1<<26)		/* Enable the int14h/FOSSIL driver		*/
 #define XTRN_NODISPLAY	(1<<27)		/* Disable local screen/display			*/
-#define XTRN_CONIO		(1<<31)		/* Intercept Windows Console I/O (Drwy)	*/
+#define XTRN_CONIO		(1U<<31)	/* Intercept Windows Console I/O (Drwy)	*/
 
 									/* Bits in user.qwk 					*/
 #define QWK_FILES	(1<<0) 			/* Include new files list				*/
@@ -496,7 +496,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define CON_MOUSE_CLK_PASSTHRU	(1<<24)	// Pass-through unhandled mouse button-click reports
 #define CON_MOUSE_REL_PASSTHRU	(1<<25)	// Pass-through unhandled mouse button-release reports
 #define CON_MOUSE_SCROLL		(1<<26)	// Mouse-reports enabled for non-hotspots (e.g. scroll-wheel)
-#define CON_CR_CLREOL			(1<<31)	// outchar('\r') clears to end-of-line first
+#define CON_CR_CLREOL			(1U<<31)// outchar('\r') clears to end-of-line first
 
 							/* Number of milliseconds						*/
 #define DELAY_AUTOHG 1500	/* Delay for auto-hangup (xfer) 				*/
@@ -571,7 +571,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SWAP_DELETE	(1<<27)		/* Swap Delete and Backspace keys		*/
 #define ICE_COLOR	(1<<28)		/* Bright background color support		*/
 #define UTF8		(1<<29)		/* UTF-8 terminal						*/
-#define MOUSE		(1<<31)		/* Mouse supported terminal				*/
+#define MOUSE		(1U<<31)	/* Mouse supported terminal				*/
 
 #define TERM_FLAGS		(ANSI|COLOR|RIP|WIP|HTML|SWAP_DELETE|ICE_COLOR|MOUSE|CHARSET_FLAGS)
 #define CHARSET_FLAGS	(NO_EXASCII|PETSCII|UTF8)
@@ -629,7 +629,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SS_SSH			(1<<28) /* Current login via SSH						*/
 #define SS_MOFF			(1<<29) /* Disable automatic messages					*/
 #define SS_QWKLOGON		(1<<30) /* QWK logon									*/
-#define SS_FASTLOGON	(1<<31) /* Fast logon									*/
+#define SS_FASTLOGON	(1U<<31)/* Fast logon									*/
 
 								/* Bits in 'mode' for getkey and getstr     */
 #define K_NONE		0			/* Use as a place holder for no mode flags	*/
@@ -751,7 +751,7 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_FOSSIL	XTRN_FOSSIL
 #define EX_NODISPLAY XTRN_NODISPLAY
 #define EX_NOLOG	(1<<30)		/* Don't log intercepted stdio				*/
-#define EX_CONIO	(1<<31)		/* Intercept Windows console I/O (doorway)	*/
+#define EX_CONIO	(1U<<31)	/* Intercept Windows console I/O (doorway)	*/
 #define EX_UNSPECIFIED	-1
 
 #if defined(__unix__)

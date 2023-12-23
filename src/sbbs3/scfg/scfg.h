@@ -77,7 +77,7 @@
 /* Constants */
 /*************/
 
-#define SUB_HDRMOD	(1<<31)		/* Modified sub-board header info */
+#define SUB_HDRMOD	(1U<<31)		/* Modified sub-board header info */
 
 #define MAX_UNIQUE_CODE_ATTEMPTS (36*36*36)
 

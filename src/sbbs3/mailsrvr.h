@@ -128,7 +128,7 @@ static struct init_field mail_init_fields[] = {
 #define MAIL_OPT_KILL_READ_SPAM			(1<<28)	/* Set the KILLREAD flag on SPAM msgs */
 #define MAIL_OPT_TLS_SUBMISSION			(1<<29)	/* Listen on the TLS "MSA" service port for mail submissions */
 #define MAIL_OPT_TLS_POP3				(1<<30)	/* POP3S */
-#define MAIL_OPT_MUTE					(1<<31)
+#define MAIL_OPT_MUTE					(1U<<31)
 
 #define MAIL_OPT_RELAY_AUTH_MASK		(MAIL_OPT_RELAY_AUTH_PLAIN|MAIL_OPT_RELAY_AUTH_LOGIN|MAIL_OPT_RELAY_AUTH_CRAM_MD5)
 

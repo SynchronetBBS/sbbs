@@ -205,7 +205,7 @@ static struct init_field {
 #define BBS_OPT_NO_RECYCLE			(1<<27)	/* Disable recycling of server		*/
 #define BBS_OPT_GET_IDENT			(1<<28)	/* Get Identity (RFC 1413)			*/
 #define BBS_OPT_NO_JAVASCRIPT		(1<<29)	/* JavaScript disabled - Not supported */
-#define BBS_OPT_MUTE				(1<<31)	/* Mute sounds - DEPRECATED (controlled via semfile) */
+#define BBS_OPT_MUTE				(1U<<31)/* Mute sounds - DEPRECATED (controlled via semfile) */
 
 /* bbs_startup_t.options bits that require re-init/recycle when changed */
 #define BBS_INIT_OPTS	(BBS_OPT_ALLOW_RLOGIN|BBS_OPT_ALLOW_SSH|BBS_OPT_NO_EVENTS|BBS_OPT_NO_SPY_SOCKETS \
