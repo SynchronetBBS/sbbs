@@ -3268,7 +3268,7 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	int usernumber = 0;
-	node_t node;
+	node_t node{};
 	if(nodenum >= 1) {	/* !all */
 		sbbs->getnodedat(nodenum, &node, false);
 		usernumber = node.useron;
