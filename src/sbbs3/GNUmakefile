@@ -8,7 +8,7 @@
 # gcc: gmake															#
 # Borland (still in testing/debuging stage): gmake bcc=1				#
 #																		#
-# Optional build targets: dlls, utils, mono, all (default)				#
+# Optional build targets: dlls, utils, all (default)					#
 #########################################################################
 
 PWD	:=	$(shell /bin/pwd)
@@ -20,10 +20,14 @@ help:
 	@echo "Synchronet build targets (multiple may be specified):"
 	@echo " 'all'         Build all libraries, utilities, and sbbs (the default)"
 	@echo " 'gitinfo'     Build GIT branch and hash information (header) files only"
+	@echo " 'utils'       Build console/TUI sysop utilities"
 	@echo " 'gtkutils'    Build graphical (GTK-based) sysop utilities"
 ifeq ($(os), linux)
 	@echo " 'setcap'      Set port bind capabilities (on Linux only, or use systemd)"
 endif
+	@echo
+	@echo "Additional/sub-build targets (multiple may be specified):"
+	@echo " 'sexyz', 'scfg', 'uedit', 'umonitor', 'jsdoor'"
 	@echo
 	@echo "Synchronet install/update targets (choose one):"
 	@echo " 'symlinks'    Update symbolic links in sbbs/exec directory (recommended)"
@@ -153,11 +157,6 @@ JSDOOR_OBJS	+= $(MTOBJODIR)/comio_nix$(OFILE)
 endif
 LDFLAGS +=	$(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(SMBLIB_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(JS_LDFLAGS) $(CRYPT_LDFLAGS)
 
-# Monolithic Synchronet executable Build Rule
-$(SBBSMONO): $(MONO_OBJS) $(OBJS)
-	@echo Linking $@
-	$(QUIET)$(CXX) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $(MONO_OBJS) $(OBJS) $(SBBS_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS) $(JS_LIBS) $(CRYPT_LIBS)
-
 # Synchronet BBS library Link Rule
 $(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(OBJS) $(LIBS) $(EXTRA_SBBS_DEPENDS) $(ENCODE_LIB) $(HASH_LIB) | $(LIBODIR)
 	@echo Linking $@
@@ -274,7 +273,7 @@ $(QWKNODES): $(QWKNODES_OBJS)
 	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(QWKNODES_OBJS) $(SMBLIB_LIBS) $(XPDEV_LIBS) $(ENCODE_LIBS) $(HASH_LIBS)
 
 # SLOG
-$(SLOG): $(SLOG_OBJS)
+$(SLOG): $(SLOG_OBJS) $(SBBS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(SLOG_OBJS) $(XPDEV_LIBS) -lsbbs
 
@@ -297,11 +296,6 @@ $(DSTSEDIT): $(DSTSEDIT_OBJS) $(ENCODE_LIB)
 $(READSAUCE): $(READSAUCE_OBJS) $(OBJODIR) $(EXEODIR)
 	@echo Linking $@
 	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(READSAUCE_OBJS) $(XPDEV_LIBS)
-
-# SHOWSTAT
-$(SHOWSTAT): $(SHOWSTAT_OBJS) $(OBJODIR) $(EXEODIR)
-	@echo Linking $@
-	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(SHOWSTAT_OBJS) $(XPDEV_LIBS)
 
 # PKTDUMP
 $(PKTDUMP): $(PKTDUMP_OBJS) $(OBJODIR) $(EXEODIR)

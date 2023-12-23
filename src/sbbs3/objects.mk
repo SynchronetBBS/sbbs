@@ -110,40 +110,24 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/ver$(OFILE)\
 			$(MTOBJODIR)/ssl$(OFILE)
 
-# Must add new additions to MONO_OBJS too!
 CON_OBJS	= $(MTOBJODIR)/sbbscon$(OFILE) \
 			$(MTOBJODIR)/sbbs_ini$(OFILE)
 
-# Must add new additions to MONO_OBJS too!
 FTP_OBJS	= $(MTOBJODIR)/ftpsrvr$(OFILE) \
 			$(MTOBJODIR)/nopen$(OFILE)
 
-# Must add new additions to MONO_OBJS too!
 MAIL_OBJS	= $(MTOBJODIR)/mailsrvr$(OFILE) \
 			$(MTOBJODIR)/mxlookup$(OFILE) \
  		  	$(MTOBJODIR)/mime$(OFILE) \
  		  	$(MTOBJODIR)/nopen$(OFILE) \
  		  	$(MTOBJODIR)/ars$(OFILE)
 
-# Must add new additions to MONO_OBJS too!
 WEB_OBJS	= $(MTOBJODIR)/websrvr$(OFILE) \
 			$(MTOBJODIR)/ars$(OFILE) \
 			$(MTOBJODIR)/ringbuf$(OFILE)
 
-# Must add new additions to MONO_OBJS too!
 SERVICE_OBJS	= $(MTOBJODIR)/services$(OFILE) \
 			$(MTOBJODIR)/sbbs_ini$(OFILE)
-
-MONO_OBJS	= \
-			$(MTOBJODIR)/ftpsrvr$(OFILE) \
-			$(MTOBJODIR)/mailsrvr$(OFILE) \
- 		  	$(MTOBJODIR)/mime$(OFILE) \
-			$(MTOBJODIR)/mxlookup$(OFILE) \
-			$(MTOBJODIR)/sbbs_ini$(OFILE) \
-			$(MTOBJODIR)/sbbscon$(OFILE) \
-			$(MTOBJODIR)/services$(OFILE) \
-			$(MTOBJODIR)/websrvr$(OFILE) \
-			$(MTOBJODIR)/ssl$(OFILE)
 
 BAJA_OBJS = \
 			$(OBJODIR)/baja$(OFILE) \

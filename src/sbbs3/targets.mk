@@ -10,7 +10,6 @@ WEBSRVR		= $(LIBODIR)/$(LIBPREFIX)websrvr$(SOFILE)
 MAILSRVR	= $(LIBODIR)/$(LIBPREFIX)mailsrvr$(SOFILE)
 SERVICES	= $(LIBODIR)/$(LIBPREFIX)services$(SOFILE)
 SBBSCON		= $(EXEODIR)/sbbs$(EXEFILE)
-SBBSMONO	= $(EXEODIR)/sbbsmono$(EXEFILE)
 JSEXEC		= $(EXEODIR)/jsexec$(EXEFILE)
 JSDOOR		= $(EXEODIR)/jsdoor$(EXEFILE)
 NODE		= $(EXEODIR)/node$(EXEFILE)
@@ -44,7 +43,7 @@ UTILS		= $(FIXSMB) $(CHKSMB) \
 			  $(ANS2ASC) $(ASC2ANS)  $(UNBAJA) \
 			  $(QWKNODES) $(SLOG) \
 			  $(DELFILES) $(DUPEFIND) \
-			  $(SEXYZ) $(DSTSEDIT) $(READSAUCE) $(SHOWSTAT) \
+			  $(SEXYZ) $(DSTSEDIT) $(READSAUCE) \
 			  $(PKTDUMP) $(FMSGDUMP) $(UPGRADE_TO_V319) \
 			  $(UPGRADE_TO_V320)
 
@@ -59,19 +58,13 @@ console:	$(JS_DEPS) xpdev-mt smblib \
 		dlls \
 		$(SBBSCON) $(JSEXEC)
 
-utils:	smblib xpdev-mt xpdev ciolib-mt uifc-mt \
-		$(LIBODIR) $(OBJODIR) $(MTOBJODIR) $(EXEODIR) \
-		$(UTILS)
+utils:		scfg uedit umonitor $(UTILS)
 
 gtkutils: gtkmonitor gtkchat gtkuseredit gtkuserlist
 
 dlls:	$(JS_DEPS) smblib xpdev-mt \
 		$(MTOBJODIR) $(LIBODIR) \
 		$(SBBS) $(FTPSRVR) $(MAILSRVR) $(SERVICES)
-
-mono:	xpdev-mt smblib \
-		$(MTOBJODIR) $(EXEODIR) \
-		$(SBBSMONO)
 
 .PHONY: scfg
 scfg:
@@ -149,7 +142,6 @@ $(WEBSRVR):
 $(MAILSRVR):
 $(SERVICES): 
 $(SBBSCON): $(XPDEV-MT_LIB) $(SMBLIB)
-$(SBBSMONO): $(XPDEV-MT_LIB) $(SMBLIB)
 $(JSEXEC): $(XPDEV-MT_LIB) $(SMBLIB)
 $(JSDOOR): $(XPDEV-MT_LIB)
 $(NODE): $(XPDEV_LIB)
@@ -172,7 +164,6 @@ $(DELFILES): $(XPDEV_LIB) $(SMBLIB)
 $(DUPEFIND): $(XPDEV_LIB) $(SMBLIB)
 $(DSTSEDIT): $(XPDEV_LIB)
 $(READSAUCE): $(XPDEV_LIB)
-$(SHOWSTAT): $(XPDEV_LIB)
 $(UPGRADE_TO_V319): $(XPDEV_LIB) $(SMBLIB)
 $(UPGRADE_TO_V320): $(XPDEV_LIB)
 
