@@ -373,6 +373,14 @@ void display_filename(BOOL force)
 	SAFECOPY(last, fname);
 }
 
+void set_cfg_filename(const char* hostname)
+{
+	if(hostname == NULL)
+		sbbs_get_ini_fname(cfg.filename, cfg.ctrl_dir);
+	else
+		snprintf(cfg.filename, sizeof cfg.filename, "%ssbbs.%s.ini", cfg.ctrl_dir, hostname);
+}
+
 int main(int argc, char **argv)
 {
 	char*	p;
@@ -400,12 +408,16 @@ int main(int argc, char **argv)
 
 	const char* import = NULL;
 	const char* grpname = NULL;
+	const char* hostname = NULL;
 	int grpnum = 0;
 	faddr_t faddr = {0};
 	uint32_t misc = 0;
 	for(i=1;i<argc;i++) {
-        if(argv[i][0]=='-'
-            ) {
+        if(argv[i][0] == '-') {
+			if(strncmp(argv[i], "-host=", 6) == 0) {
+				hostname = argv[i] + 6;
+				continue;
+			}
 			if(strncmp(argv[i], "-import=", 8) == 0) {
 				import = argv[i] + 8;
 				continue;
@@ -415,7 +427,7 @@ int main(int argc, char **argv)
 				continue;
 			}
 			if(strncmp(argv[i], "-misc=", 6) == 0) {
-				misc = strtoul(argv[i] + 7, NULL, 0);
+				misc = strtoul(argv[i] + 6, NULL, 0);
 				continue;
 			}
 			if(strcmp(argv[i], "-insert") == 0) {
@@ -505,35 +517,36 @@ int main(int argc, char **argv)
 					USAGE:
                     printf("\nusage: scfg [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
-                        "-w  =  run initial setup wizard\n"
-                        "-f  =  force save of configuration files\n"
-                        "-a  =  update all message base status headers\n"
-                        "-h  =  don't update message base status headers\n"
-						"-u# =  set file creation permissions mask (in octal)\n"
-						"-k  =  keyboard mode only (no mouse support)\n"
-						"-c  =  force color mode\n"
-						"-m  =  force monochrome mode\n"
-                        "-e# =  set escape delay to #msec\n"
-						"-insert = enable keyboard insert mode by default\n"
-						"-import=<filename> = import a message area list file\n"
-						"-faddr=<addr> = specify your FTN address for imported subs\n"
-						"-misc=<value> = specify option flags for imported subs\n"
-						"-g# =  set group number (or name) to import into\n"
-						"-iX =  set interface mode to X (default=auto) where X is one of:\n"
+                        "-w                run initial setup wizard\n"
+                        "-f                force save of configuration files\n"
+                        "-a                update all message base status headers\n"
+                        "-h                don't update message base status headers\n"
+						"-u#               set file creation permissions mask (in octal)\n"
+						"-k                keyboard mode only (no mouse support)\n"
+						"-c                force color mode\n"
+						"-m                force monochrome mode\n"
+                        "-e#               set escape delay to #msec\n"
+						"-insert           enable keyboard insert mode by default\n"
+						"-import=<fname>   import a message area list file\n"
+						"-faddr=<addr>     specify your FTN address for imported subs\n"
+						"-misc=<value>     specify option flags for imported subs\n"
+						"-g#               set group number (or name) to import into\n"
+						"-host=<name>      set hostname to use for alternate sbbs.ini file\n"
+						"-iX               set interface mode to X (default=auto) where X is one of:\n"
 #ifdef __unix__
-						"       X = X11 mode\n"
-						"       C = Curses mode\n"
-						"       F = Curses mode with forced IBM charset\n"
-						"       I = Curses mode with forced ASCII charset\n"
+						"                   X = X11 mode\n"
+						"                   C = Curses mode\n"
+						"                   F = Curses mode with forced IBM charset\n"
+						"                   I = Curses mode with forced ASCII charset\n"
 #else
-						"       W = Win32 console mode\n"
+						"                   W = Win32 console mode\n"
 #endif
-						"       A = ANSI mode\n"
-						"       D = standard input/output/door mode\n"
-						"-A  =  use alternate (ASCII) characters for arrow symbols\n"
-                        "-v# =  set video mode to # (default=auto)\n"
-                        "-l# =  set screen lines to # (default=auto-detect)\n"
-						"-y  =  automatically save changes (don't ask)\n"
+						"                   A = ANSI mode\n"
+						"                   D = standard input/output/door mode\n"
+						"-A                use alternate (ASCII) characters for arrow symbols\n"
+                        "-v#               set video mode to # (default=auto)\n"
+                        "-l#               set screen lines to # (default=auto-detect)\n"
+						"-y                automatically save changes (don't ask)\n"
                         );
         			exit(0);
 			}
@@ -722,6 +735,7 @@ int main(int argc, char **argv)
 					uifc.msg(errormsg);
 					break;
 				}
+				set_cfg_filename(hostname);
 				node_menu();
 				free_main_cfg(&cfg);
 				break;
@@ -741,6 +755,7 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 2:
+				set_cfg_filename(hostname);
 				server_cfg();
 				break;
 			case 3:
@@ -2485,44 +2500,44 @@ void bail(int code)
         save_chat_cfg(&cfg);
 		save_xtrn_cfg(&cfg);
 
-		sbbs_get_ini_fname(cfg.filename, cfg.ctrl_dir);
-
-		fp = iniOpenFile(cfg.filename, /* for_modify? */true);
-		if(fp == NULL)
-			uifc.msgf("Error opening %s", cfg.filename);
-		else {
-			sbbs_read_ini(
-				 fp
-				,cfg.filename
-				,&global_startup
-				,&run_bbs
-				,&bbs_startup
-				,&run_ftp
-				,&ftp_startup
-				,&run_web
-				,&web_startup
-				,&run_mail
-				,&mail_startup
-				,&run_services
-				,&services_startup
-				);
-			if(!sbbs_write_ini(
-				 fp
-				,&cfg
-				,&global_startup
-				,run_bbs
-				,&bbs_startup
-				,run_ftp
-				,&ftp_startup
-				,run_web
-				,&web_startup
-				,run_mail
-				,&mail_startup
-				,run_services
-				,&services_startup
-				))
-				uifc.msgf("Error writing %s", cfg.filename);
-			iniCloseFile(fp);
+		if(*cfg.filename) {
+			fp = iniOpenFile(cfg.filename, /* for_modify? */true);
+			if(fp == NULL)
+				uifc.msgf("Error opening %s", cfg.filename);
+			else {
+				sbbs_read_ini(
+					 fp
+					,cfg.filename
+					,&global_startup
+					,&run_bbs
+					,&bbs_startup
+					,&run_ftp
+					,&ftp_startup
+					,&run_web
+					,&web_startup
+					,&run_mail
+					,&mail_startup
+					,&run_services
+					,&services_startup
+					);
+				if(!sbbs_write_ini(
+					 fp
+					,&cfg
+					,&global_startup
+					,run_bbs
+					,&bbs_startup
+					,run_ftp
+					,&ftp_startup
+					,run_web
+					,&web_startup
+					,run_mail
+					,&mail_startup
+					,run_services
+					,&services_startup
+					))
+					uifc.msgf("Error writing %s", cfg.filename);
+				iniCloseFile(fp);
+			}
 		}
         uifc.pop(NULL);
 	}

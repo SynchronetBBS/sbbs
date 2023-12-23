@@ -392,6 +392,8 @@ static void termsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Execute QWK-related Events"
 			,startup.options & BBS_OPT_NO_EVENTS ? "N/A" : startup.options & BBS_OPT_NO_QWK_EVENTS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
+		strcpy(opt[i++], "JavaScript Settings...");
+		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
@@ -531,6 +533,12 @@ static void termsrvr_cfg(void)
 			case 27:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
+			case 28:
+				js_startup_cfg(&startup.js);
+				break;
+			case 29:
+				login_attempt_cfg(&startup.login_attempt);
+				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
 					uifc.changes = true;
@@ -634,14 +642,13 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Authentication Methods", startup.default_auth_list);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
-		bool cgi_enabled = !(startup.options & WEB_OPT_NO_CGI);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Support",  cgi_enabled ? "Yes" : "No");
-		if(cgi_enabled) {
-			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Directory", startup.cgi_dir);
-			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI File Extensions", strListCombine(startup.cgi_ext, tmp, sizeof(tmp), ", "));
-			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Default Content-Type", startup.default_cgi_content);
-			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Max Inactivity", vduration(startup.max_cgi_inactivity));
-		}
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Support",  startup.options & WEB_OPT_NO_CGI ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Directory", startup.cgi_dir);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI File Extensions", strListCombine(startup.cgi_ext, tmp, sizeof(tmp), ", "));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Default Content-Type", startup.default_cgi_content);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Max Inactivity", vduration(startup.max_cgi_inactivity));
+		strcpy(opt[i++], "JavaScript Settings...");
+		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
@@ -792,6 +799,12 @@ static void websrvr_cfg(void)
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum CGI Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_cgi_inactivity = (uint16_t)parse_duration(str);
 				break;
+			case 27:
+				js_startup_cfg(&startup.js);
+				break;
+			case 28:
+				login_attempt_cfg(&startup.login_attempt);
+				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
 					uifc.changes = true;
@@ -885,6 +898,8 @@ static void ftpsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Sysop File System Access", startup.options & FTP_OPT_NO_LOCAL_FSYS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Allow Bounce Transfers", startup.options & FTP_OPT_ALLOW_BOUNCE ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
+		strcpy(opt[i++], "Failed Login Attempts...");
+
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
@@ -985,6 +1000,9 @@ static void ftpsrvr_cfg(void)
 				break;
 			case 14:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
+				break;
+			case 15:
+				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -1225,6 +1243,8 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Hash DNS-Blacklisted Msgs", startup.options & MAIL_OPT_DNSBL_SPAMHASH ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Kill SPAM When Read", startup.options & MAIL_OPT_KILL_READ_SPAM ? "Yes": "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SendMail Thread...", startup.options & MAIL_OPT_NO_SENDMAIL ? strDisabled : "");
+		strcpy(opt[i++], "JavaScript Settings...");
+		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
@@ -1400,6 +1420,12 @@ static void mailsrvr_cfg(void)
 			case 30:
 				sendmail_cfg(&startup);
 				break;
+			case 31:
+				js_startup_cfg(&startup.js);
+				break;
+			case 32:
+				login_attempt_cfg(&startup.login_attempt);
+				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
 					uifc.changes = true;
@@ -1482,6 +1508,8 @@ static void services_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Network Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Configuration File", startup.services_ini);
+		strcpy(opt[i++], "JavaScript Settings...");
+		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
@@ -1512,6 +1540,12 @@ static void services_cfg(void)
 				break;
 			case 4:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Services Configuration File", startup.services_ini, sizeof(startup.services_ini)-1, K_EDIT);
+				break;
+			case 5:
+				js_startup_cfg(&startup.js);
+				break;
+			case 6:
+				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
 				if(memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -1559,8 +1593,6 @@ void server_cfg(void)
 {
 	static int srvr_dflt;
 	BOOL run_bbs, run_ftp, run_web, run_mail, run_services;
-
-	sbbs_get_ini_fname(cfg.filename, cfg.ctrl_dir);
 
 	while(1) {
 		FILE* fp = iniOpenFile(cfg.filename, /* for_modify? */false);

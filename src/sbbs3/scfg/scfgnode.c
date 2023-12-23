@@ -32,22 +32,20 @@ static char* node_path_help =
 
 void adjust_last_node()
 {
-	char ini_fname[MAX_PATH + 1];
 	const char* section = "bbs";
 	const char* key = "LastNode";
 
-	sbbs_get_ini_fname(ini_fname, cfg.ctrl_dir);
 
-	FILE* fp = iniOpenFile(ini_fname, /* modify */false);
+	FILE* fp = iniOpenFile(cfg.filename, /* modify */false);
 	str_list_t ini = iniReadFile(fp);
 	iniCloseFile(fp);
 	uint last_node = iniGetUInteger(ini, section, key, cfg.sys_nodes);
 	char prompt[128];
 	SAFEPRINTF(prompt, "Update Terminal Server 'LastNode' value to %u", cfg.sys_nodes);
 	if(last_node < cfg.sys_nodes && uifc.confirm(prompt)) {
-		fp = iniOpenFile(ini_fname, /* modify */true);
+		fp = iniOpenFile(cfg.filename, /* modify */true);
 		if(fp == NULL)
-			uifc.msgf("Error %d opening %s", errno, ini_fname);
+			uifc.msgf("Error %d opening %s", errno, cfg.filename);
 		else {
 			iniSetUInteger(&ini, section, key, cfg.sys_nodes, NULL);
 			iniWriteFile(fp, ini);
