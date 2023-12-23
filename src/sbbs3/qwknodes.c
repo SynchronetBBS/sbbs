@@ -101,7 +101,7 @@ char *loadmsgtail(smbmsg_t* msg)
 		if(xlat!=XLAT_NONE) 		/* no translations supported */
 			continue;
 		length=msg->dfield[i].length-2;
-		if((buf=realloc(buf,l+msg->dfield[i].length+1))==NULL)
+		if((buf=realloc_or_free(buf,l+msg->dfield[i].length+1))==NULL)
 			return(buf);
 		l+=fread(buf+l,1,length,smb.sdt_fp);
 		buf[l]=0; 

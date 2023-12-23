@@ -240,8 +240,10 @@ int sbbs_t::process_edited_file(const char* src, const char* dest, int mode, uns
 	memset(buf,0,len+1);
 	int rd = fread(buf,len,1,fp);
 	fclose(fp);
-	if(rd != 1)
+	if(rd != 1) {
+		free(buf);
 		return -4;
+	}
 
 	if((fp=fopen(dest,"wb"))!=NULL) {
 		len=process_edited_text(buf, fp, mode, lines, maxlines);

@@ -517,13 +517,15 @@ static ushort js_port(JSContext* cx, jsval val, int type)
 	if(JSVAL_IS_STRING(val)) {
 		str = JS_ValueToString(cx,val);
 		JSSTRING_TO_ASTRING(cx, str, cp, 16, NULL);
-		if(IS_DIGIT(*cp))
-			return((ushort)strtol(cp,NULL,0));
-		rc=JS_SUSPENDREQUEST(cx);
-		serv = getservbyname(cp,type==SOCK_STREAM ? "tcp":"udp");
-		JS_RESUMEREQUEST(cx, rc);
-		if(serv!=NULL)
-			return(htons(serv->s_port));
+		if(cp != NULL) {
+			if(IS_DIGIT(*cp))
+				return((ushort)strtol(cp,NULL,0));
+			rc=JS_SUSPENDREQUEST(cx);
+			serv = getservbyname(cp,type==SOCK_STREAM ? "tcp":"udp");
+			JS_RESUMEREQUEST(cx, rc);
+			if(serv!=NULL)
+				return(htons(serv->s_port));
+		}
 	}
 	return(0);
 }

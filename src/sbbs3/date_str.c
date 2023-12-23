@@ -36,7 +36,7 @@ time32_t dstrtounix(scfg_t* cfg, const char *instr)
 	char		str[16];
 	struct tm	tm;
 
-	if(!instr[0] || !strncmp(instr,"00/00/00",8))
+	if(instr == NULL || !instr[0] || !strncmp(instr,"00/00/00",8))
 		return(0);
 
 	if(IS_DIGIT(instr[0]) && IS_DIGIT(instr[1])

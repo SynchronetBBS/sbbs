@@ -687,7 +687,7 @@ js_require(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*	exec_obj;
 	JSObject*	tmp_obj;
     char*		property;
-    char*		filename;
+    char*		filename = NULL;
     JSBool		found = JS_FALSE;
     JSBool		ret;
 	jsval *argv=JS_ARGV(cx, arglist);

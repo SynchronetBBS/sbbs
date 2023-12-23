@@ -616,7 +616,7 @@ static BOOL handle_crypt_call_except2(int status, http_session_t *session, const
 static BOOL session_check(http_session_t *session, BOOL *rd, BOOL *wr, unsigned timeout)
 {
 	BOOL	ret = FALSE;
-	BOOL	lcl_rd;
+	BOOL	lcl_rd = 0;
 	BOOL	*rd_ptr = rd?rd:&lcl_rd;
 
 	if (session->is_tls) {
@@ -3962,6 +3962,7 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 	if (*path == '/'||  *path == '.' || strncmp(path, "unix:", 5) == 0) {
 #if defined(_WIN32) && !defined(UDS_SUPPORT)
 		lprintf(LOG_ERR, "%04d UNIX DOMAIN SOCKETS ARE NOT SUPPORTED in %s", client_sock, __FUNCTION__);
+		free(path);
 		return INVALID_SOCKET;
 #else
 		// UNIX-domain socket
