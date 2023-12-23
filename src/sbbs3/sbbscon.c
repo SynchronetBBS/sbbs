@@ -2206,5 +2206,6 @@ int main(int argc, char** argv)
 	printf("\r%*s\r",prompt_len,"");
 
 	free_cfg(&scfg);
+	sbbs_free_ini(/* global_startup: */NULL, &bbs_startup, &ftp_startup, &web_startup, &mail_startup, &services_startup);
 	return(0);
 }
