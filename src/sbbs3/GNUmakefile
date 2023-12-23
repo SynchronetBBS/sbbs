@@ -263,7 +263,7 @@ $(ASC2ANS): $(OBJODIR)/asc2ans.o
 	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(OBJODIR)/asc2ans.o
 
 # SEXYZ
-$(SEXYZ): $(SEXYZ_OBJS)
+$(SEXYZ): $(SEXYZ_OBJS) | $(EXEODIR)
 	@echo Linking $@
 	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) $(MT_LDFLAGS) -o $@ $(SEXYZ_OBJS) $(HASH_LIBS) $(XPDEV-MT_LIBS)
 
