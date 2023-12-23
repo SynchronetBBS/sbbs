@@ -2205,5 +2205,6 @@ int main(int argc, char** argv)
 	/* erase the prompt */
 	printf("\r%*s\r",prompt_len,"");
 
+	free_cfg(&scfg);
 	return(0);
 }
