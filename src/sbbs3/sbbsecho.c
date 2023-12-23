@@ -1661,7 +1661,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, fidoaddr_t addr, cons
 
 						++cfg.area[u].links;
 						if((cfg.area[u].link=(fidoaddr_t *)
-							realloc(cfg.area[u].link,sizeof(fidoaddr_t)
+							realloc_or_free(cfg.area[u].link,sizeof(fidoaddr_t)
 							*(cfg.area[u].links)))==NULL) {
 							lprintf(LOG_ERR,"ERROR line %d allocating memory for area "
 								"#%u links.",__LINE__,u+1);
@@ -2440,7 +2440,7 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 				continue;
 			num_mfncrc++;
 			p=getfname(hdr.subj);
-			if((mfncrc=(uint32_t *)realloc(mfncrc,num_mfncrc*sizeof(uint32_t)))==NULL) {
+			if((mfncrc=(uint32_t *)realloc_or_free(mfncrc,num_mfncrc*sizeof(uint32_t)))==NULL) {
 				lprintf(LOG_ERR,"ERROR line %d allocating %lu for bundle name crc"
 					,__LINE__,num_mfncrc*sizeof(uint32_t));
 				continue;
@@ -3931,7 +3931,7 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 					addr.point=atoi(p2+1);
 				if(!addr.zone)
 					addr.zone=zone; 		/* Was 1 */
-				if((seenbys->addr=(fidoaddr_t *)realloc(seenbys->addr
+				if((seenbys->addr=(fidoaddr_t *)realloc_or_free(seenbys->addr
 					,sizeof(fidoaddr_t)*(seenbys->addrs+1)))==NULL) {
 					lprintf(LOG_ERR,"ERROR line %d allocating memory for message "
 						"seenbys.",__LINE__);
@@ -3951,7 +3951,7 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 		}
 	}
 	else {
-		if((seenbys->addr=(fidoaddr_t *)realloc(seenbys->addr
+		if((seenbys->addr=(fidoaddr_t *)realloc_or_free(seenbys->addr
 			,sizeof(fidoaddr_t)))==NULL) {
 			lprintf(LOG_ERR,"ERROR line %d allocating memory for message seenbys."
 				,__LINE__);
@@ -3992,7 +3992,7 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 					addr.point=atoi(p2+1);
 				if(!addr.zone)
 					addr.zone=zone; 		/* Was 1 */
-				if((paths->addr=(fidoaddr_t *)realloc(paths->addr
+				if((paths->addr=(fidoaddr_t *)realloc_or_free(paths->addr
 					,sizeof(fidoaddr_t)*(paths->addrs+1)))==NULL) {
 					lprintf(LOG_ERR,"ERROR line %d allocating memory for message "
 						"paths.",__LINE__);
@@ -4009,7 +4009,7 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 		}
 	}
 	else {
-		if((paths->addr=(fidoaddr_t *)realloc(paths->addr
+		if((paths->addr=(fidoaddr_t *)realloc_or_free(paths->addr
 			,sizeof(fidoaddr_t)))==NULL) {
 			lprintf(LOG_ERR,"ERROR line %d allocating memory for message paths."
 				,__LINE__);
@@ -6454,7 +6454,7 @@ int main(int argc, char **argv)
 					break;
 				}
 				if((cfg.area[areanum].link=(fidoaddr_t *)
-					realloc(cfg.area[areanum].link
+					realloc_or_free(cfg.area[areanum].link
 					,sizeof(fidoaddr_t)*(cfg.area[areanum].links+1)))==NULL) {
 					printf("\n");
 					lprintf(LOG_ERR,"ERROR allocating memory for area #%u links."

@@ -217,7 +217,7 @@ void sbbs_t::update_qwkroute(char *via)
 				if(i<total_qwknodes && qwknode[i].time>t)
 					continue;
 				if(i==total_qwknodes) {
-					if((qwknode=(struct qwknode*)realloc(qwknode,sizeof(struct qwknode)*(i+1)))==NULL) {
+					if((qwknode=(struct qwknode*)realloc_or_free(qwknode,sizeof(struct qwknode)*(i+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,via,sizeof(struct qwknode)*(i+1));
 						break;
 					}
@@ -249,7 +249,7 @@ void sbbs_t::update_qwkroute(char *via)
 			if(!stricmp(qwknode[i].id,node))
 				break;
 		if(i==total_qwknodes) {		/* Not in list */
-			if((qwknode=(struct qwknode*)realloc(qwknode,sizeof(struct qwknode)*(total_qwknodes+1)))==NULL) {
+			if((qwknode=(struct qwknode*)realloc_or_free(qwknode,sizeof(struct qwknode)*(total_qwknodes+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,node,sizeof(struct qwknode)*(total_qwknodes+1));
 				break;
 			}

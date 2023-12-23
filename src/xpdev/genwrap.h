@@ -394,6 +394,8 @@ msclock_t	msclock(void);
 DLLEXPORT BOOL		check_pid(pid_t);
 DLLEXPORT BOOL		terminate_pid(pid_t);
 
+DLLEXPORT void*		realloc_or_free(void* p, size_t size);
+
 #if defined(__cplusplus)
 }
 #endif

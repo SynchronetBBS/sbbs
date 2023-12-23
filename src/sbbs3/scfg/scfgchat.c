@@ -67,7 +67,7 @@ void page_cfg()
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Line",str,50
 				,K_EDIT)<1)
 				continue;
-			if((cfg.page=(page_t **)realloc(cfg.page,sizeof(page_t *)*(cfg.total_pages+1)))
+			if((cfg.page=(page_t **)realloc_or_free(cfg.page,sizeof(page_t *)*(cfg.total_pages+1)))
 				==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_pages+1);
 				cfg.total_pages=0;
@@ -266,7 +266,7 @@ void chan_cfg()
 				uifc.helpbuf=0;
 				continue; 
 			}
-			if((cfg.chan=(chan_t **)realloc(cfg.chan,sizeof(chan_t *)*(cfg.total_chans+1)))
+			if((cfg.chan=(chan_t **)realloc_or_free(cfg.chan,sizeof(chan_t *)*(cfg.total_chans+1)))
 				==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_chans+1);
 				cfg.total_chans=0;
@@ -542,7 +542,7 @@ void chatact_cfg(uint setnum)
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"",out,LEN_CHATACTOUT
 				,K_MSG)<1)
 				continue;
-			if((cfg.chatact=(chatact_t **)realloc(cfg.chatact
+			if((cfg.chatact=(chatact_t **)realloc_or_free(cfg.chatact
 				,sizeof(chatact_t *)*(cfg.total_chatacts+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_chatacts+1);
 				cfg.total_chatacts=0;
@@ -671,7 +671,7 @@ void guru_cfg()
 				uifc.helpbuf=0;
 				continue; 
 			}
-			if((cfg.guru=(guru_t **)realloc(cfg.guru,sizeof(guru_t *)*(cfg.total_gurus+1)))
+			if((cfg.guru=(guru_t **)realloc_or_free(cfg.guru,sizeof(guru_t *)*(cfg.total_gurus+1)))
 				==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_gurus+1);
 				cfg.total_gurus=0;
@@ -827,7 +827,7 @@ void actsets_cfg()
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Chat Action Set Name",str,25
 				,0)<1)
 				continue;
-			if((cfg.actset=(actset_t **)realloc(cfg.actset,sizeof(actset_t *)*(cfg.total_actsets+1)))
+			if((cfg.actset=(actset_t **)realloc_or_free(cfg.actset,sizeof(actset_t *)*(cfg.total_actsets+1)))
 				==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_actsets+1);
 				cfg.total_actsets=0;

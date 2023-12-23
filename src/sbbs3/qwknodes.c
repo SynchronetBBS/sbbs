@@ -314,7 +314,7 @@ int main(int argc, char **argv)
 						break;
 				if(l==total_crcs) {
 					total_crcs++;
-					if((crc=(uint32_t *)realloc(crc
+					if((crc=(uint32_t *)realloc_or_free(crc
 						,sizeof(uint32_t)*total_crcs))==NULL) {
 						printf("Error allocating %lu bytes\n"
 							,sizeof(uint32_t)*total_crcs);

@@ -324,7 +324,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	/******************/
 	str_list_t archivelist = iniGetSectionList(ini, "archive:");
 	cfg->arcdefs = strListCount(archivelist);
-	if((cfg->arcdef = realloc(cfg->arcdef, sizeof(arcdef_t)*cfg->arcdefs)) == NULL) {
+	if((cfg->arcdef = realloc_or_free(cfg->arcdef, sizeof(arcdef_t)*cfg->arcdefs)) == NULL) {
 		strListFree(&archivelist);
 		return false;
 	}
@@ -348,7 +348,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	if(cfg->sort_nodelist)
 		strListSortAlphaCase(nodelist);
 	cfg->nodecfgs = strListCount(nodelist);
-	if((cfg->nodecfg = realloc(cfg->nodecfg, sizeof(nodecfg_t)*cfg->nodecfgs)) == NULL) {
+	if((cfg->nodecfg = realloc_or_free(cfg->nodecfg, sizeof(nodecfg_t)*cfg->nodecfgs)) == NULL) {
 		strListFree(&nodelist);
 		return false;
 	}
@@ -427,7 +427,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	/**************/
 	str_list_t echolists = iniGetSectionList(ini, "echolist:");
 	cfg->listcfgs = strListCount(echolists);
-	if((cfg->listcfg = realloc(cfg->listcfg, sizeof(echolist_t)*cfg->listcfgs)) == NULL) {
+	if((cfg->listcfg = realloc_or_free(cfg->listcfg, sizeof(echolist_t)*cfg->listcfgs)) == NULL) {
 		strListFree(&echolists);
 		return false;
 	}
@@ -451,7 +451,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	/***********/
 	str_list_t domains = iniGetSectionList(ini, "domain:");
 	cfg->domain_count = strListCount(domains);
-	if((cfg->domain_list = realloc(cfg->domain_list, sizeof(struct fido_domain)*cfg->domain_count)) == NULL) {
+	if((cfg->domain_list = realloc_or_free(cfg->domain_list, sizeof(struct fido_domain)*cfg->domain_count)) == NULL) {
 		strListFree(&domains);
 		return false;
 	}
@@ -473,7 +473,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	/**********/
 	str_list_t robots = iniGetSectionList(ini, "robot:");
 	cfg->robot_count = strListCount(robots);
-	if((cfg->robot_list = realloc(cfg->robot_list, sizeof(struct robot)*cfg->robot_count)) == NULL) {
+	if((cfg->robot_list = realloc_or_free(cfg->robot_list, sizeof(struct robot)*cfg->robot_count)) == NULL) {
 		strListFree(&robots);
 		return false;
 	}

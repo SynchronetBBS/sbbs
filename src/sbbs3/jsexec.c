@@ -1043,7 +1043,7 @@ long js_exec(const char *fname, const char* buf, char** args)
 			if(line_no==1 && strncmp(line,"#!",2)==0)
 				strcpy(line,"\n");	/* To keep line count correct */
 			len=strlen(line);
-			if((js_buf=realloc(js_buf,js_buflen+len))==NULL) {
+			if((js_buf=realloc_or_free(js_buf,js_buflen+len))==NULL) {
 				lprintf(LOG_ERR,"!Error allocating %lu bytes of memory"
 					,(ulong)(js_buflen+len));
 				if(fp!=stdin)

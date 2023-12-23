@@ -2338,7 +2338,7 @@ int natvpgm_cfg()
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Native Program Name",str,12
 				,0)<1)
 				continue;
-			if((cfg.natvpgm=(natvpgm_t **)realloc(cfg.natvpgm
+			if((cfg.natvpgm=(natvpgm_t **)realloc_or_free(cfg.natvpgm
 				,sizeof(natvpgm_t *)*(cfg.total_natvpgms+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_natvpgms+1);
 				cfg.total_natvpgms=0;
@@ -2640,7 +2640,7 @@ void hotkey_cfg(void)
 				,K_UPPER|K_NOSPACE)<1)
 				continue;
 
-			if((cfg.hotkey=(hotkey_t **)realloc(cfg.hotkey
+			if((cfg.hotkey=(hotkey_t **)realloc_or_free(cfg.hotkey
 				,sizeof(hotkey_t *)*(cfg.total_hotkeys+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_hotkeys+1);
 				cfg.total_hotkeys=0;

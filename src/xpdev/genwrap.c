@@ -1117,7 +1117,7 @@ BOOL terminate_pid(pid_t pid)
 
 /****************************************************************************/
 /* Re-entrant (thread-safe) version of strerror()							*/
-/* GNU (not POSIX) inspired API											*/
+/* GNU (not POSIX) inspired API												*/
 /****************************************************************************/
 char* safe_strerror(int errnum, char *buf, size_t buflen)
 {
@@ -1135,4 +1135,16 @@ char* safe_strerror(int errnum, char *buf, size_t buflen)
 	strerror_r(errnum, buf, buflen);
 #endif
 	return buf;
+}
+
+/****************************************************************************/
+/* Common realloc mistake: 'p' nulled but not freed upon failure			*/
+/* [memleakOnRealloc]														*/
+/****************************************************************************/
+void* realloc_or_free(void* p, size_t size)
+{
+	void* n = realloc(p, size);
+	if(n == NULL)
+		free(p);
+	return n;
 }

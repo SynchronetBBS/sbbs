@@ -212,7 +212,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		i=fread(buf,1,sizeof(buf),fp);
 		if(i<1)
 			break;
-		if((msgtxt = realloc(msgtxt,msgtxtlen+i+1))==NULL) {
+		if((msgtxt = realloc_or_free(msgtxt,msgtxtlen+i+1))==NULL) {
 			fprintf(errfp,"\n%s!realloc(%ld) failure\n",beep,msgtxtlen+i+1);
 			bail(1);
 		}

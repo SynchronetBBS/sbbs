@@ -369,7 +369,7 @@ void xfer_opts()
 						continue;
 					}
 					if(msk == MSK_INS) {
-						if((cfg.fview=(fview_t **)realloc(cfg.fview
+						if((cfg.fview=(fview_t **)realloc_or_free(cfg.fview
 							,sizeof(fview_t *)*(cfg.total_fviews+1)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fviews+1);
 							cfg.total_fviews=0;
@@ -499,7 +499,7 @@ void xfer_opts()
 						continue;
 					}
 					if(msk == MSK_INS) {
-						if((cfg.ftest=(ftest_t **)realloc(cfg.ftest
+						if((cfg.ftest=(ftest_t **)realloc_or_free(cfg.ftest
 							,sizeof(ftest_t *)*(cfg.total_ftests+1)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_ftests+1);
 							cfg.total_ftests=0;
@@ -653,7 +653,7 @@ void xfer_opts()
 						continue;
 					}
 					if(msk == MSK_INS) {
-						if((cfg.dlevent=(dlevent_t **)realloc(cfg.dlevent
+						if((cfg.dlevent=(dlevent_t **)realloc_or_free(cfg.dlevent
 							,sizeof(dlevent_t *)*(cfg.total_dlevents+1)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_dlevents+1);
 							cfg.total_dlevents=0;
@@ -800,7 +800,7 @@ void xfer_opts()
 						continue;
 					}
 					if(msk == MSK_INS) {
-						if((cfg.fextr=(fextr_t **)realloc(cfg.fextr
+						if((cfg.fextr=(fextr_t **)realloc_or_free(cfg.fextr
 							,sizeof(fextr_t *)*(cfg.total_fextrs+1)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fextrs+1);
 							cfg.total_fextrs=0;
@@ -939,7 +939,7 @@ void xfer_opts()
 						continue;
 					}
 					if(msk == MSK_INS) {
-						if((cfg.fcomp=(fcomp_t **)realloc(cfg.fcomp
+						if((cfg.fcomp=(fcomp_t **)realloc_or_free(cfg.fcomp
 							,sizeof(fcomp_t *)*(cfg.total_fcomps+1)))==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fcomps+1);
 							cfg.total_fcomps=0;

@@ -117,9 +117,9 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						return(0);
 					}
 					csi->str_vars++;
-					csi->str_var=(char **)realloc(csi->str_var
+					csi->str_var=(char **)realloc_or_free(csi->str_var
 						,sizeof(char *)*csi->str_vars);
-					csi->str_var_name=(uint32_t *)realloc(csi->str_var_name
+					csi->str_var_name=(uint32_t *)realloc_or_free(csi->str_var_name
 						,sizeof(int32_t)*csi->str_vars);
 					if(csi->str_var==NULL
 						|| csi->str_var_name==NULL) { /* REALLOC failed */
@@ -147,9 +147,9 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						return(0);
 					}
 					csi->int_vars++;
-					csi->int_var=(int32_t *)realloc(csi->int_var
+					csi->int_var=(int32_t *)realloc_or_free(csi->int_var
 						,sizeof(char *)*csi->int_vars);
-					csi->int_var_name=(uint32_t *)realloc(csi->int_var_name
+					csi->int_var_name=(uint32_t *)realloc_or_free(csi->int_var_name
 						,sizeof(int32_t)*csi->int_vars);
 					if(csi->int_var==NULL
 						|| csi->int_var_name==NULL) { /* REALLOC failed */
@@ -177,9 +177,9 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						return(0);
 					}
 					global_str_vars++;
-					global_str_var=(char **)realloc(global_str_var
+					global_str_var=(char **)realloc_or_free(global_str_var
 						,sizeof(char *)*global_str_vars);
-					global_str_var_name=(uint32_t *)realloc(global_str_var_name
+					global_str_var_name=(uint32_t *)realloc_or_free(global_str_var_name
 						,sizeof(int32_t)*global_str_vars);
 					if(global_str_var==NULL
 						|| global_str_var_name==NULL) { /* REALLOC failed */
@@ -208,9 +208,9 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						return(0);
 					}
 					global_int_vars++;
-					global_int_var=(int32_t *)realloc(global_int_var
+					global_int_var=(int32_t *)realloc_or_free(global_int_var
 						,sizeof(char *)*global_int_vars);
-					global_int_var_name=(uint32_t *)realloc(global_int_var_name
+					global_int_var_name=(uint32_t *)realloc_or_free(global_int_var_name
 						,sizeof(int32_t)*global_int_vars);
 					if(global_int_var==NULL
 						|| global_int_var_name==NULL) { /* REALLOC failed */
@@ -470,9 +470,9 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 								break;
 					if(pp && *pp!=csi->str && i==MAX_SYSVARS) {
 						if(*pp)
-							*pp=(char *)realloc(*pp,strlen(*pp)+strlen(tmp)+1);
+							*pp=(char *)realloc_or_free(*pp,strlen(*pp)+strlen(tmp)+1);
 						else
-							*pp=(char *)realloc(*pp,strlen(tmp)+1);
+							*pp=(char *)realloc_or_free(*pp,strlen(tmp)+1);
 					}
 					if(pp && *pp)
 						strcat(*pp,tmp);
@@ -499,9 +499,9 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 									break;
 						if(pp && *pp!=csi->str && i==MAX_SYSVARS) {
 							if(*pp)
-								*pp=(char *)realloc(*pp,strlen(*pp)+strlen(tmp)+1);
+								*pp=(char *)realloc_or_free(*pp,strlen(*pp)+strlen(tmp)+1);
 							else
-								*pp=(char *)realloc(*pp,strlen(tmp)+1);
+								*pp=(char *)realloc_or_free(*pp,strlen(tmp)+1);
 						}
 						if(pp && *pp)
 							strcat(*pp,tmp);
@@ -519,9 +519,9 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 								break;
 					if(*pp1!=csi->str && (!*pp1 || i==MAX_SYSVARS)) {
 						if(*pp1)
-							*pp1=(char *)realloc(*pp1,strlen(*pp1)+strlen(*pp2)+1);
+							*pp1=(char *)realloc_or_free(*pp1,strlen(*pp1)+strlen(*pp2)+1);
 						else
-							*pp1=(char *)realloc(*pp1,strlen(*pp2)+1);
+							*pp1=(char *)realloc_or_free(*pp1,strlen(*pp2)+1);
 					}
 					if(*pp1 != NULL)
 						strcat(*pp1,*pp2);

@@ -232,7 +232,7 @@ int fixsmb(char* sub)
 		}
 		if(!dupe_msgnum) {
 			total++;
-			if((numbers = realloc(numbers, total * sizeof(*numbers))) == NULL) {
+			if((numbers = realloc_or_free(numbers, total * sizeof(*numbers))) == NULL) {
 				fprintf(stderr, "realloc failure: %lu\n", total * sizeof(*numbers));
 				return EXIT_FAILURE;
 			}

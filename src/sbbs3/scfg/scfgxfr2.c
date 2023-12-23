@@ -1021,7 +1021,7 @@ void xfer_cfg()
 							break;
 						if(j==cfg.total_dirs) {
 
-							if((cfg.dir=(dir_t **)realloc(cfg.dir
+							if((cfg.dir=(dir_t **)realloc_or_free(cfg.dir
 								,sizeof(dir_t *)*(cfg.total_dirs+1)))==NULL) {
 								errormsg(WHERE,ERR_ALLOC,"dir",cfg.total_dirs+1);
 								cfg.total_dirs=0;

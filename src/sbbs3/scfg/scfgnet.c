@@ -53,9 +53,9 @@ bool new_qhub(unsigned new_qhubnum)
 
 bool new_qhub_sub(qhub_t* qhub, int subnum, sub_t* sub, unsigned confnum)
 {
-	if((qhub->sub=realloc(qhub->sub, sizeof(*qhub->sub)*(qhub->subs+1)))==NULL
-		|| (qhub->conf=(ushort *)realloc(qhub->conf, sizeof(*qhub->conf)*(qhub->subs+1)))==NULL
-		|| (qhub->mode=(uchar *)realloc(qhub->mode, sizeof(*qhub->mode)*(qhub->subs+1)))==NULL) {
+	if((qhub->sub=realloc_or_free(qhub->sub, sizeof(*qhub->sub)*(qhub->subs+1)))==NULL
+		|| (qhub->conf=(ushort *)realloc_or_free(qhub->conf, sizeof(*qhub->conf)*(qhub->subs+1)))==NULL
+		|| (qhub->mode=(uchar *)realloc_or_free(qhub->mode, sizeof(*qhub->mode)*(qhub->subs+1)))==NULL) {
 		/* ToDo: report error */
 		return false;
 	}
@@ -628,7 +628,7 @@ void net_cfg()
 								} else
 									newfaddr = savfaddr;
 
-								if((cfg.faddr=(faddr_t *)realloc(cfg.faddr
+								if((cfg.faddr=(faddr_t *)realloc_or_free(cfg.faddr
 									,sizeof(faddr_t)*(cfg.total_faddrs+1)))==NULL) {
 									errormsg(WHERE,ERR_ALLOC,nulstr
 										,sizeof(faddr_t)*cfg.total_faddrs+1);

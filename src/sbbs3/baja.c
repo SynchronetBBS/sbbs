@@ -314,7 +314,7 @@ void newvar(char* src, char *in)
 		if(i<vars)
 			return;
 	}
-	if((var_name=(uint32_t *)realloc(var_name,sizeof(int32_t)*(vars+1)))==NULL) {
+	if((var_name=(uint32_t *)realloc_or_free(var_name,sizeof(int32_t)*(vars+1)))==NULL) {
 		printf("Too many (%"PRIu32") variables!\n",vars);
 		bail(1); }
 	var_name[vars]=l;
@@ -522,14 +522,14 @@ void compile(char *src)
 			if(sp)
 				*sp=0;
 			truncsp(arg2);
-			if((define_str=(char **)realloc(define_str,sizeof(char *)*(defines+1)))
+			if((define_str=(char **)realloc_or_free(define_str,sizeof(char *)*(defines+1)))
 				==NULL) {
 				printf("Too many defines.\n");
 				bail(1); }
 			if((define_str[defines]=(char *)malloc(strlen(arg)+1))==NULL) {
 				printf("Too many defines.\n");
 				bail(1); }
-			if((define_val=(char **)realloc(define_val,sizeof(char *)*(defines+1)))
+			if((define_val=(char **)realloc_or_free(define_val,sizeof(char *)*(defines+1)))
 				==NULL) {
 				printf("Too many defines.\n");
 				bail(1); }
@@ -721,11 +721,11 @@ void compile(char *src)
 				printf("!SYNTAX ERROR (duplicate label name):\n");
 				printf(linestr,src,line,p);
 				bail(1); }
-			if((label_name=(char **)realloc(label_name,sizeof(char *)*(labels+1)))
+			if((label_name=(char **)realloc_or_free(label_name,sizeof(char *)*(labels+1)))
 				==NULL) {
 				printf("Too many labels.\n");
 				bail(1); }
-			if((label_indx=(uint *)realloc(label_indx,sizeof(int)*(labels+1)))
+			if((label_indx=(uint *)realloc_or_free(label_indx,sizeof(int)*(labels+1)))
 				==NULL) {
 				printf("Too many labels.\n");
 				bail(1); }
@@ -741,19 +741,19 @@ void compile(char *src)
 			sp=strchr(arg,' ');
 			if(sp)
 				*sp=0;
-			if((goto_label=(char **)realloc(goto_label,sizeof(char *)*(gotos+1)))
+			if((goto_label=(char **)realloc_or_free(goto_label,sizeof(char *)*(gotos+1)))
 				==NULL) {
 				printf("Too many gotos.\n");
 				bail(1); }
-			if((goto_file=(char **)realloc(goto_file,sizeof(char *)*(gotos+1)))
+			if((goto_file=(char **)realloc_or_free(goto_file,sizeof(char *)*(gotos+1)))
 				==NULL) {
 				printf("Too many gotos.\n");
 				bail(1); }
-			if((goto_indx=(uint *)realloc(goto_indx,sizeof(int)*(gotos+1)))
+			if((goto_indx=(uint *)realloc_or_free(goto_indx,sizeof(int)*(gotos+1)))
 				==NULL) {
 				printf("Too many gotos.\n");
 				bail(1); }
-			if((goto_line=(uint *)realloc(goto_line,sizeof(int)*(gotos+1)))
+			if((goto_line=(uint *)realloc_or_free(goto_line,sizeof(int)*(gotos+1)))
 				==NULL) {
 				printf("Too many gotos.\n");
 				bail(1); }
@@ -775,19 +775,19 @@ void compile(char *src)
 			sp=strchr(arg,' ');
 			if(sp)
 				*sp=0;
-			if((call_label=(char **)realloc(call_label,sizeof(char *)*(calls+1)))
+			if((call_label=(char **)realloc_or_free(call_label,sizeof(char *)*(calls+1)))
 				==NULL) {
 				printf("Too many calls.\n");
 				bail(1); }
-			if((call_file=(char **)realloc(call_file,sizeof(char *)*(calls+1)))
+			if((call_file=(char **)realloc_or_free(call_file,sizeof(char *)*(calls+1)))
 				==NULL) {
 				printf("Too many calls.\n");
 				bail(1); }
-			if((call_indx=(uint *)realloc(call_indx,sizeof(int)*(calls+1)))
+			if((call_indx=(uint *)realloc_or_free(call_indx,sizeof(int)*(calls+1)))
 				==NULL) {
 				printf("Too many calls.\n");
 				bail(1); }
-			if((call_line=(uint *)realloc(call_line,sizeof(int)*(calls+1)))
+			if((call_line=(uint *)realloc_or_free(call_line,sizeof(int)*(calls+1)))
 				==NULL) {
 				printf("Too many calls.\n");
 				bail(1); }

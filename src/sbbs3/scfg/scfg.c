@@ -378,7 +378,7 @@ void set_cfg_filename(const char* hostname)
 	if(hostname == NULL)
 		sbbs_get_ini_fname(cfg.filename, cfg.ctrl_dir);
 	else
-		snprintf(cfg.filename, sizeof cfg.filename, "%ssbbs.%s.ini", cfg.ctrl_dir, hostname);
+		snprintf(cfg.filename, sizeof cfg.filename, "%ssbbs%s%s.ini", cfg.ctrl_dir, *hostname ? ".":"", hostname);
 }
 
 int main(int argc, char **argv)
@@ -1122,7 +1122,7 @@ void txt_cfg()
 				uifc.helpbuf=0;
 				continue;
 			}
-			if((cfg.txtsec=(txtsec_t **)realloc(cfg.txtsec
+			if((cfg.txtsec=(txtsec_t **)realloc_or_free(cfg.txtsec
 				,sizeof(txtsec_t *)*(cfg.total_txtsecs+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_txtsecs+1);
 				cfg.total_txtsecs=0;
@@ -1311,7 +1311,7 @@ void shell_cfg()
 				uifc.helpbuf=0;
 				continue;
 			}
-			if((cfg.shell=(shell_t **)realloc(cfg.shell
+			if((cfg.shell=(shell_t **)realloc_or_free(cfg.shell
 				,sizeof(shell_t *)*(cfg.total_shells+1)))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_shells+1);
 				cfg.total_shells=0;

@@ -196,7 +196,7 @@ int main(int argc,char **argv)
 							}
 							if(g==total_found) {
 								++total_found;
-								if((foundcrc = realloc(foundcrc
+								if((foundcrc = realloc_or_free(foundcrc
 									,total_found*sizeof(uint32_t)))==NULL) {
 									printf("Out of memory reallocating\r\n");
 									return(1); 
