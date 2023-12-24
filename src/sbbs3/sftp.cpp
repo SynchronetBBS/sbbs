@@ -63,7 +63,7 @@ static int type_cmp(const void *key, const void *name)
 	int k = *(uint8_t *)key;
 	int n = *(uint8_t *)name;
 
-	return n - k;
+	return k - n;
 }
 
 static const char * const
@@ -142,21 +142,18 @@ have_full_pkt(sbbs_t *sbbs)
 static void
 remove_packet(sbbs_t *sbbs)
 {
-sbbs->lprintf(LOG_DEBUG, "Removing packet type %" PRIu8, ((uint8_t *)sbbs->sftp_pending_packet)[4]);
 	if (!have_pkt_sz(sbbs)) {
 		sbbs->lprintf(LOG_ERR, "sftp removing invalid packet len (%zu) at %s:%d", sbbs->sftp_pending_packet_sz, __FILE__, __LINE__);
 		return;
 	}
 
 	uint32_t sz = pkt_sz(sbbs);
-sbbs->lprintf(LOG_DEBUG, "Size to remove: %" PRIu32, sz);
 	if (sz > sbbs->sftp_pending_packet_used) {
 		sbbs->lprintf(LOG_ERR, "sftp packet size %" PRIu32 ", larger than used bytes %zu.  Discarding.", sz, sbbs->sftp_pending_packet_used);
 		discard_packet(sbbs);
 		return;
 	}
 	uint32_t newsz = sbbs->sftp_pending_packet_used - sz - sizeof(uint32_t);
-sbbs->lprintf(LOG_DEBUG, "New size: %" PRIu32, sz);
 	memmove(sbbs->sftp_pending_packet, &((uint8_t *)sbbs->sftp_pending_packet)[sz], newsz);
 	sbbs->sftp_pending_packet_used = newsz;
 	// TODO: realloc() smaller?
@@ -256,7 +253,6 @@ send_pkt(sbbs_t *sbbs, tx_pkt_t pkt)
 			size_t sendbytes = remain;
 			if (sendbytes > 0x2000)
 				sendbytes = 0x2000;
-sbbs->lprintf(LOG_DEBUG, "Sending %zu sftp bytes", remain);
 			if(cryptStatusError((err=cryptPushData(sbbs->ssh_session, ((char*)data) + sent, remain, &i)))) {
 				/* Handle the SSH error here... */
 				GCESSTR(err, node, sbbs->ssh_session, "pushing data");
@@ -418,7 +414,6 @@ init(sbbs_t *sbbs, rx_pkt_t rpkt)
 	append32(ps, SFTP_VERSION);
 
 	uint32_t ver = get32(rpkt);
-sbbs->lprintf(LOG_DEBUG, "Handing init packet, ver = %" PRIu32, ver);
 	if (ver < SFTP_VERSION) {
 		// TODO: Handle this better...
 		sbbs->lprintf(LOG_ERR, "Unsupported sftp version %" PRIu32 " hanging connection on purpose", ver);
@@ -522,7 +517,6 @@ void
 sftp_handle_data(sbbs_t *sbbs, char *inbuf, int len)
 {
 	// Validate arguments
-sbbs->lprintf(LOG_DEBUG, "Got %d bytes\n", len);
 	if (sbbs == NULL || inbuf == NULL)
 		sbbs->lprintf(LOG_ERR, "sftp NULL pointer at %s:%d", __FILE__, __LINE__);
 	if (len == 0)
