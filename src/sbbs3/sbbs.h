@@ -415,7 +415,12 @@ public:
 #ifdef USE_CRYPTLIB
 	CRYPT_SESSION	ssh_session=-1;
 #endif
-	int		session_channel=-1;
+	int session_channel=-1;
+	int sftp_channel = -1;
+	void *sftp_pending_packet = NULL;
+	size_t sftp_pending_packet_sz = 0;
+	size_t sftp_pending_packet_used = 0;
+
 	std::atomic<bool> ssh_mode{false};
 	SOCKET	passthru_socket=INVALID_SOCKET;
 	bool	passthru_socket_active = false;
