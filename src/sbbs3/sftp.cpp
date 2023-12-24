@@ -431,7 +431,6 @@ send_error(sbbs_t *sbbs, uint32_t id, uint32_t code, const char *msg, const char
 
 	if (!pkt)
 		return;
-	// TODO: Obviously, we need real package generation code...
 	append32(pkt, id);
 	append32(pkt, code);
 	appendstring(pkt, msg);
