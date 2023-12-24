@@ -111,6 +111,7 @@ int msgdump(FILE* fp, const char* fname)
 	fseek(fp, sizeof(hdr), SEEK_SET);
 	if(fread(body, len, 1, fp) != 1) {
 		perror("reading body text");
+		free(body);
 		return __COUNTER__;
 	}
 	fprintf(bodyfp, "\n-start of message text-\n");
