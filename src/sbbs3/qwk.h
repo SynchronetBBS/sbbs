@@ -19,7 +19,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define QWK_NEWLINE		'\xe3'	/* QWK line terminator (227) */
+#define QWK_NEWLINE		227		/* QWK line terminator (0xE3) */
 #define QWK_BLOCK_LEN	128
 #define QWK_HFIELD_LEN	25		/* Header field (To/From/Subject) length */
 
