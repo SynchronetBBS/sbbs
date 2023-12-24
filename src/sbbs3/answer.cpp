@@ -255,6 +255,22 @@ bool sbbs_t::answer()
 				lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s'", rlogin_name);
 			badlogin(rlogin_name, tmp);
 		}
+		if (cryptStatusOK(cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_WIDTH, &l)) && l > 0) {
+			cols = l;
+			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket, client.addr, cols);
+		}
+		if (cryptStatusOK(cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT, &l)) && l > 0) {
+			rows = l;
+			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket, client.addr, rows);
+		}
+		l = 0;
+		if (cryptStatusOK(cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL, terminal, &l)) && l > 0) {
+			if (l < sizeof(terminal))
+				terminal[l] = 0;
+			else
+				terminal[sizeof(terminal)-1] = 0;
+			lprintf(LOG_DEBUG, "%04d SSH [%s] term: %s", client_socket, client.addr, terminal);
+		}
 	}
 #endif
 

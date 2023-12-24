@@ -276,10 +276,24 @@ ssh_connect(struct bbslist *bbs)
 
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);
+		uifc.pop("Setting Channel");
+	}
+
+	cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, CRYPT_UNUSED);
+
+	if (!bbs->hidepopups) {
+		uifc.pop(NULL);
+		uifc.pop("Setting Channel Type");
+	}
+
+	cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE, "session", 7);
+
+	if (!bbs->hidepopups) {
+		uifc.pop(NULL);
 		uifc.pop("Setting Terminal Type");
 	}
 	term = get_emulation_str(get_emulation(bbs));
-	status = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_TERMINAL, term, strlen(term));
+	status = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL, term, strlen(term));
 
 	get_term_win_size(&cols, &rows, NULL, NULL, &bbs->nostatus);
 
@@ -287,13 +301,13 @@ ssh_connect(struct bbslist *bbs)
 		uifc.pop(NULL);
 		uifc.pop("Setting Terminal Width");
 	}
-	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_WIDTH, cols);
+	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_WIDTH, cols);
 
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);
 		uifc.pop("Setting Terminal Height");
 	}
-	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_HEIGHT, rows);
+	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT, rows);
 
 	cl.SetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
 
