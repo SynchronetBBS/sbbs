@@ -1641,7 +1641,7 @@ function IRCClient_do_connect(con_server,con_port) {
 		con_port = con_cline.port;
 	if (!con_port && !con_cline.port)
 		con_port = String(Default_Port);
-	if (!con_port.match(/^[0-9]+$/)) {
+	if (con_port != parseInt(con_port)) {
 		this.server_notice("Invalid port: " + con_port);
 		return false;
 	}
