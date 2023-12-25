@@ -740,7 +740,7 @@ CSI Ps c (DA)
 	Defaults: Ps = 0
 	If Ps is 0, CTerm will reply with the sequence:
         CSI = 67;84;101;114;109;pN c
-	64;84;101;114;109 is the ASCII values of the "CTerm" string.  pN is the
+	67;84;101;114;109 is the ASCII values of the "CTerm" string.  pN is the
 	CVS revision ID of CTerm with dots converted to semi-colons
 	(e.g. "1;156").  Use the CVS revision to detect if a specific feature
 	is available.  If you are adding features to a forked version of cterm,
