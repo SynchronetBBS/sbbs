@@ -378,6 +378,7 @@ int smb_renewfile(smb_t* smb, smbfile_t* file, int storage, const char* path)
 	int result;
 	if((result = smb_removefile(smb, file)) != SMB_SUCCESS)
 		return result;
+	file->hdr.when_imported.time = 0; // Reset the import date/time
 	return smb_addfile(smb, file, storage, file->extdesc, file->metadata, path);
 }
 
@@ -388,6 +389,12 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 	int result;
 	int removed = 0;
 	char fname[SMB_FILEIDX_NAMELEN + 1] = "";
+
+	if(file->total_hfields < 1) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s header has %u fields"
+			,__FUNCTION__, file->total_hfields);
+		return SMB_ERR_HDR_FIELD;
+	}
 
 	if(!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
