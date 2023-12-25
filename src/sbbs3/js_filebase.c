@@ -1355,7 +1355,7 @@ js_renew_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	file_t file;
-	if((p->smb_result = smb_loadfile(&p->smb, fname, &file, file_detail_index)) == SMB_SUCCESS) {
+	if((p->smb_result = smb_loadfile(&p->smb, fname, &file, file_detail_metadata)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
 		p->smb_result = smb_renewfile(&p->smb, &file, SMB_SELFPACK, getfilepath(scfg, &file, path));
 		smb_freefilemem(&file);
