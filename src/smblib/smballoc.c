@@ -308,14 +308,18 @@ int smb_freemsghdr(smb_t* smb, off_t offset, uint length)
 	}
 	clearerr(smb->sha_fp);
 	blocks = smb_hdrblocks(length);
-	if(blocks < 1)
+	if(blocks < 1) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s invalid header length: %u", __FUNCTION__, length);
 		return SMB_ERR_HDR_LEN;
+	}
 
 	sha_offset = offset/SHD_BLOCK_LEN;
 	if(filelength(fileno(smb->sha_fp)) <= (sha_offset + blocks)) {
 		if(chsize(fileno(smb->sha_fp), (int)sha_offset) == 0) {
-			if(chsize(fileno(smb->shd_fp), (int)(smb->status.header_offset + offset)) != 0)
+			if(chsize(fileno(smb->shd_fp), (int)(smb->status.header_offset + offset)) != 0) {
+				safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s header truncation failure", __FUNCTION__);
 				return SMB_ERR_TRUNCATE;
+			}
 			return SMB_SUCCESS;
 		}
 	}
