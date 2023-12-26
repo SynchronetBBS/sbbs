@@ -23,7 +23,7 @@ sftpc_finish(sftpc_state_t state)
 }
 
 sftpc_state_t
-sftpc_begin(bool (*send_cb)(sftp_tx_pkt_t *pkt, void *cb_data), void *cb_data)
+sftpc_begin(bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data), void *cb_data)
 {
 	sftpc_state_t ret = (sftpc_state_t)malloc(sizeof(sftpc_state_t));
 	if (ret == NULL)
@@ -46,24 +46,34 @@ sftpc_init(sftpc_state_t state)
 {
 	assert(state);
 	if (!state)
-		return false;
+		goto fail;
 	assert(state->thread == pthread_self());
 	if (state->thread != pthread_self())
-		return false;
+		goto fail;
 	if (!sftp_appendbyte(&state->txp, SSH_FXP_INIT))
-		return false;
+		goto fail;
 	if (!sftp_append32(&state->txp, SFTP_VERSION))
-		return false;
+		goto fail;
+	uint8_t *txbuf;
+	size_t txsz;
+	if (!sftp_prep_tx_packet(state->txp, &txbuf, &txsz))
+		goto fail;
+	if (!state->send_cb(txbuf, txsz, state->cb_data))
+		goto fail;
+	sftp_tx_pkt_reset(&state->txp);
 	if (WaitForEvent(state->recv_event, INFINITE) != WAIT_OBJECT_0)
-		return false;
+		goto fail;
 	if (state->rxp->type != SSH_FXP_VERSION)
-		return false;
+		goto fail;
 	if (sftp_get32(state->rxp) != SFTP_VERSION)
-		return false;
+		goto fail;
 	sftp_remove_packet(state->rxp);
 	if (!sftp_have_full_pkt(state->rxp))
 		ResetEvent(state->recv_event);
 	return true;
+fail:
+	sftp_tx_pkt_reset(&state->txp);
+	return false;
 }
 
 bool

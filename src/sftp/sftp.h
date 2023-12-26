@@ -65,8 +65,9 @@ typedef struct sftp_rx_pkt {
 	uint32_t cur;
 	uint32_t sz;
 	uint32_t used;
+	uint32_t len;
 	uint8_t type;
-	uint8_t *data;
+	uint8_t data[];
 } *sftp_rx_pkt_t;
 
 typedef struct sftp_string {
@@ -91,7 +92,7 @@ struct sftp_file_attributes {
 };
 
 typedef struct sftp_client_state {
-	bool (*send_cb)(sftp_tx_pkt_t *pkt, void *cb_data);
+	bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data);
 	xpevent_t recv_event;
 	sftp_rx_pkt_t rxp;
 	sftp_tx_pkt_t txp;
@@ -111,12 +112,14 @@ uint32_t sftp_get32(sftp_rx_pkt_t pkt);
 uint32_t sftp_get64(sftp_rx_pkt_t pkt);
 sftp_str_t sftp_getstring(sftp_rx_pkt_t pkt, uint8_t **str);
 bool sftp_rx_pkt_append(sftp_rx_pkt_t *pkt, uint8_t *inbuf, uint32_t len);
+bool sftp_tx_pkt_reset(sftp_tx_pkt_t *pktp);
 bool sftp_appendbyte(sftp_tx_pkt_t *pktp, uint8_t u8);
 bool sftp_append32(sftp_tx_pkt_t *pktp, uint32_t u32);
 bool sftp_append64(sftp_tx_pkt_t *pktp, uint64_t u);
 bool sftp_appendstring(sftp_tx_pkt_t *pktp, sftp_str_t s);
 void sftp_free_tx_pkt(sftp_tx_pkt_t pkt);
 void sftp_free_rx_pkt(sftp_rx_pkt_t pkt);
+bool sftp_prep_tx_packet(sftp_tx_pkt_t pkt, uint8_t **buf, size_t *sz);
 
 /* sftp_str.c */
 sftp_str_t sftp_strdup(const char *str);
@@ -126,7 +129,7 @@ void free_sftp_str(sftp_str_t str);
 
 /* sftp_client.c */
 void sftpc_finish(sftpc_state_t state);
-sftpc_state_t sftpc_begin(bool (*send_cb)(sftp_tx_pkt_t *pkt, void *cb_data), void *cb_data);
+sftpc_state_t sftpc_begin(bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data), void *cb_data);
 bool sftpc_init(sftpc_state_t state);
 bool sftpc_recv(sftpc_state_t state, uint8_t *buf, uint32_t sz);
 
