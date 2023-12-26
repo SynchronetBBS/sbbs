@@ -62,13 +62,15 @@
 "\1_\r\n\1y\1hStart with number [\1w%u\1y]: \1w"             048 StartWithN
 "\r\n\1n\1c\xfe \1b\1hReading E-mail \1n\1c\xfe \1b\1h(\1w\1`?\1b=Menu)"\  049 ReadingMail
 	" (\1w%u\1b of \1w%u\1b): \1n\1~"
-"\1n\r\nYou can't reply to this message.\r\n"    	050 CantReplyToMsg
-"  \1h\1bRe\1n\1b: \1h\1c%s\1n\r\n\r\n"                        051 Regarding
-"  \1h\1bRe\1n\1b: \1h\1c%s\r\n  "\				   052 RegardingByOn
-	"\1bBy\1n\1b: \1h\1c%s \1bon \1c%s\1n\r\n\r\n"    	
-"  \1h\1bRe\1n\1b: \1h\1c%s\r\n  "\  				   053 RegardingByToOn	
-	"\1bBy\1n\1b: \1h\1c%s \1bto \1c%s \1bon "\       
-	"\1c%s\1n\r\n\r\n"
+"\1n\r\nYou can't reply to this message.\r\n"    	   050 CantReplyToMsg
+"  \1h\1bRe\1n\1b: \1h\1c@MSG_SUBJECT@\1n\r\n\r\n"     051 Regarding
+"  \1h\1bRe\1n\1b: \1h\1c@MSG_SUBJECT@\r\n  "\         052 RegardingByOn
+	"\1bBy\1n\1b: \1h\1c@MSG_FROM_NAME@ "\
+	"\1bon \1c@MSG_DATE@\1n\r\n\r\n"
+"  \1h\1bRe\1n\1b: \1h\1c@MSG_SUBJECT@\r\n  "\         053 RegardingByToOn
+	"\1bBy\1n\1b: \1h\1c@MSG_FROM_NAME@ "\
+	"\1bto \1c@MSG_TO_NAME@ "\
+	"\1bon \1c@MSG_DATE@\1n\r\n\r\n"
 "Delete mail from %s"                                   054 DeleteMailQ
 "OK"                                                    055 OK
 "\r\n\1_\1b\1hForward mail to: \1w"                         056 ForwardMailTo
