@@ -632,7 +632,7 @@ typedef struct {				/* Message or File */
 	};
 	union {
 		uchar*	tail;			/* Message body tail (optional) */
-		char*	metadata;		/* File metadata */
+		char*	auxdata;		/* File aux-data (JSON) */
 	};
 	char*		tags;			/* Message tags (space-delimited) */
 	char*		editor;			/* Message editor (if known) */
