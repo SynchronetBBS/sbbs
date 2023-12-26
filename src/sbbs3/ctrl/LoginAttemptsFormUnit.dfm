@@ -83,20 +83,22 @@ object LoginAttemptsForm: TLoginAttemptsForm
     end
     object ResolveHostnameMenuItem: TMenuItem
       Caption = 'Lookup Hostname'
+      ShortCut = 76
       OnClick = ResolveHostnameMenuItemClick
     end
     object FilterIpMenuItem: TMenuItem
       Caption = 'Filter IP Address'
+      ShortCut = 70
       OnClick = FilterIpMenuItemClick
-    end
-    object ClearListMenuItem: TMenuItem
-      Caption = 'Clear List'
-      OnClick = ClearListMenuItemClick
     end
     object Remove1: TMenuItem
       Caption = 'Remove'
       ShortCut = 46
       OnClick = Remove1Click
+    end
+    object ClearListMenuItem: TMenuItem
+      Caption = 'Remove All'
+      OnClick = ClearListMenuItemClick
     end
   end
 end
