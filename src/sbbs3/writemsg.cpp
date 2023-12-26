@@ -141,12 +141,14 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 }
 
 /****************************************************************************/
+/* Insure ends in LF or CRLF												*/
 /****************************************************************************/
 int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lines, unsigned maxlines)
 {
 	unsigned i,l;
 	int	len=0;
 	ushort useron_xedit = useron.xedit;
+	char lastch = 0;
 
 	if(useron_xedit && !chk_ar(cfg.xedit[useron_xedit-1]->ar, &useron, &client))
 		useron_xedit = 0;
@@ -157,6 +159,7 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 			switch(cfg.xedit[useron_xedit-1]->soft_cr) {
 				case XEDIT_SOFT_CR_EXPAND:
 					len += fwrite(crlf,1,2,stream);
+					lastch = '\n';
 					continue;
 				case XEDIT_SOFT_CR_STRIP:
 					continue;
@@ -169,6 +172,7 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 		if(buf[l]==LF && (!l || buf[l-1]!=CR) && useron_xedit
 			&& cfg.xedit[useron_xedit-1]->misc&EXPANDLF) {
 			len+=fwrite(crlf,1,2,stream);
+			lastch = '\n';
 			i++;
 			continue;
 		}
@@ -205,12 +209,17 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 		if(buf[l]==LF)
 			i++;
 		fputc(buf[l],stream);
+		lastch = buf[l];
 		len++;
 	}
 
 	if(buf[l]) {
 		bprintf(text[NoMoreLines], i);
 		buf[l] = 0;
+	}
+	if(lastch != '\n') {
+		len+=fwrite(crlf,1,2,stream);
+		++i;
 	}
 
 	if(lines!=NULL)
