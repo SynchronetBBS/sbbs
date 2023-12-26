@@ -89,6 +89,7 @@
 #  SMBLIB_SRC		- Path to smblib source									#
 #  ENCODE_SRC	    - Path to encode lib source								#
 #  HASH_SRC			- Path to hash lib source								#
+#  SFTP_SRC			- Path to sftp lib source								#
 #  MT_CFLAGS		- CFLAGS for building MT objects						#
 #  MT_LDFLAGS		- LDFLAGS for linking MT targets						#
 #  UL_PRE			- Use Library prefix (*nix is -l)						#
@@ -426,6 +427,7 @@ ENCODE_SRC	:=	$(SRC_ROOT)$(DIRSEP)encode
 HASH_SRC 	:=	$(SRC_ROOT)$(DIRSEP)hash
 3RDP_ROOT	?=	$(SRC_ROOT)$(DIRSEP)..$(DIRSEP)3rdp
 3RDP_BUILD	:=	$(3RDP_ROOT)$(DIRSEP)build
+SFTP_SRC	:=	$(SRC_ROOT)$(DIRSEP)sftp
 
 # SDL ciolib enabled by default for the moment.
 ifndef WITHOUT_SDL
@@ -447,6 +449,7 @@ endif
 -include		$(HASH_SRC)$(DIRSEP)Common.gmake
 -include		$(3RDP_BUILD)$(DIRSEP)Common.make
 -include		$(3RDP_BUILD)$(DIRSEP)Common.gmake
+-include		$(SFTP_SRC)$(DIRSEP)Common.make
 
 ifdef DEBUG
  CFLAGS	+=	-ggdb
@@ -556,3 +559,6 @@ $(CRYPT_LIB):  $(CRYPT_DEPS)
 cl:
 	$(MAKE) -C $(3RDPBUILDDIR) cryptlib
 
+$(SFTPLIB-MT): sftp-mt
+sftp-mt:
+	$(MAKE) -C $(SFTP_SRC) mtlib
