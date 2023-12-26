@@ -361,10 +361,12 @@ int smb_addfile_withlist(smb_t* smb, smbfile_t* file, int storage, const char* e
 
 	if(list != NULL && *list != NULL) {
 		size_t size = strListCount(list) * 1024;
-		auxdata = calloc(1, size);
-		if(auxdata == NULL)
-			return SMB_ERR_MEM;
-		strListCombine(list, auxdata, size - 1, "\r\n");
+		if(size > 0) {
+			auxdata = calloc(1, size);
+			if(auxdata == NULL)
+				return SMB_ERR_MEM;
+			strListCombine(list, auxdata, size - 1, "\r\n");
+		}
 	}
 	result = smb_addfile(smb, file, storage, extdesc, auxdata, path);
 	free(auxdata);
