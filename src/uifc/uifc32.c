@@ -362,6 +362,7 @@ int uifcini32(uifcapi_t* uifcapi)
 	for(i=0; i<MAX_BUFS; i++)
 		sav[i].buf=NULL;
 	api->savnum=0;
+	api->exit_flags = 0;
 
 	api->initialized=TRUE;
 
@@ -650,7 +651,6 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 	BOOL shadow = api->scrn_width >= 80;
 
 	if(cur==NULL) cur=&tmpcur;
-	api->exit_flags = 0;
 	hclr=api->hclr;
 	lclr=api->lclr;
 	bclr=api->bclr;
@@ -2144,7 +2144,6 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	char	*pastebuf=NULL;
 	unsigned char	*pb=NULL;
 
-	api->exit_flags = 0;
 	if((str=alloca(max+1))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,(max+1));
@@ -2751,7 +2750,6 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
 	uint title_len=0;
 	struct mouse_event	mevnt;
 
-	api->exit_flags = 0;
 	_setcursortype(_NOCURSOR);
 
 	title_len=strlen(title);
@@ -3059,7 +3057,6 @@ static void help(void)
 	long l;
 	FILE *fp;
 
-	api->exit_flags = 0;
 	if(api->helpbuf==NULL && api->helpixbfile[0]==0)
 		return;
 
