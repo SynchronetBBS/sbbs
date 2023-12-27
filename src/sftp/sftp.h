@@ -1,10 +1,6 @@
 #ifndef SFTP_SFTP_H
 #define SFTP_SFTP_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <eventwrap.h>
 #include <inttypes.h>
 #include <stdbool.h>
