@@ -2,11 +2,13 @@
 
 /* $Id: ssh.c,v 1.31 2020/05/28 22:58:26 deuce Exp $ */
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include "bbslist.h"
 #include "ciolib.h"
 #include "conn.h"
+#include "eventwrap.h"
 #include "gen_defs.h"
 #include "genwrap.h"
 #include "sftp.h"
@@ -51,60 +53,95 @@ cryptlib_error_message(int status, const char *msg)
 static void
 close_sftp_channel(void)
 {
+	if (sftp_state == NULL)
+		return;
 	pthread_mutex_lock(&ssh_mutex);
 	if (sftp_channel != -1) {
-		cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sftp_channel);
-		cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
+		if (cryptStatusOK(cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sftp_channel)))
+			cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
 		sftp_channel = -1;
 	}
 	pthread_mutex_unlock(&ssh_mutex);
 	sftpc_finish(sftp_state);
+	sftp_state = NULL;
+}
+
+static void
+close_ssh_channel(void)
+{
+	pthread_mutex_lock(&ssh_mutex);
+	if (ssh_channel != -1) {
+		if (cryptStatusOK(cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel)))
+			cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
+		ssh_channel = -1;
+	}
+	pthread_mutex_unlock(&ssh_mutex);
 }
 
 void
 ssh_input_thread(void *args)
 {
-	int    status;
+	int    popstatus, gchstatus, status;
 	int    rd;
 	size_t buffered;
 	size_t buffer;
 	int    chan;
 
 	SetThreadName("SSH Input");
-	conn_api.input_thread_running = 1;
 	while (ssh_active && !conn_api.terminate) {
 		if (!socket_readable(ssh_sock, 100))
 			continue;
 
 		pthread_mutex_lock(&ssh_mutex);
-		status = cl.FlushData(ssh_session);
-		status = cl.PopData(ssh_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
-		if (cryptStatusOK(status))
-			status = cl.GetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &chan);
+		conn_api.input_thread_running = 1;
+		cl.FlushData(ssh_session);
+		popstatus = cl.PopData(ssh_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
+		gchstatus = cl.GetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &chan);
 		pthread_mutex_unlock(&ssh_mutex);
 
                 // Handle case where there was socket activity without readable data (ie: rekey)
-		if (status == CRYPT_ERROR_TIMEOUT)
+		if (popstatus == CRYPT_ERROR_TIMEOUT)
 			continue;
 
-		if (cryptStatusError(status)) {
-			if ((status == CRYPT_ERROR_COMPLETE) || (status == CRYPT_ERROR_READ) || (status == CRYPT_ERROR_NOTFOUND)) { /* connection closed */
-				ssh_active = true;
+		// A final read on a channel just occured... figure out which is missing...
+		if (gchstatus == CRYPT_ERROR_NOTFOUND) {
+			if (ssh_channel != -1) {
+				status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel);
+				if (status == CRYPT_ERROR_NOTFOUND) {
+					chan = ssh_channel;
+				}
+			}
+			if (chan == -1) {
+				if (sftp_channel != -1) {
+					status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel);
+					if (status == CRYPT_ERROR_NOTFOUND) {
+						chan = sftp_channel;
+					}
+				}
+			}
+		}
+
+		if (cryptStatusError(popstatus)) {
+			if ((popstatus == CRYPT_ERROR_COMPLETE) || (popstatus == CRYPT_ERROR_READ)) { /* connection closed */
+				if (chan == ssh_channel)
+					break;
+			}
+			else {
+				cryptlib_error_message(popstatus, "recieving data");
 				break;
 			}
-			cryptlib_error_message(status, "recieving data");
-			ssh_active = true;
-			break;
 		}
 		else {
 			if (chan == sftp_channel) {
 				if (!sftpc_recv(sftp_state, conn_api.rd_buf, rd)) {
-					ssh_active = true;
 					close_sftp_channel();
 					continue;
 				}
+				if (gchstatus == CRYPT_ERROR_NOTFOUND) {
+					sftp_channel = -1;
+				}
 			}
-			else {
+			else if (chan == ssh_channel) {
 				buffered = 0;
 				while (buffered < rd) {
 					pthread_mutex_lock(&(conn_inbuf.mutex));
@@ -112,6 +149,13 @@ ssh_input_thread(void *args)
 					buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
 					pthread_mutex_unlock(&(conn_inbuf.mutex));
 				}
+				if (gchstatus == CRYPT_ERROR_NOTFOUND) {
+					ssh_channel = -1;
+				}
+			}
+			else {
+				assert(true);
+				cryptlib_error_message(gchstatus, "unknown channel");
 			}
 		}
 	}
@@ -128,7 +172,7 @@ ssh_output_thread(void *args)
 
 	SetThreadName("SSH Output");
 	conn_api.output_thread_running = 1;
-	while (ssh_active && !conn_api.terminate) {
+	while (ssh_active && !conn_api.terminate && ssh_channel != -1) {
 		pthread_mutex_lock(&(conn_outbuf.mutex));
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
@@ -138,17 +182,19 @@ ssh_output_thread(void *args)
 			while (ssh_active && sent < wr) {
 				ret = 0;
 				pthread_mutex_lock(&ssh_mutex);
+				if (ssh_channel == -1) {
+					pthread_mutex_unlock(&ssh_mutex);
+					break;
+				}
 				status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel);
 				if (cryptStatusOK(status))
 					status = cl.PushData(ssh_session, conn_api.wr_buf + sent, wr - sent, &ret);
 				pthread_mutex_unlock(&ssh_mutex);
 				if (cryptStatusError(status)) {
 					if ((status == CRYPT_ERROR_COMPLETE) || (status == CRYPT_ERROR_NOTFOUND)) { /* connection closed */
-						ssh_active = true;
 						break;
 					}
 					cryptlib_error_message(status, "sending data");
-					ssh_active = true;
 					break;
 				}
 				sent += ret;
@@ -187,11 +233,9 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 			cryptlib_error_message(status, "sending sftp data");
 		if (cryptStatusError(status)) {
 			if (status == CRYPT_ERROR_COMPLETE) { /* connection closed */
-				ssh_active = true;	// TODO: Why are we doing this?
 				break;
 			}
 			cryptlib_error_message(status, "sending sftp data");
-			ssh_active = true;
 			break;
 		}
 		sent += ret;
@@ -380,6 +424,7 @@ ssh_connect(struct bbslist *bbs)
 			uifc.pop(NULL);
 		return -1;
 	}
+	cl.FlushData(ssh_session);
 
 	ssh_active = true;
 	if (!bbs->hidepopups) {
@@ -426,57 +471,47 @@ ssh_connect(struct bbslist *bbs)
 
 #if NOTYET
 	// TODO: Without this sleep, all is woe.
-	SLEEP(10);
+	//SLEEP(10);
+	while (!conn_api.input_thread_running)
+		SLEEP(1);
 	if (cryptStatusOK(status)) {
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
 		if (!bbs->hidepopups) {
 			/* Clear ownership */
 			uifc.pop(NULL);
 			uifc.pop("Creating SFTP Channel");
 		}
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
 		pthread_mutex_lock(&ssh_mutex);
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
 		status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, CRYPT_UNUSED);
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
 		if (cryptStatusError(status))
 			cryptlib_error_message(status, "setting new channel");
 		if (cryptStatusOK(status)) {
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
 			status = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE, "subsystem", 9);
 			if (cryptStatusError(status))
 				cryptlib_error_message(status, "setting channel type");
 			if (cryptStatusOK(status)) {
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
 				status = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ARG1, "sftp", 4);
 				if (cryptStatusError(status))
 					cryptlib_error_message(status, "setting subsystem");
 				if (cryptStatusOK(status)) {
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
 					status = cl.GetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &sftp_channel);
 					if (cryptStatusError(status))
 						cryptlib_error_message(status, "getting new channel");
 					if (cryptStatusOK(status)) {
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
 						// TODO: Do something...
 					}
 				}
 			}
 		}
-		pthread_mutex_unlock(&ssh_mutex);
 	}
 	if (sftp_channel != -1) {
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
 		pthread_mutex_lock(&ssh_mutex);
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
+		cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sftp_channel);
 		status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 1);
 		pthread_mutex_unlock(&ssh_mutex);
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
-		if (cryptStatusError(status))
+		if (cryptStatusError(status)) {
 			cryptlib_error_message(status, "activating sftp session");
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
+		}
 		if (cryptStatusOK(status)) {
-fprintf(stderr, "%s:%d\n", __FILE__, __LINE__);
 			sftp_state = sftpc_begin(sftp_send, NULL);
 			if (sftp_state == NULL)
 				fprintf(stderr, "Failure!\n");
@@ -498,7 +533,8 @@ ssh_close(void)
 	char garbage[1024];
 
 	conn_api.terminate = 1;
-	cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 0);
+	close_sftp_channel();
+	close_ssh_channel();
 	ssh_active = false;
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
