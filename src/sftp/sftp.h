@@ -5,10 +5,10 @@
 extern "C" {
 #endif
 
-#include <stdbool.h>
+#include <eventwrap.h>
 #include <inttypes.h>
-
-#include "eventwrap.h"
+#include <stdbool.h>
+#include <threadwrap.h>
 
 // draft-ietf-secsh-filexfer-02
 
@@ -96,8 +96,14 @@ typedef struct sftp_client_state {
 	xpevent_t recv_event;
 	sftp_rx_pkt_t rxp;
 	sftp_tx_pkt_t txp;
-	pthread_t thread;
+	sftp_str_t home;
 	void *cb_data;
+	sftp_str_t err_msg;
+	sftp_str_t err_lang;
+	pthread_t thread;
+	uint32_t id;
+	uint32_t err_id;
+	uint32_t err_code;
 } *sftpc_state_t;
 
 /* sftp_pkt.c */
@@ -110,7 +116,7 @@ bool sftp_have_full_pkt(sftp_rx_pkt_t pkt);
 void sftp_remove_packet(sftp_rx_pkt_t pkt);
 uint32_t sftp_get32(sftp_rx_pkt_t pkt);
 uint32_t sftp_get64(sftp_rx_pkt_t pkt);
-sftp_str_t sftp_getstring(sftp_rx_pkt_t pkt, uint8_t **str);
+sftp_str_t sftp_getstring(sftp_rx_pkt_t pkt);
 bool sftp_rx_pkt_append(sftp_rx_pkt_t *pkt, uint8_t *inbuf, uint32_t len);
 bool sftp_tx_pkt_reset(sftp_tx_pkt_t *pktp);
 bool sftp_appendbyte(sftp_tx_pkt_t *pktp, uint8_t u8);
@@ -132,5 +138,6 @@ void sftpc_finish(sftpc_state_t state);
 sftpc_state_t sftpc_begin(bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data), void *cb_data);
 bool sftpc_init(sftpc_state_t state);
 bool sftpc_recv(sftpc_state_t state, uint8_t *buf, uint32_t sz);
+bool sftpc_realpath(sftpc_state_t state, char *path, sftp_str_t *ret);
 
 #endif

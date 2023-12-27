@@ -513,10 +513,14 @@ ssh_connect(struct bbslist *bbs)
 		}
 		if (cryptStatusOK(status)) {
 			sftp_state = sftpc_begin(sftp_send, NULL);
-			if (sftp_state == NULL)
-				fprintf(stderr, "Failure!\n");
-			else if (sftpc_init(sftp_state))
-				fprintf(stderr, "Success!\n");
+			if (sftp_state != NULL) {
+				if (sftpc_init(sftp_state)) {
+					sftp_str_t ret = NULL;
+					if (sftpc_realpath(sftp_state, ".", &ret)) {
+						fprintf(stderr, "Home dir: %.*s\n", ret->len, ret->c_str);
+					}
+				}
+			}
 		}
 	}
 #endif

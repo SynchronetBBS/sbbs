@@ -2,9 +2,9 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <xpprintf.h>
 
 #include "sftp.h"
-#include "xpprintf.h"
 
 static sftp_str_t
 alloc_str(uint32_t len)
