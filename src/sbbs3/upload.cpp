@@ -531,8 +531,8 @@ bool sbbs_t::bulkupload(int dirnum)
 		if(strListFind(list, fname, /* case-sensitive: */FALSE) < 0) {
 			smb_freemsgmem(&f);
 			smb_hfield_str(&f, SMB_FILENAME, dirent->d_name);
-			off_t flen = flength(str);
-			bprintf(text[BulkUploadDescPrompt], format_filename(f.name, fname, 12, /* pad: */FALSE), flen/1024);
+			char tmp[64];
+			bprintf(text[BulkUploadDescPrompt], format_filename(f.name, fname, 12, /* pad: */FALSE), byte_estimate_to_str(flength(str), tmp, sizeof tmp, 1, 1));
 			if(strcmp(f.name, fname) != 0)
 				SAFECOPY(desc, f.name);
 			else
