@@ -770,6 +770,20 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	entry->rip = iniGetEnum(section, NULL, "RIP", rip_versions, RIP_VERSION_NONE);
 	entry->force_lcf = iniGetBool(section, NULL, "ForceLCF", false);
 	entry->yellow_is_yellow = iniGetBool(section, NULL, "YellowIsYellow", false);
+	if (iniKeyExists(section, NULL, "SSHFingerprint")) {
+		char fp[41];
+		int i;
+		iniGetString(section, NULL, "SSHFingerprint", "", fp);
+		for (i = 0; i < 20; i++) {
+			if (sscanf(&fp[i * 2], "%2" SCNx8, &entry->ssh_fingerprint[i]) != 1)
+				break;
+		}
+		if (i == 20)
+			entry->has_fingerprint = true;
+	}
+	else {
+		entry->has_fingerprint = false;
+	}
 	iniGetString(section, NULL, "DownloadPath", home, entry->dldir);
 	iniGetString(section, NULL, "UploadPath", home, entry->uldir);
 
@@ -1711,6 +1725,14 @@ add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetString(&inifile, bbs->name, "Comment", bbs->comment, &ini_style);
 	iniSetBool(&inifile, bbs->name, "ForceLCF", bbs->force_lcf, &ini_style);
 	iniSetBool(&inifile, bbs->name, "YellowIsYellow", bbs->yellow_is_yellow, &ini_style);
+	if (bbs->has_fingerprint) {
+		char fp[41];
+		fp[0] = 0;
+		for (int i = 0; i < 20; i++) {
+			sprintf(&fp[i * 2], "%02x", bbs->ssh_fingerprint[i]);
+		}
+		iniSetString(&inifile, bbs->name, "SSHFingerprint", fp, &ini_style);
+	}
 	if ((listfile = fopen(listpath, "w")) != NULL) {
 		iniWriteFile(listfile, inifile);
 		fclose(listfile);

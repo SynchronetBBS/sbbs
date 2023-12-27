@@ -140,6 +140,8 @@ struct bbslist {
 	char               comment[1024];
 	bool               force_lcf;
 	bool               yellow_is_yellow;
+	bool               has_fingerprint;
+	uint8_t            ssh_fingerprint[20];
 };
 
 extern char *music_names[];

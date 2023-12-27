@@ -253,6 +253,8 @@ ssh_connect(struct bbslist *bbs)
 	char        username[MAX_USER_LEN + 1];
 	int         rows, cols;
 	const char *term;
+	int         slen;
+	uint8_t     server_fp[sizeof(bbs->ssh_fingerprint)];
 
 	ssh_channel = -1;
 	sftp_channel = -1;
@@ -454,6 +456,64 @@ ssh_connect(struct bbslist *bbs)
 		if (!bbs->hidepopups)
 			uifc.pop(NULL);
 		return -1;
+	}
+
+	memset(server_fp, 0, sizeof(server_fp));
+	status = cl.GetAttributeString(ssh_session, CRYPT_SESSINFO_SERVER_FINGERPRINT_SHA1, server_fp, &slen);
+	if (cryptStatusOK(status)) {
+		if (memcmp(bbs->ssh_fingerprint, server_fp, sizeof(server_fp))) {
+			static const char * const opts[4] = {"Disconnect", "Update", "Ignore", ""};
+			FILE *listfile;
+			str_list_t inifile;
+			char fpstr[41];
+			int i;
+
+			slen = 0;
+			if (bbs->has_fingerprint) {
+				char ofpstr[41];
+
+				for (i = 0; i < sizeof(server_fp); i++) {
+					sprintf(&fpstr[i * 2], "%02x", server_fp[i]);
+				}
+				for (i = 0; i < sizeof(server_fp); i++) {
+					sprintf(&ofpstr[i * 2], "%02x", bbs->ssh_fingerprint[i]);
+				}
+				asprintf(&uifc.helpbuf, "`Fingerprint Changed`\n\n"
+				    "The server fingerprint has changed from the last known good connection.\n"
+				    "This may indicate someone is evesdropping on your connection.\n"
+				    "It is also possible that a host key has just been changed.\n"
+				    "\n"
+				    "Last known fingerprint: %s\n"
+				    "Fingerprint sent now:   %s\n", ofpstr, fpstr);
+				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &slen, NULL, "Fingerprint Changed", (char **)opts);
+				free(uifc.helpbuf);
+			}
+			else
+				i = 1;
+			switch(i) {
+				case 1:
+					if ((listfile = fopen(settings.list_path, "r")) != NULL) {
+						inifile = iniReadFile(listfile);
+						fclose(listfile);
+						iniSetString(&inifile, bbs->name, "SSHFingerprint", fpstr, &ini_style);
+						if ((listfile = fopen(settings.list_path, "w")) != NULL) {
+							iniWriteFile(listfile, inifile);
+							fclose(listfile);
+						}
+						strListFree(&inifile);
+					}
+					break;
+				case 2:
+					break;
+				default:
+					if (!bbs->hidepopups)
+						uifc.pop(NULL);
+					return -1;
+			}
+		}
+		bbs->has_fingerprint = true;
+	} else {
+		fprintf(stderr, "Failed to get fingerprint. :(\n");
 	}
 
 	if (!bbs->hidepopups)
