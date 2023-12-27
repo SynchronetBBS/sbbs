@@ -280,7 +280,7 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 	if(*p)
         SAFECOPY(global->host_name,value);
 
-	global->sem_chk_freq=iniGetUInteger(list,section,strSemFileCheckFrequency,DEFAULT_SEM_CHK_FREQ);
+	global->sem_chk_freq=(uint16_t)iniGetDuration(list,section,strSemFileCheckFrequency,DEFAULT_SEM_CHK_FREQ);
 	global->interfaces=iniGetStringList(list,section,strInterfaces, ",", "0.0.0.0,::");
 	global->outgoing4.s_addr=iniGetIpAddress(list,section,strOutgoing4,INADDR_ANY);
 	global->outgoing6=iniGetIp6Address(list,section,strOutgoing6,wildcard6);
@@ -452,7 +452,7 @@ void sbbs_read_ini(
 			=iniGetShortInt(list,section,"OutbufDrainTimeout",10);
 
 		bbs->sem_chk_freq
-			=iniGetShortInt(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
+			=(int)iniGetDuration(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 
 		/* JavaScript operating parameters */
 		sbbs_get_js_settings(list, section, &bbs->js, &global->js);
@@ -537,7 +537,7 @@ void sbbs_read_ini(
 		ftp->qwk_timeout
 			=(uint16_t)iniGetDuration(list,section,"QwkTimeout",FTP_DEFAULT_QWK_TIMEOUT);		/* seconds */
 		ftp->sem_chk_freq
-			=(uint16_t)iniGetDuration(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
+			=(int)iniGetDuration(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 		ftp->min_fsize
 			=iniGetBytes(list,section,"MinFileSize",1,0);
 		ftp->max_fsize
@@ -611,9 +611,9 @@ void sbbs_read_ini(
 		mail->max_delivery_attempts
 			=iniGetUInteger(list,section,"MaxDeliveryAttempts",MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS);
 		mail->rescan_frequency
-			=iniGetUInteger(list,section,"RescanFrequency",MAIL_DEFAULT_RESCAN_FREQUENCY);	/* 60 minutes */
+			=(uint16_t)iniGetDuration(list,section,"RescanFrequency",MAIL_DEFAULT_RESCAN_FREQUENCY);	/* 60 minutes */
 		mail->sem_chk_freq
-			=iniGetUInteger(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
+			=(int)iniGetDuration(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 		mail->lines_per_yield
 			=iniGetUInteger(list,section,"LinesPerYield",MAIL_DEFAULT_LINES_PER_YIELD);
 		mail->max_recipients
@@ -691,7 +691,7 @@ void sbbs_read_ini(
 			=iniGetIp6Address(list,section,strOutgoing6,global->outgoing6);
 
 		services->sem_chk_freq
-			=iniGetUInteger(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
+			=(int)iniGetDuration(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 
 		/* JavaScript operating parameters */
 		sbbs_get_js_settings(list, section, &services->js, &global->js);
@@ -739,7 +739,7 @@ void sbbs_read_ini(
 		web->max_inactivity
 			=(uint16_t)iniGetDuration(list,section,strMaxInactivity,WEB_DEFAULT_MAX_INACTIVITY);		/* seconds */
 		web->sem_chk_freq
-			=iniGetUInteger(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
+			=(int)iniGetDuration(list,section,strSemFileCheckFrequency,global->sem_chk_freq);
 
 		/* JavaScript operating parameters */
 		sbbs_get_js_settings(list, section, &web->js, &global->js);
@@ -849,7 +849,7 @@ BOOL sbbs_write_ini(
 		iniSetString(lp,section,strCtrlDirectory,global->ctrl_dir,&style);
 		iniSetString(lp,section,strTempDirectory,global->temp_dir,&style);
 		iniSetString(lp,section,strHostName,global->host_name,&style);
-		iniSetUInteger(lp,section,strSemFileCheckFrequency,global->sem_chk_freq,&style);
+		iniSetDuration(lp,section,strSemFileCheckFrequency,global->sem_chk_freq,&style);
 		if(global->outgoing4.s_addr != INADDR_ANY)
 			iniSetIpAddress(lp,section,strOutgoing4,global->outgoing4.s_addr,&style);
 		if(memcmp(&global->outgoing6, &wildcard6, sizeof(wildcard6)) != 0)
@@ -927,7 +927,7 @@ BOOL sbbs_write_ini(
 
 		if(bbs->sem_chk_freq==global->sem_chk_freq)
 			iniRemoveValue(lp,section,strSemFileCheckFrequency);
-		else if(!iniSetUInteger(lp,section,strSemFileCheckFrequency,bbs->sem_chk_freq,&style))
+		else if(!iniSetDuration(lp,section,strSemFileCheckFrequency,bbs->sem_chk_freq,&style))
 			break;
 
 		if(bbs->log_level==global->log_level)
@@ -1033,7 +1033,7 @@ BOOL sbbs_write_ini(
 
 		if(ftp->sem_chk_freq==global->sem_chk_freq)
 			iniRemoveValue(lp,section,strSemFileCheckFrequency);
-		else if(!iniSetUInteger(lp,section,strSemFileCheckFrequency,ftp->sem_chk_freq,&style))
+		else if(!iniSetDuration(lp,section,strSemFileCheckFrequency,ftp->sem_chk_freq,&style))
 			break;
 
 		if(ftp->log_level==global->log_level)
@@ -1096,7 +1096,7 @@ BOOL sbbs_write_ini(
 
 		if(mail->sem_chk_freq==global->sem_chk_freq)
 			iniRemoveValue(lp,section,strSemFileCheckFrequency);
-		else if(!iniSetUInteger(lp,section,strSemFileCheckFrequency,mail->sem_chk_freq,&style))
+		else if(!iniSetDuration(lp,section,strSemFileCheckFrequency,mail->sem_chk_freq,&style))
 			break;
 
 		if(mail->log_level==global->log_level)
@@ -1125,7 +1125,7 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetUInteger(lp,section,"MaxDeliveryAttempts",mail->max_delivery_attempts,&style))
 			break;
-		if(!iniSetUInteger(lp,section,"RescanFrequency",mail->rescan_frequency,&style))
+		if(!iniSetDuration(lp,section,"RescanFrequency",mail->rescan_frequency,&style))
 			break;
 		if(!iniSetUInteger(lp,section,"LinesPerYield",mail->lines_per_yield,&style))
 			break;
@@ -1222,7 +1222,7 @@ BOOL sbbs_write_ini(
 
 		if(services->sem_chk_freq==global->sem_chk_freq)
 			iniRemoveValue(lp,section,strSemFileCheckFrequency);
-		else if(!iniSetUInteger(lp,section,strSemFileCheckFrequency,services->sem_chk_freq,&style))
+		else if(!iniSetDuration(lp,section,strSemFileCheckFrequency,services->sem_chk_freq,&style))
 			break;
 
 		if(services->log_level==global->log_level)
@@ -1294,7 +1294,7 @@ BOOL sbbs_write_ini(
 
 		if(web->sem_chk_freq==global->sem_chk_freq)
 			iniRemoveValue(lp,section,strSemFileCheckFrequency);
-		else if(!iniSetUInteger(lp,section,strSemFileCheckFrequency,web->sem_chk_freq,&style))
+		else if(!iniSetDuration(lp,section,strSemFileCheckFrequency,web->sem_chk_freq,&style))
 			break;
 
 		if(web->log_level==global->log_level)
