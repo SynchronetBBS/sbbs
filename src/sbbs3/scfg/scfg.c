@@ -381,6 +381,21 @@ void set_cfg_filename(const char* hostname)
 		snprintf(cfg.filename, sizeof cfg.filename, "%ssbbs%s%s.ini", cfg.ctrl_dir, *hostname ? ".":"", hostname);
 }
 
+#ifdef _WIN32
+	#define printf cprintf
+#endif
+
+void banner()
+{
+	char	compiler[32];
+
+	DESCRIBE_COMPILER(compiler);
+
+	printf("\nSynchronet Configuration Utility (%s)  v%s%c  " COPYRIGHT_NOTICE
+        "\n",PLATFORM_DESC, VERSION, REVISION);
+	printf("\nCompiled %s/%s %s %s with %s\n", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
+}
+
 int main(int argc, char **argv)
 {
 	char*	p;
@@ -390,14 +405,12 @@ int main(int argc, char **argv)
 	BOOL    door_mode=FALSE;
 	BOOL	alt_chars = FALSE;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
-	char	compiler[32];
 
-	DESCRIBE_COMPILER(compiler);
-
-    printf("\nSynchronet Configuration Utility (%s)  v%s%c  " COPYRIGHT_NOTICE
-        "\n",PLATFORM_DESC, VERSION, REVISION);
-	printf("\nCompiled %s/%s %s %s with %s\n", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
-
+#if defined(_WIN32)
+	cio_api.options |= CONIO_OPT_DISABLE_CLOSE;
+#else
+	banner();
+#endif
 	xp_randomize();
 	cfg.size=sizeof(cfg);
 
@@ -493,10 +506,22 @@ int main(int argc, char **argv)
 						case 'I':
 							ciolib_mode=CIOLIB_MODE_CURSES_ASCII;
 							break;
-#endif
+#elif defined _WIN32
 						case 'W':
 							ciolib_mode=CIOLIB_MODE_CONIO;
 							break;
+						case 'G':
+							switch (toupper(argv[i][3])) {
+								case 0:
+								case 'W':
+									ciolib_mode = CIOLIB_MODE_GDI;
+									break;
+								case 'F':
+									ciolib_mode = CIOLIB_MODE_GDI_FULLSCREEN;
+									break;
+							}
+							break;
+#endif
 						case 'D':
 		                    door_mode=TRUE;
 		                    break;
@@ -514,7 +539,16 @@ int main(int argc, char **argv)
 					auto_save=TRUE;
 					break;
                 default:
-					USAGE:
+				USAGE:
+#ifdef _WIN32
+					uifc.size=sizeof(uifc);
+					uifc.mode |= UIFC_NOMOUSE;
+					uifc.scrn_len = 40;
+					initciolib(CIOLIB_MODE_CONIO);
+					uifcini32(&uifc);
+					banner();
+#endif
+
                     printf("\nusage: scfg [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
                         "-w                run initial setup wizard\n"
@@ -534,20 +568,28 @@ int main(int argc, char **argv)
 						"-host=<name>      set hostname to use for alternate sbbs.ini file\n"
 						"-iX               set interface mode to X (default=auto) where X is one of:\n"
 #ifdef __unix__
-						"                   X = X11 mode\n"
-						"                   C = Curses mode\n"
-						"                   F = Curses mode with forced IBM charset\n"
-						"                   I = Curses mode with forced ASCII charset\n"
-#else
-						"                   W = Win32 console mode\n"
-#endif
-						"                   A = ANSI mode\n"
-						"                   D = standard input/output/door mode\n"
+						"                   X  = X11 mode\n"
+						"                   C  = Curses mode\n"
+						"                   F  = Curses mode with forced IBM charset\n"
+						"                   I  = Curses mode with forced ASCII charset\n"
+#elif defined(_WIN32)
+						"                   W  = Win32 console mode\n"
+#if defined(WITH_GDI)
+						"                   G  = Win32 graphics mode\n"
+						"                   GF = Win32 graphics mode, full screen\n"
+#endif // WITH_GDI
+#endif // _WIN32
+						"                   A  = ANSI mode\n"
+						"                   D  = standard input/output/door mode\n"
 						"-A                use alternate (ASCII) characters for arrow symbols\n"
                         "-v#               set video mode to # (default=auto)\n"
                         "-l#               set screen lines to # (default=auto-detect)\n"
 						"-y                automatically save changes (don't ask)\n"
                         );
+#ifdef _WIN32
+					printf("\nHit a key to close...");
+					getch();
+#endif
         			exit(0);
 			}
 		}
