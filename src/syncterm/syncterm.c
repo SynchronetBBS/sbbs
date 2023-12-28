@@ -1195,7 +1195,7 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 					fn[0] = 0;
 			}
 			break;
-		case SYNCTERM_PATH_INI:
+		case SYNCTERM_PATH_KEYS:
 			backslash(fn);
 			strncat(fn, "syncterm.ssh", fnlen - strlen(fn) - 1);
 			break;
