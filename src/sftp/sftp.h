@@ -8,34 +8,33 @@
 
 // draft-ietf-secsh-filexfer-02
 
-#define SSH_FXP_INIT           UINT8_C(1)
-#define SSH_FXP_VERSION        UINT8_C(2)
-#define SSH_FXP_OPEN           UINT8_C(3)
-#define SSH_FXP_CLOSE          UINT8_C(4)
-#define SSH_FXP_READ           UINT8_C(5)
-#define SSH_FXP_WRITE          UINT8_C(6)
-#define SSH_FXP_LSTAT          UINT8_C(7)
-#define SSH_FXP_FSTAT          UINT8_C(8)
-#define SSH_FXP_SETSTAT        UINT8_C(9)
-#define SSH_FXP_FSETSTAT       UINT8_C(10)
-#define SSH_FXP_OPENDIR        UINT8_C(11)
-#define SSH_FXP_READDIR        UINT8_C(12)
-#define SSH_FXP_REMOVE         UINT8_C(13)
-#define SSH_FXP_MKDIR          UINT8_C(14)
-#define SSH_FXP_RMDIR          UINT8_C(15)
-#define SSH_FXP_REALPATH       UINT8_C(16)
-#define SSH_FXP_STAT           UINT8_C(17)
-#define SSH_FXP_RENAME         UINT8_C(18)
-#define SSH_FXP_READLINK       UINT8_C(19)
-#define SSH_FXP_SYMLINK        UINT8_C(20)
-#define SSH_FXP_STATUS         UINT8_C(101)
-#define SSH_FXP_HANDLE         UINT8_C(102)
-#define SSH_FXP_DATA           UINT8_C(103)
-#define SSH_FXP_NAME           UINT8_C(104)
-#define SSH_FXP_ATTRS          UINT8_C(105)
-#define SSH_FXP_EXTENDED       UINT8_C(200)
-#define SSH_FXP_EXTENDED_REPLY UINT8_C(201)
-
+#define SSH_FXP_INIT             UINT8_C(1)
+#define SSH_FXP_VERSION          UINT8_C(2)
+#define SSH_FXP_OPEN             UINT8_C(3)
+#define SSH_FXP_CLOSE            UINT8_C(4)
+#define SSH_FXP_READ             UINT8_C(5)
+#define SSH_FXP_WRITE            UINT8_C(6)
+#define SSH_FXP_LSTAT            UINT8_C(7)
+#define SSH_FXP_FSTAT            UINT8_C(8)
+#define SSH_FXP_SETSTAT          UINT8_C(9)
+#define SSH_FXP_FSETSTAT         UINT8_C(10)
+#define SSH_FXP_OPENDIR          UINT8_C(11)
+#define SSH_FXP_READDIR          UINT8_C(12)
+#define SSH_FXP_REMOVE           UINT8_C(13)
+#define SSH_FXP_MKDIR            UINT8_C(14)
+#define SSH_FXP_RMDIR            UINT8_C(15)
+#define SSH_FXP_REALPATH         UINT8_C(16)
+#define SSH_FXP_STAT             UINT8_C(17)
+#define SSH_FXP_RENAME           UINT8_C(18)
+#define SSH_FXP_READLINK         UINT8_C(19)
+#define SSH_FXP_SYMLINK          UINT8_C(20)
+#define SSH_FXP_STATUS           UINT8_C(101)
+#define SSH_FXP_HANDLE           UINT8_C(102)
+#define SSH_FXP_DATA             UINT8_C(103)
+#define SSH_FXP_NAME             UINT8_C(104)
+#define SSH_FXP_ATTRS            UINT8_C(105)
+#define SSH_FXP_EXTENDED         UINT8_C(200)
+#define SSH_FXP_EXTENDED_REPLY   UINT8_C(201)
 
 #define SSH_FX_OK                UINT32_C(0)
 #define SSH_FX_EOF               UINT32_C(1)
@@ -47,6 +46,19 @@
 #define SSH_FX_CONNECTION_LOST   UINT32_C(7)
 #define SSH_FX_OP_UNSUPPORTED    UINT32_C(8)
 
+#define SSH_FXF_READ             UINT32_C(0x00000001)
+#define SSH_FXF_WRITE            UINT32_C(0x00000002)
+#define SSH_FXF_APPEND           UINT32_C(0x00000004)
+#define SSH_FXF_CREAT            UINT32_C(0x00000008)
+#define SSH_FXF_TRUNC            UINT32_C(0x00000010)
+#define SSH_FXF_EXCL             UINT32_C(0x00000020)
+
+#define SSH_FILEXFER_ATTR_SIZE        UINT32_C(0x00000001)
+#define SSH_FILEXFER_ATTR_UIDGID      UINT32_C(0x00000002)
+#define SSH_FILEXFER_ATTR_PERMISSIONS UINT32_C(0x00000004)
+#define SSH_FILEXFER_ATTR_ACMODTIME   UINT32_C(0x00000008)
+#define SSH_FILEXFER_ATTR_EXTENDED    UINT32_C(0x80000000)
+        
 #define SFTP_MIN_PACKET_ALLOC 4096
 #define SFTP_VERSION 3
 
@@ -76,16 +88,8 @@ struct sftp_extended_file_attribute {
 	struct sftp_string *data;
 };
 
-struct sftp_file_attributes {
-	uint32_t flags;
-	uint64_t size;
-	uint32_t uid;
-	uint32_t gid;
-	uint32_t perm;
-	uint32_t atime;
-	uint32_t mtime;
-	struct sftp_extended_file_attribute ext[];
-};
+struct sftp_file_attributes;
+typedef struct sftp_file_attributes *sftp_file_attr_t;
 
 typedef struct sftp_client_state {
 	bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data);
@@ -101,6 +105,14 @@ typedef struct sftp_client_state {
 	uint32_t err_id;
 	uint32_t err_code;
 } *sftpc_state_t;
+
+enum sftp_handle_type {
+	SFTP_HANDLE_TYPE_DIR,
+	SFTP_HANDLE_TYPE_FILE,
+};
+
+typedef sftp_str_t sftp_filehandle_t;
+typedef sftp_str_t sftp_dirhandle_t;
 
 /* sftp_pkt.c */
 const char * const sftp_get_type_name(uint8_t type);
@@ -135,5 +147,28 @@ sftpc_state_t sftpc_begin(bool (*send_cb)(uint8_t *buf, size_t len, void *cb_dat
 bool sftpc_init(sftpc_state_t state);
 bool sftpc_recv(sftpc_state_t state, uint8_t *buf, uint32_t sz);
 bool sftpc_realpath(sftpc_state_t state, char *path, sftp_str_t *ret);
+bool sftpc_open(sftpc_state_t state, char *path, uint32_t flags, sftp_file_attr_t attr, sftp_dirhandle_t *handle);
+bool sftpc_close(sftpc_state_t state, sftp_filehandle_t *handle);
+bool sftpc_read(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, uint32_t len, sftp_str_t *ret);
+bool sftpc_write(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, sftp_str_t data);
+
+/* sftp_attr.c */
+sftp_file_attr_t sftp_fattr_alloc(void);
+void sftp_fattr_free(sftp_file_attr_t fattr);
+void sftp_fattr_set_size(sftp_file_attr_t fattr, uint64_t sz);
+bool sftp_fattr_get_size(sftp_file_attr_t fattr, uint64_t *sz);
+void sftp_fattr_set_uid_gid(sftp_file_attr_t fattr, uint32_t uid, uint32_t gid);
+bool sftp_fattr_get_uid(sftp_file_attr_t fattr, uint32_t *uid);
+bool sftp_fattr_get_gid(sftp_file_attr_t fattr, uint32_t *gid);
+void sftp_fattr_set_permissions(sftp_file_attr_t fattr, uint64_t perm);
+bool sftp_fattr_get_permissions(sftp_file_attr_t fattr, uint64_t *perm);
+void sftp_fattr_set_times(sftp_file_attr_t fattr, uint32_t atime, uint32_t mtime);
+bool sftp_fattr_get_atime(sftp_file_attr_t fattr, uint32_t *atime);
+bool sftp_fattr_get_mtime(sftp_file_attr_t fattr, uint32_t *mtime);
+bool sftp_fattr_add_ext(sftp_file_attr_t *fattr, sftp_str_t type, sftp_str_t data);
+sftp_str_t sftp_fattr_get_ext_type(sftp_file_attr_t fattr, uint32_t index);
+sftp_str_t sftp_fattr_get_ext_data(sftp_file_attr_t fattr, uint32_t index);
+uint32_t sftp_fattr_get_ext_count(sftp_file_attr_t fattr);
+bool sftp_appendfattr(sftp_tx_pkt_t *pktp, sftp_file_attr_t fattr);
 
 #endif

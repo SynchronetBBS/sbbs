@@ -250,7 +250,7 @@ error_popup(struct bbslist *bbs, const char *blurb, int status)
 	char str[1024];
 	sprintf(str, "Error %d %s", status, blurb);
 	if (!bbs->hidepopups)
-		uifcmsg("Error %s", str);
+		uifcmsg(str, str);
 	conn_api.terminate = 1;
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
@@ -301,8 +301,7 @@ ssh_connect(struct bbslist *bbs)
 		if(cryptStatusError(status)) {
 			error_popup(bbs, "creating context", status);
 		}
-		status = cl.KeysetClose(ssh_keyset);
-		if (cryptStatusError(status)) {
+		if (cryptStatusError(cl.KeysetClose(ssh_keyset))) {
 			error_popup(bbs, "closing keyset", status);
 		}
 	}
@@ -314,7 +313,7 @@ ssh_connect(struct bbslist *bbs)
 				error_popup(bbs, "creating context", status);
 				break;
 			}
-			status = cl.SetAttributeString(ssh_context, CRYPT_CTXINFO_LABEL, KEY_LABEL, 10);
+			status = cl.SetAttributeString(ssh_context, CRYPT_CTXINFO_LABEL, KEY_LABEL, strlen(KEY_LABEL));
 			if (cryptStatusError(status)) {
 				error_popup(bbs, "setting label", status);
 				break;
@@ -417,12 +416,15 @@ ssh_connect(struct bbslist *bbs)
 			return -1;
 		}
 
-		if (!bbs->hidepopups)
-			uifc.pop("Setting Private Key");
-		status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_PRIVATEKEY, ssh_context);
-		if (cryptStatusError(status)) {
-			error_popup(bbs, "setting private key", status);
-			return -1;
+		if (ssh_context != -1) {
+			if (!bbs->hidepopups)
+				uifc.pop("Setting Private Key");
+			status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_PRIVATEKEY, ssh_context);
+			cl.DestroyContext(ssh_context);
+			if (cryptStatusError(status)) {
+				error_popup(bbs, "setting private key", status);
+				return -1;
+			}
 		}
 	}
 
@@ -625,8 +627,14 @@ ssh_connect(struct bbslist *bbs)
 			if (sftp_state != NULL) {
 				if (sftpc_init(sftp_state)) {
 					sftp_str_t ret = NULL;
-					if (sftpc_realpath(sftp_state, ".", &ret)) {
-						fprintf(stderr, "Home dir: %.*s\n", ret->len, ret->c_str);
+					sftp_filehandle_t f = NULL;
+
+					if (sftpc_open(sftp_state, ".ssh/authorized_keys", SSH_FXF_READ, NULL, &f)) {
+						if (sftpc_read(sftp_state, f, 0, 1024, &ret)) {
+							fprintf(stderr, "First lines... %s\n", ret->c_str);
+							free_sftp_str(ret);
+						}
+						sftpc_close(sftp_state, &f);
 					}
 				}
 			}

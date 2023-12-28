@@ -112,6 +112,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="sftp_client.c" />
+    <ClCompile Include="sftp_attr.c" />
     <ClCompile Include="sftp_pkt.c" />
     <ClCompile Include="sftp_str.c" />
   </ItemGroup>

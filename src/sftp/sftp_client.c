@@ -42,11 +42,24 @@ append64(sftpc_state_t state, uint64_t u)
 }
 
 static bool
-appendstring(sftpc_state_t state, sftp_str_t *s)
+appendfattr(sftpc_state_t state, sftp_file_attr_t fattr)
+{
+	return sftp_appendfattr(&state->txp, fattr);
+}
+
+static bool
+appendandfreestring(sftpc_state_t state, sftp_str_t *s)
 {
 	bool ret = sftp_appendstring(&state->txp, *s);
 	free_sftp_str(*s);
 	*s = NULL;
+	return ret;
+}
+
+static bool
+appendstring(sftpc_state_t state, sftp_str_t s)
+{
+	bool ret = sftp_appendstring(&state->txp, s);
 	return ret;
 }
 
@@ -135,11 +148,26 @@ appendheader(sftpc_state_t state, uint8_t type)
 }
 
 static bool
+appendfhandle(sftpc_state_t state, sftp_filehandle_t handle)
+{
+	return appendstring(state, (sftp_str_t)handle);
+}
+
+static bool
+appenddhandle(sftpc_state_t state, sftp_dirhandle_t handle)
+{
+	return appendstring(state, (sftp_str_t)handle);
+}
+
+static bool
 get_result(sftpc_state_t state)
 {
 	uint8_t *txbuf;
 	size_t txsz;
 
+	assert(state->thread == pthread_self());
+	if (state->thread != pthread_self())
+		return false;
 	if (!sftp_prep_tx_packet(state->txp, &txbuf, &txsz))
 		return false;
 	if (!state->send_cb(txbuf, txsz, state->cb_data))
@@ -213,7 +241,7 @@ sftpc_realpath(sftpc_state_t state, char *path, sftp_str_t *ret)
 	if (!appendheader(state, SSH_FXP_REALPATH))
 		return false;
 	sftp_str_t pstr = sftp_strdup(path);
-	if (!appendstring(state, &pstr))
+	if (!appendandfreestring(state, &pstr))
 		return false;
 	if (!get_result(state))
 		return false;
@@ -228,4 +256,130 @@ sftpc_realpath(sftpc_state_t state, char *path, sftp_str_t *ret)
 	}
 	handle_error(state);
 	return false;
+}
+
+static bool
+parse_handle(sftpc_state_t state, sftp_str_t *handle)
+{
+	assert(state);
+	if (state == NULL)
+		return false;
+	assert(state->rxp);
+	if (state->rxp == NULL)
+		return false;
+	assert(state->rxp->type == SSH_FXP_HANDLE);
+	if (state->rxp->type != SSH_FXP_HANDLE)
+		return false;
+	assert(handle);
+	if (handle == NULL)
+		return false;
+	*handle = getstring(state);
+	if (*handle == NULL)
+		return false;
+	return true;
+}
+
+bool
+sftpc_open(sftpc_state_t state, char *path, uint32_t flags, sftp_file_attr_t attr, sftp_dirhandle_t *handle)
+{
+	assert(handle);
+	if (handle == NULL)
+		return false;
+	assert(!*handle);
+	if (*handle != NULL)
+		return false;
+	if (!appendheader(state, SSH_FXP_OPEN))
+		return false;
+	sftp_str_t pstr = sftp_strdup(path);
+	if (!appendandfreestring(state, &pstr))
+		return false;
+	if (!append32(state, flags))
+		return false;
+	sftp_file_attr_t a = attr;
+	if (a == NULL) {
+		a = sftp_fattr_alloc();
+		if (a == NULL)
+			return false;
+	}
+	if (!appendfattr(state, a)) {
+		if (a != attr)
+			sftp_fattr_free(a);
+		return false;
+	}
+	if (a != attr)
+		sftp_fattr_free(a);
+	if (!get_result(state))
+		return false;
+	if (state->rxp->type == SSH_FXP_HANDLE) {
+		if (!parse_handle(state, (sftp_str_t *)handle)) {
+			response_handled(state);
+			return false;
+		}
+		response_handled(state);
+		return true;
+	}
+	handle_error(state);
+	return false;
+}
+
+bool
+sftpc_close(sftpc_state_t state, sftp_filehandle_t *handle)
+{
+	if (!appendheader(state, SSH_FXP_CLOSE))
+		return false;
+	if (!appendfhandle(state, *handle))
+		return false;
+	if (!get_result(state))
+		return false;
+	handle_error(state);
+	free_sftp_str(*handle);
+	*handle = NULL;
+	return state->err_code == SSH_FX_OK;
+}
+
+bool
+sftpc_read(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, uint32_t len, sftp_str_t *ret)
+{
+	assert(ret);
+	if (ret == NULL)
+		return false;
+	assert(*ret == NULL);
+	if (*ret != NULL)
+		return false;
+	if (!appendheader(state, SSH_FXP_READ))
+		return false;
+	if (!appendfhandle(state, handle))
+		return false;
+	if (!append64(state, offset))
+		return false;
+	if (!append32(state, len))
+		return false;
+	if (!get_result(state))
+		return false;
+	if (state->rxp->type == SSH_FXP_DATA) {
+		*ret = getstring(state);
+		return *ret != NULL;
+	}
+	handle_error(state);
+	return false;
+}
+
+bool
+sftpc_write(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, sftp_str_t data)
+{
+	assert(data);
+	if (data == NULL)
+		return false;
+	if (!appendheader(state, SSH_FXP_WRITE))
+		return false;
+	if (!appendfhandle(state, handle))
+		return false;
+	if (!append64(state, offset))
+		return false;
+	if (!appendstring(state, data))
+		return false;
+	if (!get_result(state))
+		return false;
+	handle_error(state);
+	return state->err_code == SSH_FX_OK;
 }
