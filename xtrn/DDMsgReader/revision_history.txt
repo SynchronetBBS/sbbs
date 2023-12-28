@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.91     2023-12-26   New sysop features while reading a message: Show message
+                      hex (with the X key) and save message hex to a file (with
+                      Ctrl-X)
 1.90b    2023-12-15   New configurable colors in the theme file for the indexed
                       newscan menu header text (indexMenuHeader), "NEW"
                       indicator text (indexMenuNewIndicator), and highlighted

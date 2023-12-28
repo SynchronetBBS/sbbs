@@ -105,6 +105,9 @@
  *                              New configurable colors in the theme file for the indexed newscan menu
  *                              header text (indexMenuHeader), "NEW" indicator text (indexMenuNewIndicator),
  *                              and highlighted "NEW" indicator text (indexMenuNewIndicatorHighlight)
+ * 2023-12-26 Eric Oulashin     Version 1.91
+ *                              New sysop features while reading a message: Show message hex (with the X key)
+ *                              and save message hex to a file (with Ctrl-X)
  */
 
 "use strict";
@@ -206,11 +209,12 @@ require("graphic.js", 'Graphic');
 require("smbdefs.js", "SMB_POLL_ANSWER");
 load('822header.js');
 var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
+var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.90b";
-var READER_DATE = "2023-12-15";
+var READER_VERSION = "1.91";
+var READER_DATE = "2023-12-26";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -790,6 +794,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.GetExtdMsgHdrInfo = DigDistMsgReader_GetExtdMsgHdrInfo;
 	this.GetMsgHdrFieldListText = DigDistMsgReader_GetMsgHdrFieldListText;
 	this.GetMsgInfoForEnhancedReader = DigDistMsgReader_GetMsgInfoForEnhancedReader;
+	this.ShowMsgHex_Scrolling = DigDistMsgReader_ShowMsgHex_Scrolling;
+	this.GetMsgHexInfo = DigDistMsgReader_GetMsgHexInfo;
+	this.SaveMsgHexDumpToFile = DigDistMsgReader_SaveMsgHexDumpToFile;
 	this.GetLastReadMsgIdxAndNum = DigDistMsgReader_GetLastReadMsgIdxAndNum;
 	this.GetScanPtrMsgIdx = DigDistMsgReader_GetScanPtrMsgIdx;
 	this.RemoveFromSearchResults = DigDistMsgReader_RemoveFromSearchResults;
@@ -1039,6 +1046,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		validateMsg: "A", // Only if the user is a sysop
 		quickValUser: CTRL_Q,
 		operatorMenu: CTRL_O,
+		showMsgHex: "X",
+		hexDump: CTRL_X,
 		threadView: "*" // TODO: Implement this
 	};
 	//if (user.is_sysop)
@@ -1523,8 +1532,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		showHdrLines: 2,
 		showKludgeLines: 3,
 		showTallyStats: 4,
-		quickValUser: 5,
-		addAuthorToTwitList: 6
+		showMsgHex: 5,
+		saveMsgHexToFile: 6,
+		quickValUser: 7,
+		addAuthorToTwitList: 8
 	};
 }
 
@@ -5152,6 +5163,9 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		}
 	}
 
+	// For viewing the hex dump information (for the sysop)
+	var msgHexInfo = null;
+
 	// User input loop
 	var continueOn = true;
 	while (continueOn)
@@ -5170,7 +5184,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 									   this.msgAreaLeft, this.msgAreaTop, msgAreaWidth,
 									   msgAreaHeight, 1, console.screen_rows,
 									   this.userSettings.useEnhReaderScrollbar,
-									   msgScrollbarUpdateFn, scrollbarInfoObj, pmode);
+									   msgScrollbarUpdateFn, pmode);
 		topMsgLineIdx = scrollRetObj.topLineIdx;
 		retObj.lastKeypress = scrollRetObj.lastKeypress;
 		switch (retObj.lastKeypress)
@@ -6174,6 +6188,60 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					this.RefreshMsgAreaRectangle(msgInfo.messageLines, topMsgLineIdx, userSettingsRetObj.optionBoxTopLeftX, userSettingsRetObj.optionBoxTopLeftY, userSettingsRetObj.optionBoxWidth, userSettingsRetObj.optionBoxHeight);
 				}
 				break;
+			case this.enhReaderKeys.showMsgHex:
+				if (user.is_sysop)
+				{
+					writeMessage = false;
+					if (msgHexInfo == null)
+						msgHexInfo = this.GetMsgHexInfo(messageText, true);
+					if (msgHexInfo.msgHexArray.length > 0)
+					{
+						this.ShowMsgHex_Scrolling(msgHexInfo);
+						if (this.userSettings.useEnhReaderScrollbar)
+							this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+						writeMessage = true;
+					}
+				}
+				else // The user is not a sysop
+					writeMessage = false;
+				break;
+			case this.enhReaderKeys.hexDump:
+				// Save a hex dump of the message to the BBS machine - Only allow this
+				// if the user is a sysop.
+				if (user.is_sysop)
+				{
+					// Prompt the user for a filename to save the hex dump to the
+					// BBS machine
+					var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+					console.print("\x01n\x01cFilename:\x01h");
+					var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
+					var filename = console.getstr(inputLen, K_NOCRLF);
+					console.attributes = "N";
+					if (filename.length > 0)
+					{
+						console.gotoxy(promptPos);
+						console.cleartoeol("\x01n");
+						console.gotoxy(promptPos);
+						var saveHexRetObj = this.SaveMsgHexDumpToFile(msgHeader, filename);
+						if (saveHexRetObj.saveSucceeded)
+							console.print("\x01n\x01cThe hex dump has been saved.\x01n");
+						else if (saveHexRetObj.errorMsg != "")
+							console.print("\x01n\x01y\x01h" + saveHexRetObj.errorMsg + "\x01n");
+						else
+							console.print("\x01n\x01y\x01hFailed!\x01n");
+					}
+					else
+					{
+						console.gotoxy(promptPos);
+						console.print("\x01n\x01y\x01hHex dump not exported\x01n");
+					}
+					mswait(ERROR_PAUSE_WAIT_MS);
+					// Refresh the last 2 lines of the message on the screen to overwrite
+					// the file save prompt
+					this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+				}
+				writeMessage = false; // Don't write the whole message again
+				break;
 			case this.enhReaderKeys.operatorMenu: // Operator menu
 				writeMessage = false;
 				if (user.is_sysop)
@@ -6258,6 +6326,50 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 										// TODO
 									}
 								}
+								break;
+							case this.readerOpMenuOptValues.showMsgHex:
+								writeMessage = false;
+								if (msgHexInfo == null)
+									msgHexInfo = this.GetMsgHexInfo(messageText, true);
+								if (msgHexInfo.msgHexArray.length > 0)
+								{
+									this.ShowMsgHex_Scrolling(msgHexInfo);
+									if (this.userSettings.useEnhReaderScrollbar)
+										this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+									writeMessage = true;
+								}
+								break;
+							case this.readerOpMenuOptValues.saveMsgHexToFile:
+								// Prompt the user for a filename to save the hex dump to the
+								// BBS machine
+								var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+								console.print("\x01n\x01cFilename:\x01h");
+								var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
+								var filename = console.getstr(inputLen, K_NOCRLF);
+								console.attributes = "N";
+								if (filename.length > 0)
+								{
+									console.gotoxy(promptPos);
+									console.cleartoeol("\x01n");
+									console.gotoxy(promptPos);
+									var saveHexRetObj = this.SaveMsgHexDumpToFile(msgHeader, filename);
+									if (saveHexRetObj.saveSucceeded)
+										console.print("\x01n\x01cThe hex dump has been saved.\x01n");
+									else if (saveHexRetObj.errorMsg != "")
+										console.print("\x01n\x01y\x01h" + saveHexRetObj.errorMsg + "\x01n");
+									else
+										console.print("\x01n\x01y\x01hFailed!\x01n");
+								}
+								else
+								{
+									console.gotoxy(promptPos);
+									console.print("\x01n\x01y\x01hHex dump not exported\x01n");
+								}
+								mswait(ERROR_PAUSE_WAIT_MS);
+								// Refresh the last 2 lines of the message on the screen to overwrite
+								// the file save prompt
+								this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+								writeMessage = true;
 								break;
 							case this.readerOpMenuOptValues.quickValUser: // Quick validate the user
 								var valRetObj = quickValidateLocalUser(msgHeader.from, this.scrollingReaderInterface && console.term_supports(USER_ANSI), this.quickUserValSetIndex);
@@ -6355,7 +6467,7 @@ function DigDistMsgReader_ShowHdrOrKludgeLines_Scrollable(pOnlyKludgeLines, msgH
 			// Display the kludge lines and let the user scroll through them
 			this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
 		}
-		scrollTextLines(extdHdrInfoLines, 0, this.colors["msgBodyColor"], true, this.msgAreaLeft,
+		scrollTextLines(extdHdrInfoLines, 0, this.colors.msgBodyColor, true, this.msgAreaLeft,
 						this.msgAreaTop, msgAreaWidth, msgAreaHeight, 1, console.screen_rows,
 						this.userSettings.useEnhReaderScrollbar, msgInfoScrollbarUpdateFn);
 		writeMessage = true; // We want to refresh the message on the screen
@@ -6610,6 +6722,9 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 		keyHelpText += "\x01c\x01hP\x01y)\x01n\x01crivate reply\x01b, ";
 	}
 	keyHelpText += "\x01c\x01hQ\x01y)\x01n\x01cuit\x01b, \x01c\x01h?\x01g: \x01c";
+
+	// For showing the message hex dump (for the sysop)
+	var msgHexInfo = null;
 
 	// User input loop
 	var writeMessage = true;
@@ -7402,6 +7517,59 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					writeMessage = true;
 				}
 				break;
+			case this.enhReaderKeys.showMsgHex: // Show message hex dump
+				writeMessage = false;
+				writePromptText = false;
+				if (user.is_sysop)
+				{
+					if (msgHexInfo == null)
+						msgHexInfo = this.GetMsgHexInfo(messageText, true);
+					if (msgHexInfo.msgHexArray.length > 0)
+					{
+						writeMessage = true;
+						writePromptText = true;
+						console.attributes = "N";
+						console.crlf();
+						console.print("\x01c\x01hMessage hex dump:\x01n\r\n");
+						console.print("=================\r\n");
+						for (var hexI = 0; hexI < msgHexInfo.msgHexArray.length; ++hexI)
+							console.print(msgHexInfo.msgHexArray[hexI] + "\r\n");
+						console.pause();
+					}
+				}
+				break;
+			case this.enhReaderKeys.hexDump:
+				writeMessage = false;
+				writePromptText = false;
+				// Save a hex dump of the message to the BBS machine - Only allow this
+				// if the user is a sysop.
+				if (user.is_sysop)
+				{
+					writeMessage = true;
+					writePromptText = true;
+					// Prompt the user for a filename to save the hex dump to the
+					// BBS machine
+					console.print("\x01n\r\n\x01cFilename:\x01h");
+					var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
+					var filename = console.getstr(inputLen, K_NOCRLF);
+					console.attributes = "N";
+					console.crlf();
+					if (filename.length > 0)
+					{
+						var saveHexRetObj = this.SaveMsgHexDumpToFile(msgHeader, filename);
+						if (saveHexRetObj.saveSucceeded)
+							console.print("\x01n\x01cThe hex dump has been saved.\x01n");
+						else if (saveHexRetObj.errorMsg != "")
+							console.print("\x01n\x01y\x01h" + saveHexRetObj.errorMsg + "\x01n");
+						else
+							console.print("\x01n\x01y\x01hFailed!\x01n");
+					}
+					else
+						console.print("\x01n\x01y\x01hHex dump not exported\x01n");
+					console.crlf();
+					console.pause();
+				}
+				break;
 			case this.enhReaderKeys.operatorMenu: // Operator menu
 				if (user.is_sysop)
 				{
@@ -7496,6 +7664,49 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 									console.print("\x01n\x01h\x01yThere is no voting information for this message\x01n");
 									console.crlf();
 								}
+								console.pause();
+								break;
+							case this.readerOpMenuOptValues.showMsgHex:
+								writeMessage = false;
+								writePromptText = false;
+								if (msgHexInfo == null)
+									msgHexInfo = this.GetMsgHexInfo(messageText, true);
+								if (msgHexInfo.msgHexArray.length > 0)
+								{
+									writeMessage = true;
+									writePromptText = true;
+									console.attributes = "N";
+									console.crlf();
+									console.print("\x01c\x01hMessage hex dump:\x01n\r\n");
+									console.print("=================\r\n");
+									for (var hexI = 0; hexI < msgHexInfo.msgHexArray.length; ++hexI)
+										console.print(msgHexInfo.msgHexArray[hexI] + "\r\n");
+									console.pause();
+								}
+								break;
+							case this.readerOpMenuOptValues.saveMsgHexToFile:
+								writeMessage = true;
+								writePromptText = true;
+								// Prompt the user for a filename to save the hex dump to the
+								// BBS machine
+								console.print("\x01n\r\n\x01cFilename:\x01h");
+								var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
+								var filename = console.getstr(inputLen, K_NOCRLF);
+								console.attributes = "N";
+								console.crlf();
+								if (filename.length > 0)
+								{
+									var saveHexRetObj = this.SaveMsgHexDumpToFile(msgHeader, filename);
+									if (saveHexRetObj.saveSucceeded)
+										console.print("\x01n\x01cThe hex dump has been saved.\x01n");
+									else if (saveHexRetObj.errorMsg != "")
+										console.print("\x01n\x01y\x01h" + saveHexRetObj.errorMsg + "\x01n");
+									else
+										console.print("\x01n\x01y\x01hFailed!\x01n");
+								}
+								else
+									console.print("\x01n\x01y\x01hHex dump not exported\x01n");
+								console.crlf();
 								console.pause();
 								break;
 							case this.readerOpMenuOptValues.quickValUser: // Quick-validate the user
@@ -7622,6 +7833,8 @@ function DigDistMsgReader_CreateReadModeOpMenu()
 		opMenu.Add("&H: Show header lines", this.readerOpMenuOptValues.showHdrLines);
 		opMenu.Add("&K: Show kludge lines", this.readerOpMenuOptValues.showKludgeLines);
 		opMenu.Add("&T: Show tally stats", this.readerOpMenuOptValues.showTallyStats);
+		opMenu.Add("&X: Show message hex", this.readerOpMenuOptValues.showMsgHex);
+		opMenu.Add("&E: Save message hex to file", this.readerOpMenuOptValues.saveMsgHexToFile);
 		opMenu.Add("&A: Quick validate the user", this.readerOpMenuOptValues.quickValUser);
 		opMenu.Add("&I: Add author to twit list", this.readerOpMenuOptValues.addAuthorToTwitList);
 		// Use cyan for the item color, and cyan with blue background for selected item color
@@ -7634,6 +7847,8 @@ function DigDistMsgReader_CreateReadModeOpMenu()
 		opMenu.Add("Show header lines", this.readerOpMenuOptValues.showHdrLines);
 		opMenu.Add("Show kludge lines", this.readerOpMenuOptValues.showKludgeLines);
 		opMenu.Add("Show tally stats", this.readerOpMenuOptValues.showTallyStats);
+		opMenu.Add("Show message hex", this.readerOpMenuOptValues.showMsgHex);
+		opMenu.Add("Save message hex to file", this.readerOpMenuOptValues.saveMsgHexToFile);
 		opMenu.Add("Quick validate the user", this.readerOpMenuOptValues.quickValUser);
 		opMenu.Add("Add author to twit list", this.readerOpMenuOptValues.addAuthorToTwitList);
 		// Use green for the item color and high cyan for the item number color
@@ -10899,6 +11114,8 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 		keyHelpLines.push("\x01h\x01cCtrl-S           \x01g: \x01n\x01cSave the message (to the BBS machine)");
 		keyHelpLines.push("\x01h\x01c" + this.enhReaderKeys.validateMsg + "                \x01g: \x01n\x01cValidate the message");
 		keyHelpLines.push("\x01h\x01cCtrl-O           \x01g: \x01n\x01cShow operator menu");
+		keyHelpLines.push("\x01h\x01cX                \x01g: \x01n\x01cShow message hex dump");
+		keyHelpLines.push("\x01h\x01cCtrl-X           \x01g: \x01n\x01cSave message hex dump to a file");
 		var quickValUserLine = "\x01h\x01cCtrl-Q           \x01g: \x01n\x01cQuick-validate user (must be local)";
 		if (this.quickUserValSetIndex >= 0 && this.quickUserValSetIndex < 10)
 			quickValUserLine += "; Set index: " + this.quickUserValSetIndex;
@@ -11034,22 +11251,6 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 			msgIsAPoll = Boolean(pMsgHdr.attr & MSG_POLL);
 		// TODO: Fix the issue with not showing votes.  With this, it seems to think it has 0 votes
 		//var hdrWithVotes = getMsgHdr(this.subBoardCode, false, pMsgHdr.number, true, true);
-		/*
-		// Temporary
-		if (user.is_sysop)
-		{
-			console.print("\x01n\r\n");
-			console.print("Has total_votes prop: " + hdrWithVotes.hasOwnProperty("total_votes") + "\r\n");
-			console.print("Has upvotes prop: " + hdrWithVotes.hasOwnProperty("upvotes") + "\r\n");
-			if (hdrWithVotes.hasOwnProperty("total_votes"))
-				console.print("total_votes: " + hdrWithVotes.total_votes + "\r\n");
-			console.crlf();
-			for (var prop in hdrWithVotes)
-				console.print(prop + ": " + hdrWithVotes[prop] + "\r\n");
-			console.pause();
-		}
-		// End Temporary
-		*/
 		if (!msgIsAPoll && pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes") && pMsgHdr.total_votes != 0)
 		//if (!msgIsAPoll && hdrWithVotes.hasOwnProperty("total_votes") && hdrWithVotes.hasOwnProperty("upvotes") && hdrWithVotes.total_votes != 0)
 		{
@@ -11229,110 +11430,110 @@ function DigDistMsgReader_DisplayEnhancedReaderWholeScrollbar(pSolidBlockStartRo
 //  pNumSolidBlocks: The number of solid/bright blocks
 function DigDistMsgReader_UpdateEnhancedReaderScrollbar(pNewStartRow, pOldStartRow, pNumSolidBlocks)
 {
-   // Calculate the difference in the start row.  If the difference is positive,
-   // then the solid block section has moved down; if the diff is negative, the
-   // solid block section has moved up.
-   var solidBlockStartRowDiff = pNewStartRow - pOldStartRow;
-   var oldLastRow = pOldStartRow + pNumSolidBlocks - 1;
-   var newLastRow = pNewStartRow + pNumSolidBlocks - 1;
-   if (solidBlockStartRowDiff > 0)
-   {
-      // The solid block section has moved down
-      if (pNewStartRow > oldLastRow)
-      {
-         // No overlap
-         // Write dim blocks over the old solid block section
-         //console.print("\x01n\x01h\x01k");
-		 console.print("\x01n" + this.colors.scrollbarBGColor);
-         for (var screenY = pOldStartRow; screenY <= oldLastRow; ++screenY)
-         {
-            console.gotoxy(this.msgAreaRight+1, screenY);
-            console.print(BLOCK1);
-			//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
-         }
-         // Write solid blocks in the new locations
-         //console.print("\x01w");
-		 console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
-         for (var screenY = pNewStartRow; screenY <= newLastRow; ++screenY)
-         {
-            console.gotoxy(this.msgAreaRight+1, screenY);
-            console.print(BLOCK2);
-			//console.print(this.text.scrollbarScrollBlockChar);  // TODO: This doesn't seem to be working
-         }
-      }
-      else
-      {
-         // There is some overlap
-         // Write dim blocks on top
-         //console.print("\x01n\x01h\x01k");
-		 console.print("\x01n" + this.colors.scrollbarBGColor);
-         for (var screenY = pOldStartRow; screenY < pNewStartRow; ++screenY)
-         {
-            console.gotoxy(this.msgAreaRight+1, screenY);
-            console.print(BLOCK1);
-			//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
-         }
-         // Write bright blocks on the bottom
-         //console.print("\x01w");
-		 console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
-         for (var screenY = oldLastRow+1; screenY <= newLastRow; ++screenY)
-         {
-            console.gotoxy(this.msgAreaRight+1, screenY);
-            console.print(BLOCK2);
-			//console.print(this.text.scrollbarScrollBlockChar); // TODO: This doesn't seem to be working
-         }
-      }
-   }
-   else if (solidBlockStartRowDiff < 0)
-   {
-      // The solid block section has moved up
-      if (pOldStartRow > newLastRow)
-      {
-         // No overlap
-         // Write dim blocks over the old solid block section
-         //console.print("\x01n\x01h\x01k");
-		 console.print("\x01n" + this.colors.scrollbarBGColor);
-         for (var screenY = pOldStartRow; screenY <= oldLastRow; ++screenY)
-         {
-            console.gotoxy(this.msgAreaRight+1, screenY);
-            console.print(BLOCK1);
-			//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
-         }
-         // Write solid blocks in the new locations
-         //console.print("\x01w");
-		 console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
-         for (var screenY = pNewStartRow; screenY <= newLastRow; ++screenY)
-         {
-            console.gotoxy(this.msgAreaRight+1, screenY);
-            console.print(BLOCK2);
-			//console.print(this.text.scrollbarScrollBlockChar); // TODO: This doesn't seem to be working
-         }
-      }
-      else
-      {
-         // There is some overlap
-         // Write bright blocks on top
-         //console.print("\x01n\x01h\x01w");
-		 console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
-         var endRow = pOldStartRow;
-         for (var screenY = pNewStartRow; screenY < endRow; ++screenY)
-         {
-            console.gotoxy(this.msgAreaRight+1, screenY);
-            console.print(BLOCK2);
-			//console.print(this.text.scrollbarScrollBlockChar); // TODO: This doesn't seem to be working
-         }
-         // Write dim blocks on the bottom
-         //console.print("\x01k");
-		 console.print("\x01n" + this.colors.scrollbarBGColor);
-         endRow = pOldStartRow + pNumSolidBlocks;
-         for (var screenY = pNewStartRow+pNumSolidBlocks; screenY < endRow; ++screenY)
-         {
-            console.gotoxy(this.msgAreaRight+1, screenY);
-            console.print(BLOCK1);
-			//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
-         }
-      }
-   }
+	// Calculate the difference in the start row.  If the difference is positive,
+	// then the solid block section has moved down; if the diff is negative, the
+	// solid block section has moved up.
+	var solidBlockStartRowDiff = pNewStartRow - pOldStartRow;
+	var oldLastRow = pOldStartRow + pNumSolidBlocks - 1;
+	var newLastRow = pNewStartRow + pNumSolidBlocks - 1;
+	if (solidBlockStartRowDiff > 0)
+	{
+		// The solid block section has moved down
+		if (pNewStartRow > oldLastRow)
+		{
+			// No overlap
+			// Write dim blocks over the old solid block section
+			//console.print("\x01n\x01h\x01k");
+			console.print("\x01n" + this.colors.scrollbarBGColor);
+			for (var screenY = pOldStartRow; screenY <= oldLastRow; ++screenY)
+			{
+				console.gotoxy(this.msgAreaRight+1, screenY);
+				console.print(BLOCK1);
+				//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
+			}
+			// Write solid blocks in the new locations
+			//console.print("\x01w");
+			console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
+			for (var screenY = pNewStartRow; screenY <= newLastRow; ++screenY)
+			{
+				console.gotoxy(this.msgAreaRight+1, screenY);
+				console.print(BLOCK2);
+				//console.print(this.text.scrollbarScrollBlockChar);  // TODO: This doesn't seem to be working
+			}
+		}
+		else
+		{
+			// There is some overlap
+			// Write dim blocks on top
+			//console.print("\x01n\x01h\x01k");
+			console.print("\x01n" + this.colors.scrollbarBGColor);
+			for (var screenY = pOldStartRow; screenY < pNewStartRow; ++screenY)
+			{
+				console.gotoxy(this.msgAreaRight+1, screenY);
+				console.print(BLOCK1);
+				//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
+			}
+			// Write bright blocks on the bottom
+			//console.print("\x01w");
+			console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
+			for (var screenY = oldLastRow+1; screenY <= newLastRow; ++screenY)
+			{
+				console.gotoxy(this.msgAreaRight+1, screenY);
+				console.print(BLOCK2);
+				//console.print(this.text.scrollbarScrollBlockChar); // TODO: This doesn't seem to be working
+			}
+		}
+	}
+	else if (solidBlockStartRowDiff < 0)
+	{
+		// The solid block section has moved up
+		if (pOldStartRow > newLastRow)
+		{
+			// No overlap
+			// Write dim blocks over the old solid block section
+			//console.print("\x01n\x01h\x01k");
+			console.print("\x01n" + this.colors.scrollbarBGColor);
+			for (var screenY = pOldStartRow; screenY <= oldLastRow; ++screenY)
+			{
+				console.gotoxy(this.msgAreaRight+1, screenY);
+				console.print(BLOCK1);
+				//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
+			}
+			// Write solid blocks in the new locations
+			//console.print("\x01w");
+			console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
+			for (var screenY = pNewStartRow; screenY <= newLastRow; ++screenY)
+			{
+				console.gotoxy(this.msgAreaRight+1, screenY);
+				console.print(BLOCK2);
+				//console.print(this.text.scrollbarScrollBlockChar); // TODO: This doesn't seem to be working
+			}
+		}
+		else
+		{
+			// There is some overlap
+			// Write bright blocks on top
+			//console.print("\x01n\x01h\x01w");
+			console.print("\x01n" + this.colors.scrollbarScrollBlockColor);
+			var endRow = pOldStartRow;
+			for (var screenY = pNewStartRow; screenY < endRow; ++screenY)
+			{
+				console.gotoxy(this.msgAreaRight+1, screenY);
+				console.print(BLOCK2);
+				//console.print(this.text.scrollbarScrollBlockChar); // TODO: This doesn't seem to be working
+			}
+			// Write dim blocks on the bottom
+			//console.print("\x01k");
+			console.print("\x01n" + this.colors.scrollbarBGColor);
+			endRow = pOldStartRow + pNumSolidBlocks;
+			for (var screenY = pNewStartRow+pNumSolidBlocks; screenY < endRow; ++screenY)
+			{
+				console.gotoxy(this.msgAreaRight+1, screenY);
+				console.print(BLOCK1);
+				//console.print(this.text.scrollbarBGChar); // TODO: This doesn't seem to be working
+			}
+		}
+	}
 }
 
 // For the DigDistMsgReader class: Returns whether a particular message is
@@ -13642,6 +13843,167 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	}
 	retObj.numNonSolidScrollBlocks = this.msgAreaHeight - retObj.numSolidScrollBlocks;
 	retObj.solidBlockStartRow = this.msgAreaTop;
+
+	return retObj;
+}
+
+// Shows a message hex dump with a scrollable interface
+//
+// Parameters:
+//  pMsgHexInfo: An object with message hex & scrollbar information, as returned by GetMsgHexInfo()
+function DigDistMsgReader_ShowMsgHex_Scrolling(pMsgHexInfo)
+{
+	if (typeof(pMsgHexInfo) !== "object" || !Array.isArray(pMsgHexInfo.msgHexArray) || pMsgHexInfo.msgHexArray.length == 0)
+		return;
+
+	var msgReaderObj = this;
+	var lastInfoSolidBlockStartRow = this.msgAreaTop;
+
+	// This is a scrollbar update function for use when viewing the header info/kludge lines.
+	function msgHexScrollbarUpdateFn(pFractionToLastPage)
+	{
+		var infoSolidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(pMsgHexInfo.numNonSolidScrollBlocks * pFractionToLastPage);
+		if (infoSolidBlockStartRow != lastInfoSolidBlockStartRow)
+			msgReaderObj.UpdateEnhancedReaderScrollbar(infoSolidBlockStartRow, lastInfoSolidBlockStartRow, pMsgHexInfo.numSolidScrollBlocks);
+		lastInfoSolidBlockStartRow = infoSolidBlockStartRow;
+		console.gotoxy(1, console.screen_rows);
+	}
+
+	if (pMsgHexInfo.msgHexArray.length > 0)
+	{
+		var msgAreaWidth = this.userSettings.useEnhReaderScrollbar ? this.msgAreaWidth : this.msgAreaWidth + 1;
+		var msgAreaHeight = this.msgAreaBottom - this.msgAreaTop + 1;
+		if (this.userSettings.useEnhReaderScrollbar)
+			this.DisplayEnhancedReaderWholeScrollbar(pMsgHexInfo.solidBlockStartRow, pMsgHexInfo.numSolidScrollBlocks);
+		scrollTextLines(pMsgHexInfo.msgHexArray, 0, this.colors.msgBodyColor, true,
+		                this.msgAreaLeft, this.msgAreaTop, msgAreaWidth, msgAreaHeight,
+		                1, console.screen_rows, this.userSettings.useEnhReaderScrollbar,
+		                msgHexScrollbarUpdateFn);
+	}
+}
+
+// Gets message hex dump information, including scrollbar information for the hex lines
+//
+// Parameters:
+//  pMessageText: The text of the message
+//  pRemoveTrailingCRLF: Optional boolean - Whether or not to remove any trailing CR or LF characters.
+//                       Defaults to false.
+//
+// Return value: An object with the following properties:
+//               msgHexArray: An array of text lines representing the hex dump of the message
+//               topLineIdxForLastPage: For scrolling, the index of the line for the top of the last page
+//               msgFractionShown: For scrolling, the fraction of the lines shown
+//               numSolidScrollBlocks: For scrolling, the number of solid srollbar blocks to use
+//               numNonSolidScrollBlocks: For scrolling, the number of non-solid scrollbar blocks to use
+//               solidBlockStartRow: For scrolling, the row on the screen to start the scrollbar at
+function DigDistMsgReader_GetMsgHexInfo(pMessageText, pRemoveTrailingCRLF)
+{
+	var retObj = {
+		msgHexArray: [],
+		topLineIdxForLastPage: 0,
+		msgFractionShown: 0.0,
+		numSolidScrollBlocks: 0,
+		numNonSolidScrollBlocks: 0,
+		solidBlockStartRow: 0
+	};
+
+	var hexArray = hexdump.generate(undefined, pMessageText, /* ASCII: */true, /* offsets: */true);
+	if (Array.isArray(hexArray) && hexArray.length > 0)
+	{
+		if (typeof(pRemoveTrailingCRLF) === "boolean" && pRemoveTrailingCRLF)
+		{
+			// Remove the trailing CR (and possibly LF) from the last Line
+			hexArray[hexArray.length-1] = hexArray[hexArray.length-1].replace(/[\r\n]+$/, "");
+		}
+
+		retObj.msgHexArray = hexArray;
+		retObj.topLineIdxForLastPage = retObj.msgHexArray.length - this.msgAreaHeight;
+		if (retObj.topLineIdxForLastPage < 0)
+			retObj.topLineIdxForLastPage = 0;
+		// Variables for the scrollbar to show the fraction of the message shown
+		retObj.msgFractionShown = this.msgAreaHeight / retObj.msgHexArray.length;
+		if (retObj.msgFractionShown > 1)
+			retObj.msgFractionShown = 1.0;
+		retObj.numSolidScrollBlocks = Math.floor(this.msgAreaHeight * retObj.msgFractionShown);
+		if (retObj.numSolidScrollBlocks == 0)
+			retObj.numSolidScrollBlocks = 1;
+		retObj.numNonSolidScrollBlocks = this.msgAreaHeight - retObj.numSolidScrollBlocks;
+		retObj.solidBlockStartRow = this.msgAreaTop;
+	}
+
+	return retObj;
+}
+
+// For the DDMsgReader class: Saves a message hex dump to a file on the BBS machine with the given filename
+//
+// Parameters:
+//  pMsgHdr: The header of the message
+//  pOutFilename: The full path & filename of the file to save the hex dump to
+//
+// Return value: An object with the following properties:
+//               saveSucceeded: Boolean - Whether or not the save succeeded
+//               errorMsg: A string containing an error on failure
+function DigDistMsgReader_SaveMsgHexDumpToFile(pMsgHdr, pOutFilename)
+{
+	var retObj = {
+		saveSucceeded: false,
+		errorMsg: ""
+	};
+
+	if (typeof(pMsgHdr) !== "object" || typeof(pOutFilename) !== "string")
+	{
+		retObj.errorMsg = "Invalid parameter given";
+		return retObj;
+	}
+
+	var msgText = "";
+	var hdrLines = null;
+	var msgbase = new MsgBase(this.subBoardCode);
+	if (msgbase.open())
+	{
+		msgText = msgbase.get_msg_body(false, pMsgHdr.number);
+		hdrLines = this.GetExtdMsgHdrInfo(msgbase, pMsgHdr.number, false, false, false, false);
+		msgbase.close();
+	}
+
+	var hexLines = hexdump.generate(undefined, msgText, /* ASCII: */true, /* offsets: */true);
+	if (Array.isArray(hexLines) && hexLines.length > 0)
+	{
+		var outFile = new File(pOutFilename);
+		if (outFile.open("w"))
+		{
+			// Write the message header lines
+			if (Array.isArray(hdrLines) && hdrLines.length > 0)
+			{
+				for (var hdrI = 0; hdrI < hdrLines.length; ++hdrI)
+					outFile.writeln(hdrLines[hdrI]);
+			}
+			else
+			{
+				outFile.writeln("From: " + pMsgHdr.from);
+				outFile.writeln("To: " + pMsgHdr.to);
+				outFile.writeln("Subject: " + pMsgHdr.subject);
+				// Message time
+				var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(pMsgHdr);
+				var dateTimeStr = "";
+				if (msgWrittenLocalTime != -1)
+					dateTimeStr = strftime("%a, %d %b %Y %H:%M:%S", msgWrittenLocalTime);
+				else
+					dateTimeStr = pMsgHdr.date.replace(/ [-+][0-9]+$/, "");
+				outFile.writeln("Date: " + dateTimeStr);
+			}
+			outFile.writeln("=================================");
+			// Write the hex dump
+			for (var hexI = 0; hexI < hexLines.length; ++hexI)
+				outFile.writeln(hexLines[hexI]);
+			outFile.close();
+			retObj.saveSucceeded = true;
+		}
+		else
+			retObj.errorMsg = "File write failed";
+	}
+	else
+		errorMsg = "Hex dump is not available";
 
 	return retObj;
 }
@@ -18173,14 +18535,13 @@ function userHandleAliasNameMatch(pNameOrCRC16)
 //                  lines
 //  pPostWriteCurY: The Y location for the cursor after writing the message
 //                  lines
-// pUseScrollbar: Boolean - Whether or not to display the scrollbar.  If false,
-//                this will display a scroll status line at the bottom instead.
+//  pUseScrollbar: Boolean - Whether or not to display the scrollbar.  If false,
+//                 this will display a scroll status line at the bottom instead.
 //  pScrollUpdateFn: A function that the caller can provide for updating the
 //                   scroll position.  This function has one parameter:
 //                   - fractionToLastPage: The fraction of the top index divided
 //                     by the top index for the last page (basically, the progress
 //                     to the last page).
-//  pScrollbarInfo: 
 //  pmode: Optional - Print mode (important for UTF8 info)
 //
 // Return value: An object with the following properties:
@@ -18188,7 +18549,7 @@ function userHandleAliasNameMatch(pNameOrCRC16)
 //               topLineIdx: The new top line index of the text lines, in case of scrolling
 function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTopLeftX, pTopLeftY,
                          pWidth, pHeight, pPostWriteCurX, pPostWriteCurY, pUseScrollbar, pScrollUpdateFn,
-                         pScrollbarInfo, pmode)
+                         pmode)
 {
 	// Variables for the top line index for the last page, scrolling, etc.
 	var topLineIdxForLastPage = pTxtLines.length - pHeight;
@@ -18205,20 +18566,6 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 		lastKeypress: "",
 		topLineIdx: pTopLineIdx
 	};
-
-	/*
-	// Temporary
-	if (user.is_sysop)
-	{
-		console.print("\x01n\r\n");
-		console.print("pWidth: " + pWidth + "\r\n");
-		console.print("pHeight: " + pHeight + "\r\n");
-		console.print("pUseScrollbar: " + pUseScrollbar + "\r\n");
-		console.print("pScrollUpdateFn: " + typeof(pScrollUpdateFn) + "\r\n");
-		console.pause();
-	}
-	// End Temporary
-	*/
 
 	// Create an array of color/attribute codes for each line of
 	// text, in case there are any such codes in the text lines,
