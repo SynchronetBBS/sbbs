@@ -39,6 +39,23 @@ struct crypt_funcs {
 	int (*AddRandom)(C_IN void C_PTR randomData, C_IN int randomDataLength);
 	int (*DeleteAttribute)(C_IN CRYPT_HANDLE cryptHandle,
 	    C_IN CRYPT_ATTRIBUTE_TYPE            attributeType);
+	int (*KeysetOpen)(C_OUT CRYPT_KEYSET C_PTR keyset,
+            C_IN CRYPT_USER cryptUser,
+            C_IN CRYPT_KEYSET_TYPE keysetType,
+            C_IN C_STR name, C_IN CRYPT_KEYOPT_TYPE options);
+        int (*KeysetClose)(C_IN CRYPT_KEYSET keyset);
+        int (*GenerateKey)(C_IN CRYPT_CONTEXT cryptContext);
+	int (*AddPrivateKey)(C_IN CRYPT_KEYSET keyset,
+	    C_IN CRYPT_HANDLE cryptKey,
+	    C_IN C_STR password );
+	int (*GetPrivateKey)(C_IN CRYPT_KEYSET keyset,
+	    C_OUT CRYPT_CONTEXT C_PTR cryptContext,
+	    C_IN CRYPT_KEYID_TYPE keyIDtype,
+	    C_IN C_STR keyID, C_IN_OPT C_STR password );
+	int (*CreateContext)(C_OUT CRYPT_CONTEXT C_PTR cryptContext,
+	    C_IN CRYPT_USER cryptUser,
+	    C_IN CRYPT_ALGO_TYPE cryptAlgo);
+	int (*DestroyContext)(C_IN CRYPT_CONTEXT cryptContext);
 };
 
 #endif // ifndef WITHOUT_CRYPTLIB

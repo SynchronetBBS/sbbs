@@ -20,6 +20,8 @@ enum {
 	SYNCTERM_DEFAULT_TRANSFER_PATH
 	,
 	SYNCTERM_PATH_CACHE
+	,
+	SYNCTERM_PATH_KEYS
 };
 
 /* Default modem device */

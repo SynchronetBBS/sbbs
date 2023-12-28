@@ -54,6 +54,13 @@ init_crypt(void)
 	cl.DestroySession = cryptDestroySession;
 	cl.AddRandom = cryptAddRandom;
 	cl.DeleteAttribute = cryptDeleteAttribute;
+	cl.KeysetOpen = cryptKeysetOpen;
+	cl.KeysetClose = cryptKeysetClose;
+	cl.GenerateKey = cryptGenerateKey;
+	cl.AddPrivateKey = cryptAddPrivateKey;
+	cl.GetPrivateKey = cryptGetPrivateKey;
+	cl.CreateContext = cryptCreateContext;
+	cl.DestroyContext = cryptDestroyContext;
  #else
 	cryptlib = xp_dlopen(libnames, RTLD_LAZY, CRYPTLIB_VERSION / 1000);
 	if (cryptlib == NULL)
@@ -107,6 +114,35 @@ init_crypt(void)
 		return -1;
 	}
 	if ((cl.DeleteAttribute = xp_dlsym(cryptlib, cryptDeleteAttribute)) == NULL) {
+		xp_dlclose(cryptlib);
+		return -1;
+	}
+
+	if ((cl.KeysetOpen = xp_dlsym(cryptlib, cryptKeysetOpen)) == NULL) {
+		xp_dlclose(cryptlib);
+		return -1;
+	}
+	if ((cl.KeysetClose = xp_dlsym(cryptlib, cryptKeysetClose)) == NULL) {
+		xp_dlclose(cryptlib);
+		return -1;
+	}
+	if ((cl.GenerateKey = xp_dlsym(cryptlib, cryptGenerateKey)) == NULL) {
+		xp_dlclose(cryptlib);
+		return -1;
+	}
+	if ((cl.AddPrivateKey = xp_dlsym(cryptlib, cryptAddPrivateKey)) == NULL) {
+		xp_dlclose(cryptlib);
+		return -1;
+	}
+	if ((cl.GetPrivateKey = xp_dlsym(cryptlib, cryptGetPrivateKey)) == NULL) {
+		xp_dlclose(cryptlib);
+		return -1;
+	}
+	if ((cl.CreateContext = xp_dlsym(cryptlib, cryptCreateContext)) == NULL) {
+		xp_dlclose(cryptlib);
+		return -1;
+	}
+	if ((cl.DestroyContext = xp_dlsym(cryptlib, cryptDestroyContext)) == NULL) {
 		xp_dlclose(cryptlib);
 		return -1;
 	}

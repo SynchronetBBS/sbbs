@@ -244,17 +244,34 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 }
 #endif
 
+static void
+error_popup(struct bbslist *bbs, const char *blurb, int status)
+{
+	char str[1024];
+	sprintf(str, "Error %d %s", status, blurb);
+	if (!bbs->hidepopups)
+		uifcmsg("Error %s", str);
+	conn_api.terminate = 1;
+	if (!bbs->hidepopups)
+		uifc.pop(NULL);
+}
+
+#define KEY_PASSWORD "TODO:ThisIsDumb"
+#define KEY_LABEL "ssh_key"
 int
 ssh_connect(struct bbslist *bbs)
 {
-	int         off = 1;
-	int         status;
-	char        password[MAX_PASSWD_LEN + 1];
-	char        username[MAX_USER_LEN + 1];
-	int         rows, cols;
-	const char *term;
-	int         slen;
-	uint8_t     server_fp[sizeof(bbs->ssh_fingerprint)];
+	int           off = 1;
+	int           status;
+	char          password[MAX_PASSWD_LEN + 1];
+	char          username[MAX_USER_LEN + 1];
+	int           rows, cols;
+	const char   *term;
+	int           slen;
+	uint8_t       server_fp[sizeof(bbs->ssh_fingerprint)];
+	char          path[MAX_PATH+1];
+	CRYPT_KEYSET  ssh_keyset;
+	CRYPT_CONTEXT ssh_context;
 
 	ssh_channel = -1;
 	sftp_channel = -1;
@@ -278,6 +295,60 @@ ssh_connect(struct bbslist *bbs)
 		}
 	}
 
+	get_syncterm_filename(path, sizeof(path), SYNCTERM_PATH_KEYS, false);
+	if(cryptStatusOK(cl.KeysetOpen(&ssh_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, path, CRYPT_KEYOPT_READONLY))) {
+		status = cl.GetPrivateKey(ssh_keyset, &ssh_context, CRYPT_KEYID_NAME, KEY_LABEL, KEY_PASSWORD);
+		if(cryptStatusError(status)) {
+			error_popup(bbs, "creating context", status);
+		}
+		status = cl.KeysetClose(ssh_keyset);
+		if (cryptStatusError(status)) {
+			error_popup(bbs, "closing keyset", status);
+		}
+	}
+	else {
+		do {
+			/* Couldn't do that... create a new context and use the key from there... */
+			status = cl.CreateContext(&ssh_context, CRYPT_UNUSED, CRYPT_ALGO_RSA);
+			if (cryptStatusError(status)) {
+				error_popup(bbs, "creating context", status);
+				break;
+			}
+			status = cl.SetAttributeString(ssh_context, CRYPT_CTXINFO_LABEL, KEY_LABEL, 10);
+			if (cryptStatusError(status)) {
+				error_popup(bbs, "setting label", status);
+				break;
+			}
+			status = cl.GenerateKey(ssh_context);
+			if (cryptStatusError(status)) {
+				error_popup(bbs, "generating key", status);
+				break;
+			}
+
+			/* Ok, now try saving this one... use the syspass to encrypt it. */
+			status = cl.KeysetOpen(&ssh_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, path, CRYPT_KEYOPT_CREATE);
+			if (cryptStatusError(status)) {
+				error_popup(bbs, "creating keyset", status);
+				break;
+			}
+			status = cl.AddPrivateKey(ssh_keyset, ssh_context, KEY_PASSWORD);
+			if (cryptStatusError(status)) {
+				cl.KeysetClose(ssh_keyset);
+				error_popup(bbs, "adding private key", status);
+				break;
+			}
+			status = cl.KeysetClose(ssh_keyset);
+			if (cryptStatusError(status)) {
+				error_popup(bbs, "closing keyset", status);
+				break;
+			}
+		} while(0);
+	}
+	if (cryptStatusError(status)) {
+		cl.DestroyContext(ssh_context);
+		ssh_context = -1;
+	}
+
 	ssh_sock = conn_socket_connect(bbs);
 	if (ssh_sock == INVALID_SOCKET)
 		return -1;
@@ -288,13 +359,7 @@ ssh_connect(struct bbslist *bbs)
 		uifc.pop("Creating Session");
 	status = cl.CreateSession(&ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH);
 	if (cryptStatusError(status)) {
-		char str[1024];
-		sprintf(str, "Error %d creating session", status);
-		if (!bbs->hidepopups)
-			uifcmsg("Error creating session", str);
-		conn_api.terminate = 1;
-		if (!bbs->hidepopups)
-			uifc.pop(NULL);
+		error_popup(bbs, "creating session", status);
 		return -1;
 	}
 
@@ -322,13 +387,7 @@ ssh_connect(struct bbslist *bbs)
         /* Add username/password */
 	status = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, username, strlen(username));
 	if (cryptStatusError(status)) {
-		char str[1024];
-		sprintf(str, "Error %d setting username", status);
-		if (!bbs->hidepopups)
-			uifcmsg("Error setting username", str);
-		conn_api.terminate = 1;
-		if (!bbs->hidepopups)
-			uifc.pop(NULL);
+		error_popup(bbs, "setting username", status);
 		return -1;
 	}
 
@@ -337,13 +396,7 @@ ssh_connect(struct bbslist *bbs)
 	if (bbs->conn_type == CONN_TYPE_SSHNA) {
 		status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_OPTIONS, CRYPT_SSHOPTION_NONE_AUTH);
 		if (cryptStatusError(status)) {
-			char str[1024];
-			sprintf(str, "Error %d disabling password auth", status);
-			if (!bbs->hidepopups)
-				uifcmsg("Error disabling password auth", str);
-			conn_api.terminate = 1;
-			if (!bbs->hidepopups)
-				uifc.pop(NULL);
+			error_popup(bbs, "disabling password auth", status);
 			return -1;
 		}
 	}
@@ -360,13 +413,15 @@ ssh_connect(struct bbslist *bbs)
 			uifc.pop("Setting Password");
 		status = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, password, strlen(password));
 		if (cryptStatusError(status)) {
-			char str[1024];
-			sprintf(str, "Error %d setting password", status);
-			if (!bbs->hidepopups)
-				uifcmsg("Error setting password", str);
-			conn_api.terminate = 1;
-			if (!bbs->hidepopups)
-				uifc.pop(NULL);
+			error_popup(bbs, "setting password", status);
+			return -1;
+		}
+
+		if (!bbs->hidepopups)
+			uifc.pop("Setting Private Key");
+		status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_PRIVATEKEY, ssh_context);
+		if (cryptStatusError(status)) {
+			error_popup(bbs, "setting private key", status);
 			return -1;
 		}
 	}
@@ -379,13 +434,7 @@ ssh_connect(struct bbslist *bbs)
         /* Pass socket to cryptlib */
 	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, ssh_sock);
 	if (cryptStatusError(status)) {
-		char str[1024];
-		sprintf(str, "Error %d passing socket", status);
-		if (!bbs->hidepopups)
-			uifcmsg("Error passing socket", str);
-		conn_api.terminate = 1;
-		if (!bbs->hidepopups)
-			uifc.pop(NULL);
+		error_popup(bbs, "passing socket", status);
 		return -1;
 	}
 

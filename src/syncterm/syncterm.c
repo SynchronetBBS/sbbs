@@ -983,6 +983,7 @@ get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 	switch (type) {
 		case SYNCTERM_PATH_INI:
 		case SYNCTERM_PATH_LIST:
+		case SYNCTERM_PATH_KEYS:
 			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kPreferencesFolderType, kCreateFolder,
 			    &ref) != noErr)
 				return NULL;
@@ -1026,6 +1027,9 @@ get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 			return fn;
 		case SYNCTERM_PATH_LIST:
 			strncat(fn, "SyncTERM.lst", fnlen - strlen(fn) - 1);
+			return fn;
+		case SYNCTERM_PATH_KEYS:
+			strncat(fn, "SyncTERM.ssh", fnlen - strlen(fn) - 1);
 			return fn;
 	}
 	return NULL;
@@ -1083,6 +1087,7 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 			switch (type) {
 				case SYNCTERM_PATH_INI:
 				case SYNCTERM_PATH_LIST:
+				case SYNCTERM_PATH_KEYS:
 					if (shared) {
 						if (GKFP(&FOLDERID_ProgramData, KF_FLAG_CREATE, NULL, &path) == S_OK)
 							we_got_this = true;
@@ -1190,6 +1195,10 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 					fn[0] = 0;
 			}
 			break;
+		case SYNCTERM_PATH_INI:
+			backslash(fn);
+			strncat(fn, "syncterm.ssh", fnlen - strlen(fn) - 1);
+			break;
 	}
 #else /* ifdef _WIN32 */
         /* UNIX */
@@ -1274,6 +1283,9 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 					fn[0] = 0;
 			}
  #endif
+			break;
+		case SYNCTERM_PATH_KEYS:
+			strncat(fn, "syncterm.ssh", fnlen - strlen(fn) - 1);
 			break;
 	}
 
