@@ -232,6 +232,8 @@ int init_sdl_video(void)
 	if (!sdl.gotfuncs)
 		return -1;
 
+	if (cio_api.options & CONIO_OPT_DISABLE_CLOSE)
+		sdl.SetHint(SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4, "1");
 	sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2" );
 	sdl.SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1" );
 #ifdef _WIN32

@@ -858,6 +858,8 @@ gdi_thread(void *arg)
 	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", STYLE, wx, wy, r.right - r.left, r.bottom - r.top, NULL, NULL, NULL, NULL);
 	if (win == NULL)
 		goto fail;
+	if (cio_api.options & CONIO_OPT_DISABLE_CLOSE)
+		EnableMenuItem(GetSystemMenu(win, /* revert; */FALSE), SC_CLOSE, MF_DISABLED); // Disable the Windows' app-system-menu close option
 	// No failing after this...
 	init_success = true;
 	if (fullscreen)
