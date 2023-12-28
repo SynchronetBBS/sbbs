@@ -840,7 +840,7 @@ bool
 check_exit(bool force)
 {
 	if (force || (uifc.exit_flags & UIFC_XF_QUIT)) {
-		if (settings.confirm_close) {
+		if (!(uifc.exit_flags & UIFC_XF_QUIT) && settings.confirm_close) {
 			if (!confirm("Are you sure you want to exit?", NULL))
 				return false;
 		}
