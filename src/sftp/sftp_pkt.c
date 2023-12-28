@@ -154,7 +154,7 @@ sftp_get64(sftp_rx_pkt_t pkt)
 {
 	uint64_t ret;
 	GET_FUNC_BODY;
-	return BE_INT32(ret);
+	return BE_INT64(ret);
 }
 
 /*

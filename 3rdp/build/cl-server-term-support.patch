@@ -32,34 +32,40 @@
  			default:
  				retIntError();
  			}
-@@ -479,6 +497,14 @@
+@@ -479,6 +497,18 @@
  		case CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE:
  			*value = isActiveChannel( channelInfoPtr ) ? TRUE : FALSE;
  			return( CRYPT_OK );
 +
 +		case CRYPT_SESSINFO_SSH_CHANNEL_WIDTH:
++			if (channelInfoPtr->width == 0)
++				return CRYPT_ERROR_NOTFOUND;
 +			*value = channelInfoPtr->width;
 +			return( CRYPT_OK );
 +
 +		case CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT:
++			if (channelInfoPtr->height == 0)
++				return CRYPT_ERROR_NOTFOUND;
 +			*value = channelInfoPtr->height;
 +			return( CRYPT_OK );
  		}
  
  	retIntError();
-@@ -532,6 +558,11 @@
+@@ -532,6 +562,13 @@
  			return( attributeCopyParams( data, dataMaxLength, dataLength,
  										 channelInfoPtr->arg2,
  										 channelInfoPtr->arg2Len ) );
 +
 +		case CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL:
++			if (channelInfoPtr->terminalLen == 0)
++				return CRYPT_ERROR_NOTFOUND;
 +			return( attributeCopyParams( data, dataMaxLength, dataLength,
 +										 channelInfoPtr->terminal,
 +										 channelInfoPtr->terminalLen ) );
  		}
  
  	retIntError();
-@@ -596,7 +627,21 @@
+@@ -596,7 +633,21 @@
  		return( selectChannel( sessionInfoPtr, channelInfoPtr->writeChannelNo,
  							   CHANNEL_WRITE ) );
  		}
@@ -81,7 +87,7 @@
  	retIntError();
  	}
  
-@@ -639,6 +684,11 @@
+@@ -639,6 +688,11 @@
  			return( attributeCopyParams( channelInfoPtr->arg2, 
  										 CRYPT_MAX_TEXTSIZE,
  										 &channelInfoPtr->arg2Len, 

@@ -188,7 +188,6 @@ static void
 handle_error(sftpc_state_t state)
 {
 	if (state->rxp->type == SSH_FXP_STATUS) {
-		state->err_id = get32(state);
 		state->err_code = get32(state);
 		if (state->err_msg != NULL)
 			free_sftp_str(state->err_msg);
@@ -358,6 +357,7 @@ sftpc_read(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, uint3
 		return false;
 	if (state->rxp->type == SSH_FXP_DATA) {
 		*ret = getstring(state);
+		response_handled(state);
 		return *ret != NULL;
 	}
 	handle_error(state);

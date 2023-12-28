@@ -256,15 +256,14 @@ get_public_key(CRYPT_CONTEXT ctx)
 
 	status = cl.GetAttributeString(ctx, CRYPT_CTXINFO_SSH_PUBLIC_KEY, NULL, &sz);
 	if (cryptStatusOK(status)) {
-		fprintf(stderr, "Size: %d\n", sz);
 		raw = malloc(sz);
 		if (raw != NULL) {
 			status = cl.GetAttributeString(ctx, CRYPT_CTXINFO_SSH_PUBLIC_KEY, raw, &sz);
 			if (cryptStatusOK(status)) {
-				rsz = sz * 4 / 3 + 3;
+				rsz = (sz - 4) * 4 / 3 + 3;
 				ret = malloc(rsz);
 				if (ret != NULL) {
-					b64_encode(ret, rsz, raw, sz);
+					b64_encode(ret, rsz, raw + 4, sz - 4);
 					free(raw);
 					return ret;
 				}
@@ -272,8 +271,73 @@ get_public_key(CRYPT_CONTEXT ctx)
 			free(raw);
 		}
 	}
-	fprintf(stderr, "Error %d\n", status);
 	return NULL;
+}
+
+static bool
+key_not_present(sftp_filehandle_t f, const char *priv)
+{
+	size_t bufsz = 0;
+	size_t old_bufpos = 0;
+	size_t bufpos = 0;
+	size_t off = 0;
+	size_t eol;
+	char *buf = NULL;
+	char *newbuf;
+	char *eolptr;
+	sftp_str_t r = NULL;
+	bool skipread = false;
+
+	do {
+		if (skipread) {
+			old_bufpos = 0;
+			skipread = false;
+		}
+		else {
+			if (bufsz - bufpos < 1024) {
+				newbuf = realloc(buf, bufsz + 4096);
+				if (newbuf == NULL) {
+					free(buf);
+					return false;
+				}
+				buf = newbuf;
+				bufsz += 4096;
+			}
+			if (!sftpc_read(sftp_state, f, off, (bufsz - bufpos > 1024) ? 1024 : bufsz - bufpos, &r)) {
+				if (sftp_state->err_code == SSH_FX_EOF) {
+					free(buf);
+					free_sftp_str(r);
+					return true;
+				}
+				free(buf);
+				return false;
+			}
+			memcpy(&buf[bufpos], r->c_str, r->len);
+			old_bufpos = bufpos;
+			bufpos += r->len;
+			off += r->len;
+			free_sftp_str(r);
+			r = NULL;
+		}
+		for (eol = old_bufpos; eol < bufpos; eol++) {
+			if (buf[eol] == '\r' || buf[eol] == '\n')
+				break;
+		}
+		if (eol < bufpos) {
+			skipread = true;
+			eolptr = &buf[eol];
+			*eolptr = 0;
+			if (strstr(buf, priv) != NULL) {
+				free(buf);
+				return false;
+			}
+			*eolptr = '\n';
+			while (eol < bufpos && (buf[eol] == '\r' || buf[eol] == '\n'))
+				eol++;
+			memmove(buf, &buf[eol], bufpos - eol);
+			bufpos = bufpos - eol;
+		}
+	} while(1);
 }
 
 static bool
@@ -325,14 +389,17 @@ add_public_key(struct bbslist *bbs, char *priv)
 			sftp_state = sftpc_begin(sftp_send, NULL);
 			if (sftp_state != NULL) {
 				if (sftpc_init(sftp_state)) {
-					sftp_str_t ret = NULL;
 					sftp_filehandle_t f = NULL;
+					// TODO: Add permissions?
 
-					if (sftpc_open(sftp_state, ".ssh/authorized_keys", SSH_FXF_READ, NULL, &f)) {
-						if (sftpc_read(sftp_state, f, 0, 1024, &ret)) {
-							fprintf(stderr, "First lines... %s\n", ret->c_str);
-							free_sftp_str(ret);
-							added = true;
+					if (sftpc_open(sftp_state, ".ssh/authorized_keys", SSH_FXF_READ | SSH_FXF_WRITE | SSH_FXF_APPEND | SSH_FXF_CREAT, NULL, &f)) {
+						/* Read through the file looking for our key */
+						if (key_not_present(f, priv)) {
+							// TODO: Types other than RSA...
+							sftp_str_t ln =  sftp_asprintf("ssh-rsa %s Added by SyncTERM\n", priv);
+							if (ln != NULL) {
+								sftpc_write(sftp_state, f, 0, ln);
+							}
 						}
 						sftpc_close(sftp_state, &f);
 					}
@@ -479,7 +546,7 @@ ssh_connect(struct bbslist *bbs)
 		return -1;
 	}
 
-        /* we need to disable Nagle on the socket. */
+	/* we need to disable Nagle on the socket. */
 	if (setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)))
 		fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
 
@@ -500,7 +567,7 @@ ssh_connect(struct bbslist *bbs)
 	if (!bbs->hidepopups)
 		uifc.pop("Setting Username");
 
-        /* Add username/password */
+	/* Add username/password */
 	status = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, username, strlen(username));
 	if (cryptStatusError(status)) {
 		error_popup(bbs, "setting username", status);
@@ -517,7 +584,7 @@ ssh_connect(struct bbslist *bbs)
 		}
 	}
 	else {
-		if (!password[0]) {
+		if (!password[0]/* && ssh_context == -1*/) {
 			if (bbs->hidepopups)
 				init_uifc(false, false);
 			uifcinput("Password", MAX_PASSWD_LEN, password, K_PASSWORD, "Incorrect password.  Try again.");
@@ -525,12 +592,14 @@ ssh_connect(struct bbslist *bbs)
 				uifcbail();
 		}
 
-		if (!bbs->hidepopups)
-			uifc.pop("Setting Password");
-		status = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, password, strlen(password));
-		if (cryptStatusError(status)) {
-			error_popup(bbs, "setting password", status);
-			return -1;
+		if (password[0]) {
+			if (!bbs->hidepopups)
+				uifc.pop("Setting Password");
+			status = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, password, strlen(password));
+			if (cryptStatusError(status)) {
+				error_popup(bbs, "setting password", status);
+				return -1;
+			}
 		}
 
 		if (ssh_context != -1) {
@@ -539,6 +608,7 @@ ssh_connect(struct bbslist *bbs)
 			pubkey = get_public_key(ssh_context);
 			status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_PRIVATEKEY, ssh_context);
 			cl.DestroyContext(ssh_context);
+			ssh_context = -1;
 			if (cryptStatusError(status)) {
 				free(pubkey);
 				error_popup(bbs, "setting private key", status);
@@ -552,13 +622,16 @@ ssh_connect(struct bbslist *bbs)
 		uifc.pop("Setting Username");
 	}
 
-        /* Pass socket to cryptlib */
+	/* Pass socket to cryptlib */
 	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, ssh_sock);
 	if (cryptStatusError(status)) {
 		free(pubkey);
 		error_popup(bbs, "passing socket", status);
 		return -1;
 	}
+
+	// We need to set the channel so we can set channel attributes.
+	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, CRYPT_UNUSED);
 
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);
@@ -583,7 +656,7 @@ ssh_connect(struct bbslist *bbs)
 
 	cl.SetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
 
-        /* Activate the session */
+	/* Activate the session */
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);
 		uifc.pop("Activating Session");
@@ -674,8 +747,6 @@ ssh_connect(struct bbslist *bbs)
 			}
 		}
 		bbs->has_fingerprint = true;
-	} else {
-		fprintf(stderr, "Failed to get fingerprint. :(\n");
 	}
 
 	if (!bbs->hidepopups)
