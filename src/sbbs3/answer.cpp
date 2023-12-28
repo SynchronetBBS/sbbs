@@ -265,7 +265,7 @@ bool sbbs_t::answer()
 		}
 		l = 0;
 		if (cryptStatusOK(cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL, terminal, &l)) && l > 0) {
-			if (l < sizeof(terminal))
+			if (l < (int)sizeof(terminal))
 				terminal[l] = 0;
 			else
 				terminal[sizeof(terminal)-1] = 0;
