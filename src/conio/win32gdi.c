@@ -147,7 +147,7 @@ gdi_add_key(uint16_t key)
 	if (key == 0xe0)
 		key = CIO_KEY_LITERAL_E0;
 	if (key < 256) {
-		buf[0] = key;
+		buf[0] = (uint8_t)key;
 		remain = 1;
 	}
 	else {
@@ -200,7 +200,6 @@ static LRESULT
 gdi_handle_wm_size(WPARAM wParam, LPARAM lParam)
 {
 	int w, h;
-	int ww, wh;
 
 	switch (wParam) {
 		case SIZE_MAXIMIZED:
@@ -442,13 +441,13 @@ win_to_pos(LPARAM lParam, struct gdi_mouse_pos *p)
 	cx -= xoff;
 	cy -= yoff;
 
-	p->tx = cx / (((float)dwidth) / cols) + 1;
+	p->tx = (int)(cx / (((float)dwidth) / cols) + 1);
 	if (p->tx > cols)
 		ret = false;
 
 	p->px = cx * (scrnwidth) / dwidth;
 
-	p->ty = cy / (((float)dheight) / rows) + 1;
+	p->ty = (int)(cy / (((float)dheight) / rows) + 1);
 	if (p->ty > rows)
 		ret = false;
 
@@ -679,8 +678,6 @@ magic_message(MSG msg)
 	static uint8_t mods = 0;
 	size_t i;
 	uint8_t set = 0;
-	int *hack;
-	RECT r;
 
 	/* Note that some messages go directly to gdi_WndProc(), so we can't
 	 * put generic stuff in here.
@@ -745,7 +742,7 @@ magic_message(MSG msg)
 												window_top = wi.rcWindow.top;
 											}
 											pthread_mutex_lock(&vstatlock);
-											window_scaling = vstat.scaling;
+											window_scaling = (float)vstat.scaling;
 											pthread_mutex_unlock(&vstatlock);
 											SetWindowLongPtr(win, GWL_STYLE, STYLE);
 											PostMessageW(win, WM_USER_SETPOS, mi.rcMonitor.left, mi.rcMonitor.top);
@@ -1066,8 +1063,6 @@ gdi_getcliptext(void)
 int
 gdi_get_window_info(int *width, int *height, int *xpos, int *ypos)
 {
-	WINDOWPLACEMENT wp;
-
 	pthread_mutex_lock(&vstatlock);
 	if(width)
 		*width=vstat.winwidth;
@@ -1221,7 +1216,7 @@ void
 gdi_setwinsize(int w, int h)
 {
 	if (fullscreen)
-		window_scaling = bitmap_double_mult_inside(w, h);
+		window_scaling = (float)bitmap_double_mult_inside(w, h);
 	else
 		PostMessageW(win, WM_USER_SETSIZE, w, h);
 }
@@ -1232,7 +1227,7 @@ gdi_getscaling(void)
 	int ret;
 
 	pthread_mutex_lock(&vstatlock);
-	ret = bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
+	ret = (int)bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
 	return ret;
 }
@@ -1243,7 +1238,7 @@ gdi_setscaling(double newval)
 	int w, h;
 
 	if (fullscreen) {
-		window_scaling = newval;
+		window_scaling = (float)newval;
 	}
 	else {
 		pthread_mutex_lock(&vstatlock);
@@ -1267,8 +1262,6 @@ gdi_getscaling_type(void)
 void
 gdi_setscaling_type(enum ciolib_scaling newtype)
 {
-	int w, h;
-
 	pthread_mutex_lock(&stypelock);
 	stype = newtype;
 	pthread_mutex_unlock(&stypelock);
