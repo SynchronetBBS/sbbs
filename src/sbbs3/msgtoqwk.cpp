@@ -246,7 +246,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 	if(!buf)
 		return -2;
 
-	uchar qwk_newline = QWK_NEWLINE;
+	char qwk_newline = QWK_NEWLINE;
 	if(smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8)) {
 		if(mode&QM_UTF8)
 			qwk_newline = '\n';
