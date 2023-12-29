@@ -214,7 +214,7 @@ ssh_output_thread(void *args)
 	conn_api.output_thread_running = 2;
 }
 
-#if NOTYET
+#if 1//NOTYET
 static bool
 sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 {
@@ -663,32 +663,17 @@ ssh_connect(struct bbslist *bbs)
 	do {
 		status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
 		if (status == CRYPT_ENVELOPE_RESOURCE) {
-			int status2;
-			status2 = cl.GetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, username, &rows);
-			fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2);
-			if (cryptStatusOK(status2)) {
-				username[rows] = 0;
-				fprintf(stderr, "Len=%d\n", rows);
-				fprintf(stderr, "Username: '%s'\n", username);
-			}
-			//status2 = cl.DeleteAttribute(ssh_session, CRYPT_SESSINFO_PRIVATEKEY);
-			//fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2); // -21 permission... can't delete...
-			//status2 = cl.DeleteAttribute(ssh_session, CRYPT_SESSINFO_USERNAME);
-			//fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2); // Done...
-			status2 = cl.DeleteAttribute(ssh_session, CRYPT_SESSINFO_PASSWORD);
-			fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2);
+			// This will fail the first time through since there is no password.
+			cl.DeleteAttribute(ssh_session, CRYPT_SESSINFO_PASSWORD);
 			if (bbs->hidepopups)
 				init_uifc(false, false);
 			password[0] = 0;
 			uifcinput("Password", MAX_PASSWD_LEN, password, K_PASSWORD, "Incorrect password.  Try again.");
 			if (bbs->hidepopups)
 				uifcbail();
-			//status2 = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, username, strlen(username));
-			//fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2);
-			status2 = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, password, strlen(password));
-			fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2);
-			status2 = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_AUTHRESPONSE, 1);
-			fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2);
+			status = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, password, strlen(password));
+			if (cryptStatusOK(status))
+				status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_AUTHRESPONSE, 1);
 		}
 	} while (status == CRYPT_ENVELOPE_RESOURCE);
 	if (cryptStatusError(status)) {
