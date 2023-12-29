@@ -1226,6 +1226,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	smb_freefilemem(&file);
 	free(extdesc);
+	free(auxdata);
 
 	return JS_TRUE;
 }
@@ -1305,7 +1306,8 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 			} else {
 				if(file.extdesc != NULL)
 					truncsp(file.extdesc);
-				if(!readd_always && strcmp(extdesc ? extdesc : "", file.extdesc ? file.extdesc : "") == 0)
+				if(!readd_always && strcmp(extdesc ? extdesc : "", file.extdesc ? file.extdesc : "") == 0
+					&& strcmp(auxdata ? auxdata : "", file.auxdata ? file.auxdata : "") == 0)
 					p->smb_result = smb_putfile(&p->smb, &file);
 				else {
 					if((p->smb_result = smb_removefile(&p->smb, &file)) == SMB_SUCCESS) {
@@ -1320,6 +1322,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	smb_freefilemem(&file);
 	free(filename);
 	free(extdesc);
+	free(auxdata);
 
 	return result;
 }
