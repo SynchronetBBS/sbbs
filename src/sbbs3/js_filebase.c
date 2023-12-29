@@ -328,7 +328,9 @@ parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 		SAFECOPY(idx->name, cp);
 	}
 	if(JS_GetProperty(cx, obj, prop_name = "size", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		smb_setfilesize(&idx->idx, (uint64_t)JSVAL_TO_DOUBLE(val));
+		jsdouble d;
+		if(JS_ValueToNumber(cx, val, &d))
+			smb_setfilesize(&idx->idx, (uint64_t)d);
 	}
 	if(JS_GetProperty(cx, obj, prop_name = "crc16", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		idx->hash.data.crc16 = JSVAL_TO_INT(val);
@@ -571,11 +573,14 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	}
 	prop_name = "cost";
 	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
-		uint64_t cost = (uint64_t)JSVAL_TO_DOUBLE(val);
-		if((file->cost != 0 || cost != 0) && (result = smb_new_hfield(file, SMB_COST, sizeof(cost), &cost)) != SMB_SUCCESS) {
-			free(cp);
-			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
-			return result;
+		jsdouble d;
+		if(JS_ValueToNumber(cx, val, &d)) {
+			uint64_t cost = (uint64_t)d;
+			if((file->cost != 0 || cost != 0) && (result = smb_new_hfield(file, SMB_COST, sizeof(cost), &cost)) != SMB_SUCCESS) {
+				free(cp);
+				JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
+				return result;
+			}
 		}
 	}
 	prop_name = "added";
