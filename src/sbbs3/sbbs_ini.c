@@ -61,6 +61,7 @@ static const char*	strLoginAttemptTempBanThreshold="LoginAttemptTempBanThreshold
 static const char*	strLoginAttemptTempBanDuration="LoginAttemptTempBanDuration";
 static const char*	strLoginAttemptFilterThreshold="LoginAttemptFilterThreshold";
 static const char*	strLoginAttemptFilterDuration="LoginAttemptFilterDuration";
+static const char*	strLoginRequirements="LoginRequirements";
 static const char*	strJavaScriptMaxBytes		="JavaScriptMaxBytes";
 static const char*	strJavaScriptTimeLimit		="JavaScriptTimeLimit";
 static const char*	strJavaScriptGcInterval		="JavaScriptGcInterval";
@@ -280,6 +281,8 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 	if(*p)
         SAFECOPY(global->host_name,value);
 
+	SAFECOPY(global->login_ars, iniGetString(list, section, strLoginRequirements, nulstr, value));
+
 	global->sem_chk_freq=(uint16_t)iniGetDuration(list,section,strSemFileCheckFrequency,DEFAULT_SEM_CHK_FREQ);
 	global->interfaces=iniGetStringList(list,section,strInterfaces, ",", "0.0.0.0,::");
 	global->outgoing4.s_addr=iniGetIpAddress(list,section,strOutgoing4,INADDR_ANY);
@@ -463,6 +466,9 @@ void sbbs_read_ini(
 		SAFECOPY(bbs->temp_dir
 			,iniGetString(list,section,strTempDirectory,global->temp_dir,value));
 
+		SAFECOPY(bbs->login_ars
+			,iniGetString(list, section, strLoginRequirements, global->login_ars, value));
+
 		bbs->default_term_width = iniGetUInteger(list, section, "DefaultTermWidth", TERM_COLS_DEFAULT);
 		bbs->default_term_height = iniGetUInteger(list, section, "DefaultTermHeight", TERM_ROWS_DEFAULT);
 
@@ -564,6 +570,9 @@ void sbbs_read_ini(
 		SAFECOPY(ftp->temp_dir
 			,iniGetString(list,section,strTempDirectory,global->temp_dir,value));
 
+		SAFECOPY(ftp->login_ars
+			,iniGetString(list, section, strLoginRequirements, global->login_ars, value));
+
 		ftp->log_level
 			=iniGetLogLevel(list,section,strLogLevel,global->log_level);
 		ftp->options
@@ -630,6 +639,9 @@ void sbbs_read_ini(
 
 		SAFECOPY(mail->temp_dir
 			,iniGetString(list,section,strTempDirectory,global->temp_dir,value));
+
+		SAFECOPY(mail->login_ars
+			,iniGetString(list, section, strLoginRequirements, global->login_ars, value));
 
 		SAFECOPY(mail->relay_server
 			,iniGetString(list,section,"RelayServer",nulstr,value));
@@ -702,6 +714,9 @@ void sbbs_read_ini(
 		SAFECOPY(services->temp_dir
 			,iniGetString(list,section,strTempDirectory,global->temp_dir,value));
 
+		SAFECOPY(services->login_ars
+			,iniGetString(list, section, strLoginRequirements, global->login_ars, value));
+
 		SAFECOPY(services->services_ini
 			,iniGetString(list, section, strIniFileName, "services.ini", value));
 
@@ -749,6 +764,9 @@ void sbbs_read_ini(
 
 		SAFECOPY(web->temp_dir
 			,iniGetString(list,section,strTempDirectory,global->temp_dir,value));
+
+		SAFECOPY(web->login_ars
+			,iniGetString(list, section, strLoginRequirements, global->login_ars, value));
 
 		SAFECOPY(web->root_dir
 			,iniGetString(list,section,"RootDirectory",WEB_DEFAULT_ROOT_DIR,value));
@@ -849,6 +867,7 @@ BOOL sbbs_write_ini(
 		iniSetString(lp,section,strCtrlDirectory,global->ctrl_dir,&style);
 		iniSetString(lp,section,strTempDirectory,global->temp_dir,&style);
 		iniSetString(lp,section,strHostName,global->host_name,&style);
+		iniSetString(lp,section,strLoginRequirements, global->login_ars, &style);
 		iniSetDuration(lp,section,strSemFileCheckFrequency,global->sem_chk_freq,&style);
 		if(global->outgoing4.s_addr != INADDR_ANY)
 			iniSetIpAddress(lp,section,strOutgoing4,global->outgoing4.s_addr,&style);
@@ -948,6 +967,11 @@ BOOL sbbs_write_ini(
 		if(stricmp(bbs->temp_dir,global->temp_dir)==0)
 			iniRemoveKey(lp,section,strTempDirectory);
 		else if(!iniSetString(lp,section,strTempDirectory,bbs->temp_dir,&style))
+			break;
+
+		if(stricmp(bbs->login_ars, global->login_ars) == 0)
+			iniRemoveKey(lp, section, strLoginRequirements);
+		else if(!iniSetString(lp, section, strLoginRequirements, bbs->login_ars, &style))
 			break;
 
 		iniSetUInteger(lp, section, "DefaultTermWidth", bbs->default_term_width, &style);
@@ -1052,6 +1076,11 @@ BOOL sbbs_write_ini(
 		else if(!iniSetString(lp,section,strTempDirectory,ftp->temp_dir,&style))
 			break;
 
+		if(stricmp(ftp->login_ars, global->login_ars) == 0)
+			iniRemoveKey(lp, section, strLoginRequirements);
+		else if(!iniSetString(lp, section, strLoginRequirements, ftp->login_ars, &style))
+			break;
+
 		if(!iniSetString(lp,section,"IndexFileName",ftp->index_file_name,&style))
 			break;
 
@@ -1151,6 +1180,11 @@ BOOL sbbs_write_ini(
 		else if(!iniSetString(lp,section,strTempDirectory,mail->temp_dir,&style))
 			break;
 
+		if(stricmp(mail->login_ars, global->login_ars) == 0)
+			iniRemoveKey(lp, section, strLoginRequirements);
+		else if(!iniSetString(lp, section, strLoginRequirements, mail->login_ars, &style))
+			break;
+
 		if(!iniSetString(lp,section,"RelayServer",mail->relay_server,&style))
 			break;
 		if(!iniSetString(lp,section,"RelayUsername",mail->relay_user,&style))
@@ -1245,6 +1279,11 @@ BOOL sbbs_write_ini(
 		else if(!iniSetString(lp,section,strTempDirectory,services->temp_dir,&style))
 			break;
 
+		if(stricmp(services->login_ars, global->login_ars) == 0)
+			iniRemoveKey(lp, section, strLoginRequirements);
+		else if(!iniSetString(lp, section, strLoginRequirements, services->login_ars, &style))
+			break;
+
 		if(!sbbs_set_sound_settings(lp, section, &services->sound, &global->sound, &style))
 			break;
 
@@ -1319,6 +1358,11 @@ BOOL sbbs_write_ini(
 		if(stricmp(web->temp_dir,global->temp_dir)==0)
 			iniRemoveKey(lp,section,strTempDirectory);
 		else if(!iniSetString(lp,section,strTempDirectory,web->temp_dir,&style))
+			break;
+
+		if(stricmp(web->login_ars, global->login_ars) == 0)
+			iniRemoveKey(lp, section, strLoginRequirements);
+		else if(!iniSetString(lp, section, strLoginRequirements, web->login_ars, &style))
 			break;
 
 		if(!iniSetString(lp,section,"RootDirectory",web->root_dir,&style))

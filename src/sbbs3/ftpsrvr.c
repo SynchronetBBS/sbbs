@@ -2538,6 +2538,13 @@ static void ctrl_thread(void* arg)
 				user.number=0;
 				continue;
 			}
+			if(!chk_ars(&scfg, startup->login_ars, &user, &client)) {
+				lprintf(LOG_NOTICE,"%04d <%s> !Insufficient server access: %s"
+					,sock, user.alias, startup->login_ars);
+				sockprintf(sock,sess,"530 Insufficient server access.");
+				user.number=0;
+				continue;
+			}
 
 			SAFEPRINTF2(sys_pass,"%s:%s",user.pass,scfg.sys_pass);
 			if(!user.pass[0]) {	/* Guest/Anonymous */

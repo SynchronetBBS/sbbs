@@ -1301,6 +1301,12 @@ static bool pop3_client_thread(pop3_t* pop3)
 			badlogin(socket, session, pop_auth_error, username, password, &client, &pop3->client_addr);
 			break;
 		}
+		if(!chk_ars(&scfg, startup->login_ars, &user, &client)) {
+			lprintf(LOG_NOTICE,"%04d %s [%s] <%s> !Insufficient server access: %s"
+				,socket, client.protocol, host_ip, username, startup->login_ars);
+			badlogin(socket, session, pop_auth_error, username, NULL, &client, &pop3->client_addr);
+			break;
+		}
 
 		if(user.pass[0]) {
 			loginSuccess(startup->login_attempt_list, &pop3->client_addr);
@@ -4172,6 +4178,12 @@ static bool smtp_client_thread(smtp_t* smtp)
 				badlogin(socket, session, badauth_rsp, user_name, user_pass, &client, &smtp->client_addr);
 				break;
 			}
+			if(!chk_ars(&scfg, startup->login_ars, &relay_user, &client)) {
+				lprintf(LOG_NOTICE,"%04d %s [%s] <%s> !Insufficient server access: %s"
+					,socket, client.protocol, client_id, user_name, startup->login_ars);
+				badlogin(socket, session, badauth_rsp, user_name, NULL, &client, &smtp->client_addr);
+				break;
+			}
 
 			if(relay_user.pass[0]) {
 				loginSuccess(startup->login_attempt_list, &smtp->client_addr);
@@ -4269,6 +4281,12 @@ static bool smtp_client_thread(smtp_t* smtp)
 					,socket,p);
 #endif
 				badlogin(socket, session, badauth_rsp, user_name, p, &client, &smtp->client_addr);
+				break;
+			}
+			if(!chk_ars(&scfg, startup->login_ars, &relay_user, &client)) {
+				lprintf(LOG_NOTICE,"%04d %s [%s] <%s> !Insufficient server access: %s"
+					,socket, client.protocol, client_id, user_name, startup->login_ars);
+				badlogin(socket, session, badauth_rsp, user_name, NULL, &client, &smtp->client_addr);
 				break;
 			}
 

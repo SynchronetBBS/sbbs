@@ -91,10 +91,19 @@ bool sbbs_t::logon()
 		useron.shell=cfg.new_shell; 
 	}
 
+	if(!chk_ars(startup->login_ars, &useron, &client)) {
+		bputs(text[NoNodeAccess]);
+		safe_snprintf(str, sizeof str, "(%04u)  %-25s  Insufficient server access: %s"
+			,useron.number, useron.alias, startup->login_ars);
+		logline(LOG_NOTICE, "+!", str);
+		hangup();
+		return false; 
+	}
+
 	if(!chk_ar(cfg.node_ar,&useron,&client)) {
 		bputs(text[NoNodeAccess]);
-		safe_snprintf(str, sizeof(str), "(%04u)  %-25s  Insufficient node access"
-			,useron.number,useron.alias);
+		safe_snprintf(str, sizeof(str), "(%04u)  %-25s  Insufficient node access: %s"
+			,useron.number, useron.alias, cfg.node_arstr);
 		logline(LOG_NOTICE,"+!",str);
 		hangup();
 		return(false); 

@@ -425,6 +425,14 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
+	if(!chk_ars(&scfg, startup->login_ars, &client->user, client->client)) {
+		lprintf(LOG_NOTICE,"%04d %s <%s> !Insufficient server access: %s"
+			,client->socket, client->service->protocol, client->user.alias, startup->login_ars);
+		badlogin(client->socket, user, NULL, client->client, &client->addr);
+		JS_RESUMEREQUEST(cx, rc);
+		return(JS_TRUE);
+	}
+
 	JS_RESUMEREQUEST(cx, rc);
 
 	if(argc>2)

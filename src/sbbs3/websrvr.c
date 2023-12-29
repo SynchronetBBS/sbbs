@@ -2041,6 +2041,13 @@ static BOOL check_ars(http_session_t * session)
 			break;
 	}
 
+	if(!chk_ars(&scfg, startup->login_ars, &thisuser, &session->client)) {
+		lprintf(LOG_NOTICE, "%04d <%s> !Insufficient server access: %s"
+			,session->socket, thisuser.alias, startup->login_ars);
+		badlogin(session->socket, thisuser.alias, NULL, &session->client, &session->addr);
+		return FALSE;
+	}
+
 	if(i != session->last_user_num) {
 		http_logoff(session,session->socket,__LINE__);
 		session->user.number=i;
@@ -5619,6 +5626,13 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);
 		}
+	}
+
+	if(!chk_ars(&scfg, startup->login_ars, &user, &session->client)) {
+		lprintf(LOG_NOTICE, "%04d <%s> !Insufficient server access: %s"
+			,session->socket, user.alias, startup->login_ars);
+		badlogin(session->socket, username, NULL, &session->client, &session->addr);
+		return JS_TRUE;
 	}
 
 	if(argc>2)

@@ -67,6 +67,7 @@ typedef struct {
 	char	ctrl_dir[INI_MAX_VALUE_LEN];
 	char	temp_dir[INI_MAX_VALUE_LEN];
 	char	host_name[INI_MAX_VALUE_LEN];
+	char	login_ars[LEN_ARSTR + 1];
 	uint16_t sem_chk_freq;
 	struct in_addr	outgoing4;
 	struct in6_addr	outgoing6;
@@ -88,6 +89,7 @@ typedef struct {
 	int			type; \
     uint32_t	options; \
 	int			log_level; \
+	char		login_ars[LEN_ARSTR + 1]; \
 	void*	cbdata; \
 	int 	(*lputs)(void*, int level, const char*); \
 	void	(*errormsg)(void*, int level, const char* msg); \

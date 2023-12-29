@@ -226,6 +226,7 @@ static void global_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Bind Retry Count", threshold(startup.bind_retry_count));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Bind Retry Delay", vduration(startup.bind_retry_delay));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Sem File Check Interval", vduration(startup.sem_chk_freq));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
@@ -235,8 +236,9 @@ static void global_cfg(void)
 			"\n"
 			"Settings that are shared among multiple Synchronet servers.\n"
 			"\n"
-			"These settings can be over-ridden on a per-server basis by editing the\n"
-			"corresponding keys in each `[server]` section of the `ctrl/sbbs.ini` file.\n"
+			"These settings can be over-ridden on a per-server basis via other SCFG\n"
+			"Server Configuration menus or by editing the corresponding keys in each\n"
+			"`[server]` section of the `ctrl/sbbs.ini` file.\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_RHT|WIN_SAV|WIN_ESC, 0, 0, 0, &cur, &bar
 			,"Global Server Settings",opt)) {
@@ -275,9 +277,12 @@ static void global_cfg(void)
 					startup.sem_chk_freq = (uint16_t)parse_duration(str);
 				break;
 			case 7:
-				js_startup_cfg(&startup.js);
+				getar("Global Server Login", startup.login_ars);
 				break;
 			case 8:
+				js_startup_cfg(&startup.js);
+				break;
+			case 9:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
@@ -392,6 +397,7 @@ static void termsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Execute QWK-related Events"
 			,startup.options & BBS_OPT_NO_EVENTS ? "N/A" : startup.options & BBS_OPT_NO_QWK_EVENTS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
@@ -534,9 +540,12 @@ static void termsrvr_cfg(void)
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			case 28:
-				js_startup_cfg(&startup.js);
+				getar("Terminal Server Login", startup.login_ars);
 				break;
 			case 29:
+				js_startup_cfg(&startup.js);
+				break;
+			case 30:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
@@ -647,6 +656,7 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI File Extensions", strListCombine(startup.cgi_ext, tmp, sizeof(tmp), ", "));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Default Content-Type", startup.default_cgi_content);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Max Inactivity", vduration(startup.max_cgi_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
@@ -800,9 +810,12 @@ static void websrvr_cfg(void)
 					startup.max_cgi_inactivity = (uint16_t)parse_duration(str);
 				break;
 			case 27:
-				js_startup_cfg(&startup.js);
+				getar("Web Server Login", startup.login_ars);
 				break;
 			case 28:
+				js_startup_cfg(&startup.js);
+				break;
+			case 29:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
@@ -898,6 +911,7 @@ static void ftpsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Sysop File System Access", startup.options & FTP_OPT_NO_LOCAL_FSYS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Allow Bounce Transfers", startup.options & FTP_OPT_ALLOW_BOUNCE ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "Failed Login Attempts...");
 
 		opt[i][0] = '\0';
@@ -1002,6 +1016,9 @@ static void ftpsrvr_cfg(void)
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			case 15:
+				getar("FTP Server Login", startup.login_ars);
+				break;
+			case 16:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
@@ -1243,6 +1260,7 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Hash DNS-Blacklisted Msgs", startup.options & MAIL_OPT_DNSBL_SPAMHASH ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Kill SPAM When Read", startup.options & MAIL_OPT_KILL_READ_SPAM ? "Yes": "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SendMail Thread...", startup.options & MAIL_OPT_NO_SENDMAIL ? strDisabled : "");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
@@ -1421,9 +1439,12 @@ static void mailsrvr_cfg(void)
 				sendmail_cfg(&startup);
 				break;
 			case 31:
-				js_startup_cfg(&startup.js);
+				getar("Mail Server Login", startup.login_ars);
 				break;
 			case 32:
+				js_startup_cfg(&startup.js);
+				break;
+			case 33:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
@@ -1508,6 +1529,7 @@ static void services_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Network Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Configuration File", startup.services_ini);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
@@ -1542,9 +1564,12 @@ static void services_cfg(void)
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Services Configuration File", startup.services_ini, sizeof(startup.services_ini)-1, K_EDIT);
 				break;
 			case 5:
-				js_startup_cfg(&startup.js);
+				getar("Services Login", startup.login_ars);
 				break;
 			case 6:
+				js_startup_cfg(&startup.js);
+				break;
+			case 7:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
