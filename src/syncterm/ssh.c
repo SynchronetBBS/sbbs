@@ -214,7 +214,7 @@ ssh_output_thread(void *args)
 	conn_api.output_thread_running = 2;
 }
 
-#if 1//NOTYET
+#if NOTYET
 static bool
 sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 {
