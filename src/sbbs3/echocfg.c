@@ -36,6 +36,8 @@
 #include "sockwrap.h"
 #include "str_util.h"
 #include "getctrl.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 char **opt;
 
@@ -692,6 +694,21 @@ void binkp_settings(nodecfg_t* node)
 	}
 }
 
+#ifdef _WIN32
+	#define printf cprintf
+#endif
+
+void banner()
+{
+	char	compiler[32];
+
+	DESCRIBE_COMPILER(compiler);
+
+	printf("\nSynchronet FidoNet Configuration  Version %u.%02u  " COPYRIGHT_NOTICE
+		"\n\n",SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR);
+	printf("Compiled %s/%s %s %s with %s\n", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
+}
+
 int main(int argc, char **argv)
 {
 	char str[256],*p;
@@ -712,8 +729,11 @@ int main(int argc, char **argv)
 	ZERO_VAR(savarcdef);
 	ZERO_VAR(savedomain);
 
-	fprintf(stderr,"\nSynchronet FidoNet Configuration  Version %u.%02u  " COPYRIGHT_NOTICE
-		"\n\n",SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR);
+#if defined(_WIN32)
+	cio_api.options |= CONIO_OPT_DISABLE_CLOSE;
+#else
+	banner();
+#endif
 
 	memset(&cfg,0,sizeof(cfg));
 	str[0]=0;
@@ -740,6 +760,7 @@ int main(int argc, char **argv)
 						case 'A':
 							ciolib_mode=CIOLIB_MODE_ANSI;
 							break;
+#if defined __unix__
 						case 'C':
 							ciolib_mode=CIOLIB_MODE_CURSES;
 							break;
@@ -756,9 +777,22 @@ int main(int argc, char **argv)
 						case 'X':
 							ciolib_mode=CIOLIB_MODE_X;
 							break;
+#elif defined _WIN32
 						case 'W':
 							ciolib_mode=CIOLIB_MODE_CONIO;
 							break;
+						case 'G':
+							switch (toupper(argv[i][3])) {
+								case 0:
+								case 'W':
+									ciolib_mode = CIOLIB_MODE_GDI;
+									break;
+								case 'F':
+									ciolib_mode = CIOLIB_MODE_GDI_FULLSCREEN;
+									break;
+							}
+							break;
+#endif
 						case 'D':
 		                    door_mode=TRUE;
 		                    break;
@@ -780,26 +814,42 @@ int main(int argc, char **argv)
                     break;
                 default:
 					USAGE:
-                    printf("usage: echocfg [path/to/sbbsecho.ini] [options]"
-                        "\n\noptions:\n\n"
-						"-k  =  keyboard mode only (no mouse support)\n"
-                        "-c  =  force color mode\n"
-						"-m  =  force monochrome mode\n"
-                        "-e# =  set escape delay to #msec\n"
-						"-iX =  set interface mode to X (default=auto) where X is one of:\n"
-#ifdef __unix__
-						"       X = X11 mode\n"
-						"       C = Curses mode\n"
-						"       F = Curses mode with forced IBM charset\n"
-						"       I = Curses mode with forced ASCII charset\n"
-#else
-						"       W = Win32 console mode\n"
+#ifdef _WIN32
+					uifc.size=sizeof(uifc);
+					uifc.mode |= UIFC_NOMOUSE;
+					initciolib(CIOLIB_MODE_CONIO);
+					uifcini32(&uifc);
+					banner();
 #endif
-						"       A = ANSI mode\n"
-						"       D = standard input/output/door mode\n"
-                        "-v# =  set video mode to # (default=auto)\n"
-                        "-l# =  set screen lines to # (default=auto-detect)\n"
+                    printf("\nusage: echocfg [path/to/sbbsecho.ini] [options]"
+                        "\n\noptions:\n\n"
+						"-k     keyboard mode only (no mouse support)\n"
+                        "-c     force color mode\n"
+						"-m     force monochrome mode\n"
+                        "-e#    set escape delay to #msec\n"
+						"-iX    set interface mode to X (default=auto) where X is one of:\n"
+#ifdef __unix__
+						"        X  = X11 mode\n"
+						"        C  = Curses mode\n"
+						"        F  = Curses mode with forced IBM charset\n"
+						"        I  = Curses mode with forced ASCII charset\n"
+#else
+						"        W  = Win32 console mode\n"
+#if defined(WITH_GDI)
+						"        G  = Win32 graphics mode\n"
+						"        GF = Win32 graphics mode, full screen\n"
+#endif // WITH_GDI
+#endif
+						"        A  = ANSI mode\n"
+						"        D  = standard input/output/door mode\n"
+                        "-v#    set video mode to # (default=auto)\n"
+                        "-l#    set screen lines to # (default=auto-detect)\n"
                         );
+#ifdef _WIN32
+					printf("\nHit a key to close...");
+					getch();
+#undef printf
+#endif
         			exit(0);
 		}
 		else

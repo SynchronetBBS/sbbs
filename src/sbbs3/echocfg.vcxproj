@@ -35,11 +35,11 @@
     <Import Project="..\xpdev\xpdev.props" />
     <Import Project="..\smblib\smblib.props" />
     <Import Project="..\uifc\uifc.props" />
-    <Import Project="..\conio\conio.props" />
     <Import Project="..\build\undeprecate.props" />
     <Import Project="..\build\target_ia32.props" />
     <Import Project="..\hash\hash.props" />
     <Import Project="..\encode\encode.props" />
+    <Import Project="..\conio\conio_gdi.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -47,11 +47,11 @@
     <Import Project="..\xpdev\xpdev.props" />
     <Import Project="..\smblib\smblib.props" />
     <Import Project="..\uifc\uifc.props" />
-    <Import Project="..\conio\conio.props" />
     <Import Project="..\build\undeprecate.props" />
     <Import Project="..\build\target_ia32.props" />
     <Import Project="..\hash\hash.props" />
     <Import Project="..\encode\encode.props" />
+    <Import Project="..\conio\conio_gdi.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -92,7 +92,6 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>.\msvc.win32.exe.debug/echocfg.pdb</ProgramDatabaseFile>
-      <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
@@ -133,7 +132,6 @@
       <OutputFile>.\msvc.win32.exe.release/echocfg.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ProgramDatabaseFile>.\msvc.win32.exe.release/echocfg.pdb</ProgramDatabaseFile>
-      <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
@@ -169,8 +167,8 @@
     <ClCompile Include="str_util.c" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\conio\conio.vcxproj">
-      <Project>{84592e48-27ca-48a6-b9c6-243d2347a578}</Project>
+    <ProjectReference Include="..\conio\conio_gdi.vcxproj">
+      <Project>{fbcce03b-65ee-44a1-bbe1-b1f789d223a1}</Project>
     </ProjectReference>
     <ProjectReference Include="..\uifc\uifc.vcxproj">
       <Project>{7bfb9820-0e57-4be4-9be9-e0a687874e19}</Project>
