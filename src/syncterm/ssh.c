@@ -306,7 +306,6 @@ key_not_present(sftp_filehandle_t f, const char *priv)
 			if (!sftpc_read(sftp_state, f, off, (bufsz - bufpos > 1024) ? 1024 : bufsz - bufpos, &r)) {
 				if (sftp_state->err_code == SSH_FX_EOF) {
 					free(buf);
-					free_sftp_str(r);
 					return true;
 				}
 				free(buf);
@@ -347,7 +346,6 @@ add_public_key(struct bbslist *bbs, char *priv)
 	bool added = false;
 
 	// TODO: Without this sleep, all is woe.
-	//SLEEP(10);
 	while (!conn_api.input_thread_running)
 		SLEEP(1);
 	if (!bbs->hidepopups) {
@@ -584,7 +582,7 @@ ssh_connect(struct bbslist *bbs)
 		}
 	}
 	else {
-		if (!password[0]/* && ssh_context == -1*/) {
+		if (!password[0] && ssh_context == -1) {
 			if (bbs->hidepopups)
 				init_uifc(false, false);
 			uifcinput("Password", MAX_PASSWD_LEN, password, K_PASSWORD, "Incorrect password.  Try again.");
@@ -661,7 +659,38 @@ ssh_connect(struct bbslist *bbs)
 		uifc.pop(NULL);
 		uifc.pop("Activating Session");
 	}
-	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
+
+	do {
+		status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
+		if (status == CRYPT_ENVELOPE_RESOURCE) {
+			int status2;
+			status2 = cl.GetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, username, &rows);
+			fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2);
+			if (cryptStatusOK(status2)) {
+				username[rows] = 0;
+				fprintf(stderr, "Len=%d\n", rows);
+				fprintf(stderr, "Username: '%s'\n", username);
+			}
+			//status2 = cl.DeleteAttribute(ssh_session, CRYPT_SESSINFO_PRIVATEKEY);
+			//fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2); // -21 permission... can't delete...
+			//status2 = cl.DeleteAttribute(ssh_session, CRYPT_SESSINFO_USERNAME);
+			//fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2); // Done...
+			status2 = cl.DeleteAttribute(ssh_session, CRYPT_SESSINFO_PASSWORD);
+			fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2);
+			if (bbs->hidepopups)
+				init_uifc(false, false);
+			password[0] = 0;
+			uifcinput("Password", MAX_PASSWD_LEN, password, K_PASSWORD, "Incorrect password.  Try again.");
+			if (bbs->hidepopups)
+				uifcbail();
+			//status2 = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, username, strlen(username));
+			//fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2);
+			status2 = cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, password, strlen(password));
+			fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2);
+			status2 = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_AUTHRESPONSE, 1);
+			fprintf(stderr, "Stats @ %d: %d\n", __LINE__, status2);
+		}
+	} while (status == CRYPT_ENVELOPE_RESOURCE);
 	if (cryptStatusError(status)) {
 		free(pubkey);
 		error_popup(bbs, "activating session", status);
