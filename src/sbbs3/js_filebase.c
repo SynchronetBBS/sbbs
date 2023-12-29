@@ -1311,6 +1311,8 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 					p->smb_result = smb_putfile(&p->smb, &file);
 				else {
 					if((p->smb_result = smb_removefile(&p->smb, &file)) == SMB_SUCCESS) {
+						if(readd_always)
+							file.hdr.when_imported.time = 0; // we want the file to appear as "new"
 						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, auxdata, newfname);
 					}
 				}
