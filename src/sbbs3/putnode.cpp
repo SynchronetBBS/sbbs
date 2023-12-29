@@ -30,7 +30,6 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 {
 	char	str[256],firston[25];
 	char	path[MAX_PATH+1];
-	char	topic[128];
 	int		wr=0;
 	int		wrerr=0;
 	int		attempts;
@@ -92,25 +91,9 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 	pthread_mutex_unlock(&nodefile_mutex);
 
 	if(cfg.mqtt.enabled && mqtt->handle != NULL) {
-		snprintf(str, sizeof(str), "%u\t%u\t%u\t%u\t%x\t%u\t%u\t%u"
-			,node->status
-			,node->action
-			,node->useron
-			,node->connection
-			,node->misc
-			,node->aux
-			,node->extaux
-			,node->errors
-			);
-		SAFEPRINTF(topic, "node/%u/status", number + 1);
-		int result = mqtt_pub_strval(mqtt, TOPIC_BBS, topic, str);
-		if(result == MQTT_SUCCESS && cfg.mqtt.verbose) {
-			SAFEPRINTF(topic, "node/%u", number + 1);
-			result = mqtt_pub_strval(mqtt, TOPIC_BBS, topic
-				,nodestatus(&cfg, node, str, sizeof(str), number + 1));
-		}
+		int result = mqtt_putnodedat(mqtt, number, node);
 		if(result != MQTT_SUCCESS)
-			lprintf(LOG_WARNING, "ERROR %d (%d) publishing node status: %s", result, errno, topic);
+			lprintf(LOG_WARNING, "ERROR %d (%d) publishing node status", result, errno);
 	}
 	if(wr!=sizeof(node_t)) {
 		errno=wrerr;

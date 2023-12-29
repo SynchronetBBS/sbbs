@@ -30,6 +30,7 @@ typedef struct
 	user_t		storage;
 	BOOL		cached;
 	client_t*	client;
+	struct mqtt* mqtt;
 	int			file;		// for fast read operations, only
 
 } private_t;
@@ -1199,6 +1200,7 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	js_getuserdat(scfg,p);
 	if(fname != NULL && is_valid_dirnum(scfg, dirnum)) {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_downloaded_file(scfg, p->user, p->client, dirnum, fname, bytes)));
+		mqtt_file_download(p->mqtt, p->user, dirnum, fname, bytes, p->client);
 	} else {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_downloaded(scfg, p->user, files, bytes)));
 	}
@@ -1671,7 +1673,7 @@ JSObject* js_CreateUserClass(JSContext* cx, JSObject* parent)
 }
 
 JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, char* name
-									  ,user_t* user, client_t* client, BOOL global_user)
+									  ,user_t* user, client_t* client, BOOL global_user, struct mqtt* mqtt)
 {
 	JSObject*	userobj;
 	private_t*	p;
@@ -1694,6 +1696,7 @@ JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, char* name
 	}
 
 	p->client = client;
+	p->mqtt = mqtt;
 	p->cached = FALSE;
 	p->user = &p->storage;
 	if(user!=NULL) {
@@ -1723,9 +1726,9 @@ JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, char* name
 /****************************************************************************/
 JSBool
 js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg, user_t* user, client_t* client
-					 ,const char* web_file_vpath_prefix, subscan_t* subscan)
+					 ,const char* web_file_vpath_prefix, subscan_t* subscan, struct mqtt* mqtt)
 {
-	if(js_CreateUserObject(cx,parent,"user",user,client,/* global_user */TRUE)==NULL)
+	if(js_CreateUserObject(cx,parent,"user",user,client,/* global_user */TRUE, mqtt)==NULL)
 		return(JS_FALSE);
 	if(js_CreateFileAreaObject(cx,parent,cfg,user,client,web_file_vpath_prefix)==NULL)
 		return(JS_FALSE);

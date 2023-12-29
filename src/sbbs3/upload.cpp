@@ -193,7 +193,7 @@ bool sbbs_t::uploadfile(file_t* f)
 			useron.cdt = adjustuserval(&cfg, useron.number, USER_CDT
 				,(int64_t)(f->cost * (cfg.dir[f->dir]->up_pct/100.0))); 
 	}
-	mqtt_file_upload(mqtt, &useron, f, length, &client);
+	mqtt_file_upload(mqtt, &useron, f->dir, f->name, length, &client);
 	user_event(EVENT_UPLOAD);
 
 	return true;

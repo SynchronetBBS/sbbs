@@ -26,6 +26,7 @@
 #include "xpdatetime.h"
 #include "date_str.h"
 #include "userdat.h"
+#include "scfglib.h"	// is_valid_dirnum()
 
 const char* server_type_desc(enum server_type type)
 {
@@ -878,9 +879,12 @@ void mqtt_shutdown(struct mqtt* mqtt)
 	}
 }
 
-static int mqtt_file_xfer(struct mqtt* mqtt, user_t* user, file_t* f, off_t bytes, client_t* client, const char* xfer)
+static int mqtt_file_xfer(struct mqtt* mqtt, user_t* user, int dirnum, const char* fname, off_t bytes, client_t* client, const char* xfer)
 {
-	if(mqtt == NULL || mqtt->cfg == NULL || user == NULL || f == NULL || client == NULL)
+	if(mqtt == NULL || mqtt->cfg == NULL || user == NULL || fname == NULL || client == NULL)
+		return MQTT_FAILURE;
+
+	if(!is_valid_dirnum(mqtt->cfg, dirnum))
 		return MQTT_FAILURE;
 
 	if(!mqtt->cfg->mqtt.enabled)
@@ -888,18 +892,46 @@ static int mqtt_file_xfer(struct mqtt* mqtt, user_t* user, file_t* f, off_t byte
 
 	char str[256];
 	char topic[128];
-	snprintf(topic, sizeof(topic), "%s/%s", xfer, mqtt->cfg->dir[f->dir]->code);
+	snprintf(topic, sizeof(topic), "%s/%s", xfer, mqtt->cfg->dir[dirnum]->code);
 	snprintf(str, sizeof(str), "%u\t%s\t%s\t%" PRIdOFF "\t%s"
-		,user->number, user->alias, f->name, bytes, client->protocol);
+		,user->number, user->alias, fname, bytes, client->protocol);
 	return mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, time(NULL), str);
 }
 
-int mqtt_file_upload(struct mqtt* mqtt, user_t* user, file_t* f, off_t bytes, client_t* client)
+int mqtt_file_upload(struct mqtt* mqtt, user_t* user, int dirnum, const char* fname, off_t bytes, client_t* client)
 {
-	return mqtt_file_xfer(mqtt, user, f, bytes, client, "upload");
+	return mqtt_file_xfer(mqtt, user, dirnum, fname, bytes, client, "upload");
 }
 
-int mqtt_file_download(struct mqtt* mqtt, user_t* user, file_t* f, off_t bytes, client_t* client)
+int mqtt_file_download(struct mqtt* mqtt, user_t* user, int dirnum, const char* fname, off_t bytes, client_t* client)
 {
-	return mqtt_file_xfer(mqtt, user, f, bytes, client, "download");
+	return mqtt_file_xfer(mqtt, user, dirnum, fname, bytes, client, "download");
+}
+
+// number is zero-based
+int mqtt_putnodedat(struct mqtt* mqtt, int number, node_t* node)
+{
+	if(mqtt == NULL || node == NULL)
+		return MQTT_FAILURE;
+
+	char str[256];
+	snprintf(str, sizeof str, "%u\t%u\t%u\t%u\t%x\t%u\t%u\t%u"
+		,node->status
+		,node->action
+		,node->useron
+		,node->connection
+		,node->misc
+		,node->aux
+		,node->extaux
+		,node->errors
+		);
+	char topic[128];
+	SAFEPRINTF(topic, "node/%u/status", number + 1);
+	int result = mqtt_pub_strval(mqtt, TOPIC_BBS, topic, str);
+	if(result == MQTT_SUCCESS && mqtt->cfg->mqtt.verbose) {
+		SAFEPRINTF(topic, "node/%u", number + 1);
+		result = mqtt_pub_strval(mqtt, TOPIC_BBS, topic
+			,nodestatus(mqtt->cfg, node, str, sizeof(str), number + 1));
+	}
+	return result;
 }

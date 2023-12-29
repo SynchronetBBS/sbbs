@@ -28,6 +28,7 @@
 
 typedef struct {
 	scfg_t* cfg;
+	struct mqtt* mqtt;
 	int nodefile;
 	int nodegets;
 } js_system_private_t;
@@ -1369,7 +1370,7 @@ js_spamlog(JSContext *cx, uintN argc, jsval *arglist)
 			from=p;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
-	ret=spamlog(sys->cfg,/* mqtt: */NULL,prot,action,reason,host,ip_addr,to,from);
+	ret=spamlog(sys->cfg, sys->mqtt, prot, action, reason, host, ip_addr, to, from);
 	free(prot);
 	free(action);
 	free(reason);
@@ -1436,7 +1437,7 @@ js_hacklog(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 	rc=JS_SUSPENDREQUEST(cx);
-	ret=hacklog(sys->cfg,/* MQTT: */NULL,prot,user,text,host,&addr);
+	ret=hacklog(sys->cfg, sys->mqtt, prot, user, text, host, &addr);
 	free(prot);
 	free(user);
 	free(text);
@@ -1834,7 +1835,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 
 	if(i==0) {
-		userobj=js_CreateUserObject(cx, obj, NULL, &user, /* client: */NULL, /* global_user: */FALSE);
+		userobj=js_CreateUserObject(cx, obj, NULL, &user, /* client: */NULL, /* global_user: */FALSE, (struct mqtt*)NULL);
 		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(userobj));
 	} else
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(i));
@@ -2519,7 +2520,8 @@ static JSBool js_node_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			node.extaux=val;
 			break;
 	}
-	putnodedat(sys->cfg,node_num,&node, /* closeit: */FALSE, sys->nodefile); // TODO: publish via MQTT
+	putnodedat(sys->cfg,node_num,&node, /* closeit: */FALSE, sys->nodefile);
+	mqtt_putnodedat(sys->mqtt, node_num, &node);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -2843,7 +2845,7 @@ JSClass js_system_class = {
 };
 
 JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
-										,scfg_t* cfg, time_t uptime, char* host_name, char* socklib_desc)
+										,scfg_t* cfg, time_t uptime, char* host_name, char* socklib_desc, struct mqtt* mqtt)
 {
 	jsval		val;
 	JSObject*	sysobj;
@@ -2860,6 +2862,7 @@ JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
 		return NULL;
 
 	sys->cfg = cfg;
+	sys->mqtt = mqtt;
 	sys->nodefile = -1;
 
 	if(!JS_SetPrivate(cx, sysobj, sys))

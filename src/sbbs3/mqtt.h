@@ -100,8 +100,9 @@ DLLEXPORT int mqtt_client_count(struct mqtt*);
 DLLEXPORT int mqtt_user_login_fail(struct mqtt*, client_t*, const char* username);
 DLLEXPORT int mqtt_user_login(struct mqtt*, client_t*);
 DLLEXPORT int mqtt_user_logout(struct mqtt*, client_t*, time_t);
-DLLEXPORT int mqtt_file_upload(struct mqtt*, user_t*, file_t*, off_t size, client_t*);
-DLLEXPORT int mqtt_file_download(struct mqtt*, user_t*, file_t*, off_t size, client_t*);
+DLLEXPORT int mqtt_file_upload(struct mqtt*, user_t*, int dirnum, const char* fname, off_t size, client_t*);
+DLLEXPORT int mqtt_file_download(struct mqtt*, user_t*, int dirnum, const char* fname, off_t size, client_t*);
+DLLEXPORT int mqtt_putnodedat(struct mqtt*, int number, node_t*);
 
 #ifdef __cplusplus
 }

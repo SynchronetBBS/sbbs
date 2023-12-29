@@ -858,6 +858,7 @@ static BOOL js_init(char** env)
 		,NULL,INVALID_SOCKET,-1					/* client */
 		,NULL									/* server */
 		,&js_glob
+		,(struct mqtt*)NULL
 		)) {
 		JS_ENDREQUEST(js_cx);
 		return(FALSE);

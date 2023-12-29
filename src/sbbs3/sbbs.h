@@ -1408,6 +1408,7 @@ extern "C" {
 #endif
 													,js_server_props_t* props	/* server */
 													,JSObject** glob
+													,struct mqtt*
 													);
 
 	/* js_server.c */
@@ -1447,7 +1448,8 @@ extern "C" {
 	DLLEXPORT JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
 													,scfg_t* cfg, time_t uptime
 													,char* host_name
-													,char* socklib_desc);
+													,char* socklib_desc
+													,struct mqtt*);
 	DLLEXPORT JSBool	js_CreateTextProperties(JSContext* cx, JSObject* parent);
 
 	/* js_client.c */
@@ -1458,10 +1460,10 @@ extern "C" {
 	/* js_user.c */
 	DLLEXPORT JSObject*	js_CreateUserClass(JSContext* cx, JSObject* parent);
 	DLLEXPORT JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent
-													,char* name, user_t* user, client_t* client, BOOL global_user);
+													,char* name, user_t* user, client_t* client, BOOL global_user, struct mqtt*);
 	DLLEXPORT JSBool	js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, client_t* client, const char* web_file_vpath_prefix
-													,subscan_t* subscan);
+													,subscan_t* subscan, struct mqtt*);
 	/* js_file_area.c */
 	DLLEXPORT JSObject* js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, client_t* client, const char* web_file_vpath_prefix);

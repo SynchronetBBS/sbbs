@@ -2270,6 +2270,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 						,client, sock, -1							/* client */
 						,&js_server_props							/* server */
 						,js_glob
+						,&mqtt
 				))
 				break;
 
@@ -2277,7 +2278,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 				break;
 
 			/* Area and "user" Objects */
-			if(!js_CreateUserObjects(*js_cx, *js_glob, &scfg, user, client, NULL, NULL))
+			if(!js_CreateUserObjects(*js_cx, *js_glob, &scfg, user, client, NULL, NULL, &mqtt))
 				break;
 
 			/* Mailproc "API" filenames */

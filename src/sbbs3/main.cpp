@@ -1365,6 +1365,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 					,client_socket == INVALID_SOCKET ? NULL : &client, client_socket, -1 /* client */
 					,&js_server_props							/* server */
 					,glob
+					,mqtt
 			))
 			break;
 		rooted=true;
@@ -1440,7 +1441,7 @@ bool sbbs_t::js_create_user_objects(JSContext* cx, JSObject* glob)
 	bool result = false;
 	if(cx != NULL) {
 		JS_BEGINREQUEST(cx);
-		if(!js_CreateUserObjects(cx, glob, &cfg, &useron, &client, startup == NULL ? NULL :startup->web_file_vpath_prefix, subscan))
+		if(!js_CreateUserObjects(cx, glob, &cfg, &useron, &client, startup == NULL ? NULL :startup->web_file_vpath_prefix, subscan, mqtt))
 			lprintf(LOG_ERR,"!JavaScript ERROR creating user objects");
 		else
 			result = true;
@@ -1463,6 +1464,7 @@ extern "C" BOOL js_CreateCommonObjects(JSContext* js_cx
 										,CRYPT_CONTEXT session		/* client */
 										,js_server_props_t* props	/* server */
 										,JSObject** glob
+										,struct mqtt* mqtt
 										)
 {
 	BOOL	success=FALSE;
@@ -1482,7 +1484,7 @@ extern "C" BOOL js_CreateCommonObjects(JSContext* js_cx
 		 */
 
 		/* System Object */
-		if(js_CreateSystemObject(js_cx, *glob, node_cfg, uptime, host_name, socklib_desc)==NULL)
+		if(js_CreateSystemObject(js_cx, *glob, node_cfg, uptime, host_name, socklib_desc, mqtt)==NULL)
 			break;
 
 		/* Internal JS Object */
@@ -1549,7 +1551,7 @@ extern "C" BOOL js_CreateCommonObjects(JSContext* js_cx
 			break;
 #endif
 		/* Area Objects */
-		if(!js_CreateUserObjects(js_cx, *glob, cfg, /* user: */NULL, client, startup == NULL ? NULL :startup->web_file_vpath_prefix, /* subscan: */NULL))
+		if(!js_CreateUserObjects(js_cx, *glob, cfg, /* user: */NULL, client, startup == NULL ? NULL :startup->web_file_vpath_prefix, /* subscan: */NULL, mqtt))
 			break;
 
 		success=TRUE;

@@ -1686,7 +1686,7 @@ BOOL http_checkuser(http_session_t * session)
 		JS_BEGINREQUEST(session->js_cx);
 		if(session->user.number>0) {
 			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
-				,startup->file_vpath_prefix, session->subscan /* subscan */)) {
+				,startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
 				JS_ENDREQUEST(session->js_cx);
 				lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
 				send_error(session,__LINE__,"500 Error initializing JavaScript User Objects");
@@ -1695,7 +1695,7 @@ BOOL http_checkuser(http_session_t * session)
 		}
 		else {
 			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, /* user: */NULL, &session->client
-				,startup->file_vpath_prefix, session->subscan /* subscan */)) {
+				,startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
 				JS_ENDREQUEST(session->js_cx);
 				lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript User Objects",session->socket);
 				send_error(session,__LINE__,"500 Error initializing JavaScript User Objects");
@@ -5637,7 +5637,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	/* user-specific objects */
 	if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
-		,startup->file_vpath_prefix, session->subscan /* subscan */)) {
+		,startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
 		lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
 		send_error(session,__LINE__,"500 Error initializing JavaScript User Objects");
 		return(FALSE);
@@ -5912,6 +5912,7 @@ js_initcx(http_session_t *session)
 									,session->tls_sess			/* client */
 									,&js_server_props			/* server */
 									,&session->js_glob
+									,&mqtt
 		)
 		|| !JS_DefineFunctions(js_cx, session->js_glob, js_global_functions)) {
 		lprintf(LOG_CRIT, "%04d JavaScript: Failed to create global objects and classes", session->socket);
@@ -6217,7 +6218,7 @@ static void respond(http_session_t * session)
 				,session->socket, session->client.protocol, session->client.addr, session->req.physical_path, snt, (long)(snt / e));
 			if(session->parsed_vpath == PARSED_VPATH_FULL && session->file.name != NULL) {
 				user_downloaded_file(&scfg, &session->user, &session->client, session->file.dir, session->file.name, snt);
-				mqtt_file_download(&mqtt, &session->user, &session->file, snt, &session->client);
+				mqtt_file_download(&mqtt, &session->user, session->file.dir, session->file.name, snt, &session->client);
 			}
 		}
 	}

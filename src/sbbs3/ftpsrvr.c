@@ -828,7 +828,7 @@ static void send_thread(void* arg)
 						putsmsg(&scfg,uploader.number,str);
 					}
 				}
-				mqtt_file_download(&mqtt, xfer.user, &f, total, xfer.client);
+				mqtt_file_download(&mqtt, xfer.user, f.dir, f.name, total, xfer.client);
 				smb_freefilemem(&f);
 			}
 			if(!xfer.tmpfile && !xfer.delfile && !(scfg.dir[f.dir]->misc&DIR_NOSTAT))
@@ -1129,7 +1129,7 @@ static void receive_thread(void* arg)
 			if(!(scfg.dir[f.dir]->misc&DIR_NOSTAT))
 				inc_upload_stats(&scfg, 1, (ulong)total);
 
-			mqtt_file_upload(&mqtt, xfer.user, &f, total, xfer.client);
+			mqtt_file_upload(&mqtt, xfer.user, f.dir, f.name, total, xfer.client);
 			smb_freefilemem(&f);
 		}
 		/* Send ACK */

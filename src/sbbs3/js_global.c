@@ -335,6 +335,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 				,-1				/* client TLS session */
 				,NULL			/* server props */
 				,&bg->obj
+				,(struct mqtt*)NULL
 				)) {
 			JS_ENDREQUEST(bg->cx);
 			JS_DestroyContext(bg->cx);
