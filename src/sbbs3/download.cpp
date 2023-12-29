@@ -46,7 +46,7 @@ void sbbs_t::downloadedfile(file_t* f)
 	logline("D-",str);
 
 	user_downloaded_file(&cfg, &useron, &client, f->dir, f->name, length);
-	mqtt_file_download(mqtt, &useron, f, length, &client);
+	mqtt_file_download(mqtt, &useron, f->dir, f->name, length, &client);
 
 	user_event(EVENT_DOWNLOAD);
 }
