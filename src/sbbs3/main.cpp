@@ -1939,7 +1939,13 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 				}
 			}
 			else {
-				GCESS(status, sbbs->client_socket, sbbs->ssh_session, "getting channel id");
+				/*
+				 * CRYPT_ERROR_NOTFOUND indicates this is the last data on the channel (whatever it was)
+				 * and it was destroyed, so it's no longer possible to get the channel id.
+				 */
+				if (status != CRYPT_ERROR_NOTFOUND)
+					GCESS(status, sbbs->client_socket, sbbs->ssh_session, "getting channel id");
+				closing_channel = -1;
 			}
 		}
 		if (ret == CRYPT_ENVELOPE_RESOURCE)
