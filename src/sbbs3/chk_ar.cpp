@@ -730,6 +730,15 @@ bool sbbs_t::chk_ar(const uchar *ar, user_t* user, client_t* client)
 	return(ar_exp(&p,user,client));
 }
 
+/****************************************************************************/
+/* Does the Access Requirement String (ARS) parse and check					*/
+/****************************************************************************/
+bool sbbs_t::chk_ars(const char *ars, user_t* user, client_t* client)
+{
+	uchar ar_buf[LEN_ARSTR + 1];
+
+	return chk_ar(arstr(NULL, ars, &cfg, ar_buf), user, client);
+}
 
 /****************************************************************************/
 /* This function fills the usrsub, usrsubs, usrgrps, curgrp, and cursub     */

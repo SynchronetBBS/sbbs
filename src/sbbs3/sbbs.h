@@ -1076,6 +1076,7 @@ public:
 	int		mv(const char *src, const char *dest, bool copy); /* fast file move/copy function */
 	bool	chksyspass(const char* sys_pw = NULL);
 	bool	chk_ar(const uchar * str, user_t* user, client_t* client); /* checks access requirements */
+	bool	chk_ars(const char * str, user_t* user, client_t* client);
 	bool	ar_exp(const uchar ** ptrptr, user_t*, client_t*);
 	void	daily_maint(void);
 	bool	backup(const char* fname, int backup_level, bool rename);

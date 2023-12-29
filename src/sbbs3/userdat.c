@@ -2419,6 +2419,16 @@ BOOL chk_ar(scfg_t* cfg, uchar *ar, user_t* user, client_t* client)
 }
 
 /****************************************************************************/
+/* Does the Access Requirement String (ARS) parse and check					*/
+/****************************************************************************/
+BOOL chk_ars(scfg_t* cfg, char *ars, user_t* user, client_t* client)
+{
+	uchar ar_buf[LEN_ARSTR + 1];
+
+	return chk_ar(cfg, arstr(NULL, ars, cfg, ar_buf), user, client);
+}
+
+/****************************************************************************/
 /* Returns 0 on success, non-zero on failure.								*/
 /****************************************************************************/
 char* getuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, char *str, size_t size)

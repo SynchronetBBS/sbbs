@@ -100,6 +100,7 @@ DLLEXPORT uint	finduserstr(scfg_t*, uint usernumber, enum user_field, const char
 DLLEXPORT uint	find_login_id(scfg_t*, const char* user_id);
 
 DLLEXPORT BOOL	chk_ar(scfg_t*, uchar* str, user_t*, client_t*); /* checks access requirements */
+DLLEXPORT BOOL	chk_ars(scfg_t*, char* str, user_t*, client_t*);
 
 DLLEXPORT uint32_t getusermisc(scfg_t*, int usernumber);
 DLLEXPORT uint32_t getuserchat(scfg_t*, int usernumber);
