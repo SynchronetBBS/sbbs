@@ -231,10 +231,8 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 				status = cl.FlushData(ssh_session);
 		}
 		pthread_mutex_unlock(&ssh_mutex);
-		if (cryptStatusError(status))
-			cryptlib_error_message(status, "sending sftp data");
 		if (cryptStatusError(status)) {
-			if (status == CRYPT_ERROR_COMPLETE) { /* connection closed */
+			if (status == CRYPT_ERROR_COMPLETE || status == CRYPT_ERROR_NOTFOUND) { /* connection closed */
 				break;
 			}
 			cryptlib_error_message(status, "sending sftp data");
@@ -380,9 +378,6 @@ add_public_key(struct bbslist *bbs, char *priv)
 		cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sftp_channel);
 		status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 1);
 		pthread_mutex_unlock(&ssh_mutex);
-		if (cryptStatusError(status)) {
-			cryptlib_error_message(status, "activating sftp session");
-		}
 		if (cryptStatusOK(status)) {
 			sftp_state = sftpc_begin(sftp_send, NULL);
 			if (sftp_state != NULL) {
