@@ -26,7 +26,6 @@
 #include "userdat.h"
 #include "filedat.h"
 #include "ars_defs.h"
-#include "text.h"
 #include "nopen.h"
 #include "datewrap.h"
 #include "date_str.h"
