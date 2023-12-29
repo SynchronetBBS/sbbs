@@ -314,10 +314,20 @@ sftp_append64(sftp_tx_pkt_t *pktp, uint64_t u64)
 bool
 sftp_appendstring(sftp_tx_pkt_t *pktp, sftp_str_t s)
 {
+	uint32_t oldused;
+
 	assert(pktp);
-	sftp_append32(pktp, s->len);
-	if (!grow_tx(pktp, s->len))
+	if (*pktp == NULL)
+		oldused = 0;
+	else
+		oldused = (*pktp)->used;
+	if (!sftp_append32(pktp, s->len))
 		return false;
+	if (!grow_tx(pktp, s->len)) {
+		if (*pktp != NULL)
+			(*pktp)->used = oldused;
+		return false;
+	}
 	sftp_tx_pkt_t pkt = *pktp;
 	memcpy(&(&pkt->type)[pkt->used], (uint8_t *)s->c_str, s->len);
 	pkt->used += s->len;
