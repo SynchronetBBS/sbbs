@@ -26,6 +26,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fixsmb", "fixsmb.vcxproj", "{1595CD8A-D141-46FE-B712-61F16C5D700F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ftpsrvr", "ftpsrvr.vcxproj", "{CB07F1CA-85D3-429B-92D5-A7650C97AB1A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A41D7A4A-2173-4DF6-96AF-9575C069CA8A} = {A41D7A4A-2173-4DF6-96AF-9575C069CA8A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jsexec", "jsexec.vcxproj", "{ACFB0944-5DD4-4E24-87E3-1F1EF8B26A0A}"
 EndProject
@@ -40,10 +43,16 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qwknodes", "qwknodes.vcxproj", "{8B1C8FB3-3E2B-4492-848E-70D59696CD04}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sbbs", "sbbs.vcxproj", "{48637A68-3478-4BED-A924-07D59D474BBE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A41D7A4A-2173-4DF6-96AF-9575C069CA8A} = {A41D7A4A-2173-4DF6-96AF-9575C069CA8A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sbbscon", "sbbscon.vcxproj", "{EC2121F2-1AC3-45E3-8EE8-EA95AFCE967E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sbbsecho", "sbbsecho.vcxproj", "{3043A9CD-A963-4BC3-BBE4-1A9D67177EC4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A41D7A4A-2173-4DF6-96AF-9575C069CA8A} = {A41D7A4A-2173-4DF6-96AF-9575C069CA8A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "scfg", "scfg\scfg.vcxproj", "{0DA3E7B4-8567-495B-B7D1-5E6AB6D6F4B1}"
 EndProject
@@ -73,6 +82,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xpdev_mt", "..\xpdev\xpdev_mt.vcxproj", "{AEED3A81-3A47-4953-BE51-FD5E08283890}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "load_cfg", "load_cfg.vcxproj", "{08FC395F-BC60-499D-9CE9-170ED718BB94}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A41D7A4A-2173-4DF6-96AF-9575C069CA8A} = {A41D7A4A-2173-4DF6-96AF-9575C069CA8A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktdump", "pktdump.vcxproj", "{85112FF8-B520-4806-A2C8-7525F495AE8F}"
 EndProject
