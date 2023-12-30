@@ -142,10 +142,13 @@ post_t * sbbs_t::loadposts(uint32_t *posts, int subnum, uint ptr, int mode, uint
 	if(unvalidated_num)
 		*unvalidated_num=UINT_MAX;
 
+	size_t offset = 0;
 	while(!feof(smb.sid_fp)) {
 		skip=0;
 		if(smb_fread(&smb, &idx,sizeof(idx),smb.sid_fp) != sizeof(idx))
 			break;
+
+		msg.idx_offset = offset++;
 
 		if(idx.number==0)	/* invalid message number, ignore */
 			continue;
