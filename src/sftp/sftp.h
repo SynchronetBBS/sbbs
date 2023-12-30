@@ -100,7 +100,6 @@ typedef struct sftp_client_state {
 	void *cb_data;
 	sftp_str_t err_msg;
 	sftp_str_t err_lang;
-	pthread_t thread;
 	uint32_t id;
 	uint32_t err_id;
 	uint32_t err_code;
