@@ -100,9 +100,12 @@ typedef struct sftp_client_state {
 	void *cb_data;
 	sftp_str_t err_msg;
 	sftp_str_t err_lang;
+	pthread_mutex_t mtx;
+	uint32_t running;
 	uint32_t id;
 	uint32_t err_id;
 	uint32_t err_code;
+	bool terminating;
 } *sftpc_state_t;
 
 enum sftp_handle_type {
