@@ -240,6 +240,7 @@ enter_function(sftpc_state_t state)
 		return false;
 	}
 	state->running++;
+	return true;
 }
 
 static bool
