@@ -164,6 +164,8 @@ get_result(sftpc_state_t state)
 		return false;
 	if (WaitForEvent(state->recv_event, INFINITE) != WAIT_OBJECT_0)
 		return false;
+	if (state->rxp == NULL)
+		return false;
 	if (state->rxp->type != SSH_FXP_VERSION) {
 		uint32_t id = sftp_get32(state->rxp);
 		if (id != state->id) {
