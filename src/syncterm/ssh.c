@@ -20,6 +20,7 @@
 #include "uifcinit.h"
 #include "window.h"
 #include "xpendian.h"
+#include "xpprintf.h"
 
 SOCKET          ssh_sock;
 CRYPT_SESSION   ssh_session;
