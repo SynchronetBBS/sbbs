@@ -126,11 +126,11 @@ sftp_remove_packet(sftp_rx_pkt_t pkt)
 	return;
 }
 
-#define GET_FUNC_BODY                                \
-	assert(pkt);                                  \
-	if (pkt->cur + offsetof(struct sftp_rx_pkt, data) + sizeof(ret) > pkt->sz)          \
-		return 0;                               \
-	memcpy(&ret, &pkt->data[pkt->cur], sizeof(ret)); \
+#define GET_FUNC_BODY                                                            \
+	assert(pkt);                                                              \
+	if (pkt->cur + offsetof(struct sftp_rx_pkt, data) + sizeof(ret) > pkt->sz) \
+		return 0;                                                           \
+	memcpy(&ret, &pkt->data[pkt->cur], sizeof(ret));                             \
 	pkt->cur += sizeof(ret)
 
 uint8_t
