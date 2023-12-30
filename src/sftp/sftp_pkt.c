@@ -79,7 +79,7 @@ uint32_t
 sftp_pkt_sz(sftp_rx_pkt_t pkt)
 {
 	if (!pkt)
-		return false;
+		return 0;
 	assert(sftp_have_pkt_sz(pkt));
 	return BE_INT32(pkt->len);
 }
