@@ -283,12 +283,12 @@ sftp_tx_pkt_reset(sftp_tx_pkt_t *pktp)
 	return true;
 }
 
-#define APPEND_FUNC_BODY(var)                           \
-	if (!grow_tx(pktp, sizeof(var)))                 \
-		return false;                             \
-	sftp_tx_pkt_t pkt = *pktp;                         \
+#define APPEND_FUNC_BODY(var)                            \
+	if (!grow_tx(pktp, sizeof(var)))                  \
+		return false;                              \
+	sftp_tx_pkt_t pkt = *pktp;                          \
 	memcpy(&(&pkt->type)[pkt->used], &var, sizeof(var)); \
-	pkt->used += sizeof(var);                            \
+	pkt->used += sizeof(var);                             \
 	return true
 
 bool
