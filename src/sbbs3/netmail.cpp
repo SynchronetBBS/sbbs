@@ -299,6 +299,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	}
 	if(read(file,buf,length) != length) {
 		close(file);
+		free(buf);
 		errormsg(WHERE, ERR_READ, str, length);
 		return false;
 	}
