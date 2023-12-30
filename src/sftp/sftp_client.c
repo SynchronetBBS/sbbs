@@ -320,7 +320,7 @@ bool
 sftpc_open(sftpc_state_t state, char *path, uint32_t flags, sftp_file_attr_t attr, sftp_dirhandle_t *handle)
 {
 	if (!enter_function(state))
-		return exit_function(state, false);
+		return false;
 	assert(path);
 	if (path == NULL)
 		return exit_function(state, false);
@@ -385,7 +385,7 @@ bool
 sftpc_read(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, uint32_t len, sftp_str_t *ret)
 {
 	if (!enter_function(state))
-		return exit_function(state, false);
+		return false;
 	assert(ret);
 	if (ret == NULL)
 		return exit_function(state, false);
