@@ -197,6 +197,7 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 	char			*cp;
 	jsrefcount		rc;
 	char			*msg;
+	static char		lastline[1024];
 
 	fp=JS_GetScriptedCaller(dbg->cx, NULL);
 	while(1) {
@@ -241,6 +242,11 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 			continue;
 		}
 		JS_RESUMEREQUEST(dbg->cx, rc);
+		if(strcmp(line, "\n") == 0) { // Enter key repeats last command
+			free(line);
+			line = strdup(lastline);
+		} else
+			snprintf(lastline, sizeof lastline, "%s", line);
 		if(strncmp(line, "break ", 6)==0) {
 			ulong				linenum=0;
 			jsbytecode			*pc;
@@ -442,7 +448,7 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 				fpp=fpi;
 			}
 			if(fpi==NULL)
-				dbg->puts("A strange amd mysterious error occured!\n");
+				dbg->puts("A strange and mysterious error occurred!\n");
 			continue;
 		}
 		dbg->puts("Unrecognized command:\n"
