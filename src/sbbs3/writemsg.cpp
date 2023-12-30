@@ -813,8 +813,10 @@ void sbbs_t::editor_info_to_msg(smbmsg_t* msg, const char* editor, const char* c
 /****************************************************************************/
 void quotestr(char *str)
 {
-	truncsp(str);
-	remove_ctrl_a(str,str);
+	if(str != NULL) {
+		truncsp(str);
+		remove_ctrl_a(str,str);
+	}
 }
 
 /****************************************************************************/
@@ -1738,6 +1740,7 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 		if(j>1 && (j!=x || feof(instream)) && buf[j-1]==LF && buf[j-2]==CR)
 			buf[j-1]=buf[j-2]=0;	/* Convert to NULL */
 		if(fwrite(buf,j,1,smb->sdt_fp) != 1) {
+			fclose(instream);
 			errormsg(WHERE, ERR_WRITE, smb->file, j);
 			smb_unlocksmbhdr(smb);
 			smb_freemsgdat(smb,offset,length,1);
