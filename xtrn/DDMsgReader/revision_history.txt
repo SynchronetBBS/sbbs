@@ -5,6 +5,15 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.92     2023-12-29   Indexed newscan: By default, if there are no new messages,
+                      it now shows "No new messages." (578 QWKNoNewMessages from
+                      text.dat). There's a new user setting to toggle whether to
+                      use the indexed newscan menu even if there are no new
+                      messages.
+                      New configuration file option:
+                      displayIndexedModeMenuIfNoNewMessages, which is a default
+                      for a user setting to toggle whether or not to use the
+                      Indexed newscan menu even when there are no new messages.
 1.91     2023-12-26   New sysop features while reading a message: Show message
                       hex (with the X key) and save message hex to a file (with
                       Ctrl-X)

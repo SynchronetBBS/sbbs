@@ -5,7 +5,7 @@
 // If you have DDMsgReader in a directory other than xtrn/DDMsgReader, then the changes to
 // DDMsgReader.cfg will be saved in that directory (assuming you're running ddmr_cfg.js from
 // that same directory).
-// Currently for DDMsgReader 1.88.
+// Currently for DDMsgReader 1.92.
 //
 // If you're running DDMsgReader from xtrn/DDMsgReader (the standard location) and you want
 // to save the configuration file there (rather than sbbs/mods), you can use one of the
@@ -18,7 +18,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. Message Reader 1.88 Configurator"))
+if (!uifc.init("DigDist. Message Reader 1.92 Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -111,6 +111,7 @@ function doMainMenu()
 		"quickUserValSetIndex", // Number (can be -1)
 		"saveAllHdrsWhenSavingMsgToBBSPC", // Boolean
 		"useIndexedModeForNewscan", // Boolean
+		"displayIndexedModeMenuIfNoNewMessages", // Boolean
 		"indexedModeMenuSnapToFirstWithNew", // Boolean
 		"newscanOnlyShowNewMsgs", // Boolean
 		"promptDelPersonalEmailAfterReply", // Boolean
@@ -142,6 +143,7 @@ function doMainMenu()
 		"Quick User Val Set Index",
 		"Save All Headers When Saving Message To BBS PC",
 		"Use Indexed Mode For Newscan",
+		"Display Indexed menu even with no new messages",
 		"Index menu: Snap to sub-boards w/ new messages",
 		"During a newscan, only show new messages",
 		"Personal email: Prompt to delete after reply",
@@ -537,12 +539,15 @@ function getOptionHelpText()
 	optionHelpText["saveAllHdrsWhenSavingMsgToBBSPC"] += "option specifies whether or not to save all the message headers along with the message. If disabled, ";
 	optionHelpText["saveAllHdrsWhenSavingMsgToBBSPC"] += "only a few relevant headers will be saved (such as From, To, Subject, and message time).";
 
-	optionHelpText["useIndexedModeForNewscan"] = "Used Indexed Mode for Newscan: Whether or not to use indexed mode for message newscans (not for new-to-you ";
+	optionHelpText["useIndexedModeForNewscan"] = "Used Indexed Mode For Newscan: Whether or not to use indexed mode for message newscans (not for new-to-you ";
 	optionHelpText["useIndexedModeForNewscan"] += "scans). This is a default for a user setting. When indexed mode is enabled for newscans, the reader displays ";
 	optionHelpText["useIndexedModeForNewscan"] += "a menu showing each sub-board and the number of new messages and total messages in each. When disabled, ";
 	optionHelpText["useIndexedModeForNewscan"] += "the reader will do a traditional newscan where it will scan through the sub-boards and go into reader ";
 	optionHelpText["useIndexedModeForNewscan"] += "mode when there are new messages in a sub-board.";
-	
+
+	optionHelpText["displayIndexedModeMenuIfNoNewMessages"] = "Display Indexed menu even with no new messages: Whether or not to show the Indexed ";
+	optionHelpText["displayIndexedModeMenuIfNoNewMessages"] += "newscan menu even when there are no new messages. This is a default for a user setting.";
+
 	optionHelpText["indexedModeMenuSnapToFirstWithNew"] = "Index menu: Snap to sub-boards w/ new messages: For the indexed newscan sub-board ";
 	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "menu in lightbar mode, whether or not to 'snap' the selected item to the next ";
 	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "sub-board with new messages upon displaying or returning to the indexed newscan ";

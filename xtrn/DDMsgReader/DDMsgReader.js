@@ -108,6 +108,12 @@
  * 2023-12-26 Eric Oulashin     Version 1.91
  *                              New sysop features while reading a message: Show message hex (with the X key)
  *                              and save message hex to a file (with Ctrl-X)
+ * 2023-12-29 Eric Oulashin     Version 1.92
+ *                              Indexed newscan: By default, if there are no new messages, it now shows
+ *                              "No new messages." (578 QWKNoNewMessages from text.dat). There's a new user
+ *                              setting to toggle whether to use the indexed newscan menu even if there are
+ *                              no new messages. New configuration file option: displayIndexedModeMenuIfNoNewMessages,
+ *                              which is a default for the user setting.
  */
 
 "use strict";
@@ -213,8 +219,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.91";
-var READER_DATE = "2023-12-26";
+var READER_VERSION = "1.92";
+var READER_DATE = "2023-12-29";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1128,6 +1134,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		// Whether or not the indexed mode sub-board menu should "snap" selection to sub-boards with new messages
 		// when the menu is shown
 		indexedModeMenuSnapToFirstWithNew: false,
+		// Whether to display the indexed mode newscan menu when there are no new messages
+		displayIndexedModeMenuIfNoNewMessages: true,
 		// Whether or not to list messages in reverse order
 		listMessagesInReverse: false,
 		// Whether or not quitting from the reader goes to the message list (instead of exiting altogether)
@@ -7814,7 +7822,7 @@ function DigDistMsgReader_CreateReadModeOpMenu()
 	var subBoardIsModerated = (this.subBoardCode != "mail" && msg_area.sub[this.subBoardCode].is_moderated);
 
 	var opMenuWidth = 35;
-	var opMenuHeight = 8;
+	var opMenuHeight = 10;
 	if (subBoardIsModerated)
 		++opMenuHeight;
 	var opMenuX = Math.floor(console.screen_columns/2) - Math.floor(opMenuWidth/2);
@@ -9150,16 +9158,18 @@ function DigDistMsgReader_ReadConfigFile()
 		if (typeof(settingsObj["saveAllHdrsWhenSavingMsgToBBSPC"]) === "boolean")
 			this.saveAllHdrsWhenSavingMsgToBBSPC = settingsObj.saveAllHdrsWhenSavingMsgToBBSPC;
 		// User setting defaults
-		if (typeof(settingsObj["reverseListOrder"] === "boolean"))
+		if (typeof(settingsObj.reverseListOrder === "boolean"))
 			this.userSettings.listMessagesInReverse = settingsObj.reverseListOrder;
-		if (typeof(settingsObj["useIndexedModeForNewscan"]) === "boolean")
+		if (typeof(settingsObj.useIndexedModeForNewscan) === "boolean")
 			this.userSettings.useIndexedModeForNewscan = settingsObj.useIndexedModeForNewscan;
-		if (typeof(settingsObj["newscanOnlyShowNewMsgs"]) === "boolean")
+		if (typeof(settingsObj.newscanOnlyShowNewMsgs) === "boolean")
 			this.userSettings.newscanOnlyShowNewMsgs = settingsObj.newscanOnlyShowNewMsgs;
-		if (typeof(settingsObj["indexedModeMenuSnapToFirstWithNew"]) === "boolean")
+		if (typeof(settingsObj.indexedModeMenuSnapToFirstWithNew) === "boolean")
 			this.userSettings.indexedModeMenuSnapToFirstWithNew = settingsObj.indexedModeMenuSnapToFirstWithNew;
-		if (typeof(settingsObj["promptDelPersonalEmailAfterReply"]) === "boolean")
+		if (typeof(settingsObj.promptDelPersonalEmailAfterReply) === "boolean")
 			this.userSettings.promptDelPersonalEmailAfterReply = settingsObj.promptDelPersonalEmailAfterReply;
+		if (typeof(settingsObj.displayIndexedModeMenuIfNoNewMessages) === "boolean")
+			this.userSettings.displayIndexedModeMenuIfNoNewMessages = settingsObj.displayIndexedModeMenuIfNoNewMessages;
 	}
 	else
 	{
@@ -14881,7 +14891,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";
 	var optBoxWidth = ChoiceScrollbox_MinWidth();
-	var optBoxHeight = 12;
+	var optBoxHeight = 13;
 	var optBoxStartX = this.msgAreaLeft + Math.floor((this.msgAreaWidth/2) - (optBoxWidth/2));
 	if (optBoxStartX < this.msgAreaLeft)
 		optBoxStartX = this.msgAreaLeft;
@@ -14918,6 +14928,10 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 	if (this.userSettings.useIndexedModeForNewscan)
 		optionBox.chgCharInTextItem(INDEXED_MODE_NEWSCAN_OPT_INDEX, checkIdx, CHECK_CHAR);
 
+	const SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Show indexed menu if there are no new messages"));
+	if (this.userSettings.displayIndexedModeMenuIfNoNewMessages)
+		optionBox.chgCharInTextItem(SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_INDEX, checkIdx, CHECK_CHAR);
+
 	const INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Index menu: Snap to sub-boards w/ new messages"));
 	if (this.userSettings.indexedModeMenuSnapToFirstWithNew)
 		optionBox.chgCharInTextItem(INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_OPT_INDEX, checkIdx, CHECK_CHAR);
@@ -14944,6 +14958,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 	optionToggles[LIST_MESSAGES_IN_REVERSE_OPT_INDEX] = this.userSettings.listMessagesInReverse;
 	optionToggles[NEWSCAN_ONLY_SHOW_NEW_MSGS_INDEX] = this.userSettings.newscanOnlyShowNewMsgs;
 	optionToggles[INDEXED_MODE_NEWSCAN_OPT_INDEX] = this.userSettings.useIndexedModeForNewscan;
+	optionToggles[SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_INDEX] = this.userSettings.displayIndexedModeMenuIfNoNewMessages;
 	optionToggles[INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_OPT_INDEX] = this.userSettings.indexedModeMenuSnapToFirstWithNew;
 	optionToggles[INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_INDEX] = this.userSettings.enterFromIndexMenuShowsMsgList;
 	optionToggles[READER_QUIT_TO_MSG_LIST_OPT_INDEX] = this.userSettings.quitFromReaderGoesToMsgList;
@@ -14985,6 +15000,9 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn)
 						break;
 					case INDEXED_MODE_NEWSCAN_OPT_INDEX:
 						this.readerObj.userSettings.useIndexedModeForNewscan = !this.readerObj.userSettings.useIndexedModeForNewscan;
+						break;
+					case SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_INDEX:
+						this.readerObj.userSettings.displayIndexedModeMenuIfNoNewMessages = !this.readerObj.userSettings.displayIndexedModeMenuIfNoNewMessages;
 						break;
 					case INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_OPT_INDEX:
 						this.readerObj.userSettings.indexedModeMenuSnapToFirstWithNew = !this.readerObj.userSettings.indexedModeMenuSnapToFirstWithNew;
@@ -15088,10 +15106,11 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	var LIST_MESSAGES_IN_REVERSE_OPT_NUM = 1;
 	var NEWSCAN_ONLY_SHOW_NEW_MSGS_OPT_NUM = 2;
 	var USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM = 3;
-	var INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM = 4;
-	var READER_QUIT_TO_MSG_LIST_OPT_NUM = 5;
-	var PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM = 6;
-	var DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM = 7;
+	var SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_NUM = 4;
+	var INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM = 5;
+	var READER_QUIT_TO_MSG_LIST_OPT_NUM = 6;
+	var PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM = 7;
+	var DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM = 8;
 	var USER_TWITLIST_OPT_NUM = 8;
 	var HIGHEST_CHOICE_NUM = USER_TWITLIST_OPT_NUM;
 
@@ -15102,6 +15121,7 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	printTradUserSettingOption(LIST_MESSAGES_IN_REVERSE_OPT_NUM, "List messages in reverse", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(NEWSCAN_ONLY_SHOW_NEW_MSGS_OPT_NUM, "Only show new messages for newscan", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM, "Use Indexed mode for newscan", wordFirstCharAttrs, wordRemainingAttrs);
+	printTradUserSettingOption(SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_NUM, "Show indexed menu if there are no new messages", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM, "Index: Selection shows message list", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(READER_QUIT_TO_MSG_LIST_OPT_NUM, "Quitting From reader goes to message list", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM, "Prompt to delete personal message after replying", wordFirstCharAttrs, wordRemainingAttrs);
@@ -15132,6 +15152,11 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 			var oldIndexedModeNewscanSetting = this.userSettings.useIndexedModeForNewscan;
 			this.userSettings.useIndexedModeForNewscan = !console.noyes("Use indexed mode for newscan-all");
 			userSettingsChanged = (this.userSettings.useIndexedModeForNewscan != oldIndexedModeNewscanSetting);
+			break;
+		case SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_NUM:
+			var oldIndexedMenuIfNoMsgsSetting = this.userSettings.displayIndexedModeMenuIfNoNewMessages;
+			this.userSettings.displayIndexedModeMenuIfNoNewMessages = !console.noyes("Show indexed menu if there are no new messages");
+			userSettingsChanged = (this.userSettings.displayIndexedModeMenuIfNoNewMessages != oldIndexedMenuIfNoMsgsSetting);
 			break;
 		case INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM:
 			var oldIndexedModeEnterShowsMsgListSetting = this.userSettings.enterFromIndexMenuShowsMsgList;
@@ -15495,6 +15520,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	// Also, build an array of sub-board codes for each menu item.
 	this.indexedModeMenu.RemoveAllItems();
 	var subBoardCodes = [];
+	var totalNewMsgs = 0;
 	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
 	{
 		// If scanning the user's current group or sub-board and this is the wrong group, then skip this group.
@@ -15507,7 +15533,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 			// Skip sub-boards that the user can't read or doesn't have configured for newscans
 			if (!msg_area.grp_list[grpIdx].sub_list[subIdx].can_read)
 				continue;
-			if ((msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW) == 0)
+			if (!Boolean(msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW))
 				continue;
 			// If scanning the user's current sub-board and this is the wrong sub-board, then
 			// skip this sub-board (the other groups should have been skipped in the outer loop).
@@ -15540,6 +15566,8 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 				subCode: msg_area.grp_list[grpIdx].sub_list[subIdx].code,
 				numNewMsgs: itemInfo.numNewMsgs
 			});
+
+			totalNewMsgs += itemInfo.numNewMsgs;
 		}
 	}
 	// If there are no items on the menu, then show a message and return
@@ -15547,6 +15575,16 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	{
 		console.print("\x01n" + this.text.msgScanCompleteText + "\x01n");
 		console.crlf();
+		console.pause();
+		return retObj;
+	}
+	// If there are no new messages and the user setting to show the indexed menu when there are no new messages
+	// is disabled, then say so and return.
+	else if (totalNewMsgs == 0 && !this.userSettings.displayIndexedModeMenuIfNoNewMessages)
+	{
+		console.attributes = "N";
+		console.putmsg(bbs.text(QWKNoNewMessages));
+		//console.crlf();
 		console.pause();
 		return retObj;
 	}
@@ -15651,7 +15689,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 				});
 				menuItem.text = itemInfo.itemText;
 				this.indexedModeMenu.items[this.indexedModeMenu.selectedItemIdx] = menuItem;
-				this.indexedModeMenu.WriteItemAtItsLocation(this.indexedModeMenu.selectedItemIdx, true, true);
+				this.indexedModeMenu.WriteItemAtItsLocation(this.indexedModeMenu.selectedItemIdx, true, false);
 			}
 			drawMenu = false; // No need to re-draw the whole menu
 		}
