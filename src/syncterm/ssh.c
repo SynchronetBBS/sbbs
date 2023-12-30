@@ -789,7 +789,7 @@ ssh_connect(struct bbslist *bbs)
 	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT, rows);
 
 	cl.SetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 30);
-	cl.SetAttribute(sess, CRYPT_OPTION_NET_WRITETIMEOUT, 30);
+	cl.SetAttribute(ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 30);
 
 	/* Activate the session */
 	if (!bbs->hidepopups) {
