@@ -33,8 +33,6 @@ sftpc_state_t   sftp_state;
 static void
 FlushData(CRYPT_SESSION sess)
 {
-	cl.SetAttribute(sess, CRYPT_OPTION_NET_READTIMEOUT, 30);
-	cl.SetAttribute(sess, CRYPT_OPTION_NET_WRITETIMEOUT, 30);
 	cl.FlushData(sess);
 }
 
@@ -182,6 +180,7 @@ ssh_input_thread(void *args)
 
 		cl.SetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 0);
 		popstatus = cl.PopData(ssh_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
+		cl.SetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 30);
 		if (cryptStatusOK(popstatus)) {
 			gchstatus = cl.GetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &chan);
 		}
@@ -790,6 +789,7 @@ ssh_connect(struct bbslist *bbs)
 	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT, rows);
 
 	cl.SetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 30);
+	cl.SetAttribute(sess, CRYPT_OPTION_NET_WRITETIMEOUT, 30);
 
 	/* Activate the session */
 	if (!bbs->hidepopups) {
