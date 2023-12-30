@@ -425,9 +425,9 @@ int smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 
 /****************************************************************************/
 /* Fills msg->idx with message index based on msg->hdr.number				*/
-/* OR if msg->hdr.number is 0, based on msg->offset (record offset).		*/
-/* if msg.hdr.number does not equal 0, then msg->offset is filled too.		*/
-/* Either msg->hdr.number or msg->offset must be initialized before 		*/
+/* OR if msg->hdr.number is 0, based on msg->idx_offset (record offset).	*/
+/* if msg.hdr.number does not equal 0, then msg->idx_offset is filled too.	*/
+/* Either msg->hdr.number or msg->idx_offset must be initialized before 	*/
 /* calling this function													*/
 /****************************************************************************/
 int smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
@@ -1841,7 +1841,7 @@ uint16_t smb_voted_already(smb_t* smb, uint32_t msgnum, const char* name, enum s
 /****************************************************************************/
 /* Writes index information for 'msg'                                       */
 /* msg->idx 																*/
-/* and msg->offset must be set prior to calling to this function			*/
+/* and msg->idx_offset must be set prior to calling to this function		*/
 /* Returns 0 if everything ok                                               */
 /****************************************************************************/
 int smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
@@ -1889,7 +1889,7 @@ int smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 /* Writes header information for 'msg'                                      */
 /* msg->hdr.length															*/
 /* msg->idx.offset															*/
-/* and msg->offset must be set prior to calling to this function			*/
+/* and msg->idx_offset must be set prior to calling to this function		*/
 /* Returns 0 if everything ok                                               */
 /****************************************************************************/
 int smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
