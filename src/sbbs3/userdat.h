@@ -65,6 +65,7 @@ DLLEXPORT int	getbirthyear(const char* birthdate);
 DLLEXPORT char* getbirthdstr(scfg_t*, const char* birthdate, char* buf, size_t);
 DLLEXPORT char* getbirthmmddyy(scfg_t*, const char* birthdate, char* buf, size_t);
 DLLEXPORT char* getbirthddmmyy(scfg_t*, const char* birthdate, char* buf, size_t);
+DLLEXPORT char* getbirthyymmdd(scfg_t*, const char* birthdate, char* buf, size_t);
 DLLEXPORT char* parse_birthdate(scfg_t*, const char* birthdate, char* out, size_t);
 DLLEXPORT char* format_birthdate(scfg_t*, const char* birthdate, char* out, size_t);
 DLLEXPORT const char* birthdate_format(scfg_t*);

@@ -102,6 +102,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	cfg->sys_timezone = iniGetInt16(ini, ROOT_SECTION, "timezone", 0);
 	cfg->sys_misc = iniGetUInteger(ini, ROOT_SECTION, "settings", 0);
+	cfg->sys_date_fmt = iniGetInteger(ini, ROOT_SECTION, "date_fmt", cfg->sys_misc & SM_EURODATE ? DDMMYY : MMDDYY);
 	cfg->sys_login = iniGetUInteger(ini, ROOT_SECTION, "login", 0);
 	cfg->sys_pwdays = iniGetInteger(ini, ROOT_SECTION, "pwdays", 0);
 	cfg->sys_deldays = iniGetInteger(ini, ROOT_SECTION, "deldays", 0);

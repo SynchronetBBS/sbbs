@@ -132,7 +132,7 @@
 							| UQ_REALNAME)
 
 								// Different bits in sys_misc				
-#define SM_CLOSED		(1<<0) 	// System is clsoed to New Users			
+#define SM_CLOSED		(1<<0) 	// System is closed to New Users			
 #define SM_SYSSTAT		(1<<1) 	// Sysops activity included in statistics	
 #define SM_NOSYSINFO	(1<<2) 	// Suppress system info display at logon	
 #define SM_PWEDIT		(1<<3) 	// Allow users to change their passwords	
@@ -149,7 +149,7 @@
 #define SM_AUTO_DST		(1<<14)	// Automatic Daylight Savings Toggle (US)   
 #define SM_R_SYSOP		(1<<15)	// Allow remote sysop login/commands		
 #define SM_QUOTE_EM		(1<<16)	// Allow quoting of e-mail					
-#define SM_EURODATE		(1<<17)	// European date format (DD/MM/YY)			
+#define SM_EURODATE		(1<<17)	// European date format (DD/MM/YY) - DEPRECATED
 #define SM_MILITARY		(1<<18)	// Military (24hr) time format 				
 #define SM_TIMEBANK		(1<<19)	// Allow time bank functions				
 #define SM_FILE_EM		(1<<20)	// Allow file attachments in E-mail 		

@@ -27,6 +27,20 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
             ,"Jul","Aug","Sep","Oct","Nov","Dec"};
 
 /****************************************************************************/
+/****************************************************************************/
+const char* date_format(scfg_t* cfg)
+{
+	switch (cfg->sys_date_fmt) {
+		case DDMMYY: return "DD/MM/YY";
+		case MMDDYY: return "MM/DD/YY";
+		case YYMMDD: return "YY/MM/DD";
+	}
+	return "????????";
+}
+
+#define DECVAL(ch, mul)	(DEC_CHAR_TO_INT(ch) * (mul))
+
+/****************************************************************************/
 /* Converts a date string in format MM/DD/YY into unix time format			*/
 /****************************************************************************/
 time32_t dstrtounix(scfg_t* cfg, const char *instr)
@@ -60,17 +74,23 @@ time32_t dstrtounix(scfg_t* cfg, const char *instr)
 	}
 
 	memset(&tm,0,sizeof(tm));
-	tm.tm_year=((p[6]&0xf)*10)+(p[7]&0xf);
+	if (cfg->sys_date_fmt == YYMMDD) {
+		tm.tm_year = DECVAL(p[0], 10) + DECVAL(p[1], 1);
+		tm.tm_mon = DECVAL(p[3], 10) + DECVAL(p[4], 1);
+		tm.tm_mday = DECVAL(p[6], 10) + DECVAL(p[7], 1);
+	} else {
+		tm.tm_year=((p[6]&0xf)*10)+(p[7]&0xf);
+		if(cfg->sys_date_fmt == DDMMYY) {
+			tm.tm_mon=((p[3]&0xf)*10)+(p[4]&0xf);
+			tm.tm_mday=((p[0]&0xf)*10)+(p[1]&0xf); 
+		}
+		else {
+			tm.tm_mon=((p[0]&0xf)*10)+(p[1]&0xf);
+			tm.tm_mday=((p[3]&0xf)*10)+(p[4]&0xf); 
+		}
+	}
 	if (tm.tm_year<Y2K_2DIGIT_WINDOW)
 		tm.tm_year+=100;
-	if(cfg->sys_misc&SM_EURODATE) {
-		tm.tm_mon=((p[3]&0xf)*10)+(p[4]&0xf);
-		tm.tm_mday=((p[0]&0xf)*10)+(p[1]&0xf); 
-	}
-	else {
-		tm.tm_mon=((p[0]&0xf)*10)+(p[1]&0xf);
-		tm.tm_mday=((p[3]&0xf)*10)+(p[4]&0xf); 
-	}
 	if (tm.tm_mon)
 		tm.tm_mon--;	/* zero-based month field */
 	tm.tm_isdst=-1;		/* Do not adjust for DST */
@@ -98,7 +118,10 @@ char* unixtodstr(scfg_t* cfg, time32_t t, char *str)
 		}
 		if(tm.tm_mday>31)
 			tm.tm_mday=1;
-		if(cfg->sys_misc&SM_EURODATE)
+		if (cfg->sys_date_fmt == YYMMDD)
+			sprintf(str,"%02u/%02u/%02u"
+				,TM_YEAR(tm.tm_year), tm.tm_mon+1, tm.tm_mday);
+		else if(cfg->sys_date_fmt == DDMMYY)
 			sprintf(str,"%02u/%02u/%02u",tm.tm_mday,tm.tm_mon+1
 				,TM_YEAR(tm.tm_year));
 		else

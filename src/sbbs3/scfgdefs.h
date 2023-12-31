@@ -384,6 +384,8 @@ struct mqtt_cfg {
 	} tls;
 };
 
+enum date_fmt { MMDDYY, DDMMYY, YYMMDD };
+
 typedef struct
 {
 	DWORD			size;				/* sizeof(scfg_t) */
@@ -460,6 +462,7 @@ typedef struct
 	char 			sys_inetaddr[128];	/* System's internet address */
 	char 			sys_location[41];	/* System Location */
 	int16_t			sys_timezone;		/* Time Zone of BBS */
+	enum date_fmt	sys_date_fmt;
 	char 			sys_daily[LEN_CMD+1];	   /* Daily event */
 	char 			sys_logon[LEN_CMD+1];	   /* Logon event */
 	char 			sys_logout[LEN_CMD+1];	   /* Logoff event */

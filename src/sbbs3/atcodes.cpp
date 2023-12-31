@@ -712,7 +712,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 	
 	if(strcmp(sp, "DATEFMT") == 0) {
-		return cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY";
+		return date_format(&cfg);
 	}
 
 	if(strcmp(sp, "BDATEFMT") == 0 || strcmp(sp, "BIRTHFMT") == 0) {

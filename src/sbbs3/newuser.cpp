@@ -283,7 +283,7 @@ BOOL sbbs_t::newuser()
 		while((cfg.uq&UQ_BIRTH) && online && text[EnterYourBirthday][0]) {
 			bprintf(text[EnterYourBirthday], birthdate_format(&cfg));
 			format_birthdate(&cfg, useron.birth, str, sizeof(str));
-			if(gettmplt(str, "nn/nn/nnnn", K_EDIT) < 10)
+			if(gettmplt(str, cfg.sys_date_fmt == YYMMDD ? "nnnn/nn/nn" : "nn/nn/nnnn", K_EDIT) < 10)
 				continue;
 			int age = getage(&cfg, parse_birthdate(&cfg, str, tmp, sizeof(tmp)));
 			if(age >= 0 && age <= 200) { // TODO: Configurable min/max user age

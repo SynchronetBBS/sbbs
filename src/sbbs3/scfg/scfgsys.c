@@ -1315,23 +1315,22 @@ int edit_sys_timefmt(int page, int total)
 int edit_sys_datefmt(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
-	int i = (cfg.sys_misc & SM_EURODATE) ? 1:0;
-	char* opts[3] = { "MM/DD/YY", "DD/MM/YY", NULL };
+	int i = cfg.sys_date_fmt;
+	char* opts[] = { "MM/DD/YY", "DD/MM/YY", "YY/MM/DD", NULL };
 	uifc.helpbuf=
 		"`Date Display Format:`\n"
 		"\n"
 		"If you would like abbreviated dates to be displayed in the traditional\n"
 		"U.S. date format of month first, choose `MM/DD/YY`.  If you prefer the\n"
 		"European traditional date format of day first, choose `DD/MM/YY`.\n"
+		"If you and your users would prefer year first, choose `YY/MM/DD`.\n"
 	;
 	if(page)
 		mode = wiz_help(page, total, uifc.helpbuf);
 	i=uifc.list(mode,0,10,0,&i,0
 		,"Date Display Format", opts);
-	if(i == 0)
-		cfg.sys_misc &= ~SM_EURODATE;
-	else if(i == 1)
-		cfg.sys_misc |= SM_EURODATE;
+	if(i >= 0)
+		cfg.sys_date_fmt = i;
 	return i;
 }
 
@@ -1656,6 +1655,7 @@ void sys_cfg(void)
 		snprintf(opt[i++],MAX_OPLN,"%-20s%s %s","Local Time Zone"
 			,smb_zonestr(cfg.sys_timezone,NULL)
 			,SMB_TZ_HAS_DST(cfg.sys_timezone) && cfg.sys_misc&SM_AUTO_DST ? "(Auto-DST)" : "");
+		snprintf(opt[i++],MAX_OPLN,"%-20s%s","Local Date Format", date_format(&cfg));
 		snprintf(opt[i++],MAX_OPLN,"%-20s%s","Operator",cfg.sys_op);
 
 		strcpy(opt[i++],"Notifications...");
@@ -1698,12 +1698,15 @@ void sys_cfg(void)
 				edit_sys_timezone(false, false);
 				break;
 			case 3:
-				edit_sys_operator(false, false);
+				edit_sys_datefmt(false, false);
 				break;
 			case 4:
+				edit_sys_operator(false, false);
+				break;
+			case 5:
 				cfg_notify();
 				break;
-			case 5:    /* Toggle Options */
+			case 6:    /* Toggle Options */
 				done=0;
 				while(!done) {
 					i=0;
@@ -1721,8 +1724,6 @@ void sys_cfg(void)
 						,cfg.sys_misc&SM_LISTLOC ? "Yes" : "No");
 					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Military (24 hour) Time Format"
 						,cfg.sys_misc&SM_MILITARY ? "Yes" : "No");
-					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","European Date Format (DD/MM/YY)"
-						,cfg.sys_misc&SM_EURODATE ? "Yes" : "No");
 					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Display Sys Info During Logon"
 						,cfg.sys_misc&SM_NOSYSINFO ? "No" : "Yes");
 					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Display Node List During Logon"
@@ -1841,9 +1842,6 @@ void sys_cfg(void)
 							edit_sys_timefmt(false, false);
 							break;
 						case 7:
-							edit_sys_datefmt(false, false);
-							break;
-						case 8:
 							i=cfg.sys_misc&SM_NOSYSINFO ? 1:0;
 							uifc.helpbuf=
 								"`Display System Information During Logon:`\n"
@@ -1860,7 +1858,7 @@ void sys_cfg(void)
 								cfg.sys_misc|=SM_NOSYSINFO;
 							}
 							break;
-						case 9:
+						case 8:
 							i=cfg.sys_misc&SM_NONODELIST ? 1:0;
 							uifc.helpbuf=
 								"`Display Active Node List During Logon:`\n"
@@ -1880,7 +1878,7 @@ void sys_cfg(void)
 						}
 					}
 				break;
-			case 6:    /* New User Values */
+			case 7:    /* New User Values */
 				done=0;
 				while(!done) {
 					i=0;
@@ -2260,7 +2258,7 @@ void sys_cfg(void)
 						}
 					}
 				break;
-			case 7:
+			case 8:
 				uifc.helpbuf=
 					"`New User Questions/Prompts:`\n"
 					"\n"
@@ -2393,10 +2391,10 @@ void sys_cfg(void)
 					}
 				}
 				break;
-			case 8:
+			case 9:
 				security_cfg();
 				break;
-			case 9:	/* Advanced Options */
+			case 10:	/* Advanced Options */
 				done=0;
 				while(!done) {
 					i=0;
@@ -2827,7 +2825,7 @@ void sys_cfg(void)
 						}
 					}
 					break;
-			case 10: /* Loadable Modules */
+			case 11: /* Loadable Modules */
 				done=0;
 				while(!done) {
 					i=0;
