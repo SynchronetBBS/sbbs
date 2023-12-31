@@ -674,7 +674,7 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	js_callback.listeners = NULL;
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 	js_handle_events(js_cx, &js_callback, &terminated);
-	sys_status &=~ SS_ABORT;
+//	sys_status &=~ SS_ABORT;
 
 	JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
 	if(rval!=JSVAL_VOID)
