@@ -32,7 +32,8 @@ extern "C" {
 extern const char* wday[];	/* abbreviated weekday names */
 extern const char* mon[];	/* abbreviated month names */
 
-DLLEXPORT const char* date_format(scfg_t*);
+DLLEXPORT char *	date_format(scfg_t*, char* buf, size_t);
+DLLEXPORT char *	date_template(scfg_t*, char* buf, size_t);
 DLLEXPORT char *	zonestr(short zone);
 DLLEXPORT time32_t	dstrtounix(scfg_t*, const char *str);
 DLLEXPORT char *	unixtodstr(scfg_t*, time32_t, char *str);

@@ -712,11 +712,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 	
 	if(strcmp(sp, "DATEFMT") == 0) {
-		return date_format(&cfg);
+		return date_format(&cfg, str, maxlen);
 	}
 
 	if(strcmp(sp, "BDATEFMT") == 0 || strcmp(sp, "BIRTHFMT") == 0) {
-		return birthdate_format(&cfg);
+		return birthdate_format(&cfg, str, maxlen);
 	}
 
 	if(strcmp(sp, "GENDERS") == 0)

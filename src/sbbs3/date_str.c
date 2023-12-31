@@ -28,14 +28,23 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 
 /****************************************************************************/
 /****************************************************************************/
-const char* date_format(scfg_t* cfg)
+char* date_format(scfg_t* cfg, char* buf, size_t size)
 {
 	switch (cfg->sys_date_fmt) {
-		case DDMMYY: return "DD/MM/YY";
-		case MMDDYY: return "MM/DD/YY";
-		case YYMMDD: return "YY/MM/DD";
+		case DDMMYY: snprintf(buf, size, "DD%cMM%cYY", cfg->sys_date_sep, cfg->sys_date_sep); return buf;
+		case MMDDYY: snprintf(buf, size, "MM%cDD%cYY", cfg->sys_date_sep, cfg->sys_date_sep); return buf;
+		case YYMMDD: snprintf(buf, size, "YY%cMM%cDD", cfg->sys_date_sep, cfg->sys_date_sep); return buf;
 	}
 	return "????????";
+}
+
+/****************************************************************************/
+/* Assumes buf is at least 9 bytes in size									*/
+/****************************************************************************/
+char* date_template(scfg_t* cfg, char* buf, size_t size)
+{
+	snprintf(buf, size, "nn%cnn%cnn", cfg->sys_date_sep, cfg->sys_date_sep);
+	return buf;
 }
 
 #define DECVAL(ch, mul)	(DEC_CHAR_TO_INT(ch) * (mul))
@@ -102,33 +111,41 @@ time32_t dstrtounix(scfg_t* cfg, const char *instr)
 /****************************************************************************/
 char* unixtodstr(scfg_t* cfg, time32_t t, char *str)
 {
-	struct tm tm;
+	struct tm tm = {0};
 	time_t unix_time=t;
 
-	if(!unix_time)
-		strcpy(str,"00/00/00");
-	else {
-		if(localtime_r(&unix_time,&tm)==NULL) {
-			strcpy(str,"00/00/00");
-			return(str);
+	if (unix_time != 0) {
+		if (localtime_r(&unix_time, &tm) != NULL) {
+			if(tm.tm_mon>11) {	  /* DOS leap year bug */
+				tm.tm_mon=0;
+				tm.tm_year++;
+			}
+			if(tm.tm_mday>31)
+				tm.tm_mday=1;
 		}
-		if(tm.tm_mon>11) {	  /* DOS leap year bug */
-			tm.tm_mon=0;
-			tm.tm_year++; 
-		}
-		if(tm.tm_mday>31)
-			tm.tm_mday=1;
-		if (cfg->sys_date_fmt == YYMMDD)
-			sprintf(str,"%02u/%02u/%02u"
-				,TM_YEAR(tm.tm_year), tm.tm_mon+1, tm.tm_mday);
-		else if(cfg->sys_date_fmt == DDMMYY)
-			sprintf(str,"%02u/%02u/%02u",tm.tm_mday,tm.tm_mon+1
-				,TM_YEAR(tm.tm_year));
-		else
-			sprintf(str,"%02u/%02u/%02u",tm.tm_mon+1,tm.tm_mday
-				,TM_YEAR(tm.tm_year)); 
 	}
-	return(str);
+	if (cfg->sys_date_fmt == YYMMDD)
+		sprintf(str,"%02u%c%02u%c%02u"
+			,TM_YEAR(tm.tm_year)
+			,cfg->sys_date_sep
+			,tm.tm_mon+1
+			,cfg->sys_date_sep
+			,tm.tm_mday);
+	else if(cfg->sys_date_fmt == DDMMYY)
+		sprintf(str,"%02u%c%02u%c%02u"
+			,tm.tm_mday
+			,cfg->sys_date_sep
+			,tm.tm_mon+1
+			,cfg->sys_date_sep
+			,TM_YEAR(tm.tm_year));
+	else
+		sprintf(str,"%02u%c%02u%c%02u"
+			,tm.tm_mon+1
+			,cfg->sys_date_sep
+			,tm.tm_mday
+			,cfg->sys_date_sep
+			,TM_YEAR(tm.tm_year));
+	return str;
 }
 
 /****************************************************************************/

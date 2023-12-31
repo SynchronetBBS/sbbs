@@ -1316,7 +1316,18 @@ int edit_sys_datefmt(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	int i = cfg.sys_date_fmt;
-	char* opts[] = { "MM/DD/YY", "DD/MM/YY", "YY/MM/DD", NULL };
+	if(cfg.sys_date_sep == '.')
+		i += 3;
+	else if(cfg.sys_date_sep == '_')
+		i += 6;
+	else if(cfg.sys_date_sep == ' ')
+		i += 9;
+	char* opts[] = {
+		"MM/DD/YY", "DD/MM/YY", "YY/MM/DD",
+		"MM.DD.YY", "DD.MM.YY", "YY.MM.DD",
+		"MM-DD-YY", "DD-MM-YY", "YY-MM-DD",
+		"MM DD YY", "DD MM YY", "YY MM DD",
+		NULL };
 	uifc.helpbuf=
 		"`Date Display Format:`\n"
 		"\n"
@@ -1324,13 +1335,24 @@ int edit_sys_datefmt(int page, int total)
 		"U.S. date format of month first, choose `MM/DD/YY`.  If you prefer the\n"
 		"European traditional date format of day first, choose `DD/MM/YY`.\n"
 		"If you and your users would prefer year first, choose `YY/MM/DD`.\n"
+		"\n"
+		"Different date value separators are also supported.\n";
 	;
 	if(page)
 		mode = wiz_help(page, total, uifc.helpbuf);
-	i=uifc.list(mode,0,10,0,&i,0
+	i=uifc.list(mode,0,00,0,&i,0
 		,"Date Display Format", opts);
-	if(i >= 0)
-		cfg.sys_date_fmt = i;
+	if (i < 0)
+		return i;
+	cfg.sys_date_fmt = i % 3;
+	if (i < 3)
+		cfg.sys_date_sep = '/';
+	else if(i < 6)
+		cfg.sys_date_sep = '.';
+	else if(i < 9)
+		cfg.sys_date_sep = '-';
+	else
+		cfg.sys_date_sep = ' ';
 	return i;
 }
 
@@ -1655,7 +1677,7 @@ void sys_cfg(void)
 		snprintf(opt[i++],MAX_OPLN,"%-20s%s %s","Local Time Zone"
 			,smb_zonestr(cfg.sys_timezone,NULL)
 			,SMB_TZ_HAS_DST(cfg.sys_timezone) && cfg.sys_misc&SM_AUTO_DST ? "(Auto-DST)" : "");
-		snprintf(opt[i++],MAX_OPLN,"%-20s%s","Local Date Format", date_format(&cfg));
+		snprintf(opt[i++],MAX_OPLN,"%-20s%s","Local Date Format", date_format(&cfg, str, sizeof str));
 		snprintf(opt[i++],MAX_OPLN,"%-20s%s","Operator",cfg.sys_op);
 
 		strcpy(opt[i++],"Notifications...");

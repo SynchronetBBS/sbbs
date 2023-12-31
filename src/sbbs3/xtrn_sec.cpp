@@ -213,7 +213,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		safe_snprintf(str, sizeof(str), "%u\n%u\n%s\n%c\n%u\n%s\n"
 			,useron.level						/* User main level */
 			,useron.level						/* User transfer level */
-			,getbirthmmddyy(&cfg, useron.birth, tmp, sizeof(tmp)) /* User birthday (MM/DD/YY) */
+			,getbirthmmddyy(&cfg, '/', useron.birth, tmp, sizeof(tmp)) /* User birthday (MM/DD/YY) */
 			,useron.sex ? useron.sex : '?'		/* User sex (M/F) */
 			,useron.number						/* User number */
 			,useron.phone); 					/* User phone number */
@@ -433,7 +433,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			"\n%s\n%02d:%02d\n%c\n"
 			,0									/* 30: Kbytes downloaded today */
 			,user_available_credits(&useron)/1024UL /* 31: Max Kbytes to download today */
-			,getbirthmmddyy(&cfg, useron.birth, tmp, sizeof(tmp))	/* 32: User birthday (MM/DD/YY) */
+			,getbirthmmddyy(&cfg, '/', useron.birth, tmp, sizeof(tmp))	/* 32: User birthday (MM/DD/YY) */
 			,node_dir							/* 33: Path to MAIN directory */
 			,data_dir							/* 34: Path to GEN directory */
 			,cfg.sys_op 						/* 35: Sysop name */
@@ -681,7 +681,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			,8									/* Data bits */
 			,online==ON_LOCAL?"LOCAL":"REMOTE"  /* Online local or remote */
 			,cfg.com_port						/* COMx port */
-			,getbirthmmddyy(&cfg, useron.birth, tmp, sizeof(tmp))	/* User birthday (MM/DD/YY) */
+			,getbirthmmddyy(&cfg, '/', useron.birth, tmp, sizeof(tmp))	/* User birthday (MM/DD/YY) */
 			,dte_rate							/* DTE rate */
 			,"FALSE"                            /* Already connected? */
 			,"Normal Connection");              /* Normal or ARQ connect */
@@ -939,7 +939,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			,MIN((tleft/60), INT16_MAX)			/* Minutes left */
 			,useron.phone						/* User's phone number */
 			,useron.location					/* User's city and state */
-			,getbirthmmddyy(&cfg, useron.birth, tmp, sizeof(tmp))	/* User's birth date (MM/DD/YY) */
+			,getbirthmmddyy(&cfg, '/', useron.birth, tmp, sizeof(tmp))	/* User's birth date (MM/DD/YY) */
 			);
 		lfexpand(str,misc);
 		fwrite(str, strlen(str), 1, fp);

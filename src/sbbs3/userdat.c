@@ -934,31 +934,37 @@ int getbirthday(scfg_t* cfg, const char* birth)
 }
 
 // Always returns string in MM/DD/YY format
-char* getbirthmmddyy(scfg_t* cfg, const char* birth, char* buf, size_t max)
+char* getbirthmmddyy(scfg_t* cfg, char sep, const char* birth, char* buf, size_t max)
 {
-	safe_snprintf(buf, max, "%02u/%02u/%02u"
+	safe_snprintf(buf, max, "%02u%c%02u%c%02u"
 		, getbirthmonth(cfg, birth)
+		, sep
 		, getbirthday(cfg, birth)
+		, sep
 		, getbirthyear(birth) % 100);
 	return buf;
 }
 
 // Always returns string in DD/MM/YY format
-char* getbirthddmmyy(scfg_t* cfg, const char* birth, char* buf, size_t max)
+char* getbirthddmmyy(scfg_t* cfg, char sep, const char* birth, char* buf, size_t max)
 {
-	safe_snprintf(buf, max, "%02u/%02u/%02u"
+	safe_snprintf(buf, max, "%02u%c%02u%c%02u"
 		, getbirthday(cfg, birth)
+		, sep
 		, getbirthmonth(cfg, birth)
+		, sep
 		, getbirthyear(birth) % 100);
 	return buf;
 }
 
 // Always returns string in YY/MM/DD format
-char* getbirthyymmdd(scfg_t* cfg, const char* birth, char* buf, size_t max)
+char* getbirthyymmdd(scfg_t* cfg, char sep, const char* birth, char* buf, size_t max)
 {
-	safe_snprintf(buf, max, "%02u/%02u/%02u"
+	safe_snprintf(buf, max, "%02u%c%02u%c%02u"
 		, getbirthyear(birth) % 100
+		, sep
 		, getbirthmonth(cfg, birth)
+		, sep
 		, getbirthday(cfg, birth));
 	return buf;
 }
@@ -966,11 +972,11 @@ char* getbirthyymmdd(scfg_t* cfg, const char* birth, char* buf, size_t max)
 char* getbirthdstr(scfg_t* cfg, const char* birth, char* buf, size_t max)
 {
 	if(cfg->sys_date_fmt == YYMMDD)
-		getbirthyymmdd(cfg, birth, buf, max);
+		getbirthyymmdd(cfg, cfg->sys_date_sep, birth, buf, max);
 	else if(cfg->sys_date_fmt == DDMMYY)
-		getbirthddmmyy(cfg, birth, buf, max);
+		getbirthddmmyy(cfg, cfg->sys_date_sep, birth, buf, max);
 	else
-		getbirthmmddyy(cfg, birth, buf, max);
+		getbirthmmddyy(cfg, cfg->sys_date_sep, birth, buf, max);
 	return buf;
 }
 
@@ -1026,26 +1032,51 @@ char* format_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t max
 	*out = '\0';
 	if(*birthdate) {
 		if (cfg->sys_date_fmt == YYMMDD)
-			safe_snprintf(out, maxlen, "%04u/%02u/%02u"
-				, getbirthyear(birthdate), getbirthmonth(cfg, birthdate), getbirthday(cfg, birthdate));
+			safe_snprintf(out, maxlen, "%04u%c%02u%c%02u"
+				, getbirthyear(birthdate)
+				, cfg->sys_date_sep
+				, getbirthmonth(cfg, birthdate)
+				, cfg->sys_date_sep
+				, getbirthday(cfg, birthdate));
 		else if (cfg->sys_date_fmt == DDMMYY)
-			safe_snprintf(out, maxlen, "%02u/%02u/%04u"
-				,getbirthday(cfg, birthdate), getbirthmonth(cfg, birthdate), getbirthyear(birthdate));
+			safe_snprintf(out, maxlen, "%02u%c%02u%c%04u"
+				, getbirthday(cfg, birthdate)
+				, cfg->sys_date_sep
+				, getbirthmonth(cfg, birthdate)
+				, cfg->sys_date_sep
+				, getbirthyear(birthdate));
 		else
-			safe_snprintf(out, maxlen, "%02u/%02u/%04u"
-				,getbirthmonth(cfg, birthdate), getbirthday(cfg, birthdate), getbirthyear(birthdate));
+			safe_snprintf(out, maxlen, "%02u%c%02u%c%04u"
+				, getbirthmonth(cfg, birthdate)
+				, cfg->sys_date_sep
+				, getbirthday(cfg, birthdate)
+				, cfg->sys_date_sep
+				, getbirthyear(birthdate));
 	}
 	return out;
 }
 
-const char* birthdate_format(scfg_t* cfg)
+/****************************************************************************/
+/****************************************************************************/
+char* birthdate_format(scfg_t* cfg, char* buf, size_t size)
 {
 	switch (cfg->sys_date_fmt) {
-		case MMDDYY: return "MM/DD/YYYY";
-		case DDMMYY: return "DD/MM/YYYY";
-		case YYMMDD: return "YYYY/MM/DD";
+		case MMDDYY: snprintf(buf, size, "MM%cDD%cYYYY", cfg->sys_date_sep, cfg->sys_date_sep); return buf;
+		case DDMMYY: snprintf(buf, size, "DD%cMM%cYYYY", cfg->sys_date_sep, cfg->sys_date_sep); return buf;
+		case YYMMDD: snprintf(buf, size, "YYYY%cMM%cDD", cfg->sys_date_sep, cfg->sys_date_sep); return buf;
 	}
 	return "??????????";
+}
+
+/****************************************************************************/
+/****************************************************************************/
+char* birthdate_template(scfg_t* cfg, char* buf, size_t size)
+{
+	if (cfg->sys_date_fmt == YYMMDD)
+		snprintf(buf, size, "nnnn%cnn%cnn", cfg->sys_date_sep, cfg->sys_date_sep);
+	else
+		snprintf(buf, size, "nn%cnn%cnnnn", cfg->sys_date_sep, cfg->sys_date_sep);
+	return buf;
 }
 
 /****************************************************************************/

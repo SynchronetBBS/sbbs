@@ -463,6 +463,7 @@ typedef struct
 	char 			sys_location[41];	/* System Location */
 	int16_t			sys_timezone;		/* Time Zone of BBS */
 	enum date_fmt	sys_date_fmt;
+	char			sys_date_sep;
 	char 			sys_daily[LEN_CMD+1];	   /* Daily event */
 	char 			sys_logon[LEN_CMD+1];	   /* Logon event */
 	char 			sys_logout[LEN_CMD+1];	   /* Logoff event */

@@ -123,6 +123,8 @@ BOOL write_main_cfg(scfg_t* cfg)
 	iniSetInt16(&ini, ROOT_SECTION, "timezone", cfg->sys_timezone, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->sys_misc, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "date_fmt", cfg->sys_date_fmt, NULL);
+	SAFEPRINTF(tmp, "%c", cfg->sys_date_sep);
+	iniSetString(&ini, ROOT_SECTION, "date_sep", tmp, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "login", cfg->sys_login, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "lastnode", cfg->sys_lastnode, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "pwdays", cfg->sys_pwdays, NULL);

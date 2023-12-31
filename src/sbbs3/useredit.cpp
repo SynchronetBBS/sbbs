@@ -183,9 +183,9 @@ void sbbs_t::useredit(int usernumber)
 				putuserstr(user.number, USER_HANDLE, user.handle);
 				break;
 			case 'B':
-				bprintf(text[EnterYourBirthday], birthdate_format(&cfg));
+				bprintf(text[EnterYourBirthday], birthdate_format(&cfg, tmp, sizeof tmp));
 				format_birthdate(&cfg, user.birth, str, sizeof(str));
-				if(gettmplt(str, "nn/nn/nnnn", kmode) == 10) {
+				if(gettmplt(str, birthdate_template(&cfg, tmp, sizeof tmp), kmode) == 10) {
 					parse_birthdate(&cfg, str, user.birth, sizeof(user.birth));
 					putuserstr(user.number, USER_BIRTH, user.birth);
 				}
@@ -342,28 +342,28 @@ void sbbs_t::useredit(int usernumber)
 			case 'K':	/* date changes */
 				bputs(text[UeditLastOn]);
 				unixtodstr(&cfg,user.laston,str);
-				gettmplt(str,"nn/nn/nn",K_LINE|K_EDIT);
+				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.laston=dstrtounix(&cfg,str);
 				putuserdatetime(user.number, USER_LASTON, user.laston);
 				bputs(text[UeditFirstOn]);
 				unixtodstr(&cfg,user.firston,str);
-				gettmplt(str,"nn/nn/nn",K_LINE|K_EDIT);
+				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.firston=dstrtounix(&cfg,str);
 				putuserdatetime(user.number, USER_FIRSTON, user.firston);
 				bputs(text[UeditExpire]);
 				unixtodstr(&cfg,user.expire,str);
-				gettmplt(str,"nn/nn/nn",K_LINE|K_EDIT);
+				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.expire=dstrtounix(&cfg,str);
 				putuserdatetime(user.number, USER_EXPIRE, user.expire);
 				bputs(text[UeditPwModDate]);
 				unixtodstr(&cfg,user.pwmod,str);
-				gettmplt(str,"nn/nn/nn",K_LINE|K_EDIT);
+				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.pwmod=dstrtounix(&cfg,str);
