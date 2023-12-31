@@ -17,6 +17,10 @@ o Increase maximum length of configured file/directory paths and command-lines
   from 63 to 100 characters
 o Internal codes (prefixes and suffixes) have doubled in maximum length
   from 8 to 16 characters (or 32 characters for prefixed-codes)
+o New IRC service (ircd v2.0)
+o New command-line specifier: %- to represent the user's chat handle/call-sign
+o New configurable date display/input formats (e.g. Year first)
+  and configurable date value separators (e.g. '.', '-', ' ' instead of '/')
 
 Security
 ~~~~~~~~
@@ -24,7 +28,7 @@ o Disallow new user aliases from matching an existing user's real name
 o Implement duplicate new-user email address checking (optional)
   - Set SCFG->System->New User Prompts->Force Unique E-mail/NetMail to "Yes"
 o New 'O' restriction is automatically applied to accounts with a duplicate
-  real name (when allowed by the sysop) and prevent such users from posting
+  real name (when allowed by the sysop) and prevents such users from posting
   or sending mail with their real name
 o Change the semantics of the "Allow Sysop Logins" setting in SCFG->System:
   an account with sysop access (i.e. level 90+) can still login, but any
@@ -34,11 +38,19 @@ o Change the semantics of the "Allow Sysop Logins" setting in SCFG->System:
   authenticate (and login), but none of those sysop-actions will be available
   to them.
   Renamed/moved to SCFG->System->Security Options->Toggles->Allow Sysop Access
+o Filter files (e.g. text/*.can) now have optional expiration date and other
+  metadata
+  - Configured via the sbbs.ini: LoginAttemptFilterDuration
+    (default: 0/infinite)
+    For details, https://wiki.synchro.net/config:filter_files#trash_can_files
 
 Customization
 ~~~~~~~~~~~~~
-o New stock modules: msgscancfg.js and filescancfg.js
-  Replaces logic previously copy/pasted into multiple Baja command shells
+o New stock JavaScript modules:
+  - msgscancfg.js and filescancfg.js
+    Replaces logic previously copy/pasted into multiple Baja command shells
+  - user_settings.js
+    Replaces hard-coded (in C++) user defaults/settings menu
 o New @-codes:
   - BUILD_DATE
   - BUILD_TIME
@@ -48,11 +60,55 @@ o New @-codes:
   - TRUNCOFF
   - GETDIM
   - LINEDELAY[:n]
+  - MSG_TO_FIRST
+  - MSG_FROM_FIRST
+  - PROT
+  - PROTNAME
+  - TERMTYPE
+  - TERMROWS
+  - TERMCOLS
+  - AUTOTERM
+  - ANSI
+  - ASCII
+  - COLOR
+  - ICE
+  - RIP
+  - PETSCII
+  - SWAPDEL
+  - UTF8
+  - MOUSE
+  - UPAUSE
+  - SPIN
+  - PAUSESPIN
+  - EXPERT
+  - HOTKEYS
+  - MSGCLS
+  - REMSUBS
+  - FILEDESC
+  - FILEFLAG
+  - AUTOHANG
+  - AUTOLOGON
+  - QUIET
+  - ASKNSCAN
+  - ASKSSCAN
+  - ANFSCAN
+  - EDITOR
+  - SHELL
+  - Every string from the text.dat file, using the string ID
 o @-codes can now be included in text centered with the CENTER @-code
   Note: this centering logic does not know the expanded-size of the @-code, so
   use a fixed-length @-code (e.g. with padding) or use the 'C' @-code format
   modifier instead
+o Support @-code expansion in node messages and short user msgs/telegrams
 o Fixed negative MSG_SCORE @-code value on 64-bit *nix builds
+o Updated text.dat strings:
+  - BulkUploadDescPrompt - now takes a string (%s) for the file size in bytes
+  - Regarding* -can now use @-codes instead of printf-specifiers
+  - UseerDefaultsHotKey - is now blank ("") by default (suppressed)
+  - YNQP - no longer used, replaced with first char of Yes/No/Quit/Password
+o Mnemonic strings now support @-codes immediately following the tilde
+  (e.g. ~@Yes@) to use the first character of a dynamically-replaced
+  (e.g. localized/translated) text string as a command key
 o New text.dat strings:
   - HashingFile
   - HashedFile
@@ -60,6 +116,15 @@ o New text.dat strings:
   - NewUserValEmailSubj
   - InactivityAlert
   - FreeDownloadUserMsg 
+  - None
+  - Which
+  - Next
+  - Prev
+  - Quit
+  - Language
+  - LANG
+  - UserDefaultsLanguage
+  - PasswordChar
 o New text.dat strings for received Fido and Internet mail
   - InternetMailReceived
   - InternetMailForwarded
@@ -90,6 +155,7 @@ o Many improvements to the Virtual UART Driver as a result of SVDM development:
 o Synchronet Control Panel (sbbsctrl.exe) now has a "Log Events to Disk"
   option, enabling writing of event thread log messages to data/events*.log
 o New useredit.exe (all new C++ version, but using the old Delphi forms)
+o scfg.exe and echocfg.exe are now Graphics/GDI applications
 
 Configuration Utility (SCFG)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -153,7 +219,9 @@ JavaScript
 o Command-shells can be written entirely in JavaScript, no .bin stub needed
 o New property: file_area.web_vpath_prefix
 o file_area.min_diskspace is in bytes now, not kilobytes
-o file-metadata-object (return value of FileBase.get()).vpath
+o file-metadata-object (return value of FileBase.get())
+  - New property: vpath
+  - Renamed property: metadata -> auxdata
 o New system methods for vetting filenames (e.g. for upload by users)
   - illegal_filename() - check if contains illegal chars/sequences
   - safest_filename() - check if contains only safest chars
@@ -171,12 +239,17 @@ o New User.close() method
 o Add 'fidonet_addr' property to msg_area.sub[]
 o New global function: rmfiles() - remove files and sub-dirs, recursively
 o New global function: strip_ctrl_a() - remove Ctrl-A sequences from string
+o New bbs.expand_atcodes() method
 o New bbs.batch_clear() method
 o New bbs.chat_sec() method
 o New bbs.sync() method
 o New bbs methods: save_msg_scan() and reload_msgs_scan()
 o bbs.telnet_gate() and rlogin_gate() now return boolean (success/failure)
 o bbs.logoff() now returns boolean (false if log-off was denied)
+o New bbs.load_user_text() method
+o bbs.text() now accepts an additional argument: default_text=false
+o bbs.text now has numeric properties named after each text ID
+  (so load() or require() of text.js is no longer strictly required)
 o New bbs properties: first_node and last_node
 o New system.find_login_id() method
 o Allow system.matchuserdata() to search deleted user records
@@ -188,14 +261,26 @@ o New console properties:
   - max_getkey_inactivity
   - last_getkey_activity
   - max_socket_inactivity
+o New console properties that present common (possibly localized) command
+  keys: yes_key, no_key, quit_key, all_key, list_key, next_key, prev_key 
 o console.mouse_mode now supports being set to just true or false (no flags)
 o console.pause() now accepts an optional bool argument (set_abort)
 o New console.flush() method
 o New console.progress() method
   Display a progress indication bar, e.g. "[ Scanning 10.0% ]" with the bar
   backfill effect (when supported by the terminal)
+o New console methods:
+  - cond_newline()
+  - cond_blankline()
+  - cond_contline()
+  - linefeed()
+o Renamed console.crlf() to console.newline() (leaving crlf() as an alias)
 o File.readBin() and writeBin() methods now support 64-bit integer binary data
 o New method: File.iniRemoveSections()
+o Stock modules previously provided as Baja-compiled .bin files, now as .js:
+  default.js
+  yesnobar.js
+  noyesbar.js
 
 Servers
 ~~~~~~~
@@ -204,6 +289,7 @@ o MQTT (IoT protocol) statistics/status/output publishing and control
 o Allow a configured maximum-severity (minimum value) for TLS-related log
   messages, default is 0 (LOG_EMERG, maximum severity)
 o All servers support login-by-realname/user-number (if enabled by the sysop)
+o All servers have configurable login requirements (AR String)
 o systemd integration (status reporting) on *nix builds
 o Fix uploader-notification, credit awards, download-counters in FTP downloads
 
@@ -217,6 +303,8 @@ o Allow a per-service "LowestLogLevel" setting
 
 Terminal Server
 ~~~~~~~~~~~~~~~
+o Multiple Language/Locale support (user selectable), see ctrl/text.*.ini
+  and https://wiki.synchro.net/custom:localization for details
 o Socket inactivity watchdog now supported and configurable with separate
   maximum inactivity values for Login, New User Registration, and normal
   User Session (SCFG->Servers->Terminal Server->Max * Inactivity settings)
@@ -259,6 +347,9 @@ o Make new user QWK-related and Chat-related settings configurable
   - Added new menu: SCFG->System->New User Values->QWK Packet Settings
 o New line-based method of output throttling (e.g for animated ANSIs)
   Enabled/set via LINEDELAY @-code and JS console.line_delay property
+o New twitlist-author operator menu option when reading messages
+o SSH terminal type/size advertisement
+o SSH max-severity of log messages is now configurable
 
 Doors
 ~~~~~
@@ -271,6 +362,7 @@ o Populate line 36 (user alias) of DOOR.SYS with the current user's handle
   Previously, we just always made this a blank line
 o Add line 8 (user's real name) to DOORFILE.SR (Solar Realms' drop file)
 o Dates in drop files are now always in MM/DD/YY format, never DD/MM/YY
+o Work-around BRE/FE/TAL ANSI-detection bug in second line of DOORFILE.SR
 o Line 37 ("Event Time") of DOOR.SYS was always 00:00, now it'll be the
   next event time (in HH:MM format)
 o Add "Disable Local Display" option for doors
@@ -343,6 +435,7 @@ o Fix erroneous filtering of vote messages by age
   e.g. !Filtering QWK message from (null) due to age: 19321 days
 o Fix: Include blank lines in messages edited with internal editor
 o Don't save draft messages upon disconnect for Guest or "no one" (user #0)
+o Fixes for moderated message bases (e.g. ignore deleted messages)
 o Ignore trailing white-space from message subjects before hashing
   Use new chksmb -S option to ignore resulting Subject CRC mismatch errors
 o Improved MIME/QP-encoded message text parsing
@@ -360,6 +453,7 @@ o Don't use libarchive for creating/appending bundles
 o New EchoCfg->Global->Sort Linked Node List option
 o Supports filtering messages based on text/subject.can file
 o Rework NetMail routing logic to handle point destinations better
+o Default packet type is now configurable
 o Options for handling of incoming bad packets
   - delete
   - rename *.bad (the previous behavior)
@@ -376,19 +470,25 @@ Web Server
 o Direct Filebase access for downloading files with access controls,
   notifications, updated statistics and credits (optional, enabled
   via SCFG->Servers->Web Server->Filebase VPath Prefix (e.g. "/files/")
-o Dynamic file area/base indexing
-  (set sbbs.ini [web] FileIndexScript to webfileindex.ssjs for demo)
+o Dynamic file area/base indexing, for a demo, set sbbs.ini [web]
+  FileIndexScript = webfileindex.ssjs
+  FileVPathPrefix = /files/
 o Requested-path aliasing, via ctrl/web_alias.ini
 o Log requests that resolve outside of the web root as hack attempts
 o Fix HTTP-requests for files >= 2GB in size
 o Perform a JS garbage collection for each new request in a reused session
 o Add UNIX domain FastCGI support (in *nix builds only)
+o Fix use of IPv6 addresses in access log filenames on Windows
+o Fewer temp files (e.g. 0-byte) being created and potentially left behind
 
 Mail Server
 ~~~~~~~~~~~
 o Fix corrupted RFC822 msg headers when a header field was > 1024 chars
 o Reject SMTP session from any client that sends illegally-long lines
+o SMTP mail server wasn't RFC 4954 compliant for "AUTH PLAIN" logins
+  Fix for errant "Missing AUTH PLAIN argument" log message
 o Fix false FORGED mail header 'FROM' field detection/rejection
+o Fix max_clients limit not being effectively-imposed on SMTPS connections
 
 FTP Server
 ~~~~~~~~~~
