@@ -2251,7 +2251,7 @@ enum {
 };
 
 #ifdef BUILD_JSDOCS
-static char* socket_prop_desc[] = {
+static const char* socket_prop_desc[] = {
 	/* Regular properties */
 	 "Error status for the last socket operation that failed - <small>READ ONLY</small>"
 	,"Error description for the last socket operation that failed - <small>READ ONLY</small>"

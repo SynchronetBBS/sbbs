@@ -25,14 +25,14 @@
 
 #ifdef BUILD_JSDOCS
 
-static char* msg_area_prop_desc[] = {
+static const char* msg_area_prop_desc[] = {
 	  "Message area settings (bit-flags) - see <tt>MM_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	 ,"FidoNet NetMail settings (bit-flags) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	 ,"Internet NetMail settings (bit-flags) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,NULL
 };
 
-static char* msg_grp_prop_desc[] = {
+static const char* msg_grp_prop_desc[] = {
 	 "Index into grp_list array (or -1 if not in array)"
 	,"Unique number for this message group"
 	,"Group name"
@@ -43,7 +43,7 @@ static char* msg_grp_prop_desc[] = {
 	,NULL
 };
 
-static char* msg_sub_prop_desc[] = {
+static const char* msg_sub_prop_desc[] = {
 
 	 "Index into sub_list array (or -1 if not in array)</i>"
 	,"Group's index into grp_list array</i>"

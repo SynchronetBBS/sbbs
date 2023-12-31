@@ -1197,7 +1197,7 @@ static JSClass js_conio_class = {
 };
 
 #ifdef BUILD_JSDOCS
-static char* conio_prop_desc[] = {
+static const char* conio_prop_desc[] = {
 	"Allows windows to scroll",
 	"Enables direct video writes (does nothing)",
 	"Do not update the screen when characters are printed",

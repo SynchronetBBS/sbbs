@@ -512,7 +512,7 @@ enum {
 };
 
 #ifdef BUILD_JSDOCS
-static char* com_prop_desc[] = {
+static const char* com_prop_desc[] = {
 	 "Error status for the last COM operation that failed - <small>READ ONLY</small>"
 	,"<tt>true</tt> if port is in a connected state - <small>READ ONLY</small>"
 	,"Enable debug logging"

@@ -213,7 +213,7 @@ static JSBool js_getstrxy_ctx_set(JSContext *cx, JSObject *obj, jsid id, JSBool 
 	return JS_TRUE;
 }
 #ifdef BUILD_JSDOCS
-static char* uifc_list_ctx_prop_desc[] = {
+static const char* uifc_list_ctx_prop_desc[] = {
 	 "Currently selected item"
 	,"0-based Line number in the currently displayed set that is highlighted"
 	,"left column"
@@ -221,7 +221,7 @@ static char* uifc_list_ctx_prop_desc[] = {
 	,"forced width"
 	,NULL
 };
-static char* uifc_showbuf_ctx_prop_desc[] = {
+static const char* uifc_showbuf_ctx_prop_desc[] = {
 	 "Currently selected item"
 	,"0-based Line number in the currently displayed set that is highlighted"
 	,"left column"
@@ -230,7 +230,7 @@ static char* uifc_showbuf_ctx_prop_desc[] = {
 	,"forced height"
 	,NULL
 };
-static char* uifc_gotoxy_ctx_prop_desc[] = {
+static const char* uifc_gotoxy_ctx_prop_desc[] = {
 	 "Last pressed key"
 	,NULL
 };
@@ -542,7 +542,7 @@ static jsSyncPropertySpec js_properties[] = {
 	{0}
 };
 #ifdef BUILD_JSDOCS
-static char* uifc_prop_desc[] = {
+static const char* uifc_prop_desc[] = {
 	 "UIFC library has been successfully initialized"
 	,"Current mode flags (see <tt>uifcdefs.js</tt>)"
 	,"A change has occurred in an input call.  You are expected to set this to false before calling the input if you care about it."

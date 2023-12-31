@@ -346,7 +346,7 @@ enum {
 };
 
 #ifdef BUILD_JSDOCS
-static char* com_prop_desc[] = {
+static const char* prop_desc[] = {
 	 "Result (error value) of last MQTT library function call - <small>READ ONLY</small>"
 	,"Result description of last MQTT library function call - <small>READ ONLY</small>"
 	,"MQTT library name and version - <small>READ ONLY</small>"
@@ -742,7 +742,7 @@ static JSBool js_mqtt_constructor(JSContext* cx, uintN argc, jsval *arglist)
 	js_DescribeSyncConstructor(cx,obj,"To create a new MQTT object: "
 		"<tt>var mqtt = new MQTT([<i>client_id</i>])</tt><br>"
 		);
-	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", com_prop_desc, JSPROP_READONLY);
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", prop_desc, JSPROP_READONLY);
 #endif
 
 	return JS_TRUE;

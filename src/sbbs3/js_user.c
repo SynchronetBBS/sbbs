@@ -847,7 +847,7 @@ static jsSyncPropertySpec js_user_properties[] = {
 };
 
 #ifdef BUILD_JSDOCS
-static char* user_prop_desc[] = {
+static const char* user_prop_desc[] = {
 
 	 "Record number (1-based)"
 	,"Alias/name"
@@ -917,7 +917,7 @@ static jsSyncPropertySpec js_user_security_properties[] = {
 };
 
 #ifdef BUILD_JSDOCS
-static char* user_security_prop_desc[] = {
+static const char* user_security_prop_desc[] = {
 
 	 "Password"
 	,"Date password last modified (time_t format)"
@@ -956,7 +956,7 @@ static jsSyncPropertySpec js_user_limits_properties[] = {
 
 
 #ifdef BUILD_JSDOCS
-static char* user_limits_prop_desc[] = {
+static const char* user_limits_prop_desc[] = {
 
 	 "Time (in minutes) per logon"
 	,"Time (in minutes) per day"
@@ -1004,7 +1004,7 @@ static jsSyncPropertySpec js_user_stats_properties[] = {
 };
 
 #ifdef BUILD_JSDOCS
-static char* user_stats_prop_desc[] = {
+static const char* user_stats_prop_desc[] = {
 
 	 "Date of previous logon (time_t format)"
 	,"Date of first logon (time_t format)"

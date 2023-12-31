@@ -3080,7 +3080,7 @@ static jsSyncPropertySpec js_msgbase_properties[] = {
 };
 
 #ifdef BUILD_JSDOCS
-static char* msgbase_prop_desc[] = {
+static const char* msgbase_prop_desc[] = {
 
 	 "Last occurred message base error - <small>READ ONLY</small>"
 	,"Return value of last <i>SMB Library</i> function call - <small>READ ONLY</small>"

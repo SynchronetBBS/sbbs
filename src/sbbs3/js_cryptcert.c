@@ -3146,7 +3146,7 @@ js_cryptcert_constructor(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 #ifdef BUILD_JSDOCS
-static char* cryptcert_cursor_prop_desc[] = {
+static const char* cryptcert_cursor_prop_desc[] = {
 	"Move the cursor to the first group or attribute.",
 	"Move the cursor to the last group or attribute.",
 	"Move the cursor to the next group or attribute.",
@@ -3154,7 +3154,7 @@ static char* cryptcert_cursor_prop_desc[] = {
 	NULL
 };
 
-static char* cryptcert_type_prop_desc[] = {
+static const char* cryptcert_type_prop_desc[] = {
 	"No certificate type",
 	"Certificate.",
 	"Attribute certificate.",
@@ -3172,7 +3172,7 @@ static char* cryptcert_type_prop_desc[] = {
 	NULL
 };
 
-static char* cryptcert_format_prop_desc[] = {
+static const char* cryptcert_format_prop_desc[] = {
 	"No certificate format",
 	"A certification request, certificate, or CRL in binary data format. The certificate object is encoded according to the ASN.1 distinguished encoding rules. This is the normal certificate encoding format.",
 	"A certificate encoded as a PKCS #7 certificate chain.",

@@ -651,7 +651,7 @@ enum {
 };
 
 #ifdef BUILD_JSDOCS
-static char* cryptcon_prop_desc[] = {
+static const char* cryptcon_prop_desc[] = {
 	 "Algorithm constant (CryptContext.ALGO.XXX)"
 	,"Cipher block size in bytes"
 	,"Output of hasing algorithms (ie: MD5, SHA1, etc)"
@@ -1009,7 +1009,7 @@ js_cryptcon_constructor(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 #ifdef BUILD_JSDOCS
-static char* cryptcon_algo_prop_desc[] = {
+static const char* cryptcon_algo_prop_desc[] = {
 	"No encryption",
 	"<p>DES is a 64-bit block cipher with a 56-bit key. Note that this algorithm is no longer considered secure and should not be used. It is present in cryptlib only for compatibility with legacy applications.</p>"
 	 "<p>Although cryptlib uses 64-bit DES keys, only 56 bits of the key are actually used. The least significant bit in each byte is used as a parity bit (cryptlib will set the correct parity values for you, so you don't have to worry about this). You can treat the algorithm as having a 64-bit key, but bear in mind that only the high 7 bits of each byte are actually used as keying material.</p>"
@@ -1043,7 +1043,7 @@ static char* cryptcon_algo_prop_desc[] = {
 	NULL
 };
 
-static char* cryptcon_mode_prop_desc[] = {
+static const char* cryptcon_mode_prop_desc[] = {
 	"No encryption mode",
 	"ECB",
 	"CBC",

@@ -118,7 +118,7 @@ static jsSyncPropertySpec js_server_properties[] = {
 };
 
 #ifdef BUILD_JSDOCS
-static char* server_prop_desc[] = {
+static const char* server_prop_desc[] = {
 
 	 "Server name and version number"
 	,"Detailed version/build information"

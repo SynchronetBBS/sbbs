@@ -262,7 +262,7 @@ enum {
 };
 
 #ifdef BUILD_JSDOCS
-static char* queue_prop_desc[] = {
+static const char* queue_prop_desc[] = {
 	 "Name of the queue (if it has one)"
 	,"<tt>true</tt> if data is waiting to be read from queue"
 	,"Number of values in the read queue"

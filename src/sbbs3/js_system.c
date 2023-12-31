@@ -618,7 +618,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 };
 
 #ifdef BUILD_JSDOCS
-static char* sys_prop_desc[] = {
+static const char* sys_prop_desc[] = {
 	/* Manually created (non-tabled) properties */
 	 "Public host name that uniquely identifies this system on the Internet (usually the same as <i>system.inet_addr</i>)"
 	,"Socket library version information"
@@ -805,7 +805,7 @@ static jsSyncPropertySpec js_sysstats_properties[] = {
 };
 
 #if !defined(JSDOOR) && defined(BUILD_JSDOCS)
-static char* sysstat_prop_desc[] = {
+static const char* sysstat_prop_desc[] = {
 	 "Total logons"
 	,"Logons today"
 	,"Total time used"
@@ -2372,7 +2372,7 @@ enum {
 };
 
 #ifdef BUILD_JSDOCS
-static char* node_prop_desc[] = {
+static const char* node_prop_desc[] = {
 	 "Status (see <tt>nodedefs.js</tt> for valid values)"
 	,"Error counter"
 	,"Current user action (see <tt>nodedefs.js</tt>)"

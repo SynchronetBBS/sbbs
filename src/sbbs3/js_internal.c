@@ -252,7 +252,7 @@ static jsSyncPropertySpec js_properties[] = {
 };
 
 #ifdef BUILD_JSDOCS
-static char* prop_desc[] = {
+static const char* prop_desc[] = {
 	/* New properties go here... */
 	"Full path and filename of JS file executed"
 	,"JS filename executed (with no path)"

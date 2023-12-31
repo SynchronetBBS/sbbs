@@ -25,7 +25,7 @@
 
 #ifdef BUILD_JSDOCS
 
-static char* xtrn_sec_prop_desc[] = {
+static const char* xtrn_sec_prop_desc[] = {
 
 	 "Index into sec_list array (or -1 if not in index)"
 	,"Unique number for this external program section"
@@ -36,7 +36,7 @@ static char* xtrn_sec_prop_desc[] = {
 	,NULL
 };
 
-static char* xtrn_prog_prop_desc[] = {
+static const char* xtrn_prog_prop_desc[] = {
 
 	 "Index into prog_list array (or -1 if not in index)"
 	,"Program number"
@@ -62,7 +62,7 @@ static char* xtrn_prog_prop_desc[] = {
 	,NULL
 };
 
-static char* event_prop_desc[] = {
+static const char* event_prop_desc[] = {
 
 	 "Command-line"
 	,"Startup directory"
@@ -79,7 +79,7 @@ static char* event_prop_desc[] = {
 	,NULL
 };
 
-static char* xedit_prop_desc[] = {
+static const char* xedit_prop_desc[] = {
 
 	 "Name"
 	,"Command-line"

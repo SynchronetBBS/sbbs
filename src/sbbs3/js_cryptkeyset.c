@@ -359,7 +359,7 @@ js_cryptkeyset_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *
 
 
 #ifdef BUILD_JSDOCS
-static char* cryptkeyset_prop_desc[] = {
+static const char* cryptkeyset_prop_desc[] = {
 	 "Keyopt constant (CryptKeyset.KEYOPT.XXX):<ul class=\"showList\">\n"
 	 "<li>CryptKeyset.KEYOPT.NONE</li>\n"
 	 "<li>CryptKeyset.KEYOPT.READONLY</li>\n"
@@ -507,7 +507,7 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 #ifdef BUILD_JSDOCS
-static char* cryptkeyset_keyopt_prop_desc[] = {
+static const char* cryptkeyset_keyopt_prop_desc[] = {
 	"No special access options (this option implies read/write access).",
 	"<p>Read-only keyset access. This option is automatically enabled by cryptlib for keyset types that have read-only restrictions enforced by the nature of the keyset, the operating system, or user access rights.</p>"
           "<p>Unless you specifically require write access to the keyset, you should use this option since it allows cryptlib to optimise its buffering and access strategies for the keyset.</p>",

@@ -1600,7 +1600,7 @@ static jsSyncPropertySpec js_filebase_properties[] = {
 };
 
 #ifdef BUILD_JSDOCS
-static char* filebase_prop_desc[] = {
+static const char* filebase_prop_desc[] = {
 
 	 "Last occurred file base error description - <small>READ ONLY</small>"
 	,"Return value of last <i>SMB Library</i> function call - <small>READ ONLY</small>"
@@ -1842,7 +1842,7 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 #ifdef BUILD_JSDOCS
-static char* filebase_detail_prop_desc[] = {
+static const char* filebase_detail_prop_desc[] = {
 	 "Include indexed-filenames only",
 	 "Normal level of file detail (e.g. full filenames, minimal metadata)",
 	 "Normal level of file detail plus extended descriptions",
@@ -1851,7 +1851,7 @@ static char* filebase_detail_prop_desc[] = {
 	 NULL
 };
 
-static char* filebase_sort_prop_desc[] = {
+static const char* filebase_sort_prop_desc[] = {
 	"Natural sort order (same as DATE_A)",
 	"Filename ascending, case insensitive sort order",
 	"Filename descending, case insensitive sort order",

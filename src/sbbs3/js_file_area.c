@@ -24,14 +24,14 @@
 
 #ifdef BUILD_JSDOCS
 
-static char* file_area_prop_desc[] = {
+static const char* file_area_prop_desc[] = {
 	 "Minimum amount of available disk space (in bytes) required for user uploads to be allowed"
 	,"File area settings (bit-flags) - see <tt>FM_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"Web file virtual path prefix"
 	,NULL
 };
 
-static char* lib_prop_desc[] = {
+static const char* lib_prop_desc[] = {
 	 "Index into lib_list array (or -1 if not in array)"
 	,"Unique number for this library"
 	,"Name"
@@ -43,7 +43,7 @@ static char* lib_prop_desc[] = {
 	,NULL
 };
 
-static char* dir_prop_desc[] = {
+static const char* dir_prop_desc[] = {
 
 	 "Index into dir_list array (or -1 if not in array)"
 	,"Unique number for this directory"

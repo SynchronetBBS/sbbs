@@ -51,7 +51,7 @@ enum {
 };
 
 #ifdef BUILD_JSDOCS
-	static char* client_prop_desc[] = {
+static const char* client_prop_desc[] = {
 	 "Client's IPv4 or IPv6 address"
 	,"Client's host name (up to 64 characters)"
 	,"Client's TCP or UDP port number"
