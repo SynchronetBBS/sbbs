@@ -1071,12 +1071,12 @@ static bool pop3_client_thread(pop3_t* pop3)
 		if (!do_cryptInit(lprintf)) {
 			return false;
 		}
-		if ((stat=cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER)) != CRYPT_OK) {
+		if ((stat=cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_TLS_SERVER)) != CRYPT_OK) {
 			GCESH(stat, client.protocol, socket, host_ip, CRYPT_UNUSED, "creating session");
 			return false;
 		}
 		pop3->session = session;
-		if ((stat=cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+		if ((stat=cryptSetAttribute(session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
 			GCESH(stat, client.protocol, socket, host_ip, session, "disabling certificate verification");
 			return false;
 		}
@@ -1183,13 +1183,13 @@ static bool pop3_client_thread(pop3_t* pop3)
 					continue;
 				}
 				sockprintf(socket,client.protocol,session,"+OK Begin TLS negotiation");
-				if ((stat=cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER)) != CRYPT_OK) {
+				if ((stat=cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_TLS_SERVER)) != CRYPT_OK) {
 					GCESH(stat, client.protocol, socket, host_ip, CRYPT_UNUSED, "creating session");
 					buf[0] = 0;
 					break;
 				}
 				pop3->session = session;
-				if ((stat=cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+				if ((stat=cryptSetAttribute(session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
 					GCESH(stat, client.protocol, socket, host_ip, session, "disabling certificate verification");
 					buf[0] = 0;
 					break;
@@ -2959,12 +2959,12 @@ static bool smtp_client_thread(smtp_t* smtp)
 		if (!do_cryptInit(lprintf)) {
 			return false;
 		}
-		if ((cstat = cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER)) != CRYPT_OK) {
+		if ((cstat = cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_TLS_SERVER)) != CRYPT_OK) {
 			GCESH(cstat, client.protocol, socket, host_ip, CRYPT_UNUSED, "creating session");
 			return false;
 		}
 		smtp->session = session;
-		if ((cstat = cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+		if ((cstat = cryptSetAttribute(session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
 			GCESH(cstat, client.protocol, socket, host_ip, session, "disabling certificate verification");
 			return false;
 		}
@@ -4936,13 +4936,13 @@ static bool smtp_client_thread(smtp_t* smtp)
 				sockprintf(socket, client.protocol, session, "454 TLS not available");
 				continue;
 			}
-			if ((cstat=cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER)) != CRYPT_OK) {
+			if ((cstat=cryptCreateSession(&session, CRYPT_UNUSED, CRYPT_SESSION_TLS_SERVER)) != CRYPT_OK) {
 				GCESH(cstat, "SMTPS", socket, host_ip, CRYPT_UNUSED, "creating TLS session");
 				sockprintf(socket, client.protocol, session, "454 TLS not available");
 				continue;
 			}
 			smtp->session = session;
-			if ((cstat=cryptSetAttribute(session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+			if ((cstat=cryptSetAttribute(session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
 				GCESH(cstat, "SMTPS", socket, host_ip, session, "disabling certificate verification");
 				destroy_session(lprintf, session);
 				session = -1;
@@ -5360,11 +5360,11 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 					const char* prot = "SEND/TLS";
 					sockprintf(sock, prot, *session, "STARTTLS");
 					if (sockgetrsp(sock, prot, *session, "220", buf, sizeof(buf))) {
-						if ((status=cryptCreateSession(session, CRYPT_UNUSED, CRYPT_SESSION_SSL)) != CRYPT_OK) {
+						if ((status=cryptCreateSession(session, CRYPT_UNUSED, CRYPT_SESSION_TLS)) != CRYPT_OK) {
 							GCESH(status, prot, sock, server, CRYPT_UNUSED, "creating TLS session");
 							continue;
 						}
-						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
 							GCESH(status, prot, sock, server, *session, "disabling certificate verification");
 							continue;
 						}

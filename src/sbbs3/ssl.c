@@ -433,7 +433,7 @@ static CRYPT_CONTEXT get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, const c
 	}
 	else {
 		/* Couldn't do that... create a new context and use the cert from there... */
-		if(!DO("creating SSL context", CRYPT_UNUSED,cryptCreateContext(&cert_entry->cert, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {
+		if(!DO("creating TLS context", CRYPT_UNUSED,cryptCreateContext(&cert_entry->cert, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {
 			unlock_ssl_cert_write(lprintf);
 			free(cert_entry);
 			return -1;
