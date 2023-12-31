@@ -15512,8 +15512,12 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	if (usingTradInterface)
 		this.indexedModeItemDescWidth -= (numberedModeItemNumWidth+1);
 	this.indexedModeSubBoardMenuSubBoardFormatStr = "%-" + this.indexedModeItemDescWidth + "s %" + numMsgsWidth + "d %" + numNewMsgsWidth + "d %" + lastPostDateWidth + "s";
+	var thisFunctionFirstCall = false; // Whether or not this is the first call of this function
 	if (typeof(this.indexedModeMenu) !== "object")
+	{
+		thisFunctionFirstCall = true;
 		this.indexedModeMenu = this.CreateLightbarIndexedModeMenu(numMsgsWidth, numNewMsgsWidth, lastPostDateWidth, this.indexedModeItemDescWidth, this.indexedModeSubBoardMenuSubBoardFormatStr);
+	}
 	else
 		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = this.indexedModeMenu.selectedItemIdx;
 	// Ensure the menu is clear, and (re-)populate the menu with sub-board information w/ # of new messages in each, etc.
@@ -15580,7 +15584,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	}
 	// If there are no new messages and the user setting to show the indexed menu when there are no new messages
 	// is disabled, then say so and return.
-	else if (totalNewMsgs == 0 && !this.userSettings.displayIndexedModeMenuIfNoNewMessages)
+	else if (thisFunctionFirstCall && totalNewMsgs == 0 && !this.userSettings.displayIndexedModeMenuIfNoNewMessages)
 	{
 		console.attributes = "N";
 		console.putmsg(bbs.text(QWKNoNewMessages));
