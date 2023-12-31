@@ -171,10 +171,12 @@ ifeq ($(CCPRE),clang)
  ifeq ($(CC),cc)
   CXX	:= c++
   AS	:= cc
+  ASFLAGS += -c
  else
   ifeq ($(CC),clang)
    CXX	:= clang++
    AS	:= clang
+   ASFLAGS += -c
   endif
  endif
 endif
