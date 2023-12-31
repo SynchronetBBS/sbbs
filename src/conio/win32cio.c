@@ -17,6 +17,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>	/* INPUT_RECORD, etc. */
 #include <genwrap.h>
 #include <stdio.h>		/* stdin */
