@@ -28,54 +28,8 @@
  
  	/* Point at which private-use values start.  Attribute values sometimes
  	   need to be extended with additional pseudo-values in object-specific
---- ./kernel/attr_acl.c	2023-12-29 15:57:31.965603000 -0500
-+++ ./kernel/attr_acl.c.orig	2023-12-29 15:57:21.751654000 -0500
-@@ -3840,6 +3840,12 @@
- 		MKPERM_SSH_EXT( RWx_RWx ),
- 		ROUTE( OBJECT_TYPE_SESSION ),
- 		subACL_SessinfoSSHChannelHeight ),
-+	MKACL_N(
-+		CRYPT_SESSINFO_SSH_CHANNEL_OPEN,
-+		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
-+		MKPERM_SSL( Rxx_Rxx ),
-+		ROUTE( OBJECT_TYPE_SESSION ),
-+		RANGE( FALSE, TRUE ) ),
- 
- 	MKACL_END(), MKACL_END()
- 	};
-@@ -4707,7 +4713,7 @@
- 	static_assert( CRYPT_CERTINFO_FIRST_EXTENSION == 2200, "Attribute value" );
- 	static_assert( CRYPT_CERTINFO_FIRST_CMS == 2500, "Attribute value" );
- 	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6016, "Attribute value" );
--	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6035, "Attribute value" );
-+	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6036, "Attribute value" );
- 	static_assert( CRYPT_CERTFORMAT_LAST == 12, "Attribute value" );
- 
- 	/* Perform a consistency check on the attribute ACLs.  The ACLs are
---- session/ssh.c.orig	2023-12-29 16:07:09.485094000 -0500
-+++ session/ssh.c	2023-12-29 16:07:52.102633000 -0500
-@@ -993,7 +993,8 @@
- 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
- 			  type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
- 			  type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT || \
--			  type == CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL);
-+			  type == CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL || \
-+			  type == CRYPT_SESSINFO_SSH_CHANNEL_OPEN);
- 
- 	if( type == CRYPT_SESSINFO_SSH_OPTIONS )
- 		{
-@@ -1010,7 +1011,8 @@
- 	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
- 		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
- 		type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
--		type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT)
-+		type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT || \
-+		type == CRYPT_SESSINFO_SSH_CHANNEL_OPEN)
- 		{
- 		status = getChannelAttribute( sessionInfoPtr, type, data );
- 		}
---- ./session/ssh2_chn.c.orig	2023-12-29 19:50:00.990529000 -0500
-+++ ./session/ssh2_chn.c	2023-12-29 19:51:32.502476000 -0500
+--- ./session/ssh2_channel.c.orig	2023-12-29 19:50:00.990529000 -0500
++++ ./session/ssh2_channel.c	2023-12-29 19:51:32.502476000 -0500
 @@ -24,6 +24,7 @@
  #define CHANNEL_FLAG_NONE		0x00	/* No channel flag */
  #define CHANNEL_FLAG_ACTIVE		0x01	/* Channel is active */
@@ -208,3 +162,47 @@
  		return( isChannelActive( sessionInfoPtr, \
  								 channelInfoPtr->channelID ) ? \
  				CRYPT_OK : OK_SPECIAL );
+--- session/ssh.c.orig	2023-12-31 08:49:41.952161000 -0500
++++ session/ssh.c	2023-12-31 08:50:06.475509000 -0500
+@@ -543,6 +543,7 @@
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT || \
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL || \
++			  type == CRYPT_SESSINFO_SSH_CHANNEL_OPEN || \
+ 			  type == CRYPT_SESSINFO_SSH_PREAUTH );
+ #else
+ 	REQUIRES( type == CRYPT_SESSINFO_SSH_PREAUTH );
+@@ -567,7 +568,8 @@
+ 	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
+ 		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
+ 		type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
+-		type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT)
++		type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT || \
++		type == CRYPT_SESSINFO_SSH_CHANNEL_OPEN)
+ 		{
+ 		status = getChannelAttribute( sessionInfoPtr, type, data );
+ 		}
+--- kernel/attr_acl.c.orig	2023-12-31 08:49:41.973327000 -0500
++++ kernel/attr_acl.c	2023-12-31 08:51:13.972549000 -0500
+@@ -3943,6 +3943,12 @@
+ 		MKPERM_SSH_EXT( RWx_RWx ),
+ 		ROUTE( OBJECT_TYPE_SESSION ),
+ 		subACL_SessinfoSSHChannelHeight ),
++	MKACL_N(
++		CRYPT_SESSINFO_SSH_CHANNEL_OPEN,
++		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
++		MKPERM_TLS( Rxx_Rxx ),
++		ROUTE( OBJECT_TYPE_SESSION ),
++		RANGE( FALSE, TRUE ) ),
+ 
+ 	MKACL_END(), MKACL_END()
+ 	};
+@@ -4931,7 +4937,7 @@
+ 	static_assert( CRYPT_CERTINFO_FIRST_EXTENSION == 2200, "Attribute value" );
+ 	static_assert( CRYPT_CERTINFO_FIRST_CMS == 2500, "Attribute value" );
+ 	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6017, "Attribute value" );
+-	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6039, "Attribute value" );
++	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6040, "Attribute value" );
+ 	static_assert( CRYPT_CERTFORMAT_LAST == 13, "Attribute value" );
+ 
+ 	/* Perform a consistency check on the attribute ACLs.  The ACLs are

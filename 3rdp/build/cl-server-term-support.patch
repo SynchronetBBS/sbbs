@@ -1,5 +1,5 @@
---- session/ssh2_chn.c.orig	2019-02-05 18:18:26.000000000 -0500
-+++ session/ssh2_chn.c	2023-12-24 08:09:36.669204000 -0500
+--- session/ssh2_channel.c.orig	2019-02-05 18:18:26.000000000 -0500
++++ session/ssh2_channel.c	2023-12-24 08:09:36.669204000 -0500
 @@ -59,6 +59,9 @@
  
  	/* Channel extra data.  This contains encoded oddball protocol-specific
@@ -99,64 +99,8 @@
  										 data, dataLength ) );
  		}
  
---- session/ssh.c.orig	2023-12-24 07:59:01.180636000 -0500
-+++ session/ssh.c	2023-12-24 08:11:02.562401000 -0500
-@@ -978,7 +978,10 @@
- 			  type == CRYPT_SESSINFO_SSH_CHANNEL_TYPE || \
- 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG1 || \
- 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG2 || \
--			  type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE );
-+			  type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
-+			  type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
-+			  type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT || \
-+			  type == CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL);
- 
- 	if( type == CRYPT_SESSINFO_SSH_OPTIONS )
- 		{
-@@ -993,7 +996,9 @@
- 		}
- 
- 	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
--		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE )
-+		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
-+		type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
-+		type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT)
- 		{
- 		status = getChannelAttribute( sessionInfoPtr, type, data );
- 		}
-@@ -1023,12 +1028,17 @@
- 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG1 || \
- 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG2 || \
- 			  type == CRYPT_SESSINFO_SSH_OPTIONS || \
--			  type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE );
-+			  type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
-+			  type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
-+			  type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT || \
-+			  type == CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL);
- 
- 	/* Get the data value if it's an integer parameter */
- 	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
- 		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
--		type == CRYPT_SESSINFO_SSH_OPTIONS)
-+		type == CRYPT_SESSINFO_SSH_OPTIONS || \
-+		type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT || \
-+		type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH) 
- 		value = *( ( int * ) data );
- 
- 	/* If we're selecting a channel and there's unwritten data from a
-@@ -1069,7 +1079,9 @@
- 		return( closeChannel( sessionInfoPtr, FALSE ) );
- 		}
- 
--	if( type == CRYPT_SESSINFO_SSH_CHANNEL )
-+	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
-+		type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
-+		type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT)
- 		status = setChannelAttribute( sessionInfoPtr, type, value );
- 	else
- 		{
---- session/ssh2_msgc.c.orig	2023-12-24 07:59:00.803690000 -0500
-+++ session/ssh2_msgc.c	2023-12-24 08:12:21.955372000 -0500
+--- session/ssh2_msgcli.c.orig	2023-12-24 07:59:00.803690000 -0500
++++ session/ssh2_msgcli.c	2023-12-24 08:12:21.955372000 -0500
 @@ -553,15 +553,15 @@
  	writeUint32( stream, channelNo );
  	writeString32( stream, "pty-req", 7 );
@@ -176,8 +120,8 @@
  		writeUint32( stream, 48 );		/* 48 x 80 (24 x 80 is so 1970s) */
  	else
  		writeUint32( stream, value);
---- session/ssh2_msgs.c.orig	2019-02-05 18:18:26.000000000 -0500
-+++ session/ssh2_msgs.c	2023-12-24 08:15:19.887857000 -0500
+--- session/ssh2_msgsvr.c.orig	2019-02-05 18:18:26.000000000 -0500
++++ session/ssh2_msgsvr.c	2023-12-24 08:15:19.887857000 -0500
 @@ -655,8 +655,20 @@
  	   problem but just deny the request */
  	switch( requestInfoPtr->requestType )
@@ -275,9 +219,9 @@
  		case CRYPT_SESSINFO_USERNAME:
  		case CRYPT_SESSINFO_PASSWORD:
  		case CRYPT_SESSINFO_SERVER_NAME:
---- kernel/attr_acl.c.orig	2023-12-24 08:27:15.033674000 -0500
-+++ kernel/attr_acl.c	2023-12-24 08:30:04.633826000 -0500
-@@ -3564,6 +3564,49 @@
+--- kernel/attr_acl.c.orig	2023-12-31 08:42:47.250931000 -0500
++++ kernel/attr_acl.c	2023-12-31 08:43:02.362902000 -0500
+@@ -3648,6 +3648,49 @@
  	MKACL_END_SUBACL(), MKACL_END_SUBACL()
  	};
  
@@ -327,7 +271,7 @@
  /* Session attributes */
  
  static const ATTRIBUTE_ACL sessionACL[] = {
-@@ -3774,24 +3817,24 @@
+@@ -3877,24 +3920,24 @@
  		MKPERM_TSP( xWD_xWD ),
  		ROUTE( OBJECT_TYPE_SESSION ), &objectCtxHash ),
  
@@ -335,7 +279,7 @@
 -		CRYPT_SESSINFO_SSH_TERMINAL,
 -		ST_NONE, ST_NONE, ST_SESS_SSH, 
 -		0xffffffff /*MKPERM_SSH_EXT( RWD_RWD )*/,
-+	MKACL_X(	/* SSH client: Read/write */
++	MKACL_ST(	/* SSH client: Read/write */
 +		CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL,
 +		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
 +		MKPERM_SSH_EXT( RWx_RWx ),
@@ -346,7 +290,7 @@
 -		ST_NONE, ST_NONE, ST_SESS_SSH, 
 -		0xffffffff /*MKPERM_SSH_EXT( RWD_RWD )*/,
 +		subACL_SessinfoSSHChannelTerminal ),
-+	MKACL_X(	/* SSH client: Read/write */
++	MKACL_ST(	/* SSH client: Read/write */
 +		CRYPT_SESSINFO_SSH_CHANNEL_WIDTH,
 +		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
 +		MKPERM_SSH_EXT( RWx_RWx ),
@@ -357,7 +301,7 @@
 -		ST_NONE, ST_NONE, ST_SESS_SSH, 
 -		0xffffffff /*MKPERM_SSH_EXT( RWD_RWD )*/,
 +		subACL_SessinfoSSHChannelWidth ),
-+	MKACL_X(	/* SSH client: Read/write */
++	MKACL_ST(	/* SSH client: Read/write */
 +		CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT,
 +		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
 +		MKPERM_SSH_EXT( RWx_RWx ),
@@ -367,12 +311,67 @@
  
  	MKACL_END(), MKACL_END()
  	};
-@@ -4659,7 +4702,7 @@
+@@ -4883,7 +4926,7 @@
  	static_assert( CRYPT_CERTINFO_FIRST_EXTENSION == 2200, "Attribute value" );
  	static_assert( CRYPT_CERTINFO_FIRST_CMS == 2500, "Attribute value" );
- 	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6016, "Attribute value" );
--	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6032, "Attribute value" );
-+	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6035, "Attribute value" );
- 	static_assert( CRYPT_CERTFORMAT_LAST == 12, "Attribute value" );
+ 	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6017, "Attribute value" );
+-	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6036, "Attribute value" );
++	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6039, "Attribute value" );
+ 	static_assert( CRYPT_CERTFORMAT_LAST == 13, "Attribute value" );
  
  	/* Perform a consistency check on the attribute ACLs.  The ACLs are
+--- ./session/ssh.c.orig	2023-12-31 09:50:25.708963000 -0500
++++ ./session/ssh.c	2023-12-31 09:51:23.743850000 -0500
+@@ -540,6 +540,9 @@
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG1 || \
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG2 || \
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
++			  type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
++			  type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT || \
++			  type == CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL || \
+ 			  type == CRYPT_SESSINFO_SSH_PREAUTH );
+ #else
+ 	REQUIRES( type == CRYPT_SESSINFO_SSH_PREAUTH );
+@@ -575,7 +578,9 @@
+ 
+ 
+ 	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
+-		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE )
++		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
++		type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
++		type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT)
+ 		{
+ 		status = getChannelAttribute( sessionInfoPtr, type, data );
+ 		}
+@@ -610,6 +615,9 @@
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG2 || \
+ 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
+ 			  type == CRYPT_SESSINFO_SSH_OPTIONS || \
++			  type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
++			  type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT || \
++			  type == CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL || \
+ 			  type == CRYPT_SESSINFO_SSH_PREAUTH );
+ #else
+ 	REQUIRES( type == CRYPT_SESSINFO_SSH_PREAUTH );
+@@ -628,7 +636,9 @@
+ 	/* Get the data value if it's an integer parameter */
+ 	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
+ 		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
+-		type == CRYPT_SESSINFO_SSH_OPTIONS )
++		type == CRYPT_SESSINFO_SSH_OPTIONS || \
++		type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT || \
++		type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH) 
+ 		value = *( ( int * ) data );
+ 
+ 	/* If we're selecting a channel and there's unwritten data from a
+@@ -679,7 +689,9 @@
+ 		return( closeChannel( sessionInfoPtr, FALSE ) );
+ 		}
+ 
+-	if( type == CRYPT_SESSINFO_SSH_CHANNEL )
++	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
++		type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
++		type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT)
+ 		status = setChannelAttribute( sessionInfoPtr, type, value );
+ 	else
+ 		{

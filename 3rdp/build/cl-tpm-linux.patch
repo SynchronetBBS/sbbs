@@ -1,25 +1,56 @@
---- ../tmp2/tools/ccopts.sh	2019-03-04 16:32:32.000000000 -0500
-+++ tools/ccopts.sh	2019-06-03 16:30:45.060050000 -0400
-@@ -241,13 +241,15 @@
- 	done
- 
- 	# TPM support
+--- tools/ccopts.sh.orig	2023-12-31 06:49:31.726056000 -0500
++++ tools/ccopts.sh	2023-12-31 06:53:11.508269000 -0500
+@@ -411,30 +411,32 @@
+ 	# TPM support.  The use of the doubled-up dirname is required because
+ 	# the TPM header is in a subdirectory tss2/tss2_fapi.h so we have to
+ 	# remove first the tss2_fapi.h and then the tss2 from the path.
 -	for includepath in $TPMPATHS ; do
 -		if [ -f $includepath ] ; then
 -			echo "TPM interface detected, enabling TPM support." >&2 ;
--			CCARGS="$CCARGS -DHAS_TPM -I"$(dirname $includepath)"" ;
--			break ;
--		fi
--	done
+-			CCARGS="$CCARGS -DHAS_TPM" ;
+-			if [ "$(dirname $includepath)" != "/usr/include/tss2" ] ; then
+-				CCARGS="$CCARGS -I$(dirname $(dirname $includepath))" ;
 +	if [ "$(uname -s)" = "Linux" ] ; then
 +		for includepath in $TPMPATHS ; do
 +			if [ -f $includepath ] ; then
 +				echo "TPM interface detected, enabling TPM support." >&2 ;
-+				CCARGS="$CCARGS -DHAS_TPM -I"$(dirname $includepath)"" ;
++				CCARGS="$CCARGS -DHAS_TPM" ;
++				if [ "$(dirname $includepath)" != "/usr/include/tss2" ] ; then
++					CCARGS="$CCARGS -I$(dirname $(dirname $includepath))" ;
++				fi ;
 +				break ;
-+			fi
+ 			fi ;
+-			break ;
+-		fi ;
+-	done
++		done
+ 
+-	# TPM RNG support.  The use of the doubled-up dirname is required because
+-	# the TPM header is in a subdirectory tss/tspi.h so we have to remove
+-	# first the tspi.h and then the tss from the path.
+-	for includepath in $TPMRNGPATHS ; do
+-		if [ -f $includepath ] ; then
+-			echo "TPM RNG interface detected, enabling TPM RNG support." >&2 ;
+-			CCARGS="$CCARGS -DHAS_TPM_RNG" ;
+-			if [ "$(dirname $includepath)" != "/usr/include/tss" ] ; then
+-				CCARGS="$CCARGS -I$(dirname $(dirname $includepath))" ;
++		# TPM RNG support.  The use of the doubled-up dirname is required because
++		# the TPM header is in a subdirectory tss/tspi.h so we have to remove
++		# first the tspi.h and then the tss from the path.
++		for includepath in $TPMRNGPATHS ; do
++			if [ -f $includepath ] ; then
++				echo "TPM RNG interface detected, enabling TPM RNG support." >&2 ;
++				CCARGS="$CCARGS -DHAS_TPM_RNG" ;
++				if [ "$(dirname $includepath)" != "/usr/include/tss" ] ; then
++					CCARGS="$CCARGS -I$(dirname $(dirname $includepath))" ;
++				fi ;
++				break ;
+ 			fi ;
+-			break ;
+-		fi ;
+-	done
 +		done
 +	fi
  
- 	# /dev/crypto support
- 	for includepath in $DEVCRYPTOPATHS ; do
+ 	# /dev/crypto support.  The use of the doubled-up dirname is required
+ 	# because the /dev/crypto header is in a subdirectory crypto/cryptodev.h
