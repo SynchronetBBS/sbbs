@@ -1,0 +1,10 @@
+--- cryptlib.h.orig	2023-12-31 12:30:58.153233000 -0500
++++ cryptlib.h	2023-12-31 12:31:23.642069000 -0500
+@@ -41,6 +41,7 @@
+   #pragma warning( push )
+   #pragma warning( disable: 4255 )	/* No function prototype given */
+   #pragma warning( disable: 4514 )	/* Unreferenced inline function has been removed */
++  #define WIN32_LEAN_AND_MEAN
+   #include <windows.h>
+   #pragma warning( pop )
+ 
