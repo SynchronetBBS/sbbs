@@ -713,6 +713,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_FIXEDHEIGHT) {
 		height=api->list_height;
 	}
+	if(mode & WIN_T2B)
+		top = 0;	// This is overridden later, so don't use top in height calculation in T2B mode
 	if(top+height>s_bottom)
 		height=(s_bottom)-top;
 	if(optheight>height)
