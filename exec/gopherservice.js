@@ -285,7 +285,7 @@ switch(field[0]) {
 **/
 		var hdr_list = msgbase.get_all_msg_headers();
 		first = msgbase.first_msg;
-		for(i=msgbase.last_msg;i>=first;i--) {
+		for(i=msgbase.last_msg; hdr_list != null && i>=first; i--) {
 			hdr = hdr_list[i];
 			if(hdr==null)
 				continue;
