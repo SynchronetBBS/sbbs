@@ -5,6 +5,13 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.93     2024-01-01   New user-toggleable behavior: Show indexed menu after
+                      reading all new messages
+                      Also, indexed reader mode (started with the -indexedMode
+                      command-line option) now lists ALL sub-boards, rather
+                      than only sub-boards the user has enabled for newscan.
+                      It also prompts the user to list sub-boards in the current
+                      group or all.
 1.92     2023-12-29   Indexed newscan: By default, if there are no new messages,
                       it now shows "No new messages." (578 QWKNoNewMessages from
                       text.dat). There's a new user setting to toggle whether to
