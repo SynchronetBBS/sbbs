@@ -927,10 +927,15 @@ bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_
 
 	if(nodecfg != NULL) {
 		pkt_type = nodecfg->pkt_type;
-		if(nodecfg->pktpwd[0] != 0)
-			strncpy((char*)hdr->type2.password, nodecfg->pktpwd, sizeof(hdr->type2.password));
-		lprintf(LOG_DEBUG, "New %spacket (type %s) created for linked-node: %s"
-			,nodecfg->pktpwd[0] == '\0' ? "" : "password-protected ", pktTypeStringList[pkt_type], smb_faddrtoa(&nodecfg->addr, NULL));
+		if(faddr_contains_wildcard(&nodecfg->addr)) {
+			lprintf(LOG_DEBUG, "New packet (type %s) created for unlinked-node: %s matching wildcard pattern (%s)"
+				,pktTypeStringList[pkt_type], smb_faddrtoa(&dest, NULL), faddrtoa(&nodecfg->addr));
+		} else {
+			if(nodecfg->pktpwd[0] != 0)
+				strncpy((char*)hdr->type2.password, nodecfg->pktpwd, sizeof(hdr->type2.password));
+			lprintf(LOG_DEBUG, "New %spacket (type %s) created for linked-node: %s"
+				,nodecfg->pktpwd[0] == '\0' ? "" : "password-protected ", pktTypeStringList[pkt_type], smb_faddrtoa(&nodecfg->addr, NULL));
+		}
 	}
 	else
 		lprintf(LOG_DEBUG, "New packet (type %s) created for unlinked-node: %s", pktTypeStringList[pkt_type], smb_faddrtoa(&dest, NULL));
