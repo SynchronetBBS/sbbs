@@ -223,6 +223,35 @@ int fwrite_intl_control_line(FILE* fp, fmsghdr_t* hdr)
 		,hdr->origzone,hdr->orignet,hdr->orignode);
 }
 
+static const char* fmsgattr_str(uint16_t attr)
+{
+	char str[64] = "";
+
+	str[0] = '\0';
+#define FIDO_ATTR_CHECK(a, f) if(a&FIDO_##f)	sprintf(str + strlen(str), "%s%s", str[0] == 0 ? "" : ", ", #f);
+	FIDO_ATTR_CHECK(attr, PRIVATE);
+	FIDO_ATTR_CHECK(attr, CRASH);
+	FIDO_ATTR_CHECK(attr, RECV);
+	FIDO_ATTR_CHECK(attr, SENT);
+	FIDO_ATTR_CHECK(attr, FILE);
+	FIDO_ATTR_CHECK(attr, INTRANS);
+	FIDO_ATTR_CHECK(attr, ORPHAN);
+	FIDO_ATTR_CHECK(attr, KILLSENT);
+	FIDO_ATTR_CHECK(attr, LOCAL);
+	FIDO_ATTR_CHECK(attr, HOLD);
+	FIDO_ATTR_CHECK(attr, FREQ);
+	FIDO_ATTR_CHECK(attr, RRREQ);
+	FIDO_ATTR_CHECK(attr, RR);
+	FIDO_ATTR_CHECK(attr, AUDIT);
+	FIDO_ATTR_CHECK(attr, FUPREQ);
+	if(str[0] == 0)
+		return "";
+
+	static char buf[128];
+	snprintf(buf, sizeof buf, " (%s)", str);
+	return buf;
+}
+
 typedef struct echostat_msg {
 	char msg_id[128];
 	char reply_id[128];
@@ -1185,9 +1214,9 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		fprintf(fp, "%s", tear_line(strstr(body, "\n--- ") == NULL ? '-' : ' '));
 	}
 	fputc(FIDO_STORED_MSG_TERMINATOR, fp);
-	lprintf(LOG_INFO, "Created NetMail (%s)%s from %s (%s) to %s (%s), attr: %04hX, subject: %s"
+	lprintf(LOG_INFO, "Created NetMail (%s)%s from %s (%s) to %s (%s), attr: %04hX%s, subject: %s"
 		,getfname(fname), (hdr.attr&FIDO_FILE) ? " with attachment" : ""
-		,from, smb_faddrtoa(&faddr, tmp), to, smb_faddrtoa(&dest, NULL), hdr.attr, subject);
+		,from, smb_faddrtoa(&faddr, tmp), to, smb_faddrtoa(&dest, NULL), hdr.attr, fmsgattr_str(hdr.attr), subject);
 	return fclose(fp);
 }
 
@@ -4298,7 +4327,8 @@ bool pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inb
 		}
 		const uint16_t remove_attrs = FIDO_CRASH | FIDO_LOCAL | FIDO_HOLD;
 		if(hdr->attr&remove_attrs) {
-			lprintf(LOG_DEBUG, "%s Removing attributes: %04hX", info, (uint16_t)(hdr->attr&remove_attrs));
+			lprintf(LOG_DEBUG, "%s Removing attributes: %04hX%s"
+				,info, (uint16_t)(hdr->attr&remove_attrs), fmsgattr_str(hdr->attr&remove_attrs));
 			hdr->attr &= ~remove_attrs;
 		}
 		if(write(file,hdr,sizeof(fmsghdr_t)) != sizeof(fmsghdr_t))
@@ -4474,12 +4504,12 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 						time_t t = (time_t)fmsgtime(hdr.time);
 						bodylen += sprintf(body+bodylen, "\rThe received message header contained:\r\r"
 							"Subj: %s\r"
-							"Attr: %04hX\r"
+							"Attr: %04hX%s\r"
 							"To  : %s (%s)\r"
 							"From: %s (%s)\r"
 							"Date: %s (parsed: 0x%08lX, %.24s)\r"
 							,hdr.subj
-							,hdr.attr
+							,hdr.attr, fmsgattr_str(hdr.attr)
 							,hdr.to, smb_faddrtoa(&scfg.faddr[match], NULL)
 							,hdr.from, faddrtoa(&addr)
 							,hdr.time, (ulong)t, ctime(&t));
@@ -5473,11 +5503,11 @@ void pack_netmail(void)
 			continue;
 		}
 
-		lprintf(LOG_INFO, "Packing NetMail (%s) from %s (%s) to %s (%s), attr: %04hX, subject: %s"
+		lprintf(LOG_INFO, "Packing NetMail (%s) from %s (%s) to %s (%s), attr: %04hX%s, subject: %s"
 			,getfname(path)
 			,hdr.from, fmsghdr_srcaddr_str(&hdr)
 			,hdr.to, smb_faddrtoa(&addr,NULL)
-			,hdr.attr, hdr.subj);
+			,hdr.attr, fmsgattr_str(hdr.attr), hdr.subj);
 		FREE_AND_NULL(fmsgbuf);
 		fmsgbuf=getfmsg(fidomsg,NULL);
 		fclose(fidomsg);
@@ -5853,8 +5883,8 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			int16_t org_attr = hdr.attr;
 			hdr.attr &= ~(FIDO_LOCAL | FIDO_INTRANS);	// Strip unexpected attributes
 			if(hdr.attr != org_attr)
-				lprintf(LOG_WARNING, "Sanitized message attributes (%04X->%04X) at offset %ld of packet: %s"
-					,org_attr, hdr.attr, (long)(msg_offset - sizeof(pkdmsg)), packet);
+				lprintf(LOG_WARNING, "Sanitized message attributes%s at offset %ld of packet: %s"
+					,fmsgattr_str(org_attr ^ hdr.attr), (long)(msg_offset - sizeof(pkdmsg)), packet);
 
 			if(strncmp(fmsgbuf, "AREA:", 5) != 0) {					/* Netmail */
 				(void)fseeko(fidomsg, msg_offset, SEEK_SET);
