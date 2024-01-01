@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.92
-                           Release date: 2023-12-29
+                                 Version 1.93
+                           Release date: 2024-01-01
 
                                      by
 
@@ -141,9 +141,11 @@ confirmation before deleting the messages.
   files.  The configuration files may be placed in the same directory as the
   .js script or in the sbbs/ctrl directory.
 - Allows a personal twit list, editable via user settings (Ctrl-U)
-- Has an "indexed" reader mode, which lists all sub-boards configured for
-  newscan by the user, with total number of messages, number of new messages,
-  and last post date, allowing the user to select a sub-board to read
+- Has an "indexed" mode, which displays a menu of sub-boards that includes the
+  total number of messages and number of new messages in each, and lets the user
+  choose a sub-board to read.  This can be used for a regular "read", which
+  lists all sub-boards, or a newscan, which lists the sub-boards enabled for
+  newscan by the user.
 - Allows the sysop to quick-validate a local user while reading one of their
   messages. The hotkey to do so is Ctrl-Q.
 
@@ -304,11 +306,12 @@ personal email.
 
 The following are the command-line parameters supported by DDMsgReader.js:
 -indexedMode: Starts DDMsgreader in "indexed" reader mode, which lists all
-              sub-boards configured for newscan by the user, with total number
-              of messages, number of new messages, and last post date, allowing
-              the user to select a sub-board to read. This is intended to work
-              if it is the only command-line option.
-
+              sub-boards, with total number of messages, number of new messages,
+              and last post date, allowing the user to select a sub-board to
+              read. This will prompt the user for "Group or All": Whether the
+              user wants to list sub-boards in the current group, or all
+              sub-boards.
+              This is intended to work if it is the only command-line option.
 -search: A search type.  Available options:
  keyword_search: Do a keyword search in message subject/body text (current message area)
  from_name_search: 'From' name search (current message area)
@@ -1354,6 +1357,7 @@ This message reader uses the following lines from Synchronet's text.dat file
 10 (Email)
 30 (Aborted)
 54 (DeleteMailQ)
+117 (MessageScanComplete)
 390 (UnknownUser)
 501 (SelectItemHdr)
 503 (SelectItemWhich)
