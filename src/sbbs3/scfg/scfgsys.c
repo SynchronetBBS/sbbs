@@ -1338,9 +1338,12 @@ int edit_sys_datefmt(int page, int total)
 		"\n"
 		"Different date value separators are also supported.\n";
 	;
-	if(page)
+	if(page) {
 		mode = wiz_help(page, total, uifc.helpbuf);
-	i=uifc.list(mode,0,00,0,&i,0
+		mode |= WIN_FIXEDHEIGHT;
+		uifc.list_height = 7;
+	}
+	i=uifc.list(mode, 0, 11, 0,&i,0
 		,"Date Display Format", opts);
 	if (i < 0)
 		return i;
