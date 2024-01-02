@@ -1014,7 +1014,7 @@ int getage(scfg_t* cfg, const char *birth)
 char* parse_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t maxlen)
 {
 	if (cfg->sys_date_fmt == YYMMDD)
-		safe_snprintf(out, maxlen, "%.4s%.2s%.2s", birthdate, birthdate + 3, birthdate + 6);
+		safe_snprintf(out, maxlen, "%.4s%.2s%.2s", birthdate, birthdate + 5, birthdate + 8);
 	else if (cfg->sys_date_fmt == DDMMYY)
 		safe_snprintf(out, maxlen, "%.4s%.2s%.2s", birthdate + 6, birthdate + 3, birthdate);
 	else
