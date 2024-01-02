@@ -437,7 +437,14 @@ void net_cfg()
 					,"QWK Packet Networks",opt);
 				switch(i) {
 					case -1:	/* ESC */
+						i = save_changes(WIN_MID|WIN_SAV);
+						if(i == -1)
+							continue;
 						done=1;
+						if(i == 0) {
+							save_msgs_cfg(&cfg);
+							refresh_cfg(&cfg);
+						}
 						break;
 					case 1:
 						uifc.helpbuf=
@@ -580,7 +587,14 @@ void net_cfg()
 					,"FidoNet EchoMail and NetMail",opt);
 				switch(i) {
 					case -1:	/* ESC */
+						i = save_changes(WIN_MID|WIN_SAV);
+						if(i == -1)
+							continue;
 						done=1;
+						if(i == 0) {
+							save_msgs_cfg(&cfg);
+							refresh_cfg(&cfg);
+						}
 						break;
 					case 0:
 						uifc.helpbuf=
@@ -924,7 +938,14 @@ void net_cfg()
 					,"Internet E-mail",opt);
 				switch(i) {
 					case -1:	/* ESC */
+						i = save_changes(WIN_MID|WIN_SAV);
+						if(i == -1)
+							continue;
 						done=1;
+						if(i == 0) {
+							save_msgs_cfg(&cfg);
+							refresh_cfg(&cfg);
+						}
 						break;
 					case 0:
 						edit_sys_inetaddr(false, false);
@@ -1054,14 +1075,6 @@ void net_cfg()
 						break;
 				}
 			}
-		}
-
-		i=save_changes(WIN_MID|WIN_SAV);
-		if(i==-1)
-			continue;
-		if(!i) {
-			save_msgs_cfg(&cfg);
-			refresh_cfg(&cfg);
 		}
 		free_msgs_cfg(&cfg);
 		free_main_cfg(&cfg);
