@@ -236,7 +236,7 @@ BOOL sbbs_t::newuser()
 			bputs(text[EnterYourCityState]);
 			if(getstr(useron.location,LEN_LOCATION,kmode) < 1)
 				continue;
-			if((cfg.uq&UQ_NOCOMMAS) && strchr(useron.location,',') == NULL) {
+			if(!(cfg.uq&UQ_NOCOMMAS) && strchr(useron.location,',') == NULL) {
 				bputs(text[CommaInLocationRequired]);
 				useron.location[0]=0;
 			} else
