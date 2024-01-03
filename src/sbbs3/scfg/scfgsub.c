@@ -1544,7 +1544,7 @@ void sub_cfg(int grpnum)
 									cfg.sub[i]->qwkconf=atoi(str);
 								break;
 							case 1:
-								n=0;
+								n=cfg.sub[i]->misc&SUB_HYPER ? 0 : cfg.sub[i]->misc&SUB_FAST ? 1 : 2;
 								strcpy(opt[0],"Hyper Allocation");
 								strcpy(opt[1],"Fast Allocation");
 								strcpy(opt[2],"Self-packing");
