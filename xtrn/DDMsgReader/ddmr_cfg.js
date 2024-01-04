@@ -748,6 +748,8 @@ function readDDMsgReaderCfgFile()
 		retObj.cfgOptions.saveAllHdrsWhenSavingMsgToBBSPC = false;
 	if (!retObj.cfgOptions.hasOwnProperty("useIndexedModeForNewscan"))
 		retObj.cfgOptions.useIndexedModeForNewscan = false;
+	if (!retObj.cfgOptions.hasOwnProperty("displayIndexedModeMenuIfNoNewMessages"))
+		retObj.cfgOptions.displayIndexedModeMenuIfNoNewMessages = false;
 	if (!retObj.cfgOptions.hasOwnProperty("enableIndexedModeMsgListCache"))
 		retObj.cfgOptions.enableIndexedModeMsgListCache = true;
 	if (!retObj.cfgOptions.hasOwnProperty("newscanOnlyShowNewMsgs"))
