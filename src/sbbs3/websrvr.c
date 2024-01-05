@@ -5923,7 +5923,7 @@ js_initcx(http_session_t *session)
 									,&startup->js				/* js */
 									,&session->client			/* client */
 									,session->socket			/* client */
-									,session->tls_sess			/* client */
+									,session->is_tls ? session->tls_sess : -1	/* client */
 									,&js_server_props			/* server */
 									,&session->js_glob
 									,&mqtt
