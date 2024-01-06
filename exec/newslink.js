@@ -56,6 +56,7 @@ var yield_length = 1;				// Length of yield (in milliseconds)
 var max_newsgroups_per_article = 5;	// Used for spam-detection
 var unmangle = false;
 var use_xover = true;
+var connect_timeout = 30;
 
 // Parse arguments
 for(i=0;i<argc;i++) {
@@ -282,7 +283,7 @@ printf("Connecting to %s port %d ...\r\n",host,port);
 socket = new Socket();
 //socket.debug=true;
 socket.bind(0,interface_ip_address);
-if(!socket.connect(host,port)) {
+if(!socket.connect(host, port, connect_timeout)) {
 	printf("!Error %d connecting to %s port %d\r\n"
 		,socket.last_error,host,port);
 	delete socket;
