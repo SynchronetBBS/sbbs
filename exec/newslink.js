@@ -272,7 +272,6 @@ if(debug) {
 	printf("username: %s\r\n",username);
 	printf("password: %s\r\n",password);
 }
-printf("%ld areas\r\n",area.length);
 
 if(host==undefined || !host.length) {
 	print("!No news server specified");
