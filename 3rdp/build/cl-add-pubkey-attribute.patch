@@ -35,13 +35,17 @@ diff -ur ../cl-old/kernel/attr_acl.c ./kernel/attr_acl.c
  	MKACL_END(), MKACL_END()
  	};
  
---- ./context/ctx_attr.c.orig	2023-02-08 05:36:06.000000000 -0500
-+++ ./context/ctx_attr.c	2023-12-31 08:46:11.978431000 -0500
-@@ -426,6 +426,7 @@
+--- context/ctx_attr.c.orig	2023-02-08 05:36:06.000000000 -0500
++++ context/ctx_attr.c	2024-01-07 19:38:26.173540000 -0500
+@@ -422,6 +422,11 @@
+ 				}
+ 			STDC_FALLTHROUGH;
+ 
++		case CRYPT_CTXINFO_SSH_PUBLIC_KEY:
++			if ( needsKey( contextInfoPtr ) )
++				return CRYPT_ERROR_NOTFOUND;
++			if (contextType != CONTEXT_PKC)
++				return CRYPT_ERROR_NOTFOUND;
+ 		case CRYPT_IATTRIBUTE_KEY_PGP:
  		case CRYPT_IATTRIBUTE_KEY_SSH:
  		case CRYPT_IATTRIBUTE_KEY_TLS:
- 		case CRYPT_IATTRIBUTE_KEY_TLS_EXT:
-+		case CRYPT_CTXINFO_SSH_PUBLIC_KEY:
- 			{
- 			STREAM stream;
- 			KEYFORMAT_TYPE formatType;

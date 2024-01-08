@@ -320,19 +320,19 @@
  	static_assert( CRYPT_CERTFORMAT_LAST == 13, "Attribute value" );
  
  	/* Perform a consistency check on the attribute ACLs.  The ACLs are
---- ./session/ssh.c.orig	2023-12-31 09:50:25.708963000 -0500
-+++ ./session/ssh.c	2023-12-31 09:51:23.743850000 -0500
-@@ -540,6 +540,9 @@
- 			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG1 || \
+--- ./session/ssh.c.orig	2024-01-07 21:24:52.912681000 -0500
++++ ./session/ssh.c	2024-01-07 21:25:24.857224000 -0500
+@@ -541,6 +541,9 @@
  			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG2 || \
  			  type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
+ 			  type == CRYPT_SESSINFO_SSH_OPTIONS || \
 +			  type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
 +			  type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT || \
 +			  type == CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL || \
  			  type == CRYPT_SESSINFO_SSH_PREAUTH );
  #else
  	REQUIRES( type == CRYPT_SESSINFO_SSH_PREAUTH );
-@@ -575,7 +578,9 @@
+@@ -576,7 +579,9 @@
  
  
  	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
@@ -343,7 +343,7 @@
  		{
  		status = getChannelAttribute( sessionInfoPtr, type, data );
  		}
-@@ -610,6 +615,9 @@
+@@ -611,6 +616,9 @@
  			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG2 || \
  			  type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
  			  type == CRYPT_SESSINFO_SSH_OPTIONS || \
@@ -353,7 +353,7 @@
  			  type == CRYPT_SESSINFO_SSH_PREAUTH );
  #else
  	REQUIRES( type == CRYPT_SESSINFO_SSH_PREAUTH );
-@@ -628,7 +636,9 @@
+@@ -629,7 +637,9 @@
  	/* Get the data value if it's an integer parameter */
  	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
  		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
@@ -364,7 +364,7 @@
  		value = *( ( int * ) data );
  
  	/* If we're selecting a channel and there's unwritten data from a
-@@ -679,7 +689,9 @@
+@@ -680,7 +690,9 @@
  		return( closeChannel( sessionInfoPtr, FALSE ) );
  		}
  
