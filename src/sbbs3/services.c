@@ -1104,7 +1104,9 @@ static void js_service_thread(void* arg)
 			}
 		}
 #endif
-		if (ssl_sync(&scfg, lprintf)) {
+		if (!ssl_sync(&scfg, lprintf)) {
+			lprintf(LOG_CRIT, "!ssl_sync() failure trying to enable TLS support");
+		} else {
 			HANDLE_CRYPT_CALL(add_private_key(&scfg, lprintf, service_client.tls_sess), &service_client, "setting private key");
 		}
 		BOOL nodelay=TRUE;
@@ -2001,7 +2003,8 @@ void services_thread(void* arg)
 					lprintf(LOG_ERR, "Option error, TLS not yet supported for static services (%s)", service[i].protocol);
 					continue;
 				}
-				ssl_sync(&scfg, lprintf);
+				if(!ssl_sync(&scfg, lprintf))
+					lprintf(LOG_CRIT, "!ssl_sync() failure trying to enable TLS support");
 			}
 			service[i].set=xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
 			if(service[i].set == NULL) {

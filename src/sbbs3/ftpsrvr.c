@@ -1151,6 +1151,7 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	char *estr = NULL;
 
 	if (!ssl_sync(&scfg, lprintf)) {
+		lprintf(LOG_CRIT, "!ssl_sync() failure trying to enable TLS support");
 		if (resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;

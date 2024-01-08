@@ -6180,7 +6180,11 @@ void mail_server(void* arg)
 		lprintf(LOG_DEBUG,"Maximum inactivity: %u seconds",startup->max_inactivity);
 
 		update_clients();
-		ssl_sync(&scfg, lprintf);
+		if(!ssl_sync(&scfg, lprintf)) {
+			lprintf(LOG_CRIT, "!ssl_sync() failure trying to enable TLS support");
+			cleanup(1);
+			return;
+		}
 
 		/* open a socket and wait for a client */
 		mail_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
