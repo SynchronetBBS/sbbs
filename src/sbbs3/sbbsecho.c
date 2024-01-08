@@ -4972,12 +4972,13 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 						break;
 					continue;
 				}
-
-				if(msg.from_net.type != NET_FIDO) {	/* Don't convert tear-lines or origin-lines for FTN-originated messages */
-					/* Need to support converting sole-LFs to Hard-CR and soft-CR (0x8D) as well */
-					if(cfg.strip_lf && buf[l]=='\n')	/* Ignore line feeds */
+				if(buf[l] == '\n') {
+					if(l == 0 || !cr) // Sole LF?
+						fmsgbuf[f++] = '\r';
+					if(cfg.strip_lf)	// Strip line feeds
 						continue;
-
+				}
+				if(msg.from_net.type != NET_FIDO) {	/* Don't convert tear-lines or origin-lines for FTN-originated messages */
 					if(cr) {
 						char *tp = (char*)buf+l;
 						/* Bugfixed: handle tear line detection/conversion and origin line detection/conversion even when line-feeds exist and aren't stripped */
@@ -4994,18 +4995,17 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 						else if(!(scfg.sub[subnum]->misc&SUB_NOTAG) && !strncmp(tp," * Origin: ",11))
 							*(tp+1)='#';
 					} /* Convert * Origin into # Origin */
-
-					if(buf[l]=='\r')
-						cr=1;
-					else
-						cr=0;
-					if((scfg.sub[subnum]->misc&SUB_ASCII)) {
-						if(buf[l]<' ' && buf[l]>=0 && buf[l]!='\r'
-							&& buf[l]!='\n')			/* Ctrl ascii */
-							buf[l]='.';             /* converted to '.' */
-						if((uchar)buf[l]&0x80)		/* extended ASCII */
-							buf[l]=exascii_to_ascii_char(buf[l]);
-					}
+				}
+				if(buf[l]=='\r')
+					cr=1;
+				else
+					cr=0;
+				if((scfg.sub[subnum]->misc&SUB_ASCII)) {
+					if(buf[l]<' ' && buf[l]>=0 && buf[l]!='\r'
+						&& buf[l]!='\n')			/* Ctrl ascii */
+						buf[l]='.';             /* converted to '.' */
+					if((uchar)buf[l]&0x80)		/* extended ASCII */
+						buf[l]=exascii_to_ascii_char(buf[l]);
 				}
 				fmsgbuf[f++]=buf[l];
 			}
