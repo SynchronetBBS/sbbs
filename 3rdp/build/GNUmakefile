@@ -142,7 +142,6 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)/dist/cryptlib.zip $(3RDP_ROOT)/build/cl-fix-test
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-testobjs.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-win32-lean-and-mean.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-thats-not-asm.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-do-debug.patch
 ifeq ($(os),win32)
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make directories
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make toolscripts
