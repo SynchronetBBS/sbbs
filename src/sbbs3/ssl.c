@@ -558,6 +558,7 @@ int destroy_session(int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSI
 	struct cert_list *psess = NULL;
 	int ret = CRYPT_ERROR_NOTFOUND;
 
+	lock_ssl_cert();
 	pthread_mutex_lock(&ssl_cert_list_mutex);
 	sess = sess_list;
 	while (sess != NULL) {
@@ -568,16 +569,13 @@ int destroy_session(int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSI
 			else {
 				psess->next = sess->next;
 			}
-			lock_ssl_cert();
 			if (sess->epoch == cert_epoch) {
-				unlock_ssl_cert(lprintf);
 				sess->sess = -1;
 				sess->next = cert_list;
 				cert_list = sess;
 				ret = cryptDestroySession(csess);
 			}
 			else {
-				unlock_ssl_cert(lprintf);
 				// TODO: Failure here isn't logged
 				cryptDestroyContext(sess->cert);
 				free(sess);
@@ -589,6 +587,7 @@ int destroy_session(int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSI
 		sess = sess->next;
 	}
 	pthread_mutex_unlock(&ssl_cert_list_mutex);
+	unlock_ssl_cert(lprintf);
 	if (ret == CRYPT_ERROR_NOTFOUND)
 		ret = cryptDestroySession(csess);
 	return ret;
