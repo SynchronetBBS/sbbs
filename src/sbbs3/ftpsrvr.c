@@ -2110,6 +2110,7 @@ static void ctrl_thread(void* arg)
 	char		buf[512];
 	char		str[128];
 	char		uniq[33];
+	char		owner[33];
 	char*		cmd;
 	char*		p;
 	char*		np;
@@ -3640,8 +3641,8 @@ static void ctrl_thread(void* arg)
 						if (cmd[3] == 'D' || strcmp(str, mls_fname) == 0) {
 							if (cmd[3] == 'T')
 								sockprintf(sock,sess, "250- Listing %s", str);
-							get_owner_name(NULL, str);
-							send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, NULL, 0, cmd[3] == 'T' ? mls_path : str);
+							get_owner_name(NULL, owner);
+							send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, owner, NULL, 0, cmd[3] == 'T' ? mls_path : str);
 							l++;
 						}
 					}
