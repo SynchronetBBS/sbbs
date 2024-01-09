@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.93
-                           Release date: 2024-01-01
+                                 Version 1.94
+                           Release date: 2024-01-08
 
                                      by
 
@@ -312,6 +312,8 @@ The following are the command-line parameters supported by DDMsgReader.js:
               user wants to list sub-boards in the current group, or all
               sub-boards.
               This is intended to work if it is the only command-line option.
+-indexModeScope: Specifies the scope (set of sub-boards) for indexed reader mode
+                 with -indexedMode. Valid values are "group" or "all".
 -search: A search type.  Available options:
  keyword_search: Do a keyword search in message subject/body text (current message area)
  from_name_search: 'From' name search (current message area)
@@ -451,6 +453,14 @@ common message operations.
 
 - Start in indexed reader mode:
 ?../xtrn/DDMsgReader/DDMsgReader.js -indexedMode
+
+- Start in indexed reader mode for the sub-boards in the current group (without
+prompting):
+?../xtrn/DDMsgReader/DDMsgReader.js -indexedMode -indexModeScope=group
+
+- Start in indexed reader mode for all sub-boards(without prompting):
+?../xtrn/DDMsgReader/DDMsgReader.js -indexedMode -indexModeScope=all
+
 
 - Text (keyword) search in the current sub-board, and list the messages found:
 ?../xtrn/DDMsgReader/DDMsgReader.js -search=keyword_search -startMode=list
@@ -1248,11 +1258,15 @@ Indexed reader mode may also be started with the -indexedMode command-line
 parameter.  For example, if you are using a JavaScript command shell:
   bbs.exec("?../xtrn/DDMsgReader/DDMsgReader.js -indexedMode");
 With the above command-line parameter, DDMsgReader will show all sub-boards the
-user is allowed to read and which they have in their newscan configuration.
-If the user has enabled indexed mode for newscans, then during a newscan, it
-will show sub-boards based on the user's chosen option for current
-sub-board/group/all.
-  
+user is allowed to read.  It will prompt the user to use sub-boards in the
+current group or all sub-boards.
+
+To have it start in indexed reader for the current group without prompting:
+bbs.exec("?../xtrn/DDMsgReader/DDMsgReader.js -indexedMode -indexModeScope=group");
+
+To have it start in indexed reader for all sub-boards without prompting:
+bbs.exec("?../xtrn/DDMsgReader/DDMsgReader.js -indexedMode -indexModeScope=all");
+
 This is an example of the sub-board menu that appears in indexed mode - And from
 here, the user can choose a sub-board to read:
 

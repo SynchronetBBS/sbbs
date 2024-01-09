@@ -120,6 +120,15 @@
  *                              now lists ALL sub-boards, rather than only sub-boards the user has enabled
  *                              for newscan. It also prompts the user to list sub-boards in the current group
  *                              or all.
+ * 2024-01-04 Eric Oulashin     Version 1.93a Beta
+ *                              Fix: For indexed read mode (not doing a newscan), when choosing a sub-board to
+ *                              read, the correct (first unread) message is displayed. Also, the user's scan
+ *                              pointer is also updated to the last_read pointer.
+ * 2024-01-08 Eric Oulashin     Version 1.94
+ *                              New operator option for read mode: Add author email to email.can.
+ *                              New command-line option: -indexModeScope, which can specify the indexed
+ *                              reader scope (group/all) without prompting the user.
+ *                              User configuration options for newscan & email only shown when doing those actions
  */
 
 "use strict";
@@ -225,8 +234,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.93";
-var READER_DATE = "2024-01-01";
+var READER_VERSION = "1.94";
+var READER_DATE = "2024-01-08";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -568,14 +577,26 @@ if (gDoDDMR)
 	{
 		console.attributes = "N";
 		console.crlf();
-		console.mnemonics("Indexed read: ~Group: @GRP@, or ~@All@: ");
-		var scopeChar = console.getkeys("GA").toString();
+		var scopeChar = "";
+		if (typeof(gCmdLineArgVals.indexmodescope) === "string")
+		{
+			var argScopeLower = gCmdLineArgVals.indexmodescope.toLowerCase();
+			if (argScopeLower == "group" || argScopeLower == "grp")
+				scopeChar = "G";
+			else if (argScopeLower == "all")
+				scopeChar = "A";
+		}
+		if (scopeChar == "")
+		{
+			console.mnemonics("Indexed read: ~Group: @GRP@, or ~@All@: ");
+			scopeChar = console.getkeys("GA").toString();
+		}
 		if (typeof(scopeChar) === "string" && scopeChar != "")
 		{
 			var scanScope = SCAN_SCOPE_ALL;
 			if (scopeChar == "G")
 				scanScope = SCAN_SCOPE_GROUP;
-			else if (scopeChar == "G")
+			else if (scopeChar == "A")
 				scanScope = SCAN_SCOPE_ALL;
 			msgReader.DoIndexedMode(scanScope, false);
 		}
@@ -1076,10 +1097,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		userSettings: CTRL_U,
 		validateMsg: "A", // Only if the user is a sysop
 		quickValUser: CTRL_Q,
+		threadView: "*", // TODO: Implement this
 		operatorMenu: CTRL_O,
 		showMsgHex: "X",
-		hexDump: CTRL_X,
-		threadView: "*" // TODO: Implement this
+		hexDump: CTRL_X
 	};
 	//if (user.is_sysop)
 	//	this.enhReaderKeys.validateMsg = "A";
@@ -1570,8 +1591,13 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		showMsgHex: 5,
 		saveMsgHexToFile: 6,
 		quickValUser: 7,
-		addAuthorToTwitList: 8
+		addAuthorToTwitList: 8,
+		addAuthorEmailToEmailFilter: 9
 	};
+
+	// For indexed mode, whether to set the indexed mode menu item index to 1 more when showing
+	// the indexed mode menu again (i.e., when the user wants to go to the next sub-board)
+	this.indexedModeSetIdxMnuIdxOneMore = false;
 }
 
 // For the DigDistMsgReader class: Sets the subBoardCode property and also
@@ -6438,6 +6464,24 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 									this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
 								}
 								break;
+							case this.readerOpMenuOptValues.addAuthorEmailToEmailFilter:
+								var fromEmailAddr = "";
+								if (typeof(msgHeader.from_net_addr) === "string" && msgHeader.from_net_addr.length > 0)
+								{
+									if (msgHeader.from_net_type == NET_INTERNET)
+										fromEmailAddr = msgHeader.from_net_addr;
+									else
+										fromEmailAddr = msgHeader.from + "@" + msgHeader.from_net_addr;
+								}
+								var promptTxt = format("Add %s to global email filter", fromEmailAddr);
+								if (this.EnhReaderPromptYesNo(promptTxt, msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr, solidBlockStartRow, numSolidScrollBlocks, true))
+								{
+									var statusMsg = "\x01n" + addToGlobalEmailFilter(fromEmailAddr) ? "\x01w\x01hSuccessfully updated the email filter" : "\x01y\x01hFailed to update the email filter!"
+									writeWithPause(1, console.screen_rows, statusMsg, ERROR_PAUSE_WAIT_MS, "\x01n", true);
+									console.attributes = "N";
+									this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea);
+								}
+								break;
 						}
 					}
 				}
@@ -7758,6 +7802,25 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 									console.pause();
 								}
 								break;
+							case this.readerOpMenuOptValues.addAuthorEmailToEmailFilter:
+								var fromEmailAddr = "";
+								if (typeof(msgHeader.from_net_addr) === "string" && msgHeader.from_net_addr.length > 0)
+								{
+									if (msgHeader.from_net_type == NET_INTERNET)
+										fromEmailAddr = msgHeader.from_net_addr;
+									else
+										fromEmailAddr = msgHeader.from + "@" + msgHeader.from_net_addr;
+								}
+								var promptTxt = format("Add %s to global email filter", fromEmailAddr);
+								if (!console.noyes(promptTxt))
+								{
+									var statusMsg = "\x01n" + addToGlobalEmailFilter(fromEmailAddr) ? "\x01w\x01hSuccessfully updated the email filter" : "\x01y\x01hFailed to update the email filter!"
+									console.print(statusMsg);
+									console.attributes = "N";
+									console.crlf();
+									console.pause();
+								}
+								break;
 						}
 					}
 				}
@@ -7849,7 +7912,7 @@ function DigDistMsgReader_CreateReadModeOpMenu()
 	var subBoardIsModerated = (this.subBoardCode != "mail" && msg_area.sub[this.subBoardCode].is_moderated);
 
 	var opMenuWidth = 35;
-	var opMenuHeight = 10;
+	var opMenuHeight = 11;
 	if (subBoardIsModerated)
 		++opMenuHeight;
 	var opMenuX = Math.floor(console.screen_columns/2) - Math.floor(opMenuWidth/2);
@@ -7872,6 +7935,7 @@ function DigDistMsgReader_CreateReadModeOpMenu()
 		opMenu.Add("&E: Save message hex to file", this.readerOpMenuOptValues.saveMsgHexToFile);
 		opMenu.Add("&A: Quick validate the user", this.readerOpMenuOptValues.quickValUser);
 		opMenu.Add("&I: Add author to twit list", this.readerOpMenuOptValues.addAuthorToTwitList);
+		opMenu.Add("&M: Add author to email filter", this.readerOpMenuOptValues.addAuthorEmailToEmailFilter);
 		// Use cyan for the item color, and cyan with blue background for selected item color
 		opMenu.colors.itemColor = "\x01n\x01c";
 		opMenu.colors.selectedItemColor = "\x01n\x01c\x014";
@@ -7886,6 +7950,7 @@ function DigDistMsgReader_CreateReadModeOpMenu()
 		opMenu.Add("Save message hex to file", this.readerOpMenuOptValues.saveMsgHexToFile);
 		opMenu.Add("Quick validate the user", this.readerOpMenuOptValues.quickValUser);
 		opMenu.Add("Add author to twit list", this.readerOpMenuOptValues.addAuthorToTwitList);
+		opMenu.Add("Add author to email filter", this.readerOpMenuOptValues.addAuthorEmailToEmailFilter);
 		// Use green for the item color and high cyan for the item number color
 		opMenu.colors.itemColor = "\x01n\x01g";
 		opMenu.colors.itemNumColor = "\x01n\x01c\x01h";
@@ -14922,7 +14987,11 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";
 	var optBoxWidth = ChoiceScrollbox_MinWidth();
-	var optBoxHeight = 14;
+	var optBoxHeight = 10;
+	if (this.doingNewscan)
+		optBoxHeight += 3;
+	if (this.readingPersonalEmail)
+		++optBoxHeight;
 	var msgBoxTopRow = 1;
 	if (typeof(pTopRowOverride) === "number" && pTopRowOverride >= 1 && pTopRowOverride <= console.screen_rows - optBoxHeight + 1)
 		msgBoxTopRow = pTopRowOverride;
@@ -14964,17 +15033,24 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 	if (this.userSettings.useIndexedModeForNewscan)
 		optionBox.chgCharInTextItem(INDEXED_MODE_NEWSCAN_OPT_INDEX, checkIdx, CHECK_CHAR);
 
-	const SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Show indexed menu if there are no new messages"));
-	if (this.userSettings.displayIndexedModeMenuIfNoNewMessages)
-		optionBox.chgCharInTextItem(SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_INDEX, checkIdx, CHECK_CHAR);
+	// Indexed-mode newscan options
+	var SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_INDEX = -1;
+	var INDEXED_MODE_NEWSCAN_MENU_AFTER_READING_ALL_NEW_MSGS_OPT_INDEX = -1;
+	var INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_OPT_INDEX = -1;
+	if (this.doingNewscan)
+	{
+		SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Show indexed menu if there are no new messages"));
+		if (this.userSettings.displayIndexedModeMenuIfNoNewMessages)
+			optionBox.chgCharInTextItem(SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_INDEX, checkIdx, CHECK_CHAR);
 
-	const INDEXED_MODE_NEWSCAN_MENU_AFTER_READING_ALL_NEW_MSGS_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Show indexed menu after reading all new msgs"));
-	if (this.userSettings.showIndexedNewscanMenuAfterReadingAllNewMsgs)
-		optionBox.chgCharInTextItem(INDEXED_MODE_NEWSCAN_MENU_AFTER_READING_ALL_NEW_MSGS_OPT_INDEX, checkIdx, CHECK_CHAR);
+		INDEXED_MODE_NEWSCAN_MENU_AFTER_READING_ALL_NEW_MSGS_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Show indexed menu after reading all new msgs"));
+		if (this.userSettings.showIndexedNewscanMenuAfterReadingAllNewMsgs)
+			optionBox.chgCharInTextItem(INDEXED_MODE_NEWSCAN_MENU_AFTER_READING_ALL_NEW_MSGS_OPT_INDEX, checkIdx, CHECK_CHAR);
 
-	const INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Index menu: Snap to sub-boards w/ new messages"));
-	if (this.userSettings.indexedModeMenuSnapToFirstWithNew)
-		optionBox.chgCharInTextItem(INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_OPT_INDEX, checkIdx, CHECK_CHAR);
+		INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Index newscan: Snap to sub-boards w/ new msgs"));
+		if (this.userSettings.indexedModeMenuSnapToFirstWithNew)
+			optionBox.chgCharInTextItem(INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_OPT_INDEX, checkIdx, CHECK_CHAR);
+	}
 
 	const INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Index menu: Enter shows message list"));
 	if (this.userSettings.enterFromIndexMenuShowsMsgList)
@@ -14988,9 +15064,14 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 	if (this.userSettings.promptDelPersonalEmailAfterReply)
 		optionBox.chgCharInTextItem(PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX, checkIdx, CHECK_CHAR);
 
-	const DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Display email 'replied' indicator"));
-	if (this.userSettings.displayMsgRepliedChar)
-		optionBox.chgCharInTextItem(DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX, checkIdx, CHECK_CHAR);
+	// Specific to personal email
+	var DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX = -1;
+	if (this.readingPersonalEmail)
+	{
+		DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Display email 'replied' indicator"));
+		if (this.userSettings.displayMsgRepliedChar)
+			optionBox.chgCharInTextItem(DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX, checkIdx, CHECK_CHAR);
+	}
 
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = {};
@@ -15147,17 +15228,31 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 		userTwitListChanged: false
 	};
 
-	var LIST_MESSAGES_IN_REVERSE_OPT_NUM = 1;
-	var NEWSCAN_ONLY_SHOW_NEW_MSGS_OPT_NUM = 2;
-	var USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM = 3;
-	var SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_NUM = 4;
-	var INDEXED_MODE_NEWSCAN_MENU_AFTER_READING_ALL_NEW_MSGS_OPT_INDEX = 5;
-	var INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM = 6;
-	var READER_QUIT_TO_MSG_LIST_OPT_NUM = 7;
-	var PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM = 8;
-	var DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM = 9;
-	var USER_TWITLIST_OPT_NUM = 10;
-	var HIGHEST_CHOICE_NUM = USER_TWITLIST_OPT_NUM;
+	var optNum = 1;
+	var LIST_MESSAGES_IN_REVERSE_OPT_NUM = optNum++;
+	var NEWSCAN_ONLY_SHOW_NEW_MSGS_OPT_NUM = optNum++;
+	var USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM = optNum++;
+	var INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM = optNum++;
+	var READER_QUIT_TO_MSG_LIST_OPT_NUM = optNum++;
+	var PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM = optNum++;
+	var USER_TWITLIST_OPT_NUM = optNum++;
+	var HIGHEST_CHOICE_NUM = USER_TWITLIST_OPT_NUM; // Highest choice number
+	// Specific to personal email
+	var DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM = -1;
+	if (this.readingPersonalEmail)
+	{
+		DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM = optNum++;
+		HIGHEST_CHOICE_NUM = DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM;
+	}
+	// Indexed-mode newscan options (will only be displayed if doing a newscan)
+	var SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_NUM = -1;
+	var INDEXED_MODE_NEWSCAN_MENU_AFTER_READING_ALL_NEW_MSGS_OPT_INDEX = -1;
+	if (this.doingNewscan)
+	{
+		SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_NUM = optNum++;
+		INDEXED_MODE_NEWSCAN_MENU_AFTER_READING_ALL_NEW_MSGS_OPT_INDEX = optNum++;
+		HIGHEST_CHOICE_NUM = INDEXED_MODE_NEWSCAN_MENU_AFTER_READING_ALL_NEW_MSGS_OPT_INDEX;
+	}
 
 	console.crlf();
 	var wordFirstCharAttrs = "\x01c\x01h";
@@ -15166,13 +15261,19 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	printTradUserSettingOption(LIST_MESSAGES_IN_REVERSE_OPT_NUM, "List messages in reverse", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(NEWSCAN_ONLY_SHOW_NEW_MSGS_OPT_NUM, "Only show new messages for newscan", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM, "Use Indexed mode for newscan", wordFirstCharAttrs, wordRemainingAttrs);
-	printTradUserSettingOption(SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_NUM, "Show indexed menu if there are no new messages", wordFirstCharAttrs, wordRemainingAttrs);
-	printTradUserSettingOption(INDEXED_MODE_NEWSCAN_MENU_AFTER_READING_ALL_NEW_MSGS_OPT_INDEX, "Show indexed menu after reading all new messages", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM, "Index: Selection shows message list", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(READER_QUIT_TO_MSG_LIST_OPT_NUM, "Quitting From reader goes to message list", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM, "Prompt to delete personal message after replying", wordFirstCharAttrs, wordRemainingAttrs);
-	printTradUserSettingOption(DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM, "Display email replied indicator", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(USER_TWITLIST_OPT_NUM, "Personal twit list", wordFirstCharAttrs, wordRemainingAttrs);
+	// Specific to personal email
+	if (this.readingPersonalEmail)
+		printTradUserSettingOption(DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM, "Display email replied indicator", wordFirstCharAttrs, wordRemainingAttrs);
+	// Newscan options
+	if (this.doingNewscan)
+	{
+		printTradUserSettingOption(SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_NUM, "Show indexed menu if there are no new messages", wordFirstCharAttrs, wordRemainingAttrs);
+		printTradUserSettingOption(INDEXED_MODE_NEWSCAN_MENU_AFTER_READING_ALL_NEW_MSGS_OPT_INDEX, "Show indexed menu after reading all new messages", wordFirstCharAttrs, wordRemainingAttrs);
+	}
 	console.crlf();
 	console.print("\x01cYour choice (\x01hQ\x01n\x01c: Quit)\x01h: \x01g");
 	var userChoiceNum = console.getnum(HIGHEST_CHOICE_NUM);
@@ -15345,19 +15446,7 @@ function DigDistMsgReader_DoIndexedMode(pScanScope, pNewscanOnly)
 				this.hdrsForCurrentSubBoard = msgHdrsCache[indexRetObj.chosenSubCode].hdrsForCurrentSubBoard;
 				this.msgNumToIdxMap = msgHdrsCache[indexRetObj.chosenSubCode].hdrsForCurrentSubBoardByMsgNum;
 			}
-			// Decide the index of the starting message: If there are no new messages, show the last
-			// messages.  Otherwise, if only showing new messages, show the first messages.
-			// Otherwise, calculate the starting index.
-			var numMessages = this.NumMessages();
-			var startIdx = 0;
-			if (indexRetObj.numNewMsgs == 0)
-				startIdx = numMessages - 1;
-			else if (!this.userSettings.newscanOnlyShowNewMsgs)
-			{
-				startIdx = numMessages > 0 ? numMessages - indexRetObj.numNewMsgs : 0;
-				if (startIdx < 0)
-					startIdx = numMessages - 1;
-			}
+
 			// If the user chose to view the message list, display the message list to let the user
 			// choose a message to read. Otherwise, start reader mode.
 			if (indexRetObj.viewMsgList)
@@ -15385,9 +15474,63 @@ function DigDistMsgReader_DoIndexedMode(pScanScope, pNewscanOnly)
 			else
 			{
 				// Let the user read the sub-board
+				// Decide the index of the starting message: If there are no new messages, show the last
+				// messages.  Otherwise, if only showing new messages, show the first messages.
+				// Otherwise, calculate the starting index.
+				var numMessages = this.NumMessages();
+				var startIdx = 0;
+				if (newscanOnly)
+				{
+					if (indexRetObj.numNewMsgs == 0)
+						startIdx = numMessages - 1;
+					else if (!this.userSettings.newscanOnlyShowNewMsgs)
+					{
+						startIdx = numMessages > 0 ? numMessages - indexRetObj.numNewMsgs : 0;
+						if (startIdx < 0)
+							startIdx = numMessages - 1;
+					}
+				}
+				else
+				{
+					// Not a newscan - Use the last_read pointer
+					var tmpMsgbase = new MsgBase(indexRetObj.chosenSubCode);
+					if (tmpMsgbase.open())
+					{
+						var lastReadMsgHdr = tmpMsgbase.get_msg_index(false, msg_area.sub[indexRetObj.chosenSubCode].last_read, false);
+						if (lastReadMsgHdr != null)
+						{
+							//startIdx = absMsgNumToIdxWithMsgbaseObj(tmpMsgbase, lastReadMsgHdr.number);
+
+							//this.PopulateHdrsForCurrentSubBoard();
+							this.subBoardCode = indexRetObj.chosenSubCode;
+							if (this.hdrsForCurrentSubBoard.length > 0)
+							{
+								startIdx = this.GetMsgIdx(GetScanPtrOrLastMsgNum(this.subBoardCode)) + 1;
+								if (startIdx < 0)
+									startIdx = 0;
+								else if (startIdx >= this.hdrsForCurrentSubBoard.length)
+									startIdx = this.hdrsForCurrentSubBoard.length - 1;
+							}
+						}
+						tmpMsgbase.close();
+					}
+				}
+
 				// pSubBoardCode, pStartingMsgOffset, pReturnOnMessageList, pAllowChgArea, pReturnOnNextAreaNav,
 				// pPromptToGoToNextAreaIfNoSearchResults
 				var readRetObj = this.ReadMessages(indexRetObj.chosenSubCode, startIdx, false, false, true, false);
+				// Even if not doing a newscan, still update the scan pointer to the user's last_read pointer
+				if (!newscanOnly)
+				{
+					if (typeof(msg_area.sub[indexRetObj.chosenSubCode].scan_ptr) === "number")
+					{
+						if (!msgNumIsLatestMsgSpecialVal(msg_area.sub[indexRetObj.chosenSubCode].scan_ptr) && msg_area.sub[indexRetObj.chosenSubCode].scan_ptr < msg_area.sub[indexRetObj.chosenSubCode].last_read)
+							msg_area.sub[indexRetObj.chosenSubCode].scan_ptr = msg_area.sub[indexRetObj.chosenSubCode].last_read;
+					}
+					else
+						msg_area.sub[indexRetObj.chosenSubCode].scan_ptr = msg_area.sub[indexRetObj.chosenSubCode].last_read;
+				}
+
 				// Update the text for the current menu item to ensure the message numbers are up to date
 				var currentMenuItem = this.indexedModeMenu.GetItem(this.indexedModeMenu.selectedItemIdx);
 				var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(indexRetObj.chosenSubCode);
@@ -15401,6 +15544,11 @@ function DigDistMsgReader_DoIndexedMode(pScanScope, pNewscanOnly)
 						hdrsForCurrentSubBoardByMsgNum: this.msgNumToIdxMap
 					};
 				}
+				if (!readRetObj.stoppedReading && (readRetObj.lastAction == ACTION_GO_NEXT_MSG_AREA || readRetObj.lastAction == ACTION_GO_NEXT_MSG))
+					this.indexedModeSetIdxMnuIdxOneMore = true;
+				else
+					this.indexedModeSetIdxMnuIdxOneMore = false;
+
 				/*
 				switch (readRetObj.lastAction)
 				{
@@ -15576,7 +15724,19 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 		this.indexedModeMenu = this.CreateLightbarIndexedModeMenu(numMsgsWidth, numNewMsgsWidth, lastPostDateWidth, this.indexedModeItemDescWidth, this.indexedModeSubBoardMenuSubBoardFormatStr);
 	}
 	else
+	{
 		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = this.indexedModeMenu.selectedItemIdx;
+		/*
+		// Temporary
+		if (user.is_sysop)
+		{
+			console.print("\x01n\r\n");
+			console.print("Indexed menu item index: " + DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx + "\r\n");
+			console.pause();
+		}
+		// End Temporary
+		*/
+	}
 	// Ensure the menu is clear, and (re-)populate the menu with sub-board information w/ # of new messages in each, etc.
 	// Also, build an array of sub-board codes for each menu item.
 	this.indexedModeMenu.RemoveAllItems();
@@ -15676,6 +15836,8 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	if (!thisFunctionFirstCall && typeof(DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx) === "number")
 	{
 		var savedItemIdx = DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx;
+		if (this.indexedModeSetIdxMnuIdxOneMore)
+			++savedItemIdx;
 		if (savedItemIdx >= 0 && savedItemIdx < this.indexedModeMenu.NumItems())
 			setIndexedSubBoardMenuSelectedItemIdx(this.indexedModeMenu, savedItemIdx);
 		else
@@ -23924,6 +24086,69 @@ function entryExistsInTwitList(pStr)
 		}
 
 		twitFile.close();
+	}
+	return entryExists;
+}
+
+// Adds to the global email filter (email.can).
+//
+// Parameters:
+//  pEmailAddr: An email address
+//
+// Return value: Boolean - Whether or not this was successful
+function addToGlobalEmailFilter(pEmailAddr)
+{
+	if (typeof(pEmailAddr) !== "string")
+		return false;
+
+	var wasSuccessful = true;
+	if (!entryExistsInGlobalEmailFilter(pEmailAddr))
+	{
+		wasSuccessful = false;
+		var filterFile = new File(system.text_dir + "email.can");
+		//if (filterFile.open(filterFile.exists ? "r+" : "w+"))
+		if (filterFile.open("a"))
+		{
+			wasSuccessful = filterFile.writeln(pEmailAddr);
+			filterFile.close();
+		}
+	}
+	return wasSuccessful;
+}
+// Returns whether an entry exists in the global email filter (email.can).
+//
+// Parameters:
+//  pEmailAddr: An entry to check in the twit list
+//
+// Return value: Boolean - Whether or not the given string exists in the twit list
+function entryExistsInGlobalEmailFilter(pEmailAddr)
+{
+	if (typeof(pEmailAddr) !== "string")
+		return false;
+
+	var entryExists = false;
+	var filterFile = new File(system.text_dir + "email.can");
+	if (filterFile.open("r"))
+	{
+		while (!filterFile.eof && !entryExists)
+		{
+			//// Read the next line from the config file.
+			var fileLine = filterFile.readln(2048);
+			// fileLine should be a string, but I've seen some cases
+			// where for some reason it isn't.  If it's not a string,
+			// then continue onto the next line.
+			if (typeof(fileLine) != "string")
+				continue;
+			// If the line starts with with a semicolon (the comment
+			// character) or is blank, then skip it.
+			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
+				continue;
+
+			// See if this line matches the given string
+			entryExists = (pEmailAddr == skipsp(truncsp(fileLine)));
+		}
+
+		filterFile.close();
 	}
 	return entryExists;
 }
