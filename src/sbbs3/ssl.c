@@ -558,6 +558,7 @@ int destroy_session(int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSI
 	struct cert_list *psess = NULL;
 	int ret = CRYPT_ERROR_NOTFOUND;
 
+	pthread_mutex_lock(&ssl_cert_list_mutex);
 	sess = sess_list;
 	while (sess != NULL) {
 		if (sess->sess == csess) {
@@ -587,6 +588,7 @@ int destroy_session(int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSI
 		psess = sess;
 		sess = sess->next;
 	}
+	pthread_mutex_unlock(&ssl_cert_list_mutex);
 	if (ret == CRYPT_ERROR_NOTFOUND)
 		ret = cryptDestroySession(csess);
 	return ret;
