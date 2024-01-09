@@ -5,6 +5,17 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.94     2024-01-07   Fix: For indexed read mode (not doing a newscan), when
+                      choosing a sub-board to read, the correct (first unread)
+                      message is displayed. Also, the user's scan pointer is
+                      also updated to the last_read pointer.
+                      New operator option for read mode: Add author email to
+                      email.can
+                      New command-line option: -indexModeScope, which can
+                      specify the indexed reader scope (group/all) without
+                      prompting the user.
+                      User configuration options for newscan & email only shown
+                      when doing those actions
 1.93     2024-01-01   New user-toggleable behavior: Show indexed menu after
                       reading all new messages
                       Also, indexed reader mode (started with the -indexedMode
