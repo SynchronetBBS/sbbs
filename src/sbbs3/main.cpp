@@ -3055,8 +3055,9 @@ void event_thread(void* arg)
 					sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr=0;
 					if(file!=-1) {
 						lseek(file,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]->subnum]->ptridx*sizeof(int32_t),SEEK_SET);
-						(void)read(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr
-							,sizeof(sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr));
+						if(read(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr
+							,sizeof(sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr)) != sizeof(uint32_t))
+							sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr = 0;
 					}
 				}
 				if(file!=-1)
