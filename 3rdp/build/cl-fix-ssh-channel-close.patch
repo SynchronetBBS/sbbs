@@ -9,6 +9,15 @@
  				}
  			else
  				{
+@@ -527,6 +538,8 @@
+ 	   no more channels left to close */
+ 	status = deleteChannel( sessionInfoPtr, channelNo, channelType,
+ 							closeLastChannel  );
++	if( getChannelStatusByChannelNo( sessionInfoPtr, channelNo ) != CHANNEL_NONE )
++		return CRYPT_OK;
+ 	if( cryptStatusError( status ) )
+ 		{
+ 		if( status != OK_SPECIAL )
 --- cryptlib.h.orig	2023-12-29 15:55:17.717475000 -0500
 +++ cryptlib.h	2023-12-29 15:56:34.124863000 -0500
 @@ -1228,6 +1228,7 @@
