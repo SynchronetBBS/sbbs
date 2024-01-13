@@ -331,7 +331,6 @@ ssh_output_thread(void *args)
 	conn_api.output_thread_running = 2;
 }
 
-#if NOTYET
 static bool
 sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 {
@@ -340,7 +339,6 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 
 	if (sz == 0)
 		return true;
-fprintf(stderr, "-- Sending %zu bytes\n", sz);
 	pthread_mutex_lock(&ssh_tx_mutex);
 	while (ssh_active && sent < sz) {
 		int status;
@@ -572,18 +570,6 @@ add_public_key(void *vpriv)
 	}
 	free(priv);
 }
-#else
-static void
-add_public_key(void *vpriv)
-{
-}
-
-static char *
-get_public_key(CRYPT_CONTEXT ctx)
-{
-	return NULL;
-}
-#endif
 
 static void
 error_popup(struct bbslist *bbs, const char *blurb, int status)
