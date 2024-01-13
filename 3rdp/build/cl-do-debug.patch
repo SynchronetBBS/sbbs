@@ -121,3 +121,13 @@
  						 -D__powerpc__ -DCONFIG_DATA_BIGENDIAN
  
  target-vxworks-ppc-gnu-2:
+--- session/ssh2_channel.c.orig	2024-01-11 20:26:11.420975000 -0500
++++ session/ssh2_channel.c	2024-01-11 20:28:39.094202000 -0500
+@@ -844,6 +844,7 @@
+ 		return( CRYPT_ERROR_NOTFOUND );
+ 	if( !isActiveChannel( channelInfoPtr ) && channelType != CHANNEL_NONE )
+ 		return( CRYPT_ERROR_NOTINITED );
++if (channelType != CHANNEL_WRITE) fprintf(stderr, "Select channel %d (%d) for %s\n", channelInfoPtr->channelID, channelNo, channelType == CHANNEL_READ ? "Read" : (channelType == CHANNEL_WRITE ? "Write" : (channelType == CHANNEL_BOTH ? "Both" : (channelType == CHANNEL_NONE ? "None" : "Unknown!"))));
+ 	switch( channelType )
+ 		{
+ 		case CHANNEL_READ:
