@@ -86,6 +86,7 @@ static volatile time_t	uptime=0;
 static volatile ulong	served=0;
 static volatile BOOL	terminate_server=FALSE;
 static char 	*text[TOTAL_TEXT];
+static str_list_t pause_semfiles;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static link_list_t current_connections;
@@ -4950,6 +4951,7 @@ static void cleanup(int code, int line)
 	free_cfg(&scfg);
 	free_text(text);
 
+	semfile_list_free(&pause_semfiles);
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 
@@ -5170,6 +5172,7 @@ void ftp_server(void* arg)
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
+		pause_semfiles=semfile_list_init(scfg.ctrl_dir,"pause", server_abbrev);
 		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
 		semfile_list_add(&recycle_semfiles,startup->ini_fname);
 		SAFEPRINTF(path,"%sftpsrvr.rec",scfg.ctrl_dir);	/* legacy */
@@ -5179,35 +5182,41 @@ void ftp_server(void* arg)
 			semfile_list_check(&initialized,shutdown_semfiles);
 		}
 
-		/* signal caller that we've started up successfully */
-		set_state(SERVER_READY);
-
 		lprintf(LOG_INFO,"FTP Server thread started");
 		mqtt_client_max(&mqtt, startup->max_clients);
 
 		while(ftp_set!=NULL && !terminate_server) {
 			YIELD();
-			if(protected_uint32_value(thread_count) <= 1) {
-				if(!(startup->options&FTP_OPT_NO_RECYCLE)) {
-					if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
-						lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
-						break;
-					}
-					if(startup->recycle_now==TRUE) {
-						lprintf(LOG_NOTICE,"0000 Recycle semaphore signaled");
-						startup->recycle_now=FALSE;
-						break;
-					}
+			if(!(startup->options&FTP_OPT_NO_RECYCLE)) {
+				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
+					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
+					break;
 				}
-				if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
-						&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
-					|| (startup->shutdown_now==TRUE
-						&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
-					startup->shutdown_now=FALSE;
-					terminate_server=TRUE;
+				if(startup->recycle_now==TRUE) {
+					lprintf(LOG_NOTICE,"0000 Recycle semaphore signaled");
+					startup->recycle_now=FALSE;
 					break;
 				}
 			}
+			if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
+					&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
+				|| (startup->shutdown_now==TRUE
+					&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
+				startup->shutdown_now=FALSE;
+				terminate_server=TRUE;
+				break;
+			}
+			if(((p = semfile_list_check(NULL, pause_semfiles)) != NULL
+					&& lprintf(LOG_INFO, "0000 Pause semaphore file (%s) detected", p))
+				|| (startup->paused
+					&& lprintf(LOG_INFO, "0000 Pause semaphore signaled"))) {
+				set_state(SERVER_PAUSED);
+				SLEEP(startup->sem_chk_freq * 1000);
+				continue;
+			}
+			/* signal caller that we've started up successfully */
+			set_state(SERVER_READY);
+
 
 			if(ftp_set==NULL || terminate_server)	/* terminated */
 				break;

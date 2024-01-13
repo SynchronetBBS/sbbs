@@ -48,6 +48,7 @@ const char* server_state_desc(enum server_state state)
 		case SERVER_STOPPED: return "stopped";
 		case SERVER_INIT: return "initializing";
 		case SERVER_READY: return "ready";
+		case SERVER_PAUSED: return "paused";
 		case SERVER_RELOADING: return "reloading";
 		case SERVER_STOPPING: return "stopping";
 		default: return "???";
@@ -494,6 +495,10 @@ static void mqtt_connect_callback(struct mosquitto* mosq, void* cbdata, int rc)
 		}
 		mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "recycle");
 		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "recycle");
+		mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "pause");
+		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "pause");
+		mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "resume");
+		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "resume");
 	}
 }
 
@@ -584,6 +589,16 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 	if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_HOST, topic, sizeof(topic), "recycle")) == 0
 		|| strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_SERVER, topic, sizeof(topic), "recycle")) == 0) {
 		mqtt->startup->recycle_now = true;
+		return;
+	}
+	if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_HOST, topic, sizeof(topic), "pause")) == 0
+		|| strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_SERVER, topic, sizeof(topic), "pause")) == 0) {
+		mqtt->startup->paused = true;
+		return;
+	}
+	if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_HOST, topic, sizeof(topic), "resume")) == 0
+		|| strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_SERVER, topic, sizeof(topic), "resume")) == 0) {
+		mqtt->startup->paused = false;
 		return;
 	}
 }

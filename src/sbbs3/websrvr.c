@@ -122,6 +122,7 @@ static web_startup_t* startup=NULL;
 static js_server_props_t js_server_props;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
+static str_list_t pause_semfiles;
 static str_list_t cgi_env;
 static struct mqtt mqtt;
 
@@ -6895,6 +6896,7 @@ static void cleanup(int code)
 
 	cgi_env=iniFreeStringList(cgi_env);
 
+	semfile_list_free(&pause_semfiles);
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 
@@ -7261,6 +7263,7 @@ void web_server(void* arg)
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
+		pause_semfiles=semfile_list_init(scfg.ctrl_dir,"pause", server_abbrev);
 		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
 		semfile_list_add(&recycle_semfiles,startup->ini_fname);
 		SAFEPRINTF(path,"%swebsrvr.rec",scfg.ctrl_dir);	/* legacy */
@@ -7275,41 +7278,24 @@ void web_server(void* arg)
 			semfile_list_check(&initialized,shutdown_semfiles);
 		}
 
-		/* signal caller that we've started up successfully */
-		set_state(SERVER_READY);
-
 		lprintf(LOG_INFO,"Web Server thread started");
 		mqtt_client_max(&mqtt, startup->max_clients);
 
 		while(!terminated && !terminate_server) {
 			YIELD();
-			/* check for re-cycle/shutdown semaphores */
-			if(protected_uint32_value(thread_count) <= (unsigned int)(2 /* web_server() and http_output_thread() */ + (http_logging_thread_running?1:0))) {
-				if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
-					if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
-						lprintf(LOG_INFO,"Recycle semaphore file (%s) detected",p);
-						if(session!=NULL) {
-							pthread_mutex_unlock(&session->struct_filled);
-							session=NULL;
-						}
-						break;
+			/* check for re-cycle/shutdown/pause semaphores */
+			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
+				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
+					lprintf(LOG_INFO,"Recycle semaphore file (%s) detected",p);
+					if(session!=NULL) {
+						pthread_mutex_unlock(&session->struct_filled);
+						session=NULL;
 					}
-					if(startup->recycle_now==TRUE) {
-						lprintf(LOG_INFO,"Recycle semaphore signaled");
-						startup->recycle_now=FALSE;
-						if(session!=NULL) {
-							pthread_mutex_unlock(&session->struct_filled);
-							session=NULL;
-						}
-						break;
-					}
+					break;
 				}
-				if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
-						&& lprintf(LOG_INFO,"Shutdown semaphore file (%s) detected",p))
-					|| (startup->shutdown_now==TRUE
-						&& lprintf(LOG_INFO,"Shutdown semaphore signaled"))) {
-					startup->shutdown_now=FALSE;
-					terminate_server=TRUE;
+				if(startup->recycle_now==TRUE) {
+					lprintf(LOG_INFO,"Recycle semaphore signaled");
+					startup->recycle_now=FALSE;
 					if(session!=NULL) {
 						pthread_mutex_unlock(&session->struct_filled);
 						session=NULL;
@@ -7317,6 +7303,28 @@ void web_server(void* arg)
 					break;
 				}
 			}
+			if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
+					&& lprintf(LOG_INFO,"Shutdown semaphore file (%s) detected",p))
+				|| (startup->shutdown_now==TRUE
+					&& lprintf(LOG_INFO,"Shutdown semaphore signaled"))) {
+				startup->shutdown_now=FALSE;
+				terminate_server=TRUE;
+				if(session!=NULL) {
+					pthread_mutex_unlock(&session->struct_filled);
+					session=NULL;
+				}
+				break;
+			}
+			if(((p = semfile_list_check(NULL, pause_semfiles)) != NULL
+					&& lprintf(LOG_INFO, "Pause semaphore file (%s) detected", p))
+				|| (startup->paused
+					&& lprintf(LOG_INFO, "Pause semaphore signaled"))) {
+				set_state(SERVER_PAUSED);
+				SLEEP(startup->sem_chk_freq * 1000);
+				continue;
+			}
+			/* signal caller that we've started up successfully */
+			set_state(SERVER_READY);
 
 			/* Startup next session thread */
 			if(session==NULL) {

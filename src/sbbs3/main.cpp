@@ -98,6 +98,7 @@ static	char *	node_text[MAX_NODES][TOTAL_TEXT];
 static	WORD	first_node;
 static	WORD	last_node;
 static	bool	terminate_server=false;
+static	str_list_t pause_semfiles;
 static	str_list_t recycle_semfiles;
 static	str_list_t shutdown_semfiles;
 static	str_list_t clear_attempts_semfiles;
@@ -4728,6 +4729,7 @@ static void cleanup(int code)
 		memset(&node_scfg[i], 0, sizeof(node_scfg[i]));
 	}
 
+	semfile_list_free(&pause_semfiles);
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 	semfile_list_free(&clear_attempts_semfiles);
@@ -5150,6 +5152,7 @@ NO_SSH:
 	/* Setup recycle/shutdown semaphore file lists */
 	shutdown_semfiles = semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
 	recycle_semfiles = semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
+	pause_semfiles = semfile_list_init(scfg.ctrl_dir,"pause", server_abbrev);
 	clear_attempts_semfiles = semfile_list_init(scfg.ctrl_dir,"clear", server_abbrev);
 	semfile_list_add(&recycle_semfiles,startup->ini_fname);
 	strListAppendFormat(&recycle_semfiles, "%stext.dat", scfg.ctrl_dir);
@@ -5182,37 +5185,45 @@ NO_SSH:
 	}
 #endif // __unix__ (unix-domain spy sockets)
 
-	/* signal caller that we've started up successfully */
-	set_state(SERVER_READY);
-
 	lprintf(LOG_INFO,"Terminal Server thread started for nodes %d through %d", first_node, last_node);
 	mqtt_client_max(&mqtt, (last_node - first_node) + 1);
 
 	while(!terminate_server) {
 		YIELD();
-		if(protected_uint32_value(node_threads_running)==0) {	/* check for re-run flags and recycle/shutdown sem files */
-			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
-				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
-					lprintf(LOG_INFO,"Recycle semaphore file (%s) detected"
-						,p);
-					break;
-				}
-				if(startup->recycle_now==TRUE) {
-					lprintf(LOG_INFO,"Recycle semaphore signaled");
-					startup->recycle_now=FALSE;
-					break;
-				}
+		/* check for re-run flags and recycle/shutdown sem files */
+		if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
+			if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
+				lprintf(LOG_INFO,"Recycle semaphore file (%s) detected"
+					,p);
+				break;
 			}
-			if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
-					&& lprintf(LOG_INFO,"Shutdown semaphore file (%s) detected"
-						,p))
-				|| (startup->shutdown_now==TRUE
-					&& lprintf(LOG_INFO,"Shutdown semaphore signaled"))) {
-				startup->shutdown_now=FALSE;
-				terminate_server=TRUE;
+			if(startup->recycle_now==TRUE) {
+				lprintf(LOG_INFO,"Recycle semaphore signaled");
+				startup->recycle_now=FALSE;
 				break;
 			}
 		}
+		if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
+				&& lprintf(LOG_INFO,"Shutdown semaphore file (%s) detected"
+					,p))
+			|| (startup->shutdown_now==TRUE
+				&& lprintf(LOG_INFO,"Shutdown semaphore signaled"))) {
+			startup->shutdown_now=FALSE;
+			terminate_server=TRUE;
+			break;
+		}
+		if(((p = semfile_list_check(NULL, pause_semfiles)) != NULL
+				&& lprintf(LOG_INFO, "Pause semaphore file (%s) detected"
+					,p))
+			|| (startup->paused
+				&& lprintf(LOG_INFO, "Pause semaphore signaled"))) {
+			set_state(SERVER_PAUSED);
+			SLEEP(startup->sem_chk_freq * 1000);
+			continue;
+		}
+		/* signal caller that we've started up successfully */
+		set_state(SERVER_READY);
+
 
     	sbbs->online=FALSE;
 //		sbbs->client_socket=INVALID_SOCKET;

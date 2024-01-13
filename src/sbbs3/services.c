@@ -62,6 +62,7 @@ static char*	text[TOTAL_TEXT];
 static volatile BOOL	terminated=FALSE;
 static time_t	uptime=0;
 static ulong	served=0;
+static str_list_t pause_semfiles;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static protected_uint32_t threads_pending_start;
@@ -1733,6 +1734,7 @@ static void cleanup(int code)
 
 	free_cfg(&scfg);
 
+	semfile_list_free(&pause_semfiles);
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 
@@ -2051,6 +2053,7 @@ void services_thread(void* arg)
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown","services");
+		pause_semfiles=semfile_list_init(scfg.ctrl_dir,"pause","services");
 		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle","services");
 		semfile_list_add(&recycle_semfiles,startup->ini_fname);
 		SAFEPRINTF(path,"%sservices.rec",scfg.ctrl_dir);	/* legacy */
@@ -2062,9 +2065,6 @@ void services_thread(void* arg)
 		}
 
 		terminated=FALSE;
-
-		/* signal caller that we've started up successfully */
-		set_state(SERVER_READY);
 
 		lprintf(LOG_INFO,"0000 Services thread started (%lu service sockets bound)", total_sockets);
 
@@ -2079,27 +2079,35 @@ void services_thread(void* arg)
 		/* Main Server Loop */
 		while(!terminated) {
 			YIELD();
-			if(active_clients()==0 && protected_uint32_value(threads_pending_start)==0) {
-				if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
-					if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
-						lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
-						break;
-					}
-					if(startup->recycle_now==TRUE) {
-						lprintf(LOG_NOTICE,"0000 Recycle semaphore signaled");
-						startup->recycle_now=FALSE;
-						break;
-					}
+			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
+				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
+					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
+					break;
 				}
-				if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
-						&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
-					|| (startup->shutdown_now==TRUE
-						&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
-					startup->shutdown_now=FALSE;
-					terminated=TRUE;
+				if(startup->recycle_now==TRUE) {
+					lprintf(LOG_NOTICE,"0000 Recycle semaphore signaled");
+					startup->recycle_now=FALSE;
 					break;
 				}
 			}
+			if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
+					&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
+				|| (startup->shutdown_now==TRUE
+					&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
+				startup->shutdown_now=FALSE;
+				terminated=TRUE;
+				break;
+			}
+			if(((p = semfile_list_check(NULL, pause_semfiles)) != NULL
+					&& lprintf(LOG_INFO,"0000 Pause semaphore file (%s) detected", p))
+				|| (startup->paused
+					&& lprintf(LOG_INFO,"0000 Pause semaphore signaled"))) {
+				set_state(SERVER_PAUSED);
+				SLEEP(startup->sem_chk_freq * 1000);
+				continue;
+			}
+			/* signal caller that we've started up successfully */
+			set_state(SERVER_READY);
 
 #ifdef PREFER_POLL
 			/* Clear poll FDs where necessary (ie: when !SERVICE_OPT_FULL_ACCEPT) */
