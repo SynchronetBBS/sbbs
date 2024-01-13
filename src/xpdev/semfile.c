@@ -33,10 +33,14 @@
 /* date/time stamp (if the file exists) against the passed time stamp (t)	*/
 /* updating the time stamp to the latest dated semaphore file and returning	*/
 /* TRUE if any where newer than the initial value.							*/
+/* If the 't' parameter is NULL, only file existence is checked (not time).	*/
 /****************************************************************************/
 BOOL semfile_check(time_t* t, const char* fname)
 {
 	time_t	ft;
+
+	if(t == NULL)
+		return fexist(fname);
 
 	if(*t==0)	/* uninitialized */
 		*t=time(NULL);

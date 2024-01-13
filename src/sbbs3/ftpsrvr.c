@@ -86,6 +86,7 @@ static volatile time_t	uptime=0;
 static volatile ulong	served=0;
 static volatile BOOL	terminate_server=FALSE;
 static char 	*text[TOTAL_TEXT];
+static str_list_t pause_semfiles;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static link_list_t current_connections;
@@ -1151,6 +1152,7 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	char *estr = NULL;
 
 	if (!ssl_sync(&scfg, lprintf)) {
+		lprintf(LOG_CRIT, "!ssl_sync() failure trying to enable TLS support");
 		if (resp)
 			sockprintf(*sock, *sess, "431 TLS not available");
 		return FALSE;
@@ -1849,7 +1851,7 @@ static BOOL send_mlsx_entry(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned 
 		end += sprintf(end, "Perm=%s;", perm);
 	if (size != UINT64_MAX && (feats & MLSX_SIZE))
 		end += sprintf(end, "Size=%" PRIu64 ";", size);
-	if (modify != 0 && (feats & MLSX_MODIFY)) {
+	if (modify > 0 && (feats & MLSX_MODIFY)) {
 		t = *gmtime(&modify);
 		end += sprintf(end, "Modify=%04d%02d%02d%02d%02d%02d;",
 		    t.tm_year+1900, t.tm_mon+1, t.tm_mday,
@@ -2067,18 +2069,18 @@ static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client,
 	*p = 0;
 }
 
-static void get_owner_name(file_t *file, char *namestr)
+static char* get_owner_name(file_t *file, char *namestr, size_t size)
 {
 	char *p;
 
 	if (file) {
 		if (file->hdr.attr & MSG_ANONYMOUS)
-			strcpy(namestr, ANONYMOUS);
+			strlcpy(namestr, ANONYMOUS, size);
 		else
-			strcpy(namestr, file->from);
+			strlcpy(namestr, file->from, size);
 	}
 	else
-		strcpy(namestr, scfg.sys_id);
+		strlcpy(namestr, scfg.sys_id, size);
 
 	// Now ensure it's an RCHAR string.
 	for (p=namestr; *p; p++) {
@@ -2101,6 +2103,7 @@ static void get_owner_name(file_t *file, char *namestr)
 		else
 			*p = '_';
 	}
+	return namestr;
 }
 
 static void ctrl_thread(void* arg)
@@ -2109,6 +2112,7 @@ static void ctrl_thread(void* arg)
 	char		buf[512];
 	char		str[128];
 	char		uniq[33];
+	char		owner[33];
 	char*		cmd;
 	char*		p;
 	char*		np;
@@ -3616,98 +3620,116 @@ static void ctrl_thread(void* arg)
 						&& (cmd[3] == 'D' || strcmp(startup->index_file_name, mls_fname) == 0)) {
 					if (cmd[3] == 'T')
 						sockprintf(sock,sess, "250- Listing %s", startup->index_file_name);
-					get_owner_name(NULL, str);
+					get_owner_name(NULL, str, sizeof str);
 					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, NULL, 0, cmd[3] == 'T' ? mls_path : startup->index_file_name);
 					l++;
 				}
 				if(lib<0) { /* Root dir */
 					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing root");
-						get_owner_name(NULL, str);
+						get_owner_name(NULL, str, sizeof str);
 						strcpy(aliaspath, "/");
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, 0, aliaspath);
 						l++;
+						/* RFC 3659: "if no object is named ... MLST to send a one-line response, describing the current directory itself" */
 					}
 					else {
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "cdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, 0, "/");
-					}
-					lprintf(LOG_INFO,"%04d <%s> %s listing: root in %s mode", sock, user.alias, cmd, mode);
+						lprintf(LOG_INFO,"%04d <%s> %s listing: root in %s mode", sock, user.alias, cmd, mode);
 
-					/* QWK Packet */
-					if(startup->options&FTP_OPT_ALLOW_QWK) {
-						SAFEPRINTF(str,"%s.qwk",scfg.sys_id);
-						if (cmd[3] == 'D' || strcmp(str, mls_fname) == 0) {
-							if (cmd[3] == 'T')
-								sockprintf(sock,sess, "250- Listing %s", str);
-							get_owner_name(NULL, str);
-							send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, NULL, 0, cmd[3] == 'T' ? mls_path : str);
-							l++;
+						/* QWK Packet */
+						if(startup->options&FTP_OPT_ALLOW_QWK) {
+							SAFEPRINTF(str,"%s.qwk",scfg.sys_id);
+							if (cmd[3] == 'D' || strcmp(str, mls_fname) == 0) {
+								if (cmd[3] == 'T')
+									sockprintf(sock,sess, "250- Listing %s", str);
+								get_owner_name(NULL, owner, sizeof owner);
+								send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", flength(qwkfile), fdate(qwkfile), owner, NULL, 0, cmd[3] == 'T' ? mls_path : str);
+								l++;
+							}
 						}
-					}
 
-					/* File Aliases */
-					sprintf(aliasfile,"%sftpalias.cfg",scfg.ctrl_dir);
-					if((alias_fp=fopen(aliasfile,"r"))!=NULL) {
+						/* File Aliases */
+						sprintf(aliasfile,"%sftpalias.cfg",scfg.ctrl_dir);
+						if((alias_fp=fopen(aliasfile,"r"))!=NULL) {
 
-						while(!feof(alias_fp)) {
-							if(!fgets(aliasline,sizeof(aliasline),alias_fp))
-								break;
+							while(!feof(alias_fp)) {
+								if(!fgets(aliasline,sizeof(aliasline),alias_fp))
+									break;
 
-							alias_dir=FALSE;
+								alias_dir=FALSE;
 
-							p=aliasline;		/* alias pointer */
-							SKIP_WHITESPACE(p);
+								p=aliasline;		/* alias pointer */
+								SKIP_WHITESPACE(p);
 
-							if(*p==';')	/* comment */
-								continue;
-
-							tp=p;		/* terminator pointer */
-							FIND_WHITESPACE(tp);
-							if(*tp) *tp=0;
-
-							np=tp+1;	/* filename pointer */
-							SKIP_WHITESPACE(np);
-
-							tp=np;		/* terminator pointer */
-							FIND_WHITESPACE(tp);
-							if(*tp) *tp=0;
-
-							dp=tp+1;	/* description pointer */
-							SKIP_WHITESPACE(dp);
-							truncsp(dp);
-
-							if(stricmp(dp,BBS_HIDDEN_ALIAS)==0)
-								continue;
-
-							/* Virtual Path? */
-							aliaspath[0]=0;
-							if(!strnicmp(np,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH))) {
-								if((dir=getdir_from_vpath(&scfg, np+strlen(BBS_VIRTUAL_PATH), &user, &client, true))<0) {
-									lprintf(LOG_WARNING,"%04d <%s> !Invalid virtual path:%s",sock,user.alias,np);
-									continue; /* No access or invalid virtual path */
-								}
-								tp=strrchr(np,'/');
-								if(tp==NULL)
+								if(*p==';')	/* comment */
 									continue;
-								tp++;
-								if(*tp) {
-									SAFEPRINTF2(aliasfile,"%s%s",scfg.dir[dir]->path,tp);
-									np=aliasfile;
-									SAFEPRINTF3(aliaspath,"/%s/%s/%s", scfg.lib[scfg.dir[dir]->lib]->vdir, scfg.dir[dir]->vdir, tp);
+
+								tp=p;		/* terminator pointer */
+								FIND_WHITESPACE(tp);
+								if(*tp) *tp=0;
+
+								np=tp+1;	/* filename pointer */
+								SKIP_WHITESPACE(np);
+
+								tp=np;		/* terminator pointer */
+								FIND_WHITESPACE(tp);
+								if(*tp) *tp=0;
+
+								dp=tp+1;	/* description pointer */
+								SKIP_WHITESPACE(dp);
+								truncsp(dp);
+
+								if(stricmp(dp,BBS_HIDDEN_ALIAS)==0)
+									continue;
+
+								/* Virtual Path? */
+								aliaspath[0]=0;
+								if(!strnicmp(np,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH))) {
+									if((dir=getdir_from_vpath(&scfg, np+strlen(BBS_VIRTUAL_PATH), &user, &client, true))<0) {
+										lprintf(LOG_WARNING,"%04d <%s> !Invalid virtual path:%s",sock,user.alias,np);
+										continue; /* No access or invalid virtual path */
+									}
+									tp=strrchr(np,'/');
+									if(tp==NULL)
+										continue;
+									tp++;
+									if(*tp) {
+										SAFEPRINTF2(aliasfile,"%s%s",scfg.dir[dir]->path,tp);
+										np=aliasfile;
+										SAFEPRINTF3(aliaspath,"/%s/%s/%s", scfg.lib[scfg.dir[dir]->lib]->vdir, scfg.dir[dir]->vdir, tp);
+									}
+									else {
+										alias_dir=TRUE;
+										SAFEPRINTF2(aliaspath,"/%s/%s", scfg.lib[scfg.dir[dir]->lib]->vdir, scfg.dir[dir]->vdir);
+									}
+								}
+
+								if(!alias_dir && !fexist(np)) {
+									lprintf(LOG_WARNING,"%04d <%s> !Missing aliased file: %s",sock, user.alias, np);
+									continue;
+								}
+
+								get_unique(aliaspath, uniq);
+								if (cmd[3] == 'D') {
+									if (alias_dir==TRUE)
+										send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, /* modify_date: */0, /* owner: */scfg.lib[scfg.dir[dir]->lib]->vdir, uniq, 0, p);
+									else
+										send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", (uint64_t)flength(np), fdate(np), get_owner_name(NULL, owner, sizeof owner), uniq, 0, p);
 								}
 								else {
-									alias_dir=TRUE;
-									SAFEPRINTF2(aliaspath,"/%s/%s", scfg.lib[scfg.dir[dir]->lib]->vdir, scfg.dir[dir]->vdir);
+									if(strcmp(mls_fname, p) != 0)
+										continue;
+									if (alias_dir==TRUE)
+										send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, /* modify_date: */0, /* owner: */scfg.lib[scfg.dir[dir]->lib]->vdir, uniq, 0, aliaspath[0] ? aliaspath : mls_path);
+									else
+										send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", (uint64_t)flength(np), fdate(np), get_owner_name(NULL, owner, sizeof owner), uniq, 0, mls_path);
 								}
+								l++;
 							}
 
-							if(!alias_dir && !fexist(np)) {
-								lprintf(LOG_WARNING,"%04d <%s> !Missing aliased file: %s",sock, user.alias, np);
-								continue;
-							}
+							fclose(alias_fp);
 						}
-
-						fclose(alias_fp);
 					}
 
 					/* Library folders */
@@ -3719,20 +3741,20 @@ static void ctrl_thread(void* arg)
 						if (cmd[3] == 'T')
 							sockprintf(sock,sess, "250- Listing %s", scfg.lib[i]->vdir);
 						get_libperm(scfg.lib[i], &user, &client, permstr);
-						get_owner_name(NULL, str);
+						get_owner_name(NULL, str, sizeof str);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, 0, str, NULL, 0, cmd[3] == 'T' ? mls_path : scfg.lib[i]->vdir);
 						l++;
 					}
 				} else if(dir<0) {
 					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing %s", scfg.lib[lib]->vdir);
-						get_owner_name(NULL, str);
+						get_owner_name(NULL, str, sizeof str);
 						SAFEPRINTF(aliaspath, "/%s", scfg.lib[lib]->vdir);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, 0, str, NULL, 0, aliaspath);
 						l++;
 					}
 					if (cmd[3] == 'D') {
-						get_owner_name(NULL, str);
+						get_owner_name(NULL, str, sizeof str);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, 0, "/");
 						SAFEPRINTF(aliaspath, "/%s", scfg.lib[lib]->vdir);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "cdir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, NULL, 0, aliaspath);
@@ -3750,7 +3772,7 @@ static void ctrl_thread(void* arg)
 						if (cmd[3] == 'T')
 							sockprintf(sock,sess, "250- Listing %s", scfg.dir[i]->vdir);
 						get_dirperm(scfg.lib[lib], scfg.dir[i], &user, &client, permstr);
-						get_owner_name(NULL, str);
+						get_owner_name(NULL, str, sizeof str);
 						SAFEPRINTF2(aliaspath, "/%s/%s", scfg.lib[lib]->vdir, scfg.dir[i]->vdir);
 						get_unique(aliaspath, uniq);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", permstr, UINT64_MAX, 0, str, uniq, 0, cmd[3] == 'T' ? mls_path : scfg.dir[i]->vdir);
@@ -3762,7 +3784,7 @@ static void ctrl_thread(void* arg)
 
 					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing %s/%s",scfg.lib[lib]->vdir,scfg.dir[dir]->vdir);
-						get_owner_name(NULL, str);
+						get_owner_name(NULL, str, sizeof str);
 						SAFEPRINTF2(aliaspath, "/%s/%s", scfg.lib[lib]->vdir, scfg.dir[dir]->vdir);
 						get_unique(aliaspath, uniq);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", (startup->options&FTP_OPT_ALLOW_QWK) ? "elc" : "el", UINT64_MAX, 0, str, uniq, 0, aliaspath);
@@ -3770,7 +3792,7 @@ static void ctrl_thread(void* arg)
 					}
 					if (cmd[3] == 'D') {
 						get_libperm(scfg.lib[lib], &user, &client, permstr);
-						get_owner_name(NULL, str);
+						get_owner_name(NULL, str, sizeof str);
 						SAFEPRINTF(aliaspath, "/%s", scfg.lib[lib]->vdir);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "pdir", permstr, UINT64_MAX, 0, str, NULL, 0, aliaspath);
 						SAFEPRINTF2(aliaspath, "/%s/%s", scfg.lib[lib]->vdir, scfg.dir[dir]->vdir);
@@ -3793,7 +3815,7 @@ static void ctrl_thread(void* arg)
 						if (cmd[3] == 'T')
 							sockprintf(sock,sess, "250- Listing %s", p);
 						get_fileperm(scfg.lib[lib], scfg.dir[dir], &user, &client, f, permstr);
-						get_owner_name(f, str);
+						get_owner_name(f, str, sizeof str);
 						SAFEPRINTF3(aliaspath, "/%s/%s/%s", scfg.lib[lib]->vdir, scfg.dir[dir]->vdir, f->name);
 						get_unique(aliaspath, uniq);
 						f->size = f->cost;
@@ -4929,6 +4951,7 @@ static void cleanup(int code, int line)
 	free_cfg(&scfg);
 	free_text(text);
 
+	semfile_list_free(&pause_semfiles);
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 
@@ -5149,6 +5172,7 @@ void ftp_server(void* arg)
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
+		pause_semfiles=semfile_list_init(scfg.ctrl_dir,"pause", server_abbrev);
 		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
 		semfile_list_add(&recycle_semfiles,startup->ini_fname);
 		SAFEPRINTF(path,"%sftpsrvr.rec",scfg.ctrl_dir);	/* legacy */
@@ -5158,35 +5182,41 @@ void ftp_server(void* arg)
 			semfile_list_check(&initialized,shutdown_semfiles);
 		}
 
-		/* signal caller that we've started up successfully */
-		set_state(SERVER_READY);
-
 		lprintf(LOG_INFO,"FTP Server thread started");
 		mqtt_client_max(&mqtt, startup->max_clients);
 
 		while(ftp_set!=NULL && !terminate_server) {
 			YIELD();
-			if(protected_uint32_value(thread_count) <= 1) {
-				if(!(startup->options&FTP_OPT_NO_RECYCLE)) {
-					if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
-						lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
-						break;
-					}
-					if(startup->recycle_now==TRUE) {
-						lprintf(LOG_NOTICE,"0000 Recycle semaphore signaled");
-						startup->recycle_now=FALSE;
-						break;
-					}
+			if(!(startup->options&FTP_OPT_NO_RECYCLE)) {
+				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
+					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
+					break;
 				}
-				if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
-						&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
-					|| (startup->shutdown_now==TRUE
-						&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
-					startup->shutdown_now=FALSE;
-					terminate_server=TRUE;
+				if(startup->recycle_now==TRUE) {
+					lprintf(LOG_NOTICE,"0000 Recycle semaphore signaled");
+					startup->recycle_now=FALSE;
 					break;
 				}
 			}
+			if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
+					&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
+				|| (startup->shutdown_now==TRUE
+					&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
+				startup->shutdown_now=FALSE;
+				terminate_server=TRUE;
+				break;
+			}
+			if(((p = semfile_list_check(NULL, pause_semfiles)) != NULL
+					&& lprintf(LOG_INFO, "0000 Pause semaphore file (%s) detected", p))
+				|| (startup->paused
+					&& lprintf(LOG_INFO, "0000 Pause semaphore signaled"))) {
+				set_state(SERVER_PAUSED);
+				SLEEP(startup->sem_chk_freq * 1000);
+				continue;
+			}
+			/* signal caller that we've started up successfully */
+			set_state(SERVER_READY);
+
 
 			if(ftp_set==NULL || terminate_server)	/* terminated */
 				break;

@@ -182,10 +182,7 @@ void node_menu()
 		prep_dir(cfg.ctrl_dir, cfg.node_dir, sizeof(cfg.node_dir));
 
 		load_node_cfg(&cfg,error, sizeof(error));
-		if (cfg.node_num != i + 1) { 	/* Node number isn't right? */
-			cfg.node_num = i + 1;		/* so fix it */
-			save_node_cfg(&cfg); /* and write it back */
-		}
+		cfg.node_num = i + 1;
 		node_cfg();
 
 		free_node_cfg(&cfg);

@@ -324,6 +324,7 @@ static const char* server_state_str(enum server_state state)
 		case SERVER_STOPPED: return "Down";
 		case SERVER_INIT: return "Initializing";
 		case SERVER_READY: return "Listening";
+		case SERVER_PAUSED: return "Paused";
 		case SERVER_RELOADING: return "Recycling";
 		case SERVER_STOPPING: return "Terminating";
 		default: return "Unknown state";

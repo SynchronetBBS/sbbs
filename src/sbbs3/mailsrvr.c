@@ -89,6 +89,7 @@ static volatile BOOL	terminate_server=FALSE;
 static volatile BOOL	terminate_sendmail=FALSE;
 static sem_t	sendmail_wakeup_sem;
 static volatile time_t	uptime;
+static str_list_t pause_semfiles;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static int		mailproc_count;
@@ -5887,6 +5888,7 @@ static void cleanup(int code)
 	}
 	free_cfg(&scfg);
 
+	semfile_list_free(&pause_semfiles);
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 
@@ -6180,7 +6182,11 @@ void mail_server(void* arg)
 		lprintf(LOG_DEBUG,"Maximum inactivity: %u seconds",startup->max_inactivity);
 
 		update_clients();
-		ssl_sync(&scfg, lprintf);
+		if(!ssl_sync(&scfg, lprintf)) {
+			lprintf(LOG_CRIT, "!ssl_sync() failure trying to enable TLS support");
+			cleanup(1);
+			return;
+		}
 
 		/* open a socket and wait for a client */
 		mail_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
@@ -6228,6 +6234,7 @@ void mail_server(void* arg)
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles=semfile_list_init(scfg.ctrl_dir,"shutdown", server_abbrev);
+		pause_semfiles=semfile_list_init(scfg.ctrl_dir,"pause", server_abbrev);
 		recycle_semfiles=semfile_list_init(scfg.ctrl_dir,"recycle", server_abbrev);
 		semfile_list_add(&recycle_semfiles,startup->ini_fname);
 		SAFEPRINTF(path,"%smailsrvr.rec",scfg.ctrl_dir);	/* legacy */
@@ -6241,36 +6248,42 @@ void mail_server(void* arg)
 		pthread_mutex_init(&savemsg_mutex, NULL);
 		savemsg_mutex_created = true;
 
-		/* signal caller that we've started up successfully */
-		set_state(SERVER_READY);
-
 		lprintf(LOG_INFO,"Mail Server thread started");
 		mqtt_client_max(&mqtt, startup->max_clients);
 
 		while(!terminated && !terminate_server) {
 			YIELD();
 
-			if(protected_uint32_value(thread_count) <= (unsigned int)(1+(sendmail_running?1:0))) {
-				if(!(startup->options&MAIL_OPT_NO_RECYCLE)) {
-					if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
-						lprintf(LOG_INFO,"Recycle semaphore file (%s) detected",p);
-						break;
-					}
-					if(startup->recycle_now==TRUE) {
-						lprintf(LOG_NOTICE,"Recycle semaphore signaled");
-						startup->recycle_now=FALSE;
-						break;
-					}
+			if(!(startup->options&MAIL_OPT_NO_RECYCLE)) {
+				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
+					lprintf(LOG_INFO,"Recycle semaphore file (%s) detected",p);
+					break;
 				}
-				if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
-						&& lprintf(LOG_INFO,"Shutdown semaphore file (%s) detected",p))
-					|| (startup->shutdown_now==TRUE
-						&& lprintf(LOG_INFO,"Shutdown semaphore signaled"))) {
-					startup->shutdown_now=FALSE;
-					terminate_server=TRUE;
+				if(startup->recycle_now==TRUE) {
+					lprintf(LOG_NOTICE,"Recycle semaphore signaled");
+					startup->recycle_now=FALSE;
 					break;
 				}
 			}
+			if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
+					&& lprintf(LOG_INFO,"Shutdown semaphore file (%s) detected",p))
+				|| (startup->shutdown_now==TRUE
+					&& lprintf(LOG_INFO,"Shutdown semaphore signaled"))) {
+				startup->shutdown_now=FALSE;
+				terminate_server=TRUE;
+				break;
+			}
+			if(((p = semfile_list_check(NULL, pause_semfiles)) != NULL
+					&& lprintf(LOG_INFO, "Pause semaphore file (%s) detected", p))
+				|| (startup->paused
+					&& lprintf(LOG_INFO, "Pause semaphore signaled"))) {
+				set_state(SERVER_PAUSED);
+				SLEEP(startup->sem_chk_freq * 1000);
+				continue;
+			}
+			/* signal caller that we've started up successfully */
+			set_state(SERVER_READY);
+
 
 			/* now wait for connection */
 			client_addr_len = sizeof(client_addr);

@@ -108,6 +108,7 @@ typedef struct {
 	char	host_name[128]; \
 	BOOL	recycle_now; \
 	BOOL	shutdown_now; \
+	BOOL	paused; \
 	int		sem_chk_freq; \
 	uint	bind_retry_count; \
 	uint	bind_retry_delay; \
