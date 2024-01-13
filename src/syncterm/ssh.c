@@ -477,7 +477,6 @@ add_public_key(void *vpriv)
 	 *       Best way to do this is a channel property that indicates
 	 *       what type of channel it is.
 	 */
-	SLEEP(1000);
 	pthread_mutex_lock(&ssh_tx_mutex);
 	pthread_mutex_lock(&ssh_mutex);
 	FlushData(ssh_session);
@@ -921,7 +920,8 @@ ssh_connect(struct bbslist *bbs)
 
 	_beginthread(ssh_output_thread, 0, NULL);
 	_beginthread(ssh_input_thread, 0, NULL);
-	_beginthread(add_public_key, 0, pubkey);
+	if (bbs->sftp_public_key)
+		_beginthread(add_public_key, 0, pubkey);
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL); // TODO: Why is this called twice?

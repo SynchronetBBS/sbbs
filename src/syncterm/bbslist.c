@@ -784,6 +784,7 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	else {
 		entry->has_fingerprint = false;
 	}
+	entry->sftp_public_key = iniGetBool(section, NULL, "SFTPPublicKey", true);
 	iniGetString(section, NULL, "DownloadPath", home, entry->dldir);
 	iniGetString(section, NULL, "UploadPath", home, entry->uldir);
 
@@ -1051,7 +1052,7 @@ get_rip_version(int oldver, int *changed)
 int
 edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault)
 {
-	char       opt[21][69]; /* 21=Holds number of menu items, 80=Number of columns */
+	char       opt[22][69]; /* 21=Holds number of menu items, 80=Number of columns */
 	char      *opts[(sizeof(opt) / sizeof(opt[0])) + 1];
 	int        changed = 0;
 	int        copt = 0, i, j;
@@ -1137,6 +1138,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		sprintf(opt[i++], "RIP               %s", rip_versions[item->rip]);
 		sprintf(opt[i++], "Force LCF Mode    %s", item->force_lcf ? "Yes" : "No");
 		sprintf(opt[i++], "Yellow is Yellow  %s", item->yellow_is_yellow ? "Yes" : "No");
+		sprintf(opt[i++], "SFTP Public Key   %s", item->sftp_public_key ? "Yes" : "No");
 		opt[i][0] = 0;
 		uifc.changes = 0;
 
@@ -1670,6 +1672,11 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				changed = 1;
 				iniSetBool(&inifile, itemname, "YellowIsYellow", item->yellow_is_yellow, &ini_style);
 				break;
+			case 20:
+				item->sftp_public_key = !item->sftp_public_key;
+				changed = 1;
+				iniSetBool(&inifile, itemname, "SFTPPublicKey", item->sftp_public_key, &ini_style);
+				break;
 		}
 		if (uifc.changes)
 			changed = 1;
@@ -1733,6 +1740,7 @@ add_bbs(char *listpath, struct bbslist *bbs)
 		}
 		iniSetString(&inifile, bbs->name, "SSHFingerprint", fp, &ini_style);
 	}
+	iniSetBool(&inifile, bbs->name, "SFTPPublicKey", bbs->sftp_public_key, &ini_style);
 	if ((listfile = fopen(listpath, "w")) != NULL) {
 		iniWriteFile(listfile, inifile);
 		fclose(listfile);
