@@ -472,12 +472,22 @@ add_public_key(void *vpriv)
 	int new_sftp_channel = -1;
 	char *priv = vpriv;
 
-	/*
-	 * TODO: We need to wait until the session is established.
-	 *       Best way to do this is a channel property that indicates
-	 *       what type of channel it is.
-	 */
-	SLEEP(1000);
+	// Wait for at most five seconds for channel to be fully active
+	active = 0;
+	for (unsigned sleep_count = 0; sleep_count < 500; sleep_count++) {
+		pthread_mutex_lock(&ssh_mutex);
+		if (ssh_channel != -1) {
+			status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel);
+			if (cryptStatusOK(status))
+				status = cl.GetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, &active);
+		}
+		pthread_mutex_unlock(&ssh_mutex);
+		if (cryptStatusOK(status) && active)
+			break;
+		SLEEP(10);
+	};
+	if (!active)
+		return;
 	pthread_mutex_lock(&ssh_tx_mutex);
 	pthread_mutex_lock(&ssh_mutex);
 	FlushData(ssh_session);
@@ -525,11 +535,21 @@ add_public_key(void *vpriv)
 		pthread_mutex_unlock(&ssh_mutex);
 		pthread_mutex_unlock(&ssh_tx_mutex);
 		active = 0;
-		do {
-			status = cl.GetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, &active);
-			if (!active)
-				SLEEP(1);
-		} while (!active);
+		for (unsigned sleep_count = 0; sleep_count < 500; sleep_count++) {
+			pthread_mutex_lock(&ssh_mutex);
+			status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, new_sftp_channel);
+			if (cryptStatusOK(status))
+				status = cl.GetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, &active);
+			pthread_mutex_unlock(&ssh_mutex);
+			if (cryptStatusOK(status) && active)
+				break;
+			SLEEP(10);
+		}
+		if (!active) {
+			close_sftp_channel(sftp_channel);
+			free(priv);
+			return;
+		}
 		pthread_mutex_lock(&ssh_tx_mutex);
 		pthread_mutex_lock(&ssh_mutex);
 		sftp_channel = new_sftp_channel;
