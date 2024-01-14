@@ -1,0 +1,11 @@
+--- session/ssh2_id.c.orig	2024-01-14 12:27:01.156907000 -0500
++++ session/ssh2_id.c	2024-01-14 12:26:48.539941000 -0500
+@@ -901,7 +901,7 @@
+ 		versionStringLength = length - startOffset;
+ 		}
+ 	if( cryptStatusError( status ) || \
+-		!isShortIntegerRangeMin( versionStringLength, 3 ) )
++		!isShortIntegerRangeMin( versionStringLength, 2 ) )
+ 		{
+ 		/* We need at least "-x.y" after the initial ID string, we can't 
+ 		   require any more than this because of CuteFTP (see note below).
