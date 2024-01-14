@@ -37,8 +37,119 @@
  CHECK_RETVAL STDC_NONNULL_ARG( ( 1 ) ) \
  int sendChannelOpen( INOUT_PTR SESSION_INFO *sessionInfoPtr );
  
---- session/ssh2_msgcli.c.orig	2024-01-12 23:36:48.182835000 -0500
-+++ session/ssh2_msgcli.c	2024-01-12 23:47:34.282817000 -0500
+--- session/sess_rd.c.orig	2023-05-06 19:14:10.000000000 -0400
++++ session/sess_rd.c	2024-01-13 01:40:38.360167000 -0500
+@@ -739,7 +739,7 @@
+ 		/* Remember how much we've copied and, if we've satisfied the 
+ 		   request, exit */
+ 		*bytesCopied = bytesToCopy;
+-		if( bytesToCopy >= length )
++		if( bytesToCopy >= 0 )
+ 			{
+ 			ENSURES( sanityCheckSessionRead( sessionInfoPtr ) );
+ 
+@@ -929,6 +929,22 @@
+ 			dataPtr += byteCount;
+ 			dataLength -= byteCount;
+ 			}
++		/*
++		 * SyncTERM hack for SSH channels... after a full packet has been received, *and*
++		 * some data has been received, always return.
++		 *
++		 * This ensures that we can never return data from two different channels in the
++		 * same cryptPopData() response.
++		 */
++		if (*bytesCopied > 0) {
++			if (sessionInfoPtr->type == CRYPT_SESSION_SSH || sessionInfoPtr->type == CRYPT_SESSION_SSH_SERVER)
++				{
++				if (sessionInfoPtr->pendingPacketLength <= 0)
++					{
++					status = OK_SPECIAL;
++					}
++				}
++		}
+ 		if( status == OK_SPECIAL )
+ 			{
+ 			/* That was the last of the data, exit */
+--- session/ssh2_msg.c.orig	2024-01-13 01:45:16.168554000 -0500
++++ session/ssh2_msg.c	2024-01-13 01:46:42.971186000 -0500
+@@ -319,7 +319,10 @@
+ 					}
+ 				}
+ 			break;
+-
++		case SSH_MSG_CHANNEL_OPEN_FAILURE:
++			return processChannelOpenFailure(sessionInfoPtr, stream);
++		case SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
++			return processChannelOpenConfirmation(sessionInfoPtr, stream);
+ 		default:
+ 			{
+ #ifdef USE_ERRMSGS
+@@ -444,10 +447,18 @@
+ 			return( OK_SPECIAL );
+ 
+ 		case SSH_MSG_CHANNEL_WINDOW_ADJUST:
++			{
++			int value;
+ 			/* Another noop-equivalent (but a very performance-affecting
+ 			   one) */
+ 			DEBUG_PUTS(( "Processing window adjust message" ));
++			status = getChannelExtAttribute(sessionInfoPtr, SSH_ATTRIBUTE_NEEDWINDOW, &value);
++			if (cryptStatusOK(status) && value)
++				{
++				status = setChannelExtAttribute(sessionInfoPtr, SSH_ATTRIBUTE_NEEDWINDOW, FALSE);
++				}
+ 			return( OK_SPECIAL );
++			}
+ 
+ 		case SSH_MSG_CHANNEL_EOF:
+ 			/* According to the SSH docs the EOF packet is a courtesy 
+--- session/ssh2_channel.c.orig	2024-01-13 02:08:47.802275000 -0500
++++ session/ssh2_channel.c	2024-01-13 02:08:53.483105000 -0500
+@@ -25,6 +25,7 @@
+ #define CHANNEL_FLAG_ACTIVE		0x01	/* Channel is active */
+ #define CHANNEL_FLAG_WRITECLOSED 0x02	/* Write-side of ch.closed */
+ #define CHANNEL_FLAG_READCLOSED 0x04	/* Read-side of ch.closed */
++#define CHANNEL_FLAG_NEEDWINDOW 0x08	/* Needs open session */
+ 
+ /* Per-channel information.  SSH channel IDs are 32-bit/4 byte data values
+    and can be reused during sessions so we provide our own guaranteed-unique
+@@ -506,7 +507,7 @@
+ 		case CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE:
+ 			if( isNullChannel( writeChannelInfoPtr ) )
+ 				return( CRYPT_ERROR_NOTFOUND );
+-			*value = isActiveChannel( writeChannelInfoPtr ) ? TRUE : FALSE;
++			*value = isActiveChannel( writeChannelInfoPtr ) ? (writeChannelInfoPtr->flags & CHANNEL_FLAG_NEEDWINDOW ? FALSE : TRUE) : FALSE;
+ 			return( CRYPT_OK );
+ 
+ 		case CRYPT_SESSINFO_SSH_CHANNEL_OPEN:
+@@ -629,6 +630,10 @@
+ 		case SSH_ATTRIBUTE_WINDOWSIZE:
+ 			*value = channelInfoPtr->windowSize;
+ 			return( CRYPT_OK );
++
++		case SSH_ATTRIBUTE_NEEDWINDOW:
++			*value = (channelInfoPtr->flags & CHANNEL_FLAG_NEEDWINDOW) ? TRUE : FALSE;
++			return( CRYPT_OK );
+ 		}
+ 
+ 	retIntError();
+@@ -761,6 +766,13 @@
+ 		case SSH_ATTRIBUTE_ALTCHANNELNO:
+ 			channelInfoPtr->writeChannelNo = value;
+ 			return( CRYPT_OK );
++
++		case SSH_ATTRIBUTE_NEEDWINDOW:
++			if (value)
++				channelInfoPtr->flags |= (CHANNEL_FLAG_NEEDWINDOW);
++			else
++				channelInfoPtr->flags &= ~(CHANNEL_FLAG_NEEDWINDOW);
++			return( CRYPT_OK );
+ 		}
+ 
+ 	retIntError();
+--- session/ssh2_msgcli.c.orig	2024-01-14 13:50:16.921501000 -0500
++++ session/ssh2_msgcli.c	2024-01-14 13:50:34.230994000 -0500
 @@ -27,13 +27,6 @@
  			   OPENREQUEST_CHANNELONLY, OPENREQUEST_SESSION,
  			   OPENREQUEST_LAST } OPENREQUEST_TYPE;
@@ -157,7 +268,7 @@
 -	sMemDisconnect( &stream );
 -	if( cryptStatusError( status ) )
 +	// Find channel by number...
-+	if (cryptStatusOK(status))
++	if (!cryptStatusError(status))
 +		status = selectChannel( sessionInfoPtr, currentChannelNo, CHANNEL_NONE );
 +	if( cryptStatusError( status ) ) {
  		return( status );
@@ -222,15 +333,24 @@
  	if( !cryptStatusError( status ) && \
  		!memcmp( buffer, "\x00\x00\x00\x00", UINT32_SIZE ) )
  		{
-@@ -721,7 +647,6 @@
+@@ -720,8 +646,15 @@
+ 		DEBUG_PRINT(( "Peer advertised window size 0 in channel open, will "
  					  "wait for window adjust in order to send data.\n" ));
  		waitforWindow = TRUE;
++		status = setChannelExtAttribute(sessionInfoPtr, SSH_ATTRIBUTE_NEEDWINDOW, TRUE);
++		if( cryptStatusError( status ) )
++			{
++			retExt( CRYPT_ERROR_INTERNAL,
++					( CRYPT_ERROR_INTERNAL, SESSION_ERRINFO,
++					  "Unable to set NEEDWINDOW for "
++					  "channel %lX", channelNo ) );
++			}
  		}
 -	sMemDisconnect( &stream );
  	if( cryptStatusError( status ) )
  		{
  		retExt( CRYPT_ERROR_BADDATA,
-@@ -757,63 +682,193 @@
+@@ -757,63 +690,178 @@
  											 windowSize );
  			}
  		}
@@ -312,21 +432,6 @@
 +				retExt( CRYPT_ERROR_BADDATA,
 +						( CRYPT_ERROR_BADDATA, SESSION_ERRINFO,
 +						  "Invalid channel information in window adjust for "
-+						  "channel %lX", channelNo ) );
-+				}
-+			}
-+		else
-+			{
-+			/*
-+			 * At this point, we're in the data-read state machine, so just note we need
-+			 * to send the session open request when the window opens up
-+			 */
-+			status = setChannelExtAttribute(sessionInfoPtr, SSH_ATTRIBUTE_NEEDWINDOW, TRUE);
-+			if( cryptStatusError( status ) )
-+				{
-+				retExt( CRYPT_ERROR_INTERNAL,
-+						( CRYPT_ERROR_INTERNAL, SESSION_ERRINFO,
-+						  "Unable to set NEEDWINDOW for "
 +						  "channel %lX", channelNo ) );
 +				}
 +			}
@@ -462,114 +567,3 @@
 +	return (CRYPT_ENVELOPE_RESOURCE);
  	}
  #endif /* USE_SSH */
---- session/sess_rd.c.orig	2023-05-06 19:14:10.000000000 -0400
-+++ session/sess_rd.c	2024-01-13 01:40:38.360167000 -0500
-@@ -739,7 +739,7 @@
- 		/* Remember how much we've copied and, if we've satisfied the 
- 		   request, exit */
- 		*bytesCopied = bytesToCopy;
--		if( bytesToCopy >= length )
-+		if( bytesToCopy >= 0 )
- 			{
- 			ENSURES( sanityCheckSessionRead( sessionInfoPtr ) );
- 
-@@ -929,6 +929,22 @@
- 			dataPtr += byteCount;
- 			dataLength -= byteCount;
- 			}
-+		/*
-+		 * SyncTERM hack for SSH channels... after a full packet has been received, *and*
-+		 * some data has been received, always return.
-+		 *
-+		 * This ensures that we can never return data from two different channels in the
-+		 * same cryptPopData() response.
-+		 */
-+		if (*bytesCopied > 0) {
-+			if (sessionInfoPtr->type == CRYPT_SESSION_SSH || sessionInfoPtr->type == CRYPT_SESSION_SSH_SERVER)
-+				{
-+				if (sessionInfoPtr->pendingPacketLength <= 0)
-+					{
-+					status = OK_SPECIAL;
-+					}
-+				}
-+		}
- 		if( status == OK_SPECIAL )
- 			{
- 			/* That was the last of the data, exit */
---- session/ssh2_msg.c.orig	2024-01-13 01:45:16.168554000 -0500
-+++ session/ssh2_msg.c	2024-01-13 01:46:42.971186000 -0500
-@@ -319,7 +319,10 @@
- 					}
- 				}
- 			break;
--
-+		case SSH_MSG_CHANNEL_OPEN_FAILURE:
-+			return processChannelOpenFailure(sessionInfoPtr, stream);
-+		case SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
-+			return processChannelOpenConfirmation(sessionInfoPtr, stream);
- 		default:
- 			{
- #ifdef USE_ERRMSGS
-@@ -444,10 +447,18 @@
- 			return( OK_SPECIAL );
- 
- 		case SSH_MSG_CHANNEL_WINDOW_ADJUST:
-+			{
-+			int value;
- 			/* Another noop-equivalent (but a very performance-affecting
- 			   one) */
- 			DEBUG_PUTS(( "Processing window adjust message" ));
-+			status = getChannelExtAttribute(sessionInfoPtr, SSH_ATTRIBUTE_NEEDWINDOW, &value);
-+			if (cryptStatusOK(status) && value)
-+				{
-+				status = setChannelExtAttribute(sessionInfoPtr, SSH_ATTRIBUTE_NEEDWINDOW, FALSE);
-+				}
- 			return( OK_SPECIAL );
-+			}
- 
- 		case SSH_MSG_CHANNEL_EOF:
- 			/* According to the SSH docs the EOF packet is a courtesy 
---- session/ssh2_channel.c.orig	2024-01-13 02:08:47.802275000 -0500
-+++ session/ssh2_channel.c	2024-01-13 02:08:53.483105000 -0500
-@@ -25,6 +25,7 @@
- #define CHANNEL_FLAG_ACTIVE		0x01	/* Channel is active */
- #define CHANNEL_FLAG_WRITECLOSED 0x02	/* Write-side of ch.closed */
- #define CHANNEL_FLAG_READCLOSED 0x04	/* Read-side of ch.closed */
-+#define CHANNEL_FLAG_NEEDWINDOW 0x08	/* Needs open session */
- 
- /* Per-channel information.  SSH channel IDs are 32-bit/4 byte data values
-    and can be reused during sessions so we provide our own guaranteed-unique
-@@ -506,7 +507,7 @@
- 		case CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE:
- 			if( isNullChannel( writeChannelInfoPtr ) )
- 				return( CRYPT_ERROR_NOTFOUND );
--			*value = isActiveChannel( writeChannelInfoPtr ) ? TRUE : FALSE;
-+			*value = isActiveChannel( writeChannelInfoPtr ) ? (writeChannelInfoPtr->flags & CHANNEL_FLAG_NEEDWINDOW ? FALSE : TRUE) : FALSE;
- 			return( CRYPT_OK );
- 
- 		case CRYPT_SESSINFO_SSH_CHANNEL_OPEN:
-@@ -629,6 +630,10 @@
- 		case SSH_ATTRIBUTE_WINDOWSIZE:
- 			*value = channelInfoPtr->windowSize;
- 			return( CRYPT_OK );
-+
-+		case SSH_ATTRIBUTE_NEEDWINDOW:
-+			*value = (channelInfoPtr->flags & CHANNEL_FLAG_NEEDWINDOW) ? TRUE : FALSE;
-+			return( CRYPT_OK );
- 		}
- 
- 	retIntError();
-@@ -761,6 +766,13 @@
- 		case SSH_ATTRIBUTE_ALTCHANNELNO:
- 			channelInfoPtr->writeChannelNo = value;
- 			return( CRYPT_OK );
-+
-+		case SSH_ATTRIBUTE_NEEDWINDOW:
-+			if (value)
-+				channelInfoPtr->flags |= (CHANNEL_FLAG_NEEDWINDOW);
-+			else
-+				channelInfoPtr->flags &= ~(CHANNEL_FLAG_NEEDWINDOW);
-+			return( CRYPT_OK );
- 		}
- 
- 	retIntError();

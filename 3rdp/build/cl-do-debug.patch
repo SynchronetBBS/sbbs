@@ -127,7 +127,7 @@
  		return( CRYPT_ERROR_NOTFOUND );
  	if( !isActiveChannel( channelInfoPtr ) && channelType != CHANNEL_NONE )
  		return( CRYPT_ERROR_NOTINITED );
-+if (channelType != CHANNEL_WRITE) fprintf(stderr, "Select channel %d (%d) for %s\n", channelInfoPtr->channelID, channelNo, channelType == CHANNEL_READ ? "Read" : (channelType == CHANNEL_WRITE ? "Write" : (channelType == CHANNEL_BOTH ? "Both" : (channelType == CHANNEL_NONE ? "None" : "Unknown!"))));
++fprintf(stderr, "Select channel %d (%d) for %s\n", channelInfoPtr->channelID, channelNo, channelType == CHANNEL_READ ? "Read" : (channelType == CHANNEL_WRITE ? "Write" : (channelType == CHANNEL_BOTH ? "Both" : (channelType == CHANNEL_NONE ? "None" : "Unknown!"))));
  	switch( channelType )
  		{
  		case CHANNEL_READ:
