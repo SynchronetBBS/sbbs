@@ -13,7 +13,7 @@
  	   no more channels left to close */
  	status = deleteChannel( sessionInfoPtr, channelNo, channelType,
  							closeLastChannel  );
-+	if( getChannelStatusByChannelNo( sessionInfoPtr, channelNo ) != CHANNEL_NONE )
++	if( getChannelStatusByChannelNo( sessionInfoPtr, channelNo ) == CHANNEL_NONE )
 +		return CRYPT_OK;
  	if( cryptStatusError( status ) )
  		{
