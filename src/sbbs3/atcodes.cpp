@@ -938,6 +938,9 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	/* LASTCALL */
 
+	if(strcmp(sp, "NODE_USER") == 0)
+		return thisnode.misc&NODE_ANON ? text[UNKNOWN_USER] : useron.alias;
+
 	if(!strncmp(sp,"NODE",4)) {
 		i=atoi(sp+4);
 		if(i && i<=cfg.sys_nodes) {
@@ -956,9 +959,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if(!strcmp(sp,"USER") || !strcmp(sp,"ALIAS") || !strcmp(sp,"NAME"))
 		return(useron.alias);
-
-	if(strcmp(sp, "NODE_USER") == 0)
-		return thisnode.misc&NODE_ANON ? text[UNKNOWN_USER] : useron.alias;
 
 	if(!strcmp(sp,"FIRST")) {
 		safe_snprintf(str,maxlen,"%s",useron.alias);
