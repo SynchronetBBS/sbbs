@@ -121,9 +121,9 @@
  						 -D__powerpc__ -DCONFIG_DATA_BIGENDIAN
  
  target-vxworks-ppc-gnu-2:
---- session/ssh2_channel.c.orig	2024-01-11 20:26:11.420975000 -0500
-+++ session/ssh2_channel.c	2024-01-11 20:28:39.094202000 -0500
-@@ -844,6 +844,7 @@
+--- session/ssh2_channel.c.orig	2024-01-14 18:46:10.151945000 -0500
++++ session/ssh2_channel.c	2024-01-14 18:52:42.636973000 -0500
+@@ -858,6 +858,7 @@
  		return( CRYPT_ERROR_NOTFOUND );
  	if( !isActiveChannel( channelInfoPtr ) && channelType != CHANNEL_NONE )
  		return( CRYPT_ERROR_NOTINITED );
@@ -131,3 +131,11 @@
  	switch( channelType )
  		{
  		case CHANNEL_READ:
+@@ -1066,6 +1067,7 @@
+ 								 channelInfoPtr->channelID ) ? \
+ 				CRYPT_OK : OK_SPECIAL );
+ 		}
++fprintf(stderr, "Deleting channel info %d (%d)\n", channelID, channelNo);
+ 	deleteSessionInfo( sessionInfoPtr, attributeListPtr );
+ 
+ 	/* If we've deleted the current channel, select a null channel until a
