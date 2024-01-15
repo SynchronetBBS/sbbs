@@ -6628,7 +6628,7 @@ void http_session_thread(void* arg)
 		}
 #endif
 		if (do_cryptInit(lprintf)) {
-			HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY), &session, "disabling certificate verification");
+			HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_MINVER_TLS13 | CRYPT_TLSOPTION_DISABLE_CERTVERIFY), &session, "disabling certificate verification");
 			HANDLE_CRYPT_CALL(add_private_key(&scfg, lprintf, session.tls_sess), &session, "setting private key");
 		}
 		BOOL nodelay=TRUE;
