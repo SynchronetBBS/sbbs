@@ -43,7 +43,6 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 {
 	char	str[256],str2[256],done=0,domsg=1
 			,*p;
-	char	fmt[256];
 	char 	tmp[512];
 	int		i;
 	uint32_t u,v;
@@ -344,17 +343,13 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				msg.hdr.number=msg.idx.number;
 				smb_getmsgidx(&smb,&msg);
 
-				const char* text_str;
+				enum text text_num;
 				if(!stricmp(str2,str))		/* Reply to sender */
-					text_str = text[Regarding];
+					text_num = Regarding;
 				else						/* Reply to other */
-					text_str = text[RegardingByOn];
-				expand_atcodes(text_str, fmt, sizeof fmt, &msg);
-				if(strcmp(text_str, fmt) != 0)
-					SAFECOPY(str2, fmt);
-				else
-					SAFEPRINTF3(str2, fmt, msghdr_field(&msg, msg.subj), msghdr_field(&msg, msg.from, tmp)
-						,timestr(msg.hdr.when_written.time));
+					text_num = RegardingByOn;
+				SAFECOPY(str2, format_text(text_num, msghdr_field(&msg, msg.subj), msghdr_field(&msg, msg.from, tmp)
+						,timestr(msg.hdr.when_written.time)));
 
 				p=strrchr(str,'@');
 				if(p) { 							/* name @addr */

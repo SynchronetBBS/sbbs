@@ -16,7 +16,7 @@ extern
 #endif
 const char* const text_id[];
 
-enum {
+enum text {
 	 MsgSubj
 	,MsgAttr
 	,MsgTo
