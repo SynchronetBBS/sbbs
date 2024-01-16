@@ -690,7 +690,7 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 					else if(ERROR_VALUE==EPIPE)
 						lprintf(LOG_NOTICE,"%04d Unable to send to peer",session->socket);
 #endif
-					else
+					else if(session->socket != INVALID_SOCKET)
 						lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",session->socket,ERROR_VALUE);
 					*failed=TRUE;
 					return(sent);
