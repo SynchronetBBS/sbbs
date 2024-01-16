@@ -745,11 +745,17 @@ static char* server_host_name(void)
 
 static void set_state(enum server_state state)
 {
+	static int curr_state;
+
+	if(state == curr_state)
+		return;
+
 	if(startup != NULL) {
 		if(startup->set_state != NULL)
 			startup->set_state(startup->cbdata, state);
 		mqtt_server_state(&mqtt, state);
 	}
+	curr_state = state;
 }
 
 static void update_clients(void)
