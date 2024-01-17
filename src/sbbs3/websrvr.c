@@ -690,7 +690,7 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, BO
 					else if(ERROR_VALUE==EPIPE)
 						lprintf(LOG_NOTICE,"%04d Unable to send to peer",session->socket);
 #endif
-					else
+					else if(session->socket != INVALID_SOCKET)
 						lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",session->socket,ERROR_VALUE);
 					*failed=TRUE;
 					return(sent);
@@ -745,11 +745,17 @@ static char* server_host_name(void)
 
 static void set_state(enum server_state state)
 {
+	static int curr_state;
+
+	if(state == curr_state)
+		return;
+
 	if(startup != NULL) {
 		if(startup->set_state != NULL)
 			startup->set_state(startup->cbdata, state);
 		mqtt_server_state(&mqtt, state);
 	}
+	curr_state = state;
 }
 
 static void update_clients(void)

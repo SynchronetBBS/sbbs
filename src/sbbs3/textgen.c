@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 	fputs("\"C\"\n", text_h);
 	fputs("#endif\n", text_h);
 	fputs("const char* const text_id[];\n\n", text_h);
-	fputs("enum {\n",text_h);
+	fputs("enum text {\n",text_h);
 
 	if(argc > 2)
 		p = argv[2];

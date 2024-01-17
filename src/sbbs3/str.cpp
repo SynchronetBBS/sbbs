@@ -123,6 +123,30 @@ bool sbbs_t::load_user_text(void)
 	return replace_text(path);
 }
 
+char* sbbs_t::format_text(enum text num, ...)
+{
+	expand_atcodes(text[num], format_text_buf, sizeof format_text_buf, /* remsg: */NULL);
+	if(strcmp(text[num], format_text_buf) == 0) { // No @-codes expanded
+		va_list args;
+		va_start(args, num);
+		vsnprintf(format_text_buf, sizeof format_text_buf, text[num], args);
+		va_end(args);
+	}
+	return format_text_buf;
+}
+
+char* sbbs_t::format_text(enum text num, smbmsg_t* remsg, ...)
+{
+	expand_atcodes(text[num], format_text_buf, sizeof format_text_buf, remsg);
+	if(strcmp(text[num], format_text_buf) == 0) { // No @-codes expanded
+		va_list args;
+		va_start(args, remsg);
+		vsnprintf(format_text_buf, sizeof format_text_buf, text[num], args);
+		va_end(args);
+	}
+	return format_text_buf;
+}
+
 /****************************************************************************/
 /* Lists all users who have access to the current sub.                      */
 /****************************************************************************/

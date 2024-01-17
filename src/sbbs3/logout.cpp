@@ -66,16 +66,10 @@ void sbbs_t::logout()
 				getnodedat(i,&node,0);
 				if((node.status==NODE_INUSE || node.status==NODE_QUIET)
 					&& !(node.misc&NODE_AOFF) && node.useron!=useron.number) {
-					char fmt[256];
-					expand_atcodes(text[NodeLoggedOff], fmt, sizeof fmt);
-					if(strcmp(text[NodeLoggedOff], fmt) != 0)
-						SAFECOPY(str, fmt);
-					else
-						snprintf(str, sizeof str, fmt
+					putnmsg(i, format_text(NodeLoggedOff
 							,cfg.node_num
 							,thisnode.misc&NODE_ANON
-								? text[UNKNOWN_USER] : useron.alias);
-					putnmsg(i, str);
+								? text[UNKNOWN_USER] : useron.alias));
 				}
 			}
 

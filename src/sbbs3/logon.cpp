@@ -554,16 +554,10 @@ bool sbbs_t::logon()
 			if(thisnode.status!=NODE_QUIET
 				&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
 				&& !(node.misc&NODE_AOFF) && node.useron!=useron.number) {
-				char fmt[256];
-				expand_atcodes(text[NodeLoggedOnAtNbps], fmt, sizeof fmt);
-				if(strcmp(text[NodeLoggedOnAtNbps], fmt) != 0)
-					SAFECOPY(str, fmt);
-				else
-					safe_snprintf(str, sizeof str, fmt
+				putnmsg(i, format_text(NodeLoggedOnAtNbps
 						,cfg.node_num
 						,thisnode.misc&NODE_ANON ? text[UNKNOWN_USER] : useron.alias
-						,connection);
-				putnmsg(i, str);
+						,connection));
 			} 
 		}
 

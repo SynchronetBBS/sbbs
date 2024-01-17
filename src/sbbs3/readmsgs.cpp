@@ -399,7 +399,6 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 {
 	char	str[256],str2[256],do_find=true,mismatches=0
 			,done=0,domsg=1,*buf;
-	char	fmt[256];
 	char	find_buf[128];
 	char	tmp[128];
 	int		i;
@@ -1010,13 +1009,9 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 					&& stricmp(msg.to,useron.name)
 					&& stricmp(msg.to,useron.alias))
 					break;
-				expand_atcodes(text[Regarding], fmt, sizeof fmt, &msg);
-				if(strcmp(text[Regarding], fmt) != 0)
-					SAFECOPY(str2, fmt);
-				else
-					SAFEPRINTF2(str2, fmt
+				SAFECOPY(str2, format_text(Regarding
 						,msghdr_field(&msg, msg.subj)
-						,timestr(msg.hdr.when_written.time));
+						,timestr(msg.hdr.when_written.time)));
 				if(msg.from_net.addr==NULL)
 					SAFECOPY(str,msg.from);
 				else if(msg.from_net.type==NET_FIDO)
