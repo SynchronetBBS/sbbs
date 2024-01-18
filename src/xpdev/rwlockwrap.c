@@ -117,8 +117,11 @@ rwlock_unlock(rwlock_t *lock)
 		LeaveCriticalSection(&lock->lk);
 		return false;
 	}
-	lock->readers--;
-	return true;
+	if (lock->readers) {
+		lock->readers--;
+		return true;
+	}
+	return false;
 }
 
 #elif defined(__unix__)
