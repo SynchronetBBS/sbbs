@@ -2,6 +2,8 @@
 
 #ifdef _WIN32
 
+#include "gen_defs.h"	// For windows.h
+
 bool
 rwlock_init(rwlock_t *lock)
 {
