@@ -4,7 +4,6 @@
 #if defined(__unix__)
 
 #include <pthread.h>
-#include <stdbool.h>
 typedef pthread_rwlock_t rwlock_t;
 
 #define rwlock_init(lock) (pthread_rwlock_init(lock, NULL) == 0)
@@ -20,11 +19,7 @@ typedef pthread_rwlock_t rwlock_t;
 
 #elif defined(_WIN32)
 
-#ifdef __MINGW32__
-#include <stdbool.h>
-#endif
-
-#include "gen_defs.h"	// For windows.h and bool :(
+#include "gen_defs.h"	// For windows.h and BOOL!! :(
 #include "threadwrap.h"
 
 typedef struct {
@@ -36,12 +31,12 @@ typedef struct {
 	DWORD writer;
 } rwlock_t;
 
-bool rwlock_init(rwlock_t *lock);
-bool rwlock_rdlock(rwlock_t *lock);
-bool rwlock_tryrdlock(rwlock_t *lock);
-bool rwlock_wrlock(rwlock_t *lock);
-bool rwlock_trywrlock(rwlock_t *lock);
-bool rwlock_unlock(rwlock_t *lock);
+BOOL rwlock_init(rwlock_t *lock);
+BOOL rwlock_rdlock(rwlock_t *lock);
+BOOL rwlock_tryrdlock(rwlock_t *lock);
+BOOL rwlock_wrlock(rwlock_t *lock);
+BOOL rwlock_trywrlock(rwlock_t *lock);
+BOOL rwlock_unlock(rwlock_t *lock);
 
 #else
 #error Not implemented

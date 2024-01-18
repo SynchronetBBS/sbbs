@@ -6,7 +6,7 @@
 
 #elif defined(_WIN32)
 
-bool
+BOOL
 rwlock_init(rwlock_t *lock)
 {
 	InitializeCriticalSection(&lock->lk);
@@ -17,7 +17,7 @@ rwlock_init(rwlock_t *lock)
 	writer = (DWORD)-1;
 }
 
-bool
+BOOL
 rwlock_rdlock(rwlock_t *lock)
 {
 	DWORD obj;
@@ -43,29 +43,29 @@ rwlock_rdlock(rwlock_t *lock)
 			lock->readers++;
 			LeaveCriticalSection(&lock->lk);
 			LeaveCriticalSection(&lock->wlk);
-			return true;
+			return TRUE;
 		}
 	}
 	lock->readers++;
 	LeaveCriticalSection(&lock->lk);
-	return true;
+	return TRUE;
 }
 
-bool
+BOOL
 rwlock_tryrdlock(rwlock_t *lock)
 {
-	bool ret = false;
+	BOOL ret = FALSE;
 
 	EnterCriticalSection(&lock->lk);
 	if (lock->writers == 0 && lock->writers_waiting == 0) {
 		lock->readers++;
-		ret = true;
+		ret = TRUE;
 	}
 	LeaveCriticalSection(&lock->lk);
 	return ret;
 }
 
-bool
+BOOL
 rwlock_wrlock(rwlock_t *lock)
 {
 	EnterCriticalSection(&lock->lk);
@@ -80,14 +80,14 @@ rwlock_wrlock(rwlock_t *lock)
 		lock->writer = GetCurrentThreadId();
 		LeaveCriticalSection(&lock->lk);
 		// Keep holding wlk
-		return true;
+		return TRUE;
 	}
 	LeaveCriticalSection(&lock->lk);
 	LeaveCriticalSection(&lock->wlk);
-	return false;
+	return FALSE;
 }
 
-bool
+BOOL
 rwlock_trywrlock(rwlock_t *lock)
 {
 	if (TryEnterCriticalSection(&lock->wlk)) {
@@ -97,35 +97,35 @@ rwlock_trywrlock(rwlock_t *lock)
 			lock->writers++;
 			lock->writer = GetCurrentThreadId();
 			LeaveCriticalSection(&lock->lk);
-			return true;
+			return TRUE;
 		}
 		LeaveCriticalSection(&lock->lk);
 		LeaveCriticalSection(&lock->wlk);
-		return false;
+		return FALSE;
 	}
-	return false;
+	return FALSE;
 }
 
-bool
+BOOL
 rwlock_unlock(rwlock_t *lock)
 {
-	bool ret = false;
+	BOOL ret = FALSE;
 	EnterCriticalSection(&lock->lk);
 	if (lock->writers) {
 		if (lock->writer == GetCurrentThreadId()) {
 			lock->writers--;
 			LeaveCriticalSection(&lock->lk);
 			LeaveCriticalSection(&lock->wlk);
-			return true;
+			return TRUE;
 		}
 		LeaveCriticalSection(&lock->lk);
-		return false;
+		return FALSE;
 	}
 	if (lock->readers) {
 		lock->readers--;
-		return true;
+		return TRUE;
 	}
-	return false;
+	return FALSE;
 }
 
 #elif defined(__unix__)
