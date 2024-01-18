@@ -261,8 +261,8 @@ static void internal_do_cryptInit(void)
 	}
 	pthread_mutex_init(&ssl_cert_mutex, NULL);
 	pthread_mutex_init(&ssl_cert_list_mutex, NULL);
-	ssl_cert_read_available = CreateEvent(NULL, TRUE, TRUE, "ssl_cert_read_available");
-	ssl_cert_write_available = CreateEvent(NULL, TRUE, TRUE, "ssl_cert_write_available");
+	ssl_cert_read_available = CreateEvent(NULL, TRUE, TRUE, NULL);
+	ssl_cert_write_available = CreateEvent(NULL, TRUE, TRUE, NULL);
 	return;
 }
 

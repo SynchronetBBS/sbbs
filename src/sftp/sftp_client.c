@@ -99,7 +99,7 @@ sftpc_begin(bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data), void *cb_d
 	sftpc_state_t ret = (sftpc_state_t)malloc(sizeof(struct sftp_client_state));
 	if (ret == NULL)
 		return NULL;
-	ret->recv_event = CreateEvent(NULL, TRUE, FALSE, "sftp_recv");
+	ret->recv_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 	if (ret->recv_event == NULL) {
 		free(ret);
 		return NULL;

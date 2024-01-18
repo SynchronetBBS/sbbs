@@ -40,6 +40,7 @@ MTOBJS	= \
 	$(MTOBJODIR)$(DIRSEP)link_list$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)msg_queue$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)multisock$(OFILE) \
+	$(MTOBJODIR)$(DIRSEP)rwlockwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)semwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)netwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)sockwrap$(OFILE) \

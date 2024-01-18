@@ -10,6 +10,7 @@
 #include "conwrap.h"
 #include "dirwrap.h"
 #include "filewrap.h"
+#include "rwlockwrap.h"
 #include "sockwrap.h"
 #include "threadwrap.h"
 #include "xpbeep.h"
@@ -63,12 +64,12 @@ int main()
 
 	printf("Testing rwlocks...\n");
 	do {
-		pthread_rwlock_t lock;
-		if ((i=pthread_rwlock_init(&lock, NULL)) != 0) {
-			printf("pthread_rwlock_init() failed (%d)\n", i);
+		rwlock_t lock;
+		if (!rwlock_init(&lock)) {
+			printf("rwlock_init() failed (%d)\n", i);
 			continue;
 		}
-		// Start two copies of the ddlock thread...
+		// Start two copies of the rdlock thread...
 		if (_beginthread(rwlock_rdlock_thread, 0, &lock) == -1UL) {
 			printf("Unable to start rwlock_rdlock_thread\n");
 			continue;
@@ -78,6 +79,9 @@ int main()
 			continue;
 		}
 		rwlock_wrlock_thread(&lock);
+		if (!rwlock_destroy(&lock)) {
+			printf("Unable to destroy rwlock\n");
+		}
 	} while(0);
 
 	for(i=0;i<3;i++) {
@@ -437,101 +441,89 @@ static void sopen_child_thread(void* arg)
 
 static void rwlock_rdlock_thread(void *arg)
 {
-	pthread_rwlock_t *lock = arg;
+	rwlock_t *lock = arg;
 	int locks = 0;
-	int i;
-	struct timespec abstime = {0};
 
 	// Grab the lock three times...
 	for (locks = 0; locks < 3; locks++) {
-		if ((i = pthread_rwlock_rdlock(lock)) != 0) {
+		if (!rwlock_rdlock(lock)) {
 			printf("Failed to obtain rdlock #%d\n", locks + 1);
 			break;
 		}
 	}
 	// Try to grab the lock (should succeed)
-	if ((i = pthread_rwlock_tryrdlock(lock)) == 0) {
+	if (rwlock_tryrdlock(lock)) {
 		locks++;
 	}
 	else {
-		printf("tryrdlock failed: %d\n", i);
+		printf("tryrdlock failed\n");
 	}
-	// Try to grab the lock before Jan 1st, 1970 (should succeed)
-	if ((i = pthread_rwlock_timedrdlock(lock, &abstime)) == 0) {
-		locks++;
-	}
-	else {
-		printf("timedrdlock failed: %d\n", i);
-	}
-	printf("Obtained %d locks (should be 5)\n", locks);
+	printf("Obtained %d locks (should be 4)\n", locks);
 	for (; locks > 0; locks--) {
 		SLEEP(1000);
-		if ((i = pthread_rwlock_unlock(lock)) != 0) {
+		// Ensure recursion works when writers are waiting...
+		if (rwlock_rdlock(lock)) {
+			if (!rwlock_unlock(lock)) {
+				printf("Failed to unlock recursive rdlock #%d with write waiter\n", locks + 1);
+			}
+		}
+		else {
+				printf("Failed to lock recursive rdlock #%d with write waiter\n", locks + 1);
+		}
+		if (!rwlock_unlock(lock)) {
 			printf("Failed to unlock rdlock #%d\n", locks);
 		}
 	}
 	SLEEP(1000);
 	// Try to grab the lock (should fail)
-	if ((i = pthread_rwlock_tryrdlock(lock)) == 0) {
-		printf("tryrdlock incorrectly succeeded: %d\n", i);
-		pthread_rwlock_unlock(lock);
+	if (rwlock_tryrdlock(lock)) {
+		printf("tryrdlock incorrectly succeeded\n");
+		rwlock_unlock(lock);
 	}
-	// Try to grab the lock before Jan 1st, 1970 (should fail)
-	if ((i = pthread_rwlock_timedrdlock(lock, &abstime)) == 0) {
-		printf("timedrdlock incorrectly succeeded: %d\n", i);
-		pthread_rwlock_unlock(lock);
-	}
-	// Wait up to five seconds for the lock (should succeed)
-	clock_gettime(CLOCK_REALTIME, &abstime);
-	abstime.tv_sec += 5;
 	printf("Waiting for lock\n");
-	if ((i = pthread_rwlock_timedrdlock(lock, &abstime)) == 0) {
+	if (rwlock_rdlock(lock)) {
 		locks++;
 	}
 	else {
-		printf("timedrdlock failed: %d\n", i);
+		printf("timedrdlock failed\n");
 	}
 	printf("Wait done\n");
 	SLEEP(1000);
 	for (; locks > 0; locks--) {
-		pthread_rwlock_unlock(lock);
+		rwlock_unlock(lock);
 	}
 }
 
 static void rwlock_wrlock_thread(void *arg)
 {
-	pthread_rwlock_t *lock = arg;
-	int i;
-	struct timespec abstime = {0};
+	rwlock_t *lock = arg;
 
 	// Sleep to allow readers to grab locks...
 	SLEEP(1000);
 	// Try to grab lock (should fail)
-	if ((i = pthread_rwlock_trywrlock(lock)) == 0) {
+	if (rwlock_trywrlock(lock)) {
 		printf("trywrlock() incorrectly succeeded\n");
-		pthread_rwlock_unlock(lock);
+		rwlock_unlock(lock);
 	}
 	// Try to grab lock (should succeed)
 	printf("Waiting for write lock\n");
-	if ((i = pthread_rwlock_wrlock(lock)) != 0) {
-		printf("wrlock() failed %d\n", i);
+	if (!rwlock_wrlock(lock)) {
+		printf("wrlock() failed\n");
 	}
 	printf("wrlock Wait done\n");
 	// Enjoy the lock for a bit...
 	SLEEP(2000);
 	printf("wrlock unlocking\n");
-	pthread_rwlock_unlock(lock);
+	rwlock_unlock(lock);
 	SLEEP(100);
-	// Wait up to five seconds for the lock (should succeed)
-	clock_gettime(CLOCK_REALTIME, &abstime);
-	abstime.tv_sec += 5;
-	printf("Waiting up to 5 seconds for wrlock\n");
-	if ((i = pthread_rwlock_timedwrlock(lock, &abstime)) != 0) {
-		printf("timedrdlock failed: %d\n", i);
+	// Wait for the lock (should succeed)
+	printf("Waiting wrlock\n");
+	if (!rwlock_wrlock(lock)) {
+		printf("wrlock failed\n");
 	}
 	else {
 		SLEEP(1000);
-		pthread_rwlock_unlock(lock);
+		rwlock_unlock(lock);
 	}
 	printf("wrlock wait done\n");
 }
