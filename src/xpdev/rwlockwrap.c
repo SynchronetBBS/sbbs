@@ -1,10 +1,6 @@
 #include "rwlockwrap.h"
 
-#if defined(__BORLANDC__)
-
-// Do nothing...
-
-#elif defined(_WIN32)
+#if defined(_WIN32)
 
 #include <stdlib.h>
 
