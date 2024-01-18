@@ -319,6 +319,16 @@ bool sbbs_t::answer()
 			lprintf(LOG_DEBUG, "%04d SSH [%s] term: %s", client_socket, client.addr, terminal);
 		}
 		pthread_mutex_unlock(&ssh_mutex);
+
+		if(REALSYSOP && (cfg.sys_misc&SM_SYSPASSLOGIN) && (cfg.sys_misc&SM_R_SYSOP)) {
+			rioctl(IOFI);       /* flush input buffer */
+			if(!chksyspass()) {
+				bputs(text[InvalidLogon]);
+				hangup();
+				useron.number=0;
+				return(false);
+			}
+		}
 	}
 #endif
 
