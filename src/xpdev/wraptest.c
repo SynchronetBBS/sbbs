@@ -79,6 +79,9 @@ int main()
 			continue;
 		}
 		rwlock_wrlock_thread(&lock);
+		if (!rwlock_destroy(&lock)) {
+			printf("Unable to destroy rwlock\n");
+		}
 	} while(0);
 
 	for(i=0;i<3;i++) {
