@@ -3,6 +3,7 @@
 #if defined(_WIN32)
 
 #include <stdlib.h>
+#include <stdio.h>
 
 static struct rwlock_reader_thread *
 find_self(rwlock_t *lock, struct rwlock_reader_thread ***prev)
@@ -12,7 +13,7 @@ find_self(rwlock_t *lock, struct rwlock_reader_thread ***prev)
 
 	if (prev)
 		*prev = &lock->rthreads;
-	for (ret = NULL; ret; ret = ret->next) {
+	for (ret = lock->rthreads; ret; ret = ret->next) {
 		if (ret->id == self)
 			return ret;
 		if (prev) {
@@ -94,7 +95,7 @@ rwlock_tryrdlock(rwlock_t *lock)
 		LeaveCriticalSection(&lock->lk);
 		return FALSE;
 	}
-	if (lock->writers == 0 && lock->writers_waiting == 0) {
+	if (rc->count || (lock->writers == 0 && lock->writers_waiting == 0)) {
 		rc->count++;
 		lock->readers++;
 		ret = TRUE;
@@ -106,23 +107,33 @@ rwlock_tryrdlock(rwlock_t *lock)
 BOOL
 rwlock_wrlock(rwlock_t *lock)
 {
+	BOOL ret = FALSE;
 	EnterCriticalSection(&lock->lk);
 	lock->writers_waiting++;
 	LeaveCriticalSection(&lock->lk);
 	EnterCriticalSection(&lock->wlk);
 	EnterCriticalSection(&lock->lk);
 	// No recursion
-	if (lock->writers == 0) {
+	while (lock->readers) {
+		LeaveCriticalSection(&lock->lk);
+		LeaveCriticalSection(&lock->wlk);
+		Sleep(1);
+		EnterCriticalSection(&lock->wlk);
+		EnterCriticalSection(&lock->lk);
+	}
+	if (lock->writers) {
+		lock->writers_waiting--;
+		ret = FALSE;
+	}
+	else {
 		lock->writers_waiting--;
 		lock->writers++;
 		lock->writer = GetCurrentThreadId();
-		LeaveCriticalSection(&lock->lk);
-		// Keep holding wlk
-		return TRUE;
+		ret = TRUE;
 	}
 	LeaveCriticalSection(&lock->lk);
 	LeaveCriticalSection(&lock->wlk);
-	return FALSE;
+	return ret;
 }
 
 BOOL
@@ -131,7 +142,7 @@ rwlock_trywrlock(rwlock_t *lock)
 	if (TryEnterCriticalSection(&lock->wlk)) {
 		EnterCriticalSection(&lock->lk);
 		// Prevent recursing on writer locks
-		if (lock->writers == 0) {
+		if (lock->readers == 0 && lock->writers == 0) {
 			lock->writers++;
 			lock->writer = GetCurrentThreadId();
 			LeaveCriticalSection(&lock->lk);
@@ -163,7 +174,7 @@ rwlock_unlock(rwlock_t *lock)
 		return FALSE;
 	}
 	if (lock->readers) {
-		rc = find_self(lock, NULL);
+		rc = find_self(lock, &prev);
 		if (rc && rc->count) {
 			rc->count--;
 			lock->readers--;
