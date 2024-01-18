@@ -20,6 +20,10 @@ typedef pthread_rwlock_t rwlock_t;
 
 #elif defined(_WIN32)
 
+#ifdef __MINGW32__
+#include <stdbool.h>
+#endif
+
 #include "gen_defs.h"	// For windows.h and bool :(
 #include "threadwrap.h"
 
