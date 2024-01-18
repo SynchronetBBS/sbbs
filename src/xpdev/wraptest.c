@@ -461,6 +461,15 @@ static void rwlock_rdlock_thread(void *arg)
 	printf("Obtained %d locks (should be 4)\n", locks);
 	for (; locks > 0; locks--) {
 		SLEEP(1000);
+		// Ensure recursion works when writers are waiting...
+		if (rwlock_rdlock(lock)) {
+			if (!rwlock_unlock(lock)) {
+				printf("Failed to unlock recursive rdlock #%d with write waiter\n", locks + 1);
+			}
+		}
+		else {
+				printf("Failed to lock recursive rdlock #%d with write waiter\n", locks + 1);
+		}
 		if (!rwlock_unlock(lock)) {
 			printf("Failed to unlock rdlock #%d\n", locks);
 		}
