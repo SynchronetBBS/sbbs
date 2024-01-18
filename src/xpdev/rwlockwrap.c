@@ -11,10 +11,10 @@ rwlock_init(rwlock_t *lock)
 {
 	InitializeCriticalSection(&lock->lk);
 	InitializeCriticalSection(&lock->wlk);
-	readers = 0;
-	writers = 0;
-	writers_waiting = 0;
-	writer = (DWORD)-1;
+	lock->readers = 0;
+	lock->writers = 0;
+	lock->writers_waiting = 0;
+	lock->writer = (DWORD)-1;
 }
 
 BOOL
