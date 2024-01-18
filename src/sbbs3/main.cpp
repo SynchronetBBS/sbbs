@@ -3679,7 +3679,7 @@ bool sbbs_t::init()
 #ifdef USE_CRYPTLIB
 	pthread_mutex_init(&ssh_mutex,NULL);
 	ssh_mutex_created = true;
-	ssh_active = CreateEvent(NULL, TRUE, FALSE, (void *)"ssh_active");
+	ssh_active = CreateEvent(NULL, TRUE, FALSE, "ssh_active");
 #endif
 	pthread_mutex_init(&input_thread_mutex,NULL);
 	input_thread_mutex_created = true;
