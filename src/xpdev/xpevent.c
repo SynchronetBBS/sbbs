@@ -25,7 +25,7 @@
 #include "genwrap.h"
 
 xpevent_t
-CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, void *name)
+CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
 {
 	xpevent_t	event;
 
