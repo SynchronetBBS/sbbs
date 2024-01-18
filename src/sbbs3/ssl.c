@@ -15,10 +15,12 @@ void free_crypt_attrstr(char *attr)
 
 char* get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr)
 {
-	int		len = 0;
-	char	*estr = NULL;
+	int   len = 0;
+	char *estr = NULL;
+	int   status;
 
-	if (cryptStatusOK(cryptGetAttributeString(sess, attr, NULL, &len))) {
+	status = cryptGetAttributeString(sess, attr, NULL, &len);
+	if (cryptStatusOK(status)) {
 		estr = malloc(len + 1);
 		if (estr) {
 			if (cryptStatusError(cryptGetAttributeString(sess, attr, estr, &len))) {
