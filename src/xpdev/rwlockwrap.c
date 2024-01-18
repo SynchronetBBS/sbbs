@@ -180,7 +180,7 @@ rwlock_unlock(rwlock_t *lock)
 }
 
 BOOL
-rwlock_destory(rwlock_t *lock)
+rwlock_destroy(rwlock_t *lock)
 {
 	EnterCriticalSection(&lock->lk);
 	if (lock->readers || lock->writers || lock->writers_waiting || lock->rthreads) {
