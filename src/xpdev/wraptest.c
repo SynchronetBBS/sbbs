@@ -26,7 +26,8 @@ static void sleep_test_thread(void* arg);
 static void sopen_test_thread(void* arg);
 static void sopen_child_thread(void* arg);
 static void lock_test_thread(void* arg);
-
+static void rwlock_rdlock_thread(void *arg);
+static void rwlock_wrlock_thread(void *arg);
 
 typedef struct {
 	sem_t parent_sem;
@@ -59,6 +60,25 @@ int main()
 	printf("%-15s: %s\n","Version",os_version(str, sizeof(str)));
 	printf("%-15s: %s\n","Compiler"	,compiler);
 	printf("%-15s: %ld\n","Random Number",xp_random(1000));
+
+	printf("Testing rwlocks...\n");
+	do {
+		pthread_rwlock_t lock;
+		if ((i=pthread_rwlock_init(&lock, NULL)) != 0) {
+			printf("pthread_rwlock_init() failed (%d)\n", i);
+			continue;
+		}
+		// Start two copies of the ddlock thread...
+		if (_beginthread(rwlock_rdlock_thread, 0, &lock) == -1UL) {
+			printf("Unable to start rwlock_rdlock_thread\n");
+			continue;
+		}
+		if (_beginthread(rwlock_rdlock_thread, 0, &lock) == -1UL) {
+			printf("Unable to start rwlock_rdlock_thread\n");
+			continue;
+		}
+		rwlock_wrlock_thread(&lock);
+	} while(0);
 
 	for(i=0;i<3;i++) {
 		if(_beginthread(
@@ -413,6 +433,107 @@ static void sopen_child_thread(void* arg)
 	} else if(arg==0)
 		perror(LOCK_FNAME);
 	printf("sopen_child_thread: %d end\n",(int)arg);
+}
+
+static void rwlock_rdlock_thread(void *arg)
+{
+	pthread_rwlock_t *lock = arg;
+	int locks = 0;
+	int i;
+	struct timespec abstime = {0};
+
+	// Grab the lock three times...
+	for (locks = 0; locks < 3; locks++) {
+		if ((i = pthread_rwlock_rdlock(lock)) != 0) {
+			printf("Failed to obtain rdlock #%d\n", locks + 1);
+			break;
+		}
+	}
+	// Try to grab the lock (should succeed)
+	if ((i = pthread_rwlock_tryrdlock(lock)) == 0) {
+		locks++;
+	}
+	else {
+		printf("tryrdlock failed: %d\n", i);
+	}
+	// Try to grab the lock before Jan 1st, 1970 (should succeed)
+	if ((i = pthread_rwlock_timedrdlock(lock, &abstime)) == 0) {
+		locks++;
+	}
+	else {
+		printf("timedrdlock failed: %d\n", i);
+	}
+	printf("Obtained %d locks (should be 5)\n", locks);
+	for (; locks > 0; locks--) {
+		SLEEP(1000);
+		if ((i = pthread_rwlock_unlock(lock)) != 0) {
+			printf("Failed to unlock rdlock #%d\n", locks);
+		}
+	}
+	SLEEP(1000);
+	// Try to grab the lock (should fail)
+	if ((i = pthread_rwlock_tryrdlock(lock)) == 0) {
+		printf("tryrdlock incorrectly succeeded: %d\n", i);
+		pthread_rwlock_unlock(lock);
+	}
+	// Try to grab the lock before Jan 1st, 1970 (should fail)
+	if ((i = pthread_rwlock_timedrdlock(lock, &abstime)) == 0) {
+		printf("timedrdlock incorrectly succeeded: %d\n", i);
+		pthread_rwlock_unlock(lock);
+	}
+	// Wait up to five seconds for the lock (should succeed)
+	clock_gettime(CLOCK_REALTIME, &abstime);
+	abstime.tv_sec += 5;
+	printf("Waiting for lock\n");
+	if ((i = pthread_rwlock_timedrdlock(lock, &abstime)) == 0) {
+		locks++;
+	}
+	else {
+		printf("timedrdlock failed: %d\n", i);
+	}
+	printf("Wait done\n");
+	SLEEP(1000);
+	for (; locks > 0; locks--) {
+		pthread_rwlock_unlock(lock);
+	}
+}
+
+static void rwlock_wrlock_thread(void *arg)
+{
+	pthread_rwlock_t *lock = arg;
+	int i;
+	struct timespec abstime = {0};
+
+	// Sleep to allow readers to grab locks...
+	SLEEP(1000);
+	// Try to grab lock (should fail)
+	if ((i = pthread_rwlock_trywrlock(lock)) == 0) {
+		printf("trywrlock() incorrectly succeeded\n");
+		pthread_rwlock_unlock(lock);
+	}
+	// Try to grab lock (should succeed)
+	printf("Waiting for write lock\n");
+	if ((i = pthread_rwlock_wrlock(lock)) != 0) {
+		printf("wrlock() failed %d\n", i);
+	}
+	printf("wrlock Wait done\n");
+	// Enjoy the lock for a bit...
+	SLEEP(2000);
+	printf("wrlock unlocking\n");
+	pthread_rwlock_unlock(lock);
+	SLEEP(100);
+	// Wait up to five seconds for the lock (should succeed)
+	clock_gettime(CLOCK_REALTIME, &abstime);
+	abstime.tv_sec += 5;
+	printf("Waiting up to 5 seconds for wrlock\n");
+	if ((i = pthread_rwlock_timedwrlock(lock, &abstime)) != 0) {
+		printf("timedrdlock failed: %d\n", i);
+	}
+	else {
+		SLEEP(1000);
+		pthread_rwlock_unlock(lock);
+	}
+	printf("wrlock wait done\n");
 }
 
 /* End of wraptest.c */
