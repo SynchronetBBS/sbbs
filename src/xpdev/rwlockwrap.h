@@ -1,11 +1,10 @@
 #ifndef RWLOCKWRAP_H
 #define RWLOCKWRAP_H
 
-#include <stdbool.h>
-
 #if defined(__unix__)
 
 #include <pthread.h>
+#include <stdbool.h>
 typedef pthread_rwlock_t rwlock_t;
 
 #define rwlock_init(lock) (pthread_rwlock_init(lock, NULL) == 0)
@@ -17,6 +16,7 @@ typedef pthread_rwlock_t rwlock_t;
 
 #elif defined(_WIN32)
 
+#include "gen_defs.h"	// For windows.h and bool :(
 #include "threadwrap.h"
 
 typedef struct {
