@@ -25,6 +25,20 @@
 
 extern "C" void client_on(SOCKET sock, client_t* client, BOOL update);
 
+bool
+sbbs_t::set_authresponse(bool activate_ssh)
+{
+	int status;
+
+	lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_AUTHRESPONSE", client_socket);
+	status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_AUTHRESPONSE, activate_ssh);
+	if(cryptStatusError(status)) {
+		log_crypt_error_status_sock(status, "setting auth response");
+		return false;
+	}
+	return true;
+}
+
 bool sbbs_t::answer()
 {
 	char	str[MAX_PATH+1],str2[MAX_PATH+1],c;
@@ -177,63 +191,47 @@ bool sbbs_t::answer()
 	}
 #ifdef USE_CRYPTLIB
 	if(sys_status&SS_SSH) {
+		int  ssh_failed=0;
+		bool activate_ssh = false;
+
 		tmp[0]=0;
 		pthread_mutex_lock(&ssh_mutex);
-		ctmp = get_crypt_attribute(ssh_session, CRYPT_SESSINFO_USERNAME);
-		if (ctmp) {
-			SAFECOPY(rlogin_name, parse_login(ctmp));
-			free_crypt_attrstr(ctmp);
-			ctmp = get_crypt_attribute(ssh_session, CRYPT_SESSINFO_PASSWORD);
+		for(ssh_failed=0; ssh_failed < 3; ssh_failed++) {
+			lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_ACTIVE", client_socket);
+			if(cryptStatusError(i=cryptSetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1))) {
+				log_crypt_error_status_sock(i, "setting session active");
+				activate_ssh = false;
+				// TODO: Add private key here...
+				if(i != CRYPT_ENVELOPE_RESOURCE) {
+					break;
+				}
+			}
+			else {
+				break;
+			}
+			ctmp = get_crypt_attribute(ssh_session, CRYPT_SESSINFO_USERNAME);
 			if (ctmp) {
-				SAFECOPY(tmp, ctmp);
+				SAFECOPY(rlogin_name, parse_login(ctmp));
 				free_crypt_attrstr(ctmp);
-			}
-			pthread_mutex_unlock(&ssh_mutex);
-			lprintf(LOG_DEBUG,"SSH login: '%s'", rlogin_name);
-		}
-		else {
-			rlogin_name[0] = 0;
-			pthread_mutex_unlock(&ssh_mutex);
-		}
-		useron.number = find_login_id(&cfg, rlogin_name);
-		if(useron.number) {
-			getuserdat(&cfg,&useron);
-			for(i=0;i<3 && online;i++) {
-				if(stricmp(tmp,useron.pass)) {
-					if(cfg.sys_misc&SM_ECHO_PW)
-						safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt: '%s'"
-							,useron.number,useron.alias,tmp);
-					else
-						safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt"
-							,useron.number,useron.alias);
-					logline(LOG_NOTICE,"+!",str);
-					badlogin(useron.alias, tmp);
-					rioctl(IOFI);       /* flush input buffer */
-					bputs(text[InvalidLogon]);
-					bputs(text[PasswordPrompt]);
-					console|=CON_R_ECHOX;
-					getstr(tmp,LEN_PASS*2,K_UPPER|K_LOWPRIO|K_TAB);
-					console&=~(CON_R_ECHOX|CON_L_ECHOX);
+				ctmp = get_crypt_attribute(ssh_session, CRYPT_SESSINFO_PASSWORD);
+				if (ctmp) {
+					SAFECOPY(tmp, ctmp);
+					free_crypt_attrstr(ctmp);
 				}
-				else {
+				lprintf(LOG_DEBUG,"SSH login: '%s'", rlogin_name);
+			}
+			else {
+				rlogin_name[0] = 0;
+				continue;
+			}
+			useron.number = find_login_id(&cfg, rlogin_name);
+			if(useron.number) {
+				getuserdat(&cfg,&useron);
+				if (stricmp(tmp, useron.pass) == 0) {
 					SAFECOPY(rlogin_pass, tmp);
-					if(REALSYSOP && (cfg.sys_misc&SM_SYSPASSLOGIN) && (cfg.sys_misc&SM_R_SYSOP)) {
-						rioctl(IOFI);       /* flush input buffer */
-						if(!chksyspass())
-							bputs(text[InvalidLogon]);
-						else {
-							i=0;
-							break;
-						}
-					}
-					else {
-						i = 0;
-						break;
-					}
+					activate_ssh = set_authresponse(true);
 				}
-			}
-			if(i) {
-				if(stricmp(tmp,useron.pass)) {
+				else if(ssh_failed) {
 					if(cfg.sys_misc&SM_ECHO_PW)
 						safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt: '%s'"
 							,useron.number,useron.alias,tmp);
@@ -242,19 +240,68 @@ bool sbbs_t::answer()
 							,useron.number,useron.alias);
 					logline(LOG_NOTICE,"+!",str);
 					badlogin(useron.alias, tmp);
-					bputs(text[InvalidLogon]);
+					useron.number=0;
 				}
-				useron.number=0;
-				hangup();
+			}
+			else {
+				if(cfg.sys_misc&SM_ECHO_PW)
+					lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s' (password: %s)", rlogin_name, truncsp(tmp));
+				else
+					lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s'", rlogin_name);
+				badlogin(rlogin_name, tmp);
+				// Enable SSH so we can create a new user...
+				activate_ssh = set_authresponse(true);
 			}
 		}
-		else {
-			if(cfg.sys_misc&SM_ECHO_PW)
-				lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s' (password: %s)", rlogin_name, truncsp(tmp));
-			else
-				lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s'", rlogin_name);
-			badlogin(rlogin_name, tmp);
+		if (activate_ssh) {
+			int cid;
+			char tname[1024];
+			int tnamelen;
+
+			ssh_failed=0;
+			// Check the channel ID and name...
+			if (cryptStatusOK(i=cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &cid))) {
+				if (i == CRYPT_OK) {
+					tnamelen = 0;
+					i=cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE, tname, &tnamelen);
+					log_crypt_error_status_sock(i, "getting channel type");
+					if (tnamelen != 7 || strnicmp(tname, "session", 7)) {
+						lprintf(LOG_NOTICE, "%04d SSH [%s] active channel '%.*s' is not 'session', disconnecting.", client_socket, client_ipaddr, tnamelen, tname);
+						badlogin(/* user: */NULL, /* passwd: */NULL, "SSH", &client_addr, /* delay: */false);
+						// Fail because there's no session.
+						activate_ssh = false;
+					}
+					else
+						session_channel = cid;
+				}
+			}
+			else {
+				log_crypt_error_status_sock(i, "getting channel id");
+				if (i == CRYPT_ERROR_PERMISSION)
+					lprintf(LOG_CRIT, "!Your cryptlib build is obsolete, please update");
+			}
 		}
+		if (activate_ssh) {
+			if(cryptStatusError(i=cryptSetAttribute(ssh_session, CRYPT_PROPERTY_OWNER, CRYPT_UNUSED))) {
+				log_crypt_error_status_sock(i, "clearing owner");
+				activate_ssh = false;
+			}
+		}
+		if(!activate_ssh) {
+			int status;
+			lprintf(LOG_NOTICE, "%04d SSH [%s] session establishment failed", client_socket, client_ipaddr);
+			if (cryptStatusError(status = cryptDestroySession(ssh_session))) {
+				lprintf(LOG_ERR, "%04d SSH ERROR %d destroying Cryptlib Session %d from %s line %d"
+					, client_socket, status, ssh_session, __FILE__, __LINE__);
+			}
+			ssh_mode = false;
+			pthread_mutex_unlock(&ssh_mutex);
+			close_socket(client_socket);
+			useron.number = 0;
+			return false;
+		}
+		SetEvent(ssh_active);
+
 		if (cryptStatusOK(cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_WIDTH, &l)) && l > 0) {
 			cols = l;
 			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket, client.addr, cols);
@@ -270,6 +317,17 @@ bool sbbs_t::answer()
 			else
 				terminal[sizeof(terminal)-1] = 0;
 			lprintf(LOG_DEBUG, "%04d SSH [%s] term: %s", client_socket, client.addr, terminal);
+		}
+		pthread_mutex_unlock(&ssh_mutex);
+
+		if(REALSYSOP && (cfg.sys_misc&SM_SYSPASSLOGIN) && (cfg.sys_misc&SM_R_SYSOP)) {
+			rioctl(IOFI);       /* flush input buffer */
+			if(!chksyspass()) {
+				bputs(text[InvalidLogon]);
+				hangup();
+				useron.number=0;
+				return(false);
+			}
 		}
 	}
 #endif

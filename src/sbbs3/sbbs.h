@@ -451,6 +451,7 @@ public:
 	bool	input_thread_mutex_created = false;
 	pthread_mutex_t	ssh_mutex;
 	bool	ssh_mutex_created = false;
+	xpevent_t ssh_active = nullptr;
 
 	#define OUTCOM_RETRY_DELAY		80		// milliseconds
 	#define OUTCOM_RETRY_ATTEMPTS	1000	// 80 seconds
@@ -1020,6 +1021,7 @@ public:
 	const char*	parse_login(const char*);
 
 	/* answer.cpp */
+	bool    set_authresponse(bool activate_ssh);
 	bool	answer(void);
 
 	/* logon.ccp */
@@ -1066,6 +1068,7 @@ public:
 	int		getnodetopage(int all, int telegram);
 
 	/* main.cpp */
+	void    log_crypt_error_status_sock(int status, const char *action);
 	int		lputs(int level, const char* str);
 	int		lprintf(int level, const char *fmt, ...)
 #if defined(__GNUC__)   // Catch printf-format errors
