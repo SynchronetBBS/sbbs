@@ -20,8 +20,6 @@ rwlock_init(rwlock_t *lock)
 BOOL
 rwlock_rdlock(rwlock_t *lock)
 {
-	DWORD obj;
-
 	EnterCriticalSection(&lock->lk);
 	while(lock->writers || lock->writers_waiting) {
 		LeaveCriticalSection(&lock->lk);
