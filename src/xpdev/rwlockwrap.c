@@ -1,6 +1,10 @@
 #include "rwlockwrap.h"
 
-#ifdef _WIN32
+#if defined(__BORLANDC__)
+
+// Do nothing...
+
+#elif defined(_WIN32)
 
 bool
 rwlock_init(rwlock_t *lock)

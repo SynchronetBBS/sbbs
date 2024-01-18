@@ -14,6 +14,10 @@ typedef pthread_rwlock_t rwlock_t;
 #define rwlock_trywrlock(lock) (pthread_rwlock_trywrlock(lock) == 0)
 #define rwlock_unlock(lock) (pthread_rwlock_unlock(lock) == 0)
 
+#elif defined(__BORLANDC__)
+
+// Not supported, but ignored...
+
 #elif defined(_WIN32)
 
 #include "gen_defs.h"	// For windows.h and bool :(
