@@ -15,6 +15,7 @@ rwlock_init(rwlock_t *lock)
 	lock->writers = 0;
 	lock->writers_waiting = 0;
 	lock->writer = (DWORD)-1;
+	return true;
 }
 
 BOOL
