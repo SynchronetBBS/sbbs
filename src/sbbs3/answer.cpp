@@ -226,21 +226,25 @@ bool sbbs_t::answer()
 			}
 			useron.number = find_login_id(&cfg, rlogin_name);
 			if(useron.number) {
-				getuserdat(&cfg,&useron);
-				if (stricmp(tmp, useron.pass) == 0) {
-					SAFECOPY(rlogin_pass, tmp);
-					activate_ssh = set_authresponse(true);
+				if (getuserdat(&cfg,&useron) == 0) {
+					if (stricmp(tmp, useron.pass) == 0) {
+						SAFECOPY(rlogin_pass, tmp);
+						activate_ssh = set_authresponse(true);
+					}
+					else if(ssh_failed) {
+						if(cfg.sys_misc&SM_ECHO_PW)
+							safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt: '%s'"
+								,useron.number,useron.alias,tmp);
+						else
+							safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt"
+								,useron.number,useron.alias);
+						logline(LOG_NOTICE,"+!",str);
+						badlogin(useron.alias, tmp);
+						useron.number=0;
+					}
 				}
-				else if(ssh_failed) {
-					if(cfg.sys_misc&SM_ECHO_PW)
-						safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt: '%s'"
-							,useron.number,useron.alias,tmp);
-					else
-						safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt"
-							,useron.number,useron.alias);
-					logline(LOG_NOTICE,"+!",str);
-					badlogin(useron.alias, tmp);
-					useron.number=0;
+				else {
+					lprintf(LOG_NOTICE, "SSH failed to read user data for %s", rlogin_name);
 				}
 			}
 			else {
@@ -252,6 +256,8 @@ bool sbbs_t::answer()
 				// Enable SSH so we can create a new user...
 				activate_ssh = set_authresponse(true);
 			}
+			if (!activate_ssh)
+				set_authresponse(false);
 		}
 		if (activate_ssh) {
 			int cid;
