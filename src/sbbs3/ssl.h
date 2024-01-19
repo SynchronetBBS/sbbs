@@ -35,6 +35,7 @@ extern "C" {
 #endif
 
 DLLEXPORT void DLLCALL free_crypt_attrstr(char *attr);
+DLLEXPORT char* DLLCALL get_binary_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr, size_t *sz);
 DLLEXPORT char* DLLCALL get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr);
 DLLEXPORT char* DLLCALL get_crypt_error(CRYPT_HANDLE sess);
 DLLEXPORT bool DLLCALL do_cryptInit(int (*lprintf)(int level, const char* fmt, ...));

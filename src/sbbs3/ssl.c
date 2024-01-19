@@ -13,7 +13,7 @@ void free_crypt_attrstr(char *attr)
 	free(attr);
 }
 
-char* get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr)
+char* get_binary_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr, size_t *sz)
 {
 	int   len = 0;
 	char *estr = NULL;
@@ -23,15 +23,23 @@ char* get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr)
 	if (cryptStatusOK(status)) {
 		estr = malloc(len + 1);
 		if (estr) {
-			if (cryptStatusError(cryptGetAttributeString(sess, attr, estr, &len))) {
-				free(estr);
-				return NULL;
+			if (cryptStatusOK(cryptGetAttributeString(sess, attr, estr, &len))) {
+				if (len >= 0) {
+					estr[len] = 0;
+					if (sz)
+						*sz = len;
+					return estr;
+				}
 			}
-			estr[len] = 0;
-			return estr;
+			free(estr);
 		}
 	}
 	return NULL;
+}
+
+char* get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr)
+{
+	return get_binary_crypt_attribute(sess, attr, NULL);
 }
 
 char* get_crypt_error(CRYPT_HANDLE sess)
