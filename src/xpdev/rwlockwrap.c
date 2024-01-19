@@ -173,7 +173,6 @@ rwlock_trywrlock(rwlock_t *lock)
 BOOL
 rwlock_unlock(rwlock_t *lock)
 {
-	BOOL ret = FALSE;
 	struct rwlock_reader_thread *rc;
 	struct rwlock_reader_thread **prev;
 
