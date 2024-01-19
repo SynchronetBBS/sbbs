@@ -278,3 +278,13 @@
  		}
  	sMemDisconnect( &stream );
  	CFI_CHECK_UPDATE( "SSH_AUTHTYPE_PUBKEY" );
+--- session/sess_attr.c.orig	2024-01-19 15:00:59.583402000 -0500
++++ session/sess_attr.c	2024-01-19 15:01:28.125584000 -0500
+@@ -884,6 +884,7 @@
+ 		case CRYPT_SESSINFO_SERVER_FINGERPRINT_SHA1:
+ 		case CRYPT_SESSINFO_SERVER_NAME:
+ 		case CRYPT_SESSINFO_CLIENT_NAME:
++		case CRYPT_SESSINFO_PUBLICKEY:
+ 			attributeListPtr = findSessionInfo( sessionInfoPtr, attribute );
+ 			if( attributeListPtr == NULL )
+ 				return( exitErrorNotInited( sessionInfoPtr, attribute ) );

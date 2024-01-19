@@ -218,6 +218,14 @@ bool sbbs_t::answer()
 					SAFECOPY(tmp, ctmp);
 					free_crypt_attrstr(ctmp);
 				}
+				else {
+					size_t sz;
+					ctmp = get_binary_crypt_attribute(ssh_session, CRYPT_SESSINFO_PUBLICKEY, &sz);
+					if (ctmp) {
+						// TODO: Validate public key?
+						free_crypt_attrstr(ctmp);
+					}
+				}
 				lprintf(LOG_DEBUG,"SSH login: '%s'", rlogin_name);
 			}
 			else {
