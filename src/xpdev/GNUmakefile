@@ -29,7 +29,7 @@ ifdef WITH_SDL_AUDIO
 endif
 
 # Executable Build Rule
-$(WRAPTEST): $(MTOBJODIR)/wraptest.o $(DEPS)
+$(WRAPTEST): $(MTOBJODIR)/wraptest.o $(DEPS) | $(EXEODIR)
 	@echo Linking $@
 	$(QUIET)$(CC) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $^ $(XPDEV-MT_LIB_BUILD) -lm $(XPDEV-MT_LIBS)
 
