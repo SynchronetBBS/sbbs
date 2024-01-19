@@ -79,6 +79,14 @@ int main()
 			continue;
 		}
 		rwlock_wrlock_thread(&lock);
+		printf("Grabbing wrlock to clean up\n");
+		if (rwlock_trywrlock(&lock)) {
+			rwlock_unlock(&lock);
+		}
+		else {
+			printf("Unable to grab lock after wrlock thread complete!\n");
+		}
+		printf("Destroying rwlock\n");
 		if (!rwlock_destroy(&lock)) {
 			printf("Unable to destroy rwlock\n");
 		}
