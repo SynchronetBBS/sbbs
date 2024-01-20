@@ -321,9 +321,9 @@ typedef struct {							/* QWK Network Hub */
 	char		fmt[MAX_FILEEXT_LEN+1]; 	/* Archive format */
 	uint16_t	time,						/* Time to call-out */
 				node,						/* Node to do the call-out */
-				freq,						/* Frequency of call-outs */
-				subs,						/* Number Sub-boards carried */
-				*conf;						/* Conference number of ea. */
+				freq;						/* Frequency of call-outs */
+	int			subs;						/* Number Sub-boards carried */
+	uint16_t	*conf;						/* Conference number of ea. */
 	sub_t**		sub;
 	time32_t	last;						/* Last network attempt */
 	uint32_t	misc;						/* QHUB_* flags */
