@@ -1121,8 +1121,10 @@ static void js_service_thread(void* arg)
 
 		HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_NETWORKSOCKET, socket), &service_client, "setting network socket");
 		if (!HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_ACTIVE, 1), &service_client, "setting session active")) {
-			if (service_client.tls_sess != -1)
+			if (service_client.tls_sess != -1) {
 				destroy_session(lprintf, service_client.tls_sess);
+				service_client.tls_sess = -1;
+			}
 			js_service_failure_cleanup(service, socket);
 			return;
 		}

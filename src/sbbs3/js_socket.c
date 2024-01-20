@@ -2380,7 +2380,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 					}
 					if (ret != CRYPT_OK) {
 						if (p->session != -1)
-							destroy_session(lprintf, p->session);
+							cryptDestroySession(p->session);
 						p->session=-1;
 						ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
 						do_js_close(cx, p, false);
