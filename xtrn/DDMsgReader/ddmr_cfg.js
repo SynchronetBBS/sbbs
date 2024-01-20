@@ -5,7 +5,7 @@
 // If you have DDMsgReader in a directory other than xtrn/DDMsgReader, then the changes to
 // DDMsgReader.cfg will be saved in that directory (assuming you're running ddmr_cfg.js from
 // that same directory).
-// Currently for DDMsgReader 1.94.
+// Currently for DDMsgReader 1.94a.
 //
 // If you're running DDMsgReader from xtrn/DDMsgReader (the standard location) and you want
 // to save the configuration file there (rather than sbbs/mods), you can use one of the
@@ -18,7 +18,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. Message Reader 1.94 Configurator"))
+if (!uifc.init("DigDist. Message Reader 1.94a Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -113,6 +113,7 @@ function doMainMenu()
 		"useIndexedModeForNewscan", // Boolean
 		"displayIndexedModeMenuIfNoNewMessages", // Boolean
 		"indexedModeMenuSnapToFirstWithNew", // Boolean
+		"indexedModeMenuSnapToNextWithNewAftarMarkAllRead", // Boolean
 		"newscanOnlyShowNewMsgs", // Boolean
 		"promptDelPersonalEmailAfterReply", // Boolean
 		"themeFilename" // String
@@ -145,6 +146,7 @@ function doMainMenu()
 		"Use Indexed Mode For Newscan",
 		"Display Indexed menu even with no new messages",
 		"Index menu: Snap to sub-boards w/ new messages",
+		"Index menu mark all read: Snap to subs w/ new msgs",
 		"During a newscan, only show new messages",
 		"Personal email: Prompt to delete after reply",
 		"Theme Filename"
@@ -553,6 +555,10 @@ function getOptionHelpText()
 	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "sub-board with new messages upon displaying or returning to the indexed newscan ";
 	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "sub-board menu. This is a default for a user setting that users can toggle ";
 	optionHelpText["indexedModeMenuSnapToFirstWithNew"] += "for themselves";
+
+	optionHelpText["indexedModeMenuSnapToNextWithNewAftarMarkAllRead"] = "Index menu mark all read: Snap to subs w/ new msgs: For the indexed sub-board menu when doing a newscan, ";
+	optionHelpText["indexedModeMenuSnapToNextWithNewAftarMarkAllRead"] += "whether or not to 'snap' the lightbar selected item to the next sub-board with ";
+	optionHelpText["indexedModeMenuSnapToNextWithNewAftarMarkAllRead"] += "new messages when the user marks all messages as read in a sub-board on the menu";
 	
 	optionHelpText["newscanOnlyShowNewMsgs"] = "During a newscan, only show new messages (default for a user setting): Whether or not ";
 	optionHelpText["newscanOnlyShowNewMsgs"] += "to only show new messages when the user is doing a newscan. Users can toggle this as ";
@@ -756,6 +762,8 @@ function readDDMsgReaderCfgFile()
 		retObj.cfgOptions.newscanOnlyShowNewMsgs = true;
 	if (!retObj.cfgOptions.hasOwnProperty("indexedModeMenuSnapToFirstWithNew"))
 		retObj.cfgOptions.indexedModeMenuSnapToFirstWithNew = false;
+	if (!retObj.cfgOptions.hasOwnProperty("indexedModeMenuSnapToNextWithNewAftarMarkAllRead"))
+		retObj.cfgOptions.indexedModeMenuSnapToNextWithNewAftarMarkAllRead = true;
 	if (!retObj.cfgOptions.hasOwnProperty("promptDelPersonalEmailAfterReply"))
 		retObj.cfgOptions.promptDelPersonalEmailAfterReply = false;
 	if (!retObj.cfgOptions.hasOwnProperty("themeFilename"))
