@@ -215,7 +215,10 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 	size_t i;
 
 	if(p->session != -1) {
-		destroy_session(lprintf, p->session);
+		if (p->tls_server)
+			destroy_session(lprintf, p->session);
+		else
+			cryptDestroySession(p->session);
 		p->session=-1;
 	}
 
@@ -2308,7 +2311,10 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			break;
 		case SOCK_PROP_DESCRIPTOR:
 			if(p->session != -1) {
-				destroy_session(lprintf, p->session);
+				if (p->tls_server)
+					destroy_session(lprintf, p->session);
+				else
+					cryptDestroySession(p->session);
 				p->session=-1;
 			}
 			if(JS_ValueToInt32(cx,*vp,&i))
@@ -2389,7 +2395,10 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			}
 			else {
 				if(p->session != -1) {
-					destroy_session(lprintf, p->session);
+					if (p->tls_server)
+						destroy_session(lprintf, p->session);
+					else
+						cryptDestroySession(p->session);
 					p->session=-1;
 					ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
 					do_js_close(cx, p, false);
