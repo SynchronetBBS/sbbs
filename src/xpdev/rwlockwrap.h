@@ -44,6 +44,7 @@ BOOL rwlock_wrlock(rwlock_t *lock);
 BOOL rwlock_trywrlock(rwlock_t *lock);
 BOOL rwlock_unlock(rwlock_t *lock);
 BOOL rwlock_destroy(rwlock_t *lock);
+#define rwlock_destory_ign(locl) ((void)rwlock_destroy(lock))
 
 #else
 #error Not implemented
