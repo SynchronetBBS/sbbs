@@ -1236,6 +1236,7 @@ typedef enum {
 	CRYPT_SESSINFO_PASSWORD,		/* Password */
 	CRYPT_SESSINFO_AUTHTOKEN,		/* Authentication token, e.g. TOTP */
 	CRYPT_SESSINFO_PRIVATEKEY,		/* Server/client private key */
+	CRYPT_SESSINFO_PUBLICKEY,		/* Other sides public key */
 	CRYPT_SESSINFO_KEYSET,			/* Certificate store */
 	CRYPT_SESSINFO_AUTHRESPONSE,	/* Session authorisation OK */
 
