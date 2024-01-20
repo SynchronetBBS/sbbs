@@ -489,15 +489,30 @@ static struct cert_list *get_sess_list_entry(scfg_t *cfg, int (*lprintf)(int lev
 {
 	struct cert_list *ret;
 
-	pthread_mutex_lock(&ssl_cert_list_mutex);
-	if (cert_list == NULL) {
-		pthread_mutex_unlock(&ssl_cert_list_mutex);
-		return get_ssl_cert(cfg, lprintf);
+	if (!rwlock_rdlock(&cert_epoch_lock)) {
+		lprintf(LOG_ERR, "Failed to lock cert_epoch_lock for read at %d", __LINE__);
+		return NULL;
 	}
-	ret = cert_list;
-	if (ret)
+	pthread_mutex_lock(&ssl_cert_list_mutex);
+	while (1) {
+		if (cert_list == NULL) {
+			pthread_mutex_unlock(&ssl_cert_list_mutex);
+			if (!rwlock_rdlock(&cert_epoch_lock)) {
+				lprintf(LOG_ERR, "Failed to unlock cert_epoch_lock for read at %d", __LINE__);
+			}
+			return get_ssl_cert(cfg, lprintf);
+		}
+		ret = cert_list;
 		cert_list = ret->next;
+		if (ret->epoch == cert_epoch)
+			break;
+		cryptDestroyContext(ret->cert);
+		free(ret);
+	}
 	pthread_mutex_unlock(&ssl_cert_list_mutex);
+	if (!rwlock_rdlock(&cert_epoch_lock)) {
+		lprintf(LOG_ERR, "Failed to unlock cert_epoch_lock for read at %d", __LINE__);
+	}
 	return ret;
 }
 
