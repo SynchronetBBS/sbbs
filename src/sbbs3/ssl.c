@@ -274,8 +274,8 @@ static void internal_do_cryptInit(void)
 	else {
 		cryptInit_error = ret; 
 	}
-	rwlock_init(&cert_epoch_lock);
-	rwlock_init(&tls_cert_file_date_lock);
+	(void)rwlock_init(&cert_epoch_lock);
+	(void)rwlock_init(&tls_cert_file_date_lock);
 	pthread_mutex_init(&ssl_cert_list_mutex, NULL);
 	pthread_mutex_init(&ssl_sess_list_mutex, NULL);
 	pthread_mutex_init(&get_ssl_cert_mutex, NULL);
