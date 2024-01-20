@@ -1171,7 +1171,7 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 	}
 	if ((status = cryptSetAttribute(*sess, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
 		GCES(status, *sock, *sess, estr, "disabling certificate verification");
-		destroy_session(lprintf, *sess);
+		cryptDestroySession(*sess);
 		*sess = -1;
 		if(resp)
 			sockprintf(*sock, *sess, "431 TLS not available");

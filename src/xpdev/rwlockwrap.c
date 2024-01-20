@@ -34,6 +34,8 @@ rwlock_init(rwlock_t *lock)
 {
 	InitializeCriticalSection(&lock->lk);
 	InitializeCriticalSection(&lock->wlk);
+	lock->zeror = CreateEvent(NULL, TRUE, TRUE, NULL);
+	lock->zerow = CreateEvent(NULL, TRUE, TRUE, NULL);
 	lock->readers = 0;
 	lock->writers = 0;
 	lock->writers_waiting = 0;
@@ -55,6 +57,10 @@ rwlock_rdlock(rwlock_t *lock)
 	}
 	while(rc->count == 0 && (lock->writers || lock->writers_waiting)) {
 		LeaveCriticalSection(&lock->lk);
+		if (WaitForSingleObject(lock->zerow, INFINITE) != WAIT_OBJECT_0) {
+			EnterCriticalSection(&lock->lk);
+			continue;
+		}
 		// Wait for current writer to release
 		EnterCriticalSection(&lock->wlk);
 		EnterCriticalSection(&lock->lk);
@@ -72,12 +78,14 @@ rwlock_rdlock(rwlock_t *lock)
 		else {
 			lock->readers++;
 			rc->count++;
+			ResetEvent(lock->zeror);
 			LeaveCriticalSection(&lock->lk);
 			LeaveCriticalSection(&lock->wlk);
 			return TRUE;
 		}
 	}
 	lock->readers++;
+	ResetEvent(lock->zeror);
 	rc->count++;
 	LeaveCriticalSection(&lock->lk);
 	return TRUE;
@@ -98,6 +106,7 @@ rwlock_tryrdlock(rwlock_t *lock)
 	if (rc->count || (lock->writers == 0 && lock->writers_waiting == 0)) {
 		rc->count++;
 		lock->readers++;
+		ResetEvent(lock->zeror);
 		ret = TRUE;
 	}
 	LeaveCriticalSection(&lock->lk);
@@ -110,6 +119,7 @@ rwlock_wrlock(rwlock_t *lock)
 	BOOL ret = FALSE;
 	EnterCriticalSection(&lock->lk);
 	lock->writers_waiting++;
+	ResetEvent(lock->zerow);
 	LeaveCriticalSection(&lock->lk);
 	EnterCriticalSection(&lock->wlk);
 	EnterCriticalSection(&lock->lk);
@@ -117,7 +127,10 @@ rwlock_wrlock(rwlock_t *lock)
 	while (lock->readers) {
 		LeaveCriticalSection(&lock->lk);
 		LeaveCriticalSection(&lock->wlk);
-		Sleep(1);
+		if (WaitForSingleObject(lock->zeror, INFINITE) != WAIT_OBJECT_0) {
+			EnterCriticalSection(&lock->lk);
+			continue;
+		}
 		EnterCriticalSection(&lock->wlk);
 		EnterCriticalSection(&lock->lk);
 	}
@@ -128,6 +141,7 @@ rwlock_wrlock(rwlock_t *lock)
 	else {
 		lock->writers_waiting--;
 		lock->writers++;
+		ResetEvent(lock->zerow);
 		lock->writer = GetCurrentThreadId();
 		ret = TRUE;
 	}
@@ -144,6 +158,7 @@ rwlock_trywrlock(rwlock_t *lock)
 		// Prevent recursing on writer locks
 		if (lock->readers == 0 && lock->writers == 0) {
 			lock->writers++;
+			ResetEvent(lock->zerow);
 			lock->writer = GetCurrentThreadId();
 			LeaveCriticalSection(&lock->lk);
 			return TRUE;
@@ -158,7 +173,6 @@ rwlock_trywrlock(rwlock_t *lock)
 BOOL
 rwlock_unlock(rwlock_t *lock)
 {
-	BOOL ret = FALSE;
 	struct rwlock_reader_thread *rc;
 	struct rwlock_reader_thread **prev;
 
@@ -166,6 +180,8 @@ rwlock_unlock(rwlock_t *lock)
 	if (lock->writers) {
 		if (lock->writer == GetCurrentThreadId()) {
 			lock->writers--;
+			if ((lock->writers_waiting + lock->writers) == 0)
+				SetEvent(lock->zerow);
 			LeaveCriticalSection(&lock->lk);
 			LeaveCriticalSection(&lock->wlk);
 			return TRUE;
@@ -182,6 +198,8 @@ rwlock_unlock(rwlock_t *lock)
 				*prev = rc->next;
 				free(rc);
 			}
+			if (lock->readers == 0)
+				SetEvent(lock->zeror);
 			LeaveCriticalSection(&lock->lk);
 			return TRUE;
 		}

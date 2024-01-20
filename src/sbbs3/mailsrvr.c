@@ -1082,15 +1082,17 @@ static bool pop3_client_thread(pop3_t* pop3)
 			GCESH(stat, client.protocol, socket, host_ip, CRYPT_UNUSED, "creating session");
 			return false;
 		}
-		pop3->session = session;
 		if ((stat=cryptSetAttribute(session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+			cryptDestroySession(session);
 			GCESH(stat, client.protocol, socket, host_ip, session, "disabling certificate verification");
 			return false;
 		}
 		if ((stat=add_private_key(&scfg, lprintf, session)) != CRYPT_OK) {
+			cryptDestroySession(session);
 			GCESH(stat, client.protocol, socket, host_ip, session, "setting private key");
 			return false;
 		}
+		pop3->session = session;
 		nodelay = TRUE;
 		setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 		nb=0;
@@ -1195,17 +1197,19 @@ static bool pop3_client_thread(pop3_t* pop3)
 					buf[0] = 0;
 					break;
 				}
-				pop3->session = session;
 				if ((stat=cryptSetAttribute(session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+					cryptDestroySession(session);
 					GCESH(stat, client.protocol, socket, host_ip, session, "disabling certificate verification");
 					buf[0] = 0;
 					break;
 				}
 				if ((stat=add_private_key(&scfg, lprintf, session)) != CRYPT_OK) {
+					cryptDestroySession(session);
 					GCESH(stat, client.protocol, socket, host_ip, session, "setting private key");
 					buf[0] = 0;
 					break;
 				}
+				pop3->session = session;
 				nodelay = TRUE;
 				setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 				nb=0;
@@ -2970,15 +2974,17 @@ static bool smtp_client_thread(smtp_t* smtp)
 			GCESH(cstat, client.protocol, socket, host_ip, CRYPT_UNUSED, "creating session");
 			return false;
 		}
-		smtp->session = session;
 		if ((cstat = cryptSetAttribute(session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+			cryptDestroySession(session);
 			GCESH(cstat, client.protocol, socket, host_ip, session, "disabling certificate verification");
 			return false;
 		}
 		if ((cstat = add_private_key(&scfg, lprintf, session)) != CRYPT_OK) {
+			cryptDestroySession(session);
 			GCESH(cstat, client.protocol, socket, host_ip, session, "setting private key");
 			return false;
 		}
+		smtp->session = session;
 		nodelay = TRUE;
 		setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 		nb=0;
@@ -4948,10 +4954,9 @@ static bool smtp_client_thread(smtp_t* smtp)
 				sockprintf(socket, client.protocol, session, "454 TLS not available");
 				continue;
 			}
-			smtp->session = session;
 			if ((cstat=cryptSetAttribute(session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
 				GCESH(cstat, "SMTPS", socket, host_ip, session, "disabling certificate verification");
-				destroy_session(lprintf, session);
+				cryptDestroySession(session);
 				session = -1;
 				sockprintf(socket, client.protocol, session, "454 TLS not available");
 				continue;
@@ -4959,11 +4964,12 @@ static bool smtp_client_thread(smtp_t* smtp)
 			if ((cstat=add_private_key(&scfg, lprintf, session)) != CRYPT_OK) {
 				GCESH(cstat, "SMTPS", socket, host_ip, session, "setting private key");
 				lprintf(LOG_ERR, "%04d SMTPS %s !Unable to set private key", socket, client_id);
-				destroy_session(lprintf, session);
+				cryptDestroySession(session);
 				session = -1;
 				sockprintf(socket, client.protocol, session, "454 TLS not available");
 				continue;
 			}
+			smtp->session = session;
 			nodelay = TRUE;
 			setsockopt(socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 			nb=0;
@@ -5372,14 +5378,20 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 							continue;
 						}
 						if ((status=cryptSetAttribute(*session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY)) != CRYPT_OK) {
+							cryptDestroySession(*session);
+							*session = -1;
 							GCESH(status, prot, sock, server, *session, "disabling certificate verification");
 							continue;
 						}
 						if ((status=cryptSetAttribute(*session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_OBLIVIOUS)) != CRYPT_OK) {
+							cryptDestroySession(*session);
+							*session = -1;
 							GCESH(status, prot, sock, server, *session, "setting certificate compliance level");
 							continue;
 						}
 						if ((status=add_private_key(&scfg, lprintf, *session)) != CRYPT_OK) {
+							cryptDestroySession(*session);
+							*session = -1;
 							GCESH(status, prot, sock, server, *session, "setting private key");
 							continue;
 						}

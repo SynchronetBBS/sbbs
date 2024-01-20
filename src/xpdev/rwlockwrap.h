@@ -28,6 +28,8 @@ struct rwlock_reader_thread {
 typedef struct {
 	CRITICAL_SECTION lk;       // Protects access to all elements
 	CRITICAL_SECTION wlk;      // Locked by an active writer
+	HANDLE zeror;              // Event set whenever there are zero readers
+	HANDLE zerow;              // Event set whenever writers_waiting + writers is zero
 	unsigned readers;
 	unsigned writers;
 	unsigned writers_waiting;
