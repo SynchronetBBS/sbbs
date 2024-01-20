@@ -16,6 +16,8 @@ In general, if it's a large set of changes, your best bet of getting it accepted
 When modifying the C/C++ source files:
 * Do not call functions from `ctype.h` (e.g. `isprint()`, `isspace()`, `isdigit()`, etc.) - use the `xpdev/gen_defs.h IS_*` macros instead.
 * Use safe string handling (e.g. xpdev's `SAFECOPY()` instead of `strcpy()`, `SAFEPRINTF()` or `snprintf()` instead of `sprintf()`).
+* For boolean variables and parameter types, use `bool` (not `BOOL` unless Win32 API compatibility is required) and use `JSBool` when libmozjs API compatibility is required.
+* Use of the `long int` type (signed or unsigned) should be avoided since it is inconsistent in size among the supported build environments / target platforms; use `int` or sized-types instead.
 
 When modifying JavaScript (`.js`) files:
 * Specify `"use strict"` when adding new files and write conforming code
