@@ -13,6 +13,7 @@ typedef pthread_rwlock_t rwlock_t;
 #define rwlock_trywrlock(lock) (pthread_rwlock_trywrlock(lock) == 0)
 #define rwlock_unlock(lock) (pthread_rwlock_unlock(lock) == 0)
 #define rwlock_destroy(lock) (pthread_rwlock_destroy(lock) == 0)
+#define rwlock_destroy_ign(lock) ((void)pthread_rwlock_destroy(lock))
 
 #elif defined(_WIN32)
 
