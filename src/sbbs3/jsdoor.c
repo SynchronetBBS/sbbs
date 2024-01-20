@@ -57,7 +57,7 @@ void* DLLCALL js_GetClassPrivate(JSContext *cx, JSObject *obj, JSClass* cls)
 	return ret;
 }
 
-void call_socket_open_callback(BOOL open)
+void call_socket_open_callback(bool open)
 {
 }
 
@@ -214,7 +214,7 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 	return NULL;
 }
 
-BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
+bool DLLCALL js_CreateCommonObjects(JSContext* js_cx
 										,scfg_t *unused1
 										,scfg_t *unused2
 										,jsSyncMethodSpec* methods	/* global */
@@ -231,7 +231,7 @@ BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 										,struct mqtt* mqtt
 										)
 {
-	BOOL	success=FALSE;
+	bool	success=FALSE;
 
 	/* Global Object */
 	if(!js_CreateGlobalObject(js_cx, &scfg, methods, js_startup, glob))
