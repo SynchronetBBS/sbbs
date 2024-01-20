@@ -2358,10 +2358,10 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 									p->tls_server = FALSE;
 								}
 								else {
-                                                                       if (scfg == NULL) {
-                                                                               ret = CRYPT_ERROR_NOTAVAIL;
-                                                                       }
-                                                                       else {
+									if (scfg == NULL) {
+										ret = CRYPT_ERROR_NOTAVAIL;
+									}
+									else {
 										ret = add_private_key(scfg, lprintf, p->session);
 										if (ret != CRYPT_OK) {
 											GCES(ret, p, estr, "setting private key");
