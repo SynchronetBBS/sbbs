@@ -29,16 +29,15 @@
 extern "C" {
 #endif
 
-BOOL	allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size);
+bool	allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size);
 char*	readline(long *offset, char *str, int maxlen, FILE *stream);
 
-DLLEXPORT BOOL	read_node_cfg(scfg_t* cfg, char* error, size_t);
-DLLEXPORT BOOL	read_main_cfg(scfg_t* cfg, char* error, size_t);
-DLLEXPORT BOOL	read_xtrn_cfg(scfg_t* cfg, char* error, size_t);
-DLLEXPORT BOOL	read_file_cfg(scfg_t* cfg, char* error, size_t);
-DLLEXPORT BOOL	read_msgs_cfg(scfg_t* cfg, char* error, size_t);
-DLLEXPORT BOOL	read_chat_cfg(scfg_t* cfg, char* error, size_t);
-DLLEXPORT BOOL	read_attr_cfg(scfg_t* cfg, char* error, size_t);
+DLLEXPORT bool	read_node_cfg(scfg_t* cfg, char* error, size_t);
+DLLEXPORT bool	read_main_cfg(scfg_t* cfg, char* error, size_t);
+DLLEXPORT bool	read_xtrn_cfg(scfg_t* cfg, char* error, size_t);
+DLLEXPORT bool	read_file_cfg(scfg_t* cfg, char* error, size_t);
+DLLEXPORT bool	read_msgs_cfg(scfg_t* cfg, char* error, size_t);
+DLLEXPORT bool	read_chat_cfg(scfg_t* cfg, char* error, size_t);
 DLLEXPORT char*	prep_path(char* path);
 DLLEXPORT char* prep_dir(const char* base, char* path, size_t);
 DLLEXPORT void	make_data_dirs(scfg_t* cfg);
@@ -66,11 +65,11 @@ int		getchatactset(scfg_t*, const char* name);
 int		getxeditnum(scfg_t*, const char* code);
 int		getshellnum(scfg_t*, const char* code);
 
-DLLEXPORT BOOL	is_valid_dirnum(scfg_t*, int);
-DLLEXPORT BOOL	is_valid_libnum(scfg_t*, int);
-DLLEXPORT BOOL	is_valid_subnum(scfg_t*, int);
-DLLEXPORT BOOL	is_valid_grpnum(scfg_t*, int);
-DLLEXPORT BOOL	is_valid_xtrnsec(scfg_t*, int);
+DLLEXPORT bool	is_valid_dirnum(scfg_t*, int);
+DLLEXPORT bool	is_valid_libnum(scfg_t*, int);
+DLLEXPORT bool	is_valid_subnum(scfg_t*, int);
+DLLEXPORT bool	is_valid_grpnum(scfg_t*, int);
+DLLEXPORT bool	is_valid_xtrnsec(scfg_t*, int);
 
 DLLEXPORT char *	trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
 DLLEXPORT char *	twitlist_fname(scfg_t* cfg, char* fname, size_t);

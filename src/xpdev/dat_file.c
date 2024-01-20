@@ -39,7 +39,7 @@ static char* csvEncode(char* field)
 	char  first;
 	char  last;
 	char* nl;
-	BOOL  enclose;
+	bool  enclose;
 
 	if((buf=malloc(strlen(field)*2))==NULL)
 		return(NULL);
@@ -203,7 +203,7 @@ str_list_t dataCreateList(const str_list_t records[], const str_list_t columns, 
 	return(list);
 }
 
-BOOL dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t columns, const char* separator
+bool dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t columns, const char* separator
 				   ,dataLineCreator_t lineCreator)
 {
 #ifdef __EMSCRIPTEN__
@@ -278,7 +278,7 @@ str_list_t*	dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t linePar
 	return(records);
 }
 
-BOOL dataListFree(str_list_t* list)
+bool dataListFree(str_list_t* list)
 {
 	size_t		i;
 
@@ -288,7 +288,7 @@ BOOL dataListFree(str_list_t* list)
 		strListFree(&list[i]);
 
 	strListFree(list);
-	return TRUE;
+	return true;
 }
 
 FILE* dataOpenFile(const char* path, const char* mode)

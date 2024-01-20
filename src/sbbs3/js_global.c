@@ -48,13 +48,13 @@ enum {
 	,GLOB_PROP_SOCKET_ERRNO_STR
 };
 
-BOOL js_argc(JSContext *cx, uintN argc, uintN min)
+bool js_argc(JSContext *cx, uintN argc, uintN min)
 {
 	if(argc < min) {
 		JS_ReportError(cx, "Insufficient Arguments");
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
@@ -5374,7 +5374,7 @@ JSClass js_global_class = {
 	,js_global_finalize		/* finalize		*/
 };
 
-BOOL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t* startup, JSObject**glob)
+bool js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t* startup, JSObject**glob)
 {
 	global_private_t*	p;
 	JSRuntime*			rt;

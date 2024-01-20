@@ -26,7 +26,7 @@
 
 const char* log_line_ending = "\r\n";
 
-extern "C" BOOL hacklog(scfg_t* cfg, struct mqtt* mqtt, const char* prot, const char* user, const char* text, const char* host, union xp_sockaddr* addr)
+extern "C" bool hacklog(scfg_t* cfg, struct mqtt* mqtt, const char* prot, const char* user, const char* text, const char* host, union xp_sockaddr* addr)
 {
 	char	tstr[64];
 	char	fname[MAX_PATH+1];
@@ -69,12 +69,12 @@ extern "C" BOOL hacklog(scfg_t* cfg, struct mqtt* mqtt, const char* prot, const 
 	return true;
 }
 
-BOOL sbbs_t::hacklog(const char* prot, const char* text)
+bool sbbs_t::hacklog(const char* prot, const char* text)
 {
 	return ::hacklog(&cfg, mqtt, prot, useron.alias, text, client_name, &client_addr);
 }
 
-extern "C" BOOL spamlog(scfg_t* cfg, struct mqtt* mqtt, char* prot, char* action
+extern "C" bool spamlog(scfg_t* cfg, struct mqtt* mqtt, char* prot, char* action
 								,char* reason, char* host, char* ip_addr
 								,char* to, char* from)
 {

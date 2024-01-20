@@ -43,25 +43,25 @@ DLLEXPORT char *	truncated_str(char* str, const char* set);
 DLLEXPORT char *	ascii_str(uchar* str);
 DLLEXPORT char *    replace_named_values(const char* src ,char* buf, size_t buflen,	 
                        const char* escape_seq, named_string_t* string_list,	 
-                       named_int_t* int_list, BOOL case_sensitive);
+                       named_int_t* int_list, bool case_sensitive);
 DLLEXPORT char *	condense_whitespace(char* str);
 DLLEXPORT char		exascii_to_ascii_char(uchar ch);
-DLLEXPORT char *	convert_ansi(const char* src, char* dest, size_t, int width, BOOL ice_color);
+DLLEXPORT char *	convert_ansi(const char* src, char* dest, size_t, int width, bool ice_color);
 DLLEXPORT char *	strip_ansi(char* str);
 DLLEXPORT char *	strip_exascii(const char *str, char* dest);
 DLLEXPORT char *	strip_cp437_graphics(const char *str, char* dest);
 DLLEXPORT char *	strip_space(const char *str, char* dest);
 DLLEXPORT char *	strip_ctrl(const char *str, char* dest);
 DLLEXPORT char *	strip_char(const char* str, char* dest, char);
-DLLEXPORT BOOL		valid_ctrl_a_attr(char a);
-DLLEXPORT BOOL		valid_ctrl_a_code(char a);
+DLLEXPORT bool		valid_ctrl_a_attr(char a);
+DLLEXPORT bool		valid_ctrl_a_code(char a);
 DLLEXPORT size_t	strip_invalid_attr(char *str);
 DLLEXPORT char *	u32toac(uint32_t, char*, char sep);
 DLLEXPORT char *	u64toac(uint64_t, char*, char sep);
 DLLEXPORT char *	rot13(char* str);
 DLLEXPORT uint32_t	str_to_bits(uint32_t currval, const char *str);
-DLLEXPORT BOOL		str_has_ctrl(const char*);
-DLLEXPORT BOOL		str_is_ascii(const char*);
+DLLEXPORT bool		str_has_ctrl(const char*);
+DLLEXPORT bool		str_is_ascii(const char*);
 DLLEXPORT char *	utf8_to_cp437_inplace(char* str);
 
 #ifdef __cplusplus

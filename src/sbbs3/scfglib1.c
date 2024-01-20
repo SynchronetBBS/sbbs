@@ -27,17 +27,17 @@
 #include "ini_file.h"
 #include "sockwrap.h"	 // IPPORT_MQTT
 
-BOOL allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size)
+bool allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size)
 {
 	safe_snprintf(error, maxerrlen, "%s: allocating %u bytes of memory for %s"
 		,fname, (uint)size, item);
-	return(FALSE);
+	return(false);
 }
 
 /****************************************************************************/
 /* Reads in node .ini and initializes the associated variables				*/
 /****************************************************************************/
-BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
+bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
 	char	errstr[256];
 	FILE*	fp;
@@ -48,7 +48,7 @@ BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFEPRINTF2(cfg->filename,"%s%s",cfg->node_dir,fname);
 	if((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
 		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),cfg->filename);
-		return FALSE;
+		return false;
 	}
 	ini = iniReadFile(fp);
 	fclose(fp);
@@ -64,15 +64,15 @@ BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	iniFreeStringList(ini);
 
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
 /* Reads in main.ini and initializes the associated variables				*/
 /****************************************************************************/
-BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
+bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	BOOL	result = FALSE;
+	bool	result = false;
 	char	errstr[256];
 	FILE*	fp;
 	str_list_t	ini = NULL;
@@ -86,7 +86,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else {
 		ini = iniReadFile(fp);
 		fclose(fp);
-		result = TRUE;
+		result = true;
 	}
 
 	SAFECOPY(cfg->sys_name, iniGetString(ini, ROOT_SECTION, "name", "", value));
@@ -127,7 +127,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->user_backup_level = iniGetUInteger(ini, ROOT_SECTION, "user_backup_level", 5);
 	cfg->mail_backup_level = iniGetUInteger(ini, ROOT_SECTION, "mail_backup_level", 5);
 	cfg->config_backup_level = iniGetUInteger(ini, ROOT_SECTION, "config_backup_level", 5);
-	cfg->new_install = iniGetBool(ini, ROOT_SECTION, "new_install", TRUE);
+	cfg->new_install = iniGetBool(ini, ROOT_SECTION, "new_install", true);
 	cfg->valuser = iniGetUInteger(ini, ROOT_SECTION, "valuser", 0);
 	cfg->erruser = iniGetUInteger(ini, ROOT_SECTION, "erruser", 0);
 	cfg->errlevel = (uchar)iniGetUInteger(ini, ROOT_SECTION, "errlevel", LOG_CRIT);
@@ -139,7 +139,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	named_str_list_t** sections = iniParseSections(ini);
 
-	section = iniGetParsedSection(sections, "node_dir", /* cut: */TRUE);
+	section = iniGetParsedSection(sections, "node_dir", /* cut: */true);
 
 	str_list_t node_dirs = iniGetKeyList(section, NULL);
 	cfg->sys_nodes = (uint16_t)strListCount(node_dirs);
@@ -153,7 +153,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	cfg->sys_lastnode = iniGetInteger(ini, ROOT_SECTION, "lastnode", cfg->sys_nodes);
 
-	section = iniGetParsedSection(sections, "dir", /* cut: */TRUE);
+	section = iniGetParsedSection(sections, "dir", /* cut: */true);
 	SAFECOPY(cfg->data_dir, iniGetString(section, NULL, "data", "../data/", value));
 	SAFECOPY(cfg->exec_dir, iniGetString(section, NULL, "exec", "../exec/", value));
 	SAFECOPY(cfg->mods_dir, iniGetString(section, NULL, "mods", "../mods/", value));
@@ -162,7 +162,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*********************/
 	/* New User Settings */
 	/*********************/
-	section = iniGetParsedSection(sections, "newuser", /* cut: */TRUE);
+	section = iniGetParsedSection(sections, "newuser", /* cut: */true);
 	cfg->uq = iniGetUInteger(section, NULL, "questions", DEFAULT_NEWUSER_QS);
 
 	SAFECOPY(cfg->new_genders, iniGetString(section, NULL, "gender_options", "MFX", value));
@@ -193,7 +193,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*************************/
 	/* Expired User Settings */
 	/*************************/
-	section = iniGetParsedSection(sections, "expired", /* cut: */TRUE);
+	section = iniGetParsedSection(sections, "expired", /* cut: */true);
 	cfg->expired_level = iniGetInteger(section, NULL, "level", 0);
 	cfg->expired_flags1 = iniGetUInt32(section, NULL, "flags1", 0);
 	cfg->expired_flags2 = iniGetUInt32(section, NULL, "flags2", 0);
@@ -205,9 +205,9 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*****************/
 	/* MQTT Settings */
 	/*****************/
-	section = iniGetParsedSection(sections, "mqtt", /* cut: */TRUE);
-	cfg->mqtt.enabled = iniGetBool(section, NULL, "enabled", FALSE);
-	cfg->mqtt.verbose = iniGetBool(section, NULL, "verbose", TRUE);
+	section = iniGetParsedSection(sections, "mqtt", /* cut: */true);
+	cfg->mqtt.enabled = iniGetBool(section, NULL, "enabled", false);
+	cfg->mqtt.verbose = iniGetBool(section, NULL, "verbose", true);
 	SAFECOPY(cfg->mqtt.username, iniGetString(section, NULL, "username", "", value));
 	SAFECOPY(cfg->mqtt.password, iniGetString(section, NULL, "password", "", value));
 	SAFECOPY(cfg->mqtt.broker_addr, iniGetString(section, NULL, "broker_addr", "127.0.0.1", value));
@@ -228,7 +228,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***********/
 	/* Modules */
 	/***********/
-	section = iniGetParsedSection(sections, "module", /* cut: */TRUE);
+	section = iniGetParsedSection(sections, "module", /* cut: */true);
 	SAFECOPY(cfg->logon_mod, iniGetString(section, NULL, "logon", "logon", value));
 	SAFECOPY(cfg->logoff_mod, iniGetString(section, NULL, "logoff", "", value));
 	SAFECOPY(cfg->newuser_mod, iniGetString(section, NULL, "newuser", "newuser", value));
@@ -266,7 +266,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	for(uint i=0; i<10; i++) {
 		char name[128];
 		SAFEPRINTF(name, "valset:%u", i);
-		section = iniGetParsedSection(sections, name, /* cut: */TRUE);
+		section = iniGetParsedSection(sections, name, /* cut: */true);
 		cfg->val_level[i] = iniGetInteger(section, NULL, "level", 0);
 		cfg->val_expire[i] = iniGetInteger(section, NULL, "expire", 0);
 		cfg->val_flags1[i] = iniGetUInt32(section, NULL, "flags1", 0);
@@ -285,7 +285,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	for(uint i=0; i<100; i++) {
 		char name[128];
 		SAFEPRINTF(name, "level:%u", i);
-		section = iniGetParsedSection(sections, name, /* cut: */TRUE);
+		section = iniGetParsedSection(sections, name, /* cut: */true);
 		cfg->level_timeperday[i] = iniGetInteger(section, NULL, "timeperday", i);
 		cfg->level_timepercall[i] = iniGetInteger(section, NULL, "timepercall", i);
 		cfg->level_callsperday[i] = iniGetInteger(section, NULL, "callsperday", i);
@@ -310,7 +310,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		memset(cfg->shell[i],0,sizeof(shell_t));
 
 		const char* name = shell_list[i];
-		section = iniGetParsedSection(sections, name, /* cut: */TRUE);
+		section = iniGetParsedSection(sections, name, /* cut: */true);
 		SAFECOPY(cfg->shell[i]->code, name + 6);
 		SAFECOPY(cfg->shell[i]->name, iniGetString(section, NULL, "name", name + 6, value));
 		SAFECOPY(cfg->shell[i]->arstr, iniGetString(section, NULL, "ars", "", value));
@@ -330,7 +330,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 /****************************************************************************/
 /* Reads in msgs.ini and initializes the associated variables				*/
 /****************************************************************************/
-BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
+bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
 	char	errstr[256];
 	FILE*	fp;
@@ -341,7 +341,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFEPRINTF2(cfg->filename,"%s%s",cfg->ctrl_dir,fname);
 	if((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
 		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),cfg->filename);
-		return FALSE;
+		return false;
 	}
 	ini = iniReadFile(fp);
 	fclose(fp);
@@ -355,7 +355,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	named_str_list_t** sections = iniParseSections(ini);
 
 	/* QWK stuff */
-	str_list_t section = iniGetParsedSection(sections, "QWK", /* cut: */TRUE);
+	str_list_t section = iniGetParsedSection(sections, "QWK", /* cut: */true);
 	cfg->max_qwkmsgs = iniGetInteger(section, NULL, "max_msgs", 0);
 	cfg->max_qwkmsgage = iniGetInteger(section, NULL, "max_age", 0);
 	SAFECOPY(cfg->qnet_tagline, iniGetString(section, NULL, "default_tagline", "", value));
@@ -363,7 +363,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	arstr(NULL, cfg->preqwk_arstr, cfg, cfg->preqwk_ar);
 
 	/* E-Mail stuff */
-	section = iniGetParsedSection(sections, "mail", /* cut: */TRUE);
+	section = iniGetParsedSection(sections, "mail", /* cut: */true);
 	cfg->mail_maxcrcs = iniGetInteger(section, NULL, "max_crcs", 0);
 	cfg->mail_maxage = iniGetInteger(section, NULL, "max_age", 0);
 	cfg->max_spamage = iniGetInteger(section, NULL, "max_spam_age", 0);
@@ -383,7 +383,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		const char* name = grp_list[i];
 		if((cfg->grp[i]=(grp_t *)malloc(sizeof(grp_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "group", sizeof(grp_t));
-		section = iniGetParsedSection(sections, name, /* cut: */TRUE);
+		section = iniGetParsedSection(sections, name, /* cut: */true);
 		memset(cfg->grp[i],0,sizeof(grp_t));
 		SAFECOPY(cfg->grp[i]->sname, name + 4);
 		SAFECOPY(cfg->grp[i]->lname, iniGetString(section, NULL, "description", name + 4, value));
@@ -420,7 +420,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			continue;
 		if((cfg->sub[i]=(sub_t *)malloc(sizeof(sub_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "sub", sizeof(sub_t));
-		section = iniGetParsedSection(sections, name, /* cut: */TRUE);
+		section = iniGetParsedSection(sections, name, /* cut: */true);
 		memset(cfg->sub[i],0,sizeof(sub_t));
 		SAFECOPY(cfg->sub[i]->code_suffix, code);
 
@@ -464,7 +464,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 				safe_snprintf(error, maxerrlen,"%s: Duplicate pointer index for subs %s and %s"
 					,fname
 					,cfg->sub[i]->code_suffix,cfg->sub[j]->code_suffix);
-				return(FALSE);
+				return(false);
 			}
 #endif
 
@@ -479,7 +479,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***********/
 	/* FidoNet */
 	/***********/
-	section = iniGetParsedSection(sections, "fidonet", /* cut: */TRUE);
+	section = iniGetParsedSection(sections, "fidonet", /* cut: */true);
 	str_list_t faddr_list = iniGetStringList(section, NULL, "addr_list", ",", "");
 	cfg->total_faddrs = strListCount(faddr_list);
 
@@ -515,11 +515,11 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		const char* name = qhub_list[i];
 		if((cfg->qhub[i]=(qhub_t *)malloc(sizeof(qhub_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "qhub", sizeof(qhub_t));
-		section = iniGetParsedSection(sections, name, /* cut: */TRUE);
+		section = iniGetParsedSection(sections, name, /* cut: */true);
 		memset(cfg->qhub[i],0,sizeof(qhub_t));
 
 		SAFECOPY(cfg->qhub[i]->id, name + 5);
-		cfg->qhub[i]->enabled = iniGetBool(section, NULL, "enabled", TRUE);
+		cfg->qhub[i]->enabled = iniGetBool(section, NULL, "enabled", true);
 		cfg->qhub[i]->time = iniGetUInt16(section, NULL, "time", 0);
 		cfg->qhub[i]->freq = iniGetUInt16(section, NULL, "freq", 0);
 		cfg->qhub[i]->days = (uint8_t)iniGetUInteger(section, NULL, "days", 0);
@@ -549,7 +549,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			char		subcode[LEN_EXTCODE + 1];
 			uint		mode;
 			confnum = atoi(qsub_list[j] + strlen(str));
-			str_list_t subsection = iniGetParsedSection(sections, qsub_list[j], /* cut: */TRUE);
+			str_list_t subsection = iniGetParsedSection(sections, qsub_list[j], /* cut: */true);
 			SAFECOPY(subcode, iniGetString(subsection, NULL, "sub", "", value));
 			subnum = getsubnum(cfg, subcode);
 			mode = iniGetUInteger(subsection, NULL, "mode", 0);
@@ -569,7 +569,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/************/
 	/* Internet */
 	/************/
-	section = iniGetParsedSection(sections, "Internet", /* cut: */TRUE);
+	section = iniGetParsedSection(sections, "Internet", /* cut: */true);
 	SAFECOPY(cfg->sys_inetaddr, iniGetString(section, NULL, "addr", "", value));
 	SAFECOPY(cfg->inetmail_sem, iniGetString(section, NULL, "netmail_sem", "", value));
 	SAFECOPY(cfg->smtpmail_sem, iniGetString(section, NULL, "smtp_sem", "", value));
@@ -579,7 +579,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	iniFreeStringList(ini);
 	iniFreeParsedSections(sections);
 
-	return TRUE;
+	return true;
 }
 
 void free_node_cfg(scfg_t* cfg)
@@ -818,27 +818,27 @@ int getshellnum(scfg_t* cfg, const char* code)
 	return 0;
 }
 
-BOOL is_valid_dirnum(scfg_t* cfg, int dirnum)
+bool is_valid_dirnum(scfg_t* cfg, int dirnum)
 {
 	return (dirnum >= 0) && (cfg != NULL) && (dirnum < cfg->total_dirs);
 }
 
-BOOL is_valid_libnum(scfg_t* cfg, int libnum)
+bool is_valid_libnum(scfg_t* cfg, int libnum)
 {
 	return (libnum >= 0) && (cfg != NULL) && (libnum < cfg->total_libs);
 }
 
-BOOL is_valid_subnum(scfg_t* cfg, int subnum)
+bool is_valid_subnum(scfg_t* cfg, int subnum)
 {
 	return (subnum >= 0) && (cfg != NULL) && (subnum < cfg->total_subs);
 }
 
-BOOL is_valid_grpnum(scfg_t* cfg, int grpnum)
+bool is_valid_grpnum(scfg_t* cfg, int grpnum)
 {
 	return (grpnum >= 0) && (cfg != NULL) && (grpnum < cfg->total_grps);
 }
 
-BOOL is_valid_xtrnsec(scfg_t* cfg, int secnum)
+bool is_valid_xtrnsec(scfg_t* cfg, int secnum)
 {
 	return (secnum >= 0) && (cfg != NULL) && (secnum < cfg->total_xtrnsecs);
 }

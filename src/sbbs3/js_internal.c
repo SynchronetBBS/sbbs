@@ -1141,7 +1141,7 @@ js_clear_events(JSContext *cx, js_callback_t *cb)
 }
 
 JSBool
-js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated)
+js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 {
 	struct js_event_list **head = &cb->events;
 	int timeout;

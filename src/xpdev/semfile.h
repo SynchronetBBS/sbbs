@@ -31,8 +31,8 @@ extern "C" {
 #endif
 
 /* semfile.c */
-DLLEXPORT BOOL		semfile_signal(const char* fname, const char* text);
-DLLEXPORT BOOL		semfile_check(time_t* t, const char* fname);
+DLLEXPORT bool		semfile_signal(const char* fname, const char* text);
+DLLEXPORT bool		semfile_check(time_t* t, const char* fname);
 DLLEXPORT char*		semfile_list_check(time_t* t, str_list_t filelist);
 DLLEXPORT str_list_t	
 					semfile_list_init(const char* parent, const char* action

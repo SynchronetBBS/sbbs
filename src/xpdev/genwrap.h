@@ -370,7 +370,7 @@ DLLEXPORT int		safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 ;
 
 /* C string/char escape-sequence processing */
-DLLEXPORT char*		c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_only);
+DLLEXPORT char*		c_escape_str(const char* src, char* dst, size_t maxlen, bool ctrl_only);
 DLLEXPORT char*		c_escape_char(char ch);
 DLLEXPORT char*		c_unescape_str(char* str);
 DLLEXPORT char		c_unescape_char_ptr(const char* str, char** endptr);
@@ -391,8 +391,8 @@ typedef		clock_t				msclock_t;
 #define		MSCLOCKS_PER_SEC	1000
 msclock_t	msclock(void);
 
-DLLEXPORT BOOL		check_pid(pid_t);
-DLLEXPORT BOOL		terminate_pid(pid_t);
+DLLEXPORT bool		check_pid(pid_t);
+DLLEXPORT bool		terminate_pid(pid_t);
 
 DLLEXPORT void*		realloc_or_free(void* p, size_t size);
 

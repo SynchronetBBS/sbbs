@@ -78,7 +78,7 @@ void mimetextpartheader(SOCKET socket, const char* prot, int sess, char* boundar
     sockprintf(socket,prot,sess,"Content-Transfer-Encoding: 8bit");
 }
 
-BOOL base64out(SOCKET socket, const char* prot, int sess, char* pathfile)
+bool base64out(SOCKET socket, const char* prot, int sess, char* pathfile)
 {
     FILE *  fp;
     char    in[57];
@@ -86,23 +86,23 @@ BOOL base64out(SOCKET socket, const char* prot, int sess, char* pathfile)
     int     bytesread;
 
     if((fp=fopen(pathfile,"rb"))==NULL) 
-        return(FALSE);
+        return(false);
     while(1) {
         bytesread=fread(in,1,sizeof(in),fp);
 		if((b64_encode(out,sizeof(out),in,bytesread)==-1)
 				|| !sockprintf(socket,prot,sess, "%s", out))  {
 			fclose(fp);
-			return(FALSE);
+			return(false);
 		}
         if(bytesread!=sizeof(in) || feof(fp))
             break;
     }
 	fclose(fp);
     sockprintf(socket,prot,sess,"");
-	return(TRUE);
+	return(true);
 }
 
-BOOL mimeattach(SOCKET socket, const char* prot, int sess, char* boundary, char* pathfile)
+bool mimeattach(SOCKET socket, const char* prot, int sess, char* boundary, char* pathfile)
 {
     char* fname = getfname(pathfile);
 
@@ -114,9 +114,9 @@ BOOL mimeattach(SOCKET socket, const char* prot, int sess, char* boundary, char*
     sockprintf(socket,prot,sess," filename=\"%s\"",fname);
     sockprintf(socket,prot,sess,"");
     if(!base64out(socket,prot,sess,pathfile))
-		return(FALSE);
+		return(false);
     sockprintf(socket,prot,sess,"");
-	return(TRUE);
+	return(true);
 }
 
 void endmime(SOCKET socket, const char* prot, int sess, char* boundary)

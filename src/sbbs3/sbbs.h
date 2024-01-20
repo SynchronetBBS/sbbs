@@ -359,7 +359,7 @@ typedef struct js_callback {
 	struct js_runq_entry    *rq_head;
 	struct js_runq_entry    *rq_tail;
 	struct js_listener_entry *listeners;
-	volatile BOOL*	terminated;
+	volatile bool*	terminated;
 	struct js_callback	*parent_cb;
 	uint32_t		counter;
 	uint32_t		limit;
@@ -368,10 +368,10 @@ typedef struct js_callback {
 	uint32_t		gc_attempts;
 	uint32_t		offline_counter;
 	int32			next_eid;
-	BOOL			auto_terminate;
-	BOOL			keepGoing;
-	BOOL			bg;
-	BOOL			events_supported;
+	JSBool			auto_terminate;
+	JSBool			keepGoing;
+	bool			bg;
+	bool			events_supported;
 } js_callback_t;
 #endif
 
@@ -402,7 +402,7 @@ public:
 	bbs_startup_t*	startup;
 
 	bool	init(void);
-	BOOL	terminated = false;
+	bool	terminated = false;
 
 	client_t client{};
 	SOCKET	client_socket = INVALID_SOCKET;
@@ -744,7 +744,7 @@ public:
 
 	/* str.cpp */
 	char	format_text_buf[256]{};
-	char*	format_text(enum text, ...);
+	char*	format_text(int /* enum text */, ...);
 	char*	format_text(enum text, smbmsg_t*, ...);
 	int		get_text_num(const char* id);
 	const char* get_text(const char* id);
@@ -1031,7 +1031,7 @@ public:
 	void	logout(void);
 
 	/* newuser.cpp */
-	BOOL	newuser(void);					/* Get new user							*/
+	bool	newuser(void);					/* Get new user							*/
 
 	/* text_sec.cpp */
 	int		text_sec(void);						/* Text sections */
@@ -1143,7 +1143,7 @@ public:
 	bool	create_batchdn_lst(bool native);
 	void	batch_upload(void);
 	void	batch_download(int xfrprot);
-	BOOL	start_batch_download(void);
+	bool	start_batch_download(void);
 
 	/* tmp_xfer.cpp */
 	void	temp_xfer(void);
@@ -1179,7 +1179,7 @@ public:
 	bool	errormsg_inside = false;
 	void	errormsg(int line, const char* function, const char *source, const char* action, const char *object
 				,int access=0, const char *extinfo=NULL);
-	BOOL	hacklog(const char* prot, const char* text);
+	bool	hacklog(const char* prot, const char* text);
 
 	/* qwk.cpp */
 	uint	qwkmail_last = 0;
@@ -1290,7 +1290,7 @@ public:
 extern "C" {
 #endif
 	/* ansiterm.cpp */
-	DLLEXPORT char*		ansi_attr(int attr, int curattr, char* str, BOOL color);
+	DLLEXPORT char*		ansi_attr(int attr, int curattr, char* str, bool color);
 
 	/* main.cpp */
 	extern const char* nulstr;
@@ -1310,9 +1310,9 @@ extern "C" {
 	/* logfile.cpp */
 	DLLEXPORT int		errorlog(scfg_t* cfg, struct mqtt*, int level, const char* host, const char* text);
 
-	DLLEXPORT BOOL		hacklog(scfg_t* cfg, struct mqtt*, const char* prot, const char* user, const char* text
+	DLLEXPORT bool		hacklog(scfg_t* cfg, struct mqtt*, const char* prot, const char* user, const char* text
 										,const char* host, union xp_sockaddr* addr);
-	DLLEXPORT BOOL		spamlog(scfg_t* cfg, struct mqtt*, char* prot, char* action, char* reason
+	DLLEXPORT bool		spamlog(scfg_t* cfg, struct mqtt*, char* prot, char* action, char* reason
 										,char* host, char* ip_addr, char* to, char* from);
 	DLLEXPORT FILE*		fopenlog(scfg_t*, const char* path);
 	DLLEXPORT size_t	fwritelog(scfg_t*, void* buf, size_t size, FILE**);
@@ -1330,13 +1330,13 @@ extern "C" {
 	DLLEXPORT int		qwk_route(scfg_t*, const char *inaddr, char *fulladdr, size_t maxlen);
 
 	/* netmail.cpp */
-	DLLEXPORT BOOL		is_supported_netmail_addr(scfg_t*, const char* addr);
+	DLLEXPORT bool		is_supported_netmail_addr(scfg_t*, const char* addr);
 
 	/* con_out.cpp */
 	unsigned char		cp437_to_petscii(unsigned char);
 
 	/* xtrn.cpp */
-	BOOL				native_executable(scfg_t*, const char* cmdline, int mode);
+	bool				native_executable(scfg_t*, const char* cmdline, int mode);
 
 #ifdef JAVASCRIPT
 
@@ -1397,7 +1397,7 @@ extern "C" {
 														,const char* name, const char* str[], unsigned flags);
 	DLLEXPORT void*		js_GetClassPrivate(JSContext*, JSObject*, JSClass*);
 
-	DLLEXPORT BOOL	js_CreateCommonObjects(JSContext* cx
+	DLLEXPORT bool	js_CreateCommonObjects(JSContext* cx
 													,scfg_t* cfg				/* common */
 													,scfg_t* node_cfg			/* node-specific */
 													,jsSyncMethodSpec* methods	/* global */
@@ -1438,8 +1438,8 @@ extern "C" {
 		str_list_t			exit_func;
 		struct js_onexit_scope	*onexit;
 	} global_private_t;
-	DLLEXPORT BOOL js_argc(JSContext *cx, unsigned argc, unsigned min);
-	DLLEXPORT BOOL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t*, JSObject**);
+	DLLEXPORT bool js_argc(JSContext *cx, unsigned argc, unsigned min);
+	DLLEXPORT bool js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t*, JSObject**);
 
 	/* js_internal.c */
 	DLLEXPORT JSObject* js_CreateInternalJsObject(JSContext*, JSObject* parent, js_callback_t*, js_startup_t*);
@@ -1448,7 +1448,7 @@ extern "C" {
 	DLLEXPORT void		js_PrepareToExecute(JSContext*, JSObject*, const char *filename, const char* startup_dir, JSObject *);
 	DLLEXPORT JSBool	js_IsTerminated(JSContext*, JSObject*);
 	DLLEXPORT char*		js_getstring(JSContext *cx, JSString *str);
-	DLLEXPORT JSBool	js_handle_events(JSContext *cx, js_callback_t *cb, volatile int *terminated);
+	DLLEXPORT JSBool	js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated);
 	DLLEXPORT JSBool	js_clear_event(JSContext *cx, jsval *arglist, js_callback_t *cb, enum js_event_type et, int ididx);
 
 	/* js_system.c */
@@ -1467,7 +1467,7 @@ extern "C" {
 	/* js_user.c */
 	DLLEXPORT JSObject*	js_CreateUserClass(JSContext* cx, JSObject* parent);
 	DLLEXPORT JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent
-													,char* name, user_t* user, client_t* client, BOOL global_user, struct mqtt*);
+													,char* name, user_t* user, client_t* client, bool global_user, struct mqtt*);
 	DLLEXPORT JSBool	js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, client_t* client, const char* web_file_vpath_prefix
 													,subscan_t* subscan, struct mqtt*);
@@ -1478,7 +1478,7 @@ extern "C" {
 	/* js_msg_area.c */
 	DLLEXPORT JSObject* js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, client_t* client, subscan_t* subscan);
-	DLLEXPORT BOOL		js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg
+	DLLEXPORT bool		js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg
 													,JSObject* subobj, int subnum);
 
 	/* js_xtrn_area.c */
@@ -1487,8 +1487,8 @@ extern "C" {
 
 	/* js_msgbase.c */
 	DLLEXPORT JSObject* js_CreateMsgBaseClass(JSContext* cx, JSObject* parent);
-	DLLEXPORT BOOL		js_ParseMsgHeaderObject(JSContext* cx, JSObject* hdrobj, smbmsg_t*);
-	DLLEXPORT BOOL		js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* hdrobj, smb_t**, smbmsg_t**, post_t**);
+	DLLEXPORT bool		js_ParseMsgHeaderObject(JSContext* cx, JSObject* hdrobj, smbmsg_t*);
+	DLLEXPORT bool		js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* hdrobj, smb_t**, smbmsg_t**, post_t**);
 
 	/* js_filebase.c */
 	DLLEXPORT JSObject* js_CreateFileBaseClass(JSContext*, JSObject* parent);
@@ -1510,14 +1510,14 @@ extern "C" {
 #else
 	DLLEXPORT void		js_timeval(JSContext* cx, jsval val, struct timeval* tv);
     DLLEXPORT SOCKET	js_socket_add(JSContext *cx, jsval val, fd_set *fds);
-	DLLEXPORT BOOL		js_socket_isset(JSContext *cx, jsval val, fd_set *fds);
+	DLLEXPORT bool		js_socket_isset(JSContext *cx, jsval val, fd_set *fds);
 #endif
 
 	/* js_queue.c */
 	DLLEXPORT JSObject* js_CreateQueueClass(JSContext* cx, JSObject* parent);
 	DLLEXPORT JSObject* js_CreateQueueObject(JSContext* cx, JSObject* parent
 													,char *name, msg_queue_t* q);
-	BOOL js_enqueue_value(JSContext *cx, msg_queue_t* q, jsval val, char* name);
+	bool js_enqueue_value(JSContext *cx, msg_queue_t* q, jsval val, char* name);
 
 	/* js_file.c */
 	DLLEXPORT JSObject* js_CreateFileClass(JSContext* cx, JSObject* parent);
@@ -1569,7 +1569,7 @@ extern "C" {
     __attribute__ ((format (printf, 2, 3)));
 #endif
 	;
-	void	call_socket_open_callback(BOOL open);
+	void	call_socket_open_callback(bool open);
 	SOCKET	open_socket(int domain, int type, const char* protocol);
 	SOCKET	accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen);
 	int		close_socket(SOCKET);
@@ -1587,7 +1587,7 @@ extern "C" {
 	int		fdatecmp_d(uchar **buf1, uchar **buf2);
 
 	/* file.cpp */
-	BOOL	filematch(const char *filename, const char *filespec);
+	bool	filematch(const char *filename, const char *filespec);
 
 	/* sbbscon.c */
 	#if defined(__unix__) && defined(NEEDS_DAEMON)

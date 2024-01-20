@@ -123,7 +123,7 @@ bool sbbs_t::load_user_text(void)
 	return replace_text(path);
 }
 
-char* sbbs_t::format_text(enum text num, ...)
+char* sbbs_t::format_text(int /* enum text */ num, ...)
 {
 	expand_atcodes(text[num], format_text_buf, sizeof format_text_buf, /* remsg: */NULL);
 	if(strcmp(text[num], format_text_buf) == 0) { // No @-codes expanded

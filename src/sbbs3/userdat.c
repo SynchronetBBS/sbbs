@@ -74,7 +74,7 @@ void split_userdat(char *userdat, char* field[])
 /* Makes dots and underscores synonymous with spaces for comparisons		*/
 /* Returns the number of the perfect matched username or 0 if no match		*/
 /****************************************************************************/
-uint matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
+uint matchuser(scfg_t* cfg, const char *name, bool sysop_alias)
 {
 	int		file,c;
 	char	dat[LEN_ALIAS+2];
@@ -115,11 +115,11 @@ uint matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 }
 
 /****************************************************************************/
-/* Return TRUE if the user 'name' (or alias) matches with 'comp'			*/
+/* Return true if the user 'name' (or alias) matches with 'comp'			*/
 /* ... ignoring non-alpha-numeric chars in either string					*/
 /* and terminating the comparison string at an '@'							*/
 /****************************************************************************/
-BOOL matchusername(scfg_t* cfg, const char* name, const char* comp)
+bool matchusername(scfg_t* cfg, const char* name, const char* comp)
 {
 	(void)cfg; // in case we want this matching logic to be configurable in the future
 
@@ -161,10 +161,10 @@ uint find_login_id(scfg_t* cfg, const char* user_id)
 		return usernum;
 	}
 
-	usernum = matchuser(cfg, user_id, /* sysop_alias: */FALSE);
+	usernum = matchuser(cfg, user_id, /* sysop_alias: */false);
 	if(usernum < 1 && check_realname(cfg, user_id) && (cfg->sys_login & LOGIN_REALNAME))
 		usernum = finduserstr(cfg, 0, USER_NAME, user_id
-			,/* del: */FALSE, /* next: */FALSE
+			,/* del: */false, /* next: */false
 			,/* Progress_cb: */NULL, /* cbdata: */NULL);
 	return usernum;
 }
@@ -179,12 +179,12 @@ int total_users(scfg_t* cfg)
 	if(!VALID_CFG(cfg))
 		return(0);
 
-	if((file=openuserdat(cfg, /* for_modify: */FALSE)) < 0)
+	if((file=openuserdat(cfg, /* for_modify: */false)) < 0)
 		return 0;
 
 	for(int usernumber = 1; success; usernumber++) {
 		char userdat[USER_RECORD_LEN + 1];
-		if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */FALSE) == 0) {
+		if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */false) == 0) {
 			char* field[USER_FIELD_COUNT];
 			split_userdat(userdat, field);
 			if(!(ahtou32(field[USER_MISC]) & (DELETED|INACTIVE)))
@@ -216,20 +216,20 @@ int lastuser(scfg_t* cfg)
 /****************************************************************************/
 /* Deletes (completely removes) last user record in userbase				*/
 /****************************************************************************/
-BOOL del_lastuser(scfg_t* cfg)
+bool del_lastuser(scfg_t* cfg)
 {
 	int		file;
 	off_t	length;
 
 	if(!VALID_CFG(cfg))
-		return(FALSE);
+		return(false);
 
-	if((file=openuserdat(cfg, /* for_modify: */TRUE)) < 0)
-		return(FALSE);
+	if((file=openuserdat(cfg, /* for_modify: */true)) < 0)
+		return(false);
 	length = filelength(file);
 	if(length < USER_RECORD_LINE_LEN) {
 		close(file);
-		return(FALSE);
+		return(false);
 	}
 	int result = chsize(file, (long)length - USER_RECORD_LINE_LEN);
 	close(file);
@@ -239,7 +239,7 @@ BOOL del_lastuser(scfg_t* cfg)
 /****************************************************************************/
 /* Opens the user database returning the file descriptor or -1 on error		*/
 /****************************************************************************/
-int openuserdat(scfg_t* cfg, BOOL for_modify)
+int openuserdat(scfg_t* cfg, bool for_modify)
 {
 	char path[MAX_PATH+1];
 
@@ -261,20 +261,20 @@ off_t userdatoffset(unsigned user_number)
 	return (user_number - 1) * USER_RECORD_LINE_LEN;
 }
 
-BOOL seekuserdat(int file, unsigned user_number)
+bool seekuserdat(int file, unsigned user_number)
 {
 	return lseek(file, userdatoffset(user_number), SEEK_SET) == userdatoffset(user_number);
 }
 
-BOOL lockuserdat(int file, unsigned user_number)
+bool lockuserdat(int file, unsigned user_number)
 {
 	if(!VALID_USER_NUMBER(user_number))
-		return FALSE;
+		return false;
 
 	off_t offset = userdatoffset(user_number);
 
 	if(lseek(file, offset, SEEK_SET) != offset)
-		return FALSE;
+		return false;
 	unsigned attempt=0;
 	while(attempt < LOOP_USERDAT && lock(file, offset, USER_RECORD_LINE_LEN) == -1) {
 		if(attempt)
@@ -284,10 +284,10 @@ BOOL lockuserdat(int file, unsigned user_number)
 	return attempt < LOOP_USERDAT;
 }
 
-BOOL unlockuserdat(int file, unsigned user_number)
+bool unlockuserdat(int file, unsigned user_number)
 {
 	if(!VALID_USER_NUMBER(user_number))
-		return FALSE;
+		return false;
 
 	return unlock(file, userdatoffset(user_number), USER_RECORD_LINE_LEN) == 0;
 }
@@ -297,7 +297,7 @@ BOOL unlockuserdat(int file, unsigned user_number)
 /* buffer of USER_RECORD_LINE_LEN in size.									*/
 /* Returns 0 on success.													*/
 /****************************************************************************/
-int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, size_t size, int infile, BOOL leave_locked)
+int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, size_t size, int infile, bool leave_locked)
 {
 	int file;
 
@@ -308,7 +308,7 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, size_t size, i
 	if(infile >= 0)
 		file = infile;
 	else {
-		if((file = openuserdat(cfg, /* for_modify: */FALSE)) < 0)
+		if((file = openuserdat(cfg, /* for_modify: */false)) < 0)
 			return file;
 	}
 
@@ -344,7 +344,7 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, size_t size, i
 }
 
 // Assumes file already positioned at beginning of user record
-BOOL writeuserfields(scfg_t* cfg, char* field[], int file)
+bool writeuserfields(scfg_t* cfg, char* field[], int file)
 {
 	char	userdat[USER_RECORD_LINE_LEN + 1] = "";
 
@@ -356,8 +356,8 @@ BOOL writeuserfields(scfg_t* cfg, char* field[], int file)
 	memset(userdat + len, USER_FIELD_SEPARATOR, USER_RECORD_LEN - len);
 	userdat[USER_RECORD_LINE_LEN - 1] = '\n';
 	if(write(file, userdat, USER_RECORD_LINE_LEN) != USER_RECORD_LINE_LEN)
-		return FALSE;
-	return TRUE;
+		return false;
+	return true;
 }
 
 static time32_t parse_usertime(const char* str)
@@ -476,7 +476,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 			if(now_tm.tm_year!=logon_tm.tm_year
 				|| now_tm.tm_mon!=logon_tm.tm_mon
 				|| now_tm.tm_mday!=logon_tm.tm_mday)
-				resetdailyuserdat(cfg,user,/* write: */FALSE);
+				resetdailyuserdat(cfg,user,/* write: */false);
 		}
 	}
 	return(0);
@@ -494,12 +494,12 @@ int getuserdat(scfg_t* cfg, user_t *user)
 	if(!VALID_CFG(cfg) || user==NULL || !VALID_USER_NUMBER(user->number))
 		return(-1);
 
-	if((file = openuserdat(cfg, /* for_modify: */FALSE)) < 0) {
+	if((file = openuserdat(cfg, /* for_modify: */false)) < 0) {
 		user->number = 0;
 		return file;
 	}
 
-	if((retval = readuserdat(cfg, user->number, userdat, sizeof(userdat), file, /* leave_locked: */FALSE)) != 0) {
+	if((retval = readuserdat(cfg, user->number, userdat, sizeof(userdat), file, /* leave_locked: */false)) != 0) {
 		close(file);
 		user->number = 0;
 		return retval;
@@ -518,7 +518,7 @@ int fgetuserdat(scfg_t* cfg, user_t *user, int file)
 	if(!VALID_CFG(cfg) || user==NULL || !VALID_USER_NUMBER(user->number))
 		return(-1);
 
-	if((retval = readuserdat(cfg, user->number, userdat, sizeof(userdat), file, /* leave_locked: */FALSE)) != 0) {
+	if((retval = readuserdat(cfg, user->number, userdat, sizeof(userdat), file, /* leave_locked: */false)) != 0) {
 		user->number = 0;
 		return retval;
 	}
@@ -535,13 +535,13 @@ static void dirtyuserdat(scfg_t* cfg, uint usernumber)
 	for(i=1;i<=cfg->sys_nodes;i++) { /* instant user data update */
 //		if(i==cfg->node_num)
 //			continue;
-		if(getnodedat(cfg, i,&node, /* lockit: */FALSE, &file) != 0)
+		if(getnodedat(cfg, i,&node, /* lockit: */false, &file) != 0)
 			continue;
 		if(node.useron==usernumber && (node.status==NODE_INUSE
 			|| node.status==NODE_QUIET)) {
-			if(getnodedat(cfg, i,&node, /* lockit: */TRUE, &file) == 0) {
+			if(getnodedat(cfg, i,&node, /* lockit: */true, &file) == 0) {
 				node.misc|=NODE_UDAT;
-				putnodedat(cfg, i,&node, /* closeit: */FALSE, file);
+				putnodedat(cfg, i,&node, /* closeit: */false, file);
 			}
 			break;
 		}
@@ -558,7 +558,7 @@ int is_user_online(scfg_t* cfg, uint usernumber)
 	node_t	node;
 
 	for(i=1; i<=cfg->sys_nodes; i++) {
-		getnodedat(cfg, i, &node, /* lockit: */FALSE, &file);
+		getnodedat(cfg, i, &node, /* lockit: */false, &file);
 		if((node.status==NODE_INUSE || node.status==NODE_QUIET
 			|| node.status==NODE_LOGON) && node.useron==usernumber)
 			return i;
@@ -579,13 +579,13 @@ static char* format_datetime(time_t t, char* str, size_t size)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
+bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 {
 	if(user == NULL)
-		return FALSE;
+		return false;
 
 	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(user->number))
-		return FALSE;
+		return false;
 
 	char flags1[LEN_FLAGSTR + 1];
 	char flags2[LEN_FLAGSTR + 1];
@@ -744,12 +744,12 @@ BOOL format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 		,user->lang
 	);
 	if(len > USER_RECORD_LEN || len < 0) // truncated?
-		return FALSE;
+		return false;
 
 	memset(userdat + len, USER_FIELD_SEPARATOR, USER_RECORD_LEN - len);
 	userdat[USER_RECORD_LINE_LEN - 1] = '\n';
 
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
@@ -770,7 +770,7 @@ int putuserdat(scfg_t* cfg, user_t* user)
 	if(!format_userdat(cfg, user, userdat))
 		return -10;
 
-	if((file=openuserdat(cfg, /* for_modify: */TRUE)) < 0)
+	if((file=openuserdat(cfg, /* for_modify: */true)) < 0)
 		return(errno);
 
 	if(filelength(file)<((off_t)user->number - 1) * USER_RECORD_LINE_LEN) {
@@ -1109,7 +1109,7 @@ int opennodeext(scfg_t* cfg)
 /* Reads the data for node number 'number' into the structure 'node'        */
 /* from node.dab															*/
 /****************************************************************************/
-int getnodedat(scfg_t* cfg, uint number, node_t *node, BOOL lockit, int* fdp)
+int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 {
 	int		rd;
 	int		count=0;
@@ -1158,7 +1158,7 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, BOOL lockit, int* fdp)
 /****************************************************************************/
 /* Write the data from the structure 'node' into node.dab  					*/
 /****************************************************************************/
-int putnodedat(scfg_t* cfg, uint number, node_t* node, BOOL closeit, int file)
+int putnodedat(scfg_t* cfg, uint number, node_t* node, bool closeit, int file)
 {
 	size_t	wr=0;
 	int		wrerr=0;
@@ -1192,105 +1192,105 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node, BOOL closeit, int file)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL set_node_status(scfg_t* cfg, int nodenum, enum node_status status)
+bool set_node_status(scfg_t* cfg, int nodenum, enum node_status status)
 {
 	node_t node;
 	int file;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
-		return FALSE;
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+		return false;
 	node.status = status;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
 }
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL set_node_misc(scfg_t* cfg, int nodenum, uint misc)
+bool set_node_misc(scfg_t* cfg, int nodenum, uint misc)
 {
 	node_t node;
 	int file;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
-		return FALSE;
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+		return false;
 	node.misc = misc;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
 }
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL set_node_lock(scfg_t* cfg, int nodenum, BOOL set)
+bool set_node_lock(scfg_t* cfg, int nodenum, bool set)
 {
 	node_t node;
 	int file;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
-		return FALSE;
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+		return false;
 	if(set)
 		node.misc |= NODE_LOCK;
 	else
 		node.misc &= ~NODE_LOCK;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
 }
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL set_node_interrupt(scfg_t* cfg, int nodenum, BOOL set)
+bool set_node_interrupt(scfg_t* cfg, int nodenum, bool set)
 {
 	node_t node;
 	int file;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
-		return FALSE;
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+		return false;
 	if(set)
 		node.misc |= NODE_INTR;
 	else
 		node.misc &= ~NODE_INTR;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
 }
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL set_node_down(scfg_t* cfg, int nodenum, BOOL set)
+bool set_node_down(scfg_t* cfg, int nodenum, bool set)
 {
 	node_t node;
 	int file;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
-		return FALSE;
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+		return false;
 	if(set)
 		node.misc |= NODE_DOWN;
 	else
 		node.misc &= ~NODE_DOWN;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
 }
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL set_node_rerun(scfg_t* cfg, int nodenum, BOOL set)
+bool set_node_rerun(scfg_t* cfg, int nodenum, bool set)
 {
 	node_t node;
 	int file;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
-		return FALSE;
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+		return false;
 	if(set)
 		node.misc |= NODE_RRUN;
 	else
 		node.misc &= ~NODE_RRUN;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
 }
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL set_node_errors(scfg_t* cfg, int nodenum, uint errors)
+bool set_node_errors(scfg_t* cfg, int nodenum, uint errors)
 {
 	node_t node;
 	int file;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */TRUE, &file) != 0)
-		return FALSE;
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+		return false;
 	node.errors = errors;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */TRUE, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
 }
 
 /****************************************************************************/
@@ -1623,7 +1623,7 @@ void printnodedat(scfg_t* cfg, uint number, node_t* node)
 
 /****************************************************************************/
 uint finduserstr(scfg_t* cfg, uint usernumber, enum user_field fnum
-						 ,const char* str, BOOL del, BOOL next, void (*progress)(void*, int, int), void* cbdata)
+						 ,const char* str, bool del, bool next, void (*progress)(void*, int, int), void* cbdata)
 {
 	int		file;
     int		unum;
@@ -1632,7 +1632,7 @@ uint finduserstr(scfg_t* cfg, uint usernumber, enum user_field fnum
 	if(!VALID_CFG(cfg) || str == NULL)
 		return(0);
 
-	if((file=openuserdat(cfg, /* for_modify: */FALSE)) == -1)
+	if((file=openuserdat(cfg, /* for_modify: */false)) == -1)
 		return(0);
 	int last = (int)filelength(file) / USER_RECORD_LINE_LEN;
 	if(usernumber && next)
@@ -1647,7 +1647,7 @@ uint finduserstr(scfg_t* cfg, uint usernumber, enum user_field fnum
 		if(usernumber && unum == usernumber)
 			continue;
 		char userdat[USER_RECORD_LEN + 1];
-		if(readuserdat(cfg, unum, userdat, sizeof(userdat), file, /* leave_locked: */FALSE) == 0) {
+		if(readuserdat(cfg, unum, userdat, sizeof(userdat), file, /* leave_locked: */false) == 0) {
 			char* field[USER_FIELD_COUNT];
 			split_userdat(userdat, field);
 			if(stricmp(field[fnum], str) == 0) {
@@ -1689,13 +1689,13 @@ int putsmsg(scfg_t* cfg, int usernumber, char *strin)
 	close(file);
 	file = -1;
 	for(i=1;i<=cfg->sys_nodes;i++) {     /* flag node if user on that msg waiting */
-		getnodedat(cfg,i,&node,/* lockit: */FALSE, &file);
+		getnodedat(cfg,i,&node,/* lockit: */false, &file);
 		if(node.useron==usernumber
 			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
 			&& !(node.misc&NODE_MSGW)) {
-			if(getnodedat(cfg,i,&node, /* lockit: */TRUE, &file)==0) {
+			if(getnodedat(cfg,i,&node, /* lockit: */true, &file)==0) {
 				node.misc|=NODE_MSGW;
-				putnodedat(cfg,i,&node, /* closeit: */FALSE, file);
+				putnodedat(cfg,i,&node, /* closeit: */false, file);
 			}
 		}
 	}
@@ -1716,13 +1716,13 @@ char* getsmsg(scfg_t* cfg, int usernumber)
 		return(NULL);
 
 	for(i=1;i<=cfg->sys_nodes;i++) {	/* clear msg waiting flag */
-		getnodedat(cfg,i,&node, /* lockit: */FALSE, &file);
+		getnodedat(cfg,i,&node, /* lockit: */false, &file);
 		if(node.useron==usernumber
 			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
 			&& node.misc&NODE_MSGW) {
-			if(getnodedat(cfg,i,&node, /* lockit: */TRUE, &file) == 0) {
+			if(getnodedat(cfg,i,&node, /* lockit: */true, &file) == 0) {
 				node.misc&=~NODE_MSGW;
-				putnodedat(cfg,i,&node, /* closeit: */FALSE, file);
+				putnodedat(cfg,i,&node, /* closeit: */false, file);
 			}
 		}
 	}
@@ -1787,9 +1787,9 @@ char* getnmsg(scfg_t* cfg, int node_num)
 	if(!VALID_CFG(cfg) || node_num<1)
 		return(NULL);
 
-	if(getnodedat(cfg,node_num,&node, /* lockit: */TRUE, &file) == 0) {
+	if(getnodedat(cfg,node_num,&node, /* lockit: */true, &file) == 0) {
 		node.misc&=~NODE_NMSG;          /* clear the NMSG flag */
-		putnodedat(cfg,node_num,&node, /* closeit: */TRUE, file);
+		putnodedat(cfg,node_num,&node, /* closeit: */true, file);
 	}
 
 	SAFEPRINTF2(str,"%smsgs/n%3.3u.msg",cfg->data_dir,node_num);
@@ -1842,12 +1842,12 @@ int putnmsg(scfg_t* cfg, int num, char *strin)
 		return(errno);
 	}
 	CLOSE_OPEN_FILE(file);
-	getnodedat(cfg,num,&node, /* lockit: */FALSE, &file);
+	getnodedat(cfg,num,&node, /* lockit: */false, &file);
 	if((node.status==NODE_INUSE || node.status==NODE_QUIET)
 		&& !(node.misc&NODE_NMSG)) {
-		if(getnodedat(cfg,num,&node, /* lockit: */TRUE, &file) == 0) {
+		if(getnodedat(cfg,num,&node, /* lockit: */true, &file) == 0) {
 			node.misc|=NODE_NMSG;
-			putnodedat(cfg,num,&node, /* closeit: */FALSE, file);
+			putnodedat(cfg,num,&node, /* closeit: */false, file);
 		}
 	}
 	CLOSE_OPEN_FILE(file);
@@ -1874,7 +1874,7 @@ int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* done)
 	memset(client, 0, sizeof(*client));
 	client->size = sizeof(client);
 	SAFEPRINTF(path, "%sclient.ini", cfg->node_path[number - 1]);
-	fp = iniOpenFile(path, /* for_modify: */FALSE);
+	fp = iniOpenFile(path, /* for_modify: */false);
 	if(fp == NULL)
 		return -2;
 	sock = iniReadShortInt(fp, ROOT_SECTION, "sock", 0);
@@ -1891,23 +1891,23 @@ int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* done)
 	return sock;
 }
 
-static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
+static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 {
-	BOOL	result,not,or,equal;
+	bool	result,not,or,equal;
 	uint	i,n,artype=AR_LEVEL,age;
 	uint64_t l;
 	time_t	now;
 	struct tm tm;
 	const char*	p;
 
-	result = TRUE;
+	result = true;
 
 	for(;(**ptrptr);(*ptrptr)++) {
 
 		if((**ptrptr)==AR_ENDNEST)
 			break;
 
-		not=or=equal = FALSE;
+		not=or=equal = false;
 
 		if((**ptrptr)==AR_OR) {
 			or=1;
@@ -2459,14 +2459,14 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 	return(result);
 }
 
-BOOL chk_ar(scfg_t* cfg, uchar *ar, user_t* user, client_t* client)
+bool chk_ar(scfg_t* cfg, uchar *ar, user_t* user, client_t* client)
 {
 	uchar *p;
 
 	if(ar==NULL)
-		return(TRUE);
+		return(true);
 	if(!VALID_CFG(cfg))
-		return(FALSE);
+		return(false);
 	p=ar;
 	return(ar_exp(cfg,&p,user,client));
 }
@@ -2474,7 +2474,7 @@ BOOL chk_ar(scfg_t* cfg, uchar *ar, user_t* user, client_t* client)
 /****************************************************************************/
 /* Does the Access Requirement String (ARS) parse and check					*/
 /****************************************************************************/
-BOOL chk_ars(scfg_t* cfg, char *ars, user_t* user, client_t* client)
+bool chk_ars(scfg_t* cfg, char *ars, user_t* user, client_t* client)
 {
 	uchar ar_buf[LEN_ARSTR + 1];
 
@@ -2497,7 +2497,7 @@ char* getuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, char *str, s
 	if((file = openuserdat(cfg, /* for_modify: */false)) == -1)
 		return str;
 
-	if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */FALSE) == 0) {
+	if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */false) == 0) {
 		split_userdat(userdat, field);
 		safe_snprintf(str, size, "%s", field[fnum]);
 	}
@@ -2585,7 +2585,7 @@ int putuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, const char *st
 	if((file = openuserdat(cfg, /* for_modify: */true)) == -1)
 		return errno;
 
-	retval = readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */TRUE);
+	retval = readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */true);
 	if(retval == 0) {
 		split_userdat(userdat, field);
 		field[fnum] = (char*)str;
@@ -2675,7 +2675,7 @@ uint64_t adjustuserval(scfg_t* cfg, int usernumber, enum user_field fnum, int64_
 	if((file = openuserdat(cfg, /* for_modify: */true)) == -1)
 		return 0;
 
-	if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */TRUE) == 0) {
+	if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */true) == 0) {
 		char* field[USER_FIELD_COUNT];
 		split_userdat(userdat, field);
 		val = strtoull(field[fnum], NULL, 10);
@@ -2775,24 +2775,24 @@ void subtract_cdt(scfg_t* cfg, user_t* user, uint64_t amt)
 	}
 }
 
-BOOL user_posted_msg(scfg_t* cfg, user_t* user, int count)
+bool user_posted_msg(scfg_t* cfg, user_t* user, int count)
 {
 	if(user==NULL)
-		return(FALSE);
+		return(false);
 
 	user->posts	=(ushort)adjustuserval(cfg, user->number, USER_POSTS, count);
 	user->ptoday=(ushort)adjustuserval(cfg, user->number, USER_PTODAY, count);
 
 	if(user->rest & FLAG('Q'))
-		return TRUE;
+		return true;
 
 	return inc_post_stats(cfg, count);
 }
 
-BOOL user_sent_email(scfg_t* cfg, user_t* user, int count, BOOL feedback)
+bool user_sent_email(scfg_t* cfg, user_t* user, int count, bool feedback)
 {
 	if(user==NULL)
-		return(FALSE);
+		return(false);
 
 	if(feedback)
 		user->fbacks=(ushort)adjustuserval(cfg, user->number, USER_FBACKS, count);
@@ -2803,26 +2803,26 @@ BOOL user_sent_email(scfg_t* cfg, user_t* user, int count, BOOL feedback)
 	return inc_email_stats(cfg, count, feedback);
 }
 
-BOOL user_downloaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
+bool user_downloaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 {
 	if(user==NULL)
-		return(FALSE);
+		return(false);
 
 	user->dls=(ushort)adjustuserval(cfg, user->number, USER_DLS, files);
 	user->dlb=adjustuserval(cfg, user->number, USER_DLB, bytes);
 
-	return(TRUE);
+	return(true);
 }
 
 #ifdef SBBS
-BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
+bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	int dirnum, const char* filename, off_t bytes)
 {
 	file_t f;
 	bool removed = false;
 
 	if(!loadfile(cfg, dirnum, filename, &f, file_detail_normal))
-		return FALSE;
+		return false;
 
 	if(!bytes)
 		bytes = getfilesize(cfg, &f);
@@ -2850,14 +2850,14 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	f.hdr.last_downloaded = time32(NULL);
 	if(!removed && !updatefile(cfg, &f)) {
 		smb_freefilemem(&f);
-		return FALSE;
+		return false;
 	}
 
 	/**************************/
 	/* Update Uploader's Info */
 	/**************************/
 	user_t uploader = {0};
-	uploader.number=matchuser(cfg, f.from, TRUE /*sysop_alias*/);
+	uploader.number=matchuser(cfg, f.from, true /*sysop_alias*/);
 	if(uploader.number
 		&& uploader.number != user->number 
 		&& getuserdat(cfg, &uploader) == 0
@@ -2912,54 +2912,54 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 		inc_download_stats(cfg, /* files: */1, bytes);
 
 	smb_freefilemem(&f);
-	return TRUE;
+	return true;
 }
 #endif
 
-BOOL user_uploaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
+bool user_uploaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 {
 	if(user==NULL)
-		return(FALSE);
+		return(false);
 
 	user->uls=(ushort)adjustuserval(cfg, user->number, USER_ULS, files);
 	user->ulb=adjustuserval(cfg, user->number, USER_ULB, bytes);
 
-	return(TRUE);
+	return(true);
 }
 
-BOOL user_adjust_credits(scfg_t* cfg, user_t* user, int64_t amount)
+bool user_adjust_credits(scfg_t* cfg, user_t* user, int64_t amount)
 {
 	if(user==NULL)
-		return(FALSE);
+		return(false);
 
 	if(amount<0)	/* subtract */
 		subtract_cdt(cfg, user, -amount);
 	else			/* add */
 		user->cdt=adjustuserval(cfg, user->number, USER_CDT, amount);
 
-	return(TRUE);
+	return(true);
 }
 
-BOOL user_adjust_minutes(scfg_t* cfg, user_t* user, long amount)
+bool user_adjust_minutes(scfg_t* cfg, user_t* user, long amount)
 {
 	if(user==NULL)
-		return(FALSE);
+		return(false);
 
 	user->min=(uint32_t)adjustuserval(cfg, user->number, USER_MIN, amount);
 
-	return(TRUE);
+	return(true);
 }
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
+bool logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 {
 	char str[128];
 	time_t tused;
 	struct tm tm, tm_now;
 
 	if(user==NULL)
-		return(FALSE);
+		return(false);
 
 	if(now==0)
 		now=time(NULL);
@@ -2974,21 +2974,21 @@ BOOL logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 
 	/* Convert time_t to struct tm */
 	if(localtime_r(&now,&tm_now)==NULL)
-		return(FALSE);
+		return(false);
 
 	if(localtime_r(&logontime,&tm)==NULL)
-		return(FALSE);
+		return(false);
 
 	/* Reset daily stats if new day */
 	if(tm.tm_mday!=tm_now.tm_mday)
-		resetdailyuserdat(cfg, user, /* write: */TRUE);
+		resetdailyuserdat(cfg, user, /* write: */true);
 
-	return(TRUE);
+	return(true);
 }
 
 /****************************************************************************/
 /****************************************************************************/
-void resetdailyuserdat(scfg_t* cfg, user_t* user, BOOL write)
+void resetdailyuserdat(scfg_t* cfg, user_t* user, bool write)
 {
 	if(!VALID_CFG(cfg) || user==NULL)
 		return;
@@ -3278,7 +3278,7 @@ int newuserdat(scfg_t* cfg, user_t* user)
 	/* Update daily statistics database (for system and node) */
 
 	for(i=0;i<2;i++) {
-		FILE* fp = fopen_dstats(cfg, i ? cfg->node_num : 0, /* for_write: */TRUE);
+		FILE* fp = fopen_dstats(cfg, i ? cfg->node_num : 0, /* for_write: */true);
 		if(fp == NULL)
 			continue;
 		if(fread_dstats(fp, &stats)) {
@@ -3378,65 +3378,65 @@ size_t user_field_len(enum user_field fnum)
 /****************************************************************************/
 /* Determine if the specified user can or cannot access the specified sub	*/
 /****************************************************************************/
-BOOL can_user_access_sub(scfg_t* cfg, int subnum, user_t* user, client_t* client)
+bool can_user_access_sub(scfg_t* cfg, int subnum, user_t* user, client_t* client)
 {
 	if(!VALID_CFG(cfg))
-		return FALSE;
+		return false;
 	if(!is_valid_subnum(cfg, subnum))
-		return FALSE;
+		return false;
 	if(!chk_ar(cfg,cfg->grp[cfg->sub[subnum]->grp]->ar,user,client))
-		return FALSE;
+		return false;
 	if(!chk_ar(cfg,cfg->sub[subnum]->ar,user,client))
-		return FALSE;
+		return false;
 
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
 /* Determine if the specified user can or cannot read the specified sub		*/
 /****************************************************************************/
-BOOL can_user_read_sub(scfg_t* cfg, int subnum, user_t* user, client_t* client)
+bool can_user_read_sub(scfg_t* cfg, int subnum, user_t* user, client_t* client)
 {
 	if(!can_user_access_sub(cfg, subnum, user, client))
-		return FALSE;
+		return false;
 	return chk_ar(cfg,cfg->sub[subnum]->read_ar,user,client);
 }
 
 /****************************************************************************/
 /* Determine if the specified user can or cannot post on the specified sub	*/
 /* 'reason' is an (optional) pointer to a text.dat item number, indicating	*/
-/* the reason the user cannot post, when returning FALSE.					*/
+/* the reason the user cannot post, when returning false.					*/
 /****************************************************************************/
-BOOL can_user_post(scfg_t* cfg, int subnum, user_t* user, client_t* client, uint* reason)
+bool can_user_post(scfg_t* cfg, int subnum, user_t* user, client_t* client, uint* reason)
 {
 	if(reason!=NULL)
 		*reason=CantPostOnSub;
 	if(!can_user_access_sub(cfg, subnum, user, client))
-		return FALSE;
+		return false;
 	if(!chk_ar(cfg,cfg->sub[subnum]->post_ar,user,client))
-		return FALSE;
+		return false;
 	if(cfg->sub[subnum]->misc&(SUB_QNET|SUB_FIDO|SUB_PNET|SUB_INET)
 		&& user->rest&FLAG('N'))		/* network restriction? */
-		return FALSE;
+		return false;
 	if((cfg->sub[subnum]->misc & SUB_NAME)
 		&& (user->rest & (FLAG('Q') | FLAG('O'))) == FLAG('O'))
-		return FALSE;
+		return false;
 	if(reason!=NULL)
 		*reason=R_Post;
 	if(user->rest&FLAG('P'))			/* post restriction? */
-		return FALSE;
+		return false;
 	if(reason!=NULL)
 		*reason=TooManyPostsToday;
 	if(user->ptoday>=cfg->level_postsperday[user->level])
-		return FALSE;
+		return false;
 
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
 // Determine if the specified user can access one or more directories of lib
 /****************************************************************************/
-BOOL can_user_access_lib(scfg_t* cfg, int libnum, user_t* user, client_t* client)
+bool can_user_access_lib(scfg_t* cfg, int libnum, user_t* user, client_t* client)
 {
 	uint count = 0;
 
@@ -3452,19 +3452,19 @@ BOOL can_user_access_lib(scfg_t* cfg, int libnum, user_t* user, client_t* client
 /****************************************************************************/
 // Determine if the specified user can access ALL file libraries
 /****************************************************************************/
-BOOL can_user_access_all_libs(scfg_t* cfg, user_t* user, client_t* client)
+bool can_user_access_all_libs(scfg_t* cfg, user_t* user, client_t* client)
 {
 	for(int libnum = 0; libnum < cfg->total_libs; libnum++) {
 		if(!can_user_access_lib(cfg, libnum, user, client))
-			return FALSE;
+			return false;
 	}
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
 // Determine if the specified user can all dirs of a lib
 /****************************************************************************/
-BOOL can_user_access_all_dirs(scfg_t* cfg, int libnum, user_t* user, client_t* client)
+bool can_user_access_all_dirs(scfg_t* cfg, int libnum, user_t* user, client_t* client)
 {
 	uint count = 0;
 
@@ -3474,7 +3474,7 @@ BOOL can_user_access_all_dirs(scfg_t* cfg, int libnum, user_t* user, client_t* c
 		if(can_user_access_dir(cfg, dirnum, user, client)) // checks lib's AR already
 			count++;
 		else
-			return FALSE;
+			return false;
 	}
 	return count >= 1; // User has access to one or more directories of library
 }
@@ -3482,72 +3482,72 @@ BOOL can_user_access_all_dirs(scfg_t* cfg, int libnum, user_t* user, client_t* c
 /****************************************************************************/
 /* Determine if the specified user can or cannot access the specified dir	*/
 /****************************************************************************/
-BOOL can_user_access_dir(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
+bool can_user_access_dir(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
 {
 	if(!VALID_CFG(cfg))
-		return FALSE;
+		return false;
 	if(!is_valid_dirnum(cfg, dirnum))
-		return FALSE;
+		return false;
 	if(!chk_ar(cfg,cfg->lib[cfg->dir[dirnum]->lib]->ar,user,client))
-		return FALSE;
+		return false;
 	if(!chk_ar(cfg,cfg->dir[dirnum]->ar,user,client))
-		return FALSE;
+		return false;
 
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
 /* Determine if the specified user can or cannot upload files to the dirnum	*/
 /* 'reason' is an (optional) pointer to a text.dat item number, indicating	*/
-/* the reason the user cannot post, when returning FALSE.					*/
+/* the reason the user cannot post, when returning false.					*/
 /****************************************************************************/
-BOOL can_user_upload(scfg_t* cfg, int dirnum, user_t* user, client_t* client, uint* reason)
+bool can_user_upload(scfg_t* cfg, int dirnum, user_t* user, client_t* client, uint* reason)
 {
 	if(reason!=NULL)
 		*reason=CantUploadHere;
 	if(!can_user_access_dir(cfg, dirnum, user, client))
-		return FALSE;
+		return false;
 	if(reason!=NULL)
 		*reason=R_Upload;
 	if(user->rest&FLAG('U'))			/* upload restriction? */
-		return FALSE;
+		return false;
 	if(user->rest&FLAG('T'))			/* transfer restriction? */
-		return FALSE;
+		return false;
 	if(!(user->exempt&FLAG('U'))		/* upload exemption */
 		&& !is_user_dirop(cfg, dirnum, user, client)) {
 		if(reason!=NULL)
 			*reason=CantUploadHere;
 		if(!chk_ar(cfg, cfg->lib[cfg->dir[dirnum]->lib]->ul_ar, user, client))
-			return FALSE;
+			return false;
 		if(!chk_ar(cfg, cfg->dir[dirnum]->ul_ar, user, client))
-			return FALSE;
+			return false;
 	}
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
 /* Determine if the specified user can or cannot download files from dirnum	*/
 /* 'reason' is an (optional) pointer to a text.dat item number, indicating	*/
-/* the reason the user cannot post, when returning FALSE.					*/
+/* the reason the user cannot post, when returning false.					*/
 /****************************************************************************/
-BOOL can_user_download(scfg_t* cfg, int dirnum, user_t* user, client_t* client, uint* reason)
+bool can_user_download(scfg_t* cfg, int dirnum, user_t* user, client_t* client, uint* reason)
 {
 	if(reason!=NULL)
 		*reason=CantDownloadFromDir;
 	if(dirnum != cfg->user_dir && !can_user_access_dir(cfg, dirnum, user, client))
-		return FALSE;
+		return false;
 	if(!chk_ar(cfg,cfg->lib[cfg->dir[dirnum]->lib]->dl_ar,user,client))
-		return FALSE;
+		return false;
 	if(!chk_ar(cfg,cfg->dir[dirnum]->dl_ar,user,client))
-		return FALSE;
+		return false;
 	if(reason!=NULL)
 		*reason=R_Download;
 	if(user->rest&FLAG('D'))			/* download restriction? */
-		return FALSE;
+		return false;
 	if(user->rest&FLAG('T'))			/* transfer restriction? */
-		return FALSE;
+		return false;
 
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
@@ -3555,55 +3555,55 @@ BOOL can_user_download(scfg_t* cfg, int dirnum, user_t* user, client_t* client, 
 /* 'reason' is an (optional) pointer to a text.dat item number				*/
 /* usernumber==0 for netmail												*/
 /****************************************************************************/
-BOOL can_user_send_mail(scfg_t* cfg, enum smb_net_type net_type, uint usernumber, user_t* user, uint* reason)
+bool can_user_send_mail(scfg_t* cfg, enum smb_net_type net_type, uint usernumber, user_t* user, uint* reason)
 {
 	if(reason!=NULL)
 		*reason=R_Email;
 	if(user==NULL || user->number==0)
-		return FALSE;
+		return false;
 	if(net_type==NET_NONE && usernumber>1 && user->rest&FLAG('E'))			/* local mail restriction? */
-		return FALSE;
+		return false;
 	if(reason!=NULL)
 		*reason=NoNetMailAllowed;
 	if(net_type!=NET_NONE && user->rest&FLAG('M'))							/* netmail restriction */
-		return FALSE;
+		return false;
 	if(net_type==NET_FIDO && !(cfg->netmail_misc&NMAIL_ALLOW))				/* Fido netmail globally disallowed */
-		return FALSE;
+		return false;
 	if(net_type==NET_INTERNET && !(cfg->inetmail_misc&NMAIL_ALLOW))			/* Internet mail globally disallowed */
-		return FALSE;
+		return false;
 	if(reason!=NULL)
 		*reason=R_Feedback;
 	if(net_type==NET_NONE && usernumber==1 && user->rest&FLAG('S'))			/* feedback restriction? */
-		return FALSE;
+		return false;
 	if(reason!=NULL)
 		*reason=TooManyEmailsToday;
 	if(user->etoday>=cfg->level_emailperday[user->level] && !(user->exempt&FLAG('M')))
-		return FALSE;
+		return false;
 
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
 /* Determine if the specified user is a system operator						*/
 /****************************************************************************/
-BOOL is_user_sysop(user_t* user)
+bool is_user_sysop(user_t* user)
 {
 	if(user == NULL)
-		return FALSE;
+		return false;
 	return user->level >= SYSOP_LEVEL;
 }
 
 /****************************************************************************/
 /* Determine if the specified user is a sub-board operator					*/
 /****************************************************************************/
-BOOL is_user_subop(scfg_t* cfg, int subnum, user_t* user, client_t* client)
+bool is_user_subop(scfg_t* cfg, int subnum, user_t* user, client_t* client)
 {
 	if(user==NULL)
-		return FALSE;
+		return false;
 	if(!can_user_access_sub(cfg, subnum, user, client))
-		return FALSE;
+		return false;
 	if(is_user_sysop(user))
-		return TRUE;
+		return true;
 
 	return cfg->sub[subnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->sub[subnum]->op_ar,user,client);
 }
@@ -3611,14 +3611,14 @@ BOOL is_user_subop(scfg_t* cfg, int subnum, user_t* user, client_t* client)
 /****************************************************************************/
 /* Determine if the specified user is a directory operator					*/
 /****************************************************************************/
-BOOL is_user_dirop(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
+bool is_user_dirop(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
 {
 	if(user==NULL)
-		return FALSE;
+		return false;
 	if(!can_user_access_dir(cfg, dirnum, user, client))
-		return FALSE;
+		return false;
 	if(is_user_sysop(user))
-		return TRUE;
+		return true;
 
 	return (cfg->dir[dirnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client))
 			|| (cfg->lib[cfg->dir[dirnum]->lib]->op_ar[0]!=0 && chk_ar(cfg,cfg->lib[cfg->dir[dirnum]->lib]->op_ar,user,client));
@@ -3628,29 +3628,29 @@ BOOL is_user_dirop(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
 /* Determine if downloads from the specified directory are free for the		*/
 /* specified user															*/
 /****************************************************************************/
-BOOL is_download_free(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
+bool is_download_free(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
 {
 	if(!VALID_CFG(cfg))
-		return(FALSE);
+		return(false);
 
 	if(!is_valid_dirnum(cfg, dirnum))
-		return(FALSE);
+		return(false);
 
 	if(cfg->dir[dirnum]->misc&DIR_FREE)
-		return(TRUE);
+		return(true);
 
 	if(user==NULL)
-		return(FALSE);
+		return(false);
 
 	if(user->exempt&FLAG('D'))
-		return(TRUE);
+		return(true);
 
 	if(cfg->lib[cfg->dir[dirnum]->lib]->ex_ar[0] != 0
 		&& chk_ar(cfg,cfg->lib[cfg->dir[dirnum]->lib]->ex_ar,user,client))
-		return TRUE;
+		return true;
 
 	if(cfg->dir[dirnum]->ex_ar[0]==0)
-		return(FALSE);
+		return(false);
 
 	return(chk_ar(cfg,cfg->dir[dirnum]->ex_ar,user,client));
 }
@@ -3695,37 +3695,37 @@ time_t gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 /*************************************************************************/
 /* Check a supplied name/alias and see if it's valid by our standards.   */
 /*************************************************************************/
-BOOL check_name(scfg_t* cfg, const char* name)
+bool check_name(scfg_t* cfg, const char* name)
 {
 	char	tmp[512];
 	size_t	len;
 
 	if(name == NULL)
-		return FALSE;
+		return false;
 
 	len=strlen(name);
 	if(len<1)
-		return FALSE;
+		return false;
 	if (   name[0] <= ' '			/* begins with white-space? */
 		|| name[len-1] <= ' '		/* ends with white-space */
 		|| !IS_ALPHA(name[0])
 		|| !stricmp(name,cfg->sys_id)
 		|| strchr(name,0xff)
-		|| matchuser(cfg,name,TRUE /* sysop_alias */)
+		|| matchuser(cfg,name,true /* sysop_alias */)
 		|| trashcan(cfg,name,"name")
 		|| alias(cfg,name,tmp)!=name
  	   )
- 		return FALSE;
- 	return TRUE;
+ 		return false;
+ 	return true;
 }
 
 /*************************************************************************/
 /* Check a supplied real name and see if it's valid by our standards.   */
 /*************************************************************************/
-BOOL check_realname(scfg_t* cfg, const char* name)
+bool check_realname(scfg_t* cfg, const char* name)
 {
 	if(name == NULL)
-		return FALSE;
+		return false;
 
 	return (uchar)name[0]<0x7f && name[1] && IS_ALPHA(name[0]) && strchr(name,' ');
 }
@@ -3741,7 +3741,7 @@ link_list_t* loginAttemptListInit(link_list_t* list)
 }
 
 /****************************************************************************/
-BOOL loginAttemptListFree(link_list_t* list)
+bool loginAttemptListFree(link_list_t* list)
 {
 	return listFree(list);
 }
@@ -3830,7 +3830,7 @@ void loginSuccess(link_list_t* list, const union xp_sockaddr* addr)
 		return;
 	listLock(list);
 	if((node=login_attempted(list, addr)) != NULL)
-		listRemoveNode(list, node, /* freeData: */TRUE);
+		listRemoveNode(list, node, /* freeData: */true);
 	listUnlock(list);
 }
 
@@ -3887,7 +3887,7 @@ ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const char* host_
 	char				name[(LEN_ALIAS * 2) + 1];
 	list_node_t*		node;
 	login_attempt_t*	attempt;
-	BOOL				result = FALSE;
+	bool				result = false;
 	time32_t			now = time32(NULL);
 	union xp_sockaddr	client_addr;
 	union xp_sockaddr	server_addr;
@@ -3936,7 +3936,7 @@ ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const char* host_
 /****************************************************************************/
 /* Message-new-scan pointer/configuration functions							*/
 /****************************************************************************/
-BOOL getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*progress)(void*, int, int), void* cbdata)
+bool getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*progress)(void*, int, int), void* cbdata)
 {
 	char		path[MAX_PATH+1];
 	int			i;
@@ -3987,14 +3987,14 @@ BOOL getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*progress)(
 		fclose(fp);
 		if(progress != NULL)
 			progress(cbdata, i, cfg->total_subs);
-		return TRUE;
+		return true;
 	}
 
 	/* Old way: */
 	SAFEPRINTF2(path,"%suser/ptrs/%4.4u.ixb", cfg->data_dir, user->number);
 	if((stream=fnopen(&file,path,O_RDONLY))==NULL) {
 		if(fexist(path))
-			return(FALSE);	/* file exists, but couldn't be opened? */
+			return(false);	/* file exists, but couldn't be opened? */
 		return initmsgptrs(cfg, subscan, cfg->new_msgscan_init, progress, cbdata);
 	}
 
@@ -4018,32 +4018,32 @@ BOOL getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*progress)(
 	if(progress != NULL)
 		progress(cbdata, i, cfg->total_subs);
 	fclose(stream);
-	return(TRUE);
+	return(true);
 }
 
 /****************************************************************************/
 /* Writes to data/user/####.subs the msgptr array for the current user		*/
 /* Pass usernumber value of 0 to indicate "Guest" login						*/
 /****************************************************************************/
-BOOL putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
+bool putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 {
 	char		path[MAX_PATH+1];
 	int			i;
 	time_t		now = time(NULL);
-	BOOL		result = TRUE;
+	bool		result = true;
 
 	if(user->number==0 || (user->rest&FLAG('G')))	/* Guest */
-		return(TRUE);
+		return(true);
 
 	fixmsgptrs(cfg, subscan);
 	SAFEPRINTF2(path,"%suser/%4.4u.subs", cfg->data_dir, user->number);
 	FILE* fp = fnopen(NULL, path, O_RDWR|O_CREAT|O_TEXT);
 	if (fp == NULL)
-		return FALSE;
+		return false;
 	str_list_t new = strListInit();
 	str_list_t ini = iniReadFile(fp);
 	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
-	BOOL modified = FALSE;
+	bool modified = false;
 	for(i=0; i < cfg->total_subs; i++) {
 		str_list_t keys = iniGetSection(ini, cfg->sub[i]->code);
 		if(subscan[i].sav_ptr==subscan[i].ptr
@@ -4055,8 +4055,8 @@ BOOL putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 			iniSetUInt32(&new, cfg->sub[i]->code, "ptr", subscan[i].ptr, &ini_style);
 			iniSetUInt32(&new, cfg->sub[i]->code, "last", subscan[i].last, &ini_style);
 			iniSetHexInt(&new, cfg->sub[i]->code, "cfg", subscan[i].cfg, &ini_style);
-			iniSetDateTime(&new, cfg->sub[i]->code, "updated", /* include_time: */TRUE, now, &ini_style);
-			modified = TRUE;
+			iniSetDateTime(&new, cfg->sub[i]->code, "updated", /* include_time: */true, now, &ini_style);
+			modified = true;
 		}
 		if(keys != NULL) {
 			iniRemoveSection(&ini, cfg->sub[i]->code);
@@ -4072,7 +4072,7 @@ BOOL putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 	return result;
 }
 
-BOOL newmsgs(smb_t* smb, time_t t)
+bool newmsgs(smb_t* smb, time_t t)
 {
 	char index_fname[MAX_PATH + 1];
 
@@ -4084,7 +4084,7 @@ BOOL newmsgs(smb_t* smb, time_t t)
 /* Initialize new-msg-scan pointers (e.g. for new users)					*/
 /* If 'days' is specified as 0, just set pointer to last message (faster)	*/
 /****************************************************************************/
-BOOL initmsgptrs(scfg_t* cfg, subscan_t* subscan, unsigned days, void (*progress)(void*, int, int), void* cbdata)
+bool initmsgptrs(scfg_t* cfg, subscan_t* subscan, unsigned days, void (*progress)(void*, int, int), void* cbdata)
 {
 	int			i;
 	smb_t		smb;
@@ -4117,14 +4117,14 @@ BOOL initmsgptrs(scfg_t* cfg, subscan_t* subscan, unsigned days, void (*progress
 	}
 	if(progress != NULL)
 		progress(cbdata, i, cfg->total_subs);
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
 /* Insure message new-scan pointers are within the range of the msgs in		*/
 /* the sub-board.															*/
 /****************************************************************************/
-BOOL fixmsgptrs(scfg_t* cfg, subscan_t* subscan)
+bool fixmsgptrs(scfg_t* cfg, subscan_t* subscan)
 {
 	int			i;
 	smb_t		smb;
@@ -4151,7 +4151,7 @@ BOOL fixmsgptrs(scfg_t* cfg, subscan_t* subscan)
 			subscan[i].last = idx.number;
 		smb_close(&smb);
 	}
-	return TRUE;
+	return true;
 }
 
 static char* sysop_available_semfile(scfg_t* scfg)
@@ -4161,12 +4161,12 @@ static char* sysop_available_semfile(scfg_t* scfg)
 	return semfile;
 }
 
-BOOL sysop_available(scfg_t* scfg)
+bool sysop_available(scfg_t* scfg)
 {
 	return fexist(sysop_available_semfile(scfg));
 }
 
-BOOL set_sysop_availability(scfg_t* scfg, BOOL available)
+bool set_sysop_availability(scfg_t* scfg, bool available)
 {
 	if(available)
 		return ftouch(sysop_available_semfile(scfg));
@@ -4180,12 +4180,12 @@ static char* sound_muted_semfile(scfg_t* scfg)
 	return semfile;
 }
 
-BOOL sound_muted(scfg_t* scfg)
+bool sound_muted(scfg_t* scfg)
 {
 	return fexist(sound_muted_semfile(scfg));
 }
 
-BOOL set_sound_muted(scfg_t* scfg, BOOL muted)
+bool set_sound_muted(scfg_t* scfg, bool muted)
 {
 	if(muted)
 		return ftouch(sound_muted_semfile(scfg));
@@ -4196,7 +4196,7 @@ BOOL set_sound_muted(scfg_t* scfg, BOOL muted)
 /* user .ini file get/set functions */
 /************************************/
 
-static FILE* user_ini_open(scfg_t* scfg, unsigned user_number, BOOL for_modify)
+static FILE* user_ini_open(scfg_t* scfg, unsigned user_number, bool for_modify)
 {
 	char path[MAX_PATH+1];
 
@@ -4204,14 +4204,14 @@ static FILE* user_ini_open(scfg_t* scfg, unsigned user_number, BOOL for_modify)
 	return iniOpenFile(path, for_modify);
 }
 
-BOOL user_get_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, char* value, size_t maxlen)
+bool user_get_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, char* value, size_t maxlen)
 {
 	FILE* fp;
 	char buf[INI_MAX_VALUE_LEN];
 
-	fp = user_ini_open(scfg, user_number, /* for_modify: */FALSE);
+	fp = user_ini_open(scfg, user_number, /* for_modify: */false);
 	if(fp == NULL)
-		return FALSE;
+		return false;
 	char* result = iniReadValue(fp, section, key, NULL, buf);
 	if(result != NULL)
 		safe_snprintf(value, maxlen, "%s", result);
@@ -4219,14 +4219,14 @@ BOOL user_get_property(scfg_t* scfg, unsigned user_number, const char* section, 
 	return result != NULL;
 }
 
-BOOL user_set_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, const char* value)
+bool user_set_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, const char* value)
 {
 	FILE* fp;
 	str_list_t ini;
 
-	fp = user_ini_open(scfg, user_number, /* for_modify: */TRUE);
+	fp = user_ini_open(scfg, user_number, /* for_modify: */true);
 	if(fp == NULL)
-		return FALSE;
+		return false;
 	ini = iniReadFile(fp);
 	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "", .value_separator = " = " };
 	char* result = iniSetValue(&ini, section, key, value, &ini_style);
@@ -4236,17 +4236,17 @@ BOOL user_set_property(scfg_t* scfg, unsigned user_number, const char* section, 
 	return result != NULL;
 }
 
-BOOL user_set_time_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, time_t value)
+bool user_set_time_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, time_t value)
 {
 	FILE* fp;
 	str_list_t ini;
 
-	fp = user_ini_open(scfg, user_number, /* for_modify: */TRUE);
+	fp = user_ini_open(scfg, user_number, /* for_modify: */true);
 	if(fp == NULL)
-		return FALSE;
+		return false;
 	ini = iniReadFile(fp);
 	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "", .value_separator = " = " };
-	char* result = iniSetDateTime(&ini, section, key, /* include_time */TRUE, value, &ini_style);
+	char* result = iniSetDateTime(&ini, section, key, /* include_time */true, value, &ini_style);
 	iniWriteFile(fp, ini);
 	iniFreeStringList(ini);
 	iniCloseFile(fp);
@@ -4265,7 +4265,7 @@ int lookup_user(scfg_t* cfg, link_list_t* list, const char *inname)
 
 	if(list->first == NULL) {
 		user_t user;
-		int userdat = openuserdat(cfg, /* modify */FALSE);
+		int userdat = openuserdat(cfg, /* modify */false);
 		if(userdat < 0)
 			return 0;
 
@@ -4290,7 +4290,7 @@ int lookup_user(scfg_t* cfg, link_list_t* list, const char *inname)
 }
 
 /* Parse a virtual filebase path of the form "[/]lib[/dir][/filename]" (e.g. main/games/filename.ext) */
-enum parsed_vpath parse_vpath(scfg_t* cfg, const char* vpath, user_t* user, client_t* client, BOOL include_upload_only
+enum parsed_vpath parse_vpath(scfg_t* cfg, const char* vpath, user_t* user, client_t* client, bool include_upload_only
 	,int* lib, int* dir, char** filename)
 {
 	char*	p;

@@ -652,7 +652,7 @@ typedef struct {				/* Message or File */
 	void		**hfield_dat;	/* Header fields (variable length portion) */
 	dfield_t	*dfield;		/* Data fields (fixed length portion) */
 	int32_t		idx_offset;		/* Offset (number of records) into index */
-	BOOL		forwarded;		/* Forwarded from agent to another */
+	bool		forwarded;		/* Forwarded from agent to another */
 	uint32_t	expiration; 	/* Message will expire on this day (if >0) */
 	uint64_t	cost;			/* Cost to download/read */
 	uint32_t	flags;			/* Various smblib run-time flags (see MSG_FLAG_*) */
@@ -680,8 +680,8 @@ typedef struct {				/* Message/File base */
 	uint32_t	retry_time; 	/* Maximum number of seconds to retry opens/locks */
 	uint32_t	retry_delay;	/* Time-slice yield (milliseconds) while retrying */
 	smbstatus_t status; 		/* Status header record */
-	BOOL		locked;			/* SMB header is locked */
-	BOOL		continue_on_error;			/* Attempt recovery after some normally fatal errors */
+	bool		locked;			/* SMB header is locked */
+	bool		continue_on_error;			/* Attempt recovery after some normally fatal errors */
 	char		last_error[MAX_PATH*2];		/* Last error message */
 
 	/* Private member variables (not initialized by or used by smblib) */

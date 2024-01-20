@@ -24,7 +24,7 @@
 
 #include <stdio.h>			/* FILE */
 #include <fcntl.h>			/* O_RDONLY */
-#include "gen_defs.h"		/* BOOL (switch to stdbool when we stop using BCB6) */
+#include "gen_defs.h"		/* bool */
 
 #define FNOPEN_BUF_SIZE		(2*1024)
 #define LOOP_NOPEN	  50	/* Retries before file access denied			*/
@@ -35,10 +35,10 @@ extern "C" {
 
 int		nopen(const char* str, uint access);
 FILE *	fnopen(int* file, const char* str, uint access);
-BOOL	ftouch(const char* fname);
-BOOL	fmutex(const char* fname, const char* text, long max_age);
-BOOL	fcompare(const char* fn1, const char* fn2);
-BOOL	backup(const char* org, int backup_level, BOOL ren);
+bool	ftouch(const char* fname);
+bool	fmutex(const char* fname, const char* text, long max_age);
+bool	fcompare(const char* fn1, const char* fn2);
+bool	backup(const char* org, int backup_level, bool ren);
 
 #ifdef __cplusplus
 }

@@ -26,56 +26,56 @@
 #include "userdat.h"
 #include "nopen.h"
 
-BOOL no_msghdr=FALSE,all_msghdr=FALSE;
+bool no_msghdr=false,all_msghdr=false;
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL save_cfg(scfg_t* cfg)
+bool save_cfg(scfg_t* cfg)
 {
 	int i;
 
 	if(cfg->prepped)
-		return(FALSE);
+		return(false);
 
 	if(!write_main_cfg(cfg))
-		return(FALSE);
+		return(false);
 	if(!write_msgs_cfg(cfg))
-		return(FALSE);
+		return(false);
 	if(!write_file_cfg(cfg))
-		return(FALSE);
+		return(false);
 	if(!write_chat_cfg(cfg))
-		return(FALSE);
+		return(false);
 	if(!write_xtrn_cfg(cfg))
-		return(FALSE);
+		return(false);
 
 	for(i=0;i<cfg->sys_nodes;i++) {
 		cfg->node_num=i+1;
 		if(!write_node_cfg(cfg))
-			return(FALSE);
+			return(false);
 	}
 
-	return(TRUE);
+	return(true);
 }
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL write_node_cfg(scfg_t* cfg)
+bool write_node_cfg(scfg_t* cfg)
 {
-	BOOL	result = FALSE;
+	bool	result = false;
 	char	inipath[MAX_PATH+1];
 	FILE*	fp;
 
 	if(cfg->prepped)
-		return FALSE;
+		return false;
 
 	if(cfg->node_num<1 || cfg->node_num>MAX_NODES)
-		return FALSE;
+		return false;
 
 	SAFECOPY(inipath, cfg->node_path[cfg->node_num-1]);
 	prep_dir(cfg->ctrl_dir, inipath, sizeof(inipath));
 	md(inipath);
 	SAFECAT(inipath, "node.ini");
-	backup(inipath, cfg->config_backup_level, TRUE);
+	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
 	iniSetString(&ini, ROOT_SECTION, "phone", cfg->node_phone, NULL);
@@ -97,19 +97,19 @@ BOOL write_node_cfg(scfg_t* cfg)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL write_main_cfg(scfg_t* cfg)
+bool write_main_cfg(scfg_t* cfg)
 {
-	BOOL	result = FALSE;
+	bool	result = false;
 	char	inipath[MAX_PATH+1];
 	char	name[INI_MAX_VALUE_LEN];
 	char	tmp[128];
 	FILE*	fp;
 
 	if(cfg->prepped)
-		return FALSE;
+		return false;
 
 	SAFEPRINTF(inipath, "%smain.ini", cfg->ctrl_dir);
-	backup(inipath, cfg->config_backup_level, TRUE);
+	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
 	iniSetString(&ini, ROOT_SECTION, "name", cfg->sys_name, NULL);
@@ -326,9 +326,9 @@ BOOL write_main_cfg(scfg_t* cfg)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL write_msgs_cfg(scfg_t* cfg)
+bool write_msgs_cfg(scfg_t* cfg)
 {
-	BOOL	result = FALSE;
+	bool	result = false;
 	char	path[MAX_PATH+1];
 	char	inipath[MAX_PATH+1];
 	char	name[INI_MAX_VALUE_LEN];
@@ -337,12 +337,12 @@ BOOL write_msgs_cfg(scfg_t* cfg)
 	smb_t	smb;
 
 	if(cfg->prepped)
-		return FALSE;
+		return false;
 
 	ZERO_VAR(smb);
 
 	SAFEPRINTF(inipath, "%smsgs.ini", cfg->ctrl_dir);
-	backup(inipath, cfg->config_backup_level, TRUE);
+	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->msg_misc, NULL);
@@ -434,7 +434,7 @@ BOOL write_msgs_cfg(scfg_t* cfg)
 				strlwr(path);
 				SAFECAT(smb.file,path);
 				if(smb_open(&smb) != SMB_SUCCESS) {
-					result = FALSE;
+					result = false;
 					continue;
 				}
 				if(!filelength(fileno(smb.shd_fp))) {
@@ -562,7 +562,7 @@ BOOL write_msgs_cfg(scfg_t* cfg)
 		md(dir);
 		SAFEPRINTF(smb.file,"%smail",dir);
 		if(smb_open(&smb)!=0) {
-			return(FALSE); 
+			return(false); 
 		}
 		if(!filelength(fileno(smb.shd_fp))) {
 			smb.status.max_msgs=0;
@@ -575,18 +575,18 @@ BOOL write_msgs_cfg(scfg_t* cfg)
 		}
 		if(smb_locksmbhdr(&smb)!=0) {
 			smb_close(&smb);
-			return(FALSE); 
+			return(false); 
 		}
 		if(smb_getstatus(&smb)!=0) {
 			smb_close(&smb);
-			return(FALSE); 
+			return(false); 
 		}
 		smb.status.max_msgs=0;
 		smb.status.max_crcs=cfg->mail_maxcrcs;
 		smb.status.max_age=cfg->mail_maxage;
 		if(smb_putstatus(&smb)!=0) {
 			smb_close(&smb);
-			return(FALSE); 
+			return(false); 
 		}
 		smb_close(&smb); 
 	}
@@ -613,18 +613,18 @@ static void write_dir_defaults_cfg(str_list_t* ini, const char* section, dir_t* 
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL write_file_cfg(scfg_t* cfg)
+bool write_file_cfg(scfg_t* cfg)
 {
-	BOOL	result = FALSE;
+	bool	result = false;
 	char	path[MAX_PATH+1];
 	char	inipath[MAX_PATH+1];
 	char	name[INI_MAX_VALUE_LEN];
 
 	if(cfg->prepped)
-		return FALSE;
+		return false;
 
 	SAFEPRINTF(inipath, "%sfile.ini", cfg->ctrl_dir);
-	backup(inipath, cfg->config_backup_level, TRUE);
+	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
 	iniSetBytes(&ini, ROOT_SECTION, "min_dspace", 1, cfg->min_dspace, NULL);
@@ -836,17 +836,17 @@ BOOL write_file_cfg(scfg_t* cfg)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL write_chat_cfg(scfg_t* cfg)
+bool write_chat_cfg(scfg_t* cfg)
 {
-	BOOL	result = FALSE;
+	bool	result = false;
 	char	inipath[MAX_PATH+1];
 	char	section[INI_MAX_VALUE_LEN];
 
 	if(cfg->prepped)
-		return FALSE;
+		return false;
 
 	SAFEPRINTF(inipath, "%schat.ini", cfg->ctrl_dir);
-	backup(inipath, cfg->config_backup_level, TRUE);
+	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
 	for(int i=0; i<cfg->total_gurus; i++) {
@@ -893,17 +893,17 @@ BOOL write_chat_cfg(scfg_t* cfg)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL write_xtrn_cfg(scfg_t* cfg)
+bool write_xtrn_cfg(scfg_t* cfg)
 {
-	BOOL	result = FALSE;
+	bool	result = false;
 	char	inipath[MAX_PATH+1];
 	char	name[INI_MAX_VALUE_LEN];
 
 	if(cfg->prepped)
-		return FALSE;
+		return false;
 
 	SAFEPRINTF(inipath, "%sxtrn.ini", cfg->ctrl_dir);
-	backup(inipath, cfg->config_backup_level, TRUE);
+	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
 	for(int i=0; i<cfg->total_xedits; i++) {
@@ -1001,10 +1001,10 @@ void refresh_cfg(scfg_t* cfg)
     node_t	node;
     
     for(i=0;i<cfg->sys_nodes;i++) {
-       	if(getnodedat(cfg,i+1,&node, /* lockit: */TRUE, &file)!=0)
+       	if(getnodedat(cfg,i+1,&node, /* lockit: */true, &file)!=0)
 			continue;
         node.misc|=NODE_RRUN;
-        if(putnodedat(cfg,i+1,&node, /* closeit: */FALSE, file))
+        if(putnodedat(cfg,i+1,&node, /* closeit: */false, file))
             break;
     }
 	CLOSE_OPEN_FILE(file);

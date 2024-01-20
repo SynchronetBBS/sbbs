@@ -22,7 +22,7 @@
 #ifndef _SOCKWRAP_H
 #define _SOCKWRAP_H
 
-#include "gen_defs.h"	/* BOOL */
+#include "gen_defs.h"	/* bool */
 
 /***************/
 /* OS-specific */
@@ -227,7 +227,7 @@ DLLEXPORT int getSocketOptionByName(const char* name, int* level);
 
 DLLEXPORT off_t sendfilesocket(int sock, int file, off_t* offset, off_t count);
 DLLEXPORT off_t recvfilesocket(int sock, int file, off_t* offset, off_t count);
-DLLEXPORT BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout);
+DLLEXPORT bool socket_check(SOCKET sock, bool* rd_p, bool* wr_p, DWORD timeout);
 DLLEXPORT int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 				   ,uint retries, uint wait_secs, const char* prot
 				   ,int (*lprintf)(int level, const char *fmt, ...));
@@ -236,7 +236,7 @@ DLLEXPORT union xp_sockaddr* inet_ptoaddr(const char *addr_str, union xp_sockadd
 DLLEXPORT const char* inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size);
 DLLEXPORT uint16_t inet_addrport(union xp_sockaddr *addr);
 DLLEXPORT void inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
-DLLEXPORT BOOL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2);
+DLLEXPORT bool inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2);
 DLLEXPORT char* socket_strerror(int, char*, size_t);
 DLLEXPORT void set_socket_errno(int);
 DLLEXPORT int get_socket_errno(void);
@@ -253,7 +253,7 @@ DLLEXPORT int socketpair(int domain, int type, int protocol, SOCKET *sv);
  * This means it will return true if recv() will return an error
  * as well as if the socket is closed (and recv() will return 0)
  */
-DLLEXPORT BOOL socket_readable(SOCKET sock, int timeout);
+DLLEXPORT bool socket_readable(SOCKET sock, int timeout);
 
 /*
  * Return TRUE if send() will not block on socket
@@ -262,7 +262,7 @@ DLLEXPORT BOOL socket_readable(SOCKET sock, int timeout);
  * This means it will return true if send() will return an error
  * as well as if the socket is closed (and send() will return 0)
  */
-DLLEXPORT BOOL socket_writable(SOCKET sock, int timeout);
+DLLEXPORT bool socket_writable(SOCKET sock, int timeout);
 
 /*
  * Return TRUE if recv() will not block and will return zero
@@ -270,7 +270,7 @@ DLLEXPORT BOOL socket_writable(SOCKET sock, int timeout);
  * disconnected, but rather that it is disconnected *AND* all
  * data has been recv()ed.
  */
-DLLEXPORT BOOL socket_recvdone(SOCKET sock, int timeout);
+DLLEXPORT bool socket_recvdone(SOCKET sock, int timeout);
 
 #ifdef __cplusplus
 }

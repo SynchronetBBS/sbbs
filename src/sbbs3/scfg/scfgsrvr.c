@@ -59,7 +59,7 @@ static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
 {
 	static int cur, bar;
 	char str[256];
-	BOOL changes = uifc.changes;
+	bool changes = uifc.changes;
 
 	while(1) {
 		int i = 0;
@@ -137,7 +137,7 @@ static void js_startup_cfg(js_startup_t* js)
 {
 	static int cur, bar;
 	char str[256];
-	BOOL changes = uifc.changes;
+	bool changes = uifc.changes;
 
 	while(1) {
 		int i = 0;
@@ -332,7 +332,7 @@ static void termsrvr_cfg(void)
 	static int cur, bar;
 	char str[256];
 	char tmp[256];
-	BOOL enabled = FALSE;
+	bool enabled = false;
 	bbs_startup_t startup = {0};
 
 	FILE* fp = iniOpenFile(cfg.filename, /* for_modify? */false);
@@ -595,7 +595,7 @@ static void websrvr_cfg(void)
 	static int cur, bar;
 	char tmp[256];
 	char str[256];
-	BOOL enabled = FALSE;
+	bool enabled = false;
 	web_startup_t startup = {0};
 
 	FILE* fp = iniOpenFile(cfg.filename, /* for_modify? */false);
@@ -833,7 +833,7 @@ static void websrvr_cfg(void)
 							 fp
 							,&cfg
 							,NULL
-							,FALSE
+							,false
 							,NULL
 							,false
 							,NULL
@@ -865,7 +865,7 @@ static void ftpsrvr_cfg(void)
 	static int cur, bar;
 	char tmp[256];
 	char str[256];
-	BOOL enabled = FALSE;
+	bool enabled = false;
 	ftp_startup_t startup = {0};
 
 	FILE* fp = iniOpenFile(cfg.filename, /* for_modify? */false);
@@ -1036,7 +1036,7 @@ static void ftpsrvr_cfg(void)
 							 fp
 							,&cfg
 							,NULL
-							,FALSE
+							,false
 							,NULL
 							,enabled
 							,&startup
@@ -1189,7 +1189,7 @@ static void mailsrvr_cfg(void)
 	char tmp[256];
 	char str[256];
 	const char* p;
-	BOOL enabled = FALSE;
+	bool enabled = false;
 	mail_startup_t startup = {0};
 
 	FILE* fp = iniOpenFile(cfg.filename, /* for_modify? */false);
@@ -1462,7 +1462,7 @@ static void mailsrvr_cfg(void)
 							 fp
 							,&cfg
 							,NULL
-							,FALSE
+							,false
 							,NULL
 							,false
 							,NULL
@@ -1494,7 +1494,7 @@ static void services_cfg(void)
 	static int cur, bar;
 	char tmp[256];
 	char str[256];
-	BOOL enabled = FALSE;
+	bool enabled = false;
 	services_startup_t startup = {0};
 
 	FILE* fp = iniOpenFile(cfg.filename, /* for_modify? */false);
@@ -1587,7 +1587,7 @@ static void services_cfg(void)
 							 fp
 							,&cfg
 							,NULL
-							,FALSE
+							,false
 							,NULL
 							,false
 							,NULL
@@ -1617,7 +1617,7 @@ static void services_cfg(void)
 void server_cfg(void)
 {
 	static int srvr_dflt;
-	BOOL run_bbs, run_ftp, run_web, run_mail, run_services;
+	bool run_bbs, run_ftp, run_web, run_mail, run_services;
 
 	while(1) {
 		FILE* fp = iniOpenFile(cfg.filename, /* for_modify? */false);

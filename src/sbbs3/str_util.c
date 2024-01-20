@@ -101,7 +101,7 @@ char* strip_ansi(char* str)
 }
 
 // Sort of a stripped down version of ANS2ASC
-char* convert_ansi(const char* src, char* dest, size_t len, int width, BOOL ice_color)
+char* convert_ansi(const char* src, char* dest, size_t len, int width, bool ice_color)
 {
 	const char* s = src;
 	char* d = dest;
@@ -438,9 +438,9 @@ uint hptoi(const char *str)
 }
 
 /****************************************************************************/
-/* Returns TRUE if a is a valid ctrl-a "attribute" code, FALSE if it isn't. */
+/* Returns true if a is a valid ctrl-a "attribute" code, FALSE if it isn't. */
 /****************************************************************************/
-BOOL valid_ctrl_a_attr(char a)
+bool valid_ctrl_a_attr(char a)
 {
 	switch(toupper(a)) {
 		case '+':	/* push attr	*/
@@ -466,21 +466,21 @@ BOOL valid_ctrl_a_attr(char a)
 		case '5':   /* magenta  bg  */
 		case '6':   /* cyan     bg  */
 		case '7':   /* white    bg  */
-			return(TRUE); 
+			return(true); 
 	}
 	return(FALSE);
 }
 
 /****************************************************************************/
-/* Returns TRUE if a is a valid QWKnet compatible Ctrl-A code, else FALSE	*/
+/* Returns true if a is a valid QWKnet compatible Ctrl-A code, else FALSE	*/
 /****************************************************************************/
-BOOL valid_ctrl_a_code(char a)
+bool valid_ctrl_a_code(char a)
 {
 	switch(toupper(a)) {
 		case 'P':		/* Pause */
 		case 'L':		/* CLS */
 		case ',':		/* 100ms delay */
-			return TRUE;
+			return true;
 	}
 	return valid_ctrl_a_attr(a);
 }
@@ -545,20 +545,20 @@ char exascii_to_ascii_char(uchar ch)
 	return ch;
 }
 
-BOOL str_is_ascii(const char* str)
+bool str_is_ascii(const char* str)
 {
 	for(const char* p = str; *p != 0; p++) {
 		if(*p < 0)
 			return FALSE;
 	}
-	return TRUE;
+	return true;
 }
 
-BOOL str_has_ctrl(const char* str)
+bool str_has_ctrl(const char* str)
 {
 	for(const char* p = str; *p != 0; p++) {
 		if((uchar)*p < ' ')
-			return TRUE;
+			return true;
 	}
 	return FALSE;
 }
@@ -584,7 +584,7 @@ char* replace_named_values(const char* src
     ,const char* escape_seq	 
     ,named_string_t* string_list	 
     ,named_int_t* int_list	 
-    ,BOOL case_sensitive)	 
+    ,bool case_sensitive)	 
  {	 
      char    val[32];	 
      size_t  i;	 

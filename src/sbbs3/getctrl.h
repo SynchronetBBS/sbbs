@@ -27,6 +27,6 @@
 #if defined(__cplusplus)
 extern "C"
 #endif
-const char* get_ctrl_dir(BOOL warn);
+const char* get_ctrl_dir(bool warn);
 
 #endif

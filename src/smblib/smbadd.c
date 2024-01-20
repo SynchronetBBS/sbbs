@@ -74,7 +74,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 
 			hashes=smb_msghashes(msg,body,SMB_HASH_SOURCE_DUPE);
 
-			if(smb_findhash(smb, hashes, &found, dupechk_hashes, /* mark? */FALSE)==SMB_SUCCESS) {
+			if(smb_findhash(smb, hashes, &found, dupechk_hashes, /* mark? */false)==SMB_SUCCESS) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)
 					,"%s duplicate %s: %s found in message #%u"
 					,__FUNCTION__
@@ -290,7 +290,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 		}
 
 		if(!(smb->status.attr&(SMB_EMAIL | SMB_NOHASH | SMB_FILE_DIRECTORY))
-			&& smb_addhashes(smb,hashes,/* skip_marked? */FALSE)==SMB_SUCCESS)
+			&& smb_addhashes(smb,hashes,/* skip_marked? */false)==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;
 		if(msg->hdr.type == SMB_MSG_TYPE_NORMAL && msg->to == NULL)	/* no recipient, don't add header (required for bulkmail) */
 			break;

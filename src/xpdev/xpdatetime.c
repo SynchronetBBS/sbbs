@@ -393,28 +393,28 @@ char* gmtime_to_isoDateTimeStr(time_t t, char* str, size_t maxlen)
 /* isoDate/Time/Zone String parsing functions								*/
 /****************************************************************************/
 
-BOOL isoTimeZoneStr_parse(const char* str, xpTimeZone_t* zone)
+bool isoTimeZoneStr_parse(const char* str, xpTimeZone_t* zone)
 {
 	unsigned hour=0,minute=0;
 
 	switch(*str) {
 		case 0:		/* local time-zone */
 			*zone = xpTimeZone_local();	
-			return TRUE;	
+			return true;	
 		case 'Z':	/* UTC */
 			*zone = xpTimeZone_UTC;		
-			return TRUE;
+			return true;
 		case '+':
 		case '-':	/* "+/- HH[:]MM" */
 			if(sscanf(str+1,"%2u%*s%2u",&hour,&minute)>=1) {
 				*zone = (hour*60) + minute;
 				if(*str=='-')
 					*zone = -(*zone);
-				return TRUE;
+				return true;
 			}
 			break;
 	}
-	return FALSE;
+	return false;
 }
 
 /* TODO: adjust times in 24:xx:xx format */

@@ -31,10 +31,10 @@
 
 /* If return value is SMB_ERR_NOT_FOUND, hash file is left open */
 int smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, 
-						 int source_mask, BOOL mark)
+						 int source_mask, bool mark)
 {
 	int		retval;
-	BOOL	found=FALSE;
+	bool	found=false;
 	size_t	c,count;
 	hash_t	hash;
 
@@ -92,7 +92,7 @@ int smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 			if(compare[c]==NULL)
 				continue;	/* no match */
 
-			found=TRUE;
+			found=true;
 
 			if(found_hash!=NULL)
 				memcpy(found_hash,&hash,sizeof(hash));
@@ -112,7 +112,7 @@ int smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 	return(SMB_ERR_NOT_FOUND);
 }
 
-int smb_addhashes(smb_t* smb, hash_t** hashes, BOOL skip_marked)
+int smb_addhashes(smb_t* smb, hash_t** hashes, bool skip_marked)
 {
 	int		retval;
 	size_t	h;
@@ -288,7 +288,7 @@ void smb_freehashes(hash_t** hashes)
 }
 
 /* Calculates and stores the hashes for a single message					*/
-int smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL update)
+int smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, bool update)
 {
 	size_t		n;
 	int			retval=SMB_SUCCESS;
@@ -308,7 +308,7 @@ int smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL update)
 			,smb_hashsource(msg,found.source)
 			,(uint)found.number);
 	} else
-		if((retval=smb_addhashes(smb,hashes,/* skip_marked? */TRUE))==SMB_SUCCESS)
+		if((retval=smb_addhashes(smb,hashes,/* skip_marked? */true))==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;
 
 	FREE_LIST(hashes,n);
@@ -337,7 +337,7 @@ int smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 		return(SMB_ERR_MEM);
 	}
 
-	if((retval=smb_findhash(smb, hashes, &found, 1<<source, FALSE))==SMB_SUCCESS) {
+	if((retval=smb_findhash(smb, hashes, &found, 1<<source, false))==SMB_SUCCESS) {
 		if(found.number==0)
 			retval=SMB_FAILURE;	/* use better error value here? */
 		else {

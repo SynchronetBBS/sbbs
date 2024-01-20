@@ -89,7 +89,7 @@ ulong _beginthread(void( *start_address )( void * )
 /****************************************************************************/
 /* Wrappers for POSIX thread (pthread) mutexes								*/
 /****************************************************************************/
-pthread_mutex_t pthread_mutex_initializer_np(BOOL recursive)
+pthread_mutex_t pthread_mutex_initializer_np(bool recursive)
 {
 	pthread_mutex_t	mutex;
 #if defined(_POSIX_THREADS)

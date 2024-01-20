@@ -4,7 +4,6 @@
 #include "dllexport.h"
 #include <cryptlib.h>
 #include "scfgdefs.h"
-#include <stdbool.h>
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT

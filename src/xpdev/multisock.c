@@ -48,9 +48,9 @@ void xpms_destroy(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET, void *
 	free(xpms_set);
 }
 
-BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
+bool xpms_add(struct xpms_set *xpms_set, int domain, int type,
 	int protocol, const char *addr, uint16_t port, const char *prot, 
-	void (*sock_init)(SOCKET, void *), int(*bind_init)(BOOL), void *cbdata)
+	void (*sock_init)(SOCKET, void *), bool(*bind_init)(bool), void *cbdata)
 {
 	struct xpms_sockdef	*new_socks;
     struct addrinfo		hints;
@@ -76,7 +76,7 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 		if(strlen(addr) >= sizeof(un_addr.sun_path)) {
 			if(xpms_set->lprintf)
 				xpms_set->lprintf(LOG_ERR, "!%s ERROR %s is too long for a portable AF_UNIX socket", prot, addr);
-			return FALSE;
+			return false;
 		}
 		strcpy(un_addr.sun_path,addr);
 #ifdef SUN_LEN
@@ -103,7 +103,7 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 		if((ret=getaddrinfo(addr, port_str, &hints, &res))!=0) {
 			if(xpms_set->lprintf)
 				xpms_set->lprintf(LOG_CRIT, "!%s ERROR %d calling getaddrinfo() on %s", prot, ret, addr);
-			return FALSE;
+			return false;
 		}
 	}
 
@@ -134,7 +134,7 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 
 		if(bind_init) {
 			if(port < IPPORT_RESERVED && port > 0)
-				bind_init(FALSE);
+				bind_init(false);
 		}
 		if(retry_bind(xpms_set->socks[xpms_set->sock_count].sock, cur->ai_addr, cur->ai_addrlen, xpms_set->retries, xpms_set->wait_secs, prot, xpms_set->lprintf)==-1) {
 			closesocket(xpms_set->socks[xpms_set->sock_count].sock);
@@ -142,13 +142,13 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].prot);
 			if(bind_init) {
 				if(port < IPPORT_RESERVED)
-					bind_init(TRUE);
+					bind_init(true);
 			}
 			continue;
 		}
 		if(bind_init) {
 			if(port < IPPORT_RESERVED && port > 0)
-				bind_init(TRUE);
+				bind_init(true);
 		}
 
 		if(type != SOCK_DGRAM) {
@@ -173,19 +173,19 @@ BOOL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 #endif
 		freeaddrinfo(res);
 	if(added)
-		return TRUE;
-	return FALSE;
+		return true;
+	return false;
 }
 
-BOOL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
+bool xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 	int protocol, str_list_t list, uint16_t default_port, const char *prot, 
-	void (*sock_init)(SOCKET, void *), int(*bind_init)(BOOL), void *cbdata)
+	void (*sock_init)(SOCKET, void *), bool(*bind_init)(bool), void *cbdata)
 {
 	char	**iface;
 	char	*host;
 	char	*host_str;
 	char	*p, *p2;
-	BOOL	one_good=FALSE;
+	bool	one_good=false;
 	
 	for(iface=list; iface && *iface; iface++) {
 		WORD	port=default_port;
@@ -215,22 +215,22 @@ BOOL xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 		if(xpms_set->lprintf)
 			xpms_set->lprintf(LOG_INFO, "%s listening on socket %s port %hu", prot, host_str, port);
 		if(xpms_add(xpms_set, domain, type, protocol, host_str, port, prot, sock_init, bind_init, cbdata))
-			one_good=TRUE;
+			one_good=true;
 		free(host);
 	}
 	return one_good;
 }
 
-BOOL xpms_add_chararray_list(struct xpms_set *xpms_set, int domain, int type,
+bool xpms_add_chararray_list(struct xpms_set *xpms_set, int domain, int type,
 	int protocol, const char *list, uint16_t default_port, const char *prot,
-	void (*sock_init)(SOCKET, void *), int(*bind_init)(BOOL), void *cbdata)
+	void (*sock_init)(SOCKET, void *), bool(*bind_init)(bool), void *cbdata)
 {
 	str_list_t slist;
-	BOOL ret;
+	bool ret;
 
 	slist = strListSplitCopy(NULL, list, ", \t\r\n");
 	if (slist == NULL)
-		return FALSE;
+		return false;
 	ret = xpms_add_list(xpms_set, domain, type, protocol, slist, default_port, prot,
 			sock_init, bind_init, cbdata);
 	strListFree(&slist);
@@ -253,7 +253,7 @@ static void btox(char *hexstr, const char *srcbuf, size_t srcbuflen, size_t hexs
 	}
 }
 
-static BOOL read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(int level, const char *fmt, ...))
+static bool read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(int level, const char *fmt, ...))
 {
 	size_t            i;
 	int            rd;
@@ -265,27 +265,27 @@ static BOOL read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(in
 			rd = recv(sock,&ch,1,0);
 			if (rd == 0) {
 				lprintf(LOG_WARNING,"%04d multisock read_socket() - remote closed the connection",sock);
-				return FALSE;
+				return false;
 
 			} else if (rd == 1) {
 				buffer[i] = ch;
 
 			} else {
 				lprintf(LOG_WARNING,"%04d multisock read_socket() - failed to read from socket. Got [%d] with error [%s]",sock,rd,socket_strerror(socket_errno,err,sizeof(err)));
-				return FALSE;
+				return false;
 			}
 
 		} else {
 			lprintf(LOG_WARNING,"%04d multisock read_socket() - No data?",sock);
-			return FALSE;
+			return false;
 
 		}
 	}
 
-	return TRUE;
+	return true;
 }
 
-static BOOL read_socket_line(SOCKET sock, char *buffer, size_t buflen, int (*lprintf)(int level, const char *fmt, ...))
+static bool read_socket_line(SOCKET sock, char *buffer, size_t buflen, int (*lprintf)(int level, const char *fmt, ...))
 {
 	size_t         i;
 
@@ -293,20 +293,20 @@ static BOOL read_socket_line(SOCKET sock, char *buffer, size_t buflen, int (*lpr
 		if (read_socket(sock, &buffer[i], 1, lprintf)) {
 			switch(buffer[i]) {
 				case 0:
-					return FALSE;
+					return false;
 				case '\n':
 					buffer[i+1] = 0;
-					return TRUE;
+					return true;
 			}
 
 		} else {
 			buffer[i] = 0;
-			return FALSE;
+			return false;
 		}
 	}
 
 	buffer[i] = 0;
-	return FALSE;
+	return false;
 }
 
 SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr, 
@@ -500,7 +500,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 
 							// OK, just for sanity, our next 10 chars should be v2...
 							memset(hapstr, 0, 10);
-							if (read_socket(ret,hapstr,10,xpms_set->lprintf)==FALSE || memcmp(hapstr, "\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A", 10) != 0) {
+							if (read_socket(ret,hapstr,10,xpms_set->lprintf)==false || memcmp(hapstr, "\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A", 10) != 0) {
 								btox(haphex,hapstr,10,sizeof(haphex), xpms_set->lprintf);
 								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - incomplete v2 setup [%s]",ret,haphex);
 								closesocket(ret);
@@ -508,7 +508,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 							}
 
 							// Command and Version
-							if (read_socket(ret,hapstr,1,xpms_set->lprintf)==FALSE) {
+							if (read_socket(ret,hapstr,1,xpms_set->lprintf)==false) {
 								btox(haphex,hapstr,1,sizeof(haphex), xpms_set->lprintf);
 								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for Verson/Command - failed [%s]",ret,haphex);
 								closesocket(ret);
@@ -543,7 +543,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 							}
 
 							// Protocol and Family
-							if (read_socket(ret,hapstr,1,xpms_set->lprintf)==FALSE) {
+							if (read_socket(ret,hapstr,1,xpms_set->lprintf)==false) {
 								btox(haphex,hapstr,1,sizeof(haphex), xpms_set->lprintf);
 								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for Protocol/Family - failed [%s]",ret,haphex);
 								closesocket(ret);
@@ -554,7 +554,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 							xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Family [%x]",ret,l); //0=UNSPEC/1=STREAM/2=DGRAM
 
 							// Address Length - 2 bytes
-							if (read_socket(ret,hapstr,2,xpms_set->lprintf)==FALSE) {
+							if (read_socket(ret,hapstr,2,xpms_set->lprintf)==false) {
 								btox(haphex,hapstr,2,sizeof(haphex), xpms_set->lprintf);
 								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for address length - failed [%s]",ret,haphex);
 								closesocket(ret);
@@ -572,7 +572,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 										goto error_return;
 									}
 									addr->in.sin_family = AF_INET;
-									if (read_socket(ret, hapstr, i, xpms_set->lprintf)==FALSE) {
+									if (read_socket(ret, hapstr, i, xpms_set->lprintf)==false) {
 										xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for IPv4 address - failed",ret);
 										closesocket(ret);
 										goto error_return;
@@ -592,7 +592,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 										goto error_return;
 									}
 									addr->in6.sin6_family = AF_INET6;
-									if (read_socket(ret,hapstr,i,xpms_set->lprintf)==FALSE) {
+									if (read_socket(ret,hapstr,i,xpms_set->lprintf)==false) {
 										xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for IPv6 address - failed",ret);
 										closesocket(ret);
 										goto error_return;

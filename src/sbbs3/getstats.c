@@ -62,7 +62,7 @@ char* cstats_fname(scfg_t* cfg, uint node, char* path, size_t size)
 
 /****************************************************************************/
 /****************************************************************************/
-FILE* fopen_dstats(scfg_t* cfg, uint node, BOOL for_write)
+FILE* fopen_dstats(scfg_t* cfg, uint node, bool for_write)
 {
     char path[MAX_PATH+1];
 
@@ -72,7 +72,7 @@ FILE* fopen_dstats(scfg_t* cfg, uint node, BOOL for_write)
 
 /****************************************************************************/
 /****************************************************************************/
-FILE* fopen_cstats(scfg_t* cfg, uint node, BOOL for_write)
+FILE* fopen_cstats(scfg_t* cfg, uint node, bool for_write)
 {
     char path[MAX_PATH+1];
 
@@ -82,14 +82,14 @@ FILE* fopen_cstats(scfg_t* cfg, uint node, BOOL for_write)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL fclose_dstats(FILE* fp)
+bool fclose_dstats(FILE* fp)
 {
 	return fclose(fp);
 }
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL fclose_cstats(FILE* fp)
+bool fclose_cstats(FILE* fp)
 {
 	return fclose(fp) == 0;
 }
@@ -112,12 +112,12 @@ static void gettotals(str_list_t ini, const char* section, totals_t* stats)
 /* Reads data from dsts.ini into stats structure                            */
 /* If node is zero, reads from ctrl/dsts.ini, otherwise from each node		*/
 /****************************************************************************/
-BOOL fread_dstats(FILE* fp, stats_t* stats)
+bool fread_dstats(FILE* fp, stats_t* stats)
 {
 	str_list_t ini;
 
 	if(fp == NULL)
-		return FALSE;
+		return false;
 
 	memset(stats, 0, sizeof(*stats));
 	ini = iniReadFile(fp);
@@ -126,17 +126,17 @@ BOOL fread_dstats(FILE* fp, stats_t* stats)
 	gettotals(ini, strStatsTotal, &stats->total);
 	iniFreeStringList(ini);
 
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
 /* Reads data from dsts.ini into stats structure                            */
 /* If node is zero, reads from ctrl/dsts.ini, otherwise from each node		*/
 /****************************************************************************/
-BOOL getstats(scfg_t* cfg, uint node, stats_t* stats)
+bool getstats(scfg_t* cfg, uint node, stats_t* stats)
 {
     char path[MAX_PATH+1];
-	BOOL result;
+	bool result;
 
 	memset(stats, 0, sizeof(*stats));
 	dstats_fname(cfg, node, path, sizeof(path));
@@ -144,7 +144,7 @@ BOOL getstats(scfg_t* cfg, uint node, stats_t* stats)
 	if(fp == NULL) {
 		int file;
 		if(fexist(path))
-			return FALSE;
+			return false;
 		// Upgrading from v3.19?
 		struct {									/* System/Node Statistics */
 			uint32_t	date,						/* When last rolled-over */
@@ -164,9 +164,9 @@ BOOL getstats(scfg_t* cfg, uint node, stats_t* stats)
 
 		SAFEPRINTF(path,"%sdsts.dab",node ? cfg->node_path[node-1] : cfg->ctrl_dir);
 		if(!fexistcase(path))
-			return TRUE;
+			return true;
 		if((file=nopen(path,O_RDONLY))==-1) {
-			return(FALSE);
+			return(false);
 		}
 		int rd = read(file, &legacy_stats, sizeof(legacy_stats));
 		close(file);
@@ -207,16 +207,16 @@ static void settotals(str_list_t* ini, const char* section, const totals_t* stat
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL fwrite_dstats(FILE* fp, const stats_t* stats)
+bool fwrite_dstats(FILE* fp, const stats_t* stats)
 {
-	BOOL result;
+	bool result;
 	str_list_t ini;
 
 	if(fp == NULL)
-		return FALSE;
+		return false;
 
 	ini = iniReadFile(fp);
-	iniSetDateTime(&ini, NULL, strStatsDate, /* include_time: */FALSE, stats->date, /* style: */NULL);
+	iniSetDateTime(&ini, NULL, strStatsDate, /* include_time: */false, stats->date, /* style: */NULL);
 	settotals(&ini, strStatsToday, &stats->today);
 	settotals(&ini, strStatsTotal, &stats->total);
 	result = iniWriteFile(fp, ini);
@@ -228,13 +228,13 @@ BOOL fwrite_dstats(FILE* fp, const stats_t* stats)
 /****************************************************************************/
 /* If node is zero, reads from ctrl/dsts.ini, otherwise from each node		*/
 /****************************************************************************/
-BOOL putstats(scfg_t* cfg, uint node, const stats_t* stats)
+bool putstats(scfg_t* cfg, uint node, const stats_t* stats)
 {
-	BOOL result;
+	bool result;
 
-	FILE* fp = fopen_dstats(cfg, node, /* for_write: */TRUE);
+	FILE* fp = fopen_dstats(cfg, node, /* for_write: */true);
 	if(fp == NULL)
-		return FALSE;
+		return false;
 	result = fwrite_dstats(fp, stats);
 	iniCloseFile(fp);
 	return result;
@@ -250,7 +250,7 @@ void rolloverstats(stats_t* stats)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL fwrite_cstats(FILE* fp, const stats_t* stats)
+bool fwrite_cstats(FILE* fp, const stats_t* stats)
 {
 	int len;
 	char pad[LEN_CSTATS_RECORD];
@@ -273,9 +273,9 @@ BOOL fwrite_cstats(FILE* fp, const stats_t* stats)
 			,strStatsNewUsers
 		);
 		if(len >= sizeof(pad))
-			return FALSE;
+			return false;
 		if(fprintf(fp, "%.*s\n", (int)(sizeof(pad) - (len + 1)), pad) <= 0)
-			return FALSE;
+			return false;
 	}
 	len = fprintf(fp
 		,"%" PRIu32 "\t%u\t%u\t%u\t%" PRIu64 "\t%u\t%" PRIu64 "\t%u\t%u\t%u\t%u\t"
@@ -292,7 +292,7 @@ BOOL fwrite_cstats(FILE* fp, const stats_t* stats)
 		,stats->nusers
 	);
 	if(len >= sizeof(pad))
-		return FALSE;
+		return false;
 	return fprintf(fp, "%.*s\n", (int)(sizeof(pad) - (len + 1)), pad) > 0;
 }
 
@@ -361,15 +361,15 @@ static void inc_xfer_stat_keys(str_list_t* ini, const char* section, uint files,
 	iniSetBytes(ini, section, bytes_key, /* unit: */1, iniGetBytes(*ini, section, bytes_key, /* unit: */1, 0) + bytes, /* style: */NULL);
 }
 
-static BOOL inc_xfer_stats(scfg_t* cfg, uint node, uint files, uint64_t bytes, const char* files_key, const char* bytes_key)
+static bool inc_xfer_stats(scfg_t* cfg, uint node, uint files, uint64_t bytes, const char* files_key, const char* bytes_key)
 {
 	FILE* fp;
 	str_list_t ini;
-	BOOL result = FALSE;
+	bool result = false;
 
-	fp = fopen_dstats(cfg, node, /* for_write: */TRUE);
+	fp = fopen_dstats(cfg, node, /* for_write: */true);
 	if(fp == NULL)
-		return FALSE;
+		return false;
 	ini = iniReadFile(fp);
 	inc_xfer_stat_keys(&ini, strStatsTotal, files, bytes, files_key, bytes_key);
 	inc_xfer_stat_keys(&ini, strStatsToday, files, bytes, files_key, bytes_key);
@@ -380,33 +380,33 @@ static BOOL inc_xfer_stats(scfg_t* cfg, uint node, uint files, uint64_t bytes, c
 	return result;
 }
 
-static BOOL inc_all_xfer_stats(scfg_t* cfg, uint files, uint64_t bytes, const char* files_key, const char* bytes_key)
+static bool inc_all_xfer_stats(scfg_t* cfg, uint files, uint64_t bytes, const char* files_key, const char* bytes_key)
 {
-	BOOL success = TRUE;
+	bool success = true;
 	if(cfg->node_num)
 		success = inc_xfer_stats(cfg, cfg->node_num, files, bytes, files_key, bytes_key);
 	return inc_xfer_stats(cfg, /* system = node_num 0 */0, files, bytes, files_key, bytes_key) && success;
 }
 
-BOOL inc_upload_stats(scfg_t* cfg, uint files, uint64_t bytes)
+bool inc_upload_stats(scfg_t* cfg, uint files, uint64_t bytes)
 {
 	return inc_all_xfer_stats(cfg, files, bytes, strStatsUploads, strStatsUploadBytes);
 }
 
-BOOL inc_download_stats(scfg_t* cfg, uint files, uint64_t bytes)
+bool inc_download_stats(scfg_t* cfg, uint files, uint64_t bytes)
 {
 	return inc_all_xfer_stats(cfg, files, bytes, strStatsDownloads, strStatsDownloadBytes);
 }
 
-static BOOL inc_post_stat(scfg_t* cfg, uint node, uint count)
+static bool inc_post_stat(scfg_t* cfg, uint node, uint count)
 {
 	FILE* fp;
 	str_list_t ini;
-	BOOL result = FALSE;
+	bool result = false;
 
-	fp = fopen_dstats(cfg, node, /* for_write: */TRUE);
+	fp = fopen_dstats(cfg, node, /* for_write: */true);
 	if(fp == NULL)
-		return FALSE;
+		return false;
 	ini = iniReadFile(fp);
 	iniSetUInteger(&ini, strStatsToday, strStatsPosts, iniGetUInteger(ini, strStatsToday, strStatsPosts, 0) + count, /* style: */NULL);
 	iniSetUInteger(&ini, strStatsTotal, strStatsPosts, iniGetUInteger(ini, strStatsTotal, strStatsPosts, 0) + count, /* style: */NULL);
@@ -417,24 +417,24 @@ static BOOL inc_post_stat(scfg_t* cfg, uint node, uint count)
 	return result;
 }
 
-BOOL inc_post_stats(scfg_t* cfg, uint count)
+bool inc_post_stats(scfg_t* cfg, uint count)
 {
-	BOOL success = TRUE;
+	bool success = true;
 	if(cfg->node_num)
 		success = inc_post_stat(cfg, cfg->node_num, count);
 	return inc_post_stat(cfg, /* system = node_num 0 */0, count) && success;
 }
 
-static BOOL inc_email_stat(scfg_t* cfg, uint node, uint count, BOOL feedback)
+static bool inc_email_stat(scfg_t* cfg, uint node, uint count, bool feedback)
 {
 	FILE* fp;
 	str_list_t ini;
-	BOOL result = FALSE;
+	bool result = false;
 	const char* key = feedback ? strStatsFeedback : strStatsEmail;
 
-	fp = fopen_dstats(cfg, node, /* for_write: */TRUE);
+	fp = fopen_dstats(cfg, node, /* for_write: */true);
 	if(fp == NULL)
-		return FALSE;
+		return false;
 	ini = iniReadFile(fp);
 	iniSetUInteger(&ini, strStatsToday, key, iniGetUInteger(ini, strStatsToday, key, 0) + count, /* style: */NULL);
 	iniSetUInteger(&ini, strStatsTotal, key, iniGetUInteger(ini, strStatsTotal, key, 0) + count, /* style: */NULL);
@@ -445,9 +445,9 @@ static BOOL inc_email_stat(scfg_t* cfg, uint node, uint count, BOOL feedback)
 	return result;
 }
 
-BOOL inc_email_stats(scfg_t* cfg, uint count, BOOL feedback)
+bool inc_email_stats(scfg_t* cfg, uint count, bool feedback)
 {
-	BOOL success = TRUE;
+	bool success = true;
 	if(cfg->node_num)
 		success = inc_email_stat(cfg, cfg->node_num, count, feedback);
 	return inc_email_stat(cfg, /* system = node_num 0 */0, count, feedback) && success;

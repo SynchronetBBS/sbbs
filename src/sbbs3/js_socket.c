@@ -33,12 +33,12 @@
 
 #ifdef JAVASCRIPT
 
-static void dbprintf(BOOL error, js_socket_private_t* p, char* fmt, ...);
+static void dbprintf(bool error, js_socket_private_t* p, char* fmt, ...);
 static bool do_CryptFlush(js_socket_private_t *p);
 static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val);
 static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len);
 static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize);
-static BOOL js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type);
+static bool js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type);
 static JSBool js_accept(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_bind(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_close(JSContext *cx, uintN argc, jsval *arglist);
@@ -64,14 +64,14 @@ static JSBool js_setsockopt(JSContext *cx, uintN argc, jsval *arglist);
 static int js_sock_read_check(js_socket_private_t *p, time_t start, int32 timeout, int i);
 static JSBool js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_socket_enumerate(JSContext *cx, JSObject *obj);
-static BOOL js_socket_peek_byte(JSContext *cx, js_socket_private_t *p);
+static bool js_socket_peek_byte(JSContext *cx, js_socket_private_t *p);
 static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp);
 static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf, size_t len, int flags, int timeout);
 static JSBool js_socket_resolve(JSContext *cx, JSObject *obj, jsid id);
 static off_t js_socket_sendfilesocket(js_socket_private_t *p, int file, off_t *offset, off_t count);
 static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, size_t len, int flush);
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp);
-static JSBool js_install_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once);
+static JSBool js_install_event(JSContext *cx, uintN argc, jsval *arglist, bool once);
 static JSBool js_on(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_once(JSContext *cx, uintN argc, jsval *arglist);
 
@@ -237,10 +237,10 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 	}
 
 	if(p->sock==INVALID_SOCKET) {
-		p->is_connected = FALSE;
+		p->is_connected = false;
 		return;
 	}
-	if(p->external==FALSE) {
+	if(p->external==false) {
 		close_socket(p->sock);
 		p->last_error = ERROR_VALUE;
 	}
@@ -251,20 +251,20 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 
 	// This is a lie for external sockets... don't tell anyone.
 	p->sock = INVALID_SOCKET;
-	p->is_connected = FALSE;
+	p->is_connected = false;
 }
 
-static BOOL js_socket_peek_byte(JSContext *cx, js_socket_private_t *p)
+static bool js_socket_peek_byte(JSContext *cx, js_socket_private_t *p)
 {
 	if (do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, 0) != CRYPT_OK)
-		return FALSE;
+		return false;
 	if (p->peeked)
 		return TRUE;
 	if (js_socket_recv(cx, p, &p->peeked_byte, 1, 0, 0) == 1) {
 		p->peeked = TRUE;
 		return TRUE;
 	}
-	return FALSE;
+	return false;
 }
 
 /* Returns > 0 upon successful data received (even if there was an error or disconnection) */
@@ -287,7 +287,7 @@ static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf
 			*(uint8_t *)buf = p->peeked_byte;
 			buf=((uint8_t *)buf) + 1;
 			if (!(flags & MSG_PEEK))
-				p->peeked = FALSE;
+				p->peeked = false;
 			total++;
 			len--;
 			if (len == 0)
@@ -421,7 +421,7 @@ static off_t js_socket_sendfilesocket(js_socket_private_t *p, int file, off_t *o
 		if(rd==0)
 			break;
 		for(i=wr=0;i<rd;i+=wr) {
-			wr=js_socket_sendsocket(p,buf+i,rd-i,FALSE);
+			wr=js_socket_sendsocket(p,buf+i,rd-i,false);
 			if(wr>0)
 				continue;
 			if(wr==SOCKET_ERROR && ERROR_VALUE==EWOULDBLOCK) {
@@ -446,7 +446,7 @@ static off_t js_socket_sendfilesocket(js_socket_private_t *p, int file, off_t *o
 	return(total);
 }
 
-static void dbprintf(BOOL error, js_socket_private_t* p, char* fmt, ...)
+static void dbprintf(bool error, js_socket_private_t* p, char* fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];
@@ -499,7 +499,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	do_js_close(cx, p, false);
-	dbprintf(FALSE, p, "closed");
+	dbprintf(false, p, "closed");
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -665,7 +665,7 @@ SOCKET js_socket_add(JSContext *cx, jsval val, fd_set *fds)
 	return sock;
 }
 
-BOOL  js_socket_isset(JSContext *cx, jsval val, fd_set *fds)
+bool  js_socket_isset(JSContext *cx, jsval val, fd_set *fds)
 {
 	js_socket_private_t	*p;
 	JSClass*	cl;
@@ -699,7 +699,7 @@ BOOL  js_socket_isset(JSContext *cx, jsval val, fd_set *fds)
 				return TRUE;
 		}
 	}
-	return FALSE;
+	return false;
 }
 
 void js_timeval(JSContext* cx, jsval val, struct timeval* tv)
@@ -789,7 +789,7 @@ js_bind(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	freeaddrinfo(res);
 
-	dbprintf(FALSE, p, "bound to port %u",port);
+	dbprintf(false, p, "bound to port %u",port);
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
@@ -822,7 +822,7 @@ js_listen(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 
-	dbprintf(FALSE, p, "listening, backlog=%d",backlog);
+	dbprintf(false, p, "listening, backlog=%d",backlog);
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
@@ -880,10 +880,10 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 	new_p->type=p->type;
 	new_p->debug=p->debug;
 	new_p->nonblocking=p->nonblocking;
-	new_p->external=FALSE;		/* let destructor close socket */
+	new_p->external=false;		/* let destructor close socket */
 	new_p->is_connected=TRUE;
 
-	dbprintf(FALSE, p, "accepted connection");
+	dbprintf(false, p, "accepted connection");
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(sockobj));
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
@@ -894,7 +894,7 @@ struct js_connect_event_args {
 	SOCKET sock;
 	int socktype;
 	char *host;
-	BOOL nonblocking;
+	bool nonblocking;
 	ushort port;
 };
 
@@ -1060,7 +1060,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 		return bgr;
 	}
 
-	dbprintf(FALSE, p, "resolving hostname: %s", p->hostname);
+	dbprintf(false, p, "resolving hostname: %s", p->hostname);
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_socktype = p->type;
@@ -1082,7 +1082,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 			timeout = js_polltimeout(cx, argv[2]);
 
 		inet_addrtop((void *)cur->ai_addr, ip_str, sizeof(ip_str));
-		dbprintf(FALSE, p, "connecting to %s on port %u at %s", ip_str, port, p->hostname);
+		dbprintf(false, p, "connecting to %s on port %u at %s", ip_str, port, p->hostname);
 		inet_setaddrport((void *)cur->ai_addr, port);
 
 		result = connect(p->sock, cur->ai_addr, cur->ai_addrlen);
@@ -1120,7 +1120,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 
 	p->is_connected = TRUE;
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
-	dbprintf(FALSE, p, "connected to %s on port %u at %s", ip_str, port, p->hostname);
+	dbprintf(false, p, "connected to %s on port %u at %s", ip_str, port, p->hostname);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -1153,7 +1153,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	ret = js_socket_sendsocket(p,cp,len,TRUE);
 	if(ret >= 0) {
-		dbprintf(FALSE, p, "sent %d of %lu bytes",ret,len);
+		dbprintf(false, p, "sent %d of %lu bytes",ret,len);
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(ret));
 	} else {
 		p->last_error=ERROR_VALUE;
@@ -1191,8 +1191,8 @@ js_sendline(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(js_socket_sendsocket(p,cp,len,FALSE)==len && js_socket_sendsocket(p,"\r\n",2,TRUE)==2) {
-		dbprintf(FALSE, p, "sent %lu bytes",len+2);
+	if(js_socket_sendsocket(p,cp,len,false)==len && js_socket_sendsocket(p,"\r\n",2,TRUE)==2) {
+		dbprintf(false, p, "sent %lu bytes",len+2);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
 		p->last_error=ERROR_VALUE;
@@ -1254,7 +1254,7 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_socktype = p->type;
 	hints.ai_flags = AI_ADDRCONFIG;
-	dbprintf(FALSE, p, "resolving hostname: %s", p->hostname);
+	dbprintf(false, p, "resolving hostname: %s", p->hostname);
 
 	if((result=getaddrinfo(p->hostname, NULL, &hints, &res) != 0)) {
 		p->last_error = ERROR_VALUE;
@@ -1267,11 +1267,11 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(cur=res; cur; cur=cur->ai_next) {
 		inet_addrtop((void *)cur->ai_addr, ip_addr, sizeof(ip_addr));
-		dbprintf(FALSE, p, "sending %lu bytes to %s port %u at %s"
+		dbprintf(false, p, "sending %lu bytes to %s port %u at %s"
 			,len, ip_addr, port, p->hostname);
 		inet_setaddrport((void *)cur->ai_addr, port);
 		if(sendto(p->sock,cp,len,0 /* flags */,cur->ai_addr,cur->ai_addrlen)==len) {
-			dbprintf(FALSE, p, "sent %lu bytes",len);
+			dbprintf(false, p, "sent %lu bytes",len);
 			JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 		} else {
 			p->last_error=ERROR_VALUE;
@@ -1322,7 +1322,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	len = js_socket_sendfilesocket(p, file, NULL, 0);
 	close(file);
 	if(len > 0) {
-		dbprintf(FALSE, p, "sent %"PRIdOFF" bytes",len);
+		dbprintf(false, p, "sent %"PRIdOFF" bytes",len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
 		p->last_error=ERROR_VALUE;
@@ -1383,7 +1383,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 			break;
 	}
 	if(wr==size) {
-		dbprintf(FALSE, p, "sent %u bytes (binary)",size);
+		dbprintf(false, p, "sent %u bytes (binary)",size);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
 		p->last_error=ERROR_VALUE;
@@ -1445,7 +1445,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	rc=JS_SUSPENDREQUEST(cx);
-	dbprintf(FALSE, p, "received %u bytes",len);
+	dbprintf(false, p, "received %u bytes",len);
 	JS_RESUMEREQUEST(cx, rc);
 
 	free(buf);
@@ -1463,7 +1463,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 	int			rd=0;
 	int32		len=512;
 	uintN		n;
-	BOOL		binary=FALSE;
+	bool		binary=false;
 	BYTE		b;
 	WORD		w;
 	DWORD		l;
@@ -1579,7 +1579,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(retobj));
 
 	rc=JS_SUSPENDREQUEST(cx);
-	dbprintf(FALSE, p, "received %u bytes from %s:%s",len,ip_addr,port);
+	dbprintf(false, p, "received %u bytes from %s:%s",len,ip_addr,port);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -1631,7 +1631,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	rc=JS_SUSPENDREQUEST(cx);
-	dbprintf(FALSE, p, "received %u bytes, lasterror=%d"
+	dbprintf(false, p, "received %u bytes, lasterror=%d"
 		,len,ERROR_VALUE);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -1645,10 +1645,10 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 static int
 js_sock_read_check(js_socket_private_t *p, time_t start, int32 timeout, int i)
 {
-	BOOL		rd;
+	bool		rd;
 
 	if(timeout > 0 && time(NULL)-start>timeout) {
-		dbprintf(FALSE, p, "recvline timeout (received: %d)",i);
+		dbprintf(false, p, "recvline timeout (received: %d)",i);
 		return 1;
 	}
 
@@ -1659,7 +1659,7 @@ js_sock_read_check(js_socket_private_t *p, time_t start, int32 timeout, int i)
 
 	if(!rd) {
 		if(time(NULL)-start>timeout) {
-			dbprintf(FALSE, p, "recvline timeout (received: %d)",i);
+			dbprintf(false, p, "recvline timeout (received: %d)",i);
 			return 1;
 		}
 		return 3;
@@ -1749,7 +1749,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	rc=JS_SUSPENDREQUEST(cx);
-	dbprintf(FALSE, p, "received %u bytes (recvline) lasterror=%d"
+	dbprintf(false, p, "received %u bytes (recvline) lasterror=%d"
 		,i,ERROR_VALUE);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -1952,7 +1952,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	js_socket_private_t*	p;
-	BOOL	poll_for_write=FALSE;
+	bool	poll_for_write=false;
 	uintN	argn;
 	int		result;
 	jsrefcount	rc;
@@ -2038,7 +2038,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 
 	p->last_error=ERROR_VALUE;
 
-	dbprintf(FALSE, p, "poll: select/poll returned %d (errno %d)"
+	dbprintf(false, p, "poll: select/poll returned %d (errno %d)"
 		,result,p->last_error);
 
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
@@ -2092,7 +2092,7 @@ js_install_one_socket_event(JSContext *cx, JSObject *obj, JSFunction *ecb, js_ca
 }
 
 static JSBool
-js_install_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once)
+js_install_event(JSContext *cx, uintN argc, jsval *arglist, bool once)
 {
 	jsval	*argv=JS_ARGV(cx, arglist);
 	js_callback_t*	cb;
@@ -2168,7 +2168,7 @@ js_install_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once)
 }
 
 static JSBool
-js_clear_socket_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once)
+js_clear_socket_event(JSContext *cx, uintN argc, jsval *arglist, bool once)
 {
 	jsval	*argv=JS_ARGV(cx, arglist);
 	enum js_event_type et;
@@ -2221,13 +2221,13 @@ js_clearOnce(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_on(JSContext *cx, uintN argc, jsval *arglist)
 {
-	return js_install_event(cx, argc, arglist, FALSE);
+	return js_install_event(cx, argc, arglist, false);
 }
 
 static JSBool
 js_clearOn(JSContext *cx, uintN argc, jsval *arglist)
 {
-	return js_clear_socket_event(cx, argc, arglist, FALSE);
+	return js_clear_socket_event(cx, argc, arglist, false);
 }
 
 /* Socket Object Properties */
@@ -2288,7 +2288,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 	jsint       tiny;
 	js_socket_private_t*	p;
 	jsrefcount	rc;
-	BOOL		b;
+	JSBool		b;
 	int32		i;
 	scfg_t *scfg;
 	char* estr;
@@ -2302,7 +2302,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 	tiny = JSVAL_TO_INT(idval);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	dbprintf(FALSE, p, "setting property %d",tiny);
+	dbprintf(false, p, "setting property %d",tiny);
 	JS_RESUMEREQUEST(cx, rc);
 
 	switch(tiny) {
@@ -2361,7 +2361,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 									// TODO: Make this configurable
 									do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_NAMEVERIFY);
 									ret=do_cryptAttributeString(p->session, CRYPT_SESSINFO_SERVER_NAME, p->hostname, strlen(p->hostname));
-									p->tls_server = FALSE;
+									p->tls_server = false;
 								}
 								else {
 									if (scfg == NULL) {
@@ -2416,8 +2416,8 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	jsval idval;
     jsint       tiny;
 	ulong		cnt;
-	BOOL		rd;
-	BOOL		wr;
+	bool		rd;
+	bool		wr;
 	js_socket_private_t*	p;
 	JSString*	js_str;
 	union xp_sockaddr	addr;
@@ -2435,7 +2435,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	rc=JS_SUSPENDREQUEST(cx);
 #if 0 /* just too much */
-	dbprintf(FALSE, p, "getting property %d",tiny);
+	dbprintf(false, p, "getting property %d",tiny);
 #endif
 
 	switch(tiny) {
@@ -2455,14 +2455,14 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SOCK_PROP_IS_WRITEABLE:
 			if(p->sock==INVALID_SOCKET && p->set)
-				wr = FALSE;
+				wr = false;
 			else
 				socket_check(p->sock,NULL,&wr,0);
 			*vp = BOOLEAN_TO_JSVAL(wr);
 			break;
 		case SOCK_PROP_DATA_WAITING:
 			if(p->sock==INVALID_SOCKET && p->set)
-				rd = FALSE;
+				rd = false;
 			else {
 				if (p->peeked)
 					rd = TRUE;
@@ -2778,7 +2778,7 @@ JSClass js_listening_socket_class = {
 	,js_finalize_socket		/* finalize		*/
 };
 
-static BOOL js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type)
+static bool js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type)
 {
 	size_t		i;
 	size_t		count=0;
@@ -2787,14 +2787,14 @@ static BOOL js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type)
 	socket_option_t* options;
 
 	if((options=getSocketOptionList())==NULL)
-		return(FALSE);
+		return(false);
 
 	if((array=JS_NewArrayObject(cx, 0, NULL))==NULL)
-		return(FALSE);
+		return(false);
 
 	if(!JS_DefineProperty(cx, obj, "option_list", OBJECT_TO_JSVAL(array)
 		, NULL, NULL, JSPROP_ENUMERATE))
-		return(FALSE);
+		return(false);
 
 	for(i=0; options[i].name!=NULL; i++) {
 		if(options[i].type && options[i].type!=type)
@@ -2846,12 +2846,12 @@ JSObject* js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock, CRYPT_C
 		return(NULL);
 	}
 
-	dbprintf(FALSE, p, "object created");
+	dbprintf(false, p, "object created");
 
 	return(obj);
 }
 
-static BOOL
+static bool
 handle_addrs(char *host, struct sockaddr_in *addr4, socklen_t *addr4len, struct sockaddr_in6 *addr6, socklen_t *addr6len)
 {
 	in_addr_t ia;
@@ -2903,7 +2903,7 @@ handle_addrs(char *host, struct sockaddr_in *addr4, socklen_t *addr4len, struct 
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_flags = AI_ADDRCONFIG | AI_PASSIVE;
 	if((i = getaddrinfo(host, NULL, &hints, &res)) != 0)
-		return FALSE;
+		return false;
 	for(cur=res; cur && (*addr4len == 0 || *addr6len == 0); cur=cur->ai_next) {
 		switch (cur->ai_family) {
 			case AF_INET:
@@ -2955,7 +2955,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	socklen_t addr6len;
 	struct sockaddr *addr;
 	socklen_t *addrlen;
-	BOOL sockbind = FALSE;
+	bool sockbind = false;
 	jsuint count;
 	int32 timeout = 10;
 
@@ -3217,7 +3217,7 @@ connected:
 	if(!js_DefineSocketOptionsArray(cx, obj, type))
 		return(JS_FALSE);
 
-	dbprintf(FALSE, p, "object constructed");
+	dbprintf(false, p, "object constructed");
 	return(JS_TRUE);
 
 fail:
@@ -3414,7 +3414,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	JS_DefineProperty(cx,obj,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
 
-	dbprintf(FALSE, p, "object constructed");
+	dbprintf(false, p, "object constructed");
 
 	return(JS_TRUE);
 
@@ -3434,7 +3434,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	uintN	i;
 	js_socket_private_t* p;
 	char*	protocol=NULL;
-	BOOL	from_descriptor=FALSE;
+	bool	from_descriptor=false;
 
 	i = 0;
 	if(JSVAL_IS_BOOLEAN(argv[i]) && argc > 1) {
@@ -3520,7 +3520,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if(!js_DefineSocketOptionsArray(cx, obj, type))
 		return(JS_FALSE);
 
-	dbprintf(FALSE, p, "object constructed");
+	dbprintf(false, p, "object constructed");
 	return(JS_TRUE);
 }
 
@@ -3624,7 +3624,7 @@ JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, char *na
 		return(NULL);
 	}
 
-	dbprintf(FALSE, p, "object created");
+	dbprintf(false, p, "object created");
 
 	return(obj);
 }

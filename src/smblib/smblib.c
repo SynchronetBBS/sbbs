@@ -71,7 +71,7 @@ int smb_open(smb_t* smb)
 	smb->shd_fp=smb->sdt_fp=smb->sid_fp=NULL;
 	smb->sha_fp=smb->sda_fp=smb->hash_fp=NULL;
 	smb->last_error[0]=0;
-	smb->locked = FALSE;
+	smb->locked = false;
 
 	/* Check for message-base lock semaphore file (under maintenance?) */
 	while(smb_islocked(smb)) {
@@ -213,14 +213,14 @@ int smb_unlock(smb_t* smb)
 	return(SMB_SUCCESS);
 }
 
-BOOL smb_islocked(smb_t* smb)
+bool smb_islocked(smb_t* smb)
 {
 	char	path[MAX_PATH+1];
 
 	if(access(smb_lockfname(smb,path,sizeof(path)-1),0)!=0)
-		return(FALSE);
+		return(false);
 	safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s %s exists", __FUNCTION__,path);
-	return(TRUE);
+	return(true);
 }
 
 /****************************************************************************/
@@ -280,7 +280,7 @@ int smb_locksmbhdr(smb_t* smb)
 	}
 	while(1) {
 		if(lock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t))==0) {
-			smb->locked=TRUE;
+			smb->locked=true;
 			return(SMB_SUCCESS);
 		}
 		if(!start)
@@ -290,7 +290,7 @@ int smb_locksmbhdr(smb_t* smb)
 				break;
 		/* In case we've already locked it */
 		if(unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t))==0)
-			smb->locked=FALSE;
+			smb->locked=false;
 		else {
 			SLEEP(smb->retry_delay);
 		}
@@ -368,7 +368,7 @@ int smb_unlocksmbhdr(smb_t* smb)
 				,"%s %d '%s' unlocking message base header", __FUNCTION__,get_errno(),strerror(get_errno()));
 			return(SMB_ERR_UNLOCK);
 		}
-		smb->locked=FALSE;
+		smb->locked=false;
 	}
 	return(SMB_SUCCESS);
 }
@@ -380,16 +380,16 @@ int smb_unlocksmbhdr(smb_t* smb)
 /****************************************************************************/
 /* Is the offset a valid message header offset?								*/
 /****************************************************************************/
-BOOL smb_valid_hdr_offset(smb_t* smb, uint offset)
+bool smb_valid_hdr_offset(smb_t* smb, uint offset)
 {
 	if(offset<sizeof(smbhdr_t)+sizeof(smbstatus_t) 
 		|| offset<smb->status.header_offset) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s invalid header offset: %u (0x%X)", __FUNCTION__
 			,offset,offset);
-		return(FALSE);
+		return(false);
 	}
-	return(TRUE);
+	return(true);
 }
 
 /****************************************************************************/
@@ -747,7 +747,7 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, size_t len,
 			msg->from=(char*)hfield_dat;
 			break; 
 		case FORWARDED:
-			msg->forwarded = TRUE;
+			msg->forwarded = true;
 			break;
 		case SENDERAGENT:
 			msg->from_agent=*(uint16_t *)hfield_dat;
@@ -1227,7 +1227,7 @@ int smb_unlockmsghdr(smb_t* smb, smbmsg_t* msg)
 /****************************************************************************/
 /* Adds a header field to the 'msg' structure (in memory only)              */
 /****************************************************************************/
-int smb_hfield_add(smbmsg_t* msg, uint16_t type, size_t length, void* data, BOOL insert)
+int smb_hfield_add(smbmsg_t* msg, uint16_t type, size_t length, void* data, bool insert)
 {
 	void**		vpp;
 	hfield_t*	hp;
@@ -1265,7 +1265,7 @@ int smb_hfield_add(smbmsg_t* msg, uint16_t type, size_t length, void* data, BOOL
 /****************************************************************************/
 /* Adds a list of header fields to the 'msg' structure (in memory only)     */
 /****************************************************************************/
-int	smb_hfield_add_list(smbmsg_t* msg, hfield_t** hfield_list, void** hfield_dat, BOOL insert)
+int	smb_hfield_add_list(smbmsg_t* msg, hfield_t** hfield_list, void** hfield_dat, bool insert)
 {
 	int			retval;
 	unsigned	n;
@@ -1284,7 +1284,7 @@ int	smb_hfield_add_list(smbmsg_t* msg, hfield_t** hfield_list, void** hfield_dat
 /****************************************************************************/
 /* Convenience function to add an ASCIIZ string header field (or blank)		*/
 /****************************************************************************/
-int smb_hfield_add_str(smbmsg_t* msg, uint16_t type, const char* str, BOOL insert)
+int smb_hfield_add_str(smbmsg_t* msg, uint16_t type, const char* str, bool insert)
 {
 	return smb_hfield_add(msg, type, str==NULL ? 0:strlen(str), (void*)str, insert);
 }
@@ -1296,7 +1296,7 @@ int smb_hfield_string(smbmsg_t* msg, uint16_t type, const char* str)
 {
 	if(str == NULL)
 		return SMB_ERR_HDR_FIELD;
-	return smb_hfield_add(msg, type, strlen(str), (void*)str, /* insert */FALSE);
+	return smb_hfield_add(msg, type, strlen(str), (void*)str, /* insert */false);
 }
 
 /****************************************************************************/
@@ -1304,7 +1304,7 @@ int smb_hfield_string(smbmsg_t* msg, uint16_t type, const char* str)
 /* Pass NULL for net_type to have the auto-detected net_type hfield	added	*/
 /* as well.																	*/
 /****************************************************************************/
-int	smb_hfield_add_netaddr(smbmsg_t* msg, uint16_t type, const char* addr, uint16_t* net_type, BOOL insert)
+int	smb_hfield_add_netaddr(smbmsg_t* msg, uint16_t type, const char* addr, uint16_t* net_type, bool insert)
 {
 	int			result;
 	fidoaddr_t	sys_addr = {0,0,0,0};	/* replace unspecified fields with 0 (don't assume 1:1/1) */
@@ -1452,7 +1452,7 @@ int smb_new_hfield(smbmsg_t* msg, uint16_t type, size_t length, void* data)
 	if(smb_get_hfield(msg, type, NULL))
 		return smb_hfield_replace(msg, type, length, data);
 	else
-		return smb_hfield_add(msg, type, length, data, /* insert */FALSE);
+		return smb_hfield_add(msg, type, length, data, /* insert */false);
 }
 
 /****************************************************************************/
@@ -1598,9 +1598,9 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 /****************************************************************************/
 int smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 {
-	return smb_new_msghdr(smb, msg, storage, /* new_msg: */TRUE);
+	return smb_new_msghdr(smb, msg, storage, /* new_msg: */true);
 }
-int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, BOOL new_msg)
+int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, bool new_msg)
 {
 	int		i;
 	off_t	l;
@@ -1647,7 +1647,7 @@ int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, BOOL new_msg)
 
 		/* This is *not* a dupe-check */
 		if(!(msg->flags&MSG_FLAG_HASHED) /* not already hashed */
-			&& (i=smb_hashmsg(smb,msg,/* text: */NULL,/* update? */TRUE))!=SMB_SUCCESS) {
+			&& (i=smb_hashmsg(smb,msg,/* text: */NULL,/* update? */true))!=SMB_SUCCESS) {
 			smb_unlocksmbhdr(smb);
 			return(i);	/* error updating hash table */
 		}
@@ -1764,17 +1764,17 @@ int smb_init_idx(smb_t* smb, smbmsg_t* msg)
 	return(SMB_SUCCESS);
 }
 
-BOOL smb_msg_is_from(smbmsg_t* msg, const char* name, enum smb_net_type net_type, const void* net_addr)
+bool smb_msg_is_from(smbmsg_t* msg, const char* name, enum smb_net_type net_type, const void* net_addr)
 {
 	if(stricmp(msg->from, name) != 0)
-		return FALSE;
+		return false;
 
 	if(msg->from_net.type != net_type)
-		return FALSE;
+		return false;
 
 	switch(net_type) {
 		case NET_NONE:
-			return TRUE;
+			return true;
 		case NET_FIDO:
 			return memcmp(msg->from_net.addr, net_addr, sizeof(fidoaddr_t)) == 0;
 		default:
@@ -1782,17 +1782,17 @@ BOOL smb_msg_is_from(smbmsg_t* msg, const char* name, enum smb_net_type net_type
 	}
 }
 
-BOOL smb_msg_is_utf8(const smbmsg_t* msg)
+bool smb_msg_is_utf8(const smbmsg_t* msg)
 {
 	for(int i=0; i < msg->total_hfields; i++) {
 		switch(msg->hfield[i].type) {
 		case FIDOCTRL:
 			if(strncmp(msg->hfield_dat[i], "CHRS: UTF-8", 11) == 0)
-				return TRUE;
+				return true;
 		}
 	}
 	if(msg->ftn_charset != NULL && strncmp(msg->ftn_charset, "UTF-8", 5) == 0)
-		return TRUE;
+		return true;
 	return msg->text_charset != NULL && stricmp(msg->text_charset, "utf-8") == 0;
 }
 
@@ -1923,7 +1923,7 @@ int smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 	}
 	if(smb_hdrblocks(hdrlen) > smb_hdrblocks(msg->hdr.length)) {
 		smbmsg_t old_msg = *msg;
-		int result = smb_new_msghdr(smb, msg, (smb->status.attr&SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_SELFPACK, FALSE);
+		int result = smb_new_msghdr(smb, msg, (smb->status.attr&SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_SELFPACK, false);
 		if(result != SMB_SUCCESS)
 			return result;
 		if(fseeko(smb->shd_fp, old_msg.idx.offset, SEEK_SET) != 0) {

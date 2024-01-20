@@ -19,7 +19,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <limits.h>	/* USHRT_MAX */
 
 #include "scfgsave.h"
@@ -107,7 +106,7 @@ extern char tmp[256];
 extern char error[256];
 extern const char *nulstr;
 extern char *invalid_code,*num_flags;
-extern BOOL new_install;
+extern bool new_install;
 extern char* area_sort_desc[AREA_SORT_TYPES+1];
 
 /***********************/
@@ -160,7 +159,7 @@ int edit_sys_alias_policy(int page, int total);
 int edit_sys_delmsg_policy(int page, int total);
 int edit_sys_newuser_fback_policy(int page, int total);
 void reencrypt_keys(const char* old_pass, const char* new_pass);
-int code_ok(char *str);
+bool code_ok(char *str);
 int  bits(long l);
 void getar(char *desc, char *ar);
 void* new_item(void* list, size_t size, int index, int* total);
@@ -173,18 +172,18 @@ int subs_in_group(int grpnum);
 char random_code_char(void);
 const char* io_method(uint32_t mode);
 void choose_io_method(uint32_t* misc);
-BOOL load_main_cfg(scfg_t*, char*, size_t);
-BOOL load_node_cfg(scfg_t*, char*, size_t);
-BOOL load_msgs_cfg(scfg_t*, char*, size_t);
-BOOL load_file_cfg(scfg_t*, char*, size_t);
-BOOL load_chat_cfg(scfg_t*, char*, size_t);
-BOOL load_xtrn_cfg(scfg_t*, char*, size_t);
-BOOL save_main_cfg(scfg_t*);
-BOOL save_node_cfg(scfg_t*);
-BOOL save_msgs_cfg(scfg_t*);
-BOOL save_file_cfg(scfg_t*);
-BOOL save_chat_cfg(scfg_t*);
-BOOL save_xtrn_cfg(scfg_t*);
+bool load_main_cfg(scfg_t*, char*, size_t);
+bool load_node_cfg(scfg_t*, char*, size_t);
+bool load_msgs_cfg(scfg_t*, char*, size_t);
+bool load_file_cfg(scfg_t*, char*, size_t);
+bool load_chat_cfg(scfg_t*, char*, size_t);
+bool load_xtrn_cfg(scfg_t*, char*, size_t);
+bool save_main_cfg(scfg_t*);
+bool save_node_cfg(scfg_t*);
+bool save_msgs_cfg(scfg_t*);
+bool save_file_cfg(scfg_t*);
+bool save_chat_cfg(scfg_t*);
+bool save_xtrn_cfg(scfg_t*);
 
 long import_msg_areas(enum import_list_type, FILE*, int grpnum, int min_confnum, int max_confnum
 	, qhub_t*, const char* pkt_orig, faddr_t* faddr, uint32_t misc, long* added);

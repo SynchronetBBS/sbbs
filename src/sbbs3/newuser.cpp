@@ -29,7 +29,7 @@
 /* Prompts user for personal information and then sends feedback to sysop.  */
 /* Called from function waitforcall											*/
 /****************************************************************************/
-BOOL sbbs_t::newuser()
+bool sbbs_t::newuser()
 {
 	char	c,str[512];
 	char 	tmp[512];
@@ -44,13 +44,13 @@ BOOL sbbs_t::newuser()
 		bputs(text[NodeLocked]);
 		logline(LOG_WARNING,"N!","New user locked node logon attempt");
 		hangup();
-		return(FALSE); 
+		return(false); 
 	}
 
 	if(cfg.sys_misc&SM_CLOSED) {
 		bputs(text[NoNewUsers]);
 		hangup();
-		return(FALSE); 
+		return(false); 
 	}
 	getnodedat(cfg.node_num,&thisnode,1);
 	thisnode.status=NODE_NEWUSER;
@@ -71,7 +71,7 @@ BOOL sbbs_t::newuser()
 		if(c==4) {
 			menu("../nupguess", P_NOABORT|P_NOERROR);
 			hangup();
-			return(FALSE); 
+			return(false); 
 		} 
 	}
 
@@ -88,7 +88,7 @@ BOOL sbbs_t::newuser()
 	if(!lastuser(&cfg)) {	/* Automatic sysop access for first user */
 		bprintf("Creating sysop account... System password required.\r\n");
 		if(!chksyspass())
-			return(FALSE); 
+			return(false); 
 		useron.level=99;
 		useron.exempt=useron.flags1=useron.flags2=0xffffffffUL;
 		useron.flags3=useron.flags4=0xffffffffUL;
@@ -122,7 +122,7 @@ BOOL sbbs_t::newuser()
 			else {
 				bprintf(text[InvalidBackspaceKeyFmt], key, key);
 				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
-					return FALSE;
+					return false;
 			}
 		}
 
@@ -174,12 +174,12 @@ BOOL sbbs_t::newuser()
 				|| (!(cfg.uq&UQ_ALIASES) && !check_realname(&cfg, useron.alias))) {
 				bputs(text[YouCantUseThatName]);
 				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
-					return(FALSE);
+					return(false);
 				continue;
 			}
 			break; 
 		}
-		if(!online) return(FALSE);
+		if(!online) return(false);
 		if((cfg.uq&UQ_ALIASES) && (cfg.uq&UQ_REALNAME)) {
 			while(online && text[EnterYourRealName][0]) {
 				bputs(text[EnterYourRealName]);
@@ -192,7 +192,7 @@ BOOL sbbs_t::newuser()
 				else
 					break; 
 				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
-					return(FALSE);
+					return(false);
 			}
 		}
 		else if(cfg.uq&UQ_COMPANY && text[EnterYourCompany][0]) {
@@ -201,13 +201,13 @@ BOOL sbbs_t::newuser()
 		}
 		if(!useron.alias[0]) {
 			errormsg(WHERE, ERR_CHK, "alias", 0);
-			return FALSE;
+			return false;
 		}
 		if(!useron.name[0])
 			SAFECOPY(useron.name,useron.alias);
 		else if(!(cfg.uq&UQ_DUPREAL) && finduserstr(useron.number, USER_NAME, useron.name) > 0)
 			useron.rest |= FLAG('O'); // Can't post or send netmail using real name (it's a duplicate)
-		if(!online) return(FALSE);
+		if(!online) return(false);
 		if(!useron.handle[0])
 			SAFECOPY(useron.handle,useron.alias);
 		while((cfg.uq&UQ_HANDLE) && online && text[EnterYourHandle][0]) {
@@ -222,16 +222,16 @@ BOOL sbbs_t::newuser()
 			else
 				break; 
 			if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
-				return(FALSE);
+				return(false);
 		}
-		if(!online) return(FALSE);
+		if(!online) return(false);
 		if(cfg.uq&UQ_ADDRESS)
 			while(online && text[EnterYourAddress][0]) { 	   /* Get address and zip code */
 				bputs(text[EnterYourAddress]);
 				if(getstr(useron.address,LEN_ADDRESS,kmode))
 					break; 
 			}
-		if(!online) return(FALSE);
+		if(!online) return(false);
 		while((cfg.uq&UQ_LOCATION) && online && text[EnterYourCityState][0]) {
 			bputs(text[EnterYourCityState]);
 			if(getstr(useron.location,LEN_LOCATION,kmode) < 1)
@@ -249,7 +249,7 @@ BOOL sbbs_t::newuser()
 					,K_UPPER|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL|K_TRIM))
 					break; 
 			}
-		if(!online) return(FALSE);
+		if(!online) return(false);
 		if((cfg.uq&UQ_PHONE) && text[EnterYourPhoneNumber][0]) {
 			if(text[CallingFromNorthAmericaQ][0])
 				usa=yesno(text[CallingFromNorthAmericaQ]);
@@ -271,7 +271,7 @@ BOOL sbbs_t::newuser()
 					break; 
 			} 
 		}
-		if(!online) return(FALSE);
+		if(!online) return(false);
 		while((cfg.uq&UQ_SEX) && text[EnterYourGender][0] && cfg.new_genders[0] != '\0' && online) {
 			bputs(text[EnterYourGender]);
 			long gender = getkeys(cfg.new_genders, 0);
@@ -291,7 +291,7 @@ BOOL sbbs_t::newuser()
 				break;
 			}
 		}
-		if(!online) return(FALSE);
+		if(!online) return(false);
 		while(!(cfg.uq&UQ_NONETMAIL) && online && text[EnterNetMailAddress][0]) {
 			bputs(text[EnterNetMailAddress]);
 			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE|K_TRIM) < 1
@@ -308,10 +308,10 @@ BOOL sbbs_t::newuser()
 		if(text[UserInfoCorrectQ][0]==0 || yesno(text[UserInfoCorrectQ]))
 			break; 
 	}
-	if(!online) return(FALSE);
+	if(!online) return(false);
 	SAFEPRINTF(str,"New user: %s",useron.alias);
 	logline("N",str);
-	if(!online) return(FALSE);
+	if(!online) return(false);
 	menu("../sbbs", P_NOABORT|P_NOERROR);
 	menu("../system", P_NOABORT|P_NOERROR);
 	menu("../newuser", P_NOABORT|P_NOERROR);
@@ -395,7 +395,7 @@ BOOL sbbs_t::newuser()
 		}
 	}
 
-	if(!online) return(FALSE);
+	if(!online) return(false);
 	if(cfg.new_magic[0] && text[MagicWordPrompt][0]) {
 		bputs(text[MagicWordPrompt]);
 		str[0]=0;
@@ -406,7 +406,7 @@ BOOL sbbs_t::newuser()
 			logline("N!",tmp);
 			hangup(); 
 		}
-		if(!online) return(FALSE); 
+		if(!online) return(false); 
 	}
 
 	bputs(text[CheckingSlots]);
@@ -415,7 +415,7 @@ BOOL sbbs_t::newuser()
 		SAFEPRINTF(str,"user record #%u",useron.number);
 		errormsg(WHERE,ERR_CREATE,str,i);
 		hangup();
-		return(FALSE); 
+		return(false); 
 	}
 	SAFEPRINTF2(str,"Created user record #%u: %s",useron.number,useron.alias);
 	logline(nulstr,str);
@@ -456,7 +456,7 @@ BOOL sbbs_t::newuser()
 				putuserstr(useron.number, USER_COMMENT, "Didn't leave feedback");
 				putusermisc(useron.number, useron.misc | DELETED);
 				putusername(&cfg,useron.number,nulstr);
-				return(FALSE); 
+				return(false); 
 			} 
 		} 
 	}
@@ -473,5 +473,5 @@ BOOL sbbs_t::newuser()
 	getuserdat(&cfg,&useron);	// In case event(s) modified user data
 	logline("N+","Successful new user logon");
 
-	return(TRUE);
+	return(true);
 }

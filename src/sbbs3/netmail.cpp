@@ -175,8 +175,8 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 
 	if((cfg.netmail_misc&NMAIL_CHSRCADDR) && cfg.total_faddrs > 1) {
 		for(int j=0; j < cfg.total_faddrs; j++)
-			uselect(/* add: */TRUE, j, text[OriginFidoAddr], smb_faddrtoa(&cfg.faddr[j], tmp), /* ar: */NULL);
-		int choice = uselect(/* add: */FALSE, /* default: */i, NULL, NULL, NULL);
+			uselect(/* add: */true, j, text[OriginFidoAddr], smb_faddrtoa(&cfg.faddr[j], tmp), /* ar: */NULL);
+		int choice = uselect(/* add: */false, /* default: */i, NULL, NULL, NULL);
 		if(choice < 0)
 			return false;
 		i = choice;
@@ -973,7 +973,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 		strListPush(&rcpt_list, p);
 	}
 	strListStripStrings(rcpt_list, "<>");
-	size_t rcpt_count = strListDedupe(&rcpt_list, /* case-sensitive */FALSE);
+	size_t rcpt_count = strListDedupe(&rcpt_list, /* case-sensitive */false);
 
 	if(useron.etoday + rcpt_count > cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt&FLAG('M'))) {
 		strListFree(&rcpt_list);
@@ -997,7 +997,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 		,(cfg.inetmail_misc&NMAIL_ALIAS) || (useron.rest&FLAG('O')) ? useron.alias : useron.name);
 
 	if(rcpt_count > 1) { /* remove "self" from reply-all list */
-		int found = strListFind(rcpt_list, your_addr, /* case_sensitive */FALSE);
+		int found = strListFind(rcpt_list, your_addr, /* case_sensitive */false);
 		if(found >= 0) {
 			strListDelete(&rcpt_list, found);
 			rcpt_count--;
@@ -1466,33 +1466,33 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	return(true);
 }
 
-extern "C" BOOL is_supported_netmail_addr(scfg_t* cfg, const char* addr)
+extern "C" bool is_supported_netmail_addr(scfg_t* cfg, const char* addr)
 {
 	const char* p;
 	fidoaddr_t faddr;
 
 	if((p = strchr(addr, '@')) == NULL)
-		return FALSE;
+		return false;
 	p++;
 	switch (smb_netaddr_type(addr)) {
 		case NET_FIDO:
 			if(!(cfg->netmail_misc&NMAIL_ALLOW))
-				return FALSE;
+				return false;
 			if(cfg->total_faddrs < 1)
-				return FALSE;
+				return false;
 			faddr = atofaddr(cfg, p);
 			for(int i = 0; i < cfg->total_faddrs; i++)
 				if(memcmp(&cfg->faddr[i], &faddr, sizeof(faddr)) == 0)
-					return FALSE;
-			return TRUE;
+					return false;
+			return true;
 		case NET_INTERNET:
 			if(!(cfg->inetmail_misc&NMAIL_ALLOW))
-				return FALSE;
+				return false;
 			if(stricmp(p, cfg->sys_inetaddr) == 0)
-				return FALSE;
+				return false;
 			char domain_list[MAX_PATH + 1];
 			SAFEPRINTF(domain_list, "%sdomains.cfg", cfg->ctrl_dir);
-			return findstr(p, domain_list) == FALSE;
+			return findstr(p, domain_list) == false;
 		case NET_QWK:
 		{
 			char fulladdr[256] = "";
@@ -1500,7 +1500,7 @@ extern "C" BOOL is_supported_netmail_addr(scfg_t* cfg, const char* addr)
 			return fulladdr[0] != 0;
 		}
 		default:
-			return FALSE;
+			return false;
 	}
-	return FALSE;
+	return false;
 }

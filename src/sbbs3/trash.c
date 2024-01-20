@@ -29,9 +29,9 @@
 
 /****************************************************************************/
 /* Searches the file <name>.can in the TEXT directory for matches			*/
-/* Returns TRUE if found in list, FALSE if not.								*/
+/* Returns true if found in list, false if not.								*/
 /****************************************************************************/
-BOOL trashcan(scfg_t* cfg, const char* insearchof, const char* name)
+bool trashcan(scfg_t* cfg, const char* insearchof, const char* name)
 {
 	struct trash trash;
 	return trashcan2(cfg, insearchof, NULL, name, &trash);
@@ -77,36 +77,36 @@ char* trash_details(const struct trash* trash, char* str, size_t max)
 
 /****************************************************************************/
 /* Searches the file <name>.can in the TEXT directory for 2 matches			*/
-/* Returns TRUE if found in list, FALSE if not.								*/
+/* Returns true if found in list, false if not.								*/
 /****************************************************************************/
-BOOL trashcan2(scfg_t* cfg, const char* str1, const char* str2, const char* name, struct trash* trash)
+bool trashcan2(scfg_t* cfg, const char* str1, const char* str2, const char* name, struct trash* trash)
 {
 	char fname[MAX_PATH+1];
 	char details[FINDSTR_MAX_LINE_LEN + 1];
 
 	if(!find2strs(str1, str2, trashcan_fname(cfg,name,fname,sizeof(fname)), details))
-		return FALSE;
+		return false;
 	if(trash != NULL) {
 		parse_trash_details(details, trash);
 		if(trash->expires && trash->expires <= time(NULL))
-			return FALSE;
+			return false;
 	}
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
-BOOL trash_in_list(const char* str1, const char* str2, str_list_t list, struct trash* trash)
+bool trash_in_list(const char* str1, const char* str2, str_list_t list, struct trash* trash)
 {
 	char details[FINDSTR_MAX_LINE_LEN + 1];
 
 	if(!find2strs_in_list(str1, str2, list, details))
-		return FALSE;
+		return false;
 	if(trash != NULL) {
 		parse_trash_details(details, trash);
 		if(trash->expires && trash->expires <= time(NULL))
-			return FALSE;
+			return false;
 	}
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
@@ -118,7 +118,7 @@ str_list_t trashcan_list(scfg_t* cfg, const char* name)
 }
 
 /****************************************************************************/
-BOOL is_host_exempt(scfg_t* cfg, const char* ip_addr, const char* host_name)
+bool is_host_exempt(scfg_t* cfg, const char* ip_addr, const char* host_name)
 {
 	char	exempt[MAX_PATH+1];
 
@@ -129,7 +129,7 @@ BOOL is_host_exempt(scfg_t* cfg, const char* ip_addr, const char* host_name)
 /****************************************************************************/
 /* Add an IP address (with comment) to the IP filter/trashcan file			*/
 /****************************************************************************/
-BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* host
+bool filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* host
 					,const char* ip_addr, const char* username, const char* fname
 					,uint duration)
 {
@@ -140,21 +140,21 @@ BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	time_t	now = time(NULL);
 
 	if(ip_addr==NULL)
-		return(FALSE);
+		return(false);
 
 	SAFEPRINTF2(exempt, "%s%s", cfg->ctrl_dir, strIpFilterExemptConfigFile);
 	if(find2strs(ip_addr, host, exempt, NULL))
-		return(FALSE);
+		return(false);
 
 	SAFEPRINTF(ip_can,"%sip.can",cfg->text_dir);
 	if(fname==NULL)
 		fname=ip_can;
 
 	if(findstr(ip_addr, fname))	/* Already filtered? */
-		return(TRUE);
+		return(true);
 
 	if((fp = fnopen(NULL, fname, O_CREAT|O_APPEND|O_WRONLY)) == NULL)
-		return(FALSE);
+		return(false);
 
 	fprintf(fp,"%s\tt=%s"
 		,ip_addr
@@ -172,25 +172,25 @@ BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	fputc('\n', fp);
 
 	fclose(fp);
-	return(TRUE);
+	return(true);
 }
 
-BOOL is_twit(scfg_t* cfg, const char* name)
+bool is_twit(scfg_t* cfg, const char* name)
 {
 	char path[MAX_PATH + 1];
 	return findstr(name, twitlist_fname(cfg, path, sizeof path));
 }
 
 /* Add a name to the global twit list */
-BOOL list_twit(scfg_t* cfg, const char* name, const char* comment)
+bool list_twit(scfg_t* cfg, const char* name, const char* comment)
 {
 	char path[MAX_PATH + 1];
 	FILE* fp = fnopen(/* fd: */NULL, twitlist_fname(cfg, path, sizeof path), O_WRONLY | O_APPEND);
 	if(fp == NULL)
-		return FALSE;
+		return false;
 	if(comment != NULL)
 		fprintf(fp, "\n; %s", comment);
-	BOOL result = fprintf(fp, "\n%s\n", name) > 0;
+	bool result = fprintf(fp, "\n%s\n", name) > 0;
 	fclose(fp);
 	return result;
 }

@@ -22,7 +22,6 @@
 /* Portions written by Allen Christiansen 1994-1996 						*/
 
 #include <str_list.h>
-#include <stdbool.h>
 #include <smbdefs.h>
 #include "sbbsdefs.h"
 #include "fidodefs.h"

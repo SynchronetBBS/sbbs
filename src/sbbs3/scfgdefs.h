@@ -327,7 +327,7 @@ typedef struct {							/* QWK Network Hub */
 	sub_t**		sub;
 	time32_t	last;						/* Last network attempt */
 	uint32_t	misc;						/* QHUB_* flags */
-	BOOL		enabled;
+	bool		enabled;
 
 } qhub_t;
 
@@ -358,8 +358,8 @@ typedef struct {
 } hotkey_t;
 
 struct mqtt_cfg {
-	BOOL		enabled;
-	BOOL		verbose;
+	bool		enabled;
+	bool		verbose;
 	char		broker_addr[128];
 	uint16_t	broker_port;
 	char		username[256];
@@ -389,7 +389,7 @@ enum date_fmt { MMDDYY, DDMMYY, YYMMDD };
 typedef struct
 {
 	DWORD			size;				/* sizeof(scfg_t) */
-	BOOL			prepped;			/* TRUE if prep_cfg() has been used */
+	bool			prepped;			/* TRUE if prep_cfg() has been used */
 	char			filename[MAX_PATH + 1]; // last-loaded cfg file path/name
 
 	grp_t			**grp;				/* Each message group */

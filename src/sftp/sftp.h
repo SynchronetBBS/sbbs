@@ -3,7 +3,6 @@
 
 #include <eventwrap.h>
 #include <inttypes.h>
-#include <stdbool.h>
 #include <threadwrap.h>
 
 // draft-ietf-secsh-filexfer-02

@@ -105,7 +105,7 @@ static	str_list_t clear_attempts_semfiles;
 static	link_list_t current_logins;
 static	link_list_t current_connections;
 #ifdef _THREAD_SUID_BROKEN
-int	thread_suid_broken=TRUE;			/* NPTL is no longer broken */
+int	thread_suid_broken=true;			/* NPTL is no longer broken */
 #endif
 
 /* convenient space-saving global variables */
@@ -195,28 +195,28 @@ void client_on(SOCKET sock, client_t* client, BOOL update)
 	if(!update)
 		listAddNodeData(&current_connections, client->addr, strlen(client->addr)+1, sock, LAST_NODE);
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(startup->cbdata,TRUE,sock,client,update);
-	mqtt_client_on(&mqtt, TRUE, sock, client, update);
+		startup->client_on(startup->cbdata,true,sock,client,update);
+	mqtt_client_on(&mqtt, true, sock, client, update);
 }
 
 static void client_off(SOCKET sock)
 {
-	listRemoveTaggedNode(&current_connections, sock, /* free_data */TRUE);
+	listRemoveTaggedNode(&current_connections, sock, /* free_data */true);
 	if(startup!=NULL && startup->client_on!=NULL)
-		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
-	mqtt_client_on(&mqtt, FALSE, sock, NULL, FALSE);
+		startup->client_on(startup->cbdata,false,sock,NULL,false);
+	mqtt_client_on(&mqtt, false, sock, NULL, false);
 }
 
 static void thread_up(BOOL setuid)
 {
 	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(startup->cbdata,TRUE,setuid);
+		startup->thread_up(startup->cbdata,true,setuid);
 }
 
 static void thread_down()
 {
 	if(startup!=NULL && startup->thread_up!=NULL)
-		startup->thread_up(startup->cbdata,FALSE,FALSE);
+		startup->thread_up(startup->cbdata,false,false);
 }
 
 int lputs(int level, const char* str)
@@ -334,7 +334,7 @@ void sock_cb(SOCKET sock, void *cb_data)
 	struct main_sock_cb_data *cb=(struct main_sock_cb_data *)cb_data;
 
 	if(cb->startup && cb->startup->socket_open)
-		cb->startup->socket_open(cb->startup->cbdata, TRUE);
+		cb->startup->socket_open(cb->startup->cbdata, true);
 	if(set_socket_options(&scfg, sock, cb->protocol, error_str, sizeof(error_str)))
 		lprintf(LOG_ERR,"%04d !ERROR %s",sock,error_str);
 }
@@ -344,10 +344,10 @@ void sock_close_cb(SOCKET sock, void *cb_data)
 	bbs_startup_t	*su=(bbs_startup_t *)cb_data;
 
 	if(su && su->socket_open)
-		su->socket_open(su->cbdata, FALSE);
+		su->socket_open(su->cbdata, false);
 }
 
-void call_socket_open_callback(BOOL open)
+void call_socket_open_callback(bool open)
 {
 	if(startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata, open);
@@ -360,7 +360,7 @@ SOCKET open_socket(int domain, int type, const char* protocol)
 
 	sock=socket(domain, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET)
-		call_socket_open_callback(TRUE);
+		call_socket_open_callback(true);
 	if(sock!=INVALID_SOCKET && set_socket_options(&scfg, sock, protocol, error, sizeof(error)))
 		lprintf(LOG_ERR,"%04d !ERROR %s",sock,error);
 
@@ -374,7 +374,7 @@ SOCKET accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen)
 
 	sock=accept(s,&addr->addr,addrlen);
 	if(sock!=INVALID_SOCKET)
-		call_socket_open_callback(TRUE);
+		call_socket_open_callback(true);
 
 	return(sock);
 }
@@ -388,7 +388,7 @@ int close_socket(SOCKET sock)
 
 	shutdown(sock,SHUT_RDWR);	/* required on Unix */
 	result=closesocket(sock);
-	call_socket_open_callback(FALSE);
+	call_socket_open_callback(false);
 	if(result!=0 && ERROR_VALUE!=ENOTSOCK)
 		lprintf(LOG_WARNING,"!ERROR %d closing socket %d",ERROR_VALUE,sock);
 	return(result);
@@ -421,7 +421,7 @@ in_addr_t resolve_ip(char *addr)
 
 WSADATA WSAData;
 #define SOCKLIB_DESC WSAData.szDescription
-static BOOL WSAInitialized=FALSE;
+static BOOL WSAInitialized=false;
 
 static BOOL winsock_startup(void)
 {
@@ -429,17 +429,17 @@ static BOOL winsock_startup(void)
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
 		lprintf(LOG_DEBUG,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
-		WSAInitialized=TRUE;
-		return(TRUE);
+		WSAInitialized=true;
+		return(true);
 	}
 
     lprintf(LOG_CRIT,"!WinSock startup ERROR %d", status);
-	return(FALSE);
+	return(false);
 }
 
 #else /* No WINSOCK */
 
-#define winsock_startup()	(TRUE)
+#define winsock_startup()	(true)
 #define SOCKLIB_DESC NULL
 
 #endif
@@ -534,9 +534,9 @@ js_DescribeSyncObject(JSContext* cx, JSObject* obj, const char* str, int ver)
 		ver*=100;
 
 	return(JS_DefineProperty(cx,obj,"_description"
-			,STRING_TO_JSVAL(js_str),NULL,NULL,JSPROP_READONLY)
+			,STRING_TO_JSVAL(js_str),NULL,NULL,JSPROP_READONLY) != JS_FALSE
 		&& JS_DefineProperty(cx,obj,"_ver"
-			,INT_TO_JSVAL(ver),NULL,NULL,JSPROP_READONLY));
+			,INT_TO_JSVAL(ver),NULL,NULL,JSPROP_READONLY) != JS_FALSE);
 }
 
 JSBool
@@ -1366,8 +1366,8 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 	js_callback.gc_interval = startup->js.gc_interval;
 	js_callback.yield_interval = startup->js.yield_interval;
 	js_callback.terminated = &terminated;
-	js_callback.auto_terminate = TRUE;
-	js_callback.events_supported = TRUE;
+	js_callback.auto_terminate = true;
+	js_callback.events_supported = true;
 
 	bool success=false;
 	bool rooted=false;
@@ -1471,7 +1471,7 @@ bool sbbs_t::js_create_user_objects(JSContext* cx, JSObject* glob)
 	return result;
 }
 
-extern "C" BOOL js_CreateCommonObjects(JSContext* js_cx
+extern "C" bool js_CreateCommonObjects(JSContext* js_cx
 										,scfg_t* cfg				/* common */
 										,scfg_t* node_cfg			/* node-specific */
 										,jsSyncMethodSpec* methods	/* global */
@@ -1488,14 +1488,14 @@ extern "C" BOOL js_CreateCommonObjects(JSContext* js_cx
 										,struct mqtt* mqtt
 										)
 {
-	BOOL	success=FALSE;
+	bool	success=false;
 
 	if(node_cfg==NULL)
 		node_cfg=cfg;
 
 	/* Global Object */
 	if(!js_CreateGlobalObject(js_cx, node_cfg, methods, js_startup, glob))
-		return(FALSE);
+		return(false);
 
 	do {
 		/*
@@ -1575,7 +1575,7 @@ extern "C" BOOL js_CreateCommonObjects(JSContext* js_cx
 		if(!js_CreateUserObjects(js_cx, *glob, cfg, /* user: */NULL, client, startup == NULL ? NULL :startup->web_file_vpath_prefix, /* subscan: */NULL, mqtt))
 			break;
 
-		success=TRUE;
+		success=true;
 	} while(0);
 
 	if(!success)
@@ -1992,7 +1992,7 @@ void input_thread(void *arg)
 #endif
 
 	SetThreadName("sbbs/termInput");
-	thread_up(TRUE /* setuid */);
+	thread_up(true /* setuid */);
 
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG,"Node %d input thread started",sbbs->cfg.node_num);
@@ -2202,7 +2202,7 @@ void input_thread(void *arg)
 			sbbs->translate_input(wrbuf, wr);
 
 		if(sbbs->passthru_socket_active == true) {
-			BOOL writable = FALSE;
+			bool writable = false;
 			if(socket_check(sbbs->passthru_socket, NULL, &writable, 1000) && writable) {
 				if(sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr) != wr)
 					lprintf(LOG_ERR, "Node %d ERROR %d writing to passthru socket"
@@ -2242,7 +2242,7 @@ void input_thread(void *arg)
 //		if(wr>100)
 //			mswait(500);	// Throttle sender
 	}
-	sbbs->online=FALSE;
+	sbbs->online=false;
 	sbbs->sys_status|=SS_ABORT;	/* as though Ctrl-C were hit */
 
     sbbs->input_thread_running = false;
@@ -2262,7 +2262,7 @@ void sbbs_t::passthru_socket_activate(bool activate)
 	time_t timeout = time(NULL) + 60;
 
 	if(activate) {
-		BOOL rd = FALSE;
+		bool rd = false;
 		while(socket_check(client_socket_dup, &rd, /* wr_p */NULL, /* timeout */0) && rd && time(NULL) < timeout) {
 			char ch;
 			if(recv(client_socket_dup, &ch, sizeof(ch), /* flags: */0) != sizeof(ch))
@@ -2296,7 +2296,7 @@ void passthru_thread(void* arg)
 	char	inbuf[IO_THREAD_BUF_SIZE / 2];
 
 	SetThreadName("sbbs/passthru");
-	thread_up(FALSE /* setuid */);
+	thread_up(false /* setuid */);
 
 	while(sbbs->online && sbbs->passthru_socket!=INVALID_SOCKET && !terminate_server) {
 		if (!socket_readable(sbbs->passthru_socket, 1000))
@@ -2384,7 +2384,7 @@ void output_thread(void* arg)
 	uint		ssh_errors = 0;
 
 	SetThreadName("sbbs/termOutput");
-	thread_up(TRUE /* setuid */);
+	thread_up(true /* setuid */);
 
 	if(sbbs->cfg.node_num) {
 		SAFEPRINTF(node,"Node %d",sbbs->cfg.node_num);
@@ -2441,7 +2441,7 @@ void output_thread(void* arg)
 #endif
 	sbbs->terminate_output_thread = false;
 
-	/* Note: do not terminate when online==FALSE, that is expected for the terminal server output_thread */
+	/* Note: do not terminate when online==false, that is expected for the terminal server output_thread */
 	while (sbbs->client_socket != INVALID_SOCKET && !terminate_server && !sbbs->terminate_output_thread) {
 		/*
 		 * I'd like to check the linear buffer against the highwater
@@ -2511,7 +2511,7 @@ void output_thread(void* arg)
 			if (cryptStatusError((err=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->session_channel)))) {
 				GCESSTR(err, node, sbbs->ssh_session, "setting channel");
 				ssh_errors++;
-				sbbs->online=FALSE;
+				sbbs->online=false;
 				i=buftop-bufbot;	// Pretend we sent it all
 			}
 			else {
@@ -2526,7 +2526,7 @@ void output_thread(void* arg)
 					/* Handle the SSH error here... */
 					GCESSTR(err, node, sbbs->ssh_session, "pushing data");
 					ssh_errors++;
-					sbbs->online=FALSE;
+					sbbs->online=false;
 					i=buftop-bufbot;	// Pretend we sent it all
 				}
 				else {
@@ -2541,7 +2541,7 @@ void output_thread(void* arg)
 						GCESSTR(err, node, sbbs->ssh_session, "flushing data");
 						ssh_errors++;
 						if (err != CRYPT_ERROR_TIMEOUT) {
-							sbbs->online=FALSE;
+							sbbs->online=false;
 							i=buftop-bufbot;	// Pretend we sent it all
 						}
 					}
@@ -2565,7 +2565,7 @@ void output_thread(void* arg)
 			else
 				lprintf(LOG_WARNING,"%s !ERROR %d sending on socket %d"
 					,node, ERROR_VALUE, sbbs->client_socket);
-			sbbs->online=FALSE;
+			sbbs->online=false;
 			/* was break; on 4/7/00 */
 			i=buftop-bufbot;	// Pretend we sent it all
 		}
@@ -2708,7 +2708,7 @@ void event_thread(void* arg)
 	sbbs_srand();	/* Seed random number generator */
 
 	SetThreadName("sbbs/events");
-	thread_up(TRUE /* setuid */);
+	thread_up(true /* setuid */);
 
 	mqtt_pub_strval(&mqtt, TOPIC_HOST, "event", "thread started");
 
@@ -2779,7 +2779,7 @@ void event_thread(void* arg)
 		} else
 			check_semaphores=false;
 
-		sbbs->online=FALSE;	/* reset this from ON_LOCAL */
+		sbbs->online=false;	/* reset this from ON_LOCAL */
 
 		/* QWK events */
 		if(check_semaphores && !(startup->options&BBS_OPT_NO_QWK_EVENTS)) {
@@ -2807,7 +2807,7 @@ void event_thread(void* arg)
 					sbbs->getusrsubs();
 					bool success = sbbs->unpack_rep(g.gl_pathv[i]);
 					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);		/* clean-up temp_dir after unpacking */
-					sbbs->online=FALSE;
+					sbbs->online=false;
 					sbbs->console&=~CON_L_ECHO;
 
 					/* putuserdat? */
@@ -2874,7 +2874,7 @@ void event_thread(void* arg)
 						sbbs->lputs(LOG_INFO, "No packet created (no new messages)");
 					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 					sbbs->console&=~CON_L_ECHO;
-					sbbs->online=FALSE;
+					sbbs->online=false;
 				}
 				if(fexist(g.gl_pathv[i]) && remove(g.gl_pathv[i]) != 0)
 					sbbs->errormsg(WHERE, ERR_REMOVE, g.gl_pathv[i], 0);
@@ -2891,7 +2891,7 @@ void event_thread(void* arg)
 				&& (fexistcase(semfile) || (now-lastprepack)/60>(60*24))) {
 				j=lastuser(&sbbs->cfg);
 				sbbs->lputs(LOG_INFO,"Pre-packing QWK Message packets...");
-				int userfile = openuserdat(&sbbs->cfg, /* for_modify: */FALSE);
+				int userfile = openuserdat(&sbbs->cfg, /* for_modify: */false);
 				for(i=1;i<=j;i++) {
 
 					sbbs->useron.number=i;
@@ -2924,7 +2924,7 @@ void event_thread(void* arg)
 						}
 						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->console&=~CON_L_ECHO;
-						sbbs->online=FALSE;
+						sbbs->online=false;
 					}
 				}
 				closeuserdat(userfile);
@@ -2977,7 +2977,7 @@ void event_thread(void* arg)
 						int result = sbbs->external(cmd, EX_OFFLINE);
 						sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Node daily event: '%s' returned %d", cmd, result);
 						sbbs->console&=~CON_L_ECHO;
-						sbbs->online=FALSE;
+						sbbs->online=false;
 					}
 					sbbs->getnodedat(i,&node,1);
 					node.misc&=~NODE_EVENT;
@@ -3057,7 +3057,7 @@ void event_thread(void* arg)
 						}
 						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->console&=~CON_L_ECHO;
-						sbbs->online=FALSE;
+						sbbs->online=false;
 						if(fexist(str) && remove(str))
 							sbbs->errormsg(WHERE, ERR_REMOVE, str, 0);
 					}
@@ -3143,7 +3143,7 @@ void event_thread(void* arg)
 						,ex_mode);
 					sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Call-out to: %s returned %d", sbbs->cfg.qhub[i]->id, result);
 					sbbs->console&=~CON_L_ECHO;
-					sbbs->online=FALSE;
+					sbbs->online=false;
 				}
 			}
 		}
@@ -3333,7 +3333,7 @@ void event_thread(void* arg)
 							sbbs->lprintf(result ? sbbs->cfg.event[i]->errlevel : LOG_INFO, "Timed event: %s returned %d", event_code, result);
 					}
 					sbbs->console&=~CON_L_ECHO;
-					sbbs->online=FALSE;
+					sbbs->online=false;
 					sbbs->cfg.event[i]->last=time32(NULL);
 					SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 					if((file=sbbs->nopen(str,O_WRONLY))==-1) {
@@ -3429,7 +3429,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	/* Init some important variables */
 
 	SAFECOPY(connection, "Telnet");
-	telnet_ack_event=CreateEvent(NULL, /* Manual Reset: */FALSE,/* InitialState */FALSE,NULL);
+	telnet_ack_event=CreateEvent(NULL, /* Manual Reset: */false,/* InitialState */false,NULL);
 
 	listInit(&savedlines, /* flags: */0);
 	listInit(&smb_list, /* flags: */0);
@@ -3472,7 +3472,7 @@ bool sbbs_t::init()
 			GetCurrentProcess(),
 			(HANDLE*)&client_socket_dup,
 			0,
-			TRUE, // Inheritable
+			true, // Inheritable
 			DUPLICATE_SAME_ACCESS)) {
 			errormsg(WHERE,ERR_CREATE,"duplicate socket handle",client_socket);
 			return(false);
@@ -3569,7 +3569,7 @@ bool sbbs_t::init()
 				,ctime_r(&ftime, tmp));
 			logline(LOG_NOTICE,"L!",str);
 			log(crlf);
-			catsyslog(TRUE);
+			catsyslog(true);
 		}
 
 		getnodedat(cfg.node_num,&thisnode,1);
@@ -3679,7 +3679,7 @@ bool sbbs_t::init()
 #ifdef USE_CRYPTLIB
 	pthread_mutex_init(&ssh_mutex,NULL);
 	ssh_mutex_created = true;
-	ssh_active = CreateEvent(NULL, TRUE, FALSE, NULL);
+	ssh_active = CreateEvent(NULL, true, false, NULL);
 #endif
 	pthread_mutex_init(&input_thread_mutex,NULL);
 	input_thread_mutex_created = true;
@@ -3938,7 +3938,7 @@ void sbbs_t::hangup(void)
 	if(online) {
 		clear_hotspots();
 		lprintf(LOG_DEBUG,"disconnecting client");
-		online=FALSE;	// moved from the bottom of this function on Jan-25-2009
+		online=false;	// moved from the bottom of this function on Jan-25-2009
 	}
 	if(client_socket_dup!=INVALID_SOCKET && client_socket_dup!=client_socket)
 		closesocket(client_socket_dup);
@@ -4244,7 +4244,7 @@ void sbbs_t::logoffstats()
 		return;
 
 	for(i=0;i<2;i++) {
-		FILE* fp = fopen_dstats(&cfg, i ? 0 : cfg.node_num, /* for_write: */TRUE);
+		FILE* fp = fopen_dstats(&cfg, i ? 0 : cfg.node_num, /* for_write: */true);
 		if(fp == NULL)
 			continue;
 		if(fread_dstats(fp, &stats)) {
@@ -4267,7 +4267,7 @@ void node_thread(void* arg)
 
 	update_clients();
 	SetThreadName("sbbs/termNode");
-	thread_up(TRUE /* setuid */);
+	thread_up(true /* setuid */);
 
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG,"Node %d thread started",sbbs->cfg.node_num);
@@ -4367,7 +4367,7 @@ void node_thread(void* arg)
 			if(sbbs->exec(&sbbs->main_csi))
 				break;
 		}
-		listRemoveTaggedNode(&current_logins, sbbs->cfg.node_num, /* free_data */TRUE);
+		listRemoveTaggedNode(&current_logins, sbbs->cfg.node_num, /* free_data */true);
 	}
 
 #ifdef _WIN32
@@ -4443,7 +4443,7 @@ void node_thread(void* arg)
 	}
 
 	if(login_success)
-		sbbs->catsyslog(/* Crash: */FALSE);
+		sbbs->catsyslog(/* Crash: */false);
 	else {
 		rewind(sbbs->logfile_fp);
 		if(chsize(fileno(sbbs->logfile_fp), 0) != 0)
@@ -4532,9 +4532,9 @@ void sbbs_t::daily_maint(void)
 	if(cfg.user_backup_level) {
 		lputs(LOG_INFO,"DAILY: Backing-up user data...");
 		SAFEPRINTF(str,"%suser/" USER_DATA_FILENAME, cfg.data_dir);
-		backup(str,cfg.user_backup_level,FALSE);
+		backup(str,cfg.user_backup_level,false);
 		SAFEPRINTF(str,"%suser/name.dat",cfg.data_dir);
-		backup(str,cfg.user_backup_level,FALSE);
+		backup(str,cfg.user_backup_level,false);
 	}
 
 	if(cfg.mail_backup_level) {
@@ -4549,21 +4549,21 @@ void sbbs_t::daily_maint(void)
 				lprintf(LOG_ERR, "ERROR %d (%s) locking mail base", result, mail.last_error);
 			else {
 				SAFEPRINTF(str,"%smail.shd",cfg.data_dir);
-				backup(str,cfg.mail_backup_level,FALSE);
+				backup(str,cfg.mail_backup_level,false);
 				SAFEPRINTF(str,"%smail.sha",cfg.data_dir);
-				backup(str,cfg.mail_backup_level,FALSE);
+				backup(str,cfg.mail_backup_level,false);
 				SAFEPRINTF(str,"%smail.sdt",cfg.data_dir);
-				backup(str,cfg.mail_backup_level,FALSE);
+				backup(str,cfg.mail_backup_level,false);
 				SAFEPRINTF(str,"%smail.sda",cfg.data_dir);
-				backup(str,cfg.mail_backup_level,FALSE);
+				backup(str,cfg.mail_backup_level,false);
 				SAFEPRINTF(str,"%smail.sid",cfg.data_dir);
-				backup(str,cfg.mail_backup_level,FALSE);
+				backup(str,cfg.mail_backup_level,false);
 				SAFEPRINTF(str,"%smail.sch",cfg.data_dir);
-				backup(str,cfg.mail_backup_level,FALSE);
+				backup(str,cfg.mail_backup_level,false);
 				SAFEPRINTF(str,"%smail.hash",cfg.data_dir);
-				backup(str,cfg.mail_backup_level,FALSE);
+				backup(str,cfg.mail_backup_level,false);
 				SAFEPRINTF(str,"%smail.ini",cfg.data_dir);
-				backup(str,cfg.mail_backup_level,FALSE);
+				backup(str,cfg.mail_backup_level,false);
 				result = smb_unlock(&mail);
 				if(result != SMB_SUCCESS)
 					lprintf(LOG_ERR, "ERROR %d (%s) unlocking mail base", result, mail.last_error);
@@ -4574,7 +4574,7 @@ void sbbs_t::daily_maint(void)
 
 	lputs(LOG_INFO, "DAILY: Checking for inactive/expired user records...");
 	lastusernum=lastuser(&cfg);
-	int userfile=openuserdat(&cfg, /* for_modify: */FALSE);
+	int userfile=openuserdat(&cfg, /* for_modify: */false);
 	for(usernum=1;usernum<=lastusernum;usernum++) {
 		user.number = usernum;
 		if((i=fgetuserdat(&cfg, &user, userfile)) != 0) {
@@ -4644,7 +4644,7 @@ void sbbs_t::daily_maint(void)
 				useron=user;
 				online=ON_LOCAL;
 				exec_bin(cfg.expire_mod,&main_csi);
-				online=FALSE;
+				online=false;
 			}
 		}
 
@@ -4686,7 +4686,7 @@ void sbbs_t::daily_maint(void)
 		const char* cmd = cmdstr(cfg.sys_daily,nulstr,nulstr,NULL);
 		online = ON_LOCAL;
 		int result = external(cmd, EX_OFFLINE);
-		online = FALSE;
+		online = false;
 		lprintf(result ? LOG_ERR : LOG_INFO, "Daily event: '%s' returned %d", cmd, result);
 	}
 	lputs(LOG_INFO, "DAILY: System maintenance ended");
@@ -4800,7 +4800,7 @@ void bbs_thread(void* arg)
 	sbbs_t*			events=NULL;
 	client_t		client;
 	startup=(bbs_startup_t*)arg;
-	BOOL			is_client=FALSE;
+	BOOL			is_client=false;
 #ifdef __unix__
 	struct main_sock_cb_data	uspy_cb[MAX_NODES]={};
 	union xp_sockaddr uspy_addr;
@@ -4831,7 +4831,7 @@ void bbs_thread(void* arg)
 
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken)
-		startup->seteuid(TRUE);
+		startup->seteuid(true);
 #endif
 
 	ZERO_VAR(js_server_props);
@@ -4844,8 +4844,8 @@ void bbs_thread(void* arg)
 	uptime=0;
 	served=0;
 
-	startup->recycle_now=FALSE;
-	startup->shutdown_now=FALSE;
+	startup->recycle_now=false;
+	startup->shutdown_now=false;
 	terminate_server=false;
 
 	SetThreadName("sbbs/termServer");
@@ -4864,9 +4864,9 @@ void bbs_thread(void* arg)
 	protected_uint32_init(&node_threads_running,0);
 	protected_uint32_init(&ssh_sessions,0);
 
-	thread_up(FALSE /* setuid */);
+	thread_up(false /* setuid */);
 	if(startup->seteuid!=NULL)
-		startup->seteuid(TRUE);
+		startup->seteuid(true);
 
 	memset(text, 0, sizeof(text));
     memset(&scfg, 0, sizeof(scfg));
@@ -4937,7 +4937,7 @@ void bbs_thread(void* arg)
 	scfg.size=sizeof(scfg);
 	scfg.node_num=startup->first_node;
 	SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
-	if(!load_cfg(&scfg, text, /* prep: */TRUE, /* node_req: */TRUE, logstr, sizeof(logstr))) {
+	if(!load_cfg(&scfg, text, /* prep: */true, /* node_req: */true, logstr, sizeof(logstr))) {
 		lprintf(LOG_CRIT,"!ERROR %s",logstr);
 		lprintf(LOG_CRIT,"!FAILED to load configuration files");
 		cleanup(1);
@@ -5002,7 +5002,7 @@ void bbs_thread(void* arg)
 			uint record = 0;
 			lprintf(LOG_NOTICE, "Auto-upgrading cumulative statistics log file: %s", oldfn);
 			stats_t stats;
-			FILE* out = fopen_cstats(&scfg, i, /* write: */TRUE);
+			FILE* out = fopen_cstats(&scfg, i, /* write: */true);
 			if(out == NULL) {
 				lprintf(LOG_ERR, "!ERROR %d (%s) creating: %s", errno, strerror(errno), newfn);
 				continue;
@@ -5228,19 +5228,19 @@ NO_SSH:
 					,p);
 				break;
 			}
-			if(startup->recycle_now==TRUE) {
+			if(startup->recycle_now==true) {
 				lprintf(LOG_INFO,"Recycle semaphore signaled");
-				startup->recycle_now=FALSE;
+				startup->recycle_now=false;
 				break;
 			}
 		}
 		if(((p=semfile_list_check(&initialized,shutdown_semfiles))!=NULL
 				&& lprintf(LOG_INFO,"Shutdown semaphore file (%s) detected"
 					,p))
-			|| (startup->shutdown_now==TRUE
+			|| (startup->shutdown_now==true
 				&& lprintf(LOG_INFO,"Shutdown semaphore signaled"))) {
-			startup->shutdown_now=FALSE;
-			terminate_server=TRUE;
+			startup->shutdown_now=false;
+			terminate_server=true;
 			break;
 		}
 		if(((p = semfile_list_check(NULL, pause_semfiles)) != NULL
@@ -5256,7 +5256,7 @@ NO_SSH:
 		set_state(SERVER_READY);
 
 
-    	sbbs->online=FALSE;
+    	sbbs->online=false;
 //		sbbs->client_socket=INVALID_SOCKET;
 #ifdef USE_CRYPTLIB
 		sbbs->ssh_mode=false;
@@ -5283,16 +5283,16 @@ NO_SSH:
 		bool ssh = false;
 #endif
 
-		is_client=FALSE;
+		is_client=false;
 		if(ts_cb == &telnet_cb) {
-	        is_client=TRUE;
+	        is_client=true;
 		} else if(ts_cb == &rlogin_cb) {
 			rlogin = true;
-			is_client=TRUE;
+			is_client=true;
 #ifdef USE_CRYPTLIB
 		} else if(ts_cb == &ssh_cb) {
 			ssh = true;
-			is_client=TRUE;
+			is_client=true;
 #endif
 		} else {
 #ifdef __unix__
@@ -5335,7 +5335,7 @@ NO_SSH:
 		}
 
 		// Count the socket:
-		call_socket_open_callback(TRUE);
+		call_socket_open_callback(true);
 
 		char host_ip[INET6_ADDRSTRLEN];
 
@@ -5414,7 +5414,7 @@ NO_SSH:
 		/* Do SSH stuff here */
 #ifdef USE_CRYPTLIB
 		if(ssh) {
-			BOOL nodelay = TRUE;
+			BOOL nodelay = true;
 			ulong nb = 0;
 
 			if(cryptStatusError(i=cryptCreateSession(&sbbs->ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH_SERVER))) {
@@ -5512,7 +5512,7 @@ NO_SSH:
 		client.port=inet_addrport(&client_addr);
 		SAFECOPY(client.user, STR_UNKNOWN_USER);
 		client.usernum = 0;
-		client_on(client_socket,&client,FALSE /* update */);
+		client_on(client_socket,&client,false /* update */);
 
 		for(i=first_node;i<=last_node;i++) {
 			/* paranoia: make sure node.status!=NODE_WFC by default */
@@ -5570,10 +5570,10 @@ NO_SSH:
 		    SAFECOPY(cfg->ctrl_dir, startup->ctrl_dir);
 			lprintf(LOG_INFO,"Node %d Loading configuration files from %s", cfg->node_num, cfg->ctrl_dir);
 			SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
-			if(!load_cfg(cfg, node_text[i - 1], /* prep: */TRUE, /* node_req: */TRUE, logstr, sizeof(logstr))) {
+			if(!load_cfg(cfg, node_text[i - 1], /* prep: */true, /* node_req: */true, logstr, sizeof(logstr))) {
 				lprintf(LOG_WARNING, "Node %d LOAD ERROR: %s, falling back to Node %d", cfg->node_num, logstr, first_node);
 				cfg->node_num = first_node;
-				if(!load_cfg(cfg, node_text[i - 1], /* prep: */TRUE, /* node: */TRUE, logstr, sizeof(logstr))) {
+				if(!load_cfg(cfg, node_text[i - 1], /* prep: */true, /* node: */true, logstr, sizeof(logstr))) {
 					lprintf(LOG_CRIT,"!ERROR %s",logstr);
 					lprintf(LOG_CRIT,"!FAILED to load configuration files");
 					sbbs->bprintf("\r\nFAILED: %s", logstr);

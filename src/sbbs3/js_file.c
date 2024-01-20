@@ -26,7 +26,6 @@
 #include "uucode.h"
 #include "yenc.h"
 #include "ini_file.h"
-#include <stdbool.h>
 
 #if !defined(__unix__)
 	#include <conio.h>		/* for kbhit() */

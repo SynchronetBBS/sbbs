@@ -139,7 +139,7 @@ extern "C" {
 		struct dirent		dirent;
 		long				handle;
 		struct _finddata_t	finddata;
-		BOOL				end;		/* End of directory flag */
+		bool				end;		/* End of directory flag */
 	} DIR;
 
 
@@ -205,29 +205,29 @@ extern "C" {
 #endif
 
 /* General file system wrappers for all platforms and compilers */
-DLLEXPORT BOOL		fexist(const char *filespec);
-DLLEXPORT BOOL		fexistcase(char *filespec);	/* fixes upr/lwr case fname */
+DLLEXPORT bool		fexist(const char *filespec);
+DLLEXPORT bool		fexistcase(char *filespec);	/* fixes upr/lwr case fname */
 DLLEXPORT off_t		flength(const char *filename);
 DLLEXPORT time_t	fdate(const char *filename);
 DLLEXPORT time_t	fcdate(const char* filename);
 DLLEXPORT int		setfdate(const char* filename, time_t t);
-DLLEXPORT BOOL		isdir(const char *filename);
-DLLEXPORT BOOL		isabspath(const char *filename);
-DLLEXPORT BOOL		isfullpath(const char* filename);
+DLLEXPORT bool		isdir(const char *filename);
+DLLEXPORT bool		isabspath(const char *filename);
+DLLEXPORT bool		isfullpath(const char* filename);
 DLLEXPORT char*		getfname(const char* path);
 DLLEXPORT char*		getfext(const char* path);
 DLLEXPORT int		getfattr(const char* filename);
 DLLEXPORT int		getfmode(const char* filename);
 DLLEXPORT uint		getfilecount(const char *path);
 DLLEXPORT char*		getdirname(const char* path);
-DLLEXPORT size_t	getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only);
+DLLEXPORT size_t	getdirsize(const char* path, bool include_subdirs, bool subdir_only);
 DLLEXPORT uint64_t	getdisksize(const char* path, uint64_t unit);
 DLLEXPORT uint64_t	getfreediskspace(const char* path, uint64_t unit);
 DLLEXPORT uint64_t	getfilesizetotal(const char *path);
 DLLEXPORT int		delfiles(const char *inpath, const char *spec, size_t keep);
 DLLEXPORT char*		backslash(char* path);
-DLLEXPORT BOOL 		wildmatch(const char *fname, const char *spec, BOOL path, BOOL case_sensitive);
-DLLEXPORT BOOL 		wildmatchi(const char *fname, const char *spec, BOOL path);
+DLLEXPORT bool 		wildmatch(const char *fname, const char *spec, bool path, bool case_sensitive);
+DLLEXPORT bool 		wildmatchi(const char *fname, const char *spec, bool path);
 DLLEXPORT int		mkpath(const char* path);
 
 

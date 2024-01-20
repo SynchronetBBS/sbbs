@@ -46,13 +46,6 @@
 	#include <xpsem.h>
 #endif
 #include <threadwrap.h>
-#if !(defined __BORLANDC__ || defined _MSC_VER)
- #include <stdbool.h>
-#else
- #define bool int
- enum { false, true };
-#endif
-
 
 #include "ciolib.h"
 

@@ -159,7 +159,7 @@ static void errormsg(void* p, int level, const char* msg)
         PlaySound(ErrorSoundFile.c_str(), NULL, SND_ASYNC|SND_FILENAME);
 }
 
-static void thread_up(void* p, BOOL up, BOOL setuid)
+static void thread_up(void* p, bool up, bool setuid)
 {
 	char str[128];
 	static HANDLE mutex;
@@ -176,7 +176,7 @@ static void thread_up(void* p, BOOL up, BOOL setuid)
 
 int sockets=0;
 
-void socket_open(void* p, BOOL open)
+void socket_open(void* p, bool open)
 {
 	char 	str[128];
 	static HANDLE mutex;
@@ -194,7 +194,7 @@ void socket_open(void* p, BOOL open)
 int clients=0;
 int total_clients=0;
 
-static void client_add(void* p, BOOL add)
+static void client_add(void* p, bool add)
 {
 	char 	str[128];
 
@@ -205,7 +205,7 @@ static void client_add(void* p, BOOL add)
     	clients--;
 }
 
-static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
+static void client_on(void* p, bool on, int sock, client_t* client, bool update)
 {
     char    str[128];
     int     i,j;
@@ -277,12 +277,12 @@ static int lputs(void* p, int level, const char *str)
     GetLocalTime(&msg.time);
     SAFECOPY(msg.buf, str);
 	listLock(list);
-	BOOL unique = TRUE;
+	bool unique = true;
 	if(list->last != NULL) {
 		last = (log_msg_t*)list->last->data;
 		if(strcmp(last->buf, msg.buf) == 0) {
 			last->repeated++;
-			unique = FALSE;
+			unique = false;
 		}
 	}
 	if(unique)

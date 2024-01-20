@@ -27,14 +27,14 @@
 extern "C" {
 #endif
 
-DLLEXPORT BOOL		save_cfg(scfg_t* cfg);
-DLLEXPORT BOOL		write_node_cfg(scfg_t* cfg);
-DLLEXPORT BOOL		write_main_cfg(scfg_t* cfg);
-DLLEXPORT BOOL		write_msgs_cfg(scfg_t* cfg);
-DLLEXPORT BOOL		write_file_cfg(scfg_t* cfg);
-DLLEXPORT BOOL		write_chat_cfg(scfg_t* cfg);
-DLLEXPORT BOOL		write_xtrn_cfg(scfg_t* cfg);
-DLLEXPORT void		refresh_cfg(scfg_t* cfg);
+DLLEXPORT bool		save_cfg(scfg_t*);
+DLLEXPORT bool		write_node_cfg(scfg_t*);
+DLLEXPORT bool		write_main_cfg(scfg_t*);
+DLLEXPORT bool		write_msgs_cfg(scfg_t*);
+DLLEXPORT bool		write_file_cfg(scfg_t*);
+DLLEXPORT bool		write_chat_cfg(scfg_t*);
+DLLEXPORT bool		write_xtrn_cfg(scfg_t*);
+DLLEXPORT void		refresh_cfg(scfg_t*);
 
 #ifdef __cplusplus
 }

@@ -99,11 +99,11 @@ void sbbs_get_ini_fname(char* ini_file, const char* ctrl_dir)
 #endif
 }
 
-static BOOL iniSetStringWithGlobalDefault(str_list_t* lp, const char* section, const char* key
+static bool iniSetStringWithGlobalDefault(str_list_t* lp, const char* section, const char* key
 	,const char* value, const char* global_value, ini_style_t* style)
 {
 	if(value != global_value && strcmp(value, global_value) == 0) {
-		return iniKeyExists(*lp, section, key) == FALSE || iniRemoveValue(lp, section, key) == TRUE;
+		return iniKeyExists(*lp, section, key) == false || iniRemoveValue(lp, section, key) == true;
 	}
 	return iniSetString(lp, section, key, value, style) != NULL;
 }
@@ -139,14 +139,14 @@ void sbbs_get_js_settings(
 	sbbs_fix_js_settings(js);
 }
 
-BOOL sbbs_set_js_settings(
+bool sbbs_set_js_settings(
 	 str_list_t* lp
 	,const char* section
 	,js_startup_t* js
 	,js_startup_t* defaults
 	,ini_style_t* style)
 {
-	BOOL	failure=FALSE;
+	bool	failure=false;
 	js_startup_t global_defaults = {
 			 JAVASCRIPT_MAX_BYTES
 			,JAVASCRIPT_TIME_LIMIT
@@ -212,7 +212,7 @@ void sbbs_get_sound_settings(str_list_t list, const char* section, struct startu
         SAFECOPY(sound->hack, value);
 }
 
-BOOL sbbs_set_sound_settings(
+bool sbbs_set_sound_settings(
 	 str_list_t* lp
 	,const char* section
 	,struct startup_sound_settings* sound
@@ -220,16 +220,16 @@ BOOL sbbs_set_sound_settings(
 	,ini_style_t* style)
 {
 	if(!iniSetStringWithGlobalDefault(lp ,section, strAnswerSound, sound->answer, defaults->answer, style))
-		return FALSE;
+		return false;
 	if(!iniSetStringWithGlobalDefault(lp, section, strLoginSound, sound->login, defaults->login, style))
-		return FALSE;
+		return false;
 	if(!iniSetStringWithGlobalDefault(lp, section, strLogoutSound, sound->logout, defaults->logout, style))
-		return FALSE;
+		return false;
 	if(!iniSetStringWithGlobalDefault(lp, section, strHangupSound, sound->hangup, defaults->hangup, style))
-		return FALSE;
+		return false;
 	if(!iniSetStringWithGlobalDefault(lp, section, strHackAttemptSound, sound->hack, defaults->hack, style))
-		return FALSE;
-	return TRUE;
+		return false;
+	return true;
 }
 
 static struct login_attempt_settings get_login_attempt_settings(str_list_t list, const char* section, global_startup_t* global)
@@ -344,15 +344,15 @@ void sbbs_read_ini(
 	 FILE*					fp
 	,const char*			ini_fname
 	,global_startup_t*		global
-	,BOOL*					run_bbs
+	,bool*					run_bbs
 	,bbs_startup_t*			bbs
-	,BOOL*					run_ftp
+	,bool*					run_ftp
 	,ftp_startup_t*			ftp
-	,BOOL*					run_web
+	,bool*					run_web
 	,web_startup_t*			web
-	,BOOL*					run_mail
+	,bool*					run_mail
 	,mail_startup_t*		mail
-	,BOOL*					run_services
+	,bool*					run_services
 	,services_startup_t*	services
 	)
 {
@@ -411,7 +411,7 @@ void sbbs_read_ini(
 	section = "BBS";
 
 	if(run_bbs!=NULL)
-		*run_bbs=iniGetBool(list,section,strAutoStart,TRUE);
+		*run_bbs=iniGetBool(list,section,strAutoStart,true);
 
 	if(bbs!=NULL) {
 
@@ -494,7 +494,7 @@ void sbbs_read_ini(
 		SAFECOPY(bbs->dosemuconf_path
 			,iniGetString(list,section,"DOSemuConfPath",default_dosemuconf_path,value));
 	#endif
-		bbs->usedosemu=iniGetBool(list,section,"UseDOSemu",TRUE);
+		bbs->usedosemu=iniGetBool(list,section,"UseDOSemu",true);
 		SAFECOPY(bbs->dosemu_path
 			,iniGetString(list,section,"DOSemuPath",default_dosemu_path,value));
 	#endif
@@ -524,7 +524,7 @@ void sbbs_read_ini(
 	section = "FTP";
 
 	if(run_ftp!=NULL)
-		*run_ftp=iniGetBool(list,section,strAutoStart,TRUE);
+		*run_ftp=iniGetBool(list,section,strAutoStart,true);
 
 	if(ftp!=NULL) {
 
@@ -589,7 +589,7 @@ void sbbs_read_ini(
 	section = "Mail";
 
 	if(run_mail!=NULL)
-		*run_mail=iniGetBool(list,section,strAutoStart,TRUE);
+		*run_mail=iniGetBool(list,section,strAutoStart,true);
 
 	if(mail!=NULL) {
 
@@ -684,14 +684,14 @@ void sbbs_read_ini(
 		mail->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
 		mail->login_attempt = get_login_attempt_settings(list, section, global);
 		mail->max_concurrent_connections = iniGetInteger(list, section, strMaxConConn, 0);
-		mail->notify_offline_users = iniGetBool(list, section, "NotifyOfflineUsers", FALSE);
+		mail->notify_offline_users = iniGetBool(list, section, "NotifyOfflineUsers", false);
 	}
 
 	/***********************************************************************/
 	section = "Services";
 
 	if(run_services!=NULL)
-		*run_services=iniGetBool(list,section,strAutoStart,TRUE);
+		*run_services=iniGetBool(list,section,strAutoStart,true);
 
 	if(services!=NULL) {
 
@@ -737,7 +737,7 @@ void sbbs_read_ini(
 	section = "Web";
 
 	if(run_web!=NULL)
-		*run_web=iniGetBool(list,section,strAutoStart,FALSE);
+		*run_web=iniGetBool(list,section,strAutoStart,false);
 
 	if(web!=NULL) {
 
@@ -782,7 +782,7 @@ void sbbs_read_ini(
 			,iniGetString(list, section, strFileIndexScript, nulstr, value));
 		SAFECOPY(web->file_vpath_prefix
 			,iniGetString(list, section, strFileVPathPrefix, nulstr, value));
-		web->file_vpath_for_vhosts = iniGetBool(list, section, strFileVPathForVHosts, FALSE);
+		web->file_vpath_for_vhosts = iniGetBool(list, section, strFileVPathForVHosts, false);
 
 		SAFECOPY(web->default_cgi_content
 			,iniGetString(list,section,"DefaultCGIContent",WEB_DEFAULT_CGI_CONTENT,value));
@@ -818,24 +818,24 @@ void sbbs_read_ini(
 	iniFreeStringList(list);
 }
 
-BOOL sbbs_write_ini(
+bool sbbs_write_ini(
 	 FILE*					fp
     ,scfg_t*                cfg
 	,global_startup_t*		global
-	,BOOL					run_bbs
+	,bool					run_bbs
 	,bbs_startup_t*			bbs
-	,BOOL					run_ftp
+	,bool					run_ftp
 	,ftp_startup_t*			ftp
-	,BOOL					run_web
+	,bool					run_web
 	,web_startup_t*			web
-	,BOOL					run_mail
+	,bool					run_mail
 	,mail_startup_t*		mail
-	,BOOL					run_services
+	,bool					run_services
 	,services_startup_t*	services
 	)
 {
 	const char*	section;
-	BOOL		result=FALSE;
+	bool		result=false;
 	str_list_t	list;
 	str_list_t*	lp;
 	ini_style_t style;
@@ -848,7 +848,7 @@ BOOL sbbs_write_ini(
 	style.bit_separator = " | ";
 
 	if((list=iniReadFile(fp))==NULL)
-		return(FALSE);
+		return(false);
 
 	if(global==NULL) {
 		memset(&global_buf,0,sizeof(global_buf));
@@ -1412,7 +1412,7 @@ BOOL sbbs_write_ini(
 	}
 
 	/***********************************************************************/
-	backup(cfg->filename, cfg->config_backup_level, /* rename: */FALSE);
+	backup(cfg->filename, cfg->config_backup_level, /* rename: */false);
 	result=iniWriteFile(fp,list);
 
 	} while(0);	/* finally */

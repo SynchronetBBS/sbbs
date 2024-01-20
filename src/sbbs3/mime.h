@@ -27,7 +27,7 @@ char *  mimegetboundary(void);
 void    mimeheaders(SOCKET socket, const char* prot, int sess, char * boundary);
 void    mimeblurb(SOCKET socket, const char* prot, int sess, char * boundary);
 void    mimetextpartheader(SOCKET socket, const char* prot, int sess, char * boundary, const char* text_subtype, const char* charset);
-BOOL    mimeattach(SOCKET socket, const char* prot, int sess, char * boundary, char * pathfile);
+bool    mimeattach(SOCKET socket, const char* prot, int sess, char * boundary, char * pathfile);
 void    endmime(SOCKET socket, const char* prot, int sess, char * boundary);
 
 #endif	/* Don't add anything after this line */

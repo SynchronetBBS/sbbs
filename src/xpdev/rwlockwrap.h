@@ -13,10 +13,11 @@ typedef pthread_rwlock_t rwlock_t;
 #define rwlock_trywrlock(lock) (pthread_rwlock_trywrlock(lock) == 0)
 #define rwlock_unlock(lock) (pthread_rwlock_unlock(lock) == 0)
 #define rwlock_destroy(lock) (pthread_rwlock_destroy(lock) == 0)
+#define rwlock_destroy_ign(lock) ((void)pthread_rwlock_destroy(lock))
 
 #elif defined(_WIN32)
 
-#include "gen_defs.h"	// For windows.h and BOOL!! :(
+#include "gen_defs.h"	// For windows.h and bool
 #include "threadwrap.h"
 
 struct rwlock_reader_thread {
@@ -37,13 +38,13 @@ typedef struct {
 	struct rwlock_reader_thread *rthreads;
 } rwlock_t;
 
-BOOL rwlock_init(rwlock_t *lock);
-BOOL rwlock_rdlock(rwlock_t *lock);
-BOOL rwlock_tryrdlock(rwlock_t *lock);
-BOOL rwlock_wrlock(rwlock_t *lock);
-BOOL rwlock_trywrlock(rwlock_t *lock);
-BOOL rwlock_unlock(rwlock_t *lock);
-BOOL rwlock_destroy(rwlock_t *lock);
+bool rwlock_init(rwlock_t *lock);
+bool rwlock_rdlock(rwlock_t *lock);
+bool rwlock_tryrdlock(rwlock_t *lock);
+bool rwlock_wrlock(rwlock_t *lock);
+bool rwlock_trywrlock(rwlock_t *lock);
+bool rwlock_unlock(rwlock_t *lock);
+bool rwlock_destroy(rwlock_t *lock);
 #define rwlock_destory_ign(locl) ((void)rwlock_destroy(lock))
 
 #else

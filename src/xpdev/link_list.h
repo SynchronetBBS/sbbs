@@ -80,26 +80,26 @@ typedef struct link_list {
 
 /* Initialization, Allocation, and Freeing of Lists and Nodes */
 DLLEXPORT link_list_t*	listInit(link_list_t* /* NULL to auto-allocate */, long flags);
-DLLEXPORT BOOL			listFree(link_list_t*);
+DLLEXPORT bool			listFree(link_list_t*);
 DLLEXPORT long			listFreeNodes(link_list_t*);
-DLLEXPORT BOOL			listFreeNodeData(list_node_t* node);
+DLLEXPORT bool			listFreeNodeData(list_node_t* node);
 
 /* Increment/decrement reference counter (and auto-free when zero), returns -1 on error */
 DLLEXPORT long	listAttach(link_list_t*);
 DLLEXPORT long	listDetach(link_list_t*);
 
 #if defined(LINK_LIST_THREADSAFE)
-DLLEXPORT BOOL	listSemPost(link_list_t*);
-DLLEXPORT BOOL	listSemWait(link_list_t*);
-DLLEXPORT BOOL	listSemTryWait(link_list_t*);
-DLLEXPORT BOOL	listSemTryWaitBlock(link_list_t*, unsigned long timeout);
+DLLEXPORT bool	listSemPost(link_list_t*);
+DLLEXPORT bool	listSemWait(link_list_t*);
+DLLEXPORT bool	listSemTryWait(link_list_t*);
+DLLEXPORT bool	listSemTryWaitBlock(link_list_t*, unsigned long timeout);
 #endif
 
 /* Lock/unlock linked lists (works best for mutex-protected lists) */
 /* Locks are recursive (e.g. must call Unlock for each call to Lock */
-DLLEXPORT BOOL	listLock(link_list_t*);
-DLLEXPORT BOOL	listUnlock(link_list_t*);
-DLLEXPORT BOOL	listIsLocked(const link_list_t*);
+DLLEXPORT bool	listLock(link_list_t*);
+DLLEXPORT bool	listUnlock(link_list_t*);
+DLLEXPORT bool	listIsLocked(const link_list_t*);
 #define	listForceUnlock(list)	while(listUnlock(list)==TRUE)
 
 /* Return count or index of nodes, or -1 on error */
@@ -141,9 +141,9 @@ DLLEXPORT list_node_t*	listPrevNode(const list_node_t*);
 DLLEXPORT void*			listNodeData(const list_node_t*);
 
 /* Primitive node locking (not recursive) */
-DLLEXPORT BOOL listLockNode(list_node_t*);
-DLLEXPORT BOOL listUnlockNode(list_node_t*);
-DLLEXPORT BOOL listNodeIsLocked(const list_node_t*);
+DLLEXPORT bool listLockNode(list_node_t*);
+DLLEXPORT bool listUnlockNode(list_node_t*);
+DLLEXPORT bool listNodeIsLocked(const list_node_t*);
 
 /* Add node to list, returns pointer to new node or NULL on error */
 DLLEXPORT list_node_t*	listAddNode(link_list_t*, void* data, list_node_tag_t, list_node_t* after /* NULL=insert */);
@@ -170,7 +170,7 @@ DLLEXPORT long		listAddNodeList(link_list_t*, const link_list_t* src, list_node_
 DLLEXPORT long		listMerge(link_list_t* dest, const link_list_t* src, list_node_t* after);
 
 /* Swap the data pointers and flags for 2 nodes (possibly in separate lists) */
-DLLEXPORT BOOL		listSwapNodes(list_node_t* node1, list_node_t* node2);
+DLLEXPORT bool		listSwapNodes(list_node_t* node1, list_node_t* node2);
 
 /* Convenience macros for pushing, popping, and inserting nodes */
 #define	listPushNode(list, data)				listAddNode(list, data, LIST_NODE_TAG_DEFAULT, LAST_NODE)
@@ -185,11 +185,11 @@ DLLEXPORT BOOL		listSwapNodes(list_node_t* node1, list_node_t* node2);
 #define listShiftNode(list)						listRemoveNode(list, FIRST_NODE, FALSE)
 
 /* Remove node from list, returning the node's data (if not free'd) */
-DLLEXPORT void*	listRemoveNode(link_list_t*, list_node_t* /* NULL=first */, BOOL free_data);
-DLLEXPORT void* listRemoveTaggedNode(link_list_t*, list_node_tag_t, BOOL free_data);
+DLLEXPORT void*	listRemoveNode(link_list_t*, list_node_t* /* NULL=first */, bool free_data);
+DLLEXPORT void* listRemoveTaggedNode(link_list_t*, list_node_tag_t, bool free_data);
 
 /* Remove multiple nodes from list, returning the number of nodes removed */
-DLLEXPORT long	listRemoveNodes(link_list_t*, list_node_t* /* NULL=first */, long count, BOOL free_data);
+DLLEXPORT long	listRemoveNodes(link_list_t*, list_node_t* /* NULL=first */, long count, bool free_data);
 
 /* Reverse the nodes in a list */
 DLLEXPORT void listReverse(link_list_t*);

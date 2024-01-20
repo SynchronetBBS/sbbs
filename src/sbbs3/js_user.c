@@ -28,7 +28,7 @@ typedef struct
 {
 	user_t*		user;
 	user_t		storage;
-	BOOL		cached;
+	JSBool		cached;
 	client_t*	client;
 	struct mqtt* mqtt;
 	int			file;		// for fast read operations, only
@@ -1125,7 +1125,7 @@ js_sent_email(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	private_t*	p;
 	uint32	count=1;
-	BOOL	feedback=FALSE;
+	JSBool	feedback=FALSE;
 	jsrefcount	rc;
 	scfg_t*		scfg;
 
@@ -1673,7 +1673,7 @@ JSObject* js_CreateUserClass(JSContext* cx, JSObject* parent)
 }
 
 JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, char* name
-									  ,user_t* user, client_t* client, BOOL global_user, struct mqtt* mqtt)
+									  ,user_t* user, client_t* client, bool global_user, struct mqtt* mqtt)
 {
 	JSObject*	userobj;
 	private_t*	p;

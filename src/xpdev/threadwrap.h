@@ -33,7 +33,6 @@
 	#endif
 #endif
 #if !__STDC_NO_ATOMICS__
-#include <stdbool.h>
 #ifdef __cplusplus
 #include <atomic>
 #else
@@ -95,7 +94,7 @@ extern "C" {
 /* Wrappers for POSIX thread (pthread) mutexes								*/
 /****************************************************************************/
 
-pthread_mutex_t pthread_mutex_initializer_np(BOOL recursive);
+pthread_mutex_t pthread_mutex_initializer_np(bool recursive);
 
 #if defined(_POSIX_THREADS)
 

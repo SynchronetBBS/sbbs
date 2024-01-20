@@ -29,7 +29,7 @@
 #endif
 
 #include "genwrap.h"	/* SLEEP */
-#include "gen_defs.h"	/* BOOL/LOG_WARNING */
+#include "gen_defs.h"	/* bool/LOG_WARNING */
 #include "sockwrap.h"	/* sendsocket */
 #include "filewrap.h"	/* filelength */
 
@@ -271,35 +271,35 @@ off_t recvfilesocket(int sock, int file, off_t *offset, off_t count)
 
 /* Return true if connected, optionally sets *rd_p to true if read data available */
 /*
- * The exact conditions where rd_p is set to TRUE and the return value
+ * The exact conditions where rd_p is set to true and the return value
  * is true or false are complex, but the intent appears to be as follows:
  *
- * If the remote has half-closed the socket, rd_p should be FALSE and
- * the function should return FALSE, unless rd_p is NULL in which case
- * the function should return TRUE.  wr_p will indicate that transmit
+ * If the remote has half-closed the socket, rd_p should be false and
+ * the function should return false, unless rd_p is NULL in which case
+ * the function should return true.  wr_p will indicate that transmit
  * buffers are available.
  *
- * If we have half-closed the socket, wr_p should be TRUE, the function
- * should return TRUE, and rd_p will indicate if there is data available
+ * If we have half-closed the socket, wr_p should be true, the function
+ * should return true, and rd_p will indicate if there is data available
  * to be received.
  *
- * If the socket is completely closed, wr_p should be TRUE, rd_p should be
- * FALSE, and the function should return FALSE, unless rd_p is NULL in which
- * case, the function should return TRUE.
+ * If the socket is completely closed, wr_p should be true, rd_p should be
+ * false, and the function should return false, unless rd_p is NULL in which
+ * case, the function should return true.
  *
  * When the function is open in both directions, wr_p will indicate transmit
  * buffers are available, rd_p will indicate data is available to be recv()ed
- * and the return value should be TRUE.
+ * and the return value should be true.
  *
- * If the socket is invalid, rd_p should be FALSE, wr_p should be FALSE, and
- * the function should return FALSE.
+ * If the socket is invalid, rd_p should be false, wr_p should be false, and
+ * the function should return false.
  *
  * These rules have various exceptions when errors are returned by select(),
- * poll(), or recv(), which will generally cause a FALSE return with rd_p
- * being FALSE and wr_p being FALSE if select/poll failed, or indicating
+ * poll(), or recv(), which will generally cause a false return with rd_p
+ * being false and wr_p being false if select/poll failed, or indicating
  * available write buffers otherwise.
  */
-BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
+bool socket_check(SOCKET sock, bool* rd_p, bool* wr_p, DWORD timeout)
 {
 #ifdef PREFER_POLL
 	struct pollfd pfd = {0};
@@ -307,13 +307,13 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	char ch;
 
 	if(rd_p!=NULL)
-		*rd_p=FALSE;
+		*rd_p=false;
 
 	if(wr_p!=NULL)
-		*wr_p=FALSE;
+		*wr_p=false;
 
 	if(sock==INVALID_SOCKET)
-		return(FALSE);
+		return(false);
 
 	pfd.fd = sock;
 	pfd.events = POLLIN | POLLHUP;
@@ -323,35 +323,35 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	j = poll(&pfd, 1, timeout);
 
 	if (j == 0)
-		return TRUE;
+		return true;
 
 	if (j == 1) {
 		if (wr_p != NULL && (pfd.revents & POLLOUT)) {
-			*wr_p = TRUE;
+			*wr_p = true;
 			if (rd_p == NULL)
-				return TRUE;
+				return true;
 		}
 
 		if (pfd.revents & (POLLERR | POLLNVAL | POLLHUP))
-			return FALSE;
+			return false;
 
 		if(pfd.revents & ~(POLLOUT) && (rd_p !=NULL || wr_p==NULL))  {
 			rd=recv(sock,&ch,1,MSG_PEEK);
 			if(rd==1 || (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE)) {
 				if(rd_p!=NULL)
-					*rd_p=TRUE;
-				return TRUE;
+					*rd_p=true;
+				return true;
 			}
 		}
-		return FALSE;
+		return false;
 	}
 
 	if (j == -1) {
 		if (errno == EINTR || errno == ENOMEM)
-			return TRUE;
+			return true;
 	}
 
-	return FALSE;
+	return false;
 #else
 	char	ch;
 	int		i,rd;
@@ -362,13 +362,13 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	struct	timeval tv;
 
 	if(rd_p!=NULL)
-		*rd_p=FALSE;
+		*rd_p=false;
 
 	if(wr_p!=NULL)
-		*wr_p=FALSE;
+		*wr_p=false;
 
 	if(sock==INVALID_SOCKET)
-		return(FALSE);
+		return(false);
 
 	FD_ZERO(&rd_set);
 	FD_SET(sock,&rd_set);
@@ -386,15 +386,15 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 
 	i=select(sock+1,rd_set_p,wr_set_p,NULL,&tv);
 	if(i==SOCKET_ERROR)
-		return(FALSE);
+		return(false);
 
 	if(i==0)
-		return(TRUE);
+		return(true);
 
 	if(wr_p!=NULL && FD_ISSET(sock,wr_set_p)) {
-		*wr_p=TRUE;
+		*wr_p=true;
 		if(i==1)
-			return(TRUE);
+			return(true);
 	}
 
 	if(rd_p !=NULL || wr_p==NULL)  {
@@ -402,23 +402,23 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 		if(rd==1
 			|| (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE)) {
 			if(rd_p!=NULL)
-				*rd_p=TRUE;
-			return(TRUE);
+				*rd_p=true;
+			return(true);
 		}
 	}
 
-	return(FALSE);
+	return(false);
 #endif
 }
 
 /*
- * Return TRUE if recv() will not block on socket
+ * Return true if recv() will not block on socket
  * Will block for timeout ms or forever if timeout is negative
  *
  * This means it will return true if recv() will return an error
  * as well as if the socket is closed (and recv() will return 0)
  */
-BOOL socket_readable(SOCKET sock, int timeout)
+bool socket_readable(SOCKET sock, int timeout)
 {
 #ifdef PREFER_POLL
 	struct pollfd pfd = {0};
@@ -426,8 +426,8 @@ BOOL socket_readable(SOCKET sock, int timeout)
 	pfd.events = POLLIN;
 
 	if (poll(&pfd, 1, timeout) == 1)
-		return TRUE;
-	return FALSE;
+		return true;
+	return false;
 #else
 	fd_set rd_set;
 	struct timeval tv = {0};
@@ -444,23 +444,23 @@ BOOL socket_readable(SOCKET sock, int timeout)
 
 	switch (select(sock+1, &rd_set, NULL, NULL, tvp)) {
 		case 0:		// Nothing to read
-			return FALSE;
+			return false;
 		case 1:
-			return TRUE;
+			return true;
 	}
 	// Errors and unexpected cases
-	return TRUE;
+	return true;
 #endif
 }
 
 /*
- * Return TRUE if send() will not block on socket
+ * Return true if send() will not block on socket
  * Will block for timeout ms or forever if timeout is negative
  *
  * This means it will return true if send() will return an error
  * as well as if the socket is closed (and send() will return 0)
  */
-BOOL socket_writable(SOCKET sock, int timeout)
+bool socket_writable(SOCKET sock, int timeout)
 {
 #ifdef PREFER_POLL
 	struct pollfd pfd = {0};
@@ -468,8 +468,8 @@ BOOL socket_writable(SOCKET sock, int timeout)
 	pfd.events = POLLOUT;
 
 	if (poll(&pfd, 1, timeout) == 1)
-		return TRUE;
-	return FALSE;
+		return true;
+	return false;
 #else
 	fd_set wr_set;
 	struct timeval tv = {0};
@@ -486,22 +486,22 @@ BOOL socket_writable(SOCKET sock, int timeout)
 
 	switch (select(sock+1, NULL, &wr_set, NULL, tvp)) {
 		case 0:		// Nothing to read
-			return FALSE;
+			return false;
 		case 1:
-			return TRUE;
+			return true;
 	}
 	// Errors and unexpected cases
-	return TRUE;
+	return true;
 #endif
 }
 
 /*
- * Return TRUE if recv() will not block and will return zero
+ * Return true if recv() will not block and will return zero
  * or an error. This is *not* a test if a socket is
  * disconnected, but rather that it is disconnected *AND* all
  * data has been recv()ed.
  */
-BOOL socket_recvdone(SOCKET sock, int timeout)
+bool socket_recvdone(SOCKET sock, int timeout)
 {
 #ifdef PREFER_POLL
 	struct pollfd pfd = {0};
@@ -515,16 +515,16 @@ BOOL socket_recvdone(SOCKET sock, int timeout)
 			if (pfd.revents) {
 				rd = recv(sock,&ch,1,MSG_PEEK);
 				if (rd == 1 || (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE))
-					return FALSE;
-				return TRUE;
+					return false;
+				return true;
 			}
-			return FALSE;
+			return false;
 		case -1:
 			if (errno == EINTR || errno == ENOMEM)
-				return FALSE;
-			return TRUE;
+				return false;
+			return true;
 	}
-	return FALSE;
+	return false;
 #else
 	fd_set rd_set;
 	struct timeval tv = {0};
@@ -543,14 +543,14 @@ BOOL socket_recvdone(SOCKET sock, int timeout)
 
 	switch (select(sock+1, &rd_set, NULL, NULL, tvp)) {
 		case -1:	// Error, call this disconnected
-			return TRUE;
+			return true;
 		case 0:		// Nothing to read
-			return FALSE;
+			return false;
 	}
 	rd = recv(sock,&ch,1,MSG_PEEK);
 	if (rd == 1 || (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE))
-		return FALSE;
-	return TRUE;
+		return false;
+	return true;
 #endif
 }
 
@@ -684,11 +684,11 @@ void inet_setaddrport(union xp_sockaddr *addr, uint16_t port)
 	}
 }
 
-/* Return TRUE if the 2 addresses are the same host (type and address) */
-BOOL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2)
+/* Return true if the 2 addresses are the same host (type and address) */
+bool inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2)
 {
 	if(addr1->addr.sa_family != addr2->addr.sa_family)
-		return FALSE;
+		return false;
 
 	switch(addr1->addr.sa_family) {
 		case AF_INET:
@@ -696,7 +696,7 @@ BOOL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2)
 		case AF_INET6:
 			return memcmp(&addr1->in6.sin6_addr, &addr2->in6.sin6_addr, sizeof(addr1->in6.sin6_addr)) == 0;
 	}
-	return FALSE;
+	return false;
 }
 
 /* Return the current socket error description (for Windows), like strerror() does for errno */

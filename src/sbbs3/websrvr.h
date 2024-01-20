@@ -50,7 +50,7 @@ typedef struct {
 	char	logfile_base[INI_MAX_VALUE_LEN];		/* Logfile base name (date is appended) */
 	char	file_index_script[INI_MAX_VALUE_LEN];
 	char	file_vpath_prefix[INI_MAX_VALUE_LEN];
-	BOOL	file_vpath_for_vhosts;
+	bool	file_vpath_for_vhosts;
 
 	/* Misc */
 	int		tls_error_level;		/* Cap the severity of TLS error log messages */

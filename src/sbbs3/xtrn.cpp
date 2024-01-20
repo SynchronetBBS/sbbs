@@ -218,7 +218,7 @@ static void petscii_convert(BYTE* buf, uint len)
 	}
 }
 
-BOOL native_executable(scfg_t* cfg, const char* cmdline, int mode)
+bool native_executable(scfg_t* cfg, const char* cmdline, int mode)
 {
 	char*	p;
 	char	str[MAX_PATH+1];

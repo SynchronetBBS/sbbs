@@ -95,7 +95,7 @@ struct js_msg_area_priv {
 	int			subnum;
 };
 
-BOOL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, int subnum)
+bool js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, int subnum)
 {
 	char		str[128];
 	JSString*	js_str;
@@ -103,153 +103,153 @@ BOOL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, in
 	sub_t*		sub;
 
 	if(!is_valid_subnum(cfg, subnum))
-		return(FALSE);
+		return(false);
 
 	sub=cfg->sub[subnum];
 
 	if(!JS_DefineProperty(cx, subobj, "number", INT_TO_JSVAL(subnum)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if(!JS_DefineProperty(cx, subobj, "grp_number", INT_TO_JSVAL(sub->grp)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, cfg->grp[sub->grp]->sname))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "grp_name", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->code))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "code", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->sname))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "name", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->lname))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "description", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->qwkname))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "qwk_name", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub_area_tag(cfg, sub, str, sizeof(str))))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "area_tag", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub_newsgroup_name(cfg, sub, str, sizeof(str))))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "newsgroup", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->arstr))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "ars", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->read_arstr))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "read_ars", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->post_arstr))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "post_ars", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->op_arstr))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "operator_ars", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->mod_arstr))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "moderated_ars", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->data_dir))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "data_dir", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str = JS_NewStringCopyZ(cx, smb_faddrtoa(&sub->faddr, str))) == NULL)
-		return FALSE;
+		return false;
 	if(!JS_DefineProperty(cx, subobj, "fidonet_addr", STRING_TO_JSVAL(js_str)
 		,NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return FALSE;
+		return false;
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->origline))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "fidonet_origin", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->tagline))==NULL)
-		return(FALSE);
+		return(false);
 	if(!JS_DefineProperty(cx, subobj, "qwknet_tagline", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	val=UINT_TO_JSVAL(sub->misc);
 	if(!JS_DefineProperty(cx, subobj, "settings", val
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if(!JS_DefineProperty(cx, subobj, "ptridx", INT_TO_JSVAL(sub->ptridx)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if(!JS_DefineProperty(cx, subobj, "qwk_conf", INT_TO_JSVAL(sub->qwkconf)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if(!JS_DefineProperty(cx, subobj, "max_crcs", INT_TO_JSVAL(sub->maxcrcs)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if(!JS_DefineProperty(cx, subobj, "max_msgs", INT_TO_JSVAL(sub->maxmsgs)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if(!JS_DefineProperty(cx, subobj, "max_age", INT_TO_JSVAL(sub->maxage)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if(!JS_DefineProperty(cx, subobj, "print_mode", INT_TO_JSVAL(sub->pmode)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 	if(!JS_DefineProperty(cx, subobj, "print_mode_neg", INT_TO_JSVAL(sub->n_pmode)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(FALSE);
+		return(false);
 
 
 #ifdef BUILD_JSDOCS
 	js_CreateArrayOfStrings(cx, subobj, "_property_desc_list", msg_sub_prop_desc, JSPROP_READONLY);
 #endif
 
-	return(TRUE);
+	return(true);
 }
 
 /***************************************/

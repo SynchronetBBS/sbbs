@@ -27,29 +27,29 @@
 /* Pattern matching string search of 'search' in 'pattern'.					*/
 /* pattern matching is case-insensitive										*/
 /* patterns beginning with ';' are comments (never match)					*/
-/* patterns beginning with '!' are reverse-matched (returns FALSE if match)	*/
+/* patterns beginning with '!' are reverse-matched (returns false if match)	*/
 /* patterns ending in '~' will match string anywhere (sub-string search)	*/
 /* patterns ending in '^' will match left string fragment only				*/
 /* patterns including '*' must match both left and right string fragments	*/
 /* all other patterns are exact-match checking								*/
 /****************************************************************************/
-BOOL findstr_in_string(const char* search, const char* pattern)
+bool findstr_in_string(const char* search, const char* pattern)
 {
 	char	buf[FINDSTR_MAX_LINE_LEN + 1];
 	char*	p = (char*)pattern;
 	char*	last;
 	const char*	splat;
 	size_t	len;
-	BOOL	found = FALSE;
+	bool	found = false;
 
 	if(pattern == NULL)
-		return FALSE;
+		return false;
 
 	if(*p == ';')		/* comment */
-		return FALSE;
+		return false;
 
 	if(*p == '!')	{	/* reverse-match */
-		found = TRUE;
+		found = true;
 		p++;
 	}
 
@@ -122,12 +122,12 @@ static uint32_t parse_cidr(const char* p, unsigned* subnet)
 	return encode_ipv4_address(byte);
 }
 
-static BOOL is_cidr_match(const char *p, uint32_t ip_addr, uint32_t cidr, unsigned subnet)
+static bool is_cidr_match(const char *p, uint32_t ip_addr, uint32_t cidr, unsigned subnet)
 {
-	BOOL	match = FALSE;
+	bool	match = false;
 
 	if(*p == '!')
-		match = TRUE;
+		match = true;
 
 	if(((ip_addr ^ cidr) >> (32-subnet)) == 0)
 		match = !match;
@@ -135,7 +135,7 @@ static BOOL is_cidr_match(const char *p, uint32_t ip_addr, uint32_t cidr, unsign
 	return match;
 }
 
-static BOOL findstr_compare(const char* str, uint32_t ip_addr, const char* pattern, char* metadata)
+static bool findstr_compare(const char* str, uint32_t ip_addr, const char* pattern, char* metadata)
 {
 	uint32_t cidr;
 	unsigned subnet;
@@ -160,7 +160,7 @@ static BOOL findstr_compare(const char* str, uint32_t ip_addr, const char* patte
 /****************************************************************************/
 /* Pattern matching string search of 'insearchof' in 'list'.				*/
 /****************************************************************************/
-BOOL findstr_in_list(const char* insearchof, str_list_t list, char* metadata)
+bool findstr_in_list(const char* insearchof, str_list_t list, char* metadata)
 {
 	return find2strs_in_list(insearchof, NULL, list, metadata);
 }
@@ -168,15 +168,15 @@ BOOL findstr_in_list(const char* insearchof, str_list_t list, char* metadata)
 /****************************************************************************/
 /* Pattern matching string search of 'str1' or 'str2' in 'list'.			*/
 /****************************************************************************/
-BOOL find2strs_in_list(const char* str1, const char* str2, str_list_t list, char* metadata)
+bool find2strs_in_list(const char* str1, const char* str2, str_list_t list, char* metadata)
 {
 	size_t	index;
-	BOOL	found=FALSE;
+	bool	found=false;
 	char*	p;
 	uint32_t ip_addr1, ip_addr2;
 
 	if(list == NULL)
-		return FALSE;
+		return false;
 	ip_addr1 = parse_ipv4_address(str1);
 	ip_addr2 = parse_ipv4_address(str2);
 	for(index=0; list[index]!=NULL; index++) {
@@ -195,7 +195,7 @@ BOOL find2strs_in_list(const char* str1, const char* str2, str_list_t list, char
 /****************************************************************************/
 /* Pattern matching string search of 'insearchof' in 'fname'.				*/
 /****************************************************************************/
-BOOL findstr(const char* insearchof, const char* fname)
+bool findstr(const char* insearchof, const char* fname)
 {
 	return find2strs(insearchof, NULL, fname, NULL);
 }
@@ -203,18 +203,18 @@ BOOL findstr(const char* insearchof, const char* fname)
 /****************************************************************************/
 /* Pattern matching string search of 'str1' or 'str2' in 'fname'.			*/
 /****************************************************************************/
-BOOL find2strs(const char* str1, const char* str2, const char* fname, char* metadata)
+bool find2strs(const char* str1, const char* str2, const char* fname, char* metadata)
 {
 	char		str[FINDSTR_MAX_LINE_LEN + 1];
-	BOOL		found=FALSE;
+	bool		found=false;
 	FILE*		fp;
 	uint32_t	ip_addr1, ip_addr2;
 
 	if(fname == NULL || *fname == '\0')
-		return FALSE;
+		return false;
 
 	if ((fp = fnopen(NULL, fname, O_RDONLY)) == NULL)
-		return FALSE; 
+		return false; 
 
 	ip_addr1 = parse_ipv4_address(str1);
 	ip_addr2 = parse_ipv4_address(str2);

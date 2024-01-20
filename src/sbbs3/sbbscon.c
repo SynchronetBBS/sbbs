@@ -25,7 +25,6 @@
 
 /* ANSI headers */
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
@@ -67,19 +66,19 @@
 #endif
 
 /* Global variables */
-BOOL				terminated=FALSE;
+bool				terminated=FALSE;
 
 enum server_state	server_state[SERVER_COUNT];
-BOOL				server_stopped[SERVER_COUNT];
-BOOL				run_bbs=FALSE;
+bool				server_stopped[SERVER_COUNT];
+bool				run_bbs=FALSE;
 bbs_startup_t		bbs_startup;
-BOOL				run_ftp=FALSE;
+bool				run_ftp=FALSE;
 ftp_startup_t		ftp_startup;
-BOOL				run_mail=FALSE;
+bool				run_mail=FALSE;
 mail_startup_t		mail_startup;
-BOOL				run_services=FALSE;
+bool				run_services=FALSE;
 services_startup_t	services_startup;
-BOOL				run_web=FALSE;
+bool				run_web=FALSE;
 web_startup_t		web_startup;
 ulong				thread_count=1;
 ulong				socket_count=0;
@@ -98,14 +97,14 @@ uid_t				new_uid;
 uid_t				old_uid;
 gid_t				new_gid;
 gid_t				old_gid;
-BOOL				is_daemon=FALSE;
+bool				is_daemon=FALSE;
 char				log_facility[2];
 char				log_ident[128];
-BOOL				std_facilities=FALSE;
+bool				std_facilities=FALSE;
 FILE *				pidf;
 char				pid_fname[MAX_PATH+1];
-BOOL                capabilities_set=FALSE;
-BOOL				syslog_always=FALSE;
+bool                capabilities_set=FALSE;
+bool				syslog_always=FALSE;
 
 #ifdef USE_LINUX_CAPS
 /*
@@ -252,7 +251,7 @@ static void notify_systemd(const char* new_status)
 static int lputs(int level, const char *str)
 {
 	static pthread_mutex_t mutex;
-	static BOOL mutex_initialized;
+	static bool mutex_initialized;
 	const char	*p;
 
 #ifdef __unix__
@@ -333,9 +332,9 @@ init_setuid_mutex(void)
 /**********************************************************
 * Change uid of the calling process to the user if specified
 * **********************************************************/
-static BOOL do_seteuid(BOOL to_new)
+static bool do_seteuid(bool to_new)
 {
-	BOOL	result=FALSE;
+	bool	result=FALSE;
 
     if(capabilities_set)
 	    return(TRUE);		/* do nothing */
@@ -375,9 +374,9 @@ static BOOL do_seteuid(BOOL to_new)
 /**********************************************************
 * Change uid of the calling process to the user if specified
 * **********************************************************/
-BOOL do_setuid(BOOL force)
+bool do_setuid(bool force)
 {
-	BOOL result=TRUE;
+	bool result=TRUE;
 #if defined(DONT_BLAME_SYNCHRONET)
 	if(!force)
 		return(do_seteuid(TRUE));
@@ -553,7 +552,7 @@ static bool linux_minprivs(void)
 
 static WSADATA WSAData;
 
-static BOOL winsock_startup(void)
+static bool winsock_startup(void)
 {
 	int		status;             /* Status Code */
 
@@ -564,7 +563,7 @@ static BOOL winsock_startup(void)
 	return(FALSE);
 }
 
-static BOOL winsock_cleanup(void)
+static bool winsock_cleanup(void)
 {
 	if(WSACleanup()==0)
 		return(TRUE);
@@ -599,10 +598,10 @@ static void set_state(void* cbdata, enum server_state state)
 	server_stopped[server_type] = (state == SERVER_STOPPED);
 }
 
-static void thread_up(void* p, BOOL up, BOOL setuid)
+static void thread_up(void* p, bool up, bool setuid)
 {
    	static pthread_mutex_t mutex;
-	static BOOL mutex_initialized;
+	static bool mutex_initialized;
 
 #ifdef _THREAD_SUID_BROKEN
 	if(thread_suid_broken && up && setuid) {
@@ -626,10 +625,10 @@ static void thread_up(void* p, BOOL up, BOOL setuid)
 	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
 
-static void socket_open(void* p, BOOL open)
+static void socket_open(void* p, bool open)
 {
    	static pthread_mutex_t mutex;
-	static BOOL mutex_initialized;
+	static bool mutex_initialized;
 
 	if(!mutex_initialized) {
 		pthread_mutex_init(&mutex,NULL);
@@ -645,7 +644,7 @@ static void socket_open(void* p, BOOL open)
 	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
 
-static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
+static void client_on(void* p, bool on, int sock, client_t* client, bool update)
 {
 	if(on) {
 		if(update) {
@@ -950,7 +949,7 @@ static void terminate(void)
 	}
 }
 
-static void read_startup_ini(BOOL recycle
+static void read_startup_ini(bool recycle
 							 ,bbs_startup_t* bbs, ftp_startup_t* ftp, web_startup_t* web
 							 ,mail_startup_t* mail, services_startup_t* services)
 {
@@ -1059,7 +1058,7 @@ BOOL WINAPI ControlHandler(unsigned long CtrlType)
 void _sighandler_quit(int sig)
 {
 	static pthread_mutex_t mutex;
-	static BOOL mutex_initialized;
+	static bool mutex_initialized;
 
 	if(!mutex_initialized) {
 		pthread_mutex_init(&mutex,NULL);

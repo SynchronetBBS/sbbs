@@ -30,7 +30,7 @@ void sbbs_t::batchmenu()
     char	str[129],tmp2[250],done=0,ch;
 	char 	tmp[512];
 	char	keys[32];
-	BOOL	sort = -1;
+	int		sort = -1;
 	int		i,n,xfrprot,xfrdir;
     int64_t	totalcdt,totalsize;
 	str_list_t ini;
@@ -234,7 +234,7 @@ void sbbs_t::batchmenu()
 /****************************************************************************/
 /* Download files from batch queue                                          */
 /****************************************************************************/
-BOOL sbbs_t::start_batch_download()
+bool sbbs_t::start_batch_download()
 {
 	char	ch;
 	char	tmp[32];
@@ -246,7 +246,7 @@ BOOL sbbs_t::start_batch_download()
 
 	if(useron.rest&FLAG('D')) {     /* Download restriction */
 		bputs(text[R_Download]);
-		return(FALSE); 
+		return(false); 
 	}
 
 	str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
@@ -255,14 +255,14 @@ BOOL sbbs_t::start_batch_download()
 	if(file_count < 1) {
 		bputs(text[DownloadQueueIsEmpty]);
 		iniFreeStringList(ini);
-		return(FALSE);
+		return(false);
 	}
 	str_list_t filenames = iniGetSectionList(ini, NULL);
 
 	if(file_count == 1) {	// Only one file in the queue? Perform a non-batch (e.g. XMODEM) download
 		const char* filename = filenames[0];
 		file_t f = {{}};
-		BOOL result = FALSE;
+		bool result = false;
 		if(!batch_file_load(&cfg, ini, filename, &f)) {
 			bprintf(text[FileDoesNotExist], filename);
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
@@ -282,7 +282,7 @@ BOOL sbbs_t::start_batch_download()
 				putnode_downloading(getfilesize(&cfg, &f));
 				result = sendfile(&f, useron.prot, /* autohang: */true);
 			}
-			if(result == TRUE)
+			if(result == true)
 				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, f.name);
 		}
 		iniFreeStringList(ini);
@@ -315,7 +315,7 @@ BOOL sbbs_t::start_batch_download()
 			,u64toac(user_available_credits(&useron),tmp));
 		iniFreeStringList(ini);
 		iniFreeStringList(filenames);
-		return(FALSE); 
+		return(false); 
 	}
 
 	int64_t totalsize = 0;
@@ -336,7 +336,7 @@ BOOL sbbs_t::start_batch_download()
 
 	if(!(useron.exempt&FLAG('T')) && !SYSOP && totaltime > (int64_t)timeleft) {
 		bputs(text[NotEnoughTimeToDl]);
-		return(FALSE); 
+		return(false); 
 	}
 	xfer_prot_menu(XFER_BATCH_DOWNLOAD);
 	sync();
@@ -350,13 +350,13 @@ BOOL sbbs_t::start_batch_download()
 	ungetkey(useron.prot);
 	ch=(char)getkeys(str,0);
 	if(ch==quit_key() || sys_status&SS_ABORT)
-		return(FALSE);
+		return(false);
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->batdlcmd[0] && cfg.prot[i]->mnemonic==ch
 			&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 			break;
 	if(i>=cfg.total_prots || !create_batchdn_lst((cfg.prot[i]->misc&PROT_NATIVE) ? true:false)) {
-		return(FALSE);
+		return(false);
 	}
 	xfrprot=i;
 #if 0 // NFB-TODO: Download events
@@ -395,7 +395,7 @@ BOOL sbbs_t::start_batch_download()
 		if((np=(char*)realloc(list,list_len+strlen(path)+1	/* add one for '\0'*/))==NULL) {
 			free(list);
 			errormsg(WHERE,ERR_ALLOC,"list",list_len+strlen(path));
-			return(FALSE);
+			return(false);
 		}
 		list = np;
 		if(!list_len)
@@ -428,7 +428,7 @@ BOOL sbbs_t::start_batch_download()
 		downloadedbytes(totalsize, elapsed);
 	autohangup();
 
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
@@ -554,7 +554,7 @@ void sbbs_t::batch_upload()
 		}
 
 		if(fexist(src))
-			mv(src, dest, /* copy: */FALSE);
+			mv(src, dest, /* copy: */false);
 
 		file_t f = {{}};
 		if(!batch_file_get(&cfg, ini, filename, &f))
