@@ -16,7 +16,7 @@ typedef pthread_rwlock_t rwlock_t;
 
 #elif defined(_WIN32)
 
-#include "gen_defs.h"	// For windows.h and BOOL!! :(
+#include "gen_defs.h"	// For windows.h and bool
 #include "threadwrap.h"
 
 struct rwlock_reader_thread {
@@ -37,13 +37,13 @@ typedef struct {
 	struct rwlock_reader_thread *rthreads;
 } rwlock_t;
 
-BOOL rwlock_init(rwlock_t *lock);
-BOOL rwlock_rdlock(rwlock_t *lock);
-BOOL rwlock_tryrdlock(rwlock_t *lock);
-BOOL rwlock_wrlock(rwlock_t *lock);
-BOOL rwlock_trywrlock(rwlock_t *lock);
-BOOL rwlock_unlock(rwlock_t *lock);
-BOOL rwlock_destroy(rwlock_t *lock);
+bool rwlock_init(rwlock_t *lock);
+bool rwlock_rdlock(rwlock_t *lock);
+bool rwlock_tryrdlock(rwlock_t *lock);
+bool rwlock_wrlock(rwlock_t *lock);
+bool rwlock_trywrlock(rwlock_t *lock);
+bool rwlock_unlock(rwlock_t *lock);
+bool rwlock_destroy(rwlock_t *lock);
 
 #else
 #error Not implemented

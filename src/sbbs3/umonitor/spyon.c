@@ -49,7 +49,7 @@ int spyon(char *sockname)  {
 	unsigned char		buf;
 	int		i;
 	fd_set	rd;
-	BOOL	b;
+	bool	b;
 	int		retval=0;
 	int		telnet_strip=0;
 	struct text_info ti;

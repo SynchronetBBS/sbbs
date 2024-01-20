@@ -97,18 +97,18 @@ typedef struct {
 	void	(*recycle)(void*); \
     void	(*terminated)(void*, int code); \
     void	(*clients)(void*, int active); \
-    void	(*thread_up)(void*, BOOL up, BOOL setuid); \
-	void	(*socket_open)(void*, BOOL open); \
-    void	(*client_on)(void*, BOOL on, int sock, client_t*, BOOL update); \
-    BOOL	(*seteuid)(BOOL user); \
-	BOOL	(*setuid)(BOOL force); \
+    void	(*thread_up)(void*, bool up, bool setuid); \
+	void	(*socket_open)(void*, bool open); \
+    void	(*client_on)(void*, bool on, int sock, client_t*, bool update); \
+    bool	(*seteuid)(bool user); \
+	bool	(*setuid)(bool force); \
     char    ctrl_dir[INI_MAX_VALUE_LEN]; \
     char	temp_dir[INI_MAX_VALUE_LEN]; \
 	char	ini_fname[INI_MAX_VALUE_LEN]; \
 	char	host_name[128]; \
-	BOOL	recycle_now; \
-	BOOL	shutdown_now; \
-	BOOL	paused; \
+	bool	recycle_now; \
+	bool	shutdown_now; \
+	bool	paused; \
 	int		sem_chk_freq; \
 	uint	bind_retry_count; \
 	uint	bind_retry_delay; \
@@ -154,7 +154,7 @@ typedef struct {
 	uint	max_concurrent_connections;
 	uint	default_term_height;
 	uint	default_term_width;
-	BOOL    usedosemu;
+	bool    usedosemu;
 	char	xtrn_term_ansi[32];		/* external ANSI terminal type (e.g. "ansi-bbs") */
 	char	xtrn_term_dumb[32];		/* external dumb terminal type (e.g. "dumb") */
 	uint16_t	max_login_inactivity;	// seconds

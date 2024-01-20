@@ -312,6 +312,18 @@ typedef int32_t         time32_t;
 #endif
 #endif
 
+// NOTE: sizeof(BOOL) == sizeof(int)  (i.e. 4) per Microsoft
+// while sizeof(bool) == sizeof(char) (i.e. 1) per C and C++ standards
+#if __STDC_VERSION__ < 202000 /* C23 */ && !defined __cplusplus
+	#if __STDC_VERSION__ >= 199901 || _MSC_VER >= 1900
+		#include <stdbool.h>
+	#elif !defined __bool_true_false_are_defined
+		#define bool char
+		#define true 1
+		#define false 0
+	#endif
+#endif
+
 #ifndef INT_TO_BOOL
 #define INT_TO_BOOL(x)  ((x)?TRUE:FALSE)
 #endif

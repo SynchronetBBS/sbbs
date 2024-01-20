@@ -45,17 +45,17 @@ typedef struct {
 #define MSG_QUEUE_ORPHAN		(1<<2)	/* Owner has detached */
 
 DLLEXPORT msg_queue_t*	msgQueueInit(msg_queue_t*, long flags);
-DLLEXPORT BOOL			msgQueueFree(msg_queue_t*);
+DLLEXPORT bool			msgQueueFree(msg_queue_t*);
 
 DLLEXPORT long			msgQueueAttach(msg_queue_t*);
 DLLEXPORT long			msgQueueDetach(msg_queue_t*);
-DLLEXPORT BOOL			msgQueueOwner(msg_queue_t*);
+DLLEXPORT bool			msgQueueOwner(msg_queue_t*);
 
 /* Get/Set queue private data */
 DLLEXPORT void*			msgQueueSetPrivateData(msg_queue_t*, void*);
 DLLEXPORT void*			msgQueueGetPrivateData(msg_queue_t*);
 
-DLLEXPORT BOOL			msgQueueWait(msg_queue_t* q, long timeout);
+DLLEXPORT bool			msgQueueWait(msg_queue_t* q, long timeout);
 DLLEXPORT long			msgQueueReadLevel(msg_queue_t*);
 DLLEXPORT void*			msgQueueRead(msg_queue_t*, long timeout);
 DLLEXPORT void*			msgQueuePeek(msg_queue_t*, long timeout);
@@ -67,7 +67,7 @@ DLLEXPORT list_node_t*	msgQueueLastNode(msg_queue_t*);
 #define			msgQueueNodeData(node)			listNodeData(node)
 
 DLLEXPORT long			msgQueueWriteLevel(msg_queue_t*);
-DLLEXPORT BOOL			msgQueueWrite(msg_queue_t*, const void*, size_t length);
+DLLEXPORT bool			msgQueueWrite(msg_queue_t*, const void*, size_t length);
 
 #if defined(__cplusplus)
 }

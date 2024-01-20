@@ -32,7 +32,7 @@ int sbbs_t::exec_net(csi_t* csi)
 	char	str[512],rsp[512],buf[1025],ch,*p,**pp,**pp1,**pp2;
 	ushort	w;
 	int 	i;
-	BOOL	rd;
+	bool	rd;
 	int32_t	*lp,*lp1,*lp2;
 	time_t	start;
 
@@ -440,7 +440,7 @@ bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, const char* cmdsrc, char* rsp)
 {
 	char	cmd[512];
 	int		len;
-	BOOL	data_avail;
+	bool	data_avail;
 	time_t	start;
 
 	if(cmdsrc!=NULL) {
@@ -627,7 +627,7 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 	char		rsp[512];
 	char		buf[4097];
 	int			rd;
-	BOOL		data_avail;
+	bool		data_avail;
 	ulong		total=0;
 	SOCKET		data_sock;
 	union xp_sockaddr	addr;

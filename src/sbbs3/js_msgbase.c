@@ -22,7 +22,6 @@
 #include "sbbs.h"
 #include "js_request.h"
 #include "userdat.h"
-#include <stdbool.h>
 
 #ifdef JAVASCRIPT
 
@@ -30,7 +29,7 @@ typedef struct
 {
 	smb_t	smb;
 	int		smb_result;
-	BOOL	debug;
+	JSBool	debug;
 	uint32_t first_msg;
 
 } private_t;
@@ -38,8 +37,8 @@ typedef struct
 typedef struct
 {
 	private_t	*p;
-	BOOL		expand_fields;
-	BOOL		enumerated;
+	bool		expand_fields;
+	bool		enumerated;
 	smbmsg_t	msg;
 	post_t		post;
 
@@ -129,7 +128,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
-static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, smbmsg_t* msg)
+static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, smbmsg_t* msg)
 {
 	char*		cp=NULL;
 	size_t		cp_sz=0;
@@ -148,12 +147,12 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		HANDLE_PENDING(cx, cp);
 		if(cp==NULL) {
 			JS_ReportError(cx, "Invalid \"to\" string in recipient object");
-			return(FALSE);
+			return(false);
 		}
 	} else {
 		if((p != NULL) && (p->smb.status.attr&SMB_EMAIL)) {	/* e-mail */
 			JS_ReportError(cx, "\"to\" property not included in email recipient object");
-			return(FALSE);					/* "to" property required */
+			return(false);					/* "to" property required */
 		}
 		cp=strdup("All");
 	}
@@ -174,7 +173,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		HANDLE_PENDING(cx, cp);
 		if(cp==NULL) {
 			JS_ReportError(cx, "Invalid \"to_list\" string in recipient object");
-			return(FALSE);
+			return(false);
 		}
 		if((smb_result = smb_hfield_str(msg, RECIPIENTLIST, cp))!=SMB_SUCCESS) {
 			free(cp);
@@ -188,7 +187,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		HANDLE_PENDING(cx, cp);
 		if(cp==NULL) {
 			JS_ReportError(cx, "Invalid \"cc_list\" string in recipient object");
-			return(FALSE);
+			return(false);
 		}
 		if((smb_result = smb_hfield_str(msg, SMB_CARBONCOPY, cp))!=SMB_SUCCESS) {
 			free(cp);
@@ -202,7 +201,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		HANDLE_PENDING(cx, cp);
 		if(cp==NULL) {
 			JS_ReportError(cx, "Invalid \"to_ext\" string in recipient object");
-			return(FALSE);
+			return(false);
 		}
 		if((smb_result = smb_hfield_str(msg, RECIPIENTEXT, cp))!=SMB_SUCCESS) {
 			free(cp);
@@ -218,7 +217,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		HANDLE_PENDING(cx, cp);
 		if(cp==NULL) {
 			JS_ReportError(cx, "Invalid \"to_org\" string in recipient object");
-			return(FALSE);
+			return(false);
 		}
 		if((smb_result = smb_hfield_str(msg, RECIPIENTORG, cp))!=SMB_SUCCESS) {
 			free(cp);
@@ -230,7 +229,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 	if(JS_GetProperty(cx, hdr, "to_net_type", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToInt32(cx,val,&i32)) {
 			free(cp);
-			return(FALSE);
+			return(false);
 		}
 		nettype=(ushort)i32;
 	}
@@ -240,7 +239,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		HANDLE_PENDING(cx, cp);
 		if(cp==NULL) {
 			JS_ReportError(cx, "Invalid \"to_net_addr\" string in recipient object");
-			return(FALSE);
+			return(false);
 		}
 		if((smb_result = smb_hfield_netaddr(msg, RECIPIENTNETADDR, cp, &nettype))!=SMB_SUCCESS) {
 			free(cp);
@@ -258,7 +257,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 				if(fulladdr[0]==0) {
 					JS_ReportError(cx, "Unroutable QWKnet \"to_net_addr\" (%s) in recipient object"
 						,msg->to_net.addr);
-					return(FALSE);
+					return(false);
 				}
 				if((smb_result = smb_hfield_str(msg, RECIPIENTNETADDR, fulladdr))!=SMB_SUCCESS) {
 					JS_ReportError(cx, "Error %d adding RECIPIENTADDR field to message header"
@@ -285,7 +284,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 
 	if(JS_GetProperty(cx, hdr, "to_agent", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToInt32(cx,val,&i32))
-			return FALSE;
+			return false;
 		agent=(ushort)i32;
 		if((smb_result = smb_hfield_bin(msg, RECIPIENTAGENT, agent))!=SMB_SUCCESS) {
 			JS_ReportError(cx, "Error %d adding RECIPIENTAGENT field to message header", smb_result);
@@ -293,17 +292,17 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		}
 	}
 
-	return(TRUE);
+	return(true);
 
 err:
 	if(smb_result != SMB_SUCCESS && p != NULL)
 		p->smb_result = smb_result;
-	return(FALSE);
+	return(false);
 
 }
 
-static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbmsg_t* msg
-								,BOOL recipient)
+static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbmsg_t* msg
+								,bool recipient)
 {
 	char*		cp=NULL;
 	size_t		cp_sz=0;
@@ -994,42 +993,42 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 
 	if(cp)
 		free(cp);
-	return(TRUE);
+	return(true);
 
 err:
 	if(smb_result != SMB_SUCCESS && p != NULL)
 		p->smb_result = smb_result;
 	if(cp)
 		free(cp);
-	return(FALSE);
+	return(false);
 }
 
 /* obj *may* have been previously returned from get_msg_header() */
-BOOL js_ParseMsgHeaderObject(JSContext* cx, JSObject* obj, smbmsg_t* msg)
+bool js_ParseMsgHeaderObject(JSContext* cx, JSObject* obj, smbmsg_t* msg)
 {
 	privatemsg_t*	p;
 
 	p=(privatemsg_t*)JS_GetPrivate(cx,obj);
 
-	if(!parse_header_object(cx, p == NULL ? NULL : p->p, obj, msg, /* recipient */ TRUE)) {
+	if(!parse_header_object(cx, p == NULL ? NULL : p->p, obj, msg, /* recipient */ true)) {
 		smb_freemsgmem(msg);
-		return(FALSE);
+		return(false);
 	}
 
-	return(TRUE);
+	return(true);
 }
 
 /* obj must've been previously returned from get_msg_header() */
-BOOL js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* obj, smb_t** smb, smbmsg_t** msg, post_t** post)
+bool js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* obj, smb_t** smb, smbmsg_t** msg, post_t** post)
 {
 	privatemsg_t*	p;
 
 	if((p=(privatemsg_t*)JS_GetPrivate(cx,obj))==NULL)
-		return FALSE;
+		return false;
 
 	if(smb != NULL) {
 		if(p->p == NULL)
-			return FALSE;
+			return false;
 		*smb = &(p->p->smb);
 	}
 	if(msg != NULL)
@@ -1037,18 +1036,18 @@ BOOL js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* obj, smb_t** smb, sm
 	if(post != NULL)
 		*post = &p->post;
 
-	return TRUE;
+	return true;
 }
 
-static BOOL msg_offset_by_id(private_t* p, char* id, int32_t* offset)
+static bool msg_offset_by_id(private_t* p, char* id, int32_t* offset)
 {
 	smbmsg_t msg;
 
 	if((p->smb_result = smb_getmsgidx_by_msgid(&(p->smb),&msg,id))!=SMB_SUCCESS)
-		return(FALSE);
+		return(false);
 
 	*offset = msg.idx_offset;
-	return(TRUE);
+	return(true);
 }
 
 static bool set_msg_idx_properties(JSContext* cx, JSObject* obj, idxrec_t* idx, int32_t offset)
@@ -1672,7 +1671,7 @@ static JSBool js_get_msg_header_enumerate(JSContext *cx, JSObject *obj)
 	if((p=(privatemsg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_TRUE;
 
-	p->enumerated = TRUE;
+	p->enumerated = true;
 
 	return JS_TRUE;
 }
@@ -2165,7 +2164,7 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 		smb_freemsghdrmem(&msg);	/* prevent duplicate header fields */
 
 		JS_RESUMEREQUEST(cx, rc);
-		if(!parse_header_object(cx, p, hdr, &msg, TRUE)) {
+		if(!parse_header_object(cx, p, hdr, &msg, true)) {
 			SAFECOPY(p->smb.last_error,"Header parsing failure (required field missing?)");
 			ret=JS_FALSE;
 			break;
@@ -2269,7 +2268,7 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
-static char* get_msg_text(private_t* p, smbmsg_t* msg, BOOL strip_ctrl_a, BOOL dot_stuffing, ulong mode, JSBool existing)
+static char* get_msg_text(private_t* p, smbmsg_t* msg, bool strip_ctrl_a, bool dot_stuffing, ulong mode, JSBool existing)
 {
 	char*		buf;
 
@@ -2752,7 +2751,7 @@ js_vote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	if(hdr == NULL)
 		return JS_TRUE;
 
-	if(parse_header_object(cx, p, hdr, &msg, FALSE)) {
+	if(parse_header_object(cx, p, hdr, &msg, false)) {
 
 		rc = JS_SUSPENDREQUEST(cx);
 		if((p->smb_result=votemsg(scfg, &(p->smb), &msg, NULL, NULL)) == SMB_SUCCESS) {
@@ -2820,7 +2819,7 @@ js_add_poll(JSContext *cx, uintN argc, jsval *arglist)
 	if(hdr == NULL)
 		return JS_TRUE;
 
-	if(parse_header_object(cx, p, hdr, &msg, FALSE)) {
+	if(parse_header_object(cx, p, hdr, &msg, false)) {
 
 		rc=JS_SUSPENDREQUEST(cx);
 		if((p->smb_result=postpoll(scfg, &(p->smb), &msg)) == SMB_SUCCESS) {

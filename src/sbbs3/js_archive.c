@@ -27,8 +27,6 @@
 #include <archive.h>
 #include <archive_entry.h>
 
-#include <stdbool.h>
-
 JSClass js_archive_class;
 
 static JSBool

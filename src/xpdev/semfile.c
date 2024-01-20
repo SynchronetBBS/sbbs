@@ -32,10 +32,10 @@
 /* This function compares a single semaphore file's							*/
 /* date/time stamp (if the file exists) against the passed time stamp (t)	*/
 /* updating the time stamp to the latest dated semaphore file and returning	*/
-/* TRUE if any where newer than the initial value.							*/
+/* true if any where newer than the initial value.							*/
 /* If the 't' parameter is NULL, only file existence is checked (not time).	*/
 /****************************************************************************/
-BOOL semfile_check(time_t* t, const char* fname)
+bool semfile_check(time_t* t, const char* fname)
 {
 	time_t	ft;
 
@@ -46,10 +46,10 @@ BOOL semfile_check(time_t* t, const char* fname)
 		*t=time(NULL);
 
 	if((ft=fdate(fname))==-1 || ft<=*t)
-		return(FALSE);
+		return(false);
 
 	*t=ft;
-	return(TRUE);
+	return(true);
 }
 
 /****************************************************************************/
@@ -112,7 +112,7 @@ void semfile_list_free(str_list_t* filelist)
 	strListFree(filelist);
 }
 
-BOOL semfile_signal(const char* fname, const char* text)
+bool semfile_signal(const char* fname, const char* text)
 {
 	int file;
 	size_t textlen = 0;
@@ -124,7 +124,7 @@ BOOL semfile_signal(const char* fname, const char* text)
 		text=hostname;
 #endif
 	if((file=open(fname,O_CREAT|O_WRONLY, DEFFILEMODE))<0)	/* use sopen instead? */
-		return(FALSE);
+		return(false);
 	if(text!=NULL)
 		wrlen = write(file,text,textlen = strlen(text));
 	close(file);

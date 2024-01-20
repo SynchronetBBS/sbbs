@@ -26,7 +26,7 @@
 /* If sent is non-zero, it returns the number of mail sent by usernumber    */
 /* If usernumber is 0, it returns all mail on the system                    */
 /****************************************************************************/
-int getmail(scfg_t* cfg, int usernumber, BOOL sent, int attr)
+int getmail(scfg_t* cfg, int usernumber, bool sent, int attr)
 {
     char    path[MAX_PATH+1];
     int     i=0;
@@ -72,7 +72,7 @@ int getmail(scfg_t* cfg, int usernumber, BOOL sent, int attr)
 /***************************/
 /* Delete file attachments */
 /***************************/
-BOOL delfattach(scfg_t* cfg, smbmsg_t* msg)
+bool delfattach(scfg_t* cfg, smbmsg_t* msg)
 {
     char dir[MAX_PATH+1];
 	char path[MAX_PATH+1];
@@ -95,14 +95,14 @@ BOOL delfattach(scfg_t* cfg, smbmsg_t* msg)
 		if(strcspn(tp, ILLEGAL_FILENAME_CHARS) == strlen(tp)) {
 			SAFEPRINTF2(path, "%s/%s", dir, tp);
 			if(fexist(path) && remove(path) != 0)
-				return FALSE;
+				return false;
 		}
 		if(!p)
 			break;
 		tp=p+1; 
 	}
 	rmdir(dir);                     /* remove the dir if it's empty */
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/

@@ -21,7 +21,6 @@
 
 #include "utf8.h"
 #include "unicode.h"
-#include <stdbool.h>
 #include <string.h>
 
 char* utf8_normalize_str(char* str)

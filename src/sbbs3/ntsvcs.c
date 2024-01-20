@@ -62,15 +62,15 @@ typedef struct {
 	char*					description;
 	void*					startup;
 	DWORD*					options;
-	BOOL*					recycle_now;
+	bool*					recycle_now;
 	int*					log_level;
 	void 					(*thread)(void* arg);
 	void					(*terminate)(void);
 	void					(WINAPI *ctrl_handler)(DWORD);
 	HANDLE					log_handle;
 	HANDLE					event_handle;
-	BOOL					autostart;
-	BOOL					debug;
+	bool					autostart;
+	bool					debug;
 	SERVICE_STATUS			status;
 	SERVICE_STATUS_HANDLE	status_handle;
 } sbbs_ntsvc_t;
@@ -492,7 +492,7 @@ static void WINAPI services_start(DWORD dwArgc, LPTSTR *lpszArgv)
 /******************************************/
 
 /* ChangeServiceConfig2 is a Win2K+ API function, must call dynamically */
-typedef WINADVAPI BOOL (WINAPI *ChangeServiceConfig2_t)(SC_HANDLE, DWORD, LPCVOID);
+typedef WINADVAPI bool (WINAPI *ChangeServiceConfig2_t)(SC_HANDLE, DWORD, LPCVOID);
 
 static void describe_service(HANDLE hSCMlib, SC_HANDLE hService, char* description)
 {
@@ -508,7 +508,7 @@ static void describe_service(HANDLE hSCMlib, SC_HANDLE hService, char* descripti
 		changeServiceConfig2(hService, SERVICE_CONFIG_DESCRIPTION, &service_desc);
 }
 
-static BOOL register_event_source(char* name, char* path)
+static bool register_event_source(char* name, char* path)
 {
 	char	keyname[256];
 	HKEY	hKey;
@@ -698,7 +698,7 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 /****************************************************************************/
 static void create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
 								,char* name, char* display_name, char* description, char* path
-								,BOOL autostart)
+								,bool autostart)
 {
     SC_HANDLE   hService;
 	DWORD		err;
@@ -1042,7 +1042,7 @@ static void set_service_start_type(SC_HANDLE hSCManager, char* name
 /****************************************************************************/
 /* Enable (set to auto-start) or disable one or all services				*/
 /****************************************************************************/
-static int enable(const char* svc_name, BOOL enabled)
+static int enable(const char* svc_name, bool enabled)
 {
 	int			i;
     SC_HANDLE   hSCManager;
@@ -1154,7 +1154,7 @@ int main(int argc, char** argv)
 	char	str[MAX_PATH+1];
 	int		i;
 	FILE*	fp=NULL;
-	BOOL	start_services=TRUE;
+	bool	start_services=TRUE;
 
 	SERVICE_TABLE_ENTRY  ServiceDispatchTable[] = 
     { 

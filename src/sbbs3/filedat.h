@@ -28,8 +28,6 @@
 #include "smblib.h"
 #include "sauce.h"
 
-#include <stdbool.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -99,8 +99,8 @@ DLLEXPORT double 		iniReadDuration(FILE*, const char* section, const char* key
 							,double deflt);
 DLLEXPORT double 		iniReadFloat(FILE*, const char* section, const char* key
 							,double deflt);
-DLLEXPORT BOOL 			iniReadBool(FILE*, const char* section, const char* key
-							,BOOL deflt);
+DLLEXPORT bool 			iniReadBool(FILE*, const char* section, const char* key
+							,bool deflt);
 DLLEXPORT time_t 		iniReadDateTime(FILE*, const char* section, const char* key
 							,time_t deflt);
 DLLEXPORT unsigned 		iniReadEnum(FILE*, const char* section, const char* key
@@ -128,10 +128,10 @@ DLLEXPORT void* 		iniFreeNamedStringList(named_string_t** list);
 
 /* File I/O Functions */
 DLLEXPORT char* 		iniFileName(char* dest, size_t maxlen, const char* dir, const char* fname);
-DLLEXPORT FILE* 		iniOpenFile(const char* fname, BOOL for_modify);
+DLLEXPORT FILE* 		iniOpenFile(const char* fname, bool for_modify);
 DLLEXPORT str_list_t 	iniReadFile(FILE*);
-DLLEXPORT BOOL 			iniWriteFile(FILE*, const str_list_t);
-DLLEXPORT BOOL 			iniCloseFile(FILE*);
+DLLEXPORT bool 			iniWriteFile(FILE*, const str_list_t);
+DLLEXPORT bool 			iniCloseFile(FILE*);
 
 /* StringList functions */
 DLLEXPORT str_list_t 	iniGetSectionList(str_list_t list, const char* prefix);
@@ -180,8 +180,8 @@ DLLEXPORT double 		iniGetDuration(str_list_t, const char* section, const char* k
 							,double deflt);
 DLLEXPORT double 		iniGetFloat(str_list_t, const char* section, const char* key
 							,double deflt);
-DLLEXPORT BOOL 			iniGetBool(str_list_t, const char* section, const char* key
-							,BOOL deflt);
+DLLEXPORT bool 			iniGetBool(str_list_t, const char* section, const char* key
+							,bool deflt);
 DLLEXPORT time_t 		iniGetDateTime(str_list_t, const char* section, const char* key
 							,time_t deflt);
 DLLEXPORT unsigned 		iniGetEnum(str_list_t, const char* section, const char* key
@@ -251,9 +251,9 @@ DLLEXPORT char* 		iniSetHexInt64(str_list_t*, const char* section, const char* k
 							,ini_style_t*);
 DLLEXPORT char* 		iniSetFloat(str_list_t*, const char* section, const char* key, double value
 							,ini_style_t*);
-DLLEXPORT char* 		iniSetBool(str_list_t*, const char* section, const char* key, BOOL value
+DLLEXPORT char* 		iniSetBool(str_list_t*, const char* section, const char* key, bool value
 							,ini_style_t*);
-DLLEXPORT char* 		iniSetDateTime(str_list_t*, const char* section, const char* key, BOOL include_time, time_t
+DLLEXPORT char* 		iniSetDateTime(str_list_t*, const char* section, const char* key, bool include_time, time_t
 							,ini_style_t*);
 DLLEXPORT char* 		iniSetEnum(str_list_t*, const char* section, const char* key, str_list_t names
 							,unsigned value, ini_style_t*);
@@ -284,24 +284,24 @@ DLLEXPORT size_t 		iniAppendSection(str_list_t*, const char* section
 DLLEXPORT size_t 		iniAppendSectionWithKeys(str_list_t*, const char* section, const str_list_t keys
 							,ini_style_t*);
 
-DLLEXPORT BOOL 			iniSectionExists(str_list_t, const char* section);
-DLLEXPORT BOOL 			iniKeyExists(str_list_t, const char* section, const char* key);
-DLLEXPORT BOOL 			iniValueExists(str_list_t, const char* section, const char* key);
+DLLEXPORT bool 			iniSectionExists(str_list_t, const char* section);
+DLLEXPORT bool 			iniKeyExists(str_list_t, const char* section, const char* key);
+DLLEXPORT bool 			iniValueExists(str_list_t, const char* section, const char* key);
 DLLEXPORT char* 		iniPopKey(str_list_t*, const char* section, const char* key, char* value);
 DLLEXPORT char* 		iniPopString(str_list_t*, const char* section, const char* key, char* value);
-DLLEXPORT BOOL 			iniRemoveKey(str_list_t*, const char* section, const char* key);
-DLLEXPORT BOOL 			iniRemoveValue(str_list_t*, const char* section, const char* key);
-DLLEXPORT BOOL 			iniRemoveSection(str_list_t*, const char* section);
-DLLEXPORT BOOL 			iniRemoveSectionFast(str_list_t, const char* section);
-DLLEXPORT BOOL 			iniRemoveSections(str_list_t*, const char* prefix);
-DLLEXPORT BOOL 			iniRenameSection(str_list_t*, const char* section, const char* newname);
-DLLEXPORT BOOL 			iniSortSections(str_list_t*, const char* prefix, BOOL sort_keys);
+DLLEXPORT bool 			iniRemoveKey(str_list_t*, const char* section, const char* key);
+DLLEXPORT bool 			iniRemoveValue(str_list_t*, const char* section, const char* key);
+DLLEXPORT bool 			iniRemoveSection(str_list_t*, const char* section);
+DLLEXPORT bool 			iniRemoveSectionFast(str_list_t, const char* section);
+DLLEXPORT bool 			iniRemoveSections(str_list_t*, const char* prefix);
+DLLEXPORT bool 			iniRenameSection(str_list_t*, const char* section, const char* newname);
+DLLEXPORT bool 			iniSortSections(str_list_t*, const char* prefix, bool sort_keys);
 
-DLLEXPORT BOOL 			iniHasInclude(const str_list_t);
+DLLEXPORT bool 			iniHasInclude(const str_list_t);
 
 /* Named String List functions */
 DLLEXPORT named_str_list_t** iniParseSections(const str_list_t);
-DLLEXPORT str_list_t	iniGetParsedSection(named_str_list_t**, const char* section, BOOL cut);
+DLLEXPORT str_list_t	iniGetParsedSection(named_str_list_t**, const char* section, bool cut);
 DLLEXPORT str_list_t 	iniGetParsedSectionList(named_str_list_t**, const char* prefix);
 DLLEXPORT void*			iniFreeParsedSections(named_str_list_t** list);
 

@@ -34,7 +34,7 @@ static ulong msg_number(smbmsg_t* msg)
 
 uint32_t get_new_msg_number(smb_t* smb)
 {
-	BOOL locked = smb->locked;
+	bool locked = smb->locked;
 
 	if(!locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return 0;
@@ -159,7 +159,7 @@ char* get_replyid(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgid, size_t ma
 /* Add auto-generated message-IDs to a message, if doesn't already have		*/
 /* The message base (smb) must be already opened							*/
 /****************************************************************************/
-BOOL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
+bool add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 {
 	char msg_id[256];
 	char faddrbuf[64];
@@ -176,12 +176,12 @@ BOOL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 				,msgid_serialno(msg)
 				);
 			if(smb_hfield_str(msg, FIDOMSGID, msg_id) != SMB_SUCCESS)
-				return FALSE;
+				return false;
 		}
 		else if(is_valid_subnum(cfg, smb->subnum) && cfg->sub[smb->subnum]->misc&SUB_FIDO) {
 			if(ftn_msgid(cfg->sub[smb->subnum], msg, msg_id, sizeof(msg_id)) != NULL) {
 				if(smb_hfield_str(msg, FIDOMSGID, msg_id) != SMB_SUCCESS)
-					return FALSE;
+					return false;
 			}
 		}
  	}
@@ -190,22 +190,22 @@ BOOL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 	if(msg->id == NULL) {
  		get_msgid(cfg, smb->subnum, msg, msg_id, sizeof(msg_id));
  		if(smb_hfield_str(msg, RFC822MSGID, msg_id) != SMB_SUCCESS)
-			return FALSE;
+			return false;
 	}
 
 	/* Generate Reply-IDs (when appropriate) */
 	if(remsg != NULL) {
-		if(add_reply_ids(cfg, smb, msg, remsg) != TRUE)
-			return FALSE;
+		if(add_reply_ids(cfg, smb, msg, remsg) != true)
+			return false;
 	}
 
 	/* Generate FidoNet Program Identifier */
  	if(msg->ftn_pid == NULL) {
-		if(smb_hfield_str(msg, FIDOPID, msg_program_id(msg_id, sizeof(msg_id))) != TRUE)
-			return FALSE;
+		if(smb_hfield_str(msg, FIDOPID, msg_program_id(msg_id, sizeof(msg_id))) != true)
+			return false;
 	}
 
-	return TRUE;	// Success
+	return true;	// Success
 }
 
 /****************************************************************************/
@@ -213,7 +213,7 @@ BOOL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 /* Migrated from sbbs_t::postmsg()											*/
 /* The message base (smb) must be already opened successfully				*/
 /****************************************************************************/
-BOOL add_reply_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
+bool add_reply_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 {
 	char* p;
 	char replyid[256];
@@ -226,16 +226,16 @@ BOOL add_reply_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 	/* Add RFC-822 Reply-ID (generate if necessary) */
 	if((p = get_replyid(cfg, smb, msg, replyid, sizeof(replyid))) != NULL) {
 		if(smb_hfield_str(msg, RFC822REPLYID, p) != SMB_SUCCESS)
-			return FALSE;
+			return false;
 	}
 
 	/* Add FidoNet Reply if original message has FidoNet MSGID */
 	if(remsg->ftn_msgid != NULL) {
 		if(smb_hfield_str(msg, FIDOREPLYID, remsg->ftn_msgid) != SMB_SUCCESS)
-			return FALSE;
+			return false;
 	}
 
-	return TRUE;	// Success
+	return true;	// Success
 }
 
 /****************************************************************************/

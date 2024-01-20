@@ -57,7 +57,7 @@ int get_text_num(const char* id)
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
 /****************************************************************************/
-BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, size_t maxerrlen)
+bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, size_t maxerrlen)
 {
 	int		i;
 	int		line=0;
@@ -67,7 +67,7 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 	if(cfg->size!=sizeof(scfg_t)) {
 		safe_snprintf(error, maxerrlen,"cfg->size (%"PRIu32") != sizeof(scfg_t) (%" XP_PRIsize_t "d)"
 			,cfg->size,sizeof(scfg_t));
-		return(FALSE);
+		return(false);
 	}
 
 	free_cfg(cfg);	/* free allocated config parameters */
@@ -76,8 +76,8 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 		cfg->node_num=1;
 
 	backslash(cfg->ctrl_dir);
-	if(read_main_cfg(cfg, error, maxerrlen)==FALSE && req_cfg)
-		return(FALSE);
+	if(read_main_cfg(cfg, error, maxerrlen)==false && req_cfg)
+		return(false);
 
 	if(prep)
 		for(i=0;i<cfg->sys_nodes;i++) 
@@ -85,18 +85,18 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 
 	SAFECOPY(cfg->node_dir,cfg->node_path[cfg->node_num-1]);
 	prep_dir(cfg->ctrl_dir, cfg->node_dir, sizeof(cfg->node_dir));
-	if(read_node_cfg(cfg, error, maxerrlen)==FALSE && req_cfg)
-		return(FALSE);
-	if(read_msgs_cfg(cfg, error, maxerrlen)==FALSE)
-		return(FALSE);
-	if(read_file_cfg(cfg, error, maxerrlen)==FALSE)
-		return(FALSE);
-	if(read_xtrn_cfg(cfg, error, maxerrlen)==FALSE)
-		return(FALSE);
-	if(read_chat_cfg(cfg, error, maxerrlen)==FALSE)
-		return(FALSE);
-	if(read_attr_cfg(cfg, error, maxerrlen)==FALSE)
-		return(FALSE);
+	if(read_node_cfg(cfg, error, maxerrlen)==false && req_cfg)
+		return(false);
+	if(read_msgs_cfg(cfg, error, maxerrlen)==false)
+		return(false);
+	if(read_file_cfg(cfg, error, maxerrlen)==false)
+		return(false);
+	if(read_xtrn_cfg(cfg, error, maxerrlen)==false)
+		return(false);
+	if(read_chat_cfg(cfg, error, maxerrlen)==false)
+		return(false);
+	if(read_attr_cfg(cfg, error, maxerrlen)==false)
+		return(false);
 
 	if(text!=NULL) {
 
@@ -106,7 +106,7 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 		SAFEPRINTF(str,"%stext.dat",cfg->ctrl_dir);
 		if((fp=fnopen(NULL,str,O_RDONLY))==NULL) {
 			safe_snprintf(error, maxerrlen,"%d opening %s",errno,str);
-			return(FALSE); 
+			return(false); 
 		}
 		for(i=0;i<TOTAL_TEXT;i++)
 			if((text[i]=readtext(&line,fp,i))==NULL) {
@@ -119,12 +119,12 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 			safe_snprintf(error, maxerrlen,"line %d: Less than TOTAL_TEXT (%u) strings defined in %s."
 				,i
 				,TOTAL_TEXT,str);
-			return(FALSE); 
+			return(false); 
 		}
 
 		SAFEPRINTF(str, "%stext.ini", cfg->ctrl_dir);
 		if ((fp = fnopen(NULL, str, O_RDONLY)) != NULL) {
-			BOOL success = TRUE;
+			bool success = true;
 			str_list_t ini = iniReadFile(fp);
 			fclose(fp);
 			named_string_t** list = iniGetNamedStringList(ini, ROOT_SECTION);
@@ -134,7 +134,7 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 					safe_snprintf(error, maxerrlen, "%s text ID (%s) not recognized"
 						,str
 						,list[i]->name);
-					success = FALSE;
+					success = false;
 					break;
 				}
 				free(text[n]);
@@ -143,7 +143,7 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 			iniFreeNamedStringList(list);
 			iniFreeStringList(ini);
 			if (!success)
-				return FALSE;
+				return false;
 		}
 
 		cfg->text = text;
@@ -159,7 +159,7 @@ BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_cfg, char* error, s
 	/* Auto-toggle daylight savings time in US time-zones */
 	sys_timezone(cfg);
 
-	return(TRUE);
+	return(true);
 }
 
 void pathify(char* str)
@@ -338,13 +338,13 @@ void prep_cfg(scfg_t* cfg)
 	for(i=0;i<cfg->total_xedits;i++) 
 		strlwr(cfg->xedit[i]->code);
 
-	cfg->prepped=TRUE;	/* data prepared for run-time, DO NOT SAVE TO DISK! */
+	cfg->prepped=true;	/* data prepared for run-time, DO NOT SAVE TO DISK! */
 }
 
 void free_cfg(scfg_t* cfg)
 {
 	if(cfg->prepped) {
-		cfg->prepped = FALSE;
+		cfg->prepped = false;
 	}
 	free_node_cfg(cfg);
 	free_main_cfg(cfg);
@@ -407,7 +407,7 @@ int md(const char* inpath)
 /****************************************************************************/
 /* Reads in ATTR.CFG and initializes the associated variables               */
 /****************************************************************************/
-BOOL read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
+bool read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
 	uint*	clr;
     char    str[256];
@@ -417,14 +417,14 @@ BOOL read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFEPRINTF(str,"%sattr.cfg",cfg->ctrl_dir);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		safe_snprintf(error, maxerrlen,"%d opening %s",errno,str);
-		return(FALSE); 
+		return(false); 
 	}
 	FREE_AND_NULL(cfg->color);
 	if((cfg->color=malloc(MIN_COLORS * sizeof(uint)))==NULL) {
 		safe_snprintf(error, maxerrlen,"Error allocating memory (%u bytes) for colors"
 			,MIN_COLORS);
 		fclose(instream);
-		return(FALSE);
+		return(false);
 	}
 	/* Setup default colors here: */
 	memset(cfg->color,LIGHTGRAY|HIGH,MIN_COLORS);
@@ -443,7 +443,7 @@ BOOL read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	fclose(instream);
 	if(cfg->total_colors<MIN_COLORS)
 		cfg->total_colors=MIN_COLORS;
-	return(TRUE);
+	return(true);
 }
 
 static void free_attr_cfg(scfg_t* cfg)
@@ -603,14 +603,14 @@ int smb_open_sub(scfg_t* cfg, smb_t* smb, int subnum)
 	return retval;
 }
 
-BOOL smb_init_dir(scfg_t* cfg, smb_t* smb, int dirnum)
+bool smb_init_dir(scfg_t* cfg, smb_t* smb, int dirnum)
 {
 	if(!is_valid_dirnum(cfg, dirnum))
-		return FALSE;
+		return false;
 	memset(smb, 0, sizeof(smb_t));
 	SAFEPRINTF2(smb->file, "%s%s", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
 	smb->retry_time = cfg->smb_retry_time;
-	return TRUE;
+	return true;
 }
 
 int smb_open_dir(scfg_t* cfg, smb_t* smb, int dirnum)
@@ -686,7 +686,7 @@ str_list_t get_lang_desc_list(scfg_t* cfg, char* text[])
 		return list;
 
 	for (size_t i = 0; i < g.gl_pathc; ++i) {
-		FILE* fp = iniOpenFile(g.gl_pathv[i], /* for_modify */FALSE);
+		FILE* fp = iniOpenFile(g.gl_pathv[i], /* for_modify */false);
 		if (fp == NULL)
 			continue;
 		char* p = iniReadString(fp, ROOT_SECTION, "LANG", NULL, value);

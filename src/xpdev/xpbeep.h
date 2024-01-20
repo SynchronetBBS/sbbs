@@ -35,12 +35,12 @@ enum WAVE_SHAPE {
 extern "C" {
 #endif
 DLLEXPORT void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape);
-DLLEXPORT BOOL xptone_open(void);
-DLLEXPORT BOOL xptone_close(void);
+DLLEXPORT bool xptone_open(void);
+DLLEXPORT bool xptone_close(void);
 DLLEXPORT void xpbeep(double freq, DWORD duration);
-DLLEXPORT BOOL xp_play_sample(const unsigned char *sample, size_t sample_size, BOOL background);
+DLLEXPORT bool xp_play_sample(const unsigned char *sample, size_t sample_size, bool background);
 DLLEXPORT void xptone_complete(void);
-DLLEXPORT BOOL xptone(double freq, DWORD duration, enum WAVE_SHAPE);
+DLLEXPORT bool xptone(double freq, DWORD duration, enum WAVE_SHAPE);
 #ifdef __unix__
 DLLEXPORT void unix_beep(int freq, int dur);
 #endif

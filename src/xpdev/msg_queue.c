@@ -47,18 +47,18 @@ msg_queue_t* msgQueueInit(msg_queue_t* q, long flags)
 	return(q);
 }
 
-BOOL msgQueueOwner(msg_queue_t* q)
+bool msgQueueOwner(msg_queue_t* q)
 {
 	if(q==NULL)
-		return(FALSE);
+		return(false);
 
 	return q->owner_thread_id == pthread_self();
 }
 
-BOOL msgQueueFree(msg_queue_t* q)
+bool msgQueueFree(msg_queue_t* q)
 {
 	if(q==NULL)
-		return(FALSE);
+		return(false);
 
 	listFree(&q->in);
 	listFree(&q->out);
@@ -66,7 +66,7 @@ BOOL msgQueueFree(msg_queue_t* q)
 	if(q->flags&MSG_QUEUE_MALLOC)
 		free(q);
 
-	return(TRUE);
+	return(true);
 }
 
 long msgQueueAttach(msg_queue_t* q)
@@ -141,7 +141,7 @@ long msgQueueReadLevel(msg_queue_t* q)
 	return listCountNodes(msgQueueReadList(q));
 }
 
-static BOOL list_wait(link_list_t* list, long timeout)
+static bool list_wait(link_list_t* list, long timeout)
 {
 #if defined(LINK_LIST_THREADSAFE)
 	if(timeout<0)	/* infinite */
@@ -166,12 +166,12 @@ static BOOL list_wait(link_list_t* list, long timeout)
 #endif
 }
 
-BOOL msgQueueWait(msg_queue_t* q, long timeout)
+bool msgQueueWait(msg_queue_t* q, long timeout)
 {
-	BOOL			result;
+	bool			result;
 	link_list_t*	list = msgQueueReadList(q);
 
-	if((result=list_wait(list,timeout))==TRUE)
+	if((result=list_wait(list,timeout))==true)
 #if defined(LINK_LIST_THREADSAFE)
 		listSemPost(list)	/* Replace the semaphore we just cleared */
 #endif
@@ -209,7 +209,7 @@ void* msgQueueFind(msg_queue_t* q, const void* data, size_t length)
 
 	if((node=listFindNode(list,data,length))==NULL)
 		return(NULL);
-	return listRemoveNode(list,node,/* Free Data? */FALSE);
+	return listRemoveNode(list,node,/* Free Data? */false);
 }
 
 list_node_t* msgQueueFirstNode(msg_queue_t* q)
@@ -227,7 +227,7 @@ long msgQueueWriteLevel(msg_queue_t* q)
 	return listCountNodes(msgQueueWriteList(q));
 }
 
-BOOL msgQueueWrite(msg_queue_t* q, const void* data, size_t length)
+bool msgQueueWrite(msg_queue_t* q, const void* data, size_t length)
 {
 	return listPushNodeData(msgQueueWriteList(q),data,length)!=NULL;
 }

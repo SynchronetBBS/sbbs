@@ -19,8 +19,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <stdbool.h>
-
 #include "sbbs.h"
 #include "dat_file.h"
 

@@ -23,7 +23,6 @@
 #include "sauce.h"
 #include "filedat.h"
 #include "js_request.h"
-#include <stdbool.h>
 
 typedef struct
 {

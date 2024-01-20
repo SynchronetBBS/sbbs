@@ -86,7 +86,7 @@ typedef uint32_t	isoTime_t;	/* HHMMSS   (decimal) */
 #define			isoTime_minute(time)			(((time)/100)%100)
 #define			isoTime_second(time)			((time)%100)
 
-DLLEXPORT BOOL			isoTimeZoneStr_parse(const char* str, xpTimeZone_t*);
+DLLEXPORT bool			isoTimeZoneStr_parse(const char* str, xpTimeZone_t*);
 DLLEXPORT xpDateTime_t	isoDateTimeStr_parse(const char* str);
 
 /**************************************************************/

@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-DLLEXPORT BOOL		load_cfg(scfg_t*, char* text[], BOOL prep, BOOL req_node, char* error, size_t);
+DLLEXPORT bool		load_cfg(scfg_t*, char* text[], bool prep, bool req_node, char* error, size_t);
 DLLEXPORT void		free_cfg(scfg_t*);
 DLLEXPORT void		free_text(char* text[]);
 DLLEXPORT int		get_text_num(const char* id);
@@ -46,8 +46,9 @@ DLLEXPORT void		pathify(char*);
 DLLEXPORT void		init_vdir(scfg_t*, dir_t*);
 DLLEXPORT int		smb_storage_mode(scfg_t*, smb_t*);
 DLLEXPORT int		smb_open_sub(scfg_t*, smb_t*, int subnum);
-DLLEXPORT BOOL		smb_init_dir(scfg_t*, smb_t*, int dirnum);
+DLLEXPORT bool		smb_init_dir(scfg_t*, smb_t*, int dirnum);
 DLLEXPORT int		smb_open_dir(scfg_t*, smb_t*, int dirnum);
+DLLEXPORT bool		read_attr_cfg(scfg_t*, char* error, size_t);
 
 #ifdef __cplusplus
 }

@@ -40,11 +40,11 @@ str_list_t*	dataParseList(const str_list_t records, str_list_t* columns, dataLin
 str_list_t*	dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t);
 
 str_list_t	dataCreateList(const str_list_t records[], const str_list_t columns, dataLineCreator_t);
-BOOL		dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t columns
+bool		dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t columns
 						  ,const char* separator, dataLineCreator_t);
 FILE*		dataOpenFile(const char* path, const char* mode);
 int			dataCloseFile(FILE*);
-BOOL		dataListFree(str_list_t*);
+bool		dataListFree(str_list_t*);
 
 /* CSV (comma separated value) API */
 char*		csvLineCreator(const str_list_t);

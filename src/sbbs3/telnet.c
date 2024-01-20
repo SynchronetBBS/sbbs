@@ -133,7 +133,7 @@ uchar telnet_opt_nak(uchar cmd)
 	return 0;
 }
 
-BOOL telnet_opt_enabled(uchar val)
+bool telnet_opt_enabled(uchar val)
 {
 	return (val == TELNET_DO) || (val == TELNET_WILL);
 }
@@ -143,7 +143,7 @@ BOOL telnet_opt_enabled(uchar val)
 // 'result' may point to either inbuf (if there were no IACs) or outbuf
 // Returns the final byte count of the result
 /*****************************************************************************/
-size_t telnet_expand(const uchar* inbuf, size_t inlen, uchar* outbuf, size_t outlen, BOOL expand_cr, uchar** result)
+size_t telnet_expand(const uchar* inbuf, size_t inlen, uchar* outbuf, size_t outlen, bool expand_cr, uchar** result)
 {
     BYTE* first_iac = (BYTE*)memchr(inbuf, TELNET_IAC, inlen);
 	BYTE*   first_cr=NULL;

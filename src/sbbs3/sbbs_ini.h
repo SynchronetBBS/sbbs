@@ -43,15 +43,15 @@ void sbbs_read_ini(
 	 FILE*					fp
 	,const char*			ini_fname
 	,global_startup_t*		global
-	,BOOL*					run_bbs
+	,bool*					run_bbs
 	,bbs_startup_t*			bbs_startup
-	,BOOL*					run_ftp
+	,bool*					run_ftp
 	,ftp_startup_t*			ftp_startup
-	,BOOL*					run_web
+	,bool*					run_web
 	,web_startup_t*			web_startup
-	,BOOL*					run_mail
+	,bool*					run_mail
 	,mail_startup_t*		mail_startup
-	,BOOL*					run_services
+	,bool*					run_services
 	,services_startup_t*	services_startup
 	);
 
@@ -71,7 +71,7 @@ void sbbs_get_js_settings(
 	,js_startup_t* defaults
 	);
 
-BOOL sbbs_set_js_settings(
+bool sbbs_set_js_settings(
 	 str_list_t* list
 	,const char* section
 	,js_startup_t* js
@@ -79,19 +79,19 @@ BOOL sbbs_set_js_settings(
 	,ini_style_t*
 	);
 
-BOOL sbbs_write_ini(
+bool sbbs_write_ini(
 	 FILE*					fp
     ,scfg_t*                cfg
 	,global_startup_t*		global
-	,BOOL					run_bbs
+	,bool					run_bbs
 	,bbs_startup_t*			bbs
-	,BOOL					run_ftp
+	,bool					run_ftp
 	,ftp_startup_t*			ftp
-	,BOOL					run_web
+	,bool					run_web
 	,web_startup_t*			web
-	,BOOL					run_mail
+	,bool					run_mail
 	,mail_startup_t*		mail
-	,BOOL					run_services
+	,bool					run_services
 	,services_startup_t*	services
 	);
 

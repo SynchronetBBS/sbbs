@@ -21,7 +21,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>	/* atoi, qsort */
-#include <stdbool.h>
 #include <string.h>	/* strnicmp */
 #include <ctype.h>	/* toupper */
 

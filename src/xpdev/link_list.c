@@ -40,7 +40,7 @@ link_list_t* listInit(link_list_t* list, long flags)
 
 #if defined(LINK_LIST_THREADSAFE)
 	if(list->flags&LINK_LIST_MUTEX) {
-		list->mutex = pthread_mutex_initializer_np(/* recursive: */TRUE);
+		list->mutex = pthread_mutex_initializer_np(/* recursive: */true);
 	}
 
 	if(list->flags&LINK_LIST_SEMAPHORE)
@@ -53,14 +53,14 @@ link_list_t* listInit(link_list_t* list, long flags)
 	return(list);
 }
 
-BOOL listFreeNodeData(list_node_t* node)
+bool listFreeNodeData(list_node_t* node)
 {
 	if(node!=NULL && node->data!=NULL && !(node->flags&LINK_LIST_LOCKED)) {
 		free(node->data);
 		node->data = NULL;
-		return(TRUE);
+		return(true);
 	}
-	return(FALSE);
+	return(false);
 }
 
 long listFreeNodes(link_list_t* list)
@@ -99,13 +99,13 @@ long listFreeNodes(link_list_t* list)
 	return(list->count);
 }
 
-BOOL listFree(link_list_t* list)
+bool listFree(link_list_t* list)
 {
 	if(list==NULL)
-		return(FALSE);
+		return(false);
 
 	if(listFreeNodes(list))
-		return(FALSE);
+		return(false);
 
 #if defined(LINK_LIST_THREADSAFE)
 
@@ -123,7 +123,7 @@ BOOL listFree(link_list_t* list)
 	}
 #endif
 
-	return(TRUE);
+	return(true);
 }
 
 long listAttach(link_list_t* list)
@@ -177,46 +177,46 @@ void* listGetPrivateData(link_list_t* list)
 
 #if defined(LINK_LIST_THREADSAFE)
 
-BOOL listSemPost(link_list_t* list)
+bool listSemPost(link_list_t* list)
 {
 	if(list==NULL || !(list->flags&LINK_LIST_SEMAPHORE))
-		return(FALSE);
+		return(false);
 
 	return(sem_post(&list->sem)==0);
 }
 
-BOOL listSemWait(link_list_t* list)
+bool listSemWait(link_list_t* list)
 {
 	if(list==NULL || !(list->flags&LINK_LIST_SEMAPHORE))
-		return(FALSE);
+		return(false);
 
 	return(sem_wait(&list->sem)==0);
 }
 
-BOOL listSemTryWait(link_list_t* list)
+bool listSemTryWait(link_list_t* list)
 {
 	if(list==NULL || !(list->flags&LINK_LIST_SEMAPHORE))
-		return(FALSE);
+		return(false);
 
 	return(sem_trywait(&list->sem)==0);
 }
 
-BOOL listSemTryWaitBlock(link_list_t* list, unsigned long timeout)
+bool listSemTryWaitBlock(link_list_t* list, unsigned long timeout)
 {
 	if(list==NULL || !(list->flags&LINK_LIST_SEMAPHORE))
-		return(FALSE);
+		return(false);
 
 	return(sem_trywait_block(&list->sem,timeout)==0);
 }
 
 #endif
 
-BOOL listLock(link_list_t* list)
+bool listLock(link_list_t* list)
 {
 	int	ret=0;
 
 	if(list==NULL)
-		return(FALSE);
+		return(false);
 #if defined(LINK_LIST_THREADSAFE)
 	if((list->flags&LINK_LIST_MUTEX) && (ret=pthread_mutex_lock(&list->mutex))==0)
 #endif
@@ -224,19 +224,19 @@ BOOL listLock(link_list_t* list)
 	return(ret==0);
 }
 
-BOOL listIsLocked(const link_list_t* list)
+bool listIsLocked(const link_list_t* list)
 {
 	if(list==NULL)
-		return(FALSE);
-	return(list->locks > 0 ? TRUE : FALSE);
+		return(false);
+	return(list->locks > 0 ? true : false);
 }
 
-BOOL listUnlock(link_list_t* list)
+bool listUnlock(link_list_t* list)
 {
 	int	ret=0;
 
 	if(list==NULL)
-		return(FALSE);
+		return(false);
 #if defined(LINK_LIST_THREADSAFE)
 	if((list->flags&LINK_LIST_MUTEX) && (ret=pthread_mutex_unlock(&list->mutex))==0)
 #endif
@@ -491,33 +491,33 @@ void* listNodeData(const list_node_t* node)
 	return(data);
 }
 
-BOOL listNodeIsLocked(const list_node_t* node)
+bool listNodeIsLocked(const list_node_t* node)
 {
 	return(node!=NULL && (node->flags&LINK_LIST_LOCKED));
 }
 
-BOOL listLockNode(list_node_t* node)
+bool listLockNode(list_node_t* node)
 {
 	if(node==NULL || (node->flags&LINK_LIST_LOCKED))
-		return(FALSE);
+		return(false);
 
 	listLock(node->list);
 	node->flags|=LINK_LIST_LOCKED;
 	listUnlock(node->list);
 
-	return(TRUE);
+	return(true);
 }
 
-BOOL listUnlockNode(list_node_t* node)
+bool listUnlockNode(list_node_t* node)
 {
 	if(!listNodeIsLocked(node))
-		return(FALSE);
+		return(false);
 
 	listLock(node->list);
 	node->flags&=~LINK_LIST_LOCKED;
 	listUnlock(node->list);
 
-	return(TRUE);
+	return(true);
 }
 
 static list_node_t* list_add_node(link_list_t* list, list_node_t* node, list_node_t* after)
@@ -701,7 +701,7 @@ link_list_t* listExtract(link_list_t* dest_list, const list_node_t* node, long m
 	return(list);
 }
 
-static void* list_remove_node(link_list_t* list, list_node_t* node, BOOL free_data)
+static void* list_remove_node(link_list_t* list, list_node_t* node, bool free_data)
 {
 	void*	data;
 
@@ -737,7 +737,7 @@ static void* list_remove_node(link_list_t* list, list_node_t* node, BOOL free_da
 	return(data);
 }
 
-void* listRemoveNode(link_list_t* list, list_node_t* node, BOOL free_data)
+void* listRemoveNode(link_list_t* list, list_node_t* node, bool free_data)
 {
 	void*	data;
 
@@ -753,7 +753,7 @@ void* listRemoveNode(link_list_t* list, list_node_t* node, BOOL free_data)
 	return(data);
 }
 
-void* listRemoveTaggedNode(link_list_t* list, list_node_tag_t tag, BOOL free_data)
+void* listRemoveTaggedNode(link_list_t* list, list_node_tag_t tag, bool free_data)
 {
 	void*			data=NULL;
 	list_node_t*	node;
@@ -771,7 +771,7 @@ void* listRemoveTaggedNode(link_list_t* list, list_node_tag_t tag, BOOL free_dat
 	return(data);
 }
 
-long listRemoveNodes(link_list_t* list, list_node_t* node, long max, BOOL free_data)
+long listRemoveNodes(link_list_t* list, list_node_t* node, long max, bool free_data)
 {
 	list_node_t	*next_node;
 	long count;
@@ -797,18 +797,18 @@ long listRemoveNodes(link_list_t* list, list_node_t* node, long max, BOOL free_d
 	return(count);
 }
 
-BOOL listSwapNodes(list_node_t* node1, list_node_t* node2)
+bool listSwapNodes(list_node_t* node1, list_node_t* node2)
 {
 	list_node_t	tmp;
 
 	if(node1==NULL || node2==NULL || node1==node2)
-		return(FALSE);
+		return(false);
 
 	if(listNodeIsLocked(node1) || listNodeIsLocked(node2))
-		return(FALSE);
+		return(false);
 
 	if(node1->list==NULL || node2->list==NULL)
-		return(FALSE);
+		return(false);
 
 #if defined(LINK_LIST_THREADSAFE)
 	listLock(node1->list);
@@ -830,7 +830,7 @@ BOOL listSwapNodes(list_node_t* node1, list_node_t* node2)
 		listUnlock(node2->list);
 #endif
 
-	return(TRUE);
+	return(true);
 }
 
 static void list_update_prev(link_list_t* list)

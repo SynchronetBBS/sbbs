@@ -226,7 +226,7 @@ char* c_escape_char(char ch)
 	return(NULL);
 }
 
-char* c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_only)
+char* c_escape_str(const char* src, char* dst, size_t maxlen, bool ctrl_only)
 {
 	const char*	s;
 	char*		d;
@@ -1024,9 +1024,9 @@ uint64_t xp_timer64(void)
 	else
 		ret = -1;
 #elif defined(_WIN32)
-	static BOOL can_use_QPF = TRUE;
-	static BOOL intable = FALSE;
-	static BOOL initialized = FALSE;
+	static bool can_use_QPF = true;
+	static bool intable = false;
+	static bool initialized = false;
 	static uint32_t msfreq;
 	static double msdfreq;
 	LARGE_INTEGER	tick;
@@ -1034,7 +1034,7 @@ uint64_t xp_timer64(void)
 	if (!initialized) {
 		LARGE_INTEGER	freq;
 		if (!QueryPerformanceFrequency(&freq))
-			can_use_QPF = FALSE;
+			can_use_QPF = false;
 		else
         		intable = (freq.QuadPart % 1000) == 0;
 
@@ -1043,11 +1043,11 @@ uint64_t xp_timer64(void)
 		else
 			msdfreq = ((double)freq.QuadPart) / 1000;
 
-		initialized = TRUE;
+		initialized = true;
 	}
 	if (can_use_QPF) {
 		if (!QueryPerformanceCounter(&tick)) {
-			can_use_QPF = FALSE;
+			can_use_QPF = false;
 			return GetTickCount();
 		}
 		if (intable)
@@ -1064,53 +1064,53 @@ uint64_t xp_timer64(void)
 	return(ret);
 }
 
-/* Returns TRUE if specified process is running */
-BOOL check_pid(pid_t pid)
+/* Returns true if specified process is running */
+bool check_pid(pid_t pid)
 {
 #ifdef __EMSCRIPTEN__
 	fprintf(stderr, "%s not implemented", __func__);
-	return FALSE;
+	return false;
 #else
 #if defined(__unix__)
 	return(kill(pid,0)==0);
 #elif defined(_WIN32)
 	HANDLE	h;
-	BOOL	result=FALSE;
+	bool	result=false;
 
-	if((h=OpenProcess(PROCESS_QUERY_INFORMATION,/* inheritable: */FALSE, pid)) != NULL) {
+	if((h=OpenProcess(PROCESS_QUERY_INFORMATION,/* inheritable: */false, pid)) != NULL) {
 		DWORD	code;
-		if(GetExitCodeProcess(h,(PDWORD)&code)==TRUE && code==STILL_ACTIVE)
-			result=TRUE;
+		if(GetExitCodeProcess(h,(PDWORD)&code)==true && code==STILL_ACTIVE)
+			result=true;
 		CloseHandle(h);
 	}
 	return result;
 #else
-	return FALSE;	/* Need check_pid() definition! */
+	return false;	/* Need check_pid() definition! */
 #endif
 #endif
 }
 
 /* Terminate (unconditionally) the specified process */
-BOOL terminate_pid(pid_t pid)
+bool terminate_pid(pid_t pid)
 {
 #ifdef __EMSCRIPTEN__
 	fprintf(stderr, "%s not implemented", __func__);
-	return FALSE;
+	return false;
 #else
 #if defined(__unix__)
 	return(kill(pid,SIGKILL)==0);
 #elif defined(_WIN32)
 	HANDLE	h;
-	BOOL	result=FALSE;
+	bool	result=false;
 
-	if((h=OpenProcess(PROCESS_TERMINATE,/* inheritable: */FALSE, pid)) != NULL) {
+	if((h=OpenProcess(PROCESS_TERMINATE,/* inheritable: */false, pid)) != NULL) {
 		if(TerminateProcess(h,255))
-			result=TRUE;
+			result=true;
 		CloseHandle(h);
 	}
 	return result;
 #else
-	return FALSE;	/* Need check_pid() definition! */
+	return false;	/* Need check_pid() definition! */
 #endif
 #endif
 }

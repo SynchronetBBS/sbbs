@@ -83,7 +83,7 @@ const char *sbbs_t::ansi(int atr)
 }
 
 /* insure str is at least 14 bytes in size! */
-extern "C" char* ansi_attr(int atr, int curatr, char* str, BOOL color)
+extern "C" char* ansi_attr(int atr, int curatr, char* str, bool color)
 {
 	if(!color) {  /* eliminate colors if terminal doesn't support them */
 		if(atr&LIGHTGRAY)       /* if any foreground bits set, set all */

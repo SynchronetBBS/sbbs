@@ -86,7 +86,7 @@ DLLEXPORT int mqtt_lputs(struct mqtt*, enum topic_depth, int level, const char* 
 DLLEXPORT int mqtt_pub_noval(struct mqtt*, enum topic_depth, const char* key);
 DLLEXPORT int mqtt_pub_strval(struct mqtt*, enum topic_depth, const char* key, const char* str);
 DLLEXPORT int mqtt_pub_uintval(struct mqtt*, enum topic_depth, const char* key, ulong value);
-DLLEXPORT int mqtt_pub_message(struct mqtt*, enum topic_depth, const char* key, const void* buf, size_t len, BOOL retain);
+DLLEXPORT int mqtt_pub_message(struct mqtt*, enum topic_depth, const char* key, const void* buf, size_t len, bool retain);
 DLLEXPORT int mqtt_pub_timestamped_msg(struct mqtt*, enum topic_depth, const char* key, time_t, const char* msg);
 DLLEXPORT int mqtt_open(struct mqtt*);
 DLLEXPORT void mqtt_close(struct mqtt*);
@@ -94,7 +94,7 @@ DLLEXPORT int mqtt_connect(struct mqtt*, const char* bind_address);
 DLLEXPORT int mqtt_disconnect(struct mqtt*);
 DLLEXPORT int mqtt_thread_start(struct mqtt*);
 DLLEXPORT int mqtt_thread_stop(struct mqtt*);
-DLLEXPORT int mqtt_client_on(struct mqtt*, BOOL on, int sock, client_t* client, BOOL update);
+DLLEXPORT int mqtt_client_on(struct mqtt*, bool on, int sock, client_t* client, bool update);
 DLLEXPORT int mqtt_client_max(struct mqtt*, ulong count);
 DLLEXPORT int mqtt_client_count(struct mqtt*);
 DLLEXPORT int mqtt_user_login_fail(struct mqtt*, client_t*, const char* username);

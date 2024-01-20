@@ -72,21 +72,21 @@ char		compiler[32];
 char*		host_name=NULL;
 char		host_name_buf[128];
 char*		load_path_list=JAVASCRIPT_LOAD_PATH;
-BOOL		pause_on_exit=FALSE;
-BOOL		pause_on_error=FALSE;
-BOOL		terminated=FALSE;
-BOOL		recycled;
-BOOL		require_cfg=FALSE;
+bool		pause_on_exit=false;
+bool		pause_on_error=false;
+bool		terminated=false;
+bool		recycled;
+bool		require_cfg=false;
 int			log_level=DEFAULT_LOG_LEVEL;
 int  		err_level=DEFAULT_ERR_LOG_LVL;
 long		umask_val = -1;
 pthread_mutex_t output_mutex;
 #if defined(__unix__)
-BOOL		daemonize=FALSE;
+bool		daemonize=false;
 struct termios	orig_term;
 #endif
 char		orig_cwd[MAX_PATH+1];
-BOOL		debugger=FALSE;
+bool		debugger=false;
 #ifndef PROG_NAME
 #define PROG_NAME "JSexec"
 #endif
@@ -313,25 +313,25 @@ daemon(int nochdir, int noclose)
 
 WSADATA WSAData;
 #define SOCKLIB_DESC WSAData.szDescription
-static BOOL WSAInitialized=FALSE;
+static bool WSAInitialized=false;
 
-static BOOL winsock_startup(void)
+static bool winsock_startup(void)
 {
 	int		status;             /* Status Code */
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
 /*		fprintf(statfp,"%s %s\n",WSAData.szDescription, WSAData.szSystemStatus); */
-		WSAInitialized=TRUE;
-		return(TRUE);
+		WSAInitialized=true;
+		return(true);
 	}
 
     lprintf(LOG_CRIT,"!WinSock startup ERROR %d", status);
-	return(FALSE);
+	return(false);
 }
 
 #else /* No WINSOCK */
 
-#define winsock_startup()	(TRUE)
+#define winsock_startup()	(true)
 #define SOCKLIB_DESC NULL
 
 #endif
@@ -672,7 +672,7 @@ js_chdir(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p = NULL;
 	jsrefcount	rc;
-	BOOL		ret;
+	bool		ret;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
 	HANDLE_PENDING(cx, p);
@@ -694,7 +694,7 @@ js_putenv(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		p=NULL;
-	BOOL		ret;
+	bool		ret;
 	jsrefcount	rc;
 
 	if(argc) {
@@ -809,7 +809,7 @@ js_OperationCallback(JSContext *cx)
 	return ret;
 }
 
-static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
+static bool js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 {
 	char		name[256];
 	char*		val;
@@ -817,11 +817,11 @@ static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 	JSObject*	js_env;
 
 	if((js_env=JS_NewObject(js_cx, NULL, NULL, glob))==NULL)
-		return(FALSE);
+		return(false);
 
 	if(!JS_DefineProperty(cx, glob, "env", OBJECT_TO_JSVAL(js_env)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-		return(FALSE);
+		return(false);
 
 	for(i=0;env[i]!=NULL;i++) {
 		SAFECOPY(name,env[i]);
@@ -833,19 +833,19 @@ static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 			val++;
 		if(!JS_DefineProperty(cx, js_env, name, STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-			return(FALSE);
+			return(false);
 	}
 
-	return(TRUE);
+	return(true);
 }
 
-static BOOL js_init(char** env)
+static bool js_init(char** env)
 {
 	memset(&startup,0,sizeof(startup));
 	SAFECOPY(startup.load_path, load_path_list);
 
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
-		return(FALSE);
+		return(false);
 	JS_SetOptions(js_cx, js_opts);
 	JS_BEGINREQUEST(js_cx);
 
@@ -861,42 +861,42 @@ static BOOL js_init(char** env)
 		,(struct mqtt*)NULL
 		)) {
 		JS_ENDREQUEST(js_cx);
-		return(FALSE);
+		return(false);
 	}
 
 	/* Environment Object (associative array) */
 	if(!js_CreateEnvObject(js_cx, js_glob, env)) {
 		JS_ENDREQUEST(js_cx);
-		return(FALSE);
+		return(false);
 	}
 
 	if(js_CreateUifcObject(js_cx, js_glob)==NULL) {
 		JS_ENDREQUEST(js_cx);
-		return(FALSE);
+		return(false);
 	}
 
 	if(js_CreateConioObject(js_cx, js_glob)==NULL) {
 		JS_ENDREQUEST(js_cx);
-		return(FALSE);
+		return(false);
 	}
 
 	/* STDIO objects */
 	if(!js_CreateFileObject(js_cx, js_glob, "stdout", STDOUT_FILENO, "w")) {
 		JS_ENDREQUEST(js_cx);
-		return(FALSE);
+		return(false);
 	}
 
 	if(!js_CreateFileObject(js_cx, js_glob, "stdin", STDIN_FILENO, "r")) {
 		JS_ENDREQUEST(js_cx);
-		return(FALSE);
+		return(false);
 	}
 
 	if(!js_CreateFileObject(js_cx, js_glob, "stderr", STDERR_FILENO, "w")) {
 		JS_ENDREQUEST(js_cx);
-		return(FALSE);
+		return(false);
 	}
 
-	return(TRUE);
+	return(true);
 }
 
 static const char* js_ext(const char* fname)
@@ -960,7 +960,7 @@ long js_exec(const char *fname, const char* buf, char** args)
 	long double	start;
 	long double	diff;
 	JSBool		exec_result;
-	BOOL		abort = FALSE;
+	bool		abort = false;
 
 	if(fname!=NULL) {
 		if(isfullpath(fname)) {
@@ -1078,8 +1078,8 @@ long js_exec(const char *fname, const char* buf, char** args)
 	if (abort) {
 		result = EXIT_FAILURE;
 	} else {
-		cb.keepGoing = FALSE;
-		cb.events_supported = TRUE;
+		cb.keepGoing = false;
+		cb.events_supported = true;
 		exec_result = JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 		js_handle_events(js_cx, &cb, &terminated);
 		fflush(confp);
@@ -1117,13 +1117,13 @@ long js_exec(const char *fname, const char* buf, char** args)
 void break_handler(int type)
 {
 	lprintf(LOG_NOTICE,"\n-> Terminated Locally (signal: %d)",type);
-	terminated=TRUE;
+	terminated=true;
 }
 
 void recycle_handler(int type)
 {
 	lprintf(LOG_NOTICE,"\n-> Recycled Locally (signal: %d)",type);
-	recycled=TRUE;
+	recycled=true;
 	cb.terminated=&recycled;
 }
 
@@ -1132,7 +1132,7 @@ void recycle_handler(int type)
 BOOL WINAPI ControlHandler(unsigned long CtrlType)
 {
 	break_handler((int)CtrlType);
-	return TRUE;
+	return true;
 }
 #endif
 
@@ -1191,9 +1191,9 @@ int main(int argc, char **argv, char** env)
 	int		argn;
 	long	result;
 	ulong	exec_count=0;
-	BOOL	loop=FALSE;
-	BOOL	nonbuffered_con=FALSE;
-	BOOL	change_cwd=TRUE;
+	bool	loop=false;
+	bool	nonbuffered_con=false;
+	bool	change_cwd=true;
 	FILE*	fp;
 	char	ini_fname[MAX_PATH + 1];
 	str_list_t ini = NULL;
@@ -1220,7 +1220,7 @@ int main(int argc, char **argv, char** env)
 	cb.limit=JAVASCRIPT_TIME_LIMIT;
 	cb.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
 	cb.gc_interval=JAVASCRIPT_GC_INTERVAL;
-	cb.auto_terminate=TRUE;
+	cb.auto_terminate=true;
 	cb.events = NULL;
 
 	DESCRIBE_COMPILER(compiler);
@@ -1232,9 +1232,9 @@ int main(int argc, char **argv, char** env)
 		return(do_bail(2));
 
 #ifndef JSDOOR
-	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir(/* warn: */FALSE));
+	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir(/* warn: */false));
 	iniFileName(ini_fname, sizeof(ini_fname), scfg.ctrl_dir, "jsexec.ini");
-	if((fp = iniOpenFile(ini_fname, /* for_modify: */FALSE)) != NULL) {
+	if((fp = iniOpenFile(ini_fname, /* for_modify: */false)) != NULL) {
 		ini = iniReadFile(fp);
 		iniCloseFile(fp);
 	} else if(fexist(ini_fname)) {
@@ -1363,18 +1363,18 @@ int main(int argc, char **argv, char** env)
 					}
 					break;
 				case 'C':
-					change_cwd = FALSE;
+					change_cwd = false;
 					break;
 #if defined(__unix__)
 				case 'd':
-					daemonize=TRUE;
+					daemonize=true;
 					break;
 #endif
 				case 'D':
-					debugger=TRUE;
+					debugger=true;
 					break;
 				case 'f':
-					nonbuffered_con=TRUE;
+					nonbuffered_con=true;
 					break;
 				case 'h':
 					if(*p==0)
@@ -1383,7 +1383,7 @@ int main(int argc, char **argv, char** env)
 						host_name=p;
 					break;
 				case 'l':
-					loop=TRUE;
+					loop=true;
 					break;
 				case 'S':
 					if(*p == '\0')
@@ -1399,23 +1399,23 @@ int main(int argc, char **argv, char** env)
 					statfp=nulfp;
 					break;
 				case 'p':
-					pause_on_exit=TRUE;
+					pause_on_exit=true;
 					break;
 				case 'q':
 					confp=nulfp;
 					break;
 				case 'R':
-					require_cfg = TRUE;
+					require_cfg = true;
 					break;
 				case 'v':
 					banner(statfp);
 					fprintf(statfp,"%s\n",(char *)JS_GetImplementationVersion());
 					return(do_bail(0));
 				case 'x':
-					cb.auto_terminate=FALSE;
+					cb.auto_terminate=false;
 					break;
 				case '!':
-					pause_on_error=TRUE;
+					pause_on_error=true;
 					break;
 				default:
 					fprintf(stderr,"\n!Unsupported option: %s\n",argv[argn]);
@@ -1454,13 +1454,13 @@ int main(int argc, char **argv, char** env)
 	strcpy(scfg.sys_pass, "ThisIsNotHowToDoSecurity");
 	strcpy(scfg.sys_name, "JSDoor");
 	strcpy(scfg.sys_inetaddr, "example.com");
-	scfg.prepped = TRUE;
+	scfg.prepped = true;
 #else
 	if(change_cwd && chdir(scfg.ctrl_dir)!=0)
 		fprintf(errfp,"!ERROR changing directory to: %s\n", scfg.ctrl_dir);
 
 	fprintf(statfp,"\nLoading configuration files from %s\n",scfg.ctrl_dir);
-	if(!load_cfg(&scfg, text, /* prep: */TRUE, require_cfg, error, sizeof(error))) {
+	if(!load_cfg(&scfg, text, /* prep: */true, require_cfg, error, sizeof(error))) {
 		fprintf(errfp,"!ERROR loading configuration files: %s\n",error);
 		if(require_cfg)
 			return(do_bail(1));
@@ -1477,9 +1477,9 @@ int main(int argc, char **argv, char** env)
 	if(daemonize) {
 		fprintf(statfp,"\nRunning as daemon\n");
 		cooked_tty();
-		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
+		if(daemon(true,false))  { /* Daemonize, DON'T switch to / and DO close descriptors */
 			fprintf(statfp,"!ERROR %d (%s) running as daemon\n", errno, strerror(errno));
-			daemonize=FALSE;
+			daemonize=false;
 		}
 	}
 #endif
@@ -1495,7 +1495,7 @@ int main(int argc, char **argv, char** env)
 
 	/* Install Ctrl-C/Break signal handler here */
 #if defined(_WIN32)
-	SetConsoleCtrlHandler(ControlHandler, TRUE /* Add */);
+	SetConsoleCtrlHandler(ControlHandler, true /* Add */);
 #elif defined(__unix__)
 	sa.sa_handler = break_handler;
 	sigaction(SIGQUIT, &sa, NULL);
@@ -1526,7 +1526,7 @@ int main(int argc, char **argv, char** env)
 		if(exec_count++)
 			lprintf(LOG_INFO,"\nRe-running: %s", module);
 
-		recycled=FALSE;
+		recycled=false;
 
 		if(!js_init(env)) {
 			lprintf(LOG_ERR,"!JavaScript initialization failure");

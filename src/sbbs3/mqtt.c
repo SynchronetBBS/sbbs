@@ -297,7 +297,7 @@ int mqtt_pub_uintval(struct mqtt* mqtt, enum topic_depth depth, const char* key,
 	return MQTT_FAILURE;
 }
 
-int mqtt_pub_message(struct mqtt* mqtt, enum topic_depth depth, const char* key, const void* buf, size_t len, BOOL retain)
+int mqtt_pub_message(struct mqtt* mqtt, enum topic_depth depth, const char* key, const void* buf, size_t len, bool retain)
 {
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
@@ -542,19 +542,19 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 				return;
 			}
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/lock", i)) == 0) {
-				set_node_lock(mqtt->cfg, i, mqtt_message_value(msg, TRUE));
+				set_node_lock(mqtt->cfg, i, mqtt_message_value(msg, true));
 				return;
 			}
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/intr", i)) == 0) {
-				set_node_interrupt(mqtt->cfg, i, mqtt_message_value(msg, TRUE));
+				set_node_interrupt(mqtt->cfg, i, mqtt_message_value(msg, true));
 				return;
 			}
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/down", i)) == 0) {
-				set_node_down(mqtt->cfg, i, mqtt_message_value(msg, TRUE));
+				set_node_down(mqtt->cfg, i, mqtt_message_value(msg, true));
 				return;
 			}
 			if(strcmp(msg->topic, mqtt_topic(mqtt, TOPIC_BBS, topic, sizeof(topic), "node/%d/set/rerun", i)) == 0) {
-				set_node_rerun(mqtt->cfg, i, mqtt_message_value(msg, TRUE));
+				set_node_rerun(mqtt->cfg, i, mqtt_message_value(msg, true));
 				return;
 			}
 		}
@@ -737,7 +737,7 @@ static void format_client_info(char* str, size_t size, int sock, client_t* clien
 		);
 }
 
-int mqtt_client_on(struct mqtt* mqtt, BOOL on, int sock, client_t* client, BOOL update)
+int mqtt_client_on(struct mqtt* mqtt, bool on, int sock, client_t* client, bool update)
 {
 	#define MAX_CLIENT_STRLEN 512
 	char str[MAX_CLIENT_STRLEN + 1];
@@ -764,7 +764,7 @@ int mqtt_client_on(struct mqtt* mqtt, BOOL on, int sock, client_t* client, BOOL 
 			mqtt_pub_strval(mqtt, TOPIC_SERVER, "client/action/connect", str);
 		}
 	} else {
-		client = listRemoveTaggedNode(&mqtt->client_list, sock, /* free_data: */FALSE);
+		client = listRemoveTaggedNode(&mqtt->client_list, sock, /* free_data: */false);
 		if(client != NULL) {
 			format_client_info(str, sizeof(str), sock, client, time(NULL));
 			mqtt_pub_strval(mqtt, TOPIC_SERVER, "client/action/disconnect", str);

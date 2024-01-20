@@ -336,7 +336,7 @@ int globi(const char *p, int flags,
 /* Returns number of files and/or sub-directories in directory (path)		*/
 /* Similar, but not identical, to getfilecount()							*/
 /****************************************************************************/
-size_t getdirsize(const char* path, BOOL include_subdirs, BOOL subdir_only)
+size_t getdirsize(const char* path, bool include_subdirs, bool subdir_only)
 {
 	char		match[MAX_PATH+1];
 	glob_t		g;
@@ -395,13 +395,13 @@ struct dirent* readdir(DIR* dir)
 {
 	if(dir==NULL)
 		return(NULL);
-	if(dir->end==TRUE)
+	if(dir->end==true)
 		return(NULL);
 	if(dir->handle==-1)
 		return(NULL);
 	sprintf(dir->dirent.d_name,"%.*s",sizeof(struct dirent)-1,dir->finddata.name);
 	if(_findnext(dir->handle,&dir->finddata)!=0)
-		dir->end=TRUE;
+		dir->end=true;
 	return(&dir->dirent);
 }
 int closedir (DIR* dir)
@@ -417,7 +417,7 @@ void rewinddir(DIR* dir)
 	if(dir==NULL)
 		return;
 	_findclose(dir->handle);
-	dir->end=FALSE;
+	dir->end=false;
 	dir->handle=_findfirst(dir->filespec,&dir->finddata);
 }
 #endif /* defined(_MSC_VER) */
@@ -496,44 +496,44 @@ off_t flength(const char *filename)
 
 /****************************************************************************/
 /* Checks the file system for the existence of a file.						*/
-/* Returns TRUE if it exists, FALSE if it doesn't.                          */
+/* Returns true if it exists, false if it doesn't.                          */
 /* 'filename' may *NOT* contain wildcards!									*/
 /****************************************************************************/
-static BOOL fnameexist(const char *filename)
+static bool fnameexist(const char *filename)
 {
 	struct stat st;
 
 	if(stat(filename, &st) != 0)
-		return FALSE;
+		return false;
 
 	if(S_ISDIR(st.st_mode))
-		return FALSE;
+		return false;
 
-	return TRUE;
+	return true;
 }
 
 /****************************************************************************/
 /* Checks the file system for the existence of one or more files.			*/
-/* Returns TRUE if it exists, FALSE if it doesn't.                          */
+/* Returns true if it exists, false if it doesn't.                          */
 /* 'filespec' may contain wildcards!										*/
 /****************************************************************************/
-BOOL fexist(const char *filespec)
+bool fexist(const char *filespec)
 {
 #if defined(_WIN32)
 
 	long	handle;
 	struct _finddata_t f;
-	BOOL	found;
+	bool	found;
 
 	if(!strchr(filespec,'*') && !strchr(filespec,'?'))
 		return(fnameexist(filespec));
 
 	if((handle=_findfirst((char*)filespec,&f))==-1)
-		return(FALSE);
-	found=TRUE;
+		return(false);
+	found=true;
 	while(f.attrib&_A_SUBDIR)
 		if(_findnext(handle,&f)!=0) {
-			found=FALSE;
+			found=false;
 			break;
 		}
 
@@ -557,7 +557,7 @@ BOOL fexist(const char *filespec)
     if (!g.gl_pathc) {
 	    /* no results */
     	globfree(&g);
-    	return FALSE;
+    	return false;
     }
 
     /* make sure it's not a directory */
@@ -565,12 +565,12 @@ BOOL fexist(const char *filespec)
     while (c--) {
     	if (*lastchar(g.gl_pathv[c]) != '/') {
         	globfree(&g);
-            return TRUE;
+            return true;
         }
     }
 
     globfree(&g);
-    return FALSE;
+    return false;
 
 #endif
 }
@@ -578,7 +578,7 @@ BOOL fexist(const char *filespec)
 /****************************************************************************/
 /* Fixes upper/lowercase filename for Unix file systems						*/
 /****************************************************************************/
-BOOL fexistcase(char *path)
+bool fexistcase(char *path)
 {
 #if defined(_WIN32)
 
@@ -587,20 +587,20 @@ BOOL fexistcase(char *path)
 	struct _finddata_t f;
 
 	if(access(path, F_OK)==-1 && !strchr(path,'*') && !strchr(path,'?'))
-		return(FALSE);
+		return(false);
 
 	if((handle=_findfirst((char*)path,&f))==-1)
-		return(FALSE);
+		return(false);
 
  	_findclose(handle);
 
  	if(f.attrib&_A_SUBDIR)
-		return(FALSE);
+		return(false);
 
 	fname=getfname(path);	/* Find filename in path */
 	strcpy(fname,f.name);	/* Correct filename */
 
-	return(TRUE);
+	return(true);
 
 #else /* Unix or OS/2 */
 
@@ -612,10 +612,10 @@ BOOL fexistcase(char *path)
 	glob_t	glb;
 
 	if(path[0]==0)		/* work around glibc bug 574274 */
-		return FALSE;
+		return false;
 
 	if(!strchr(path,'*') && !strchr(path,'?') && fnameexist(path))
-		return(TRUE);
+		return(true);
 
 	SAFECOPY(globme,path);
 	p=getfname(globme);
@@ -636,7 +636,7 @@ BOOL fexistcase(char *path)
 #endif
 
 	if(glob(globme,GLOB_MARK,NULL,&glb) != 0)
-		return(FALSE);
+		return(false);
 
 	if(glb.gl_pathc>0)  {
 		for(i=0;i<glb.gl_pathc;i++)  {
@@ -646,20 +646,20 @@ BOOL fexistcase(char *path)
 		if(i<glb.gl_pathc)  {
 			sprintf(path,"%.*s",MAX_PATH,glb.gl_pathv[i]);
 			globfree(&glb);
-			return TRUE;
+			return true;
 		}
 	}
 
 	globfree(&glb);
-	return FALSE;
+	return false;
 
 #endif
 }
 
 /****************************************************************************/
-/* Returns TRUE if the filename specified is a directory					*/
+/* Returns true if the filename specified is a directory					*/
 /****************************************************************************/
-BOOL isdir(const char *filename)
+bool isdir(const char *filename)
 {
 	char	path[MAX_PATH+1];
 	char*	p;
@@ -680,9 +680,9 @@ BOOL isdir(const char *filename)
 #else
 	if(stat(path, &st)!=0)
 #endif
-		return(FALSE);
+		return(false);
 
-	return(S_ISDIR(st.st_mode) ? TRUE : FALSE);
+	return(S_ISDIR(st.st_mode) ? true : false);
 }
 
 /****************************************************************************/
@@ -893,7 +893,7 @@ typedef BOOL(WINAPI * GetDiskFreeSpaceEx_t)
 #endif
 
 /* Unit should be a power-of-2 (e.g. 1024 to report kilobytes) or 1 (to report bytes) */
-static uint64_t getdiskspace(const char* path, uint64_t unit, BOOL freespace)
+static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 {
 #if defined(_WIN32)
 	char			root[16];
@@ -985,12 +985,12 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, BOOL freespace)
 
 uint64_t getfreediskspace(const char* path, uint64_t unit)
 {
-	return getdiskspace(path, unit, /* freespace? */TRUE);
+	return getdiskspace(path, unit, /* freespace? */true);
 }
 
 uint64_t getdisksize(const char* path, uint64_t unit)
 {
-	return getdiskspace(path, unit, /* freespace? */FALSE);
+	return getdiskspace(path, unit, /* freespace? */false);
 }
 
 /****************************************************************************/
@@ -1000,13 +1000,13 @@ uint64_t getdisksize(const char* path, uint64_t unit)
 char * _fullpath(char *target, const char *path, size_t size)  {
 	char	*out;
 	char	*p;
-	BOOL	target_alloced=FALSE;
+	bool	target_alloced=false;
 
 	if(target==NULL)  {
 		if((target=malloc(MAX_PATH+1))==NULL) {
 			return(NULL);
 		}
-		target_alloced=TRUE;
+		target_alloced=true;
 	}
 	out=target;
 	*out=0;
@@ -1094,7 +1094,7 @@ char* backslash(char* path)
 /****************************************************************************/
 /* Returns true if the specified filename an absolute pathname				*/
 /****************************************************************************/
-BOOL isabspath(const char *filename)
+bool isabspath(const char *filename)
 {
 	char path[MAX_PATH+1];
 
@@ -1104,7 +1104,7 @@ BOOL isabspath(const char *filename)
 /****************************************************************************/
 /* Returns true if the specified filename is a full ("rooted") path			*/
 /****************************************************************************/
-BOOL isfullpath(const char* filename)
+bool isfullpath(const char* filename)
 {
 	return(filename[0]=='/'
 #ifdef WIN32
@@ -1118,7 +1118,7 @@ BOOL isfullpath(const char* filename)
 /* Optionally not allowing * to match PATH_DELIM (for paths)				*/
 /****************************************************************************/
 
-BOOL wildmatch(const char *fname, const char *spec, BOOL path, BOOL case_sensitive)
+bool wildmatch(const char *fname, const char *spec, bool path, bool case_sensitive)
 {
 	char *specp;
 	char *fnamep;
@@ -1130,11 +1130,11 @@ BOOL wildmatch(const char *fname, const char *spec, BOOL path, BOOL case_sensiti
 		switch(*specp) {
 			case '?':
 				if(!(*fnamep))
-					return(FALSE);
+					return(false);
 				break;
 			case 0:
 				if(!*fnamep)
-					return(TRUE);
+					return(true);
 				break;
 			case '*':
 				while(*specp=='*')
@@ -1151,14 +1151,14 @@ BOOL wildmatch(const char *fname, const char *spec, BOOL path, BOOL case_sensiti
 					wildend=strchr(fnamep, 0);
 				for(;wildend >= fnamep;wildend--) {
 					if(wildmatch(wildend, specp, path, case_sensitive))
-						return(TRUE);
+						return(true);
 				}
-				return(FALSE);
+				return(false);
 			default:
 				if(case_sensitive && *specp != *fnamep)
-					return(FALSE);
+					return(false);
 				if((!case_sensitive) && toupper(*specp) != toupper(*fnamep))
-					return(FALSE);
+					return(false);
 		}
 		if(!(*specp && *fnamep))
 			break;
@@ -1166,18 +1166,18 @@ BOOL wildmatch(const char *fname, const char *spec, BOOL path, BOOL case_sensiti
 	while(*specp=='*')
 		specp++;
 	if(*specp==*fnamep)
-		return(TRUE);
+		return(true);
 	if((!case_sensitive) && toupper(*specp) == toupper(*fnamep))
-		return(TRUE);
-	return(FALSE);
+		return(true);
+	return(false);
 }
 
 /****************************************************************************/
 /* Matches file name against filespec, ignoring case						*/
 /****************************************************************************/
-BOOL wildmatchi(const char *fname, const char *spec, BOOL path)
+bool wildmatchi(const char *fname, const char *spec, bool path)
 {
-	return wildmatch(fname, spec, path, /* case_sensitive: */FALSE);
+	return wildmatch(fname, spec, path, /* case_sensitive: */false);
 }
 
 /****************************************************************************/

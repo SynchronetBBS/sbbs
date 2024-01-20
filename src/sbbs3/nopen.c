@@ -96,26 +96,26 @@ FILE* fnopen(int* fd, const char* str, uint access)
     return(stream);
 }
 
-BOOL ftouch(const char* fname)
+bool ftouch(const char* fname)
 {
 	int file;
 
 	/* update the time stamp */
 	if(utime(fname, NULL)==0)
-		return TRUE;
+		return true;
 
 	/* create the file */
 	if((file=nopen(fname,O_WRONLY|O_CREAT))<0)
-		return FALSE;
+		return false;
 	close(file);
-	return TRUE;
+	return true;
 }
 
-BOOL fmutex(const char* fname, const char* text, long max_age)
+bool fmutex(const char* fname, const char* text, long max_age)
 {
 	int file;
 	time_t t;
-	BOOL result = TRUE;
+	bool result = true;
 #if !defined(NO_SOCKET_SUPPORT)
 	char hostname[128];
 	if(text==NULL && gethostname(hostname,sizeof(hostname))==0)
@@ -124,34 +124,34 @@ BOOL fmutex(const char* fname, const char* text, long max_age)
 
 	if(max_age && (t=fdate(fname)) >= 0 && (time(NULL)-t) > max_age) {
 		if(remove(fname)!=0)
-			return FALSE;
+			return false;
 	}
 	if((file=open(fname,O_CREAT|O_WRONLY|O_EXCL,DEFFILEMODE))<0)
-		return FALSE;
+		return false;
 	if(text!=NULL)
 		result = write(file,text,strlen(text)) >= 0;
 	close(file);
 	return result;
 }
 
-BOOL fcompare(const char* fn1, const char* fn2)
+bool fcompare(const char* fn1, const char* fn2)
 {
 	FILE*	fp1;
 	FILE*	fp2;
-	BOOL	success=TRUE;
+	bool	success=true;
 
 	if(flength(fn1) != flength(fn2))
-		return FALSE;
+		return false;
 	if((fp1=fopen(fn1,"rb"))==NULL)
-		return FALSE;
+		return false;
 	if((fp2=fopen(fn2,"rb"))==NULL) {
 		fclose(fp1);
-		return FALSE;
+		return false;
 	}
 
 	while(!feof(fp1) && success) {
 		if(fgetc(fp1) != fgetc(fp2))
-			success=FALSE;
+			success=false;
 	}
 
 	fclose(fp1);
@@ -163,7 +163,7 @@ BOOL fcompare(const char* fn1, const char* fn2)
 
 /****************************************************************************/
 /****************************************************************************/
-BOOL backup(const char *fname, int backup_level, BOOL ren)
+bool backup(const char *fname, int backup_level, bool ren)
 {
 	char	oldname[MAX_PATH+1];
 	char	newname[MAX_PATH+1];
@@ -172,7 +172,7 @@ BOOL backup(const char *fname, int backup_level, BOOL ren)
 	int		len;
 
 	if(flength(fname) < 1)	/* no need to backup a 0-byte (or non-existent) file */
-		return FALSE;
+		return false;
 
 	if((ext=strrchr(fname,'.'))==NULL)
 		ext="";
@@ -183,19 +183,19 @@ BOOL backup(const char *fname, int backup_level, BOOL ren)
 		safe_snprintf(newname,sizeof(newname),"%.*s.%d%s",len,fname,i-1,ext);
 		if(i==backup_level)
 			if(fexist(newname) && remove(newname)!=0)
-				return FALSE;
+				return false;
 		if(i==1) {
-			if(ren == TRUE) {
+			if(ren == true) {
 				if(rename(fname,newname)!=0)
-					return FALSE;
+					return false;
 			} else {
 				struct utimbuf ut;
 
 				/* preserve the original time stamp */
 				ut.modtime = fdate(fname);
 
-				if(!CopyFile(fname, newname, /* failIfExists: */FALSE))
-					return FALSE;
+				if(!CopyFile(fname, newname, /* failIfExists: */false))
+					return false;
 
 				ut.actime = time(NULL);
 				utime(newname, &ut);
@@ -204,8 +204,8 @@ BOOL backup(const char *fname, int backup_level, BOOL ren)
 		}
 		safe_snprintf(oldname,sizeof(oldname),"%.*s.%d%s",len,fname,i-2,ext);
 		if(fexist(oldname) && rename(oldname,newname)!=0)
-			return FALSE;
+			return false;
 	}
 
-	return TRUE;
+	return true;
 }

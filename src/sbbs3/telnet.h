@@ -149,9 +149,9 @@ DLLEXPORT const char* telnet_cmd_desc(uchar cmd);
 DLLEXPORT const char* telnet_opt_desc(uchar opt);
 DLLEXPORT		uchar telnet_opt_ack(uchar cmd);
 DLLEXPORT		uchar telnet_opt_nak(uchar cmd);
-DLLEXPORT		BOOL  telnet_opt_enabled(uchar value);
+DLLEXPORT		bool  telnet_opt_enabled(uchar value);
 DLLEXPORT size_t telnet_expand(const uchar* inbuf, size_t inlen, uchar* outbuf, size_t outlen
-								,BOOL expand_cr, uchar** result);
+								,bool expand_cr, uchar** result);
 
 #ifdef __cplusplus
 }

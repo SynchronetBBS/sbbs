@@ -45,7 +45,7 @@ size_t strListCount(const str_list_t list)
 	return(i);
 }
 
-BOOL strListIsEmpty(const str_list_t list)
+bool strListIsEmpty(const str_list_t list)
 {
 	return (list == NULL) || (list[0] == NULL);
 }
@@ -65,7 +65,7 @@ int strListIndexOf(const str_list_t list, const char* str)
 	return -1;
 }
 
-int strListFind(const str_list_t list, const char* str, BOOL case_sensitive)
+int strListFind(const str_list_t list, const char* str, bool case_sensitive)
 {
 	size_t		i;
 
@@ -173,28 +173,28 @@ char* strListFastRemove(str_list_t list, size_t index)
 	return str;
 }
 
-BOOL strListDelete(str_list_t* list, size_t index)
+bool strListDelete(str_list_t* list, size_t index)
 {
 	char*	str;
 
 	if((str=strListRemove(list, index))==NULL)
-		return(FALSE);
+		return(false);
 
 	free(str);
 
-	return(TRUE);
+	return(true);
 }
 
-BOOL strListFastDelete(str_list_t list, size_t index)
+bool strListFastDelete(str_list_t list, size_t index)
 {
 	char*	str;
 
 	if((str=strListFastRemove(list, index))==NULL)
-		return(FALSE);
+		return(false);
 
 	free(str);
 
-	return(TRUE);
+	return(true);
 }
 
 char* strListReplace(const str_list_t list, size_t index, const char* str)
@@ -240,7 +240,7 @@ size_t strListModifyEach(const str_list_t list, char*(modify(size_t, char*, void
 	return i;
 }
 
-BOOL strListSwap(const str_list_t list, size_t index1, size_t index2)
+bool strListSwap(const str_list_t list, size_t index1, size_t index2)
 {
 	char*	tmp;
 	size_t	count;
@@ -254,13 +254,13 @@ BOOL strListSwap(const str_list_t list, size_t index1, size_t index2)
 		index2 = count-1;
 
 	if(index1 >= count || index2 >= count || index1 == index2)	
-		return(FALSE);	/* invalid index, do nothing */
+		return(false);	/* invalid index, do nothing */
 
 	tmp=list[index1];
 	list[index1]=list[index2];
 	list[index2]=tmp;
 
-	return(TRUE);
+	return(true);
 }
 
 char* strListAnnex(str_list_t* list, const char* str, size_t index)
@@ -869,7 +869,7 @@ int strListStripStrings(str_list_t list, const char* set)
 }
 
 /* Remove duplicate strings from list, return the new list length */
-int strListDedupe(str_list_t* list, BOOL case_sensitive)
+int strListDedupe(str_list_t* list, bool case_sensitive)
 {
 	size_t		i,j;
 

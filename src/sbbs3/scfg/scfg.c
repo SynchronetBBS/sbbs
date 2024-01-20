@@ -36,12 +36,12 @@
 scfg_t	cfg;    /* Synchronet Configuration */
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 
-BOOL forcesave=FALSE;
-BOOL new_install=FALSE;
-BOOL run_wizard = FALSE;
-static BOOL auto_save=FALSE;
-extern BOOL all_msghdr;
-extern BOOL no_msghdr;
+bool forcesave=false;
+bool new_install=false;
+bool run_wizard = false;
+static bool auto_save=false;
+extern bool all_msghdr;
+extern bool no_msghdr;
 char **opt;
 char tmp[256];
 char error[256];
@@ -402,8 +402,8 @@ int main(int argc, char **argv)
     char    errormsg[MAX_PATH*2];
 	int 	i,j,main_dflt=0,chat_dflt=0;
 	char	cfg_fname[MAX_PATH + 1];
-	BOOL    door_mode=FALSE;
-	BOOL	alt_chars = FALSE;
+	bool    door_mode=false;
+	bool	alt_chars = false;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
 
 #if defined(_WIN32)
@@ -415,7 +415,7 @@ int main(int argc, char **argv)
 	cfg.size=sizeof(cfg);
 
     memset(&uifc,0,sizeof(uifc));
-    SAFECOPY(cfg.ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
+    SAFECOPY(cfg.ctrl_dir, get_ctrl_dir(/* warn: */true));
 
 	uifc.esc_delay=25;
 
@@ -444,16 +444,16 @@ int main(int argc, char **argv)
 				continue;
 			}
 			if(strcmp(argv[i], "-insert") == 0) {
-				uifc.insert_mode = TRUE;
+				uifc.insert_mode = true;
 				continue;
 			}
             switch(argv[i][1]) {
 				case 'w':
-					run_wizard = TRUE;
+					run_wizard = true;
 					break;
                 case 'n':   /* Set "New Installation" flag */
-					new_install=TRUE;
-					forcesave=TRUE;
+					new_install=true;
+					forcesave=true;
                     continue;
 				case 'k':	/* Keyboard only (no mouse) */
 					uifc.mode |= UIFC_NOMOUSE;
@@ -480,7 +480,7 @@ int main(int argc, char **argv)
         			all_msghdr=!all_msghdr;
                     break;
                 case 'f':
-                	forcesave=TRUE;
+                	forcesave=true;
                     break;
                 case 'l':
                     uifc.scrn_len=atoi(argv[i]+2);
@@ -523,20 +523,20 @@ int main(int argc, char **argv)
 							break;
 #endif
 						case 'D':
-		                    door_mode=TRUE;
+		                    door_mode=true;
 		                    break;
 						default:
 							goto USAGE;
 					}
 					break;
 				case 'A':
-					alt_chars = TRUE;
+					alt_chars = true;
 					break;
                 case 'v':
                     textmode(atoi(argv[i]+2));
                     break;
 				case 'y':
-					auto_save=TRUE;
+					auto_save=true;
 					break;
                 default:
 				USAGE:
@@ -714,12 +714,12 @@ int main(int argc, char **argv)
 		SAFEPRINTF(errormsg, "Main configuration file (%s) missing!", cfg_fname);
 		uifc.msg(errormsg);
 	}
-	FILE* fp = iniOpenFile(cfg_fname, /* for_modify */TRUE);
+	FILE* fp = iniOpenFile(cfg_fname, /* for_modify */true);
 	if(fp == NULL) {
 		SAFEPRINTF2(errormsg, "Error %d opening configuration file: %s", errno, cfg_fname);
 		uifc.msg(errormsg);
 	} else {
-		cfg.new_install = iniReadBool(fp, ROOT_SECTION, "new_install", TRUE);
+		cfg.new_install = iniReadBool(fp, ROOT_SECTION, "new_install", true);
 		iniCloseFile(fp);
 	}
 	if(run_wizard
@@ -964,98 +964,98 @@ int main(int argc, char **argv)
 	}
 }
 
-BOOL load_main_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
+bool load_main_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
 	uifc.pop("Reading main.ini ...");
-	BOOL result = read_main_cfg(cfg, error, maxerrlen);
+	bool result = read_main_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL load_node_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
+bool load_node_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
 	uifc.pop("Reading node.ini ...");
-	BOOL result = read_node_cfg(cfg, error, maxerrlen);
+	bool result = read_node_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL load_msgs_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
+bool load_msgs_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
 	uifc.pop("Reading msgs.ini ...");
-	BOOL result = read_msgs_cfg(cfg, error, maxerrlen);
+	bool result = read_msgs_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL load_file_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
+bool load_file_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
 	uifc.pop("Reading file.ini ...");
-	BOOL result = read_file_cfg(cfg, error, maxerrlen);
+	bool result = read_file_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL load_chat_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
+bool load_chat_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
 	uifc.pop("Reading chat.ini ...");
-	BOOL result = read_chat_cfg(cfg, error, maxerrlen);
+	bool result = read_chat_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL load_xtrn_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
+bool load_xtrn_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
 	uifc.pop("Reading xtrn.ini ...");
-	BOOL result = read_xtrn_cfg(cfg, error, maxerrlen);
+	bool result = read_xtrn_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL save_main_cfg(scfg_t* cfg)
+bool save_main_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing main.ini ...");
-	BOOL result = write_main_cfg(cfg);
+	bool result = write_main_cfg(cfg);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL save_node_cfg(scfg_t* cfg)
+bool save_node_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing node.ini ...");
-	BOOL result = write_node_cfg(cfg);
+	bool result = write_node_cfg(cfg);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL save_msgs_cfg(scfg_t* cfg)
+bool save_msgs_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing msgs.ini ...");
-	BOOL result = write_msgs_cfg(cfg);
+	bool result = write_msgs_cfg(cfg);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL save_file_cfg(scfg_t* cfg)
+bool save_file_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing file.ini ...");
-	BOOL result = write_file_cfg(cfg);
+	bool result = write_file_cfg(cfg);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL save_chat_cfg(scfg_t* cfg)
+bool save_chat_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing chat.ini ...");
-	BOOL result = write_chat_cfg(cfg);
+	bool result = write_chat_cfg(cfg);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL save_xtrn_cfg(scfg_t* cfg)
+bool save_xtrn_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing xtrn.ini ...");
-	BOOL result = write_xtrn_cfg(cfg);
+	bool result = write_xtrn_cfg(cfg);
 	uifc.pop(NULL);
 	return result;
 }
@@ -1072,7 +1072,7 @@ int save_changes(int mode)
 
 	if(!uifc.changes)
 		return(2);
-	if(auto_save==TRUE)	{ /* -y switch used, return "Yes" */
+	if(auto_save==true)	{ /* -y switch used, return "Yes" */
 		uifc.changes=0;
 		return(0);
 	}
@@ -2453,14 +2453,14 @@ void getar(char *desc, char *inar)
 	sprintf(inar,"%.*s",LEN_ARSTR,ar);
 }
 
-BOOL code_ok(char *str)
+bool code_ok(char *str)
 {
 
 	if(*str == 0)
-		return FALSE;
+		return false;
 	if(strcspn(str," \\/|<>*?+[]:=\";,")!=strlen(str))
-		return FALSE;
-	return TRUE;
+		return false;
+	return true;
 }
 
 char random_code_char(void)
@@ -2521,7 +2521,7 @@ void bail(int code)
 	}
     else if(forcesave) {
 		FILE* fp;
-		BOOL run_bbs, run_ftp, run_web, run_mail, run_services;
+		bool run_bbs, run_ftp, run_web, run_mail, run_services;
 		global_startup_t global_startup = {0};
 		bbs_startup_t bbs_startup = {0};
 		web_startup_t web_startup = {0};

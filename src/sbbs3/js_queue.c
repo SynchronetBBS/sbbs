@@ -43,7 +43,7 @@ static void js_finalize_queue(JSContext *cx, JSObject *obj)
 		return;
 
 	if(msgQueueDetach(q)==0 && (n=listFindNode(&named_queues,q,/* length=0 for ptr compare */0))!=NULL)
-		listRemoveNode(&named_queues,n,FALSE);
+		listRemoveNode(&named_queues,n,false);
 
 	JS_SetPrivate(cx, obj, NULL);
 }
@@ -204,14 +204,14 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name)
 	return(v);
 }
 
-BOOL js_enqueue_value(JSContext *cx, msg_queue_t* q, jsval val, char* name)
+bool js_enqueue_value(JSContext *cx, msg_queue_t* q, jsval val, char* name)
 {
 	queued_value_t* v;
-	BOOL			result;
+	bool			result;
 	jsrefcount		rc;
 
 	if((v=js_encode_value(cx,val,name))==NULL)
-		return(FALSE);
+		return(false);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	result=msgQueueWrite(q,v,sizeof(queued_value_t));

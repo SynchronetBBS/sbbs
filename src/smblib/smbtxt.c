@@ -37,7 +37,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 	char*	str;
 	uint16_t	xlat;
 	uint 	i;
-	int		lzh;	/* BOOL */
+	int		lzh;	/* bool */
 	int		l=0,lzhlen,length;
 
 	if((buf=(char*)malloc(sizeof(char)))==NULL) {
@@ -293,7 +293,7 @@ static enum content_transfer_encoding mime_getxferencoding(const char* beg, cons
 }
 
 /* ToDo: parse and return the "modification-date" value */
-static BOOL mime_getattachment(const char* beg, const char* end, char* attachment, size_t attachment_len)
+static bool mime_getattachment(const char* beg, const char* end, char* attachment, size_t attachment_len)
 {
 	char fname[MAX_PATH+1];
 	const char* p = beg;
@@ -340,9 +340,9 @@ static BOOL mime_getattachment(const char* beg, const char* end, char* attachmen
 			strncpy(attachment, getfname(fname), attachment_len);
 			attachment[attachment_len - 1] = '\0';
 		}
-		return TRUE;
+		return true;
 	}
-	return FALSE;
+	return false;
 }
 
 // Parses a MIME text/* content-type header field
@@ -379,10 +379,10 @@ void smb_parse_content_type(const char* content_type, char** subtype, char** cha
 			((p = strcasestr(parms, " charset=")) != NULL
 				|| (p = strcasestr(parms, ";charset=")) != NULL
 				|| (p = strcasestr(parms, "\tcharset=")) != NULL)) {
-			BOOL quoted = FALSE;
+			bool quoted = false;
 			p += 9;
 			if(*p == '"') {
-				quoted = TRUE;
+				quoted = true;
 				p++;
 			}
 			char* tp = p;
@@ -411,7 +411,7 @@ static const char* mime_getpart(const char* buf, const char* content_type, const
 	char	match2[128];
 	int		match_len = 0;
 	int		found = 0;
-	BOOL	quoted_boundary = FALSE;
+	bool	quoted_boundary = false;
 
 	if(content_match != NULL) {
 		match_len = sprintf(match1, "%s;", content_match);
@@ -435,7 +435,7 @@ static const char* mime_getpart(const char* buf, const char* content_type, const
 	p += 9;
 	if(*p == '"') {
 		p++;
-		quoted_boundary = TRUE;
+		quoted_boundary = true;
 	}
 	SAFEPRINTF(boundary, "--%s", p);
 	if((p = strchr(boundary, quoted_boundary ? '"' : ';')) != NULL)

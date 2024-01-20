@@ -4,7 +4,6 @@
 #include "xpendian.h"	/* swap */
 #include "dirwrap.h"	/* _PATH_DEVNULL */
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>
 
 FILE* nulfp;

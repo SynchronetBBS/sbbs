@@ -76,8 +76,8 @@ DLLEXPORT char*			strListRemove(str_list_t*, size_t index);
 DLLEXPORT char*			strListFastRemove(str_list_t, size_t index);
 
 /* Remove and free a string at a specific index */
-DLLEXPORT BOOL			strListDelete(str_list_t*, size_t index);
-DLLEXPORT BOOL			strListFastDelete(str_list_t, size_t index);
+DLLEXPORT bool			strListDelete(str_list_t*, size_t index);
+DLLEXPORT bool			strListFastDelete(str_list_t, size_t index);
 
 /* Replace a string at a specific index */
 DLLEXPORT char*			strListReplace(const str_list_t, size_t index, const char* str);
@@ -96,7 +96,7 @@ DLLEXPORT char*			strListJoin(const str_list_t, char* buf, size_t buflen, const 
 DLLEXPORT size_t		strListModifyEach(const str_list_t list, char*(modify(size_t index, char* str, void*)), void* cbdata);
 
 /* Swap the strings at index1 and index2 */
-DLLEXPORT BOOL			strListSwap(const str_list_t, size_t index1, size_t index2);
+DLLEXPORT bool			strListSwap(const str_list_t, size_t index1, size_t index2);
 
 /* Convenience macros for pushing, popping strings (LIFO stack) */
 #define		strListPush(list, str)	strListAppend(list, str, STR_LIST_LAST_INDEX)
@@ -123,12 +123,12 @@ DLLEXPORT char*			strListCombine(str_list_t, char* buf, size_t maxlen, const cha
 
 /* Count the number of strings in the list and returns the count */
 DLLEXPORT size_t		strListCount(const str_list_t);
-DLLEXPORT BOOL			strListIsEmpty(const str_list_t);
+DLLEXPORT bool			strListIsEmpty(const str_list_t);
 
 /* Returns the index of the specified str (by ptr compare) or -1 if not found */
 DLLEXPORT int			strListIndexOf(const str_list_t, const char* str);
 /* Returns the index of the specified str (by string compare) or -1 if not found */
-DLLEXPORT int			strListFind(const str_list_t, const char* str, BOOL case_sensitive);
+DLLEXPORT int			strListFind(const str_list_t, const char* str, bool case_sensitive);
 
 /* Sort the strings in the string list */
 DLLEXPORT void			strListSortAlpha(str_list_t);
@@ -160,7 +160,7 @@ DLLEXPORT int			strListTruncateStrings(str_list_t, const char* set);
 /* Remove all occurrences of chars in set from string in list */
 DLLEXPORT int			strListStripStrings(str_list_t, const char* set);
 /* Remove duplicate strings from list, return the new list length */
-DLLEXPORT int			strListDedupe(str_list_t*, BOOL case_sensitive);
+DLLEXPORT int			strListDedupe(str_list_t*, bool case_sensitive);
 /* Remove blank strings from list, return the new list length */
 DLLEXPORT int			strListDeleteBlanks(str_list_t*);
 DLLEXPORT int			strListFastDeleteBlanks(str_list_t);

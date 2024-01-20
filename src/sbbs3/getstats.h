@@ -30,23 +30,23 @@ extern "C" {
 
 DLLEXPORT char*		dstats_fname(scfg_t*, uint node, char* path, size_t);
 DLLEXPORT char*		cstats_fname(scfg_t*, uint node, char* path, size_t);
-DLLEXPORT FILE*		fopen_dstats(scfg_t*, uint node, BOOL for_write);
-DLLEXPORT FILE*		fopen_cstats(scfg_t*, uint node, BOOL for_write);
-DLLEXPORT BOOL		fclose_cstats(FILE*);
-DLLEXPORT BOOL		fclose_dstats(FILE*);
-DLLEXPORT BOOL		fread_dstats(FILE*, stats_t*);
-DLLEXPORT BOOL		fwrite_dstats(FILE*, const stats_t*);
-DLLEXPORT BOOL		fwrite_cstats(FILE*, const stats_t*);
+DLLEXPORT FILE*		fopen_dstats(scfg_t*, uint node, bool for_write);
+DLLEXPORT FILE*		fopen_cstats(scfg_t*, uint node, bool for_write);
+DLLEXPORT bool		fclose_cstats(FILE*);
+DLLEXPORT bool		fclose_dstats(FILE*);
+DLLEXPORT bool		fread_dstats(FILE*, stats_t*);
+DLLEXPORT bool		fwrite_dstats(FILE*, const stats_t*);
+DLLEXPORT bool		fwrite_cstats(FILE*, const stats_t*);
 DLLEXPORT void		parse_cstats(str_list_t, stats_t*);
-DLLEXPORT BOOL		getstats(scfg_t*, uint node, stats_t*);
-DLLEXPORT BOOL		putstats(scfg_t*, uint node, const stats_t*);
+DLLEXPORT bool		getstats(scfg_t*, uint node, stats_t*);
+DLLEXPORT bool		putstats(scfg_t*, uint node, const stats_t*);
 DLLEXPORT uint		getposts(scfg_t*, int subnum);
 DLLEXPORT int		getfiles(scfg_t*, int dirnum);
 DLLEXPORT void		rolloverstats(stats_t*);
-DLLEXPORT BOOL		inc_post_stats(scfg_t*, uint count);
-DLLEXPORT BOOL		inc_email_stats(scfg_t*, uint count, BOOL feedback);
-DLLEXPORT BOOL		inc_upload_stats(scfg_t*, uint files, uint64_t bytes);
-DLLEXPORT BOOL		inc_download_stats(scfg_t*, uint files, uint64_t bytes);
+DLLEXPORT bool		inc_post_stats(scfg_t*, uint count);
+DLLEXPORT bool		inc_email_stats(scfg_t*, uint count, bool feedback);
+DLLEXPORT bool		inc_upload_stats(scfg_t*, uint files, uint64_t bytes);
+DLLEXPORT bool		inc_download_stats(scfg_t*, uint files, uint64_t bytes);
 
 #ifdef __cplusplus
 }

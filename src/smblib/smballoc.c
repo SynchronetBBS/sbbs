@@ -122,7 +122,7 @@ off_t smb_fallocdat(smb_t* smb, off_t length, uint16_t refs)
 /****************************************************************************/
 int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 {
-	BOOL	da_opened=FALSE;
+	bool	da_opened=false;
 	int		retval=SMB_SUCCESS;
 	uint16_t	i;
 	int		l,blocks;
@@ -143,7 +143,7 @@ int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 	if(smb->sda_fp==NULL) {
 		if((i=smb_open_da(smb))!=SMB_SUCCESS)
 			return(i);
-		da_opened=TRUE;
+		da_opened=true;
 	}
 	flen = filelength(fileno(smb->sda_fp));
 	if(flen < sizeof(uint16_t))
@@ -261,7 +261,7 @@ int smb_incdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 int smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
 	int		i=SMB_SUCCESS;
-	BOOL	da_opened=FALSE;
+	bool	da_opened=false;
 	uint16_t	x;
 
 	if(smb->status.attr&SMB_HYPERALLOC)  /* Nothing to do */
@@ -270,7 +270,7 @@ int smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 	if(smb->sda_fp==NULL) {
 		if((i=smb_open_da(smb))!=SMB_SUCCESS)
 			return(i);
-		da_opened=TRUE;
+		da_opened=true;
 	}
 
 	if(!smb->locked && smb_locksmbhdr(smb)!=SMB_SUCCESS)

@@ -22,7 +22,7 @@
 #include "sbbs.h"
 #include "ident.h"
 
-BOOL identify(union xp_sockaddr *client_addr, u_short local_port, char* buf
+bool identify(union xp_sockaddr *client_addr, u_short local_port, char* buf
 			   ,size_t maxlen, int timeout)
 {
 	char		req[128];
@@ -31,7 +31,7 @@ BOOL identify(union xp_sockaddr *client_addr, u_short local_port, char* buf
 	ulong		val;
 	SOCKET		sock=INVALID_SOCKET;
 	union xp_sockaddr	addr;
-	BOOL		success=FALSE;
+	bool		success=FALSE;
 
 	if(client_addr->addr.sa_family != AF_INET && client_addr->addr.sa_family != AF_INET6)
 		return FALSE;

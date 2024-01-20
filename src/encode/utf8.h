@@ -22,8 +22,8 @@
 #ifndef UTF8_H_
 #define UTF8_H_
 
-#include <stdbool.h>
 #include <stdlib.h>
+#include "gen_defs.h" // bool
 #include "unicode_defs.h"
 
 #define UTF8_MAX_LEN 6	// Longest possible UTF-8 sequence

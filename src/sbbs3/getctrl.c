@@ -23,7 +23,7 @@
 #include "getctrl.h"
 #include "sbbsdefs.h"
 
-const char* get_ctrl_dir(BOOL warn)
+const char* get_ctrl_dir(bool warn)
 {
 	char* p = getenv("SBBSCTRL");
 	if(p == NULL || *p == '\0') {

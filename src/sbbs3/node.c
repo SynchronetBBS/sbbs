@@ -31,7 +31,6 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>		/* isdigit */
-#include <stdbool.h>
 
 /* Synchronet-specific */
 #include "sbbsdefs.h"
