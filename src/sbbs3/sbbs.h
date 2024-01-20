@@ -744,7 +744,7 @@ public:
 
 	/* str.cpp */
 	char	format_text_buf[256]{};
-	char*	format_text(enum text, ...);
+	char*	format_text(int /* enum text */, ...);
 	char*	format_text(enum text, smbmsg_t*, ...);
 	int		get_text_num(const char* id);
 	const char* get_text(const char* id);
