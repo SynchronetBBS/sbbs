@@ -517,7 +517,7 @@ bool write_msgs_cfg(scfg_t* cfg)
 		iniSetString(&section, name, "format", cfg->qhub[i]->fmt, NULL);
 		strListMerge(&ini, section);
 		free(section);
-		for(uint j=0; j<cfg->qhub[i]->subs; j++) {
+		for(int j=0; j<cfg->qhub[i]->subs; j++) {
 			sub_t* sub = cfg->qhub[i]->sub[j];
 			if(sub == NULL)
 				continue;

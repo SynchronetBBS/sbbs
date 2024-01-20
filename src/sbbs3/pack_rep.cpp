@@ -36,7 +36,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	char		error[256];
 	int 		mode;
 	const char* fmode;
-	uint		i,j,k;
+	int			i,j,k;
 	long		msgcnt,submsgs,packedmail,netfiles=0,deleted;
 	uint32_t	u;
 	uint32_t	posts;
