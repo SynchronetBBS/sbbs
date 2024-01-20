@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.94
-                           Release date: 2024-01-08
+                                 Version 1.95
+                           Release date: 2024-01-20
 
                                      by
 
@@ -314,6 +314,8 @@ The following are the command-line parameters supported by DDMsgReader.js:
               This is intended to work if it is the only command-line option.
 -indexModeScope: Specifies the scope (set of sub-boards) for indexed reader mode
                  with -indexedMode. Valid values are "group" or "all".
+-newscanIndexMenuAfterReadAllNew: Always display the indexed mode menu, even
+                 during a newscan after the user has read all new messages
 -search: A search type.  Available options:
  keyword_search: Do a keyword search in message subject/body text (current message area)
  from_name_search: 'From' name search (current message area)
@@ -460,6 +462,14 @@ prompting):
 
 - Start in indexed reader mode for all sub-boards(without prompting):
 ?../xtrn/DDMsgReader/DDMsgReader.js -indexedMode -indexModeScope=all
+
+- Start in indexed reader mode for all sub-boards (without prompting), and still
+show the indexed mode menu when the user is done reading all messages:
+?../xtrn/DDMsgReader/DDMsgReader.js -indexedMode -indexModeScope=all -newscanIndexMenuAfterReadAllNew
+
+- Do a newscan for all-subobards, use the indexed mode menu, and continue displaying
+the index mode menu after the user has read all new messages:
+?../xtrn/DDMsgReader/DDMsgReader.js -search=new_msg_scan -indexedMode -indexModeScope=all -newscanIndexMenuAfterReadAllNew
 
 
 - Text (keyword) search in the current sub-board, and list the messages found:
@@ -806,6 +816,15 @@ indexedModeMenuSnapToFirstWithNew     For the indexed newscan sub-board menu in
                                       menu. This is a default for a user setting
                                       that users can toggle for themselves.
 
+indexedModeMenuSnapToNextWithNewAftarMarkAllRead
+                                      For the indexed sub-board menu when doing
+                                      a newscan, whether or not to "snap" the
+                                      lightbar selected item to the next
+                                      sub-board with new messages when the user
+                                      marks all messages as read in a sub-board
+                                      on the menu. This is a default for a user
+                                      setting that users can toggle for
+                                      themselves.
 
 promptDelPersonalEmailAfterReply      Default for a user setting: When reading
                                       personal email, whether or not to propmt

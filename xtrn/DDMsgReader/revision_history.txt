@@ -5,6 +5,26 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.95     2024-01-20   Removed user option to display indexed mode menu in
+                      newscan after all new messages are read.
+                      Command-line option -indexedMode can now be specified with
+                      -search=new_msg_scan to make it display the indexed mode
+                      menu, regardless of the user setting to use the indexed
+                      mode menu for a newscan.
+                      New command-line option: -newscanIndexMenuAfterReadAllNew
+                      This specifies to continue to display the indexed mode
+                      menu after the user has read all new messages during a
+                      newscan.
+                      The following command-line can be used to do a newscan
+                      for all sub-boards and continue displaying the index mode
+                      menu after the user has read all new messages:
+                      DDMsgReader.js -search=new_msg_scan -indexedMode -indexModeScope=all -newscanIndexMenuAfterReadAllNew
+                      New indexed mode newscan behavior: R (mark all read) moves
+                      to the next sub-board.
+                      Ctrl-S in the indexed mode menu re-scans sub-boards (to
+                      detect more new messages, etc.)
+                      New DDMsgReader.cfg option for user config default:
+                      indexedModeMenuSnapToNextWithNewAftarMarkAllRead
 1.94     2024-01-07   Fix: For indexed read mode (not doing a newscan), when
                       choosing a sub-board to read, the correct (first unread)
                       message is displayed. Also, the user's scan pointer is
