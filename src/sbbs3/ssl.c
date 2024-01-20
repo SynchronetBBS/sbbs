@@ -266,19 +266,41 @@ static void internal_do_cryptInit(void)
 {
 	int ret;
 
+	cryptInit_error = CRYPT_ERROR_NOTINITED;
+	if (!rwlock_init(&cert_epoch_lock))
+		return;
+	if (!rwlock_init(&tls_cert_file_date_lock)) {
+		rwlock_destroy(&cert_epoch_lock);
+		return;
+	}
+	if (pthread_mutex_init(&ssl_cert_list_mutex, NULL) != 0) {
+		rwlock_destroy(&tls_cert_file_date_lock);
+		rwlock_destroy(&cert_epoch_lock);
+		return;
+	}
+	if (pthread_mutex_init(&ssl_sess_list_mutex, NULL) != 0) {
+		pthread_mutex_destroy(&ssl_cert_list_mutex);
+		rwlock_destroy(&tls_cert_file_date_lock);
+		rwlock_destroy(&cert_epoch_lock);
+		return;
+	}
+	if (pthread_mutex_init(&get_ssl_cert_mutex, NULL) != 0) {
+		pthread_mutex_destroy(&ssl_sess_list_mutex);
+		pthread_mutex_destroy(&ssl_cert_list_mutex);
+		rwlock_destroy(&tls_cert_file_date_lock);
+		rwlock_destroy(&cert_epoch_lock);
+		return;
+	}
+
 	if((ret=cryptInit())==CRYPT_OK) {
 		cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
 		atexit(do_cryptEnd);
 		cryptlib_initialized = true;
+		cryptInit_error = CRYPT_OK;
 	}
 	else {
 		cryptInit_error = ret; 
 	}
-	(void)rwlock_init(&cert_epoch_lock);
-	(void)rwlock_init(&tls_cert_file_date_lock);
-	pthread_mutex_init(&ssl_cert_list_mutex, NULL);
-	pthread_mutex_init(&ssl_sess_list_mutex, NULL);
-	pthread_mutex_init(&get_ssl_cert_mutex, NULL);
 	return;
 }
 
