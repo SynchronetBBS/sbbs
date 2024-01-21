@@ -227,7 +227,7 @@ ssh_input_thread(void *args)
 				status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, chan);
 				if (status != CRYPT_ERROR_NOTFOUND) {
 					cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
-					if (chan == ssh_channel) {
+					if (chan == ssh_channel || chan == -1) {
 						pthread_mutex_unlock(&ssh_mutex);
 						break;
 					}
