@@ -902,6 +902,7 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 	DWORD			NumberOfFreeClusters;
 	DWORD			BytesPerSector;
 	DWORD			SectorsPerCluster;
+	uint64_t		total;
 	ULARGE_INTEGER	avail;
 	ULARGE_INTEGER	size;
 	static HINSTANCE hK32;
@@ -920,7 +921,10 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 			NULL))		/* receives the free bytes on disk */
 			return(0);
 
-		return freespace ? size.QuadPart : avail.QuadPart;
+		total = freespace ? avail.QuadPart : size.QuadPart;
+		if (unit > 1)
+			total /= unit;
+		return total;
 	}
 
 	/* Windows 95 (old way), limited to 2GB */
