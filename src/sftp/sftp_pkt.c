@@ -335,6 +335,40 @@ sftp_appendstring(sftp_tx_pkt_t *pktp, sftp_str_t s)
 }
 
 bool
+sftp_appendcstring(sftp_tx_pkt_t *pktp, const char *str)
+{
+	uint32_t oldused;
+	uint32_t len;
+	size_t sz;
+
+	assert(pktp);
+	if (*pktp == NULL)
+		oldused = 0;
+	else
+		oldused = (*pktp)->used;
+	assert(str);
+	if (str == NULL)
+		oldused = 0;
+	else
+		oldused = (*pktp)->used;
+	sz = strlen(str);
+	if (sz > UINT32_MAX)
+		return false;
+	len = sz;
+	if (!sftp_append32(pktp, len))
+		return false;
+	if (!grow_tx(pktp, len)) {
+		if (*pktp != NULL)
+			(*pktp)->used = oldused;
+		return false;
+	}
+	sftp_tx_pkt_t pkt = *pktp;
+	memcpy(&(&pkt->type)[pkt->used], str, len);
+	pkt->used += len;
+	return true;
+}
+
+bool
 sftp_prep_tx_packet(sftp_tx_pkt_t pkt, uint8_t **buf, size_t *sz)
 {
 	assert(pkt);

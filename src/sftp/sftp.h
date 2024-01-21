@@ -59,7 +59,7 @@
 #define SSH_FILEXFER_ATTR_EXTENDED    UINT32_C(0x80000000)
 
 #define SFTP_MIN_PACKET_ALLOC 4096
-#define SFTP_VERSION 3
+#define SFTP_VERSION UINT32_C(3)
 
 typedef struct sftp_tx_pkt {
 	uint32_t sz;
@@ -90,23 +90,6 @@ struct sftp_extended_file_attribute {
 struct sftp_file_attributes;
 typedef struct sftp_file_attributes *sftp_file_attr_t;
 
-typedef struct sftp_client_state {
-	bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data);
-	xpevent_t recv_event;
-	sftp_rx_pkt_t rxp;
-	sftp_tx_pkt_t txp;
-	sftp_str_t home;
-	void *cb_data;
-	sftp_str_t err_msg;
-	sftp_str_t err_lang;
-	pthread_mutex_t mtx;
-	uint32_t running;
-	uint32_t id;
-	uint32_t err_id;
-	uint32_t err_code;
-	bool terminating;
-} *sftpc_state_t;
-
 enum sftp_handle_type {
 	SFTP_HANDLE_TYPE_DIR,
 	SFTP_HANDLE_TYPE_FILE,
@@ -114,6 +97,55 @@ enum sftp_handle_type {
 
 typedef sftp_str_t sftp_filehandle_t;
 typedef sftp_str_t sftp_dirhandle_t;
+
+typedef struct sftp_client_state {
+	bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data);
+	xpevent_t recv_event;
+	sftp_rx_pkt_t rxp;
+	sftp_tx_pkt_t txp;
+	void *cb_data;
+	sftp_str_t err_msg;
+	sftp_str_t err_lang;
+	pthread_mutex_t mtx;
+	uint32_t version;
+	uint32_t running;
+	uint32_t id;
+	uint32_t err_id;
+	uint32_t err_code;
+	bool terminating;
+} *sftpc_state_t;
+
+typedef struct sftp_server_state {
+	bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data);
+	sftp_rx_pkt_t rxp;
+	sftp_tx_pkt_t txp;
+	void *cb_data;
+	void (*lprintf)(const char *fmt, ...);
+	bool (*open)(sftp_str_t filename, uint32_t flags, sftp_file_attr_t attributes, void *cb_data);
+	bool (*close)(sftp_str_t handle, void *cb_data);
+	bool (*read)(sftp_filehandle_t handle, uint64_t offset, uint32_t len, void *cb_data);
+	bool (*write)(sftp_filehandle_t handle, uint64_t offset, sftp_str_t data, void *cb_data);
+	bool (*remove)(sftp_str_t filename, void *cb_data);
+	bool (*rename)(sftp_str_t oldpath, sftp_str_t newpath, void *cb_data);
+	bool (*mkdir)(sftp_str_t path, sftp_file_attr_t attributes, void *cb_data);
+	bool (*rmdir)(sftp_str_t path, void *cb_data);
+	bool (*opendir)(sftp_str_t path, void *cb_data);
+	bool (*readdir)(sftp_str_t handle, void *cb_data);
+	bool (*stat)(sftp_str_t path, void *cb_data);
+	bool (*lstat)(sftp_str_t path, void *cb_data);
+	bool (*fstat)(sftp_filehandle_t handle, void *cb_data);
+	bool (*setstat)(sftp_str_t path, sftp_file_attr_t attributes, void *cb_data);
+	bool (*fsetstat)(sftp_filehandle_t handle, sftp_file_attr_t attributes, void *cb_data);
+	bool (*readlink)(sftp_str_t path, void *cb_data);
+	bool (*symlink)(sftp_str_t linkpath, sftp_str_t targetpath, void *cb_data);
+	bool (*realpath)(sftp_str_t path, void *cb_data);
+	bool (*extended)(sftp_str_t request, sftp_rx_pkt_t pkt, void *cb_data);
+	pthread_mutex_t mtx;
+	uint32_t running;
+	uint32_t id;
+	uint32_t version;
+	bool terminating;
+} *sftps_state_t;
 
 /* sftp_pkt.c */
 const char * const sftp_get_type_name(uint8_t type);
@@ -132,6 +164,7 @@ bool sftp_appendbyte(sftp_tx_pkt_t *pktp, uint8_t u8);
 bool sftp_append32(sftp_tx_pkt_t *pktp, uint32_t u32);
 bool sftp_append64(sftp_tx_pkt_t *pktp, uint64_t u);
 bool sftp_appendstring(sftp_tx_pkt_t *pktp, sftp_str_t s);
+bool sftp_appendcstring(sftp_tx_pkt_t *pktp, const char *str);
 void sftp_free_tx_pkt(sftp_tx_pkt_t pkt);
 void sftp_free_rx_pkt(sftp_rx_pkt_t pkt);
 bool sftp_prep_tx_packet(sftp_tx_pkt_t pkt, uint8_t **buf, size_t *sz);
@@ -171,5 +204,12 @@ sftp_str_t sftp_fattr_get_ext_type(sftp_file_attr_t fattr, uint32_t index);
 sftp_str_t sftp_fattr_get_ext_data(sftp_file_attr_t fattr, uint32_t index);
 uint32_t sftp_fattr_get_ext_count(sftp_file_attr_t fattr);
 bool sftp_appendfattr(sftp_tx_pkt_t *pktp, sftp_file_attr_t fattr);
+sftp_file_attr_t sftp_getfattr(sftp_rx_pkt_t pkt);
+
+/* sftp_server.c */
+bool sftps_recv(sftps_state_t state, uint8_t *buf, uint32_t sz);
+sftps_state_t sftps_begin(bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data), void *cb_data);
+bool sftps_send_packet(sftps_state_t state);
+bool sftps_send_error(sftps_state_t state, uint32_t code, const char *msg);
 
 #endif
