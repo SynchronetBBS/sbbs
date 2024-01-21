@@ -1,0 +1,56 @@
+--- session/ssh2_channel.c.orig	2024-01-21 13:40:11.856563000 -0500
++++ session/ssh2_channel.c	2024-01-21 13:49:03.319502000 -0500
+@@ -1043,28 +1043,32 @@
+ 		!isChannelActive( sessionInfoPtr, channelID ) )
+ 		return( CRYPT_ERROR_PERMISSION );
+ 
+-	/* Delete the channel entry.  If we're only closing the write side we
+-	   mark the channel as closed for write but leave the overall channel
+-	   open */
+-	if( channelType == CHANNEL_WRITE  && !(channelInfoPtr->flags & CHANNEL_FLAG_READCLOSED))
++	/* Always delete the channel if we're closing */
++	if( !TEST_FLAG(sessionInfoPtr->flags, SESSION_FLAG_SENDCLOSED) )
+ 		{
+-		REQUIRES( !( channelInfoPtr->flags & CHANNEL_FLAG_WRITECLOSED ) );
+-		channelInfoPtr->flags |= CHANNEL_FLAG_WRITECLOSED;
+-		if( channelID == sshInfo->currWriteChannel )
+-			sshInfo->currWriteChannel = UNUSED_CHANNEL_ID;
+-		return( isChannelActive( sessionInfoPtr, \
+-								 channelInfoPtr->channelID ) ? \
+-				CRYPT_OK : OK_SPECIAL );
+-		}
+-	if( channelType == CHANNEL_READ && !(channelInfoPtr->flags & CHANNEL_FLAG_WRITECLOSED) && isChannelActive( sessionInfoPtr, channelID ) )
+-		{
+-		REQUIRES( !( channelInfoPtr->flags & CHANNEL_FLAG_READCLOSED ) );
+-		channelInfoPtr->flags |= CHANNEL_FLAG_READCLOSED;
+-		if( channelID == sshInfo->currReadChannel )
+-			sshInfo->currReadChannel = UNUSED_CHANNEL_ID;
+-		return( isChannelActive( sessionInfoPtr, \
+-								 channelInfoPtr->channelID ) ? \
+-				CRYPT_OK : OK_SPECIAL );
++		/* Delete the channel entry.  If we're only closing the write side we
++		   mark the channel as closed for write but leave the overall channel
++		   open */
++		if( channelType == CHANNEL_WRITE  && !(channelInfoPtr->flags & CHANNEL_FLAG_READCLOSED))
++			{
++			REQUIRES( !( channelInfoPtr->flags & CHANNEL_FLAG_WRITECLOSED ) );
++			channelInfoPtr->flags |= CHANNEL_FLAG_WRITECLOSED;
++			if( channelID == sshInfo->currWriteChannel )
++				sshInfo->currWriteChannel = UNUSED_CHANNEL_ID;
++			return( isChannelActive( sessionInfoPtr, \
++									 channelInfoPtr->channelID ) ? \
++					CRYPT_OK : OK_SPECIAL );
++			}
++		if( channelType == CHANNEL_READ && !(channelInfoPtr->flags & CHANNEL_FLAG_WRITECLOSED) && isChannelActive( sessionInfoPtr, channelID ) )
++			{
++			REQUIRES( !( channelInfoPtr->flags & CHANNEL_FLAG_READCLOSED ) );
++			channelInfoPtr->flags |= CHANNEL_FLAG_READCLOSED;
++			if( channelID == sshInfo->currReadChannel )
++				sshInfo->currReadChannel = UNUSED_CHANNEL_ID;
++			return( isChannelActive( sessionInfoPtr, \
++									 channelInfoPtr->channelID ) ? \
++					CRYPT_OK : OK_SPECIAL );
++			}
+ 		}
+ 	deleteSessionInfo( sessionInfoPtr, attributeListPtr );
+ 
