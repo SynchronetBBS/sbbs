@@ -1151,7 +1151,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		markAllRead: "R",
 		help: "?",
 		userSettings: CTRL_U,
-		reScanSubBoards: CTRL_S
+		reScanSubBoards: CTRL_R
 	};
 
 	// Message status characters for the message list
@@ -1614,15 +1614,16 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// Menu option values to use for the operator menu for reader mode
 	this.readerOpMenuOptValues = {
 		validateMsg: 0,
-		editAuthorUserAccount: 1,
-		showHdrLines: 2,
-		showKludgeLines: 3,
-		showTallyStats: 4,
-		showMsgHex: 5,
-		saveMsgHexToFile: 6,
-		quickValUser: 7,
-		addAuthorToTwitList: 8,
-		addAuthorEmailToEmailFilter: 9
+		saveMsgToBBSMachine: 1,
+		editAuthorUserAccount: 2,
+		showHdrLines: 3,
+		showKludgeLines: 4,
+		showTallyStats: 5,
+		showMsgHex: 6,
+		saveMsgHexToFile: 7,
+		quickValUser: 8,
+		addAuthorToTwitList: 9,
+		addAuthorEmailToEmailFilter: 10
 	};
 
 	// For indexed mode, whether to set the indexed mode menu item index to 1 more when showing
@@ -6418,6 +6419,42 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 									}
 								}
 								break;
+							case this.readerOpMenuOptValues.saveMsgToBBSMachine:
+								// Prompt the user for a filename to save the message to the
+								// BBS machine
+								var promptPos = this.EnhReaderPrepLast2LinesForPrompt();
+								console.print("\x01n\x01cFilename:\x01h");
+								var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
+								var filename = console.getstr(inputLen, K_NOCRLF);
+								console.attributes = "N";
+								if (filename.length > 0)
+								{
+									var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename, promptPos);
+									console.gotoxy(promptPos);
+									console.cleartoeol("\x01n");
+									console.gotoxy(promptPos);
+									if (saveMsgRetObj.succeeded)
+									{
+										var statusMsg = "\x01n\x01cThe message has been saved.";
+										if (msgHdrHasAttachmentFlag(msgHeader))
+											statusMsg += " Attachments not saved.";
+										statusMsg += "\x01n";
+										console.print(statusMsg);
+									}
+									else
+										console.print("\x01n\x01y\x01hFailed: " + saveMsgRetObj.errorMsg + "\x01n");
+									mswait(ERROR_PAUSE_WAIT_MS);
+								}
+								else
+								{
+									console.gotoxy(promptPos);
+									console.print("\x01n\x01y\x01hMessage not exported\x01n");
+									mswait(ERROR_PAUSE_WAIT_MS);
+								}
+								// Refresh the last 2 lines of the message on the screen to overwrite
+								// the file save prompt
+								this.DisplayEnhReaderError("", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+								break;
 							case this.readerOpMenuOptValues.showMsgHex:
 								writeMessage = false;
 								if (msgHexInfo == null)
@@ -7775,6 +7812,34 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 								}
 								console.pause();
 								break;
+							case this.readerOpMenuOptValues.saveMsgToBBSMachine:
+								console.crlf();
+								console.print("\x01n\x01cFilename:\x01h");
+								var inputLen = console.screen_columns - 10; // 10 = "Filename:" length + 1
+								var filename = console.getstr(inputLen, K_NOCRLF);
+								console.attributes = "N";
+								console.crlf();
+								if (filename.length > 0)
+								{
+									var saveMsgRetObj = this.SaveMsgToFile(msgHeader, filename);
+									if (saveMsgRetObj.succeeded)
+									{
+										console.print("\x01n\x01cThe message has been saved.\x01n");
+										if (msgHdrHasAttachmentFlag(msgHeader))
+											console.print(" Attachments not saved.");
+										console.attributes = "N";
+									}
+									else
+										console.print("\x01n\x01y\x01hFailed: " + saveMsgRetObj.errorMsg + "\x01n");
+									mswait(ERROR_PAUSE_WAIT_MS);
+								}
+								else
+								{
+									console.print("\x01n\x01y\x01hMessage not exported\x01n");
+									mswait(ERROR_PAUSE_WAIT_MS);
+								}
+								writeMessage = true;
+								break;
 							case this.readerOpMenuOptValues.showMsgHex:
 								writeMessage = false;
 								writePromptText = false;
@@ -7961,6 +8026,7 @@ function DigDistMsgReader_CreateReadModeOpMenu()
 		opMenu.Add("&H: Show header lines", this.readerOpMenuOptValues.showHdrLines);
 		opMenu.Add("&K: Show kludge lines", this.readerOpMenuOptValues.showKludgeLines);
 		opMenu.Add("&T: Show tally stats", this.readerOpMenuOptValues.showTallyStats);
+		opMenu.Add("&S: Save msg to BBS machine", this.readerOpMenuOptValues.saveMsgToBBSMachine);
 		opMenu.Add("&X: Show message hex", this.readerOpMenuOptValues.showMsgHex);
 		opMenu.Add("&E: Save message hex to file", this.readerOpMenuOptValues.saveMsgHexToFile);
 		opMenu.Add("&A: Quick validate the user", this.readerOpMenuOptValues.quickValUser);
@@ -7976,6 +8042,7 @@ function DigDistMsgReader_CreateReadModeOpMenu()
 		opMenu.Add("Show header lines", this.readerOpMenuOptValues.showHdrLines);
 		opMenu.Add("Show kludge lines", this.readerOpMenuOptValues.showKludgeLines);
 		opMenu.Add("Show tally stats", this.readerOpMenuOptValues.showTallyStats);
+		opMenu.Add("Save msg to BBS machine", this.readerOpMenuOptValues.saveMsgToBBSMachine);
 		opMenu.Add("Show message hex", this.readerOpMenuOptValues.showMsgHex);
 		opMenu.Add("Save message hex to file", this.readerOpMenuOptValues.saveMsgHexToFile);
 		opMenu.Add("Quick validate the user", this.readerOpMenuOptValues.quickValUser);
@@ -15643,7 +15710,7 @@ function DigDistMsgReader_DoIndexedMode(pScanScope, pNewscanOnly)
 				else
 					this.DoUserSettings_Traditional();
 			}
-			// CTRL-S: Re-scan sub-boards
+			// CTRL-R: Re-scan sub-boards
 			else if (indexRetObj.lastUserInput == this.indexedModeMenuKeys.reScanSubBoards)
 			{
 				drawMenu = true;
@@ -16235,7 +16302,7 @@ function DigDistMsgReader_ShowIndexedListHelp()
 		printf(formatStr, "R", "Mark all read in the sub-board");
 		printf(formatStr, "M", "Show message list for the sub-board");
 		printf(formatStr, "Ctrl-U", "User settings");
-		printf(formatStr, "Ctrl-S", "Re-scan sub-boards");
+		printf(formatStr, "Ctrl-R", "Re-scan sub-boards");
 		printf(formatStr, "Q", "Quit");
 		//printf(formatStr, "?", "Show this help screen");
 	}
