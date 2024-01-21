@@ -1008,7 +1008,8 @@ char * _fullpath(char *target, const char *path, size_t size)  {
 	bool	target_alloced=false;
 
 	if(target==NULL)  {
-		if((target=malloc(MAX_PATH+1))==NULL) {
+		size = MAX_PATH + 1;
+		if((target=malloc(size))==NULL) {
 			return(NULL);
 		}
 		target_alloced=true;
