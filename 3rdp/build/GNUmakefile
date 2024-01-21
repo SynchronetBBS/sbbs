@@ -88,12 +88,13 @@ $(CRYPT_SRC): | $(3RDPSRCDIR)
 $(CRYPT_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(CRYPT_IDIR)
 
-$(CRYPTLIB_BUILD): $(3RDP_ROOT)/dist/cryptlib.zip $(3RDP_ROOT)/build/terminal-params.patch $(3RDP_ROOT)/build/cl-mingw32-static.patch $(3RDP_ROOT)/build/cl-ranlib.patch $(3RDP_ROOT)/build/cl-win32-noasm.patch $(3RDP_ROOT)/build/cl-zz-country.patch $(3RDP_ROOT)/build/cl-algorithms.patch $(3RDP_ROOT)/build/cl-allow-duplicate-ext.patch $(3RDP_ROOT)/build/cl-macosx-minver.patch $(3RDP_ROOT)/build/cl-endian.patch $(3RDP_ROOT)/build/cl-cryptodev.patch $(3RDP_ROOT)/build/cl-posix-me-gently.patch $(3RDP_ROOT)/build/cl-tpm-linux.patch $(3RDP_ROOT)/build/cl-PAM-noprompts.patch $(3RDP_ROOT)/build/cl-zlib.patch $(3RDP_ROOT)/build/Dynamic-linked-static-lib.patch $(3RDP_ROOT)/build/SSL-fix.patch $(3RDP_ROOT)/build/cl-bigger-maxattribute.patch $(3RDP_ROOT)/build/cl-vcxproj.patch $(3RDP_ROOT)/build/cl-mingw-vcver.patch $(3RDP_ROOT)/build/cl-win32-build-fix.patch $(3RDP_ROOT)/build/cl-gcc-non-const-time-val.patch $(3RDP_ROOT)/build/cl-no-odbc.patch $(3RDP_ROOT)/build/cl-noasm-defines.patch $(3RDP_ROOT)/build/cl-bn-noasm64-fix.patch $(3RDP_ROOT)/build/cl-no-RSA-suites.patch $(3RDP_ROOT)/build/cl-fix-ECC-RSA.patch $(3RDP_ROOT)/build/cl-prefer-ECC.patch $(3RDP_ROOT)/build/cl-prefer-ECC-harder.patch $(3RDP_ROOT)/build/cl-more-RSA-ECC-fixes.patch $(3RDP_ROOT)/build/cl-DH-key-init.patch $(3RDP_ROOT)/build/cl-clear-GCM-flag.patch $(3RDP_ROOT)/build/cl-use-ssh-ctr.patch $(3RDP_ROOT)/build/cl-ssh-list-ctr-modes.patch $(3RDP_ROOT)/build/cl-ssh-incCtr.patch $(3RDP_ROOT)/build/cl-ssl-suite-blocksizes.patch $(3RDP_ROOT)/build/cl-no-tpm.patch $(3RDP_ROOT)/build/cl-no-via-aes.patch $(3RDP_ROOT)/build/cl-fix-ssh-ecc-ephemeral.patch $(3RDP_ROOT)/build/cl-just-use-cc.patch $(3RDP_ROOT)/build/cl-learn-numbers.patch $(3RDP_ROOT)/build/cl-no-safe-stack.patch $(3RDP_ROOT)/build/cl-allow-pkcs12.patch $(3RDP_ROOT)/build/cl-uint64_t-redefine.patch $(3RDP_ROOT)/build/cl-random-openbsd.patch $(3RDP_ROOT)/build/cl-openbsd-threads.patch $(3RDP_ROOT)/build/cl-allow-none-auth.patch $(3RDP_ROOT)/build/cl-mingw-add-m32.patch $(3RDP_ROOT)/build/cl-poll-not-select.patch $(3RDP_ROOT)/build/cl-check-before-use.patch $(3RDP_ROOT)/build/cl-linux-yield.patch $(3RDP_ROOT)/build/cl-good-sockets.patch $(3RDP_ROOT)/build/cl-moar-objects.patch $(3RDP_ROOT)/build/cl-pthread_yield.patch $(3RDP_ROOT)/build/cl-check-cert-dont-modify.patch $(3RDP_ROOT)/build/cl-server-term-support.patch $(3RDP_ROOT)/build/cl-add-pubkey-attribute.patch $(3RDP_ROOT)/build/cl-allow-ssh-auth-retries.patch $(3RDP_ROOT)/build/cl-fix-ssh-channel-close.patch | $(CRYPT_SRC) $(CRYPT_IDIR) $(3RDP_ROOT)/build/cl-remove-march.patch
+$(CRYPTLIB_BUILD): $(3RDP_ROOT)/dist/cryptlib.zip $(3RDP_ROOT)/build/cl-fix-test-select.patch $(3RDP_ROOT)/build/cl-terminal-params.patch $(3RDP_ROOT)/build/cl-mingw32-static.patch $(3RDP_ROOT)/build/cl-ranlib.patch $(3RDP_ROOT)/build/cl-win32-noasm.patch $(3RDP_ROOT)/build/cl-zz-country.patch $(3RDP_ROOT)/build/cl-algorithms.patch $(3RDP_ROOT)/build/cl-allow-duplicate-ext.patch $(3RDP_ROOT)/build/cl-macosx-minver.patch $(3RDP_ROOT)/build/cl-posix-me-gently.patch $(3RDP_ROOT)/build/cl-PAM-noprompts.patch $(3RDP_ROOT)/build/cl-zlib.patch $(3RDP_ROOT)/build/cl-Dynamic-linked-static-lib.patch $(3RDP_ROOT)/build/cl-SSL-fix.patch $(3RDP_ROOT)/build/cl-bigger-maxattribute.patch $(3RDP_ROOT)/build/cl-endian.patch $(3RDP_ROOT)/build/cl-vcxproj.patch $(3RDP_ROOT)/build/cl-mingw-vcver.patch $(3RDP_ROOT)/build/cl-win32-build-fix.patch $(3RDP_ROOT)/build/cl-no-odbc.patch $(3RDP_ROOT)/build/cl-noasm-defines.patch $(3RDP_ROOT)/build/cl-bn-noasm64-fix.patch $(3RDP_ROOT)/build/cl-prefer-ECC.patch $(3RDP_ROOT)/build/cl-prefer-ECC-harder.patch $(3RDP_ROOT)/build/cl-clear-GCM-flag.patch $(3RDP_ROOT)/build/cl-use-ssh-ctr.patch $(3RDP_ROOT)/build/cl-ssl-suite-blocksizes.patch $(3RDP_ROOT)/build/cl-no-tpm.patch $(3RDP_ROOT)/build/cl-no-via-aes.patch $(3RDP_ROOT)/build/cl-fix-ssh-ecc-ephemeral.patch $(3RDP_ROOT)/build/cl-just-use-cc.patch $(3RDP_ROOT)/build/cl-no-safe-stack.patch $(3RDP_ROOT)/build/cl-allow-pkcs12.patch $(3RDP_ROOT)/build/cl-openbsd-threads.patch $(3RDP_ROOT)/build/cl-allow-none-auth.patch $(3RDP_ROOT)/build/cl-mingw-add-m32.patch $(3RDP_ROOT)/build/cl-poll-not-select.patch $(3RDP_ROOT)/build/cl-good-sockets.patch $(3RDP_ROOT)/build/cl-moar-objects.patch $(3RDP_ROOT)/build/cl-server-term-support.patch $(3RDP_ROOT)/build/cl-add-pubkey-attribute.patch $(3RDP_ROOT)/build/cl-allow-ssh-auth-retries.patch $(3RDP_ROOT)/build/cl-fix-ssh-channel-close.patch $(3RDP_ROOT)/build/cl-vt-lt-2005-always-defined.patch $(3RDP_ROOT)/build/cl-no-pie.patch $(3RDP_ROOT)/build/cl-no-testobjs.patch $(3RDP_ROOT)/build/cl-win32-lean-and-mean.patch $(3RDP_ROOT)/build/cl-thats-not-asm.patch $(3RDP_ROOT)/build/cl-make-channels-work.patch $(3RDP_ROOT)/build/cl-allow-ssh-2.0-go.patch $(3RDP_ROOT)/build/cl-read-timeout-every-time.patch $(3RDP_ROOT)/build/cl-allow-servercheck-pubkeys.patch $(3RDP_ROOT)/build/cl-pass-after-pubkey.patch $(3RDP_ROOT)/build/cl-ssh-list-ctr-modes.patch | $(CRYPT_SRC) $(CRYPT_IDIR) $(3RDP_ROOT)/build/cl-remove-march.patch
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(CRYPT_SRC)/*
 	$(QUIET)unzip -oa $(3RDPDISTDIR)/cryptlib.zip -d $(CRYPT_SRC)
 	$(QUIET)perl -pi.bak -e 's/\r//' $(CRYPT_SRC)/crypt32.vcxproj
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < terminal-params.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-fix-test-select.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-terminal-params.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-mingw32-static.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-ranlib.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-vcxproj.patch
@@ -103,54 +104,50 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)/dist/cryptlib.zip $(3RDP_ROOT)/build/terminal-pa
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-algorithms.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-allow-duplicate-ext.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-macosx-minver.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-cryptodev.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-posix-me-gently.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-tpm-linux.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-PAM-noprompts.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-zlib.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < Dynamic-linked-static-lib.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < SSL-fix.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-Dynamic-linked-static-lib.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-SSL-fix.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-bigger-maxattribute.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-mingw-vcver.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-win32-build-fix.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-gcc-non-const-time-val.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-odbc.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-noasm-defines.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-bn-noasm64-fix.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-RSA-suites.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-fix-ECC-RSA.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-prefer-ECC.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-prefer-ECC-harder.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-more-RSA-ECC-fixes.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-DH-key-init.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-clear-GCM-flag.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-use-ssh-ctr.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-ssh-list-ctr-modes.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-ssh-incCtr.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-ssl-suite-blocksizes.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-tpm.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-via-aes.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-fix-ssh-ecc-ephemeral.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-just-use-cc.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-learn-numbers.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-safe-stack.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-allow-pkcs12.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-uint64_t-redefine.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-random-openbsd.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-openbsd-threads.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-allow-none-auth.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-mingw-add-m32.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-poll-not-select.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-check-before-use.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-linux-yield.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-good-sockets.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-moar-objects.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-remove-march.patch
-	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-pthread_yield.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-server-term-support.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-add-pubkey-attribute.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-allow-ssh-auth-retries.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-fix-ssh-channel-close.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-vt-lt-2005-always-defined.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-pie.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-testobjs.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-win32-lean-and-mean.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-thats-not-asm.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-make-channels-work.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-allow-ssh-2.0-go.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-read-timeout-every-time.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-pass-after-pubkey.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-allow-servercheck-pubkeys.patch
 ifeq ($(os),win32)
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make directories
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make toolscripts

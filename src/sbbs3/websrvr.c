@@ -6615,7 +6615,7 @@ void http_session_thread(void* arg)
 	if (session.is_tls) {
 		BOOL looking_good;
 		/* Create and initialize the TLS session */
-		if (!HANDLE_CRYPT_CALL(cryptCreateSession(&session.tls_sess, CRYPT_UNUSED, CRYPT_SESSION_SSL_SERVER), &session, "creating session")) {
+		if (!HANDLE_CRYPT_CALL(cryptCreateSession(&session.tls_sess, CRYPT_UNUSED, CRYPT_SESSION_TLS_SERVER), &session, "creating session")) {
 			close_session_no_rb(&session);
 			thread_down();
 			return;
@@ -6637,7 +6637,7 @@ void http_session_thread(void* arg)
 
 		looking_good = do_cryptInit(lprintf);
 		if (looking_good)
-			looking_good = HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_DISABLE_CERTVERIFY), &session, "disabling certificate verification");
+			looking_good = HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY), &session, "disabling certificate verification");
 		if (looking_good)
 			looking_good = HANDLE_CRYPT_CALL(add_private_key(&scfg, lprintf, session.tls_sess), &session, "setting private key");
 		if (!looking_good) {
@@ -6650,7 +6650,8 @@ void http_session_thread(void* arg)
 		bool nodelay=true;
 		setsockopt(session.socket,IPPROTO_TCP,TCP_NODELAY,(char*)&nodelay,sizeof(nodelay));
 
-		//HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_SSL_OPTIONS, CRYPT_SSLOPTION_MINVER_TLS12), &session, "setting TLS minver to 1.2");
+		if (looking_good)
+			looking_good = HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_MINVER_TLS12), &session, "setting TLS minver to 1.2");
 		if (looking_good)
 			looking_good = HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_NETWORKSOCKET, session.socket), &session, "setting network socket");
 		if (looking_good)

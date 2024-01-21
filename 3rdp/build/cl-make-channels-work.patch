@@ -1,0 +1,578 @@
+--- ./session/ssh.h.orig	2023-05-06 18:55:50.000000000 -0400
++++ ./session/ssh.h	2024-01-12 23:35:03.804841000 -0500
+@@ -309,9 +309,17 @@
+ 	SSH_ATTRIBUTE_WINDOWCOUNT,				/* Data window count */
+ 	SSH_ATTRIBUTE_WINDOWSIZE,				/* Data window size */
+ 	SSH_ATTRIBUTE_ALTCHANNELNO,				/* Secondary channel no. */
++	SSH_ATTRIBUTE_NEEDWINDOW,				/* Send session open when window opens */
+ 	SSH_ATTRIBUTE_LAST						/* Last channel attribute */
+ 	} SSH_ATTRIBUTE_TYPE;
+ 
++#ifdef USE_SSH_EXTENDED
++typedef enum { SERVICE_NONE, SERVICE_SHELL, SERVICE_PORTFORWARD, 
++			   SERVICE_SUBSYSTEM, SERVICE_EXEC, SERVICE_LAST } SERVICE_TYPE;
++#else
++typedef enum { SERVICE_NONE, SERVICE_SHELL, SERVICE_LAST } SERVICE_TYPE;
++#endif /* USE_SSH_EXTENDED */
++
+ /* Check whether a DH/ECDH value is valid for a given server key size.  The 
+    check is slightly different for the ECC version because the value is
+    a composite ECC point with two coordinates, so we have to divide the 
+@@ -697,6 +705,18 @@
+ 
+ /* Prototypes for functions in ssh2_msgcli.c */
+ 
++CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
++int getServiceType( INOUT_PTR SESSION_INFO *sessionInfoPtr, 
++						   OUT_ENUM_OPT( SERVICE ) SERVICE_TYPE *serviceType );
++						   CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
++int createSessionOpenRequest( INOUT_PTR SESSION_INFO *sessionInfoPtr,
++									 INOUT_PTR STREAM *stream,
++									 IN_ENUM( SERVICE ) \
++										const SERVICE_TYPE serviceType );
++CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
++int processChannelOpenFailure( INOUT_PTR SESSION_INFO *sessionInfoPtr, INOUT_PTR STREAM *stream );
++CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
++int processChannelOpenConfirmation( INOUT_PTR SESSION_INFO *sessionInfoPtr, INOUT_PTR STREAM *stream );
+ CHECK_RETVAL STDC_NONNULL_ARG( ( 1 ) ) \
+ int sendChannelOpen( INOUT_PTR SESSION_INFO *sessionInfoPtr );
+ 
+--- session/sess_rd.c.orig	2023-05-06 19:14:10.000000000 -0400
++++ session/sess_rd.c	2024-01-13 01:40:38.360167000 -0500
+@@ -739,7 +739,7 @@
+ 		/* Remember how much we've copied and, if we've satisfied the 
+ 		   request, exit */
+ 		*bytesCopied = bytesToCopy;
+-		if( bytesToCopy >= length )
++		if( bytesToCopy >= 0 )
+ 			{
+ 			ENSURES( sanityCheckSessionRead( sessionInfoPtr ) );
+ 
+@@ -929,6 +929,22 @@
+ 			dataPtr += byteCount;
+ 			dataLength -= byteCount;
+ 			}
++		/*
++		 * SyncTERM hack for SSH channels... after a full packet has been received, *and*
++		 * some data has been received, always return.
++		 *
++		 * This ensures that we can never return data from two different channels in the
++		 * same cryptPopData() response.
++		 */
++		if (*bytesCopied > 0) {
++			if (sessionInfoPtr->type == CRYPT_SESSION_SSH || sessionInfoPtr->type == CRYPT_SESSION_SSH_SERVER)
++				{
++				if (sessionInfoPtr->pendingPacketLength <= 0)
++					{
++					status = OK_SPECIAL;
++					}
++				}
++		}
+ 		if( status == OK_SPECIAL )
+ 			{
+ 			/* That was the last of the data, exit */
+--- session/ssh2_msg.c.orig	2024-01-13 01:45:16.168554000 -0500
++++ session/ssh2_msg.c	2024-01-13 01:46:42.971186000 -0500
+@@ -319,7 +319,10 @@
+ 					}
+ 				}
+ 			break;
+-
++		case SSH_MSG_CHANNEL_OPEN_FAILURE:
++			return processChannelOpenFailure(sessionInfoPtr, stream);
++		case SSH_MSG_CHANNEL_OPEN_CONFIRMATION:
++			return processChannelOpenConfirmation(sessionInfoPtr, stream);
+ 		default:
+ 			{
+ #ifdef USE_ERRMSGS
+@@ -444,10 +447,18 @@
+ 			return( OK_SPECIAL );
+ 
+ 		case SSH_MSG_CHANNEL_WINDOW_ADJUST:
++			{
++			int value;
+ 			/* Another noop-equivalent (but a very performance-affecting
+ 			   one) */
+ 			DEBUG_PUTS(( "Processing window adjust message" ));
++			status = getChannelExtAttribute(sessionInfoPtr, SSH_ATTRIBUTE_NEEDWINDOW, &value);
++			if (cryptStatusOK(status) && value)
++				{
++				status = setChannelExtAttribute(sessionInfoPtr, SSH_ATTRIBUTE_NEEDWINDOW, FALSE);
++				}
+ 			return( OK_SPECIAL );
++			}
+ 
+ 		case SSH_MSG_CHANNEL_EOF:
+ 			/* According to the SSH docs the EOF packet is a courtesy 
+--- session/ssh2_msgcli.c.orig	2024-01-14 13:50:16.921501000 -0500
++++ session/ssh2_msgcli.c	2024-01-14 13:50:34.230994000 -0500
+@@ -27,13 +27,6 @@
+ 			   OPENREQUEST_CHANNELONLY, OPENREQUEST_SESSION,
+ 			   OPENREQUEST_LAST } OPENREQUEST_TYPE;
+ 
+-#ifdef USE_SSH_EXTENDED
+-typedef enum { SERVICE_NONE, SERVICE_SHELL, SERVICE_PORTFORWARD, 
+-			   SERVICE_SUBSYSTEM, SERVICE_EXEC, SERVICE_LAST } SERVICE_TYPE;
+-#else
+-typedef enum { SERVICE_NONE, SERVICE_SHELL, SERVICE_LAST } SERVICE_TYPE;
+-#endif /* USE_SSH_EXTENDED */
+-
+ /****************************************************************************
+ *																			*
+ *								Utility Functions							*
+@@ -45,7 +38,7 @@
+ /* Determine which type of service the caller requested */
+ 
+ CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
+-static int getServiceType( INOUT_PTR SESSION_INFO *sessionInfoPtr, 
++int getServiceType( INOUT_PTR SESSION_INFO *sessionInfoPtr, 
+ 						   OUT_ENUM_OPT( SERVICE ) SERVICE_TYPE *serviceType )
+ 	{
+ 	BYTE typeString[ CRYPT_MAX_TEXTSIZE + 8 ];
+@@ -441,7 +434,7 @@
+ #endif /* USE_SSH_EXTENDED */
+ 
+ CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
+-static int createSessionOpenRequest( INOUT_PTR SESSION_INFO *sessionInfoPtr,
++int createSessionOpenRequest( INOUT_PTR SESSION_INFO *sessionInfoPtr,
+ 									 INOUT_PTR STREAM *stream,
+ 									 IN_ENUM( SERVICE ) \
+ 										const SERVICE_TYPE serviceType )
+@@ -595,121 +588,54 @@
+ 	return( status );
+ 	}
+ 
+-/* Send a channel open */
++CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
++int processChannelOpenFailure( INOUT_PTR SESSION_INFO *sessionInfoPtr, INOUT_PTR STREAM *stream )
++	{
++	int status;
++	status = getOpenFailInfo( sessionInfoPtr, stream );
++	return( status );
++	}
+ 
+-CHECK_RETVAL STDC_NONNULL_ARG( ( 1 ) ) \
+-int sendChannelOpen( INOUT_PTR SESSION_INFO *sessionInfoPtr )
++CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
++int processChannelOpenConfirmation( INOUT_PTR SESSION_INFO *sessionInfoPtr, INOUT_PTR STREAM *stream )
+ 	{
+-	STREAM stream;
++	int status;
++	long currentChannelNo;
++	long channelNo;
++	long origWriteChannelNo;
+ 	SERVICE_TYPE serviceType;
+-	OPENREQUEST_TYPE requestType;
+-	BOOLEAN waitforWindow = FALSE;
++	long windowSize;
++	STREAM sendStream;
+ 	BYTE buffer[ UINT32_SIZE + 8 ];
+-	const long channelNo = getCurrentChannelNo( sessionInfoPtr,
+-												CHANNEL_READ );
+-	long currentChannelNo, windowSize;
+-	int length, value, status;
++	BOOLEAN waitforWindow = FALSE;
++	int length;
+ 
+-	assert( isWritePtr( sessionInfoPtr, sizeof( SESSION_INFO ) ) );
+-
+-	REQUIRES( sanityCheckSessionSSH( sessionInfoPtr ) );
+-
+-	/* Make sure that there's channel data available to activate and
+-	   that it doesn't correspond to an already-active channel */
+-	if( channelNo == UNUSED_CHANNEL_NO )
+-		{
+-		retExt( CRYPT_ERROR_NOTINITED,
+-				( CRYPT_ERROR_NOTINITED, SESSION_ERRINFO, 
+-				  "No current channel information available to activate "
+-				  "channel" ) );
+-		}
+-	status = getChannelAttribute( sessionInfoPtr,
+-								  CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE,
+-								  &value );
+-	if( cryptStatusError( status ) || value )
+-		{
+-		retExt( CRYPT_ERROR_INITED,
+-				( CRYPT_ERROR_INITED, SESSION_ERRINFO, 
+-				  "Current channel has already been activated" ) );
+-		}
+-
+-	/* Determine the service type that we'll be using */
+ 	status = getServiceType( sessionInfoPtr, &serviceType );
+-	if( cryptStatusError( status ) )
++	if( cryptStatusError( status ) ) {
+ 		return( status );
++	}
+ 
+-	/* Create a request for the appropriate type of service */
+-	status = createOpenRequest( sessionInfoPtr, &stream, serviceType, 
+-								&requestType );
+-	if( cryptStatusError( status ) )
+-		return( status );
++	origWriteChannelNo = sessionInfoPtr->sessionSSH->currWriteChannel;
++	status = currentChannelNo = readUint32( stream );
+ 
+-	/* Send the open request to the server.  The SSH spec doesn't really
+-	   explain the semantics of the server's response to the channel open
+-	   command, in particular whether the returned data size parameters are
+-	   merely a confirmation of the client's requested values or whether the
+-	   server is allowed to further modify them to suit its own requirements
+-	   (or perhaps one is for send and the other for receive?).  In the
+-	   absence of any further guidance we just ignore the returned values,
+-	   which seems to work for all deployed servers */
+-	status = wrapSendPacketSSH2( sessionInfoPtr, &stream );
+-	sMemDisconnect( &stream );
+-	if( cryptStatusError( status ) )
++	// Find channel by number...
++	if (!cryptStatusError(status))
++		status = selectChannel( sessionInfoPtr, currentChannelNo, CHANNEL_NONE );
++	if( cryptStatusError( status ) ) {
+ 		return( status );
++	}
++	channelNo = currentChannelNo;
+ 
+-#if 0	/* Never used, see comment in createOpenRequest() for 
+-		   "tcpip-forward" type */
+-	/* If it's a request-only message that doesn't open a channel then
+-	   we're done */
+-	if( requestType == OPENREQUEST_STANDALONE )
+-		return( CRYPT_OK );
+-#endif /* 0 */
+-
+-	/* Wait for the server's ack of the channel open request:
+-
+-		byte	SSH_MSG_CHANNEL_OPEN_CONFIRMATION
+-		uint32	recipient_channel
+-		uint32	sender_channel
+-		uint32	initial_window_size
+-		uint32	maximum_packet_size
+-		... 
+-		
+-	   Quite a number of implementations use the same approach that we do to 
+-	   the windowing problem and advertise a maximum-size window, since this 
+-	   is typically INT_MAX (used by e.g. PSFTP, WinSCP, and FileZilla) we 
+-	   have to use an sread() rather than the range-checking readUint32() 
+-	   to read this */
+-	status = length = \
+-		readAuthPacketSSH2( sessionInfoPtr, SSH_MSG_SPECIAL_CHANNEL,
+-							ID_SIZE + UINT32_SIZE + UINT32_SIZE + \
+-								UINT32_SIZE + UINT32_SIZE );
+-	if( cryptStatusError( status ) )
+-		return( status );
+-	sMemConnect( &stream, sessionInfoPtr->receiveBuffer, length );
+-	if( sessionInfoPtr->sessionSSH->packetType == SSH_MSG_CHANNEL_OPEN_FAILURE )
+-		{
+-		/* The open failed, report the details to the user */
+-		status = getOpenFailInfo( sessionInfoPtr, &stream );
+-		sMemDisconnect( &stream );
+-		return( status );
+-		}
+-	status = currentChannelNo = readUint32( &stream );
+-	if( !cryptStatusError( status ) && currentChannelNo != channelNo )
+-		{
+-		/* We got back a different channel number than we sent */
+-		status = CRYPT_ERROR_BADDATA;
+-		}
+ 	if( !cryptStatusError( status ) )
+-		status = currentChannelNo = readUint32( &stream );
++		status = currentChannelNo = readUint32( stream );
+ 	if( cryptStatusError( status ) )
+ 		{
+-		sMemDisconnect( &stream );
+ 		retExt( CRYPT_ERROR_BADDATA,
+ 				( CRYPT_ERROR_BADDATA, SESSION_ERRINFO, 
+ 				  "Invalid channel information in channel open "
+ 				  "confirmation for channel %lX", channelNo ) );
+ 		}
+-	status = sread( &stream, buffer, UINT32_SIZE );
++	status = sread( stream, buffer, UINT32_SIZE );
+ 	if( !cryptStatusError( status ) && \
+ 		!memcmp( buffer, "\x00\x00\x00\x00", UINT32_SIZE ) )
+ 		{
+@@ -720,8 +646,15 @@
+ 		DEBUG_PRINT(( "Peer advertised window size 0 in channel open, will "
+ 					  "wait for window adjust in order to send data.\n" ));
+ 		waitforWindow = TRUE;
++		status = setChannelExtAttribute(sessionInfoPtr, SSH_ATTRIBUTE_NEEDWINDOW, TRUE);
++		if( cryptStatusError( status ) )
++			{
++			retExt( CRYPT_ERROR_INTERNAL,
++					( CRYPT_ERROR_INTERNAL, SESSION_ERRINFO,
++					  "Unable to set NEEDWINDOW for "
++					  "channel %lX", channelNo ) );
++			}
+ 		}
+-	sMemDisconnect( &stream );
+ 	if( cryptStatusError( status ) )
+ 		{
+ 		retExt( CRYPT_ERROR_BADDATA,
+@@ -757,63 +690,178 @@
+ 											 windowSize );
+ 			}
+ 		}
+-	if( cryptStatusOK( status ) )
+-		status = selectChannel( sessionInfoPtr, channelNo, CHANNEL_BOTH );
+-	if( cryptStatusError( status ) )
++	if (cryptStatusOK(status))
++		status = selectChannel( sessionInfoPtr, currentChannelNo, CHANNEL_BOTH );
++	if( cryptStatusError( status ) ) {
++		selectChannel( sessionInfoPtr, origWriteChannelNo, CHANNEL_WRITE );
+ 		return( status );
++	}
+ 
+ 	/* If we're just opening a new channel in an existing session then we're 
+ 	   done */
+-	if( requestType == OPENREQUEST_CHANNELONLY )
++	if( serviceType == SERVICE_PORTFORWARD ) {
++		selectChannel( sessionInfoPtr, origWriteChannelNo, CHANNEL_WRITE );
+ 		return( CRYPT_OK );
++	}
+ 
+-	REQUIRES( requestType == OPENREQUEST_SESSION );
++	if ( TRUE || channelNo == 0 || !waitforWindow )
++		{
++		/* It's a session open request that requires additional messages to do
++		   anything useful, create and send the extra packets.  Unlike the 
++		   overall open request, we can't wrap and send the packets in one go
++		   because serviceType == SERVICE_SHELL has to send multiple packets,
++		   which are wrapped in createSessionOpenRequest() */
++		status = createSessionOpenRequest( sessionInfoPtr, &sendStream, 
++										   serviceType );
++		if( cryptStatusOK( status ) )
++			{
++			/* serviceType == SERVICE_SHELL creates two packets */
++			status = sendPacketSSH2( sessionInfoPtr, &sendStream );
++			}
++		sMemDisconnect( &sendStream );
++		if( cryptStatusError( status ) )
++			selectChannel( sessionInfoPtr, origWriteChannelNo, CHANNEL_WRITE );
++			return( status );
++		}
+ 
+-	/* It's a session open request that requires additional messages to do
+-	   anything useful, create and send the extra packets.  Unlike the 
+-	   overall open request, we can't wrap and send the packets in one go
+-	   because serviceType == SERVICE_SHELL has to send multiple packets,
+-	   which are wrapped in createSessionOpenRequest() */
+-	status = createSessionOpenRequest( sessionInfoPtr, &stream, 
+-									   serviceType );
+-	if( cryptStatusOK( status ) )
++	/* If the peer advertised a zero-length window, we have to wait for a
++	   window adjust before we can send any data.  We know that this is what
++	   will (or at least should) arrive next because we've set want_reply =
++	   FALSE in the session open request */
++	if( waitforWindow )
+ 		{
+-		/* serviceType == SERVICE_SHELL creates two packets */
+-		status = sendPacketSSH2( sessionInfoPtr, &stream );
++		if ( channelNo == 0 )
++			{
++			/* This isn't really an auth packet any more but to read further
++			   packets we would have to get into the data-read state machine via
++			   readHeaderFunction()/processBodyFunction() which would be quite
++			   difficult, so we read it as a (pseudo-)auth packet */
++			status = length = \
++				readAuthPacketSSH2( sessionInfoPtr, SSH_MSG_CHANNEL_WINDOW_ADJUST,
++									ID_SIZE + UINT32_SIZE + UINT32_SIZE );
++			if( cryptStatusError( status ) ) {
++				selectChannel( sessionInfoPtr, origWriteChannelNo, CHANNEL_WRITE );
++				return( status );
++			}
++			sMemConnect( &sendStream, sessionInfoPtr->receiveBuffer, length );
++			status = currentChannelNo = readUint32( &sendStream );
++			if( !cryptStatusError( status ) && currentChannelNo != channelNo )
++				status = CRYPT_ERROR_BADDATA;
++			sMemDisconnect( &sendStream );
++			if( cryptStatusError( status ) )
++				{
++				retExt( CRYPT_ERROR_BADDATA,
++						( CRYPT_ERROR_BADDATA, SESSION_ERRINFO,
++						  "Invalid channel information in window adjust for "
++						  "channel %lX", channelNo ) );
++				}
++			}
+ 		}
++
++	selectChannel( sessionInfoPtr, origWriteChannelNo, CHANNEL_WRITE );
++	return( CRYPT_OK );
++	}
++
++/* Send a channel open */
++
++CHECK_RETVAL STDC_NONNULL_ARG( ( 1 ) ) \
++int sendChannelOpen( INOUT_PTR SESSION_INFO *sessionInfoPtr )
++	{
++	STREAM stream;
++	SERVICE_TYPE serviceType;
++	OPENREQUEST_TYPE requestType;
++	const long channelNo = getCurrentChannelNo( sessionInfoPtr,
++												CHANNEL_READ );
++	int length, value, status;
++
++	assert( isWritePtr( sessionInfoPtr, sizeof( SESSION_INFO ) ) );
++
++	REQUIRES( sanityCheckSessionSSH( sessionInfoPtr ) );
++
++	/* Make sure that there's channel data available to activate and
++	   that it doesn't correspond to an already-active channel */
++	if( channelNo == UNUSED_CHANNEL_NO )
++		{
++		retExt( CRYPT_ERROR_NOTINITED,
++				( CRYPT_ERROR_NOTINITED, SESSION_ERRINFO, 
++				  "No current channel information available to activate "
++				  "channel" ) );
++		}
++	status = getChannelAttribute( sessionInfoPtr,
++								  CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE,
++								  &value );
++	if( cryptStatusError( status ) || value )
++		{
++		retExt( CRYPT_ERROR_INITED,
++				( CRYPT_ERROR_INITED, SESSION_ERRINFO, 
++				  "Current channel has already been activated" ) );
++		}
++
++	/* Determine the service type that we'll be using */
++	status = getServiceType( sessionInfoPtr, &serviceType );
++	if( cryptStatusError( status ) )
++		return( status );
++
++	/* Create a request for the appropriate type of service */
++	status = createOpenRequest( sessionInfoPtr, &stream, serviceType, 
++								&requestType );
++	if( cryptStatusError( status ) )
++		return( status );
++
++	/* Send the open request to the server.  The SSH spec doesn't really
++	   explain the semantics of the server's response to the channel open
++	   command, in particular whether the returned data size parameters are
++	   merely a confirmation of the client's requested values or whether the
++	   server is allowed to further modify them to suit its own requirements
++	   (or perhaps one is for send and the other for receive?).  In the
++	   absence of any further guidance we just ignore the returned values,
++	   which seems to work for all deployed servers */
++	status = wrapSendPacketSSH2( sessionInfoPtr, &stream );
+ 	sMemDisconnect( &stream );
+ 	if( cryptStatusError( status ) )
+ 		return( status );
+-	
+-	/* If the peer advertised a zero-length window, we have to wait for a 
+-	   window adjust before we can send any data.  We know that this is what
+-	   will (or at least should) arrive next because we've set want_reply = 
+-	   FALSE in the session open request */
+-	if( waitforWindow )
++
++#if 0	/* Never used, see comment in createOpenRequest() for 
++		   "tcpip-forward" type */
++	/* If it's a request-only message that doesn't open a channel then
++	   we're done */
++	if( requestType == OPENREQUEST_STANDALONE )
++		return( CRYPT_OK );
++#endif /* 0 */
++
++	if (channelNo == 0)
+ 		{
+-		/* This isn't really an auth packet any more but to read further 
+-		   packets we would have to get into the data-read state machine via
+-		   readHeaderFunction()/processBodyFunction() which would be quite
+-		   difficult, so we read it as a (pseudo-)auth packet */
++		/* Wait for the server's ack of the channel open request:
++
++			byte	SSH_MSG_CHANNEL_OPEN_CONFIRMATION
++			uint32	recipient_channel
++			uint32	sender_channel
++			uint32	initial_window_size
++			uint32	maximum_packet_size
++			... 
++			
++		   Quite a number of implementations use the same approach that we do to 
++		   the windowing problem and advertise a maximum-size window, since this 
++		   is typically INT_MAX (used by e.g. PSFTP, WinSCP, and FileZilla) we 
++		   have to use an sread() rather than the range-checking readUint32() 
++		   to read this */
+ 		status = length = \
+-			readAuthPacketSSH2( sessionInfoPtr, SSH_MSG_CHANNEL_WINDOW_ADJUST,
+-								ID_SIZE + UINT32_SIZE + UINT32_SIZE );
++			readAuthPacketSSH2( sessionInfoPtr, SSH_MSG_SPECIAL_CHANNEL,
++								ID_SIZE + UINT32_SIZE + UINT32_SIZE + \
++									UINT32_SIZE + UINT32_SIZE );
+ 		if( cryptStatusError( status ) )
+ 			return( status );
+ 		sMemConnect( &stream, sessionInfoPtr->receiveBuffer, length );
+-		status = currentChannelNo = readUint32( &stream );
+-		if( !cryptStatusError( status ) && currentChannelNo != channelNo )
+-			status = CRYPT_ERROR_BADDATA;
+-		sMemDisconnect( &stream );
+-		if( cryptStatusError( status ) )
++		if( sessionInfoPtr->sessionSSH->packetType == SSH_MSG_CHANNEL_OPEN_FAILURE )
+ 			{
+-			retExt( CRYPT_ERROR_BADDATA,
+-					( CRYPT_ERROR_BADDATA, SESSION_ERRINFO, 
+-					  "Invalid channel information in window adjust for "
+-					  "channel %lX", channelNo ) );
++			status = processChannelOpenFailure(sessionInfoPtr, &stream);
++			sMemDisconnect( &stream );
++			return status;
+ 			}
++		status = processChannelOpenConfirmation(sessionInfoPtr, &stream);
++		sMemDisconnect( &stream );
++		return status;
+ 		}
+-
+-	return( CRYPT_OK );
++	return (CRYPT_ENVELOPE_RESOURCE);
+ 	}
+ #endif /* USE_SSH */
+--- session/ssh2_channel.c.orig	2024-01-14 18:43:50.796652000 -0500
++++ session/ssh2_channel.c	2024-01-14 18:45:50.515008000 -0500
+@@ -25,6 +25,7 @@
+ #define CHANNEL_FLAG_ACTIVE		0x01	/* Channel is active */
+ #define CHANNEL_FLAG_WRITECLOSED 0x02	/* Write-side of ch.closed */
+ #define CHANNEL_FLAG_READCLOSED 0x04	/* Read-side of ch.closed */
++#define CHANNEL_FLAG_NEEDWINDOW 0x08	/* Needs open session */
+ 
+ /* Per-channel information.  SSH channel IDs are 32-bit/4 byte data values
+    and can be reused during sessions so we provide our own guaranteed-unique
+@@ -506,7 +507,7 @@
+ 		case CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE:
+ 			if( isNullChannel( writeChannelInfoPtr ) )
+ 				return( CRYPT_ERROR_NOTFOUND );
+-			*value = isActiveChannel( writeChannelInfoPtr ) ? TRUE : FALSE;
++			*value = isActiveChannel( writeChannelInfoPtr ) ? (writeChannelInfoPtr->flags & CHANNEL_FLAG_NEEDWINDOW ? FALSE : TRUE) : FALSE;
+ 			return( CRYPT_OK );
+ 
+ 		case CRYPT_SESSINFO_SSH_CHANNEL_OPEN:
+@@ -629,6 +630,10 @@
+ 		case SSH_ATTRIBUTE_WINDOWSIZE:
+ 			*value = channelInfoPtr->windowSize;
+ 			return( CRYPT_OK );
++
++		case SSH_ATTRIBUTE_NEEDWINDOW:
++			*value = (channelInfoPtr->flags & CHANNEL_FLAG_NEEDWINDOW) ? TRUE : FALSE;
++			return( CRYPT_OK );
+ 		}
+ 
+ 	retIntError();
+@@ -748,6 +753,8 @@
+ 		{
+ 		case SSH_ATTRIBUTE_ACTIVE:
+ 			channelInfoPtr->flags |= CHANNEL_FLAG_ACTIVE;
++			if( channelInfoPtr->flags & CHANNEL_FLAG_READCLOSED )
++				deleteChannel(sessionInfoPtr, channelInfoPtr->writeChannelNo, CHANNEL_BOTH, FALSE);
+ 			return( CRYPT_OK );
+ 
+ 		case SSH_ATTRIBUTE_WINDOWCOUNT:
+@@ -760,6 +767,13 @@
+ 
+ 		case SSH_ATTRIBUTE_ALTCHANNELNO:
+ 			channelInfoPtr->writeChannelNo = value;
++			return( CRYPT_OK );
++
++		case SSH_ATTRIBUTE_NEEDWINDOW:
++			if (value)
++				channelInfoPtr->flags |= (CHANNEL_FLAG_NEEDWINDOW);
++			else
++				channelInfoPtr->flags &= ~(CHANNEL_FLAG_NEEDWINDOW);
+ 			return( CRYPT_OK );
+ 		}
+ 

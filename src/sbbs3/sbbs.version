@@ -1,4 +1,3 @@
 SBBS {
 	local: BN_*;  # hide cryptlib BigNum functions, prevent collision with OpenSSL
 };
-

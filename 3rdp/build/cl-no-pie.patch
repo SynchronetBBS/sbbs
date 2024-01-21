@@ -1,0 +1,15 @@
+--- tools/ccopts.sh.orig	2023-12-31 11:49:24.760461000 -0500
++++ tools/ccopts.sh	2023-12-31 11:49:32.686744000 -0500
+@@ -1253,9 +1253,9 @@
+ # Enable ASLR.  We only do this for static libs, for shared libs it's
+ # already been handled via -fpic.
+ 
+-if [ "$COMPILER_VER" -ge 42 ] && [ $SHARED -le 0 ] ; then
+-	CCARGS="$CCARGS -fpie -Wl,-pie" ;
+-fi
++#if [ "$COMPILER_VER" -ge 42 ] && [ $SHARED -le 0 ] ; then
++#	CCARGS="$CCARGS -fpie -Wl,-pie" ;
++#fi
+ 
+ # Newer versions of gcc support marking the stack as nonexecutable (e.g.
+ # using the x86-64 NX bit), so if it's available we enable it.  This is

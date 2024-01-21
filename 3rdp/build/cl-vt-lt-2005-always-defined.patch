@@ -1,0 +1,11 @@
+--- io/file.c.orig	2023-12-31 10:28:41.818647000 -0500
++++ io/file.c	2023-12-31 10:28:56.618717000 -0500
+@@ -5226,7 +5226,7 @@
+ CHECK_RETVAL_BOOL STDC_NONNULL_ARG( ( 1 ) ) \
+ static BOOLEAN isSpecialSID( INOUT_PTR SID *pUserSid )
+ 	{
+-#if defined( _MSC_VER ) && VC_LT_2005( _MSC_VER )
++#if VC_LT_2005( _MSC_VER )
+ 	BYTE sidBuffer[ SID_BUFFER_SIZE + 8 ];
+ 	SID *pSid = ( PSID ) sidBuffer;
+ 	SID_IDENTIFIER_AUTHORITY identifierAuthority = SECURITY_NT_AUTHORITY;

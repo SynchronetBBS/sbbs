@@ -1,0 +1,18 @@
+--- session/ssh2_authcli.c.orig	2024-01-19 12:15:13.314932000 -0500
++++ session/ssh2_authcli.c	2024-01-19 12:15:26.674148000 -0500
+@@ -597,6 +597,7 @@
+ 	   and return some sort of useful information to the caller */
+ 	if( providedAuthType == SSH_AUTHTYPE_PUBKEY )
+ 		{
++#if 0
+ 		if( needsPW )
+ 			{
+ 			setObjectErrorInfo( sessionInfoPtr, CRYPT_SESSINFO_PASSWORD,
+@@ -606,6 +607,7 @@
+ 					  "Server requested password authentication but only a "
+ 					  "public/private key was available" ) );
+ 			}
++#endif
+ 		return CRYPT_ENVELOPE_RESOURCE;
+ 		}
+ 	if( requiredAuthType == SSH_AUTHTYPE_PUBKEY )

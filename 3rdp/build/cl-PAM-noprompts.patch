@@ -1,5 +1,5 @@
---- ../tmp2/session/ssh2_authc.c	2018-12-14 17:31:34.000000000 -0500
-+++ session/ssh2_authc.c	2019-06-03 16:41:49.956986000 -0400
+--- ../tmp2/session/ssh2_authcli.c	2018-12-14 17:31:34.000000000 -0500
++++ session/ssh2_authcli.c	2019-06-03 16:41:49.956986000 -0400
 @@ -868,7 +868,7 @@
  		if( !cryptStatusError( status ) )
  			{

@@ -1,6 +1,6 @@
---- session/ssh2.c.orig	2019-01-26 20:39:00.000000000 -0500
-+++ session/ssh2.c	2020-02-14 02:31:35.785792000 -0500
-@@ -851,6 +851,7 @@
+--- ./session/ssh2_algo.c.orig	2024-01-20 16:21:25.993730000 -0500
++++ ./session/ssh2_algo.c	2024-01-20 16:21:59.153489000 -0500
+@@ -837,6 +837,7 @@
  
  		/* Make sure that any required sub-algorithms are available */
  		if( algoStringInfo->subAlgo != CRYPT_ALGO_NONE && \

@@ -12,7 +12,9 @@
 	#define xp_dlsym(handle, name)				dlsym(handle, #name)
 	#define xp_dlclose(handle)					dlclose(handle)
 #elif defined(_WIN32)
+	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
+	#undef WIN32_LEAN_AND_MEAN
 
 	typedef HMODULE dll_handle;
 	DLLEXPORT dll_handle xp_dlopen(const char **name, int mode, int major);

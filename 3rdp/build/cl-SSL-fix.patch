@@ -1,0 +1,16 @@
+--- ../tmp2/session/sess_attr.c	2019-02-05 18:18:28.000000000 -0500
++++ session/sess_attr.c	2019-06-03 17:06:34.378151000 -0400
+@@ -102,11 +102,13 @@
+ 
+ 	/* If there's already a network socket specified then we can't set a 
+ 	   server name as well */
++/*
+ 	if( sessionInfoPtr->networkSocket != CRYPT_ERROR )
+ 		{
+ 		return( exitErrorInited( sessionInfoPtr, 
+ 								 CRYPT_SESSINFO_NETWORKSOCKET ) );
+ 		}
++*/
+ 
+ 	/* Parse the server name.  The PKI protocols all use HTTP as their 
+ 	   substrate so if it's not SSH or SSL/TLS we require HTTP */
