@@ -1,7 +1,7 @@
 /****************************************************************************
 *																			*
 *							  cryptlib Header File							*
-*						Copyright Peter Gutmann 1992-2019					*
+*						Copyright Peter Gutmann 1992-2022					*
 *																			*
 ****************************************************************************/
 
@@ -9,13 +9,13 @@
 
 #define _CRYPTLIB_DEFINED
 
-/* The current cryptlib version: 3.4.5 */
+/* The current cryptlib version: 3.4.7 */
 
-#define CRYPTLIB_VERSION	345
+#define CRYPTLIB_VERSION	347
 
 /* Fixup for Windows support.  We need to include windows.h for various types
-   and prototypes needed for DLLs.  In addition wincrypt.h defines some
-   values with the same names as cryptlib ones, so we need to check for this
+   and prototypes needed for DLLs, but this pulls in wincrypt.h which defines 
+   values with the same names as cryptlib ones so we need to check for this
    and issue a warning not to mix cryptlib with CryptoAPI (that's like taking
    a bank vault and making one side out of papier mache).
 
@@ -25,7 +25,7 @@
    if they ignore this convention.  The NOCRYPT doesn't fix this since
    wincrypt.h can be pulled in indirectly and unconditionally, for example
    via winldap.h -> schnlsp.h -> schannel.h -> wincrypt.h.  To fix this, we
-   create a redundant define for CRYPT_MODE_ECB which produces a compile
+   create a redundant define for CRYPT_MODE_ECB that produces a compile
    error if wincrypt.h is included after cryptlib.h.  Since thie will
    conflict with the enum, we have to place it after the CRYPT_MODE_xxx
    enums */
@@ -33,11 +33,17 @@
 #if ( defined( _WINDOWS ) || defined( WIN32 ) || defined( _WIN32 ) || \
 	  defined( __WIN32__ ) || defined( _WIN32_WCE ) ) && \
 	  !defined( _SCCTK ) && !defined( _CVI_ )
-  #ifndef WIN32_LEAN_AND_MEAN
-	#define WIN32_LEAN_AND_MEAN	/* Skip RPC, OLE, Multimedia, etc */
-  #endif /* WIN32_LEAN_AND_MEAN */
   #define NOCRYPT				/* Disable include of wincrypt.h */
+
+  /* The Windows headers are riddled with errors which are turned up at 
+     warning level 4.  To deal with this we disable some of the noisier 
+	 ones */
+  #pragma warning( push )
+  #pragma warning( disable: 4255 )	/* No function prototype given */
+  #pragma warning( disable: 4514 )	/* Unreferenced inline function has been removed */
+  #define WIN32_LEAN_AND_MEAN
   #include <windows.h>
+  #pragma warning( pop )
 
   /* Catch use of CryptoAPI and cryptlib at the same time.  wxWidgets 
      includes wincrypt.h by default so we undefine the conflicting values 
@@ -202,10 +208,11 @@ typedef enum {						/* Algorithms */
 	CRYPT_ALGO_IDEA,				/* IDEA (only used for PGP 2.x) */
 	CRYPT_ALGO_CAST,				/* CAST-128 (only used for OpenPGP) */
 	CRYPT_ALGO_RC2,					/* RC2 (disabled by default, used for PKCS #12) */
-	CRYPT_ALGO_RC4,					/* RC4 (insecure, deprecated) */
+	CRYPT_ALGO_RC4,					/* RC4 (insecure, disabled by default) */
 	CRYPT_ALGO_RESERVED1,			/* Formerly RC5 */
 	CRYPT_ALGO_AES,					/* AES */
 	CRYPT_ALGO_RESERVED2,			/* Formerly Blowfish */
+	CRYPT_ALGO_CHACHA20,			/* ChaCha20 */
 
 	/* Public-key encryption */
 	CRYPT_ALGO_DH = 100,			/* Diffie-Hellman */
@@ -215,11 +222,13 @@ typedef enum {						/* Algorithms */
 	CRYPT_ALGO_RESERVED3,			/* Formerly KEA */
 	CRYPT_ALGO_ECDSA,				/* ECDSA */
 	CRYPT_ALGO_ECDH,				/* ECDH */
+	CRYPT_ALGO_EDDSA,				/* EDDSA */
+	CRYPT_ALGO_25519,				/* X25519/X448 */
 
 	/* Hash algorithms */
 	CRYPT_ALGO_RESERVED4 = 200,		/* Formerly MD2 */
 	CRYPT_ALGO_RESERVED5,			/* Formerly MD4 */
-	CRYPT_ALGO_MD5,					/* MD5 (only used for TLS 1.0/1.1) */
+	CRYPT_ALGO_MD5,					/* MD5 (only used internally for TLS 1.0/1.1) */
 	CRYPT_ALGO_SHA1,				/* SHA/SHA1 */
 	CRYPT_ALGO_RESERVED6,			/* Formerly RIPE-MD 160 */
 	CRYPT_ALGO_SHA2,				/* SHA-256 */
@@ -227,11 +236,12 @@ typedef enum {						/* Algorithms */
 	CRYPT_ALGO_SHAng,				/* Future SHA-nextgen standard */
 
 	/* MACs */
-	CRYPT_ALGO_RESREVED_7 = 300,	/* Formerly HMAC-MD5 */
+	CRYPT_ALGO_RESERVED7 = 300,		/* Formerly HMAC-MD5 */
 	CRYPT_ALGO_HMAC_SHA1,			/* HMAC-SHA */
-	CRYPT_ALGO_RESERVED8,			/* Formerly HMAC-RIPEMD-160 */
+	CRYPT_ALGO_RESERVED8,			/* Formerly HMAC-RIPEMD 160 */
 	CRYPT_ALGO_HMAC_SHA2,			/* HMAC-SHA2 */
-	CRYPT_ALGO_HMAC_SHAng,			/* HMAC-future-SHA-nextgen */
+	CRYPT_ALGO_HMAC_SHAng,			/* HMAC-SHA-nextgen */
+	CRYPT_ALGO_POLY1305,			/* Poly1305 */
 
 #ifdef _CRYPT_DEFINED
 	/* Alongside the usual types we also need a generic secret-key store
@@ -273,8 +283,8 @@ typedef enum {						/* Block cipher modes */
 	CRYPT_MODE_NONE,				/* No encryption mode */
 	CRYPT_MODE_ECB,					/* ECB */
 	CRYPT_MODE_CBC,					/* CBC */
-	CRYPT_MODE_CFB,					/* CFB */
-	CRYPT_MODE_GCM,					/* GCM */
+	CRYPT_MODE_CFB,					/* CFB, needed for PGP */
+	CRYPT_MODE_GCM,					/* GCM, needed for SSH and TLS */
 	CRYPT_MODE_LAST					/* Last possible crypt mode value */
 	} CRYPT_MODE_TYPE;
 
@@ -285,6 +295,17 @@ typedef enum {						/* Block cipher modes */
   #define CRYPT_MODE_ECB	1
 #endif /* Windows other than a cross-development environment */
 
+/* PKC format subtypes */
+
+typedef enum {
+	CRYPT_PKCFORMAT_NONE,			/* No PKC format type */
+	CRYPT_PKCFORMAT_PKCS1,			/* PKCS #1 */
+		CRYPT_PKCFORMAT_DEFAULT = CRYPT_PKCFORMAT_PKCS1,
+	CRYPT_PKCFORMAT_OAEP,			/* RSA-OAEP */
+	CRYPT_PKCFORMAT_PSS,			/* RSA-PSS */
+	CRYPT_PKCFORMAT_LAST			/* Last possible PKC format type */
+	} CRYPT_PKCFORMAT_TYPE;
+
 /* Keyset subtypes */
 
 typedef enum {						/* Keyset types */
@@ -292,15 +313,15 @@ typedef enum {						/* Keyset types */
 	CRYPT_KEYSET_FILE,				/* Generic flat file keyset */
 	CRYPT_KEYSET_HTTP,				/* Web page containing cert/CRL */
 	CRYPT_KEYSET_LDAP,				/* LDAP directory service */
-	CRYPT_KEYSET_ODBC,				/* Generic ODBC interface */
-	CRYPT_KEYSET_DATABASE,			/* Generic RDBMS interface */
-	CRYPT_KEYSET_ODBC_STORE,		/* ODBC certificate store */
-	CRYPT_KEYSET_DATABASE_STORE,	/* Database certificate store */
+	CRYPT_KEYSET_DATABASE,			/* ODBC database interface */
+		CRYPT_KEYSET_ODBC = CRYPT_KEYSET_DATABASE,	/* Backwards compatibility */
+	CRYPT_KEYSET_DATABASE_STORE,		/* ODBC certificate store */
+		CRYPT_KEYSET_ODBC_STORE = CRYPT_KEYSET_DATABASE_STORE,
 	CRYPT_KEYSET_LAST				/* Last possible keyset type */
 
 #ifdef _CRYPT_DEFINED
 	/* Useful defines used internally for range checking */
-	, CRYPT_FIRST_RDBMS = CRYPT_KEYSET_ODBC,
+	, CRYPT_FIRST_RDBMS = CRYPT_KEYSET_DATABASE,
 	CRYPT_LAST_RDBMS = CRYPT_KEYSET_DATABASE_STORE
 #endif /* _CRYPT_DEFINED */
 	} CRYPT_KEYSET_TYPE;
@@ -309,7 +330,7 @@ typedef enum {						/* Keyset types */
 
 typedef enum {						/* Crypto device types */
 	CRYPT_DEVICE_NONE,				/* No crypto device */
-	CRYPT_DEVICE_FORTEZZA,			/* Fortezza card - Placeholder only */
+	CRYPT_DEVICE_TPM,				/* TPM, formerly Fortezza */
 	CRYPT_DEVICE_PKCS11,			/* PKCS #11 crypto token */
 	CRYPT_DEVICE_CRYPTOAPI,			/* Microsoft CryptoAPI */
 	CRYPT_DEVICE_HARDWARE,			/* Generic crypo HW plugin */
@@ -338,9 +359,16 @@ typedef enum {						/* Certificate object types */
 	   certificate-bagging schemes such as cert chains and sequences that
 	   can't be exported in this format and therefore aren't visible to the
 	   user, but that need to be distinguished internally.  The following
-	   types are only visible internally */
+	   types are only visible internally.  
+	   
+	   These types are only used on import where we need to provide a format 
+	   hint alongside the type, so the types below encode both the format, 
+	   for example SET OF Certificate, and the underlying type, certificate 
+	   chain */
 	CRYPT_ICERTTYPE_CMS_CERTSET,	/* CMS SET OF Certificate = cert chain */
-	CRYPT_ICERTTYPE_SSL_CERTCHAIN,	/* SSL certificate chain = cert chain */
+	CRYPT_ICERTTYPE_CMP_CERTSEQUENCE,/* CMP SEQUENCE OF Certificate = cert chain */
+	CRYPT_ICERTTYPE_TLS_CERTCHAIN,	/* TLS certificate chain = cert chain */
+	CRYPT_ICERTTYPE_TLS13_CERTCHAIN,/* TLS 1.3 certificate chain = cert chain */
 	CRYPT_ICERTTYPE_REVINFO,		/* Revocation info/single CRL entry */
 #endif /* _CRYPT_DEFINED */
 	CRYPT_CERTTYPE_LAST				/* Last possible cert.type */
@@ -361,10 +389,11 @@ typedef enum {
 	CRYPT_FORMAT_PGP,				/* PGP format */
 #ifdef _CRYPT_DEFINED
 	/* Alongside the usual types we can also wind up with various protocol-
-	   specific format types such as SSL and SSH.  The following types are
+	   specific format types such as TLS and SSH.  The following types are
 	   only visible internally */
-	CRYPT_IFORMAT_SSL,				/* SSL/TLS format */
+	CRYPT_IFORMAT_TLS,				/* TLS format */
 	CRYPT_IFORMAT_TLS12,			/* TLS 1.2 format */
+	CRYPT_IFORMAT_TLS13,			/* TLS 1.3 format */
 	CRYPT_IFORMAT_SSH,				/* SSH format */
 #endif /* _CRYPT_DEFINED */
 	CRYPT_FORMAT_LAST				/* Last possible format type */
@@ -379,12 +408,14 @@ typedef enum {
 	CRYPT_SESSION_NONE,				/* No session type */
 	CRYPT_SESSION_SSH,				/* SSH */
 	CRYPT_SESSION_SSH_SERVER,		/* SSH server */
-	CRYPT_SESSION_SSL,				/* SSL/TLS */
-		CRYPT_SESSION_TLS = CRYPT_SESSION_SSL,
-	CRYPT_SESSION_SSL_SERVER,		/* SSL/TLS server */
-		CRYPT_SESSION_TLS_SERVER = CRYPT_SESSION_SSL_SERVER,
+	CRYPT_SESSION_TLS,				/* TLS */
+		CRYPT_SESSION_SSL = CRYPT_SESSION_TLS,
+	CRYPT_SESSION_TLS_SERVER,		/* TLS server */
+		CRYPT_SESSION_SSL_SERVER = CRYPT_SESSION_TLS_SERVER,
 	CRYPT_SESSION_RTCS,				/* RTCS */
 	CRYPT_SESSION_RTCS_SERVER,		/* RTCS server */
+	CRYPT_SESSION_SCVP,				/* SCVP */
+	CRYPT_SESSION_SCVP_SERVER,		/* SCVP server */
 	CRYPT_SESSION_OCSP,				/* OCSP */
 	CRYPT_SESSION_OCSP_SERVER,		/* OCSP server */
 	CRYPT_SESSION_TSP,				/* TSP */
@@ -473,17 +504,17 @@ typedef enum {
 	CRYPT_OPTION_INFO_STEPPING,		/* Release stepping */
 
 	/* Encryption options */
-	CRYPT_OPTION_ENCR_ALGO,			/* Conventional ncryption algorithm */
+	CRYPT_OPTION_ENCR_ALGO,			/* Conventional encryption algorithm */
 	CRYPT_OPTION_ENCR_HASH,			/* Hash algorithm */
 	CRYPT_OPTION_ENCR_MAC,			/* MAC algorithm */
 
 	/* PKC options */
 	CRYPT_OPTION_PKC_ALGO,			/* PKC algorithm */
 	CRYPT_OPTION_PKC_KEYSIZE,		/* PKC key size */
+	CRYPT_OPTION_PKC_FORMAT,		/* PKC format */
 
-	/* Placeholder for obsolete options */
-	CRYPT_OPTION_DUMMY1,
-	CRYPT_OPTION_DUMMY2,
+	/* Additional encryption options, replacing an obsolete option */
+	CRYPT_OPTION_ENCR_HASHPARAM,	/* Hash/MAC parameter */
 
 	/* Keying options */
 	CRYPT_OPTION_KEYING_ALGO,		/* Key processing algorithm */
@@ -771,8 +802,16 @@ typedef enum {
 
 	/* 2 5 29 9 subjectDirectoryAttributes */
 	CRYPT_CERTINFO_SUBJECTDIRECTORYATTRIBUTES,
+#ifdef USE_CUSTOM_CONFIG_1
+	CRYPT_CERTINFO_SUBJECTDIR_OBJECTCLASS,	/* objectClass */
+	CRYPT_CERTINFO_SUBJECTDIR_CLEARANCE_POLICY,		/* clearance.policy */
+	CRYPT_CERTINFO_SUBJECTDIR_CLEARANCE_CLASSLIST,	/* clearance.classList */
+	CRYPT_CERTINFO_SUBJECTDIR_CLEARANCE_CATEGORY_POLICY1,	/* clearance.secCategories.category.policy1 */
+	CRYPT_CERTINFO_SUBJECTDIR_CLEARANCE_CATEGORY_POLICY2,	/* clearance.secCategories.category.policy2 */
+#else
 	CRYPT_CERTINFO_SUBJECTDIR_TYPE,			/* attribute.type */
 	CRYPT_CERTINFO_SUBJECTDIR_VALUES,		/* attribute.values */
+#endif /* USE_CUSTOM_CONFIG_1 */
 
 	/* 2 5 29 14 subjectKeyIdentifier */
 	CRYPT_CERTINFO_SUBJECTKEYIDENTIFIER,
@@ -1084,6 +1123,12 @@ typedef enum {
 	/* 1 2 840 113549 1 9 25 3 randomNonce */
 	CRYPT_CERTINFO_CMS_NONCE,				/* randomNonce */
 
+	/* 1 2 840 113549 1 9 52 cmsAlgorithmProtection */
+	CRYPT_CERTINFO_CMS_ALGORITHMPROTECTION,
+	CRYPT_CERTINFO_CMS_ALGORITHMPROTECTION_HASH,/* Signer hash algorithm */
+	CRYPT_CERTINFO_CMS_ALGORITHMPROTECTION_SIG,	/* Signer sig.algorithm */
+	CRYPT_CERTINFO_CMS_ALGORITHMPROTECTION_MAC,	/* Signer MAC algorithm */
+
 	/* SCEP attributes:
 	   2 16 840 1 113733 1 9 2 messageType
 	   2 16 840 1 113733 1 9 3 pkiStatus
@@ -1189,7 +1234,9 @@ typedef enum {
 	/* Security-related information */
 	CRYPT_SESSINFO_USERNAME,		/* User name */
 	CRYPT_SESSINFO_PASSWORD,		/* Password */
+	CRYPT_SESSINFO_AUTHTOKEN,		/* Authentication token, e.g. TOTP */
 	CRYPT_SESSINFO_PRIVATEKEY,		/* Server/client private key */
+	CRYPT_SESSINFO_PUBLICKEY,		/* Other sides public key */
 	CRYPT_SESSINFO_KEYSET,			/* Certificate store */
 	CRYPT_SESSINFO_AUTHRESPONSE,	/* Session authorisation OK */
 
@@ -1211,17 +1258,21 @@ typedef enum {
 	/* Protocol-specific information */
 	CRYPT_SESSINFO_CMP_REQUESTTYPE,	/* Request type */
 	CRYPT_SESSINFO_CMP_PRIVKEYSET,	/* Private-key keyset */
+	CRYPT_SESSINFO_CMP_OPTIONS,		/* CMP protocol options */
 	CRYPT_SESSINFO_SSH_CHANNEL,		/* SSH current channel */
 	CRYPT_SESSINFO_SSH_CHANNEL_TYPE,/* SSH channel type */
 	CRYPT_SESSINFO_SSH_CHANNEL_ARG1,/* SSH channel argument 1 */
 	CRYPT_SESSINFO_SSH_CHANNEL_ARG2,/* SSH channel argument 2 */
 	CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE,/* SSH channel active */
+	CRYPT_SESSINFO_SSH_PREAUTH,		/* SSH pre-authentication value */
 	CRYPT_SESSINFO_SSH_OPTIONS,		/* SSH protocol options */
-	CRYPT_SESSINFO_SSL_OPTIONS,		/* SSL/TLS protocol options */
-	CRYPT_SESSINFO_SSL_SUBPROTOCOL,	/* SSL/TLS additional sub-protocol */
-	CRYPT_SESSINFO_SSL_WSPROTOCOL,	/* SSL/TLS WebSockets sub-protocol */
-	CRYPT_SESSINFO_SSL_EAPCHALLENGE,/* SSL/TLS EAP challenge */
-	CRYPT_SESSINFO_SSL_EAPKEY,		/* SSL/TLS EAP key */
+	CRYPT_SESSINFO_TLS_OPTIONS,		/* SSL/TLS protocol options */
+		CRYPT_SESSINFO_SSL_OPTIONS = CRYPT_SESSINFO_TLS_OPTIONS,
+	CRYPT_SESSINFO_TLS_SUBPROTOCOL,	/* SSL/TLS additional sub-protocol */
+	CRYPT_SESSINFO_TLS_WSPROTOCOL,	/* SSL/TLS WebSockets sub-protocol */
+	CRYPT_SESSINFO_TLS_EAPCHALLENGE,/* TLS EAP challenge */
+	CRYPT_SESSINFO_TLS_EAPKEY,		/* TLS EAP key */
+	CRYPT_SESSINFO_TLS_EAPDATA,		/* TLS EAP additional data */
 	CRYPT_SESSINFO_TSP_MSGIMPRINT,	/* TSP message imprint */
 
 	/* Terminal attributes */
@@ -1256,19 +1307,29 @@ typedef enum {
 
 	/* The following attributes are only visible internally and are protected
 	   from any external access by the kernel (and for good measure by checks
-	   in other places as well).  The two attributes CRYPT_IATTRIBUTE_KEY_SPKI
-	   and CRYPT_IATTRIBUTE_SPKI are actually the same thing, the difference
-	   is that the former is write-only for contexts and the latter is read-
-	   only for certificates (the former is used when loading a context from
-	   a key contained in a device, where the actual key components aren't
-	   directly available in the context but may be needed in the future for
-	   things like cert requests).  Because a single object can act as both a
-	   context and a cert, having two explicitly different attribute names
-	   makes things less confusing.  In addition, some public-key attributes
-	   have _PARTIAL variants that load the public-key components but don't
-	   initialise the key/move the context into the high state.  This is
-	   used for formats in which public and private-key components are loaded
-	   separately */
+	   in other places as well).  
+	   
+	   The CRYPT_IATTRIBUTE_COMPLETEINIT attribute is used to complete the
+	   initialisation process for system objects like the default user 
+	   object, these are created early on in the boot process but their
+	   initialisation can't be completed at that point because higher-level
+	   functionality that's required to complete the intialisation isn't
+	   available yet, see cryptlib.c for details.
+
+	   The two attributes CRYPT_IATTRIBUTE_KEY_SPKI and CRYPT_IATTRIBUTE_SPKI 
+	   are actually the same thing, the difference is that the former is 
+	   write-only for contexts in low mode (read-only in high mode) and the 
+	   latter is read-only for certificates (the former is used when loading 
+	   a context from a key contained in a device, where the actual key 
+	   components aren't directly available in the context but may be needed 
+	   in the future for things like cert requests).  Because a single object 
+	   can act as both a context and a cert, having two explicitly different 
+	   attribute names makes things less confusing.  
+	   
+	   In addition, some public-key attributes have _PARTIAL variants that 
+	   load the public-key components but don't initialise the key/move the 
+	   context into the high state.  This is used for formats in which 
+	   public and private-key components are loaded separately */
 	, CRYPT_IATTRIBUTE_FIRST = 8000,
 	CRYPT_IATTRIBUTE_TYPE,			/* Object type */
 	CRYPT_IATTRIBUTE_SUBTYPE,		/* Object subtype */
@@ -1277,6 +1338,7 @@ typedef enum {
 	CRYPT_IATTRIBUTE_ACTIONPERMS,	/* Object action permissions */
 	CRYPT_IATTRIBUTE_LOCKED,		/* Object locked for exclusive use */
 	CRYPT_IATTRIBUTE_INITIALISED,	/* Object inited (in high state) */
+	CRYPT_IATTRIBUTE_COMPLETEINIT,	/* Complete init of system objects */
 
 	/* Context internal attributes */
 	CRYPT_IATTRIBUTE_KEYSIZE,		/* Key size (written to non-native ctxs) */
@@ -1287,22 +1349,23 @@ typedef enum {
 	CRYPT_IATTRIBUTE_KEY_SPKI,		/* SubjectPublicKeyInfo */
 	CRYPT_IATTRIBUTE_KEY_PGP,		/* PGP-format public key */
 	CRYPT_IATTRIBUTE_KEY_SSH,		/* SSHv2-format public key */
-	CRYPT_IATTRIBUTE_KEY_SSL,		/* SSL-format public key */
-	CRYPT_IATTRIBUTE_KEY_SSL_EXT,	/* TLS-extended-format public key */
+	CRYPT_IATTRIBUTE_KEY_TLS,		/* TLS-format public key */
+	CRYPT_IATTRIBUTE_KEY_TLS_EXT,	/* TLS-extended-format public key */
 	CRYPT_IATTRIBUTE_KEY_SPKI_PARTIAL,/* SubjectPublicKeyInfo w/o trigger */
 	CRYPT_IATTRIBUTE_KEY_PGP_PARTIAL,/* PGP public key w/o trigger */
 	CRYPT_IATTRIBUTE_KEY_DLPPARAM,	/* DLP domain parameters */
 	CRYPT_IATTRIBUTE_KEY_ECCPARAM,	/* ECC domain parameters */
 	CRYPT_IATTRIBUTE_PGPVALIDITY,	/* PGP key validity */
-	CRYPT_IATTRIBUTE_DEVICEOBJECT,	/* Device object handle */
+	CRYPT_IATTRIBUTE_DEVICEOBJECT,	/* Handle for object in device */
 	CRYPT_IATTRIBUTE_DEVICESTORAGEID,/* Storage ID for data in device */
 	CRYPT_IATTRIBUTE_EXISTINGLABEL,	/* Existing label for object in device */
 	CRYPT_IATTRIBUTE_KEYING_ALGO_PARAM,/* Opt.params for C_C_KEYING_ALGO */
 	CRYPT_IATTRIBUTE_KDFPARAMS,		/* Opt.KDF params for generic-secret */
 	CRYPT_IATTRIBUTE_ENCPARAMS,		/* Encryption params for generic-secret */
 	CRYPT_IATTRIBUTE_MACPARAMS,		/* MAC params for generic-secret */
-	CRYPT_IATTRIBUTE_AAD,			/* AAD for authenticated-encr.modes */
-	CRYPT_IATTRIBUTE_ICV,			/* ICV for authenticated-encr.modes */
+	CRYPT_IATTRIBUTE_AAD,			/* AAD for AEAD modes */
+	CRYPT_IATTRIBUTE_ICV,			/* ICV for AEAD modes */
+	CRYPT_IATTRIBUTE_REKEY,			/* Rekey for AEAD modes */
 
 	/* Certificate internal attributes */
 	CRYPT_IATTRIBUTE_SUBJECT,		/* SubjectName */
@@ -1311,8 +1374,7 @@ typedef enum {
 	CRYPT_IATTRIBUTE_HOLDERNAME,	/* Best approximation to cert.owner name */
 	CRYPT_IATTRIBUTE_HOLDERURI,		/* Best approximation to cert.owner URI */
 	CRYPT_IATTRIBUTE_SPKI,			/* Encoded SubjectPublicKeyInfo */
-	CRYPT_IATTRIBUTE_CERTKEYALGO,	/* PKC algo.used for certificate */
-	CRYPT_IATTRIBUTE_CERTHASHALGO,	/* Hash algo.used for certificate */
+	CRYPT_IATTRIBUTE_CERTHASHALGO,	/* Certificate hash algorithm */
 	CRYPT_IATTRIBUTE_CERTCOLLECTION,/* Certs added to cert chain */
 	CRYPT_IATTRIBUTE_CRLENTRY,		/* Individual entry from CRL */
 	CRYPT_IATTRIBUTE_RESPONDERURL,	/* RTCS/OCSP responder name */
@@ -1337,10 +1399,15 @@ typedef enum {
 	CRYPT_IATTRIBUTE_RANDOM_HIPICKET,/* High picket for random data attrs.*/
 	CRYPT_IATTRIBUTE_RANDOM_NONCE,	/* Basic nonce */
 	CRYPT_IATTRIBUTE_TIME,			/* Reliable (hardware-based) time value */
+	CRYPT_IATTRIBUTE_HWSTORAGE,		/* Associated keyset for priv.key data */
+	CRYPT_IATTRIBUTE_COMMITNOTIFY,	/* Commit notification for device data */
+	CRYPT_IATTRIBUTE_RESETNOTIFY,	/* Reset notification for device data */
 
 	/* Envelope internal attributes */
 	CRYPT_IATTRIBUTE_INCLUDESIGCERT,/* Whether to include signing cert(s) */
 	CRYPT_IATTRIBUTE_ATTRONLY,		/* Signed data contains only CMS attrs.*/
+	CRYPT_IATTRIBUTE_ENVFORMAT,		/* Envelope format type */
+	CRYPT_IATTRIBUTE_ENVUSAGE,		/* Envelope usage as content-type */
 
 	/* Keyset internal attributes */
 	CRYPT_IATTRIBUTE_CONFIGDATA,	/* Config information */
@@ -1349,7 +1416,7 @@ typedef enum {
 	CRYPT_IATTRIBUTE_USERINFO,		/* User information */
 	CRYPT_IATTRIBUTE_TRUSTEDCERT,	/* First trusted cert */
 	CRYPT_IATTRIBUTE_TRUSTEDCERT_NEXT,	/* Successive trusted certs */
-	CRYPT_IATTRIBUTE_HWSTORAGE,		/* Associated device for priv.key data */
+	CRYPT_IATTRIBUTE_HWDEVICE,		/* Associated device for priv.key data */
 
 	/* Session internal attributes */
 	CRYPT_IATTRIBUTE_ENC_TIMESTAMP,	/* Encoded TSA timestamp */
@@ -1491,7 +1558,11 @@ typedef enum { CRYPT_CONTENT_NONE, CRYPT_CONTENT_DATA,
 			   CRYPT_CONTENT_AUTHENVDATA, CRYPT_CONTENT_TSTINFO,
 			   CRYPT_CONTENT_SPCINDIRECTDATACONTEXT,
 			   CRYPT_CONTENT_RTCSREQUEST, CRYPT_CONTENT_RTCSRESPONSE,
-			   CRYPT_CONTENT_RTCSRESPONSE_EXT, CRYPT_CONTENT_MRTD, 
+			   CRYPT_CONTENT_RTCSRESPONSE_EXT, 
+			   CRYPT_CONTENT_SCVPCERTVALREQUEST,
+			   CRYPT_CONTENT_SCVPCERTVALRESPONSE, 
+			   CRYPT_CONTENT_SCVPVALPOLREQUEST,
+			   CRYPT_CONTENT_SCVPVALPOLRESPONSE, CRYPT_CONTENT_MRTD, 
 			   CRYPT_CONTENT_LAST
 			 } CRYPT_CONTENT_TYPE;
 
@@ -1540,7 +1611,9 @@ typedef enum {
 	} CRYPT_INTEGRITY_TYPE;
 
 /* The certificate export format type, which defines the format in which a
-   certificate object is exported */
+   certificate object is exported.  For example a basic certificate type can 
+   be exported as a certificate, certificate chain, SET OF certificate, 
+   SEQUENCE OF certificate, or TLS or TLS 1.3 certificate collection */
 
 typedef enum {
 	CRYPT_CERTFORMAT_NONE,			/* No certificate format */
@@ -1553,7 +1626,8 @@ typedef enum {
 #ifdef _CRYPT_DEFINED
 	CRYPT_ICERTFORMAT_CERTSET,		/* SET OF Certificate */
 	CRYPT_ICERTFORMAT_CERTSEQUENCE,	/* SEQUENCE OF Certificate */
-	CRYPT_ICERTFORMAT_SSL_CERTCHAIN,/* SSL certificate chain */
+	CRYPT_ICERTFORMAT_TLS_CERTCHAIN,/* TLS certificate chain */
+	CRYPT_ICERTFORMAT_TLS13_CERTCHAIN,/* TLS 1.3 certificate chain */
 	CRYPT_ICERTFORMAT_DATA,			/* Non-signed object data */
 	CRYPT_ICERTFORMAT_SMIME_CERTIFICATE,/* S/MIME cert.request or cert chain */
 			/* Used as an internal format specifier when the format is 
@@ -1663,26 +1737,36 @@ typedef enum {
 	CRYPT_SUBPROTOCOL_NONE,			/* No sub-protocol type */
 	CRYPT_SUBPROTOCOL_WEBSOCKETS,	/* Websockets */
 	CRYPT_SUBPROTOCOL_EAPTTLS,		/* EAP-TTLS */
+	CRYPT_SUBPROTOCOL_PEAP,			/* PEAP */
 	CRYPT_SUBPROTOCOL_LAST			/* Last possible sub-protocol type */
 	} CRYPT_SUBPROTOCOL_TYPE;
 
-/* SSL/TLS protocol options.  CRYPT_SSLOPTION_MINVER_SSLV3 is the same as 
-   CRYPT_SSLOPTION_NONE since this is the baseline, although it'll never be
+/* CMP protocol options */
+
+#define CRYPT_CMPOPTION_NONE				0x000
+#define CRYPT_CMPOPTION_3GPP				0x001	/* Peer is following 33.310 */
+#ifdef _CRYPT_DEFINED
+#define CRYPT_CMPOPTION_MAX					0x07F	/* Defines for range checking */
+#endif /* _CRYPT_DEFINED */
+
+/* TLS protocol options.  CRYPT_TLSOPTION_MINVER_SSLV3 is the same as 
+   CRYPT_TLSOPTION_NONE since this is the baseline, although it'll never be
    encountered since SSLv3 is disabled */
 
-#define CRYPT_SSLOPTION_NONE				0x000
-#define CRYPT_SSLOPTION_MINVER_SSLV3		0x000	/* Min.protocol version */
-#define CRYPT_SSLOPTION_MINVER_TLS10		0x001
-#define CRYPT_SSLOPTION_MINVER_TLS11		0x002
-#define CRYPT_SSLOPTION_MINVER_TLS12		0x003
-#define CRYPT_SSLOPTION_MINVER_TLS13		0x004
-#define CRYPT_SSLOPTION_MANUAL_CERTCHECK	0x008	/* Require manual cert.verif.*/
-#define CRYPT_SSLOPTION_DISABLE_NAMEVERIFY	0x010	/* Disable cert hostname check */
-#define CRYPT_SSLOPTION_DISABLE_CERTVERIFY	0x020	/* Disable certificate check */
-#define CRYPT_SSLOPTION_SUITEB_128			0x100	/* SuiteB security levels (may */
-#define CRYPT_SSLOPTION_SUITEB_256			0x200	/*  vanish in future releases) */
+#define CRYPT_TLSOPTION_NONE				0x000
+#define CRYPT_TLSOPTION_MINVER_SSLV3		0x000	/* Min.protocol version */
+#define CRYPT_TLSOPTION_MINVER_TLS10		0x001
+#define CRYPT_TLSOPTION_MINVER_TLS11		0x002
+#define CRYPT_TLSOPTION_MINVER_TLS12		0x003
+#define CRYPT_TLSOPTION_MINVER_TLS13		0x004
+#define CRYPT_TLSOPTION_MANUAL_CERTCHECK	0x008	/* Require manual cert.verif.*/
+#define CRYPT_TLSOPTION_DISABLE_NAMEVERIFY	0x010	/* Disable cert hostname check */
+#define CRYPT_TLSOPTION_DISABLE_CERTVERIFY	0x020	/* Disable certificate check */
+#define CRYPT_TLSOPTION_SERVER_SNI			0x040	/* Enable SNI-based key selection */
+#define CRYPT_TLSOPTION_SUITEB_128			0x100	/* SuiteB security levels (will */
+#define CRYPT_TLSOPTION_SUITEB_256			0x200	/*  vanish in future releases) */
 #ifdef _CRYPT_DEFINED
-#define CRYPT_SSLOPTION_MAX					0x7F	/* Defines for range checking */
+#define CRYPT_TLSOPTION_MAX					0x07F	/* Defines for range checking */
 #endif /* _CRYPT_DEFINED */
 
 /* SSH protocol options. */
@@ -1699,18 +1783,24 @@ typedef enum {
 *																			*
 ****************************************************************************/
 
-/* The maximum user key size - 2048 bits */
+/* The maximum user key size - 512 bits */
 
-#define CRYPT_MAX_KEYSIZE		256
+#define CRYPT_MAX_KEYSIZE		64
 
 /* The maximum IV/cipher block size - 256 bits */
 
 #define CRYPT_MAX_IVSIZE		32
 
 /* The maximum public-key component size - 4096 bits, and maximum component
-   size for ECCs - 576 bits (to handle the P521 curve) */
+   size for ECCs - 576 bits (to handle the P521 curve).  This is a bit 
+   complex to set up because it can be overridden via the 
+   CONFIG_PKC_ALLOCSIZE define in order to conserve memory */
 
-#define CRYPT_MAX_PKCSIZE		512
+#ifdef CONFIG_PKC_ALLOCSIZE
+  #define CRYPT_MAX_PKCSIZE		CONFIG_PKC_ALLOCSIZE
+#else
+  #define CRYPT_MAX_PKCSIZE		512
+#endif /* CRYPT_MAX_PKCSIZE */
 #define CRYPT_MAX_PKCSIZE_ECC	72
 
 /* The maximum hash size - 512 bits.  Before 3.4 this was 256 bits, in the 
@@ -1884,6 +1974,8 @@ typedef enum {
 	CRYPT_ECCCURVE_BRAINPOOL_P256, /* Brainpool p256r1 */
 	CRYPT_ECCCURVE_BRAINPOOL_P384, /* Brainpool p384r1 */
 	CRYPT_ECCCURVE_BRAINPOOL_P512, /* Brainpool p512r1 */
+	CRYPT_ECCCURVE_25519,		/* X25519/Ed25519 */
+	CRYPT_ECCCURVE_448,			/* X448/Ed448 */
 	CRYPT_ECCCURVE_LAST			/* Last valid ECC curve type */
 	} CRYPT_ECCCURVE_TYPE;
 
@@ -1997,10 +2089,14 @@ typedef struct {
 
 #define CRYPT_ENVELOPE_RESOURCE	( -50 )	/* Need resource to proceed */
 
-/* Macros to examine return values */
+/* Macros to examine return values.  These may have more complex definitions 
+   via internal headers, so we only define them if they're not already
+   defined */
 
-#define cryptStatusError( status )	( ( status ) < CRYPT_OK )
-#define cryptStatusOK( status )		( ( status ) == CRYPT_OK )
+#ifndef cryptStatusError
+  #define cryptStatusError( status )	( ( status ) < CRYPT_OK )
+  #define cryptStatusOK( status )		( ( status ) == CRYPT_OK )
+#endif /* cryptStatusError */
 
 /****************************************************************************
 *																			*

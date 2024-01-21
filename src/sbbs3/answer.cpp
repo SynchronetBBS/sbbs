@@ -19,6 +19,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <stddef.h> // size_t for base64.h
+#include "base64.h"
 #include "sbbs.h"
 #include "telnet.h"
 #include "ssl.h"
@@ -39,11 +41,67 @@ sbbs_t::set_authresponse(bool activate_ssh)
 	return true;
 }
 
+static bool
+check_pubkey(scfg_t *cfg, ushort unum, char *pkey, size_t pksz)
+{
+	// 2048 is enough bytes for anyone!
+	// I would absolutely prefer a getline() here. :(
+	char path[MAX_PATH + 1];
+	char keyline[2048 + 1];
+	FILE *sshkeys;
+	char *brkb;
+	char *tok;
+
+	// Obviously not valid...
+	if (pksz < 16)
+		return false;
+	SAFEPRINTF2(path, "%suser/%04d.sshkeys", cfg->data_dir, unum);
+	sshkeys = fopen(path, "rb");
+	if (sshkeys != NULL) {
+		while (fgets(keyline, sizeof(keyline), sshkeys) != NULL) {
+			size_t len = strlen(keyline);
+
+			if (keyline[len - 1] != '\n') {
+				// Ignore the rest of the line...
+				while (keyline[len - 1] != '\n') {
+					lprintf(LOG_ERR, "keyline not large enough for key in %s (or missing newline)\n", path);
+					if (fgets(keyline, sizeof(keyline), sshkeys) == NULL)
+						break;
+					len = strlen(keyline);
+				}
+			}
+			else {
+				tok = strtok_r(keyline, " \t", &brkb);
+				if (tok) {
+					tok = strtok_r(NULL, " \t", &brkb);
+					if (tok) {
+						char pk[2048];
+						int pklen;
+						pklen = b64_decode(pk, sizeof(pk), tok, 0);
+						if (pklen != -1) {
+							if ((pksz - 4) == pklen) {
+								if (memcmp(&pkey[4], pk, pklen) == 0) {
+									fclose(sshkeys);
+									return true;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		fclose(sshkeys);
+	}
+	return false;
+}
+
 bool sbbs_t::answer()
 {
 	char	str[MAX_PATH+1],str2[MAX_PATH+1],c;
 	char 	tmp[MAX_PATH];
 	char 	*ctmp;
+	char 	*pubkey;
+	size_t  pubkeysz;
 	char 	path[MAX_PATH+1];
 	int		i,l,in;
 	struct tm tm;
@@ -218,6 +276,9 @@ bool sbbs_t::answer()
 					SAFECOPY(tmp, ctmp);
 					free_crypt_attrstr(ctmp);
 				}
+				else {
+					pubkey = get_binary_crypt_attribute(ssh_session, CRYPT_SESSINFO_PUBLICKEY, &pubkeysz);
+				}
 				lprintf(LOG_DEBUG,"SSH login: '%s'", rlogin_name);
 			}
 			else {
@@ -226,21 +287,33 @@ bool sbbs_t::answer()
 			}
 			useron.number = find_login_id(&cfg, rlogin_name);
 			if(useron.number) {
-				getuserdat(&cfg,&useron);
-				if (stricmp(tmp, useron.pass) == 0) {
-					SAFECOPY(rlogin_pass, tmp);
-					activate_ssh = set_authresponse(true);
+				if (getuserdat(&cfg,&useron) == 0) {
+					if (pubkey) {
+						if (check_pubkey(&cfg, useron.number, pubkey, pubkeysz)) {
+							SAFECOPY(rlogin_pass, tmp);
+							activate_ssh = set_authresponse(true);
+						}
+					}
+					else {
+						if (stricmp(tmp, useron.pass) == 0) {
+							SAFECOPY(rlogin_pass, tmp);
+							activate_ssh = set_authresponse(true);
+						}
+						else if(ssh_failed) {
+							if(cfg.sys_misc&SM_ECHO_PW)
+								safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt: '%s'"
+									,useron.number,useron.alias,tmp);
+							else
+								safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt"
+									,useron.number,useron.alias);
+							logline(LOG_NOTICE,"+!",str);
+							badlogin(useron.alias, tmp);
+							useron.number=0;
+						}
+					}
 				}
-				else if(ssh_failed) {
-					if(cfg.sys_misc&SM_ECHO_PW)
-						safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt: '%s'"
-							,useron.number,useron.alias,tmp);
-					else
-						safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt"
-							,useron.number,useron.alias);
-					logline(LOG_NOTICE,"+!",str);
-					badlogin(useron.alias, tmp);
-					useron.number=0;
+				else {
+					lprintf(LOG_NOTICE, "SSH failed to read user data for %s", rlogin_name);
 				}
 			}
 			else {
@@ -252,6 +325,10 @@ bool sbbs_t::answer()
 				// Enable SSH so we can create a new user...
 				activate_ssh = set_authresponse(true);
 			}
+			if (pubkey)
+				free_crypt_attrstr(pubkey);
+			if (!activate_ssh)
+				set_authresponse(false);
 		}
 		if (activate_ssh) {
 			int cid;

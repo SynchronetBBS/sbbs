@@ -1,0 +1,11 @@
+--- makefile.orig	2023-12-31 12:09:41.982826000 -0500
++++ makefile	2023-12-31 12:10:05.682180000 -0500
+@@ -1784,7 +1784,7 @@
+ # than the system tools and libraries for the build, so we special-case this
+ # step based on the $(OSNAME) setting supplied to the build script.
+ 
+-$(ALIBNAME):	$(OBJS) $(EXTRAOBJS) $(TESTOBJS)
++$(ALIBNAME):	$(OBJS) $(EXTRAOBJS)
+ 				@./tools/buildlib.sh $(ALIBNAME) $(OSNAME) $(AR) \
+ 					$(OBJS) $(EXTRAOBJS)
+ 

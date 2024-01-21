@@ -27,9 +27,11 @@ CRYPT_SESSION   ssh_session;
 int             ssh_channel;
 int             ssh_active = true;
 pthread_mutex_t ssh_mutex;
+pthread_mutex_t ssh_tx_mutex;
 int             sftp_channel = -1;
 bool            sftp_active;
 sftpc_state_t   sftp_state;
+bool            pubkey_thread_running;
 
 static void
 FlushData(CRYPT_SESSION sess)
@@ -60,17 +62,17 @@ cryptlib_error_message(int status, const char *msg)
 }
 
 static void
-close_sftp_channel(void)
+close_sftp_channel(int chan)
 {
 	sftpc_state_t oldstate;
 	pthread_mutex_lock(&ssh_mutex);
-	if (sftp_channel != -1) {
+	if (chan != -1) {
 		FlushData(ssh_session);
-		if (cryptStatusOK(cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sftp_channel))) {
+		if (cryptStatusOK(cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, chan))) {
 			cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
 		}
-		sftp_channel = -1;
 	}
+	sftp_channel = -1;
 	oldstate = sftp_state;
 	sftp_state = NULL;
 	pthread_mutex_unlock(&ssh_mutex);
@@ -106,9 +108,9 @@ check_channel_open(int *chan)
 		if (cryptStatusError(status)) {
 			open = 0;
 		}
-	}
-	if (!open) {
-		cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
+		if (!open) {
+			cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
+		}
 	}
 	return open;
 }
@@ -246,7 +248,7 @@ ssh_input_thread(void *args)
 				 */
 				if (rd > 0 && !sftpc_recv(sftp_state, conn_api.rd_buf, rd)) {
 					pthread_mutex_unlock(&ssh_mutex);
-					close_sftp_channel();
+					close_sftp_channel(sftp_channel);
 					pthread_mutex_lock(&ssh_mutex);
 					FlushData(ssh_session);
 					pthread_mutex_unlock(&ssh_mutex);
@@ -295,6 +297,7 @@ ssh_output_thread(void *args)
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
+			pthread_mutex_lock(&ssh_tx_mutex);
 			while (ssh_active && sent < wr) {
 				ret = 0;
 				pthread_mutex_lock(&ssh_mutex);
@@ -320,6 +323,7 @@ ssh_output_thread(void *args)
 				}
 				sent += ret;
 			}
+			pthread_mutex_unlock(&ssh_tx_mutex);
 		}
 		else {
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
@@ -328,7 +332,6 @@ ssh_output_thread(void *args)
 	conn_api.output_thread_running = 2;
 }
 
-#if NOTYET
 static bool
 sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 {
@@ -337,6 +340,7 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 
 	if (sz == 0)
 		return true;
+	pthread_mutex_lock(&ssh_tx_mutex);
 	while (ssh_active && sent < sz) {
 		int status;
 		int ret = 0;
@@ -359,6 +363,7 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 		}
 		sent += ret;
 	}
+	pthread_mutex_unlock(&ssh_tx_mutex);
 	return sent == sz;
 }
 
@@ -465,14 +470,28 @@ add_public_key(void *vpriv)
 {
 	int status;
 	int active;
+	int new_sftp_channel = -1;
 	char *priv = vpriv;
 
-	/*
-	 * TODO: We need to wait until the session is established.
-	 *       Best way to do this is a channel property that indicates
-	 *       what type of channel it is.
-	 */
-	SLEEP(1000);
+	// Wait for at most five seconds for channel to be fully active
+	active = 0;
+	for (unsigned sleep_count = 0; sleep_count < 500 && conn_api.terminate == 0; sleep_count++) {
+		pthread_mutex_lock(&ssh_mutex);
+		if (ssh_channel != -1) {
+			status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel);
+			if (cryptStatusOK(status))
+				status = cl.GetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, &active);
+		}
+		pthread_mutex_unlock(&ssh_mutex);
+		if (cryptStatusOK(status) && active)
+			break;
+		SLEEP(10);
+	};
+	if (!active) {
+		pubkey_thread_running = false;
+		return;
+	}
+	pthread_mutex_lock(&ssh_tx_mutex);
 	pthread_mutex_lock(&ssh_mutex);
 	FlushData(ssh_session);
 	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, CRYPT_UNUSED);
@@ -490,7 +509,7 @@ add_public_key(void *vpriv)
 				pthread_mutex_unlock(&ssh_mutex);
 				cryptlib_error_message(status, "setting subsystem");
 			} else {
-				status = cl.GetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &sftp_channel);
+				status = cl.GetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &new_sftp_channel);
 				if (cryptStatusError(status)) {
 					sftp_channel = -1;
 					pthread_mutex_unlock(&ssh_mutex);
@@ -499,27 +518,73 @@ add_public_key(void *vpriv)
 			}
 		}
 	}
-	if (sftp_channel != -1) {
+	if (new_sftp_channel != -1) {
 		status = cl.GetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_OPEN, &active);
 		if (cryptStatusError(status) || !active) {
 			cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
-			sftp_channel = -1;
 			pthread_mutex_unlock(&ssh_mutex);
+			pthread_mutex_unlock(&ssh_tx_mutex);
 			free(priv);
+			pubkey_thread_running = false;
 			return;
 		}
 		status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 1);
-		if (cryptStatusError(status)) {
+		if (cryptStatusError(status) && status != CRYPT_ENVELOPE_RESOURCE) {
 			pthread_mutex_unlock(&ssh_mutex);
-			close_sftp_channel();
+			pthread_mutex_unlock(&ssh_tx_mutex);
+			close_sftp_channel(new_sftp_channel);
 			free(priv);
+			pubkey_thread_running = false;
 			return;
 		}
+		pthread_mutex_unlock(&ssh_mutex);
+		pthread_mutex_unlock(&ssh_tx_mutex);
+		active = 0;
+		for (unsigned sleep_count = 0; sleep_count < 500 && conn_api.terminate == 0; sleep_count++) {
+			pthread_mutex_lock(&ssh_mutex);
+			status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, new_sftp_channel);
+			if (cryptStatusOK(status))
+				status = cl.GetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, &active);
+			pthread_mutex_unlock(&ssh_mutex);
+			if (cryptStatusOK(status) && active)
+				break;
+			SLEEP(10);
+		}
+		if (!active) {
+			close_sftp_channel(sftp_channel);
+			free(priv);
+			pubkey_thread_running = false;
+			return;
+		}
+		/*
+		 * Old version of Synchronet will accept the channel, then
+		 * immediately close it.  If we then send data on the channel,
+		 * it will get mixed in with the first channels data because
+		 * it doesn't have the channel patches.
+		 * 
+		 * To avoid that, we'll sleep for a second to allow
+		 * the remote to close the channel if it wants to.
+		 */
+		for (unsigned sleep_count = 0; sleep_count < 100 && conn_api.terminate == 0; sleep_count++) {
+			SLEEP(10);
+		}
+		pthread_mutex_lock(&ssh_tx_mutex);
+		pthread_mutex_lock(&ssh_mutex);
+		if (conn_api.terminate || !check_channel_open(&new_sftp_channel)) {
+			pthread_mutex_unlock(&ssh_tx_mutex);
+			pthread_mutex_unlock(&ssh_mutex);
+			free(priv);
+			pubkey_thread_running = false;
+			return;
+		}
+		sftp_channel = new_sftp_channel;
 		sftp_state = sftpc_begin(sftp_send, NULL);
 		pthread_mutex_unlock(&ssh_mutex);
+		pthread_mutex_unlock(&ssh_tx_mutex);
 		if (sftp_state == NULL) {
-			close_sftp_channel();
+			close_sftp_channel(sftp_channel);
 			free(priv);
+			pubkey_thread_running = false;
 			return;
 		}
 		if (sftpc_init(sftp_state)) {
@@ -544,25 +609,14 @@ add_public_key(void *vpriv)
 			pthread_mutex_unlock(&ssh_mutex);
 			sftpc_finish(oldstate);
 		}
-		close_sftp_channel();
+		close_sftp_channel(sftp_channel);
 	}
 	else {
 		pthread_mutex_unlock(&ssh_mutex);
 	}
 	free(priv);
+	pubkey_thread_running = false;
 }
-#else
-static void
-add_public_key(void *vpriv)
-{
-}
-
-static char *
-get_public_key(CRYPT_CONTEXT ctx)
-{
-	return NULL;
-}
-#endif
 
 static void
 error_popup(struct bbslist *bbs, const char *blurb, int status)
@@ -597,6 +651,7 @@ ssh_connect(struct bbslist *bbs)
 	if (!bbs->hidepopups)
 		init_uifc(true, true);
 	pthread_mutex_init(&ssh_mutex, NULL);
+	pthread_mutex_init(&ssh_tx_mutex, NULL);
 
 	if (!crypt_loaded) {
 		if (!bbs->hidepopups) {
@@ -913,7 +968,10 @@ ssh_connect(struct bbslist *bbs)
 
 	_beginthread(ssh_output_thread, 0, NULL);
 	_beginthread(ssh_input_thread, 0, NULL);
-	_beginthread(add_public_key, 0, pubkey);
+	if (bbs->sftp_public_key) {
+		pubkey_thread_running = true;
+		_beginthread(add_public_key, 0, pubkey);
+	}
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL); // TODO: Why is this called twice?
@@ -927,10 +985,10 @@ ssh_close(void)
 	char garbage[1024];
 
 	conn_api.terminate = 1;
-	close_sftp_channel();
+	close_sftp_channel(sftp_channel);
 	close_ssh_channel();
 	ssh_active = false;
-	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
+	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1 || pubkey_thread_running) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
 	}

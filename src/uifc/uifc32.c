@@ -27,6 +27,7 @@
 	#endif
     #define mswait(x) delay(x)
 #elif defined(_WIN32)
+	#define WIN32_LEAN_AND_MEAN
 	#include <share.h>
 	#include <windows.h>
 	#define mswait(x) Sleep(x)

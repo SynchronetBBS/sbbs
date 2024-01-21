@@ -36,7 +36,7 @@ void free_crypt_attrstr(char *attr)
 	free(attr);
 }
 
-char* get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr)
+char* get_binary_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr, size_t *sz)
 {
 	int   len = 0;
 	char *estr = NULL;
@@ -46,15 +46,23 @@ char* get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr)
 	if (cryptStatusOK(status)) {
 		estr = malloc(len + 1);
 		if (estr) {
-			if (cryptStatusError(cryptGetAttributeString(sess, attr, estr, &len))) {
-				free(estr);
-				return NULL;
+			if (cryptStatusOK(cryptGetAttributeString(sess, attr, estr, &len))) {
+				if (len >= 0) {
+					estr[len] = 0;
+					if (sz)
+						*sz = len;
+					return estr;
+				}
 			}
-			estr[len] = 0;
-			return estr;
+			free(estr);
 		}
 	}
 	return NULL;
+}
+
+char* get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr)
+{
+	return get_binary_crypt_attribute(sess, attr, NULL);
 }
 
 char* get_crypt_error(CRYPT_HANDLE sess)
@@ -423,7 +431,7 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 	}
 	else {
 		/* Couldn't do that... create a new context and use the cert from there... */
-		if(!DO("creating SSL context", CRYPT_UNUSED,cryptCreateContext(&cert_entry->cert, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {
+		if(!DO("creating TLS context", CRYPT_UNUSED,cryptCreateContext(&cert_entry->cert, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {
 			pthread_mutex_unlock(&get_ssl_cert_mutex);
 			free(cert_entry);
 			return NULL;

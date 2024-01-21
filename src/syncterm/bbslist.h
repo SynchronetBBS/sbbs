@@ -142,6 +142,7 @@ struct bbslist {
 	bool               yellow_is_yellow;
 	bool               has_fingerprint;
 	uint8_t            ssh_fingerprint[20];
+	bool               sftp_public_key;
 };
 
 extern char *music_names[];

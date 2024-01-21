@@ -1,0 +1,11 @@
+--- bn/bn_lcl.h.orig	2024-01-07 22:16:23.377711000 -0500
++++ bn/bn_lcl.h	2024-01-07 22:16:36.330481000 -0500
+@@ -232,7 +232,7 @@
+ #  define PTR_SIZE_INT size_t
+ # endif                         /* defined(OPENSSL_SYS_VMS) [else] */
+ 
+-# if !defined(OPENSSL_NO_ASM) && !defined(OPENSSL_NO_INLINE_ASM) && !defined(PEDANTIC)
++# if !defined(PEDANTIC)
+ 
+ /* The original OpenSSL code has a mass of inline asm to handle 64-bit 
+    multiplies across different architectures, however if the compiler 
