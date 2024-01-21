@@ -1608,27 +1608,69 @@ static JSBool
 js_editfile(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-    JSString*	str;
+    JSString*	js_str;
 	sbbs_t*		sbbs;
-	char*		cstr;
+	char*		path{nullptr};
+	char*		to{nullptr};
+	char*		from{nullptr};
+	char*		subj{nullptr};
+	char*		msgarea{nullptr};
+	int32		maxlines = 10000;
 	jsrefcount	rc;
+	JSBool		result = JS_TRUE;
 
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if((str=JS_ValueToString(cx, argv[0]))==NULL)
-		return(JS_FALSE);
+	for (uintN i = 0; i < argc; ++i) {
+		if(JSVAL_IS_NUMBER(argv[i])) {
+			if(!JS_ValueToInt32(cx, argv[i], &maxlines))
+				return JS_FALSE;
+			continue;
+		}
+		if(JSVAL_IS_STRING(argv[i])) {
+			if((js_str = JS_ValueToString(cx, argv[i])) == NULL)
+				continue;
+			char* cstr;
+			JSSTRING_TO_MSTRING(cx, js_str, cstr, NULL);
+			if(cstr == nullptr)
+				continue;
+			if(path == nullptr)
+				path = cstr;
+			else if(to == nullptr)
+				to = cstr;
+			else if(from == nullptr)
+				from = cstr;
+			else if(subj == nullptr)
+				subj = cstr;
+			else if(msgarea == nullptr)
+				msgarea = cstr;
+			else {
+				JS_ReportError(cx, "Unsupported argument");
+				free(cstr);
+				result = JS_FALSE;
+			}
+			continue;
+		}
+	}
 
-	JSSTRING_TO_MSTRING(cx, str, cstr, NULL);
-	if(cstr==NULL)
-		return JS_FALSE;
-	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->editfile(cstr)));
-	free(cstr);
-	JS_RESUMEREQUEST(cx, rc);
-    return(JS_TRUE);
+	if(path == nullptr) {
+		JS_ReportError(cx, "No filename specified");
+		result = JS_FALSE;
+	}
+	if (result == JS_TRUE) {
+		rc=JS_SUSPENDREQUEST(cx);
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->editfile(path, maxlines, to, from, subj, msgarea)));
+		JS_RESUMEREQUEST(cx, rc);
+	}
+	free(path);
+	free(to);
+	free(from);
+	free(subj);
+	free(msgarea);
+    return result;
 }
 
 
@@ -2599,8 +2641,8 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("Print the last <i>n</i> lines of file with optional print mode, original column width, and scope.")
 	,310
 	},
-	{"editfile",		js_editfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename")
-	,JSDOCSTR("Edit/create a text file using the user's preferred message editor")
+	{"editfile",		js_editfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename [,<i>number</i> maxlines=10000] [,<i>string</i> to] [,<i>string</i> from] [,<i>string</i> subject] [,<i>string</i> msg_area]")
+	,JSDOCSTR("Edit/create a text file using the user's preferred message editor with optional override values for the drop file created to communicate metadata to an external editor")
 	,310
 	},
 	{"uselect",			js_uselect,			0, JSTYPE_NUMBER,	JSDOCSTR("[<i>number</i> index, title, item] [,ars]")

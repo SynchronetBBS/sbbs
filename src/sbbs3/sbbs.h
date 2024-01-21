@@ -798,12 +798,12 @@ public:
 	bool	forwardmsg(smb_t*, smbmsg_t*, const char* to, const char* subject = NULL, const char* comment = NULL);
 	void	removeline(char *str, char *str2, char num, char skip);
 	uint	msgeditor(char *buf, const char *top, char *title, uint max_lines, uint max_line_len);
-	bool	editfile(char *path, uint max_lines = 10000);
+	bool	editfile(char *path, uint max_lines = 10000, const char* to = NULL, const char* from = NULL, const char* subj = NULL, const char* msgarea = NULL);
 	ushort	chmsgattr(const smbmsg_t*);
 	bool	quotemsg(smb_t*, smbmsg_t*, bool tails = false);
 	bool	editmsg(smb_t*, smbmsg_t*);
 	void	editor_inf(int xeditnum, const char *to, const char* from, const char *subj, int mode
-				,int subnum, const char* tagfile);
+				,const char* msgarea, const char* tagfile = NULL);
 	bool	copyfattach(uint to, uint from, const char* subj);
 	bool	movemsg(smbmsg_t* msg, int subnum);
 	int		process_edited_text(char* buf, FILE* stream, int mode, unsigned* lines, unsigned maxlines);

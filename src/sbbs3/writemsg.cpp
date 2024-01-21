@@ -589,7 +589,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				}
 			}
 		}
-		editor_inf(useron_xedit,to,from,subj,mode,subnum,tagfile);
+		editor_inf(useron_xedit,to,from,subj,mode,subnum==INVALID_SUB ? nulstr : cfg.sub[subnum]->sname, tagfile);
 		if(cfg.xedit[useron_xedit-1]->type) {
 			gettimeleft();
 			xtrndat(mode&WM_ANON ? text[Anonymous]:from,cfg.node_dir,cfg.xedit[useron_xedit-1]->type
@@ -822,7 +822,7 @@ void quotestr(char *str)
 /****************************************************************************/
 /****************************************************************************/
 void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const char *subj, int mode
-	,int subnum, const char* tagfile)
+	,const char* msgarea, const char* tagfile)
 {
 	char	path[MAX_PATH+1];
 	FILE*	fp;
@@ -841,9 +841,7 @@ void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const ch
 		fprintf(fp,"%s\r\n%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n"
 			,mode&WM_ANON ? text[Anonymous]:from,to,subj,1
 			,mode&WM_NETMAIL ? "NetMail"
-				:mode&WM_EMAIL ? "Electronic Mail"
-					:subnum==INVALID_SUB ? nulstr
-						:cfg.sub[subnum]->sname
+				:mode&WM_EMAIL ? "Electronic Mail" : msgarea
 			,mode&WM_PRIVATE ? "YES":"NO");
 		/* the 7th line (the tag-line file) is a Synchronet extension, for SlyEdit */
 		if((mode&WM_EXTDESC)==0 && tagfile!=NULL)
@@ -1240,7 +1238,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 /****************************************************************************/
 /* Edits an existing file or creates a new one in MSG format                */
 /****************************************************************************/
-bool sbbs_t::editfile(char *fname, uint maxlines)
+bool sbbs_t::editfile(char *fname, uint maxlines, const char* to, const char* from, const char* subj, const char* msgarea)
 {
 	char *buf,path[MAX_PATH+1];
 	char msgtmp[MAX_PATH+1];
@@ -1262,6 +1260,15 @@ bool sbbs_t::editfile(char *fname, uint maxlines)
 	quotes_fname(useron_xedit, path, sizeof(path));
 	(void)removecase(path);
 
+	if(to == NULL)
+		to = fname;
+	if(from == NULL)
+		from = nulstr;
+	if(subj == NULL)
+		subj = nulstr;
+	if(msgarea == NULL)
+		msgarea = nulstr;
+
 	if(useron_xedit) {
 
 		SAFECOPY(path,fname);
@@ -1273,7 +1280,7 @@ bool sbbs_t::editfile(char *fname, uint maxlines)
 				CopyFile(path, msgtmp, /* failIfExists: */FALSE);
 		}
 
-		editor_inf(useron_xedit,/* to: */fname,/* from: */nulstr,/* subj: */nulstr,/* mode: */0,INVALID_SUB,/* tagfile: */NULL);
+		editor_inf(useron_xedit, to, from, subj, /* mode: */0, msgarea);
 		if(cfg.xedit[useron_xedit-1]->misc&XTRN_NATIVE)
 			mode|=EX_NATIVE;
 		if(cfg.xedit[useron_xedit-1]->misc&XTRN_SH)
