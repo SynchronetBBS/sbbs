@@ -100,7 +100,7 @@ bool sbbs_t::answer()
 	char	str[MAX_PATH+1],str2[MAX_PATH+1],c;
 	char 	tmp[MAX_PATH];
 	char 	*ctmp;
-	char 	*pubkey;
+	char 	*pubkey{nullptr};
 	size_t  pubkeysz;
 	char 	path[MAX_PATH+1];
 	int		i,l,in;
