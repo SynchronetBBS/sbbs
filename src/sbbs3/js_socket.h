@@ -26,6 +26,7 @@ typedef struct
 	BOOL	peeked;
 	uint16_t local_port;
 	js_callback_t *js_cb;
+	int     tls_minver;
 } js_socket_private_t;
 
 #ifdef __cplusplus

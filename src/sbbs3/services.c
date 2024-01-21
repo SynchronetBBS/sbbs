@@ -1097,6 +1097,7 @@ static void js_service_thread(void* arg)
 			js_service_failure_cleanup(service, socket);
 			return;
 		}
+		HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_MINVER_TLS12), &service_client, "setting minimum TLS version");
 		/* Add all the user/password combinations */
 #if 0 // TLS-PSK is currently broken in cryptlib
 		last = lastuser(&scfg);

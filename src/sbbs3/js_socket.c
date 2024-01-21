@@ -2250,6 +2250,7 @@ enum {
 	,SOCK_PROP_NETWORK_ORDER
 	,SOCK_PROP_SSL_SESSION
 	,SOCK_PROP_SSL_SERVER
+	,SOCK_PROP_TLS_MINVER
 
 };
 
@@ -2275,6 +2276,7 @@ static const char* socket_prop_desc[] = {
 	,"<tt>true</tt> if binary data is to be sent in Network Byte Order (big end first), default is <tt>true</tt>"
 	,"Set to <tt>true</tt> to enable SSL as a client on the socket"
 	,"Set to <tt>true</tt> to enable SSL as a server on the socket"
+	,"Set to 100 to support TLS 1.0, 101 to support TLS 1.1 and 102 (default) for TLS 1.2, must be set before enabling TLS"
 
 	/* statically-defined properties: */
 	,"Array of socket option names supported by the current platform"
@@ -2355,6 +2357,12 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 							nb=1;
 							setsockopt(p->sock,IPPROTO_TCP,TCP_NODELAY,(char*)&nb,sizeof(nb));
 							if((ret=do_cryptAttribute(p->session, CRYPT_SESSINFO_NETWORKSOCKET, p->sock))==CRYPT_OK) {
+								int minver = CRYPT_TLSOPTION_MINVER_TLS12;
+								if (p->tls_minver == 100)
+									minver = CRYPT_TLSOPTION_MINVER_TLS10;
+								else if (p->tls_minver == 101)
+									minver = CRYPT_TLSOPTION_MINVER_TLS11;
+								do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, minver);
 								// Reduced compliance checking... required for acme-staging-v02.api.letsencrypt.org
 								do_cryptAttribute(p->session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_REDUCED);
 								if (tiny == SOCK_PROP_SSL_SESSION) {
@@ -2405,6 +2413,17 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 				}
 			}
 			JS_RESUMEREQUEST(cx, rc);
+			break;
+		case SOCK_PROP_TLS_MINVER:
+			if(JS_ValueToInt32(cx,*vp,&i)) {
+				switch(i) {
+					case 100:
+					case 101:
+					case 102:
+						p->tls_minver = i;
+						break;
+				}
+			}
 			break;
 	}
 
@@ -2568,6 +2587,9 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SOCK_PROP_SSL_SERVER:
 			*vp = BOOLEAN_TO_JSVAL(p->session != -1 && p->tls_server);
 			break;
+		case SOCK_PROP_TLS_MINVER:
+			*vp = INT_TO_JSVAL(p->tls_minver);
+			break;
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
@@ -2599,6 +2621,7 @@ static jsSyncPropertySpec js_socket_properties[] = {
 	{	"network_byte_order",SOCK_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	311 },
 	{	"ssl_session"		,SOCK_PROP_SSL_SESSION	,JSPROP_ENUMERATE,	316	},
 	{	"ssl_server"		,SOCK_PROP_SSL_SERVER	,JSPROP_ENUMERATE,	316	},
+	{	"tls_minver"		,SOCK_PROP_TLS_MINVER	,JSPROP_ENUMERATE,	320	},
 	{0}
 };
 
@@ -2834,6 +2857,7 @@ JSObject* js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock, CRYPT_C
 	p->network_byte_order = TRUE;
 	p->session=session;
 	p->unflushed = 0;
+	p->tls_minver = 102;
 
 	if (p->sock != INVALID_SOCKET) {
 		len=sizeof(p->remote_addr);
@@ -3192,6 +3216,7 @@ connected:
 	p->session=-1;
 	p->unflushed = 0;
 	p->is_connected = TRUE;
+	p->tls_minver = 102;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
@@ -3384,6 +3409,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	p->session=-1;
 	p->unflushed = 0;
 	p->local_port = port;
+	p->tls_minver = 102;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
@@ -3497,6 +3523,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	p->network_byte_order = TRUE;
 	p->session=-1;
 	p->unflushed = 0;
+	p->tls_minver = 102;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
@@ -3618,6 +3645,7 @@ JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, char *na
 	p->network_byte_order = TRUE;
 	p->session=-1;
 	p->unflushed = 0;
+	p->tls_minver = 102;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
