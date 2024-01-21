@@ -325,8 +325,10 @@ bool sbbs_t::answer()
 				// Enable SSH so we can create a new user...
 				activate_ssh = set_authresponse(true);
 			}
-			if (pubkey)
+			if (pubkey) {
 				free_crypt_attrstr(pubkey);
+				pubkey = nullptr;
+			}
 			if (!activate_ssh)
 				set_authresponse(false);
 		}
