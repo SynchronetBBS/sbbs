@@ -130,7 +130,7 @@ typedef struct sftp_server_state {
 	bool (*mkdir)(sftp_str_t path, sftp_file_attr_t attributes, void *cb_data);
 	bool (*rmdir)(sftp_str_t path, void *cb_data);
 	bool (*opendir)(sftp_str_t path, void *cb_data);
-	bool (*readdir)(sftp_str_t handle, void *cb_data);
+	bool (*readdir)(sftp_dirhandle_t handle, void *cb_data);
 	bool (*stat)(sftp_str_t path, void *cb_data);
 	bool (*lstat)(sftp_str_t path, void *cb_data);
 	bool (*fstat)(sftp_filehandle_t handle, void *cb_data);

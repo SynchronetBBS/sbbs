@@ -15,6 +15,17 @@ get64(sftps_state_t state)
 	return sftp_get64(state->rxp);
 }
 
+static sftp_str_t
+getcstring(sftps_state_t state)
+{
+	sftp_str_t str = getstring(state);
+	if (memchr(str->c_str, 0, str->len) != NULL) {
+		free_sftp_str(str);
+		return NULL;
+	}
+	return str;
+}
+
 static bool
 appendcstring(sftps_state_t state, const char *s)
 {
@@ -92,7 +103,7 @@ s_open(sftps_state_t state)
 	sftp_file_attr_t attrs;
 
 	state->id = get32(state);
-	fname = getstring(state);
+	fname = getcstring(state);
 	if (fname == NULL)
 		return false;
 	flags = get32(state);
@@ -151,13 +162,43 @@ s_write(sftps_state_t state)
 }
 
 static bool
+s_close(sftps_state_t state)
+{
+	bool ret;
+	sftp_str_t handle;
+	
+	state->id = get32(state);
+	handle = getstring(state);
+	if (handle == NULL)
+		return false;
+	ret = state->close(handle, state->cb_data);
+	free_sftp_str(handle);
+	return ret;
+}
+
+static bool
+s_readdir(sftps_state_t state)
+{
+	bool ret;
+	sftp_dirhandle_t handle;
+
+	state->id = get32(state);
+	handle = getstring(state);
+	if (handle == NULL)
+		return false;
+	ret = state->readdir(handle, state->cb_data);
+	free_sftp_str(handle);
+	return ret;
+}
+
+static bool
 s_id_str(sftps_state_t state, bool (*cb)(sftp_str_t, void *))
 {
 	bool ret;
 	sftp_str_t str;
 	
 	state->id = get32(state);
-	str = getstring(state);
+	str = getcstring(state);
 	if (str == NULL)
 		return false;
 	ret = cb(str, state->cb_data);
@@ -188,7 +229,7 @@ s_id_str_attr(sftps_state_t state, bool (*cb)(sftp_str_t, sftp_file_attr_t, void
 	sftp_file_attr_t attrs;
 	
 	state->id = get32(state);
-	str = getstring(state);
+	str = getcstring(state);
 	if (str == NULL)
 		return false;
 	attrs = sftp_getfattr(state->rxp);
@@ -232,10 +273,10 @@ s_id_str_str(sftps_state_t state, bool (*cb)(sftp_str_t, sftp_str_t, void *))
 	sftp_str_t str2;
 	
 	state->id = get32(state);
-	str1 = getstring(state);
+	str1 = getcstring(state);
 	if (str1 == NULL)
 		return false;
-	str2 = getstring(state);
+	str2 = getcstring(state);
 	if (str2 == NULL) {
 		free_sftp_str(str1);
 		return false;
@@ -269,7 +310,7 @@ sftps_recv(sftps_state_t state, uint8_t *buf, uint32_t sz)
 				break;
 			case SSH_FXP_CLOSE:
 				if (state->close) {
-					if (!s_id_str(state, state->close))
+					if (!s_close(state))
 						return exit_function(state, false);
 					handled = true;
 				}
@@ -325,7 +366,7 @@ sftps_recv(sftps_state_t state, uint8_t *buf, uint32_t sz)
 				break;
 			case SSH_FXP_READDIR:
 				if (state->readdir) {
-					if (!s_id_str(state, state->readdir))
+					if (!s_readdir(state))
 						return exit_function(state, false);
 					handled = true;
 				}
@@ -389,7 +430,7 @@ sftps_recv(sftps_state_t state, uint8_t *buf, uint32_t sz)
 			case SSH_FXP_EXTENDED:
 				if (state->version >= 3 && state->extended) {
 					state->id = get32(state);
-					sftp_str_t request = getstring(state);
+					sftp_str_t request = getcstring(state);
 					if (request == NULL)
 						return exit_function(state, false);
 					handled = state->extended(request, state->rxp, state->cb_data);
