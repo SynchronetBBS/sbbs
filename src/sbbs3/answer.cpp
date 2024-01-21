@@ -79,8 +79,8 @@ check_pubkey(scfg_t *cfg, ushort unum, char *pkey, size_t pksz)
 						int pklen;
 						pklen = b64_decode(pk, sizeof(pk), tok, 0);
 						if (pklen > 0) {
-							if ((pksz - 4) == pklen) {
-								if (memcmp(&pkey[4], pk, (unsigned)pklen) == 0) {
+							if ((pksz - 4) == (unsigned)pklen) {
+								if (memcmp(&pkey[4], pk, pklen) == 0) {
 									fclose(sshkeys);
 									return true;
 								}
