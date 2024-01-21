@@ -281,3 +281,52 @@ fail:
 	(*pktp)->used = oldused;
 	return false;
 }
+
+sftp_file_attr_t
+sftp_getfattr(sftp_rx_pkt_t pkt)
+{
+	sftp_file_attr_t ret = sftp_fattr_alloc();
+	if (ret == NULL)
+		return ret;
+	ret->flags = sftp_get32(pkt);
+	if (ret->flags & SSH_FILEXFER_ATTR_SIZE) {
+		ret->size = sftp_get64(pkt);
+	}
+	if (ret->flags & SSH_FILEXFER_ATTR_UIDGID) {
+		ret->uid = sftp_get32(pkt);
+		ret->gid = sftp_get32(pkt);
+	}
+	if (ret->flags & SSH_FILEXFER_ATTR_PERMISSIONS) {
+		ret->perm = sftp_get32(pkt);
+	}
+	if (ret->flags & SSH_FILEXFER_ATTR_ACMODTIME) {
+		ret->atime = sftp_get32(pkt);
+		ret->mtime = sftp_get32(pkt);
+	}
+	if (ret->flags & SSH_FILEXFER_ATTR_EXTENDED) {
+		uint32_t extcnt = sftp_get32(pkt);
+		uint32_t ext;
+		for (ext = 0; ext < extcnt; ext++) {
+			sftp_str_t type = sftp_getstring(pkt);
+			if (type == NULL)
+				break;
+			sftp_str_t data = sftp_getstring(pkt);
+			if (data == NULL) {
+				free_sftp_str(type);
+				break;
+			}
+			if (!sftp_fattr_add_ext(&ret, type, data)) {
+				free_sftp_str(type);
+				free_sftp_str(data);
+				break;
+			}
+			free_sftp_str(type);
+			free_sftp_str(data);
+		}
+		if (ext != extcnt) {
+			sftp_fattr_free(ret);
+			return NULL;
+		}
+	}
+	return ret;
+}
