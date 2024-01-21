@@ -3466,22 +3466,6 @@ bool sbbs_t::init()
 
 	if(cfg.node_num && client_socket!=INVALID_SOCKET) {
 
-#ifdef _WIN32
-		if(!DuplicateHandle(GetCurrentProcess(),
-			(HANDLE)client_socket,
-			GetCurrentProcess(),
-			(HANDLE*)&client_socket_dup,
-			0,
-			true, // Inheritable
-			DUPLICATE_SAME_ACCESS)) {
-			errormsg(WHERE,ERR_CREATE,"duplicate socket handle",client_socket);
-			return(false);
-		}
-		lprintf(LOG_DEBUG,"socket %u duplicated as %u", client_socket, client_socket_dup);
-#else
-		client_socket_dup = client_socket;
-#endif
-
 		addr_len=sizeof(addr);
 		if((result=getsockname(client_socket, &addr.addr, &addr_len))!=0) {
 			lprintf(LOG_CRIT,"!ERROR %d (%d) getting local address/port of socket"
