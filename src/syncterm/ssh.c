@@ -614,7 +614,8 @@ add_public_key(void *vpriv)
 			sftpc_state_t oldstate = sftp_state;
 			sftp_state = NULL;
 			pthread_mutex_unlock(&ssh_mutex);
-			sftpc_finish(oldstate);
+			if (oldstate)
+				sftpc_finish(oldstate);
 		}
 		close_sftp_channel(sftp_channel);
 	}
