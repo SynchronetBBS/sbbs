@@ -5064,13 +5064,13 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"dir_freespace",	js_freediskspace,	2,	JSTYPE_NUMBER,	JSDOCSTR("directory [,unit_size=1]")
 	,JSDOCSTR("Return the amount of available disk space in the specified <i>directory</i> "
 		"using the specified <i>unit_size</i> in bytes (default: 1), "
-		"specify a <i>unit_size</i> of <tt>1024</tt> to return the available space in <i>kilobytes</i>.")
+		"specify a <i>unit_size</i> of <tt>1000</tt> to return the available space in <i>kilobytes</i> or <tt>1024</t> for <i>kibibytes</i>.")
 	,311
 	},
 	{"disk_size",		js_disksize,		2,	JSTYPE_NUMBER,	JSDOCSTR("directory [,unit_size=1]")
 	,JSDOCSTR("Return the total disk size of the specified <i>directory</i> "
 		"using the specified <i>unit_size</i> in bytes (default: 1), "
-		"specify a <i>unit_size</i> of <tt>1024</tt> to return the total disk size in <i>kilobytes</i>.")
+		"specify a <i>unit_size</i> of <tt>1000</tt> to return the total disk size in <i>kilobytes</i> or <tt>1024</t> for <i>kibibytes</i>.")
 	,314
 	},
 	{"socket_select",	js_socket_select,	0,	JSTYPE_ARRAY,	JSDOCSTR("[array of socket objects or descriptors] [,<i>number</i> timeout=0] [,<i>bool</i> write=false]")
