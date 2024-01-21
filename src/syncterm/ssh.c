@@ -189,8 +189,7 @@ ssh_input_thread(void *args)
 		}
 		else {
 			gchstatus = CRYPT_OK;
-			if (!cryptStatusError(popstatus))
-				chan = -1;
+			chan = -1;
 		}
 		pthread_mutex_unlock(&ssh_mutex);
 
@@ -223,7 +222,7 @@ ssh_input_thread(void *args)
 		}
 
 		if (cryptStatusError(popstatus)) {
-			if ((popstatus == CRYPT_ERROR_COMPLETE) || (popstatus == CRYPT_ERROR_READ)) { /* connection closed */
+			if (chan == -1 || (popstatus == CRYPT_ERROR_COMPLETE) || (popstatus == CRYPT_ERROR_READ)) { /* connection closed */
 				pthread_mutex_lock(&ssh_mutex);
 				status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, chan);
 				if (status != CRYPT_ERROR_NOTFOUND) {
