@@ -245,10 +245,10 @@ Fun snippet from the FreeBSD manpage:
     return handle;
 }
 
-BOOL comClose(COM_HANDLE handle)
+bool comClose(COM_HANDLE handle)
 {
     if (handle == COM_HANDLE_INVALID)
-        return FALSE;
+        return false;
     return (!close(handle));
 }
 
@@ -270,19 +270,19 @@ long comGetBaudRate(COM_HANDLE handle)
     return ((long)(in>out?in:out));
 }
 
-BOOL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
+bool comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 {
     struct termios t;
 
     if(tcgetattr(handle, &t))
-        return FALSE;
+        return false;
 
     cfsetispeed(&t, rate_to_macro(rate));
     cfsetospeed(&t, rate_to_macro(rate));
     if(tcsetattr(handle, TCSANOW, &t)==-1)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
 int comGetFlowControl(COM_HANDLE handle)
@@ -291,7 +291,7 @@ int comGetFlowControl(COM_HANDLE handle)
     struct termios t;
 
     if(tcgetattr(handle, &t)==-1)
-        return FALSE;
+        return false;
 
     if ((t.c_cflag & CTSRTS_FLOW_CFLAGS) == CTSRTS_FLOW_CFLAGS)
         ret |= COM_FLOW_CONTROL_RTS_CTS;
@@ -301,12 +301,12 @@ int comGetFlowControl(COM_HANDLE handle)
     return ret;
 }
 
-BOOL comSetFlowControl(COM_HANDLE handle, int modes)
+bool comSetFlowControl(COM_HANDLE handle, int modes)
 {
     struct termios t;
 
     if(tcgetattr(handle, &t)==-1)
-        return FALSE;
+        return false;
 
     if (modes & COM_FLOW_CONTROL_RTS_CTS)
         t.c_cflag |= CTSRTS_FLOW_CFLAGS;
@@ -319,17 +319,17 @@ BOOL comSetFlowControl(COM_HANDLE handle, int modes)
         t.c_iflag &= ~XONXOFF_FLOW_IFLAGS;
 
     if(tcsetattr(handle, TCSANOW, &t)==-1)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
-BOOL comSetParity(COM_HANDLE handle, BOOL enable, BOOL odd)
+bool comSetParity(COM_HANDLE handle, bool enable, bool odd)
 {
     struct termios t;
 
     if(tcgetattr(handle, &t)==-1)
-        return FALSE;
+        return false;
 
     if (enable) {
         t.c_cflag |= PARENB;
@@ -341,17 +341,17 @@ BOOL comSetParity(COM_HANDLE handle, BOOL enable, BOOL odd)
         t.c_cflag &= ~(PARENB | PARODD);
 
     if(tcsetattr(handle, TCSANOW, &t)==-1)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
-BOOL comSetBits(COM_HANDLE handle, size_t byteSize, size_t stopBits)
+bool comSetBits(COM_HANDLE handle, size_t byteSize, size_t stopBits)
 {
     struct termios t;
 
     if(tcgetattr(handle, &t)==-1)
-		return FALSE;
+		return false;
 
 	t.c_cflag &= ~CSIZE;
 	switch(byteSize) {
@@ -374,9 +374,9 @@ BOOL comSetBits(COM_HANDLE handle, size_t byteSize, size_t stopBits)
 		t.c_cflag &= ~CSTOPB;
 
     if(tcsetattr(handle, TCSANOW, &t)==-1)
-        return FALSE;
+        return false;
 
-    return TRUE;
+    return true;
 }
 
 int comGetModemStatus(COM_HANDLE handle)
@@ -389,33 +389,33 @@ int comGetModemStatus(COM_HANDLE handle)
     return status;
 }
 
-static BOOL comSetFlags(COM_HANDLE handle, int flags, BOOL set)
+static bool comSetFlags(COM_HANDLE handle, int flags, bool set)
 {
     int cmd = set ? TIOCMBIS : TIOCMBIC;
 
     return (ioctl(handle, cmd, &flags) == 0);
 }
 
-BOOL comRaiseDTR(COM_HANDLE handle)
+bool comRaiseDTR(COM_HANDLE handle)
 {
-    return comSetFlags(handle, TIOCM_DTR, TRUE);
+    return comSetFlags(handle, TIOCM_DTR, true);
 }
 
-BOOL comLowerDTR(COM_HANDLE handle)
+bool comLowerDTR(COM_HANDLE handle)
 {
-    return comSetFlags(handle, TIOCM_DTR, FALSE);
+    return comSetFlags(handle, TIOCM_DTR, false);
 }
 
-BOOL comRaiseRTS(COM_HANDLE handle)
+bool comRaiseRTS(COM_HANDLE handle)
 {
-    return comSetFlags(handle, TIOCM_RTS, TRUE);
+    return comSetFlags(handle, TIOCM_RTS, true);
 }
 
-BOOL comLowerRTS(COM_HANDLE handle)
+bool comLowerRTS(COM_HANDLE handle)
 {
-    return comSetFlags(handle, TIOCM_RTS, FALSE);
+    return comSetFlags(handle, TIOCM_RTS, false);
 }
-BOOL comWriteByte(COM_HANDLE handle, BYTE ch)
+bool comWriteByte(COM_HANDLE handle, BYTE ch)
 {
     return(write(handle, &ch, 1)==1);
 }
@@ -433,22 +433,22 @@ int comWriteString(COM_HANDLE handle, const char* str)
     return comWriteBuf(handle, (BYTE*)str, strlen(str));
 }
 
-BOOL comReadByte(COM_HANDLE handle, BYTE* ch)
+bool comReadByte(COM_HANDLE handle, BYTE* ch)
 {
     return(read(handle, ch, 1)==1);
 }
 
-BOOL comPurgeInput(COM_HANDLE handle)
+bool comPurgeInput(COM_HANDLE handle)
 {
     return(tcflush(handle, TCIFLUSH)==0);
 }
 
-BOOL comPurgeOutput(COM_HANDLE handle)
+bool comPurgeOutput(COM_HANDLE handle)
 {
     return(tcflush(handle, TCOFLUSH)==0);
 }
 
-BOOL comDrainOutput(COM_HANDLE handle)
+bool comDrainOutput(COM_HANDLE handle)
 {
     return(tcdrain(handle)==0);
 }

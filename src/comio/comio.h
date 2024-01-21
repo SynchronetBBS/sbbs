@@ -23,7 +23,7 @@
 #define _COMIO_H
 
 #include <limits.h>	/* INT_MAX */
-#include <gen_defs.h>	/* BOOL */
+#include <gen_defs.h>	/* bool */
 
 #define COM_ERROR						-1
 #define COM_INFINITE_TIMEOUT	INT_MIN
@@ -99,29 +99,29 @@ extern "C" {
 
 COMIOEXPORT char*		comVersion(char* str, size_t len);
 COMIOEXPORT COM_HANDLE	comOpen(const char* device);
-COMIOEXPORT BOOL		comClose(COM_HANDLE);
+COMIOEXPORT bool		comClose(COM_HANDLE);
 COMIOEXPORT long		comGetBaudRate(COM_HANDLE);
-COMIOEXPORT BOOL		comSetBaudRate(COM_HANDLE, ulong rate);
+COMIOEXPORT bool		comSetBaudRate(COM_HANDLE, ulong rate);
 COMIOEXPORT int			comGetFlowControl(COM_HANDLE);
-COMIOEXPORT BOOL		comSetFlowControl(COM_HANDLE, int);
+COMIOEXPORT bool		comSetFlowControl(COM_HANDLE, int);
 COMIOEXPORT int			comGetModemStatus(COM_HANDLE);
-COMIOEXPORT int			comRaiseDTR(COM_HANDLE);
-COMIOEXPORT int			comLowerDTR(COM_HANDLE);
-COMIOEXPORT int			comRaiseRTS(COM_HANDLE);
-COMIOEXPORT int			comLowerRTS(COM_HANDLE);
-COMIOEXPORT BOOL		comWriteByte(COM_HANDLE, BYTE);
+COMIOEXPORT bool		comRaiseDTR(COM_HANDLE);
+COMIOEXPORT bool		comLowerDTR(COM_HANDLE);
+COMIOEXPORT bool		comRaiseRTS(COM_HANDLE);
+COMIOEXPORT bool		comLowerRTS(COM_HANDLE);
+COMIOEXPORT bool		comWriteByte(COM_HANDLE, BYTE);
 COMIOEXPORT int			comWriteBuf(COM_HANDLE, const BYTE*, size_t buflen);
 COMIOEXPORT int			comWriteString(COM_HANDLE, const char*);
-COMIOEXPORT BOOL		comReadByte(COM_HANDLE, BYTE*);
+COMIOEXPORT bool		comReadByte(COM_HANDLE, BYTE*);
 COMIOEXPORT size_t		comReadBuf(COM_HANDLE, char* buf, size_t buflen
 							,const char* terminators, int timeout /* in milliseconds */);
 COMIOEXPORT size_t		comReadLine(COM_HANDLE, char* buf, size_t buflen
 							,int timeout /* in milliseconds */);
-COMIOEXPORT BOOL		comPurgeInput(COM_HANDLE);
-COMIOEXPORT BOOL		comPurgeOutput(COM_HANDLE);
-COMIOEXPORT BOOL		comDrainOutput(COM_HANDLE);
-COMIOEXPORT BOOL		comSetParity(COM_HANDLE, BOOL enable, BOOL odd);
-COMIOEXPORT BOOL		comSetBits(COM_HANDLE, size_t byteSize, size_t stopBits);
+COMIOEXPORT bool		comPurgeInput(COM_HANDLE);
+COMIOEXPORT bool		comPurgeOutput(COM_HANDLE);
+COMIOEXPORT bool		comDrainOutput(COM_HANDLE);
+COMIOEXPORT bool		comSetParity(COM_HANDLE, bool enable, bool odd);
+COMIOEXPORT bool		comSetBits(COM_HANDLE, size_t byteSize, size_t stopBits);
 
 #if defined(__cplusplus)
 }

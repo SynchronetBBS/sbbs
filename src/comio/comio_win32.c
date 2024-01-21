@@ -79,7 +79,7 @@ COM_HANDLE comOpen(const char* device)
 	return handle;
 }
 
-BOOL comClose(COM_HANDLE handle)
+bool comClose(COM_HANDLE handle)
 {
 	return CloseHandle(handle);
 }
@@ -94,12 +94,12 @@ long comGetBaudRate(COM_HANDLE handle)
 	return dcb.BaudRate;
 }
 
-BOOL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
+bool comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 {
 	DCB dcb;
 
 	if(GetCommState(handle, &dcb)!=TRUE)
-		return FALSE;
+		return false;
 
 	dcb.BaudRate=rate;
 
@@ -123,12 +123,12 @@ int comGetFlowControl(COM_HANDLE handle)
 	return result;
 }
 
-BOOL comSetFlowControl(COM_HANDLE handle, int type)
+bool comSetFlowControl(COM_HANDLE handle, int type)
 {
 	DCB dcb;
 
 	if(GetCommState(handle, &dcb) != TRUE)
-		return FALSE;
+		return false;
 
 	dcb.fOutxCtsFlow = 0;
 	dcb.fRtsControl = RTS_CONTROL_DISABLE; // This is questionable
@@ -151,24 +151,24 @@ BOOL comSetFlowControl(COM_HANDLE handle, int type)
 	return SetCommState(handle, &dcb);
 }
 
-BOOL comSetParity(COM_HANDLE handle, BOOL enable, BOOL odd)
+bool comSetParity(COM_HANDLE handle, bool enable, bool odd)
 {
 	DCB dcb;
 
 	if(GetCommState(handle, &dcb) != TRUE)
-		return FALSE;
+		return false;
 
 	dcb.fParity = enable;
 	dcb.Parity = enable ? (odd ? ODDPARITY : EVENPARITY) : NOPARITY;
 	return SetCommState(handle, &dcb);
 }
 
-BOOL comSetBits(COM_HANDLE handle, size_t byteSize, size_t stopBits)
+bool comSetBits(COM_HANDLE handle, size_t byteSize, size_t stopBits)
 {
 	DCB dcb;
 
 	if(GetCommState(handle, &dcb) != TRUE)
-		return FALSE;
+		return false;
 
 	dcb.ByteSize = (BYTE)byteSize;
 	dcb.StopBits = stopBits == 2 ? TWOSTOPBITS : ONESTOPBIT;
@@ -186,27 +186,27 @@ int comGetModemStatus(COM_HANDLE handle)
 		return COM_ERROR;
 }
 
-BOOL comRaiseDTR(COM_HANDLE handle)
+bool comRaiseDTR(COM_HANDLE handle)
 {
 	return EscapeCommFunction(handle, SETDTR);
 }
 
-BOOL comLowerDTR(COM_HANDLE handle)
+bool comLowerDTR(COM_HANDLE handle)
 {
 	return EscapeCommFunction(handle, CLRDTR);
 }
 
-BOOL comRaiseRTS(COM_HANDLE handle)
+bool comRaiseRTS(COM_HANDLE handle)
 {
 	return EscapeCommFunction(handle, SETRTS);
 }
 
-BOOL comLowerRTS(COM_HANDLE handle)
+bool comLowerRTS(COM_HANDLE handle)
 {
 	return EscapeCommFunction(handle, CLRRTS);
 }
 
-BOOL comWriteByte(COM_HANDLE handle, BYTE ch)
+bool comWriteByte(COM_HANDLE handle, BYTE ch)
 {
 	DWORD wr=0;
 
@@ -228,24 +228,24 @@ int comWriteString(COM_HANDLE handle, const char* str)
 	return comWriteBuf(handle, str, strlen(str));
 }
 
-BOOL comReadByte(COM_HANDLE handle, BYTE* ch)
+bool comReadByte(COM_HANDLE handle, BYTE* ch)
 {
 	DWORD rd;
 
 	return ReadFile(handle, ch, sizeof(BYTE), &rd, NULL) && rd==sizeof(BYTE);
 }
 
-BOOL comPurgeInput(COM_HANDLE handle)
+bool comPurgeInput(COM_HANDLE handle)
 {
 	return PurgeComm(handle, PURGE_RXCLEAR);
 }
 
-BOOL comPurgeOutput(COM_HANDLE handle)
+bool comPurgeOutput(COM_HANDLE handle)
 {
 	return PurgeComm(handle, PURGE_TXCLEAR);
 }
 
-BOOL comDrainOutput(COM_HANDLE handle)
+bool comDrainOutput(COM_HANDLE handle)
 {
 	return FlushFileBuffers(handle);
 }
