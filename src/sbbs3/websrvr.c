@@ -6637,8 +6637,6 @@ void http_session_thread(void* arg)
 
 		looking_good = do_cryptInit(lprintf);
 		if (looking_good)
-			looking_good = HANDLE_CRYPT_CALL(cryptSetAttribute(session.tls_sess, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY), &session, "disabling certificate verification");
-		if (looking_good)
 			looking_good = HANDLE_CRYPT_CALL(add_private_key(&scfg, lprintf, session.tls_sess), &session, "setting private key");
 		if (!looking_good) {
 			cryptDestroySession(session.tls_sess);
