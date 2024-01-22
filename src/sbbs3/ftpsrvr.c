@@ -49,7 +49,7 @@
 /* Constants */
 
 #define FTP_SERVER				"Synchronet FTP Server"
-const char* server_abbrev = "ftp";
+static const char* server_abbrev = "ftp";
 
 #define ANONYMOUS				"anonymous"
 

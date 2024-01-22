@@ -41,7 +41,7 @@
 //---------------------------------------------------------------------------
 
 #define TELNET_SERVER "Synchronet Terminal Server"
-const char* server_abbrev = "term";
+static const char* server_abbrev = "term";
 
 #define TIMEOUT_THREAD_WAIT		60			// Seconds (was 15)
 #define IO_THREAD_BUF_SIZE	   	20000		// Bytes
