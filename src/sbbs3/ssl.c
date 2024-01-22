@@ -270,11 +270,18 @@ static void do_cryptEnd(void)
 	cryptEnd();
 }
 
+static char *cryptfail = NULL;
 static void internal_do_cryptInit(void)
 {
 	int ret;
+	int maj;
+	int min;
+	int stp;
+	int tmp;
+	char patches[32];
 
 	cryptInit_error = CRYPT_ERROR_NOTINITED;
+
 	if (!rwlock_init(&cert_epoch_lock))
 		return;
 	if (!rwlock_init(&tls_cert_file_date_lock)) {
@@ -309,6 +316,43 @@ static void internal_do_cryptInit(void)
 	else {
 		cryptInit_error = ret; 
 	}
+	ret = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_MAJORVERSION, &maj);
+	if (cryptStatusError(ret)) {
+		cryptInit_error = ret;
+		cryptlib_initialized = false;
+		cryptEnd();
+		return;
+	}
+	ret = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_MINORVERSION, &min);
+	if (cryptStatusError(ret)) {
+		cryptInit_error = ret;
+		cryptlib_initialized = false;
+		cryptEnd();
+		return;
+	}
+	ret = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_STEPPING, &stp);
+	if (cryptStatusError(ret)) {
+		cryptInit_error = ret;
+		cryptlib_initialized = false;
+		cryptEnd();
+		return;
+	}
+	tmp = (maj * 100) + (min * 10) + stp;
+	if (tmp != CRYPTLIB_VERSION) {
+		cryptInit_error = CRYPT_ERROR_INVALID;
+		cryptlib_initialized = false;
+		cryptEnd();
+		asprintf(&cryptfail, "Incorrect cryptlib version %d (expected %d)", tmp, CRYPTLIB_VERSION);
+		return;
+	}
+	ret = cryptGetAttributeString(CRYPT_UNUSED, CRYPT_OPTION_INFO_PATCHES, patches, &stp);
+	if (cryptStatusError(ret) || stp != 32 || memcmp(patches, CRYPTLIB_PATCHES, 32) != 0) {
+		cryptInit_error = ret;
+		cryptlib_initialized = false;
+		cryptEnd();
+		asprintf(&cryptfail, "Incorrect cryptlib patch set %.32s (expected %s)", patches, CRYPTLIB_PATCHES);
+		return;
+	}
 	return;
 }
 
@@ -319,8 +363,15 @@ bool do_cryptInit(int (*lprintf)(int level, const char* fmt, ...))
 		lprintf(LOG_ERR, "%s call to pthread_once failed with error %d", __FUNCTION__, ret);
 		return false;
 	}
-	if (!cryptlib_initialized)
-		lprintf(LOG_ERR,"cryptInit() returned %d", cryptInit_error);
+	if (!cryptlib_initialized) {
+		if (cryptfail) {
+			lprintf(LOG_ERR,"cryptInit() returned %d: %s", cryptInit_error, cryptfail);
+			free(cryptfail);
+			cryptfail = NULL;
+		}
+		else
+			lprintf(LOG_ERR,"cryptInit() returned %d", cryptInit_error);
+	}
 	return cryptlib_initialized;
 }
 

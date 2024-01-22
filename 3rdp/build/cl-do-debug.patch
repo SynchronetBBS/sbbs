@@ -139,3 +139,13 @@
  	deleteSessionInfo( sessionInfoPtr, attributeListPtr );
  
  	/* If we've deleted the current channel, select a null channel until a
+--- random/unix.c.orig	2024-01-22 14:18:12.671954000 -0500
++++ random/unix.c	2024-01-22 14:18:49.574744000 -0500
+@@ -602,6 +602,7 @@
+ 	for( i = 0; sysctlInfo[ i ].mibCount != 0; i++ )
+ 		{
+ 		size_t size = SYSCTL_BUFFER_SIZE;
++		memset(sysctlBuffer, 0, size);
+ 
+ 		/* Since we only care about the information that's returned as an 
+ 		   entropy source, we treat a buffer-not-large-enough error (errno
