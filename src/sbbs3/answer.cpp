@@ -375,8 +375,6 @@ bool sbbs_t::answer()
 			}
 			ssh_mode = false;
 			pthread_mutex_unlock(&ssh_mutex);
-			close_socket(client_socket);
-			client_socket = INVALID_SOCKET;
 			useron.number = 0;
 			return false;
 		}
