@@ -6179,8 +6179,7 @@ void mail_server(void* arg)
 		update_clients();
 		if(!ssl_sync(&scfg, lprintf)) {
 			lprintf(LOG_CRIT, "!ssl_sync() failure trying to enable TLS support");
-			cleanup(1);
-			return;
+			startup->options &= ~(MAIL_OPT_TLS_POP3 | MAIL_OPT_TLS_SUBMISSION);
 		}
 
 		/* open a socket and wait for a client */
