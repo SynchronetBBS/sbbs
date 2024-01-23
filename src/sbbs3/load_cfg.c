@@ -413,6 +413,7 @@ bool read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
     char    str[256];
 	long	offset=0;
     FILE    *instream;
+	int		i;
 
 	SAFEPRINTF(str,"%sattr.cfg",cfg->ctrl_dir);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
@@ -427,7 +428,8 @@ bool read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		return(false);
 	}
 	/* Setup default colors here: */
-	memset(cfg->color,LIGHTGRAY|HIGH,MIN_COLORS);
+	for(i = 0; i < MIN_COLORS; ++i)
+		cfg->color[i] = LIGHTGRAY | HIGH;
 	cfg->color[clr_votes_full] = WHITE|BG_MAGENTA;
 	cfg->color[clr_progress_full] = CYAN|HIGH|BG_BLUE;
 	for(cfg->total_colors=0;!feof(instream) && !ferror(instream);cfg->total_colors++) {
