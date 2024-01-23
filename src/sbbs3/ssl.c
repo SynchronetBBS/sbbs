@@ -364,15 +364,11 @@ bool do_cryptInit(int (*lprintf)(int level, const char* fmt, ...))
 		return false;
 	}
 	if (!cryptlib_initialized) {
-		pthread_mutex_lock(&ssl_sess_list_mutex);
 		if (cryptfail) {
 			lprintf(LOG_ERR,"cryptInit() returned %d: %s", cryptInit_error, cryptfail);
-			free(cryptfail);
-			cryptfail = NULL;
 		}
 		else
 			lprintf(LOG_ERR,"cryptInit() returned %d", cryptInit_error);
-		pthread_mutex_unlock(&ssl_sess_list_mutex);
 	}
 	return cryptlib_initialized;
 }
