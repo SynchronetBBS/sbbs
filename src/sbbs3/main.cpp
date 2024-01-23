@@ -3468,8 +3468,8 @@ bool sbbs_t::init()
 
 		addr_len=sizeof(addr);
 		if((result=getsockname(client_socket, &addr.addr, &addr_len))!=0) {
-			lprintf(LOG_CRIT,"!ERROR %d (%d) getting local address/port of socket"
-				,result, ERROR_VALUE);
+			lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) getting local address/port of socket"
+				,client_socket, client.protocol, result, ERROR_VALUE);
 			return(false);
 		}
 		inet_addrtop(&addr, local_addr, sizeof(local_addr));
