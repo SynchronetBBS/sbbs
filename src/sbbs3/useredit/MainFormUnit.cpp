@@ -201,18 +201,24 @@ void __fastcall TMainForm::GetUserData(int number)
     LogonCheckListBox->Tag = false;
 
     // Appy 'QWK' bit-field
-    QWKCheckListBox->Checked[0] = user.qwk & QWK_FILES;
-    QWKCheckListBox->Checked[1] = user.qwk & QWK_EMAIL;
-    QWKCheckListBox->Checked[2] = user.qwk & QWK_ALLMAIL;
-    QWKCheckListBox->Checked[3] = user.qwk & QWK_DELMAIL;
-    QWKCheckListBox->Checked[4] = user.qwk & QWK_BYSELF;
-    QWKCheckListBox->Checked[5] = user.qwk & QWK_EXPCTLA;
-    QWKCheckListBox->Checked[6] = !(user.qwk & QWK_RETCTLA);
-    QWKCheckListBox->Checked[7] = user.qwk & QWK_ATTACH;
-    QWKCheckListBox->Checked[8] = user.qwk & QWK_NOINDEX;
-    QWKCheckListBox->Checked[9] = user.qwk & QWK_TZ;
-    QWKCheckListBox->Checked[10] = user.qwk & QWK_VIA;
-    QWKCheckListBox->Checked[11] = !(user.qwk & QWK_NOCTRL);
+	int i = 0;
+	QWKCheckListBox->Checked[i++] = user.qwk & QWK_EXT;
+    QWKCheckListBox->Checked[i++] = !(user.qwk & QWK_RETCTLA);
+    QWKCheckListBox->Checked[i++] = user.qwk & QWK_EXPCTLA;
+	QWKCheckListBox->Checked[i++] = user.qwk & QWK_UTF8;
+    QWKCheckListBox->Checked[i++] = user.qwk & QWK_FILES;
+    QWKCheckListBox->Checked[i++] = user.qwk & QWK_ATTACH;
+    QWKCheckListBox->Checked[i++] = user.qwk & QWK_BYSELF;
+    QWKCheckListBox->Checked[i++] = user.qwk & QWK_EMAIL;
+    QWKCheckListBox->Checked[i++] = user.qwk & QWK_ALLMAIL;
+    QWKCheckListBox->Checked[i++] = user.qwk & QWK_DELMAIL;
+    QWKCheckListBox->Checked[i++] = user.qwk & QWK_NOINDEX;
+    QWKCheckListBox->Checked[i++] = !(user.qwk & QWK_NOCTRL);
+    QWKCheckListBox->Checked[i++] = user.qwk & QWK_TZ;
+    QWKCheckListBox->Checked[i++] = user.qwk & QWK_VIA;
+	QWKCheckListBox->Checked[i++] = user.qwk & QWK_MSGID;
+	QWKCheckListBox->Checked[i++] = user.qwk & QWK_HEADERS;
+	QWKCheckListBox->Checked[i++] = user.qwk & QWK_VOTING;
     QWKCheckListBox->Tag = false;
 
     // Apply 'chat' bit-field
@@ -377,18 +383,24 @@ void __fastcall TMainForm::PutUserData(int number)
     }
 
     if(QWKCheckListBox->Tag) {
-        SetBit( QWKCheckListBox->Checked[0], user.qwk, QWK_FILES);
-        SetBit( QWKCheckListBox->Checked[1], user.qwk, QWK_EMAIL);
-        SetBit( QWKCheckListBox->Checked[2], user.qwk, QWK_ALLMAIL);
-        SetBit( QWKCheckListBox->Checked[3], user.qwk, QWK_DELMAIL);
-        SetBit( QWKCheckListBox->Checked[4], user.qwk, QWK_BYSELF);
-        SetBit( QWKCheckListBox->Checked[5], user.qwk, QWK_EXPCTLA);
-        SetBit(!QWKCheckListBox->Checked[6], user.qwk, QWK_RETCTLA);
-        SetBit( QWKCheckListBox->Checked[7], user.qwk, QWK_ATTACH);
-        SetBit( QWKCheckListBox->Checked[8], user.qwk, QWK_NOINDEX);
-        SetBit( QWKCheckListBox->Checked[9], user.qwk, QWK_TZ);
-        SetBit( QWKCheckListBox->Checked[10], user.qwk, QWK_VIA);
-        SetBit(!QWKCheckListBox->Checked[11], user.qwk, QWK_NOCTRL);
+		int i = 0;
+		SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_EXT);
+        SetBit(!QWKCheckListBox->Checked[i++], user.qwk, QWK_RETCTLA);
+        SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_EXPCTLA);
+		SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_UTF8);
+        SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_FILES);
+        SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_ATTACH);
+        SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_BYSELF);
+        SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_EMAIL);
+        SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_ALLMAIL);
+        SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_DELMAIL);
+        SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_NOINDEX);
+        SetBit(!QWKCheckListBox->Checked[i++], user.qwk, QWK_NOCTRL);
+        SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_TZ);
+        SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_VIA);
+		SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_MSGID);
+		SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_HEADERS);
+		SetBit( QWKCheckListBox->Checked[i++], user.qwk, QWK_VOTING);
 
         putuserqwk(&cfg, user.number, user.qwk);
     }

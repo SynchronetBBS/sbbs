@@ -1110,18 +1110,23 @@ object MainForm: TMainForm
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             Items.Strings = (
+			  'Include QWKE Extensions'
+              'Strip Ctrl-A codes'
+              'Expand Ctrl-A Codes to ANSI'
+			  'Include UTF-8 Characters'
               'Include New Files List'
+              'Include File Attachments'
+              'Include Messages From Self'
               'Include Unread Email'
               'Include ALL Email'
-              'Delete Email After Download'
-              'Include Messages From Self'
-              'Expand Ctrl-A Codes to ANSI'
-              'Strip Ctrl-A codes'
-              'Include File Attachments'
+              'Delete Downloaded E-mail'
               'Include Index Files'
-              'Include Time Zone (@TZ)'
-              'Include Seen-Bys (@VIA)'
-              'Extraneous Control Files')
+              'Include Control Files'
+              'Include Time Zone Kludges'
+              'Include Via/Routing Kludges'
+			  'Include Message-ID Kludges'
+			  'Include HEADERS.DAT File'
+			  'Include VOTING.DAT File')
             TabOrder = 0
           end
         end
