@@ -46,7 +46,7 @@ static char* separate_thousands(const char* src, char *dest, size_t maxlen, char
 	char* d = dest;
 	for(size_t i = 0; i < digits; d++, i++) {
 		*d = src[i];
-		if(i && i + 3 < digits && (digits - (i + 1)) % 3 == 0)
+		if(i + 3 < digits && (digits - (i + 1)) % 3 == 0)
 			*(++d) = sep;
 	}
 	*d = 0;
