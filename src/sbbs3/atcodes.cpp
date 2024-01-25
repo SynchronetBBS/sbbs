@@ -114,7 +114,7 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 {
 	char	str[128],str2[128],*tp,*sp,*p;
     int     len;
-	struct atcode_format fmt;
+	atcode_format fmt;
 	int		pmode = 0;
 	const char *cp;
 
@@ -243,7 +243,7 @@ const char* sbbs_t::formatted_atcode(const char* sp, char* str, size_t maxlen)
 {
 	char	tmp[128];
 	char	buf[256];
-	struct atcode_format fmt;
+	atcode_format fmt;
 
 	SAFECOPY(tmp, sp);
 	char* p = fmt.parse(tmp);
