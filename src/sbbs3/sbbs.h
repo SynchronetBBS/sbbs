@@ -1319,8 +1319,8 @@ extern "C" {
 	DLLEXPORT void		fcloselog(FILE*);
 
 	/* data.cpp */
-	DLLEXPORT time_t	getnextevent(scfg_t* cfg, event_t* event);
-	DLLEXPORT time_t	getnexteventtime(event_t* event);
+	DLLEXPORT time_t	getnextevent(scfg_t* cfg, event_t**);
+	DLLEXPORT time_t	getnexteventtime(const event_t*);
 
 	/* sockopt.c */
 	DLLEXPORT int		set_socket_options(scfg_t* cfg, SOCKET sock, const char* section

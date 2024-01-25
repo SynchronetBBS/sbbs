@@ -100,7 +100,7 @@ uint sbbs_t::finduser(const char* name, bool silent_failure)
 /****************************************************************************/
 /* Return date/time that the specified event should run next				*/
 /****************************************************************************/
-extern "C" time_t getnexteventtime(event_t* event)
+extern "C" time_t getnexteventtime(const event_t* event)
 {
 	struct tm tm;
 	time_t	t = time(NULL);
@@ -143,7 +143,7 @@ extern "C" time_t getnexteventtime(event_t* event)
 /* Return time of next forced timed event									*/
 /* 'event' may be NULL														*/
 /****************************************************************************/
-extern "C" time_t getnextevent(scfg_t* cfg, event_t* event)
+extern "C" time_t getnextevent(scfg_t* cfg, event_t** event)
 {
     int     i;
 	time_t	event_time=0;
@@ -164,7 +164,7 @@ extern "C" time_t getnextevent(scfg_t* cfg, event_t* event)
 		if(!event_time || thisevent<event_time) {
 			event_time=thisevent;
 			if(event!=NULL)
-				*event=*cfg->event[i];
+				*event = cfg->event[i];
 		}
 	}
 
@@ -180,7 +180,7 @@ uint sbbs_t::gettimeleft(bool handle_out_of_time)
 {
     char    str[128];
 	char 	tmp[512];
-	event_t	nextevent;
+	event_t* nextevent{nullptr};
 
 	now=time(NULL);
 
@@ -188,8 +188,8 @@ uint sbbs_t::gettimeleft(bool handle_out_of_time)
 
 	/* Timed event time reduction handler */
 	event_time=getnextevent(&cfg, &nextevent);
-	if(event_time)
-		event_code=nextevent.code;
+	if(event_time && nextevent != nullptr)
+		event_code=nextevent->code;
 
 	if(event_time && now+(time_t)timeleft>event_time) {    /* less time, set flag */
 		if(event_time<now)
