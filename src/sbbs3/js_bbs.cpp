@@ -1672,11 +1672,8 @@ js_atcode(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
-	char	str[128],str2[128],*p;
+	char	str[128];
 	char	*instr;
-	size_t	disp_len;
-	bool	padded_left=false;
-	bool	padded_right=false;
 	const char *cp;
 	jsrefcount	rc;
 
@@ -1690,35 +1687,14 @@ js_atcode(JSContext *cx, uintN argc, jsval *arglist)
 	if(instr==NULL)
 		return(JS_FALSE);
 
-	disp_len=strlen(instr);
-	if((p=strstr(instr,"-L"))!=NULL)
-		padded_left=true;
-	else if((p=strstr(instr,"-R"))!=NULL)
-		padded_right=true;
-	if(p!=NULL) {
-		if(*(p+2) && IS_DIGIT(*(p+2)))
-			disp_len=atoi(p+2);
-		*p=0;
-	}
-
-	if(disp_len >= sizeof(str))
-		disp_len=sizeof(str)-1;
-
 	rc=JS_SUSPENDREQUEST(cx);
-	cp=sbbs->atcode(instr,str2,sizeof(str2));
+	cp = sbbs->formatted_atcode(instr, str, sizeof(str));
 	free(instr);
 	JS_RESUMEREQUEST(cx, rc);
 	if(cp==NULL)
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 	else {
-		if(padded_left)
-			sprintf(str,"%-*.*s",(int)disp_len,(int)disp_len,cp);
-		else if(padded_right)
-			sprintf(str,"%*.*s",(int)disp_len,(int)disp_len,cp);
-		else
-			SAFECOPY(str,cp);
-
-		JSString* js_str = JS_NewStringCopyZ(cx, str);
+		JSString* js_str = JS_NewStringCopyZ(cx, cp);
 		if(js_str==NULL)
 			return(JS_FALSE);
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
@@ -4435,7 +4411,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	{"expand_atcodes",	js_expand_atcodes,	1,	JSTYPE_STRING,	JSDOCSTR("string")
-	,JSDOCSTR("Return string with @-code expanded values (formatting and some @-codes are not supported)")
+	,JSDOCSTR("Return string with @-code expanded values (some formatting and @-codes are not supported)")
 	,320
 	},
 	/* text.dat */
