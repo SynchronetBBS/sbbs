@@ -712,3 +712,23 @@ char* utf8_to_cp437_inplace(char* str)
 		,/* decode error char: */CP437_INVERTED_EXCLAMATION_MARK);
 }
 
+char* separate_thousands(const char* src, char *dest, size_t maxlen, char sep)
+{
+	if(strlen(src) * 1.3 > maxlen)
+		return (char*)src;
+	const char* tail = src;
+	while(*tail && IS_DIGIT(*tail))
+		tail++;
+	if(tail == src)
+		return (char*)src;
+	size_t digits = tail - src;
+	char* d = dest;
+	for(size_t i = 0; i < digits; d++, i++) {
+		*d = src[i];
+		if(i + 3 < digits && (digits - (i + 1)) % 3 == 0)
+			*(++d) = sep;
+	}
+	*d = 0;
+	strcpy(d, tail);
+	return dest;
+}

@@ -33,27 +33,6 @@
 	#define	SOCKLIB_DESC NULL
 #endif
 
-static char* separate_thousands(const char* src, char *dest, size_t maxlen, char sep)
-{
-	if(strlen(src) * 1.3 > maxlen)
-		return (char*)src;
-	const char* tail = src;
-	while(*tail && IS_DIGIT(*tail))
-		tail++;
-	if(tail == src)
-		return (char*)src;
-	size_t digits = tail - src;
-	char* d = dest;
-	for(size_t i = 0; i < digits; d++, i++) {
-		*d = src[i];
-		if(i + 3 < digits && (digits - (i + 1)) % 3 == 0)
-			*(++d) = sep;
-	}
-	*d = 0;
-	strcpy(d, tail);
-	return dest;
-}
-
 struct atcode_format {
 	int		disp_len;
 	enum {
