@@ -47,67 +47,65 @@ struct atcode_format {
 	bool	thousep = false;	// thousands-separated
 	bool	uppercase = false;
 	bool	width_specified = false;
-};
+	char* parse(char* sp) {
+		char* p;
 
-static char* parse_atcode_format(char* sp, struct atcode_format& fmt)
-{
-	char* p;
-
-	fmt.disp_len=strlen(sp) + 2;
-	if((p = strchr(sp, '|')) != NULL) {
-		if(strchr(p, 'T') != NULL)
-			fmt.thousep = true;
-		if(strchr(p, 'U') != NULL)
-			fmt.uppercase = true;
-		if(strchr(p, 'L') != NULL)
-			fmt.align = fmt.left;
-		else if(strchr(p, 'R') != NULL)
-			fmt.align = fmt.right;
-		else if(strchr(p, 'C') != NULL)
-			fmt.align = fmt.center;
-		else if(strchr(p, 'W') != NULL)
-			fmt.doubled = true;
-		else if(strchr(p, 'Z') != NULL)
-			fmt.zero_padded = true;
-		else if(strchr(p, '>') != NULL)
-			fmt.truncated = false;
-	}
-	else if(strchr(sp, ':') != NULL)
-		p = NULL;
-	else if((p=strstr(sp,"-L"))!=NULL)
-		fmt.align = fmt.left;
-	else if((p=strstr(sp,"-R"))!=NULL)
-		fmt.align = fmt.right;
-	else if((p=strstr(sp,"-C"))!=NULL)
-		fmt.align = fmt.center;
-	else if((p=strstr(sp,"-W"))!=NULL)	/* wide */
-		fmt.doubled=true;
-	else if((p=strstr(sp,"-Z"))!=NULL)
-		fmt.zero_padded=true;
-	else if((p=strstr(sp,"-T"))!=NULL)
-		fmt.thousep=true;
-	else if((p=strstr(sp,"-U"))!=NULL)
-		fmt.uppercase=true;
-	else if((p=strstr(sp,"->"))!=NULL)	/* wrap */
-		fmt.truncated = false;
-	if(p!=NULL) {
-		char* lp = p;
-		lp++;	// skip the '|' or '-'
-		while(*lp == '>'|| IS_ALPHA(*lp))
-			lp++;
-		if(*lp)
-			fmt.width_specified = true;
-		while(*lp && !IS_DIGIT(*lp))
-			lp++;
-		if(*lp && IS_DIGIT(*lp)) {
-			fmt.disp_len=atoi(lp);
-			fmt.width_specified = true;
+		disp_len=strlen(sp) + 2;
+		if((p = strchr(sp, '|')) != NULL) {
+			if(strchr(p, 'T') != NULL)
+				thousep = true;
+			if(strchr(p, 'U') != NULL)
+				uppercase = true;
+			if(strchr(p, 'L') != NULL)
+				align = left;
+			else if(strchr(p, 'R') != NULL)
+				align = right;
+			else if(strchr(p, 'C') != NULL)
+				align = center;
+			else if(strchr(p, 'W') != NULL)
+				doubled = true;
+			else if(strchr(p, 'Z') != NULL)
+				zero_padded = true;
+			else if(strchr(p, '>') != NULL)
+				truncated = false;
 		}
-		*p=0;
-	}
+		else if(strchr(sp, ':') != NULL)
+			p = NULL;
+		else if((p=strstr(sp,"-L"))!=NULL)
+			align = left;
+		else if((p=strstr(sp,"-R"))!=NULL)
+			align = right;
+		else if((p=strstr(sp,"-C"))!=NULL)
+			align = center;
+		else if((p=strstr(sp,"-W"))!=NULL)	/* wide */
+			doubled=true;
+		else if((p=strstr(sp,"-Z"))!=NULL)
+			zero_padded=true;
+		else if((p=strstr(sp,"-T"))!=NULL)
+			thousep=true;
+		else if((p=strstr(sp,"-U"))!=NULL)
+			uppercase=true;
+		else if((p=strstr(sp,"->"))!=NULL)	/* wrap */
+			truncated = false;
+		if(p!=NULL) {
+			char* lp = p;
+			lp++;	// skip the '|' or '-'
+			while(*lp == '>'|| IS_ALPHA(*lp))
+				lp++;
+			if(*lp)
+				width_specified = true;
+			while(*lp && !IS_DIGIT(*lp))
+				lp++;
+			if(*lp && IS_DIGIT(*lp)) {
+				disp_len=atoi(lp);
+				width_specified = true;
+			}
+			*p=0;
+		}
 
-	return p;
-}
+		return p;
+	}
+};
 
 /****************************************************************************/
 /* Returns 0 if invalid @ code. Returns length of @ code if valid.          */
@@ -170,7 +168,7 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 		return len;
 	}
 
-	p = parse_atcode_format(sp, fmt);
+	p = fmt.parse(sp);
 
 	cp = atcode(sp, str2, sizeof(str2), &pmode, fmt.align == fmt.center, obj);
 	if(cp==NULL)
@@ -248,7 +246,7 @@ const char* sbbs_t::formatted_atcode(const char* sp, char* str, size_t maxlen)
 	struct atcode_format fmt;
 
 	SAFECOPY(tmp, sp);
-	char* p = parse_atcode_format(tmp, fmt);
+	char* p = fmt.parse(tmp);
 
 	const char* cp = atcode(tmp, buf, sizeof buf);
 	if(cp == nullptr)
