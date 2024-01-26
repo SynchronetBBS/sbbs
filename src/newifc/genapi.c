@@ -107,8 +107,8 @@ main(int argc, char **argv)
 
 	fputs("NewIfcObj NI_copy(NewIfcObj obj);\n", header);
 	fputs("NewIfcObj NI_create(enum NewIfc_object obj, NewIfcObj parent);\n", header);
-	fputs("enum NewIfc_error NI_error(NewIfcObj obj);\n\n", header);
-	fputs("bool NI_walk_children(NewIfcObj obj, bool (*cb)(NewIfcObj obj, void *cb_data), void *cbdata);\n", header);
+	fputs("enum NewIfc_error NI_error(NewIfcObj obj);\n", header);
+	fputs("bool NI_walk_children(NewIfcObj obj, bool (*cb)(NewIfcObj obj, void *cb_data), void *cbdata);\n\n", header);
 
 	nitems = sizeof(attributes) / sizeof(attributes[0]);
 	for (i = 0; i < nitems; i++) {
