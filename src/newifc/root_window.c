@@ -150,7 +150,7 @@ rw_get(NewIfcObj obj, int attr, ...)
 	return rw->api.last_error == NewIfc_error_none;
 }
 
-NewIfcObj
+static NewIfcObj
 rw_copy(NewIfcObj old)
 {
 	struct root_window *ret;
