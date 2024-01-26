@@ -46,6 +46,8 @@ o Filter files (e.g. text/*.can) now have optional expiration date and other
 
 Customization
 ~~~~~~~~~~~~~
+o New preferred method of text.dat string sysop-customization: ctrl/text.ini
+  See https://wiki.synchro.net/custom:text.ini for details
 o New stock JavaScript modules:
   - msgscancfg.js and filescancfg.js
     Replaces logic previously copy/pasted into multiple Baja command shells
@@ -99,7 +101,14 @@ o @-codes can now be included in text centered with the CENTER @-code
   Note: this centering logic does not know the expanded-size of the @-code, so
   use a fixed-length @-code (e.g. with padding) or use the 'C' @-code format
   modifier instead
-o Support @-code expansion in node messages and short user msgs/telegrams
+o @-codes with format modifiers are now supported in JS bbs.atcode() method,
+  previously, only the basic '-L' and '-R' modifiers were partially supported
+o Support @-code expansion in certin text.dat/ini strings:
+  NodeLoggedOnAtNbps
+  NodeLoggedOff
+  Regarding
+  RegardingByOn
+  RegardingByToOn
 o Fixed negative MSG_SCORE @-code value on 64-bit *nix builds
 o Updated text.dat strings:
   - BulkUploadDescPrompt - now takes a string (%s) for the file size in bytes
