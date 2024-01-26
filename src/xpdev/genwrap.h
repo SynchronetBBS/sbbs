@@ -365,7 +365,7 @@ DLLEXPORT char*		os_cmdshell(void);
 DLLEXPORT char*		lastchar(const char* str);
 DLLEXPORT int		safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 #if defined(__GNUC__)   // Catch printf-format errors
-    __attribute__ ((format (printf, 3 , 4)));            // 1 is 'this'
+    __attribute__ ((format (printf, 3 , 4)))            // 1 is 'this'
 #endif
 ;
 
