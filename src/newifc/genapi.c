@@ -33,6 +33,11 @@ struct attribute_info {
 
 const struct attribute_info
 attributes[] = {
+	{"child_height", "uint16_t", attr_impl_global, 1},
+	{"child_width", "uint16_t", attr_impl_global, 1},
+	{"child_xpos", "uint16_t", attr_impl_global, 1},
+	{"child_ypos", "uint16_t", attr_impl_global, 1},
+	{"dirty", "bool", attr_impl_root, 1},
 	{"height", "uint16_t", attr_impl_global, 0},
 	{"locked", "bool", attr_impl_root, 0},
 	{"locked_by_me", "bool", attr_impl_root, 1},
@@ -41,6 +46,8 @@ attributes[] = {
 	{"title", "const char *", attr_impl_object, 0},
 	{"transparent", "bool", attr_impl_object, 0},
 	{"width", "uint16_t", attr_impl_global, 0},
+	{"xpos", "uint16_t", attr_impl_global, 0},
+	{"ypos", "uint16_t", attr_impl_global, 0},
 };
 
 struct error_info {
@@ -55,6 +62,7 @@ error_inf[] = {
 	{"error_not_implemented"},
 	{"error_lock_failed"},
 	{"error_needs_parent"},
+	{"error_wont_fit"},
 };
 
 int
@@ -100,6 +108,7 @@ main(int argc, char **argv)
 	fputs("NewIfcObj NI_copy(NewIfcObj obj);\n", header);
 	fputs("NewIfcObj NI_create(enum NewIfc_object obj, NewIfcObj parent);\n", header);
 	fputs("enum NewIfc_error NI_error(NewIfcObj obj);\n\n", header);
+	fputs("bool NI_walk_children(NewIfcObj obj, bool (*cb)(NewIfcObj obj, void *cb_data), void *cbdata);\n", header);
 
 	nitems = sizeof(attributes) / sizeof(attributes[0]);
 	for (i = 0; i < nitems; i++) {
@@ -133,10 +142,16 @@ main(int argc, char **argv)
 	      "\tNewIfcObj lowerpeer;\n"
 	      "\tNewIfcObj topchild;\n"
 	      "\tNewIfcObj bottomchild;\n"
-	      "\tuint16_t height;\n"
-	      "\tuint16_t width;\n"
 	      "\tenum NewIfc_object type;\n"
 	      "\tenum NewIfc_error last_error;\n"
+	      "\tuint16_t height;\n"
+	      "\tuint16_t width;\n"
+	      "\tuint16_t xpos;\n"
+	      "\tuint16_t ypos;\n"
+	      "\tuint16_t child_height;\n"
+	      "\tuint16_t child_width;\n"
+	      "\tuint16_t child_xpos;\n"
+	      "\tuint16_t child_ypos;\n"
 	      "};\n\n", internal_header);
 
 	fputs("enum NewIfc_attribute {\n", internal_header);
@@ -214,16 +229,7 @@ main(int argc, char **argv)
 	      "\treturn ret;\n"
 	      "};\n\n", c_code);
 
-	fputs("NewIfcObj\n"
-	      "NI_copy(NewIfcObj obj) {\n"
-	      "\treturn obj->copy(obj);\n"
-	      "}\n\n", c_code);
-
-	fputs("enum NewIfc_error\n"
-	      "NI_error(NewIfcObj obj)\n"
-	      "{\n"
-	      "\treturn obj->last_error;\n"
-	      "}\n\n", c_code);
+	fputs("#include \"newifc_nongen.c\"\n\n", c_code);
 
 	nitems = sizeof(attributes) / sizeof(attributes[0]);
 	for (i = 0; i < nitems; i++) {
@@ -261,38 +267,48 @@ main(int argc, char **argv)
 							"NI_set_%s(NewIfcObj obj, %s value) {\n"
 							"\tbool ret;\n"
 							"\tif (NI_set_locked(obj, true)) {\n"
-							"\t\tobj->%s = value;\n"
+							"\t\tif ((!obj->set(obj, NewIfc_%s, value)) && obj->last_error != NewIfc_error_not_implemented) {\n"
+							"\t\t\tobj->%s = value;\n"
+							"\t\t\tobj->last_error = NewIfc_error_none;\n"
+							"\t\t}\n"
 							"\t\tNI_set_locked(obj, false);\n"
 							"\t}\n"
 							"\telse\n"
 							"\t\tret = false;\n"
+							"\treturn ret;\n"
+							"}\n\n", attributes[i].name, attributes[i].type, attributes[i].name, attributes[i].name);
+				}
+
+				fprintf(c_code, "bool\n"
+				                "NI_get_%s(NewIfcObj obj, %s* value) {\n"
+				                "\tbool ret;\n"
+				                "\tif (NI_set_locked(obj, true)) {\n"
+						"\t\tif ((!obj->get(obj, NewIfc_%s, value)) && obj->last_error != NewIfc_error_not_implemented) {\n"
+						"\t\t\t*value = obj->%s;\n"
+						"\t\t\tobj->last_error = NewIfc_error_none;\n"
+						"\t\t}\n"
+						"\t\tNI_set_locked(obj, false);\n"
+						"\t}\n"
+						"\telse\n"
+						"\t\tret = false;\n"
+						"\treturn ret;\n"
+						"}\n\n", attributes[i].name, attributes[i].type, attributes[i].name, attributes[i].name);
+				break;
+			case attr_impl_root:
+				if (!attributes[i].read_only) {
+					fprintf(c_code, "bool\n"
+							"NI_set_%s(NewIfcObj obj, %s value) {\n"
+							"\tbool ret = obj->root->set(obj, NewIfc_%s, value);\n"
+							"\tobj->last_error = obj->root->last_error;\n"
 							"\treturn ret;\n"
 							"}\n\n", attributes[i].name, attributes[i].type, attributes[i].name);
 				}
 
 				fprintf(c_code, "bool\n"
 						"NI_get_%s(NewIfcObj obj, %s* value) {\n"
-						"\tbool ret;\n"
-						"\tif (NI_set_locked(obj, true)) {\n"
-						"\t\t*value = obj->%s;\n"
-						"\t\tNI_set_locked(obj, false);\n"
-						"\t}\n"
-						"\telse\n"
-						"\t\tret = false;\n"
+						"\tbool ret = obj->root->get(obj, NewIfc_%s, value);\n"
+						"\tobj->last_error = obj->root->last_error;\n"
 						"\treturn ret;\n"
-						"}\n\n", attributes[i].name, attributes[i].type, attributes[i].name);
-				break;
-			case attr_impl_root:
-				if (!attributes[i].read_only) {
-					fprintf(c_code, "bool\n"
-							"NI_set_%s(NewIfcObj obj, %s value) {\n"
-							"\treturn obj->root->set(obj, NewIfc_%s, value);\n"
-							"}\n\n", attributes[i].name, attributes[i].type, attributes[i].name);
-				}
-
-				fprintf(c_code, "bool\n"
-						"NI_get_%s(NewIfcObj obj, %s* value) {\n"
-						"\treturn obj->root->get(obj, NewIfc_%s, value);\n"
 						"}\n\n", attributes[i].name, attributes[i].type, attributes[i].name);
 				break;
 		}

@@ -26,7 +26,52 @@ struct root_window {
 	unsigned transparent:1;
 	unsigned show_title:1;
 	unsigned help:1;
+	unsigned dirty:1;
 };
+
+struct rw_recalc_child_cb_params {
+	uint16_t height;
+	uint16_t width;
+};
+
+static bool
+rw_recalc_child_cb(NewIfcObj obj, void *cbdata)
+{
+	struct rw_recalc_child_cb_params *nsz = cbdata;
+
+	if (obj->height > nsz->height)
+		return false;
+	if (obj->width > nsz->width)
+		return false;
+	return true;
+}
+
+static void
+rw_recalc_child(struct root_window *rw, uint16_t height, uint16_t width)
+{
+	uint16_t losty = 0;
+	struct rw_recalc_child_cb_params nsz = {height, width};
+
+	if (rw->show_title) {
+		nsz.height--;
+		losty++;
+	}
+	if (rw->help) {
+		nsz.height--;
+		losty++;
+	}
+	if (losty > height) {
+		rw->api.last_error = NewIfc_error_wont_fit;
+		return;
+	}
+	if (!NI_walk_children((NewIfcObj)rw, rw_recalc_child_cb, &nsz)) {
+		rw->api.last_error = NewIfc_error_wont_fit;
+		return;
+	}
+	rw->api.child_height = nsz.height;
+	rw->api.child_ypos = rw->show_title ? 1 : 0;
+	return;
+}
 
 static bool
 rw_set(NewIfcObj obj, int attr, ...)
@@ -45,9 +90,17 @@ rw_set(NewIfcObj obj, int attr, ...)
 			break;
 		case NewIfc_show_help:
 			SET_BOOL(rw, help);
+			rw_recalc_child(rw, rw->api.height, rw->api.width);
 			break;
 		case NewIfc_title:
 			SET_STRING(rw, title, title_sz);
+			rw_recalc_child(rw, rw->api.height, rw->api.width);
+			break;
+		case NewIfc_height:
+			rw_recalc_child(rw, va_arg(ap, int), rw->api.width);
+			break;
+		case NewIfc_width:
+			rw_recalc_child(rw, rw->api.height, va_arg(ap, int));
 			break;
 		case NewIfc_locked:
 			if (va_arg(ap, int)) {
@@ -176,6 +229,12 @@ NewIFC_root_window(void)
 		ret->api.last_error = NewIfc_error_none;
 		ret->api.width = 80;
 		ret->api.height = 25;
+		ret->api.xpos = 0;
+		ret->api.ypos = 0;
+		ret->api.child_xpos = 0;
+		ret->api.child_ypos = 1;
+		ret->api.child_width = 80;
+		ret->api.child_height = 23;
 		ret->transparent = false;
 		ret->show_title = true;
 		ret->help = true;
