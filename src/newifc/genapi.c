@@ -45,13 +45,14 @@ attributes[] = {
 	{"locked", "bool", attr_impl_root, 0},
 	{"locked_by_me", "bool", attr_impl_root, 1},
 	{"lowerpeer", "NewIfcObj", attr_impl_global, 1},
+	{"min_height", "uint16_t", attr_impl_global, 1},
+	{"min_width", "uint16_t", attr_impl_global, 1},
 	{"parent", "NewIfcObj", attr_impl_global, 1},
 	{"root", "NewIfcObj", attr_impl_global, 1},
 	{"show_help", "bool", attr_impl_object, 0},
 	{"show_title", "bool", attr_impl_object, 0},
 	{"title", "const char *", attr_impl_object, 0},
 	{"topchild", "NewIfcObj", attr_impl_global, 1},
-	{"transparent", "bool", attr_impl_object, 0},
 	{"type", "enum NewIfc_object", attr_impl_global, 1},
 	{"width", "uint16_t", attr_impl_global, 0},
 	{"xpos", "uint16_t", attr_impl_global, 0},
@@ -159,6 +160,8 @@ main(int argc, char **argv)
 	      "	NI_err last_error;\n"
 	      "	uint16_t height;\n"
 	      "	uint16_t width;\n"
+	      "	uint16_t min_height;\n"
+	      "	uint16_t min_width;\n"
 	      "	uint16_t xpos;\n"
 	      "	uint16_t ypos;\n"
 	      "	uint16_t child_height;\n"

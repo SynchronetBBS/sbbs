@@ -23,7 +23,6 @@ struct root_window {
 	size_t title_sz;
 	pthread_mutex_t mtx;
 	unsigned locks;
-	unsigned transparent:1;
 	unsigned show_title:1;
 	unsigned help:1;
 	unsigned dirty:1;
@@ -82,9 +81,6 @@ rw_set(NewIfcObj obj, int attr, ...)
 	rw->api.last_error = NewIfc_error_none;
 	va_start(ap, attr);
 	switch (attr) {
-		case NewIfc_transparent:
-			SET_BOOL(rw, transparent);
-			break;
 		case NewIfc_show_title:
 			SET_BOOL(rw, show_title);
 			break;
@@ -155,9 +151,6 @@ rw_get(NewIfcObj obj, int attr, ...)
 	rw->api.last_error = NewIfc_error_none;
 	va_start(ap, attr);
 	switch (attr) {
-		case NewIfc_transparent:
-			GET_BOOL(rw, transparent);
-			break;
 		case NewIfc_show_title:
 			GET_BOOL(rw, show_title);
 			break;
@@ -245,9 +238,10 @@ NewIFC_root_window(NewIfcObj *newobj)
 	(*newrw)->api.child_ypos = 1;
 	(*newrw)->api.child_width = 80;
 	(*newrw)->api.child_height = 23;
+	(*newrw)->api.min_height = 2;
+	(*newrw)->api.min_width = 40;
 	// TODO: This is only needed by the unit tests...
 	(*newrw)->api.root = *newobj;
-	(*newrw)->transparent = false;
 	(*newrw)->show_title = true;
 	(*newrw)->help = true;
 	(*newrw)->title_sz = 0;
@@ -280,7 +274,8 @@ void test_root_window(CuTest *ct)
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->width == 80);
 	CuAssertTrue(ct, obj->height == 25);
-	CuAssertTrue(ct, obj->get(obj, NewIfc_transparent, &b) == NewIfc_error_none && !b);
+	CuAssertTrue(ct, obj->min_width == 40);
+	CuAssertTrue(ct, obj->min_height == 2);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_show_title, &b) == NewIfc_error_none && b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
@@ -294,7 +289,6 @@ void test_root_window(CuTest *ct)
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) == NewIfc_error_none && !b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 
-	CuAssertTrue(ct, obj->set(obj, NewIfc_transparent, true) == NewIfc_error_none);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->set(obj, NewIfc_show_title, false) == NewIfc_error_none);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
@@ -309,8 +303,6 @@ void test_root_window(CuTest *ct)
 	CuAssertTrue(ct, obj->set(obj, NewIfc_locked_by_me, &b) == NewIfc_error_not_implemented);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_not_implemented);
 
-	CuAssertTrue(ct, obj->get(obj, NewIfc_transparent, &b) == NewIfc_error_none && b);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_show_title, &b) == NewIfc_error_none && !b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_show_help, &b) == NewIfc_error_none && !b);
