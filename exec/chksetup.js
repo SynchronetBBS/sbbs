@@ -268,7 +268,7 @@ var tests = {
 	
 	check_dove_net: function(options)
 	{
-		const TOTAL_DOVENET_CONFERENCES = js.global.jsexec_revision ? 22 : 21;
+		const TOTAL_DOVENET_CONFERENCES = js.global.jsexec_revision ? 23 : 22;
 		var output = [];
 		var grp = msg_area.grp["DOVE-Net"];
 		if(!grp)
