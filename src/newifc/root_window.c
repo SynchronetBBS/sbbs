@@ -261,7 +261,6 @@ NewIFC_root_window(NewIfcObj *newobj)
 void test_root_window(CuTest *ct)
 {
 	bool b;
-	uint32_t u32;
 	char *s;
 	NewIfcObj obj;
 	static const char *new_title = "New Title";

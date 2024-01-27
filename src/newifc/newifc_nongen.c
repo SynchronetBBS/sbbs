@@ -65,3 +65,16 @@ NI_walk_children(NewIfcObj obj, NI_err (*cb)(NewIfcObj obj, void *cb_data), void
 		ret = NewIfc_error_lock_failed;
 	return ret;
 }
+
+int
+handler_compar(const void *a, const void *b)
+{
+	const enum NewIfc_event_handlers *key = a;
+	const struct NewIfc_handler *tst = b;
+
+	if (*key < tst->event)
+		return -1;
+	if (*key > tst->event)
+		return 1;
+	return 0;
+}
