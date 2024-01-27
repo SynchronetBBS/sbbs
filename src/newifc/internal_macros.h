@@ -4,7 +4,6 @@
 #define SET_VARS           \
 	va_list ap;         \
 	char *buf; \
-	size_t sz
 
 #define SET_BOOL(st, field) do {    \
 	st->field = va_arg(ap, int); \
@@ -32,7 +31,6 @@
 
 #define GET_VARS   \
 	va_list ap; \
-	size_t sz;   \
 
 #define GET_BOOL(st, field)     *(va_arg(ap, bool *))     = st->field
 #define GET_UINT32_T(st, field) *(va_arg(ap, uint32_t *)) = st->field;

@@ -33,18 +33,26 @@ struct attribute_info {
 
 const struct attribute_info
 attributes[] = {
+	{"bottomchild", "NewIfcObj", attr_impl_global, 1},
 	{"child_height", "uint16_t", attr_impl_global, 1},
 	{"child_width", "uint16_t", attr_impl_global, 1},
 	{"child_xpos", "uint16_t", attr_impl_global, 1},
 	{"child_ypos", "uint16_t", attr_impl_global, 1},
 	{"dirty", "bool", attr_impl_root, 1},
 	{"height", "uint16_t", attr_impl_global, 0},
+	{"higherpeer", "NewIfcObj", attr_impl_global, 1},
+	{"last_error", "NI_err", attr_impl_global, 1},
 	{"locked", "bool", attr_impl_root, 0},
 	{"locked_by_me", "bool", attr_impl_root, 1},
+	{"lowerpeer", "NewIfcObj", attr_impl_global, 1},
+	{"parent", "NewIfcObj", attr_impl_global, 1},
+	{"root", "NewIfcObj", attr_impl_global, 1},
 	{"show_help", "bool", attr_impl_object, 0},
 	{"show_title", "bool", attr_impl_object, 0},
 	{"title", "const char *", attr_impl_object, 0},
+	{"topchild", "NewIfcObj", attr_impl_global, 1},
 	{"transparent", "bool", attr_impl_object, 0},
+	{"type", "enum NewIfc_object", attr_impl_global, 1},
 	{"width", "uint16_t", attr_impl_global, 0},
 	{"xpos", "uint16_t", attr_impl_global, 0},
 	{"ypos", "uint16_t", attr_impl_global, 0},
@@ -52,17 +60,19 @@ attributes[] = {
 
 struct error_info {
 	const char *name;
+	int value;
 };
 
 const struct error_info
 error_inf[] = {
-	{"error_none"},
-	{"error_allocation_failure"},
-	{"error_out_of_range"},
-	{"error_not_implemented"},
-	{"error_lock_failed"},
-	{"error_needs_parent"},
-	{"error_wont_fit"},
+	{"error_none", 0},
+	{"error_allocation_failure", -1},
+	{"error_invalid_arg", -1},
+	{"error_lock_failed", -1},
+	{"error_needs_parent", -1},
+	{"error_not_implemented", -1},
+	{"error_out_of_range", -1},
+	{"error_wont_fit", -1},
 };
 
 int
@@ -74,7 +84,7 @@ main(int argc, char **argv)
 	size_t nitems;
 	size_t i;
 
-	header = fopen("newifc.h", "wb");
+	header = fopen("newifc.h", "w");
 	if (header == NULL) {
 		perror("Opening header");
 		return EXIT_FAILURE;
@@ -91,36 +101,39 @@ main(int argc, char **argv)
 
 	fputs("typedef struct newifc_api *NewIfcObj;\n\n", header);
 
-	fputs("enum NewIfc_error {\n", header);
+	fputs("typedef enum NewIfc_error {\n", header);
 	nitems = sizeof(error_inf) / sizeof(error_inf[0]);
 	for (i = 0; i < nitems; i++) {
-		fprintf(header, "\tNewIfc_%s,\n", error_inf[i].name);
+		if (error_inf[i].value >= 0)
+			fprintf(header, "	NewIfc_%s = %d,\n", error_inf[i].name, error_inf[i].value);
+		else
+			fprintf(header, "	NewIfc_%s,\n", error_inf[i].name);
 	}
-	fputs("};\n\n", header);
+	fputs("} NI_err;\n\n", header);
 
 	fputs("enum NewIfc_object {\n", header);
 	nitems = sizeof(objtypes) / sizeof(objtypes[0]);
 	for (i = 0; i < nitems; i++) {
-		fprintf(header, "\tNewIfc_%s,\n", objtypes[i].name);
+		fprintf(header, "	NewIfc_%s,\n", objtypes[i].name);
 	}
 	fputs("};\n\n", header);
 
-	fputs("NewIfcObj NI_copy(NewIfcObj obj);\n", header);
-	fputs("NewIfcObj NI_create(enum NewIfc_object obj, NewIfcObj parent);\n", header);
-	fputs("enum NewIfc_error NI_error(NewIfcObj obj);\n", header);
-	fputs("bool NI_walk_children(NewIfcObj obj, bool (*cb)(NewIfcObj obj, void *cb_data), void *cbdata);\n\n", header);
+	fputs("NI_err NI_copy(NewIfcObj obj, NewIfcObj *newobj);\n", header);
+	fputs("NI_err NI_create(enum NewIfc_object obj, NewIfcObj parent, NewIfcObj *newobj);\n", header);
+	fputs("NI_err NI_error(NewIfcObj obj);\n", header);
+	fputs("NI_err NI_walk_children(NewIfcObj obj, NI_err (*cb)(NewIfcObj obj, void *cb_data), void *cbdata);\n\n", header);
 
 	nitems = sizeof(attributes) / sizeof(attributes[0]);
 	for (i = 0; i < nitems; i++) {
 		if (!attributes[i].read_only)
-			fprintf(header, "bool NI_set_%s(NewIfcObj obj, %s value);\n", attributes[i].name, attributes[i].type);
-		fprintf(header, "bool NI_get_%s(NewIfcObj obj, %s* value);\n", attributes[i].name, attributes[i].type);
+			fprintf(header, "NI_err NI_set_%s(NewIfcObj obj, %s value);\n", attributes[i].name, attributes[i].type);
+		fprintf(header, "NI_err NI_get_%s(NewIfcObj obj, %s* value);\n", attributes[i].name, attributes[i].type);
 	}
 	fputs("\n#endif\n", header);
 	fclose(header);
 
 
-	internal_header = fopen("newifc_internal.h", "wb");
+	internal_header = fopen("newifc_internal.h", "w");
 	if (internal_header == NULL) {
 		perror("Opening internal header");
 		return EXIT_FAILURE;
@@ -133,31 +146,31 @@ main(int argc, char **argv)
 	      "#define NEWIFC_INTERNAL_H\n"
 	      "\n"
 	      "struct newifc_api {\n"
-	      "\tbool (*set)(NewIfcObj niobj, const int attr, ...);\n"
-	      "\tbool (*get)(NewIfcObj niobj, const int attr, ...);\n"
-	      "\tNewIfcObj (*copy)(NewIfcObj obj);\n"
-	      "\tNewIfcObj root;\n"
-	      "\tNewIfcObj parent;\n"
-	      "\tNewIfcObj higherpeer;\n"
-	      "\tNewIfcObj lowerpeer;\n"
-	      "\tNewIfcObj topchild;\n"
-	      "\tNewIfcObj bottomchild;\n"
-	      "\tenum NewIfc_object type;\n"
-	      "\tenum NewIfc_error last_error;\n"
-	      "\tuint16_t height;\n"
-	      "\tuint16_t width;\n"
-	      "\tuint16_t xpos;\n"
-	      "\tuint16_t ypos;\n"
-	      "\tuint16_t child_height;\n"
-	      "\tuint16_t child_width;\n"
-	      "\tuint16_t child_xpos;\n"
-	      "\tuint16_t child_ypos;\n"
+	      "	NI_err (*set)(NewIfcObj niobj, const int attr, ...);\n"
+	      "	NI_err (*get)(NewIfcObj niobj, const int attr, ...);\n"
+	      "	NI_err (*copy)(NewIfcObj obj, NewIfcObj *newobj);\n"
+	      "	NewIfcObj root;\n"
+	      "	NewIfcObj parent;\n"
+	      "	NewIfcObj higherpeer;\n"
+	      "	NewIfcObj lowerpeer;\n"
+	      "	NewIfcObj topchild;\n"
+	      "	NewIfcObj bottomchild;\n"
+	      "	enum NewIfc_object type;\n"
+	      "	NI_err last_error;\n"
+	      "	uint16_t height;\n"
+	      "	uint16_t width;\n"
+	      "	uint16_t xpos;\n"
+	      "	uint16_t ypos;\n"
+	      "	uint16_t child_height;\n"
+	      "	uint16_t child_width;\n"
+	      "	uint16_t child_xpos;\n"
+	      "	uint16_t child_ypos;\n"
 	      "};\n\n", internal_header);
 
 	fputs("enum NewIfc_attribute {\n", internal_header);
 	nitems = sizeof(attributes) / sizeof(attributes[0]);
 	for (i = 0; i < nitems; i++) {
-		fprintf(internal_header, "\tNewIfc_%s,\n", attributes[i].name);
+		fprintf(internal_header, "	NewIfc_%s,\n", attributes[i].name);
 	}
 	fputs("};\n\n", internal_header);
 
@@ -165,7 +178,7 @@ main(int argc, char **argv)
 	fclose(internal_header);
 
 
-	c_code = fopen("newifc.c", "wb");
+	c_code = fopen("newifc.c", "w");
 	if (c_code == NULL) {
 		perror("Opening c source");
 		return EXIT_FAILURE;
@@ -182,52 +195,57 @@ main(int argc, char **argv)
 	}
 	fputs("\n", c_code);
 
-	fputs("NewIfcObj\n"
-	      "NI_create(enum NewIfc_object obj, NewIfcObj parent) {\n"
-	      "\tNewIfcObj ret = NULL;\n"
+	fputs("NI_err\n"
+	      "NI_create(enum NewIfc_object obj, NewIfcObj parent, NewIfcObj *newobj) {\n"
+	      "	NI_err ret = NewIfc_error_none;\n"
 	      "\n"
-	      "\tswitch(obj) {\n", c_code);
+	      "	if (newobj == NULL)\n"
+	      "		return NewIfc_error_invalid_arg;\n"
+	      "	*newobj = NULL;\n"
+	      "	switch(obj) {\n", c_code);
 	nitems = sizeof(objtypes) / sizeof(objtypes[0]);
 	for (i = 0; i < nitems; i++) {
-		fprintf(c_code, "\t\tcase NewIfc_%s:\n", objtypes[i].name);
+		fprintf(c_code, "		case NewIfc_%s:\n", objtypes[i].name);
 		if (objtypes[i].needs_parent) {
-			fputs("\t\t\tif (parent == NULL) {\n"
-			                "\t\t\t\tbreak;\n"
-			                "\t\t\t}\n", c_code);
+			fputs("			if (parent == NULL) {\n"
+			      "				ret = NewIfc_error_invalid_arg;\n"
+			      "				break;\n"
+			      "			}\n", c_code);
 		}
 		else {
-			fputs("\t\t\tif (parent != NULL) {\n"
-			                "\t\t\t\tbreak;\n"
-			                "\t\t\t}\n", c_code);
+			fputs("			if (parent != NULL) {\n"
+			      "				ret = NewIfc_error_invalid_arg;\n"
+			      "				break;\n"
+			      "			}\n", c_code);
 		}
-		fprintf(c_code, "\t\t\tret = NewIFC_%s();\n"
-		                "\t\t\tif (ret == NULL) {\n"
-		                "\t\t\t\tbreak;\n"
-		                "\t\t\t}\n"
-		                "\t\t\tret->type = obj;\n"
-		                "\t\t\tbreak;\n", objtypes[i].name);
+		fprintf(c_code, "			ret = NewIFC_%s(newobj);\n"
+		                "			if (ret != NewIfc_error_none) {\n"
+		                "				break;\n"
+		                "			}\n"
+		                "			(*newobj)->type = obj;\n"
+		                "			break;\n", objtypes[i].name);
 	}
-	fputs("\t}\n"
-	      "\tif (ret) {\n"
-	      "\t\tret->parent = parent;\n"
-	      "\t\tret->higherpeer = NULL;\n"
-	      "\t\tret->topchild = NULL;\n"
-	      "\t\tret->bottomchild = NULL;\n"
-	      "\t\tif (parent) {\n"
-	      "\t\t\tret->root = parent->root;\n"
-	      "\t\t\tret->lowerpeer = parent->topchild;\n"
-	      "\t\t\tparent->topchild = ret;\n"
-	      "\t\t\tif (parent->bottomchild == NULL) {\n"
-	      "\t\t\t\tparent->bottomchild = ret;\n"
-	      "\t\t\t}\n"
-	      "\t\t}\n"
-	      "\t\telse {\n"
-	      "\t\t\tret->root = ret;\n"
-	      "\t\t\tret->lowerpeer = NULL;\n"
-	      "\t\t}\n"
-	      "\t}\n"
-	      "\treturn ret;\n"
-	      "};\n\n", c_code);
+	fputs("	}\n"
+	      "	if (ret == NewIfc_error_none) {\n"
+	      "		(*newobj)->parent = parent;\n"
+	      "		(*newobj)->higherpeer = NULL;\n"
+	      "		(*newobj)->topchild = NULL;\n"
+	      "		(*newobj)->bottomchild = NULL;\n"
+	      "		if (parent) {\n"
+	      "			(*newobj)->root = parent->root;\n"
+	      "			(*newobj)->lowerpeer = parent->topchild;\n"
+	      "			parent->topchild = *newobj;\n"
+	      "			if (parent->bottomchild == NULL) {\n"
+	      "				parent->bottomchild = *newobj;\n"
+	      "			}\n"
+	      "		}\n"
+	      "		else {\n"
+	      "			(*newobj)->root = *newobj;\n"
+	      "			(*newobj)->lowerpeer = NULL;\n"
+	      "		}\n"
+	      "	}\n"
+	      "	return ret;\n"
+	      "}\n\n", c_code);
 
 	fputs("#include \"newifc_nongen.c\"\n\n", c_code);
 
@@ -236,80 +254,100 @@ main(int argc, char **argv)
 		switch (attributes[i].impl) {
 			case attr_impl_object:
 				if (!attributes[i].read_only) {
-					fprintf(c_code, "bool\n"
-							"NI_set_%s(NewIfcObj obj, %s value) {\n"
-							"\tbool ret;\n"
-							"\tif (NI_set_locked(obj, true)) {\n"
-							"\t\tret = obj->set(obj, NewIfc_%s, value);\n"
-							"\t\tNI_set_locked(obj, false);\n"
-							"\t}\n"
-							"\telse\n"
-							"\t\tret = false;\n"
-							"\treturn ret;\n"
-							"}\n\n", attributes[i].name, attributes[i].type, attributes[i].name);
+					fprintf(c_code, "NI_err\n"
+					                "NI_set_%s(NewIfcObj obj, %s value) {\n"
+					                "	NI_err ret;\n"
+					                "	if (obj == NULL)\n"
+					                "		return NewIfc_error_invalid_arg;\n"
+					                "	if (NI_set_locked(obj, true)) {\n"
+					                "		ret = obj->set(obj, NewIfc_%s, value);\n"
+					                "		NI_set_locked(obj, false);\n"
+					                "	}\n"
+					                "	else\n"
+					                "		ret = NewIfc_error_lock_failed;\n"
+					                "	return ret;\n"
+					                "}\n\n", attributes[i].name, attributes[i].type, attributes[i].name);
 				}
 
-				fprintf(c_code, "bool\n"
-						"NI_get_%s(NewIfcObj obj, %s* value) {\n"
-						"\tbool ret;\n"
-						"\tif (NI_set_locked(obj, true)) {\n"
-						"\t\tret = obj->get(obj, NewIfc_%s, value);\n"
-						"\t\tNI_set_locked(obj, false);\n"
-						"\t}\n"
-						"\telse\n"
-						"\t\tret = false;\n"
-						"\treturn ret;\n"
-						"}\n\n", attributes[i].name, attributes[i].type, attributes[i].name);
+				fprintf(c_code, "NI_err\n"
+				                "NI_get_%s(NewIfcObj obj, %s* value) {\n"
+				                "	NI_err ret;\n"
+				                "	if (obj == NULL)\n"
+				                "		return NewIfc_error_invalid_arg;\n"
+				                "	if (value == NULL)\n"
+				                "		return NewIfc_error_invalid_arg;\n"
+				                "	if (NI_set_locked(obj, true)) {\n"
+				                "		ret = obj->get(obj, NewIfc_%s, value);\n"
+				                "		NI_set_locked(obj, false);\n"
+				                "	}\n"
+				                "	else\n"
+				                "		ret = NewIfc_error_lock_failed;\n"
+				                "	return ret;\n"
+				                "}\n\n", attributes[i].name, attributes[i].type, attributes[i].name);
 				break;
 			case attr_impl_global:
 				if (!attributes[i].read_only) {
-					fprintf(c_code, "bool\n"
-							"NI_set_%s(NewIfcObj obj, %s value) {\n"
-							"\tbool ret;\n"
-							"\tif (NI_set_locked(obj, true)) {\n"
-							"\t\tif ((!obj->set(obj, NewIfc_%s, value)) && obj->last_error != NewIfc_error_not_implemented) {\n"
-							"\t\t\tobj->%s = value;\n"
-							"\t\t\tobj->last_error = NewIfc_error_none;\n"
-							"\t\t}\n"
-							"\t\tNI_set_locked(obj, false);\n"
-							"\t}\n"
-							"\telse\n"
-							"\t\tret = false;\n"
-							"\treturn ret;\n"
-							"}\n\n", attributes[i].name, attributes[i].type, attributes[i].name, attributes[i].name);
+					fprintf(c_code, "NI_err\n"
+					                "NI_set_%s(NewIfcObj obj, %s value) {\n"
+					                "	NI_err ret;\n"
+					                "	if (obj == NULL)\n"
+					                "		return NewIfc_error_invalid_arg;\n"
+					                "	if (NI_set_locked(obj, true)) {\n"
+					                "		ret = obj->set(obj, NewIfc_%s, value);\n"
+					                "		if (ret != NewIfc_error_none && obj->last_error != NewIfc_error_not_implemented) {\n"
+					                "			obj->%s = value;\n"
+					                "			obj->last_error = NewIfc_error_none;\n"
+					                "		}\n"
+					                "		NI_set_locked(obj, false);\n"
+					                "	}\n"
+					                "	else\n"
+					                "		ret = NewIfc_error_lock_failed;\n"
+					                "	return ret;\n"
+					                "}\n\n", attributes[i].name, attributes[i].type, attributes[i].name, attributes[i].name);
 				}
 
-				fprintf(c_code, "bool\n"
+				fprintf(c_code, "NI_err\n"
 				                "NI_get_%s(NewIfcObj obj, %s* value) {\n"
-				                "\tbool ret;\n"
-				                "\tif (NI_set_locked(obj, true)) {\n"
-						"\t\tif ((!obj->get(obj, NewIfc_%s, value)) && obj->last_error != NewIfc_error_not_implemented) {\n"
-						"\t\t\t*value = obj->%s;\n"
-						"\t\t\tobj->last_error = NewIfc_error_none;\n"
-						"\t\t}\n"
-						"\t\tNI_set_locked(obj, false);\n"
-						"\t}\n"
-						"\telse\n"
-						"\t\tret = false;\n"
-						"\treturn ret;\n"
-						"}\n\n", attributes[i].name, attributes[i].type, attributes[i].name, attributes[i].name);
+				                "	NI_err ret;\n"
+				                "	if (obj == NULL)\n"
+				                "		return NewIfc_error_invalid_arg;\n"
+				                "	if (value == NULL)\n"
+				                "		return NewIfc_error_invalid_arg;\n"
+				                "	if (NI_set_locked(obj, true)) {\n"
+				                "		ret = obj->get(obj, NewIfc_%s, value);\n"
+				                "		if ((ret != NewIfc_error_none) && obj->last_error != NewIfc_error_not_implemented) {\n"
+				                "			*value = obj->%s;\n"
+				                "			obj->last_error = NewIfc_error_none;\n"
+				                "		}\n"
+				                "		NI_set_locked(obj, false);\n"
+				                "	}\n"
+				                "	else\n"
+				                "		ret = NewIfc_error_lock_failed;\n"
+				                "	return ret;\n"
+				                "}\n\n", attributes[i].name, attributes[i].type, attributes[i].name, attributes[i].name);
 				break;
 			case attr_impl_root:
 				if (!attributes[i].read_only) {
-					fprintf(c_code, "bool\n"
-							"NI_set_%s(NewIfcObj obj, %s value) {\n"
-							"\tbool ret = obj->root->set(obj, NewIfc_%s, value);\n"
-							"\tobj->last_error = obj->root->last_error;\n"
-							"\treturn ret;\n"
-							"}\n\n", attributes[i].name, attributes[i].type, attributes[i].name);
+					fprintf(c_code, "NI_err\n"
+					                "NI_set_%s(NewIfcObj obj, %s value) {\n"
+					                "	if (obj == NULL)\n"
+					                "		return NewIfc_error_invalid_arg;\n"
+					                "	NI_err ret = obj->root->set(obj, NewIfc_%s, value);\n"
+					                "	obj->last_error = obj->root->last_error;\n"
+					                "	return ret;\n"
+					                "}\n\n", attributes[i].name, attributes[i].type, attributes[i].name);
 				}
 
-				fprintf(c_code, "bool\n"
-						"NI_get_%s(NewIfcObj obj, %s* value) {\n"
-						"\tbool ret = obj->root->get(obj, NewIfc_%s, value);\n"
-						"\tobj->last_error = obj->root->last_error;\n"
-						"\treturn ret;\n"
-						"}\n\n", attributes[i].name, attributes[i].type, attributes[i].name);
+				fprintf(c_code, "NI_err\n"
+				                "NI_get_%s(NewIfcObj obj, %s* value) {\n"
+				                "	if (obj == NULL)\n"
+				                "		return NewIfc_error_invalid_arg;\n"
+				                "	if (value == NULL)\n"
+				                "		return NewIfc_error_invalid_arg;\n"
+				                "	NI_err ret = obj->root->get(obj, NewIfc_%s, value);\n"
+				                "	obj->last_error = obj->root->last_error;\n"
+				                "	return ret;\n"
+				                "}\n\n", attributes[i].name, attributes[i].type, attributes[i].name);
 				break;
 		}
 	}

@@ -34,16 +34,16 @@ struct rw_recalc_child_cb_params {
 	uint16_t width;
 };
 
-static bool
+static NI_err
 rw_recalc_child_cb(NewIfcObj obj, void *cbdata)
 {
 	struct rw_recalc_child_cb_params *nsz = cbdata;
 
 	if (obj->height > nsz->height)
-		return false;
+		return NewIfc_error_wont_fit;
 	if (obj->width > nsz->width)
-		return false;
-	return true;
+		return NewIfc_error_wont_fit;
+	return NewIfc_error_none;
 }
 
 static void
@@ -64,7 +64,7 @@ rw_recalc_child(struct root_window *rw, uint16_t height, uint16_t width)
 		rw->api.last_error = NewIfc_error_wont_fit;
 		return;
 	}
-	if (!NI_walk_children((NewIfcObj)rw, rw_recalc_child_cb, &nsz)) {
+	if (NI_walk_children((NewIfcObj)rw, rw_recalc_child_cb, &nsz) != NewIfc_error_none) {
 		rw->api.last_error = NewIfc_error_wont_fit;
 		return;
 	}
@@ -73,7 +73,7 @@ rw_recalc_child(struct root_window *rw, uint16_t height, uint16_t width)
 	return;
 }
 
-static bool
+static NI_err
 rw_set(NewIfcObj obj, int attr, ...)
 {
 	struct root_window *rw = (struct root_window *)obj;
@@ -142,10 +142,10 @@ rw_set(NewIfcObj obj, int attr, ...)
 	}
 	va_end(ap);
 
-	return rw->api.last_error == NewIfc_error_none;
+	return rw->api.last_error;
 }
 
-static bool
+static NI_err
 rw_get(NewIfcObj obj, int attr, ...)
 {
 	struct root_window *rw = (struct root_window *)obj;
@@ -200,54 +200,66 @@ rw_get(NewIfcObj obj, int attr, ...)
 			break;
 	}
 
-	return rw->api.last_error == NewIfc_error_none;
+	return rw->api.last_error;
 }
 
-static NewIfcObj
-rw_copy(NewIfcObj old)
+static NI_err
+rw_copy(NewIfcObj old, NewIfcObj *newobj)
 {
-	struct root_window *ret;
+	struct root_window **newrw = (struct root_window **)newobj;
+	struct root_window *oldrw = (struct root_window *)old;
 
-	ret = malloc(sizeof(struct root_window));
-	memcpy(ret, old, sizeof(struct root_window));
-	ret->title = strdup(ret->title);
-
-	return (struct newifc_api *)ret;
-}
-
-NewIfcObj
-NewIFC_root_window(void)
-{
-	struct root_window *ret;
-
-	ret = malloc(sizeof(struct root_window));
-
-	if (ret) {
-		ret->api.get = rw_get;
-		ret->api.set = rw_set;
-		ret->api.copy = rw_copy;
-		ret->api.last_error = NewIfc_error_none;
-		ret->api.width = 80;
-		ret->api.height = 25;
-		ret->api.xpos = 0;
-		ret->api.ypos = 0;
-		ret->api.child_xpos = 0;
-		ret->api.child_ypos = 1;
-		ret->api.child_width = 80;
-		ret->api.child_height = 23;
-		ret->transparent = false;
-		ret->show_title = true;
-		ret->help = true;
-		ret->title_sz = 0;
-		ret->title = strdup(default_title);
-		ret->locks = 0;
-		if (ret->title == NULL) {
-			free(ret);
-			return NULL;
-		}
-		ret->mtx = pthread_mutex_initializer_np(true);
+	*newrw = malloc(sizeof(struct root_window));
+	if (*newrw == NULL) {
+		return NewIfc_error_allocation_failure;
 	}
-	return (struct newifc_api *)ret;
+	memcpy(*newrw, old, sizeof(struct root_window));
+	(*newrw)->title = strdup(oldrw->title);
+	if ((*newrw)->title == NULL) {
+		free(*newrw);
+		return NewIfc_error_allocation_failure;
+	}
+
+	return NewIfc_error_none;
+}
+
+static NI_err
+NewIFC_root_window(NewIfcObj *newobj)
+{
+	struct root_window **newrw = (struct root_window **)newobj;
+
+	*newrw = malloc(sizeof(struct root_window));
+
+	if (*newrw == NULL) {
+		return NewIfc_error_allocation_failure;
+	}
+	(*newrw)->api.get = rw_get;
+	(*newrw)->api.set = rw_set;
+	(*newrw)->api.copy = rw_copy;
+	(*newrw)->api.last_error = NewIfc_error_none;
+	(*newrw)->api.width = 80;
+	(*newrw)->api.height = 25;
+	(*newrw)->api.xpos = 0;
+	(*newrw)->api.ypos = 0;
+	(*newrw)->api.child_xpos = 0;
+	(*newrw)->api.child_ypos = 1;
+	(*newrw)->api.child_width = 80;
+	(*newrw)->api.child_height = 23;
+	// TODO: This is only needed by the unit tests...
+	(*newrw)->api.root = *newobj;
+	(*newrw)->transparent = false;
+	(*newrw)->show_title = true;
+	(*newrw)->help = true;
+	(*newrw)->title_sz = 0;
+	(*newrw)->title = strdup(default_title);
+	(*newrw)->locks = 0;
+	if ((*newrw)->title == NULL) {
+		free(*newrw);
+		return NewIfc_error_allocation_failure;
+	}
+	(*newrw)->mtx = pthread_mutex_initializer_np(true);
+
+	return NewIfc_error_none;
 }
 
 #ifdef BUILD_TESTS
@@ -260,7 +272,7 @@ void test_root_window(CuTest *ct)
 	NewIfcObj obj;
 	static const char *new_title = "New Title";
 
-	obj = NewIFC_root_window();
+	CuAssertTrue(ct, !NewIFC_root_window(&obj));
 	CuAssertPtrNotNull(ct, obj);
 	CuAssertPtrNotNull(ct, obj->get);
 	CuAssertPtrNotNull(ct, obj->set);
@@ -268,52 +280,53 @@ void test_root_window(CuTest *ct)
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->width == 80);
 	CuAssertTrue(ct, obj->height == 25);
-	CuAssertTrue(ct, obj->get(obj, NewIfc_transparent, &b) && !b);
+	CuAssertTrue(ct, obj->get(obj, NewIfc_transparent, &b) == NewIfc_error_none && !b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->get(obj, NewIfc_show_title, &b) && b);
+	CuAssertTrue(ct, obj->get(obj, NewIfc_show_title, &b) == NewIfc_error_none && b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->get(obj, NewIfc_show_help, &b) && b);
+	CuAssertTrue(ct, obj->get(obj, NewIfc_show_help, &b) == NewIfc_error_none && b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertStrEquals(ct, (obj->get(obj, NewIfc_title, &s), s), default_title);
+	CuAssertTrue(ct, obj->get(obj, NewIfc_title, &s) == NewIfc_error_none);
+	CuAssertStrEquals(ct, s, default_title);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->get(obj, NewIfc_locked, &b) && !b);
+	CuAssertTrue(ct, obj->get(obj, NewIfc_locked, &b) == NewIfc_error_none && !b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) && !b);
+	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) == NewIfc_error_none && !b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 
-	CuAssertTrue(ct, obj->set(obj, NewIfc_transparent, true));
+	CuAssertTrue(ct, obj->set(obj, NewIfc_transparent, true) == NewIfc_error_none);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->set(obj, NewIfc_show_title, false));
+	CuAssertTrue(ct, obj->set(obj, NewIfc_show_title, false) == NewIfc_error_none);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->set(obj, NewIfc_show_help, false));
+	CuAssertTrue(ct, obj->set(obj, NewIfc_show_help, false) == NewIfc_error_none);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->set(obj, NewIfc_title, new_title));
+	CuAssertTrue(ct, obj->set(obj, NewIfc_title, new_title) == NewIfc_error_none);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, !obj->set(obj, NewIfc_locked, false));
+	CuAssertTrue(ct, obj->set(obj, NewIfc_locked, false) == NewIfc_error_lock_failed);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_lock_failed);
-	CuAssertTrue(ct, obj->set(obj, NewIfc_locked, true));
+	CuAssertTrue(ct, obj->set(obj, NewIfc_locked, true) == NewIfc_error_none);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, !obj->set(obj, NewIfc_locked_by_me, &b));
+	CuAssertTrue(ct, obj->set(obj, NewIfc_locked_by_me, &b) == NewIfc_error_not_implemented);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_not_implemented);
 
-	CuAssertTrue(ct, obj->get(obj, NewIfc_transparent, &b) && b);
+	CuAssertTrue(ct, obj->get(obj, NewIfc_transparent, &b) == NewIfc_error_none && b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->get(obj, NewIfc_show_title, &b) && !b);
+	CuAssertTrue(ct, obj->get(obj, NewIfc_show_title, &b) == NewIfc_error_none && !b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->get(obj, NewIfc_show_help, &b) && !b);
+	CuAssertTrue(ct, obj->get(obj, NewIfc_show_help, &b) == NewIfc_error_none && !b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->get(obj, NewIfc_title, &s));
+	CuAssertTrue(ct, obj->get(obj, NewIfc_title, &s) == NewIfc_error_none);
 	CuAssertStrEquals(ct, s, new_title);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->get(obj, NewIfc_locked, &b) && b);
+	CuAssertTrue(ct, obj->get(obj, NewIfc_locked, &b) == NewIfc_error_none && b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) && b);
+	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) == NewIfc_error_none && b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, obj->set(obj, NewIfc_locked, false));
+	CuAssertTrue(ct, obj->set(obj, NewIfc_locked, false) == NewIfc_error_none);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-	CuAssertTrue(ct, !obj->set(obj, NewIfc_locked, false));
+	CuAssertTrue(ct, obj->set(obj, NewIfc_locked, false) == NewIfc_error_lock_failed);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_lock_failed);
-	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) && !b);
+	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) == NewIfc_error_none && !b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 }
 
