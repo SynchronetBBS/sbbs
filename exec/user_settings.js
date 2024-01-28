@@ -225,7 +225,7 @@ var thisuser = new User(argv[0] || user.number);
 
 const userSigFilename = system.data_dir + "user" + format("%04d.sig", thisuser.number);
 const PETSCII_DELETE = '\x14';
-const PETSCII_UPPERLOWER = '\x1d';
+const PETSCII_UPPERLOWER = 0x1d;
 
 while(bbs.online && !js.terminated) {
 	bbs.node_action = NODE_DFLT;
