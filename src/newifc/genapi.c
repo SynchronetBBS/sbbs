@@ -45,6 +45,7 @@ enum attribute_impl {
 	attr_impl_global,
 	attr_impl_object,
 	attr_impl_root,
+	attr_impl_global_custom_setter,
 };
 
 struct attribute_info {
@@ -62,7 +63,9 @@ attributes[] = {
 	{"child_xpos", NI_attr_type_uint16_t, attr_impl_global, 1},
 	{"child_ypos", NI_attr_type_uint16_t, attr_impl_global, 1},
 	{"dirty", NI_attr_type_bool, attr_impl_root, 1},
+	{"focus", NI_attr_type_bool, attr_impl_global_custom_setter, 0},
 	{"height", NI_attr_type_uint16_t, attr_impl_global, 0},
+	{"hidden", NI_attr_type_bool, attr_impl_global, 1},
 	{"higherpeer", NI_attr_type_NewIfcObj, attr_impl_global, 1},
 	{"last_error", NI_attr_type_NI_err, attr_impl_global, 1},
 	{"locked", NI_attr_type_bool, attr_impl_root, 0},
@@ -98,6 +101,7 @@ error_inf[] = {
 	{"error_out_of_range", -1},
 	{"error_wont_fit", -1},
 	{"error_cancelled", -1},
+	{"error_skip_subtree", -1},
 };
 
 struct handler_info {
@@ -157,12 +161,14 @@ main(int argc, char **argv)
 	fputs("NI_err NI_copy(NewIfcObj obj, NewIfcObj *newobj);\n", header);
 	fputs("NI_err NI_create(enum NewIfc_object obj, NewIfcObj parent, NewIfcObj *newobj);\n", header);
 	fputs("NI_err NI_error(NewIfcObj obj);\n", header);
-	fputs("NI_err NI_walk_children(NewIfcObj obj, NI_err (*cb)(NewIfcObj obj, void *cb_data), void *cbdata);\n\n", header);
+	fputs("NI_err NI_walk_children(NewIfcObj obj, bool top_down, NI_err (*cb)(NewIfcObj obj, void *cb_data), void *cbdata);\n\n", header);
 
 	nitems = sizeof(attributes) / sizeof(attributes[0]);
 	for (i = 0; i < nitems; i++) {
-		if (!attributes[i].read_only)
+		if (!attributes[i].read_only) {
+			fprintf(header, "NI_err NI_add_%s_handler(NewIfcObj obj, NI_err (*handler)(NewIfcObj obj, %s newval, void *cbdata), void *cbdata);\n", attributes[i].name, type_str[attributes[i].type].type);
 			fprintf(header, "NI_err NI_set_%s(NewIfcObj obj, %s value);\n", attributes[i].name, type_str[attributes[i].type].type);
+		}
 		fprintf(header, "NI_err NI_get_%s(NewIfcObj obj, %s* value);\n", attributes[i].name, type_str[attributes[i].type].type);
 	}
 	fputs("\n#endif\n", header);
@@ -212,7 +218,7 @@ main(int argc, char **argv)
 	      "	NI_err (*set)(NewIfcObj niobj, const int attr, ...);\n"
 	      "	NI_err (*get)(NewIfcObj niobj, const int attr, ...);\n"
 	      "	NI_err (*copy)(NewIfcObj obj, NewIfcObj *newobj);\n"
-	      "	struct NewIfc_handler *handlers;\n"
+	      "	struct NewIfc_handler **handlers;\n"
 	      "	size_t handlers_sz;\n"
 	      "	NewIfcObj root;\n"
 	      "	NewIfcObj parent;\n"
@@ -232,6 +238,8 @@ main(int argc, char **argv)
 	      "	uint16_t child_width;\n"
 	      "	uint16_t child_xpos;\n"
 	      "	uint16_t child_ypos;\n"
+	      "	unsigned focus:1;\n"
+	      "	unsigned hidden:1;\n"
 	      "};\n\n", internal_header);
 
 	fputs("enum NewIfc_attribute {\n", internal_header);
@@ -325,9 +333,10 @@ main(int argc, char **argv)
 		                "{\n"
 		                "	if (obj->handlers == NULL)\n"
 		                "		return NewIfc_error_none;\n"
-		                "	struct NewIfc_handler *h = bsearch(&type, obj->handlers, obj->handlers_sz, sizeof(obj->handlers[0]), handler_compar);\n"
-		                "	if (h == NULL)\n"
+		                "	struct NewIfc_handler **head = bsearch(&type, obj->handlers, obj->handlers_sz, sizeof(obj->handlers[0]), handler_bsearch_compar);\n"
+		                "	if (head == NULL)\n"
 		                "		return NewIfc_error_none;\n"
+		                "	struct NewIfc_handler *h = *head;\n"
 		                "	while (h != NULL) {\n"
 		                "		NI_err ret = h->on_%s_change(obj, newval, h->cbdata);\n"
 		                "		if (ret != NewIfc_error_none)\n"
@@ -398,6 +407,8 @@ main(int argc, char **argv)
 					                "}\n\n", attributes[i].name, type_str[attributes[i].type].type, attributes[i].name, attributes[i].name);
 				}
 
+				// Fall-through
+			case attr_impl_global_custom_setter:
 				fprintf(c_code, "NI_err\n"
 				                "NI_get_%s(NewIfcObj obj, %s* value) {\n"
 				                "	NI_err ret;\n"
@@ -442,6 +453,30 @@ main(int argc, char **argv)
 				                "}\n\n", attributes[i].name, type_str[attributes[i].type].type, attributes[i].name);
 				break;
 		}
+		fprintf(c_code, "NI_err\n"
+		                "NI_add_%s_handler(NewIfcObj obj, NI_err (*handler)(NewIfcObj obj, %s newval, void *cbdata), void *cbdata)\n"
+		                "{\n"
+		                "	NI_err ret;\n"
+		                "	if (obj == NULL || handler == NULL)\n"
+		                "		return NewIfc_error_invalid_arg;\n"
+		                "	if (NI_set_locked(obj, true)) {\n"
+		                "		struct NewIfc_handler *h = malloc(sizeof(struct NewIfc_handler));\n"
+		                "		if (h == NULL)\n"
+		                "			return NewIfc_error_allocation_failure;\n"
+		                "		h->on_%s_change = handler;\n"
+		                "		h->cbdata = cbdata;\n"
+		                "		h->event = NewIfc_on_%s_change;\n"
+		                "		h->next = NULL;\n"
+		                "		ret = NI_install_handler(obj, h);\n"
+		                "		NI_set_locked(obj, false);\n"
+		                "	}\n"
+		                "	else\n"
+		                "		ret = NewIfc_error_lock_failed;\n"
+		                "	return ret;\n"
+		                "}\n\n", attributes[i].name, type_str[attributes[i].type].type, type_str[attributes[i].type].var_name, attributes[i].name);
 	}
+
+	fputs("#include \"newifc_nongen_after.c\"\n\n", c_code);
+
 	fclose(c_code);
 }

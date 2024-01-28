@@ -28,27 +28,41 @@ NI_copy(NewIfcObj obj, NewIfcObj *newobj) {
 }
 
 static NI_err
-NI_walk_children_recurse(NewIfcObj obj, NI_err (*cb)(NewIfcObj obj, void *cb_data), void *cbdata)
+NI_walk_children_recurse(NewIfcObj obj, bool top_down, NI_err (*cb)(NewIfcObj obj, void *cb_data), void *cbdata)
 {
 	NI_err err;
+	NewIfcObj nobj;
 
 	if (!obj)
 		return NewIfc_error_none;
 	err = cb(obj, cbdata);
 	if (err != NewIfc_error_none)
 		return err;
-	if (obj->bottomchild != NULL) {
-		err = NI_walk_children_recurse(obj->bottomchild, cb, cbdata);
-		if (err != NewIfc_error_none)
+	if (top_down)
+		nobj = obj->topchild;
+	else
+		nobj = obj->bottomchild;
+
+	if (nobj != NULL) {
+		err = NI_walk_children_recurse(nobj, top_down, cb, cbdata);
+		if (err != NewIfc_error_none && err != NewIfc_error_skip_subtree)
 			return err;
 	}
-	if (!obj->higherpeer)
+	if (top_down)
+		nobj = obj->lowerpeer;
+	else
+		nobj = obj->higherpeer;
+
+	if (!nobj)
 		return NewIfc_error_none;
-	return NI_walk_children_recurse(obj->higherpeer, cb, cbdata);
+	err = NI_walk_children_recurse(nobj, top_down, cb, cbdata);
+	if (err != NewIfc_error_none && err != NewIfc_error_skip_subtree)
+		return err;
+	return NewIfc_error_none;
 }
 
 NI_err
-NI_walk_children(NewIfcObj obj, NI_err (*cb)(NewIfcObj obj, void *cb_data), void *cbdata)
+NI_walk_children(NewIfcObj obj, bool top_down, NI_err (*cb)(NewIfcObj obj, void *cb_data), void *cbdata)
 {
 	NI_err ret;
 
@@ -58,7 +72,7 @@ NI_walk_children(NewIfcObj obj, NI_err (*cb)(NewIfcObj obj, void *cb_data), void
 		return NewIfc_error_invalid_arg;
 	ret = NI_set_locked(obj, true);
 	if (ret == NewIfc_error_none) {
-		ret = NI_walk_children_recurse(obj->bottomchild, cb, cbdata);
+		ret = NI_walk_children_recurse(obj->bottomchild, top_down, cb, cbdata);
 		NI_set_locked(obj, false);
 	}
 	else
@@ -66,15 +80,59 @@ NI_walk_children(NewIfcObj obj, NI_err (*cb)(NewIfcObj obj, void *cb_data), void
 	return ret;
 }
 
-int
-handler_compar(const void *a, const void *b)
+static int
+handler_bsearch_compar(const void *a, const void *b)
 {
 	const enum NewIfc_event_handlers *key = a;
-	const struct NewIfc_handler *tst = b;
+	const struct NewIfc_handler **tst = (const struct NewIfc_handler **)b;
 
-	if (*key < tst->event)
+	if (*key < (*tst)->event)
 		return -1;
-	if (*key > tst->event)
+	if (*key > (*tst)->event)
 		return 1;
 	return 0;
+}
+
+static int
+handler_qsort_compar(const void *a, const void *b)
+{
+	const struct NewIfc_handler **ap = (const struct NewIfc_handler **)a;
+	const struct NewIfc_handler **bp = (const struct NewIfc_handler **)b;
+
+	return ((*ap)->event - (*bp)->event);
+}
+
+static NI_err
+NI_install_handler(NewIfcObj obj, struct NewIfc_handler *handler)
+{
+	struct NewIfc_handler **head = bsearch(&handler->event, obj->handlers,
+	    obj->handlers_sz, sizeof(obj->handlers[0]), handler_bsearch_compar);
+
+	if (head != NULL) {
+		handler->next = *head;
+		*head = handler;
+		return NewIfc_error_none;
+	}
+	// Increase the size of handlers...
+	// TODO: this is pretty inefficient, a bsearch() for insert point
+	// would be best, but even a linear search for it would likely be
+	// better.
+	size_t new_sz = obj->handlers_sz;
+	struct NewIfc_handler ***na = realloc(obj->handlers, new_sz * sizeof(obj->handlers[0]));
+	if (na == NULL)
+		return NewIfc_error_allocation_failure;
+	obj->handlers[obj->handlers_sz] = handler;
+	obj->handlers_sz = new_sz;
+	qsort(obj->handlers, obj->handlers_sz, sizeof(obj->handlers[0]), handler_qsort_compar);
+	return NewIfc_error_none;
+}
+
+static NI_err
+remove_focus_cb(NewIfcObj obj, void *cbdata)
+{
+	(void)cbdata;
+	if (obj->focus == false)
+		return NewIfc_error_skip_subtree;
+	obj->set(obj, NewIfc_focus, false);
+	return NewIfc_error_none;
 }

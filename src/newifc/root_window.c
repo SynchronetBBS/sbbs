@@ -63,7 +63,7 @@ rw_recalc_child(struct root_window *rw, uint16_t height, uint16_t width)
 		rw->api.last_error = NewIfc_error_wont_fit;
 		return;
 	}
-	if (NI_walk_children((NewIfcObj)rw, rw_recalc_child_cb, &nsz) != NewIfc_error_none) {
+	if (NI_walk_children((NewIfcObj)rw, false, rw_recalc_child_cb, &nsz) != NewIfc_error_none) {
 		rw->api.last_error = NewIfc_error_wont_fit;
 		return;
 	}
@@ -242,6 +242,7 @@ NewIFC_root_window(NewIfcObj *newobj)
 	(*newrw)->api.min_width = 40;
 	// TODO: This is only needed by the unit tests...
 	(*newrw)->api.root = *newobj;
+	(*newrw)->api.focus = true;
 	(*newrw)->show_title = true;
 	(*newrw)->help = true;
 	(*newrw)->title_sz = 0;
@@ -276,6 +277,7 @@ void test_root_window(CuTest *ct)
 	CuAssertTrue(ct, obj->min_width == 40);
 	CuAssertTrue(ct, obj->min_height == 2);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
+	CuAssertTrue(ct, obj->focus == true);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_show_title, &b) == NewIfc_error_none && b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_show_help, &b) == NewIfc_error_none && b);
