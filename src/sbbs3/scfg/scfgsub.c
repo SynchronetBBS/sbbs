@@ -96,7 +96,7 @@ void remove_sub(scfg_t* cfg, int subnum, bool cut)
 		cut_qhub_sub = NULL;
 	// Remove the sub-board from any QWKnet hub sub-boards
 	for (int q = 0; q < cfg->total_qhubs; q++) {
-		for (unsigned s = 0; s < cfg->qhub[q]->subs; s++) {
+		for (int s = 0; s < cfg->qhub[q]->subs; s++) {
 			if (cfg->qhub[q]->sub[s] == sub) {
 				if(cut && cut_qhub_sub == NULL)
 					cut_qhub_sub = &cfg->qhub[q]->sub[s];
@@ -1113,7 +1113,7 @@ void sub_cfg(int grpnum)
 									"~#Inverse Text#~\n"
 									"_Underlined Text_\n"
 									"\n"
-									"Markup character cannot be combined.\n"
+									"Markup characters cannot be combined.\n"
 								;
 								strcpy(opt[0],"Yes");
 								strcpy(opt[1],"Yes and Hide the Markup Characters");
