@@ -1100,6 +1100,7 @@ void msg_opts()
 {
 	char str[128];
 	static int msg_dflt;
+	static int msg_bar;
 	int i,j,n;
 
 	while(1) {
@@ -1168,7 +1169,7 @@ void msg_opts()
 			"private E-mail and public posts in public message areas, sub-boards.\n"
 		;
 
-		switch(uifc.list(WIN_ORG|WIN_ACT|WIN_MID|WIN_CHE,0,0,72,&msg_dflt,0
+		switch(uifc.list(WIN_ORG|WIN_ACT|WIN_MID|WIN_CHE,0,0,72,&msg_dflt, &msg_bar
 			,"Message Options",opt)) {
 			case -1:
 				i=save_changes(WIN_MID);
