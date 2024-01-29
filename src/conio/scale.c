@@ -748,29 +748,60 @@ pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height)
 	}
 }
 
-static uint32_t
-blend(const uint32_t c1, const uint32_t c2, uint16_t weight)
+struct YCoCg_data {
+	unsigned Y;
+	signed Co;
+	signed Cg;
+};
+
+static void
+RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
 {
-	uint8_t yuv1[4];
-	uint8_t yuv2[4];
-	uint8_t yuv3[4];
+	signed R, G, B, tmp;
+
+	R = (RGB >> 16) & 0xFF;
+	G = (RGB >> 8) & 0xFF;
+	B = (RGB) & 0xFF;
+
+	YCoCg->Co = R - B;
+	tmp = B + (YCoCg->Co >> 1);
+	YCoCg->Cg = G - tmp;
+	YCoCg->Y = tmp + (YCoCg->Cg >> 1);
+}
+
+static uint32_t
+YCoCg_to_RGB(struct YCoCg_data *YCoCg)
+{
+	signed Ri, Gi, Bi, tmp;
+	unsigned R, G, B;
+
+	tmp = YCoCg->Y - (YCoCg->Cg >> 1);
+	Gi = YCoCg->Cg + tmp;
+	Bi = tmp - (YCoCg->Co >> 1);
+	Ri = Bi + YCoCg->Co;
+	R = ((Ri < 0) ? 0 : ((Ri > 255) ? 255 : Ri));
+	G = ((Gi < 0) ? 0 : ((Gi > 255) ? 255 : Gi));
+	B = ((Bi < 0) ? 0 : ((Bi > 255) ? 255 : Bi));
+	return (R << 16) | (G << 8) | B;
+}
+
+static uint32_t
+blend_YCoCg(const uint32_t c1, const uint32_t c2, uint16_t weight)
+{
 	const uint16_t iw = 65535 - weight;
 
-	*(uint32_t *)yuv1 = ciolib_r2yptr[c1];
-	*(uint32_t *)yuv2 = ciolib_r2yptr[c2];
-#ifdef __BIG_ENDIAN__
-	yuv3[0] = 0;
-	yuv3[1] = (yuv1[1] * iw + yuv2[1] * weight) / 65535;
-	yuv3[2] = (yuv1[2] * iw + yuv2[2] * weight) / 65535;
-	yuv3[3] = (yuv1[3] * iw + yuv2[3] * weight) / 65535;
-#else
-	yuv3[3] = 0;
-	yuv3[2] = (yuv1[2] * iw + yuv2[2] * weight) / 65535;
-	yuv3[1] = (yuv1[1] * iw + yuv2[1] * weight) / 65535;
-	yuv3[0] = (yuv1[0] * iw + yuv2[0] * weight) / 65535;
-#endif
+	struct YCoCg_data ycc1;
+	struct YCoCg_data ycc2;
+	struct YCoCg_data ycc3;
 
-	return ciolib_y2rptr[*(uint32_t*)yuv3];
+	RGB_to_YCoCg(c1, &ycc1);
+	RGB_to_YCoCg(c2, &ycc2);
+
+	ycc3.Y = ((uint32_t)ycc1.Y * iw + (uint32_t)ycc2.Y * weight) / 65535;
+	ycc3.Co = ((int32_t)ycc1.Co * iw + (int32_t)ycc2.Co * weight) / 65535;
+	ycc3.Cg = ((int32_t)ycc1.Cg * iw + (int32_t)ycc2.Cg * weight) / 65535;
+
+	return YCoCg_to_RGB(&ycc3);
 }
 
 /*
@@ -807,7 +838,7 @@ interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwi
 				if (pix1 == pix2)
 					*dst = pix1;
 				else {
-					*dst = blend(pix1, pix2, weight);
+					*dst = blend_YCoCg(pix1, pix2, weight);
 				}
 			}
 			dst += newwidth;
@@ -874,7 +905,7 @@ interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newh
 				if (pix1 == pix2)
 					*dst = pix1;
 				else
-					*dst = blend(pix1, pix2, weight);
+					*dst = blend_YCoCg(pix1, pix2, weight);
 				dst++;
 			}
 		}

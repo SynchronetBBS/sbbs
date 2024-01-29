@@ -40,20 +40,40 @@
 #undef PI
 #endif
 
+struct YCoCg_data {
+	unsigned Y;
+	signed Co;
+	signed Cg;
+};
+
+static void
+RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
+{
+	int R, G, B, tmp;
+
+	R = (RGB >> 16) & 0xFF;
+	G = (RGB >> 8) & 0xFF;
+	B = (RGB) & 0xFF;
+
+	YCoCg->Co = R - B;
+	tmp = B + (YCoCg->Co >> 1);
+	YCoCg->Cg = G - tmp;
+	YCoCg->Y = tmp + (YCoCg->Cg >> 1);
+}
+
 static uint32_t pixel_diff(uint32_t x, uint32_t y)
 {
-#define YMASK 0xff0000
-#define UMASK 0x00ff00
-#define VMASK 0x0000ff
-#define ABSDIFF(a,b) (abs((int)(a)-(int)(b)))
+	struct YCoCg_data yccx;
+	struct YCoCg_data yccy;
+//#define ABSDIFF(a,b) (abs((int)(a)-(int)(b)))
+#define ABSDIFF(a,b) (a > b ? a - b : b - a)
 
-    uint32_t yuv1 = ciolib_r2yptr[x & 0xffffff];
+	RGB_to_YCoCg(x, &yccx);
+	RGB_to_YCoCg(y, &yccy);
 
-    uint32_t yuv2 = ciolib_r2yptr[y & 0xffffff];
-
-    return (ABSDIFF(yuv1 & YMASK, yuv2 & YMASK) >> 16) +
-           (ABSDIFF(yuv1 & UMASK, yuv2 & UMASK) >>  8) +
-            ABSDIFF(yuv1 & VMASK, yuv2 & VMASK);
+    return (ABSDIFF(yccx.Y, yccy.Y)) +
+           (ABSDIFF(yccx.Co, yccy.Co) >> 1) +
+           (ABSDIFF(yccx.Cg, yccy.Cg) >> 1);
 }
 
 #define ALPHA_BLEND_128_W(a, b) ((((a) & LB_MASK) >> 1) + (((b) & LB_MASK) >> 1))
