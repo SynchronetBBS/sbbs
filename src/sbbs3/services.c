@@ -1260,6 +1260,8 @@ static void js_service_thread(void* arg)
 		lprintf(LOG_INFO,"%04d %s [%s] JavaScript service thread terminated (%lu clients remain, %lu total, %lu served)"
 			,socket, service->protocol, client.addr, remain, active_clients(), service->served);
 
+	if (service_client.tls_sess != -1)
+		destroy_session(lprintf, service_client.tls_sess);
 	client_off(socket);
 	close_socket(socket);
 }
