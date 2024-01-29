@@ -136,3 +136,16 @@ remove_focus_cb(NewIfcObj obj, void *cbdata)
 	obj->set(obj, NewIfc_focus, false);
 	return NewIfc_error_none;
 }
+
+static NI_err
+NI_resize(NewIfcObj obj, uint16_t width, uint16_t height)
+{
+	/* First, make sure all children will fit in new size...
+	 * walk through them and check that the minsize is smaller than
+	 * or equal to the updated client size accounting for X/Y position */
+
+	/* Now walk through them again actually setting the size...
+	 * This is where sizers will need to get beefy */
+
+	return NewIfc_error_none;
+}

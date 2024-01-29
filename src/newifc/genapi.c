@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 enum ni_type {
 	ni_bool,
@@ -21,6 +22,8 @@ objtypes[] = {
 enum attribute_types {
 	NI_attr_type_NewIfcObj,
 	NI_attr_type_uint16_t,
+	NI_attr_type_uint8_t,
+	NI_attr_type_uint32_t,
 	NI_attr_type_NI_err,
 	NI_attr_type_bool,
 	NI_attr_type_charptr,
@@ -35,6 +38,8 @@ struct type_str_values {
 struct type_str_values type_str[] = {
 	{"NewIfcObj", "obj"},
 	{"uint16_t", "uint16"},
+	{"uint8_t", "uint8"},
+	{"uint32_t", "uint32"},
 	{"NI_err", "NI_err"},
 	{"bool", "bool"},
 	{"const char *", "const_char_ptr"},
@@ -63,6 +68,10 @@ attributes[] = {
 	{"child_xpos", NI_attr_type_uint16_t, attr_impl_global, 1},
 	{"child_ypos", NI_attr_type_uint16_t, attr_impl_global, 1},
 	{"dirty", NI_attr_type_bool, attr_impl_root, 1},
+	{"fill_character", NI_attr_type_uint32_t, attr_impl_global, 0},
+	{"fill_character_colour", NI_attr_type_uint32_t, attr_impl_global, 0},
+	{"fill_colour", NI_attr_type_uint32_t, attr_impl_global, 0},
+	{"fill_font", NI_attr_type_uint8_t, attr_impl_global, 0},
 	{"focus", NI_attr_type_bool, attr_impl_global_custom_setter, 0},
 	{"height", NI_attr_type_uint16_t, attr_impl_global, 0},
 	{"hidden", NI_attr_type_bool, attr_impl_global, 1},
@@ -83,6 +92,16 @@ attributes[] = {
 	{"width", NI_attr_type_uint16_t, attr_impl_global, 0},
 	{"xpos", NI_attr_type_uint16_t, attr_impl_global, 0},
 	{"ypos", NI_attr_type_uint16_t, attr_impl_global, 0},
+};
+
+struct attribute_alias {
+	const char *attribute_name;
+	const char *alias_name;
+};
+
+const struct attribute_alias aliases[] = {
+	{"fill_colour", "fill_color"},
+	{"fill_character_colour", "fill_character_color"},
 };
 
 struct error_info {
@@ -114,6 +133,148 @@ extra_handlers[] = {
 	{"on_render", "NI_err (*on_render)(NewIfcObj obj, void *cbdata)"},
 	{"on_destroy", "NI_err (*on_destroy)(NewIfcObj obj, void *cbdata)"},
 };
+
+size_t
+find_attribute(const char *name)
+{
+	size_t nitems = sizeof(attributes) / sizeof(attributes[0]);
+	// Linear search in case they're not alphabetical
+	for (size_t i = 0; i < nitems; i++) {
+		if (strcmp(attributes[i].name, name) == 0)
+			return i;
+	}
+	return -1;
+}
+
+void
+attribute_functions(size_t i, FILE *c_code, const char *alias)
+{
+	switch (attributes[i].impl) {
+		case attr_impl_object:
+			if (!attributes[i].read_only) {
+				fprintf(c_code, "NI_err\n"
+						"NI_set_%s(NewIfcObj obj, %s value) {\n"
+						"	NI_err ret;\n"
+						"	if (obj == NULL)\n"
+						"		return NewIfc_error_invalid_arg;\n"
+						"	if (NI_set_locked(obj, true)) {\n"
+						"		ret = call_%s_change_handlers(obj, NewIfc_%s, value);\n"
+						"		if (ret != NewIfc_error_none)\n"
+						"			return ret;\n"
+						"		ret = obj->set(obj, NewIfc_%s, value);\n"
+						"		NI_set_locked(obj, false);\n"
+						"	}\n"
+						"	else\n"
+						"		ret = NewIfc_error_lock_failed;\n"
+						"	return ret;\n"
+						"}\n\n", alias, type_str[attributes[i].type].type, type_str[attributes[i].type].var_name, attributes[i].name, attributes[i].name);
+			}
+
+			fprintf(c_code, "NI_err\n"
+					"NI_get_%s(NewIfcObj obj, %s* value) {\n"
+					"	NI_err ret;\n"
+					"	if (obj == NULL)\n"
+					"		return NewIfc_error_invalid_arg;\n"
+					"	if (value == NULL)\n"
+					"		return NewIfc_error_invalid_arg;\n"
+					"	if (NI_set_locked(obj, true)) {\n"
+					"		ret = obj->get(obj, NewIfc_%s, value);\n"
+					"		NI_set_locked(obj, false);\n"
+					"	}\n"
+					"	else\n"
+					"		ret = NewIfc_error_lock_failed;\n"
+					"	return ret;\n"
+					"}\n\n", alias, type_str[attributes[i].type].type, attributes[i].name);
+			break;
+		case attr_impl_global:
+			if (!attributes[i].read_only) {
+				fprintf(c_code, "NI_err\n"
+						"NI_set_%s(NewIfcObj obj, %s value) {\n"
+						"	NI_err ret;\n"
+						"	if (obj == NULL)\n"
+						"		return NewIfc_error_invalid_arg;\n"
+						"	if (NI_set_locked(obj, true)) {\n"
+						"		ret = obj->set(obj, NewIfc_%s, value);\n"
+						"		if (ret != NewIfc_error_none && obj->last_error != NewIfc_error_not_implemented) {\n"
+						"			obj->%s = value;\n"
+						"			obj->last_error = NewIfc_error_none;\n"
+						"		}\n"
+						"		NI_set_locked(obj, false);\n"
+						"	}\n"
+						"	else\n"
+						"		ret = NewIfc_error_lock_failed;\n"
+						"	return ret;\n"
+						"}\n\n", alias, type_str[attributes[i].type].type, attributes[i].name, attributes[i].name);
+			}
+
+			// Fall-through
+		case attr_impl_global_custom_setter:
+			fprintf(c_code, "NI_err\n"
+					"NI_get_%s(NewIfcObj obj, %s* value) {\n"
+					"	NI_err ret;\n"
+					"	if (obj == NULL)\n"
+					"		return NewIfc_error_invalid_arg;\n"
+					"	if (value == NULL)\n"
+					"		return NewIfc_error_invalid_arg;\n"
+					"	if (NI_set_locked(obj, true)) {\n"
+					"		ret = obj->get(obj, NewIfc_%s, value);\n"
+					"		if ((ret != NewIfc_error_none) && obj->last_error != NewIfc_error_not_implemented) {\n"
+					"			*value = obj->%s;\n"
+					"			obj->last_error = NewIfc_error_none;\n"
+					"		}\n"
+					"		NI_set_locked(obj, false);\n"
+					"	}\n"
+					"	else\n"
+					"		ret = NewIfc_error_lock_failed;\n"
+					"	return ret;\n"
+					"}\n\n", alias, type_str[attributes[i].type].type, attributes[i].name, attributes[i].name);
+			break;
+		case attr_impl_root:
+			if (!attributes[i].read_only) {
+				fprintf(c_code, "NI_err\n"
+						"NI_set_%s(NewIfcObj obj, %s value) {\n"
+						"	if (obj == NULL)\n"
+						"		return NewIfc_error_invalid_arg;\n"
+						"	NI_err ret = obj->root->set(obj, NewIfc_%s, value);\n"
+						"	obj->last_error = obj->root->last_error;\n"
+						"	return ret;\n"
+						"}\n\n", alias, type_str[attributes[i].type].type, attributes[i].name);
+			}
+
+			fprintf(c_code, "NI_err\n"
+					"NI_get_%s(NewIfcObj obj, %s* value) {\n"
+					"	if (obj == NULL)\n"
+					"		return NewIfc_error_invalid_arg;\n"
+					"	if (value == NULL)\n"
+					"		return NewIfc_error_invalid_arg;\n"
+					"	NI_err ret = obj->root->get(obj, NewIfc_%s, value);\n"
+					"	obj->last_error = obj->root->last_error;\n"
+					"	return ret;\n"
+					"}\n\n", alias, type_str[attributes[i].type].type, attributes[i].name);
+			break;
+	}
+	fprintf(c_code, "NI_err\n"
+			"NI_add_%s_handler(NewIfcObj obj, NI_err (*handler)(NewIfcObj obj, %s newval, void *cbdata), void *cbdata)\n"
+			"{\n"
+			"	NI_err ret;\n"
+			"	if (obj == NULL || handler == NULL)\n"
+			"		return NewIfc_error_invalid_arg;\n"
+			"	if (NI_set_locked(obj, true)) {\n"
+			"		struct NewIfc_handler *h = malloc(sizeof(struct NewIfc_handler));\n"
+			"		if (h == NULL)\n"
+			"			return NewIfc_error_allocation_failure;\n"
+			"		h->on_%s_change = handler;\n"
+			"		h->cbdata = cbdata;\n"
+			"		h->event = NewIfc_on_%s_change;\n"
+			"		h->next = NULL;\n"
+			"		ret = NI_install_handler(obj, h);\n"
+			"		NI_set_locked(obj, false);\n"
+			"	}\n"
+			"	else\n"
+			"		ret = NewIfc_error_lock_failed;\n"
+			"	return ret;\n"
+			"}\n\n", alias, type_str[attributes[i].type].type, type_str[attributes[i].type].var_name, attributes[i].name);
+}
 
 int
 main(int argc, char **argv)
@@ -158,6 +319,8 @@ main(int argc, char **argv)
 	}
 	fputs("};\n\n", header);
 
+	fputs("#define NI_TRANSPARENT UINT32_MAX\n\n", header);
+
 	fputs("NI_err NI_copy(NewIfcObj obj, NewIfcObj *newobj);\n", header);
 	fputs("NI_err NI_create(enum NewIfc_object obj, NewIfcObj parent, NewIfcObj *newobj);\n", header);
 	fputs("NI_err NI_error(NewIfcObj obj);\n", header);
@@ -170,6 +333,15 @@ main(int argc, char **argv)
 			fprintf(header, "NI_err NI_set_%s(NewIfcObj obj, %s value);\n", attributes[i].name, type_str[attributes[i].type].type);
 		}
 		fprintf(header, "NI_err NI_get_%s(NewIfcObj obj, %s* value);\n", attributes[i].name, type_str[attributes[i].type].type);
+	}
+	nitems = sizeof(aliases) / sizeof(aliases[0]);
+	for (i = 0; i < nitems; i++) {
+		size_t a = find_attribute(aliases[i].attribute_name);
+		if (!attributes[a].read_only) {
+			fprintf(header, "NI_err NI_set_%s(NewIfcObj obj, %s value);\n", aliases[i].alias_name, type_str[attributes[a].type].type);
+		}
+		fprintf(header, "NI_err NI_add_%s_handler(NewIfcObj obj, NI_err (*handler)(NewIfcObj obj, %s newval, void *cbdata), void *cbdata);\n", aliases[i].alias_name, type_str[attributes[a].type].type);
+		fprintf(header, "NI_err NI_get_%s(NewIfcObj obj, %s* value);\n", aliases[i].alias_name, type_str[attributes[a].type].type);
 	}
 	fputs("\n#endif\n", header);
 	fclose(header);
@@ -219,13 +391,15 @@ main(int argc, char **argv)
 	      "	NI_err (*get)(NewIfcObj niobj, const int attr, ...);\n"
 	      "	NI_err (*copy)(NewIfcObj obj, NewIfcObj *newobj);\n"
 	      "	struct NewIfc_handler **handlers;\n"
-	      "	size_t handlers_sz;\n"
 	      "	NewIfcObj root;\n"
 	      "	NewIfcObj parent;\n"
 	      "	NewIfcObj higherpeer;\n"
 	      "	NewIfcObj lowerpeer;\n"
 	      "	NewIfcObj topchild;\n"
 	      "	NewIfcObj bottomchild;\n"
+	      "	size_t handlers_sz;\n"
+	      "	uint32_t fill_character_colour;\n"
+	      "	uint32_t fill_colour;\n"
 	      "	enum NewIfc_object type;\n"
 	      "	NI_err last_error;\n"
 	      "	uint16_t height;\n"
@@ -238,6 +412,8 @@ main(int argc, char **argv)
 	      "	uint16_t child_width;\n"
 	      "	uint16_t child_xpos;\n"
 	      "	uint16_t child_ypos;\n"
+	      "	uint8_t fill_character;\n"
+	      "	uint8_t fill_font;\n"
 	      "	unsigned focus:1;\n"
 	      "	unsigned hidden:1;\n"
 	      "};\n\n", internal_header);
@@ -272,7 +448,8 @@ main(int argc, char **argv)
 	fputs("\n", c_code);
 
 	fputs("NI_err\n"
-	      "NI_create(enum NewIfc_object obj, NewIfcObj parent, NewIfcObj *newobj) {\n"
+	      "NI_create(enum NewIfc_object obj, NewIfcObj parent, NewIfcObj *newobj)\n"
+	      "{\n"
 	      "	NI_err ret = NewIfc_error_none;\n"
 	      "\n"
 	      "	if (newobj == NULL)\n"
@@ -349,131 +526,12 @@ main(int argc, char **argv)
 
 	nitems = sizeof(attributes) / sizeof(attributes[0]);
 	for (i = 0; i < nitems; i++) {
-		switch (attributes[i].impl) {
-			case attr_impl_object:
-				if (!attributes[i].read_only) {
-					fprintf(c_code, "NI_err\n"
-					                "NI_set_%s(NewIfcObj obj, %s value) {\n"
-					                "	NI_err ret;\n"
-					                "	if (obj == NULL)\n"
-					                "		return NewIfc_error_invalid_arg;\n"
-					                "	if (NI_set_locked(obj, true)) {\n"
-					                "		ret = call_%s_change_handlers(obj, NewIfc_%s, value);\n"
-					                "		if (ret != NewIfc_error_none)\n"
-					                "			return ret;\n"
-					                "		ret = obj->set(obj, NewIfc_%s, value);\n"
-					                "		NI_set_locked(obj, false);\n"
-					                "	}\n"
-					                "	else\n"
-					                "		ret = NewIfc_error_lock_failed;\n"
-					                "	return ret;\n"
-					                "}\n\n", attributes[i].name, type_str[attributes[i].type].type, type_str[attributes[i].type].var_name, attributes[i].name, attributes[i].name);
-				}
-
-				fprintf(c_code, "NI_err\n"
-				                "NI_get_%s(NewIfcObj obj, %s* value) {\n"
-				                "	NI_err ret;\n"
-				                "	if (obj == NULL)\n"
-				                "		return NewIfc_error_invalid_arg;\n"
-				                "	if (value == NULL)\n"
-				                "		return NewIfc_error_invalid_arg;\n"
-				                "	if (NI_set_locked(obj, true)) {\n"
-				                "		ret = obj->get(obj, NewIfc_%s, value);\n"
-				                "		NI_set_locked(obj, false);\n"
-				                "	}\n"
-				                "	else\n"
-				                "		ret = NewIfc_error_lock_failed;\n"
-				                "	return ret;\n"
-				                "}\n\n", attributes[i].name, type_str[attributes[i].type].type, attributes[i].name);
-				break;
-			case attr_impl_global:
-				if (!attributes[i].read_only) {
-					fprintf(c_code, "NI_err\n"
-					                "NI_set_%s(NewIfcObj obj, %s value) {\n"
-					                "	NI_err ret;\n"
-					                "	if (obj == NULL)\n"
-					                "		return NewIfc_error_invalid_arg;\n"
-					                "	if (NI_set_locked(obj, true)) {\n"
-					                "		ret = obj->set(obj, NewIfc_%s, value);\n"
-					                "		if (ret != NewIfc_error_none && obj->last_error != NewIfc_error_not_implemented) {\n"
-					                "			obj->%s = value;\n"
-					                "			obj->last_error = NewIfc_error_none;\n"
-					                "		}\n"
-					                "		NI_set_locked(obj, false);\n"
-					                "	}\n"
-					                "	else\n"
-					                "		ret = NewIfc_error_lock_failed;\n"
-					                "	return ret;\n"
-					                "}\n\n", attributes[i].name, type_str[attributes[i].type].type, attributes[i].name, attributes[i].name);
-				}
-
-				// Fall-through
-			case attr_impl_global_custom_setter:
-				fprintf(c_code, "NI_err\n"
-				                "NI_get_%s(NewIfcObj obj, %s* value) {\n"
-				                "	NI_err ret;\n"
-				                "	if (obj == NULL)\n"
-				                "		return NewIfc_error_invalid_arg;\n"
-				                "	if (value == NULL)\n"
-				                "		return NewIfc_error_invalid_arg;\n"
-				                "	if (NI_set_locked(obj, true)) {\n"
-				                "		ret = obj->get(obj, NewIfc_%s, value);\n"
-				                "		if ((ret != NewIfc_error_none) && obj->last_error != NewIfc_error_not_implemented) {\n"
-				                "			*value = obj->%s;\n"
-				                "			obj->last_error = NewIfc_error_none;\n"
-				                "		}\n"
-				                "		NI_set_locked(obj, false);\n"
-				                "	}\n"
-				                "	else\n"
-				                "		ret = NewIfc_error_lock_failed;\n"
-				                "	return ret;\n"
-				                "}\n\n", attributes[i].name, type_str[attributes[i].type].type, attributes[i].name, attributes[i].name);
-				break;
-			case attr_impl_root:
-				if (!attributes[i].read_only) {
-					fprintf(c_code, "NI_err\n"
-					                "NI_set_%s(NewIfcObj obj, %s value) {\n"
-					                "	if (obj == NULL)\n"
-					                "		return NewIfc_error_invalid_arg;\n"
-					                "	NI_err ret = obj->root->set(obj, NewIfc_%s, value);\n"
-					                "	obj->last_error = obj->root->last_error;\n"
-					                "	return ret;\n"
-					                "}\n\n", attributes[i].name, type_str[attributes[i].type].type, attributes[i].name);
-				}
-
-				fprintf(c_code, "NI_err\n"
-				                "NI_get_%s(NewIfcObj obj, %s* value) {\n"
-				                "	if (obj == NULL)\n"
-				                "		return NewIfc_error_invalid_arg;\n"
-				                "	if (value == NULL)\n"
-				                "		return NewIfc_error_invalid_arg;\n"
-				                "	NI_err ret = obj->root->get(obj, NewIfc_%s, value);\n"
-				                "	obj->last_error = obj->root->last_error;\n"
-				                "	return ret;\n"
-				                "}\n\n", attributes[i].name, type_str[attributes[i].type].type, attributes[i].name);
-				break;
-		}
-		fprintf(c_code, "NI_err\n"
-		                "NI_add_%s_handler(NewIfcObj obj, NI_err (*handler)(NewIfcObj obj, %s newval, void *cbdata), void *cbdata)\n"
-		                "{\n"
-		                "	NI_err ret;\n"
-		                "	if (obj == NULL || handler == NULL)\n"
-		                "		return NewIfc_error_invalid_arg;\n"
-		                "	if (NI_set_locked(obj, true)) {\n"
-		                "		struct NewIfc_handler *h = malloc(sizeof(struct NewIfc_handler));\n"
-		                "		if (h == NULL)\n"
-		                "			return NewIfc_error_allocation_failure;\n"
-		                "		h->on_%s_change = handler;\n"
-		                "		h->cbdata = cbdata;\n"
-		                "		h->event = NewIfc_on_%s_change;\n"
-		                "		h->next = NULL;\n"
-		                "		ret = NI_install_handler(obj, h);\n"
-		                "		NI_set_locked(obj, false);\n"
-		                "	}\n"
-		                "	else\n"
-		                "		ret = NewIfc_error_lock_failed;\n"
-		                "	return ret;\n"
-		                "}\n\n", attributes[i].name, type_str[attributes[i].type].type, type_str[attributes[i].type].var_name, attributes[i].name);
+		attribute_functions(i, c_code, attributes[i].name);
+	}
+	nitems = sizeof(aliases) / sizeof(aliases[0]);
+	for (i = 0; i < nitems; i++) {
+		size_t a = find_attribute(aliases[i].attribute_name);
+		attribute_functions(a, c_code, aliases[i].alias_name);
 	}
 
 	fputs("#include \"newifc_nongen_after.c\"\n\n", c_code);
