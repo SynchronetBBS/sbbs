@@ -269,21 +269,19 @@ do_scale(struct rectlist* rect, int fwidth, int fheight)
 				total_yscaling /= 3;
 				yscale *= 3;
 			}
-			if (ciolib_r2yptr != NULL && ciolib_y2rptr != NULL) {
-				while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
-					xbr4++;
-					total_xscaling /= 4;
-					xscale *= 4;
-					total_yscaling /= 4;
-					yscale *= 4;
-				}
-				while (total_xscaling > 1 && ((total_xscaling % 2) == 0) && ((total_yscaling % 2) == 0)) {
-					xbr2++;
-					total_xscaling /= 2;
-					xscale *= 2;
-					total_yscaling /= 2;
-					yscale *= 2;
-				}
+			while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
+				xbr4++;
+				total_xscaling /= 4;
+				xscale *= 4;
+				total_yscaling /= 4;
+				yscale *= 4;
+			}
+			while (total_xscaling > 1 && ((total_xscaling % 2) == 0) && ((total_yscaling % 2) == 0)) {
+				xbr2++;
+				total_xscaling /= 2;
+				xscale *= 2;
+				total_yscaling /= 2;
+				yscale *= 2;
 			}
 		}
 	}
@@ -423,28 +421,26 @@ csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->
 	}
 
 	// And finally, interpolate if needed
-	if (ciolib_r2yptr != NULL && ciolib_y2rptr != NULL) {
-		if (fheight != csrc->h) {
-			interpolate_height(csrc->data, ctarget->data, csrc->w, csrc->h, fheight);
-			ctarget->h = fheight;
-			ctarget->w = csrc->w;
-			csrc = ctarget;
-			if (ctarget == ret1)
-				ctarget = ret2;
-			else
-				ctarget = ret1;
-		}
+	if (fheight != csrc->h) {
+		interpolate_height(csrc->data, ctarget->data, csrc->w, csrc->h, fheight);
+		ctarget->h = fheight;
+		ctarget->w = csrc->w;
+		csrc = ctarget;
+		if (ctarget == ret1)
+			ctarget = ret2;
+		else
+			ctarget = ret1;
+	}
 	
-		if (fwidth != csrc->w) {
-			interpolate_width(csrc->data, ctarget->data, csrc->w, csrc->h, fwidth);
-			ctarget->h = csrc->h;
-			ctarget->w = fwidth;
-			csrc = ctarget;
-			if (ctarget == ret1)
-				ctarget = ret2;
-			else
-				ctarget = ret1;
-		}
+	if (fwidth != csrc->w) {
+		interpolate_width(csrc->data, ctarget->data, csrc->w, csrc->h, fwidth);
+		ctarget->h = csrc->h;
+		ctarget->w = fwidth;
+		csrc = ctarget;
+		if (ctarget == ret1)
+			ctarget = ret2;
+		else
+			ctarget = ret1;
 	}
 
 	release_buffer(ctarget);

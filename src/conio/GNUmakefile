@@ -49,7 +49,7 @@ endif
 
 
 # CIOLIB Library Link Rule
-$(CIOLIB-MT_BUILD): $(MTOBJODIR) $(OBJS) $(CIOLIB_INTERPOLATE_TARGET) $(MTOBJODIR)$(DIRSEP)rgbmap$(OFILE)
+$(CIOLIB-MT_BUILD): $(MTOBJODIR) $(OBJS) $(CIOLIB_INTERPOLATE_TARGET)
 
 	@echo Creating $@ ...
 	$(QUIET)$(AR) rc $@ $(OBJS)
@@ -68,18 +68,3 @@ $(MTOBJODIR)$(DIRSEP)ciolib_res${OFILE}: ciolib.rc syncicon64.ico
 	@echo Creating $< ...
 	$(QUIET)${WINDRES} $(WINDRESFLAGS) -O coff -i ciolib.rc -o $@
 endif
-
-$(EXEODIR)$(DIRSEP)genmap$(EXEFILE): $(EXEODIR)
-
-$(SRCODIR)$(DIRSEP)rgbmap.s: $(EXEODIR)$(DIRSEP)genmap$(EXEFILE) $(SRCODIR)
-	@echo Creating $@...
-	$(QUIET)$(EXEODIR)$(DIRSEP)genmap$(EXEFILE) $(os) $(SRCODIR)
-
-$(SRCODIR)$(DIRSEP)rgbmap.h: $(SRCODIR)$(DIRSEP)rgbmap.s
-
-$(MTOBJODIR)$(DIRSEP)rgbmap$(OFILE): $(SRCODIR)$(DIRSEP)rgbmap.s $(SRCODIR)$(DIRSEP)rgbmap.h
-
-$(EXEODIR)$(DIRSEP)genmap$(EXEFILE): genmap.c
-	@echo Compiling $@...
-	$(QUIET)cc $(LDFLAGS) $< -o $@
-

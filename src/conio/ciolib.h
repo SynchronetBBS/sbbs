@@ -410,8 +410,6 @@ CIOLIBEXPORTVAR const void * ciolib_initial_icon;
 CIOLIBEXPORTVAR size_t ciolib_initial_icon_width;
 CIOLIBEXPORTVAR const char *ciolib_initial_program_name;
 CIOLIBEXPORTVAR const char *ciolib_initial_program_class;
-CIOLIBEXPORTVAR const uint32_t *ciolib_r2yptr;
-CIOLIBEXPORTVAR const uint32_t *ciolib_y2rptr;
 
 CIOLIBEXPORT int initciolib(int mode);
 CIOLIBEXPORT void suspendciolib(void);

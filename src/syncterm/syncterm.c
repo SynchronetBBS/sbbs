@@ -1756,10 +1756,6 @@ main(int argc, char **argv)
 	else
 		cio_api.options &= ~CONIO_OPT_BLOCKY_SCALING;
 	ciolib_initial_scaling_type = (settings.extern_scale ? CIOLIB_SCALING_EXTERNAL : CIOLIB_SCALING_INTERNAL);
-#ifdef HAS_BITMAP
-	ciolib_r2yptr = r2y;
-	ciolib_y2rptr = y2r;
-#endif
 	if (initciolib(ciolib_mode))
 		return 1;
 	setname("SyncTERM");
