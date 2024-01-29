@@ -2,6 +2,8 @@
 #include <stdarg.h>
 #include <stdlib.h>  // malloc()/free()
 
+#define CIOLIB_NO_MACROS
+#include "ciolib.h"
 #include "genwrap.h"
 #include "strwrap.h"
 #include "threadwrap.h"
@@ -19,12 +21,9 @@ static const char default_title[] = "No Title Set";
 
 struct root_window {
 	struct newifc_api api;
-	char *title;
-	size_t title_sz;
+	struct vmem_cell *display;
 	pthread_mutex_t mtx;
 	unsigned locks;
-	unsigned show_title:1;
-	unsigned help:1;
 	unsigned dirty:1;
 };
 
@@ -147,35 +146,67 @@ rw_copy(NewIfcObj old, NewIfcObj *newobj)
 }
 
 static NI_err
+rw_render(NewIfcObj obj, uint16_t xpos, uint16_t ypos, uint16_t width, uint16_t height)
+{
+	struct root_window *rw = (struct root_window *)obj;
+	size_t sz = rw->api.width;
+	sz *= rw->api.height;
+	if (rw->api.fill_colour != NI_TRANSPARENT || rw->api.fill_character_colour != NI_TRANSPARENT) {
+		for (size_t c = 0; c < sz; c++) {
+			// TODO: No way to generate legacy attribute from colour.
+			if (rw->api.fill_colour != NI_TRANSPARENT)
+				rw->display[c].bg = rw->api.fill_colour;
+			if (rw->api.fill_character_colour != NI_TRANSPARENT) {
+				rw->display[c].fg = rw->api.fill_character_colour;
+				rw->display[c].ch = rw->api.fill_character;
+				if (ciolib_checkfont(rw->api.fill_font))
+					rw->display[c].font = rw->api.fill_font;
+			}
+		}
+	}
+}
+
+static NI_err
 NewIFC_root_window(NewIfcObj *newobj)
 {
 	struct root_window **newrw = (struct root_window **)newobj;
 
-	*newrw = malloc(sizeof(struct root_window));
+	*newrw = calloc(1, sizeof(struct root_window));
 
-	if (*newrw == NULL) {
+	if (*newrw == NULL)
 		return NewIfc_error_allocation_failure;
-	}
 	(*newrw)->api.get = rw_get;
 	(*newrw)->api.set = rw_set;
 	(*newrw)->api.copy = rw_copy;
 	(*newrw)->api.last_error = NewIfc_error_none;
-	(*newrw)->api.width = 80;
-	(*newrw)->api.height = 25;
-	(*newrw)->api.child_width = 80;
-	(*newrw)->api.child_height = 25;
-	(*newrw)->api.xpos = 0;
-	(*newrw)->api.ypos = 0;
-	(*newrw)->api.child_xpos = 0;
 	(*newrw)->api.child_ypos = 1;
-	(*newrw)->api.min_height = 2;
-	(*newrw)->api.min_width = 40;
 	// TODO: This is only needed by the unit tests...
 	(*newrw)->api.root = *newobj;
 	(*newrw)->api.focus = true;
-	(*newrw)->locks = 0;
 	(*newrw)->mtx = pthread_mutex_initializer_np(true);
 
+	struct text_info ti;
+	ciolib_gettextinfo(&ti);
+	(*newrw)->api.width = ti.screenwidth;
+	(*newrw)->api.height = ti.screenheight;
+	(*newrw)->api.child_width = ti.screenwidth;
+	(*newrw)->api.child_height = ti.screenheight;
+	(*newrw)->api.fill_character = ' ';
+	(*newrw)->api.fill_colour = ciolib_bg;
+	(*newrw)->api.fill_character_colour = ciolib_fg;
+	int cf = ciolib_getfont(0);
+	if (cf < 0)
+		cf = 0;
+	(*newrw)->api.fill_font = cf;
+	size_t cells = ti.screenwidth;
+	cells *= ti.screenheight;
+	(*newrw)->display = malloc(sizeof(struct vmem_cell) * cells);
+	if ((*newrw)->display == NULL) {
+		free(*newrw);
+		*newrw = NULL;
+		return NewIfc_error_allocation_failure;
+	}
+	ciolib_vmem_gettext(1, 1, (*newrw)->api.width, (*newrw)->api.height, (*newrw)->display);
 	return NewIfc_error_none;
 }
 
@@ -196,8 +227,8 @@ void test_root_window(CuTest *ct)
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->width == 80);
 	CuAssertTrue(ct, obj->height == 25);
-	CuAssertTrue(ct, obj->min_width == 40);
-	CuAssertTrue(ct, obj->min_height == 2);
+	CuAssertTrue(ct, obj->min_width == 0);
+	CuAssertTrue(ct, obj->min_height == 0);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->focus == true);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked, &b) == NewIfc_error_none && !b);

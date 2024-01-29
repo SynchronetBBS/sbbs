@@ -1,8 +1,9 @@
-CFLAGS += -I../xpdev -I../cutest -pthread
+CFLAGS += -I../conio -I../xpdev -I../cutest -pthread
 CFLAGS += -DHAS_STDINT_H
 CFLAGS += -DHAS_INTTYPES_H
 CFLAGS += -g -std=c11 -Wall -Wextra -Wpedantic
-LIBS += -lpthread
+LDFLAGS += -L../conio/clang.freebsd.amd64.lib.portable -L../xpdev/clang.freebsd.amd64.lib.portable
+LIBS += -lpthread -lciolib_mt -lxpdev_mt -lcursesw -lm
 
 VPATH = ../cutest:../xpdev
 
@@ -10,7 +11,7 @@ ifdef TESTS
 CFLAGS += -DBUILD_TESTS
 all: runtest
 
-test: alltests.o CuTest.o threadwrap.o libnewifc.a
+test: alltests.o CuTest.o libnewifc.a
 	cc ${LDFLAGS} -L. ${CFLAGS} $^ -o $@ ${LIBS} -lnewifc
 
 runtest: test

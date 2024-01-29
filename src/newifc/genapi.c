@@ -67,7 +67,6 @@ attributes[] = {
 	{"child_width", NI_attr_type_uint16_t, attr_impl_global, 1},
 	{"child_xpos", NI_attr_type_uint16_t, attr_impl_global, 1},
 	{"child_ypos", NI_attr_type_uint16_t, attr_impl_global, 1},
-	{"dirty", NI_attr_type_bool, attr_impl_root, 1},
 	{"fill_character", NI_attr_type_uint32_t, attr_impl_global, 0},
 	{"fill_character_colour", NI_attr_type_uint32_t, attr_impl_global, 0},
 	{"fill_colour", NI_attr_type_uint32_t, attr_impl_global, 0},
@@ -84,9 +83,6 @@ attributes[] = {
 	{"min_width", NI_attr_type_uint16_t, attr_impl_global, 1},
 	{"parent", NI_attr_type_NewIfcObj, attr_impl_global, 1},
 	{"root", NI_attr_type_NewIfcObj, attr_impl_global, 1},
-	{"show_help", NI_attr_type_bool, attr_impl_object, 0},
-	{"show_title", NI_attr_type_bool, attr_impl_object, 0},
-	{"title", NI_attr_type_charptr, attr_impl_object, 0},
 	{"topchild", NI_attr_type_NewIfcObj, attr_impl_global, 1},
 	{"type", NI_attr_type_NewIfc_object, attr_impl_global, 1},
 	{"width", NI_attr_type_uint16_t, attr_impl_global, 0},
@@ -132,6 +128,7 @@ const struct handler_info
 extra_handlers[] = {
 	{"on_render", "NI_err (*on_render)(NewIfcObj obj, void *cbdata)"},
 	{"on_destroy", "NI_err (*on_destroy)(NewIfcObj obj, void *cbdata)"},
+	{"on_key", "NI_err (*on_key)(NewIfcObj obj, uint16_t scancode)"},
 };
 
 size_t
@@ -319,7 +316,23 @@ main(int argc, char **argv)
 	}
 	fputs("};\n\n", header);
 
-	fputs("#define NI_TRANSPARENT UINT32_MAX\n\n", header);
+	fputs("#define NI_TRANSPARENT  UINT32_MAX\n"
+	      "#define NI_BLACK        UINT32_C(0)\n"
+	      "#define NI_BLUE         UINT32_C(0x0000A8)\n"
+	      "#define NI_GREEN        UINT32_C(0x00A800)\n"
+	      "#define NI_CYAN         UINT32_C(0x00A8A8)\n"
+	      "#define NI_RED          UINT32_C(0xA80000)\n"
+	      "#define NI_MAGENTA      UINT32_C(0xA800A8)\n"
+	      "#define NI_BROWN        UINT32_C(0xA85400)\n"
+	      "#define NI_LIGHTGRAY    UINT32_C(0xA8A8A8)\n"
+	      "#define NI_DARKGRAY     UINT32_C(0x545454)\n"
+	      "#define NI_LIGHTBLUE    UINT32_C(0x5454FF)\n"
+	      "#define NI_LIGHTGREEN   UINT32_C(0x54FF54)\n"
+	      "#define NI_LIGHTCYAN    UINT32_C(0x54FFFF)\n"
+	      "#define NI_LIGHTRED     UINT32_C(0xFF5454)\n"
+	      "#define NI_LIGHTMAGENTA UINT32_C(0xFF54FF)\n"
+	      "#define NI_YELLOW       UINT32_C(0xFFFF54)\n"
+	      "#define NI_WHITE        UINT32_C(0xFFFFFF)\n\n", header);
 
 	fputs("NI_err NI_copy(NewIfcObj obj, NewIfcObj *newobj);\n", header);
 	fputs("NI_err NI_create(enum NewIfc_object obj, NewIfcObj parent, NewIfcObj *newobj);\n", header);
@@ -485,6 +498,7 @@ main(int argc, char **argv)
 	      "		(*newobj)->topchild = NULL;\n"
 	      "		(*newobj)->bottomchild = NULL;\n"
 	      "		(*newobj)->handlers = NULL;\n"
+	      "		(*newobj)->handlers_sz = 0;\n"
 	      "		if (parent) {\n"
 	      "			(*newobj)->root = parent->root;\n"
 	      "			(*newobj)->lowerpeer = parent->topchild;\n"
