@@ -11,8 +11,6 @@
 #include "newifc.h"
 #include "newifc_internal.h"
 
-#include "internal_macros.h"
-
 #ifdef BUILD_TESTS
 #include "CuTest.h"
 #endif
@@ -27,12 +25,19 @@ label_set(NewIfcObj obj, int attr, ...)
 {
 	struct label *l = (struct label *)obj;
 	NI_err ret = NewIfc_error_none;
-	SET_VARS;
+	va_list ap;
+	char *buf;
 
 	va_start(ap, attr);
 	switch (attr) {
 		case NewIfc_text:
-			SET_STRING(l, text);
+			buf = strdup(va_arg(ap, const char *));
+			if (buf == NULL) {
+				ret = NewIfc_error_allocation_failure;
+				break;
+			}
+			free(l->text);
+			l->text = buf;
 			break;
 		default:
 			ret = NewIfc_error_not_implemented;
@@ -48,12 +53,12 @@ label_get(NewIfcObj obj, int attr, ...)
 {
 	struct label *l = (struct label *)obj;
 	NI_err ret = NewIfc_error_none;
-	GET_VARS;
+	va_list ap;
 
 	va_start(ap, attr);
 	switch (attr) {
 		case NewIfc_text:
-			GET_STRING(l, text);
+			*(va_arg(ap, char **)) = l->text;
 			break;
 		default:
 			ret = NewIfc_error_not_implemented;
@@ -134,7 +139,7 @@ NewIFC_label(NewIfcObj parent, NewIfcObj *newobj)
 	parent->bottomchild = parent->topchild = (NewIfcObj)*newl;
 	(*newl)->api.root = parent->root;
 	(*newl)->api.parent = parent;
-	(*newl)->api.width = 0;
+	(*newl)->api.width = parent->child_width;
 	(*newl)->api.height = 1;
 	(*newl)->api.min_width = 0;
 	(*newl)->api.min_height = 1;
@@ -145,7 +150,6 @@ NewIFC_label(NewIfcObj parent, NewIfcObj *newobj)
 
 void test_label(CuTest *ct)
 {
-	bool b;
 	char *s;
 	NewIfcObj obj;
 	NewIfcObj robj;
@@ -160,7 +164,7 @@ void test_label(CuTest *ct)
 	CuAssertPtrNotNull(ct, obj->set);
 	CuAssertPtrNotNull(ct, obj->copy);
 	CuAssertPtrNotNull(ct, obj->do_render);
-	CuAssertTrue(ct, obj->width == 0);
+	CuAssertTrue(ct, obj->width == 80);
 	CuAssertTrue(ct, obj->height == 1);
 	CuAssertTrue(ct, obj->min_width == 0);
 	CuAssertTrue(ct, obj->min_height == 1);

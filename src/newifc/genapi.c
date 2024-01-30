@@ -43,7 +43,7 @@ struct type_str_values type_str[] = {
 	{"uint32_t", "uint32"},
 	{"NI_err", "NI_err"},
 	{"bool", "bool"},
-	{"const char *", "const_char_ptr"},
+	{"char *", "char_ptr"},
 	{"enum NewIfc_object", "obj_enum"},
 };
 
@@ -157,7 +157,7 @@ attribute_functions(size_t i, FILE *c_code, const char *alias)
 		case attr_impl_object:
 			if (!attributes[i].read_only) {
 				fprintf(c_code, "NI_err\n"
-						"NI_set_%s(NewIfcObj obj, %s value) {\n"
+						"NI_set_%s(NewIfcObj obj, const %s value) {\n"
 						"	NI_err ret;\n"
 						"	if (obj == NULL)\n"
 						"		return NewIfc_error_invalid_arg;\n"
@@ -197,7 +197,7 @@ attribute_functions(size_t i, FILE *c_code, const char *alias)
 		case attr_impl_global:
 			if (!attributes[i].read_only) {
 				fprintf(c_code, "NI_err\n"
-						"NI_set_%s(NewIfcObj obj, %s value) {\n"
+						"NI_set_%s(NewIfcObj obj, const %s value) {\n"
 						"	NI_err ret;\n"
 						"	if (obj == NULL)\n"
 						"		return NewIfc_error_invalid_arg;\n"
@@ -268,7 +268,7 @@ attribute_functions(size_t i, FILE *c_code, const char *alias)
 	}
 	if (!attributes[i].no_event) {
 		fprintf(c_code, "NI_err\n"
-				"NI_add_%s_handler(NewIfcObj obj, NI_err (*handler)(NewIfcObj obj, %s newval, void *cbdata), void *cbdata)\n"
+				"NI_add_%s_handler(NewIfcObj obj, NI_err (*handler)(NewIfcObj obj, const %s newval, void *cbdata), void *cbdata)\n"
 				"{\n"
 				"	NI_err ret;\n"
 				"	if (obj == NULL || handler == NULL)\n"
@@ -362,20 +362,20 @@ main(int argc, char **argv)
 	nitems = sizeof(attributes) / sizeof(attributes[0]);
 	for (i = 0; i < nitems; i++) {
 		if (!attributes[i].read_only) {
-			fprintf(header, "NI_err NI_set_%s(NewIfcObj obj, %s value);\n", attributes[i].name, type_str[attributes[i].type].type);
+			fprintf(header, "NI_err NI_set_%s(NewIfcObj obj, const %s value);\n", attributes[i].name, type_str[attributes[i].type].type);
 		}
 		if (!attributes[i].no_event)
-			fprintf(header, "NI_err NI_add_%s_handler(NewIfcObj obj, NI_err (*handler)(NewIfcObj obj, %s newval, void *cbdata), void *cbdata);\n", attributes[i].name, type_str[attributes[i].type].type);
+			fprintf(header, "NI_err NI_add_%s_handler(NewIfcObj obj, NI_err (*handler)(NewIfcObj obj, const %s newval, void *cbdata), void *cbdata);\n", attributes[i].name, type_str[attributes[i].type].type);
 		fprintf(header, "NI_err NI_get_%s(NewIfcObj obj, %s* value);\n", attributes[i].name, type_str[attributes[i].type].type);
 	}
 	nitems = sizeof(aliases) / sizeof(aliases[0]);
 	for (i = 0; i < nitems; i++) {
 		size_t a = find_attribute(aliases[i].attribute_name);
 		if (!attributes[a].read_only) {
-			fprintf(header, "NI_err NI_set_%s(NewIfcObj obj, %s value);\n", aliases[i].alias_name, type_str[attributes[a].type].type);
+			fprintf(header, "NI_err NI_set_%s(NewIfcObj obj, const %s value);\n", aliases[i].alias_name, type_str[attributes[a].type].type);
 		}
 		if (!attributes[i].no_event)
-			fprintf(header, "NI_err NI_add_%s_handler(NewIfcObj obj, NI_err (*handler)(NewIfcObj obj, %s newval, void *cbdata), void *cbdata);\n", aliases[i].alias_name, type_str[attributes[a].type].type);
+			fprintf(header, "NI_err NI_add_%s_handler(NewIfcObj obj, NI_err (*handler)(NewIfcObj obj, const %s newval, void *cbdata), void *cbdata);\n", aliases[i].alias_name, type_str[attributes[a].type].type);
 		fprintf(header, "NI_err NI_get_%s(NewIfcObj obj, %s* value);\n", aliases[i].alias_name, type_str[attributes[a].type].type);
 	}
 	fputs("\n#endif\n", header);
@@ -413,7 +413,7 @@ main(int argc, char **argv)
 	      "	union {\n", internal_header);
 	nitems = sizeof(type_str) / sizeof(type_str[0]);
 	for (i = 0; i < nitems; i++) {
-	      fprintf(internal_header, "		NI_err (*on_%s_change)(NewIfcObj obj, %s newval, void *cbdata);\n", type_str[i].var_name, type_str[i].type);
+	      fprintf(internal_header, "		NI_err (*on_%s_change)(NewIfcObj obj, const %s newval, void *cbdata);\n", type_str[i].var_name, type_str[i].type);
 	}
 	nitems = sizeof(extra_handlers) / sizeof(extra_handlers[0]);
 	for (i = 0; i < nitems; i++) {
@@ -490,7 +490,6 @@ main(int argc, char **argv)
 
 	fputs("#include \"newifc.h\"\n", c_code);
 	fputs("#include \"newifc_internal.h\"\n", c_code);
-	fputs("#include \"internal_macros.h\"\n", c_code);
 	fputs("\n", c_code);
 
 	nitems = sizeof(objtypes) / sizeof(objtypes[0]);
@@ -570,7 +569,7 @@ main(int argc, char **argv)
 	nitems = sizeof(type_str) / sizeof(type_str[0]);
 	for (i = 0; i < nitems; i++) {
 		fprintf(c_code, "NI_err\n"
-		                "call_%s_change_handlers(NewIfcObj obj, enum NewIfc_attribute type, %s newval)\n"
+		                "call_%s_change_handlers(NewIfcObj obj, enum NewIfc_attribute type, const %s newval)\n"
 		                "{\n"
 		                "	if (obj->handlers == NULL)\n"
 		                "		return NewIfc_error_none;\n"

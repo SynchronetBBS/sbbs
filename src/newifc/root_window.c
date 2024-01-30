@@ -11,8 +11,6 @@
 #include "newifc.h"
 #include "newifc_internal.h"
 
-#include "internal_macros.h"
-
 #ifdef BUILD_TESTS
 #include "CuTest.h"
 #endif
@@ -36,7 +34,7 @@ rw_set(NewIfcObj obj, int attr, ...)
 {
 	struct root_window *rw = (struct root_window *)obj;
 	NI_err ret = NewIfc_error_none;
-	SET_VARS;
+	va_list ap;
 
 	va_start(ap, attr);
 	switch (attr) {
@@ -88,7 +86,7 @@ rw_get(NewIfcObj obj, int attr, ...)
 {
 	struct root_window *rw = (struct root_window *)obj;
 	NI_err ret = NewIfc_error_none;
-	GET_VARS;
+	va_list ap;
 	int lkret;
 
 	va_start(ap, attr);
@@ -139,6 +137,17 @@ rw_copy(NewIfcObj old, NewIfcObj *newobj)
 		return NewIfc_error_allocation_failure;
 	}
 	memcpy(*newrw, old, sizeof(struct root_window));
+	(*newrw)->mtx = pthread_mutex_initializer_np(true);
+	(*newrw)->locks = 0;
+	size_t cells = (*newrw)->api.width;
+	cells *= (*newrw)->api.height;
+	(*newrw)->display = malloc(sizeof(struct vmem_cell) * cells);
+	if ((*newrw)->display == NULL) {
+		free(*newrw);
+		*newrw = NULL;
+		return NewIfc_error_allocation_failure;
+	}
+	memcpy((*newrw)->display, oldrw->display, sizeof(struct vmem_cell) * cells);
 
 	return NewIfc_error_none;
 }
@@ -295,9 +304,7 @@ NewIFC_root_window(NewIfcObj parent, NewIfcObj *newobj)
 void test_root_window(CuTest *ct)
 {
 	bool b;
-	char *s;
 	NewIfcObj obj;
-	static const char *new_title = "New Title";
 
 	CuAssertTrue(ct, NewIFC_root_window(NULL, &obj) == NewIfc_error_none);
 	CuAssertPtrNotNull(ct, obj);
