@@ -2,13 +2,15 @@
 
 #include "CuTest.h"
 
-CuSuite* root_window_get_test_suite();
+void test_root_window(CuTest *ct);
+void test_label(CuTest *ct);
 
 void RunAllTests(void) {
 	CuString *output = CuStringNew();
 	CuSuite* suite = CuSuiteNew();
 
-	CuSuiteAddSuite(suite, root_window_get_test_suite());
+	SUITE_ADD_TEST(suite, test_root_window);
+	SUITE_ADD_TEST(suite, test_label);
 
 	CuSuiteRun(suite);
 	CuSuiteSummary(suite, output);

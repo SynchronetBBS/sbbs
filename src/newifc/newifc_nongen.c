@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "newifc.h"
 
 NI_err

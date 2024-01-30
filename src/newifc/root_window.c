@@ -24,7 +24,6 @@ struct root_window {
 	struct vmem_cell *display;
 	pthread_mutex_t mtx;
 	unsigned locks;
-	unsigned dirty:1;
 };
 
 struct rw_recalc_child_cb_params {
@@ -146,31 +145,110 @@ rw_copy(NewIfcObj old, NewIfcObj *newobj)
 }
 
 static NI_err
-rw_render(NewIfcObj obj, uint16_t xpos, uint16_t ypos, uint16_t width, uint16_t height)
+call_render_handlers(NewIfcObj obj)
 {
-	struct root_window *rw = (struct root_window *)obj;
-	size_t sz = rw->api.width;
-	sz *= rw->api.height;
-	if (rw->api.fill_colour != NI_TRANSPARENT || rw->api.fill_character_colour != NI_TRANSPARENT) {
-		for (size_t c = 0; c < sz; c++) {
-			// TODO: No way to generate legacy attribute from colour.
-			if (rw->api.fill_colour != NI_TRANSPARENT)
-				rw->display[c].bg = rw->api.fill_colour;
-			if (rw->api.fill_character_colour != NI_TRANSPARENT) {
-				rw->display[c].fg = rw->api.fill_character_colour;
-				rw->display[c].ch = rw->api.fill_character;
-				if (ciolib_checkfont(rw->api.fill_font))
-					rw->display[c].font = rw->api.fill_font;
-			}
-		}
+	enum NewIfc_event_handlers hval = NewIfc_on_render;
+	if (obj->handlers == NULL)
+		return NewIfc_error_none;
+	struct NewIfc_handler **head = bsearch(&hval, obj->handlers, obj->handlers_sz, sizeof(obj->handlers[0]), handler_bsearch_compar);
+	if (head == NULL)
+		return NewIfc_error_none;
+	struct NewIfc_handler *h = *head;
+	while (h != NULL) {
+		NI_err ret = h->on_render(obj, h->cbdata);
+		if (ret != NewIfc_error_none)
+			return ret;
+		h = h->next;
 	}
+	return NewIfc_error_none;
 }
 
 static NI_err
-NewIFC_root_window(NewIfcObj *newobj)
+rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
+{
+	int16_t oxpos, oypos, owidth, oheight;
+	NI_err ret = call_render_handlers(obj);
+	if (ret != NewIfc_error_none)
+		return ret;
+
+	// Fill background
+	if (obj->fill_colour != NI_TRANSPARENT || obj->fill_character_colour != NI_TRANSPARENT) {
+		size_t c;
+		for (size_t y = 0; y < obj->child_height; y++) {
+			c = (y + ctx->ypos + obj->child_ypos) * ctx->dwidth;
+			for (size_t x = 0; x < obj->child_width; x++) {
+				if (obj->fill_colour != NI_TRANSPARENT)
+					ctx->vmem[c].bg = obj->fill_colour;
+				if (obj->fill_character_colour != NI_TRANSPARENT) {
+					ctx->vmem[c].fg = obj->fill_character_colour;
+					ctx->vmem[c].ch = obj->fill_character;
+					if (ciolib_checkfont(obj->fill_font))
+						ctx->vmem[c].font = obj->fill_font;
+				}
+			}
+		}
+	}
+	if (obj->root != obj)
+		obj->do_render(obj, ctx);
+
+	owidth = ctx->width;
+	oheight = ctx->height;
+	oxpos = ctx->xpos;
+	oypos = ctx->ypos;
+	ctx->width = obj->child_width;
+	ctx->height = obj->child_height;
+	assert(ctx->xpos >= obj->xpos);
+	ctx->xpos -= obj->xpos;
+	assert(ctx->ypos >= obj->ypos);
+	ctx->ypos -= obj->ypos;
+
+	// Recurse children
+	if (obj->bottomchild) {
+		ret = rw_do_render_recurse(obj->bottomchild, ctx);
+		if (ret != NewIfc_error_none)
+			return ret;
+	}
+	ctx->width = owidth;
+	ctx->height = oheight;
+	ctx->xpos = oxpos;
+	ctx->ypos = oypos;
+	// Recurse peers
+	if (obj->higherpeer) {
+		ret = rw_do_render_recurse(obj->higherpeer, ctx);
+		if (ret != NewIfc_error_none)
+			return ret;
+	}
+	return NewIfc_error_none;
+}
+
+static NI_err
+rw_do_render(NewIfcObj obj, struct NewIfc_render_context *nullctx)
+{
+	struct root_window *rw = (struct root_window *) obj;
+	struct NewIfc_render_context ctx = {
+		.vmem = rw->display,
+		.dwidth = obj->width,
+		.dheight = obj->height,
+		.width = obj->width,
+		.height = obj->height,
+		.xpos = 0,
+		.ypos = 0,
+	};
+	NI_err ret = rw_do_render_recurse(obj, &ctx);
+	if (ret == NewIfc_error_none) {
+		struct root_window *rw = (struct root_window *)obj;
+		ciolib_vmem_puttext(obj->xpos + 1, obj->ypos + 1, obj->width + obj->xpos, obj->height + obj->ypos, rw->display);
+	}
+	return ret;
+}
+
+static NI_err
+NewIFC_root_window(NewIfcObj parent, NewIfcObj *newobj)
 {
 	struct root_window **newrw = (struct root_window **)newobj;
 
+	if (parent != NULL)
+		return NewIfc_error_invalid_arg;
 	*newrw = calloc(1, sizeof(struct root_window));
 
 	if (*newrw == NULL)
@@ -183,6 +261,10 @@ NewIFC_root_window(NewIfcObj *newobj)
 	// TODO: This is only needed by the unit tests...
 	(*newrw)->api.root = *newobj;
 	(*newrw)->api.focus = true;
+	(*newrw)->api.do_render = &rw_do_render;
+	(*newrw)->api.fg_colour = NI_LIGHTGRAY;
+	(*newrw)->api.bg_colour = NI_BLACK;
+	(*newrw)->api.font = 0;
 	(*newrw)->mtx = pthread_mutex_initializer_np(true);
 
 	struct text_info ti;
@@ -219,7 +301,7 @@ void test_root_window(CuTest *ct)
 	NewIfcObj obj;
 	static const char *new_title = "New Title";
 
-	CuAssertTrue(ct, !NewIFC_root_window(&obj));
+	CuAssertTrue(ct, NewIFC_root_window(NULL, &obj) == NewIfc_error_none);
 	CuAssertPtrNotNull(ct, obj);
 	CuAssertPtrNotNull(ct, obj->get);
 	CuAssertPtrNotNull(ct, obj->set);
@@ -235,6 +317,9 @@ void test_root_window(CuTest *ct)
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) == NewIfc_error_none && !b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
+	CuAssertTrue(ct, obj->fg_colour == NI_LIGHTGRAY);
+	CuAssertTrue(ct, obj->bg_colour == NI_BLACK);
+	CuAssertTrue(ct, obj->font == 0);
 
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->set(obj, NewIfc_locked, false) == NewIfc_error_lock_failed);
@@ -254,12 +339,8 @@ void test_root_window(CuTest *ct)
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_lock_failed);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) == NewIfc_error_none && !b);
 	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
-}
 
-CuSuite* root_window_get_test_suite() {
-	CuSuite* suite = CuSuiteNew();
-	SUITE_ADD_TEST(suite, test_root_window);
-	return suite;
+	CuAssertTrue(ct, obj->do_render(obj, NULL) == NewIfc_error_none);
 }
 
 #endif
