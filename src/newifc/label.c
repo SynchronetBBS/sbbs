@@ -91,21 +91,44 @@ label_copy(NewIfcObj old, NewIfcObj *newobj)
 static NI_err
 label_do_render(NewIfcObj obj, struct NewIfc_render_context *ctx)
 {
-	size_t sz = 0;
+	size_t tsz = 0;
+	uint16_t xpos, ypos;
 	struct label *l = (struct label *) obj;
 	if (l->text)
-		sz = strlen(l->text);
+		tsz = strlen(l->text);
+	NI_err ret = NI_get_top_left(obj, tsz, 1, &xpos, &ypos);
+	ypos -= ctx->ypos;
+	xpos -= ctx->xpos;
+	if (ret != NewIfc_error_none)
+		return ret;
 	// TODO: Ensure text fits...
-	size_t c = ctx->ypos * ctx->dwidth + ctx->xpos;
-	for (size_t i = 0; i < sz; i++, c++) {
-		if (obj->bg_colour != NI_TRANSPARENT)
-			ctx->vmem[c].bg = obj->bg_colour;
-		if (obj->fg_colour != NI_TRANSPARENT) {
-			ctx->vmem[c].fg = obj->fg_colour;
-			ctx->vmem[c].font = obj->font;
-			ctx->vmem[c].ch = l->text[i];
+	for (size_t y = 0; y < ctx->height; y++) {
+		size_t c = (ctx->ypos + y) * ctx->dwidth + ctx->xpos;
+		for (size_t x = 0; x < ctx->width; x++, c++) {
+			if (l->api.bg_colour != NI_TRANSPARENT)
+				ctx->vmem[c].bg = l->api.bg_colour;
+			if (l->api.fg_colour != NI_TRANSPARENT) {
+				ctx->vmem[c].fg = l->api.fg_colour;
+				ctx->vmem[c].font = l->api.font;
+				if (y == ypos && x >= xpos && x < xpos + tsz)
+					ctx->vmem[c].ch = l->text[x - xpos];
+				else
+					ctx->vmem[c].ch = ' ';
+			}
 		}
 	}
+	return NewIfc_error_none;
+}
+
+static NI_err
+label_destroy(NewIfcObj newobj)
+{
+	struct label *l = (struct label *)newobj;
+
+	if (l == NULL)
+		return NewIfc_error_invalid_arg;
+	free(l->text);
+	free(l);
 	return NewIfc_error_none;
 }
 
@@ -114,9 +137,11 @@ NewIFC_label(NewIfcObj parent, NewIfcObj *newobj)
 {
 	struct label **newl = (struct label **)newobj;
 
-	if (parent == NULL)
+	if (parent == NULL || newobj == NULL)
 		return NewIfc_error_invalid_arg;
-	*newl = calloc(1, sizeof(struct label));
+	if (parent->child_height < 1)
+		return NewIfc_error_wont_fit;
+	(*newl) = calloc(1, sizeof(struct label));
 
 	if (*newl == NULL)
 		return NewIfc_error_allocation_failure;
@@ -130,19 +155,20 @@ NewIFC_label(NewIfcObj parent, NewIfcObj *newobj)
 	(*newl)->api.set = &label_set;
 	(*newl)->api.copy = &label_copy;
 	(*newl)->api.do_render = &label_do_render;
+	(*newl)->api.destroy = &label_destroy;
 	(*newl)->api.child_ypos = 0;
 	(*newl)->api.child_xpos = 0;
 	(*newl)->api.child_width = 0;
 	(*newl)->api.child_height = 0;
-	// TODO: This is only needed by the unit tests...
-	(*newl)->api.root = parent->root;
-	parent->bottomchild = parent->topchild = (NewIfcObj)*newl;
-	(*newl)->api.root = parent->root;
 	(*newl)->api.parent = parent;
 	(*newl)->api.width = parent->child_width;
-	(*newl)->api.height = 1;
+	(*newl)->api.height = parent->child_height;
 	(*newl)->api.min_width = 0;
 	(*newl)->api.min_height = 1;
+	(*newl)->api.left_pad = 0;
+	(*newl)->api.right_pad = 0;
+	(*newl)->api.top_pad = 0;
+	(*newl)->api.bottom_pad = 0;
 	return NewIfc_error_none;
 }
 
@@ -151,24 +177,28 @@ NewIFC_label(NewIfcObj parent, NewIfcObj *newobj)
 void test_label(CuTest *ct)
 {
 	char *s;
-	NewIfcObj obj;
-	NewIfcObj robj;
+	NewIfcObj obj = NULL;
+	NewIfcObj robj = NULL;
 	static const char *new_title = "New Title";
 	struct vmem_cell cells;
 
 	CuAssertTrue(ct, NewIFC_root_window(NULL, &robj) == NewIfc_error_none);
 	CuAssertPtrNotNull(ct, robj);
 	CuAssertTrue(ct, NewIFC_label(robj, &obj) == NewIfc_error_none);
+	obj->root = robj;
+	obj->parent = robj;
+	robj->top_child = obj;
+	robj->bottom_child = obj;
 	CuAssertPtrNotNull(ct, obj);
 	CuAssertPtrNotNull(ct, obj->get);
 	CuAssertPtrNotNull(ct, obj->set);
 	CuAssertPtrNotNull(ct, obj->copy);
 	CuAssertPtrNotNull(ct, obj->do_render);
 	CuAssertTrue(ct, obj->width == 80);
-	CuAssertTrue(ct, obj->height == 1);
+	CuAssertTrue(ct, obj->height == 25);
 	CuAssertTrue(ct, obj->min_width == 0);
 	CuAssertTrue(ct, obj->min_height == 1);
-	CuAssertTrue(ct, obj->focus == true);
+	CuAssertTrue(ct, obj->focus == false);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_text, &s) == NewIfc_error_none && strcmp(s, "") == 0);
 
 	CuAssertTrue(ct, obj->set(obj, NewIfc_text, new_title) == NewIfc_error_none);
@@ -184,6 +214,8 @@ void test_label(CuTest *ct)
 		CuAssertTrue(ct, cells.bg == obj->bg_colour);
 		CuAssertTrue(ct, cells.font == obj->font);
 	}
+	CuAssertTrue(ct, obj->destroy(obj) == NewIfc_error_none);
+	CuAssertTrue(ct, robj->destroy(robj) == NewIfc_error_none);
 }
 
 #endif

@@ -29,6 +29,7 @@ enum attribute_types {
 	NI_attr_type_bool,
 	NI_attr_type_charptr,
 	NI_attr_type_NewIfc_object,
+	NI_attr_type_NewIfc_align,
 };
 
 struct type_str_values {
@@ -45,6 +46,7 @@ struct type_str_values type_str[] = {
 	{"bool", "bool"},
 	{"char *", "char_ptr"},
 	{"enum NewIfc_object", "obj_enum"},
+	{"enum NewIfc_alignment", "align_enum"},
 };
 
 enum attribute_impl {
@@ -60,39 +62,45 @@ struct attribute_info {
 	enum attribute_impl impl;
 	int read_only;
 	int no_event;
+	int inherit;
 };
 
 const struct attribute_info
 attributes[] = {
-	{"bg_colour", NI_attr_type_uint32_t, attr_impl_global, 0, 0},
-	{"bottomchild", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0},
-	{"child_height", NI_attr_type_uint16_t, attr_impl_global, 1, 0},
-	{"child_width", NI_attr_type_uint16_t, attr_impl_global, 1, 0},
-	{"child_xpos", NI_attr_type_uint16_t, attr_impl_global, 1, 0},
-	{"child_ypos", NI_attr_type_uint16_t, attr_impl_global, 1, 0},
-	{"fg_colour", NI_attr_type_uint32_t, attr_impl_global, 0, 0},
-	{"fill_character", NI_attr_type_uint8_t, attr_impl_global, 0, 0},
-	{"fill_character_colour", NI_attr_type_uint32_t, attr_impl_global, 0, 0},
-	{"fill_colour", NI_attr_type_uint32_t, attr_impl_global, 0, 0},
-	{"fill_font", NI_attr_type_uint8_t, attr_impl_global, 0, 0},
-	{"focus", NI_attr_type_bool, attr_impl_global_custom_setter, 0, 0},
-	{"font", NI_attr_type_uint8_t, attr_impl_global, 0, 0},
-	{"height", NI_attr_type_uint16_t, attr_impl_global, 0, 0},
-	{"hidden", NI_attr_type_bool, attr_impl_global, 1, 0},
-	{"higherpeer", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0},
-	{"locked", NI_attr_type_bool, attr_impl_root, 0, 1},
-	{"locked_by_me", NI_attr_type_bool, attr_impl_root, 1, 1},
-	{"lowerpeer", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0},
-	{"min_height", NI_attr_type_uint16_t, attr_impl_global, 1, 0},
-	{"min_width", NI_attr_type_uint16_t, attr_impl_global, 1, 0},
-	{"parent", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0},
-	{"root", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0},
-	{"text", NI_attr_type_charptr, attr_impl_object, 0, 0},
-	{"topchild", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0},
-	{"type", NI_attr_type_NewIfc_object, attr_impl_global, 1, 0},
-	{"width", NI_attr_type_uint16_t, attr_impl_global, 0, 0},
-	{"xpos", NI_attr_type_uint16_t, attr_impl_global, 0, 0},
-	{"ypos", NI_attr_type_uint16_t, attr_impl_global, 0, 0},
+	{"align", NI_attr_type_NewIfc_align, attr_impl_global, 0, 0, 1},
+	{"bg_colour", NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
+	{"bottom_child", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
+	{"bottom_pad", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"child_height", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"child_width", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"child_xpos", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"child_ypos", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"fg_colour", NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
+	{"fill_character", NI_attr_type_uint8_t, attr_impl_global, 0, 0, 1},
+	{"fill_character_colour", NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
+	{"fill_colour", NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
+	{"fill_font", NI_attr_type_uint8_t, attr_impl_global, 0, 0, 1},
+	{"focus", NI_attr_type_bool, attr_impl_global_custom_setter, 0, 0, 0},
+	{"font", NI_attr_type_uint8_t, attr_impl_global, 0, 0, 1},
+	{"height", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"hidden", NI_attr_type_bool, attr_impl_global, 1, 0, 1},
+	{"higher_peer", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
+	{"locked", NI_attr_type_bool, attr_impl_root, 0, 1, 0},
+	{"locked_by_me", NI_attr_type_bool, attr_impl_root, 1, 1, 0},
+	{"lower_peer", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
+	{"left_pad", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"min_height", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"min_width", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"parent", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
+	{"right_pad", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"root", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 1},
+	{"text", NI_attr_type_charptr, attr_impl_object, 0, 0, 0},
+	{"top_pad", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"top_child", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
+	{"type", NI_attr_type_NewIfc_object, attr_impl_global, 1, 0, 0},
+	{"width", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"xpos", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"ypos", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
 };
 
 struct attribute_alias {
@@ -336,6 +344,20 @@ main(int argc, char **argv)
 	}
 	fputs("};\n\n", header);
 
+	fputs("enum NewIfc_alignment {\n"
+	      "	NewIfc_align_top_left,\n"
+	      "	NewIfc_align_top_middle,\n"
+	      "	NewIfc_align_top_right,\n"
+	      "	NewIfc_align_middle_left,\n"
+	      "	NewIfc_align_centre,\n"
+	      "	NewIfc_align_center = NewIfc_align_centre,\n"
+	      "	NewIfc_align_middle = NewIfc_align_centre,\n"
+	      "	NewIfc_align_middle_right,\n"
+	      "	NewIfc_align_bottom_left,\n"
+	      "	NewIfc_align_bottom_middle,\n"
+	      "	NewIfc_align_bottom_right,\n"
+	      "};\n\n", header);
+
 	fputs("#define NI_TRANSPARENT  UINT32_MAX\n"
 	      "#define NI_BLACK        UINT32_C(0)\n"
 	      "#define NI_BLUE         UINT32_C(0x800000A8)\n"
@@ -356,8 +378,15 @@ main(int argc, char **argv)
 
 	fputs("NI_err NI_copy(NewIfcObj obj, NewIfcObj *newobj);\n", header);
 	fputs("NI_err NI_create(enum NewIfc_object obj, NewIfcObj parent, NewIfcObj *newobj);\n", header);
+	fputs("NI_err NI_destroy(NewIfcObj obj);\n", header);
 	fputs("NI_err NI_error(NewIfcObj obj);\n", header);
 	fputs("NI_err NI_walk_children(NewIfcObj obj, bool top_down, NI_err (*cb)(NewIfcObj obj, void *cb_data), void *cbdata);\n\n", header);
+	fputs("NI_err NI_inner_width(NewIfcObj obj, uint16_t *width);\n", header);
+	fputs("NI_err NI_inner_height(NewIfcObj obj, uint16_t *hright);\n", header);
+	fputs("NI_err NI_inner_xpos(NewIfcObj obj, uint16_t *xpos);\n", header);
+	fputs("NI_err NI_inner_ypos(NewIfcObj obj, uint16_t *ypos);\n", header);
+	fputs("NI_err NI_inner_size(NewIfcObj obj, uint16_t *width, uint16_t *height);\n", header);
+	fputs("NI_err NI_inner_size_pos(NewIfcObj obj, uint16_t *width, uint16_t *height, uint16_t *xpos, uint16_t *ypos);\n", header);
 
 	nitems = sizeof(attributes) / sizeof(attributes[0]);
 	for (i = 0; i < nitems; i++) {
@@ -438,19 +467,21 @@ main(int argc, char **argv)
 	      "	NI_err (*get)(NewIfcObj niobj, const int attr, ...);\n"
 	      "	NI_err (*copy)(NewIfcObj obj, NewIfcObj *newobj);\n"
 	      "	NI_err (*do_render)(NewIfcObj obj, struct NewIfc_render_context *ctx);\n"
+	      "	NI_err (*destroy)(NewIfcObj obj);\n"
 	      "	struct NewIfc_handler **handlers;\n"
 	      "	NewIfcObj root;\n"
 	      "	NewIfcObj parent;\n"
-	      "	NewIfcObj higherpeer;\n"
-	      "	NewIfcObj lowerpeer;\n"
-	      "	NewIfcObj topchild;\n"
-	      "	NewIfcObj bottomchild;\n"
+	      "	NewIfcObj higher_peer;\n"
+	      "	NewIfcObj lower_peer;\n"
+	      "	NewIfcObj top_child;\n"
+	      "	NewIfcObj bottom_child;\n"
 	      "	size_t handlers_sz;\n"
 	      "	uint32_t fill_character_colour;\n"
 	      "	uint32_t fill_colour;\n"
 	      "	uint32_t fg_colour;\n"
 	      "	uint32_t bg_colour;\n"
 	      "	enum NewIfc_object type;\n"
+	      "	enum NewIfc_alignment align;\n"
 	      "	uint16_t height;\n"
 	      "	uint16_t width;\n"
 	      "	uint16_t min_height;\n"
@@ -461,6 +492,10 @@ main(int argc, char **argv)
 	      "	uint16_t child_width;\n"
 	      "	uint16_t child_xpos;\n"
 	      "	uint16_t child_ypos;\n"
+	      "	uint16_t left_pad;\n"
+	      "	uint16_t right_pad;\n"
+	      "	uint16_t bottom_pad;\n"
+	      "	uint16_t top_pad;\n"
 	      "	uint8_t fill_character;\n"
 	      "	uint8_t fill_font;\n"
 	      "	uint8_t font;\n"
@@ -477,7 +512,6 @@ main(int argc, char **argv)
 
 	fputs("#endif\n", internal_header);
 	fclose(internal_header);
-
 
 	c_code = fopen("newifc.c", "w");
 	if (c_code == NULL) {
@@ -532,22 +566,22 @@ main(int argc, char **argv)
 	fputs("	}\n"
 	      "	if (ret == NewIfc_error_none) {\n"
 	      "		(*newobj)->parent = parent;\n"
-	      "		(*newobj)->higherpeer = NULL;\n"
-	      "		(*newobj)->topchild = NULL;\n"
-	      "		(*newobj)->bottomchild = NULL;\n"
+	      "		(*newobj)->higher_peer = NULL;\n"
+	      "		(*newobj)->top_child = NULL;\n"
+	      "		(*newobj)->bottom_child = NULL;\n"
 	      "		(*newobj)->handlers = NULL;\n"
 	      "		(*newobj)->handlers_sz = 0;\n"
 	      "		if (parent) {\n"
 	      "			(*newobj)->root = parent->root;\n"
-	      "			(*newobj)->lowerpeer = parent->topchild;\n"
-	      "			parent->topchild = *newobj;\n"
-	      "			if (parent->bottomchild == NULL) {\n"
-	      "				parent->bottomchild = *newobj;\n"
+	      "			(*newobj)->lower_peer = parent->top_child;\n"
+	      "			parent->top_child = *newobj;\n"
+	      "			if (parent->bottom_child == NULL) {\n"
+	      "				parent->bottom_child = *newobj;\n"
 	      "			}\n"
 	      "		}\n"
 	      "		else {\n"
 	      "			(*newobj)->root = *newobj;\n"
-	      "			(*newobj)->lowerpeer = NULL;\n"
+	      "			(*newobj)->lower_peer = NULL;\n"
 	      "		}\n"
 	      "	}\n"
 	      "	return ret;\n"
@@ -560,8 +594,10 @@ main(int argc, char **argv)
 	      "{\n", c_code);
 	nitems = sizeof(attributes) / sizeof(attributes[0]);
 	for (i = 0; i < nitems; i++) {
-		if (attributes[i].impl == attr_impl_global || attributes[i].impl == attr_impl_global_custom_setter)
-			fprintf(c_code,"	dst->%s = src->%s;\n", attributes[i].name, attributes[i].name);
+		if (attributes[i].impl == attr_impl_global || attributes[i].impl == attr_impl_global_custom_setter) {
+			if (attributes[i].inherit)
+				fprintf(c_code,"	dst->%s = src->%s;\n", attributes[i].name, attributes[i].name);
+		}
 	}
 	fputs("	return NewIfc_error_none;\n"
 	      "}\n\n", c_code);

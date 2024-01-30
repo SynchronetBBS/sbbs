@@ -197,13 +197,69 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 			}
 		}
 	}
-	if (obj->root != obj)
-		obj->do_render(obj, ctx);
-
+	// Fill padding
+	if (obj->top_pad || obj->bottom_pad || obj->left_pad || obj->right_pad) {
+		size_t c;
+		for (size_t y = 0; y < obj->height; y++) {
+			if ((y < obj->top_pad) || (y >= (obj->height - obj->bottom_pad))) {
+				c = (y + ctx->ypos + obj->ypos) * ctx->dwidth;
+				for (size_t x = 0; x < obj->width; x++) {
+					if (obj->bg_colour != NI_TRANSPARENT)
+						ctx->vmem[c].bg = obj->bg_colour;
+					if (obj->fg_colour != NI_TRANSPARENT) {
+						ctx->vmem[c].fg = obj->fg_colour;
+						ctx->vmem[c].ch = ' ';
+						if (ciolib_checkfont(obj->font))
+							ctx->vmem[c].font = obj->font;
+					}
+					c++;
+				}
+			}
+			else {
+				if (obj->left_pad) {
+					c = (y + ctx->ypos + obj->ypos) * ctx->dwidth;
+					for (size_t x = 0; x < obj->left_pad; x++) {
+						if (obj->bg_colour != NI_TRANSPARENT)
+							ctx->vmem[c].bg = obj->bg_colour;
+						if (obj->fg_colour != NI_TRANSPARENT) {
+							ctx->vmem[c].fg = obj->fg_colour;
+							ctx->vmem[c].ch = ' ';
+							if (ciolib_checkfont(obj->font))
+								ctx->vmem[c].font = obj->font;
+						}
+						c++;
+					}
+				}
+				if (obj->right_pad) {
+					c = (y + ctx->ypos + obj->ypos) * ctx->dwidth;
+					c += obj->width;
+					c -= obj->right_pad;
+					for (size_t x = 0; x < obj->right_pad; x++) {
+						if (obj->bg_colour != NI_TRANSPARENT)
+							ctx->vmem[c].bg = obj->bg_colour;
+						if (obj->fg_colour != NI_TRANSPARENT) {
+							ctx->vmem[c].fg = obj->fg_colour;
+							ctx->vmem[c].ch = ' ';
+							if (ciolib_checkfont(obj->font))
+								ctx->vmem[c].font = obj->font;
+						}
+						c++;
+					}
+				}
+			}
+		}
+	}
 	owidth = ctx->width;
 	oheight = ctx->height;
 	oxpos = ctx->xpos;
 	oypos = ctx->ypos;
+	ctx->width = obj->width - (obj->left_pad + obj->right_pad);
+	ctx->height = obj->height - (obj->top_pad + obj->bottom_pad);
+	ctx->xpos += obj->left_pad;
+	ctx->ypos += obj->top_pad;
+	if (obj->root != obj)
+		obj->do_render(obj, ctx);
+
 	ctx->width = obj->child_width;
 	ctx->height = obj->child_height;
 	assert(ctx->xpos >= obj->xpos);
@@ -212,8 +268,8 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 	ctx->ypos -= obj->ypos;
 
 	// Recurse children
-	if (obj->bottomchild) {
-		ret = rw_do_render_recurse(obj->bottomchild, ctx);
+	if (obj->bottom_child) {
+		ret = rw_do_render_recurse(obj->bottom_child, ctx);
 		if (ret != NewIfc_error_none)
 			return ret;
 	}
@@ -222,8 +278,8 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 	ctx->xpos = oxpos;
 	ctx->ypos = oypos;
 	// Recurse peers
-	if (obj->higherpeer) {
-		ret = rw_do_render_recurse(obj->higherpeer, ctx);
+	if (obj->higher_peer) {
+		ret = rw_do_render_recurse(obj->higher_peer, ctx);
 		if (ret != NewIfc_error_none)
 			return ret;
 	}
@@ -252,11 +308,24 @@ rw_do_render(NewIfcObj obj, struct NewIfc_render_context *nullctx)
 }
 
 static NI_err
+rw_destroy(NewIfcObj obj)
+{
+	struct root_window *newrw = (struct root_window *)obj;
+
+	if (obj == NULL)
+		return NewIfc_error_invalid_arg;
+	free(newrw->display);
+	pthread_mutex_destroy(&newrw->mtx);
+	free(newrw);
+	return NewIfc_error_none;
+}
+
+static NI_err
 NewIFC_root_window(NewIfcObj parent, NewIfcObj *newobj)
 {
 	struct root_window **newrw = (struct root_window **)newobj;
 
-	if (parent != NULL)
+	if (parent != NULL || newobj == NULL)
 		return NewIfc_error_invalid_arg;
 	*newrw = calloc(1, sizeof(struct root_window));
 
@@ -265,6 +334,7 @@ NewIFC_root_window(NewIfcObj parent, NewIfcObj *newobj)
 	(*newrw)->api.get = rw_get;
 	(*newrw)->api.set = rw_set;
 	(*newrw)->api.copy = rw_copy;
+	(*newrw)->api.destroy = rw_destroy;
 	// TODO: This is only needed by the unit tests...
 	(*newrw)->api.root = *newobj;
 	(*newrw)->api.focus = true;
@@ -304,7 +374,7 @@ NewIFC_root_window(NewIfcObj parent, NewIfcObj *newobj)
 void test_root_window(CuTest *ct)
 {
 	bool b;
-	NewIfcObj obj;
+	NewIfcObj obj = NULL;
 
 	CuAssertTrue(ct, NewIFC_root_window(NULL, &obj) == NewIfc_error_none);
 	CuAssertPtrNotNull(ct, obj);
@@ -334,6 +404,7 @@ void test_root_window(CuTest *ct)
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) == NewIfc_error_none && !b);
 
 	CuAssertTrue(ct, obj->do_render(obj, NULL) == NewIfc_error_none);
+	CuAssertTrue(ct, obj->destroy(obj) == NewIfc_error_none);
 }
 
 #endif
