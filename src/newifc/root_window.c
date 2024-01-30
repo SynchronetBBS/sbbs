@@ -35,26 +35,26 @@ static NI_err
 rw_set(NewIfcObj obj, int attr, ...)
 {
 	struct root_window *rw = (struct root_window *)obj;
+	NI_err ret = NewIfc_error_none;
 	SET_VARS;
 
-	rw->api.last_error = NewIfc_error_none;
 	va_start(ap, attr);
 	switch (attr) {
 		case NewIfc_locked:
 			if (va_arg(ap, int)) {
 				if (pthread_mutex_lock(&rw->mtx) != 0) {
-					rw->api.last_error = NewIfc_error_lock_failed;
+					ret = NewIfc_error_lock_failed;
 					break;
 				}
 				rw->locks++;
 			}
 			else {
 				if (pthread_mutex_trylock(&rw->mtx) != 0) {
-					rw->api.last_error = NewIfc_error_lock_failed;
+					ret = NewIfc_error_lock_failed;
 					break;
 				}
 				if (rw->locks == 0) {
-					rw->api.last_error = NewIfc_error_lock_failed;
+					ret = NewIfc_error_lock_failed;
 					// TODO: Unlock failure can't be recovered and is silent... :(
 #ifndef NDEBUG
 					int lkret =
@@ -66,31 +66,31 @@ rw_set(NewIfcObj obj, int attr, ...)
 					break;
 				}
 				if (pthread_mutex_unlock(&rw->mtx) != 0) {
-					rw->api.last_error = NewIfc_error_lock_failed;
+					ret = NewIfc_error_lock_failed;
 				}
 				rw->locks--;
 				if (pthread_mutex_unlock(&rw->mtx) != 0) {
-					rw->api.last_error = NewIfc_error_lock_failed;
+					ret = NewIfc_error_lock_failed;
 				}
 			}
 			break;
 		default:
-			rw->api.last_error = NewIfc_error_not_implemented;
+			ret = NewIfc_error_not_implemented;
 			break;
 	}
 	va_end(ap);
 
-	return rw->api.last_error;
+	return ret;
 }
 
 static NI_err
 rw_get(NewIfcObj obj, int attr, ...)
 {
 	struct root_window *rw = (struct root_window *)obj;
+	NI_err ret = NewIfc_error_none;
 	GET_VARS;
 	int lkret;
 
-	rw->api.last_error = NewIfc_error_none;
 	va_start(ap, attr);
 	switch (attr) {
 		case NewIfc_locked:
@@ -99,16 +99,15 @@ rw_get(NewIfcObj obj, int attr, ...)
 			else {
 				*(va_arg(ap, bool *)) = rw->locks > 0;
 				if (pthread_mutex_unlock(&rw->mtx) != 0) {
-					rw->api.last_error = NewIfc_error_lock_failed;
-					assert(rw->api.last_error != NewIfc_error_lock_failed);
-					break;
+					ret = NewIfc_error_lock_failed;
+					assert(ret != NewIfc_error_lock_failed);
 				}
 			}
 			break;
 		case NewIfc_locked_by_me:
 			if ((lkret = pthread_mutex_trylock(&rw->mtx)) != 0) {
 				if (lkret != EBUSY) {
-					rw->api.last_error = NewIfc_error_lock_failed;
+					ret = NewIfc_error_lock_failed;
 					break;
 				}
 				*(va_arg(ap, bool *)) = false;
@@ -116,17 +115,17 @@ rw_get(NewIfcObj obj, int attr, ...)
 			else {
 				*(va_arg(ap, bool *)) = rw->locks > 0;
 				if (pthread_mutex_unlock(&rw->mtx) != 0) {
-					rw->api.last_error = NewIfc_error_lock_failed;
-					assert(rw->api.last_error != NewIfc_error_lock_failed);
+					ret = NewIfc_error_lock_failed;
+					assert(ret != NewIfc_error_lock_failed);
 				}
 			}
 			break;
 		default:
-			rw->api.last_error = NewIfc_error_not_implemented;
+			ret = NewIfc_error_not_implemented;
 			break;
 	}
 
-	return rw->api.last_error;
+	return ret;
 }
 
 static NI_err
@@ -185,6 +184,7 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 					if (ciolib_checkfont(obj->fill_font))
 						ctx->vmem[c].font = obj->fill_font;
 				}
+				c++;
 			}
 		}
 	}
@@ -256,8 +256,6 @@ NewIFC_root_window(NewIfcObj parent, NewIfcObj *newobj)
 	(*newrw)->api.get = rw_get;
 	(*newrw)->api.set = rw_set;
 	(*newrw)->api.copy = rw_copy;
-	(*newrw)->api.last_error = NewIfc_error_none;
-	(*newrw)->api.child_ypos = 1;
 	// TODO: This is only needed by the unit tests...
 	(*newrw)->api.root = *newobj;
 	(*newrw)->api.focus = true;
@@ -306,39 +304,27 @@ void test_root_window(CuTest *ct)
 	CuAssertPtrNotNull(ct, obj->get);
 	CuAssertPtrNotNull(ct, obj->set);
 	CuAssertPtrNotNull(ct, obj->copy);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
+	CuAssertPtrNotNull(ct, obj->do_render);
 	CuAssertTrue(ct, obj->width == 80);
 	CuAssertTrue(ct, obj->height == 25);
 	CuAssertTrue(ct, obj->min_width == 0);
 	CuAssertTrue(ct, obj->min_height == 0);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->focus == true);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked, &b) == NewIfc_error_none && !b);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) == NewIfc_error_none && !b);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->fg_colour == NI_LIGHTGRAY);
 	CuAssertTrue(ct, obj->bg_colour == NI_BLACK);
 	CuAssertTrue(ct, obj->font == 0);
 
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->set(obj, NewIfc_locked, false) == NewIfc_error_lock_failed);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_lock_failed);
 	CuAssertTrue(ct, obj->set(obj, NewIfc_locked, true) == NewIfc_error_none);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->set(obj, NewIfc_locked_by_me, &b) == NewIfc_error_not_implemented);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_not_implemented);
 
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked, &b) == NewIfc_error_none && b);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) == NewIfc_error_none && b);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->set(obj, NewIfc_locked, false) == NewIfc_error_none);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->set(obj, NewIfc_locked, false) == NewIfc_error_lock_failed);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_lock_failed);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) == NewIfc_error_none && !b);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 
 	CuAssertTrue(ct, obj->do_render(obj, NULL) == NewIfc_error_none);
 }

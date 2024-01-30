@@ -17,14 +17,14 @@
 	st->field = va_arg(ap, uint16_t); \
 } while(0);
 
-#define SET_STRING(st, field) do {                                 \
-	buf = strdup(va_arg(ap, const char *));                     \
-	if (buf == NULL) {                                           \
-		st->api.last_error = NewIfc_error_allocation_failure; \
-		break;                                                 \
-	}                                                               \
-	free(st->field);                                                 \
-	st->field = buf;                                                  \
+#define SET_STRING(st, field) do {                  \
+	buf = strdup(va_arg(ap, const char *));      \
+	if (buf == NULL) {                            \
+		ret = NewIfc_error_allocation_failure; \
+		break;                                  \
+	}                                                \
+	free(st->field);                                  \
+	st->field = buf;                                   \
 } while(0)
 
 

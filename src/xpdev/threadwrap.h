@@ -94,6 +94,7 @@ extern "C" {
 /* Wrappers for POSIX thread (pthread) mutexes								*/
 /****************************************************************************/
 
+bool pthread_mutex_init_np(pthread_mutex_t *mtx, bool recursive);
 pthread_mutex_t pthread_mutex_initializer_np(bool recursive);
 
 #if defined(_POSIX_THREADS)

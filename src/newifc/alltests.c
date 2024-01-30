@@ -4,6 +4,7 @@
 
 void test_root_window(CuTest *ct);
 void test_label(CuTest *ct);
+void test_api(CuTest *ct);
 
 void RunAllTests(void) {
 	CuString *output = CuStringNew();
@@ -11,6 +12,7 @@ void RunAllTests(void) {
 
 	SUITE_ADD_TEST(suite, test_root_window);
 	SUITE_ADD_TEST(suite, test_label);
+	SUITE_ADD_TEST(suite, test_api);
 
 	CuSuiteRun(suite);
 	CuSuiteSummary(suite, output);

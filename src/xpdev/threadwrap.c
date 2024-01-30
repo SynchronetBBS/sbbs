@@ -89,6 +89,36 @@ ulong _beginthread(void( *start_address )( void * )
 /****************************************************************************/
 /* Wrappers for POSIX thread (pthread) mutexes								*/
 /****************************************************************************/
+bool pthread_mutex_init_np(pthread_mutex_t *mutex, bool recursive)
+{
+#if defined(_POSIX_THREADS)
+	pthread_mutexattr_t attr;
+	if (pthread_mutexattr_init(&attr) != 0)
+		return false;
+	if(recursive)
+#if defined(__linux__) && defined(PTHREAD_MUTEX_RECURSIVE_NP) && !defined(__USE_UNIX98)
+		if (pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE_NP) != 0) {
+			pthread_mutexattr_destroy(&attr);
+			return false;
+		}
+#else
+		if (pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE) != 0) {
+			pthread_mutexattr_destroy(&attr);
+			return false;
+		}
+#endif
+	pthread_mutex_init(mutex, &attr);
+	pthread_mutexattr_destroy(&attr);
+#else	/* Assumes recursive (e.g. Windows) */
+	(void)recursive;
+	pthread_mutex_init(mutex,NULL);
+#endif
+	return(true);
+}
+
+/****************************************************************************/
+/* Wrappers for POSIX thread (pthread) mutexes								*/
+/****************************************************************************/
 pthread_mutex_t pthread_mutex_initializer_np(bool recursive)
 {
 	pthread_mutex_t	mutex;

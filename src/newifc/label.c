@@ -26,41 +26,41 @@ static NI_err
 label_set(NewIfcObj obj, int attr, ...)
 {
 	struct label *l = (struct label *)obj;
+	NI_err ret = NewIfc_error_none;
 	SET_VARS;
 
-	l->api.last_error = NewIfc_error_none;
 	va_start(ap, attr);
 	switch (attr) {
 		case NewIfc_text:
 			SET_STRING(l, text);
 			break;
 		default:
-			l->api.last_error = NewIfc_error_not_implemented;
+			ret = NewIfc_error_not_implemented;
 			break;
 	}
 	va_end(ap);
 
-	return l->api.last_error;
+	return ret;
 }
 
 static NI_err
 label_get(NewIfcObj obj, int attr, ...)
 {
 	struct label *l = (struct label *)obj;
+	NI_err ret = NewIfc_error_none;
 	GET_VARS;
 
-	l->api.last_error = NewIfc_error_none;
 	va_start(ap, attr);
 	switch (attr) {
 		case NewIfc_text:
 			GET_STRING(l, text);
 			break;
 		default:
-			l->api.last_error = NewIfc_error_not_implemented;
+			ret = NewIfc_error_not_implemented;
 			break;
 	}
 
-	return l->api.last_error;
+	return ret;
 }
 
 static NI_err
@@ -125,7 +125,6 @@ NewIFC_label(NewIfcObj parent, NewIfcObj *newobj)
 	(*newl)->api.set = &label_set;
 	(*newl)->api.copy = &label_copy;
 	(*newl)->api.do_render = &label_do_render;
-	(*newl)->api.last_error = NewIfc_error_none;
 	(*newl)->api.child_ypos = 0;
 	(*newl)->api.child_xpos = 0;
 	(*newl)->api.child_width = 0;
@@ -154,27 +153,23 @@ void test_label(CuTest *ct)
 	struct vmem_cell cells;
 
 	CuAssertTrue(ct, NewIFC_root_window(NULL, &robj) == NewIfc_error_none);
+	CuAssertPtrNotNull(ct, robj);
 	CuAssertTrue(ct, NewIFC_label(robj, &obj) == NewIfc_error_none);
 	CuAssertPtrNotNull(ct, obj);
 	CuAssertPtrNotNull(ct, obj->get);
 	CuAssertPtrNotNull(ct, obj->set);
 	CuAssertPtrNotNull(ct, obj->copy);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
+	CuAssertPtrNotNull(ct, obj->do_render);
 	CuAssertTrue(ct, obj->width == 0);
 	CuAssertTrue(ct, obj->height == 1);
 	CuAssertTrue(ct, obj->min_width == 0);
 	CuAssertTrue(ct, obj->min_height == 1);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->focus == true);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_text, &s) == NewIfc_error_none && strcmp(s, "") == 0);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 	CuAssertTrue(ct, obj->set(obj, NewIfc_text, new_title) == NewIfc_error_none);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 
 	CuAssertTrue(ct, obj->get(obj, NewIfc_text, &s) == NewIfc_error_none && strcmp(s, new_title) == 0);
-	CuAssertTrue(ct, obj->last_error == NewIfc_error_none);
 
 	CuAssertTrue(ct, robj->do_render(robj, NULL) == NewIfc_error_none);
 	size_t sz = strlen(new_title);
