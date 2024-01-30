@@ -27,7 +27,7 @@ newifc.h: newifc.c
 
 root_window.o: newifc.h
 
-newifc.o: newifc.c internal_macros.h root_window.c
+newifc.o: newifc.c root_window.c
 
 libnewifc.a: libnewifc.a(newifc.o)
 	ranlib $@
