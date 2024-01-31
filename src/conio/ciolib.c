@@ -2055,3 +2055,98 @@ CIOLIBEXPORT uint32_t ciolib_mousepointer(enum ciolib_mouse_ptr type)
 		return cio_api.mousepointer(type);
 	return 0;
 }
+
+struct YCoCg_data {
+	unsigned Y;
+	signed Co;
+	signed Cg;
+};
+
+static void
+RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
+{
+	signed R, G, B, tmp;
+
+	R = (RGB >> 16) & 0xFF;
+	G = (RGB >> 8) & 0xFF;
+	B = (RGB) & 0xFF;
+
+	YCoCg->Co = R - B;
+	tmp = B + (YCoCg->Co >> 1);
+	YCoCg->Cg = G - tmp;
+	YCoCg->Y = tmp + (YCoCg->Cg >> 1);
+}
+
+static uint32_t pixel_diff(struct YCoCg_data *x, struct YCoCg_data *y)
+{
+//#define ABSDIFF(a,b) (abs((int)(a)-(int)(b)))
+#define ABSDIFF(a,b) (a > b ? a - b : b - a)
+
+    return (ABSDIFF(x->Y, y->Y)) +
+           (ABSDIFF(x->Co, y->Co) >> 1) +
+           (ABSDIFF(x->Cg, y->Cg) >> 1);
+}
+
+struct YCoCg_data legacy_ycc[] = {
+	{0, 0, 0},
+	{42, -168, -84},
+	{84, 0, 168},
+	{126, -168, 84},
+	{42, 168, -84},
+	{84, 0, -168},
+	{84, 168, 0},
+	{168, 0, 0},
+	{84, 0, 0},
+	{126, -171, -85},
+	{169, 0, 171},
+	{212, -171, 86},
+	{126, 171, -85},
+	{169, 0, -171},
+	{212, 171, 86},
+	{255, 0, 0},
+};
+
+CIOLIBEXPORT uint8_t ciolib_rgb_to_legacyattr(uint32_t fg, uint32_t bg)
+{
+	uint8_t bestf;
+	uint32_t bestfv = UINT32_MAX;
+	uint8_t bestb;
+	uint32_t bestbv = UINT32_MAX;
+	struct YCoCg_data yccf;
+	struct YCoCg_data yccb;
+
+	// TODO: We may need to use get_modepalette here...
+	if (fg & 0x80000000)
+		RGB_to_YCoCg(fg & 0xFFFFFF, &yccf);
+	else {
+		bestfv = 0;
+		bestf = fg & 0x0f;
+	}
+	if (bg & 0x80000000)
+		RGB_to_YCoCg(bg & 0xFFFFFF, &yccb);
+	else {
+		bestbv = 0;
+		bestb = bg & 0x07;
+	}
+
+	for (size_t i = 0; i < 16; i++) {
+		if (bestfv > 0) {
+			uint32_t d = pixel_diff(&yccf, &legacy_ycc[i]);
+			if (d < bestfv) {
+				bestfv = d;
+				bestf = i;
+			}
+		}
+		if (bestbv > 0) {
+			if (i < 8) {
+				uint32_t d = pixel_diff(&yccb, &legacy_ycc[i]);
+				if (d < bestbv) {
+					bestbv = d;
+					bestb = i;
+				}
+			}
+		}
+	}
+
+	return (bestb << 4) | bestf;
+}

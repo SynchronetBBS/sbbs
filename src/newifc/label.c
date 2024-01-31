@@ -26,18 +26,27 @@ label_set(NewIfcObj obj, int attr, ...)
 	struct label *l = (struct label *)obj;
 	NI_err ret = NewIfc_error_none;
 	va_list ap;
+	const char *s;
 	char *buf;
 
 	va_start(ap, attr);
 	switch (attr) {
 		case NewIfc_text:
-			buf = strdup(va_arg(ap, const char *));
+			s = va_arg(ap, const char *);
+			size_t sz = strlen(s) + obj->left_pad + obj->right_pad;
+			if (sz > UINT16_MAX)
+				return NewIfc_error_wont_fit;
+			ret = NI_set_min_width(obj, sz);
+			if (ret != NewIfc_error_none)
+				return ret;
+			buf = strdup(s);
 			if (buf == NULL) {
 				ret = NewIfc_error_allocation_failure;
 				break;
 			}
 			free(l->text);
 			l->text = buf;
+			obj->min_width = sz;
 			break;
 		default:
 			ret = NewIfc_error_not_implemented;
@@ -105,16 +114,10 @@ label_do_render(NewIfcObj obj, struct NewIfc_render_context *ctx)
 	for (size_t y = 0; y < ctx->height; y++) {
 		size_t c = (ctx->ypos + y) * ctx->dwidth + ctx->xpos;
 		for (size_t x = 0; x < ctx->width; x++, c++) {
-			if (l->api.bg_colour != NI_TRANSPARENT)
-				ctx->vmem[c].bg = l->api.bg_colour;
-			if (l->api.fg_colour != NI_TRANSPARENT) {
-				ctx->vmem[c].fg = l->api.fg_colour;
-				ctx->vmem[c].font = l->api.font;
-				if (y == ypos && x >= xpos && x < xpos + tsz)
-					ctx->vmem[c].ch = l->text[x - xpos];
-				else
-					ctx->vmem[c].ch = ' ';
-			}
+			if (y == ypos && x >= xpos && x < xpos + tsz)
+				set_vmem_cell(&ctx->vmem[c], l->api.fg_colour, l->api.bg_colour, l->text[x - xpos], l->api.font);
+			else
+				set_vmem_cell(&ctx->vmem[c], l->api.fg_colour, l->api.bg_colour, ' ', l->api.font);
 		}
 	}
 	return NewIfc_error_none;
@@ -135,40 +138,38 @@ label_destroy(NewIfcObj newobj)
 static NI_err
 NewIFC_label(NewIfcObj parent, NewIfcObj *newobj)
 {
-	struct label **newl = (struct label **)newobj;
+	struct label *newl;
 
-	if (parent == NULL || newobj == NULL)
+	if (newobj == NULL)
 		return NewIfc_error_invalid_arg;
+	*newobj = NULL;
 	if (parent->child_height < 1)
 		return NewIfc_error_wont_fit;
-	(*newl) = calloc(1, sizeof(struct label));
-
-	if (*newl == NULL)
+	newl = calloc(1, sizeof(struct label));
+	if (newl == NULL)
 		return NewIfc_error_allocation_failure;
-	(*newl)->text = strdup("");
-	if ((*newl)->text == NULL) {
-		free(*newl);
+	NI_err ret = NI_setup_globals(newl, parent);
+	if (ret != NewIfc_error_none) {
+		free(newl);
+		return ret;
+	}
+	newl->text = strdup("");
+	if (newl->text == NULL) {
+		free(newl);
 		return NewIfc_error_allocation_failure;
 	}
-	NI_copy_globals(&((*newl)->api), parent);
-	(*newl)->api.get = &label_get;
-	(*newl)->api.set = &label_set;
-	(*newl)->api.copy = &label_copy;
-	(*newl)->api.do_render = &label_do_render;
-	(*newl)->api.destroy = &label_destroy;
-	(*newl)->api.child_ypos = 0;
-	(*newl)->api.child_xpos = 0;
-	(*newl)->api.child_width = 0;
-	(*newl)->api.child_height = 0;
-	(*newl)->api.parent = parent;
-	(*newl)->api.width = parent->child_width;
-	(*newl)->api.height = parent->child_height;
-	(*newl)->api.min_width = 0;
-	(*newl)->api.min_height = 1;
-	(*newl)->api.left_pad = 0;
-	(*newl)->api.right_pad = 0;
-	(*newl)->api.top_pad = 0;
-	(*newl)->api.bottom_pad = 0;
+	newl->api.get = &label_get;
+	newl->api.set = &label_set;
+	newl->api.copy = &label_copy;
+	newl->api.do_render = &label_do_render;
+	newl->api.destroy = &label_destroy;
+	ret = NI_set_min_height(newl, 1);
+	if (ret != NewIfc_error_none) {
+		free(newl->text);
+		free(newl);
+		return ret;
+	}
+	*newobj = (NewIfcObj)newl;
 	return NewIfc_error_none;
 }
 

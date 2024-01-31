@@ -179,20 +179,18 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 	if (ret != NewIfc_error_none)
 		return ret;
 
-	// Fill background
+	// On entry, ctx contains the render rectangle for this object,
+	// so xpos and ypos are "included" in the values... which means
+	// this should render the entire rectangle (at least until we
+	// have clipping boxes)
+
+	// Fill background of child area
 	if (obj->fill_colour != NI_TRANSPARENT || obj->fill_character_colour != NI_TRANSPARENT) {
 		size_t c;
 		for (size_t y = 0; y < obj->child_height; y++) {
 			c = (y + ctx->ypos + obj->child_ypos) * ctx->dwidth;
 			for (size_t x = 0; x < obj->child_width; x++) {
-				if (obj->fill_colour != NI_TRANSPARENT)
-					ctx->vmem[c].bg = obj->fill_colour;
-				if (obj->fill_character_colour != NI_TRANSPARENT) {
-					ctx->vmem[c].fg = obj->fill_character_colour;
-					ctx->vmem[c].ch = obj->fill_character;
-					if (ciolib_checkfont(obj->fill_font))
-						ctx->vmem[c].font = obj->fill_font;
-				}
+				set_vmem_cell(&ctx->vmem[c], obj->fill_character_colour, obj->fill_colour, obj->fill_character, obj->fill_font);
 				c++;
 			}
 		}
@@ -204,14 +202,7 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 			if ((y < obj->top_pad) || (y >= (obj->height - obj->bottom_pad))) {
 				c = (y + ctx->ypos + obj->ypos) * ctx->dwidth;
 				for (size_t x = 0; x < obj->width; x++) {
-					if (obj->bg_colour != NI_TRANSPARENT)
-						ctx->vmem[c].bg = obj->bg_colour;
-					if (obj->fg_colour != NI_TRANSPARENT) {
-						ctx->vmem[c].fg = obj->fg_colour;
-						ctx->vmem[c].ch = ' ';
-						if (ciolib_checkfont(obj->font))
-							ctx->vmem[c].font = obj->font;
-					}
+					set_vmem_cell(&ctx->vmem[c], obj->fg_colour, obj->bg_colour, ' ', obj->font);
 					c++;
 				}
 			}
@@ -219,14 +210,7 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 				if (obj->left_pad) {
 					c = (y + ctx->ypos + obj->ypos) * ctx->dwidth;
 					for (size_t x = 0; x < obj->left_pad; x++) {
-						if (obj->bg_colour != NI_TRANSPARENT)
-							ctx->vmem[c].bg = obj->bg_colour;
-						if (obj->fg_colour != NI_TRANSPARENT) {
-							ctx->vmem[c].fg = obj->fg_colour;
-							ctx->vmem[c].ch = ' ';
-							if (ciolib_checkfont(obj->font))
-								ctx->vmem[c].font = obj->font;
-						}
+						set_vmem_cell(&ctx->vmem[c], obj->fg_colour, obj->bg_colour, ' ', obj->font);
 						c++;
 					}
 				}
@@ -235,48 +219,54 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 					c += obj->width;
 					c -= obj->right_pad;
 					for (size_t x = 0; x < obj->right_pad; x++) {
-						if (obj->bg_colour != NI_TRANSPARENT)
-							ctx->vmem[c].bg = obj->bg_colour;
-						if (obj->fg_colour != NI_TRANSPARENT) {
-							ctx->vmem[c].fg = obj->fg_colour;
-							ctx->vmem[c].ch = ' ';
-							if (ciolib_checkfont(obj->font))
-								ctx->vmem[c].font = obj->font;
-						}
+						set_vmem_cell(&ctx->vmem[c], obj->fg_colour, obj->bg_colour, ' ', obj->font);
 						c++;
 					}
 				}
 			}
 		}
 	}
+
 	owidth = ctx->width;
 	oheight = ctx->height;
 	oxpos = ctx->xpos;
 	oypos = ctx->ypos;
+
+	// Calculate this objects internal render rectangle (inside of padding)
 	ctx->width = obj->width - (obj->left_pad + obj->right_pad);
 	ctx->height = obj->height - (obj->top_pad + obj->bottom_pad);
 	ctx->xpos += obj->left_pad;
 	ctx->ypos += obj->top_pad;
+	// And render it
 	if (obj->root != obj)
 		obj->do_render(obj, ctx);
 
-	ctx->width = obj->child_width;
-	ctx->height = obj->child_height;
-	assert(ctx->xpos >= obj->xpos);
-	ctx->xpos -= obj->xpos;
-	assert(ctx->ypos >= obj->ypos);
-	ctx->ypos -= obj->ypos;
-
-	// Recurse children
+	// Next, we recurse to the children of this object, so update
+	// ctx to the child area
 	if (obj->bottom_child) {
+		ctx->width = obj->child_width;
+		ctx->height = obj->child_height;
+		ctx->xpos += obj->child_xpos;
+		ctx->xpos += obj->bottom_child->xpos;
+		ctx->ypos += obj->child_ypos;
+		ctx->ypos += obj->bottom_child->ypos;
+
+		// Recurse children
 		ret = rw_do_render_recurse(obj->bottom_child, ctx);
 		if (ret != NewIfc_error_none)
 			return ret;
 	}
+
+	// Now, restore 
 	ctx->width = owidth;
 	ctx->height = oheight;
 	ctx->xpos = oxpos;
 	ctx->ypos = oypos;
+	// And "uncorrect" for our x/ypos
+	assert(obj->xpos <= ctx->xpos);
+	ctx->xpos -= obj->xpos;
+	assert(obj->ypos <= ctx->ypos);
+	ctx->ypos -= obj->ypos;
 	// Recurse peers
 	if (obj->higher_peer) {
 		ret = rw_do_render_recurse(obj->higher_peer, ctx);
@@ -324,28 +314,32 @@ static NI_err
 NewIFC_root_window(NewIfcObj parent, NewIfcObj *newobj)
 {
 	struct root_window **newrw = (struct root_window **)newobj;
+	NI_err ret;
 
 	if (parent != NULL || newobj == NULL)
 		return NewIfc_error_invalid_arg;
 	*newrw = calloc(1, sizeof(struct root_window));
-
 	if (*newrw == NULL)
 		return NewIfc_error_allocation_failure;
+	ret = NI_setup_globals(*newobj, parent);
+	if (ret != NewIfc_error_none) {
+		free(*newrw);
+		return ret;
+	}
+	struct text_info ti;
+	ciolib_gettextinfo(&ti);
+	int cf = ciolib_getfont(0);
+	if (cf < 0)
+		cf = 0;
 	(*newrw)->api.get = rw_get;
 	(*newrw)->api.set = rw_set;
 	(*newrw)->api.copy = rw_copy;
-	(*newrw)->api.destroy = rw_destroy;
-	// TODO: This is only needed by the unit tests...
-	(*newrw)->api.root = *newobj;
-	(*newrw)->api.focus = true;
 	(*newrw)->api.do_render = &rw_do_render;
-	(*newrw)->api.fg_colour = NI_LIGHTGRAY;
-	(*newrw)->api.bg_colour = NI_BLACK;
-	(*newrw)->api.font = 0;
-	(*newrw)->mtx = pthread_mutex_initializer_np(true);
-
-	struct text_info ti;
-	ciolib_gettextinfo(&ti);
+	(*newrw)->api.destroy = rw_destroy;
+	(*newrw)->api.focus = true;
+	(*newrw)->api.fg_colour = ciolib_fg;
+	(*newrw)->api.bg_colour = ciolib_bg;
+	(*newrw)->api.font = cf;
 	(*newrw)->api.width = ti.screenwidth;
 	(*newrw)->api.height = ti.screenheight;
 	(*newrw)->api.child_width = ti.screenwidth;
@@ -353,14 +347,15 @@ NewIFC_root_window(NewIfcObj parent, NewIfcObj *newobj)
 	(*newrw)->api.fill_character = ' ';
 	(*newrw)->api.fill_colour = ciolib_bg;
 	(*newrw)->api.fill_character_colour = ciolib_fg;
-	int cf = ciolib_getfont(0);
-	if (cf < 0)
-		cf = 0;
 	(*newrw)->api.fill_font = cf;
+
+	(*newrw)->mtx = pthread_mutex_initializer_np(true);
+
 	size_t cells = ti.screenwidth;
 	cells *= ti.screenheight;
 	(*newrw)->display = malloc(sizeof(struct vmem_cell) * cells);
 	if ((*newrw)->display == NULL) {
+		pthread_mutex_destroy(&(*newrw)->mtx);
 		free(*newrw);
 		*newrw = NULL;
 		return NewIfc_error_allocation_failure;
@@ -389,8 +384,8 @@ void test_root_window(CuTest *ct)
 	CuAssertTrue(ct, obj->focus == true);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked, &b) == NewIfc_error_none && !b);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) == NewIfc_error_none && !b);
-	CuAssertTrue(ct, obj->fg_colour == NI_LIGHTGRAY);
-	CuAssertTrue(ct, obj->bg_colour == NI_BLACK);
+	CuAssertTrue(ct, obj->fg_colour == 7);
+	CuAssertTrue(ct, obj->bg_colour == 0);
 	CuAssertTrue(ct, obj->font == 0);
 
 	CuAssertTrue(ct, obj->set(obj, NewIfc_locked, false) == NewIfc_error_lock_failed);

@@ -382,6 +382,7 @@ typedef struct {
 	void	(*setwinsize)	(int width, int height);
 	void	(*setwinposition)	(int x, int y);
 	void	(*setscaling_type)	(enum ciolib_scaling);
+	uint8_t (*rgb_to_legacyattr)	(uint32_t fg, uint32_t bg);
 	enum ciolib_scaling (*getscaling_type)	(void);
 } cioapi_t;
 
@@ -491,6 +492,7 @@ CIOLIBEXPORT void ciolib_setwinposition(int x, int y);
 CIOLIBEXPORT enum ciolib_codepage ciolib_getcodepage(void);
 CIOLIBEXPORT void ciolib_setscaling_type(enum ciolib_scaling);
 CIOLIBEXPORT enum ciolib_scaling ciolib_getscaling_type(void);
+CIOLIBEXPORT uint8_t ciolib_rgb_to_legacyattr(uint32_t fg, uint32_t bg);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
@@ -579,6 +581,7 @@ CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
 	#define getcodepage()			ciolib_getcodepage()
 	#define setscaling_type(a)		ciolib_setscaling_type(a)
 	#define getscaling_type()		ciolib_getscaling_type()
+	#define rgb_to_legacyattr(fg, bg)	ciolib_rgb_to_legacyattr(fg,bg)
 #endif
 
 #ifdef WITH_SDL

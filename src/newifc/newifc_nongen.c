@@ -119,10 +119,11 @@ NI_install_handler(NewIfcObj obj, struct NewIfc_handler *handler)
 	// TODO: this is pretty inefficient, a bsearch() for insert point
 	// would be best, but even a linear search for it would likely be
 	// better.
-	size_t new_sz = obj->handlers_sz;
+	size_t new_sz = obj->handlers_sz + 1;
 	struct NewIfc_handler ***na = realloc(obj->handlers, new_sz * sizeof(obj->handlers[0]));
 	if (na == NULL)
 		return NewIfc_error_allocation_failure;
+	obj->handlers = na;
 	obj->handlers[obj->handlers_sz] = handler;
 	obj->handlers_sz = new_sz;
 	qsort(obj->handlers, obj->handlers_sz, sizeof(obj->handlers[0]), handler_qsort_compar);
@@ -341,4 +342,71 @@ NI_destroy(NewIfcObj obj)
 	}
 	NI_err ret = NI_destroy_recurse(obj, true);
 	return ret;
+}
+
+// Lowering a min width/height is always fine.
+// Raising a min width/height MAY NOT BE fine.
+static NI_err
+NI_check_new_min_width(NewIfcObj obj, uint16_t new_width, void *cbdata)
+{
+	uint16_t old_width;
+	NI_err ret;
+
+	ret = NI_get_min_width(obj, &old_width);
+	if (ret != NewIfc_error_none)
+		return ret;
+	// Lowering min width is always fine.
+	if (new_width <= old_width)
+		return NewIfc_error_none;
+	if (obj->parent != NULL) {
+		// If it fits in the parent, it's fine
+		if (obj->parent->child_width >= new_width)
+			return NewIfc_error_none;
+	}
+	// Now, we know it doesn't fit where it is without adjusting
+	// *something* we need a way to know if layout would succeed
+	// with this new value... very tricky.
+	return NewIfc_error_wont_fit;
+}
+
+static NI_err
+NI_setup_globals(NewIfcObj obj, NewIfcObj parent)
+{
+	NI_err ret;
+
+	if (parent) {
+		ret = NI_copy_globals(obj, parent);
+		if (ret != NewIfc_error_none)
+			return ret;
+		obj->parent = parent;
+		obj->root = parent->root;
+		obj->lower_peer = parent->top_child;
+		parent->top_child = obj;
+		if (parent->bottom_child == NULL)
+			parent->bottom_child = obj;
+		obj->width = parent->child_width;
+		obj->height = parent->child_height;
+		ret = NI_add_min_width_handler(obj, NI_check_new_min_width, NULL);
+	}
+	else
+		obj->root = obj;
+
+	return NewIfc_error_none;
+}
+
+static void
+set_vmem_cell(struct vmem_cell *cell, uint32_t fg, uint32_t bg, uint8_t ch, uint8_t font)
+{
+	if (bg != NI_TRANSPARENT)
+		cell->bg = bg;
+	if (fg != NI_TRANSPARENT) {
+		cell->fg = fg;
+		cell->ch = ch;
+		if (ciolib_checkfont(font))
+			cell->font = font;
+	}
+	uint8_t la = ciolib_rgb_to_legacyattr(cell->fg, cell->bg);
+	// Preserve blink
+	la |= (cell->legacy_attr & 0x80);
+	cell->legacy_attr = la;
 }

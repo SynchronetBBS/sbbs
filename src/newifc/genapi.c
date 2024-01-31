@@ -25,7 +25,6 @@ enum attribute_types {
 	NI_attr_type_uint16_t,
 	NI_attr_type_uint8_t,
 	NI_attr_type_uint32_t,
-	NI_attr_type_NI_err,
 	NI_attr_type_bool,
 	NI_attr_type_charptr,
 	NI_attr_type_NewIfc_object,
@@ -42,7 +41,6 @@ struct type_str_values type_str[] = {
 	{"uint16_t", "uint16"},
 	{"uint8_t", "uint8"},
 	{"uint32_t", "uint32"},
-	{"NI_err", "NI_err"},
 	{"bool", "bool"},
 	{"char *", "char_ptr"},
 	{"enum NewIfc_object", "obj_enum"},
@@ -203,32 +201,30 @@ attribute_functions(size_t i, FILE *c_code, const char *alias)
 					"}\n\n", alias, type_str[attributes[i].type].type, attributes[i].name);
 			break;
 		case attr_impl_global:
-			if (!attributes[i].read_only) {
-				fprintf(c_code, "NI_err\n"
-						"NI_set_%s(NewIfcObj obj, const %s value) {\n"
-						"	NI_err ret;\n"
-						"	if (obj == NULL)\n"
-						"		return NewIfc_error_invalid_arg;\n"
-						"	if (NI_set_locked(obj, true) == NewIfc_error_none) {\n", alias, type_str[attributes[i].type].type);
-				if (!attributes[i].no_event) {
-					fprintf(c_code, "		ret = call_%s_change_handlers(obj, NewIfc_%s, value);\n"
-							"		if (ret != NewIfc_error_none) {\n"
-							"			NI_set_locked(obj, false);\n"
-							"			return ret;\n"
-							"		}\n", type_str[attributes[i].type].var_name, attributes[i].name);
-				}
-				fprintf(c_code, "		ret = obj->set(obj, NewIfc_%s, value);\n"
-						"		if (ret == NewIfc_error_not_implemented) {\n"
-						"			obj->%s = value;\n"
-						"			ret = NewIfc_error_none;\n"
-						"		}\n"
-						"		NI_set_locked(obj, false);\n"
-						"	}\n"
-						"	else\n"
-						"		ret = NewIfc_error_lock_failed;\n"
-						"	return ret;\n"
-						"}\n\n", attributes[i].name, attributes[i].name);
+			fprintf(c_code, "%s NI_err\n"
+					"NI_set_%s(NewIfcObj obj, const %s value) {\n"
+					"	NI_err ret;\n"
+					"	if (obj == NULL)\n"
+					"		return NewIfc_error_invalid_arg;\n"
+					"	if (NI_set_locked(obj, true) == NewIfc_error_none) {\n", attributes[i].read_only ? "static " : "", alias, type_str[attributes[i].type].type);
+			if (!attributes[i].no_event) {
+				fprintf(c_code, "		ret = call_%s_change_handlers(obj, NewIfc_%s, value);\n"
+						"		if (ret != NewIfc_error_none) {\n"
+						"			NI_set_locked(obj, false);\n"
+						"			return ret;\n"
+						"		}\n", type_str[attributes[i].type].var_name, attributes[i].name);
 			}
+			fprintf(c_code, "		ret = obj->set(obj, NewIfc_%s, value);\n"
+					"		if (ret == NewIfc_error_not_implemented) {\n"
+					"			obj->%s = value;\n"
+					"			ret = NewIfc_error_none;\n"
+					"		}\n"
+					"		NI_set_locked(obj, false);\n"
+					"	}\n"
+					"	else\n"
+					"		ret = NewIfc_error_lock_failed;\n"
+					"	return ret;\n"
+					"}\n\n", attributes[i].name, attributes[i].name);
 
 			// Fall-through
 		case attr_impl_global_custom_setter:
@@ -510,6 +506,16 @@ main(int argc, char **argv)
 	}
 	fputs("};\n\n", internal_header);
 
+	nitems = sizeof(attributes) / sizeof(attributes[0]);
+	for (i = 0; i < nitems; i++) {
+		if (attributes[i].read_only && attributes[i].impl == attr_impl_global) {
+			fprintf(header, "static NI_err NI_set_%s(NewIfcObj obj, const %s value);\n", attributes[i].name, type_str[attributes[i].type].type);
+		}
+	}
+
+	fputs("static NI_err NI_copy_globals(NewIfcObj dst, NewIfcObj src);\n", internal_header);
+
+	fputs("\n", internal_header);
 	fputs("#endif\n", internal_header);
 	fclose(internal_header);
 
@@ -564,26 +570,6 @@ main(int argc, char **argv)
 		                "			break;\n", objtypes[i].name);
 	}
 	fputs("	}\n"
-	      "	if (ret == NewIfc_error_none) {\n"
-	      "		(*newobj)->parent = parent;\n"
-	      "		(*newobj)->higher_peer = NULL;\n"
-	      "		(*newobj)->top_child = NULL;\n"
-	      "		(*newobj)->bottom_child = NULL;\n"
-	      "		(*newobj)->handlers = NULL;\n"
-	      "		(*newobj)->handlers_sz = 0;\n"
-	      "		if (parent) {\n"
-	      "			(*newobj)->root = parent->root;\n"
-	      "			(*newobj)->lower_peer = parent->top_child;\n"
-	      "			parent->top_child = *newobj;\n"
-	      "			if (parent->bottom_child == NULL) {\n"
-	      "				parent->bottom_child = *newobj;\n"
-	      "			}\n"
-	      "		}\n"
-	      "		else {\n"
-	      "			(*newobj)->root = *newobj;\n"
-	      "			(*newobj)->lower_peer = NULL;\n"
-	      "		}\n"
-	      "	}\n"
 	      "	return ret;\n"
 	      "}\n\n", c_code);
 
@@ -604,7 +590,7 @@ main(int argc, char **argv)
 
 	nitems = sizeof(type_str) / sizeof(type_str[0]);
 	for (i = 0; i < nitems; i++) {
-		fprintf(c_code, "NI_err\n"
+		fprintf(c_code, "static NI_err\n"
 		                "call_%s_change_handlers(NewIfcObj obj, enum NewIfc_attribute type, const %s newval)\n"
 		                "{\n"
 		                "	if (obj->handlers == NULL)\n"
