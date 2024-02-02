@@ -960,7 +960,7 @@ bool sbbs_t::trashcan(const char *insearchof, const char *name, struct trash* tr
 	char str[MAX_PATH+1];
 	bool result;
 
-	result=::trashcan2(&cfg, insearchof, name, NULL, trash);
+	result=::trashcan2(&cfg, insearchof, NULL, name, trash);
 	if(result) {
 		sprintf(str,"%sbad%s.msg",cfg.text_dir,name);
 		if(fexistcase(str)) {
