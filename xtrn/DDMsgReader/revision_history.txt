@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.95a    2024-01-23   Bug fix: Aborting when the sub-board isn't available when
+                      editing a personal email message
 1.95     2024-01-20   Removed user option to display indexed mode menu in
                       newscan after all new messages are read.
                       Command-line option -indexedMode can now be specified with
