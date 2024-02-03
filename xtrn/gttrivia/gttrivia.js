@@ -59,29 +59,19 @@ if (system.version_num < 31500)
 var GAME_VERSION = "1.03";
 var GAME_VER_DATE = "2023-01-14";
 
-// Determine the location of this script (its startup directory).
-// The code for figuring this out is a trick that was created by Deuce,
-// suggested by Rob Swindell.  I've shortened the code a little.
-var gStartupPath = '.';
-var gThisScriptFilename = "";
-try { throw dig.dist(dist); } catch(e) {
-	gStartupPath = backslash(e.fileName.replace(/[\/\\][^\/\\]*$/,''));
-	gThisScriptFilename = file_getname(e.fileName);
-}
-
 // Load required .js libraries
 var requireFnExists = (typeof(require) === "function");
 if (requireFnExists)
 {
 	require("sbbsdefs.js", "P_NONE");
 	require("json-client.js", "JSONClient");
-	require(gStartupPath + "lib.js", "getJSONSvcPortFromServicesIni");
+	require(js.exec_dir + "lib.js", "getJSONSvcPortFromServicesIni");
 }
 else
 {
 	load("sbbsdefs.js");
 	load("json-client.js");
-	load(gStartupPath + "lib.js");
+	load(js.exec_dir + "lib.js");
 }
 
 
@@ -134,10 +124,10 @@ var LOWER_CENTER_BLOCK = "\xDC";
 // Maximum Levenshtein distance (inclusive) to consisder an answer matching (when appropriate)
 var MAX_LEVENSHTEIN_DISTANCE = 2;
 // Scores filename
-var SCORES_FILENAME = gStartupPath + "scores.json";
+var SCORES_FILENAME = js.exec_dir + "scores.json";
 // Semaphore filename to use when saving the user's score to try to prevent multiple instances
 // from overwriting the score on each other
-var SCORES_SEMAPHORE_FILENAME = gStartupPath + "SCORES_SEMAPHORE.tmp";
+var SCORES_SEMAPHORE_FILENAME = js.exec_dir + "SCORES_SEMAPHORE.tmp";
 // Main menu actions
 var ACTION_PLAY = 0;
 var ACTION_SHOW_HELP_SCREEN = 1;
@@ -158,7 +148,7 @@ var JSON_DB_LOCK_UNLOCK = -1;
 
 
 // Load the settings from the .ini file
-var gSettings = loadSettings(gStartupPath);
+var gSettings = loadSettings();
 
 // Parse command-line arguments
 var gCmdLineArgs = parseCmdLineArgs(argv);
@@ -518,11 +508,8 @@ function playTrivia()
 
 // Loads settings from the .ini file
 //
-// Parameters:
-//  gStartupPath: The path to the directory where the .ini file is located
-//
 // Return value: An object with 'behavior' and 'color' sections with the settings loaded from the .ini file
-function loadSettings(pStartupPath)
+function loadSettings()
 {
 	var settings = {
 		colors: {
@@ -548,7 +535,7 @@ function loadSettings(pStartupPath)
 			answerFact: "G"
 		}
 	};
-	var cfgFileName = genFullPathCfgFilename("gttrivia.ini", pStartupPath);
+	var cfgFileName = genFullPathCfgFilename("gttrivia.ini", js.exec_dir);
 	var iniFile = new File(cfgFileName);
 	if (iniFile.open("r"))
 	{
@@ -647,7 +634,9 @@ function genFullPathCfgFilename(pFilename, pDefaultPath)
 		if (typeof(pDefaultPath) == "string")
 		{
 			// Make sure the default path has a trailing path separator
-			var defaultPath = backslash(pDefaultPath);
+			var defaultPath = pDefaultPath;
+			if (defaultPath.length > 0 && defaultPath.charAt(defaultPath.length-1) != "/" && defaultPath.charAt(defaultPath.length-1) != "\\")
+				defaultPath += "/";
 			fullyPathedFilename = defaultPath + pFilename;
 		}
 		else
@@ -699,7 +688,7 @@ function displayProgramLogo(pClearScreenFirst, pPauseAfter)
 	if (typeof(pClearScreenFirst) === "boolean" && pClearScreenFirst)
 		console.clear("\x01n");
 
-	console.printfile(gStartupPath + "gttrivia.asc", P_NONE, 80);
+	console.printfile(js.exec_dir + "gttrivia.asc", P_NONE, 80);
 
 	if (typeof(pPauseAfter) === "boolean" && pPauseAfter)
 		console.pause();
@@ -761,7 +750,7 @@ function doMainMenu()
 function getQACategoriesAndFilenames()
 {
 	var sectionsAndFilenames = [];
-	var QAFilenames = directory(gStartupPath + "qa/*.qa");
+	var QAFilenames = directory(js.exec_dir + "qa/*.qa");
 	for (var i = 0; i < QAFilenames.length; ++i)
 	{
 		// Get the section name - Start by removing the .qa filename extension
@@ -853,6 +842,8 @@ function getQACategoriesAndFilenames()
 	return sectionsAndFilenames;
 }
 
+// TODO: Put the next 3 functions into a common JS library for use with this and
+// qa_edit.js?
 // Parses a Q&A file with questions and answers
 //
 // Parameters:
@@ -1840,7 +1831,7 @@ function doSysopMenu()
 		console.print("\x01c1\x01y\x01h) \x01bClear high scores\x01n");
 		console.print("     \x01cQ\x01y\x01h)\x01buit\x01n");
 		// If there is an inter-BBS scores JSON file, then add some options to manage that
-		if (file_exists(backslash(gStartupPath + "server") + "gttrivia.json"))
+		if (file_exists(js.exec_dir + "server/" + "gttrivia.json"))
 		{
 			validKeys += "23";
 			console.crlf();

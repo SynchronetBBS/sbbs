@@ -1386,7 +1386,7 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 	{
 		var batchDLQueueStats = getUserDLQueueStats();
 		var filenamesFailed = []; // To store filenames that failed to get added to the queue
-		var batchDLFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".dnload";
+		var batchDLFilename = system.data_dir + "user/" + format("%04d", user.number) + ".dnload";
 		var batchDLFile = new File(batchDLFilename);
 		if (batchDLFile.open(batchDLFile.exists ? "r+" : "w+"))
 		{
@@ -1613,7 +1613,7 @@ function getUserDLQueueStats()
 		filenames: []
 	};
 
-	var batchDLFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".dnload";
+	var batchDLFilename = system.data_dir + "user/" + format("%04d", user.number) + ".dnload";
 	var batchDLFile = new File(batchDLFilename);
 	if (batchDLFile.open(batchDLFile.exists ? "r+" : "w+"))
 	{
@@ -1673,7 +1673,7 @@ function letUserDownloadSelectedFile(pFileMetadata)
 	{
 		console.print("\x01cDownloading \x01h" + pFileMetadata.name + "\x01n");
 		console.crlf();
-		var selectedFilanmeFullPath = backslash(file_area.dir[pFileMetadata.dirCode].path) + pFileMetadata.name;
+		var selectedFilanmeFullPath = file_area.dir[pFileMetadata.dirCode].path + pFileMetadata.name;
 		bbs.send_file(selectedFilanmeFullPath);
 	}
 
@@ -3736,14 +3736,6 @@ function readConfigFile()
 {
 	var themeFilename = ""; // In case a theme filename is specified
 
-	// Determine the script's startup directory.
-	// This code is a trick that was created by Deuce, suggested by Rob Swindell
-	// as a way to detect which directory the script was executed in.  I've
-	// shortened the code a little.
-	var startupPath = '.';
-	try { throw dig.dist(dist); } catch(e) { startupPath = e.fileName; }
-	startupPath = backslash(startupPath.replace(/[\/\\][^\/\\]*$/,''));
-
 	// Open the main configuration file.  First look for it in the sbbs/mods
 	// directory, then sbbs/ctrl, then in the same directory as this script.
 	var cfgFilename = "ddfilelister.cfg";
@@ -3751,7 +3743,7 @@ function readConfigFile()
 	if (!file_exists(cfgFilenameFullPath))
 		cfgFilenameFullPath = file_cfgname(system.ctrl_dir, cfgFilename);
 	if (!file_exists(cfgFilenameFullPath))
-		cfgFilenameFullPath = file_cfgname(startupPath, cfgFilename);
+		cfgFilenameFullPath = file_cfgname(js.exec_dir, cfgFilename);
 	var cfgFile = new File(cfgFilenameFullPath);
 	if (cfgFile.open("r"))
 	{
@@ -3819,7 +3811,7 @@ function readConfigFile()
 					if (!file_exists(themeFilename))
 						themeFilename = system.ctrl_dir + settingsObj[prop];
 					if (!file_exists(themeFilename))
-						themeFilename = startupPath + settingsObj[prop];
+						themeFilename = js.exec_dir + settingsObj[prop];
 				}
 			}
 		}

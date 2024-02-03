@@ -54,13 +54,6 @@
  2 (argv[1]): Editor mode ("DCT", "ICE", or "RANDOM")
 */
 
-// Determine the location of this script (its startup directory).
-// The code for figuring this out is a trick that was created by Deuce,
-// suggested by Rob Swindell.  I've shortened the code a little.
-var gStartupPath = '.';
-try { throw dig.dist(dist); } catch(e) { gStartupPath = e.fileName; }
-gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
-
 // EDITOR_STYLE: Can be changed to mimic the look of DCT Edit or IceEdit.
 // The following are supported:
 //  "DCT": DCT Edit style
@@ -87,14 +80,14 @@ if (requireFnExists)
 	require("sbbsdefs.js", "K_NOCRLF");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
 	require("attr_conv.js", "syncAttrCodesToANSI");
-	require(gStartupPath + "SlyEdit_Misc.js", "gUserSettingsFilename");
+	require(js.exec_dir + "SlyEdit_Misc.js", "gUserSettingsFilename");
 }
 else
 {
 	load("sbbsdefs.js");
 	load("dd_lightbar_menu.js");
 	load("attr_conv.js");
-	load(gStartupPath + "SlyEdit_Misc.js");
+	load(js.exec_dir + "SlyEdit_Misc.js");
 }
 
 // Load program settings from SlyEdit.cfg, and load the user configuratio nsettings
@@ -314,9 +307,9 @@ var gSubjScreenLen = 0;
 if (EDITOR_STYLE == "DCT")
 {
 	if (requireFnExists)
-		require(gStartupPath + "SlyEdit_DCTStuff.js", "DrawQuoteWindowTopBorder_DCTStyle");
+		require(js.exec_dir + "SlyEdit_DCTStuff.js", "DrawQuoteWindowTopBorder_DCTStyle");
 	else
-		load(gStartupPath + "SlyEdit_DCTStuff.js");
+		load(js.exec_dir + "SlyEdit_DCTStuff.js");
 	gEditTop = 6;
 	gQuoteWinTextColor = gConfigSettings.DCTColors.QuoteWinText;
 	gQuoteLineHighlightColor = gConfigSettings.DCTColors.QuoteLineHighlightColor;
@@ -341,9 +334,9 @@ if (EDITOR_STYLE == "DCT")
 else if (EDITOR_STYLE == "ICE")
 {
 	if (requireFnExists)
-		require(gStartupPath + "SlyEdit_IceStuff.js", "DrawQuoteWindowTopBorder_IceStyle");
+		require(js.exec_dir + "SlyEdit_IceStuff.js", "DrawQuoteWindowTopBorder_IceStyle");
 	else
-		load(gStartupPath + "SlyEdit_IceStuff.js");
+		load(js.exec_dir + "SlyEdit_IceStuff.js");
 	gEditTop = 5;
 	gQuoteWinTextColor = gConfigSettings.iceColors.QuoteWinText;
 	gQuoteLineHighlightColor = gConfigSettings.iceColors.QuoteLineHighlightColor;
@@ -5708,7 +5701,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 
 	// Load the dictionary filenames - If there are more than 1, then we'll add
 	// an option for the user to choose a dictionary.
-	var dictionaryFilenames = getDictionaryFilenames(gStartupPath);
+	var dictionaryFilenames = getDictionaryFilenames(js.exec_dir);
 
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";

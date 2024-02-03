@@ -21,12 +21,12 @@
 if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_NOCRLF");
-	require(getScriptDir() + "SlyEdit_Misc.js", "UPPER_LEFT_SINGLE");
+	require(js.exec_dir + "SlyEdit_Misc.js", "UPPER_LEFT_SINGLE");
 }
 else
 {
 	load("sbbsdefs.js");
-	load(getScriptDir() + "SlyEdit_Misc.js");
+	load(js.exec_dir + "SlyEdit_Misc.js");
 }
 
 // Read the color configuration file
@@ -957,15 +957,4 @@ function displayIceYesNoText(pYesSelected)
                        "\x01n");
       }
    }
-}
-
-// Returns the the script's execution directory.
-// The code in this function is a trick that was created by Deuce, suggested
-// by Rob Swindell as a way to detect which directory the script was executed
-// in.  I've shortened the code a little.
-function getScriptDir()
-{
-   var startup_path = '.';
-   try { throw dig.dist(dist); } catch(e) { startup_path = e.fileName; }
-   return(backslash(startup_path.replace(/[\/\\][^\/\\]*$/,'')));
 }
