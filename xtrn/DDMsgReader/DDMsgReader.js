@@ -143,6 +143,8 @@
  *                              Ctrl-S in the indexed mode menu re-scans sub-boards (to detect more new messages, etc.)
  *                              New DDMsgReader.cfg option for user config default:
  *                              indexedModeMenuSnapToNextWithNewAftarMarkAllRead
+ * 2024-01-23 Eric Oulashin     Version 1.95a
+ *                              Bug fix: Abort when sub-board code isn't available when editing personal email
  */
 
 "use strict";
@@ -248,8 +250,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.95";
-var READER_DATE = "2024-01-20";
+var READER_VERSION = "1.95a";
+var READER_DATE = "2024-01-23";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -440,14 +442,6 @@ var gANSIRegexes = [ new RegExp(ascii(27) + "\[[0-9]+[mM]", "gi"),
                      new RegExp(ascii(27) + "\[[sSuUkK]", "gi"),
                      new RegExp(ascii(27) + "\[2[jJ]", "gi") ];
 
-// Determine the script's startup directory.
-// This code is a trick that was created by Deuce, suggested by Rob Swindell
-// as a way to detect which directory the script was executed in.  I've
-// shortened the code a little.
-var gStartupPath = '.';
-try { throw dig.dist(dist); } catch(e) { gStartupPath = e.fileName; }
-gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
-
 // See if we're running in Windows or not.  Until early 2015, the word_wrap()
 // function seemed to have a bug where the wrapping length in Linux was one
 // less than what it uses in Windows).  That seemed to be fixed in one of the
@@ -456,7 +450,7 @@ var gRunningInWindows = /^WIN/.test(system.platform.toUpperCase());
 
 // Temporary directory (in the logged-in user's node directory) to store
 // file attachments, etc.
-var gFileAttachDir = backslash(system.node_dir + "DDMsgReader_Attachments");
+var gFileAttachDir = system.node_dir + "DDMsgReader_Attachments/";
 // If the temporary attachments directory exists, then delete it (in case the last
 // user hung up while running this script, etc.)
 if (file_exists(gFileAttachDir))
@@ -464,12 +458,12 @@ if (file_exists(gFileAttachDir))
 
 // See if the avatar support file is available, and load is if so
 var gAvatar = null;
-if (file_exists(backslash(system.exec_dir) + "load/avatar_lib.js"))
+if (file_exists(system.exec_dir + "load/avatar_lib.js"))
 	gAvatar = load({}, "avatar_lib.js");
 
 // User twitlist filename (and settings filename)
-var gUserTwitListFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".DDMsgReader_twitlist";
-var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".DDMsgReader_Settings";
+var gUserTwitListFilename = system.data_dir + "user/" + format("%04d", user.number) + ".DDMsgReader_twitlist";
+var gUserSettingsFilename = system.data_dir + "user/" + format("%04d", user.number) + ".DDMsgReader_Settings";
 
 /////////////////////////////////////////////
 // Script execution code
@@ -729,7 +723,7 @@ if (gDoDDMR)
 
 	// Remove the temporary attachments & ANSI temp directories if they exists
 	deltree(gFileAttachDir);
-	deltree(backslash(system.node_dir + "DDMsgReaderANSIMsgTemp"));
+	deltree(system.node_dir + "DDMsgReaderANSIMsgTemp/");
 
 	// Before this script finishes, make sure the terminal attributes are set back
 	// to normal (in case there are any attributes left on, such as background,
@@ -4755,6 +4749,28 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 	else if (msgVoteInfo.voteScore < -999)
 		msgVoteInfo.voteScore = -999;
 
+	// If the message/header is UTF-8 and the user's terminal isn't, we'll have to convert the information being displayed
+	var fromName = pMsgHeader.from;
+	var toName = pMsgHeader.to;
+	var subject = pMsgHeader.subject;
+	if (pMsgHeader.hasOwnProperty("is_utf8") && pMsgHeader.is_utf8)
+	{
+		var userConsoleSupportsUTF8 = false;
+		if (typeof(USER_UTF8) != "undefined")
+			userConsoleSupportsUTF8 = console.term_supports(USER_UTF8);
+		if (!userConsoleSupportsUTF8)
+		{
+			fromName = utf8_cp437(fromName);
+			toName = utf8_cp437(toName);
+			subject = utf8_cp437(subject);
+		}
+	}
+
+	// If the message was posted anonymously and the logged-in user is
+	// not the sysop, then show "Anonymous" for the 'from' name.
+	if (!user.is_sysop && Boolean(pMsgHeader.attr & MSG_ANONYMOUS))
+		fromName = "Anonymous";
+
 	// Generate the string with the message header information.
 	var msgHdrStr = "";
 	// Note: The message header has the following fields:
@@ -4782,25 +4798,21 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		}
 		else if (msgHdrHasAttachmentFlag(pMsgHeader))
 			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + this.msgListStatusChars.attachments + "\x01n";
-		var fromName = pMsgHeader.from;
-		// If the message was posted anonymously and the logged-in user is
-		// not the sysop, then show "Anonymous" for the 'from' name.
-		if (!user.is_sysop && ((pMsgHeader.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
-			fromName = "Anonymous";
+
 		if (this.showScoresInMsgList)
 		{
 			msgHdrStr += format(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
 			       fromName.substr(0, this.FROM_LEN),
-			       pMsgHeader.to.substr(0, this.TO_LEN),
-			       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
+			       toName.substr(0, this.TO_LEN),
+			       subject.substr(0, this.SUBJ_LEN),
 			       msgVoteInfo.voteScore, sDate, sTime);
 		}
 		else
 		{
 			msgHdrStr += format(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
 			       fromName.substr(0, this.FROM_LEN),
-			       pMsgHeader.to.substr(0, this.TO_LEN),
-			       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
+			       toName.substr(0, this.TO_LEN),
+			       subject.substr(0, this.SUBJ_LEN),
 			       sDate, sTime);
 		}
 	}
@@ -4825,28 +4837,24 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		// Determine whether to use the normal, "to-user", or "from-user" format string.
 		// The differences are the colors.  Then, output the message information line.
 		var msgToUser = userHandleAliasNameMatch(pMsgHeader.to);
-		var fromNameUpper = pMsgHeader.from.toUpperCase();
+		var fromNameUpper = fromName.toUpperCase();
 		var msgIsFromUser = ((fromNameUpper == user.alias.toUpperCase()) || (fromNameUpper == user.name.toUpperCase()) || (fromNameUpper == user.handle.toUpperCase()));
 		var formatStr = ""; // Format string for printing the message information
 		if (this.readingPersonalEmail)
 			formatStr = this.sMsgInfoFormatStr;
 		else
 			formatStr = (msgToUser ? this.sMsgInfoToUserFormatStr : (msgIsFromUser ? this.sMsgInfoFromUserFormatStr : this.sMsgInfoFormatStr));
-		var fromName = pMsgHeader.from;
-		// If the message was posted anonymously and the logged-in user is
-		// not the sysop, then show "Anonymous" for the 'from' name.
-		if (!user.is_sysop && ((pMsgHeader.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
-			fromName = "Anonymous";
+
 		if (this.showScoresInMsgList)
 		{
 			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, fromName.substr(0, this.FROM_LEN),
-			       pMsgHeader.to.substr(0, this.TO_LEN), pMsgHeader.subject.substr(0, this.SUBJ_LEN),
+			       toName.substr(0, this.TO_LEN), subject.substr(0, this.SUBJ_LEN),
 			       msgVoteInfo.voteScore, sDate, sTime);
 		}
 		else
 		{
 			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, fromName.substr(0, this.FROM_LEN),
-			       pMsgHeader.to.substr(0, this.TO_LEN), pMsgHeader.subject.substr(0, this.SUBJ_LEN),
+			       toName.substr(0, this.TO_LEN), subject.substr(0, this.SUBJ_LEN),
 			       sDate, sTime);
 		}
 	}
@@ -9273,7 +9281,7 @@ function DigDistMsgReader_ReadConfigFile()
 	if (!file_exists(cfgFilename))
 		cfgFilename = file_cfgname(system.ctrl_dir, this.cfgFilename);
 	if (!file_exists(cfgFilename))
-		cfgFilename = file_cfgname(gStartupPath, this.cfgFilename);
+		cfgFilename = file_cfgname(js.exec_dir, this.cfgFilename);
 	var cfgFile = new File(cfgFilename);
 	if (cfgFile.open("r"))
 	{
@@ -9342,7 +9350,7 @@ function DigDistMsgReader_ReadConfigFile()
 			if (!file_exists(themeFilename))
 				themeFilename = system.ctrl_dir + settingsObj.themeFilename;
 			if (!file_exists(themeFilename))
-				themeFilename = gStartupPath + settingsObj.themeFilename;
+				themeFilename = js.exec_dir + settingsObj.themeFilename;
 		}
 		if (typeof(settingsObj["saveAllHdrsWhenSavingMsgToBBSPC"]) === "boolean")
 			this.saveAllHdrsWhenSavingMsgToBBSPC = settingsObj.saveAllHdrsWhenSavingMsgToBBSPC;
@@ -9602,9 +9610,15 @@ function DigDistMsgReader_EditExistingMsg(pMsgIndex)
 	{
 		if (!bbs.edit_msg(msgHeader))
 		{
-			var grpIdx = msg_area.sub[this.subBoardCode].grp_index;
-			var areaDesc = msg_area.grp_list[grpIdx].description + " - " + msg_area.sub[this.subBoardCode].description;
-			var logMsg = user.alias + " was unable to edit message number " + msgHeader.number + " in " + areaDesc;
+			var logMsg = user.alias + " was unable to edit message number " + msgHeader.number + " in ";
+			if (!this.readingPersonalEmail)
+			{
+				var grpIdx = msg_area.sub[this.subBoardCode].grp_index;
+				var areaDesc = msg_area.grp_list[grpIdx].description + " - " + msg_area.sub[this.subBoardCode].description;
+				logMsg += areaDesc;
+			}
+			else
+				logMsg += "personal email";
 			log(LOG_ERROR, logMsg);
 			bbs.log_str(logMsg);
 		}
@@ -10399,11 +10413,42 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 	}
 	var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
 	var msgVoteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
+	// Get the fields we need from the header, and if the header is UTF-8 and the user's terminal doesn't support
+	// UTF-8, convert the text
+	var fromName = pMsgHdr.from;
+	var toName = pMsgHdr.to;
+	var fromNetAddr = (typeof(pMsgHdr.from_net_addr) == "string" ? " (" + pMsgHdr.from_net_addr + ")" : "");
+	var from_ext = (typeof pMsgHdr.from_ext === "undefined" ? "" : pMsgHdr.from_ext);
+	var to_ext = (typeof pMsgHdr.to_ext === "undefined" ? "" : pMsgHdr.to_ext);
+	var subject = pMsgHdr.subject;
+	var id = (typeof(pMsgHdr.id) === "string" ? pMsgHdr.id : "");
+	var reply_id = (typeof(pMsgHdr.reply_id) === "string" ? pMsgHdr.reply_id : "");
+	var from_net_addr = (typeof(pMsgHdr.from_net_addr) === "string" ? pMsgHdr.from_net_addr : "");
+	var to_net_addr = (typeof(pMsgHdr.to_net_addr) === "string" ? pMsgHdr.to_net_addr : "");
+	if (pMsgHdr.hasOwnProperty("is_utf8") && pMsgHdr.is_utf8)
+	{
+		var userConsoleSupportsUTF8 = false;
+		if (typeof(USER_UTF8) != "undefined")
+			userConsoleSupportsUTF8 = console.term_supports(USER_UTF8);
+		if (!userConsoleSupportsUTF8)
+		{
+			fromName = utf8_cp437(fromName);
+			toName = utf8_cp437(toName);
+			fromNetAddr = utf8_cp437(fromNetAddr);
+			from_ext = utf8_cp437(from_ext);
+			to_ext = utf8_cp437(to_ext);
+			subject = utf8_cp437(subject);
+			id = utf8_cp437(id);
+			reply_id = utf8_cp437(reply_id);
+			from_net_addr = utf8_cp437(from_net_addr);
+			to_net_addr = utf8_cp437(to_net_addr);
+		}
+	}
 	// This list has some custom @-codes:
-	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, pMsgHdr["subject"])
-	                         .replace(/@MSG_TO@/gi, pMsgHdr["to"])
-	                         .replace(/@MSG_TO_NAME@/gi, pMsgHdr["to"])
-	                         .replace(/@MSG_TO_EXT@/gi, (typeof(pMsgHdr["to_ext"]) == "string" ? pMsgHdr["to_ext"] : ""))
+	var newTxtLine = textLine.replace(/@MSG_SUBJECT@/gi, subject)
+	                         .replace(/@MSG_TO@/gi, toName)
+	                         .replace(/@MSG_TO_NAME@/gi, toName)
+	                         .replace(/@MSG_TO_EXT@/gi, to_ext)
 	                         .replace(/@MSG_DATE@/gi, pDateTimeStr)
 	                         .replace(/@MSG_ATTR@/gi, mainMsgAttrStr)
 	                         .replace(/@MSG_AUXATTR@/gi, auxMsgAttrStr)
@@ -10411,11 +10456,11 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 	                         .replace(/@MSG_ALLATTR@/gi, allMsgAttrStr)
 	                         .replace(/@MSG_NUM_AND_TOTAL@/gi, messageNum.toString() + "/" + this.NumMessages())
 	                         .replace(/@MSG_NUM@/gi, messageNum.toString())
-	                         .replace(/@MSG_ID@/gi, (typeof(pMsgHdr["id"]) == "string" ? pMsgHdr["id"] : ""))
-	                         .replace(/@MSG_REPLY_ID@/gi, (typeof(pMsgHdr["reply_id"]) == "string" ? pMsgHdr["reply_id"] : ""))
-	                         .replace(/@MSG_FROM_NET@/gi, (typeof(pMsgHdr["from_net_addr"]) == "string" ? pMsgHdr["from_net_addr"] : ""))
-	                         .replace(/@MSG_TO_NET@/gi, (typeof(pMsgHdr["to_net_addr"]) == "string" ? pMsgHdr["to_net_addr"] : ""))
-	                         .replace(/@MSG_TIMEZONE@/gi, (useBBSLocalTimeZone ? system.zonestr(system.timezone) : system.zonestr(pMsgHdr["when_written_zone"])))
+	                         .replace(/@MSG_ID@/gi, id)
+	                         .replace(/@MSG_REPLY_ID@/gi, reply_id)
+	                         .replace(/@MSG_FROM_NET@/gi, from_net_addr)
+	                         .replace(/@MSG_TO_NET@/gi, to_net_addr)
+	                         .replace(/@MSG_TIMEZONE@/gi, (useBBSLocalTimeZone ? system.zonestr(system.timezone) : system.zonestr(pMsgHdr.when_written_zone)))
 	                         .replace(/@GRP@/gi, groupName)
 	                         .replace(/@GRPL@/gi, groupDesc)
 	                         .replace(/@SUB@/gi, subName)
@@ -10443,9 +10488,9 @@ function DigDistMsgReader_ParseMsgAtCodes(pTextLine, pMsgHdr, pDisplayMsgNum, pD
 	}
 	else
 	{
-		newTxtLine = newTxtLine.replace(/@MSG_FROM@/gi, pMsgHdr["from"])
-		                       .replace(/@MSG_FROM_AND_FROM_NET@/gi, pMsgHdr["from"] + (typeof(pMsgHdr["from_net_addr"]) == "string" ? " (" + pMsgHdr["from_net_addr"] + ")" : ""))
-		                       .replace(/@MSG_FROM_EXT@/gi, (typeof(pMsgHdr["from_ext"]) == "string" ? pMsgHdr["from_ext"] : ""));
+		newTxtLine = newTxtLine.replace(/@MSG_FROM@/gi, fromName)
+		                       .replace(/@MSG_FROM_AND_FROM_NET@/gi, fromName + (from_net_addr.length > 0 ? " (" + from_net_addr + ")" : ""))
+		                       .replace(/@MSG_FROM_EXT@/gi, from_ext);
 	}
 	if (!pAllowCLS)
 		newTxtLine = newTxtLine.replace(/@CLS@/gi, "");
@@ -10476,6 +10521,28 @@ function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTe
                                   pAtCodeStr, pDateTimeStr, pUseBBSLocalTimeZone, pMsgMainAttrStr, pMsgAuxAttrStr,
 								  pMsgNetAttrStr, pMsgAllAttrStr, pDashJustifyIdx)
 {
+	// Get the fields we need from the header, and if the header is UTF-8 and the user's terminal doesn't support
+	// UTF-8, convert the text
+	var fromName = pMsgHdr.from;
+	var fromNetAddr = (typeof(pMsgHdr.from_net_addr) == "string" ? " (" + pMsgHdr.from_net_addr + ")" : "");
+	var fromExt = (typeof pMsgHdr.from_ext === "undefined" ? "" : pMsgHdr.from_ext);
+	var toExt = (typeof pMsgHdr.to_ext === "undefined" ? "" : pMsgHdr.to_ext);
+	var subject = pMsgHdr.subject;
+	if (pMsgHdr.hasOwnProperty("is_utf8") && pMsgHdr.is_utf8)
+	{
+		var userConsoleSupportsUTF8 = false;
+		if (typeof(USER_UTF8) != "undefined")
+			userConsoleSupportsUTF8 = console.term_supports(USER_UTF8);
+		if (!userConsoleSupportsUTF8)
+		{
+			fromName = utf8_cp437(fromName);
+			fromNetAddr = utf8_cp437(fromNetAddr);
+			fromExt = utf8_cp437(fromExt);
+			toExt = utf8_cp437(toExt);
+			subject = utf8_cp437(subject);
+		}
+	}
+
 	if (typeof(pDashJustifyIdx) != "number")
 		pDashJustifyIdx = findDashJustifyIndex(pAtCodeStr);
 	// Specify the format string with left or right justification based on the justification
@@ -10488,11 +10555,11 @@ function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTe
 		// If the user is not the sysop and the message was posted anonymously,
 		// then replace the from name @-codes with "Anonymous".  Otherwise,
 		// replace the from name @-codes with the actual from name.
-		if (!user.is_sysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+		if (!user.is_sysop && Boolean(pMsgHdr.attr & MSG_ANONYMOUS))
 			replacementTxt = "Anonymous".substr(0, pSpecifiedLen);
 		else
 		{
-			var fromWithNet = pMsgHdr["from"] + (typeof(pMsgHdr["from_net_addr"]) == "string" ? " (" + pMsgHdr["from_net_addr"] + ")" : "");
+			var fromWithNet = fromName + fromNetAddr;
 			replacementTxt = fromWithNet.substr(0, pSpecifiedLen);
 		}
 	}
@@ -10501,27 +10568,27 @@ function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTe
 		// If the user is not the sysop and the message was posted anonymously,
 		// then replace the from name @-codes with "Anonymous".  Otherwise,
 		// replace the from name @-codes with the actual from name.
-		if (!user.is_sysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+		if (!user.is_sysop && Boolean(pMsgHdr.attr & MSG_ANONYMOUS))
 			replacementTxt = "Anonymous".substr(0, pSpecifiedLen);
 		else
-			replacementTxt = pMsgHdr["from"].substr(0, pSpecifiedLen);
+			replacementTxt = fromName.substr(0, pSpecifiedLen);
 	}
 	else if (pAtCodeStr.indexOf("@MSG_FROM_EXT") > -1)
 	{
 		// If the user is not the sysop and the message was posted anonymously,
 		// then replace the from name @-codes with "Anonymous".  Otherwise,
 		// replace the from name @-codes with the actual from name.
-		if (!user.is_sysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+		if (!user.is_sysop && (Boolean(pMsgHdr.attr & MSG_ANONYMOUS)))
 			replacementTxt = "Anonymous".substr(0, pSpecifiedLen);
 		else
-			replacementTxt = (typeof pMsgHdr["from_ext"] === "undefined" ? "" : pMsgHdr["from_ext"].substr(0, pSpecifiedLen));
+			replacementTxt = fromExt.substr(0, pSpecifiedLen);
 	}
 	else if ((pAtCodeStr.indexOf("@MSG_TO") > -1) || (pAtCodeStr.indexOf("@MSG_TO_NAME") > -1))
 		replacementTxt = pMsgHdr["to"].substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_TO_EXT") > -1)
-		replacementTxt = (typeof pMsgHdr["to_ext"] === "undefined" ? "" : pMsgHdr["to_ext"].substr(0, pSpecifiedLen));
+		replacementTxt = toExt.substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_SUBJECT") > -1)
-		replacementTxt = pMsgHdr["subject"].substr(0, pSpecifiedLen);
+		replacementTxt = subject.substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_DATE") > -1)
 		replacementTxt = pDateTimeStr.substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_ATTR") > -1)
@@ -10534,12 +10601,12 @@ function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTe
 		replacementTxt = pMsgAllAttrStr.substr(0, pSpecifiedLen);
 	else if (pAtCodeStr.indexOf("@MSG_NUM_AND_TOTAL") > -1)
 	{
-		var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
+		var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr.offset+1);
 		replacementTxt = (messageNum.toString() + "/" + this.NumMessages()).substr(0, pSpecifiedLen); // "number" is also absolute number
 	}
 	else if (pAtCodeStr.indexOf("@MSG_NUM") > -1)
 	{
-		var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr["offset"]+1);
+		var messageNum = (typeof(pDisplayMsgNum) == "number" ? pDisplayMsgNum : pMsgHdr.offset+1);
 		replacementTxt = messageNum.toString().substr(0, pSpecifiedLen); // "number" is also absolute number
 	}
 	else if (pAtCodeStr.indexOf("@MSG_ID") > -1)
@@ -10551,7 +10618,7 @@ function DigDistMsgReader_ReplaceMsgAtCodeFormatStr(pMsgHdr, pDisplayMsgNum, pTe
 		if (pUseBBSLocalTimeZone)
 			replacementTxt = system.zonestr(system.timezone).substr(0, pSpecifiedLen);
 		else
-			replacementTxt = system.zonestr(pMsgHdr["when_written_zone"]).substr(0, pSpecifiedLen);
+			replacementTxt = system.zonestr(pMsgHdr.when_written_zone).substr(0, pSpecifiedLen);
 	}
 	else if (pAtCodeStr.indexOf("@GRP") > -1)
 	{
@@ -20797,7 +20864,7 @@ function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 	// width (areaChgHeader-<width>.ans/asc).  If not, then just go with
 	// msgHeader.ans/asc.
 	var txtFileExists = true;
-	var txtFilenameFullPath = gStartupPath + pFilenameBase;
+	var txtFilenameFullPath = js.exec_dir + pFilenameBase;
 	var txtFileFilename = "";
 	if (file_exists(txtFilenameFullPath + "-" + console.screen_columns + ".ans"))
 		txtFileFilename = txtFilenameFullPath + "-" + console.screen_columns + ".ans";
@@ -20828,7 +20895,7 @@ function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 						var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
 									+ syncConvertedHdrFilename + "\"";
 						// Note: Both system.exec(cmdLine) and
-						// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
+						// bbs.exec(cmdLine, EX_NATIVE, js.exec_dir) could be used to
 						// execute the command, but system.exec() seems noticeably faster.
 						system.exec(cmdLine);
 					}
@@ -20850,7 +20917,7 @@ function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 				var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
 				            + syncConvertedHdrFilename + "\"";
 				// Note: Both system.exec(cmdLine) and
-				// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
+				// bbs.exec(cmdLine, EX_NATIVE, js.exec_dir) could be used to
 				// execute the command, but system.exec() seems noticeably faster.
 				system.exec(cmdLine);
 			}
