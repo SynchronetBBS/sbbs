@@ -152,14 +152,6 @@ var HORIZONTAL_SINGLE = "\xC4";
 var ERROR_WAIT_MS = 1500;
 var SEARCH_TIMEOUT_MS = 10000;
 
-// Determine the script's startup directory.
-// This code is a trick that was created by Deuce, suggested by Rob Swindell
-// as a way to detect which directory the script was executed in.  I've
-// shortened the code a little.
-var gStartupPath = '.';
-try { throw dig.dist(dist); } catch(e) { gStartupPath = e.fileName; }
-gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
-
 // gIsSysop stores whether or not the user is a sysop.
 var gIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
 
@@ -2194,16 +2186,8 @@ function DDMsgAreaChooser_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 // For the DDMsgAreaChooser class: Reads the configuration file.
 function DDMsgAreaChooser_ReadConfigFile()
 {
-	// Determine the script's startup directory.
-	// This code is a trick that was created by Deuce, suggested by Rob Swindell
-	// as a way to detect which directory the script was executed in.  I've
-	// shortened the code a little.
-	var startup_path = '.';
-	try { throw dig.dist(dist); } catch(e) { startup_path = e.fileName; }
-	startup_path = backslash(startup_path.replace(/[\/\\][^\/\\]*$/,''));
-
 	// Open the configuration file
-	var cfgFile = new File(startup_path + "DDMsgAreaChooser.cfg");
+	var cfgFile = new File(js.exec_dir + "DDMsgAreaChooser.cfg");
 	if (cfgFile.open("r"))
 	{
 		var behaviorSettings = cfgFile.iniGetObject("BEHAVIOR");
@@ -2828,7 +2812,7 @@ function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 	// width (areaChgHeader-<width>.ans/asc).  If not, then just go with
 	// msgHeader.ans/asc.
 	var txtFileExists = true;
-	var txtFilenameFullPath = gStartupPath + pFilenameBase;
+	var txtFilenameFullPath = js.exec_dir + pFilenameBase;
 	var txtFileFilename = "";
 	if (file_exists(txtFilenameFullPath + "-" + console.screen_columns + ".ans"))
 		txtFileFilename = txtFilenameFullPath + "-" + console.screen_columns + ".ans";
@@ -2856,7 +2840,7 @@ function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 					var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
 								+ syncConvertedHdrFilename + "\"";
 					// Note: Both system.exec(cmdLine) and
-					// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
+					// bbs.exec(cmdLine, EX_NATIVE, js.exec_dir) could be used to
 					// execute the command, but system.exec() seems noticeably faster.
 					system.exec(cmdLine);
 				}
@@ -2877,7 +2861,7 @@ function loadTextFileIntoArray(pFilenameBase, pMaxNumLines)
 				var cmdLine = system.exec_dir + "ans2asc \"" + txtFileFilename + "\" \""
 				            + syncConvertedHdrFilename + "\"";
 				// Note: Both system.exec(cmdLine) and
-				// bbs.exec(cmdLine, EX_NATIVE, gStartupPath) could be used to
+				// bbs.exec(cmdLine, EX_NATIVE, js.exec_dir) could be used to
 				// execute the command, but system.exec() seems noticeably faster.
 				system.exec(cmdLine);
 			}

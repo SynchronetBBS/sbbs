@@ -152,7 +152,7 @@ var COPYRIGHT_YEAR = 2022;
 // Lister, since it will be used more than once.
 var gDDML_DROP_FILE_NAME = system.node_dir + "DDML_SyncSMBInfo.txt";
 
-var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".SlyEdit_Settings";
+var gUserSettingsFilename = system.data_dir + "user/" + format("%04d", user.number) + ".SlyEdit_Settings";
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Object/class stuff
@@ -2106,7 +2106,7 @@ function ReadSlyEditConfigFile()
 		enableTextReplacements: false,
 		textReplacementsUseRegex: false,
 		enableTaglines: false,
-		tagLineFilename: genFullPathCfgFilename("SlyEdit_Taglines.txt", gStartupPath),
+		tagLineFilename: genFullPathCfgFilename("SlyEdit_Taglines.txt", js.exec_dir),
 		taglinePrefix: "... ",
 		quoteTaglines: false,
 		shuffleTaglines: false,
@@ -2145,7 +2145,7 @@ function ReadSlyEditConfigFile()
 		iceColors: {
 			menuOptClassicColors: true,
 			// Ice color theme file
-			ThemeFilename: genFullPathCfgFilename("SlyIceColors_BlueIce.cfg", gStartupPath),
+			ThemeFilename: genFullPathCfgFilename("SlyIceColors_BlueIce.cfg", js.exec_dir),
 			// Quote line color
 			QuoteLineColor: "\x01n\x01c",
 			// Ice colors for the quote window
@@ -2175,7 +2175,7 @@ function ReadSlyEditConfigFile()
 		// Default DCT-style colors
 		DCTColors: {
 			// DCT color theme file
-			ThemeFilename: genFullPathCfgFilename("SlyDCTColors_Default.cfg", gStartupPath),
+			ThemeFilename: genFullPathCfgFilename("SlyDCTColors_Default.cfg", js.exec_dir),
 			// Quote line color
 			QuoteLineColor: "\x01n\x01c",
 			// DCT colors for the border stuff
@@ -2229,7 +2229,7 @@ function ReadSlyEditConfigFile()
 	};
 
 	// Open the SlyEdit configuration file
-	var slyEdCfgFileName = genFullPathCfgFilename("SlyEdit.cfg", gStartupPath);
+	var slyEdCfgFileName = genFullPathCfgFilename("SlyEdit.cfg", js.exec_dir);
 	var cfgFile = new File(slyEdCfgFileName);
 	if (cfgFile.open("r"))
 	{
@@ -2268,11 +2268,11 @@ function ReadSlyEditConfigFile()
 				cfgObj.enableTextReplacements = true;
 		}
 		if (behaviorSettings.hasOwnProperty("tagLineFilename") && typeof(behaviorSettings.tagLineFilename) === "string")
-			cfgObj.tagLineFilename = genFullPathCfgFilename(behaviorSettings.tagLineFilename, gStartupPath);
+			cfgObj.tagLineFilename = genFullPathCfgFilename(behaviorSettings.tagLineFilename, js.exec_dir);
 		if (behaviorSettings.hasOwnProperty("taglinePrefix") && typeof(behaviorSettings.taglinePrefix) === "string")
 			cfgObj.taglinePrefix = behaviorSettings.taglinePrefix;
 		if (behaviorSettings.hasOwnProperty("dictionaryFilenames") && typeof(behaviorSettings.dictionaryFilenames) === "string")
-			cfgObj.dictionaryFilenames = parseDictionaryConfig(behaviorSettings.dictionaryFilenames, gStartupPath);
+			cfgObj.dictionaryFilenames = parseDictionaryConfig(behaviorSettings.dictionaryFilenames, js.exec_dir);
 		// Color settings
 		var iceColorSettings = cfgFile.iniGetObject("ICE_COLORS");
 		var DCTColorSettings = cfgFile.iniGetObject("DCT_COLORS");
@@ -2281,11 +2281,11 @@ function ReadSlyEditConfigFile()
 		if (typeof(cfgObj.DCTColors) !== "object")
 			cfgObj.DCTColors = {};
 		if (iceColorSettings.hasOwnProperty("ThemeFilename") && typeof(iceColorSettings.ThemeFilename) === "string")
-			cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename(iceColorSettings.ThemeFilename, gStartupPath);
+			cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename(iceColorSettings.ThemeFilename, js.exec_dir);
 		if (iceColorSettings.hasOwnProperty("menuOptClassicColors") && typeof(iceColorSettings.menuOptClassicColors) === "boolean")
 			cfgObj.iceColors.menuOptClassicColors = iceColorSettings.menuOptClassicColors; // This is a boolean
 		if (DCTColorSettings.hasOwnProperty("ThemeFilename") && typeof(DCTColorSettings.ThemeFilename) === "string")
-			cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename(DCTColorSettings.ThemeFilename, gStartupPath);
+			cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename(DCTColorSettings.ThemeFilename, js.exec_dir);
 
 		cfgFile.close();
 
@@ -2297,7 +2297,7 @@ function ReadSlyEditConfigFile()
 		// set all available dictionary files in the configuration.
 		if (cfgObj.dictionaryFilenames.length == 0)
 		{
-			var dictFilenames = getDictionaryFilenames(gStartupPath);
+			var dictFilenames = getDictionaryFilenames(js.exec_dir);
 			for (var i = 0; i < dictFilenames.length; ++i)
 				cfgObj.dictionaryFilenames.push(dictFilenames[i]);
 		}
@@ -3465,7 +3465,7 @@ function readUserSigFile()
 
 	// The user signature files are located in sbbs/data/user, and the filename
 	// is the user number (zero-padded up to 4 digits) + .sig
-	var userSigFilename = backslash(system.data_dir + "user") + format("%04d.sig", user.number);
+	var userSigFilename = system.data_dir + "user/" + format("%04d.sig", user.number);
 	retObj.sigFileExists = file_exists(userSigFilename);
 	if (retObj.sigFileExists)
 	{
@@ -3545,7 +3545,7 @@ function populateTxtReplacements(pReplacementsObj, pRegex, pAllowColors)
 
 	// Note: Limited to words without spaces.
 	// Open the word replacements configuration file
-	var wordReplacementsFilename = genFullPathCfgFilename("SlyEdit_TextReplacements.cfg", gStartupPath);
+	var wordReplacementsFilename = genFullPathCfgFilename("SlyEdit_TextReplacements.cfg", js.exec_dir);
 	var arrayPopulated = false;
 	var wordFile = new File(wordReplacementsFilename);
 	if (wordFile.open("r"))
@@ -3717,7 +3717,9 @@ function genFullPathCfgFilename(pFilename, pDefaultPath)
 		if (typeof(pDefaultPath) == "string")
 		{
 			// Make sure the default path has a trailing path separator
-			var defaultPath = backslash(pDefaultPath);
+			var defaultPath = pDefaultPath;
+			if (defaultPath.length > 0 && defaultPath.charAt(defaultPath.length-1) != "/" && defaultPath.charAt(defaultPath.length-1) != "\\")
+				defaultPath += "/";
 			fullyPathedFilename = defaultPath + pFilename;
 		}
 		else
@@ -4134,7 +4136,7 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 					else if (settingUpper == "AUTOSIGNEMAILSREALNAME")
 						userSettingsObj.autoSignEmailsRealName = (valueUpper == "TRUE");
 					else if (settingUpper == "DICTIONARYFILENAMES")
-						userSettingsObj.dictionaryFilenames = parseDictionaryConfig(value, gStartupPath);
+						userSettingsObj.dictionaryFilenames = parseDictionaryConfig(value, js.exec_dir);
 				}
 			}
 		}
@@ -4369,15 +4371,19 @@ function getDictionaryFilenames(pDefaultPath)
 {
 	var filenameWildcard = "dictionary_*.txt";
 	var dictionaryFilenames = [];
-	var dirEntries = directory(backslash(system.mods_dir) + filenameWildcard);
+	var dirEntries = directory(system.mods_dir + filenameWildcard);
 	for (var i = 0; i < dirEntries.length; ++i)
 		dictionaryFilenames.push(dirEntries[i]);
-	dirEntries = directory(backslash(system.ctrl_dir) + filenameWildcard);
+	dirEntries = directory(system.ctrl_dir + filenameWildcard);
 	for (var i = 0; i < dirEntries.length; ++i)
 		dictionaryFilenames.push(dirEntries[i]);
 	if (typeof(pDefaultPath) == "string")
 	{
-		dirEntries = directory(backslash(pDefaultPath) + filenameWildcard);
+		// Make sure the default path has a trailing path separator
+		var defaultPath = pDefaultPath;
+		if (defaultPath.length > 0 && defaultPath.charAt(defaultPath.length-1) != "/" && defaultPath.charAt(defaultPath.length-1) != "\\")
+			defaultPath += "/";
+		dirEntries = directory(defaultPath + filenameWildcard);
 		for (var i = 0; i < dirEntries.length; ++i)
 			dictionaryFilenames.push(dirEntries[i]);
 	}
@@ -4399,7 +4405,7 @@ function readDictionaryFile(pFilename, pFullyPathed)
 	if (pFullyPathed)
 		dictFilename = pFilename;
 	else
-		dictFilename = genFullPathCfgFilename(pFilename, gStartupPath);
+		dictFilename = genFullPathCfgFilename(pFilename, js.exec_dir);
 
 	// Read the lines from the dictionary; skip Aspell copyright header lines
 	// if they exist, and lower-case all words for case-insensitive matching.

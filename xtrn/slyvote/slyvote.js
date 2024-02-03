@@ -427,7 +427,7 @@ if (!subBoardsConfigured)
 
 // Read the user settings file
 // The name of the user's settings file for SlyVote
-var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".slyvote.cfg";
+var gUserSettingsFilename = system.data_dir + "user/" + format("%04d", user.number) + ".slyvote.cfg";
 var gUserSettings = ReadUserSettingsFile(gUserSettingsFilename, gSlyVoteCfg);
 
 // Determine which sub-board to use - Prioritize the last sub-board in the user
