@@ -96,6 +96,8 @@
  * 2023-11-11 Eric Oulashin     Version 2.15a
  *                              On start, if console.aborted is true (due to the user pressing Ctrl-C, etc.),
  *                              then return -1 to stop a file scan in progress.
+ * 2024-02-02 Eric Oulashin     Version 2.15b
+ *                              More checks for pFileList[pIdx] and the 'desc' property when getting the description
 */
 
 "use strict";
@@ -140,8 +142,8 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 
 // Lister version information
-var LISTER_VERSION = "2.15a";
-var LISTER_DATE = "2023-11-11";
+var LISTER_VERSION = "2.15b";
+var LISTER_DATE = "2024-02-02";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -4053,7 +4055,10 @@ function parseArgs(argv)
 		// The 2nd argument is the mode/behavior bits in either case
 		var FLBehavior = parseInt(argv[1]);
 		if (isNaN(FLBehavior))
+		{
+			if (user.is_sysop) console.print("Fuck!\r\n\x01p"); // Temporary
 			return false;
+		}
 		else
 			gListBehavior = FLBehavior;
 		// If the 'no header' option was passed, then disable that
@@ -4067,17 +4072,28 @@ function parseArgs(argv)
 		// 2 args - Scanning/searching
 		if (argv.length == 2)
 		{
-			// - 0: Bool (scanning all directories): 0/1
-			// - 1: FL_ mode value
-			gScanAllDirs = (argv[0] == "1");
-			if ((FLBehavior & FL_ULTIME) == FL_ULTIME)
-				gScriptMode = MODE_NEW_FILE_SEARCH;
-			else if ((FLBehavior & FL_FINDDESC) == FL_FINDDESC || (FLBehavior & FL_EXFIND) == FL_EXFIND)
-				gScriptMode = MODE_SEARCH_DESCRIPTION;
-			if ((FLBehavior & FL_VIEW) == FL_VIEW)
+			// When used as the Scan Dirs lodable module (no longer recommended):
+			if (argv[0] == "0" || argv[0] == "1")
 			{
-				// View ZIP/ARC/GIF etc. info
-				// TODO: Not sure what to do with this
+				// - 0: Bool (scanning all directories): 0/1
+				// - 1: FL_ mode value
+				gScanAllDirs = (argv[0] == "1");
+				if ((FLBehavior & FL_ULTIME) == FL_ULTIME)
+					gScriptMode = MODE_NEW_FILE_SEARCH;
+				else if ((FLBehavior & FL_FINDDESC) == FL_FINDDESC || (FLBehavior & FL_EXFIND) == FL_EXFIND)
+					gScriptMode = MODE_SEARCH_DESCRIPTION;
+				if ((FLBehavior & FL_VIEW) == FL_VIEW)
+				{
+					// View ZIP/ARC/GIF etc. info
+					// TODO: Not sure what to do with this
+				}
+			}
+			// When used as the List Files loadable module: First arg is a directory internal code
+			// and 2nd arg is 0 or 1
+			else if (/^[^\s]+$/.test(argv[0]) && (argv[1] == "0" || argv[1] == "1"))
+			{
+				// - 0: Directory internal code
+				// - 1: Bool (scanning all directories): 0/1
 			}
 		}
 		// 3 args - Listing
@@ -4975,7 +4991,9 @@ function numFileInfoLines(pFileList)
 //  pFormatInfo: An object containing format information returned by getTraditionalFileInfoFormatInfo()
 function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 {
-	if (!Array.isArray(pFileList) || typeof(pIdx) !== "number" || pIdx < 0 || pIdx > pFileList.length)
+	if (!Array.isArray(pFileList) || typeof(pIdx) !== "number" || pIdx < 0 || pIdx >= pFileList.length)
+		return [];
+	if (pFileList[pIdx] == undefined)
 		return [];
 
 	var userExtDescEnabled = ((user.settings & USER_EXTDESC) == USER_EXTDESC);
@@ -4983,7 +5001,10 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 	if (userExtDescEnabled)
 		descLines = getExtdFileDescArray(pFileList, pIdx);
 	else
-		descLines = [ pFileList[pIdx].desc.replace(/\r$/, "").replace(/\n$/, "").replace(/\r\n$/, "") ];
+	{
+		if (pFileList[pIdx].hasOwnProperty("desc") && typeof(pFileList[pIdx].desc) === "string")
+			descLines = [ pFileList[pIdx].desc.replace(/\r$/, "").replace(/\n$/, "").replace(/\r\n$/, "") ];
+	}
 	if (descLines.length == 0)
 		descLines.push("");
 
@@ -5026,7 +5047,9 @@ function getTraditionalFileInfoFormatInfo()
 //               if not available, the array will containin the non-extended description.
 function getExtdFileDescArray(pFileList, pIdx)
 {
-	if (!Array.isArray(pFileList) || typeof(pIdx) !== "number" || pIdx < 0 || pIdx > pFileList.length)
+	if (!Array.isArray(pFileList) || typeof(pIdx) !== "number" || pIdx < 0 || pIdx >= pFileList.length)
+		return [];
+	if (pFileList[pIdx] == undefined)
 		return [];
 
 	var extdDesc = "";
@@ -5040,7 +5063,10 @@ function getExtdFileDescArray(pFileList, pIdx)
 			extdDesc = fileMetadata.extdesc;
 	}
 	if (extdDesc.length == 0)
-		extdDesc = pFileList[pIdx].desc;
+	{
+		if (pFileList[pIdx].hasOwnProperty("desc") && typeof(pFileList[pIdx].desc) === "string")
+			extdDesc = pFileList[pIdx].desc;
+	}
 	var descLines = lfexpand(extdDesc).split("\r\n");
 	// Splitting as above can result in an extra empty last line
 	if (descLines[descLines.length-1].length == 0)

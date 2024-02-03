@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.15b    2024-02-02   Code change/fix: More checks for pFileList[pIdx] and the
+                      'desc' property when getting the description
 2.15a    2023-11-11   On start, if console.aborted is true (due to the user
                       pressing Ctrl-C, etc.), then return -1 to stop a file
                       scan in progress.
