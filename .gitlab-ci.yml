@@ -342,3 +342,65 @@ sexpots-netbsd:
     name: sexpots-netbsd-amd64
     paths:
       - "src/sexpots/*.exe.release/*"
+
+sbbs-openbsd:
+  tags: [OpenBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sbbs3
+    - gmake RELEASE=1 all
+  artifacts:
+    name: sbbs-openbsd-amd64
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+      - "src/sbbs3/*.lib.release/*"
+      - "src/sbbs3/*/*.exe.release/*"
+
+syncterm-openbsd:
+  tags: [OpenBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncterm
+    - gmake RELEASE=1
+  artifacts:
+    name: syncterm-openbsd-amd64
+    paths:
+      - "src/syncterm/*.exe.release/*"
+
+syncdraw-openbsd:
+  tags: [OpenBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncdraw
+    - gmake RELEASE=1
+  artifacts:
+    name: syncdraw-openbsd-amd64
+    paths:
+      - "src/syncdraw/*.exe.release/*"
+
+jsdoor-openbsd:
+  tags: [OpenBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sbbs3
+    - gmake RELEASE=1 jsdoor
+  artifacts:
+    name: jsdoor-openbsd-amd64
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+
+sexpots-openbsd:
+  tags: [OpenBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sexpots
+    - gmake RELEASE=1
+  artifacts:
+    name: sexpots-openbsd-amd64
+    paths:
+      - "src/sexpots/*.exe.release/*"
