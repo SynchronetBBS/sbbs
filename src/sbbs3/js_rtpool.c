@@ -25,18 +25,24 @@ static void trigger_thread(void *args)
 	}
 }
 
+static void 
+jsrt_init(void)
+{
+	initialized=TRUE;
+	pthread_mutex_init(&jsrt_mutex, NULL);
+	pthread_mutex_lock(&jsrt_mutex);
+	listInit(&rt_list, 0);
+	pthread_mutex_unlock(&jsrt_mutex);
+	_beginthread(trigger_thread, TRIGGER_THREAD_STACK_SIZE, NULL);
+}
+
+static pthread_once_t jsrt_once = PTHREAD_ONCE_INIT;
 JSRuntime * jsrt_GetNew(int maxbytes, unsigned long timeout, const char *filename, long line)
 {
 	JSRuntime *ret;
 
-	if(!initialized) {
-		initialized=TRUE;
-		pthread_mutex_init(&jsrt_mutex, NULL);
-		pthread_mutex_lock(&jsrt_mutex);
-		listInit(&rt_list, 0);
-		_beginthread(trigger_thread, TRIGGER_THREAD_STACK_SIZE, NULL);
-	} else
-		pthread_mutex_lock(&jsrt_mutex);
+	pthread_once(&jsrt_once, jsrt_init);
+	pthread_mutex_lock(&jsrt_mutex);
 	ret=JS_NewRuntime(maxbytes);
 	listPushNode(&rt_list, ret);
 	pthread_mutex_unlock(&jsrt_mutex);
