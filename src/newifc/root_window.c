@@ -127,32 +127,6 @@ rw_get(NewIfcObj obj, int attr, ...)
 }
 
 static NI_err
-rw_copy(NewIfcObj old, NewIfcObj *newobj)
-{
-	struct root_window **newrw = (struct root_window **)newobj;
-	struct root_window *oldrw = (struct root_window *)old;
-
-	*newrw = malloc(sizeof(struct root_window));
-	if (*newrw == NULL) {
-		return NewIfc_error_allocation_failure;
-	}
-	memcpy(*newrw, old, sizeof(struct root_window));
-	(*newrw)->mtx = pthread_mutex_initializer_np(true);
-	(*newrw)->locks = 0;
-	size_t cells = (*newrw)->api.width;
-	cells *= (*newrw)->api.height;
-	(*newrw)->display = malloc(sizeof(struct vmem_cell) * cells);
-	if ((*newrw)->display == NULL) {
-		free(*newrw);
-		*newrw = NULL;
-		return NewIfc_error_allocation_failure;
-	}
-	memcpy((*newrw)->display, oldrw->display, sizeof(struct vmem_cell) * cells);
-
-	return NewIfc_error_none;
-}
-
-static NI_err
 call_render_handlers(NewIfcObj obj)
 {
 	enum NewIfc_event_handlers hval = NewIfc_on_render;
@@ -175,6 +149,8 @@ static NI_err
 rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 {
 	int16_t oxpos, oypos, owidth, oheight;
+	if (obj->hidden)
+		return NewIfc_error_none;
 	NI_err ret = call_render_handlers(obj);
 	if (ret != NewIfc_error_none)
 		return ret;
@@ -198,10 +174,10 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 	// Fill padding
 	if (obj->top_pad || obj->bottom_pad || obj->left_pad || obj->right_pad) {
 		size_t c;
-		for (size_t y = 0; y < obj->height; y++) {
-			if ((y < obj->top_pad) || (y >= (obj->height - obj->bottom_pad))) {
+		for (size_t y = 0; y < obj->layout_size.height; y++) {
+			if ((y < obj->top_pad) || (y >= (obj->layout_size.height - obj->bottom_pad))) {
 				c = (y + ctx->ypos + obj->ypos) * ctx->dwidth;
-				for (size_t x = 0; x < obj->width; x++) {
+				for (size_t x = 0; x < obj->layout_size.width; x++) {
 					set_vmem_cell(&ctx->vmem[c], obj->fg_colour, obj->bg_colour, ' ', obj->font);
 					c++;
 				}
@@ -216,7 +192,7 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 				}
 				if (obj->right_pad) {
 					c = (y + ctx->ypos + obj->ypos) * ctx->dwidth;
-					c += obj->width;
+					c += obj->layout_size.width;
 					c -= obj->right_pad;
 					for (size_t x = 0; x < obj->right_pad; x++) {
 						set_vmem_cell(&ctx->vmem[c], obj->fg_colour, obj->bg_colour, ' ', obj->font);
@@ -233,8 +209,8 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 	oypos = ctx->ypos;
 
 	// Calculate this objects internal render rectangle (inside of padding)
-	ctx->width = obj->width - (obj->left_pad + obj->right_pad);
-	ctx->height = obj->height - (obj->top_pad + obj->bottom_pad);
+	ctx->width = obj->layout_size.width - (obj->left_pad + obj->right_pad);
+	ctx->height = obj->layout_size.height - (obj->top_pad + obj->bottom_pad);
 	ctx->xpos += obj->left_pad;
 	ctx->ypos += obj->top_pad;
 	// And render it
@@ -279,20 +255,21 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 static NI_err
 rw_do_render(NewIfcObj obj, struct NewIfc_render_context *nullctx)
 {
+	(void)nullctx;
 	struct root_window *rw = (struct root_window *) obj;
 	struct NewIfc_render_context ctx = {
 		.vmem = rw->display,
-		.dwidth = obj->width,
-		.dheight = obj->height,
-		.width = obj->width,
-		.height = obj->height,
+		.dwidth = obj->layout_size.width,
+		.dheight = obj->layout_size.height,
+		.width = obj->layout_size.width,
+		.height = obj->layout_size.height,
 		.xpos = 0,
 		.ypos = 0,
 	};
 	NI_err ret = rw_do_render_recurse(obj, &ctx);
 	if (ret == NewIfc_error_none) {
 		struct root_window *rw = (struct root_window *)obj;
-		ciolib_vmem_puttext(obj->xpos + 1, obj->ypos + 1, obj->width + obj->xpos, obj->height + obj->ypos, rw->display);
+		ciolib_vmem_puttext(obj->xpos + 1, obj->ypos + 1, obj->layout_size.width + obj->xpos, obj->layout_size.height + obj->ypos, rw->display);
 	}
 	return ret;
 }
@@ -321,8 +298,14 @@ NewIFC_root_window(NewIfcObj parent, NewIfcObj *newobj)
 	*newrw = calloc(1, sizeof(struct root_window));
 	if (*newrw == NULL)
 		return NewIfc_error_allocation_failure;
+	(*newrw)->mtx = pthread_mutex_initializer_np(true);
+	(*newrw)->api.get = rw_get;
+	(*newrw)->api.set = rw_set;
+	(*newrw)->api.do_render = &rw_do_render;
+	(*newrw)->api.destroy = rw_destroy;
 	ret = NI_setup_globals(*newobj, parent);
 	if (ret != NewIfc_error_none) {
+		pthread_mutex_destroy(&(*newrw)->mtx);
 		free(*newrw);
 		return ret;
 	}
@@ -331,25 +314,18 @@ NewIFC_root_window(NewIfcObj parent, NewIfcObj *newobj)
 	int cf = ciolib_getfont(0);
 	if (cf < 0)
 		cf = 0;
-	(*newrw)->api.get = rw_get;
-	(*newrw)->api.set = rw_set;
-	(*newrw)->api.copy = rw_copy;
-	(*newrw)->api.do_render = &rw_do_render;
-	(*newrw)->api.destroy = rw_destroy;
-	(*newrw)->api.focus = true;
-	(*newrw)->api.fg_colour = ciolib_fg;
-	(*newrw)->api.bg_colour = ciolib_bg;
-	(*newrw)->api.font = cf;
-	(*newrw)->api.width = ti.screenwidth;
-	(*newrw)->api.height = ti.screenheight;
-	(*newrw)->api.child_width = ti.screenwidth;
-	(*newrw)->api.child_height = ti.screenheight;
-	(*newrw)->api.fill_character = ' ';
-	(*newrw)->api.fill_colour = ciolib_bg;
-	(*newrw)->api.fill_character_colour = ciolib_fg;
-	(*newrw)->api.fill_font = cf;
-
-	(*newrw)->mtx = pthread_mutex_initializer_np(true);
+	NI_set_focus(&(*newrw)->api, true);
+	NI_set_fg_color(&(*newrw)->api, ciolib_fg);
+	NI_set_bg_color(&(*newrw)->api, ciolib_bg);
+	NI_set_font(&(*newrw)->api, cf);
+	NI_set_width(&(*newrw)->api, ti.screenwidth);
+	NI_set_height(&(*newrw)->api, ti.screenheight);
+	NI_set_child_width(&(*newrw)->api, ti.screenwidth);
+	NI_set_child_height(&(*newrw)->api, ti.screenheight);
+	NI_set_fill_character(&(*newrw)->api, ' ');
+	NI_set_fill_colour(&(*newrw)->api, ciolib_bg);
+	NI_set_fill_character_colour(&(*newrw)->api, ciolib_fg);
+	NI_set_fill_font(&(*newrw)->api, cf);
 
 	size_t cells = ti.screenwidth;
 	cells *= ti.screenheight;
@@ -375,12 +351,11 @@ void test_root_window(CuTest *ct)
 	CuAssertPtrNotNull(ct, obj);
 	CuAssertPtrNotNull(ct, obj->get);
 	CuAssertPtrNotNull(ct, obj->set);
-	CuAssertPtrNotNull(ct, obj->copy);
 	CuAssertPtrNotNull(ct, obj->do_render);
 	CuAssertTrue(ct, obj->width == 80);
 	CuAssertTrue(ct, obj->height == 25);
-	CuAssertTrue(ct, obj->min_width == 0);
-	CuAssertTrue(ct, obj->min_height == 0);
+	CuAssertTrue(ct, obj->min_width == 80);
+	CuAssertTrue(ct, obj->min_height == 25);
 	CuAssertTrue(ct, obj->focus == true);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked, &b) == NewIfc_error_none && !b);
 	CuAssertTrue(ct, obj->get(obj, NewIfc_locked_by_me, &b) == NewIfc_error_none && !b);

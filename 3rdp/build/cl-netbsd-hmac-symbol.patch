@@ -1,0 +1,35 @@
+--- context/ctx_hsha2.c.orig	2024-02-03 23:52:01.086437000 -0500
++++ context/ctx_hsha2.c	2024-02-04 00:00:35.711741000 -0500
+@@ -285,7 +285,7 @@
+ /* Hash data using HMAC-SHA2 */
+ 
+ CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
+-static int hmac( INOUT_PTR CONTEXT_INFO *contextInfoPtr, 
++static int hello_netbsd_users_hmac( INOUT_PTR CONTEXT_INFO *contextInfoPtr, 
+ 				IN_BUFFER( noBytes ) BYTE *buffer, 
+ 				IN_LENGTH_Z int noBytes )
+ 	{
+@@ -476,12 +476,12 @@
+ 		static const CAPABILITY_INFO capabilityInfoHMACSHA384 = {
+ 				CRYPT_ALGO_SHA2, bitsToBytes( 384 ), "HMAC-SHA384", 11,
+ 				bitsToBytes( 64 ), bitsToBytes( 128 ), CRYPT_MAX_KEYSIZE,
+-				selfTest, getInfo, NULL, NULL, initKey, NULL, hmac, hmac
++				selfTest, getInfo, NULL, NULL, initKey, NULL, hello_netbsd_users_hmac, hello_netbsd_users_hmac
+ 				};
+ 		static const CAPABILITY_INFO capabilityInfoHMACSHA512 = {
+ 				CRYPT_ALGO_SHA2, bitsToBytes( 512 ), "HMAC-SHA512", 11,
+ 				bitsToBytes( 64 ), bitsToBytes( 128 ), CRYPT_MAX_KEYSIZE,
+-				selfTest, getInfo, NULL, NULL, initKey, NULL, hmac, hmac
++				selfTest, getInfo, NULL, NULL, initKey, NULL, hello_netbsd_users_hmac, hello_netbsd_users_hmac 
+ 				};
+ 
+ 		/* Switch to the appropriate variant of SHA-2.  Note that the 
+@@ -528,7 +528,7 @@
+ static const CAPABILITY_INFO capabilityInfo = {
+ 	CRYPT_ALGO_HMAC_SHA2, bitsToBytes( 256 ), "HMAC-SHA2", 9,
+ 	MIN_KEYSIZE, bitsToBytes( 256 ), CRYPT_MAX_KEYSIZE,
+-	selfTest, getInfo, NULL, initParams, initKey, NULL, hmac, hmac
++	selfTest, getInfo, NULL, initParams, initKey, NULL, hello_netbsd_users_hmac, hello_netbsd_users_hmac
+ 	};
+ 
+ CHECK_RETVAL_PTR_NONNULL \

@@ -46,7 +46,6 @@ label_set(NewIfcObj obj, int attr, ...)
 			}
 			free(l->text);
 			l->text = buf;
-			obj->min_width = sz;
 			break;
 		default:
 			ret = NewIfc_error_not_implemented;
@@ -75,26 +74,6 @@ label_get(NewIfcObj obj, int attr, ...)
 	}
 
 	return ret;
-}
-
-static NI_err
-label_copy(NewIfcObj old, NewIfcObj *newobj)
-{
-	struct label **newl = (struct label **)newobj;
-	struct label *oldl = (struct label *)old;
-
-	*newl = malloc(sizeof(struct label));
-	if (*newl == NULL)
-		return NewIfc_error_allocation_failure;
-	memcpy(*newl, oldl, sizeof(struct label));
-	assert(oldl->text);
-	(*newl)->text = strdup(oldl->text);
-	if ((*newl)->text == NULL) {
-		free(*newl);
-		return NewIfc_error_allocation_failure;
-	}
-
-	return NewIfc_error_none;
 }
 
 static NI_err
@@ -148,7 +127,7 @@ NewIFC_label(NewIfcObj parent, NewIfcObj *newobj)
 	newl = calloc(1, sizeof(struct label));
 	if (newl == NULL)
 		return NewIfc_error_allocation_failure;
-	NI_err ret = NI_setup_globals(newl, parent);
+	NI_err ret = NI_setup_globals(&newl->api, parent);
 	if (ret != NewIfc_error_none) {
 		free(newl);
 		return ret;
@@ -160,10 +139,9 @@ NewIFC_label(NewIfcObj parent, NewIfcObj *newobj)
 	}
 	newl->api.get = &label_get;
 	newl->api.set = &label_set;
-	newl->api.copy = &label_copy;
 	newl->api.do_render = &label_do_render;
 	newl->api.destroy = &label_destroy;
-	ret = NI_set_min_height(newl, 1);
+	ret = NI_set_min_height(&newl->api, 1);
 	if (ret != NewIfc_error_none) {
 		free(newl->text);
 		free(newl);
@@ -193,10 +171,9 @@ void test_label(CuTest *ct)
 	CuAssertPtrNotNull(ct, obj);
 	CuAssertPtrNotNull(ct, obj->get);
 	CuAssertPtrNotNull(ct, obj->set);
-	CuAssertPtrNotNull(ct, obj->copy);
 	CuAssertPtrNotNull(ct, obj->do_render);
-	CuAssertTrue(ct, obj->width == 80);
-	CuAssertTrue(ct, obj->height == 25);
+	CuAssertTrue(ct, obj->width == NI_GROW);
+	CuAssertTrue(ct, obj->height == NI_GROW);
 	CuAssertTrue(ct, obj->min_width == 0);
 	CuAssertTrue(ct, obj->min_height == 1);
 	CuAssertTrue(ct, obj->focus == false);

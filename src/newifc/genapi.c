@@ -18,6 +18,8 @@ const struct objtype_info
 objtypes[] = {
 	{"root_window", 0},
 	{"label", 1},
+	{"sizer", 1},
+	{"sizer_cell", 1},
 };
 
 enum attribute_types {
@@ -29,6 +31,8 @@ enum attribute_types {
 	NI_attr_type_charptr,
 	NI_attr_type_NewIfc_object,
 	NI_attr_type_NewIfc_align,
+	NI_attr_type_int32_t,
+	NI_attr_type_voidptr_t,
 };
 
 struct type_str_values {
@@ -45,6 +49,8 @@ struct type_str_values type_str[] = {
 	{"char *", "char_ptr"},
 	{"enum NewIfc_object", "obj_enum"},
 	{"enum NewIfc_alignment", "align_enum"},
+	{"int32_t", "int32"},
+	{"void *", "void_ptr"},
 };
 
 enum attribute_impl {
@@ -56,6 +62,7 @@ enum attribute_impl {
 
 struct attribute_info {
 	const char *name;
+	const char *member_name;
 	enum attribute_types type;
 	enum attribute_impl impl;
 	int read_only;
@@ -65,40 +72,45 @@ struct attribute_info {
 
 const struct attribute_info
 attributes[] = {
-	{"align", NI_attr_type_NewIfc_align, attr_impl_global, 0, 0, 1},
-	{"bg_colour", NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
-	{"bottom_child", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
-	{"bottom_pad", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
-	{"child_height", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
-	{"child_width", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
-	{"child_xpos", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
-	{"child_ypos", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
-	{"fg_colour", NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
-	{"fill_character", NI_attr_type_uint8_t, attr_impl_global, 0, 0, 1},
-	{"fill_character_colour", NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
-	{"fill_colour", NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
-	{"fill_font", NI_attr_type_uint8_t, attr_impl_global, 0, 0, 1},
-	{"focus", NI_attr_type_bool, attr_impl_global_custom_setter, 0, 0, 0},
-	{"font", NI_attr_type_uint8_t, attr_impl_global, 0, 0, 1},
-	{"height", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
-	{"hidden", NI_attr_type_bool, attr_impl_global, 1, 0, 1},
-	{"higher_peer", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
-	{"locked", NI_attr_type_bool, attr_impl_root, 0, 1, 0},
-	{"locked_by_me", NI_attr_type_bool, attr_impl_root, 1, 1, 0},
-	{"lower_peer", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
-	{"left_pad", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
-	{"min_height", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
-	{"min_width", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
-	{"parent", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
-	{"right_pad", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
-	{"root", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 1},
-	{"text", NI_attr_type_charptr, attr_impl_object, 0, 0, 0},
-	{"top_pad", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
-	{"top_child", NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
-	{"type", NI_attr_type_NewIfc_object, attr_impl_global, 1, 0, 0},
-	{"width", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
-	{"xpos", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
-	{"ypos", NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"align", NULL, NI_attr_type_NewIfc_align, attr_impl_global, 0, 0, 1},
+	{"bg_colour", NULL, NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
+	{"bottom_child", NULL, NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
+	{"bottom_pad", NULL, NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"child_height", NULL, NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"child_width", NULL, NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"child_xpos", NULL, NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"child_ypos", NULL, NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"fg_colour", NULL, NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
+	{"fill_character", NULL, NI_attr_type_uint8_t, attr_impl_global, 0, 0, 1},
+	{"fill_character_colour", NULL, NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
+	{"fill_colour", NULL, NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
+	{"fill_font", NULL, NI_attr_type_uint8_t, attr_impl_global, 0, 0, 1},
+	{"focus", NULL, NI_attr_type_bool, attr_impl_global_custom_setter, 0, 0, 0},
+	{"font", NULL, NI_attr_type_uint8_t, attr_impl_global, 0, 0, 1},
+	{"group_size", NULL, NI_attr_type_uint8_t, attr_impl_object, 0, 0, 0},
+	{"height", NULL, NI_attr_type_int32_t, attr_impl_global_custom_setter, 0, 0, 0},
+	{"hidden", NULL, NI_attr_type_bool, attr_impl_global, 1, 0, 1},
+	{"higher_peer", NULL, NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
+	{"layout_width", "layout_size.width", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"layout_height", "layout_size.height", NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"locked", NULL, NI_attr_type_bool, attr_impl_root, 0, 1, 0},
+	{"locked_by_me", NULL, NI_attr_type_bool, attr_impl_root, 1, 1, 0},
+	{"lower_peer", NULL, NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
+	{"left_pad", NULL, NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"min_height", NULL, NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"min_width", NULL, NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"parent", NULL, NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
+	{"right_pad", NULL, NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"root", NULL, NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 1},
+	{"text", NULL, NI_attr_type_charptr, attr_impl_object, 0, 0, 0},
+	{"top_pad", NULL, NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"top_child", NULL, NI_attr_type_NewIfcObj, attr_impl_global, 1, 0, 0},
+	{"type", NULL, NI_attr_type_NewIfc_object, attr_impl_global, 1, 0, 0},
+	{"user_data", NULL, NI_attr_type_voidptr_t, attr_impl_global, 0, 0, 0},
+	{"weight", NULL, NI_attr_type_uint8_t, attr_impl_object, 0, 0, 0},
+	{"width", NULL, NI_attr_type_int32_t, attr_impl_global_custom_setter, 0, 0, 0},
+	{"xpos", NULL, NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
+	{"ypos", NULL, NI_attr_type_uint16_t, attr_impl_global, 0, 0, 0},
 };
 
 struct attribute_alias {
@@ -135,14 +147,25 @@ error_inf[] = {
 struct handler_info {
 	const char *name;
 	const char *prototype;
+	const char *args;
+	const char *params;
 };
 
 const struct handler_info
 extra_handlers[] = {
-	{"on_render", "NI_err (*on_render)(NewIfcObj obj, void *cbdata)"},
-	{"on_destroy", "NI_err (*on_destroy)(NewIfcObj obj, void *cbdata)"},
-	{"on_key", "NI_err (*on_key)(NewIfcObj obj, uint16_t scancode)"},
+	{"on_layout_minsize", "NI_err (*on_layout_minsize)(NewIfcObj obj, void *cbdata)", NULL, NULL},
+	{"on_layout_size", "NI_err (*on_layout_size)(NewIfcObj obj, void *cbdata)", NULL, NULL},
+	{"on_render", "NI_err (*on_render)(NewIfcObj obj, void *cbdata)", NULL, NULL},
+	{"on_destroy", "NI_err (*on_destroy)(NewIfcObj obj, void *cbdata)", NULL, NULL},
+	{"on_key", "NI_err (*on_key)(NewIfcObj obj, uint16_t scancode, void *cbdata)", ", uint16_t scancode", ", scancode"},
 };
+
+const char *member_name(size_t idx)
+{
+	if (attributes[idx].member_name == NULL)
+		return attributes[idx].name;
+	return attributes[idx].member_name;
+}
 
 size_t
 find_attribute(const char *name)
@@ -169,7 +192,7 @@ attribute_functions(size_t i, FILE *c_code, const char *alias)
 						"		return NewIfc_error_invalid_arg;\n"
 						"	if (NI_set_locked(obj, true) == NewIfc_error_none) {\n", alias, type_str[attributes[i].type].type);
 				if (!attributes[i].no_event) {
-					fprintf(c_code, "		ret = call_%s_change_handlers(obj, NewIfc_%s, value);\n"
+					fprintf(c_code, "		ret = call_%s_change_handlers(obj, NewIfc_%s_handler, value);\n"
 							"		if (ret != NewIfc_error_none) {\n"
 							"			NI_set_locked(obj, false);\n"
 							"			return ret;\n"
@@ -201,14 +224,14 @@ attribute_functions(size_t i, FILE *c_code, const char *alias)
 					"}\n\n", alias, type_str[attributes[i].type].type, attributes[i].name);
 			break;
 		case attr_impl_global:
-			fprintf(c_code, "%s NI_err\n"
+			fprintf(c_code, "%sNI_err\n"
 					"NI_set_%s(NewIfcObj obj, const %s value) {\n"
 					"	NI_err ret;\n"
 					"	if (obj == NULL)\n"
 					"		return NewIfc_error_invalid_arg;\n"
 					"	if (NI_set_locked(obj, true) == NewIfc_error_none) {\n", attributes[i].read_only ? "static " : "", alias, type_str[attributes[i].type].type);
 			if (!attributes[i].no_event) {
-				fprintf(c_code, "		ret = call_%s_change_handlers(obj, NewIfc_%s, value);\n"
+				fprintf(c_code, "		ret = call_%s_change_handlers(obj, NewIfc_%s_handler, value);\n"
 						"		if (ret != NewIfc_error_none) {\n"
 						"			NI_set_locked(obj, false);\n"
 						"			return ret;\n"
@@ -224,7 +247,7 @@ attribute_functions(size_t i, FILE *c_code, const char *alias)
 					"	else\n"
 					"		ret = NewIfc_error_lock_failed;\n"
 					"	return ret;\n"
-					"}\n\n", attributes[i].name, attributes[i].name);
+					"}\n\n", attributes[i].name, member_name(i));
 
 			// Fall-through
 		case attr_impl_global_custom_setter:
@@ -246,7 +269,7 @@ attribute_functions(size_t i, FILE *c_code, const char *alias)
 					"	else\n"
 					"		ret = NewIfc_error_lock_failed;\n"
 					"	return ret;\n"
-					"}\n\n", alias, type_str[attributes[i].type].type, attributes[i].name, attributes[i].name);
+					"}\n\n", alias, type_str[attributes[i].type].type, attributes[i].name, member_name(i));
 			break;
 		case attr_impl_root:
 			if (!attributes[i].read_only) {
@@ -306,6 +329,8 @@ main(int argc, char **argv)
 	size_t nitems;
 	size_t i;
 
+	(void)argc;
+	(void)argv;
 	header = fopen("newifc.h", "w");
 	if (header == NULL) {
 		perror("Opening header");
@@ -372,7 +397,9 @@ main(int argc, char **argv)
 	      "#define NI_YELLOW       UINT32_C(0x80FFFF54)\n"
 	      "#define NI_WHITE        UINT32_C(0x80FFFFFF)\n\n", header);
 
-	fputs("NI_err NI_copy(NewIfcObj obj, NewIfcObj *newobj);\n", header);
+	fputs("#define NI_GROW   -1\n"
+	      "#define NI_SHRINK -2\n", header);
+
 	fputs("NI_err NI_create(enum NewIfc_object obj, NewIfcObj parent, NewIfcObj *newobj);\n", header);
 	fputs("NI_err NI_destroy(NewIfcObj obj);\n", header);
 	fputs("NI_err NI_error(NewIfcObj obj);\n", header);
@@ -402,6 +429,10 @@ main(int argc, char **argv)
 		if (!attributes[i].no_event)
 			fprintf(header, "NI_err NI_add_%s_handler(NewIfcObj obj, NI_err (*handler)(NewIfcObj obj, const %s newval, void *cbdata), void *cbdata);\n", aliases[i].alias_name, type_str[attributes[a].type].type);
 		fprintf(header, "NI_err NI_get_%s(NewIfcObj obj, %s* value);\n", aliases[i].alias_name, type_str[attributes[a].type].type);
+	}
+	nitems = sizeof(extra_handlers) / sizeof(extra_handlers[0]);
+	for (i = 0; i < nitems; i++) {
+		fprintf(header, "NI_err NI_add_%s_handler(NewIfcObj obj, %s);\n", extra_handlers[i].name, extra_handlers[i].prototype);
 	}
 	fputs("\n#endif\n", header);
 	fclose(header);
@@ -458,10 +489,14 @@ main(int argc, char **argv)
 	      "	uint16_t ypos;\n"
 	      "};\n\n", internal_header);
 
+	fputs("struct lo_size {\n"
+	      "	uint16_t width;\n"
+	      "	uint16_t height;\n"
+	      "};\n\n", internal_header);
+
 	fputs("struct newifc_api {\n"
 	      "	NI_err (*set)(NewIfcObj niobj, const int attr, ...);\n"
 	      "	NI_err (*get)(NewIfcObj niobj, const int attr, ...);\n"
-	      "	NI_err (*copy)(NewIfcObj obj, NewIfcObj *newobj);\n"
 	      "	NI_err (*do_render)(NewIfcObj obj, struct NewIfc_render_context *ctx);\n"
 	      "	NI_err (*destroy)(NewIfcObj obj);\n"
 	      "	struct NewIfc_handler **handlers;\n"
@@ -471,15 +506,18 @@ main(int argc, char **argv)
 	      "	NewIfcObj lower_peer;\n"
 	      "	NewIfcObj top_child;\n"
 	      "	NewIfcObj bottom_child;\n"
+	      "	void * user_data;\n"
 	      "	size_t handlers_sz;\n"
+	      "	struct lo_size layout_min_size;\n"
+	      "	struct lo_size layout_size;\n"
 	      "	uint32_t fill_character_colour;\n"
 	      "	uint32_t fill_colour;\n"
 	      "	uint32_t fg_colour;\n"
 	      "	uint32_t bg_colour;\n"
 	      "	enum NewIfc_object type;\n"
 	      "	enum NewIfc_alignment align;\n"
-	      "	uint16_t height;\n"
-	      "	uint16_t width;\n"
+	      "	int32_t height;\n"
+	      "	int32_t width;\n"
 	      "	uint16_t min_height;\n"
 	      "	uint16_t min_width;\n"
 	      "	uint16_t xpos;\n"
@@ -506,6 +544,17 @@ main(int argc, char **argv)
 	}
 	fputs("};\n\n", internal_header);
 
+	fputs("enum NewIfc_handler_type {\n", internal_header);
+	nitems = sizeof(attributes) / sizeof(attributes[0]);
+	for (i = 0; i < nitems; i++) {
+		fprintf(internal_header, "	NewIfc_%s_handler,\n", attributes[i].name);
+	}
+	nitems = sizeof(extra_handlers) / sizeof(extra_handlers[0]);
+	for (i = 0; i < nitems; i++) {
+		fprintf(internal_header, "	NewIfc_%s_handler,\n", extra_handlers[i].name);
+	}
+	fputs("};\n\n", internal_header);
+
 	nitems = sizeof(attributes) / sizeof(attributes[0]);
 	for (i = 0; i < nitems; i++) {
 		if (attributes[i].read_only && attributes[i].impl == attr_impl_global) {
@@ -514,6 +563,15 @@ main(int argc, char **argv)
 	}
 
 	fputs("static NI_err NI_copy_globals(NewIfcObj dst, NewIfcObj src);\n", internal_header);
+
+	nitems = sizeof(type_str) / sizeof(type_str[0]);
+	for (i = 0; i < nitems; i++) {
+		fprintf(internal_header, "static NI_err call_%s_change_handlers(NewIfcObj obj, enum NewIfc_handler_type type, const %s newval);\n", type_str[i].var_name, type_str[i].type);
+	}
+	nitems = sizeof(extra_handlers) / sizeof(extra_handlers[0]);
+	for (i = 0; i < nitems; i++) {
+		fprintf(internal_header, "static NI_err call_%s_handlers(NewIfcObj obj, enum NewIfc_handler_type type%s);\n", extra_handlers[i].name, extra_handlers[i].args ? extra_handlers[i].args : "");
+	}
 
 	fputs("\n", internal_header);
 	fputs("#endif\n", internal_header);
@@ -582,7 +640,7 @@ main(int argc, char **argv)
 	for (i = 0; i < nitems; i++) {
 		if (attributes[i].impl == attr_impl_global || attributes[i].impl == attr_impl_global_custom_setter) {
 			if (attributes[i].inherit)
-				fprintf(c_code,"	dst->%s = src->%s;\n", attributes[i].name, attributes[i].name);
+				fprintf(c_code,"	dst->%s = src->%s;\n", member_name(i), member_name(i));
 		}
 	}
 	fputs("	return NewIfc_error_none;\n"
@@ -591,7 +649,7 @@ main(int argc, char **argv)
 	nitems = sizeof(type_str) / sizeof(type_str[0]);
 	for (i = 0; i < nitems; i++) {
 		fprintf(c_code, "static NI_err\n"
-		                "call_%s_change_handlers(NewIfcObj obj, enum NewIfc_attribute type, const %s newval)\n"
+		                "call_%s_change_handlers(NewIfcObj obj, enum NewIfc_handler_type type, const %s newval)\n"
 		                "{\n"
 		                "	if (obj->handlers == NULL)\n"
 		                "		return NewIfc_error_none;\n"
@@ -607,6 +665,27 @@ main(int argc, char **argv)
 		                "	}\n"
 		                "	return NewIfc_error_none;\n"
 		                "}\n\n", type_str[i].var_name, type_str[i].type, type_str[i].var_name);
+	}
+
+	nitems = sizeof(extra_handlers) / sizeof(extra_handlers[0]);
+	for (i = 0; i < nitems; i++) {
+		fprintf(c_code, "static NI_err\n"
+		                "call_%s_handlers(NewIfcObj obj, enum NewIfc_handler_type type%s)\n"
+		                "{\n"
+		                "	if (obj->handlers == NULL)\n"
+		                "		return NewIfc_error_none;\n"
+		                "	struct NewIfc_handler **head = bsearch(&type, obj->handlers, obj->handlers_sz, sizeof(obj->handlers[0]), handler_bsearch_compar);\n"
+		                "	if (head == NULL)\n"
+		                "		return NewIfc_error_none;\n"
+		                "	struct NewIfc_handler *h = *head;\n"
+		                "	while (h != NULL) {\n"
+		                "		NI_err ret = h->%s(obj%s, h->cbdata);\n"
+		                "		if (ret != NewIfc_error_none)\n"
+		                "			return ret;\n"
+		                "		h = h->next;\n"
+		                "	}\n"
+		                "	return NewIfc_error_none;\n"
+		                "}\n\n", extra_handlers[i].name, extra_handlers[i].args ? extra_handlers[i].args : "", extra_handlers[i].name, extra_handlers[i].params ? extra_handlers[i].params : "");
 	}
 
 	nitems = sizeof(attributes) / sizeof(attributes[0]);

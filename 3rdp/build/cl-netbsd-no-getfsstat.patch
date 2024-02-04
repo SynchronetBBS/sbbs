@@ -1,0 +1,22 @@
+--- random/unix.c.orig	2023-06-15 21:31:00.000000000 -0400
++++ random/unix.c	2024-02-04 00:09:42.916028000 -0500
+@@ -560,8 +560,10 @@
+ 									/* IPv4 routing table */
+ 	{ 6, { CTL_NET, AF_ROUTE, 0, AF_INET6, NET_RT_DUMP, 0 }, 5 },
+ 									/* IPv6 routing table */
++#ifdef RTF_LLINFO
+ 	{ 6, { CTL_NET, AF_ROUTE, 0, AF_INET, NET_RT_FLAGS, RTF_LLINFO }, 5 },
+ 									/* ARP cache */
++#endif
+ 
+ 	/* VM info */
+ #ifdef VM_LOADAVG 
+@@ -747,7 +749,7 @@
+ 
+ /* BSD-specific polling using getfsstat() */
+ 
+-#if defined( __FreeBSD__ ) || defined( __NetBSD__ ) || \
++#if defined( __FreeBSD__ ) || \
+ 	defined( __OpenBSD__ ) || defined( __APPLE__ )
+ 
+ #define USE_GETFSSTAT
