@@ -425,7 +425,15 @@ int curs_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 	int fillpos=0;
 	unsigned char attrib;
 	unsigned char colour;
+	short cpair;
 	int oldx, oldy;
+#ifdef CURSES_CCHAR_MAX
+	wchar_t allchars[CURSES_CCHAR_MAX];
+#else
+#ifdef CCHARW_MAX
+	wchar_t allchars[CCHARW_MAX];
+#endif
+#endif
 	unsigned char thischar;
 	int	ext_char;
 	struct text_info	ti;
@@ -457,8 +465,8 @@ int curs_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 		for(x=sx-1;x<=ex-1;x++)
 		{
 			mvin_wch(y, x, &cchar);
-			attr = cchar.attr;
-			thischar = ext_char = cchar.chars[0];
+			getcchar(&cchar, allchars, &attr, &cpair, NULL);
+			thischar = ext_char = allchars[0];
 			if(attr&WA_REVERSE) {
 				thischar=(thischar)-'A'+1;
 			}
