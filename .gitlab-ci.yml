@@ -313,7 +313,7 @@ syncdraw-netbsd:
   extends: .rules
   script:
     - cd src/syncdraw
-    - gmake RELEASE=1
+    - gmake USE_SYSTEM_CURSES=1 RELEASE=1
   artifacts:
     name: syncdraw-netbsd-amd64
     paths:
@@ -325,7 +325,7 @@ jsdoor-netbsd:
   extends: .rules
   script:
     - cd src/sbbs3
-    - gmake RELEASE=1 jsdoor
+    - gmake USE_SYSTEM_CURSES=1 RELEASE=1 jsdoor
   artifacts:
     name: jsdoor-netbsd-amd64
     paths:
@@ -337,7 +337,7 @@ sexpots-netbsd:
   extends: .rules
   script:
     - cd src/sexpots
-    - gmake RELEASE=1
+    - gmake USE_SYSTEM_CURSES=1 RELEASE=1
   artifacts:
     name: sexpots-netbsd-amd64
     paths:
