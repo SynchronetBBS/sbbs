@@ -280,3 +280,65 @@ jsdoor-windows:
     name: jsdoor-win32
     paths:
       - "src/sbbs3/*.exe.release/*"
+
+sbbs-netbsd:
+  tags: [NetBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sbbs3
+    - gmake USE_SYSTEM_CURSES=1 RELEASE=1 all
+  artifacts:
+    name: sbbs-netbsd-amd64
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+      - "src/sbbs3/*.lib.release/*"
+      - "src/sbbs3/*/*.exe.release/*"
+
+syncterm-netbsd:
+  tags: [NetBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncterm
+    - gmake USE_SYSTEM_CURSES=1 RELEASE=1
+  artifacts:
+    name: syncterm-netbsd-amd64
+    paths:
+      - "src/syncterm/*.exe.release/*"
+
+syncdraw-netbsd:
+  tags: [NetBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncdraw
+    - gmake RELEASE=1
+  artifacts:
+    name: syncdraw-netbsd-amd64
+    paths:
+      - "src/syncdraw/*.exe.release/*"
+
+jsdoor-netbsd:
+  tags: [NetBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sbbs3
+    - gmake RELEASE=1 jsdoor
+  artifacts:
+    name: jsdoor-netbsd-amd64
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+
+sexpots-netbsd:
+  tags: [NetBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sexpots
+    - gmake RELEASE=1
+  artifacts:
+    name: sexpots-netbsd-amd64
+    paths:
+      - "src/sexpots/*.exe.release/*"
