@@ -950,8 +950,8 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 	struct statvfs fs;
 	uint64_t blocks;
 
-    if (statvfs(path, &fs) < 0)
-    	return 0;
+	if (statvfs(path, &fs) < 0)
+		return 0;
 
 	if(freespace)
 		blocks=fs.f_bavail;
