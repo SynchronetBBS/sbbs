@@ -48,8 +48,6 @@ UTIL_LDFLAGS	:=	$(LDFLAGS)
 UTIL_LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV_LDFLAGS) $(ENCODE_LDFLAGS)
 CONSOLE_LDFLAGS	+=	$(LDFLAGS) $(SMBLIB_LDFLAGS) $(XPDEV_LDFLAGS)
 UTIL_LIBS	+=	$(HASH_LIBS)
-FILE_LIBS	= $(shell pkg-config libarchive -libs)
-CFLAGS	+= $(shell pkg-config libarchive -cflags)
 
 ifndef bcc
  ifneq ($(os),sunos)
@@ -103,6 +101,12 @@ ifndef WITHOUT_MOSQUITTO
    JS_LIBS += $(shell pkg-config libmosquitto --libs)
   endif
  endif
+endif
+ifeq ($(shell pkg-config libarchive --exists && echo "yes"),yes)
+ CFLAGS += $(shell pkg-config libarchive --cflags)
+ FILE_LIBS	= $(shell pkg-config libarchive -libs)
+else
+ FILE_LIBS	= -larchive
 endif
 
 include sbbsdefs.mk
