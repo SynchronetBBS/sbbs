@@ -48,7 +48,8 @@ UTIL_LDFLAGS	:=	$(LDFLAGS)
 UTIL_LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV_LDFLAGS) $(ENCODE_LDFLAGS)
 CONSOLE_LDFLAGS	+=	$(LDFLAGS) $(SMBLIB_LDFLAGS) $(XPDEV_LDFLAGS)
 UTIL_LIBS	+=	$(HASH_LIBS)
-FILE_LIBS	= -larchive
+FILE_LIBS	= $(shell pkg-config libarchive -libs)
+CFLAGS	+= $(shell pkg-config libarchive -cflags)
 
 ifndef bcc
  ifneq ($(os),sunos)
