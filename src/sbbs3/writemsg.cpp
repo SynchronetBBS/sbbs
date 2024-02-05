@@ -1238,7 +1238,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 /****************************************************************************/
 /* Edits an existing file or creates a new one in MSG format                */
 /****************************************************************************/
-bool sbbs_t::editfile(char *fname, uint maxlines, const char* to, const char* from, const char* subj, const char* msgarea)
+bool sbbs_t::editfile(char *fname, uint maxlines, const char* to, const char* from, const char* subj, const char* msgarea, bool clean_quotes)
 {
 	char *buf,path[MAX_PATH+1];
 	char msgtmp[MAX_PATH+1];
@@ -1257,8 +1257,8 @@ bool sbbs_t::editfile(char *fname, uint maxlines, const char* to, const char* fr
 	if(useron_xedit && !chk_ar(cfg.xedit[useron_xedit-1]->ar, &useron, &client))
 		useron_xedit = 0;
 
-	quotes_fname(useron_xedit, path, sizeof(path));
-	(void)removecase(path);
+	if(clean_quotes)
+		(void)removecase(quotes_fname(useron_xedit, path, sizeof(path)));
 
 	if(to == NULL)
 		to = fname;

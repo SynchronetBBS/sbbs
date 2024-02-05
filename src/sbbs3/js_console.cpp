@@ -1616,6 +1616,7 @@ js_editfile(JSContext *cx, uintN argc, jsval *arglist)
 	char*		subj{nullptr};
 	char*		msgarea{nullptr};
 	int32		maxlines = 10000;
+	bool		clean_quotes = true;
 	jsrefcount	rc;
 	JSBool		result = JS_TRUE;
 
@@ -1654,6 +1655,8 @@ js_editfile(JSContext *cx, uintN argc, jsval *arglist)
 			}
 			continue;
 		}
+		if(JSVAL_IS_BOOLEAN(argv[i]))
+			clean_quotes = JSVAL_TO_BOOLEAN(argv[i]);
 	}
 
 	if(path == nullptr) {
@@ -1662,7 +1665,7 @@ js_editfile(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if (result == JS_TRUE) {
 		rc=JS_SUSPENDREQUEST(cx);
-		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->editfile(path, maxlines, to, from, subj, msgarea)));
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->editfile(path, maxlines, to, from, subj, msgarea, clean_quotes)));
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	free(path);
@@ -2641,7 +2644,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("Print the last <i>n</i> lines of file with optional print mode, original column width, and scope.")
 	,310
 	},
-	{"editfile",		js_editfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename [,<i>number</i> maxlines=10000] [,<i>string</i> to] [,<i>string</i> from] [,<i>string</i> subject] [,<i>string</i> msg_area]")
+	{"editfile",		js_editfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename [,<i>number</i> maxlines=10000] [,<i>string</i> to] [,<i>string</i> from] [,<i>string</i> subject] [,<i>string</i> msg_area] [,<i>bool</i> clean_quotes=true")
 	,JSDOCSTR("Edit/create a text file using the user's preferred message editor with optional override values for the drop file created to communicate metadata to an external editor")
 	,310
 	},
