@@ -1,0 +1,11 @@
+--- js-1.8.5/js/src/configure.orig	2024-02-05 01:55:51.182253000 -0500
++++ js-1.8.5/js/src/configure	2024-02-05 01:56:06.239782000 -0500
+@@ -14838,7 +14838,7 @@
+ 
+ JS_NATIVE_EDITLINE=
+ EDITLINE_LIBS=
+-JS_DISABLE_SHELL=
++JS_DISABLE_SHELL=1
+ 
+ case "$target" in
+ *-wince*|*-winmo*|*-mingw*|*-cygwin*|*-msvc*|*-mks*)
