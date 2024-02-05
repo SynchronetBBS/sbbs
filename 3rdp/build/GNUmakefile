@@ -58,7 +58,6 @@ $(JS_SRC): | $(3RDPSRCDIR)
 $(JS_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(JS_IDIR)
 
-#	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-no-rwx-pages.patch
 $(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)/build/js-configure.patch $(3RDP_ROOT)/build/js-configure.in.patch $(3RDP_ROOT)/build/imacro-asm-fix.patch $(3RDP_ROOT)/build/js-volatile-outside-functions.patch $(3RDP_ROOT)/build/js-Wno-misleading-indentation.patch $(3RDP_ROOT)/build/js-allow-python3.patch $(3RDP_ROOT)/build/js-no-rwx-pages.patch $(3RDP_ROOT)/build/js-disable-shell.patch | $(JS_SRC) $(JS_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(JS_SRC)/*
@@ -75,6 +74,7 @@ $(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/build/js_src_jsnativ
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-makefile.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-disable-warnings.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-disable-shell.patch
+	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-no-rwx-pages.patch
 	-$(QUIET)cd $(JS_SRC)/js-1.8.5/js/src && autoconf-2.13
 	$(QUIET)cd $(JS_SRC)/js-1.8.5/js/src && env $(JS_CONFIGURE_ENV) ./configure $(JS_CONFIGURE_ARGS)
 ifdef VERBOSE

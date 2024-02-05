@@ -166,6 +166,9 @@ LDFLAGS +=	$(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(SMBLIB_LDFLAGS) $(ENCODE_LDF
 $(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(OBJS) $(LIBS) $(EXTRA_SBBS_DEPENDS) $(ENCODE_LIB) $(HASH_LIB) | $(LIBODIR)
 	@echo Linking $@
 	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) -o $@ $(OBJS) $(SBBS_LIBS) $(SMBLIB_LIBS) $(LIBS) $(SHLIBOPTS) $(JS_LIBS) $(CRYPT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(XPDEV-MT_LIBS) $(FILE_LIBS) -Wl,--version-script=sbbs.version
+ifeq ($(os), netbsd)
+	paxctl +m $(SBBS)
+endif
 
 # FTP Server Link Rule
 $(FTPSRVR): $(MTOBJODIR)/ftpsrvr.o
@@ -251,11 +254,17 @@ $(MAKEUSER): $(MAKEUSER_OBJS) | $(EXEODIR)
 $(JSDOOR): $(JSDOOR_OBJS) $(XPDEV_LIB) $(ENCODE_LIB) $(HASH_LIB) | $(EXEODIR)
 	@echo Linking $@
 	$(QUIET)$(CXX) $(JS_CFLAGS) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(JSDOOR_OBJS) $(JS_LIBS) $(CRYPT_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(SMBLIB_LIBS) $(ENCODE_LIBS) $(XPDEV-MT_LIBS) $(HASH_LIBS) $(FILE_LIBS)
+ifeq ($(os), netbsd)
+	paxctl +m $(JSDOOR)
+endif
 
 # JSEXEC
 $(JSEXEC): $(JSEXEC_OBJS) $(SBBS) | $(EXEODIR)
 	@echo Linking $@
 	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(JSEXEC_OBJS) -lsbbs $(JS_LIBS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
+ifeq ($(os), netbsd)
+	paxctl +m $(JSEXEC)
+endif
 
 # ANS2ASC
 $(ANS2ASC): $(OBJODIR)/ans2asc.o $(OBJODIR)/sauce.o $(XPDEV_LIB) | $(EXEODIR)
