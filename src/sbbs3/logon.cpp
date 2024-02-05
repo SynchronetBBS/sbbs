@@ -200,8 +200,6 @@ bool sbbs_t::logon()
 	delfiles(cfg.temp_dir,ALLFILES);
 	safe_snprintf(str, sizeof(str), "%smsgs/n%3.3u.msg",cfg.data_dir,cfg.node_num);
 	remove(str);            /* remove any pending node messages */
-	safe_snprintf(str, sizeof(str), "%smsgs/n%3.3u.ixb",cfg.data_dir,cfg.node_num);
-	remove(str);			/* remove any pending node message indices */
 
 	if(!SYSOP && online==ON_REMOTE && !(sys_status&SS_QWKLOGON)) {
 		rioctl(IOCM|ABORT);	/* users can't abort anything */
