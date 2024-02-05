@@ -155,7 +155,7 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)/dist/cryptlib.zip $(3RDP_ROOT)/build/cl-fix-test
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-add-patches-info.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-netbsd-hmac-symbol.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-netbsd-no-getfsstat.patch
-	$(QUIET)perl -pi.bak -e 's/^(#define CRYPTLIB_VERSION.*)$$/"$$1\n#define CRYPTLIB_PATCHES \"" . (chomp($$val = `cat cl-*.patch | if (which md5sum 2>&1 > \/dev\/null); then md5sum; else md5; fi`), $$val) . "\""/e' $(CRYPT_SRC)/cryptlib.h
+	$(QUIET)perl -pi.bak -e 's/^(#define CRYPTLIB_VERSION.*)$$/"$$1\n#define CRYPTLIB_PATCHES \"" . (chomp($$val = `cat cl-*.patch | if (which md5sum > \/dev\/null 2>&1); then md5sum; else md5; fi`), $$val) . "\""/e' $(CRYPT_SRC)/cryptlib.h
 ifeq ($(os),win32)
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make directories
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make toolscripts
