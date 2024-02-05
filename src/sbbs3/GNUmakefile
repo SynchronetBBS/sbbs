@@ -104,7 +104,7 @@ ifndef WITHOUT_MOSQUITTO
 endif
 ifeq ($(shell pkg-config libarchive --exists && echo "yes"),yes)
  CFLAGS += $(shell pkg-config libarchive --cflags)
- FILE_LIBS	= $(shell pkg-config libarchive -libs)
+ FILE_LIBS	= $(shell pkg-config libarchive --libs)
 else
  FILE_LIBS	= -larchive
 endif
