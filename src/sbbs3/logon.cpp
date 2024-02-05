@@ -197,9 +197,6 @@ bool sbbs_t::logon()
 	useron.logontime=(time32_t)logontime;
 	last_ns_time=ns_time=useron.ns_time;
 	// ns_time-=(useron.tlast*60); /* file newscan time == last logon time */
-	delfiles(cfg.temp_dir,ALLFILES);
-	safe_snprintf(str, sizeof(str), "%smsgs/n%3.3u.msg",cfg.data_dir,cfg.node_num);
-	remove(str);            /* remove any pending node messages */
 
 	if(!SYSOP && online==ON_REMOTE && !(sys_status&SS_QWKLOGON)) {
 		rioctl(IOCM|ABORT);	/* users can't abort anything */

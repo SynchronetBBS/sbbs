@@ -1035,7 +1035,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 			mode |= WM_QUOTE;
 	}
 
-	SAFEPRINTF(msgpath,"%snetmail.msg",cfg.node_dir);
+	msg_tmp_fname(useron.xedit, msgpath, sizeof(msgpath));
 	if(!writemsg(msgpath,nulstr,title,WM_NETMAIL|mode,INVALID_SUB, to_list, /* from: */your_addr, &editor, &charset)) {
 		strListFree(&rcpt_list);
 		bputs(text[Aborted]);
@@ -1313,7 +1313,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 			mode |= WM_QUOTE;
 	}
 
-	SAFEPRINTF(msgpath,"%snetmail.msg",cfg.node_dir);
+	msg_tmp_fname(useron.xedit, msgpath, sizeof(msgpath));
 	if(!writemsg(msgpath,nulstr,title, (mode|WM_QWKNET|WM_NETMAIL) ,INVALID_SUB,to,/* from: */useron.alias, &editor, &charset)) {
 		bputs(text[Aborted]);
 		return(false); 
