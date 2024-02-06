@@ -170,6 +170,11 @@ lbMenu.wrapNavigation = false;
 // long as it's not a space.  For instance, to highlight the "x" in "Exit":
 lbMenu.Add("E&xit", -1);
 
+// The last parameter to Add() is a boolean specifying whether the item text is
+// in UTF-8 format.
+// Adding an item where the text is known to be in UTF-8 format
+lbMenu.Add(someonesName, 1, null, true, true);
+
 To enable borders, set the borderEnabled property to true.  Example:
 lbMenu.borderEnabled = true;
 
@@ -242,6 +247,10 @@ lbMenu.GetItem = function(pItemIndex) {
 	// the return value to return from the menu:
 	menuItemObj.text = itemText;
 	menuItemObj.retval = itemRetval;
+
+	// And if the text in the item is UTF-8, you must specify so as follows:
+	menuItemObj.textIsUTF8 = true;
+
 	return menuItemObj; // The DDLightbarMenu object will use this when displaying the menu
 };
 
