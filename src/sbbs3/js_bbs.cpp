@@ -1715,6 +1715,8 @@ js_expand_atcodes(JSContext* cx, uintN argc, jsval* arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
+	smbmsg_t* msg = (smbmsg_t*)sbbs->current_msg;
+
 	if (!js_argc(cx, argc, 1))
 		return JS_FALSE;
 
@@ -1722,8 +1724,16 @@ js_expand_atcodes(JSContext* cx, uintN argc, jsval* arglist)
 	if (instr == NULL)
 		return JS_FALSE;
 
+	if(JSVAL_IS_OBJECT(argv[1]) && !JSVAL_IS_NULL(argv[1])) {
+		JSObject* hdrobj;
+		if((hdrobj = JSVAL_TO_OBJECT(argv[1])) == NULL)
+			return JS_FALSE;
+		if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, /* smb_t: */NULL, &msg, /* post: */NULL))
+			return JS_FALSE;
+	}
+
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->expand_atcodes(instr, result, sizeof result);
+	sbbs->expand_atcodes(instr, result, sizeof result, msg);
 	free(instr);
 	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, result)));
@@ -4410,8 +4420,9 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Return @-code value, specified <i>code</i> string does not include @ character delimiters")
 	,310
 	},
-	{"expand_atcodes",	js_expand_atcodes,	1,	JSTYPE_STRING,	JSDOCSTR("string")
-	,JSDOCSTR("Return string with @-code expanded values (some formatting and @-codes are not supported)")
+	{"expand_atcodes",	js_expand_atcodes,	1,	JSTYPE_STRING,	JSDOCSTR("string [,<i>object</i> msg_header]")
+	,JSDOCSTR("Return string with @-code expanded values (some formatting and @-codes are not supported), "
+		"using optional <tt>msg_header</tt> for <tt>MSG_*</tt> codes")
 	,320
 	},
 	/* text.dat */
