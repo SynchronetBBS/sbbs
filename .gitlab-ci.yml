@@ -256,6 +256,14 @@ jsdoor-freebsd:
     paths:
       - "src/sbbs3/*.exe.release/*"
 
+js-testsuite-freebsd:
+  stage: test
+  extends: .rules
+  script:
+    - *.exe.release/jsdoor exec/tests/test.js
+  dependencies:
+    - build jsdoor-freebsd
+
 jsdoor-linux:
   tags: [Linux]
   image: gcc
@@ -343,6 +351,14 @@ jsdoor-netbsd:
     paths:
       - "src/sbbs3/*.exe.release/*"
 
+js-testsuite-netbsd:
+  stage: test
+  extends: .rules
+  script:
+    - *.exe.release/jsdoor exec/tests/test.js
+  dependencies:
+    - build jsdoor-netbsd
+
 sexpots-netbsd:
   tags: [NetBSD]
   stage: build
@@ -404,6 +420,14 @@ jsdoor-openbsd:
     name: jsdoor-openbsd-amd64
     paths:
       - "src/sbbs3/*.exe.release/*"
+
+js-testsuite-openbsd:
+  stage: test
+  extends: .rules
+  script:
+    - *.exe.release/jsdoor exec/tests/test.js
+  dependencies:
+    - build jsdoor-openbsd
 
 sexpots-openbsd:
   tags: [OpenBSD]
