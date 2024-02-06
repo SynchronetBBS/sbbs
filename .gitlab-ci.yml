@@ -260,7 +260,7 @@ js-testsuite-freebsd:
   stage: test
   extends: .rules
   script:
-    - *.exe.release/jsdoor exec/tests/test.js
+    - "*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
     - build jsdoor-freebsd
 
@@ -355,7 +355,7 @@ js-testsuite-netbsd:
   stage: test
   extends: .rules
   script:
-    - *.exe.release/jsdoor exec/tests/test.js
+    - "*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
     - build jsdoor-netbsd
 
@@ -425,7 +425,7 @@ js-testsuite-openbsd:
   stage: test
   extends: .rules
   script:
-    - *.exe.release/jsdoor exec/tests/test.js
+    - "*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
     - build jsdoor-openbsd
 
