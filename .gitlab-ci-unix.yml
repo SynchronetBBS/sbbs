@@ -13,11 +13,11 @@ spec:
 ".$[[ inputs.os ]]":
   extends: .rules
   tags: 
-    - $[[ inputs.tagname ]]
+    - "$[[ inputs.tagname ]]"
   variables:
-    CROSS_PLATFORM: $[[ inputs.cross_platform ]]
-    OS: $[[ inputs.os ]]
-    PLATFORM: $[[ inputs.platform ]]
+    CROSS_PLATFORM: "$[[ inputs.cross_platform ]]"
+    OS: "$[[ inputs.os ]]"
+    PLATFORM: "$[[ inputs.platform ]]"
     OSP: "$[[ inputs.os ]]-$[[ inputs.platform ]]"
     BUILD_FLAGS: "$[[ inputs.build_flags ]]"
     NO_JAVASCRIPT: "$[[ inputs.no_javascript ]]"
