@@ -282,6 +282,8 @@ spec:
   rules:
     - if: $CROSS_PLATFORM == "yes"
       when: never
+    - if: $NO_JAVASCRIPT == "yes"
+      when: never
     - changes:
       - src/**/*
       - 3rdp/**/*
