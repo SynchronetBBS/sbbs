@@ -39,7 +39,8 @@ spec:
   variables:
     GIT_STRATEGY: fetch
   script:
-    - echo Cloned
+    - cd 3rdp/build
+    - gmake ${BUILD_FLAGS} clean
 
 "spidermonkey-$[[ inputs.os ]]":
   extends:
