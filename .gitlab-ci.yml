@@ -30,10 +30,8 @@ smoketest-jsexec-linux:
   extends: .rules
   script:
     - cd src/sbbs3
-    - "*.exe.release/jsexec -C -c../../ctrl -r 'exit(42)'"
+    - "*.exe.release/jsexec -C -c../../ctrl -r 'exit(0)'"
   dependencies: [sbbs-linux]
-  allow_failure:
-    exit_codes: 42
 
 sexpots-linux:
   tags: [Linux]
