@@ -32,6 +32,9 @@
 extern "C" {
 #endif
 
+// Decode a UTF-8 first byte, returns length of character sequence (1-4) or 0 on error
+int utf8_decode_firstbyte(char ch);
+
 // Returns true if the string is valid UTF-8
 bool utf8_str_is_valid(const char*);
 

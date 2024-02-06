@@ -23,6 +23,20 @@
 #include "unicode.h"
 #include <string.h>
 
+int utf8_decode_firstbyte(char ch)
+{
+	/* Check syntax and work out the encoded value (if correct) */
+	if ((ch & 0x80) == 0)
+		return 1;
+	if ((ch & 0xe0) == 0xc0)
+		return 2;
+	if ((ch & 0xf0) == 0xe0)
+		return 3;
+	if ((ch & 0xf8) == 0xf0)
+		return 4;
+	return 0; // error
+}
+
 char* utf8_normalize_str(char* str)
 {
 	char* dest = str;
