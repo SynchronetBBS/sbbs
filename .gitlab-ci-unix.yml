@@ -86,8 +86,6 @@ spec:
     paths:
       - "src/encode/*.*.*.lib.release*"
       - "src/encode/*.*.*.obj.release*"
-  needs:
-    - job: "xpdev-$[[ inputs.os ]]"
 
 "hash-$[[ inputs.os ]]":
   extends:
@@ -112,8 +110,6 @@ spec:
     paths:
       - "src/conio/*.*.*.lib.release*"
       - "src/conio/*.*.*.obj.release*"
-  needs:
-    - job: "xpdev-$[[ inputs.os ]]"
 
 "sftp-$[[ inputs.os ]]":
   extends:
@@ -126,8 +122,6 @@ spec:
     paths:
       - "src/sftp/*.*.*.lib.release*"
       - "src/sftp/*.*.*.obj.release*"
-  needs:
-    - job: "xpdev-$[[ inputs.os ]]"
 
 "smblib-$[[ inputs.os ]]":
   extends:
@@ -140,8 +134,6 @@ spec:
     paths:
       - "src/smblib/*.*.*.lib.release*"
       - "src/smblib/*.*.*.obj.release*"
-  needs:
-    - job: "xpdev-$[[ inputs.os ]]"
 
 "uifc-$[[ inputs.os ]]":
   extends:
