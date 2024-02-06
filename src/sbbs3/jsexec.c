@@ -1456,7 +1456,7 @@ int main(int argc, char **argv, char** env)
 	strcpy(scfg.sys_inetaddr, "example.com");
 	scfg.prepped = true;
 #else
-	char relpath[PATH_MAX + 1];
+	char relpath[MAX_PATH + 1];
 	SAFECOPY(relpath, scfg.ctrl_dir);
 	FULLPATH(scfg.ctrl_dir, relpath, sizeof scfg.ctrl_dir);
 	if(change_cwd && chdir(scfg.ctrl_dir)!=0)
