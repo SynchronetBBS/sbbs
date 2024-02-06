@@ -11,7 +11,7 @@
   script:
     - cd 3rdp/build
     - gmake ${BUILD_FLAGS} libmozjs
-  artifact:
+  artifacts:
     name: "spidermonkey-${OSP}"
     paths:
       - "3rdp/*.*.*.release/mozjs"
@@ -23,7 +23,7 @@
   script:
     - cd 3rdp/build
     - gmake ${BUILD_FLAGS} cryptlib
-  artifact:
+  artifacts:
     name: "cryptlib-${OSP}"
     paths:
       - "3rdp/*.*.*.release/cl"
@@ -32,7 +32,7 @@
   script:
     - cd src/xpdev
     - gmake ${BUILD_FLAGS}
-  artifact:
+  artifacts:
     name: "xpdev-${OSP}"
     paths:
       - "src/xpdev/*.*.*.lib.release*"
@@ -43,7 +43,7 @@
   script:
     - cd src/encode
     - gmake ${BUILD_FLAGS}
-  artifact:
+  artifacts:
     name: "encode-${OSP}"
     paths:
       - "src/encode/*.*.*.lib.release*"
@@ -54,7 +54,7 @@
   script:
     - cd src/hash
     - gmake ${BUILD_FLAGS}
-  artifact:
+  artifacts:
     name: "hash-${OSP}"
     paths:
       - "src/hash/*.*.*.lib.release*"
@@ -63,7 +63,7 @@
   script:
     - cd src/ciolib
     - gmake ${BUILD_FLAGS}
-  artifact:
+  artifacts:
     name: "ciolib-${OSP}"
     paths:
       - "src/ciolib/*.*.*.lib.release*"
@@ -76,7 +76,7 @@
   script:
     - cd src/sftp
     - gmake ${BUILD_FLAGS}
-  artifact:
+  artifacts:
     name: "sftp-${OSP}"
     paths:
       - "src/sftp/*.*.*.lib.release*"
@@ -87,7 +87,7 @@
   script:
     - cd src/smblib
     - gmake ${BUILD_FLAGS}
-  artifact:
+  artifacts:
     name: "smblib-${OSP}"
     paths:
       - "src/smblib/*.*.*.lib.release*"
@@ -100,7 +100,7 @@
   script:
     - cd src/uifc
     - gmake ${BUILD_FLAGS}
-  artifact:
+  artifacts:
     name: "uifc-${OSP}"
     paths:
       - "src/uifc/*.*.*.lib.release*"
