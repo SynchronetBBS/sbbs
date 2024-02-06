@@ -39,8 +39,6 @@ spec:
     name: "xpdev-${OSP}"
     paths:
       - "src/xpdev/*.*.*.lib.release*"
-  needs:
-    - job: 'xpdev-$[[ inputs.os ]]'
 
 .encode:
   script:
