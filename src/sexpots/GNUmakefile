@@ -3,6 +3,12 @@ include ${SRC_ROOT}/build/Common.gmake
 
 CFLAGS  +=       -I${SRC_ROOT}/comio -I${SRC_ROOT}/sbbs3 $(XPDEV-MT_CFLAGS)
 LDFLAGS +=       $(XPDEV-MT_LDFLAGS)
+ifeq ($(os), win32)
+	OBJS += $(MTOBJODIR)$(DIRSEP)comio_win32$(OFILE)
+	CFLAGS += -DTELNET_NO_DLL
+else
+	OBJS += $(MTOBJODIR)$(DIRSEP)comio_nix$(OFILE)
+endif
 
 vpath %.c ../comio ../sbbs3
 
