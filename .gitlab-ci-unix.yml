@@ -23,6 +23,8 @@ spec:
     BUILD_FLAGS: "$[[ inputs.build_flags ]]"
     NO_JAVASCRIPT: "$[[ inputs.no_javascript ]]"
     GIT_STRATEGY: none
+  script:
+    - echo Cloned
 
 ".$[[ inputs.os ]]-build":
   stage: build
