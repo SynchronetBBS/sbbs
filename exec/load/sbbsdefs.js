@@ -185,6 +185,7 @@ var   K_ANSI_CPR	=(1<<22);	/* ANSI Cursor Position Report expected		*/
 var   K_TRIM        =(1<<23);   /* Trim white-space from both ends of str   */
 var   K_CTRLKEYS	=(1<<24);	/* No control-key handling/eating in inkey()*/
 var   K_NUL         =(1<<25);   /* Return null instead of "" upon timeout   */
+var   K_CP437		=(1<<26);	/* Translate (UTF-8) input to CP437 chars	*/
 					    		/********************************************/
 
 						    	/********************************************/
