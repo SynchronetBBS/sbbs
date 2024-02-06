@@ -2058,8 +2058,20 @@ while((drop_file_name = file_getcase(system.node_dir + "editor.inf"))!=undefined
 			info = drop_file.readAll();
 			drop_file.close();
 			subj=strip_ctrl(info[0]);
+			if (pmode & P_UTF8) {
+				if (!str_is_utf8(subj))
+					subj = utf8_encode(subj);
+			}
 			to=strip_ctrl(info[1]);
+			if (pmode & P_UTF8) {
+				if (!str_is_utf8(to))
+					to = utf8_encode(to);
+			}
 			from=strip_ctrl(info[3]);
+			if (pmode & P_UTF8) {
+				if (!str_is_utf8(from))
+					from = utf8_encode(from);
+			}
 		}
 	}
 	file_remove(drop_file_name);
