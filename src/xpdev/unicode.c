@@ -726,5 +726,5 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 		}
 	}
 
-	return UNICODE_UNDEFINED; // Not-mapped
+	return '\0'; // Not-mapped
 }
