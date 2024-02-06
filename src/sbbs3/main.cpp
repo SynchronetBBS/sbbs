@@ -3567,7 +3567,7 @@ bool sbbs_t::init()
 
 		// remove any pending node messages
 		safe_snprintf(str, sizeof(str), "%smsgs/n%3.3u.msg",cfg.data_dir,cfg.node_num);
-		remove(str);
+		(void)remove(str);
 		// Delete any stale temporary files (with potentially sensitive content)
 		delfiles(cfg.temp_dir,ALLFILES);
 		safe_snprintf(str, sizeof(str), "%sMSGTMP", cfg.node_dir);
