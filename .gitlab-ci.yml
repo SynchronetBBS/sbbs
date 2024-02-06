@@ -380,8 +380,8 @@ spidermonkey-openbsd:
     - gmake libmozjs
   artifacts:
     named: libmozjs
-  paths:
-    - "src/3rdp/*.release/mozjs"
+    paths:
+      - "src/3rdp/*.release/mozjs"
 
 cryptlib-openbsd:
   tags: [OpenBSD]
@@ -392,8 +392,8 @@ cryptlib-openbsd:
     - gmake libmozjs
   artifacts:
     named: cryptlib
-  paths:
-    - "src/3rdp/*.release/mozjs"
+    paths:
+      - "src/3rdp/*.release/mozjs"
 
 sbbs-openbsd:
   tags: [OpenBSD]
