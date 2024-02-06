@@ -257,6 +257,7 @@ jsdoor-freebsd:
       - "src/sbbs3/*.exe.release/*"
 
 js-testsuite-freebsd:
+  tags: [FreeBSD]
   stage: test
   extends: .rules
   script:
@@ -352,6 +353,7 @@ jsdoor-netbsd:
       - "src/sbbs3/*.exe.release/*"
 
 js-testsuite-netbsd:
+  tags: [NetBSD]
   stage: test
   extends: .rules
   script:
@@ -422,6 +424,7 @@ jsdoor-openbsd:
       - "src/sbbs3/*.exe.release/*"
 
 js-testsuite-openbsd:
+  tags: [OpenBSD]
   stage: test
   extends: .rules
   script:
