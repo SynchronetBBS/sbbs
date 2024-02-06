@@ -10,6 +10,199 @@ spec:
     no_javascript:
       default: 'no'
 ---
+.spidermonkey:
+  script:
+    - cd 3rdp/build
+    - gmake ${BUILD_FLAGS} libmozjs
+  artifacts:
+    name: "spidermonkey-${OSP}"
+    paths:
+      - "3rdp/*.*.*.release/mozjs"
+  rules:
+    - if: $NO_JAVASCRIPT == "yes"
+      when: never
+
+.cryptlib:
+  script:
+    - cd 3rdp/build
+    - gmake ${BUILD_FLAGS} cryptlib
+  artifacts:
+    name: "cryptlib-${OSP}"
+    paths:
+      - "3rdp/*.*.*.release/cl"
+
+.xpdev:
+  script:
+    - cd src/xpdev
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "xpdev-${OSP}"
+    paths:
+      - "src/xpdev/*.*.*.lib.release*"
+  needs:
+    - job: 'xpdev-${OS}'
+
+.encode:
+  script:
+    - cd src/encode
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "encode-${OSP}"
+    paths:
+      - "src/encode/*.*.*.lib.release*"
+  needs:
+    - job: "xpdev-${OS}"
+
+.hash:
+  script:
+    - cd src/hash
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "hash-${OSP}"
+    paths:
+      - "src/hash/*.*.*.lib.release*"
+
+.ciolib:
+  script:
+    - cd src/ciolib
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "ciolib-${OSP}"
+    paths:
+      - "src/ciolib/*.*.*.lib.release*"
+  needs:
+    - job: "xpdev-${OS}"
+    - job: "hash-${OS}"
+    - job: "encode-${OS}"
+
+.sftp:
+  script:
+    - cd src/sftp
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "sftp-${OSP}"
+    paths:
+      - "src/sftp/*.*.*.lib.release*"
+  needs:
+    - job: "xpdev-${OS}"
+
+.smblib:
+  script:
+    - cd src/smblib
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "smblib-${OSP}"
+    paths:
+      - "src/smblib/*.*.*.lib.release*"
+  needs:
+    - job: "xpdev-${OS}"
+    - job: "hash-${OS}"
+    - job: "encode-${OS}"
+
+.uifc:
+  script:
+    - cd src/uifc
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "uifc-${OSP}"
+    paths:
+      - "src/uifc/*.*.*.lib.release*"
+  needs:
+    - job: "xpdev-${OS}"
+    - job: "ciolib-${OS}"
+
+.sbbs:
+  script:
+    - cd src/sbbs3
+    - gmake ${BUILD_FLAGS} all
+  artifacts:
+    name: "sbbs-${OSP}"
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+      - "src/sbbs3/*.lib.release/*"
+      - "src/sbbs3/*/*.exe.release/*"
+  needs:
+    - job: "ciolib-${OS}"
+    - job: "cryptlib-${OS}"
+    - job: "encode-${OS}"
+    - job: "hash-${OS}"
+    - job: "sftp-${OS}"
+    - job: "smblib-${OS}"
+    - job: "spidermonkey-${OS}"
+    - job: "uifc-${OS}"
+    - job: "xpdev-${OS}"
+  rules:
+    - if: $CROSS_PLATFORM == "yes"
+      when: never
+
+.syncterm:
+  script:
+    - cd src/syncterm
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "syncterm-${OSP}"
+    paths:
+      - "src/syncterm/*.exe.release/*"
+  needs:
+    - job: "ciolib-${OS}"
+    - job: "cryptlib-${OS}"
+    - job: "encode-${OS}"
+    - job: "hash-${OS}"
+    - job: "sftp-${OS}"
+    - job: "uifc-${OS}"
+    - job: "xpdev-${OS}"
+
+.syncdraw:
+  script:
+    - cd src/syncdraw
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "syncdraw-${OSP}"
+    paths:
+      - "src/syncdraw/*.exe.release/*"
+  needs:
+    - job: "ciolib-$(OS)"
+    - job: "xpdev-$(OS)"
+
+.jsdoor:
+  script:
+    - cd src/sbbs3
+    - gmake ${BUILD_FLAGS} jsdoor
+  artifacts:
+    name: "jsdoor-${OSP}"
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+  needs:
+    - job: "ciolib-${OS}"
+    - job: "cryptlib-${OS}"
+    - job: "encode-${OS}"
+    - job: "hash-${OS}"
+    - job: "sftp-${OS}"
+    - job: "smblib-${OS}"
+    - job: "spidermonkey-${OS}"
+    - job: "uifc-${OS}"
+    - job: "xpdev-${OS}"
+
+.js-testsuite:
+  script:
+    - "src/sbbs3/*.exe.release/jsdoor exec/tests/test.js"
+  dependencies:
+    - "jsdoor-${OS}"
+  rules:
+    - if: $CROSS_PLATFORM == "yes"
+      when: never
+
+.sexpots:
+  script:
+    - cd src/sexpots
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "sexpots-${OSP}"
+    paths:
+      - "src/sexpots/*.exe.release/*"
+  needs:
+    - job: "xpdev-${OS}"
+
 ".$[[ inputs.os ]]":
   extends: .rules
   tags: 
