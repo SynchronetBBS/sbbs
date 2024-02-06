@@ -161,8 +161,8 @@ spec:
     paths:
       - "src/syncdraw/*.exe.release/*"
   needs:
-    - job: "ciolib-$(OS)"
-    - job: "xpdev-$(OS)"
+    - job: "ciolib-$[[ inputs.os ]]"
+    - job: "xpdev-$[[ inputs.os ]]"
 
 .jsdoor:
   script:
