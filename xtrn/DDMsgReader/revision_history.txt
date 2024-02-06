@@ -5,8 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.95a    2024-01-23   Bug fix: Aborting when the sub-board isn't available when
-                      editing a personal email message
+1.95b    2024-02-04   Bug fix: Use the P_UTF8 mode bit when printing UTF-8
+                      message header info (such as 'from' and 'to').
+                      A dd_lightbar_menu.js update goes along with this.
+1.95a    2024-01-23   Bug fix: Was aborting when sub-board code isn't available
+                      when editing personal email
 1.95     2024-01-20   Removed user option to display indexed mode menu in
                       newscan after all new messages are read.
                       Command-line option -indexedMode can now be specified with

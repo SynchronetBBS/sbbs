@@ -145,6 +145,9 @@
  *                              indexedModeMenuSnapToNextWithNewAftarMarkAllRead
  * 2024-01-23 Eric Oulashin     Version 1.95a
  *                              Bug fix: Abort when sub-board code isn't available when editing personal email
+ * 2024-02-04 Eric Oulashin     Version 1.95b
+ *                              Bug fix: Use the P_UTF8 mode bit when printing UTF-8 message header info (such as 'from' and 'to').
+ *                              A dd_lightbar_menu.js update goes along with this.
  */
 
 "use strict";
@@ -248,10 +251,9 @@ load('822header.js');
 var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 var hexdump = load('hexdump_lib.js');
 
-
 // Reader version information
-var READER_VERSION = "1.95a";
-var READER_DATE = "2024-01-23";
+var READER_VERSION = "1.95b";
+var READER_DATE = "2024-02-04";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4407,6 +4409,7 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 			// When setting the item text, call PrintMessageInfo with true as
 			// the last parameter to return the string instead
 			menuItemObj.text = strip_ctrl(this.msgReader.PrintMessageInfo(msgHdr, false, itemIdx+1, true));
+			menuItemObj.textIsUTF8 = msgHdr.hasOwnProperty("is_utf8") && msgHdr.is_utf8;
 			menuItemObj.retval = msgHdr.number;
 			var msgIsToUser = userHandleAliasNameMatch(msgHdr.to);
 			var msgIsFromUser = userHandleAliasNameMatch(msgHdr.from);
@@ -4753,11 +4756,10 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 	var fromName = pMsgHeader.from;
 	var toName = pMsgHeader.to;
 	var subject = pMsgHeader.subject;
-	if (pMsgHeader.hasOwnProperty("is_utf8") && pMsgHeader.is_utf8)
+	var userConsoleSupportsUTF8 = (typeof(USER_UTF8) != "undefined" ? console.term_supports(USER_UTF8) : false);
+	var msgIsUTF8 = pMsgHeader.hasOwnProperty("is_utf8") && pMsgHeader.is_utf8;
+	if (msgIsUTF8)
 	{
-		var userConsoleSupportsUTF8 = false;
-		if (typeof(USER_UTF8) != "undefined")
-			userConsoleSupportsUTF8 = console.term_supports(USER_UTF8);
 		if (!userConsoleSupportsUTF8)
 		{
 			fromName = utf8_cp437(fromName);
@@ -4862,7 +4864,8 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 	var returnStrInstead = (typeof(pReturnStrInstead) == "boolean" ? pReturnStrInstead : false);
 	if (!returnStrInstead)
 	{
-		console.print(msgHdrStr);
+		var printMode = (terminalSupportsUTF8 && hdrIsUTF8 ? P_UTF8 : P_NONE);
+		console.print(msgHdrStr, printMode);
 		console.cleartoeol("\x01n"); // To clear away any extra text that may have been entered by the user
 	}
 	return msgHdrStr;
@@ -9788,6 +9791,13 @@ function DigDistMsgReader_DisplaySyncMsgHeader(pMsgHdr)
 	if ((pMsgHdr == null) || (typeof(pMsgHdr) != "object"))
 		return;
 
+	// Check whether the header is UTF-8 and whether the user's terminal supports UTF-8, and
+	// set the print mode accordingly (the header fields should already be converted from
+	// UTF-8 to cp437 if the header is UTF-8 and the user's terminal doesn't support UTF-8)
+	var terminalSupportsUTF8 = (typeof(USER_UTF8) != "undefined" ? console.term_supports(USER_UTF8) : false);
+	var hdrIsUTF8 = pMsgHdr.hasOwnProperty("is_utf8") && pMsgHdr.is_utf8;
+	var printMode = (terminalSupportsUTF8 && hdrIsUTF8 ? P_UTF8 : P_NONE);
+
 	// Note: The message header has the following fields:
 	// 'number': The message number
 	// 'offset': The message offset
@@ -9800,7 +9810,7 @@ function DigDistMsgReader_DisplaySyncMsgHeader(pMsgHdr)
 	//var dateTimeStr = strftime("%Y-%m-%d %H:%M:%S", msgHeader.when_imported_time)
 	// Use the date text in the message header, without the time
 	// zone offset at the end.
-	var dateTimeStr = pMsgHdr["date"].replace(/ [-+][0-9]+$/, "");
+	var dateTimeStr = pMsgHdr.date.replace(/ [-+][0-9]+$/, "");
 
 	// Check to see if there is a msghdr file in the sbbs/text/menu
 	// directory.  If there is, then use it to display the message
@@ -9828,7 +9838,7 @@ function DigDistMsgReader_DisplaySyncMsgHeader(pMsgHdr)
 				// message read prompt, this script now has to parse & replace some of
 				// the @-codes in the message header line, since Synchronet doesn't know
 				// that the user is reading a message.
-				console.putmsg(this.ParseMsgAtCodes(fileLine, pMsgHdr, null, dateTimeStr, false, true));
+				console.putmsg(this.ParseMsgAtCodes(fileLine, pMsgHdr, null, dateTimeStr, false, true), printMode);
 				console.crlf();
 			}
 			msgHdrFile.close();
@@ -9845,15 +9855,15 @@ function DigDistMsgReader_DisplaySyncMsgHeader(pMsgHdr)
 		console.print("\x01n\x01w" + charStr(HORIZONTAL_DOUBLE, 78));
 		console.crlf();
 		var horizSingleFive = charStr(HORIZONTAL_SINGLE, 5);
-		console.print("\x01n\x01w" + horizSingleFive + "\x01cFrom\x01w\x01h: \x01b" + pMsgHdr["from"].substr(0, console.screen_columns-12));
+		console.print("\x01n\x01w" + horizSingleFive + "\x01cFrom\x01w\x01h: \x01b" + pMsgHdr.from.substr(0, console.screen_columns-12), printMode);
 		console.crlf();
-		console.print("\x01n\x01w" + horizSingleFive + "\x01cTo  \x01w\x01h: \x01b" + pMsgHdr["to"].substr(0, console.screen_columns-12));
+		console.print("\x01n\x01w" + horizSingleFive + "\x01cTo  \x01w\x01h: \x01b" + pMsgHdr.to.substr(0, console.screen_columns-12), printMode);
 		console.crlf();
-		console.print("\x01n\x01w" + horizSingleFive + "\x01cSubj\x01w\x01h: \x01b" + pMsgHdr["subject"].substr(0, console.screen_columns-12));
+		console.print("\x01n\x01w" + horizSingleFive + "\x01cSubj\x01w\x01h: \x01b" + pMsgHdr.subject.substr(0, console.screen_columns-12), printMode);
 		console.crlf();
-		console.print("\x01n\x01w" + horizSingleFive + "\x01cDate\x01w\x01h: \x01b" + dateTimeStr.substr(0, console.screen_columns-12));
+		console.print("\x01n\x01w" + horizSingleFive + "\x01cDate\x01w\x01h: \x01b" + dateTimeStr.substr(0, console.screen_columns-12), printMode);
 		console.crlf();
-		console.print("\x01n\x01w" + horizSingleFive + "\x01cAttr\x01w\x01h: \x01b" + allMsgAttrStr.substr(0, console.screen_columns-12));
+		console.print("\x01n\x01w" + horizSingleFive + "\x01cAttr\x01w\x01h: \x01b" + allMsgAttrStr.substr(0, console.screen_columns-12), printMode);
 		console.crlf();
 	}
 }
@@ -11492,7 +11502,7 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		return;
 	if ((enhMsgHdrLines.length == 0) || (this.enhMsgHeaderWidth == 0))
 		return;
-
+	
 	// Create a formatted date & time string.  Adjust the message's time to
 	// the BBS local time zone if possible.
 	var dateTimeStr = "";
@@ -11505,7 +11515,25 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	}
 	else
 		dateTimeStr = pMsgHdr.date.replace(/ [-+][0-9]+$/, "");
+
+	// Check whether the header is UTF-8 and whether the user's terminal supports UTF-8, and
+	// set the print mode accordingly (the header fields should already be converted from
+	// UTF-8 to cp437 if the header is UTF-8 and the user's terminal doesn't support UTF-8)
+	var terminalSupportsUTF8 = (typeof(USER_UTF8) != "undefined" ? console.term_supports(USER_UTF8) : false);
+	var hdrIsUTF8 = pMsgHdr.hasOwnProperty("is_utf8") && pMsgHdr.is_utf8;
+	var printMode = (terminalSupportsUTF8 && hdrIsUTF8 ? P_UTF8 : P_NONE);
 	
+	// If the message is in UTF-8 and the user's terminal supports UTF-8, then we'll be printing
+	// with the P_UTF8 mode bit. We'll need to convert the display header lines to UTF-8 so they'll
+	// display properly.
+	if (hdrIsUTF8 && terminalSupportsUTF8)
+	{
+		var hdrLines_UTF8 = []; // We need to make a copy so we don't modify the original
+		for (var i = 0; i < enhMsgHdrLines.length; ++i)
+			hdrLines_UTF8.push(utf8_encode(enhMsgHdrLines[i]));
+		enhMsgHdrLines = hdrLines_UTF8;
+	}
+
 	var enhHdrLines = enhMsgHdrLines.slice(0);
 	// Do some things if using the internal header (not loaded externally)
 	if (this.usingInternalEnhMsgHdr)
@@ -11547,7 +11575,7 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		{
 			console.gotoxy(screenX, screenY++);
 			console.putmsg(this.ParseMsgAtCodes(enhHdrLines[hdrFileIdx], pMsgHdr,
-			               pDisplayMsgNum, dateTimeStr, useBBSLocalTimeZone, false));
+			               pDisplayMsgNum, dateTimeStr, useBBSLocalTimeZone, false), printMode);
 		}
 		// Older - Used to center the header lines, but I'm not sure this is necessary,
 		// and it might even make the header off by one, which could be bad.
@@ -11582,7 +11610,7 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		for (var hdrFileIdx = 0; hdrFileIdx < enhHdrLines.length; ++hdrFileIdx)
 		{
 			console.putmsg(this.ParseMsgAtCodes(enhHdrLines[hdrFileIdx], pMsgHdr,
-			               pDisplayMsgNum, dateTimeStr, useBBSLocalTimeZone, false));
+			               pDisplayMsgNum, dateTimeStr, useBBSLocalTimeZone, false), printMode);
 		}
 		// Note: Avatar display is only supported for ANSI
 	}
@@ -20145,7 +20173,7 @@ function parseLoadableModuleArgs(argv)
 {
 	// TODO: Allow indexed reader mode?
 	//argVals.indexedmode = true;
-
+	
 	var argVals = getDefaultArgParseObj();
 
 	var allDigitsRegex = /^[0-9]+$/; // To check if a string consists only of digits
