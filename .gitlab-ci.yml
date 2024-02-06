@@ -1,18 +1,3 @@
-spec:
-  inputs:
-    os:
-      default: ''
-    platform:
-      default: ''
-    tagname:
-      default: ''
-    cross_platform:
-      default: 'no'
-    build_flags:
-      default: 'RELEASE=1'
-    no_javascript:
-      default: 'no'
----
 .rules:
   rules:
     - changes:

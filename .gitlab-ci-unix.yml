@@ -1,3 +1,15 @@
+spec:
+  inputs:
+    os:
+    platform:
+    tagname:
+    cross_platform:
+      default: 'no'
+    build_flags:
+      default: 'RELEASE=1'
+    no_javascript:
+      default: 'no'
+---
 ".$[[ inputs.os ]]":
   extends: .rules
   tags: 
