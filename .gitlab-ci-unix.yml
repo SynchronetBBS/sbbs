@@ -1,0 +1,94 @@
+".$[[ inputs.os ]]":
+  extends: .rules
+  tags: 
+    - $[[ inputs.tagname ]]
+  variables:
+    CROSS_PLATFORM: $[[ inputs.cross_platform ]]
+    OS: $[[ inputs.os ]]
+    PLATFORM: $[[ inputs.platform ]]
+    OSP: "$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    BUILD_FLAGS: "$[[ inputs.build_flags ]]"
+    NO_JAVASCRIPT: "$[[ inputs.no_javascript ]]"
+
+".$[[ inputs.os ]]-build":
+  stage: build
+  extends: .$[[ inputs.os ]]
+
+".$[[ inputs.os ]]-test":
+  stage: test
+  extends: .$[[ inputs.os ]]
+
+"spidermonkey-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .spidermonkey
+
+"cryptlib-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .cryptlib
+
+"xpdev-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .xpdev
+
+"encode-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .encode
+
+"hash-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .hash
+
+"ciolib-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .ciolib
+
+"sftp-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .sftp
+
+"smblib-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .smblib
+
+"uifc-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .uifc
+
+"sbbs-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .sbbs
+
+"syncterm-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .syncterm
+
+"syncdraw-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .syncdraw
+
+"jsdoor-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .jsdoor
+
+"sexpots-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+    - .sexpots
+
+"js-testsuite-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-test
+    - .js-testsuite
