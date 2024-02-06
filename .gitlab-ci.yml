@@ -1,3 +1,12 @@
+spec:
+  inputs:
+    os:
+    platform:
+    tagname:
+    cross_platform: 'no'
+    build_flags: 'RELEASE=1'
+    no_javascript: 'no'
+---
 .rules:
   rules:
     - changes:
@@ -154,7 +163,7 @@
     - cd src/syncdraw
     - gmake ${BUILD_FLAGS}
   artifacts:
-    name: "syncdraw-${OSP}:
+    name: "syncdraw-${OSP}"
     paths:
       - "src/syncdraw/*.exe.release/*"
   needs:
@@ -206,25 +215,16 @@ include:
       os: 'openbsd'
       platform: 'amd64'
       tagname: 'OpenBSD'
-      cross_platform: 'no'
-      build_flags: 'RELEASE=1'
-      no_javascript: 'no'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'netbsd'
       platform: 'amd64'
       tagname: 'NetBSD'
-      cross_platform: 'no'
-      build_flags: 'RELEASE=1'
-      no_javascript: 'no'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'freebsd'
       platform: 'amd64'
       tagname: 'FreeBSD'
-      cross_platform: 'no'
-      build_flags: 'RELEASE=1'
-      no_javascript: 'no'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'mingw32'
@@ -238,8 +238,6 @@ include:
       os: 'raspian'
       platform: 'aarch64'
       tagname: 'RaspberryPi'
-      cross_platform: 'no'
-      build_flags: 'RELEASE=1'
       no_javascript: 'yes'
 # NOTE: linux-sbbs builds gtkutils, so that would need to be fiddled with
 #  - local: '.gitlab-ci-unix.yml'
