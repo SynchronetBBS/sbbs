@@ -371,7 +371,7 @@ sexpots-netbsd:
     paths:
       - "src/sexpots/*.exe.release/*"
 
-spidermonkey-openbsd
+spidermonkey-openbsd:
   tags: [OpenBSD]
   stage: build
   extends: .rules
@@ -383,7 +383,7 @@ spidermonkey-openbsd
   paths:
     - "src/3rdp/*.release/mozjs"
 
-cryptlib-openbsd
+cryptlib-openbsd:
   tags: [OpenBSD]
   stage: build
   extends: .rules
