@@ -102,12 +102,12 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - cd src/ciolib
+    - cd src/conio
     - gmake ${BUILD_FLAGS}
   artifacts:
     name: "ciolib-${OSP}"
     paths:
-      - "src/ciolib/*.*.*.lib.release*"
+      - "src/conio/*.*.*.lib.release*"
   needs:
     - job: "xpdev-$[[ inputs.os ]]"
     - job: "hash-$[[ inputs.os ]]"
