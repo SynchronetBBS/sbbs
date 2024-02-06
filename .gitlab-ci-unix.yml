@@ -73,6 +73,7 @@ spec:
     name: "xpdev-${OSP}"
     paths:
       - "src/xpdev/*.*.*.lib.release*"
+      - "src/xpdev/*.*.*.obj.release*"
 
 "encode-$[[ inputs.os ]]":
   extends:
@@ -113,8 +114,6 @@ spec:
       - "src/conio/*.*.*.obj.release*"
   needs:
     - job: "xpdev-$[[ inputs.os ]]"
-    - job: "hash-$[[ inputs.os ]]"
-    - job: "encode-$[[ inputs.os ]]"
 
 "sftp-$[[ inputs.os ]]":
   extends:
@@ -143,8 +142,6 @@ spec:
       - "src/smblib/*.*.*.obj.release*"
   needs:
     - job: "xpdev-$[[ inputs.os ]]"
-    - job: "hash-$[[ inputs.os ]]"
-    - job: "encode-$[[ inputs.os ]]"
 
 "uifc-$[[ inputs.os ]]":
   extends:
