@@ -23,8 +23,6 @@ spec:
     BUILD_FLAGS: "$[[ inputs.build_flags ]]"
     NO_JAVASCRIPT: "$[[ inputs.no_javascript ]]"
     GIT_STRATEGY: none
-  script:
-    - echo Cloned
 
 ".$[[ inputs.os ]]-build":
   stage: build
@@ -38,6 +36,8 @@ spec:
   extends: .rules
   variables:
     GIT_STRATEGY: clone
+  script:
+    - echo Cloned
 
 "spidermonkey-$[[ inputs.os ]]":
   extends:
