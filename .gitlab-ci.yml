@@ -379,7 +379,6 @@ spidermonkey-openbsd:
     - cd src/3rdp/build
     - gmake libmozjs
   artifacts:
-    named: libmozjs
     paths:
       - "src/3rdp/*.release/mozjs"
 
@@ -391,7 +390,6 @@ cryptlib-openbsd:
     - cd src/3rdp/build
     - gmake libmozjs
   artifacts:
-    named: cryptlib
     paths:
       - "src/3rdp/*.release/mozjs"
 
