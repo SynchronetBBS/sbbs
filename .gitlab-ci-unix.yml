@@ -40,7 +40,7 @@ spec:
     paths:
       - "src/xpdev/*.*.*.lib.release*"
   needs:
-    - job: 'xpdev-${OS}'
+    - job: 'xpdev-$[[ inputs.os ]]'
 
 .encode:
   script:
@@ -51,7 +51,7 @@ spec:
     paths:
       - "src/encode/*.*.*.lib.release*"
   needs:
-    - job: "xpdev-${OS}"
+    - job: "xpdev-$[[ inputs.os ]]"
 
 .hash:
   script:
@@ -71,9 +71,9 @@ spec:
     paths:
       - "src/ciolib/*.*.*.lib.release*"
   needs:
-    - job: "xpdev-${OS}"
-    - job: "hash-${OS}"
-    - job: "encode-${OS}"
+    - job: "xpdev-$[[ inputs.os ]]"
+    - job: "hash-$[[ inputs.os ]]"
+    - job: "encode-$[[ inputs.os ]]"
 
 .sftp:
   script:
@@ -84,7 +84,7 @@ spec:
     paths:
       - "src/sftp/*.*.*.lib.release*"
   needs:
-    - job: "xpdev-${OS}"
+    - job: "xpdev-$[[ inputs.os ]]"
 
 .smblib:
   script:
@@ -95,9 +95,9 @@ spec:
     paths:
       - "src/smblib/*.*.*.lib.release*"
   needs:
-    - job: "xpdev-${OS}"
-    - job: "hash-${OS}"
-    - job: "encode-${OS}"
+    - job: "xpdev-$[[ inputs.os ]]"
+    - job: "hash-$[[ inputs.os ]]"
+    - job: "encode-$[[ inputs.os ]]"
 
 .uifc:
   script:
@@ -108,8 +108,8 @@ spec:
     paths:
       - "src/uifc/*.*.*.lib.release*"
   needs:
-    - job: "xpdev-${OS}"
-    - job: "ciolib-${OS}"
+    - job: "xpdev-$[[ inputs.os ]]"
+    - job: "ciolib-$[[ inputs.os ]]"
 
 .sbbs:
   script:
@@ -122,15 +122,15 @@ spec:
       - "src/sbbs3/*.lib.release/*"
       - "src/sbbs3/*/*.exe.release/*"
   needs:
-    - job: "ciolib-${OS}"
-    - job: "cryptlib-${OS}"
-    - job: "encode-${OS}"
-    - job: "hash-${OS}"
-    - job: "sftp-${OS}"
-    - job: "smblib-${OS}"
-    - job: "spidermonkey-${OS}"
-    - job: "uifc-${OS}"
-    - job: "xpdev-${OS}"
+    - job: "ciolib-$[[ inputs.os ]]"
+    - job: "cryptlib-$[[ inputs.os ]]"
+    - job: "encode-$[[ inputs.os ]]"
+    - job: "hash-$[[ inputs.os ]]"
+    - job: "sftp-$[[ inputs.os ]]"
+    - job: "smblib-$[[ inputs.os ]]"
+    - job: "spidermonkey-$[[ inputs.os ]]"
+    - job: "uifc-$[[ inputs.os ]]"
+    - job: "xpdev-$[[ inputs.os ]]"
   rules:
     - if: $CROSS_PLATFORM == "yes"
       when: never
@@ -144,13 +144,13 @@ spec:
     paths:
       - "src/syncterm/*.exe.release/*"
   needs:
-    - job: "ciolib-${OS}"
-    - job: "cryptlib-${OS}"
-    - job: "encode-${OS}"
-    - job: "hash-${OS}"
-    - job: "sftp-${OS}"
-    - job: "uifc-${OS}"
-    - job: "xpdev-${OS}"
+    - job: "ciolib-$[[ inputs.os ]]"
+    - job: "cryptlib-$[[ inputs.os ]]"
+    - job: "encode-$[[ inputs.os ]]"
+    - job: "hash-$[[ inputs.os ]]"
+    - job: "sftp-$[[ inputs.os ]]"
+    - job: "uifc-$[[ inputs.os ]]"
+    - job: "xpdev-$[[ inputs.os ]]"
 
 .syncdraw:
   script:
@@ -173,21 +173,21 @@ spec:
     paths:
       - "src/sbbs3/*.exe.release/*"
   needs:
-    - job: "ciolib-${OS}"
-    - job: "cryptlib-${OS}"
-    - job: "encode-${OS}"
-    - job: "hash-${OS}"
-    - job: "sftp-${OS}"
-    - job: "smblib-${OS}"
-    - job: "spidermonkey-${OS}"
-    - job: "uifc-${OS}"
-    - job: "xpdev-${OS}"
+    - job: "ciolib-$[[ inputs.os ]]"
+    - job: "cryptlib-$[[ inputs.os ]]"
+    - job: "encode-$[[ inputs.os ]]"
+    - job: "hash-$[[ inputs.os ]]"
+    - job: "sftp-$[[ inputs.os ]]"
+    - job: "smblib-$[[ inputs.os ]]"
+    - job: "spidermonkey-$[[ inputs.os ]]"
+    - job: "uifc-$[[ inputs.os ]]"
+    - job: "xpdev-$[[ inputs.os ]]"
 
 .js-testsuite:
   script:
     - "src/sbbs3/*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
-    - "jsdoor-${OS}"
+    - "jsdoor-$[[ inputs.os ]]"
   rules:
     - if: $CROSS_PLATFORM == "yes"
       when: never
@@ -201,7 +201,7 @@ spec:
     paths:
       - "src/sexpots/*.exe.release/*"
   needs:
-    - job: "xpdev-${OS}"
+    - job: "xpdev-$[[ inputs.os ]]"
 
 ".$[[ inputs.os ]]":
   extends: .rules
