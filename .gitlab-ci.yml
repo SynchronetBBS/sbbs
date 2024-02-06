@@ -23,6 +23,16 @@ sbbs-linux:
       - "src/sbbs3/*.lib.release/*"
       - "src/sbbs3/*/*.exe.release/*"
 
+smoketest-jsexec-linux:
+  tags: [Linux]
+  image: gcc
+  stage: test
+  script:
+    - cd src/sbbs3
+    - *.exe.release/jsexec -r 'exit(42)'
+  allow_failure:
+    exit_codes: 42
+
 sexpots-linux:
   tags: [Linux]
   image: gcc
