@@ -1,8 +1,11 @@
 spec:
   inputs:
     os:
+      default: ''
     platform:
+      default: ''
     tagname:
+      default: ''
     cross_platform:
       default: 'no'
     build_flags:
