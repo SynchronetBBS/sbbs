@@ -262,7 +262,7 @@ js-testsuite-freebsd:
   script:
     - "*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
-    - build jsdoor-freebsd
+    - build jsdoor-freebsd-amd64
 
 jsdoor-linux:
   tags: [Linux]
@@ -357,7 +357,7 @@ js-testsuite-netbsd:
   script:
     - "*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
-    - build jsdoor-netbsd
+    - build jsdoor-netbsd-amd64
 
 sexpots-netbsd:
   tags: [NetBSD]
@@ -427,7 +427,7 @@ js-testsuite-openbsd:
   script:
     - "*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
-    - build jsdoor-openbsd
+    - build jsdoor-openbsd-amd64
 
 sexpots-openbsd:
   tags: [OpenBSD]
