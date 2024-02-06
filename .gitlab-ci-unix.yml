@@ -84,6 +84,7 @@ spec:
     name: "encode-${OSP}"
     paths:
       - "src/encode/*.*.*.lib.release*"
+      - "src/encode/*.*.*.obj.release*"
   needs:
     - job: "xpdev-$[[ inputs.os ]]"
 
@@ -97,6 +98,7 @@ spec:
     name: "hash-${OSP}"
     paths:
       - "src/hash/*.*.*.lib.release*"
+      - "src/hash/*.*.*.obj.release*"
 
 "ciolib-$[[ inputs.os ]]":
   extends:
@@ -108,6 +110,7 @@ spec:
     name: "ciolib-${OSP}"
     paths:
       - "src/conio/*.*.*.lib.release*"
+      - "src/conio/*.*.*.obj.release*"
   needs:
     - job: "xpdev-$[[ inputs.os ]]"
     - job: "hash-$[[ inputs.os ]]"
@@ -123,6 +126,7 @@ spec:
     name: "sftp-${OSP}"
     paths:
       - "src/sftp/*.*.*.lib.release*"
+      - "src/sftp/*.*.*.obj.release*"
   needs:
     - job: "xpdev-$[[ inputs.os ]]"
 
@@ -136,6 +140,7 @@ spec:
     name: "smblib-${OSP}"
     paths:
       - "src/smblib/*.*.*.lib.release*"
+      - "src/smblib/*.*.*.obj.release*"
   needs:
     - job: "xpdev-$[[ inputs.os ]]"
     - job: "hash-$[[ inputs.os ]]"
@@ -151,6 +156,7 @@ spec:
     name: "uifc-${OSP}"
     paths:
       - "src/uifc/*.*.*.lib.release*"
+      - "src/uifc/*.*.*.obj.release*"
   needs:
     - job: "xpdev-$[[ inputs.os ]]"
     - job: "ciolib-$[[ inputs.os ]]"
