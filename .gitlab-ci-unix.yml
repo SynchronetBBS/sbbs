@@ -33,7 +33,9 @@ spec:
   extends: .$[[ inputs.os ]]
 
 "clone-$[[ inputs.os ]]":
-  extends: .rules
+  extends: 
+   - .rules
+   - .$[[ inputs.os ]]-build
   variables:
     GIT_STRATEGY: clone
   script:
