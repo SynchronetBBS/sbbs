@@ -37,7 +37,7 @@
 
 #include <signal.h>
 #include <stdio.h>
-/* #include "curs_fix.h" */
+#include "ciolib.h"
 #include "filepick.h"
 #include "uifc.h"
 
