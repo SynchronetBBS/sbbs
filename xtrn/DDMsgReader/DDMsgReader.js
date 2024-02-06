@@ -9838,7 +9838,13 @@ function DigDistMsgReader_DisplaySyncMsgHeader(pMsgHdr)
 				// message read prompt, this script now has to parse & replace some of
 				// the @-codes in the message header line, since Synchronet doesn't know
 				// that the user is reading a message.
-				console.putmsg(this.ParseMsgAtCodes(fileLine, pMsgHdr, null, dateTimeStr, false, true), printMode);
+				var hdrLine = this.ParseMsgAtCodes(fileLine, pMsgHdr, null, dateTimeStr, false, true);
+				// If the message is in UTF-8 and the user's terminal supports UTF-8, then we'll be printing
+				// with the P_UTF8 mode bit. We'll need to convert the display header line to UTF-8 so all
+				// of it will display properly.
+				if (hdrIsUTF8 && terminalSupportsUTF8)
+					hdrLine = utf8_encode(hdrLine);
+				console.putmsg(hdrLine, printMode);
 				console.crlf();
 			}
 			msgHdrFile.close();
