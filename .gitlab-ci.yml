@@ -27,6 +27,7 @@ smoketest-jsexec-linux:
   tags: [Linux]
   image: gcc
   stage: test
+  extends: .rules
   script:
     - cd src/sbbs3
     - "*.exe.release/jsexec -r 'exit(42)'"
