@@ -178,6 +178,9 @@ spec:
     - job: "uifc-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
   rules:
+  rules:
+    - if: $NO_JAVASCRIPT == "yes"
+      when: never
     - if: $CROSS_PLATFORM == "yes"
       when: never
     - changes:
