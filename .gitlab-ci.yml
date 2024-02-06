@@ -376,22 +376,22 @@ spidermonkey-openbsd:
   stage: build
   extends: .rules
   script:
-    - cd src/3rdp/build
+    - cd 3rdp/build
     - gmake libmozjs
   artifacts:
     paths:
-      - "src/3rdp/*.release/mozjs"
+      - "3rdp/*.release/mozjs"
 
 cryptlib-openbsd:
   tags: [OpenBSD]
   stage: build
   extends: .rules
   script:
-    - cd src/3rdp/build
+    - cd 3rdp/build
     - gmake libmozjs
   artifacts:
     paths:
-      - "src/3rdp/*.release/mozjs"
+      - "3rdp/*.release/mozjs"
 
 sbbs-openbsd:
   tags: [OpenBSD]
