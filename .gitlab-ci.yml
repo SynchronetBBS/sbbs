@@ -29,7 +29,7 @@ smoketest-jsexec-linux:
   stage: test
   script:
     - cd src/sbbs3
-    - *.exe.release/jsexec -r 'exit(42)'
+    - "*.exe.release/jsexec -r 'exit(42)'"
   allow_failure:
     exit_codes: 42
 
