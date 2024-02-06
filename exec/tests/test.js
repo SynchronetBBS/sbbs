@@ -68,7 +68,7 @@ function run_tests(location, obj)
 
 	if (obj.tests !== undefined) {
 		obj.tests.forEach(function(testscript) {
-			var failed = false;
+			var tfailed = false;
 
 			try {
 				var dir = testscript;
@@ -77,16 +77,17 @@ function run_tests(location, obj)
 				var result = js.exec(testscript, location, new function(){});
 				chdir(js.exec_dir);
 				if (result instanceof Error) {
-					failed = true;
+					tfailed = true;
 					log("Caught: "+result);
 				}
 			}
 			catch(e) {
-				failed = true;
+				tfailed = true;
 				log("Caught: "+e);
 			}
-			if (failed) {
+			if (tfailed) {
 				stdout.writeln("FAILED!");
+				stdout.writeln("");
 				failed++;
 			}
 			else {
@@ -105,3 +106,6 @@ function run_tests(location, obj)
 }
 
 run_tests(testroot, testdirs[testroot]);
+if (failed > 0)
+	exit(1);
+exit(0);
