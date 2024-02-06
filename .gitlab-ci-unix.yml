@@ -22,7 +22,7 @@ spec:
     OSP: "$[[ inputs.os ]]-$[[ inputs.platform ]]"
     BUILD_FLAGS: "$[[ inputs.build_flags ]]"
     NO_JAVASCRIPT: "$[[ inputs.no_javascript ]]"
-    GIT_STRATEGY: none
+    GIT_STRATEGY: fetch
 
 ".$[[ inputs.os ]]-build":
   stage: build
@@ -39,8 +39,7 @@ spec:
   variables:
     GIT_STRATEGY: fetch
   script:
-    - cd 3rdp/build
-    - gmake ${BUILD_FLAGS} clean
+    - echo Fetched
 
 "spidermonkey-$[[ inputs.os ]]":
   extends:
