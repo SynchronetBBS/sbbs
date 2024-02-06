@@ -240,6 +240,15 @@ spec:
     - job: "spidermonkey-$[[ inputs.os ]]"
     - job: "uifc-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
+  rules:
+    - if: $NO_JAVASCRIPT == "yes"
+      when: never
+    - changes:
+      - src/**/*
+      - 3rdp/**/*
+      - ctrl/text.dat
+      - xtrn/**/{GNUm,M}akefile
+      - xtrn/**/*.{c,h,cpp,hpp,mk}
 
 "sexpots-$[[ inputs.os ]]":
   extends:
