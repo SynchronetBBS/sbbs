@@ -409,7 +409,7 @@ sbbs-openbsd:
   needs:
     - job: cryptlib-openbsd
       artifacts: true
-    - job: libmozjs-openbsd
+    - job: spidermonkey-openbsd
       artifacts: true
 
 syncterm-openbsd:
@@ -453,7 +453,7 @@ jsdoor-openbsd:
   needs:
     - job: cryptlib-openbsd
       artifacts: true
-    - job: libmozjs-openbsd
+    - job: spidermonkey-openbsd
       artifacts: true
 
 js-testsuite-openbsd:
