@@ -46,13 +46,11 @@ var subj,to,from;
 var options = load('modopts.js', 'fseditor');
 if(!options)
 	options = {};
-if(options.utf8_support === undefined)
-	options.utf8_support = argv.indexOf('-utf8') >= 0;
 if(!options.default_tabstop)
 	options.default_tabstop = 8;
 
 var pmode = 0;
-if(options.utf8_support && console.term_supports(USER_UTF8))
+if(console.term_supports(USER_UTF8))
 	pmode |= P_UTF8;
 
 var tab_width = bbs.mods.userprops.get("fseditor", "tabstop", options.default_tabstop);
@@ -80,6 +78,38 @@ function Line(copyfrom)
 		this.kludged = copyfrom.kludged;
 		this.firstchar = copyfrom.firstchar;
 		this.selected = copyfrom.selected;
+	}
+}
+
+function ch_to_string(c)
+{
+	var derp;
+	var i;
+	var ret = '';
+
+	if (pmode & P_UTF8) {
+		derp = utf8_encode(c.charCodeAt(0));
+		for (i = 0; i < derp.length; i++)
+			ret += derp[i];
+	}
+	else {
+		ret += c;
+	}
+	return ret;
+}
+
+function shitty_putc(c)
+{
+	var derp;
+	var i;
+
+	if (pmode & P_UTF8) {
+		derp = utf8_encode(c.charCodeAt(0));
+		for (i = 0; i < derp.length; i++)
+			console.putbyte(ascii(derp[i]));
+	}
+	else {
+		console.putbyte(ascii(c));
 	}
 }
 
@@ -119,7 +149,7 @@ function draw_line(l,x,clear)
 		console.gotoxy(x+1,yp);
 		for(; x<line[l].text.length && x<(console.screen_columns-1); x++) {
 			console.attributes=ascii(line[l].attr.substr(x,1));
-			console.print(line[l].text.substr(x,1), pmode);
+			shitty_putc(line[l].text[x]);
 		}
 		if(clear && x<(console.screen_columns-1)) {
 			console.attributes=7;
@@ -172,7 +202,7 @@ function next_line()
 		scroll(scroll_lines);		/* Scroll up */
 	if(last_xpos>=0)
 		xpos=last_xpos;
-	var text_length = console.strlen(line[ypos].text, pmode);
+	var text_length = line[ypos].text.length;
 	if(xpos>text_length)
 		xpos=text_length;
 }
@@ -190,7 +220,7 @@ function try_prev_line()
 			scroll(0-scroll_lines);		/* Scroll down */
 		if(last_xpos>=0)
 			xpos=last_xpos;
-		var text_length = console.strlen(line[ypos].text, pmode);
+		var text_length = line[ypos].text.length;
 		if(xpos>text_length)
 			xpos=text_length;
 		return(true);
@@ -212,7 +242,7 @@ function try_next_line()
 			scroll(scroll_lines);		/* Scroll up */
 		if(last_xpos>=0)
 			xpos=last_xpos;
-		var text_length = console.strlen(line[ypos].text, pmode);
+		var text_length = line[ypos].text.length;
 		if(xpos>text_length)
 			xpos=text_length;
 		return(true);
@@ -534,6 +564,32 @@ function erase_graphic_box()
 	graphics_box_displayed=0;
 }
 
+function shitty_inkey(mode, timeout)
+{
+	var b = console.inkey(mode, timeout);
+	var ab;
+	var bit;
+	var val;
+	var tmp;
+	var ret = b;
+	if (pmode & P_UTF8) {
+		ab = ascii(b);
+		if (ascii(b[0]) & 0x80) {
+			for (bit = 7; ab & (1<<bit); bit--)
+				val = ab & ((1<<bit) - 1);
+
+			for (bit = 6; bit > 3 && (ab & (1<<bit)); bit--) {
+				tmp = console.getbyte(timeout);
+				val = (val << 6) | (tmp & 0x3f);
+			}
+
+			ret = String.fromCharCode(val);
+		}
+	}
+
+	return ret;
+}
+
 function get_graphic()
 {
 	var key='';
@@ -554,7 +610,7 @@ function get_graphic()
 			console.gotoxy(41+inp.length,graphics_box_displayed);
 		else
 			console.gotoxy(55+inp.length,graphics_box_displayed);
-		ch=console.inkey(0,10000);
+		ch=shitty_inkey(0,10000);
 		switch(ch) {
 			case '':
 				break;
@@ -1074,10 +1130,11 @@ function make_strings(soft,embed_colour)
 					}
 					lastattr=thisattr;
 				}
-				str+=line[i].text.substr(j,1);
+				str+=ch_to_string(line[i].text.substr(j,1));
 			}
 		}
 		else {
+			// This code will break with unicode, but that's OK since it's never used.
 			str+=line[i].text;
 			attrs+=line[i].attr;
 		}
@@ -1256,7 +1313,7 @@ function quote_mode()
 
 	while(1) {
 		set_cursor();
-		key=console.inkey(0,10000);
+		key=shitty_inkey(0,10000);
 		if(key=='')
 			continue;
 		switch(key) {
@@ -1526,7 +1583,7 @@ function edit(quote_first)
 	}
 	while(1) {
 		set_cursor();
-		key=console.inkey(/* mode: */0, /* timeout (ms): */10000);
+		key=shitty_inkey(/* mode: */0, /* timeout (ms): */10000);
 		if(!bbs.online) {
 			save_file();
 			return 1;	// aborted
@@ -1643,7 +1700,7 @@ function edit(quote_first)
 				break;
 			case KEY_END:	/* CTRL-E  */
 				last_xpos=-1;
-				xpos=console.strlen(line[ypos].text, pmode);
+				xpos=line[ypos].text.length;
 				break;
 			case KEY_RIGHT:	/* CTRL-F  */
 				last_xpos=-1;
@@ -1928,7 +1985,7 @@ function edit(quote_first)
 						console.line_counter=0;
 						return;
 					}
-					while(console.inkey(/* mode: */0, /* timeout: */500) == '\x18')
+					while(shitty_inkey(/* mode: */0, /* timeout: */500) == '\x18')
 						;
 					console.print(format(bbs.text(FileNotReceived), "File"));
 					console.pause();
