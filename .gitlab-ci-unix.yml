@@ -22,6 +22,7 @@ spec:
     OSP: "$[[ inputs.os ]]-$[[ inputs.platform ]]"
     BUILD_FLAGS: "$[[ inputs.build_flags ]]"
     NO_JAVASCRIPT: "$[[ inputs.no_javascript ]]"
+    GIT_STRATEGY: none
 
 ".$[[ inputs.os ]]-build":
   stage: build
@@ -30,6 +31,11 @@ spec:
 ".$[[ inputs.os ]]-test":
   stage: test
   extends: .$[[ inputs.os ]]
+
+"clone-$[[ inputs.os ]]":
+  extends: .rules
+  variables:
+    GIT_STRATEGY: clone
 
 "spidermonkey-$[[ inputs.os ]]":
   extends:
@@ -51,6 +57,8 @@ spec:
       - ctrl/text.dat
       - xtrn/**/{GNUm,M}akefile
       - xtrn/**/*.{c,h,cpp,hpp,mk}
+  needs:
+    - job: "clone-$[[ inputs.os ]]"
 
 "cryptlib-$[[ inputs.os ]]":
   extends:
@@ -62,6 +70,8 @@ spec:
     name: "cryptlib-${OSP}"
     paths:
       - "3rdp/*.*.*.release/cl"
+  needs:
+    - job: "clone-$[[ inputs.os ]]"
 
 "xpdev-$[[ inputs.os ]]":
   extends:
@@ -74,6 +84,8 @@ spec:
     paths:
       - "src/xpdev/*.*.*.lib.release*"
       - "src/xpdev/*.*.*.obj.release*"
+  needs:
+    - job: "clone-$[[ inputs.os ]]"
 
 "encode-$[[ inputs.os ]]":
   extends:
@@ -86,6 +98,8 @@ spec:
     paths:
       - "src/encode/*.*.*.lib.release*"
       - "src/encode/*.*.*.obj.release*"
+  needs:
+    - job: "clone-$[[ inputs.os ]]"
 
 "hash-$[[ inputs.os ]]":
   extends:
@@ -98,6 +112,8 @@ spec:
     paths:
       - "src/hash/*.*.*.lib.release*"
       - "src/hash/*.*.*.obj.release*"
+  needs:
+    - job: "clone-$[[ inputs.os ]]"
 
 "ciolib-$[[ inputs.os ]]":
   extends:
@@ -110,6 +126,8 @@ spec:
     paths:
       - "src/conio/*.*.*.lib.release*"
       - "src/conio/*.*.*.obj.release*"
+  needs:
+    - job: "clone-$[[ inputs.os ]]"
 
 "sftp-$[[ inputs.os ]]":
   extends:
@@ -122,6 +140,8 @@ spec:
     paths:
       - "src/sftp/*.*.*.lib.release*"
       - "src/sftp/*.*.*.obj.release*"
+  needs:
+    - job: "clone-$[[ inputs.os ]]"
 
 "smblib-$[[ inputs.os ]]":
   extends:
@@ -134,6 +154,8 @@ spec:
     paths:
       - "src/smblib/*.*.*.lib.release*"
       - "src/smblib/*.*.*.obj.release*"
+  needs:
+    - job: "clone-$[[ inputs.os ]]"
 
 "uifc-$[[ inputs.os ]]":
   extends:
@@ -149,6 +171,7 @@ spec:
   needs:
     - job: "xpdev-$[[ inputs.os ]]"
     - job: "ciolib-$[[ inputs.os ]]"
+    - job: "clone-$[[ inputs.os ]]"
 
 "sbbs-$[[ inputs.os ]]":
   extends:
@@ -172,7 +195,7 @@ spec:
     - job: "spidermonkey-$[[ inputs.os ]]"
     - job: "uifc-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
-  rules:
+    - job: "clone-$[[ inputs.os ]]"
   rules:
     - if: $NO_JAVASCRIPT == "yes"
       when: never
@@ -203,6 +226,7 @@ spec:
     - job: "sftp-$[[ inputs.os ]]"
     - job: "uifc-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
+    - job: "clone-$[[ inputs.os ]]"
 
 "syncdraw-$[[ inputs.os ]]":
   extends:
@@ -217,6 +241,7 @@ spec:
   needs:
     - job: "ciolib-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
+    - job: "clone-$[[ inputs.os ]]"
 
 "jsdoor-$[[ inputs.os ]]":
   extends:
@@ -238,6 +263,7 @@ spec:
     - job: "spidermonkey-$[[ inputs.os ]]"
     - job: "uifc-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
+    - job: "clone-$[[ inputs.os ]]"
   rules:
     - if: $NO_JAVASCRIPT == "yes"
       when: never
@@ -260,6 +286,7 @@ spec:
       - "src/sexpots/*.exe.release/*"
   needs:
     - job: "xpdev-$[[ inputs.os ]]"
+    - job: "clone-$[[ inputs.os ]]"
 
 "js-testsuite-$[[ inputs.os ]]":
   extends:
