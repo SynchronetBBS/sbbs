@@ -34,6 +34,7 @@ spec:
 "spidermonkey-$[[ inputs.os ]]":
   extends:
     - .$[[ inputs.os ]]-build
+    - .rules
   script:
     - cd 3rdp/build
     - gmake ${BUILD_FLAGS} libmozjs
