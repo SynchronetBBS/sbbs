@@ -21,6 +21,8 @@
 
 #include "sbbs.h"
 #include "petdefs.h"
+#include "unicode.h"
+#include "utf8.h"
 
 int sbbs_t::kbincom(unsigned int timeout)
 {
@@ -97,17 +99,15 @@ void sbbs_t::translate_input(uchar* buf, size_t len)
 int sbbs_t::inkey(int mode, unsigned int timeout)
 {
 	int	ch=0;
+	const int no_input = (mode & K_NUL) ? NOINP : 0; // distinguish between timeout and '\0'
 
 	ch=kbincom(timeout);
 
 	if(sys_status&SS_SYSPAGE)
 		sbbs_beep(400 + sbbs_random(800), ch == NOINP ? 100 : 10);
 
-	if(ch == NOINP) {
-		if(mode & K_NUL)	// distinguish between timeout and '\0'
-			return NOINP;
-		return 0;
-	}
+	if(ch == NOINP)
+		return no_input;
 
 	if(cfg.node_misc&NM_7BITONLY
 		&& (!(sys_status&SS_USERON) || term_supports(NO_EXASCII)))
@@ -120,6 +120,31 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 		if(cfg.ctrlkey_passthru&(1<<ch))	/*  flagged as passthru? */
 			return(ch);						/* do not handle here */
 		return(handle_ctrlkey(ch,mode));
+	}
+
+	/* Translate (not control character) input into CP437 */
+	if (mode & K_CP437) {
+		if ((ch & 0x80) && term_supports(UTF8)) {
+			char utf8[UTF8_MAX_LEN] = { (char)ch };
+			int len = utf8_decode_firstbyte(ch);
+			if (len < 2 || len > sizeof(utf8))
+				return no_input;
+			for (int i = 1; i < len; ++i) {
+				ch = kbincom(timeout);
+				if (!(ch & 0x80) || (ch == NOINP))
+					break;
+				utf8[i] = ch;
+			}
+			if (ch & 0x80) {
+				enum unicode_codepoint codepoint;
+				len = utf8_getc(utf8, len, &codepoint);
+				if (len < 1)
+					return no_input;
+				ch = unicode_to_cp437(codepoint);
+				if (ch == 0)
+					return no_input;
+			}
+		}
 	}
 
 	if(mode&K_UPPER)
