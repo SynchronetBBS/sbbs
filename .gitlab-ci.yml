@@ -388,7 +388,7 @@ cryptlib-openbsd:
   extends: .rules
   script:
     - cd 3rdp/build
-    - gmake libmozjs
+    - gmake cryptlib
   artifacts:
     paths:
       - "3rdp/*.release/mozjs"
