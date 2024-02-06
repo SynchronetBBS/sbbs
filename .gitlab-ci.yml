@@ -259,7 +259,7 @@ js-testsuite-freebsd:
   stage: test
   extends: .rules
   script:
-    - "*.exe.release/jsdoor exec/tests/test.js"
+    - "src/sbbs3/*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
     - jsdoor-freebsd
 
@@ -355,7 +355,7 @@ js-testsuite-netbsd:
   stage: test
   extends: .rules
   script:
-    - "*.exe.release/jsdoor exec/tests/test.js"
+    - "src/sbbs3/*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
     - jsdoor-netbsd
 
@@ -371,6 +371,30 @@ sexpots-netbsd:
     paths:
       - "src/sexpots/*.exe.release/*"
 
+spidermonkey-openbsd
+  tags: [OpenBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/3rdp/build
+    - gmake libmozjs
+  artifacts:
+    named: libmozjs
+  paths:
+    - "src/3rdp/*.release/mozjs"
+
+cryptlib-openbsd
+  tags: [OpenBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/3rdp/build
+    - gmake libmozjs
+  artifacts:
+    named: cryptlib
+  paths:
+    - "src/3rdp/*.release/mozjs"
+
 sbbs-openbsd:
   tags: [OpenBSD]
   stage: build
@@ -384,6 +408,11 @@ sbbs-openbsd:
       - "src/sbbs3/*.exe.release/*"
       - "src/sbbs3/*.lib.release/*"
       - "src/sbbs3/*/*.exe.release/*"
+  needs:
+    - job: cryptlib-openbsd
+      artifacts: true
+    - job: libmozjs-openbsd
+      artifacts: true
 
 syncterm-openbsd:
   tags: [OpenBSD]
@@ -396,6 +425,9 @@ syncterm-openbsd:
     name: syncterm-openbsd-amd64
     paths:
       - "src/syncterm/*.exe.release/*"
+  needs:
+    - job: cryptlib-openbsd
+      artifacts: true
 
 syncdraw-openbsd:
   tags: [OpenBSD]
@@ -420,13 +452,18 @@ jsdoor-openbsd:
     name: jsdoor-openbsd-amd64
     paths:
       - "src/sbbs3/*.exe.release/*"
+  needs:
+    - job: cryptlib-openbsd
+      artifacts: true
+    - job: libmozjs-openbsd
+      artifacts: true
 
 js-testsuite-openbsd:
   tags: [OpenBSD]
   stage: test
   extends: .rules
   script:
-    - "*.exe.release/jsdoor exec/tests/test.js"
+    - "src/sbbs3/*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
     - jsdoor-openbsd
 
