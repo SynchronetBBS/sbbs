@@ -392,7 +392,7 @@ cryptlib-openbsd:
     - gmake cryptlib RELEASE=1
   artifacts:
     paths:
-      - "3rdp/*.*.*.release/mozjs"
+      - "3rdp/*.*.*.release/cl"
 
 sbbs-openbsd:
   tags: [OpenBSD]
