@@ -45,6 +45,12 @@ spec:
   rules:
     - if: $NO_JAVASCRIPT == "yes"
       when: never
+    - changes:
+      - src/**/*
+      - 3rdp/**/*
+      - ctrl/text.dat
+      - xtrn/**/{GNUm,M}akefile
+      - xtrn/**/*.{c,h,cpp,hpp,mk}
 
 "cryptlib-$[[ inputs.os ]]":
   extends:
@@ -174,6 +180,12 @@ spec:
   rules:
     - if: $CROSS_PLATFORM == "yes"
       when: never
+    - changes:
+      - src/**/*
+      - 3rdp/**/*
+      - ctrl/text.dat
+      - xtrn/**/{GNUm,M}akefile
+      - xtrn/**/*.{c,h,cpp,hpp,mk}
 
 "syncterm-$[[ inputs.os ]]":
   extends:
@@ -252,3 +264,9 @@ spec:
   rules:
     - if: $CROSS_PLATFORM == "yes"
       when: never
+    - changes:
+      - src/**/*
+      - 3rdp/**/*
+      - ctrl/text.dat
+      - xtrn/**/{GNUm,M}akefile
+      - xtrn/**/*.{c,h,cpp,hpp,mk}
