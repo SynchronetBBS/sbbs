@@ -37,7 +37,7 @@
     paths:
       - "src/xpdev/*.*.*.lib.release*"
   needs:
-    - job: xpdev-${OS}
+    - job: "xpdev-${OS}"
 
 .encode:
   script:
@@ -48,7 +48,7 @@
     paths:
       - "src/encode/*.*.*.lib.release*"
   needs:
-    - job: xpdev-${OS}
+    - job: "xpdev-${OS}"
 
 .hash:
   script:
@@ -68,9 +68,9 @@
     paths:
       - "src/ciolib/*.*.*.lib.release*"
   needs:
-    - job: xpdev-${OS}
-    - job: hash-${OS}
-    - job: encode-${OS}
+    - job: "xpdev-${OS}"
+    - job: "hash-${OS}"
+    - job: "encode-${OS}"
 
 .sftp:
   script:
@@ -81,7 +81,7 @@
     paths:
       - "src/sftp/*.*.*.lib.release*"
   needs:
-    - job: xpdev-${OS}
+    - job: "xpdev-${OS}"
 
 .smblib:
   script:
@@ -92,9 +92,9 @@
     paths:
       - "src/smblib/*.*.*.lib.release*"
   needs:
-    - job: xpdev-${OS}
-    - job: hash-${OS}
-    - job: encode-${OS}
+    - job: "xpdev-${OS}"
+    - job: "hash-${OS}"
+    - job: "encode-${OS}"
 
 .uifc:
   script:
@@ -105,8 +105,8 @@
     paths:
       - "src/uifc/*.*.*.lib.release*"
   needs:
-    - job: xpdev-${OS}
-    - job: ciolib-${OS}
+    - job: "xpdev-${OS}"
+    - job: "ciolib-${OS}"
 
 .sbbs:
   script:
@@ -119,15 +119,15 @@
       - "src/sbbs3/*.lib.release/*"
       - "src/sbbs3/*/*.exe.release/*"
   needs:
-    - job: ciolib-${OS}
-    - job: cryptlib-${OS}
-    - job: encode-${OS}
-    - job: hash-${OS}
-    - job: sftp-${OS}
-    - job: smblib-${OS}
-    - job: spidermonkey-${OS}
-    - job: uifc-${OS}
-    - job: xpdev-${OS}
+    - job: "ciolib-${OS}"
+    - job: "cryptlib-${OS}"
+    - job: "encode-${OS}"
+    - job: "hash-${OS}"
+    - job: "sftp-${OS}"
+    - job: "smblib-${OS}"
+    - job: "spidermonkey-${OS}"
+    - job: "uifc-${OS}"
+    - job: "xpdev-${OS}"
   rules:
     - if: $CROSS_PLATFORM == "yes"
       when: never
@@ -141,13 +141,13 @@
     paths:
       - "src/syncterm/*.exe.release/*"
   needs:
-    - job: ciolib-${OS}
-    - job: cryptlib-${OS}
-    - job: encode-${OS}
-    - job: hash-${OS}
-    - job: sftp-${OS}
-    - job: uifc-${OS}
-    - job: xpdev-${OS}
+    - job: "ciolib-${OS}"
+    - job: "cryptlib-${OS}"
+    - job: "encode-${OS}"
+    - job: "hash-${OS}"
+    - job: "sftp-${OS}"
+    - job: "uifc-${OS}"
+    - job: "xpdev-${OS}"
 
 .syncdraw:
   script:
@@ -158,8 +158,8 @@
     paths:
       - "src/syncdraw/*.exe.release/*"
   needs:
-    - job: ciolib-$(OS)
-    - job: xpdev-$(OS)
+    - job: "ciolib-$(OS)"
+    - job: "xpdev-$(OS)"
 
 .jsdoor:
   script:
@@ -170,21 +170,21 @@
     paths:
       - "src/sbbs3/*.exe.release/*"
   needs:
-    - job: ciolib-${OS}
-    - job: cryptlib-${OS}
-    - job: encode-${OS}
-    - job: hash-${OS}
-    - job: sftp-${OS}
-    - job: smblib-${OS}
-    - job: spidermonkey-${OS}
-    - job: uifc-${OS}
-    - job: xpdev-${OS}
+    - job: "ciolib-${OS}"
+    - job: "cryptlib-${OS}"
+    - job: "encode-${OS}"
+    - job: "hash-${OS}"
+    - job: "sftp-${OS}"
+    - job: "smblib-${OS}"
+    - job: "spidermonkey-${OS}"
+    - job: "uifc-${OS}"
+    - job: "xpdev-${OS}"
 
 .js-testsuite:
   script:
     - "src/sbbs3/*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
-    - jsdoor-${OS}
+    - "jsdoor-${OS}"
   rules:
     - if: $CROSS_PLATFORM == "yes"
       when: never
@@ -198,7 +198,7 @@
     paths:
       - "src/sexpots/*.exe.release/*"
   needs:
-    - job: xpdev-${OS}
+    - job: "xpdev-${OS}"
 
 include:
   - local: '.gitlab-ci-unix.yml'
