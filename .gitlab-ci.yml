@@ -18,6 +18,7 @@ include:
       os: 'netbsd'
       platform: 'amd64'
       tagname: 'NetBSD'
+      build_flags: 'RELEASE=1 USE_SYSTEM_CURSES=1'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'freebsd'
