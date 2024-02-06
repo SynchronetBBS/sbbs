@@ -195,6 +195,6 @@ jsdoor-linux:
 sbbs-freebsd-noskeeters:
   extends:
     - .freebsd-build
-    - .sbbs
+    - sbbs-freebsd
   variables:
     BUILDPFLAGS: "RELEASE=1 WITHOUT_MOSQUITTO=1"
