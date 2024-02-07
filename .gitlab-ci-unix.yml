@@ -293,6 +293,7 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/sbbs3
+    - touch cl
     - touch depend
     - touch xpdev
     - touch xpdev-mt
@@ -311,6 +312,7 @@ spec:
       - "src/sbbs3/*.obj.release*/*.o*"
   needs:
     - job: "ciolib-$[[ inputs.os ]]"
+    - job: "cryptlib-$[[ inputs.os ]]"
     - job: "encode-$[[ inputs.os ]]"
     - job: "gitinfo-$[[ inputs.os ]]"
     - job: "hash-$[[ inputs.os ]]"
