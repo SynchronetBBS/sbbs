@@ -58,6 +58,7 @@ PREFIX	?= /usr/local
 DESKTOPDIR ?= $(PREFIX)/share/applications
 
 CFLAGS	+=	-DPREFIX=\"${DESTDIR}${PREFIX}\"
+CFLAGS	+=	-DTELNET_NO_DLL
 ifeq ($(PREFIX),/usr)
  MANPREFIX ?= /usr/share
  SYSTEM_LIST_DIR ?= /etc
