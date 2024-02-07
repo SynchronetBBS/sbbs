@@ -42,7 +42,7 @@ spec:
     paths:
       - "3rdp/*.*.*.release/mozjs"
   rules:
-    - if: "$[[ inputs.no_javascript ]] == "yes"
+    - if: "$[[ inputs.no_javascript ]] == yes"
       when: never
     - !reference [.rules, rules]
 
