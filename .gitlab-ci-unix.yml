@@ -151,6 +151,77 @@ spec:
     - job: "xpdev-$[[ inputs.os ]]"
     - job: "ciolib-$[[ inputs.os ]]"
 
+"utils-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - cd src/sbbs3
+    - gmake ${BUILD_FLAGS} utils
+  artifacts:
+    name: "utils-${OSP}"
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+  needs:
+    - job: "ciolib-$[[ inputs.os ]]"
+    - job: "smblib-$[[ inputs.os ]]"
+    - job: "uifc-$[[ inputs.os ]]"
+    - job: "xpdev-$[[ inputs.os ]]"
+
+"scfg-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - cd src/sbbs3/scfg
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "scfg-${OSP}"
+    paths:
+      - "src/sbbs3/scfg/*.exe.release/*"
+  needs:
+    - job: "ciolib-$[[ inputs.os ]]"
+    - job: "cryptlib-$[[ inputs.os ]]"
+    - job: "encode-$[[ inputs.os ]]"
+    - job: "hash-$[[ inputs.os ]]"
+    - job: "smblib-$[[ inputs.os ]]"
+    - job: "uifc-$[[ inputs.os ]]"
+    - job: "xpdev-$[[ inputs.os ]]"
+
+"uedit-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - cd src/sbbs3/uedit
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "uedit-${OSP}"
+    paths:
+      - "src/sbbs3/uedit/*.exe.release/*"
+  needs:
+    - job: "ciolib-$[[ inputs.os ]]"
+    - job: "encode-$[[ inputs.os ]]"
+    - job: "hash-$[[ inputs.os ]]"
+    - job: "smblib-$[[ inputs.os ]]"
+    - job: "uifc-$[[ inputs.os ]]"
+    - job: "xpdev-$[[ inputs.os ]]"
+
+"umonitor-$[[ inputs.os ]]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - cd src/sbbs3/umonitor
+    - gmake ${BUILD_FLAGS}
+  artifacts:
+    name: "umonitor-${OSP}"
+    paths:
+      - "src/sbbs3/umonitor/*.exe.release/*"
+  needs:
+    - job: "ciolib-$[[ inputs.os ]]"
+    - job: "encode-$[[ inputs.os ]]"
+    - job: "hash-$[[ inputs.os ]]"
+    - job: "smblib-$[[ inputs.os ]]"
+    - job: "uifc-$[[ inputs.os ]]"
+    - job: "xpdev-$[[ inputs.os ]]"
+
 "sbbs-$[[ inputs.os ]]":
   extends:
     - .$[[ inputs.os ]]-build
@@ -168,10 +239,14 @@ spec:
     - job: "cryptlib-$[[ inputs.os ]]"
     - job: "encode-$[[ inputs.os ]]"
     - job: "hash-$[[ inputs.os ]]"
+    - job: "scfg-$[[ inputs.os ]]"
     - job: "sftp-$[[ inputs.os ]]"
     - job: "smblib-$[[ inputs.os ]]"
     - job: "spidermonkey-$[[ inputs.os ]]"
+    - job: "uedit-$[[ inputs.os ]]"
     - job: "uifc-$[[ inputs.os ]]"
+    - job: "umonitor-$[[ inputs.os ]]"
+    - job: "utils-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
   rules:
     - if: $NO_JAVASCRIPT == "yes"

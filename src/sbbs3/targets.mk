@@ -65,9 +65,25 @@ utils:	smblib xpdev-mt xpdev ciolib-mt uifc-mt \
 
 gtkutils: gtkmonitor gtkchat gtkuseredit gtkuserlist
 
-dlls:	$(JS_DEPS) smblib xpdev-mt \
-		$(MTOBJODIR) $(LIBODIR) \
-		$(SBBS) $(FTPSRVR) $(MAILSRVR) $(SERVICES)
+.PHONY libdeps
+libdeps: $(JS_DEPS) gitinfo smblib xpdev-mt $(MTOBJODIR) $(LIBODIR)
+
+.PHONY libsbbs
+libsbbs: libdeps $(SBBS)
+
+.PHONY libftpsrvr
+libftpsrvr: libdeps $(FTPSRVR)
+
+.PHONY libmailsrvr
+libmailsrvr: libdeps $(MAILSRVR)
+
+.PHONY libservices
+libservices: libdeps $(SERVICES)
+
+.PHONY libwebsrvr
+libwebsrvr: libdeps $(WEBSRVR)
+
+dlls:	libsbbs libftpsrvr libmailsrvr libservices libwebsrvr
 
 mono:	xpdev-mt smblib \
 		$(MTOBJODIR) $(EXEODIR) \
