@@ -29,7 +29,7 @@
 #include "vidmodes.h"
 #include "win32cio.h"
 
-CIOLIBEXPORTVAR const struct keyvals keyval[] =
+CIOLIBEXPORT const struct keyvals keyval[] =
 {
 	{VK_BACK, 0x08, 0x08, 0x7f, 0x0e00},
 	{VK_TAB, 0x09, 0x0f00, 0x9400, 0xa500},
