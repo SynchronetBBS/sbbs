@@ -41,6 +41,7 @@ spec:
     - .rules
   script:
     - cd 3rdp/build
+    - touch depend
     - gmake ${BUILD_FLAGS} libmozjs
   artifacts:
     expire_in: 30 mins
@@ -62,6 +63,7 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd 3rdp/build
+    - touch depend
     - gmake ${BUILD_FLAGS} cryptlib
   artifacts:
     expire_in: 30 mins
@@ -74,6 +76,7 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/xpdev
+    - touch depend
     - gmake ${BUILD_FLAGS}
   artifacts:
     expire_in: 30 mins
@@ -87,6 +90,7 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/encode
+    - touch depend
     - gmake ${BUILD_FLAGS}
   artifacts:
     expire_in: 30 mins
@@ -100,6 +104,7 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/hash
+    - touch depend
     - gmake ${BUILD_FLAGS}
   artifacts:
     expire_in: 30 mins
@@ -113,6 +118,7 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/conio
+    - touch depend
     - gmake ${BUILD_FLAGS}
   artifacts:
     expire_in: 30 mins
@@ -126,6 +132,7 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/sftp
+    - touch depend
     - gmake ${BUILD_FLAGS}
   artifacts:
     expire_in: 30 mins
@@ -139,6 +146,7 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/smblib
+    - touch depend
     - gmake ${BUILD_FLAGS}
   artifacts:
     expire_in: 30 mins
@@ -152,6 +160,10 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/uifc
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch ciolib-mt
     - gmake ${BUILD_FLAGS}
   artifacts:
     expire_in: 30 mins
@@ -168,6 +180,7 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/sbbs3
+    - touch depend
     - gmake ${BUILD_FLAGS} gitinfo
   artifacts:
     expire_in: 30 mins
@@ -180,6 +193,16 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/sbbs3/scfg
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch encode
+    - touch hash
+    - touch smblib
+    - touch ciolib-mt
+    - touch uifc
+    - touch uifc-mt
+    - touch cl
     - gmake ${BUILD_FLAGS} GIT=NO
   artifacts:
     expire_in: 30 mins
@@ -202,6 +225,15 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/sbbs3/uedit
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch encode
+    - touch hash
+    - touch smblib
+    - touch ciolib-mt
+    - touch uifc
+    - touch uifc-mt
     - gmake ${BUILD_FLAGS} GIT=NO
   artifacts:
     expire_in: 30 mins
@@ -232,6 +264,15 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/sbbs3/umonitor
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch encode
+    - touch hash
+    - touch smblib
+    - touch ciolib-mt
+    - touch uifc
+    - touch uifc-mt
     - gmake ${BUILD_FLAGS}
   artifacts:
     expire_in: 30 mins
@@ -252,6 +293,15 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/sbbs3
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch encode
+    - touch hash
+    - touch smblib
+    - touch ciolib-mt
+    - touch uifc
+    - touch uifc-mt
     - gmake ${BUILD_FLAGS} GIT=NO standalone-utils
   artifacts:
     expire_in: 30 mins
@@ -272,8 +322,19 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - touch xpdev
     - cd src/sbbs3
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch smblib
+    - touch uifc
+    - touch uifc-mt
+    - touch ciolib-mt
+    - touch encode
+    - touch hash
+    - touch smblib
+    - touch sftp-mt
+    - touch cl
     - gmake ${BUILD_FLAGS} GIT=NO all
   artifacts:
     name: "sbbs-${OSP}"
@@ -313,6 +374,16 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/syncterm
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch encode
+    - touch hash
+    - touch ciolib-mt
+    - touch uifc
+    - touch uifc-mt
+    - touch sftp-mt
+    - touch cl
     - gmake ${BUILD_FLAGS}
   artifacts:
     name: "syncterm-${OSP}"
@@ -332,6 +403,10 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/syncdraw
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch ciolib-mt
     - gmake ${BUILD_FLAGS}
   artifacts:
     name: "syncdraw-${OSP}"
@@ -346,6 +421,17 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/sbbs3
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch encode
+    - touch hash
+    - touch smblib
+    - touch ciolib-mt
+    - touch uifc
+    - touch uifc-mt
+    - touch sftp-mt
+    - touch cl
     - gmake ${BUILD_FLAGS} jsdoor
   artifacts:
     name: "jsdoor-${OSP}"
@@ -376,6 +462,9 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/sexpots
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
     - gmake ${BUILD_FLAGS}
   artifacts:
     name: "sexpots-${OSP}"
