@@ -65,6 +65,18 @@ utils:	smblib xpdev-mt xpdev ciolib-mt uifc-mt \
 
 gtkutils: gtkmonitor gtkchat gtkuseredit gtkuserlist
 
+.PHONY: standalone-utils
+standalone-utils: $(FIXSMB) $(CHKSMB) \
+			  $(SMBUTIL) $(BAJA) $(NODE) \
+			  $(SBBSECHO) $(ECHOCFG) \
+			  $(ADDFILES) $(FILELIST) $(MAKEUSER) \
+			  $(ANS2ASC) $(ASC2ANS)  $(UNBAJA) \
+			  $(QWKNODES) $(SLOG) \
+			  $(DELFILES) $(DUPEFIND) \
+			  $(SEXYZ) $(READSAUCE) \
+			  $(PKTDUMP) $(FMSGDUMP) $(UPGRADE_TO_V319) \
+			  $(UPGRADE_TO_V320)
+
 .PHONY: libdeps
 libdeps: $(JS_DEPS) gitinfo smblib xpdev-mt $(MTOBJODIR) $(LIBODIR)
 
