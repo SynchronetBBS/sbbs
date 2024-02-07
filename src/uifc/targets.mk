@@ -9,4 +9,4 @@ test: xpdev-mt ciolib-mt mtlib $(EXEODIR) $(UIFCTEST)
 mtlib: $(UIFCLIB-MT_BUILD)
 
 # Library dependencies.
-$(UIFCTEST):	$(CIOLIB-MT) $(XPDEV-MT_LIB) $(UIFCLIB-MT) mtlib
+$(UIFCTEST):	$(CIOLIB-MT) $(XPDEV-MT_LIB) $(UIFCLIB-MT_BUILD)
