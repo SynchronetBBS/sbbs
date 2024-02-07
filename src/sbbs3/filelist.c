@@ -68,7 +68,7 @@ char* byteStr(uint64_t value)
 	else if(value>=1024)
 		SAFEPRINTF(tmp, "%5.1fK", value/1024.0); 
 	else
-		SAFEPRINTF(tmp, "%5luB", value);
+		SAFEPRINTF(tmp, "%5" PRIu64 "B", value);
 	return tmp;
 }
 
