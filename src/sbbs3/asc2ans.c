@@ -24,7 +24,7 @@
 #include <string.h>		/* strcmp */
 
 #ifdef _WIN32
-	#include <Windows.h>	/* SetConsoleMode */
+	#include <windows.h>	/* SetConsoleMode */
 	#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
 	#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 	#endif
