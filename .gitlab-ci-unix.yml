@@ -179,6 +179,8 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch src/sbbs3/git_hash.h
+    - touch src/sbbs3/git_branch.h
     - cd src/sbbs3/scfg
     - gmake ${BUILD_FLAGS}
   artifacts:
@@ -201,6 +203,8 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch src/sbbs3/git_hash.h
+    - touch src/sbbs3/git_branch.h
     - cd src/sbbs3/uedit
     - gmake ${BUILD_FLAGS}
   artifacts:
@@ -251,6 +255,8 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch src/sbbs3/git_hash.h
+    - touch src/sbbs3/git_branch.h
     - cd src/sbbs3
     - gmake ${BUILD_FLAGS} standalone-utils
   artifacts:
@@ -272,6 +278,8 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch src/sbbs3/git_hash.h
+    - touch src/sbbs3/git_branch.h
     - cd src/sbbs3
     - gmake -d ${BUILD_FLAGS} all
   artifacts:
