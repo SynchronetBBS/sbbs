@@ -71,11 +71,11 @@ extern "C" {
  * On platforms where alloca() is not in libc, programs which use
  * it will fail to link when compiled with non-GNU compilers.
  */
-#if __GNUC__ >= 2 || defined(__INTEL_COMPILER)
+#if defined(_WIN32)
+#include <malloc.h>
+#elif __GNUC__ >= 2 || defined(__INTEL_COMPILER)
 #undef  alloca  /* some GNU bits try to get cute and define this on their own */
 #define alloca(sz) __builtin_alloca(sz)
-#elif defined(_WIN32)
-#include <malloc.h>
 #endif
 
 /*********************/
