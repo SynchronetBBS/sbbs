@@ -2,12 +2,11 @@ UIFCTEST	=	$(EXEODIR)$(DIRSEP)uifctest$(EXEFILE)
 UIFCLIB_BUILD	=	$(LIBODIR)$(DIRSEP)$(LIBPREFIX)uifc$(LIBFILE)
 UIFCLIB-MT_BUILD	=	$(LIBODIR)$(DIRSEP)$(LIBPREFIX)uifc_mt$(LIBFILE)
 
-all: mtlib test
+all: $(UIFCLIB-MT_BUILD) $(UIFCTEST)
 
 test: xpdev-mt ciolib-mt mtlib $(EXEODIR) $(UIFCTEST)
 
-mtlib: $(MTOBJODIR) $(LIBODIR) $(UIFCLIB-MT_BUILD)
+mtlib: $(UIFCLIB-MT_BUILD)
 
 # Library dependencies.
 $(UIFCTEST):	$(CIOLIB-MT) $(XPDEV-MT_LIB) $(UIFCLIB-MT) mtlib
-
