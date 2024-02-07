@@ -925,7 +925,7 @@ do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 				SLEEP(1);
 		}
 		free(wh[curr_wh].lpData);
-		wh[curr_wh].lpData=samp;
+		wh[curr_wh].lpData=(LPSTR)samp;
 		wh[curr_wh].dwBufferLength=sz;
 		if(waveOutPrepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
 			if(waveOutWrite(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
