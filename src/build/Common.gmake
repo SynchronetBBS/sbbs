@@ -242,7 +242,9 @@ endif
 ifeq ($(machine_uname),x86_64)
  machine_uname	:= x64
 endif
-CFLAGS +=	-fpic
+ifneq ($(os), Win32)
+ CFLAGS +=	-fpic
+endif
 ifeq ($(machine_uname),sparc64)
  CFLAGS +=      -D__BIG_ENDIAN__
 endif
