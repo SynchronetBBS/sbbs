@@ -1904,8 +1904,13 @@ int main(int argc, char **argv)
 	else
 #endif
 	{
-		i=1;
-		ioctlsocket(sock, FIONBIO, &i);
+#ifdef _WIN32
+		// TODO: Is there a type for this?
+		u_long nonblock = 1;
+#else
+		int nonblock = 1;
+#endif
+		ioctlsocket(sock, FIONBIO, &nonblock);
 	}
 
 	if(!socket_check(sock, NULL, NULL, 0)) {

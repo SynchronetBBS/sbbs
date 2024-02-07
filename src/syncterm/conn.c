@@ -474,7 +474,11 @@ int
 conn_socket_connect(struct bbslist *bbs)
 {
 	SOCKET           sock = INVALID_SOCKET;
+#ifdef _WIN32
+	u_long           nonblock;
+#else
 	int              nonblock;
+#endif
 	int              failcode = FAILURE_WHAT_FAILURE;
 	struct addrinfo  hints;
 	struct addrinfo *res = NULL;
