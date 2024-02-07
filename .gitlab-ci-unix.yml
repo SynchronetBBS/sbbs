@@ -335,6 +335,21 @@ spec:
     - touch smblib
     - touch sftp-mt
     - touch cl
+    - touch scfg/xpdev-mt
+    - touch scfg/uifc-mt
+    - touch scfg/ciolib-mt
+    - touch scfg/smblib
+    - touch scfg/encode
+    - touch scfg/hash
+    - touch scfg/cl
+    - touch uedit/smblib
+    - touch uedit/uifc-mt
+    - touch uedit/ciolib-mt
+    - touch uedit/xpdev-mt
+    - touch umonitor/ciolib-mt
+    - touch umonitor/uifc-mt
+    - touch umonitor/xpdev-mt
+    - touch umonitor/smblib
     - gmake ${BUILD_FLAGS} GIT=NO all
   artifacts:
     name: "sbbs-${OSP}"
