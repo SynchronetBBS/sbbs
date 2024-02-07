@@ -15,6 +15,8 @@ spec:
       default: 'no'
     has_curses:
       default: 'yes'
+    has_gtk:
+      default: 'no'
 ---
 
 ".$[[ inputs.os ]]":
@@ -459,6 +461,101 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [gtkchat]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - cd src/sbbs3/gtkchat
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch encode
+    - touch hash
+    - touch smblib
+    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+  artifacts:
+    name: "gtkchat-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/sbbs3/gtkchat/*.exe.release/*"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+  rules:
+    - if: '"$[[ inputs.has_gtk ]]" == "no"'
+      when: never
+    - !reference [.rules, rules]
+
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [gtkmonitor]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - cd src/sbbs3/gtkmonitor
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch smblib
+    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+  artifacts:
+    name: "gtkmonitor-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/sbbs3/gtkmonitor/*.exe.release/*"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+  rules:
+    - if: '"$[[ inputs.has_gtk ]]" == "no"'
+      when: never
+    - !reference [.rules, rules]
+
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [gtkuseredit]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - cd src/sbbs3/gtkuseredit
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch smblib
+    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+  artifacts:
+    name: "gtkuseredit-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/sbbs3/gtkuseredit/*.exe.release/*"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+  rules:
+    - if: '"$[[ inputs.has_gtk ]]" == "no"'
+      when: never
+    - !reference [.rules, rules]
+
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [gtkuserlist]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - cd src/sbbs3/gtkuserlist
+    - touch depend
+    - touch xpdev
+    - touch xpdev-mt
+    - touch smblib
+    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+  artifacts:
+    name: "gtkuserlist-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/sbbs3/gtkuserlist/*.exe.release/*"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+  rules:
+    - if: '"$[[ inputs.has_gtk ]]" == "no"'
+      when: never
+    - !reference [.rules, rules]
+
+#########
+# Tests #
+#########
 "js-testsuite [$[[ inputs.os ]]-$[[ inputs.platform ]]]":
   extends:
     - .$[[ inputs.os ]]-test
