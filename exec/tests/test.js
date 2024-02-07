@@ -69,6 +69,7 @@ function run_tests(location, obj)
 	if (obj.tests !== undefined) {
 		obj.tests.forEach(function(testscript) {
 			var tfailed = false;
+			var fail_msg = '';
 
 			try {
 				var dir = testscript;
@@ -78,15 +79,18 @@ function run_tests(location, obj)
 				chdir(js.exec_dir);
 				if (result instanceof Error) {
 					tfailed = true;
+					fail_msg = e;
 					log("Caught: "+result);
 				}
 			}
 			catch(e) {
 				tfailed = true;
+				fail_msg = e;
 				log("Caught: "+e);
 			}
 			if (tfailed) {
 				stdout.writeln("FAILED!");
+				stdout.writeln(e);
 				stdout.writeln("");
 				failed++;
 			}
