@@ -179,10 +179,8 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - touch src/sbbs3/git_hash.h
-    - touch src/sbbs3/git_branch.h
     - cd src/sbbs3/scfg
-    - gmake ${BUILD_FLAGS}
+    - gmake ${BUILD_FLAGS} GIT=NO
   artifacts:
     expire_in: 30 mins
     name: "scfg-${OSP}"
@@ -203,10 +201,8 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - touch src/sbbs3/git_hash.h
-    - touch src/sbbs3/git_branch.h
     - cd src/sbbs3/uedit
-    - gmake ${BUILD_FLAGS}
+    - gmake ${BUILD_FLAGS} GIT=NO
   artifacts:
     expire_in: 30 mins
     name: "uedit-${OSP}"
@@ -255,10 +251,8 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - touch src/sbbs3/git_hash.h
-    - touch src/sbbs3/git_branch.h
     - cd src/sbbs3
-    - gmake ${BUILD_FLAGS} standalone-utils
+    - gmake ${BUILD_FLAGS} GIT=NO standalone-utils
   artifacts:
     expire_in: 30 mins
     name: "utils-${OSP}"
@@ -278,10 +272,8 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - touch src/sbbs3/git_hash.h
-    - touch src/sbbs3/git_branch.h
     - cd src/sbbs3
-    - gmake -d ${BUILD_FLAGS} all
+    - gmake -d ${BUILD_FLAGS} GIT=NO all
   artifacts:
     name: "sbbs-${OSP}"
     paths:
