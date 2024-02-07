@@ -24,6 +24,7 @@ include:
       os: 'freebsd'
       platform: 'amd64'
       tagname: 'FreeBSD'
+      build_flags: '-d RELEASE=1'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'mingw32'
