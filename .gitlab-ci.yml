@@ -1,3 +1,7 @@
+variables:
+  BUILD_ARGS:
+    description: "Extra arguments to pass on gmake command lines."
+
 .rules:
   rules:
     - changes:

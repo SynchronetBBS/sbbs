@@ -94,6 +94,7 @@
 #  MT_LDFLAGS		- LDFLAGS for linking MT targets						#
 #  UL_PRE			- Use Library prefix (*nix is -l)						#
 #  UL_SUF			- Use Library siffix (bcc is .lib)						#
+#  WERROR           - Error on warnings                                     #
 #																			#
 # Common Targets Defined:													#
 #  Implicit C and C++ targets												#
@@ -161,6 +162,11 @@ endif
 # VERBOSE/QUIET
 ifndef VERBOSE
  QUIET	:=	@
+endif
+
+# WERROR
+ifdef WERROR
+ CFLAGS += -Werror
 endif
 
 # Compiler-specific options
