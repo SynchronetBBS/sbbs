@@ -194,14 +194,14 @@ spec:
       - "src/sbbs3/scfg/*.exe.release/*"
       - "src/sbbs3/scfg/*.obj.release*/*.o*"
   needs:
-    - job: "ciolib-$[[ inputs.os ]]"
-    - job: "cryptlib-$[[ inputs.os ]]"
-    - job: "encode-$[[ inputs.os ]]"
-    - job: "hash-$[[ inputs.os ]]"
-    - job: "smblib-$[[ inputs.os ]]"
-    - job: "uifc-$[[ inputs.os ]]"
-    - job: "xpdev-$[[ inputs.os ]]"
-    - job: "gitinfo-$[[ inputs.os ]]"
+    - job: "$[[ inputs.os ]] [ciolib]"
+    - job: "$[[ inputs.os ]] [cryptlib]"
+    - job: "$[[ inputs.os ]] [encode]"
+    - job: "$[[ inputs.os ]] [hash]"
+    - job: "$[[ inputs.os ]] [smblib]"
+    - job: "$[[ inputs.os ]] [uifc]"
+    - job: "$[[ inputs.os ]] [xpdev]"
+    - job: "$[[ inputs.os ]] [gitinfo]"
 
 "$[[ inputs.os ]] [uedit]":
   extends:
@@ -225,13 +225,13 @@ spec:
       - "src/sbbs3/uedit/*.exe.release/*"
       - "src/sbbs3/uedit/*.obj.release*/*.o*"
   needs:
-    - job: "ciolib-$[[ inputs.os ]]"
-    - job: "encode-$[[ inputs.os ]]"
-    - job: "hash-$[[ inputs.os ]]"
-    - job: "smblib-$[[ inputs.os ]]"
-    - job: "uifc-$[[ inputs.os ]]"
-    - job: "xpdev-$[[ inputs.os ]]"
-    - job: "gitinfo-$[[ inputs.os ]]"
+    - job: "$[[ inputs.os ]] [ciolib]"
+    - job: "$[[ inputs.os ]] [encode]"
+    - job: "$[[ inputs.os ]] [hash]"
+    - job: "$[[ inputs.os ]] [smblib]"
+    - job: "$[[ inputs.os ]] [uifc]"
+    - job: "$[[ inputs.os ]] [xpdev]"
+    - job: "$[[ inputs.os ]] [gitinfo]"
   rules:
     - if: '"$[[ inputs.has_curses ]]" == "no"'
       when: never
@@ -259,12 +259,12 @@ spec:
       - "src/sbbs3/umonitor/*.exe.release/*"
       - "src/sbbs3/umonitor/*.obj.release*/*.o*"
   needs:
-    - job: "ciolib-$[[ inputs.os ]]"
-    - job: "encode-$[[ inputs.os ]]"
-    - job: "hash-$[[ inputs.os ]]"
-    - job: "smblib-$[[ inputs.os ]]"
-    - job: "uifc-$[[ inputs.os ]]"
-    - job: "xpdev-$[[ inputs.os ]]"
+    - job: "$[[ inputs.os ]] [ciolib]"
+    - job: "$[[ inputs.os ]] [encode]"
+    - job: "$[[ inputs.os ]] [hash]"
+    - job: "$[[ inputs.os ]] [smblib]"
+    - job: "$[[ inputs.os ]] [uifc]"
+    - job: "$[[ inputs.os ]] [xpdev]"
 
 "$[[ inputs.os ]] [utils]":
   extends:
@@ -289,14 +289,14 @@ spec:
       - "src/sbbs3/*.exe.release/*"
       - "src/sbbs3/*.obj.release*/*.o*"
   needs:
-    - job: "ciolib-$[[ inputs.os ]]"
-    - job: "cryptlib-$[[ inputs.os ]]"
-    - job: "encode-$[[ inputs.os ]]"
-    - job: "gitinfo-$[[ inputs.os ]]"
-    - job: "hash-$[[ inputs.os ]]"
-    - job: "smblib-$[[ inputs.os ]]"
-    - job: "uifc-$[[ inputs.os ]]"
-    - job: "xpdev-$[[ inputs.os ]]"
+    - job: "$[[ inputs.os ]] [ciolib]"
+    - job: "$[[ inputs.os ]] [cryptlib]"
+    - job: "$[[ inputs.os ]] [encode]"
+    - job: "$[[ inputs.os ]] [gitinfo]"
+    - job: "$[[ inputs.os ]] [hash]"
+    - job: "$[[ inputs.os ]] [smblib]"
+    - job: "$[[ inputs.os ]] [uifc]"
+    - job: "$[[ inputs.os ]] [xpdev]"
 
 "$[[ inputs.os ]] [sbbs]":
   extends:
@@ -338,20 +338,20 @@ spec:
       - "src/sbbs3/*.lib.release/*"
       - "src/sbbs3/*/*.exe.release/*"
   needs:
-    - job: "spidermonkey-$[[ inputs.os ]]"
-    - job: "cryptlib-$[[ inputs.os ]]"
-    - job: "xpdev-$[[ inputs.os ]]"
-    - job: "encode-$[[ inputs.os ]]"
-    - job: "hash-$[[ inputs.os ]]"
-    - job: "sftp-$[[ inputs.os ]]"
-    - job: "smblib-$[[ inputs.os ]]"
-    - job: "ciolib-$[[ inputs.os ]]"
-    - job: "uifc-$[[ inputs.os ]]"
-    - job: "gitinfo-$[[ inputs.os ]]"
-    - job: "scfg-$[[ inputs.os ]]"
-    - job: "uedit-$[[ inputs.os ]]"
-    - job: "umonitor-$[[ inputs.os ]]"
-    - job: "utils-$[[ inputs.os ]]"
+    - job: "$[[ inputs.os ]] [spidermonkey]"
+    - job: "$[[ inputs.os ]] [cryptlib]"
+    - job: "$[[ inputs.os ]] [xpdev]"
+    - job: "$[[ inputs.os ]] [encode]"
+    - job: "$[[ inputs.os ]] [hash]"
+    - job: "$[[ inputs.os ]] [sftp]"
+    - job: "$[[ inputs.os ]] [smblib]"
+    - job: "$[[ inputs.os ]] [ciolib]"
+    - job: "$[[ inputs.os ]] [uifc]"
+    - job: "$[[ inputs.os ]] [gitinfo]"
+    - job: "$[[ inputs.os ]] [scfg]"
+    - job: "$[[ inputs.os ]] [uedit]"
+    - job: "$[[ inputs.os ]] [umonitor]"
+    - job: "$[[ inputs.os ]] [utils]"
   rules:
     - if: '"$[[ inputs.no_javascript ]]" == "yes"'
       when: never
@@ -380,13 +380,13 @@ spec:
     paths:
       - "src/syncterm/*.exe.release/*"
   needs:
-    - job: "ciolib-$[[ inputs.os ]]"
-    - job: "cryptlib-$[[ inputs.os ]]"
-    - job: "encode-$[[ inputs.os ]]"
-    - job: "hash-$[[ inputs.os ]]"
-    - job: "sftp-$[[ inputs.os ]]"
-    - job: "uifc-$[[ inputs.os ]]"
-    - job: "xpdev-$[[ inputs.os ]]"
+    - job: "$[[ inputs.os ]] [ciolib]"
+    - job: "$[[ inputs.os ]] [cryptlib]"
+    - job: "$[[ inputs.os ]] [encode]"
+    - job: "$[[ inputs.os ]] [hash]"
+    - job: "$[[ inputs.os ]] [sftp]"
+    - job: "$[[ inputs.os ]] [uifc]"
+    - job: "$[[ inputs.os ]] [xpdev]"
 
 "$[[ inputs.os ]] [syncdraw]":
   extends:
@@ -403,8 +403,8 @@ spec:
     paths:
       - "src/syncdraw/*.exe.release/*"
   needs:
-    - job: "ciolib-$[[ inputs.os ]]"
-    - job: "xpdev-$[[ inputs.os ]]"
+    - job: "$[[ inputs.os ]] [ciolib]"
+    - job: "$[[ inputs.os ]] [xpdev]"
 
 "$[[ inputs.os ]] [jsdoor]":
   extends:
@@ -429,15 +429,15 @@ spec:
     paths:
       - "src/sbbs3/*.exe.release/*"
   needs:
-    - job: "ciolib-$[[ inputs.os ]]"
-    - job: "cryptlib-$[[ inputs.os ]]"
-    - job: "encode-$[[ inputs.os ]]"
-    - job: "hash-$[[ inputs.os ]]"
-    - job: "sftp-$[[ inputs.os ]]"
-    - job: "smblib-$[[ inputs.os ]]"
-    - job: "spidermonkey-$[[ inputs.os ]]"
-    - job: "uifc-$[[ inputs.os ]]"
-    - job: "xpdev-$[[ inputs.os ]]"
+    - job: "$[[ inputs.os ]] [ciolib]"
+    - job: "$[[ inputs.os ]] [cryptlib]"
+    - job: "$[[ inputs.os ]] [encode]"
+    - job: "$[[ inputs.os ]] [hash]"
+    - job: "$[[ inputs.os ]] [sftp]"
+    - job: "$[[ inputs.os ]] [smblib]"
+    - job: "$[[ inputs.os ]] [spidermonkey]"
+    - job: "$[[ inputs.os ]] [uifc]"
+    - job: "$[[ inputs.os ]] [xpdev]"
   rules:
     - if: '"$[[ inputs.no_javascript ]]" == "yes"'
       when: never
@@ -457,7 +457,7 @@ spec:
     paths:
       - "src/sexpots/*.exe.release/*"
   needs:
-    - job: "xpdev-$[[ inputs.os ]]"
+    - job: "$[[ inputs.os ]] [xpdev]"
 
 "$[[ inputs.os ]] [js-testsuite]":
   extends:
