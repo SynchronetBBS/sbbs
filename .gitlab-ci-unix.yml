@@ -1,9 +1,6 @@
-# TODO: Investiage $VARIABLES vs $[[ inputs.interpolation ]]
-#       Add support for GTK utilities
+# TODO: Add support for GTK utilities
 #       The bad touching needs to be solved in the build system, but
 #       maybe there's a way to automate it with needs?
-#       The only reason the second column of dependencies exists is
-#       because we build uifctest.
 
 spec:
   inputs:
@@ -24,15 +21,6 @@ spec:
   extends: .rules
   tags: 
     - "$[[ inputs.tagname ]]"
-  variables:
-    CROSS_PLATFORM: "$[[ inputs.cross_platform ]]"
-    OS: "$[[ inputs.os ]]"
-    PLATFORM: "$[[ inputs.platform ]]"
-    OSP: "$[[ inputs.os ]]-$[[ inputs.platform ]]"
-    BUILD_FLAGS: "$[[ inputs.build_flags ]]"
-    NO_JAVASCRIPT: "$[[ inputs.no_javascript ]]"
-    HAS_CURSES: "$[[ inputs.has_curses ]]"
-    GIT_STRATEGY: fetch
 
 ".$[[ inputs.os ]]-build":
   stage: build
@@ -45,18 +33,17 @@ spec:
 "spidermonkey-$[[ inputs.os ]]":
   extends:
     - .$[[ inputs.os ]]-build
-    - .rules
   script:
     - cd 3rdp/build
     - touch depend
-    - gmake ${BUILD_FLAGS} libmozjs
+    - gmake $[[ inputs.build_flags ]] libmozjs
   artifacts:
     expire_in: 30 mins
-    name: "spidermonkey-${OSP}"
+    name: "spidermonkey-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "3rdp/*.*.*.release/mozjs"
   rules:
-    - if: $NO_JAVASCRIPT == "yes"
+    - if: $[[ inputs.no_javascript ]] == "yes"
       when: never
     - !reference [.rules, rules]
 
@@ -66,10 +53,10 @@ spec:
   script:
     - cd 3rdp/build
     - touch depend
-    - gmake ${BUILD_FLAGS} cryptlib
+    - gmake $[[ inputs.build_flags ]] cryptlib
   artifacts:
     expire_in: 30 mins
-    name: "cryptlib-${OSP}"
+    name: "cryptlib-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "3rdp/*.*.*.release/cl"
 
@@ -79,10 +66,10 @@ spec:
   script:
     - cd src/xpdev
     - touch depend
-    - gmake ${BUILD_FLAGS}
+    - gmake $[[ inputs.build_flags ]]
   artifacts:
     expire_in: 30 mins
-    name: "xpdev-${OSP}"
+    name: "xpdev-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/xpdev/*.*.*.lib.release*"
       - "src/xpdev/*.*.*.obj.release*/*.o*"
@@ -93,10 +80,10 @@ spec:
   script:
     - cd src/encode
     - touch depend
-    - gmake ${BUILD_FLAGS}
+    - gmake $[[ inputs.build_flags ]]
   artifacts:
     expire_in: 30 mins
-    name: "encode-${OSP}"
+    name: "encode-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/encode/*.*.*.lib.release*"
       - "src/encode/*.*.*.obj.release*/*.o*"
@@ -107,10 +94,10 @@ spec:
   script:
     - cd src/hash
     - touch depend
-    - gmake ${BUILD_FLAGS}
+    - gmake $[[ inputs.build_flags ]]
   artifacts:
     expire_in: 30 mins
-    name: "hash-${OSP}"
+    name: "hash-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/hash/*.*.*.lib.release*"
       - "src/hash/*.*.*.obj.release*/*.o*"
@@ -121,10 +108,10 @@ spec:
   script:
     - cd src/conio
     - touch depend
-    - gmake ${BUILD_FLAGS}
+    - gmake $[[ inputs.build_flags ]]
   artifacts:
     expire_in: 30 mins
-    name: "ciolib-${OSP}"
+    name: "ciolib-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/conio/*.*.*.lib.release*"
       - "src/conio/*.*.*.obj.release*/*.o*"
@@ -135,10 +122,10 @@ spec:
   script:
     - cd src/sftp
     - touch depend
-    - gmake ${BUILD_FLAGS}
+    - gmake $[[ inputs.build_flags ]]
   artifacts:
     expire_in: 30 mins
-    name: "sftp-${OSP}"
+    name: "sftp-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sftp/*.*.*.lib.release*"
       - "src/sftp/*.*.*.obj.release*/*.o*"
@@ -149,10 +136,10 @@ spec:
   script:
     - cd src/smblib
     - touch depend
-    - gmake ${BUILD_FLAGS}
+    - gmake $[[ inputs.build_flags ]]
   artifacts:
     expire_in: 30 mins
-    name: "smblib-${OSP}"
+    name: "smblib-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/smblib/*.*.*.lib.release*"
       - "src/smblib/*.*.*.obj.release*/*.o*"
@@ -163,10 +150,10 @@ spec:
   script:
     - cd src/uifc
     - touch depend
-    - gmake ${BUILD_FLAGS}
+    - gmake $[[ inputs.build_flags ]]
   artifacts:
     expire_in: 30 mins
-    name: "uifc-${OSP}"
+    name: "uifc-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/uifc/*.*.*.lib.release*"
       - "src/uifc/*.*.*.obj.release*/*.o*"
@@ -177,10 +164,10 @@ spec:
   script:
     - cd src/sbbs3
     - touch depend
-    - gmake ${BUILD_FLAGS} gitinfo
+    - gmake $[[ inputs.build_flags ]] gitinfo
   artifacts:
     expire_in: 30 mins
-    name: "gitinfo-${OSP}"
+    name: "gitinfo-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/git_*.h"
 
@@ -199,10 +186,10 @@ spec:
     - touch uifc
     - touch uifc-mt
     - touch cl
-    - gmake ${BUILD_FLAGS} GIT=NO
+    - gmake $[[ inputs.build_flags ]] GIT=NO
   artifacts:
     expire_in: 30 mins
-    name: "scfg-${OSP}"
+    name: "scfg-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/scfg/*.exe.release/*"
       - "src/sbbs3/scfg/*.obj.release*/*.o*"
@@ -230,10 +217,10 @@ spec:
     - touch ciolib-mt
     - touch uifc
     - touch uifc-mt
-    - gmake ${BUILD_FLAGS} GIT=NO
+    - gmake $[[ inputs.build_flags ]] GIT=NO
   artifacts:
     expire_in: 30 mins
-    name: "uedit-${OSP}"
+    name: "uedit-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/uedit/*.exe.release/*"
       - "src/sbbs3/uedit/*.obj.release*/*.o*"
@@ -246,7 +233,7 @@ spec:
     - job: "xpdev-$[[ inputs.os ]]"
     - job: "gitinfo-$[[ inputs.os ]]"
   rules:
-    - if: $HAS_CURSES == "no"
+    - if: $[[ inputs.has_curses ]] == "no"
       when: never
     - !reference [.rules, rules]
 
@@ -264,10 +251,10 @@ spec:
     - touch ciolib-mt
     - touch uifc
     - touch uifc-mt
-    - gmake ${BUILD_FLAGS}
+    - gmake $[[ inputs.build_flags ]]
   artifacts:
     expire_in: 30 mins
-    name: "umonitor-${OSP}"
+    name: "umonitor-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/umonitor/*.exe.release/*"
       - "src/sbbs3/umonitor/*.obj.release*/*.o*"
@@ -294,10 +281,10 @@ spec:
     - touch ciolib-mt
     - touch uifc
     - touch uifc-mt
-    - gmake ${BUILD_FLAGS} GIT=NO standalone-utils
+    - gmake $[[ inputs.build_flags ]] GIT=NO standalone-utils
   artifacts:
     expire_in: 30 mins
-    name: "utils-${OSP}"
+    name: "utils-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/*.exe.release/*"
       - "src/sbbs3/*.obj.release*/*.o*"
@@ -343,9 +330,9 @@ spec:
     - touch umonitor/uifc-mt
     - touch umonitor/xpdev-mt
     - touch umonitor/smblib
-    - gmake ${BUILD_FLAGS} GIT=NO all
+    - gmake $[[ inputs.build_flags ]] GIT=NO all
   artifacts:
-    name: "sbbs-${OSP}"
+    name: "sbbs-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/*.exe.release/*"
       - "src/sbbs3/*.lib.release/*"
@@ -366,9 +353,9 @@ spec:
     - job: "umonitor-$[[ inputs.os ]]"
     - job: "utils-$[[ inputs.os ]]"
   rules:
-    - if: $NO_JAVASCRIPT == "yes"
+    - if: $[[ inputs.no_javascript ]] == "yes"
       when: never
-    - if: $CROSS_PLATFORM == "yes"
+    - if: $[[ inputs.cross_platform ]] == "yes"
       when: never
     - !reference [.rules, rules]
 
@@ -387,9 +374,9 @@ spec:
     - touch uifc-mt
     - touch sftp-mt
     - touch cl
-    - gmake ${BUILD_FLAGS}
+    - gmake $[[ inputs.build_flags ]]
   artifacts:
-    name: "syncterm-${OSP}"
+    name: "syncterm-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/syncterm/*.exe.release/*"
   needs:
@@ -410,9 +397,9 @@ spec:
     - touch xpdev
     - touch xpdev-mt
     - touch ciolib-mt
-    - gmake ${BUILD_FLAGS}
+    - gmake $[[ inputs.build_flags ]]
   artifacts:
-    name: "syncdraw-${OSP}"
+    name: "syncdraw-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/syncdraw/*.exe.release/*"
   needs:
@@ -436,9 +423,9 @@ spec:
     - touch sftp-mt
     - touch cl
     - touch js
-    - gmake ${BUILD_FLAGS} jsdoor
+    - gmake $[[ inputs.build_flags ]] jsdoor
   artifacts:
-    name: "jsdoor-${OSP}"
+    name: "jsdoor-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/*.exe.release/*"
   needs:
@@ -452,7 +439,7 @@ spec:
     - job: "uifc-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
   rules:
-    - if: $NO_JAVASCRIPT == "yes"
+    - if: $[[ inputs.no_javascript ]] == "yes"
       when: never
     - !reference [.rules, rules]
 
@@ -464,9 +451,9 @@ spec:
     - touch depend
     - touch xpdev
     - touch xpdev-mt
-    - gmake ${BUILD_FLAGS}
+    - gmake $[[ inputs.build_flags ]]
   artifacts:
-    name: "sexpots-${OSP}"
+    name: "sexpots-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sexpots/*.exe.release/*"
   needs:
@@ -480,8 +467,8 @@ spec:
   dependencies:
     - "jsdoor-$[[ inputs.os ]]"
   rules:
-    - if: $CROSS_PLATFORM == "yes"
+    - if: $[[ inputs.cross_platform ]] == "yes"
       when: never
-    - if: $NO_JAVASCRIPT == "yes"
+    - if: $[[ inputs.no_javascript ]] == "yes"
       when: never
     - !reference [.rules, rules]
