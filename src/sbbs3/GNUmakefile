@@ -269,7 +269,7 @@ endif
 # ANS2ASC
 $(ANS2ASC): $(OBJODIR)/ans2asc.o $(OBJODIR)/sauce.o $(XPDEV_LIB) | $(EXEODIR)
 	@echo Linking $@
-	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $^ -lm
+	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $^ -lm $(XPDEV_LIBS)
 
 # ASC2ANS
 $(ASC2ANS): $(OBJODIR)/asc2ans.o | $(EXEODIR)
