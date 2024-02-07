@@ -248,6 +248,7 @@ spec:
   needs:
     - job: "ciolib-$[[ inputs.os ]]"
     - job: "encode-$[[ inputs.os ]]"
+    - job: "gitinfo-$[[ inputs.os ]]"
     - job: "hash-$[[ inputs.os ]]"
     - job: "smblib-$[[ inputs.os ]]"
     - job: "uifc-$[[ inputs.os ]]"
@@ -269,6 +270,7 @@ spec:
     - job: "ciolib-$[[ inputs.os ]]"
     - job: "cryptlib-$[[ inputs.os ]]"
     - job: "encode-$[[ inputs.os ]]"
+    - job: "gitinfo-$[[ inputs.os ]]"
     - job: "hash-$[[ inputs.os ]]"
     - job: "scfg-$[[ inputs.os ]]"
     - job: "sftp-$[[ inputs.os ]]"
