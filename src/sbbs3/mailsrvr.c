@@ -29,7 +29,6 @@
 #include <errno.h>			/* errno */
 
 /* Synchronet-specific headers */
-#include "gen_defs.h"
 #undef SBBS	/* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
 #include "sbbs.h"
 #include "mailsrvr.h"
@@ -3205,7 +3204,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 						safe_snprintf(str,sizeof(str),"%s%s%s",head,sender_addr,tail);
 
 					if((telegram_buf=(char*)malloc((size_t)(length+strlen(str)+1)))==NULL) {
-						lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %" XP_PRIsize_t " bytes of memory for telegram from %s"
+						lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %" XP_PRIsize_t "u bytes of memory for telegram from %s"
 							,socket, client.protocol, client_id, length+strlen(str)+1,sender_addr);
 						sockprintf(socket,client.protocol,session, insuf_stor);
 						continue;
