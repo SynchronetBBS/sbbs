@@ -2457,7 +2457,7 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 				continue;
 			}
 			if(filelength(fmsg)<sizeof(fmsghdr_t)) {
-				lprintf(LOG_ERR,"ERROR line %d %s has invalid length of %lu bytes"
+				lprintf(LOG_ERR,"ERROR line %d %s has invalid length of %" PRIuOFF " bytes"
 					,__LINE__
 					,path
 					,filelength(fmsg));
@@ -2538,7 +2538,7 @@ char *pktname(const char* outbound)
     time_t t;
 
 	for(t = time(NULL); t != 0; t++) {
-		SAFEPRINTF2(path,"%s%lx.pkt",outbound, t);
+		SAFEPRINTF2(path,"%s%llx.pkt",outbound, (unsigned long long)t);
 		if(!fexist(path))				/* Add 1 second if name exists */
 			return path;
 	}
@@ -5445,7 +5445,7 @@ void pack_netmail(void)
 			continue;
 		}
 		if(filelength(fmsg)<sizeof(fmsghdr_t)) {
-			lprintf(LOG_WARNING,"%s Invalid length of %lu bytes",path,filelength(fmsg));
+			lprintf(LOG_WARNING,"%s Invalid length of %" PRIuOFF " bytes",path,filelength(fmsg));
 			fclose(fidomsg);
 			continue;
 		}
@@ -5659,7 +5659,7 @@ void find_stray_packets(void)
 		}
 		flen = filelength(fileno(fp));
 		if(flen < sizeof(pkthdr) + sizeof(terminator)) {
-			lprintf(LOG_ERR,"ERROR invalid length of %lu bytes for stray packet: %s", flen, packet);
+			lprintf(LOG_ERR,"ERROR invalid length of %" PRIuOFF " bytes for stray packet: %s", flen, packet);
 			fclose(fp);
 			delfile(packet, __LINE__);
 			continue;
@@ -5775,7 +5775,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			continue;
 		}
 		if(filelength(fmsg) < sizeof(pkthdr) + sizeof(terminator)) {
-			lprintf(LOG_WARNING,"Invalid length of %s: %lu bytes"
+			lprintf(LOG_WARNING,"Invalid length of %s: %" PRIuOFF " bytes"
 				,packet,filelength(fmsg));
 			fclose(fidomsg);
 			rename_bad_packet(packet, "pkt-len");
@@ -6107,7 +6107,7 @@ void check_free_diskspace(const char* path)
 		uint64_t freek = getfreediskspace(path, 1024);
 
 		if(freek < (uint64_t)cfg.min_free_diskspace / 1024) {
-			lprintf(LOG_ERR, "!Insufficient free disk space (%luK < %"PRId64"K bytes) in %s\n"
+			lprintf(LOG_ERR, "!Insufficient free disk space (%" PRIu64 "K < %"PRId64"K bytes) in %s\n"
 				, freek, cfg.min_free_diskspace / 1024, path);
 			bail(1);
 		}
@@ -6673,7 +6673,7 @@ int main(int argc, char **argv)
 				continue;
 			}
 			if(filelength(fmsg)<sizeof(fmsghdr_t)) {
-				lprintf(LOG_ERR,"ERROR line %d invalid length of %lu bytes for %s",__LINE__
+				lprintf(LOG_ERR,"ERROR line %d invalid length of %" PRIuOFF" bytes for %s",__LINE__
 					,filelength(fmsg),path);
 				fclose(fidomsg);
 				continue;
