@@ -2296,9 +2296,9 @@ static time_t parseDateTime(const char* value)
 		return t;
 
 #if defined __BORLANDC__
-	return((time_t)strtoull(value,NULL,0));
-#else
 	return((time_t)strtoul(value,NULL,0));
+#else
+	return((time_t)strtoull(value,NULL,0));
 #endif
 }
 
