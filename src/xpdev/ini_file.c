@@ -843,7 +843,7 @@ char* iniSetDateTime(str_list_t* list, const char* section, const char* key
 	if(value==0)
 		SAFECOPY(str,"Never");
 	else if((p=ctime_r(&value,tstr))==NULL)
-		SAFEPRINTF(str,"0x%lx",value);
+		SAFEPRINTF(str,"0x%llx",(long long)value);
 	else if(!include_time)	/* reformat into "Mon DD YYYY" */
 		safe_snprintf(str,sizeof(str),"%.3s %.2s %.4s"		,p+4,p+8,p+20);
 	else					/* reformat into "Mon DD YYYY HH:MM:SS" */
@@ -2295,7 +2295,7 @@ static time_t parseDateTime(const char* value)
 	if((t=xpDateTime_to_time(isoDateTimeStr_parse(value))) != INVALID_TIME)
 		return t;
 
-	return(strtoul(value,NULL,0));
+	return((time_t)strtoull(value,NULL,0));
 }
 
 time_t iniReadDateTime(FILE* fp, const char* section, const char* key, time_t deflt)

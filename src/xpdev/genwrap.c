@@ -617,7 +617,7 @@ void xp_randomize(void)
 		seed = curtime ^ BYTE_SWAP_INT(process_id);
 
 		#if defined(_WIN32) || defined(GetCurrentThreadId)
-			seed ^= (unsigned)GetCurrentThreadId();
+			seed ^= (unsigned)(uintptr_t)GetCurrentThreadId();
 		#endif
 
 #if defined(HAS_DEV_URANDOM) && defined(URANDOM_DEV)
