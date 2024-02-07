@@ -24,7 +24,7 @@ spec:
 
 ".$[[ inputs.os ]]-build":
   stage: build
-  extends: .$[[ inputs.os ]]
+  extends: ".$[[ inputs.os ]]"
 
 ".$[[ inputs.os ]]-test":
   stage: test
