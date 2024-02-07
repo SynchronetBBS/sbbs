@@ -71,7 +71,7 @@ standalone-utils: $(FIXSMB) $(CHKSMB) \
 			  $(SBBSECHO) $(ECHOCFG) \
 			  $(ADDFILES) $(FILELIST) $(MAKEUSER) \
 			  $(ANS2ASC) $(ASC2ANS)  $(UNBAJA) \
-			  $(QWKNODES) $(SLOG) \
+			  $(QWKNODES) \
 			  $(DELFILES) $(DUPEFIND) \
 			  $(SEXYZ) $(READSAUCE) \
 			  $(PKTDUMP) $(FMSGDUMP) $(UPGRADE_TO_V319) \
