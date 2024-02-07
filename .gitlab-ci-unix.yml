@@ -30,7 +30,7 @@ spec:
   stage: test
   extends: .$[[ inputs.os ]]
 
-"spidermonkey-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [spidermonkey]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -47,7 +47,7 @@ spec:
       when: never
     - !reference [.rules, rules]
 
-"cryptlib-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [cryptlib]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -60,7 +60,7 @@ spec:
     paths:
       - "3rdp/*.*.*.release/cl"
 
-"xpdev-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [xpdev]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -74,7 +74,7 @@ spec:
       - "src/xpdev/*.*.*.lib.release*"
       - "src/xpdev/*.*.*.obj.release*/*.o*"
 
-"encode-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [encode]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -88,7 +88,7 @@ spec:
       - "src/encode/*.*.*.lib.release*"
       - "src/encode/*.*.*.obj.release*/*.o*"
 
-"hash-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [hash]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -102,7 +102,7 @@ spec:
       - "src/hash/*.*.*.lib.release*"
       - "src/hash/*.*.*.obj.release*/*.o*"
 
-"ciolib-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [ciolib]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -116,7 +116,7 @@ spec:
       - "src/conio/*.*.*.lib.release*"
       - "src/conio/*.*.*.obj.release*/*.o*"
 
-"sftp-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [sftp]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -130,7 +130,7 @@ spec:
       - "src/sftp/*.*.*.lib.release*"
       - "src/sftp/*.*.*.obj.release*/*.o*"
 
-"smblib-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [smblib]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -144,7 +144,7 @@ spec:
       - "src/smblib/*.*.*.lib.release*"
       - "src/smblib/*.*.*.obj.release*/*.o*"
 
-"uifc-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [uifc]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -158,7 +158,7 @@ spec:
       - "src/uifc/*.*.*.lib.release*"
       - "src/uifc/*.*.*.obj.release*/*.o*"
 
-"gitinfo-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [gitinfo]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -171,7 +171,7 @@ spec:
     paths:
       - "src/sbbs3/git_*.h"
 
-"scfg-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [scfg]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -203,7 +203,7 @@ spec:
     - job: "xpdev-$[[ inputs.os ]]"
     - job: "gitinfo-$[[ inputs.os ]]"
 
-"uedit-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [uedit]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -237,7 +237,7 @@ spec:
       when: never
     - !reference [.rules, rules]
 
-"umonitor-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [umonitor]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -266,7 +266,7 @@ spec:
     - job: "uifc-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
 
-"utils-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [utils]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -298,7 +298,7 @@ spec:
     - job: "uifc-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
 
-"sbbs-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [sbbs]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -359,7 +359,7 @@ spec:
       when: never
     - !reference [.rules, rules]
 
-"syncterm-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [syncterm]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -388,7 +388,7 @@ spec:
     - job: "uifc-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
 
-"syncdraw-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [syncdraw]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -406,7 +406,7 @@ spec:
     - job: "ciolib-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
 
-"jsdoor-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [jsdoor]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -443,7 +443,7 @@ spec:
       when: never
     - !reference [.rules, rules]
 
-"sexpots-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [sexpots]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -459,7 +459,7 @@ spec:
   needs:
     - job: "xpdev-$[[ inputs.os ]]"
 
-"js-testsuite-$[[ inputs.os ]]":
+"$[[ inputs.os ]] [js-testsuite]":
   extends:
     - .$[[ inputs.os ]]-test
   script:
