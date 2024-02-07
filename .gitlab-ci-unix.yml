@@ -459,7 +459,7 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
-"$[[ inputs.os ]]-$[[ inputs.platform ]] [js-testsuite]":
+"js-testsuite [$[[ inputs.os ]]-$[[ inputs.platform ]]]":
   extends:
     - .$[[ inputs.os ]]-test
   script:
