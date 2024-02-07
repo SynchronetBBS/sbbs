@@ -2295,7 +2295,11 @@ static time_t parseDateTime(const char* value)
 	if((t=xpDateTime_to_time(isoDateTimeStr_parse(value))) != INVALID_TIME)
 		return t;
 
+#if defined __BORLANDC__
 	return((time_t)strtoull(value,NULL,0));
+#else
+	return((time_t)strtoul(value,NULL,0));
+#endif
 }
 
 time_t iniReadDateTime(FILE* fp, const char* section, const char* key, time_t deflt)
