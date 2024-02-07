@@ -19,7 +19,8 @@ spec:
 
 ".$[[ inputs.os ]]":
   extends: .rules
-  tags: "$[[ inputs.tagname ]]"
+  tags:
+    - "$[[ inputs.tagname ]]"
 
 ".$[[ inputs.os ]]-build":
   stage: build
