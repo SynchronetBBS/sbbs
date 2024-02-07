@@ -1307,27 +1307,27 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if(!strcmp(sp,"FREESPACE")) {
-		safe_snprintf(str,maxlen,"%lu",getfreediskspace(cfg.temp_dir,0));
+		safe_snprintf(str,maxlen,"%" PRIu64,getfreediskspace(cfg.temp_dir,0));
 		return(str);
 	}
 
 	if(!strcmp(sp,"FREESPACEK")) {
-		safe_snprintf(str,maxlen,"%lu",getfreediskspace(cfg.temp_dir,1024));
+		safe_snprintf(str,maxlen,"%" PRIu64,getfreediskspace(cfg.temp_dir,1024));
 		return(str);
 	}
 
 	if(strcmp(sp,"FREESPACEM") == 0) {
-		safe_snprintf(str,maxlen,"%lu",getfreediskspace(cfg.temp_dir, 1024 * 1024));
+		safe_snprintf(str,maxlen,"%" PRIu64,getfreediskspace(cfg.temp_dir, 1024 * 1024));
 		return(str);
 	}
 
 	if(strcmp(sp,"FREESPACEG") == 0) {
-		safe_snprintf(str,maxlen,"%lu",getfreediskspace(cfg.temp_dir, 1024 * 1024 * 1024));
+		safe_snprintf(str,maxlen,"%" PRIu64,getfreediskspace(cfg.temp_dir, 1024 * 1024 * 1024));
 		return(str);
 	}
 
 	if(strcmp(sp,"FREESPACET") == 0) {
-		safe_snprintf(str,maxlen,"%lu",getfreediskspace(cfg.temp_dir, 1024 * 1024 * 1024) / 1024);
+		safe_snprintf(str,maxlen,"%" PRIu64,getfreediskspace(cfg.temp_dir, 1024 * 1024 * 1024) / 1024);
 		return(str);
 	}
 
