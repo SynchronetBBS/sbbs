@@ -16,13 +16,13 @@ typedef struct {
 
 typedef struct {
 	char            Sign[20];
-	char            a[3];
-	char            Name[16];
+	char            a[4];		// This is a Turbo Pascal array, length is in first element, can hold 3 values
+	char            Name[17];	// Another TP array (16)
 	unsigned char   FontType;
 	unsigned char   Spaces;
 	short           Nul;
-	unsigned short  Chartable[95];
-	char            b[20];
+	unsigned short  Chartable[96];  // Another TP array (95)
+	char            b[21];          // Another TP array (20)
 }               TheDrawFont;
 
 extern MysticDrawFontHeader Header;
