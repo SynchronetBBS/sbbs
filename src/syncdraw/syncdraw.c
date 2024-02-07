@@ -51,7 +51,7 @@
 #include "tabulator.h"
 
 unsigned char   Screen[4][MaxLines + 1][160];
-unsigned char   tabs[80];
+unsigned char   tabs[81];
 unsigned char   CursorPos[80], cpos = 1;
 int             CursorX = 0, CursorY = 0, FirstLine = 0, x, y, LastLine = 0;
 unsigned char   Attribute = 7, FontMode = FALSE, Undo = FALSE, FontTyped = FALSE,

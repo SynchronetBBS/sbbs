@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include <genwrap.h>
 #include <xp_dl.h>
 
 #define BITMAP_CIOLIB_DRIVER

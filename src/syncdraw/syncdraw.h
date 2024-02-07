@@ -5,7 +5,7 @@
 #define MaxLines 1000
 
 extern unsigned char   Screen[4][MaxLines+1][160];
-extern unsigned char   tabs[80];
+extern unsigned char   tabs[81];
 extern unsigned char   CursorPos[80];
 extern int             CursorX, CursorY, FirstLine, x, y, LastLine;
 extern unsigned char   Attribute, FontMode, Undo, FontTyped,
