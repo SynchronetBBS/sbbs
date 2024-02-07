@@ -10,8 +10,6 @@ all:		xpdev-mt \
 		smblib \
 		encode \
 		hash \
-		$(EXEODIR) \
-		$(MTOBJODIR) \
 		$(SCFG)
 
 ifdef SBBSEXEC
