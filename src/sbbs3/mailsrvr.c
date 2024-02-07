@@ -29,6 +29,7 @@
 #include <errno.h>			/* errno */
 
 /* Synchronet-specific headers */
+#include "gen_defs.h"
 #undef SBBS	/* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
 #include "sbbs.h"
 #include "mailsrvr.h"
