@@ -828,7 +828,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		else
 			l=(((tm.tm_hour*60)+tm.tm_min)*60) + tm.tm_sec;
 
-		safe_snprintf(str, sizeof(str), "%s\n%s\n%u\n%u\n%u\n%u\n%" PRId32 "\n%lu\n%s\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%u\n%u\n%u\n%u\n%" PRId32 "\n%" PRIu64 "\n%s\n"
 			"%s\n%s\n%u\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"
 			"%" PRIu64 "\n%" PRIu64 "\n%s\n%s\n"
 			,dropdir
@@ -838,7 +838,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			,useron.dls 						/* Total downloads */
 			,cfg.level_timepercall[useron.level]/* Minutes allowed this call */
 			,l									/* Secs since midnight (logon) */
-			,starttime-logontime				/* Extra time in seconds */
+			,(uint64_t)(starttime-logontime)		/* Extra time in seconds */
 			,"FALSE"                            /* Sysop next? */
 			,"FALSE"                            /* From Front-end? */
 			,"FALSE"                            /* Software Flow Control? */
