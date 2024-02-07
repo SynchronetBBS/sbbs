@@ -2816,7 +2816,7 @@ void event_thread(void* arg)
 							sbbs->errormsg(WHERE, ERR_REMOVE, g.gl_pathv[i], 0);
 					} else {
 						char badpkt[MAX_PATH+1];
-						SAFEPRINTF2(badpkt, "%s.%lx.bad", g.gl_pathv[i], time(NULL));
+						SAFEPRINTF2(badpkt, "%s.%" PRIx64 ".bad", g.gl_pathv[i], (uint64_t)time(NULL));
 						(void)remove(badpkt);
 						if(rename(g.gl_pathv[i], badpkt) == 0)
 							sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", g.gl_pathv[i], badpkt);
@@ -4947,7 +4947,7 @@ void bbs_thread(void* arg)
 	}
 
 	if((t=checktime())!=0) {   /* Check binary time */
-		lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
+		lprintf(LOG_ERR,"!TIME PROBLEM (%" PRId64 ")",(int64_t)t);
 	}
 
 	if(smb_tzutc(sys_timezone(&scfg)) != xpTimeZone_local()) {
