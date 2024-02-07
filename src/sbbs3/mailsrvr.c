@@ -3204,14 +3204,14 @@ static bool smtp_client_thread(smtp_t* smtp)
 						safe_snprintf(str,sizeof(str),"%s%s%s",head,sender_addr,tail);
 
 					if((telegram_buf=(char*)malloc((size_t)(length+strlen(str)+1)))==NULL) {
-						lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %lu bytes of memory for telegram from %s"
+						lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %" XP_PRIsize_t " bytes of memory for telegram from %s"
 							,socket, client.protocol, client_id, length+strlen(str)+1,sender_addr);
 						sockprintf(socket,client.protocol,session, insuf_stor);
 						continue;
 					}
 					strcpy(telegram_buf,str);	/* can't use SAFECOPY here */
 					if(fread(telegram_buf+strlen(str),1,(size_t)length,msgtxt)!=length) {
-						lprintf(LOG_ERR,"%04d %s %s !ERROR reading %lu bytes from telegram file"
+						lprintf(LOG_ERR,"%04d %s %s !ERROR reading %" PRIuOFF " bytes from telegram file"
 							,socket, client.protocol, client_id, length);
 						sockprintf(socket,client.protocol,session, insuf_stor);
 						free(telegram_buf);
@@ -3232,7 +3232,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 						SAFECOPY(rcpt_addr,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENTNETADDR),rcpt_to,value));
 
 						if((i=putsmsg(&scfg,usernum,telegram_buf))==0)
-							lprintf(LOG_INFO,"%04d %s %s Created telegram (%ld/%lu bytes) from '%s' to '%s' <%s>"
+							lprintf(LOG_INFO,"%04d %s %s Created telegram (%" PRIdOFF "/%lu bytes) from '%s' to '%s' <%s>"
 								,socket, client.protocol, client_id, length, (ulong)strlen(telegram_buf), sender_addr, rcpt_to, rcpt_addr);
 						else
 							lprintf(LOG_ERR,"%04d %s %s !ERROR %d creating telegram from '%s' to '%s' <%s>"
@@ -3631,9 +3631,9 @@ static bool smtp_client_thread(smtp_t* smtp)
 				length=filelength(fileno(msgtxt))-ftell(msgtxt);
 
 				if(startup->max_msg_size && length>startup->max_msg_size) {
-					lprintf(LOG_NOTICE,"%04d %s %s !Message size (%lu) from %s to <%s> exceeds maximum: %u bytes"
+					lprintf(LOG_NOTICE,"%04d %s %s !Message size (%" PRIuOFF ") from %s to <%s> exceeds maximum: %u bytes"
 						,socket, client.protocol, client_id, length, sender_info, rcpt_addr, startup->max_msg_size);
-					sockprintf(socket,client.protocol,session, "552 Message size (%lu) exceeds maximum: %u bytes"
+					sockprintf(socket,client.protocol,session, "552 Message size (%" PRIuOFF ") exceeds maximum: %u bytes"
 						,length,startup->max_msg_size);
 					subnum=INVALID_SUB;
 					stats.msgs_refused++;
@@ -3641,7 +3641,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				}
 
 				if((msgbuf=(char*)malloc((size_t)(length+1)))==NULL) {
-					lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %lu bytes of memory"
+					lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %" PRIuOFF " bytes of memory"
 						,socket, client.protocol, client_id, length+1);
 					sockprintf(socket,client.protocol,session, insuf_stor);
 					subnum=INVALID_SUB;
@@ -6160,7 +6160,7 @@ void mail_server(void* arg)
 		}
 
 		if((t=checktime())!=0) {   /* Check binary time */
-			lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
+			lprintf(LOG_ERR,"!TIME PROBLEM (%" PRId64 ")",(int64_t)t);
 		}
 
 		if(uptime==0)
