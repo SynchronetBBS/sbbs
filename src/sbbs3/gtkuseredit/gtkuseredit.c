@@ -1,5 +1,6 @@
 #include <gtk/gtk.h>
 
+#undef JAVASCRIPT
 #include "sbbs.h"
 #include "dirwrap.h"
 

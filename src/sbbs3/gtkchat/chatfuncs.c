@@ -8,6 +8,7 @@
 #include <utime.h>
 #include <unistd.h>
 
+#undef JAVASCRIPT
 #include "sbbs.h"
 #include "chatfuncs.h"
 
