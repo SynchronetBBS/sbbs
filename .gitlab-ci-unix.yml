@@ -19,16 +19,15 @@ spec:
 
 ".$[[ inputs.os ]]":
   extends: .rules
-  tags: 
-    - "$[[ inputs.tagname ]]"
+  tags: "$[[ inputs.tagname ]]"
 
-#".$[[ inputs.os ]]-build":
-#  stage: build
-#  extends: .$[[ inputs.os ]]
+".$[[ inputs.os ]]-build":
+  stage: build
+  extends: .$[[ inputs.os ]]
 
-#".$[[ inputs.os ]]-test":
-#  stage: test
-#  extends: .$[[ inputs.os ]]
+".$[[ inputs.os ]]-test":
+  stage: test
+  extends: .$[[ inputs.os ]]
 
 "spidermonkey-$[[ inputs.os ]]":
   extends:
