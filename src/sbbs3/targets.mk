@@ -65,22 +65,22 @@ utils:	smblib xpdev-mt xpdev ciolib-mt uifc-mt \
 
 gtkutils: gtkmonitor gtkchat gtkuseredit gtkuserlist
 
-.PHONY libdeps
+.PHONY: libdeps
 libdeps: $(JS_DEPS) gitinfo smblib xpdev-mt $(MTOBJODIR) $(LIBODIR)
 
-.PHONY libsbbs
+.PHONY: libsbbs
 libsbbs: libdeps $(SBBS)
 
-.PHONY libftpsrvr
+.PHONY: libftpsrvr
 libftpsrvr: libdeps $(FTPSRVR)
 
-.PHONY libmailsrvr
+.PHONY: libmailsrvr
 libmailsrvr: libdeps $(MAILSRVR)
 
-.PHONY libservices
+.PHONY: libservices
 libservices: libdeps $(SERVICES)
 
-.PHONY libwebsrvr
+.PHONY: libwebsrvr
 libwebsrvr: libdeps $(WEBSRVR)
 
 dlls:	libsbbs libftpsrvr libmailsrvr libservices libwebsrvr
