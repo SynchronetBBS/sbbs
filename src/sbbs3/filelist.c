@@ -330,7 +330,7 @@ int main(int argc, char **argv)
 		time_t t = 0;
 		if(max_age)
 			t = time(NULL) - (max_age * 24 * 60 * 60);
-		ulong size_t;
+		size_t file_count;
 		file_t* file_list = loadfiles(&smb
 			,/* filespec: */pattern, /* time: */t, file_detail_extdesc, scfg.dir[i]->sort, &file_count);
 
