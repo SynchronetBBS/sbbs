@@ -3116,7 +3116,7 @@ static void ctrl_thread(void* arg)
 				filepos=atol(p);
 			else
 				filepos=0;
-			sockprintf(sock,sess,"350 Restarting at %"PRIdOFF". Send STORE or RETRIEVE to initiate transfer."
+			sockprintf(sock,sess,"350 Restarting at %ld. Send STORE or RETRIEVE to initiate transfer."
 				,filepos);
 			continue;
 		}
@@ -3253,9 +3253,9 @@ static void ctrl_thread(void* arg)
 								*lastchar(fpath) = 0;
 							write_local_mlsx(fp, INVALID_SOCKET, -1, mlsx_feats, fpath, FALSE);
 						}
-						lprintf(LOG_INFO, "%04d <%s> %s-listing (%ld bytes) of local %s (%lu files) created in %ld seconds"
+						lprintf(LOG_INFO, "%04d <%s> %s-listing (%ld bytes) of local %s (%lu files) created in %" PRId64 " seconds"
 							,sock, user.alias, cmd, ftell(fp), path
-							,(ulong)g.gl_pathc, (long)time(NULL) - start);
+							,(ulong)g.gl_pathc, (int64_t)(time(NULL) - start));
 						globfree(&g);
 						fclose(fp);
 						filexfer(&data_addr,sock,sess,pasv_sock,pasv_sess,&data_sock,&data_sess,fname,0L
@@ -3332,9 +3332,9 @@ static void ctrl_thread(void* arg)
 					} else
 						fprintf(fp,"%s\r\n", getfname(fpath));
 				}
-				lprintf(LOG_INFO, "%04d <%s> %slisting (%ld bytes) of local %s (%lu files) created in %ld seconds"
+				lprintf(LOG_INFO, "%04d <%s> %slisting (%ld bytes) of local %s (%lu files) created in %" PRId64 " seconds"
 					,sock, user.alias, detail ? "detailed ":"", ftell(fp), path
-					,(ulong)g.gl_pathc, (long)time(NULL) - start);
+					,(ulong)g.gl_pathc, (int64_t)(time(NULL) - start));
 				globfree(&g);
 				fclose(fp);
 				filexfer(&data_addr,sock,sess,pasv_sock,pasv_sess,&data_sock,&data_sess,fname,0L
@@ -3838,9 +3838,9 @@ static void ctrl_thread(void* arg)
 						l++;
 					}
 					if (cmd[3] == 'D') {
-						lprintf(LOG_INFO, "%04d <%s> %s listing (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
+						lprintf(LOG_INFO, "%04d <%s> %s listing (%ld bytes) of /%s/%s (%lu files) created in %" PRId64 " seconds"
 						    ,sock, user.alias, cmd, ftell(fp), scfg.lib[lib]->vdir, scfg.dir[dir]->vdir
-						    ,(ulong)file_count, (long)time(NULL) - start);
+						    ,(ulong)file_count, (int64_t)(time(NULL) - start));
 					}
 					freefiles(file_list, file_count);
 					smb_close(&smb);
@@ -4136,9 +4136,9 @@ static void ctrl_thread(void* arg)
 					} else
 						fprintf(fp,"%s\r\n", f->name);
 				}
-				lprintf(LOG_INFO, "%04d <%s> %slisting (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
+				lprintf(LOG_INFO, "%04d <%s> %slisting (%ld bytes) of /%s/%s (%lu files) created in %" PRId64 " seconds"
 					,sock, user.alias, detail ? "detailed ":"", ftell(fp), scfg.lib[lib]->vdir, scfg.dir[dir]->vdir
-					,(ulong)file_count, (long)time(NULL) - start);
+					,(ulong)file_count, (int64_t)(time(NULL) - start));
 				freefiles(file_list, file_count);
 				smb_close(&smb);
 			} else
@@ -4395,9 +4395,9 @@ static void ctrl_thread(void* arg)
 							fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN
 								,f->name, f->desc);
 						}
-						lprintf(LOG_INFO, "%04d <%s> index (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
+						lprintf(LOG_INFO, "%04d <%s> index (%ld bytes) of /%s/%s (%lu files) created in %" PRId64 " seconds"
 							,sock, user.alias, ftell(fp), scfg.lib[lib]->vdir, scfg.dir[dir]->vdir
-							,(ulong)file_count, (long)time(NULL) - start);
+							,(ulong)file_count, (int64_t)(time(NULL) - start));
 						freefiles(file_list, file_count);
 						smb_close(&smb);
 					}
@@ -4886,8 +4886,8 @@ static void ctrl_thread(void* arg)
 			}
 			if(count && (count%60)==0)
 				lprintf(LOG_WARNING,"%04d Still waiting for transfer to complete "
-					"(count=%lu, aborted=%d, lastactive=%lX) ..."
-					,sock,count,transfer_aborted,lastactive);
+					"(count=%lu, aborted=%d, lastactive=%" PRIX64 ") ..."
+					,sock,count,transfer_aborted,(uint64_t)lastactive);
 			count++;
 			mswait(1000);
 		}
@@ -5117,7 +5117,7 @@ void ftp_server(void* arg)
 		mqtt_startup(&mqtt, &scfg, (struct startup*)startup, ftp_ver(), lputs);
 
 		if((t=checktime())!=0) {   /* Check binary time */
-			lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
+			lprintf(LOG_ERR,"!TIME PROBLEM (%" PRId64 ")",(int64_t)t);
 		}
 
 		if(uptime==0)
