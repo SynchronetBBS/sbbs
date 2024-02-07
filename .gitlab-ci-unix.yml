@@ -42,7 +42,7 @@ spec:
     paths:
       - "3rdp/*.*.*.release/mozjs"
   rules:
-    - if: "$[[ inputs.no_javascript ]] == yes"
+    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
       when: never
     - !reference [.rules, rules]
 
@@ -232,7 +232,7 @@ spec:
     - job: "xpdev-$[[ inputs.os ]]"
     - job: "gitinfo-$[[ inputs.os ]]"
   rules:
-    - if: "$[[ inputs.has_curses ]] == no"
+    - if: '"$[[ inputs.has_curses ]]" == "no"'
       when: never
     - !reference [.rules, rules]
 
@@ -352,9 +352,9 @@ spec:
     - job: "umonitor-$[[ inputs.os ]]"
     - job: "utils-$[[ inputs.os ]]"
   rules:
-    - if: "$[[ inputs.no_javascript ]] == yes"
+    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
       when: never
-    - if: "$[[ inputs.cross_platform ]] == yes"
+    - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
     - !reference [.rules, rules]
 
@@ -438,7 +438,7 @@ spec:
     - job: "uifc-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
   rules:
-    - if: "$[[ inputs.no_javascript ]] == yes"
+    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
       when: never
     - !reference [.rules, rules]
 
@@ -466,8 +466,8 @@ spec:
   dependencies:
     - "jsdoor-$[[ inputs.os ]]"
   rules:
-    - if: "$[[ inputs.cross_platform ]] == yes"
+    - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
-    - if: "$[[ inputs.no_javascript ]] == yes"
+    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
       when: never
     - !reference [.rules, rules]
