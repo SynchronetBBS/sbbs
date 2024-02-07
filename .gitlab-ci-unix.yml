@@ -80,7 +80,7 @@ spec:
     name: "xpdev-${OSP}"
     paths:
       - "src/xpdev/*.*.*.lib.release*"
-      - "src/xpdev/*.*.*.obj.release*"
+      - "src/xpdev/*.*.*.obj.release*/*.o*"
 
 "encode-$[[ inputs.os ]]":
   extends:
@@ -93,7 +93,7 @@ spec:
     name: "encode-${OSP}"
     paths:
       - "src/encode/*.*.*.lib.release*"
-      - "src/encode/*.*.*.obj.release*"
+      - "src/encode/*.*.*.obj.release*/*.o*"
 
 "hash-$[[ inputs.os ]]":
   extends:
@@ -106,7 +106,7 @@ spec:
     name: "hash-${OSP}"
     paths:
       - "src/hash/*.*.*.lib.release*"
-      - "src/hash/*.*.*.obj.release*"
+      - "src/hash/*.*.*.obj.release*/*.o*"
 
 "ciolib-$[[ inputs.os ]]":
   extends:
@@ -119,7 +119,7 @@ spec:
     name: "ciolib-${OSP}"
     paths:
       - "src/conio/*.*.*.lib.release*"
-      - "src/conio/*.*.*.obj.release*"
+      - "src/conio/*.*.*.obj.release*/*.o*"
 
 "sftp-$[[ inputs.os ]]":
   extends:
@@ -132,7 +132,7 @@ spec:
     name: "sftp-${OSP}"
     paths:
       - "src/sftp/*.*.*.lib.release*"
-      - "src/sftp/*.*.*.obj.release*"
+      - "src/sftp/*.*.*.obj.release*/*.o*"
 
 "smblib-$[[ inputs.os ]]":
   extends:
@@ -145,7 +145,7 @@ spec:
     name: "smblib-${OSP}"
     paths:
       - "src/smblib/*.*.*.lib.release*"
-      - "src/smblib/*.*.*.obj.release*"
+      - "src/smblib/*.*.*.obj.release*/*.o*"
 
 "uifc-$[[ inputs.os ]]":
   extends:
@@ -158,7 +158,7 @@ spec:
     name: "uifc-${OSP}"
     paths:
       - "src/uifc/*.*.*.lib.release*"
-      - "src/uifc/*.*.*.obj.release*"
+      - "src/uifc/*.*.*.obj.release*/*.o*"
   needs:
     - job: "xpdev-$[[ inputs.os ]]"
     - job: "ciolib-$[[ inputs.os ]]"
@@ -186,7 +186,7 @@ spec:
     name: "scfg-${OSP}"
     paths:
       - "src/sbbs3/scfg/*.exe.release/*"
-      - "src/sbbs3/scfg/*.obj.release*/*"
+      - "src/sbbs3/scfg/*.obj.release*/*.o*"
   needs:
     - job: "ciolib-$[[ inputs.os ]]"
     - job: "cryptlib-$[[ inputs.os ]]"
@@ -208,7 +208,7 @@ spec:
     name: "uedit-${OSP}"
     paths:
       - "src/sbbs3/uedit/*.exe.release/*"
-      - "src/sbbs3/uedit/*.obj.release*/*"
+      - "src/sbbs3/uedit/*.obj.release*/*.o*"
   needs:
     - job: "ciolib-$[[ inputs.os ]]"
     - job: "encode-$[[ inputs.os ]]"
@@ -238,7 +238,7 @@ spec:
     name: "umonitor-${OSP}"
     paths:
       - "src/sbbs3/umonitor/*.exe.release/*"
-      - "src/sbbs3/umonitor/*.obj.release*/*"
+      - "src/sbbs3/umonitor/*.obj.release*/*.o*"
   needs:
     - job: "ciolib-$[[ inputs.os ]]"
     - job: "encode-$[[ inputs.os ]]"
@@ -258,7 +258,7 @@ spec:
     name: "utils-${OSP}"
     paths:
       - "src/sbbs3/*.exe.release/*"
-      - "src/sbbs3/*.obj.release*/*"
+      - "src/sbbs3/*.obj.release*/*.o*"
   needs:
     - job: "ciolib-$[[ inputs.os ]]"
     - job: "encode-$[[ inputs.os ]]"
