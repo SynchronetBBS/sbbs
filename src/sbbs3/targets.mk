@@ -74,8 +74,7 @@ standalone-utils: $(FIXSMB) $(CHKSMB) \
 			  $(QWKNODES) \
 			  $(DELFILES) $(DUPEFIND) \
 			  $(SEXYZ) $(READSAUCE) \
-			  $(PKTDUMP) $(FMSGDUMP) $(UPGRADE_TO_V319) \
-			  $(UPGRADE_TO_V320)
+			  $(PKTDUMP) $(FMSGDUMP)
 
 .PHONY: libdeps
 libdeps: $(JS_DEPS) gitinfo smblib xpdev-mt $(MTOBJODIR) $(LIBODIR)
