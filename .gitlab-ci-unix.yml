@@ -1,5 +1,4 @@
-# TODO: Don't copy/paste the .rules when we need an if
-#       Investiage $VARIABLES vs $[[ inputs.interpolation ]]
+# TODO: Investiage $VARIABLES vs $[[ inputs.interpolation ]]
 #       Add support for GTK utilities
 #       The bad touching needs to be solved in the build system, but
 #       maybe there's a way to automate it with needs?
@@ -59,12 +58,7 @@ spec:
   rules:
     - if: $NO_JAVASCRIPT == "yes"
       when: never
-    - changes:
-      - src/**/*
-      - 3rdp/**/*
-      - ctrl/text.dat
-      - xtrn/**/{GNUm,M}akefile
-      - xtrn/**/*.{c,h,cpp,hpp,mk}
+    - !reference [.rules, rules]
 
 "cryptlib-$[[ inputs.os ]]":
   extends:
@@ -254,12 +248,7 @@ spec:
   rules:
     - if: $HAS_CURSES == "no"
       when: never
-    - changes:
-      - src/**/*
-      - 3rdp/**/*
-      - ctrl/text.dat
-      - xtrn/**/{GNUm,M}akefile
-      - xtrn/**/*.{c,h,cpp,hpp,mk}
+    - !reference [.rules, rules]
 
 "umonitor-$[[ inputs.os ]]":
   extends:
@@ -381,12 +370,7 @@ spec:
       when: never
     - if: $CROSS_PLATFORM == "yes"
       when: never
-    - changes:
-      - src/**/*
-      - 3rdp/**/*
-      - ctrl/text.dat
-      - xtrn/**/{GNUm,M}akefile
-      - xtrn/**/*.{c,h,cpp,hpp,mk}
+    - !reference [.rules, rules]
 
 "syncterm-$[[ inputs.os ]]":
   extends:
@@ -470,12 +454,7 @@ spec:
   rules:
     - if: $NO_JAVASCRIPT == "yes"
       when: never
-    - changes:
-      - src/**/*
-      - 3rdp/**/*
-      - ctrl/text.dat
-      - xtrn/**/{GNUm,M}akefile
-      - xtrn/**/*.{c,h,cpp,hpp,mk}
+    - !reference [.rules, rules]
 
 "sexpots-$[[ inputs.os ]]":
   extends:
@@ -505,9 +484,4 @@ spec:
       when: never
     - if: $NO_JAVASCRIPT == "yes"
       when: never
-    - changes:
-      - src/**/*
-      - 3rdp/**/*
-      - ctrl/text.dat
-      - xtrn/**/{GNUm,M}akefile
-      - xtrn/**/*.{c,h,cpp,hpp,mk}
+    - !reference [.rules, rules]
