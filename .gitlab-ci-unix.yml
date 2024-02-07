@@ -272,6 +272,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch xpdev
     - cd src/sbbs3
     - gmake ${BUILD_FLAGS} GIT=NO all
   artifacts:
