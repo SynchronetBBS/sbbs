@@ -75,7 +75,7 @@ smoketest-jsexec-linux:
     - cd src/sbbs3
     - export LD_LIBRARY_PATH=$(realpath *.lib.release)
     - "*.exe.release/jsexec -C -c../../ctrl -r 'exit(0)'"
-  dependencies: [sbbs-linux]
+  dependencies: ["linux-x64 [sbbs]"]
 
 #sexpots-linux:
 #  tags: [Linux]
