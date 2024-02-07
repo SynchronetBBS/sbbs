@@ -175,6 +175,7 @@ spec:
     name: "scfg-${OSP}"
     paths:
       - "src/sbbs3/scfg/*.exe.release/*"
+      - "src/sbbs3/scfg/*.obj.release*/*"
   needs:
     - job: "ciolib-$[[ inputs.os ]]"
     - job: "cryptlib-$[[ inputs.os ]]"
@@ -195,6 +196,7 @@ spec:
     name: "uedit-${OSP}"
     paths:
       - "src/sbbs3/uedit/*.exe.release/*"
+      - "src/sbbs3/uedit/*.obj.release*/*"
   needs:
     - job: "ciolib-$[[ inputs.os ]]"
     - job: "encode-$[[ inputs.os ]]"
@@ -223,6 +225,7 @@ spec:
     name: "umonitor-${OSP}"
     paths:
       - "src/sbbs3/umonitor/*.exe.release/*"
+      - "src/sbbs3/umonitor/*.obj.release*/*"
   needs:
     - job: "ciolib-$[[ inputs.os ]]"
     - job: "encode-$[[ inputs.os ]]"
