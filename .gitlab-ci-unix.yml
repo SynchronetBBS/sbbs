@@ -273,7 +273,7 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - cd src/sbbs3
-    - gmake ${BUILD_FLAGS} all
+    - gmake -d ${BUILD_FLAGS} all
   artifacts:
     name: "sbbs-${OSP}"
     paths:
