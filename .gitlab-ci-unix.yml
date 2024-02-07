@@ -465,7 +465,7 @@ spec:
   script:
     - "src/sbbs3/*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
-    - "jsdoor-$[[ inputs.os ]]"
+    - "$[[ inputs.os ]] [jsdoor]"
   rules:
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
