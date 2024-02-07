@@ -203,7 +203,7 @@ static int syslog(int level, char *fmt, ...)
 			NULL,					// no user security identifier
 			1,						// one string
 			0,						// no data
-			&p,						// pointer to string array
+			(LPCSTR*)&p,			// pointer to string array
 			NULL);					// pointer to data
 
     return(retval);
