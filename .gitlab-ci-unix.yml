@@ -43,6 +43,7 @@ spec:
     - cd 3rdp/build
     - gmake ${BUILD_FLAGS} libmozjs
   artifacts:
+    expire_in: 30 mins
     name: "spidermonkey-${OSP}"
     paths:
       - "3rdp/*.*.*.release/mozjs"
@@ -63,6 +64,7 @@ spec:
     - cd 3rdp/build
     - gmake ${BUILD_FLAGS} cryptlib
   artifacts:
+    expire_in: 30 mins
     name: "cryptlib-${OSP}"
     paths:
       - "3rdp/*.*.*.release/cl"
@@ -74,6 +76,7 @@ spec:
     - cd src/xpdev
     - gmake ${BUILD_FLAGS}
   artifacts:
+    expire_in: 30 mins
     name: "xpdev-${OSP}"
     paths:
       - "src/xpdev/*.*.*.lib.release*"
@@ -86,6 +89,7 @@ spec:
     - cd src/encode
     - gmake ${BUILD_FLAGS}
   artifacts:
+    expire_in: 30 mins
     name: "encode-${OSP}"
     paths:
       - "src/encode/*.*.*.lib.release*"
@@ -98,6 +102,7 @@ spec:
     - cd src/hash
     - gmake ${BUILD_FLAGS}
   artifacts:
+    expire_in: 30 mins
     name: "hash-${OSP}"
     paths:
       - "src/hash/*.*.*.lib.release*"
@@ -110,6 +115,7 @@ spec:
     - cd src/conio
     - gmake ${BUILD_FLAGS}
   artifacts:
+    expire_in: 30 mins
     name: "ciolib-${OSP}"
     paths:
       - "src/conio/*.*.*.lib.release*"
@@ -122,6 +128,7 @@ spec:
     - cd src/sftp
     - gmake ${BUILD_FLAGS}
   artifacts:
+    expire_in: 30 mins
     name: "sftp-${OSP}"
     paths:
       - "src/sftp/*.*.*.lib.release*"
@@ -134,6 +141,7 @@ spec:
     - cd src/smblib
     - gmake ${BUILD_FLAGS}
   artifacts:
+    expire_in: 30 mins
     name: "smblib-${OSP}"
     paths:
       - "src/smblib/*.*.*.lib.release*"
@@ -146,6 +154,7 @@ spec:
     - cd src/uifc
     - gmake ${BUILD_FLAGS}
   artifacts:
+    expire_in: 30 mins
     name: "uifc-${OSP}"
     paths:
       - "src/uifc/*.*.*.lib.release*"
@@ -161,6 +170,7 @@ spec:
     - cd src/sbbs3
     - gmake ${BUILD_FLAGS} gitinfo
   artifacts:
+    expire_in: 30 mins
     name: "gitinfo-${OSP}"
     paths:
       - "src/sbbs3/git_*.h"
@@ -172,6 +182,7 @@ spec:
     - cd src/sbbs3/scfg
     - gmake ${BUILD_FLAGS}
   artifacts:
+    expire_in: 30 mins
     name: "scfg-${OSP}"
     paths:
       - "src/sbbs3/scfg/*.exe.release/*"
@@ -193,6 +204,7 @@ spec:
     - cd src/sbbs3/uedit
     - gmake ${BUILD_FLAGS}
   artifacts:
+    expire_in: 30 mins
     name: "uedit-${OSP}"
     paths:
       - "src/sbbs3/uedit/*.exe.release/*"
@@ -222,6 +234,7 @@ spec:
     - cd src/sbbs3/umonitor
     - gmake ${BUILD_FLAGS}
   artifacts:
+    expire_in: 30 mins
     name: "umonitor-${OSP}"
     paths:
       - "src/sbbs3/umonitor/*.exe.release/*"
@@ -241,6 +254,7 @@ spec:
     - cd src/sbbs3
     - gmake ${BUILD_FLAGS} standalone-utils
   artifacts:
+    expire_in: 30 mins
     name: "utils-${OSP}"
     paths:
       - "src/sbbs3/*.exe.release/*"
