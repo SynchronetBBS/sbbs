@@ -9,6 +9,8 @@ spec:
       default: 'RELEASE=1'
     no_javascript:
       default: 'no'
+    has_curses:
+      default: 'yes'
 ---
 
 ".$[[ inputs.os ]]":
@@ -22,6 +24,7 @@ spec:
     OSP: "$[[ inputs.os ]]-$[[ inputs.platform ]]"
     BUILD_FLAGS: "$[[ inputs.build_flags ]]"
     NO_JAVASCRIPT: "$[[ inputs.no_javascript ]]"
+    HAS_CURSES: "$[[ inputs.has_curses ]]"
     GIT_STRATEGY: fetch
 
 ".$[[ inputs.os ]]-build":
@@ -174,6 +177,8 @@ spec:
       - "src/sbbs3/*.exe.release/*"
   needs:
     - job: "ciolib-$[[ inputs.os ]]"
+    - job: "encode-$[[ inputs.os ]]"
+    - job: "hash-$[[ inputs.os ]]"
     - job: "smblib-$[[ inputs.os ]]"
     - job: "uifc-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
@@ -217,6 +222,15 @@ spec:
     - job: "uifc-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
     - job: "gitinfo-$[[ inputs.os ]]"
+  rules:
+    - if: $HAS_CURSES == "no"
+      when: never
+    - changes:
+      - src/**/*
+      - 3rdp/**/*
+      - ctrl/text.dat
+      - xtrn/**/{GNUm,M}akefile
+      - xtrn/**/*.{c,h,cpp,hpp,mk}
 
 "umonitor-$[[ inputs.os ]]":
   extends:
