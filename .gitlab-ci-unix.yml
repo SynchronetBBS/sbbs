@@ -30,7 +30,7 @@ spec:
   stage: test
   extends: .$[[ inputs.os ]]
 
-"$[[ inputs.os ]] [spidermonkey]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -47,7 +47,7 @@ spec:
       when: never
     - !reference [.rules, rules]
 
-"$[[ inputs.os ]] [cryptlib]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -60,7 +60,7 @@ spec:
     paths:
       - "3rdp/*.*.*.release/cl"
 
-"$[[ inputs.os ]] [xpdev]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -74,7 +74,7 @@ spec:
       - "src/xpdev/*.*.*.lib.release*"
       - "src/xpdev/*.*.*.obj.release*/*.o*"
 
-"$[[ inputs.os ]] [encode]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -88,7 +88,7 @@ spec:
       - "src/encode/*.*.*.lib.release*"
       - "src/encode/*.*.*.obj.release*/*.o*"
 
-"$[[ inputs.os ]] [hash]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -102,7 +102,7 @@ spec:
       - "src/hash/*.*.*.lib.release*"
       - "src/hash/*.*.*.obj.release*/*.o*"
 
-"$[[ inputs.os ]] [ciolib]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -116,7 +116,7 @@ spec:
       - "src/conio/*.*.*.lib.release*"
       - "src/conio/*.*.*.obj.release*/*.o*"
 
-"$[[ inputs.os ]] [sftp]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -130,7 +130,7 @@ spec:
       - "src/sftp/*.*.*.lib.release*"
       - "src/sftp/*.*.*.obj.release*/*.o*"
 
-"$[[ inputs.os ]] [smblib]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -144,7 +144,7 @@ spec:
       - "src/smblib/*.*.*.lib.release*"
       - "src/smblib/*.*.*.obj.release*/*.o*"
 
-"$[[ inputs.os ]] [uifc]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -158,7 +158,7 @@ spec:
       - "src/uifc/*.*.*.lib.release*"
       - "src/uifc/*.*.*.obj.release*/*.o*"
 
-"$[[ inputs.os ]] [gitinfo]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -171,7 +171,7 @@ spec:
     paths:
       - "src/sbbs3/git_*.h"
 
-"$[[ inputs.os ]] [scfg]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [scfg]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -194,16 +194,16 @@ spec:
       - "src/sbbs3/scfg/*.exe.release/*"
       - "src/sbbs3/scfg/*.obj.release*/*.o*"
   needs:
-    - job: "$[[ inputs.os ]] [ciolib]"
-    - job: "$[[ inputs.os ]] [cryptlib]"
-    - job: "$[[ inputs.os ]] [encode]"
-    - job: "$[[ inputs.os ]] [hash]"
-    - job: "$[[ inputs.os ]] [smblib]"
-    - job: "$[[ inputs.os ]] [uifc]"
-    - job: "$[[ inputs.os ]] [xpdev]"
-    - job: "$[[ inputs.os ]] [gitinfo]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]"
 
-"$[[ inputs.os ]] [uedit]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [uedit]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -225,19 +225,19 @@ spec:
       - "src/sbbs3/uedit/*.exe.release/*"
       - "src/sbbs3/uedit/*.obj.release*/*.o*"
   needs:
-    - job: "$[[ inputs.os ]] [ciolib]"
-    - job: "$[[ inputs.os ]] [encode]"
-    - job: "$[[ inputs.os ]] [hash]"
-    - job: "$[[ inputs.os ]] [smblib]"
-    - job: "$[[ inputs.os ]] [uifc]"
-    - job: "$[[ inputs.os ]] [xpdev]"
-    - job: "$[[ inputs.os ]] [gitinfo]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]"
   rules:
     - if: '"$[[ inputs.has_curses ]]" == "no"'
       when: never
     - !reference [.rules, rules]
 
-"$[[ inputs.os ]] [umonitor]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [umonitor]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -259,14 +259,14 @@ spec:
       - "src/sbbs3/umonitor/*.exe.release/*"
       - "src/sbbs3/umonitor/*.obj.release*/*.o*"
   needs:
-    - job: "$[[ inputs.os ]] [ciolib]"
-    - job: "$[[ inputs.os ]] [encode]"
-    - job: "$[[ inputs.os ]] [hash]"
-    - job: "$[[ inputs.os ]] [smblib]"
-    - job: "$[[ inputs.os ]] [uifc]"
-    - job: "$[[ inputs.os ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
-"$[[ inputs.os ]] [utils]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [utils]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -289,16 +289,16 @@ spec:
       - "src/sbbs3/*.exe.release/*"
       - "src/sbbs3/*.obj.release*/*.o*"
   needs:
-    - job: "$[[ inputs.os ]] [ciolib]"
-    - job: "$[[ inputs.os ]] [cryptlib]"
-    - job: "$[[ inputs.os ]] [encode]"
-    - job: "$[[ inputs.os ]] [gitinfo]"
-    - job: "$[[ inputs.os ]] [hash]"
-    - job: "$[[ inputs.os ]] [smblib]"
-    - job: "$[[ inputs.os ]] [uifc]"
-    - job: "$[[ inputs.os ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
-"$[[ inputs.os ]] [sbbs]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -338,20 +338,20 @@ spec:
       - "src/sbbs3/*.lib.release/*"
       - "src/sbbs3/*/*.exe.release/*"
   needs:
-    - job: "$[[ inputs.os ]] [spidermonkey]"
-    - job: "$[[ inputs.os ]] [cryptlib]"
-    - job: "$[[ inputs.os ]] [xpdev]"
-    - job: "$[[ inputs.os ]] [encode]"
-    - job: "$[[ inputs.os ]] [hash]"
-    - job: "$[[ inputs.os ]] [sftp]"
-    - job: "$[[ inputs.os ]] [smblib]"
-    - job: "$[[ inputs.os ]] [ciolib]"
-    - job: "$[[ inputs.os ]] [uifc]"
-    - job: "$[[ inputs.os ]] [gitinfo]"
-    - job: "$[[ inputs.os ]] [scfg]"
-    - job: "$[[ inputs.os ]] [uedit]"
-    - job: "$[[ inputs.os ]] [umonitor]"
-    - job: "$[[ inputs.os ]] [utils]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [scfg]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uedit]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [umonitor]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [utils]"
   rules:
     - if: '"$[[ inputs.no_javascript ]]" == "yes"'
       when: never
@@ -359,7 +359,7 @@ spec:
       when: never
     - !reference [.rules, rules]
 
-"$[[ inputs.os ]] [syncterm]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [syncterm]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -380,15 +380,15 @@ spec:
     paths:
       - "src/syncterm/*.exe.release/*"
   needs:
-    - job: "$[[ inputs.os ]] [ciolib]"
-    - job: "$[[ inputs.os ]] [cryptlib]"
-    - job: "$[[ inputs.os ]] [encode]"
-    - job: "$[[ inputs.os ]] [hash]"
-    - job: "$[[ inputs.os ]] [sftp]"
-    - job: "$[[ inputs.os ]] [uifc]"
-    - job: "$[[ inputs.os ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
-"$[[ inputs.os ]] [syncdraw]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [syncdraw]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -403,10 +403,10 @@ spec:
     paths:
       - "src/syncdraw/*.exe.release/*"
   needs:
-    - job: "$[[ inputs.os ]] [ciolib]"
-    - job: "$[[ inputs.os ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
-"$[[ inputs.os ]] [jsdoor]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -429,21 +429,21 @@ spec:
     paths:
       - "src/sbbs3/*.exe.release/*"
   needs:
-    - job: "$[[ inputs.os ]] [ciolib]"
-    - job: "$[[ inputs.os ]] [cryptlib]"
-    - job: "$[[ inputs.os ]] [encode]"
-    - job: "$[[ inputs.os ]] [hash]"
-    - job: "$[[ inputs.os ]] [sftp]"
-    - job: "$[[ inputs.os ]] [smblib]"
-    - job: "$[[ inputs.os ]] [spidermonkey]"
-    - job: "$[[ inputs.os ]] [uifc]"
-    - job: "$[[ inputs.os ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
   rules:
     - if: '"$[[ inputs.no_javascript ]]" == "yes"'
       when: never
     - !reference [.rules, rules]
 
-"$[[ inputs.os ]] [sexpots]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [sexpots]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -457,15 +457,15 @@ spec:
     paths:
       - "src/sexpots/*.exe.release/*"
   needs:
-    - job: "$[[ inputs.os ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
-"$[[ inputs.os ]] [js-testsuite]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [js-testsuite]":
   extends:
     - .$[[ inputs.os ]]-test
   script:
     - "src/sbbs3/*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
-    - "$[[ inputs.os ]] [jsdoor]"
+    - "$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]"
   rules:
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
