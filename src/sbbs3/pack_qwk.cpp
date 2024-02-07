@@ -595,11 +595,11 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		byte_estimate_to_str(ftell(qwk), tmp, sizeof(tmp), 1024, 1);
 		if(online == ON_REMOTE)
 			bprintf("\r\n\r\n\1n\1hPacked %u messages (%s bytes) in %u seconds "
-				"(%lu messages/second)."
+				"(%" PRIu64 " messages/second)."
 				,(*msgcnt)+mailmsgs
 				,tmp
 				,(uint)elapsed
-				,((*msgcnt)+mailmsgs) / elapsed);
+				,(uint64_t)((*msgcnt)+mailmsgs) / elapsed);
 		lprintf(LOG_INFO, "packed %u messages (%s bytes) in %u seconds (%u msgs/sec)"
 			,(*msgcnt)+mailmsgs
 			,tmp
