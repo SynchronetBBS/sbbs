@@ -1,3 +1,11 @@
+# TODO: Don't copy/paste the .rules when we need an if
+#       Investiage $VARIABLES vs $[[ inputs.interpolation ]]
+#       Add support for GTK utilities
+#       The bad touching needs to be solved in the build system, but
+#       maybe there's a way to automate it with needs?
+#       The only reason the second column of dependencies exists is
+#       because we build uifctest.
+
 spec:
   inputs:
     os:
@@ -161,9 +169,6 @@ spec:
   script:
     - cd src/uifc
     - touch depend
-    - touch xpdev
-    - touch xpdev-mt
-    - touch ciolib-mt
     - gmake ${BUILD_FLAGS}
   artifacts:
     expire_in: 30 mins
@@ -171,9 +176,6 @@ spec:
     paths:
       - "src/uifc/*.*.*.lib.release*"
       - "src/uifc/*.*.*.obj.release*/*.o*"
-  needs:
-    - job: "xpdev-$[[ inputs.os ]]"
-    - job: "ciolib-$[[ inputs.os ]]"
 
 "gitinfo-$[[ inputs.os ]]":
   extends:
