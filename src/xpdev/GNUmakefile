@@ -37,21 +37,21 @@ $(XPTIME): $(OBJODIR)/xptime.o $(XPDEV_LIB_BUILD)
 	@echo Linking $@
 	$(QUIET)$(CC) -o $@ $(LDFLAGS) $^ $(XPDEV_LIB_BUILD)
 
-$(XPDEV_LIB_BUILD): $(OBJODIR) $(OBJS)
+$(XPDEV_LIB_BUILD): $(OBJS) | $(OBJODIR)
 	@echo Creating $@
 	$(QUIET)$(AR) rc $@ $(OBJS)
 	$(QUIET)$(RANLIB) $@
 
-$(XPDEV_SHLIB_BUILD): $(OBJODIR) $(OBJS)
+$(XPDEV_SHLIB_BUILD): $(OBJS) | $(OBJODIR)
 	@echo Creating $@
 	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(OBJS) $(SHLIBOPTS) -o $@
 
-$(XPDEV-MT_LIB_BUILD): $(MTOBJODIR) $(MTOBJS)
+$(XPDEV-MT_LIB_BUILD): $(MTOBJS) | $(MTOBJODIR)
 	@echo Creating $@
 	$(QUIET)$(AR) rc $@ $(MTOBJS)
 	$(QUIET)$(RANLIB) $@
 
-$(XPDEV-MT_SHLIB_BUILD): $(MTOBJODIR) $(MTOBJS)
+$(XPDEV-MT_SHLIB_BUILD): $(MTOBJS) | $(MTOBJODIR)
 	@echo Creating $@
 	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MTOBJS) $(SHLIBOPTS) -o $@
 
