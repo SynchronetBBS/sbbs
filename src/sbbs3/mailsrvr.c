@@ -3204,8 +3204,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 						safe_snprintf(str,sizeof(str),"%s%s%s",head,sender_addr,tail);
 
 					if((telegram_buf=(char*)malloc((size_t)(length+strlen(str)+1)))==NULL) {
-						lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %" XP_PRIsize_t "u bytes of memory for telegram from %s"
-							,socket, client.protocol, client_id, length+strlen(str)+1,sender_addr);
+						lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %" PRIu64 " bytes of memory for telegram from %s"
+							,socket, client.protocol, client_id, (uint64_t)(length+strlen(str)+1),sender_addr);
 						sockprintf(socket,client.protocol,session, insuf_stor);
 						continue;
 					}
