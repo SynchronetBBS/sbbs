@@ -380,8 +380,12 @@ main(int argc, char **argv)
 				fread(&TDFont.Chartable[x], 2, 1, fp3);
 				TDFont.Chartable[x]=LE_SHORT(TDFont.Chartable[x]);
 			}
-			for (x = 1; x <= 22; x++)
+			// TODO: This read 22 bytes previously...
+			for (x = 1; x <= 20; x++)
 				TDFont.b[x] = fgetc(fp3);
+			// TODO: So I added two junk reads here.
+			fgetc(fp3);
+			fgetc(fp3);
 			for (x = 0; x <= 16; x++)
 				FontRec.FontName[x] = TDFont.Name[x];
 			FontRec.FilePos = b + FontRecordSize;
