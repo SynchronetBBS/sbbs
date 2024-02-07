@@ -1981,7 +1981,7 @@ void services_thread(void* arg)
 		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
 
 		if((t=checktime())!=0) {   /* Check binary time */
-			lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
+			lprintf(LOG_ERR,"!TIME PROBLEM (%" PRId64 ")",(int64_t)t);
 		}
 
 		if(uptime==0)
