@@ -165,25 +165,6 @@ spec:
     paths:
       - "src/sbbs3/git_*.h"
 
-"utils-$[[ inputs.os ]]":
-  extends:
-    - .$[[ inputs.os ]]-build
-  script:
-    - cd src/sbbs3
-    - gmake ${BUILD_FLAGS} utils
-  artifacts:
-    name: "utils-${OSP}"
-    paths:
-      - "src/sbbs3/*.exe.release/*"
-  needs:
-    - job: "ciolib-$[[ inputs.os ]]"
-    - job: "encode-$[[ inputs.os ]]"
-    - job: "hash-$[[ inputs.os ]]"
-    - job: "smblib-$[[ inputs.os ]]"
-    - job: "uifc-$[[ inputs.os ]]"
-    - job: "xpdev-$[[ inputs.os ]]"
-    - job: "gitinfo-$[[ inputs.os ]]"
-
 "scfg-$[[ inputs.os ]]":
   extends:
     - .$[[ inputs.os ]]-build
@@ -274,7 +255,6 @@ spec:
     - job: "uedit-$[[ inputs.os ]]"
     - job: "uifc-$[[ inputs.os ]]"
     - job: "umonitor-$[[ inputs.os ]]"
-    - job: "utils-$[[ inputs.os ]]"
     - job: "xpdev-$[[ inputs.os ]]"
   rules:
     - if: $NO_JAVASCRIPT == "yes"
