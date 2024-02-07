@@ -449,6 +449,7 @@ spec:
     - touch uifc-mt
     - touch sftp-mt
     - touch cl
+    - touch js
     - gmake ${BUILD_FLAGS} jsdoor
   artifacts:
     name: "jsdoor-${OSP}"

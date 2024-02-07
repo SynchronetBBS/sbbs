@@ -102,31 +102,31 @@ mono:	xpdev-mt smblib \
 
 .PHONY: scfg
 scfg:
-	$(MAKE) -C scfg $(MAKEFLAGS)
+	$(MAKE) -C scfg
 
 .PHONY: uedit
 uedit: uifc-mt
-	$(MAKE) -C uedit $(MAKEFLAGS)
+	$(MAKE) -C uedit
 
 .PHONY: umonitor
 umonitor: uifc-mt
-	$(MAKE) -C umonitor $(MAKEFLAGS)
+	$(MAKE) -C umonitor
 
 .PHONY: gtkmonitor
 gtkmonitor:
-	$(MAKE) -C gtkmonitor $(MAKEFLAGS)
+	$(MAKE) -C gtkmonitor
 
 .PHONY: gtkchat
 gtkchat:
-	$(MAKE) -C gtkchat $(MAKEFLAGS)
+	$(MAKE) -C gtkchat
 
 .PHONY: gtkuseredit
 gtkuseredit:
-	$(MAKE) -C gtkuseredit $(MAKEFLAGS)
+	$(MAKE) -C gtkuseredit
 
 .PHONY: gtkuserlist
 gtkuserlist:
-	$(MAKE) -C gtkuserlist $(MAKEFLAGS)
+	$(MAKE) -C gtkuserlist
 
 ifdef SBBSEXEC
 .PHONY: install
