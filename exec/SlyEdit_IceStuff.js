@@ -232,7 +232,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
       var startPos = (console.screen_columns/2).toFixed(0) - (msgAreaName.length/2).toFixed(0) - 2;
       // Write border characters up to the message area name start position
       screenText = "";
-      for (var i = strip_ctrl(redrawScreen_IceStyle.msgAreaBorder).length; i < startPos; ++i)
+      for (var i = console.strlen(redrawScreen_IceStyle.msgAreaBorder); i < startPos; ++i)
          screenText += HORIZONTAL_SINGLE;
       redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(screenText,
                                                              gConfigSettings.iceColors.BorderColor1,
@@ -252,7 +252,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
       // Write horizontal border characters up until the point where we'll output
       // the node number.
       screenText = "";
-      for (var posX = strip_ctrl(redrawScreen_IceStyle.msgAreaBorder).length; posX < nodeFieldStartPos; ++posX)
+      for (var posX = console.strlen(redrawScreen_IceStyle.msgAreaBorder); posX < nodeFieldStartPos; ++posX)
          screenText += HORIZONTAL_SINGLE;
       redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(screenText,
                                                             gConfigSettings.iceColors.BorderColor1,
@@ -341,8 +341,8 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
       // Append border characters up until the point we'll have to write the CTRL key
       // help text.
       var screenText = "";
-      var endPos = console.screen_columns - strip_ctrl(ctrlKeyHelp).length - 3;
-      var textLen = strip_ctrl(DisplayTextAreaBottomBorder_IceStyle.border).length;
+      var endPos = console.screen_columns - console.strlen(ctrlKeyHelp) - 3;
+      var textLen = console.strlen(DisplayTextAreaBottomBorder_IceStyle.border);
       for (var i = textLen+1; i < endPos; ++i)
          screenText += HORIZONTAL_SINGLE;
       DisplayTextAreaBottomBorder_IceStyle.border += randomTwoColorString(screenText,
@@ -389,7 +389,7 @@ function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
 		// Calculate the starting position to center the help text, and front-pad
 		// DisplayBottomHelpLine_IceStyle.helpText with that many spaces.
 		var xPos = (console.screen_columns / 2).toFixed(0)
-		         - (strip_ctrl(screenText).length / 2).toFixed(0);
+		         - (console.strlen(screenText) / 2).toFixed(0);
 		DisplayBottomHelpLine_IceStyle.helpText = "";
 		for (var i = 0; i < xPos; ++i)
 			DisplayBottomHelpLine_IceStyle.helpText += " ";
@@ -527,7 +527,7 @@ function promptYesNo_IceStyle(pQuestion, pDefaultYes)
    displayIceYesNoText(pDefaultYes);
 
    // yesNoX contains the horizontal position for the "Yes" & "No" text.
-   const yesNoX = strip_ctrl(pQuestion).length + 3;
+   const yesNoX = console.strlen(pQuestion) + 3;
 
    // Input loop
    var userInput = "";

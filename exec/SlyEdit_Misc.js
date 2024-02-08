@@ -41,11 +41,13 @@ if (typeof(require) === "function")
 {
 	require("text.js", "Pause");
 	require("key_defs.js", "CTRL_A");
+	require("userdefs.js", "USER_ANSI");
 }
 else
 {
 	load("text.js");
 	load("key_defs.js");
+	load("userdefs.js");
 }
  
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -146,13 +148,19 @@ var ESC_MENU_USER_SETTINGS = 12;
 var ESC_MENU_SPELL_CHECK = 13;
 
 
-var COPYRIGHT_YEAR = 2022;
+var COPYRIGHT_YEAR = 2024;
 
 // Store the full path & filename of the Digital Distortion Message
 // Lister, since it will be used more than once.
 var gDDML_DROP_FILE_NAME = system.node_dir + "DDML_SyncSMBInfo.txt";
 
 var gUserSettingsFilename = system.data_dir + "user/" + format("%04d", user.number) + ".SlyEdit_Settings";
+
+// See if the user's terminal supports UTF-8 (USER_UTF8 is defined in userdefs.js)
+var gUserConsoleSupportsUTF8 = (typeof(USER_UTF8) != "undefined" ? console.term_supports(USER_UTF8) : false);
+// See if K_CP437 is defined (for the input mode, for UTF-8 terminals).  And cache
+// the result for speed with further calls, since this function will be called repeatedly.
+var g_K_CP437Exists = (typeof(K_CP437) === "number");
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Object/class stuff
@@ -271,7 +279,14 @@ function TextLine_length()
 // For the TextLine class: Returns the printed length of the text (without any attribute codes, etc.)
 function TextLine_screenLength()
 {
-	return console.strlen(this.text);
+	// If we need the length as UTF-8 if user's terminal supports it and we're inputting UTF-8?  Maybe not,
+	// since we use K_CP437 in that case to convert to CP437..
+	//str_is_utf8(text)
+	//utf8_get_width(text)
+	// If the user's terminal is UTF-8 capable count the text as UTF-8
+	//var textMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
+	var textMode = P_NONE;
+	return console.strlen(this.text, textMode);
 }
 // For the TextLine class: Prints the text line, using its text attributes.
 //
@@ -1001,7 +1016,7 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdC
 	// Calculate the maximum top border text length to account for the left/right
 	// T chars and "Page #### of ####" text
 	var maxTopBorderTextLen = innerBorderWidth - (pAddTCharsAroundTopText ? 21 : 19);
-	if (strip_ctrl(pTopBorderText).length > maxTopBorderTextLen)
+	if (console.strlen(pTopBorderText) > maxTopBorderTextLen)
 		pTopBorderText = pTopBorderText.substr(0, maxTopBorderTextLen);
 	this.topBorder = "\x01n" + pSlyEdCfgObj.genColors.listBoxBorder + UPPER_LEFT_SINGLE;
 	if (addTopTCharsAroundText)
@@ -1010,7 +1025,7 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdC
 	               + pTopBorderText + "\x01n" + pSlyEdCfgObj.genColors.listBoxBorder;
 	if (addTopTCharsAroundText)
 		this.topBorder += LEFT_T_SINGLE;
-	const topBorderTextLen = strip_ctrl(pTopBorderText).length;
+	const topBorderTextLen = console.strlen(pTopBorderText);
 	var numHorizBorderChars = innerBorderWidth - topBorderTextLen - 20;
 	if (addTopTCharsAroundText)
 		numHorizBorderChars -= 2;
@@ -1027,7 +1042,7 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdC
 	this.bottomBorder = "\x01n" + pSlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE
 	                  + RIGHT_T_SINGLE + this.btmBorderNavText + "\x01n" + pSlyEdCfgObj.genColors.listBoxBorder
 	                  + LEFT_T_SINGLE;
-	var numCharsRemaining = this.dimensions.width - strip_ctrl(this.btmBorderNavText).length - 6;
+	var numCharsRemaining = this.dimensions.width - console.strlen(this.btmBorderNavText) - 6;
 	for (var i = 0; i < numCharsRemaining; ++i)
 		this.bottomBorder += HORIZONTAL_SINGLE;
 	this.bottomBorder += LOWER_RIGHT_SINGLE;
@@ -1256,7 +1271,7 @@ function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooL
 
 	if (pAutoStripIfTooLong)
 	{
-		if (strip_ctrl(pText).length > innerWidth)
+		if (console.strlen(pText) > innerWidth)
 			pText = pText.substr(0, innerWidth);
 	}
 
@@ -1269,7 +1284,7 @@ function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooL
 	this.bottomBorder += pText + "\x01n" + this.SlyEdCfgObj.genColors.listBoxBorder;
 	if (pAddTChars)
 		this.bottomBorder += LEFT_T_SINGLE;
-	var numCharsRemaining = this.dimensions.width - strip_ctrl(this.bottomBorder).length - 3;
+	var numCharsRemaining = this.dimensions.width - console.strlen(this.bottomBorder) - 3;
 	for (var i = 0; i < numCharsRemaining; ++i)
 		this.bottomBorder += HORIZONTAL_SINGLE;
 	this.bottomBorder += LOWER_RIGHT_SINGLE;
@@ -1775,7 +1790,7 @@ function displayHelpHeader()
       var headerText = EDITOR_PROGRAM_NAME + " Help \x01w(\x01y"
                       + (EDITOR_STYLE == "DCT" ? "DCT" : "Ice")
                       + " mode\x01w)";
-      var headerTextLen = strip_ctrl(headerText).length;
+      var headerTextLen = console.strlen(headerText);
 
       // Top border
       var headerTextStr = "\x01n\x01h\x01c" + UPPER_LEFT_SINGLE;
@@ -4300,6 +4315,11 @@ function consolePauseWithoutText()
 function getKeyWithESCChars(pGetKeyMode, pCfgObj)
 {
 	var getKeyMode = (typeof(pGetKeyMode) == "number" ? pGetKeyMode : K_NONE);
+	// If the user's terminal supports UTF-8, then allow UTF-8 input and convert
+	// it to cp437 (this is necessary because Synchronet's internal strings aren't
+	// always UTF-8)
+	if (gUserConsoleSupportsUTF8 && g_K_CP437Exists)
+		getKeyMode |= K_CP437;
 	var userInput = getUserKey(getKeyMode, pCfgObj);
 	if (userInput == KEY_ESC)
 	{
@@ -4782,15 +4802,15 @@ function shortenStrWithAttrCodes(pStr, pNewLength, pFromLeft)
 function centeredText(pWidth, pText)
 {
 	var givenText = pText;
-	var textLen = strip_ctrl(givenText).length;
+	var textLen = console.strlen(givenText);
 	if (textLen > pWidth)
 	{
 		givenText = shortenStrWithAttrCodes(givenText, pWidth);
-		textLen = strip_ctrl(givenText).length;
+		textLen = console.strlen(givenText);
 	}
 	var textX = Math.floor(pWidth / 2) - Math.floor(textLen/2);
 	var textStr = format("%" + textX + "s", "") + givenText;
-	var numSpacesRemaining = pWidth - strip_ctrl(textStr).length;
+	var numSpacesRemaining = pWidth - console.strlen(textStr);
 	textStr += format("%" + numSpacesRemaining + "s", "");
 	return textStr;
 }

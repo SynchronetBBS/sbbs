@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.87a
-                        Release date: 2023-12-17
+                              Version 1.88
+                        Release date: 2024-02-07
 
                                   by
 
@@ -23,15 +23,16 @@ Contents
  2. Introduction
  3. Installation & Setup
  4. Features
- 5. Configuration file
- 6. Ice-style Color Theme Settings
- 7. DCT-style Color Theme Settings
- 8. Common colors (appearing in both Ice and DCT color theme files)
- 9. Text replacements (AKA Macros)
-10. User settings
-11. Taglines
-12. Spell check and dictionaries
-13. Version history
+ 5. UTF-8 support and CP437
+ 6. Configuration file
+ 7. Ice-style Color Theme Settings
+ 8. DCT-style Color Theme Settings
+ 9. Common colors (appearing in both Ice and DCT color theme files)
+10. Text replacements (AKA Macros)
+1`. User settings
+12. Taglines
+13. Spell check and dictionaries
+14. Version history
 
 
 1. Disclaimer
@@ -235,7 +236,16 @@ Ctrl-K       : Change text color            ¦ Ctrl-R  : Spell checker
 Ctrl-O       : Import a file                ¦ Ctrl-X  : Export to file
 
 
-5. Configuration file
+5. 5. UTF-8 support and CP437
+=============================
+As of version 1.88, SlyEdit is able to accept UTF-8 character input, but it has
+Synchronet convert the input to CP437 internally. As of this writing, Synchronet
+didn't fully have UTF-8 string support yet.
+Internally, the new (at the time) K_CP437 mode bit is used when accepting user
+input.
+
+
+6. Configuration file
 =====================
 The configuration file, SlyEdit.cfg, is split up into 3 sections -
 Behavior, Ice colors, and DCT colors.  These sections are designated
@@ -427,7 +437,7 @@ Setting                           Description
 -------                           -----------
 ThemeFilename                     The name of the color theme file to use.
                                   Note: DCT-style theme settings are described
-                                  in Section 6: DCT-style Color Theme Settings.
+                                  in Section 8: DCT-style Color Theme Settings.
                                   If no theme file is specified, then default
                                   colors will be used.
 
@@ -442,7 +452,7 @@ High green: gh
 Normal cyan: c
 
 
-6. Ice-style Color Theme Settings
+7. Ice-style Color Theme Settings
 =================================
 Note that you don't need control (Ctrl-A) characters for the color settings;
 just the attribute characters.
@@ -507,7 +517,7 @@ UnselectedOptionBorderColor       The color to use for the borders around
 UnselectedOptionTextColor         The color to use for the text for unselected
                                   multi-choice options
 
-7. DCT-style Color Theme Settings
+8. DCT-style Color Theme Settings
 =================================
 Note that you don't need control (Ctrl-A) characters for the color settings;
 just the attribute characters.
@@ -731,7 +741,7 @@ listBoxItemHighlight              The color to use for the currently selected
                                   item in list boxes (such as the list of text
                                   replacements and the list of tag lines)
 
-9. Text replacements (AKA Macros)
+10. Text replacements (AKA Macros)
 ==================================
 SlyEdit version 1.29 added text replacements (AKA Macros), which lets you (the
 sysop) define words to be replaced with other text as the user types a message.
@@ -824,7 +834,7 @@ store it in buffer 1, and in JavaScript (and with SlyEdit's search and
 replace), you would use $1 to refer to the word "darn".  For example, for
 (darn), the replacement $1it would replace the word "darn" with "darnit".
 
-10. User settings
+11. User settings
 =================
 Since version 1.32, SlyEdit has the ability for each user to configure some
 settings for themselves.  The user settings include the following:
@@ -858,7 +868,7 @@ The user settings files will be stored in the sbbs/data/user directory with the
 filename <user number>.SlyEdit_Settings, and the user number will be 0-padded
 up to 4 digits.
 
-11. Taglines
+12. Taglines
 ============
 SlyEdit version 1.32 added the ability for users to optionally choose a tagline
 to be appended to their message upon saving the message.  Each user can
@@ -888,7 +898,7 @@ user's signature (if they have one).  If the MSGINF file does not include the
 7th line, then the tagline will appear before the user's signature.
 
 
-12. Spell check and dictionaries
+13. Spell check and dictionaries
 ================================
 Since version 1.64, SlyEdit has a spell check feature.  Spell check can be
 started by the user with the Ctrl-R hotkey, or by the Edit > Spell Checker
@@ -928,10 +938,27 @@ case, since SlyEdit does case-insensitive matching by converting words in the
 message to lower-case and comparing them with the words in the dictionary.
 
 
-143 Version history
+14. Version history
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.88     2024-02-07   Support for entering UTF-8/Unicode characters; internally
+                      uses K_CP437 to convert to CP437, so the strings are still
+                      in CP437 internally in Synchronet
+1.87a    2023-12-17   Using the msg_area.sub object to check sub-board settings
+                      instead of opening the sub-board (for determining whether
+                      to post with real name)
+1.87     2023-08-15   Improvement to paragraph/line breaks in quote line wrapping
+1.86     2023-07-26   Started refactoring the re-wrapping of quote lines to work
+                      better for the various quote prefixes used in various
+                      messages.
+1.85     2023-05-15   Internal: Refactored readColorConfig() in _DCTStuff.js
+                      and _IceStuff.js.
+                      Removed the readValueSettingConfigFile() function.
+1.84     2023-02-10   Sysops: When importing a file from the BBS machine,
+                      SlyEdit now prompts to send it immediately or not (if not,
+                      edit it before sending).  Sending immediately can be
+                      useful for posting ANSI files unmodified.
 1.83     2022-12-13   Quote lines that are wider than the user's terminal width
                       are now wrapped to the user's terminal width to ensure
 					  all the quote lines are entirely available to be quoted.
