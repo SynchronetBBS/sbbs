@@ -342,7 +342,8 @@ static void internal_do_cryptInit(void)
 		cryptInit_error = CRYPT_ERROR_INVALID;
 		cryptlib_initialized = false;
 		cryptEnd();
-		asprintf(&cryptfail, "Incorrect cryptlib version %d (expected %d)", tmp, CRYPTLIB_VERSION);
+		if (asprintf(&cryptfail, "Incorrect cryptlib version %d (expected %d)", tmp, CRYPTLIB_VERSION) == -1)
+			cryptfail = NULL;
 		return;
 	}
 	ret = cryptGetAttributeString(CRYPT_UNUSED, CRYPT_OPTION_INFO_PATCHES, patches, &stp);
@@ -350,7 +351,8 @@ static void internal_do_cryptInit(void)
 		cryptInit_error = ret;
 		cryptlib_initialized = false;
 		cryptEnd();
-		asprintf(&cryptfail, "Incorrect cryptlib patch set %.32s (expected %s)", patches, CRYPTLIB_PATCHES);
+		if (asprintf(&cryptfail, "Incorrect cryptlib patch set %.32s (expected %s)", patches, CRYPTLIB_PATCHES) == -1)
+			cryptfail = NULL;
 		return;
 	}
 	return;
