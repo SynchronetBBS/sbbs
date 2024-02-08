@@ -8,26 +8,34 @@ The cursor is moved to the first character of the next line
 as soon as a character is written to the last column of the
 current line, not on the next character.  A tab will wrap
 to the next line only if the current cursor position is the
-last character on the line.
+last character on the line.  This behavior is often surprising
+to people who are used to VT emulators which implement the LCF
+as documented in STD-070, who expect the cursor to "stick" in
+the last column until the next character is received.
 
-I'm often asked why I don't use VT semantics for wrapping.
-The primary reason is that the person asking almost certainly
-doesn't know what the VT semantics are, they just want
-SyncTERM to behave the same as some other terminal they like.
+There are two settable flags that will impact the default
+behaviour.
 
-Not only have the VT semantics never been properly
-implemented in any terminal, they even varied between
-different actual hardware VT terminals.  Luckily, everything
-is on the internet now, so you can see the details and results
-here: https://github.com/mattiase/wraptest
+CSI ? 7 l will disable wrapping at the end of line
+completely, and any characters written to the last column will
+not move the cursor at all, overwriting the existing charater.
+Default behaviour can be restored with CSI ? 7 h.
 
-This is implemented as described in STD-070 and can be enabled
-using CSI = 4 h or disabled using CSI = 4 l.  Note however that
-when it is set in this way, it is cleared by a reset (RIS) so
-if something will be sending arbitrary sequences (such as a
-door) it should be re-enabled on return.  It can also be set
-using CSI = 5 h, but when set in this manner, it CANNOT be
-cleared using a sequence.
+If the CSI = 4 h sequence is received, CTerm will enable LCF
+mode as documented in STD-070, and CSI = 4 l will restore
+default behaviour.  CSI = 5 h will set LCF mode and disable
+CSI = 4 l, as well as cause LCF to remain enabled across
+an ESC c (RIS).
+
+Specifically, the LCF will be
+set when displaying a printable character advances the cursor
+to the right margin, and cleared by any of the following being
+received:
+CSI ? 6 h, CSI ? 6 l, CSI ? 7 l, CSI @, CSI A, CSI B, CSI a
+CSI j, CSI H, CSI f, CSI I, CSI Y, CSI J, CSI K, CSI P
+CSI X, CSI r, ESC E, ESC M, CR, LF, BS, TAB
+Any normal printable character when the cursor is at the right
+margin (of the screen or scrollable area).
 
 Control characters:
 
@@ -60,6 +68,11 @@ Control characters:
 
 0x0D - CR:
 	Move cursor position to column 1 of the current line
+
+0x1B - ESC:
+	Introduces a control code.  The ESC and the next byte
+	together form the control code.  If the control code is
+	not valid, the ESC is ignored.
 
 Control Codes:
 --------------
@@ -119,7 +132,7 @@ ESC P	Device Control String (DCS)
 
 		The rest of the string is made up of sixel data characters and
 		sixel control functions.  Sixel data characters are in the
-		rage of '?' (0x3f) to '~' (0x7e).  Each sixel data character
+		range of '?' (0x3f) to '~' (0x7e).  Each sixel data character
 		represents six vertical pixels.  The data is extracted by
 		subtracting 0x3f from the ASCII value of the character.
 		The least significant bit is the topmost pixel.
@@ -246,7 +259,6 @@ ESC ^	Privacy Message (PM)
 ESC _	Application Program String (APS)
 	Begins a string consisting of the characters 0x08 - 0x0d and
 	0x20-0x7e, terminated by a String Terminator (ST)
-	The string is currently ignored.
 	
 	SyncTERM implements the following APS commands:
 
@@ -811,13 +823,13 @@ CSI = 255 h (BCSET)
 
 	SOURCE: BANSI.TXT
 
-CSI = 0 h (CTELCF)
+CSI = 4 h (CTELCF)
 	NON-STANDARD EXTENSION
 	Enable Last Column Flag mode
 
 	SOURCE: CTerm
 
-CSI = 1 h (CTFLCF)
+CSI = 5 h (CTFLCF)
 	NON-STANDARD EXTENSION
 	Force Last Column Flag mode
 
@@ -948,7 +960,7 @@ CSI = 255 l (BCRST)
 
 	SOURCE: BANSI.TXT
 
-CSI = 0 l (CTDLCF)
+CSI = 4 l (CTDLCF)
 	NON-STANDARD EXTENSION
 	Disable Last Column Flag mode
 
