@@ -287,7 +287,7 @@ sftp_tx_pkt_reset(sftp_tx_pkt_t *pktp)
 	if (!grow_tx(pktp, sizeof(var)))                           \
 		return false;                                       \
 	sftp_tx_pkt_t pkt = *pktp;                                   \
-	memcpy((void*)(&(&pkt->type)[pkt->used]), &var, sizeof(var)); \
+	memcpy((uint64_t *)(&(&pkt->type)[pkt->used]), &var, sizeof(var)); \
 	pkt->used += sizeof(var);                                      \
 	return true
 
