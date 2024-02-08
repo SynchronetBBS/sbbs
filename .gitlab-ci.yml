@@ -50,22 +50,6 @@ include:
       tagname: "Linux"
       has_gtk: "yes"
 
-#sbbs-linux:
-#  tags: [Linux]
-#  image: gcc
-#  stage: build
-#  extends: .rules
-#  script:
-#    - cd src/sbbs3
-#    - make RELEASE=1 all
-#    - make RELEASE=1 gtkutils
-#  artifacts:
-#    name: sbbs-linux-x64
-#    paths:
-#      - "src/sbbs3/*.exe.release/*"
-#      - "src/sbbs3/*.lib.release/*"
-#      - "src/sbbs3/*/*.exe.release/*"
-
 smoketest-jsexec-linux:
   tags: [Linux]
   image: gcc
@@ -77,34 +61,7 @@ smoketest-jsexec-linux:
     - "*.exe.release/jsexec -C -c../../ctrl -r 'exit(0)'"
   dependencies: ["linux-x64 [sbbs]"]
 
-#sexpots-linux:
-#  tags: [Linux]
-#  image: gcc
-#  stage: build
-#  extends: .rules
-#  script:
-#    - cd src/sexpots
-#    - make RELEASE=1
-#  artifacts:
-#    name: sexpots-linux-x64
-#    paths:
-#      - "src/sexpots/*.exe.release/*"
-
-#syncterm-linux:
-#  tags: [Linux]
-#  image: gcc
-#  stage: build
-#  extends: .rules
-#  script:
-#    - cd src/syncterm
-#    - make RELEASE=1 PREFIX=/usr dpkg
-#  artifacts:
-#    name: syncterm-linux-x64
-#    paths:
-#      - "src/syncterm/*.exe.release/*"
-#      - "src/syncterm/syncterm*.deb"
-
-sbbs-windows:
+"windows-x86 [sbbs]":
   tags: [Windows]
   stage: build
   extends: .rules
@@ -133,7 +90,7 @@ sbbs-windows:
       - "src/sbbs3/*/*.exe"
       - "xtrn/*/*.exe"
 
-sexpots-windows:
+"windows-x86 [sexpots]":
   tags: [Windows]
   stage: build
   extends: .rules
@@ -145,7 +102,7 @@ sexpots-windows:
     paths:
       - "src/sexpots/Release/*.exe"
 
-svdm-windows:
+"windows-x86 [svdm]":
   tags: [Windows]
   stage: build
   extends: .rules
@@ -157,7 +114,7 @@ svdm-windows:
     paths:
       - "src/vdmodem/Release/*.exe"
 
-syncterm-msvc:
+"windows-x86 [syncterm-msvc]":
   tags: [Windows]
   stage: build
   extends: .rules
@@ -168,32 +125,6 @@ syncterm-msvc:
     name: syncterm-msvc
     paths:
       - "src/syncterm/Release/*.exe"
-
-#syncdraw-linux:
-#  tags: [Linux]
-#  image: gcc
-#  stage: build
-#  extends: .rules
-#  script:
-#    - cd src/syncdraw
-#    - make RELEASE=1
-#  artifacts:
-#    name: syncdraw-linux-x64
-#    paths:
-#      - "src/syncdraw/*.exe.release/*"
-
-#jsdoor-linux:
-#  tags: [Linux]
-#  image: gcc
-#  stage: build
-#  extends: .rules
-#  script:
-#    - cd src/sbbs3
-#    - make RELEASE=1 jsdoor
-#  artifacts:
-#    name: jsdoor-linux-x64
-#    paths:
-#      - "src/sbbs3/*.exe.release/*"
 
 "freebsd-amd64 [sbbs-noskeeters]":
   extends:
