@@ -150,7 +150,7 @@ ifdef DEBUG
   LDFLAGS	+=	-fprofile-arcs -ftest-coverage
  endif
  ifdef FORTIFY
-  CFLAGS += -O1
+  CFLAGS += -Og
  endif
  ifdef SANITIZE
   CFLAGS += -fsanitize=undefined,address -fno-omit-frame-pointer
