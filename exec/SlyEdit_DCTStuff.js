@@ -398,7 +398,7 @@ function DisplayBottomHelpLine_DCTStyle(pLineNum, pUsingQuotes)
 		// Center the text by padding it in the front with spaces.  This is done instead
 		// of using console.center() because console.center() will output a newline,
 		// which would not be good on the last line of the screen.
-		var numSpaces = (console.screen_columns/2).toFixed(0) - (strip_ctrl(DisplayBottomHelpLine_DCTStyle.helpText).length/2).toFixed(0);
+		var numSpaces = (console.screen_columns/2).toFixed(0) - (console.strlen(DisplayBottomHelpLine_DCTStyle.helpText)/2).toFixed(0);
 		for (var i = 0; i < numSpaces; ++i)
 			DisplayBottomHelpLine_DCTStyle.helpText = " " + DisplayBottomHelpLine_DCTStyle.helpText;
 	}
@@ -448,7 +448,7 @@ function DrawQuoteWindowTopBorder_DCTStyle(pQuoteWinHeight, pEditLeft, pEditRigh
                                 + UPPER_LEFT_SINGLE + HORIZONTAL_SINGLE + " "
                                 + gConfigSettings.DCTColors.QuoteWinBorderTextColor
                                 + "Quote Window " + gConfigSettings.DCTColors.QuoteWinBorderColor;
-      var curLength = strip_ctrl(DrawQuoteWindowTopBorder_DCTStyle.border).length;
+      var curLength = console.strlen(DrawQuoteWindowTopBorder_DCTStyle.border);
       var borderWidth = pEditRight - pEditLeft;
       for (var i = curLength; i < borderWidth; ++i)
          DrawQuoteWindowTopBorder_DCTStyle.border += HORIZONTAL_SINGLE;
@@ -488,7 +488,7 @@ function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
                          + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
                          + "[F/L] First/last page";
 						 */
-      var helpTextLen = strip_ctrl(quoteHelpText).length;
+      var helpTextLen = console.strlen(quoteHelpText);
 
       // Figure out the starting horizontal position on the screen so that
       // the quote help text line can be centered.
@@ -1321,7 +1321,7 @@ function DCTMenu_DoInputLoop()
 		// Output this.clearSpaceTopText
 		console.print(this.clearSpaceTopText);
 		// Output the rest of the blank space
-		var textLen = strip_ctrl(this.clearSpaceTopText).length;
+		var textLen = console.strlen(this.clearSpaceTopText);
 		if (textLen < this.width)
 		{
 			var numSpaces = this.width - textLen;

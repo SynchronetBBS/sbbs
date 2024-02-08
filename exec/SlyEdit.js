@@ -45,9 +45,15 @@
  *                              Using the msg_area.sub object to check sub-board settings instead
  *                              of opening the sub-board (for determining whether to post with
  *                              real name)
+ * 2024-02-07 Eric Oulashin     Version 1.88
+ *                              Support for entering UTF-8/Unicode characters; using K_CP437 to
+ *                              convert to CP437
  */
 
 "use strict";
+
+// TODO: UTF-8 support in FSeditor improved (for Keyop for typing a pound currency sign):
+// https://gitlab.synchro.net/main/sbbs/-/commit/66ed218f8a1032c16a674b62
 
 /* Command-line arguments:
  1 (argv[0]): Filename to read/edit
@@ -135,8 +141,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.87a";
-var EDITOR_VER_DATE = "2023-12-17";
+var EDITOR_VERSION = "1.88";
+var EDITOR_VER_DATE = "2024-02-07";
 
 
 // Program variables
@@ -1878,6 +1884,10 @@ function doBackspace(pCurpos, pCurrentWordLength)
 		currentWordLength: pCurrentWordLength
 	};
 
+	// If the user's terminal is UTF-8 capable, we'll want to print as UTF-8.
+	//var printMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
+	var printMode = P_NONE;
+
 	var didBackspace = false;
 	// For later, store a backup of the current edit line index and
 	// cursor position.
@@ -1894,8 +1904,8 @@ function doBackspace(pCurpos, pCurrentWordLength)
 	{
 		if (gTextLineIndex > 0)
 		{
-			console.print(BACKSPACE);
-			console.print(" ");
+			console.print(BACKSPACE, printMode);
+			console.print(" ", printMode);
 			--retObj.x;
 			console.gotoxy(retObj.x, retObj.y);
 
@@ -2350,7 +2360,10 @@ function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
 			displayEditLines(retObj.y, gEditLinesIndex, retObj.y, false, true);
 		else
 		{
-			console.print(pUserInput);
+			// If the user's terminal is UTF-8 capable, we'll want to print as UTF-8.
+			//var printMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
+			var printMode = P_NONE;
+			console.print(pUserInput, printMode);
 			placeCursorAtEnd = false; // Since we just output the character
 		}
 
@@ -3301,6 +3314,10 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 	// pEndScreenRow or gEditBottom.
 	var endScreenRow = (pEndScreenRow != null ? pEndScreenRow : gEditBottom);
 
+	// If the user's terminal is UTF-8 capable, we'll want to print the message text as UTF-8.
+	//var printMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
+	var printMode = P_NONE;
+
 	// Apply anny attribute codes until the given start array index
 	var currentAttrCodes = getAllEditLineAttrsUntilLineIdx(pArrayIndex);
 	console.print("\x01n" + currentAttrCodes);
@@ -3314,7 +3331,7 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 		if ((gEditAreaBuffer[screenLine] != textLine) || pIgnoreEditAreaBuffer)
 		{
 			// Make sure the text line doesn't exceed the edit width (unlikely)
-			if (console.strlen(textLine) > gEditWidth)
+			if (console.strlen(textLine, printMode) > gEditWidth)
 				textLine = shortenStrWithAttrCodes(textLine, gEditWidth, true);
 			// If the line is a quote line, then apply the quote line color (and strip other
 			// attribute codes from the line)
@@ -3325,7 +3342,7 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 			else if (arrayIndex > 0 && isQuoteLine(gEditLines, arrayIndex-1))
 				textLine = "\x01n" + textLine;
 			console.gotoxy(gEditLeft, screenLine);
-			console.print(textLine);
+			console.print(textLine, printMode);
 			gEditAreaBuffer[screenLine] = textLine;
 			// Clear to the end of the line, to erase any previously written text.
 			console.cleartoeol("\x01n");
@@ -3832,7 +3849,7 @@ function importFile(pCurpos)
 	{
 		// Go to the last row on the screen and prompt the user for a filename
 		var promptText = "\x01n\x01cFile:\x01h";
-		var promptTextLen = strip_ctrl(promptText).length;
+		var promptTextLen = console.strlen(promptText);
 		console.gotoxy(1, console.screen_rows);
 		console.cleartoeol("\x01n");
 		console.print(promptText);
@@ -3985,7 +4002,7 @@ function exportToFile()
 
    // Go to the last row on the screen and prompt the user for a filename
    var promptText = "\x01n\x01cFile:\x01h";
-   var promptTextLen = strip_ctrl(promptText).length;
+   var promptTextLen = console.strlen(promptText);
    console.gotoxy(1, console.screen_rows);
    console.cleartoeol("\x01n");
    console.print(promptText);
@@ -4044,7 +4061,7 @@ function findText(pCurpos)
 
 	// Go to the last row on the screen and prompt the user for text to find
 	var promptText = "\x01n\x01cText:\x01h";
-	var promptTextLen = strip_ctrl(promptText).length;
+	var promptTextLen = console.strlen(promptText);
 	console.gotoxy(1, console.screen_rows);
 	console.cleartoeol("\x01n");
 	console.print(promptText);
@@ -4369,6 +4386,10 @@ function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
 		return retObj;
 	}
 
+	// If the user's terminal is UTF-8 capable, we'll want to count the text as UTF-8.
+	//var textMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
+	var textMode = P_NONE;
+
 	// Ensure the word doesn't have any whitespace and isn't just whitespace
 	currentWord = trimSpaces(currentWord, true, true, true);
 	if (currentWord.length > 0)
@@ -4430,7 +4451,7 @@ function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
 				//console.gotoxy(retObj.x, retObj.y); // Updated line position
 				console.gotoxy(oldLineX, retObj.y);   // Old line position
 				console.print(gEditLines[pEditLineIdx].substr(true, wordIdxInLine, currentWord.length));
-				retObj.x = wordIdxInLine + strip_ctrl(pWordArray[pWordIdx]).length + 1;
+				retObj.x = wordIdxInLine + console.strlen(pWordArray[pWordIdx], textMode) + 1;
 				// Prompt the user for a corrected word.  If they enter
 				// a new word, then fix it in the text line.
 				var wordCorrectRetObj = inputWordCorrection(currentWord, { x: retObj.x, y: retObj.y }, pEditLineIdx);
@@ -4537,6 +4558,10 @@ function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
 
 	var originalCurpos = pCurpos;
 
+	// If the user's terminal is UTF-8 capable, we'll want to count the text as UTF-8.
+	//var textMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
+	var textMode = P_NONE;
+
 	// Create and display a text area with the misspelled word as the title
 	// and get user input for the corrected word
 	// For the 'text box', ensure the width is at most 80 characters
@@ -4550,7 +4575,7 @@ function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
 	var borderLine = "\x01n\x01g" + UPPER_LEFT_SINGLE + RIGHT_T_SINGLE;
 	borderLine += "\x01b\x01h" + pMisspelledWord.substr(0, txtBoxWidth-4);
 	borderLine += "\x01n\x01g" + LEFT_T_SINGLE;
-	var remainingWidth = txtBoxWidth - strip_ctrl(borderLine).length - 1;
+	var remainingWidth = txtBoxWidth - console.strlen(borderLine) - 1;
 	for (var i = 0; i < remainingWidth; ++i)
 		borderLine += HORIZONTAL_SINGLE;
 	borderLine += UPPER_RIGHT_SINGLE + "\x01n";
@@ -4559,7 +4584,7 @@ function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
 	// Draw the bottom border of the input box
 	borderLine = "\x01g" + LOWER_LEFT_SINGLE + RIGHT_T_SINGLE;
 	borderLine += "\x01c\x01hEnter\x01y=\x01bNo change\x01n\x01g" + LEFT_T_SINGLE + RIGHT_T_SINGLE + "\x01H\x01cCtrl-C\x01n\x01c/\x01hESC\x01y=\x01bEnd\x01n\x01g" + LEFT_T_SINGLE;
-	var remainingWidth = txtBoxWidth - strip_ctrl(borderLine).length - 1;
+	var remainingWidth = txtBoxWidth - console.strlen(borderLine) - 1;
 	for (var i = 0; i < remainingWidth; ++i)
 		borderLine += HORIZONTAL_SINGLE;
 	borderLine += LOWER_RIGHT_SINGLE + "\x01n";
@@ -4582,6 +4607,7 @@ function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
 	var continueOn = true;
 	while(continueOn)
 	{
+		// Note: getKeyWithESCChars() accounts for UTF-8
 		var userInputChar = getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
 		switch (userInputChar)
 		{
@@ -4604,7 +4630,7 @@ function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
 			default:
 				// Append the character to the new word if the word is less than
 				// the maximum input length
-				if ((strip_ctrl(retObj.newWord).length < maxInputLen) && isPrintableChar(userInputChar))
+				if ((console.strlen(retObj.newWord, textMode) < maxInputLen) && isPrintableChar(userInputChar))
 				{
 					retObj.newWord += userInputChar;
 					console.print(userInputChar);
@@ -4862,7 +4888,7 @@ function displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight)
       console.print(displayCrossPostHelp.helpLines[i]);
       // If the text line is shorter than the inner width of the box, then
       // blank the rest of the line.
-      lineLen = strip_ctrl(displayCrossPostHelp.helpLines[i]).length;
+      lineLen = console.strlen(displayCrossPostHelp.helpLines[i]);
       if (lineLen < selBoxInnerWidth)
       {
          var numSpaces = selBoxInnerWidth - lineLen;
@@ -5429,6 +5455,10 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 	//if (length > (gEditLines[pIndex].text.length - start))
 	//	length = gEditLines[pIndex].text.length - start;
 
+	// If the user's terminal is UTF-8 capable, we'll want to count the text as UTF-8.
+	//var textMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
+	var textMode = P_NONE;
+
 	var lengthWritten = 0;
 	if (useColors)
 	{
@@ -5437,7 +5467,7 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 		//var lineText = substrWithAttrCodes(gEditLines[pIndex].getText(true), start, lineLengthToGet);
 		// The line's substr() will include the necessary attribute codes
 		var lineText = gEditLines[pIndex].substr(true, start, lineLengthToGet);
-		lengthWritten = console.strlen(lineText);
+		lengthWritten = console.strlen(lineText, textMode);
 		console.print(lineText);
 	}
 	else
@@ -5450,11 +5480,11 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 			// Just print the entire line.
 			lengthWritten = gEditLines[pIndex].text.length;
 			if (length <= 0)
-				console.print(gEditLines[pIndex].text);
+				console.print(gEditLines[pIndex].text, textMode);
 			else
 			{
 				var textToWrite = gEditLines[pIndex].text.substr(start, length);
-				console.print(textToWrite);
+				console.print(textToWrite, textMode);
 				lengthWritten = textToWrite.length;
 			}
 		}
@@ -5466,8 +5496,8 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 				textToWrite = gEditLines[pIndex].text.substr(start);
 			else
 				textToWrite = gEditLines[pIndex].text.substr(start, length);
-			console.print(textToWrite);
-			lengthWritten = textToWrite.length;
+			console.print(textToWrite, textMode);
+			lengthWritten = console.strlen(textToWrite, textMode);
 		}
 	}
 	return lengthWritten;
@@ -5527,7 +5557,7 @@ function listTextReplacements()
 			listTextReplacements.topBorder += HORIZONTAL_SINGLE;
 		listTextReplacements.topBorder += UPPER_RIGHT_SINGLE;
 	}
-	boxInfo.width = strip_ctrl(listTextReplacements.topBorder).length;
+	boxInfo.width = console.strlen(listTextReplacements.topBorder);
 	if (typeof(listTextReplacements.bottomBorder) == "undefined")
 	{
 		var numReplacementsStr = "Total: " + listTextReplacements.txtReplacementArr.length;
