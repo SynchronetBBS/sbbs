@@ -496,14 +496,17 @@ spec:
     - touch xpdev
     - touch xpdev-mt
     - touch smblib
+    - touch cl
     - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     name: "gtkmonitor-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/gtkmonitor/*.exe.release/*"
   needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs]"
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
       when: never
@@ -518,14 +521,17 @@ spec:
     - touch xpdev
     - touch xpdev-mt
     - touch smblib
+    - touch cl
     - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     name: "gtkuseredit-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/gtkuseredit/*.exe.release/*"
   needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs]"
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
       when: never
@@ -540,14 +546,17 @@ spec:
     - touch xpdev
     - touch xpdev-mt
     - touch smblib
+    - touch cl
     - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     name: "gtkuserlist-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/gtkuserlist/*.exe.release/*"
   needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs]"
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
       when: never

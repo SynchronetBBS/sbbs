@@ -3,11 +3,7 @@
 
 #include <gtk/gtk.h>
 
-#undef JAVASCRIPT
-// Disable it here since we don't need the sbbs_t bits
-#undef USE_CRYPTLIB
 #include "sbbs.h"
-#define USE_CRYPTLIB
 
 struct gtkmonitor_config {
 	char	view_stdout[MAX_PATH+1];	/* %f | xmessage -file - */
