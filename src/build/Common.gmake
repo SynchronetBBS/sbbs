@@ -481,6 +481,7 @@ else # RELEASE
  # This also meant that -O3 wouldn't work either.
  CFLAGS	:= -O3 -Wno-unused-result -fomit-frame-pointer -ffast-math -funroll-loops $(CFLAGS)
 endif
+CFLAGS += -fno-delete-null-pointer-checks
 
 -include targets.mk
 -include $(SRC_ROOT)/build/rules.mk
