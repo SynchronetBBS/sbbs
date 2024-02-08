@@ -2108,9 +2108,9 @@ struct YCoCg_data legacy_ycc[] = {
 
 CIOLIBEXPORT uint8_t ciolib_rgb_to_legacyattr(uint32_t fg, uint32_t bg)
 {
-	uint8_t bestf;
+	uint8_t bestf = LIGHTRED;
 	uint32_t bestfv = UINT32_MAX;
-	uint8_t bestb;
+	uint8_t bestb BLINK | (RED << 4);
 	uint32_t bestbv = UINT32_MAX;
 	struct YCoCg_data yccf;
 	struct YCoCg_data yccb;
