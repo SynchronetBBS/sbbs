@@ -9,7 +9,9 @@
 #include <unistd.h>
 
 #undef JAVASCRIPT
+#undef USE_CRYPTLIB
 #include "sbbs.h"
+#define USE_CRYPTLIB
 #include "chatfuncs.h"
 
 #define PCHAT_LEN 1000

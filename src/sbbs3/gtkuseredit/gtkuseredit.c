@@ -1,7 +1,9 @@
 #include <gtk/gtk.h>
 
 #undef JAVASCRIPT
+#undef USE_CRYPTLIB
 #include "sbbs.h"
+#define USE_CRYPTLIB
 #include "dirwrap.h"
 
 #include "events.h"
