@@ -152,6 +152,7 @@ spec:
   script:
     - cd src/uifc
     - touch depend
+    - touch ciolib-mt
     - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     expire_in: 30 mins
@@ -159,6 +160,8 @@ spec:
     paths:
       - "src/uifc/*.*.*.lib.release*"
       - "src/uifc/*.*.*.obj.release*/*.o*"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]":
   extends:
