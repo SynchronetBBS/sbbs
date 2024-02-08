@@ -388,8 +388,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 			 */
 			offset2=p-format;
 			newbuf=(char *)realloc(format, format_len+i-1 /* -1 for the '*' that's already there */);
-			if(newbuf==NULL)
+			if(newbuf==NULL) {
+				free(format);
 				return(NULL);
+			}
 			format=newbuf;
 			p=format+offset2;
 			/*
@@ -427,8 +429,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 				 */
 				offset2=p-format;
 				newbuf=(char *)realloc(format, format_len+i-1 /* -1 for the '*' that's already there */);
-				if(newbuf==NULL)
+				if(newbuf==NULL) {
+					free(format);
 					return(NULL);
+				}
 				format=newbuf;
 				p=format+offset2;
 				/*
@@ -1230,6 +1234,7 @@ char* xp_asprintf_next(char *format, int type, ...)
 			newbuf=(char *)realloc(format, format_len-this_format_len+j);
 			if(newbuf==NULL) {
 				FREE_AND_NULL(entry);
+				free(format);
 				return(NULL);
 			}
 			format=newbuf;
