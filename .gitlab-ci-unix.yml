@@ -10,7 +10,7 @@ spec:
     cross_platform:
       default: 'no'
     build_flags:
-      default: 'RELEASE=1 WERROR=1'
+      default: 'RELEASE=1'
     no_javascript:
       default: 'no'
     has_curses:
