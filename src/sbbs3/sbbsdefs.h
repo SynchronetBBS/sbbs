@@ -659,7 +659,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define K_TRIM		(1<<23)		/* Trimmed white-space						*/
 #define K_CTRLKEYS	(1<<24)		/* No control-key handling/eating in inkey()*/
 #define K_NUL		(1<<25)		/* Return NOINP on timeout instead of '\0'	*/
-#define K_CP437		(1<<26)		/* Translate (UTF-8) input to CP437 chars	*/
+#define K_UTF8		(1<<26)		/* Don't translate UTF-8 input into CP437 	*/
 
 								/* Bits in 'mode' for putmsg and printfile  */
 #define P_NONE		0			/* No mode flags							*/

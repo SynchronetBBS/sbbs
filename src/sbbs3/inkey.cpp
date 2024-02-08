@@ -123,13 +123,13 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 	}
 
 	/* Translate (not control character) input into CP437 */
-	if (mode & K_CP437) {
+	if (!(mode & K_UTF8)) {
 		if ((ch & 0x80) && term_supports(UTF8)) {
 			char utf8[UTF8_MAX_LEN] = { (char)ch };
-			int len = utf8_decode_firstbyte(ch);
+			size_t len = utf8_decode_firstbyte(ch);
 			if (len < 2 || len > sizeof(utf8))
 				return no_input;
-			for (int i = 1; i < len; ++i) {
+			for (size_t i = 1; i < len; ++i) {
 				ch = kbincom(timeout);
 				if (!(ch & 0x80) || (ch == NOINP))
 					break;
