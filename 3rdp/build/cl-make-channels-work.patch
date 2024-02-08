@@ -44,7 +44,7 @@
  		   request, exit */
  		*bytesCopied = bytesToCopy;
 -		if( bytesToCopy >= length )
-+		if( bytesToCopy >= 0 )
++		if( bytesToCopy >= length || sessionInfoPtr->type == CRYPT_SESSION_SSH || sessionInfoPtr->type == CRYPT_SESSION_SSH_SERVER)
  			{
  			ENSURES( sanityCheckSessionRead( sessionInfoPtr ) );
  
