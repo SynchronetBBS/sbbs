@@ -22,7 +22,7 @@ include:
       os: 'netbsd'
       platform: 'amd64'
       tagname: 'NetBSD'
-      build_flags: 'RELEASE=1 USE_SYSTEM_CURSES=1'
+      build_flags: 'RELEASE=1 USE_SYSTEM_CURSES=1 WERROR=1'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'freebsd'
@@ -34,7 +34,7 @@ include:
       platform: 'x86'
       tagname: 'FreeBSD'
       cross_platform: 'yes'
-      build_flags: 'AR=mingw32-ar AS=mingw32-as CC=mingw32-gcc CXX=mingw32-g++ RANLIB=mingw32-ranlib WINDRES=mingw32-windres RELEASE=1'
+      build_flags: 'AR=mingw32-ar AS=mingw32-as CC=mingw32-gcc CXX=mingw32-g++ RANLIB=mingw32-ranlib WINDRES=mingw32-windres RELEASE=1 WERROR=1'
       no_javascript: 'yes'
       has_curses: 'no'
   - local: '.gitlab-ci-unix.yml'
