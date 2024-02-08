@@ -133,6 +133,9 @@ ifndef DEBUG
  endif
 endif
 
+ifdef FORTIFY
+ CFLAGS += -D_FORTIFY_SOURCE=3
+endif
 ifdef DEBUG
  ifdef PROFILE
   CFLAGS	+=	-pg
@@ -147,7 +150,7 @@ ifdef DEBUG
   LDFLAGS	+=	-fprofile-arcs -ftest-coverage
  endif
  ifdef FORTIFY
-  CFLAGS += -D_FORTIFY_SOURCE=3 -O1
+  CFLAGS += -O1
  endif
  ifdef SANITIZE
   CFLAGS += -fsanitize=undefined,address -fno-omit-frame-pointer
