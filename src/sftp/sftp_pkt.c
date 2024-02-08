@@ -287,7 +287,7 @@ sftp_tx_pkt_reset(sftp_tx_pkt_t *pktp)
 	if (!grow_tx(pktp, sizeof(var)))                  \
 		return false;                              \
 	sftp_tx_pkt_t pkt = *pktp;                          \
-	memcpy(&((uint8_t *)pkt)[pkt->user + offsetof(struct sftp_tx_pkt, type)], &var, sizeof(var)); \
+	memcpy(&((uint8_t *)pkt)[pkt->used + offsetof(struct sftp_tx_pkt, type)], &var, sizeof(var)); \
 	pkt->used += sizeof(var);                             \
 	return true
 
