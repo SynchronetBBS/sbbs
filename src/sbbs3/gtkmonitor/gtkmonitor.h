@@ -3,6 +3,7 @@
 
 #include <gtk/gtk.h>
 
+#undef JAVASCRIPT
 #include "sbbs.h"
 
 struct gtkmonitor_config {
