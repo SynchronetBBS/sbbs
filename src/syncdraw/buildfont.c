@@ -65,7 +65,7 @@ insertfont(char *Name)
 int main(int argnum, char *args[])
 {
 	FILE           *fp, *font;
-	char            filename[254];
+	char            filename[255];
 	int             x, y;
 	char            FontFile[255];
 
