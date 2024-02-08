@@ -1,6 +1,6 @@
-# TODO: Add support for GTK utilities
-#       The bad touching needs to be solved in the build system, but
+# TODO: The bad touching needs to be solved in the build system, but
 #       maybe there's a way to automate it with needs?
+#       Build the various sbbs libraries separately as well.
 
 spec:
   inputs:
@@ -497,6 +497,7 @@ spec:
     - touch xpdev-mt
     - touch smblib
     - touch cl
+    - touch js
     - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     name: "gtkmonitor-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -507,6 +508,7 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
       when: never
@@ -522,12 +524,14 @@ spec:
     - touch xpdev-mt
     - touch smblib
     - touch cl
+    - touch js
     - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     name: "gtkuseredit-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/gtkuseredit/*.exe.release/*"
   needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
