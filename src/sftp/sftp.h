@@ -64,8 +64,13 @@
 typedef struct sftp_tx_pkt {
 	uint32_t sz;
 	uint32_t used;
-	uint8_t type;
-	uint8_t data[];
+	union {
+		struct {
+			uint8_t type;
+			uint8_t data[];
+		};
+		uint8_t tdata[];
+	}
 } *sftp_tx_pkt_t;
 
 typedef struct sftp_rx_pkt {
