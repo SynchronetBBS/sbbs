@@ -70,7 +70,7 @@ typedef struct sftp_tx_pkt {
 			uint8_t data[];
 		};
 		uint8_t tdata[];
-	}
+	};
 } *sftp_tx_pkt_t;
 
 typedef struct sftp_rx_pkt {
