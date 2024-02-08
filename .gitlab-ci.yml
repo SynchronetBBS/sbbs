@@ -195,7 +195,7 @@ syncterm-msvc:
 #    paths:
 #      - "src/sbbs3/*.exe.release/*"
 
-sbbs-freebsd-noskeeters:
+"freebsd-amd64 [sbbs-noskeeters]":
   extends:
     - .freebsd-build
     - "freebsd-amd64 [sbbs]"
