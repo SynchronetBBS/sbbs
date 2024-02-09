@@ -1176,6 +1176,17 @@ var tests = [
 		return true;
 		// TODO: Interactive...
 	}},
+	{'name':'Regressions', 'func':function() {
+		// Fixed by 3dfa12a6cac
+		// Deleting lines could move rows that are off the screen
+		// in a box that has a negative height
+		console.clear();
+		console.gotoxy(1, 2);
+		console.write(format("\x1b[2;%dr", console.screen_rows - 1));
+		console.gotoxy(1, 2);
+		console.write(format("\x1b[%dM", console.screen_rows - 1));
+		return true;
+	}},
 ];
 
 function main()
