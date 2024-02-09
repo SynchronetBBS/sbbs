@@ -1,6 +1,40 @@
---- ./session/sess_rd.c.orig	2024-01-14 19:55:23.556519000 -0500
-+++ ./session/sess_rd.c	2024-01-14 19:55:55.611225000 -0500
-@@ -884,28 +884,28 @@
+--- session/sess_rd.c.orig	2024-02-09 13:31:06.861571000 -0500
++++ session/sess_rd.c	2024-02-09 13:33:52.564141000 -0500
+@@ -686,7 +686,8 @@
+ static int getData( INOUT_PTR SESSION_INFO *sessionInfoPtr, 
+ 					OUT_BUFFER( length, *bytesCopied ) BYTE *buffer, 
+ 					IN_DATALENGTH const int length, 
+-					OUT_DATALENGTH_Z int *bytesCopied )
++					OUT_DATALENGTH_Z int *bytesCopied,
++					BOOLEAN *setTimeout )
+ 	{
+ 	const int bytesToCopy = min( length, sessionInfoPtr->receiveBufPos );
+ 	READSTATE_INFO readInfo;
+@@ -822,6 +823,7 @@
+ 				sessionInfoPtr->receiveBufSize - sessionInfoPtr->receiveBufEnd )
+ 			{
+ 			sioctlSet( &sessionInfoPtr->stream, STREAM_IOCTL_READTIMEOUT, 1 );
++			*setTimeout = TRUE;
+ 			}
+ 
+ 		ENSURES( sanityCheckSessionRead( sessionInfoPtr ) );
+@@ -843,6 +845,7 @@
+ 	   necessary to avoid having the stream always block for the set timeout 
+ 	   value on the last read */
+ 	sioctlSet( &sessionInfoPtr->stream, STREAM_IOCTL_READTIMEOUT, 0 );
++	*setTimeout = TRUE;
+ 
+ 	ENSURES( sanityCheckSessionRead( sessionInfoPtr ) );
+ 
+@@ -855,6 +858,7 @@
+ 					IN_DATALENGTH const int dataMaxLength, 
+ 					OUT_DATALENGTH_Z int *bytesCopied )
+ 	{
++	BOOLEAN setTimeout = FALSE;
+ 	BYTE *dataPtr = data;
+ 	int dataLength, status = CRYPT_OK, LOOP_ITERATOR;
+ 
+@@ -884,29 +888,31 @@
  		return( status );
  		}
  
@@ -26,7 +60,7 @@
  	LOOP_MAX_REV_INITCHECK( dataLength = dataMaxLength, dataLength > 0 )
  		{
  		int byteCount;
-+
+ 
 +		/* Update the stream read timeout to the current user-selected read 
 +		   timeout in case the user has changed the timeout setting.
 +	   
@@ -43,8 +77,20 @@
 +		   code ends up in a hidden long exchange with the other side using the
 +		   same timeout that was set for the overall read before the higher-
 +		   level read code gets to complete the actual read */
-+		sioctlSet( &sessionInfoPtr->stream, STREAM_IOCTL_READTIMEOUT, 
-+				   sessionInfoPtr->readTimeout );
- 
++		if (!setTimeout)
++			sioctlSet( &sessionInfoPtr->stream, STREAM_IOCTL_READTIMEOUT, 
++					   sessionInfoPtr->readTimeout );
++		setTimeout = FALSE;
++
  		ENSURES( LOOP_INVARIANT_MAX_REV_XXX( dataLength, 1, dataMaxLength ) );
  				 /* dataLength is decremented by the number of bytes read */
+ 
+@@ -918,7 +924,7 @@
+ 			   available.
+ 			3. CRYPT_OK to indicate that data was read and more may be 
+ 			   available */
+-		status = getData( sessionInfoPtr, dataPtr, dataLength, &byteCount );
++		status = getData( sessionInfoPtr, dataPtr, dataLength, &byteCount, &setTimeout );
+ 		if( cryptStatusError( status ) && status != OK_SPECIAL )
+ 			break;
+ 
