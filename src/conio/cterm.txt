@@ -278,12 +278,12 @@ ESC _	Application Program String (APS)
 		And additional argument can be specified as a glob(3)
 		pattern (defaults to "*") in APS SyncTERM:C;L;Ps ST.
 
-	APS SyncTERM:C;SetFont Pn Ps
+	APS SyncTERM:C;SetFont Pn Ps ST
 		Where Pn is a font slot number (max 255) and Ps is a
 		filename in the cache.  This sets font slot Pn to use
 		the specified font file.
 
-	APS SyncTERM:C;DrawPPM Ps... Ps2
+	APS SyncTERM:C;DrawPPM Ps... Ps2 ST
 		Draws a PPM from the cache directory on the screen.
 		Ps2 is the filename and is required.  Arguments for
 		Ps are optional.  The following options can be included
@@ -344,15 +344,15 @@ ESC _	Application Program String (APS)
 		and assumes it is correctly using the BT.709 gamma
 		transfer.
 
-	APS SyncTERM:C;LoadPPM Ps... Ps0
+	APS SyncTERM:C;LoadPPM Ps... Ps0 ST
 		Loads a PPM to a buffer.  Ps0 is the filename
 		B=#
 			Selects the buffer (0 or 1 only) to paste from.
 		
-	APS SyncTERM:C;LoadPBM Ps... Ps0
+	APS SyncTERM:C;LoadPBM Ps... Ps0 ST
 		Loads a PBM to a buffer.  Ps0 is the filename
 		
-	APS SyncTERM:P;Copy Ps...
+	APS SyncTERM:P;Copy Ps... ST
 		Copies a portion of the screen into an internal buffer
 		for use with the Paste function.  Defaults to copying
 		the entire screen.
@@ -372,7 +372,7 @@ ESC _	Application Program String (APS)
 			Sets the height to copy.
 			Default = Screen height - X.
 
-	APS SyncTERM:P,Paste Ps...
+	APS SyncTERM:P,Paste Ps... ST
 		Pastes from the copied buffer.  Supports the same
 		options as the Cache DrawPPM command except for the
 		filename, and adds the B= option.
@@ -1303,9 +1303,9 @@ CSI Ps ; Pn1 ; Pn2 ; Pn3 t (CT24BC)
 CSI ? Ps...  u (CTRMS)
 	NON-STANDARD EXTENSION
 	Restore Mode Setting
-	Saves the current mode states as specified by CSI ? l and CSI ? h.  If
-	Ps is omitted, saves all such states.  If one or more values of Ps is
-	included, restores all the specified states (arguments to CSI ? l/h)
+	Restores the mode states as saved via CSI ? s.  If Ps is omitted,
+	restores all such states.  If one or more values of Ps is included,
+	restores all the specified states (arguments to CSI ? l/h)
 
 	SOURCE: SyncTERM only
 
