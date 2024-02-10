@@ -1244,21 +1244,11 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 
 	// Fix the width & height if needed
 	var width = pWidth;
-	if (width > (this.size.width - pStartX + 1))
-		width = (this.size.width - pStartX + 1);
+	if (width > (this.size.width - pStartX + 5)) // Used to be + 1, but then this wouldn't draw the last character in the item text
+		width = (this.size.width - pStartX + 5);
 	var height = pHeight;
 	if (height > (this.size.height - pStartY + 1))
 		height = (this.size.height - pStartY + 1);
-	/*
-	// Temporary
-	if (user.is_sysop)
-	{
-		console.print("\x01n\r\n");
-		printf("DrawPartial 1 - X, Y, width, height: %d, %d; %d, %d\r\n", pStartX, pStartY, width, height);
-		console.pause();
-	}
-	// End Temporary
-	*/
 
 	var selectedItemIndexes = { }; // For multi-select mode
 	if (typeof(pSelectedItemIndexes) == "object")
@@ -1375,16 +1365,6 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 	// Write the menu items
 	if (writeMenuItems)
 	{
-		/*
-		// Temporary
-		if (user.is_sysop)
-		{
-			console.print("\x01n\r\n");
-			console.print("itemTxtStartIdx: " + itemTxtStartIdx + ", itemLen: " + itemLen + "\r\n");
-			console.pause();
-		}
-		// End Temporary
-		*/
 		var blankItemTextFormatStr = "\x01n%" + itemLen + "s";
 		for (var lineNum = pStartY + this.pos.y - 1; lineNum <= lastLineNum; ++lineNum)
 		{
@@ -1437,16 +1417,6 @@ function DDLightbarMenu_DrawPartialAbs(pStartX, pStartY, pWidth, pHeight, pSelec
 	var width = pWidth;
 	var startX = pStartX - this.pos.x + 1;
 	var startY = pStartY - this.pos.y + 1;
-	/*
-	// Temporary
-	if (user.is_sysop)
-	{
-		console.print("\x01n\r\n");
-		printf("Here 1 - X, Y, width, height: %d, %d; %d, %d\r\n", startX, startY, width, height);
-		console.pause();
-	}
-	// End Temporary
-	*/
 	if (startX < 1)
 	{
 		var XDiff = 1 - startX;
@@ -1459,16 +1429,6 @@ function DDLightbarMenu_DrawPartialAbs(pStartX, pStartY, pWidth, pHeight, pSelec
 		startY += YDiff;
 		height -= YDiff;
 	}
-	/*
-	// Temporary
-	if (user.is_sysop)
-	{
-		console.print("\x01n\r\n");
-		printf("Here 2 - X, Y, width, height: %d, %d; %d, %d\r\n", startX, startY, width, height);
-		console.pause();
-	}
-	// End Temporary
-	*/
 	this.DrawPartial(startX, startY, width, height, pSelectedItemIndexes);
 }
 
