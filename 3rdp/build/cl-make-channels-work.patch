@@ -1,42 +1,3 @@
---- ./session/ssh.h.orig	2023-05-06 18:55:50.000000000 -0400
-+++ ./session/ssh.h	2024-01-12 23:35:03.804841000 -0500
-@@ -309,9 +309,17 @@
- 	SSH_ATTRIBUTE_WINDOWCOUNT,				/* Data window count */
- 	SSH_ATTRIBUTE_WINDOWSIZE,				/* Data window size */
- 	SSH_ATTRIBUTE_ALTCHANNELNO,				/* Secondary channel no. */
-+	SSH_ATTRIBUTE_NEEDWINDOW,				/* Send session open when window opens */
- 	SSH_ATTRIBUTE_LAST						/* Last channel attribute */
- 	} SSH_ATTRIBUTE_TYPE;
- 
-+#ifdef USE_SSH_EXTENDED
-+typedef enum { SERVICE_NONE, SERVICE_SHELL, SERVICE_PORTFORWARD, 
-+			   SERVICE_SUBSYSTEM, SERVICE_EXEC, SERVICE_LAST } SERVICE_TYPE;
-+#else
-+typedef enum { SERVICE_NONE, SERVICE_SHELL, SERVICE_LAST } SERVICE_TYPE;
-+#endif /* USE_SSH_EXTENDED */
-+
- /* Check whether a DH/ECDH value is valid for a given server key size.  The 
-    check is slightly different for the ECC version because the value is
-    a composite ECC point with two coordinates, so we have to divide the 
-@@ -697,6 +705,18 @@
- 
- /* Prototypes for functions in ssh2_msgcli.c */
- 
-+CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
-+int getServiceType( INOUT_PTR SESSION_INFO *sessionInfoPtr, 
-+						   OUT_ENUM_OPT( SERVICE ) SERVICE_TYPE *serviceType );
-+						   CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
-+int createSessionOpenRequest( INOUT_PTR SESSION_INFO *sessionInfoPtr,
-+									 INOUT_PTR STREAM *stream,
-+									 IN_ENUM( SERVICE ) \
-+										const SERVICE_TYPE serviceType );
-+CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
-+int processChannelOpenFailure( INOUT_PTR SESSION_INFO *sessionInfoPtr, INOUT_PTR STREAM *stream );
-+CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
-+int processChannelOpenConfirmation( INOUT_PTR SESSION_INFO *sessionInfoPtr, INOUT_PTR STREAM *stream );
- CHECK_RETVAL STDC_NONNULL_ARG( ( 1 ) ) \
- int sendChannelOpen( INOUT_PTR SESSION_INFO *sessionInfoPtr );
- 
 --- session/sess_rd.c.orig	2023-05-06 19:14:10.000000000 -0400
 +++ session/sess_rd.c	2024-01-13 01:40:38.360167000 -0500
 @@ -739,7 +739,7 @@
@@ -523,8 +484,8 @@
 +	return (CRYPT_ENVELOPE_RESOURCE);
  	}
  #endif /* USE_SSH */
---- session/ssh2_channel.c.orig	2024-01-14 18:43:50.796652000 -0500
-+++ session/ssh2_channel.c	2024-01-14 18:45:50.515008000 -0500
+--- session/ssh2_channel.c.orig	2024-02-09 21:30:28.116630000 -0500
++++ session/ssh2_channel.c	2024-02-09 21:31:00.238043000 -0500
 @@ -25,6 +25,7 @@
  #define CHANNEL_FLAG_ACTIVE		0x01	/* Channel is active */
  #define CHANNEL_FLAG_WRITECLOSED 0x02	/* Write-side of ch.closed */
@@ -553,6 +514,15 @@
  		}
  
  	retIntError();
+@@ -726,7 +731,7 @@
+ 	}
+ 
+ CHECK_RETVAL STDC_NONNULL_ARG( ( 1 ) ) \
+-int setChannelExtAttribute( const SESSION_INFO *sessionInfoPtr,
++int setChannelExtAttribute( INOUT_PTR SESSION_INFO *sessionInfoPtr,
+ 							IN_ATTRIBUTE const SSH_ATTRIBUTE_TYPE attribute,
+ 							IN_INT_Z const int value )
+ 	{
 @@ -748,6 +753,8 @@
  		{
  		case SSH_ATTRIBUTE_ACTIVE:
@@ -575,4 +545,52 @@
 +				channelInfoPtr->flags &= ~(CHANNEL_FLAG_NEEDWINDOW);
  			return( CRYPT_OK );
  		}
+ 
+--- session/ssh.h.orig	2023-05-06 18:55:50.000000000 -0400
++++ session/ssh.h	2024-02-09 21:31:35.603926000 -0500
+@@ -309,9 +309,17 @@
+ 	SSH_ATTRIBUTE_WINDOWCOUNT,				/* Data window count */
+ 	SSH_ATTRIBUTE_WINDOWSIZE,				/* Data window size */
+ 	SSH_ATTRIBUTE_ALTCHANNELNO,				/* Secondary channel no. */
++	SSH_ATTRIBUTE_NEEDWINDOW,				/* Send session open when window opens */
+ 	SSH_ATTRIBUTE_LAST						/* Last channel attribute */
+ 	} SSH_ATTRIBUTE_TYPE;
+ 
++#ifdef USE_SSH_EXTENDED
++typedef enum { SERVICE_NONE, SERVICE_SHELL, SERVICE_PORTFORWARD, 
++			   SERVICE_SUBSYSTEM, SERVICE_EXEC, SERVICE_LAST } SERVICE_TYPE;
++#else
++typedef enum { SERVICE_NONE, SERVICE_SHELL, SERVICE_LAST } SERVICE_TYPE;
++#endif /* USE_SSH_EXTENDED */
++
+ /* Check whether a DH/ECDH value is valid for a given server key size.  The 
+    check is slightly different for the ECC version because the value is
+    a composite ECC point with two coordinates, so we have to divide the 
+@@ -655,7 +663,7 @@
+ 						  IN_BUFFER( dataLength ) const void *data, 
+ 						  IN_LENGTH_TEXT const int dataLength );
+ CHECK_RETVAL STDC_NONNULL_ARG( ( 1 ) ) \
+-int setChannelExtAttribute( const SESSION_INFO *sessionInfoPtr,
++int setChannelExtAttribute( INOUT_PTR SESSION_INFO *sessionInfoPtr,
+ 							IN_ATTRIBUTE const SSH_ATTRIBUTE_TYPE attribute,
+ 							IN_INT_Z const int value );
+ CHECK_RETVAL STDC_NONNULL_ARG( ( 1 ) ) \
+@@ -697,6 +705,18 @@
+ 
+ /* Prototypes for functions in ssh2_msgcli.c */
+ 
++CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
++int getServiceType( INOUT_PTR SESSION_INFO *sessionInfoPtr, 
++						   OUT_ENUM_OPT( SERVICE ) SERVICE_TYPE *serviceType );
++						   CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
++int createSessionOpenRequest( INOUT_PTR SESSION_INFO *sessionInfoPtr,
++									 INOUT_PTR STREAM *stream,
++									 IN_ENUM( SERVICE ) \
++										const SERVICE_TYPE serviceType );
++CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
++int processChannelOpenFailure( INOUT_PTR SESSION_INFO *sessionInfoPtr, INOUT_PTR STREAM *stream );
++CHECK_RETVAL STDC_NONNULL_ARG( ( 1, 2 ) ) \
++int processChannelOpenConfirmation( INOUT_PTR SESSION_INFO *sessionInfoPtr, INOUT_PTR STREAM *stream );
+ CHECK_RETVAL STDC_NONNULL_ARG( ( 1 ) ) \
+ int sendChannelOpen( INOUT_PTR SESSION_INFO *sessionInfoPtr );
  
