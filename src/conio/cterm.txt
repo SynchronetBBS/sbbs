@@ -667,7 +667,7 @@ CSI Pn P (DCH)
 CSI Pn S (SU)
 	Scroll Up
 	Defaults: Pn = 1
-	Scrolls all text on the screen up Pn lines.  New lines emptied at the
+	Scrolls the screen up Pn lines.  New lines emptied at the
 	bottom are filled with the current attribute.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
@@ -779,10 +779,10 @@ CSI < Ps c (CTDA)
 	6 - Extended palette is available
 	7 - Mouse is available
 
-CSI Ps d (VPA)
+CSI PN d (VPA)
 	Line Position Absolute
-	Defaults: Ps = 1
-	Moves to row specified by Ps.
+	Defaults: Pn = 1
+	Moves to row specified by Pn.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
@@ -795,8 +795,8 @@ CSI Pn SP d (TSR)
 
 CSI Pn e (VPR)
 	Line Position Forward
-	Defaults: Ps = 1
-	Moves forward Ps rows.
+	Defaults: Pn = 1
+	Moves forward Pn rows.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
@@ -809,8 +809,8 @@ CSI Pn1 ; Pn2 f (HVP)
 
 CSI Ps g (TBC)
 	Tabulation Clear
-	Defaults: Pn = 0
-	Deletes tab stops according to the values of P1:
+	Defaults: Ps = 0
+	Deletes tab stops according to the values of Ps:
 	0 - Deletes tab stop at current position.
 	3 - Deletes all tab stops.
 	5 - Deletes all tab stops.
@@ -920,7 +920,7 @@ CSI ? Ps... h (DECSET)
 	     SOURCE: xterm
 	1006 -  SGR encoded extended coordinates
 	     Instead of the CSI M method, the format of mouse reporting
-	     is change to CSI < Pb ; Px ; Py M for presses and
+	     is changed to CSI < Pb ; Px ; Py M for presses and
 	     CSI < Pb ; Px ; Py m for releases.
 	     Instead of CSI M
 	     Px and Py are one-based.
@@ -1071,7 +1071,7 @@ CSI Ps... m (SGR)
 	36 -  Cyan foreground                               X     X
 	37 -  White foreground                              X     X
 	38 -  Extended Foreground (see notes)                     X
-	39 -  Default foreground (same as white)	           X     X
+	39 -  Default foreground (same as white)	    X     X
 	40 -  Black background                                 X     X
 	41 -  Red background                                   X     X
 	42 -  Green background                                 X     X
