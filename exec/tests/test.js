@@ -79,18 +79,18 @@ function run_tests(location, obj)
 				chdir(js.exec_dir);
 				if (result instanceof Error) {
 					tfailed = true;
-					fail_msg = e;
+					fail_msg = e.toString();
 					log("Caught: "+result);
 				}
 			}
 			catch(e) {
 				tfailed = true;
-				fail_msg = e;
+				fail_msg = e.toString();
 				log("Caught: "+e);
 			}
 			if (tfailed) {
 				stdout.writeln("FAILED!");
-				stdout.writeln(e);
+				stdout.writeln(fail_msg);
 				stdout.writeln("");
 				failed++;
 			}
