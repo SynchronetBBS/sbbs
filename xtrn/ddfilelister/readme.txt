@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.15b
-                           Release date: 2024-02-02
+                                 Version 2.16
+                           Release date: 2024-02-10
 
                                      by
 
@@ -227,6 +227,8 @@ traditionalUseSyncStock               If using the traditional user interface,
 
 sortOrder                             String: The file sort order to use.
                                       Valid values are:
+                                      PER_DIR_CFG: According to the directory
+                                      configuration in SCFG > File Areas > library > File Directories > dir > Advanced Options > Sort Value and Direction
                                       NATURAL: Natural sort order (same as DATE_A)
                                       NAME_AI: Filename ascending, case insensitive sort order
                                       NAME_DI: Filename descending, case insensitive sort order
@@ -262,7 +264,7 @@ fileSize                             File size in the file list
 desc                                 Description in the file list
 
 bkgHighlight                         Background color for the highlighted
-                                     (selected) file menu itme
+                                     (selected) file menu item
 
 filenameHighlight                    Highlight filename color for the file list
 
