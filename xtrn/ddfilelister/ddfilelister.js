@@ -98,6 +98,10 @@
  *                              then return -1 to stop a file scan in progress.
  * 2024-02-02 Eric Oulashin     Version 2.15b
  *                              More checks for pFileList[pIdx] and the 'desc' property when getting the description
+ * 2024-02-10 Eric Oulashin     Version 2.16
+ *                              New sort option in the config file: PER_DIR_CFG, which has Synchronet sort
+ *                              the file list according to the file directory's configuration (SCFG >
+ *                              File Areas > library > File Directories > dir > Advanced Options > Sort Value and Direction)
 */
 
 "use strict";
@@ -142,8 +146,8 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 
 // Lister version information
-var LISTER_VERSION = "2.15b";
-var LISTER_DATE = "2024-02-02";
+var LISTER_VERSION = "2.16";
+var LISTER_DATE = "2024-02-10";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,7 +188,7 @@ var gColors = {
 	filename: "\x01n\x01b\x01h",
 	fileSize: "\x01n\x01m\x01h",
 	desc: "\x01n\x01w",
-	bkgHighlight: "\x01n\x01" + "4",
+	bkgHighlight: "\x01n\x014",
 	filenameHighlight: "\x01c\x01h",
 	fileSizeHighlight: "\x01c\x01h",
 	descHighlight: "\x01c\x01h",
@@ -206,7 +210,7 @@ var gColors = {
 	fileAreaDesc: "\x01w",
 	fileAreaNumItems: "\x01w",
 
-	fileAreaMenuHighlightBkg: "\x01" + "7",
+	fileAreaMenuHighlightBkg: "\x017",
 	fileAreaNumHighlight: "\x01b",
 	fileAreaDescHighlight: "\x01b",
 	fileAreaNumItemsHighlight: "\x01b",
@@ -241,8 +245,9 @@ var MODE_SEARCH_DESCRIPTION = 3;
 var MODE_NEW_FILE_SEARCH = 4;
 
 // Sort orders (not included in FileBase.SORT)
-var SORT_FL_ULTIME = 50; // Sort by upload time
-var SORT_FL_DLTIME = 51; // Sort by download time
+var SORT_PER_DIR_CFG = 50; // Sort according to the file directory configuration
+var SORT_FL_ULTIME = 51;   // Sort by upload time
+var SORT_FL_DLTIME = 52;   // Sort by download time
 
 // The searc/list mode for the current run
 var gScriptMode = MODE_LIST_DIR; // Default
@@ -284,7 +289,7 @@ var gTraditionalUseSyncStock = false;
 var gFilespec = "*";
 
 // The sort order to use for the file list
-var gFileSortOrder = FileBase.SORT.NATURAL; // Natural sort order, same as DATE_A (import date ascending)
+var gFileSortOrder = SORT_PER_DIR_CFG; // Use the file directory's configured sort order option
 
 var gSearchVerbose = false;
 
@@ -1093,10 +1098,20 @@ function showFileInfo_ANSI(pFileMetadata)
 	// Some more fields for the sysop
 	if (user.is_sysop)
 	{
-		var sysopFields = [ "from", "cost", "added"];
+		var sysopFields = [ "from", "cost", "added" ];
+		//sysopFields = [ "added" ];
+		//console.clear("\x01n"); // Temporary
 		for (var sI = 0; sI < sysopFields.length; ++sI)
 		{
 			var prop = sysopFields[sI];
+			/*
+			// Temporary
+			console.print(prop + " - Exists: " + fileMetadata.hasOwnProperty(prop) + "\r\n");
+			if (fileMetadata.hasOwnProperty(prop))
+				console.print(" type: " + typeof(fileMetadata[prop]) + "\r\n");
+			console.pause();
+			// End Temporary
+			*/
 			if (fileMetadata.hasOwnProperty(prop))
 			{
 				if (typeof(fileMetadata[prop]) === "string" && fileMetadata[prop].length == 0)
@@ -1108,11 +1123,13 @@ function showFileInfo_ANSI(pFileMetadata)
 				else
 					infoValue = fileMetadata[prop].toString().substr(0, frameInnerWidth);
 				fileInfoStr += format(fieldFormatStr, propName, infoValue);
-				fileInfoStr += "\x01n\x01w";
+				//fileInfoStr += "\x01n\x01w";
 			}
 		}
 	}
-	fileInfoStr += "\x01n\x01w";
+	// Append a final CR & LF so that all lines can be split on those
+	fileInfoStr += "\r\n";
+	//fileInfoStr += "\x01n\x01w";
 
 	// Construct & draw a frame with the file information & do the input loop
 	// for the frame until the user closes the frame.
@@ -1236,7 +1253,7 @@ function showFileInfo_noANSI(pFileMetadata)
 	// Some more fields for the sysop
 	if (user.is_sysop)
 	{
-		var sysopFields = [ "from", "cost", "added"];
+		var sysopFields = [ "from", "cost", "added" ];
 		for (var sI = 0; sI < sysopFields.length; ++sI)
 		{
 			var prop = sysopFields[sI];
@@ -3782,6 +3799,8 @@ function readConfigFile()
 						gFileSortOrder = FileBase.SORT.DATE_A;
 					else if (valueUpper == "DATE_D")
 						gFileSortOrder = FileBase.SORT.DATE_D;
+					else if (valueUpper == "PER_DIR_CFG")
+						gFileSortOrder = SORT_PER_DIR_CFG;
 					else if (valueUpper == "ULTIME")
 						gFileSortOrder = SORT_FL_ULTIME;
 					else if (valueUpper == "DLTIME")
@@ -4165,6 +4184,8 @@ function populateFileList(pSearchMode)
 				else if (gFileSortOrder == SORT_FL_DLTIME)
 					gFileList.sort(fileInfoSortDLTime);
 			}
+			else if (gFileSortOrder == SORT_PER_DIR_CFG)
+				gFileList = filebase.get_list(gFilespec, fileDetail, 0, true, file_area.dir[gDirCode].sort);
 			else
 				gFileList = filebase.get_list(gFilespec, fileDetail, 0, true, gFileSortOrder);
 			filebase.close();
@@ -4414,6 +4435,8 @@ function searchDirWithFilespec(pDirCode, pFilespec)
 			else if (gFileSortOrder == SORT_FL_DLTIME)
 				fileList.sort(fileInfoSortDLTime);
 		}
+		else if (gFileSortOrder == SORT_PER_DIR_CFG)
+			fileList = filebase.get_list(pFilespec, fileDetail, 0, true, file_area.dir[pDirCode].sort);
 		else
 			fileList = filebase.get_list(pFilespec, fileDetail, 0, true, gFileSortOrder);
 		retObj.foundFiles = (fileList.length > 0);
@@ -4468,6 +4491,8 @@ function searchDirWithDescUpper(pDirCode, pDescUpper)
 			else if (gFileSortOrder == SORT_FL_DLTIME)
 				fileList.sort(fileInfoSortDLTime);
 		}
+		else if (gFileSortOrder == SORT_PER_DIR_CFG)
+			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, file_area.dir[pDirCode].sort);
 		else
 			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, gFileSortOrder);
 		filebase.close();
@@ -4537,6 +4562,8 @@ function searchDirNewFiles(pDirCode, pSinceTime)
 			else if (gFileSortOrder == SORT_FL_DLTIME)
 				fileList.sort(fileInfoSortDLTime);
 		}
+		else if (gFileSortOrder == SORT_PER_DIR_CFG)
+			fileList = filebase.get_list(gFilespec, fileDetail, 0, true, file_area.dir[pDirCode].sort);
 		else
 			fileList = filebase.get_list(gFilespec, fileDetail, 0, true, gFileSortOrder);
 		filebase.close();

@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.16     2024-10-10   New sort option in the config file: PER_DIR_CFG, which has
+                      Synchronet sort the file list according to the file
+                      directory's configuration (SCFG > File Areas > library >
+                      File Directories > dir > Advanced Options > Sort Value and Direction)
 2.15b    2024-02-02   Code change/fix: More checks for pFileList[pIdx] and the
                       'desc' property when getting the description
 2.15a    2023-11-11   On start, if console.aborted is true (due to the user
