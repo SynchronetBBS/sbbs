@@ -5,6 +5,10 @@
 #include <time.h>
 #include "sftp.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 struct sftp_file_attributes {
 	uint32_t flags;
 	uint64_t size;

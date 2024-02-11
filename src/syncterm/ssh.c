@@ -22,6 +22,10 @@
 #include "xpendian.h"
 #include "xpprintf.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 SOCKET          ssh_sock;
 CRYPT_SESSION   ssh_session;
 int             ssh_channel;

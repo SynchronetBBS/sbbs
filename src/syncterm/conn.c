@@ -46,6 +46,10 @@
 #endif
 #include "conn_telnet.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 struct conn_api    conn_api;
 char              *conn_types_enum[] = {
 	"Unknown", "RLogin", "RLoginReversed", "Telnet", "Raw", "SSH", "SSHNA", "Modem", "Serial", "NoRTS", "Shell",

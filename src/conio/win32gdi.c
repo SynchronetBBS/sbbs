@@ -15,6 +15,10 @@
 #include "win32cio.h"
 #include "scale.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 static HWND win;
 static HANDLE rch;
 static HANDLE wch;

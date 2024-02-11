@@ -18,6 +18,10 @@
 #include "term.h"
 #include "uifcinit.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 #define TELNET_TERM_MAXLEN 40
 
 uint         telnet_cmdlen = 0;

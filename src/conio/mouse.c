@@ -28,6 +28,10 @@
 
 #include "ciolib.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 #define MSEC_CLOCK()	xp_timer64()
 
 enum {

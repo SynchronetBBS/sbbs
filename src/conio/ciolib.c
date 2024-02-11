@@ -57,6 +57,10 @@
 #include "ansi_cio.h"
 #include "syncicon64.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 CIOLIBEXPORT cioapi_t	cio_api;
 
 static const int tabs[]={1,9,17,25,33,41,49,57,65,73,81,89,97,105,113,121,129,137,145};

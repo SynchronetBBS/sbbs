@@ -22,6 +22,10 @@
 #include "vidmodes.h"
 #include "window.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 struct sort_order_info {
 	char  *name;
 	int    flags;
