@@ -35,7 +35,7 @@ function is_user_accessible_dir(dir)
 }
 
 var out = js.global.stdout ? stdout : console;
-var sort_prop = "name";
+var sort_prop;
 var exclude_list = [];
 var options = { sort: false, case_sensitive: true };
 var json_space;
@@ -308,8 +308,8 @@ for(var i = 0; i < dir_list.length; i++) {
 if(!file_list.length)
 	exit(0);
 
-if(!options.hdr && options.sort) {
-	if(options.case_sensitive) {
+if(!options.hdr && options.sort && sort_prop !== undefined) {
+	if(!options.case_sensitive) {
 		log("Sorting " + file_list.length + " files...");
 		if(typeof file_list[0] == "string")
 			file_list.sort(
@@ -322,8 +322,12 @@ if(!options.hdr && options.sort) {
 		else {
 			file_list.sort(
 				function(a, b) {
-					var a = String(a[sort_prop]).toLowerCase();
-					var b = String(b[sort_prop]).toLowerCase();
+					var a = a[sort_prop];
+					var b = b[sort_prop];
+					if(typeof a == "string") {
+						var a = a.toLowerCase();
+						var b = b.toLowerCase();
+					}
 					if (a < b) return -1;
 					if (a > b) return 1;
 					return 0;
