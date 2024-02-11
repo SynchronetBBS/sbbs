@@ -1726,7 +1726,7 @@ bitmap_double_mult_inside(int maxwidth, int maxheight)
 int
 bitmap_largest_mult_inside(int maxwidth, int maxheight)
 {
-	return bitmap_double_mult_inside(maxwidth, maxheight);
+	return (int)bitmap_double_mult_inside(maxwidth, maxheight);
 }
 
 // Must be called with vstatlock
@@ -1736,8 +1736,10 @@ bitmap_get_scaled_win_size(double scale, int *w, int *h, int maxwidth, int maxhe
 	bool wc = bitmap_width_controls();
 	double max;
 
-	if (maxwidth == 0 && maxheight == 0)
-		return bitmap_get_scaled_win_size_nomax(scale, w, h);
+	if (maxwidth == 0 && maxheight == 0) {
+		bitmap_get_scaled_win_size_nomax(scale, w, h);
+		return;
+	}
 	if (maxwidth < vstat.scrnwidth)
 		maxwidth = vstat.scrnwidth;
 	if (maxheight < vstat.scrnheight)
