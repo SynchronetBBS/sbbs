@@ -61,7 +61,7 @@
  * 4267 is the same thing, but from size_t.
  */
 #ifdef _MSC_VER
-#pragma warning(disable : 4244 4267)
+#pragma warning(disable : 4244 4267 4018)
 #endif
 
 // Hack for Visual Studio 2022

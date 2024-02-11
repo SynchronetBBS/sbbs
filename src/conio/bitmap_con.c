@@ -26,6 +26,10 @@
 #include "vidmodes.h"
 #include "bitmap_con.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 static uint32_t palette[65536];
 
 #if 0

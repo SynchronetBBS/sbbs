@@ -31,6 +31,10 @@
 #include "sdlfuncs.h"
 #include "sdl_con.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 int bitmap_width,bitmap_height;
 
 /* 256 bytes so I can cheat */

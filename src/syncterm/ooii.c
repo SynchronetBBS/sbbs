@@ -17,6 +17,10 @@
 #include "ooii_sounds.h"
 #include "term.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 static unsigned char stormColors[7] = {7, 12, 8, 15, 14, 13, 1};
 
 static char          diseases[11][14] = // #,str length

@@ -7,6 +7,10 @@
 #include "scale.h"
 #include "xbr.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 static void pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height);
 static void pointy_scale5(uint32_t* src, uint32_t* dest, int width, int height);
 static void pointy_scale_odd(uint32_t* src, uint32_t* dest, int width, int height, int mult);

@@ -32,6 +32,10 @@
 #include "xpprintf.h"
 #include "zmodem.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 #ifndef WITHOUT_OOII
  #include "ooii.h"
 #endif
