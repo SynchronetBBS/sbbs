@@ -832,7 +832,7 @@ xptone_close(void)
 
 // This can't be const because the Win32 API is not const.
 static bool
-do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
+do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 {
 	unsigned char *samp;
 	int need_copy = 0;
