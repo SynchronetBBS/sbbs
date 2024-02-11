@@ -91,7 +91,7 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 	pthread_mutex_unlock(&nodefile_mutex);
 
 	if(cfg.mqtt.enabled && mqtt->handle != NULL) {
-		int result = mqtt_putnodedat(mqtt, number, node);
+		int result = mqtt_putnodedat(mqtt, number + 1, node);
 		if(result != MQTT_SUCCESS)
 			lprintf(LOG_WARNING, "ERROR %d (%d) publishing node status", result, errno);
 	}

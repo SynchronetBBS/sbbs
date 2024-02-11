@@ -923,7 +923,7 @@ int mqtt_file_download(struct mqtt* mqtt, user_t* user, int dirnum, const char* 
 	return mqtt_file_xfer(mqtt, user, dirnum, fname, bytes, client, "download");
 }
 
-// number is zero-based
+// number is one-based
 int mqtt_putnodedat(struct mqtt* mqtt, int number, node_t* node)
 {
 	if(mqtt == NULL || node == NULL)
@@ -941,12 +941,12 @@ int mqtt_putnodedat(struct mqtt* mqtt, int number, node_t* node)
 		,node->errors
 		);
 	char topic[128];
-	SAFEPRINTF(topic, "node/%u/status", number + 1);
+	SAFEPRINTF(topic, "node/%u/status", number);
 	int result = mqtt_pub_strval(mqtt, TOPIC_BBS, topic, str);
 	if(result == MQTT_SUCCESS && mqtt->cfg->mqtt.verbose) {
-		SAFEPRINTF(topic, "node/%u", number + 1);
+		SAFEPRINTF(topic, "node/%u", number);
 		result = mqtt_pub_strval(mqtt, TOPIC_BBS, topic
-			,nodestatus(mqtt->cfg, node, str, sizeof(str), number + 1));
+			,nodestatus(mqtt->cfg, node, str, sizeof(str), number));
 	}
 	return result;
 }
