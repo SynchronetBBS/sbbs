@@ -83,6 +83,10 @@ static size_t sample_size;
 
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 static bool sound_device_open_failed=false;
 #ifdef USE_ALSA_SOUND
 static bool alsa_device_open_failed=false;
@@ -215,7 +219,7 @@ struct alsa_api_struct *alsa_api=NULL;
 
 #ifdef XPDEV_THREAD_SAFE
 static void init_sample(void);
-static bool xp_play_sample_locked(const unsigned char *sample, size_t size, bool background);
+static bool xp_play_sample_locked(unsigned char *sample, size_t size, bool background);
 #endif
 
 /********************************************************************************/
@@ -239,10 +243,6 @@ void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SH
 		inc=8.0*atan(1.0);
 		inc *= ((double)freq / (double)S_RATE);
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4244)
-#endif
 		for(i=0;i<samples;i++) {
 			pos=(inc*(double)i);
 			pos -= (int)(pos/WAVE_TPI)*WAVE_TPI;
@@ -276,9 +276,6 @@ void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SH
 					break;
 			}
 		}
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 		/* Now we have a "perfect" wave... 
 		 * we must clean it up now to avoid click/pop
@@ -997,6 +994,7 @@ void xp_play_sample_thread(void *data)
 	size_t			this_sample_size;
 	int freed;
 
+	(void)data; // Unused
 	SetThreadName("Sample Play");
 	sample_thread_running=true;
 	sem_post(&sample_complete_sem);
@@ -1082,7 +1080,7 @@ init_sample(void)
 	sem_init(&sample_complete_sem, 0, 0);
 }
 
-static bool xp_play_sample_locked(const unsigned char *sample, size_t size, bool background)
+static bool xp_play_sample_locked(unsigned char *sample, size_t size, bool background)
 {
 	if(!sample_thread_running) {
 		_beginthread(xp_play_sample_thread, 0,NULL);
@@ -1114,7 +1112,7 @@ static bool xp_play_sample_locked(const unsigned char *sample, size_t size, bool
  * This MUST not return false after sample goes into the sample buffer in the background.
  * If it does, the caller won't be able to free() it.
  */
-bool xp_play_sample(const unsigned char *sample, size_t size, bool background)
+bool xp_play_sample(unsigned char *sample, size_t size, bool background)
 {
 	bool ret;
 	pthread_once(&sample_initialized_pto, init_sample);
@@ -1125,11 +1123,12 @@ bool xp_play_sample(const unsigned char *sample, size_t size, bool background)
 	return(ret);
 }
 #else
-bool xp_play_sample(const unsigned char *sample, size_t sample_size, bool background)
+bool xp_play_sample(unsigned char *sample, size_t sample_size, bool background)
 {
 	bool must_close=false;
 	bool ret;
 
+	(void)background; // Never used when single-threaded
 	if(handle_type==SOUND_DEVICE_CLOSED) {
 		must_close=true;
 		if(!xptone_open())
@@ -1160,15 +1159,8 @@ bool xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 		freq=17;
 	samples=S_RATE*duration/1000;
 	if(freq) {
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4244)
-#endif
 		if(samples<=S_RATE/freq*2)
 			samples=S_RATE/freq*2;
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 	}
 	if(freq==0 || samples > S_RATE/freq*2) {
 		int sample_len;

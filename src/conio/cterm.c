@@ -59,6 +59,8 @@
  * 4244 appears to be for implicit conversions
  * warning C4244: '=': conversion from 'uint64_t' to 'int', possible loss of data
  * 4267 is the same thing, but from size_t.
+ * 4018 warns when comparing signed and unsigned if the signed is implicitly
+ *      converted to unsigned (so more sane than -Wsign-compare)
  */
 #ifdef _MSC_VER
 #pragma warning(disable : 4244 4267 4018)

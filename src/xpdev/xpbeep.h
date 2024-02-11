@@ -38,7 +38,7 @@ DLLEXPORT void xptone_makewave(double freq, unsigned char *wave, int samples, en
 DLLEXPORT bool xptone_open(void);
 DLLEXPORT bool xptone_close(void);
 DLLEXPORT void xpbeep(double freq, DWORD duration);
-DLLEXPORT bool xp_play_sample(const unsigned char *sample, size_t sample_size, bool background);
+DLLEXPORT bool xp_play_sample(unsigned char *sample, size_t sample_size, bool background);
 DLLEXPORT void xptone_complete(void);
 DLLEXPORT bool xptone(double freq, DWORD duration, enum WAVE_SHAPE);
 #ifdef __unix__

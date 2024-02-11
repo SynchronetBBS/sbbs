@@ -64,6 +64,8 @@ DLLEXPORT dll_handle xp_dlopen(const char **names, int mode, int major)
 	char		fname[MAX_PATH+1];
 	dll_handle	ret=NULL;
 
+	(void)mode; // Not used on Win32.
+	(void)major; // Not used on Win32.
 	for(; *names && (*names)[0]; names++) {
 		sprintf(fname, "%s.dll", *names);
 		if((ret=LoadLibrary(fname))!=NULL)
