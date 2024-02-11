@@ -292,7 +292,7 @@ int unlock(int file, off_t offset, off_t size)
 	return(i);
 }
 
-#endif	/* !Unix && (MSVC || MinGW) */
+#endif	/* !__unix__ && (_MSC_VER || __MINGW32__ || __DMC__) */
 
 #if defined(_WIN32 )
 static size_t
