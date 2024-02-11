@@ -239,7 +239,7 @@ void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SH
 		inc=8.0*atan(1.0);
 		inc *= ((double)freq / (double)S_RATE);
 
-#ifdef MSVC
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4244)
 #endif
@@ -276,7 +276,7 @@ void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SH
 					break;
 			}
 		}
-#ifdef MSVC
+#ifdef _MSC_VER
 #pragma warning(pop)
 #endif
 
@@ -1160,13 +1160,13 @@ bool xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 		freq=17;
 	samples=S_RATE*duration/1000;
 	if(freq) {
-#ifdef MSVC
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4244)
 #endif
 		if(samples<=S_RATE/freq*2)
 			samples=S_RATE/freq*2;
-#ifdef MSVC
+#ifdef _MSC_VER
 #pragma warning(pop)
 #endif
 	}
