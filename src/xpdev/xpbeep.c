@@ -239,6 +239,10 @@ void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SH
 		inc=8.0*atan(1.0);
 		inc *= ((double)freq / (double)S_RATE);
 
+#ifdef MSVC
+#pragma warning(push)
+#pragma warning(disable : 4244)
+#endif
 		for(i=0;i<samples;i++) {
 			pos=(inc*(double)i);
 			pos -= (int)(pos/WAVE_TPI)*WAVE_TPI;
@@ -272,6 +276,9 @@ void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SH
 					break;
 			}
 		}
+#ifdef MSVC
+#pragma warning(pop)
+#endif
 
 		/* Now we have a "perfect" wave... 
 		 * we must clean it up now to avoid click/pop
@@ -823,10 +830,11 @@ xptone_close(void)
 	return ret;
 }
 
+// This can't be const because the Win32 API is not const.
 static bool
 do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 {
-	const unsigned char *samp;
+	unsigned char *samp;
 	int need_copy = 0;
 #ifdef AFMT_U8
 	int wr;
@@ -1152,8 +1160,15 @@ bool xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 		freq=17;
 	samples=S_RATE*duration/1000;
 	if(freq) {
+#ifdef MSVC
+#pragma warning(push)
+#pragma warning(disable : 4244)
+#endif
 		if(samples<=S_RATE/freq*2)
 			samples=S_RATE/freq*2;
+#ifdef MSVC
+#pragma warning(pop)
+#endif
 	}
 	if(freq==0 || samples > S_RATE/freq*2) {
 		int sample_len;
