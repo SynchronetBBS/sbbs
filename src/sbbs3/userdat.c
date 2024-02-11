@@ -1480,9 +1480,12 @@ char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen, int num)
 					if(is_valid_xtrnnum(cfg, xtrnnum))
 						sprintf(str+strlen(str),"running %s"
 							,cfg->xtrn[xtrnnum]->name);
+					else if(*user.curxtrn != '\0')
+						sprintf(str+strlen(str),"running external program %s"
+							,user.curxtrn);
 					else
 						sprintf(str+strlen(str),"running external program #%d"
-                            ,node->aux);
+							,node->aux);
                     break;
                 case NODE_DFLT:
                     strcat(str,"changing defaults");
