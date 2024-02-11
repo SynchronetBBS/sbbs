@@ -303,7 +303,7 @@ gdi_handle_wm_paint(HWND hwnd)
 			diw = gb->w;
 			b5hdr.bV5Width = gb->w;
 			dih = gb->h;
-			b5hdr.bV5Height = -gb->h;
+			b5hdr.bV5Height = 0L - gb->h;
 			b5hdr.bV5SizeImage = gb->w * gb->h * 4;
 		}
 		data = gb->data;
