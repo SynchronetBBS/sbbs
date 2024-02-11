@@ -54,6 +54,16 @@
 #include "base64.h"
 #include <crc16.h>
 
+/*
+ * Disable warnings for well-defined standard C operations
+ * 4244 appears to be for implicit conversions
+ * warning C4244: '=': conversion from 'uint64_t' to 'int', possible loss of data
+ * 4267 is the same thing, but from size_t.
+ */
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267)
+#endif
+
 // Hack for Visual Studio 2022
 #ifndef UINT64_MAX
 #define UINT64_MAX UINT64_C(-1)
