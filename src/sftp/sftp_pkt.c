@@ -7,6 +7,10 @@
 
 #include "sftp.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4244 4267 4018)
+#endif
+
 static const struct type_names {
 	const uint8_t type;
 	const char * const name;
