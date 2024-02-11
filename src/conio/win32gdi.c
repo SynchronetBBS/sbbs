@@ -39,8 +39,6 @@ static LONG window_left, window_top;
 #define WM_USER_SETPOS (WM_USER + 2)
 #define WM_USER_SETCURSOR (WM_USER + 3)
 
-#define LCS_WINDOWS_COLOR_SPACE 0x57696E20
-
 // Used to create a DI bitmap from bitmap_con data
 static BITMAPV5HEADER b5hdr = {
 	.bV5Size = sizeof(BITMAPV5HEADER),
@@ -53,7 +51,7 @@ static BITMAPV5HEADER b5hdr = {
 	.bV5RedMask = 0x00ff0000,
 	.bV5GreenMask = 0x0000ff00,
 	.bV5BlueMask = 0x000000ff,
-	.bV5CSType = LCS_WINDOWS_COLOR_SPACE,
+	.bV5CSType = 0x57696E20, /* LCS_WINDOWS_COLOR_SPACE */
 	.bV5Intent = LCS_GM_BUSINESS,
 };
 
