@@ -761,6 +761,17 @@ int getlibnum_from_name(scfg_t* cfg, const char* name)
 	return i;
 }
 
+int getxtrnnum(scfg_t* cfg, const char* code)
+{
+	int i;
+
+	for(i = 0; i < cfg->total_xtrns; i++) {
+		if(stricmp(cfg->xtrn[i]->code, code) == 0)
+			break;
+	}
+	return i;
+}
+
 int getxtrnsec(scfg_t* cfg, const char* code)
 {
 	int i;
@@ -836,6 +847,11 @@ bool is_valid_subnum(scfg_t* cfg, int subnum)
 bool is_valid_grpnum(scfg_t* cfg, int grpnum)
 {
 	return (grpnum >= 0) && (cfg != NULL) && (grpnum < cfg->total_grps);
+}
+
+bool is_valid_xtrnnum(scfg_t* cfg, int xtrnnum)
+{
+	return (xtrnnum >= 0) && (cfg != NULL) && (xtrnnum < cfg->total_xtrns);
 }
 
 bool is_valid_xtrnsec(scfg_t* cfg, int secnum)

@@ -59,6 +59,7 @@ int		getlibnum_from_name(scfg_t*, const char* name);
 int		getsubnum(scfg_t*, const char* code);
 int		getgrpnum(scfg_t*, const char* code);
 int		getgrpnum_from_name(scfg_t*, const char* name);
+int		getxtrnnum(scfg_t*, const char* code);
 int		getxtrnsec(scfg_t*, const char* code);
 int		getgurunum(scfg_t*, const char* code);
 int		getchatactset(scfg_t*, const char* name);
@@ -69,6 +70,7 @@ DLLEXPORT bool	is_valid_dirnum(scfg_t*, int);
 DLLEXPORT bool	is_valid_libnum(scfg_t*, int);
 DLLEXPORT bool	is_valid_subnum(scfg_t*, int);
 DLLEXPORT bool	is_valid_grpnum(scfg_t*, int);
+DLLEXPORT bool	is_valid_xtrnnum(scfg_t*, int);
 DLLEXPORT bool	is_valid_xtrnsec(scfg_t*, int);
 
 DLLEXPORT char *	trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);

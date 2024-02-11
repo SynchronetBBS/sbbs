@@ -1106,7 +1106,7 @@ int opennodeext(scfg_t* cfg)
 }
 
 /****************************************************************************/
-/* Reads the data for node number 'number' into the structure 'node'        */
+/* Reads the data for 1-based node number 'number' into the node structure	*/
 /* from node.dab															*/
 /****************************************************************************/
 int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
@@ -1157,6 +1157,7 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 
 /****************************************************************************/
 /* Write the data from the structure 'node' into node.dab  					*/
+/* number is the 1-based node number										*/
 /****************************************************************************/
 int putnodedat(scfg_t* cfg, uint number, node_t* node, bool closeit, int file)
 {
@@ -1395,6 +1396,8 @@ char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen, int num)
 	char	tmp[128];
 	char*	mer;
 	int		hour;
+	int		xtrnnum;
+	user_t	user = {0};
 
 	if(node==NULL) {
 		strncpy(buf,"(null)",buflen);
@@ -1467,13 +1470,18 @@ char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen, int num)
                     strcat(str,"posting auto-message");
                     break;
                 case NODE_XTRN:
-                    if(!node->aux)
+                    if(node->aux == 0) {
                         strcat(str,"at external program menu");
-                    else if(node->aux<=cfg->total_xtrns)
-                        sprintf(str+strlen(str),"running %s"
- 	                       ,cfg->xtrn[node->aux-1]->name);
-                    else
-                        sprintf(str+strlen(str),"running external program #%d"
+						break;
+					}
+					user.number = node->useron;
+					getuserdat(cfg, &user);
+					xtrnnum = getxtrnnum(cfg, user.curxtrn);
+					if(is_valid_xtrnnum(cfg, xtrnnum))
+						sprintf(str+strlen(str),"running %s"
+							,cfg->xtrn[xtrnnum]->name);
+					else
+						sprintf(str+strlen(str),"running external program #%d"
                             ,node->aux);
                     break;
                 case NODE_DFLT:
