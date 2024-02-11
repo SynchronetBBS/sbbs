@@ -1851,7 +1851,7 @@ static const char* filebase_detail_prop_desc[] = {
 };
 
 static const char* filebase_sort_prop_desc[] = {
-	"Natural sort order (same as DATE_A)",
+	"Natural/index order (no sorting)",
 	"Filename ascending, case insensitive sort order",
 	"Filename descending, case insensitive sort order",
 	"Filename ascending, case sensitive sort order",

@@ -35,6 +35,7 @@ char* file_sort_desc[] = {
 	"Name Descending (case-sensitive)",
 	"Size Ascending",
 	"Size Descending",
+	"None (unsorted natural index order)",
 	NULL
 };
 
@@ -127,7 +128,8 @@ static char* sort_help =
 	"\n"
 	"The dates available for sorting are the file import/upload date/time.\n"
 	"\n"
-	"The natural (and thus fastest) sort order is `Date Ascending`."
+	"The natural (and thus fastest) sort order is `None`, which is normally\n"
+	"the order in which the files were added/imported into the filebase."
 	;
 
 static bool new_dir(unsigned new_dirnum, unsigned libnum)
@@ -2076,7 +2078,7 @@ void dir_cfg(int libnum)
 						"\n"
 						"This is the advanced options menu for the selected file directory.\n"
 					;
-						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,4,65,&adv_dflt,0
+						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,4,66,&adv_dflt,0
 							,"Advanced Options",opt);
 						if(n==-1)
 							break;
