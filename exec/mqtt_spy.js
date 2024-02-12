@@ -47,7 +47,7 @@ function output(str)
 			str = utf8_encode(str);
 	}
 	if(js.global.console)
-		console.write(str);
+		write_raw(str);
 	else
 		write(str);
 }
