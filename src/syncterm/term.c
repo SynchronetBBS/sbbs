@@ -4590,7 +4590,6 @@ doterm(struct bbslist *bbs)
 							key = '\b';
 						else
 							key = '\x7f';
-						break;
 
                                         /* FALLTHROUGH to default */
 					default:
