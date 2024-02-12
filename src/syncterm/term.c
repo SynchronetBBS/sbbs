@@ -4586,7 +4586,11 @@ doterm(struct bbslist *bbs)
 						conn_send("\033[Z", 3, 0);
 						break;
 					case '\b':
-						key = '\b';
+						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
+							key = '\b';
+						else
+							key = '\x7f';
+						break;
 
                                         /* FALLTHROUGH to default */
 					default:

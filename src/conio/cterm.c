@@ -2623,6 +2623,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											flags |= CIOLIB_VIDEO_NOBLINK;
 											SETVIDEOFLAGS(flags);
 											break;
+										case 67:
+											cterm->extattr |= CTERM_EXTATTR_DECBKM;
+											break;
 										case 69:
 											cterm->extattr |= CTERM_EXTATTR_DECLRMM;
 											break;
@@ -2724,6 +2727,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											flags = GETVIDEOFLAGS();
 											flags &= ~CIOLIB_VIDEO_NOBLINK;
 											SETVIDEOFLAGS(flags);
+											break;
+										case 67:
+											cterm->extattr &= ~(CTERM_EXTATTR_DECBKM);
 											break;
 										case 69:
 											cterm->extattr &= ~(CTERM_EXTATTR_DECLRMM);
@@ -2910,7 +2916,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									    CTERM_SAVEMODE_NOBRIGHT|CTERM_SAVEMODE_BGBRIGHT|CTERM_SAVEMODE_ORIGIN|CTERM_SAVEMODE_SIXEL_SCROLL|
 									    CTERM_SAVEMODE_MOUSE_X10|CTERM_SAVEMODE_MOUSE_NORMAL|CTERM_SAVEMODE_MOUSE_HIGHLIGHT|
 									    CTERM_SAVEMODE_MOUSE_BUTTONTRACK|CTERM_SAVEMODE_MOUSE_ANY|CTERM_SAVEMODE_MOUSE_FOCUS|
-									    CTERM_SAVEMODE_MOUSE_UTF8|CTERM_SAVEMODE_MOUSE_SGR|CTERM_SAVEMODE_MOUSE_ALTSCROLL|CTERM_SAVEMODE_MOUSE_URXVT|CTERM_SAVEMODE_DECLRMM);
+									    CTERM_SAVEMODE_MOUSE_UTF8|CTERM_SAVEMODE_MOUSE_SGR|CTERM_SAVEMODE_MOUSE_ALTSCROLL|CTERM_SAVEMODE_MOUSE_URXVT|CTERM_SAVEMODE_DECLRMM|CTERM_SAVEMODE_DECBKM);
 									cterm->saved_mode &= ~(cterm->saved_mode_mask);
 									cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_AUTOWRAP)?CTERM_SAVEMODE_AUTOWRAP:0;
 									cterm->saved_mode |= (cterm->cursor==_NORMALCURSOR)?CTERM_SAVEMODE_CURSOR:0;
@@ -2932,6 +2938,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									cterm->saved_mode |= (cterm->mouse_state_query(1007, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ALTSCROLL : 0);
 									cterm->saved_mode |= (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_URXVT : 0);
 									cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_DECLRMM) ? CTERM_SAVEMODE_DECLRMM : 0;
+									cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_DECBKM) ? CTERM_SAVEMODE_DECBKM : 0;
 									setwindow(cterm);
 									break;
 								}
@@ -2983,6 +2990,11 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												cterm->saved_mode_mask |= CTERM_SAVEMODE_NOBLINK;
 												cterm->saved_mode &= ~(CTERM_SAVEMODE_NOBLINK);
 												cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBLINK)?CTERM_SAVEMODE_NOBLINK:0;
+												break;
+											case 67:
+												cterm->saved_mode_mask |= CTERM_SAVEMODE_DECBKM;
+												cterm->saved_mode &= ~(CTERM_SAVEMODE_DECBKM);
+												cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_DECBKM) ? CTERM_SAVEMODE_DECBKM : 0;
 												break;
 											case 69:
 												cterm->saved_mode_mask |= CTERM_SAVEMODE_DECLRMM;
@@ -3127,6 +3139,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										cterm->mouse_state_change(1007, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ALTSCROLL, cterm->mouse_state_change_cbdata);
 									if(cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_URXVT)
 										cterm->mouse_state_change(1015, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_URXVT, cterm->mouse_state_change_cbdata);
+									if(cterm->saved_mode_mask & CTERM_SAVEMODE_DECBKM) {
+										if (cterm->saved_mode & CTERM_SAVEMODE_DECBKM)
+											cterm->extattr |= CTERM_EXTATTR_DECBKM;
+										else
+											cterm->extattr &= ~CTERM_EXTATTR_DECBKM;
+									}
 									if(cterm->saved_mode_mask & CTERM_SAVEMODE_DECLRMM) {
 										if (cterm->saved_mode & CTERM_SAVEMODE_DECLRMM)
 											cterm->extattr |= CTERM_EXTATTR_DECLRMM;
@@ -3208,6 +3226,14 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 													else
 														flags &= ~CIOLIB_VIDEO_NOBLINK;
 													SETVIDEOFLAGS(flags);
+												}
+												break;
+											case 67:
+												if(cterm->saved_mode_mask & CTERM_SAVEMODE_DECBKM) {
+													if (cterm->saved_mode & CTERM_SAVEMODE_DECBKM)
+														cterm->extattr |= CTERM_EXTATTR_DECBKM;
+													else
+														cterm->extattr &= ~CTERM_EXTATTR_DECBKM;
 												}
 												break;
 											case 69:
@@ -4516,7 +4542,7 @@ cterm_reset(struct cterminal *cterm)
 	cterm->xpos = TERM_MINX;
 	cterm->ypos = TERM_MINY;
 	cterm->cursor=_NORMALCURSOR;
-	cterm->extattr = CTERM_EXTATTR_AUTOWRAP | CTERM_EXTATTR_SXSCROLL;
+	cterm->extattr = CTERM_EXTATTR_AUTOWRAP | CTERM_EXTATTR_SXSCROLL | CTERM_EXTATTR_DECBKM;
 	FREE_AND_NULL(cterm->tabs);
 	cterm->tabs = malloc(sizeof(cterm_tabs));
 	if (cterm->tabs) {

@@ -109,6 +109,7 @@ struct cterminal {
 #define CTERM_SAVEMODE_MOUSE_ALTSCROLL		0x20000
 #define CTERM_SAVEMODE_MOUSE_URXVT		0x40000
 #define CTERM_SAVEMODE_DECLRMM			0x80000
+#define CTERM_SAVEMODE_DECBKM                   0x100000
 	int32_t				saved_mode;
 	int32_t				saved_mode_mask;
 
@@ -125,6 +126,7 @@ struct cterminal {
 #define CTERM_EXTATTR_SXSCROLL		0x0004
 #define CTERM_EXTATTR_DECLRMM		0x0008
 #define CTERM_EXTATTR_BRACKETPASTE      0x0010
+#define CTERM_EXTATTR_DECBKM            0x0020
 	int					save_xpos;		// Saved position (for later restore)
 	int					save_ypos;
 	int					sequence;		// An escape sequence is being parsed

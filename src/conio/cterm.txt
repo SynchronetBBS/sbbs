@@ -874,6 +874,8 @@ CSI ? Ps... h (DECSET)
 	     This makes the blink (5, 6) graphic renditions not cause the
 	     character to blink.  Mostly for use with CSI ? 34 h to permit
 	     fonts to be used without blinking.  Defaults to reset.
+	67 - When set, the backspace key sends a backspace character.
+	     Defaults to set.
 	69 - DEC Left Right Margin Mode enabled
 	     Enables CSI s to set the left/right margins, and disables CSI s
 	     from saving the current cursor position.
@@ -1001,6 +1003,8 @@ CSI ? Ps... l (DECRST)
 	35 - Blink Enable
 	     With this mode reset, the blink (5,6) graphic renditions behave
 	     normally (cause the characters to blink).  Defaults to reset.
+	67 - When reset, the backspace key sends a delete character.
+	     Defaults to set.
 	69 - DEC Left Right Margin Mode disabled
 	     Disables CSI s from setting the left/right margins, and changes
 	     it back to saving the current cursor position.  The current
