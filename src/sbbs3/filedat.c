@@ -357,7 +357,9 @@ void sortfiles(file_t* filelist, size_t count, enum file_sort order)
 			break;
 		case FILE_SORT_SIZE_D:
 			qsort(filelist, count, sizeof(*filelist), file_compare_size_d);
-			break; 
+			break;
+		case FILE_SORT_NATURAL:
+			break;
 	}
 }
 
