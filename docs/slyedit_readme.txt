@@ -23,16 +23,15 @@ Contents
  2. Introduction
  3. Installation & Setup
  4. Features
- 5. UTF-8 support
- 6. Configuration file
- 7. Ice-style Color Theme Settings
- 8. DCT-style Color Theme Settings
- 9. Common colors (appearing in both Ice and DCT color theme files)
-10. Text replacements (AKA Macros)
-1`. User settings
-12. Taglines
-13. Spell check and dictionaries
-14. Version history
+ 5. Configuration file
+ 6. Ice-style Color Theme Settings
+ 7. DCT-style Color Theme Settings
+ 8. Common colors (appearing in both Ice and DCT color theme files)
+ 9. Text replacements (AKA Macros)
+10. User settings
+11. Taglines
+12. Spell check and dictionaries
+13. Version history
 
 
 1. Disclaimer
@@ -70,6 +69,8 @@ CTRL-K key, if the allowColorSelection is set to true in SlyEdit.cfg.  Also,
 you can have SlyEdit convert colors to ANSI when posting messages, for
 compatibility with other BBS software.  To do so, set the saveColorsAsANSI
 setting to true in SlyEdit.cfg.
+
+As of version 1.88b (2024-02-11), SlyEdit supports inputting UTF-8 text.
 
 Also, SlyEdit has no moving parts that can wear out over time.
 
@@ -236,18 +237,7 @@ Ctrl-K       : Change text color            ¦ Ctrl-R  : Spell checker
 Ctrl-O       : Import a file                ¦ Ctrl-X  : Export to file
 
 
-5. UTF-8 support
-===================
-As of version 1.88b, SlyEdit is able to accept UTF-8 character/text input. This
-allows inputting a wider range of characters, but one limitation is that if the
-user's terminal is UTF-8, high-ASCII characters (with numeric values 129-255)
-can't be entered.  Even when using the graphic character input (with Ctrl-G),
-those characters will be translated to a different character for UTF-8. However,
-if the user is not using a UTF-8 terminal, though (i.e., their terminal uses
-CP437), those characters can be entered.
-
-
-6. Configuration file
+5. Configuration file
 =====================
 The configuration file, SlyEdit.cfg, is split up into 3 sections -
 Behavior, Ice colors, and DCT colors.  These sections are designated
@@ -454,7 +444,7 @@ High green: gh
 Normal cyan: c
 
 
-7. Ice-style Color Theme Settings
+6. Ice-style Color Theme Settings
 =================================
 Note that you don't need control (Ctrl-A) characters for the color settings;
 just the attribute characters.
@@ -519,7 +509,7 @@ UnselectedOptionBorderColor       The color to use for the borders around
 UnselectedOptionTextColor         The color to use for the text for unselected
                                   multi-choice options
 
-8. DCT-style Color Theme Settings
+7. DCT-style Color Theme Settings
 =================================
 Note that you don't need control (Ctrl-A) characters for the color settings;
 just the attribute characters.
@@ -743,7 +733,7 @@ listBoxItemHighlight              The color to use for the currently selected
                                   item in list boxes (such as the list of text
                                   replacements and the list of tag lines)
 
-10. Text replacements (AKA Macros)
+9. Text replacements (AKA Macros)
 ==================================
 SlyEdit version 1.29 added text replacements (AKA Macros), which lets you (the
 sysop) define words to be replaced with other text as the user types a message.
@@ -836,7 +826,7 @@ store it in buffer 1, and in JavaScript (and with SlyEdit's search and
 replace), you would use $1 to refer to the word "darn".  For example, for
 (darn), the replacement $1it would replace the word "darn" with "darnit".
 
-11. User settings
+10. User settings
 =================
 Since version 1.32, SlyEdit has the ability for each user to configure some
 settings for themselves.  The user settings include the following:
@@ -870,7 +860,7 @@ The user settings files will be stored in the sbbs/data/user directory with the
 filename <user number>.SlyEdit_Settings, and the user number will be 0-padded
 up to 4 digits.
 
-12. Taglines
+11. Taglines
 ============
 SlyEdit version 1.32 added the ability for users to optionally choose a tagline
 to be appended to their message upon saving the message.  Each user can
@@ -900,7 +890,7 @@ user's signature (if they have one).  If the MSGINF file does not include the
 7th line, then the tagline will appear before the user's signature.
 
 
-13. Spell check and dictionaries
+12. Spell check and dictionaries
 ================================
 Since version 1.64, SlyEdit has a spell check feature.  Spell check can be
 started by the user with the Ctrl-R hotkey, or by the Edit > Spell Checker
@@ -940,7 +930,7 @@ case, since SlyEdit does case-insensitive matching by converting words in the
 message to lower-case and comparing them with the words in the dictionary.
 
 
-14. Version history
+13. Version history
 ===================
 Version  Date         Description
 -------  ----         -----------
