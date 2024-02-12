@@ -24,6 +24,8 @@ o New configurable date display/input formats (e.g. Year first)
 
 Security
 ~~~~~~~~
+o New cryptographic library (cryptlib) version 3.4.7 for TLS and SSH
+o Set the minimum TLS version for the FTP server and TLS services to TLS 1.2
 o Disallow new user aliases from matching an existing user's real name
 o Implement duplicate new-user email address checking (optional)
   - Set SCFG->System->New User Prompts->Force Unique E-mail/NetMail to "Yes"
@@ -165,6 +167,7 @@ o Synchronet Control Panel (sbbsctrl.exe) now has a "Log Events to Disk"
   option, enabling writing of event thread log messages to data/events*.log
 o New useredit.exe (all new C++ version, but using the old Delphi forms)
 o scfg.exe and echocfg.exe are now Graphics/GDI applications
+  (use -iw option if you want to use the old Windows "console" output mode)
 
 Configuration Utility (SCFG)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -259,6 +262,8 @@ o New bbs.load_user_text() method
 o bbs.text() now accepts an additional argument: default_text=false
 o bbs.text now has numeric properties named after each text ID
   (so load() or require() of text.js is no longer strictly required)
+o bbs.editfile() now supports overriding the maximum lines (default: 10000)
+  and message metadata fields place in external editor drop files
 o New bbs properties: first_node and last_node
 o New system.find_login_id() method
 o Allow system.matchuserdata() to search deleted user records
@@ -287,7 +292,7 @@ o Renamed console.crlf() to console.newline() (leaving crlf() as an alias)
 o File.readBin() and writeBin() methods now support 64-bit integer binary data
 o New method: File.iniRemoveSections()
 o Stock modules previously provided as Baja-compiled .bin files, now as .js:
-  default.js
+  default.js (uses new load/shell_lib.js library for writing command shells)
   yesnobar.js
   noyesbar.js
 
@@ -299,6 +304,11 @@ o Allow a configured maximum-severity (minimum value) for TLS-related log
   messages, default is 0 (LOG_EMERG, maximum severity)
 o All servers support login-by-realname/user-number (if enabled by the sysop)
 o All servers have configurable login requirements (AR String)
+o All servers can be "paused" (and subsequently unpaused) via semaphore file
+  or MQTT - paused servers don't accept new connections, but otherwise keep
+  running
+o All servers (terminal, mail, web, ftp, services) recycle or shutdown faster
+  and do not accept new connections when pending a recycle or shutdown
 o systemd integration (status reporting) on *nix builds
 o Fix uploader-notification, credit awards, download-counters in FTP downloads
 
@@ -337,6 +347,9 @@ o Fix lost 'unexpected characters' received in ANSI get cursor position
 o newuser.js has a new 'notify_sysop' option (enabled via modopts.ini)
   Will notify the sysop via email and telegram whenever a new user account has
   been created
+o When editing existing messages (in message bases), the metadata details of
+  the message (e.g. to, from, subject) are now passed to external editors in
+  the editor drop file
 o Configurable system password timeout (default: 15 minutes)
 o Fix PETSCII 40/80 column port connections for IPv6
 o [BBS]
@@ -359,6 +372,8 @@ o New line-based method of output throttling (e.g for animated ANSIs)
 o New twitlist-author operator menu option when reading messages
 o SSH terminal type/size advertisement
 o SSH max-severity of log messages is now configurable
+o SSH negotiation is now asynchronous/non-blocking, so other nodes can accept
+  connections while any SSH negotiations are in progress
 
 Doors
 ~~~~~
@@ -463,6 +478,7 @@ o New EchoCfg->Global->Sort Linked Node List option
 o Supports filtering messages based on text/subject.can file
 o Rework NetMail routing logic to handle point destinations better
 o Default packet type is now configurable
+o Handle LF-terminated messages more "correctly" (convert to CR or CRLF)
 o Options for handling of incoming bad packets
   - delete
   - rename *.bad (the previous behavior)
