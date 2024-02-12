@@ -27,24 +27,24 @@ static scfg_t	cfg;
 
 static int togglechat(int on)
 {
-    static int  org_act;
+	static int  org_act;
 	int nodefile = -1;
 
 	if(getnodedat(&cfg,nodenum,&node,TRUE,&nodefile))
 		return(-1);
-    if(on) {
-        org_act=node.action;
-        if(org_act==NODE_PCHT)
-            org_act=NODE_MAIN;
-        node.misc|=NODE_LCHAT;
-    }
+	if(on) {
+		org_act=node.action;
+		if(org_act==NODE_PCHT)
+			org_act=NODE_MAIN;
+		node.misc|=NODE_LCHAT;
+	}
 	else {
-        node.action=org_act;
-        node.misc&=~NODE_LCHAT;
-    }
+		node.action=org_act;
+		node.misc&=~NODE_LCHAT;
+	}
 	if(putnodedat(&cfg,nodenum,&node,TRUE,nodefile))
 		return(-1);
-    return(0);
+	return(0);
 }
 
 int chat_open(int node_num, char *ctrl_dir)
@@ -52,12 +52,12 @@ int chat_open(int node_num, char *ctrl_dir)
 	char	*p;
 	char	str[1024];
 
-    /* Read .cfg files here */
-    memset(&cfg,0,sizeof(cfg));
-    cfg.size=sizeof(cfg);
-    SAFECOPY(cfg.ctrl_dir,ctrl_dir);
-    if(!load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str)))
-        return(-1);
+	/* Read .cfg files here */
+	memset(&cfg,0,sizeof(cfg));
+	cfg.size=sizeof(cfg);
+	SAFECOPY(cfg.ctrl_dir,ctrl_dir);
+	if(!load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str)))
+		return(-1);
 
 	nodenum=node_num;
 
@@ -77,13 +77,13 @@ int chat_open(int node_num, char *ctrl_dir)
 		,DEFFILEMODE))==-1) {
 		close(out);
 		return(-1);
-    }
+	}
 
 	if((p=(char *)malloc(PCHAT_LEN))==NULL) {
 		close(in);
 		close(out);
 		return(-1);
-    }
+	}
 	memset(p,0,PCHAT_LEN);
 	write(in,p,PCHAT_LEN);
 	write(out,p,PCHAT_LEN);
