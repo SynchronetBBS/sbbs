@@ -4419,7 +4419,10 @@ doterm(struct bbslist *bbs)
 						conn_send("\033[K", 3, 0);
 						break;
 					case CIO_KEY_DC:    /* "Delete" key, send ASCII 127 (DEL) */
-						conn_send("\x7f", 1, 0);
+						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
+							conn_send("\x7f", 1, 0);
+						else
+							conn_send("\x1b[3~", 1, 0);
 						break;
 					case CIO_KEY_NPAGE: /* Page down */
 						conn_send("\033[U", 3, 0);
