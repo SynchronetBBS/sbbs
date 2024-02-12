@@ -1582,8 +1582,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			 * to a value we may have made up.
 			 * TODO: We can set stuff from the user term here...
 			 */
-			for (i = 0; i < (sizeof(term.c_cc) / sizeof(term.c_cc[0])); i++)
-				term.c_cc[i] = _POSIX_VDISABLE;
+			for (unsigned noti = 0; noti < (sizeof(term.c_cc) / sizeof(term.c_cc[0])); noti++)
+				term.c_cc[noti] = _POSIX_VDISABLE;
 #ifdef VEOF
 			term.c_cc[VEOF] = CEOF;
 #endif
