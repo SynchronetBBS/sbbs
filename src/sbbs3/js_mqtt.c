@@ -45,8 +45,10 @@ static void js_finalize_mqtt(JSContext* cx, JSObject* obj)
 		mosquitto_loop_stop(p->handle, /* force: */false);
 		mosquitto_destroy(p->handle);
 	}
-	while((msg = msgQueueRead(&p->q, /* timeout: */0)) != NULL)
-		mosquitto_message_free(&msg);
+	while((msg = msgQueueRead(&p->q, /* timeout: */0)) != NULL) {
+		mosquitto_message_free_contents(msg);
+		free(msg);
+	}
 	msgQueueFree(&p->q);
 	free(p);
 
@@ -314,7 +316,8 @@ static JSBool js_read(JSContext* cx, uintN argc, jsval *arglist)
 			if(str != NULL)
 				JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 		}
-		mosquitto_message_free(&msg);
+		mosquitto_message_free_contents(msg);
+		free(msg);
 	}
 	JS_RESUMEREQUEST(cx, rc);
 
