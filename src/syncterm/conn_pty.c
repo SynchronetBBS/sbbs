@@ -402,14 +402,14 @@ pty_connect(struct bbslist *bbs)
 	char          *termcap;
 	int            cols, rows, pixelc, pixelr;
 	int            cp;
+	int            i;
 
 	ts.c_iflag = TTYDEF_IFLAG;
 	ts.c_oflag = TTYDEF_OFLAG;
 	ts.c_lflag = TTYDEF_LFLAG;
 	ts.c_cflag = TTYDEF_CFLAG;
-#ifdef VTIME
-	ts.c_cc[VTIME] = CTIME;
-#endif
+	for (i = 0; i < (sizeof(ts.c_cc) / sizeof(ts.c_cc[0])); i++)
+		ts.c_cc[i] = _POSIX_VDISABLE;
 #ifdef VMIN
 	ts.c_cc[VMIN] = CMIN;
 #endif
