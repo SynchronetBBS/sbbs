@@ -73,7 +73,6 @@ int main(int argc, char **argv)
 
     if(argc > 1) {
         if(!stricmp(argv[1],"/?")) {
-            if(argc);
             printf("\r\nThe Beast's Domain  Reroller  Copyright 1993 Domain "
                     "Entertainment\r\n");
             printf("\r\nUsage: REROLL /SAVE\r\n");
