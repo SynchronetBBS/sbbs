@@ -431,7 +431,9 @@ while(bbs.online && !js.terminated) {
 					&& !(thisuser.settings & (USER_PETSCII | USER_SWAP_DELETE))
 					&& bbs.online) {
 					console.putmsg(bbs.text(bbs.text.HitYourBackspaceKey));
+					console.status |= CON_RAW_IN;
 					var key = console.getkey(K_CTRLKEYS);
+					console.status &= ~CON_RAW_IN;
 					console.putmsg(format(bbs.text(bbs.text.CharacterReceivedFmt), ascii(key), ascii(key)));
 					if (key == '\b')
 						break;
