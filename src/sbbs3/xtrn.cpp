@@ -28,7 +28,6 @@
 #ifdef __unix__
 	#include <sys/wait.h>	// WEXITSTATUS
 
-	#define TTYDEFCHARS		// needed for ttydefchars definition
 	#include <sys/ttydefaults.h>	// Linux - it's motherfucked.
 #if defined(__FreeBSD__)
 	#include <libutil.h>	// forkpty()
@@ -53,6 +52,11 @@
 /*
  * Control Character Defaults
  */
+#ifdef _POSIX_VDISABLE
+#define XTRN_VDISABLE _POSIX_VDISABLE
+#else
+#define XTRN_VDISABLE 0xff
+#endif
 #ifndef CTRL
 	#define CTRL(x)	(x&037)
 #endif
@@ -60,7 +64,7 @@
 	#define	CEOF		CTRL('d')
 #endif
 #ifndef CEOL
-	#define	CEOL		0xff		/* XXX avoid _POSIX_VDISABLE */
+	#define	CEOL		XTRN_VDISABLE
 #endif
 #ifndef CERASE
 	#define	CERASE		0177
@@ -135,16 +139,6 @@
 #endif
 #ifndef TTYDEF_CFLAG
 	#define TTYDEF_CFLAG    (CREAD | CS8 | HUPCL)
-#endif
-#if defined(__QNX__) || defined(__solaris__) || defined(__NetBSD__)
-	static cc_t     ttydefchars[NCCS] = {
-        CEOF,   CEOL,   CEOL,   CERASE, CWERASE, CKILL, CREPRINT,
-        CERASE2, CINTR, CQUIT,  CSUSP,  CDSUSP, CSTART, CSTOP,  CLNEXT,
-        CDISCARD, CMIN, CTIME,  CSTATUS
-#ifndef __solaris__
-	, _POSIX_VDISABLE
-#endif
-	};
 #endif
 
 #endif	/* __unix__ */
@@ -1581,7 +1575,90 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			term.c_oflag = TTYDEF_OFLAG;
 			term.c_lflag = TTYDEF_LFLAG;
 			term.c_cflag = TTYDEF_CFLAG;
-			memcpy(term.c_cc,ttydefchars,sizeof(term.c_cc));
+			/*
+			 * On Linux, ttydefchars is in the wrong order, so
+			 * it's completely useless for anything.
+			 * Instead, set any value we've ever heard of
+			 * to a value we may have made up.
+			 * TODO: We can set stuff from the user term here...
+			 */
+#ifdef VEOF
+			term.c_cc[VEOF] = CEOF;
+#endif
+#ifdef VEOL
+			term.c_cc[VEOL] = CEOL;
+#endif
+#ifdef VEOL2
+#ifdef CEOL2
+			term.c_cc[VEOL2] = CEOL2;
+#else
+			term.c_cc[VEOL2] = CEOL;
+#endif
+#endif
+#ifdef VERASE
+			term.c_cc[VERASE] = CERASE;
+#endif
+#ifdef VKILL
+			term.c_cc[VKILL] = CKILL;
+#endif
+#ifdef VREPRINT
+			term.c_cc[VREPRINT] = CREPRINT;
+#endif
+#ifdef VINTR
+			term.c_cc[VINTR] = CINTR;
+#endif
+#ifdef VERASE2
+#ifdef CERASE2
+			term.c_cc[VERASE2] = CERASE2;
+#else
+			term.c_cc[VERASE2] = CERASE;
+#endif
+#endif
+#ifdef VQUIT
+			term.c_cc[VQUIT] = CQUIT;
+#endif
+#ifdef VSUSP
+			term.c_cc[VSUSP] = CSUSP;
+#endif
+#ifdef VDSUSP
+			term.c_cc[VDSUSP] = CDSUSP;
+#endif
+#ifdef VSTART
+			term.c_cc[VSTART] = CSTART;
+#endif
+#ifdef VSTOP
+			term.c_cc[VSTOP] = CSTOP;
+#endif
+#ifdef VLNEXT
+			term.c_cc[VLNEXT] = CLNEXT;
+#endif
+#ifdef VDISCARD
+			term.c_cc[VDISCARD] = CDISCARD;
+#endif
+#ifdef VMIN
+			term.c_cc[VMIN] = CMIN;
+#endif
+#ifdef VTIME
+			term.c_cc[VTIME] = CTIME;
+#endif
+#ifdef VSTATUS
+			term.c_cc[VSTATUS] = CSTATUS;
+#endif
+#ifdef VWERASE
+			term.c_cc[VWERASE] = CWERASE;
+#endif
+#ifdef VEOT
+			term.c_cc[VEOT] = CEOT;
+#endif
+#ifdef VBRK
+			term.c_cc[VBRK] = CBRK;
+#endif
+#ifdef VRPRNT
+			term.c_cc[VRPRNT] = CRPRNT;
+#endif
+#ifdef VFLUSH
+			term.c_cc[VFLUSH] = CFLUSH
+#endif
 		}
 		winsize.ws_row=rows;
 		winsize.ws_col=cols;
