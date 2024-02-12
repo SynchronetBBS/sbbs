@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.88
-                        Release date: 2024-02-07
+                              Version 1.88b
+                        Release date: 2024-02-11
 
                                   by
 
@@ -23,7 +23,7 @@ Contents
  2. Introduction
  3. Installation & Setup
  4. Features
- 5. UTF-8 support and CP437
+ 5. UTF-8 support
  6. Configuration file
  7. Ice-style Color Theme Settings
  8. DCT-style Color Theme Settings
@@ -216,7 +216,7 @@ BBS machine):
 
 Help keys                                     Slash commands (on blank line)
 ---------                                     ------------------------------
-Ctrl-G       : General help                 ¦ /A      : Abort
+Ctrl-G       : Input graphic character      ¦ /A      : Abort
 Ctrl-L       : Command key list (this list) ¦ /S      : Save
                                             ¦ /Q      : Quote message
 Ctrl-T       : List text replacements       ¦ /T      : List text replacements
@@ -236,13 +236,15 @@ Ctrl-K       : Change text color            ¦ Ctrl-R  : Spell checker
 Ctrl-O       : Import a file                ¦ Ctrl-X  : Export to file
 
 
-5. 5. UTF-8 support and CP437
-=============================
-As of version 1.88, SlyEdit is able to accept UTF-8 character input, but it has
-Synchronet convert the input to CP437 internally. As of this writing, Synchronet
-didn't fully have UTF-8 string support yet.
-Internally, the new (at the time) K_CP437 mode bit is used when accepting user
-input.
+5. UTF-8 support
+===================
+As of version 1.88b, SlyEdit is able to accept UTF-8 character/text input. This
+allows inputting a wider range of characters, but one limitation is that if the
+user's terminal is UTF-8, high-ASCII characters (with numeric values 129-255)
+can't be entered.  Even when using the graphic character input (with Ctrl-G),
+those characters will be translated to a different character for UTF-8. However,
+if the user is not using a UTF-8 terminal, though (i.e., their terminal uses
+CP437), those characters can be entered.
 
 
 6. Configuration file
@@ -942,6 +944,9 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.88b    2024-02-11   Previous change reverted; now has "real" UTF-8 support.
+                      New feature: Entering a graphic char with Ctrl-G (Ctrl-G
+                      was previously the key for general help, which wasn't much)
 1.88     2024-02-07   Support for entering UTF-8/Unicode characters; internally
                       uses K_CP437 to convert to CP437, so the strings are still
                       in CP437 internally in Synchronet

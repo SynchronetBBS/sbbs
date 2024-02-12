@@ -158,9 +158,9 @@ var gUserSettingsFilename = system.data_dir + "user/" + format("%04d", user.numb
 
 // See if the user's terminal supports UTF-8 (USER_UTF8 is defined in userdefs.js)
 var gUserConsoleSupportsUTF8 = (typeof(USER_UTF8) != "undefined" ? console.term_supports(USER_UTF8) : false);
-// See if K_CP437 is defined (for the input mode, for UTF-8 terminals).  And cache
-// the result for speed with further calls, since this function will be called repeatedly.
-var g_K_CP437Exists = (typeof(K_CP437) === "number");
+// Since K_UTF8 (in sbbsdefs.js) was added in Synchronet 3.20, see if it exists
+var g_K_UTF8Exists = (typeof(K_UTF8) === "number");
+var gPrintMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Object/class stuff
@@ -279,13 +279,12 @@ function TextLine_length()
 // For the TextLine class: Returns the printed length of the text (without any attribute codes, etc.)
 function TextLine_screenLength()
 {
-	// If we need the length as UTF-8 if user's terminal supports it and we're inputting UTF-8?  Maybe not,
-	// since we use K_CP437 in that case to convert to CP437..
+	// We don't translate UTF-8 to CP437..
 	//str_is_utf8(text)
 	//utf8_get_width(text)
 	// If the user's terminal is UTF-8 capable count the text as UTF-8
 	//var textMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
-	var textMode = P_NONE;
+	var textMode = (g_K_UTF8Exists && str_is_utf8(this.text) ? P_UTF8 : P_NONE);
 	return console.strlen(this.text, textMode);
 }
 // For the TextLine class: Prints the text line, using its text attributes.
@@ -296,16 +295,60 @@ function TextLine_screenLength()
 //  pClearToEOL: Boolean - Whether or not to clear to the end of the line.  Defaults to false.
 function TextLine_print(pPrintNormalAttrFirst, pMaxLength, pClearToEOL)
 {
+	var maxLengthIsNumber = (typeof(pMaxLength) === "number");
+	if (maxLengthIsNumber && pMaxLength == 0)
+		return;
+
 	var printNormalAttrFirst = (typeof(pPrintNormalAttrFirst) === "boolean" ? pPrintNormalAttrFirst : false);
 	if (printNormalAttrFirst)
 		console.attributes = "N";
-	if (this.screenLength() > 0)
+
+	// New:
+	var attrKeys = this.getSortedAttrKeysArray(); // The attribute keys are indexes for this.text
+	if (attrKeys.length > 0)
 	{
-		var thisLineText = this.getText(true);
-		if (typeof(pMaxLength) === "number" && pMaxLength > 0 && pMaxLength < this.screenLength())
-			thisLineText = shortenStrWithAttrCodes(thisLineText, pMaxLength, true);
-		console.print(thisLineText);
+		var continueOn = true;
+		var keysArrayEndIdx = attrKeys.length - 1;
+		var substrStartIdx = 0;
+		for (var keysIdx = 0; keysIdx <= keysArrayEndIdx && continueOn; ++keysIdx)
+		{
+			var textIdx = +(attrKeys[keysIdx]);
+			if (textIdx > 0)
+			{
+				if (maxLengthIsNumber && textIdx >= pMaxLength-1)
+				{
+					textIdx = pMaxLength-1;
+					continueOn = false;
+				}
+				printStrConsideringUTF8(this.text.substring(substrStartIdx, textIdx), gPrintMode);
+			}
+			//console.attributes = this.attrs[textIdx].replace(ascii(0x01), "");
+			console.print(this.attrs[textIdx]);
+
+			if (keysIdx < keysArrayEndIdx)
+			{
+				var substringEndIdx = +(attrKeys[keysIdx+1]);
+				// TODO: Is this correct with substringEndIdx and pMaxLength?
+				if (maxLengthIsNumber && substringEndIdx >= pMaxLength-1)
+				{
+					substringEndIdx = pMaxLength-1;
+					continueOn = false;
+				}
+				printStrConsideringUTF8(this.text.substring(textIdx, substringEndIdx), gPrintMode);
+				substrStartIdx = substringEndIdx;
+			}
+			else
+				printStrConsideringUTF8(this.text.substring(textIdx), gPrintMode);
+		}
 	}
+	else
+	{
+		if (maxLengthIsNumber)
+			printStrConsideringUTF8(this.text.substr(0, pMaxLength), gPrintMode);
+		else
+			printStrConsideringUTF8(this.text, gPrintMode);
+	}
+
 	var clearToEOL = (typeof(pClearToEOL) === "boolean" ? pClearToEOL : false);
 	if (clearToEOL)
 		console.cleartoeol("\x01n");
@@ -795,10 +838,12 @@ function TextLine_getWord(pCharIndex)
 }
 // For the TextLine class: Removes a single character from the line.  Also adjust attribute code
 // indexes if necessary.
+//
+// Return value: Whether or not the removed character was UTF-8 (boolean)
 function TextLine_removeCharAt(pCharIdx)
 {
 	if (typeof(pCharIdx) !== "number" || pCharIdx < 0 || pCharIdx >= this.text.length)
-		return;
+		return false;
 
 	this.text = this.text.substr(0, pCharIdx) + this.text.substr(pCharIdx+1);
 	// For attribute indexes to the right of pCharIdx, move them left by 1.
@@ -1870,7 +1915,8 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtR
 	// Help keys and slash commands
 	printf("\x01n\x01g%-44s  %-33s\r\n", "Help keys", "Slash commands (on blank line)");
 	printf("\x01k\x01h%-44s  %-33s\r\n", charStr(HORIZONTAL_SINGLE, 9), charStr(HORIZONTAL_SINGLE, 30));
-	displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
+	//displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
+	displayCmdKeyFormattedDouble("Ctrl-G", "Input graphic character", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save", true);
 	displayCmdKeyFormattedDouble("", "", "/Q", "Quote message", true);
 	if (pTxtReplacments)
@@ -3812,8 +3858,39 @@ function getUserKey(pMode, pCfgObj)
 	else if (typeof(pCfgObj) == "object" && typeof(pCfgObj.userInputTimeout) === "number")
 		inputTimeoutMS = pCfgObj.inputTimeoutMS;
 
+	// If K_UTF8 is defined, then add it to getKeymode.  K_UTF8 specifies not to
+	// translate UTF-8 to CP437.
+	var inputMode = pMode;
+	if (g_K_UTF8Exists)
+		inputMode |= K_UTF8;
+
 	// Input a key from the user
-	userKey = console.inkey(pMode, inputTimeoutMS);
+	userKey = console.inkey(inputMode, inputTimeoutMS);
+
+	// Get the character code (including the 2nd byte from the user's console), generate
+	// the character code, then get the character from the character code.
+	// Credit to Deuce for this code (this was seen in fseditor.js)
+	if (gUserConsoleSupportsUTF8) // In fseditor, if the print mode contains P_UTF8
+	{
+		var ab = ascii(userKey);
+		var val;
+		var bit;
+		var tmp;
+		// Check if the 128th bit is set (hex 80)
+		if (Boolean(ascii(userKey[0]) & 0x80))
+		{
+			for (bit = 7; ab & (1 << bit); --bit)
+				val = ab & ((1 << bit) - 1);
+
+			for (bit = 6; bit > 3 && (ab & (1<<bit)); --bit)
+			{
+				tmp = console.getbyte(inputTimeoutMS);
+				val = (val << 6) | (tmp & 0x3f);
+			}
+
+			userKey = String.fromCharCode(val);
+		}
+	}
 
 	return userKey;
 }
@@ -4315,11 +4392,6 @@ function consolePauseWithoutText()
 function getKeyWithESCChars(pGetKeyMode, pCfgObj)
 {
 	var getKeyMode = (typeof(pGetKeyMode) == "number" ? pGetKeyMode : K_NONE);
-	// If the user's terminal supports UTF-8, then allow UTF-8 input and convert
-	// it to cp437 (this is necessary because Synchronet's internal strings aren't
-	// always UTF-8)
-	if (gUserConsoleSupportsUTF8 && g_K_CP437Exists)
-		getKeyMode |= K_CP437;
 	var userInput = getUserKey(getKeyMode, pCfgObj);
 	if (userInput == KEY_ESC)
 	{
@@ -4977,33 +5049,6 @@ function commonPrefixUtil(pStr1, pStr2)
 	return result;
 }
 
-/*
-function commonPrefix(pStringArr, pLastPrefixChar, lastCharShouldBeSpace)
-{
-	if (pStringArr.length == 0)
-		return "";
-
-	var prefix = pStringArr[0];
-	for (var i = 1; i < pStringArr.length; ++i)
-		prefix = commonPrefixUtil(prefix, pStringArr[i]);
-
-	if (typeof(pLastPrefixChar) == "string")
-	{
-		var idx = prefix.lastIndexOf(pLastPrefixChar);
-		if (idx > -1)
-			prefix = prefix.substr(0, idx+1);
-	}
-
-	if ((prefix.length > 0) && lastCharShouldBeSpace)
-	{
-		if (prefix.charAt(prefix.length-1) != " ")
-			prefix += " ";
-	}
-
-	return prefix;
-}
-*/
-
 function commonEditLinesPrefix(pEditLines, pStartIdx, pEndIdx, pLastPrefixChar, lastCharShouldBeSpace)
 {
 	if (pEditLines.length == 0)
@@ -5126,6 +5171,438 @@ function attrCodeStr(pAttrCodeCharStr)
 	return str;
 }
 
+// Prints a character, taking into account printing with UTF8 (with the P_UTF8 mode bit)
+//
+// Parameters:
+//  pChar: The character to print
+//  pmode: The mode bits (will be checked to see if P_UTF8 is specified)
+function printCharConsideringUTF8(pChar, pmode)
+{
+	// Credit to Deuce for this code (this was seen in fseditor.js)
+	if (pmode & P_UTF8)
+	{
+		var encoded = utf8_encode(pChar.charCodeAt(0));
+		for (var i = 0; i < encoded.length; ++i)
+			console.putbyte(ascii(encoded[i]));
+	}
+	else
+		console.putbyte(ascii(pChar));
+}
+
+// Prints a string, taking into account printing with UTF8 (with the P_UTF8 mode bit),
+// as well as Synchronet attribute codes in the string.
+//
+// Parameters:
+//  pStr: The string to print
+//  pmode: The mode bits (will be checked to see if P_UTF8 is specified)
+function printStrConsideringUTF8(pStr, pmode)
+{
+	// Look for Synchronet attributes in the string.  For any part of the string
+	// that's not Synchronet attributes, use printCharConsideringUTF8() to print
+	// each character, and print the Synchronet attributes with console.print().
+	var theStr = pStr;
+	var attrMatch = theStr.match(/(\x01[krgybmcwhifn\-_01234567])+/i);
+	while (Array.isArray(attrMatch) && attrMatch.length > 0)
+	{
+		var stringPart = theStr.substr(0, attrMatch.index);
+		for (var i = 0; i < stringPart.length; ++i)
+			printCharConsideringUTF8(stringPart[i], pmode);
+		console.print(attrMatch[0], pmode);
+		// Remove the (leading) part of the string that we've just printed
+		theStr = theStr.substr(attrMatch.index + attrMatch[0].length);
+		attrMatch = theStr.match(/(\x01[krgybmcwhifn\-_01234567])+/i);
+	}
+	// If there's still some text left in the string, print it.
+	if (theStr.length > 0)
+	{
+		for (var i = 0; i < theStr.length; ++i)
+			printCharConsideringUTF8(theStr[i], pmode);
+	}
+}
+
+// Translatees ASCII character codes (numeric) 128-255 to UTF-8 character codes (numeric)
+function CP437CodeToUTF8Code(pCP437Code)
+{
+	// https://www.compart.com/en/unicode/charsets/IBM-Symbols
+	var UTF8Code = 0;
+	switch(pCP437Code)
+	{
+		case 128:
+			UTF8Code = 0xC7;
+			break;
+		case 129: // https://www.compart.com/en/unicode/U+00FC
+			UTF8Code = 0xFC;
+			break;
+		case 130:
+			UTF8Code = 0xE9;
+			break;
+		case 131: // https://www.compart.com/en/unicode/U+00E2
+			UTF8Code = 0xE2;
+			break;
+		case 132:
+			UTF8Code = 0xE4;
+			break;
+		case 133:
+			UTF8Code = 0xE0;
+			break;
+		case 134:
+			UTF8Code = 0xE5;
+			break;
+		case 135:
+			UTF8Code = 0xE7;
+			break;
+		case 136:
+			UTF8Code = 0xEA;
+			break;
+		case 137:
+			UTF8Code = 0xEB;
+			break;
+		case 138:
+			UTF8Code = 0xE8;
+			break;
+		case 139:
+			UTF8Code = 0xEF;
+			break;
+		case 140:
+			UTF8Code = 0xEE;
+			break;
+		case 141:
+			UTF8Code = 0xEC;
+			break;
+		case 142:
+			UTF8Code = 0xC4;
+			break;
+		case 143:
+			UTF8Code = 0xC5;
+			break;
+		case 144:
+			UTF8Code = 0xC9;
+			break;
+		case 145:
+			UTF8Code = 0xE6;
+			break;
+		case 146:
+			UTF8Code = 0xC6;
+			break;
+		case 147:
+			UTF8Code = 0xF4;
+			break;
+		case 148:
+			UTF8Code = 0xF6;
+			break;
+		case 149:
+			UTF8Code = 0xF2;
+			break;
+		case 150:
+			UTF8Code = 0xFB;
+			break;
+		case 151:
+			UTF8Code = 0xF9;
+			break;
+		case 152:
+			UTF8Code = 0xFF;
+			break;
+		case 153:
+			UTF8Code = 0xD6;
+			break;
+		case 154:
+			UTF8Code = 0xDC;
+			break;
+		case 155:
+			UTF8Code = 0xA2;
+			break;
+		case 156:
+			UTF8Code = 0xA3;
+			break;
+		case 157:
+			UTF8Code = 0xA5;
+			break;
+		case 158:
+			UTF8Code = 0x20A7;
+			break;
+		case 159:
+			UTF8Code = 0x192;
+			break;
+		case 160:
+			UTF8Code = 0xE1;
+			break;
+		case 161:
+			UTF8Code = 0xED;
+			break;
+		case 162:
+			UTF8Code = 0xF3;
+			break;
+		case 163:
+			UTF8Code = 0xFA;
+			break;
+		case 164:
+			UTF8Code = 0xF1;
+			break;
+		case 165:
+			UTF8Code = 0xD1;
+			break;
+		case 166:
+			UTF8Code = 0xAA;
+			break;
+		case 167:
+			UTF8Code = 0xBA;
+			break;
+		case 168:
+			UTF8Code = 0xBF;
+			break;
+		// https://www.w3.org/TR/xml-entity-names/025.html
+		case 169:
+			UTF8Code = 0x250E;
+			break;
+		case 170:
+			UTF8Code = 0x2513;
+			break;
+		case 176:
+			UTF8Code = 0x2591;
+			break;
+		case 177:
+			UTF8Code = 0x2592;
+			break;
+		case 178:
+			UTF8Code = 0x2593;
+			break;
+		case 179:
+			UTF8Code = 0x2502;
+			break;
+		case 180:
+			UTF8Code = 0x2538;
+			break;
+		case 181:
+			UTF8Code = 0x2561;
+			break;
+		case 182:
+			UTF8Code = 0x2562;
+			break;
+		case 183:
+			UTF8Code = 0x2556;
+			break;
+		case 184:
+			UTF8Code = 0x2555;
+			break;
+		case 185:
+			UTF8Code = 0x2563;
+			break;
+		case 186:
+			UTF8Code = 0x2551;
+			break;
+		case 187:
+			UTF8Code = 0x2557;
+			break;
+		case 188:
+			UTF8Code = 0x255D;
+			break;
+		case 189:
+			UTF8Code = 0x255C;
+			break;
+		case 190:
+			UTF8Code = 0x255B;
+			break;
+		case 191:
+			UTF8Code = 0x2510;
+			break;
+		case 192:
+			UTF8Code = 0x2514;
+			break;
+		case 193:
+			UTF8Code = 0x2534;
+			break;
+		case 194:
+			UTF8Code = 0x2530;
+			break;
+		case 195:
+			UTF8Code = 0x2520;
+			break;
+		case 196:
+			UTF8Code = 0x2500;
+			break;
+		case 197:
+			UTF8Code = 0x2542;
+			break;
+		case 198:
+			UTF8Code = 0x255E;
+			break;
+		case 199:
+			UTF8Code = 0x255F;
+			break;
+		case 200:
+			UTF8Code = 0x255A;
+			break;
+		case 201:
+			UTF8Code = 0x2554;
+			break;
+		case 202:
+			UTF8Code = 0x2569;
+			break;
+		case 203:
+			UTF8Code = 0x2566;
+			break;
+		case 204:
+			UTF8Code = 0x2560;
+			break;
+		case 205:
+			UTF8Code = 0x2550;
+			break;
+		case 206:
+			UTF8Code = 0x256C;
+			break;
+		case 207:
+			UTF8Code = 0x2567;
+			break;
+		case 208:
+			UTF8Code = 0x2568;
+			break;
+		case 209:
+			UTF8Code = 0x2564;
+			break;
+		case 210:
+			UTF8Code = 0x2565;
+			break;
+		case 211:
+			UTF8Code = 0x2559;
+			break;
+		case 212:
+			UTF8Code = 0x2558;
+			break;
+		case 213:
+			UTF8Code = 0x2552;
+			break;
+		case 214:
+			UTF8Code = 0x2553;
+			break;
+		case 215:
+			UTF8Code = 0x256B;
+			break;
+		case 216:
+			UTF8Code = 0x256A;
+			break;
+		case 217:
+			UTF8Code = 0x2518;
+			break;
+		case 218:
+			UTF8Code = 0x250C;
+			break;
+		case 219:
+			UTF8Code = 0x2588;
+			break;
+		case 220:
+			UTF8Code = 0x2584;
+			break;
+		case 221:
+			UTF8Code = 0x258C;
+			break;
+		case 222:
+			UTF8Code = 0x2590;
+			break;
+		case 223:
+			UTF8Code = 0x2580;
+			break;
+		case 224:
+			UTF8Code = 0x3B1;
+			break;
+		case 225:
+			UTF8Code = 0x3B2;
+			break;
+		case 226:
+			UTF8Code = 0x393;
+			break;
+		case 227:
+			UTF8Code = 0x3C0;
+			break;
+		case 228:
+			UTF8Code = 0x3A3;
+			break;
+		case 229:
+			UTF8Code = 0x3C3;
+			break;
+		case 230:
+			UTF8Code = 0xB5;
+			break;
+		case 231:
+			UTF8Code = 0x3C4;
+			break;
+		case 232:
+			UTF8Code = 0x3A6;
+			break;
+		case 233:
+			UTF8Code = 0x398;
+			break;
+		case 234:
+			UTF8Code = 0x3A9;
+			break;
+		case 235:
+			UTF8Code = 0x3B4;
+			break;
+		case 236:
+			UTF8Code = 0x221E;
+			break;
+		case 237:
+			UTF8Code = 0x3C6;
+			break;
+		case 238:
+			UTF8Code = 0x3B5;
+			break;
+		case 239:
+			UTF8Code = 0x2229;
+			break;
+		case 240:
+			UTF8Code = 0x2261;
+			break;
+		case 241:
+			UTF8Code = 0xB1;
+			break;
+		case 242:
+			UTF8Code = 0x2265;
+			break;
+		case 243:
+			UTF8Code = 0x2264;
+			break;
+		case 244:
+			UTF8Code = 0x2320;
+			break;
+		case 245:
+			UTF8Code = 0x2321;
+			break;
+		case 246:
+			UTF8Code = 0xF7;
+			break;
+		case 247:
+			UTF8Code = 0x2248;
+			break;
+		case 248:
+			UTF8Code = 0xB0;
+			break;
+		case 249:
+			UTF8Code = 0x2219;
+			break;
+		case 250:
+			UTF8Code = 0xFB;
+			break;
+		case 251:
+			UTF8Code = 0x221A;
+			break;
+		case 252:
+			UTF8Code = 0x207F;
+			break;
+		case 253:
+			UTF8Code = 0xB2;
+			break;
+		case 254:
+			UTF8Code = 0x25A0;
+			break;
+		case 255:
+			UTF8Code = 0xA0;
+			break;
+		default:
+			UTF8Code = 0;
+	}
+	return String.fromCharCode(UTF8Code);
+}
+
 // This function displays debug text at a given location on the screen, then
 // moves the cursor back to a given location.
 //
@@ -5136,13 +5613,15 @@ function attrCodeStr(pAttrCodeCharStr)
 //  pOriginalPos: An object with x and y properties containing the original cursor position
 //  pClearDebugLineFirst: Whether or not to clear the debug line before writing the text
 //  pPauseAfter: Can be a boolean (whether or not to pause after displaying the text) or a number (number of milliseconds to wait)
-function displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLineFirst, pPauseAfter)
+//  pPrintMode: Optional print mode. Defaults to P_NONE.
+function displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLineFirst, pPauseAfter, pPrintMode)
 {
+	var printMode = (typeof(pPrintMode) === "number" ? pPrintMode : P_NONE);
 	console.gotoxy(pDebugX, pDebugY);
 	if (pClearDebugLineFirst)
 		console.clearline();
 	// Output the text
-	console.print(pText);
+	console.print(pText, printMode);
 	if (typeof(pPauseAfter) === "boolean" && pPauseAfter)
 		console.pause();
 	else if (typeof(pPauseAfter) === "number" && pPauseAfter > 0)

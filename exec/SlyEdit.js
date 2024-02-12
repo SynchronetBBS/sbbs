@@ -48,12 +48,14 @@
  * 2024-02-07 Eric Oulashin     Version 1.88
  *                              Support for entering UTF-8/Unicode characters; using K_CP437 to
  *                              convert to CP437
+ * 2024-02-11 Eric Oulashin     1.88b
+ *                              Previous change reverted; "Real" UTF-8 support implemented for
+ *                              text input.
+ *                              New feature: Entering a graphic char with Ctrl-G (Ctrl-G
+ *                              was previously the key for general help, which wasn't much)
  */
 
 "use strict";
-
-// TODO: UTF-8 support in FSeditor improved (for Keyop for typing a pound currency sign):
-// https://gitlab.synchro.net/main/sbbs/-/commit/66ed218f8a1032c16a674b62
 
 /* Command-line arguments:
  1 (argv[0]): Filename to read/edit
@@ -141,8 +143,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.88";
-var EDITOR_VER_DATE = "2024-02-07";
+var EDITOR_VERSION = "1.88b";
+var EDITOR_VER_DATE = "2024-02-11";
 
 
 // Program variables
@@ -688,37 +690,46 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 	var crossPosted = false;
 	if (gCrossPostMsgSubs.numMsgGrps() > 0)
 	{
+		// Read the user's signature, in case they have one
+		var msgSigInfo = readUserSigFile();
+
 		// If the will cross-post into other sub-boards, then create a string containing
 		// the user's entire message.
 		var msgContents = "";
 		if (!postingOnlyInOriginalSubBoard)
 		{
-			// Append each line to msgContents.  Then,
-			//  - If using Synchronet 3.15 or higher:
-			//    Depending on whether the line has a hard newline
-			//    or a soft newline, append a "\r\n" or a " \n", as
-			//    per Synchronet's standard as of 3.15.
-			//  - Otherwise (Synchronet 3.14 and below):
-			//    Just append a "\r\n" to the line
-			if (system.version_num >= 31500)
+			// If using UTF-8, then build msgContents in a way that it will look as it should.
+			if (gPrintMode & P_UTF8)
 			{
-				var useHardNewline = false;
 				for (var i = 0; i < gEditLines.length; ++i)
 				{
+					var msgTxtLine = gEditLines[i].getText(true);
+					for (var txtLineI = 0; txtLineI < msgTxtLine.length; ++txtLineI)
+					{
+						// Credit to Deuce for this code (this was seen in fseditor.js)
+						var encoded = utf8_encode(msgTxtLine[txtLineI].charCodeAt(0));
+						for (var encodedI = 0; encodedI < encoded.length; ++encodedI)
+							msgContents += encoded[encodedI];
+					}
 					// Use a hard newline if the current edit line has one or if this is
 					// the last line of the message.
-					useHardNewline = (gEditLines[i].hardNewlineEnd || (i == gEditLines.length-1));
+					var useHardNewline = (gEditLines[i].hardNewlineEnd || (i == gEditLines.length-1));
+					msgContents += (useHardNewline ? "\r\n" : " \n");
+				}
+			}
+			else
+			{
+				// Not using UTF-8. Build msgContents directly from the message lines.
+				for (var i = 0; i < gEditLines.length; ++i)
+				{
+					var msgTxtLine = gEditLines[i].getText(true);
+					// Use a hard newline if the current edit line has one or if this is
+					// the last line of the message.
+					var useHardNewline = (gEditLines[i].hardNewlineEnd || (i == gEditLines.length-1));
 					msgContents += gEditLines[i].getText(true) + (useHardNewline ? "\r\n" : " \n");
 				}
 			}
-			else // Synchronet 3.14 and below
-			{
-				for (var i = 0; i < gEditLines.length; ++i)
-					msgContents += gEditLines[i].getText(true) + "\r\n";
-			}
 
-			// Read the user's signature, in case they have one
-			var msgSigInfo = readUserSigFile();
 			// If the user has not chosen to auto-sign messages, then also append their
 			// signature to the message now.
 			if (!gUserSettings.autoSignMessages)
@@ -877,14 +888,16 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 		}
 	}
 	if (saveMsgFile)
-		saveMessageToFile();
+		saveMessageToFile(); // Save the message for being posted by Synchronet
 }
 
+// Saves the message to the file.  If no command-line arguments were passed to SlyEdit, then the
+// filename will be INPUT.MSG in the system's temporary directory; otherwise, the first command-line
+// argument will be used.
 function saveMessageToFile()
 {
-	// Open the output filename.  If no arguments were passed, then use
-	// INPUT.MSG in the node's temporary directory; otherwise, use the
-	// first program argument.
+	// If no command-line arguments were passed, then use INPUT.MSG in the system temporary directory; otherwise,
+	// use the first command-line argument.
 	var outputFilename = (argc == 0 ? system.temp_dir + "INPUT.MSG" : argv[0]);
 	var msgFile = new File(outputFilename);
 	if (msgFile.open("w"))
@@ -898,13 +911,28 @@ function saveMessageToFile()
 		// Write each line of the message to the file.  Note: The
 		// "Expand Line Feeds to CRLF" option should be turned on
 		// in SCFG for this to work properly for all platforms.
+		var lastLineIdx = gEditLines.length - 1;
 		for (var i = 0; i < gEditLines.length; ++i)
 		{
 			//msgFile.writeln(gEditLines[i].getText(gConfigSettings.allowColorSelection));
 			var msgTxtLine = gEditLines[i].getText(gConfigSettings.allowColorSelection);
 			if (msgHasAttrCodes && gConfigSettings.saveColorsAsANSI)
 				msgTxtLine = syncAttrCodesToANSI(msgTxtLine);
-			msgFile.writeln(msgTxtLine);
+			// If UTF-8 is enabled, then write each character propertly.  Otherwise, write the entire
+			// line to the file with writeln()
+			if (gPrintMode & P_UTF8)
+			{
+				for (var txtLineI = 0; txtLineI < msgTxtLine.length; ++txtLineI)
+				{
+					// Credit to Deuce for this code (this was seen in fseditor.js)
+					var encoded = utf8_encode(msgTxtLine[txtLineI].charCodeAt(0));
+					for (var encodedI = 0; encodedI < encoded.length; ++encodedI)
+						msgFile.writeBin(ascii(encoded[encodedI]), 1);
+				}
+				msgFile.writeln(""); // Write an end-line
+			}
+			else
+				msgFile.writeln(msgTxtLine);
 		}
 		// Auto-sign the message if the user's setting to do so is enabled
 		if (gUserSettings.autoSignMessages)
@@ -1072,7 +1100,8 @@ function doEditLoop()
 	const ABORT_KEY                 = CTRL_A;
 	const CROSSPOST_KEY             = CTRL_C;
 	const DELETE_LINE_KEY           = CTRL_D;
-	const GENERAL_HELP_KEY          = CTRL_G;
+	//const GENERAL_HELP_KEY          = CTRL_G;
+	const GRAPHICS_CHAR_KEY         = CTRL_G;
 	const TOGGLE_INSERT_KEY         = CTRL_I;
 	const CHANGE_COLOR_KEY          = CTRL_K;
 	const CMDLIST_HELP_KEY          = CTRL_L;
@@ -1113,6 +1142,15 @@ function doEditLoop()
 	var continueOn = true;
 	while (continueOn)
 	{
+		/*
+		// Temporary
+		userInput = getUserKey(P_NONE);
+		//console.print(userInput, gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
+		console.print(userInput, P_UTF8);
+		console.crlf();
+		console.pause();
+		// End Temporary
+		*/
 		userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN|K_NUL, gConfigSettings);
 
 		// If the cursor is at the end of the last line and the user
@@ -1183,12 +1221,26 @@ function doEditLoop()
 				               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
 				               displayEditLines);
 				break;
+			/*
 			case GENERAL_HELP_KEY:
 				displayGeneralHelp(true, true, true);
 				clearEditAreaBuffer();
 				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
 				               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
 				               displayEditLines);
+				break;
+			*/
+			case GRAPHICS_CHAR_KEY:
+				var graphicChar = promptForGraphicsChar(curpos);
+				fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+				console.gotoxy(curpos);
+				if (graphicChar != null && typeof(graphicChar) === "string" && graphicChar.length > 0)
+				{
+					var retObject = doPrintableChar(graphicChar, curpos, currentWordLength);
+					curpos.x = retObject.x;
+					curpos.y = retObject.y;
+					currentWordLength = retObject.currentWordLength;
+				}
 				break;
 			case QUOTE_KEY:
 				// Let the user choose & insert quote lines into the message.
@@ -1884,10 +1936,6 @@ function doBackspace(pCurpos, pCurrentWordLength)
 		currentWordLength: pCurrentWordLength
 	};
 
-	// If the user's terminal is UTF-8 capable, we'll want to print as UTF-8.
-	//var printMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
-	var printMode = P_NONE;
-
 	var didBackspace = false;
 	// For later, store a backup of the current edit line index and
 	// cursor position.
@@ -1904,19 +1952,33 @@ function doBackspace(pCurpos, pCurrentWordLength)
 	{
 		if (gTextLineIndex > 0)
 		{
+			/*
+			var printMode = gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE;
 			console.print(BACKSPACE, printMode);
 			console.print(" ", printMode);
-			--retObj.x;
-			console.gotoxy(retObj.x, retObj.y);
+			//console.print(BACKSPACE);
+			//console.print(" ");
+			*/
 
 			// Remove the previous character from the text line
 			var textLineLength = gEditLines[gEditLinesIndex].screenLength();
 			if (textLineLength > 0)
 			{
+				var printMode = gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE;
+				console.print(BACKSPACE, printMode);
+				console.print(" ", printMode);
+				//console.print(BACKSPACE);
+				//console.print(" ");
+
+				// TODO: After backspacing over a UTF-8 character in the middle of a text line, we can't backspace anymore
+
 				gEditLines[gEditLinesIndex].removeCharAt(--gTextLineIndex);
 				didBackspace = true;
 				//--gTextLineIndex;
 			}
+
+			--retObj.x;
+			console.gotoxy(retObj.x, retObj.y);
 		}
 	}
 	else
@@ -2231,13 +2293,13 @@ function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
 	// fill it with spaces up to gTextLineIndex.
 	if (gTextLineIndex > gEditLines[gEditLinesIndex].screenLength())
 	{
-		var numSpaces = gTextLineIndex - gEditLines[gEditLinesIndex].length();
+		var numSpaces = gTextLineIndex - gEditLines[gEditLinesIndex].screenLength();
 		if (numSpaces > 0)
 			gEditLines[gEditLinesIndex].text += format("%" + numSpaces + "s", "");
 		gEditLines[gEditLinesIndex].text += pUserInput;
 	}
 	// If gTextLineIndex is at the end of the line, then just append the char.
-	else if (gTextLineIndex == gEditLines[gEditLinesIndex].length())
+	else if (gTextLineIndex == gEditLines[gEditLinesIndex].screenLength())
 		gEditLines[gEditLinesIndex].text += pUserInput;
 	else
 	{
@@ -2360,10 +2422,7 @@ function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
 			displayEditLines(retObj.y, gEditLinesIndex, retObj.y, false, true);
 		else
 		{
-			// If the user's terminal is UTF-8 capable, we'll want to print as UTF-8.
-			//var printMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
-			var printMode = P_NONE;
-			console.print(pUserInput, printMode);
+			printStrConsideringUTF8(pUserInput, gPrintMode);
 			placeCursorAtEnd = false; // Since we just output the character
 		}
 
@@ -3314,10 +3373,6 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 	// pEndScreenRow or gEditBottom.
 	var endScreenRow = (pEndScreenRow != null ? pEndScreenRow : gEditBottom);
 
-	// If the user's terminal is UTF-8 capable, we'll want to print the message text as UTF-8.
-	//var printMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
-	var printMode = P_NONE;
-
 	// Apply anny attribute codes until the given start array index
 	var currentAttrCodes = getAllEditLineAttrsUntilLineIdx(pArrayIndex);
 	console.print("\x01n" + currentAttrCodes);
@@ -3326,12 +3381,11 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 	var arrayIndex = pArrayIndex;
 	while ((screenLine <= endScreenRow) && (arrayIndex < gEditLines.length))
 	{
-		// Note: gEditAreaBuffer is also used in clearMsgAreaToBottom().
 		var textLine = gEditLines[arrayIndex].getText(true);
 		if ((gEditAreaBuffer[screenLine] != textLine) || pIgnoreEditAreaBuffer)
 		{
 			// Make sure the text line doesn't exceed the edit width (unlikely)
-			if (console.strlen(textLine, printMode) > gEditWidth)
+			if (console.strlen(textLine) > gEditWidth)
 				textLine = shortenStrWithAttrCodes(textLine, gEditWidth, true);
 			// If the line is a quote line, then apply the quote line color (and strip other
 			// attribute codes from the line)
@@ -3342,7 +3396,10 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 			else if (arrayIndex > 0 && isQuoteLine(gEditLines, arrayIndex-1))
 				textLine = "\x01n" + textLine;
 			console.gotoxy(gEditLeft, screenLine);
-			console.print(textLine, printMode);
+			// TODO: When using printStrConsideringUTF8(), the line is printed 1 character
+			// at a time, and attribute codes aren't being interpreted as they would with
+			// console.print()
+			gEditLines[arrayIndex].print(true, gEditWidth, true);
 			gEditAreaBuffer[screenLine] = textLine;
 			// Clear to the end of the line, to erase any previously written text.
 			console.cleartoeol("\x01n");
@@ -3353,7 +3410,7 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 				normalAttrIdx = currentAttrCodes.lastIndexOf("\x01N");
 			if (normalAttrIdx > -1)
 				currentAttrCodes = currentAttrCodes.substr(normalAttrIdx);
-			console.print(currentAttrCodes);
+			console.print(currentAttrCodes, gPrintMode);
 		}
 
 		++screenLine;
@@ -4386,9 +4443,8 @@ function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
 		return retObj;
 	}
 
-	// If the user's terminal is UTF-8 capable, we'll want to count the text as UTF-8.
-	//var textMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
-	var textMode = P_NONE;
+	// If K_UTF8 exists, then SlyEdit supports UTF-8 strings
+	var textMode = (g_K_UTF8Exists && gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
 
 	// Ensure the word doesn't have any whitespace and isn't just whitespace
 	currentWord = trimSpaces(currentWord, true, true, true);
@@ -4446,11 +4502,12 @@ function spellCheckWordInLine(pDictionaries, pEditLineIdx, pWordArray, pWordIdx,
 				var highlightText = gEditLines[pEditLineIdx].text.substr(wordIdxInLine, currentWord.length);
 				//console.gotoxy(retObj.x, retObj.y); // Updated line position
 				console.gotoxy(oldLineX, retObj.y);   // Old line position
-				console.print("\x01n\x01k\x01" + "4" + highlightText);
+				console.print("\x01n\x01k\x014");
+				printStrConsideringUTF8(highlightText, gPrintMode);
 				mswait(SPELL_CHECK_PAUSE_MS);
 				//console.gotoxy(retObj.x, retObj.y); // Updated line position
 				console.gotoxy(oldLineX, retObj.y);   // Old line position
-				console.print(gEditLines[pEditLineIdx].substr(true, wordIdxInLine, currentWord.length));
+				printStrConsideringUTF8(gEditLines[pEditLineIdx].substr(true, wordIdxInLine, currentWord.length), gPrintMode);
 				retObj.x = wordIdxInLine + console.strlen(pWordArray[pWordIdx], textMode) + 1;
 				// Prompt the user for a corrected word.  If they enter
 				// a new word, then fix it in the text line.
@@ -4558,9 +4615,8 @@ function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
 
 	var originalCurpos = pCurpos;
 
-	// If the user's terminal is UTF-8 capable, we'll want to count the text as UTF-8.
-	//var textMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
-	var textMode = P_NONE;
+	// If K_UTF8 exists, then SlyEdit supports UTF-8 strings
+	var textMode = (g_K_UTF8Exists && gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
 
 	// Create and display a text area with the misspelled word as the title
 	// and get user input for the corrected word
@@ -4607,7 +4663,7 @@ function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
 	var continueOn = true;
 	while(continueOn)
 	{
-		// Note: getKeyWithESCChars() accounts for UTF-8
+		// Note: If K_UTF8 is available, getKeyWithESCChars() uses K_UTF8 to input UTF-8 text
 		var userInputChar = getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
 		switch (userInputChar)
 		{
@@ -5455,10 +5511,6 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 	//if (length > (gEditLines[pIndex].text.length - start))
 	//	length = gEditLines[pIndex].text.length - start;
 
-	// If the user's terminal is UTF-8 capable, we'll want to count the text as UTF-8.
-	//var textMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
-	var textMode = P_NONE;
-
 	var lengthWritten = 0;
 	if (useColors)
 	{
@@ -5467,8 +5519,8 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 		//var lineText = substrWithAttrCodes(gEditLines[pIndex].getText(true), start, lineLengthToGet);
 		// The line's substr() will include the necessary attribute codes
 		var lineText = gEditLines[pIndex].substr(true, start, lineLengthToGet);
-		lengthWritten = console.strlen(lineText, textMode);
-		console.print(lineText);
+		lengthWritten = console.strlen(lineText, str_is_ascii(lineText) ? P_NONE : P_UTF8);
+		printStrConsideringUTF8(lineText, gPrintMode);
 	}
 	else
 	{
@@ -5480,11 +5532,11 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 			// Just print the entire line.
 			lengthWritten = gEditLines[pIndex].text.length;
 			if (length <= 0)
-				console.print(gEditLines[pIndex].text, textMode);
+				gEditLines[pIndex].print(false);
 			else
 			{
 				var textToWrite = gEditLines[pIndex].text.substr(start, length);
-				console.print(textToWrite, textMode);
+				printStrConsideringUTF8(textToWrite, gPrintMode);
 				lengthWritten = textToWrite.length;
 			}
 		}
@@ -5496,8 +5548,8 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 				textToWrite = gEditLines[pIndex].text.substr(start);
 			else
 				textToWrite = gEditLines[pIndex].text.substr(start, length);
-			console.print(textToWrite, textMode);
-			lengthWritten = console.strlen(textToWrite, textMode);
+			printStrConsideringUTF8(textToWrite, gPrintMode);
+			lengthWritten = console.strlen(textToWrite, str_is_ascii(textToWrite) ? P_NONE :P_UTF8);
 		}
 	}
 	return lengthWritten;
@@ -6347,4 +6399,155 @@ function getAllEditLineAttrs(pEndArrayIdx, pLineEditIdx)
 			attributesStr = attributesStr.substr(normalAttrIdx/*+2*/);
 	}
 	return attributesStr;
+}
+
+// Prompts the user to enter a graphical character (codes 129-155).
+// Credit to Deuce - Taken from FSEditor (get_graphic()) and modified a bit.
+//
+// Parameters:
+//  pCurPos: The current cursor position
+//
+//  Return value: A graphic character if one is selected, or null if none was selected
+function promptForGraphicsChar(pCurPos)
+{
+	console.gotoxy(1, console.screen_rows);
+	console.cleartoeol("\x01n");
+	console.gotoxy(1, console.screen_rows);
+	console.putmsg("Enter Graphics Code (\x01H?\x01N for a list, \x01HCTRL-C\x01N to cancel): ");
+	console.attributes = 31;
+	console.write(format("%3.3s",""));
+	var inp = ""; // The uer's inputted string
+	console.gotoxy(55 + inp.length, console.screen_rows);
+	var continueOn = true;
+	while (continueOn)
+	{
+		var ch = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
+		switch(ch)
+		{
+			case '':
+				break;
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				switch(inp.length)
+				{
+					case 0:
+						if (ch != '1' && ch != '2')
+						{
+							console.beep();
+							ch = '';
+						}
+						break;
+					case 1:
+						if (inp.substr(0,1) == '1' && ch < '2')
+						{
+							console.beep();
+							ch = '';
+						}
+						if (inp.substr(0,1) == '2' && ch > '5')
+						{
+							console.beep();
+							ch = '';
+						}
+						break;
+					case 2:
+						if (inp.substr(0,2) == '25' && ch > '5')
+						{
+							console.beep();
+							ch = '';
+						}
+						if (inp.substr(0,2) == '12' && ch < '8')
+						{
+							console.beep();
+							ch = '';
+						}
+						break;
+					default:
+						console.beep();
+						ch = '';
+						break;
+				}
+				console.print(ch);
+				inp += ch;
+				break;
+			case '\x08':	/* Backspace */
+				inp = inp.substr(0, inp.length-1);
+				break;
+			case '\x0d':	/* CR */
+				if (inp.length >= 3)
+				{
+					// Return the chosen graphic char here
+					console.attributes = "N";
+					var intVal = parseInt(inp);
+					if (gUserConsoleSupportsUTF8) // In fseditor, if the print mode contains P_UTF8
+						return CP437CodeToUTF8Code(intVal);
+					else
+						return ascii(intVal);
+				}
+				else if (inp.length > 0)
+				{
+					console.beep();
+					break;
+				}
+				else
+				{
+					// Abort
+					continueOn = false;
+					break;
+				}
+			case '\x03':	/* CTRL-C */
+				continueOn = false;
+				break;
+			case '?':
+				// Draws a graphics reference box then waits for a keypress.
+				var refBoxStartRow = gEditTop + 3;
+				// Blank out the edit area at the top & bottom of where the reference box will be drawn
+				for (var row = gEditTop; row <= refBoxStartRow; ++row)
+				{
+					console.gotoxy(1, row);
+					console.cleartoeol("\x01n");
+				}
+				for (var row = gEditBottom-2; row <= gEditBottom; ++row)
+				{
+					console.gotoxy(1, row);
+					console.cleartoeol("\x01n");
+				}
+
+				console.gotoxy(1, refBoxStartRow);
+				console.attributes = 7;
+				for (var x = 128; x < 256; ++x)
+				{
+					printf(" %s: %-3d", ascii(x), x);
+					if (x == 137 || x == 147 || x == 157 || x == 167 || x == 177 || x == 187 || x == 197 || x == 207 || x == 217 || x == 227 || x == 237 || x == 247)
+						console.crlf();
+				}
+				console.cleartoeol();
+				console.gotoxy(1, refBoxStartRow + 13);
+				console.print("PRESS ANY KEY TO CONTINUE", gPrintMode);
+				if (gUserConsoleSupportsUTF8)
+					console.print(" (Results may be different for a UTF-8 terminal)", gPrintMode);
+				console.cleartoeol();
+				console.getkey();
+
+				// Refresh the edit lines on the screen
+				var editLinesTopIndex = gEditLinesIndex - (pCurPos.y - gEditTop);
+				displayMessageRectangle(1, gEditTop, gEditWidth, gEditHeight, editLinesTopIndex, true);
+				
+				// Return to the char # prompt
+				console.gotoxy(55 + inp.length, console.screen_rows);
+				break;
+			default:
+				console.beep();
+				break;
+		}
+	}
+
+	console.attributes = "N";
 }
