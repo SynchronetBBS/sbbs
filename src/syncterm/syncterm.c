@@ -79,6 +79,7 @@ enum {
 #include "term.h"
 #include "uifcinit.h"
 #include "window.h"
+#include "ssh.h"
 
 char *syncterm_version = "SyncTERM 1.2b"
 
