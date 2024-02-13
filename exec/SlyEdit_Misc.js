@@ -303,7 +303,6 @@ function TextLine_print(pPrintNormalAttrFirst, pMaxLength, pClearToEOL)
 	if (printNormalAttrFirst)
 		console.attributes = "N";
 
-	// New:
 	var attrKeys = this.getSortedAttrKeysArray(); // The attribute keys are indexes for this.text
 	if (attrKeys.length > 0)
 	{
@@ -2758,7 +2757,7 @@ function quotedLineIndexes(pTextLineArray, pStartIndex, pQuotePrefix)
 function isQuoteLine(pLineArray, pLineIndex)
 {
 	//if (typeof(pLineArray) == "undefined")
-	if (typeof(pLineArray) !== "object") // Should be an array
+	if (!Array.isArray(pLineArray))
 		return false;
 	if (typeof(pLineIndex) !== "number")
 		return false;

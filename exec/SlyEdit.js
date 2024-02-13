@@ -53,9 +53,16 @@
  *                              text input.
  *                              New feature: Entering a graphic char with Ctrl-G (Ctrl-G
  *                              was previously the key for general help, which wasn't much)
+ * 2024-02-12 Eric Oulashin     1.88c
+ *                              UTF-8 support in the displayed header and when quoting text
+ *                              and when quoting message text
  */
 
 "use strict";
+
+// TODO:
+// - Header display doesn't display UTF-8 characters correctly
+// - UTF-8 characters in quote lines aren't handled correctly
 
 /* Command-line arguments:
  1 (argv[0]): Filename to read/edit
@@ -143,8 +150,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.88b";
-var EDITOR_VER_DATE = "2024-02-11";
+var EDITOR_VERSION = "1.88c";
+var EDITOR_VER_DATE = "2024-02-12";
 
 
 // Program variables
@@ -3208,6 +3215,7 @@ function createQuoteLineMenu(pQuoteTopScreenRow)
 			// Note: this refers to the quote line menu object (DDLightbarMenu)
 			menuItemObj.text = getQuoteTextLine(pQuoteLineIdx, this.size.width);
 			menuItemObj.retval = pQuoteLineIdx;
+			menuItemObj.textIsUTF8 = !str_is_ascii(menuItemObj.text);
 		}
 		return menuItemObj;
 	};
@@ -3384,22 +3392,31 @@ function displayEditLines(pStartScreenRow, pArrayIndex, pEndScreenRow, pClearRem
 		var textLine = gEditLines[arrayIndex].getText(true);
 		if ((gEditAreaBuffer[screenLine] != textLine) || pIgnoreEditAreaBuffer)
 		{
+			var lineIsQuoteLine = isQuoteLine(gEditLines, arrayIndex);
 			// Make sure the text line doesn't exceed the edit width (unlikely)
 			if (console.strlen(textLine) > gEditWidth)
 				textLine = shortenStrWithAttrCodes(textLine, gEditWidth, true);
 			// If the line is a quote line, then apply the quote line color (and strip other
 			// attribute codes from the line)
-			if (isQuoteLine(gEditLines, arrayIndex))
+			if (lineIsQuoteLine)
 				textLine = "\x01n" + gQuoteLineColor + strip_ctrl(textLine);
 			// If this line is not a quote line but the last line was, include a normal attribute at the
 			// beginning to remove the quote line color.
 			else if (arrayIndex > 0 && isQuoteLine(gEditLines, arrayIndex-1))
 				textLine = "\x01n" + textLine;
 			console.gotoxy(gEditLeft, screenLine);
-			// TODO: When using printStrConsideringUTF8(), the line is printed 1 character
-			// at a time, and attribute codes aren't being interpreted as they would with
-			// console.print()
-			gEditLines[arrayIndex].print(true, gEditWidth, true);
+			// TODO: For some reason, neither the end line print() function nor printStrConsideringUTF8()
+			// are able to correctly print UTF-8 characters for quote lines. So for quote lines, print
+			// using console.print() with a mode bit if needed.  We strip color from quote lines, so
+			// this should be fine.
+			if (lineIsQuoteLine)
+				console.print(textLine, gPrintMode);
+			else
+			{
+				gEditLines[arrayIndex].print(true, gEditWidth, true);
+				//printStrConsideringUTF8(textLine, gPrintMode);
+			}
+
 			gEditAreaBuffer[screenLine] = textLine;
 			// Clear to the end of the line, to erase any previously written text.
 			console.cleartoeol("\x01n");
@@ -3553,7 +3570,7 @@ function displayMessageRectangle(pX, pY, pWidth, pHeight, pEditLinesIndex, pClea
 			{
 				if (pWidth > actualLenWritten)
 				{
-					printf("\x01n%" + +(pWidth-actualLenWritten) + "s", "");
+					printf("%*s", pWidth-actualLenWritten, "");
 					//console.print(editColor);
 				}
 			}
@@ -5518,7 +5535,8 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 		// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
 		//var lineText = substrWithAttrCodes(gEditLines[pIndex].getText(true), start, lineLengthToGet);
 		// The line's substr() will include the necessary attribute codes
-		var lineText = gEditLines[pIndex].substr(true, start, lineLengthToGet);
+		//var lineText = gEditLines[pIndex].substr(true, start, lineLengthToGet);
+		var lineText = substrWithAttrCodes(gEditLines[pIndex].getText(true), start, lineLengthToGet);
 		lengthWritten = console.strlen(lineText, str_is_ascii(lineText) ? P_NONE : P_UTF8);
 		printStrConsideringUTF8(lineText, gPrintMode);
 	}
