@@ -49,7 +49,7 @@ cryptlib_error_message(int status, const char *msg)
 	char  str[64];
 	char  str2[64];
 	char *errmsg;
-	int   err_len;
+	int   err_len = 0;
 
 	sprintf(str, "Error %d %s\r\n\r\n", status, msg);
 	pthread_mutex_lock(&ssh_mutex);
