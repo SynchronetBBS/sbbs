@@ -6,11 +6,11 @@
 #include "ciolib.h"
 #include "conn.h"
 #include "conn_telnet.h"
+#include "cryptlib.h"
 #include "gen_defs.h"
 #include "genwrap.h"
 #include "sockwrap.h"
 #include "ssh.h"
-#include "st_crypt.h"
 #include "syncterm.h"
 #include "threadwrap.h"
 #include "uifcinit.h"
@@ -26,22 +26,6 @@ telnets_connect(struct bbslist *bbs)
 		init_uifc(true, true);
 	pthread_mutex_init(&ssh_mutex, NULL);
 
-	if (!crypt_loaded) {
-		if (!bbs->hidepopups) {
-			uifcmsg("Cannot load cryptlib - TelnetS inoperative", "`Cannot load cryptlib`\n\n"
-			    "Cannot load the file "
-#ifdef _WIN32
-			    "cl32.dll"
-#else
-			    "libcl.so"
-#endif
-			    "\nThis file is required for TLS functionality.\n\n"
-			    "The newest version is always available from:\n"
-			    "http://www.cs.auckland.ac.nz/~pgut001/cryptlib/");
-			return conn_api.terminate = -1;
-		}
-	}
-
 	ssh_sock = conn_socket_connect(bbs);
 	if (ssh_sock == INVALID_SOCKET)
 		return -1;
@@ -50,7 +34,7 @@ telnets_connect(struct bbslist *bbs)
 
 	if (!bbs->hidepopups)
 		uifc.pop("Creating Session");
-	status = cl.CreateSession(&ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSL);
+	status = cryptCreateSession(&ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSL);
 	if (cryptStatusError(status)) {
 		char str[1024];
 		sprintf(str, "Error %d creating session", status);
@@ -70,7 +54,7 @@ telnets_connect(struct bbslist *bbs)
 		uifc.pop(NULL);
 
         /* Pass socket to cryptlib */
-	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, ssh_sock);
+	status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, ssh_sock);
 	if (cryptStatusError(status)) {
 		char str[1024];
 		sprintf(str, "Error %d passing socket", status);
@@ -82,14 +66,14 @@ telnets_connect(struct bbslist *bbs)
 		return -1;
 	}
 
-	cl.SetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
+	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
 
         /* Activate the session */
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);
 		uifc.pop("Activating Session");
 	}
-	status = cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
+	status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
 	if (cryptStatusError(status)) {
 		if (!bbs->hidepopups)
 			cryptlib_error_message(status, "activating session");
@@ -106,7 +90,7 @@ telnets_connect(struct bbslist *bbs)
 		uifc.pop(NULL);
 		uifc.pop("Clearing Ownership");
 	}
-	status = cl.SetAttribute(ssh_session, CRYPT_PROPERTY_OWNER, CRYPT_UNUSED);
+	status = cryptSetAttribute(ssh_session, CRYPT_PROPERTY_OWNER, CRYPT_UNUSED);
 	if (cryptStatusError(status)) {
 		if (!bbs->hidepopups)
 			cryptlib_error_message(status, "clearing session ownership");

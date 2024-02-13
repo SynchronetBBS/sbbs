@@ -5,7 +5,9 @@
 
 #include <stdbool.h>
 
-#include "st_crypt.h"
+#include "cryptlib.h"
+void init_crypt(void);
+void exit_crypt(void);
 int ssh_connect(struct bbslist *bbs);
 int ssh_close(void);
 void ssh_input_thread(void *args);

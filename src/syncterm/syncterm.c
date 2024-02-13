@@ -72,9 +72,9 @@ enum {
 
 #include "bbslist.h"
 #include "conn.h"
+#include "cryptlib.h"
 #include "fonts.h"
 #include "scale.h"
-#include "st_crypt.h"
 #include "syncterm.h"
 #include "term.h"
 #include "uifcinit.h"
@@ -1558,9 +1558,7 @@ main(int argc, char **argv)
 
 #if !defined(WITHOUT_CRYPTLIB)
         /* Cryptlib initialization MUST be done before ciolib init */
-	if (!crypt_loaded)
-		init_crypt();
-	atexit(exit_crypt);
+        init_crypt();
 #endif
 
         /* UIFC initialization */

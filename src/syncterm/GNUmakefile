@@ -17,7 +17,7 @@ else
 endif
 
 ifeq ($(os),sunos)    # Solaris
- LDFLAGS += -lnsl -lrt -lcurses -ldl
+ LDFLAGS += -lnsl -lrt -lcurses
  CFLAGS	+=	-DNEED_CFMAKERAW
 endif
 
@@ -26,7 +26,6 @@ ifdef WITHOUT_CRYPTLIB
  CRYPT_LDFLAGS :=
  CRYPT_DEPS :=
 else
- OBJS += $(MTOBJODIR)$(DIRSEP)st_crypt$(OFILE)
  OBJS += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
  OBJS += $(MTOBJODIR)$(DIRSEP)telnets$(OFILE)
  CFLAGS	+=	$(CRYPT_CFLAGS) $(SFTP-MT_CFLAGS)
@@ -36,21 +35,12 @@ else
 endif
 
 ifeq ($(os),darwin)
- ifeq ($(shell uname -r),6.8)
-  EXTRA_LIBS += /usr/local/lib/libdl.a
- endif
  EXTRA_LIBS += -framework CoreServices
  STATIC_CRYPTLIB ?= 1
 endif
 
 ifdef STATIC_CRYPTLIB
  CFLAGS += -DSTATIC_CRYPTLIB
-endif
-
-ifeq ($(os),linux)
- ifeq ($(shell uname -m),x86_64)
-  LDFLAGS += -ldl
- endif
 endif
 
 DESTDIR	?=

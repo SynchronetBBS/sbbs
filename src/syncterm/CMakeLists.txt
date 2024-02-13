@@ -45,7 +45,6 @@ set(SOURCE
 	../smblib/crc32.c
 	../sbbs3/zmodem.c
 	../sbbs3/xmodem.c
-	st_crypt.c
 	syncterm.c
 	ooii.c
 	ooii_logons.c
