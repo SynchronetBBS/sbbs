@@ -94,9 +94,9 @@ label_do_render(NewIfcObj obj, struct NewIfc_render_context *ctx)
 		size_t c = (ctx->ypos + y) * ctx->dwidth + ctx->xpos;
 		for (size_t x = 0; x < ctx->width; x++, c++) {
 			if (y == ypos && x >= xpos && x < xpos + tsz)
-				set_vmem_cell(&ctx->vmem[c], l->api.fg_colour, l->api.bg_colour, l->text[x - xpos], l->api.font);
+				set_vmem_cell(ctx, x, y, l->api.fg_colour, l->api.bg_colour, l->text[x - xpos], l->api.font);
 			else
-				set_vmem_cell(&ctx->vmem[c], l->api.fg_colour, l->api.bg_colour, ' ', l->api.font);
+				set_vmem_cell(ctx, x, y, l->api.fg_colour, l->api.bg_colour, ' ', l->api.font);
 		}
 	}
 	return NewIfc_error_none;

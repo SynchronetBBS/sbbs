@@ -481,12 +481,12 @@ main(int argc, char **argv)
 
 	fputs("struct NewIfc_render_context {\n"
 	      "	struct vmem_cell *vmem;\n"
+	      "	int32_t  xpos;\n"
+	      "	int32_t  ypos;\n"
 	      "	uint16_t dwidth;\n"
 	      "	uint16_t dheight;\n"
 	      "	uint16_t width;\n"
 	      "	uint16_t height;\n"
-	      "	uint16_t xpos;\n"
-	      "	uint16_t ypos;\n"
 	      "};\n\n", internal_header);
 
 	fputs("struct lo_size {\n"

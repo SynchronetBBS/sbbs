@@ -25,7 +25,7 @@ newifc.c: genapi
 
 newifc.h: newifc.c
 
-newifc.o: newifc.c root_window.c label.c sizer.c sizer_cell.c
+newifc.o: newifc.c root_window.c label.c sizer.c sizer_cell.c newifc_nongen.c newifc_nongen_after.c
 
 libnewifc.a: libnewifc.a(newifc.o)
 	ranlib $@

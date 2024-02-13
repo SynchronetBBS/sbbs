@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 
 #include "newifc.h"
@@ -423,9 +424,22 @@ NI_setup_globals(NewIfcObj obj, NewIfcObj parent)
 	return NewIfc_error_none;
 }
 
+#include <stdio.h>
 static void
-set_vmem_cell(struct vmem_cell *cell, uint32_t fg, uint32_t bg, uint8_t ch, uint8_t font)
+set_vmem_cell(struct NewIfc_render_context *ctx, uint16_t x, uint16_t y, uint32_t fg, uint32_t bg, uint8_t ch, uint8_t font)
 {
+	int py = ctx->ypos + y;
+	int px = ctx->xpos + x;
+	struct vmem_cell *cell;
+
+assert(ctx->width < 100);
+assert(x < 100);
+fprintf(stderr, "Printing at %hux%hu (%hu + %hu of %hu) in %hux%hu\n", px, py, ctx->xpos, x, ctx->width, ctx->dwidth, ctx->dheight);
+	if (px < 0 || x >= ctx->width)
+		return;
+	if (py < 0 || y >= ctx->height)
+		return;
+	cell = &ctx->vmem[py * ctx->dwidth + px];
 	if (bg != NI_TRANSPARENT)
 		cell->bg = bg;
 	if (fg != NI_TRANSPARENT) {

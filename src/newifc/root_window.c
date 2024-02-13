@@ -162,12 +162,9 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 
 	// Fill background of child area
 	if (obj->fill_colour != NI_TRANSPARENT || obj->fill_character_colour != NI_TRANSPARENT) {
-		size_t c;
 		for (size_t y = 0; y < obj->child_height; y++) {
-			c = (y + ctx->ypos + obj->child_ypos) * ctx->dwidth;
 			for (size_t x = 0; x < obj->child_width; x++) {
-				set_vmem_cell(&ctx->vmem[c], obj->fill_character_colour, obj->fill_colour, obj->fill_character, obj->fill_font);
-				c++;
+				set_vmem_cell(ctx, x + obj->child_xpos, y + obj->child_ypos, obj->fill_character_colour, obj->fill_colour, obj->fill_character, obj->fill_font);
 			}
 		}
 	}
@@ -176,27 +173,20 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 		size_t c;
 		for (size_t y = 0; y < obj->layout_size.height; y++) {
 			if ((y < obj->top_pad) || (y >= (obj->layout_size.height - obj->bottom_pad))) {
-				c = (y + ctx->ypos + obj->ypos) * ctx->dwidth;
 				for (size_t x = 0; x < obj->layout_size.width; x++) {
-					set_vmem_cell(&ctx->vmem[c], obj->fg_colour, obj->bg_colour, ' ', obj->font);
+					set_vmem_cell(ctx, x, y, obj->fg_colour, obj->bg_colour, ' ', obj->font);
 					c++;
 				}
 			}
 			else {
 				if (obj->left_pad) {
-					c = (y + ctx->ypos + obj->ypos) * ctx->dwidth;
 					for (size_t x = 0; x < obj->left_pad; x++) {
-						set_vmem_cell(&ctx->vmem[c], obj->fg_colour, obj->bg_colour, ' ', obj->font);
-						c++;
+						set_vmem_cell(ctx, x, y, obj->fg_colour, obj->bg_colour, ' ', obj->font);
 					}
 				}
 				if (obj->right_pad) {
-					c = (y + ctx->ypos + obj->ypos) * ctx->dwidth;
-					c += obj->layout_size.width;
-					c -= obj->right_pad;
 					for (size_t x = 0; x < obj->right_pad; x++) {
-						set_vmem_cell(&ctx->vmem[c], obj->fg_colour, obj->bg_colour, ' ', obj->font);
-						c++;
+						set_vmem_cell(ctx, x + obj->width - obj->right_pad, y, obj->fg_colour, obj->bg_colour, ' ', obj->font);
 					}
 				}
 			}
