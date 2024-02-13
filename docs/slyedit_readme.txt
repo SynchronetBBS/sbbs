@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.88b
-                        Release date: 2024-02-11
+                              Version 1.88c
+                        Release date: 2024-02-12
 
                                   by
 
@@ -934,6 +934,8 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.88c    2024-02-12   UTF-8 support in the displayed header and when quoting
+                      text and when quoting message text
 1.88b    2024-02-11   Previous change reverted; now has "real" UTF-8 support.
                       New feature: Entering a graphic char with Ctrl-G (Ctrl-G
                       was previously the key for general help, which wasn't much)

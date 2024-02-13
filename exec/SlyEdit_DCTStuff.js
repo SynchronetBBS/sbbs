@@ -146,9 +146,10 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 				  gConfigSettings.DCTColors.TopLabelColonColor + ": " +
 				  gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
 				  gConfigSettings.DCTColors.TopFromFillColor + DOT_CHAR + 
-				  gConfigSettings.DCTColors.TopFromColor + screenText +
-				  gConfigSettings.DCTColors.TopFromFillColor);
-	fieldWidth -= (screenText.length+1);
+				  gConfigSettings.DCTColors.TopFromColor);
+	console.print(screenText, gPrintMode); // Support UTF-8 in the "From" name
+	console.print(gConfigSettings.DCTColors.TopFromFillColor);
+	fieldWidth -= (console.strlen(screenText, gPrintMode)+1);
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(DOT_CHAR);
 	console.print(gConfigSettings.DCTColors.TopInfoBracketColor + "]");
@@ -184,9 +185,10 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 				  gConfigSettings.DCTColors.TopLabelColonColor + ": " +
 				  gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
 				  gConfigSettings.DCTColors.TopToFillColor + DOT_CHAR +
-				  gConfigSettings.DCTColors.TopToColor + screenText +
-				  gConfigSettings.DCTColors.TopToFillColor);
-	fieldWidth -= (screenText.length+1);
+				  gConfigSettings.DCTColors.TopToColor);
+	console.print(screenText, gPrintMode); // Support UTF-8 in the "To" name
+	console.print(gConfigSettings.DCTColors.TopToFillColor);
+	fieldWidth -= (console.strlen(screenText, gPrintMode)+1);
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(DOT_CHAR);
 	console.print(gConfigSettings.DCTColors.TopInfoBracketColor + "]");
@@ -232,8 +234,9 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	                                   gConfigSettings.DCTColors.TopLabelColonColor + ": " +
 	                                   gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
 	                                   gConfigSettings.DCTColors.TopSubjFillColor + DOT_CHAR +
-	                                   gConfigSettings.DCTColors.TopSubjColor + screenText +
-	                                   gConfigSettings.DCTColors.TopSubjFillColor);
+	                                   gConfigSettings.DCTColors.TopSubjColor);
+	console.print(screenText, gPrintMode); // Support UTF-8 in the subject
+	console.print(gConfigSettings.DCTColors.TopSubjFillColor);
 	fieldWidth -= (screenText.length);
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(DOT_CHAR);

@@ -133,8 +133,9 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 				  gConfigSettings.iceColors.TopInfoBkgColor + " " +
 				  gConfigSettings.iceColors.TopLabelColor + "TO" +
 				  gConfigSettings.iceColors.TopLabelColonColor + ": " +
-				  gConfigSettings.iceColors.TopToColor + screenText);
-	fieldWidth -= screenText.length;
+				  gConfigSettings.iceColors.TopToColor);
+	console.print(screenText, gPrintMode); // Support UTF-8 in the "To" name
+	fieldWidth -= console.strlen(screenText, gPrintMode);
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(" ");
 
@@ -143,8 +144,9 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	screenText = gFromName.substr(0, fieldWidth);
 	console.print(" " + gConfigSettings.iceColors.TopLabelColor + "FROM" +
 	              gConfigSettings.iceColors.TopLabelColonColor + ": " +
-	              gConfigSettings.iceColors.TopFromColor + screenText);
-	fieldWidth -= screenText.length;
+	              gConfigSettings.iceColors.TopFromColor);
+				  console.print(screenText, gPrintMode); // Support UTF-8 in the "From" name
+	fieldWidth -= console.strlen(screenText, gPrintMode);
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(" ");
 	// More spaces until the time location
@@ -174,8 +176,9 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	                                           gConfigSettings.iceColors.TopInfoBkgColor + " " +
 	                                           gConfigSettings.iceColors.TopLabelColor + "SUBJECT" +
 	                                           gConfigSettings.iceColors.TopLabelColonColor + ": " +
-	                                           gConfigSettings.iceColors.TopSubjectColor + screenText);
-	fieldWidth -= screenText.length;
+	                                           gConfigSettings.iceColors.TopSubjectColor);
+	console.print(screenText, gPrintMode); // Support UTF-8 in the subject
+	fieldWidth -= console.strlen(screenText, gPrintMode);
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(" ");
 
