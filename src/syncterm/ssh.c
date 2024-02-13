@@ -49,20 +49,32 @@ cryptlib_error_message(int status, const char *msg)
 	char  str[64];
 	char  str2[64];
 	char *errmsg;
-	int   err_len = 0;
+	int   err_len;
+	bool  err_written = false;
 
 	sprintf(str, "Error %d %s\r\n\r\n", status, msg);
 	pthread_mutex_lock(&ssh_mutex);
-	cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, NULL, &err_len);
-	errmsg = (char *)malloc(err_len + strlen(str) + 5);
-	strcpy(errmsg, str);
-	cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, errmsg + strlen(str), &err_len);
-	pthread_mutex_unlock(&ssh_mutex);
-	errmsg[strlen(str) + err_len] = 0;
-	strcat(errmsg, "\r\n\r\n");
-	sprintf(str2, "Error %d %s", status, msg);
-	uifcmsg(str2, errmsg);
-	free(errmsg);
+	if (cryptStatusOK(cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, NULL, &err_len))) {
+		errmsg = malloc(err_len + strlen(str) + 5);
+		if (errmsg) {
+			strcpy(errmsg, str);
+			if (cryptStatusOK(cl.GetAttributeString(ssh_session, CRYPT_ATTRIBUTE_ERRORMESSAGE, errmsg + strlen(str), &err_len))) {
+				pthread_mutex_unlock(&ssh_mutex);
+				errmsg[strlen(str) + err_len] = 0;
+				strcat(errmsg, "\r\n\r\n");
+				sprintf(str2, "Error %d %s", status, msg);
+				uifcmsg(str2, errmsg);
+				err_written = true;
+			}
+			free(errmsg);
+		}
+	}
+	if (!err_written) {
+		pthread_mutex_unlock(&ssh_mutex);
+		sprintf(str2, "Error %d %s", status, msg);
+		uifcmsg(str2, "Additionally, a failure occured getting the error message");
+		free(errmsg);
+	}
 }
 
 static void
