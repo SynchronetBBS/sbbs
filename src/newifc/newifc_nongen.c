@@ -11,7 +11,11 @@ NI_walk_children_recurse(NewIfcObj obj, bool top_down, NI_err (*cb)(NewIfcObj ob
 
 	if (!obj)
 		return NewIfc_error_none;
+	err = NI_set_locked(obj, true);
+	if (err != NewIfc_error_none)
+		return err;
 	err = cb(obj, cbdata);
+	NI_set_locked(obj, false);
 	if (err != NewIfc_error_none)
 		return err;
 	if (top_down)
@@ -46,13 +50,7 @@ NI_walk_children(NewIfcObj obj, bool top_down, NI_err (*cb)(NewIfcObj obj, void 
 		return NewIfc_error_invalid_arg;
 	if (cb == NULL)
 		return NewIfc_error_invalid_arg;
-	ret = NI_set_locked(obj, true);
-	if (ret == NewIfc_error_none) {
-		ret = NI_walk_children_recurse(top_down ? obj->top_child : obj->bottom_child, top_down, cb, cbdata);
-		NI_set_locked(obj, false);
-	}
-	else
-		ret = NewIfc_error_lock_failed;
+	ret = NI_walk_children_recurse(top_down ? obj->top_child : obj->bottom_child, top_down, cb, cbdata);
 	return ret;
 }
 
@@ -111,6 +109,7 @@ remove_focus_cb(NewIfcObj obj, void *cbdata)
 	if (obj->focus == false)
 		return NewIfc_error_skip_subtree;
 	obj->set(obj, NewIfc_focus, false);
+	obj->focus = false;
 	return NewIfc_error_none;
 }
 
@@ -420,11 +419,11 @@ NI_setup_globals(NewIfcObj obj, NewIfcObj parent)
 		ret = NI_add_min_width_handler(obj, NI_check_new_min_width, NULL);
 		ret = NI_add_min_height_handler(obj, NI_check_new_min_height, NULL);
 	}
+	NI_set_dirty(obj, true);
 
 	return NewIfc_error_none;
 }
 
-#include <stdio.h>
 static void
 set_vmem_cell(struct NewIfc_render_context *ctx, uint16_t x, uint16_t y, uint32_t fg, uint32_t bg, uint8_t ch, uint8_t font)
 {
@@ -432,9 +431,6 @@ set_vmem_cell(struct NewIfc_render_context *ctx, uint16_t x, uint16_t y, uint32_
 	int px = ctx->xpos + x;
 	struct vmem_cell *cell;
 
-assert(ctx->width < 100);
-assert(x < 100);
-fprintf(stderr, "Printing at %hux%hu (%hu + %hu of %hu) in %hux%hu\n", px, py, ctx->xpos, x, ctx->width, ctx->dwidth, ctx->dheight);
 	if (px < 0 || x >= ctx->width)
 		return;
 	if (py < 0 || y >= ctx->height)
@@ -522,7 +518,7 @@ static NI_err
 do_layout_recurse_nonnull(NewIfcObj obj, struct lo_size *ms)
 {
 	if (obj)
-		return do_layout_set_minsize_recurse(obj->lower_peer, ms);
+		return do_layout_set_minsize_recurse(obj, ms);
 	return NewIfc_error_none;
 }
 
@@ -539,7 +535,6 @@ do_layout_set_minsize_recurse(NewIfcObj obj, struct lo_size *pms)
 	}
 	if (ret != NewIfc_error_none)
 		return ret;
-
 
 	// This assumes the difference between width and child_width is a constant
 	if (obj->child_width) {
@@ -598,7 +593,7 @@ do_layout_set_size_recurse(NewIfcObj obj)
 			return ret;
 	}
 	else {
-		if (obj->parent->child_width < obj->width)
+		if (obj->parent && obj->parent->child_width < obj->width)
 			return NewIfc_error_wont_fit;
 	}
 
@@ -617,7 +612,7 @@ do_layout_set_size_recurse(NewIfcObj obj)
 			return ret;
 	}
 	else {
-		if (obj->parent->child_height < obj->height)
+		if (obj->parent && obj->parent->child_height < obj->height)
 			return NewIfc_error_wont_fit;
 	}
 
@@ -662,5 +657,10 @@ NI_do_layout(NewIfcObj obj)
 	ret = do_layout_set_size_recurse(obj->root);
 	if (ret != NewIfc_error_none)
 		return ret;
+
+	ret = NI_set_dirty(obj, false);
+	if (ret != NewIfc_error_none)
+		return ret;
+
 	return NewIfc_error_none;
 }

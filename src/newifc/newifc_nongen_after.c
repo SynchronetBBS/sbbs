@@ -46,6 +46,53 @@ NI_set_focus(NewIfcObj obj, bool value) {
 	return ret;
 }
 
+static NI_err
+clean_cb(NewIfcObj obj, void *cbdata)
+{
+	NI_err ret;
+
+	if (!obj->dirty)
+		return NewIfc_error_skip_subtree;
+	obj->set(obj, NewIfc_dirty, false);
+	obj->dirty = false;
+
+	return NewIfc_error_none;
+}
+
+NI_err
+NI_set_dirty(NewIfcObj obj, bool value) {
+	NI_err ret;
+	if (obj == NULL)
+		return NewIfc_error_invalid_arg;
+	if (NI_set_locked(obj, true) == NewIfc_error_none) {
+		// Setting to dirty walks up
+		// Setting to clean walks down
+		NewIfcObj mobj;
+		if (value) {
+			for (mobj = obj; mobj; mobj = mobj->parent) {
+				ret = NI_set_locked(mobj, true);
+				if (ret == NewIfc_error_none) {
+					if (mobj->dirty) {
+						NI_set_locked(mobj, false);
+						break;
+					}
+					mobj->dirty = true;
+					NI_set_locked(mobj, false);
+				}
+				else
+					ret = NewIfc_error_lock_failed;
+			}
+		}
+		else {
+			ret = NI_walk_children(obj, true, clean_cb, NULL);
+		}
+		NI_set_locked(obj, false);
+	}
+	else
+		ret = NewIfc_error_lock_failed;
+	return ret;
+}
+
 #ifdef BUILD_TESTS
 
 #include <stdio.h>

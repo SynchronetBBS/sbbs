@@ -80,6 +80,7 @@ attributes[] = {
 	{"child_width", NULL, NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
 	{"child_xpos", NULL, NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
 	{"child_ypos", NULL, NI_attr_type_uint16_t, attr_impl_global, 1, 0, 0},
+	{"dirty", NULL, NI_attr_type_bool, attr_impl_global_custom_setter, 0, 0, 0},
 	{"fg_colour", NULL, NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
 	{"fill_character", NULL, NI_attr_type_uint8_t, attr_impl_global, 0, 0, 1},
 	{"fill_character_colour", NULL, NI_attr_type_uint32_t, attr_impl_global, 0, 0, 1},
@@ -410,6 +411,7 @@ main(int argc, char **argv)
 	fputs("NI_err NI_inner_ypos(NewIfcObj obj, uint16_t *ypos);\n", header);
 	fputs("NI_err NI_inner_size(NewIfcObj obj, uint16_t *width, uint16_t *height);\n", header);
 	fputs("NI_err NI_inner_size_pos(NewIfcObj obj, uint16_t *width, uint16_t *height, uint16_t *xpos, uint16_t *ypos);\n", header);
+	fputs("NI_err NI_do_layout(NewIfcObj obj);\n", header);
 
 	nitems = sizeof(attributes) / sizeof(attributes[0]);
 	for (i = 0; i < nitems; i++) {
@@ -533,6 +535,7 @@ main(int argc, char **argv)
 	      "	uint8_t fill_character;\n"
 	      "	uint8_t fill_font;\n"
 	      "	uint8_t font;\n"
+	      "	unsigned dirty:1;\n"
 	      "	unsigned focus:1;\n"
 	      "	unsigned hidden:1;\n"
 	      "};\n\n", internal_header);

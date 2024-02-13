@@ -245,6 +245,7 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 static NI_err
 rw_do_render(NewIfcObj obj, struct NewIfc_render_context *nullctx)
 {
+	NI_err ret;
 	(void)nullctx;
 	struct root_window *rw = (struct root_window *) obj;
 	struct NewIfc_render_context ctx = {
@@ -256,7 +257,12 @@ rw_do_render(NewIfcObj obj, struct NewIfc_render_context *nullctx)
 		.xpos = 0,
 		.ypos = 0,
 	};
-	NI_err ret = rw_do_render_recurse(obj, &ctx);
+	if (obj->dirty) {
+		ret = NI_do_layout(obj);
+		if (ret != NewIfc_error_none)
+			return ret;
+	}
+	ret = rw_do_render_recurse(obj, &ctx);
 	if (ret == NewIfc_error_none) {
 		struct root_window *rw = (struct root_window *)obj;
 		ciolib_vmem_puttext(obj->xpos + 1, obj->ypos + 1, obj->layout_size.width + obj->xpos, obj->layout_size.height + obj->ypos, rw->display);
