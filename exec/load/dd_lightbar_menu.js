@@ -1148,6 +1148,28 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 {
 	var numItems = typeof(pNumItems) === "number" ? pNumItems : this.NumItems();
 
+	// TODO: If the item text is UTF-8 and the user's terminal supports UTF-8, then see if the
+	// item color is an array of objects; if so, we know the screen columns of each 'field', so
+	// we can position the cursor as necessary.
+	/*
+	this.colors = {
+		itemColor: "\x01n\x01w\x01" + "4", // Can be either a string or an array specifying colors within the item
+		selectedItemColor: "\x01n\x01b\x01" + "7", // Can be either a string or an array specifying colors within the item
+		altItemColor: "\x01n\x01w\x01" + "4", // Alternate item color.  Can be either a string or an array specifying colors within the item
+		altSelectedItemColor: "\x01n\x01b\x01" + "7", // Alternate selected item color.  Can be either a string or an array specifying colors within the item
+		unselectableItemColor: "\x01n\x01b\x01h", // Can be either a string or an array specifying colors within the item
+		itemTextCharHighlightColor: "\x01y\x01h",
+	}
+	*/
+	/*
+	if (Array.isArray(itemColor))
+	{
+		var bkgColor = getBackgroundAttrAtIdx(itemColor, this.size.width-1);
+		itemColor = "\x01n\x01h\x01g" + bkgColor;
+	}
+	*/
+	// Look at function addAttrsToString()
+	
 	var itemText = this.GetItemText(pIdx, pItemLen, pHighlight, pSelected);
 	// If the text is UTF-8 and the user's terminal is UTF-8, then set the mode bit accordingly.
 	// If the text is UTF-8 and the user's terminal doesn't support UTF-8, convert the text to cp437.
@@ -1179,6 +1201,9 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 		printedLen = console.strlen(itemText, printModeBits);
 	}
 
+	// Upon more testing, this is bad..  For some messages (i.e., Mike Powell on FSXNet),
+	// this is outputting more than it should:
+	/*
 	// If the printed length is less than the inner width for text, then fill in the
 	// remaining width (either with no attributes or highlighted attributes).
 	var menuInnerWidth = this.InnerTextWidth(numItems);
@@ -1198,6 +1223,7 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 		}
 		printf(attrs + "%*s", diff, "");
 	}
+	*/
 }
 
 // Writes a menu item at its location on the menu.  This should only be called
