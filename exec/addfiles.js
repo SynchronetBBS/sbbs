@@ -59,7 +59,7 @@ for(var i = 0; i < argc; i++) {
 			writeln("                  (default: " + default_excludes.join(',') + ")");
 			writeln("  -diz            always extract/use description in archive");
 			writeln("  -update         update existing file entries (default is to skip them)");
-			writeln("  -readd          re-add existing file entries (so they appears as newly-uploaded");
+			writeln("  -readd          re-add existing file entries (so they appear as newly-uploaded");
 			writeln("  -date[=fmt]     include today's date in description");
 			writeln("  -fdate[=fmt]    include file's date in description");
 			writeln("  -adate[=fmt]    include newest archived file date in description");
