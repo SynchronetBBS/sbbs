@@ -406,7 +406,7 @@ int main(int argc, char **argv)
 	bool    door_mode=false;
 	bool	alt_chars = false;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
-	enum text_mode video_mode = LCD80X25;
+	enum text_modes video_mode = LCD80X25;
 
 #if defined(_WIN32)
 	cio_api.options |= CONIO_OPT_DISABLE_CLOSE;

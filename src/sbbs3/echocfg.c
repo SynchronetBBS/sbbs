@@ -721,7 +721,7 @@ int main(int argc, char **argv)
 	struct robot saverobot;
 	BOOL door_mode=FALSE;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
-	enum text_mode video_mode = LCD80X25;
+	enum text_modes video_mode = LCD80X25;
 	unsigned int u;
 	char	sysop_aliases[256];
 	sbbsecho_cfg_t orig_cfg;
