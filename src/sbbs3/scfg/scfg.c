@@ -28,6 +28,7 @@
 #include "cryptlib.h"
 #include "xpdatetime.h"
 #include "sbbs_ini.h"
+#include "ciolib.h"
 
 /********************/
 /* Global Variables */

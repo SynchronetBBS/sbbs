@@ -31,6 +31,7 @@
 #define __COLORS
 #include "ciolib.h"
 #include "uifc.h"
+#include "ciolib.h"
 #include "scfgdefs.h"
 #include "sbbsecho.h"
 #include "sockwrap.h"
