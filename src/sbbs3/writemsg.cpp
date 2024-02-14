@@ -154,7 +154,8 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 		useron_xedit = 0;
 
 	for(l=i=0;buf[l] && i<maxlines;l++) {
-		if((uchar)buf[l] == FIDO_SOFT_CR && useron_xedit) {
+		if((uchar)buf[l] == FIDO_SOFT_CR && useron_xedit
+			&& !(cfg.xedit[useron_xedit-1]->misc & XTRN_UTF8)) {
 			i++;
 			switch(cfg.xedit[useron_xedit-1]->soft_cr) {
 				case XEDIT_SOFT_CR_EXPAND:
@@ -847,6 +848,7 @@ void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const ch
 		if((mode&WM_EXTDESC)==0 && tagfile!=NULL)
 			fprintf(fp,"%s", tagfile);
 		fprintf(fp,"\r\n");
+		fprintf(fp,"%s\r\n", cfg.xedit[xeditnum]->misc & XTRN_UTF8 ? "UTF-8" : "CP437");
 		fclose(fp);
 	}
 	else {
