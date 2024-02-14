@@ -2090,7 +2090,8 @@ void services_thread(void* arg)
 		/* Main Server Loop */
 		while(!terminated) {
 			YIELD();
-			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
+			if(!(startup->options&BBS_OPT_NO_RECYCLE)
+				&& active_clients()==0 && protected_uint32_value(threads_pending_start) == 0) {
 				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
 					break;

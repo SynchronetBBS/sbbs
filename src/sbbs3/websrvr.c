@@ -7307,7 +7307,9 @@ void web_server(void* arg)
 		while(!terminate_server) {
 			YIELD();
 			/* check for re-cycle/shutdown/pause semaphores */
-			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
+			if(!(startup->options&BBS_OPT_NO_RECYCLE)
+				&& protected_uint32_value(thread_count)
+					<= (unsigned int)(2 /* web_server() and http_session_thread() */ + (http_logging_thread_running?1:0))) {
 				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 					lprintf(LOG_INFO,"Recycle semaphore file (%s) detected",p);
 					if(session!=NULL) {

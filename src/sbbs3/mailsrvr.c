@@ -6248,7 +6248,8 @@ void mail_server(void* arg)
 		while(!terminated && !terminate_server) {
 			YIELD();
 
-			if(!(startup->options&MAIL_OPT_NO_RECYCLE)) {
+			if(!(startup->options&MAIL_OPT_NO_RECYCLE)
+				&& protected_uint32_value(thread_count) <= (unsigned int)(1+(sendmail_running?1:0))) {
 				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 					lprintf(LOG_INFO,"Recycle semaphore file (%s) detected",p);
 					break;

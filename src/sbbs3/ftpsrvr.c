@@ -5193,7 +5193,7 @@ void ftp_server(void* arg)
 
 		while(ftp_set!=NULL && !terminate_server) {
 			YIELD();
-			if(!(startup->options&FTP_OPT_NO_RECYCLE)) {
+			if(!(startup->options&FTP_OPT_NO_RECYCLE) && protected_uint32_value(thread_count) <= 1) {
 				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
 					break;

@@ -5216,7 +5216,8 @@ NO_SSH:
 	while(!terminate_server) {
 		YIELD();
 		/* check for re-run flags and recycle/shutdown sem files */
-		if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
+		if(!(startup->options&BBS_OPT_NO_RECYCLE)
+			&& protected_uint32_value(node_threads_running) == 0) {
 			if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 				lprintf(LOG_INFO,"Recycle semaphore file (%s) detected"
 					,p);
@@ -5248,7 +5249,6 @@ NO_SSH:
 		}
 		/* signal caller that we've started up successfully */
 		set_state(SERVER_READY);
-
 
     	sbbs->online=false;
 #ifdef USE_CRYPTLIB
