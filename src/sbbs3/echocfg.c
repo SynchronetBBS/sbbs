@@ -720,6 +720,7 @@ int main(int argc, char **argv)
 	struct robot saverobot;
 	BOOL door_mode=FALSE;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
+	enum text_mode video_mode = LCD80X25;
 	unsigned int u;
 	char	sysop_aliases[256];
 	sbbsecho_cfg_t orig_cfg;
@@ -810,7 +811,7 @@ int main(int argc, char **argv)
         			uifc.mode|=UIFC_COLOR;
                     break;
                 case 'V':
-                    textmode(atoi(argv[i]+2));
+                    video_mode = atoi(argv[i]+2);
                     break;
                 default:
 					USAGE:
@@ -842,8 +843,9 @@ int main(int argc, char **argv)
 #endif
 						"        A  = ANSI mode\n"
 						"        D  = standard input/output/door mode\n"
-                        "-v#    set video mode to # (default=auto)\n"
+                        "-v#    set video mode to # (default=%u)\n"
                         "-l#    set screen lines to # (default=auto-detect)\n"
+						,video_mode
                         );
 #ifdef _WIN32
 					printf("\nHit a key to close...");
@@ -886,6 +888,7 @@ int main(int argc, char **argv)
     		printf("ciolib library init returned error %d\n",i);
     		exit(1);
 		}
+		textmode(video_mode);
 		ciolib_settitle("Synchronet FidoNet Configuration");
     	i=uifcini32(&uifc);  /* curses/conio/X/ANSI */
 	}

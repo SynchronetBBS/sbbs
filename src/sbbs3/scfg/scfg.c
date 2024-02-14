@@ -405,6 +405,7 @@ int main(int argc, char **argv)
 	bool    door_mode=false;
 	bool	alt_chars = false;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
+	enum text_mode video_mode = LCD80X25;
 
 #if defined(_WIN32)
 	cio_api.options |= CONIO_OPT_DISABLE_CLOSE;
@@ -533,7 +534,7 @@ int main(int argc, char **argv)
 					alt_chars = true;
 					break;
                 case 'v':
-                    textmode(atoi(argv[i]+2));
+                    video_mode = atoi(argv[i]+2);
                     break;
 				case 'y':
 					auto_save=true;
@@ -582,9 +583,10 @@ int main(int argc, char **argv)
 						"                   A  = ANSI mode\n"
 						"                   D  = standard input/output/door mode\n"
 						"-A                use alternate (ASCII) characters for arrow symbols\n"
-                        "-v#               set video mode to # (default=auto)\n"
+                        "-v#               set video mode to # (default=%u)\n"
                         "-l#               set screen lines to # (default=auto-detect)\n"
 						"-y                automatically save changes (don't ask)\n"
+						,video_mode
                         );
 #ifdef _WIN32
 					printf("\nHit a key to close...");
@@ -679,6 +681,7 @@ int main(int argc, char **argv)
     		printf("ciolib library init returned error %d\n",i);
     		exit(1);
 		}
+		textmode(video_mode);
 		ciolib_settitle("Synchronet Configuration");
 		i=uifcini32(&uifc);  /* curses/conio/X/ANSI */
 		if(alt_chars) {
