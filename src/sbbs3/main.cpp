@@ -5251,7 +5251,6 @@ NO_SSH:
 
 
     	sbbs->online=false;
-//		sbbs->client_socket=INVALID_SOCKET;
 #ifdef USE_CRYPTLIB
 		sbbs->ssh_mode=false;
 #endif
