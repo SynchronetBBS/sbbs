@@ -45,7 +45,7 @@ static const char* client_prop_desc[] = {
 	,"User's number (non-zero if logged in)"
 
 	/* this next one must be last */
-	,"Instance of <a href=#Socket>Socket class</a> representing client's TCP/IP connection"
+	,"Instance of <a href=#Socket_class>Socket class</a> representing client's TCP/IP connection"
 	,NULL
 	};
 #endif
