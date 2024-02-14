@@ -1882,20 +1882,24 @@ void xedit_cfg()
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Expand Line Feeds to CRLF"
 				,cfg.xedit[i]->misc&EXPANDLF ? "Yes":"No");
 			const char* p;
-			switch(cfg.xedit[i]->soft_cr) {
-				case XEDIT_SOFT_CR_EXPAND:
-					p = "Convert to CRLF";
-					break;
-				case XEDIT_SOFT_CR_STRIP:
-					p = "Strip";
-					break;
-				case XEDIT_SOFT_CR_RETAIN:
-					p = "Retain";
-					break;
-				default:
-				case XEDIT_SOFT_CR_UNDEFINED:
-					p = "Unspecified";
-					break;
+			if(cfg.xedit[i]->misc&XTRN_UTF8) {
+				p = "N/A";
+			} else {
+				switch(cfg.xedit[i]->soft_cr) {
+					case XEDIT_SOFT_CR_EXPAND:
+						p = "Convert to CRLF";
+						break;
+					case XEDIT_SOFT_CR_STRIP:
+						p = "Strip";
+						break;
+					case XEDIT_SOFT_CR_RETAIN:
+						p = "Retain";
+						break;
+					default:
+					case XEDIT_SOFT_CR_UNDEFINED:
+						p = "Unspecified";
+						break;
+				}
 			}
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Handle Soft CRs", p);
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Strip FidoNet Kludges"
@@ -2170,6 +2174,8 @@ void xedit_cfg()
 					}
 					break;
 				case 12:
+					if(cfg.xedit[i]->misc & XTRN_UTF8)
+						break; // N/A
 					k = cfg.xedit[i]->soft_cr;
 					strcpy(opt[0],"Unspecified");
 					strcpy(opt[1],"Convert to CRLF");
@@ -2224,8 +2230,9 @@ void xedit_cfg()
 					uifc.helpbuf=
 						"`Support UTF-8 Encoding:`\n"
 						"\n"
-						"If this editor can detect and support UTF-8 terminals, set this option\n"
-						"to `Yes`."
+						"If this editor can handle UTF-8 encoded message text and header fields\n"
+						"and can detect and support UTF-8 terminal input and output, set this\n"
+						"option to `Yes`."
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
                 		,"Support UTF-8 Encoding"
