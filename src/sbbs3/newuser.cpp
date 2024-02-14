@@ -286,7 +286,7 @@ bool sbbs_t::newuser()
 			if(gettmplt(str, birthdate_template(&cfg, tmp, sizeof tmp), K_EDIT) < 10)
 				continue;
 			int age = getage(&cfg, parse_birthdate(&cfg, str, tmp, sizeof(tmp)));
-			if(age >= 0 && age <= 200) { // TODO: Configurable min/max user age
+			if(age >= 1 && age <= 200) { // TODO: Configurable min/max user age
 				SAFECOPY(useron.birth, tmp);
 				break;
 			}

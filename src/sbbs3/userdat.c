@@ -983,6 +983,7 @@ char* getbirthdstr(scfg_t* cfg, const char* birth, char* buf, size_t max)
 /****************************************************************************/
 /* Returns the age derived from the string 'birth' in the format CCYYMMDD	*/
 /* or legacy: MM/DD/YY or DD/MM/YY											*/
+/* Returns 0 on invalid 'birth' date										*/
 /****************************************************************************/
 int getage(scfg_t* cfg, const char *birth)
 {
@@ -1003,7 +1004,10 @@ int getage(scfg_t* cfg, const char *birth)
 	int year = getbirthyear(birth);
 	int age = (1900 + tm.tm_year) - year;
 	int mon = getbirthmonth(cfg, birth);
-	if(mon > tm.tm_mon || (mon == tm.tm_mon && getbirthday(cfg, birth) > tm.tm_mday))
+	int day = getbirthday(cfg, birth);
+	if(mon < 1 || mon > 12 || day < 1 || day > 31)
+		return 0;
+	if(mon > tm.tm_mon || (mon == tm.tm_mon && day > tm.tm_mday))
 		age--;
 	return age;
 }
