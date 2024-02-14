@@ -6896,15 +6896,17 @@ void web_terminate(void)
 
 static void cleanup(int code)
 {
-	if(protected_uint32_value(thread_count) > 1) {
-		lprintf(LOG_INFO,"0000 Waiting for %d child threads to terminate", protected_uint32_value(thread_count)-1);
-		while(protected_uint32_value(thread_count) > 1) {
-			mswait(1000);
-			listSemPost(&log_list);
-			lprintf(LOG_INFO,"0000 Waiting for %d child threads to terminate", protected_uint32_value(thread_count)-1);
-		}
-		lprintf(LOG_INFO,"0000 Done waiting");
+	bool waited = false;
+	uint32_t threads;
+
+	while((threads = protected_uint32_value(thread_count)) > 1) {
+		lprintf(LOG_INFO,"0000 Waiting for %d child threads to terminate", threads-1);
+		mswait(1000);
+		waited = true;
+		listSemPost(&log_list);
 	}
+	if(waited)
+		lprintf(LOG_INFO,"0000 Done waiting");
 	terminate_js = false;
 	free_cfg(&scfg);
 
