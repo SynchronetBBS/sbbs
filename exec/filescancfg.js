@@ -1,6 +1,7 @@
 // File Scan Configuration menu
 
 require("sbbsdefs.js", "USER_EXPERT");
+require("gettext.js", "gettext");
 
 "use strict";
 
@@ -10,7 +11,7 @@ while(bbs.online && !js.terminated) {
 	if(!(user.settings & USER_EXPERT))
 		bbs.menu(menufile);
 	bbs.nodesync();
-	console.print("\r\n\x01y\x01hConfig: \x01n");
+	console.print("\r\n\x01y\x01h" + gettext("Config") + ": \x01n");
 	var key = console.getkeys("?QBEP\r");
 	bbs.log_key(key);
 
@@ -26,20 +27,14 @@ while(bbs.online && !js.terminated) {
 			break;
 		case 'B':
 			user.settings ^= USER_BATCHFLAG;
-			console.print("\r\nBatch flagging in file listings is now: \1h");
-			if(user.settings & USER_BATCHFLAG)
-				console.print("ON");
-			else
-				console.print("OFF");
+			console.print("\r\n" + gettext("Batch flagging in file listings is now") + ": \1h");
+			console.print(bbs.text((user.settings & USER_BATCHFLAG) ? bbs.text.On : bbs.text.Off));
 			console.crlf();
 			break;
 		case 'E':
 			user.settings ^= USER_EXTDESC;
-			console.print("\r\nExtended file description display is now: \1h");
-			if(user.settings & USER_EXTDESC)
-				console.print("ON");
-			else
-				console.print("OFF");
+			console.print("\r\n" + gettext("Extended file description display is now") + ": \1h");
+			console.print(bbs.text((user.settings & USER_EXTDESC) ? bbs.text.On : bbs.text.Off));
 			console.crlf();
 			break;
 	}

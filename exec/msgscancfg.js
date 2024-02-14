@@ -1,6 +1,7 @@
 // Message Scan Configuration menu
 
 require("sbbsdefs.js", "USER_EXPERT");
+require("gettext.js", "gettext");
 
 "use strict";
 
@@ -10,7 +11,7 @@ while(bbs.online && !js.terminated) {
 	if(!(user.settings & USER_EXPERT))
 		bbs.menu(menufile);
 	bbs.nodesync();
-	console.print("\r\n\x01y\x01hConfig: \x01n");
+	console.print("\r\n\x01y\x01h" + gettext("Config") + ": \x01n");
 	var key = console.getkeys("?QNPISRW\r");
 	bbs.log_key(key);
 
@@ -33,11 +34,11 @@ while(bbs.online && !js.terminated) {
 			break;
 		case 'R':
 			bbs.reload_msg_scan();
-			console.print("\r\nMessage scan configuration and pointers re-loaded.\r\n");
+			console.print("\r\n" + gettext("Message scan configuration and pointers re-loaded.") + "\r\n");
 			break;
 		case 'W':
 			bbs.save_msg_scan();
-			console.print("\r\nMessage scan configuration and pointers saved.\r\n");
+			console.print("\r\n" + gettext("Message scan configuration and pointers saved.") +  "\r\n");
 			break;
 	}
 	break;
