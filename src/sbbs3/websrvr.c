@@ -108,7 +108,7 @@ static protected_uint32_t active_clients;
 static protected_uint32_t thread_count;
 static volatile ulong	client_highwater=0;
 static volatile bool	terminate_server=false;
-static volatile bool	terminated=false;
+static volatile bool	terminate_js=false;
 static volatile bool	terminate_http_logging_thread=false;
 static struct xpms_set	*ws_set=NULL;
 static char		root_dir[MAX_PATH+1];
@@ -6899,11 +6899,13 @@ static void cleanup(int code)
 	if(protected_uint32_value(thread_count) > 1) {
 		lprintf(LOG_INFO,"0000 Waiting for %d child threads to terminate", protected_uint32_value(thread_count)-1);
 		while(protected_uint32_value(thread_count) > 1) {
-			mswait(100);
+			mswait(1000);
 			listSemPost(&log_list);
+			lprintf(LOG_INFO,"0000 Waiting for %d child threads to terminate", protected_uint32_value(thread_count)-1);
 		}
 		lprintf(LOG_INFO,"0000 Done waiting");
 	}
+	terminate_js = false;
 	free_cfg(&scfg);
 
 	listFree(&log_list);
@@ -6920,10 +6922,9 @@ static void cleanup(int code)
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 
-	if(!terminated) {	/* Can this be changed to a if(ws_set!=NULL) check instead? */
+	if(ws_set!=NULL) {
 		xpms_destroy(ws_set, close_socket_cb, NULL);
 		ws_set=NULL;
-		terminated=true;
 	}
 
 	update_clients();	/* active_clients is destroyed below */
@@ -7257,7 +7258,6 @@ void web_server(void* arg)
 			cleanup(1);
 			return;
 		}
-		terminated=false;
 		lprintf(LOG_DEBUG,"Web Server socket set created");
 
 		/*
@@ -7302,7 +7302,7 @@ void web_server(void* arg)
 		lprintf(LOG_INFO,"Web Server thread started");
 		mqtt_client_max(&mqtt, startup->max_clients);
 
-		while(!terminated && !terminate_server) {
+		while(!terminate_server) {
 			YIELD();
 			/* check for re-cycle/shutdown/pause semaphores */
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
@@ -7371,12 +7371,6 @@ void web_server(void* arg)
 			if(client_socket == INVALID_SOCKET)
 				continue;
 
-			if(terminated) {	/* terminated */
-				pthread_mutex_unlock(&session->struct_filled);
-				session=NULL;
-				break;
-			}
-
 			if(startup->socket_open!=NULL)
 				startup->socket_open(startup->cbdata,true);
 
@@ -7429,7 +7423,7 @@ void web_server(void* arg)
 			session->addr_len=client_addr_len;
    			session->socket=client_socket;
 			session->js_callback.auto_terminate=true;
-			session->js_callback.terminated=&terminate_server;
+			session->js_callback.terminated=&terminate_js;
 			session->js_callback.limit=startup->js.time_limit;
 			session->js_callback.gc_interval=startup->js.gc_interval;
 			session->js_callback.yield_interval=startup->js.yield_interval;
@@ -7446,6 +7440,7 @@ void web_server(void* arg)
 			session=NULL;
 		}
 
+		terminate_js = true;
 		/* Wait for active clients to terminate */
 		if(protected_uint32_value(active_clients)) {
 			lprintf(LOG_INFO, "Waiting for %d active clients to disconnect..."
