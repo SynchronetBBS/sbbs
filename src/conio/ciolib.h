@@ -116,7 +116,7 @@ enum {
 #define CIOLIB_VIDEO_EXPAND               (1<<5)	// Use an extra blank column between characters from the font
 #define CIOLIB_VIDEO_LINE_GRAPHICS_EXPAND (1<<6)	// Per VGA, when using CIOLIB_VIDEO_EXPAND, repeat the last column for chars 0xC0 - 0xDF inclusive
 
-enum text_modes
+enum text_mode
 {
     /* DOS-compatible modes */
 
