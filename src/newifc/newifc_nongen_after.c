@@ -135,7 +135,6 @@ void test_api(CuTest *ct)
 
 	CuAssertTrue(ct, robj->do_render(robj, NULL) == NewIfc_error_none);
 	size_t sz = strlen(new_title);
-#if 0
 	for (size_t i = 0; i < sz; i++) {
 		ciolib_vmem_gettext(i+36,1,i+36,1,&cells);
 		CuAssertTrue(ct, cells.ch == new_title[i]);
@@ -143,8 +142,6 @@ void test_api(CuTest *ct)
 		CuAssertTrue(ct, cells.bg == obj->bg_colour);
 		CuAssertTrue(ct, cells.font == obj->font);
 	}
-#endif
-sleep(2);
 	CuAssertTrue(ct, NI_destroy(robj) == NewIfc_error_none);
 }
 

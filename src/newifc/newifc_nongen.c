@@ -595,6 +595,9 @@ do_layout_set_size_recurse(NewIfcObj obj)
 	else {
 		if (obj->parent && obj->parent->child_width < obj->width)
 			return NewIfc_error_wont_fit;
+		ret = NI_set_layout_width(obj, obj->width);
+		if (ret != NewIfc_error_none)
+			return ret;
 	}
 
 	if (obj->height == NI_SHRINK) {
@@ -614,6 +617,9 @@ do_layout_set_size_recurse(NewIfcObj obj)
 	else {
 		if (obj->parent && obj->parent->child_height < obj->height)
 			return NewIfc_error_wont_fit;
+		ret = NI_set_layout_height(obj, obj->height);
+		if (ret != NewIfc_error_none)
+			return ret;
 	}
 
 	// Then, recurse peers

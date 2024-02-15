@@ -186,7 +186,7 @@ rw_do_render_recurse(NewIfcObj obj, struct NewIfc_render_context *ctx)
 				}
 				if (obj->right_pad) {
 					for (size_t x = 0; x < obj->right_pad; x++) {
-						set_vmem_cell(ctx, x + obj->width - obj->right_pad, y, obj->fg_colour, obj->bg_colour, ' ', obj->font);
+						set_vmem_cell(ctx, x + obj->layout_size.width - obj->right_pad, y, obj->fg_colour, obj->bg_colour, ' ', obj->font);
 					}
 				}
 			}
