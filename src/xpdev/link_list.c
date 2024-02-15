@@ -146,8 +146,10 @@ long listDettach(link_list_t* list)
 		return(-1);
 
 	listLock(list);
-	if((refs=--list->refs)==0)
+	if((refs=--list->refs)==0) {
+		listUnlock(list);
 		listFree(list);
+	}
 	else
 		listUnlock(list);
 
