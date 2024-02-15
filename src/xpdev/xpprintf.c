@@ -1067,8 +1067,11 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:
-							/* strtold() isn't ubiquitous yet */
+#if defined(__BORLANDC__)
 							ld=strtod(cp, NULL);
+#else
+							ld=strtold(cp, NULL);
+#endif
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							ld=d;
