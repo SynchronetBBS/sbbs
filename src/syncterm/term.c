@@ -2035,9 +2035,9 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
                 /* Use correct file size */
 		fflush(fp);
 
-		lprintf(LOG_DEBUG, "file_bytes=%u", file_bytes);
-		lprintf(LOG_DEBUG, "file_bytes_left=%u", file_bytes_left);
-		lprintf(LOG_DEBUG, "filelength=%u", filelength(fileno(fp)));
+		lprintf(LOG_DEBUG, "file_bytes=%" PRId64, file_bytes);
+		lprintf(LOG_DEBUG, "file_bytes_left=%" PRId64, file_bytes_left);
+		lprintf(LOG_DEBUG, "filelength=%" PRIuOFF, filelength(fileno(fp)));
 
 		if (file_bytes < (ulong)filelength(fileno(fp))) {
 			lprintf(LOG_INFO, "Truncating file to %lu bytes", (ulong)file_bytes);
@@ -3292,7 +3292,7 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 	char            fn_root[MAX_PATH + 1];
 	FILE           *f;
 	size_t          rc;
-	size_t          sz;
+	off_t           off;
 	char           *p;
 	char           *buf;
 	struct bbslist *bbs = apcd;
@@ -3412,20 +3412,29 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 			return;
 		if (!fexist(fn))
 			return;
-		sz = flength(fn);
+		off = flength(fn);
+		switch (off) {
+			case 4096:
+			case 3584:
+			case 2048:
+				// Only supported values.
+				break;
+			default:
+				return;
+		}
 		f = fopen(fn, "rb");
 		if (f) {
-			buf = malloc(sz);
+			buf = malloc(off);
 			if (buf == NULL) {
 				fclose(f);
 				return;
 			}
-			if (fread(buf, sz, 1, f) != 1) {
+			if (fread(buf, off, 1, f) != 1) {
 				fclose(f);
 				free(buf);
 				return;
 			}
-			switch (sz) {
+			switch (off) {
 				case 4096:
 					FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_sixteen);
 					conio_fontdata[cterm->font_slot].eight_by_sixteen = buf;

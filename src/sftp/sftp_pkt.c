@@ -170,6 +170,9 @@ sftp_getstring(sftp_rx_pkt_t pkt)
 {
 	assert(pkt);
 	uint32_t sz = sftp_get32(pkt);
+	// Expressed this way so Coverity untaints it...
+	if (sz > pkt->sz - sizeof(sz) - offsetof(struct sftp_rx_pkt, data) - pkt->cur)
+		return NULL;
 	if (pkt->cur + offsetof(struct sftp_rx_pkt, data) + sizeof(sz) > pkt->sz)
 		return NULL;
 	sftp_str_t ret = sftp_memdup(&pkt->data[pkt->cur], sz);
@@ -204,6 +207,7 @@ sftp_rx_pkt_append(sftp_rx_pkt_t *pktp, uint8_t *inbuf, uint32_t len)
 	else {
 		old_used = pkt->used;
 		old_sz = pkt->sz;
+		old_cur = pkt->cur;
 		new_sz = offsetof(struct sftp_rx_pkt, len) + pkt->used + len;
 	}
 	if (new_sz > old_sz) {
@@ -287,11 +291,13 @@ sftp_tx_pkt_reset(sftp_tx_pkt_t *pktp)
 	return true;
 }
 
+#define APPEND_TX_DATA_PTR(pkt) (&((uint8_t *)pkt)[pkt->used + offsetof(struct sftp_tx_pkt, type)])
+
 #define APPEND_FUNC_BODY(var)                                                                     \
 	if (!grow_tx(pktp, sizeof(var)))                                                           \
 		return false;                                                                       \
 	sftp_tx_pkt_t pkt = *pktp;                                                                   \
-	memcpy(&((uint8_t *)pkt)[pkt->used + offsetof(struct sftp_tx_pkt, type)], &var, sizeof(var)); \
+	memcpy(APPEND_TX_DATA_PTR(pkt), &var, sizeof(var)); \
 	pkt->used += sizeof(var);                                                                      \
 	return true
 
@@ -333,7 +339,7 @@ sftp_appendstring(sftp_tx_pkt_t *pktp, sftp_str_t s)
 		return false;
 	}
 	sftp_tx_pkt_t pkt = *pktp;
-	memcpy(&(&pkt->type)[pkt->used], (uint8_t *)s->c_str, s->len);
+	memcpy(&((uint8_t *)pkt)[pkt->used + offsetof(struct sftp_tx_pkt, type)], (uint8_t *)s->c_str, s->len);
 	pkt->used += s->len;
 	return true;
 }
@@ -352,9 +358,7 @@ sftp_appendcstring(sftp_tx_pkt_t *pktp, const char *str)
 		oldused = (*pktp)->used;
 	assert(str);
 	if (str == NULL)
-		oldused = 0;
-	else
-		oldused = (*pktp)->used;
+		return false;
 	sz = strlen(str);
 	if (sz > UINT32_MAX)
 		return false;
@@ -367,7 +371,7 @@ sftp_appendcstring(sftp_tx_pkt_t *pktp, const char *str)
 		return false;
 	}
 	sftp_tx_pkt_t pkt = *pktp;
-	memcpy(&(&pkt->type)[pkt->used], str, len);
+	memcpy(APPEND_TX_DATA_PTR(pkt), str, len);
 	pkt->used += len;
 	return true;
 }

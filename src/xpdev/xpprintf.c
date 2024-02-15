@@ -1374,10 +1374,8 @@ char* xp_vasprintf(const char *format, va_list va)
 				next=xp_asprintf_next(working, type, va_arg(va, size_t));
 				break;
 		}
-		if(next==NULL) {
-			free(working);
+		if(next==NULL)
 			return(NULL);
-		}
 		working=next;
 	}
 	next=xp_asprintf_end(working, NULL);

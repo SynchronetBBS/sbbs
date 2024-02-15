@@ -19,6 +19,8 @@ static sftp_str_t
 getcstring(sftps_state_t state)
 {
 	sftp_str_t str = getstring(state);
+	if (str == NULL)
+		return NULL;
 	if (memchr(str->c_str, 0, str->len) != NULL) {
 		free_sftp_str(str);
 		return NULL;
