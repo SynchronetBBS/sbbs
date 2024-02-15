@@ -8090,9 +8090,10 @@ rv_termset(const char * const var, const void * const data)
 							rip.y_dim = 350;
 							pthread_mutex_lock(&vstatlock);
 							rip.x_max = vstat.scrnwidth;
+							rip.y_max = vstat.scrnheight;
+							pthread_mutex_unlock(&vstatlock);
 							if (rip.x_max > rip.x_dim)
 								rip.x_max = rip.x_dim;
-							rip.y_max = vstat.scrnheight;
 							if (rip.y_max > rip.y_dim)
 								rip.y_max = rip.y_dim;
 
@@ -8105,7 +8106,6 @@ rv_termset(const char * const var, const void * const data)
 							FREE_AND_NULL(rip.ymap);
 							FREE_AND_NULL(rip.xunmap);
 							FREE_AND_NULL(rip.yunmap);
-							pthread_mutex_unlock(&vstatlock);
 							return NULL;
 					}
 					break;
@@ -11708,9 +11708,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							rip.y_dim = y1;
 							pthread_mutex_lock(&vstatlock);
 							rip.x_max = vstat.scrnwidth;
+							rip.y_max = vstat.scrnheight;
+							pthread_mutex_unlock(&vstatlock);
 							if (rip.x_max > rip.x_dim)
 								rip.x_max = rip.x_dim;
-							rip.y_max = vstat.scrnheight;
 							if (rip.y_max > rip.y_dim)
 								rip.y_max = rip.y_dim;
 
@@ -11723,7 +11724,6 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							FREE_AND_NULL(rip.ymap);
 							FREE_AND_NULL(rip.xunmap);
 							FREE_AND_NULL(rip.yunmap);
-							pthread_mutex_unlock(&vstatlock);
 							break;
 						case 'g': // RIP_GOTOXY !|g <x> <y>
                                                         /* This command sets the position of the text cursor in the TTY
@@ -16149,13 +16149,13 @@ init_rip(struct bbslist *bbs)
 	if (cio_api.options & CONIO_OPT_SET_PIXEL) {
 		pthread_mutex_lock(&vstatlock);
 		rip.x_max = vstat.scrnwidth;
+		rip.y_max = vstat.scrnheight;
+		pthread_mutex_unlock(&vstatlock);
 		if (rip.x_max > rip.x_dim)
 			rip.x_max = rip.x_dim;
 		rip.y_dim = 350;
-		rip.y_max = vstat.scrnheight;
 		if (rip.y_max > rip.y_dim)
 			rip.y_max = rip.y_dim;
-		pthread_mutex_unlock(&vstatlock);
 	}
 	rip.viewport.ex = rip.x_dim - 1;
 	rip.viewport.ey = rip.y_dim - 1;
