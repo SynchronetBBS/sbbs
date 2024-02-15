@@ -566,15 +566,14 @@ function erase_graphic_box()
 
 function shitty_inkey(mode, timeout)
 {
-	var b = console.inkey(mode|K_UTF8, timeout);
-	var ab;
+	var b = console.inkey(mode | K_UTF8, timeout);
+	var ab = ascii(b);
 	var bit;
 	var val;
 	var tmp;
 	var ret = b;
 	if (pmode & P_UTF8) {
-		ab = ascii(b);
-		if (ascii(b[0]) & 0x80) {
+		if (ab & 0x80) {
 			for (bit = 7; ab & (1<<bit); bit--)
 				val = ab & ((1<<bit) - 1);
 
