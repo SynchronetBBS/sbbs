@@ -40,7 +40,7 @@ var DCTMENU_EDIT_SETTINGS = 6;
 var DCTMENU_SYSOP_IMPORT_FILE = 7;
 var DCTMENU_SYSOP_EXPORT_FILE = 11;
 var DCTMENU_HELP_COMMAND_LIST = 8;
-var DCTMENU_HELP_GENERAL = 9;
+var DCTMENU_GRAPHIC_CHAR = 9;
 var DCTMENU_HELP_PROGRAM_INFO = 10;
 var DCTMENU_CROSS_POST = 12;
 var DCTMENU_LIST_TXT_REPLACEMENTS = 13;
@@ -135,11 +135,10 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// Next line
 	// From name
 	var lineNum = 2;
+	var fromNameAndAreaLineNum = lineNum;
 	console.gotoxy(1, lineNum);
 	// Calculate the width of the from name field: 28 characters, based
 	// on an 80-column screen width.
-	var fieldWidth = (console.screen_columns * (28/80)).toFixed(0);
-	var screenText = gFromName.substr(0, fieldWidth);
 	console.print(randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor2) +
 				  " " + gConfigSettings.DCTColors.TopLabelColor + "From " +
@@ -147,38 +146,35 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 				  gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
 				  gConfigSettings.DCTColors.TopFromFillColor + DOT_CHAR + 
 				  gConfigSettings.DCTColors.TopFromColor);
-	console.print(screenText, gPrintMode); // Support UTF-8 in the "From" name
 	console.print(gConfigSettings.DCTColors.TopFromFillColor);
-	fieldWidth -= (console.strlen(screenText, gPrintMode)+1);
+	var fieldWidth = Math.floor(console.screen_columns * (28/80)) - 2;
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(DOT_CHAR);
 	console.print(gConfigSettings.DCTColors.TopInfoBracketColor + "]");
 
 	// Message area
-	fieldWidth = (console.screen_columns * (27/80)).toFixed(0);
-	screenText = gMsgArea.substr(0, fieldWidth);
+	fieldWidth = Math.floor(console.screen_columns * (27/80));
 	var startX = console.screen_columns - fieldWidth - 9;
 	console.gotoxy(startX, lineNum);
 	console.print(gConfigSettings.DCTColors.TopLabelColor + "Area" +
 	              gConfigSettings.DCTColors.TopLabelColonColor + ": " +
 	              gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
 	              gConfigSettings.DCTColors.TopAreaFillColor + DOT_CHAR +
-	              gConfigSettings.DCTColors.TopAreaColor + screenText +
-	              gConfigSettings.DCTColors.TopAreaFillColor);
-	fieldWidth -= (screenText.length+1);
+	              gConfigSettings.DCTColors.TopAreaColor);
+	console.print(gConfigSettings.DCTColors.TopAreaFillColor);
+	--fieldWidth;
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(DOT_CHAR);
 	console.print(gConfigSettings.DCTColors.TopInfoBracketColor + "] " +
 	              randomTwoColorString(VERTICAL_SINGLE,
 	                                   gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor2));
+	var msgAreaX = startX + 8; // For later
 
 	// Next line: To, Time, time Left
-	++lineNum;
+	var toNameLineNum = ++lineNum;
 	console.gotoxy(1, lineNum);
 	// To name
-	fieldWidth = (console.screen_columns * (28/80)).toFixed(0);
-	screenText = gToName.substr(0, fieldWidth);
 	console.print(randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor2) +
 				  " " + gConfigSettings.DCTColors.TopLabelColor + "To   " +
@@ -186,9 +182,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 				  gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
 				  gConfigSettings.DCTColors.TopToFillColor + DOT_CHAR +
 				  gConfigSettings.DCTColors.TopToColor);
-	console.print(screenText, gPrintMode); // Support UTF-8 in the "To" name
 	console.print(gConfigSettings.DCTColors.TopToFillColor);
-	fieldWidth -= (console.strlen(screenText, gPrintMode)+1);
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(DOT_CHAR);
 	console.print(gConfigSettings.DCTColors.TopInfoBracketColor + "]");
@@ -223,11 +217,9 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	              gConfigSettings.DCTColors.TopBorderColor2));
 
 	// Line 3: Subject
-	++lineNum;
+	var subjLineNum = ++lineNum;
 	console.gotoxy(1, lineNum);
-	//fieldWidth = (console.screen_columns * (66/80)).toFixed(0);
 	fieldWidth = +(console.screen_columns - 15);
-	screenText = gMsgSubj.substr(0, fieldWidth);
 	console.print(randomTwoColorString(LOWER_LEFT_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor1) +
 	                                   " " + gConfigSettings.DCTColors.TopLabelColor + "Subj " +
@@ -235,9 +227,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	                                   gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
 	                                   gConfigSettings.DCTColors.TopSubjFillColor + DOT_CHAR +
 	                                   gConfigSettings.DCTColors.TopSubjColor);
-	console.print(screenText, gPrintMode); // Support UTF-8 in the subject
 	console.print(gConfigSettings.DCTColors.TopSubjFillColor);
-	fieldWidth -= (screenText.length);
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(DOT_CHAR);
 	console.print(DOT_CHAR);
@@ -253,6 +243,29 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// Display the bottom message area border and help line
 	DisplayTextAreaBottomBorder_DCTStyle(pEditBottom+1, null, pEditLeft, pEditRight, pInsertMode);
 	DisplayBottomHelpLine_DCTStyle(console.screen_rows, pUseQuotes);
+
+	// Display the message header information fields (From, To, Subj, Area). We use
+	// gotoxy() and print these last in case they're UTF-8, to avoid header graphic
+	// chars moving around.
+	// TODO: Doing a substr() on UTF-8 strings seems to result in them being shorter
+	// than intended if there are multi-byte characters.
+	// Message area
+	var msgAreaName = gMsgArea.substr(0, Math.floor(console.screen_columns * (27/80)));
+	console.gotoxy(msgAreaX, fromNameAndAreaLineNum);
+	console.print(msgAreaName, P_AUTO_UTF8);
+	// From name
+	var infoX = 12;
+	var fromName = gFromName.substr(0, Math.floor(console.screen_columns * (28/80)));
+	console.gotoxy(infoX, fromNameAndAreaLineNum);
+	console.print(fromName, P_AUTO_UTF8);
+	// To name
+	var toName = gToName.substr(0, Math.floor(console.screen_columns * (28/80)));
+	console.gotoxy(infoX, toNameLineNum);
+	console.print(toName, P_AUTO_UTF8);
+	// Subject
+	console.gotoxy(infoX, subjLineNum);
+	var subj = gMsgSubj.substr(0, +(console.screen_columns - 15));
+	console.print(subj, P_AUTO_UTF8);
 	
 	// Go to the start of the edit area
 	console.gotoxy(pEditLeft, pEditTop);
@@ -829,6 +842,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 		// Edit menu
 		doDCTESCMenu.allMenus[editMenuNum] = new DCTMenu(doDCTESCMenu.mainMenuItemPositions.editX, doDCTESCMenu.mainMenuItemPositions.mainMenuY+1);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("&Insert Mode    Ctrl-I", DCTMENU_EDIT_INSERT_TOGGLE);
+		doDCTESCMenu.allMenus[editMenuNum].addItem("&Graphic char   Ctrl-G", DCTMENU_GRAPHIC_CHAR);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("&Find Text      Ctrl-N", DCTMENU_EDIT_FIND_TEXT);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("Spe&ll Checker  Ctrl-W", DCTMENU_EDIT_SPELL_CHECKER);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("Setti&ngs       Ctrl-U", DCTMENU_EDIT_SETTINGS);
@@ -845,8 +859,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 
 		// Help menu
 		doDCTESCMenu.allMenus[helpMenuNum] = new DCTMenu(doDCTESCMenu.mainMenuItemPositions.helpX, doDCTESCMenu.mainMenuItemPositions.mainMenuY+1);
-		doDCTESCMenu.allMenus[helpMenuNum].addItem("C&ommand List   Ctrl-P", DCTMENU_HELP_COMMAND_LIST);
-		doDCTESCMenu.allMenus[helpMenuNum].addItem("&General Help   Ctrl-G", DCTMENU_HELP_GENERAL);
+		doDCTESCMenu.allMenus[helpMenuNum].addItem("C&ommand List   Ctrl-L", DCTMENU_HELP_COMMAND_LIST);
 		doDCTESCMenu.allMenus[helpMenuNum].addItem("&Program Info   Ctrl-R", DCTMENU_HELP_PROGRAM_INFO);
 		if (gConfigSettings.enableTextReplacements)
 		{
@@ -854,7 +867,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 			doDCTESCMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_T, DCTMENU_LIST_TXT_REPLACEMENTS);
 		}
 		doDCTESCMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_P, DCTMENU_HELP_COMMAND_LIST);
-		doDCTESCMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_G, DCTMENU_HELP_GENERAL);
+		doDCTESCMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_G, DCTMENU_GRAPHIC_CHAR);
 		doDCTESCMenu.allMenus[helpMenuNum].addExitLoopKey(CTRL_R, DCTMENU_HELP_PROGRAM_INFO);
 
 		// For each menu, add KEY_LEFT, KEY_RIGHT, and ESC as loop-exit keys;
@@ -1017,8 +1030,8 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 	else if ((userInput == "O") || (userInput == DCTMENU_HELP_COMMAND_LIST))
 		chosenAction = ESC_MENU_HELP_COMMAND_LIST;
 	// General help
-	else if ((userInput == "G") || (userInput == DCTMENU_HELP_GENERAL))
-		chosenAction = ESC_MENU_HELP_GENERAL;
+	else if ((userInput == "G") || (userInput == DCTMENU_GRAPHIC_CHAR))
+		chosenAction = ESC_MENU_HELP_GRAPHIC_CHAR;
 	// Program info
 	else if ((userInput == "P") || (userInput == DCTMENU_HELP_PROGRAM_INFO))
 		chosenAction = ESC_MENU_HELP_PROGRAM_INFO;
@@ -1066,7 +1079,7 @@ function valMatchesMenuCode(pVal)
 	valMatches = ((pVal == DCTMENU_FILE_SAVE) || (pVal == DCTMENU_FILE_ABORT) ||
 	              (pVal == DCTMENU_FILE_EDIT) || (pVal == DCTMENU_EDIT_INSERT_TOGGLE) ||
 	              (pVal == DCTMENU_EDIT_FIND_TEXT) || (pVal == DCTMENU_HELP_COMMAND_LIST) ||
-	              (pVal == DCTMENU_HELP_GENERAL) || (pVal == DCTMENU_HELP_PROGRAM_INFO) ||
+	              (pVal == DCTMENU_GRAPHIC_CHAR) || (pVal == DCTMENU_HELP_PROGRAM_INFO) ||
 	              (pVal == DCTMENU_EDIT_SETTINGS) || (pVal == DCTMENU_EDIT_SPELL_CHECKER));
 	if (gConfigSettings.enableTextReplacements)
 		valMatches = (valMatches || (pVal == DCTMENU_LIST_TXT_REPLACEMENTS));

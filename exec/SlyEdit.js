@@ -56,13 +56,13 @@
  * 2024-02-12 Eric Oulashin     1.88c
  *                              UTF-8 support in the displayed header and when quoting text
  *                              and when quoting message text
+ * 2024-02-16 Eric Oulashin     1.88d
+ *                              Header display update for UTF-8. And printing from/to/subj after
+ *                              writing the header with empty data so that the header 'graphic'
+ *                              characters & everything lines up properly.
  */
 
 "use strict";
-
-// TODO:
-// - Header display doesn't display UTF-8 characters correctly
-// - UTF-8 characters in quote lines aren't handled correctly
 
 /* Command-line arguments:
  1 (argv[0]): Filename to read/edit
@@ -150,8 +150,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.88c";
-var EDITOR_VER_DATE = "2024-02-12";
+var EDITOR_VERSION = "1.88d";
+var EDITOR_VER_DATE = "2024-02-16";
 
 
 // Program variables
@@ -467,9 +467,9 @@ var gMsgAreaInfo = null; // Will store the value returned by getCurMsgInfo().
 var setMsgAreaInfoObj = false;
 var gMsgSubj = "";
 var gFromName = user.alias;
-var gToName = gInputFilename;
+var gToName = "";
 var gMsgArea = "";
-var gTaglineFile = "";
+var gTaglineFilename = "";
 var dropFileTime = -Infinity;
 var dropFileName = file_getcase(system.node_dir + "msginf");
 if (dropFileName != undefined)
@@ -483,8 +483,16 @@ if (dropFileName != undefined)
 			var info = dropFile.readAll();
 			dropFile.close();
 
+			//https://wiki.synchro.net/ref:msginf
+
+			// If the msginf file has at least 8 lines, the 8th line
+			// specifies the character set (CP437 or UTF-8)
+			if (info.length >= 8)
+				gConfiguredCharset = info[7].toUpperCase();
+			
 			gFromName = info[0];
 			gToName = info[1];
+			gMsgSubj = info[2];
 			gMsgSubj = info[2];
 			gMsgArea = info[4];
 
@@ -494,13 +502,13 @@ if (dropFileName != undefined)
 			gMsgAreaInfo = getCurMsgInfo(gMsgArea);
 			setMsgAreaInfoObj = true;
 
-			// If the msginf file has 7 lines, then the 7th line is the full
+			// If the msginf file has at least 7 lines, then the 7th line is the full
 			// path & filename of the tagline file, where we can write the
 			// user's chosen tag line (if the user has that option enabled)
 			// for the BBS software to read the tagline & insert it at the
 			// proper place in the message.
 			if (info.length >= 7)
-				gTaglineFile = info[6];
+				gTaglineFilename = info[6];
 		}
 	}
 	file_remove(dropFileName);
@@ -520,10 +528,19 @@ else
 				info = dropFile.readAll();
 				dropFile.close();
 
-				gFromName = info[3];
-				gToName = info[1];
-				gMsgSubj = info[0];
 				gMsgArea = "";
+				if (userEditorCfgHasUTF8Enabled())
+				{
+					gFromName = utf8_decode(info[3]);
+					gToName = utf8_decode(info[1]);
+					gMsgSubj = utf8_decode(info[0]);
+				}
+				else
+				{
+					gFromName = info[3];
+					gToName = info[1];
+					gMsgSubj = info[0];
+				}
 
 				// TODO: If we can know the name of the message
 				// area name, we can call getCurMsgInfo().  But
@@ -555,9 +572,6 @@ if (postingInMsgSubBoard(gMsgArea))
 // Open the quote file / message file
 readQuoteOrMessageFile();
 
-// If the subject is blank, set it to something.
-if (gMsgSubj == "")
-   gMsgSubj = gToName.replace(/^.*[\\\/]/,'');
 // Store a copy of the current subject (possibly allowing the user to
 // change the subject in the future)
 var gOldSubj = gMsgSubj;
@@ -1900,8 +1914,8 @@ function doEditLoop()
 					// then write the tag line to that file (Synchronet will read that
 					// and append its contents after the user's signature).  Otherwise,
 					// append the tagline to the message directly.
-					if (gTaglineFile.length > 0)
-						writeTaglineToMsgTaglineFile(taglineRetObj.tagline, gTaglineFile);
+					if (gTaglineFilename.length > 0)
+						writeTaglineToMsgTaglineFile(taglineRetObj.tagline, gTaglineFilename);
 					else
 					{
 						// Append a blank line and then append the tagline to the message
@@ -3681,11 +3695,17 @@ function doESCMenu(pCurpos, pCurrentWordLength)
 			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode,
 			               gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop), displayEditLines);
 			break;
-		case ESC_MENU_HELP_GENERAL:
-			displayGeneralHelp(true, true, true);
-			clearEditAreaBuffer();
-			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode,
-			               gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop), displayEditLines);
+		case ESC_MENU_HELP_GRAPHIC_CHAR:
+			var graphicChar = promptForGraphicsChar(pCurpos);
+			fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+			console.gotoxy(pCurpos);
+			if (graphicChar != null && typeof(graphicChar) === "string" && graphicChar.length > 0)
+			{
+				var retObject = doPrintableChar(graphicChar, pCurpos, pCurrentWordLength);
+				returnObj.x = retObject.x;
+				returnObj.y = retObject.y;
+				returnObj.currentWordLength = retObject.currentWordLength;
+			}
 			break;
 		case ESC_MENU_HELP_PROGRAM_INFO:
 			displayProgramInfoBox();

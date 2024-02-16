@@ -1,5 +1,4 @@
 /* This file declares some general helper functions and variables
-/* This file declares some general helper functions and variables
  * that are used by SlyEdit.
  *
  * Author: Eric Oulashin (AKA Nightfox)
@@ -139,7 +138,7 @@ var ESC_MENU_SYSOP_IMPORT_FILE = 3;
 var ESC_MENU_SYSOP_EXPORT_FILE = 4;
 var ESC_MENU_FIND_TEXT = 5;
 var ESC_MENU_HELP_COMMAND_LIST = 6;
-var ESC_MENU_HELP_GENERAL = 7;
+var ESC_MENU_HELP_GRAPHIC_CHAR = 7;
 var ESC_MENU_HELP_PROGRAM_INFO = 8;
 var ESC_MENU_EDIT_MESSAGE = 9;
 var ESC_MENU_CROSS_POST_MESSAGE = 10;
@@ -161,6 +160,9 @@ var gUserConsoleSupportsUTF8 = (typeof(USER_UTF8) != "undefined" ? console.term_
 // Since K_UTF8 (in sbbsdefs.js) was added in Synchronet 3.20, see if it exists
 var g_K_UTF8Exists = (typeof(K_UTF8) === "number");
 var gPrintMode = (gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
+
+// Characterset supported by the editor in the editor configuration; to be read from the drop file in SlyEdit.js
+var gConfiguredCharset = "";
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Object/class stuff
@@ -5178,7 +5180,7 @@ function attrCodeStr(pAttrCodeCharStr)
 function printCharConsideringUTF8(pChar, pmode)
 {
 	// Credit to Deuce for this code (this was seen in fseditor.js)
-	if (pmode & P_UTF8)
+	if (Boolean(pmode & P_UTF8) || Boolean(pmode & P_AUTO_UTF8))
 	{
 		var encoded = utf8_encode(pChar.charCodeAt(0));
 		for (var i = 0; i < encoded.length; ++i)
@@ -5600,6 +5602,16 @@ function CP437CodeToUTF8Code(pCP437Code)
 			UTF8Code = 0;
 	}
 	return String.fromCharCode(UTF8Code);
+}
+
+// Returns whether the SlyEdit configuration supports UTF-8 (using the user's editor
+// code, assuming it's one of the variants of SlyEdit)
+function userEditorCfgHasUTF8Enabled()
+{
+	if (gConfiguredCharset.length > 0) // Will not be read in versions of Synchronet below 3.20
+		return (gConfiguredCharset == "UTF-8");
+	else
+		return Boolean(xtrn_area.editor[user.editor].settings & XTRN_UTF8);
 }
 
 // This function displays debug text at a given location on the screen, then
