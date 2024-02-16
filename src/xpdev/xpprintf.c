@@ -1150,7 +1150,11 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:
-							s=strtol(cp, NULL, 0);	/* was strtoll */
+#if defined(__BORLANDC__)
+							s=strtoul(cp, NULL, 0);
+#else
+							s=strtoull(cp, NULL, 0);
+#endif
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							s=(size_t)d;
