@@ -1736,7 +1736,7 @@ x11_event(XEvent *ev)
 						x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, bytes_left, True, AnyPropertyType, &pastebuf_format, &format, &len, &dummy, (unsigned char **)&pastebuf);
 						if (!(A(UTF8_STRING) && pastebuf_format == A(UTF8_STRING))) {
 							char *opb = pastebuf;
-							pastebuf = (char *)cp_to_utf8(CIOLIB_ISO_8859_1, (uint8_t *)pastebuf, strlen(pastebuf), NULL);
+							pastebuf = (char *)cp_to_utf8(CIOLIB_ISO_8859_1, pastebuf, strlen(pastebuf), NULL);
 							if (pastebuf == NULL)
 								pastebuf = opb;
 							else
