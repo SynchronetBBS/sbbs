@@ -1165,7 +1165,7 @@ static bool content_file_open(http_session_t* session)
 	const char* path = session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE];
 	if (session->req.fp == NULL) {
 		if (path == NULL)
-			lprintf(LOG_CRIT, "%04d %s [%s] Response file path is NULL"
+			lprintf(LOG_WARNING, "%04d %s [%s] Response file path is NULL"
 				,session->socket, session->client.protocol, session->host_ip);
 		else {
 			session->req.fp = fopen(path, "wb");
