@@ -4612,7 +4612,7 @@ js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
 		int result = utf8_putc(outbuf, len - 1, codepoint);
 		if(result < 1) {
 			free(outbuf);
-			JS_ReportError(cx, "utf8_encode: error: %d", result);
+			JS_ReportError(cx, "utf8_encode: error: %d for codepoint %X", result, codepoint);
 			return JS_FALSE;
 		}
 		outbuf[result] = 0;
