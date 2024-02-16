@@ -11091,11 +11091,12 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			// their external editor settings
 			var editorQuoteCfg = getExternalEditorQuoteWrapCfgFromSCFG(user.editor);
 			// Check for the drop file casing
-			var quotesFilename = "";
-			if (xtrn_area.editor[user.editor].settings & XTRN_LWRCASE)
-				quotesFilename = "quotes.txt";
-			else
-				quotesFilename = "QUOTES.TXT";
+			var quotesFilename = "QUOTES.TXT";
+			if (user.editor != "" && typeof (xtrn_area.editor[user.editor]) === "object")
+			{
+				if (xtrn_area.editor[user.editor].settings & XTRN_LWRCASE)
+					quotesFilename = quotesFilename.toLowerCase();
+			}
 			// Write the message text to the quotes file
 			quoteFile = new File(system.node_dir + quotesFilename);
 			if (quoteFile.open("w"))
