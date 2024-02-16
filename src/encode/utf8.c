@@ -224,6 +224,28 @@ size_t utf8_str_count_width(const char* str, size_t min_width, size_t max_width)
 	return count;
 }
 
+// Like strlcpy(), but doesn't leave a partial UTF-8 sequence at the end of dst
+size_t utf8_strlcpy(char* dst, const char* src, size_t size)
+{
+	size_t i;
+	int len;
+
+	if (size < 1)
+		return 0;
+
+	for (i = 0; src[i] != '\0'; i += len) {
+		len = utf8_decode_firstbyte(src[i]);
+		if (len < 1)
+			break;
+		if(i + len  < size) {
+			memcpy(dst, src + i, len);
+			dst += len;
+		}
+	}
+	*dst = '\0';
+	return i;
+}
+
 int cp437_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char minval)
 {
 	int retval = 0;

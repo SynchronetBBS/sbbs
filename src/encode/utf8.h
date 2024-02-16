@@ -44,6 +44,9 @@ size_t utf8_str_total_width(const char*);
 // Return the count of chars within the specified width range in UTF-8 string (str)
 size_t utf8_str_count_width(const char*, size_t min_width, size_t max_width);
 
+// Like strlcpy(), but doesn't leave a partial UTF-8 sequence at the end of dst
+size_t utf8_strlcpy(char* dst, const char* src, size_t size);
+
 // Normalizes (to ASCII) chars in UTF-8 string 'str', in-place, resulting in string <= original in length
 char* utf8_normalize_str(char* str);
 
