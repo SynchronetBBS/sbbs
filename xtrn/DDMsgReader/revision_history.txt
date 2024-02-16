@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.95c    2024-02-15   The filename of quotes.txt is now in the correct case for
+                      the user's editor.
+                      "terminalSupportsUTF8 not defined" error eliminated.
 1.95b    2024-02-04   Bug fix: Use the P_UTF8 mode bit when printing UTF-8
                       message header info (such as 'from' and 'to').
                       A dd_lightbar_menu.js update goes along with this.

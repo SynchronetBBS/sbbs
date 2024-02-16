@@ -148,6 +148,9 @@
  * 2024-02-04 Eric Oulashin     Version 1.95b
  *                              Bug fix: Use the P_UTF8 mode bit when printing UTF-8 message header info (such as 'from' and 'to').
  *                              A dd_lightbar_menu.js update goes along with this.
+ * 2024-      Eric Oulashin     Version 1.95c
+ *                              The filename of quotes.txt is now in the correct case for the user's editor.
+ *                              "terminalSupportsUTF8 not defined" error eliminated.
  */
 
 "use strict";
@@ -252,8 +255,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 var hexdump = load('hexdump_lib.js');
 
 // Reader version information
-var READER_VERSION = "1.95b";
-var READER_DATE = "2024-02-04";
+var READER_VERSION = "1.95c";
+var READER_DATE = "2024-02-15";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4760,7 +4763,50 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 	var msgIsUTF8 = pMsgHeader.hasOwnProperty("is_utf8") && pMsgHeader.is_utf8;
 	if (msgIsUTF8)
 	{
-		if (!userConsoleSupportsUTF8)
+		if (userConsoleSupportsUTF8)
+		{
+			//fromName = sbbsifyStr(fromName);
+			// Temporary
+			/*
+			var fieldNew = "";
+			for (var fieldI = 0; fieldI < fromName.length; ++fieldI)
+			{
+				// Credit to Deuce for this code (this was seen in fseditor.js)
+				var encoded = utf8_encode(fromName[fieldI].charCodeAt(0));
+				for (var encodedI = 0; encodedI < encoded.length; ++encodedI)
+					fieldNew += encoded[encodedI];
+			}
+			fromName = fieldNew;
+			*/
+
+			/*
+			// Temporary
+			if (user.is_sysop)
+			{
+				var curPos = console.getxy();
+				if (fromName[0] == "D")
+				{
+					for (var tmpI = 0; tmpI < fromName.length; ++tmpI)
+					{
+						console.gotoxy(1, 1);
+						var debugMsg = tmpI + ": " + fromName[tmpI] + " ASCII: " + str_is_ascii(fromName[tmpI]) + "    ";
+						console.print(debugMsg, P_UTF8);
+						mswait(500);
+					}
+				}
+				console.gotoxy(curPos);
+			}
+			// End Temporary
+			*/
+			/*
+			var printedLen = console.strlen(fromName, P_UTF8);
+			if (fromName.length > printedLen)
+			{
+				fromName += format("%*s", fromName.length - printedLen, "");
+			}
+			*/
+		}
+		else
 		{
 			fromName = utf8_cp437(fromName);
 			toName = utf8_cp437(toName);
@@ -4800,6 +4846,35 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		}
 		else if (msgHdrHasAttachmentFlag(pMsgHeader))
 			msgIndicatorChar = "\x01n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + this.msgListStatusChars.attachments + "\x01n";
+
+		// TODO: Handle UTF-8 in the header fields
+		/*
+		var fromNameForItemStr = fromName.substr(0, this.FROM_LEN);
+		var toNameForItemStr = toName.substr(0, this.TO_LEN);
+		var subjectForItemStr = subject.substr(0, this.SUBJ_LEN);
+		if (msgIsUTF8 && userConsoleSupportsUTF8)
+		{
+			var printedLen = console.strlen(fromNameForItemStr, P_UTF8);
+			fromNameForItemStr = fromNameForItemStr.length + "; " + printedLen;
+			if (fromNameForItemStr.length > printedLen)
+			{
+				//fromNameForItemStr += format("%*s", fromNameForItemStr.length - printedLen, "");
+			}
+		}
+
+		if (this.showScoresInMsgList)
+		{
+			msgHdrStr += format(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
+			       fromNameForItemStr, toNameForItemStr, subjectForItemStr,
+			       msgVoteInfo.voteScore, sDate, sTime);
+		}
+		else
+		{
+			msgHdrStr += format(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
+			       fromNameForItemStr, toNameForItemStr, subjectForItemStr,
+			       sDate, sTime);
+		}
+		*/
 
 		if (this.showScoresInMsgList)
 		{
@@ -4847,6 +4922,45 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		else
 			formatStr = (msgToUser ? this.sMsgInfoToUserFormatStr : (msgIsFromUser ? this.sMsgInfoFromUserFormatStr : this.sMsgInfoFormatStr));
 
+		// TODO: Handle UTF-8 in the header fields
+		/*
+		// Deuce said:
+		// <Deuce> JS Strings are intended for each codepoint to be "one character" in the JS string.
+		// <Deuce> Synchronet does it differently though.
+		// <Deuce> If you want substr to work, you'll ned to convert from UTF-8 into a JS native string.
+		// <Deuce> But then it won't work with format().
+		// <Deuce> Passing a JS native string that has real unicode codepoints in it to a Synchronet function would corrupt the string in wild and wacky ways.
+
+		//var fromNameForItemStr = format("%-" + this.FROM_LEN + "s", fromName.substr(0, this.FROM_LEN));
+		var fromNameForItemStr = fromName.substr(0, this.FROM_LEN);
+		//if (fromNameForItemStr[0] == "D") fromNameForItemStr = str_is_ascii(fromNameForItemStr);
+		var toNameForItemStr = toName.substr(0, this.TO_LEN);
+		var subjectForItemStr = subject.substr(0, this.SUBJ_LEN);
+		if (msgIsUTF8 && userConsoleSupportsUTF8)
+		{
+			var printedLen = console.strlen(fromNameForItemStr, P_UTF8);
+			//fromNameForItemStr = fromNameForItemStr.length + "; " + printedLen;
+			if (fromNameForItemStr.length > printedLen)
+			{
+				// TODO: This isn't working
+				//fromNameForItemStr += format("%*s", fromNameForItemStr.length - printedLen, "");
+				//fromNameForItemStr = format("%-" + this.FROM_LEN + "s", fromName.substr(0, this.FROM_LEN));
+				fromNameForItemStr = utf8_decode(fromName).substr(0, this.FROM_LEN);
+			}
+		}
+
+		if (this.showScoresInMsgList)
+		{
+			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, fromNameForItemStr, toNameForItemStr, subjectForItemStr,
+			       msgVoteInfo.voteScore, sDate, sTime);
+		}
+		else
+		{
+			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, fromNameForItemStr, toNameForItemStr, subjectForItemStr,
+			       sDate, sTime);
+		}
+		*/
+
 		if (this.showScoresInMsgList)
 		{
 			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, fromName.substr(0, this.FROM_LEN),
@@ -4864,6 +4978,7 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 	var returnStrInstead = (typeof(pReturnStrInstead) == "boolean" ? pReturnStrInstead : false);
 	if (!returnStrInstead)
 	{
+		var terminalSupportsUTF8 = (typeof(USER_UTF8) != "undefined" ? console.term_supports(USER_UTF8) : false);
 		var printMode = (terminalSupportsUTF8 && hdrIsUTF8 ? P_UTF8 : P_NONE);
 		console.print(msgHdrStr, printMode);
 		console.cleartoeol("\x01n"); // To clear away any extra text that may have been entered by the user
@@ -10975,8 +11090,14 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			// Get the user's setting for whether or not to wrap quote lines (and how long) from
 			// their external editor settings
 			var editorQuoteCfg = getExternalEditorQuoteWrapCfgFromSCFG(user.editor);
+			// Check for the drop file casing
+			var quotesFilename = "";
+			if (xtrn_area.editor[user.editor].settings & XTRN_LWRCASE)
+				quotesFilename = "quotes.txt";
+			else
+				quotesFilename = "QUOTES.TXT";
 			// Write the message text to the quotes file
-			quoteFile = new File(system.node_dir + "QUOTES.TXT");
+			quoteFile = new File(system.node_dir + quotesFilename);
 			if (quoteFile.open("w"))
 			{
 				var msgNum = (typeof(pMsgIdx) === "number" ? pMsgIdx+1 : null);
@@ -11580,8 +11701,25 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		for (var hdrFileIdx = 0; hdrFileIdx < enhHdrLines.length; ++hdrFileIdx)
 		{
 			console.gotoxy(screenX, screenY++);
-			console.putmsg(this.ParseMsgAtCodes(enhHdrLines[hdrFileIdx], pMsgHdr,
-			               pDisplayMsgNum, dateTimeStr, useBBSLocalTimeZone, false), printMode);
+			// For Synchronet 3.20:
+			/*
+			<git_rswindell> From: Rob Swindell (on Windows 11)
+			<git_rswindell>
+			https://gitlab.synchro.net/main/sbbs/-/commit/90b93e4a1eb53532faca437a
+			<git_rswindell>     Modified src/sbbs3/js_bbs.cpp
+			<git_rswindell> Support optional msg_header argument to bbs.expand_atcodes()
+			<git_rswindell> For Nightfox's use in DDMsgReader.
+			*/
+			//if (typeof(bbs.expand_atcodes) === "function")
+			if (false)
+			{
+				console.putmsg(enhHdrLines[hdrFileIdx], pMsgHdr);
+			}
+			else
+			{
+				console.putmsg(this.ParseMsgAtCodes(enhHdrLines[hdrFileIdx], pMsgHdr,
+				               pDisplayMsgNum, dateTimeStr, useBBSLocalTimeZone, false), printMode);
+			}
 		}
 		// Older - Used to center the header lines, but I'm not sure this is necessary,
 		// and it might even make the header off by one, which could be bad.
@@ -24429,7 +24567,6 @@ function entryExistsInGlobalEmailFilter(pEmailAddr)
 	}
 	return entryExists;
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////////
 
