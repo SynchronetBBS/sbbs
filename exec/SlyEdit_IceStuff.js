@@ -83,7 +83,7 @@ function globalScreenVarsSetup_IceStyle()
 {
 	gSubjPos.x = 12;
 	gSubjPos.y = 3;
-	gSubjScreenLen = +(console.screen_columns * (54/80)).toFixed(0);
+	gSubjScreenLen = Math.floor(console.screen_columns * (54/80));
 }
 
 // Re-draws the screen, in the style of IceEdit.
@@ -106,47 +106,40 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// border line only once, for efficiency).
 	if (typeof(redrawScreen_IceStyle.topBorder) == "undefined")
 	{
-      redrawScreen_IceStyle.topBorder = UPPER_LEFT_SINGLE;
-      var innerWidth = console.screen_columns - 2;
-      for (var i = 0; i < innerWidth; ++i)
-         redrawScreen_IceStyle.topBorder += HORIZONTAL_SINGLE;
-      redrawScreen_IceStyle.topBorder += UPPER_RIGHT_SINGLE;
-      redrawScreen_IceStyle.topBorder = randomTwoColorString(redrawScreen_IceStyle.topBorder,
-                                                             gConfigSettings.iceColors.BorderColor1,
-                                                             gConfigSettings.iceColors.BorderColor2);
-   }
-   // Print the border line on the screen
-   console.clear();
-   console.print(redrawScreen_IceStyle.topBorder);
+		redrawScreen_IceStyle.topBorder = UPPER_LEFT_SINGLE;
+		var innerWidth = console.screen_columns - 2;
+		for (var i = 0; i < innerWidth; ++i)
+			redrawScreen_IceStyle.topBorder += HORIZONTAL_SINGLE;
+		redrawScreen_IceStyle.topBorder += UPPER_RIGHT_SINGLE;
+		redrawScreen_IceStyle.topBorder = randomTwoColorString(redrawScreen_IceStyle.topBorder,
+		                                                       gConfigSettings.iceColors.BorderColor1,
+		                                                       gConfigSettings.iceColors.BorderColor2);
+	}
+	// Print the border line on the screen
+	console.clear();
+	console.print(redrawScreen_IceStyle.topBorder);
 
 	// Next line
 	// To name
 	var lineNum = 2;
+	var toNameLineNum = lineNum;
 	console.gotoxy(1, lineNum);
-	// Calculate the width of the user alias field: 28 characters, based
-	// on an 80-column screen width.
-	var fieldWidth = (console.screen_columns * (29/80)).toFixed(0);
-	var screenText = gToName.substr(0, fieldWidth);
 	console.print("\x01n" + randomTwoColorString(VERTICAL_SINGLE,
-	                                            gConfigSettings.iceColors.BorderColor1,
-	                                            gConfigSettings.iceColors.BorderColor2) +
-				  gConfigSettings.iceColors.TopInfoBkgColor + " " +
-				  gConfigSettings.iceColors.TopLabelColor + "TO" +
-				  gConfigSettings.iceColors.TopLabelColonColor + ": " +
-				  gConfigSettings.iceColors.TopToColor);
-	console.print(screenText, gPrintMode); // Support UTF-8 in the "To" name
-	fieldWidth -= console.strlen(screenText, gPrintMode);
+	              gConfigSettings.iceColors.BorderColor1,
+	              gConfigSettings.iceColors.BorderColor2) +
+	              gConfigSettings.iceColors.TopInfoBkgColor + " " +
+	              gConfigSettings.iceColors.TopLabelColor + "TO" +
+	              gConfigSettings.iceColors.TopLabelColonColor + ": " +
+	              gConfigSettings.iceColors.TopToColor);
+	var fieldWidth = Math.floor(console.screen_columns * (29/80));
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(" ");
 
 	// From name
-	fieldWidth = (console.screen_columns * (29/80)).toFixed(0);
-	screenText = gFromName.substr(0, fieldWidth);
+	var fromNameLineNum = toNameLineNum;
 	console.print(" " + gConfigSettings.iceColors.TopLabelColor + "FROM" +
 	              gConfigSettings.iceColors.TopLabelColonColor + ": " +
 	              gConfigSettings.iceColors.TopFromColor);
-				  console.print(screenText, gPrintMode); // Support UTF-8 in the "From" name
-	fieldWidth -= console.strlen(screenText, gPrintMode);
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(" ");
 	// More spaces until the time location
@@ -162,29 +155,26 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	console.print(" ");
 	displayTime_IceStyle();
 	console.print(" " + randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.iceColors.BorderColor1,
-	                                         gConfigSettings.iceColors.BorderColor2));
+	              gConfigSettings.iceColors.BorderColor2));
 
 	// Next line: Subject, time left, insert/overwrite mode
-	++lineNum;
+	var subjectLineNum = ++lineNum;
 	console.gotoxy(1, lineNum);
 	// Subject
-	fieldWidth = (console.screen_columns * (54/80)).toFixed(0);
-	screenText = gMsgSubj.substr(0, fieldWidth);
 	console.print("\x01n" + randomTwoColorString(VERTICAL_SINGLE,
-	                                           gConfigSettings.iceColors.BorderColor1,
-	                                           gConfigSettings.iceColors.BorderColor2) +
-	                                           gConfigSettings.iceColors.TopInfoBkgColor + " " +
-	                                           gConfigSettings.iceColors.TopLabelColor + "SUBJECT" +
-	                                           gConfigSettings.iceColors.TopLabelColonColor + ": " +
-	                                           gConfigSettings.iceColors.TopSubjectColor);
-	console.print(screenText, gPrintMode); // Support UTF-8 in the subject
-	fieldWidth -= console.strlen(screenText, gPrintMode);
+	              gConfigSettings.iceColors.BorderColor1,
+	              gConfigSettings.iceColors.BorderColor2) +
+	              gConfigSettings.iceColors.TopInfoBkgColor + " " +
+	              gConfigSettings.iceColors.TopLabelColor + "SUBJECT" +
+	              gConfigSettings.iceColors.TopLabelColonColor + ": " +
+	              gConfigSettings.iceColors.TopSubjectColor);
+	fieldWidth = Math.floor(console.screen_columns * (54/80));
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(" ");
 
 	// Time left
-	fieldWidth = (console.screen_columns * (4/80)).toFixed(0);
-	screenText = Math.floor(bbs.time_left / 60).toString().substr(0, fieldWidth);
+	fieldWidth = Math.floor(console.screen_columns * (4/80));
+	var screenText = Math.floor(bbs.time_left / 60).toString().substr(0, fieldWidth);
 	startX = console.screen_columns - fieldWidth - 10;
 	// Before outputting the time left, write more spaces until the starting
 	// horizontal location.
@@ -204,82 +194,103 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// Insert/overwrite mode
 	console.print(" " + gConfigSettings.iceColors.EditMode + pInsertMode + " \x01n" +
 	              randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.iceColors.BorderColor1,
-	                                                    gConfigSettings.iceColors.BorderColor2));
-	
+	              gConfigSettings.iceColors.BorderColor2));
+
 	// Next line: Top border for the message area and also includes the user #,
 	// message area, and node #.
 	// Generate this border line only once, for efficiency.
 	if (typeof(redrawScreen_IceStyle.msgAreaBorder) == "undefined")
 	{
-      redrawScreen_IceStyle.msgAreaBorder = "\x01n"
-                         + randomTwoColorString(LEFT_T_SINGLE + HORIZONTAL_SINGLE,
-                                                gConfigSettings.iceColors.BorderColor1,
-                                                gConfigSettings.iceColors.BorderColor2)
-      // User #, padded with high-black dim block characters, 5 characters for a screen
-      // that's 80 characters wide.
-                       + "\x01h" + THIN_RECTANGLE_LEFT + "#\x01k";
-      fieldWidth = (console.screen_columns * (5/80)).toFixed(0) - user.number.toString().length;
-      for (var i = 0; i < fieldWidth; ++i)
-         redrawScreen_IceStyle.msgAreaBorder += BLOCK1;
-      redrawScreen_IceStyle.msgAreaBorder += "\x01c" + user.number
-                                           + gConfigSettings.iceColors.BorderColor1
-                                           + THIN_RECTANGLE_RIGHT;
+		redrawScreen_IceStyle.msgAreaBorder = "\x01n"
+		                                    + randomTwoColorString(LEFT_T_SINGLE + HORIZONTAL_SINGLE,
+		                                    gConfigSettings.iceColors.BorderColor1,
+		                                    gConfigSettings.iceColors.BorderColor2)
+		                                    // User #, padded with high-black dim block characters,
+		                                    // 5 characters for a screen that's 80 characters wide.
+		                                    + "\x01h" + THIN_RECTANGLE_LEFT + "#\x01k";
+		fieldWidth = Math.floor(console.screen_columns * (5/80)) - user.number.toString().length;
+		for (var i = 0; i < fieldWidth; ++i)
+			redrawScreen_IceStyle.msgAreaBorder += BLOCK1;
+		redrawScreen_IceStyle.msgAreaBorder += "\x01c" + user.number
+											+ gConfigSettings.iceColors.BorderColor1
+											+ THIN_RECTANGLE_RIGHT;
 
-      // The message area name should be centered on the line.  So, based on its
-      // length (up to 35 characters), figure out its starting position before
-      // printing it.
-      //var msgAreaName = gMsgArea.substr(0, 20); // Used to be 20 characters
-      var msgAreaName = gMsgArea.substr(0, 35);
-      // 2 is subtracted from the starting position to leave room for the
-      // block character and the space.
-      var startPos = (console.screen_columns/2).toFixed(0) - (msgAreaName.length/2).toFixed(0) - 2;
-      // Write border characters up to the message area name start position
-      screenText = "";
-      for (var i = console.strlen(redrawScreen_IceStyle.msgAreaBorder); i < startPos; ++i)
-         screenText += HORIZONTAL_SINGLE;
-      redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(screenText,
-                                                             gConfigSettings.iceColors.BorderColor1,
-                                                             gConfigSettings.iceColors.BorderColor2);
+		// The message area name should be centered on the line.  So, based on its
+		// length (up to 35 characters), figure out its starting position before
+		// printing it.
+		//var msgAreaName = gMsgArea.substr(0, 20); // Used to be 20 characters
+		var msgAreaName = gMsgArea.substr(0, 35);
+		// 2 is subtracted from the starting position to leave room for the
+		// block character and the space.
+		var startPos = Math.floor(console.screen_columns/2) - Math.floor(msgAreaName.length/2) - 2;
+		// Write border characters up to the message area name start position
+		screenText = "";
+		for (var i = console.strlen(redrawScreen_IceStyle.msgAreaBorder); i < startPos; ++i)
+			screenText += HORIZONTAL_SINGLE;
+		redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(screenText,
+																	gConfigSettings.iceColors.BorderColor1,
+																	gConfigSettings.iceColors.BorderColor2);
 
-      // Write the message area name
-      redrawScreen_IceStyle.msgAreaBorder += "\x01h" + gConfigSettings.iceColors.BorderColor1
-                  + THIN_RECTANGLE_LEFT + " " + iceText(msgAreaName, "\x01w") + " \x01h"
-                  + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_RIGHT;
+		// Write the message area name
+		redrawScreen_IceStyle.msgAreaBorder += "\x01h" + gConfigSettings.iceColors.BorderColor1
+		                                    + THIN_RECTANGLE_LEFT + " " + iceText(msgAreaName, "\x01w") + " \x01h"
+		                                    + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_RIGHT;
 
-      // Calculate the field width for the node number field.
-      // For the node # field, use 3 characters for a screen 80 characters wide.
-      fieldWidth = (console.screen_columns * (3/80)).toFixed(0);
-      // Calculate the horizontal starting position for the node field.
-      var nodeFieldStartPos = console.screen_columns - fieldWidth - 9;
+		// Calculate the field width for the node number field.
+		// For the node # field, use 3 characters for a screen 80 characters wide.
+		fieldWidth = Math.floor(console.screen_columns * (3/80));
+		// Calculate the horizontal starting position for the node field.
+		var nodeFieldStartPos = console.screen_columns - fieldWidth - 9;
 
-      // Write horizontal border characters up until the point where we'll output
-      // the node number.
-      screenText = "";
-      for (var posX = console.strlen(redrawScreen_IceStyle.msgAreaBorder); posX < nodeFieldStartPos; ++posX)
-         screenText += HORIZONTAL_SINGLE;
-      redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(screenText,
-                                                            gConfigSettings.iceColors.BorderColor1,
-                                                            gConfigSettings.iceColors.BorderColor2);
+		// Write horizontal border characters up until the point where we'll output
+		// the node number.
+		screenText = "";
+		for (var posX = console.strlen(redrawScreen_IceStyle.msgAreaBorder); posX < nodeFieldStartPos; ++posX)
+			screenText += HORIZONTAL_SINGLE;
+		redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(screenText,
+																	gConfigSettings.iceColors.BorderColor1,
+																	gConfigSettings.iceColors.BorderColor2);
 
-      // Output the node # field
-      redrawScreen_IceStyle.msgAreaBorder += "\x01h" + gConfigSettings.iceColors.BorderColor1
-                         + THIN_RECTANGLE_LEFT + iceText("Node", "\x01w") + "\x01n\x01b:\x01h\x01k";
-      fieldWidth -= bbs.node_num.toString().length;
-      for (var i = 0; i < fieldWidth; ++i)
-         redrawScreen_IceStyle.msgAreaBorder += BLOCK1;
-      redrawScreen_IceStyle.msgAreaBorder += "\x01c" + bbs.node_num
-                         + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_RIGHT;
+		// Output the node # field
+		redrawScreen_IceStyle.msgAreaBorder += "\x01h" + gConfigSettings.iceColors.BorderColor1
+		                                    + THIN_RECTANGLE_LEFT + iceText("Node", "\x01w") + "\x01n\x01b:\x01h\x01k";
+		fieldWidth -= bbs.node_num.toString().length;
+		for (var i = 0; i < fieldWidth; ++i)
+			redrawScreen_IceStyle.msgAreaBorder += BLOCK1;
+		redrawScreen_IceStyle.msgAreaBorder += "\x01c" + bbs.node_num
+		                                    + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_RIGHT;
 
-      // Write the last 2 characters of top border
-      redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(HORIZONTAL_SINGLE + RIGHT_T_SINGLE,
-                                                               gConfigSettings.iceColors.BorderColor1,
-                                                               gConfigSettings.iceColors.BorderColor2);
+		// Write the last 2 characters of top border
+		redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(HORIZONTAL_SINGLE + RIGHT_T_SINGLE,
+		                                                            gConfigSettings.iceColors.BorderColor1,
+		                                                            gConfigSettings.iceColors.BorderColor2);
 	}
 	// Draw the border line on the screen
 	++lineNum;
 	console.gotoxy(1, lineNum);
 	console.print(redrawScreen_IceStyle.msgAreaBorder);
-	
+
+	// Display the message header information fields (From, To, Subj, Area). We use
+	// gotoxy() and print these last in case they're UTF-8, to avoid header graphic
+	// chars moving around.
+	// TODO: Doing a substr() on UTF-8 strings seems to result in them being shorter
+	// than intended if there are multi-byte characters.
+	// To name
+	console.gotoxy(7, toNameLineNum);
+	console.print("\x01n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopToColor);
+	var toName = gToName.substr(0, Math.floor(console.screen_columns * (29/80)));
+	console.print(toName, P_AUTO_UTF8);
+	// From name
+	console.gotoxy(43, fromNameLineNum);
+	console.print("\x01n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopFromColor);
+	var fromName = gFromName.substr(0, Math.floor(console.screen_columns * (29/80)));
+	console.print(fromName, P_AUTO_UTF8);
+	// Subject
+	console.gotoxy(12, subjectLineNum);
+	console.print("\x01n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopSubjectColor);
+	var subj = gMsgSubj.substr(0, Math.floor(console.screen_columns * (54/80)));
+	console.print(subj, P_AUTO_UTF8);
+
 	// Display the bottom message area border and help line
 	DisplayTextAreaBottomBorder_IceStyle(pEditBottom + 1, pUseQuotes);
 	DisplayBottomHelpLine_IceStyle(console.screen_rows, pUseQuotes);
@@ -391,8 +402,8 @@ function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
 		               + iceText("Press ESCape For Help", "\x01w");
 		// Calculate the starting position to center the help text, and front-pad
 		// DisplayBottomHelpLine_IceStyle.helpText with that many spaces.
-		var xPos = (console.screen_columns / 2).toFixed(0)
-		         - (console.strlen(screenText) / 2).toFixed(0);
+		var xPos = Math.floor(console.screen_columns / 2)
+		         - Math.floor(console.strlen(screenText) / 2);
 		DisplayBottomHelpLine_IceStyle.helpText = "";
 		for (var i = 0; i < xPos; ++i)
 			DisplayBottomHelpLine_IceStyle.helpText += " ";
@@ -588,7 +599,7 @@ function displayTime_IceStyle(pTimeStr)
 // Displays the number of minutes remaining on the screen.
 function displayTimeRemaining_IceStyle()
 {
-   var fieldWidth = (console.screen_columns * (4/80)).toFixed(0);
+	var fieldWidth =Math.floor(console.screen_columns * (4/80));
 	var formatStr = "\x01n" + gConfigSettings.iceColors.TopInfoBkgColor
 	              + gConfigSettings.iceColors.TopTimeLeftColor + "%-"
 	              + fieldWidth + "s";
