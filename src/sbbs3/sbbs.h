@@ -266,6 +266,8 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "xpdatetime.h"
 #include "unicode_defs.h"
 
+#define SAFECOPY_UTF8(dst, src) if(utf8_str_is_valid(src)) utf8_strlcpy(dst, src, sizeof dst); else SAFECOPY(dst, src)
+
 /***********************/
 /* Synchronet-specific */
 /***********************/
@@ -577,6 +579,7 @@ public:
 	int		tabstop = 8;	/* Current symmetric-tabstop (size) */
 	int		lastlinelen = 0;	/* The previously displayed line length */
 	int 	autoterm=0;		/* Auto-detected terminal type */
+	size_t	unicode_zerowidth=0;
 	char	terminal[TELNET_TERM_MAXLEN+1]{};	// <- answer() writes to this
 	int		cterm_version=0;/* (MajorVer*1000) + MinorVer */
 	link_list_t savedlines{};

@@ -29,7 +29,7 @@ char* sbbs_t::auto_utf8(const char* str, int& mode)
 {
 	if(strncmp(str, "\xEF\xBB\xBF", 3) == 0) {
 		mode |= P_UTF8;
-		return (char*)(str + 3);
+		return (char*)str;
 	}
 	if(mode & P_AUTO_UTF8) {
 		if(!str_is_ascii(str) && utf8_str_is_valid(str))
@@ -155,7 +155,7 @@ size_t sbbs_t::bstrlen(const char *str, int mode)
 			len = utf8_getc(str, end - str, &codepoint);
 			if(len < 1)
 				break;
-			count += unicode_width(codepoint);;
+			count += unicode_width(codepoint, unicode_zerowidth);
 		} else
 			count++;
 		str += len;
@@ -347,7 +347,7 @@ size_t sbbs_t::print_utf8_as_cp437(const char* str, size_t len)
 	char ch = unicode_to_cp437(codepoint);
 	if(ch)
 		outchar(ch);
-	else if(unicode_width(codepoint) > 0) {
+	else if(unicode_width(codepoint, unicode_zerowidth) > 0) {
 		outchar(CP437_INVERTED_QUESTION_MARK);
 		char seq[32] = "";
 		for(size_t i = 0; i < len; i++)
@@ -796,7 +796,7 @@ int sbbs_t::outchar(enum unicode_codepoint codepoint, const char* cp437_fallback
 		if(len < 1)
 			return len;
 		putcom(str, len);
-		inc_column(unicode_width(codepoint));
+		inc_column(unicode_width(codepoint, unicode_zerowidth));
 		return 0;
 	}
 	if(cp437_fallback == NULL)

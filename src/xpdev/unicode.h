@@ -23,6 +23,7 @@
 #define UNICODE_H_
 
 #include <stdlib.h>
+#include "gen_defs.h"
 #include "unicode_defs.h"
 
 #if defined(__cplusplus)
@@ -30,7 +31,8 @@ extern "C" {
 #endif
 
 extern enum unicode_codepoint cp437_unicode_tbl[];
-size_t unicode_width(enum unicode_codepoint);
+bool unicode_is_zerowidth(enum unicode_codepoint);
+size_t unicode_width(enum unicode_codepoint, size_t zerowidth);
 char unicode_to_cp437(enum unicode_codepoint);
 char unicode_to_latin1(enum unicode_codepoint);
 

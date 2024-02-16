@@ -80,7 +80,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 	}
 
 	SAFECOPY(undo,str1);
-	i=l=strlen(str1);
+	i=l=bstrlen(str1, P_AUTO_UTF8);
 	if(mode&K_AUTODEL && str1[0] && !(mode&K_NOECHO)) {
 		ch=getkey(mode|K_GETSTR);
 		attr(atr);
@@ -92,7 +92,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 		else {
 			for(i=0;i<l;i++)
 				outchar(BS);
-			column+=rputs(str1);
+			column+=bputs(str1, P_AUTO_UTF8);
 			i=l;
 		}
 		if(ch!=' ' && ch!=TAB)
@@ -353,7 +353,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				break;
 			case CTRL_R:    /* Ctrl-R Redraw Line */
 				if(!(mode&K_NOECHO))
-					redrwstr(str1,i,l,K_MSG);
+					redrwstr(str1,i,l, P_AUTO_UTF8);
 				break;
 			case TERM_KEY_INSERT:	/* Ctrl-V			Toggles Insert/Overwrite */
 				if(mode&K_NOECHO)

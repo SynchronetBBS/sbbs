@@ -40,8 +40,9 @@ void sbbs_t::redrwstr(char *strin, int i, int l, int mode)
 		column+=rprintf("%-*.*s",l,l,strin);
 	cleartoeol();
 	if(i<l) {
+		auto_utf8(strin, mode);
 		if(mode&P_UTF8)
-			l = utf8_str_total_width(strin);
+			l = utf8_str_total_width(strin, unicode_zerowidth);
 		cursor_left(l-i);
 	}
 }

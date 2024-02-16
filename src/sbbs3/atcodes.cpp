@@ -201,9 +201,9 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 	}
 	if(pmode & P_UTF8) {
 		if(term_supports(UTF8))
-			fmt.disp_len += strlen(cp) - utf8_str_total_width(cp);
+			fmt.disp_len += strlen(cp) - utf8_str_total_width(cp, unicode_zerowidth);
 		else
-			fmt.disp_len += strlen(cp) - utf8_str_count_width(cp, /* min: */1, /* max: */2);
+			fmt.disp_len += strlen(cp) - utf8_str_count_width(cp, /* min: */1, /* max: */2, unicode_zerowidth);
 	}
 	if(fmt.align == fmt.left)
 		bprintf(pmode, "%-*.*s",fmt.disp_len,fmt.disp_len,cp);

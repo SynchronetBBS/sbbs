@@ -1013,7 +1013,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 						,msghdr_field(&msg, msg.subj)
 						,timestr(msg.hdr.when_written.time)));
 				if(msg.from_net.addr==NULL)
-					SAFECOPY(str,msg.from);
+					SAFECOPY_UTF8(str,msg.from);
 				else if(msg.from_net.type==NET_FIDO)
 					SAFEPRINTF2(str,"%s@%s",msg.from
 						,smb_faddrtoa((faddr_t *)msg.from_net.addr,tmp));

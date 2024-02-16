@@ -4668,6 +4668,7 @@ js_utf8_get_width(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		str = NULL;
 	jsrefcount	rc;
+	int			zerowidth = 1;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -4680,7 +4681,7 @@ js_utf8_get_width(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	size_t width = utf8_str_total_width(str);
+	size_t width = utf8_str_total_width(str, zerowidth);
 	JS_RESUMEREQUEST(cx, rc);
 
 	free(str);

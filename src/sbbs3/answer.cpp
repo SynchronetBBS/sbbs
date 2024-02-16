@@ -501,8 +501,10 @@ bool sbbs_t::answer()
 						if(x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x; 
 						if(y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
 					} else {	// second report
-						if(x < 3)	// ZWNBSP didn't move cursor (more than one column)
+						if(x < 3) {	// ZWNBSP didn't move cursor (more than one column)
 							autoterm |= UTF8;
+							unicode_zerowidth = x - 1;
+						}
 					}
 				} else if(sscanf(p, "[=67;84;101;114;109;%u;%u", &x, &y) == 2 && *lastchar(p) == 'c') {
 					lprintf(LOG_INFO,"received CTerm version report: %u.%u", x, y);

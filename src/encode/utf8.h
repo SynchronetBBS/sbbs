@@ -39,10 +39,10 @@ int utf8_decode_firstbyte(char ch);
 bool utf8_str_is_valid(const char*);
 
 // Returns the fixed printed-width of the UTF-8 string
-size_t utf8_str_total_width(const char*);
+size_t utf8_str_total_width(const char*, size_t zerowidth);
 
 // Return the count of chars within the specified width range in UTF-8 string (str)
-size_t utf8_str_count_width(const char*, size_t min_width, size_t max_width);
+size_t utf8_str_count_width(const char*, size_t min_width, size_t max_width, size_t zerowidth);
 
 // Like strlcpy(), but doesn't leave a partial UTF-8 sequence at the end of dst
 size_t utf8_strlcpy(char* dst, const char* src, size_t size);

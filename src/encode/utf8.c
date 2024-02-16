@@ -167,7 +167,7 @@ char* utf8_replace_chars(char* str, char (*lookup)(enum unicode_codepoint), char
 				continue;
 			}
 		}
-		if(unicode_width(codepoint) == 0) {
+		if(unicode_is_zerowidth(codepoint)) {
 			if(unsupported_zwch)
 				*dest++ = unsupported_zwch;
 		} 
@@ -191,7 +191,7 @@ bool utf8_str_is_valid(const char* str)
 }
 
 // Return the total printed-width of UTF-8 string (str) accounting for zero/half/full-width codepoints
-size_t utf8_str_total_width(const char* str)
+size_t utf8_str_total_width(const char* str, size_t zerowidth)
 {
 	size_t count = 0;
 	const char* end = str + strlen(str);
@@ -200,14 +200,14 @@ size_t utf8_str_total_width(const char* str)
 		int len = utf8_getc(str, end - str, &codepoint);
 		if (len < 1)
 			break;
-		count += unicode_width(codepoint);
+		count += unicode_width(codepoint, zerowidth);
 		str += len;
 	}
 	return count;
 }
 
 // Return the count of chars within the specified width range in UTF-8 string (str)
-size_t utf8_str_count_width(const char* str, size_t min_width, size_t max_width)
+size_t utf8_str_count_width(const char* str, size_t min_width, size_t max_width, size_t zerowidth)
 {
 	size_t count = 0;
 	const char* end = str + strlen(str);
@@ -216,7 +216,7 @@ size_t utf8_str_count_width(const char* str, size_t min_width, size_t max_width)
 		int len = utf8_getc(str, end - str, &codepoint);
 		if (len < 1)
 			break;
-		size_t width = unicode_width(codepoint);
+		size_t width = unicode_width(codepoint, zerowidth);
 		if(width >= min_width && width <= max_width)
 			count++;
 		str += len;

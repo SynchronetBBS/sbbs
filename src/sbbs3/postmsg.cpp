@@ -92,18 +92,18 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	}
 
 	if(remsg) {
-		SAFECOPY(title, msghdr_field(remsg, remsg->subj, NULL, term_supports(UTF8)));
+		SAFECOPY_UTF8(title, msghdr_field(remsg, remsg->subj, NULL, term_supports(UTF8)));
 		if(remsg->hdr.attr&MSG_ANONYMOUS)
 			SAFECOPY(from,text[Anonymous]);
 		else
-			SAFECOPY(from, msghdr_field(remsg, remsg->from, NULL, term_supports(UTF8)));
+			SAFECOPY_UTF8(from, msghdr_field(remsg, remsg->from, NULL, term_supports(UTF8)));
 		// If user posted this message, reply to the original recipient again
 		if(remsg->to != NULL
 			&& ((remsg->from_ext != NULL && atoi(remsg->from_ext)==useron.number)
 				|| stricmp(useron.alias,remsg->from) == 0 || stricmp(useron.name,remsg->from) == 0))
-			SAFECOPY(touser, msghdr_field(remsg, remsg->to, NULL, term_supports(UTF8)));
+			SAFECOPY_UTF8(touser, msghdr_field(remsg, remsg->to, NULL, term_supports(UTF8)));
 		else
-			SAFECOPY(touser,from);
+			SAFECOPY_UTF8(touser,from);
 		if(remsg->to != NULL)
 			strListPush(&names, remsg->to);
 		msgattr=(ushort)(remsg->hdr.attr&MSG_PRIVATE);

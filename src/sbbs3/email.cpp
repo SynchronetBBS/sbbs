@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "cmdshell.h"
+#include "utf8.h"
 
 /****************************************************************************/
 /* Mails a message to usernumber. 'top' is a buffer to place at beginning   */
@@ -47,9 +48,9 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	smbmsg_t	msg;
 
 	if(subj != NULL)
-		SAFECOPY(title, subj);
+		SAFECOPY_UTF8(title, subj);
 	if(remsg != NULL && title[0] == 0)
-		SAFECOPY(title, remsg->subj);
+		SAFECOPY_UTF8(title, remsg->subj);
 
 	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt&FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);

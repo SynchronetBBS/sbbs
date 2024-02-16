@@ -294,10 +294,9 @@ enum unicode_codepoint cp437_unicode_tbl[] =
 	/* 0xFF */ UNICODE_NO_BREAK_SPACE
 };
 
-size_t unicode_width(enum unicode_codepoint u)
+bool unicode_is_zerowidth(enum unicode_codepoint u)
 {
 	switch(u) {
-		case UNICODE_UNDEFINED:
 		case UNICODE_ZERO_WIDTH_SPACE:
 		case UNICODE_ZERO_WIDTH_NON_JOINER:
 		case UNICODE_ZERO_WIDTH_JOINER:
@@ -318,6 +317,15 @@ size_t unicode_width(enum unicode_codepoint u)
 		case UNICODE_VARIATION_SELECTOR_15:
 		case UNICODE_VARIATION_SELECTOR_16:
 		case UNICODE_ZERO_WIDTH_NO_BREAK_SPACE:
+			return true;
+	}
+	return false;
+}
+
+size_t unicode_width(enum unicode_codepoint u, size_t zerowidth)
+{
+	switch(u) {
+		case UNICODE_UNDEFINED:
 			return 0;
 		// Exceptions to the ranges (blocks/sub-blocks) in the default case
 		case UNICODE_CIRCLED_NUMBER_TEN_ON_BLACK_SQUARE:
@@ -383,6 +391,8 @@ size_t unicode_width(enum unicode_codepoint u)
 				|| (u >= UNICODE_BLOCK_EXTA_SYMBOLS_AND_PICTOGRAPHS_BEGIN	&& u <= UNICODE_BLOCK_EXTA_SYMBOLS_AND_PICTOGRAPHS_END)
 				)
 				return 2;
+			if(unicode_is_zerowidth(u))
+				return zerowidth;
 			return 1;
 	}
 }
