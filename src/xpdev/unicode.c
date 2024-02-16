@@ -318,8 +318,9 @@ bool unicode_is_zerowidth(enum unicode_codepoint u)
 		case UNICODE_VARIATION_SELECTOR_16:
 		case UNICODE_ZERO_WIDTH_NO_BREAK_SPACE:
 			return true;
+		default:
+			return false;
 	}
-	return false;
 }
 
 size_t unicode_width(enum unicode_codepoint u, size_t zerowidth)
