@@ -438,7 +438,7 @@ uint hptoi(const char *str)
 }
 
 /****************************************************************************/
-/* Returns true if a is a valid ctrl-a "attribute" code, FALSE if it isn't. */
+/* Returns true if a is a valid ctrl-a "attribute" code, false if it isn't. */
 /****************************************************************************/
 bool valid_ctrl_a_attr(char a)
 {
@@ -468,11 +468,11 @@ bool valid_ctrl_a_attr(char a)
 		case '7':   /* white    bg  */
 			return(true); 
 	}
-	return(FALSE);
+	return(false);
 }
 
 /****************************************************************************/
-/* Returns true if a is a valid QWKnet compatible Ctrl-A code, else FALSE	*/
+/* Returns true if a is a valid QWKnet compatible Ctrl-A code, else false	*/
 /****************************************************************************/
 bool valid_ctrl_a_code(char a)
 {
@@ -549,7 +549,7 @@ bool str_is_ascii(const char* str)
 {
 	for(const char* p = str; *p != 0; p++) {
 		if(*p < 0)
-			return FALSE;
+			return false;
 	}
 	return true;
 }
@@ -560,7 +560,7 @@ bool str_has_ctrl(const char* str)
 		if((uchar)*p < ' ')
 			return true;
 	}
-	return FALSE;
+	return false;
 }
 
 /****************************************************************************/
