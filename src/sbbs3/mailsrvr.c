@@ -1936,8 +1936,8 @@ static void exempt_email_addr(const char* comment
 	angle_bracket(to, sizeof(to), toaddr);
 	if(!email_addr_is_exempt(to)) {
 		SAFEPRINTF(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
-		if((fp=fopen(fname,"a"))==NULL)
-			lprintf(LOG_ERR,"0000 !Error opening file: %s", fname);
+		if((fp=fnopen(NULL, fname, O_CREAT|O_WRONLY|O_APPEND))==NULL)
+			lprintf(LOG_ERR,"0000 !Error %d opening file: %s", errno, fname);
 		else {
 			lprintf(LOG_INFO,"0000 %s: %s", comment, to);
 			fprintf(fp,"\n;%s from %s on %s\n%s\n"
