@@ -840,7 +840,7 @@ gdi_thread(void *arg)
 				vstat.winheight *= ciolib_initial_scaling;
 				ciolib_initial_scaling = bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
 			}
-			else {
+			if (ciolib_initial_scaling < 1.0) {
 				ciolib_initial_scaling = 1.0;
 			}
 		}

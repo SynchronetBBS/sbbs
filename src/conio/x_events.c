@@ -1243,7 +1243,7 @@ static int video_init()
 			if (x11_get_maxsize(&w, &h)) {
 				ciolib_initial_scaling = bitmap_double_mult_inside(w, h);
 			}
-			else {
+			if (ciolib_initial_scaling < 1.0) {
 				ciolib_initial_scaling = 1.0;
 			}
 		}
