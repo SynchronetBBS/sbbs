@@ -69,7 +69,7 @@ cryptlib_error_message(int status, const char *msg)
 {
 	char  str[64];
 	char  str2[64];
-	char *errmsg;
+	char *errmsg = NULL;
 	int   err_len;
 	bool  err_written = false;
 
@@ -86,8 +86,8 @@ cryptlib_error_message(int status, const char *msg)
 				sprintf(str2, "Error %d %s", status, msg);
 				uifcmsg(str2, errmsg);
 				err_written = true;
+				free(errmsg);
 			}
-			free(errmsg);
 		}
 	}
 	if (!err_written) {
@@ -249,7 +249,7 @@ ssh_input_thread(void *args)
 			if (chan == -1) {
 				if (sftp_channel != -1) {
 					FlushData(ssh_session);
-					status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel);
+					status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sftp_channel);
 					if (status == CRYPT_ERROR_NOTFOUND) {
 						chan = sftp_channel;
 					}
@@ -259,7 +259,7 @@ ssh_input_thread(void *args)
 		}
 
 		if (cryptStatusError(popstatus)) {
-			if (chan == -1 || (popstatus == CRYPT_ERROR_COMPLETE) || (popstatus == CRYPT_ERROR_READ)) { /* connection closed */
+			if (chan == -1) { /* connection closed */
 				pthread_mutex_lock(&ssh_mutex);
 				status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, chan);
 				if (status != CRYPT_ERROR_NOTFOUND) {
@@ -315,6 +315,9 @@ ssh_input_thread(void *args)
 						pthread_mutex_unlock(&(conn_inbuf.mutex));
 					}
 				}
+			}
+			else {
+				pthread_mutex_unlock(&ssh_mutex);
 			}
 		}
 		FlushData(ssh_session);
@@ -524,14 +527,17 @@ add_public_key(void *vpriv)
 			status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel);
 			if (cryptStatusOK(status))
 				status = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, &active);
+			if (cryptStatusOK(status) && active) {
+				pthread_mutex_unlock(&ssh_mutex);
+				break;
+			}
 		}
 		pthread_mutex_unlock(&ssh_mutex);
-		if (cryptStatusOK(status) && active)
-			break;
 		SLEEP(10);
 	};
 	if (!active) {
 		pubkey_thread_running = false;
+		free(priv);
 		return;
 	}
 	pthread_mutex_lock(&ssh_tx_mutex);
@@ -657,6 +663,7 @@ add_public_key(void *vpriv)
 	}
 	else {
 		pthread_mutex_unlock(&ssh_mutex);
+		pthread_mutex_unlock(&ssh_tx_mutex);
 	}
 	free(priv);
 	pubkey_thread_running = false;
@@ -999,6 +1006,9 @@ ssh_connect(struct bbslist *bbs)
 	if (bbs->sftp_public_key) {
 		pubkey_thread_running = true;
 		_beginthread(add_public_key, 0, pubkey);
+	}
+	else {
+		free(pubkey);
 	}
 
 	if (!bbs->hidepopups)

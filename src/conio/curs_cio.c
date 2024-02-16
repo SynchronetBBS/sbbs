@@ -695,9 +695,7 @@ int curs_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 			fill[fillpos].ch=(unsigned char)(thischar);
 			attrib=0;
 			if (attr & WA_BOLD) {
-				if (thischar == ' ')
-					thischar = 0;
-				else
+				if (thischar != ' ')
 					attrib |= 8;
 			}
 			if (attr & WA_BLINK)
