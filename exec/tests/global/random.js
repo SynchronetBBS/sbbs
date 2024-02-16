@@ -1,5 +1,5 @@
 random();
-if (random() == random() == random() == random())
+if (random(10000) == random(10000) == random(10000) == random(10000))
 	throw new Error("Four random() calls returned same result");
 for (var i = 0; i < 1000; i++) {
 	var rval = random(10);
