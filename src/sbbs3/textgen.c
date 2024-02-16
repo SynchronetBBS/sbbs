@@ -2,9 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "sbbs.h"
+#include "genwrap.h"	// truncsp
 #include "dirwrap.h"	// MAX_PATH
 #include "gen_defs.h"
+#include "str_util.h"
+#include "getctrl.h"
 
 /****************************************************************************/
 /* Reads special TEXT.DAT printf style text lines, splicing multiple lines, */
