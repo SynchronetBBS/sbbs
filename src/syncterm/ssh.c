@@ -1022,6 +1022,8 @@ ssh_close(void)
 {
 	char garbage[1024];
 
+	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
+	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 1);
 	conn_api.terminate = 1;
 	close_sftp_channel(sftp_channel);
 	close_ssh_channel();
