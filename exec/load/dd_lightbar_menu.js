@@ -612,7 +612,6 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.GetBottomDisplayedItemPos = DDLightbarMenu_GetBottomDisplayedItemPos;
 	this.ScreenRowForItem = DDLightbarMenu_ScreenRowForItem;
 	this.ANSISupported = DDLightbarMenu_ANSISupported;
-	this.InnerTextWidth = DDLightbarMenu_InnerTextWidth;
 
 	// ValidateSelectItem is a function for validating that the user can select an item.
 	// It takes the selected item's return value and returns a boolean to signify whether
@@ -983,13 +982,43 @@ function DDLightbarMenu_SetHeight(pHeight)
 function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar, pNumItems)
 {
 	var numMenuItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
-	var itemLen = this.InnerTextWidth(numMenuItems);
 	if (this.ANSISupported())
 	{
 		var drawBorders = (typeof(pDrawBorders) == "boolean" ? pDrawBorders : true);
 		var drawScrollbar = (typeof(pDrawScrollbar) == "boolean" ? pDrawScrollbar : true);
 
 		var curPos = { x: this.pos.x, y: this.pos.y }; // For writing the menu items
+		var itemLen = this.size.width;
+		// If borders are enabled, then adjust the item length, starting x, and starting
+		// y accordingly, and draw the border.
+		if (this.borderEnabled)
+		{
+			itemLen -= 2;
+			++curPos.x;
+			++curPos.y;
+			if (drawBorders)
+				this.DrawBorder();
+		}
+		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+			--itemLen; // Leave room for the scrollbar in the item lengths
+		// If the scrollbar is enabled & needed and we are to update it,
+		// then calculate the scrollbar blocks and update it on the screen.
+		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow() && drawScrollbar)
+		{
+			this.CalcScrollbarBlocks();
+			if (!this.drawnAlready)
+				this.DisplayInitialScrollbar(this.pos.y);
+			else
+				this.UpdateScrollbarWithHighlightedItem(true);
+		}
+		// For numbered mode, we'll need to know the length of the longest item number
+		// so that we can use that space to display the item numbers.
+		if (this.numberedMode)
+		{
+			this.itemNumLen = numMenuItems.toString().length;
+			itemLen -= this.itemNumLen;
+			--itemLen; // Have a space for separation between the numbers and items
+		}
 
 		// Write the menu items, only up to the height of the menu
 		var numPossibleItems = (this.borderEnabled ? this.size.height - 2 : this.size.height);
@@ -1002,7 +1031,7 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar,
 			{
 				console.gotoxy(curPos.x, curPos.y);
 				var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
-				this.WriteItem(idx, itemLen, idx == this.selectedItemIdx, showMultiSelectMark, curPos.x, curPos.y, numMenuItems);
+				this.WriteItem(idx, itemLen, idx == this.selectedItemIdx, showMultiSelectMark, curPos.x, curPos.y);
 			}
 			++curPos.y;
 			++numItemsWritten;
@@ -1033,6 +1062,12 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar,
 		// ANSI mode disabled, or the user's terminal doesn't support ANSI
 		var numberedModeBackup = this.numberedMode;
 		this.numberedMode = true;
+		var itemLen = this.size.width;
+		// For numbered mode, we'll need to know the length of the longest item number
+		// so that we can use that space to display the item numbers.
+		this.itemNumLen = numMenuItems.toString().length;
+		itemLen -= this.itemNumLen;
+		--itemLen; // Have a space for separation between the numbers and items
 		console.attributes = "N";
 		for (var i = 0; i < numMenuItems; ++i)
 		{
@@ -1143,39 +1178,13 @@ function DDLightbarMenu_DrawBorder()
 //             at the end of the item's text.
 //  pScreenX: Optional - The horizontal screen coordinate of the start of the item
 //  pScreenY: Optional - The vertical screen coordinate of the start of the item
-//  pNumItems: Optional - Cached number of items, if known
-function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreenX, pScreenY, pNumItems)
+function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreenX, pScreenY)
 {
-	var numItems = typeof(pNumItems) === "number" ? pNumItems : this.NumItems();
-
-	// TODO: If the item text is UTF-8 and the user's terminal supports UTF-8, then see if the
-	// item color is an array of objects; if so, we know the screen columns of each 'field', so
-	// we can position the cursor as necessary.
-	/*
-	this.colors = {
-		itemColor: "\x01n\x01w\x01" + "4", // Can be either a string or an array specifying colors within the item
-		selectedItemColor: "\x01n\x01b\x01" + "7", // Can be either a string or an array specifying colors within the item
-		altItemColor: "\x01n\x01w\x01" + "4", // Alternate item color.  Can be either a string or an array specifying colors within the item
-		altSelectedItemColor: "\x01n\x01b\x01" + "7", // Alternate selected item color.  Can be either a string or an array specifying colors within the item
-		unselectableItemColor: "\x01n\x01b\x01h", // Can be either a string or an array specifying colors within the item
-		itemTextCharHighlightColor: "\x01y\x01h",
-	}
-	*/
-	/*
-	if (Array.isArray(itemColor))
-	{
-		var bkgColor = getBackgroundAttrAtIdx(itemColor, this.size.width-1);
-		itemColor = "\x01n\x01h\x01g" + bkgColor;
-	}
-	*/
-	// Look at function addAttrsToString()
-	
 	var itemText = this.GetItemText(pIdx, pItemLen, pHighlight, pSelected);
 	// If the text is UTF-8 and the user's terminal is UTF-8, then set the mode bit accordingly.
 	// If the text is UTF-8 and the user's terminal doesn't support UTF-8, convert the text to cp437.
 	var printModeBits = P_NONE;
-	var menuItem = this.GetItem(pIdx); // Needed for colors later (and textLineIsUTF8). Maybe not the most efficient, but meh..
-	if (menuItem.textIsUTF8)
+	if (this.ItemTextIsUTF8(pIdx))
 	{
 		if (console.term_supports(USER_UTF8))
 			printModeBits = P_UTF8;
@@ -1186,44 +1195,15 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 	// then create a string that is shortened from itemText from those start & end
 	// indexes, and add color to it.
 	// Otherwise, just print the full item text.
-	var printedLen = 0;
 	if ((this.nextDrawOnlyItemSubstr != null) && (typeof(this.nextDrawOnlyItemSubstr) == "object") && this.nextDrawOnlyItemSubstr.hasOwnProperty("start") && this.nextDrawOnlyItemSubstr.hasOwnProperty("end") && (typeof(pScreenX) == "number") && (typeof(pScreenY) == "number"))
 	{
 		var len = this.nextDrawOnlyItemSubstr.end - this.nextDrawOnlyItemSubstr.start;
 		var shortenedText = substrWithAttrCodes(itemText, this.nextDrawOnlyItemSubstr.start, len);
 		console.gotoxy(pScreenX+this.nextDrawOnlyItemSubstr.start, pScreenY);
 		console.print(shortenedText + "\x01n", printModeBits);
-		printedLen = console.strlen(shortenedText, printModeBits);
 	}
 	else
-	{
 		console.print(itemText + "\x01n", printModeBits);
-		printedLen = console.strlen(itemText, printModeBits);
-	}
-
-	// Upon more testing, this is bad..  For some messages (i.e., Mike Powell on FSXNet),
-	// this is outputting more than it should:
-	/*
-	// If the printed length is less than the inner width for text, then fill in the
-	// remaining width (either with no attributes or highlighted attributes).
-	var menuInnerWidth = this.InnerTextWidth(numItems);
-	if (printedLen < menuInnerWidth)
-	{
-		var diff = menuInnerWidth - printedLen;
-		//var padding = format("%*s", diff, "");
-		var attrs = "";
-		if (pHighlight)
-		{
-			if (menuItem.itemSelectedColor != null)
-				attrs = menuItem.itemSelectedColor;
-			else
-				attrs = (menuItem.useAltColors ? this.colors.altSelectedItemColor : this.colors.selectedItemColor);
-			if (typeof(attrs) !== "string") // Could be an array; just blank attrs for now if so
-				attrs = "";
-		}
-		printf(attrs + "%*s", diff, "");
-	}
-	*/
 }
 
 // Writes a menu item at its location on the menu.  This should only be called
@@ -1233,14 +1213,13 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 //  pIdx: The index of the item to write
 //  pHighlight: Whether or not the item should be highlighted
 //  pSelected: Whether or not the item is selected
-//  pNumItems: Optional - Cached number of items, if known
-function DDLightbarMenu_WriteItemAtItsLocation(pIdx, pHighlight, pSelected, pNumItems)
+function DDLightbarMenu_WriteItemAtItsLocation(pIdx, pHighlight, pSelected)
 {
 	if (this.borderEnabled)
 		console.gotoxy(this.pos.x+1, this.pos.y+pIdx-this.topItemIdx+1);
 	else
 		console.gotoxy(this.pos.x, this.pos.y+pIdx-this.topItemIdx);
-	this.WriteItem(pIdx, null, pHighlight, pSelected, null, null, pNumItems);
+	this.WriteItem(pIdx, null, pHighlight, pSelected);
 }
 
 // Draws part of the menu, starting at a certain location within the menu and
@@ -1498,7 +1477,6 @@ function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
 
 		// Decide which color(s) to use for the item text
 		var menuItem = this.GetItem(pIdx);
-
 		var normalItemColor;
 		var selectedItemColor;
 		if (menuItem.itemColor != null)
@@ -3314,50 +3292,6 @@ function DDLightbarMenu_ScreenRowForItem(pItemIdx)
 function DDLightbarMenu_ANSISupported()
 {
 	return (console.term_supports(USER_ANSI) && this.allowANSI);
-}
-
-// Returns the width available for the menu item text, accounting for borders
-// etc.
-//
-// Parameters:
-//  pNumItems: Optional - A cached value for the number of menu items.  If not specified, this will
-//             call this.NumItems();
-function DDLightbarMenu_InnerTextWidth(pNumItems)
-{
-	var numMenuItems = (typeof(pNumItems) === "number" ? pNumItems : this.NumItems());
-	var itemLen = 0;
-	if (this.ANSISupported())
-	{
-		itemLen = this.size.width;
-		// If borders are enabled, then adjust the item length, starting x, and starting
-		// y accordingly, and draw the border.
-		if (this.borderEnabled)
-		{
-			itemLen -= 2;
-			++curPos.x;
-			++curPos.y;
-		}
-		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
-			--itemLen; // Leave room for the scrollbar in the item lengths
-		// For numbered mode, we'll need to know the length of the longest item number
-		// so that we can use that space to display the item numbers.
-		if (this.numberedMode)
-		{
-			this.itemNumLen = numMenuItems.toString().length;
-			itemLen -= this.itemNumLen;
-			--itemLen; // Have a space for separation between the numbers and items
-		}
-	}
-	else
-	{
-		itemLen = this.size.width;
-		// For numbered mode, we'll need to know the length of the longest item number
-		// so that we can use that space to display the item numbers.
-		this.itemNumLen = numMenuItems.toString().length;
-		itemLen -= this.itemNumLen;
-		--itemLen; // Have a space for separation between the numbers and items
-	}
-	return itemLen;
 }
 
 // Calculates the number of solid scrollbar blocks & non-solid scrollbar blocks
