@@ -340,7 +340,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		/* Quote entire message to MSGTMP or INPUT.MSG */
 
 		if(useron_xedit && cfg.xedit[useron_xedit-1]->misc&QUOTEALL) {
-			if(!quotes_fname(useron_xedit, path, sizeof(path)))
+			if(!fexist(quotes_fname(useron_xedit, path, sizeof(path))))
 				fexistcase(path);
 			if((stream=fnopen(NULL,path,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
@@ -378,7 +378,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			;
 
 		else if(yesno(text[QuoteMessageQ])) {
-			if(!quotes_fname(useron_xedit, path, sizeof(path)))
+			if(!fexist(quotes_fname(useron_xedit, path, sizeof(path))))
 				fexistcase(path);
 			if((stream=fnopen(&file,path,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
