@@ -266,7 +266,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "xpdatetime.h"
 #include "unicode_defs.h"
 
-#define SAFECOPY_UTF8(dst, src) if(utf8_str_is_valid(src)) utf8_strlcpy(dst, src, sizeof dst); else SAFECOPY(dst, src)
+#define SAFECOPY_UTF8(dst, src) do { if(utf8_str_is_valid(src)) utf8_strlcpy(dst, src, sizeof dst); else SAFECOPY(dst, src); } while(0)
 
 /***********************/
 /* Synchronet-specific */
