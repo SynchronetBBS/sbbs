@@ -1650,8 +1650,8 @@ x11_event(XEvent *ev)
 						resize = false;
 						if (fullscreen) {
 							fullscreen = false;
-							x_cvstat.scaling = saved_scaling;
 							pthread_mutex_lock(&vstatlock);
+							x_cvstat.scaling = saved_scaling;
 							/*
 							 * Mode may have changed while in fullscreen... recalculate scaling to
 							 * fit inside the old window size
