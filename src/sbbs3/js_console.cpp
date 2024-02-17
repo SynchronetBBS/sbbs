@@ -44,6 +44,7 @@ enum {
 	,CON_PROP_TERMINAL
 	,CON_PROP_TERM_TYPE
 	,CON_PROP_CHARSET
+	,CON_PROP_UNICODE_ZEROWIDTH
 	,CON_PROP_CTERM_VERSION
 	,CON_PROP_WORDWRAP
 	,CON_PROP_QUESTION
@@ -141,10 +142,12 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if((js_str=JS_NewStringCopyZ(cx, sbbs->term_charset()))==NULL)
 				return(JS_FALSE);
 			break;
+		case CON_PROP_UNICODE_ZEROWIDTH:
+			val = sbbs->unicode_zerowidth;
+			break;
 		case CON_PROP_CTERM_VERSION:
 			val=sbbs->cterm_version;
 			break;
-
 		case CON_PROP_MAX_GETKEY_INACTIVITY:
 			val=sbbs->cfg.max_getkey_inactivity;
 			break;
@@ -315,6 +318,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_AUTOTERM:
 			sbbs->autoterm=val;
 			break;
+		case CON_PROP_UNICODE_ZEROWIDTH:
+			sbbs->unicode_zerowidth = val;
+			break;
 		case CON_PROP_TERMINAL:
 			JSVALUE_TO_MSTRING(cx, *vp, sval, NULL);
 			if(sval==NULL)
@@ -406,6 +412,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{	"terminal"			,CON_PROP_TERMINAL			,CON_PROP_FLAGS ,311},
 	{	"type"				,CON_PROP_TERM_TYPE			,JSPROP_ENUMERATE|JSPROP_READONLY ,31702},
 	{	"charset"			,CON_PROP_CHARSET			,JSPROP_ENUMERATE|JSPROP_READONLY ,31702},
+	{	"unicode_zerowidth"	,CON_PROP_UNICODE_ZEROWIDTH,CON_PROP_FLAGS, 320},
 	{	"cterm_version"		,CON_PROP_CTERM_VERSION		,CON_PROP_FLAGS ,317},
 	{	"max_getkey_inactivity"	,CON_PROP_MAX_GETKEY_INACTIVITY	,CON_PROP_FLAGS, 320},
 	{	"inactivity_hangup"		,CON_PROP_MAX_GETKEY_INACTIVITY	,0				,31401}, // alias
@@ -457,6 +464,7 @@ static const char* con_prop_desc[] = {
 	,"Terminal type description, possibly supplied by client (e.g. 'ANSI')"
 	,"Terminal type (i.e. 'ANSI', 'RIP', 'PETSCII', or 'DUMB')"
 	,"Terminal character set (i.e. 'UTF-8', 'CP437', 'CBM-ASCII', or 'US-ASCII')"
+	,"Detected width of 'ZERO-WIDTH' UNICODE characters, in columns (either 0 or 1)"
 	,"Detected CTerm (SyncTERM) version as an integer > 1000 where major version is cterm_version / 1000 and minor version is cterm_version % 1000"
 	,"Number of seconds before disconnection due to user/keyboard inactivity (in getkey/getstr)"
 	,"User/keyboard inactivity timeout reference value (time_t format)"
@@ -2631,7 +2639,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,31902
 	},
 	{"strlen",			js_strlen,			1, JSTYPE_NUMBER,	JSDOCSTR("text [,p_mode=P_NONE]")
-	,JSDOCSTR("Returns the printed-length (number of columns) of the specified <i>text</i>, accounting for Ctrl-A codes")
+	,JSDOCSTR("Returns the printed-length (number of columns) of the specified <i>text</i>, accounting for Ctrl-A codes and UNICODE zero/half/full-width characters")
 	,310
 	},
 	{"printfile",		js_printfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename [,<i>number</i> p_mode=P_NONE] [,<i>number</i> orig_columns=0] [,<i>object</i> scope]")
