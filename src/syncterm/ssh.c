@@ -270,8 +270,9 @@ ssh_input_thread(void *args)
 				 *       and will deadlock.
 				 */
 				if (rd > 0 && !sftpc_recv(sftp_state, conn_api.rd_buf, rd)) {
+					int sc = sftp_channel;
 					pthread_mutex_unlock(&ssh_mutex);
-					close_sftp_channel(sftp_channel);
+					close_sftp_channel(sc);
 					pthread_mutex_lock(&ssh_mutex);
 					FlushData(ssh_session);
 					pthread_mutex_unlock(&ssh_mutex);
@@ -566,6 +567,7 @@ add_public_key(void *vpriv)
 			pubkey_thread_running = false;
 			return;
 		}
+		int sc = sftp_channel;
 		pthread_mutex_unlock(&ssh_mutex);
 		pthread_mutex_unlock(&ssh_tx_mutex);
 		active = 0;
@@ -580,7 +582,7 @@ add_public_key(void *vpriv)
 			SLEEP(10);
 		}
 		if (!active) {
-			close_sftp_channel(sftp_channel);
+			close_sftp_channel(sc);
 			free(priv);
 			pubkey_thread_running = false;
 			return;
@@ -611,7 +613,7 @@ add_public_key(void *vpriv)
 		pthread_mutex_unlock(&ssh_mutex);
 		pthread_mutex_unlock(&ssh_tx_mutex);
 		if (sftp_state == NULL) {
-			close_sftp_channel(sftp_channel);
+			close_sftp_channel(new_sftp_channel);
 			free(priv);
 			pubkey_thread_running = false;
 			return;
@@ -639,7 +641,7 @@ add_public_key(void *vpriv)
 			if (oldstate)
 				sftpc_finish(oldstate);
 		}
-		close_sftp_channel(sftp_channel);
+		close_sftp_channel(new_sftp_channel);
 	}
 	else {
 		pthread_mutex_unlock(&ssh_mutex);
