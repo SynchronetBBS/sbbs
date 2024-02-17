@@ -3771,6 +3771,7 @@ doterm(struct bbslist *bbs)
 								uifcmsg("Disconnected",
 								    "`Disconnected`\n\nRemote host dropped connection");
 							check_exit(false);
+							scrollback_pos = cterm->backpos;
 							cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
                                                                                                 * scrollback */
 							scrollback_lines = cterm->backpos;
@@ -4130,6 +4131,7 @@ doterm(struct bbslist *bbs)
 					    "Selecting Yes closes the connection\n")) {
 						freescreen(savscrn);
 						setup_mouse_events(&ms);
+						scrollback_pos = cterm->backpos;
 						cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
                                                                                         * scrollback */
 						scrollback_lines = cterm->backpos;
@@ -4161,6 +4163,7 @@ doterm(struct bbslist *bbs)
 					j = wherey();
 					switch (syncmenu(bbs, &speed)) {
 						case -1:
+							scrollback_pos = cterm->backpos;
 							cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
                                                                                                 * scrollback */
 							scrollback_lines = cterm->backpos;
@@ -4204,6 +4207,7 @@ doterm(struct bbslist *bbs)
 							break;
 						case 12:
 #endif
+							scrollback_pos = cterm->backpos;
 							cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
                                                                                                 * scrollback */
 							scrollback_lines = cterm->backpos;

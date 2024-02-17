@@ -87,6 +87,7 @@ extern struct vmem_cell        *scrollback_buf;
 extern uint32_t                *scrollback_fbuf;
 extern uint32_t                *scrollback_bbuf;
 extern unsigned int             scrollback_lines;
+extern unsigned int             scrollback_pos;
 extern unsigned int             scrollback_mode;
 extern unsigned int             scrollback_cols;
 extern struct syncterm_settings settings;

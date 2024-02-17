@@ -384,7 +384,7 @@ viewofflinescroll(void)
 	setfont(0, false, 4);
 	drawwin();
 	set_modepalette(palettes[COLOUR_PALETTE]);
-	top = scrollback_lines;
+	top = scrollback_pos;
 	gotoxy(1, 1);
 	textattr(uifc.hclr | (uifc.bclr << 4) | BLINK);
 	gettextinfo(&sbtxtinfo);
