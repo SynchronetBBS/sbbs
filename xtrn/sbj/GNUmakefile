@@ -30,8 +30,8 @@ $(SBJ): $(OBJS)
    endif
 	$(QUIET)$(CC) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(LDFLAGS) $^ -o $@ $(XPDEV-MT_LIBS)
 
-$(SBJCLEAN): sbjclean.c
+$(SBJCLEAN): sbjclean.o
    ifndef bcc
 	@echo Linking $@
    endif
-	$(QUIET)$(CC) $(CFLAGS) $(XPDEV_LDFLAGS) $(LDFLAGS) $^ -o $@ $(XPDEV_LIBS)
+	$(QUIET)$(CC) $(CFLAGS) $(XPDEV_LDFLAGS) $(LDFLAGS) sbjclean.o -o $@ $(XPDEV_LIBS)
