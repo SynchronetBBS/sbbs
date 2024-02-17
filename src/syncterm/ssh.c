@@ -258,27 +258,7 @@ ssh_input_thread(void *args)
 			pthread_mutex_unlock(&ssh_mutex);
 		}
 
-		if (cryptStatusError(popstatus)) {
-			if (chan == -1) { /* connection closed */
-				pthread_mutex_lock(&ssh_mutex);
-				status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, chan);
-				if (status != CRYPT_ERROR_NOTFOUND) {
-					cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
-					if (chan == ssh_channel || chan == -1) {
-						pthread_mutex_unlock(&ssh_mutex);
-						break;
-					}
-				}
-				if (chan == sftp_channel)
-					sftp_channel = -1;
-				pthread_mutex_unlock(&ssh_mutex);
-			}
-			else {
-				cryptlib_error_message(popstatus, "recieving data");
-				break;
-			}
-		}
-		else if (chan != -1) {
+		if (cryptStatusOK(popstatus) && chan != -1) {
 			pthread_mutex_lock(&ssh_mutex);
 			if (chan == sftp_channel) {
 				if (gchstatus == CRYPT_ERROR_NOTFOUND) {
