@@ -280,9 +280,6 @@ gdi_handle_wm_paint(HWND hwnd)
 	void *data;
 	enum ciolib_scaling st;
 
-	list = get_rect();
-	if (list == NULL)
-		return 0;
 	pthread_mutex_lock(&vstatlock);
 	w = vstat.winwidth;
 	h = vstat.winheight;
@@ -290,6 +287,13 @@ gdi_handle_wm_paint(HWND hwnd)
 	vsh = vstat.scrnheight;
 	bitmap_get_scaled_win_size(vstat.scaling, &sw, &sh, vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
+	while(true) {
+		list = get_rect();
+		if (list == NULL)
+			return 0;
+		if (vsw == list->rect.width && vsh == list->rect.height)
+			break;
+	}
 	pthread_mutex_lock(&off_lock);
 	dwidth = sw;
 	dheight = sh;
