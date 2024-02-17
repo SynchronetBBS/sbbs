@@ -12,7 +12,7 @@
 /* The current cryptlib version: 3.4.7 */
 
 #define CRYPTLIB_VERSION	347
-#define CRYPTLIB_PATCHES "344cf11072cf821d4a07a90b03322f9c  -"
+#define CRYPTLIB_PATCHES "e937bc381ecbe8619d35067e599b8286  -"
 
 /* Fixup for Windows support.  We need to include windows.h for various types
    and prototypes needed for DLLs, but this pulls in wincrypt.h which defines 
