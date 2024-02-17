@@ -1050,6 +1050,8 @@ void sdl_video_event_thread(void *data)
 						update_cvstat(&cvstat);
 						pthread_mutex_lock(&vstatlock);
 						// Get correct aspect ratio for dst...
+						int sw = cvstat.scrnwidth;
+						int sh = cvstat.scrnheight;
 						bitmap_get_scaled_win_size(cvstat.scaling, &dst.w, &dst.h, cvstat.winwidth, cvstat.winheight);
 						pthread_mutex_unlock(&vstatlock);
 						pthread_mutex_lock(&win_mutex);
@@ -1066,7 +1068,7 @@ void sdl_video_event_thread(void *data)
 								SDL_Rect src;
 
 								old_next = list->next;
-								if (list->next == NULL && !skipit) {
+								if (list->next == NULL && !skipit && sw == list->rect.width && sh == list->rect.height) {
 									void *pixels;
 									int pitch;
 									int row;
