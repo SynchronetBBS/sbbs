@@ -768,7 +768,11 @@ magic_message(MSG msg)
 									PostMessageW(win, WM_USER_SETPOS, window_left, window_top);
 								}
 							}
-							gdi_add_key(keyval[i].ALT);
+							if (keyval[i].ALT == 0x6b00) { // ALT-F4
+								gdi_add_key(CIO_KEY_QUIT);
+							}
+							else
+								gdi_add_key(keyval[i].ALT);
 							return true;
 						}
 					}
