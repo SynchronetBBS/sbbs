@@ -9,15 +9,10 @@
     <ClCompile>
       <PreprocessorDefinitions>WITH_GDI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <NoWin32Manifest>True</NoWin32Manifest>
     </ClCompile>
-    <ResourceCompile>
-      <NoWin32Manifest>True</NoWin32Manifest>
-    </ResourceCompile>
     <Link>
       <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
-      <NoWin32Manifest>True</NoWin32Manifest>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

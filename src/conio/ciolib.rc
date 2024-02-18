@@ -1,7 +1,9 @@
 #include "windows.h"
 
 /* Manifest */
+#ifdef __GNUC__
 1 RT_MANIFEST "ciolib.manifest"
+#endif
 
 /* ========================================================================= */
 /* Icons.                                                                    */
