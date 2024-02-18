@@ -1769,19 +1769,26 @@ function getCurrentTimeStr()
 	return timeStr;
 }
 
-// Returns whether or not a character is printable.
+// Returns whether or not a character is printable.  This function is fairly simplistic.
 function isPrintableChar(pText)
 {
-   // Make sure pText is valid and is a string.
-   if (typeof(pText) != "string")
-      return false;
-   if (pText.length == 0)
-      return false;
+	// Make sure pText is valid and is a string.
+	if (typeof(pText) != "string")
+		return false;
+	if (pText.length == 0)
+		return false;
 
-   // Make sure the character is a printable ASCII character in the range of 32 to 254,
-   // except for 127 (delete).
-   var charCode = pText.charCodeAt(0);
-   return ((charCode > 31) && (charCode < 255) && (charCode != 127));
+	var charCode = pText.charCodeAt(0);
+	// If K_UTF8 exists, then we use it for input and UTF-8 characters are possible.
+	// Otherwise, just ASCII/CP437 characters are possible.
+	if (g_K_UTF8Exists)
+		return (charCode > 31 && charCode != 127);
+	else // ASCII/CP437
+	{
+		// Make sure the character is a printable ASCII/CP437 character in the range of
+		// 32 to 254, except for 127 (delete).
+		return (charCode > 31 && charCode < 255 && charCode != 127);
+	}
 }
 
 // Removes multiple, leading, and/or trailing spaces
