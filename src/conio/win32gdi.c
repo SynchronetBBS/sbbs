@@ -41,6 +41,9 @@ static LONG window_left, window_top;
 #ifndef WM_DPICHANGED
  #define WM_DPICHANGED 0x02E0
 #endif
+#ifndef WM_GETDPISCALEDSIZE
+ #define WM_GETDPISCALEDSIZE 0x2E4
+#endif
 #define WM_USER_INVALIDATE WM_USER
 #define WM_USER_SETSIZE (WM_USER + 1)
 #define WM_USER_SETPOS (WM_USER + 2)
@@ -188,6 +191,37 @@ sp_to_codepoint(uint16_t high, uint16_t low)
 	return (high - 0xd800) * 0x400 + (low - 0xdc00) + 0x10000;
 }
 
+static BOOL
+gdiAdjustWindowRect(LPRECT r, DWORD style, BOOL menu)
+{
+	static bool gotPtr = false;
+	static BOOL (*AWREFD)(LPRECT, DWORD, BOOL, DWORD, UINT);
+	static BOOL (*GDFW)(HWND);
+	static BOOL (*GDFS)(void);
+
+	if (!gotPtr) {
+		const char* user32dll[] = {"User32", NULL};
+		dll_handle userDLL = xp_dlopen(user32dll, RTLD_LAZY, 0);
+
+		if (userDLL) {
+			AWREFD = xp_dlsym(userDLL, AdjustWindowRectExForDpi);
+			GDFW = xp_dlsym(userDLL, GetDpiForWindow);
+			GDFS = xp_dlsym(userDLL, GetDpiForSystem);
+		}
+		gotPtr = true;
+	}
+
+	if (win && AWREFD && GDFW && GDFS) {
+		UINT dpi;
+		if (win == NULL)
+			dpi = GDFS();
+		else
+			dpi = GDFW(win);
+		return AWREFD(r, style, menu, 0, dpi);
+	}
+	return AdjustWindowRect(r, style, menu);
+}
+
 static bool
 UnadjustWindowSize(int *w, int *h)
 {
@@ -196,7 +230,7 @@ UnadjustWindowSize(int *w, int *h)
 
 	if (fullscreen)
 		return true;
-	ret = AdjustWindowRect(&r, STYLE, FALSE);
+	ret = gdiAdjustWindowRect(&r, STYLE, FALSE);
 	if (ret) {
 		*w += r.left - r.right;
 		*h += r.top - r.bottom;
@@ -562,7 +596,7 @@ handle_wm_getminmaxinfo(MINMAXINFO *inf)
 	r.left = 0;
 	r.right = maxw;
 	r.bottom = maxh;
-	AdjustWindowRect(&r, STYLE, FALSE);
+	gdiAdjustWindowRect(&r, STYLE, FALSE);
 	inf->ptMaxTrackSize.x = r.right - r.left;
 	inf->ptMaxTrackSize.y = r.bottom - r.top;
 	inf->ptMaxSize.x = inf->ptMaxTrackSize.x;
@@ -574,10 +608,20 @@ handle_wm_getminmaxinfo(MINMAXINFO *inf)
 	r.left = 0;
 	r.right = minw;
 	r.bottom = minh;
-	AdjustWindowRect(&r, STYLE, FALSE);
+	gdiAdjustWindowRect(&r, STYLE, FALSE);
 	inf->ptMinTrackSize.x = r.right - r.left;
 	inf->ptMinTrackSize.y = r.bottom - r.top;
 
+	return 0;
+}
+
+static LRESULT
+gdi_handle_getdpiscaledsize(WPARAM wParam, LPSIZE sz)
+{
+	pthread_mutex_lock(&vstatlock);
+	sz->cx = vstat.winwidth;
+	sz->cy = vstat.winheight;
+	pthread_mutex_unlock(&vstatlock);
 	return 0;
 }
 
@@ -631,6 +675,8 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				return 0;
 			}
 			break;
+		case WM_GETDPISCALEDSIZE:
+			return gdi_handle_getdpiscaledsize(wParam, (LPSIZE)lParam);
 		case WM_DPICHANGED:
 			// The rect is the suggested position and size for the window...
 			//r = *((RECT*)lParam);
@@ -662,7 +708,7 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			r.right = wParam;
 			r.bottom = lParam;
 			pthread_mutex_unlock(&vstatlock);
-			AdjustWindowRect(&r, STYLE, FALSE);
+			gdiAdjustWindowRect(&r, STYLE, FALSE);
 			SetWindowPos(win, NULL, 0, 0, r.right - r.left, r.bottom - r.top, SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
 			return true;
 		case WM_USER_SETPOS:
@@ -880,7 +926,7 @@ gdi_thread(void *arg)
 	r.right = vstat.winwidth;
 	r.bottom = vstat.winheight;
 	pthread_mutex_unlock(&vstatlock);
-	AdjustWindowRect(&r, STYLE, FALSE);
+	gdiAdjustWindowRect(&r, STYLE, FALSE);
 	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", STYLE, wx, wy, r.right - r.left, r.bottom - r.top, NULL, NULL, NULL, NULL);
 	if (win == NULL)
 		goto fail;
