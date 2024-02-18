@@ -9,6 +9,9 @@
     <ClCompile>
       <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <Link>
+      <NoWin32Manifest>True</NoWin32Manifest>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

@@ -12,6 +12,7 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <NoWin32Manifest>True</NoWin32Manifest>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

@@ -13,6 +13,7 @@
     <Link>
       <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
+      <NoWin32Manifest>True</NoWin32Manifest>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />
