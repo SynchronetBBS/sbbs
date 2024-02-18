@@ -74,7 +74,8 @@ ifeq ($(os),win32)
  OBJS	+= $(MTOBJODIR)$(DIRSEP)comio_win32$(OFILE) \
            $(MTOBJODIR)$(DIRSEP)modem$(OFILE) \
            $(MTOBJODIR)$(DIRSEP)comio$(OFILE) \
-           $(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE)
+           $(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE) \
+           $(MTOBJODIR)$(DIRSEP)syncterm_res$(OFILE)
 else
  ifneq ($(os),haiku)
   OBJS	+= $(MTOBJODIR)$(DIRSEP)comio_nix$(OFILE) \
@@ -200,3 +201,9 @@ syncterm-clean:
 	${DELETE} changelog.gz
 
 clean: syncterm-clean
+
+ifeq ($(os),win32)
+$(MTOBJODIR)$(DIRSEP)syncterm_res${OFILE}: syncterm.rc
+	@echo Creating $< ...
+	$(QUIET)${WINDRES} $(WINDRESFLAGS) -O coff -i syncterm.rc -o $@
+endif

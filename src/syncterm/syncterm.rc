@@ -1,0 +1,35 @@
+#include "windows.h"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,2,0,0
+ PRODUCTVERSION 1,2,0,0
+ FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+ //FILEFLAGS VS_FF_DEBUG | VS_FF_PRERELEASE
+#else
+ //FILEFLAGS VS_FF_PRERELEASE
+#endif
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_APP
+ FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "04090000"
+        BEGIN
+            VALUE "CompanyName", "Stephen Hurd (Deuce)\0"
+            VALUE "FileDescription", "SyncTERM BBS Client\0"
+            VALUE "FileVersion", "1.2b\0"
+            VALUE "InternalName", "syncterm.exe\0"
+            VALUE "LegalCopyright", "Stephen Hurd (Deuce)\0"
+            VALUE "OriginalFilename", "syncterm.exe\0"
+            VALUE "ProductName", "SyncTERM\0"
+            VALUE "ProductVersion", "1.2b\0"
+        END
+    END
+
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 0
+    END
+END
