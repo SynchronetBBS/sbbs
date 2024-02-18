@@ -156,7 +156,8 @@ syncmenu(struct bbslist *bbs, int *speed)
 		"Capture Control ("ALT_KEY_NAMEP "-C)",
 		"ANSI Music Control ("ALT_KEY_NAMEP "-M)",
 		"Font Setup ("ALT_KEY_NAMEP "-F)",
-		"Toggle Doorway Mode"
+		"Toggle Doorway Mode",
+		"Toggle Remote Mouse (" ALT_KEY_NAMEP "-O)"
 #ifndef WITHOUT_OOII
 		, "Toggle Operation Overkill ][ Mode"
 #endif
@@ -196,6 +197,7 @@ syncmenu(struct bbslist *bbs, int *speed)
 		    "`ANSI Music`     Enables/Disables ANSI Music\n"
 		    "`Font`           Changes the current font (when supported)\n"
 		    "`Doorway Mode`   Toggles the current DoorWay (keyboard input) setting\n"
+		    "`Remote Mouse`   Toggles remote mouse events\n"
 #ifndef WITHOUT_OOII
 		    "`Operation Overkill ][ Mode`\n"
 		    "               Toggles the current Operation Overkill ][ setting\n"

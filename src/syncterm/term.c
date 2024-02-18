@@ -116,6 +116,7 @@ struct mouse_state {
 	uint32_t         flags;
 
 #define MS_FLAGS_SGR (1 << 0)
+#define MS_FLAGS_DISABLED (1 << 1)
 #define MS_SGR_SET (1006)
 	enum mouse_modes mode;
 };
@@ -124,7 +125,7 @@ void
 setup_mouse_events(struct mouse_state *ms)
 {
 	ciomouse_setevents(0);
-	if (ms) {
+	if (ms && ((ms->flags & MS_FLAGS_DISABLED) == 0)) {
 		switch (ms->mode) {
 			case MM_RIP:
 				ciomouse_addevent(CIOLIB_BUTTON_1_PRESS);
@@ -345,10 +346,13 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	time_t            now;
 	static time_t     lastupd = 0;
 	static int        oldspeed = 0;
+	static int        lastmouse = 0;
+	int               newmouse;
 	int               timeon;
 	char              sep;
 	int               oldfont_norm;
 	int               oldfont_bright;
+	struct mouse_state *ms = cterm->mouse_state_change_cbdata;
 
 	if (term.nostatus)
 		return;
@@ -374,12 +378,14 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 			sep = '|';
 	}
 	now = time(NULL);
-	if ((now == lastupd) && (speed == oldspeed)) {
+	newmouse = ((ms->mode == MM_OFF) ? 1 : 0) | (ms->flags & MS_FLAGS_DISABLED);
+	if ((now == lastupd) && (speed == oldspeed) && (newmouse == lastmouse)) {
 		setfont(oldfont_norm, 0, 1);
 		setfont(oldfont_bright, 0, 2);
 		return;
 	}
 	lastupd = now;
+	lastmouse = newmouse;
 	oldspeed = speed;
 	if (now > (bbs->connected + 359999))
 		timeon = 350000;
@@ -481,6 +487,11 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	}
 	if (wherex() - term.y + 1 >= term.width)
 		clreol();
+	if (ms->mode != 0) {
+		gotoxy(31, 1);
+		ciolib_setcolour((ms->flags & MS_FLAGS_DISABLED) ? 8 : 11, 4);
+		putch('M');
+	}
 	_wscroll = oldscroll;
 	setfont(oldfont_norm, 0, 1);
 	setfont(oldfont_bright, 0, 2);
@@ -4094,6 +4105,13 @@ doterm(struct bbslist *bbs)
 					showmouse();
 					key = 0;
 					break;
+				case 0x1800: /* ALT-O */
+					ms.flags ^= MS_FLAGS_DISABLED;
+					setup_mouse_events(&ms);
+					showmouse();
+					key = 0;
+					sleep = false;
+					break;
 				case 0x1600: /* ALT-U - Upload */
 					begin_upload(bbs, false, inch);
 					setup_mouse_events(&ms);
@@ -4191,11 +4209,16 @@ doterm(struct bbslist *bbs)
 						case 10:
 							cterm->doorway_mode = !cterm->doorway_mode;
 							break;
+						case 11:
+							ms.flags ^= MS_FLAGS_DISABLED;
+							setup_mouse_events(&ms);
+							showmouse();
+							break;
 
 #ifdef WITHOUT_OOII
-						case 11:
+						case 12:
 #else
-						case 11:
+						case 12:
 							ooii_mode++;
 							if (ooii_mode > MAX_OOII_MODE) {
 								xptone_close();
@@ -4205,7 +4228,7 @@ doterm(struct bbslist *bbs)
 								xptone_open();
 							}
 							break;
-						case 12:
+						case 13:
 #endif
 							scrollback_pos = cterm->backpos;
 							cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
@@ -4218,9 +4241,9 @@ doterm(struct bbslist *bbs)
 							hold_update = oldmc;
 							return true;
 #ifdef WITHOUT_OOII
-						case 12:
-#else
 						case 13:
+#else
+						case 14:
 #endif
 						{
 							struct ciolib_screen *savscrn;

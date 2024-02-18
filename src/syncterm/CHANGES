@@ -21,6 +21,7 @@ Improve startup behaviour on Windows
 Allow hardware scaling in X11, GDI, and SDL modes
 Support XTerm Bracketed Paste
 Add -b and -n command-line options for BBS list and INI file respectively
+Add ALT-O to toggle remote mouse support (to enable copy/paste locally)
 
 Version 1.1
 -----------
