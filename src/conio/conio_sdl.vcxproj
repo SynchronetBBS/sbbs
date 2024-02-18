@@ -82,6 +82,7 @@
     <Lib>
       <OutputFile>.\msvc.win32.sdl.release\conio_sdl.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
+      <NoWin32Manifest>True</NoWin32Manifest>
     </Lib>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -112,6 +113,7 @@
     <Lib>
       <OutputFile>.\msvc.win32.sdl.debug\conio_sdl.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
+      <NoWin32Manifest>True</NoWin32Manifest>
     </Lib>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>

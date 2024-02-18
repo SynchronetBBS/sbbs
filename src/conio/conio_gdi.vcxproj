@@ -82,6 +82,7 @@
     <Lib>
       <OutputFile>.\msvc.win32.gdi.release\conio_gdi.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
+      <NoWin32Manifest>True</NoWin32Manifest>
     </Lib>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -112,6 +113,7 @@
     <Lib>
       <OutputFile>.\msvc.win32.gdi.debug\conio_gdi.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
+      <NoWin32Manifest>True</NoWin32Manifest>
     </Lib>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
