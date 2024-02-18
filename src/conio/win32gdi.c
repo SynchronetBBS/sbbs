@@ -38,6 +38,9 @@ static bool fullscreen;
 static float window_scaling;
 static LONG window_left, window_top;
 
+#ifndef WM_DPICHANGED
+ #define WM_DPICHANGED 0x02E0
+#endif
 #define WM_USER_INVALIDATE WM_USER
 #define WM_USER_SETSIZE (WM_USER + 1)
 #define WM_USER_SETPOS (WM_USER + 2)
@@ -628,6 +631,16 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				return 0;
 			}
 			break;
+		case WM_DPICHANGED:
+			// The rect is the suggested position and size for the window...
+			//r = *((RECT*)lParam);
+			// The high and low words have the X and Y DPI respectively, and they're always the same
+			//WORD dpi = HIWORD(wParam);
+			// For now, just say "We've got this!" and ignore it.
+			// TODO: In the future, maybe resize so the window stays "the same"?
+			//       Problem is that this is still imaginary DPI, so unlikely to work properly.
+			return 0;
+			break;
 		case WM_USER_SETCURSOR:
 			if (!GetClientRect(hwnd, &r))
 				break;
@@ -1108,7 +1121,8 @@ gdi_init(int mode)
 	typedef enum D3_PROCESS_DPI_AWARENESS {
 		D3_PROCESS_DPI_UNAWARE = 0,
 		D3_PROCESS_SYSTEM_DPI_AWARE = 1,
-		D3_PROCESS_PER_MONITOR_DPI_AWARE = 2
+		D3_PROCESS_PER_MONITOR_DPI_AWARE = 2,
+		D3_PROCESS_PER_MONITOR_DPI_AWARE_V2 = 3,
 	} YQ2_PROCESS_DPI_AWARENESS;
 
 	/* For Vista, Win7 and Win8 */
@@ -1117,12 +1131,16 @@ gdi_init(int mode)
 	/* Win8.1 and later */
 	HRESULT(WINAPI *SetProcessDpiAwareness)(enum D3_PROCESS_DPI_AWARENESS dpiAwareness) = NULL;
 
+	/* Win10v1703 and later */
+	HRESULT(WINAPI *SetProcessDpiAwarenessContext)(enum D3_PROCESS_DPI_AWARENESS dpiAwareness) = NULL;
+
 	const char* user32dll[] = {"User32", NULL};
 	dll_handle userDLL = xp_dlopen(user32dll, RTLD_LAZY, 0);
 
 	if (userDLL)
 	{
 		SetProcessDPIAware = xp_dlsym(userDLL, SetProcessDPIAware);
+		SetProcessDpiAwarenessContext = xp_dlsym(userDLL, SetProcessDpiAwarenessContext);
 	}
 
 	const char* shcoredll[] = {"SHCore", NULL};
@@ -1133,7 +1151,11 @@ gdi_init(int mode)
 		SetProcessDpiAwareness = xp_dlsym(shcoreDLL, SetProcessDpiAwareness);
 	}
 
-	if (SetProcessDpiAwareness) {
+	if (SetProcessDpiAwarenessContext) {
+		if (!SetProcessDpiAwarenessContext(D3_PROCESS_PER_MONITOR_DPI_AWARE_V2))
+			SetProcessDpiAwarenessContext(D3_PROCESS_PER_MONITOR_DPI_AWARE);
+	}
+	else if (SetProcessDpiAwareness) {
 		SetProcessDpiAwareness(D3_PROCESS_PER_MONITOR_DPI_AWARE);
 	}
 	else if (SetProcessDPIAware) {
