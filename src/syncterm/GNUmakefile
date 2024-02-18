@@ -99,7 +99,7 @@ ifeq ($(os),win32)
  EXTRA_LIBS += -luuid
 endif
 
-$(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE):
+$(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE): ${CIOLIB-MT}
 	cd ${MTOBJODIR} && $(AR) -x ../${CIOLIB-MT} ciolib_res$(OFILE)
 
 $(SYNCTERM): $(CRYPT_DEPS) $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)

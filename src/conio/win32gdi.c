@@ -1112,9 +1112,6 @@ gdi_init(int mode)
 {
 	CreatePipe(&rch, &wch, NULL, 0);
 
-	bitmap_drv_init(gdi_drawrect, gdi_flush);
-	gdi_textmode(ciolib_initial_mode);
-
 	// code that tells windows we're High DPI aware so it doesn't scale our windows
 	// taken from Yamagi Quake II
 
@@ -1161,6 +1158,9 @@ gdi_init(int mode)
 	else if (SetProcessDPIAware) {
 		SetProcessDPIAware();
 	}
+	bitmap_drv_init(gdi_drawrect, gdi_flush);
+	gdi_textmode(ciolib_initial_mode);
+
 	_beginthread(gdi_thread, 0, (void *)(intptr_t)mode);
 	WaitForSingleObject(init_sem, INFINITE);
 	CloseHandle(init_sem);
