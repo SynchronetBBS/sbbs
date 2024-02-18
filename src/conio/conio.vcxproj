@@ -77,7 +77,6 @@
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
-      <NoWin32Manifest>True</NoWin32Manifest>
     </ResourceCompile>
     <Lib>
       <OutputFile>.\msvc.win32.release\conio.lib</OutputFile>
@@ -111,7 +110,6 @@
     <Lib>
       <OutputFile>.\msvc.win32.debug\conio.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <NoWin32Manifest>True</NoWin32Manifest>
     </Lib>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>

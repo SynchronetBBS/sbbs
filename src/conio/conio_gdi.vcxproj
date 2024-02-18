@@ -78,7 +78,6 @@
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
-      <NoWin32Manifest>True</NoWin32Manifest>
     </ResourceCompile>
     <Lib>
       <OutputFile>.\msvc.win32.gdi.release\conio_gdi.lib</OutputFile>
@@ -109,7 +108,6 @@
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
-      <NoWin32Manifest>True</NoWin32Manifest>
     </ResourceCompile>
     <Lib>
       <OutputFile>.\msvc.win32.gdi.debug\conio_gdi.lib</OutputFile>
