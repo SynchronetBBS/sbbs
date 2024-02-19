@@ -195,9 +195,9 @@ static BOOL
 gdiAdjustWindowRect(LPRECT r, DWORD style, BOOL menu, UINT dpi)
 {
 	static bool gotPtr = false;
-	static BOOL (*AWREFD)(LPRECT, DWORD, BOOL, DWORD, UINT);
-	static BOOL (*GDFW)(HWND);
-	static BOOL (*GDFS)(void);
+	static BOOL (__stdcall *AWREFD)(LPRECT, DWORD, BOOL, DWORD, UINT);
+	static BOOL (__stdcall *GDFW)(HWND);
+	static BOOL (__stdcall *GDFS)(void);
 
 	if (!gotPtr) {
 		const char* user32dll[] = {"User32", NULL};
