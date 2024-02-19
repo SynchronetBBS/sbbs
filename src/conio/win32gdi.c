@@ -233,8 +233,8 @@ UnadjustWindowSize(int *w, int *h)
 		return true;
 	ret = gdiAdjustWindowRect(&r, STYLE, FALSE, 0);
 	if (ret) {
-		*w += r.right - r.left + 1;
-		*h += r.bottom - r.top + 1;
+		*w += r.left - r.right;
+		*h += r.top - r.bottom;
 	}
 	return ret;
 }
@@ -542,12 +542,13 @@ get_monitor_size_pos(int *w, int *h, int *xpos, int *ypos)
 	if (mon) {
 		mi.cbSize = sizeof(mi);
 		ret = GetMonitorInfoW(mon, &mi);
+		// This rect appears to actually be position/size, not a real rect on my laptop.
 		if (ret) {
 			if (fullscreen) {
 				if (w)
-					*w = mi.rcMonitor.right - mi.rcMonitor.left + 1;
+					*w = mi.rcMonitor.right - mi.rcMonitor.left;
 				if (h)
-					*h = mi.rcMonitor.bottom - mi.rcMonitor.top + 1;
+					*h = mi.rcMonitor.bottom - mi.rcMonitor.top;
 				if (xpos)
 					*xpos = mi.rcMonitor.left;
 				if (ypos)
@@ -555,9 +556,9 @@ get_monitor_size_pos(int *w, int *h, int *xpos, int *ypos)
 			}
 			else {
 				if (w)
-					*w = mi.rcWork.right - mi.rcWork.left + 1;
+					*w = mi.rcWork.right - mi.rcWork.left;
 				if (h)
-					*h = mi.rcWork.bottom - mi.rcWork.top + 1;
+					*h = mi.rcWork.bottom - mi.rcWork.top;
 				if (xpos)
 					*xpos = mi.rcWork.left;
 				if (ypos)
@@ -589,8 +590,8 @@ handle_wm_getminmaxinfo(MINMAXINFO *inf)
 
 	r.top = 0;
 	r.left = 0;
-	r.right = maxw;
-	r.bottom = maxh;
+	r.right = maxw - 1;
+	r.bottom = maxh - 1;
 	gdiAdjustWindowRect(&r, STYLE, FALSE, 0);
 	inf->ptMaxTrackSize.x = r.right - r.left + 1;
 	inf->ptMaxTrackSize.y = r.bottom - r.top + 1;
@@ -601,8 +602,8 @@ handle_wm_getminmaxinfo(MINMAXINFO *inf)
 
 	r.top = 0;
 	r.left = 0;
-	r.right = minw;
-	r.bottom = minh;
+	r.right = minw - 1;
+	r.bottom = minh - 1;
 	gdiAdjustWindowRect(&r, STYLE, FALSE, 0);
 	inf->ptMinTrackSize.x = r.right - r.left + 1;
 	inf->ptMinTrackSize.y = r.bottom - r.top + 1;
@@ -617,8 +618,8 @@ gdi_handle_getdpiscaledsize(WPARAM wParam, LPSIZE sz)
 	pthread_mutex_lock(&vstatlock);
 	// Now make the inside of the window the size we want (sigh)
 	r.left = r.top = 0;
-	r.right = vstat.scrnwidth;
-	r.bottom = vstat.scrnheight;
+	r.right = vstat.scrnwidth - 1;
+	r.bottom = vstat.scrnheight - 1;
 	pthread_mutex_unlock(&vstatlock);
 	gdiAdjustWindowRect(&r, STYLE, FALSE, HIWORD(wParam));
 	sz->cx = r.right - r.left + 1;
@@ -696,7 +697,7 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				break;
 			if (!ScreenToClient(hwnd, &p))
 				break;
-			if (p.x < 0 || p.y < 0 || p.x > (r.right - r.left + 1) || p.y > (r.bottom - r.top + 1))
+			if (p.x < 0 || p.y < 0 || p.x > (r.right - r.left) || p.y > (r.bottom - r.top))
 				break;
 			SetCursor(cursor);
 			break;
@@ -707,8 +708,8 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			pthread_mutex_lock(&vstatlock);
 			// Now make the inside of the window the size we want (sigh)
 			r.left = r.top = 0;
-			r.right = wParam;
-			r.bottom = lParam;
+			r.right = wParam - 1;
+			r.bottom = lParam - 1;
 			pthread_mutex_unlock(&vstatlock);
 			gdiAdjustWindowRect(&r, STYLE, FALSE, 0);
 			SetWindowPos(win, NULL, 0, 0, r.right - r.left + 1, r.bottom - r.top + 1, SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
@@ -925,8 +926,8 @@ gdi_thread(void *arg)
 	stype = ciolib_initial_scaling_type;
 	// Now make the inside of the window the size we want (sigh)
 	r.left = r.top = 0;
-	r.right = vstat.winwidth;
-	r.bottom = vstat.winheight;
+	r.right = vstat.winwidth - 1;
+	r.bottom = vstat.winheight - 1;
 	pthread_mutex_unlock(&vstatlock);
 	gdiAdjustWindowRect(&r, STYLE, FALSE, 0);
 	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", STYLE, wx, wy, r.right - r.left + 1, r.bottom - r.top + 1, NULL, NULL, NULL, NULL);
