@@ -536,7 +536,7 @@ add_public_key(void *vpriv)
 			} else {
 				status = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &new_sftp_channel);
 				if (cryptStatusError(status)) {
-					sftp_channel = -1;
+					sftp_channel = new_sftp_channel = -1;
 					pthread_mutex_unlock(&ssh_mutex);
 					cryptlib_error_message(status, "getting new channel");
 				}
