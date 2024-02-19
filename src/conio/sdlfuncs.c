@@ -240,11 +240,12 @@ int init_sdl_video(void)
 	// code that tells windows we're High DPI aware so it doesn't scale our windows
 	// taken from Yamagi Quake II
 
-	typedef enum D3_PROCESS_DPI_AWARENESS {
+	enum D3_PROCESS_DPI_AWARENESS {
 		D3_PROCESS_DPI_UNAWARE = 0,
 		D3_PROCESS_SYSTEM_DPI_AWARE = 1,
-		D3_PROCESS_PER_MONITOR_DPI_AWARE = 2
-	} YQ2_PROCESS_DPI_AWARENESS;
+		D3_PROCESS_PER_MONITOR_DPI_AWARE = 2,
+		D3_PROCESS_PER_MONITOR_DPI_AWARE_V2 = 3,
+	};
 
 	/* For Vista, Win7 and Win8 */
 	BOOL(WINAPI *SetProcessDPIAware)(void) = NULL;
@@ -252,12 +253,16 @@ int init_sdl_video(void)
 	/* Win8.1 and later */
 	HRESULT(WINAPI *SetProcessDpiAwareness)(enum D3_PROCESS_DPI_AWARENESS dpiAwareness) = NULL;
 
+	/* Win10v1703 and later */
+	HRESULT(WINAPI *SetProcessDpiAwarenessContext)(enum D3_PROCESS_DPI_AWARENESS dpiAwareness) = NULL;
+
 	const char* user32dll[] = {"User32", NULL};
 	dll_handle userDLL = xp_dlopen(user32dll, RTLD_LAZY, 0);
 
 	if (userDLL)
 	{
 		SetProcessDPIAware = xp_dlsym(userDLL, SetProcessDPIAware);
+		SetProcessDpiAwarenessContext = xp_dlsym(userDLL, SetProcessDpiAwarenessContext);
 	}
 
 
@@ -269,7 +274,11 @@ int init_sdl_video(void)
 		SetProcessDpiAwareness = xp_dlsym(shcoreDLL, SetProcessDpiAwareness);
 	}
 
-	if (SetProcessDpiAwareness) {
+	if (SetProcessDpiAwarenessContext) {
+		if (!SetProcessDpiAwarenessContext(D3_PROCESS_PER_MONITOR_DPI_AWARE_V2))
+			SetProcessDpiAwarenessContext(D3_PROCESS_PER_MONITOR_DPI_AWARE);
+	}
+	else if (SetProcessDpiAwareness) {
 		SetProcessDpiAwareness(D3_PROCESS_PER_MONITOR_DPI_AWARE);
 	}
 	else if (SetProcessDPIAware) {

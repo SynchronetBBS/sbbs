@@ -429,10 +429,8 @@ gdi_handle_wm_char(WPARAM wParam, LPARAM lParam)
 	uint8_t ch;
 	uint16_t repeat;
 	uint16_t i;
-	bool alt;
 
 	repeat = lParam & 0xffff;
-	alt = lParam & (1 << 29);
 	if (IS_HIGH_SURROGATE(wParam)) {
 		highpair = wParam;
 		return 0;
@@ -527,10 +525,6 @@ gdi_handle_mouse_wheel(int16_t distance, LPARAM lParam)
 static LRESULT
 gdi_handle_activate(HWND hwnd, WPARAM wParam)
 {
-	static LPCTSTR lc = IDC_IBEAM;
-	uint16_t lw = wParam & 0xffff;
-
-	// TODO: We may need to read the state of CTRL and SHIFT keys for extended key input...
 	return 0;
 }
 
@@ -1169,12 +1163,12 @@ gdi_init(int mode)
 	// code that tells windows we're High DPI aware so it doesn't scale our windows
 	// taken from Yamagi Quake II
 
-	typedef enum D3_PROCESS_DPI_AWARENESS {
+	enum D3_PROCESS_DPI_AWARENESS {
 		D3_PROCESS_DPI_UNAWARE = 0,
 		D3_PROCESS_SYSTEM_DPI_AWARE = 1,
 		D3_PROCESS_PER_MONITOR_DPI_AWARE = 2,
 		D3_PROCESS_PER_MONITOR_DPI_AWARE_V2 = 3,
-	} YQ2_PROCESS_DPI_AWARENESS;
+	};
 
 	/* For Vista, Win7 and Win8 */
 	BOOL(WINAPI *SetProcessDPIAware)(void) = NULL;
