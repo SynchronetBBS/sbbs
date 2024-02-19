@@ -2677,7 +2677,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											cterm->last_column_flag |= CTERM_LCF_FORCED | CTERM_LCF_ENABLED;
 											break;
 										case 255:
-											cterm->doorway_mode=0;
+											cterm->doorway_mode=1;
 											break;
 									}
 								}
