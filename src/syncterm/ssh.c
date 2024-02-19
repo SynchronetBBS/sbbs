@@ -228,17 +228,16 @@ ssh_input_thread(void *args)
 			gchstatus = CRYPT_OK;
 			chan = -1;
 		}
-		pthread_mutex_unlock(&ssh_mutex);
 
                 // Handle case where there was socket activity without readable data (ie: rekey)
 		if (popstatus == CRYPT_ERROR_TIMEOUT) {
 			FlushData(ssh_session);
+			pthread_mutex_unlock(&ssh_mutex);
 			continue;
 		}
 
 		// A final read on a channel just occured... figure out which is missing...
 		if (gchstatus == CRYPT_ERROR_NOTFOUND) {
-			pthread_mutex_lock(&ssh_mutex);
 			if (ssh_channel != -1) {
 				FlushData(ssh_session);
 				status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel);
@@ -255,11 +254,9 @@ ssh_input_thread(void *args)
 					}
 				}
 			}
-			pthread_mutex_unlock(&ssh_mutex);
 		}
 
 		if (cryptStatusOK(popstatus) && chan != -1) {
-			pthread_mutex_lock(&ssh_mutex);
 			if (chan == sftp_channel) {
 				if (gchstatus == CRYPT_ERROR_NOTFOUND) {
 					sftp_channel = -1;
@@ -278,9 +275,6 @@ ssh_input_thread(void *args)
 					pthread_mutex_unlock(&ssh_mutex);
 					continue;
 				}
-				else {
-					pthread_mutex_unlock(&ssh_mutex);
-				}
 			}
 			else if (chan == ssh_channel) {
 				if (gchstatus == CRYPT_ERROR_NOTFOUND) {
@@ -296,12 +290,11 @@ ssh_input_thread(void *args)
 						pthread_mutex_unlock(&(conn_inbuf.mutex));
 					}
 				}
-			}
-			else {
-				pthread_mutex_unlock(&ssh_mutex);
+				pthread_mutex_lock(&ssh_mutex);
 			}
 		}
 		FlushData(ssh_session);
+		pthread_mutex_unlock(&ssh_mutex);
 	}
 	conn_api.input_thread_running = 2;
 }
