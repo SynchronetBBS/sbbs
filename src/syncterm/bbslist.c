@@ -781,7 +781,7 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 		for (i = 0; i < 20; i++) {
 			if (!(isxdigit(fp[i*2]) && isxdigit(fp[i*2+1])))
 				break;
-			entry->ssh_fingerprint[i] = (HEX_CHAR_TO_INT(fp[i*2]) * 256) + HEX_CHAR_TO_INT(fp[i*2+1]);
+			entry->ssh_fingerprint[i] = (HEX_CHAR_TO_INT(fp[i*2]) * 16) + HEX_CHAR_TO_INT(fp[i*2+1]);
 		}
 		if (i == 20)
 			entry->has_fingerprint = true;
@@ -1745,6 +1745,7 @@ add_bbs(char *listpath, struct bbslist *bbs)
 		for (int i = 0; i < 20; i++) {
 			sprintf(&fp[i * 2], "%02x", bbs->ssh_fingerprint[i]);
 		}
+		fp[sizeof(fp)-1] = 0;
 		iniSetString(&inifile, bbs->name, "SSHFingerprint", fp, &ini_style);
 	}
 	iniSetBool(&inifile, bbs->name, "SFTPPublicKey", bbs->sftp_public_key, &ini_style);

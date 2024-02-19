@@ -922,15 +922,17 @@ ssh_connect(struct bbslist *bbs)
 			int i;
 
 			slen = 0;
+			for (i = 0; i < sizeof(server_fp); i++) {
+				sprintf(&fpstr[i * 2], "%02x", server_fp[i]);
+			}
+			fpstr[sizeof(fpstr)-1] = 0;
 			if (bbs->has_fingerprint) {
 				char ofpstr[41];
 
 				for (i = 0; i < sizeof(server_fp); i++) {
-					sprintf(&fpstr[i * 2], "%02x", server_fp[i]);
-				}
-				for (i = 0; i < sizeof(server_fp); i++) {
 					sprintf(&ofpstr[i * 2], "%02x", bbs->ssh_fingerprint[i]);
 				}
+				ofpstr[sizeof(ofpstr)-1] = 0;
 				asprintf(&uifc.helpbuf, "`Fingerprint Changed`\n\n"
 				    "The server fingerprint has changed from the last known good connection.\n"
 				    "This may indicate someone is evesdropping on your connection.\n"
