@@ -779,11 +779,14 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 		int i;
 		iniGetString(section, NULL, "SSHFingerprint", "", fp);
 		for (i = 0; i < 20; i++) {
-			if (sscanf(&fp[i * 2], "%2" SCNx8, &entry->ssh_fingerprint[i]) != 1)
+			if (!(isxdigit(fp[i*2]) && isxdigit(fp[i*2+1])))
 				break;
+			entry->ssh_fingerprint[i] = (HEX_CHAR_TO_INT(fp[i*2]) * 256) + HEX_CHAR_TO_INT(fp[i*2+1]);
 		}
 		if (i == 20)
 			entry->has_fingerprint = true;
+		else
+			entry->has_fingerprint = false;
 	}
 	else {
 		entry->has_fingerprint = false;
