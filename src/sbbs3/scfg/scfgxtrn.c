@@ -1949,6 +1949,14 @@ void xedit_cfg()
 						SAFECOPY(cfg.xedit[i]->name,str);
 					break;
 				case 1:
+					uifc.helpbuf=
+						"`WARNING:`\n"
+						"\n"
+						"If you change an external editor's internal code, any users that have\n"
+						"chosen that editor as their default, will be reverted to the internal\n"
+						"message editor as their default preference (that they can then change).";
+					if(uifc.deny("Changing an editor's internal code is not recommended. Edit anyway?"))
+						break;
 					SAFECOPY(str,cfg.xedit[i]->code);
 					uifc.helpbuf=
 						"`Message Editor Internal Code:`\n"

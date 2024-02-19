@@ -1457,17 +1457,26 @@ void shell_cfg()
 						SAFECOPY(cfg.shell[i]->name,str);
 					break;
 				case 1:
+					uifc.helpbuf=
+						"`WARNING:`\n"
+						"\n"
+						"If you change a command shell's internal code, any users that have\n"
+						"chosen that shell as their default, will be reverted to the default\n"
+						"command shell for new users or the first configured command shell\n"
+						"for which they meet the access requirements.";
+					if(uifc.deny("Changing a shell's internal code is not recommended. Edit anyway?"))
+						break;
 					SAFECOPY(str,cfg.shell[i]->code);
 					uifc.helpbuf=
 						"`Command Shell Internal Code:`\n"
 						"\n"
 						"Every command shell must have its own unique internal code for\n"
-						"Synchronet to reference it by. It is helpful if this code is an\n"
-						"abbreviation of the name.\n"
+						"Synchronet to reference it by.\n"
 						"\n"
-						"This code will be the base filename used to load the shell from your\n"
-						"`exec` directory. e.g. A shell with an internal code of `MYBBS` would\n"
-						"indicate a Baja shell file named `mybbs.bin` in your `exec` directory.\n"
+						"This code will be the base filename of the command shell script/module.\n"
+						"e.g. A shell with an internal code of `MYBBS` would correlate with a\n"
+						"Baja shell file named `mybbs.bin` or a JavaScript module named `mybbs.js`\n"
+						"located in your `exec` or `mods` directories.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE);
