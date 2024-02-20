@@ -1013,6 +1013,27 @@ char* iniReadString(FILE* fp, const char* section, const char* key, const char* 
 	return(value);
 }
 
+char* iniReadSString(FILE* fp, const char* section, const char* key, const char* deflt, char* value, size_t sz)
+{
+	char fval[INI_MAX_VALUE_LEN];
+	char *ret;
+	size_t pos;
+
+	ret = iniReadString(fp, section, key, deflt, value);
+	if (ret == NULL)
+		return ret;
+	if (sz < 1 || value == NULL)
+		return NULL;
+	for (pos = 0; fval[pos]; pos++) {
+		if (pos == sz - 1) {
+			value[pos] = 0;
+			break;
+		}
+		value[pos] = fval[pos];
+	}
+	return value;
+}
+
 /* Does NOT support string literals: */
 char* iniReadValue(FILE* fp, const char* section, const char* key, const char* deflt, char* value)
 {

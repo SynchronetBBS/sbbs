@@ -72,6 +72,8 @@ DLLEXPORT char* 		iniReadExistingValue(FILE*, const char* section, const char* k
 /* These functions read a single key of the specified type */
 DLLEXPORT char* 		iniReadString(FILE*, const char* section, const char* key
 							,const char* deflt, char* value);
+DLLEXPORT char*         iniReadSString(FILE* fp, const char* section, const char* key
+                            ,const char* deflt, char* value, size_t sz);
 /* If the key doesn't exist, iniReadExistingString just returns NULL */
 DLLEXPORT char* 		iniReadExistingString(FILE*, const char* section, const char* key
 							,const char* deflt, char* value);
