@@ -1345,7 +1345,7 @@ load_settings(struct syncterm_settings *set)
 	set->custom_aw = iniReadInteger(inifile, "SyncTERM", "CustomAspectWidth", 4);
 	set->custom_ah = iniReadInteger(inifile, "SyncTERM", "CustomAspectHeight", 3);
 	get_syncterm_filename(set->list_path, sizeof(set->list_path), SYNCTERM_PATH_LIST, false);
-	iniReadString(inifile, "SyncTERM", "ListPath", set->list_path, set->list_path);
+	iniReadSString(inifile, "SyncTERM", "ListPath", set->list_path, set->list_path, sizeof(set->list_path));
 	set->scaling_factor = iniReadFloat(inifile, "SyncTERM", "ScalingFactor", 0);
 	set->blocky = iniReadBool(inifile, "SyncTERM", "BlockyScaling", true);
 	set->extern_scale = iniReadBool(inifile, "SyncTERM", "ExternalScaling", false);
@@ -1354,9 +1354,9 @@ load_settings(struct syncterm_settings *set)
 	set->left_just = iniReadBool(inifile, "SyncTERM", "LeftJustify", false);
 
         /* Modem settings */
-	iniReadString(inifile, "SyncTERM", "ModemInit", "AT&F&C1&D2", set->mdm.init_string);
-	iniReadString(inifile, "SyncTERM", "ModemDial", "ATDT", set->mdm.dial_string);
-	iniReadString(inifile, "SyncTERM", "ModemDevice", DEFAULT_MODEM_DEV, set->mdm.device_name);
+	iniReadSString(inifile, "SyncTERM", "ModemInit", "AT&F&C1&D2", set->mdm.init_string, sizeof(set->mdm.init_string));
+	iniReadSString(inifile, "SyncTERM", "ModemDial", "ATDT", set->mdm.dial_string, sizeof(set->mdm.dial_string));
+	iniReadSString(inifile, "SyncTERM", "ModemDevice", DEFAULT_MODEM_DEV, set->mdm.device_name, sizeof(set->mdm.device_name));
 	set->mdm.com_rate = iniReadLongInt(inifile, "SyncTERM", "ModemComRate", 0);
 
         /* Sort order */
@@ -1368,7 +1368,7 @@ load_settings(struct syncterm_settings *set)
 	strListFree(&sortby);
 
         /* Shell TERM settings */
-	iniReadString(inifile, "SyncTERM", "TERM", "syncterm", set->TERM);
+	iniReadSString(inifile, "SyncTERM", "TERM", "syncterm", set->TERM, sizeof(set->TERM));
 
 	if (inifile)
 		fclose(inifile);
