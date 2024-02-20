@@ -149,6 +149,11 @@ DLLEXPORT char* 		iniGetExistingValue(str_list_t, const char* section, const cha
 /* Return the string value (potentially string literals separated by colon rather than equal): */
 DLLEXPORT char* 		iniGetString(str_list_t, const char* section, const char* key
 							,const char* deflt, char* value /* may be NULL */);
+
+/* As above but specify the size of value */
+DLLEXPORT char*         iniGetSString(str_list_t listr, const char* section, const char* key
+                            ,const char* deflt, char* value /* may be NULL */, size_t sz);
+
 /* If the key doesn't exist, iniGetExistingString just returns NULL */
 DLLEXPORT char* 		iniGetExistingString(str_list_t, const char* section, const char* key
 							,const char* deflt, char* value /* may be NULL */);
