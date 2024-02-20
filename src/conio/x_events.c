@@ -1170,8 +1170,12 @@ static void resize_window()
 	bitmap_get_scaled_win_size(new_scaling, &width, &height, 0, 0);
 	resize = new_scaling != vstat.scaling || width != vstat.winwidth || height != vstat.winheight;
 	x_cvstat.scaling = vstat.scaling;
-	if (resize)
+	if (resize) {
+		map_window();
 		x11.XResizeWindow(dpy, win, width, height);
+		x_cvstat.winwidth = vstat.winwidth = width;
+		x_cvstat.winheight = vstat.winheight = height;
+	}
 	pthread_mutex_unlock(&vstatlock);
 
 	return;
