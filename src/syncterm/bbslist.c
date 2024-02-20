@@ -756,16 +756,16 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 #endif
 	}
 	section = iniGetSection(listfile, bbsname);
-	iniGetString(section, NULL, "Address", "", entry->addr);
+	iniGetSString(section, NULL, "Address", "", entry->addr, sizeof(entry->addr));
 	entry->conn_type = iniGetEnum(section, NULL, "ConnectionType", conn_types_enum, CONN_TYPE_SSH);
 	entry->flow_control = fc_from_enum(iniGetEnum(section, NULL, "FlowControl", fc_enum, 0));
 	entry->port = iniGetShortInt(section, NULL, "Port", conn_ports[entry->conn_type]);
 	entry->added = iniGetDateTime(section, NULL, "Added", 0);
 	entry->connected = iniGetDateTime(section, NULL, "LastConnected", 0);
 	entry->calls = iniGetInteger(section, NULL, "TotalCalls", 0);
-	iniGetString(section, NULL, "UserName", "", entry->user);
-	iniGetString(section, NULL, "Password", "", entry->password);
-	iniGetString(section, NULL, "SystemPassword", "", entry->syspass);
+	iniGetSString(section, NULL, "UserName", "", entry->user, sizeof(entry->user));
+	iniGetSString(section, NULL, "Password", "", entry->password, sizeof(entry->password));
+	iniGetSString(section, NULL, "SystemPassword", "", entry->syspass, sizeof(entry->syspass));
 	if (iniGetBool(section, NULL, "BeDumb", false)) /* Legacy */
 		entry->conn_type = CONN_TYPE_RAW;
 	entry->screen_mode = iniGetEnum(section, NULL, "ScreenMode", screen_modes_enum, SCREEN_MODE_CURRENT);
@@ -777,7 +777,7 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	if (iniKeyExists(section, NULL, "SSHFingerprint")) {
 		char fp[41];
 		int i;
-		iniGetString(section, NULL, "SSHFingerprint", "", fp);
+		iniGetSString(section, NULL, "SSHFingerprint", "", fp, sizeof(fp));
 		for (i = 0; i < 20; i++) {
 			if (!(isxdigit(fp[i*2]) && isxdigit(fp[i*2+1])))
 				break;
@@ -792,11 +792,11 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 		entry->has_fingerprint = false;
 	}
 	entry->sftp_public_key = iniGetBool(section, NULL, "SFTPPublicKey", true);
-	iniGetString(section, NULL, "DownloadPath", home, entry->dldir);
-	iniGetString(section, NULL, "UploadPath", home, entry->uldir);
+	iniGetSString(section, NULL, "DownloadPath", home, entry->dldir, sizeof(entry->dldir));
+	iniGetSString(section, NULL, "UploadPath", home, entry->uldir, sizeof(entry->uldir));
 
         /* Log Stuff */
-	iniGetString(section, NULL, "LogFile", "", entry->logfile);
+	iniGetSString(section, NULL, "LogFile", "", entry->logfile, sizeof(entry->logfile));
 	entry->append_logfile = iniGetBool(section, NULL, "AppendLogFile", true);
 	entry->xfer_loglevel = iniGetEnum(section, NULL, "TransferLogLevel", log_levels, LOG_INFO);
 	entry->telnet_loglevel = iniGetEnum(section, NULL, "TelnetLogLevel", log_levels, LOG_INFO);
@@ -804,8 +804,8 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	entry->bpsrate = iniGetInteger(section, NULL, "BPSRate", 0);
 	entry->music = iniGetInteger(section, NULL, "ANSIMusic", CTERM_MUSIC_BANSI);
 	entry->address_family = iniGetEnum(section, NULL, "AddressFamily", address_families, ADDRESS_FAMILY_UNSPEC);
-	iniGetString(section, NULL, "Font", "Codepage 437 English", entry->font);
-	iniGetString(section, NULL, "Comment", "", entry->comment);
+	iniGetSString(section, NULL, "Font", "Codepage 437 English", entry->font, sizeof(entry->font));
+	iniGetSString(section, NULL, "Comment", "", entry->comment, sizeof(entry->comment));
 	entry->type = type;
 	entry->id = id;
 
