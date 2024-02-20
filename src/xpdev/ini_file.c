@@ -1015,21 +1015,21 @@ char* iniReadString(FILE* fp, const char* section, const char* key, const char* 
 
 char* iniReadSString(FILE* fp, const char* section, const char* key, const char* deflt, char* value, size_t sz)
 {
-	char fval[INI_MAX_VALUE_LEN];
+	char fval[INI_MAX_VALUE_LEN] = "";
 	char *ret;
 	size_t pos;
 
-	ret = iniReadString(fp, section, key, deflt, value);
+	ret = iniReadString(fp, section, key, deflt, fval);
 	if (ret == NULL)
 		return ret;
 	if (sz < 1 || value == NULL)
 		return NULL;
-	for (pos = 0; fval[pos]; pos++) {
+	for (pos = 0; ret[pos]; pos++) {
 		if (pos == sz - 1) {
 			value[pos] = 0;
 			break;
 		}
-		value[pos] = fval[pos];
+		value[pos] = ret[pos];
 	}
 	return value;
 }
@@ -1061,21 +1061,21 @@ char* iniGetString(str_list_t list, const char* section, const char* key, const 
 
 char* iniGetSString(str_list_t list, const char* section, const char* key, const char* deflt, char* value, size_t sz)
 {
-	char fval[INI_MAX_VALUE_LEN];
+	char fval[INI_MAX_VALUE_LEN] = "";
 	char *ret;
 	size_t pos;
 
-	ret = iniGetString(list, section, key, deflt, value);
+	ret = iniGetString(list, section, key, deflt, fval);
 	if (ret == NULL)
 		return ret;
 	if (sz < 1 || value == NULL)
 		return ret;
-	for (pos = 0; fval[pos]; pos++) {
+	for (pos = 0; ret[pos]; pos++) {
 		if (pos == sz - 1) {
 			value[pos] = 0;
 			break;
 		}
-		value[pos] = fval[pos];
+		value[pos] = ret[pos];
 	}
 	if (ret == fval)
 		return value;
