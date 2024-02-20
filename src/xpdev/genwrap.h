@@ -232,12 +232,10 @@ extern "C" {
 #endif
 
 #if !defined(_MSC_VER) && !defined(__BORLANDC__) && !defined(__WATCOMC__)
-#ifdef __GNUC__
-#if (__GNUC__ < 5)
+#if (defined(__GNUC__) && (__GNUC__ > 4)) || !defined(__MINGW32__)
 	DLLEXPORT char* ultoa(ulong, char*, int radix);
 	DLLEXPORT char* _i64toa(int64_t, char*, int radix);
 	DLLEXPORT char* _ui64toa(uint64_t, char*, int radix);
-#endif
 #endif
 #endif
 

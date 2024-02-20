@@ -671,8 +671,7 @@ long xp_random(int n)
 /* There may be a native GNU C Library function to this...					*/
 /****************************************************************************/
 #if !defined(_MSC_VER) && !defined(__BORLANDC__) && !defined(__WATCOMC__)
-#ifdef __GNUC__
-#if (__GNUC__ < 5)
+#if (defined(__GNUC__) && (__GNUC__ > 4)) || !defined(__MINGW32__)
 char* ultoa(ulong val, char* str, int radix)
 {
 	switch(radix) {
@@ -729,7 +728,6 @@ char* _ui64toa(uint64_t val, char* str, int radix)
 	}
 	return str;
 }
-#endif
 #endif
 #endif
 
