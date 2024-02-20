@@ -417,7 +417,7 @@ BOOL NT_SetConsoleDisplayMode(HANDLE hOutputHandle, DWORD dwNewMode)
     BOOL	ret;
     const char KERNEL32_NAME[] = "kernel32.dll";
 
-    hKernel32 = LoadLibrary(KERNEL32_NAME);
+    hKernel32 = LoadLibraryA(KERNEL32_NAME);
     if (hKernel32 == NULL)
         return FALSE;
 
@@ -448,7 +448,7 @@ BOOL NT_GetConsoleDisplayMode(DWORD* mode)
     BOOL	ret;
     const char KERNEL32_NAME[] = "kernel32.dll";
 
-    hKernel32 = LoadLibrary(KERNEL32_NAME);
+    hKernel32 = LoadLibraryA(KERNEL32_NAME);
     if (hKernel32 == NULL)
         return FALSE;
 
@@ -792,7 +792,7 @@ void win32_setcursortype(int type)
 
 void win32_settitle(const char *title)
 {
-	SetConsoleTitle(title);
+	SetConsoleTitleA(title);
 }
 
 void win32_copytext(const char *text, size_t buflen)

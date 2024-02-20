@@ -1129,7 +1129,7 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 	if (!we_got_this) {
  #ifdef CSIDL_FLAG_CREATE
 		if (type == SYNCTERM_DEFAULT_TRANSFER_PATH) {
-			switch (SHGetFolderPath(NULL, CSIDL_PERSONAL | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT,
+			switch (SHGetFolderPathA(NULL, CSIDL_PERSONAL | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT,
 			    fn)) {
 				case E_FAIL:
 				case E_INVALIDARG:
@@ -1145,7 +1145,7 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 				MKDIR(fn);
 			return fn;
 		}
-		switch (SHGetFolderPath(NULL, (shared ? CSIDL_COMMON_APPDATA : CSIDL_APPDATA) | CSIDL_FLAG_CREATE, NULL,
+		switch (SHGetFolderPathA(NULL, (shared ? CSIDL_COMMON_APPDATA : CSIDL_APPDATA) | CSIDL_FLAG_CREATE, NULL,
 		    SHGFP_TYPE_CURRENT, fn)) {
 			case E_FAIL:
 			case E_INVALIDARG:

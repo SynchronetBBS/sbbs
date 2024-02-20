@@ -47,7 +47,7 @@ COM_HANDLE comOpen(const char* device)
 		sprintf(dp, "\\\\.\\%s", device);
 	}
 
-	if((handle=CreateFile(dp
+	if((handle=CreateFileA(dp
 		,GENERIC_READ|GENERIC_WRITE 	/* Access */
 		,0								/* Share mode */
 		,NULL							/* Security attributes */

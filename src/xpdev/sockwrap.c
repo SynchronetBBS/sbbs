@@ -707,7 +707,7 @@ DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 	buf[buflen - 1] = 0;
 	if(error_number > 0 && error_number < WSABASEERR)
 		error_number += WSABASEERR;
-	if(!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,	// dwFlags
+	if(!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,	// dwFlags
 		NULL,			// lpSource
 		error_number,	// dwMessageId
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),    // dwLanguageId

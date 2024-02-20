@@ -890,7 +890,7 @@ uint64_t getfilesizetotal(const char *inpath)
 /****************************************************************************/
 #if defined(_WIN32)
 typedef BOOL(WINAPI * GetDiskFreeSpaceEx_t)
-	(LPCTSTR,PULARGE_INTEGER,PULARGE_INTEGER,PULARGE_INTEGER);
+	(LPCSTR,PULARGE_INTEGER,PULARGE_INTEGER,PULARGE_INTEGER);
 #endif
 
 /* Unit should be a power-of-2 (e.g. 1024 to report kilobytes) or 1 (to report bytes) */
@@ -906,15 +906,14 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 	ULARGE_INTEGER	avail;
 	ULARGE_INTEGER	size;
 	static HINSTANCE hK32;
-	GetDiskFreeSpaceEx_t GetDiskFreeSpaceEx;
+	GetDiskFreeSpaceEx_t GDFSE;
 
 	if(hK32 == NULL)
-		hK32 = LoadLibrary("KERNEL32");
-	GetDiskFreeSpaceEx
-		= (GetDiskFreeSpaceEx_t)GetProcAddress(hK32,"GetDiskFreeSpaceExA");
+		hK32 = LoadLibraryA("KERNEL32");
+	GDFSE = (GetDiskFreeSpaceEx_t)GetProcAddress(hK32,"GetDiskFreeSpaceExA");
 
-	if (GetDiskFreeSpaceEx!=NULL) {	/* Windows 95-OSR2 or later */
-		if(!GetDiskFreeSpaceEx(
+	if (GDFSE!=NULL) {	/* Windows 95-OSR2 or later */
+		if(!GDFSE(
 			path,		/* pointer to the directory name */
 			&avail,		/* receives the number of bytes on disk avail to the caller */
 			&size,		/* receives the number of bytes on disk */
@@ -929,7 +928,7 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 
 	/* Windows 95 (old way), limited to 2GB */
 	sprintf(root,"%.3s",path);
-	if(!GetDiskFreeSpace(
+	if(!GetDiskFreeSpaceA(
 		root,					/* pointer to root path */
 		(PDWORD)&SectorsPerCluster,		/* pointer to sectors per cluster */
 		(PDWORD)&BytesPerSector,		/* pointer to bytes per sector */
