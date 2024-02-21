@@ -1562,7 +1562,11 @@ service_loop(int argc, char** argv)
 			port = (ushort)strtol(argv[++argn], NULL, 0);
 		else if(stricmp(arg,"live")==0) {
 			if(argc > argn+1 &&
+#ifdef _BORLANDC_
 				(com_handle = (COM_HANDLE)strtol(argv[argn+1], NULL, 0)) != 0) {
+#else
+				(com_handle = (COM_HANDLE)strtoll(argv[argn+1], NULL, 0)) != 0) {
+#endif
 				argn++;
 				com_handle_passed=TRUE;
 			}
