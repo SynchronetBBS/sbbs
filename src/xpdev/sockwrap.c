@@ -785,7 +785,7 @@ socketpair(int domain, int type, int protocol, SOCKET *sv)
 	SOCKET *check;
 	fd_set rfd;
 	struct timeval tv;
-	size_t sa_len;
+	socklen_t sa_len;
 
 	sv[0] = sv[1] = INVALID_SOCKET;
 	ls = socket(domain, type, protocol);
