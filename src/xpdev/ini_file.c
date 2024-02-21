@@ -1021,9 +1021,9 @@ char* iniReadSString(FILE* fp, const char* section, const char* key, const char*
 
 	ret = iniReadString(fp, section, key, deflt, fval);
 	if (ret == NULL)
-		return ret;
+		return NULL;
 	if (ret == deflt)
-		return ret;
+		return deflt;
 	if (sz < 1 || value == NULL)
 		return value;
 	for (pos = 0; ret[pos]; pos++) {
@@ -1068,9 +1068,9 @@ char* iniGetSString(str_list_t list, const char* section, const char* key, const
 
 	ret = iniGetString(list, section, key, deflt, fval);
 	if (ret == NULL)
-		return ret;
+		return NULL;
 	if (ret == deflt)
-		return ret;
+		return deflt;
 	if (sz < 1 || value == NULL)
 		return value;
 	for (pos = 0; ret[pos]; pos++) {
