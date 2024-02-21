@@ -2323,7 +2323,7 @@ void x11_event_thread(void *args)
 						case X11_LOCAL_FLUSH:
 							x11.XFlush(dpy);
 							if (!got_first_resize) {
-								if (++flush_count > 5)
+								if (++flush_count > 3)
 									got_first_resize = true;
 							}
 							break;
