@@ -48,6 +48,9 @@
 #if defined(__cplusplus)
 	extern "C"
 #endif
+#if !defined(__GCC__) || (__GCC__ > 4)
+	extern
+#endif
 	HINSTANCE hK32;
 
 #elif defined(__unix__)		/* Unix-variant */
