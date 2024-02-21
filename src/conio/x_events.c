@@ -1469,8 +1469,10 @@ static void handle_resize_event(int width, int height, bool map)
 	bitmap_drv_request_pixels();
 	if (!got_first_resize) {
 		if (!fullscreen) {
+			pthread_mutex_lock(&vstatlock);
+			vstat.scaling = bitmap_double_mult_inside(width, height);
+			pthread_mutex_unlock(&vstatlock);
 			resize_window();
-			got_first_resize = true;
 		}
 	}
 }
@@ -1603,7 +1605,7 @@ is_fullscreen(void)
 }
 
 static void
-handle_configuration(int w, int h, bool map)
+handle_configuration(int w, int h, bool map, bool se)
 {
 	bool resize = false;
 
@@ -1613,7 +1615,7 @@ handle_configuration(int w, int h, bool map)
 	pthread_mutex_unlock(&vstatlock);
 	if (resize)
 		handle_resize_event(w, h, map);
-	if (w && h)
+	if (w && h && !se)
 		got_first_resize = true;
 }
 
@@ -1691,7 +1693,7 @@ x11_event(XEvent *ev)
 		/* Graphics related events */
 		case ConfigureNotify: {
 			/*
-			 * NOTE: The x/y values in the event are relative to root of send_event is true, and
+			 * NOTE: The x/y values in the event are relative to root if send_event is true, and
 			 * relative to the parent (which is the above member) if send_event is false.  Trying
 			 * to translate from parent to root in here is a bad idea as there's a race condition.
 			 * Basically, if we care about the x/y pos, we should not use it when send_event is
@@ -1705,7 +1707,7 @@ x11_event(XEvent *ev)
 					pending_height = ev->xconfigure.height;
 				}
 				else {
-					handle_configuration(ev->xconfigure.width, ev->xconfigure.height, false);
+					handle_configuration(ev->xconfigure.width, ev->xconfigure.height, false, ev->xconfigure.send_event);
 				}
 			}
 			break;
@@ -1713,7 +1715,7 @@ x11_event(XEvent *ev)
 		case MapNotify:
 			if (map_pending) {
 				map_pending = false;
-				handle_configuration(pending_width, pending_height, true);
+				handle_configuration(pending_width, pending_height, true, true);
 			}
 			break;
 		case NoExpose:
