@@ -1171,7 +1171,9 @@ static void resize_window()
 	resize = new_scaling != vstat.scaling || width != vstat.winwidth || height != vstat.winheight;
 	x_cvstat.scaling = vstat.scaling;
 	if (resize) {
+		pthread_mutex_unlock(&vstatlock);
 		map_window();
+		pthread_mutex_lock(&vstatlock);
 		x11.XResizeWindow(dpy, win, width, height);
 		x_cvstat.winwidth = vstat.winwidth = width;
 		x_cvstat.winheight = vstat.winheight = height;
