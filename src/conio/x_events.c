@@ -2203,6 +2203,7 @@ void x11_event_thread(void *args)
 	XEvent ev;
 	static struct timeval tv;
 	int mode = (int)(intptr_t)args;
+	int flush_count = 0;
 
 	SetThreadName("X11 Events");
 	if (mode == CIOLIB_MODE_X_FULLSCREEN)
@@ -2321,6 +2322,10 @@ void x11_event_thread(void *args)
 							break;
 						case X11_LOCAL_FLUSH:
 							x11.XFlush(dpy);
+							if (!got_first_resize) {
+								if (++flush_count > 5)
+									got_first_resize = true;
+							}
 							break;
 						case X11_LOCAL_BEEP:
 							x11.XBell(dpy, 100);
