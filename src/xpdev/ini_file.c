@@ -1023,7 +1023,7 @@ char* iniReadSString(FILE* fp, const char* section, const char* key, const char*
 	if (ret == NULL)
 		return NULL;
 	if (ret == deflt)
-		return deflt;
+		return (char*)deflt;
 	if (sz < 1 || value == NULL)
 		return value;
 	for (pos = 0; ret[pos]; pos++) {
@@ -1070,7 +1070,7 @@ char* iniGetSString(str_list_t list, const char* section, const char* key, const
 	if (ret == NULL)
 		return NULL;
 	if (ret == deflt)
-		return deflt;
+		return (char*)deflt;
 	if (sz < 1 || value == NULL)
 		return value;
 	for (pos = 0; ret[pos]; pos++) {
