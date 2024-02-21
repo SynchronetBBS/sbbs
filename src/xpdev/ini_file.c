@@ -1022,17 +1022,17 @@ char* iniReadSString(FILE* fp, const char* section, const char* key, const char*
 	ret = iniReadString(fp, section, key, deflt, fval);
 	if (ret == NULL)
 		return ret;
+	if (ret == deflt)
+		return ret;
 	if (sz < 1 || value == NULL)
-		return NULL;
+		return value;
 	for (pos = 0; ret[pos]; pos++) {
 		if (pos == sz - 1)
 			break;
 		value[pos] = ret[pos];
 	}
 	value[pos] = 0;
-	if (ret == fval)
-		return value;
-	return ret;
+	return value;
 }
 
 /* Does NOT support string literals: */
@@ -1069,17 +1069,17 @@ char* iniGetSString(str_list_t list, const char* section, const char* key, const
 	ret = iniGetString(list, section, key, deflt, fval);
 	if (ret == NULL)
 		return ret;
-	if (sz < 1 || value == NULL)
+	if (ret == deflt)
 		return ret;
+	if (sz < 1 || value == NULL)
+		return value;
 	for (pos = 0; ret[pos]; pos++) {
 		if (pos == sz - 1)
 			break;
 		value[pos] = ret[pos];
 	}
 	value[pos] = 0;
-	if (ret == fval)
-		return value;
-	return ret;
+	return value;
 }
 
 /* Does NOT support string literals: */
