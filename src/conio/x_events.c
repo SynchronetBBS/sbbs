@@ -60,6 +60,7 @@ bool xrender_found;
 bool xinerama_found;
 bool xrandr_found;
 bool x_internal_scaling = true;
+bool got_first_resize;
 
 /*
  * Local variables
@@ -1466,6 +1467,12 @@ static void handle_resize_event(int width, int height, bool map)
 	pthread_mutex_unlock(&vstatlock);
 	resize_xim();
 	bitmap_drv_request_pixels();
+	if (!got_first_resize) {
+		if (!fullscreen) {
+			resize_window();
+			got_first_resize = true;
+		}
+	}
 }
 
 static void expose_rect(int x, int y, int width, int height)
@@ -1606,6 +1613,8 @@ handle_configuration(int w, int h, bool map)
 	pthread_mutex_unlock(&vstatlock);
 	if (resize)
 		handle_resize_event(w, h, map);
+	if (w && h)
+		got_first_resize = true;
 }
 
 static void
