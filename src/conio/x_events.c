@@ -1011,7 +1011,7 @@ static int init_window()
 	bitmap_get_scaled_win_size(x_cvstat.scaling, &w, &h, mw, mh);
 	vstat.winwidth = x_cvstat.winwidth = w;
 	vstat.winheight = x_cvstat.winheight = h;
-	vstat.scaling = x_cvstat.scaling;
+	vstat.scaling = x_cvstat.scaling = bitmap_double_mult_inside(w, h);
 	pthread_mutex_unlock(&vstatlock);
 	win = x11.XCreateWindow(dpy, parent, 0, 0,
 	    w, h, 2, depth, InputOutput, visual, CWColormap | CWBorderPixel | CWBackPixel, &wa);
@@ -1178,8 +1178,10 @@ static void resize_window()
 		x11.XResizeWindow(dpy, win, width, height);
 		x_cvstat.winwidth = vstat.winwidth = width;
 		x_cvstat.winheight = vstat.winheight = height;
+		vstat.scaling = x_cvstat.scaling = bitmap_double_mult_inside(width, height);
 	}
 	pthread_mutex_unlock(&vstatlock);
+	resize_xim();
 
 	return;
 }
@@ -1188,7 +1190,6 @@ static void init_mode_internal(int mode)
 {
 	int mw, mh;
 	int ow, oh;
-	double os;
 
 	x11_get_maxsize(&mw, &mh);
 	pthread_mutex_lock(&vstatlock);
@@ -1198,13 +1199,12 @@ static void init_mode_internal(int mode)
 	}
 	ow = vstat.winwidth;
 	oh = vstat.winheight;
-	os = vstat.scaling;
 	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
 	x_cvstat = vstat;
 	if (fullscreen) {
 		vstat.winwidth = ow;
 		vstat.winheight = oh;
-		vstat.scaling = os;
+		vstat.scaling = bitmap_double_mult_inside(ow, oh);
 	}
 	pthread_mutex_unlock(&vstatlock);
 	resize_window();
@@ -1460,7 +1460,7 @@ static void handle_resize_event(int width, int height, bool map)
 	pthread_mutex_lock(&vstatlock);
 	x_cvstat.winwidth = vstat.winwidth = width;
 	x_cvstat.winheight = vstat.winheight = height;
-	vstat.scaling = bitmap_double_mult_inside(width, height);
+	vstat.scaling = x_cvstat.scaling = bitmap_double_mult_inside(width, height);
 	if (vstat.scaling > 16)
 		vstat.scaling = 16;
 	x_cvstat.scaling = vstat.scaling;
@@ -1661,6 +1661,8 @@ x11_event(XEvent *ev)
 								if (x_cvstat.winwidth != w || x_cvstat.winheight != h) {
 									x_cvstat.winwidth = w;
 									x_cvstat.winheight = h;
+									x_cvstat.scaling = bitmap_double_mult_inside(w, h);
+									resize_xim();
 								}
 							}
 						}
@@ -1681,8 +1683,11 @@ x11_event(XEvent *ev)
 							pthread_mutex_unlock(&vstatlock);
 							x_cvstat.winwidth = w;
 							x_cvstat.winheight = h;
-							if (resize)
+							x_cvstat.scaling = bitmap_double_mult_inside(w, h);
+							if (resize) {
 								x11.XMoveResizeWindow(dpy, win, saved_xpos, saved_ypos, w, h);
+								resize_xim();
+							}
 							else
 								x11.XMoveWindow(dpy, win, saved_xpos, saved_ypos);
 						}
