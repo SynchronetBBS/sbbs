@@ -95,10 +95,11 @@ void xpunmap(struct xpmapping *map)
 
 struct xpmapping* xpmap(const char *filename, enum xpmap_type type)
 {
-	HFILE				fd;
+	HANDLE				fd;
 	HANDLE				md;
 	OFSTRUCT			of;
-	UINT				oflags;
+	DWORD				caccess;
+	DWORD				cshare;
 	DWORD				mprot;
 	DWORD				maccess;
 	DWORD				size;
@@ -107,28 +108,31 @@ struct xpmapping* xpmap(const char *filename, enum xpmap_type type)
 
 	switch(type) {
 		case XPMAP_READ:
-			oflags=OF_READ|OF_SHARE_DENY_NONE;
+			caccess = GENERIC_READ;
+			cshare = FILE_SHARE_READ | FILE_SHARE_WRITE;
 			mprot=PAGE_READONLY;
 			maccess=FILE_MAP_READ;
 			break;
 		case XPMAP_WRITE:
-			oflags=OF_READWRITE|OF_SHARE_DENY_NONE;
+			caccess = GENERIC_READ | GENERIC_WRITE;
+			cshare = FILE_SHARE_READ | FILE_SHARE_WRITE;
 			mprot=PAGE_READWRITE;
 			maccess=FILE_MAP_WRITE;
 			break;
 		case XPMAP_COPY:
-			oflags=OF_READ|OF_SHARE_DENY_NONE;
+			caccess = GENERIC_READ;
+			cshare = FILE_SHARE_READ | FILE_SHARE_WRITE;
 			mprot=PAGE_WRITECOPY;
 			maccess=FILE_MAP_COPY;
 			break;
 	}
 
-	fd=OpenFile(filename, &of, oflags);
-	if(fd == HFILE_ERROR)
+	fd=CreateFile(filename, caccess, cshare, NULL, OPEN_EXISTING, 0, NULL);
+	if(fd == INVALID_HANDLE_VALUE)
 		return NULL;
-	if((size=GetFileSize((HANDLE)fd, NULL))==INVALID_FILE_SIZE)
+	if((size=GetFileSize(fd, NULL))==INVALID_FILE_SIZE)
 		return NULL;
-	md=CreateFileMapping((HANDLE)fd, NULL, mprot, 0, size, NULL);
+	md=CreateFileMapping(fd, NULL, mprot, 0, size, NULL);
 	if(md==NULL)
 		return NULL;
 	addr=MapViewOfFile(md, maccess, 0, 0, size);
@@ -139,7 +143,7 @@ struct xpmapping* xpmap(const char *filename, enum xpmap_type type)
 		return NULL;
 	}
 	ret->addr=addr;
-	ret->fd=(HANDLE)fd;
+	ret->fd=fd;
 	ret->md=md;
 	ret->size=size;
 	return ret;
