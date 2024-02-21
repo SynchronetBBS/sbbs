@@ -4,7 +4,7 @@
    #endif /* OpenBSD safe string functions */
  
    /* Widechar functions */
-+#if (!defined(__GNUC__)) || (__GNUC__ < 5)
++#if (!defined(__GNUC__)) || (__GNUC__ < 5) || (!defined(__MINGW32__))
    int mbstowcs_s( size_t *retval, wchar_t *dst, size_t dstmax, 
  				  const char *src, size_t len );
    int wcstombs_s( size_t *retval, char *dst, size_t dstmax, 
@@ -19,7 +19,7 @@
  ****************************************************************************/
  
  #ifndef __STDC_LIB_EXT1__
-+#if (!defined(__GNUC__)) || (__GNUC__ < 5)
++#if (!defined(__GNUC__)) || (__GNUC__ < 5) || (!defined(__MINGW32__))
  
  /* Minimal wrappers for the TR 24731 functions to map them to older stdlib 
     equivalents.  Because of potential issues when comparing a (signed)

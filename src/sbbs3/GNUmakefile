@@ -49,9 +49,11 @@ UTIL_LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDE
 CONSOLE_LDFLAGS	+=	$(LDFLAGS) $(SMBLIB_LDFLAGS) $(XPDEV_LDFLAGS)
 UTIL_LIBS	+=	$(HASH_LIBS)
 
-ifndef bcc
- ifneq ($(os),sunos)
-  LDFLAGS	+=	-lutil
+ifndef win
+ ifndef bcc
+  ifneq ($(os),sunos)
+   LDFLAGS	+=	-lutil
+  endif
  endif
 endif
 
