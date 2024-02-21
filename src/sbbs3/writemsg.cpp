@@ -511,7 +511,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			max_title_len = LEN_TITLE;
 		if(draft_restored)
 			user_get_property(&cfg, useron.number, draft_desc, "subject", subj, max_title_len);
-		if(!getstr(subj,max_title_len,mode&WM_FILE ? K_LINE|K_TRIM : K_LINE|K_EDIT|K_AUTODEL|K_TRIM)
+		if(!getstr(subj,max_title_len,mode&WM_FILE ? K_LINE|K_TRIM : K_LINE|K_EDIT|K_AUTODEL|K_TRIM|K_UTF8)
 			&& useron_level && useron.logons) {
 			free(buf);
 			return(false);
@@ -1158,7 +1158,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 			else if(!stricmp(strin,"/T")) { /* Edit title/subject */
 				if(title != nulstr) { // hack
 					bputs(text[SubjectPrompt]);
-					getstr(title,LEN_TITLE,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
+					getstr(title,LEN_TITLE,K_LINE|K_EDIT|K_AUTODEL|K_TRIM|K_UTF8);
 					sync();
 					CRLF;
 				}
@@ -1449,7 +1449,7 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 		else {
 			SAFEPRINTF(subj, "Fwd: %s", orgmsg->subj);
 			bputs(text[SubjectPrompt]);
-			if(!getstr(subj, sizeof(subj) - 1, K_LINE | K_EDIT | K_AUTODEL | K_TRIM))
+			if(!getstr(subj, sizeof(subj) - 1, K_LINE | K_EDIT | K_AUTODEL | K_TRIM | K_UTF8))
 				return false;
 		}
 	}
