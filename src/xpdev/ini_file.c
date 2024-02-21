@@ -1025,13 +1025,14 @@ char* iniReadSString(FILE* fp, const char* section, const char* key, const char*
 	if (sz < 1 || value == NULL)
 		return NULL;
 	for (pos = 0; ret[pos]; pos++) {
-		if (pos == sz - 1) {
-			value[pos] = 0;
+		if (pos == sz - 1)
 			break;
-		}
 		value[pos] = ret[pos];
 	}
-	return value;
+	value[pos] = 0;
+	if (ret == fval)
+		return value;
+	return ret;
 }
 
 /* Does NOT support string literals: */
@@ -1071,12 +1072,11 @@ char* iniGetSString(str_list_t list, const char* section, const char* key, const
 	if (sz < 1 || value == NULL)
 		return ret;
 	for (pos = 0; ret[pos]; pos++) {
-		if (pos == sz - 1) {
-			value[pos] = 0;
+		if (pos == sz - 1)
 			break;
-		}
 		value[pos] = ret[pos];
 	}
+	value[pos] = 0;
 	if (ret == fval)
 		return value;
 	return ret;
