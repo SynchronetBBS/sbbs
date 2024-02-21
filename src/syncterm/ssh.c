@@ -109,7 +109,15 @@ close_sftp_channel(int chan)
 			cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
 		}
 	}
-	sftp_channel = -1;
+	if (chan == sftp_channel)
+		sftp_channel = -1;
+	else {
+		FlushData(ssh_session);
+		if (cryptStatusOK(cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sftp_channel))) {
+			cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
+		}
+		sftp_channel = -1;
+	}
 	oldstate = sftp_state;
 	sftp_state = NULL;
 	pthread_mutex_unlock(&ssh_mutex);
@@ -161,6 +169,7 @@ ssh_input_thread(void *args)
 	size_t buffer;
 	int    chan;
 	sftpc_state_t oldstate = NULL;
+	bool   both_gone = false;
 
 	SetThreadName("SSH Input");
 	conn_api.input_thread_running = 1;
@@ -178,15 +187,11 @@ ssh_input_thread(void *args)
 				sftp_channel = -1;
 			}
 		}
-		if (ssh_channel == -1 && sftp_channel == -1) {
-			if (oldstate != NULL) {
-				sftpc_finish(oldstate);
-				oldstate = NULL;
-			}
-			pthread_mutex_unlock(&ssh_mutex);
-			break;
-		}
+		if (ssh_channel == -1 && sftp_channel == -1) 
+			both_gone = true;
 		pthread_mutex_unlock(&ssh_mutex);
+		if (both_gone)
+			break;
 		if (oldstate != NULL) {
 			sftpc_finish(oldstate);
 			oldstate = NULL;
@@ -204,16 +209,15 @@ ssh_input_thread(void *args)
 		}
 		if (sftp_channel != -1) {
 			if (!check_channel_open(&sftp_channel)) {
-				pthread_mutex_lock(&ssh_mutex);
 				sftpc_state_t oldstate = sftp_state;
 				sftp_state = NULL;
 				sftp_channel = -1;
 				pthread_mutex_unlock(&ssh_mutex);
 				sftpc_finish(oldstate);
+				oldstate = NULL;
 			}
 		}
 		if (ssh_channel == -1 && sftp_channel == -1) {
-			fprintf(stderr, "All my friends are gone!\n");
 			pthread_mutex_unlock(&ssh_mutex);
 			break;
 		}
@@ -295,6 +299,10 @@ ssh_input_thread(void *args)
 		}
 		FlushData(ssh_session);
 		pthread_mutex_unlock(&ssh_mutex);
+	}
+	if (oldstate != NULL) {
+		sftpc_finish(oldstate);
+		oldstate = NULL;
 	}
 	conn_api.input_thread_running = 2;
 }
