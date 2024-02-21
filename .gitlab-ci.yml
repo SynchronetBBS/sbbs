@@ -49,6 +49,15 @@ include:
       platform: "x64"
       tagname: "Linux"
       has_gtk: "yes"
+  - local: '.gitlab-ci-unix.yml'
+    inputs:
+      os: 'mingw32-w64'
+      platform: 'x86'
+      tagname: 'FreeBSD'
+      cross_platform: 'yes'
+      build_flags: 'AR=/home/admin/mingw-w32/bin/i686-w64-mingw32-ar AS=/home/admin/mingw-w32/bin/i686-w64-mingw32-as CC=/home/admin/mingw-w32/bin/i686-w64-mingw32-gcc CXX=/home/admin/mingw-w32/bin/i686-w64-mingw32-g++ RANLIB=/home/admin/mingw-w32/bin/i686-w64-mingw32-ranlib WINDRES=/home/admin/mingw-w32/bin/i686-w64-mingw32-windres RELEASE=1'
+      no_javascript: 'yes'
+      has_curses: 'no'
 
 smoketest-jsexec-linux:
   tags: [Linux]
