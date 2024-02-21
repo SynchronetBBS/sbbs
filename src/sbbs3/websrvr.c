@@ -1747,7 +1747,7 @@ static void calculate_digest(http_session_t * session, char *ha1, char *ha2, uns
 	MD5_close(&ctx, digest);
 }
 
-static bool digest_authentication(http_session_t* session, int auth_allowed, user_t thisuser, char** reason)
+static bool digest_authentication(http_session_t* session, int auth_allowed, user_t* thisuser, char** reason)
 {
 	unsigned char	digest[MD5_DIGEST_SIZE];
 	char			ha1[MD5_DIGEST_SIZE*2+1];
@@ -1801,12 +1801,12 @@ static bool digest_authentication(http_session_t* session, int auth_allowed, use
 	MD5_digest(&ctx, ":", 1);
 	MD5_digest(&ctx, session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name), strlen(session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name)));
 	MD5_digest(&ctx, ":", 1);
-	MD5_digest(&ctx, thisuser.pass, strlen(thisuser.pass));
+	MD5_digest(&ctx, thisuser->pass, strlen(thisuser->pass));
 	MD5_close(&ctx, digest);
 	MD5_hex(ha1, digest);
 
 	/* H(A1)l */
-	pass=strdup(thisuser.pass);
+	pass=strdup(thisuser->pass);
 	strlwr(pass);
 	MD5_open(&ctx);
 	MD5_digest(&ctx, session->req.auth.username, strlen(session->req.auth.username));
@@ -1824,7 +1824,7 @@ static bool digest_authentication(http_session_t* session, int auth_allowed, use
 	MD5_digest(&ctx, ":", 1);
 	MD5_digest(&ctx, session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name), strlen(session->req.digest_realm?session->req.digest_realm:(session->req.realm?session->req.realm:scfg.sys_name)));
 	MD5_digest(&ctx, ":", 1);
-	MD5_digest(&ctx, thisuser.pass, strlen(thisuser.pass));
+	MD5_digest(&ctx, thisuser->pass, strlen(thisuser->pass));
 	MD5_close(&ctx, digest);
 	MD5_hex(ha1u, digest);
 	free(pass);
@@ -1845,7 +1845,7 @@ static bool digest_authentication(http_session_t* session, int auth_allowed, use
 
 	/* Check password as in user base */
 	calculate_digest(session, ha1, ha2, digest);
-	if(thisuser.pass[0]) {	// Zero-length password is "special" (any password will work)
+	if(thisuser->pass[0]) {	// Zero-length password is "special" (any password will work)
 		if(memcmp(digest, session->req.auth.digest, sizeof(digest))) {
 			/* Check against lower-case password */
 			calculate_digest(session, ha1l, ha2, digest);
@@ -2036,7 +2036,7 @@ static bool check_ars(http_session_t * session)
 		case AUTHENTICATION_DIGEST:
 		{
 			char* reason="unknown";
-			if(!digest_authentication(session, auth_allowed, thisuser, &reason)) {
+			if(!digest_authentication(session, auth_allowed, &thisuser, &reason)) {
 				lprintf(LOG_NOTICE,"%04d <%s> !DIGEST AUTHENTICATION FAILURE (reason: %s)"
 						,session->socket,session->req.auth.username,reason);
 				badlogin(session->socket, session->req.auth.username, "<digest>", &session->client, &session->addr);
