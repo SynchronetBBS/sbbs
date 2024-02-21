@@ -141,6 +141,7 @@ endif
 ####################
 # libarchive stuff #
 ####################
-ifeq ($(os),win32)
- LDFLAGS += -L$(3RDP_ROOT)/win32.release/libarchive/bin
+ifdef win
+ LDFLAGS += -L$(3RDP_ROOT)/$(os).release/libarchive/bin
+ LDFLAGS += -L$(3RDP_ROOT)/$(os).release/libarchive/lib
 endif
