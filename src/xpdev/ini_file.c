@@ -1020,10 +1020,11 @@ char* iniReadSString(FILE* fp, const char* section, const char* key, const char*
 	size_t pos;
 
 	ret = iniReadString(fp, section, key, deflt, fval);
-	if (ret == NULL)
+	if (ret == NULL) {
+		if (sz > 0 && value != NULL)
+			value[0] = 0;
 		return NULL;
-	if (ret == deflt)
-		return (char*)deflt;
+	}
 	if (sz < 1 || value == NULL)
 		return value;
 	for (pos = 0; ret[pos]; pos++) {
@@ -1032,6 +1033,8 @@ char* iniReadSString(FILE* fp, const char* section, const char* key, const char*
 		value[pos] = ret[pos];
 	}
 	value[pos] = 0;
+	if (ret == deflt)
+		return (char*)deflt;
 	return value;
 }
 
@@ -1067,10 +1070,11 @@ char* iniGetSString(str_list_t list, const char* section, const char* key, const
 	size_t pos;
 
 	ret = iniGetString(list, section, key, deflt, fval);
-	if (ret == NULL)
+	if (ret == NULL) {
+		if (sz > 0 && value != NULL)
+			value[0] = 0;
 		return NULL;
-	if (ret == deflt)
-		return (char*)deflt;
+	}
 	if (sz < 1 || value == NULL)
 		return value;
 	for (pos = 0; ret[pos]; pos++) {
@@ -1079,6 +1083,8 @@ char* iniGetSString(str_list_t list, const char* section, const char* key, const
 		value[pos] = ret[pos];
 	}
 	value[pos] = 0;
+	if (ret == deflt)
+		return (char*)deflt;
 	return value;
 }
 
