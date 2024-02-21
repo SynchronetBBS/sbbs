@@ -228,7 +228,7 @@ unsigned char   avt_color = FALSE, avt_rep = FALSE, avt_command = FALSE,
 unsigned char   pcb_color = FALSE, pcb_code = FALSE, d, pcb_col = 0;
 unsigned char   ans_esc = FALSE, ans_code = FALSE, ans_rep, e, ans_attr = 0;
 unsigned char   sync_code = FALSE;
-int             acx, acy, errno;
+int             acx, acy;
 char            ansicode[20];
 char            copytmp[20];
 char            code[20];
