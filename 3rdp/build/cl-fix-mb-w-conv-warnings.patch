@@ -1,0 +1,33 @@
+--- misc/os_spec.h.orig	2024-02-20 21:13:23.001994000 -0500
++++ misc/os_spec.h	2024-02-20 21:15:43.649318000 -0500
+@@ -1164,10 +1164,12 @@
+   #endif /* OpenBSD safe string functions */
+ 
+   /* Widechar functions */
++#if (!defined(__GNUC__)) || (__GNUC__ < 5)
+   int mbstowcs_s( size_t *retval, wchar_t *dst, size_t dstmax, 
+ 				  const char *src, size_t len );
+   int wcstombs_s( size_t *retval, char *dst, size_t dstmax, 
+ 				  const wchar_t *src, size_t len );
++#endif
+   #if defined( USE_EMBEDDED_OS )
+     /* Support for the thread-safe mbtowc() is practially nonexistent in
+ 	   embedded OSes, but in any case is unlikely to be necessary since
+--- misc/int_string.c.orig	2024-02-20 21:26:17.818569000 -0500
++++ misc/int_string.c	2024-02-20 21:27:13.057203000 -0500
+@@ -475,6 +475,7 @@
+ ****************************************************************************/
+ 
+ #ifndef __STDC_LIB_EXT1__
++#if (!defined(__GNUC__)) || (__GNUC__ < 5)
+ 
+ /* Minimal wrappers for the TR 24731 functions to map them to older stdlib 
+    equivalents.  Because of potential issues when comparing a (signed)
+@@ -532,6 +533,7 @@
+ 	*retval = bytesCopied;
+ 	return( 0 );
+ 	}
++#endif
+ #endif /* !__STDC_LIB_EXT1__ */
+ 
+ /****************************************************************************

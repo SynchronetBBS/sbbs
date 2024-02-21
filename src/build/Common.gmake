@@ -215,16 +215,28 @@ else
 endif
 BUILDPATH	?=	$(BUILD)
 
-gcc_machine		:= $(findstring mingw32,$(shell ${CC} -dumpmachine))
-gcc_w64                 := $(findstring w64,$(shell ${CC} -dumpmachine))
+gcc_machine := $(findstring mingw32,$(shell ${CC} -dumpmachine))
+gcc_w64     := $(findstring w64,$(shell ${CC} -dumpmachine))
+gcc_x86_64  := $(findstring x86_64,$(shell ${CC} -dumpmachine))
 ifeq ($(gcc_machine),mingw32)
- os		:= Win32
- CFLAGS	+=	-DMSVCRT_VERSION=0x0800 -m32
+ CFLAGS	+=	-DMSVCRT_VERSION=0x0800
+ ifeq ($(gcc_x86_64),x86_64)
+  os            := Win64
+  win           := 64
+  CFLAGS        += -m64
+  LDFLAGS       += -m64
+  machine_uname := x64
+ else
+  os            := Win32
+  win           := 32
+  CFLAGS        += -m32
+  LDFLAGS       += -m32
+  WINDRESFLAGS  += -Fpe-i386
+  machine_uname := x86
+ endif
  ifeq ($(gcc_w64),w64)
   CFLAGS += -DDISABLE_MKSTEMP_DEFINE
  endif
- LDFLAGS+=	-m32
- WINDRESFLAGS+=	-Fpe-i386
 endif
 
 # Get OS
@@ -233,14 +245,14 @@ ifndef os
 endif
 os      :=	$(shell echo $(os) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
 
-ifneq ($(os),win32)
+ifndef win
  ifneq ($(os),darwin)
   CFLAGS +=	-DPREFER_POLL
  endif
+ machine_uname	:=	$(shell if uname -m | egrep -v "(i[3456789]*|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
+ machine_uname	:=	$(shell if uname -m | egrep "64" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; else echo $(machine_uname) ; fi)
 endif
 
-machine_uname	:=	$(shell if uname -m | egrep -v "(i[3456789]*|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
-machine_uname	:=	$(shell if uname -m | egrep "64" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; else echo $(machine_uname) ; fi)
 ifeq ($(os),darwin)
  ifeq ("$(machine_uname)","")
   ifeq ($(shell sysctl hw.optional.x86_64),hw.optional.x86_64: 1)
@@ -252,7 +264,7 @@ endif
 ifeq ($(machine_uname),x86_64)
  machine_uname	:= x64
 endif
-ifneq ($(os), win32)
+ifndef win
  CFLAGS +=	-fpic
 endif
 ifeq ($(machine_uname),sparc64)
@@ -313,7 +325,7 @@ endif
 LIBPREFIX	:= lib
 DIRSEP		:= /
 OFILE		:= .o
-ifeq ($(os),win32)
+ifdef win
  EXEFILE		:= .exe
 else
  ifeq ($(os),emscripten)
@@ -406,7 +418,7 @@ else
       # This makes ctime_r() be the correct one.
       #CFLAGS	   += -D_POSIX_PTHREAD_SEMANTICS
      else
-      ifeq ($(os),win32) # Windows
+      ifdef win # Windows
        CFLAGS		+= -U__STRICT_ANSI__ -D_WIN32 -D_WIN32_WINNT=0x0501 -DWINVER=0x0501 -D_WIN32_IE=0x0500
        MT_CFLAGS	+= -D_WIN32
       else

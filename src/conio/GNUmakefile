@@ -5,7 +5,7 @@ include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rule
 CFLAGS += $(XPDEV-MT_CFLAGS) $(HASH_CFLAGS) $(ENCODE_CFLAGS) $(CIOLIB-MT_CFLAGS)
 VPATH = $(SRCODIR)
 
-ifeq ($(os),win32)
+ifdef win
  ifndef WITHOUT_GDI
   OBJS	+=	$(MTOBJODIR)$(DIRSEP)win32gdi$(OFILE)
   NEED_BITMAP := 1
@@ -59,7 +59,7 @@ $(CIOLIB-MT_SHLIB_BUILD): $(MTOBJODIR) $(OBJS)
 	@echo Creating $@
 	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(OBJS) $(SHLIBOPTS) -o $@
 
-ifeq ($(os),win32)
+ifdef win
 mtlib: $(MTOBJODIR)$(DIRSEP)ciolib_res${OFILE}
 
 dl-mtlib: $(MTOBJODIR)$(DIRSEP)ciolib_res${OFILE}

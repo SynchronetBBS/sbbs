@@ -4,7 +4,7 @@ include $(SRC_ROOT)/build/Common.gmake
 ifdef XP_SEM
 	MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)xpsem$(OFILE)
 endif
-ifneq ($(os),win32)
+ifndef win
  MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)xpevent$(OFILE)
 endif
 

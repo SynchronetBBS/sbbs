@@ -20,11 +20,11 @@ endif
 ifeq ($(os),openbsd)
  CFLAGS += -DHAVE_VASPRINTF
 endif
-ifeq ($(os),win32)
+ifdef win
  CFLAGS += -I${3RDP_ROOT}/win32.release/sdl2/include
 endif
 
-ifneq ($(os),win32)
+ifndef win
  ifeq ($(shell pkg-config ncursesw --exists && echo YES), YES)
   CIOLIB-MT_LIBS += $(shell pkg-config ncursesw --libs)
   CIOLIB-MT_CFLAGS += $(shell pkg-config ncursesw --cflags)
@@ -56,9 +56,9 @@ ifneq ($(os),win32)
    endif
   endif
  else
-   ifeq ($(os),darwin)
-    CIOLIB-MT_CFLAGS		+=  -DDISABLE_X11=1
-   endif
+  ifeq ($(os),darwin)
+   CIOLIB-MT_CFLAGS		+=  -DDISABLE_X11=1
+  endif
  endif
 else
  NO_X			 :=  1
@@ -165,7 +165,7 @@ ifdef WITH_SDL
    CIOLIB_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
    CIOLIB_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
   else
-   ifeq ($(os),win32)
+   ifdef win
     CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
     WITH_SDL	:=	1
     CIOLIB_CFLAGS	+=	-DWITH_SDL

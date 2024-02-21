@@ -70,7 +70,7 @@ else
 endif
 INSTALL_DATA	?=	install -m 0644
 
-ifeq ($(os),win32)
+ifdef win
  OBJS	+= $(MTOBJODIR)$(DIRSEP)comio_win32$(OFILE) \
            $(MTOBJODIR)$(DIRSEP)modem$(OFILE) \
            $(MTOBJODIR)$(DIRSEP)comio$(OFILE) \
@@ -88,15 +88,15 @@ ifndef bcc
  ifneq ($(os),sunos)
   ifneq ($(os),darwin)
    ifneq ($(os),haiku)
-    ifneq ($(os),win32)
-      EXTRA_LIBS   +=  -lutil
+    ifndef win
+     EXTRA_LIBS   +=  -lutil
     endif
    endif
   endif
  endif
 endif
 
-ifeq ($(os),win32)
+ifdef win
  EXTRA_LIBS += -luuid
 endif
 
@@ -202,7 +202,7 @@ syncterm-clean:
 
 clean: syncterm-clean
 
-ifeq ($(os),win32)
+ifdef win
 $(MTOBJODIR)$(DIRSEP)syncterm_res${OFILE}: syncterm.rc
 	@echo Creating $< ...
 	$(QUIET)${WINDRES} $(WINDRESFLAGS) -O coff -i syncterm.rc -o $@
