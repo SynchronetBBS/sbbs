@@ -362,7 +362,7 @@ conn_send(const void *vbuffer, size_t buflen, unsigned int timeout)
 	return found;
 }
 
-int
+SOCKET
 conn_connect(struct bbslist *bbs)
 {
 	char str[64];

@@ -86,7 +86,7 @@ struct conn_buffer {
 int conn_recv_upto(void *buffer, size_t buflen, unsigned int timeout);
 int conn_send(const void *buffer, size_t buflen, unsigned int timeout);
 int conn_send_raw(const void *buffer, size_t buflen, unsigned int timeout);
-int conn_connect(struct bbslist *bbs);
+SOCKET conn_connect(struct bbslist *bbs);
 int conn_close(void);
 bool conn_connected(void);
 size_t conn_data_waiting(void);
