@@ -799,7 +799,7 @@ static void map_window()
 		}
 		sh->flags |= PMaxSize;
 
-		bitmap_get_scaled_win_size(x_cvstat.scaling, &sh->base_width, &sh->base_height, 0, 0);
+		bitmap_get_scaled_win_size(x_cvstat.scaling, &sh->base_width, &sh->base_height, sh->max_width, sh->max_height);
 		sh->flags |= PBaseSize;
 
 		sh->width = sh->base_width;
@@ -1200,9 +1200,11 @@ static void init_mode_internal(int mode)
 	os = vstat.scaling;
 	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
 	x_cvstat = vstat;
-	vstat.winwidth = ow;
-	vstat.winheight = oh;
-	vstat.scaling = os;
+	if (fullscreen) {
+		vstat.winwidth = ow;
+		vstat.winheight = oh;
+		vstat.scaling = os;
+	}
 	pthread_mutex_unlock(&vstatlock);
 	resize_window();
 	pthread_mutex_lock(&vstatlock);
