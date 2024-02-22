@@ -690,7 +690,7 @@ coord_conv_xy(struct cterminal *cterm, enum cterm_coordinates from_coord,
 			case CTERM_COORD_ABSTERM:
 				*x += cterm->x - 1;
 				break;
-			case CTERM_COORD_CURR:
+			default:
 				// Silence warnings
 				break;
 		}
@@ -709,7 +709,7 @@ coord_conv_xy(struct cterminal *cterm, enum cterm_coordinates from_coord,
 			case CTERM_COORD_ABSTERM:
 				*x -= cterm->x - 1;
 				break;
-			case CTERM_COORD_CURR:
+			default:
 				// Silence warnings
 				break;
 		}
@@ -730,7 +730,7 @@ coord_conv_xy(struct cterminal *cterm, enum cterm_coordinates from_coord,
 			case CTERM_COORD_ABSTERM:
 				*y += cterm->y - 1;
 				break;
-			case CTERM_COORD_CURR:
+			default:
 				// Silence warnings
 				break;
 		}
@@ -749,7 +749,7 @@ coord_conv_xy(struct cterminal *cterm, enum cterm_coordinates from_coord,
 			case CTERM_COORD_ABSTERM:
 				*y -= cterm->y - 1;
 				break;
-			case CTERM_COORD_CURR:
+			default:
 				// Silence warnings
 				break;
 		}
