@@ -116,6 +116,7 @@ static int handle_rc;
 
 #ifdef WITH_PULSEAUDIO
 struct pulseaudio_api_struct {
+	dll_handle dl;
 	pa_simple* (*simple_new)(const char * server, const char * name, pa_stream_direction_t dir, const char * dev, const char * stream_name, const pa_sample_spec * ss, const pa_channel_map * map, const pa_buffer_attr * attr, int * error);
 	int (*simple_write)(pa_simple * s, const void * data, size_t bytes, int * error);
 	int (*simple_drain)(pa_simple * s, int * error);
@@ -137,6 +138,7 @@ static bool				portaudio_initialized=false;
 #define PaTimestamp		PaTime
 #endif
 struct portaudio_api_struct {
+	dll_handle dl;
 	PaError (*init)( void );
 	PaError (*open)( PaStream** stream,
                               int numInputChannels,
@@ -186,6 +188,7 @@ static	int dsp;
 
 #ifdef USE_ALSA_SOUND
 struct alsa_api_struct {
+	dll_handle dl;
 	int		(*snd_pcm_open)
 				(snd_pcm_t **pcm, const char *name, snd_pcm_stream_t stream, int mode);
 	int		(*snd_pcm_hw_params_malloc)
@@ -403,17 +406,16 @@ xptone_open_locked(void)
 #ifdef WITH_PULSEAUDIO
 	if(!pulseaudio_device_open_failed) {
 		if(pu_api==NULL) {
-			dll_handle dl=NULL;
 			const char *libnames[]={"pulse-simple",NULL};
 			if(((pu_api=(struct pulseaudio_api_struct *)malloc(sizeof(struct pulseaudio_api_struct)))==NULL)
-					|| ((dl=xp_dlopen(libnames,RTLD_LAZY,0))==NULL)
-					|| ((pu_api->simple_new=xp_dlsym(dl,pa_simple_new))==NULL)
-					|| ((pu_api->simple_write=xp_dlsym(dl,pa_simple_write))==NULL)
-					|| ((pu_api->simple_drain=xp_dlsym(dl,pa_simple_drain))==NULL)
-					|| ((pu_api->simple_free=xp_dlsym(dl,pa_simple_free))==NULL)
+					|| ((pu_api->dl=xp_dlopen(libnames,RTLD_LAZY,0))==NULL)
+					|| ((pu_api->simple_new=xp_dlsym(pu_api->dl,pa_simple_new))==NULL)
+					|| ((pu_api->simple_write=xp_dlsym(pu_api->dl,pa_simple_write))==NULL)
+					|| ((pu_api->simple_drain=xp_dlsym(pu_api->dl,pa_simple_drain))==NULL)
+					|| ((pu_api->simple_free=xp_dlsym(pu_api->dl,pa_simple_free))==NULL)
 					) {
-				if(dl)
-					xp_dlclose(dl);
+				if(pu_api->dl)
+					xp_dlclose(pu_api->dl);
 				free(pu_api);
 				pu_api=NULL;
 			}
@@ -446,34 +448,33 @@ xptone_open_locked(void)
 #ifdef WITH_PORTAUDIO
 	if(!portaudio_device_open_failed) {
 		if(pa_api==NULL) {
-			dll_handle dl=NULL;
 			const char *libnames[]={"portaudio",NULL};
 			if(((pa_api=(struct portaudio_api_struct *)malloc(sizeof(struct portaudio_api_struct)))==NULL)
-					|| ((dl=xp_dlopen(libnames,RTLD_LAZY,0))==NULL)
-					|| ((pa_api->init=xp_dlsym(dl,Pa_Initialize))==NULL)
-					|| ((pa_api->open=xp_dlsym(dl,Pa_OpenDefaultStream))==NULL)
-					|| ((pa_api->close=xp_dlsym(dl,Pa_CloseStream))==NULL)
-					|| ((pa_api->start=xp_dlsym(dl,Pa_StartStream))==NULL)
+					|| ((pa_api->dl=xp_dlopen(libnames,RTLD_LAZY,0))==NULL)
+					|| ((pa_api->init=xp_dlsym(pa_api->dl,Pa_Initialize))==NULL)
+					|| ((pa_api->open=xp_dlsym(pa_api->dl,Pa_OpenDefaultStream))==NULL)
+					|| ((pa_api->close=xp_dlsym(pa_api->dl,Pa_CloseStream))==NULL)
+					|| ((pa_api->start=xp_dlsym(pa_api->dl,Pa_StartStream))==NULL)
 					||
 						(
-							((pa_api->active=xp_dlsym(dl,Pa_StreamActive))==NULL)
-							&& ((pa_api->active=xp_dlsym(dl,Pa_IsStreamActive))==NULL)
+							((pa_api->active=xp_dlsym(pa_api->dl,Pa_StreamActive))==NULL)
+							&& ((pa_api->active=xp_dlsym(pa_api->dl,Pa_IsStreamActive))==NULL)
 						)
-					|| ((pa_api->stop=xp_dlsym(dl,Pa_StopStream))==NULL)
+					|| ((pa_api->stop=xp_dlsym(pa_api->dl,Pa_StopStream))==NULL)
 					) {
-				if(dl)
-					xp_dlclose(dl);
+				if(pa_api->dl)
+					xp_dlclose(pa_api->dl);
 				free(pa_api);
 				pa_api=NULL;
 			}
 			else {
 				/* Get version and other optional pointers */
 				pa_api->ver=1800;
-				if((pa_api->version=xp_dlsym(dl, Pa_GetVersion))!=NULL) {
+				if((pa_api->version=xp_dlsym(pa_api->dl, Pa_GetVersion))!=NULL) {
 					pa_api->ver=pa_api->version();
 					if(pa_api->ver >= 1899) {
-						if((pa_api->write=xp_dlsym(dl, Pa_WriteStream))==NULL) {
-							xp_dlclose(dl);
+						if((pa_api->write=xp_dlsym(pa_api->dl, Pa_WriteStream))==NULL) {
+							xp_dlclose(pa_api->dl);
 							free(pa_api);
 							pa_api=NULL;
 						}
@@ -568,26 +569,25 @@ xptone_open_locked(void)
 #ifdef USE_ALSA_SOUND
 	if(!alsa_device_open_failed) {
 		if(alsa_api==NULL) {
-			dll_handle dl=NULL;
 			const char *libnames[]={"asound", NULL};
 			if(((alsa_api=(struct alsa_api_struct *)malloc(sizeof(struct alsa_api_struct)))==NULL)
-					|| ((dl=xp_dlopen(libnames,RTLD_LAZY,2))==NULL)
-					|| ((alsa_api->snd_pcm_open=xp_dlsym(dl,snd_pcm_open))==NULL)
-					|| ((alsa_api->snd_pcm_hw_params_malloc=xp_dlsym(dl,snd_pcm_hw_params_malloc))==NULL)
-					|| ((alsa_api->snd_pcm_hw_params_any=xp_dlsym(dl,snd_pcm_hw_params_any))==NULL)
-					|| ((alsa_api->snd_pcm_hw_params_set_access=xp_dlsym(dl,snd_pcm_hw_params_set_access))==NULL)
-					|| ((alsa_api->snd_pcm_hw_params_set_format=xp_dlsym(dl,snd_pcm_hw_params_set_format))==NULL)
-					|| ((alsa_api->snd_pcm_hw_params_set_rate_near=xp_dlsym(dl,snd_pcm_hw_params_set_rate_near))==NULL)
-					|| ((alsa_api->snd_pcm_hw_params_set_channels=xp_dlsym(dl,snd_pcm_hw_params_set_channels))==NULL)
-					|| ((alsa_api->snd_pcm_hw_params=xp_dlsym(dl,snd_pcm_hw_params))==NULL)
-					|| ((alsa_api->snd_pcm_prepare=xp_dlsym(dl,snd_pcm_prepare))==NULL)
-					|| ((alsa_api->snd_pcm_hw_params_free=xp_dlsym(dl,snd_pcm_hw_params_free))==NULL)
-					|| ((alsa_api->snd_pcm_close=xp_dlsym(dl,snd_pcm_close))==NULL)
-					|| ((alsa_api->snd_pcm_writei=xp_dlsym(dl,snd_pcm_writei))==NULL)
-					|| ((alsa_api->snd_pcm_drain=xp_dlsym(dl,snd_pcm_drain))==NULL)
+					|| ((alsa_api->dl=xp_dlopen(libnames,RTLD_LAZY,2))==NULL)
+					|| ((alsa_api->snd_pcm_open=xp_dlsym(alsa_api->dl,snd_pcm_open))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_malloc=xp_dlsym(alsa_api->dl,snd_pcm_hw_params_malloc))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_any=xp_dlsym(alsa_api->dl,snd_pcm_hw_params_any))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_set_access=xp_dlsym(alsa_api->dl,snd_pcm_hw_params_set_access))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_set_format=xp_dlsym(alsa_api->dl,snd_pcm_hw_params_set_format))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_set_rate_near=xp_dlsym(alsa_api->dl,snd_pcm_hw_params_set_rate_near))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_set_channels=xp_dlsym(alsa_api->dl,snd_pcm_hw_params_set_channels))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params=xp_dlsym(alsa_api->dl,snd_pcm_hw_params))==NULL)
+					|| ((alsa_api->snd_pcm_prepare=xp_dlsym(alsa_api->dl,snd_pcm_prepare))==NULL)
+					|| ((alsa_api->snd_pcm_hw_params_free=xp_dlsym(alsa_api->dl,snd_pcm_hw_params_free))==NULL)
+					|| ((alsa_api->snd_pcm_close=xp_dlsym(alsa_api->dl,snd_pcm_close))==NULL)
+					|| ((alsa_api->snd_pcm_writei=xp_dlsym(alsa_api->dl,snd_pcm_writei))==NULL)
+					|| ((alsa_api->snd_pcm_drain=xp_dlsym(alsa_api->dl,snd_pcm_drain))==NULL)
 					) {
-				if(dl)
-					xp_dlclose(dl);
+				if(alsa_api->dl)
+					xp_dlclose(alsa_api->dl);
 				free(alsa_api);
 				alsa_api=NULL;
 				alsa_device_open_failed=true;
