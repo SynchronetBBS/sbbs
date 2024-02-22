@@ -1200,12 +1200,9 @@ static void init_mode_internal(int mode)
 	ow = vstat.winwidth;
 	oh = vstat.winheight;
 	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
-	x_cvstat = vstat;
-	if (fullscreen) {
-		vstat.winwidth = ow;
-		vstat.winheight = oh;
-		vstat.scaling = bitmap_double_mult_inside(ow, oh);
-	}
+	vstat.winwidth = ow;
+	vstat.winheight = oh;
+	vstat.scaling = bitmap_double_mult_inside(ow, oh);
 	pthread_mutex_unlock(&vstatlock);
 	resize_window();
 	pthread_mutex_lock(&vstatlock);
@@ -2054,7 +2051,7 @@ x11_event(XEvent *ev)
 										pthread_mutex_lock(&vstatlock);
 										ms = bitmap_largest_mult_inside(mw, mh);
 										pthread_mutex_unlock(&vstatlock);
-										if (x_cvstat.scaling + 1 <= ms)
+										if (ival + 1 <= ms)
 											x_setscaling(ival + 1);
 									}
 								}
