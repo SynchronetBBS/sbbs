@@ -832,7 +832,9 @@ static bool
 do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 {
 	unsigned char *samp;
+#if defined(WITH_PORTAUDIO) || defined(_WIN32) || defined(WITH_SDL_AUDIO)
 	int need_copy = 0;
+#endif
 #ifdef AFMT_U8
 	int wr;
 	int	i;
@@ -853,6 +855,7 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 		need_copy = 1;
 #endif
 
+#if defined(WITH_PORTAUDIO) || defined(_WIN32) || defined(WITH_SDL_AUDIO)
 	if (freed)
 		*freed = need_copy;
 	if (need_copy) {
@@ -869,6 +872,11 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 	else {
 		samp = sampo;
 	}
+#else
+	if (freed)
+		*freed = 0;
+	samp = sampo;
+#endif
 
 #ifdef WITH_PULSEAUDIO
 	if(handle_type==SOUND_DEVICE_PULSEAUDIO) {
