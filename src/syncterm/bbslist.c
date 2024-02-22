@@ -2520,7 +2520,7 @@ edit_comment(struct bbslist *list, char *listpath)
 	    &ch);
 	switch (ch) {
 		case '\x1b':
-			strcpy(list->comment, old);
+			SAFECOPY(list->comment, old);
 			ret = true;
 			goto done;
 		case '\t':
