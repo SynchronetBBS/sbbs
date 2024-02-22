@@ -63,18 +63,22 @@ time_t sane_timegm(struct tm* tm)
 time32_t time32(time32_t* tp)
 {
 	time_t t;
+	uint32_t t32;
 
 	t=time(NULL);
+	t32 = t & UINT32_MAX;
 
 	if(tp!=NULL)
-		*tp=(time32_t)t;
+		*tp=(time32_t)t32;
 
-	return (time32_t)t;
+	return (time32_t)t32;
 }
 
 time32_t mktime32(struct tm* tm)
 {
-	return (time32_t)mktime(tm);	/* don't use sane_mktime since tm->tm_mon is assumed to be already zero-based */
+	time_t t = mktime(tm);
+	uint32_t t32 = t & UINT32_MAX;
+	return (time32_t)t32;	/* don't use sane_mktime since tm->tm_mon is assumed to be already zero-based */
 }
 
 struct tm* localtime32(const time32_t* t32, struct tm* tm)
