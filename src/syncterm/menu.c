@@ -221,16 +221,7 @@ syncmenu(struct bbslist *bbs, int *speed)
 				break;
 			case 2: /* Login */
 				ret = 1;
-				conn_send(bbs->user, strlen(bbs->user), 0);
-				conn_send("\r", 1, 0);
-				SLEEP(10);
-				conn_send(bbs->password, strlen(bbs->password), 0);
-				conn_send("\r", 1, 0);
-				if (bbs->syspass[0]) {
-					SLEEP(10);
-					conn_send(bbs->syspass, strlen(bbs->syspass), 0);
-					conn_send("\r", 1, 0);
-				}
+				send_login(bbs);
 				break;
 			case 5: /* Output rate */
 				if ((bbs->conn_type == CONN_TYPE_MODEM) || (bbs->conn_type == CONN_TYPE_SERIAL)

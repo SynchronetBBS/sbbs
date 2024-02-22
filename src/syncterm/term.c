@@ -3649,6 +3649,38 @@ do_paste(void)
 	}
 }
 
+void
+send_login(struct bbslist *bbs) {
+	if ((bbs->conn_type != CONN_TYPE_RLOGIN)
+	    && (bbs->conn_type != CONN_TYPE_RLOGIN_REVERSED)
+	    && (bbs->conn_type != CONN_TYPE_SSH)) {
+		if (bbs->conn_type != CONN_TYPE_SSHNA) {
+			if (bbs->user[0]) {
+				conn_send(bbs->user, strlen(bbs->user), 0);
+				conn_send(
+					cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
+					1,
+					0);
+				SLEEP(10);
+			}
+		}
+		if (bbs->password[0]) {
+			conn_send(bbs->password, strlen(bbs->password), 0);
+			conn_send(
+				cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
+				1,
+				0);
+			SLEEP(10);
+		}
+	}
+	if (bbs->syspass[0]) {
+		conn_send(bbs->syspass, strlen(bbs->syspass), 0);
+		conn_send(cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
+		    1,
+		    0);
+	}
+}
+
 bool
 doterm(struct bbslist *bbs)
 {
@@ -4069,34 +4101,7 @@ doterm(struct bbslist *bbs)
 					key = 0;
 					break;
 				case 0x2600: /* ALT-L */
-					if ((bbs->conn_type != CONN_TYPE_RLOGIN)
-					    && (bbs->conn_type != CONN_TYPE_RLOGIN_REVERSED)
-					    && (bbs->conn_type != CONN_TYPE_SSH)) {
-						if (bbs->conn_type != CONN_TYPE_SSHNA) {
-							if (bbs->user[0]) {
-								conn_send(bbs->user, strlen(bbs->user), 0);
-								conn_send(
-									cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
-									1,
-									0);
-								SLEEP(10);
-							}
-						}
-						if (bbs->password[0]) {
-							conn_send(bbs->password, strlen(bbs->password), 0);
-							conn_send(
-								cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
-								1,
-								0);
-							SLEEP(10);
-						}
-					}
-					if (bbs->syspass[0]) {
-						conn_send(bbs->syspass, strlen(bbs->syspass), 0);
-						conn_send(cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
-						    1,
-						    0);
-					}
+					send_login(bbs);
 					key = 0;
 					break;
 				case 0x3200: /* ALT-M */
