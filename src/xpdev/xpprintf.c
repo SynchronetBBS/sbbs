@@ -739,7 +739,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:
-							i=strtol(cp, NULL, 0);
+							if (cp)
+								i=strtol(cp, NULL, 0);
+							else
+								i = 0;
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							i=(int)d;
@@ -776,7 +779,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:
-							ui=strtoul(cp, NULL, 0);
+							if (cp)
+								ui=strtoul(cp, NULL, 0);
+							else
+								ui = 0;
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							ui=(unsigned)d;
@@ -813,7 +819,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:
-							l=strtol(cp, NULL, 0);
+							if (cp)
+								l=strtol(cp, NULL, 0);
+							else
+								l = 0;
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							l=(long)d;
@@ -850,7 +859,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:
-							ul=strtoul(cp, NULL, 0);
+							if (cp)
+								ul=strtoul(cp, NULL, 0);
+							else
+								ul = 0;
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							ul=(unsigned long)d;
@@ -886,7 +898,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							ll=ull;
 							break;
 						case XP_PRINTF_TYPE_CHARP:
-							ll=strtoll(cp, NULL, 0);
+							if (cp)
+								ll=strtoll(cp, NULL, 0);
+							else
+								ll = 0;
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							ll=d;
@@ -921,7 +936,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							ull=ll;
 							break;
 						case XP_PRINTF_TYPE_CHARP:
-							ull=strtoull(cp, NULL, 0);
+							if (cp)
+								ull=strtoull(cp, NULL, 0);
+							else
+								ull = 0;
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							ull=d;
@@ -1013,7 +1031,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:
-							d=strtod(cp, NULL);
+							if (cp)
+								d=strtod(cp, NULL);
+							else
+								d = 0.0;
 							break;
 						case XP_PRINTF_TYPE_LONGDOUBLE:
 							d=ld;
@@ -1050,11 +1071,14 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:
+							if (cp)
 #if defined(__BORLANDC__)
-							ld=strtod(cp, NULL);
+								ld=strtod(cp, NULL);
 #else
-							ld=strtold(cp, NULL);
+								ld=strtold(cp, NULL);
 #endif
+							else
+								ld = 0.0L;
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							ld=d;
@@ -1129,11 +1153,14 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 #endif
 						case XP_PRINTF_TYPE_CHARP:
+							if (cp)
 #if defined(__BORLANDC__)
-							s=strtoul(cp, NULL, 0);
+								s=strtoul(cp, NULL, 0);
 #else
-							s=strtoull(cp, NULL, 0);
+								s=strtoull(cp, NULL, 0);
 #endif
+							else
+								s = 0;
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							s=(size_t)d;
