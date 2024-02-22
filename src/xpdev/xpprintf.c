@@ -679,9 +679,6 @@ char* xp_asprintf_next(char *format, int type, ...)
 			switch(correct_type) {
 				case XP_PRINTF_TYPE_CHAR:
 					switch(type) {
-						case XP_PRINTF_TYPE_CHAR:
-						case XP_PRINTF_TYPE_INT:
-							break;
 						case XP_PRINTF_TYPE_UINT:
 							i=ui;
 							break;
@@ -764,8 +761,6 @@ char* xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_INT:
 							ui=i;
 							break;
-						case XP_PRINTF_TYPE_UINT:
-							break;
 						case XP_PRINTF_TYPE_LONG:
 							ui=l;
 							break;
@@ -806,8 +801,6 @@ char* xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_UINT:
 							l=ui;
 							break;
-						case XP_PRINTF_TYPE_LONG:
-							break;
 						case XP_PRINTF_TYPE_ULONG:
 							l=ul;
 							break;
@@ -847,8 +840,6 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 						case XP_PRINTF_TYPE_LONG:
 							ul=l;
-							break;
-						case XP_PRINTF_TYPE_ULONG:
 							break;
 #if defined(XP_PRINTF_TYPE_LONGLONG)
 						case XP_PRINTF_TYPE_LONGLONG:
@@ -891,8 +882,6 @@ char* xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_ULONG:
 							ll=ul;
 							break;
-						case XP_PRINTF_TYPE_LONGLONG:
-							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
 							ll=ull;
 							break;
@@ -930,8 +919,6 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 						case XP_PRINTF_TYPE_LONGLONG:
 							ull=ll;
-							break;
-						case XP_PRINTF_TYPE_ULONGLONG:
 							break;
 						case XP_PRINTF_TYPE_CHARP:
 							ull=strtoull(cp, NULL, 0);
@@ -983,8 +970,6 @@ char* xp_asprintf_next(char *format, int type, ...)
 							cp=num_str;
 							break;
 #endif
-						case XP_PRINTF_TYPE_CHARP:
-							break;
 						case XP_PRINTF_TYPE_DOUBLE:
 							sprintf(num_str, "%f", d);
 							cp=num_str;
@@ -1030,8 +1015,6 @@ char* xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_CHARP:
 							d=strtod(cp, NULL);
 							break;
-						case XP_PRINTF_TYPE_DOUBLE:
-							break;
 						case XP_PRINTF_TYPE_LONGDOUBLE:
 							d=ld;
 							break;
@@ -1076,8 +1059,6 @@ char* xp_asprintf_next(char *format, int type, ...)
 						case XP_PRINTF_TYPE_DOUBLE:
 							ld=d;
 							break;
-						case XP_PRINTF_TYPE_LONGDOUBLE:
-							break;
 						case XP_PRINTF_TYPE_VOIDP:
 							ld=(long double)((long int)pntr);
 							break;
@@ -1118,8 +1099,6 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 						case XP_PRINTF_TYPE_LONGDOUBLE:
 							pntr=(void *)((intptr_t)ld);
-							break;
-						case XP_PRINTF_TYPE_VOIDP:
 							break;
 						case XP_PRINTF_TYPE_SIZET:
 							pntr=(void *)((intptr_t)s);
@@ -1164,8 +1143,6 @@ char* xp_asprintf_next(char *format, int type, ...)
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
 							s=(size_t)pntr;
-							break;
-						case XP_PRINTF_TYPE_SIZET:
 							break;
 					}
 					break;
