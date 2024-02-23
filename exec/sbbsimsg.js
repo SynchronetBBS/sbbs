@@ -189,12 +189,12 @@ while(bbs.online) {
 	console.line_counter=0;	// defeat pause
 	console.clearline();
 	console.print("\1n\xfe \1h\1bInterBBS \1n\xfe ");
-	console.mnemonics("Anyone: ~Telegram, Active-Users: ~Message/~List, or ~Quit: ");
+	console.mnemonics("Anyone: ~Telegram, Active-Users: ~Message/~List, or ~@Quit@: ");
 	console.aborted = false;
 	var key;
 	var last_request = 0;
 	var request_interval = 60;	// seconds
-	var valid_keys = "QLTM\rD";
+	var valid_keys = "LTM\rD" + console.quit_key;
 	while(bbs.online && !console.aborted) {
 		if(time() - last_request >= request_interval) {
 			lib.request_active_users();
@@ -310,7 +310,7 @@ while(bbs.online) {
 			}
 			break;
 		default:
-			print("\1h\1cQuit");
+			console.putmsg("\1h\1c@Quit@");
 			break prompt;
 	}
 }

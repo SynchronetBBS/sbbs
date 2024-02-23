@@ -8,6 +8,7 @@ if(argc == 1 && argv[0] == "install") {
 
 require("sbbsdefs.js", 'SS_USERON');
 require("text.js", 'PrivateMsgPrompt');
+require("gettext.js", "gettext");
 
 if(!(bbs.sys_status&SS_USERON))	// Don't allow use until logged-on
 	exit();
@@ -21,13 +22,14 @@ while(bbs.online && !(console.aborted)) {
 		break; 
 	}
 	bbs.nodesync();
-	console.print("\1n\r\n\xfe \1b\1h\Private \1n\xfe ");
-	console.mnemonics("~Telegram, ~Message, ~Chat, ~InterBBS, ~View, or ~Quit: ");
+	console.print("\1n\r\n\xfe \1b\1h" + gettext("Private") + " \1n\xfe ");
+	console.mnemonics("~Telegram, ~Message, ~Chat, ~InterBBS, ~View, or ~@Quit@: ");
 	bbs.sys_status&=~SS_ABORT;
 	var ch;
+	var keys = "TMCIV\r" + console.quit_key;
 	while(bbs.online && !console.aborted) {  /* Watch for incoming messages */
 		ch=console.inkey(/* mode: */K_UPPER, /* timeout: */1000);
-		if(ch && "TMCIQV\r".indexOf(ch)>=0)
+		if(ch && keys.indexOf(ch)>=0)
 			break;
 		
 		console.line_counter = 0;
@@ -171,7 +173,7 @@ while(bbs.online && !(console.aborted)) {
 			load({}, 'viewimsgs.js');
 			break;
 		default:
-			console.print("Quit\r\n");
+			console.putmsg("@Quit@\r\n");
 			exit();
 	}
 }
