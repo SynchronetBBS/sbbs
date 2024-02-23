@@ -1,0 +1,26 @@
+--- session/ssh2_msgcli.c.orig	2024-02-22 22:36:15.723051000 -0500
++++ session/ssh2_msgcli.c	2024-02-22 22:37:41.041899000 -0500
+@@ -610,11 +610,6 @@
+ 	BOOLEAN waitforWindow = FALSE;
+ 	int length;
+ 
+-	status = getServiceType( sessionInfoPtr, &serviceType );
+-	if( cryptStatusError( status ) ) {
+-		return( status );
+-	}
+-
+ 	origWriteChannelNo = sessionInfoPtr->sessionSSH->currWriteChannel;
+ 	status = currentChannelNo = readUint32( stream );
+ 
+@@ -635,6 +630,11 @@
+ 				  "Invalid channel information in channel open "
+ 				  "confirmation for channel %lX", channelNo ) );
+ 		}
++	status = getServiceType( sessionInfoPtr, &serviceType );
++	if( cryptStatusError( status ) ) {
++		return( status );
++	}
++
+ 	status = sread( stream, buffer, UINT32_SIZE );
+ 	if( !cryptStatusError( status ) && \
+ 		!memcmp( buffer, "\x00\x00\x00\x00", UINT32_SIZE ) )
