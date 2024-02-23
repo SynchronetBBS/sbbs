@@ -1,6 +1,6 @@
 --- session/session.h.orig	2024-02-22 21:46:07.919870000 -0500
 +++ session/session.h	2024-02-22 21:54:28.395535000 -0500
-@@ -370,6 +370,12 @@
+@@ -370,6 +370,11 @@
  	BUFFER_FIXED( KEYID_SIZE ) \
  	BYTE authUserNameHash[ KEYID_SIZE + 8 ];/* Hashed userID */
  	/* SSH_AUTHTYPE_TYPE */ int authType;	/* Authentication method */
@@ -9,7 +9,6 @@
 +	   it's in a local variable.  Store it in the session data instead. */
 +	BUFFER_FIXED( 20 ) \
 +	BYTE headerBuffer[ 20 + 8 ];
-+	int headerBufferUsed;
  	} SSH_INFO;
  #endif /* USE_SSH */
  
@@ -39,22 +38,21 @@
  											expectedType );
  			if( cryptStatusError( localStatus ) )
  				status = localStatus;
-@@ -474,11 +473,12 @@
+@@ -474,11 +473,11 @@
  		}
  	else
  		{
 -		status = readFixedHeader( sessionInfoPtr, headerBuffer, 
 -								  headerByteCount );
-+		status = readFixedHeader( sessionInfoPtr, sshInfo->headerBuffer + sshInfo->headerBufferUsed, 
-+								  headerByteCount - sshInfo->headerBufferUsed );
++		status = readFixedHeader( sessionInfoPtr, sshInfo->headerBuffer, 
++								  headerByteCount );
  		}
  	if( cryptStatusError( status ) )
  		return( status );
-+	sshInfo->headerBufferUsed = 0;
  
  	/* If we're in the data-processing stage (i.e. it's a post-handshake
  	   data packet read) exception conditions need to be handled specially 
-@@ -500,8 +500,8 @@
+@@ -500,8 +499,8 @@
  	   of the message we decrypt */
  	if( isSecureRead )
  		{
@@ -65,7 +63,7 @@
  
  		/* If we're using EtM then we have to preserve a copy of the 
  		   ciphertext so that we can MAC it later */
-@@ -541,7 +541,7 @@
+@@ -541,7 +540,7 @@
  			larger than the (remaining) data that we've already read.  For
  			this case we need to check that the data payload is at least as
  			long as the minimum-length packet */
@@ -74,7 +72,7 @@
  	status = length = readUint32( &stream );
  	static_assert( SSH_HEADER_REMAINDER_SIZE == MIN_PACKET_SIZE - \
  												LENGTH_SIZE, \
-@@ -598,8 +598,8 @@
+@@ -598,8 +597,8 @@
  	   from the stream above but have to manually extract it here */
  	static_assert( LENGTH_SIZE + 1 + ID_SIZE <= MIN_PACKET_SIZE,
  				   "Header length calculation" );
