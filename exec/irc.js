@@ -664,6 +664,9 @@ function wait_for(commands)  {
 		// Don't handle user input at this point!
 		// screen.update();
 	}
+	alert("Connection timed out");
+	sock.close();
+	clean_exit();
 }
 
 function in_a_channel() {
