@@ -577,7 +577,7 @@ add_public_key(void *vpriv)
 			pubkey_thread_running = false;
 			return;
 		}
-		int sc = sftp_channel;
+		int sc = new_sftp_channel;
 		pthread_mutex_unlock(&ssh_mutex);
 		pthread_mutex_unlock(&ssh_tx_mutex);
 		active = 0;
