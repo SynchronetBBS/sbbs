@@ -23,7 +23,7 @@
 +		if (*bytesCopied > 0) {
 +			if (sessionInfoPtr->type == CRYPT_SESSION_SSH || sessionInfoPtr->type == CRYPT_SESSION_SSH_SERVER)
 +				{
-+				if (sessionInfoPtr->pendingPacketLength <= 0)
++				if (sessionInfoPtr->receiveBufPos <= 0)
 +					{
 +					status = OK_SPECIAL;
 +					}
