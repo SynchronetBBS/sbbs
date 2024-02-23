@@ -58,10 +58,10 @@ init_crypt(void)
 		cryptlib_error_message(status, "initializing cryptlib");
 }
 
-static void
+static int
 FlushData(CRYPT_SESSION sess)
 {
-	(void)cryptFlushData(sess);
+	return cryptFlushData(sess);
 }
 
 void
@@ -175,7 +175,10 @@ ssh_input_thread(void *args)
 	conn_api.input_thread_running = 1;
 	while (ssh_active && !conn_api.terminate) {
 		pthread_mutex_lock(&ssh_mutex);
-		FlushData(ssh_session);
+		if (FlushData(ssh_session) == CRYPT_ERROR_COMPLETE) {
+			pthread_mutex_unlock(&ssh_mutex);
+			break;
+		}
 		if (ssh_channel != -1) {
 			if (!check_channel_open(&ssh_channel))
 				ssh_channel = -1;
@@ -200,7 +203,10 @@ ssh_input_thread(void *args)
 			continue;
 
 		pthread_mutex_lock(&ssh_mutex);
-		FlushData(ssh_session);
+		if (FlushData(ssh_session) == CRYPT_ERROR_COMPLETE) {
+			pthread_mutex_unlock(&ssh_mutex);
+			break;
+		}
 
 		// Check channels are active...
 		if (ssh_channel != -1) {
@@ -215,6 +221,7 @@ ssh_input_thread(void *args)
 				pthread_mutex_unlock(&ssh_mutex);
 				sftpc_finish(oldstate);
 				oldstate = NULL;
+				pthread_mutex_lock(&ssh_mutex);
 			}
 		}
 		if (ssh_channel == -1 && sftp_channel == -1) {
