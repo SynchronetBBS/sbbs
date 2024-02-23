@@ -8,7 +8,7 @@ var old_auto_terminate=js.auto_terminate;
 js.on_exit("js.auto_terminate=old_auto_terminate");
 js.auto_terminate=false;
 
-const REVISION = "1.61";
+const REVISION = "1.62";
 const SPACEx80 = "                                                                                ";
 const MAX_HIST = 50;
 
@@ -144,8 +144,12 @@ channels=new Channels();
 // Wait for welcome message...
 while(!connected)  {
 	if(sock.poll(connect_timeout))  {
-		wait_for(["433","422","376"]);
-		connected=1;
+		if(wait_for(["433","432","422","376"]) == 432) {
+			log(LOG_WARNING, "Nick rejected with error 432, auto-fixing nick");
+			nick = "_" + nick;
+			send_cmd("NICK", nick);
+		} else
+			connected=1;
 	}
 	else  {
 		alert("Response timeout");
@@ -631,7 +635,7 @@ function wait_for(commands)  {
 	var message="";
 	var i=0;
 
-	while(1)  {
+	while(sock.poll(connect_timeout))  {
 		if(!sock.is_connected)  {
 			alert("Lost connection");
 			sock.close();
