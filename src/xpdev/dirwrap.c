@@ -231,7 +231,7 @@ int	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 int	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 {
     struct	_finddata_t ff;
-	long	ff_handle;
+	intptr_t ff_handle;
 	size_t	found=0;
 	char	path[MAX_PATH+1];
 	char*	p;
