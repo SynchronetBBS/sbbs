@@ -1944,9 +1944,9 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 	pthread_mutex_unlock(&screenlock);
 	pthread_mutex_unlock(&vstatlock);
 
-	pthread_mutex_lock(&callbacks.lock);
 	callbacks.drawrect=drawrect_cb;
 	callbacks.flush=flush_cb;
+	pthread_mutex_lock(&callbacks.lock);
 	callbacks.rects = 0;
 	pthread_mutex_unlock(&callbacks.lock);
 	bitmap_initialized=1;
