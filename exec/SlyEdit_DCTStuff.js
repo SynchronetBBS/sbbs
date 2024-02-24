@@ -198,7 +198,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	              gConfigSettings.DCTColors.TopInfoBracketColor + "]");
 
 	// Time left
-	fieldWidth = (console.screen_columns * (7/80)).toFixed(0);
+	fieldWidth = Math.floor(console.screen_columns * (7/80));
 	startX = console.screen_columns - fieldWidth - 9;
 	console.gotoxy(startX, lineNum);
 	var timeStr = Math.floor(bbs.time_left / 60).toString().substr(0, fieldWidth);
@@ -414,7 +414,7 @@ function DisplayBottomHelpLine_DCTStyle(pLineNum, pUsingQuotes)
 		// Center the text by padding it in the front with spaces.  This is done instead
 		// of using console.center() because console.center() will output a newline,
 		// which would not be good on the last line of the screen.
-		var numSpaces = (console.screen_columns/2).toFixed(0) - (console.strlen(DisplayBottomHelpLine_DCTStyle.helpText)/2).toFixed(0);
+		var numSpaces = Math.floor(console.screen_columns/2) - Math.floor(console.strlen(DisplayBottomHelpLine_DCTStyle.helpText)/2);
 		for (var i = 0; i < numSpaces; ++i)
 			DisplayBottomHelpLine_DCTStyle.helpText = " " + DisplayBottomHelpLine_DCTStyle.helpText;
 	}
@@ -558,8 +558,8 @@ function promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, pParamObj, pAlw
 	//const boxWidth = 27;
 	const boxWidth = pQuestion.length + 14;
 	const boxHeight = 6;
-	const boxX = (console.screen_columns/2).toFixed(0) - (boxWidth/2).toFixed(0);
-	const boxY = +pParamObj.editTop + +(pParamObj.editHeight/2).toFixed(0) - +(boxHeight/2).toFixed(0);
+	const boxX = Math.floor(console.screen_columns/2) - Math.floor(boxWidth/2);
+	const boxY = pParamObj.editTop + Math.floor(pParamObj.editHeight/2) - Math.floor(boxHeight/2);
 	const innerBoxWidth = boxWidth - 2;
 
 	// Display the question box
@@ -678,10 +678,10 @@ function displayTime_DCTStyle(pTimeStr)
 	// Calculate the horizontal location for the time string, using basically
 	// the formula used for calculating the horizontal location of the message
 	// area in redrawScreen_DCTStyle(), which the time lines up with.
-	var fieldWidth = (console.screen_columns * (27/80)).toFixed(0);
-   //var curposX = console.screen_columns - fieldWidth - 9 + 8;
-   var curposX = console.screen_columns - fieldWidth - 1;
-   console.gotoxy(curposX, 3);
+	var fieldWidth = Math.floor(console.screen_columns * (27/80));
+	//var curposX = console.screen_columns - fieldWidth - 9 + 8;
+	var curposX = console.screen_columns - fieldWidth - 1;
+	console.gotoxy(curposX, 3);
 
 	if (pTimeStr == null)
 		console.print("\x01n" + gConfigSettings.DCTColors.TopTimeColor + getCurrentTimeStr());
@@ -692,7 +692,7 @@ function displayTime_DCTStyle(pTimeStr)
 // Displays the number of minutes remaining on the screen.
 function displayTimeRemaining_DCTStyle()
 {
-	var fieldWidth = (console.screen_columns * (7/80)).toFixed(0);
+	var fieldWidth = Math.floor(console.screen_columns * (7/80));
 	var startX = console.screen_columns - fieldWidth - 1;
 	console.gotoxy(startX, 3);
 	var timeStr = Math.floor(bbs.time_left / 60).toString().substr(0, fieldWidth);
