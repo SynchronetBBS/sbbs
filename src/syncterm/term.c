@@ -4262,6 +4262,7 @@ doterm(struct bbslist *bbs)
 							show_bbslist(bbs->name, true);
 							sprintf(title, "SyncTERM - %s\n", bbs->name);
 							settitle(title);
+							uifcbail();
 							restorescreen(savscrn);
 							freescreen(savscrn);
 						}
