@@ -27,7 +27,7 @@
 #include "telnet.h"
 #include "str_util.h"
 
-#define SPYBUF_LEN  10000
+#define SPYBUF_LEN  100000
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "Emulvt"
@@ -88,7 +88,7 @@ int __fastcall TSpyForm::strip_telnet(uchar *buf, int len)
 //---------------------------------------------------------------------------
 void __fastcall TSpyForm::SpyTimerTick(TObject *Sender)
 {
-    uchar   buf[8192];
+    uchar   buf[SPYBUF_LEN];
     int     rd;
 
     if(*outbuf==NULL)
