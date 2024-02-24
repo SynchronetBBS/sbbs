@@ -219,7 +219,7 @@ extern "C" {
 	#define snprintf		safe_snprintf
 #endif
 
-#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__DMC__)
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__DMC__) || defined(__BORLANDC__)
 #if !defined(snprintf)
 	#define snprintf		_snprintf
 #endif
