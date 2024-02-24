@@ -2574,7 +2574,10 @@ void output_thread(void* arg)
 			/* Spy on the user locally */
 			if(startup->node_spybuf!=NULL
 				&& startup->node_spybuf[sbbs->cfg.node_num-1]!=NULL) {
-				RingBufWrite(startup->node_spybuf[sbbs->cfg.node_num-1],buf+bufbot,i);
+				DWORD result = RingBufWrite(startup->node_spybuf[sbbs->cfg.node_num-1],buf+bufbot,i);
+				if(result != i)
+					lprintf(LOG_WARNING, "%s SHORT WRITE to spy ring buffer (%u < %u)"
+						,node, result, i);
 			}
 			/* Spy on the user remotely */
 			if(sbbs->cfg.mqtt.enabled && mqtt.handle != NULL) {
