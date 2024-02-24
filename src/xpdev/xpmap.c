@@ -97,7 +97,6 @@ struct xpmapping* xpmap(const char *filename, enum xpmap_type type)
 {
 	HANDLE				fd;
 	HANDLE				md;
-	OFSTRUCT			of;
 	DWORD				caccess;
 	DWORD				cshare;
 	DWORD				mprot;
