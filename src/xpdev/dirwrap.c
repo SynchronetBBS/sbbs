@@ -522,7 +522,7 @@ bool fexist(const char *filespec)
 {
 #if defined(_WIN32)
 
-	long	handle;
+	intptr_t handle;
 	struct _finddata_t f;
 	bool	found;
 
@@ -584,7 +584,7 @@ bool fexistcase(char *path)
 #if defined(_WIN32)
 
 	char*	fname;
-	long	handle;
+	intptr_t handle;
 	struct _finddata_t f;
 
 	if(access(path, F_OK)==-1 && !strchr(path,'*') && !strchr(path,'?'))
@@ -693,7 +693,7 @@ bool isdir(const char *filename)
 int getfattr(const char* filename)
 {
 #if defined(_WIN32)
-	long handle;
+	intptr_t handle;
 	struct _finddata_t	finddata;
 
 	if((handle=_findfirst((char*)filename,&finddata))==-1) {

@@ -137,7 +137,7 @@ extern "C" {
 	{
 		char				filespec[260];
 		struct dirent		dirent;
-		long				handle;
+		intptr_t			handle;
 		struct _finddata_t	finddata;
 		bool				end;		/* End of directory flag */
 	} DIR;
