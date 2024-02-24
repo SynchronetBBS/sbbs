@@ -16,7 +16,7 @@
  #endif /* USE_SSH */
  
 --- session/ssh2_rd.c.orig	2023-06-15 04:35:42.000000000 -0400
-+++ session/ssh2_rd.c	2024-02-22 21:57:48.805525000 -0500
++++ session/ssh2_rd.c	2024-02-24 13:14:20.946739000 -0500
 @@ -407,7 +407,6 @@
  							const SSH_PROTOSTATE_TYPE protocolState )
  	{
@@ -41,20 +41,15 @@
  											expectedType );
  			if( cryptStatusError( localStatus ) )
  				status = localStatus;
-@@ -474,11 +473,11 @@
+@@ -474,7 +473,7 @@
  		}
  	else
  		{
 -		status = readFixedHeader( sessionInfoPtr, headerBuffer, 
--								  headerByteCount );
 +		status = readFixedHeader( sessionInfoPtr, sshInfo->headerBuffer, 
-+								  headerByteCount );
+ 								  headerByteCount );
  		}
  	if( cryptStatusError( status ) )
- 		return( status );
- 
- 	/* If we're in the data-processing stage (i.e. it's a post-handshake
- 	   data packet read) exception conditions need to be handled specially 
 @@ -500,8 +499,8 @@
  	   of the message we decrypt */
  	if( isSecureRead )
