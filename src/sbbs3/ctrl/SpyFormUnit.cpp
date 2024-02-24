@@ -1,7 +1,5 @@
 /* Synchronet Control Panel (GUI Borland C++ Builder Project for Win32) */
 
-/* $Id: SpyFormUnit.cpp,v 1.15 2020/04/15 05:37:36 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -39,6 +25,7 @@
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
 #include "telnet.h"
+#include "str_util.h"
 
 #define SPYBUF_LEN  10000
 //---------------------------------------------------------------------------
@@ -50,6 +37,7 @@ TSpyForm *SpyForm;
 __fastcall TSpyForm::TSpyForm(TComponent* Owner)
     : TForm(Owner)
 {
+	IdleCount = 0;
     Width=MainForm->SpyTerminalWidth;
     Height=MainForm->SpyTerminalHeight;
     Terminal = new TEmulVT(this);
@@ -106,13 +94,42 @@ void __fastcall TSpyForm::SpyTimerTick(TObject *Sender)
     if(*outbuf==NULL)
         return;
 
-    rd=RingBufRead(*outbuf,buf,sizeof(buf));
-    if(rd) {
+    rd=RingBufRead(*outbuf,buf,sizeof(buf) - 1);
+    if(rd > 0) {
+		if(IdleCount >= 2) {
+			if(fdate(TerminalIniFile.c_str()) > terminal_fdate)
+				ReadTerminalIniFile();
+		}
         rd=strip_telnet(buf,rd);
-        Terminal->WriteBuffer(buf,rd);
+		buf[rd] = 0;
+		if(utf8)
+			utf8_to_cp437_inplace(buf);
+		Terminal->WriteBuffer(buf, strlen(buf));
+		IdleCount = 0;
         Timer->Interval=1;
-    } else
+    } else {
+		++IdleCount;
         Timer->Interval=250;
+	}
+}
+//---------------------------------------------------------------------------
+void __fastcall TSpyForm::ReadTerminalIniFile()
+{
+	FILE* fp = iniOpenFile(TerminalIniFile.c_str(), /* for_modify: */FALSE);
+	if(fp != NULL) {
+		char type[128] = {0};
+		char chars[128] = {0};
+		iniReadString(fp, ROOT_SECTION, "type", /* default: */NULL, type);
+		iniReadString(fp, ROOT_SECTION, "chars", /* default: */NULL, chars);
+		Terminal->Cols = iniReadInteger(fp, ROOT_SECTION, "cols", 80);
+		Terminal->Rows = iniReadInteger(fp, ROOT_SECTION, "rows", 25);
+		fclose(fp);
+		utf8 = stricmp(chars, "UTF-8") == 0;
+		Caption = "Node " + AnsiString(NodeNum) + " ("
+			+ AnsiString(Terminal->Cols) + "x" + AnsiString(Terminal->Rows) + " "
+			+ chars + " / " + type + ")";
+	}
+	terminal_fdate = fdate(TerminalIniFile.c_str());
 }
 //---------------------------------------------------------------------------
 void __fastcall TSpyForm::FormShow(TObject *Sender)
@@ -128,7 +145,8 @@ void __fastcall TSpyForm::FormShow(TObject *Sender)
     Terminal->Font=MainForm->SpyTerminalFont;
     Terminal->Clear();
     Terminal->WriteStr("*** Synchronet Local Spy ***\r\n\r\n");
-    Terminal->WriteStr("ANSI Terminal Emulation:"+CopyRight+"\r\n\r\n");
+	ReadTerminalIniFile();
+	Terminal->WriteStr("ANSI Terminal Emulation:"+CopyRight+"\r\n\r\n");
 
     KeyboardActive->Checked=!MainForm->SpyTerminalKeyboardActive;
     KeyboardActiveClick(Sender);
