@@ -1,12 +1,15 @@
 --- session/session.h.orig	2024-02-22 21:46:07.919870000 -0500
 +++ session/session.h	2024-02-22 21:54:28.395535000 -0500
-@@ -370,6 +370,11 @@
+@@ -370,6 +370,14 @@
  	BUFFER_FIXED( KEYID_SIZE ) \
  	BYTE authUserNameHash[ KEYID_SIZE + 8 ];/* Hashed userID */
  	/* SSH_AUTHTYPE_TYPE */ int authType;	/* Authentication method */
 +
 +	/* If a header is only partially read, cryptlib takes a shit because
-+	   it's in a local variable.  Store it in the session data instead. */
++	   it's in a local variable.  Store it in the session data instead.
++	   Note, we can't use LENGTH_SIZE or MIN_PACKET_SIZE as in the original
++	   since it's defined with two different values in tls.h and ssh.h.
++	   Just hard-coding 20 here (LENGTH_SIZE + MIN_PACKET_SIZE per ssh.h). */
 +	BUFFER_FIXED( 20 ) \
 +	BYTE headerBuffer[ 20 + 8 ];
  	} SSH_INFO;
