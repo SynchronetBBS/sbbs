@@ -19,6 +19,8 @@ const NOP	=241 	/* 0xf1 - No operation */
 
 const SE	=240 	/* 0xf0 - End of subnegotiation parameters. */
 
+const NEW_ENVIRON =39	/* 0x27 - NEW-ENVIRON - Exchange environment vars etc. */
+			/* js doesn't like - in variables so must use underscore */
 const NAWS	=31	/* 0x1f - NAWS - Negotiate About Window Size */
 const MSDP	=69	/* 0x45 - MSDP - MUD Server Data Protocl */
 const MMSP	=70	/* 0x46 - MMSP - MUD Master Server Protocol */
@@ -56,6 +58,7 @@ function cmdstr(cmd)
         case MXP:	return "MXP";
         case AARD:	return "AARD";
         case GCMP:	return "GCMP";
+        case NEW_ENVIRON: return "NEW-ENVIRON";
     }
     return cmd;
 }
