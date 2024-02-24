@@ -1123,16 +1123,16 @@ bool terminate_pid(pid_t pid)
 /****************************************************************************/
 char* safe_strerror(int errnum, char *buf, size_t buflen)
 {
-	strncpy(buf, "Unknown error", buflen);
-	buf[buflen - 1] = 0;
+	snprintf(buf, buflen, "Unknown error: %d", errnum);
 
 #if defined(_MSC_VER)
 	strerror_s(buf, buflen, errnum);
 #elif defined(_WIN32) || defined(__EMSCRIPTEN__)
-	strncpy(buf, strerror(errnum), buflen);
-	buf[buflen - 1] = 0;
+	strlcpy(buf, strerror(errnum), buflen);
 #elif defined(_GNU_SOURCE)
-	buf = strerror_r(errnum, buf, buflen);
+	char* ret = strerror_r(errnum, buf, buflen);
+	if (ret != buf)
+		strlcpy(buf, ret, buflen);
 #else
 	strerror_r(errnum, buf, buflen);
 #endif
