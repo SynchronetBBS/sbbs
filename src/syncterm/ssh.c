@@ -691,11 +691,13 @@ ssh_connect(struct bbslist *bbs)
 	CRYPT_CONTEXT ssh_context;
 	char         *pubkey = NULL;
 
-	ssh_channel = -1;
-	sftp_channel = -1;
 	if (!bbs->hidepopups)
 		init_uifc(true, true);
 	pthread_mutex_init(&ssh_mutex, NULL);
+	pthread_mutex_lock(&ssh_mutex);
+	ssh_channel = -1;
+	sftp_channel = -1;
+	pthread_mutex_unlock(&ssh_mutex);
 	pthread_mutex_init(&ssh_tx_mutex, NULL);
 
 	get_syncterm_filename(path, sizeof(path), SYNCTERM_PATH_KEYS, false);
@@ -1021,7 +1023,10 @@ ssh_close(void)
 	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
 	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 1);
 	conn_api.terminate = 1;
-	close_sftp_channel(sftp_channel);
+	pthread_mutex_lock(&ssh_mutex);
+	int sc = sftp_channel;
+	pthread_mutex_unlock(&ssh_mutex);
+	close_sftp_channel(sc);
 	close_ssh_channel();
 	ssh_active = false;
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1 || pubkey_thread_running) {
