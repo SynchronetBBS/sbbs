@@ -75,6 +75,15 @@ static JSBool js_install_event(JSContext *cx, uintN argc, jsval *arglist, bool o
 static JSBool js_on(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_once(JSContext *cx, uintN argc, jsval *arglist);
 
+static void store_socket_error(js_socket_private_t* p, int error_num, const char* error_str)
+{
+	p->last_error = error_num;
+	if(error_str != NULL)
+		strlcpy(p->last_error_str, error_str, sizeof p->last_error_str);
+	else
+		socket_strerror(error_num, p->last_error_str, sizeof p->last_error_str);
+}
+
 static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val)
 {
 	int ret;
@@ -242,7 +251,7 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 	}
 	if(p->external==false) {
 		close_socket(p->sock);
-		p->last_error = ERROR_VALUE;
+		store_socket_error(p, ERROR_VALUE, NULL);
 	}
 	else {
 		if (!finalize)
@@ -771,13 +780,13 @@ js_bind(JSContext *cx, uintN argc, jsval *arglist)
 	if((ret=getaddrinfo(cstr, portstr, &hints, &res)) != 0) {
 		JS_RESUMEREQUEST(cx,rc);
 		dbprintf(TRUE, p, "getaddrinfo(%s, %s) failed with error %d", cstr, portstr, ret);
-		p->last_error=ERROR_VALUE;
+		store_socket_error(p, ret, gai_strerror(ret));
 		return(JS_TRUE);
 	}
 	for(tres=res; tres; tres=tres->ai_next) {
 		if(bind(p->sock, tres->ai_addr, tres->ai_addrlen)!=0) {
 			if (tres->ai_next == NULL) {
-				p->last_error=ERROR_VALUE;
+				store_socket_error(p, ERROR_VALUE, NULL);
 				dbprintf(TRUE, p, "bind failed with error %d",ERROR_VALUE);
 				freeaddrinfo(res);
 				JS_RESUMEREQUEST(cx, rc);
@@ -815,7 +824,7 @@ js_listen(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(listen(p->sock, backlog)!=0) {
-		p->last_error=ERROR_VALUE;
+		store_socket_error(p, ERROR_VALUE, NULL);
 		dbprintf(TRUE, p, "listen failed with error %d",ERROR_VALUE);
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		JS_RESUMEREQUEST(cx, rc);
@@ -850,7 +859,7 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	if(p->set) {
 		if((new_socket=xpms_accept(p->set,&(p->remote_addr),&addrlen,XPMS_FOREVER,XPMS_FLAGS_NONE,NULL))==INVALID_SOCKET) {
-			p->last_error=ERROR_VALUE;
+			store_socket_error(p, ERROR_VALUE, NULL);
 			dbprintf(TRUE, p, "accept failed with error %d",ERROR_VALUE);
 			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);
@@ -859,7 +868,7 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	else {
 		if((new_socket=accept_socket(p->sock,&(p->remote_addr),&addrlen))==INVALID_SOCKET) {
-			p->last_error=ERROR_VALUE;
+			store_socket_error(p, ERROR_VALUE, NULL);
 			dbprintf(TRUE, p, "accept failed with error %d",ERROR_VALUE);
 			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);
@@ -1068,7 +1077,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 	result = getaddrinfo(p->hostname, NULL, &hints, &res);
 	if(result != 0) {
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-		p->last_error = ERROR_VALUE;
+		store_socket_error(p, result, gai_strerror(result));
 		dbprintf(TRUE, p, "getaddrinfo(%s) failed with error %d", p->hostname, result);
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
@@ -1109,7 +1118,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(result!=0) {
 		freeaddrinfo(res);
-		p->last_error = result;
+		store_socket_error(p, result, NULL);
 		dbprintf(TRUE, p, "connect failed with error %d", result);
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		JS_RESUMEREQUEST(cx, rc);
@@ -1156,7 +1165,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(false, p, "sent %d of %lu bytes",ret,len);
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(ret));
 	} else {
-		p->last_error=ERROR_VALUE;
+		store_socket_error(p, ERROR_VALUE, NULL);
 		dbprintf(TRUE, p, "send of %lu bytes failed",len);
 	}
 	free(cp);
@@ -1195,7 +1204,7 @@ js_sendline(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(false, p, "sent %lu bytes",len+2);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
-		p->last_error=ERROR_VALUE;
+		store_socket_error(p, ERROR_VALUE, NULL);
 		dbprintf(TRUE, p, "send of %lu bytes failed",len+2);
 	}
 	free(cp);
@@ -1257,7 +1266,7 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 	dbprintf(false, p, "resolving hostname: %s", p->hostname);
 
 	if((result=getaddrinfo(p->hostname, NULL, &hints, &res) != 0)) {
-		p->last_error = ERROR_VALUE;
+		store_socket_error(p, result, gai_strerror(result));
 		dbprintf(TRUE, p, "getaddrinfo(%s) failed with error %d", p->hostname, result);
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		free(cp);
@@ -1274,7 +1283,7 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 			dbprintf(false, p, "sent %lu bytes",len);
 			JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 		} else {
-			p->last_error=ERROR_VALUE;
+			store_socket_error(p, ERROR_VALUE, NULL);
 			dbprintf(TRUE, p, "send of %lu bytes failed to %s",len, ip_addr);
 		}
 	}
@@ -1325,7 +1334,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(false, p, "sent %"PRIdOFF" bytes",len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
-		p->last_error=ERROR_VALUE;
+		store_socket_error(p, ERROR_VALUE, NULL);
 		dbprintf(TRUE, p, "send of %s failed",fname);
 	}
 	free(fname);
@@ -1386,7 +1395,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(false, p, "sent %u bytes (binary)",size);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
-		p->last_error=ERROR_VALUE;
+		store_socket_error(p, ERROR_VALUE, NULL);
 		dbprintf(TRUE, p, "send of %u bytes (binary) failed",size);
 	}
 
@@ -1430,7 +1439,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	len = js_socket_recv(cx,p,buf,len,0,timeout);
 	JS_RESUMEREQUEST(cx, rc);
 	if(len<0) {
-		p->last_error=ERROR_VALUE;
+		store_socket_error(p, ERROR_VALUE, NULL);
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 		free(buf);
 		return(JS_TRUE);
@@ -1522,7 +1531,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 
 		if(rd!=len) {
-			p->last_error=ERROR_VALUE;
+			store_socket_error(p, ERROR_VALUE, NULL);
 			return(JS_TRUE);
 		}
 
@@ -1537,7 +1546,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 		len = recvfrom(p->sock,buf,len,0,&addr.addr,&addrlen);
 		JS_RESUMEREQUEST(cx, rc);
 		if(len<0) {
-			p->last_error=ERROR_VALUE;
+			store_socket_error(p, ERROR_VALUE, NULL);
 			free(buf);
 			return(JS_TRUE);
 		}
@@ -1617,7 +1626,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 		len=0;
 	JS_RESUMEREQUEST(cx, rc);
 	if(len<0) {
-		p->last_error=ERROR_VALUE;
+		store_socket_error(p, ERROR_VALUE, NULL);
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 		free(buf);
 		return(JS_TRUE);
@@ -1653,7 +1662,7 @@ js_sock_read_check(js_socket_private_t *p, time_t start, int32 timeout, int i)
 	}
 
 	if(!socket_check(p->sock,&rd,NULL,1000)) {
-		p->last_error=ERROR_VALUE;
+		store_socket_error(p, ERROR_VALUE, NULL);
 		return 2;
 	}
 
@@ -1722,7 +1731,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 
 		if((got=js_socket_recv(cx, p, &ch, 1, 0, i?1:timeout))!=1) {
 			if(p->session == -1)
-				p->last_error = ERROR_VALUE;
+				store_socket_error(p, ERROR_VALUE, NULL);
 			if (i == 0) {			// no data received
 				JS_RESUMEREQUEST(cx, rc);
 				free(buf);			// so return null (not an empty string)
@@ -1801,7 +1810,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if(rd!=size)
-		p->last_error=ERROR_VALUE;
+		store_socket_error(p, ERROR_VALUE, NULL);
 
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
@@ -1849,7 +1858,7 @@ js_getsockopt(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(val));
 	} else {
-		p->last_error=ERROR_VALUE;
+		store_socket_error(p, ERROR_VALUE, NULL);
 		dbprintf(TRUE, p, "error %d getting option %d"
 			,ERROR_VALUE,opt);
 	}
@@ -1904,7 +1913,7 @@ js_setsockopt(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(
 		setsockopt(p->sock, level, opt, vp, len)==0));
-	p->last_error=ERROR_VALUE;
+	store_socket_error(p, ERROR_VALUE, NULL);
 
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
@@ -1941,7 +1950,7 @@ js_ioctlsocket(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
-	p->last_error=ERROR_VALUE;
+	store_socket_error(p, ERROR_VALUE, NULL);
 
 	return(JS_TRUE);
 }
@@ -2036,7 +2045,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 		result = select(high+1,rd_set,wr_set,NULL,&tv);
 #endif
 
-	p->last_error=ERROR_VALUE;
+	store_socket_error(p, ERROR_VALUE, NULL);
 
 	dbprintf(false, p, "poll: select/poll returned %d (errno %d)"
 		,result,p->last_error);
@@ -2462,7 +2471,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = INT_TO_JSVAL(p->last_error);
 			break;
 		case SOCK_PROP_ERROR_STR:
-			if((js_str=JS_NewStringCopyZ(cx, socket_strerror(p->last_error, str, sizeof(str))))==NULL)
+			if((js_str=JS_NewStringCopyZ(cx, p->last_error_str))==NULL)
 				return JS_FALSE;
 			*vp = STRING_TO_JSVAL(js_str);
 			break;
