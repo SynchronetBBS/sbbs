@@ -5,7 +5,7 @@
  	case $OSNAME in
  		'Darwin')
 -			CCARGS="$CCARGS -fPIC -fno-common" ;;
-+			CCARGS="$CCARGS -fPIC -fno-common -mmacosx-version-min=10.5" ;;
++			CCARGS="$CCARGS -fPIC -fno-common -mmacosx-version-min=10.7" ;;
  
  		'CYGWIN_NT-5.0'|'CYGWIN_NT-5.1'|'CYGWIN_NT-6.1')
  			;;
