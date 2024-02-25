@@ -120,6 +120,7 @@ char* utf8_normalize_str(char* str)
 					src += 2;
 					*src -= '\x81';
 					*dest++ = '!' + *src;
+					*dest++ = ' ';
 					continue;
 				}
 			}
@@ -128,6 +129,7 @@ char* utf8_normalize_str(char* str)
 					src += 2;
 					*src -= '\x80';
 					*dest++ = '`' + *src;
+					*dest++ = ' ';
 					continue;
 				}
 			}
