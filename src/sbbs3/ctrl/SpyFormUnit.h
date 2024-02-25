@@ -60,7 +60,7 @@ __published:	// IDE-managed Components
     void __fastcall FormMouseUp(TObject *Sender, TMouseButton Button,
           TShiftState Shift, int X, int Y);
 private:	// User declarations
-	int __fastcall strip_telnet(uchar *buf, int len);
+	int __fastcall ParseOutput(uchar *buf, int len);
 	time_t terminal_fdate;
 	void __fastcall ReadTerminalIniFile();
 	bool utf8;

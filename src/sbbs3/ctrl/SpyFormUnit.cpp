@@ -24,7 +24,6 @@
 
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
-#include "telnet.h"
 #include "str_util.h"
 
 #define SPYBUF_LEN  100000
@@ -54,7 +53,7 @@ __fastcall TSpyForm::~TSpyForm()
 	delete Terminal;
 }
 //---------------------------------------------------------------------------
-int __fastcall TSpyForm::strip_telnet(uchar *buf, int len)
+int __fastcall TSpyForm::ParseOutput(uchar *buf, int len)
 {
     int i;
     int telnet_cmd=0;
@@ -65,22 +64,6 @@ int __fastcall TSpyForm::strip_telnet(uchar *buf, int len)
 			Terminal->Clear();
 			continue;
 		}
-        if(buf[i]==TELNET_IAC || telnet_cmd) {
-            if(telnet_cmd==1 && buf[i]==TELNET_IAC) {
-                telnet_cmd=0;   /* escape IAC */
-                continue;
-            }
-            if(telnet_cmd==1 && buf[i]<TELNET_WILL) {
-                telnet_cmd=0;   /* single byte command */
-                continue;
-            }
-            if(telnet_cmd>=2) {
-                telnet_cmd=0;   /* two byte command */
-                continue;
-            }
-            telnet_cmd++;
-            continue;
-        }
         buf[newlen++]=buf[i];
     }
     return(newlen);
@@ -100,7 +83,7 @@ void __fastcall TSpyForm::SpyTimerTick(TObject *Sender)
 			if(fdate(TerminalIniFile.c_str()) > terminal_fdate)
 				ReadTerminalIniFile();
 		}
-        rd=strip_telnet(buf,rd);
+        rd=ParseOutput(buf,rd);
 		buf[rd] = 0;
 		if(utf8)
 			utf8_to_cp437_inplace(buf);
