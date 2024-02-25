@@ -161,7 +161,7 @@ void node_toggles(scfg_t *cfg,int nodenum)  {
 	}
 }
 
-int dospy(int nodenum, bbs_startup_t *bbs_startup)  {
+int dospy(scfg_t *cfg, int nodenum, bbs_startup_t *bbs_startup)  {
 	char str[80],str2[80];
 	int i;
 
@@ -169,7 +169,7 @@ int dospy(int nodenum, bbs_startup_t *bbs_startup)  {
 		snprintf(str,sizeof(str),"%slocalspy%d.sock", bbs_startup->temp_dir, nodenum);
 	else
 		snprintf(str,sizeof(str),"%slocalspy%d.sock", bbs_startup->ctrl_dir, nodenum);
-	i=spyon(str);
+	i=spyon(str, nodenum, cfg);
 	switch(i) {
 		case SPY_NOSOCKET:
 			uifc.msg("Could not create socket");
@@ -1208,7 +1208,7 @@ USAGE:
 		}
 
 		if(j==-2-CIO_KEY_F(12)) {	/* Spy */
-			dospy(main_dflt,&bbs_startup);
+			dospy(&cfg,main_dflt,&bbs_startup);
 			continue;
 		}
 
@@ -1297,7 +1297,7 @@ USAGE:
 							break;
 
 						case 1:	/* Spy */
-							dospy(j,&bbs_startup);
+							dospy(&cfg,j,&bbs_startup);
 							break;
 
 						case 2:	/* Send message */
@@ -1366,7 +1366,7 @@ USAGE:
 					switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&i,0,"Node Options",opt))  {
 
 						case 0:	/* Spy */
-							dospy(j,&bbs_startup);
+							dospy(&cfg,j,&bbs_startup);
 							break;
 
 						case 1: /* Chat with User */

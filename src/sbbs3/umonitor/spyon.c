@@ -29,15 +29,44 @@
 
 #include <genwrap.h>
 #include <sockwrap.h>
+#include "ini_file.h"
 #include "spyon.h"
 #include "ciolib.h"
 #include "cterm.h"
 #include "uifc.h"
+#include "str_util.h"
 
 struct cterminal *cterm;
 extern uifcapi_t uifc; /* User Interface (UIFC) Library API */
+cterm_emulation_t cterm_emu = CTERM_EMULATION_ANSI_BBS;
+char term_type[INI_MAX_VALUE_LEN] = "unknown";
+int term_cols = 80;
+int term_rows = 25;
+bool term_utf8 = false;
 
-int spyon(char *sockname)  {
+time_t read_term_ini(const char* path)
+{
+	FILE* fp = iniOpenFile(path, /* for_modify: */false);
+	if(fp != NULL) {
+		char chars[INI_MAX_VALUE_LEN];
+		iniReadString(fp, ROOT_SECTION, "type", /* default: */NULL, term_type);
+		iniReadString(fp, ROOT_SECTION, "chars", /* default: */NULL, chars);
+		term_cols = iniReadInteger(fp, ROOT_SECTION, "cols", term_cols);
+		term_rows = iniReadInteger(fp, ROOT_SECTION, "rows", term_rows);
+		term_utf8 = false;
+		if(stricmp(term_type, "PETSCII") == 0)
+			cterm_emu = CTERM_EMULATION_PETASCII;
+		else {
+			cterm_emu = CTERM_EMULATION_ANSI_BBS;
+			if(stricmp(chars, "UTF-8") == 0)
+				term_utf8 = true;
+		}
+		fclose(fp);
+	}
+	return fdate(path);
+}
+
+int spyon(char *sockname, int nodenum, scfg_t* cfg)  {
 #if defined _WIN32
 	uifc.msg("Spying not supported on Win32 yet!");
 	return SPY_SOCKETLOST;
@@ -46,12 +75,14 @@ int spyon(char *sockname)  {
 	struct sockaddr_un spy_name;
 	socklen_t	spy_len;
 	unsigned char		key;
-	unsigned char		buf;
+	char	buf[100000];
+	char	term_ini_fname[MAX_PATH + 1];
+	time_t	term_ini_ftime;
+	int		idle_count = 0;
 	int		i;
 	fd_set	rd;
 	bool	b;
 	int		retval=0;
-	int		telnet_strip=0;
 	struct text_info ti;
 	char *scrn;
 
@@ -63,6 +94,11 @@ int spyon(char *sockname)  {
 		return(SPY_NOSOCKET);
 	}
 	
+	snprintf(term_ini_fname, sizeof term_ini_fname, "%sterminal.ini"
+		,cfg->node_path[nodenum - 1]);
+
+	term_ini_ftime = read_term_ini(term_ini_fname);
+
 	spy_name.sun_family=AF_UNIX;
 	SAFECOPY(spy_name.sun_path,sockname);
 #ifdef SUN_LEN
@@ -82,9 +118,9 @@ int spyon(char *sockname)  {
 	textbackground(BLUE);
 	clrscr();
 	gotoxy(1,ti.screenheight);
-	cputs("Local spy mode... press CTRL-C to return to monitor");
+	cprintf("Spying on node %d ... press CTRL-C to return to monitor", nodenum);
 	clreol();
-	cterm = cterm_init(ti.screenheight - 1, ti.screenwidth, 1, 1, 0, 0, NULL, CTERM_EMULATION_ANSI_BBS);
+	cterm = cterm_init(ti.screenheight - 1, ti.screenwidth, 1, 1, 0, 0, NULL, cterm_emu);
 	while(spy_sock!=INVALID_SOCKET && cterm != NULL)  {
 		struct timeval tv;
 		tv.tv_sec=0;
@@ -104,21 +140,21 @@ int spyon(char *sockname)  {
 			break;
 		}
 		if(spy_sock != INVALID_SOCKET && FD_ISSET(spy_sock,&rd))  {
-			if((i=read(spy_sock,&buf,1))==1)  {
-				if(telnet_strip) {
-					telnet_strip++;
-					if(buf==255 && telnet_strip==2) {
-						telnet_strip=0;
-						cterm_write(cterm, &buf,1,NULL,0,NULL);
+			if((i=read(spy_sock, buf, sizeof(buf) - 1)) > 0)  {
+				if(idle_count >= 1000 && fdate(term_ini_fname) > term_ini_ftime) {
+					term_ini_ftime = read_term_ini(term_ini_fname);
+					if(cterm_emu != cterm->emulation) {
+						cterm_end(cterm, 1);
+						cterm = cterm_init(ti.screenheight - 1, ti.screenwidth, 1, 1, 0, 0, NULL, cterm_emu);
 					}
-					if(telnet_strip==3)
-						telnet_strip=0;
 				}
-				else
-					if(buf==255)
-						telnet_strip=1;
-					else
-						cterm_write(cterm, &buf,1,NULL,0,NULL);
+				if(term_utf8) {
+					buf[i] = '\0';
+					utf8_to_cp437_inplace(buf);
+					i = strlen(buf);
+				}
+				idle_count = 0;
+				cterm_write(cterm, buf, i, NULL, 0, NULL);
 			}
 			else if(i<0) {
 				close(spy_sock);
@@ -126,6 +162,8 @@ int spyon(char *sockname)  {
 				retval=SPY_SOCKETLOST;
 				break;
 			}
+		} else {
+			++idle_count;
 		}
 		if(kbhit())  {
 			key=getch();
