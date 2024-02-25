@@ -89,5 +89,7 @@
 	<string>Copyright 2011, Stephen Hurd.</string>
 
 	<key>NSHighResolutionCapable</key> <true/>
+
+	<key>NSSupportsAutomaticGraphicsSwitching</key> <true/>
 </dict>
 </plist>
