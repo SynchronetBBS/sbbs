@@ -2574,7 +2574,7 @@ void output_thread(void* arg)
 			/* Spy on the user locally */
 			if(startup->node_spybuf!=NULL
 				&& startup->node_spybuf[sbbs->cfg.node_num-1]!=NULL) {
-				DWORD result = RingBufWrite(startup->node_spybuf[sbbs->cfg.node_num-1],buf+bufbot,i);
+				int result = RingBufWrite(startup->node_spybuf[sbbs->cfg.node_num-1],buf+bufbot,i);
 				if(result != i)
 					lprintf(LOG_WARNING, "%s SHORT WRITE to spy ring buffer (%u < %u)"
 						,node, result, i);
@@ -2587,7 +2587,7 @@ void output_thread(void* arg)
 						,node, result, errno, i, spy_topic);
 			}
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
-				if(sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i) != i)
+				if(sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i) != i && ERROR_VALUE != EPIPE)
 					lprintf(LOG_ERR, "%s ERROR %d writing to spy socket", node, ERROR_VALUE);
 #ifdef __unix__
 			if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
