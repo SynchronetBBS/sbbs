@@ -56,7 +56,6 @@ __fastcall TSpyForm::~TSpyForm()
 int __fastcall TSpyForm::ParseOutput(uchar *buf, int len)
 {
     int i;
-    int telnet_cmd=0;
     int newlen=0;
 
     for(i=0;i<len;i++) {
@@ -100,8 +99,8 @@ void __fastcall TSpyForm::ReadTerminalIniFile()
 {
 	FILE* fp = iniOpenFile(TerminalIniFile.c_str(), /* for_modify: */FALSE);
 	if(fp != NULL) {
-		char type[128] = {0};
-		char chars[128] = {0};
+		char type[INI_MAX_VALUE_LEN] = {0};
+		char chars[INI_MAX_VALUE_LEN] = {0};
 		iniReadString(fp, ROOT_SECTION, "type", /* default: */NULL, type);
 		iniReadString(fp, ROOT_SECTION, "chars", /* default: */NULL, chars);
 		Terminal->Cols = iniReadInteger(fp, ROOT_SECTION, "cols", 80);
