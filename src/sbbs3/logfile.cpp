@@ -265,7 +265,7 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 		return;
 	errormsg_inside=true;
 
-	if(strcmp(action, ERR_CHK) != 0)
+	if(errno != 0 && strcmp(action, ERR_CHK) != 0)
 		safe_snprintf(errno_info, sizeof(errno_info), "%d (%s) "
 	#ifdef _WIN32
 			"(WinError %u) "
