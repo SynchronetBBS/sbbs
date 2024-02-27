@@ -76,7 +76,9 @@ function list(filename, verbose)
 	file_fmt += "\x01h\x01w%s";
 	if(verbose > 1)
 		file_fmt += "  %s";
-	if(!js.global.console) {
+	if(js.global.console) {
+		console.cond_newline();
+	} else {
 		dir_fmt = strip_ctrl(dir_fmt);
 		file_fmt = strip_ctrl(file_fmt);
 	}
