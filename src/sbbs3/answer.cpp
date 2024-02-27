@@ -369,7 +369,8 @@ bool sbbs_t::answer()
 						 *       appear to use arbitrary inter-character timeouts
 						 *       I'll just use a five second interpacket gap for now.
 						 */
-						lprintf(LOG_DEBUG, "%04d SSH [%s] waiting for channel type.", client_socket, client_ipaddr);
+						if (waits == 0)
+							lprintf(LOG_DEBUG, "%04d SSH [%s] waiting for channel type.", client_socket, client_ipaddr);
 						waits++;
 						SLEEP(10);
 						waits++;
