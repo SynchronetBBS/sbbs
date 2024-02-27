@@ -129,6 +129,9 @@ function enable_localuser(usernum, enabled)
 	else {
 		obj.disabled = !enabled;
 		obj.updated = new Date();
+		file.ini_key_prefix = '\t';
+		file.ini_section_separator = '\n';
+		file.ini_value_separator = ' = ';
 		result = file.iniSetObject("avatar", obj);
 		cache_set(usernum, obj);
 	}
