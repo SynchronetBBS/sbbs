@@ -199,7 +199,7 @@ static jsSyncPropertySpec js_properties[] = {
 		,JSDOCSTR("JavaScript engine version information (AKA system.js_version) - <small>READ ONLY</small>")
 	},
 	{	"auto_terminate",	PROP_AUTO_TERMINATE,JSPROP_ENUMERATE,	311
-		,JSDOCSTR("Set to <i>false</i> to disable the automatic termination of the script upon external request")
+		,JSDOCSTR("Set to <i>false</i> to disable the automatic termination of the script upon external request or user disconnection")
 	},
 	{	"terminated",		PROP_TERMINATED,	JSPROP_ENUMERATE,	311
 		,JSDOCSTR("Termination has been requested (stop execution as soon as possible)")
