@@ -400,7 +400,7 @@ struct mouse_hotspot {		// Mouse hot-spot
 	bool	hungry;
 };
 
-typedef struct {
+typedef struct sftp_dirdes {
 	bool is_static;
 	union {
 		struct {
@@ -415,7 +415,7 @@ typedef struct {
 	} info;
 } *sftp_dirdescriptor_t;
 
-typedef struct {
+typedef struct sftp_filedes {
 	char *local_path;    // Needed to get size and record transfer
 	uint32_t idx_offset; // TODO: Not needed?  idx_number is likely better
 	uint32_t idx_number; // Used when recording transfer
