@@ -539,7 +539,7 @@ bool sbbs_t::logon()
 			}
 			if(node.status==NODE_INUSE && i!=cfg.node_num && node.useron==useron.number
 				&& !SYSOP && !(useron.exempt&FLAG('G'))) {
-				SAFEPRINTF2(str,"(%04u)  %-25s  On two nodes at the same time"
+				SAFEPRINTF2(str,"(%04u)  %-25s  On more than one node at the same time"
 					,useron.number,useron.alias);
 				logline(LOG_NOTICE,"+!",str);
 				bputs(text[UserOnTwoNodes]);
