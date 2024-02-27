@@ -30,11 +30,13 @@ appendfhandle(sftpc_state_t state, sftp_filehandle_t handle)
 	return appendstring(state, (sftp_str_t)handle);
 }
 
+#ifdef NOTYET
 static bool
 appenddhandle(sftpc_state_t state, sftp_dirhandle_t handle)
 {
 	return appendstring(state, (sftp_str_t)handle);
 }
+#endif
 
 static bool
 cappendheader(sftpc_state_t state, uint8_t type)

@@ -502,11 +502,11 @@ parse_file_handle(sbbs_t *sbbs, sftp_filehandle_t handle)
 	constexpr size_t nfdes = sizeof(sbbs->sftp_filedes) / sizeof(sbbs->sftp_filedes[0]);
 
 	long tmp = strtol(reinterpret_cast<char *>(handle->c_str), nullptr, 10);
-	if (tmp == 0)
+	if (tmp <= 0)
 		return UINT_MAX;
 	if (tmp > UINT_MAX)
 		return UINT_MAX;
-	if (tmp > nfdes)
+	if (static_cast<size_t>(tmp) > nfdes)
 		return UINT_MAX;
 	if (sbbs->sftp_filedes[tmp - 1] == nullptr)
 		return UINT_MAX;
@@ -523,11 +523,11 @@ parse_dir_handle(sbbs_t *sbbs, sftp_dirhandle_t handle)
 	if (memcmp(handle->c_str, "D:", 2) != 0)
 		return UINT_MAX;
 	long tmp = strtol(reinterpret_cast<char *>(handle->c_str + 2), nullptr, 10);
-	if (tmp == 0)
+	if (tmp <= 0)
 		return UINT_MAX;
 	if (tmp > UINT_MAX)
 		return UINT_MAX;
-	if (tmp > nfdes)
+	if (static_cast<size_t>(tmp) > nfdes)
 		return UINT_MAX;
 	if (sbbs->sftp_dirdes[tmp - 1] == nullptr)
 		return UINT_MAX;
