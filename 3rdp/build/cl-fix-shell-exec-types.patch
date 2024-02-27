@@ -1,0 +1,23 @@
+--- ./session/ssh2_msgsvr.c.orig	2024-01-22 00:34:35.418900000 -0500
++++ ./session/ssh2_msgsvr.c	2024-01-22 00:40:38.301267000 -0500
+@@ -676,7 +676,9 @@
+ 				setChannelAttribute(sessionInfoPtr, CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT, status);
+ 			break;
+ 		case REQUEST_SHELL:
+-			//setChannelAttribute(sessionInfoPtr, status, CRYPT_SESSINFO_SSH_SHELL);
++			status = setChannelAttributeS( sessionInfoPtr,
++										   CRYPT_SESSINFO_SSH_CHANNEL_TYPE,
++										   "shell", 5 );
+ 			break;
+ 		case REQUEST_NOOP:
+ 			/* Generic requests containing extra information that we're not
+@@ -686,6 +688,9 @@
+ #ifdef USE_SSH_EXTENDED
+ 		case REQUEST_EXEC:
+ 			/* A further generic request that we're not interested in */
++			status = setChannelAttributeS( sessionInfoPtr,
++										   CRYPT_SESSINFO_SSH_CHANNEL_TYPE,
++										   "exec", 4 );
+ 			break;
+ 
+ 		case REQUEST_SUBSYSTEM:

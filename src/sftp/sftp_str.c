@@ -6,8 +6,8 @@
 
 #include "sftp.h"
 
-static sftp_str_t
-alloc_str(uint32_t len)
+sftp_str_t
+sftp_alloc_str(uint32_t len)
 {
 	sftp_str_t ret = (sftp_str_t)malloc(offsetof(struct sftp_string, c_str) + len + 1);
 	if (ret != NULL) {
@@ -23,7 +23,7 @@ sftp_strdup(const char *str)
 	size_t len = strlen(str);
 	if (len > UINT32_MAX)
 		return NULL;
-	sftp_str_t ret = alloc_str(len);
+	sftp_str_t ret = sftp_alloc_str(len);
 	if (ret == NULL)
 		return ret;
 	memcpy(ret->c_str, str, ret->len);
@@ -45,7 +45,7 @@ sftp_asprintf(const char *format, ...)
 		free(str);
 		return NULL;
 	}
-	sftp_str_t ret = alloc_str(len);
+	sftp_str_t ret = sftp_alloc_str(len);
 	if (ret == NULL) {
 		free(str);
 		return NULL;
@@ -58,7 +58,7 @@ sftp_asprintf(const char *format, ...)
 sftp_str_t
 sftp_memdup(uint8_t *buf, uint32_t sz)
 {
-	sftp_str_t ret = alloc_str(sz);
+	sftp_str_t ret = sftp_alloc_str(sz);
 	if (ret == NULL)
 		return ret;
 	memcpy(ret->c_str, buf, sz);

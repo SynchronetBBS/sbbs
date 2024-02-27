@@ -303,6 +303,11 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "getmail.h"
 #include "msg_id.h"
 #include "mqtt.h"
+#if defined(__cplusplus)
+extern "C" {
+#include "sftp.h"
+}
+#endif
 
 #if defined(JAVASCRIPT)
 enum js_event_type {
@@ -395,6 +400,30 @@ struct mouse_hotspot {		// Mouse hot-spot
 	bool	hungry;
 };
 
+typedef struct {
+	bool is_static;
+	union {
+		struct {
+			int lib;
+			int dir;
+			int32_t idx;
+		} filebase;
+		struct {
+			int32_t idx;
+			void *mapping;
+		} rootdir;
+	} info;
+} *sftp_dirdescriptor_t;
+
+typedef struct {
+	char *local_path;    // Needed to get size and record transfer
+	uint32_t idx_offset; // TODO: Not needed?  idx_number is likely better
+	uint32_t idx_number; // Used when recording transfer
+	int fd;              // File descriptor
+	int dir;             // Used to record the transfer and to indicate if it's a filebase file
+	bool created;        // Basically indicates it's an "upload"
+} *sftp_filedescriptor_t;
+
 class sbbs_t
 {
 
@@ -422,9 +451,12 @@ public:
 #endif
 	int session_channel=-1;
 	int sftp_channel = -1;
-	void *sftp_pending_packet = NULL;
-	size_t sftp_pending_packet_sz = 0;
-	size_t sftp_pending_packet_used = 0;
+	sftps_state_t sftp_state = nullptr;
+	char *sftp_cwd = nullptr;
+#define NUM_SFTP_FILEDES 10
+	sftp_filedescriptor_t sftp_filedes[NUM_SFTP_FILEDES] {};
+#define NUM_SFTP_DIRDES 4
+	sftp_dirdescriptor_t sftp_dirdes[NUM_SFTP_DIRDES] {};
 
 	std::atomic<bool> ssh_mode{false};
 	SOCKET	passthru_socket=INVALID_SOCKET;
@@ -1271,6 +1303,10 @@ public:
 
 	/* telgate.cpp */
 	bool	telnet_gate(char* addr, uint mode, unsigned timeout=10, char* client_user_name=NULL, char* server_user_name=NULL, char* term_type=NULL);	// See TG_* for mode bits
+
+	/* sftp.cpp */
+	bool init_sftp(int channel_id);
+	bool sftp_end(void);
 
 };
 

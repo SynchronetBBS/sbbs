@@ -279,12 +279,14 @@ sbbs_t::log_crypt_error_status_sock(int status, const char *action)
 {
 	char *estr;
 	int level;
-	get_crypt_error_string(status, ssh_session, &estr, action, &level);
-	if (estr) {
-		if (level < startup->ssh_error_level)
-			level = startup->ssh_error_level;
-		lprintf(level, "%04d SSH %s", client_socket, estr);
-		free_crypt_attrstr(estr);
+	if (cryptStatusError(status)) {
+		get_crypt_error_string(status, ssh_session, &estr, action, &level);
+		if (estr) {
+			if (level < startup->ssh_error_level)
+				level = startup->ssh_error_level;
+			lprintf(level, "%04d SSH %s", client_socket, estr);
+			free_crypt_attrstr(estr);
+		}
 	}
 }
 
@@ -1924,39 +1926,87 @@ bool sbbs_t::request_telnet_opt(uchar cmd, uchar opt, unsigned waitforack)
 	return true;
 }
 
+static bool channel_open(sbbs_t *sbbs, int channel)
+{
+	int rval;
+
+	if (cryptStatusError(cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->session_channel)))
+		return false;
+	if (cryptStatusError(cryptGetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_OPEN, &rval)))
+		return false;
+	return rval;
+}
+
 static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 {
 	int status;
 	int cid;
-	char *cname;
+	char *cname = nullptr;
+	char *ssname = nullptr;
 	int ret;
 	int closing_channel = -1;
+	int tgot;
 
 	*got=0;
 	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
 	    && node_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
-		ret = cryptPopData(sbbs->ssh_session, inbuf, want, got);
+		ret = cryptPopData(sbbs->ssh_session, inbuf, want, &tgot);
 		if (ret == CRYPT_OK) {
 			status = cryptGetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &cid);
 			if (status == CRYPT_OK) {
 				if (cid == closing_channel)
 					continue;
-				if (cid != sbbs->session_channel) {
+				if (cid == sbbs->sftp_channel) {
+					if (!sftps_recv(sbbs->sftp_state, reinterpret_cast<uint8_t *>(inbuf), tgot))
+						sbbs->sftp_end();
+				}
+				else if (cid == sbbs->session_channel) {
+					*got = tgot;
+				}
+				else {
 					if (cryptStatusError(status = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, cid))) {
 						sbbs->log_crypt_error_status_sock(status, "setting channel");
 						return status;
 					}
 					cname = get_crypt_attribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE);
-					lprintf(LOG_WARNING, "Node %d SSH WARNING: attempt to use channel '%s' (%d != %d)"
-						, sbbs->cfg.node_num, cname ? cname : "<unknown>", cid, sbbs->session_channel);
-					if (cname)
-						free_crypt_attrstr(cname);
-					closing_channel = cid;
-					if (cryptStatusError(status = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0))) {
-						sbbs->log_crypt_error_status_sock(status, "closing channel");
-						return status;
+					if (strcmp(cname, "subsystem") == 0) {
+						ssname = get_crypt_attribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ARG1);
+					}
+					if (startup->options & BBS_OPT_ALLOW_SFTP && ssname && cname && sbbs->sftp_channel == -1 && strcmp(ssname, "sftp") == 0) {
+						if (sbbs->init_sftp(cid)) {
+							if (tgot > 0) {
+								if (!sftps_recv(sbbs->sftp_state, reinterpret_cast<uint8_t *>(inbuf), tgot))
+									sbbs->sftp_end();
+							}
+							sbbs->sftp_channel = cid;
+						}
+					}
+					if (cid != sbbs->sftp_channel && cid != sbbs->session_channel) {
+						lprintf(LOG_WARNING, "Node %d SSH WARNING: attempt to use channel '%s' (%d != %d or %d)"
+							, sbbs->cfg.node_num, cname ? cname : "<unknown>", cid, sbbs->session_channel, sbbs->sftp_channel);
+						if (cname) {
+							free_crypt_attrstr(cname);
+							cname = nullptr;
+						}
+						if (ssname) {
+							free_crypt_attrstr(ssname);
+							ssname = nullptr;
+						}
+						closing_channel = cid;
+						if (cryptStatusError(status = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0))) {
+							sbbs->log_crypt_error_status_sock(status, "closing channel");
+							return status;
+						}
 					}
 					continue;
+				}
+				if (cid != -1) {
+					if (cryptStatusOK(cryptGetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_OPEN, &ret))) {
+						if (!ret) {
+							closing_channel = -1;
+							ret = CRYPT_ERROR_NOTFOUND;
+						}
+					}
 				}
 			}
 			else {
@@ -1964,9 +2014,29 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 				 * CRYPT_ERROR_NOTFOUND indicates this is the last data on the channel (whatever it was)
 				 * and it was destroyed, so it's no longer possible to get the channel id.
 				 */
+				bool closed {false};
 				if (status != CRYPT_ERROR_NOTFOUND)
 					sbbs->log_crypt_error_status_sock(status, "getting channel id");
 				closing_channel = -1;
+				if (sbbs->sftp_channel != -1) {
+					if (!channel_open(sbbs, sbbs->sftp_channel)) {
+						if (cryptStatusOK(cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->sftp_channel)))
+							cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
+						sbbs->sftp_channel = -1;
+						closed = true;
+					}
+				}
+				if (sbbs->session_channel != -1) {
+					if (!channel_open(sbbs, sbbs->session_channel)) {
+						if (cryptStatusOK(cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->session_channel)))
+							cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0);
+						sbbs->session_channel = -1;
+						closed = true;
+					}
+				}
+				// All channels are now closed.
+				if (closed && sbbs->sftp_channel == -1 && sbbs->session_channel == -1)
+					return CRYPT_ERROR_COMPLETE;
 			}
 		}
 		if (ret == CRYPT_ENVELOPE_RESOURCE)
@@ -2113,6 +2183,8 @@ void input_thread(void *arg)
 				pthread_mutex_unlock(&sbbs->ssh_mutex);
 				if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
 					sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
+				if (err == CRYPT_ERROR_COMPLETE)
+					break;
 				if(err==CRYPT_ERROR_TIMEOUT)
 					continue;
 				/* Handle the SSH error here... */
@@ -2509,46 +2581,51 @@ void output_thread(void* arg)
 				pthread_mutex_unlock(&sbbs->ssh_mutex);
 				continue;
 			}
-			if (cryptStatusError((err=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->session_channel)))) {
-				GCESSTR(err, node, sbbs->ssh_session, "setting channel");
-				ssh_errors++;
-				sbbs->online=false;
+			if (sbbs->session_channel == -1) {
 				i=buftop-bufbot;	// Pretend we sent it all
 			}
 			else {
-				/*
-				 * Limit as per js_socket.c.
-				 * Sure, this is TLS, not SSH, but we see weird stuff here in sz file transfers.
-				 */
-				size_t sendbytes = buftop-bufbot;
-				if (sendbytes > 0x2000)
-					sendbytes = 0x2000;
-				if(cryptStatusError((err=cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))) {
-					/* Handle the SSH error here... */
-					GCESSTR(err, node, sbbs->ssh_session, "pushing data");
+				if (cryptStatusError((err=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->session_channel)))) {
+					GCESSTR(err, node, sbbs->ssh_session, "setting channel");
 					ssh_errors++;
 					sbbs->online=false;
 					i=buftop-bufbot;	// Pretend we sent it all
 				}
 				else {
-					// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
-					/* This sets the write timeout for the flush, then sets it to zero
-					 * afterward... presumably because the read timeout gets set to
-					 * what the current write timeout is.
+					/*
+					 * Limit as per js_socket.c.
+					 * Sure, this is TLS, not SSH, but we see weird stuff here in sz file transfers.
 					 */
-					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 5)))
-						GCESSTR(err, node, sbbs->ssh_session, "setting write timeout");
-					if(cryptStatusError((err=cryptFlushData(sbbs->ssh_session)))) {
-						GCESSTR(err, node, sbbs->ssh_session, "flushing data");
+					size_t sendbytes = buftop-bufbot;
+					if (sendbytes > 0x2000)
+						sendbytes = 0x2000;
+					if(cryptStatusError((err=cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))) {
+						/* Handle the SSH error here... */
+						GCESSTR(err, node, sbbs->ssh_session, "pushing data");
 						ssh_errors++;
-						if (err != CRYPT_ERROR_TIMEOUT) {
-							sbbs->online=false;
-							i=buftop-bufbot;	// Pretend we sent it all
-						}
+						sbbs->online=false;
+						i=buftop-bufbot;	// Pretend we sent it all
 					}
-					// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
-					if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 0)))
-						GCESSTR(err, node, sbbs->ssh_session, "setting write timeout");
+					else {
+						// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
+						/* This sets the write timeout for the flush, then sets it to zero
+						 * afterward... presumably because the read timeout gets set to
+						 * what the current write timeout is.
+						 */
+						if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 5)))
+							GCESSTR(err, node, sbbs->ssh_session, "setting write timeout");
+						if(cryptStatusError((err=cryptFlushData(sbbs->ssh_session)))) {
+							GCESSTR(err, node, sbbs->ssh_session, "flushing data");
+							ssh_errors++;
+							if (err != CRYPT_ERROR_TIMEOUT) {
+								sbbs->online=false;
+								i=buftop-bufbot;	// Pretend we sent it all
+							}
+						}
+						// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
+						if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 0)))
+							GCESSTR(err, node, sbbs->ssh_session, "setting write timeout");
+					}
 				}
 			}
 			pthread_mutex_unlock(&sbbs->ssh_mutex);
@@ -3677,7 +3754,7 @@ bool sbbs_t::init()
 #ifdef USE_CRYPTLIB
 	pthread_mutex_init(&ssh_mutex,NULL);
 	ssh_mutex_created = true;
-	ssh_active = CreateEvent(NULL, true, false, NULL);
+	ssh_active = CreateEvent(nullptr, true, false, nullptr);
 #endif
 	pthread_mutex_init(&input_thread_mutex,NULL);
 	input_thread_mutex_created = true;

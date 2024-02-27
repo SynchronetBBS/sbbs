@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include "sftp.h"
 
@@ -66,7 +67,7 @@ sftp_fattr_set_uid_gid(sftp_file_attr_t fattr, uint32_t uid, uint32_t gid)
 	assert(fattr);
 	fattr->uid = uid;
 	fattr->gid = gid;
-	fattr->flags |= SSH_FILEXFER_ATTR_SIZE;
+	fattr->flags |= SSH_FILEXFER_ATTR_UIDGID;
 }
 
 bool
@@ -94,7 +95,7 @@ sftp_fattr_get_gid(sftp_file_attr_t fattr, uint32_t *gid)
 }
 
 void
-sftp_fattr_set_permissions(sftp_file_attr_t fattr, uint64_t perm)
+sftp_fattr_set_permissions(sftp_file_attr_t fattr, uint32_t perm)
 {
 	assert(fattr);
 	fattr->perm = perm;
@@ -102,7 +103,7 @@ sftp_fattr_set_permissions(sftp_file_attr_t fattr, uint64_t perm)
 }
 
 bool
-sftp_fattr_get_permissions(sftp_file_attr_t fattr, uint64_t *perm)
+sftp_fattr_get_permissions(sftp_file_attr_t fattr, uint32_t *perm)
 {
 	assert(fattr);
 	if (fattr->flags & SSH_FILEXFER_ATTR_PERMISSIONS) {
@@ -207,6 +208,16 @@ sftp_fattr_get_ext_data(sftp_file_attr_t fattr, uint32_t index)
 	if (index >= fattr->ext_count)
 		return NULL;
 	return fattr->ext[index].data;
+}
+
+sftp_str_t
+sftp_fattr_get_ext_by_type(sftp_file_attr_t fattr, const char *type)
+{
+	for (uint32_t i = 0; i < fattr->ext_count; i++) {
+		if (strcmp((const char *)fattr->ext[i].type->c_str, type) == 0)
+			return fattr->ext[i].data;
+	}
+	return NULL;
 }
 
 uint32_t

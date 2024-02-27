@@ -16,13 +16,6 @@ append64(sftpc_state_t state, uint64_t u)
 }
 
 static bool
-appendstring(sftpc_state_t state, sftp_str_t s)
-{
-	bool ret = sftp_appendstring(&state->txp, s);
-	return ret;
-}
-
-static bool
 appendandfreestring(sftpc_state_t state, sftp_str_t *s)
 {
 	bool ret = sftp_appendstring(&state->txp, *s);
@@ -44,12 +37,6 @@ appenddhandle(sftpc_state_t state, sftp_dirhandle_t handle)
 }
 
 static bool
-appendfattr(sftpc_state_t state, sftp_file_attr_t fattr)
-{
-	return sftp_appendfattr(&state->txp, fattr);
-}
-
-static bool
 cappendheader(sftpc_state_t state, uint8_t type)
 {
 	state->err_code = 0;
@@ -58,6 +45,7 @@ cappendheader(sftpc_state_t state, uint8_t type)
 	state->err_lang = NULL;
 	free_sftp_str(state->err_msg);
 	state->err_msg = NULL;
+	state->id++;
 	return appendheader(state, type);
 }
 
@@ -367,4 +355,13 @@ sftpc_write(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, sftp
 		return exit_function(state, false);
 	handle_error(state);
 	return exit_function(state, state->err_code == SSH_FX_OK);
+}
+
+bool
+sftpc_reclaim(sftpc_state_t state)
+{
+	bool ret = true;
+	ret = sftp_tx_pkt_reclaim(&state->txp) && ret;
+	ret = sftp_rx_pkt_reclaim(&state->rxp) && ret;
+	return ret;
 }

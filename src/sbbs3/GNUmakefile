@@ -51,9 +51,9 @@ UTIL_LIBS	+=	$(HASH_LIBS)
 
 ifndef win
  ifndef bcc
-  ifneq ($(os),sunos)
-   LDFLAGS	+=	-lutil
-  endif
+ ifneq ($(os),sunos)
+  LDFLAGS	+=	-lutil
+ endif
  endif
 endif
 
@@ -112,7 +112,7 @@ else
 endif
 
 include sbbsdefs.mk
-MT_CFLAGS	+=	$(SBBSDEFS)
+MT_CFLAGS	+=	$(SBBSDEFS) $(SFTP-MT_CFLAGS)
 
 ifndef NO_LD_RUN_PATH
  # Set up LD_RUN_PATH for run-time locating of the .so files
@@ -162,12 +162,12 @@ else
 OBJS	+= $(MTOBJODIR)/comio_nix$(OFILE)
 JSDOOR_OBJS	+= $(MTOBJODIR)/comio_nix$(OFILE)
 endif
-LDFLAGS +=	$(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(SMBLIB_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(JS_LDFLAGS) $(CRYPT_LDFLAGS)
+LDFLAGS +=	$(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(SMBLIB_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(JS_LDFLAGS) $(CRYPT_LDFLAGS) $(SFTP-MT_LDFLAGS)
 
 # Synchronet BBS library Link Rule
-$(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(OBJS) $(LIBS) $(EXTRA_SBBS_DEPENDS) $(ENCODE_LIB) $(HASH_LIB) | $(LIBODIR)
+$(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(OBJS) $(LIBS) $(EXTRA_SBBS_DEPENDS) $(ENCODE_LIB) $(HASH_LIB) $(SFTPLIB-MT) | $(LIBODIR)
 	@echo Linking $@
-	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) -o $@ $(OBJS) $(SBBS_LIBS) $(SMBLIB_LIBS) $(LIBS) $(SHLIBOPTS) $(JS_LIBS) $(CRYPT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(XPDEV-MT_LIBS) $(FILE_LIBS) -Wl,--version-script=sbbs.version
+	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) -o $@ $(OBJS) $(SBBS_LIBS) $(SMBLIB_LIBS) $(LIBS) $(SHLIBOPTS) $(JS_LIBS) $(CRYPT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(XPDEV-MT_LIBS) $(FILE_LIBS) $(SFTP-MT_LIBS) -Wl,--version-script=sbbs.version
 ifeq ($(os), netbsd)
 	paxctl +m $(SBBS)
 endif

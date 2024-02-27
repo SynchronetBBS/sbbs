@@ -44,6 +44,7 @@
     <Import Project="..\hash\hash.props" />
     <Import Project="..\..\3rdp\win32.release\libarchive\libarchive.props" />
     <Import Project="..\..\3rdp\win32.release\mosquitto\mosquitto.props" />
+    <Import Project="..\sftp\sftp.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -60,6 +61,7 @@
     <Import Project="..\hash\hash.props" />
     <Import Project="..\..\3rdp\win32.release\libarchive\libarchive.props" />
     <Import Project="..\..\3rdp\win32.release\mosquitto\mosquitto.props" />
+    <Import Project="..\sftp\sftp.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -682,6 +684,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="sftp.cpp" />
     <ClCompile Include="sockopts.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -807,6 +810,10 @@
     </ProjectReference>
     <ProjectReference Include="..\xpdev\xpdev_mt.vcxproj">
       <Project>{aeed3a81-3a47-4953-be51-fd5e08283890}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\sftp\sftp.vcxproj">
+      <Project>{4c69a1d2-182a-45d3-ad33-54a8a91b387d}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
