@@ -1035,7 +1035,7 @@ public:
 	bool	logon(void);
 
 	/* logout.cpp */
-	void	logout(void);
+	void	logout(bool logged_in = true);
 
 	/* newuser.cpp */
 	bool	newuser(void);					/* Get new user							*/

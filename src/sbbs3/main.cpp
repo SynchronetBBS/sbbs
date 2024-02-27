@@ -4365,6 +4365,7 @@ void node_thread(void* arg)
 				break;
 		}
 		listRemoveTaggedNode(&current_logins, sbbs->cfg.node_num, /* free_data */true);
+		sbbs->logoffstats();	/* Updates both system and node dsts.ini (daily statistics) files */
 	}
 
 #ifdef _WIN32
@@ -4375,9 +4376,7 @@ void node_thread(void* arg)
 	sbbs->hangup();	/* closes sockets, calls client_off, and shuts down the output_thread */
     node_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 
-	sbbs->logout();
-	if(login_success)
-		sbbs->logoffstats();	/* Updates both system and node dsts.ini (daily statistics) files */
+	sbbs->logout(login_success);
 
 	time_t now = time(NULL);
 	SAFEPRINTF(str, "%sclient.ini", sbbs->cfg.node_dir);
