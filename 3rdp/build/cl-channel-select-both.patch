@@ -1,0 +1,11 @@
+--- session/ssh2_channel.c.orig	2024-02-26 21:17:09.598879000 -0500
++++ session/ssh2_channel.c	2024-02-26 21:17:23.741869000 -0500
+@@ -660,7 +660,7 @@
+ 		if( channelInfoPtr == NULL )
+ 			return( CRYPT_ERROR_NOTFOUND );
+ 		return( selectChannel( sessionInfoPtr, channelInfoPtr->writeChannelNo,
+-							   CHANNEL_WRITE ) );
++							   CHANNEL_BOTH ) );
+ 		}
+ 	channelInfoPtr = ( SSH_CHANNEL_INFO * ) \
+ 				getCurrentChannelInfo( sessionInfoPtr, CHANNEL_READ );

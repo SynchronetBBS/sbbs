@@ -1,534 +1,1790 @@
-#include <stdlib.h>
-#include <string.h>
-#include <threadwrap.h>
-#include <xpendian.h>
+#include <memory>
 
 #include "sbbs.h"
-#include "sftp.h"
-#include "ssl.h"
+#include "xpprintf.h" // for asprintf() on Win32
 
-#define SFTP_MIN_PACKET_ALLOC 4096
-#define SFTP_VERSION 3
+constexpr uint32_t lib_flag {UINT32_C(1)<<31};
+constexpr uint32_t lib_mask {~lib_flag};
+constexpr uint32_t users_gid {UINT32_MAX};
 
-typedef struct tx_pkt_struct {
-	uint32_t sz;
-	uint32_t used;
-	uint8_t type;
-	uint8_t data[];
-} *tx_pkt_t;
+#define SLASH_FILES "/files"
+#define SLASH_HOME "/home"
 
-typedef struct rx_pkt_struct {
-	uint32_t sz;
-	uint32_t cur;
-	uint8_t type;
-	uint8_t *data;
-} *rx_pkt_t;
-
-static const struct type_names {
-	const uint8_t type;
-	const char * const name;
-} type_names[] = {
-	{SSH_FXP_INIT, "INIT"},
-	{SSH_FXP_VERSION, "VERSION"},
-	{SSH_FXP_OPEN, "OPEN"},
-	{SSH_FXP_CLOSE, "CLOSE"},
-	{SSH_FXP_READ, "READ"},
-	{SSH_FXP_WRITE, "WRITE"},
-	{SSH_FXP_LSTAT, "LSTAT"},
-	{SSH_FXP_FSTAT, "FSTAT"},
-	{SSH_FXP_SETSTAT, "SETSTAT"},
-	{SSH_FXP_FSETSTAT, "FSETSTAT"},
-	{SSH_FXP_OPENDIR, "OPENDIR"},
-	{SSH_FXP_READDIR, "READDIR"},
-	{SSH_FXP_REMOVE, "REMOVE"},
-	{SSH_FXP_MKDIR, "MKDIR"},
-	{SSH_FXP_RMDIR, "RMDIR"},
-	{SSH_FXP_REALPATH, "REALPATH"},
-	{SSH_FXP_STAT, "STAT"},
-	{SSH_FXP_RENAME, "RENAME"},
-	{SSH_FXP_READLINK, "READLINK"},
-	{SSH_FXP_SYMLINK, "SYMLINK"},
-	{SSH_FXP_STATUS, "STATUS"},
-	{SSH_FXP_HANDLE, "HANDLE"},
-	{SSH_FXP_DATA, "DATA"},
-	{SSH_FXP_NAME, "NAME"},
-	{SSH_FXP_ATTRS, "ATTRS"},
-	{SSH_FXP_EXTENDED, "EXTENDED"},
-	{SSH_FXP_EXTENDED_REPLY, "EXTENDED REPLY"},
-};
-static const char * const notfound_type = "<UNKNOWN>";
-
-static int type_cmp(const void *key, const void *name)
-{
-	int k = *(uint8_t *)key;
-	int n = *(uint8_t *)name;
-
-	return k - n;
-}
-
-static const char * const
-get_type_name(uint8_t type)
-{
-	struct type_names *t = static_cast<struct type_names *>(bsearch(&type, type_names, sizeof(type_names) / sizeof(type_names[0]), sizeof(type_names[0]), type_cmp));
-
-	if (t == NULL)
-		return notfound_type;
-	return t->name;
-}
-
-static void
-discard_packet(sbbs_t *sbbs)
-{
-	void * new_buf;
-
-	sbbs->sftp_pending_packet_used = 0;
-	new_buf = realloc(sbbs->sftp_pending_packet, SFTP_MIN_PACKET_ALLOC);
-	if (new_buf == NULL) {
-		sbbs->sftp_pending_packet_sz = 0;
-		free(sbbs->sftp_pending_packet);
-		sbbs->sftp_pending_packet = NULL;
-	}
-	else {
-		sbbs->sftp_pending_packet_sz = SFTP_MIN_PACKET_ALLOC;
-	}
-}
-
-static bool
-have_pkt_sz(sbbs_t *sbbs)
-{
-	return sbbs->sftp_pending_packet_used >= sizeof(uint32_t);
-}
-
-static bool
-have_pkt_type(sbbs_t *sbbs)
-{
-	return sbbs->sftp_pending_packet_used >= sizeof(uint32_t) + sizeof(uint8_t);
-}
-
-static uint32_t
-pkt_sz(sbbs_t *sbbs)
-{
-	if (!have_pkt_sz(sbbs)) {
-		sbbs->lprintf(LOG_ERR, "sftp detected invalid packet len (%zu) at %s:%d", sbbs->sftp_pending_packet_sz, __FILE__, __LINE__);
-		return 0;
-	}
-
-	return BE_INT32(*(uint32_t *)sbbs->sftp_pending_packet);
-}
-
-static uint8_t
-pkt_type(sbbs_t *sbbs)
-{
-	if (!have_pkt_type(sbbs)) {
-		sbbs->lprintf(LOG_ERR, "sftp detected invalid packet len (%zu) at %s:%d", sbbs->sftp_pending_packet_sz, __FILE__, __LINE__);
-		return 0;
-	}
-
-	return ((uint8_t *)sbbs->sftp_pending_packet)[4];
-}
-
-static bool
-have_full_pkt(sbbs_t *sbbs)
-{
-	uint32_t sz = pkt_sz(sbbs);
-
-	if (!have_pkt_sz(sbbs))
-		return false;
-	if (sbbs->sftp_pending_packet_used >= sizeof(uint32_t) + sz)
-		return true;
-	return false;
-}
-
-static void
-remove_packet(sbbs_t *sbbs)
-{
-	if (!have_pkt_sz(sbbs)) {
-		sbbs->lprintf(LOG_ERR, "sftp removing invalid packet len (%zu) at %s:%d", sbbs->sftp_pending_packet_sz, __FILE__, __LINE__);
-		return;
-	}
-
-	uint32_t sz = pkt_sz(sbbs);
-	if (sz > sbbs->sftp_pending_packet_used) {
-		sbbs->lprintf(LOG_ERR, "sftp packet size %" PRIu32 ", larger than used bytes %zu.  Discarding.", sz, sbbs->sftp_pending_packet_used);
-		discard_packet(sbbs);
-		return;
-	}
-	uint32_t newsz = sbbs->sftp_pending_packet_used - sz - sizeof(uint32_t);
-	memmove(sbbs->sftp_pending_packet, &((uint8_t *)sbbs->sftp_pending_packet)[sz], newsz);
-	sbbs->sftp_pending_packet_used = newsz;
-	// TODO: realloc() smaller?
-	return;
-}
-
-static bool
-realloc_append(sbbs_t *sbbs, char *inbuf, int len)
-{
-	void * new_buf;
-
-	if ((sbbs->sftp_pending_packet_used + len) > sbbs->sftp_pending_packet_sz) {
-		size_t new_sz = sbbs->sftp_pending_packet_sz + SFTP_MIN_PACKET_ALLOC;
-		while (new_sz < sbbs->sftp_pending_packet_used + len)
-			new_sz += SFTP_MIN_PACKET_ALLOC;
-		new_buf = realloc(sbbs->sftp_pending_packet, new_sz);
-		if (new_buf == NULL) {
-			discard_packet(sbbs);
-			sbbs->lprintf(LOG_ERR, "Unable to resize sftp pending packet from %zu to %zu", sbbs->sftp_pending_packet_used, new_sz);
-			return false;
-		}
-		sbbs->sftp_pending_packet = new_buf;
-	}
-	memcpy(&((uint8_t *)sbbs->sftp_pending_packet)[sbbs->sftp_pending_packet_used], inbuf, len);
-	sbbs->sftp_pending_packet_used += len;
-	return true;
-}
+constexpr int32_t no_more_files = -3;
+constexpr int32_t dot = -2;
+constexpr int32_t dotdot = -1;
 
 /*
- * TODO:
- * 
- * This is copied from main.cpp, and should really be left there...
- * presumably we would want a separate outbuf for sftp and let main.cpp
- * send from both as appropriate.
- * 
- * This should work for testing though.
+ * This does all the work of mapping an sftp path received from the client
+ * to an opendir handle.  It will also enforce permissions.
  */
+typedef enum map_path_result {
+	MAP_FAILED,
+	MAP_BAD_PATH,
+	MAP_PERMISSION_DENIED,
+	MAP_ALLOC_FAILED,
+	MAP_INVALID_ARGS,
+	MAP_SMB_FAILED,
+	// The rest should be in this order at the end
+	MAP_SUCCESS,
+	MAP_TO_FILE = MAP_SUCCESS,
+	MAP_TO_DIR,
+	MAP_TO_SYMLINK,
+} map_path_result_t;
 
-#define GCESSTR(status, str, sess, action) do {                         \
-	char *GCES_estr;                                                    \
-	int GCES_level;                                                      \
-	get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);\
-	if (GCES_estr) {                                                       \
-		if (GCES_level < startup->ssh_error_level)							\
-			GCES_level = startup->ssh_error_level;							 \
-		lprintf(GCES_level, "%s SSH %s from %s (session %d)", str, GCES_estr, __FUNCTION__, sess);                \
-		free_crypt_attrstr(GCES_estr);                                       \
-	}                                                                         \
-} while (0)
+typedef enum map_path_mode {
+	MAP_STAT,
+	MAP_READ,
+	MAP_WRITE,
+	MAP_RDWR,
+} map_path_mode_t;
 
-static struct sh {
-	int ssh_error_level;
-} startup_hack = {
-	LOG_DEBUG
+struct pathmap {
+	const char *sftp_patt;	// %s is replaced with user alias
+	const char *real_patt;	// %s is replaced with datadir, %d with user number
+	const char *link_patt;	// %s is replaced with datadir, %d with user number
+	sftp_file_attr_t (*get_attrs)(sbbs_t *sbbs, const char *path);
+	bool is_dynamic;
 };
-static sh *startup = &startup_hack;
 
-static void
-send_pkt(sbbs_t *sbbs, tx_pkt_t pkt)
-{
-	char node[128];
-	int err;
-	int i;
-	size_t remain = pkt->used + 5;
-	size_t sent = 0;
-	uint8_t oldhdr[offsetof(struct tx_pkt_struct, data)];
-	uint32_t u32;
+static sftp_file_attr_t rootdir_attrs(sbbs_t *sbbs, const char *path);
+static sftp_file_attr_t homedir_attrs(sbbs_t *sbbs, const char *path);
+static sftp_file_attr_t homefile_attrs(sbbs_t *sbbs, const char *path);
+static sftp_file_attr_t sshkeys_attrs(sbbs_t *sbbs, const char *path);
+static char *sftp_parse_crealpath(sbbs_t *sbbs, const char *filename);
+static char *expand_slash(const char *orig);
+static bool is_in_filebase(const char *path);
 
-	memcpy(oldhdr, pkt, sizeof(oldhdr));
-	pkt->data[-1] = pkt->type;
-	u32 = pkt->used + 1;
-	u32 = BE_INT32(u32);
-	memcpy(&pkt->data[-5], &u32, sizeof(u32));
-	uint8_t *data = &pkt->data[-5];
-	if(sbbs->cfg.node_num)
-		SAFEPRINTF(node,"Node %d",sbbs->cfg.node_num);
-	else
-		SAFECOPY(node,sbbs->client_name);
+const char files_path[] = SLASH_FILES;
+constexpr size_t files_path_len = (sizeof(files_path) - 1);
 
-	while (remain) {
-		pthread_mutex_lock(&sbbs->ssh_mutex);
-		if(sbbs->terminate_output_thread) {
-			pthread_mutex_unlock(&sbbs->ssh_mutex);
-			break;
+static struct pathmap static_files[] = {
+	// TODO: ftpalias.cfg
+	// TODO: User to user file transfers
+	// TODO: Upload to sysop
+	{"/", nullptr, nullptr, rootdir_attrs},
+	{SLASH_FILES "/", nullptr, nullptr, rootdir_attrs},
+	{SLASH_HOME "/", nullptr, nullptr, homedir_attrs},
+	{SLASH_HOME "/%s/", nullptr, nullptr, homedir_attrs},
+	// TODO: Some way for a sysop/mod authour to map things in here
+	{SLASH_HOME "/%s/.ssh/", nullptr, nullptr, homedir_attrs},
+	{SLASH_HOME "/%s/.ssh/authorized_keys", "%suser/%04d.sshkeys", SLASH_HOME "/%s/sshkeys", sshkeys_attrs},
+	{SLASH_HOME "/%s/sshkeys", "%suser/%04d.sshkeys", nullptr, homefile_attrs},
+	{SLASH_HOME "/%s/plan", "%suser/%04d.plan", nullptr, homefile_attrs},
+	{SLASH_HOME "/%s/signature", "%suser/%04d.sig", nullptr, homefile_attrs},
+	{SLASH_HOME "/%s/smtptags", "%suser/%04d.smtptags", nullptr, homefile_attrs},
+};
+constexpr size_t static_files_sz = (sizeof(static_files) / sizeof(static_files[0]));
+
+class path_map {
+	bool is_static_ {true};
+	map_path_result_t result_ {MAP_FAILED};
+
+	// Too lazy to write a std::expected thing here.
+	int find_lib_sz_(const char *libnam, size_t lnsz)
+	{
+		for (int l = 0; l < sbbs->cfg.total_libs; l++) {
+			if (!can_user_access_lib(&sbbs->cfg, l, &sbbs->useron, &sbbs->client))
+				continue;
+			char *exp = expand_slash(sbbs->cfg.lib[l]->lname);
+			if (exp == nullptr)
+				return -1;
+			if ((memcmp(libnam, exp, lnsz) == 0)
+			    && (exp[lnsz] == 0)) {
+				free(exp);
+				return l;
+			}
+			free(exp);
 		}
-		if (cryptStatusError((err=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->sftp_channel)))) {
-			GCESSTR(err, node, sbbs->ssh_session, "setting channel");
-			//sbbs->online=FALSE;
-			// TODO: Sure hope the second one doesn't succeed. :D
-			i = remain > INT_MAX ? INT_MAX : remain;	// Pretend we sent it all
+		return -1;
+	}
+
+	int find_dir_sz_(const char *dirnam, int lib, size_t dnsz)
+	{
+		for (int d = 0; d < sbbs->cfg.total_dirs; d++) {
+			if (sbbs->cfg.dir[d]->lib != lib)
+				continue;
+			if (!can_user_access_dir(&sbbs->cfg, d, &sbbs->useron, &sbbs->client))
+				continue;
+			char *exp = expand_slash(sbbs->cfg.dir[d]->lname);
+			if (exp == nullptr)
+				return -1;
+			if ((memcmp(dirnam, exp, dnsz) == 0)
+			    && (exp[dnsz] == 0)) {
+				free(exp);
+				return d;
+			}
+			free(exp);
 		}
-		else {
-			/*
-			 * Limit as per js_socket.c.
-			 * Sure, this is TLS, not SSH, but we see weird stuff here in sz file transfers.
-			 */
-			size_t sendbytes = remain;
-			if (sendbytes > 0x2000)
-				sendbytes = 0x2000;
-			if(cryptStatusError((err=cryptPushData(sbbs->ssh_session, ((char*)data) + sent, remain, &i)))) {
-				/* Handle the SSH error here... */
-				GCESSTR(err, node, sbbs->ssh_session, "pushing data");
-				//ssh_errors++;
-				sbbs->online=FALSE;
-				// TODO: Sure hope the second one doesn't succeed. :D
-				i = remain > INT_MAX ? INT_MAX : remain;	// Pretend we sent it all
+		return -1;
+	}
+
+
+public:
+	const map_path_mode_t mode;
+	sbbs_t * const sbbs{};
+	char * local_path{};
+	char * sftp_path{};
+	char * sftp_link_target{};
+	union {
+		struct {
+			uint32_t offset;
+			int32_t idx;
+			int lib;
+			int dir;
+		} filebase {0,no_more_files,-1,-1};
+		struct {
+			struct pathmap *mapping;
+		} rootdir;
+	} info;
+
+	path_map() = delete;
+	path_map(sbbs_t *sbbsptr, const char* path, map_path_mode_t mode) : mode(mode),  sbbs(sbbsptr)
+	{
+		path_map(sbbs, reinterpret_cast<const uint8_t*>(path), mode);
+	}
+
+	path_map(sbbs_t *sbbsptr, const uint8_t* path, map_path_mode_t mode) : mode(mode), sbbs(sbbsptr)
+	{
+		const char *c;
+		const char *cpath = reinterpret_cast<const char *>(path);
+
+		if (path == nullptr || sbbs == nullptr) {
+			result_ = MAP_INVALID_ARGS;
+			return;
+		}
+
+		this->sftp_path = sftp_parse_crealpath(sbbs, cpath);
+		if (this->sftp_path == nullptr) {
+			return;
+		}
+		if (is_in_filebase(this->sftp_path)) {
+			// This is in the file base.
+			if (mode == MAP_RDWR) {
+				result_ = MAP_PERMISSION_DENIED;
+				return;
+			}
+			this->is_static_ = false;
+			this->info.filebase.dir = -1;
+			this->info.filebase.lib = -1;
+			this->info.filebase.idx = dot;
+			if (this->sftp_path[files_path_len] == 0 || this->sftp_path[files_path_len] == 0) {
+				// Root...
+				result_ = MAP_TO_DIR;
+				return;
+			}
+			const char *lib = &this->sftp_path[files_path_len + 1];
+			c = strchr(lib, '/');
+			size_t libsz;
+			if (c == nullptr) {
+				libsz = strlen(lib);
 			}
 			else {
-				// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
-				/* This sets the write timeout for the flush, then sets it to zero
-				 * afterward... presumably because the read timeout gets set to
-				 * what the current write timeout is.
-				 */
-				if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 5)))
-					GCESSTR(err, node, sbbs->ssh_session, "setting write timeout");
-				if(cryptStatusError((err=cryptFlushData(sbbs->ssh_session)))) {
-					GCESSTR(err, node, sbbs->ssh_session, "flushing data");
-					//ssh_errors++;
-					if (err != CRYPT_ERROR_TIMEOUT) {
-						// TODO: Sure hope the second one doesn't succeed. :D
-						i = remain > INT_MAX ? INT_MAX : remain;	// Pretend we sent it all
-					}
-				}
-				// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
-				if(cryptStatusError(err=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 0)))
-					GCESSTR(err, node, sbbs->ssh_session, "setting write timeout");
+				libsz = c - (lib);
 			}
-			if (i > remain)
-				remain = 0;
-			else
-				remain -= i;
+			this->info.filebase.lib = find_lib_sz_(lib, libsz);
+			if (this->info.filebase.lib == -1) {
+				result_ = MAP_BAD_PATH;
+				return;
+			}
+			if (c == nullptr || c[1] == 0) {
+				result_ = MAP_TO_DIR;
+				return;
+			}
+			// There's a dir name too...
+			const char *dir = &lib[libsz + 1];
+			c = strchr(dir, '/');
+			size_t dirsz;
+			if (c == nullptr) {
+				dirsz = strlen(dir);
+			}
+			else {
+				dirsz = c - dir;
+			}
+			this->info.filebase.dir = find_dir_sz_(dir, this->info.filebase.lib, dirsz);
+			if (this->info.filebase.dir == -1) {
+				result_ = MAP_BAD_PATH;
+				return;
+			}
+			if (c == nullptr || c[1] == 0) {
+				result_ = MAP_TO_DIR;
+				return;
+			}
+			// There's a filename too!  What fun!
+			smb_t     smb{};
+			smbfile_t file{};
+			result_ = MAP_TO_FILE;
+			const char *fname = &dir[dirsz + 1];
+			asprintf(&this->local_path, "%s/%s", sbbs->cfg.dir[this->info.filebase.dir]->path, fname);
+			if (this->local_path == nullptr) {
+				result_ = MAP_ALLOC_FAILED;
+				return;
+			}
+			if (smb_open_dir(&sbbs->cfg, &smb, this->info.filebase.dir) != SMB_SUCCESS) {
+				result_ = MAP_SMB_FAILED;
+				return;
+			}
+			if (smb_findfile(&smb, fname, &file) != SMB_SUCCESS) {
+				/*
+				 * If it doesn't exist, and we're trying to write,
+				 * this is success
+				 */
+				if ((mode == MAP_READ) || (mode == MAP_STAT)) {
+					result_ = MAP_BAD_PATH;
+					return;
+				}
+				if (access(this->local_path, F_OK)) {
+					// File already exists...
+					result_ = MAP_PERMISSION_DENIED;
+					return;
+				}
+				return;
+			}
+			this->info.filebase.idx = file.file_idx.idx.number;
+			this->info.filebase.offset = file.file_idx.idx.offset;
+			// TODO: Keep this around?
+			smb_freefilemem(&file);
+			smb_close(&smb);
+			/* TODO: Sometimes some users can overwrite some files...
+			 *       but for now, nobody can.
+			 */
+			if (mode == MAP_WRITE || mode == MAP_RDWR) {
+				result_ = MAP_PERMISSION_DENIED;
+				return;
+			}
+			if (mode == MAP_READ) {
+				if (!can_user_download(&sbbs->cfg, this->info.filebase.dir, &sbbs->useron, &sbbs->client, nullptr)) {
+					result_ = MAP_PERMISSION_DENIED;
+					return;
+				}
+			}
+			return;
 		}
-		pthread_mutex_unlock(&sbbs->ssh_mutex);
+		else {
+			// Static files
+			unsigned sfidx;
+
+			this->is_static_ = true;
+			size_t pathlen = strlen(this->sftp_path);
+			for (sfidx = 0; sfidx < static_files_sz; sfidx++) {
+				char tmpdir[MAX_PATH + 1];
+				snprintf(tmpdir, sizeof(tmpdir), static_files[sfidx].sftp_patt, sbbs->useron.alias);
+				if (strncmp(this->sftp_path, tmpdir, pathlen) == 0
+				    && (tmpdir[pathlen] == 0
+				    || (tmpdir[pathlen] == '/' && tmpdir[pathlen + 1] == 0))) {
+					this->info.rootdir.mapping = &static_files[sfidx];
+					if (static_files[sfidx].real_patt) {
+						asprintf(&this->local_path, static_files[sfidx].real_patt, sbbs->cfg.data_dir, sbbs->useron.number);
+						if (this->local_path == nullptr) {
+							result_ = MAP_ALLOC_FAILED;
+							return;
+						}
+						result_ = MAP_TO_FILE;
+					}
+					else
+						result_ = MAP_TO_DIR;
+					if ((mode == MAP_READ || mode == MAP_STAT)
+					    && (result_ == MAP_TO_FILE)) {
+						if (access(this->local_path, R_OK)) {
+							result_ = MAP_BAD_PATH;
+							return;
+						}
+					}
+					if (static_files[sfidx].link_patt) {
+						asprintf(&this->sftp_link_target, static_files[sfidx].link_patt, sbbs->useron.alias);
+						if (this->local_path == nullptr) {
+							result_ = MAP_ALLOC_FAILED;
+							return;
+						}
+					}
+					return;
+				}
+			}
+			result_ = MAP_FAILED;
+			return;
+		}
 	}
-	memcpy(pkt, oldhdr, sizeof(oldhdr));
-}
 
-static tx_pkt_t
-alloc_pkt(size_t sz, uint8_t type)
-{
-	tx_pkt_t ret = static_cast<tx_pkt_t>(malloc(sz + offsetof(struct tx_pkt_struct, data)));
-	ret->sz = sz;
-	ret->used = 0;
-	ret->type = type;
+	bool cleanup()
+	{
+		switch(result_) {
+			case MAP_BAD_PATH:
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_NO_SUCH_FILE, "No such file");
+			case MAP_PERMISSION_DENIED:
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_PERMISSION_DENIED, "No such file");
+			default:
+				if (result_ >= MAP_SUCCESS) {
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_PERMISSION_DENIED, "No such file");
+				}
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Mapping failure");
+		}
+	}
 
-	return ret;
-}
+	const map_path_result_t &result(void) const {
+		return result_;
+	}
+
+	const bool &is_static(void) const {
+		return is_static_;
+	}
+
+	const bool success(void) {
+		return result_ >= MAP_SUCCESS;
+	}
+
+	~path_map() {
+		free(local_path);
+		free(sftp_path);
+		free(sftp_link_target);
+	}
+};
 
 static bool
-append32(tx_pkt_t pkt, uint32_t u)
+is_in_filebase(const char *path)
 {
-	uint32_t u32 = BE_INT32(u);
-	if (pkt->used  + sizeof(u) <= pkt->sz) {
-		memcpy(&pkt->data[pkt->used], &u32, sizeof(u32));
-		pkt->used += sizeof(u32);
-		return true;
+	if (memcmp(files_path, path, files_path_len) == 0) {
+		if (path[files_path_len] == 0 || path[files_path_len] == '/')
+			return true;
 	}
 	return false;
-	
-}
-
-static bool
-append64(tx_pkt_t pkt, uint64_t u)
-{
-	uint64_t u64 = BE_INT64(u);
-	if (pkt->used + sizeof(u) <= pkt->sz) {
-		memcpy(&pkt->data[pkt->used], &u64, sizeof(u64));
-		pkt->used += sizeof(u64);
-		return true;
-	}
-	return false;
-}
-
-static bool
-appendstring(tx_pkt_t pkt, const char *s)
-{
-	size_t sl = strlen(s);
-	if (sl > UINT32_MAX)
-		sl = UINT32_MAX;
-	uint32_t s32 = BE_INT32(sl);
-	if (pkt->used + sizeof(sl) + sl <= pkt->sz) {
-		memcpy(&pkt->data[pkt->used], &s32, sizeof(s32));
-		pkt->used += sizeof(s32);
-		memcpy(&pkt->data[pkt->used], (uint8_t *)s, sl);
-		pkt->used += sl;
-		return true;
-	}
-	return false;
-}
-
-static void
-free_pkt(tx_pkt_t pkt)
-{
-	free(pkt);
-}
-
-static uint32_t
-get32(rx_pkt_t pkt)
-{
-	uint32_t ret;
-
-	if (pkt->cur + sizeof(ret) > pkt->sz)
-		return 0;
-
-	memcpy(&ret, &pkt->data[pkt->cur], sizeof(ret));
-	pkt->cur += sizeof(ret);
-	return BE_INT32(ret);
-}
-
-static uint32_t
-get64(rx_pkt_t pkt)
-{
-	uint64_t ret;
-
-	if (pkt->cur + sizeof(ret) > pkt->sz)
-		return 0;
-	memcpy(&ret, &pkt->data[pkt->cur], sizeof(ret));
-	pkt->cur += sizeof(ret);
-	return ret;
 }
 
 /*
- * NOT NULL TERMINATED use the returned length.
+ * Replaces a Solidus (aka: slash) with a U+2215 Division Slash
+ * The SFTP protocol requires the use of Solidus as a path separator,
+ * and dir and lib names can contain it.  Rather than a visually
+ * different and one-way mapping as used in the FTP server, take
+ * advantage of the fact that dir and lib names aren't unicode to have
+ * a visially similar reversible mapping.
+ *
+ * Even in the future, should these support unicode, it will at least
+ * still be visually more similar, even if it's not reversible.
  */
-static uint32_t
-getstring(rx_pkt_t pkt, uint8_t **str)
+static char *
+expand_slash(const char *orig)
 {
-	uint32_t ret = get32(pkt);
-	if (pkt->cur + sizeof(ret) > pkt->sz) {
-		*str = &pkt->data[pkt->cur];
-		return 0;
+	char *p;
+	const char *p2;
+	char *p3;
+	unsigned slashes = 0;
+
+	for (p2 = orig; *p2; p2++) {
+		if (*p2 == '/')
+			slashes++;
 	}
-	*str = &pkt->data[pkt->cur];
-	pkt->cur += ret;
+	p = static_cast<char *>(malloc(strlen(orig) + (slashes * 2) + 1));
+	if (p == nullptr)
+		return p;
+	p3 = p;
+	for (p2 = orig; *p2; p2++) {
+		if (*p2 == '/') {
+			*p3++ = 0xe2;
+			*p3++ = 0x88;
+			*p3++ = 0x95;
+		}
+		else
+			*p3++ = *p2;
+	}
+	*p3 = 0;
+	return p;
+}
+
+static sftp_file_attr_t
+dummy_attrs(void)
+{
+	return sftp_fattr_alloc();
+}
+
+static sftp_file_attr_t
+homedir_attrs(sbbs_t *sbbs, const char *path)
+{
+	sftp_file_attr_t attr = sftp_fattr_alloc();
+
+	if (attr == nullptr)
+		return nullptr;
+	sftp_fattr_set_permissions(attr, S_IFDIR | S_IRWXU | S_IRUSR | S_IWUSR | S_IXUSR);
+	sftp_fattr_set_uid_gid(attr, sbbs->useron.number, users_gid);
+	return attr;
+}
+
+static sftp_file_attr_t
+rootdir_attrs(sbbs_t *sbbs, const char *path)
+{
+	sftp_file_attr_t attr = sftp_fattr_alloc();
+
+	if (attr == nullptr)
+		return nullptr;
+	sftp_fattr_set_permissions(attr, S_IFDIR | S_IRWXU | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+	sftp_fattr_set_uid_gid(attr, 1, users_gid);
+	return attr;
+}
+
+static sftp_file_attr_t
+homefile_attrs(sbbs_t *sbbs, const char *path)
+{
+	sftp_file_attr_t attr = sftp_fattr_alloc();
+
+	if (attr == nullptr)
+		return nullptr;
+	sftp_fattr_set_permissions(attr, S_IFREG | S_IRWXU | S_IRUSR | S_IWUSR);
+	sftp_fattr_set_uid_gid(attr, sbbs->useron.number, users_gid);
+	sftp_fattr_set_size(attr, flength(path));
+	time_t fd = fdate(path);
+	sftp_fattr_set_times(attr, fd, fd);
+	return attr;
+}
+
+static sftp_file_attr_t
+sshkeys_attrs(sbbs_t *sbbs, const char *path)
+{
+	sftp_file_attr_t attr = sftp_fattr_alloc();
+
+	if (attr == nullptr)
+		return nullptr;
+	sftp_fattr_set_permissions(attr, S_IFLNK | S_IRWXU | S_IRUSR | S_IWUSR);
+	sftp_fattr_set_uid_gid(attr, sbbs->useron.number, users_gid);
+	sftp_fattr_set_size(attr, flength(path));
+	time_t fd = fdate(path);
+	sftp_fattr_set_times(attr, fd, fd);
+	return attr;
+}
+
+void
+remove_trailing_slash(char *str)
+{
+	size_t end = strlen(str);
+
+	if (end > 0)
+		end--;
+	while (str[end] == '/' && end > 0)
+		str[end] = 0;
+}
+
+static char *
+sftp_parse_crealpath(sbbs_t *sbbs, const char *filename)
+{
+	char *ret;
+	char *tmp;
+
+	if (sbbs->sftp_cwd == nullptr)
+		asprintf(&sbbs->sftp_cwd, SLASH_HOME "/%s", sbbs->useron.alias);
+	if (sbbs->sftp_cwd == nullptr)
+		return nullptr;
+	if (!isfullpath(filename)) {
+		asprintf(&tmp, "%s/%s", sbbs->sftp_cwd, filename);
+		if (tmp == nullptr)
+			return tmp;
+		ret = _fullpath(nullptr, tmp, 0);
+		free(tmp);
+	}
+	else {
+		ret = _fullpath(nullptr, filename, 0);
+	}
+	// TODO: Why does _fullpath() do this?
+	if (ret[0] == 0) {
+		free(ret);
+		ret = strdup("/");
+	}
+	remove_trailing_slash(ret);
+
 	return ret;
 }
 
 static char *
-get_alloced_string(rx_pkt_t pkt)
+sftp_parse_realpath(sbbs_t *sbbs, sftp_str_t filename)
 {
-	uint8_t *str;
-	uint32_t len = getstring(pkt, &str);
-	if (str) {
-		return strndup((const char *)str, len);
-	}
-	return NULL;
+	return sftp_parse_crealpath(sbbs, reinterpret_cast<char *>(filename->c_str));
 }
 
-static void
-init(sbbs_t *sbbs, rx_pkt_t rpkt)
+static unsigned
+parse_file_handle(sbbs_t *sbbs, sftp_filehandle_t handle)
 {
-	// TODO nice macros for sizes
-	uint8_t pkt[offsetof(struct tx_pkt_struct, data) + 4];
-	tx_pkt_t ps = (tx_pkt_t)pkt;
-	ps->sz = 4;
-	ps->used = 0;
-	ps->type = SSH_FXP_VERSION;
-	append32(ps, SFTP_VERSION);
+	constexpr size_t nfdes = sizeof(sbbs->sftp_filedes) / sizeof(sbbs->sftp_filedes[0]);
 
-	uint32_t ver = get32(rpkt);
-	if (ver < SFTP_VERSION) {
-		// TODO: Handle this better...
-		sbbs->lprintf(LOG_ERR, "Unsupported sftp version %" PRIu32 " hanging connection on purpose", ver);
-		return;
-	}
-	send_pkt(sbbs, ps);
+	long tmp = strtol(reinterpret_cast<char *>(handle->c_str), nullptr, 10);
+	if (tmp == 0)
+		return UINT_MAX;
+	if (tmp > UINT_MAX)
+		return UINT_MAX;
+	if (tmp > nfdes)
+		return UINT_MAX;
+	if (sbbs->sftp_filedes[tmp - 1] == nullptr)
+		return UINT_MAX;
+	return tmp - 1;
 }
 
-static void
-send_error(sbbs_t *sbbs, uint32_t id, uint32_t code, const char *msg, const char *lang)
+static unsigned
+parse_dir_handle(sbbs_t *sbbs, sftp_dirhandle_t handle)
 {
-	// TODO Nice macros for sizes?
-	size_t esz = 11 + strlen(msg) + strlen(lang) + 8;
-	tx_pkt_t pkt = alloc_pkt(esz, SSH_FXP_STATUS);
+	constexpr size_t nfdes = sizeof(sbbs->sftp_dirdes) / sizeof(sbbs->sftp_dirdes[0]);
 
-	if (!pkt)
-		return;
-	append32(pkt, id);
-	append32(pkt, code);
-	appendstring(pkt, msg);
-	appendstring(pkt, lang);
-	send_pkt(sbbs, pkt);
-	free_pkt(pkt);
+	if (handle->len < 3)
+		return UINT_MAX;
+	if (memcmp(handle->c_str, "D:", 2) != 0)
+		return UINT_MAX;
+	long tmp = strtol(reinterpret_cast<char *>(handle->c_str + 2), nullptr, 10);
+	if (tmp == 0)
+		return UINT_MAX;
+	if (tmp > UINT_MAX)
+		return UINT_MAX;
+	if (tmp > nfdes)
+		return UINT_MAX;
+	if (sbbs->sftp_dirdes[tmp - 1] == nullptr)
+		return UINT_MAX;
+	return tmp - 1;
 }
 
 /*
- * Sent by openssh sftp client at start... so this is just a dummy for now
+ * From FreeBSD ls
  */
-static void
-realpath(sbbs_t *sbbs, rx_pkt_t rpkt)
-{
-	tx_pkt_t pkt = alloc_pkt(77, SSH_FXP_NAME);
-	append32(pkt, get32(rpkt));
-	append32(pkt, 1);
-	appendstring(pkt, "/");
-	appendstring(pkt, "-rwxr-xr-x   1 mjos     staff      348911 Mar 25 14:29 /");
-	append32(pkt, 0);
-	send_pkt(sbbs, pkt);
-	free_pkt(pkt);
-}
-
-static void
-handle_packet(sbbs_t *sbbs)
-{
-	struct rx_pkt_struct pkt;
-	pkt.sz = pkt_sz(sbbs) - 1;
-	pkt.type = pkt_type(sbbs);
-	pkt.data = &((uint8_t *)(sbbs->sftp_pending_packet))[sizeof(uint32_t) + sizeof(uint8_t)];
-	pkt.cur = 0;
-	const char *const tn = get_type_name(pkt.type);
-	uint32_t id;
-
-	sbbs->lprintf(LOG_DEBUG, "sftp got packet type %s (sz=%" PRIu32 ", type=%" PRIu8 ")", tn, pkt.sz, pkt.type);
-	switch(pkt.type) {
-		case SSH_FXP_INIT:
-			init(sbbs, &pkt);
-			break;
-		case SSH_FXP_REALPATH:
-			realpath(sbbs, &pkt);
-			break;
-		case SSH_FXP_VERSION:
-		case SSH_FXP_OPEN:
-		case SSH_FXP_CLOSE:
-		case SSH_FXP_READ:
-		case SSH_FXP_WRITE:
-		case SSH_FXP_LSTAT:
-		case SSH_FXP_FSTAT:
-		case SSH_FXP_SETSTAT:
-		case SSH_FXP_FSETSTAT:
-		case SSH_FXP_OPENDIR:
-		case SSH_FXP_READDIR:
-		case SSH_FXP_REMOVE:
-		case SSH_FXP_MKDIR:
-		case SSH_FXP_RMDIR:
-		case SSH_FXP_STAT:
-		case SSH_FXP_RENAME:
-		case SSH_FXP_READLINK:
-		case SSH_FXP_SYMLINK:
-		case SSH_FXP_STATUS:
-		case SSH_FXP_HANDLE:
-		case SSH_FXP_DATA:
-		case SSH_FXP_NAME:
-		case SSH_FXP_ATTRS:
-		case SSH_FXP_EXTENDED:
-		case SSH_FXP_EXTENDED_REPLY:
-			id = get32(&pkt);
-			sbbs->lprintf(LOG_DEBUG, "sftp does not support %s yet", tn);
-			send_error(sbbs, id, SSH_FX_OP_UNSUPPORTED, "Unsupported", "en-CA");
-			break;
-		default:
-			sbbs->lprintf(LOG_INFO, "sftp got unknown type: %02" PRIx8, pkt.type);
-			id = get32(&pkt);
-			sbbs->lprintf(LOG_DEBUG, "sftp does not support %s yet", tn);
-			send_error(sbbs, id, SSH_FX_OP_UNSUPPORTED, "Unsupported", "en-CA");
-			break;
-	}
-}
-
 void
-sftp_handle_data(sbbs_t *sbbs, char *inbuf, int len)
+format_time(sbbs_t *sbbs, time_t ftime, char *longstring, size_t sz)
 {
-	// Validate arguments
-	if (sbbs == NULL || inbuf == NULL)
-		sbbs->lprintf(LOG_ERR, "sftp NULL pointer at %s:%d", __FILE__, __LINE__);
-	if (len == 0)
-		return;
-	if (len < 0) {
-		sbbs->lprintf(LOG_ERR, "Invalid sftp chunk length: %d", len);
+	static time_t now;
+	const char *format;
+	static int d_first = (sbbs->cfg.sys_date_fmt == DDMMYY);
+
+	now = time(NULL);
+
+#define SIXMONTHS       ((365 / 2) * 86400)
+	if (ftime + SIXMONTHS > now && ftime < now + SIXMONTHS)
+		/* mmm dd hh:mm || dd mmm hh:mm */
+		format = d_first ? "%e %b %R" : "%b %e %R";
+	else
+		/* mmm dd  yyyy || dd mmm  yyyy */
+		format = d_first ? "%e %b  %Y" : "%b %e  %Y";
+	strftime(longstring, sz, format, localtime(&ftime));
+}
+
+static void
+uid_to_string(sbbs_t *sbbs, uint32_t uid, char *buf)
+{
+	if (uid == 0)
+		strcpy(buf, "<nobody>");
+	if (username(&sbbs->cfg, uid, buf) == nullptr || buf[0] == 0)
+		strcpy(buf, "unknown");
+}
+
+static void
+gid_to_string(sbbs_t *sbbs, uint32_t gid, char *buf)
+{
+	if (gid == users_gid)
+		strcpy(buf, "users");
+	else if (gid & lib_flag)
+		strcpy(buf, sbbs->cfg.lib[gid & lib_mask]->vdir);
+	else
+		strcpy(buf, sbbs->cfg.dir[gid]->code);
+}
+
+static char *
+get_longname(sbbs_t *sbbs, const char *path, const char *link, sftp_file_attr_t attr)
+{
+	char *ret;
+	const char *fname;
+	uint32_t perms;
+	uint32_t mtime;
+	uint64_t sz;
+	char pstr[11];
+	char szstr[21];
+	char datestr[20];
+	char owner[LEN_ALIAS + 1];
+	char group[LEN_EXTCODE + 1];
+
+	memset(pstr, '-', sizeof(pstr) - 1);
+	pstr[sizeof(pstr) - 1] = 0;
+	if (sftp_fattr_get_permissions(attr, &perms)) {
+		switch (perms & S_IFMT) {
+			case S_IFSOCK:
+				pstr[0] = 's';
+				break;
+			case S_IFLNK:
+				pstr[0] = 'l';
+				break;
+			case S_IFREG:
+				pstr[0] = '-';
+				break;
+			case S_IFBLK:
+				pstr[0] = 'b';
+				break;
+			case S_IFDIR:
+				pstr[0] = 'd';
+				break;
+			case S_IFCHR:
+				pstr[0] = 'c';
+				break;
+			case S_IFIFO:
+				pstr[0] = 'p';
+				break;
+		}
+		if (perms & S_IRUSR)
+			pstr[1] = 'r';
+		if (perms & S_IWUSR)
+			pstr[2] = 'w';
+		if (((perms & S_IXUSR) == 0) && (perms & S_ISUID))
+			pstr[3] = 'S';
+		else if ((perms & S_IXUSR) && (perms & S_ISUID))
+			pstr[3] = 's';
+		else if (perms & S_IXUSR)
+			pstr[3] = 'x';
+		if (perms & S_IRGRP)
+			pstr[4] = 'r';
+		if (perms & S_IWGRP)
+			pstr[5] = 'w';
+		if (((perms & S_IXGRP) == 0) && (perms & S_ISGID))
+			pstr[6] = 'S';
+		else if ((perms & S_IXGRP) && (perms & S_ISGID))
+			pstr[6] = 's';
+		else if (perms & S_IXGRP)
+			pstr[6] = 'x';
+		if (perms & S_IROTH)
+			pstr[7] = 'r';
+		if (perms & S_IWOTH)
+			pstr[8] = 'w';
+		if (perms & S_IXOTH) {
+			if (perms & S_ISVTX)
+				pstr[9] = 't';
+			else
+				pstr[9] = 'x';
+		}
+		else if (perms & S_ISVTX)
+			pstr[9] = 'T';
+	}
+	sz = 0;
+	sftp_fattr_get_size(attr, &sz);
+	sprintf(szstr, "%8" PRIu64, sz);
+	mtime = 0;
+	sftp_fattr_get_mtime(attr, &mtime);
+	format_time(sbbs, mtime, datestr, sizeof(datestr));
+	uint32_t uid{0};
+	sftp_fattr_get_uid(attr, &uid);
+	uid_to_string(sbbs, uid, owner);
+	uid = 0;
+	sftp_fattr_get_gid(attr, &uid);
+	gid_to_string(sbbs, uid, group);
+	fname = getfname(path);
+	if (fname[0] == 0)
+		fname = path;
+	asprintf(&ret, "%s   0 %-8.8s %-8.8s %-8s %-12s %s%s%s", pstr, owner, group, szstr, datestr, fname, pstr[0] == 'l' ? " -> " : "", link ? link : "");
+	return ret;
+}
+
+static sftp_file_attr_t
+get_lib_attrs(sbbs_t *sbbs, int lib)
+{
+	sftp_file_attr_t attr = sftp_fattr_alloc();
+
+	if (attr == nullptr)
+		return nullptr;
+	sftp_fattr_set_permissions(attr, S_IFDIR | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP);
+	sftp_fattr_set_uid_gid(attr, 1, static_cast<uint32_t>(lib) | lib_flag);
+	return attr;
+}
+
+static sftp_file_attr_t
+get_dir_attrs(sbbs_t *sbbs, int32_t dir)
+{
+	sftp_file_attr_t attr = sftp_fattr_alloc();
+	uint32_t perms = S_IFDIR | S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP;
+
+	if (attr == nullptr)
+		return nullptr;
+	if (can_user_upload(&sbbs->cfg, dir, &sbbs->useron, &sbbs->client, nullptr))
+		perms |= S_IWGRP;
+	sftp_fattr_set_permissions(attr, perms);
+	sftp_fattr_set_uid_gid(attr, 1, static_cast<uint32_t>(dir));
+	return attr;
+}
+
+static sftp_file_attr_t
+get_filebase_attrs(sbbs_t *sbbs, int32_t dir, smbfile_t *file)
+{
+	sftp_file_attr_t attr = sftp_fattr_alloc();
+	uint32_t perms = S_IFREG | S_IRUSR | S_IWUSR;
+	time32_t atime;
+	time32_t mtime;
+
+	if (attr == nullptr)
+		return nullptr;
+	if (can_user_download(&sbbs->cfg, dir, &sbbs->useron, &sbbs->client, nullptr))
+		perms |= S_IRGRP;
+	if (can_user_upload(&sbbs->cfg, dir, &sbbs->useron, &sbbs->client, nullptr))
+		perms |= S_IWGRP;
+	sftp_fattr_set_permissions(attr, perms);
+	sftp_fattr_set_size(attr, smb_getfilesize(&file->idx));
+	sftp_fattr_set_uid_gid(attr, 0, static_cast<uint32_t>(dir));
+	atime = file->hdr.last_downloaded; // Is this a time_t?
+	mtime = file->hdr.when_written.time;
+	sftp_fattr_set_times(attr, atime, mtime);
+	// TODO: How to get user number of uploader if available?  For uid
+	//       Answer, from_ext... be sure to check if it's anonymous etc.
+	//       Real answer: We don't store the user number of uploader,
+	//                    look up the usernumber from uploader's username.
+
+	return attr;
+}
+
+static int
+find_lib(sbbs_t *sbbs, const char *path)
+{
+	char *p = strdup(path);
+	char *c = strchr(p, '/');
+	char *exp;
+	int l;
+
+	if (c)
+		*c = 0;
+	for (l = 0; l < sbbs->cfg.total_libs; l++) {
+		if (!can_user_access_lib(&sbbs->cfg, l, &sbbs->useron, &sbbs->client))
+			continue;
+		exp = expand_slash(sbbs->cfg.lib[l]->lname);
+		if (exp == nullptr)
+			return -1;
+		if (strcmp(p, exp)) {
+			free(exp);
+			continue;
+		}
+		free(exp);
+		break;
+	}
+	free(p);
+	if (l < sbbs->cfg.total_libs)
+		return l;
+	return -1;
+}
+
+static int
+find_dir(sbbs_t *sbbs, const char *path, int lib)
+{
+	char *p = strdup(path);
+	char *c;
+	char *e;
+	int d;
+	char *exp;
+
+	if (p == nullptr)
+		return -1;
+	remove_trailing_slash(p);
+	c = strchr(p, '/');
+	if (c == nullptr || c[1] == 0) {
+		free(p);
+		return -1;
+	}
+	c++;
+	e = strchr(c, '/');
+	if (e != nullptr)
+		*e = 0;
+	for (d = 0; d < sbbs->cfg.total_dirs; d++) {
+		if (sbbs->cfg.dir[d]->lib != lib)
+			continue;
+		if (!can_user_access_dir(&sbbs->cfg, d, &sbbs->useron, &sbbs->client))
+			continue;
+		exp = expand_slash(sbbs->cfg.dir[d]->lname);
+		if (exp == nullptr) {
+			free(p);
+			return -1;
+		}
+		if (strcmp(c, exp)) {
+			free(exp);
+			continue;
+		}
+		free(exp);
+		break;
+	}
+	free(p);
+	if (d < sbbs->cfg.total_dirs)
+		return d;
+	return -1;
+}
+
+static struct pathmap *
+get_pathmap_ptr(sbbs_t *sbbs, const char *filename)
+{
+	unsigned sf;
+	char vpath[MAX_PATH + 1];
+
+	for (sf = 0; sf < static_files_sz; sf++) {
+		snprintf(vpath, sizeof(vpath), static_files[sf].sftp_patt, sbbs->useron.alias);
+		remove_trailing_slash(vpath);
+		if (strcmp(vpath, filename) == 0)
+			return &static_files[sf];
+	}
+	return nullptr;
+}
+
+// TODO: This should be overhauled as well...
+static sftp_file_attr_t
+get_attrs(sbbs_t *sbbs, const char *path, char **link)
+{
+	struct pathmap *pm;
+	char ppath[MAX_PATH + 1];
+	sftp_file_attr_t ret;
+
+	if (link)
+		*link = nullptr;
+	pm = get_pathmap_ptr(sbbs, path);
+	if (pm == nullptr) {
+		int lib;
+		int dir;
+		const char *libp;
+
+		if (!is_in_filebase(path))
+			return nullptr;
+		libp = path + files_path_len + 1;
+		lib = find_lib(sbbs, libp);
+		if (lib == -1) {
+			return nullptr;
+		}
+		const char *c = strchr(libp, '/');
+		if (c == nullptr || c[1] == 0)
+			return get_lib_attrs(sbbs, lib);
+		dir = find_dir(sbbs, libp, lib);
+		if (dir == -1)
+			return nullptr;
+		c = strchr(c + 1, '/');
+		if (c == nullptr || c[1] == 0)
+			return get_dir_attrs(sbbs, dir);
+		smb_t smb{};
+		smbfile_t file{};
+		if (smb_open_dir(&sbbs->cfg, &smb, dir) != SMB_SUCCESS)
+			return nullptr;
+		if (smb_findfile(&smb, &c[1], &file) != SMB_SUCCESS) {
+			smb_close(&smb);
+			return nullptr;
+		}
+		if (smb_getfile(&smb, &file, file_detail_normal) != SMB_SUCCESS) {
+			smb_close(&smb);
+			return nullptr;
+		}
+		ret = get_filebase_attrs(sbbs, dir, &file);
+		smb_freefilemem(&file);
+		smb_close(&smb);
+		return ret;
+	}
+	if (pm->real_patt)
+		snprintf(ppath, sizeof(ppath), pm->real_patt, sbbs->cfg.data_dir, sbbs->useron.number);
+	else
+		ppath[0] = 0;
+	ret = pm->get_attrs(sbbs, ppath);
+	if (link && pm->link_patt) {
+		asprintf(link, pm->link_patt, sbbs->useron.alias);
+		if (link == nullptr) {
+			sftp_fattr_free(ret);
+			ret = nullptr;
+		}
+	}
+	return ret;
+}
+
+static void
+copy_path(char *p, const char *fp)
+{
+	char *last;
+
+	strcpy(p, fp);
+	last = strrchr(p, '/');
+	if (last == nullptr) {
 		return;
 	}
+	*last = 0;
+}
 
-	if (!realloc_append(sbbs, inbuf, len))
+static void
+copy_path_from_dir(char *p, const char *fp)
+{
+	char *last;
+
+	strcpy(p, fp);
+	last = strrchr(p, '/');
+	if (last == nullptr) {
 		return;
-	if (!have_full_pkt(sbbs))
+	}
+	if (last[1] == 0) {
+		*last = 0;
+		last = strrchr(p, '/');
+		if (last == nullptr)
+			return;
+	}
+	*last = 0;
+}
+
+static bool
+generic_dot_attr_entry(sbbs_t *sbbs, char *fname, sftp_file_attr_t attr, char **link, int32_t *idx)
+{
+	if (attr == nullptr)
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Attributes allocation failure");
+	char *lname = get_longname(sbbs, fname, link ? *link : nullptr, attr);
+	if (lname == nullptr) {
+		sftp_fattr_free(attr);
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Longname allocation failure");
+	}
+	(*idx)++;
+	bool ret = sftps_send_name(sbbs->sftp_state, 1, &fname, &lname, &attr);
+	free(lname);
+	sftp_fattr_free(attr);
+	return ret;
+}
+
+static bool
+generic_dot_entry(sbbs_t *sbbs, char *fname, const char *path, int32_t *idx)
+{
+	char *link;
+	sftp_file_attr_t attr = get_attrs(sbbs, path, &link);
+	return generic_dot_attr_entry(sbbs, fname, attr, &link, idx);
+}
+
+static bool
+generic_dot_realpath_entry(sbbs_t *sbbs, char *fname, const char *path, int32_t *idx)
+{
+	char *vpath = sftp_parse_crealpath(sbbs, path);
+	if (vpath == nullptr) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Path allocation failure");
+	}
+	bool ret = generic_dot_entry(sbbs, fname, vpath, idx);
+	free(vpath);
+	return ret;
+}
+
+static void
+record_transfer(sbbs_t *sbbs, sftp_filedescriptor_t desc, bool upload)
+{
+	if (desc->dir == -1)
 		return;
-	handle_packet(sbbs);
-	remove_packet(sbbs);
+	char *nptr = strrchr(desc->local_path, '/');
+	if (nptr != nullptr) {
+		file_t file{};
+		nptr++;
+		file.name = nptr;
+		file.dir = desc->dir;
+		file.size = flength(desc->local_path);
+		file.file_idx.idx.offset = desc->idx_offset;
+		file.file_idx.idx.number = desc->idx_number;
+		if (upload)
+			sbbs->uploadfile(&file);
+		else
+			sbbs->downloadedfile(&file);
+		file.name = nullptr;
+		// We shouldn't need to call this, but it doesn't hurt.
+		smb_freefilemem(&file);
+	}
+}
+
+extern "C" {
+
+static bool
+sftp_send(uint8_t *buf, size_t len, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	size_t sent = 0;
+	int i;
+	int status;
+
+	if (sbbs->sftp_channel == -1)
+		return false;
+	while (sent < len) {
+		pthread_mutex_lock(&sbbs->ssh_mutex);
+		status = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->sftp_channel);
+		if (cryptStatusError(status))
+			return false;
+		size_t sendbytes = len - sent;
+#define SENDBYTES_MAX 0x2000
+		if (sendbytes > SENDBYTES_MAX)
+			sendbytes = SENDBYTES_MAX;
+		status = cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 5);
+		if(cryptStatusError(status)) {
+			pthread_mutex_unlock(&sbbs->ssh_mutex);
+			return false;
+		}
+		status = cryptPushData(sbbs->ssh_session, (char*)buf + sent, sendbytes, &i);
+		if(cryptStatusError(status)) {
+			pthread_mutex_unlock(&sbbs->ssh_mutex);
+			return false;
+		}
+		status = cryptFlushData(sbbs->ssh_session);
+		if(cryptStatusError(status)) {
+			pthread_mutex_unlock(&sbbs->ssh_mutex);
+			return false;
+		}
+		status = cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 0);
+		if(cryptStatusError(status)) {
+			pthread_mutex_unlock(&sbbs->ssh_mutex);
+			return false;
+		}
+		pthread_mutex_unlock(&sbbs->ssh_mutex);
+		sent += i;
+	}
+	return true;
+}
+
+static void
+sftp_lprintf(void *arg, const char *fmt, ...)
+{
+	sbbs_t *sbbs = (sbbs_t *)arg;
+	va_list argptr;
+	char sbuf[1024];
+
+	va_start(argptr,fmt);
+	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+	va_end(argptr);
+	sbbs->lprintf(LOG_ERR, "SFTP %s", sbuf);
+}
+
+static void
+sftp_cleanup_callback(void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	constexpr size_t nfdes = sizeof(sbbs->sftp_filedes) / sizeof(sbbs->sftp_filedes[0]);
+	constexpr size_t nddes = sizeof(sbbs->sftp_dirdes) / sizeof(sbbs->sftp_dirdes[0]);
+
+	for (unsigned i = 0; i < nfdes; i++) {
+		if (sbbs->sftp_filedes[i] != nullptr) {
+			close(sbbs->sftp_filedes[i]->fd);
+			if (sbbs->sftp_filedes[i]->created && sbbs->sftp_filedes[i]->local_path) {
+				// If we were uploading, delete the incomplete file
+				remove(sbbs->sftp_filedes[i]->local_path);
+			}
+			free(sbbs->sftp_filedes[i]->local_path);
+			free(sbbs->sftp_filedes[i]);
+			sbbs->sftp_filedes[i] = nullptr;
+		}
+	}
+	for (unsigned i = 0; i < nddes; i++) {
+		free(sbbs->sftp_dirdes[i]);
+		sbbs->sftp_dirdes[i] = nullptr;
+	}
+	free(sbbs->sftp_cwd);
+}
+
+static bool
+sftp_open(sftp_str_t filename, uint32_t flags, sftp_file_attr_t attributes, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	constexpr size_t nfdes = sizeof(sbbs->sftp_filedes) / sizeof(sbbs->sftp_filedes[0]);
+	unsigned fdidx;
+	mode_t omode = 0;
+	int oflags = 0;
+	sftp_str_t handle;
+	bool ret;
+	map_path_mode_t mmode;
+
+	sbbs->lprintf(LOG_DEBUG, "SFTP open(%.*s, %x, )", filename->len, filename->c_str, flags);
+
+	// See if there's an available file descriptor
+	for (fdidx = 0; fdidx < nfdes; fdidx++) {
+		if (sbbs->sftp_filedes[fdidx] == nullptr)
+			break;
+	}
+	if (fdidx == nfdes) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Too many open file descriptors");
+	}
+	switch (flags & (SSH_FXF_READ | SSH_FXF_WRITE)) {
+		case SSH_FXF_READ:
+			oflags |= O_RDONLY;
+			mmode = MAP_READ;
+			break;
+		case SSH_FXF_WRITE:
+			oflags |= O_WRONLY;
+			mmode = MAP_WRITE;
+			break;
+		case (SSH_FXF_READ | SSH_FXF_WRITE):
+			oflags |= O_RDWR;
+			mmode = MAP_RDWR;
+			break;
+		case 0:
+			return sftps_send_error(sbbs->sftp_state, SSH_FX_OP_UNSUPPORTED, "Invalid flags (not read or write)");
+	}
+	if (flags & SSH_FXF_APPEND)
+		oflags |= O_APPEND;
+	if (flags & SSH_FXF_CREAT)
+		oflags |= O_CREAT;
+	if (flags & SSH_FXF_TRUNC)
+		oflags |= O_TRUNC;
+	if (flags & SSH_FXF_EXCL)
+		oflags |= O_EXCL;
+	path_map pmap(sbbs, filename->c_str, mmode);
+	if (pmap.result() != MAP_TO_FILE)
+		return pmap.cleanup();
+	if (oflags & O_CREAT) {
+		uint32_t perms;
+		if (!sftp_fattr_get_permissions(attributes, &perms)) {
+			omode = DEFFILEMODE;
+		}
+		else {
+			if (perms & 0444) {
+				omode |= S_IREAD;
+			}
+			if (perms & 0222) {
+				omode |= S_IWRITE;
+			}
+			if (perms & ~(0666)) {
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_OP_UNSUPPORTED, "Invalid permissions");
+			}
+		}
+		if (sftp_fattr_get_size(attributes, nullptr)) {
+			return sftps_send_error(sbbs->sftp_state, SSH_FX_OP_UNSUPPORTED, "Specifying size in open not supported");
+		}
+		if (sftp_fattr_get_uid(attributes, nullptr)) {
+			return sftps_send_error(sbbs->sftp_state, SSH_FX_OP_UNSUPPORTED, "Specifying uid/gid in open not supported");
+		}
+		if (sftp_fattr_get_atime(attributes, nullptr)) {
+			return sftps_send_error(sbbs->sftp_state, SSH_FX_OP_UNSUPPORTED, "Specifying times in open not supported");
+		}
+		if (sftp_fattr_get_ext_count(attributes)) {
+			return sftps_send_error(sbbs->sftp_state, SSH_FX_OP_UNSUPPORTED, "Specifying extended attributes in open not supported");
+		}
+	}
+	sbbs->sftp_filedes[fdidx] = static_cast<sftp_filedescriptor_t>(calloc(1, sizeof(*sbbs->sftp_filedes[0])));
+	if (sbbs->sftp_filedes[fdidx] == nullptr) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to allocate file handle");
+	}
+	if (pmap.is_static())
+		sbbs->sftp_filedes[fdidx]->dir = -1;
+	else {
+		sbbs->sftp_filedes[fdidx]->dir = pmap.info.filebase.dir;
+		sbbs->sftp_filedes[fdidx]->idx_offset = pmap.info.filebase.offset;
+		sbbs->sftp_filedes[fdidx]->idx_number = pmap.info.filebase.idx;
+	}
+	if (access(pmap.local_path, F_OK) != 0) {
+		// File did not exist, and we're creating
+		if (oflags & O_CREAT) {
+			sbbs->sftp_filedes[fdidx]->created = true;
+		}
+	}
+	if (sbbs->sftp_filedes[fdidx] == nullptr) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to allocate file handle");
+	}
+	sbbs->sftp_filedes[fdidx]->local_path = strdup(pmap.local_path);
+	if (sbbs->sftp_filedes[fdidx]->local_path == nullptr) {
+		free(sbbs->sftp_filedes[fdidx]);
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Allocation failure");
+	}
+	sbbs->sftp_filedes[fdidx]->fd = open(pmap.local_path, oflags, omode);
+	if (sbbs->sftp_filedes[fdidx]->fd == -1) {
+		free(sbbs->sftp_filedes[fdidx]->local_path);
+		free(sbbs->sftp_filedes[fdidx]);
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Operation failed");
+	}
+	handle = sftp_asprintf("%u", fdidx + 1);
+	if (handle == nullptr) {
+		close(sbbs->sftp_filedes[fdidx]->fd);
+		free(sbbs->sftp_filedes[fdidx]->local_path);
+		free(sbbs->sftp_filedes[fdidx]);
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Out of resources");
+	}
+	ret = sftps_send_handle(sbbs->sftp_state, handle);
+	free_sftp_str(handle);
+	return ret;
+}
+
+static bool
+sftp_close(sftp_str_t handle, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+
+	sbbs->lprintf(LOG_DEBUG, "SFTP close(%.*s)", handle->len, handle->c_str);
+	if (isdigit(handle->c_str[0])) {
+		unsigned fidx = parse_file_handle(sbbs, handle);
+		if (fidx == UINT_MAX) {
+			return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Invalid file handle");
+		}
+		int rval = close(sbbs->sftp_filedes[fidx]->fd);
+		if (sbbs->sftp_filedes[fidx]->created)
+			record_transfer(sbbs, sbbs->sftp_filedes[fidx], true);
+		free(sbbs->sftp_filedes[fidx]->local_path);
+		free(sbbs->sftp_filedes[fidx]);
+		sbbs->sftp_filedes[fidx] = nullptr;
+		if (rval)
+			return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Close failed");
+		else
+			return sftps_send_error(sbbs->sftp_state, SSH_FX_OK, "Closed");
+	}
+	else {
+		unsigned didx = parse_dir_handle(sbbs, handle);
+		if (didx == UINT_MAX) {
+			return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Invalid handle");
+		}
+		free(sbbs->sftp_dirdes[didx]);
+		sbbs->sftp_dirdes[didx] = nullptr;
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_OK, "Closed");
+	}
+}
+
+static bool
+sftp_read(sftp_filehandle_t handle, uint64_t offset, uint32_t len, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	unsigned fidx = parse_file_handle(sbbs, handle);
+	ssize_t rlen;
+
+	sbbs->lprintf(LOG_DEBUG, "SFTP read(%.*s, %" PRIu64 ", %" PRIu32 ")", handle->len, handle->c_str, offset, len);
+	if (fidx == UINT_MAX) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Invalid file handle");
+	}
+	int fd = sbbs->sftp_filedes[fidx]->fd;
+	if (fd == -1) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Invalid file handle");
+	}
+	if (lseek(fd, offset, SEEK_SET) == -1) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to seek to correct position");
+	}
+	sftp_str_t data = sftp_alloc_str(len);
+	if (data == nullptr) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to allocate buffer");
+	}
+	rlen = read(fd, data->c_str, len);
+	if (rlen == 0) {
+		// EOF
+		free_sftp_str(data);
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "End of file");
+	}
+	if (rlen == -1) {
+		// Error
+		free_sftp_str(data);
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Failed");
+	}
+	data->len = rlen;
+	bool ret = sftps_send_data(sbbs->sftp_state, data);
+	free_sftp_str(data);
+	/*
+	 * A successful transfer is defined as the last byte of the file
+	 * being transmitted to the remote.
+	 */
+	uint8_t byte;
+	if (read(fd, &byte, 1) == 0)
+		record_transfer(sbbs, sbbs->sftp_filedes[fidx], false);
+
+	return ret;
+}
+
+static bool
+sftp_write(sftp_filehandle_t handle, uint64_t offset, sftp_str_t data, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	unsigned fidx = parse_file_handle(sbbs, handle);
+	ssize_t rlen;
+
+	sbbs->lprintf(LOG_DEBUG, "SFTP write(%.*s, %" PRIu64 ", %" PRIu32 ")", handle->len, handle->c_str, offset, data->len);
+	if (data->len == 0) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_OK, "Nothing done, as requested");
+	}
+	if (fidx == UINT_MAX) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Invalid file handle");
+	}
+	int fd = sbbs->sftp_filedes[fidx]->fd;
+	if (fd == -1) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Invalid file handle");
+	}
+	if (lseek(fd, offset, SEEK_SET) == -1) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to seek to correct position");
+	}
+	rlen = write(fd, data->c_str, data->len);
+	if (rlen == -1) {
+		// Error
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Failed");
+	}
+	if (rlen != data->len) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "Short write... I dunno.");
+	}
+	return sftps_send_error(sbbs->sftp_state, SSH_FX_OK, "Wrote");
+}
+
+static bool
+sftp_realpath(sftp_str_t path, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	char *rp = sftp_parse_realpath(sbbs, path);
+	sbbs->lprintf(LOG_DEBUG, "SFTP realpath(%.*s)", path->len, path->c_str);
+	if (rp == nullptr) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "No idea where that is boss");
+	}
+	sftp_file_attr_t attr = dummy_attrs();
+	if (attr == nullptr) {
+		free(rp);
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to allocate attribute");
+	}
+	bool ret = sftps_send_name(sbbs->sftp_state, 1, &rp, &rp, &attr);
+	free(rp);
+	sftp_fattr_free(attr);
+
+	return ret;
+}
+
+static bool
+sftp_opendir(sftp_str_t path, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	constexpr size_t nddes = sizeof(sbbs->sftp_dirdes) / sizeof(sbbs->sftp_dirdes[0]);
+	unsigned ddidx;
+	sftp_str_t h;
+
+	sbbs->lprintf(LOG_DEBUG, "SFTP opendir(%.*s)", path->len, path->c_str);
+	// See if there's an available file descriptor
+	for (ddidx = 0; ddidx < nddes; ddidx++) {
+		if (sbbs->sftp_dirdes[ddidx] == nullptr)
+			break;
+	}
+	if (ddidx == nddes) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Too many open file descriptors");
+	}
+	path_map pmap(sbbs, path->c_str, MAP_READ);
+	if (pmap.result() != MAP_TO_DIR)
+		return pmap.cleanup();
+	sbbs->sftp_dirdes[ddidx] = static_cast<sftp_dirdescriptor_t>(malloc(sizeof(*sbbs->sftp_dirdes[ddidx])));
+	if (pmap.is_static()) {
+		sbbs->sftp_dirdes[ddidx]->is_static = true;
+		sbbs->sftp_dirdes[ddidx]->info.rootdir.mapping = pmap.info.rootdir.mapping;
+		sbbs->sftp_dirdes[ddidx]->info.rootdir.idx = dot;
+	}
+	else {
+		sbbs->sftp_dirdes[ddidx]->is_static = false;
+		sbbs->sftp_dirdes[ddidx]->info.filebase.lib = pmap.info.filebase.lib;
+		sbbs->sftp_dirdes[ddidx]->info.filebase.dir = pmap.info.filebase.dir;
+		sbbs->sftp_dirdes[ddidx]->info.filebase.idx = dot;
+	}
+	h = sftp_asprintf("D:%u", ddidx + 1);
+	if (h == nullptr) {
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Handle allocation failure");
+	}
+	return sftps_send_handle(sbbs->sftp_state, h);
+}
+
+// TODO: This is still too ugly... should be split into multiple functions.
+static bool
+sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	unsigned didx = parse_dir_handle(sbbs, handle);
+	sftp_file_attr_t attr;
+	sftp_dirdescriptor_t dd;
+	char tmppath[MAX_PATH + 1];
+	char cwd[MAX_PATH + 1];
+	char *vpath;
+	char *lname;
+	char *ename;
+	bool ret;
+	struct pathmap *pm;
+
+	sbbs->lprintf(LOG_DEBUG, "SFTP readdir(%.*s)", handle->len, handle->c_str);
+	if (didx == UINT_MAX)
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Invalid handle");
+	dd = sbbs->sftp_dirdes[didx];
+	pm = static_cast<struct pathmap *>(dd->info.rootdir.mapping);
+	if (dd->is_static) {
+		char *link;
+
+		if (dd->info.rootdir.idx == no_more_files) {
+			return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
+		}
+		if (dd->info.rootdir.idx == dot) {
+			char *dir = const_cast<char *>(".");
+			snprintf(tmppath, sizeof(tmppath), pm->sftp_patt, sbbs->useron.alias);
+			remove_trailing_slash(tmppath);
+			return generic_dot_entry(sbbs, dir, tmppath, &dd->info.rootdir.idx);
+		}
+		if (dd->info.rootdir.idx == dotdot) {
+			if (pm->sftp_patt[1]) {
+				char *dir = const_cast<char *>("..");
+				snprintf(tmppath, sizeof(tmppath) - 2 /* for dir */, pm->sftp_patt, sbbs->useron.alias);
+				strcat(tmppath, dir);
+				return generic_dot_realpath_entry(sbbs, dir, tmppath, &dd->info.rootdir.idx);
+			}
+			else
+				dd->info.rootdir.idx++;
+		}
+		if (dd->info.rootdir.idx == 0) {
+			unsigned sf;
+			for (sf = 0; sf < static_files_sz; sf++) {
+				if (&static_files[sf] == pm) {
+					dd->info.rootdir.idx = sf;
+					break;
+				}
+			}
+			if (sf == static_files_sz)
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Corrupt directory handle");
+		}
+		copy_path(cwd, pm->sftp_patt);
+		while (static_files[dd->info.rootdir.idx].sftp_patt != nullptr) {
+			dd->info.rootdir.idx++;
+			if (static_files[dd->info.rootdir.idx].sftp_patt == nullptr) {
+				dd->info.rootdir.idx = no_more_files;
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
+			}
+			copy_path_from_dir(tmppath, static_files[dd->info.rootdir.idx].sftp_patt);
+			if (strcmp(cwd, tmppath))
+				continue;
+			if (static_files[dd->info.rootdir.idx].real_patt) {
+				sprintf(tmppath, static_files[dd->info.rootdir.idx].real_patt, sbbs->cfg.data_dir, sbbs->useron.number);
+				if (access(tmppath, F_OK))
+					continue;
+			}
+			sprintf(tmppath, static_files[dd->info.rootdir.idx].sftp_patt, sbbs->useron.alias);
+			remove_trailing_slash(tmppath);
+			attr = get_attrs(sbbs, tmppath, &link);
+			if (attr == nullptr)
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Attributes allocation failure");
+			lname = get_longname(sbbs, tmppath, link, attr);
+			if (lname == nullptr) {
+				sftp_fattr_free(attr);
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Longname allocation failure");
+			}
+			vpath = getfname(tmppath);
+			ret = sftps_send_name(sbbs->sftp_state, 1, &vpath, &lname, &attr);
+			free(lname);
+			sftp_fattr_free(attr);
+			return ret;
+		}
+	}
+	else {
+		if (dd->info.filebase.lib == -1) {
+			// /files/ (ie: list of libs)
+			if (dd->info.filebase.idx == no_more_files) {
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
+			}
+			if (dd->info.filebase.idx == dot) {
+				char *dir = const_cast<char *>(".");
+				strcpy(tmppath, SLASH_FILES);
+				return generic_dot_entry(sbbs, dir, tmppath, &dd->info.filebase.idx);
+			}
+			if (dd->info.filebase.idx == dotdot) {
+				char *dir = const_cast<char *>("..");
+				strcpy(tmppath, "/");
+				return generic_dot_entry(sbbs, dir, tmppath, &dd->info.filebase.idx);
+			}
+			while (dd->info.filebase.idx < sbbs->cfg.total_libs) {
+				if (dd->info.filebase.idx >= sbbs->cfg.total_libs) {
+					dd->info.filebase.idx = no_more_files;
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
+				}
+				if (!can_user_access_lib(&sbbs->cfg, dd->info.filebase.idx, &sbbs->useron, &sbbs->client)) {
+					dd->info.filebase.idx++;
+					continue;
+				}
+				attr = get_lib_attrs(sbbs, dd->info.filebase.idx);
+				if (attr == nullptr)
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Attributes allocation failure");
+				ename = expand_slash(sbbs->cfg.lib[dd->info.filebase.idx]->lname);
+				if (ename == nullptr) {
+					sftp_fattr_free(attr);
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Ename allocation failure");
+				}
+				lname = get_longname(sbbs, ename, nullptr, attr);
+				if (lname == nullptr) {
+					free(ename);
+					sftp_fattr_free(attr);
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Longname allocation failure");
+				}
+				ret = sftps_send_name(sbbs->sftp_state, 1, &ename, &lname, &attr);
+				free(ename);
+				free(lname);
+				sftp_fattr_free(attr);
+				dd->info.filebase.idx++;
+				return ret;
+			}
+		}
+		else if (dd->info.filebase.dir == -1) {
+			// /files/somelib (ie: list of dirs)
+			if (dd->info.filebase.idx == no_more_files) {
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
+			}
+			if (dd->info.filebase.idx == dot) {
+				char *dir = const_cast<char *>(".");
+				attr = get_lib_attrs(sbbs, dd->info.filebase.lib);
+				return generic_dot_attr_entry(sbbs, dir, attr, nullptr, &dd->info.filebase.idx);
+			}
+			if (dd->info.filebase.idx == dotdot) {
+				char *dir = const_cast<char *>("..");
+				strcpy(tmppath, SLASH_FILES);
+				return generic_dot_entry(sbbs, dir, tmppath, &dd->info.filebase.idx);
+			}
+			while (dd->info.filebase.idx < sbbs->cfg.total_dirs) {
+				if (dd->info.filebase.idx >= sbbs->cfg.total_dirs) {
+					dd->info.filebase.idx = no_more_files;
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
+				}
+				if (sbbs->cfg.dir[dd->info.filebase.idx]->lib != dd->info.filebase.lib) {
+					dd->info.filebase.idx++;
+					continue;
+				}
+				if (!can_user_access_dir(&sbbs->cfg, dd->info.filebase.idx, &sbbs->useron, &sbbs->client)) {
+					dd->info.filebase.idx++;
+					continue;
+				}
+				attr = get_dir_attrs(sbbs, dd->info.filebase.idx);
+				if (attr == nullptr)
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Attributes allocation failure");
+				ename = expand_slash(sbbs->cfg.dir[dd->info.filebase.idx]->lname);
+				if (ename == nullptr)
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "EName allocation failure");
+				lname = get_longname(sbbs, ename, nullptr, attr);
+				if (lname == nullptr) {
+					free(ename);
+					sftp_fattr_free(attr);
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Longname allocation failure");
+				}
+				ret = sftps_send_name(sbbs->sftp_state, 1, &ename, &lname, &attr);
+				free(ename);
+				free(lname);
+				sftp_fattr_free(attr);
+				dd->info.filebase.idx++;
+				return ret;
+			}
+		}
+		else {
+			// /files/somelib/somedir (ie: list of files)
+			if (dd->info.filebase.idx == no_more_files) {
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
+			}
+			if (dd->info.filebase.idx == dot) {
+				char *dir = const_cast<char *>(".");
+				attr = get_dir_attrs(sbbs, dd->info.filebase.dir);
+				return generic_dot_attr_entry(sbbs, dir, attr, nullptr, &dd->info.filebase.idx);
+			}
+			if (dd->info.filebase.idx == dotdot) {
+				char *dir = const_cast<char *>("..");
+				attr = get_lib_attrs(sbbs, dd->info.filebase.lib);
+				return generic_dot_attr_entry(sbbs, dir, attr, nullptr, &dd->info.filebase.idx);
+			}
+			// Find the "next"* file number.
+			smb_t     smb{};
+			idxrec_t  idx{};
+			smbfile_t file{};
+			if (smb_open_dir(&sbbs->cfg, &smb, dd->info.filebase.dir) != SMB_SUCCESS) {
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Can't open dir");
+			}
+			do  {
+				if (dd->info.filebase.idx == 0) {
+					if (smb_getfirstidx(&smb, &idx) != SMB_SUCCESS) {
+						smb_close(&smb);
+						dd->info.filebase.idx = no_more_files;
+						return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No files at all");
+					}
+					file.hdr.number = idx.number;
+				}
+				else {
+					file.hdr.number = dd->info.filebase.idx;
+					if (smb_getmsgidx(&smb, &file) != SMB_SUCCESS) {
+						smb_close(&smb);
+						return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Can't find previous file in index");
+					}
+					file.hdr.number = 0;
+					file.idx_offset++;
+				}
+				int result = smb_getmsgidx(&smb, &file);
+				if (result == SMB_ERR_HDR_OFFSET) {
+					smb_close(&smb);
+					dd->info.filebase.idx = no_more_files;
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
+				}
+				if (result != SMB_SUCCESS) {
+					smb_close(&smb);
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Can't find next file in index");
+				}
+				dd->info.filebase.idx = file.file_idx.idx.number;
+				if (!(file.file_idx.idx.attr & MSG_FILE))
+					continue;
+				if (file.file_idx.idx.attr & (MSG_DELETE | MSG_PRIVATE))
+					continue;
+				if ((file.file_idx.idx.attr & (MSG_MODERATED | MSG_VALIDATED)) == MSG_MODERATED)
+					continue;
+				if (file.hdr.auxattr & MSG_NODISP)
+					continue;
+				if (smb_getfile(&smb, &file, file_detail_normal) != SMB_SUCCESS) {
+					smb_close(&smb);
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Can't get file header");
+				}
+				attr = get_filebase_attrs(sbbs, dd->info.filebase.dir, &file);
+				if (attr == nullptr) {
+					smb_freefilemem(&file);
+					smb_close(&smb);
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Can't get file attributes");
+				}
+				strcpy(tmppath, file.name);
+				sprintf(cwd, "%s/%s", sbbs->cfg.dir[dd->info.filebase.dir]->path, file.name);
+				smb_freefilemem(&file);
+				if (access(cwd, R_OK)) {
+					sftp_fattr_free(attr);
+					continue;
+				}
+				smb_close(&smb);
+				break;
+			} while (1);
+			char *lname = get_longname(sbbs, cwd, nullptr, attr);
+			if (lname == nullptr) {
+				sftp_fattr_free(attr);
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Can't get file header");
+			}
+			vpath = tmppath;
+			ret = sftps_send_name(sbbs->sftp_state, 1, &vpath, &lname, &attr);
+			free(lname);
+			sftp_fattr_free(attr);
+			return ret;
+		}
+	}
+	return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
+
+	return true;
+}
+
+static bool
+sftp_stat(sftp_str_t path, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	unsigned lcnt = 0;
+
+	sbbs->lprintf(LOG_DEBUG, "SFTP stat(%.*s)", path->len, path->c_str);
+
+	std::unique_ptr<path_map> cpmap(new path_map(sbbs, path->c_str, MAP_STAT));
+
+	if (!cpmap->success())
+		return cpmap->cleanup();
+	while (cpmap->sftp_link_target != nullptr) {
+		lcnt++;
+		if (lcnt > 50) {
+			return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Too many symbolic links");
+		}
+		std::unique_ptr<path_map> newpmap(new path_map(sbbs, cpmap->sftp_link_target, MAP_STAT));
+		if (!newpmap->success())
+			return newpmap->cleanup();
+		cpmap = std::move(newpmap);
+	}
+	sftp_file_attr_t attr = get_attrs(sbbs, cpmap->sftp_path, nullptr);
+	if (attr == nullptr)
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to allocate attribute");
+	bool ret = sftps_send_attrs(sbbs->sftp_state, attr);
+	sftp_fattr_free(attr);
+
+	return ret;
+}
+
+static bool
+sftp_lstat(sftp_str_t path, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	sbbs->lprintf(LOG_DEBUG, "SFTP lstat(%.*s)", path->len, path->c_str);
+	path_map pmap(sbbs, path->c_str, MAP_STAT);
+	if (!pmap.success())
+		return pmap.cleanup();
+	sftp_file_attr_t attr = get_attrs(sbbs, pmap.sftp_path, nullptr);
+	if (attr == nullptr)
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to allocate attribute");
+	bool ret = sftps_send_attrs(sbbs->sftp_state, attr);
+	sftp_fattr_free(attr);
+
+	return ret;
+}
+
+static bool
+sftp_readlink(sftp_str_t path, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	sbbs->lprintf(LOG_DEBUG, "SFTP readlink(%.*s)", path->len, path->c_str);
+	path_map pmap(sbbs, path->c_str, MAP_STAT);
+	if (pmap.result() != MAP_TO_SYMLINK)
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Not a symlink");
+	sftp_file_attr_t attr = dummy_attrs();
+	if (attr == nullptr)
+		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to allocate attribute");
+	bool ret = sftps_send_name(sbbs->sftp_state, 1, &pmap.sftp_link_target, &pmap.sftp_link_target, &attr);
+	sftp_fattr_free(attr);
+
+	return ret;
+}
+
+#if NOTYET
+static bool
+sftp_fstat(sftp_filehandle_t handle, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	return true;
+}
+
+static bool
+sftp_remove(sftp_str_t filename, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	return true;
+}
+
+static bool
+sftp_rename(sftp_str_t oldpath, sftp_str_t newpath, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	return true;
+}
+
+static bool
+sftp_extended(sftp_str_t request, sftp_rx_pkt_t pkt, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	return true;
+}
+
+static bool
+sftp_setstat(sftp_str_t path, sftp_file_attr_t attributes, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	return true;
+}
+
+static bool
+sftp_fsetstat(sftp_filehandle_t handle, sftp_file_attr_t attributes, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	return true;
+}
+
+static bool
+sftp_mkdir(sftp_str_t path, sftp_file_attr_t attributes, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	return true;
+}
+
+static bool
+sftp_rmdir(sftp_str_t path, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	return true;
+}
+
+static bool
+sftp_symlink(sftp_str_t linkpath, sftp_str_t targetpath, void *cb_data)
+{
+	sbbs_t *sbbs = (sbbs_t *)cb_data;
+	return true;
+}
+#endif
+
+}
+
+bool
+sbbs_t::init_sftp(int cid)
+{
+	sftp_state = sftps_begin(sftp_send, this);
+	if (sftp_state != nullptr) {
+		sftp_state->lprintf = sftp_lprintf;
+		sftp_state->cleanup_callback = sftp_cleanup_callback;
+		sftp_state->realpath = sftp_realpath;
+		sftp_state->open = sftp_open;
+		sftp_state->close = sftp_close;
+		sftp_state->read = sftp_read;
+		sftp_state->write = sftp_write;
+		sftp_state->opendir = sftp_opendir;
+		sftp_state->readdir = sftp_readdir;
+		sftp_state->stat = sftp_stat;
+		sftp_state->lstat = sftp_lstat;
+		sftp_state->readlink = sftp_readlink;
+		sftp_channel = cid;
+		lprintf(LOG_INFO, "SFTP initialized on channel %d", cid);
+		return true;
+	}
+	return false;
+}
+
+bool
+sbbs_t::sftp_end(void)
+{
+	sftps_end(sftp_state);
+	sftp_state = nullptr;
+	return true;
 }

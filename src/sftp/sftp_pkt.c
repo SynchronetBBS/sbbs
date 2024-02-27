@@ -112,19 +112,51 @@ sftp_have_full_pkt(sftp_rx_pkt_t pkt)
 	return false;
 }
 
+bool
+sftp_rx_pkt_reclaim(sftp_rx_pkt_t *pktp)
+{
+	assert(pktp);
+	if (pktp == NULL)
+		return false;
+	sftp_rx_pkt_t pkt = *pktp;
+	if (pkt == NULL)
+		return true;
+	uint32_t reclaimable = pkt->sz - pkt->used;
+	if (reclaimable < SFTP_MIN_PACKET_ALLOC)
+		return true;
+	reclaimable = (reclaimable / SFTP_MIN_PACKET_ALLOC) * SFTP_MIN_PACKET_ALLOC;
+	size_t newsz = pkt->sz - reclaimable;
+	if (newsz < SFTP_MIN_PACKET_ALLOC)
+		newsz = SFTP_MIN_PACKET_ALLOC;
+	if (newsz >= pkt->sz)
+		return true;
+	void *newbuf = realloc(pkt, newsz);
+	if (newbuf != NULL) {
+		*pktp = newbuf;
+		pkt = *pktp;
+		pkt->sz = newsz;
+	}
+	return true;
+}
+
 void
 sftp_remove_packet(sftp_rx_pkt_t pkt)
 {
 	if (!pkt)
 		return;
-	uint32_t sz = sftp_pkt_sz(pkt);
-	assert(sz <= pkt->used);
-	uint32_t newsz = pkt->used - sz - sizeof(uint32_t);
-	uint8_t *src = (uint8_t *)&pkt->len;
-	src += sizeof(uint32_t);
-	src += sz;
-	memmove(&pkt->len, src, newsz);
-	pkt->used = newsz;
+	if (!sftp_have_pkt_sz(pkt)) {
+		pkt->used = 0;
+	}
+	else {
+		uint32_t sz = sftp_pkt_sz(pkt);
+		assert(sz <= pkt->used);
+		uint32_t newsz = pkt->used - sz - sizeof(uint32_t);
+		uint8_t *src = (uint8_t *)&pkt->len;
+		src += sizeof(uint32_t);
+		src += sz;
+		memmove(&pkt->len, src, newsz);
+		pkt->used = newsz;
+	}
 	pkt->cur = 0;
 	// TODO: realloc() smaller?
 	return;
@@ -244,29 +276,31 @@ grow_tx(sftp_tx_pkt_t *pktp, uint32_t need)
 	sftp_tx_pkt_t pkt = *pktp;
 	size_t newsz;
 	uint32_t oldsz;
-	uint32_t oldused;
+	bool zero_used = false;
 	if (pkt == NULL) {
 		newsz = offsetof(struct sftp_tx_pkt, type) + need;
-		oldused = 0;
 		oldsz = 0;
+		zero_used = true;
 	}
 	else {
 		newsz = pkt->used + need;
-		oldused = pkt->used;
 		oldsz = pkt->sz;
 	}
 	if (newsz > oldsz) {
-		if (newsz % SFTP_MIN_PACKET_ALLOC)
-			newsz = newsz / SFTP_MIN_PACKET_ALLOC + SFTP_MIN_PACKET_ALLOC;
+		size_t remain = newsz % SFTP_MIN_PACKET_ALLOC;
+		if (remain != 0)
+			newsz += (SFTP_MIN_PACKET_ALLOC - remain);
 		void *new_buf = realloc(pkt, newsz);
 		if (new_buf == NULL)
 			return false;
 		*pktp = (sftp_tx_pkt_t)new_buf;
+		if (zero_used)
+			(*pktp)->used = 0;
 		pkt = *pktp;
 		pkt->sz = newsz;
-		pkt->used = oldused;
 	}
 	assert(pkt->sz >= pkt->used);
+	assert(pkt->sz >= (pkt->used + need));
 	return true;
 }
 
@@ -280,13 +314,32 @@ sftp_tx_pkt_reset(sftp_tx_pkt_t *pktp)
 	if (pkt == NULL)
 		return true;
 	pkt->used = 0;
-	if (pkt->sz == SFTP_MIN_PACKET_ALLOC)
+	return true;
+}
+
+bool
+sftp_tx_pkt_reclaim(sftp_tx_pkt_t *pktp)
+{
+	assert(pktp);
+	if (pktp == NULL)
+		return false;
+	sftp_tx_pkt_t pkt = *pktp;
+	if (pkt == NULL)
 		return true;
-	void *newbuf = realloc(pkt, SFTP_MIN_PACKET_ALLOC);
+	uint32_t reclaimable = pkt->sz - pkt->used;
+	if (reclaimable < SFTP_MIN_PACKET_ALLOC)
+		return true;
+	reclaimable = (reclaimable / SFTP_MIN_PACKET_ALLOC) * SFTP_MIN_PACKET_ALLOC;
+	size_t newsz = pkt->sz - reclaimable;
+	if (newsz < SFTP_MIN_PACKET_ALLOC)
+		newsz = SFTP_MIN_PACKET_ALLOC;
+	if (newsz >= pkt->sz)
+		return true;
+	void *newbuf = realloc(pkt, newsz);
 	if (newbuf != NULL) {
 		*pktp = newbuf;
 		pkt = *pktp;
-		pkt->sz = SFTP_MIN_PACKET_ALLOC;
+		pkt->sz = newsz;
 	}
 	return true;
 }
@@ -327,6 +380,8 @@ sftp_appendstring(sftp_tx_pkt_t *pktp, sftp_str_t s)
 	uint32_t oldused;
 
 	assert(pktp);
+	if (pktp == NULL)
+		return false;
 	if (*pktp == NULL)
 		oldused = 0;
 	else

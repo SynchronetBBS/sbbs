@@ -230,7 +230,7 @@ static const char* uifc_showbuf_ctx_prop_desc[] = {
 	,"forced height"
 	,NULL
 };
-static const char* uifc_gotoxy_ctx_prop_desc[] = {
+static const char* uifc_getstrxy_ctx_prop_desc[] = {
 	 "Last pressed key"
 	,NULL
 };
@@ -389,7 +389,7 @@ static JSBool js_getstrxy_ctx_constructor(JSContext *cx, uintN argc, jsval *argl
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used to retain UIFC getstrxy context", 317);
 	js_DescribeSyncConstructor(cx, obj, "To create a new UIFCGetStrXYContext object: <tt>var ctx = new UIFCGetStrXYContext();</tt>");
-	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", uifc_showbuf_ctx_prop_desc, JSPROP_READONLY);
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", uifc_getstrxy_ctx_prop_desc, JSPROP_READONLY);
 #endif
 	return JS_TRUE;
 }

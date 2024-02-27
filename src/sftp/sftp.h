@@ -1,9 +1,81 @@
 #ifndef SFTP_SFTP_H
 #define SFTP_SFTP_H
 
-#include <eventwrap.h>
-#include <inttypes.h>
-#include <threadwrap.h>
+#include "eventwrap.h"
+#include "gen_defs.h"
+#include "str_list.h"
+#include "threadwrap.h"
+
+// POSIX permissions... as required.
+#ifndef S_IFMT
+#define S_IFMT   0170000                /* type of file mask */
+#endif
+#ifndef S_IFSOCK
+#define S_IFSOCK 0140000                /* socket */
+#endif
+#ifndef S_IFLNK
+#define S_IFLNK  0120000                /* symbolic link */
+#endif
+#ifndef S_IFREG
+#define S_IFREG  0100000                /* regular */
+#endif
+#ifndef S_IFBLK
+#define S_IFBLK  0060000                /* block special */
+#endif
+#ifndef S_IFDIR
+#define S_IFDIR  0040000                /* directory */
+#endif
+#ifndef S_IFCHR
+#define S_IFCHR  0020000                /* character special */
+#endif
+#ifndef S_IFIFO
+#define S_IFIFO  0010000                /* named pipe (fifo) */
+#endif
+#ifndef S_ISUID
+#define S_ISUID 0004000                 /* set user id on execution */
+#endif
+#ifndef S_ISGID
+#define S_ISGID 0002000                 /* set group id on execution */
+#endif
+#ifndef S_ISVTX
+#define S_ISVTX  0001000                /* save swapped text even after use */
+#endif
+#ifndef S_IRWXU
+#define S_IRWXU 0000700                 /* RWX mask for owner */
+#endif
+#ifndef S_IRUSR
+#define S_IRUSR 0000400                 /* R for owner */
+#endif
+#ifndef S_IWUSR
+#define S_IWUSR 0000200                 /* W for owner */
+#endif
+#ifndef S_IXUSR
+#define S_IXUSR 0000100                 /* X for owner */
+#endif
+#ifndef S_IRWXG
+#define S_IRWXG 0000070                 /* RWX mask for group */
+#endif
+#ifndef S_IRGRP
+#define S_IRGRP 0000040                 /* R for group */
+#endif
+#ifndef S_IWGRP
+#define S_IWGRP 0000020                 /* W for group */
+#endif
+#ifndef S_IXGRP
+#define S_IXGRP 0000010                 /* X for group */
+#endif
+#ifndef S_IRWXO
+#define S_IRWXO 0000007                 /* RWX mask for other */
+#endif
+#ifndef S_IROTH
+#define S_IROTH 0000004                 /* R for other */
+#endif
+#ifndef S_IWOTH
+#define S_IWOTH 0000002                 /* W for other */
+#endif
+#ifndef S_IXOTH
+#define S_IXOTH 0000001                 /* X for other */
+#endif
 
 // draft-ietf-secsh-filexfer-02
 
@@ -60,6 +132,7 @@
 
 #define SFTP_MIN_PACKET_ALLOC 4096
 #define SFTP_VERSION UINT32_C(3)
+#define SFTP_MAX_PACKET_SIZE (256*1024)
 
 typedef struct sftp_tx_pkt {
 	uint32_t sz;
@@ -120,7 +193,8 @@ typedef struct sftp_server_state {
 	sftp_rx_pkt_t rxp;
 	sftp_tx_pkt_t txp;
 	void *cb_data;
-	void (*lprintf)(const char *fmt, ...);
+	void (*lprintf)(void *cb_data, const char *fmt, ...);
+	void (*cleanup_callback)(void *cb_data);
 	bool (*open)(sftp_str_t filename, uint32_t flags, sftp_file_attr_t attributes, void *cb_data);
 	bool (*close)(sftp_str_t handle, void *cb_data);
 	bool (*read)(sftp_filehandle_t handle, uint64_t offset, uint32_t len, void *cb_data);
@@ -168,8 +242,11 @@ bool sftp_appendcstring(sftp_tx_pkt_t *pktp, const char *str);
 void sftp_free_tx_pkt(sftp_tx_pkt_t pkt);
 void sftp_free_rx_pkt(sftp_rx_pkt_t pkt);
 bool sftp_prep_tx_packet(sftp_tx_pkt_t pkt, uint8_t **buf, size_t *sz);
+bool sftp_tx_pkt_reclaim(sftp_tx_pkt_t *pktp);
+bool sftp_rx_pkt_reclaim(sftp_rx_pkt_t *pktp);
 
 /* sftp_str.c */
+sftp_str_t sftp_alloc_str(uint32_t len);
 sftp_str_t sftp_strdup(const char *str);
 sftp_str_t sftp_asprintf(const char *format, ...);
 sftp_str_t sftp_memdup(uint8_t *buf, uint32_t sz);
@@ -185,6 +262,7 @@ bool sftpc_open(sftpc_state_t state, char *path, uint32_t flags, sftp_file_attr_
 bool sftpc_close(sftpc_state_t state, sftp_filehandle_t *handle);
 bool sftpc_read(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, uint32_t len, sftp_str_t *ret);
 bool sftpc_write(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, sftp_str_t data);
+bool sftpc_reclaim(sftpc_state_t state);
 
 /* sftp_attr.c */
 sftp_file_attr_t sftp_fattr_alloc(void);
@@ -194,14 +272,15 @@ bool sftp_fattr_get_size(sftp_file_attr_t fattr, uint64_t *sz);
 void sftp_fattr_set_uid_gid(sftp_file_attr_t fattr, uint32_t uid, uint32_t gid);
 bool sftp_fattr_get_uid(sftp_file_attr_t fattr, uint32_t *uid);
 bool sftp_fattr_get_gid(sftp_file_attr_t fattr, uint32_t *gid);
-void sftp_fattr_set_permissions(sftp_file_attr_t fattr, uint64_t perm);
-bool sftp_fattr_get_permissions(sftp_file_attr_t fattr, uint64_t *perm);
+void sftp_fattr_set_permissions(sftp_file_attr_t fattr, uint32_t perm);
+bool sftp_fattr_get_permissions(sftp_file_attr_t fattr, uint32_t *perm);
 void sftp_fattr_set_times(sftp_file_attr_t fattr, uint32_t atime, uint32_t mtime);
 bool sftp_fattr_get_atime(sftp_file_attr_t fattr, uint32_t *atime);
 bool sftp_fattr_get_mtime(sftp_file_attr_t fattr, uint32_t *mtime);
 bool sftp_fattr_add_ext(sftp_file_attr_t *fattr, sftp_str_t type, sftp_str_t data);
 sftp_str_t sftp_fattr_get_ext_type(sftp_file_attr_t fattr, uint32_t index);
 sftp_str_t sftp_fattr_get_ext_data(sftp_file_attr_t fattr, uint32_t index);
+sftp_str_t sftp_fattr_get_ext_by_type(sftp_file_attr_t fattr, const char *type);
 uint32_t sftp_fattr_get_ext_count(sftp_file_attr_t fattr);
 bool sftp_appendfattr(sftp_tx_pkt_t *pktp, sftp_file_attr_t fattr);
 sftp_file_attr_t sftp_getfattr(sftp_rx_pkt_t pkt);
@@ -211,5 +290,11 @@ bool sftps_recv(sftps_state_t state, uint8_t *buf, uint32_t sz);
 sftps_state_t sftps_begin(bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data), void *cb_data);
 bool sftps_send_packet(sftps_state_t state);
 bool sftps_send_error(sftps_state_t state, uint32_t code, const char *msg);
+bool sftps_end(sftps_state_t state);
+bool sftps_send_handle(sftps_state_t state, sftp_str_t handle);
+bool sftps_send_data(sftps_state_t state, sftp_str_t data);
+bool sftps_send_name(sftps_state_t state, uint32_t count, str_list_t fnames, str_list_t lnames, sftp_file_attr_t *attrs);
+bool sftps_send_attrs(sftps_state_t state, sftp_file_attr_t attr);
+bool sftps_reclaim(sftps_state_t state);
 
 #endif

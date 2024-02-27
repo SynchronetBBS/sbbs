@@ -34,8 +34,8 @@ appendheader(SFTP_STATIC_TYPE state, uint8_t type)
 		return false;
 	if (!sftp_appendbyte(&state->txp, type))
 		return false;
-	if (type != SSH_FXP_INIT) {
-		if (!sftp_append32(&state->txp, ++state->id))
+	if (type != SSH_FXP_INIT && type != SSH_FXP_VERSION) {
+		if (!sftp_append32(&state->txp, state->id))
 			return false;
 	}
 	return true;
@@ -63,4 +63,17 @@ exit_function(SFTP_STATIC_TYPE state, bool retval)
 	state->running--;
 	pthread_mutex_unlock(&state->mtx);
 	return retval;
+}
+
+static bool
+appendstring(SFTP_STATIC_TYPE state, sftp_str_t s)
+{
+	bool ret = sftp_appendstring(&state->txp, s);
+	return ret;
+}
+
+static bool
+appendfattr(SFTP_STATIC_TYPE state, sftp_file_attr_t fattr)
+{
+	return sftp_appendfattr(&state->txp, fattr);
 }

@@ -90,6 +90,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/scandirs$(OFILE)\
 			$(MTOBJODIR)/scansubs$(OFILE)\
 			$(MTOBJODIR)/scfgsave$(OFILE)\
+			$(MTOBJODIR)/sftp$(OFILE)\
 			$(MTOBJODIR)/sockopts$(OFILE)\
 			$(MTOBJODIR)/str$(OFILE)\
 			$(MTOBJODIR)/telgate$(OFILE)\

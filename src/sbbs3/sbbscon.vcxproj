@@ -39,6 +39,7 @@
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\hash\hash.props" />
     <Import Project="..\..\3rdp\win32.release\mosquitto\mosquitto.props" />
+    <Import Project="..\sftp\sftp.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -50,6 +51,7 @@
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\hash\hash.props" />
     <Import Project="..\..\3rdp\win32.release\mosquitto\mosquitto.props" />
+    <Import Project="..\sftp\sftp.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -189,6 +191,10 @@
     </ProjectReference>
     <ProjectReference Include="websrvr.vcxproj">
       <Project>{7c6f645f-bb54-4018-8ae9-6c38626325f6}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\sftp\sftp.vcxproj">
+      <Project>{4c69a1d2-182a-45d3-ad33-54a8a91b387d}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
