@@ -457,24 +457,24 @@ function updateInsertModeOnScreen_DCTStyle(pEditRight, pEditBottom, pInsertMode)
 //  pEditRight: The rightmost column on the screen for the edit window
 function DrawQuoteWindowTopBorder_DCTStyle(pQuoteWinHeight, pEditLeft, pEditRight)
 {
-   // Generate the top border vairable only once.
-   if (typeof(DrawQuoteWindowTopBorder_DCTStyle.border) == "undefined")
-   {
-      DrawQuoteWindowTopBorder_DCTStyle.border = gConfigSettings.DCTColors.QuoteWinBorderColor
-                                + UPPER_LEFT_SINGLE + HORIZONTAL_SINGLE + " "
-                                + gConfigSettings.DCTColors.QuoteWinBorderTextColor
-                                + "Quote Window " + gConfigSettings.DCTColors.QuoteWinBorderColor;
-      var curLength = console.strlen(DrawQuoteWindowTopBorder_DCTStyle.border);
-      var borderWidth = pEditRight - pEditLeft;
-      for (var i = curLength; i < borderWidth; ++i)
-         DrawQuoteWindowTopBorder_DCTStyle.border += HORIZONTAL_SINGLE;
-      DrawQuoteWindowTopBorder_DCTStyle.border += UPPER_RIGHT_SINGLE;
-   }
+	// Generate the top border vairable only once.
+	if (typeof(DrawQuoteWindowTopBorder_DCTStyle.border) == "undefined")
+	{
+		DrawQuoteWindowTopBorder_DCTStyle.border = gConfigSettings.DCTColors.QuoteWinBorderColor
+		                                         + UPPER_LEFT_SINGLE + HORIZONTAL_SINGLE + " "
+		                                         + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+		                                         + "Quote Window " + gConfigSettings.DCTColors.QuoteWinBorderColor;
+		var curLength = console.strlen(DrawQuoteWindowTopBorder_DCTStyle.border);
+		var borderWidth = pEditRight - pEditLeft;
+		for (var i = curLength; i < borderWidth; ++i)
+			DrawQuoteWindowTopBorder_DCTStyle.border += HORIZONTAL_SINGLE;
+		DrawQuoteWindowTopBorder_DCTStyle.border += UPPER_RIGHT_SINGLE;
+	}
 
-   // Draw the top border line
-   var screenLine = console.screen_rows - pQuoteWinHeight + 1;
-   console.gotoxy(pEditLeft, screenLine);
-   console.print(DrawQuoteWindowTopBorder_DCTStyle.border);
+	// Draw the top border line
+	var screenLine = console.screen_rows - pQuoteWinHeight + 1;
+	console.gotoxy(pEditLeft, screenLine);
+	console.print(DrawQuoteWindowTopBorder_DCTStyle.border);
 }
 
 // Draws the bottom border of the quote window, DCT Edit style.  Note:
@@ -486,46 +486,46 @@ function DrawQuoteWindowTopBorder_DCTStyle(pQuoteWinHeight, pEditLeft, pEditRigh
 //  pEditRight: The rightmost column of the edit area
 function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
 {
-   // Generate the bottom border vairable only once.
-   if (typeof(DrawQuoteWindowBottomBorder_DCTStyle.border) == "undefined")
-   {
-      // Create a string containing the quote help text.
-      var quoteHelpText = gConfigSettings.DCTColors.QuoteWinBorderTextColor
-                         + "[Enter] Accept" + gConfigSettings.DCTColors.QuoteWinBorderColor
-                         + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
-                         + "[^Q/ESC] End" + gConfigSettings.DCTColors.QuoteWinBorderColor
-                         + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
-                         + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn/Home/End] Scroll"
-                         + gConfigSettings.DCTColors.QuoteWinBorderColor + HORIZONTAL_SINGLE
-                         + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor;
-						 /*
-						 + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn] Scroll"
-                         + gConfigSettings.DCTColors.QuoteWinBorderColor + HORIZONTAL_SINGLE
-                         + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
-                         + "[F/L] First/last page";
-						 */
-      var helpTextLen = console.strlen(quoteHelpText);
+	// Generate the bottom border vairable only once.
+	if (typeof(DrawQuoteWindowBottomBorder_DCTStyle.border) == "undefined")
+	{
+		// Create a string containing the quote help text.
+		var quoteHelpText = gConfigSettings.DCTColors.QuoteWinBorderTextColor
+		                 + "[Enter] Accept" + gConfigSettings.DCTColors.QuoteWinBorderColor
+		                 + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+		                 + "[^Q/ESC] End" + gConfigSettings.DCTColors.QuoteWinBorderColor
+		                 + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+		                 + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn/Home/End] Scroll"
+		                 + gConfigSettings.DCTColors.QuoteWinBorderColor + HORIZONTAL_SINGLE
+		                 + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor;
+		                 /*
+		                 + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn] Scroll"
+		                 + gConfigSettings.DCTColors.QuoteWinBorderColor + HORIZONTAL_SINGLE
+		                 + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+		                 + "[F/L] First/last page";
+		                 */
+		var helpTextLen = console.strlen(quoteHelpText);
 
-      // Figure out the starting horizontal position on the screen so that
-      // the quote help text line can be centered.
-      var helpTextStartX = Math.floor((console.screen_columns/2) - (helpTextLen/2));
+		// Figure out the starting horizontal position on the screen so that
+		// the quote help text line can be centered.
+		var helpTextStartX = Math.floor((console.screen_columns/2) - (helpTextLen/2));
 
-      // Start creating DrawQuoteWindowBottomBorder_DCTStyle.border with the
-      // bottom border lines, up until helpTextStartX.
-      DrawQuoteWindowBottomBorder_DCTStyle.border = gConfigSettings.DCTColors.QuoteWinBorderColor
-                                                  + LOWER_LEFT_SINGLE;
-      for (var XPos = pEditLeft+2; XPos < helpTextStartX; ++XPos)
-         DrawQuoteWindowBottomBorder_DCTStyle.border += HORIZONTAL_SINGLE;
-      // Add the help text, then display the rest of the bottom border characters.
-      DrawQuoteWindowBottomBorder_DCTStyle.border += quoteHelpText
-                                                   + gConfigSettings.DCTColors.QuoteWinBorderColor;
-      for (var XPos = helpTextStartX + helpTextLen; XPos <= pEditRight-2; ++XPos)
-         DrawQuoteWindowBottomBorder_DCTStyle.border += HORIZONTAL_SINGLE;
-      DrawQuoteWindowBottomBorder_DCTStyle.border += LOWER_RIGHT_SINGLE;
-   }
+		// Start creating DrawQuoteWindowBottomBorder_DCTStyle.border with the
+		// bottom border lines, up until helpTextStartX.
+		DrawQuoteWindowBottomBorder_DCTStyle.border = gConfigSettings.DCTColors.QuoteWinBorderColor + LOWER_LEFT_SINGLE;
+		for (var XPos = pEditLeft+2; XPos < helpTextStartX; ++XPos)
+			DrawQuoteWindowBottomBorder_DCTStyle.border += HORIZONTAL_SINGLE;
+		// Add the help text, then display the rest of the bottom border characters.
+		DrawQuoteWindowBottomBorder_DCTStyle.border += quoteHelpText + gConfigSettings.DCTColors.QuoteWinBorderColor;
+		// Previously, the rightmost column in this loop was pEditRight-2, but now it looks like that was resulting
+		// in this line being 2 characters shorter than it should be.
+		for (var XPos = helpTextStartX + helpTextLen; XPos <= pEditRight; ++XPos)
+			DrawQuoteWindowBottomBorder_DCTStyle.border += HORIZONTAL_SINGLE;
+		DrawQuoteWindowBottomBorder_DCTStyle.border += LOWER_RIGHT_SINGLE;
+	}
 
-   // Print the border text on the screen
-   console.print(DrawQuoteWindowBottomBorder_DCTStyle.border);
+	// Print the border text on the screen
+	console.print(DrawQuoteWindowBottomBorder_DCTStyle.border);
 }
 
 // Prompts the user for a yes/no question, DCTEdit-style.
