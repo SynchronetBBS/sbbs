@@ -2244,6 +2244,7 @@ void input_thread(void *arg)
 	}
 	sbbs->online=false;
 	sbbs->sys_status|=SS_ABORT;	/* as though Ctrl-C were hit */
+	SetEvent(sbbs->inbuf.data_event); // terminate incom() wait
 
     sbbs->input_thread_running = false;
 	sbbs->terminate_output_thread = true;
@@ -3960,6 +3961,9 @@ void sbbs_t::hangup(void)
 int sbbs_t::incom(unsigned int timeout)
 {
 	uchar	ch;
+
+	if(!online)
+		return NOINP;
 
 	// If we think we may have some input, send all our output
 	if (RingBufFull(&outbuf) != 0) {
