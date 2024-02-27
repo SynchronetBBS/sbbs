@@ -526,7 +526,7 @@ bool sbbs_t::logon()
 	getsmsg(useron.number); 		/* Moved from further down */
 	sync();
 	c=0;
-	for(i=1;i<=cfg.sys_nodes;i++)
+	for(i=1;i<=cfg.sys_nodes;i++) {
 		if(i!=cfg.node_num) {
 			getnodedat(i,&node,0);
 			if(!(cfg.sys_misc&SM_NONODELIST)
@@ -546,6 +546,11 @@ bool sbbs_t::logon()
 				hangup();
 				return(false); 
 			}
+		}
+	}
+	for(i=1;i<=cfg.sys_nodes;i++) {
+		if(i!=cfg.node_num) {
+			getnodedat(i,&node,0);
 			if(thisnode.status!=NODE_QUIET
 				&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
 				&& !(node.misc&NODE_AOFF) && node.useron!=useron.number) {
@@ -555,6 +560,7 @@ bool sbbs_t::logon()
 						,connection));
 			} 
 		}
+	}
 
 	if(cfg.sys_exp_warn && useron.expire && useron.expire>now /* Warn user of coming */
 		&& (useron.expire-now)/(1440L*60L)<=cfg.sys_exp_warn) /* expiration */
