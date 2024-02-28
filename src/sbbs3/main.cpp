@@ -5509,6 +5509,11 @@ NO_SSH:
 			if(cryptStatusError(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_OPTION_NET_CONNECTTIMEOUT, startup->ssh_connect_timeout)))
 				sbbs->log_crypt_error_status_sock(i, "setting connect timeout");
 
+			if (startup->options & BBS_OPT_SSH_ANYAUTH) {
+				if(cryptStatusError(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_OPTIONS, CRYPT_SSHOPTION_NONE_AUTH)))
+					sbbs->log_crypt_error_status_sock(i, "setting none auth");
+			}
+
 			if(cryptStatusError(i=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_PRIVATEKEY, ssh_context))) {
 				sbbs->log_crypt_error_status_sock(i, "setting private key");
 				SSH_END(client_socket);

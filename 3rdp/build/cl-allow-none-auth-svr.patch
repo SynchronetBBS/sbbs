@@ -1,0 +1,35 @@
+--- session/ssh2_authsvr.c.orig	2024-02-27 23:34:46.193489000 -0500
++++ session/ssh2_authsvr.c	2024-02-27 23:41:23.757054000 -0500
+@@ -969,6 +969,21 @@
+ 		{
+ 		sMemDisconnect( &stream );
+ 
++		if( GET_FLAG( sessionInfoPtr->protocolFlags, SSH_PFLAG_DUMMYUSERAUTH ) )
++		{
++			status = sendResponseSuccess( sessionInfoPtr );
++			if( cryptStatusError( status ) )
++				return( status );
++			CFI_CHECK_UPDATE( "sendResponseSuccess" );
++			ENSURES( CFI_CHECK_SEQUENCE_6( "readAuthPacketSSH2", 
++										   "checkAuthPacketSSH2", 
++										   "checkQueryValidity", "readAuthInfo", 
++										   "findSessionInfoEx",
++										   "sendResponseSuccess" ) );
++			*userAuthInfo = USERAUTH_SUCCESS;
++			return( CRYPT_OK );
++		}
++
+ 		/* Tell the client which authentication methods can continue */
+ 		status = sendResponseFailureInfo( sessionInfoPtr, allowPubkeyAuth );
+ 		if( cryptStatusError( status ) )
+--- kernel/attr_acl.c.orig	2024-02-27 23:48:28.589935000 -0500
++++ kernel/attr_acl.c	2024-02-27 23:48:44.993835000 -0500
+@@ -3900,7 +3900,7 @@
+ 		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 2, CRYPT_MAX_TEXTSIZE ) ),
+ 	MKACL_N(	/* SSH protocol options */
+ 		CRYPT_SESSINFO_SSH_OPTIONS,
+-		ST_NONE, ST_NONE, ST_SESS_SSH, 
++		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
+ 		MKPERM_SESSIONS( Rxx_RWx ),
+ 		ROUTE( OBJECT_TYPE_SESSION ),
+ 		RANGE( CRYPT_SSHOPTION_NONE, CRYPT_SSHOPTION_MAX ) ),

@@ -274,6 +274,10 @@ bool sbbs_t::answer()
 					}
 				}
 			}
+			else {
+				activate_ssh = true;
+				SetEvent(ssh_active);
+			}
 		}
 		else {
 			for(ssh_failed=0; ssh_failed < 3; ssh_failed++) {
