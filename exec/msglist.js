@@ -637,11 +637,26 @@ function get_msg_lines(msgbase, msg, hdr, source, hex, wrap, chop)
 	return text;
 }
 
+function prop_val(msg, prop)
+{
+	var val = msg[prop].toLowerCase();
+
+	if(prop === 'subject') {
+		while(val.slice(0, 3) == 're:') {
+			val = val.slice(3);
+			while(val.slice(0, 1) == ' ')
+				val = val.slice(1);
+		}
+	}
+	return val;
+}
+
 function next_msg(list, current, prop)
 {
+	const val = prop_val(list[current], prop);
 	var next = current + 1;
 	while(next < list.length) {
-		if(list[next][prop].toLowerCase() == list[current][prop].toLowerCase())
+		if(prop_val(list[next], prop) == val)
 			break;
 		next++;
 	}
@@ -653,9 +668,10 @@ function next_msg(list, current, prop)
 
 function prev_msg(list, current, prop)
 {
+	const val = prop_val(list[current], prop);
 	var prev = current - 1;
 	while(prev >= 0) {
-		if(list[prev][prop].toLowerCase() == list[current][prop].toLowerCase())
+		if(prop_val(list[prev], prop) == val)
 			break;
 		prev--;
 	}
