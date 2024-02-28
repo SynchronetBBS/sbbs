@@ -1981,6 +1981,10 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 							sbbs->sftp_channel = cid;
 						}
 					}
+					if (cname && sbbs->session_channel == -1 && strcmp(cname, "shell") == 0) {
+						sbbs->session_channel = cid;
+					}
+
 					if (cid != sbbs->sftp_channel && cid != sbbs->session_channel) {
 						lprintf(LOG_WARNING, "Node %d SSH WARNING: attempt to use channel '%s' (%d != %d or %d)"
 							, sbbs->cfg.node_num, cname ? cname : "<unknown>", cid, sbbs->session_channel, sbbs->sftp_channel);
