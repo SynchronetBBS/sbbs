@@ -1986,22 +1986,29 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 					}
 
 					if (cid != sbbs->sftp_channel && cid != sbbs->session_channel) {
-						lprintf(LOG_WARNING, "Node %d SSH WARNING: attempt to use channel '%s' (%d != %d or %d)"
-							, sbbs->cfg.node_num, cname ? cname : "<unknown>", cid, sbbs->session_channel, sbbs->sftp_channel);
-						if (cname) {
-							free_crypt_attrstr(cname);
-							cname = nullptr;
-						}
-						if (ssname) {
-							free_crypt_attrstr(ssname);
-							ssname = nullptr;
-						}
-						closing_channel = cid;
-						if (cryptStatusError(status = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0))) {
-							sbbs->log_crypt_error_status_sock(status, "closing channel");
-							return status;
+						if (cname == nullptr || strcmp(cname, "session") != 0) {
+							lprintf(LOG_WARNING, "Node %d SSH WARNING: attempt to use channel '%s' (%d != %d or %d)"
+								, sbbs->cfg.node_num, cname ? cname : "<unknown>", cid, sbbs->session_channel, sbbs->sftp_channel);
+							if (cname) {
+								free_crypt_attrstr(cname);
+								cname = nullptr;
+							}
+							if (ssname) {
+								free_crypt_attrstr(ssname);
+								ssname = nullptr;
+							}
+							closing_channel = cid;
+							if (cryptStatusError(status = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE, 0))) {
+								sbbs->log_crypt_error_status_sock(status, "closing channel");
+								return status;
+							}
 						}
 					}
+					free_crypt_attrstr(cname);
+					cname = nullptr;
+					free_crypt_attrstr(ssname);
+					ssname = nullptr;
+
 					continue;
 				}
 				if (cid != -1) {
