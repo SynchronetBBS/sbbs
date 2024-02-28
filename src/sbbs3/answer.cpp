@@ -254,88 +254,111 @@ bool sbbs_t::answer()
 
 		tmp[0]=0;
 		pthread_mutex_lock(&ssh_mutex);
-		for(ssh_failed=0; ssh_failed < 3; ssh_failed++) {
+
+		if (startup->options & BBS_OPT_SSH_ANYAUTH) {
 			lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_ACTIVE", client_socket);
 			if(cryptStatusError(i=cryptSetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1))) {
 				log_crypt_error_status_sock(i, "setting session active");
 				activate_ssh = false;
 				// TODO: Add private key here...
-				if(i != CRYPT_ENVELOPE_RESOURCE) {
-					break;
+				if(i == CRYPT_ENVELOPE_RESOURCE) {
+					activate_ssh = set_authresponse(true);
+					lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_ACTIVE", client_socket);
+					i = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
+					if (cryptStatusError(i)) {
+						log_crypt_error_status_sock(i, "setting session active");
+						activate_ssh = false;
+					}
+					else {
+						SetEvent(ssh_active);
+					}
 				}
 			}
-			else {
-				SetEvent(ssh_active);
-				break;
-			}
-			free_crypt_attrstr(pubkey);
-			pubkey = nullptr;
-			pubkeysz = 0;
-			ctmp = get_crypt_attribute(ssh_session, CRYPT_SESSINFO_USERNAME);
-			if (ctmp) {
-				SAFECOPY(rlogin_name, parse_login(ctmp));
-				free_crypt_attrstr(ctmp);
-				ctmp = get_crypt_attribute(ssh_session, CRYPT_SESSINFO_PASSWORD);
-				if (ctmp) {
-					SAFECOPY(tmp, ctmp);
-					free_crypt_attrstr(ctmp);
+		}
+		else {
+			for(ssh_failed=0; ssh_failed < 3; ssh_failed++) {
+				lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_ACTIVE", client_socket);
+				if(cryptStatusError(i=cryptSetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1))) {
+					log_crypt_error_status_sock(i, "setting session active");
+					activate_ssh = false;
+					// TODO: Add private key here...
+					if(i != CRYPT_ENVELOPE_RESOURCE) {
+						break;
+					}
 				}
 				else {
-					free_crypt_attrstr(pubkey);
-					pubkey = get_binary_crypt_attribute(ssh_session, CRYPT_SESSINFO_PUBLICKEY, &pubkeysz);
+					SetEvent(ssh_active);
+					break;
 				}
-				lprintf(LOG_DEBUG,"SSH login: '%s'", rlogin_name);
-			}
-			else {
-				rlogin_name[0] = 0;
-				continue;
-			}
-			useron.number = find_login_id(&cfg, rlogin_name);
-			if(useron.number) {
-				if (getuserdat(&cfg,&useron) == 0) {
-					if (pubkey) {
-						if (check_pubkey(&cfg, useron.number, pubkey, pubkeysz)) {
-							SAFECOPY(rlogin_pass, tmp);
-							activate_ssh = set_authresponse(true);
+				free_crypt_attrstr(pubkey);
+				pubkey = nullptr;
+				pubkeysz = 0;
+				ctmp = get_crypt_attribute(ssh_session, CRYPT_SESSINFO_USERNAME);
+				if (ctmp) {
+					SAFECOPY(rlogin_name, parse_login(ctmp));
+					free_crypt_attrstr(ctmp);
+					ctmp = get_crypt_attribute(ssh_session, CRYPT_SESSINFO_PASSWORD);
+					if (ctmp) {
+						SAFECOPY(tmp, ctmp);
+						free_crypt_attrstr(ctmp);
+					}
+					else {
+						free_crypt_attrstr(pubkey);
+						pubkey = get_binary_crypt_attribute(ssh_session, CRYPT_SESSINFO_PUBLICKEY, &pubkeysz);
+					}
+					lprintf(LOG_DEBUG,"SSH login: '%s'", rlogin_name);
+				}
+				else {
+					rlogin_name[0] = 0;
+					continue;
+				}
+				useron.number = find_login_id(&cfg, rlogin_name);
+				if(useron.number) {
+					if (getuserdat(&cfg,&useron) == 0) {
+						if (pubkey) {
+							if (check_pubkey(&cfg, useron.number, pubkey, pubkeysz)) {
+								SAFECOPY(rlogin_pass, tmp);
+								activate_ssh = set_authresponse(true);
+							}
+						}
+						else {
+							if (stricmp(tmp, useron.pass) == 0) {
+								SAFECOPY(rlogin_pass, tmp);
+								activate_ssh = set_authresponse(true);
+							}
+							else if(ssh_failed) {
+								if(cfg.sys_misc&SM_ECHO_PW)
+									safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt: '%s'"
+										,useron.number,useron.alias,tmp);
+								else
+									safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt"
+										,useron.number,useron.alias);
+								logline(LOG_NOTICE,"+!",str);
+								badlogin(useron.alias, tmp);
+								useron.number=0;
+							}
 						}
 					}
 					else {
-						if (stricmp(tmp, useron.pass) == 0) {
-							SAFECOPY(rlogin_pass, tmp);
-							activate_ssh = set_authresponse(true);
-						}
-						else if(ssh_failed) {
-							if(cfg.sys_misc&SM_ECHO_PW)
-								safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt: '%s'"
-									,useron.number,useron.alias,tmp);
-							else
-								safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt"
-									,useron.number,useron.alias);
-							logline(LOG_NOTICE,"+!",str);
-							badlogin(useron.alias, tmp);
-							useron.number=0;
-						}
+						lprintf(LOG_NOTICE, "SSH failed to read user data for %s", rlogin_name);
 					}
 				}
 				else {
-					lprintf(LOG_NOTICE, "SSH failed to read user data for %s", rlogin_name);
+					if(cfg.sys_misc&SM_ECHO_PW)
+						lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s' (password: %s)", rlogin_name, truncsp(tmp));
+					else
+						lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s'", rlogin_name);
+					badlogin(rlogin_name, tmp);
+					// Enable SSH so we can create a new user...
+					activate_ssh = set_authresponse(true);
 				}
+				if (pubkey) {
+					free_crypt_attrstr(pubkey);
+					pubkey = nullptr;
+				}
+				if (!activate_ssh)
+					set_authresponse(false);
 			}
-			else {
-				if(cfg.sys_misc&SM_ECHO_PW)
-					lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s' (password: %s)", rlogin_name, truncsp(tmp));
-				else
-					lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s'", rlogin_name);
-				badlogin(rlogin_name, tmp);
-				// Enable SSH so we can create a new user...
-				activate_ssh = set_authresponse(true);
-			}
-			if (pubkey) {
-				free_crypt_attrstr(pubkey);
-				pubkey = nullptr;
-			}
-			if (!activate_ssh)
-				set_authresponse(false);
 		}
 		if (activate_ssh) {
 			int cid;
@@ -388,7 +411,7 @@ bool sbbs_t::answer()
 					}
 					else if (tnamelen == 9 && strncmp(tname, "subsystem", 9) == 0) {
 						i=cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ARG1, tname, &tnamelen);
-						if (startup->options&BBS_OPT_ALLOW_SFTP && tnamelen == 4 && strncmp(tname, "sftp", 4) == 0) {
+						if (((startup->options & (BBS_OPT_ALLOW_SFTP | BBS_OPT_SSH_ANYAUTH)) == BBS_OPT_ALLOW_SFTP) && tnamelen == 4 && strncmp(tname, "sftp", 4) == 0) {
 							if (useron.number) {
 								activate_ssh = init_sftp(cid);
 								cols = 0;

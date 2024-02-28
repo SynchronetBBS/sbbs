@@ -1972,7 +1972,7 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 					if (strcmp(cname, "subsystem") == 0) {
 						ssname = get_crypt_attribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ARG1);
 					}
-					if (startup->options & BBS_OPT_ALLOW_SFTP && ssname && cname && sbbs->sftp_channel == -1 && strcmp(ssname, "sftp") == 0) {
+					if (((startup->options & (BBS_OPT_ALLOW_SFTP | BBS_OPT_SSH_ANYAUTH)) == BBS_OPT_ALLOW_SFTP) && ssname && cname && sbbs->sftp_channel == -1 && strcmp(ssname, "sftp") == 0) {
 						if (sbbs->init_sftp(cid)) {
 							if (tgot > 0) {
 								if (!sftps_recv(sbbs->sftp_state, reinterpret_cast<uint8_t *>(inbuf), tgot))

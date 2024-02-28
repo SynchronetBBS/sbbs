@@ -205,6 +205,7 @@ static struct init_field {
 #define BBS_OPT_NO_NEWDAY_EVENTS	(1<<14)	/* Don't check for a new day in event thread */
 #define BBS_OPT_NO_TELNET			(1<<15)	/* Don't accept incoming telnet connections */
 #define BBS_OPT_ALLOW_SFTP			(1<<16)	/* Allow logins via BSD SFTP		*/
+#define BBS_OPT_SSH_ANYAUTH			(1<<17)	/* Blindly accept any SSH credentials */
 #define BBS_OPT_HAPROXY_PROTO   	(1<<26)	/* Incoming requests are via HAproxy */
 #define BBS_OPT_NO_RECYCLE			(1<<27)	/* Disable recycling of server		*/
 #define BBS_OPT_GET_IDENT			(1<<28)	/* Get Identity (RFC 1413)			*/
@@ -233,6 +234,7 @@ static ini_bitdesc_t bbs_options[] = {
 	{ BBS_OPT_NO_NEWDAY_EVENTS ,"NO_NEWDAY_EVENTS" },
 	{ BBS_OPT_NO_TELNET        ,"NO_TELNET"        },
 	{ BBS_OPT_ALLOW_SFTP       ,"ALLOW_SFTP"       },
+	{ BBS_OPT_SSH_ANYAUTH      ,"SSH_ANYAUTH"      },
 	{ BBS_OPT_NO_RECYCLE       ,"NO_RECYCLE"       },
 	{ BBS_OPT_GET_IDENT        ,"GET_IDENT"        },
 	{ BBS_OPT_NO_JAVASCRIPT    ,"NO_JAVASCRIPT"    },
