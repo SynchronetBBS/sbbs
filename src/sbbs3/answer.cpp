@@ -375,19 +375,16 @@ bool sbbs_t::answer()
 				unsigned waits = 0;
 				term_output_disabled = true;
 				do {
-					int ccid;
 					tnamelen = 0;
 					i=cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, cid);
-					if (cryptStatusError(i)) {
-						log_crypt_error_status_sock(i, "setting channel id");
-					}
+					log_crypt_error_status_sock(i, "setting channel id");
 					if (cryptStatusOK(i)) {
 						i=cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE, tname, &tnamelen);
 						log_crypt_error_status_sock(i, "getting channel type");
 					}
 					if (cryptStatusError(i)) {
 						activate_ssh = false;
-						tnamelen = 0;
+						break;
 					}
 					if (tnamelen == 7 && strnicmp(tname, "session", 7) == 0) {
 						pthread_mutex_unlock(&ssh_mutex);
@@ -409,12 +406,17 @@ bool sbbs_t::answer()
 						pthread_mutex_lock(&ssh_mutex);
 						continue;
 					}
-					if (tnamelen == 5 && strnicmp(tname, "shell", 5) == 0) {
+					else if (tnamelen == 5 && strnicmp(tname, "shell", 5) == 0) {
 						term_output_disabled = false;
 						session_channel = cid;
 					}
 					else if (tnamelen == 9 && strncmp(tname, "subsystem", 9) == 0) {
 						i=cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ARG1, tname, &tnamelen);
+						log_crypt_error_status_sock(i, "getting subsystem argument");
+						if (cryptStatusError(i)) {
+							activate_ssh = false;
+							break;
+						}
 						if (((startup->options & (BBS_OPT_ALLOW_SFTP | BBS_OPT_SSH_ANYAUTH)) == BBS_OPT_ALLOW_SFTP) && tnamelen == 4 && strncmp(tname, "sftp", 4) == 0) {
 							if (useron.number) {
 								activate_ssh = init_sftp(cid);
@@ -443,13 +445,6 @@ bool sbbs_t::answer()
 						badlogin(rlogin_name, rlogin_pass, "SSH", &client_addr, /* delay: */false);
 						// Fail because there's no session.
 						activate_ssh = false;
-					}
-					if (cryptStatusOK(i)) {
-						i=cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &ccid);
-						if (cid == -1)
-							cid = ccid;
-						if (cryptStatusOK(i) && ccid != cid)
-							continue;
 					}
 					break;
 				} while(1);
