@@ -446,6 +446,8 @@ bool sbbs_t::answer()
 					}
 					if (cryptStatusOK(i)) {
 						i=cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &ccid);
+						if (cid == -1)
+							cid = ccid;
 						if (cryptStatusOK(i) && ccid != cid)
 							continue;
 					}
