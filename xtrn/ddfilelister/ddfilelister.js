@@ -102,6 +102,10 @@
  *                              New sort option in the config file: PER_DIR_CFG, which has Synchronet sort
  *                              the file list according to the file directory's configuration (SCFG >
  *                              File Areas > library > File Directories > dir > Advanced Options > Sort Value and Direction)
+ * 2024-02-28 Eric Oulashin     Version 2.17
+ *                              Fix for possibly no file description when adding to the batch DL queue.
+ *                              Also, fix for file description screen refresh (off by one column) for extended
+ *                              descriptions
 */
 
 "use strict";
@@ -146,8 +150,8 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 
 // Lister version information
-var LISTER_VERSION = "2.16";
-var LISTER_DATE = "2024-02-10";
+var LISTER_VERSION = "2.17";
+var LISTER_DATE = "2024-02-28";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1496,7 +1500,8 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 					for (var i = 0; i < batchDLQueueStats.filenames.length; ++i)
 					{
 						queueStats += shortenFilename(batchDLQueueStats.filenames[i].filename, frameInnerWidth, false) + "\r\n";
-						queueStats += batchDLQueueStats.filenames[i].desc.substr(0, frameInnerWidth) + "\r\n";
+						if (typeof(batchDLQueueStats.filenames[i].desc) === "string")
+							queueStats += batchDLQueueStats.filenames[i].desc.substr(0, frameInnerWidth) + "\r\n";
 						if (i < batchDLQueueStats.filenames.length-1)
 							queueStats += "\r\n";
 					}
@@ -1578,7 +1583,8 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 					for (var i = 0; i < batchDLQueueStats.filenames.length; ++i)
 					{
 						console.print(batchDLQueueStats.filenames[i].filename + "\r\n");
-						console.print(batchDLQueueStats.filenames[i].desc + "\r\n");
+						if (typeof(batchDLQueueStats.filenames[i].desc) === "string")
+							console.print(batchDLQueueStats.filenames[i].desc + "\r\n");
 						if (i < batchDLQueueStats.filenames.length-1)
 							console.crlf();
 					}
@@ -1647,7 +1653,10 @@ function getUserDLQueueStats()
 				//allIniObjs[i].name
 				//allIniObjs[i].dir
 				//allIniObjs[i].desc
-				retObj.filenames.push({ filename: allIniObjs[i].name, desc: allIniObjs[i].desc });
+				retObj.filenames.push({
+					filename: allIniObjs[i].name,
+					desc: typeof(allIniObjs[i].desc) === "string" ? allIniObjs[i].desc : ""
+				});
 				// dir is the internal directory code
 				if (allIniObjs[i].dir.length > 0)
 				{
@@ -4784,12 +4793,12 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 		// However, printf() doesn't account for attribute codes and thus may not
 		// fill the rest of the width.  So, we do that manually.
 		var descLine = substrWithAttrCodes(fileDescArray[i], 0, maxDescLen);
-		var lineTextLength = console.strlen(descLine);
+		var lineTextLength = console.strlen(descLine, P_AUTO_UTF8);
 		if (lineTextLength > 0)
 		{
 			console.gotoxy(startX, screenRowForPrinting++);
 			console.print(descLine);
-			var remainingLen = maxDescLen - lineTextLength;
+			var remainingLen = maxDescLen - lineTextLength + 1;
 			if (remainingLen > 0)
 				printf("%-*s", remainingLen, "");
 		}

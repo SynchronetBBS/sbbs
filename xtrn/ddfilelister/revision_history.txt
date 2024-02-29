@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.17     2024-02-28   Fix for possibly no file description when adding to the
+                      batch DL queue.
+                      Also, fix for file description screen refresh (off by one
+                      column) for extended descriptions
 2.16     2024-10-10   New sort option in the config file: PER_DIR_CFG, which has
                       Synchronet sort the file list according to the file
                       directory's configuration (SCFG > File Areas > library >
