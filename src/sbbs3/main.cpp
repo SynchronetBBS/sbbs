@@ -1957,8 +1957,10 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 				if (cid == closing_channel)
 					continue;
 				if (cid == sbbs->sftp_channel) {
+					pthread_mutex_unlock(&sbbs->ssh_mutex);
 					if (!sftps_recv(sbbs->sftp_state, reinterpret_cast<uint8_t *>(inbuf), tgot))
 						sbbs->sftp_end();
+					pthread_mutex_lock(&sbbs->ssh_mutex);
 				}
 				else if (cid == sbbs->session_channel) {
 					*got = tgot;
@@ -1975,8 +1977,10 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 					if (((startup->options & (BBS_OPT_ALLOW_SFTP | BBS_OPT_SSH_ANYAUTH)) == BBS_OPT_ALLOW_SFTP) && ssname && cname && sbbs->sftp_channel == -1 && strcmp(ssname, "sftp") == 0) {
 						if (sbbs->init_sftp(cid)) {
 							if (tgot > 0) {
+								pthread_mutex_lock(&sbbs->ssh_mutex);
 								if (!sftps_recv(sbbs->sftp_state, reinterpret_cast<uint8_t *>(inbuf), tgot))
 									sbbs->sftp_end();
+								pthread_mutex_lock(&sbbs->ssh_mutex);
 							}
 							sbbs->sftp_channel = cid;
 						}
