@@ -350,7 +350,7 @@ is_in_filebase(const char *path)
 }
 
 /*
- * Replaces a Solidus (aka: slash) with a U+2215 Division Slash
+ * Replaces a Solidus (aka: slash) with a U+29F8 Big Solidus
  * The SFTP protocol requires the use of Solidus as a path separator,
  * and dir and lib names can contain it.  Rather than a visually
  * different and one-way mapping as used in the FTP server, take
@@ -379,8 +379,8 @@ expand_slash(const char *orig)
 	for (p2 = orig; *p2; p2++) {
 		if (*p2 == '/') {
 			*p3++ = 0xe2;
-			*p3++ = 0x88;
-			*p3++ = 0x95;
+			*p3++ = 0xa7;
+			*p3++ = 0xb8;
 		}
 		else
 			*p3++ = *p2;
