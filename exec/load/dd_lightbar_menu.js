@@ -1178,9 +1178,10 @@ function DDLightbarMenu_DrawBorder()
 //             at the end of the item's text.
 //  pScreenX: Optional - The horizontal screen coordinate of the start of the item
 //  pScreenY: Optional - The vertical screen coordinate of the start of the item
-function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreenX, pScreenY)
+function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreenX, pScreenY, pCalculatedItemStartX, pCalculatedItemY)
 {
 	var itemText = this.GetItemText(pIdx, pItemLen, pHighlight, pSelected);
+	/*
 	// If the text is UTF-8 and the user's terminal is UTF-8, then set the mode bit accordingly.
 	// If the text is UTF-8 and the user's terminal doesn't support UTF-8, convert the text to cp437.
 	var printModeBits = P_NONE;
@@ -1191,6 +1192,8 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 		else
 			itemText = utf8_cp437(itemText);
 	}
+	*/
+	var printModeBits = P_AUTO_UTF8;
 	// If this.nextDrawOnlyItemSubstr is an object with start & end properties,
 	// then create a string that is shortened from itemText from those start & end
 	// indexes, and add color to it.
@@ -1203,7 +1206,92 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 		console.print(shortenedText + "\x01n", printModeBits);
 	}
 	else
-		console.print(itemText + "\x01n", printModeBits);
+	{
+		// var userConsoleSupportsUTF8 = (typeof(USER_UTF8) != "undefined" ? console.term_supports(USER_UTF8) : false);
+		// If the item has UTF-8 text, then one problem is that printing the whole string could result
+		// in the printed string length being shorter than expected (due to multi-byte characters),
+		// which can result in the inner text width not being completely filled.  If there are 'columns'
+		// of information within the item, the result is that the text wouldn't properly line up anymore.
+		// To deal with this, we'll check to see if the item color is an array (which specifies colors at
+		// text indexes), and if so, get the text substrings and use console.gotoxy() to write the parts
+		// of the item text in their proper places.
+		// Also, with the item that is currently highlighted with the background color, the background
+		// color wouldn't continue all the way.   So, we need to ensure we fill the whole text area.
+		if (this.ItemTextIsUTF8(pIdx))
+		{
+			// Figure out which color is needed for this item (normal/selected/unselectable/alternate)
+			var itemColor = this.GetColorForItem(pIdx, pHighlight); // pSelected
+			// If the item color is an array, then use substrings & console.gotoxy() to print the parts
+			// if the text in their proper locations
+			if (Array.isArray(itemColor) && itemColor.length > 0)
+			{
+				// Figure out the cursor location of the start of the item text
+				var itemStartX = 0;
+				var itemY = 0;
+				if (pCalculatedItemStartX != undefined && pCalculatedItemStartX != null && pCalculatedItemY != undefined && pCalculatedItemY != null)
+				{
+					itemStartX = pCalculatedItemStartX;
+					itemY = pCalculatedItemY;
+				}
+				else
+				{
+					itemStartX = this.pos.x;
+					itemY = this.pos.y + pIdx - this.topItemIdx;
+					if (this.borderEnabled)
+					{
+						++itemStartX;
+						++itemY;
+					}
+				}
+				// For each item in the colors array, get the substring of the item, position
+				// the cursor in the proper place, and print the substring of the item text
+				var itemStartIdx = 0;
+				var itemLen = 0;
+				for (var i = 0; i < itemColor.length; ++i)
+				{
+					itemLen = itemColor[i].end - itemColor[i].start;
+					var textToPrint = substrWithAttrCodes(itemText, itemStartIdx, itemLen);
+					console.gotoxy(itemStartX + itemColor[i].start, itemY);
+					console.print(textToPrint, P_AUTO_UTF8); // printModeBits
+					itemStartIdx += itemLen;
+
+					// If the printed length of the string is shorter than needed, then fill the
+					// remainder of the width with spaces.
+					var printedLen = console.strlen(textToPrint, P_AUTO_UTF8);
+					if (printedLen < itemLen)
+						printf("%*s", itemLen - printedLen, "");
+				}
+			}
+			else // The item color definition is not an array or has 0 length.  The color definition could be a string.
+			{
+				console.print(itemText + "\x01n", printModeBits);
+				// If the printed length of the text is shorter than needed, then fill the
+				// remainder of the width with spaces.
+				var itemLen = console.strlen(itemText, P_NONE);
+				var printedLen = console.strlen(itemText, P_AUTO_UTF8);
+				if (printedLen < itemLen)
+				{
+					console.print(this.GetColorForItem(pIdx, pHighlight));
+					printf("%*s", itemLen - printedLen, "");
+					console.attributes = "N";
+				}
+			}
+		}
+		else // The item text is not UTF-8, at least that we know of
+		{
+			console.print(itemText + "\x01n", printModeBits);
+			// If the printed length of the text is shorter than needed, then fill the
+			// remainder of the width with spaces.
+			var itemLen = console.strlen(itemText, P_NONE);
+			var printedLen = console.strlen(itemText, P_AUTO_UTF8);
+			if (printedLen < itemLen)
+			{
+				console.print(this.GetColorForItem(pIdx, pHighlight));
+				printf("%*s", itemLen - printedLen, "");
+				console.attributes = "N";
+			}
+		}
+	}
 }
 
 // Writes a menu item at its location on the menu.  This should only be called
@@ -1215,11 +1303,15 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 //  pSelected: Whether or not the item is selected
 function DDLightbarMenu_WriteItemAtItsLocation(pIdx, pHighlight, pSelected)
 {
+	var itemStartX = this.pos.x;
+	var itemY =  this.pos.y + pIdx - this.topItemIdx;
 	if (this.borderEnabled)
-		console.gotoxy(this.pos.x+1, this.pos.y+pIdx-this.topItemIdx+1);
-	else
-		console.gotoxy(this.pos.x, this.pos.y+pIdx-this.topItemIdx);
-	this.WriteItem(pIdx, null, pHighlight, pSelected);
+	{
+		++itemStartX;
+		++itemY;
+	}
+	console.gotoxy(itemStartX, itemY);
+	this.WriteItem(pIdx, null, pHighlight, pSelected, itemStartX, itemY);
 }
 
 // Draws part of the menu, starting at a certain location within the menu and
@@ -1751,7 +1843,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 		// process user input further
 		var mouseInputOnly_continue = false;
 		var continueOn = true;
-		while (continueOn)
+		while (continueOn && bbs.online && !js.terminated)
 		{
 			if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
 				this.UpdateScrollbarWithHighlightedItem();
@@ -1862,6 +1954,13 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			}
 			else // this.mouseEnabled is false
 				this.lastUserInput = getKeyWithESCChars(inputMode, this.inputTimeoutMS);
+				
+			
+			// If the user is no longer online (disconnected) or the JS engine has
+			// been terminated, then exit the loop now
+			if (bbs.online == 0 || js.terminated)
+				break;
+			
 
 			// If no further input processing needs to be done due to a mouse click
 			// action, then continue to the next loop iteration.
@@ -2143,7 +2242,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				this.lastUserInput = "Q"; // To signify quitting
 				userAnswerIsValid = true;
 			}
-		} while (!userAnswerIsValid);
+		} while (!userAnswerIsValid && bbs.online && !js.terminated);
 	}
 
 	// Set the screen color back to normal so that text written to the screen
@@ -3171,11 +3270,17 @@ function DDLightbarMenu_GetColorForItem(pItemIndex, pSelected)
 	if ((pItemIndex < 0) || (pItemIndex >= this.NumItems()))
 		return "";
 
-	var selected = (typeof(pSelected) == "boolean" ? pSelected : false);
-	if (selected)
-		return (this.GetItem(pItemIndex).useAltColors ? this.colors.altSelectedItemColor : this.colors.selectedItemColor);
+	var menuItem = this.GetItem(pItemIndex);
+	if (this.allowUnselectableItems && !menuItem.isSelectable)
+		return this.colors.unselectableItemColor;
 	else
-		return (this.GetItem(pItemIndex).useAltColors ? this.colors.altItemColor : this.colors.itemColor);
+	{
+		var selected = (typeof(pSelected) == "boolean" ? pSelected : false);
+		if (selected)
+			return (menuItem.useAltColors ? this.colors.altSelectedItemColor : this.colors.selectedItemColor);
+		else
+			return (menuItem.useAltColors ? this.colors.altItemColor : this.colors.itemColor);
+	}
 }
 
 // Returns either the selected or alternate selected color for an item
@@ -3321,8 +3426,6 @@ function DDLightbarMenu_CalcScrollbarBlocks()
 		this.scrollbarInfo.numNonSolidScrollBlocks = 0;
 	}
 }
-
-
 
 
 //////////////////////////////////////////////////////////
@@ -3828,7 +3931,7 @@ function getKeyWithESCChars(pGetKeyMode, pInputTimeoutMS)
 	// Input a key from the user and take action based on the user's input.  If
 	// the user is a sysop, don't use an input timeout.
 	var userInput = "";
-	if (user.compare_ars("SYSOP"))
+	if (user.is_sysop)
 		userInput = console.getkey(getKeyMode);
 	else
 		userInput = console.inkey(getKeyMode, inputTimeoutMS);
@@ -3921,57 +4024,4 @@ function findPageNumOfItemNum(pItemNum, pNumPerPage, pTotalNum, pReverseOrder)
 		itemPageNum = Math.ceil(pItemNum / pNumPerPage);
 
 	return itemPageNum;
-}
-
-
-
-
-function logStackTrace(levels) {
-    var callstack = [];
-    var isCallstackPopulated = false;
-    try {
-        i.dont.exist += 0; //doesn't exist- that's the point
-    } catch (e) {
-        if (e.stack) { //Firefox / chrome
-            var lines = e.stack.split('\n');
-            for (var i = 0, len = lines.length; i < len; i++) {
-                    callstack.push(lines[i]);
-            }
-            //Remove call to logStackTrace()
-            callstack.shift();
-            isCallstackPopulated = true;
-        }
-        else if (window.opera && e.message) { //Opera
-            var lines = e.message.split('\n');
-            for (var i = 0, len = lines.length; i < len; i++) {
-                if (lines[i].match(/^\s*[A-Za-z0-9\-_\$]+\(/)) {
-                    var entry = lines[i];
-                    //Append next line also since it has the file info
-                    if (lines[i + 1]) {
-                        entry += " at " + lines[i + 1];
-                        i++;
-                    }
-                    callstack.push(entry);
-                }
-            }
-            //Remove call to logStackTrace()
-            callstack.shift();
-            isCallstackPopulated = true;
-        }
-    }
-    if (!isCallstackPopulated) { //IE and Safari
-        var currentFunction = arguments.callee.caller;
-        while (currentFunction) {
-            var fn = currentFunction.toString();
-            var fname = fn.substring(fn.indexOf("function") + 8, fn.indexOf("(")) || "anonymous";
-            callstack.push(fname);
-            currentFunction = currentFunction.caller;
-        }
-    }
-    if (levels) {
-        console.print(callstack.slice(0, levels).join("\r\n"));
-    }
-    else {
-        console.print(callstack.join("\r\n"));
-    }
 }
