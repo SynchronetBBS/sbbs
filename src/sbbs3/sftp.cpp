@@ -1384,7 +1384,8 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 		if (dd->info.rootdir.idx == dotdot) {
 			if (pm->sftp_patt[1]) {
 				char *dir = const_cast<char *>("..");
-				snprintf(tmppath, sizeof(tmppath) - 2 /* for dir */, pm->sftp_patt, sbbs->useron.alias);
+				snprintf(tmppath, sizeof(tmppath) - 3 /* for dir */, pm->sftp_patt, sbbs->useron.alias);
+				tmppath[sizeof(tmppath) - 2] = 0;
 				strcat(tmppath, dir);
 				return generic_dot_realpath_entry(sbbs, dir, tmppath, &dd->info.rootdir.idx);
 			}
