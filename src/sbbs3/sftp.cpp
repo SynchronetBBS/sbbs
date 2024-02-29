@@ -737,8 +737,10 @@ find_lib(sbbs_t *sbbs, const char *path)
 		if (!can_user_access_lib(&sbbs->cfg, l, &sbbs->useron, &sbbs->client))
 			continue;
 		exp = expand_slash(sbbs->cfg.lib[l]->lname);
-		if (exp == nullptr)
+		if (exp == nullptr) {
+			free(p);
 			return -1;
+		}
 		if (strcmp(p, exp)) {
 			free(exp);
 			continue;
@@ -875,6 +877,12 @@ get_attrs(sbbs_t *sbbs, const char *path, char **link)
 	return ret;
 }
 
+static sftp_file_attr_t
+get_attrs(sbbs_t *sbbs, const char *path)
+{
+	return get_attrs(sbbs, path, nullptr);
+}
+
 static void
 copy_path(char *p, const char *fp)
 {
@@ -929,7 +937,9 @@ generic_dot_entry(sbbs_t *sbbs, char *fname, const char *path, int32_t *idx)
 {
 	char *link;
 	sftp_file_attr_t attr = get_attrs(sbbs, path, &link);
-	return generic_dot_attr_entry(sbbs, fname, attr, &link, idx);
+	bool ret = generic_dot_attr_entry(sbbs, fname, attr, &link, idx);
+	free(link);
+	return ret;
 }
 
 static bool
@@ -1421,9 +1431,12 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 			sprintf(tmppath, static_files[dd->info.rootdir.idx].sftp_patt, sbbs->useron.alias);
 			remove_trailing_slash(tmppath);
 			attr = get_attrs(sbbs, tmppath, &link);
-			if (attr == nullptr)
+			if (attr == nullptr) {
+				free(link);
 				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Attributes allocation failure");
+			}
 			lname = get_longname(sbbs, tmppath, link, attr);
+			free(link);
 			if (lname == nullptr) {
 				sftp_fattr_free(attr);
 				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Longname allocation failure");
@@ -1514,8 +1527,10 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 				if (attr == nullptr)
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Attributes allocation failure");
 				ename = expand_slash(sbbs->cfg.dir[dd->info.filebase.idx]->lname);
-				if (ename == nullptr)
+				if (ename == nullptr) {
+					sftp_fattr_free(attr);
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "EName allocation failure");
+				}
 				lname = get_longname(sbbs, ename, nullptr, attr);
 				if (lname == nullptr) {
 					free(ename);
@@ -1648,7 +1663,7 @@ sftp_stat(sftp_str_t path, void *cb_data)
 			return newpmap->cleanup();
 		cpmap = std::move(newpmap);
 	}
-	sftp_file_attr_t attr = get_attrs(sbbs, cpmap->sftp_path, nullptr);
+	sftp_file_attr_t attr = get_attrs(sbbs, cpmap->sftp_path);
 	if (attr == nullptr)
 		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to allocate attribute");
 	bool ret = sftps_send_attrs(sbbs->sftp_state, attr);
@@ -1665,7 +1680,7 @@ sftp_lstat(sftp_str_t path, void *cb_data)
 	path_map pmap(sbbs, path->c_str, MAP_STAT);
 	if (!pmap.success())
 		return pmap.cleanup();
-	sftp_file_attr_t attr = get_attrs(sbbs, pmap.sftp_path, nullptr);
+	sftp_file_attr_t attr = get_attrs(sbbs, pmap.sftp_path);
 	if (attr == nullptr)
 		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to allocate attribute");
 	bool ret = sftps_send_attrs(sbbs->sftp_state, attr);

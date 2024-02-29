@@ -65,20 +65,24 @@ s_open(sftps_state_t state)
 	if (!(flags & SSH_FXF_WRITE)) {
 		if (flags & SSH_FXF_CREAT) {
 			sftps_send_error(state, SSH_FX_OP_UNSUPPORTED, "Can't create unless writing");
+			free_sftp_str(fname);
 			return true;
 		}
 		if (flags & SSH_FXF_APPEND) {
 			sftps_send_error(state, SSH_FX_OP_UNSUPPORTED, "Can't append unless writing");
+			free_sftp_str(fname);
 			return true;
 		}
 	}
 	if (!(flags & SSH_FXF_CREAT)) {
 		if (flags & SSH_FXF_TRUNC) {
 			sftps_send_error(state, SSH_FX_OP_UNSUPPORTED, "Can't truncate unless creating");
+			free_sftp_str(fname);
 			return true;
 		}
 		if (flags & SSH_FXF_EXCL) {
 			sftps_send_error(state, SSH_FX_OP_UNSUPPORTED, "Can't open exclisive unless creating");
+			free_sftp_str(fname);
 			return true;
 		}
 	}
