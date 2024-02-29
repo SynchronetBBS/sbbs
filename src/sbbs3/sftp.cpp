@@ -1,4 +1,5 @@
 #include <memory>
+#include <vector>
 
 #include "sbbs.h"
 #include "xpprintf.h" // for asprintf() on Win32
@@ -9,6 +10,7 @@ constexpr uint32_t users_gid {UINT32_MAX};
 
 #define SLASH_FILES "/files"
 #define SLASH_HOME "/home"
+#define MAX_FILES_PER_READDIR 25
 
 constexpr int32_t no_more_files = -3;
 constexpr int32_t dot = -2;
@@ -54,6 +56,8 @@ static sftp_file_attr_t sshkeys_attrs(sbbs_t *sbbs, const char *path);
 static char *sftp_parse_crealpath(sbbs_t *sbbs, const char *filename);
 static char *expand_slash(const char *orig);
 static bool is_in_filebase(const char *path);
+static char * get_longname(sbbs_t *sbbs, const char *path, const char *link, sftp_file_attr_t attr);
+static sftp_file_attr_t get_attrs(sbbs_t *sbbs, const char *path, char **link);
 
 const char files_path[] = SLASH_FILES;
 constexpr size_t files_path_len = (sizeof(files_path) - 1);
@@ -336,6 +340,105 @@ public:
 		free(local_path);
 		free(sftp_path);
 		free(sftp_link_target);
+	}
+};
+
+
+class file_names {
+	uint32_t entries_{0};
+	sbbs_t * const sbbs{};
+	std::vector<char *> fnames;
+	std::vector<char *> lnames;
+	std::vector<sftp_file_attr_t> attrs;
+public:
+	uint32_t entries(void) { return entries_; }
+
+	bool add_name(char *fname, char *lname, sftp_file_attr_t attr) {
+		unsigned added = 0;
+		try {
+			fnames.push_back(fname);
+			added++;
+			lnames.push_back(lname);
+			added++;
+			attrs.push_back(attr);
+			added++;
+			entries_ += 1;
+		}
+		catch(...) {
+			if (added < 1)
+				free(fname);
+			if (added < 2)
+				free(lname);
+			if (added < 3)
+				sftp_fattr_free(attr);
+			return false;
+		}
+		return true;
+	}
+
+	bool
+	generic_dot_attr_entry(char *fname, sftp_file_attr_t attr, char **link, int32_t& idx)
+	{
+		if (attr == nullptr) {
+			free(fname);
+			return false;
+		}
+		char *lname = get_longname(sbbs, fname, link ? *link : nullptr, attr);
+		if (lname == nullptr) {
+			free(fname);
+			sftp_fattr_free(attr);
+			return false;
+		}
+		bool ret = add_name(fname, lname, attr);
+		if (ret)
+			idx++;
+		return ret;
+	}
+
+	bool
+	generic_dot_entry(char *fname, const char *path, int32_t& idx)
+	{
+		char *link = nullptr;
+		sftp_file_attr_t attr = get_attrs(sbbs, path, &link);
+		if (attr == nullptr) {
+			free(link);
+			free(fname);
+			return false;
+		}
+		bool ret = generic_dot_attr_entry(fname, attr, &link, idx);
+		free(link);
+		return ret;
+	}
+
+	bool
+	generic_dot_realpath_entry(char *fname, const char *path, int32_t& idx)
+	{
+		char *vpath = sftp_parse_crealpath(sbbs, path);
+		if (vpath == nullptr) {
+			free(fname);
+			return false;
+		}
+		bool ret = generic_dot_entry(fname, vpath, idx);
+		free(vpath);
+		return ret;
+	}
+
+	bool send(void) {
+		if (entries_ < 1)
+			return false;
+		return sftps_send_name(sbbs->sftp_state, entries_, &fnames[0], &lnames[0], &attrs[0]);
+	}
+
+	file_names() = delete;
+	file_names(sbbs_t *sbbsptr) : sbbs(sbbsptr) {}
+
+	~file_names(void) {
+		for (auto&& name : fnames)
+			free(name);
+		for (auto&& name : lnames)
+			free(name);
+		for (auto&& attr : attrs)
+			sftp_fattr_free(attr);
 	}
 };
 
@@ -915,45 +1018,6 @@ copy_path_from_dir(char *p, const char *fp)
 	*last = 0;
 }
 
-static bool
-generic_dot_attr_entry(sbbs_t *sbbs, char *fname, sftp_file_attr_t attr, char **link, int32_t *idx)
-{
-	if (attr == nullptr)
-		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Attributes allocation failure");
-	char *lname = get_longname(sbbs, fname, link ? *link : nullptr, attr);
-	if (lname == nullptr) {
-		sftp_fattr_free(attr);
-		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Longname allocation failure");
-	}
-	(*idx)++;
-	bool ret = sftps_send_name(sbbs->sftp_state, 1, &fname, &lname, &attr);
-	free(lname);
-	sftp_fattr_free(attr);
-	return ret;
-}
-
-static bool
-generic_dot_entry(sbbs_t *sbbs, char *fname, const char *path, int32_t *idx)
-{
-	char *link;
-	sftp_file_attr_t attr = get_attrs(sbbs, path, &link);
-	bool ret = generic_dot_attr_entry(sbbs, fname, attr, &link, idx);
-	free(link);
-	return ret;
-}
-
-static bool
-generic_dot_realpath_entry(sbbs_t *sbbs, char *fname, const char *path, int32_t *idx)
-{
-	char *vpath = sftp_parse_crealpath(sbbs, path);
-	if (vpath == nullptr) {
-		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Path allocation failure");
-	}
-	bool ret = generic_dot_entry(sbbs, fname, vpath, idx);
-	free(vpath);
-	return ret;
-}
-
 static void
 record_transfer(sbbs_t *sbbs, sftp_filedescriptor_t desc, bool upload)
 {
@@ -1373,8 +1437,8 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 	char *vpath;
 	char *lname;
 	char *ename;
-	bool ret;
 	struct pathmap *pm;
+	file_names fn(sbbs);
 
 	sbbs->lprintf(LOG_DEBUG, "SFTP readdir(%.*s)", handle->len, handle->c_str);
 	if (didx == UINT_MAX)
@@ -1385,21 +1449,25 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 		char *link;
 
 		if (dd->info.rootdir.idx == no_more_files) {
+			if (fn.entries() > 0)
+				return fn.send();
 			return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
 		}
 		if (dd->info.rootdir.idx == dot) {
-			char *dir = const_cast<char *>(".");
+			const char *dir = ".";
 			snprintf(tmppath, sizeof(tmppath), pm->sftp_patt, sbbs->useron.alias);
 			remove_trailing_slash(tmppath);
-			return generic_dot_entry(sbbs, dir, tmppath, &dd->info.rootdir.idx);
+			if (!fn.generic_dot_entry(strdup(dir), tmppath, dd->info.rootdir.idx))
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to add dot dir");
 		}
 		if (dd->info.rootdir.idx == dotdot) {
 			if (pm->sftp_patt[1]) {
-				char *dir = const_cast<char *>("..");
+				const char *dir = "..";
 				snprintf(tmppath, sizeof(tmppath) - 3 /* for dir */, pm->sftp_patt, sbbs->useron.alias);
 				tmppath[sizeof(tmppath) - 2] = 0;
 				strcat(tmppath, dir);
-				return generic_dot_realpath_entry(sbbs, dir, tmppath, &dd->info.rootdir.idx);
+				if (!fn.generic_dot_realpath_entry(strdup(dir), tmppath, dd->info.rootdir.idx))
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Unable to add dotdot dir");
 			}
 			else
 				dd->info.rootdir.idx++;
@@ -1416,10 +1484,12 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Corrupt directory handle");
 		}
 		copy_path(cwd, pm->sftp_patt);
-		while (static_files[dd->info.rootdir.idx].sftp_patt != nullptr) {
+		while (static_files[dd->info.rootdir.idx].sftp_patt != nullptr && fn.entries() < MAX_FILES_PER_READDIR) {
 			dd->info.rootdir.idx++;
 			if (static_files[dd->info.rootdir.idx].sftp_patt == nullptr) {
 				dd->info.rootdir.idx = no_more_files;
+				if (fn.entries() > 0)
+					return fn.send();
 				return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
 			}
 			copy_path_from_dir(tmppath, static_files[dd->info.rootdir.idx].sftp_patt);
@@ -1444,31 +1514,34 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Longname allocation failure");
 			}
 			vpath = getfname(tmppath);
-			ret = sftps_send_name(sbbs->sftp_state, 1, &vpath, &lname, &attr);
-			free(lname);
-			sftp_fattr_free(attr);
-			return ret;
+			fn.add_name(strdup(vpath), lname, attr);
 		}
 	}
 	else {
 		if (dd->info.filebase.lib == -1) {
 			// /files/ (ie: list of libs)
 			if (dd->info.filebase.idx == no_more_files) {
+				if (fn.entries() > 0)
+					return fn.send();
 				return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
 			}
 			if (dd->info.filebase.idx == dot) {
-				char *dir = const_cast<char *>(".");
+				const char *dir = ".";
 				strcpy(tmppath, SLASH_FILES);
-				return generic_dot_entry(sbbs, dir, tmppath, &dd->info.filebase.idx);
+				if (!fn.generic_dot_entry(strdup(dir), tmppath, dd->info.filebase.idx))
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "Error adding topdoot");
 			}
 			if (dd->info.filebase.idx == dotdot) {
-				char *dir = const_cast<char *>("..");
+				const char *dir = "..";
 				strcpy(tmppath, "/");
-				return generic_dot_entry(sbbs, dir, tmppath, &dd->info.filebase.idx);
+				if (!fn.generic_dot_entry(strdup(dir), tmppath, dd->info.filebase.idx))
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "Error adding topdootdoot");
 			}
-			while (dd->info.filebase.idx < sbbs->cfg.total_libs) {
+			while (dd->info.filebase.idx < sbbs->cfg.total_libs && fn.entries() < MAX_FILES_PER_READDIR) {
 				if (dd->info.filebase.idx >= sbbs->cfg.total_libs) {
 					dd->info.filebase.idx = no_more_files;
+					if (fn.entries() > 0)
+						return fn.send();
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
 				}
 				if (!can_user_access_lib(&sbbs->cfg, dd->info.filebase.idx, &sbbs->useron, &sbbs->client)) {
@@ -1489,32 +1562,35 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 					sftp_fattr_free(attr);
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Longname allocation failure");
 				}
-				ret = sftps_send_name(sbbs->sftp_state, 1, &ename, &lname, &attr);
-				free(ename);
-				free(lname);
-				sftp_fattr_free(attr);
+				if (!fn.add_name(ename, lname, attr))
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "Error adding lib");
 				dd->info.filebase.idx++;
-				return ret;
 			}
 		}
 		else if (dd->info.filebase.dir == -1) {
 			// /files/somelib (ie: list of dirs)
 			if (dd->info.filebase.idx == no_more_files) {
+				if (fn.entries() > 0)
+					return fn.send();
 				return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
 			}
 			if (dd->info.filebase.idx == dot) {
-				char *dir = const_cast<char *>(".");
+				const char *dir = ".";
 				attr = get_lib_attrs(sbbs, dd->info.filebase.lib);
-				return generic_dot_attr_entry(sbbs, dir, attr, nullptr, &dd->info.filebase.idx);
+				if (!fn.generic_dot_attr_entry(strdup(dir), attr, nullptr, dd->info.filebase.idx))
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "Adding libdoot");
 			}
 			if (dd->info.filebase.idx == dotdot) {
-				char *dir = const_cast<char *>("..");
+				const char *dir = "..";
 				strcpy(tmppath, SLASH_FILES);
-				return generic_dot_entry(sbbs, dir, tmppath, &dd->info.filebase.idx);
+				if (!fn.generic_dot_entry(strdup(dir), tmppath, dd->info.filebase.idx))
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "Adding libdootdoot");
 			}
-			while (dd->info.filebase.idx < sbbs->cfg.total_dirs) {
+			while (dd->info.filebase.idx < sbbs->cfg.total_dirs && fn.entries() < MAX_FILES_PER_READDIR) {
 				if (dd->info.filebase.idx >= sbbs->cfg.total_dirs) {
 					dd->info.filebase.idx = no_more_files;
+					if (fn.entries() > 0)
+						return fn.send();
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
 				}
 				if (sbbs->cfg.dir[dd->info.filebase.idx]->lib != dd->info.filebase.lib) {
@@ -1539,28 +1615,29 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 					sftp_fattr_free(attr);
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Longname allocation failure");
 				}
-				ret = sftps_send_name(sbbs->sftp_state, 1, &ename, &lname, &attr);
-				free(ename);
-				free(lname);
-				sftp_fattr_free(attr);
+				if (!fn.add_name(ename, lname, attr))
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Add dir name failure");
 				dd->info.filebase.idx++;
-				return ret;
 			}
 		}
 		else {
 			// /files/somelib/somedir (ie: list of files)
 			if (dd->info.filebase.idx == no_more_files) {
+				if (fn.entries() > 0)
+					return fn.send();
 				return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
 			}
 			if (dd->info.filebase.idx == dot) {
-				char *dir = const_cast<char *>(".");
+				const char *dir = ".";
 				attr = get_dir_attrs(sbbs, dd->info.filebase.dir);
-				return generic_dot_attr_entry(sbbs, dir, attr, nullptr, &dd->info.filebase.idx);
+				if (!fn.generic_dot_attr_entry(strdup(dir), attr, nullptr, dd->info.filebase.idx))
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "Adding dirdoot");
 			}
 			if (dd->info.filebase.idx == dotdot) {
-				char *dir = const_cast<char *>("..");
+				const char *dir = "..";
 				attr = get_lib_attrs(sbbs, dd->info.filebase.lib);
-				return generic_dot_attr_entry(sbbs, dir, attr, nullptr, &dd->info.filebase.idx);
+				if (!fn.generic_dot_attr_entry(strdup(dir), attr, nullptr, dd->info.filebase.idx))
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "Adding dirdootdoot");
 			}
 			// Find the "next"* file number.
 			smb_t     smb{};
@@ -1574,6 +1651,8 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 					if (smb_getfirstidx(&smb, &idx) != SMB_SUCCESS) {
 						smb_close(&smb);
 						dd->info.filebase.idx = no_more_files;
+						if (fn.entries() > 0)
+							return fn.send();
 						return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No files at all");
 					}
 					file.hdr.number = idx.number;
@@ -1591,6 +1670,8 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 				if (result == SMB_ERR_HDR_OFFSET) {
 					smb_close(&smb);
 					dd->info.filebase.idx = no_more_files;
+					if (fn.entries() > 0)
+						return fn.send();
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
 				}
 				if (result != SMB_SUCCESS) {
@@ -1623,24 +1704,23 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 					sftp_fattr_free(attr);
 					continue;
 				}
-				smb_close(&smb);
-				break;
-			} while (1);
-			char *lname = get_longname(sbbs, cwd, nullptr, attr);
-			if (lname == nullptr) {
-				sftp_fattr_free(attr);
-				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Can't get file header");
-			}
-			vpath = tmppath;
-			ret = sftps_send_name(sbbs->sftp_state, 1, &vpath, &lname, &attr);
-			free(lname);
-			sftp_fattr_free(attr);
-			return ret;
+				char *lname = get_longname(sbbs, cwd, nullptr, attr);
+				if (lname == nullptr) {
+					sftp_fattr_free(attr);
+					smb_close(&smb);
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Can't get file header");
+				}
+				if (!fn.add_name(strdup(tmppath), lname, attr)) {
+					smb_close(&smb);
+					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Can't get file header");
+				}
+			} while (fn.entries() < MAX_FILES_PER_READDIR);
+			smb_close(&smb);
 		}
 	}
+	if (fn.entries() > 0)
+		return fn.send();
 	return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
-
-	return true;
 }
 
 static bool
