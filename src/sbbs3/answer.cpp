@@ -401,6 +401,7 @@ bool sbbs_t::answer()
 						if (waits > 500) {
 							lprintf(LOG_INFO, "%04d SSH [%s] TIMEOUT waiting for channel type.", client_socket, client_ipaddr);
 							activate_ssh = false;
+							pthread_mutex_lock(&ssh_mutex);
 							break;
 						}
 						pthread_mutex_lock(&ssh_mutex);
