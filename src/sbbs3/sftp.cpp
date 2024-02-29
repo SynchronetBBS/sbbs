@@ -168,7 +168,7 @@ public:
 			this->info.filebase.dir = -1;
 			this->info.filebase.lib = -1;
 			this->info.filebase.idx = dot;
-			if (this->sftp_path[files_path_len] == 0 || this->sftp_path[files_path_len] == 0) {
+			if (this->sftp_path[files_path_len] == 0 || this->sftp_path[files_path_len+1] == 0) {
 				// Root...
 				result_ = MAP_TO_DIR;
 				return;
