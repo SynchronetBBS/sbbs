@@ -374,7 +374,7 @@ sftps_recv(sftps_state_t state, uint8_t *buf, uint32_t sz)
 		uint32_t psz = sftp_pkt_sz(state->rxp);
 		if (psz > SFTP_MAX_PACKET_SIZE) {
 			state->lprintf(state->cb_data, "Packet too large (%" PRIu32 " bytes)", psz);
-			return false;
+			return exit_function(state, false);
 		}
 	}
 	while (sftp_have_full_pkt(state->rxp)) {

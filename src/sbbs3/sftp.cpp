@@ -993,8 +993,10 @@ sftp_send(uint8_t *buf, size_t len, void *cb_data)
 	while (sent < len) {
 		pthread_mutex_lock(&sbbs->ssh_mutex);
 		status = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->sftp_channel);
-		if (cryptStatusError(status))
+		if (cryptStatusError(status)) {
+			pthread_mutex_unlock(&sbbs->ssh_mutex);
 			return false;
+		}
 		size_t sendbytes = len - sent;
 #define SENDBYTES_MAX 0x2000
 		if (sendbytes > SENDBYTES_MAX)
