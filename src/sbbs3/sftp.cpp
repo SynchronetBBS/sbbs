@@ -1778,6 +1778,8 @@ sftp_symlink(sftp_str_t linkpath, sftp_str_t targetpath, void *cb_data)
 bool
 sbbs_t::init_sftp(int cid)
 {
+	if (sftp_state != nullptr)
+		return true;
 	sftp_state = sftps_begin(sftp_send, this);
 	if (sftp_state != nullptr) {
 		sftp_state->lprintf = sftp_lprintf;
