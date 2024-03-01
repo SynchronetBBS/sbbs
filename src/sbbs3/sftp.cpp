@@ -9,6 +9,8 @@ constexpr uint32_t lib_mask {~lib_flag};
 constexpr uint32_t users_gid {UINT32_MAX};
 
 #define SLASH_FILES "/files"
+#define SLASH_VFILES "/vfiles"
+#define SLASH_FLS "/fls"
 #define SLASH_HOME "/home"
 #define MAX_FILES_PER_READDIR 25
 
@@ -56,11 +58,16 @@ static sftp_file_attr_t sshkeys_attrs(sbbs_t *sbbs, const char *path);
 static char *sftp_parse_crealpath(sbbs_t *sbbs, const char *filename);
 static char *expand_slash(const char *orig);
 static bool is_in_filebase(const char *path);
+static enum sftp_dir_tree in_tree(const char *path);
 static char * get_longname(sbbs_t *sbbs, const char *path, const char *link, sftp_file_attr_t attr);
 static sftp_file_attr_t get_attrs(sbbs_t *sbbs, const char *path, char **link);
 
 const char files_path[] = SLASH_FILES;
 constexpr size_t files_path_len = (sizeof(files_path) - 1);
+const char vfiles_path[] = SLASH_VFILES;
+constexpr size_t vfiles_path_len = (sizeof(vfiles_path) - 1);
+const char fls_path[] = SLASH_FLS;
+constexpr size_t fls_path_len = (sizeof(fls_path) - 1);
 
 static struct pathmap static_files[] = {
 	// TODO: ftpalias.cfg
@@ -68,6 +75,7 @@ static struct pathmap static_files[] = {
 	// TODO: Upload to sysop
 	{"/", nullptr, nullptr, rootdir_attrs},
 	{SLASH_FILES "/", nullptr, nullptr, rootdir_attrs},
+	//{SLASH_FLS "/", nullptr, nullptr, rootdir_attrs},
 	{SLASH_HOME "/", nullptr, nullptr, homedir_attrs},
 	{SLASH_HOME "/%s/", nullptr, nullptr, homedir_attrs},
 	// TODO: Some way for a sysop/mod authour to map things in here
@@ -77,11 +85,13 @@ static struct pathmap static_files[] = {
 	{SLASH_HOME "/%s/plan", "%suser/%04d.plan", nullptr, homefile_attrs},
 	{SLASH_HOME "/%s/signature", "%suser/%04d.sig", nullptr, homefile_attrs},
 	{SLASH_HOME "/%s/smtptags", "%suser/%04d.smtptags", nullptr, homefile_attrs},
+	{SLASH_VFILES "/", nullptr, nullptr, rootdir_attrs},
 };
 constexpr size_t static_files_sz = (sizeof(static_files) / sizeof(static_files[0]));
 
 class path_map {
 	bool is_static_ {true};
+	enum sftp_dir_tree tree_ {SFTP_DTREE_FULL};
 	map_path_result_t result_ {MAP_FAILED};
 
 	// Too lazy to write a std::expected thing here.
@@ -90,7 +100,18 @@ class path_map {
 		for (int l = 0; l < sbbs->cfg.total_libs; l++) {
 			if (!can_user_access_lib(&sbbs->cfg, l, &sbbs->useron, &sbbs->client))
 				continue;
-			char *exp = expand_slash(sbbs->cfg.lib[l]->lname);
+			char *exp {};
+			switch (tree_) {
+				case SFTP_DTREE_FULL:
+					exp = expand_slash(sbbs->cfg.lib[l]->lname);
+					break;
+				case SFTP_DTREE_SHORT:
+					exp = expand_slash(sbbs->cfg.lib[l]->sname);
+					break;
+				case SFTP_DTREE_VIRTUAL:
+					exp = expand_slash(sbbs->cfg.lib[l]->vdir);
+					break;
+			}
 			if (exp == nullptr)
 				return -1;
 			if ((memcmp(libnam, exp, lnsz) == 0)
@@ -110,7 +131,18 @@ class path_map {
 				continue;
 			if (!can_user_access_dir(&sbbs->cfg, d, &sbbs->useron, &sbbs->client))
 				continue;
-			char *exp = expand_slash(sbbs->cfg.dir[d]->lname);
+			char *exp {};
+			switch (tree_) {
+				case SFTP_DTREE_FULL:
+					exp = expand_slash(sbbs->cfg.dir[d]->lname);
+					break;
+				case SFTP_DTREE_SHORT:
+					exp = expand_slash(sbbs->cfg.dir[d]->code);
+					break;
+				case SFTP_DTREE_VIRTUAL:
+					exp = expand_slash(sbbs->cfg.dir[d]->vdir);
+					break;
+			}
 			if (exp == nullptr)
 				return -1;
 			if ((memcmp(dirnam, exp, dnsz) == 0)
@@ -122,7 +154,6 @@ class path_map {
 		}
 		return -1;
 	}
-
 
 public:
 	const map_path_mode_t mode;
@@ -163,6 +194,7 @@ public:
 			return;
 		}
 		if (is_in_filebase(this->sftp_path)) {
+			tree_ = in_tree(this->sftp_path);
 			// This is in the file base.
 			if (mode == MAP_RDWR) {
 				result_ = MAP_PERMISSION_DENIED;
@@ -172,12 +204,25 @@ public:
 			this->info.filebase.dir = -1;
 			this->info.filebase.lib = -1;
 			this->info.filebase.idx = dot;
-			if (this->sftp_path[files_path_len] == 0 || this->sftp_path[files_path_len+1] == 0) {
+			char *lib;
+			size_t sz;
+			switch (tree_) {
+				case SFTP_DTREE_FULL:
+					sz = files_path_len;
+					break;
+				case SFTP_DTREE_SHORT:
+					sz = fls_path_len;
+					break;
+				case SFTP_DTREE_VIRTUAL:
+					sz = vfiles_path_len;
+					break;
+			}
+			if (this->sftp_path[sz] == 0 || this->sftp_path[sz+1] == 0) {
 				// Root...
 				result_ = MAP_TO_DIR;
 				return;
 			}
-			const char *lib = &this->sftp_path[files_path_len + 1];
+			lib = &this->sftp_path[sz + 1];
 			c = strchr(lib, '/');
 			size_t libsz;
 			if (c == nullptr) {
@@ -332,6 +377,10 @@ public:
 		return is_static_;
 	}
 
+	const enum sftp_dir_tree &tree(void) const {
+		return tree_;
+	}
+
 	const bool success(void) {
 		return result_ >= MAP_SUCCESS;
 	}
@@ -449,7 +498,33 @@ is_in_filebase(const char *path)
 		if (path[files_path_len] == 0 || path[files_path_len] == '/')
 			return true;
 	}
+	if (memcmp(fls_path, path, fls_path_len) == 0) {
+		if (path[fls_path_len] == 0 || path[fls_path_len] == '/')
+			return true;
+	}
+	if (memcmp(vfiles_path, path, vfiles_path_len) == 0) {
+		if (path[vfiles_path_len] == 0 || path[vfiles_path_len] == '/')
+			return true;
+	}
 	return false;
+}
+
+static enum sftp_dir_tree
+in_tree(const char *path)
+{
+	if (memcmp(files_path, path, files_path_len) == 0) {
+		if (path[files_path_len] == 0 || path[files_path_len] == '/')
+			return SFTP_DTREE_FULL;
+	}
+	if (memcmp(fls_path, path, fls_path_len) == 0) {
+		if (path[fls_path_len] == 0 || path[fls_path_len] == '/')
+			return SFTP_DTREE_SHORT;
+	}
+	if (memcmp(vfiles_path, path, vfiles_path_len) == 0) {
+		if (path[vfiles_path_len] == 0 || path[vfiles_path_len] == '/')
+			return SFTP_DTREE_VIRTUAL;
+	}
+	throw std::invalid_argument( "Invalid path" );
 }
 
 /*
@@ -827,11 +902,11 @@ get_filebase_attrs(sbbs_t *sbbs, int32_t dir, smbfile_t *file)
 }
 
 static int
-find_lib(sbbs_t *sbbs, const char *path)
+find_lib(sbbs_t *sbbs, const char *path, enum sftp_dir_tree tree)
 {
 	char *p = strdup(path);
 	char *c = strchr(p, '/');
-	char *exp;
+	char *exp {};
 	int l;
 
 	if (c)
@@ -839,7 +914,17 @@ find_lib(sbbs_t *sbbs, const char *path)
 	for (l = 0; l < sbbs->cfg.total_libs; l++) {
 		if (!can_user_access_lib(&sbbs->cfg, l, &sbbs->useron, &sbbs->client))
 			continue;
-		exp = expand_slash(sbbs->cfg.lib[l]->lname);
+		switch (tree) {
+			case SFTP_DTREE_FULL:
+				exp = expand_slash(sbbs->cfg.lib[l]->lname);
+				break;
+			case SFTP_DTREE_SHORT:
+				exp = expand_slash(sbbs->cfg.lib[l]->sname);
+				break;
+			case SFTP_DTREE_VIRTUAL:
+				exp = expand_slash(sbbs->cfg.lib[l]->vdir);
+				break;
+		}
 		if (exp == nullptr) {
 			free(p);
 			return -1;
@@ -858,13 +943,13 @@ find_lib(sbbs_t *sbbs, const char *path)
 }
 
 static int
-find_dir(sbbs_t *sbbs, const char *path, int lib)
+find_dir(sbbs_t *sbbs, const char *path, int lib, enum sftp_dir_tree tree)
 {
 	char *p = strdup(path);
 	char *c;
 	char *e;
 	int d;
-	char *exp;
+	char *exp{};
 
 	if (p == nullptr)
 		return -1;
@@ -883,7 +968,17 @@ find_dir(sbbs_t *sbbs, const char *path, int lib)
 			continue;
 		if (!can_user_access_dir(&sbbs->cfg, d, &sbbs->useron, &sbbs->client))
 			continue;
-		exp = expand_slash(sbbs->cfg.dir[d]->lname);
+		switch (tree) {
+			case SFTP_DTREE_FULL:
+				exp = expand_slash(sbbs->cfg.dir[d]->lname);
+				break;
+			case SFTP_DTREE_SHORT:
+				exp = expand_slash(sbbs->cfg.dir[d]->code);
+				break;
+			case SFTP_DTREE_VIRTUAL:
+				exp = expand_slash(sbbs->cfg.dir[d]->vdir);
+				break;
+		}
 		if (exp == nullptr) {
 			free(p);
 			return -1;
@@ -934,15 +1029,26 @@ get_attrs(sbbs_t *sbbs, const char *path, char **link)
 
 		if (!is_in_filebase(path))
 			return nullptr;
-		libp = path + files_path_len + 1;
-		lib = find_lib(sbbs, libp);
+		enum sftp_dir_tree tree = in_tree(path);
+		switch (tree) {
+			case SFTP_DTREE_FULL:
+				libp = path + files_path_len + 1;
+				break;
+			case SFTP_DTREE_SHORT:
+				libp = path + fls_path_len + 1;
+				break;
+			case SFTP_DTREE_VIRTUAL:
+				libp = path + vfiles_path_len + 1;
+				break;
+		}
+		lib = find_lib(sbbs, libp, tree);
 		if (lib == -1) {
 			return nullptr;
 		}
 		const char *c = strchr(libp, '/');
 		if (c == nullptr || c[1] == 0)
 			return get_lib_attrs(sbbs, lib);
-		dir = find_dir(sbbs, libp, lib);
+		dir = find_dir(sbbs, libp, lib, tree);
 		if (dir == -1)
 			return nullptr;
 		c = strchr(c + 1, '/');
@@ -1406,6 +1512,7 @@ sftp_opendir(sftp_str_t path, void *cb_data)
 	if (pmap.result() != MAP_TO_DIR)
 		return pmap.cleanup();
 	sbbs->sftp_dirdes[ddidx] = static_cast<sftp_dirdescriptor_t>(malloc(sizeof(*sbbs->sftp_dirdes[ddidx])));
+	sbbs->sftp_dirdes[ddidx]->tree = pmap.tree();
 	if (pmap.is_static()) {
 		sbbs->sftp_dirdes[ddidx]->is_static = true;
 		sbbs->sftp_dirdes[ddidx]->info.rootdir.mapping = pmap.info.rootdir.mapping;
@@ -1527,7 +1634,17 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 			}
 			if (dd->info.filebase.idx == dot) {
 				const char *dir = ".";
-				strcpy(tmppath, SLASH_FILES);
+				switch (dd->tree) {
+					case SFTP_DTREE_FULL:
+						strcpy(tmppath, SLASH_FILES);
+						break;
+					case SFTP_DTREE_SHORT:
+						strcpy(tmppath, SLASH_FLS);
+						break;
+					case SFTP_DTREE_VIRTUAL:
+						strcpy(tmppath, SLASH_VFILES);
+						break;
+				}
 				if (!fn.generic_dot_entry(strdup(dir), tmppath, dd->info.filebase.idx))
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "Error adding topdoot");
 			}
@@ -1551,7 +1668,17 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 				attr = get_lib_attrs(sbbs, dd->info.filebase.idx);
 				if (attr == nullptr)
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Attributes allocation failure");
-				ename = expand_slash(sbbs->cfg.lib[dd->info.filebase.idx]->lname);
+				switch (dd->tree) {
+					case SFTP_DTREE_FULL:
+						ename = expand_slash(sbbs->cfg.lib[dd->info.filebase.idx]->lname);
+						break;
+					case SFTP_DTREE_SHORT:
+						ename = expand_slash(sbbs->cfg.lib[dd->info.filebase.idx]->sname);
+						break;
+					case SFTP_DTREE_VIRTUAL:
+						ename = expand_slash(sbbs->cfg.lib[dd->info.filebase.idx]->vdir);
+						break;
+				}
 				if (ename == nullptr) {
 					sftp_fattr_free(attr);
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Ename allocation failure");
@@ -1582,7 +1709,17 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 			}
 			if (dd->info.filebase.idx == dotdot) {
 				const char *dir = "..";
-				strcpy(tmppath, SLASH_FILES);
+				switch (dd->tree) {
+					case SFTP_DTREE_FULL:
+						strcpy(tmppath, SLASH_FILES);
+						break;
+					case SFTP_DTREE_SHORT:
+						strcpy(tmppath, SLASH_FLS);
+						break;
+					case SFTP_DTREE_VIRTUAL:
+						strcpy(tmppath, SLASH_VFILES);
+						break;
+				}
 				if (!fn.generic_dot_entry(strdup(dir), tmppath, dd->info.filebase.idx))
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "Adding libdootdoot");
 			}
@@ -1604,7 +1741,17 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 				attr = get_dir_attrs(sbbs, dd->info.filebase.idx);
 				if (attr == nullptr)
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Attributes allocation failure");
-				ename = expand_slash(sbbs->cfg.dir[dd->info.filebase.idx]->lname);
+				switch (dd->tree) {
+					case SFTP_DTREE_FULL:
+						ename = expand_slash(sbbs->cfg.dir[dd->info.filebase.idx]->lname);
+						break;
+					case SFTP_DTREE_SHORT:
+						ename = expand_slash(sbbs->cfg.dir[dd->info.filebase.idx]->code);
+						break;
+					case SFTP_DTREE_VIRTUAL:
+						ename = expand_slash(sbbs->cfg.dir[dd->info.filebase.idx]->vdir);
+						break;
+				}
 				if (ename == nullptr) {
 					sftp_fattr_free(attr);
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "EName allocation failure");

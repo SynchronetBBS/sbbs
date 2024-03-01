@@ -400,8 +400,15 @@ struct mouse_hotspot {		// Mouse hot-spot
 	bool	hungry;
 };
 
+enum sftp_dir_tree {
+	SFTP_DTREE_FULL,
+	SFTP_DTREE_SHORT,
+	SFTP_DTREE_VIRTUAL
+};
+
 typedef struct sftp_dirdes {
 	bool is_static;
+	enum sftp_dir_tree tree;
 	union {
 		struct {
 			int lib;
