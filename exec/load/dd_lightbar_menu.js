@@ -1202,7 +1202,8 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 	{
 		var len = this.nextDrawOnlyItemSubstr.end - this.nextDrawOnlyItemSubstr.start;
 		var shortenedText = substrWithAttrCodes(itemText, this.nextDrawOnlyItemSubstr.start, len);
-		console.gotoxy(pScreenX+this.nextDrawOnlyItemSubstr.start, pScreenY);
+		if (this.ANSISupported())
+			console.gotoxy(pScreenX+this.nextDrawOnlyItemSubstr.start, pScreenY);
 		console.print(shortenedText + "\x01n", printModeBits);
 	}
 	else
@@ -1251,7 +1252,8 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 				{
 					itemLen = itemColor[i].end - itemColor[i].start;
 					var textToPrint = substrWithAttrCodes(itemText, itemStartIdx, itemLen);
-					console.gotoxy(itemStartX + itemColor[i].start, itemY);
+					if (this.ANSISupported())
+						console.gotoxy(itemStartX + itemColor[i].start, itemY);
 					console.print(textToPrint, P_AUTO_UTF8); // printModeBits
 					itemStartIdx += itemLen;
 
