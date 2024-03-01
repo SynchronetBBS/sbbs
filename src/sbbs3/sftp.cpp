@@ -138,7 +138,7 @@ class path_map {
 					exp = expand_slash(sbbs->cfg.dir[d]->lname);
 					break;
 				case SFTP_DTREE_SHORT:
-					exp = expand_slash(sbbs->cfg.dir[d]->code);
+					exp = expand_slash(sbbs->cfg.dir[d]->sname);
 					break;
 				case SFTP_DTREE_VIRTUAL:
 					exp = expand_slash(sbbs->cfg.dir[d]->vdir);
@@ -974,7 +974,7 @@ find_dir(sbbs_t *sbbs, const char *path, int lib, enum sftp_dir_tree tree)
 				exp = expand_slash(sbbs->cfg.dir[d]->lname);
 				break;
 			case SFTP_DTREE_SHORT:
-				exp = expand_slash(sbbs->cfg.dir[d]->code);
+				exp = expand_slash(sbbs->cfg.dir[d]->sname);
 				break;
 			case SFTP_DTREE_VIRTUAL:
 				exp = expand_slash(sbbs->cfg.dir[d]->vdir);
@@ -1747,7 +1747,7 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 						ename = expand_slash(sbbs->cfg.dir[dd->info.filebase.idx]->lname);
 						break;
 					case SFTP_DTREE_SHORT:
-						ename = expand_slash(sbbs->cfg.dir[dd->info.filebase.idx]->code);
+						ename = expand_slash(sbbs->cfg.dir[dd->info.filebase.idx]->sname);
 						break;
 					case SFTP_DTREE_VIRTUAL:
 						ename = expand_slash(sbbs->cfg.dir[dd->info.filebase.idx]->vdir);
