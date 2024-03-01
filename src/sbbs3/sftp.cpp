@@ -86,7 +86,7 @@ static struct pathmap static_files[] = {
 	{SLASH_HOME "/%s/plan", "%suser/%04d.plan", nullptr, homefile_attrs},
 	{SLASH_HOME "/%s/signature", "%suser/%04d.sig", nullptr, homefile_attrs},
 	{SLASH_HOME "/%s/smtptags", "%suser/%04d.smtptags", nullptr, homefile_attrs},
-	{SLASH_VFILES "/", nullptr, nullptr, rootdir_attrs},
+	//{SLASH_VFILES "/", nullptr, nullptr, rootdir_attrs},
 };
 constexpr size_t static_files_sz = (sizeof(static_files) / sizeof(static_files[0]));
 
@@ -529,7 +529,8 @@ in_tree(const char *path)
 }
 
 /*
- * Replaces a Solidus (aka: slash) with a U+29F8 Big Solidus
+ * Replaces a slash with a dash.
+ * 
  * The SFTP protocol requires the use of Solidus as a path separator,
  * and dir and lib names can contain it.  Rather than a visually
  * different and one-way mapping as used in the FTP server, take
@@ -556,11 +557,8 @@ expand_slash(const char *orig)
 		return p;
 	p3 = p;
 	for (p2 = orig; *p2; p2++) {
-		if (*p2 == '/') {
-			*p3++ = 0xe2;
-			*p3++ = 0xa7;
-			*p3++ = 0xb8;
-		}
+		if (*p2 == '/')
+			*p3++ = '-';
 		else
 			*p3++ = *p2;
 	}
