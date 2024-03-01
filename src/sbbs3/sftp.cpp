@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <memory>
 #include <vector>
 
