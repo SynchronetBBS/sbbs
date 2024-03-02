@@ -568,7 +568,7 @@ bool sbbs_t::answer()
 
 			if(l) {
 				truncsp(str);
-				c_escape_str(str,tmp,sizeof(tmp)-1,TRUE);
+				c_escape_str(str,tmp,sizeof(tmp)-1,true);
 				lprintf(LOG_DEBUG,"received terminal auto-detection response: '%s'", tmp);
 
 				if(strstr(str,"RIPSCRIP")) {
@@ -622,7 +622,7 @@ bool sbbs_t::answer()
 			if(!autoterm) {
 				autoterm |= NO_EXASCII;
 				if(str[0]) {
-					c_escape_str(str,tmp,sizeof(tmp)-1,TRUE);
+					c_escape_str(str,tmp,sizeof(tmp)-1,true);
 					lprintf(LOG_NOTICE,"terminal auto-detection failed, response: '%s'", tmp);
 				}
 			}
@@ -674,7 +674,7 @@ bool sbbs_t::answer()
 					}
 					SAFECOPY(client.addr,cid);
 					SAFECOPY(client.host,client_name);
-					client_on(client_socket,&client,TRUE /* update */);
+					client_on(client_socket,&client,true /* update */);
 				} else {
 					if(telnet_location[0]) {			/* Telnet Location info provided */
 						lprintf(LOG_INFO, "Telnet Location: %s", telnet_location);
