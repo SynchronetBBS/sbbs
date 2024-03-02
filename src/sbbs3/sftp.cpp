@@ -637,6 +637,49 @@ remove_trailing_slash(char *str)
 		str[end] = 0;
 }
 
+/*
+ * This is mostly copied from the xpdev _fullpath() implementation
+ */
+static char *
+sftp_resolve_path(char *target, const char *path, size_t size)
+{
+	char	*out;
+	char	*p;
+
+	if(target==NULL)  {
+		size = MAX_PATH + 1;
+		if((target=(char*)malloc(size))==NULL) {
+			return(NULL);
+		}
+	}
+	strncpy(target, path, size);
+	target[size-1] = 0;
+	out=target;
+
+	for(;*out;out++) {
+		while(*out=='/') {
+			if(*(out+1)=='/')
+				memmove(out,out+1,strlen(out));
+			else if(*(out+1)=='.' && (*(out+2)=='/' || *(out+2)==0))
+				memmove(out,out+2,strlen(out)-1);
+			else if(*(out+1)=='.' && *(out+2)=='.' && (*(out+3)=='/' || *(out+3)==0))  {
+				*out=0;
+				p=strrchr(target,'/');
+				if(p==NULL)
+					p=target;
+				memmove(p,out+3,strlen(out+3)+1);
+				out=p;
+			}
+			else  {
+				out++;
+			}
+		}
+		if (!*out)
+			break;
+	}
+	return(target);
+}
+
 static char *
 sftp_parse_crealpath(sbbs_t *sbbs, const char *filename)
 {
@@ -651,16 +694,15 @@ sftp_parse_crealpath(sbbs_t *sbbs, const char *filename)
 		asprintf(&tmp, "%s/%s", sbbs->sftp_cwd, filename);
 		if (tmp == nullptr)
 			return tmp;
-		ret = _fullpath(nullptr, tmp, 0);
+		ret = sftp_resolve_path(nullptr, tmp, 0);
 		free(tmp);
 	}
 	else {
-		ret = _fullpath(nullptr, filename, 0);
+		ret = sftp_resolve_path(nullptr, filename, 0);
 	}
-	// TODO: Why does _fullpath() do this?
 	if (ret[0] == 0) {
 		free(ret);
-		ret = strdup("/");
+		return nullptr;
 	}
 	remove_trailing_slash(ret);
 
