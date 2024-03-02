@@ -1589,7 +1589,9 @@ sftp_opendir(sftp_str_t path, void *cb_data)
 	if (h == nullptr) {
 		return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Handle allocation failure");
 	}
-	return sftps_send_handle(sbbs->sftp_state, h);
+	bool ret = sftps_send_handle(sbbs->sftp_state, h);
+	free_sftp_str(h);
+	return ret;
 }
 
 // TODO: This is still too ugly... should be split into multiple functions.
