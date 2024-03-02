@@ -427,6 +427,9 @@ bool sbbs_t::answer()
 								mouse_mode = MOUSE_MODE_OFF;
 								autoterm = 0;
 								sys_status |= SS_USERON;
+								SAFECOPY(client.user, useron.alias);
+								client.usernum = useron.number;
+								client_on(client_socket, &client,/* update: */TRUE);
 							}
 							else {
 								lprintf(LOG_NOTICE, "%04d Trying to create new user over sftp, disconnecting.", client_socket);
