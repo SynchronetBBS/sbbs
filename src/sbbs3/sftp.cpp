@@ -206,7 +206,7 @@ public:
 			this->info.filebase.lib = -1;
 			this->info.filebase.idx = dot;
 			char *lib;
-			size_t sz;
+			size_t sz{files_path_len}; // Initialize in case tree_ isn't valid (which should have trown an exception)
 			switch (tree_) {
 				case SFTP_DTREE_FULL:
 					sz = files_path_len;
@@ -265,8 +265,7 @@ public:
 			smbfile_t file{};
 			result_ = MAP_TO_FILE;
 			const char *fname = &dir[dirsz + 1];
-			asprintf(&this->local_path, "%s/%s", sbbs->cfg.dir[this->info.filebase.dir]->path, fname);
-			if (this->local_path == nullptr) {
+			if (asprintf(&this->local_path, "%s/%s", sbbs->cfg.dir[this->info.filebase.dir]->path, fname) == -1) {
 				result_ = MAP_ALLOC_FAILED;
 				return;
 			}
@@ -324,8 +323,7 @@ public:
 				    || (tmpdir[pathlen] == '/' && tmpdir[pathlen + 1] == 0))) {
 					this->info.rootdir.mapping = &static_files[sfidx];
 					if (static_files[sfidx].real_patt) {
-						asprintf(&this->local_path, static_files[sfidx].real_patt, sbbs->cfg.data_dir, sbbs->useron.number);
-						if (this->local_path == nullptr) {
+						if (asprintf(&this->local_path, static_files[sfidx].real_patt, sbbs->cfg.data_dir, sbbs->useron.number) == -1) {
 							result_ = MAP_ALLOC_FAILED;
 							return;
 						}
@@ -341,8 +339,7 @@ public:
 						}
 					}
 					if (static_files[sfidx].link_patt) {
-						asprintf(&this->sftp_link_target, static_files[sfidx].link_patt, sbbs->useron.alias);
-						if (this->local_path == nullptr) {
+						if (asprintf(&this->sftp_link_target, static_files[sfidx].link_patt, sbbs->useron.alias) == -1) {
 							result_ = MAP_ALLOC_FAILED;
 							return;
 						}
@@ -693,13 +690,14 @@ sftp_parse_crealpath(sbbs_t *sbbs, const char *filename)
 	char *ret;
 	char *tmp;
 
-	if (sbbs->sftp_cwd == nullptr)
-		asprintf(&sbbs->sftp_cwd, SLASH_HOME "/%s", sbbs->useron.alias);
+	if (sbbs->sftp_cwd == nullptr) {
+		if (asprintf(&sbbs->sftp_cwd, SLASH_HOME "/%s", sbbs->useron.alias) == -1)
+			sbbs->sftp_cwd = nullptr;
+	}
 	if (sbbs->sftp_cwd == nullptr)
 		return nullptr;
 	if (!isfullpath(filename)) {
-		asprintf(&tmp, "%s/%s", sbbs->sftp_cwd, filename);
-		if (tmp == nullptr)
+		if (asprintf(&tmp, "%s/%s", sbbs->sftp_cwd, filename) == -1)
 			return tmp;
 		ret = sftp_resolve_path(nullptr, tmp, 0);
 		free(tmp);
@@ -892,7 +890,8 @@ get_longname(sbbs_t *sbbs, const char *path, const char *link, sftp_file_attr_t 
 	fname = getfname(path);
 	if (fname[0] == 0)
 		fname = path;
-	asprintf(&ret, "%s   0 %-8.8s %-8.8s %-8s %-12s %s%s%s", pstr, owner, group, szstr, datestr, fname, pstr[0] == 'l' ? " -> " : "", link ? link : "");
+	if (asprintf(&ret, "%s   0 %-8.8s %-8.8s %-8s %-12s %s%s%s", pstr, owner, group, szstr, datestr, fname, pstr[0] == 'l' ? " -> " : "", link ? link : "") == -1)
+		return nullptr;
 	return ret;
 }
 
@@ -1090,6 +1089,8 @@ get_attrs(sbbs_t *sbbs, const char *path, char **link)
 			case SFTP_DTREE_VIRTUAL:
 				libp = path + vfiles_path_len + 1;
 				break;
+			default:
+				return nullptr;
 		}
 		lib = find_lib(sbbs, libp, tree);
 		if (lib == -1) {
@@ -1127,8 +1128,7 @@ get_attrs(sbbs_t *sbbs, const char *path, char **link)
 		ppath[0] = 0;
 	ret = pm->get_attrs(sbbs, ppath);
 	if (link && pm->link_patt) {
-		asprintf(link, pm->link_patt, sbbs->useron.alias);
-		if (link == nullptr) {
+		if (asprintf(link, pm->link_patt, sbbs->useron.alias) == -1) {
 			sftp_fattr_free(ret);
 			ret = nullptr;
 		}
@@ -1333,7 +1333,7 @@ sftp_open(sftp_str_t filename, uint32_t flags, sftp_file_attr_t attributes, void
 			oflags |= O_RDWR;
 			mmode = MAP_RDWR;
 			break;
-		case 0:
+		default:
 			return sftps_send_error(sbbs->sftp_state, SSH_FX_OP_UNSUPPORTED, "Invalid flags (not read or write)");
 	}
 	if (flags & SSH_FXF_APPEND)
@@ -1654,6 +1654,8 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 		copy_path(cwd, pm->sftp_patt);
 		while (static_files[dd->info.rootdir.idx].sftp_patt != nullptr && fn.entries() < MAX_FILES_PER_READDIR) {
 			dd->info.rootdir.idx++;
+			if (dd->info.rootdir.idx >= static_files_sz)
+				break;
 			if (static_files[dd->info.rootdir.idx].sftp_patt == nullptr) {
 				dd->info.rootdir.idx = no_more_files;
 				if (fn.entries() > 0)
@@ -1813,6 +1815,9 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 					case SFTP_DTREE_VIRTUAL:
 						ename = expand_slash(sbbs->cfg.dir[dd->info.filebase.idx]->vdir);
 						break;
+					default:
+						sftp_fattr_free(attr);
+						return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Invalid tree type");
 				}
 				if (ename == nullptr) {
 					sftp_fattr_free(attr);
