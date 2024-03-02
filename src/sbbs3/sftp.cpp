@@ -1620,7 +1620,8 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Longname allocation failure");
 			}
 			vpath = getfname(tmppath);
-			fn.add_name(strdup(vpath), lname, attr);
+			if (!fn.add_name(strdup(vpath), lname, attr))
+				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "adding static file");
 		}
 	}
 	else {
