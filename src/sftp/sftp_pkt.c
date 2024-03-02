@@ -45,6 +45,21 @@ static const struct type_names {
 };
 static const char * const notfound_type = "<UNKNOWN>";
 
+static const struct errcode_names {
+	const uint32_t errcode;
+	const char * const name;
+} errcode_names[] = {
+	{SSH_FX_OK, "OK"},
+	{SSH_FX_EOF, "End Of File"},
+	{SSH_FX_NO_SUCH_FILE, "No Such File"},
+	{SSH_FX_PERMISSION_DENIED, "Permission Denied"},
+	{SSH_FX_FAILURE, "General Failure"},
+	{SSH_FX_BAD_MESSAGE, "Bad Message"},
+	{SSH_FX_NO_CONNECTION, "No Connection"},
+	{SSH_FX_CONNECTION_LOST, "Connection Lost"},
+	{SSH_FX_OP_UNSUPPORTED, "Operation Unsupported"},
+};
+
 static int type_cmp(const void *key, const void *name)
 {
 	int k = *(uint8_t *)key;
@@ -61,6 +76,24 @@ sftp_get_type_name(uint8_t type)
 	if (t == NULL)
 		return notfound_type;
 	return t->name;
+}
+
+static int errcode_cmp(const void *key, const void *name)
+{
+	int k = *(uint32_t *)key;
+	int n = *(uint32_t *)name;
+
+	return k - n;
+}
+
+const char * const
+sftp_get_errcode_name(uint32_t errcode)
+{
+	struct errcode_names *ec = (struct errcode_names *)(bsearch(&errcode, errcode_names, sizeof(errcode_names) / sizeof(errcode_names[0]), sizeof(errcode_names[0]), errcode_cmp));
+
+	if (ec == NULL)
+		return notfound_type;
+	return ec->name;
 }
 
 bool

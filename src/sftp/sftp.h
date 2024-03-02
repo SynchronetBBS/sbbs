@@ -193,7 +193,7 @@ typedef struct sftp_server_state {
 	sftp_rx_pkt_t rxp;
 	sftp_tx_pkt_t txp;
 	void *cb_data;
-	void (*lprintf)(void *cb_data, const char *fmt, ...);
+	void (*lprintf)(void *cb_data, uint32_t errcode, const char *fmt, ...);
 	void (*cleanup_callback)(void *cb_data);
 	bool (*open)(sftp_str_t filename, uint32_t flags, sftp_file_attr_t attributes, void *cb_data);
 	bool (*close)(sftp_str_t handle, void *cb_data);
@@ -223,6 +223,7 @@ typedef struct sftp_server_state {
 
 /* sftp_pkt.c */
 const char * const sftp_get_type_name(uint8_t type);
+const char * const sftp_get_errcode_name(uint32_t errcode);
 bool sftp_have_pkt_sz(sftp_rx_pkt_t pkt);
 bool sftp_have_pkt_type(sftp_rx_pkt_t pkt);
 uint32_t sftp_pkt_sz(sftp_rx_pkt_t pkt);

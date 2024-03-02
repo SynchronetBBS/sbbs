@@ -1248,17 +1248,28 @@ sftp_send(uint8_t *buf, size_t len, void *cb_data)
 }
 
 static void
-sftp_lprintf(void *arg, const char *fmt, ...)
+sftp_lprintf(void *arg, uint32_t errcode, const char *fmt, ...)
 {
 	sbbs_t *sbbs = (sbbs_t *)arg;
 	va_list argptr;
 	char sbuf[1024];
+	int level = LOG_DEBUG;
+
+	switch (errcode) {
+		case SSH_FX_PERMISSION_DENIED:
+			level = LOG_INFO;
+			break;
+		case SSH_FX_FAILURE:
+		case SSH_FX_BAD_MESSAGE:
+			level = LOG_WARNING;
+			break;
+	}
 
 	va_start(argptr,fmt);
 	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
 	va_end(argptr);
-	sbbs->lprintf(LOG_ERR, "SFTP %s", sbuf);
+	sbbs->lprintf(level, "SFTP error code %" PRIu32 " (%s) %s", errcode, sftp_get_errcode_name(errcode), sbuf);
 }
 
 static void
