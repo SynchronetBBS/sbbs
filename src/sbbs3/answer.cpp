@@ -674,7 +674,7 @@ bool sbbs_t::answer()
 					}
 					SAFECOPY(client.addr,cid);
 					SAFECOPY(client.host,client_name);
-					client_on(client_socket,&client,true /* update */);
+					client_on(client_socket,&client,TRUE /* update */);
 				} else {
 					if(telnet_location[0]) {			/* Telnet Location info provided */
 						lprintf(LOG_INFO, "Telnet Location: %s", telnet_location);
@@ -706,7 +706,7 @@ bool sbbs_t::answer()
 				lprintf(LOG_NOTICE, "no Telnet commands received, reverting to Raw TCP mode");
 				telnet_mode |= TELNET_MODE_OFF;
 				client.protocol = "Raw";
-				client_on(client_socket, &client,/* update: */true);
+				client_on(client_socket, &client,/* update: */TRUE);
 				SAFECOPY(connection, client.protocol);
 				node_connection = NODE_CONNECTION_RAW;
 			}
