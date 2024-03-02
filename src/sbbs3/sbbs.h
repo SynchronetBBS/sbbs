@@ -305,7 +305,18 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "mqtt.h"
 #if defined(__cplusplus)
 extern "C" {
+/*
+ * MSVC (correctly) warns that flexible arrays are not part of C++
+ * Since these are used in this header, disable the warning
+ */
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4200)
+#endif
 #include "sftp.h"
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 }
 #endif
 

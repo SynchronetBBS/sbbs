@@ -645,12 +645,14 @@ sftp_resolve_path(char *target, const char *path, size_t size)
 {
 	char	*out;
 	char	*p;
+	bool    target_alloced=false;
 
-	if(target==NULL)  {
+	if(target==NULL) {
 		size = MAX_PATH + 1;
 		if((target=(char*)malloc(size))==NULL) {
 			return(NULL);
 		}
+		target_alloced=true;
 	}
 	strncpy(target, path, size);
 	target[size-1] = 0;
@@ -665,8 +667,11 @@ sftp_resolve_path(char *target, const char *path, size_t size)
 			else if(*(out+1)=='.' && *(out+2)=='.' && (*(out+3)=='/' || *(out+3)==0))  {
 				*out=0;
 				p=strrchr(target,'/');
-				if(p==NULL)
-					p=target;
+				if(p==NULL) {
+					if (target_alloced)
+						free(target);
+					return nullptr;
+				}
 				memmove(p,out+3,strlen(out+3)+1);
 				out=p;
 			}
@@ -674,8 +679,10 @@ sftp_resolve_path(char *target, const char *path, size_t size)
 				out++;
 			}
 		}
-		if (!*out)
-			break;
+	}
+	if (size > 1 && *target == 0) {
+		target[0] = '/';
+		target[1] = 0;
 	}
 	return(target);
 }
@@ -700,6 +707,8 @@ sftp_parse_crealpath(sbbs_t *sbbs, const char *filename)
 	else {
 		ret = sftp_resolve_path(nullptr, filename, 0);
 	}
+	if (ret == nullptr)
+		return ret;
 	if (ret[0] == 0) {
 		free(ret);
 		return nullptr;
