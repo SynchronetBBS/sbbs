@@ -223,6 +223,9 @@ static char* node_connection_desc(ushort conn, char* str)
 		case NODE_CONNECTION_SSH:
 			strcpy(str,"via ssh");
 			break;
+		case NODE_CONNECTION_SFTP:
+			strcpy(str,"via sftp");
+			break;
 		case NODE_CONNECTION_RAW:
 			strcpy(str,"via raw");
 			break;

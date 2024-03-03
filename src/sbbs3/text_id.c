@@ -874,4 +874,5 @@ const char* const text_id[]={
 	,"LANG"
 	,"UserDefaultsLanguage"
 	,"PasswordChar"
+	,"NodeConnectionSFTP"
 };

@@ -477,6 +477,7 @@ public:
 	sftp_dirdescriptor_t sftp_dirdes[NUM_SFTP_DIRDES] {};
 
 	std::atomic<bool> ssh_mode{false};
+	bool term_output_disabled{};
 	SOCKET	passthru_socket=INVALID_SOCKET;
 	bool	passthru_socket_active = false;
 	void	passthru_socket_activate(bool);

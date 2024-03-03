@@ -105,7 +105,6 @@ bool sbbs_t::answer()
 	char 	path[MAX_PATH+1];
 	int		i,l,in;
 	struct tm tm;
-	bool term_output_disabled{};
 	max_socket_inactivity = startup->max_login_inactivity;
 	useron.number=0;
 	answertime=logontime=starttime=now=time(NULL);
@@ -427,9 +426,24 @@ bool sbbs_t::answer()
 								mouse_mode = MOUSE_MODE_OFF;
 								autoterm = 0;
 								sys_status |= SS_USERON;
+								client.protocol = "SFTP";
 								SAFECOPY(client.user, useron.alias);
 								client.usernum = useron.number;
 								client_on(client_socket, &client,/* update: */TRUE);
+								SAFECOPY(connection, client.protocol);
+								if((useron.exempt&FLAG('Q') && useron.misc&QUIET))
+									thisnode.status = NODE_QUIET;
+								else
+									thisnode.status = NODE_INUSE;
+								thisnode.action = NODE_XFER;
+								thisnode.connection = NODE_CONNECTION_SFTP;
+								thisnode.useron = useron.number;
+								putnodedat(cfg.node_num, &thisnode);
+								SAFECOPY(useron.modem, connection);
+								SAFECOPY(useron.ipaddr, client_ipaddr);
+								SAFECOPY(useron.comp, client_name);
+								useron.logons++;
+								putuserdat(&cfg,&useron);
 							}
 							else {
 								lprintf(LOG_NOTICE, "%04d Trying to create new user over sftp, disconnecting.", client_socket);
@@ -438,7 +452,7 @@ bool sbbs_t::answer()
 							}
 						}
 						else {
-							lprintf(LOG_NOTICE, "%04d SSH [%s] active channel subsystem '%.*s' is not 'sftp', disconnecting.", client_socket, client_ipaddr, tnamelen, tname);
+							lprintf(LOG_NOTICE, "%04d SSH [%s] active channel subsystem '%.*s' is not 'sftp' (or SFTP not allowed), disconnecting.", client_socket, client_ipaddr, tnamelen, tname);
 							badlogin(rlogin_name, rlogin_pass, "SSH", &client_addr, /* delay: */false);
 							// Fail because there's no session.
 							activate_ssh = false;

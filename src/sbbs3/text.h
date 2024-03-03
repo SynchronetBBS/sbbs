@@ -890,6 +890,7 @@ enum text {
 	,LANG
 	,UserDefaultsLanguage
 	,PasswordChar
+	,NodeConnectionSFTP
 
 	,TOTAL_TEXT
 };

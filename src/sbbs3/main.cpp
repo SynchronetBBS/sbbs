@@ -4388,7 +4388,24 @@ void node_thread(void* arg)
 		login_success = true;
 		if(sbbs->useron.pass[0])
 			listAddNodeData(&current_logins, sbbs->client.addr, strlen(sbbs->client.addr)+1, sbbs->cfg.node_num, LAST_NODE);
-		if(sbbs->sys_status&SS_QWKLOGON) {
+		if(sbbs->term_output_disabled) { // e.g. SFTP
+			while(sbbs->online) {
+				SLEEP(1000);
+				sbbs->getnodedat(sbbs->cfg.node_num, &sbbs->thisnode, /* lock: */false);
+				if(sbbs->thisnode.misc & NODE_UDAT && !(sbbs->useron.rest & FLAG('G'))) {   /* not guest */
+					getuserdat(&sbbs->cfg, &sbbs->useron);
+					if(sbbs->getnodedat(sbbs->cfg.node_num, &sbbs->thisnode, /* lock: */true) == 0) {
+						sbbs->thisnode.misc &= ~NODE_UDAT;
+						sbbs->putnodedat(sbbs->cfg.node_num, &sbbs->thisnode); 
+					}
+				}
+				if(sbbs->thisnode.misc & NODE_INTR) {
+					sbbs->logline(LOG_NOTICE,nulstr,"Interrupted");
+					sbbs->hangup();
+				}
+			}
+		} 
+		else if(sbbs->sys_status&SS_QWKLOGON) {
 			sbbs->getsmsg(sbbs->useron.number);
 			sbbs->qwk_sec();
 		} else while(sbbs->useron.number

@@ -419,6 +419,8 @@ static char* node_connection_desc(sbbs_t* sbbs, ushort conn, char* str)
 			return sbbs->text[NodeConnectionRLogin];
 		case NODE_CONNECTION_SSH:
 			return sbbs->text[NodeConnectionSSH];
+		case NODE_CONNECTION_SFTP:
+			return sbbs->text[NodeConnectionSFTP];
 		case NODE_CONNECTION_RAW:
 			return sbbs->text[NodeConnectionRaw];
 		default:

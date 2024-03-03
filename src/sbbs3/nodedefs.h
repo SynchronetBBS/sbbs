@@ -109,6 +109,7 @@ typedef struct {					/* Node information kept in node.dab */
 #define NODE_CONNECTION_RLOGIN			(USHRT_MAX-1)
 #define NODE_CONNECTION_SSH				(USHRT_MAX-2)
 #define NODE_CONNECTION_RAW				(USHRT_MAX-3)
+#define NODE_CONNECTION_SFTP			(USHRT_MAX-4)
 				misc,					/* Miscellaneous bits for node */
 				aux;					/* Auxiliary word for node */
     uint32_t   extaux;					/* Extended aux dword for node */
