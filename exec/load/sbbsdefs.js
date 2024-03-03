@@ -52,6 +52,7 @@ var   SYS_SHRTPAGE	=(1<<21);	/* Short sysop page 						*/
 var   SYS_TIME_EXP	=(1<<22);	/* Set to expired values if out-of-time 	*/
 var   SYS_FASTMAIL	=(1<<23);	/* Fast e-mail storage mode 				*/
 var   SYS_NONODELIST=(1<<24);	/* Suppress active node list during logon	*/
+var   SYS_MOUSE_HOT	=(1<<25);	/* Mouse Hot-spots in menus and prompts		*/
 var   SYS_FWDTONET	=(1<<26);	/* Allow forwarding of e-mail to netmail	*/
 var   SYS_DELREADM	=(1<<27);	/* Delete read mail automatically			*/
 var   SYS_NOCDTCVT	=(1<<28);	/* No credit to minute conversions allowed	*/
