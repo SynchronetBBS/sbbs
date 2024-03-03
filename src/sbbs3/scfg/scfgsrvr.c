@@ -332,7 +332,6 @@ static void telnet_srvr_cfg(bbs_startup_t* startup)
 	static int cur, bar;
 	char str[256];
 	char tmp[256];
-	bool enabled = false;
 
 	while(1) {
 		int i = 0;
@@ -389,7 +388,6 @@ static void ssh_srvr_cfg(bbs_startup_t* startup)
 	static int cur, bar;
 	char str[256];
 	char tmp[256];
-	bool enabled = false;
 
 	while(1) {
 		int i = 0;
@@ -467,7 +465,6 @@ static void rlogin_srvr_cfg(bbs_startup_t* startup)
 	static int cur, bar;
 	char str[256];
 	char tmp[256];
-	bool enabled = false;
 
 	while(1) {
 		int i = 0;
