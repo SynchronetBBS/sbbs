@@ -83,8 +83,9 @@ static struct init_field web_init_fields[] = {
 #define WEB_OPT_VIRTUAL_HOSTS		(1<<4)	/* Use virtual host html subdirs	*/
 #define WEB_OPT_NO_CGI				(1<<5)	/* Disable CGI support				*/
 #define WEB_OPT_HTTP_LOGGING		(1<<6)	/* Create/write-to HttpLogFile		*/
-#define WEB_OPT_ALLOW_TLS			(1<<7)	/* Enable HTTPS						*/
+#define WEB_OPT_ALLOW_TLS			(1<<7)	/* Enable HTTPS support				*/
 #define WEB_OPT_HSTS_SAFE			(1<<8)	/* All URLs can be served over HTTPS*/
+#define WEB_OPT_NO_HTTP				(1<<9)	/* Disable HTTP support				*/
 
 /* web_startup_t.options bits that require re-init/recycle when changed */
 #define WEB_INIT_OPTS	(WEB_OPT_HTTP_LOGGING)
@@ -97,6 +98,7 @@ static ini_bitdesc_t web_options[] = {
 	{ WEB_OPT_DEBUG_SSJS			,"DEBUG_SSJS"			},
 	{ WEB_OPT_VIRTUAL_HOSTS			,"VIRTUAL_HOSTS"		},
 	{ WEB_OPT_NO_CGI				,"NO_CGI"				},
+	{ WEB_OPT_NO_HTTP				,"NO_HTTP"				},
 	{ WEB_OPT_HTTP_LOGGING			,"HTTP_LOGGING"			},
 	{ WEB_OPT_ALLOW_TLS				,"ALLOW_TLS"			},
 	{ WEB_OPT_HSTS_SAFE				,"HSTS_SAFE"			},
