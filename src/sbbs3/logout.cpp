@@ -122,7 +122,8 @@ void sbbs_t::logout(bool logged_in)
 		useron.textra+=(ushort)((starttime-logontime)/60);
 
 	putuserdec32(useron.number, USER_TEXTRA, useron.textra);
-	putuserdatetime(useron.number, USER_NS_TIME, last_ns_time);
+	if(last_ns_time > 0)
+		putuserdatetime(useron.number, USER_NS_TIME, last_ns_time);
 
 	logoutuserdat(&cfg, &useron, now, logontime);
 
