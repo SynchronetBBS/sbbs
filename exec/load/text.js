@@ -880,7 +880,8 @@ var Language=870;
 var LANG=871;
 var UserDefaultsLanguage=872;
 var PasswordChar=873;
+var NodeConnectionSFTP=874;
 
-var TOTAL_TEXT=874;
+var TOTAL_TEXT=875;
 
 this;
