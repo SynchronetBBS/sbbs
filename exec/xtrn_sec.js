@@ -47,8 +47,10 @@ if(options.singlecolumn_margin == undefined)
 if(options.singlecolumn_height == undefined)
 	options.singlecolumn_height = console.screen_rows - options.singlecolumn_margin;
 
-if(console.screen_columns < 80)
+if(console.screen_columns < 80) {
 	options.multicolumn = false;
+	options.center = false;
+}
 
 if(options.restricted_user_msg === undefined)
 	options.restricted_user_msg = bbs.text(R_ExternalPrograms);
