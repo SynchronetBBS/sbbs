@@ -1,3 +1,7 @@
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
 #include <stdexcept>
 #include <memory>
 #include <vector>
@@ -488,6 +492,69 @@ public:
 			sftp_fattr_free(attr);
 	}
 };
+
+static std::string
+sftp_attr_string(sftp_file_attr_t attr)
+{
+	uint64_t u64;
+	uint32_t u32;
+	sftp_str_t str;
+	std::ostringstream ret;
+	std::string rstr;
+
+	try {
+		if (sftp_fattr_get_size(attr, &u64))
+			ret << "size=" << u64 << ", ";
+		if (sftp_fattr_get_uid(attr, &u32))
+			ret << "uid=" << u32 << ", ";
+		if (sftp_fattr_get_gid(attr, &u32))
+			ret << "gid=" << u32 << ", ";
+		if (sftp_fattr_get_permissions(attr, &u32))
+			ret << "perm=0" << std::oct << u32 << ", " << std::dec;
+		/*
+		 * We can't use std::put_time() because apparently std::gmtime_r() isn't
+		 * available on Win32.
+		 */
+		if (sftp_fattr_get_atime(attr, &u32)) {
+			struct tm t;
+			time_t tt = u32;
+			if (gmtime_r(&tt, &t))
+				ret << "atime=" << std::put_time(&t, "%c") << u32 << ", ";
+			else
+				ret << "atime=" << u32 << ", ";
+		}
+		if (sftp_fattr_get_mtime(attr, &u32)) {
+			struct tm t;
+			time_t tt = u32;
+			if (gmtime_r(&tt, &t))
+				ret << "mtime=" << std::put_time(&t, "%c") << u32 << ", ";
+			else
+				ret << "mtime=" << u32 << ", ";
+		}
+		u32 = sftp_fattr_get_ext_count(attr);
+		for (uint32_t idx = 0; idx < u32; idx++) {
+			str = sftp_fattr_get_ext_type(attr, idx);
+			if (str)
+				ret << str->c_str << "=";
+			else
+				ret << "<null>=";
+			free_sftp_str(str);
+			str = sftp_fattr_get_ext_data(attr, idx);
+			if (str)
+				ret << str->c_str << ", ";
+			else
+				ret << "<null>, ";
+			free_sftp_str(str);
+		}
+		std::string rstr = ret.str();
+		if (rstr.length() > 2)
+			rstr.erase(rstr.length() - 2);
+	}
+	catch(...) {
+		rstr = "<error>"; // TODO: This could throw as well. :(
+	}
+	return rstr;
+}
 
 static bool
 is_in_filebase(const char *path)
@@ -1315,7 +1382,7 @@ sftp_open(sftp_str_t filename, uint32_t flags, sftp_file_attr_t attributes, void
 	bool ret;
 	map_path_mode_t mmode;
 
-	sbbs->lprintf(LOG_DEBUG, "SFTP open(%.*s, %x, )", filename->len, filename->c_str, flags);
+	sbbs->lprintf(LOG_DEBUG, "SFTP open(%.*s, %x, %s)", filename->len, filename->c_str, flags, sftp_attr_string(attributes).c_str());
 
 	// See if there's an available file descriptor
 	for (fdidx = 0; fdidx < nfdes; fdidx++) {
