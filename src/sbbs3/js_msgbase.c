@@ -868,15 +868,15 @@ static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 
 	/* Numeric Header Fields */
 	if(JS_GetProperty(cx, hdr, "attr", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToInt32(cx,val,&i32))
+		if(!JS_ValueToECMAUint32(cx,val,&u32))
 			goto err;
-		msg->hdr.attr=(ushort)i32;
+		msg->hdr.attr=(ushort)u32;
 		msg->idx.attr=msg->hdr.attr;
 	}
 	if(JS_GetProperty(cx, hdr, "votes", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToInt32(cx,val,&i32))
+		if(!JS_ValueToECMAUint32(cx,val,&u32))
 			goto err;
-		msg->hdr.votes=(ushort)i32;
+		msg->hdr.votes=(ushort)u32;
 		if(msg->hdr.type == SMB_MSG_TYPE_BALLOT)
 			msg->idx.votes=msg->hdr.votes;
 	}
@@ -886,14 +886,14 @@ static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		msg->hdr.auxattr=u32;
 	}
 	if(JS_GetProperty(cx, hdr, "netattr", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToInt32(cx,val,&i32))
+		if(!JS_ValueToECMAUint32(cx,val,&u32))
 			goto err;
-		msg->hdr.netattr=i32;
+		msg->hdr.netattr=u32;
 	}
 	if(JS_GetProperty(cx, hdr, "when_written_time", &val) && !JSVAL_NULL_OR_VOID(val))  {
-		if(!JS_ValueToInt32(cx,val,&i32))
+		if(!JS_ValueToECMAUint32(cx,val,&u32))
 			goto err;
-		msg->hdr.when_written.time=i32;
+		msg->hdr.when_written.time=u32;
 	}
 	if(JS_GetProperty(cx, hdr, "when_written_zone", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToInt32(cx,val,&i32))
@@ -901,9 +901,9 @@ static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		msg->hdr.when_written.zone=(short)i32;
 	}
 	if(JS_GetProperty(cx, hdr, "when_imported_time", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToInt32(cx,val,&i32))
+		if(!JS_ValueToECMAUint32(cx,val,&u32))
 			goto err;
-		msg->hdr.when_imported.time=i32;
+		msg->hdr.when_imported.time=u32;
 	}
 	if(JS_GetProperty(cx, hdr, "when_imported_zone", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToInt32(cx,val,&i32))
@@ -912,30 +912,30 @@ static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(JS_GetProperty(cx, hdr, "thread_id", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToInt32(cx,val,&i32))
+		if(!JS_ValueToECMAUint32(cx,val,&u32))
 			goto err;
-		msg->hdr.thread_id=i32;
+		msg->hdr.thread_id=u32;
 	}
 	if((JS_GetProperty(cx, hdr, "thread_orig", &val) && (!JSVAL_NULL_OR_VOID(val)))
 			|| (JS_GetProperty(cx, hdr, "thread_back", &val) && !JSVAL_NULL_OR_VOID(val))) {
-		if(!JS_ValueToInt32(cx,val,&i32))
+		if(!JS_ValueToECMAUint32(cx,val,&u32))
 			goto err;
-		msg->hdr.thread_back=i32;
+		msg->hdr.thread_back=u32;
 	}
 	if(JS_GetProperty(cx, hdr, "thread_next", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToInt32(cx,val,&i32))
+		if(!JS_ValueToECMAUint32(cx,val,&u32))
 			goto err;
-		msg->hdr.thread_next=i32;
+		msg->hdr.thread_next=u32;
 	}
 	if(JS_GetProperty(cx, hdr, "thread_first", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToInt32(cx,val,&i32))
+		if(!JS_ValueToECMAUint32(cx,val,&u32))
 			goto err;
-		msg->hdr.thread_first=i32;
+		msg->hdr.thread_first=u32;
 	}
 	if(JS_GetProperty(cx, hdr, "delivery_attempts", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToInt32(cx,val,&i32))
+		if(!JS_ValueToECMAUint32(cx,val,&u32))
 			goto err;
-		msg->hdr.delivery_attempts=i32;
+		msg->hdr.delivery_attempts=u32;
 	}
 
 	if(JS_GetProperty(cx, hdr, "priority", &val) && !JSVAL_NULL_OR_VOID(val)) {
@@ -986,9 +986,9 @@ static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	if(msg->hdr.number==0 && JS_GetProperty(cx, hdr, "number", &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToInt32(cx,val,&i32))
+		if(!JS_ValueToECMAUint32(cx,val,&u32))
 			goto err;
-		msg->hdr.number=i32;
+		msg->hdr.number=u32;
 	}
 
 	if(cp)
@@ -1143,7 +1143,7 @@ js_get_msg_index(JSContext *cx, uintN argc, jsval *arglist)
 					return JS_FALSE;
 			}
 			else {									/* Get by number */
-				if(!JS_ValueToInt32(cx, argv[n], (int32*)&msg.hdr.number))
+				if(!JS_ValueToECMAUint32(cx, argv[n], &msg.hdr.number))
 					return JS_FALSE;
 			}
 		}
@@ -1750,7 +1750,7 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			}
 		}
 		else {									/* Get by number */
-			if(!JS_ValueToInt32(cx,argv[n++],(int32*)&(p->msg).hdr.number)) {
+			if(!JS_ValueToECMAUint32(cx,argv[n++],&(p->msg).hdr.number)) {
 				free(p);
 				return JS_FALSE;
 			}
@@ -2111,7 +2111,7 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 					return JS_FALSE;
 			}
 			else {									/* Get by number */
-				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number))
+				if(!JS_ValueToECMAUint32(cx,argv[n],&msg.hdr.number))
 					return JS_FALSE;
 			}
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
@@ -2222,7 +2222,7 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 					return JS_FALSE;
 			}
 			else {									/* Get by number */
-				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number))
+				if(!JS_ValueToECMAUint32(cx,argv[n],&msg.hdr.number))
 					return JS_FALSE;
 			}
 			msg_specified=JS_TRUE;
@@ -2364,7 +2364,7 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 					return JS_FALSE;
 			}
 			else {									/* Get by number */
-				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number))
+				if(!JS_ValueToECMAUint32(cx,argv[n],&msg.hdr.number))
 					return JS_FALSE;
 			}
 			msg_specified=JS_TRUE;
@@ -2478,7 +2478,7 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 					return JS_FALSE;
 			}
 			else {									/* Get by number */
-				if(!JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number))
+				if(!JS_ValueToECMAUint32(cx,argv[n],&msg.hdr.number))
 					return JS_FALSE;
 			}
 			msg_specified=JS_TRUE;
@@ -2843,7 +2843,7 @@ js_how_user_voted(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject*	obj=JS_THIS_OBJECT(cx, arglist);
 	jsval*		argv=JS_ARGV(cx, arglist);
-	int32		msgnum;
+	uint32		msgnum;
 	private_t*	p;
 	char*		name = NULL;
 	uint16_t	votes;
@@ -2858,7 +2858,7 @@ js_how_user_voted(JSContext *cx, uintN argc, jsval *arglist)
 	if(!SMB_IS_OPEN(&(p->smb)))
 		return JS_TRUE;
 
-	if(!JS_ValueToInt32(cx, argv[0], &msgnum))
+	if(!JS_ValueToECMAUint32(cx, argv[0], &msgnum))
 		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[1], name, NULL)
@@ -2881,7 +2881,7 @@ js_close_poll(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject*	obj=JS_THIS_OBJECT(cx, arglist);
 	jsval*		argv=JS_ARGV(cx, arglist);
-	int32		msgnum;
+	uint32		msgnum;
 	private_t*	p;
 	char*		name = NULL;
 	int			result;
@@ -2899,7 +2899,7 @@ js_close_poll(JSContext *cx, uintN argc, jsval *arglist)
 	if(!SMB_IS_OPEN(&(p->smb)))
 		return JS_TRUE;
 
-	if(!JS_ValueToInt32(cx, argv[0], &msgnum))
+	if(!JS_ValueToECMAUint32(cx, argv[0], &msgnum))
 		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[1], name, NULL)
@@ -2951,11 +2951,11 @@ static JSBool js_msgbase_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 
 	switch(tiny) {
 		case SMB_PROP_RETRY_TIME:
-			if(!JS_ValueToInt32(cx,*vp,(int32*)&(p->smb).retry_time))
+			if(!JS_ValueToECMAUint32(cx,*vp,&(p->smb).retry_time))
 				return JS_FALSE;
 			break;
 		case SMB_PROP_RETRY_DELAY:
-			if(!JS_ValueToInt32(cx,*vp,(int32*)&(p->smb).retry_delay))
+			if(!JS_ValueToECMAUint32(cx,*vp,&(p->smb).retry_delay))
 				return JS_FALSE;
 			break;
 		case SMB_PROP_DEBUG:
