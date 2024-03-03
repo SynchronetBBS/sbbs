@@ -1177,8 +1177,12 @@ copy_path_from_dir(char *p, const char *fp)
 static void
 record_transfer(sbbs_t *sbbs, sftp_filedescriptor_t desc, bool upload)
 {
-	if (desc->dir == -1)
+	if (desc->dir == -1) {
+		char str[MAX_PATH + 1];
+		snprintf(str, sizeof str, "%s (%" PRId64 " bytes)", desc->local_path, flength(desc->local_path));
+		sbbs->logline(upload ? "U+" : "D-", str);
 		return;
+	}
 	char *nptr = strrchr(desc->local_path, '/');
 	if (nptr != nullptr) {
 		file_t file{};

@@ -444,6 +444,9 @@ bool sbbs_t::answer()
 								SAFECOPY(useron.comp, client_name);
 								useron.logons++;
 								putuserdat(&cfg,&useron);
+								snprintf(str, sizeof(str), "(%04u)  %-25s  %s Logon"
+									,useron.number, useron.alias, client.protocol);
+								logline("++", str);
 							}
 							else {
 								lprintf(LOG_NOTICE, "%04d Trying to create new user over sftp, disconnecting.", client_socket);
