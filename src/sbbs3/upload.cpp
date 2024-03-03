@@ -175,8 +175,10 @@ bool sbbs_t::uploadfile(file_t* f)
 	if(!addfile(&cfg, f, ext, /* metadata: */NULL, &client))
 		return false;
 
-	safe_snprintf(str,sizeof(str),"uploaded %s to %s %s"
-		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
+	snprintf(str,sizeof(str),"uploaded %s (%" PRId64 " bytes) to %s %s"
+		,f->name
+		,length
+		,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	if(cfg.dir[f->dir]->upload_sem[0])
 		ftouch(cmdstr(cfg.dir[f->dir]->upload_sem,nulstr,nulstr,NULL));

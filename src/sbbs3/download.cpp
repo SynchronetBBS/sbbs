@@ -40,8 +40,10 @@ void sbbs_t::downloadedfile(file_t* f)
 		logon_dls++;
 	}
 	bprintf(text[FileNBytesSent],f->name,ultoac((ulong)length,tmp));
-	SAFEPRINTF3(str,"downloaded %s from %s %s"
-		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
+	snprintf(str, sizeof str, "downloaded %s (%" PRId64 " bytes) from %s %s"
+		,f->name
+		,length
+		,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	logline("D-",str);
 
@@ -52,7 +54,8 @@ void sbbs_t::downloadedfile(file_t* f)
 }
 
 /****************************************************************************/
-/* This function is called when a file is successfully downloaded.			*/
+/* This function is to be called when a file is successfully downloaded,	*/
+/* to re-calculate and store the user's download through-put (in CPS).		*/
 /****************************************************************************/
 void sbbs_t::downloadedbytes(off_t size, time_t elapsed)
 {
