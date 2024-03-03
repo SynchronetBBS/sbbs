@@ -7,12 +7,17 @@ General
 ~~~~~~~
 o New userbase (see https://wiki.synchro.net/history:newuserbase for details)
 o New primary configuration files: http://wiki.synchro.net/history:newcfgfiles
+o Improved UTF-8 terminal support
+  - UNICODE characters sent to Terminal Server are automatically converted to
+    CP437 (if possible) in most scenarios
+  - Auto-detection of zero-width character column width in UTF-8 terminals
+    (some UTF-8 terminals display an empty cell, others do not)
+  - Spying on UTF-8 terminals displays CP437 equivalents (much prettier)
+    via sbbsctrl and umonitor applications
 o New statistics file formats
   - */dsts.dab (daily statistics and running totals) -> */dsts.ini
   - */csts.dab (cumulative statistics / log) -> */csts.tab
   - DSTSEDIT (daily stats editor) goes away: just edit the dsts.ini file
-o Baja: Make !INCLUDE directives filename case-insensitive
-  - some old command shells/mods wouldn't compile on *nix systems otherwise
 o Increase maximum length of configured file/directory paths and command-lines
   from 63 to 100 characters
 o Internal codes (prefixes and suffixes) have doubled in maximum length
@@ -25,6 +30,7 @@ o New configurable date display/input formats (e.g. Year first)
 Security
 ~~~~~~~~
 o New cryptographic library (cryptlib) version 3.4.7 for TLS and SSH
+  - with many custom patches for bug fixes and Synchronet-specific features
 o Set the minimum TLS version for the FTP server and TLS services to TLS 1.2
 o Disallow new user aliases from matching an existing user's real name
 o Implement duplicate new-user email address checking (optional)
@@ -50,6 +56,8 @@ Customization
 ~~~~~~~~~~~~~
 o New preferred method of text.dat string sysop-customization: ctrl/text.ini
   See https://wiki.synchro.net/custom:text.ini for details
+o Baja: Make !INCLUDE directives filename case-insensitive
+  - some old command shells/mods wouldn't compile on *nix systems otherwise
 o New stock JavaScript modules:
   - msgscancfg.js and filescancfg.js
     Replaces logic previously copy/pasted into multiple Baja command shells
@@ -136,6 +144,7 @@ o New text.dat strings:
   - LANG
   - UserDefaultsLanguage
   - PasswordChar
+  - NodeConnectionSFTP
 o New text.dat strings for received Fido and Internet mail
   - InternetMailReceived
   - InternetMailForwarded
@@ -370,6 +379,8 @@ o Make new user QWK-related and Chat-related settings configurable
 o New line-based method of output throttling (e.g for animated ANSIs)
   Enabled/set via LINEDELAY @-code and JS console.line_delay property
 o New twitlist-author operator menu option when reading messages
+o SSH FTP (SFTP) support
+o SSH "any auth" support (e.g. for use with login matrixes)
 o SSH terminal type/size advertisement
 o SSH max-severity of log messages is now configurable
 o SSH negotiation is now asynchronous/non-blocking, so other nodes can accept
@@ -412,6 +423,7 @@ o When user hangs-up on external programs on *nix, try to terminate w/SIGTERM
 
 File Transfers
 ~~~~~~~~~~~~~~
+o Added support for SSH FTP (SFTP)
 o Extracted DIZ from sub-directory of archive does not preempt root DIZ File
 o Increased maximum extended file description length from 4000 to 5000 chars
 o Filenames > 12 chars use liberal filename matching
@@ -494,7 +506,7 @@ Web Server
 ~~~~~~~~~~
 o Direct Filebase access for downloading files with access controls,
   notifications, updated statistics and credits (optional, enabled
-  via SCFG->Servers->Web Server->Filebase VPath Prefix (e.g. "/files/")
+  via SCFG->Servers->Web Server->Filebase VPath Prefix (e.g. "/files/"))
 o Dynamic file area/base indexing, for a demo, set sbbs.ini [web]
   FileIndexScript = webfileindex.ssjs
   FileVPathPrefix = /files/
