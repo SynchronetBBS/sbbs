@@ -2798,9 +2798,9 @@ void sys_cfg(void)
 								"inactivity detection feature.  Default is `5 minutes`.\n"
 								"\n"
 								"For lower-level inactive socket detection/disconnection, see the\n"
-								"`Max*Inactivity` keys in the `[BBS]` section of your `ctrl/sbbs.ini` file.\n"
+								"`Max*Inactivity` settings `SCFG:Servers->Terminal Server`. \n"
 								"\n"
-								"H-exempt users will not be disconnected due to inactivity."
+								"`H`-exempt users will not be disconnected due to inactivity."
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,14
 								,"Duration Before Inactive-User Disconnection"
