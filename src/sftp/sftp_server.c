@@ -81,7 +81,7 @@ s_open(sftps_state_t state)
 			return true;
 		}
 		if (flags & SSH_FXF_EXCL) {
-			sftps_send_error(state, SSH_FX_OP_UNSUPPORTED, "Can't open exclisive unless creating");
+			sftps_send_error(state, SSH_FX_OP_UNSUPPORTED, "Can't open exclusive unless creating");
 			free_sftp_str(fname);
 			return true;
 		}
