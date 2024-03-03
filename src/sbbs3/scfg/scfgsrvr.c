@@ -346,8 +346,8 @@ static void telnet_srvr_cfg(bbs_startup_t* startup)
 			,startup->options & BBS_OPT_NO_TELNET ? "N/A" : startup->options & BBS_OPT_NO_TELNET_GA ? "No" : "Yes");
 		opt[i][0] = '\0';
 
-		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
-			,"Telnet Server",opt)) {
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"Telnet Support",opt)) {
 			case 0:
 				startup->options ^= BBS_OPT_NO_TELNET;
 				break;
@@ -408,8 +408,8 @@ static void ssh_srvr_cfg(bbs_startup_t* startup)
 
 		opt[i][0] = '\0';
 
-		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
-			,"SSH Server",opt)) {
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"SSH Support",opt)) {
 			case 0:
 				startup->options ^= BBS_OPT_ALLOW_SSH;
 				break;
@@ -477,8 +477,8 @@ static void rlogin_srvr_cfg(bbs_startup_t* startup)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Port", startup->rlogin_port);
 		opt[i][0] = '\0';
 
-		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
-			,"RLogin Server",opt)) {
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"RLogin Support",opt)) {
 			case 0:
 				startup->options ^= BBS_OPT_ALLOW_RLOGIN;
 				break;
