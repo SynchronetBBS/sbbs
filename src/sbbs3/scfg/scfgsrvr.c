@@ -336,13 +336,13 @@ static void telnet_srvr_cfg(bbs_startup_t* startup)
 
 	while(1) {
 		int i = 0;
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", startup->options & BBS_OPT_NO_TELNET ? "No" : "Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Interfaces"
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Enabled", startup->options & BBS_OPT_NO_TELNET ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Interfaces"
 			,startup->options & BBS_OPT_NO_TELNET ? "N/A" : strListCombine(startup->telnet_interfaces, tmp, sizeof(tmp), ", "));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Port", startup->telnet_port);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Command Debug"
+		snprintf(opt[i++], MAX_OPLN, "%-20s%u", "Port", startup->telnet_port);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Command Debug"
 			,startup->options & BBS_OPT_NO_TELNET ? "N/A" : startup->options & BBS_OPT_DEBUG_TELNET ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Send Go-Aheads"
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Send Go-Aheads"
 			,startup->options & BBS_OPT_NO_TELNET ? "N/A" : startup->options & BBS_OPT_NO_TELNET_GA ? "No" : "Yes");
 		opt[i][0] = '\0';
 
@@ -471,10 +471,10 @@ static void rlogin_srvr_cfg(bbs_startup_t* startup)
 
 	while(1) {
 		int i = 0;
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", startup->options & BBS_OPT_ALLOW_RLOGIN ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Interfaces"
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Enabled", startup->options & BBS_OPT_ALLOW_RLOGIN ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Interfaces"
 			,startup->options & BBS_OPT_ALLOW_RLOGIN ? strListCombine(startup->rlogin_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Port", startup->rlogin_port);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%u", "Port", startup->rlogin_port);
 		opt[i][0] = '\0';
 
 		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, 0, 0, 0, &cur, &bar
@@ -645,6 +645,8 @@ static void termsrvr_cfg(void)
 				startup.options ^= BBS_OPT_NO_EVENTS;
 				break;
 			case 16:
+				if(startup.options & BBS_OPT_NO_EVENTS)
+					break;
 				startup.options ^= BBS_OPT_NO_QWK_EVENTS;
 				break;
 			case 17:
@@ -701,6 +703,98 @@ static void termsrvr_cfg(void)
 	}
 }
 
+static void http_srvr_cfg(web_startup_t* startup)
+{
+	static int cur, bar;
+	char tmp[256];
+	char str[256];
+
+	while(1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Enabled", startup->options & WEB_OPT_NO_HTTP ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Interfaces"
+			,startup->options & WEB_OPT_NO_HTTP ? "N/A" : strListCombine(startup->interfaces, tmp, sizeof(tmp), ", "));
+		snprintf(opt[i++], MAX_OPLN, "%-20s%u", "Port", startup->port);
+		opt[i][0] = '\0';
+
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"HTTP Support",opt)) {
+			case 0:
+				startup->options ^= WEB_OPT_NO_HTTP;
+				break;
+			case 1:
+				if(startup->options & WEB_OPT_NO_HTTP)
+					break;
+				strListCombine(startup->interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup->interfaces);
+					strListSplitCopy(&startup->interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 3:
+				if(startup->options & WEB_OPT_NO_HTTP)
+					break;
+				SAFEPRINTF(str, "%u", startup->port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup->port = atoi(str);
+				break;
+			default:
+				return;
+		}
+	}
+}
+
+static void https_srvr_cfg(web_startup_t* startup)
+{
+	static int cur, bar;
+	char tmp[256];
+	char str[256];
+
+	while(1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", startup->options & WEB_OPT_ALLOW_TLS  ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Interfaces"
+			,startup->options & WEB_OPT_ALLOW_TLS ? strListCombine(startup->tls_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Port", startup->tls_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Strict Transport Security"
+			,startup->options & WEB_OPT_ALLOW_TLS ? (startup->options & WEB_OPT_HSTS_SAFE ? "Yes" : "No") : "N/A");
+		opt[i][0] = '\0';
+
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"HTTPS Support",opt)) {
+			case 0:
+				startup->options ^= WEB_OPT_ALLOW_TLS;
+				break;
+			case 1:
+				if(!(startup->options & WEB_OPT_ALLOW_TLS))
+					break;
+				strListCombine(startup->tls_interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP/TLS (HTTPS) Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup->tls_interfaces);
+					strListSplitCopy(&startup->tls_interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 2:
+				if(!(startup->options & WEB_OPT_ALLOW_TLS))
+					break;
+				SAFEPRINTF(str, "%u", startup->tls_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP/TLS (HTTPS) TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup->tls_port = atoi(str);
+				break;
+			case 3:
+				if(!(startup->options & WEB_OPT_ALLOW_TLS))
+					break;
+				startup->options ^= WEB_OPT_HSTS_SAFE;
+				break;
+			default:
+				return;
+		}
+	}
+}
+
+
 static void websrvr_cfg(void)
 {
 	static int cur, bar;
@@ -738,17 +832,14 @@ static void websrvr_cfg(void)
 		int i = 0;
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", enabled ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "HTTP Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "HTTP Port", startup.port);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "HTTPS Support", startup.options & WEB_OPT_ALLOW_TLS ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "HTTPS Interfaces"
-			,startup.options & WEB_OPT_ALLOW_TLS ? strListCombine(startup.tls_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "HTTPS Port", startup.tls_port);
+		snprintf(str, sizeof str, "Port %u", startup.port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "HTTP Support...", startup.options & WEB_OPT_NO_HTTP ? strDisabled : str);
+		snprintf(str, sizeof str, "Port %u", startup.tls_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "HTTPS Support...",  startup.options & WEB_OPT_ALLOW_TLS ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSJS File Extension", startup.ssjs_ext);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Index Filenames", strListCombine(startup.index_file_name, tmp, sizeof(tmp), ", "));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Content Root Directory", startup.root_dir);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Error Sub-directory", startup.error_dir);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Strict Transport Security", startup.options & WEB_OPT_HSTS_SAFE ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Virtual Host Support", startup.options & WEB_OPT_VIRTUAL_HOSTS ? "Yes" : "No");
 		SAFECOPY(str, startup.logfile_base);
 		if(*str == '\0')
@@ -758,15 +849,19 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase Index Script", startup.file_index_script);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase VPath Prefix", startup.file_vpath_prefix);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase VPath for VHosts", startup.file_vpath_for_vhosts ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase VPath for VHosts"
+			,startup.options & WEB_OPT_VIRTUAL_HOSTS ? startup.file_vpath_for_vhosts ? "Yes" : "No" : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Authentication Methods", startup.default_auth_list);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Support",  startup.options & WEB_OPT_NO_CGI ? "No" : "Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Directory", startup.cgi_dir);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI File Extensions", strListCombine(startup.cgi_ext, tmp, sizeof(tmp), ", "));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Default Content-Type", startup.default_cgi_content);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Max Inactivity", vduration(startup.max_cgi_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Directory", startup.options & WEB_OPT_NO_CGI ? "N/A" : startup.cgi_dir);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI File Extensions"
+			,startup.options & WEB_OPT_NO_CGI ? "N/A" : strListCombine(startup.cgi_ext, tmp, sizeof(tmp), ", "));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Default Content-Type"
+			,startup.options & WEB_OPT_NO_CGI ? "N/A" : startup.default_cgi_content);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Max Inactivity"
+			,startup.options & WEB_OPT_NO_CGI ? "N/A" : vduration(startup.max_cgi_inactivity));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
@@ -798,39 +893,16 @@ static void websrvr_cfg(void)
 				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup.log_level, 0, "Log Level", iniLogLevelStringList());
 				break;
 			case 2:
-				strListCombine(startup.interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
-					strListFree(&startup.interfaces);
-					strListSplitCopy(&startup.interfaces, str, ", ");
-					uifc.changes = true;
-				}
+				http_srvr_cfg(&startup);
 				break;
 			case 3:
-				SAFEPRINTF(str, "%u", startup.port);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
-					startup.port = atoi(str);
+				https_srvr_cfg(&startup);
 				break;
 			case 4:
-				startup.options ^= WEB_OPT_ALLOW_TLS;
-				break;
-			case 5:
-				strListCombine(startup.tls_interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP/TLS (HTTPS) Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
-					strListFree(&startup.tls_interfaces);
-					strListSplitCopy(&startup.tls_interfaces, str, ", ");
-					uifc.changes = true;
-				}
-				break;
-			case 6:
-				SAFEPRINTF(str, "%u", startup.tls_port);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "HTTP/TLS (HTTPS) TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
-					startup.tls_port = atoi(str);
-				break;
-			case 7:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Server-side JavaScript File Extension"
 					, startup.ssjs_ext, sizeof(startup.ssjs_ext) -1, K_EDIT);
 				break;
-			case 8:
+			case 5:
 				strListCombine(startup.index_file_name, str, sizeof(str), ", ");
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Index Filenames", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.index_file_name);
@@ -838,21 +910,18 @@ static void websrvr_cfg(void)
 					uifc.changes = true;
 				}
 				break;
-			case 9:
+			case 6:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Content Root Directory"
 					,startup.root_dir, sizeof(startup.root_dir)-1, K_EDIT);
 				break;
-			case 10:
+			case 7:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Error Sub-directory"
 					,startup.error_dir, sizeof(startup.error_dir)-1, K_EDIT);
 				break;
-			case 11:
-				startup.options ^= WEB_OPT_HSTS_SAFE;
-				break;
-			case 12:
+			case 8:
 				startup.options ^= WEB_OPT_VIRTUAL_HOSTS;
 				break;
-			case 13:
+			case 9:
 				i = startup.options & WEB_OPT_HTTP_LOGGING ? 0 : 1;
 				i = uifc.list(WIN_SAV|WIN_MID, 0, 0, 0, &i, 0, "Log Requests to Files in Combined Log Format", uifcYesNoOpts);
 				if(i == 0) {
@@ -862,48 +931,52 @@ static void websrvr_cfg(void)
 				} else if(i == 1)
 					startup.options &= ~WEB_OPT_HTTP_LOGGING;
 				break;
-			case 14:
+			case 10:
 				SAFECOPY(str, maximum(startup.max_clients));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Count (0=Unlimited)", str, 10, K_EDIT) > 0)
 					startup.max_clients = atoi(str);
 				break;
-			case 15:
+			case 11:
 				SAFECOPY(str, duration(startup.max_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 16:
+			case 12:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Filebase Index Script"
 					,startup.file_index_script, sizeof(startup.file_index_script)-1, K_EDIT);
 				break;
-			case 17:
+			case 13:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Filebase Virtual Path Prefix"
 					,startup.file_vpath_prefix, sizeof(startup.file_vpath_prefix)-1, K_EDIT);
 				break;
-			case 18:
+			case 14:
 				startup.file_vpath_for_vhosts = !startup.file_vpath_for_vhosts;
 				break;
-			case 19:
+			case 15:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Authentication Methods"
 					,startup.default_auth_list, sizeof(startup.default_auth_list)-1, K_EDIT);
 				break;
-			case 20:
+			case 16:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)"
 					,str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.outbuf_drain_timeout = atoi(str);
 				break;
-			case 21:
+			case 17:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 22:
+			case 18:
 				startup.options ^= WEB_OPT_NO_CGI;
 				break;
-			case 23:
+			case 19:
+				if(startup.options & WEB_OPT_NO_CGI)
+					break;
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "CGI Directory"
 					,startup.cgi_dir, sizeof(startup.cgi_dir)-1, K_EDIT);
 				break;
-			case 24:
+			case 20:
+				if(startup.options & WEB_OPT_NO_CGI)
+					break;
 				strListCombine(startup.cgi_ext, str, sizeof(str), ", ");
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "CGI File Extensions", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.cgi_ext);
@@ -911,22 +984,26 @@ static void websrvr_cfg(void)
 					uifc.changes = true;
 				}
 				break;
-			case 25:
+			case 21:
+				if(startup.options & WEB_OPT_NO_CGI)
+					break;
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Default CGI MIME Content-Type"
 					,startup.default_cgi_content, sizeof(startup.default_cgi_content)-1, K_EDIT);
 				break;
-			case 26:
+			case 22:
+				if(startup.options & WEB_OPT_NO_CGI)
+					break;
 				duration_to_str(startup.max_cgi_inactivity, str, sizeof(str));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum CGI Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_cgi_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 27:
+			case 23:
 				getar("Web Server Login", startup.login_ars);
 				break;
-			case 28:
+			case 24:
 				js_startup_cfg(&startup.js);
 				break;
-			case 29:
+			case 25:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
@@ -1183,12 +1260,16 @@ static void sendmail_cfg(mail_startup_t* startup)
 	while(1) {
 		int i = 0;
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", startup->options & MAIL_OPT_NO_SENDMAIL ? "No" : "Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Rescan Interval", vduration(startup->rescan_frequency));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Connect Timeout", vduration(startup->connect_timeout));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-exempt Recipients", startup->options & MAIL_OPT_NO_AUTO_EXEMPT ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Rescan Interval"
+			,startup->options & MAIL_OPT_NO_SENDMAIL ? "N/A" : vduration(startup->rescan_frequency));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Connect Timeout"
+			,startup->options & MAIL_OPT_NO_SENDMAIL ? "N/A" : vduration(startup->connect_timeout));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-exempt Recipients"
+			,startup->options & MAIL_OPT_NO_SENDMAIL ? "N/A" : startup->options & MAIL_OPT_NO_AUTO_EXEMPT ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Max Delivery Attempts", startup->max_delivery_attempts);
-		bool applicable = startup->options & MAIL_OPT_RELAY_TX;
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Delivery Method", applicable ? "Relay" : "Direct");
+		bool applicable = (startup->options & (MAIL_OPT_RELAY_TX | MAIL_OPT_NO_SENDMAIL)) == MAIL_OPT_RELAY_TX;
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Delivery Method"
+			,startup->options & MAIL_OPT_NO_SENDMAIL ? "N/A" : applicable ? "Relay" : "Direct");
 		if(applicable) {
 			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Relay Server Address", startup->relay_server);
 			snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Relay Server TCP Port", startup->relay_port);
@@ -1206,12 +1287,10 @@ static void sendmail_cfg(mail_startup_t* startup)
 				snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Relay Server Password", startup->relay_pass);
 			}
 		}
-		if(startup->options & MAIL_OPT_NO_SENDMAIL)
-			i = 1;
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
-			"`SendMail Thread Configuration:`\n"
+			"`SendMail Configuration:`\n"
 			"\n"
 			"Set the operating parameters of the Synchronet Mail Server SendMail\n"
 			"Thread.\n"
@@ -1219,29 +1298,39 @@ static void sendmail_cfg(mail_startup_t* startup)
 			"For full documentation, see `http://wiki.synchro.net/server:mail`\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_BOT|WIN_SAV, 0, 0, 0, &cur, &bar
-			,"SendMail Thread",opt)) {
+			,"SendMail Support",opt)) {
 			case 0:
 				startup->options ^= MAIL_OPT_NO_SENDMAIL;
 				break;
 			case 1:
+				if(startup->options & MAIL_OPT_NO_SENDMAIL)
+					break;
 				SAFECOPY(str, duration(startup->rescan_frequency, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "MailBase Rescan Interval", str, 5, K_EDIT) > 0)
 					startup->rescan_frequency = (uint16_t)parse_duration(str);
 				break;
 			case 2:
+				if(startup->options & MAIL_OPT_NO_SENDMAIL)
+					break;
 				SAFECOPY(str, duration(startup->connect_timeout, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SendMail Connect Timeout", str, 5, K_EDIT) > 0)
 					startup->connect_timeout = (uint32_t)parse_duration(str);
 				break;
 			case 3:
+				if(startup->options & MAIL_OPT_NO_SENDMAIL)
+					break;
 				startup->options ^= MAIL_OPT_NO_AUTO_EXEMPT;
 				break;
 			case 4:
+				if(startup->options & MAIL_OPT_NO_SENDMAIL)
+					break;
 				SAFEPRINTF(str, "%u", startup->max_delivery_attempts);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Number of SendMail Delivery Attempts", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup->max_delivery_attempts = atoi(str);
 				break;
 			case 5:
+				if(startup->options & MAIL_OPT_NO_SENDMAIL)
+					break;
 				startup->options ^= MAIL_OPT_RELAY_TX;
 				break;
 			case 6:
@@ -1294,6 +1383,122 @@ static void sendmail_cfg(mail_startup_t* startup)
 	}
 }
 
+static void submission_srvr_cfg(mail_startup_t* startup)
+{
+	static int cur, bar;
+	char str[256];
+
+	while(1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-10s%s", "Enabled", startup->options & MAIL_OPT_USE_SUBMISSION_PORT ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-10s%u", "Port", startup->submission_port);
+		opt[i][0] = '\0';
+
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"Submission Support",opt)) {
+			case 0:
+				startup->options ^= MAIL_OPT_USE_SUBMISSION_PORT;
+				break;
+			case 1:
+				if(!(startup->options & MAIL_OPT_USE_SUBMISSION_PORT))
+					break;
+				SAFEPRINTF(str, "%u", startup->submission_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SMTP-Submission TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup->submission_port = atoi(str);
+				break;
+			default:
+				return;
+		}
+	}
+}
+
+static void submissions_srvr_cfg(mail_startup_t* startup)
+{
+	static int cur, bar;
+	char str[256];
+
+	while(1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-10s%s", "Enabled", startup->options & MAIL_OPT_TLS_SUBMISSION ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-10s%u", "Port", startup->submissions_port);
+		opt[i][0] = '\0';
+
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"Submission/TLS Support",opt)) {
+			case 0:
+				startup->options ^= MAIL_OPT_TLS_SUBMISSION;
+				break;
+			case 1:
+				if(!(startup->options & MAIL_OPT_TLS_SUBMISSION))
+					break;
+				SAFEPRINTF(str, "%u", startup->submissions_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SMTP-Submission/TLS TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup->submissions_port = atoi(str);
+				break;
+			default:
+				return;
+		}
+	}
+}
+
+static void pop3_srvr_cfg(mail_startup_t* startup)
+{
+	static int cur, bar;
+	char str[256];
+
+	while(1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-10s%s", "Enabled", startup->options & MAIL_OPT_ALLOW_POP3 ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-10s%u", "Port", startup->pop3_port);
+		opt[i][0] = '\0';
+
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"POP3 Support",opt)) {
+			case 0:
+				startup->options ^= MAIL_OPT_ALLOW_POP3;
+				break;
+			case 1:
+				if(!(startup->options & MAIL_OPT_ALLOW_POP3))
+					break;
+				SAFEPRINTF(str, "%u", startup->pop3_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "POP3 TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup->pop3_port = atoi(str);
+				break;
+			default:
+				return;
+		}
+	}
+}
+
+static void pop3s_srvr_cfg(mail_startup_t* startup)
+{
+	static int cur, bar;
+	char str[256];
+
+	while(1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-10s%s", "Enabled", startup->options & MAIL_OPT_TLS_POP3 ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-10s%u", "Port", startup->pop3s_port);
+		opt[i][0] = '\0';
+
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"POP3/TLS Support",opt)) {
+			case 0:
+				startup->options ^= MAIL_OPT_TLS_POP3;
+				break;
+			case 1:
+				if(!(startup->options & MAIL_OPT_TLS_POP3))
+					break;
+				SAFEPRINTF(str, "%u", startup->pop3s_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "POP3/TLS TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup->pop3s_port = atoi(str);
+				break;
+			default:
+				return;
+		}
+	}
+}
+
 static void mailsrvr_cfg(void)
 {
 	static int cur, bar;
@@ -1333,18 +1538,19 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", enabled ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SMTP Interfaces", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "SMTP Port", startup.smtp_port);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Submission Support", startup.options & MAIL_OPT_USE_SUBMISSION_PORT ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Submission Port", startup.submission_port);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Submission/TLS Support", startup.options & MAIL_OPT_TLS_SUBMISSION ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Submission/TLS Port", startup.submissions_port);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3 Support", startup.options & MAIL_OPT_ALLOW_POP3 ? "Yes" : "No");
+		snprintf(str, sizeof str, "Port %u", startup.smtp_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SMTP Support", str);
+		snprintf(str, sizeof str, "Port %u", startup.submission_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Submission Support", startup.options & MAIL_OPT_USE_SUBMISSION_PORT ? str : strDisabled);
+		snprintf(str, sizeof str, "Port %u", startup.submissions_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Submission/TLS Support", startup.options & MAIL_OPT_TLS_SUBMISSION ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3 Interfaces"
 			,startup.options & (MAIL_OPT_ALLOW_POP3 | MAIL_OPT_TLS_POP3)
 				? strListCombine(startup.pop3_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "POP3 Port", startup.pop3_port);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3/TLS Support", startup.options & MAIL_OPT_TLS_POP3 ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "POP3/TLS Port", startup.pop3s_port);
+		snprintf(str, sizeof str, "Port %u", startup.pop3_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3 Support", startup.options & MAIL_OPT_ALLOW_POP3 ? str : strDisabled);
+		snprintf(str, sizeof str, "Port %u", startup.pop3s_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3/TLS Support", startup.options & MAIL_OPT_TLS_POP3 ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
@@ -1370,7 +1576,7 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s%s", "DNS-Blacklisted Servers", startup.options & MAIL_OPT_DNSBL_THROTTLE ? "Throttle and " : "", p);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Hash DNS-Blacklisted Msgs", startup.options & MAIL_OPT_DNSBL_SPAMHASH ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Kill SPAM When Read", startup.options & MAIL_OPT_KILL_READ_SPAM ? "Yes": "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SendMail Thread...", startup.options & MAIL_OPT_NO_SENDMAIL ? strDisabled : "");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SendMail Support...", startup.options & MAIL_OPT_NO_SENDMAIL ? strDisabled : "");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
@@ -1410,25 +1616,12 @@ static void mailsrvr_cfg(void)
 					startup.smtp_port = atoi(str);
 				break;
 			case 4:
-				startup.options ^= MAIL_OPT_USE_SUBMISSION_PORT;
+				submission_srvr_cfg(&startup);
 				break;
 			case 5:
-				SAFEPRINTF(str, "%u", startup.submission_port);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SMTP-Submission TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
-					startup.submission_port = atoi(str);
+				submissions_srvr_cfg(&startup);
 				break;
 			case 6:
-				startup.options ^= MAIL_OPT_TLS_SUBMISSION;
-				break;
-			case 7:
-				SAFEPRINTF(str, "%u", startup.submissions_port);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SMTP-Submission/TLS TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
-					startup.submissions_port = atoi(str);
-				break;
-			case 8:
-				startup.options ^= MAIL_OPT_ALLOW_POP3;
-				break;
-			case 9:
 				strListCombine(startup.pop3_interfaces, str, sizeof(str), ", ");
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "POP3 Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup.pop3_interfaces);
@@ -1436,75 +1629,68 @@ static void mailsrvr_cfg(void)
 					uifc.changes = true;
 				}
 				break;
-			case 10:
-				SAFEPRINTF(str, "%u", startup.pop3_port);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "POP3 TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
-					startup.pop3_port = atoi(str);
+			case 7:
+				pop3_srvr_cfg(&startup);
 				break;
-			case 11:
-				startup.options ^= MAIL_OPT_TLS_POP3;
+			case 8:
+				pop3s_srvr_cfg(&startup);
 				break;
-			case 12:
-				SAFEPRINTF(str, "%u", startup.pop3s_port);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "POP3/TLS TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
-					startup.pop3s_port = atoi(str);
-				break;
-			case 13:
+			case 9:
 				SAFECOPY(str, maximum(startup.max_clients));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Count (0=Unlimited)", str, 10, K_EDIT) > 0)
 					startup.max_clients = atoi(str);
 				break;
-			case 14:
+			case 10:
 				SAFECOPY(str, duration(startup.max_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 15:
+			case 11:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
 					startup.max_concurrent_connections = atoi(str);
 				break;
-			case 16:
+			case 12:
 				SAFECOPY(str, maximum(startup.max_recipients));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Recipients per Message", str, 10, K_EDIT) > 0)
 					startup.max_recipients = atoi(str);
 				break;
-			case 17:
+			case 13:
 				SAFECOPY(str, maximum(startup.max_msgs_waiting));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Messages Waiting per User", str, 10, K_EDIT) > 0)
 					startup.max_msgs_waiting = atoi(str);
 				break;
-			case 18:
+			case 14:
 				byte_count_to_str(startup.max_msg_size, str, sizeof(str));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Received Message Size (in bytes)", str, 10, K_EDIT) > 0)
 					startup.max_msg_size = (uint32_t)parse_byte_count(str, 1);
 				break;
-			case 19:
+			case 15:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Default Recipient (user alias)"
 					,startup.default_user, sizeof(startup.default_user)-1, K_EDIT);
 				break;
-			case 20:
+			case 16:
 				startup.options ^= MAIL_OPT_ALLOW_RX_BY_NUMBER;
 				break;
-			case 21:
+			case 17:
 				startup.options ^= MAIL_OPT_ALLOW_SYSOP_ALIASES;
 				break;
-			case 22:
+			case 18:
 				startup.options ^= MAIL_OPT_NO_NOTIFY;
 				break;
-			case 23:
+			case 19:
 				startup.notify_offline_users = !startup.notify_offline_users;
 				break;
-			case 24:
+			case 20:
 				startup.options ^= MAIL_OPT_ALLOW_RELAY;
 				break;
-			case 25:
+			case 21:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 26:
+			case 22:
 				startup.options ^= MAIL_OPT_DNSBL_CHKRECVHDRS;
 				break;
-			case 27:
+			case 23:
 				i = 0;
 				strcpy(opt[i++], "Refuse Session");
 				strcpy(opt[i++], "Silently Ignore");
@@ -1540,22 +1726,22 @@ static void mailsrvr_cfg(void)
 				else
 					startup.options &= ~MAIL_OPT_DNSBL_THROTTLE;
 				break;
-			case 28:
+			case 24:
 				startup.options ^= MAIL_OPT_DNSBL_SPAMHASH;
 				break;
-			case 29:
+			case 25:
 				startup.options ^= MAIL_OPT_KILL_READ_SPAM;
 				break;
-			case 30:
+			case 26:
 				sendmail_cfg(&startup);
 				break;
-			case 31:
+			case 27:
 				getar("Mail Server Login", startup.login_ars);
 				break;
-			case 32:
+			case 28:
 				js_startup_cfg(&startup.js);
 				break;
-			case 33:
+			case 29:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
