@@ -603,7 +603,7 @@ homefile_attrs(sbbs_t *sbbs, const char *path)
 	sftp_fattr_set_permissions(attr, S_IFREG | S_IRWXU | S_IRUSR | S_IWUSR);
 	sftp_fattr_set_uid_gid(attr, sbbs->useron.number, users_gid);
 	sftp_fattr_set_size(attr, flength(path));
-	time_t fd = fdate(path);
+	time32_t fd = static_cast<time32_t>(fdate(path));
 	sftp_fattr_set_times(attr, fd, fd);
 	return attr;
 }
@@ -618,7 +618,7 @@ sshkeys_attrs(sbbs_t *sbbs, const char *path)
 	sftp_fattr_set_permissions(attr, S_IFLNK | S_IRWXU | S_IRUSR | S_IWUSR);
 	sftp_fattr_set_uid_gid(attr, sbbs->useron.number, users_gid);
 	sftp_fattr_set_size(attr, flength(path));
-	time_t fd = fdate(path);
+	time32_t fd = static_cast<time32_t>(fdate(path));
 	sftp_fattr_set_times(attr, fd, fd);
 	return attr;
 }
@@ -1656,7 +1656,7 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 		copy_path(cwd, pm->sftp_patt);
 		while (static_files[dd->info.rootdir.idx].sftp_patt != nullptr && fn.entries() < MAX_FILES_PER_READDIR) {
 			dd->info.rootdir.idx++;
-			if (dd->info.rootdir.idx >= static_files_sz)
+			if (dd->info.rootdir.idx >= static_cast<int32_t>(static_files_sz))
 				break;
 			if (static_files[dd->info.rootdir.idx].sftp_patt == nullptr) {
 				dd->info.rootdir.idx = no_more_files;
