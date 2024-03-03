@@ -603,7 +603,7 @@ homefile_attrs(sbbs_t *sbbs, const char *path)
 	sftp_fattr_set_permissions(attr, S_IFREG | S_IRWXU | S_IRUSR | S_IWUSR);
 	sftp_fattr_set_uid_gid(attr, sbbs->useron.number, users_gid);
 	sftp_fattr_set_size(attr, flength(path));
-	time32_t fd = static_cast<time32_t>(fdate(path));
+	uint32_t fd = static_cast<uint32_t>(fdate(path));
 	sftp_fattr_set_times(attr, fd, fd);
 	return attr;
 }
@@ -618,7 +618,7 @@ sshkeys_attrs(sbbs_t *sbbs, const char *path)
 	sftp_fattr_set_permissions(attr, S_IFLNK | S_IRWXU | S_IRUSR | S_IWUSR);
 	sftp_fattr_set_uid_gid(attr, sbbs->useron.number, users_gid);
 	sftp_fattr_set_size(attr, flength(path));
-	time32_t fd = static_cast<time32_t>(fdate(path));
+	uint32_t fd = static_cast<uint32_t>(fdate(path));
 	sftp_fattr_set_times(attr, fd, fd);
 	return attr;
 }
@@ -927,8 +927,8 @@ get_filebase_attrs(sbbs_t *sbbs, int32_t dir, smbfile_t *file)
 {
 	sftp_file_attr_t attr = sftp_fattr_alloc();
 	uint32_t perms = S_IFREG | S_IRUSR | S_IWUSR;
-	time32_t atime;
-	time32_t mtime;
+	uint32_t atime;
+	uint32_t mtime;
 
 	if (attr == nullptr)
 		return nullptr;
