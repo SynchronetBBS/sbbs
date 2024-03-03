@@ -447,6 +447,7 @@ bool sbbs_t::answer()
 								snprintf(str, sizeof(str), "(%04u)  %-25s  %s Logon"
 									,useron.number, useron.alias, client.protocol);
 								logline("++", str);
+								max_socket_inactivity = startup->max_sftp_inactivity;
 							}
 							else {
 								lprintf(LOG_NOTICE, "%04d Trying to create new user over sftp, disconnecting.", client_socket);
@@ -778,6 +779,7 @@ bool sbbs_t::answer()
 	if(useron.pass[0])
 		loginSuccess(startup->login_attempt_list, &client_addr);
 
-	max_socket_inactivity = startup->max_session_inactivity;
+	if(!term_output_disabled)
+		max_socket_inactivity = startup->max_session_inactivity;
 	return(true);
 }

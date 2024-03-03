@@ -160,6 +160,7 @@ typedef struct {
 	uint16_t	max_login_inactivity;	// seconds
 	uint16_t	max_newuser_inactivity;	// seconds
 	uint16_t	max_session_inactivity;	// seconds
+	uint16_t	max_sftp_inactivity;	// seconds
 
 	/* JavaScript operating parameters */
 	js_startup_t js;

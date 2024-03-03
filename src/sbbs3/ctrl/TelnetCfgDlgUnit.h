@@ -97,6 +97,9 @@ __published:
     TEdit *SshConnTimeoutEdit;
     TButton *ConfigureSoundButton;
     TCheckBox *EventsLogFileCheckBox;
+    TCheckBox *SFTPEnabledCheckBox;
+    TLabel *SFTPMaxInactivityLabel;
+    TEdit *SFTPMaxInactivityEdit;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
     void __fastcall RLoginEnabledCheckBoxClick(TObject *Sender);

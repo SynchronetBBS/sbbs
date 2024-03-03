@@ -63,6 +63,7 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
         SshInterfaceEdit->Text=AnsiString(str);
     }
     SshConnTimeoutEdit->Text = duration_to_str(MainForm->bbs_startup.ssh_connect_timeout, str, sizeof str);
+    SFTPMaxInactivityEdit->Text = duration_to_str(MainForm->bbs_startup.max_sftp_inactivity, str, sizeof str);
 
 	TelnetPortEdit->Text=AnsiString((int)MainForm->bbs_startup.telnet_port);
 	RLoginPortEdit->Text=AnsiString((int)MainForm->bbs_startup.rlogin_port);
@@ -89,6 +90,8 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
         =MainForm->bbs_startup.options&BBS_OPT_ALLOW_RLOGIN;
     SshEnabledCheckBox->Checked
         =MainForm->bbs_startup.options&BBS_OPT_ALLOW_SSH;
+    SFTPEnabledCheckBox->Checked
+        =MainForm->bbs_startup.options&BBS_OPT_ALLOW_SFTP;
 
     QWKEventsCheckBox->Checked
         =!(MainForm->bbs_startup.options&BBS_OPT_NO_QWK_EVENTS);
@@ -114,6 +117,7 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     iniFreeStringList(MainForm->bbs_startup.ssh_interfaces);
     MainForm->bbs_startup.ssh_interfaces = strListSplitCopy(NULL, SshInterfaceEdit->Text.c_str(), ",");
     MainForm->bbs_startup.ssh_connect_timeout = parse_duration(SshConnTimeoutEdit->Text.c_str());
+    MainForm->bbs_startup.max_sftp_inactivity = parse_duration(SFTPMaxInactivityEdit->Text.c_str());
 
     MainForm->bbs_startup.telnet_port=TelnetPortEdit->Text.ToIntDef(23);
     MainForm->bbs_startup.rlogin_port=RLoginPortEdit->Text.ToIntDef(513);
@@ -167,6 +171,11 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->bbs_startup.options|=BBS_OPT_ALLOW_SSH;
     else
 	    MainForm->bbs_startup.options&=~BBS_OPT_ALLOW_SSH;
+
+	if(SFTPEnabledCheckBox->Checked==true)
+    	MainForm->bbs_startup.options|=BBS_OPT_ALLOW_SFTP;
+    else
+	    MainForm->bbs_startup.options&=~BBS_OPT_ALLOW_SFTP;
 
     MainForm->EventsLogFile = EventsLogFileCheckBox->Checked;
     MainForm->SaveIniSettings(Sender);

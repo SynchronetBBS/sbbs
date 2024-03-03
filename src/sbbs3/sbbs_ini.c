@@ -43,6 +43,7 @@ static const char*	strMaxInactivity="MaxInactivity";
 static const char*	strMaxLoginInactivity="MaxLoginInactivity";
 static const char*	strMaxNewUserInactivity="MaxNewUserInactivity";
 static const char*	strMaxSessionInactivity="MaxSessionInactivity";
+static const char*	strMaxSFTPInactivity="MaxSFTPInactivity";
 static const char*	strMaxConConn="MaxConcurrentConnections";
 static const char*	strHostName="HostName";
 static const char*	strLogLevel="LogLevel";
@@ -516,6 +517,7 @@ void sbbs_read_ini(
 		bbs->max_login_inactivity = (uint16_t)iniGetDuration(list, section, strMaxLoginInactivity, 10 * 60);
 		bbs->max_newuser_inactivity = (uint16_t)iniGetDuration(list, section, strMaxNewUserInactivity, 60 * 60);
 		bbs->max_session_inactivity = (uint16_t)iniGetDuration(list, section, strMaxSessionInactivity, 0);
+		bbs->max_sftp_inactivity = (uint16_t)iniGetDuration(list, section, strMaxSFTPInactivity, FTP_DEFAULT_MAX_INACTIVITY);
 
 		SAFECOPY(bbs->web_file_vpath_prefix, iniGetString(list, "web", strFileVPathPrefix, nulstr, value));
 	}
@@ -942,6 +944,8 @@ bool sbbs_write_ini(
 		if(!iniSetDuration(lp, section, strMaxNewUserInactivity, bbs->max_newuser_inactivity, &style))
 			break;
 		if(!iniSetDuration(lp, section, strMaxSessionInactivity, bbs->max_session_inactivity, &style))
+			break;
+		if(!iniSetDuration(lp, section, strMaxSFTPInactivity, bbs->max_sftp_inactivity, &style))
 			break;
 
 		if(bbs->sem_chk_freq==global->sem_chk_freq)

@@ -352,6 +352,8 @@ static void telnet_srvr_cfg(bbs_startup_t* startup)
 				startup->options ^= BBS_OPT_NO_TELNET;
 				break;
 			case 1:
+				if(startup->options & BBS_OPT_NO_TELNET)
+					break;
 				strListCombine(startup->telnet_interfaces, str, sizeof(str), ", ");
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Telnet Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup->telnet_interfaces);
@@ -360,14 +362,20 @@ static void telnet_srvr_cfg(bbs_startup_t* startup)
 				}
 				break;
 			case 2:
+				if(startup->options & BBS_OPT_NO_TELNET)
+					break;
 				SAFEPRINTF(str, "%u", startup->telnet_port);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Telnet TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup->telnet_port = atoi(str);
 				break;
 			case 3:
+				if(startup->options & BBS_OPT_NO_TELNET)
+					break;
 				startup->options ^= BBS_OPT_DEBUG_TELNET;
 				break;
 			case 4:
+				if(startup->options & BBS_OPT_NO_TELNET)
+					break;
 				startup->options ^= BBS_OPT_NO_TELNET_GA;
 				break;
 			default:
@@ -391,7 +399,13 @@ static void ssh_srvr_cfg(bbs_startup_t* startup)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Port", startup->ssh_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Connect Timeout"
 			,startup->options & BBS_OPT_ALLOW_SSH ? vduration(startup->ssh_connect_timeout) : "N/A");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Error Level", iniLogLevelStringList()[startup->ssh_error_level]);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Error Level"
+			,startup->options & BBS_OPT_ALLOW_SSH ? iniLogLevelStringList()[startup->ssh_error_level] : "N/A");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "File Transfer (SFTP) Support"
+			,startup->options & BBS_OPT_ALLOW_SSH ? (startup->options & BBS_OPT_ALLOW_SFTP ? "Yes" : "No") : "N/A");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max SFTP Inactivity"
+			,(startup->options & BBS_OPT_ALLOW_SSH) && (startup->options & BBS_OPT_ALLOW_SFTP) ? vduration(startup->max_sftp_inactivity) : "N/A");
+
 		opt[i][0] = '\0';
 
 		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
@@ -400,6 +414,8 @@ static void ssh_srvr_cfg(bbs_startup_t* startup)
 				startup->options ^= BBS_OPT_ALLOW_SSH;
 				break;
 			case 1:
+				if(!(startup->options & BBS_OPT_ALLOW_SSH))
+					break;
 				strListCombine(startup->ssh_interfaces, str, sizeof(str), ", ");
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup->ssh_interfaces);
@@ -408,17 +424,37 @@ static void ssh_srvr_cfg(bbs_startup_t* startup)
 				}
 				break;
 			case 2:
+				if(!(startup->options & BBS_OPT_ALLOW_SSH))
+					break;
 				SAFEPRINTF(str, "%u", startup->ssh_port);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup->ssh_port = atoi(str);
 				break;
 			case 3:
+				if(!(startup->options & BBS_OPT_ALLOW_SSH))
+					break;
 				SAFECOPY(str, duration(startup->ssh_connect_timeout, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH Connect Timeout", str, 6, K_EDIT) > 0)
 					startup->ssh_connect_timeout = (uint16_t)parse_duration(str);
 				break;
 			case 4:
+				if(!(startup->options & BBS_OPT_ALLOW_SSH))
+					break;
 				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup->ssh_error_level, 0, "SSH Error Log Level", iniLogLevelStringList());
+				break;
+			case 5:
+				if(!(startup->options & BBS_OPT_ALLOW_SSH))
+					break;
+				startup->options ^= BBS_OPT_ALLOW_SFTP;
+				break;
+			case 6:
+				if(!(startup->options & BBS_OPT_ALLOW_SSH))
+					break;
+				if(!(startup->options & BBS_OPT_ALLOW_SFTP))
+					break;
+				SAFECOPY(str, duration(startup->max_sftp_inactivity, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity during SFTP Session", str, 10, K_EDIT) > 0)
+					startup->max_sftp_inactivity = (uint16_t)parse_duration(str);
 				break;
 			default:
 				return;
@@ -447,6 +483,8 @@ static void rlogin_srvr_cfg(bbs_startup_t* startup)
 				startup->options ^= BBS_OPT_ALLOW_RLOGIN;
 				break;
 			case 1:
+				if(!(startup->options & BBS_OPT_ALLOW_RLOGIN))
+					break;
 				strListCombine(startup->rlogin_interfaces, str, sizeof(str), ", ");
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "RLogin Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
 					strListFree(&startup->rlogin_interfaces);
@@ -455,6 +493,8 @@ static void rlogin_srvr_cfg(bbs_startup_t* startup)
 				}
 				break;
 			case 2:
+				if(!(startup->options & BBS_OPT_ALLOW_RLOGIN))
+					break;
 				SAFEPRINTF(str, "%u", startup->rlogin_port);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "RLogin TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup->rlogin_port = atoi(str);
@@ -469,7 +509,6 @@ static void termsrvr_cfg(void)
 {
 	static int cur, bar;
 	char str[256];
-	char tmp[256];
 	bool enabled = false;
 	bbs_startup_t startup = {0};
 

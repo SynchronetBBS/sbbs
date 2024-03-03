@@ -3,8 +3,8 @@ object TelnetCfgDlg: TTelnetCfgDlg
   Top = 475
   BorderStyle = bsDialog
   Caption = 'Terminal Server Configuration'
-  ClientHeight = 234
-  ClientWidth = 286
+  ClientHeight = 270
+  ClientWidth = 330
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -15,46 +15,46 @@ object TelnetCfgDlg: TTelnetCfgDlg
   Position = poScreenCenter
   OnShow = FormShow
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   object PageControl: TPageControl
     Left = 3
     Top = 3
-    Width = 278
-    Height = 186
-    ActivePage = GeneralTabSheet
-    TabIndex = 0
+    Width = 321
+    Height = 215
+    ActivePage = SshTabSheet
+    TabIndex = 3
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
       object FirstNodeLabel: TLabel
-        Left = 7
-        Top = 10
-        Width = 78
-        Height = 20
+        Left = 8
+        Top = 12
+        Width = 90
+        Height = 23
         AutoSize = False
         Caption = 'First Node'
       end
       object LastNodeLabel: TLabel
-        Left = 7
-        Top = 36
-        Width = 74
-        Height = 20
+        Left = 8
+        Top = 42
+        Width = 85
+        Height = 23
         AutoSize = False
         Caption = 'Last Node'
       end
       object MaxConConLabel: TLabel
-        Left = 7
-        Top = 62
-        Width = 74
-        Height = 20
+        Left = 8
+        Top = 72
+        Width = 85
+        Height = 23
         AutoSize = False
         Caption = 'Max Con-Conn'
       end
       object AutoStartCheckBox: TCheckBox
-        Left = 148
-        Top = 10
-        Width = 117
-        Height = 19
+        Left = 171
+        Top = 12
+        Width = 135
+        Height = 21
         Hint = 'Automatically start Terminal server'
         Caption = 'Auto Startup'
         ParentShowHint = False
@@ -62,20 +62,20 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 4
       end
       object FirstNodeEdit: TEdit
-        Left = 85
-        Top = 10
-        Width = 39
-        Height = 21
+        Left = 98
+        Top = 12
+        Width = 45
+        Height = 23
         Hint = 'First node number available for Terminal logins'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
       end
       object XtrnMinCheckBox: TCheckBox
-        Left = 148
-        Top = 36
-        Width = 117
-        Height = 20
+        Left = 171
+        Top = 42
+        Width = 135
+        Height = 23
         Hint = 'External programs run in a minimized window'
         Caption = 'Minimize Externals'
         ParentShowHint = False
@@ -83,20 +83,20 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 5
       end
       object LastNodeEdit: TEdit
-        Left = 85
-        Top = 36
-        Width = 39
-        Height = 21
+        Left = 98
+        Top = 42
+        Width = 45
+        Height = 23
         Hint = 'Last node number available for Terminal logins'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
       end
       object HostnameCheckBox: TCheckBox
-        Left = 7
-        Top = 114
-        Width = 117
-        Height = 23
+        Left = 8
+        Top = 132
+        Width = 135
+        Height = 26
         Hint = 'Automatically lookup client'#39's hostname via DNS'
         Caption = 'Hostname Lookup'
         ParentShowHint = False
@@ -104,10 +104,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 3
       end
       object QWKEventsCheckBox: TCheckBox
-        Left = 148
-        Top = 114
-        Width = 117
-        Height = 20
+        Left = 171
+        Top = 132
+        Width = 135
+        Height = 23
         Hint = 'Handle QWK Message Packet Events in This Instance'
         Caption = 'QWK Msg Events'
         ParentShowHint = False
@@ -115,10 +115,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 7
       end
       object EventsCheckBox: TCheckBox
-        Left = 148
-        Top = 62
-        Width = 117
-        Height = 20
+        Left = 171
+        Top = 72
+        Width = 135
+        Height = 23
         Hint = 'Enable the events thread'
         Caption = 'Events Enabled'
         ParentShowHint = False
@@ -126,10 +126,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 6
       end
       object DosSupportCheckBox: TCheckBox
-        Left = 7
-        Top = 88
-        Width = 130
-        Height = 20
+        Left = 8
+        Top = 102
+        Width = 150
+        Height = 23
         Hint = 'Attempt to execute 16-bit DOS progarms (requires NTVDM)'
         Caption = 'DOS Program Support'
         ParentShowHint = False
@@ -137,10 +137,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 8
       end
       object MaxConConEdit: TEdit
-        Left = 85
-        Top = 62
-        Width = 39
-        Height = 21
+        Left = 98
+        Top = 72
+        Width = 45
+        Height = 23
         Hint = 
           'Maximum unauthenticated Concurrent Connections from same IP (0=u' +
           'nlimited)'
@@ -149,10 +149,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 2
       end
       object EventsLogFileCheckBox: TCheckBox
-        Left = 148
-        Top = 88
-        Width = 117
-        Height = 20
+        Left = 171
+        Top = 102
+        Width = 135
+        Height = 23
         Hint = 'Save event log messages to disk file in your DATA directory'
         Caption = 'Log Events to Disk'
         ParentShowHint = False
@@ -164,26 +164,26 @@ object TelnetCfgDlg: TTelnetCfgDlg
       Caption = 'Telnet'
       ImageIndex = 1
       object InterfaceLabel: TLabel
-        Left = 7
-        Top = 36
-        Width = 78
-        Height = 21
+        Left = 8
+        Top = 42
+        Width = 90
+        Height = 24
         AutoSize = False
         Caption = 'Interfaces (IPs)'
       end
       object TelnetPortLabel: TLabel
-        Left = 7
-        Top = 10
-        Width = 78
-        Height = 21
+        Left = 8
+        Top = 12
+        Width = 90
+        Height = 24
         AutoSize = False
         Caption = 'Listening Port'
       end
       object CmdLogCheckBox: TCheckBox
-        Left = 7
-        Top = 88
-        Width = 169
-        Height = 21
+        Left = 8
+        Top = 102
+        Width = 195
+        Height = 24
         Hint = 'Log (debug) all transmitted and received Telnet commands'
         Caption = 'Log Telnet Commands'
         ParentShowHint = False
@@ -191,10 +191,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 3
       end
       object TelnetInterfaceEdit: TEdit
-        Left = 85
-        Top = 36
-        Width = 156
-        Height = 21
+        Left = 98
+        Top = 42
+        Width = 180
+        Height = 23
         Hint = 
           'Comma-separated list of IP addresses to accept incoming connecti' +
           'ons'
@@ -203,20 +203,20 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 1
       end
       object TelnetPortEdit: TEdit
-        Left = 85
-        Top = 10
-        Width = 39
-        Height = 21
+        Left = 98
+        Top = 12
+        Width = 45
+        Height = 23
         Hint = 'TCP port for incoming connections (default=23)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
       end
       object TelnetGaCheckBox: TCheckBox
-        Left = 7
-        Top = 62
-        Width = 169
-        Height = 21
+        Left = 8
+        Top = 72
+        Width = 195
+        Height = 24
         Hint = 
           'Send periodic Telnet GA commands to help detect dropped connecti' +
           'ons'
@@ -226,10 +226,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 2
       end
       object AutoLogonCheckBox: TCheckBox
-        Left = 7
-        Top = 114
-        Width = 117
-        Height = 19
+        Left = 8
+        Top = 132
+        Width = 135
+        Height = 21
         Hint = 'Allow V-exempt users to auto-logon based on their IP address'
         Caption = 'AutoLogon via IP'
         ParentShowHint = False
@@ -241,36 +241,36 @@ object TelnetCfgDlg: TTelnetCfgDlg
       Caption = 'RLogin'
       ImageIndex = 3
       object RLoginPortLabel: TLabel
-        Left = 7
-        Top = 10
-        Width = 78
-        Height = 21
+        Left = 8
+        Top = 12
+        Width = 90
+        Height = 24
         AutoSize = False
         Caption = 'Listening Port'
       end
       object RLoginInterfaceLabel: TLabel
-        Left = 7
-        Top = 36
-        Width = 78
-        Height = 21
+        Left = 8
+        Top = 42
+        Width = 90
+        Height = 24
         AutoSize = False
         Caption = 'Interfaces (IPs)'
       end
       object RLoginPortEdit: TEdit
-        Left = 85
-        Top = 10
-        Width = 39
-        Height = 21
+        Left = 98
+        Top = 12
+        Width = 45
+        Height = 23
         Hint = 'TCP port for incoming connections (default=513)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
       end
       object RLoginInterfaceEdit: TEdit
-        Left = 85
-        Top = 36
-        Width = 156
-        Height = 21
+        Left = 98
+        Top = 42
+        Width = 180
+        Height = 23
         Hint = 
           'Comma-separated list of IP addresses to accept incoming connecti' +
           'ons'
@@ -279,10 +279,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 2
       end
       object RLoginEnabledCheckBox: TCheckBox
-        Left = 184
-        Top = 10
-        Width = 73
-        Height = 17
+        Left = 212
+        Top = 12
+        Width = 85
+        Height = 19
         Hint = 'Enable the RLogin port'
         Caption = 'Enabled'
         ParentShowHint = False
@@ -291,10 +291,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         OnClick = RLoginEnabledCheckBoxClick
       end
       object RLoginIPallowButton: TButton
-        Left = 8
-        Top = 62
-        Width = 233
-        Height = 21
+        Left = 9
+        Top = 72
+        Width = 269
+        Height = 24
         Hint = 
           'IP addresses of trusted hosts to allow unauthenticed RLogins fro' +
           'm'
@@ -309,44 +309,52 @@ object TelnetCfgDlg: TTelnetCfgDlg
       Caption = 'SSH'
       ImageIndex = 4
       object SshPortLabel: TLabel
-        Left = 7
-        Top = 10
-        Width = 78
-        Height = 21
+        Left = 8
+        Top = 12
+        Width = 90
+        Height = 24
         AutoSize = False
         Caption = 'Listening Port'
       end
       object SshInterfaceLabel: TLabel
-        Left = 7
-        Top = 36
-        Width = 78
-        Height = 21
+        Left = 8
+        Top = 42
+        Width = 90
+        Height = 24
         AutoSize = False
         Caption = 'Interfaces (IPs)'
       end
       object SshConnectTimeoutLabel: TLabel
-        Left = 7
-        Top = 62
-        Width = 78
-        Height = 21
+        Left = 8
+        Top = 72
+        Width = 90
+        Height = 24
         AutoSize = False
         Caption = 'Conn Timeout'
       end
+      object SFTPMaxInactivityLabel: TLabel
+        Left = 8
+        Top = 136
+        Width = 90
+        Height = 24
+        AutoSize = False
+        Caption = 'Max Inactivity'
+      end
       object SshPortEdit: TEdit
-        Left = 85
-        Top = 10
-        Width = 39
-        Height = 21
+        Left = 98
+        Top = 12
+        Width = 45
+        Height = 23
         Hint = 'TCP port for incoming connections (default=22)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
       end
       object SshEnabledCheckBox: TCheckBox
-        Left = 184
-        Top = 10
-        Width = 73
-        Height = 17
+        Left = 212
+        Top = 12
+        Width = 85
+        Height = 19
         Hint = 'Enable the Secure Shell (SSH) port'
         Caption = 'Enabled'
         ParentShowHint = False
@@ -355,10 +363,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
         OnClick = SshEnabledCheckBoxClick
       end
       object SshInterfaceEdit: TEdit
-        Left = 85
-        Top = 36
-        Width = 156
-        Height = 21
+        Left = 98
+        Top = 42
+        Width = 180
+        Height = 23
         Hint = 
           'Comma-separated list of IP addresses to accept incoming connecti' +
           'ons'
@@ -367,24 +375,45 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 2
       end
       object SshConnTimeoutEdit: TEdit
-        Left = 85
-        Top = 62
-        Width = 39
-        Height = 21
-        Hint = 'SSH Connection Timeout (in seconds)'
+        Left = 98
+        Top = 72
+        Width = 45
+        Height = 23
+        Hint = 'SSH Connection Timeout'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
+      end
+      object SFTPEnabledCheckBox: TCheckBox
+        Left = 8
+        Top = 102
+        Width = 195
+        Height = 24
+        Hint = 'Enable SSH File Transfer (SFTP) support'
+        Caption = 'File Transfer (SFTP) Support'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 4
+      end
+      object SFTPMaxInactivityEdit: TEdit
+        Left = 98
+        Top = 136
+        Width = 45
+        Height = 23
+        Hint = 'Maximum SFTP Session Inactivity'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 5
       end
     end
     object SoundTabSheet: TTabSheet
       Caption = 'Sound'
       ImageIndex = 2
       object ConfigureSoundButton: TButton
-        Left = 8
-        Top = 8
-        Width = 257
-        Height = 25
+        Left = 9
+        Top = 9
+        Width = 297
+        Height = 29
         Caption = 'Configure Common Server Event Sounds'
         TabOrder = 0
         OnClick = ConfigureSoundButtonClick
@@ -392,10 +421,10 @@ object TelnetCfgDlg: TTelnetCfgDlg
     end
   end
   object OKBtn: TButton
-    Left = 20
-    Top = 201
-    Width = 76
-    Height = 25
+    Left = 23
+    Top = 232
+    Width = 88
+    Height = 29
     Caption = 'OK'
     Default = True
     ModalResult = 1
@@ -403,20 +432,20 @@ object TelnetCfgDlg: TTelnetCfgDlg
     OnClick = OKBtnClick
   end
   object CancelBtn: TButton
-    Left = 104
-    Top = 201
-    Width = 75
-    Height = 25
+    Left = 120
+    Top = 232
+    Width = 87
+    Height = 29
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
     TabOrder = 2
   end
   object ApplyBtn: TButton
-    Left = 189
-    Top = 201
-    Width = 76
-    Height = 25
+    Left = 218
+    Top = 232
+    Width = 88
+    Height = 29
     Cancel = True
     Caption = 'Apply'
     TabOrder = 3
