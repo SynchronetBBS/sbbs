@@ -270,12 +270,14 @@ bool sbbs_t::answer()
 					}
 					else {
 						SetEvent(ssh_active);
+						lprintf(LOG_DEBUG, "%04d SSH SSH_ANYAUTH allowed presented credential", client_socket);
 					}
 				}
 			}
 			else {
 				activate_ssh = true;
 				SetEvent(ssh_active);
+				lprintf(LOG_DEBUG, "%04d SSH SSH_ANYAUTH allowed with no credential", client_socket);
 			}
 		}
 		else {
@@ -309,7 +311,7 @@ bool sbbs_t::answer()
 						free_crypt_attrstr(pubkey);
 						pubkey = get_binary_crypt_attribute(ssh_session, CRYPT_SESSINFO_PUBLICKEY, &pubkeysz);
 					}
-					lprintf(LOG_DEBUG,"SSH login: '%s'", rlogin_name);
+					lprintf(LOG_DEBUG,"%04d SSH login: '%s'", client_socket, rlogin_name);
 				}
 				else {
 					rlogin_name[0] = 0;
@@ -322,12 +324,19 @@ bool sbbs_t::answer()
 							if (check_pubkey(&cfg, useron.number, pubkey, pubkeysz)) {
 								SAFECOPY(rlogin_pass, tmp);
 								activate_ssh = set_authresponse(true);
+								lprintf(LOG_DEBUG, "%04d SSH Public key authentication successful", client_socket);
+								ssh_failed--;
+							}
+							else {
+								lprintf(LOG_DEBUG, "%04d SSH Public key authentication failed", client_socket);
 							}
 						}
 						else {
 							if (stricmp(tmp, useron.pass) == 0) {
 								SAFECOPY(rlogin_pass, tmp);
 								activate_ssh = set_authresponse(true);
+								lprintf(LOG_DEBUG, "%04d SSH password authentication successful", client_socket);
+								ssh_failed--;
 							}
 							else if(ssh_failed) {
 								if(cfg.sys_misc&SM_ECHO_PW)
@@ -343,14 +352,14 @@ bool sbbs_t::answer()
 						}
 					}
 					else {
-						lprintf(LOG_NOTICE, "SSH failed to read user data for %s", rlogin_name);
+						lprintf(LOG_NOTICE, "%04d SSH failed to read user data for %s", client_socket, rlogin_name);
 					}
 				}
 				else {
 					if(cfg.sys_misc&SM_ECHO_PW)
-						lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s' (password: %s)", rlogin_name, truncsp(tmp));
+						lprintf(LOG_NOTICE, "%04d SSH !UNKNOWN USER: '%s' (password: %s)", client_socket, rlogin_name, truncsp(tmp));
 					else
-						lprintf(LOG_NOTICE, "SSH !UNKNOWN USER: '%s'", rlogin_name);
+						lprintf(LOG_NOTICE, "%04d SSH !UNKNOWN USER: '%s'", client_socket, rlogin_name);
 					badlogin(rlogin_name, tmp);
 					// Enable SSH so we can create a new user...
 					activate_ssh = set_authresponse(true);
