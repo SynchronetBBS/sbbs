@@ -1735,24 +1735,26 @@ void sys_cfg(void)
 				done=0;
 				while(!done) {
 					i=0;
-					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Allow User Aliases"
+					snprintf(opt[i++], MAX_OPLN, "%-35s%s","Allow User Aliases"
 						,cfg.uq&UQ_ALIASES ? "Yes" : "No");
-					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Allow Time Banking"
+					snprintf(opt[i++], MAX_OPLN, "%-35s%s","Allow Time Banking"
 						,cfg.sys_misc&SM_TIMEBANK ? "Yes" : "No");
-					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Allow Credit Conversions"
+					snprintf(opt[i++], MAX_OPLN, "%-35s%s","Allow Credit Conversions"
 						,cfg.sys_misc&SM_NOCDTCVT ? "No" : "Yes");
-					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Short Sysop Page"
+					snprintf(opt[i++], MAX_OPLN, "%-35s%s","Short Sysop Page"
 						,cfg.sys_misc&SM_SHRTPAGE ? "Yes" : "No");
-					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Include Sysop in Statistics"
+					snprintf(opt[i++], MAX_OPLN, "%-35s%s","Include Sysop in Statistics"
 						,cfg.sys_misc&SM_SYSSTAT ? "Yes" : "No");
-					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Use Location in User Lists"
+					snprintf(opt[i++], MAX_OPLN, "%-35s%s","Use Location in User Lists"
 						,cfg.sys_misc&SM_LISTLOC ? "Yes" : "No");
-					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Military (24 hour) Time Format"
+					snprintf(opt[i++], MAX_OPLN, "%-35s%s","Military (24 hour) Time Format"
 						,cfg.sys_misc&SM_MILITARY ? "Yes" : "No");
-					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Display Sys Info During Logon"
+					snprintf(opt[i++], MAX_OPLN, "%-35s%s","Display Sys Info During Logon"
 						,cfg.sys_misc&SM_NOSYSINFO ? "No" : "Yes");
-					snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Display Node List During Logon"
+					snprintf(opt[i++], MAX_OPLN, "%-35s%s","Display Node List During Logon"
 						,cfg.sys_misc&SM_NONODELIST ? "No" : "Yes");
+					snprintf(opt[i++], MAX_OPLN, "%-35s%s","Mouse Hot-spots in Menus/Prompts"
+						,cfg.sys_misc&SM_MOUSE_HOT ? "Yes" : "No");
 					opt[i][0]=0;
 					uifc.helpbuf=
 						"`System Toggle Options:`\n"
@@ -1760,7 +1762,7 @@ void sys_cfg(void)
 						"This is a menu of system related options that can be toggled between\n"
 						"two or more states, such as `Yes` and `No`.\n"
 					;
-					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,41,&tog_dflt,&tog_bar
+					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT,0,0,43,&tog_dflt,&tog_bar
 						,"Toggle Options",opt)) {
 						case -1:
 							done=1;
@@ -1898,6 +1900,23 @@ void sys_cfg(void)
 							}
 							else if(i==1 && !(cfg.sys_misc&SM_NONODELIST)) {
 								cfg.sys_misc|=SM_NONODELIST;
+							}
+							break;
+						case 9:
+							i=cfg.sys_misc&SM_MOUSE_HOT ? 0:1;
+							uifc.helpbuf=
+								"`Mouse Hot-spots in Menus and Prompts:`\n"
+								"\n"
+								"If you want to disable all mouse `Hot-spots` in the BBS menus and prompts,\n"
+								"set this option to `No`.\n"
+							;
+							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+								,"Mouse Hot-spots in Menus and Prompts",uifcYesNoOpts);
+							if(i == 1 && cfg.sys_misc & SM_MOUSE_HOT) {
+								cfg.sys_misc &= ~SM_MOUSE_HOT;
+							}
+							else if(i == 0 && !(cfg.sys_misc & SM_MOUSE_HOT)) {
+								cfg.sys_misc |= SM_MOUSE_HOT;
 							}
 							break;
 						}

@@ -614,7 +614,7 @@ void sbbs_t::set_mouse(int flags)
 
 struct mouse_hotspot* sbbs_t::add_hotspot(struct mouse_hotspot* spot)
 {
-	if(!term_supports(MOUSE))
+	if(!(cfg.sys_misc & SM_MOUSE_HOT) || !term_supports(MOUSE))
 		return NULL;
 	if(spot->y < 0)
 		spot->y = row;

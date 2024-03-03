@@ -157,7 +157,7 @@
 #define SM_TIME_EXP		(1<<22)	// Set to expired values if out-of-time 	
 #define SM_FASTMAIL		(1<<23)	// Fast e-mail storage mode 				
 #define SM_NONODELIST	(1<<24)	// Suppress active node list during logon	
-#define SM_UNUSED2		(1<<25)
+#define SM_MOUSE_HOT	(1<<25) // Mouse hotspot support
 #define SM_FWDTONET		(1<<26)	// Allow forwarding of e-mail to netmail	
 #define SM_DELREADM		(1<<27)	// Delete read mail automatically			
 #define SM_NOCDTCVT		(1<<28)	// No credit to minute conversions allowed	
