@@ -327,6 +327,144 @@ static void global_cfg(void)
 	}
 }
 
+static void telnet_srvr_cfg(bbs_startup_t* startup)
+{
+	static int cur, bar;
+	char str[256];
+	char tmp[256];
+	bool enabled = false;
+
+	while(1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", startup->options & BBS_OPT_NO_TELNET ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Interfaces"
+			,startup->options & BBS_OPT_NO_TELNET ? "N/A" : strListCombine(startup->telnet_interfaces, tmp, sizeof(tmp), ", "));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Port", startup->telnet_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Command Debug"
+			,startup->options & BBS_OPT_NO_TELNET ? "N/A" : startup->options & BBS_OPT_DEBUG_TELNET ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Send Go-Aheads"
+			,startup->options & BBS_OPT_NO_TELNET ? "N/A" : startup->options & BBS_OPT_NO_TELNET_GA ? "No" : "Yes");
+		opt[i][0] = '\0';
+
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"Telnet Server",opt)) {
+			case 0:
+				startup->options ^= BBS_OPT_NO_TELNET;
+				break;
+			case 1:
+				strListCombine(startup->telnet_interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Telnet Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup->telnet_interfaces);
+					strListSplitCopy(&startup->telnet_interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 2:
+				SAFEPRINTF(str, "%u", startup->telnet_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Telnet TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup->telnet_port = atoi(str);
+				break;
+			case 3:
+				startup->options ^= BBS_OPT_DEBUG_TELNET;
+				break;
+			case 4:
+				startup->options ^= BBS_OPT_NO_TELNET_GA;
+				break;
+			default:
+				return;
+		}
+	}
+}
+
+static void ssh_srvr_cfg(bbs_startup_t* startup)
+{
+	static int cur, bar;
+	char str[256];
+	char tmp[256];
+	bool enabled = false;
+
+	while(1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", startup->options & BBS_OPT_ALLOW_SSH ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Interfaces"
+			,startup->options & BBS_OPT_ALLOW_SSH ? strListCombine(startup->ssh_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Port", startup->ssh_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Connect Timeout"
+			,startup->options & BBS_OPT_ALLOW_SSH ? vduration(startup->ssh_connect_timeout) : "N/A");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Error Level", iniLogLevelStringList()[startup->ssh_error_level]);
+		opt[i][0] = '\0';
+
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"SSH Server",opt)) {
+			case 0:
+				startup->options ^= BBS_OPT_ALLOW_SSH;
+				break;
+			case 1:
+				strListCombine(startup->ssh_interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup->ssh_interfaces);
+					strListSplitCopy(&startup->ssh_interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 2:
+				SAFEPRINTF(str, "%u", startup->ssh_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup->ssh_port = atoi(str);
+				break;
+			case 3:
+				SAFECOPY(str, duration(startup->ssh_connect_timeout, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH Connect Timeout", str, 6, K_EDIT) > 0)
+					startup->ssh_connect_timeout = (uint16_t)parse_duration(str);
+				break;
+			case 4:
+				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup->ssh_error_level, 0, "SSH Error Log Level", iniLogLevelStringList());
+				break;
+			default:
+				return;
+		}
+	}
+}
+
+static void rlogin_srvr_cfg(bbs_startup_t* startup)
+{
+	static int cur, bar;
+	char str[256];
+	char tmp[256];
+	bool enabled = false;
+
+	while(1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", startup->options & BBS_OPT_ALLOW_RLOGIN ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Interfaces"
+			,startup->options & BBS_OPT_ALLOW_RLOGIN ? strListCombine(startup->rlogin_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Port", startup->rlogin_port);
+		opt[i][0] = '\0';
+
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_RHT|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"RLogin Server",opt)) {
+			case 0:
+				startup->options ^= BBS_OPT_ALLOW_RLOGIN;
+				break;
+			case 1:
+				strListCombine(startup->rlogin_interfaces, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "RLogin Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup->rlogin_interfaces);
+					strListSplitCopy(&startup->rlogin_interfaces, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 2:
+				SAFEPRINTF(str, "%u", startup->rlogin_port);
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "RLogin TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
+					startup->rlogin_port = atoi(str);
+				break;
+			default:
+				return;
+		}
+	}
+}
+
 static void termsrvr_cfg(void)
 {
 	static int cur, bar;
@@ -366,26 +504,13 @@ static void termsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "First Node", startup.first_node);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Last Node", startup.last_node);
+		snprintf(str, sizeof str, "Port %u", startup.ssh_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Support...", startup.options & BBS_OPT_ALLOW_SSH ? str : strDisabled);
+		snprintf(str, sizeof str, "Port %u", startup.telnet_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Telnet Support...", startup.options & BBS_OPT_NO_TELNET ? strDisabled : str);
+		snprintf(str, sizeof str, "Port %u", startup.rlogin_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "RLogin Support...", startup.options & BBS_OPT_ALLOW_RLOGIN ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "DOS Program Support", startup.options & BBS_OPT_NO_DOS ? "No" : "Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Support", startup.options & BBS_OPT_ALLOW_SSH ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Interfaces"
-			,startup.options & BBS_OPT_ALLOW_SSH ? strListCombine(startup.ssh_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "SSH Port", startup.ssh_port);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Connect Timeout"
-			,startup.options & BBS_OPT_ALLOW_SSH ? vduration(startup.ssh_connect_timeout) : "N/A");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Error Level", iniLogLevelStringList()[startup.ssh_error_level]);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Telnet Support", startup.options & BBS_OPT_NO_TELNET ? "No" : "Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Telnet Interfaces"
-			,startup.options & BBS_OPT_NO_TELNET ? "N/A" : strListCombine(startup.telnet_interfaces, tmp, sizeof(tmp), ", "));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Telnet Port", startup.telnet_port);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Telnet Command Debug"
-			,startup.options & BBS_OPT_NO_TELNET ? "N/A" : startup.options & BBS_OPT_DEBUG_TELNET ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Telnet Send Go-Aheads"
-			,startup.options & BBS_OPT_NO_TELNET ? "N/A" : startup.options & BBS_OPT_NO_TELNET_GA ? "No" : "Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "RLogin Support", startup.options & BBS_OPT_ALLOW_RLOGIN ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "RLogin Interfaces"
-			,startup.options & BBS_OPT_ALLOW_RLOGIN ? strListCombine(startup.rlogin_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "RLogin Port", startup.rlogin_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "40 Column PETSCII Port", startup.pet40_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "80 Column PETSCII Port", startup.pet80_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
@@ -431,121 +556,68 @@ static void termsrvr_cfg(void)
 					startup.last_node = atoi(str);
 				break;
 			case 4:
-				startup.options ^= BBS_OPT_NO_DOS;
+				ssh_srvr_cfg(&startup);
 				break;
 			case 5:
-				startup.options ^= BBS_OPT_ALLOW_SSH;
+				telnet_srvr_cfg(&startup);
 				break;
 			case 6:
-				strListCombine(startup.ssh_interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
-					strListFree(&startup.ssh_interfaces);
-					strListSplitCopy(&startup.ssh_interfaces, str, ", ");
-					uifc.changes = true;
-				}
+				rlogin_srvr_cfg(&startup);
 				break;
 			case 7:
-				SAFEPRINTF(str, "%u", startup.ssh_port);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
-					startup.ssh_port = atoi(str);
+				startup.options ^= BBS_OPT_NO_DOS;
 				break;
 			case 8:
-				SAFECOPY(str, duration(startup.ssh_connect_timeout, false));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "SSH Connect Timeout", str, 6, K_EDIT) > 0)
-					startup.ssh_connect_timeout = (uint16_t)parse_duration(str);
-				break;
-			case 9:
-				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup.ssh_error_level, 0, "SSH Error Log Level", iniLogLevelStringList());
-				break;
-			case 10:
-				startup.options ^= BBS_OPT_NO_TELNET;
-				break;
-			case 11:
-				strListCombine(startup.telnet_interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Telnet Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
-					strListFree(&startup.telnet_interfaces);
-					strListSplitCopy(&startup.telnet_interfaces, str, ", ");
-					uifc.changes = true;
-				}
-				break;
-			case 12:
-				SAFEPRINTF(str, "%u", startup.telnet_port);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Telnet TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
-					startup.telnet_port = atoi(str);
-				break;
-			case 13:
-				startup.options ^= BBS_OPT_DEBUG_TELNET;
-				break;
-			case 14:
-				startup.options ^= BBS_OPT_NO_TELNET_GA;
-				break;
-			case 15:
-				startup.options ^= BBS_OPT_ALLOW_RLOGIN;
-				break;
-			case 16:
-				strListCombine(startup.rlogin_interfaces, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "RLogin Network Interfaces (IPv4/6)", str, sizeof(str)-1, K_EDIT) >= 0) {
-					strListFree(&startup.rlogin_interfaces);
-					strListSplitCopy(&startup.rlogin_interfaces, str, ", ");
-					uifc.changes = true;
-				}
-				break;
-			case 17:
-				SAFEPRINTF(str, "%u", startup.rlogin_port);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "RLogin TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
-					startup.rlogin_port = atoi(str);
-				break;
-			case 18:
 				SAFEPRINTF(str, "%u", startup.pet40_port);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "40 Column CBM/PETSCII TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.pet40_port = atoi(str);
 				break;
-			case 19:
+			case 9:
 				SAFEPRINTF(str, "%u", startup.pet80_port);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "80 Column CBM/PETSCII TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.pet80_port = atoi(str);
 				break;
-			case 20:
+			case 10:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
 					startup.max_concurrent_connections = atoi(str);
 				break;
-			case 21:
+			case 11:
 				SAFECOPY(str, duration(startup.max_login_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity at Login", str, 10, K_EDIT) > 0)
 					startup.max_login_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 22:
+			case 12:
 				SAFECOPY(str, duration(startup.max_newuser_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity at New User Registration", str, 10, K_EDIT) > 0)
 					startup.max_newuser_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 23:
+			case 13:
 				SAFECOPY(str, duration(startup.max_session_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity during User Session", str, 10, K_EDIT) > 0)
 					startup.max_session_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 24:
+			case 14:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.outbuf_drain_timeout = atoi(str);
 				break;
-			case 25:
+			case 15:
 				startup.options ^= BBS_OPT_NO_EVENTS;
 				break;
-			case 26:
+			case 16:
 				startup.options ^= BBS_OPT_NO_QWK_EVENTS;
 				break;
-			case 27:
+			case 17:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 28:
+			case 18:
 				getar("Terminal Server Login", startup.login_ars);
 				break;
-			case 29:
+			case 19:
 				js_startup_cfg(&startup.js);
 				break;
-			case 30:
+			case 20:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
