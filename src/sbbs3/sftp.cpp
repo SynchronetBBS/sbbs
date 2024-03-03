@@ -1310,7 +1310,7 @@ sftp_open(sftp_str_t filename, uint32_t flags, sftp_file_attr_t attributes, void
 	constexpr size_t nfdes = sizeof(sbbs->sftp_filedes) / sizeof(sbbs->sftp_filedes[0]);
 	unsigned fdidx;
 	mode_t omode = 0;
-	int oflags = 0;
+	int oflags = O_BINARY;
 	sftp_str_t handle;
 	bool ret;
 	map_path_mode_t mmode;
