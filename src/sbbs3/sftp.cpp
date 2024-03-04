@@ -1816,6 +1816,9 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 					case SFTP_DTREE_VIRTUAL:
 						ename = expand_slash(sbbs->cfg.lib[dd->info.filebase.idx]->vdir);
 						break;
+					default:
+						ename = nullptr;
+						break;
 				}
 				if (ename == nullptr) {
 					sftp_fattr_free(attr);
