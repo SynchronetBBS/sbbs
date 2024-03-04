@@ -142,12 +142,14 @@ symlinks: all
 	ln -sf `realpath */$(EXEODIR)/*` $(SBBSEXEC)
 endif
 
+ifdef SBBS_OFFICIAL
 ifdef SBBSCTRL
 $(EXEODIR)/textgen: $(TEXTGEN_OBJS)
 	$(CC) -o $@ $(TEXTGEN_OBJS) $(XPDEV_LIB) $(ENCODE_LIB) -lm
 
 text.h: $(SBBSCTRL)/text.dat $(EXEODIR)/textgen
 	$(EXEODIR)/textgen
+endif
 endif
 
 .PHONY: FORCE
