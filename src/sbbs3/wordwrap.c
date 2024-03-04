@@ -223,7 +223,7 @@ static struct section_len get_ws_len(char *buf, int col)
  * maxlen cols (used to find the number of bytes to fill a specific
  * number of columns).
  */
-static struct section_len get_word_len(char *buf, int maxlen, BOOL is_utf8)
+static struct section_len get_word_len(char *buf, int maxlen, bool is_utf8)
 {
 	struct section_len ret = {0,0};
 
@@ -295,21 +295,21 @@ static void free_paragraphs(struct paragraph *paragraph, int count)
 /*
  * Appends bytes to a paragraph, realloc()ing space if needed.
  */
-static BOOL paragraph_append(struct paragraph *paragraph, const char *bytes, size_t count)
+static bool paragraph_append(struct paragraph *paragraph, const char *bytes, size_t count)
 {
 	char *new_text;
 
 	while (paragraph->len + count + 1 > paragraph->alloc_size) {
 		new_text = realloc(paragraph->text, paragraph->alloc_size * 2);
 		if (new_text == NULL)
-			return FALSE;
+			return false;
 		paragraph->text = new_text;
 		paragraph->alloc_size *= 2;
 	}
 	memcpy(paragraph->text + paragraph->len, bytes, count);
 	paragraph->text[paragraph->len+count] = 0;
 	paragraph->len += count;
-	return TRUE;
+	return true;
 }
 
 /*
@@ -319,7 +319,7 @@ static BOOL paragraph_append(struct paragraph *paragraph, const char *bytes, siz
  * The returned malloc()ed array will have the text member of the last
  * paragraph set to NULL.
  */
-static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes, BOOL *has_crs, BOOL is_utf8)
+static struct paragraph *word_unwrap(char *inbuf, int oldlen, bool handle_quotes, bool *has_crs, bool is_utf8)
 {
 	unsigned inpos=0;
 	struct prefix new_prefix;
@@ -327,7 +327,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 	int paragraph = 0;
 	struct paragraph *ret = NULL;
 	struct paragraph *newret = NULL;
-	BOOL paragraph_done;
+	bool paragraph_done;
 	int next_word_len;
 	size_t new_prefix_len;
 	size_t alloc_len = oldlen+1;
@@ -335,7 +335,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 	if (alloc_len > 4096)
 		alloc_len = 4096;
 	if(has_crs)
-		*has_crs = FALSE;
+		*has_crs = false;
 	while(inbuf[inpos]) {
 		incol = 0;
 		/* Start of a new paragraph (ie: after a hard CR) */
@@ -357,12 +357,12 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 		}
 		else
 			memset(&ret[paragraph].prefix, 0, sizeof(ret[paragraph].prefix));
-		paragraph_done = FALSE;
+		paragraph_done = false;
 		while(!paragraph_done) {
 			switch(inbuf[inpos]) {
 				case '\r':		// Strip CRs and add them in later.
 					if (has_crs)
-						*has_crs = TRUE;
+						*has_crs = true;
 					// Fall-through to strip
 				case '\b':		// Strip backspaces.
 				case DEL:	// Strip delete chars.
@@ -378,7 +378,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 						break;
 					// If the original line was overly long, it's hard.
 					if (incol > oldlen) {
-						paragraph_done = TRUE;
+						paragraph_done = true;
 						break;
 					}
 					// Now, if the prefix changes, it's hard.
@@ -391,7 +391,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 						new_prefix_len = 0;
 					}
 					if (cmp_prefix(&new_prefix, &ret[paragraph].prefix) != 0) {
-						paragraph_done = TRUE;
+						paragraph_done = true;
 						FREE_AND_NULL(new_prefix.bytes);
 						break;
 					}
@@ -403,18 +403,18 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 						case '\r':
 						case '\n':
 							FREE_AND_NULL(new_prefix.bytes);
-							paragraph_done = TRUE;
+							paragraph_done = true;
 							break;
 					}
 					if (paragraph_done) {
 						FREE_AND_NULL(new_prefix.bytes);
-						paragraph_done = TRUE;
+						paragraph_done = true;
 						break;
 					}
 					// If this paragraph was only whitespace, it's hard.
 					if(strspn(ret[paragraph].text, " \t\r") == strlen(ret[paragraph].text)) {
 						FREE_AND_NULL(new_prefix.bytes);
-						paragraph_done = TRUE;
+						paragraph_done = true;
 						break;
 					}
 
@@ -422,7 +422,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 					next_word_len = get_word_len(inbuf+inpos+1+new_prefix_len, -1, is_utf8).len;
 					if ((incol + next_word_len + 1 - 1) < oldlen) {
 						FREE_AND_NULL(new_prefix.bytes);
-						paragraph_done = TRUE;
+						paragraph_done = true;
 						break;
 					}
 					// Skip the new prefix...
@@ -447,7 +447,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 			}
 			inpos++;
 			if (inbuf[inpos] == 0)
-				paragraph_done = TRUE;
+				paragraph_done = true;
 		}
 		paragraph++;
 	}
@@ -472,7 +472,7 @@ fail_return:
  * 
  * Returns a malloc()ed string.
  */
-static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, BOOL handle_quotes, BOOL has_crs, BOOL is_utf8)
+static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, bool handle_quotes, bool has_crs, bool is_utf8)
 {
 	int outcol;
 	char *outbuf = NULL;
@@ -551,11 +551,11 @@ static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, BOOL ha
 	return outbuf;
 }
 
-char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes, BOOL is_utf8)
+char* wordwrap(char* inbuf, int len, int oldlen, bool handle_quotes, bool is_utf8)
 {
 	char*		outbuf;
 	struct paragraph *paragraphs;
-	BOOL		has_crs;
+	bool		has_crs;
 
 	if (oldlen < 1)
 		oldlen = 79;
