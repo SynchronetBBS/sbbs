@@ -112,7 +112,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		mode|=QM_VIA;
 	if(useron.qwk&QWK_MSGID)
 		mode|=QM_MSGID;
-	mode |= useron.qwk&(QWK_EXT | QWK_UTF8);
+	mode |= useron.qwk&(QWK_EXT | QWK_UTF8 | QWK_WORDWRAP);
 
 	(*msgcnt)=0L;
 	if(/* !prepack && */ !(useron.qwk&QWK_NOCTRL)) {

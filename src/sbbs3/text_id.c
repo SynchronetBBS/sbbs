@@ -875,4 +875,5 @@ const char* const text_id[]={
 	,"UserDefaultsLanguage"
 	,"PasswordChar"
 	,"NodeConnectionSFTP"
+	,"QWKSettingsWrapText"
 };

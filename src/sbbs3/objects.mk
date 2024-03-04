@@ -292,3 +292,8 @@ LOAD_CFG_OBJS = \
 			$(OBJODIR)/ars$(OFILE) \
 			$(OBJODIR)/nopen$(OFILE)
 
+TEXTGEN_OBJS = 		$(OBJODIR)/textgen$(OFILE) \
+			$(OBJODIR)/getctrl$(OFILE) \
+			$(OBJODIR)/str_util$(OFILE)
+
+

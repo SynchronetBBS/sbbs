@@ -23,6 +23,7 @@
 #include "qwk.h"
 #include "utf8.h"
 #include "cp437defs.h"
+#include "wordwrap.h"
 
 #define MAX_MSGNUM	0x7FFFFFUL	// only 7 (decimal) digits allowed for msg num
 
@@ -246,14 +247,24 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 	if(!buf)
 		return -2;
 
+	bool is_utf8 = false;
 	char qwk_newline = QWK_NEWLINE;
 	if(smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8)) {
-		if(mode&QM_UTF8)
+		if(mode&QM_UTF8) {
 			qwk_newline = '\n';
-		else
+			is_utf8 = true;
+		} else
 			utf8_to_cp437_inplace(buf);
 	}
-
+	if(mode & QM_WORDWRAP) {
+		int org_cols = msg->columns ? msg->columns : 80;
+		int new_cols = useron.cols ? useron.cols : cols ? cols : 80;
+		char* wrapped = ::wordwrap(buf, new_cols - 1, org_cols - 1, /* handle_quotes */true, is_utf8);
+		if(wrapped != NULL) {
+			free(buf);
+			buf = wrapped;
+		}
+	}
 	fprintf(qwk_fp,"%*s",QWK_BLOCK_LEN,"");		/* Init header to space */
 
 	if(msg->hdr.type == SMB_MSG_TYPE_NORMAL) {

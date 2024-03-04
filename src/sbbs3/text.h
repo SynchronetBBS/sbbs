@@ -891,6 +891,7 @@ enum text {
 	,UserDefaultsLanguage
 	,PasswordChar
 	,NodeConnectionSFTP
+	,QWKSettingsWrapText
 
 	,TOTAL_TEXT
 };

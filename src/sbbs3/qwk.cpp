@@ -475,12 +475,15 @@ void sbbs_t::qwk_sec()
 				add_hotspot('U');
 				bprintf(text[QWKSettingsUtf8]
 					,useron.qwk&QWK_UTF8 ? text[Yes]:text[No]);
+				add_hotspot('W');
+				bprintf(text[QWKSettingsWrapText]
+					,useron.qwk&QWK_WORDWRAP ? text[Yes]:text[No]);
 				add_hotspot('X');
 				bprintf(text[QWKSettingsExtended]
 					,useron.qwk&QWK_EXT ? text[Yes]:text[No]);
 				bputs(text[QWKSettingsWhich]);
 				add_hotspot('Q');
-				ch=(char)getkeys("AEDFHIOPQTUYMNCXZV",0);
+				ch=(char)getkeys("AEDFHIOPQTUYMNCXZVW",0);
 				if(sys_status&SS_ABORT || !ch || ch=='Q' || !online)
 					break;
 				switch(ch) {
@@ -555,11 +558,14 @@ void sbbs_t::qwk_sec()
 					case 'Y':   /* Yourself */
 						useron.qwk^=QWK_BYSELF;
 						break;
-					case 'X':	/* QWKE */
-						useron.qwk^=QWK_EXT;
-						break;
 					case 'U':
 						useron.qwk^=QWK_UTF8;
+						break;
+					case 'W':
+						useron.qwk^=QWK_WORDWRAP;
+						break;
+					case 'X':	/* QWKE */
+						useron.qwk^=QWK_EXT;
 						break;
 				}
 				putuserqwk(useron.number, useron.qwk);

@@ -437,6 +437,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QWK_HEADERS	(1<<16)			/* Include HEADERS.DAT file				*/
 #define QWK_VOTING	(1<<17)			/* Include VOTING.DAT					*/
 #define QWK_UTF8	(1<<18)			/* Include UTF-8 characters				*/
+#define QWK_WORDWRAP (1<<19)		/* Word-wrap message text				*/
 
 #define QWK_DEFAULT	(QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL)
 
