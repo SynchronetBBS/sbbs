@@ -731,13 +731,10 @@ sftp_resolve_path(char *target, const char *path, size_t size)
 			else if(*(out+1)=='.' && *(out+2)=='.' && (*(out+3)=='/' || *(out+3)==0))  {
 				*out=0;
 				p=strrchr(target,'/');
-				if(p==NULL) {
-					if (target_alloced)
-						free(target);
-					return nullptr;
+				if (p!=NULL) {
+					memmove(p,out+3,strlen(out+3)+1);
+					out=p;
 				}
-				memmove(p,out+3,strlen(out+3)+1);
-				out=p;
 			}
 			else  {
 				out++;
