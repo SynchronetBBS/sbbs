@@ -399,10 +399,10 @@ static void ssh_srvr_cfg(bbs_startup_t* startup)
 			,startup->options & BBS_OPT_ALLOW_SSH ? vduration(startup->ssh_connect_timeout) : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Error Level"
 			,startup->options & BBS_OPT_ALLOW_SSH ? iniLogLevelStringList()[startup->ssh_error_level] : "N/A");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "File Transfer (SFTP) Support"
-			,startup->options & BBS_OPT_ALLOW_SSH ? (startup->options & BBS_OPT_ALLOW_SFTP ? "Yes" : "No") : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "User Authentication Type"
 			,startup->options & BBS_OPT_ALLOW_SSH ? (startup->options & BBS_OPT_SSH_ANYAUTH ? "Any" : "Valid Key or Username") : "N/A");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "File Transfer (SFTP) Support"
+			,startup->options & BBS_OPT_ALLOW_SSH ? (startup->options & BBS_OPT_ALLOW_SFTP ? "Yes" : "No") : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max SFTP Inactivity"
 			,(startup->options & BBS_OPT_ALLOW_SSH) && (startup->options & BBS_OPT_ALLOW_SFTP) ? vduration(startup->max_sftp_inactivity) : "N/A");
 
@@ -445,12 +445,12 @@ static void ssh_srvr_cfg(bbs_startup_t* startup)
 			case 5:
 				if(!(startup->options & BBS_OPT_ALLOW_SSH))
 					break;
-				startup->options ^= BBS_OPT_ALLOW_SFTP;
+				startup->options ^= BBS_OPT_SSH_ANYAUTH;
 				break;
 			case 6:
 				if(!(startup->options & BBS_OPT_ALLOW_SSH))
 					break;
-				startup->options ^= BBS_OPT_SSH_ANYAUTH;
+				startup->options ^= BBS_OPT_ALLOW_SFTP;
 				break;
 			case 7:
 				if(!(startup->options & BBS_OPT_ALLOW_SSH))
