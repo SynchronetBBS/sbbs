@@ -773,6 +773,10 @@ public:
 	int		dir_op(int dirnum);
 	bool	is_valid_subnum(int subnum) { return ::is_valid_subnum(&cfg, subnum); }
 	bool	is_valid_dirnum(int dirnum) { return ::is_valid_dirnum(&cfg, dirnum); }
+	char*	dir_name(int dirnum) { return ::dir_name(&cfg, dirnum); }
+	char*	lib_name(int dirnum) { return ::lib_name(&cfg, dirnum); }
+	char*	sub_name(int subnum) { return ::sub_name(&cfg, subnum); }
+	char*	grp_name(int subnum) { return ::grp_name(&cfg, subnum); }
 
 	void	getmsgptrs(void);
 	void	putmsgptrs(void);

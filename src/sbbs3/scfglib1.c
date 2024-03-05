@@ -739,6 +739,40 @@ int getgrpnum(scfg_t* cfg, const char* code)
 	return i;
 }
 
+char* lib_name(scfg_t* cfg, int dirnum)
+{
+	if(!is_valid_dirnum(cfg, dirnum))
+		return "<invalid dir>";
+	int libnum = cfg->dir[dirnum]->lib;
+	if(!is_valid_libnum(cfg, libnum))
+		return "<invalid lib>";
+	return cfg->lib[libnum]->sname;
+}
+
+char* dir_name(scfg_t* cfg, int dirnum)
+{
+	if(!is_valid_dirnum(cfg, dirnum))
+		return "<invalid dir>";
+	return cfg->dir[dirnum]->sname;
+}
+
+char* grp_name(scfg_t* cfg, int subnum)
+{
+	if(!is_valid_subnum(cfg, subnum))
+		return "<invalid sub>";
+	int grpnum = cfg->sub[subnum]->grp;
+	if(!is_valid_grpnum(cfg, grpnum))
+		return "<invalid grp>";
+	return cfg->grp[grpnum]->sname;
+}
+
+char* sub_name(scfg_t* cfg, int subnum)
+{
+	if(!is_valid_subnum(cfg, subnum))
+		return "<invalid sub>";
+	return cfg->sub[subnum]->sname;
+}
+
 int getgrpnum_from_name(scfg_t* cfg, const char* name)
 {
 	int i;

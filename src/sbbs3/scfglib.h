@@ -65,6 +65,10 @@ int		getgurunum(scfg_t*, const char* code);
 int		getchatactset(scfg_t*, const char* name);
 int		getxeditnum(scfg_t*, const char* code);
 int		getshellnum(scfg_t*, const char* code);
+char*	lib_name(scfg_t*, int dirnum);
+char*	dir_name(scfg_t*, int dirnum);
+char*	grp_name(scfg_t*, int subnum);
+char*	sub_name(scfg_t*, int subnum);
 
 DLLEXPORT bool	is_valid_dirnum(scfg_t*, int);
 DLLEXPORT bool	is_valid_libnum(scfg_t*, int);
