@@ -125,7 +125,7 @@ bool sbbs_t::uploadfile(file_t* f)
 			for(int j=0; j < usrdirs[i]; j++,k++) {
 				if(cfg.dir[usrdir[i][j]]->misc&DIR_DUPES
 					&& findfile(&cfg, usrdir[i][j], /* filename: */NULL, f)) {
-					bprintf(text[FileAlreadyOnline], f->name);
+					bprintf(text[FileAlreadyOnline], f->name, lib_name(usrdir[i][j]), dir_name(usrdir[i][j]));
 					if(!dir_op(f->dir)) {
 						remove(path);
 						safe_snprintf(str, sizeof(str), "attempted to upload %s to %s %s (duplicate hash)"
@@ -315,7 +315,7 @@ bool sbbs_t::upload(int dirnum)
 	bool found = findfile(&cfg, dirnum, fname, NULL);
 	bputs(text[SearchedForDupes]);
 	if(found) {
-		bprintf(text[FileAlreadyOnline],fname);
+		bprintf(text[FileAlreadyOnline],fname, lib_name(dirnum), dir_name(dirnum));
 		return(false); 	 /* File is already in database */
 	}
 	for(i=k=0;i<usrlibs;i++) {
@@ -326,7 +326,7 @@ bool sbbs_t::upload(int dirnum)
 			if(cfg.dir[usrdir[i][j]]->misc&DIR_DUPES
 				&& findfile(&cfg, usrdir[i][j], fname, NULL)) {
 				bputs(text[SearchedForDupes]);
-				bprintf(text[FileAlreadyOnline],fname);
+				bprintf(text[FileAlreadyOnline], fname, lib_name(usrdir[i][j]), dir_name(usrdir[i][j]));
 				if(!dir_op(dirnum))
 					return(false); 	 /* File is in database for another dir */
 			}

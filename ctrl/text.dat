@@ -255,7 +255,7 @@
 "\r\n\1r\1h\1iThat file is not on disk!\1n\r\n"             209 FileNotOnDisk
 "\r\n\1r\1h\1iPlease upload files with the following "\    210 TheseFileExtsOnly
 	"extensions only:\1n\r\n\1w\1h"
-"\r\n\1r\1h\1i%s has already been uploaded!\1n\r\n"         211 FileAlreadyOnline
+"\r\n\1n\1h%s\1r\1h\1i has already been uploaded to\1n\1c %s \1h%s\1n\r\n" 211 FileAlreadyOnline
 "\r\n\1w\1hHit [ENTER] after last destination "\          212 EnterAfterLastDestUser
 	"user.\r\n\r\n"
 "\1_\1y\1hSend file to (User name or number): \1n"          213 SendFileToUser

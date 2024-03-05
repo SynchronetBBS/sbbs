@@ -234,7 +234,7 @@ bool sbbs_t::movefile(smb_t* smb, file_t* f, int newdir)
 {
 	file_t newfile = *f;
 	if(findfile(&cfg, newdir, f->name, NULL)) {
-		bprintf(text[FileAlreadyThere], f->name);
+		bprintf(text[FileAlreadyOnline], f->name, lib_name(newdir), dir_name(newdir));
 		return false;
 	}
 

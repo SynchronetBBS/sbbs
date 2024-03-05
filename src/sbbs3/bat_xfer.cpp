@@ -548,7 +548,7 @@ void sbbs_t::batch_upload()
 		SAFEPRINTF2(src, "%s%s", cfg.temp_dir, filename);
 		SAFEPRINTF2(dest, "%s%s", cfg.dir[dir]->path, filename);
 		if(fexistcase(src) && fexistcase(dest)) { /* file's in two places */
-			bprintf(text[FileAlreadyThere], filename);
+			bprintf(text[FileAlreadyOnline], filename, lib_name(dir), dir_name(dir));
 			remove(src);    /* this is the one received */
 			continue;
 		}
@@ -581,7 +581,9 @@ void sbbs_t::batch_upload()
 		}
 		SAFEPRINTF2(dest, "%s%s", cfg.dir[cfg.upload_dir]->path, dirent->d_name);
 		if(fexistcase(dest)) {
-			bprintf(text[FileAlreadyOnline], dirent->d_name);
+			bprintf(text[FileAlreadyOnline], dirent->d_name
+				,lib_name(cfg.upload_dir)
+				,dir_name(cfg.upload_dir));
 			continue;
 		}
 		if(mv(src, dest, /* copy: */false))
@@ -599,7 +601,8 @@ void sbbs_t::batch_upload()
 		}
 		bputs(text[SearchedForDupes]);
 		if(x<usrlibs) {
-			bprintf(text[FileAlreadyOnline], dirent->d_name);
+			bprintf(text[FileAlreadyOnline], dirent->d_name
+				,lib_name(usrdir[x][y]), dir_name(usrdir[x][y]));
 		} else {
 			file_t f = {{}};
 			f.dir = cfg.upload_dir;
