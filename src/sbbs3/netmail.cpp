@@ -212,7 +212,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 		SAFEPRINTF3(str,"%sfile/%04u.out/%s",tmp,useron.number,fname);
 		SAFECOPY(subj, str);
 		if(fexistcase(str)) {
-			bputs(text[FileAlreadyThere]);
+			bprintf(text[FileAlreadyThere], str);
 			return(false); 
 		}
 		{ /* Remote */
@@ -1048,7 +1048,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 		SAFEPRINTF3(str2,"%sfile/%04u.out/%s",cfg.data_dir,useron.number,title);
 		if(fexistcase(str2)) {
 			strListFree(&rcpt_list);
-			bputs(text[FileAlreadyThere]);
+			bprintf(text[FileAlreadyThere], str2);
 			(void)remove(msgpath);
 			return(false); 
 		}

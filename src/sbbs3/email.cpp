@@ -132,7 +132,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		(void)MKDIR(str2);
 		SAFEPRINTF3(str2,"%sfile/%04u.in/%s", cfg.data_dir,usernumber,title);
 		if(fexistcase(str2)) {
-			bputs(text[FileAlreadyThere]);
+			bprintf(text[FileAlreadyThere], str2);
 			(void)remove(msgpath);
 			return(false); 
 		}
