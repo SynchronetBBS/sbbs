@@ -50,7 +50,7 @@ void iniSetDefaultStyle(ini_style_t style)
 
 /* These correlate with the LOG_* definitions in syslog.h/gen_defs.h */
 static char* logLevelStringList[]
-	= {"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Informational", "Debugging", NULL};
+	= {"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
 
 str_list_t iniLogLevelStringList(void)
 {
@@ -2378,6 +2378,20 @@ time_t iniGetDateTime(str_list_t list, const char* section, const char* key, tim
 	return(parseDateTime(vp));
 }
 
+// Like stricmp(), but either string may be shorter than the other and still match
+int partial_stricmp(const char* str1, const char* str2)
+{
+	int result = 0;
+
+	while(result == 0 && *str1 != '\0' && *str2 != '\0') {
+		result = toupper(*str1) - toupper(*str2);
+		++str1;
+		++str2;
+	}
+
+	return result;
+}
+
 static unsigned parseEnum(const char* value, str_list_t names, unsigned deflt)
 {
 	unsigned i,count;
@@ -2401,7 +2415,7 @@ static unsigned parseEnum(const char* value, str_list_t names, unsigned deflt)
 
 	/* Look for partial matches second */
 	for(i=0; i<count; i++)
-		if(strnicmp(names[i],val,strlen(val))==0)
+		if(partial_stricmp(names[i],val)==0)
 			return(i);
 
     i=strtoul(val, &endptr, 0);
@@ -2523,7 +2537,7 @@ static int parseNamedInt(const char* value, named_int_t* names)
 
 	/* Look for partial matches second */
 	for(i=0; names[i].name!=NULL; i++)
-		if(strnicmp(names[i].name,value,strlen(value))==0)
+		if(partial_stricmp(names[i].name,value)==0)
 			return(names[i].value);
 
 	return(parseInteger(value));
@@ -2568,7 +2582,7 @@ static ulong parseNamedULongInt(const char* value, named_ulong_t* names)
 
 	/* Look for partial matches second */
 	for(i=0; names[i].name!=NULL; i++)
-		if(strnicmp(names[i].name,value,strlen(value))==0)
+		if(partial_stricmp(names[i].name,value)==0)
 			return(names[i].value);
 
 	return(parseULongInteger(value));
@@ -2613,7 +2627,7 @@ static double parseNamedFloat(const char* value, named_double_t* names)
 
 	/* Look for partial matches second */
 	for(i=0; names[i].name!=NULL; i++)
-		if(strnicmp(names[i].name,value,strlen(value))==0)
+		if(partial_stricmp(names[i].name,value)==0)
 			return(names[i].value);
 
 	return(atof(value));
