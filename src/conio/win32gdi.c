@@ -479,22 +479,22 @@ win_to_pos(LPARAM lParam, struct gdi_mouse_pos *p)
 
 	cx = lParam & 0xffff;
 	pthread_mutex_lock(&off_lock);
-	if (cx < xoff || cy < yoff) {
-		pthread_mutex_unlock(&off_lock);
-		return false;
-	}
+	if (cx < xoff)
+		cx = xoff;
+	if (cy < yoff)
+		cy = yoff;
 	cx -= xoff;
 	cy -= yoff;
 
 	p->tx = (int)(cx / (((float)dwidth) / cols) + 1);
 	if (p->tx > cols)
-		ret = false;
+		p->tx = cols;
 
 	p->px = cx * (scrnwidth) / dwidth;
 
 	p->ty = (int)(cy / (((float)dheight) / rows) + 1);
 	if (p->ty > rows)
-		ret = false;
+		p->ty = rows;
 
 	p->py = cy * (scrnheight) / dheight;
 	pthread_mutex_unlock(&off_lock);

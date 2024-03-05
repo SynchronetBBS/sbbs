@@ -1515,30 +1515,32 @@ static bool
 xlat_mouse_xy(int *x, int *y)
 {
 	int xoff, yoff;
+	int xw, xh;
 
 	pthread_mutex_lock(&vstatlock);
-	xoff = (vstat.winwidth - xim->width) / 2;
+	bitmap_get_scaled_win_size(vstat.scaling, &xw, &xh, 0, 0);
+	xoff = (vstat.winwidth - xw) / 2;
 	if (xoff < 0)
 		xoff = 0;
-	yoff = (vstat.winheight - xim->height) / 2;
+	yoff = (vstat.winheight - xh) / 2;
 	if (yoff < 0)
 		yoff = 0;
 	pthread_mutex_unlock(&vstatlock);
 
 	if (*x < xoff)
-		return false;
+		*x = xoff;
 	if (*y < yoff)
-		return false;
+		*y = yoff;
 	*x -= xoff;
 	*y -= yoff;
-	if (*x >= xim->width)
-		return false;
-	if (*y >= xim->height)
-		return false;
+	if (*x >= xw)
+		*x = xw - 1;
+	if (*y >= xh)
+		*y = xh - 1;
 	*x *= x_cvstat.scrnwidth;
 	*y *= x_cvstat.scrnheight;
-	*x /= xim->width;
-	*y /= xim->height;
+	*x /= xw;
+	*y /= xh;
 	return true;
 }
 

@@ -842,44 +842,54 @@ static void sdl_mouse_thread(void *data)
 	}
 }
 
-static int win_to_text_xpos(int winpos, struct video_stats *vs)
-{
-	int ret;
-
-	ret = winpos/(((float)vs->winwidth)/vs->cols)+1;
-	if (ret > vs->cols)
-		ret = vs->cols;
-	if (ret < 1)
-		ret = 1;
-	return ret;
-}
-
-static int win_to_text_ypos(int winpos, struct video_stats *vs)
-{
-	int ret;
-
-	ret = winpos/(((float)vs->winheight)/vs->rows)+1;
-	if (ret > vs->rows)
-		ret = vs->rows;
-	if (ret < 1)
-		ret = 1;
-	return ret;
-}
-
 static int win_to_res_xpos(int winpos, struct video_stats *vs)
 {
 	int ret;
+	int w, h;
 
-	ret = winpos * (vs->scrnwidth) / vs->winwidth;
+	bitmap_get_scaled_win_size(vs->scaling, &w, &h, 0, 0);
+	int xoff = (vs->winwidth - w) / 2;
+	if (xoff < 0)
+		xoff = 0;
+	if (winpos < xoff)
+		winpos = 0;
+	else
+		winpos -= xoff;
+	if (winpos >= w)
+		winpos = w - 1;
+	ret = winpos * vs->scrnwidth / w;
 	return ret;
 }
 
 static int win_to_res_ypos(int winpos, struct video_stats *vs)
 {
 	int ret;
+	int w, h;
 
-	ret = winpos * (vs->scrnheight) / vs->winheight;
+	bitmap_get_scaled_win_size(vs->scaling, &w, &h, 0, 0);
+	int yoff = (vs->winheight - h) / 2;
+	if (yoff < 0)
+		yoff = 0;
+	if (winpos < yoff)
+		winpos = 0;
+	else
+		winpos -= yoff;
+	if (winpos >= h)
+		winpos = h - 1;
+	ret = winpos * vs->scrnheight / h;
 	return ret;
+}
+
+static int win_to_text_xpos(int winpos, struct video_stats *vs)
+{
+	winpos = win_to_res_xpos(winpos, vs);
+	return (winpos * vs->cols / vs->scrnwidth) + 1;
+}
+
+static int win_to_text_ypos(int winpos, struct video_stats *vs)
+{
+	winpos = win_to_res_ypos(winpos, vs);
+	return (winpos * vs->rows / vs->scrnheight) + 1;
 }
 
 void sdl_video_event_thread(void *data)
