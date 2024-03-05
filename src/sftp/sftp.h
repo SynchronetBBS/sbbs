@@ -193,7 +193,7 @@ typedef struct sftp_server_state {
 	sftp_rx_pkt_t rxp;
 	sftp_tx_pkt_t txp;
 	void *cb_data;
-	void (*lprintf)(void *cb_data, uint32_t errcode, const char *fmt, ...);
+	void (*lprint)(void *cb_data, uint32_t errcode, const char *msg);
 	void (*cleanup_callback)(void *cb_data);
 	bool (*open)(sftp_str_t filename, uint32_t flags, sftp_file_attr_t attributes, void *cb_data);
 	bool (*close)(sftp_str_t handle, void *cb_data);
@@ -250,7 +250,7 @@ bool sftp_rx_pkt_reclaim(sftp_rx_pkt_t *pktp);
 sftp_str_t sftp_alloc_str(uint32_t len);
 sftp_str_t sftp_strdup(const char *str);
 sftp_str_t sftp_asprintf(const char *format, ...);
-sftp_str_t sftp_memdup(uint8_t *buf, uint32_t sz);
+sftp_str_t sftp_memdup(const uint8_t *buf, uint32_t sz);
 void free_sftp_str(sftp_str_t str);
 
 /* sftp_client.c */

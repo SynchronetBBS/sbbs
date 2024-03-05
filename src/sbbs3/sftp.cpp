@@ -1320,11 +1320,9 @@ sftp_send(uint8_t *buf, size_t len, void *cb_data)
 }
 
 static void
-sftp_lprintf(void *arg, uint32_t errcode, const char *fmt, ...)
+sftp_lprint(void *arg, uint32_t errcode, const char *msg)
 {
 	sbbs_t *sbbs = (sbbs_t *)arg;
-	va_list argptr;
-	char sbuf[1024];
 	int level = LOG_DEBUG;
 
 	switch (errcode) {
@@ -1337,11 +1335,7 @@ sftp_lprintf(void *arg, uint32_t errcode, const char *fmt, ...)
 			break;
 	}
 
-	va_start(argptr,fmt);
-	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
-	sbuf[sizeof(sbuf)-1]=0;
-	va_end(argptr);
-	sbbs->lprintf(level, "SFTP error code %" PRIu32 " (%s) %s", errcode, sftp_get_errcode_name(errcode), sbuf);
+	sbbs->lprintf(level, "SFTP error code %" PRIu32 " (%s) %s", errcode, sftp_get_errcode_name(errcode), msg);
 }
 
 static void
@@ -2153,7 +2147,7 @@ sbbs_t::init_sftp(int cid)
 		return true;
 	sftp_state = sftps_begin(sftp_send, this);
 	if (sftp_state != nullptr) {
-		sftp_state->lprintf = sftp_lprintf;
+		sftp_state->lprint = sftp_lprint;
 		sftp_state->cleanup_callback = sftp_cleanup_callback;
 		sftp_state->realpath = sftp_realpath;
 		sftp_state->open = sftp_open;

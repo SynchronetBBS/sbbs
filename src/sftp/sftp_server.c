@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <genwrap.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <threadwrap.h>
 #include <str_list.h>
@@ -326,11 +327,29 @@ sftps_send_packet(sftps_state_t state)
 	return true;
 }
 
+static void
+lprintf(sftps_state_t state, uint32_t code, const char *fmt, ...)
+{
+	char *msg;
+	va_list va;
+	int rc;
+
+	if (state->lprint == NULL)
+		return;
+	if (fmt == NULL)
+		return;
+	va_start(va, fmt);
+	rc = vasprintf(&msg, fmt, va);
+	va_end(va);
+	if (rc == -1)
+		return;
+	state->lprint(state->cb_data, code, msg);
+}
+
 bool
 sftps_send_error(sftps_state_t state, uint32_t code, const char *msg)
 {
-	if (state->lprintf)
-		state->lprintf(state->cb_data, code, "%s", msg);
+	lprintf(state, code, "%s", msg);
 	if (!appendheader(state, SSH_FXP_STATUS))
 		return false;
 	if (!append32(state, code))
@@ -375,8 +394,7 @@ sftps_recv(sftps_state_t state, uint8_t *buf, uint32_t sz)
 	if (sftp_have_pkt_sz(state->rxp)) {
 		uint32_t psz = sftp_pkt_sz(state->rxp);
 		if (psz > SFTP_MAX_PACKET_SIZE) {
-			if (state->lprintf)
-				state->lprintf(state->cb_data, SSH_FX_FAILURE, "Packet too large (%" PRIu32 " bytes)", psz);
+			lprintf(state, SSH_FX_FAILURE, "Packet too large (%" PRIu32 " bytes)", psz);
 			return exit_function(state, false);
 		}
 	}
@@ -528,8 +546,7 @@ sftps_recv(sftps_state_t state, uint8_t *buf, uint32_t sz)
 				break;
 		}
 		if (!handled) {
-			if (state->lprintf)
-				state->lprintf(state->cb_data, SSH_FX_FAILURE, "Unhandled request type: %s (%d)", sftp_get_type_name(state->rxp->type), state->rxp->type);
+			lprintf(state, SSH_FX_FAILURE, "Unhandled request type: %s (%d)", sftp_get_type_name(state->rxp->type), state->rxp->type);
 			state->id = get32(state);
 			if (!sftps_send_error(state, SSH_FX_OP_UNSUPPORTED, "Operation not implemented"))
 				return exit_function(state, false);
@@ -568,22 +585,19 @@ sftps_send_name(sftps_state_t state, uint32_t count, str_list_t fnames, str_list
 		return false;
 	for (uint32_t idx = 0; idx < count; idx++) {
 		if (fnames[idx] == NULL) {
-			if (state->lprintf)
-				state->lprintf(state->cb_data, SSH_FX_FAILURE, "Reached fnames terminator at position %" PRIu32 " of " PRIu32, idx, count);
+			lprintf(state, SSH_FX_FAILURE, "Reached fnames terminator at position %" PRIu32 " of " PRIu32, idx, count);
 			return false;
 		}
 		if (!appendcstring(state, fnames[idx]))
 			return false;
 		if (lnames[idx] == NULL) {
-			if (state->lprintf)
-				state->lprintf(state->cb_data, SSH_FX_FAILURE, "Reached lnames terminator at position %" PRIu32 " of " PRIu32, idx, count);
+			lprintf(state, SSH_FX_FAILURE, "Reached lnames terminator at position %" PRIu32 " of " PRIu32, idx, count);
 			return false;
 		}
 		if (!appendcstring(state, lnames[idx]))
 			return false;
 		if (attrs[idx] == NULL) {
-			if (state->lprintf)
-				state->lprintf(state->cb_data, SSH_FX_FAILURE, "Reached attrs terminator at position %" PRIu32 " of " PRIu32, idx, count);
+			lprintf(state, SSH_FX_FAILURE, "Reached attrs terminator at position %" PRIu32 " of " PRIu32, idx, count);
 			return false;
 		}
 		if (!appendfattr(state, attrs[idx]))

@@ -56,7 +56,7 @@ sftp_asprintf(const char *format, ...)
 }
 
 sftp_str_t
-sftp_memdup(uint8_t *buf, uint32_t sz)
+sftp_memdup(const uint8_t *buf, uint32_t sz)
 {
 	sftp_str_t ret = sftp_alloc_str(sz);
 	if (ret == NULL)
