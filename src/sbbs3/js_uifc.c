@@ -326,6 +326,7 @@ static jsSyncPropertySpec js_uifc_getstrxy_class_properties[] = {
 /* Constructor */
 static JSBool js_list_ctx_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
+	jsval *argv=JS_ARGV(cx, arglist);
 	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
 	struct list_ctx_private*	p;
 	obj = JS_NewObject(cx, &js_uifc_list_ctx_class, NULL, NULL);
@@ -339,6 +340,11 @@ static JSBool js_list_ctx_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	p->bar = INT_MAX;
+	if (argc > 0 && JSVAL_IS_NUMBER(argv[0])) p->cur = JSVAL_TO_INT(argv[0]);
+	if (argc > 1 && JSVAL_IS_NUMBER(argv[1])) p->bar = JSVAL_TO_INT(argv[1]);
+	if (argc > 2 && JSVAL_IS_NUMBER(argv[2])) p->left = JSVAL_TO_INT(argv[2]);
+	if (argc > 3 && JSVAL_IS_NUMBER(argv[3])) p->top = JSVAL_TO_INT(argv[3]);
+	if (argc > 4 && JSVAL_IS_NUMBER(argv[4])) p->width = JSVAL_TO_INT(argv[4]);
 	js_SyncResolve(cx, obj, NULL, js_uifc_list_class_properties, NULL, NULL, 0);
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used to retain UIFC list menu context", 317);
@@ -349,6 +355,7 @@ static JSBool js_list_ctx_constructor(JSContext *cx, uintN argc, jsval *arglist)
 }
 static JSBool js_showbuf_ctx_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
+	jsval *argv=JS_ARGV(cx, arglist);
 	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
 	struct showbuf_ctx_private*	p;
 	obj = JS_NewObject(cx, &js_uifc_showbuf_ctx_class, NULL, NULL);
@@ -359,6 +366,12 @@ static JSBool js_showbuf_ctx_constructor(JSContext *cx, uintN argc, jsval *argli
 	}
 	p->height = INT_MAX;
 	p->width = INT_MAX;
+	if (argc > 0 && JSVAL_IS_NUMBER(argv[0])) p->cur = JSVAL_TO_INT(argv[0]);
+	if (argc > 1 && JSVAL_IS_NUMBER(argv[1])) p->bar = JSVAL_TO_INT(argv[1]);
+	if (argc > 2 && JSVAL_IS_NUMBER(argv[2])) p->left = JSVAL_TO_INT(argv[2]);
+	if (argc > 3 && JSVAL_IS_NUMBER(argv[3])) p->top = JSVAL_TO_INT(argv[3]);
+	if (argc > 4 && JSVAL_IS_NUMBER(argv[4])) p->width = JSVAL_TO_INT(argv[4]);
+	if (argc > 5 && JSVAL_IS_NUMBER(argv[5])) p->height = JSVAL_TO_INT(argv[5]);
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
 		return JS_FALSE;
@@ -1160,7 +1173,7 @@ static jsSyncMethodSpec js_functions[] = {
 		"<tt>title</tt> is the brief description of the list (menu) to be displayed in the list heading.<br>"
 		"<tt>options</tt> is an array of items (typically strings) that comprise the displayed list.<br>"
 		"The <tt>CTX</tt> (context) object can be created using <tt>new uifc.list.CTX</tt> and if the same object is passed in successive calls, allows <tt>WIN_SAV</tt> to work correctly.<br>"
-		"The context object has the following properties (<i>numbers</i>):<br><tt>cur, bar, top, left, width</tt>"
+		"The context object has the following properties (<i>numbers</i>):<br><tt>cur, bar, left, top, width</tt>"
 		"<p>"
 		"Return <tt>-1</tt> if list is aborted (e.g. via ESC key press), <tt>false</tt> upon error (e.g. no option array provided), "
 		"or the 0-based numeric index of the option selected by the user.<br>"
@@ -1179,7 +1192,7 @@ static jsSyncMethodSpec js_functions[] = {
 	{"showbuf",			js_uifc_showbuf,	7,	JSTYPE_VOID,	JSDOCSTR("<i>number</i> mode, <i>string</i> title, <i>string</i> helpbuf [,<i>uifc.showbuf.CTX</i> ctx]")
 	,JSDOCSTR("Show a scrollable text buffer - optionally parsing \"help markup codes\"<br>"
 		"The context object can be created using <tt>new uifc.showbuf.CTX</tt> and if the same object is passed, allows <tt>WIN_SAV</tt> to work correctly.<br>"
-		"The context object has the following properties (<i>numbers</i>):<br><tt>cur, bar, top, left, width, height</tt>")
+		"The context object has the following properties (<i>numbers</i>):<br><tt>cur, bar, left, top, width, height</tt>")
 	,31802
 	},
 	{"timedisplay",			js_uifc_timedisplay,	0,	JSTYPE_VOID,	JSDOCSTR("[<i>bool<i/> force = false]")
