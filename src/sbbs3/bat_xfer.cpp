@@ -589,7 +589,7 @@ void sbbs_t::batch_upload()
 		if(mv(src, dest, /* copy: */false))
 			continue;
 
-		int x,y;
+		int x,y = 0;
 		for(x=0;x<usrlibs;x++) {
 			progress(text[SearchingForDupes], x, usrlibs);
 			for(y=0;y<usrdirs[x];y++)
