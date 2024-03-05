@@ -538,17 +538,19 @@ static void termsrvr_cfg(void)
 		int i = 0;
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", enabled ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "First Node", startup.first_node);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Last Node", startup.last_node);
+		snprintf(str, sizeof str, "%u-%u", startup.first_node, startup.last_node);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Serving Nodes", str);
 		snprintf(str, sizeof str, "Port %u", startup.ssh_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Support...", startup.options & BBS_OPT_ALLOW_SSH ? str : strDisabled);
 		snprintf(str, sizeof str, "Port %u", startup.telnet_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Telnet Support...", startup.options & BBS_OPT_NO_TELNET ? strDisabled : str);
 		snprintf(str, sizeof str, "Port %u", startup.rlogin_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "RLogin Support...", startup.options & BBS_OPT_ALLOW_RLOGIN ? str : strDisabled);
+		snprintf(str, sizeof str, "Port %u", startup.pet40_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "40 Column PETSCII Support",startup.pet40_port ? str : strDisabled );
+		snprintf(str, sizeof str, "Port %u", startup.pet80_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "80 Column PETSCII Support", startup.pet80_port  ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "DOS Program Support", startup.options & BBS_OPT_NO_DOS ? "No" : "Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "40 Column PETSCII Port", startup.pet40_port);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "80 Column PETSCII Port", startup.pet80_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Login Inactivity", vduration(startup.max_login_inactivity));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max New User Inactivity", vduration(startup.max_newuser_inactivity));
@@ -583,79 +585,78 @@ static void termsrvr_cfg(void)
 				break;
 			case 2:
 				SAFEPRINTF(str, "%u", startup.first_node);
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "First Node Available For Terminal Logins", str, 3, K_NUMBER|K_EDIT) > 0)
-					startup.first_node = atoi(str);
-				break;
-			case 3:
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "First Node Available For Terminal Logins", str, 3, K_NUMBER|K_EDIT) < 1)
+					break;
+				startup.first_node = atoi(str);
 				SAFEPRINTF(str, "%u", startup.last_node);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Last Node Available For Terminal Logins", str, 3, K_NUMBER|K_EDIT) > 0)
 					startup.last_node = atoi(str);
 				break;
-			case 4:
+			case 3:
 				ssh_srvr_cfg(&startup);
 				break;
-			case 5:
+			case 4:
 				telnet_srvr_cfg(&startup);
 				break;
-			case 6:
+			case 5:
 				rlogin_srvr_cfg(&startup);
 				break;
-			case 7:
-				startup.options ^= BBS_OPT_NO_DOS;
-				break;
-			case 8:
+			case 6:
 				SAFEPRINTF(str, "%u", startup.pet40_port);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "40 Column CBM/PETSCII TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.pet40_port = atoi(str);
 				break;
-			case 9:
+			case 7:
 				SAFEPRINTF(str, "%u", startup.pet80_port);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "80 Column CBM/PETSCII TCP Port", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.pet80_port = atoi(str);
 				break;
-			case 10:
+			case 8:
+				startup.options ^= BBS_OPT_NO_DOS;
+				break;
+			case 9:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
 					startup.max_concurrent_connections = atoi(str);
 				break;
-			case 11:
+			case 10:
 				SAFECOPY(str, duration(startup.max_login_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity at Login", str, 10, K_EDIT) > 0)
 					startup.max_login_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 12:
+			case 11:
 				SAFECOPY(str, duration(startup.max_newuser_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity at New User Registration", str, 10, K_EDIT) > 0)
 					startup.max_newuser_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 13:
+			case 12:
 				SAFECOPY(str, duration(startup.max_session_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity during User Session", str, 10, K_EDIT) > 0)
 					startup.max_session_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 14:
+			case 13:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)", str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.outbuf_drain_timeout = atoi(str);
 				break;
-			case 15:
+			case 14:
 				startup.options ^= BBS_OPT_NO_EVENTS;
 				break;
-			case 16:
+			case 15:
 				if(startup.options & BBS_OPT_NO_EVENTS)
 					break;
 				startup.options ^= BBS_OPT_NO_QWK_EVENTS;
 				break;
-			case 17:
+			case 16:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 18:
+			case 17:
 				getar("Terminal Server Login", startup.login_ars);
 				break;
-			case 19:
+			case 18:
 				js_startup_cfg(&startup.js);
 				break;
-			case 20:
+			case 19:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
