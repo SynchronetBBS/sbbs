@@ -1103,19 +1103,9 @@ function showFileInfo_ANSI(pFileMetadata)
 	if (user.is_sysop)
 	{
 		var sysopFields = [ "from", "cost", "added" ];
-		//sysopFields = [ "added" ];
-		//console.clear("\x01n"); // Temporary
 		for (var sI = 0; sI < sysopFields.length; ++sI)
 		{
 			var prop = sysopFields[sI];
-			/*
-			// Temporary
-			console.print(prop + " - Exists: " + fileMetadata.hasOwnProperty(prop) + "\r\n");
-			if (fileMetadata.hasOwnProperty(prop))
-				console.print(" type: " + typeof(fileMetadata[prop]) + "\r\n");
-			console.pause();
-			// End Temporary
-			*/
 			if (fileMetadata.hasOwnProperty(prop))
 			{
 				if (typeof(fileMetadata[prop]) === "string" && fileMetadata[prop].length == 0)
@@ -4075,10 +4065,7 @@ function parseArgs(argv)
 		// The 2nd argument is the mode/behavior bits in either case
 		var FLBehavior = parseInt(argv[1]);
 		if (isNaN(FLBehavior))
-		{
-			if (user.is_sysop) console.print("Fuck!\r\n\x01p"); // Temporary
 			return false;
-		}
 		else
 			gListBehavior = FLBehavior;
 		// If the 'no header' option was passed, then disable that
