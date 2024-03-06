@@ -709,14 +709,12 @@ sftp_resolve_path(char *target, const char *path, size_t size)
 {
 	char	*out;
 	char	*p;
-	bool    target_alloced=false;
 
 	if(target==NULL) {
 		size = MAX_PATH + 1;
 		if((target=(char*)malloc(size))==NULL) {
 			return(NULL);
 		}
-		target_alloced=true;
 	}
 	strncpy(target, path, size);
 	target[size-1] = 0;
