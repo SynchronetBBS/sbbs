@@ -555,6 +555,10 @@ add_public_key(void *vpriv)
 					pthread_mutex_unlock(&ssh_mutex);
 					cryptlib_error_message(status, "getting new channel");
 				}
+				else if (new_sftp_channel == -1) { // Shouldn't be possible...
+					sftp_channel = new_sftp_channel = -1;
+					pthread_mutex_unlock(&ssh_mutex);
+				}
 			}
 		}
 	}
@@ -656,7 +660,6 @@ add_public_key(void *vpriv)
 		close_sftp_channel(new_sftp_channel);
 	}
 	else {
-		pthread_mutex_unlock(&ssh_mutex);
 		pthread_mutex_unlock(&ssh_tx_mutex);
 	}
 	free(priv);
