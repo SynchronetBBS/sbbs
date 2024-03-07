@@ -612,8 +612,8 @@ add_public_key(void *vpriv)
 		pthread_mutex_lock(&ssh_tx_mutex);
 		pthread_mutex_lock(&ssh_mutex);
 		if (conn_api.terminate || !check_channel_open(&new_sftp_channel)) {
-			pthread_mutex_unlock(&ssh_tx_mutex);
 			pthread_mutex_unlock(&ssh_mutex);
+			pthread_mutex_unlock(&ssh_tx_mutex);
 			free(priv);
 			pubkey_thread_running = false;
 			return;
