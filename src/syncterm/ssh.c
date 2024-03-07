@@ -466,12 +466,8 @@ key_not_present(sftp_filehandle_t f, const char *priv)
 			}
 			if (!sftpc_read(sftp_state, f, off, (bufsz - bufpos > 1024) ? 1024 : bufsz - bufpos, &r)) {
 				free(buf);
-				pthread_mutex_lock(&ssh_mutex);
-				if (sftp_state->err_code == SSH_FX_EOF) {
-					pthread_mutex_unlock(&ssh_mutex);
+				if (sftpc_get_err(sftp_state) == SSH_FX_EOF)
 					return true;
-				}
-				pthread_mutex_unlock(&ssh_mutex);
 				return false;
 			}
 			memcpy(&buf[bufpos], r->c_str, r->len);

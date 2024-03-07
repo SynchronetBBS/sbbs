@@ -171,22 +171,7 @@ enum sftp_handle_type {
 typedef sftp_str_t sftp_filehandle_t;
 typedef sftp_str_t sftp_dirhandle_t;
 
-typedef struct sftp_client_state {
-	bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data);
-	xpevent_t recv_event;
-	sftp_rx_pkt_t rxp;
-	sftp_tx_pkt_t txp;
-	void *cb_data;
-	sftp_str_t err_msg;
-	sftp_str_t err_lang;
-	pthread_mutex_t mtx;
-	uint32_t version;
-	uint32_t running;
-	uint32_t id;
-	uint32_t err_id;
-	uint32_t err_code;
-	bool terminating;
-} *sftpc_state_t;
+typedef struct sftp_client_state *sftpc_state_t;
 
 typedef struct sftp_server_state {
 	bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data);
@@ -264,6 +249,7 @@ bool sftpc_close(sftpc_state_t state, sftp_filehandle_t *handle);
 bool sftpc_read(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, uint32_t len, sftp_str_t *ret);
 bool sftpc_write(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, sftp_str_t data);
 bool sftpc_reclaim(sftpc_state_t state);
+uint32_t sftpc_get_err(sftpc_state_t state);
 
 /* sftp_attr.c */
 sftp_file_attr_t sftp_fattr_alloc(void);

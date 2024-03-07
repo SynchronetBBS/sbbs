@@ -5,6 +5,23 @@
 
 #include "sftp.h"
 
+typedef struct sftp_client_state {
+	bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data);
+	xpevent_t recv_event;
+	sftp_rx_pkt_t rxp;
+	sftp_tx_pkt_t txp;
+	void *cb_data;
+	sftp_str_t err_msg;
+	sftp_str_t err_lang;
+	pthread_mutex_t mtx;
+	uint32_t version;
+	uint32_t running;
+	uint32_t id;
+	uint32_t err_id;
+	uint32_t err_code;
+	bool terminating;
+} *sftpc_state_t;
+
 #define SFTP_STATIC_TYPE sftpc_state_t
 #include "sftp_static.h"
 #undef SFTP_STATIC_TYPE
@@ -365,5 +382,16 @@ sftpc_reclaim(sftpc_state_t state)
 	bool ret = true;
 	ret = sftp_tx_pkt_reclaim(&state->txp) && ret;
 	ret = sftp_rx_pkt_reclaim(&state->rxp) && ret;
+	return ret;
+}
+
+uint32_t
+sftpc_get_err(sftpc_state_t state)
+{
+	uint32_t ret = SSH_FX_FAILURE;
+	if (!enter_function(state))
+		return ret;
+	ret = state->err_code;
+	exit_function(state, true);
 	return ret;
 }
