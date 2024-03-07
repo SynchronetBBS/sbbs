@@ -101,7 +101,6 @@ cryptlib_error_message(int status, const char *msg)
 static void
 close_sftp_channel(int chan)
 {
-	sftpc_state_t oldstate;
 	pthread_mutex_lock(&ssh_mutex);
 	if (chan != -1) {
 		FlushData(ssh_session);
@@ -118,12 +117,8 @@ close_sftp_channel(int chan)
 		}
 		sftp_channel = -1;
 	}
-	oldstate = sftp_state;
-	sftp_state = NULL;
 	pthread_mutex_unlock(&ssh_mutex);
-	if (oldstate != NULL) {
-		sftpc_finish(oldstate);
-	}
+	sftpc_finish(sftp_state);
 }
 
 static void
@@ -168,12 +163,13 @@ ssh_input_thread(void *args)
 	size_t buffered;
 	size_t buffer;
 	int    chan;
-	sftpc_state_t oldstate = NULL;
 	bool   both_gone = false;
+	bool   sftp_do_finish;
 
 	SetThreadName("SSH Input");
 	conn_api.input_thread_running = 1;
 	while (ssh_active && !conn_api.terminate) {
+		sftp_do_finish = false;
 		pthread_mutex_lock(&ssh_mutex);
 		if (FlushData(ssh_session) == CRYPT_ERROR_COMPLETE) {
 			pthread_mutex_unlock(&ssh_mutex);
@@ -185,8 +181,7 @@ ssh_input_thread(void *args)
 		}
 		if (sftp_channel != -1) {
 			if (!check_channel_open(&sftp_channel)) {
-				oldstate = sftp_state;
-				sftp_state = NULL;
+				sftp_do_finish = true;
 				sftp_channel = -1;
 			}
 		}
@@ -195,9 +190,9 @@ ssh_input_thread(void *args)
 		pthread_mutex_unlock(&ssh_mutex);
 		if (both_gone)
 			break;
-		if (oldstate != NULL) {
-			sftpc_finish(oldstate);
-			oldstate = NULL;
+		if (sftp_do_finish) {
+			sftpc_finish(sftp_state);
+			sftp_do_finish = false;
 		}
 		if (!socket_readable(ssh_sock, 100))
 			continue;
@@ -215,12 +210,8 @@ ssh_input_thread(void *args)
 		}
 		if (sftp_channel != -1) {
 			if (!check_channel_open(&sftp_channel)) {
-				sftpc_state_t oldstate = sftp_state;
-				sftp_state = NULL;
-				sftp_channel = -1;
 				pthread_mutex_unlock(&ssh_mutex);
-				sftpc_finish(oldstate);
-				oldstate = NULL;
+				sftpc_finish(sftp_state);
 				pthread_mutex_lock(&ssh_mutex);
 			}
 		}
@@ -306,10 +297,6 @@ ssh_input_thread(void *args)
 		}
 		FlushData(ssh_session);
 		pthread_mutex_unlock(&ssh_mutex);
-	}
-	if (oldstate != NULL) {
-		sftpc_finish(oldstate);
-		oldstate = NULL;
 	}
 	conn_api.input_thread_running = 2;
 }
@@ -449,7 +436,7 @@ key_not_present(sftp_filehandle_t f, const char *priv)
 	sftp_str_t r = NULL;
 	bool skipread = false;
 
-	do {
+	while (ssh_active) {
 		if (skipread) {
 			old_bufpos = 0;
 			skipread = false;
@@ -495,7 +482,8 @@ key_not_present(sftp_filehandle_t f, const char *priv)
 			memmove(buf, &buf[eol], bufpos - eol);
 			bufpos = bufpos - eol;
 		}
-	} while(1);
+	}
+	return false;
 }
 
 static void
@@ -520,6 +508,8 @@ add_public_key(void *vpriv)
 			}
 		}
 		pthread_mutex_unlock(&ssh_mutex);
+		if (!ssh_active)
+			break;
 		SLEEP(10);
 	};
 	if (!active) {
@@ -606,7 +596,7 @@ add_public_key(void *vpriv)
 		 * To avoid that, we'll sleep for a second to allow
 		 * the remote to close the channel if it wants to.
 		 */
-		for (unsigned sleep_count = 0; sleep_count < 100 && conn_api.terminate == 0; sleep_count++) {
+		for (unsigned sleep_count = 0; sleep_count < 100 && conn_api.terminate == 0 && ssh_active; sleep_count++) {
 			SLEEP(10);
 		}
 		pthread_mutex_lock(&ssh_tx_mutex);
@@ -646,12 +636,7 @@ add_public_key(void *vpriv)
 				}
 				sftpc_close(sftp_state, &f);
 			}
-			pthread_mutex_lock(&ssh_mutex);
-			sftpc_state_t oldstate = sftp_state;
-			sftp_state = NULL;
-			pthread_mutex_unlock(&ssh_mutex);
-			if (oldstate)
-				sftpc_finish(oldstate);
+			sftpc_finish(sftp_state);
 		}
 		close_sftp_channel(new_sftp_channel);
 	}
@@ -1022,16 +1007,21 @@ ssh_close(void)
 	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
 	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 1);
 	conn_api.terminate = 1;
-	pthread_mutex_lock(&ssh_mutex);
-	int sc = sftp_channel;
-	pthread_mutex_unlock(&ssh_mutex);
-	close_sftp_channel(sc);
-	close_ssh_channel();
 	ssh_active = false;
+	if (sftp_state)
+		sftpc_finish(sftp_state);
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1 || pubkey_thread_running) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
 	}
+	pthread_mutex_lock(&ssh_mutex);
+	int sc = sftp_channel;
+	pthread_mutex_unlock(&ssh_mutex);
+	if (sc != -1)
+		close_sftp_channel(sc);
+	if (sftp_state)
+		sftpc_end(sftp_state);
+	close_ssh_channel();
 	cryptDestroySession(ssh_session);
 	closesocket(ssh_sock);
 	ssh_sock = INVALID_SOCKET;

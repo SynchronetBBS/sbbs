@@ -250,6 +250,7 @@ bool sftpc_read(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, 
 bool sftpc_write(sftpc_state_t state, sftp_filehandle_t handle, uint64_t offset, sftp_str_t data);
 bool sftpc_reclaim(sftpc_state_t state);
 uint32_t sftpc_get_err(sftpc_state_t state);
+void sftpc_end(sftpc_state_t state);
 
 /* sftp_attr.c */
 sftp_file_attr_t sftp_fattr_alloc(void);

@@ -147,6 +147,10 @@ sftpc_finish(sftpc_state_t state)
 	if (state == NULL)
 		return;
 	pthread_mutex_lock(&state->mtx);
+	if (state->terminating == true) {
+		pthread_mutex_unlock(&state->mtx);
+		return;
+	}
 	state->terminating = true;
 	pthread_mutex_unlock(&state->mtx);
 	// TODO: Close all open handles
@@ -165,6 +169,17 @@ sftpc_finish(sftpc_state_t state)
 	}
 	sftp_free_rx_pkt(state->rxp);
 	sftp_free_tx_pkt(state->txp);
+	pthread_mutex_unlock(&state->mtx);
+}
+
+void
+sftpc_end(sftpc_state_t state)
+{
+	assert(state);
+	if (state == NULL)
+		return;
+	pthread_mutex_lock(&state->mtx);
+	assert(state->terminating);
 	pthread_mutex_unlock(&state->mtx);
 	pthread_mutex_destroy(&state->mtx);
 	free(state);
