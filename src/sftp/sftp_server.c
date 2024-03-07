@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <threadwrap.h>
 #include <str_list.h>
+#include <xpprintf.h>
 
 #include "sftp.h"
 
