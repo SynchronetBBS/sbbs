@@ -341,7 +341,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		,SMBUTIL_VER
 		,PLATFORM_DESC
 		,GIT_BRANCH, GIT_HASH
-		,__DATE__
+		,GIT_DATE
 		,compiler
 		);
 	if((i=smb_hfield_str(&msg,FIDOPID,str))!=SMB_SUCCESS) {

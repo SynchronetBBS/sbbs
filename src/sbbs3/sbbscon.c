@@ -1153,7 +1153,7 @@ static const char* sbbscon_ver()
 	if(*str == '\0') {
 		char compiler[32];
 		DESCRIBE_COMPILER(compiler);
-		snprintf(str, sizeof(str), "Synchronet Console %s%c%s  Compiled %s/%s %s %s with %s"
+		snprintf(str, sizeof(str), "Synchronet Console %s%c%s  Compiled %s/%s %s with %s"
 				,VERSION, REVISION
 #ifdef _DEBUG
 				," Debug"
@@ -1161,7 +1161,7 @@ static const char* sbbscon_ver()
 				,""
 #endif
 				,git_branch, git_hash
-				,__DATE__, __TIME__, compiler);
+				,git_date, compiler);
 	}
 	return str;
 }

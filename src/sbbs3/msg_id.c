@@ -249,6 +249,6 @@ char* msg_program_id(char* pid, size_t maxlen)
 	snprintf(pid, maxlen, "%.10s %s%c-%s %s/%s %s %s"
 		,VERSION_NOTICE,VERSION,REVISION,PLATFORM_DESC
 		,GIT_BRANCH, GIT_HASH
-		,__DATE__,compiler);
+		,GIT_DATE,compiler);
 	return pid;
 }

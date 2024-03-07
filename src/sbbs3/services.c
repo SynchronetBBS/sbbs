@@ -1777,7 +1777,7 @@ const char* services_ver(void)
 	DESCRIBE_COMPILER(compiler);
 
 	sprintf(ver,"Synchronet Services %s%c%s  "
-		"Compiled %s/%s %s %s with %s"
+		"Compiled %s/%s %s with %s"
 		,VERSION, REVISION
 #ifdef _DEBUG
 		," Debug"
@@ -1785,7 +1785,7 @@ const char* services_ver(void)
 		,""
 #endif
 		,GIT_BRANCH, GIT_HASH
-		,__DATE__, __TIME__, compiler
+		,GIT_DATE, compiler
 		);
 
 	return(ver);
@@ -1938,7 +1938,7 @@ void services_thread(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s with %s", GIT_BRANCH, GIT_HASH, GIT_DATE, compiler);
 
 		protected_uint32_init(&threads_pending_start,0);
 

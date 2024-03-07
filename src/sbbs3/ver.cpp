@@ -85,17 +85,17 @@ void sbbs_t::ver()
 
 	DESCRIBE_COMPILER(compiler);
 
-	sprintf(str,"Revision %c%s %s %.5s  "
+	sprintf(str,"Revision %c%s %s "
 		"SMBLIB %s  %s"
 		,toupper(REVISION)
 		,beta_version
-		,__DATE__,__TIME__
+		,git_date
 		,smb_lib_ver(),compiler);
 
 	center(str);
 	CRLF;
 
-	center(GIT_BRANCH "/" GIT_HASH " - " GIT_DATE);
+	center("https;//gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH);
 	CRLF;
 
 	sprintf(str,"%s - http://synchro.net", COPYRIGHT_NOTICE);

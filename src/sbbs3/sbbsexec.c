@@ -530,8 +530,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 		case VDD_OPEN:
 
-			lprintf(LOG_INFO,"Synchronet Virtual Device Driver, %s/%s %s %s"
-				,GIT_BRANCH, GIT_HASH, __DATE__, __TIME__);
+			lprintf(LOG_INFO,"Synchronet Virtual Device Driver, %s/%s %s"
+				,GIT_BRANCH, GIT_HASH, GIT_DATE);
 #if 0
 			sprintf(str,"sbbsexec%d.log",node_num);
 			fp=fopen(str,"wb");

@@ -4997,7 +4997,7 @@ const char* ftp_ver(void)
 	DESCRIBE_COMPILER(compiler);
 
 	safe_snprintf(ver, sizeof(ver), "%s %s%c%s  "
-		"Compiled %s/%s %s %s with %s"
+		"Compiled %s/%s %s with %s"
 		,FTP_SERVER
 		,VERSION, REVISION
 #ifdef _DEBUG
@@ -5006,7 +5006,7 @@ const char* ftp_ver(void)
 		,""
 #endif
 		,GIT_BRANCH, GIT_HASH
-		,__DATE__, __TIME__, compiler);
+		,GIT_DATE, compiler);
 
 	return(ver);
 }
@@ -5086,7 +5086,7 @@ void ftp_server(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s with %s", GIT_BRANCH, GIT_HASH, GIT_DATE, compiler);
 
 		sbbs_srand();	/* Seed random number generator */
 

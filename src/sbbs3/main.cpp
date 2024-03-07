@@ -4820,7 +4820,7 @@ const char* bbs_ver(void)
 	if(ver[0]==0) {	/* uninitialized */
 		DESCRIBE_COMPILER(compiler);
 
-		safe_snprintf(ver,sizeof(ver),"%s %s%c%s  Compiled %s/%s %s %s with %s"
+		safe_snprintf(ver,sizeof(ver),"%s %s%c%s  Compiled %s/%s %s with %s"
 			,TELNET_SERVER
 			,VERSION, REVISION
 #ifdef _DEBUG
@@ -4829,7 +4829,7 @@ const char* bbs_ver(void)
 			,""
 #endif
 			,git_branch, git_hash
-			,__DATE__, __TIME__, compiler
+			,git_date, compiler
 			);
 	}
 	return(ver);
@@ -4995,7 +4995,7 @@ void bbs_thread(void* arg)
 		,""
 #endif
 		);
-	lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
+	lprintf(LOG_INFO,"Compiled %s/%s %s with %s", git_branch, git_hash, git_date, compiler);
 
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG, "sizeof: int=%d, long=%d, off_t=%d, time_t=%d"

@@ -707,7 +707,7 @@ void banner()
 
 	printf("\nSynchronet FidoNet Configuration  Version %u.%02u  " COPYRIGHT_NOTICE
 		"\n\n",SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR);
-	printf("Compiled %s/%s %s %s with %s\n", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
+	printf("Compiled %s/%s %s with %s\n", GIT_BRANCH, GIT_HASH, GIT_DATE, compiler);
 }
 
 int main(int argc, char **argv)

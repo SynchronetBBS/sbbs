@@ -1698,7 +1698,7 @@ int main(int argc, char **argv)
 #ifdef _DEBUG
 				fprintf(statfp,"Debug\n");
 #endif
-				fprintf(statfp,"Compiled %s %.5s with %s\n",__DATE__,__TIME__,compiler);
+				fprintf(statfp,"Compiled %s/%s %s with %s\n",GIT_BRANCH,GIT_HASH,GIT_DATE,compiler);
 				fprintf(statfp,"%s\n",os_version(str, sizeof(str)));
 				bail(0);
 				return 0;

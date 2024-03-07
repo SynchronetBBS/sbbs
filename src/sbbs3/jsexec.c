@@ -108,8 +108,8 @@ void banner(FILE* fp)
 #endif
 		);
 
-	fprintf(fp, "Compiled %s %s with %s\n"
-		,__DATE__, __TIME__, compiler);
+	fprintf(fp, "Compiled %s with %s\n"
+		,GIT_DATE, compiler);
 }
 
 void usage()
@@ -1007,13 +1007,13 @@ long js_exec(const char *fname, const char* buf, char** args)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	safe_snprintf(rev_detail, sizeof(rev_detail), PROG_NAME " " GIT_BRANCH "/" GIT_HASH "%s  "
-		"Compiled %s %s with %s"
+		"Compiled %s with %s"
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
-		,__DATE__, __TIME__, compiler
+		,GIT_DATE, compiler
 		);
 
 	JS_DefineProperty(js_cx, js_glob, PROG_NAME_LC "_revision_detail"
