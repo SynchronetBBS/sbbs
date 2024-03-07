@@ -85,7 +85,7 @@ void sbbs_t::ver()
 
 	DESCRIBE_COMPILER(compiler);
 
-	sprintf(str,"Revision %c%s %s "
+	sprintf(str,"Revision %c%s %s  "
 		"SMBLIB %s  %s"
 		,toupper(REVISION)
 		,beta_version
