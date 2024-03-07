@@ -456,6 +456,9 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if(strcmp(sp, "GIT_BRANCH") == 0)
 		return git_branch;
 
+	if(strcmp(sp, "GIT_DATE") == 0)
+		return git_date;
+
 	if(strcmp(sp, "BUILD_DATE") == 0)
 		return __DATE__;
 
