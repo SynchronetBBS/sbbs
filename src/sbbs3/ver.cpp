@@ -32,6 +32,7 @@ extern "C" {
 #endif
 
 const char* git_hash = GIT_HASH;
+const char* git_date = GIT_DATE;
 const char* git_branch = GIT_BRANCH;
 const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
 
@@ -94,7 +95,7 @@ void sbbs_t::ver()
 	center(str);
 	CRLF;
 
-	center("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH); 
+	center(GIT_BRANCH "/" GIT_HASH " - " GIT_DATE);
 	CRLF;
 
 	sprintf(str,"%s - http://synchro.net", COPYRIGHT_NOTICE);

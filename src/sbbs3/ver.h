@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 extern const char* git_hash;
+extern const char* git_date;
 extern const char* git_branch;
 extern const char* beta_version;
 
