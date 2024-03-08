@@ -70,10 +70,9 @@ a large number of supported compile flags (many of which are shared with
 Synchronet).
 
 The biggest optional dependency is SDL 1.2 (from http://libsdl.org).
-SyncTERM can use SDL for both graphics and sound.  If SDL is available,
-it is highly reccomended that it be used.  X11 can also be used for
-graphics, and OSS, ALSA, or Portaudio can also provide sound.  These use
-run-time linking, so at compile time, only the headers are needed.
+SyncTERM can use SDL for both graphics and sound.  X11 can also be used
+for graphics, and OSS, ALSA, or Portaudio can also provide sound.  These
+use run-time linking, so at compile time, only the headers are needed.
 Static linking with SDL is also supported, but the other optional
 dependencies can not be statically linked.
 
@@ -107,6 +106,12 @@ options are supported (options are not case sensitive):
 -4	
     Specifying -4 forces SyncTERM to use IPv4 addresses when possible.
 
+-B/path/to/bbs/list.lst
+    Loads the user BBS list from the specified file instead of the default.
+
+-C
+    Changes the default to no status line.
+
 -E##
     Specifies the escape delay in ANSI on Curses modes.  The escape delay
     is how long SyncTERM will wait after an escape key is received from the
@@ -131,8 +136,16 @@ options are supported (options are not case sensitive):
         curses, but instead of the curses-defined alternative character set,
         assumes that the IBM CP437 character set can be output.
 
-    X - X11 output mode.  UNIX only mode which directly uses the X11 libraries
-        for drawing.
+    G[WF] - Windows GDI output mode.  Uses the Win32 API directly, and is
+        the default for Windows.  Additionally, a 'W' or 'F' can be
+        specified to force windowed or full-screen mode respectively.
+
+    I - Curses in ASCII mode.
+
+    X[WF] - X11 output mode.  UNIX only mode which directly uses the X11
+        libraries for drawing.  The default where supported.  Additionally,
+        a 'W' or 'F' can be specified to force windowed or full-screen
+        mode respectively.
 
     W - Windows console mode.  Windows only mode which uses the system console
         APIs for output.
@@ -143,7 +156,17 @@ options are supported (options are not case sensitive):
 
 -L##
     Specifies the number of lines on the "screen".  Supported values are:
-    14, 21, 25 (default), 28, 43, 50, and 60.
+    14, 21, 25 (default), 28, 43, 50, and 60.  If an unsupported value
+    is used, it will default use 50.
+
+-pns_*
+    Only "supported" on macOS.  Ignored.
+
+-N/path/to/config.ini
+    Loads the configuration from the specified file instead of the default.
+
+-Q
+    Quiet mode, doesn't show popups by default.
 
 -R
     Use RLogin mode when connecting.
@@ -158,7 +181,7 @@ options are supported (options are not case sensitive):
 
 After the options, a full URI, hostname, or dialing directory entry may be
 specified.  Supported URI schemes are:
-rlogin://, ssh://, telnet://, raw://, shell://.
+rlogin://, ssh://, telnet://, raw://, shell://, ghost://.
 
 If there is an entry matching the URI, hostname, or entry name, the settings will
 be loaded from the BBS list, then modified per the command-line arguments.
@@ -252,3 +275,32 @@ earliest in it's name.
                          The Dialing Directory
 
 This is the default startup screen if no BBS is specified on the command-line.
+At the top is the program name and version, a build date, the current
+output mode, and the current date and time.
+
+With version numbers, trailing letters indicate pre-release versions. 'a'
+indicates an alpha build which will have known bugs and/or incomplete features.
+'b' indicates a beta build which indicates there are expected to be no known
+bugs, but it has not received testing. "rcX" is a release candidate where
+X is a number.  These indicate that after some period (usually one to two
+weeks) of no newly reported bugs, a release will be made.
+
+The output mode is important to make note of when reporting issues, since
+many bugs only impact one or two output modes.  It's after the build date.
+
+The bottom-most line contains help on the current menu, indicating what
+options are available in the most recent menu.
+
+There are three areas the user can interact with in the dialing directory.
+The "Directory" menu, the "SyncTERM Settings" menu, and the comment line.
+
+The comment line is directly above the help line at the bottom, and allows
+a per-BBS comment to be entered.
+
+
+                             The Directory
+
+This menu lists all the entries in the two dialing directory files.  If
+you move the bar over one and press <Enter>, it will connect you to the
+highlighted system as configured in the entry.
+
