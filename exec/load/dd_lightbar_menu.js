@@ -1459,7 +1459,7 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 	// Write the menu items
 	if (writeMenuItems)
 	{
-		var blankItemTextFormatStr = "\x01n%" + itemLen + "s";
+		var itemLenTextFormatStr = "\x01n%" + itemLen + "s";
 		for (var lineNum = pStartY + this.pos.y - 1; lineNum <= lastLineNum; ++lineNum)
 		{
 			var startX = pStartX;
@@ -1481,12 +1481,33 @@ function DDLightbarMenu_DrawPartial(pStartX, pStartY, pWidth, pHeight, pSelected
 			var itemText = this.GetItemText(itemIdx, null, highlightItem, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 			//var shortenedText = substrWithAttrCodes(itemText, itemTxtStartIdx, itemLen);
 			var shortenedText = substrWithAttrCodes(itemText, itemTxtStartIdx, itemLen, true);
-			// If shortenedText is empty (perhaps there's no menu item for this line),
-			// then make shortenedText consist of all spaces at the proper length
-			if (shortenedText.length == 0)
-				shortenedText = format(blankItemTextFormatStr, "");
 			console.gotoxy(startX, lineNum);
 			console.print(shortenedText + "\x01n");
+			// If the shortened item text ends before the given width, then
+			// write empty text (and/or the border and/or scrollbar) until the
+			// right edge of the menu
+			var shortenedTextEndX = +(startX+console.strlen(shortenedText) - 1);
+			var screenEndX = pStartX + pWidth - 1;
+			var menuEndX = this.pos.x + this.size.width - 1;
+			if (shortenedTextEndX < screenEndX) // && menuEndX <= screenEndX
+			{
+				var emptyTextWidth = menuEndX - shortenedTextEndX;
+				if (this.borderEnabled)
+					--emptyTextWidth;
+				if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+					--emptyTextWidth;
+				// Write the empty text, scrollbar (if necessary), and border
+				// character (if necessary)
+				if (emptyTextWidth > 0)
+					printf("%*s", emptyTextWidth, "");
+				if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+				{
+					var solidBlockStartRow = this.CalcScrollbarSolidBlockStartRow();
+					this.UpdateScrollbar(solidBlockStartRow, this.scrollbarInfo.solidBlockLastStartRow, this.scrollbarInfo.numSolidScrollBlocks);
+				}
+				if (this.borderEnabled)
+					console.print("\x01n" + this.colors.borderColor + this.borderChars.right + "\x01n");
+			}
 		}
 	}
 }
