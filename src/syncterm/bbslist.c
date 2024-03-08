@@ -791,7 +791,7 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	else {
 		entry->has_fingerprint = false;
 	}
-	entry->sftp_public_key = iniGetBool(section, NULL, "SFTPPublicKey", true);
+	entry->sftp_public_key = iniGetBool(section, NULL, "SFTPPublicKey", false);
 	iniGetSString(section, NULL, "DownloadPath", home, entry->dldir, sizeof(entry->dldir));
 	iniGetSString(section, NULL, "UploadPath", home, entry->uldir, sizeof(entry->uldir));
 
