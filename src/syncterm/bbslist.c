@@ -287,11 +287,13 @@ static char *conn_type_help = "`Connection Type`\n\n"
     "`Telnet`...........: Use more common Telnet protocol\n"
     "`Raw`..............: Make a raw TCP socket connection\n"
     "`SSH`..............: Connect using the Secure Shell (SSH-2) protocol\n"
+    "`SSH (no auth)`....: SSH-2, but will not send password or public key\n"
     "`Modem`............: Connect using a dial-up modem\n"
     "`Serial`...........: Connect directly to a serial communications port\n"
     "`3-wire (no RTS)`..: As with Serial, but lower RTS\n"
     "`Shell`............: Connect to a local PTY (*nix only)\n"
-    "`MBBS GHost`.......: Communicate using the Major BBS 'GHost' protocol\n";
+    "`MBBS GHost`.......: Communicate using the Major BBS 'GHost' protocol\n"
+    "`TelnetS`..........: Telnet over TLS\n";
 
 static char *YesNo[3] = {"Yes", "No", ""};
 
@@ -1069,6 +1071,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 	str_list_t inifile;
 	char       tmp[LIST_NAME_MAX + 1];
 	char      *itemname;
+	char      *tmpptr;
 
 	for (i = 0; i < sizeof(opt) / sizeof(opt[0]); i++)
 		opts[i] = opt[i];
@@ -1114,7 +1117,13 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 			fc_str(opt[i++], item->flow_control);
 		else if (item->conn_type != CONN_TYPE_SHELL)
 			sprintf(opt[i++], "TCP Port          %hu", item->port);
-		if (item->conn_type == CONN_TYPE_SSHNA) {
+		if (item->conn_type == CONN_TYPE_MBBS_GHOST) {
+			printf_trunc(opt[i], sizeof(opt[i]), "Username          %s", item->user);
+			i++;
+			sprintf(opt[i++], "GHost Program     %s", item->password);
+			sprintf(opt[i++], "System Password   %s", item->syspass[0] ? "********" : "<none>");
+		}
+		else if (item->conn_type == CONN_TYPE_SSHNA) {
 			printf_trunc(opt[i], sizeof(opt[i]), "SSH Username      %s", item->user);
 			i++;
 			sprintf(opt[i++], "BBS Username      %s", item->password);
@@ -1145,7 +1154,8 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		sprintf(opt[i++], "RIP               %s", rip_versions[item->rip]);
 		sprintf(opt[i++], "Force LCF Mode    %s", item->force_lcf ? "Yes" : "No");
 		sprintf(opt[i++], "Yellow is Yellow  %s", item->yellow_is_yellow ? "Yes" : "No");
-		sprintf(opt[i++], "SFTP Public Key   %s", item->sftp_public_key ? "Yes" : "No");
+		if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA)
+			sprintf(opt[i++], "SFTP Public Key   %s", item->sftp_public_key ? "Yes" : "No");
 		opt[i][0] = 0;
 		uifc.changes = 0;
 
@@ -1190,6 +1200,10 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 			    "~ Yellow Is Yellow ~\n"
 			    "        Make the dark yellow colour actually yellow instead of the brown\n"
 			    "        used in IBM CGA monitors\n\n"
+			    "~ SFTP Public Key ~ (if applicable)\n"
+			    "        Automatically append the SSH public key to the\n"
+			    "        .ssh/authorized_keys file on the remote system using the SFTP\n"
+			    "        protocol."
 			;
 		}
 		else {
@@ -1380,16 +1394,23 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				iniSetString(&inifile, itemname, "UserName", item->user, &ini_style);
 				break;
 			case 5:
-				if (item->conn_type == CONN_TYPE_SSHNA) {
+				if (item->conn_type == CONN_TYPE_MBBS_GHOST) {
+					uifc.helpbuf = "`GHost Program`\n\n"
+					    "Enter the program name to be sent.";
+					tmpptr = "GHost Program";
+				}
+				else if (item->conn_type == CONN_TYPE_SSHNA) {
 					uifc.helpbuf = "`BBS Username`\n\n"
 					    "Enter the username to be sent for auto-login (ALT-L).";
+					tmpptr = "BBS Username";
 				}
 				else {
 					uifc.helpbuf = "`Password`\n\n"
 					    "Enter your password for auto-login.\n"
 					    "For SSH, this must be the SSH password if it exists.\n";
+					tmpptr = "Password";
 				}
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Password", item->password, MAX_PASSWD_LEN, K_EDIT);
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, tmpptr, item->password, MAX_PASSWD_LEN, K_EDIT);
 				check_exit(false);
 				iniSetString(&inifile, itemname, "Password", item->password, &ini_style);
 				break;

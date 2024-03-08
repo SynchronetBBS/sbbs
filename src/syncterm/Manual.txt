@@ -304,3 +304,164 @@ This menu lists all the entries in the two dialing directory files.  If
 you move the bar over one and press <Enter>, it will connect you to the
 highlighted system as configured in the entry.
 
+To add a new entry, go to the bottom of the list (by pressing end) and
+select the blank entry at the bottom.  A window will pop up asking for
+the Name of the entry.  This name must not already exist in the personal
+dialing directory.
+
+Next you will be prompted for the protocol to use.  Options include:
+
+    RLogin: Uses the historic RFC1282 RLogin protocol without OOB data.  This
+        is an obsolete, unencrypted protocol that can allow auto-login, and
+        is 8-bit clean (unlike telnet).  It is very simple.  Instead of the
+        local username, the users password is sent.
+
+    RLogin Reversed: Some RLogin servers that support password auto-login have
+        reversed the remote and local username fields.  This allows connecting
+        to these servers.
+
+    Telnet: Uses the historic and highly complex telnet protocol.  This is an
+        obsolete, unencrypted protocol and is not 8-bit clean and predates
+        TCP/IP.  It has been the source of many security vulnerabilities over
+        the fifty years or so it has existed.  Historically, it has been the
+        most common way to connect to a remote system as a terminal, so is
+        widely supported.
+
+    Raw: A raw 8-bit clean TCP connection.  This is often what retro BBSs
+        actually support when they say they support telnet.
+
+    SSH: The Secure Shell v2 protocol.  This is the modern replacement for both
+        telnet and rlogin, and is widely supported.  This is encrypted and
+        performs user and server authentication as part of the protocol instead
+        of inline.  SyncTERM supports authenticating with both a password and
+        a public key.
+
+    SSH (no auth): The SSH protocol, but will not send a password or public
+        key.  Used for auto-login systems where the user name by itself is
+        sufficient.
+
+    Modem: SyncTERM can directly control a modem for making outgoing calls.
+
+    Serial: Direct communication with a serial port.
+
+    3-wire: Serial, but with only transmit and receive.  In this mode, there
+        is no way to detect if the remote has hung up and there is no flow
+        control, so bytes can easily be lost.  This is primarily used for
+        communicating with embedded hardware, and not BBSs.
+
+    Shell: Runs a shell in the terminal.
+
+    MBBS GHost: The MajorBBS 'GHost' protocol.
+
+    TelnetS: Telnet over TLS.  All the drawbacks of the telnet protocol, but
+        at least it's encrypted.
+
+Finally, you will be promted for the "address".  This is the DNS addres, IP
+address, serial port, or command to connect to.
+
+Ones these three pieces of information are entered, the entry is created
+and you are returned to the Directory.  To further modify the settings,
+you can press F2 to enter the Edit Directory Entry menu.
+
+
+                          Edit Directory Entry
+
+In this menu, you can modify all the connection settings for an entry.
+The exact contents of this menu will vary a bit by connection type, but
+most of the options are the same or silimar.
+
+    Name: The name of the entry.
+
+    Phone Number (Modem only): The phone number to dial.
+
+    Device Name (Serial and 3-wire only): The device name to open.
+
+    Command (Shell only): The command to run (usually a shell such as
+        /bin/sh)
+
+    Address: IP address or host name
+
+    Connection Type: Protocol to use.  See pervious section
+
+    Flow Control (Modem, Serial, and 3-wire): The type of flow control
+        to use. RTC/CTS, XON/XOFF, Both, or None
+
+    TCP Port: The TCP port to connect to.
+
+    SSH Username (SSH (no auth)): The username to send for the SSH
+        protocol.  This may not be the same as the BBS username.
+
+    BBS Username (SSH (no auth)): The username to send when ALT-L is entered.
+
+    BBS Password (SSH (no auth)): The password to send on ALT-L.
+
+    Username: The user name to send.  Used by SSH, RLogin, and GHost.
+        For other protocols, send when ALT-L is pressed.
+
+    Password: The password to send.
+
+    GHost Program (GHost): The program name to send to the remote.
+
+    System Password: An additional password that can be sent after the
+        first ALT-L using successive ALT-Ls.
+
+
+                               MBBS GHost
+
+"GHost" in Syncterm refers to the "Galacticomm Host Program" (called Ghost)
+that was included in Major BBS and Worldgroup (MBBS/WG) that allowed a Sysop
+to connect another (DOS-based) PC to the BBS by use of a null modem cable.
+This was a way for a MBBS/WG Sysop to offer DOS doors, something that wasn't
+normally possible.
+
+The functions of the Ghost software itself are beyond the scope of Syncterm,
+and you should consult the MBBS/WG Ghost documentation for operation details.
+However, broadly speaking, it worked like this:
+
+1) MBBS/WG would send a signal down the null modem cable to alert the DOS PC
+    (running Ghost) that it wanted to run a door.
+2) Using a simple protocol, MBBS/WG would transmit information required to
+    run the door (username, time remaining, whether ANSI-BBS graphics were
+    supported, etc) to Ghost.
+3) Ghost would then launch the door in DOS, using a batch file to call Ghost
+    back once the door exited to wait for the next request.
+
+While few people are connecting DOS-based PC's to anything by null modem
+cables anymore, the Ghost protocol (as offered in Syncterm) is still useful
+because it's a way to run DOS doors inside a virtual machine and expose them
+outside of that virtual machine.  The idea being that the VM would configure
+a serial port as some kind of network passthrough, so when Syncterm connects,
+it's passed through to the VM and then Ghost.
+
+One use case for this is to offer DOS doors in environments where it would
+normally be difficult or impossible.  For example, a UNIX user could run
+Syncterm on a remote system in curses mode, where it would then connect to
+a VM and launch a DOS door via Ghost.  This would all be presented to the
+end UNIX user in a seamless way, so all they would see is the door startup.
+
+The Ghost protocol consists of a single line starting with 'MBBS:',
+terminated with \r\n, and contains five parameters:
+
+MBBS: PROGRAM PROTOCOL 'USER' TIME GR
+
+You don't need to worry about sending this since Syncterm will format it
+for you based on the Syncterm configuration options.  But it is helpful
+to understand how various Syncterm options will translate to the Ghost
+protocol parameters:
+
+PROGRAM: The name of the DOS door/software to ask the Ghost side to run.
+Configured in Syncterm in the 'GHost Program' field of a directory entry,
+or after the final slash in a ghost:// style URL.
+For example: ghost://user@203.0.113.64/program
+
+PROTOCOL: Always set to 2.  Not configurable in Syncterm.
+
+USER: Username of the person connecting.  Configured in Syncterm in the
+'username' field of a directory entry, or before the '@' in a ghost://
+style URL.  For example: ghost://user@203.0.113.64/program
+
+TIME: Amount of time the user has remaining.  Always set to 999.  Not
+configurable in Syncterm.
+
+GR: Set to GR (for "GRaphics", meaning ANSI-BBS support) or NG
+(for "No Graphics").  Always set to GR.  Not configurable in Syncterm.
