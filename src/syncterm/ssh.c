@@ -609,17 +609,15 @@ add_public_key(void *vpriv)
 			return;
 		}
 		sftp_channel = new_sftp_channel;
+		pthread_mutex_unlock(&ssh_mutex);
+		pthread_mutex_unlock(&ssh_tx_mutex);
 		sftp_state = sftpc_begin(sftp_send, NULL);
 		if (sftp_state == NULL) {
-			pthread_mutex_unlock(&ssh_mutex);
-			pthread_mutex_unlock(&ssh_tx_mutex);
 			close_sftp_channel(new_sftp_channel);
 			free(priv);
 			pubkey_thread_running = false;
 			return;
 		}
-		pthread_mutex_unlock(&ssh_mutex);
-		pthread_mutex_unlock(&ssh_tx_mutex);
 		if (sftpc_init(sftp_state)) {
 			sftp_filehandle_t f = NULL;
 			// TODO: Add permissions?
