@@ -1,4 +1,4 @@
-                           SyncTERM v1.0
+                           SyncTERM v1.2
 
 SyncTERM is a terminal program written specifically for connecting to
 Bulleten Board Systems (BBSs).  Despite the name, SyncTERM is in no way
@@ -408,13 +408,13 @@ most of the options are the same or silimar.
 
                                MBBS GHost
 
-"GHost" in Syncterm refers to the "Galacticomm Host Program" (called Ghost)
+"GHost" in SyncTERM refers to the "Galacticomm Host Program" (called Ghost)
 that was included in Major BBS and Worldgroup (MBBS/WG) that allowed a Sysop
 to connect another (DOS-based) PC to the BBS by use of a null modem cable.
 This was a way for a MBBS/WG Sysop to offer DOS doors, something that wasn't
 normally possible.
 
-The functions of the Ghost software itself are beyond the scope of Syncterm,
+The functions of the Ghost software itself are beyond the scope of SyncTERM,
 and you should consult the MBBS/WG Ghost documentation for operation details.
 However, broadly speaking, it worked like this:
 
@@ -427,15 +427,15 @@ However, broadly speaking, it worked like this:
     back once the door exited to wait for the next request.
 
 While few people are connecting DOS-based PC's to anything by null modem
-cables anymore, the Ghost protocol (as offered in Syncterm) is still useful
+cables anymore, the Ghost protocol (as offered in SyncTERM) is still useful
 because it's a way to run DOS doors inside a virtual machine and expose them
 outside of that virtual machine.  The idea being that the VM would configure
-a serial port as some kind of network passthrough, so when Syncterm connects,
+a serial port as some kind of network passthrough, so when SyncTERM connects,
 it's passed through to the VM and then Ghost.
 
 One use case for this is to offer DOS doors in environments where it would
 normally be difficult or impossible.  For example, a UNIX user could run
-Syncterm on a remote system in curses mode, where it would then connect to
+SyncTERM on a remote system in curses mode, where it would then connect to
 a VM and launch a DOS door via Ghost.  This would all be presented to the
 end UNIX user in a seamless way, so all they would see is the door startup.
 
@@ -444,24 +444,24 @@ terminated with \r\n, and contains five parameters:
 
 MBBS: PROGRAM PROTOCOL 'USER' TIME GR
 
-You don't need to worry about sending this since Syncterm will format it
-for you based on the Syncterm configuration options.  But it is helpful
-to understand how various Syncterm options will translate to the Ghost
+You don't need to worry about sending this since SyncTERM will format it
+for you based on the SyncTERM configuration options.  But it is helpful
+to understand how various SyncTERM options will translate to the Ghost
 protocol parameters:
 
 PROGRAM: The name of the DOS door/software to ask the Ghost side to run.
-Configured in Syncterm in the 'GHost Program' field of a directory entry,
+Configured in SyncTERM in the 'GHost Program' field of a directory entry,
 or after the final slash in a ghost:// style URL.
 For example: ghost://user@203.0.113.64/program
 
-PROTOCOL: Always set to 2.  Not configurable in Syncterm.
+PROTOCOL: Always set to 2.  Not configurable in SyncTERM.
 
-USER: Username of the person connecting.  Configured in Syncterm in the
+USER: Username of the person connecting.  Configured in SyncTERM in the
 'username' field of a directory entry, or before the '@' in a ghost://
 style URL.  For example: ghost://user@203.0.113.64/program
 
 TIME: Amount of time the user has remaining.  Always set to 999.  Not
-configurable in Syncterm.
+configurable in SyncTERM.
 
 GR: Set to GR (for "GRaphics", meaning ANSI-BBS support) or NG
-(for "No Graphics").  Always set to GR.  Not configurable in Syncterm.
+(for "No Graphics").  Always set to GR.  Not configurable in SyncTERM.
