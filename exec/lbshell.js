@@ -847,10 +847,9 @@ while(bbs.online) {
 	}
 }
 
-function todo_getfiles(lib, dir)
+function todone_getfiles(lib, dir)
 {
-	var path=format("%s%s.ixb", file_area.lib_list[lib].dir_list[dir].data_dir, file_area.lib_list[lib].dir_list[dir].code);
-	return(file_size(path)/22);	/* F_IXBSIZE */
+	return file_area.lib_list[lib].dir_list[dir].files;
 }
 
 function mouse_enable(enable)
@@ -1042,7 +1041,7 @@ function show_filemenu()
 										console.putmsg(' ',P_SAVEATR);
 									if(i<99)
 										console.putmsg(' ',P_SAVEATR);
-									console.putmsg(format(bbs.text(DirLstFmt),i+1, file_area.lib_list[j].dir_list[i].description,"",todo_getfiles(j,i)),P_SAVEATR);
+									console.putmsg(format(bbs.text(DirLstFmt),i+1, file_area.lib_list[j].dir_list[i].description,"",todone_getfiles(j,i)),P_SAVEATR);
 								}
 							}
 							console.mnemonics(format(bbs.text(JoinWhichDir),bbs.curdir+1));
