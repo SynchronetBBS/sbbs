@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.18     2024-03-08   Bug fix: Got description search working when used as a
+                      loadable module.
+                      Added Ctrl-C to the help screen to mention it can be used
+                      to abort.
 2.17     2024-02-28   Fix for possibly no file description when adding to the
                       batch DL queue.
                       Also, fix for file description screen refresh (off by one

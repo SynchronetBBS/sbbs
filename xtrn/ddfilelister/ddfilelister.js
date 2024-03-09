@@ -106,6 +106,9 @@
  *                              Fix for possibly no file description when adding to the batch DL queue.
  *                              Also, fix for file description screen refresh (off by one column) for extended
  *                              descriptions
+ * 2024-03-08 Eric Oulashin     Version 2.18
+ *                              Bug fix: Got description search working when used as a loadable module.
+ *                              Added Ctrl-C to the help screen to mention it can be used to abort.
 */
 
 "use strict";
@@ -150,8 +153,8 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 
 // Lister version information
-var LISTER_VERSION = "2.17";
-var LISTER_DATE = "2024-02-28";
+var LISTER_VERSION = "2.18";
+var LISTER_DATE = "2024-03-08";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -291,6 +294,9 @@ var gTraditionalUseSyncStock = false;
 
 // The filename pattern to match
 var gFilespec = "*";
+
+// Description keyword to match (empty for no keyword search)
+var gDescKeyword = "";
 
 // The sort order to use for the file list
 var gFileSortOrder = SORT_PER_DIR_CFG; // Use the file directory's configured sort order option
@@ -1768,6 +1774,9 @@ function displayHelpScreen()
 		printf(printfStr, "DEL", "Delete the file(s)");
 	}
 	printf(printfStr, "?", "Show this help screen");
+	// Ctrl-C for aborting (wanted to use isDoingFileSearch() but it seems even for searching/scanning,
+	// the mode is LIST_DIR rather than a search/scan
+	printf(printfStr, "Ctrl-C", "Abort (can quit out of searching, etc.)");
 	printf(printfStr, "Q", "Quit back to the BBS");
 	console.attributes = "N";
 	console.crlf();
@@ -4069,7 +4078,7 @@ function parseArgs(argv)
 		else
 			gListBehavior = FLBehavior;
 		// If the 'no header' option was passed, then disable that
-		if ((gListBehavior & FL_NO_HDR) == FL_NO_HDR)
+		if (Boolean(gListBehavior & FL_NO_HDR))
 			gListBehavior &= ~FL_NO_HDR;
 		scriptRanAsLoadableModule = true;
 
@@ -4085,11 +4094,11 @@ function parseArgs(argv)
 				// - 0: Bool (scanning all directories): 0/1
 				// - 1: FL_ mode value
 				gScanAllDirs = (argv[0] == "1");
-				if ((FLBehavior & FL_ULTIME) == FL_ULTIME)
+				if (Boolean(FLBehavior & FL_ULTIME))
 					gScriptMode = MODE_NEW_FILE_SEARCH;
-				else if ((FLBehavior & FL_FINDDESC) == FL_FINDDESC || (FLBehavior & FL_EXFIND) == FL_EXFIND)
+				else if (Boolean(FLBehavior & FL_FINDDESC) || Boolean(FLBehavior & FL_EXFIND))
 					gScriptMode = MODE_SEARCH_DESCRIPTION;
-				if ((FLBehavior & FL_VIEW) == FL_VIEW)
+				if (Boolean(FLBehavior & FL_VIEW))
 				{
 					// View ZIP/ARC/GIF etc. info
 					// TODO: Not sure what to do with this
@@ -4103,17 +4112,39 @@ function parseArgs(argv)
 				// - 1: Bool (scanning all directories): 0/1
 			}
 		}
-		// 3 args - Listing
+		// 3 args - Internal code, mode, filespec/description keyword
 		else if (argv.length >= 3) //==3
 		{
+			//if (user.is_sysop) console.print("\x01nargv:" + argv + ":\r\n\x01p"); // Temporary
 			// - 0: Directory internal code
 			// - 1: FL_ mode value
-			// - 2: Filespec (i.e., *, *.zip, etc.)
+			// - 2: Filespec (i.e., *, *.zip, etc.) or keyword for description search
+			// Filename search: os2xferp,4,*.zip:
 			if (!file_area.dir.hasOwnProperty(argv[0]))
 				return false;
 			gDirCode = argv[0];
-			gFilespec = argv[2];
-			if ((FLBehavior & FL_VIEW) == FL_VIEW)
+			if (Boolean(FLBehavior & FL_FINDDESC) || Boolean(FLBehavior & FL_EXFIND))
+			{
+				gScriptMode = MODE_SEARCH_DESCRIPTION;
+				// The keyword could have spaces in it, so look at argv[2] and the remainder of the
+				// command-line arguments and combine those into gDescKeyword
+				gDescKeyword = "";
+				for (var i = 2; i < argv.length; ++i)
+				{
+					if (argv[i].length > 0)
+					{
+						if (gDescKeyword.length > 0)
+							gDescKeyword += " ";
+						gDescKeyword += argv[i];
+					}
+				}
+			}
+			else if (Boolean(FLBehavior & FL_NO_HDR))
+			{
+				// Filename search
+				gFilespec = argv[2];
+			}
+			else if (Boolean(FLBehavior & FL_VIEW))
 			{
 				// View ZIP/ARC/GIF etc. info
 				// TODO: Not sure what to do with this
@@ -4121,9 +4152,9 @@ function parseArgs(argv)
 		}
 
 		// Options that apply to both searching and listing
-		if ((FLBehavior & FL_ULTIME) == FL_ULTIME)
+		if (Boolean(FLBehavior & FL_ULTIME))
 			gFileSortOrder = SORT_FL_ULTIME;
-		else if ((FLBehavior & FL_DLTIME) == FL_DLTIME)
+		else if (Boolean(FLBehavior & FL_DLTIME))
 			gFileSortOrder = SORT_FL_DLTIME;
 
 	}
@@ -4248,41 +4279,55 @@ function populateFileList(pSearchMode)
 	{
 		var lastDirCode = "";
 
-		// If not saerching all already, prompt the user for directory, library, or all
-		var validInputOptions = "DLA";
-		var userInputDLA = "";
-		if (gScanAllDirs)
-			userInputDLA = "A";
-		else
+		// If gDescKeyword hasn't been specified (i.e., via use as a loadable module), then if
+		// not saerching all already, prompt the user for directory, library, or all
+		if (gDescKeyword == "")
 		{
-			console.attributes = "N";
-			console.crlf();
-			//console.print("\r\n\x01c\x01hFind Text in File Descriptions (no wildcards)\x01n\r\n");
-			console.mnemonics(bbs.text(DirLibOrAll));
-			console.attributes = "N";
-			userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
-		}
-		var searchDescription = "";
-		if (userInputDLA.length > 0 && validInputOptions.indexOf(userInputDLA) > -1)
-		{
-			// Prompt the user for a description to search for
-			console.mnemonics(bbs.text(SearchStringPrompt));
-			searchDescription = console.getstr(40, K_LINE|K_UPPER);
-			if (searchDescription.length > 0)
-				console.print("Searching....");
+			var validInputOptions = "DLA";
+			var userInputDLA = "";
+			if (gScanAllDirs)
+				userInputDLA = "A";
 			else
 			{
-				retObj.exitNow = true;
-				retObj.exitCode = 0;
-				return retObj;
+				console.attributes = "N";
+				console.crlf();
+				//console.print("\r\n\x01c\x01hFind Text in File Descriptions (no wildcards)\x01n\r\n");
+				console.mnemonics(bbs.text(DirLibOrAll));
+				console.attributes = "N";
+				userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
+			}
+			var searchDescription = "";
+			if (userInputDLA.length > 0 && validInputOptions.indexOf(userInputDLA) > -1)
+			{
+				// Prompt the user for a description to search for
+				console.mnemonics(bbs.text(SearchStringPrompt));
+				searchDescription = console.getstr(40, K_LINE|K_UPPER);
+				if (searchDescription.length > 0)
+					console.print("Searching....");
+				else
+				{
+					retObj.exitNow = true;
+					retObj.exitCode = 0;
+					return retObj;
+				}
+			}
+			var searchRetObj = searchDirGroupOrAll(userInputDLA, function(pDirCode) {
+				return searchDirWithDescUpper(pDirCode, searchDescription);
+			});
+			allSameDir = searchRetObj.allSameDir;
+			for (var i = 0; i < searchRetObj.errors.length; ++i)
+				dirErrors.push(searchRetObj.errors[i]);
+		}
+		else
+		{
+			if (gDirCode.length > 0 && gDescKeyword.length > 0)
+			{
+				var searchRetObj = searchDirWithDescUpper(gDirCode, gDescKeyword.toUpperCase());
+				//searchRetObj.foundFiles
+				for (var i = 0; i < searchRetObj.dirErrors.length; ++i)
+					dirErrors.push(searchRetObj.dirErrors[i]);
 			}
 		}
-		var searchRetObj = searchDirGroupOrAll(userInputDLA, function(pDirCode) {
-			return searchDirWithDescUpper(pDirCode, searchDescription);
-		});
-		allSameDir = searchRetObj.allSameDir;
-		for (var i = 0; i < searchRetObj.errors.length; ++i)
-			dirErrors.push(searchRetObj.errors[i]);
 	}
 	else if (pSearchMode == MODE_NEW_FILE_SEARCH)
 	{
