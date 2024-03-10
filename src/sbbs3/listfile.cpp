@@ -463,7 +463,8 @@ bool sbbs_t::listfile(file_t* f, const  int dirnum, const char *search, const ch
 int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 							,const int totalfiles)
 {
-	char	ch,str[256],*p,remcdt=0,remfile=0;
+	char	ch,str[256],*p;
+	bool	remcdt,remfile;
 	int		c, d;
 	char 	path[MAX_PATH + 1];
 	int		i,j;
@@ -641,8 +642,8 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 				if(ch=='R') {
 					if(noyes(text[RemoveFileQ]))
 						return(2);
-					remcdt = TRUE;
-					remfile = TRUE;
+					remcdt = true;
+					remfile = true;
 					if(dir_op(smb->dirnum)) {
 						remfile=!noyes(text[DeleteFileQ]);
 						remcdt=!noyes(text[RemoveCreditsQ]);
@@ -688,7 +689,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 											if(remove(getfilepath(&cfg, bf[i], path)) != 0)
 												errormsg(WHERE, ERR_REMOVE, path);
 										}
-										if(remcdt)
+										if(bf[i]->cost > 0 && remcdt)
 											removefcdt(bf[i]);
 									}
 								}
@@ -708,7 +709,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 										if(remove(getfilepath(&cfg, f, path)) != 0 && fexist(path))
 											errormsg(WHERE, ERR_REMOVE, path);
 									}
-									if(remcdt)
+									if(f->cost > 0 && remcdt)
 										removefcdt(f);
 								}
 							}
