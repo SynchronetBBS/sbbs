@@ -876,4 +876,6 @@ const char* const text_id[]={
 	,"PasswordChar"
 	,"NodeConnectionSFTP"
 	,"QWKSettingsWrapText"
+	,"UnknownUploader"
+	,"FREE"
 };

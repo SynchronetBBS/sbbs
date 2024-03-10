@@ -892,6 +892,8 @@ enum text {
 	,PasswordChar
 	,NodeConnectionSFTP
 	,QWKSettingsWrapText
+	,UnknownUploader
+	,FREE
 
 	,TOTAL_TEXT
 };
