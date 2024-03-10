@@ -1295,7 +1295,7 @@ static void sendmail_cfg(mail_startup_t* startup)
 		opt[i][0] = '\0';
 
 		uifc.helpbuf=
-			"`SendMail Configuration:`\n"
+			"`SendMail Support:`\n"
 			"\n"
 			"Set the operating parameters of the Synchronet Mail Server SendMail\n"
 			"Thread.\n"
@@ -1581,7 +1581,11 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s%s", "DNS-Blacklisted Servers", startup.options & MAIL_OPT_DNSBL_THROTTLE ? "Throttle and " : "", p);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Hash DNS-Blacklisted Msgs", startup.options & MAIL_OPT_DNSBL_SPAMHASH ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Kill SPAM When Read", startup.options & MAIL_OPT_KILL_READ_SPAM ? "Yes": "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SendMail Support...", startup.options & MAIL_OPT_NO_SENDMAIL ? strDisabled : "");
+		if(startup.options & MAIL_OPT_RELAY_TX)
+			p = "Relay";
+		else
+			p = "Direct";
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SendMail Support...", startup.options & MAIL_OPT_NO_SENDMAIL ? strDisabled : p);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
