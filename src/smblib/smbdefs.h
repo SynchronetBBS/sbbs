@@ -58,15 +58,6 @@
 	#endif
 #endif
 
-#define HUGE16
-#define FAR16
-#define REALLOC realloc
-#define LMALLOC malloc
-#define MALLOC malloc
-#define LFREE free
-#define FREE free
-
-
 #define SDT_BLOCK_LEN		256 		/* Size of data blocks */
 #define SHD_BLOCK_LEN		256 		/* Size of header blocks */
 
