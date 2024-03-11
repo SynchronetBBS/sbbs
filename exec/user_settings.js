@@ -327,13 +327,20 @@ while(bbs.online && !js.terminated) {
 			break;
 		}
 		case 'L':
+		{
 			console.putmsg(bbs.text(bbs.text.HowManyColumns));
-			thisuser.screen_columns = console.getnum(999,0);
+			var val = console.getnum(999,0);
+			if (val < 0)
+				break;
+			thisuser.screen_columns = val;
 			console.putmsg(bbs.text(bbs.text.HowManyRows));
-			thisuser.screen_rows = console.getnum(999,0);
+			val = console.getnum(999,0);
+			if (val < 0)
+				break;
 			if (user.number === thisuser.number)
 				console.getdimensions();
 			break;
+		}
 		case 'M':
 			console.putmsg(bbs.text(bbs.text.EnterNetMailAddress));
 			var email = console.getstr(thisuser.netmail, LEN_NETMAIL
