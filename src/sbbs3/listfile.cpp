@@ -402,7 +402,7 @@ bool sbbs_t::listfile(file_t* f, const  int dirnum, const char *search, const ch
 	if(useron.misc&BATCHFLAG) {
 		if(!cdt && !(cfg.dir[dirnum]->misc&DIR_FREE)) {
 			attr(curatr^(HIGH|BLINK));
-			bputs("  FREE"); 
+			bprintf("%6s", text[FREE]);
 		}
 		else 
 			bprintf("%6s", bytes);
@@ -410,7 +410,7 @@ bool sbbs_t::listfile(file_t* f, const  int dirnum, const char *search, const ch
 	else {
 		if(!cdt && !(cfg.dir[dirnum]->misc&DIR_FREE)) {  /* FREE file */
 			attr(curatr^(HIGH|BLINK));
-			bputs("   FREE"); 
+			bprintf("%7s", text[FREE]);
 		}
 		else 
 			bprintf("%7s", bytes);
