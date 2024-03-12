@@ -3738,9 +3738,16 @@ function substrWithAttrCodes(pStr, pStartIdx, pLen)
 	if (typeof(pStartIdx) === "number" && pStartIdx >= 0 && pStartIdx < screenLen)
 		startIdx = pStartIdx;
 
+	// If the string doesn't have any control characters (used for Synchronet attribute
+	// codes), then just return a standard substring of it
+	if (pStr.indexOf("\x01") == -1)
+		return pStr.substr(startIdx, len);
+
 	// Find the actual start & end indexes, considering (not counting) attribute codes,
 	// and return the substring including any applicable attributes from the string
 	var actualStartIdx = findIdxConsideringAttrs(pStr, startIdx);
+	// The old way (the string was 1 char too long):
+	/*
 	var actualEndIdx = findIdxConsideringAttrs(pStr, startIdx+len+1);
 	// With the actual start & end indexes, make sure we'll get the string
 	// length desired; if not, adjust actualEndIdx;
@@ -3748,6 +3755,22 @@ function substrWithAttrCodes(pStr, pStartIdx, pLen)
 	if (actualEndIdx-actualStartIdx < len)
 		actualEndIdx += len - lenWithActualIndexes;
 	return getAttrsBeforeStrIdx(pStr, actualStartIdx) + pStr.substring(actualStartIdx, actualEndIdx);
+	*/
+
+	// New way:
+	var lastStrIdx = pStr.length - 1;
+	var shortenedStr = "";
+	var numPrintableChars = 0;
+	var i = actualStartIdx;
+	while (numPrintableChars < len && i < pStr.length)
+	{
+		shortenedStr += pStr[i++];
+		if (pStr[i] == "\x01" && i < lastStrIdx)
+			shortenedStr += pStr[i++];
+		else
+			++numPrintableChars;
+	}
+	return getAttrsBeforeStrIdx(pStr, actualStartIdx) + shortenedStr;
 }
 // Helper for substrWithAttrCodes(): Maps a 'visual' character index in a string to its
 // actual index within the string, considering any attribute codes in the string.

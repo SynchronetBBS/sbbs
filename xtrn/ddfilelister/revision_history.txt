@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.19     2024-03-11   File description refresh fixes when using extended
+                      descriptions (along with an updated dd_lightbar_menu.js)
 2.18     2024-03-08   Bug fix: Got description search working when used as a
                       loadable module.
                       Added Ctrl-C to the help screen to mention it can be used
