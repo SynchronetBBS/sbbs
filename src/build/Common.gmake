@@ -498,8 +498,9 @@ else # RELEASE
  # This also meant that -O3 wouldn't work either.
  CFLAGS	:= -O3 -Wno-unused-result -fomit-frame-pointer -ffast-math -funroll-loops $(CFLAGS)
  ifndef NO_LTO
-  CFLAGS += -flto
-  LDFLAGS += -flto
+  # Not Yet... this requires more care with library ordering.
+  # CFLAGS += -flto
+  # LDFLAGS += -flto
  endif
 endif
 CFLAGS += -fno-delete-null-pointer-checks
