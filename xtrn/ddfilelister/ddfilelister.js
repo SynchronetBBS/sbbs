@@ -109,6 +109,10 @@
  * 2024-03-08 Eric Oulashin     Version 2.18
  *                              Bug fix: Got description search working when used as a loadable module.
  *                              Added Ctrl-C to the help screen to mention it can be used to abort.
+ * 2024-03-11 Eric Oulashin     Version 2.19
+ *                              Screen refresh fix: When printing the empty lines after an extended
+ *                              description, ensure the whole line width is used (the last character
+ *                              was being left there when it should have been written over with a space)
 */
 
 "use strict";
@@ -143,6 +147,7 @@ if (system.version_num < 31900)
 
 
 require("sbbsdefs.js", "K_UPPER");
+require("sbbsdefs.js", "K_UPPER");
 require('key_defs.js', 'KEY_UP');
 require("text.js", "Email"); // Text string definitions (referencing text.dat)
 require("dd_lightbar_menu.js", "DDLightbarMenu");
@@ -153,8 +158,8 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 
 // Lister version information
-var LISTER_VERSION = "2.18";
-var LISTER_DATE = "2024-03-08";
+var LISTER_VERSION = "2.19";
+var LISTER_DATE = "2024-03-11";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1889,7 +1894,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 		else
 			fileIndexes.push(+(pFileListMenu.selectedItemIdx));
 		// Ensure the file indexes are sorted in numerical order
-		fileIndexes.sort(function(a, b) { return a - b});
+		fileIndexes.sort(function(a, b) { return a - b });
 
 		// Go through the list of files and move each of them
 		var moveAllSucceeded = true;
@@ -4115,7 +4120,6 @@ function parseArgs(argv)
 		// 3 args - Internal code, mode, filespec/description keyword
 		else if (argv.length >= 3) //==3
 		{
-			//if (user.is_sysop) console.print("\x01nargv:" + argv + ":\r\n\x01p"); // Temporary
 			// - 0: Directory internal code
 			// - 1: FL_ mode value
 			// - 2: Filespec (i.e., *, *.zip, etc.) or keyword for description search
@@ -4790,7 +4794,8 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	}
 
 	// Calculate where to write the description on the screen
-	var startX = gFileListMenu.size.width + 1; // Assuming the file menu starts at the leftmost column
+	//var startX = gFileListMenu.size.width + 1; // Assuming the file menu starts at the leftmost column
+	var startX = gFileListMenu.pos.x + gFileListMenu.size.width;
 	var maxDescLen = console.screen_columns - startX;
 	if (typeof(pMaxWidth) === "number" && pMaxWidth >= 0 && pMaxWidth < maxDescLen)
 		maxDescLen = pMaxWidth;
@@ -4830,7 +4835,8 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 		{
 			console.gotoxy(startX, screenRowForPrinting++);
 			console.print(descLine);
-			var remainingLen = maxDescLen - lineTextLength + 1;
+			//var remainingLen = maxDescLen - lineTextLength + 1;
+			var remainingLen = maxDescLen - lineTextLength;
 			if (remainingLen > 0)
 				printf("%-*s", remainingLen, "");
 		}
@@ -4839,21 +4845,36 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 		if (screenRowForPrinting > lastScreenRow)
 			break;
 	}
-	// If there is room (and we're not below the file date already), shoe the file date on the next line
+	// TODO: We shouldn't have to do this
+	// For the remainder of the description area, it seems maxDescLen has to be 1 longer in order
+	// to fill the whole text width
+	/*
+	if (maxDescLen == console.screen_columns - startX)
+	{
+		++maxDescLen;
+		formatStr = "%-" + maxDescLen + "s";
+	}
+	*/
+	// If there is room (and we're not below the file date already), show the file date on the next line.
 	var belowDescriptionDate = (pStartScreenRow > gFileListMenu.pos.y + fileDescArray.length);
 	if (!belowDescriptionDate && screenRowForPrinting <= lastScreenRow && fileMetadata.hasOwnProperty("time"))
 	{
 		console.attributes = "N";
 		console.gotoxy(startX, screenRowForPrinting++);
 		var dateStr = "Date: " + strftime("%Y-%m-%d", fileMetadata.time);
-		printf("%-" + maxDescLen + "s", dateStr.substr(0, maxDescLen));
+		//printf("%-" + maxDescLen + "s", dateStr.substr(0, maxDescLen));
+		printf(formatStr, dateStr.substr(0, maxDescLen));
 	}
 	// Clear the rest of the lines to the bottom of the list area
 	console.attributes = "N";
 	while (screenRowForPrinting <= lastScreenRow)
 	{
 		console.gotoxy(startX, screenRowForPrinting++);
-			printf(formatStr, "");
+		printf(formatStr, "");
+		//printf(formatStr, "!");
+		//printf("%-*s", maxDescLen, "");
+		//for (var i = 0; i < maxDescLen; ++i)
+		//	console.print("!");
 	}
 }
 
@@ -4907,7 +4928,8 @@ function refreshScreenMainContent(pUpperLeftX, pUpperLeftY, pWidth, pHeight, pSe
 	if (extendedDescEnabled())
 	{
 		var fileMenuRightX = gFileListMenu.pos.x + gFileListMenu.size.width - 1;
-		var width = pWidth - (fileMenuRightX - pUpperLeftX + 1);
+		//var width = pWidth - (fileMenuRightX - pUpperLeftX + 1);
+		var width = pWidth - (fileMenuRightX - pUpperLeftX);
 		if (width > 0)
 		{
 			var firstRow = pUpperLeftY;
