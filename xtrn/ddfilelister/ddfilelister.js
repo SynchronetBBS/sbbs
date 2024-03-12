@@ -2871,21 +2871,27 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride, pNumberedMode)
 //  pNumberedMode: Boolean - Whether or not the menu/list has numbers in front of the file info items
 function displayListHdrLine(pMoveToLocationFirst, pNumberedMode)
 {
+	// Make the format string if it hasn't been made already
+	if (displayListHdrLine.formatStr == undefined)
+	{
+		var filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
+		var fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1;
+		var descLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart + 1;
+		var numItemsLen = gFileList.length.toString().length;
+		if (pNumberedMode)
+			descLen -= (numItemsLen+1);
+		displayListHdrLine.formatStr = "\x01n\x01w\x01h";
+		if (pNumberedMode)
+			displayListHdrLine.formatStr += format("%" + numItemsLen + "s ", "#");
+		displayListHdrLine.formatStr += "%-" + filenameLen + "s %" + fileSizeLen + "s %-"
+		                             + +(descLen-7) + "s\x01n\x01w%5s\x01n";
+	}
+
 	if (pMoveToLocationFirst && console.term_supports(USER_ANSI))
 		console.gotoxy(1, 3);
-	var filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
-	var fileSizeLen = gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1;
-	var descLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart + 1;
-	var numItemsLen = gFileList.length.toString().length;
-	if (pNumberedMode)
-		descLen -= (numItemsLen+1);
-	var formatStr = "\x01n\x01w\x01h";
-	if (pNumberedMode)
-		formatStr += format("%" + numItemsLen + "s ", "#");
-	formatStr += "%-" + filenameLen + "s %" + fileSizeLen + "s %-"
-	              + +(descLen-7) + "s\x01n\x01w%5s\x01n";
+
 	var listHdrEndText = THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1;
-	printf(formatStr, "Filename", "Size", "Description", listHdrEndText);
+	printf(displayListHdrLine.formatStr, "Filename", "Size", "Description", listHdrEndText);
 }
 
 // Creates the menu for displaying the file list
