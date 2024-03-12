@@ -243,16 +243,21 @@ int fixsmb(char* sub)
 		else if(smb_undelete)
 			msg.hdr.attr&=~MSG_DELETE;
 
-		/* Create hash record */
-		if(msg.hdr.attr&MSG_DELETE)
-			text=NULL;
-		else
-			text=smb_getmsgtxt(&smb,&msg,GETMSGTXT_BODY_ONLY);
-		i=smb_hashmsg(&smb,&msg,(uchar*)text,TRUE /* update */);
-		if(i!=SMB_SUCCESS)
-			printf("!ERROR %d hashing message\n", i);
-		if(text!=NULL)
-			free(text);
+		if(renumber)
+			msg.hdr.number=n+1;
+
+		if(renumber || msg.hdr.number <= last_msg) {
+			/* Create hash record */
+			if(msg.hdr.attr&MSG_DELETE)
+				text=NULL;
+			else
+				text=smb_getmsgtxt(&smb,&msg,GETMSGTXT_BODY_ONLY);
+			i=smb_hashmsg(&smb,&msg,(uchar*)text,TRUE /* update */);
+			if(i!=SMB_SUCCESS)
+				printf("!ERROR %d hashing message\n", i);
+			if(text!=NULL)
+				free(text);
+		}
 
 		/* Index the header */
 		if(dupe_msgnum)
@@ -263,8 +268,6 @@ int fixsmb(char* sub)
 			printf("Not indexing invalid message number (0)!\n");
 		else {
 			msg.idx_offset=n;
-			if(renumber)
-				msg.hdr.number=n+1;
 			if(msg.hdr.number > highest)
 				highest = msg.hdr.number;
 			if(msg.hdr.netattr&MSG_INTRANSIT) {
