@@ -39,6 +39,21 @@
 #define LINEAR_RX_BUFLEN		10000
 #define READ_TIMEOUT			(30 * 1000)	// X00REF.DOC "the timeout value is set to 30 seconds"
 
+#define DEFAULT_UART		{ \
+	.io_base				= UART_COM1_IO_BASE, \
+	.irq					= UART_COM1_IRQ, \
+	.ier_reg				= 0, \
+	.lcr_reg				= UART_LCR_8_DATA_BITS, \
+	.mcr_reg				= UART_MCR_DTR, \
+	.lsr_reg				= UART_LSR_EMPTY_DATA | UART_LSR_EMPTY_XMIT, \
+	.msr_reg				= UART_MSR_CTS | UART_MSR_DSR, \
+	.scratch_reg			= 0, \
+	.divisor_latch_lsb		= 0x03,	/* 38400 */ \
+	.divisor_latch_msb		= 0x00, \
+	.fifo_enabled			= 0, \
+	.virtualize				= FALSE \
+	}
+
 /* UART Parameters and virtual registers */
 struct uart {
 	WORD io_base;
@@ -53,20 +68,7 @@ struct uart {
 	BYTE divisor_latch_msb;
 	BYTE fifo_enabled;
 	BOOL virtualize;
-} default_uart = {
-	.io_base				= UART_COM1_IO_BASE,	/* COM1 */
-	.irq					= UART_COM1_IRQ,
-	.ier_reg				= 0,
-	.lcr_reg				= UART_LCR_8_DATA_BITS,
-	.mcr_reg				= UART_MCR_DTR,
-	.lsr_reg				= UART_LSR_EMPTY_DATA | UART_LSR_EMPTY_XMIT,
-	.msr_reg				= UART_MSR_CTS | UART_MSR_DSR,
-	.scratch_reg			= 0,
-	.divisor_latch_lsb		= 0x03,	/* 38400 */
-	.divisor_latch_msb		= 0x00,
-	.fifo_enabled			= 0,
-	.virtualize				= FALSE
-}, uart;
+} default_uart = DEFAULT_UART, uart = DEFAULT_UART;
 
 // Notice: re-initialize global variables in VDDInitialize for NTVDMx64 and pre-Vista versions of Windows
 int log_level = LOG_INFO;
