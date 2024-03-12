@@ -877,7 +877,6 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 
 			if(api->mode&UIFC_MOUSE) {
 				set_vmem(ptr++, api->chars->button_left, hclr|(bclr<<4), 0);
-				/* *(ptr++)='þ'; */
 				set_vmem(ptr++, api->chars->close_char, lclr|(bclr<<4), 0);
 				set_vmem(ptr++, api->chars->button_right, hclr|(bclr<<4), 0);
 				i=3;
@@ -1969,7 +1968,6 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 		if(api->mode&UIFC_MOUSE && width>6) {
 			j=1;
 			set_vmem(&in_win[j++], api->chars->button_left, api->hclr|(api->bclr<<4), 0);
-			/* in_win[4]='þ'; */
 			set_vmem(&in_win[j++], api->chars->close_char, api->lclr|(api->bclr<<4), 0);
 			set_vmem(&in_win[j++], api->chars->button_right, api->hclr|(api->bclr<<4), 0);
 			l=3;
@@ -2810,7 +2808,6 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
    		      tmp_buffer2[i].ch=api->chars->help_top;
 		if((api->mode&UIFC_MOUSE) && (!(mode&WIN_DYN))) {
 			set_vmem(&tmp_buffer2[1], api->chars->button_left, api->hclr|(api->bclr<<4), 0);
-			/* tmp_buffer2[4]='þ'; */
 			set_vmem(&tmp_buffer2[2], api->chars->close_char, api->lclr|(api->bclr<<4), 0);
 			set_vmem(&tmp_buffer2[3], api->chars->button_right, api->hclr|(api->bclr<<4), 0);
 			/* Buttons are ignored - leave it this way to not confuse stuff from help() */
