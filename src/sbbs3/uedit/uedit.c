@@ -60,6 +60,7 @@ struct user_list {
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 char YesStr[]="Yes";
 char NoStr[]="No";
+char sepchar = 0xb3;
 
 #define GETUSERDAT(cfg, user)	if (getuserdat(cfg, user) != 0) { uifc.msg("Error reading user database!"); return -1; }
 
@@ -1683,6 +1684,7 @@ int finduser(scfg_t *cfg, user_t *user)
 	int i,j,last;
 	ushort un;
 	char str[256];
+	char title[256];
 	struct user_list **opt;
 	int done=0;
 
@@ -1706,7 +1708,7 @@ int finduser(scfg_t *cfg, user_t *user)
 				FREE_AND_NULL(opt[j]);
 				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
 					allocfail(sizeof(struct user_list));
-				sprintf(opt[j]->info,"%1.1s³%1.1s³ %-25.25s ³ %-25.25s",user->misc&DELETED?"*":" ",user->misc&INACTIVE?"*":" ",user->name,user->alias);
+				sprintf(opt[j]->info,"%1.1s%c%1.1s%c %-25.25s %c %-25.25s",user->misc&DELETED?"Y":"N",sepchar,user->misc&INACTIVE?"Y":"N",sepchar,user->name,sepchar,user->alias);
 				opt[j++]->usernum=i;
 			}
 		}
@@ -1715,7 +1717,8 @@ int finduser(scfg_t *cfg, user_t *user)
 			allocfail(sizeof(struct user_list));
 		opt[j]->info[0]=0;
 		i=0;
-		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,"D³I³ Real Name                 ³ Alias                    ",(char **)opt)) {
+		sprintf(title,"D%cI%c Real Name                 %c Alias                    ", sepchar, sepchar, sepchar);
+		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,title,(char **)opt)) {
 			case -1:
 				done=1;
 				break;
@@ -1737,6 +1740,7 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 	int i,j,last;
 	struct user_list **opt;
 	int done=0;
+	char title[256];
 
 	if((opt=(struct user_list **)malloc(sizeof(struct user_list *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(struct user_list *)*(MAX_OPTS+1));
@@ -1755,7 +1759,7 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 				FREE_AND_NULL(opt[j]);
 				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
 					allocfail(sizeof(struct user_list));
-				sprintf(opt[j]->info,"%1.1s³%1.1s³ %-25.25s ³ %-25.25s",user->misc&DELETED?"*":" ",user->misc&INACTIVE?"*":" ",user->name,user->alias);
+				sprintf(opt[j]->info,"%1.1s%c%1.1s%c %-25.25s %c %-25.25s",user->misc&DELETED?"Y":"N",sepchar,user->misc&INACTIVE?"Y":"N",sepchar,user->name,sepchar,user->alias);
 				opt[j++]->usernum=i;
 			}
 		}
@@ -1764,7 +1768,8 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 			allocfail(sizeof(struct user_list));
 		opt[j]->info[0]=0;
 		i=0;
-		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,"D³I³ Real Name                 ³ Alias                    ",(char **)opt)) {
+		sprintf(title, "D%cI%c Real Name                 %c Alias                    ", sepchar, sepchar, sepchar);
+		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,title,(char **)opt)) {
 			case -1:
 				done=1;
 				break;
@@ -1879,6 +1884,7 @@ int main(int argc, char** argv)  {
 	user_t	user;
 	int		edtuser=0;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
+	bool uifcx = false;
 
 	/******************/
 	/* Ini file stuff */
@@ -1962,6 +1968,11 @@ int main(int argc, char** argv)  {
 						case 'C':
 							ciolib_mode=CIOLIB_MODE_CURSES;
 							break;
+						case 'D':
+							ciolib_mode=CIOLIB_MODE_ANSI;
+							uifcx = true;
+							sepchar = ',';
+							break;
 						case 0:
 							printf("NOTICE: The -i option is deprecated, use -if instead\n");
 							SLEEP(2000);
@@ -1998,6 +2009,7 @@ int main(int argc, char** argv)  {
 						"       W = Win32 console mode\n"
 #endif
 						"       A = ANSI mode\n"
+						"       D = Dumb terminal mode\n"
                         "-l# =  set screen lines to #\n"
 						,argv[0]
                         );
@@ -2012,12 +2024,17 @@ int main(int argc, char** argv)  {
 #endif
 
 	uifc.size=sizeof(uifc);
-	i=initciolib(ciolib_mode);
-	if(i!=0) {
-    	printf("ciolib library init returned error %d\n",i);
-    	exit(1);
+	if (uifcx) {
+		i=uifcinix(&uifc);
 	}
-	i=uifcini32(&uifc);  /* curses */
+	else {
+		i=initciolib(ciolib_mode);
+		if(i!=0) {
+			printf("ciolib library init returned error %d\n",i);
+			exit(1);
+		}
+		i=uifcini32(&uifc);  /* curses */
+	}
 	if(i!=0) {
 		printf("uifc library init returned error %d\n",i);
 		exit(1);
@@ -2107,11 +2124,12 @@ int main(int argc, char** argv)  {
 				for(i=1; i<=last; i++) {
 					user.number=i;
 					GETUSERDAT(&cfg,&user);
-					sprintf(opt[i-1],"%1.1s³%1.1s³ %-25.25s ³ %-25.25s",user.misc&DELETED?"*":" ",user.misc&INACTIVE?"*":" ",user.name,user.alias);
+					sprintf(opt[i-1],"%1.1s%c%1.1s%c %-25.25s %c %-25.25s",user.misc&DELETED?"Y":"N",sepchar,user.misc&INACTIVE?"Y":"N",sepchar,user.name,sepchar,user.alias);
 				}
 				opt[i-1][0]=0;
 				i=0;
-				switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&curuser,&curbar,"³D³I³ Real Name                 ³ Alias                    ",opt)) {
+				sprintf(str, "%cD%cI%c Real Name                 %c Alias                    ", sepchar, sepchar, sepchar, sepchar);
+				switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&curuser,&curbar,str,opt)) {
 					case -1:
 						done=1;
 						break;
@@ -2129,11 +2147,14 @@ int main(int argc, char** argv)  {
 				for(i=1,j=0; i<=last; i++) {
 					user.number = i;
 					GETUSERDAT(&cfg, &user);
-					sprintf(opt[j++], "%-4u ³ %-25.25s ³ %-25.25s", i, user.name, user.alias);
+					if (user.misc & (DELETED | INACTIVE))
+						continue;
+					sprintf(opt[j++], "%-4u %c %-25.25s %c %-25.25s", i, sepchar, user.name, sepchar, user.alias);
 				}
 				opt[j][0] = 0;
 				i=0;
-				switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,"Num  ³ Real Name                 ³ Alias                    ",opt)) {
+				sprintf(str, "Num  %c Real Name                 %c Alias                    ", sepchar, sepchar);
+				switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,str,opt)) {
 					case -1:
 						done = 1;
 						break;
