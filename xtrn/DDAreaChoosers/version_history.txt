@@ -5,7 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.41     2023-1027    Message area chooser only: In lightbar mode, when using
+1.41     2024-03-13   File area chooser: Fix for the directory item counts
+1.41     2023-10-27   Message area chooser only: In lightbar mode, when using
                       name collapisng, ensure the menu item for the appropriate
                       subgroup is selected.
                       The file area chooser was already doing this.

@@ -66,6 +66,8 @@
  *                            Directory name collapsing: Fix for incorrect subdir assignment.
  *                            Also, won't collapse if the name before the separator is the same as
  *                            the file library description.
+ * 2024-03-13 Eric Oulashin   Version 1.41
+ *                            Fix for the directory item counts
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -106,8 +108,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.40";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2023-10-24";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.41";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2024-03-13";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -1097,16 +1099,18 @@ function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCa
 		{
 			pAreaChooser.WriteDirListHdr1Line(pLibIdx, pDirIdx, pNumPages, pPageNum);
 			console.gotoxy(1, pAreaChooser.areaChangeHdrLines.length+2);
+			var numItemsColHdrTxt = "";
 			if (pAreaChooser.useDirCollapsing)
 			{
 				if (pLevel == 2)
-					printf(pAreaChooser.fileDirHdrPrintfStr, "Dir #", "Description", "# Items");
+					numItemsColHdrTxt = "# Items";
 				else if (level == 3)
-					printf(pAreaChooser.fileDirHdrPrintfStr, "Dir #", "Description", "# Files");
+					numItemsColHdrTxt = "# Files";
 					
 			}
 			else
-				printf(pAreaChooser.fileDirHdrPrintfStr, "Dir #", "Description", "# Files");
+				numItemsColHdrTxt = "# Files";
+			printf(pAreaChooser.fileDirHdrPrintfStr, "Dir #", "Description", numItemsColHdrTxt);
 		}
 	}
 
@@ -2491,18 +2495,7 @@ function DDFileAreaChooser_GetGreatestNumFiles(pLibIndex)
 	for (var dirIndex = 0; dirIndex < file_area.lib_list[pLibIndex].dir_list.length; ++dirIndex)
 	{
 		var dirCode = file_area.lib_list[pLibIndex].dir_list[dirIndex].code;
-		// If we've alrady got the # of files for the dir, then use it; otherwise,
-		// call NumFilesInDir() to get the file count.  Also, make sure these are
-		// all actual file counts in the directories.
-		if (typeof(retObj.fileCounts[dirIndex]) == "number")
-		{
-			if (this.useDirCollapsing && (this.lib_list[pLibIndex].dir_list[dirIndex].subdir_list.length > 0))
-				retObj.fileCountsByCode[dirCode] = numFilesInDir(pLibIndex, dirIndex);
-			else
-				retObj.fileCountsByCode[dirCode] = retObj.fileCounts[dirIndex];
-		}
-		else
-			retObj.fileCountsByCode[dirCode] = numFilesInDir(pLibIndex, dirIndex);
+		retObj.fileCountsByCode[dirCode] = numFilesInDir(pLibIndex, dirIndex);
 	}
 
 	return retObj;
