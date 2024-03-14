@@ -3318,17 +3318,17 @@ show_bbslist(char *current, int connected)
 						asprintf(&p,
 						    "`SyncTERM File Locations`\n\n"
 						    "~ Global Dialing Directory (Read-Only) ~\n"
-						    "  %s\n\n"
+						    "  %s\n"
 						    "~ Personal Dialing Directory ~\n"
-						    "  %s\n\n"
+						    "  %s\n"
 						    "~ Configuration File ~\n"
-						    "  %s\n\n"
+						    "  %s\n"
 						    "~ Default download Directory ~\n"
-						    "  %s\n\n"
+						    "  %s\n"
 						    "~ Cache Directory ~\n"
-						    "  %s\n\n"
+						    "  %s\n"
 						    "~ SSH Keys File ~\n"
-						    "  %s\n\n",
+						    "  %s\n",
 						    shared_list,
 						    personal_list,
 						    setting_file,
