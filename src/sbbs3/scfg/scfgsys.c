@@ -1965,6 +1965,9 @@ void sys_cfg(void)
 						"\n"
 						"This menu allows you to determine the default values (settings,\n"
 						"security) assigned to newly-created user accounts.\n"
+						"\n"
+						"Some of thes settings are also automatically applied to 'Guest'\n"
+						"(G-restricted) account logons.\n"
 					;
 					switch(uifc.list(WIN_ACT|WIN_BOT|WIN_RHT|WIN_SAV,0,0,0,&new_dflt,0
 						,"New User Values",opt)) {
@@ -2102,7 +2105,8 @@ void sys_cfg(void)
 							uifc.helpbuf=
 								"`New User Editor:`\n"
 								"\n"
-								"You can use this option to select the default editor for new users.\n"
+								"You can use this option to select the default editor for new users\n"
+								"and 'Guest' (G-restriced) account logons.\n"
 							;
 							i=uifc.list(WIN_SAV|WIN_RHT,2,1,13,&i,0,"Editors",opt);
 							if(i==-1)
@@ -2114,14 +2118,14 @@ void sys_cfg(void)
 							break;
 						case 11:
 							for(i=0;i<cfg.total_shells && i<MAX_OPTS;i++)
-								snprintf(opt[i],MAX_OPLN,"%-.*s", LEN_CODE, cfg.shell[i]->code);
+								snprintf(opt[i],MAX_OPLN,"%-*s %s", LEN_CODE, cfg.shell[i]->code, cfg.shell[i]->name);
 							opt[i][0]=0;
 							i=cfg.new_shell;
 							uifc.helpbuf=
 								"`New User Command Shell:`\n"
 								"\n"
 								"You can use this option to select the default command shell for new\n"
-								"users.\n"
+								"users or 'Guest' (G-restricted) account logons.\n"
 							;
 							i=uifc.list(WIN_SAV|WIN_RHT,2,1,13,&i,0
 								,"Command Shells",opt);
@@ -2134,7 +2138,9 @@ void sys_cfg(void)
 								"`New User Default Download Protocol:`\n"
 								"\n"
 								"This option allows you to set the default download protocol of new users\n"
-								"(protocol command key or `BLANK` for no default).\n"
+								"or 'Guest' (G-restricted) account logons.\n"
+								"\n"
+								"Set this to the desired protocol command key or `BLANK` for no default.\n"
 							;
 							sprintf(str,"%c",cfg.new_prot);
 							uifc.input(WIN_SAV|WIN_MID,0,0
