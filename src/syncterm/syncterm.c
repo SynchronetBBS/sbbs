@@ -1330,6 +1330,38 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 }
 
 void
+check_upgrade(void)
+{
+	char       inipath[MAX_PATH + 1];
+
+	if (get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false) != NULL) {
+#if !(defined(_WIN32) || defined(__APPLE__) || defined(__MACH__))
+		if (!fexist(inipath)) {
+			const char *home = getenv("HOME");
+			if (home != NULL) {
+				char oldpath[MAX_PATH+1];
+				snprintf(oldpath, sizeof(oldpath), "%s/.syncterm", home);
+				if (isdir(oldpath)) {
+					init_uifc(true, true);
+					uifc.showbuf(WIN_SAV | WIN_MID | WIN_HLP, 0, 0, 76, uifc.scrn_len - 2, "Upgrade Detected",
+					    "It looks like you've just upgraded SyncTERM.  Previously on POSIX\n"
+					    "systems, all files were usually stored in $HOME/.syncterm.  However,\n"
+					    "with SyncTERM 1.2, files are now stored in the locations defined In the\n"
+					    "XDG Base Directory Specification.\n"
+					    "\n"
+					    "You may want to note the new locations in the File Locations menu\n"
+					    "option in SyncTERM Settings menu, exit SyncTERM (this is important) and\n"
+					    "manually move the files to the new locations, overwriting the newly\n"
+					    "created ini file\n", NULL, NULL);
+					uifcbail();
+				}
+			}
+		}
+#endif
+	}
+}
+
+void
 load_settings(struct syncterm_settings *set)
 {
 	FILE      *inifile;
@@ -1802,6 +1834,7 @@ main(int argc, char **argv)
 	umask(077);
 #endif
 
+	check_upgrade();
 #if 0
  #ifdef ALPHA
 	init_uifc(true, true);
