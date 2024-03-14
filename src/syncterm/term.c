@@ -1779,7 +1779,6 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 	char     str[MAX_PATH * 2 + 2];
 	char     fname[MAX_PATH + 1];
 	int      i = 0;
-	int      fnum = 0;
 	uint     errors;
 	uint     total_files = 0;
 	uint     cps;
@@ -1943,8 +1942,6 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 		}
 
 		lprintf(LOG_DEBUG, "Receiving: %.64s ", str);
-
-		fnum++;
 
 		while (fexistcase(str) && !(mode & OVERWRITE)) {
 			lprintf(LOG_WARNING, "%s already exists", str);
