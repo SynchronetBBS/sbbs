@@ -1346,7 +1346,7 @@ check_upgrade(void)
 					uifc.showbuf(WIN_SAV | WIN_MID | WIN_HLP, 0, 0, 76, uifc.scrn_len - 2, "Upgrade Detected",
 					    "It looks like you've just upgraded SyncTERM.  Previously on POSIX\n"
 					    "systems, all files were usually stored in $HOME/.syncterm.  However,\n"
-					    "with SyncTERM 1.2, files are now stored in the locations defined In the\n"
+					    "with SyncTERM 1.2, files are now stored in the locations defined in the\n"
 					    "XDG Base Directory Specification.\n"
 					    "\n"
 					    "You may want to note the new locations in the File Locations menu\n"
