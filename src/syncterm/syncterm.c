@@ -1037,7 +1037,7 @@ get_OSX_filename(char *fn, int fnlen, int type, int shared)
 #elif defined(_WIN32) /* if defined(__APPLE__) && defined(__MACH__) */
 
 static char *
-get_win32_path(char *fn, int fnlen, int type, int shared)
+get_win_filename(char *fn, int fnlen, int type, int shared)
 {
 	char             *home;
 	static dll_handle shell32 = NULL;
