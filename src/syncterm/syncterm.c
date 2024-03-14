@@ -974,7 +974,7 @@ parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults
 #if defined(__APPLE__) && defined(__MACH__)
 
 static char *
-get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
+get_OSX_filename(char *fn, int fnlen, int type, int shared)
 {
 	FSRef ref;
 
@@ -1034,23 +1034,11 @@ get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 	return NULL;
 }
 
-#endif /* if defined(__APPLE__) && defined(__MACH__) */
+#elif defined(_WIN32) /* if defined(__APPLE__) && defined(__MACH__) */
 
-char *
-get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
+static char *
+get_win32_path(char *fn, int fnlen, int type, int shared)
 {
-	char oldlst[MAX_PATH + 1];
-
-	if ((config_override != NULL) && (type == SYNCTERM_PATH_INI) && !shared) {
-		sprintf(fn, "%.*s", fnlen - 1, config_override);
-		return fn;
-	}
-	if ((list_override != NULL) && (type == SYNCTERM_PATH_LIST) && !shared) {
-		sprintf(fn, "%.*s", fnlen - 1, list_override);
-		return fn;
-	}
-	memset(fn, 0, fnlen);
-#ifdef _WIN32
 	char             *home;
 	static dll_handle shell32 = NULL;
 	bool              we_got_this = false;
@@ -1064,13 +1052,8 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 	home = getenv("HOME");
 	if (home == NULL)
 		home = getenv("USERPROFILE");
-	if (home == NULL) {
-		strcpy(oldlst, "./syncterm.lst");
-	}
-	else {
-		SAFECOPY(oldlst, home);
-		strcat(oldlst, "/syncterm.lst");
-	}
+	if (home == NULL)
+		home = ".";
 
 	if (shell32 == NULL)
 		shell32 = xp_dlopen(shell32dll, RTLD_LAZY, 6);
@@ -1138,7 +1121,7 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 					break;
 				default:
 					backslash(fn);
-					strcat(fn, "SyncTERM");
+					strncat(fn, "SyncTERM", fnlen - strlen(fn) - 1);
 					break;
 			}
 			if (!isdir(fn))
@@ -1153,7 +1136,7 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 				break;
 			default:
 				backslash(fn);
-				strcat(fn, "SyncTERM");
+				strncat(fn, "SyncTERM", fnlen - strlen(fn) - 1);
 				break;
 		}
  #else /* ifdef CSIDL_FLAG_CREATE */
@@ -1165,7 +1148,7 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
         /* Create if it doesn't exist */
 	if (*fn && !isdir(fn)) {
 		if (MKDIR(fn))
-			fn[0] = 0;
+			return NULL;
 	}
 
 	switch (type) {
@@ -1187,67 +1170,107 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 					break;
 				}
 			}
-			strncat(fn, "cache", fnlen - strlen(fn) - 1);
-			backslash(fn);
-			if (!isdir(fn)) {
-				if (MKDIR(fn))
-					fn[0] = 0;
-			}
 			break;
 		case SYNCTERM_PATH_KEYS:
 			backslash(fn);
 			strncat(fn, "syncterm.ssh", fnlen - strlen(fn) - 1);
 			break;
 	}
-#else /* ifdef _WIN32 */
-        /* UNIX */
-	char *home = getenv("HOME");
+}
 
+#else
+enum xdg_paths {
+	XDG_DATA_HOME,
+	XDG_CONFIG_HOME,
+	XDG_CACHE_HOME,
+	XDG_NONE, // Download dir
+};
+static char *
+get_xdg_path(enum xdg_paths type, char *buf, size_t bufsz)
+{
+	char *env;
+
+	// First, check if XDG variable is set
+	switch(type) {
+		case XDG_DATA_HOME:
+			env = getenv("XDG_DATA_HOME");
+			break;
+		case XDG_CONFIG_HOME:
+			env = getenv("XDG_CONFIG_HOME");
+			break;
+		case XDG_CACHE_HOME:
+			env = getenv("XDG_CACHE_HOME");
+			break;
+		case XDG_NONE:
+			// Always use HOME...
+			env = NULL;
+			break;
+		default:
+			fprintf(stderr, "Invalid XDG type %d\n", type);
+			return NULL;
+	}
+
+	// Not set, get default
+	if (env == NULL) {
+		char *home;
+		home = getenv("HOME"); // Standard
+		if (home == NULL)
+			home = ".";
+		switch(type) {
+			case XDG_DATA_HOME:
+				snprintf(buf, bufsz, "%s/.local/share", home);
+				break;
+			case XDG_CONFIG_HOME:
+				snprintf(buf, bufsz, "%s/.config", home);
+				break;
+			case XDG_CACHE_HOME:
+				snprintf(buf, bufsz, "%s/.cache", home);
+				break;
+			case XDG_NONE:
+				snprintf(buf, bufsz, "%s", home);
+				break;
+		}
+	}
+	else {
+		snprintf(buf, bufsz, "%s", env);
+	}
+
+	// Add "syncterm" to the end
+	if (type != XDG_NONE) {
+		backslash(buf);
+		strcat(buf, "syncterm");
+	}
+
+	return buf;
+}
+
+static char *
+get_unix_filename(char *fn, int fnlen, int type, int shared)
+{
 	if (!shared) {
-		if (((home == NULL) || (strlen(home) > MAX_PATH - 32))) { /* $HOME just too damn big */
-			if ((type == SYNCTERM_DEFAULT_TRANSFER_PATH) || (type == SYNCTERM_PATH_CACHE)) {
-				if(getcwd(fn, fnlen) == NULL)
+		switch(type) {
+			case SYNCTERM_PATH_INI:
+				if (get_xdg_path(XDG_CONFIG_HOME, fn, fnlen) == NULL)
 					return NULL;
-				backslash(fn);
-				if (type == SYNCTERM_PATH_CACHE) {
-					strcat(fn, "cache");
-					backslash(fn);
-				}
-				return fn;
-			}
-			SAFECOPY(oldlst, "syncterm.lst");
-			strcpy(fn, "./");
+				break;
+			case SYNCTERM_PATH_LIST:
+				if (get_xdg_path(XDG_DATA_HOME, fn, fnlen) == NULL)
+					return NULL;
+				break;
+			case SYNCTERM_DEFAULT_TRANSFER_PATH:
+				if (get_xdg_path(XDG_NONE, fn, fnlen) == NULL)
+					return NULL;
+				break;
+			case SYNCTERM_PATH_CACHE:
+				if (get_xdg_path(XDG_CACHE_HOME, fn, fnlen) == NULL)
+					return NULL;
+				break;
+			case SYNCTERM_PATH_KEYS:
+				if (get_xdg_path(XDG_DATA_HOME, fn, fnlen) == NULL)
+					return NULL;
+				break;
 		}
-		else {
-			if (type == SYNCTERM_DEFAULT_TRANSFER_PATH) {
-				strcpy(fn, home);
-				backslash(fn);
- #if defined(__APPLE__) && defined(__MACH__)
-				if (get_new_OSX_filename(oldlst, sizeof(oldlst), type, shared) != NULL)
-					strcpy(fn, oldlst);
- #endif
-				if (!isdir(fn))
-					if (MKDIR(fn))
-						fn[0] = 0;
-				return fn;
-			}
-			SAFECOPY(oldlst, home);
-			backslash(oldlst);
-			strcat(oldlst, "syncterm.lst");
-			sprintf(fn, "%.*s", fnlen, home);
-			strncat(fn, "/.syncterm", fnlen - strlen(fn) - 1);
-			backslash(fn);
-			if (type == SYNCTERM_PATH_CACHE) {
-				if (!isdir(fn))
-					if (MKDIR(fn))
-						fn[0] = 0;
-
-
-				strcat(fn, "cache");
-				backslash(fn);
-				return fn;
-			}
-		}
+		backslash(fn);
 	}
 	else {
  #ifdef SYSTEM_LIST_DIR
@@ -1258,13 +1281,11 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
  #endif
 	}
 
- #if !(defined(__APPLE__) && defined(__MACH__))
-        /* Create if it doesn't exist */
+	/* Create if it doesn't exist */
 	if (!isdir(fn) && !shared) {
 		if (MKDIR(fn))
-			fn[0] = 0;
+			return NULL;
 	}
- #endif
 
 	switch (type) {
 		case SYNCTERM_PATH_INI:
@@ -1274,42 +1295,38 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 			strncat(fn, "syncterm.lst", fnlen - strlen(fn) - 1);
 			break;
 		case SYNCTERM_PATH_CACHE:
-			strncat(fn, "cache", fnlen - strlen(fn) - 1);
-			backslash(fn);
- #if !(defined(__APPLE__) && defined(__MACH__))
-			if (!isdir(fn)) {
-				if (MKDIR(fn))
-					fn[0] = 0;
-			}
- #endif
 			break;
 		case SYNCTERM_PATH_KEYS:
 			strncat(fn, "syncterm.ssh", fnlen - strlen(fn) - 1);
 			break;
 	}
 
- #if defined(__APPLE__) && defined(__MACH__)
-	strcpy(oldlst, fn);
-	if (get_new_OSX_filename(fn, fnlen, type, shared) != NULL) {
-		if (fexist(oldlst)) {
-			if (!isdir(oldlst)) {
-				char *lastslash = strrchr(oldlst, '/');
-
-				rename(oldlst, fn);
-				if (lastslash) {
-					*(lastslash + 1) = '*';
-					*(lastslash + 2) = 0;
-					if (!fexist(oldlst)) {
-						*lastslash = 0;
-						rmdir(oldlst);
-					}
-				}
-			}
-		}
-	}
- #endif /* OS X */
-#endif /* !Win32 */
 	return fn;
+}
+
+#endif /* if defined(__APPLE__) && defined(__MACH__) */
+
+
+char *
+get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
+{
+	if ((config_override != NULL) && (type == SYNCTERM_PATH_INI) && !shared) {
+		sprintf(fn, "%.*s", fnlen - 1, config_override);
+		return fn;
+	}
+	if ((list_override != NULL) && (type == SYNCTERM_PATH_LIST) && !shared) {
+		sprintf(fn, "%.*s", fnlen - 1, list_override);
+		return fn;
+	}
+	memset(fn, 0, fnlen);
+#if defined(__APPLE__) && defined(__MACH__)
+	return get_OSX_filename(fn, fnlen, type, shared);
+#elif defined(_WIN32)
+	return get_win_filename(fn, fnlen, type, shared);
+#else
+	return get_unix_filename(fn, fnlen, type, shared);
+#endif
+	return NULL;
 }
 
 void
