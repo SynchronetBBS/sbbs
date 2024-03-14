@@ -1254,7 +1254,7 @@ get_unix_filename(char *fn, int fnlen, int type, int shared)
 					return NULL;
 				break;
 			case SYNCTERM_PATH_LIST:
-				if (get_xdg_path(XDG_DATA_HOME, fn, fnlen) == NULL)
+				if (get_xdg_path(XDG_CONFIG_HOME, fn, fnlen) == NULL)
 					return NULL;
 				break;
 			case SYNCTERM_DEFAULT_TRANSFER_PATH:
