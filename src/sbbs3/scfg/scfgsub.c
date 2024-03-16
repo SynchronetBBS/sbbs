@@ -45,6 +45,7 @@ bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc)
 		if(cfg.sub[u]->grp == group_num) {
 			*new_subboard = *cfg.sub[u];
 			new_subboard->misc &= ~SUB_TEMPLATE;
+			new_subboard->arstr[0] = 0;
 			if(cfg.sub[u]->misc & SUB_TEMPLATE)	/* Use this sub (not last) if marked as template */
 				break;
 		}
