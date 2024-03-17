@@ -464,7 +464,8 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 							,const int totalfiles)
 {
 	char	ch,str[256],*p;
-	bool	remcdt,remfile;
+	bool	remcdt = false;
+	bool	remfile = false;
 	int		c, d;
 	char 	path[MAX_PATH + 1];
 	int		i,j;
