@@ -296,10 +296,6 @@ void exit_sdl_con(void)
 	ciolib_reaper = 0;
 	if (sdl_init_good)
 		sdl_user_func_ret(SDL_USEREVENT_QUIT);
-	else {
-		if (ciolib_reaper)
-			exit(0);
-	}
 }
 
 void sdl_copytext(const char *text, size_t buflen)
