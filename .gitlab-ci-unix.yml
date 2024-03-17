@@ -409,43 +409,6 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
-".$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]":
-  extends:
-    - .$[[ inputs.os ]]-build
-  script:
-    - cd src/sbbs3
-    - touch depend
-    - touch xpdev
-    - touch xpdev-mt
-    - touch encode
-    - touch hash
-    - touch smblib
-    - touch ciolib-mt
-    - touch uifc
-    - touch uifc-mt
-    - touch sftp-mt
-    - touch cl
-    - touch js
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS jsdoor
-  artifacts:
-    name: "jsdoor-$[[ inputs.os ]]-$[[ inputs.platform ]]"
-    paths:
-      - "src/sbbs3/*.exe.release/*"
-  needs:
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
-  rules:
-    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
-      when: never
-    - !reference [.rules, rules]
-
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [sexpots]":
   extends:
     - .$[[ inputs.os ]]-build
@@ -576,7 +539,7 @@ spec:
   script:
     - "src/sbbs3/*.exe.release/jsdoor exec/tests/test.js"
   dependencies:
-    - "$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]"
+    - "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs]"
   rules:
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
