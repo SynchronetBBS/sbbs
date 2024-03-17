@@ -32,7 +32,7 @@
 #define STARTUP_INI_JSOPT_BITDESC_TABLE
 #include "sbbs.h"
 #include "ciolib.h"
-#if defined(main) && !defined(JSDOOR)
+#if defined(main) && defined(_WIN32) && !defined(JSDOOR)
  #undef main	// Don't be a Windows program, be a Console one
 #endif
 #include "ini_file.h"
