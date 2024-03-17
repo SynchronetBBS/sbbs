@@ -436,19 +436,13 @@ else
 endif
 
 SHLIBOPTS   :=  -shared
-ifeq ($(os),darwin)
- MKSHLIB        :=  libtool -dynamic -framework System -lcc_dynamic
- MKSHPPLIB      :=  libtool -dynamic -framework System -lcc_dynamic -lstdc++
- SHLIBOPTS  :=
+ifeq ($(os),sunos)
+ MKSHLIB       :=  /usr/ccs/bin/ld -G
+ MKSHPPLIB     :=  /usr/ccs/bin/ld -G
+ SHLIBOPTS :=
 else
- ifeq ($(os),sunos)
-  MKSHLIB       :=  /usr/ccs/bin/ld -G
-  MKSHPPLIB     :=  /usr/ccs/bin/ld -G
-  SHLIBOPTS :=
- else
-  MKSHLIB       :=  $(CC)
-  MKSHPPLIB     :=  $(CXX)
- endif
+ MKSHLIB       :=  $(CC)
+ MKSHPPLIB     :=  $(CXX)
 endif
 
 # Paths
