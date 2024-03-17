@@ -823,17 +823,19 @@ static bool js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 		return(false);
 
-	for(i=0;env[i]!=NULL;i++) {
-		SAFECOPY(name,env[i]);
-		truncstr(name,"=");
-		val=strchr(env[i],'=');
-		if(val==NULL)
-			val="";
-		else
-			val++;
-		if(!JS_DefineProperty(cx, js_env, name, STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-			return(false);
+	if (env) {
+		for(i=0;env[i]!=NULL;i++) {
+			SAFECOPY(name,env[i]);
+			truncstr(name,"=");
+			val=strchr(env[i],'=');
+			if(val==NULL)
+				val="";
+			else
+				val++;
+			if(!JS_DefineProperty(cx, js_env, name, STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+				return(false);
+		}
 	}
 
 	return(true);
@@ -1179,7 +1181,8 @@ void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
 /*********************/
 /* Entry point (duh) */
 /*********************/
-int main(int argc, char **argv, char** env)
+extern char **environ;
+int main(int argc, char **argv)
 {
 #ifndef JSDOOR
 	char	error[512];
@@ -1531,7 +1534,7 @@ int main(int argc, char **argv, char** env)
 
 		recycled=false;
 
-		if(!js_init(env)) {
+		if(!js_init(environ)) {
 			lprintf(LOG_ERR,"!JavaScript initialization failure");
 			return(do_bail(1));
 		}
