@@ -3047,7 +3047,7 @@ function dnsbl_exempt(ip) {
 		return true;
 	if(ip.indexOf("127.") == 0)
 		return true;
-	return false;
+	return system.findstr(system.ctrl_dir + "dnsbl_exempt.cfg", ip);
 }
 
 function check_dnsbl(ip, rbl) {
