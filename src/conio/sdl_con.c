@@ -69,6 +69,7 @@ int	sdl_init_good=0;
 pthread_mutex_t sdl_keylock;
 sem_t sdl_key_pending;
 static unsigned int sdl_pending_mousekeys=0;
+static bool sdl_sync_initialized;
 
 struct sdl_keyvals {
 	int	keysym
@@ -193,6 +194,7 @@ const struct sdl_keyvals sdl_keyval[] =
 
 void sdl_video_event_thread(void *data);
 static void setup_surfaces(struct video_stats *vs);
+static int sdl_initsync(void);
 
 static void sdl_user_func(int func, ...)
 {
@@ -294,10 +296,9 @@ void exit_sdl_con(void)
 {
 	// Avoid calling exit(0) from an atexit() function...
 	ciolib_reaper = 0;
-	if (sdl_init_good)
-		sdl_user_func_ret(SDL_USEREVENT_QUIT);
-	else
-		exit(0);
+	if (!sdl_sync_initialized)
+		sdl_initsync();
+	sdl_user_func_ret(SDL_USEREVENT_QUIT);
 }
 
 void sdl_copytext(const char *text, size_t buflen)
@@ -1030,7 +1031,7 @@ void sdl_video_event_thread(void *data)
 					if (sdl_init_good)
 						sdl_add_key(CIO_KEY_QUIT, &cvstat);
 					else
-						exit(0);
+						return;
 				}
 				break;
 			case SDL_WINDOWEVENT:
@@ -1273,7 +1274,8 @@ void sdl_video_event_thread(void *data)
 	return;
 }
 
-int sdl_initciolib(int mode)
+static int
+sdl_initsync(void)
 {
 #if defined(__DARWIN__)
 	if (initsdl_ret) {
@@ -1291,6 +1293,14 @@ int sdl_initciolib(int mode)
 	pthread_mutex_init(&win_mutex, NULL);
 	pthread_mutex_init(&sdl_keylock, NULL);
 	pthread_mutex_init(&sdl_mode_mutex, NULL);
+	sdl_sync_initialized = true;
+	return 0;
+}
+
+int sdl_initciolib(int mode)
+{
+	if (sdl_initsync() == -1)
+		return -1;
 	return(sdl_init(mode));
 }
 

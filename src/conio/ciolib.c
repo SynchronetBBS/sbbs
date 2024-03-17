@@ -2028,8 +2028,8 @@ void main_stub(void *argptr)
 	args->ret = CIOLIB_main(args->argc, args->argv);
 	args->no_sdl = 1;
 	sem_post(&startsdl_sem);
-	sem_post(&main_sem);
 	exit_sdl_con();
+	sem_post(&main_sem);
 }
 
 int main(int argc, char **argv)
