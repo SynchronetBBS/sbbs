@@ -180,7 +180,7 @@ void sbbs_t::update_qwkroute(char *via)
 	if(via==NULL) {
 		if(!total_qwknodes)
 			return;
-		sprintf(str,"%sqnet/route.dat",cfg.data_dir);
+		snprintf(str, sizeof str, "%sqnet/route.dat",cfg.data_dir);
 		if((stream=fnopen(&file,str,O_WRONLY|O_CREAT|O_TRUNC))!=NULL) {
 			t=time(NULL);
 			t-=(90L*24L*60L*60L);
@@ -198,7 +198,7 @@ void sbbs_t::update_qwkroute(char *via)
 	}
 
 	if(!total_qwknodes) {
-		sprintf(str,"%sqnet/route.dat",cfg.data_dir);
+		snprintf(str, sizeof str, "%sqnet/route.dat",cfg.data_dir);
 		if((stream=fnopen(&file,str,O_RDONLY))!=NULL) {
 			while(!feof(stream)) {
 				if(!fgets(str,sizeof(str),stream))
@@ -208,7 +208,7 @@ void sbbs_t::update_qwkroute(char *via)
 				p=strchr(str,':');
 				if(!p) continue;
 				*p=0;
-				sprintf(node,"%.8s",str+9);
+				snprintf(node, sizeof node, "%.8s",str+9);
 				tp=strchr(node,' '); 		/* change "node bbs:" to "node:" */
 				if(tp) *tp=0;
 				for(i=0;i<total_qwknodes;i++)
@@ -226,7 +226,7 @@ void sbbs_t::update_qwkroute(char *via)
 				strcpy(qwknode[i].id,node);
 				p++;
 				while(*p && *p<=' ') p++;
-				sprintf(qwknode[i].path,"%.127s",p);
+				snprintf(qwknode[i].path, sizeof qwknode[i].path, "%.127s",p);
 				qwknode[i].time=t;
 			}
 			fclose(stream);
@@ -239,7 +239,7 @@ void sbbs_t::update_qwkroute(char *via)
 
 	while(p && *p) {
 		p++;
-		sprintf(node,"%.8s",p);
+		snprintf(node, sizeof node, "%.8s",p);
 		tp=strchr(node,'/');
 		if(tp) *tp=0;
 		tp=strchr(node,' '); 		/* no spaces allowed */
@@ -255,8 +255,8 @@ void sbbs_t::update_qwkroute(char *via)
 			}
 			total_qwknodes++;
 		}
-		sprintf(qwknode[i].id,"%.8s",node);
-		sprintf(qwknode[i].path,"%.*s",(int)((p-1)-via),via);
+		snprintf(qwknode[i].id, sizeof qwknode[i].id, "%.8s",node);
+		snprintf(qwknode[i].path, sizeof qwknode[i].path, "%.*s",(int)((p-1)-via),via);
 		qwknode[i].time=time(NULL);
 		p=strchr(p,'/');
 	}
@@ -278,7 +278,7 @@ void sbbs_t::qwk_success(uint msgcnt, char bi, char prepack)
 		char id[LEN_QWKID+1];
 		SAFECOPY(id,useron.alias);
 		strlwr(id);
-		sprintf(str,"%sqnet/%s.out/",cfg.data_dir,id);
+		snprintf(str, sizeof str, "%sqnet/%s.out/",cfg.data_dir,id);
 		int result = delfiles(str,ALLFILES);
 		if(result < 0)
 			errormsg(WHERE, ERR_REMOVE, str, result);
@@ -289,7 +289,7 @@ void sbbs_t::qwk_success(uint msgcnt, char bi, char prepack)
 		logline("D-",str);
 		posts_read+=msgcnt;
 
-		sprintf(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
+		snprintf(str, sizeof str, "%sfile/%04u.qwk",cfg.data_dir,useron.number);
 		if(fexistcase(str))
 			remove(str);
 
@@ -303,7 +303,7 @@ void sbbs_t::qwk_success(uint msgcnt, char bi, char prepack)
 	if(useron.rest&FLAG('Q'))
 		useron.qwk|=(QWK_EMAIL|QWK_ALLMAIL|QWK_DELMAIL);
 	if(useron.qwk&(QWK_EMAIL|QWK_ALLMAIL)) {
-		sprintf(smb.file,"%smail",cfg.data_dir);
+		snprintf(smb.file, sizeof smb.file, "%smail",cfg.data_dir);
 		smb.retry_time=cfg.smb_retry_time;
 		smb.subnum=INVALID_SUB;
 		if((i=smb_open(&smb))!=0) {
@@ -397,7 +397,7 @@ void sbbs_t::qwk_sec()
 		action=NODE_TQWK;
 		sync();
 		bputs(text[QWKPrompt]);
-		sprintf(str,"?UDCSP\r%c",quit_key());
+		snprintf(str, sizeof str, "?UDCSP\r%c",quit_key());
 		ch=(char)getkeys(str,0);
 		if(ch>' ')
 			logch(ch,0);
@@ -576,7 +576,7 @@ void sbbs_t::qwk_sec()
 		}
 
 		if(ch=='D') {   /* Download QWK Packet of new messages */
-			sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
+			snprintf(str, sizeof str, "%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 			if(!fexistcase(str) && !pack_qwk(str,&msgcnt,0)) {
 				for(i=0;i<cfg.total_subs;i++)
 					subscan[i].ptr=sav_ptr[i];
@@ -605,10 +605,10 @@ void sbbs_t::qwk_sec()
 			/***************/
 			xfer_prot_menu(XFER_DOWNLOAD);
 			mnemonics(text[ProtocolOrQuit]);
-			sprintf(tmp2,"%c",quit_key());
+			snprintf(tmp2, sizeof tmp2, "%c",quit_key());
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
+					snprintf(tmp, sizeof tmp, "%c",cfg.prot[i]->mnemonic);
 					strcat(tmp2,tmp);
 				}
 			ungetkey(useron.prot);
@@ -624,8 +624,8 @@ void sbbs_t::qwk_sec()
 					&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 					break;
 			if(i<cfg.total_prots) {
-				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
-				sprintf(tmp2,"%s.qwk",cfg.sys_id);
+				snprintf(str, sizeof str, "%s%s.qwk",cfg.temp_dir,cfg.sys_id);
+				snprintf(tmp2, sizeof tmp2, "%s.qwk",cfg.sys_id);
 				error=protocol(cfg.prot[i],XFER_DOWNLOAD,str,nulstr,false);
 				if(!checkprotresult(cfg.prot[i], error, tmp2)) {
 					last_ns_time=ns_time;
@@ -654,10 +654,10 @@ void sbbs_t::qwk_sec()
 			/******************/
 			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);
-			sprintf(tmp2,"%c",quit_key());
+			snprintf(tmp2, sizeof tmp2, "%c",quit_key());
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
+					snprintf(tmp, sizeof tmp, "%c",cfg.prot[i]->mnemonic);
 					strcat(tmp2,tmp);
 				}
 			ch=(char)getkeys(tmp2,0);
@@ -669,7 +669,7 @@ void sbbs_t::qwk_sec()
 					break;
 			if(i>=cfg.total_prots)	/* This shouldn't happen */
 				continue;
-			sprintf(str,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
+			snprintf(str, sizeof str, "%s%s.rep",cfg.temp_dir,cfg.sys_id);
 			protocol(cfg.prot[i],XFER_UPLOAD,str,nulstr,true);
 			unpack_rep();
 			delfiles(cfg.temp_dir,ALLFILES);
@@ -719,7 +719,7 @@ void sbbs_t::qwkcfgline(char *buf, int subnum)
 	uint	qwk=useron.qwk;
 	file_t f = {{}};
 
-	sprintf(str,"%-25.25s",buf);	/* Note: must be space-padded, left justified */
+	snprintf(str, sizeof str, "%-25.25s",buf);	/* Note: must be space-padded, left justified */
 	strupr(str);
 	bprintf("\1n\r\n\1b\1hQWK Control [\1c%s\1b]: \1g%s\r\n"
 		,subnum==INVALID_SUB ? "Mail":cfg.sub[subnum]->qwkname,str);
@@ -735,7 +735,7 @@ void sbbs_t::qwkcfgline(char *buf, int subnum)
 				y=l-(x*1000);
 				if(x>=usrgrps || y>=usrsubs[x]) {
 					bprintf(text[QWKInvalidConferenceN],l);
-					sprintf(str,"Invalid conference number %u",l);
+					snprintf(str, sizeof str, "Invalid conference number %u",l);
 					logline(LOG_NOTICE,"Q!",str);
 				}
 				else
@@ -971,7 +971,7 @@ bool sbbs_t::qwk_voting(str_list_t* ini, int offset, smb_net_type_t net_type, co
 	int found;
 	str_list_t section_list = iniGetSectionList(*ini, /* prefix: */NULL);
 
-	sprintf(location, "%x", offset);
+	snprintf(location, sizeof location, "%x", offset);
 	if((found = strListFind(section_list, location, /* case_sensitive: */FALSE)) < 0) {
 		lprintf(LOG_NOTICE, "QWK vote message (offset: %d) not found in %s VOTING.DAT", offset, qnet_id);
 		strListFree(&section_list);

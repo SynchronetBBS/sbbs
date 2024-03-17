@@ -157,7 +157,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			errors++;
 			continue;
 		}
-		sprintf(tmp,"%.6s",block+116);
+		snprintf(tmp, sizeof tmp, "%.6s",block+116);
 		blocks=atoi(tmp);  /* i = number of blocks */
 		n=(uint)block[123]|(((uint)block[124])<<8);  /* conference number */
 		if(blocks<2) {
@@ -208,7 +208,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			}
 
 			smb_stack(&smb,SMB_STACK_PUSH);
-			sprintf(smb.file,"%smail",cfg.data_dir);
+			snprintf(smb.file, sizeof smb.file, "%smail",cfg.data_dir);
 			smb.retry_time=cfg.smb_retry_time;
 			smb.subnum=INVALID_SUB;
 			if((k=smb_open(&smb))!=0) {
@@ -379,7 +379,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 
 	dir=opendir(cfg.temp_dir);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
-		sprintf(str,"%s%s",cfg.temp_dir,dirent->d_name);
+		snprintf(str, sizeof str, "%s%s",cfg.temp_dir,dirent->d_name);
 		if(isdir(str))	/* sub-dir */
 			continue;
 
@@ -396,7 +396,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		// Copy files
 		SAFEPRINTF2(fname,"%s/%s",inbox,dirent->d_name);
 		mv(str,fname,1 /* overwrite */);
-		sprintf(str,text[ReceivedFileViaQWK],dirent->d_name,cfg.qhub[hubnum]->id);
+		snprintf(str, sizeof str, text[ReceivedFileViaQWK],dirent->d_name,cfg.qhub[hubnum]->id);
 		putsmsg(1,str);
 		lprintf(LOG_INFO,"Received file from %s: %s", cfg.qhub[hubnum]->id, dirent->d_name);
 	}
@@ -411,7 +411,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			"(%lu msgs) in %lu seconds (%lu msgs/sec), %lu errors, %lu dupes"
 			,cfg.qhub[hubnum]->id, tmsgs, t, tmsgs/t, errors, dupes);
 		/* trigger timed event with internal code of 'qnet-qwk' to run */
-		sprintf(str,"%sqnet-qwk.now",cfg.data_dir);
+		snprintf(str, sizeof str, "%sqnet-qwk.now",cfg.data_dir);
 		ftouch(str);
 	}
 	delfiles(cfg.temp_dir,ALLFILES);

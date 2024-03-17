@@ -193,7 +193,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			errors++;
 			break;
 		}
-		sprintf(tmp,"%.6s",block+116);
+		snprintf(tmp, sizeof tmp, "%.6s",block+116);
 		blocks=atoi(tmp);  /* i = number of blocks */
 		long confnum = atol((char *)block+1);
 		if(blocks<2) {
