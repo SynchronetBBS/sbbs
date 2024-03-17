@@ -63,7 +63,6 @@ include:
       os: 'darwin'
       platform: 'x86'
       tagname: 'macOS'
-      cross_platform: 'yes'
 
 smoketest-jsexec-linux:
   tags: [Linux]
