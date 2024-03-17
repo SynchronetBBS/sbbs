@@ -296,6 +296,8 @@ void exit_sdl_con(void)
 	ciolib_reaper = 0;
 	if (sdl_init_good)
 		sdl_user_func_ret(SDL_USEREVENT_QUIT);
+	else
+		exit(0);
 }
 
 void sdl_copytext(const char *text, size_t buflen)
@@ -1024,8 +1026,12 @@ void sdl_video_event_thread(void *data)
 				 */
 				if (ciolib_reaper)
 					sdl_user_func(SDL_USEREVENT_QUIT);
-				else
-					sdl_add_key(CIO_KEY_QUIT, &cvstat);
+				else {
+					if (sdl_init_good)
+						sdl_add_key(CIO_KEY_QUIT, &cvstat);
+					else
+						exit(0);
+				}
 				break;
 			case SDL_WINDOWEVENT:
 				switch(ev.window.event) {

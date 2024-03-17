@@ -461,6 +461,7 @@ ifndef WITHOUT_SDL
  USE_SDL	:=	1
  ifeq ($(os),darwin)
   USE_SDL_AUDIO := 1
+  STATIC_SDL := 1
  endif
 endif
 
