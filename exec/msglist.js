@@ -713,20 +713,44 @@ function mail_reply(msg, reply_all)
 	return success;
 }
 
-function download_msg(msg, plain_text)
+function download_msg(msg, msgbase, plain_text)
 {
 	var fname = system.temp_dir + "msg_" + msg.number + ".txt";
 	var f = new File(fname);
 	if(!f.open("wb"))
 		return false;
 	var text = msgbase.get_msg_body(msg
-				,/* strip ctrl-a */false
+				,/* strip ctrl-a */plain_text
 				,/* dot-stuffing */false
 				,/* tails */true
 				,plain_text);
 	f.write(msg.get_rfc822_header(/* force_update: */false, /* unfold: */false
 		,/* default_content_type */!plain_text));
 	f.writeln(text);
+	f.close();
+	return bbs.send_file(fname);
+}
+
+function download_thread(thread_id, msgbase, plain_text)
+{
+	var fname = system.temp_dir + "thread_" + thread_id + ".txt";
+	var f = new File(fname);
+	if(!f.open("wb"))
+		return false;
+	const total_msgs = msgbase.total_msgs;
+	for (var i = 0; i < total_msgs; ++i) {
+		var msg = msgbase.get_msg_header(true, i);
+		if (msg == null || msg.thread_id !== thread_id)
+			continue;
+		var text = msgbase.get_msg_body(msg
+				,/* strip ctrl-a */plain_text
+				,/* dot-stuffing */false
+				,/* tails */true
+				,plain_text);
+		f.write(msg.get_rfc822_header(/* force_update: */false, /* unfold: */false
+			,/* default_content_type */!plain_text));
+		f.writeln(text);
+	}
 	f.close();
 	return bbs.send_file(fname);
 }
@@ -1132,7 +1156,11 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							break;
 						case 'D':
 							console.clearline();
-							if(!console.noyes("Download message", P_NOCRLF)) {
+							if(list[current].thread_id && !console.noyes("Download thread", P_NOCRLF)) {
+								if(!download_thread(list[current].thread_id, msgbase, console.yesno("Plain-text only")))
+									alert("failed");
+							}
+							else if(!console.noyes("Download message", P_NOCRLF)) {
 								if(!download_msg(list[current], msgbase, console.yesno("Plain-text only")))
 									alert("failed");
 							}
@@ -1489,9 +1517,9 @@ function msg_attributes(msg, msgbase, short)
 	if(msg.attr&MSG_VALIDATED)						result.push(options.attr_valid || "Valid"), str += 'V';
 	if(msg.attr&MSG_PRIVATE)						result.push(options.attr_private || "Priv"), str += 'p';
 	if(msg.attr&MSG_POLL)							result.push(options.attr_poll || "Poll"), str += '?';
-	if(msg.netattr&MSG_SENT)						result.push(options.attr_sent || "Sent"), str += 's';
-	if(msg.netattr&MSG_KILLSENT)					result.push(options.attr_sent || "KS"), str += 'k';
-	if(msg.netattr&MSG_INTRANSIT)					result.push(options.attr_intransit || "InTransit"), str += 'T';
+	if(msg.netattr&NETMSG_SENT)						result.push(options.attr_sent || "Sent"), str += 's';
+	if(msg.netattr&NETMSG_KILLSENT)					result.push(options.attr_sent || "KS"), str += 'k';
+	if(msg.netattr&NETMSG_INTRANSIT)				result.push(options.attr_intransit || "InTransit"), str += 'T';
 	/*
 	if(sub_op(subnum) && msg->hdr.attr&MSG_ANONYMOUS)	return 'A';
 	*/

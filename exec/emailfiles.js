@@ -143,7 +143,7 @@ function sendfiles()
 			, to_net_type: NET_INTERNET
 			, to_net_addr: address
 			, attr: MSG_NOREPLY // Suppress bounce messages
-			, netattr: MSG_KILLSENT
+			, netattr: NETMSG_KILLSENT
 			, auxattr: MSG_FILEATTACH
 		};
 		var msgbody = format(options.msgbody || "Your requested file (%u of %u) is attached." +

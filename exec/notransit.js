@@ -16,8 +16,8 @@ for(i=0;i<total_msgs;i++) {
 								/* offset:			*/	i,
 								/* expand_fields:	*/	false);
 	printf("#%lu from: %-30s %08lx\r\n",hdr.number,hdr.from,hdr.netattr);
-	if(hdr && hdr.netattr&MSG_INTRANSIT) {
-		hdr.netattr&=~MSG_INTRANSIT;
+	if(hdr && hdr.netattr&NETMSG_INTRANSIT) {
+		hdr.netattr&=~NETMSG_INTRANSIT;
 		printf("Removing in-transit attribute from message #%lu\r\n",hdr.number);
 		if(!mail.put_msg_header(true,i,hdr))
 			alert(mail.last_error);

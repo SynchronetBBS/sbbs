@@ -80,15 +80,15 @@ const POLL_RESULTS_SHIFT	= 30;
 
 
 /* Message network attributes */
-const MSG_LOCAL				= (1<<0);	// Msg created locally
-const MSG_INTRANSIT			= (1<<1);	// Msg is in-transit
-const MSG_SENT				= (1<<2);	// Sent to remote
-const MSG_KILLSENT			= (1<<3);	// Kill when sent
-const MSG_ARCHIVESENT 		= (1<<4);	// Archive when sent
-const MSG_HOLD				= (1<<5);	// Hold for pick-up
-const MSG_CRASH				= (1<<6);	// Crash
-const MSG_IMMEDIATE			= (1<<7);	// Send Msg now, ignore restrictions
-const MSG_DIRECT			= (1<<8);	// Send directly to destination
+const NETMSG_LOCAL				= (1<<0);	// Msg created locally
+const NETMSG_INTRANSIT			= (1<<1);	// Msg is in-transit
+const NETMSG_SENT				= (1<<2);	// Sent to remote
+const NETMSG_KILLSENT			= (1<<3);	// Kill when sent
+const NETMSG_ARCHIVESENT 		= (1<<4);	// Archive when sent
+const NETMSG_HOLD				= (1<<5);	// Hold for pick-up
+const NETMSG_CRASH				= (1<<6);	// Crash
+const NETMSG_IMMEDIATE			= (1<<7);	// Send Msg now, ignore restrictions
+const NETMSG_DIRECT				= (1<<8);	// Send directly to destination
 
 /* Net types */
 const NET_NONE				= 0;		// Local message

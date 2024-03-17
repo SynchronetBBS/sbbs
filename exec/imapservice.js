@@ -1033,31 +1033,31 @@ function parse_flags(inflags)
 				break;
 
 			case 'LOCAL':
-				flags.netattr |= MSG_LOCAL;
+				flags.netattr |= NETMSG_LOCAL;
 				break;
 			case 'INTRANSIT':
-				flags.netattr |= MSG_INTRANSIT;
+				flags.netattr |= NETMSG_INTRANSIT;
 				break;
 			case 'SENT':
-				flags.netattr |= MSG_SENT;
+				flags.netattr |= NETMSG_SENT;
 				break;
 			case 'KILLSENT':
-				flags.netattr |= MSG_KILLSENT;
+				flags.netattr |= NETMSG_KILLSENT;
 				break;
 			case 'ARCHIVESENT':
-				flags.netattr |= MSG_ARCHIVESENT;
+				flags.netattr |= NETMSG_ARCHIVESENT;
 				break;
 			case 'HOLD':
-				flags.netattr |= MSG_HOLD;
+				flags.netattr |= NETMSG_HOLD;
 				break;
 			case 'CRASH':
-				flags.netattr |= MSG_CRASH;
+				flags.netattr |= NETMSG_CRASH;
 				break;
 			case 'IMMEDIATE':
-				flags.netattr |= MSG_IMMEDIATE;
+				flags.netattr |= NETMSG_IMMEDIATE;
 				break;
 			case 'DIRECT':
-				flags.netattr |= MSG_DIRECT;
+				flags.netattr |= NETMSG_DIRECT;
 				break;
 		}
 	}
@@ -1123,21 +1123,21 @@ function calc_msgflags(attr, netattr, num, msg, readonly)
 	if(attr & MSG_NOREPLY)
 		flags += "NOREPLY ";
 
-	if(netattr & MSG_INTRANSIT)
+	if(netattr & NETMSG_INTRANSIT)
 		flags += "INTRANSIT ";
-	if(netattr & MSG_SENT)
+	if(netattr & NETMSG_SENT)
 		flags += "SENT ";
-	if(netattr & MSG_KILLSENT)
+	if(netattr & NETMSG_KILLSENT)
 		flags += "KILLSENT ";
-	if(netattr & MSG_ARCHIVESENT)
+	if(netattr & NETMSG_ARCHIVESENT)
 		flags += "ARCHIVESENT ";
-	if(netattr & MSG_HOLD)
+	if(netattr & NETMSG_HOLD)
 		flags += "HOLD ";
-	if(netattr & MSG_CRASH)
+	if(netattr & NETMSG_CRASH)
 		flags += "CRASH ";
-	if(netattr & MSG_IMMEDIATE)
+	if(netattr & NETMSG_IMMEDIATE)
 		flags += "IMMEDIATE ";
-	if(netattr & MSG_DIRECT)
+	if(netattr & NETMSG_DIRECT)
 		flags += "DIRECT ";
 
 	if(attr==0xffff || orig_ptrs[num] < msg) {
