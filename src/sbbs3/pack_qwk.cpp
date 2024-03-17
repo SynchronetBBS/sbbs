@@ -189,6 +189,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			"%sNDX\r\n"
 			"%sTZ\r\n"
 			"%sVIA\r\n"
+			"%sMSGID\r\n"
 			"%sCONTROL\r\n"
 			"MIXEDCASE = YES\r\n"
 			,VERSION_NOTICE
@@ -197,7 +198,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			,p,p,p,p
 			,p,p,p,p
 			,p,p,p,p
-			,p,p,p,p
+			,p,p,p,p,p
 			);
 		fclose(stream);
 		if(useron.rest&FLAG('Q')) {
