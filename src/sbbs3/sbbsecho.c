@@ -1109,6 +1109,8 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 	if(msg != NULL) {
 		if(msg->hdr.netattr&NETMSG_CRASH)
 			hdr.attr|=FIDO_CRASH;
+		if(msg->hdr.netattr&NETMSG_HOLD)
+			hdr.attr|=FIDO_HOLD;
 		if(msg->hdr.auxattr&MSG_FILEATTACH)
 			hdr.attr|=FIDO_FILE;
 		if(msg->hdr.auxattr&MSG_FILEREQUEST)
