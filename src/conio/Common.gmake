@@ -103,6 +103,7 @@ ifdef USE_SDL
   ifeq ($(os),darwin)
    ifeq ($(shell if [ -d /Library/Frameworks/SDL2.framework ] ; then echo YES ; fi),YES)
     SDL_FRAMEWORK_PATH ?= /Library/Frameworks
+    CFLAGS += -F${SDL_FRAMEWORK_PATH} -framework SDL2
    endif
    ifdef SDL_FRAMEWORK_PATH
     WITH_SDL	:=	1
