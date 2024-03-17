@@ -108,6 +108,10 @@ ifeq ($(shell pkg-config libarchive --exists && echo "yes"),yes)
  CFLAGS += $(shell pkg-config libarchive --cflags)
  FILE_LIBS	= $(shell pkg-config libarchive --libs)
 else
+ ifeq ($(os), darwin)
+  CFLAGS += -I/usr/local/opt/libarchive/include
+  CFLAGS += -L/usr/local/opt/libarchive/lib
+ else
  FILE_LIBS	= -larchive
 endif
 
