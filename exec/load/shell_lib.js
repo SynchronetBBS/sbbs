@@ -540,7 +540,7 @@ function download_user_files()
 	if(file_area.user_dir == undefined)
 		console.print(bbs.text(bbs.text.NoUserDir));
 	else {
-		if(!bbs.list_file_info(file_area.user_dir, FI_USERXFER))
+		if(!bbs.list_file_info(file_area.user_dir.number, FI_USERXFER))
 			console.print(bbs.text(bbs.text.NoFilesForYou));
 	}
 }
