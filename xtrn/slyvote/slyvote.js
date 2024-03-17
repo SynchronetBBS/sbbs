@@ -336,21 +336,14 @@ var gAuxMsgAttrStrs = {
 	MSG_NODISP: "NoDisp"
 };
 var gNetMsgAttrStrs = {
-	MSG_LOCAL: "FromLocal",
-	MSG_INTRANSIT: "Transit",
-	MSG_SENT: "Sent",
-	MSG_KILLSENT: "KillSent",
-	MSG_ARCHIVESENT: "ArcSent",
-	MSG_HOLD: "Hold",
-	MSG_CRASH: "Crash",
-	MSG_IMMEDIATE: "Now",
-	MSG_DIRECT: "Direct",
-	MSG_GATE: "Gate",
-	MSG_ORPHAN: "Orphan",
-	MSG_FPU: "FPU",
-	MSG_TYPELOCAL: "ForLocal",
-	MSG_TYPEECHO: "ForEcho",
-	MSG_TYPENET: "ForNetmail"
+	NETMSG_LOCAL: "FromLocal",
+	NETMSG_INTRANSIT: "Transit",
+	NETMSG_SENT: "Sent",
+	NETMSG_KILLSENT: "KillSent",
+	NETMSG_HOLD: "Hold",
+	NETMSG_CRASH: "Crash",
+	NETMSG_IMMEDIATE: "Now",
+	NETMSG_DIRECT: "Direct"
 };
 
 // An amount of milliseconds to wait after displaying an error message, etc.

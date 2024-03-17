@@ -20603,30 +20603,15 @@ function makeNetMsgAttrStr(pNetMsgAttrs, pIfEmptyString)
 	if (makeNetMsgAttrStr.attrStrs === undefined)
 	{
 		makeNetMsgAttrStr.attrStrs = [
-			{ attr: MSG_LOCAL, str: "FromLocal" },
-			{ attr: MSG_INTRANSIT, str: "Transit" },
-			{ attr: MSG_SENT, str: "Sent" },
-			{ attr: MSG_KILLSENT, str: "KillSent" },
-			{ attr: MSG_ARCHIVESENT, str: "ArcSent" },
-			{ attr: MSG_HOLD, str: "Hold" },
-			{ attr: MSG_CRASH, str: "Crash" },
-			{ attr: MSG_IMMEDIATE, str: "Now" },
-			{ attr: MSG_DIRECT, str: "Direct" }
+			{ attr: NETMSG_LOCAL, str: "FromLocal" },
+			{ attr: NETMSG_INTRANSIT, str: "Transit" },
+			{ attr: NETMSG_SENT, str: "Sent" },
+			{ attr: NETMSG_KILLSENT, str: "KillSent" },
+			{ attr: NETMSG_HOLD, str: "Hold" },
+			{ attr: NETMSG_CRASH, str: "Crash" },
+			{ attr: NETMSG_IMMEDIATE, str: "Now" },
+			{ attr: NETMSG_DIRECT, str: "Direct" }
 		];
-		if (typeof(MSG_GATE) === "number")
-			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_GATE, str: "Gate" });
-		if (typeof(MSG_ORPHAN) === "number")
-			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_ORPHAN, str: "Orphan" });
-		if (typeof(MSG_FPU) === "number")
-			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_FPU, str: "FPU" });
-		if (typeof(MSG_TYPELOCAL) === "number")
-			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_TYPELOCAL, str: "ForLocal" });
-		if (typeof(MSG_TYPEECHO) === "number")
-			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_TYPEECHO, str: "ForEcho" });
-		if (typeof(MSG_TYPENET) === "number")
-			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_TYPENET, str: "ForNetmail" });
-		if (typeof(MSG_MIMEATTACH) === "number")
-			makeNetMsgAttrStr.attrStrs.push({ attr: MSG_MIMEATTACH, str: "MimeAttach" });
 	}
 
 	var msgAttrStr = "";
