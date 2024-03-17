@@ -294,7 +294,8 @@ void exit_sdl_con(void)
 {
 	// Avoid calling exit(0) from an atexit() function...
 	ciolib_reaper = 0;
-	sdl_user_func_ret(SDL_USEREVENT_QUIT);
+	if (sdl_init_good)
+		sdl_user_func_ret(SDL_USEREVENT_QUIT);
 }
 
 void sdl_copytext(const char *text, size_t buflen)
