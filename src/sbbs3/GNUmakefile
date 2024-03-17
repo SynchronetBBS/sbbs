@@ -171,7 +171,7 @@ endif
 # Synchronet BBS library Link Rule
 $(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(OBJS) $(LIBS) $(EXTRA_SBBS_DEPENDS) $(ENCODE_LIB) $(HASH_LIB) $(SFTPLIB-MT) | $(LIBODIR)
 	@echo Linking $@
-	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) -o $@ $(OBJS) $(SBBS_LIBS) $(SMBLIB_LIBS) $(LIBS) $(SHLIBOPTS) $(JS_LIBS) $(CRYPT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(XPDEV-MT_LIBS) $(FILE_LIBS) $(SFTP-MT_LIBS) -Wl,--version-script=sbbs.version
+	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) -o $@ $(OBJS) $(SBBS_LIBS) $(SMBLIB_LIBS) $(LIBS) $(SHLIBOPTS) $(JS_LIBS) $(CRYPT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(XPDEV-MT_LIBS) $(FILE_LIBS) $(SFTP-MT_LIBS) $(SBBS_EXTRA_LDFLAGS)
 ifeq ($(os), netbsd)
 	paxctl +m $(SBBS)
 endif
