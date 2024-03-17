@@ -35,6 +35,9 @@ ifneq ($(os),darwin)
   endif
  endif
 endif
+ifeq ($(os),darwin)
+ JS_CONFIGURE_ARGS += '--enable-macos-target=10.11'
+endif
 # Blacklist some machines...
 
 JS_CONFIGURE_ENV += 'CXXFLAGS=$(CXXFLAGS)'
