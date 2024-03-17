@@ -189,12 +189,12 @@ $(MAILSRVR): $(MAIL_OBJS)
 # Web Server Link Rule
 $(WEBSRVR): $(WEB_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) -o $@ $(ENCODE_LIBS) -lsbbs
+	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) -o $@ $(ENCODE_LIBS) -lsbbs $(XPDEV-MT_LIBS)
 
 # Services Link Rule
 $(SERVICES): $(SERVICE_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(SERVICE_OBJS) $(SHLIBOPTS) -o $@ -lsbbs $(XPDEV-MT_LIBS)
+	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(SERVICE_OBJS) $(SHLIBOPTS) -o $@ -lsbbs
 
 # Synchronet Console Build Rule
 $(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
