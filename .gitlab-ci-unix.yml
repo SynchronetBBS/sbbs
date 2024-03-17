@@ -333,6 +333,7 @@ spec:
     - touch umonitor/xpdev-mt
     - touch umonitor/smblib
     - gmake $[[ inputs.build_flags ]] $BUILD_ARGS GIT=NO all
+    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS jsdoor
   artifacts:
     name: "sbbs-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -408,7 +409,7 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
-"$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]":
+".$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
