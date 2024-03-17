@@ -329,7 +329,7 @@ int main(int argc, char **argv)
 	str_list_t	list;
 	int			retval = EXIT_SUCCESS;
 
-	printf("\nFIXSMB v3.19-%s %s/%s SMBLIB %s - Rebuild Synchronet Message Base\n\n"
+	printf("\nFIXSMB v3.20-%s %s/%s SMBLIB %s - Rebuild Synchronet Message Base\n\n"
 		,PLATFORM_DESC, GIT_BRANCH, GIT_HASH, smb_lib_ver());
 
 	list=strListInit();
