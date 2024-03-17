@@ -1,0 +1,26 @@
+--- js-1.8.5/js/src/configure.orig	2024-03-16 21:46:17
++++ js-1.8.5/js/src/configure	2024-03-16 21:47:48
+@@ -953,8 +953,8 @@
+     if test -z "$MIDL"; then MIDL=midl; fi
+     ;;
+ *-darwin*)
+-    if test -z "$CC"; then CC=gcc-4.2; fi
+-    if test -z "$CXX"; then CXX=g++-4.2; fi
++    if test -z "$CC"; then CC=cc; fi
++    if test -z "$CXX"; then CXX=c++; fi
+     ;;
+ esac
+ fi
+--- js-1.8.5/js/src/configure.in.orig	2024-03-16 23:06:25
++++ js-1.8.5/js/src/configure.in	2024-03-16 23:06:47
+@@ -196,8 +196,8 @@
+     if test -z "$MIDL"; then MIDL=midl; fi
+     ;;
+ *-darwin*)
+-    if test -z "$CC"; then CC=gcc-4.2; fi
+-    if test -z "$CXX"; then CXX=g++-4.2; fi
++    if test -z "$CC"; then CC=cc; fi
++    if test -z "$CXX"; then CXX=c++; fi
+     ;;
+ esac
+ fi

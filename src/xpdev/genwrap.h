@@ -161,8 +161,6 @@ extern "C" {
 	#define PLATFORM_DESC	"GNU/Hurd"
 #elif defined(__QNX__)
 	#define PLATFORM_DESC	"QNX"
-#elif defined(__unix__)
-	#define PLATFORM_DESC	"Unix"
 #elif defined(__APPLE__)
 	#include <TargetConditionals.h>
 	#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
@@ -172,6 +170,8 @@ extern "C" {
 	#else
 		#define PLATFORM_DESC "Apple"
 	#endif
+#elif defined(__unix__)
+	#define PLATFORM_DESC	"Unix"
 #elif defined(__HAIKU__)
 	#define PLATFORM_DESC	"Haiku"
 #else

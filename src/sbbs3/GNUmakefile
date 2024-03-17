@@ -51,9 +51,9 @@ UTIL_LIBS	+=	$(HASH_LIBS)
 
 ifndef win
  ifndef bcc
- ifneq ($(os),sunos)
-  LDFLAGS	+=	-lutil
- endif
+  ifneq ($(os),sunos)
+   LDFLAGS	+=	-lutil
+  endif
  endif
 endif
 
@@ -110,7 +110,7 @@ ifeq ($(shell pkg-config libarchive --exists && echo "yes"),yes)
 else
  ifeq ($(os), darwin)
   CFLAGS += -I/usr/local/opt/libarchive/include
-  CFLAGS += -L/usr/local/opt/libarchive/lib
+  LDFLAGS += -L/usr/local/opt/libarchive/lib
  endif
  FILE_LIBS	= -larchive
 endif
@@ -135,25 +135,22 @@ ifndef NO_LD_RUN_PATH
  endif
  export LD_RUN_PATH
  ifeq ($(CCPRE),clang)
-  LDFLAGS += -rpath $(LD_RUN_PATH)
+  # TODO Darwin needs to post-process with install_name_tool
+  ifneq ($(os),darwin)
+   LDFLAGS += -rpath $(LD_RUN_PATH)
+  endif
  endif
 endif
 
 CON_LIBS	+= -lsbbs -lftpsrvr -lwebsrvr -lmailsrvr -lservices
 SHLIBOPTS	:=	-shared
-ifeq ($(os),darwin)
- MKSHLIB		:=	libtool -dynamic -framework System -lcc_dynamic
- MKSHPPLIB		:=	libtool -dynamic -framework System -lcc_dynamic -lstdc++
+ifeq ($(os),sunos)
+ MKSHLIB		:=	/usr/ccs/bin/ld -G
+ MKSHPPLIB		:=	/usr/ccs/bin/ld -G
  SHLIBOPTS	:=
 else
- ifeq ($(os),sunos)
-  MKSHLIB		:=	/usr/ccs/bin/ld -G
-  MKSHPPLIB		:=	/usr/ccs/bin/ld -G
-  SHLIBOPTS	:=
- else
-  MKSHLIB		:=	$(CC)
-  MKSHPPLIB		:=	$(CXX)
- endif
+ MKSHLIB		:=	$(CC)
+ MKSHPPLIB		:=	$(CXX)
 endif
 
 CFLAGS	+=	$(JS_CFLAGS) $(CRYPT_CFLAGS) $(UIFC-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(SMBLIB_CFLAGS) $(CIOLIB-MT_CFLAGS) $(ENCODE_CFLAGS) $(HASH_CFLAGS)
@@ -167,6 +164,9 @@ OBJS	+= $(MTOBJODIR)/comio_nix$(OFILE)
 JSDOOR_OBJS	+= $(MTOBJODIR)/comio_nix$(OFILE)
 endif
 LDFLAGS +=	$(UIFC-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(SMBLIB_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(JS_LDFLAGS) $(CRYPT_LDFLAGS) $(SFTP-MT_LDFLAGS)
+ifneq ($(os),darwin)
+ SBBS_EXTRA_LDFLAGS += -Wl,--version-script=sbbs.version
+endif
 
 # Synchronet BBS library Link Rule
 $(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(OBJS) $(LIBS) $(EXTRA_SBBS_DEPENDS) $(ENCODE_LIB) $(HASH_LIB) $(SFTPLIB-MT) | $(LIBODIR)

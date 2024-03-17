@@ -64,7 +64,6 @@ include:
       platform: 'x86'
       tagname: 'macOS'
       cross_platform: 'yes'
-      no_javascript: 'yes'
 
 smoketest-jsexec-linux:
   tags: [Linux]
