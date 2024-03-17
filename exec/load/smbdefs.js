@@ -1,6 +1,7 @@
 // $Id: smbdefs.js,v 1.11 2019/08/26 08:57:14 rswindell Exp $
-// Synchronet Message Base constant definitions (from smbdefs.h and smblib.h)								
-								
+// Synchronet Message Base constant definitions (from smbdefs.h and smblib.h)
+// @format.tab-size 4
+
 /* Values for MsgBase.status (SMBLIB function return values) */
 const SMB_SUCCESS			= 0;		// Successful result/return code
 const SMB_DUPE_MSG			= 1;		// Duplicate message detected by smb_addcrc()
@@ -29,7 +30,7 @@ const SMB_ERR_MEM			= -300;		// Memory allocation error
 const SMB_EMAIL				= 1;		// User numbers stored in Indexes
 const SMB_HYPERALLOC		= 2;		// No allocation (also storage value for smb_addmsghdr)
 const SMB_NOHASH			= 4;		// Do not calculate or store hashes
-									
+
 /* Message Types */
 const MSG_TYPE_NORMAL		= 0;		// Classic message (for reading)
 const MSG_TYPE_POLL			= 1;		// A poll question 
@@ -69,7 +70,7 @@ const MSG_RECEIPTREQ		= (1<<4);	// Return receipt requested
 const MSG_CONFIRMREQ		= (1<<5);	// Confirmation receipt requested
 const MSG_NODISP			= (1<<6);	// Msg may not be displayed to user
 const MSG_HFIELDS_UTF8		= (1<<13);	// Message header fields are UTF-8 encoded
-const POLL_CLOSED			= (1<<24);	// Closed to voting 
+const POLL_CLOSED			= (1<<24);	// Closed to voting
 const POLL_RESULTS_MASK		= (3<<30);	// 4 possible values:
 const POLL_RESULTS_SECRET	= (3<<30);	// No one but pollster can see results
 const POLL_RESULTS_CLOSED	= (2<<30);	// No one but pollster can see results until poll is closed
@@ -89,7 +90,7 @@ const MSG_CRASH				= (1<<6);	// Crash
 const MSG_IMMEDIATE			= (1<<7);	// Send Msg now, ignore restrictions
 const MSG_DIRECT			= (1<<8);	// Send directly to destination
 
-/* Net types */										
+/* Net types */
 const NET_NONE				= 0;		// Local message
 const NET_UNKNOWN			= 1;		// Networked, but unknown type
 const NET_FIDO				= 2;		// FidoNet
@@ -99,7 +100,7 @@ const NET_INTERNET			= 5;		// NNTP
 const NET_WWIV				= 6;		// WWIV
 const NET_MHS				= 7;		// MHS
 
-/* Agent types */										
+/* Agent types */
 const AGENT_PERSON			= 0;		// Human
 const AGENT_PROCESS			= 1;		// Unknown process type
 const AGENT_SMBUTIL			= 2;		// Imported via Synchronet SMBUTIL
@@ -113,8 +114,8 @@ const SMB_PRIORITY_NORMAL		= 3;
 const SMB_PRIORITY_LOW			= 4;
 const SMB_PRIORITY_LOWEST		= 5;
 
-/* Message hfield types */										
-const SMB_SUMMARY			= 0x61; 	// Not currently used for messages								
+/* Message hfield types */
+const SMB_SUMMARY			= 0x61; 	// Not currently used for messages
 const SMB_COMMENT 			= 0x62; 	// Appear in message text, before body
 const SMB_GROUP 			= 0x64;
 const SMB_TAGS				= 0x69; 	// Tags (ala hashtags) for a message
