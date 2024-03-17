@@ -111,7 +111,7 @@ else
  ifeq ($(os), darwin)
   CFLAGS += -I/usr/local/opt/libarchive/include
   CFLAGS += -L/usr/local/opt/libarchive/lib
- else
+ endif
  FILE_LIBS	= -larchive
 endif
 
