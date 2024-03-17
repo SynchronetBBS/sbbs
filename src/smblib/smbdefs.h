@@ -314,14 +314,14 @@
 #define POLL_RESULTS_SHIFT	30
 
 										/* Message network attributes */
-#define MSG_LOCAL			(1<<0)		/* Msg created locally */
-#define MSG_INTRANSIT		(1<<1)		/* Msg is in-transit */
-#define MSG_SENT			(1<<2)		/* Sent to remote */
-#define MSG_KILLSENT		(1<<3)		/* Kill when sent */
-#define MSG_HOLD			(1<<5)		/* Hold for pick-up */
-#define MSG_CRASH			(1<<6)		/* Crash */
-#define MSG_IMMEDIATE		(1<<7)		/* Send Msg now, ignore restrictions */
-#define MSG_DIRECT			(1<<8)		/* Send directly to destination */
+#define NETMSG_LOCAL		(1<<0)		/* Msg created locally */
+#define NETMSG_INTRANSIT	(1<<1)		/* Msg is in-transit */
+#define NETMSG_SENT			(1<<2)		/* Sent to remote */
+#define NETMSG_KILLSENT		(1<<3)		/* Kill when sent */
+#define NETMSG_HOLD			(1<<5)		/* Hold for pick-up */
+#define NETMSG_CRASH		(1<<6)		/* Crash */
+#define NETMSG_IMMEDIATE	(1<<7)		/* Send Msg now, ignore restrictions */
+#define NETMSG_DIRECT		(1<<8)		/* Send directly to destination */
 
 enum smb_net_type {
      NET_NONE				/* Local message */

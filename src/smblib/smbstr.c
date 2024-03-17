@@ -488,17 +488,19 @@ char* smb_auxattrstr(int32_t attr, char* outstr, size_t maxlen)
 	return outstr;
 }
 
+#define NETMSG_ATTR_CHECK(a, f) if(a&NETMSG_##f)	sprintf(str + strlen(str), "%s%s", str[0] == 0 ? "" : ", ", #f);
+
 char* smb_netattrstr(int32_t attr, char* outstr, size_t maxlen)
 {
 	char str[128] = "";
-	MSG_ATTR_CHECK(attr, LOCAL);
-	MSG_ATTR_CHECK(attr, INTRANSIT);
-	MSG_ATTR_CHECK(attr, SENT);
-	MSG_ATTR_CHECK(attr, KILLSENT);
-	MSG_ATTR_CHECK(attr, HOLD);
-	MSG_ATTR_CHECK(attr, CRASH);
-	MSG_ATTR_CHECK(attr, IMMEDIATE);
-	MSG_ATTR_CHECK(attr, DIRECT);
+	NETMSG_ATTR_CHECK(attr, LOCAL);
+	NETMSG_ATTR_CHECK(attr, INTRANSIT);
+	NETMSG_ATTR_CHECK(attr, SENT);
+	NETMSG_ATTR_CHECK(attr, KILLSENT);
+	NETMSG_ATTR_CHECK(attr, HOLD);
+	NETMSG_ATTR_CHECK(attr, CRASH);
+	NETMSG_ATTR_CHECK(attr, IMMEDIATE);
+	NETMSG_ATTR_CHECK(attr, DIRECT);
 	strncpy(outstr, str, maxlen);
 	return outstr;
 }

@@ -186,9 +186,9 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	smb_faddrtoa(&cfg.faddr[i], str);
 	bprintf(text[NetMailing], to, smb_faddrtoa(&dest_addr,tmp), from, str);
 
-	if(cfg.netmail_misc&NMAIL_CRASH) msg.hdr.netattr |= MSG_CRASH;
-	if(cfg.netmail_misc&NMAIL_HOLD)  msg.hdr.netattr |= MSG_HOLD;
-	if(cfg.netmail_misc&NMAIL_KILL)  msg.hdr.netattr |= MSG_KILLSENT;
+	if(cfg.netmail_misc&NMAIL_CRASH) msg.hdr.netattr |= NETMSG_CRASH;
+	if(cfg.netmail_misc&NMAIL_HOLD)  msg.hdr.netattr |= NETMSG_HOLD;
+	if(cfg.netmail_misc&NMAIL_KILL)  msg.hdr.netattr |= NETMSG_KILLSENT;
 	if(mode&WM_FILE) msg.hdr.auxattr |= (MSG_FILEATTACH | MSG_KILLFILE); 
 
 	if(remsg != NULL && resmb != NULL && !(mode&WM_QUOTE)) {
@@ -248,14 +248,14 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 		} 
 	}
 
-	msg.hdr.netattr |= MSG_LOCAL; 
+	msg.hdr.netattr |= NETMSG_LOCAL; 
 	lprintf(LOG_DEBUG, "NetMail subject: %s", subj);
 	p=subj;
 	if((SYSOP || useron.exempt&FLAG('F'))
 		&& !strnicmp(p,"CR:",3)) {     /* Crash over-ride by sysop */
 		p+=3;				/* skip CR: */
 		SKIP_WHITESPACE(p);
-		msg.hdr.netattr |= MSG_CRASH; 
+		msg.hdr.netattr |= NETMSG_CRASH; 
 	}
 
 	if((SYSOP || useron.exempt&FLAG('F'))
@@ -321,7 +321,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	editor_info_to_msg(&msg, editor, charset);
 
 	if(cfg.netmail_misc&NMAIL_DIRECT)
-		msg.hdr.netattr |= MSG_DIRECT;
+		msg.hdr.netattr |= NETMSG_DIRECT;
 
 	smb_t smb;
 	memset(&smb, 0, sizeof(smb));
@@ -1136,9 +1136,9 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
 	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
-	msg.hdr.netattr |= MSG_LOCAL;
+	msg.hdr.netattr |= NETMSG_LOCAL;
 	if(cfg.inetmail_misc&NMAIL_KILL)
-		msg.hdr.netattr |= MSG_KILLSENT;
+		msg.hdr.netattr |= NETMSG_KILLSENT;
 
 	if(rcpt_count > 1)
 		smb_hfield_str(&msg, RECIPIENTLIST, to_list);

@@ -2040,14 +2040,14 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 	if(!strcmp(sp,"MSG_NETATTR") && current_msg!=NULL) {
 		safe_snprintf(str,maxlen,"%s%s%s%s%s%s%s%s"
-			,current_msg->hdr.netattr&MSG_LOCAL			? "Local  "			:nulstr
-			,current_msg->hdr.netattr&MSG_INTRANSIT		? "InTransit  "     :nulstr
-			,current_msg->hdr.netattr&MSG_SENT			? "Sent  "			:nulstr
-			,current_msg->hdr.netattr&MSG_KILLSENT		? "KillSent  "      :nulstr
-			,current_msg->hdr.netattr&MSG_HOLD			? "Hold  "			:nulstr
-			,current_msg->hdr.netattr&MSG_CRASH			? "Crash  "			:nulstr
-			,current_msg->hdr.netattr&MSG_IMMEDIATE		? "Immediate  "		:nulstr
-			,current_msg->hdr.netattr&MSG_DIRECT		? "Direct  "		:nulstr
+			,current_msg->hdr.netattr&NETMSG_LOCAL			? "Local  "			:nulstr
+			,current_msg->hdr.netattr&NETMSG_INTRANSIT		? "InTransit  "     :nulstr
+			,current_msg->hdr.netattr&NETMSG_SENT			? "Sent  "			:nulstr
+			,current_msg->hdr.netattr&NETMSG_KILLSENT		? "KillSent  "      :nulstr
+			,current_msg->hdr.netattr&NETMSG_HOLD			? "Hold  "			:nulstr
+			,current_msg->hdr.netattr&NETMSG_CRASH			? "Crash  "			:nulstr
+			,current_msg->hdr.netattr&NETMSG_IMMEDIATE		? "Immediate  "		:nulstr
+			,current_msg->hdr.netattr&NETMSG_DIRECT			? "Direct  "		:nulstr
 			);
 		return(str);
 	}

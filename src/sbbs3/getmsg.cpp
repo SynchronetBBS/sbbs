@@ -113,14 +113,14 @@ void sbbs_t::show_msgattr(const smbmsg_t* msg)
 
 	char netattr_str[64];
 	safe_snprintf(netattr_str, sizeof(netattr_str), "%s%s%s%s%s%s%s%s"
-		,netattr&MSG_LOCAL		? "Local  "			:nulstr
-		,netattr&MSG_INTRANSIT	? "InTransit  "     :nulstr
-		,netattr&MSG_SENT		? "Sent  "			:nulstr
-		,netattr&MSG_KILLSENT	? "KillSent  "      :nulstr
-		,netattr&MSG_HOLD		? "Hold  "			:nulstr
-		,netattr&MSG_CRASH		? "Crash  "			:nulstr
-		,netattr&MSG_IMMEDIATE	? "Immediate  "		:nulstr
-		,netattr&MSG_DIRECT		? "Direct  "		:nulstr
+		,netattr&NETMSG_LOCAL		? "Local  "			:nulstr
+		,netattr&NETMSG_INTRANSIT	? "InTransit  "     :nulstr
+		,netattr&NETMSG_SENT		? "Sent  "			:nulstr
+		,netattr&NETMSG_KILLSENT	? "KillSent  "      :nulstr
+		,netattr&NETMSG_HOLD		? "Hold  "			:nulstr
+		,netattr&NETMSG_CRASH		? "Crash  "			:nulstr
+		,netattr&NETMSG_IMMEDIATE	? "Immediate  "		:nulstr
+		,netattr&NETMSG_DIRECT		? "Direct  "		:nulstr
 		);
 
 	bprintf(text[MsgAttr], attr_str, auxattr_str, netattr_str

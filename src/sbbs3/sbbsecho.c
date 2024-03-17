@@ -1107,7 +1107,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 
 	hdr.attr=(FIDO_PRIVATE|FIDO_KILLSENT|FIDO_LOCAL);
 	if(msg != NULL) {
-		if(msg->hdr.netattr&MSG_CRASH)
+		if(msg->hdr.netattr&NETMSG_CRASH)
 			hdr.attr|=FIDO_CRASH;
 		if(msg->hdr.auxattr&MSG_FILEATTACH)
 			hdr.attr|=FIDO_FILE;
@@ -3260,7 +3260,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 	if(hdr->attr&FIDO_FILE)
 		msg.hdr.auxattr|=MSG_FILEATTACH;
 	if(hdr->attr&FIDO_INTRANS)
-		msg.hdr.netattr|=MSG_INTRANSIT;
+		msg.hdr.netattr|=NETMSG_INTRANSIT;
 
 	msg.hdr.when_imported.time=now;
 	msg.hdr.when_imported.zone=sys_timezone(&scfg);
@@ -5284,11 +5284,11 @@ int export_netmail(void)
 
 		printf("NetMail msg #%u from %s to %s (%s): "
 			,msg.hdr.number, msg.from, msg.to, smb_faddrtoa(msg.to_net.addr,NULL));
-		if(msg.hdr.netattr&MSG_INTRANSIT) {
+		if(msg.hdr.netattr&NETMSG_INTRANSIT) {
 			printf("in-transit\n");
 			continue;
 		}
-		if((msg.hdr.netattr&MSG_SENT) && !cfg.ignore_netmail_sent_attr) {
+		if((msg.hdr.netattr&NETMSG_SENT) && !cfg.ignore_netmail_sent_attr) {
 			printf("already sent\n");
 			continue;
 		}
@@ -5335,9 +5335,9 @@ int export_netmail(void)
 		create_netmail(msg.to, &msg, msg_subj, txt, /* dest: */*(fidoaddr_t*)msg.to_net.addr, /* src: */NULL);
 		FREE_AND_NULL(txt);
 
-		msg.hdr.netattr |= MSG_SENT;
-		msg.hdr.netattr &= ~MSG_INTRANSIT;
-		if(cfg.delete_netmail || (msg.hdr.netattr&MSG_KILLSENT) || msg.from_ext == NULL) {
+		msg.hdr.netattr |= NETMSG_SENT;
+		msg.hdr.netattr &= ~NETMSG_INTRANSIT;
+		if(cfg.delete_netmail || (msg.hdr.netattr&NETMSG_KILLSENT) || msg.from_ext == NULL) {
 			/* Delete exported netmail */
 			msg.hdr.attr |= MSG_DELETE;
 			if((i = smb_updatemsg(email, &msg)) != SMB_SUCCESS)

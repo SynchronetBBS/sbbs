@@ -640,7 +640,7 @@ int main(int argc, char **argv)
 							,smb_name_crc(msg.to),msg.idx.to);
 					tocrc++;
 				}
-				if(msg.hdr.netattr&MSG_INTRANSIT) {
+				if(msg.hdr.netattr&NETMSG_INTRANSIT) {
 					fprintf(stderr,"%sIn transit\n",beep);
 					msgerr=TRUE;
 					if(extinfo)

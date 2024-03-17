@@ -270,9 +270,9 @@ int fixsmb(char* sub)
 			msg.idx_offset=n;
 			if(msg.hdr.number > highest)
 				highest = msg.hdr.number;
-			if(msg.hdr.netattr&MSG_INTRANSIT) {
+			if(msg.hdr.netattr&NETMSG_INTRANSIT) {
 				printf("Removing 'in transit' attribute\n");
-				msg.hdr.netattr&=~MSG_INTRANSIT;
+				msg.hdr.netattr&=~NETMSG_INTRANSIT;
 			}
 			if((i=smb_putmsg(&smb,&msg))!=0) {
 				printf("\nsmb_putmsg returned %d: %s\n",i,smb.last_error);

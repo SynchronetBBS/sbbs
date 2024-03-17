@@ -3799,7 +3799,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				i=savemsg(&scfg, &smb, &msg, &client, server_host_name(), msgbuf, /* remsg: */NULL);
 				if(smb_countattachments(&smb, &msg, msgbuf) > 0)
 					msg.hdr.auxattr |= MSG_MIMEATTACH;
-				msg.hdr.netattr |= MSG_KILLSENT;
+				msg.hdr.netattr |= NETMSG_KILLSENT;
 				free(msgbuf);
 				if(i!=SMB_SUCCESS) {
 					smb_close(&smb);
@@ -3872,7 +3872,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 					smb_hfield_add_str(&newmsg, SMTPRECEIVED, hdrfield, /* insert: */TRUE);
 
 					if(nettype == NET_FIDO) {
-						newmsg.hdr.netattr |= MSG_LOCAL | MSG_KILLSENT;
+						newmsg.hdr.netattr |= NETMSG_LOCAL | NETMSG_KILLSENT;
 						char* tp = strchr(rcpt_name, '@');
 						if(tp != NULL)
 							*tp = 0;
@@ -5168,7 +5168,7 @@ static int remove_msg_intransit(smb_t* smb, smbmsg_t* msg)
 			,i, smb->last_error, msg->idx.number);
 		return(i);
 	}
-	msg->hdr.netattr&=~MSG_INTRANSIT;
+	msg->hdr.netattr&=~NETMSG_INTRANSIT;
 	i=smb_putmsghdr(smb,msg);
 	smb_unlockmsghdr(smb,msg);
 
@@ -5549,7 +5549,7 @@ static void sendmail_thread(void* arg)
 				continue;
 			}
 			if(msg.hdr.attr&MSG_DELETE || msg.to_net.type!=NET_INTERNET || msg.to_net.addr==NULL
-				|| (msg.hdr.netattr&MSG_SENT)) {
+				|| (msg.hdr.netattr&NETMSG_SENT)) {
 				smb_unlockmsghdr(&smb,&msg);
 				continue;
 			}
@@ -5572,13 +5572,13 @@ static void sendmail_thread(void* arg)
 			else
 				safe_snprintf(rcpt_info, sizeof(rcpt_info), "'%s' %s", msg.to, angle_bracket(tmp, sizeof(tmp), (char*)msg.to_net.addr));
 
-			if(!(startup->options&MAIL_OPT_SEND_INTRANSIT) && msg.hdr.netattr&MSG_INTRANSIT) {
+			if(!(startup->options&MAIL_OPT_SEND_INTRANSIT) && msg.hdr.netattr&NETMSG_INTRANSIT) {
 				smb_unlockmsghdr(&smb,&msg);
 				lprintf(LOG_NOTICE,"0000 SEND Message #%u from %s to %s - in transit"
 					,msg.hdr.number, sender_info, rcpt_info);
 				continue;
 			}
-			msg.hdr.netattr|=MSG_INTRANSIT;	/* Prevent another sendmail thread from sending this msg */
+			msg.hdr.netattr|=NETMSG_INTRANSIT;	/* Prevent another sendmail thread from sending this msg */
 			smb_putmsghdr(&smb,&msg);
 			smb_unlockmsghdr(&smb,&msg);
 
@@ -5819,10 +5819,10 @@ static void sendmail_thread(void* arg)
 				,sock, prot, msg.hdr.number, bytes, lines, sender_info, msg.to, toaddr);
 
 			/* Now lets mark this message for deletion without corrupting the index */
-			if((msg.hdr.netattr & MSG_KILLSENT) || msg.from_ext == NULL)
+			if((msg.hdr.netattr & NETMSG_KILLSENT) || msg.from_ext == NULL)
 				msg.hdr.attr|=MSG_DELETE;
-			msg.hdr.netattr|=MSG_SENT;
-			msg.hdr.netattr&=~MSG_INTRANSIT;
+			msg.hdr.netattr|=NETMSG_SENT;
+			msg.hdr.netattr&=~NETMSG_INTRANSIT;
 			if((i=smb_updatemsg(&smb,&msg))!=SMB_SUCCESS)
 				lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) deleting message #%u"
 					,sock, prot, i, smb.last_error, msg.hdr.number);
