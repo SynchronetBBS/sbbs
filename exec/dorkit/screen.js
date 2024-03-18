@@ -421,6 +421,8 @@ Screen.prototype.print=function(str) {
 							}
 						}
 						break;
+					case 'n':	// Device status report... no action from this object.
+						break;
 					case 's':
 						this.saved_pos.x = this.pos.x;
 						this.saved_pos.y = this.pos.y;
@@ -439,7 +441,6 @@ Screen.prototype.print=function(str) {
 						//if (this.touched.length > 0 || this.full)
 						break;
 					// Still TODO...
-					//case 'n':	// Device status report... no action from this object.
 					//case 'Z':	// Back tabulate
 					//case 'S':	// Scroll up
 					//case 'T':	// Scroll down
