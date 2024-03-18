@@ -535,6 +535,11 @@ $(MTOBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS) | $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++11 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) -o $@ -c $<
 
+# Implicit MT Obj-C Compile Rule
+$(MTOBJODIR)/%$(OFILE) : %.m $(BUILD_DEPENDS) | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) -ObjC $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -o $@ -c $<
+
 depend:
 	$(QUIET)$(DELETE) $(OBJODIR)/.depend
 	$(QUIET)$(DELETE) $(MTOBJODIR)/.depend

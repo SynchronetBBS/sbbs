@@ -3,7 +3,7 @@
 /* $Id: syncterm.c,v 1.261 2020/06/27 00:04:50 deuce Exp $ */
 
 #if defined(__APPLE__) && defined(__MACH__)
- #include <CoreServices/CoreServices.h> // FSFindFolder() and friends
+ #include "DarwinWrappers.h"
 #endif
 
 #define NOCRYPT                         /* Stop windows.h from loading wincrypt.h */
@@ -972,67 +972,6 @@ parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults
 }
 
 #if defined(__APPLE__) && defined(__MACH__)
-
-static char *
-get_OSX_filename(char *fn, int fnlen, int type, int shared)
-{
-	FSRef ref;
-
-        /* First, get the path */
-	switch (type) {
-		case SYNCTERM_PATH_INI:
-		case SYNCTERM_PATH_LIST:
-		case SYNCTERM_PATH_KEYS:
-			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kPreferencesFolderType, kCreateFolder,
-			    &ref) != noErr)
-				return NULL;
-			if (FSRefMakePath(&ref, (unsigned char *)fn, fnlen) != noErr)
-				return NULL;
-			backslash(fn);
-			strncat(fn, "SyncTERM", fnlen - strlen(fn) - 1);
-			backslash(fn);
-			if (!isdir(fn)) {
-				if (MKDIR(fn))
-					return NULL;
-			}
-			break;
-
-		case SYNCTERM_DEFAULT_TRANSFER_PATH:
-                        /* I'd love to use the "right" setting here, but don't know how */
-			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kDownloadsFolderType, kCreateFolder,
-			    &ref) != noErr)
-				return NULL;
-			if (FSRefMakePath(&ref, (unsigned char *)fn, fnlen) != noErr)
-				return NULL;
-			backslash(fn);
-			if (!isdir(fn)) {
-				if (MKDIR(fn))
-					return NULL;
-			}
-			return fn;
-		case SYNCTERM_PATH_CACHE:
-			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kCachedDataFolderType, kCreateFolder,
-			    &ref) != noErr)
-				return NULL;
-			if (FSRefMakePath(&ref, (unsigned char *)fn, fnlen) != noErr)
-				return NULL;
-			backslash(fn);
-			return fn;
-	}
-
-	switch (type) {
-		case SYNCTERM_PATH_INI:
-			strncat(fn, "SyncTERM.ini", fnlen - strlen(fn) - 1);
-			return fn;
-		case SYNCTERM_PATH_LIST:
-			strncat(fn, "SyncTERM.lst", fnlen - strlen(fn) - 1);
-			return fn;
-		case SYNCTERM_PATH_KEYS:
-			strncat(fn, "SyncTERM.ssh", fnlen - strlen(fn) - 1);
-			return fn;
-	}
-	return NULL;
-}
 
 #elif defined(_WIN32) /* if defined(__APPLE__) && defined(__MACH__) */
 

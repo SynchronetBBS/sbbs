@@ -35,7 +35,8 @@ else
 endif
 
 ifeq ($(os),darwin)
- EXTRA_LIBS += -framework CoreServices
+ OBJS += $(MTOBJODIR)$(DIRSEP)DarwinWrappers$(OFILE)
+ EXTRA_LIBS += -framework Foundation
  STATIC_CRYPTLIB ?= 1
 endif
 
