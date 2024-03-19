@@ -256,7 +256,8 @@ typedef struct  {
 	char			host_ip[INET6_ADDRSTRLEN];
 	char			host_name[128];	/* Resolved remote host */
 	int				http_ver;       /* Request HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
-	bool			finished;		/* Do not accept any more imput from client */
+	bool			send_failed;
+	bool			finished;		/* Do not accept any more input from client */
 	enum parsed_vpath parsed_vpath; /* file area/base access */
 	int				libnum;
 	file_t			file;
@@ -1492,8 +1493,14 @@ static off_t sock_sendfile(http_session_t *session,char *path, off_t start, off_
 	char	buf[OUTBUF_LEN];		/* Input buffer */
 	uint64_t remain;
 
-	if(startup->options&WEB_OPT_DEBUG_TX)
-		lprintf(LOG_DEBUG,"%04d %s [%s] Sending %s",session->socket, session->client.protocol, session->host_ip, path);
+	if(startup->options&WEB_OPT_DEBUG_TX) {
+		if(start || end)
+			lprintf(LOG_DEBUG,"%04d %s [%s] Sending bytes %" PRIuOFF "-%" PRIuOFF " of %s"
+				,session->socket, session->client.protocol, session->host_ip, start, end, path);
+		else
+			lprintf(LOG_DEBUG,"%04d %s [%s] Sending %s"
+				,session->socket, session->client.protocol, session->host_ip, path);
+	}
 	if((file=open(path,O_RDONLY|O_BINARY))==-1)
 		lprintf(LOG_WARNING,"%04d !ERROR %d opening %s",session->socket,errno,path);
 	else {
@@ -6225,23 +6232,38 @@ static void respond(http_session_t * session)
 	if(session->req.send_content && content_length > 0)  {
 		off_t snt=0;
 		time_t start = time(NULL);
-		lprintf(LOG_INFO,"%04d %s [%s] Sending file: %s (%"PRIdOFF" bytes)"
-			,session->socket, session->client.protocol, session->client.addr, session->req.physical_path, content_length);
+		if(session->req.range_start != 0 || (session->req.range_end && session->req.range_end != (content_length - 1)))
+			lprintf(LOG_INFO,"%04d %s [%s] Sending file: %s (range %"PRIdOFF"-%"PRIdOFF" of %"PRIdOFF" bytes)"
+				,session->socket, session->client.protocol, session->client.addr, session->req.physical_path
+				,session->req.range_start,session->req.range_end, content_length);
+		else
+			lprintf(LOG_INFO,"%04d %s [%s] Sending file: %s (%"PRIdOFF" bytes)"
+				,session->socket, session->client.protocol, session->client.addr, session->req.physical_path, content_length);
 		snt=sock_sendfile(session,session->req.physical_path,session->req.range_start,session->req.range_end);
-		if(session->req.ld!=NULL) {
-			if(snt<0)
-				snt=0;
-			session->req.ld->size=snt;
-		}
-		if(snt>0) {
-			time_t e = time(NULL) - start;
-			if(e < 1)
-				e = 1;
-			lprintf(LOG_INFO, "%04d %s [%s] Sent file: %s (%"PRIdOFF" bytes, %ld cps)"
-				,session->socket, session->client.protocol, session->client.addr, session->req.physical_path, snt, (long)(snt / e));
-			if(session->parsed_vpath == PARSED_VPATH_FULL && session->file.name != NULL) {
-				user_downloaded_file(&scfg, &session->user, &session->client, session->file.dir, session->file.name, snt);
-				mqtt_file_download(&mqtt, &session->user, session->file.dir, session->file.name, snt, &session->client);
+		if(!session->send_failed) {
+			if(session->req.ld!=NULL) {
+				if(snt<0)
+					snt=0;
+				session->req.ld->size=snt;
+			}
+			if(snt>0) {
+				char cps[32] = "";
+				time_t e = time(NULL) - start;
+				if(e > 1)
+					snprintf(cps, sizeof cps, ", %ld cps", (long)(snt / e));
+				if(snt == content_length)
+					lprintf(LOG_INFO, "%04d %s [%s] Sent file: %s (%"PRIdOFF" bytes%s)"
+						,session->socket, session->client.protocol, session->client.addr
+						,session->req.physical_path, snt, cps);
+				else
+					lprintf(LOG_INFO, "%04d %s [%s] Sent %"PRIdOFF" bytes%s (offset %"PRIdOFF"-%"PRIdOFF") of file: %s (%"PRIdOFF" bytes)"
+						,session->socket, session->client.protocol, session->client.addr
+						,snt, cps, session->req.range_start, session->req.range_end
+						,session->req.physical_path, content_length);
+				if(session->parsed_vpath == PARSED_VPATH_FULL && session->file.name != NULL) {
+					user_downloaded_file(&scfg, &session->user, &session->client, session->file.dir, session->file.name, snt);
+					mqtt_file_download(&mqtt, &session->user, session->file.dir, session->file.name, snt, &session->client);
+				}
 			}
 		}
 	}
@@ -6428,7 +6450,6 @@ void http_output_thread(void *arg)
 	char	buf[OUTBUF_LEN+12];						/* *MUST* be large enough to hold the buffer,
 														the size of the buffer in hex, and four extra bytes. */
 	char	*bufdata;
-	bool	failed=false;
 	int		len;
 	unsigned avail;
 	int		chunked;
@@ -6547,8 +6568,8 @@ void http_output_thread(void *arg)
 			len+=2;
 		}
 
-		if(!failed)
-			sess_sendbuf(session, buf, len, &failed);
+		if(!session->send_failed)
+			sess_sendbuf(session, buf, len, &session->send_failed);
 		pthread_mutex_unlock(&session->outbuf_write);
     }
 	thread_down();
