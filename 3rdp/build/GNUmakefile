@@ -34,7 +34,7 @@ ifneq ($(os),linux)
  endif
 endif
 ifeq ($(os),darwin)
- JS_CONFIGURE_ARGS += '--enable-macos-target=12.0'
+ JS_CONFIGURE_ARGS += '--enable-macos-target=${MIN_MAC_OSX_VERSION}'
 endif
 # Blacklist some machines...
 
@@ -167,6 +167,7 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)/dist/cryptlib.zip $(3RDP_ROOT)/build/cl-fix-test
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-channel-select-both.patch
 	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-allow-none-auth-svr.patch
 	$(QUIET)perl -pi.bak -e 's/^(#define CRYPTLIB_VERSION.*)$$/"$$1\n#define CRYPTLIB_PATCHES \"" . (chomp($$val = `cat cl-*.patch | if (which md5sum > \/dev\/null 2>&1); then md5sum; else md5; fi`), $$val) . "\""/e' $(CRYPT_SRC)/cryptlib.h
+	$(QUIET)sed -E -I orig 's/%%MIN_MAC_OSX_VERSION%%/${MIN_MAC_OSX_VERSION}/g' $(CRYPT_SRC)/tools/ccopts.sh
 ifeq ($(os),win32)
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make directories
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make toolscripts
