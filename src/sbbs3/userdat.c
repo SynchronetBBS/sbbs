@@ -2899,7 +2899,7 @@ bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 					SAFEPRINTF2(username,"%s [%s]", alias, client->addr);
 			} else
 				SAFECOPY(username, alias);
-			if(strcmp(cfg->dir[dirnum]->code, "TEMP") == 0 || bytes < f.size)
+			if(strcmp(cfg->dir[dirnum]->code, "TEMP") == 0 || bytes < getfilesize(cfg, &f))
 				SAFECOPY(prefix, cfg->text[Partially]);
 			if(client != NULL) {
 				SAFECAT(prefix, client->protocol);
