@@ -34,7 +34,7 @@ ifneq ($(os),linux)
  endif
 endif
 ifeq ($(os),darwin)
- JS_CONFIGURE_ARGS += '--enable-macos-target=10.11'
+ JS_CONFIGURE_ARGS += '--enable-macos-target=12.0'
 endif
 # Blacklist some machines...
 
