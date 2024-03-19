@@ -2018,30 +2018,39 @@ struct main_args {
 	int argc;
 	char **argv;
 	int ret;
-	int no_sdl;
+	enum {
+		SDL_NOT_STARTED,
+		SDL_STARTED,
+		SDL_ENDED
+	} sdl_state;
 };
 
 int CIOLIB_main(int, char **);
 void main_stub(void *argptr)
 {
+	bool exit_sdl = false;
 	struct main_args *args = (struct main_args *)argptr;
 	args->ret = CIOLIB_main(args->argc, args->argv);
-	args->no_sdl = 1;
+	if (args->sdl_state == SDL_STARTED)
+		exit_sdl = true;
+	args->sdl_state = SDL_ENDED;
 	sem_post(&startsdl_sem);
-	exit_sdl_con();
+	if (exit_sdl)
+		exit_sdl_con();
 	sem_post(&main_sem);
 }
 
 int main(int argc, char **argv)
 {
-	struct main_args ma = {argc, argv, -1, 0};
+	struct main_args ma = {argc, argv, -1, SDL_NOT_STARTED};
 	sem_init(&startsdl_sem, 0, 0);
 	sem_init(&main_sem, 0, 0);
 	initsdl_ret = init_sdl_video();
 	_beginthread(main_stub, 0, &ma);
-	if (!ma.no_sdl) {
-		if (initsdl_ret != -1) {
-			sem_wait(&startsdl_sem);
+	if (initsdl_ret != -1) {
+		sem_wait(&startsdl_sem);
+		if (ma.sdl_state == SDL_NOT_STARTED) {
+			ma.sdl_state = SDL_STARTED;
 			sdl_video_event_thread(NULL);
 		}
 	}
