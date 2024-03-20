@@ -315,7 +315,7 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
-"$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]":
   extends:
     - .$[[ inputs.os ]]-build
   script:
@@ -350,6 +350,36 @@ spec:
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS GIT=NO all
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS jsdoor
   artifacts:
+    expire_in: 30 mins
+    name: "sbbs-build-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+      - "src/sbbs3/*.lib.release/*"
+      - "src/sbbs3/*/*.exe.release/*"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]"
+  rules:
+    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
+      when: never
+    - if: '"$[[ inputs.cross_platform ]]" == "yes"'
+      when: never
+    - !reference [.rules, rules]
+
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - echo Combining artifacts
+  artifacts:
     name: "sbbs-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/*.exe.release/*"
@@ -366,6 +396,7 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [scfg]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uedit]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [umonitor]"
