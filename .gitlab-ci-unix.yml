@@ -67,6 +67,7 @@ spec:
     name: "cryptlib-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "3rdp/*.*.*.release/cl"
+  needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]":
   extends:
@@ -81,6 +82,7 @@ spec:
     paths:
       - "src/xpdev/*.*.*.lib.release*"
       - "src/xpdev/*.*.*.obj.release*/*.o*"
+  needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]":
   extends:
@@ -95,6 +97,7 @@ spec:
     paths:
       - "src/encode/*.*.*.lib.release*"
       - "src/encode/*.*.*.obj.release*/*.o*"
+  needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]":
   extends:
@@ -109,6 +112,7 @@ spec:
     paths:
       - "src/hash/*.*.*.lib.release*"
       - "src/hash/*.*.*.obj.release*/*.o*"
+  needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]":
   extends:
@@ -123,6 +127,7 @@ spec:
     paths:
       - "src/conio/*.*.*.lib.release*"
       - "src/conio/*.*.*.obj.release*/*.o*"
+  needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]":
   extends:
@@ -137,6 +142,7 @@ spec:
     paths:
       - "src/sftp/*.*.*.lib.release*"
       - "src/sftp/*.*.*.obj.release*/*.o*"
+  needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]":
   extends:
@@ -151,6 +157,7 @@ spec:
     paths:
       - "src/smblib/*.*.*.lib.release*"
       - "src/smblib/*.*.*.obj.release*/*.o*"
+  needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]":
   extends:
@@ -165,6 +172,7 @@ spec:
     paths:
       - "src/uifc/*.*.*.lib.release*"
       - "src/uifc/*.*.*.obj.release*/*.o*"
+  needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]":
   extends:
@@ -178,6 +186,7 @@ spec:
     name: "gitinfo-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/git_*.h"
+  needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [scfg]":
   extends:
