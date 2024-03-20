@@ -1,0 +1,22 @@
+--- js-1.8.5/js/src/configure.orig	2024-03-20 12:55:27
++++ js-1.8.5/js/src/configure	2024-03-20 12:56:19
+@@ -16193,7 +16193,7 @@
+   # from our configure.
+   mkdir -p $_objdir/ctypes/libffi
+   old_cache_file=$cache_file
+-  cache_file=$_objdir/ctypes/libffi/config.cache
++  cache_file=$cache_file.ffi
+   old_config_files=$CONFIG_FILES
+   unset CONFIG_FILES
+   
+--- js-1.8.5/js/src/configure.in.orig	2024-03-20 12:58:07
++++ js-1.8.5/js/src/configure.in	2024-03-20 12:58:50
+@@ -6147,7 +6147,7 @@
+   # from our configure.
+   mkdir -p $_objdir/ctypes/libffi
+   old_cache_file=$cache_file
+-  cache_file=$_objdir/ctypes/libffi/config.cache
++  cache_file=$cache_file.ffi
+   old_config_files=$CONFIG_FILES
+   unset CONFIG_FILES
+   AC_OUTPUT_SUBDIRS(ctypes/libffi)

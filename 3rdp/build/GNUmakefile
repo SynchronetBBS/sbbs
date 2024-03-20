@@ -59,7 +59,7 @@ $(JS_SRC): | $(3RDPSRCDIR)
 $(JS_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(JS_IDIR)
 
-$(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)/build/js-configure.patch $(3RDP_ROOT)/build/js-configure.in.patch $(3RDP_ROOT)/build/imacro-asm-fix.patch $(3RDP_ROOT)/build/js-volatile-outside-functions.patch $(3RDP_ROOT)/build/js-Wno-misleading-indentation.patch $(3RDP_ROOT)/build/js-allow-python3.patch $(3RDP_ROOT)/build/js-no-rwx-pages.patch $(3RDP_ROOT)/build/js-disable-shell.patch $(3RDP_ROOT)/build/js-darwin-configure.patch | $(JS_SRC) $(JS_IDIR)
+$(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)/build/js-configure.patch $(3RDP_ROOT)/build/js-configure.in.patch $(3RDP_ROOT)/build/imacro-asm-fix.patch $(3RDP_ROOT)/build/js-volatile-outside-functions.patch $(3RDP_ROOT)/build/js-Wno-misleading-indentation.patch $(3RDP_ROOT)/build/js-allow-python3.patch $(3RDP_ROOT)/build/js-no-rwx-pages.patch $(3RDP_ROOT)/build/js-disable-shell.patch $(3RDP_ROOT)/build/js-darwin-configure.patch $(3RDP_ROOT)/build/js-keep-ffi-cache.patch | $(JS_SRC) $(JS_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(JS_SRC)/*
 	$(QUIET)tar -xzC $(JS_SRC) -f $(3RDPDISTDIR)/libmozjs.tgz
@@ -77,6 +77,7 @@ $(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/build/js_src_jsnativ
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-disable-shell.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-no-rwx-pages.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-darwin-configure.patch
+	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-keep-ffi-cache.patch
 	-$(QUIET)cd $(JS_SRC)/js-1.8.5/js/src && autoconf-2.13
 	$(QUIET)cd $(JS_SRC)/js-1.8.5/js/src && env $(JS_CONFIGURE_ENV) ./configure $(JS_CONFIGURE_ARGS)
 ifdef VERBOSE
