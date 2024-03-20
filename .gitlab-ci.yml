@@ -63,6 +63,7 @@ include:
       os: 'darwin'
       platform: 'x86'
       tagname: 'macOS'
+      gnu_make: 'make'
 
 smoketest-jsexec-linux:
   tags: [Linux]

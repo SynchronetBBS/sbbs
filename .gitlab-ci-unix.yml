@@ -17,6 +17,8 @@ spec:
       default: 'yes'
     has_gtk:
       default: 'no'
+    gnu_make:
+      default: 'gmake'
 ---
 
 ".$[[ inputs.os ]]":
@@ -38,7 +40,7 @@ spec:
   script:
     - cd 3rdp/build
     - touch depend
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS libmozjs
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS libmozjs
   artifacts:
     expire_in: 30 mins
     name: "spidermonkey-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -55,7 +57,7 @@ spec:
   script:
     - cd 3rdp/build
     - touch depend
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS cryptlib
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS cryptlib
   artifacts:
     expire_in: 30 mins
     name: "cryptlib-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -68,7 +70,7 @@ spec:
   script:
     - cd src/xpdev
     - touch depend
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     expire_in: 30 mins
     name: "xpdev-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -82,7 +84,7 @@ spec:
   script:
     - cd src/encode
     - touch depend
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     expire_in: 30 mins
     name: "encode-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -96,7 +98,7 @@ spec:
   script:
     - cd src/hash
     - touch depend
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     expire_in: 30 mins
     name: "hash-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -110,7 +112,7 @@ spec:
   script:
     - cd src/conio
     - touch depend
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     expire_in: 30 mins
     name: "ciolib-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -124,7 +126,7 @@ spec:
   script:
     - cd src/sftp
     - touch depend
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     expire_in: 30 mins
     name: "sftp-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -138,7 +140,7 @@ spec:
   script:
     - cd src/smblib
     - touch depend
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     expire_in: 30 mins
     name: "smblib-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -152,7 +154,7 @@ spec:
   script:
     - cd src/uifc
     - touch depend
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     expire_in: 30 mins
     name: "uifc-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -166,7 +168,7 @@ spec:
   script:
     - cd src/sbbs3
     - touch depend
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS gitinfo
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS gitinfo
   artifacts:
     expire_in: 30 mins
     name: "gitinfo-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -188,7 +190,7 @@ spec:
     - touch uifc
     - touch uifc-mt
     - touch cl
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS GIT=NO
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS GIT=NO
   artifacts:
     expire_in: 30 mins
     name: "scfg-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -219,7 +221,7 @@ spec:
     - touch ciolib-mt
     - touch uifc
     - touch uifc-mt
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS GIT=NO
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS GIT=NO
   artifacts:
     expire_in: 30 mins
     name: "uedit-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -253,7 +255,7 @@ spec:
     - touch ciolib-mt
     - touch uifc
     - touch uifc-mt
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     expire_in: 30 mins
     name: "umonitor-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -283,7 +285,7 @@ spec:
     - touch ciolib-mt
     - touch uifc
     - touch uifc-mt
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS GIT=NO standalone-utils
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS GIT=NO standalone-utils
   artifacts:
     expire_in: 30 mins
     name: "utils-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -332,8 +334,8 @@ spec:
     - touch umonitor/uifc-mt
     - touch umonitor/xpdev-mt
     - touch umonitor/smblib
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS GIT=NO all
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS jsdoor
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS GIT=NO all
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS jsdoor
   artifacts:
     name: "sbbs-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -377,7 +379,7 @@ spec:
     - touch uifc-mt
     - touch sftp-mt
     - touch cl
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     name: "syncterm-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -400,7 +402,7 @@ spec:
     - touch xpdev
     - touch xpdev-mt
     - touch ciolib-mt
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     name: "syncdraw-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -417,7 +419,7 @@ spec:
     - touch depend
     - touch xpdev
     - touch xpdev-mt
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     name: "sexpots-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -436,7 +438,7 @@ spec:
     - touch encode
     - touch hash
     - touch smblib
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     name: "gtkchat-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -462,7 +464,7 @@ spec:
     - touch smblib
     - touch cl
     - touch js
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     name: "gtkmonitor-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -489,7 +491,7 @@ spec:
     - touch smblib
     - touch cl
     - touch js
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     name: "gtkuseredit-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -515,7 +517,7 @@ spec:
     - touch xpdev-mt
     - touch smblib
     - touch cl
-    - gmake $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   artifacts:
     name: "gtkuserlist-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
