@@ -1,4 +1,12 @@
-5a6,8
-> echo "-DFIXED_SEED=0xFEEDC0DEBAADF00D"
-> exit
-> 
+--- tools/getseed.sh.orig	2024-03-20 14:20:36.856327000 -0400
++++ tools/getseed.sh	2024-03-20 14:22:46.445783000 -0400
+@@ -3,6 +3,9 @@
+ #
+ # Usage: getseed.sh osname
+ 
++echo "-DFIXED_SEED=0xFEEDC0DEBAADF00D"
++exit
++
+ OSNAME=""
+ IS64BIT=0
+ 
