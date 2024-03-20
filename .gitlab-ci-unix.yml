@@ -40,7 +40,7 @@ spec:
   script:
     - cd 3rdp/build
     - touch depend
-    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] JS_CONFIGURE_ARGS="--cache-file=smconfig.cache" $BUILD_ARGS libmozjs
+    - JS_CONFIGURE_ARGS="--cache-file=../../../../../build/smconfig.cache" $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS libmozjs
   artifacts:
     expire_in: 30 mins
     name: "spidermonkey-$[[ inputs.os ]]-$[[ inputs.platform ]]"
