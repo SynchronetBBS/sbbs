@@ -174,6 +174,9 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)/dist/cryptlib.zip $(3RDP_ROOT)/build/cl-fix-test
 	$(QUIET)perl -pi.bak -e 's/^(#define CRYPTLIB_VERSION.*)$$/"$$1\n#define CRYPTLIB_PATCHES \"" . (chomp($$val = `cat cl-*.patch | if (which md5sum > \/dev\/null 2>&1); then md5sum; else md5; fi`), $$val) . "\""/e' $(CRYPT_SRC)/cryptlib.h
 	@date
 	$(QUIET)sed -E -iorig 's/%%MIN_MAC_OSX_VERSION%%/${MIN_MAC_OSX_VERSION}/g' $(CRYPT_SRC)/tools/ccopts.sh
+ifdef FIXED_FIXED_SEED
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-fixed-fixed-seed.patch
+endif
 ifeq ($(os),win32)
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make directories
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make toolscripts

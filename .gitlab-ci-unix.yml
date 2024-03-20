@@ -61,7 +61,7 @@ spec:
   script:
     - cd 3rdp/build
     - touch depend
-    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS cryptlib
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] FIXED_FIXED_SEED=1 $BUILD_ARGS cryptlib
   artifacts:
     expire_in: 30 mins
     name: "cryptlib-$[[ inputs.os ]]-$[[ inputs.platform ]]"

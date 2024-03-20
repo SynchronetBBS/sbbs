@@ -1,0 +1,4 @@
+5a6,8
+> echo "-DFIXED_SEED=0xFEEDC0DEBAADF00D"
+> exit
+> 
