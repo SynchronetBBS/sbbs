@@ -1,0 +1,90 @@
+--- makefile.orig	2024-03-20 03:12:15.052088000 -0400
++++ makefile	2024-03-20 03:12:36.104348000 -0400
+@@ -414,19 +414,19 @@
+ 
+ default:
+ 	@$(MAKE) common-tasks
+-	@./tools/buildall.sh $(MAKE) $(CC) $(OSNAME) $(CFLAGS) $(BUILDOPTS)
++	@./tools/buildall.sh $(MAKE) "$(CC)" $(OSNAME) $(CFLAGS) $(BUILDOPTS)
+ 
+ shared:
+ 	@$(MAKE) common-tasks
+-	@./tools/buildall.sh shared $(MAKE) $(CC) $(OSNAME) $(CFLAGS) $(BUILDOPTS)
++	@./tools/buildall.sh shared $(MAKE) "$(CC)" $(OSNAME) $(CFLAGS) $(BUILDOPTS)
+ 
+ debug:
+ 	@$(MAKE) common-tasks
+-	@./tools/buildall.sh $(MAKE) $(CC) $(OSNAME) $(CFLAGS_DEBUG) $(BUILDOPTS)
++	@./tools/buildall.sh $(MAKE) "$(CC)" $(OSNAME) $(CFLAGS_DEBUG) $(BUILDOPTS)
+ 
+ generic:
+ 	@$(MAKE) common-tasks
+-	@./tools/buildall.sh generic $(MAKE) $(CC) $(OSNAME) $(CFLAGS) $(BUILDOPTS)
++	@./tools/buildall.sh generic $(MAKE) "$(CC)" $(OSNAME) $(CFLAGS) $(BUILDOPTS)
+ 
+ # Special-case targets.  The "analyse" target isn't used directly but is
+ # invoked as part of the clang static analyser build process.
+--- tools/getlibs.sh.orig	2024-03-20 03:19:12.877267000 -0400
++++ tools/getlibs.sh	2024-03-20 03:19:22.916650000 -0400
+@@ -31,9 +31,9 @@
+ # Get the compiler build options, which affect the linker options.
+ 
+ if [ $ISSPECIAL -eq 0 ] ; then
+-	BUILDOPTS="$(./tools/ccopts.sh $CC $OSNAME 2>/dev/null)" ;
++	BUILDOPTS="$(./tools/ccopts.sh "$CC" $OSNAME 2>/dev/null)" ;
+ else
+-	BUILDOPTS="$(./tools/ccopts.sh special $CC $OSNAME 2>/dev/null)" ;
++	BUILDOPTS="$(./tools/ccopts.sh special "$CC" $OSNAME 2>/dev/null)" ;
+ fi
+ 
+ hasSubstring()
+@@ -212,4 +212,4 @@
+ 
+ # Finally, report what we've found
+ 
+-echo "$LDARGS"
+\ No newline at end of file
++echo "$LDARGS"
+--- tools/buildall.sh.orig	2023-02-07 22:48:48.000000000 -0500
++++ tools/buildall.sh	2024-03-20 03:22:13.342620000 -0400
+@@ -131,7 +131,7 @@
+ # substitutes are more preferred one if available, unless $CC is a custom
+ # compiler like a static source code analyser or fuzzer build.
+ 
+-CC="$(./tools/getcompiler.sh $CC $OSNAME)"
++CC="$(./tools/getcompiler.sh "$CC" $OSNAME)"
+ 
+ # OS X Snow Leopard broke dlopen(), if it's called from a (sub-)thread then it
+ # dies with a SIGTRAP.  Specifically, if you dlopen() a shared library linked
+@@ -199,15 +199,15 @@
+ # we add an extra character to the comparison string to avoid syntax errors.
+ 
+ if [ $ANALYSE -gt 0 ] ; then
+-	CFLAGS="$(./tools/ccopts.sh analyse $CC $OSNAME)" ;
++	CFLAGS="$(./tools/ccopts.sh analyse "$CC" $OSNAME)" ;
+ elif [ $ISSPECIAL -gt 0 ] ; then
+-	CFLAGS="$(./tools/ccopts.sh special $CC $OSNAME)" ;
++	CFLAGS="$(./tools/ccopts.sh special "$CC" $OSNAME)" ;
+ elif [ $GENERICBUILD -gt 0 ] ; then
+-	CFLAGS="$(./tools/ccopts.sh generic $CC $OSNAME)" ;
++	CFLAGS="$(./tools/ccopts.sh generic "$CC" $OSNAME)" ;
+ elif [ $SHARED -gt 0 ] ; then
+-	CFLAGS="$(./tools/ccopts.sh shared $CC $OSNAME)" ;
++	CFLAGS="$(./tools/ccopts.sh shared "$CC" $OSNAME)" ;
+ else
+-	CFLAGS="$(./tools/ccopts.sh $CC $OSNAME)" ;
++	CFLAGS="$(./tools/ccopts.sh "$CC" $OSNAME)" ;
+ fi
+ if [ '$(CFLAGS)x' = 'x' ] ; then
+ 	echo "$0: Couldn't get compiler flags via tools/ccopts.sh." >&2 ;
+--- tools/ccopts.sh.orig	2024-03-20 03:23:53.320971000 -0400
++++ tools/ccopts.sh	2024-03-20 03:24:11.225180000 -0400
+@@ -264,7 +264,7 @@
+ if [ "$($CC -v 2>&1 | grep -c "ccc-analyzer")" -gt 0 ] ; then
+ 	ISCLANG_ANALYSER=1 ;
+ fi
+-if [ $CC != "xlc" ] && [ "$($CC -v 2>&1 | grep -c "gcc")" -gt 0 ] ; then
++if [ "$CC" != "xlc" ] && [ "$($CC -v 2>&1 | grep -c "gcc")" -gt 0 ] ; then
+ 	ISGCC=1 ;
+ fi
+ if [ $ISCLANG_ANALYSER -gt 0 ] ; then

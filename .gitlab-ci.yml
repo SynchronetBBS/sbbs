@@ -64,6 +64,7 @@ include:
       platform: 'x86'
       tagname: 'macOS'
       gnu_make: 'make'
+      build_flags: 'CC="ccache cc" CXX="ccache c++"'
 
 smoketest-jsexec-linux:
   tags: [Linux]
