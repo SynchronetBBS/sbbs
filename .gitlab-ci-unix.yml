@@ -114,7 +114,7 @@ spec:
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
-    - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/conio.tgz" src/conio/*.lib.release* src/conio/*.obj.release*/*.o*
+    - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz" src/conio/*.lib.release* src/conio/*.obj.release*/*.o*
   needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]":
