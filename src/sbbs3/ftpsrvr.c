@@ -543,13 +543,13 @@ void ftp_terminate(void)
 	terminate_server=TRUE;
 }
 
-int ftp_remove(SOCKET sock, int line, const char* fname, const char* username)
+bool ftp_remove(SOCKET sock, int line, const char* fname, const char* username, int err_level)
 {
 	int ret=0;
 
 	if(fexist(fname) && (ret=remove(fname))!=0) {
 		if(fexist(fname))	// In case there was a race condition (other host deleted file first)
-			lprintf(LOG_ERR,"%04d <%s> !ERROR %d (%s) (line %d) removing file: %s", sock, username, errno, strerror(errno), line, fname);
+			lprintf(err_level, "%04d <%s> !ERROR %d (%s) (line %d) removing file: %s", sock, username, errno, strerror(errno), line, fname);
 	}
 	return ret;
 }
@@ -614,7 +614,7 @@ static void send_thread(void* arg)
 	if(length < 1) {
 		if(xfer.tmpfile) {
 			if(!(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-				ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias);
+				ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias, LOG_ERR);
 			sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 No files");
 		} else {
 			lprintf(LOG_WARNING, "%04d <%s> !DATA cannot send file (%s) with size of %"PRIdOFF" bytes"
@@ -633,7 +633,7 @@ static void send_thread(void* arg)
 			,xfer.ctrl_sock, xfer.user->alias, errno, strerror(errno), __LINE__, xfer.filename);
 		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 ERROR %d (%s) opening %s", errno, strerror(errno), xfer.filename);
 		if(xfer.tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-			(void)ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias);
+			ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias, LOG_ERR);
 		ftp_close_socket(xfer.data_sock,xfer.data_sess,__LINE__);
 		*xfer.inprogress=FALSE;
 		thread_down();
@@ -854,10 +854,10 @@ static void send_thread(void* arg)
 		*xfer.inprogress=FALSE;
 	if(xfer.tmpfile) {
 		if(!(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-			(void)ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias);
+			ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias, LOG_ERR);
 	}
 	else if(xfer.delfile && !error)
-		(void)ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias);
+		ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias, LOG_WARNING);
 
 #if defined(SOCKET_DEBUG_SENDTHREAD)
 			socket_debug[xfer.ctrl_sock]&=~SOCKET_DEBUG_SENDTHREAD;
@@ -1053,7 +1053,7 @@ static void receive_thread(void* arg)
 	}
 	if(error) {
 		if(!xfer.append)
-			(void)ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias);
+			ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias, LOG_ERR);
 	} else {
 		dur=(long)(time(NULL)-start);
 		cps=(ulong)(dur ? total/dur : total*2);
@@ -1095,7 +1095,7 @@ static void receive_thread(void* arg)
 						prep_file_desc(extdesc, fdesc);	/* strip control chars and dupe chars */
 					}
 					file_sauce_hfields(&f, &sauce);
-					ftp_remove(xfer.ctrl_sock, __LINE__, tmp, xfer.user->alias);
+					ftp_remove(xfer.ctrl_sock, __LINE__, tmp, xfer.user->alias, LOG_ERR);
 				} else
 					lprintf(LOG_DEBUG,"%04d <%s> DATA DIZ does not exist in: %s",xfer.ctrl_sock, xfer.user->alias ,xfer.filename);
 			} /* FILE_ID.DIZ support */
@@ -1236,7 +1236,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 		lprintf(LOG_WARNING,"%04d <%s> !DATA TRANSFER already in progress",ctrl_sock, user->alias);
 		sockprintf(ctrl_sock,ctrl_sess,"425 Transfer already in progress.");
 		if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-			(void)ftp_remove(ctrl_sock, __LINE__, filename, user->alias);
+			ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 		return;
 	}
 	*inprogress=TRUE;
@@ -1251,7 +1251,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 			lprintf(LOG_ERR,"%04d <%s> !DATA ERROR %d opening socket", ctrl_sock, user->alias, ERROR_VALUE);
 			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d opening socket",ERROR_VALUE);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-				(void)ftp_remove(ctrl_sock, __LINE__, filename, user->alias);
+				ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 			*inprogress=FALSE;
 			return;
 		}
@@ -1283,7 +1283,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 				,ctrl_sock, user->alias, result, ERROR_VALUE, *data_sock);
 			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d binding socket",ERROR_VALUE);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-				(void)ftp_remove(ctrl_sock, __LINE__, filename, user->alias);
+				ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 			*inprogress=FALSE;
 			ftp_close_socket(data_sock,data_sess,__LINE__);
 			return;
@@ -1296,7 +1296,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 					,host_ip,inet_addrport(addr),*data_sock);
 			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d connecting to socket",ERROR_VALUE);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-				(void)ftp_remove(ctrl_sock, __LINE__, filename, user->alias);
+				ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 			*inprogress=FALSE;
 			ftp_close_socket(data_sock,data_sess,__LINE__);
 			return;
@@ -1311,7 +1311,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 					,ctrl_sock, user->alias);
 				sockprintf(ctrl_sock,ctrl_sess,"425 Error activating TLS");
 				if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-					(void)ftp_remove(ctrl_sock, __LINE__, filename, user->alias);
+					ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 				*inprogress=FALSE;
 				ftp_close_socket(data_sock,data_sess,__LINE__);
 				return;
@@ -1334,7 +1334,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 				,ctrl_sock, user->alias);
 			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d selecting socket for connection",ERROR_VALUE);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-				(void)ftp_remove(ctrl_sock, __LINE__, filename, user->alias);
+				ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 			*inprogress=FALSE;
 			return;
 		}
@@ -1352,7 +1352,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 				,ctrl_sock, user->alias,ERROR_VALUE,pasv_sock);
 			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d accepting connection",ERROR_VALUE);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-				(void)ftp_remove(ctrl_sock, __LINE__, filename, user->alias);
+				ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 			*inprogress=FALSE;
 			return;
 		}
@@ -1366,7 +1366,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 				lprintf(LOG_WARNING,"%04d <%s> PASV !DATA ERROR starting TLS", pasv_sock, user->alias);
 				sockprintf(ctrl_sock,ctrl_sess,"425 Error negotiating TLS");
 				if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-					(void)ftp_remove(ctrl_sock, __LINE__, filename, user->alias);
+					ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 				*inprogress=FALSE;
 				return;
 			}
@@ -1421,7 +1421,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 
 	/* failure */
 	if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-		(void)ftp_remove(ctrl_sock, __LINE__, filename, user->alias);
+		ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 	*inprogress=FALSE;
 }
 
@@ -3514,7 +3514,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if(!strnicmp(cmd,"DELE ",5)) {
-					if(ftp_remove(sock, __LINE__, fname, user.alias) == 0) {
+					if(ftp_remove(sock, __LINE__, fname, user.alias, LOG_ERR) == true) {
 						sockprintf(sock,sess,"250 \"%s\" removed successfully.",fname);
 						lprintf(LOG_NOTICE,"%04d <%s> deleted file: %s",sock,user.alias,fname);
 					} else {
@@ -4259,13 +4259,13 @@ static void ctrl_thread(void* arg)
 					if(!socket_check(sock,NULL,NULL,0)) {
 						lprintf(LOG_NOTICE,"%04d <%s> disconnected while waiting for QWK packet creation"
 							,sock, user.alias);
-						(void)ftp_remove(sock, __LINE__, str, user.alias);
+						ftp_remove(sock, __LINE__, str, user.alias, LOG_ERR);
 						continue;
 					}
 					if(fexist(str)) {
 						lprintf(LOG_WARNING,"%04d <%s> !TIMEOUT waiting for QWK packet creation", sock, user.alias);
 						sockprintf(sock,sess,"451 Time-out waiting for packet creation.");
-						(void)ftp_remove(sock, __LINE__, str, user.alias);
+						ftp_remove(sock, __LINE__, str, user.alias, LOG_ERR);
 						filepos=0;
 						continue;
 					}
