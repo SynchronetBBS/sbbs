@@ -352,6 +352,7 @@ spec:
     expire_in: 30 mins
     name: "sbbs-build-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
+      - "src/sbbs3/*.obj.release*/"
       - "src/sbbs3/*.exe.release/*"
       - "src/sbbs3/*.lib.release/*"
       - "src/sbbs3/*/*.exe.release/*"
