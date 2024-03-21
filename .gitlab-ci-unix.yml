@@ -204,11 +204,12 @@ spec:
       when: never
     - if: '"$[[ inputs.platform ]]" != "amd64"'
       when: never
+    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [cleanup]":
-  stage: cleanup
   extends:
     - .$[[ inputs.os ]]-build
+  stage: cleanup
   script:
     - echo "Delete ${CI_PIPELINE_ID}-gitinfo"
   cache:
@@ -220,6 +221,7 @@ spec:
       when: never
     - if: '"$[[ inputs.platform ]]" != "amd64"'
       when: never
+    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [scfg]":
   extends:
