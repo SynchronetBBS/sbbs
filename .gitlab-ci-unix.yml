@@ -194,6 +194,7 @@ spec:
   needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [cleanup]":
+  stage: cleanup
   extends:
     - .$[[ inputs.os ]]-build
   script:
