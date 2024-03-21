@@ -689,9 +689,3 @@ spec:
     - rm -rf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
   dependencies:
     - "$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]"
-  rules:
-    - if: '"$[[ inputs.cross_platform ]]" == "yes"'
-      when: never
-    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
-      when: never
-    - !reference [.rules, rules]
