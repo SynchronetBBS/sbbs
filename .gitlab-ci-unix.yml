@@ -183,7 +183,7 @@ spec:
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS gitinfo
   cache:
     key: "${CI_PIPELINE_ID}-gitinfo"
-    files:
+    paths:
       - "src/sbbs3/git_*.h"
     policy: push
   artifacts:
@@ -201,7 +201,7 @@ spec:
     - echo "Delete ${CI_PIPELINE_ID}-gitinfo"
   cache:
     key: "${CI_PIPELINE_ID}-gitinfo"
-    files:
+    paths:
       - "src/sbbs3/git_*.h"
     policy: push
   needs: []
