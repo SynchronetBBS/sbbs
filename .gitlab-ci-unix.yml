@@ -204,7 +204,7 @@ spec:
     paths:
       - "src/sbbs3/git_*.h"
     policy: push
-  needs: []
+  dependencies: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [scfg]":
   extends:
