@@ -169,14 +169,14 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
     - cd src/sbbs3/scfg
     - touch depend
     - touch xpdev
@@ -206,13 +206,13 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
     - cd src/sbbs3/uedit
     - touch depend
     - touch xpdev
@@ -244,12 +244,12 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/sbbs3/umonitor
     - touch depend
     - touch xpdev
@@ -276,14 +276,14 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/sbbs3
     - touch cl
     - touch depend
@@ -313,16 +313,16 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sftp.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sftp.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
     - cd src/sbbs3
     - touch depend
     - touch xpdev
@@ -377,16 +377,16 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
     - cd src/sbbs3
     - touch depend
     - touch xpdev
@@ -445,11 +445,11 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/scfg.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uedit.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/umonitor.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/utils.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/scfg.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uedit.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/umonitor.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/utils.tgz"
   artifacts:
     name: "sbbs-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -473,13 +473,13 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sftp.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sftp.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/syncterm
     - touch depend
     - touch xpdev
@@ -509,8 +509,8 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/syncdraw
     - touch depend
     - touch xpdev
@@ -529,7 +529,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/sexpots
     - touch depend
     - touch xpdev
@@ -546,7 +546,10 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
     - cd src/sbbs3/gtkchat
     - touch depend
     - touch xpdev
@@ -573,11 +576,11 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
     - cd src/sbbs3/gtkmonitor
     - touch depend
     - touch xpdev
@@ -594,7 +597,7 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
@@ -605,11 +608,11 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
     - cd src/sbbs3/gtkuseredit
     - touch depend
     - touch xpdev
@@ -627,7 +630,7 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
       when: never
@@ -637,10 +640,10 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
-    - tar xf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
     - cd src/sbbs3/gtkuserlist
     - touch depend
     - touch xpdev
@@ -656,7 +659,7 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
       when: never
