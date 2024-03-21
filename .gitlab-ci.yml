@@ -2,6 +2,11 @@ variables:
   BUILD_ARGS:
     description: "Extra arguments to pass on gmake command lines."
 
+states:
+  - build
+  - test
+  - cleanup
+
 .rules:
   rules:
     - changes:

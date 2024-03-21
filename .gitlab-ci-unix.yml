@@ -181,11 +181,28 @@ spec:
     - cd src/sbbs3
     - touch depend
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS gitinfo
+  cache:
+    key: "${CI_PIPELINE_ID}-gitinfo"
+    files:
+      - "src/sbbs3/git_*.h"
+    policy: push
   artifacts:
     expire_in: 30 mins
     name: "gitinfo-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/sbbs3/git_*.h"
+  needs: []
+
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [cleanup]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - echo "Delete ${CI_PIPELINE_ID}-gitinfo"
+  cache:
+    key: "${CI_PIPELINE_ID}-gitinfo"
+    files:
+      - "src/sbbs3/git_*.h"
+    policy: push
   needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [scfg]":
