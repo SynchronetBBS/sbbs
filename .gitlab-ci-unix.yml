@@ -188,41 +188,6 @@ spec:
       - "src/sbbs3/git_*.h"
   needs: []
 
-"$[[ inputs.os ]]-$[[ inputs.platform ]] [cache-thing]":
-  extends:
-    - .$[[ inputs.os ]]-build
-  script:
-    - touch cache-me
-  cache:
-    key: "$[[ inputs.os ]]-${CI_PIPELINE_ID}-gitinfo"
-    paths:
-      - cache-me
-    policy: push
-  dependencies: []
-  rules:
-    - if: '"$[[ inputs.os ]]" != "freebsd"'
-      when: never
-    - if: '"$[[ inputs.platform ]]" != "amd64"'
-      when: never
-    - !reference [.rules, rules]
-
-"$[[ inputs.os ]]-$[[ inputs.platform ]] [cleanup]":
-  extends:
-    - .$[[ inputs.os ]]-build
-  stage: cleanup
-  script:
-    - echo "Delete ${CI_PIPELINE_ID}-gitinfo"
-  cache:
-    key: "$[[ inputs.os ]]-${CI_PIPELINE_ID}-gitinfo"
-    policy: push
-  dependencies: []
-  rules:
-    - if: '"$[[ inputs.os ]]" != "freebsd"'
-      when: never
-    - if: '"$[[ inputs.platform ]]" != "amd64"'
-      when: never
-    - !reference [.rules, rules]
-
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [scfg]":
   extends:
     - .$[[ inputs.os ]]-build
