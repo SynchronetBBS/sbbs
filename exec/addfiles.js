@@ -180,20 +180,23 @@ for(var d = 0; d < dir_list.length; d++) {
 
 	var listpath;
 	if(listfile) {
-		listpath = file_getcase(dir.path + listfile) || file_getcase(listfile);
-		var f = new File(listpath);
-		if(f.exists) {
-			writeln("Opening " + f.name);
-			if(!f.open('r')) {
-				alert("Error " + f.error + " (" + strerror(f.error) + ") opening " + f.name);
-				exit(1);
-			}
-			file_list = parse_file_list(f.readAll());
-			f.close();
-		} else {
-			alert(dir.path + file_getname(listfile) + " does not exist");
+		if(file_getname(listfile) == listfile)
+			listpath = dir.path + listfile;
+		else
+			listpath = listfile;
+		var realpath = file_getcase(listpath);
+		if(!realpath) {
+			alert(listpath + " does not exist");
 			continue;
 		}
+		var f = new File(realpath);
+		writeln("Opening " + f.name);
+		if(!f.open('r')) {
+			alert("Error " + f.error + " (" + strerror(f.error) + ") opening " + f.name);
+			exit(1);
+		}
+		file_list = parse_file_list(f.readAll());
+		f.close();
 	}
 	else {
 		var list = directory(dir.path + '*');
