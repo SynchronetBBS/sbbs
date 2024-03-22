@@ -439,7 +439,7 @@ typedef struct {
 #define SAFECOPY(dst,src)                   strlcpy(dst,src,sizeof(dst))
 #endif
 
-/* Extra-safe SAFECOPY doesn't pass NULL-pointer to strncpy */
+/* Extra-safe SAFECOPY doesn't pass NULL-pointer to strlcpy */
 #ifdef _DEBUG
 #define XSAFECOPY(dst,src) do { \
 	static_assert(sizeof(dst) != sizeof(void*), "SAFECOPY() on pointer-sized dst, use strlcpy"); \
@@ -462,7 +462,7 @@ typedef struct {
 #define SAFEPRINTF2(dst,fmt,a1,a2)          snprintf(dst,sizeof(dst),fmt,a1,a2)
 #define SAFEPRINTF3(dst,fmt,a1,a2,a3)		snprintf(dst,sizeof(dst),fmt,a1,a2,a3)
 #define SAFEPRINTF4(dst,fmt,a1,a2,a3,a4)	snprintf(dst,sizeof(dst),fmt,a1,a2,a3,a4)
-#else										
+#else
 #define SAFEPRINTF(dst,fmt,arg)				snprintf(dst,sizeof(dst),fmt,arg), TERMINATE(dst)
 #define SAFEPRINTF2(dst,fmt,a1,a2)			snprintf(dst,sizeof(dst),fmt,a1,a2), TERMINATE(dst)
 #define SAFEPRINTF3(dst,fmt,a1,a2,a3)		snprintf(dst,sizeof(dst),fmt,a1,a2,a3), TERMINATE(dst)
