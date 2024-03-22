@@ -692,3 +692,4 @@ spec:
     - .$[[ inputs.os ]]-cleanup
   script:
     - rm -rf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
+  dependencies: []
