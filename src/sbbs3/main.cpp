@@ -19,7 +19,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#error Broken
 #include "sbbs.h"
 #include "ident.h"
 #include "telnet.h"
