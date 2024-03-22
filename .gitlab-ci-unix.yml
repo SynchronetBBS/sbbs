@@ -672,9 +672,11 @@ spec:
   extends:
     - .$[[ inputs.os ]]-test
   script:
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/jsdoor.tgz"
     - "src/sbbs3/*.exe.release/jsdoor exec/tests/test.js"
-  dependencies:
-    - "$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]"
+      artifacts: false
   rules:
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
