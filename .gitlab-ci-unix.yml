@@ -693,5 +693,5 @@ spec:
   script:
     - rm -rf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
   needs:
-    - "$[[ inputs.os ]]-$[[ inputs.platform ]] js-testsuite"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] js-testsuite"
       artifacts: false
