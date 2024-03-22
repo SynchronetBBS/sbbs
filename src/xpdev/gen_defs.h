@@ -23,6 +23,9 @@
 #define _GEN_DEFS_H
 
 #include "cp437defs.h"
+#ifdef _DEBUG
+#include <assert.h>
+#endif
 #include <errno.h>
 
 /* Resolve multi-named errno constants */
@@ -427,9 +430,24 @@ typedef struct {
 #define TERMINATE(str)                      str[sizeof(str)-1]=0
 
 /* This is a bound-safe version of strcpy basically - only works with fixed-length arrays */
+#ifdef _DEBUG
+#define SAFECOPY(dst,src) do { \
+	_Static_assert(sizeof(dst) != sizeof(void*), "SAFECOPY() on pointer-sized dst, use strlcpy"); \
+	strlcpy(dst,src,sizeof(dst)); \
+} while(0)
+#else
 #define SAFECOPY(dst,src)                   strlcpy(dst,src,sizeof(dst))
+#endif
+
 /* Extra-safe SAFECOPY doesn't pass NULL-pointer to strncpy */
-#define XSAFECOPY(dst,src)                  strlcpy(dst,(src)==NULL?"(null)":(src),sizeof(dst))
+#ifdef _DEBUG
+#define XSAFECOPY(dst,src) do { \
+	_Static_assert(sizeof(dst) != sizeof(void*), "SAFECOPY() on pointer-sized dst, use strlcpy"); \
+	strlcpy(dst,(src)==NULL?"(null)":(src),sizeof(dst)); \
+} while(0)
+#else
+#define XSAFECOPY(dst,src) strlcpy(dst,(src)==NULL?"(null)":(src),sizeof(dst))
+#endif
 
 #define SAFECAT(dst, src) do { \
 	if(strlen((char*)(dst)) + strlen((char*)(src)) < sizeof(dst)) { \
