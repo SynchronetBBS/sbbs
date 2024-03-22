@@ -15,7 +15,6 @@ stages:
       - ctrl/text.dat
       - xtrn/**/{GNUm,M}akefile
       - xtrn/**/*.{c,h,cpp,hpp,mk}
-  allow_failure: true
 
 include:
   - local: '.gitlab-ci-unix.yml'
