@@ -56,10 +56,10 @@ bool sauce_fread_charinfo(FILE* fp, enum sauce_char_filetype* type, struct sauce
 		*type = record.filetype;
 	if(info != NULL) {
 		memset(info, 0, sizeof(*info));
-		SAFECOPY(info->title, record.title), truncsp(info->title);
-		SAFECOPY(info->author, record.author), truncsp(info->author);
-		SAFECOPY(info->group, record.group), truncsp(info->group);
-		SAFECOPY(info->date, record.date), truncsp(info->date);
+		SAFECOPY(info->title, record.title); truncsp(info->title);
+		SAFECOPY(info->author, record.author); truncsp(info->author);
+		SAFECOPY(info->group, record.group); truncsp(info->group);
+		SAFECOPY(info->date, record.date); truncsp(info->date);
 		info->width = record.tinfo1;
 		info->height = record.tinfo2;
 		switch(record.filetype) {
