@@ -687,10 +687,11 @@ spec:
 ###########
 # Cleanup #
 ###########
-"cleanup [$[[ inputs.os ]]-$[[ inputs.platform ]]]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] cleanup":
   extends:
     - .$[[ inputs.os ]]-cleanup
   script:
     - rm -rf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
-  dependencies:
-    - "$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]"
+  needs:
+    - "$[[ inputs.os ]]-$[[ inputs.platform ]] js-testsuite"
+      artifacts: false
