@@ -551,7 +551,7 @@ bool ftp_remove(SOCKET sock, int line, const char* fname, const char* username, 
 		if(fexist(fname))	// In case there was a race condition (other host deleted file first)
 			lprintf(err_level, "%04d <%s> !ERROR %d (%s) (line %d) removing file: %s", sock, username, errno, strerror(errno), line, fname);
 	}
-	return ret;
+	return ret == 0;
 }
 
 typedef struct {
