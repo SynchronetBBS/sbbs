@@ -67,7 +67,7 @@ int safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 }
 
 #ifdef NEEDS_STRLCPY
-size_t strlcpy(char *dst, const char *src, size_t size)
+size_t strlcpy(char *dst, const char *src, size_t dsize)
 {
         const char *osrc = src;
         size_t nleft = dsize;
