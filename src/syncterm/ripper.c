@@ -15479,11 +15479,15 @@ do_skypix(char *buf, size_t len)
 					break;
 				char *dldir = strdup(rip.bbs->dldir);
 				strcpy(rip.bbs->dldir, cache_path);
-				strcat(cache_path, p);
-				suspend_rip(true);
-				xmodem_download(rip.bbs, XMODEM | CRC | RECV, cache_path);
-				suspend_rip(false);
-				strcpy(rip.bbs->dldir, dldir);
+				// TODO: Handle error...
+				if ((strlen(cache_path) + strlen(p) + 1) <= sizeof(cache_path)) {
+					strcat(cache_path, p);
+					suspend_rip(true);
+					xmodem_download(rip.bbs, XMODEM | CRC | RECV, cache_path);
+					suspend_rip(false);
+				}
+				// TODO: strlcpy() needed in xpdev
+				strncpy(rip.bbs->dldir, dldir, sizeof(rip.bbs->dldir));
 				free(dldir);
 			}
 			break;
