@@ -432,7 +432,7 @@ typedef struct {
 /* This is a bound-safe version of strcpy basically - only works with fixed-length arrays */
 #ifdef _DEBUG
 #define SAFECOPY(dst,src) do { \
-#if __STDC_VERSION__ >= 201112L
+#if (__STDC_VERSION__ >= 201112L)
 	static_assert(sizeof(dst) != sizeof(void*), "SAFECOPY() on pointer-sized dst, use strlcpy"); \
 #endif
 	strlcpy(dst,src,sizeof(dst)); \
@@ -444,7 +444,7 @@ typedef struct {
 /* Extra-safe SAFECOPY doesn't pass NULL-pointer to strlcpy */
 #ifdef _DEBUG
 #define XSAFECOPY(dst,src) do { \
-#if __STDC_VERSION__ >= 201112L
+#if (__STDC_VERSION__ >= 201112L)
 	static_assert(sizeof(dst) != sizeof(void*), "SAFECOPY() on pointer-sized dst, use strlcpy"); \
 #endif
 	strlcpy(dst,(src)==NULL?"(null)":(src),sizeof(dst)); \
