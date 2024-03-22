@@ -668,7 +668,7 @@ spec:
 #########
 # Tests #
 #########
-"js-testsuite [$[[ inputs.os ]]-$[[ inputs.platform ]]]":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] js-testsuite":
   extends:
     - .$[[ inputs.os ]]-test
   script:
