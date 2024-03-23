@@ -48,6 +48,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz" 3rdp/*.release/mozjs
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
   rules:
     - if: '"$[[ inputs.no_javascript ]]" == "yes"'
       when: never
@@ -67,6 +68,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz" 3rdp/*.release/cl
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
   needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]":
@@ -79,6 +81,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz" src/xpdev/*.lib.release* src/xpdev/*.obj.release*/*.o*
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
   needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]":
@@ -91,6 +94,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz" src/encode/*.lib.release* src/encode/*.obj.release*/*.o*
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
   needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]":
@@ -103,6 +107,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz" src/hash/*.lib.release* src/hash/*.obj.release*/*.o*
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
   needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]":
@@ -115,6 +120,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz" src/conio/*.lib.release* src/conio/*.obj.release*/*.o*
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
   needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]":
@@ -127,6 +133,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sftp.tgz" src/sftp/*.lib.release* src/sftp/*.obj.release*/*.o*
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sftp.tgz"
   needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]":
@@ -139,6 +146,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz" src/smblib/*.lib.release* src/smblib/*.obj.release*/*.o*
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
   needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]":
@@ -151,6 +159,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz" src/uifc/*.lib.release* src/uifc/*.obj.release*/*.o*
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
   needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]":
@@ -163,6 +172,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz" src/sbbs3/git_*.h
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
   needs: []
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [scfg]":
@@ -192,6 +202,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/scfg.tgz" src/sbbs3/scfg/*.exe.release* src/sbbs3/scfg/*.obj.release*/*.o*
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/scfg.tgz"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
@@ -227,6 +238,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uedit.tgz" src/sbbs3/uedit/*.exe.release* src/sbbs3/uedit/*.obj.release*/*.o*
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uedit.tgz"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
@@ -264,6 +276,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/umonitor.tgz" src/sbbs3/umonitor/*.exe.release* src/sbbs3/umonitor/*.obj.release*/*.o*
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/umonitor.tgz"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
@@ -299,6 +312,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/utils.tgz" src/sbbs3/*.exe.release* src/sbbs3/*.obj.release*/*.o*
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/utils.tgz"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
@@ -355,6 +369,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz" src/sbbs3/*.exe.release* src/sbbs3/*.obj.release*/*.o* src/sbbs3/*.lib.release/* src/sbbs3/*/*.exe.release/*
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
@@ -418,6 +433,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/jsdoor.tgz" src/sbbs3/*.exe.release/jsdoor
+    - chmod 0444 "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/jsdoor.tgz"
   artifacts:
     expire_in: 30 mins
     name: "jsdoor-$[[ inputs.os ]]-$[[ inputs.platform ]]"
