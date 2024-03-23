@@ -113,6 +113,8 @@
  *                              Screen refresh fix: When printing the empty lines after an extended
  *                              description, ensure the whole line width is used (the last character
  *                              was being left there when it should have been written over with a space)
+ * 2024-03-22 Eric Oulashin     Version 2.20
+ *                              (Hopefully) Fix for descLines being undefined in getFileInfoLineArrayForTraditionalUI()
 */
 
 "use strict";
@@ -158,8 +160,8 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 
 // Lister version information
-var LISTER_VERSION = "2.19";
-var LISTER_DATE = "2024-03-11";
+var LISTER_VERSION = "2.20";
+var LISTER_DATE = "2024-03-22";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -5093,6 +5095,8 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 		if (pFileList[pIdx].hasOwnProperty("desc") && typeof(pFileList[pIdx].desc) === "string")
 			descLines = [ pFileList[pIdx].desc.replace(/\r$/, "").replace(/\n$/, "").replace(/\r\n$/, "") ];
 	}
+	if (!Array.isArray(descLines))
+		descLines = [];
 	if (descLines.length == 0)
 		descLines.push("");
 
