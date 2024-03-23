@@ -49,6 +49,12 @@ static ini_style_t eventIniStyle = {
 	/* key_prefix: */nullptr,
 	/* section_separator: */""
 };
+static ini_style_t qhubIniStyle = {
+	/* key_len: */LEN_QWKID,
+	/* key_prefix: */nullptr,
+	/* section_separator: */""
+};
+static const char* qhubIniSection = "QWK_NetworkHubs";
 
 #define TIMEOUT_THREAD_WAIT		60			// Seconds (was 15)
 #define IO_THREAD_BUF_SIZE	   	20000		// Bytes
@@ -2829,6 +2835,9 @@ void event_thread(void* arg)
 	if (fp != nullptr) {
 		for (i = 0; i < sbbs->cfg.total_events; ++i)
 			sbbs->cfg.event[i]->last = (time32_t)iniReadDateTime(fp, eventIniSection, sbbs->cfg.event[i]->code, 0);
+		for (i = 0; i < sbbs->cfg.total_qhubs; ++i)
+			sbbs->cfg.qhub[i]->last = (time32_t)iniReadDateTime(fp, qhubIniSection, sbbs->cfg.qhub[i]->id, 0);
+
 		lastprepack = iniReadDateTime(fp, ROOT_SECTION, "QWK_prepack", 0);
 		iniCloseFile(fp);
 	} else {
@@ -2846,6 +2855,17 @@ void event_thread(void* arg)
 			lastprepack = t32;
 			close(file);
 		}
+		// Read qnet.dab (legacy), and auto-upgrade to time.ini
+		SAFEPRINTF(str,"%sqnet.dab",sbbs->cfg.ctrl_dir);
+		if((file=sbbs->nopen(str,O_RDWR|O_CREAT))!=-1) {
+			for(i=0;i<sbbs->cfg.total_qhubs;i++) {
+				sbbs->cfg.qhub[i]->last=0;
+				if(read(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last))!=sizeof(sbbs->cfg.qhub[i]->last))
+					sbbs->errormsg(WHERE,ERR_READ,str,sizeof(sbbs->cfg.qhub[i]->last));
+			}
+			close(file);
+		}
+
 		fp = iniOpenFile(ini_file, /* for modify: */true);
 		if (fp == nullptr)
 			sbbs->errormsg(WHERE, ERR_CREATE, ini_file, 0);
@@ -2856,6 +2876,8 @@ void event_thread(void* arg)
 					iniSetDateTime(&ini, ROOT_SECTION, "QWK_prepack", /* include time */true, lastprepack, /* style: */nullptr);
 				for (i = 0; i < sbbs->cfg.total_events; ++i)
 					iniSetDateTime(&ini, eventIniSection, sbbs->cfg.event[i]->code, /* include time */true, sbbs->cfg.event[i]->last, &eventIniStyle);
+				for (i = 0; i < sbbs->cfg.total_qhubs; ++i)
+					iniSetDateTime(&ini, qhubIniSection, sbbs->cfg.qhub[i]->id, /* include time */true, sbbs->cfg.qhub[i]->last, &qhubIniStyle);
 				iniWriteFile(fp, ini);
 				iniCloseFile(fp);
 				iniFreeStringList(ini);
@@ -2866,26 +2888,6 @@ void event_thread(void* arg)
 		/* Event always runs after initialization? */
 		if(sbbs->cfg.event[i]->misc&EVENT_INIT)
 			sbbs->cfg.event[i]->last=-1;
-	}
-
-	// Read QNET.DAB
-	SAFEPRINTF(str,"%sqnet.dab",sbbs->cfg.ctrl_dir);
-	if((file=sbbs->nopen(str,O_RDWR|O_CREAT))==-1)
-		sbbs->errormsg(WHERE,ERR_OPEN,str,0);
-	else {
-		for(i=0;i<sbbs->cfg.total_qhubs;i++) {
-			sbbs->cfg.qhub[i]->last=0;
-			if(filelength(file)<(int)(sizeof(time32_t)*(i+1))) {
-				sbbs->lprintf(LOG_WARNING,"Initializing last call-out time for QWKnet hub: %s"
-					,sbbs->cfg.qhub[i]->id);
-				if(write(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last)) != sizeof sbbs->cfg.qhub[i]->last)
-					sbbs->errormsg(WHERE, ERR_WRITE, str, 4);
-			} else {
-				if(read(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last))!=sizeof(sbbs->cfg.qhub[i]->last))
-					sbbs->errormsg(WHERE,ERR_READ,str,sizeof(sbbs->cfg.qhub[i]->last));
-			}
-		}
-		close(file);
 	}
 
 	while(!sbbs->terminated && !terminate_server) {
@@ -3240,15 +3242,19 @@ void event_thread(void* arg)
 				sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 
 				sbbs->cfg.qhub[i]->last=time32(NULL);
-				SAFEPRINTF(str,"%sqnet.dab",sbbs->cfg.ctrl_dir);
-				if((file=sbbs->nopen(str,O_WRONLY))==-1) {
+				SAFEPRINTF(str,"%stime.ini",sbbs->cfg.ctrl_dir);
+				FILE* fp = iniOpenFile(str, /* for_modify: */true);
+				if(fp == NULL) {
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
 					break;
 				}
-				lseek(file,sizeof(time32_t)*i,SEEK_SET);
-				if(write(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last)) != sizeof sbbs->cfg.qhub[i]->last)
-					sbbs->errormsg(WHERE, ERR_WRITE, str, 4);
-				close(file);
+				str_list_t ini = iniReadFile(fp);
+				if(ini != NULL) {
+					iniSetDateTime(&ini, qhubIniSection, sbbs->cfg.qhub[i]->id, /* include time: */true, sbbs->cfg.qhub[i]->last, &qhubIniStyle);
+					iniWriteFile(fp, ini);
+					iniFreeStringList(ini);
+				}
+				iniCloseFile(fp);
 
 				if(sbbs->cfg.qhub[i]->call[0]) {
 					if(sbbs->cfg.qhub[i]->node == NODE_ANY)
