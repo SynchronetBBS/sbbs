@@ -551,6 +551,4 @@ typedef struct {
         #include <SDL.h>
 #endif
 
-#include "genwrap.h" // For strlcpy()/strlcat() -- yes, it needs to be down here.
-
 #endif /* Don't add anything after this #endif statement */

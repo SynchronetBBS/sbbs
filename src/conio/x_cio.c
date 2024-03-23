@@ -107,7 +107,7 @@ void x_setname(const char *name)
 	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_SETNAME;
-	SAFECOPY(ev.data.name, name);
+	strlcpy(ev.data.name, name, sizeof(ev.data.name));
 	write_event(&ev);
 }
 
@@ -116,7 +116,7 @@ void x_settitle(const char *title)
 	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_SETTITLE;
-	SAFECOPY(ev.data.title, title);
+	strlcpy(ev.data.title, title, sizeof(ev.data.title));
 	write_event(&ev);
 }
 
