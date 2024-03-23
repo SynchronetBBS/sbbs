@@ -27,6 +27,7 @@
 #include <assert.h>
 #endif
 #include <errno.h>
+// Note, genwrap.h is included at the *end* of this file.
 
 /* Resolve multi-named errno constants */
 #if defined(EDEADLK) && !defined(EDEADLOCK)
@@ -549,5 +550,7 @@ typedef struct {
 #ifdef WITH_SDL_AUDIO
         #include <SDL.h>
 #endif
+
+#include "genwrap.h" // For strlcpy()/strlcat() -- yes, it needs to be down here.
 
 #endif /* Don't add anything after this #endif statement */
