@@ -1242,6 +1242,11 @@ public:
 	void	errormsg(int line, const char* function, const char *source, const char* action, const char *object
 				,int access=0, const char *extinfo=NULL);
 	bool	hacklog(const char* prot, const char* text);
+	void	fremove(int line, const char* function, const char *source, const char* path) {
+		int result = remove(path);
+		if(result != 0)
+			errormsg(line, function, source, ERR_REMOVE, path);
+	}
 
 	/* qwk.cpp */
 	uint	qwkmail_last = 0;

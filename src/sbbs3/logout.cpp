@@ -86,7 +86,7 @@ void sbbs_t::logout(bool logged_in)
 	}
 	SAFEPRINTF2(path,"%smsgs/%4.4u.msg",cfg.data_dir,useron.number);
 	if(fexistcase(path) && !flength(path))		/* remove any 0 byte message files */
-		remove(path);
+		fremove(WHERE, path);
 
 	delfiles(cfg.temp_dir,ALLFILES);
 	if(sys_status&SS_USERON) {	// Insures the useron actually went through logon()/getmsgptrs() first
