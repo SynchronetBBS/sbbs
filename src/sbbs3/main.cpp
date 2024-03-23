@@ -43,6 +43,13 @@
 #define TELNET_SERVER "Synchronet Terminal Server"
 static const char* server_abbrev = "term";
 
+static const char* eventIniSection = "Events";
+static ini_style_t eventIniStyle = {
+	/* key_len: */LEN_CODE,
+	/* key_prefix: */nullptr,
+	/* section_separator: */""
+};
+
 #define TIMEOUT_THREAD_WAIT		60			// Seconds (was 15)
 #define IO_THREAD_BUF_SIZE	   	20000		// Bytes
 #define TIMEOUT_MUTEX_FILE		12*60*60
@@ -2793,7 +2800,7 @@ void event_thread(void* arg)
 	time_t		start;
 	time_t		lastsemchk=0;
 	time_t		lastnodechk=0;
-	time32_t	lastprepack=0;
+	time_t		lastprepack=0;
 	node_t		node;
 	glob_t		g;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
@@ -2815,29 +2822,50 @@ void event_thread(void* arg)
 	}
 #endif
 
-	// Read TIME.DAB
-	SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
-	if((file=sbbs->nopen(str,O_RDWR|O_CREAT))==-1)
-		sbbs->errormsg(WHERE,ERR_OPEN,str,0);
-	else {
-		for(i=0;i<sbbs->cfg.total_events;i++) {
-			sbbs->cfg.event[i]->last=0;
-			if(filelength(file)<(int)(sizeof(time32_t)*(i+1))) {
-				sbbs->lprintf(LOG_WARNING,"Initializing last run time for event: %s"
-					,sbbs->cfg.event[i]->code);
-				if(write(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last)) != sizeof sbbs->cfg.event[i]->last)
-					sbbs->errormsg(WHERE, ERR_WRITE, str, 4);
-			} else {
+	// Read event "last ran" times from ctrl/time.ini
+	char ini_file[MAX_PATH+1];
+	SAFEPRINTF(ini_file,"%stime.ini",sbbs->cfg.ctrl_dir);
+	FILE* fp = iniOpenFile(ini_file, /* for modify: */false);
+	if (fp != nullptr) {
+		for (i = 0; i < sbbs->cfg.total_events; ++i)
+			sbbs->cfg.event[i]->last = (time32_t)iniReadDateTime(fp, eventIniSection, sbbs->cfg.event[i]->code, 0);
+		lastprepack = iniReadDateTime(fp, ROOT_SECTION, "QWK_prepack", 0);
+		iniCloseFile(fp);
+	} else {
+		// Read time.dab (legacy), and auto-upgrade to time.ini
+		SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
+		if((file=sbbs->nopen(str,O_RDONLY)) != -1) {
+			time32_t t32;
+			for(i=0;i<sbbs->cfg.total_events;i++) {
+				sbbs->cfg.event[i]->last=0;
 				if(read(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last))!=sizeof(sbbs->cfg.event[i]->last))
 					sbbs->errormsg(WHERE,ERR_READ,str,sizeof(time32_t));
 			}
-			/* Event always runs after initialization? */
-			if(sbbs->cfg.event[i]->misc&EVENT_INIT)
-				sbbs->cfg.event[i]->last=-1;
+			if(read(file, &t32, sizeof t32) != sizeof t32)	/* expected to fail first time */
+				t32 = 0;
+			lastprepack = t32;
+			close(file);
 		}
-		if(read(file,&lastprepack,sizeof(lastprepack)) != sizeof lastprepack)	/* expected to fail first time */
-			lastprepack = 0;
-		close(file);
+		fp = iniOpenFile(ini_file, /* for modify: */true);
+		if (fp == nullptr)
+			sbbs->errormsg(WHERE, ERR_CREATE, ini_file, 0);
+		else {
+			str_list_t ini = strListInit();
+			if(ini != NULL) {
+				if(lastprepack != 0)
+					iniSetDateTime(&ini, ROOT_SECTION, "QWK_prepack", /* include time */true, lastprepack, /* style: */nullptr);
+				for (i = 0; i < sbbs->cfg.total_events; ++i)
+					iniSetDateTime(&ini, eventIniSection, sbbs->cfg.event[i]->code, /* include time */true, sbbs->cfg.event[i]->last, &eventIniStyle);
+				iniWriteFile(fp, ini);
+				iniCloseFile(fp);
+				iniFreeStringList(ini);
+			}
+		}
+	}
+	for (i = 0; i < sbbs->cfg.total_events; ++i) {
+		/* Event always runs after initialization? */
+		if(sbbs->cfg.event[i]->misc&EVENT_INIT)
+			sbbs->cfg.event[i]->last=-1;
 	}
 
 	// Read QNET.DAB
@@ -3024,16 +3052,19 @@ void event_thread(void* arg)
 					}
 				}
 				closeuserdat(userfile);
-				lastprepack=(time32_t)now;
-				SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
-				if((file=sbbs->nopen(str,O_WRONLY))==-1) {
+				lastprepack=now;
+				SAFEPRINTF(str,"%stime.ini",sbbs->cfg.ctrl_dir);
+				if((fp = iniOpenFile(str, /* for modify: */true ))== NULL) {
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
 					break;
 				}
-				lseek(file,(int)sbbs->cfg.total_events*4L,SEEK_SET);
-				if(write(file,&lastprepack,sizeof(lastprepack)) != sizeof lastprepack)
-					sbbs->errormsg(WHERE, ERR_WRITE, str, sizeof lastprepack);
-				close(file);
+				str_list_t ini = iniReadFile(fp);
+				if(ini != NULL) {
+					iniSetDateTime(&ini, ROOT_SECTION, "QWK_prepack", /* include time: */true, lastprepack, /* style: */nullptr);
+					iniWriteFile(fp, ini);
+					iniFreeStringList(ini);
+				}
+				iniCloseFile(fp);
 
 				remove(semfile);
 			}
@@ -3289,16 +3320,14 @@ void event_thread(void* arg)
 							}
 
 							lastnodechk=now;
-							SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
-							if((file=sbbs->nopen(str,O_RDONLY))==-1) {
+							SAFEPRINTF(str,"%stime.ini",sbbs->cfg.ctrl_dir);
+							if((fp = iniOpenFile(str, /* for modify: */false)) == NULL) {
 								sbbs->errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-								sbbs->cfg.event[i]->last=(time32_t)now;
+								sbbs->cfg.event[i]->last = (time32_t)now;
 								continue;
 							}
-							lseek(file,(int)i*4L,SEEK_SET);
-							if(read(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last)) != sizeof sbbs->cfg.event[i]->last)
-								sbbs->errormsg(WHERE, ERR_READ, str, 4);
-							close(file);
+							sbbs->cfg.event[i]->last = (time32_t)iniReadDateTime(fp, eventIniSection, sbbs->cfg.event[i]->code, 0);
+							iniCloseFile(fp);
 							if(now-sbbs->cfg.event[i]->last<(60*60))	/* event is done */
 								break;
 							if(now-start>(90*60)) {
@@ -3431,15 +3460,18 @@ void event_thread(void* arg)
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=false;
 					sbbs->cfg.event[i]->last=time32(NULL);
-					SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
-					if((file=sbbs->nopen(str,O_WRONLY))==-1) {
+					SAFEPRINTF(str,"%stime.ini",sbbs->cfg.ctrl_dir);
+					if((fp = iniOpenFile(str, /* for modify: */true)) == NULL) {
 						sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
 						break;
 					}
-					lseek(file,(int)i*4L,SEEK_SET);
-					if(write(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last)) != sizeof sbbs->cfg.event[i]->last)
-						sbbs->errormsg(WHERE, ERR_WRITE, str, 4);
-					close(file);
+					str_list_t ini = iniReadFile(fp);
+					if(ini != NULL) {
+						iniSetDateTime(&ini, eventIniSection, sbbs->cfg.event[i]->code, /* include time */true, sbbs->cfg.event[i]->last, &eventIniStyle);
+						iniWriteFile(fp, ini);
+						iniFreeStringList(ini);
+					}
+					iniCloseFile(fp);
 
 					if(sbbs->cfg.event[i]->node != NODE_ANY
 						&& sbbs->cfg.event[i]->misc&EVENT_EXCL) { /* exclusive event */
