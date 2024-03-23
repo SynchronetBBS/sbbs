@@ -48,6 +48,7 @@ include:
       platform: "x64"
       tagname: "Linux"
       has_gtk: "yes"
+      build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'mingw-w64'
