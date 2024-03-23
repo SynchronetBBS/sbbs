@@ -156,3 +156,4 @@ smoketest-jsexec-linux:
     - "freebsd-amd64 [sbbs-build]"
   variables:
     BUILDPFLAGS: "RELEASE=1 WITHOUT_MOSQUITTO=1"
+    EXTRA_FILENAME: "-noskeeters"
