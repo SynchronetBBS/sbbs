@@ -256,7 +256,7 @@ typedef struct  {
 	char			host_ip[INET6_ADDRSTRLEN];
 	char			host_name[128];	/* Resolved remote host */
 	int				http_ver;       /* Request HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
-	bool			send_failed;
+	volatile bool	send_failed;
 	bool			finished;		/* Do not accept any more input from client */
 	enum parsed_vpath parsed_vpath; /* file area/base access */
 	int				libnum;
@@ -640,7 +640,7 @@ static bool session_check(http_session_t *session, bool *rd, bool *wr, unsigned 
 	return socket_check(session->socket, rd, wr, timeout);
 }
 
-static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, bool *failed)
+static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, volatile bool *failed)
 {
 	size_t sent=0;
 	int	tls_sent;
