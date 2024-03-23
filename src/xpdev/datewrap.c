@@ -29,11 +29,15 @@ time_t checktime(void)
 	time_t		t=0x2D24BD00L;	/* Correct time_t value on Jan-1-1994 */
 	struct tm	gmt;
 	struct tm	tm;
+	struct tm*	tmp;
 
 	memset(&tm,0,sizeof(tm));
 	tm.tm_year=94;
 	tm.tm_mday=1;
-	return mktime(&tm) - mktime(gmtime_r(&t,&gmt));
+	tmp = gmtime_r(&t,&gmt);
+	if(tmp == NULL)
+		return -1;
+	return mktime(&tm) - mktime(tmp);
 }
 
 /* Compensates for struct tm "weirdness" */
