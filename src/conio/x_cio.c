@@ -27,6 +27,7 @@
 
 #include <threadwrap.h>
 #include <xp_dl.h>
+#include <genwrap.h>
 
 #if (defined CIOLIB_IMPORTS)
  #undef CIOLIB_IMPORTS
