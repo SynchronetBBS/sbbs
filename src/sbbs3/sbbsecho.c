@@ -3638,7 +3638,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 /***********************************************************************/
 bool getzpt(FILE* stream, fmsghdr_t* hdr)
 {
-	char buf[0x1000];
+	char buf[0x1000] = "";
 	int i,len,cr=0;
 	off_t pos;
 	fidoaddr_t faddr;
@@ -3647,7 +3647,7 @@ bool getzpt(FILE* stream, fmsghdr_t* hdr)
 	pos=ftello(stream);
 	if(pos < 0)
 		return false;
-	len=fread(buf,1,0x1000,stream);
+	len=fread(buf,1,sizeo(buf) - 1,stream);
 	for(i=0;i<len;i++) {
 		if(buf[i]=='\n')	/* ignore line-feeds */
 			continue;
