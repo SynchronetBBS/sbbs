@@ -62,7 +62,7 @@ char* socklib_version(char* str, char* winsock_ver)
 	sprintf(str,"GLIBC %u.%u",__GLIBC__,__GLIBC_MINOR__);
 
 #else
-	
+
 	strcpy(str,"");
 
 #endif
@@ -95,7 +95,7 @@ void sbbs_t::ver()
 	center(str);
 	CRLF;
 
-	center("https;//gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH);
+	center("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH);
 	CRLF;
 
 	sprintf(str,"%s - http://synchro.net", COPYRIGHT_NOTICE);
