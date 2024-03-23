@@ -45,14 +45,10 @@ static const char* server_abbrev = "term";
 
 static const char* eventIniSection = "Events";
 static ini_style_t eventIniStyle = {
-	/* key_len: */LEN_CODE,
-	/* key_prefix: */nullptr,
-	/* section_separator: */""
+	/* key_len: */LEN_CODE
 };
 static ini_style_t qhubIniStyle = {
-	/* key_len: */LEN_QWKID,
-	/* key_prefix: */nullptr,
-	/* section_separator: */""
+	/* key_len: */LEN_QWKID
 };
 static const char* qhubIniSection = "QWK_NetworkHubs";
 
