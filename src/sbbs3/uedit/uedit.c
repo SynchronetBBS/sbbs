@@ -170,19 +170,19 @@ time_t strtosec(char *str)
 	return(sec);
 }
 
-char *geteditor(char *edit)
+char *geteditor(char *edit, size_t size)
 {
 	if(getenv("EDITOR")==NULL && (getenv("VISUAL")==NULL || getenv("DISPLAY")==NULL))
 #ifdef __unix__
-		strcpy(edit,"vi");
+		strlcpy(edit, "vi", size);
 #else
-		strcpy(edit,"notepad");
+		strlcpy(edit, "notepad", size);
 #endif
 	else {
 		if(getenv("DISPLAY")!=NULL && getenv("VISUAL")!=NULL)
-			strcpy(edit,getenv("VISUAL"));
+			strlcpy(edit, getenv("VISUAL"), size);
 		else
-			strcpy(edit,getenv("EDITOR"));
+			strlcpy(edit, getenv("EDITOR"), size);
 	}
 	return(edit);
 }
@@ -612,7 +612,7 @@ int edit_tmpqwktype(scfg_t *cfg, user_t *user)
 			break;
 		default:
 			if(strcmp(cfg->fcomp[j]->ext,user->tmpext)) {
-				strcpy(user->tmpext,cfg->fcomp[j]->ext);
+				SAFECOPY(user->tmpext,cfg->fcomp[j]->ext);
 				putuserstr(cfg, user->number, USER_TMPEXT, user->tmpext);
 			}
 			break;
@@ -815,10 +815,10 @@ int edit_fileopts(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Extended Descriptions      %s",user->misc & EXTDESC?"Yes":"No");
 		sprintf(opt[i++],"Batch Flagging             %s",user->misc & BATCHFLAG?"Yes":"No");
 		sprintf(opt[i++],"Auto Transfer Hangup       %s",user->misc & AUTOHANG?"Yes":"No");
-		strcpy(str,"None");
+		SAFECOPY(str,"None");
 		for(k=0;k<cfg->total_prots;k++)
 			if(cfg->prot[k]->mnemonic==user->prot)
-				strcpy(str,cfg->prot[k]->name);
+				SAFECOPY(str,cfg->prot[k]->name);
 		sprintf(opt[i++],"Default Download Protocol  %s",str);
 		sprintf(opt[i++],"Temp/QWK File Type         %s",user->tmpext);
 		opt[i][0]=0;
@@ -866,7 +866,7 @@ int edit_comment(scfg_t *cfg, user_t *user)
 	char str[1024];
 	char editor[1024];
 
-	sprintf(str,"%s %suser/%04u.msg",geteditor(editor),cfg->data_dir,user->number);
+	sprintf(str,"%s %suser/%04u.msg",geteditor(editor, sizeof editor),cfg->data_dir,user->number);
 	do_cmd(str);
 	return(0);
 }
@@ -1828,9 +1828,9 @@ int createdefaults(scfg_t* cfg)
 	user.freecdt=cfg->level_freecdtperday[user.level];
 
 	if(cfg->total_fcomps)
-		strcpy(user.tmpext,cfg->fcomp[0]->ext);
+		SAFECOPY(user.tmpext,cfg->fcomp[0]->ext);
 	else
-		strcpy(user.tmpext,"ZIP");
+		SAFECOPY(user.tmpext,"ZIP");
 	for(i=0;i<cfg->total_xedits;i++)
 		if(!stricmp(cfg->xedit[i]->code,cfg->new_xedit))
 			break;
@@ -1905,7 +1905,7 @@ int main(int argc, char** argv)  {
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
-    strcpy(bbs_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(bbs_startup.ctrl_dir,ctrl_dir);
 
 	/* Read .ini file here */
 	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
