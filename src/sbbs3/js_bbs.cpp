@@ -1726,10 +1726,14 @@ js_expand_atcodes(JSContext* cx, uintN argc, jsval* arglist)
 
 	if(JSVAL_IS_OBJECT(argv[1]) && !JSVAL_IS_NULL(argv[1])) {
 		JSObject* hdrobj;
-		if((hdrobj = JSVAL_TO_OBJECT(argv[1])) == NULL)
+		if((hdrobj = JSVAL_TO_OBJECT(argv[1])) == NULL) {
+			free(instr);
 			return JS_FALSE;
-		if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, /* smb_t: */NULL, &msg, /* post: */NULL))
+		}
+		if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, /* smb_t: */NULL, &msg, /* post: */NULL)) {
+			free(instr);
 			return JS_FALSE;
+		}
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
