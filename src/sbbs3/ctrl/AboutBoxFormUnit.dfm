@@ -13373,7 +13373,7 @@ object AboutBoxForm: TAboutBoxForm
     Alignment = taRightJustify
     Anchors = [akLeft, akBottom]
     AutoSize = False
-    Caption = 'Copyright 2022  ::'
+    Caption = 'Copyright 2024  ::'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -15
