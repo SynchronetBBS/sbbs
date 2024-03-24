@@ -204,7 +204,12 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		fseek(f, -128, SEEK_END);
+		if (fseek(f, -128, SEEK_END) != 0) {
+			fclose(f);
+			fprintf(stderr, "Unable to seek to beginning of SAUCE record in %s.\n", argv[i]);
+			continue;
+		}
+
 		if (fread(&sauce, sizeof(sauce), 1, f) < 1) {
 			fclose(f);
 			fprintf(stderr, "Unable to read SAUCE record from %s.\n", argv[i]);
