@@ -224,9 +224,9 @@ void sbbs_t::multinodechat(int channel)
 							break;
 						}
 						if((gurubuf=(char *)malloc((size_t)filelength(file)+1))==NULL) {
-							close(file);
 							errormsg(WHERE,ERR_ALLOC,str
 								,(size_t)filelength(file)+1);
+							close(file);
 							break;
 						}
 						if(read(file,gurubuf,(size_t)filelength(file)) < 1)
