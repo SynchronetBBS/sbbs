@@ -1635,8 +1635,10 @@ js_editfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	for (uintN i = 0; i < argc; ++i) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx, argv[i], &maxlines))
-				return JS_FALSE;
+			if(!JS_ValueToInt32(cx, argv[i], &maxlines)) {
+				result = JS_FALSE;
+				break;
+			}
 			continue;
 		}
 		if(JSVAL_IS_STRING(argv[i])) {
