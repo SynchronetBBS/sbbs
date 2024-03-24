@@ -38,9 +38,8 @@ include:
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'raspian'
-      platform: 'aarch64'
+      platform: 'armhf-on-aarch64'
       tagname: 'RaspberryPi'
-      no_javascript: 'yes'
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1'
   - local: '.gitlab-ci-unix.yml'
     inputs:

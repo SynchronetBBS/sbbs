@@ -1,0 +1,11 @@
+--- js-1.8.5/js/src/methodjit/Logging.h.orig	2011-03-31 15:08:36.000000000 -0400
++++ js-1.8.5/js/src/methodjit/Logging.h	2024-03-24 18:12:15.113345000 -0400
+@@ -38,7 +38,7 @@
+  *
+  * ***** END LICENSE BLOCK ***** */
+ 
+-#if !defined jsjaeger_logging_h__ && (defined JS_METHODJIT || defined JS_TRACER)
++#if !defined jsjaeger_logging_h__
+ #define jsjaeger_logging_h__
+ 
+ #include "prmjtime.h"
