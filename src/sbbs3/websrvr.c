@@ -1535,7 +1535,7 @@ static off_t sock_sendfile(http_session_t *session,char *path, off_t start, off_
 /********************************************************/
 static void send_error(http_session_t * session, unsigned line, const char* message)
 {
-	char	error_code[4];
+	char	error_code[5];
 	struct stat	sb;
 	char	sbuf[MAX_PATH+1];
 	char	sbuf2[MAX_PATH+1];
