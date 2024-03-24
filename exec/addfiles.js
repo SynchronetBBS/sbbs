@@ -230,10 +230,13 @@ for(var d = 0; d < dir_list.length; d++) {
 			continue;
 		}
 		var path = file_area.dir[code].path + file.name;
-		if(!file_exists(path)) {
+		var realpath = file_getcase(path);
+		if(!realpath)) {
 			alert("does not exist: " + path);
 			continue;
 		}
+		path = realpath;
+		file.name = file_getname(path);
 		if(options.date)
 			file.desc = datestr(time()) + " " + (file.desc || "");
 		else if(options.fdate)
