@@ -9,3 +9,14 @@
  
  case "$target" in
  *-wince*|*-winmo*|*-mingw*|*-cygwin*|*-msvc*|*-mks*)
+--- js-1.8.5/js/src/configure.in.orig	2024-03-25 00:20:29.843542000 -0400
++++ js-1.8.5/js/src/configure.in	2024-03-25 00:20:42.244482000 -0400
+@@ -5612,7 +5612,7 @@
+ 
+ JS_NATIVE_EDITLINE=
+ EDITLINE_LIBS=
+-JS_DISABLE_SHELL=
++JS_DISABLE_SHELL=1
+ 
+ case "$target" in
+ *-wince*|*-winmo*|*-mingw*|*-cygwin*|*-msvc*|*-mks*)

@@ -333,7 +333,11 @@ else
   EXEFILE		:=
  endif
 endif
-SOFILE		:= .so
+ifeq ($(os),win32)
+ SOFILE		:= .dll
+else
+ SOFILE		:= .so
+endif
 LIBFILE		:= .a
 UL_PRE		:=	-l
 UL_SUF		:=	

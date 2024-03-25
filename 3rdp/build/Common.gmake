@@ -2,31 +2,38 @@
 # NSPR Stuff #
 ##############
 
-ifeq ($(shell nspr-config --version > /dev/null 2>&1 && echo YES),YES)
- NSPRDIR ?= $(shell nspr-config --libdir)
- NSPRINCLUDE ?= $(shell nspr-config --includedir)
- NSPR_CFLAGS ?= $(shell nspr-config --cflags)
- NSPR_LIBS ?= $(shell nspr-config --libs)
+ifeq ($(os),win32)
+ NSPRDIR ?= $(3RDP_ROOT)/win32.release/nspr/lib
+ NSPRINCLUDE ?= $(3RDP_ROOT)/win32.release/nspr/include/nspr
+ NSPR_CFLAGS ?= -I$(3RDP_ROOT)/win32.release/nspr/include/nspr
+ NSPR_LIBS ?= -L$(3RDP_ROOT)/win32.release/nspr/lib -lplds4 -lplc4 -lnspr4
 else
- ifeq ($(os),sunos)
-  ifeq ($(shell test -f /usr/sfw/lib/mozilla/libnspr4.so && echo "yes"),yes)
-   NSPRDIR ?= /usr/sfw/lib/mozilla
-   ifeq ($(shell test -d /usr/sfw/include/mozilla/nspr && echo "yes"),yes)
-    NSPRINCLUDE ?= /usr/sfw/include/mozilla/nspr
+ ifeq ($(shell nspr-config --version > /dev/null 2>&1 && echo YES),YES)
+  NSPRDIR ?= $(shell nspr-config --libdir)
+  NSPRINCLUDE ?= $(shell nspr-config --includedir)
+  NSPR_CFLAGS ?= $(shell nspr-config --cflags)
+  NSPR_LIBS ?= $(shell nspr-config --libs)
+ else
+  ifeq ($(os),sunos)
+   ifeq ($(shell test -f /usr/sfw/lib/mozilla/libnspr4.so && echo "yes"),yes)
+    NSPRDIR ?= /usr/sfw/lib/mozilla
+    ifeq ($(shell test -d /usr/sfw/include/mozilla/nspr && echo "yes"),yes)
+     NSPRINCLUDE ?= /usr/sfw/include/mozilla/nspr
+    endif
    endif
   endif
- endif
 
- ifndef NSPRDIR
-  NSPRDIR := $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)nspr$(DIRSEP)$(machine).$(BUILD)
- endif
+  ifndef NSPRDIR
+   NSPRDIR := $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)nspr$(DIRSEP)$(machine).$(BUILD)
+  endif
 
- #The following is needed for nspr support on Linux
- ifeq ($(os),linux)
-  NSPR_LIBS +=	-ldl
- endif
+  #The following is needed for nspr support on Linux
+  ifeq ($(os),linux)
+   NSPR_LIBS +=	-ldl
+  endif
 
- NSPR_LIBS	+=	-lnspr4
+  NSPR_LIBS	+=	-lnspr4
+ endif
 endif
 
 NSPR_LDFLAGS	+=	-L/usr/local/lib -L$(NSPRDIR)

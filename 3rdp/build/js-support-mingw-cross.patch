@@ -1,0 +1,62 @@
+--- ./js-1.8.5/js/src/configure.in.orig	2024-03-24 23:43:27.372496000 -0400
++++ ./js-1.8.5/js/src/configure.in	2024-03-24 23:44:49.874853000 -0400
+@@ -337,6 +337,9 @@
+ AC_SUBST(ANDROID_SDK)
+ AC_SUBST(ANDROID_PLATFORM_TOOLS)
+ 
++dnl AR_EXEEXT for cross-compiling to Windows
++AC_EXEEXT
++
+ dnl ========================================================
+ dnl Checks for compilers.
+ dnl ========================================================
+@@ -1842,14 +1845,17 @@
+         HOST_AR_FLAGS='-NOLOGO -OUT:"$@"'
+         HOST_CFLAGS="$HOST_CFLAGS -TC -nologo -Fd\$(HOST_PDBFILE)"
+         HOST_RANLIB='echo ranlib'
+-    else
+-        HOST_CFLAGS="$HOST_CFLAGS -mno-cygwin"
+     fi
+     HOST_CFLAGS="$HOST_CFLAGS -DXP_WIN32 -DXP_WIN -DWIN32 -D_WIN32 -DNO_X11"
+     HOST_NSPR_MDCPUCFG='\"md/_winnt.cfg\"'
+     HOST_OPTIMIZE_FLAGS="${HOST_OPTIMIZE_FLAGS=-O2}"
+     HOST_BIN_SUFFIX=.exe
+     case "$host" in
++    *cygwin*)
++      if test -z "$_WIN32_MSVC"; then
++        HOST_CFLAGS="$HOST_CFLAGS -mno-cygwin"
++      fi
++      ;;
+     *mingw*)
+     dnl MinGW/MSYS does not need CYGWIN_WRAPPER
+         PERL="/bin/sh ${_topsrcdir}/build/msys-perl-wrapper"
+@@ -2344,9 +2350,15 @@
+     # #include <string> vs -I./dist/include/string issue so don't use it
+     SYSTEM_MAKEDEPEND=
+     if test -n "$GNU_CC"; then
+-        CC="$CC -mno-cygwin"
+-        CXX="$CXX -mno-cygwin"
+-        CPP="$CPP -mno-cygwin"
++        case "$host" in
++        *cygwin*)
++            if test -z "$_WIN32_MSVC"; then
++                CC="$CC -mno-cygwin"
++                CXX="$CXX -mno-cygwin"
++                CPP="$CPP -mno-cygwin"
++            fi
++            ;;
++        esac
+         CFLAGS="$CFLAGS -mms-bitfields"
+         CXXFLAGS="$CXXFLAGS -mms-bitfields"
+         DSO_LDOPTS='-shared'
+--- js-1.8.5/js/src/config/mkdepend/Makefile.in.orig	2024-03-25 00:14:48.920732000 -0400
++++ js-1.8.5/js/src/config/mkdepend/Makefile.in	2024-03-25 00:14:56.527309000 -0400
+@@ -71,7 +71,7 @@
+ 
+ include $(topsrcdir)/config/rules.mk
+ 
+-HOST_CFLAGS	+= -DINCLUDEDIR=\"/usr/include\" -DOBJSUFFIX=\".$(OBJ_SUFFIX)\"
++HOST_CFLAGS	+= -DINCLUDEDIR=\"/usr/include\" -DOBJSUFFIX=\".$(OBJ_SUFFIX)\" -DNO_X11
+ 
+ ifdef GNU_CC
+ _GCCDIR		= $(shell $(CC) -print-file-name=include)
