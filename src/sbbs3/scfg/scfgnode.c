@@ -192,16 +192,17 @@ void node_menu()
 void node_cfg()
 {
 	static	int node_dflt;
-	char	done,str[81];
-	static	int adv_dflt,tog_dflt,tog_bar;
+	char	str[81];
 	int 	i;
 
 	while(1) {
 		i=0;
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Phone Number",cfg.node_phone);
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Logon Requirements",cfg.node_arstr);
-		strcpy(opt[i++],"Toggle Options...");
-		strcpy(opt[i++],"Advanced Options...");
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Keep Node File Open",cfg.node_misc&NM_CLOSENODEDAB ? "No":"Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Daily Event",cfg.node_daily);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Node Directory",cfg.node_path[cfg.node_num-1]);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Text Directory",cfg.text_dir);
 		opt[i][0]=0;
 		sprintf(str,"Node %d Configuration",cfg.node_num);
 		uifc.helpbuf=
@@ -221,7 +222,7 @@ void node_cfg()
 				if(i!=-1)
 					return;
 				break;
-			case 0:
+			case __COUNTER__:
 				uifc.helpbuf=
 					"`Node Phone Number:`\n"
 					"\n"
@@ -230,110 +231,63 @@ void node_cfg()
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,10,"Phone Number",cfg.node_phone,sizeof(cfg.node_phone)-1,K_EDIT);
 				break;
-			case 1:
+			case __COUNTER__:
 				sprintf(str,"Node %u Logon",cfg.node_num);
 				getar(str,cfg.node_arstr);
 				break;
-			case 2:
-				done=0;
-				while(!done) {
-					i=0;
-					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Keep Node File Open"
-						,cfg.node_misc&NM_CLOSENODEDAB ? "No":"Yes");
-
-					opt[i][0]=0;
-					uifc.helpbuf=
-						"`Node Toggle Options:`\n"
-						"\n"
-						"This is the toggle options menu for the selected node's configuration.\n"
-						"\n"
-						"The available options from this menu can all be toggled between two or\n"
-						"more states, such as `Yes` and `No``.\n"
-					;
-					switch(uifc.list(WIN_BOT|WIN_RHT|WIN_ACT|WIN_SAV,3,2,35,&tog_dflt
-						,&tog_bar,"Toggle Options",opt)) {
-						case -1:
-							done=1;
-							break;
-						case 0:
-							i=cfg.node_misc&NM_CLOSENODEDAB ? 1:0;
-							uifc.helpbuf=
-								"`Keep Node File Open:`\n"
-								"\n"
-								"If you want to keep the shared node file (`ctrl/node.dab`) open,\n"
-								"(for better performance and reliability) set this option to `Yes`.\n"
-								"If want to keep the file closed (for `Samba` compatibility), set this\n"
-								"option to `No`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-								,"Keep Node File Open",uifcYesNoOpts);
-							if(i==0 && cfg.node_misc&NM_CLOSENODEDAB) {
-								cfg.node_misc&=~NM_CLOSENODEDAB;
-								uifc.changes=1;
-							}
-							else if(i==1 && !(cfg.node_misc&NM_CLOSENODEDAB)) {
-								cfg.node_misc|=NM_CLOSENODEDAB;
-								uifc.changes=1;
-							}
-							break;
-						}
-					}
-				break;
-			case 3:
-				done=0;
-				while(!done) {
-					i=0;
-					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Daily Event",cfg.node_daily);
-					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Node Directory",cfg.node_path[cfg.node_num-1]);
-					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Text Directory",cfg.text_dir);
-					opt[i][0]=0;
-					uifc.helpbuf=
-						"`Node Advanced Options:`\n"
-						"\n"
-						"This is the advanced options menu for the selected node. The available\n"
-						"options are of an advanced nature and should not be modified unless you\n"
-						"are sure of the consequences and necessary preparation.\n"
-					;
-					switch(uifc.list(WIN_T2B|WIN_RHT|WIN_ACT|WIN_SAV,2,0,60,&adv_dflt,0
-						,"Advanced Options",opt)) {
-						case -1:
-							done=1;
-							break;
-						case __COUNTER__:
-							uifc.helpbuf=
-								"`Daily Event:`\n"
-								"\n"
-								"If you have an event that this node's terminal server should run every\n"
-								"day, enter the command line for that event here.\n"
-								"\n"
-								"An event can be any valid command line. If multiple programs or commands\n"
-								"are required, use a batch file or shell script.\n"
-								SCFG_CMDLINE_PREFIX_HELP
-								SCFG_CMDLINE_SPEC_HELP
-							;
-							uifc.input(WIN_MID|WIN_SAV,0,10,"Daily Event"
-								,cfg.node_daily,sizeof(cfg.node_daily)-1,K_EDIT);
-							break;
-						case __COUNTER__:
-							uifc.helpbuf = node_path_help;
-							uifc.input(WIN_MID|WIN_SAV,0,10,"Node Directory"
-								,cfg.node_path[cfg.node_num-1],sizeof(cfg.node_path[0])-1,K_EDIT);
-							break;
-						case __COUNTER__:
-							uifc.helpbuf=
-								"`Text Directory:`\n"
-								"\n"
-								"Your text directory contains `read-only` text files. Synchronet never\n"
-								"`writes` to any files in this directory so it `CAN` be placed on a RAM\n"
-								"disk or other volatile media. This directory contains the system's menus\n"
-								"and other important text files, so be sure the files and directories are\n"
-								"moved to this directory if you decide to change it.\n"
-							;
-							uifc.input(WIN_MID|WIN_SAV,0,10,"Text Directory"
-								,cfg.text_dir,sizeof(cfg.text_dir)-1,K_EDIT);
-							break;
-					}
+			case __COUNTER__:
+				i=cfg.node_misc&NM_CLOSENODEDAB ? 1:0;
+				uifc.helpbuf=
+					"`Keep Node File Open:`\n"
+					"\n"
+					"If you want to keep the shared node file (`ctrl/node.dab`) open,\n"
+					"(for better performance and reliability) set this option to `Yes`.\n"
+					"If want to keep the file closed (for `Samba` compatibility), set this\n"
+					"option to `No`.\n"
+				;
+				i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
+					,"Keep Node File Open",uifcYesNoOpts);
+				if(i==0 && cfg.node_misc&NM_CLOSENODEDAB) {
+					cfg.node_misc&=~NM_CLOSENODEDAB;
+					uifc.changes=1;
 				}
+				else if(i==1 && !(cfg.node_misc&NM_CLOSENODEDAB)) {
+					cfg.node_misc|=NM_CLOSENODEDAB;
+					uifc.changes=1;
+				}
+				break;
+			case __COUNTER__:
+				uifc.helpbuf=
+					"`Daily Event:`\n"
+					"\n"
+					"If you have an event that this node's terminal server should run every\n"
+					"day, enter the command line for that event here.\n"
+					"\n"
+					"An event can be any valid command line. If multiple programs or commands\n"
+					"are required, use a batch file or shell script.\n"
+					SCFG_CMDLINE_PREFIX_HELP
+					SCFG_CMDLINE_SPEC_HELP
+				;
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Daily Event"
+					,cfg.node_daily,sizeof(cfg.node_daily)-1,K_EDIT);
+				break;
+			case __COUNTER__:
+				uifc.helpbuf = node_path_help;
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Node Directory"
+					,cfg.node_path[cfg.node_num-1],sizeof(cfg.node_path[0])-1,K_EDIT);
+				break;
+			case __COUNTER__:
+				uifc.helpbuf=
+					"`Text Directory:`\n"
+					"\n"
+					"Your text directory contains `read-only` text files. Synchronet never\n"
+					"`writes` to any files in this directory so it `CAN` be placed on a RAM\n"
+					"disk or other volatile media. This directory contains the system's menus\n"
+					"and other important text files, so be sure the files and directories are\n"
+					"moved to this directory if you decide to change it.\n"
+				;
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Text Directory"
+					,cfg.text_dir,sizeof(cfg.text_dir)-1,K_EDIT);
 				break;
 		}
 	}
