@@ -33,7 +33,7 @@ ifneq ($(os),linux)
   JS_CONFIGURE_ARGS += '--disable-tracejit'
  endif
 endif
-JS_CONFIGURE_ARGS += --build=$(shell gcc -v 2>&1 | awk '/^Target:/ {print $$2}')
+JS_CONFIGURE_ARGS += --build=$(shell cc -v 2>&1 | awk '/^Target:/ {print $$2}')
 JS_CONFIGURE_ARGS += --host=$(shell $(CC) -v 2>&1 | awk '/^Target:/ {print $$2}')
 JS_CONFIGURE_ARGS += --target=$(shell $(CC) -v 2>&1 | awk '/^Target:/ {print $$2}')
 ifeq ($(os),darwin)
