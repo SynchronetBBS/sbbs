@@ -41,7 +41,7 @@
 #include "git_hash.h"
 
 #define TITLE "Synchronet Virtual DOS Modem for Windows"
-#define VERSION "0.4"
+#define VERSION "0.5"
 
 bool external_socket;
 union xp_sockaddr addr;
@@ -79,6 +79,8 @@ struct {
 	ulong data_rate;
 	bool server_echo;
 	bool server_binary;
+	DWORD main_loop_delay;
+	DWORD socket_select_timeout;
 	char client_file[MAX_PATH + 1];
 	char ip_filter_file[MAX_PATH + 1];
 	char ring_sound[MAX_PATH + 1];
@@ -1105,6 +1107,8 @@ bool read_ini(const char* ini_fname)
 	cfg.server_echo = iniGetBool(ini, ROOT_SECTION, "ServerEcho", cfg.server_echo);
 	cfg.server_binary = iniGetBool(ini, ROOT_SECTION, "ServerBinary", cfg.server_binary);
 	cfg.data_rate = iniGetLongInt(ini, ROOT_SECTION, "Rate", cfg.data_rate);
+	cfg.main_loop_delay = iniGetUInteger(ini, ROOT_SECTION, "MainLoopDelay", cfg.main_loop_delay);
+	cfg.socket_select_timeout = iniGetUInteger(ini, ROOT_SECTION, "SocketSelectTimeout", cfg.socket_select_timeout);
 	cfg.address_family = iniGetEnum(ini, ROOT_SECTION, "AddressFamily", addrFamilyNames, cfg.address_family);
 	char value[INI_MAX_VALUE_LEN];
 	const char* p = iniGetString(ini, ROOT_SECTION, "BusyNotice", NULL, value);
@@ -1389,12 +1393,12 @@ int main(int argc, char** argv)
 	ULONGLONG lastrx = 0;
 	int largest_recv = 0;
 
-	while(WaitForSingleObject(process_info.hProcess,0) != WAIT_OBJECT_0) {
+	while(WaitForSingleObject(process_info.hProcess, cfg.main_loop_delay) != WAIT_OBJECT_0) {
 		ULONGLONG now = xp_timer64();
 		if(modem.online) {
 			fd_set fds = {0};
 			FD_SET(sock, &fds);
-			struct timeval tv = { 0, 0 };
+			struct timeval tv = { 0, cfg.socket_select_timeout * 1000 };
 			result = select(/* ignored: */0, &fds, NULL, NULL, &tv);
 			if(result != 0) {
 				if(result == SOCKET_ERROR)
