@@ -143,6 +143,7 @@ bool write_main_cfg(scfg_t* cfg)
 	iniSetHexInt(&ini, ROOT_SECTION, "ctrlkey_passthru", cfg->ctrlkey_passthru, NULL);
 	iniSetDuration(&ini, ROOT_SECTION, "max_getkey_inactivity", cfg->max_getkey_inactivity, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "inactivity_warn", cfg->inactivity_warn, NULL);
+	iniSetBool(&ini, ROOT_SECTION, "spinning_pause_prompt", cfg->spinning_pause_prompt, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "user_backup_level", cfg->user_backup_level, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "mail_backup_level", cfg->mail_backup_level, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "config_backup_level", cfg->config_backup_level, NULL);

@@ -118,6 +118,7 @@ if(node_settings & NM_LOGON_P)
 	cnf.login |= LOGIN_PWPROMPT;
 if(!(node_settings & NM_NO_NUM))
 	cnf.login |= LOGIN_USERNUM;
+cnf.spinning_pause_prompt = (node_settings & NM_NOPAUSESPIN) ? "false" : "true";
 
 for(var i in cnf.validation_set)
 	ini.iniSetObject("valset:" + i, cnf.validation_set[i]);

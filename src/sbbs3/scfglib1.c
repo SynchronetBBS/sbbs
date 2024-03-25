@@ -123,6 +123,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->ctrlkey_passthru = iniGetInteger(ini, ROOT_SECTION, "ctrlkey_passthru", 0);
 	cfg->max_getkey_inactivity = (uint)iniGetDuration(ini, ROOT_SECTION, "max_getkey_inactivity", 300);
 	cfg->inactivity_warn = (uchar)iniGetUInteger(ini, ROOT_SECTION, "inactivity_warn", 75);
+	cfg->spinning_pause_prompt = iniGetBool(ini, ROOT_SECTION, "spinning_pause_prompt", true);
 
 	cfg->user_backup_level = iniGetUInteger(ini, ROOT_SECTION, "user_backup_level", 5);
 	cfg->mail_backup_level = iniGetUInteger(ini, ROOT_SECTION, "mail_backup_level", 5);

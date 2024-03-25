@@ -1755,6 +1755,8 @@ void sys_cfg(void)
 						,cfg.sys_misc&SM_NONODELIST ? "No" : "Yes");
 					snprintf(opt[i++], MAX_OPLN, "%-35s%s","Mouse Hot-spots in Menus/Prompts"
 						,cfg.sys_misc&SM_MOUSE_HOT ? "Yes" : "No");
+					snprintf(opt[i++], MAX_OPLN, "%-35s%s","Spinning Cursor at Pause Prompts"
+						,cfg.spinning_pause_prompt ? "Yes" : "No");
 					opt[i][0]=0;
 					uifc.helpbuf=
 						"`System Toggle Options:`\n"
@@ -1919,6 +1921,20 @@ void sys_cfg(void)
 								cfg.sys_misc |= SM_MOUSE_HOT;
 							}
 							break;
+						case 10:
+							i=cfg.spinning_pause_prompt ? 0:1;
+							uifc.helpbuf=
+								"`Spinning Cursor at Pause Prompts:`\n"
+								"\n"
+								"If you want to display a spinning cursor at the [Hit a key] prompt,\n"
+								"set this option to `Yes`.\n"
+							;
+							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
+								,"Spinning Cursor at Pause Prompts",uifcYesNoOpts);
+							if(i >= 0)
+								cfg.spinning_pause_prompt = !cfg.spinning_pause_prompt;
+							break;
+
 						}
 					}
 				break;

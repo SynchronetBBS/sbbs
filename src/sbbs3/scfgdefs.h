@@ -488,6 +488,7 @@ typedef struct
 
 	char			node_daily[LEN_CMD+1];	/* Name of node's daily event */
 	uint32_t		node_misc;			/* Misc bits for node setup */
+	bool			spinning_pause_prompt;
 	uint16_t		valuser;			/* User validation mail goes to */
 	uint16_t		erruser;			/* User error messages goes to */
 	uchar			errlevel;			/* Log level threshold to notify user (erruser) */

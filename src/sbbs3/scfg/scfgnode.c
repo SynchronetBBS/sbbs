@@ -238,8 +238,6 @@ void node_cfg()
 				done=0;
 				while(!done) {
 					i=0;
-					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Spinning Pause Prompt"
-						,cfg.node_misc&NM_NOPAUSESPIN ? "No":"Yes");
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Keep Node File Open"
 						,cfg.node_misc&NM_CLOSENODEDAB ? "No":"Yes");
 
@@ -258,25 +256,6 @@ void node_cfg()
 							done=1;
 							break;
 						case 0:
-							i=cfg.node_misc&NM_NOPAUSESPIN ? 1:0;
-							uifc.helpbuf=
-								"`Spinning Pause Prompt:`\n"
-								"\n"
-								"If you want to display a spinning cursor at the [Hit a key] prompt,\n"
-								"set this option to `Yes`.\n"
-							;
-							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
-								,"Spinning Cursor at Pause Prompt",uifcYesNoOpts);
-							if(i==0 && cfg.node_misc&NM_NOPAUSESPIN) {
-								cfg.node_misc&=~NM_NOPAUSESPIN;
-								uifc.changes=1;
-							}
-							else if(i==1 && !(cfg.node_misc&NM_NOPAUSESPIN)) {
-								cfg.node_misc|=NM_NOPAUSESPIN;
-								uifc.changes=1;
-							}
-							break;
-						case 1:
 							i=cfg.node_misc&NM_CLOSENODEDAB ? 1:0;
 							uifc.helpbuf=
 								"`Keep Node File Open:`\n"
