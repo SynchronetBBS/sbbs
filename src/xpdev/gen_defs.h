@@ -27,7 +27,6 @@
 #include <assert.h>
 #endif
 #include <errno.h>
-// Note, genwrap.h is included at the *end* of this file.
 
 /* Resolve multi-named errno constants */
 #if defined(EDEADLK) && !defined(EDEADLOCK)
