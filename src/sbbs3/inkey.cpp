@@ -109,9 +109,8 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 	if(ch == NOINP)
 		return no_input;
 
-	if(cfg.node_misc&NM_7BITONLY
-		&& (!(sys_status&SS_USERON) || term_supports(NO_EXASCII)))
-		ch&=0x7f;
+	if(term_supports(NO_EXASCII))
+		ch&=0x7f; // e.g. strip parity bit
 
 	getkey_last_activity = time(NULL);
 
