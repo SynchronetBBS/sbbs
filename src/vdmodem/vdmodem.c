@@ -720,6 +720,23 @@ connected:
 	return connected(modem);
 }
 
+void init_telnet_options()
+{
+	if(mode == TELNET) {
+		ZERO_VAR(telnet);
+		if(cfg.server_echo) {
+			/* Disable Telnet Terminal Echo */
+			request_telnet_opt(TELNET_WILL,TELNET_ECHO);
+		}
+		if(cfg.server_binary) {
+			/* Will send in binary mode (no CR->CRLF expansion on receiver side) */
+			request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
+		}
+		/* Will suppress Go Ahead */
+		request_telnet_opt(TELNET_WILL,TELNET_SUP_GA);
+	}
+}
+
 char* answer(struct modem* modem)
 {
 	if(listening_sock == INVALID_SOCKET)
@@ -742,19 +759,7 @@ char* answer(struct modem* modem)
 			fclose(fp);
 		}
 	}
-	if(mode == TELNET) {
-		ZERO_VAR(telnet);
-		if(cfg.server_echo) {
-			/* Disable Telnet Terminal Echo */
-			request_telnet_opt(TELNET_WILL,TELNET_ECHO);
-		}
-		if(cfg.server_binary) {
-			/* Will send in binary mode (no CR->CRLF expansion on receiver side) */
-			request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
-		}
-		/* Will suppress Go Ahead */
-		request_telnet_opt(TELNET_WILL,TELNET_SUP_GA);
-	}
+	init_telnet_options();
 	putcom(cfg.answer_banner, strlen(cfg.answer_banner));
 	return connected(modem);
 }
@@ -1275,9 +1280,10 @@ int main(int argc, char** argv)
 
 		_beginthread(listen_thread, /* stack_size: */0, &modem);
 	} else {
-		if(sock != INVALID_SOCKET) {
+		if(sock != INVALID_SOCKET) { // -h option specified without -l
 			setsockopts(sock);
 			connected(&modem);
+			init_telnet_options();
 		}
 	}
 
