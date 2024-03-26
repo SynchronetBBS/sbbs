@@ -1,0 +1,10 @@
+--- cryptlib.h.orig	2024-03-25 06:07:16.633688000 -0400
++++ cryptlib.h	2024-03-25 06:07:24.449604000 -0400
+@@ -8,6 +8,7 @@
+ #ifndef _CRYPTLIB_DEFINED
+ 
+ #define _CRYPTLIB_DEFINED
++#include <limits.h>
+ 
+ /* The current cryptlib version: 3.4.7 */
+ 

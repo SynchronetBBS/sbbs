@@ -18,7 +18,8 @@ SRC_ROOT = ..
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
 CFLAGS += -I$(XPDEV_SRC) $(ENCODE_CFLAGS) $(HASH_CFLAGS) $(XPDEV_CFLAGS)
-
+CFLAGS := $(filter-out -DSMB_IMPORTS -DMD5_IMPORTS -DB64_IMPORTS,$(CFLAGS))
+CFLAGS += -DSMB_EXPORTS -DMD5_EXPORTS -DB64_EXPORTS
 
 # SMBLIB Library Link Rule
 $(SMBLIB_BUILD): $(OBJS) | $(OBJODIR)

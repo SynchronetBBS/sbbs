@@ -1,7 +1,7 @@
 #ifdef DLLEXPORT
 #undef DLLEXPORT
 #endif
-#if defined(_WIN32) && ! defined(__MINGW32__)
+#if defined(_WIN32)
 	#ifdef SBBS_EXPORTS
 		#define DLLEXPORT	__declspec(dllexport)
 	#else

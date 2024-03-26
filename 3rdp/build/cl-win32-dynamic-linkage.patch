@@ -1,0 +1,11 @@
+--- cryptlib.h.orig	2024-03-25 05:57:10.515088000 -0400
++++ cryptlib.h	2024-03-25 05:59:23.436090000 -0400
+@@ -76,7 +76,7 @@
+    internal crypt.h or not */
+ 
+ #if ( defined( WIN32 ) || defined( _WIN32 ) || defined( __WIN32__ ) || \
+-	  defined( _WIN32_WCE ) ) && !( defined( STATIC_LIB ) || defined( _SCCTK ) )
++	  defined( _WIN32_WCE ) ) && !( defined( _SCCTK ) )
+   #define C_PTR	*					/* General pointer */
+   #if defined( _WIN32_WCE )
+ 	/* Rather than relying on _UNICODE being defined (which would cause

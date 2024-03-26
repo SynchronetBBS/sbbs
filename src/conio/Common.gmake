@@ -28,6 +28,7 @@ ifndef win
  ifeq ($(shell pkg-config ncursesw --exists && echo YES), YES)
   CIOLIB-MT_LIBS += $(shell pkg-config ncursesw --libs)
   CIOLIB-MT_CFLAGS += $(shell pkg-config ncursesw --cflags)
+  CIOLIB-MT_CFLAGS += -DCIOLIB_IMPORTS
  else
   ifdef USE_SYSTEM_CURSES
    CIOLIB-MT_LIBS		+=	$(UL_PRE)curses$(UL_SUF)

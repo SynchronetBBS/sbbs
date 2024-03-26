@@ -297,6 +297,9 @@ else
   ifeq ($(os),darwin)	# Don't go digging for stuff on Mac, nobody knows what's up.
    CFLAGS	+=	-DHAS_INTTYPES_H
   endif
+  ifeq ($(os),win32)	# Don't go digging for stuff on Win, huge pain.
+   CFLAGS	+=	-DHAS_INTTYPES_H
+  endif
  endif
 endif
 

@@ -69,7 +69,7 @@ char sepchar = 0xb3;
  * From FreeBSD src/lib/libc/string/strcasestr.c
  */
 char *
-strcasestr(const char *s, const char *find)
+uedit_strcasestr(const char *s, const char *find)
 {
 	char c, sc;
 	size_t len;
@@ -191,12 +191,12 @@ int do_cmd(char *cmd)
 {
 	int i;
 
-#ifdef HAS_CURSES
+#if defined(HAS_CURSES) && !defined(_WIN32)
 	if(cio_api.mode == CIOLIB_MODE_CURSES || cio_api.mode == CIOLIB_MODE_CURSES_IBM)
 		endwin();
 #endif
 	i=system(cmd);
-#ifdef HAS_CURSES
+#if defined(HAS_CURSES) && !defined(_WIN32)
 	if(cio_api.mode == CIOLIB_MODE_CURSES || cio_api.mode == CIOLIB_MODE_CURSES_IBM)
 		refresh();
 #endif
@@ -1703,7 +1703,7 @@ int finduser(scfg_t *cfg, user_t *user)
 		for(i=1; i<=last; i++) {
 			user->number=i;
 			GETUSERDAT(cfg,user);
-			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL
+			if(uedit_strcasestr(user->alias, str)!=NULL || uedit_strcasestr(user->name, str)!=NULL || uedit_strcasestr(user->handle, str)!=NULL
 					|| user->number==un) {
 				FREE_AND_NULL(opt[j]);
 				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
@@ -1755,7 +1755,7 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 		for(i=1; i<=last; i++) {
 			user->number=i;
 			GETUSERDAT(cfg,user);
-			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL) {
+			if(uedit_strcasestr(user->alias, str)!=NULL || uedit_strcasestr(user->name, str)!=NULL || uedit_strcasestr(user->handle, str)!=NULL) {
 				FREE_AND_NULL(opt[j]);
 				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
 					allocfail(sizeof(struct user_list));

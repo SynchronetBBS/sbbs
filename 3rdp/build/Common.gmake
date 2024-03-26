@@ -36,7 +36,9 @@ else
  endif
 endif
 
-NSPR_LDFLAGS	+=	-L/usr/local/lib -L$(NSPRDIR)
+ifndef NSPR_LIBS
+ NSPR_LDFLAGS	+=	-L/usr/local/lib -L$(NSPRDIR)
+endif
 
 ifdef NSPRINCLUDE
  NSPR_CFLAGS += -I$(NSPRINCLUDE)
@@ -133,7 +135,9 @@ else
  CRYPTLIBDIR := $(CRYPT_IDIR)
  CRYPT_DEPS := cl
  CRYPT_LIBS += $(CRYPT_IDIR)/libcl.a
- CRYPT_CFLAGS += -DSTATIC_CRYPTLIB -DSTATIC_LIB
+ ifndef win
+  CRYPT_CFLAGS += -DSTATIC_CRYPTLIB -DSTATIC_LIB
+ endif
 endif
 
 # Put it all together...

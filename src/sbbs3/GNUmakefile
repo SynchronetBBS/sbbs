@@ -115,8 +115,10 @@ else
  FILE_LIBS	= -larchive
 endif
 
-include sbbsdefs.mk
-MT_CFLAGS	+=	$(SBBSDEFS) $(SFTP-MT_CFLAGS)
+CFLAGS := $(filter-out -DWRAPPER_IMPORTS -DSBBS_IMPORTS,$(CFLAGS))
+CFLAGS += -DWRAPPER_EXPORTS -DSBBS_EXPORTS -DRINGBUF_EVENT -DRINGBUF_MUTEX
+MT_CFLAGS := $(filter-out -DWRAPPER_IMPORTS -DSBBS_IMPORTS,$(MT_CFLAGS))
+MT_CFLAGS += -DWRAPPER_EXPORTS -DSBBS_EXPORTS
 
 ifndef NO_LD_RUN_PATH
  # Set up LD_RUN_PATH for run-time locating of the .so files
@@ -168,38 +170,60 @@ ifneq ($(os),darwin)
  SBBS_EXTRA_LDFLAGS += -Wl,--version-script=sbbs.version
 endif
 
-# Synchronet BBS library Link Rule
-$(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(OBJS) $(LIBS) $(EXTRA_SBBS_DEPENDS) $(ENCODE_LIB) $(HASH_LIB) $(SFTPLIB-MT) | $(LIBODIR)
-	@echo Linking $@
-	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) -o $@ $(OBJS) $(SBBS_LIBS) $(SMBLIB_LIBS) $(LIBS) $(SHLIBOPTS) $(JS_LIBS) $(CRYPT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(XPDEV-MT_LIBS) $(FILE_LIBS) $(SFTP-MT_LIBS) $(SBBS_EXTRA_LDFLAGS)
-ifeq ($(os), netbsd)
-	paxctl +m $(SBBS)
-endif
+LIB_EXPORTS = \
+	CFLAGS="$(CFLAGS)" \
+	SBBS="$(SBBS)" \
+	QUIET="$(QUIET)" \
+	MKSHPPLIB="$(MKSHPPLIB)" \
+	LDFLAGS="$(LDFLAGS)" \
+	SBBS_LIBS="$(SBBS_LIBS)" \
+	SMBLIB_LIBS="$(SMBLIB_LIBS)" \
+	LIBS="$(LIBS)" \
+	SHLIBIPTS="$(SHLIBIPTS)" \
+	JS_LIBS="$(JS_LIBS)" \
+	CRYPT_LIBS="$(CRYPT_LIBS)" \
+	ENCODE_LIBS="$(ENCODE_LIBS)" \
+	HASH_LIBS="$(HASH_LIBS)" \
+	XPDEV-MT_LIBS="$(XPDEV-MT_LIBS)" \
+	FILE_LIBS="$(FILE_LIBS)" \
+	SFTP-MT_LIBS="$(SFTP-MT_LIBS)" \
+	SFTP-MT_CFLAGS="$(SFTP-MT_CFLAGS)" \
+	MT_CFLAGS="$(MT_CFLAGS)" \
+	SBBS_EXTRA_LDFLAGS="$(SBBS_EXTRA_LDFLAGS)" \
+	MTOBJODIR="$(MTOBJODIR)" \
+	FTPSRVR="$(FTPSRVR)" \
+	MAILSRVR="$(MAILSRVR)" \
+	WEBSRVR="$(WEBSRVR)" \
+	SERVICES="$(SERVICES)" \
+	BUILD_DEPENDS="$(BUILD_DEPENDS)" \
+	OBJODIR="$(OBJODIR)" \
+	COMPILE_MSG="$(COMPILE_MSG)" \
+	AS="$(AS)" \
+	ASFLAGS="$(ASFLAGS)" \
+	OFILE="$(OFILE)" \
+	CC="$(CC)" \
+	CCFLAGS="$(CCFLAGS)" \
+	CXX="$(CXX)"
 
-# FTP Server Link Rule
-$(FTPSRVR): $(MTOBJODIR)/ftpsrvr.o
-	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MTOBJODIR)/ftpsrvr.o $(SHLIBOPTS) -o $@ -lsbbs
 
-# Mail Server Link Rule
-$(MAILSRVR): $(MAIL_OBJS)
-	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MAIL_OBJS) $(SHLIBOPTS) -o $@ -lsbbs
+$(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(LIBS) $(EXTRA_SBBS_DEPENDS) $(ENCODE_LIB) $(HASH_LIB) $(SFTPLIB-MT) | $(LIBODIR)
+	$(QUIET)$(MAKE) -f sbbs.mk $(LIB_EXPORTS) OBJS="$(OBJS)" $@
 
-# Web Server Link Rule
-$(WEBSRVR): $(WEB_OBJS)
-	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) -o $@ $(ENCODE_LIBS) -lsbbs $(XPDEV-MT_LIBS)
+$(FTPSRVR):
+	$(QUIET)$(MAKE) -f ftpsrvr.mk $(LIB_EXPORTS) FTP_OBJS="$(FTP_OBJS)" $@
 
-# Services Link Rule
-$(SERVICES): $(SERVICE_OBJS)
-	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(SERVICE_OBJS) $(SHLIBOPTS) -o $@ -lsbbs
+$(MAILSRVR):
+	$(QUIET)$(MAKE) -f mailsrvr.mk $(LIB_EXPORTS) MAIL_OBJS="$(MAIL_OBJS)" $@
+
+$(WEBSRVR):
+	$(QUIET)$(MAKE) -f websrvr.mk $(LIB_EXPORTS) WEB_OBJS="$(WEB_OBJS)" $@
+
+$(SERVICES):
+	$(QUIET)$(MAKE) -f services.mk $(LIB_EXPORTS) SERVICES_OBJS="$(SERVICES_OBJS)" $@
 
 # Synchronet Console Build Rule
-$(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
-	@echo Linking $@
-	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(CON_OBJS) $(CON_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
+$(SBBSCON): $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
+	$(QUIET)$(MAKE) -f sbbs.mk $(LIB_EXPORTS) CON_OBJS="$(CON_OBJS)" $@
 
 # Baja Utility
 $(BAJA): $(BAJA_OBJS) | $(EXEODIR)
@@ -254,7 +278,7 @@ $(FILELIST): $(FILELIST_OBJS) $(ENCODE_LIB) | $(EXEODIR)
 # MAKEUSER
 $(MAKEUSER): $(MAKEUSER_OBJS) | $(EXEODIR)
 	@echo Linking $@
-	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(MAKEUSER_OBJS) $(XPDEV_LIBS) $(SMBLIB_LIBS) $(ENCODE_LIBS) $(HASH_LIBS)
+	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(MAKEUSER_OBJS) $(XPDEV_LIBS) $(SMBLIB_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(FILE_LIBS)
 
 # JSDOOR
 $(JSDOOR): $(JSDOOR_OBJS) $(XPDEV_LIB) $(ENCODE_LIB) $(HASH_LIB) $(CIOLIB-MT) | $(EXEODIR)
@@ -265,12 +289,8 @@ ifeq ($(os), netbsd)
 endif
 
 # JSEXEC
-$(JSEXEC): $(JSEXEC_OBJS) $(SBBS) $(CIOLIB-MT) | $(EXEODIR)
-	@echo Linking $@
-	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(JSEXEC_OBJS) -lsbbs $(JS_LIBS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
-ifeq ($(os), netbsd)
-	paxctl +m $(JSEXEC)
-endif
+$(JSEXEC): $(SBBS) $(CIOLIB-MT) | $(EXEODIR)
+	$(QUIET)$(MAKE) -f jsexec.mk $(LIB_EXPORTS) JSEXEC_OBJS="$(JSEXEC_OBJS)" $@
 
 # ANS2ASC
 $(ANS2ASC): $(OBJODIR)/ans2asc.o $(OBJODIR)/sauce.o $(XPDEV_LIB) | $(EXEODIR)

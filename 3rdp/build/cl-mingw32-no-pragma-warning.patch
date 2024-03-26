@@ -1,0 +1,23 @@
+--- cryptlib.h.orig	2024-03-25 04:19:30.935061000 -0400
++++ cryptlib.h	2024-03-25 04:20:04.604215000 -0400
+@@ -39,12 +39,14 @@
+   /* The Windows headers are riddled with errors which are turned up at 
+      warning level 4.  To deal with this we disable some of the noisier 
+ 	 ones */
+-  #pragma warning( push )
+-  #pragma warning( disable: 4255 )	/* No function prototype given */
+-  #pragma warning( disable: 4514 )	/* Unreferenced inline function has been removed */
+-  #define WIN32_LEAN_AND_MEAN
+-  #include <windows.h>
+-  #pragma warning( pop )
++  #ifndef __MINGW32__
++    #pragma warning( push )
++    #pragma warning( disable: 4255 )	/* No function prototype given */
++    #pragma warning( disable: 4514 )	/* Unreferenced inline function has been removed */
++    #define WIN32_LEAN_AND_MEAN
++    #include <windows.h>
++    #pragma warning( pop )
++  #endif
+ 
+   /* Catch use of CryptoAPI and cryptlib at the same time.  wxWidgets 
+      includes wincrypt.h by default so we undefine the conflicting values 

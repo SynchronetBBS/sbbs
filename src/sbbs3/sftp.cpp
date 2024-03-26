@@ -518,17 +518,21 @@ sftp_attr_string(sftp_file_attr_t attr)
 		if (sftp_fattr_get_atime(attr, &u32)) {
 			struct tm t;
 			time_t tt = u32;
+#ifndef __MINGW32__
 			if (gmtime_r(&tt, &t))
 				ret << "atime=" << std::put_time(&t, "%c") << u32 << ", ";
 			else
+#endif
 				ret << "atime=" << u32 << ", ";
 		}
 		if (sftp_fattr_get_mtime(attr, &u32)) {
 			struct tm t;
 			time_t tt = u32;
+#ifndef __MINGW32__
 			if (gmtime_r(&tt, &t))
 				ret << "mtime=" << std::put_time(&t, "%c") << u32 << ", ";
 			else
+#endif
 				ret << "mtime=" << u32 << ", ";
 		}
 		u32 = sftp_fattr_get_ext_count(attr);

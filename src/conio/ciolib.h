@@ -36,10 +36,10 @@
         #if defined(CIOLIB_IMPORTS) || defined(CIOLIB_EXPORTS)
                 #if defined(CIOLIB_IMPORTS)
                         #define CIOLIBEXPORT __declspec( dllimport )
-                        #define CIOLIBEXPORTVAR __declspec( dllimport )
+                        #define CIOLIBEXPORTVAR __declspec( dllimport ) extern
                 #else
                         #define CIOLIBEXPORT __declspec( dllexport )
-                        #define CIOLIBEXPORTVAR __declspec( dllexport )
+                        #define CIOLIBEXPORTVAR __declspec( dllexport ) extern
                 #endif
         #else   /* self-contained executable */
                 #define CIOLIBEXPORT

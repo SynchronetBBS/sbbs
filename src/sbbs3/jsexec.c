@@ -32,7 +32,8 @@
 #define STARTUP_INI_JSOPT_BITDESC_TABLE
 #include "sbbs.h"
 #include "ciolib.h"
-#if defined(main) && defined(_WIN32) && !defined(JSDOOR)
+// TODO: Whatever the MSVC build is doing to make this work should be done here too...
+#if defined(main) && defined(_WIN32) && !defined(JSDOOR) && !defined(__MINGW32__)
  #undef main	// Don't be a Windows program, be a Console one
 #endif
 #include "ini_file.h"

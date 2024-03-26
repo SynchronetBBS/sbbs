@@ -3,6 +3,8 @@ SRC_ROOT = ..
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
 CFLAGS += $(XPDEV-MT_CFLAGS) $(HASH_CFLAGS) $(ENCODE_CFLAGS) $(CIOLIB-MT_CFLAGS)
+CFLAGS := $(filter-out -DCIOLIB_IMPORT,$(CFLAGS))
+CFLAGS += -DCIOLIB_EXPORTS
 VPATH = $(SRCODIR)
 
 ifdef win
@@ -10,7 +12,13 @@ ifdef win
   OBJS	+=	$(MTOBJODIR)$(DIRSEP)win32gdi$(OFILE)
   NEED_BITMAP := 1
  endif
- OBJS	+=	$(MTOBJODIR)$(DIRSEP)SDL_win32_main$(OFILE)
+ ifdef WITH_SDL
+  OBJS	+=	$(MTOBJODIR)$(DIRSEP)SDL_win32_main$(OFILE)
+ else
+  ifndef WITHOUT_GDI
+   OBJS	+=	$(MTOBJODIR)$(DIRSEP)SDL_win32_main$(OFILE)
+  endif
+ endif
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)win32cio$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE)
 else

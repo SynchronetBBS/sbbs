@@ -1343,14 +1343,10 @@ public:
 #undef DLLEXPORT
 #endif
 #ifdef _WIN32
-	#ifdef __MINGW32__
-		#define DLLEXPORT
+	#ifdef SBBS_EXPORTS
+		#define DLLEXPORT	__declspec(dllexport)
 	#else
-		#ifdef SBBS_EXPORTS
-			#define DLLEXPORT	__declspec(dllexport)
-		#else
-			#define DLLEXPORT	__declspec(dllimport)
-		#endif
+		#define DLLEXPORT	__declspec(dllimport)
 	#endif
 #else	/* !_WIN32 */
 	#define DLLEXPORT

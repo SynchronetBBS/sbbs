@@ -29,8 +29,12 @@ ifeq ($(os),linux)	# Linux
  XPDEV-MT_LIBS	+=	-lpthread
 endif
 ifdef win		# MinGW32
- XPDEV_LIBS	+=	-lws2_32 -lwinmm -lnetapi32 -liphlpapi
- XPDEV-MT_LIBS	+=	-lws2_32 -lwinmm -lnetapi32 -liphlpapi
+ XPDEV_LIBS	 +=	-lws2_32 -lwinmm -lnetapi32 -liphlpapi
+ XPDEV-MT_LIBS	 +=	-lws2_32 -lwinmm -lnetapi32 -liphlpapi
+ XPDEV_CFLAGS +=      -DWRAPPER_EXPORTS
+ XPDEV-MT_CFLAGS +=      -DWRAPPER_EXPORTS
+ XPDEV_LIBS	+=	$(XPDEV_SRC)$(DIRSEP)$(MTOBJODIR)$(DIRSEP)xpmap$(OFILE)
+ XPDEV-MT_LIBS	+=	$(XPDEV_SRC)$(DIRSEP)$(MTOBJODIR)$(DIRSEP)xpmap$(OFILE)
 endif
 ifndef win
  ifeq ($(shell if [ -c /dev/urandom ] ; then echo YES ; fi),YES)
@@ -188,13 +192,15 @@ X_PRESENT	= $(shell if [ ! \( -f $(X_HEADERS)$(DIRSEP)X11$(DIRSEP)Xlib.h -a -f $
 ifeq ($(X_PRESENT),NO)
  NO_X=1
 else
- ifeq ($(os),darwin)	# No X11 for OSX
-  ifndef HAS_DLOPEN
-   NO_X=1
+ ifneq ($(os),win32)
+  ifeq ($(os),darwin)	# No X11 for OSX
+   ifndef HAS_DLOPEN
+    NO_X=1
+   endif
   endif
+  XPDEV-MT_CFLAGS	+=	-I$(X_HEADERS)
+  XPDEV_CFLAGS	+=	-I$(X_HEADERS)
  endif
- XPDEV-MT_CFLAGS	+=	-I$(X_HEADERS)
- XPDEV_CFLAGS	+=	-I$(X_HEADERS)
 endif
 
 ifndef WITHOUT_PORTAUDIO

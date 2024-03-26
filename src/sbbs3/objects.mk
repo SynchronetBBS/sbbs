@@ -112,23 +112,26 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/ssl$(OFILE)
 
 CON_OBJS	= $(MTOBJODIR)/sbbscon$(OFILE) \
-			$(MTOBJODIR)/sbbs_ini$(OFILE)
+			$(MTOBJODIR)/sbbs_ini$(OFILE) \
+			$(MTOBJODIR)/getctrl$(OFILE)
 
 FTP_OBJS	= $(MTOBJODIR)/ftpsrvr$(OFILE) \
 			$(MTOBJODIR)/nopen$(OFILE)
 
 MAIL_OBJS	= $(MTOBJODIR)/mailsrvr$(OFILE) \
 			$(MTOBJODIR)/mxlookup$(OFILE) \
- 		  	$(MTOBJODIR)/mime$(OFILE) \
- 		  	$(MTOBJODIR)/nopen$(OFILE) \
- 		  	$(MTOBJODIR)/ars$(OFILE)
+ 			$(MTOBJODIR)/mime$(OFILE) \
+ 			$(MTOBJODIR)/nopen$(OFILE) \
+ 			$(MTOBJODIR)/ars$(OFILE) \
+ 			$(MTOBJODIR)/utf8$(OFILE)
 
 WEB_OBJS	= $(MTOBJODIR)/websrvr$(OFILE) \
 			$(MTOBJODIR)/ars$(OFILE) \
 			$(MTOBJODIR)/ringbuf$(OFILE)
 
 SERVICE_OBJS	= $(MTOBJODIR)/services$(OFILE) \
-			$(MTOBJODIR)/sbbs_ini$(OFILE)
+			$(MTOBJODIR)/sbbs_ini$(OFILE) \
+			$(MTOBJODIR)/nopen$(OFILE)
 
 BAJA_OBJS = \
 			$(OBJODIR)/baja$(OFILE) \
@@ -195,12 +198,13 @@ MAKEUSER_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/userdat$(OFILE) \
 			$(OBJODIR)/trash$(OFILE) \
 			$(OBJODIR)/getstats$(OFILE) \
-			$(OBJODIR)/msgdate$(OFILE)
+			$(OBJODIR)/msgdate$(OFILE) \
 
 JSEXEC_OBJS = \
 			$(MTOBJODIR)/jsexec$(OFILE) \
 			$(MTOBJODIR)/js_uifc$(OFILE) \
-			$(MTOBJODIR)/js_conio$(OFILE)
+			$(MTOBJODIR)/js_conio$(OFILE) \
+			$(MTOBJODIR)/getctrl$(OFILE)
 
 JSDOOR_OBJS = 		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/date_str$(OFILE) \

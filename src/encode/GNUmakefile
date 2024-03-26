@@ -8,6 +8,8 @@ SRC_ROOT ?= ..
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
 CFLAGS += -I$(ENCODE_SRC) $(XPDEV_CFLAGS)
+CFLAGS := $(filter-out -DB64_IMPORTS -DLZH_IMPORTS,$(CFLAGS))
+CFLAGS += -DB64_EXPORTS -DLZH_EXPORTS
 
 # ENCODE Library Link Rule
 $(ENCODE_BUILD): $(OBJODIR) $(OBJS)

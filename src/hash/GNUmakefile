@@ -7,7 +7,8 @@ SRC_ROOT ?= ..
 # Cross platform/compiler definitions
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
-CFLAGS += -I$(HASH_SRC) $(XPDEV_CFLAGS)
+CFLAGS := $(filter-out -DMD5_IMPORTS,$(CFLAGS))
+CFLAGS += -I$(HASH_SRC) $(XPDEV_CFLAGS) -DMD5_EXPORTS
 
 # HASH Library Link Rule
 $(HASH_BUILD): $(OBJODIR) $(OBJS)
