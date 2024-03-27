@@ -31,6 +31,9 @@ Date       Author            Description
                              affected saving local scores and showing local scores.
 2023-01-14 Eric Oulashin     Version 1.03
                              Releasing this version
+2024-03-26 Eric Oulashin     Version 1.04
+                             Formatting fix for sysop menu when the server scores file is missing.
+                             Allow showing help when playing a game by entering ?
 */
 
 "use strict";
@@ -56,8 +59,8 @@ if (system.version_num < 31500)
 }
 
 // Version information
-var GAME_VERSION = "1.03";
-var GAME_VER_DATE = "2023-01-14";
+var GAME_VERSION = "1.04";
+var GAME_VER_DATE = "2024-03-26";
 
 // Load required .js libraries
 var requireFnExists = (typeof(require) === "function");
@@ -390,7 +393,7 @@ function playTrivia()
 			console.attributes = "N" + gSettings.colors.answerInput;
 			var userResponse = console.getstr();
 			console.print("\x01n");
-			var responseCheckRetObj = checkUserResponse(QAArray[i].answer, userResponse);
+			var responseCheckRetObj = checkUserResponse(QAArray[i].answer, userResponse, qaFilenameInfo[chosenSectionIdx].sectionName);
 			if (responseCheckRetObj.userChoseQuit)
 			{
 				continueQuestioning = false;
@@ -403,6 +406,13 @@ function playTrivia()
 				console.attributes = "N" + gSettings.colors.questionHdr;
 				console.print("Correct!\x01n");
 				console.crlf();
+			}
+			// If the user is extempt from an incorrect answer, then decrement the try
+			// counter and continue to the next iteration (to not count against the user)
+			else if (responseCheckRetObj.incorrectExempt)
+			{
+				--tryI;
+				continue;
 			}
 			else
 			{
@@ -1066,15 +1076,18 @@ function shuffle(pArray)
 //  pAnswer: The answer to the question. This can either be a string (for a single answer) or an array of
 //           strings (if multiple answers are acceptable)
 //  pUserInput: The user's response to the question (string)
+//  pCategoryName: The name of the category being played.  Only needed for display on the help screen.
 //
 // Return value: An object with the following properties:
 //               userChoseQuit: Boolean: Whether or not the user chose to quit
 //               userInputMatchedAnswer: Boolean: Whether or not the user's answer matches the given answer to the question
-function checkUserResponse(pAnswer, pUserInput)
+//               incorrectExempt: Whether or not the user is exempt from a wrong answer (i.e., they chose to view help)
+function checkUserResponse(pAnswer, pUserInput, pCategoryName)
 {
 	var retObj = {
 		userChoseQuit: false,
-		userInputMatchedAnswer: false
+		userInputMatchedAnswer: false,
+		incorrectExempt: false
 	};
 
 	// pAnswer should be a string or an array, and pUserInput should be a string
@@ -1088,6 +1101,12 @@ function checkUserResponse(pAnswer, pUserInput)
 	if (userInputUpper == "Q")
 	{
 		retObj.userChoseQuit = true;
+		return retObj;
+	}
+	else if (pUserInput == "?")
+	{
+		showHelpScreen(pCategoryName);
+		retObj.incorrectExempt = true;
 		return retObj;
 	}
 
@@ -1648,7 +1667,10 @@ function userScoresSortTotalScoreHighest(pPlayerA, pPlayerB)
 }
 
 // Displays the game help to the user
-function showHelpScreen()
+//
+// Parameters:
+//  pCategoryName: Optional - A category name, if the user is currently playing a game
+function showHelpScreen(pCategoryName)
 {
 	// Construct the header text lines only once.
 	if (typeof(showHelpScreen.headerLines) === "undefined")
@@ -1686,6 +1708,13 @@ function showHelpScreen()
 	console.center("\x01n\x01cVersion \x01h" + GAME_VERSION);
 	console.center("\x01n\x01c\x01h" + GAME_VER_DATE + "\x01n");
 	console.crlf();
+	if (typeof(pCategoryName) === "string" && pCategoryName.length > 0)
+	{
+		var catHelpStr = "\x01n\x01gYou are currently playing a game:\x01n "
+		               + attrCodeStr(gSettings.colors.triviaCategoryName) + pCategoryName + "\x01n";
+		console.putmsg(catHelpStr, P_WORDWRAP);
+		console.crlf();
+	}
 	var helpText = GAME_NAME + " is a trivia game with a freeform answer format.  The game "
 	             + "starts with a main menu, allowing you to play, show high scores, or quit.";
 	printWithWordWrap("\x01n\x01c", helpText);
@@ -1847,6 +1876,8 @@ function doSysopMenu()
 			console.print("\x01c3\x01y\x01h) \x01bDelete BBS scores\x01n");
 			console.crlf();
 		}
+		else
+			console.crlf();
 		console.attributes = "NB";
 		for (var i = 0; i < console.screen_columns-1; ++i)
 			console.print(HORIZONTAL_DOUBLE);
