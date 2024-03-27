@@ -4,6 +4,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.03     2024-03-26   Formatting fix for sysop menu when the server scores file
+                      is missing.
+                      Allow showing help when playing a game by entering ?
 1.03     2023-01-14   Question sets (in the .qa files) may now have a section
                       of JSON metadata to specify the name of the category (if
                       different from simple filename parsing) and optionally
