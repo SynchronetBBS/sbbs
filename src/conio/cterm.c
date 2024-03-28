@@ -3739,7 +3739,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							cterm_gotoxy(cterm, col, row);
 							break;
 						case 'M':	/* Delete Line (also ANSI music) */
-							if(cterm->music_enable==CTERM_MUSIC_ENABLED) {
+							if(cterm->music_enable==CTERM_MUSIC_ENABLED && seq->param_count == 0) {
 								cterm->music=1;
 							}
 							else {
