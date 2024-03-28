@@ -421,6 +421,93 @@ most of the options are the same or silimar.
     System Password: An additional password that can be sent after the
         first ALT-L using successive ALT-Ls.
 
+    Screen Mode: Selects the format of the window when connected.
+        A mode specifies the number of columns, the number of rows,
+        the aspect ratio, and the font size.  Some modes such as the
+        Commodore and Atari modes will also change the selected font.
+        If the current font is a mode-specific one (such as C64 or Atari),
+        Changing from that mode to a standard one will change the font
+        to Codepage 437 English.
+
+    Hide Status Line: Indicates that the "status line" at the bottom of
+        the window when connected should not be displayed.  This allows
+        for an extra line of text from the remote to be shown.
+
+    Download Path: The location to save downloaded files.
+
+    Upload Path: The location to start at when browsing for files to
+        upload.
+
+    Log Configuration: This brings up a sub-menu to control a debug log.
+        There are four options in this sub-menu:
+        Log Filename: If this is not blank, specifies the file to write
+            the log data to.  When this is blank, disable logging.
+        File Transfer Log Level: May be one of None, Alerts, Critical Errors,
+            Errors, Warnings, Notices, Normal, or Debug.
+        Telnet Command Log Level: Chosen from the same list as above.
+        Append Log File: If set you Yes, the log file retains old information
+            and will keep growing.  If set to No, the log file is emptied
+            for each new connection.
+
+    Comm Rate: For networked modes, specifies the sharacter pacing speed.
+        For serial and modem types, specifies the speed to open the port at.
+
+    ANSI Music: There are three options in this sub-menu.
+        ESC [ | only: With this setting, ANSI music is fully compliant with
+            the standards (ECMA-48, ANSI, etc), but almost not software
+            works with this.
+        BANSI Style: Supports both the SyncTERM (CSI |) and BananaCom (CSI N)
+            ANSI music styles.  Support is still very rare, but slightly
+            more common than the first.
+        All ANSI Music Enabled: In addition to the previous two, also
+            supports CSI M for ANSI music.  This is by far the most common
+            sequence used by software that supports ANSI music.
+            Unfortunately, this prevents the ANSI Delete Line sequence from
+            working correctly.
+
+    Address Family: Selected IP address family for network connections.
+        As per DNS: Uses the first address returned by getaddrinfo()
+        IPv4 only: Will only connect over an IPv4 address.  If none is
+            available, the connection will fail.
+        IPv6 only: Will only connect over an IPv6 address.  If none is
+            available, the connection will fail.
+ 
+    Font: Choses a font (and by implication, a codepage) for the connection.
+        Custom fonts are also listed in this menu.
+
+    Hide Popups: Do not show status and progress popups.
+
+    RIP: Selects the version for Remote Imaging Protocol ("RIP").
+        RIP allows graphics and mouse usage, and was used by doors and
+        BBSs starting in the early 90s.  The RIP support in SyncTERM is
+        not complete, and may not be compatible with other terminals.
+        RIPv1 is the one most commonly used by old BBS software, and it
+        requires that the Screen Mode be set to an EGA mode.  RIPv3
+        is an updated version that is not backward compatible, but can
+        be used in any mode.
+
+    Force LCF Mode: This setting will force the DEC terminal
+        "Last Column Flag" mode to always be enabled.  This mode is almost
+        always used in modern terminal emulators, which are almost all
+        VT-102 emulators at least.  LCF controls the wrapping behaviour
+        when the cursor is on the last column of a line.  The specific
+        rules used are complex and not implemented the same in all terminal
+        emulators even today.
+
+    Yellow is Yellow: By default, SyncTERM displays low-intensity yellow
+        as brown.  This originated in the IBM CGA monitors, and was carried
+        forward to EGA and even most VGA modes.  Some digital monitors that
+        were CGA compatible did not have the brown hack.  While the vast
+        majority of software will assume that low-intensity yellow should
+        be brown, this allows strict standard compliance.
+
+    SFTP Public Key: For SSH connections, SyncTERM can open another SSH
+        channel and write the public key to .ssh/authorized_keys on the
+        remote, which will enable authentication using the private key on
+        at least OpenSSH and new versions of Synchronet.  This option
+        requires SFTP support from the remote side, and may cause connection
+        stability issues of SFTP is not available or does not work correctly.
+
 
                         Modifying the Sort Order
 
