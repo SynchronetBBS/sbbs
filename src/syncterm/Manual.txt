@@ -3,7 +3,7 @@
 SyncTERM is a terminal program written specifically for connecting to
 Bulleten Board Systems (BBSs).  Despite the name, SyncTERM is in no way
 Synchronet specific, it just happens to share a large portion of code
-with the rest of the Synchronet project, and live in the same CVS
+with the rest of the Synchronet project, and live in the same git
 repository.
 
 
@@ -228,39 +228,31 @@ Return: Select the currently highlighted option.  If there is a blank
 
 Escape: Exit the current menu.
 Backspace: An alias for Escape.
-CTRL-C: An alias for Escape (Except when F5 is available)
+CTRL-C: An alias for Escape.
 
 Home: Jump to the beginning of the menu
-CTRL-B: An alias for Home
 
 Up Arrow: Move to the previous item in the list
 
 Page Up: Jump up in the menu by one screen.
-CTRL-U: An alias for Page Up
 
 Page Down: Jump down in the menu by one screen.
-CTRL-D: An alias for Page Down
 
 End: Jump to the end of the menu
-CTRL-E: An alias for End
 
 Down Arrow: Move to the next item in the list.
 
 F1: Help
-CTRL-Z: An alias for F1
 
 F2: Edit
 
 F5: Copy
 CTRL-Insert: An alias for F5
-CTRL-C: An alias for F5 (Overrides the alias for ESC)
 
 Shift-Delete: Cut
-CTRL-X: An alias for Shift-Delete
 
 F6: Paste
 Shift-Insert: An alias for F6
-CTRL-V: An alias for F6
 
 Insert: Inserts a new item.
 +: An alias for Insert
@@ -270,6 +262,14 @@ Delete: Delete item at current location
 
 Any letter or number: Jumps to the next item that has that character
 earliest in it's name.
+
+ALT-Left: Snap the window size to the next smaller integer zoom level
+
+ALT-Right: Snap the window size to the next larger smaller integer zoom level
+
+CTRL-F: Find text in options
+
+CTRL-G: Repeat last find
 
 
                          The Dialing Directory
@@ -303,6 +303,22 @@ a per-BBS comment to be entered.
 This menu lists all the entries in the two dialing directory files.  If
 you move the bar over one and press <Enter>, it will connect you to the
 highlighted system as configured in the entry.
+
+In addition to the standard controls, this menu also has some extra keyboard
+shortcuts.
+
+CTRL-D: Quick-connect to a URL
+
+CTRL-E: Edit the selected entry (Alias for F2)
+
+CTRL-S: Modify the sort order
+
+ALT-B: View the scrollback of the last session
+
+TAB: Move to the comment field for the current entry, or the settings
+     menu if there is no current entry.
+
+Back TAB (Shift=TAB): Move to settings menu.
 
 To add a new entry, go to the bottom of the list (by pressing end) and
 select the blank entry at the bottom.  A window will pop up asking for
@@ -404,6 +420,36 @@ most of the options are the same or silimar.
 
     System Password: An additional password that can be sent after the
         first ALT-L using successive ALT-Ls.
+
+
+                        Modifying the Sort Order
+
+You can change the order that entries appear in the Directory via the CTRL-S
+key.  This brings up a menu where you can add entries by either pressing
+Insert to add before the current item, or by pressing Return on the enpty
+line at the end.  This will bring up a list of fields that can be sorted on.
+
+Pressing enter on a field will toggle if it's reversed (highest to lowest) or
+not.
+
+
+                          Viewing the Scrollback
+
+When viewing the scrollback, the following keys are supported:
+
+Up-arrow: Move up one line
+J: Move up one line
+
+Down-arrow: Move down on line
+K: Move down one line
+
+Page Up: Move up one screen
+H: Move up one screen
+
+Page Down: Move down on screen
+L: Move down one screen
+
+Escape: Exit scrollback mode
 
 
                                MBBS GHost
