@@ -2677,7 +2677,7 @@ show_bbslist(char *current, int connected)
 					    "~ CTRL-E ~ to edit the selected entry\n"
 					    "~ CTRL-S ~ to modify the sort order\n"
 					    "~ TAB ~ to modify the selected entry comment or SyncTERM Settings\n"
-					    "~ ENTER ~ to edit to the selected entry";
+					    "~ ENTER ~ to edit to the selected entry"
 					    "`Conio Keys` (may not work in some modes)\n\n"
 					    "~ " ALT_KEY_NAMEP
 					    "-Left ~ Snap window size to next smaller horizontal size\n"
