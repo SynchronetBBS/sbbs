@@ -625,8 +625,8 @@ CSI Pn M (DL)
 	empty lines at the end of the screen with the current attribute.
 	If the cursor is not currently inside the scrolling margins, has no
 	effect.
-	If "ANSI" Music is fully enabled (CSI = 2 M), performs "ANSI" music
-	instead.
+	If "ANSI" Music is fully enabled (CSI = 2 M), and no parameter is
+        specified, performs "ANSI" music instead.
 	See "ANSI" MUSIC section for more details.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
