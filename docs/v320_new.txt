@@ -18,6 +18,8 @@ o New statistics file formats
   - */dsts.dab (daily statistics and running totals) -> */dsts.ini
   - */csts.dab (cumulative statistics / log) -> */csts.tab
   - DSTSEDIT (daily stats editor) goes away: just edit the dsts.ini file
+o New event time file format
+  - ctrl/time.dab and qnet.dab are now converted to ctrl/time.ini
 o Increase maximum length of configured file/directory paths and command-lines
   from 63 to 100 characters
 o Internal codes (prefixes and suffixes) have doubled in maximum length
@@ -145,6 +147,9 @@ o New text.dat strings:
   - UserDefaultsLanguage
   - PasswordChar
   - NodeConnectionSFTP
+  - QWKSettingsWrapText
+  - UnknownUploader
+  - FREE
 o New text.dat strings for received Fido and Internet mail
   - InternetMailReceived
   - InternetMailForwarded
