@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Synchronet BBS Software"
-#define MyAppVersion "3.19b"
+#define MyAppVersion "3.20b"
 #define MyAppPublisher "Rob Swindell"
 #define MyAppURL "http://www.synchro.net/"
 #define MyAppSupportURL "http://wiki.synchro.net/howto:support"
@@ -10,7 +10,7 @@
 #define MyAppExeName "sbbsctrl.exe"
 #define sbbsCtrlPanel "Synchronet Control Panel"
 #define release "release"
-#define source "e:\sbbs"
+#define source "c:\sbbs"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
@@ -24,15 +24,15 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppSupportURL}
 AppUpdatesURL={#MyAppDownloadURL}
-AppCopyright=Copyright 2022 {#MyAppPublisher}
-VersionInfoVersion=3.19.1
+AppCopyright=Copyright 2024 {#MyAppPublisher}
+VersionInfoVersion=3.20.1
 AppMutex=sbbs_running,sbbsctrl_running
 DefaultDirName={sd}\sbbs
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 AllowNoIcons=yes
 ; OutputDir=.
-OutputBaseFilename=setup
+OutputBaseFilename=install_SBBS_v{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 MinVersion = 5.1
@@ -77,10 +77,10 @@ Source: "s:\sbbs\exec\user.com";                              DestDir: "{app}\ex
 Source: "s:\sbbs\exec\mlabels.exe";                           DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "s:\sbbs\exec\svdmansi.com";                          DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "s:\sbbs\exec\dosxtrn.exe";                           DestDir: "{app}\exec";  Flags: ignoreversion
-Source: "node1\node.cnf";                                     DestDir: "{app}\node1"; Flags: ignoreversion
-Source: "node1\node.cnf";                                     DestDir: "{app}\node2"; Flags: ignoreversion
-Source: "node1\node.cnf";                                     DestDir: "{app}\node3"; Flags: ignoreversion
-Source: "node1\node.cnf";                                     DestDir: "{app}\node4"; Flags: ignoreversion
+Source: "node1\node.ini";                                     DestDir: "{app}\node1"; Flags: ignoreversion
+Source: "node1\node.ini";                                     DestDir: "{app}\node2"; Flags: ignoreversion
+Source: "node1\node.ini";                                     DestDir: "{app}\node3"; Flags: ignoreversion
+Source: "node1\node.ini";                                     DestDir: "{app}\node4"; Flags: ignoreversion
 Source: "exec\*";   DestDir: "{app}\exec";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "baja.js,menu.js,sbbsedit.js,jsdocs.js,testbuild.js,load\menulib.js"
 Source: "ctrl\*";   DestDir: "{app}\ctrl";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.?.cnf,*.?.ini"
 Source: "text\*";   DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.0??.*,.gitignore"
