@@ -81,7 +81,7 @@ const char* ver(void)
 
     static char ver[256];
     wsprintf(ver,"Synchronet Control Panel v%u.%u.%u.%u%s%s  "
-        "Compiled %s/%s %s %s with %s"
+        "Compiled %s/%s %s with %s"
         ,Ver->dwFileVersionMS>>16
         ,Ver->dwFileVersionMS&0xffff
         ,Ver->dwFileVersionLS>>16
@@ -91,7 +91,7 @@ const char* ver(void)
         ,Ver->dwFileFlags&VS_FF_PRERELEASE ?
             " Pre-release" : ""
 		,GIT_BRANCH, GIT_HASH
-        ,__DATE__, __TIME__, compiler
+        ,GIT_DATE, compiler
         );
 
 	return ver;
