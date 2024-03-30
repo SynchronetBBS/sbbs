@@ -83,11 +83,6 @@ else
 // Make a copy of js.exec_dir.  js.exec_dir could be changed indirectly
 // due to another JS script running (for instance, via console.yesno(),
 // which would run yesnobar.js in sbbs/exec).
-// Determine the location of this script (its startup directory).
-// The code for figuring this out is a trick that was created by Deuce,
-// suggested by Rob Swindell.  I've shortened the code a little.
-// js.exec_dir should contain the script's path, but that can change
-// as other JS scripts run (such as yesnobar.js in sbbs/exec)
 const gScriptExecDir = js.exec_dir;
 
 
