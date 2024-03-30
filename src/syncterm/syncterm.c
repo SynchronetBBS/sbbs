@@ -72,14 +72,16 @@ enum {
 
 #include "bbslist.h"
 #include "conn.h"
+#ifndef WITHOUT_CRYPTLIB
 #include "cryptlib.h"
+#include "ssh.h"
+#endif
 #include "fonts.h"
 #include "scale.h"
 #include "syncterm.h"
 #include "term.h"
 #include "uifcinit.h"
 #include "window.h"
-#include "ssh.h"
 
 char *syncterm_version = "SyncTERM 1.2b"
 
