@@ -34,6 +34,9 @@ Date       Author            Description
 2024-03-26 Eric Oulashin     Version 1.04
                              Formatting fix for sysop menu when the server scores file is missing.
                              Allow showing help when playing a game by entering ?
+2024-03-29 Eric Oulashin     Version 1.05
+                             Ensure the correct script startup directory is always used (make
+							 a copy of js.exec_dir on startup, since js.exec_dir could change)
 */
 
 "use strict";
@@ -59,8 +62,8 @@ if (system.version_num < 31500)
 }
 
 // Version information
-var GAME_VERSION = "1.04";
-var GAME_VER_DATE = "2024-03-26";
+var GAME_VERSION = "1.05";
+var GAME_VER_DATE = "2024-03-29";
 
 // Load required .js libraries
 var requireFnExists = (typeof(require) === "function");
@@ -76,6 +79,17 @@ else
 	load("json-client.js");
 	load(js.exec_dir + "lib.js");
 }
+
+// Make a copy of js.exec_dir.  js.exec_dir could be changed indirectly
+// due to another JS script running (for instance, via console.yesno(),
+// which would run yesnobar.js in sbbs/exec).
+// Determine the location of this script (its startup directory).
+// The code for figuring this out is a trick that was created by Deuce,
+// suggested by Rob Swindell.  I've shortened the code a little.
+// js.exec_dir should contain the script's path, but that can change
+// as other JS scripts run (such as yesnobar.js in sbbs/exec)
+const gScriptExecDir = js.exec_dir;
+
 
 
 // Characters for display
@@ -127,10 +141,10 @@ var LOWER_CENTER_BLOCK = "\xDC";
 // Maximum Levenshtein distance (inclusive) to consisder an answer matching (when appropriate)
 var MAX_LEVENSHTEIN_DISTANCE = 2;
 // Scores filename
-var SCORES_FILENAME = js.exec_dir + "scores.json";
+var SCORES_FILENAME = gScriptExecDir + "scores.json";
 // Semaphore filename to use when saving the user's score to try to prevent multiple instances
 // from overwriting the score on each other
-var SCORES_SEMAPHORE_FILENAME = js.exec_dir + "SCORES_SEMAPHORE.tmp";
+var SCORES_SEMAPHORE_FILENAME = gScriptExecDir + "SCORES_SEMAPHORE.tmp";
 // Main menu actions
 var ACTION_PLAY = 0;
 var ACTION_SHOW_HELP_SCREEN = 1;
@@ -545,7 +559,7 @@ function loadSettings()
 			answerFact: "G"
 		}
 	};
-	var cfgFileName = genFullPathCfgFilename("gttrivia.ini", js.exec_dir);
+	var cfgFileName = genFullPathCfgFilename("gttrivia.ini", gScriptExecDir);
 	var iniFile = new File(cfgFileName);
 	if (iniFile.open("r"))
 	{
@@ -698,7 +712,7 @@ function displayProgramLogo(pClearScreenFirst, pPauseAfter)
 	if (typeof(pClearScreenFirst) === "boolean" && pClearScreenFirst)
 		console.clear("\x01n");
 
-	console.printfile(js.exec_dir + "gttrivia.asc", P_NONE, 80);
+	console.printfile(gScriptExecDir + "gttrivia.asc", P_NONE, 80);
 
 	if (typeof(pPauseAfter) === "boolean" && pPauseAfter)
 		console.pause();
@@ -760,7 +774,7 @@ function doMainMenu()
 function getQACategoriesAndFilenames()
 {
 	var sectionsAndFilenames = [];
-	var QAFilenames = directory(js.exec_dir + "qa/*.qa");
+	var QAFilenames = directory(gScriptExecDir + "qa/*.qa");
 	for (var i = 0; i < QAFilenames.length; ++i)
 	{
 		// Get the section name - Start by removing the .qa filename extension
@@ -1414,7 +1428,7 @@ function showScores()
 	// Show local scores.  Then, if there is a server configured, prompt the user if they
 	// want to see server scores, and if so, show those.
 	showLocalScores();
-	
+
 	if (gSettings.hasValidServerSettings())
 	{
 		var showServerScoresConfirm = console.yesno("\x01n\x01b\x01hShow multi-BBS scores");
@@ -1427,7 +1441,7 @@ function showScores()
 // Shows the locally saved scores (on the current BBS)
 function showLocalScores()
 {
-	console.print("\x01n");
+	console.attributes = "N";
 	console.crlf();
 	var sortedScores = [];
 	// Read the scores file to see if the user has an existing score in there already
@@ -1508,13 +1522,23 @@ function showServerScores()
 			console.attributes = "N" + gSettings.colors.error;
 			console.print("Invalid scores data was received from the server\x01n");
 			console.crlf();
+			if (user.is_sysop)
+			{
+				console.print("Expected an object.  It's actually: " + typeof(data) + "\r\n");
+				//gSettings.remoteServer.server, gSettings.remoteServer.port
+				console.print("    Server: " + gSettings.remoteServer.server + "\r\n");
+				console.print("      Port: " + gSettings.remoteServer.port + "\r\n");
+				console.print("JSON scope: " + gSettings.remoteServer.gtTriviaScope + "\r\n");
+			}
 			return;
 		}
 		if (!data.hasOwnProperty("systems"))
 		{
 			console.attributes = "N" + gSettings.colors.error;
-			console.print("Invalid scores data was received from the server\x01n");
+			console.print("Invalid scores data was received from the server (2)\x01n");
 			console.crlf();
+			if (user.is_sysop)
+				console.print("The JSON data doesn't have a 'systems' element.\r\n");
 			return;
 		}
 
@@ -1860,7 +1884,7 @@ function doSysopMenu()
 		console.print("\x01c1\x01y\x01h) \x01bClear high scores\x01n");
 		console.print("     \x01cQ\x01y\x01h)\x01buit\x01n");
 		// If there is an inter-BBS scores JSON file, then add some options to manage that
-		if (file_exists(js.exec_dir + "server/" + "gttrivia.json"))
+		if (file_exists(gScriptExecDir + "server/" + "gttrivia.json"))
 		{
 			validKeys += "23";
 			console.crlf();
