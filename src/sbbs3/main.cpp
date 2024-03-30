@@ -2338,6 +2338,7 @@ void input_thread(void *arg)
 //		if(wr>100)
 //			mswait(500);	// Throttle sender
 	}
+	sbbs->sftp_end();
 	sbbs->online=false;
 	sbbs->sys_status|=SS_ABORT;	/* as though Ctrl-C were hit */
 	SetEvent(sbbs->inbuf.data_event); // terminate incom() wait

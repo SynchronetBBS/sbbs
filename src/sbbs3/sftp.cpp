@@ -2164,7 +2164,8 @@ sbbs_t::init_sftp(int cid)
 bool
 sbbs_t::sftp_end(void)
 {
-	sftps_end(sftp_state);
+	if (sftp_state)
+		sftps_end(sftp_state);
 	sftp_state = nullptr;
 	return true;
 }
