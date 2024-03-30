@@ -541,6 +541,10 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	JSObject*	js_script=NULL;
 	jsval		old_js_argv = JSVAL_VOID;
 	jsval		old_js_argc = JSVAL_VOID;
+	jsval		old_js_exec_path = JSVAL_VOID;
+	jsval		old_js_exec_file = JSVAL_VOID;
+	jsval		old_js_exec_dir = JSVAL_VOID;
+	jsval		val;
 	jsval		rval;
 	int32		result=0;
 	struct js_event_list	*events;
@@ -663,6 +667,17 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 		js_callback.counter=0;	// Reset loop counter
 	}
 	JS_SetOperationCallback(js_cx, js_OperationCallback);
+	if(JS_GetProperty(js_cx, js_glob, "js", &val) && JSVAL_IS_OBJECT(val)) {
+		JSObject* js = JSVAL_TO_OBJECT(val);
+
+		if(JS_GetProperty(js_cx, js, "exec_path", &old_js_exec_path))
+			JS_AddValueRoot(js_cx, &old_js_exec_path);
+		if(JS_GetProperty(js_cx, js, "exec_file", &old_js_exec_file))
+			JS_AddValueRoot(js_cx, &old_js_exec_file);
+		if(JS_GetProperty(js_cx, js, "exec_dir", &old_js_exec_dir))
+			JS_AddValueRoot(js_cx, &old_js_exec_dir);
+	}
+
 	js_PrepareToExecute(js_cx, js_glob, path, startup_dir, js_scope);
 	events = js_callback.events;
 	js_callback.events = NULL;
@@ -701,6 +716,18 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 		}
 		JS_RemoveValueRoot(js_cx, &old_js_argv);
 		JS_RemoveValueRoot(js_cx, &old_js_argc);
+	}
+	if(JS_GetProperty(js_cx, js_glob, "js", &val) && JSVAL_IS_OBJECT(val)) {
+		JSObject* js = JSVAL_TO_OBJECT(val);
+		JS_DefineProperty(js_cx, js, "exec_path", old_js_exec_path
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		JS_RemoveValueRoot(js_cx, &old_js_exec_path);
+		JS_DefineProperty(js_cx, js, "exec_file", old_js_exec_file
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		JS_RemoveValueRoot(js_cx, &old_js_exec_file);
+		JS_DefineProperty(js_cx, js, "exec_dir", old_js_exec_dir
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		JS_RemoveValueRoot(js_cx, &old_js_exec_dir);
 	}
 
 	JS_GC(js_cx);
