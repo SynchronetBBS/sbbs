@@ -151,6 +151,8 @@
  * 2024-      Eric Oulashin     Version 1.95c
  *                              The filename of quotes.txt is now in the correct case for the user's editor.
  *                              "terminalSupportsUTF8 not defined" error eliminated.
+ * 2024-03-31 Eric Oulashin     Version 1.95d
+ *                              Fix for checkmark refresh when selecting all/none in the message list
  */
 
 "use strict";
@@ -255,8 +257,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 var hexdump = load('hexdump_lib.js');
 
 // Reader version information
-var READER_VERSION = "1.95c";
-var READER_DATE = "2024-02-15";
+var READER_VERSION = "1.95d";
+var READER_DATE = "2024-03-31";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4152,7 +4154,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			this.ToggleSelectedMessage(this.subBoardCode, this.lightbarListSelectedMsgIdx);
 			// Have the menu draw only the check character column in the
 			// next iteration
-			msgListMenu.nextDrawOnlyItemSubstr = { start: this.MSGNUM_LEN, end: this.MSGNUM_LEN+1 };
+			msgListMenu.nextDrawOnlyItemSubstr = { start: this.MSGNUM_LEN+1, end: this.MSGNUM_LEN+2 };
 		}
 		// Ctrl-A: Select/de-select all messages
 		else if (lastUserInputUpper == CTRL_A)
@@ -4175,7 +4177,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					this.ToggleSelectedMessage(this.subBoardCode, messageIndex, messageSelectToggle);
 				// Have the menu draw only the check character column in the
 				// next iteration
-				msgListMenu.nextDrawOnlyItemSubstr = { start: this.MSGNUM_LEN, end: this.MSGNUM_LEN+1 };
+				msgListMenu.nextDrawOnlyItemSubstr = { start: this.MSGNUM_LEN+1, end: this.MSGNUM_LEN+2 };
 			}
 			else
 				drawMenu = false; // No need to re-draw the menu
