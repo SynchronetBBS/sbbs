@@ -100,6 +100,8 @@ function dir_index(dir)
 	writeln("<tbody>");
 	for(var l in list) {
 		var f = list[l];
+		if(f.size <= 0)
+			continue;
 		write("<tr>");
 		write("<td>" + f.name.link(f.name) + "</td>");
 		write("<td align=right>" + file_size_float(f.size, 1, 0) + "</td>");
