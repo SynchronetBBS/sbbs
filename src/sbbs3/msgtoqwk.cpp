@@ -510,7 +510,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 			safe_snprintf(tmp,sizeof(tmp)," %c \1g%.10s\1n %c %.127s%c"
 				,ch,VERSION_NOTICE,ch,cfg.sub[subnum]->tagline,qwk_newline);
 			char* tail = tmp;
-			if((smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8)) && (mode&QM_UTF8)) {
+			if(is_utf8) {
 				if(cp437_to_utf8_str(tmp, msghdr_utf8_text, sizeof(msghdr_utf8_text), /* min-char-val: */'\x80') > 1)
 					tail = msghdr_utf8_text;
 			}
