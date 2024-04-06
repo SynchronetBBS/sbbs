@@ -3,6 +3,7 @@
 "use strict";
 
 const quiet = argv.indexOf("-q") >= 0;
+const verbose = argv.indexOf("-v") >= 0;
 
 function cont(str)
 {
@@ -62,7 +63,7 @@ for(var i in file_list) {
 	var path = item.dir + item.file;
 	var count = directory(path).length;
 	if(count < 1) {
-		if(!quiet) print(path + format(" (%s)", item.desc) + " does not exist");
+		if(verbose) print(path + format(" (%s)", item.desc) + " does not exist");
 		continue;
 	}
 	var multi = count > 1 ? format(" (%u files)", count) : "";
