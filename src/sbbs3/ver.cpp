@@ -33,6 +33,7 @@ extern "C" {
 
 const char* git_hash = GIT_HASH;
 const char* git_date = GIT_DATE;
+const time_t git_time = GIT_TIME;
 const char* git_branch = GIT_BRANCH;
 const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
 

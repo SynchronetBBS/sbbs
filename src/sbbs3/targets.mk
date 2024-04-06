@@ -159,6 +159,7 @@ ifneq ($(GIT), NO)
 git_hash.h: FORCE ../../.git
 	$(QUIET)git log -1 HEAD --format="#define GIT_HASH \"%h\"" > $@.tmp
 	$(QUIET)git log -1 HEAD --format="#define GIT_DATE \"%cd\"" '--date=format-local:%b %d %Y %H:%M' >> $@.tmp
+	$(QUIET)git log -1 HEAD --format="#define GIT_TIME %cd" --date=unix >> $@.tmp
 	$(QUIET)test -e $@ && diff $@.tmp $@ || cp $@.tmp $@
 	$(QUIET)rm -f $@.tmp
 
