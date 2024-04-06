@@ -38,11 +38,18 @@ const file_list = [
 	{ dir: system.ctrl_dir, file: "pnet.dab", desc: "PostLink network call-out times (unused)" },
 	{ dir: system.ctrl_dir, file: "qnet.dab", desc: "QWK network call-out times (migrated to time.ini)" },
 	{ dir: system.ctrl_dir, file: "time.dab", desc: "Timed-event execution times (migrated to time.ini)" },
-	{ dir: system.data_dir + backslash("dirs"), file: "*.ixb", desc: "Filebase indexes (migrated to *.sid)" },
-	{ dir: system.data_dir + backslash("dirs"), file: "*.dat", desc: "Filebase data (migrated to *.shd)" },
-	{ dir: system.data_dir + backslash("dirs"), file: "*.exb", desc: "Filebase extended descriptions (migrated to *.sdt)" },
-	{ dir: system.data_dir + backslash("dirs"), file: "*.dab", desc: "Filebase metadata (migrated to *.ini)" },
 ];
+
+var data_dir = {};
+for(var i in file_area.dir)
+	data_dir[file_area.dir[i].data_dir] = true;
+
+for(var i in data_dir) {
+	file_list.push( { dir: i, file: "*.ixb", desc: "Filebase indexes (migrated to *.sid)" } );
+	file_list.push( { dir: i, file: "*.dat", desc: "Filebase data (migrated to *.shd)" } );
+	file_list.push( { dir: i, file: "*.exb", desc: "Filebase extended descriptions (migrated to *.sdt)" } );
+	file_list.push( { dir: i, file: "*.dab", desc: "Filebase metadata (migrated to *.ini)" } );
+}
 
 for(var i in system.node_list) {
 	file_list.push( { dir: system.node_list[i].dir, file: "node.cnf", desc: "Node configuration settings (migrated to node.ini" } );
@@ -55,7 +62,7 @@ for(var i in file_list) {
 	var path = item.dir + item.file;
 	var count = directory(path).length;
 	if(count < 1) {
-		print(path + format(" (%s)", item.desc) + " does not exist");
+		if(!quiet) print(path + format(" (%s)", item.desc) + " does not exist");
 		continue;
 	}
 	var multi = count > 1 ? format(" (%u files)", count) : "";
