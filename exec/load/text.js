@@ -881,7 +881,10 @@ var LANG=871;
 var UserDefaultsLanguage=872;
 var PasswordChar=873;
 var NodeConnectionSFTP=874;
+var QWKSettingsWrapText=875;
+var UnknownUploader=876;
+var FREE=877;
 
-var TOTAL_TEXT=875;
+var TOTAL_TEXT=878;
 
 this;
