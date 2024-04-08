@@ -2695,7 +2695,7 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING("git_branch", git_branch);
 	LAZY_STRING("git_hash", git_hash);
 	LAZY_STRING("git_date", git_date);
-	LAZY_INTEGER("git_time", git_time);
+	LAZY_INTEGER("git_time", (uint32_t)git_time);
 
 	LAZY_STRING("platform", PLATFORM_DESC);
 	LAZY_STRING("architecture", ARCHITECTURE_DESC);
