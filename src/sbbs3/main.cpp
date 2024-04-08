@@ -4466,9 +4466,11 @@ void node_thread(void* arg)
 				}
 				SAFEPRINTF2(str,"%s%s.bin",sbbs->cfg.mods_dir
 					,sbbs->cfg.shell[sbbs->useron.shell]->code);
-				if(sbbs->cfg.mods_dir[0]==0 || !fexistcase(str))
+				if(sbbs->cfg.mods_dir[0]==0 || !fexistcase(str)) {
 					SAFEPRINTF2(str,"%s%s.bin",sbbs->cfg.exec_dir
 						,sbbs->cfg.shell[sbbs->useron.shell]->code);
+					fexistcase(str);
+				}
 				if((file=sbbs->nopen(str,O_RDONLY))==-1) {
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 					sbbs->hangup();
