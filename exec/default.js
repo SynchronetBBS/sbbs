@@ -10,7 +10,6 @@ require("userdefs.js", "UFLAG_T");
 require("nodedefs.js", "NODE_MAIN");
 require("key_defs.js", "KEY_UP");
 require("gettext.js", "gettext");
-bbs.revert_text(bbs.text.Pause);
 load("termsetup.js");
 var shell = load({}, "shell_lib.js");
 
