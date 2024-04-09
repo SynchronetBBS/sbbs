@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.21     2024-04-09   Fix: Searching by file date as a loadable module now does
+                      the new file search
 2.20     2024-03-22   (Hopefully) Fix for descLines undefined error
 2.19     2024-03-11   File description refresh fixes when using extended
                       descriptions (along with an updated dd_lightbar_menu.js)

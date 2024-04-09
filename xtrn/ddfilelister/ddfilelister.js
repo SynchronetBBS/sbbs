@@ -115,6 +115,10 @@
  *                              was being left there when it should have been written over with a space)
  * 2024-03-22 Eric Oulashin     Version 2.20
  *                              (Hopefully) Fix for descLines being undefined in getFileInfoLineArrayForTraditionalUI()
+ * 2024-04-08 Eric Oulashin     Version 2.21 Beta
+ *                              Fix: Searching by file date as a loadable module now does the new file search
+ * 2024-04-09 Eric Oulashin     Version 2.21
+ *                              Releasing this version
 */
 
 "use strict";
@@ -123,7 +127,6 @@
 //console.ctrlkey_passthru |= (1<<3); // Ctrl-C
 //console.ctrlkey_passthru = "+C";
 //console.ctrlkey_passthru = "-C";
-
 
 // If the search action has been aborted, then return -1
 if (console.aborted)
@@ -160,8 +163,8 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 
 // Lister version information
-var LISTER_VERSION = "2.20";
-var LISTER_DATE = "2024-03-22";
+var LISTER_VERSION = "2.21";
+var LISTER_DATE = "2024-04-09";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -4097,7 +4100,7 @@ function parseArgs(argv)
 
 		// Default gScriptmode to MODE_LIST_DIR; for FLBehavior as FL_NONE, no special behavior
 		gScriptMode = MODE_LIST_DIR;
-
+		
 		// 2 args - Scanning/searching
 		if (argv.length == 2)
 		{
@@ -4107,22 +4110,26 @@ function parseArgs(argv)
 				// - 0: Bool (scanning all directories): 0/1
 				// - 1: FL_ mode value
 				gScanAllDirs = (argv[0] == "1");
-				if (Boolean(FLBehavior & FL_ULTIME))
-					gScriptMode = MODE_NEW_FILE_SEARCH;
-				else if (Boolean(FLBehavior & FL_FINDDESC) || Boolean(FLBehavior & FL_EXFIND))
-					gScriptMode = MODE_SEARCH_DESCRIPTION;
-				if (Boolean(FLBehavior & FL_VIEW))
-				{
-					// View ZIP/ARC/GIF etc. info
-					// TODO: Not sure what to do with this
-				}
 			}
 			// When used as the List Files loadable module: First arg is a directory internal code
-			// and 2nd arg is 0 or 1
-			else if (/^[^\s]+$/.test(argv[0]) && (argv[1] == "0" || argv[1] == "1"))
+			// and 2nd arg is list mode (FL_ mode value; see comments above starting with FL_NONE)
+			else if (/^[^\s]+$/.test(argv[0]))
 			{
 				// - 0: Directory internal code
-				// - 1: Bool (scanning all directories): 0/1
+				if (typeof(file_area.dir[argv[0]]) === "object")
+					gDirCode = argv[0];
+			}
+
+			// If FL_ULTIME is set, then set the script mode to new file search
+			if (Boolean(FLBehavior & FL_ULTIME))
+				gScriptMode = MODE_NEW_FILE_SEARCH; // List files by upload time
+			// If FL_FINDDESC is set, then set the script mode to search by description
+			else if (Boolean(FLBehavior & FL_FINDDESC) || Boolean(FLBehavior & FL_EXFIND))
+				gScriptMode = MODE_SEARCH_DESCRIPTION;
+			if (Boolean(FLBehavior & FL_VIEW))
+			{
+				// View ZIP/ARC/GIF etc. info
+				// TODO: Not sure what to do with this
 			}
 		}
 		// 3 args - Internal code, mode, filespec/description keyword
@@ -4373,6 +4380,9 @@ function populateFileList(pSearchMode)
 		var userInputDLA = "";
 		if (gScanAllDirs)
 			userInputDLA = "A";
+		// If running as a loadable module, the sub-board would be specified
+		else if (gRunningAsLoadableModule)
+			userInputDLA = "D";
 		else
 		{
 			console.attributes = "N";
@@ -4383,17 +4393,28 @@ function populateFileList(pSearchMode)
 			console.attributes = "N";
 			console.crlf();
 		}
+		// Synchronet itself seems to print the "Searching for files uploaded after..." string, so
+		// we don't have to print it here
+		/*
 		if (userInputDLA == "D" || userInputDLA == "L" || userInputDLA == "A")
 		{
 			console.print("\x01n\x01cSearching for files uploaded after \x01h" + system.timestr(bbs.new_file_time) + "\x01n");
 			console.crlf();
 		}
+		*/
 		var searchRetObj = searchDirGroupOrAll(userInputDLA, function(pDirCode) {
-			return searchDirNewFiles(pDirCode, bbs.new_file_time);
+			var searchDirNewFilesRetObj = searchDirNewFiles(pDirCode, bbs.new_file_time);
+			// If searching a single directory and no files were found, then say so
+			if (userInputDLA == "D" && !searchDirNewFilesRetObj.foundFiles)
+			{
+				var areaFullDesc = file_area.dir[pDirCode].lib_name + ": " + file_area.dir[pDirCode].description;
+				printf("\x01n\x01cNo new files found in \x01h%s\x01n\r\n", areaFullDesc);
+			}
+			return searchDirNewFilesRetObj;
 		});
 		// Now bbs.last_new_file_time needs to be updated with the current time
 		bbs.last_new_file_time = time();
-		// user.new_file_time should be updated with the value of bbs.last_new_file_time
+		// user.new_file_time will be updated with the value of bbs.last_new_file_time
 		// when the user logs off.
 		allSameDir = searchRetObj.allSameDir;
 		for (var i = 0; i < searchRetObj.errors.length; ++i)
