@@ -4470,7 +4470,7 @@ void node_thread(void* arg)
 				if(sbbs->cfg.mods_dir[0]==0 || !fexistcase(str)) {
 					SAFEPRINTF2(str,"%s%s.bin",sbbs->cfg.exec_dir
 						,sbbs->cfg.shell[sbbs->useron.shell]->code);
-					fexistcase(str);
+					(void)fexistcase(str);
 				}
 				if((file=sbbs->nopen(str,O_RDONLY))==-1) {
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
