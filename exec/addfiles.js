@@ -231,7 +231,7 @@ for(var d = 0; d < dir_list.length; d++) {
 		}
 		var path = file_area.dir[code].path + file.name;
 		var realpath = file_getcase(path);
-		if(!realpath)) {
+		if(!realpath) {
 			alert("does not exist: " + path);
 			continue;
 		}
