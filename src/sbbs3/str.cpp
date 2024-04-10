@@ -965,7 +965,7 @@ bool sbbs_t::trashcan(const char *insearchof, const char *name, struct trash* tr
 		sprintf(str,"%sbad%s.msg",cfg.text_dir,name);
 		if(fexistcase(str)) {
 			printfile(str,0);
-			mswait(500); // give time for tx buffer to clear before disconnect
+			flush_output(500); // give time for tx buffer to clear before disconnect
 		}
 	}
 	return(result);

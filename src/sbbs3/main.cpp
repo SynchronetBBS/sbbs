@@ -4132,7 +4132,7 @@ int sbbs_t::outcom(uchar ch)
 			break;
 		i++;
 		if(i >= outcom_max_attempts) {			/* timeout - beep flush outbuf */
-			lprintf(LOG_NOTICE, "%04d %s TIMEOUT after %d attempts with %d bytes in transmit buffer (flushing)"
+			lprintf(LOG_NOTICE, "%04d %s TIMEOUT after %d attempts with %d bytes in transmit buffer (purging)"
 				,client_socket, __FUNCTION__, i, RingBufFull(&outbuf));
 			RingBufReInit(&outbuf);
 			_outcom(BEL);
@@ -4141,7 +4141,7 @@ int sbbs_t::outcom(uchar ch)
 		if(sys_status&SS_SYSPAGE)
 			sbbs_beep(i, OUTCOM_RETRY_DELAY);
 		else
-			mswait(OUTCOM_RETRY_DELAY);
+			flush_output(OUTCOM_RETRY_DELAY);
 	}
 	return 0;	// Success
 }
@@ -5632,11 +5632,11 @@ NO_SSH:
 		}
 
 		if(sbbs->trashcan(host_name,"host", &trash)) {
-			SSH_END(client_socket);
-			close_socket(client_socket);
 			char details[128];
 			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
 				,client_socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details));
+			SSH_END(client_socket);
+			close_socket(client_socket);
 			continue;
 		}
 
@@ -5704,7 +5704,7 @@ NO_SSH:
 				sbbs->putcom("\r\nSorry, all terminal nodes are in use or otherwise unavailable.\r\n");
 				sbbs->putcom("Please try again later.\r\n");
 			}
-			mswait(3000);
+			sbbs->flush_output(3000);
 			client_off(client_socket);
 			SSH_END(client_socket);
 			close_socket(client_socket);
@@ -5777,7 +5777,7 @@ NO_SSH:
 				sbbs->printfile(str,P_NOABORT);
 			else
 				sbbs->putcom("\r\nSorry, initialization failed. Try again later.\r\n");
-			mswait(3000);
+			sbbs->flush_output(3000);
 			sbbs->getnodedat(new_node->cfg.node_num,&node,1);
 			node.status=NODE_WFC;
 			sbbs->putnodedat(new_node->cfg.node_num,&node);

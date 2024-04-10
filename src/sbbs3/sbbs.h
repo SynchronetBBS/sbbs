@@ -501,6 +501,7 @@ public:
 	RingBuf	inbuf{};
 	RingBuf	outbuf{};
 	bool	WaitForOutbufEmpty(int timeout) { return WaitForEvent(outbuf.empty_event, timeout) == WAIT_OBJECT_0; }
+	bool	flush_output(int timeout) { return online && WaitForOutbufEmpty(timeout); }
 	HANDLE	input_thread=nullptr;
 	pthread_mutex_t	input_thread_mutex;
 	bool	input_thread_mutex_created = false;
