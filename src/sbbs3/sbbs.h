@@ -509,9 +509,9 @@ public:
 	xpevent_t ssh_active = nullptr;
 
 	#define OUTCOM_RETRY_DELAY		80		// milliseconds
-	#define OUTCOM_RETRY_ATTEMPTS	1000	// 80 seconds
-	int 	_outcom(uchar ch); 	   // send character, without retry (on buffer flow condition)
-	int		outcom(uchar ch, int max_attempts = OUTCOM_RETRY_ATTEMPTS);		// send character, with retry
+	int		outcom_max_attempts =	1000;	// 80 seconds
+	int 	_outcom(uchar ch); 	   // send character, without retry (on buffer full condition)
+	int		outcom(uchar ch);		// send character, with retry
 	int 	incom(unsigned int timeout=0);		   // receive character
 	int 	kbincom(unsigned int timeout=0);	   // " " or return keyboard buffer
 	int		translate_input(int ch);

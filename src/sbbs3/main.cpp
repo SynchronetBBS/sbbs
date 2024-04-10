@@ -4124,17 +4124,18 @@ int sbbs_t::_outcom(uchar ch)
 }
 
 // This outcom version retries - copied loop from sbbs_t::outchar()
-int sbbs_t::outcom(uchar ch, int max_attempts)
+int sbbs_t::outcom(uchar ch)
 {
 	int i = 0;
 	while(_outcom(ch) != 0) {
 		if(!online)
 			break;
 		i++;
-		if(i >= max_attempts) {			/* timeout - beep flush outbuf */
-			lprintf(LOG_NOTICE, "timeout(outcom) %04X %04X", rioctl(TXBC), rioctl(IOFO));
+		if(i >= outcom_max_attempts) {			/* timeout - beep flush outbuf */
+			lprintf(LOG_NOTICE, "%04d %s TIMEOUT after %d attempts with %d bytes in transmit buffer (flushing)"
+				,client_socket, __FUNCTION__, i, RingBufFull(&outbuf));
+			RingBufReInit(&outbuf);
 			_outcom(BEL);
-			rioctl(IOCS|PAUSE);
 			return TXBOF;
 		}
 		if(sys_status&SS_SYSPAGE)
@@ -5299,6 +5300,7 @@ NO_SSH:
 		cleanup(1);
 		return;
 	}
+	sbbs->outcom_max_attempts = 10;
     sbbs->output_thread_running = true;
 	_beginthread(output_thread, 0, sbbs);
 
