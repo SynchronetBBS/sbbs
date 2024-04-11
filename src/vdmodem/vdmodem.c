@@ -731,8 +731,11 @@ void init_telnet_options()
 			request_telnet_opt(TELNET_WILL,TELNET_ECHO);
 		}
 		if(cfg.server_binary) {
-			/* Will send in binary mode (no CR->CRLF expansion on receiver side) */
-			request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
+			request_telnet_opt(TELNET_DO, TELNET_BINARY_TX);
+			request_telnet_opt(TELNET_WILL, TELNET_BINARY_TX);
+		} else {
+			request_telnet_opt(TELNET_DONT, TELNET_BINARY_TX);
+			request_telnet_opt(TELNET_WONT, TELNET_BINARY_TX);
 		}
 		/* Will suppress Go Ahead */
 		request_telnet_opt(TELNET_WILL,TELNET_SUP_GA);
