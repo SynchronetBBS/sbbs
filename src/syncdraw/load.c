@@ -229,7 +229,7 @@ unsigned char   pcb_color = FALSE, pcb_code = FALSE, d, pcb_col = 0;
 unsigned char   ans_esc = FALSE, ans_code = FALSE, ans_rep, e, ans_attr = 0;
 unsigned char   sync_code = FALSE;
 int             acx, acy;
-char            ansicode[20];
+char            ansicode[200];
 char            copytmp[20];
 char            code[20];
 
