@@ -324,7 +324,8 @@ function import_entry(name, text)
                 bbs.network[network] = {name: match[2]};
                 break;
             case 'address':
-                bbs.network[network].address = match[2];
+				if(bbs.network[network] !== undefined)
+					bbs.network[network].address = match[2];
                 break;
             case 'terminal':
                 if(bbs.terminal.types.length)
