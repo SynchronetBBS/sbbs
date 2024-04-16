@@ -40,7 +40,7 @@ typedef struct {							/* Message sub board info */
 				post_sem[LEN_DIR+1],		/* Semaphore file for this sub */
 				tagline[81],				/* Optional QWK net tag line */
 				newsgroup[LEN_DIR+1];		/* Newsgroup name */
-	char		area_tag[41];
+	char		area_tag[FIDO_AREATAG_LEN+1];
 	uchar		ar[LEN_ARSTR+1],
 				read_ar[LEN_ARSTR+1],
 				post_ar[LEN_ARSTR+1],
@@ -74,7 +74,7 @@ typedef struct {							/* Transfer Directory Info */
 	char		code[LEN_EXTCODE+1];		/* Internal code (with optional lib prefix) */
 	char		code_suffix[LEN_CODE+1];	/* Eight character code suffix */
 	char		vdir[LEN_SLNAME+1];			/* Virtual Directory name */
-	char		area_tag[41];
+	char		area_tag[FIDO_AREATAG_LEN+1];
 	char		lname[LEN_SLNAME+1],		/* Long name - used for listing */
 				sname[LEN_SSNAME+1],		/* Short name - used for prompts */
 				arstr[LEN_ARSTR+1],			/* Access Requirements */
