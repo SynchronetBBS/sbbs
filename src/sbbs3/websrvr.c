@@ -1548,7 +1548,7 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 		,session->socket, session->client.protocol, session->host_ip, message, line, session->req.request_line);
 	session->req.keep_alive=false;
 	session->req.send_location=NO_LOCATION;
-	SAFECOPY(error_code,message);
+	strlcpy(error_code, message, 4);
 	SAFECOPY(session->req.status,message);
 	if(atoi(error_code)<500) {
 		/*
