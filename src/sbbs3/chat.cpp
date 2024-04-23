@@ -1217,7 +1217,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 	j=atoi(str);
 	if(j && j<=cfg.sys_lastnode && j<=cfg.sys_nodes) {
 		getnodedat(j,&node,0);
-		if(node.status!=NODE_INUSE && !SYSOP) {
+		if(node.useron == 0 || (node.status!=NODE_INUSE && !SYSOP)) {
 			bprintf(text[NodeNIsNotInUse],j);
 			return(0);
 		}
