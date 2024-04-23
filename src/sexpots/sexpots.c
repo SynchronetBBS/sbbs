@@ -1727,8 +1727,8 @@ int main(int argc, char** argv)
 	/* Generate and display banner */
 	/*******************************/
 
-	sprintf(banner,"\n%s v2.0-%s"
-		" Copyright %s Rob Swindell"
+	sprintf(banner,"\n%s/%-7s "
+		"v2.0  Copyright %s Rob Swindell"
 		,TITLE
 		,PLATFORM_DESC
 		,&__DATE__[7]
