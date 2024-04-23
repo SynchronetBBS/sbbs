@@ -92,6 +92,14 @@ request_telnet_opt(uchar cmd, uchar opt)
 	send_telnet_cmd(cmd, opt);
 }
 
+// Have conn_api.binary_mode auto-track (to true) when both sides are in binary TX mode
+static inline
+update_binary_mode()
+{
+	conn_api.binary_mode = (telnet_remote_option[TELNET_BINARY_TX] == TELNET_WILL)
+		&& (telnet_local_option[TELNET_BINARY_TX] == TELNET_DO);
+}
+
 BYTE *
 telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 {
@@ -193,6 +201,8 @@ telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 							case TELNET_NEGOTIATE_WINDOW_SIZE:
 								telnet_local_option[option] = command;
 								send_telnet_cmd(telnet_opt_ack(command), option);
+								if(option == TELNET_BINARY_TX)
+									update_binary_mode();
 								break;
 							default:                          /* unsupported local options
                                                                                            */
@@ -232,6 +242,8 @@ telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 							case TELNET_NEGOTIATE_WINDOW_SIZE:
 								telnet_remote_option[option] = command;
 								send_telnet_cmd(telnet_opt_ack(command), option);
+								if(option == TELNET_BINARY_TX)
+									update_binary_mode();
 								break;
 							default:                            /* unsupported remote
                                                                                              * options */
