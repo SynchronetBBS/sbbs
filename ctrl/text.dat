@@ -114,7 +114,7 @@
 "\r\n\r\nNo text file sections available.\r\n"          080 NoTextSections
 "\1l\1_\1c\1hGeneral Text File Sections:\r\n\r\n"           081 TextSectionLstHdr
 "\1n\1c<\1h%d\1n\1c> %s\r\n"                                082 TextSectionLstFmt
-"\1_\r\n\1c@Which@ or \1h~Q\1n\1cuit: \1h"                      083 WhichTextSection
+"\r\n@Which@ or ~@Quit@: "                                  083 WhichTextSection
 "\1l\1_\1c\1h%s Files:\r\n\r\n"                             084 TextFilesLstHdr
 "\1c\1h%3d: \1n\1c%s"                                      085 TextFilesLstFmt
 "\r\n@Which@, ~Add, ~Remove, ~Edit, or ~@Quit@: "           086 WhichTextFileSysop
@@ -469,7 +469,7 @@
 	"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
 	"\xc4\xc4\xc4\xc4\xc4\xc4 "
 "\1h\1c%3u \xb3 \1n\1c%-32.32s\1h "                        383 XtrnProgLstFmt
-"\r\n\1-\1c@Which@ or \1h~Q\1n\1cuit: \1h"                 384 WhichXtrnProg
+"\r\n@Which@ or ~@Quit@: "                              384 WhichXtrnProg
 "\r\n%s is currently running %s on node %d.\r\n"\       385 UserRunningXtrn
 	"\r\nTry again later.\r\n\r\n"
 "Remove node lock"                                      386 RemoveNodeLockQ
@@ -674,8 +674,8 @@
 "\r\n\1n\1h\1m%-2d \1n\1m%-6u \1w\1h%-25.25s \1m%-25.25s"\     545 LastFewCallersFmt
 	"\1n\1m%02u:%02u \1h%-8.8s \1n\1m%3d"
 "\r\n\1g\1hLogons Today:\1n\1g"                            546 CallersToday
-"\1_\1b\1hDo you mean %s #%u "\                            547 DoYouMeanThisUserQ
-	"(\1cY\1bes, \1cN\1bo, or \1cQ\1buit) ? \1n"
+"Do you mean %s #%u "\                            547 DoYouMeanThisUserQ
+	"(~@Yes@, ~@No@, or ~@Quit@) ? "
 "UNKNOWN USER"                                          548 UNKNOWN_USER
 "\r\nTime's up.\r\n"                                    549 TimesUp
 "\1_\1w\1hNode %2d: \1g%s\1n\1g logged off\r\n\1n"             550 NodeLoggedOff
@@ -1059,5 +1059,5 @@
 "*"                                                        873 PasswordChar
 " via sftp"                                                874 NodeConnectionSFTP
 "\1n\1b[\1h\1wW\1n\1b] \1hWord-wrap Message Text       \1n\1b: \1c%s\r\n"	875  QWKSettingsWrapText
-"\1/Unknown uploader (%s) of file: %s"			           877 UnknownUploader
-"FREE"                                                     878 FREE
+"\1/Unknown uploader (%s) of file: %s"			           876 UnknownUploader
+"FREE"                                                     877 FREE
