@@ -1,6 +1,7 @@
 #include <ctype.h>
 
 #include "dirwrap.h"
+#include "genwrap.h"
 #include "uifc.h"
 #include "ciolib.h"
 
