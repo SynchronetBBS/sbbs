@@ -71,8 +71,11 @@ uint sbbs_t::finduser(const char* name, bool silent_failure)
 				return((l/(LEN_ALIAS+2))+1); 
 			}
 			if(pass==2 && strcasestr(buf, name)) {
-				bprintf(text[DoYouMeanThisUserQ], buf
+				char tmp[256];
+				char str[256];
+				snprintf(tmp, sizeof tmp, expand_atcodes(text[DoYouMeanThisUserQ], str, sizeof str), buf
 					,(uint)(l/(LEN_ALIAS+2))+1);
+				mnemonics(tmp);
 				c=(char)getkeys(ynq,0);
 				if(sys_status&SS_ABORT) {
 					fclose(stream);
