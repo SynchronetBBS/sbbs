@@ -1117,6 +1117,8 @@ get_win_filename(char *fn, int fnlen, int type, int shared)
 			strncat(fn, "syncterm.ssh", fnlen - strlen(fn) - 1);
 			break;
 	}
+
+	return fn;
 }
 
 #else
