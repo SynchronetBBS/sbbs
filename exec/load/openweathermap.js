@@ -31,10 +31,10 @@ OpenWeatherMap.prototype.read_cache = function (endpoint, params) {
     const hash = base64_encode(endpoint + JSON.stringify(params));
     cache_file = new File(system.temp_dir + 'openweathermap_' + hash + '.json');
     if (!cache_file.exists) return;
+    if (time() - cache_file.date > this.settings.data_refresh) return;
     cache_file.open('r');
     const cache = JSON.parse(cache_file.read());
     cache_file.close();
-    if (time() - cache.dt > this.settings.data_refresh) return;
     return cache;
 }
 
