@@ -103,7 +103,7 @@ OpenWeatherMap.prototype.call_api_v3 = function (params) {
 
     const req = new HTTPRequest();
     var response = req.Get(url);
-    response = { data: response, dt: time() };
+    response = JSON.parse(response);
     if (req.response_code >= 200 && req.response_code < 300) {
         this.write_cache('onecall', params, response);
     }
@@ -137,3 +137,5 @@ OpenWeatherMap.prototype.wind_direction = function (deg) {
 OpenWeatherMap.prototype.c_to_f = function (c) {
     return Math.round((c * (9/5)) + 32);
 }
+
+OpenWeatherMap;
