@@ -11,14 +11,11 @@ load('modopts.js');
 
 function OpenWeatherMap() {
     this.settings = get_mod_options('openweathermap');
-	
-	if(this.settings == undefined) {
-		this.settings = {};
-	}		
-	if (!this.settings.rate_window) this.settings.rate_window = 60; // Seconds
+    if (this.settings == undefined) this.settings = {};
+    if (!this.settings.rate_window) this.settings.rate_window = 60; // Seconds
     if (!this.settings.rate_limit) this.settings.rate_limit = 60; // Requests per window
     if (!this.settings.data_refresh) this.settings.data_refresh = 7200; // Seconds
-	if (!this.settings.api_key) throw("no openweathermap API key found in modopts.ini");
+    if (!this.settings.api_key) throw("no openweathermap API key found in modopts.ini");
     this.rate_file = new File(system.temp_dir + 'openweathermap_rate.json');
 }
 
@@ -90,6 +87,29 @@ OpenWeatherMap.prototype.call_api = function (endpoint, params, raw) {
     }
 
     return response;
+}
+
+OpenWeatherMap.prototype.call_api_v3 = function (params) {
+
+    const cache = this.read_cache('onecall', params);
+    if (cache) return cache;
+
+    if (!this.rate_limit()) return { error: 'Rate limit exceeded' };
+
+    var url = 'https://api.openweathermap.org/data/3.0/onecall?appid=' + this.settings.api_key + '&lat=' + params.lat + '&lon=' + params.lon;
+    if (Array.isArray(params.exclude)) url += '&exclude=' + params.exclude.join(',');
+    if (typeof params.units === 'string') url += '&units=' + params.units;
+    if (typeof params.lang === 'string') url += '&lang=' + params.lang;
+
+    const req = new HTTPRequest();
+    var response = req.Get(url);
+    response = { data: response, dt: time() };
+    if (req.response_code >= 200 && req.response_code < 300) {
+        this.write_cache('onecall', params, response);
+    }
+
+    return response;
+
 }
 
 OpenWeatherMap.prototype.wind_direction = function (deg) {
