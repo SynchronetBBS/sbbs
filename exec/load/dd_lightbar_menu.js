@@ -3955,7 +3955,7 @@ function printedToRealIdxInStr(pStr, pIdx)
 // Inputs a keypress from the user and handles some ESC-based
 // characters such as PageUp, PageDown, and ESC.  If PageUp
 // or PageDown are pressed, this function will return the
-// string defined by KEY_PAGE_UP or EY_PAGE_DOWN,
+// string defined by KEY_PAGEUP or KEY_PAGEDN (from key_defs.js),
 // respectively.  Also, F1-F5 will be returned as "\x01F1"
 // through "\x01F5", respectively.
 // Thanks goes to Psi-Jack for the original impementation
@@ -3989,10 +3989,10 @@ function getKeyWithESCChars(pGetKeyMode, pInputTimeoutMS)
 				switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
 				{
 					case 'V':
-						userInput = KEY_PAGE_UP;
+						userInput = KEY_PAGEUP;
 						break;
 					case 'U':
-						userInput = KEY_PAGE_DOWN;
+						userInput = KEY_PAGEDN;
 						break;
 				}
 				break;
