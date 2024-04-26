@@ -293,7 +293,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 				JSVALUE_TO_MSTRING(cx, *vp, sval, NULL);
 				if(sval==NULL)
 					break;
-				val=attrstr(sval);
+				val=strtoattr(sval, /* endptr: */NULL);
 				free(sval);
 			}
 			rc=JS_SUSPENDREQUEST(cx);
@@ -1112,7 +1112,7 @@ js_set_attr(JSContext* cx, sbbs_t* sbbs, jsval val)
 		JSVALUE_TO_MSTRING(cx, val, as, NULL);
 		if(as==NULL)
 			return JS_FALSE;
-		attr=attrstr(as);
+		attr=strtoattr(as, /* endptr: */NULL);
 		free(as);
 	}
 	else {

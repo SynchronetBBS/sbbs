@@ -440,7 +440,7 @@ bool read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 				break;
 			cfg->color=clr;
 		}
-		cfg->color[cfg->total_colors]=attrstr(str); 
+		cfg->color[cfg->total_colors]=strtoattr(str, /* endptr: */NULL); 
 	}
 	fclose(instream);
 	if(cfg->total_colors<MIN_COLORS)

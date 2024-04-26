@@ -338,11 +338,22 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		else if(stricmp(sp, "off") == 0)
 			hot_attr = 0;
 		else
-			hot_attr = attrstr(sp);
+			hot_attr = strtoattr(sp, /* endptr: */NULL);
 		return nulstr;
 	}
 	if(strcmp(sp, "CLEAR_HOT") == 0) {
 		clear_hotspots();
+		return nulstr;
+	}
+
+	if(strncmp(sp, "MNE:", 4) == 0) {	// Mnemonic attribute control
+		sp += 4;
+		mneattr_low = strtoattr(sp, &tp);
+		mneattr_high = mneattr_low ^ HIGH;
+		if(tp != NULL && *tp != '\0')
+			mneattr_high = strtoattr(tp + 1, &tp);
+		if(tp != NULL && *tp != '\0')
+			mneattr_cmd = strtoattr(tp + 1, NULL);
 		return nulstr;
 	}
 

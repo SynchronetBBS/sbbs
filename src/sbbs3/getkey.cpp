@@ -191,12 +191,17 @@ void sbbs_t::mnemonics(const char *instr)
 			bputs(instr);
 			return; 
 		}
-		attr(cfg.color[clr_mnelow]); 
 	}
+
+	mneattr_low = cfg.color[clr_mnelow];
+	mneattr_high = cfg.color[clr_mnehigh];
+	mneattr_cmd = cfg.color[clr_mnecmd];
+
 	char str[256];
 	expand_atcodes(instr, str, sizeof str);
 	l=0L;
 	int term = term_supports();
+	attr(mneattr_low);
 
 	while(str[l]) {
 		if(str[l]=='~' && str[l+1] < ' ') {
@@ -208,28 +213,28 @@ void sbbs_t::mnemonics(const char *instr)
 				outchar('(');
 			l++;
 			if(!ctrl_a_codes)
-				attr(cfg.color[clr_mnehigh]);
+				attr(mneattr_high);
 			add_hotspot(str[l], /* hungry: */true);
 			outchar(str[l]);
 			l++;
 			if(!(term&(ANSI|PETSCII)))
 				outchar(')');
 			if(!ctrl_a_codes)
-				attr(cfg.color[clr_mnelow]); 
+				attr(mneattr_low);
 		}
 		else if(str[l]=='`' && str[l+1]!=0) {
 			if(!(term&(ANSI|PETSCII)))
 				outchar('[');
 			l++;
 			if(!ctrl_a_codes)
-				attr(cfg.color[clr_mnehigh]);
+				attr(mneattr_high);
 			add_hotspot(str[l], /* hungry: */false);
 			outchar(str[l]);
 			l++;
 			if(!(term&(ANSI|PETSCII)))
 				outchar(']');
 			if(!ctrl_a_codes)
-				attr(cfg.color[clr_mnelow]); 
+				attr(mneattr_low);
 		}
 		else {
 			if(str[l]==CTRL_A && str[l+1]!=0) {
@@ -243,7 +248,7 @@ void sbbs_t::mnemonics(const char *instr)
 		} 
 	}
 	if(!ctrl_a_codes)
-		attr(cfg.color[clr_mnecmd]);
+		attr(mneattr_cmd);
 }
 
 /****************************************************************************/

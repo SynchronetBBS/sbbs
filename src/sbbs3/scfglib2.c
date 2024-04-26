@@ -768,7 +768,7 @@ char *u32toaf(uint32_t l,char *str)
 /****************************************************************************/
 /* Returns the actual attribute code from a string of ATTR characters       */
 /****************************************************************************/
-uint attrstr(const char *str)
+uint strtoattr(const char *str, char** endptr)
 {
 	int atr;
 	ulong l=0;
@@ -833,9 +833,15 @@ uint attrstr(const char *str)
 			case '7':	/* White Background */
 				atr=(uchar)((atr&0x8f)|BG_LIGHTGRAY);
 				break;
+			default:
+				if(endptr != NULL)
+					*endptr = (char*)str + l;
+				return atr;
 			}
 		l++;
 	}
+	if(endptr != NULL)
+		*endptr = (char*)str + l;
 	return(atr);
 }
 

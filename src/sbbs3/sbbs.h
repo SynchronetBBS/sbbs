@@ -624,6 +624,9 @@ public:
 	uint	curatr = LIGHTGRAY;	/* Current Text Attributes Always */
 	uint	attr_stack[64]{};	/* Saved attributes (stack) */
 	int 	attr_sp = 0;	/* Attribute stack pointer */
+	uint	mneattr_low = LIGHTGRAY;
+	uint	mneattr_high = LIGHTGRAY;
+	uint	mneattr_cmd = LIGHTGRAY;
 	int 	lncntr = 0; 	/* Line Counter - for PAUSE */
 	bool	msghdr_tos = false;	/* Message header was displayed at Top of Screen */
 	int		row=0;			/* Current row */
