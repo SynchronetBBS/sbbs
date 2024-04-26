@@ -93,7 +93,7 @@ request_telnet_opt(uchar cmd, uchar opt)
 }
 
 // Have conn_api.binary_mode auto-track (to true) when both sides are in binary TX mode
-static inline
+static inline void
 update_binary_mode()
 {
 	conn_api.binary_mode = (telnet_remote_option[TELNET_BINARY_TX] == TELNET_WILL)
