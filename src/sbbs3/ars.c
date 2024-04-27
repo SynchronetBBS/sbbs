@@ -286,10 +286,6 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				artype=AR_RIP;
 				i+=2;
 			}
-			else if(!strnicmp(str+i,"WIP",3)) {
-				artype=AR_WIP;
-				i+=2;
-			}
 			else if(!strnicmp(str+i,"OS2",3)) {
 				artype=AR_OS2;
 				i+=2;
@@ -496,7 +492,6 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				arg_expected=TRUE;
 				switch(artype) {
 					case AR_RIP:
-					case AR_WIP:
 					case AR_ANSI:
 					case AR_PETSCII:
 					case AR_ASCII:

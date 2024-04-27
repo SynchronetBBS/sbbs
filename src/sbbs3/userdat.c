@@ -2044,9 +2044,7 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				else result=!not;
 				break;
 			case AR_WIP:
-				if(user==NULL || !(user->misc&WIP))
-					result=not;
-				else result=!not;
+				result=not;
 				break;
 			case AR_OS2:
 				#ifndef __OS2__

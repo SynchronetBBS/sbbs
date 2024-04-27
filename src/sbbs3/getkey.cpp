@@ -442,7 +442,7 @@ bool sbbs_t::pause(bool set_abort)
 		pause_hotspot = add_hotspot('\r');
 	bputs(text[Pause]);
 	len = bstrlen(text[Pause]);
-	if(sys_status&SS_USERON && !(useron.misc&(HTML|WIP|NOPAUSESPIN))
+	if(sys_status&SS_USERON && !(useron.misc&(NOPAUSESPIN))
 		&& cfg.spinning_pause_prompt)
 		l|=K_SPIN;
 	ch=getkey(l);

@@ -91,7 +91,7 @@ void sbbs_t::scansubs(int mode)
 	}
 
 	if(ch==text[SubGroupKeys][0] /* 'S' */) {
-		if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT)) {
+		if(useron.misc&(RIP) && !(useron.misc&EXPERT)) {
 			menu("msgscan");
 		}
 		i=scanposts(usrsub[curgrp][cursub[curgrp]],mode,str);
@@ -102,7 +102,7 @@ void sbbs_t::scansubs(int mode)
 		return;
 	}
 	if(ch==text[SubGroupKeys][1] /* 'G' */) {
-		if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT)) {
+		if(useron.misc&(RIP) && !(useron.misc&EXPERT)) {
 			menu("msgscan");
 		}
 		for(i=0;i<usrsubs[curgrp] && !msgabort();i++) {
@@ -197,7 +197,7 @@ void sbbs_t::scanallsubs(int mode)
 		}
 	}
 
-	if(useron.misc&(RIP|WIP|HTML) && !(useron.misc&EXPERT)) {
+	if(useron.misc&(RIP) && !(useron.misc&EXPERT)) {
 		menu("msgscan");
 	}
 	if((sub = (uint*)malloc(sizeof(uint) * cfg.total_subs)) == NULL) {

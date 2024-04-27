@@ -763,8 +763,6 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				else done=1;
 			continue; 
 		}
-		if(useron.misc&WIP)
-			menu("msgscan");
 		sync();
 		if(unvalidated < smb.curmsg)
 			bprintf(text[UnvalidatedWarning],unvalidated+1);

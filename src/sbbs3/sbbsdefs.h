@@ -564,9 +564,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define COLDKEYS	(1<<18)		/* No hot-keys							*/
 #define EXTDESC 	(1<<19)		/* Extended file descriptions			*/
 #define AUTOHANG	(1<<20)		/* Auto-hang-up after transfer			*/
-#define WIP 		(1<<21)		/* Supports WIP terminal emulation		*/
+#define WIP_UNUSED 	(1<<21)		/* Supports WIP terminal emulation		*/
 #define AUTOLOGON	(1<<22)		/* AutoLogon via IP						*/
-#define HTML		(1<<23)		/* Using Zuul/HTML terminal				*/
+#define HTML_UNUSED	(1<<23)		/* Using Zuul/HTML terminal				*/
 #define NOPAUSESPIN	(1<<24)		/* No spinning cursor at pause prompt	*/
 #define PETSCII		(1<<26)		/* Commodore PET/CBM terminal			*/
 #define SWAP_DELETE	(1<<27)		/* Swap Delete and Backspace keys		*/
@@ -574,7 +574,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define UTF8		(1<<29)		/* UTF-8 terminal						*/
 #define MOUSE		(1U<<31)	/* Mouse supported terminal				*/
 
-#define TERM_FLAGS		(ANSI|COLOR|RIP|WIP|HTML|SWAP_DELETE|ICE_COLOR|MOUSE|CHARSET_FLAGS)
+#define TERM_FLAGS		(ANSI|COLOR|RIP|SWAP_DELETE|ICE_COLOR|MOUSE|CHARSET_FLAGS)
 #define CHARSET_FLAGS	(NO_EXASCII|PETSCII|UTF8)
 #define CHARSET_ASCII	NO_EXASCII	// US-ASCII
 #define CHARSET_PETSCII	PETSCII		// CBM-ASCII

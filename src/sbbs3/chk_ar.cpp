@@ -188,12 +188,9 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_WIP:
-				if(!term_supports(WIP))
-					result=_not;
-				else result=!_not;
+				result=_not;
 				if(!result) {
 					noaccess_str=text[NoAccessTerminal];
-					noaccess_val=WIP; 
 				}
 				break;
 			case AR_OS2:

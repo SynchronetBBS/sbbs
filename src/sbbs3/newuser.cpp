@@ -136,7 +136,7 @@ bool sbbs_t::newuser()
 		if(useron.misc&ANSI) {
 			useron.rows = TERM_ROWS_AUTO;
 			useron.cols = TERM_COLS_AUTO;
-			if(!(cfg.uq&UQ_COLORTERM) || useron.misc&(RIP|WIP|HTML) || yesno(text[ColorTerminalQ]))
+			if(!(cfg.uq&UQ_COLORTERM) || useron.misc&(RIP) || yesno(text[ColorTerminalQ]))
 				useron.misc|=COLOR; 
 			else
 				useron.misc&=~COLOR;
