@@ -22,6 +22,8 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 #include "telnet.h"
+#include "unicode.h"
+#include "utf8.h"
 
 #include <signal.h>			// kill()
 
@@ -210,6 +212,42 @@ static void petscii_convert(BYTE* buf, uint len)
     for(uint i=0; i<len; i++) {
 		buf[i] = cp437_to_petscii(buf[i]);
 	}
+}
+
+static BYTE* cp437_to_utf8(BYTE* input, size_t& len, BYTE* outbuf, size_t maxlen)
+{
+	size_t outlen = 0;
+	for (size_t i = 0; i < len; ++i) {
+		if (outlen >= maxlen) {
+			break;
+		}
+		BYTE ch = input[i];
+		enum unicode_codepoint codepoint = UNICODE_UNDEFINED;
+		switch (ch) {
+			case '\a':
+			case '\b':
+			case '\e':
+			case '\f':
+			case '\n':
+			case '\r':
+			case '\t':
+				// Don't convert these control characters UNICODE
+				break;
+			default:
+				codepoint = cp437_unicode_tbl[ch];
+		}
+		if (codepoint != UNICODE_UNDEFINED) {
+			int ulen = utf8_putc((char*)outbuf + outlen, maxlen - outlen, codepoint);
+			if (ulen < 1)
+				break;
+			outlen += ulen;
+		} else {
+			*(outbuf + outlen) = ch;
+			outlen++;
+		}
+	}
+	len = outlen;
+	return outbuf;
 }
 
 bool native_executable(scfg_t* cfg, const char* cmdline, int mode)
@@ -1079,7 +1117,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	BYTE	buf[XTRN_IO_BUF_LEN];
     BYTE 	output_buf[XTRN_IO_BUF_LEN*2];
 	uint	avail;
-    ulong	output_len;
+    size_t	output_len;
 	bool	native=false;			// DOS program by default
 	bool	rio_abortable_save=rio_abortable;
 	int		i;
@@ -1092,6 +1130,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	int		out_pipe[2];
 	int		err_pipe[2];
     BYTE 	wwiv_buf[XTRN_IO_BUF_LEN*2];
+	BYTE	utf8_buf[XTRN_IO_BUF_LEN*4];
     bool	wwiv_flag=false;
  	char* p;
 #ifdef PREFER_POLL
@@ -1826,6 +1865,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 				}
 			}
 
+			/* Output */
 			bp=buf;
 			i=0;
 			if(mode&EX_NOLOG)
@@ -1910,6 +1950,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 				}
 				if (term_supports(PETSCII))
 					petscii_convert(bp, output_len);
+				else if (term_supports(UTF8))
+					bp = cp437_to_utf8(bp, output_len, utf8_buf, sizeof utf8_buf);
 			}
 			/* Did expansion overrun the output buffer? */
 			if(output_len>sizeof(output_buf)) {
