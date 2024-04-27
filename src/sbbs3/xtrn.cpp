@@ -150,7 +150,7 @@
 /*****************************************************************************/
 /* Interrupt routine to expand WWIV Ctrl-C# codes into ANSI escape sequences */
 /*****************************************************************************/
-BYTE* wwiv_expand(BYTE* buf, uint buflen, BYTE* outbuf, ulong& newlen
+BYTE* wwiv_expand(BYTE* buf, uint buflen, BYTE* outbuf, size_t& newlen
 	,uint user_misc, bool& ctrl_c)
 {
     char	ansi_seq[32];
@@ -300,7 +300,7 @@ extern SOCKET node_socket[];
 /*****************************************************************************/
 // Expands Single CR to CRLF
 /*****************************************************************************/
-BYTE* cr_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
+BYTE* cr_expand(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t& newlen)
 {
 	uint	i,j;
 
@@ -938,7 +938,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 /*****************************************************************************/
 // Expands Unix LF to CRLF
 /*****************************************************************************/
-BYTE* lf_expand(BYTE* inbuf, uint inlen, BYTE* outbuf, ulong& newlen)
+BYTE* lf_expand(BYTE* inbuf, uint inlen, BYTE* outbuf, size_t& newlen)
 {
 	uint	i,j;
 
