@@ -13,6 +13,8 @@ require("gettext.js", "gettext");
 load("termsetup.js");
 var shell = load({}, "shell_lib.js");
 
+system.settings &= ~SYS_RA_EMU; // Use (R)e-read and (A)uto-reply keys
+
 const help_key = '?';
 // If user has unlimited time, display time-used rather than time-remaining
 const time_code = user.security.exemptions & UFLAG_T ? "@TUSED@" : "@TLEFT@";
