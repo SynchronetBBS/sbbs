@@ -91,14 +91,14 @@ while(bbs.online) {
 			}
 		}
 		bbs.nodesync();
-		var keys = "Q?";
+		var keys = console.quit_key + "?";
 		if(user.is_sysop) {
 			keys += "ARED";
 			console.mnemonics(bbs.text(WhichTextFileSysop));
 		} else
 			console.mnemonics(bbs.text(WhichTextFile));
 		var cmd = console.getkeys(keys, list.length);
-		if(cmd == 'Q' || (!cmd && !prev))
+		if(cmd == console.quit_key || (!cmd && !prev))
 			break;
 		switch(cmd) {
 			case 'D':
@@ -146,7 +146,7 @@ while(bbs.online) {
 				break;
 			}
 			case 'R':
-				console.print(bbs.text(RemoveWhichTextFile));
+				console.putmsg(bbs.text(RemoveWhichTextFile));
 				var i = console.getnum(list.length);
 				if(i < 1)
 					break;
@@ -159,7 +159,7 @@ while(bbs.online) {
 				}
 				break;
 			case 'E':
-				console.print(bbs.text(EditWhichTextFile));
+				console.putmsg(bbs.text(EditWhichTextFile));
 				var i = console.getnum(list.length);
 				if(i < 1)
 					break;
