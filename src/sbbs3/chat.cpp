@@ -52,7 +52,7 @@ void sbbs_t::multinodechat(int channel)
 
 	if(!chan_access(channel-1))
 		return;
-	if(useron.misc&(RIP|WIP|HTML) ||!(useron.misc&EXPERT))
+	if(useron.misc&(RIP) ||!(useron.misc&EXPERT))
 		menu("multchat");
 	bputs(text[WelcomeToMultiChat]);
 	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
@@ -1471,8 +1471,8 @@ void sbbs_t::nodemsg()
 /****************************************************************************/
 void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 {
-	char	str[512],cstr[512],*ptr,*answer[100],theanswer[1024]
-			,mistakes=1,hu=0;
+	char	str[512],cstr[512],*ptr,*answer[100],theanswer[1024];
+	bool	mistakes=1,hu=0;
 	char 	tmp[512];
 	FILE*	fp;
 	uint 	c,i,j,k,answers;
