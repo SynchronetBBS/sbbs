@@ -114,11 +114,11 @@
 "\r\n\r\nNo text file sections available.\r\n"          080 NoTextSections
 "\1l\1_\1c\1hGeneral Text File Sections:\r\n\r\n"           081 TextSectionLstHdr
 "\1n\1c<\1h%d\1n\1c> %s\r\n"                                082 TextSectionLstFmt
-"\r\n@Which@ or ~@Quit@: "                                  083 WhichTextSection
+"\r\n@MNE:C@@Which@ or ~@Quit@: "                           083 WhichTextSection
 "\1l\1_\1c\1h%s Files:\r\n\r\n"                             084 TextFilesLstHdr
 "\1c\1h%3d: \1n\1c%s"                                      085 TextFilesLstFmt
-"\r\n@Which@, ~Add, ~Remove, ~Edit, or ~@Quit@: "           086 WhichTextFileSysop
-"\1_\r\n\1n\1c@Which@ or \1h~Q\1n\1cuit: \1h"                    087 WhichTextFile
+"\r\n@MNE:C@@Which@, ~Add, ~Remove, ~Edit, or ~@Quit@: "   086 WhichTextFileSysop
+"\r\n@MNE:C@@Which@ or ~@Quit@: "                       087 WhichTextFile
 "\1_\r\n\1y\1hBefore which file [last]: \1n"            088 AddTextFileBeforeWhich
 "\r\nPath and filename (no path indicates "\            089 AddTextFilePath
 	"%stext/%s/filename):\r\n"
@@ -469,7 +469,7 @@
 	"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
 	"\xc4\xc4\xc4\xc4\xc4\xc4 "
 "\1h\1c%3u \xb3 \1n\1c%-32.32s\1h "                        383 XtrnProgLstFmt
-"\r\n@Which@ or ~@Quit@: "                              384 WhichXtrnProg
+"\r\n@MNE:C@@Which@ or ~@Quit@: "                          384 WhichXtrnProg
 "\r\n%s is currently running %s on node %d.\r\n"\       385 UserRunningXtrn
 	"\r\nTry again later.\r\n\r\n"
 "Remove node lock"                                      386 RemoveNodeLockQ
