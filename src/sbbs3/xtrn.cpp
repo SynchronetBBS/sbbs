@@ -226,7 +226,7 @@ static BYTE* cp437_to_utf8(BYTE* input, size_t& len, BYTE* outbuf, size_t maxlen
 		switch (ch) {
 			case '\a':
 			case '\b':
-			case '\e':
+			case ESC: // '\e' not supported by MSVC
 			case '\f':
 			case '\n':
 			case '\r':
@@ -366,12 +366,12 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	HANDLE	rdoutpipe;
 	HANDLE	wrinpipe;
     PROCESS_INFORMATION process_info;
-	unsigned long	rd;
-    unsigned long	wr;
-    unsigned long	len;
+	size_t	rd;
+    DWORD	wr;
+    DWORD	len;
     DWORD	avail;
-	unsigned long	msglen;
-	unsigned long	retval;
+	DWORD	msglen;
+	DWORD	retval;
 	DWORD	last_error;
 	DWORD	loop_since_io=0;
 	struct	tm tm;
@@ -722,9 +722,11 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 				}
 
 				/* CR expansion */
-				if(use_pipes)
-					bp=cr_expand(buf,wr,output_buf,wr);
-				else
+				if(use_pipes) {
+					size_t sz;
+					bp=cr_expand(buf,wr,output_buf,sz);
+					wr = sz;
+				} else
 					bp=buf;
 
 				len=0;
