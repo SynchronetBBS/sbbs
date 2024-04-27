@@ -194,7 +194,7 @@ while(bbs.online) {
 	var key;
 	var last_request = 0;
 	var request_interval = 60;	// seconds
-	var valid_keys = "LTM\rD" + console.quit_key;
+	var valid_keys = "LTM\r" + console.quit_key;
 	while(bbs.online && !console.aborted) {
 		if(time() - last_request >= request_interval) {
 			lib.request_active_users();
@@ -218,10 +218,6 @@ while(bbs.online) {
 			break;
 	}
 	switch(key) {
-		case 'D':
-			for(var i in lib.sys_list)
-				print(i + ' = ' + JSON.stringify(lib.sys_list[i]));
-			break;
 		case 'L':
 			print("\1h\1cList\r\n");
 			list_users();
