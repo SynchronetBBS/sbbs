@@ -507,12 +507,6 @@ G_MODULE_EXPORT void load_user(GtkWidget *wiggy, gpointer data)
 		else
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&RIP);
 
-		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserWIP"));
-		if(w==NULL)
-			fprintf(stderr,"Cannot get the WIP widget\n");
-		else
-			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),user.misc&WIP);
-
 		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserUPAUSE"));
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the upause widget\n");
@@ -1261,19 +1255,6 @@ G_MODULE_EXPORT void save_user(GtkWidget *wiggy, gpointer data)
 					break;
 				default:
 					user.misc|=RIP;
-			}
-		}
-
-		w=GTK_WIDGET(gtk_builder_get_object(builder, "cUserWIP"));
-		if(w==NULL)
-			fprintf(stderr,"Cannot get the WIP widget\n");
-		else {
-			switch(gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(w))) {
-				case 0:
-					user.misc&=~WIP;
-					break;
-				default:
-					user.misc|=WIP;
 			}
 		}
 
