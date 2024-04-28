@@ -892,7 +892,6 @@ object MainForm: TMainForm
               'ANSI'
               'Color'
               'RIP'
-              'WIP'
               'Pause'
               'Hot Keys'
               'Spinning Cursor')
