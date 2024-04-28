@@ -537,6 +537,9 @@ int main(int argc, char **argv)
                 case 'v':
                     video_mode = atoi(argv[i]+2);
                     break;
+				case 's':
+					ciolib_initial_scaling = strtod(argv[i]+2, NULL);
+					break;
 				case 'y':
 					auto_save=true;
 					break;
@@ -585,7 +588,8 @@ int main(int argc, char **argv)
 						"                   D  = standard input/output/door mode\n"
 						"-A                use alternate (ASCII) characters for arrow symbols\n"
                         "-v#               set video mode to # (default=%u)\n"
-                        "-l#               set screen lines to # (default=auto-detect)\n"
+                        "-l#               set window lines to # (default=auto-detect)\n"
+                        "-s#               set window scaling factor to # (default=1.0)\n"
 						"-y                automatically save changes (don't ask)\n"
 						,video_mode
                         );

@@ -814,6 +814,9 @@ int main(int argc, char **argv)
                 case 'V':
                     video_mode = atoi(argv[i]+2);
                     break;
+				case 'S':
+					ciolib_initial_scaling = strtod(argv[i]+2, NULL);
+					break;
                 default:
 					USAGE:
 #ifdef _WIN32
@@ -845,7 +848,8 @@ int main(int argc, char **argv)
 						"        A  = ANSI mode\n"
 						"        D  = standard input/output/door mode\n"
                         "-v#    set video mode to # (default=%u)\n"
-                        "-l#    set screen lines to # (default=auto-detect)\n"
+                        "-l#    set window lines to # (default=auto-detect)\n"
+						"-s#    set window scaling factor to # (default=1.0)\n"
 						,video_mode
                         );
 #ifdef _WIN32
