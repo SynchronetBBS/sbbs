@@ -83,7 +83,7 @@ static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
 			"Temporary Bans of IP addresses (stored in memory) are `not` persistent\n"
 			"across reset or recycles of SBBS.\n"
 			"\n"
-			"Filters of IP Addresses (stored in test/ip.can file) `are` persistent\n"
+			"Filters of IP Addresses (stored in text/ip.can file) `are` persistent\n"
 			"across resets of SBBS but may be configured to have a limited lifetime."
 		;
 		switch(uifc.list(WIN_ACT|WIN_BOT|WIN_SAV, 0, 0, 0, &cur, &bar
