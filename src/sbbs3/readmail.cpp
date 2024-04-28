@@ -275,9 +275,6 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 		}
 		else domsg=1;
 
-		if(useron.misc&WIP)
-			menu(menu_file); 
-
 		sync();
 		if(which==MAIL_SENT)
 			bprintf(text[ReadingSentMail],smb.curmsg+1,smb.msgs);
