@@ -577,9 +577,9 @@ bool fexist(const char *filespec)
 }
 
 /****************************************************************************/
-/* Fixes upper/lowercase filename for Unix file systems						*/
+/* Fixes upper/lowercase filename or dirname for Unix file systems			*/
 /****************************************************************************/
-bool fexistcase(char *path)
+static bool getfilecase(char *path, bool dir)
 {
 #if defined(_WIN32)
 
@@ -595,7 +595,7 @@ bool fexistcase(char *path)
 
  	_findclose(handle);
 
- 	if(f.attrib&_A_SUBDIR)
+	if(INT_TO_BOOL(f.attrib&_A_SUBDIR) != dir)
 		return(false);
 
 	fname=getfname(path);	/* Find filename in path */
@@ -636,7 +636,7 @@ bool fexistcase(char *path)
 	}
 #endif
 
-	if(glob(globme,GLOB_MARK,NULL,&glb) != 0)
+	if(glob(globme, dir ? GLOB_ONLYDIR : GLOB_MARK, NULL, &glb) != 0)
 		return(false);
 
 	if(glb.gl_pathc>0)  {
@@ -655,6 +655,16 @@ bool fexistcase(char *path)
 	return false;
 
 #endif
+}
+
+bool fexistcase(char *path)
+{
+	return getfilecase(path, false);
+}
+
+bool getdircase(char* path)
+{
+	return getfilecase(path, true);
 }
 
 /****************************************************************************/

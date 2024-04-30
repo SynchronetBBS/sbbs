@@ -219,6 +219,7 @@ DLLEXPORT char*		getfext(const char* path);
 DLLEXPORT int		getfattr(const char* filename);
 DLLEXPORT int		getfmode(const char* filename);
 DLLEXPORT uint		getfilecount(const char *path);
+DLLEXPORT bool		getdircase(char* path);
 DLLEXPORT char*		getdirname(const char* path);
 DLLEXPORT size_t	getdirsize(const char* path, bool include_subdirs, bool subdir_only);
 DLLEXPORT uint64_t	getdisksize(const char* path, uint64_t unit);
