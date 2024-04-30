@@ -1,7 +1,7 @@
 // SlyEdit configurator: This is a menu-driven configuration program/script for SlyEdit.
 // Any changes are saved to SlyEdit.cfg in sbbs/mods, so that custom changes don't get
 // overridden with SlyEdit.cfg in sbbs/ctrl due to an update.
-// Currently for SlyEdit 1.88d.
+// Currently for SlyEdit 1.89.
 
 "use strict";
 

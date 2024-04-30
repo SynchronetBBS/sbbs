@@ -60,6 +60,15 @@
  *                              Header display update for UTF-8. And printing from/to/subj after
  *                              writing the header with empty data so that the header 'graphic'
  *                              characters & everything lines up properly.
+ * 2024-04-30 Eric Oulashin     Version 1.89
+ *                              Quote wrapping length: When re-wrapping quote lines, read the
+ *                              editor configuration settings for "word-wrap quoted text" as
+ *                              specified in xtrn.ini (settable in scfg) - Wrap quote lines
+ *                              to the width specified there, or if not specified, default to
+ *                              79 columns. This is to help ensure quoted text is a reasonable
+ *                              width for many terminals. The wrapping logic is also called for
+ *                              prepending quoted text with the quote prefix, so (for now)
+ *                              there needs to be a default quote wrap width.
  */
 
 "use strict";
@@ -150,8 +159,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.88d";
-var EDITOR_VER_DATE = "2024-02-16";
+var EDITOR_VERSION = "1.89";
+var EDITOR_VER_DATE = "2024-04-30";
 
 
 // Program variables
@@ -3047,12 +3056,23 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 			gQuoteLinesIndex = 0;
 			gQuoteLinesTopIndex = 0;
 
-			// Update the quote line prefix text and wrap the quote lines
-			//var maxQuoteLineLength = 79;
-			var maxQuoteLineLength = console.screen_columns - 1;
+			// If configured to do so, ensure the quote lines are wrapped according
+			// to the editor configuration, or by default to 79 columns
+			var maxQuoteLineLength = 79;
 			setQuotePrefix();
 			if (gConfigSettings.reWrapQuoteLines)
+			{
+				// If the settings for the user's configured editor have quote wrapping
+				// enabled with a number of columns, then use that number of columns.
+				// The wrapTextLinesForQuoting() function is what prepends the quote
+				// prefix onto the quote lines. It also does wrapping, so (at least for
+				// now) we need some value for the maximum quote line length, and we need
+				// to call that function to prepend the quote prefix onto the quote lines
+				var quoteWrapCfg = getEditorQuoteWrapCfgFromSCFG();
+				if (quoteWrapCfg.quoteWrapEnabled && quoteWrapCfg.quoteWrapCols > 0)
+					maxQuoteLineLength = quoteWrapCfg.quoteWrapCols;
 				gQuoteLines = wrapTextLinesForQuoting(gQuoteLines, gQuotePrefix, gUserSettings.indentQuoteLinesWithInitials, gUserSettings.trimSpacesFromQuoteLines, maxQuoteLineLength);
+			}
 			else if (gUserSettings.useQuoteLineInitials)
 			{
 				var maxQuoteLineWidth = maxQuoteLineLength - gQuotePrefix.length;
