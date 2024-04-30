@@ -636,6 +636,9 @@ static bool getfilecase(char *path, bool dir)
 	}
 #endif
 
+#if !defined GLOB_ONLYDIR
+	#define GLOB_ONLYDIR 0
+#endif
 	if(glob(globme, dir ? GLOB_ONLYDIR : GLOB_MARK, NULL, &glb) != 0)
 		return(false);
 
