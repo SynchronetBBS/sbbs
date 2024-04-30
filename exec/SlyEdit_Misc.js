@@ -5621,6 +5621,80 @@ function userEditorCfgHasUTF8Enabled()
 		return Boolean(xtrn_area.editor[user.editor].settings & XTRN_UTF8);
 }
 
+// Gets the quote wrap settings for the user's configured external editor (which is assumed to be SlyEdit)
+//
+// Return value: An object containing the following properties:
+//               quoteWrapEnabled: Boolean: Whether or not quote wrapping is enabled for the editor
+//               quoteWrapCols: The number of columns to wrap quote lines
+//  If the given editor code is not found, quoteWrapEnabled will be false and quoteWrapCols will be -1
+function getEditorQuoteWrapCfgFromSCFG()
+{
+	var retObj = {
+		quoteWrapEnabled: false,
+		quoteWrapCols: -1
+	};
+
+	var editorCode = user.editor.toLowerCase();
+	if (!xtrn_area.editor.hasOwnProperty(editorCode))
+		return retObj;
+
+	// Set up a cache so that we don't have to keep repeatedly parsing the Synchronet
+	// config every time the user replies to a message
+	if (typeof(getEditorQuoteWrapCfgFromSCFG.cache) === "undefined")
+		getEditorQuoteWrapCfgFromSCFG.cache = {};
+	// If we haven't looked up the quote wrap cols setting yet, then do so; otherwise, use the
+	// cached setting.
+	if (!getEditorQuoteWrapCfgFromSCFG.cache.hasOwnProperty(editorCode))
+	{
+		if ((xtrn_area.editor[editorCode].settings & XTRN_QUOTEWRAP) == XTRN_QUOTEWRAP)
+		{
+			retObj.quoteWrapEnabled = true;
+			retObj.quoteWrapCols = console.screen_columns - 1;
+
+			// For Synchronet 3.20 and newer, read the quote wrap setting from xtrn.ini
+			if (system.version_num >= 32000)
+			{
+				// The INI section for the editor should be something like [editor:SLYEDICE], and
+				// it should have a quotewrap_cols property
+				var xtrnIniFile = new File(system.ctrl_dir + "xtrn.ini");
+				if (xtrnIniFile.open("r"))
+				{
+					var quoteWrapCols = xtrnIniFile.iniGetValue("editor:" + user.editor.toUpperCase(), "quotewrap_cols", 79);
+					if (quoteWrapCols > 0)
+						retObj.quoteWrapCols = quoteWrapCols;
+					xtrnIniFile.close();
+				}
+			}
+			else
+			{
+				// Synchronet below version 3.20: Read the quote wrap setting from xtrn.cnf
+				var cnflib = load({}, "cnflib.js");
+				var xtrnCnf = cnflib.read("xtrn.cnf");
+				if (typeof(xtrnCnf) === "object")
+				{
+					for (var i = 0; i < xtrnCnf.xedit.length; ++i)
+					{
+						if (xtrnCnf.xedit[i].code.toLowerCase() == editorCode)
+						{
+							if (xtrnCnf.xedit[i].hasOwnProperty("quotewrap_cols"))
+							{
+								if (xtrnCnf.xedit[i].quotewrap_cols > 0)
+									retObj.quoteWrapCols = xtrnCnf.xedit[i].quotewrap_cols;
+							}
+							break;
+						}
+					}
+				}
+			}
+		}
+		getEditorQuoteWrapCfgFromSCFG.cache[editorCode] = retObj;
+	}
+	else
+		retObj = getEditorQuoteWrapCfgFromSCFG.cache[editorCode];
+
+	return retObj;
+}
+
 // This function displays debug text at a given location on the screen, then
 // moves the cursor back to a given location.
 //
