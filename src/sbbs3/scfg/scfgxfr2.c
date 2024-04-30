@@ -302,6 +302,7 @@ void xfer_cfg()
 {
 	static int libs_dflt,libs_bar,dflt,bar;
 	char str[256], done=0, *p;
+	char path[MAX_PATH+1];
 	char tmp_code[MAX_PATH+1];
 	int file,j,k,q;
 	int i;
@@ -695,6 +696,8 @@ void xfer_cfg()
 					break;
 	#define DIRS_TXT_HELP_TEXT		"`DIRS.TXT` is a plain text file that includes all of the Synchronet\n" \
 									"configuration field values for each directory in the library.\n"
+	#define DIRS_CDR_HELP_TEXT		"`DIRS.TXT` is also a text file containing a list of directory names and\n" \
+									"descriptions (one per line) included on CD-ROMs.\n"
 	#define FILEGATE_ZXX_HELP_TEXT	"`FILEGATE.ZXX` is a plain text file in the old RAID/FILEBONE.NA format\n" \
 									"which describes a list of file areas connected across a File\n" \
 									"Distribution Network (e.g. Fidonet)."
@@ -703,6 +706,7 @@ void xfer_cfg()
 					ported=0;
 					q=uifc.changes;
 					strcpy(opt[k++],"DIRS.TXT     (Synchronet)");
+					strcpy(opt[k++],"DIRS.TXT     (CD-ROM)");
 					strcpy(opt[k++],"FILEGATE.ZXX (Fido)");
 					opt[k][0]=0;
 					uifc.helpbuf=
@@ -713,6 +717,8 @@ void xfer_cfg()
 						"\n"
 						DIRS_TXT_HELP_TEXT
 						"\n"
+						DIRS_CDR_HELP_TEXT
+						"\n"
 						FILEGATE_ZXX_HELP_TEXT
 					;
 					k=0;
@@ -721,9 +727,14 @@ void xfer_cfg()
 					if(k==-1)
 						break;
 					if(k==0)
-						sprintf(str,"%sDIRS.TXT",cfg.ctrl_dir);
-					else if(k==1)
-						sprintf(str,"FILEGATE.ZXX");
+						snprintf(str, sizeof str, "%sDIRS.TXT",cfg.ctrl_dir);
+					else if(k==1) {
+						SAFECOPY(str, cfg.lib[libnum]->parent_path);
+						backslash(str);
+						SAFECAT(str, "DIRS.TXT");
+					}
+					else if(k==2)
+						snprintf(str, sizeof str, "FILEGATE.ZXX");
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
 						,str,sizeof(str)-1,K_EDIT)<=0) {
 						uifc.changes=q;
@@ -753,6 +764,10 @@ void xfer_cfg()
 							continue;
 						ported++;
 						if(k==1) {
+							fprintf(stream,"%-30s %s\n", cfg.dir[j]->path, cfg.dir[j]->lname);
+							continue;
+						}
+						if(k==2) {
 							fprintf(stream,"Area %-*s  0     !      %s\n"
 								,FIDO_AREATAG_LEN
 								,dir_area_tag(&cfg, cfg.dir[j], str, sizeof(str)) ,cfg.dir[j]->lname);
@@ -813,9 +828,12 @@ void xfer_cfg()
 						"\n"
 						DIRS_TXT_HELP_TEXT
 						"\n"
+						DIRS_CDR_HELP_TEXT
+						"\n"
 						FILEGATE_ZXX_HELP_TEXT
 					;
 					strcpy(opt[k++],"DIRS.TXT     (Synchronet)");
+					strcpy(opt[k++],"DIRS.TXT     (CD-ROM)");
 					strcpy(opt[k++],"FILEGATE.ZXX (Fido)");
 					strcpy(opt[k++],"DIRS.RAW     (Raw)");
 					strcpy(opt[k++],"Directory Listing...");
@@ -827,21 +845,26 @@ void xfer_cfg()
 						break;
 					if(k==0)
 						sprintf(str,"%sDIRS.TXT",cfg.ctrl_dir);
-					else if(k==1)
+					else if(k==1) {
+						SAFECOPY(str,cfg.lib[libnum]->parent_path);
+						backslash(str);
+						SAFECAT(str,"DIRS.TXT");
+					}
+					else if(k==2)
 						sprintf(str,"FILEGATE.ZXX");
 					else {
 						SAFECOPY(str,cfg.lib[libnum]->parent_path);
 						backslash(str);
 						SAFECAT(str,"dirs.raw");
 					}
-					if(k==3) {
+					if(k==4) {
 						if(!create_raw_dir_list(str))
 							break;
 					} else {
 						if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
 							,str,sizeof(str)-1,K_EDIT)<=0)
 							break;
-						if(k==2 && !fexistcase(str)) {
+						if(k==3 && !fexistcase(str)) {
 							j=0;
 							if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
 								,"File doesn't exist, create it?",uifcYesNoOpts)==0)
@@ -865,7 +888,7 @@ void xfer_cfg()
 						p=str;
 						while(*p && *p<=' ') p++;
 
-						if(k>=2) { /* raw */
+						if(k>=3) { /* raw */
 							int len = strlen(p);
 							if(len > LEN_DIR)
 								continue;
@@ -895,7 +918,7 @@ void xfer_cfg()
 							SAFECOPY(tmpdir.sname,p);
 							ported++;
 						}
-						else if(k==1) {
+						else if(k==2) {
 							if(strnicmp(p,"AREA ",5))
 								continue;
 							p+=5;
@@ -911,6 +934,20 @@ void xfer_cfg()
 							SAFECOPY(tmpdir.sname,tmp_code);
 							SAFECOPY(tmpdir.area_tag,tmp_code);
 							SAFECOPY(tmpdir.lname,p);
+							ported++;
+						}
+						else if(k == 1) { // CD-ROM DIRS.TXT format
+							char* tp = p + 1;
+							FIND_WHITESPACE(tp);
+							if(*tp != '\0') {
+								*tp = '\0';
+								tp++;
+								FIND_ALPHANUMERIC(tp);
+							}
+							SAFECOPY(tmp_code, p);
+							SAFECOPY(tmpdir.path, p);
+							SAFECOPY(tmpdir.sname, p);
+							SAFECOPY(tmpdir.lname, *tp == '\0' ? tmp_code : tp);
 							ported++;
 						}
 						else {
@@ -985,6 +1022,10 @@ void xfer_cfg()
 
 						SAFECOPY(tmpdir.code_suffix, prep_code(tmp_code,cfg.lib[libnum]->code_prefix));
 
+						snprintf(path, sizeof path, "%s/%s", cfg.lib[libnum]->parent_path, tmpdir.path);
+						if(getdircase(path))
+							SAFECOPY(tmpdir.path, getfname(path));
+
 						int dupes = 0;
 						int attempts = 0;	// attempts to generate a unique internal code
 						if(stricmp(tmpdir.code_suffix, duplicate_code) == 0)
@@ -1037,17 +1078,20 @@ void xfer_cfg()
 								break;
 							}
 							*cfg.dir[j] = cfg.lib[libnum]->dir_defaults;
-							cfg.dir[j]->dirnum = j;
 							added++;
-						} else
+						} else {
+							SAFEPRINTF(str, "Duplicate dir: %s", cfg.dir[j]->code_suffix);
+							uifc.msg(str);
 							dupes++;
-						if(k==1) {
+						}
+						if(k==2) {
 							SAFECOPY(cfg.dir[j]->code_suffix,tmpdir.code_suffix);
 							SAFECOPY(cfg.dir[j]->sname,tmpdir.sname);
 							SAFECOPY(cfg.dir[j]->lname,tmpdir.lname);
 						} else
 							memcpy(cfg.dir[j],&tmpdir,sizeof(dir_t));
 						cfg.dir[j]->lib = libnum;
+						cfg.dir[j]->dirnum = j;
 						if(j==cfg.total_dirs) {
 							cfg.dir[j]->misc=tmpdir.misc;
 							cfg.total_dirs++;
