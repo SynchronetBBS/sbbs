@@ -608,8 +608,10 @@ void xfer_cfg()
 						"The parent directory is not used for directories with a full/absolute\n"
 						"`Transfer File Path` configured."
 					;
-					uifc.input(WIN_MID|WIN_SAV,0,0,"Parent Directory"
-						,cfg.lib[libnum]->parent_path,sizeof(cfg.lib[libnum]->parent_path)-1,K_EDIT);
+					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Parent Directory"
+						,cfg.lib[libnum]->parent_path,sizeof(cfg.lib[libnum]->parent_path)-1,K_EDIT) > 0)
+						if(!getdircase(cfg.lib[libnum]->parent_path))
+							uifc.msg("Directory doesn't exist");
 					break;
 				case __COUNTER__:
 					sprintf(str,"%s Library Access",cfg.lib[libnum]->sname);
@@ -697,10 +699,11 @@ void xfer_cfg()
 	#define DIRS_TXT_HELP_TEXT		"`DIRS.TXT` is a plain text file that includes all of the Synchronet\n" \
 									"configuration field values for each directory in the library.\n"
 	#define DIRS_CDR_HELP_TEXT		"`DIRS.TXT` is also a text file containing a list of directory names and\n" \
-									"descriptions (one per line) included on CD-ROMs.\n"
+									"descriptions (one per line) included on CD-ROMs.\n" \
+									"Sometimes this file is named `DIRS.WIN`.\n"
 	#define FILEGATE_ZXX_HELP_TEXT	"`FILEGATE.ZXX` is a plain text file in the old RAID/FILEBONE.NA format\n" \
 									"which describes a list of file areas connected across a File\n" \
-									"Distribution Network (e.g. Fidonet)."
+									"Distribution Network (e.g. Fidonet).\n"
 				case __COUNTER__:
 					k=0;
 					ported=0;
@@ -936,7 +939,8 @@ void xfer_cfg()
 							SAFECOPY(tmpdir.lname,p);
 							ported++;
 						}
-						else if(k == 1) { // CD-ROM DIRS.TXT format
+						else if(k == 1) { // CD-ROM DIRS.TXT (DIRS.WIN) format
+							while(*p == '/' || *p =='\\') p++;
 							char* tp = p + 1;
 							FIND_WHITESPACE(tp);
 							if(*tp != '\0') {
@@ -944,9 +948,12 @@ void xfer_cfg()
 								tp++;
 								FIND_ALPHANUMERIC(tp);
 							}
-							SAFECOPY(tmp_code, p);
+							replace_chars(p, '\\', '/');
+							if(lastchar(p) == '/')
+								*lastchar(p) = '\0';
+							SAFECOPY(tmp_code, getfname(p));
 							SAFECOPY(tmpdir.path, p);
-							SAFECOPY(tmpdir.sname, p);
+							SAFECOPY(tmpdir.sname, tmp_code);
 							SAFECOPY(tmpdir.lname, *tp == '\0' ? tmp_code : tp);
 							ported++;
 						}
