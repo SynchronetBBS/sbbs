@@ -949,7 +949,7 @@ void xfer_cfg()
 								FIND_ALPHANUMERIC(tp);
 							}
 							replace_chars(p, '\\', '/');
-							if(lastchar(p) == '/')
+							if(*lastchar(p) == '/')
 								*lastchar(p) = '\0';
 							SAFECOPY(tmp_code, getfname(p));
 							SAFECOPY(tmpdir.path, p);
