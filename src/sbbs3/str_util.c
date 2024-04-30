@@ -649,8 +649,18 @@ char* replace_named_values(const char* src
      *p=0;   /* terminate string in destination buffer */	 
  
      return(buf);	 
- }	 
- 
+ }
+
+/****************************************************************************/
+/****************************************************************************/
+char* replace_chars(char *str, char c1, char c2)
+{
+	char* p;
+
+	REPLACE_CHARS(str, c1, c2, p);
+	return str;
+}
+
 /****************************************************************************/
 /* Condense consecutive white-space chars in a string to single spaces		*/
 /****************************************************************************/
