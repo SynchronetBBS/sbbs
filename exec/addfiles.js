@@ -151,6 +151,8 @@ if(!dir_list.length) {
 
 var added = 0;
 var updated = 0;
+var renamed = 0;
+var missing = [];
 for(var d = 0; d < dir_list.length; d++) {
 	
 	var code = dir_list[d];
@@ -232,8 +234,16 @@ for(var d = 0; d < dir_list.length; d++) {
 		var path = file_area.dir[code].path + file.name;
 		var realpath = file_getcase(path);
 		if(!realpath) {
-			alert("does not exist: " + path);
-			continue;
+			realpath = file_getcase(path.replace(/-/g, "_"));
+			if(!realpath) {
+				alert("does not exist: " + path);
+				missing.push(path);
+				continue;
+			}
+		}
+		if(file.name != file_getname(realpath)) {
+			print("Renamed " + file.name + " to " + file_getname(realpath));
+			++renamed;
 		}
 		path = realpath;
 		file.name = file_getname(path);
@@ -282,6 +292,15 @@ for(var d = 0; d < dir_list.length; d++) {
 writeln(added + " files added");
 if(updated)
 	writeln(updated + " files updated");
+if(renamed)
+	writeln(renamed + " files renamed");
+if(missing.length) {
+	alert(missing.length + " files missing");
+	if(verbosity) {
+		for(var i in missing)
+			alert(missing[i]);
+	}
+}
 
 // Parse a FILES.BBS (or similar) file listing file
 // Note: file descriptions must begin with an alphabetic character
