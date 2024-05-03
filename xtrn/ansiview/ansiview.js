@@ -4,6 +4,7 @@ load("tree.js");
 load("scrollbar.js");
 load("funclib.js");
 load("filebrowser.js");
+var cgadefs = load({}, "cga_defs.js");
 var Ansi = load({}, "ansiterm_lib.js");
 var Sauce = load({}, "sauce_lib.js");
 var Graphic = load({}, "graphic.js");
@@ -234,10 +235,10 @@ function GalleryChooser() {
 			browserFrame
 		);
 		tree = new Tree(frame);
-		tree.colors.fg = getColor(settings.fg);
-		tree.colors.bg = getColor(settings.bg);
-		tree.colors.lfg = getColor(settings.lfg);
-		tree.colors.lbg = getColor(settings.lbg);
+		tree.colors.fg = settings.fg;
+		tree.colors.bg = settings.bg;
+		tree.colors.lfg = settings.lfg;
+		tree.colors.lbg = settings.lbg;
 
 		getList().forEach(function (e) {
 			e.colors = settings;
