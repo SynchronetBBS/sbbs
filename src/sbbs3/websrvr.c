@@ -6622,7 +6622,7 @@ void http_session_thread(void* arg)
 		thread_down();
 		return;
 	}
-	session.client.protocol=session.is_tls ? "HTTPS":"HTTP";
+	SAFECOPY(session.client.protocol, session.is_tls ? "HTTPS":"HTTP");
 	lprintf(LOG_DEBUG,"%04d %s [%s] Session thread started", session.socket, session.client.protocol, session.host_ip);
 
 	if(startup->index_file_name==NULL || startup->cgi_ext==NULL)

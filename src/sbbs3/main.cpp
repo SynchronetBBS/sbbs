@@ -5495,9 +5495,9 @@ NO_SSH:
 
 
 #ifdef USE_CRYPTLIB
-		client.protocol=rlogin ? "RLogin":(ssh ? "SSH" : "Telnet");
+		SAFECOPY(client.protocol, rlogin ? "RLogin":(ssh ? "SSH" : "Telnet"));
 #else
-		client.protocol=rlogin ? "RLogin":"Telnet";
+		SAFECOPY(client.protocol, rlogin ? "RLogin":"Telnet");
 #endif
 		union xp_sockaddr local_addr;
 		memset(&local_addr, 0, sizeof(local_addr));

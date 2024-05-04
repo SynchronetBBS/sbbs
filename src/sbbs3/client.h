@@ -33,7 +33,7 @@ typedef struct {
 	char		host[256];	/* host name */
 	uint16_t	port;		/* TCP port number */
 	time32_t	time;		/* connect time */
-	const char*	protocol;	/* protocol description */
+	char		protocol[32];	/* protocol description */
 	char		user[32];	/* user name */
 	uint32_t	usernum;	/* user number (authenticated when non-zero) */
 } client_t;

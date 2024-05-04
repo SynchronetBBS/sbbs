@@ -435,7 +435,7 @@ bool sbbs_t::answer()
 								mouse_mode = MOUSE_MODE_OFF;
 								autoterm = 0;
 								sys_status |= SS_USERON;
-								client.protocol = "SFTP";
+								SAFECOPY(client.protocol, "SFTP");
 								SAFECOPY(client.user, useron.alias);
 								client.usernum = useron.number;
 								client_on(client_socket, &client,/* update: */TRUE);
@@ -735,7 +735,7 @@ bool sbbs_t::answer()
 			} else {
 				lprintf(LOG_NOTICE, "no Telnet commands received, reverting to Raw TCP mode");
 				telnet_mode |= TELNET_MODE_OFF;
-				client.protocol = "Raw";
+				SAFECOPY(client.protocol, "Raw");
 				client_on(client_socket, &client,/* update: */TRUE);
 				SAFECOPY(connection, client.protocol);
 				node_connection = NODE_CONNECTION_RAW;

@@ -2320,7 +2320,7 @@ static void ctrl_thread(void* arg)
 	SAFECOPY(client.addr,host_ip);
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&ftp.client_addr);
-	client.protocol="FTP";
+	SAFECOPY(client.protocol, "FTP");
 	SAFECOPY(client.user, STR_UNKNOWN_USER);
 	client.usernum = 0;
 	client_on(sock,&client,FALSE /* update */);
@@ -2646,7 +2646,7 @@ static void ctrl_thread(void* arg)
 				got_pbsz = FALSE;
 				protection = FALSE;
 				lprintf(LOG_INFO, "%04d <%s> initialized TLS successfully", sock, host_ip);
-				client.protocol = "FTPS";
+				SAFECOPY(client.protocol, "FTPS");
 				client_on(sock, &client, /* update: */TRUE);
 				continue;
 			}

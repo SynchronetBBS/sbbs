@@ -1049,7 +1049,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 
 	socket = pop3->socket;
 
-	client.protocol = pop3->tls_port ? "POP3S" : "POP3";
+	SAFECOPY(client.protocol, pop3->tls_port ? "POP3S" : "POP3");
 
 	if(startup->options&MAIL_OPT_DEBUG_POP3)
 		lprintf(LOG_DEBUG,"%04d %s session thread started", socket, client.protocol);
@@ -1221,7 +1221,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 					}
 				}
 				i++;
-				client.protocol = "POP3S";
+				SAFECOPY(client.protocol, "POP3S");
 			}
 			else
 				sockprintf(socket,client.protocol,session,"-ERR USER, APOP, CAPA, or STLS command expected");
@@ -2924,7 +2924,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 	socket = smtp->socket;
 
-	client.protocol = smtp->tls_port ? "SMTPS" : "SMTP";
+	SAFECOPY(client.protocol, smtp->tls_port ? "SMTPS" : "SMTP");
 
 	lprintf(LOG_DEBUG,"%04d %s Session thread started", socket, client.protocol);
 
@@ -4969,7 +4969,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 					break;
 				}
 			}
-			client.protocol = "SMTPS";
+			SAFECOPY(client.protocol, "SMTPS");
 			continue;
 		}
 		sockprintf(socket,client.protocol,session,"500 Syntax error");

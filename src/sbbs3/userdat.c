@@ -1879,16 +1879,12 @@ int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* done)
 	SOCKET sock = INVALID_SOCKET;
 	char path[MAX_PATH + 1];
 	char value[INI_MAX_VALUE_LEN];
-	char* p;
 	FILE* fp;
 
 	if(!VALID_CFG(cfg)
 		|| client == NULL || number < 1 || number > cfg->sys_nodes)
 		return -1;
 
-	if(client->size == sizeof(client)) {
-		free((char*)client->protocol);
-	}
 	memset(client, 0, sizeof(*client));
 	client->size = sizeof(client);
 	SAFEPRINTF(path, "%sclient.ini", cfg->node_path[number - 1]);
@@ -1901,8 +1897,7 @@ int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* done)
 	client->usernum = iniReadInteger(fp, ROOT_SECTION, "user", 0);
 	SAFECOPY(client->addr, iniReadString(fp, ROOT_SECTION, "addr", "<none>", value));
 	SAFECOPY(client->host, iniReadString(fp, ROOT_SECTION, "host", "<none>", value));
-	if((p = iniReadString(fp, ROOT_SECTION, "prot", NULL, value)) != NULL)
-		client->protocol = strdup(p);
+	SAFECOPY(client->protocol, iniReadString(fp, ROOT_SECTION, "prot", "<unknown>", value));
 	SAFECOPY(client->user, iniReadString(fp, ROOT_SECTION, "name", "<unknown>", value));
 	*done = iniReadInteger(fp, ROOT_SECTION, "done", client->time);
 	fclose(fp);
