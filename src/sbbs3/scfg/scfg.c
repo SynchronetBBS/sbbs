@@ -125,6 +125,13 @@ void sort_subs(int grpnum)
 {
 	sort_group = grpnum;
 	qsort(cfg.sub, cfg.total_subs, sizeof(sub_t*), sub_compare);
+
+	// Re-number the sub-boards after sorting:
+	for(int i = 0; i < cfg.total_subs; ++i) {
+		if(cfg.sub[i]->grp != grpnum)
+			continue;
+		cfg.sub[i]->subnum = i;
+	}
 }
 
 static int sort_lib = 0;
@@ -152,6 +159,13 @@ void sort_dirs(int libnum)
 {
 	sort_lib = libnum;
 	qsort(cfg.dir, cfg.total_dirs, sizeof(dir_t*), dir_compare);
+
+	// Re-number the directories after sorting:
+	for(int i = 0; i < cfg.total_dirs; ++i) {
+		if(cfg.dir[i]->lib != libnum)
+			continue;
+		cfg.dir[i]->dirnum = i;
+	}
 }
 
 void wizard_msg(int page, int total, const char* text)
