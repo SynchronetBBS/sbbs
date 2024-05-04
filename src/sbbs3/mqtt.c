@@ -808,7 +808,7 @@ int mqtt_user_login_fail(struct mqtt* mqtt, client_t* client, const char* userna
 	if(!mqtt->cfg->mqtt.enabled)
 		return MQTT_SUCCESS;
 
-	if(client->protocol == NULL || username == NULL)
+	if(username == NULL)
 		return MQTT_FAILURE;
 	snprintf(topic, sizeof(topic), "login_fail/%s", client->protocol);
 	strlwr(topic);
