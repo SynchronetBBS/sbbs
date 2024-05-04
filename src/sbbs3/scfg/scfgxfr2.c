@@ -1031,7 +1031,7 @@ void xfer_cfg()
 
 						snprintf(path, sizeof path, "%s/%s", cfg.lib[libnum]->parent_path, tmpdir.path);
 						if(getdircase(path))
-							SAFECOPY(tmpdir.path, getfname(path));
+							SAFECOPY(tmpdir.path, path + strlen(cfg.lib[libnum]->parent_path) + 1);
 
 						int dupes = 0;
 						int attempts = 0;	// attempts to generate a unique internal code
