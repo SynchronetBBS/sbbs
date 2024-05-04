@@ -175,6 +175,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	var toNameLineNum = ++lineNum;
 	console.gotoxy(1, lineNum);
 	// To name
+	fieldWidth = Math.floor(console.screen_columns * (28/80)) - 2;
 	console.print(randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor2) +
 				  " " + gConfigSettings.DCTColors.TopLabelColor + "To   " +
