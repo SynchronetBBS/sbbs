@@ -3385,6 +3385,51 @@ function getFromNameForCurMsg(pMsgInfo)
 	return fromName;
 }
 
+// Returns whether the current message being replied to is a poll.
+// Only for use when replying to a message in a public sub-board.
+// The message information is retrieved from DDML_SyncSMBInfo.txt
+// in the node dir if it exists or from the bbs object's properties.
+// On error, the string returned will be blank.
+//
+// Parameters:
+//  pMsgInfo: Optional: An object returned by getCurMsgInfo().  If this
+//            parameter is not specified, this function will call
+//            getCurMsgInfo() to get it.
+//
+// Return value: Whether or not the message being replied to is a poll
+function curMsgIsPoll(pMsgInfo)
+{
+	if (typeof(MSG_TYPE_POLL) == "undefined")
+		return false;
+
+	var msgIsPoll = false;
+
+	// Get the information about the current message from
+	// DDML_SyncSMBInfo.txt in the node dir if it exists or from
+	// the bbs object's properties.  Then open the message header
+	// and get the 'from' name from it.
+	var msgInfo = null;
+	if ((pMsgInfo != null) && (typeof(pMsgInfo) != "undefined"))
+		msgInfo = pMsgInfo;
+	else
+		msgInfo = getCurMsgInfo();
+
+	if (msgInfo.subBoardCode.length > 0)
+	{
+		var msgBase = new MsgBase(msgInfo.subBoardCode);
+		if (msgBase != null)
+		{
+			msgBase.open();
+			var hdr = msgBase.get_msg_header(msgInfo.msgNumIsOffset, msgInfo.curMsgNum, true);
+			if (hdr != null)
+				msgIsPoll = Boolean(hdr.type & MSG_TYPE_POLL);
+			msgBase.close();
+		}
+	}
+
+	return msgIsPoll;
+}
+
 // Calculates & returns a page number.
 //
 // Parameters:

@@ -69,6 +69,10 @@
  *                              width for many terminals. The wrapping logic is also called for
  *                              prepending quoted text with the quote prefix, so (for now)
  *                              there needs to be a default quote wrap width.
+ * 2024-05-04 Eric Oulashin     Version 1.89a
+ *                              Don't line-wrap poll messages for quoting, as that could mess
+ *                              up the formatting of the poll options.  Also, a minor fix for
+ *                              the 'to' name length in DCT mode when using a wide terminal.
  */
 
 "use strict";
@@ -159,8 +163,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.89";
-var EDITOR_VER_DATE = "2024-04-30";
+var EDITOR_VERSION = "1.89a";
+var EDITOR_VER_DATE = "2024-05-04";
 
 
 // Program variables
@@ -3056,11 +3060,12 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 			gQuoteLinesIndex = 0;
 			gQuoteLinesTopIndex = 0;
 
-			// If configured to do so, ensure the quote lines are wrapped according
-			// to the editor configuration, or by default to 79 columns
+			// If configured to do so, and the message is not a poll, ensure the
+			// quote lines are wrapped according to the editor configuration, or
+			// by default to 79 columns
 			var maxQuoteLineLength = 79;
 			setQuotePrefix();
-			if (gConfigSettings.reWrapQuoteLines)
+			if (gConfigSettings.reWrapQuoteLines && !curMsgIsPoll(gMsgAreaInfo))
 			{
 				// If the settings for the user's configured editor have quote wrapping
 				// enabled with a number of columns, then use that number of columns.
@@ -3078,6 +3083,12 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 				var maxQuoteLineWidth = maxQuoteLineLength - gQuotePrefix.length;
 				for (var i = 0; i < gQuoteLines.length; ++i)
 					gQuoteLines[i] = quote_msg(gQuoteLines[i], maxQuoteLineWidth, gQuotePrefix);
+			}
+			else
+			{
+				// Quote with the default quote prefix (no initials)
+				for (var i = 0; i < gQuoteLines.length; ++i)
+					gQuoteLines[i] = quote_msg(gQuoteLines[i], maxQuoteLineLength);
 			}
 		}
 	}
