@@ -2963,6 +2963,10 @@ show_bbslist(char *current, int connected)
 								    != CONN_TYPE_SERIAL_NORTS)
 								    && (list[listcount - 1]->conn_type
 								    != CONN_TYPE_SHELL)) {
+									/* Default address to name, if appears to be address */
+									if (strchr(list[listcount - 1]->name, ' ') == NULL
+										&& strchr(list[listcount - 1]->name, '.') != NULL)
+										SAFECOPY(list[listcount - 1]->addr, list[listcount - 1]->name);
                                                                         /* Set the port too */
 									j = conn_ports[list[listcount - 1]->conn_type];
 									if ((j < 1) || (j > 65535))
@@ -2979,7 +2983,7 @@ show_bbslist(char *current, int connected)
 							if (uifc.changes) {
 								uifc.changes = 0;
 								uifc.helpbuf = address_help;
-								uifc.input(WIN_MID | WIN_SAV,
+								if (uifc.input(WIN_MID | WIN_SAV,
 								    0,
 								    0
 								    ,
@@ -2994,7 +2998,8 @@ show_bbslist(char *current, int connected)
 								    ,
 								    list[listcount - 1]->addr,
 								    LIST_ADDR_MAX,
-								    K_EDIT);
+								    K_EDIT) >= 1)
+									uifc.changes = 1;
 								// Parse TCP port from address, if specified
 								switch(list[listcount -1]->conn_type) {
 									case CONN_TYPE_MODEM:
