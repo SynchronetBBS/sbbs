@@ -696,15 +696,15 @@ void xfer_cfg()
 						uifc.changes = TRUE;
 					}
 					break;
+				case __COUNTER__:
 	#define DIRS_TXT_HELP_TEXT		"`DIRS.TXT` is a plain text file that includes all of the Synchronet\n" \
 									"configuration field values for each directory in the library.\n"
 	#define DIRS_CDR_HELP_TEXT		"`DIRS.TXT` is also a text file containing a list of directory names and\n" \
 									"descriptions (one per line) included on CD-ROMs.\n" \
-									"Sometimes this file is named `DIRS.WIN`.\n"
+									"A file of this format is sometimes named `DIRS.WIN` or `00_INDEX.TXT`.\n"
 	#define FILEGATE_ZXX_HELP_TEXT	"`FILEGATE.ZXX` is a plain text file in the old RAID/FILEBONE.NA format\n" \
 									"which describes a list of file areas connected across a File\n" \
 									"Distribution Network (e.g. Fidonet).\n"
-				case __COUNTER__:
 					k=0;
 					ported=0;
 					q=uifc.changes;
@@ -1030,6 +1030,11 @@ void xfer_cfg()
 						SAFECOPY(tmpdir.code_suffix, prep_code(tmp_code,cfg.lib[libnum]->code_prefix));
 
 						snprintf(path, sizeof path, "%s/%s", cfg.lib[libnum]->parent_path, tmpdir.path);
+						if(fexistcase(path)) {
+							SAFEPRINTF(str, "Not a dir: %s", path);
+							uifc.msg(str);
+							continue;
+						}
 						if(getdircase(path))
 							SAFECOPY(tmpdir.path, path + strlen(cfg.lib[libnum]->parent_path) + 1);
 
