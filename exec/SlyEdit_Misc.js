@@ -5663,7 +5663,12 @@ function userEditorCfgHasUTF8Enabled()
 	if (gConfiguredCharset.length > 0) // Will not be read in versions of Synchronet below 3.20
 		return (gConfiguredCharset == "UTF-8");
 	else
-		return Boolean(xtrn_area.editor[user.editor].settings & XTRN_UTF8);
+	{
+		if (typeof(xtrn_area.editor[user.editor]) === "object")
+			return Boolean(xtrn_area.editor[user.editor].settings & XTRN_UTF8);
+		else
+			return false;
+	}
 }
 
 // Gets the quote wrap settings for the user's configured external editor (which is assumed to be SlyEdit)
@@ -5691,7 +5696,7 @@ function getEditorQuoteWrapCfgFromSCFG()
 	// cached setting.
 	if (!getEditorQuoteWrapCfgFromSCFG.cache.hasOwnProperty(editorCode))
 	{
-		if ((xtrn_area.editor[editorCode].settings & XTRN_QUOTEWRAP) == XTRN_QUOTEWRAP)
+		if (typeof(xtrn_area.editor[user.editor]) === "object" && Boolean(xtrn_area.editor[user.editor].settings & XTRN_QUOTEWRAP))
 		{
 			retObj.quoteWrapEnabled = true;
 			retObj.quoteWrapCols = console.screen_columns - 1;

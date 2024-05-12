@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.88d
-                        Release date: 2024-02-16
+                              Version 1.89b
+                        Release date: 2024-05-11
 
                                   by
 
@@ -934,6 +934,25 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.89b    2024-05-11   In SlyEdit_Misc.js, check to see that
+                      xtrn_area.editor[user.editor] is an object before using it.
+1.89a    2024-05-04   Don't line-wrap poll messages for quoting, as that could
+                      mess up the formatting of the poll options.  Also, a minor
+                      fix for the 'to' name length in DCT mode when using a wide
+                      terminal.
+1.89     2024-04-30   Quote wrapping length: When re-wrapping quote lines, read
+                      the editor configuration settings for "word-wrap quoted
+                      text" as specified in xtrn.ini (settable in scfg) - Wrap
+                      quote lines to the width specified there, or if not
+                      specified, default to 79 columns. This is to help ensure
+                      quoted text is a reasonable width for many terminals. The
+                      wrapping logic is also called for prepending quoted text
+                      with the quote prefix, so (for now) there needs to be a
+                      default quote wrap width.
+1.88d    2024-02-16   Header display update for UTF-8. And printing from/to/subj
+                      after writing the header with empty data so that the
+                      header 'graphic' characters & everything lines up
+                      properly.
 1.88c    2024-02-12   UTF-8 support in the displayed header and when quoting
                       text and when quoting message text
 1.88b    2024-02-11   Previous change reverted; now has "real" UTF-8 support.

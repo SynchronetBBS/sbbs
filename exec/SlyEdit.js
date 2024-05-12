@@ -73,6 +73,9 @@
  *                              Don't line-wrap poll messages for quoting, as that could mess
  *                              up the formatting of the poll options.  Also, a minor fix for
  *                              the 'to' name length in DCT mode when using a wide terminal.
+ * 2024-05-11 Eric Oulashin     Version 1.89b
+ *                              In SlyEdit_Misc.js, check to see that xtrn_area.editor[user.editor]
+ *                              is an object before using it.
  */
 
 "use strict";
@@ -163,8 +166,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.89a";
-var EDITOR_VER_DATE = "2024-05-04";
+var EDITOR_VERSION = "1.89b";
+var EDITOR_VER_DATE = "2024-05-11";
 
 
 // Program variables
