@@ -1,7 +1,7 @@
 // SlyEdit configurator: This is a menu-driven configuration program/script for SlyEdit.
 // Any changes are saved to SlyEdit.cfg in sbbs/mods, so that custom changes don't get
 // overridden with SlyEdit.cfg in sbbs/ctrl due to an update.
-// Currently for SlyEdit 1.89.
+// Currently for SlyEdit 1.89b.
 
 "use strict";
 
@@ -10,7 +10,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("SlyEdit 1.88d Configurator"))
+if (!uifc.init("SlyEdit 1.89b Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
