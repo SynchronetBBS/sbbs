@@ -411,6 +411,27 @@ void banner()
 	printf("\nCompiled %s/%s %s %s with %s\n", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
 }
 
+void read_scfg_ini()
+{
+	char path[MAX_PATH + 1];
+
+	snprintf(path, sizeof path, "%s/scfg.ini", cfg.ctrl_dir);
+	FILE* fp = iniOpenFile(path, /* update: */false);
+
+	uifc.mode = iniReadInteger(fp, "uifc", "mode", uifc.mode);
+	uifc.scrn_len = iniReadInteger(fp, "uifc", "height", uifc.scrn_len);
+	uifc.insert_mode = iniReadBool(fp, "uifc", "insert", uifc.insert_mode);
+	uifc.esc_delay = iniReadInteger(fp, "uifc", "esc_delay", uifc.esc_delay);
+
+	ciolib_initial_mode = iniReadInteger(fp, "ciolib", "mode", ciolib_initial_mode);
+	ciolib_initial_scaling = iniReadFloat(fp, "ciolib", "scaling", ciolib_initial_scaling);
+	ciolib_initial_window_height = iniReadInteger(fp, "ciolib", "height", ciolib_initial_window_height);
+	ciolib_initial_window_width = iniReadInteger(fp, "ciolib", "width", ciolib_initial_window_width);
+
+	if (fp != NULL)
+		iniCloseFile(fp);
+}
+
 int main(int argc, char **argv)
 {
 	char*	p;
@@ -432,6 +453,8 @@ int main(int argc, char **argv)
 
     memset(&uifc,0,sizeof(uifc));
     SAFECOPY(cfg.ctrl_dir, get_ctrl_dir(/* warn: */true));
+
+	read_scfg_ini();
 
 	uifc.esc_delay=25;
 
