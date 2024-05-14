@@ -5615,7 +5615,7 @@ function wake_up()
 				sln('');
 				more_nomail();
 				lw('`%  You are diagnosed with ');
-				sln(vds[random(vds.length5)]);
+				sln(vds[random(vds.length)]);
 				sln('');
 				lln('  `2You are fairly sure you didn\'t get it off a toilet seat.');
 				sln('');
