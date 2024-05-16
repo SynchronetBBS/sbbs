@@ -4097,7 +4097,7 @@ function lw(str, ext)
 					throw new Error('Out of sync with server after Marry');
 				}
 			}
-			mop = mop.reLoad(true);
+			mop.reLoad(true);
 			// DIFF: See what happens here... this check is new.
 			if (mop.married_to === -1 || mop.married_to === player.Record) {
 				mop.married_to = player.Record;
