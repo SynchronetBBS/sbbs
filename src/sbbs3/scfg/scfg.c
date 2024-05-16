@@ -48,6 +48,8 @@ char tmp[256];
 char error[256];
 char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code Suffix", NULL };
 static char title[128];
+int ciolib_mode = CIOLIB_MODE_AUTO;
+enum text_modes video_mode = LCD80X25;
 
 /* convenient space-saving global constants */
 const char* nulstr="";
@@ -418,13 +420,14 @@ void read_scfg_ini()
 	snprintf(path, sizeof path, "%s/scfg.ini", cfg.ctrl_dir);
 	FILE* fp = iniOpenFile(path, /* update: */false);
 
-	uifc.mode = iniReadInteger(fp, "uifc", "mode", uifc.mode);
-	uifc.scrn_len = iniReadInteger(fp, "uifc", "height", uifc.scrn_len);
-	uifc.insert_mode = iniReadBool(fp, "uifc", "insert", uifc.insert_mode);
-	uifc.esc_delay = iniReadInteger(fp, "uifc", "esc_delay", uifc.esc_delay);
-
-	ciolib_initial_mode = iniReadInteger(fp, "ciolib", "mode", ciolib_initial_mode);
-	ciolib_initial_scaling = iniReadFloat(fp, "ciolib", "scaling", ciolib_initial_scaling);
+	const char* section = ROOT_SECTION;
+	video_mode = iniReadInteger(fp, section, "video_mode", video_mode);
+	uifc.mode = iniReadInteger(fp, section, "uifc_mode", uifc.mode);
+	uifc.scrn_len = iniReadInteger(fp, section, "lines", uifc.scrn_len);
+	uifc.insert_mode = iniReadBool(fp, section, "insert", uifc.insert_mode);
+	uifc.esc_delay = iniReadInteger(fp, section, "esc_delay", uifc.esc_delay);
+	ciolib_mode = iniReadInteger(fp, section, "ciolib_mode", ciolib_mode);
+	ciolib_initial_scaling = iniReadFloat(fp, section, "scaling", ciolib_initial_scaling);
 
 	if (fp != NULL)
 		iniCloseFile(fp);
@@ -438,8 +441,6 @@ int main(int argc, char **argv)
 	char	cfg_fname[MAX_PATH + 1];
 	bool    door_mode=false;
 	bool	alt_chars = false;
-	int		ciolib_mode=CIOLIB_MODE_AUTO;
-	enum text_modes video_mode = LCD80X25;
 
 #if defined(_WIN32)
 	cio_api.options |= CONIO_OPT_DISABLE_CLOSE;
