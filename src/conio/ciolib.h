@@ -402,8 +402,6 @@ CIOLIBEXPORTVAR int hold_update;
 CIOLIBEXPORTVAR int puttext_can_move;
 CIOLIBEXPORTVAR int ciolib_reaper;
 CIOLIBEXPORTVAR const char *ciolib_appname;
-CIOLIBEXPORTVAR int ciolib_initial_window_height;
-CIOLIBEXPORTVAR int ciolib_initial_window_width;
 CIOLIBEXPORTVAR double ciolib_initial_scaling;
 CIOLIBEXPORTVAR int ciolib_initial_mode;
 CIOLIBEXPORTVAR enum ciolib_scaling ciolib_initial_scaling_type;

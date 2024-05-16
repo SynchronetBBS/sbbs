@@ -425,8 +425,6 @@ void read_scfg_ini()
 
 	ciolib_initial_mode = iniReadInteger(fp, "ciolib", "mode", ciolib_initial_mode);
 	ciolib_initial_scaling = iniReadFloat(fp, "ciolib", "scaling", ciolib_initial_scaling);
-	ciolib_initial_window_height = iniReadInteger(fp, "ciolib", "height", ciolib_initial_window_height);
-	ciolib_initial_window_width = iniReadInteger(fp, "ciolib", "width", ciolib_initial_window_width);
 
 	if (fp != NULL)
 		iniCloseFile(fp);
