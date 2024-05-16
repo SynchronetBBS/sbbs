@@ -888,12 +888,12 @@ int main(int argc, char **argv)
 		}
 	uifc.size=sizeof(uifc);
 	if(!door_mode) {
+		ciolib_initial_mode = video_mode;
 		i=initciolib(ciolib_mode);
 		if(i!=0) {
     		printf("ciolib library init returned error %d\n",i);
     		exit(1);
 		}
-		textmode(video_mode);
 		ciolib_settitle("Synchronet FidoNet Configuration");
     	i=uifcini32(&uifc);  /* curses/conio/X/ANSI */
 	}
