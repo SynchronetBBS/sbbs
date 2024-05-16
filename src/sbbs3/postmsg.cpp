@@ -397,7 +397,7 @@ extern "C" int msg_client_hfields(smbmsg_t* msg, client_t* client)
 	if(*client->host
 		&& (i=smb_hfield_str(msg,SENDERHOSTNAME,client->host))!=SMB_SUCCESS)
 		return(i);
-	if(client->protocol!=NULL && (i=smb_hfield_str(msg,SENDERPROTOCOL,client->protocol))!=SMB_SUCCESS)
+	if((i=smb_hfield_str(msg,SENDERPROTOCOL,client->protocol))!=SMB_SUCCESS)
 		return(i);
 	if(client->port) {
 		SAFEPRINTF(port,"%u",client->port);

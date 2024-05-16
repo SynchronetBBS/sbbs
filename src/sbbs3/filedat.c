@@ -701,7 +701,7 @@ int file_client_hfields(file_t* f, client_t* client)
 		return i;
 	if(*client->host && (i = smb_hfield_str(f, SENDERHOSTNAME, client->host)) != SMB_SUCCESS)
 		return i;
-	if(client->protocol != NULL && (i = smb_hfield_str(f, SENDERPROTOCOL, client->protocol)) != SMB_SUCCESS)
+	if((i = smb_hfield_str(f, SENDERPROTOCOL, client->protocol)) != SMB_SUCCESS)
 		return i;
 	if(client->port) {
 		char	port[16];
