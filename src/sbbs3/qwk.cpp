@@ -1085,7 +1085,16 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 		smb_freemsgmem(&msg);
 		return false;
 	}
-
+	if (hubnum == -1 && strnicmp(section, "poll:", 5) == 0) {
+		char str[256];
+		uint reason = CantPostOnSub;
+		if(!can_user_post(&cfg, smb.subnum, &useron, &client, &reason)) {
+			bputs(text[reason]);
+			SAFEPRINTF2(str, "QWK Poll not allowed, reason = %u (%s)", reason, text[reason]);
+			logline(LOG_NOTICE, "P!", str);
+			return false;
+		}
+	}
 	if((result = smb_open_sub(&cfg, &smb, smb.subnum)) != SMB_SUCCESS) {
 		errormsg(WHERE, ERR_OPEN, smb.file, 0, smb.last_error);
 		return false;
