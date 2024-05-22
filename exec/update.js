@@ -233,6 +233,44 @@ upgraded = true;
 if(!upgraded)
 	js.exec("upgrade_to_v320.js", {});
 
+if(file_date(system.ctrl_dir + "attr.cfg") > file_date(system.ctrl_dir + "attr.ini")) {
+	print("file.cfg -> file.ini");
+	var f = new File(system.ctrl_dir + "attr.cfg");
+	if(!f.open("r"))
+		alert("Error " + f.error + " opening " + f.name);
+	else {
+		var list = f.readAll();
+		f.close();
+		f = new File(system.ctrl_dir + "attr.ini");
+		if(!f.open("w"))
+			alert("Error " + f.error + " creating " + f.name);
+		else {
+			f.writeln("mnehigh           = " + list.shift());
+			f.writeln("mnelow            = " + list.shift());
+			f.writeln("mnecmd            = " + list.shift());
+			f.writeln("inputline         = " + list.shift());
+			f.writeln("error             = " + list.shift());
+			f.writeln("nodenum           = " + list.shift());
+			f.writeln("nodeuser          = " + list.shift());
+			f.writeln("nodestatus        = " + list.shift());
+			f.writeln("filename          = " + list.shift());
+			f.writeln("filecdt           = " + list.shift());
+			f.writeln("filedesc          = " + list.shift());
+			f.writeln("filelisthdrbox    = " + list.shift());
+			f.writeln("filelistline      = " + list.shift());
+			f.writeln("chatlocal         = " + list.shift());
+			f.writeln("chatremote        = " + list.shift());
+			f.writeln("multichat         = " + list.shift());
+			f.writeln("external          = " + list.shift());
+			f.writeln("votes_full        = " + list.shift());
+			f.writeln("votes_empty       = " + list.shift());
+			f.writeln("progress_complete = " + list.shift());
+			f.writeln("progress_empty    = " + list.shift());
+			f.close();
+		}
+	}
+}
+
 print("Checking for v3.20 user base");
 if(file_exists(system.data_dir + 'user/user.dat') && !file_exists(system.data_dir + 'user/user.tab')) {
 	var cmdline = system.exec_dir + "upgrade_to_v320";
