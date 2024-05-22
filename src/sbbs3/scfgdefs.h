@@ -624,8 +624,7 @@ typedef struct
 	uchar			inactivity_warn;		// percentage
 	uint			max_getkey_inactivity;	// Seconds before user inactivity hang-up
 
-	uint* 			color;					/* Different colors for the BBS */
-	uint32_t		total_colors;
+	uint 			color[NUM_COLORS];		/* Different colors for the BBS */
 	uint32_t		ctrlkey_passthru;		/* Bits represent control keys NOT handled by inkey() */
 
 	uint			user_backup_level;

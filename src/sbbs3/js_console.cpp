@@ -2877,7 +2877,7 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 		,NULL, NULL, 0))
 		return(NULL);
 
-	for(uint i=0;i<sbbs->cfg.total_colors;i++) {
+	for(uint i=0; i < NUM_COLORS; i++) {
 
 		jsval val=INT_TO_JSVAL(sbbs->cfg.color[i]);
 		if(!JS_SetElement(cx, color_list, i, &val))

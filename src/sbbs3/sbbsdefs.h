@@ -348,7 +348,7 @@ enum {
 	,clr_votes_empty
 	,clr_progress_full
 	,clr_progress_empty
-	,MIN_COLORS
+	,NUM_COLORS
 };
 
 enum {								/* Values for xtrn_t.type				*/

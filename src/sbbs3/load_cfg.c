@@ -31,7 +31,6 @@
 #endif
 
 static void prep_cfg(scfg_t* cfg);
-static void free_attr_cfg(scfg_t* cfg);
 
 int 	lprintf(int level, const char *fmt, ...);	/* log output */
 
@@ -352,7 +351,6 @@ void free_cfg(scfg_t* cfg)
 	free_file_cfg(cfg);
 	free_chat_cfg(cfg);
 	free_xtrn_cfg(cfg);
-	free_attr_cfg(cfg);
 
 	if(cfg->text != NULL)
 		free_text(cfg->text);
@@ -409,50 +407,42 @@ int md(const char* inpath)
 /****************************************************************************/
 bool read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	uint*	clr;
-    char    str[256];
-	long	offset=0;
-    FILE    *instream;
-	int		i;
+    char    value[INI_MAX_VALUE_LEN];
+	char	path[MAX_PATH + 1];
+    FILE*	fp;
+    str_list_t ini;
 
-	SAFEPRINTF(str,"%sattr.cfg",cfg->ctrl_dir);
-	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		safe_snprintf(error, maxerrlen,"%d opening %s",errno,str);
-		return(false); 
-	}
-	FREE_AND_NULL(cfg->color);
-	if((cfg->color=malloc(MIN_COLORS * sizeof(uint)))==NULL) {
-		safe_snprintf(error, maxerrlen,"Error allocating memory (%u bytes) for colors"
-			,MIN_COLORS);
-		fclose(instream);
-		return(false);
-	}
-	/* Setup default colors here: */
-	for(i = 0; i < MIN_COLORS; ++i)
-		cfg->color[i] = LIGHTGRAY | HIGH;
-	cfg->color[clr_votes_full] = WHITE|BG_MAGENTA;
-	cfg->color[clr_progress_full] = CYAN|HIGH|BG_BLUE;
-	for(cfg->total_colors=0;!feof(instream) && !ferror(instream);cfg->total_colors++) {
-		if(readline(&offset,str,4,instream)==NULL)
-			break;
-		if(cfg->total_colors>=MIN_COLORS) {
-			if((clr=realloc(cfg->color,(cfg->total_colors+1) * sizeof(uint)))==NULL)
-				break;
-			cfg->color=clr;
-		}
-		cfg->color[cfg->total_colors]=strtoattr(str, /* endptr: */NULL); 
-	}
-	fclose(instream);
-	if(cfg->total_colors<MIN_COLORS)
-		cfg->total_colors=MIN_COLORS;
+	SAFEPRINTF(path,"%sattr.ini",cfg->ctrl_dir);
+	fp = fnopen(NULL, path, O_RDONLY);
+
+	ini = iniReadFile(fp);
+	if(fp != NULL)
+		fclose(fp);
+
+	cfg->color[clr_mnehigh]			= strtoattr(iniGetString(ini, ROOT_SECTION, "mnehigh", "WH", value), /* endptr: */NULL);
+	cfg->color[clr_mnelow]			= strtoattr(iniGetString(ini, ROOT_SECTION, "mnelow", "G", value), /* endptr: */NULL);
+	cfg->color[clr_mnecmd]			= strtoattr(iniGetString(ini, ROOT_SECTION, "mnecmd", "WH", value), /* endptr: */NULL);
+	cfg->color[clr_inputline]		= strtoattr(iniGetString(ini, ROOT_SECTION, "inputline", "WH4E", value), /* endptr: */NULL);
+	cfg->color[clr_err]				= strtoattr(iniGetString(ini, ROOT_SECTION, "error", "RH", value), /* endptr: */NULL);
+	cfg->color[clr_nodenum]			= strtoattr(iniGetString(ini, ROOT_SECTION, "nodenum", "WH", value), /* endptr: */NULL);
+	cfg->color[clr_nodeuser]		= strtoattr(iniGetString(ini, ROOT_SECTION, "nodeuser", "GH", value), /* endptr: */NULL);
+	cfg->color[clr_nodestatus]		= strtoattr(iniGetString(ini, ROOT_SECTION, "nodestatus", "G", value), /* endptr: */NULL);
+	cfg->color[clr_filename]		= strtoattr(iniGetString(ini, ROOT_SECTION, "filename", "BH", value), /* endptr: */NULL);
+	cfg->color[clr_filecdt]			= strtoattr(iniGetString(ini, ROOT_SECTION, "filecdt", "M", value), /* endptr: */NULL);
+	cfg->color[clr_filedesc]		= strtoattr(iniGetString(ini, ROOT_SECTION, "filedesc", "W", value), /* endptr: */NULL);
+	cfg->color[clr_filelsthdrbox]	= strtoattr(iniGetString(ini, ROOT_SECTION, "filelisthdrbox", "YH", value), /* endptr: */NULL);
+	cfg->color[clr_filelstline]		= strtoattr(iniGetString(ini, ROOT_SECTION, "filelistline", "B", value), /* endptr: */NULL);
+	cfg->color[clr_chatlocal]		= strtoattr(iniGetString(ini, ROOT_SECTION, "chatlocal", "GH", value), /* endptr: */NULL);
+	cfg->color[clr_chatremote]		= strtoattr(iniGetString(ini, ROOT_SECTION, "chatremote", "G", value), /* endptr: */NULL);
+	cfg->color[clr_multichat]		= strtoattr(iniGetString(ini, ROOT_SECTION, "multichat", "W", value), /* endptr: */NULL);
+	cfg->color[clr_external]		= strtoattr(iniGetString(ini, ROOT_SECTION, "external", "WH", value), /* endptr: */NULL);
+	cfg->color[clr_votes_full]		= strtoattr(iniGetString(ini, ROOT_SECTION, "votes_full", "WH5", value), /* endptr: */NULL);
+	cfg->color[clr_votes_empty]		= strtoattr(iniGetString(ini, ROOT_SECTION, "votes_empty", "WH", value), /* endptr: */NULL);
+	cfg->color[clr_progress_full]	= strtoattr(iniGetString(ini, ROOT_SECTION, "progress_full", "WH5", value), /* endptr: */NULL);
+	cfg->color[clr_progress_empty]	= strtoattr(iniGetString(ini, ROOT_SECTION, "progress_empty", "WH", value), /* endptr: */NULL);
+
+	iniFreeStringList(ini);
 	return(true);
-}
-
-static void free_attr_cfg(scfg_t* cfg)
-{
-	if(cfg->color!=NULL)
-		FREE_AND_NULL(cfg->color);
-	cfg->total_colors=0;
 }
 
 char* prep_dir(const char* base, char* path, size_t buflen)
