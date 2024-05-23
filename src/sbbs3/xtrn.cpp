@@ -385,6 +385,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		return -1;
 	}
 
+	clear_hotspots();
+
 	XTRN_LOADABLE_MODULE(cmdline,startup_dir);
 	XTRN_LOADABLE_JS_MODULE(cmdline,mode,startup_dir);
 
@@ -1143,6 +1145,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 	xtrn_mode = mode;
 	lprintf(LOG_DEBUG, "Executing external: %s", cmdline);
+
+	clear_hotspots();
 
 	if(startup_dir==NULL)
 		startup_dir=nulstr;
