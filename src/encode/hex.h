@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 char* hex_encode(char esc, const char* src, char* chars, char* dest, size_t size);
+// In-place decode of hex-encoded bytes (pass esc of '\0' for no escape char)
 char* hex_decode(char esc, char* str);
 
 #ifdef __cplusplus

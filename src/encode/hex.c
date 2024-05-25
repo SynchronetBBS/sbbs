@@ -49,6 +49,10 @@ char* hex_decode(char esc, char* str)
 			*dest = HEX_CHAR_TO_INT(*src) << 4;
 			src++;
 			*dest |= HEX_CHAR_TO_INT(*src);
+		} else if(esc == '\0' && IS_HEXDIGIT(*src) && IS_HEXDIGIT(*(src + 1))) {
+			*dest = HEX_CHAR_TO_INT(*src) << 4;
+			src++;
+			*dest |= HEX_CHAR_TO_INT(*src);
 		} else
 			*dest = *src;
 		src++;
