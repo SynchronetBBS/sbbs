@@ -26,12 +26,14 @@ void read_uifc_ini(const char* path, uifcapi_t* uifc, int* ciolib_mode, enum tex
 	FILE* fp = iniOpenFile(path, /* update: */false);
 
 	const char* section = ROOT_SECTION;
-	*video_mode = iniReadInteger(fp, section, "video_mode", *video_mode);
+	if (video_mode != NULL)
+		*video_mode = iniReadInteger(fp, section, "video_mode", *video_mode);
 	uifc->mode = iniReadInteger(fp, section, "uifc_mode", uifc->mode);
 	uifc->scrn_len = iniReadInteger(fp, section, "lines", uifc->scrn_len);
 	uifc->insert_mode = iniReadBool(fp, section, "insert", uifc->insert_mode);
 	uifc->esc_delay = iniReadInteger(fp, section, "esc_delay", uifc->esc_delay);
-	*ciolib_mode = iniReadInteger(fp, section, "ciolib_mode", *ciolib_mode);
+	if (ciolib_mode != NULL)
+		*ciolib_mode = iniReadInteger(fp, section, "ciolib_mode", *ciolib_mode);
 	ciolib_initial_scaling = iniReadFloat(fp, section, "scaling", ciolib_initial_scaling);
 
 	if (fp != NULL)
