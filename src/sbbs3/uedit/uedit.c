@@ -58,6 +58,7 @@ struct user_list {
 /* Global Variables */
 /********************/
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
+int	ciolib_mode=CIOLIB_MODE_AUTO;
 char YesStr[]="Yes";
 char NoStr[]="No";
 char sepchar = 0xb3;
@@ -1862,6 +1863,16 @@ int createdefaults(scfg_t* cfg)
 	return(i);
 }
 
+void read_uedit_ini(const char* ctrl_dir)
+{
+	char path[MAX_PATH + 1];
+
+	snprintf(path, sizeof path, "%s/uedit.ini", ctrl_dir);
+	if(!fexist(path))
+		snprintf(path, sizeof path, "%s/uifc.ini", ctrl_dir);
+	read_uifc_ini(path, &uifc, &ciolib_mode, NULL);
+}
+
 int main(int argc, char** argv)  {
 	char**	opt;
 	char**	mopt;
@@ -1876,7 +1887,6 @@ int main(int argc, char** argv)  {
 	int		last;
 	user_t	user;
 	int		edtuser=0;
-	int		ciolib_mode=CIOLIB_MODE_AUTO;
 	bool uifcx = false;
 
 	/******************/
@@ -1890,6 +1900,8 @@ int main(int argc, char** argv)  {
         "Rob Swindell\n",revision,PLATFORM_DESC,&__DATE__[7]);
 
 	SAFECOPY(ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
+
+	read_uedit_ini(ctrl_dir);
 
 	sbbs_get_ini_fname(ini_file, ctrl_dir);
 
