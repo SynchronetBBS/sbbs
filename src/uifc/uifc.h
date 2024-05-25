@@ -22,6 +22,9 @@
 #ifndef _UIFC_H_
 #define _UIFC_H_
 
+#include "gen_defs.h"	// int64_t
+#include "ciolib.h"		// enum text_modes
+
 #include <time.h>
 #include <fcntl.h>
 #include <ctype.h>
@@ -522,6 +525,8 @@ int uifcini(uifcapi_t*);	/* Original implementation based on conio		*/
 UIFCEXPORT int uifcinix(uifcapi_t*);	/* Standard I/O implementation		*/
 UIFCEXPORT int uifcini32(uifcapi_t*);	/* modern implementation			*/
 /****************************************************************************/
+
+void read_uifc_ini(const char* path, uifcapi_t*, int* ciolib_mode, enum text_modes*);
 
 #ifdef __cplusplus
 }

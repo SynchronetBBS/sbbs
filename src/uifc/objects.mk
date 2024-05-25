@@ -1,4 +1,6 @@
-OBJS = $(OBJODIR)$(DIRSEP)uifcx$(OFILE)
+OBJS = $(OBJODIR)/uifcx.o
 
-MT_OBJS = $(MTOBJODIR)$(DIRSEP)uifc32$(OFILE) \
-       $(MTOBJODIR)$(DIRSEP)uifcx$(OFILE)
+MT_OBJS = $(MTOBJODIR)/uifc32.o \
+       $(MTOBJODIR)/uifcx.o \
+       $(MTOBJODIR)/uifc_ini.o
+
