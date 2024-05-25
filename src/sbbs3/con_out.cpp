@@ -727,6 +727,8 @@ int sbbs_t::outchar(char ch)
 			outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
 		if(ch == '\r' && (console&CON_CR_CLREOL))
 			cleartoeol();
+		if(ch == '\n' && line_delay)
+			SLEEP(line_delay);
 		if(term&PETSCII) {
 			uchar pet = cp437_to_petscii(ch);
 			if(pet == PETSCII_SOLID)
@@ -739,11 +741,8 @@ int sbbs_t::outchar(char ch)
 		} else {
 			if(utf8[0] != 0)
 				putcom(utf8);
-			else {
-				if(ch == '\n' && line_delay)
-					SLEEP(line_delay);
+			else
 				outcom(ch);
-			}
 		}
 	}
 	if(outchar_esc == ansiState_none) {
