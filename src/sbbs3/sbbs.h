@@ -627,6 +627,9 @@ public:
 	uint	mneattr_low = LIGHTGRAY;
 	uint	mneattr_high = LIGHTGRAY;
 	uint	mneattr_cmd = LIGHTGRAY;
+	uint	rainbow[LEN_RAINBOW + 1]{};
+	bool	rainbow_repeat = false;
+	int		rainbow_index = -1;
 	int 	lncntr = 0; 	/* Line Counter - for PAUSE */
 	bool	msghdr_tos = false;	/* Message header was displayed at Top of Screen */
 	int		row=0;			/* Current row */

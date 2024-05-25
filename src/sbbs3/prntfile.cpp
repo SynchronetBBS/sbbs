@@ -127,6 +127,9 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 			errormsg(WHERE,ERR_ALLOC,fpath,length+1L);
 			return false; 
 		}
+		uint rainbow_sav[LEN_RAINBOW + 1];
+		memcpy(rainbow_sav, rainbow, sizeof rainbow_sav);
+
 		while(!feof(stream) && !msgabort()) {
 			if(fgets(buf, length + 1, stream) == NULL)
 				break;
@@ -135,6 +138,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 			if(putmsgfrag(buf, mode, org_cols, obj) != '\0') // early-EOF?
 				break;
 		}
+		memcpy(rainbow, rainbow_sav, sizeof rainbow);
 		free(buf);
 		fclose(stream);
 		if(!(mode&P_SAVEATR)) {
@@ -161,6 +165,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 	if(rip)
 		ansi_getlines();
 	console=savcon;
+
 	return true;
 }
 

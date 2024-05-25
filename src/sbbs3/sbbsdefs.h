@@ -538,6 +538,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_ARSTR		40	/* Max length of Access Requirement string		*/
 #define LEN_CHATACTCMD	 9	/* Chat action command							*/
 #define LEN_CHATACTOUT	65	/* Chat action output string					*/
+#define LEN_RAINBOW		40	// Rainbow attribute array length
 
 #define SIF_MAXBUF  0x7000			/* Maximum buffer size of SIF data		*/
 

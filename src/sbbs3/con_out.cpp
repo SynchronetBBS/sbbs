@@ -675,6 +675,15 @@ int sbbs_t::outchar(char ch)
 	}
 	else
 		outchar_esc = ansiState_none;
+
+	if(outchar_esc == ansiState_none && rainbow_index >= 0) {
+		attr(rainbow[rainbow_index]);
+		if(rainbow[rainbow_index + 1] == 0) {
+			if(rainbow_repeat)
+				rainbow_index = 0;
+		} else
+			++rainbow_index;
+	}
 	int term = term_supports();
 	char utf8[UTF8_MAX_LEN + 1] = "";
 	if(!(term&PETSCII)) {
@@ -1155,6 +1164,8 @@ void sbbs_t::ctrl_a(char x)
 		cursor_right((uchar)x-0x7f);
 		return;
 	}
+	if(valid_ctrl_a_attr(x) && toupper(x) != 'X')
+		rainbow_index = -1;
 	if(IS_DIGIT(x)) {	/* background color */
 		atr &= (BG_BRIGHT|BLINK|0x0f);
 	}
@@ -1321,6 +1332,11 @@ void sbbs_t::ctrl_a(char x)
 			break;
 		case '7':	/* White Background */
 			attr(atr | BG_LIGHTGRAY);
+			break;
+		case 'X':	// Rainbow
+			if(rainbow[rainbow_index + 1] != 0)
+				++rainbow_index;
+			rainbow_repeat = (x == 'X');
 			break;
 	}
 }

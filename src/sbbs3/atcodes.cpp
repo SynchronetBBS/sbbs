@@ -357,6 +357,12 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return nulstr;
 	}
 
+	if(strncmp(sp, "RAINBOW:", 8) == 0) {
+		memset(rainbow, 0, sizeof rainbow);
+		parse_attr_str_list(rainbow, LEN_RAINBOW, sp + 8);
+		return nulstr;
+	}
+
 	if(strncmp(sp, "U+", 2) == 0) {	// UNICODE
 		enum unicode_codepoint codepoint = (enum unicode_codepoint)strtoul(sp + 2, &tp, 16);
 		if(tp == NULL || *tp == 0)

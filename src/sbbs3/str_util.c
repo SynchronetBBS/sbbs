@@ -457,6 +457,7 @@ bool valid_ctrl_a_attr(char a)
 		case 'N':   /* normal       */
 		case 'R':   /* red      fg  */
 		case 'W':   /* white    fg  */
+		case 'X':	/* rainbow		*/
 		case 'Y':   /* yellow   fg  */
 		case '0':   /* black    bg  */
 		case '1':   /* red      bg  */

@@ -845,6 +845,17 @@ uint strtoattr(const char *str, char** endptr)
 	return(atr);
 }
 
+void parse_attr_str_list(uint* list, int max, const char* str)
+{
+	char* endptr = NULL;
+	for(int i = 0; i < max && *str != '\0'; ++i) {
+		list[i] = strtoattr(str, &endptr);
+		if(*endptr == '\0')
+			break;
+		str = endptr + 1;
+	}
+}
+
 void free_file_cfg(scfg_t* cfg)
 {
 	int i;

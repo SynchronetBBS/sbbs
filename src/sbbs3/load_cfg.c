@@ -441,6 +441,9 @@ bool read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->color[clr_progress_full]	= strtoattr(iniGetString(ini, ROOT_SECTION, "progress_full", "WH5", value), /* endptr: */NULL);
 	cfg->color[clr_progress_empty]	= strtoattr(iniGetString(ini, ROOT_SECTION, "progress_empty", "WH", value), /* endptr: */NULL);
 
+	iniGetString(ini, ROOT_SECTION, "rainbow", "WH,W,CH,C,MH,M,BH,B,YH,Y,GH,G,RH,R,KH", value);
+	memset(cfg->rainbow, 0, sizeof cfg->rainbow);
+	parse_attr_str_list(cfg->rainbow, LEN_RAINBOW, value);
 	iniFreeStringList(ini);
 	return(true);
 }
