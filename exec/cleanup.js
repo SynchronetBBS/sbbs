@@ -27,6 +27,7 @@ const file_list = [
 	{ dir: system.data_dir + backslash("user"), file: "user.dat", desc: "User database (migrated to user.tab)" },
 	{ dir: system.data_dir + backslash("user/ptrs"), file: "*.ixb", desc: "User message scan config/pointers (migrated to *.subs)" },
 	{ dir: system.ctrl_dir, file: "*.cnf", desc: "System configuration settings (migrated to *.ini)" },
+	{ dir: system.ctrl_dir, file: "attr.cfg", desc: "Text attribute settings (migrated to attr.ini)" },
 	{ dir: system.ctrl_dir, file: "sbbsecho.cfg", desc: "SBBSecho v2 configuration settings (migrated to sbbsecho.ini)" },
 	{ dir: system.ctrl_dir, file: "dsts.dab", desc: "Daily system statistics (migrated to dsts.ini)" },
 	{ dir: system.ctrl_dir, file: "csts.dab", desc: "Cumulative system statistics (migrated to csts.tab)" },
