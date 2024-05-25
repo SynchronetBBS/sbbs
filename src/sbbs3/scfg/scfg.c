@@ -418,19 +418,9 @@ void read_scfg_ini()
 	char path[MAX_PATH + 1];
 
 	snprintf(path, sizeof path, "%s/scfg.ini", cfg.ctrl_dir);
-	FILE* fp = iniOpenFile(path, /* update: */false);
-
-	const char* section = ROOT_SECTION;
-	video_mode = iniReadInteger(fp, section, "video_mode", video_mode);
-	uifc.mode = iniReadInteger(fp, section, "uifc_mode", uifc.mode);
-	uifc.scrn_len = iniReadInteger(fp, section, "lines", uifc.scrn_len);
-	uifc.insert_mode = iniReadBool(fp, section, "insert", uifc.insert_mode);
-	uifc.esc_delay = iniReadInteger(fp, section, "esc_delay", uifc.esc_delay);
-	ciolib_mode = iniReadInteger(fp, section, "ciolib_mode", ciolib_mode);
-	ciolib_initial_scaling = iniReadFloat(fp, section, "scaling", ciolib_initial_scaling);
-
-	if (fp != NULL)
-		iniCloseFile(fp);
+	if(!fexist(path))
+		snprintf(path, sizeof path, "%s/uifc.ini", cfg.ctrl_dir);
+	read_uifc_ini(path, &uifc, &ciolib_mode, &video_mode);
 }
 
 int main(int argc, char **argv)
