@@ -756,7 +756,7 @@ static jsval get_value(JSContext *cx, char* value, bool blanks)
 		if(f)
 			val=DOUBLE_TO_JSVAL(atof(value));
 		else
-			val=DOUBLE_TO_JSVAL((double)strtoul(value,NULL,10));
+			val=UINT_TO_JSVAL(strtoul(value,NULL,10));
 		return(val);
 	}
 	/* hexadecimal number? */
@@ -765,7 +765,7 @@ static jsval get_value(JSContext *cx, char* value, bool blanks)
 			if(!isxdigit((uchar)*p))
 				break;
 		if(*p==0) {
-			val=DOUBLE_TO_JSVAL((double)strtoul(value,NULL,0));
+			val=UINT_TO_JSVAL(strtoul(value,NULL,0));
 			return(val);
 		}
 	}
