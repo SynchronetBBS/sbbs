@@ -1867,7 +1867,7 @@ int main(int argc, char** argv)  {
 	char**	mopt;
 	int		main_dflt=0;
 	int		main_bar=0;
-	char	revision[16];
+	char*	revision = "1.66";
 	char	str[256],ctrl_dir[MAX_PATH + 1];
 	char	title[256];
 	int		i,j;
@@ -1885,8 +1885,6 @@ int main(int argc, char** argv)  {
 	char	ini_file[MAX_PATH+1];
 	FILE*				fp;
 	bbs_startup_t		bbs_startup;
-
-	sscanf("$Revision: 1.65 $", "%*s %s", revision);
 
     printf("\nSynchronet User Editor %s-%s  Copyright %s "
         "Rob Swindell\n",revision,PLATFORM_DESC,&__DATE__[7]);
