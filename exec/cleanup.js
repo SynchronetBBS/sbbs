@@ -23,12 +23,6 @@ print("for a reasonable period of time before continuing.");
 if(!cont())
 	exit(0);
 
-function remove(path)
-{
-	if(cont("Remove " + path))
-		; //file_remove(path);
-}
-
 const file_list = [
 	{ dir: system.data_dir + backslash("user"), file: "user.dat", desc: "User database (migrated to user.tab)" },
 	{ dir: system.data_dir + backslash("user/ptrs"), file: "*.ixb", desc: "User message scan config/pointers (migrated to *.subs)" },
