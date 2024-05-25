@@ -44,6 +44,8 @@ char **opt;
 
 sbbsecho_cfg_t cfg;
 uifcapi_t uifc;
+int	ciolib_mode=CIOLIB_MODE_AUTO;
+enum text_modes video_mode = LCD80X25;
 
 void bail(int code)
 {
@@ -710,6 +712,16 @@ void banner()
 	printf("Compiled %s/%s %s with %s\n", GIT_BRANCH, GIT_HASH, GIT_DATE, compiler);
 }
 
+void read_echocfg_ini()
+{
+	char path[MAX_PATH + 1];
+
+	snprintf(path, sizeof path, "%s/echocfg.ini", get_ctrl_dir(/* warn: */false));
+	if(!fexist(path))
+		snprintf(path, sizeof path, "%s/uifc.ini", get_ctrl_dir(/* warn: */false));
+	read_uifc_ini(path, &uifc, &ciolib_mode, &video_mode);
+}
+
 int main(int argc, char **argv)
 {
 	char str[256],*p;
@@ -720,8 +732,6 @@ int main(int argc, char **argv)
 	struct fido_domain savedomain;
 	struct robot saverobot;
 	BOOL door_mode=FALSE;
-	int		ciolib_mode=CIOLIB_MODE_AUTO;
-	enum text_modes video_mode = LCD80X25;
 	unsigned int u;
 	char	sysop_aliases[256];
 	sbbsecho_cfg_t orig_cfg;
@@ -736,6 +746,8 @@ int main(int argc, char **argv)
 #else
 	banner();
 #endif
+
+	read_echocfg_ini();
 
 	memset(&cfg,0,sizeof(cfg));
 	str[0]=0;
