@@ -53,6 +53,7 @@ const char *YesStr="Yes";
 const char *NoStr="No";
 char app_title[128];
 int	ciolib_mode=CIOLIB_MODE_AUTO;
+enum text_modes video_mode = LCD80X25;
 
 int lprintf(char *fmt, ...)
 {
@@ -810,6 +811,16 @@ int edit_can(scfg_t *cfg)
 	return(0);
 }
 
+void read_umonitor_ini(const char* ctrl_dir)
+{
+	char path[MAX_PATH + 1];
+
+	snprintf(path, sizeof path, "%s/umonitor.ini", ctrl_dir);
+	if(!fexist(path))
+		snprintf(path, sizeof path, "%s/uifc.ini", ctrl_dir);
+	read_uifc_ini(path, &uifc, &ciolib_mode, &video_mode);
+}
+
 int main(int argc, char** argv)  {
 
 	char**	opt;
@@ -884,6 +895,7 @@ int main(int argc, char** argv)  {
 
 	memset(&uifc,0,sizeof(uifc));
 	uifc.mode|=UIFC_NOCTRL;
+	read_umonitor_ini(cfg.ctrl_dir);
 
 	uifc.esc_delay=500;
 
@@ -982,6 +994,7 @@ USAGE:
 #endif
 
 	uifc.size=sizeof(uifc);
+	ciolib_initial_mode = video_mode;
 	i=initciolib(ciolib_mode);
 	if(i!=0) {
 		printf("ciolib library init returned error %d\n",i);
