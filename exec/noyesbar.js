@@ -30,10 +30,8 @@ while(bbs.online && !js.terminated) {
 	var key = console.getkey(0).toUpperCase();
 	console.backspace(console.strlen(str));
 	console.print("\x01n\x01h\x01>");
-	if(console.aborted) {
-		affirm = false;
+	if(console.aborted)
 		break;
-	}
 	if(key == '\r')
 		break;
 	if(key == yes_key) {
@@ -47,4 +45,5 @@ while(bbs.online && !js.terminated) {
 	affirm = !affirm;
 }
 
-console.ungetstr(affirm ? yes_key : no_key);
+if(!console.aborted)
+	console.ungetstr(affirm ? yes_key : no_key);
