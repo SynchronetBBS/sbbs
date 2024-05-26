@@ -22,7 +22,8 @@
 #include <stdio.h>
 #include <ctype.h>		/* toupper */
 #include <string.h>		/* strcmp */
-#include "sbbsdefs.h"	// VERSION
+#include "git_branch.h"
+#include "git_hash.h"
 
 #ifdef _WIN32
 	#include <windows.h>	/* SetConsoleMode */
@@ -32,12 +33,12 @@
 #endif
 
 #define CTRL_A	'\1'
-#undef ANSI
 #define ANSI	fprintf(out,"\x1b[")
 
 static void print_usage(const char* prog)
 {
-	fprintf(stderr,"\nSynchronet Ctrl-A-Code to ANSI-Terminal-Sequence Conversion Utility v%s\n",VERSION);
+	fprintf(stderr,"\nSynchronet Ctrl-A-Code to ANSI-Terminal-Sequence Conversion Utility %s/%s\n"
+		,GIT_BRANCH, GIT_HASH);
 	fprintf(stderr,"\nusage: %s infile.asc [outfile.ans] [[option] [...]]\n",prog);
 	fprintf(stderr,"\noptions:\n\n");
 	fprintf(stderr,"-strip            strip Ctrl-A codes without ANSI equivalent, e.g. pause, delay\n");
