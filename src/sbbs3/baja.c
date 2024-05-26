@@ -3401,9 +3401,6 @@ int main(int argc, char **argv)
 	char	path[MAX_PATH+1];
 	int		i,j;
 	int		show_banner=TRUE;
-	char	revision[16];
-
-	sscanf("$Revision: 1.52 $", "%*s %s", revision);
 
 	p = getenv("BAJAINCLUDE");
 	if(p != NULL) {
@@ -3439,14 +3436,14 @@ int main(int argc, char **argv)
 					show_banner=0;
 					break;
 				default:
-					printf(banner,PLATFORM_DESC,revision);
+					printf(banner,PLATFORM_DESC,VERSION);
 					puts(usage);
 					bail(1); }
 		else
 			SAFECOPY(src, argv[i]);
 
 	if(show_banner)
-		printf(banner,PLATFORM_DESC,revision);
+		printf(banner,PLATFORM_DESC,VERSION);
 
 	if(!src[0]) {
 		puts(usage);

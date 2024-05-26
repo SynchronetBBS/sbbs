@@ -2333,15 +2333,12 @@ int main(int argc, char **argv)
 	FILE	*src;
 	char 	newname[MAX_PATH+1];
 	char	*p;
-	char	revision[16];
 	FILE	*cache;
 	char	cache_line[1024];
 	char	*crc,*good,*str;
 
-	sscanf("$Revision: 1.48 $", "%*s %s", revision);
-
 	printf("\nUNBAJA v%s-%s - Synchronet Baja Shell/Module De-compiler\n"
-		,revision, PLATFORM_DESC);
+		,VERSION, PLATFORM_DESC);
 
 	for(f=1; f<argc; f++) {
 		if(!strncmp(argv[f],"-b",2)) {
