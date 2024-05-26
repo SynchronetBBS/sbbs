@@ -72,16 +72,13 @@ int main(int argc, char **argv)
 {
 	const char*	p;
 	char	error[512];
-	char	revision[16];
 	int		i;
 	int		first_arg=1;
 	time_t	now;
 	user_t	user;
 
-	sscanf("$Revision: 1.12 $", "%*s %s", revision);
-
 	fprintf(stderr,"\nMAKEUSER v%s-%s - Adds User to Synchronet User Database\n"
-		,revision
+		,VERSION
 		,PLATFORM_DESC
 		);
 
