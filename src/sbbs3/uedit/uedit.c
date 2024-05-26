@@ -59,6 +59,7 @@ struct user_list {
 /********************/
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 int	ciolib_mode=CIOLIB_MODE_AUTO;
+enum text_modes video_mode = LCD80X25;
 char YesStr[]="Yes";
 char NoStr[]="No";
 char sepchar = 0xb3;
@@ -1870,7 +1871,7 @@ void read_uedit_ini(const char* ctrl_dir)
 	snprintf(path, sizeof path, "%s/uedit.ini", ctrl_dir);
 	if(!fexist(path))
 		snprintf(path, sizeof path, "%s/uifc.ini", ctrl_dir);
-	read_uifc_ini(path, &uifc, &ciolib_mode, NULL);
+	read_uifc_ini(path, &uifc, &ciolib_mode, &video_mode);
 }
 
 int main(int argc, char** argv)  {
@@ -2031,6 +2032,7 @@ int main(int argc, char** argv)  {
 		i=uifcinix(&uifc);
 	}
 	else {
+		ciolib_initial_mode = video_mode;
 		i=initciolib(ciolib_mode);
 		if(i!=0) {
 			printf("ciolib library init returned error %d\n",i);
