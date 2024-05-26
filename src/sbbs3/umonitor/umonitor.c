@@ -817,7 +817,6 @@ int main(int argc, char** argv)  {
 	int		main_dflt=0;
 	int		main_bar=0;
 	int		sys_cur=0;
-	char	revision[16];
 	char	str[256],ctrl_dir[MAX_PATH + 1];
 	int		i,j;
 	node_t	node;
@@ -837,10 +836,8 @@ int main(int argc, char** argv)  {
 	FILE*				fp=NULL;
 	bbs_startup_t		bbs_startup;
 
-	sscanf("$Revision: 1.99 $", "%*s %s", revision);
-
 	printf("\nSynchronet UNIX Monitor %s-%s  Copyright %s "
-		"Rob Swindell\n",revision,PLATFORM_DESC,&__DATE__[7]);
+		"Rob Swindell\n",VERSION,PLATFORM_DESC,&__DATE__[7]);
 
 	SAFECOPY(ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
 	backslash(ctrl_dir);
