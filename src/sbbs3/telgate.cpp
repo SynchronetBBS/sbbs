@@ -44,14 +44,14 @@ struct TelnetProxy
 				sbbs->lprintf(LOG_DEBUG, "%s: %s", __FUNCTION__, telnet_cmd_desc(cmd));
 			sprintf(buf, "%c%c", TELNET_IAC, cmd);
 			if (::sendsocket(sock, buf, 2) != 2)
-				lprintf(LOG_WARNING, "%s: Failed to send Telnet command: %s", __FUNCTION__, telnet_cmd_desc(cmd));
+				lprintf(LOG_WARNING, "%s: Failed to send command: %s", __FUNCTION__, telnet_cmd_desc(cmd));
 		}
 		else {
 			if(sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
 				sbbs->lprintf(LOG_DEBUG, "%s: %s %s", __FUNCTION__, telnet_cmd_desc(cmd), telnet_opt_desc(opt));
 			sprintf(buf, "%c%c%c", TELNET_IAC, cmd, opt);
 			if (::sendsocket(sock, buf, 3) != 3)
-				sbbs->lprintf(LOG_WARNING, "%s: Failed to send Telnet command: %s %s", __FUNCTION__, telnet_cmd_desc(cmd), telnet_opt_desc(opt));
+				sbbs->lprintf(LOG_WARNING, "%s: Failed to send command: %s %s", __FUNCTION__, telnet_cmd_desc(cmd), telnet_opt_desc(opt));
 		}
 	}
 
@@ -135,7 +135,8 @@ struct TelnetProxy
 									sbbs->term_type(),
 									TELNET_IAC, TELNET_SE);
 
-							::sendsocket(sock, buf, len);
+							if (::sendsocket(sock, buf, len) != len)
+								lprintf(LOG_WARNING, "%s: Failed to send TERM_TYPE command", __FUNCTION__);
 							request_opt(TELNET_WILL, TELNET_NEGOTIATE_WINDOW_SIZE);
 						}
 						cmdlen = 0;
@@ -178,9 +179,10 @@ struct TelnetProxy
 							buf[6] = sbbs->rows & 0xff;
 							buf[7] = TELNET_IAC;
 							buf[8] = TELNET_SE;
-							if(sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
+							if (sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
 								sbbs->lprintf(LOG_DEBUG, "%s: Window Size is %u x %u", __FUNCTION__, sbbs->cols, sbbs->rows);
-							::sendsocket(sock, (char *)buf, 9);
+							if (::sendsocket(sock, (char *)buf, 9) != 9)
+								lprintf(LOG_WARNING, "%s: Failed to send Window Size command", __FUNCTION__);
 						}
 					}
 					else { /* WILL/WONT (remote options) */
