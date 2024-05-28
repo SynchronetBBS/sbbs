@@ -58,6 +58,7 @@ function read_xtrn_ini(filename)
 	obj.sec = read_sections(f, "sec:");
 	obj.prog = read_sections(f, "prog:");
 	obj.native = read_sections(f, "native:");
+	obj.hotkey = read_sections(f, "hotkey:");
 	
 	for(var i in obj.prog) {
 		var item = obj.prog[i];
@@ -99,11 +100,12 @@ function write_xtrn_ini(filename, obj)
 			throw new Error("Invalid section number: " + item.sec);
 		item.code = obj.sec[item.sec].code + ":" + item.code;
 	}
-	write_sections(f, obj.event, "event:");
 	write_sections(f, obj.editor, "editor:");
 	write_sections(f, obj.sec, "sec:");
 	write_sections(f, obj.prog, "prog:");
+	write_sections(f, obj.event, "event:");
 	write_sections(f, obj.native, "native:");
+	write_sections(f, obj.hotkey, "hotkey:");
 	f.close();
 	return true;
 }
