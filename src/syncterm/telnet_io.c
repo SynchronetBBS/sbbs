@@ -195,7 +195,6 @@ telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 					if (telnet_local_option[option] != command) {
 						switch (option) {
 							case TELNET_BINARY_TX:
-							case TELNET_ECHO:
 							case TELNET_TERM_TYPE:
 							case TELNET_SUP_GA:
 							case TELNET_NEGOTIATE_WINDOW_SIZE:
