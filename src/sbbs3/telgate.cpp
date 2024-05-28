@@ -20,14 +20,207 @@
  ****************************************************************************/
 
 #include "sbbs.h"
-#include "telnet.h" 
+#include "telnet.h"
+
+struct TelnetProxy
+{
+	SOCKET sock;
+	uint8_t	local_option[0x100]{};
+	uint8_t	remote_option[0x100]{};
+	sbbs_t* sbbs;
+	int cmdlen = 0;
+	uint8_t cmd[64];
+	uint8_t outbuf[1024];
+
+	TelnetProxy(SOCKET sock_, sbbs_t* sbbs_)
+		: sock{sock_}, sbbs{sbbs_} {}
+
+	void send(uint8_t cmd, uint8_t opt)
+	{
+		char buf[16];
+
+		if (cmd < TELNET_WILL) {
+			if(sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
+				sbbs->lprintf(LOG_DEBUG, __FUNCTION__ ": %s",	telnet_cmd_desc(cmd));
+			sprintf(buf, "%c%c", TELNET_IAC, cmd);
+			if (::sendsocket(sock, buf, 2) != 2)
+				lprintf(LOG_WARNING, "Failed to send Telnet command: %s", telnet_cmd_desc(cmd));
+		}
+		else {
+			if(sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
+				sbbs->lprintf(LOG_DEBUG, __FUNCTION__ ": %s %s", telnet_cmd_desc(cmd), telnet_opt_desc(opt));
+			sprintf(buf, "%c%c%c", TELNET_IAC, cmd, opt);
+			if (::sendsocket(sock, buf, 3) != 3)
+				sbbs->lprintf(LOG_WARNING, "Failed to send Telnet command: %s %s", telnet_cmd_desc(cmd), telnet_opt_desc(opt));
+		}
+	}
+
+	void request_opt(uint8_t cmd, uint8_t opt)
+	{
+		if ((cmd == TELNET_DO) || (cmd == TELNET_DONT)) { /* remote option */
+			if (remote_option[opt] == telnet_opt_ack(cmd))
+				return;                           /* already set in this mode, do nothing */
+			remote_option[opt] = telnet_opt_ack(cmd);
+		}
+		else {                                            /* local option */
+			if (local_option[opt] == telnet_opt_ack(cmd))
+				return;                           /* already set in this mode, do nothing */
+			local_option[opt] = telnet_opt_ack(cmd);
+		}
+		send(cmd, opt);
+	}
+
+	uint8_t* recv(uint8_t *inbuf, size_t inlen, ssize_t& outlen)
+	{
+		uint8_t  command;
+		uint8_t  option;
+		uint8_t *first_int = NULL;
+
+		if (inlen < 1) {
+			outlen = 0;
+			return inbuf; /* no length? No interpretation */
+		}
+
+		first_int = (uint8_t *)memchr(inbuf, TELNET_IAC, inlen);
+		if ((cmdlen == 0) && (first_int == NULL)) {
+			outlen = inlen;
+			return inbuf; /* no interpretation needed */
+		}
+
+		if (cmdlen == 0 /* If we haven't returned and cmdlen==0 then first_int is not NULL */) {
+			outlen = first_int - inbuf;
+			memcpy(outbuf, inbuf, outlen);
+		}
+		else {
+			outlen = 0;
+		}
+
+		for (size_t i = outlen; i < inlen; i++) {
+			if (remote_option[TELNET_BINARY_TX] != TELNET_WILL) {
+				if ((cmdlen == 1) && (cmd[0] == '\r')) {
+					outbuf[outlen++] = '\r';
+					if ((inbuf[i] != 0) && (inbuf[i] != TELNET_IAC))
+						outbuf[outlen++] = inbuf[i];
+					cmdlen = 0;
+					if (inbuf[i] != TELNET_IAC)
+						continue;
+				}
+				if ((inbuf[i] == '\r') && (cmdlen == 0)) {
+					cmd[cmdlen++] = '\r';
+					continue;
+				}
+			}
+
+			if ((inbuf[i] == TELNET_IAC) && (cmdlen == 1)) { /* escaped 255 */
+				cmdlen = 0;
+				outbuf[outlen++] = TELNET_IAC;
+				continue;
+			}
+			if ((inbuf[i] == TELNET_IAC) || cmdlen) {
+				if (cmdlen < sizeof(cmd))
+					cmd[cmdlen++] = inbuf[i];
+
+				command = cmd[1];
+				option = cmd[2];
+
+				if ((cmdlen >= 2) && (command == TELNET_SB)) {
+					if ((inbuf[i] == TELNET_SE)
+						&& (cmd[cmdlen - 2] == TELNET_IAC)) {
+											/* sub-option terminated */
+						if ((option == TELNET_TERM_TYPE) && (cmd[3] == TELNET_TERM_SEND)) {
+							char        buf[32];
+							int         len = snprintf(buf, sizeof buf, "%c%c%c%c%s%c%c",
+									TELNET_IAC, TELNET_SB,
+									TELNET_TERM_TYPE, TELNET_TERM_IS,
+									sbbs->term_type(),
+									TELNET_IAC, TELNET_SE);
+
+							::sendsocket(sock, buf, len);
+							request_opt(TELNET_WILL, TELNET_NEGOTIATE_WINDOW_SIZE);
+						}
+						cmdlen = 0;
+					}
+				}
+				else if ((cmdlen == 2) && (inbuf[i] < TELNET_WILL)) {
+					cmdlen = 0;
+				}
+				else if (cmdlen >= 3) { /* telnet option negotiation */
+					if(sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
+						sbbs->lprintf(LOG_DEBUG, __FUNCTION__ ": %s %s",
+							telnet_cmd_desc(command), telnet_opt_desc(option));
+
+					if ((command == TELNET_DO) || (command == TELNET_DONT)) { /* local options */
+						if (local_option[option] != command) {
+							switch (option) {
+								case TELNET_BINARY_TX:
+								case TELNET_TERM_TYPE:
+								case TELNET_SUP_GA:
+								case TELNET_NEGOTIATE_WINDOW_SIZE:
+									local_option[option] = command;
+									send(telnet_opt_ack(command), option);
+									break;
+								default: // unsupported local options
+									if (command == TELNET_DO) /* NAK */
+										send(telnet_opt_nak(command),
+											option);
+									break;
+							}
+						}
+
+						if ((command == TELNET_DO) && (option == TELNET_NEGOTIATE_WINDOW_SIZE)) {
+							uint8_t buf[32];
+
+							buf[0] = TELNET_IAC;
+							buf[1] = TELNET_SB;
+							buf[2] = TELNET_NEGOTIATE_WINDOW_SIZE;
+							buf[3] = (sbbs->cols >> 8) & 0xff;
+							buf[4] = sbbs->cols & 0xff;
+							buf[5] = (sbbs->rows >> 8) & 0xff;
+							buf[6] = sbbs->rows & 0xff;
+							buf[7] = TELNET_IAC;
+							buf[8] = TELNET_SE;
+							if(sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
+								sbbs->lprintf(LOG_DEBUG, __FUNCTION__ ": Window Size is %u x %u", sbbs->cols, sbbs->rows);
+							::sendsocket(sock, (char *)buf, 9);
+						}
+					}
+					else { /* WILL/WONT (remote options) */
+						if (remote_option[option] != command) {
+							switch (option) {
+								case TELNET_BINARY_TX:
+								case TELNET_ECHO:
+								case TELNET_TERM_TYPE:
+								case TELNET_SUP_GA:
+								case TELNET_NEGOTIATE_WINDOW_SIZE:
+									remote_option[option] = command;
+									send(telnet_opt_ack(command), option);
+									break;
+								default: // unsupported remote options
+									if (command == TELNET_WILL) /* NAK */
+										send(telnet_opt_nak(command), option);
+									break;
+							}
+						}
+					}
+
+					cmdlen = 0;
+				}
+			}
+			else {
+				outbuf[outlen++] = inbuf[i];
+			}
+		}
+		return outbuf;
+	}
+}; // struct TelnetProxy
+
 
 bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* client_user_name, char* server_user_name, char* term_type)
 {
 	char*	p;
 	uchar	buf[512];
 	int		i;
-	int		rd;
+	ssize_t	rd;
 	uint	attempts;
 	u_long	l;
 	bool	gotline;
@@ -36,6 +229,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 	uint	save_console;
 	SOCKET	remote_socket;
 	SOCKADDR_IN	addr;
+	TelnetProxy* proxy = nullptr;
 
 	if(mode&TG_RLOGIN)
 		port=513;
@@ -77,7 +271,6 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 	addr.sin_port   = htons(port);
 
 	l=1;
-
 	if((i = ioctlsocket(remote_socket, FIONBIO, &l))!=0) {
 		lprintf(LOG_NOTICE,"!TELGATE ERROR %d (%d) disabling socket blocking"
 			,i, ERROR_VALUE);
@@ -122,6 +315,10 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 		if(sendsocket(remote_socket,(char*)buf,l) != (ssize_t)l)
 			lprintf(LOG_WARNING, "Error %d sending %lu bytes to server: %s", ERROR_VALUE, l, destaddr);
 		mode|=TG_NOLF;	/* Send LF (to remote host) when Telnet client sends CRLF (when not in binary mode) */
+	} else {
+		proxy = new TelnetProxy(remote_socket, this);
+		if(!(mode & TG_ECHO))
+			proxy->request_opt(TELNET_DO, TELNET_ECHO);
 	}
 
 	/* This is required for gating to Unix telnetd */
@@ -130,7 +327,6 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 
 	/* Text/NVT mode by default */
 	request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX, 3000);
-
 	if(!(telnet_mode&TELNET_MODE_OFF) && (mode&TG_PASSTHRU))
 		telnet_mode|=TELNET_MODE_GATE;	// Pass-through telnet commands
 
@@ -139,16 +335,6 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 			gettimeleft();
 		rd=RingBufRead(&inbuf,buf,sizeof(buf)-1);
 		if(rd) {
-#if 0
-			if(memchr(buf,TELNET_IAC,rd)) {
-				char dump[2048];
-				dump[0];
-				p=dump;
-				for(int i=0;i<rd;i++)
-					p+=sprintf(p,"%u ",buf[i]);
-				lprintf(LOG_DEBUG,"Node %d Telnet cmd from client: %s", cfg.node_num, dump);
-			}
-#endif
 			if(telnet_remote_option[TELNET_BINARY_TX]!=TELNET_WILL) {
 				if(*buf==CTRL_CLOSE_BRACKET) {
 					save_console=console;
@@ -240,17 +426,10 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 			lprintf(LOG_INFO,"Node %d Telnet gate disconnected",cfg.node_num);
 			break;
 		}
-#if 0
-		if(memchr(buf,TELNET_IAC,rd)) {
-			char dump[2048];
-			dump[0];
-			p=dump;
-			for(int i=0;i<rd;i++)
-				p+=sprintf(p,"%u ",buf[i]);
-			lprintf(LOG_DEBUG,"Node %d Telnet cmd from server: %s", cfg.node_num, dump);
-		}
-#endif
-		RingBufWrite(&outbuf,buf,rd);
+		uint8_t* p = buf;
+		if(!(mode & (TG_RLOGIN | TG_PASSTHRU)))
+			p = proxy->recv(buf, rd, rd);
+		RingBufWrite(&outbuf,p,rd);
 	}
 	console&=~CON_RAW_IN;
 	telnet_mode&=~TELNET_MODE_GATE;
