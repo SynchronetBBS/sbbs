@@ -28,7 +28,7 @@ struct TelnetProxy
 	uint8_t	local_option[0x100]{};
 	uint8_t	remote_option[0x100]{};
 	sbbs_t* sbbs;
-	int cmdlen = 0;
+	size_t cmdlen = 0;
 	uint8_t cmd[64];
 	uint8_t outbuf[1024];
 
@@ -41,17 +41,17 @@ struct TelnetProxy
 
 		if (cmd < TELNET_WILL) {
 			if(sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
-				sbbs->lprintf(LOG_DEBUG, __FUNCTION__ ": %s",	telnet_cmd_desc(cmd));
+				sbbs->lprintf(LOG_DEBUG, "%s: %s", __FUNCTION__, telnet_cmd_desc(cmd));
 			sprintf(buf, "%c%c", TELNET_IAC, cmd);
 			if (::sendsocket(sock, buf, 2) != 2)
-				lprintf(LOG_WARNING, "Failed to send Telnet command: %s", telnet_cmd_desc(cmd));
+				lprintf(LOG_WARNING, "%s: Failed to send Telnet command: %s", __FUNCTION__, telnet_cmd_desc(cmd));
 		}
 		else {
 			if(sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
-				sbbs->lprintf(LOG_DEBUG, __FUNCTION__ ": %s %s", telnet_cmd_desc(cmd), telnet_opt_desc(opt));
+				sbbs->lprintf(LOG_DEBUG, "%s: %s %s", __FUNCTION__, telnet_cmd_desc(cmd), telnet_opt_desc(opt));
 			sprintf(buf, "%c%c%c", TELNET_IAC, cmd, opt);
 			if (::sendsocket(sock, buf, 3) != 3)
-				sbbs->lprintf(LOG_WARNING, "Failed to send Telnet command: %s %s", telnet_cmd_desc(cmd), telnet_opt_desc(opt));
+				sbbs->lprintf(LOG_WARNING, "%s: Failed to send Telnet command: %s %s", __FUNCTION__, telnet_cmd_desc(cmd), telnet_opt_desc(opt));
 		}
 	}
 
@@ -146,8 +146,7 @@ struct TelnetProxy
 				}
 				else if (cmdlen >= 3) { /* telnet option negotiation */
 					if(sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
-						sbbs->lprintf(LOG_DEBUG, __FUNCTION__ ": %s %s",
-							telnet_cmd_desc(command), telnet_opt_desc(option));
+						sbbs->lprintf(LOG_DEBUG, "%s: %s %s", __FUNCTION__, telnet_cmd_desc(command), telnet_opt_desc(option));
 
 					if ((command == TELNET_DO) || (command == TELNET_DONT)) { /* local options */
 						if (local_option[option] != command) {
@@ -180,7 +179,7 @@ struct TelnetProxy
 							buf[7] = TELNET_IAC;
 							buf[8] = TELNET_SE;
 							if(sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
-								sbbs->lprintf(LOG_DEBUG, __FUNCTION__ ": Window Size is %u x %u", sbbs->cols, sbbs->rows);
+								sbbs->lprintf(LOG_DEBUG, "%s: Window Size is %u x %u", __FUNCTION__, sbbs->cols, sbbs->rows);
 							::sendsocket(sock, (char *)buf, 9);
 						}
 					}
