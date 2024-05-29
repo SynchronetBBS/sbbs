@@ -41,12 +41,14 @@ if (typeof(require) === "function")
 	require("text.js", "Pause");
 	require("key_defs.js", "CTRL_A");
 	require("userdefs.js", "USER_ANSI");
+	require("dd_lightbar_menu.js", "DDLightbarMenu"); // Also defines getKeyWithESCChars() and some KEY_F* keys
 }
 else
 {
 	load("text.js");
 	load("key_defs.js");
 	load("userdefs.js");
+	load("dd_lightbar_menu.js"); // Defines getKeyWithESCChars() and some KEY_F* keys
 }
  
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -109,11 +111,6 @@ var KEY_ENTER = CTRL_M;
 var XOFF = CTRL_Q;
 var XON = CTRL_S;
 var KEY_INSERT = CTRL_V;
-var KEY_F1 = "\x01F1";
-var KEY_F2 = "\x01F2";
-var KEY_F3 = "\x01F3";
-var KEY_F4 = "\x01F4";
-var KEY_F5 = "\x01F5";
 // PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
 // use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
 // defines them as KEY_PAGEUP and KEY_PAGEDN; I've used slightly different names
@@ -4425,82 +4422,6 @@ function consolePauseWithoutText()
 	bbs.replace_text(Pause, "");
 	console.pause();
 	bbs.revert_text(Pause);
-}
-
-// Inputs a keypress from the user and handles some ESC-based
-// characters such as PageUp, PageDown, and ESC.  If PageUp
-// or PageDown are pressed, this function will return the
-// string defined by KEY_PAGE_UP or EY_PAGE_DOWN,
-// respectively.  Also, F1-F5 will be returned as "\x01F1"
-// through "\x01F5", respectively.
-// Thanks goes to Psi-Jack for the original impementation
-// of this function.
-//
-// Parameters:
-//  pGetKeyMode: Optional - The mode bits for console.getkey().
-//               If not specified, K_NONE will be used.
-//  pCfgObj: The configuration object (stores the input timeout setting)
-//
-// Return value: The user's keypress
-function getKeyWithESCChars(pGetKeyMode, pCfgObj)
-{
-	var getKeyMode = (typeof(pGetKeyMode) == "number" ? pGetKeyMode : K_NONE);
-	var userInput = getUserKey(getKeyMode, pCfgObj);
-	if (userInput == KEY_ESC)
-	{
-		switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
-		{
-			case '[':
-				switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
-				{
-					case 'V':
-						userInput = KEY_PAGE_UP;
-						break;
-					case 'U':
-						userInput = KEY_PAGE_DOWN;
-						break;
-					case '1':
-						userInput = KEY_F1;
-						break;
-					case '2':
-						userInput = KEY_F2;
-						break;
-					case '3':
-						userInput = KEY_F3;
-						break;
-					case '4':
-						userInput = KEY_F4;
-						break;
-					case '5':
-						userInput = KEY_F5;
-						break;
-				}
-				break;
-			case 'O':
-				switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
-				{
-					case 'P':
-						userInput = KEY_F1;
-						break;
-					case 'Q':
-						userInput = KEY_F2;
-						break;
-					case 'R':
-						userInput = KEY_F3;
-						break;
-					case 'S':
-						userInput = KEY_F4;
-						break;
-					case 't':
-						userInput = KEY_F5;
-						break;
-				}
-			default:
-				break;
-		}
-	}
-
-	return userInput;
 }
 
 // Returns an array of dictionary filenames, with the filename pattern

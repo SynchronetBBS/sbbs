@@ -109,14 +109,12 @@ var requireFnExists = (typeof(require) === "function");
 if (requireFnExists)
 {
 	require("sbbsdefs.js", "K_NOCRLF");
-	require("dd_lightbar_menu.js", "DDLightbarMenu");
 	require("attr_conv.js", "syncAttrCodesToANSI");
 	require(js.exec_dir + "SlyEdit_Misc.js", "gUserSettingsFilename");
 }
 else
 {
 	load("sbbsdefs.js");
-	load("dd_lightbar_menu.js");
 	load("attr_conv.js");
 	load(js.exec_dir + "SlyEdit_Misc.js");
 }
