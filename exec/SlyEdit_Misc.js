@@ -1505,7 +1505,7 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 		}
 
 		// Get a key from the user (upper-case) and take action based upon it.
-		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN, this.SlyEdCfgObj);
+		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN, this.SlyEdCfgObj.inputTimeoutMS);
 		switch (retObj.lastKeypress)
 		{
 			case 'N': // Next page
@@ -4412,7 +4412,7 @@ function consolePauseWithESCChars(pCfgObj)
 	if (pausePromptText.toUpperCase().indexOf("@EXEC:") > -1)
 		pausePromptText = "\x01n\x01c[ Press a key ] ";
 	console.print("\x01n" + pausePromptText);
-	getKeyWithESCChars(K_NOSPIN|K_NOCRLF|K_NOECHO, pCfgObj);
+	getKeyWithESCChars(K_NOSPIN|K_NOCRLF|K_NOECHO, pCfgObj.inputTimeoutMS);
 }
 
 // Sets the "pause" text to an empty string, does a console.pause(), then restores the pause text.
