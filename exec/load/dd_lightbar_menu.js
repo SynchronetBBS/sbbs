@@ -383,6 +383,11 @@ var KEY_ENTER = "\x0d";
 // defines them as KEY_PAGEUP and KEY_PAGEDN (key_defs.js is loaded by
 // sbbsdefs.js).
 //var KEY_ESC = ascii(27);
+var KEY_F1 = "\x01F1";
+var KEY_F2 = "\x01F2";
+var KEY_F3 = "\x01F3";
+var KEY_F4 = "\x01F4";
+var KEY_F5 = "\x01F5";
 
 // Box-drawing/border characters: Single-line
 var UPPER_LEFT_SINGLE = "\xDA";

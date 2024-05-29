@@ -109,14 +109,12 @@ var requireFnExists = (typeof(require) === "function");
 if (requireFnExists)
 {
 	require("sbbsdefs.js", "K_NOCRLF");
-	require("dd_lightbar_menu.js", "DDLightbarMenu");
 	require("attr_conv.js", "syncAttrCodesToANSI");
 	require(js.exec_dir + "SlyEdit_Misc.js", "gUserSettingsFilename");
 }
 else
 {
 	load("sbbsdefs.js");
-	load("dd_lightbar_menu.js");
 	load("attr_conv.js");
 	load(js.exec_dir + "SlyEdit_Misc.js");
 }
@@ -1188,7 +1186,7 @@ function doEditLoop()
 		console.pause();
 		// End Temporary
 		*/
-		userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN|K_NUL, gConfigSettings);
+		userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN|K_NUL, gConfigSettings.inputTimeoutMS);
 
 		// If the cursor is at the end of the last line and the user
 		// pressed the DEL key, then treat it as a backspace.  Some
@@ -3829,7 +3827,7 @@ function displayProgramInfoBox()
 
 	console.attributes = "N";
 	// Wait for a keypress
-	getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
+	getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings.inputTimeoutMS);
 	// Erase the info box
 	var editLineIndexAtSelBoxTopRow = gEditLinesIndex-(boxTopLeftY-gEditTop);
 	if (editLineIndexAtSelBoxTopRow < 0)
@@ -4735,7 +4733,7 @@ function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
 	while(continueOn)
 	{
 		// Note: If K_UTF8 is available, getKeyWithESCChars() uses K_UTF8 to input UTF-8 text
-		var userInputChar = getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
+		var userInputChar = getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings.inputTimeoutMS);
 		switch (userInputChar)
 		{
 			case CTRL_C:
