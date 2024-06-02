@@ -1425,7 +1425,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	else
 #endif
 	{
-		SAFECOPY(startup_dir, cfg.xtrn[xtrnnum]->path);
+		cmdstr(cfg.xtrn[xtrnnum]->path, "", "", startup_dir);
 		SAFECOPY(drop_file, path);
 	}
 
