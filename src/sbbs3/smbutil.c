@@ -102,6 +102,7 @@ char *usage=
 "       u    = undelete all msgs (remove delete flag)\n"
 "       m    = maintain msg base - delete old msgs and msgs over max\n"
 "       p[k] = pack msg base (k specifies minimum packable Kbytes)\n"
+"       Z    = lock a msg base SMB header for testing, until keypress\n"
 "       L    = lock a msg base for exclusive-access/backup\n"
 "       U    = unlock a msg base\n"
 "\n"
@@ -2014,6 +2015,16 @@ int main(int argc, char **argv)
 						case 'm':
 						case 'M':
 							maint();
+							break;
+						case 'Z':
+							puts("Locking SMB header");
+							if((i=smb_locksmbhdr(&smb)) != SMB_SUCCESS) {
+								fprintf(errfp,"\n%s!smb_locksmbhdr returned %d: %s\n"
+									,beep,i,smb.last_error);
+								return EXIT_FAILURE;
+							}
+							fprintf(statfp,"\nHit enter to continue...");
+							getchar();
 							break;
 						default:
 							printf("%s",usage);
