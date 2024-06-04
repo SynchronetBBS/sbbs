@@ -599,11 +599,12 @@ void tevents_cfg()
 					uifc.helpbuf=
 						"`Timed Event Start-up Directory:`\n"
 						"\n"
-						"This is the DOS drive/directory where the event program is located.\n"
 						"If a path is specified here, it will be made the current directory\n"
 						"before the event's command line is executed.  This eliminates the need\n"
 						"for batch files that just change the current drive and directory before\n"
 						"executing the event.\n"
+						"\n"
+						"Command-line specifiers may be included in the start-up directory.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,10,"Directory"
 						,cfg.event[i]->dir,sizeof(cfg.event[i]->dir)-1,K_EDIT);
@@ -1292,11 +1293,14 @@ void xtrn_cfg(int section)
 					uifc.helpbuf=
 						"`Online Program Start-up Directory:`\n"
 						"\n"
-						"This is the DOS drive/directory where the online program is located.\n"
 						"If a path is specified here, it will be made the current directory\n"
 						"before the program's command line is executed.  This eliminates the need\n"
 						"for batch files that just change the current drive and directory before\n"
 						"executing the program.\n"
+						"\n"
+						"For BBS doors, this is often the path where the program was installed.\n"
+						"\n"
+						"Command-line specifiers may be included in the start-up directory.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,10,""
 						,cfg.xtrn[i]->path,sizeof(cfg.xtrn[i]->path)-1,K_EDIT);
