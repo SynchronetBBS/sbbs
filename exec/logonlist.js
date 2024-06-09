@@ -54,6 +54,8 @@ var days_ago = 0;
 var day = options.today || "Today";
 if(argv.indexOf('-y') >= 0)
 	days_ago = 1, day = options.yesterday || "Yesterday";
+else if(parseInt(argv[0]) > 0)
+	days_ago = parseInt(argv[0]), day = days_ago + " days ago";
 
 // Returns true on success, string on error
 function print(hdr, num, days_ago)
