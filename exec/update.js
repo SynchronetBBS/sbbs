@@ -234,7 +234,7 @@ if(!upgraded)
 	js.exec("upgrade_to_v320.js", {});
 
 if(file_date(system.ctrl_dir + "attr.cfg") > file_date(system.ctrl_dir + "attr.ini")) {
-	print("file.cfg -> file.ini");
+	print("attr.cfg -> attr.ini");
 	var f = new File(system.ctrl_dir + "attr.cfg");
 	if(!f.open("r"))
 		alert("Error " + f.error + " opening " + f.name);
