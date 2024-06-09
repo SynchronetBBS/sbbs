@@ -1151,6 +1151,7 @@ char* prep_file_desc(const char* ext, char* dest)
 	if(buf == NULL)
 		return NULL;
 	src = buf;
+	replace_chars(src, '\n', ' ');
 	strip_ctrl(src, src);
 	if(!str_is_ascii(src)) {
 		if(utf8_str_is_valid(src))
