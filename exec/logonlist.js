@@ -2,6 +2,13 @@
 
 // Install with 'jsexec logonlist install'
 
+// By dfeault, this module displays logons/callers 'today'
+
+// Options:
+// -l [count]   Display last few logons (possibly over multiple days)
+// -y           Display all logons yeterday
+// <days>       Display all logons from the specified number of days ago
+
 "use strict";
 
 require("sbbsdefs.js", 'SYS_LISTLOC');
