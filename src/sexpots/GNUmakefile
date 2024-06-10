@@ -12,7 +12,21 @@ endif
 
 vpath %.c ../comio ../sbbs3
 
-$(SEXPOTS): $(OBJS)
+
+$(SEXPOTS): git_branch.h git_hash.h $(OBJS)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(OBJS) $(XPDEV-MT_LIBS)
 
+ifneq ($(GIT), NO)
+git_hash.h: FORCE ../../.git
+	$(QUIET)git log -1 HEAD --format="#define GIT_HASH \"%h\"" > $@.tmp
+	$(QUIET)git log -1 HEAD --format="#define GIT_DATE \"%cd\"" '--date=format-local:%b %d %Y %H:%M' >> $@.tmp
+	$(QUIET)git log -1 HEAD --format="#define GIT_TIME %cd" --date=unix >> $@.tmp
+	$(QUIET)test -e $@ && diff $@.tmp $@ || cp $@.tmp $@
+	$(QUIET)rm -f $@.tmp
+
+git_branch.h: FORCE ../../.git
+	$(QUIET)echo '#define GIT_BRANCH "'`git rev-parse --abbrev-ref HEAD`\" > $@.tmp
+	$(QUIET)test -e $@ && diff $@.tmp $@ || cp $@.tmp $@
+	$(QUIET)rm -f $@.tmp
+endif
