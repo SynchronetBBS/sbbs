@@ -809,7 +809,7 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{	"note"				,USER_PROP_NOTE		 	,USER_PROP_FLAGS,		310},
 	{	"ip_address"		,USER_PROP_IPADDR	 	,USER_PROP_FLAGS,		310},
 	{	"host_name"			,USER_PROP_COMP		 	,USER_PROP_FLAGS,		310},
-	{	"computer"			,USER_PROP_COMP		 	,USER_PROP_FLAGS,		310},
+	{	"computer"			,USER_PROP_COMP		 	,0, /* Alias */			310},
 	{	"comment"			,USER_PROP_COMMENT	 	,USER_PROP_FLAGS,		310},
 	{	"netmail"			,USER_PROP_NETMAIL	 	,USER_PROP_FLAGS,		310},
 	{	"email"				,USER_PROP_EMAIL	 	,USER_PROP_FLAGS|JSPROP_READONLY,		310},
@@ -823,7 +823,7 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{	"birthday"			,USER_PROP_BIRTHDAY  	,USER_PROP_FLAGS,		31802},
 	{	"age"				,USER_PROP_AGE			,USER_PROP_FLAGS|JSPROP_READONLY,		310},
 	{	"connection"		,USER_PROP_MODEM      	,USER_PROP_FLAGS,		310},
-	{	"modem"				,USER_PROP_MODEM      	,USER_PROP_FLAGS,		310},
+	{	"modem"				,USER_PROP_MODEM      	,0, /* Alias */			310},
 	{	"screen_rows"		,USER_PROP_ROWS		 	,USER_PROP_FLAGS,		310},
 	{	"screen_columns"	,USER_PROP_COLS		 	,USER_PROP_FLAGS,		31802},
 	{	"gender"			,USER_PROP_SEX		 	,USER_PROP_FLAGS,		310},
@@ -855,9 +855,8 @@ static const char* user_prop_desc[] = {
 	,"Chat handle"
 	,"Language code (blank, if default, e.g. English)"
 	,"Sysop note"
-	,"IP address last logged on from"
-	,"Host name last logged on from"
-	,"AKA host_name"
+	,"IP address last logged-in from"
+	,"Host name last logged-in from (AKA <tt>computer</tt>)"
 	,"Sysop's comment"
 	,"External e-mail address"
 	,"Local Internet e-mail address	- <small>READ ONLY</small>"
@@ -870,8 +869,7 @@ static const char* user_prop_desc[] = {
 	,"Birth month (1-12)"
 	,"Birth day of month (1-31)"
 	,"Calculated age in years - <small>READ ONLY</small>"
-	,"Connection type (protocol)"
-	,"AKA connection"
+	,"Connection type (protocol, AKA <tt>modem</tt>)"
 	,"Terminal rows (0 = auto-detect)"
 	,"Terminal columns (0 = auto-detect)"
 	,"Gender type (e.g. M or F or any single-character)"
