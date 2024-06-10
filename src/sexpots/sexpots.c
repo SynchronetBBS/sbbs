@@ -1364,7 +1364,7 @@ BOOL hangup_call(COM_HANDLE com_handle)
 {
 	time_t	start;
 	int		attempt;
-	int		mdm_status;
+	int		mdm_status = -1;
 
 	if(dcd_ignore || !carrier_detect(com_handle))/* DCD already low */
 		return TRUE;
