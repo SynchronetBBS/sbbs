@@ -17,6 +17,8 @@ function add(obj)
 		obj = {};
 	if(obj.time === undefined)
 		obj.time = time();
+	if(obj.protocol === undefined)
+		obj.protocol = client.protocol;
 	if(obj.user === undefined) {
 		obj.user = JSON.parse(JSON.stringify(user));
 		obj.user.limits = undefined;

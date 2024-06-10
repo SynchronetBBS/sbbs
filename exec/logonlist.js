@@ -83,7 +83,7 @@ function print(hdr, num, days_ago)
 			,(system.settings & SYS_LISTLOC) ? record.user.location : record.user.note
 			,date.getHours()
 			,date.getMinutes()
-			,record.user.connection
+			,record.protocol || record.user.connection
 			,record.user.stats.logons_today
 			));
 	}
