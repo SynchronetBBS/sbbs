@@ -957,6 +957,13 @@ char* chr(BYTE ch, char* str, size_t size)
 	return str;
 }
 
+void sendbuf(SOCKET sock, void* buf, int len)
+{
+	int wr = sendsocket(sock, buf, len);
+	if (wr != len)
+		lprintf(LOG_ERR, "!send returned %d instead of %d", wr, len);
+}
+
 /****************************************************************************/
 /****************************************************************************/
 void input_thread(void* arg)
@@ -973,8 +980,8 @@ void input_thread(void* arg)
 		if(com_debug)
 			lprintf(LOG_DEBUG, "Received char from COM port (%s): %s", com_dev, chr(ch, dbg, sizeof(dbg)));
 		if(telnet && ch==TELNET_IAC)
-			sendsocket(sock, &ch, sizeof(ch));	/* escape Telnet IAC char (255) when in telnet mode */
-		sendsocket(sock, &ch, sizeof(ch));
+			sendbuf(sock, &ch, sizeof(ch));	/* escape Telnet IAC char (255) when in telnet mode */
+		sendbuf(sock, &ch, sizeof(ch));
 		bytes_received++;
 	}
 	lprintf(LOG_DEBUG,"Input thread terminated");
@@ -1061,7 +1068,7 @@ void ident_server_thread(void* arg)
 						/* example response: "40931,23:USERID:UNIX:cyan" */
 						SAFEPRINTF4(response,"%s:%s:%s %s\r\n"
 							,request, ident_response, cid_number, cid_name);
-						sendsocket(client_socket,response,strlen(response));
+						sendbuf(client_socket,response,strlen(response));
 					} else
 						lprintf(LOG_DEBUG,"ident recv=%d %d", rd, ERROR_VALUE);
 				}
@@ -1077,19 +1084,19 @@ void ident_server_thread(void* arg)
 static void send_telnet_cmd(uchar cmd, uchar opt)
 {
 	char buf[16];
-	
+
 	if(cmd<TELNET_WILL) {
 		if(debug_telnet)
 			lprintf(LOG_INFO,"TX Telnet command: %s"
 				,telnet_cmd_desc(cmd));
 		sprintf(buf,"%c%c",TELNET_IAC,cmd);
-		sendsocket(sock,buf,2);
+		sendbuf(sock,buf,2);
 	} else {
 		if(debug_telnet)
 			lprintf(LOG_INFO,"TX Telnet command: %s %s"
 				,telnet_cmd_desc(cmd), telnet_opt_desc(opt));
 		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
-		sendsocket(sock,buf,3);
+		sendbuf(sock,buf,3);
 	}
 }
 
@@ -1164,7 +1171,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 							,TELNET_IAC,TELNET_SE);
 						if(debug_telnet)
 							lprintf(LOG_INFO,"TX Telnet command: Terminal Type is %s", termtype);
-						sendsocket(sock,buf,len);
+						sendbuf(sock,buf,len);
 /*						request_telnet_opt(TELNET_WILL, TELNET_TERM_SPEED); */
 					} else if(option==TELNET_TERM_SPEED && telnet_cmd[3]==TELNET_TERM_SEND) {
 						char buf[sizeof(termspeed) + 32];
@@ -1175,7 +1182,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 							,TELNET_IAC,TELNET_SE);
 						if(debug_telnet)
 							lprintf(LOG_INFO,"TX Telnet command: Terminal Speed is %s", termspeed);
-						sendsocket(sock,buf,len);
+						sendbuf(sock,buf,len);
 					}
 
 					telnet_cmdlen=0;
@@ -1211,7 +1218,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 										,TELNET_IAC,TELNET_SE);
 									if(debug_telnet)
 										lprintf(LOG_INFO,"TX Telnet command: Location is %s %s", cid_number, cid_name);
-									sendsocket(sock,buf,len);
+									sendbuf(sock,buf,len);
 								} else
 									send_telnet_cmd(telnet_opt_ack(command),option);
 								break;
