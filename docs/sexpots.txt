@@ -1,7 +1,7 @@
      Synchronet External Plain Old Telephone System (POTS) Support
      -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
                             a.k.a. SEXPOTS
-                     Copyright 2014 Rob Swindell
+                     Copyright 2024 Rob Swindell
 
 For current documentation, see http://wiki.synchro.net/util:sexpots
 
@@ -61,8 +61,8 @@ http://www.fsf.org/licensing/licenses/gpl.txt
 with portions licensed under the GNU Lesser General Public License (LGPL)
 http://www.fsf.org/licensing/licenses/lgpl.txt.
 
-You can find the current source code (in C) in the CVS repository at
-cvs.synchro.net.
+You can find the current source code (in C) in the Git repository at
+gitlab.synchro.net.
 
 The latest and greatest build will be included in Synchronet-Win32 releases.
 You should be able to find/download the latest general release of SEXPOTS
@@ -99,6 +99,10 @@ NT Service Options:
     -remove               remove NT service
     -enable               enable NT service (auto-start during boot)
     -disable              disable NT service
+
+Additional options for Unix versions:
+
+    -syslog               log to syslog rather than stdout/err
 
 
 Installation
@@ -175,9 +179,9 @@ Example .ini file (with default values given):
     EnableCallerID = AT+VCID=1  ; Enable Caller-ID support (or try AT#CID=1)
     Timeout = 5                 ; Seconds to wait for a response from modem
     ReInit = 60                 ; Minutes between re-init while waiting for call
-    Answer = ATA		; Answer command (for manual answer mode)
-    Ring = RING			; Ring indication string
-    ManualAnswer = FALSE	; Set to TRUE to disable auto-answer
+    Answer = ATA                ; Answer command (for manual answer mode)
+    Ring = RING                 ; Ring indication string
+    ManualAnswer = FALSE        ; Set to TRUE to disable auto-answer
 
     [TCP]
     Host = localhost            ; Hostname or IP address of TCP server
@@ -222,12 +226,6 @@ mechanism (use the Telnet "Location" option instead).
 Using Synchronet v3.14a or earlier, the Synchronet Telnet Server will detect
 the caller as just another Telnet connection, but comming in from the local
 network interface (IP address).
-
-
-Linux/Unix Version
-------------------
-There is a preliminary *nix port of SEXPOTS in cvs.synchro.net, but it's not
-being distributed or supported at this time.
 
 
 Terminology
