@@ -35,6 +35,8 @@
 
 /* sbbs */
 #include "telnet.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 /* constants */
 #define NAME					"SEXPOTS"
@@ -1734,7 +1736,8 @@ int main(int argc, char** argv)
 		,&__DATE__[7]
 		);
 
-	fprintf(stdout,"%s\n\n", banner);
+	fprintf(stdout,"%s\n", banner);
+	fprintf(stdout,"https://gitlab.synchro.net - %s/%s %s\n\n", GIT_BRANCH, GIT_HASH, GIT_DATE);
 
 	/**********************/
 	/* Parse command-line */
