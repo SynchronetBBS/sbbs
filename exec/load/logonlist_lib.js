@@ -62,7 +62,7 @@ function get(num, days_ago)
 		var more = json_lines.get(filename(days_ago), num);
 		if(typeof more !== 'object')
 			break;
-		result.push.apply(result, more);
+		result.unshift.apply(result, more);
 		if(num < 0)
 			num += more.length;
 		else
