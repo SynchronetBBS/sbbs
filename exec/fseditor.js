@@ -2033,7 +2033,7 @@ console.write("\033[=1M");
 console.clear();
 console.writeln("Opening " + input_filename);
 var f=new File(input_filename);
-if(f.open("r",false)) {
+if(f.open("rb",false)) {
 	ypos=0;
 	if(use_quotes) {
 		var quote_width = console.screen_columns - 1;
