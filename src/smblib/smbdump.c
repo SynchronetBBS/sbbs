@@ -103,6 +103,12 @@ str_list_t smb_msghdr_str_list(smbmsg_t* msg)
 					,smb_hfieldtype(msg->hfield[i].type)
 					,ctime_r(&tt, tmp));
 				break;
+			case SUBJECT:
+				if(msg->hdr.type == SMB_MSG_TYPE_FILE) {
+					strListAppendFormat(&list, HFIELD_NAME_FMT "%s", "Filename", msg->hfield_dat[i]);
+					break;
+				}
+				// Fall-through
 			default:
 				strListAppendFormat(&list, HFIELD_NAME_FMT "%s"
 					,smb_hfieldtype(msg->hfield[i].type)
