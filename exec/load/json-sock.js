@@ -45,7 +45,7 @@ Socket.prototype.recvJSON = function() {
 			}
 		} 
 		catch(e) {
-			log(LOG_ERROR,'recvJSON(): ' + e + format(" '%s'", packet));
+			log(LOG_ERROR,format("recvJSON(%s): %s '%s'", this.descriptor, e, packet));
 		}
 	}
 	return packet;
