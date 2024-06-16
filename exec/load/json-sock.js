@@ -45,7 +45,7 @@ Socket.prototype.recvJSON = function() {
 			}
 		} 
 		catch(e) {
-			log(LOG_ERROR,e);
+			log(LOG_ERROR,'recvJSON(): ' + e + format(" '%s'", packet));
 		}
 	}
 	return packet;
