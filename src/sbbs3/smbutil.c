@@ -19,7 +19,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define SMBUTIL_VER "3.19"
+#define SMBUTIL_VER "3.20"
 char	compiler[32];
 
 const char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
@@ -85,8 +85,8 @@ char *usage=
 "usage: smbutil [-opts] cmd <filespec.shd>\n"
 "\n"
 "cmd:\n"
-"       l[n] = list msgs starting at number n\n"
-"       r[n] = read msgs starting at number n\n"
+"       l[n] = list msgs/files starting at number n\n"
+"       r[n] = read msgs/files starting at number n\n"
 "       x[n] = dump msg index at number n\n"
 "       v[n] = view msg headers starting at number n\n"
 "       V[n] = view msg headers starting at number n verbose\n"
@@ -97,10 +97,10 @@ char *usage=
 "       s    = display msg base status\n"
 "       c    = change msg base status\n"
 "       R    = re-initialize/repair SMB/status headers\n"
-"       D    = delete and remove all msgs (not reversable)\n"
-"       d    = flag all msgs for deletion\n"
-"       u    = undelete all msgs (remove delete flag)\n"
-"       m    = maintain msg base - delete old msgs and msgs over max\n"
+"       D    = delete and remove all msgs/files (not reversable)\n"
+"       d    = flag all msgs/files for deletion\n"
+"       u    = undelete all msgs/files (remove delete flag)\n"
+"       m    = maintain base - delete old msgs/files and msgs over max\n"
 "       p[k] = pack msg base (k specifies minimum packable Kbytes)\n"
 "       Z    = lock a msg base SMB header for testing, until keypress\n"
 "       L    = lock a msg base for exclusive-access/backup\n"
@@ -396,19 +396,26 @@ void showstatus(void)
 			,beep,i,smb.last_error);
 		return; 
 	}
-	printf("last_msg        =%"PRIu32"\n"
-		   "total_msgs      =%"PRIu32"\n"
-		   "header_offset   =%"PRIu32"\n"
-		   "max_crcs        =%"PRIu32"\n"
-		   "max_msgs        =%"PRIu32"\n"
-		   "max_age         =%u\n"
-		   "attr            =%04Xh\n"
+	printf("%-15s = %"PRIu32"\n"
+		   "%-15s = %"PRIu32"\n"
+		   "%-15s = %"PRIu32"\n"
+		   "%-15s = %"PRIu32"\n"
+		   "%-15s = %"PRIu32"\n"
+		   "%-15s = %u\n"
+		   "%-15s = %04Xh\n"
+		   ,smb.status.attr & SMB_FILE_DIRECTORY ? "last_file" : "last_msg"
 		   ,smb.status.last_msg
+		   ,smb.status.attr & SMB_FILE_DIRECTORY ? "total_files" : "total_msgs"
 		   ,smb.status.total_msgs
+		   ,"header_offset"
 		   ,smb.status.header_offset
+		   ,"max_crcs"
 		   ,smb.status.max_crcs
+		   ,smb.status.attr & SMB_FILE_DIRECTORY ? "max_files" : "max_msgs"
 		   ,smb.status.max_msgs
+		   ,"max_age"
 		   ,smb.status.max_age
+		   ,"attr"
 		   ,smb.status.attr
 		   );
 }
