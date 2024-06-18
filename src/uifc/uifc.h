@@ -88,6 +88,9 @@
 #define MSK_CUT 			0x40000000
 #define MSK_PASTE			0x50000000	/* Overwrite selected item with previously copied item */
 #define MSK_EDIT			0x60000000
+#define MSK_TAG				0x70000000
+
+#define MSK_TAGALL			(MSK_TAG | MSK_OFF)
 
 /* Legacy terms (get/put instead of copy/paste) */
 #define MSK_GET		MSK_COPY
@@ -140,6 +143,7 @@
 #define WIN_DYN 	(1LL<<16) /* Dynamic window - return at least every second */
 #define WIN_CUT		(1LL<<17)	/* Allow ^X (cut) a menu item */
 #define WIN_HLP 	(1LL<<17) /* Parse 'Help codes' - showbuf() */
+#define WIN_TAG		(1LL<<18)	/* Allow space bar to toggle tagged options */
 #define WIN_PACK 	(1LL<<18) /* Pack text in window (No padding) - showbuf() */
 #define WIN_IMM 	(1LL<<19) /* Draw window and return immediately */
 #define WIN_FAT		(1LL<<20)	/* Do not pad outside borders */

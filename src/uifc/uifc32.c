@@ -1222,6 +1222,10 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 				case DEL:
 					gotkey=CIO_KEY_DC;	/* delete */
 					break;
+				case CTRL_A:
+					if(mode & WIN_TAG)
+						return MSK_TAGALL;
+					break;
 				case CTRL_B:
 					if(!(api->mode&UIFC_NOCTRL))
 						gotkey=CIO_KEY_HOME;
@@ -1730,6 +1734,10 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 				}
 				else
 					switch(gotkey) {
+						case ' ':
+							if(mode & WIN_TAG)
+								return MSK_TAG | (*cur);
+							break;
 						case CR:
 							if(!opts)
 								break;
@@ -1878,7 +1886,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *str,
 	int max, int kmode)
 {
-	struct vmem_cell shade[MAX_COLS], save_buf[MAX_COLS*4], in_win[MAX_COLS*3];
+	struct vmem_cell shade[MAX_COLS], save_buf[MAX_COLS*4], in_win[MAX_COLS*3], save_bottomline[MAX_COLS];
 	int	width;
 	int height=3;
 	int i,plen,slen,j;
@@ -1933,9 +1941,11 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 		left=-(s_left)+1;
 	if(top<0)
 		top=0;
-	if(mode&WIN_SAV)
+	if(mode&WIN_SAV) {
 		vmem_gettext(s_left+left,s_top+top,s_left+left+width+(shadow*2)-1
 			,s_top+top+height+(!shadow),save_buf);
+		vmem_gettext(1, api->scrn_len + 1, api->scrn_width, api->scrn_len + 1, save_bottomline);
+	}
 	if(mode&WIN_ORG) { /* Clear around menu */
 		if(top)
 			vmem_puttext(1,2,api->scrn_width,s_top+top-1,blk_scrn);
@@ -2032,9 +2042,11 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 		api->bottomline(WIN_COPY|WIN_CUT|WIN_PASTE);
 	textattr(api->lclr|(api->bclr<<4));
 	i=ugetstr(s_left+left+plen+offset,s_top+top+tbrdrwidth,iwidth,str,max,kmode,NULL);
-	if(mode&WIN_SAV)
+	if(mode&WIN_SAV) {
 		vmem_puttext(s_left+left,s_top+top,s_left+left+width+(shadow*2)-1
 			,s_top+top+height+(!shadow),save_buf);
+		vmem_puttext(1, api->scrn_len + 1, api->scrn_width, api->scrn_len + 1, save_bottomline);
+	}
 	free(prompt);
 	return(i);
 }
@@ -2542,6 +2554,12 @@ void bottomline(uifc_winmode_t mode)
 	if(mode&WIN_EDIT) {
 		i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"F2 ");
 		i += uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Edit Item  ");
+	}
+	if(mode&WIN_TAG) {
+		i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"Space ");
+		i += uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Tag Item  ");
+		i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"^A ");
+		i += uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Tag All  ");
 	}
 	if(mode&WIN_COPY) {
 		if(api->mode&UIFC_NOCTRL) {
