@@ -30,6 +30,10 @@ const MSK_COPY 	= 0x30000000;
 const MSK_CUT 	= 0x40000000;
 const MSK_PASTE = 0x50000000;
 const MSK_EDIT 	= 0x60000000;
+const MSK_TAG	= 0x70000000;
+
+const MSK_TAGALL = MSK_TAG | MSK_OFF;
+
 /* Dont forget, negative return values are used for extended keys (if WIN_EXTKEYS used)! */
 const MAX_OPLN	= 75;	/* Maximum length of each option per menu call */
 const MAX_BUFS	= 7;	/* Maximum number of screen buffers to save */
@@ -69,7 +73,9 @@ const WIN_CHE 		= (1<<14);	/* Stay active after escape if changes */
 const WIN_XTR 		= (1<<15);	/* Add extra line at end for inserting at end */
 const WIN_DYN 		= (1<<16);	/* Dynamic window - return at least every second */
 const WIN_CUT		= (1<<17);	/* Allow ^X (cut) a menu item */
-const WIN_PACK 		= (1<<18);	/* Pack text in window (No padding) */
+const WIN_HLP		= (1<<17);	/* showbuf(): Parse help text codes */
+const WIN_TAG		= (1<<18);	/* Allow space bar to toggle tagged options */
+const WIN_PACK 		= (1<<18);	/* showbuf(): Pack text in window (No padding) */
 const WIN_IMM 		= (1<<19);	/* Draw window and return immediately */
 const WIN_FAT		= (1<<20);	/* Do not pad outside borders */
 const WIN_REDRAW	= (1<<21);	/* Force redraw on dynamic window */
@@ -87,7 +93,6 @@ const WIN_POP		= (1<<30);	/* Exit the list. Act as though ESC was pressed. */
 								/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
 const WIN_SEL		= (1<<31);	/* Exit the list. Act as though ENTER was pressed. */
 								/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
-
 const WIN_MID		= WIN_L2R|WIN_T2B;/* Place window in middle of screen */
 
 const SCRN_TOP		= 3;
