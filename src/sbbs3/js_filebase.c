@@ -1169,6 +1169,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	file_t		file;
 	client_t*	client = NULL;
 	bool		use_diz_always = false;
+	bool		use_diz_never = false;
 	jsrefcount	rc;
 
 	ZERO_VAR(file);
@@ -1196,7 +1197,10 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	if(argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
-		use_diz_always = JSVAL_TO_BOOLEAN(argv[argn]);
+		if(JSVAL_TO_BOOLEAN(argv[argn]))
+			use_diz_always = true;
+		else
+			use_diz_never = true;
 		argn++;
 	}
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn]) && !JSVAL_IS_NULL(argv[argn])) {
@@ -1211,6 +1215,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	if(file.name != NULL) {
 		if((extdesc == NULL	|| use_diz_always == true)
+			&& !use_diz_never
 			&& is_valid_dirnum(scfg, file.dir)
 			&& (scfg->dir[file.dir]->misc & DIR_DIZ)) {
 			get_diz(scfg, &file, &extdesc);
@@ -1699,8 +1704,8 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"add",				js_add_file,		1, JSTYPE_BOOLEAN
-		,JSDOCSTR("<i>object</i> file-meta-object [,<i>bool</i> use_diz_always=false] [,<i>object</i> client=none]")
-		,JSDOCSTR("Add a file to the file base, returning <tt>true</tt> on success or <tt>false</tt> upon failure.")
+		,JSDOCSTR("<i>object</i> file-meta-object [,<i>bool</i> use_diz=config] [,<i>object</i> client=none]")
+		,JSDOCSTR("Add a file to the file base, returning <tt>true</tt> on success or <tt>false</tt> upon failure.  Pass <tt>use_diz</tt> parameter as <tt>true</tt> or <tt>false</tt> to override directory configuration with regards to extracting/using description files (e.g. FILE_ID.DIZ) from archive (e.g. ZIP) files.")
 		,31900
 	},
 	{"remove",			js_remove_file,		2, JSTYPE_BOOLEAN
