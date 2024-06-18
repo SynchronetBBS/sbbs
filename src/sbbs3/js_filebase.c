@@ -1704,8 +1704,8 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"add",				js_add_file,		1, JSTYPE_BOOLEAN
-		,JSDOCSTR("<i>object</i> file-meta-object [,<i>bool</i> use_diz=config] [,<i>object</i> client=none]")
-		,JSDOCSTR("Add a file to the file base, returning <tt>true</tt> on success or <tt>false</tt> upon failure.  Pass <tt>use_diz</tt> parameter as <tt>true</tt> or <tt>false</tt> to override directory configuration with regards to extracting/using description files (e.g. FILE_ID.DIZ) from archive (e.g. ZIP) files.")
+		,JSDOCSTR("<i>object</i> file-meta-object [,<i>bool</i> use_diz=true-if-no-extdesc] [,<i>object</i> client=none]")
+		,JSDOCSTR("Add a file to the file base, returning <tt>true</tt> on success or <tt>false</tt> upon failure.  Pass <tt>use_diz</tt> parameter as <tt>true</tt> or <tt>false</tt> to force or prevent the extraction/import of description file (e.g. FILE_ID.DIZ) within archive (e.g. ZIP) file.")
 		,31900
 	},
 	{"remove",			js_remove_file,		2, JSTYPE_BOOLEAN
