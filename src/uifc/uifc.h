@@ -164,6 +164,7 @@
 								/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
 #define WIN_LEFTKEY		(1LL<<32)	/* Display left-arrow-key support indicator */
 #define WIN_RIGHTKEY	(1LL<<33)	/* Display right-arrow-key support indicator */
+#define WIN_BLANKOPTS	(1LL<<34)	/* Blank options are allowed (terminate list on NULL only) */
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
 #define WIN_GET	WIN_COPY

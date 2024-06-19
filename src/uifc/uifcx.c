@@ -198,7 +198,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 		cur = &tmpcur;
 
     for(opts=0;opts<MAX_OPTS;opts++)
-    	if(option[opts]==NULL || option[opts][0]==0)
+		if(option[opts]==NULL || (!(mode&WIN_BLANKOPTS) && option[opts][0]==0))
     		break;
 
     if((*cur)>=opts)

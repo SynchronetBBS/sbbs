@@ -620,6 +620,8 @@ inactive_win(struct vmem_cell *buf, int left, int top, int right, int bottom, in
 	vmem_puttext(left, top, right, bottom, buf);
 }
 
+static inline char* non_null_str(char* str) { return str == NULL ? "" : str; }
+
 /****************************************************************************/
 /* General menu function, see uifc.h for details.							*/
 /****************************************************************************/
@@ -688,7 +690,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 	}
 	/* Count the options */
 	while (option != NULL && opts < MAX_OPTS) {
-		if (option[opts] == NULL || option[opts][0] == 0)
+		if (option[opts] == NULL || (!(mode&WIN_BLANKOPTS) && option[opts][0] == 0))
 			break;
 		else opts++;
 	}
@@ -1286,7 +1288,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							for(i=1;i<optheight-vbrdrsize;i++)    /* re-display options */
 								uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+i
 									,lclr|(bclr<<4)
-									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
+									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+									,non_null_str(option[i]));
 							(*cur)=0;
 							if(bar)
 								(*bar)=0;
@@ -1323,7 +1326,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+j
 									,i==opts-1 ? lbclr
 										: lclr|(bclr<<4)
-									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
+									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+									,non_null_str(option[i]));
 							(*cur)=opts-1;
 							if(bar)
 								(*bar)=optheight-vbrdrsize-1;
@@ -1364,7 +1368,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								,s_left+left+width-rbrdrwidth-1,s_top+top+height-bbrdrwidth-1,1);
 							uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth
 								,lbclr
-								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[*cur]);
+								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+								,non_null_str(option[*cur]));
 						}
 						else {
 							vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
@@ -1399,7 +1404,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+j
 								,i==*cur ? lbclr
 									: lclr|(bclr<<4)
-								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
+								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+								,non_null_str(option[i]));
 						break;
 					case CIO_KEY_NPAGE:	/* PgDn */
 						if(!opts)
@@ -1425,7 +1431,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+j
 								,i==*cur ? lbclr
 									: lclr|(bclr<<4)
-								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
+								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+								,non_null_str(option[i]));
 						break;
 					case CIO_KEY_END:	/* end */
 						if(!opts)
@@ -1440,7 +1447,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+j
 									,i==opts-1 ? lbclr
 										: lclr|(bclr<<4)
-									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
+									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+									,non_null_str(option[i]));
 							(*cur)=opts-1;
 							y=top+optheight-bbrdrwidth-1;
 							if(bar)
@@ -1479,7 +1487,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							for(i=1;i<height-vbrdrsize;i++)    /* re-display options */
 								uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+i
 									,lclr|(bclr<<4)
-									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
+									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+									,non_null_str(option[i]));
 							(*cur)=0;
 							y=top+tbrdrwidth;
 							if(bar)
@@ -1526,7 +1535,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							/* gotoxy(1,1); cprintf("\rdebug: %4d ",__LINE__); */
 							uprintf(s_left+left+lbrdrwidth+2,s_top+top+height-bbrdrwidth-1
 								,lbclr
-								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[*cur]);
+								,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+								,non_null_str(option[*cur]));
 						}
 						else {
 							vmem_gettext(s_left+lbrdrwidth+2+left,s_top+y
@@ -1676,7 +1686,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 									uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+j
 										,i==(*cur) ? lbclr
 											: lclr|(bclr<<4)
-										,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
+										,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+										,non_null_str(option[i]));
 								y=top+height-bbrdrwidth-1;
 								if(bar)
 									(*bar)=optheight-vbrdrsize-1;
@@ -1692,12 +1703,13 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								putch(api->chars->down_arrow);	   /* put the down arrow */
 								uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth
 									,lbclr
-									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[(*cur)]);
+									,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+									,non_null_str(option[(*cur)]));
 								for(i=1;i<height-vbrdrsize;i++) 	/* re-display options */
 									uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+i
 										,lclr|(bclr<<4)
 										,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
-										,option[(*cur)+i]);
+										,non_null_str(option[(*cur)+i]));
 								y=top+tbrdrwidth;
 								if(bar)
 									(*bar)=0;
@@ -1799,7 +1811,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 													uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+j
 														,i==(*cur) ? lbclr
 															: lclr|(bclr<<4)
-														,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[i]);
+														,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+														,non_null_str(option[i]));
 												y=top+height-bbrdrwidth-1;
 												if(bar)
 													(*bar)=optheight-vbrdrsize-1;
@@ -1815,12 +1828,13 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 												putch(api->chars->down_arrow);	   /* put the down arrow */
 												uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth
 													,lbclr
-													,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2,option[(*cur)]);
+													,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
+													,non_null_str(option[(*cur)]));
 												for(i=1;i<height-vbrdrsize;i++) 	/* re-display options */
 													uprintf(s_left+left+lbrdrwidth+2,s_top+top+tbrdrwidth+i
 														,lclr|(bclr<<4)
 														,"%-*.*s",width-hbrdrsize-2,width-hbrdrsize-2
-														,option[(*cur)+i]);
+														,non_null_str(option[(*cur)+i]));
 												y=top+tbrdrwidth;
 												if(bar)
 													(*bar)=0;
@@ -2558,8 +2572,8 @@ void bottomline(uifc_winmode_t mode)
 	if(mode&WIN_TAG) {
 		i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"Space ");
 		i += uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Tag Item  ");
-		i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"^A ");
-		i += uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"Tag All  ");
+		i += uprintf(i,api->scrn_len+1,api->bclr|(api->cclr<<4),"^A");
+		i += uprintf(i,api->scrn_len+1,BLACK|(api->cclr<<4),"ll  ");
 	}
 	if(mode&WIN_COPY) {
 		if(api->mode&UIFC_NOCTRL) {
