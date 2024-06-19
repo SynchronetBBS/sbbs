@@ -903,7 +903,7 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 	} else {
 		rc=JS_SUSPENDREQUEST(cx);
-		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(uifc->list(mode,left,top,width,(int*)dptr,(int*)bptr,title,opts)));
+		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(uifc->list(mode|WIN_BLANKOPTS,left,top,width,(int*)dptr,(int*)bptr,title,opts)));
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	strListFree(&opts);
