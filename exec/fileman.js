@@ -14,6 +14,10 @@ if(!uifc.init("Synchronet File Manager")) {
 }
 js.on_exit("uifc.bail()");
 
+// TODO: make these configurable
+var uploader = system.operator;
+var use_diz = false;
+
 const main_ctx = new uifc.list.CTX;
 while(!js.terminated) {
 	const items = [
@@ -112,6 +116,8 @@ function search(prompt, func)
 	uifc.pop();
 	if(found.length)
 		list_files(found.length + " " + (pattern || "offline") + " files found", found);
+	else
+		uifc.msg("No files found");
 }
 
 function find_filename(dircode, pattern)
@@ -226,12 +232,16 @@ function browse_dir(dircode)
 	list_files(file_area.dir[dircode].name + format(" Files (%u)", list.length), list, dircode);
 }
 
+function find_file(fname, list)
+{
+	for(var i = 0; i < list.length; ++i)
+		if(list[i].name == fname)
+			return i;
+	return -1;
+}
+
 function list_files(title, list, dircode)
 {
-	if(!list || !list.length) {
-		uifc.msg("No files in " + title);
-		return;
-	}
 	const wide_screen = uifc.screen_width >= 100;
 	const ctx = new uifc.list.CTX;
 	while(!js.terminated) {
@@ -249,9 +259,13 @@ function list_files(title, list, dircode)
 				,tagged ? 2:0
 				,list[i].tagged ? ascii(251):""
 				,namelen, wide_screen ? list[i].name : FileBase().format_name(list[i].name)
-				,list[i].desc || list[i].extdesc || ""));
-		var result = uifc.list(WIN_SAV | WIN_RHT | WIN_ACT | WIN_DEL | WIN_DELACT | WIN_TAG
-			,title, items, ctx);
+				,list[i].desc || ""));
+		var win_mode = WIN_SAV | WIN_RHT | WIN_ACT | WIN_DEL | WIN_DELACT | WIN_TAG;
+		if(dircode)
+			win_mode |= WIN_INS | WIN_INSACT;
+		if(!tagged)
+			win_mode |= WIN_EDIT;
+		var result = uifc.list(win_mode, title, items, ctx);
 		if(result == -1)
 			break;
 		if(result == MSK_TAGALL) {
@@ -269,6 +283,9 @@ function list_files(title, list, dircode)
 					list[result].tagged = !list[result].tagged;
 					++ctx.cur;
 					++ctx.bar;
+					break;
+				case MSK_INS:
+					add_files(list, dircode);
 					break;
 				case MSK_DEL:
 					var opts = [ "No", "Yes" ];
@@ -296,15 +313,76 @@ function list_files(title, list, dircode)
 							list.splice(result, /* deleteCount: */1);
 					}
 					break;
+				case MSK_EDIT:
+					var orig_name = file.name;
+					if(edit_filename(file))
+						save(file, dircode, orig_name);
+					break;
 			}
 			continue;
 		}
 		if(tagged > 0) {
 			multi(list, dircode, tagged);
 		} else { // Single-file selected
-			var file = list[result];
-			if(edit(file, dircode)) // file (re)moved?
+			if(edit(list[result], dircode)) // file (re)moved?
 				list.splice(result, /* deleteCount: */1);
+		}
+	}
+}
+
+function add_files(list, dircode)
+{
+	var all_files = directory(file_area.dir[dircode].path + "*");
+	var new_files = [];
+	for(var i in all_files) {
+		if(!file_isdir(all_files[i])) {
+			var fname = file_getname(all_files[i]);
+			if(find_file(fname, list) < 0)
+				new_files.push(fname);
+		}
+	}
+	if(new_files.length < 1) {
+		uifc.msg("No new files to add in " + file_area.dir[dircode].path);
+		return;
+	}
+	const ctx = new uifc.list.CTX;
+	var tagged = [];
+	while(!js.terminated && new_files.length > 0) {
+		const new_title = new_files.length + " New Files in " + file_area.dir[dircode].path;
+		var opts = [];
+		for(var i in new_files)
+			opts[i] = format("%-*s%s", tagged.length ? 2:0, tagged.indexOf(new_files[i]) >= 0 ? ascii(251):"", new_files[i]);
+		var choice = uifc.list(WIN_SAV|WIN_ACT|WIN_TAG, new_title, opts, ctx);
+		if(choice < 0)
+			break;
+		if(choice == MSK_TAGALL) {
+			if(tagged.length)
+				tagged = [];
+			else
+				for(var i in new_files)
+					tagged[i] = new_files[i];
+			continue;
+		}
+		if((choice & MSK_ON) == MSK_TAG) {
+			choice &= MSK_OFF;
+			var i = tagged.indexOf(new_files[choice]);
+			if(i >= 0)
+				tagged.splice(i, /* deleteCount: */1);
+			else
+				tagged.push(new_files[choice]);
+			++ctx.cur;
+			++ctx.bar;
+			continue;
+		}
+		var files = tagged;
+		if(!files.length)
+			files = [new_files[choice]];
+		for(var i in files) {
+			var new_file = add_file(files[i], dircode);
+			if(!new_file)
+				break;
+			list.push(new_file);
+			new_files.splice(i, /* deleteCount: */1);
 		}
 	}
 }
@@ -342,7 +420,7 @@ function remove(file, del, dircode)
 	return result;
 }
 
-function dump(file, dircode)
+function view_details(file, dircode)
 {
 	if(!dircode)
 		dircode = file.dircode;
@@ -351,10 +429,10 @@ function dump(file, dircode)
 		uifc.msg("Unable to open base: " + dircode);
 		return;
 	}
-//	file = base.get(file, FileBase.DETAIL.AUXDATA);
+	var dir = file_area.dir[dircode];
 	var buf = [];
-	if(file.extdesc)
-		buf = buf.concat(truncsp(file.extdesc).split('\n'));
+	buf.push(format("Library          " + file_area.lib[dir.lib_name].description));
+	buf.push(format("Directory        " + dir.description));
 	buf.push(format("Size             " + file_size_float(base.get_size(file), 1, 1)));
 	buf.push(format("Time             " + system.timestr(base.get_time(file))));
 	uifc.showbuf(WIN_MID|WIN_HLP, base.get_path(file), buf.concat(base.dump(file.name)).join('\n'));
@@ -396,12 +474,49 @@ function confirm(prompt)
 	return choice;
 }
 
+function edit_filename(file)
+{
+	var name = uifc.input(WIN_MID|WIN_SAV, "Filename", file.name, 100, K_EDIT);
+	if(!name)
+		return false;
+	name = file_getname(name);
+	if(name == file.name)
+		return false;
+	file.name = name;
+	return true;
+}
+
+function edit_desc(file)
+{
+	var desc = uifc.input(WIN_MID|WIN_SAV, "Description", file.desc, LEN_FDESC, K_EDIT);
+	if(desc !== undefined)
+		file.desc = desc;
+}
+
+function edit_uploader(file)
+{
+	var from = uifc.input(WIN_MID|WIN_SAV, "Uploader", file.from, LEN_ALIAS, K_EDIT);
+	if(from !== undefined)
+		file.from = from;
+	return file.from;
+}
+
+function edit_cost(file)
+{
+	var cost = uifc.input(WIN_MID|WIN_SAV, "Download Cost (in credits)", String(file.cost), 15, K_NUMBER|K_EDIT);
+	if(cost !== undefined)
+		file.cost = cost;
+}
+
 function edit(file, dircode)
 {
+	file.extdesc = get_extdesc(file, dircode);
 	const ctx = new uifc.list.CTX;
 	var orig = JSON.parse(JSON.stringify(file));
 	while(!js.terminated) {
 		var opts = [
+			"Move File...",
+			"Remove File...",
 			"View Details...",
 			"View Archive...",
 			"Filename: " + file.name,
@@ -409,51 +524,30 @@ function edit(file, dircode)
 			"Uploader: " + (file.from || ""),
 			"Added: " + system.timestr(file.added).slice(4),
 			"Cost: " + file.cost,
-			"Move File...",
-			"Remove File..."
+			"|---------- Extended Description -----------|"
 			];
-		if(JSON.stringify(file) != JSON.stringify(orig))
-			opts.push("Save changes...");
+		if(file.extdesc) {
+			var extdesc = strip_ctrl_a(file.extdesc).split('\r\n');
+			opts = opts.concat(extdesc);
+		}
 		const title = (dircode || file.dircode) + "/" +  orig.name;
-		var choice = uifc.list(WIN_SAV|WIN_ACT, title, opts, ctx);
-		if(choice < 0)
+		var choice = uifc.list(WIN_SAV|WIN_ACT|WIN_ESC|WIN_XTR|WIN_INS|WIN_DEL, title, opts, ctx);
+		if(choice == -1) {
+			if(JSON.stringify(file) != JSON.stringify(orig)) {
+				var choice = confirm("Save Changes?");
+				if(choice < 0)
+					continue;
+				if(choice && save(file, dircode, orig.name))
+					return false;
+			}
 			break;
+		}
+		var mask = choice & MSK_ON;
+		choice &= MSK_OFF;
+		if(mask && choice < 10)
+			continue;
 		switch(choice) {
 			case 0:
-				dump(file, dircode);
-				break;
-			case 1:
-				view_archive(file, dircode);
-				break;
-			case 2:
-				var name = uifc.input(WIN_MID|WIN_SAV, "Filename", file.name, 100, K_EDIT);
-				if(!name)
-					break;
-				file.name = name;
-				break;
-			case 3:
-				var desc = uifc.input(WIN_MID|WIN_SAV, "Description", file.desc, LEN_FDESC, K_EDIT);
-				if(!desc)
-					break;
-				file.desc = desc;
-				break;
-			case 4:
-				var from = uifc.input(WIN_MID|WIN_SAV, "Uploader", file.from, LEN_ALIAS, K_EDIT);
-				if(!from)
-					break;
-				file.from = from;
-				break;
-			case 5:
-				var date = uifc.input(WIN_MID|WIN_SAV, "Added", new Date(file.added * 1000).toString().slice(4), 20, K_EDIT);
-				if(date)
-					file.added = Date.parse(date) / 1000;
-				break;
-			case 6:
-				var cost = uifc.input(WIN_MID|WIN_SAV, "Download Cost (in credits)", String(file.cost), 15, K_NUMBER|K_EDIT);
-				if(cost !== undefined)
-					file.cost = cost;
-				break;
-			case 7:
 				var dest = select_dir();
 				if(!dest)
 					break;
@@ -464,35 +558,97 @@ function edit(file, dircode)
 				if(move(file, dircode, dest))
 					return true;
 				break;
-			case 8:
+			case 1:
 				var del = confirm("Delete File Also");
 				if(del < 0)
 					break;
 				if(remove(file, del, dircode))
 					return true;
 				break;
+			case 2:
+				view_details(file, dircode);
+				break;
+			case 3:
+				view_archive(file, dircode);
+				break;
+			case 4:
+				edit_filename(file);
+				break;
+			case 5:
+				edit_desc(file);
+				break;
+			case 6:
+				edit_uploader(file);
+				break;
+			case 7:
+				var date = uifc.input(WIN_MID|WIN_SAV, "Added", new Date(file.added * 1000).toString().slice(4), 20, K_EDIT);
+				if(date)
+					file.added = Date.parse(date) / 1000;
+				break;
+			case 8:
+				edit_cost(file);
+				break;
 			case 9:
-				if(save(file, dircode, orig.name))
-					orig = JSON.parse(JSON.stringify(file));
+				break;
+			default: // Extended description
+				var extdesc = file.extdesc ? file.extdesc.split('\r\n') : [];
+				var index = choice - 10;
+				if(mask & MSK_DEL) {
+					extdesc.splice(index, /* deleteCount: */1);
+				}
+				else if(mask & MSK_INS) {
+					var str = uifc.input(WIN_SAV, 1, ctx.bar + 2, "", 79, K_MSG);
+					if(str !== undefined)
+						extdesc.splice(index, /* deleteCount: */0, str);
+				}
+				else if(extdesc.length <= index) {
+					var str = uifc.input(WIN_SAV, 1, ctx.bar + 2, "", 79, K_MSG);
+					if(str !== undefined)
+						extdesc.push(str);
+				}
+				else {
+					var str = uifc.input(WIN_SAV, 1, ctx.bar + 2, "", extdesc[index], 79, K_EDIT|K_MSG);
+					if(str !== undefined)
+						extdesc[index] = str;
+				}
+				file.extdesc = extdesc.join('\r\n');
 				break;
 		}
 	}
-	file.name = orig.name;
+	for(var i in file)
+		file[i] = orig[i];
+
 	return false;
+}
+
+function get_extdesc(file, dircode)
+{
+	if(file.extdesc)
+		return file.extdesc;
+	if(!dircode)
+		dircode = file.dircode;
+	var base = new FileBase(dircode);
+	if(!base.open()) {
+		uifc.msg("Unable to open base: " + dircode);
+		return false;
+	}
+	var f = base.get(file, FileBase.DETAIL.EXTENDED);
+	if(f) file = f;
+	base.close();
+	return file.extdesc;
 }
 
 function move(file, dircode, dest)
 {
+	var dest_path = file_area.dir[dest].path + file.name;
+	if(file_exists(dest_path)) {
+		uifc.msg("File already exists: " + dest_path);
+		return false;
+	}
 	var result = false;
 	var base = new FileBase(dest);
 	if(!base.open()) {
 		uifc.msg("Unable to open base: " + dest);
-		return false;
-	}
-	var dest_path = base.get_path(file);
-	if(file_exists(dest_path)) {
-		uifc.msg("File already exists: " + dest_path);
-		base.close();
 		return false;
 	}
 	result = base.add(file, /* use_diz: */false);
@@ -510,6 +666,12 @@ function move(file, dircode, dest)
 	}
 	try {
 		var src_path = base.get_path(file);
+		if(!src_path) {
+			uifc.msg(format("Error %d (%s) getting source path for: %s"
+				,base.status, base.error, file.name));
+			base.close();
+			return false;
+		}
 		result = base.remove(file.name);
 		if(!result)
 			uifc.msg("remove failure " + base.status + ": " + file.name);
@@ -585,4 +747,58 @@ function save(file, dircode, filename)
 	}
 	base.close();
 	return result;
+}
+
+function add_file(filename, dircode)
+{
+	var base = new FileBase(dircode);
+	if(!base.open()) {
+		uifc.msg("Unable to open base: " + dircode);
+		return false;
+	}
+	var result = false;
+	var file = {
+		name: filename,
+		from: uploader,
+		cost: file_size(file_area.dir[dircode].path + filename)
+		};
+	const ctx = new uifc.list.CTX;
+	const title = "Adding " + filename + " to " + dircode;
+	while(!js.terminated) {
+		var opts = [
+			"Add File...",
+			"Description: " + (file.desc || ""),
+			"Uploader: " + (file.from || ""),
+			"Cost: " + file.cost,
+			"Extract/Import DIZ: " + ((file_area.dir[dircode].settings & DIR_DIZ) ? (use_diz ? "Yes" : "No") : "N/A"),
+			];
+		var choice = uifc.list(WIN_MID|WIN_SAV|WIN_ACT, title, opts, ctx);
+		if(choice < 0)
+			break;
+		switch(choice) {
+			case 1:
+				edit_desc(file);
+				continue;
+			case 2:
+				uploader = edit_uploader(file);
+				continue;
+			case 3:
+				edit_cost(file);
+				continue;
+			case 4:
+				if(file_area.dir[dircode].settings & DIR_DIZ)
+					use_diz = !use_diz;
+				continue;
+		}
+		uifc.pop(title);
+		result = base.add(file, use_diz);
+		uifc.pop();
+		if(result) {
+			file = base.get(filename);
+		} else
+			uifc.msg(format("Error %d (%s) adding file", base.status, base.error));
+		break;
+	}
+	base.close();
+	return result ? file : false;
 }
