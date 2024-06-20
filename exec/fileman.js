@@ -194,7 +194,7 @@ function find_offline(dircode)
 	var found = [];
 	for(var i in list) {
 		var file = list[i];
-		if(!file_exists(base.get_path(file))) {
+		if(!file_exists(base.get_path(file.name))) {
 			file.dircode = dircode;
 			found.push(file);
 		}
@@ -396,7 +396,7 @@ function fexists(file, dircode)
 		uifc.msg("Unable to open base: " + dircode);
 		return;
 	}
-	var result = file_exists(base.get_path(file));
+	var result = file_exists(base.get_path(file.name));
 	base.close();
 	return result;
 }
@@ -411,7 +411,7 @@ function remove(file, del, dircode)
 		return;
 	}
 	var result = false;
-	var path = base.get_path(file);
+	var path = base.get_path(file.name);
 	if(!del || file_exists(path))
 		result = base.remove(file.name, del);
 	else
@@ -433,8 +433,8 @@ function view_details(file, dircode)
 	var buf = [];
 	buf.push(format("Library          " + file_area.lib[dir.lib_name].description));
 	buf.push(format("Directory        " + dir.description));
-	buf.push(format("Size             " + file_size_float(base.get_size(file), 1, 1)));
-	buf.push(format("Time             " + system.timestr(base.get_time(file))));
+	buf.push(format("Size             " + file_size_float(base.get_size(file.name), 1, 1)));
+	buf.push(format("Time             " + system.timestr(base.get_time(file.name))));
 	uifc.showbuf(WIN_MID|WIN_HLP, base.get_path(file), buf.concat(base.dump(file.name)).join('\n'));
 	base.close();
 }
@@ -449,7 +449,7 @@ function view_archive(file, dircode)
 		return;
 	}
 	try {
-		var list = new Archive(base.get_path(file)).list();
+		var list = new Archive(base.get_path(file.name)).list();
 		var buf = [];
 		var namelen = 0;
 		for(var i in list)
@@ -459,7 +459,7 @@ function view_archive(file, dircode)
 			buf.push(format("%-*s  %10u  %s"
 				,namelen, list[i].name, list[i].size
 				,system.timestr(list[i].time).slice(4)));
-		uifc.showbuf(WIN_MID|WIN_HLP, base.get_path(file), buf.join('\n'));
+		uifc.showbuf(WIN_MID|WIN_HLP, base.get_path(file.name), buf.join('\n'));
 	} catch(e) {
 		uifc.msg(e);
 	}
@@ -511,7 +511,7 @@ function view_text_file(file, dircode)
 		uifc.msg("Unable to open base: " + dircode);
 		return;
 	}
-	var path = base.get_path(file);
+	var path = base.get_path(file.name);
 	if(path) {
 		var f = new File(path);
 		if(f.open("r")) {
@@ -700,7 +700,7 @@ function get_extdesc(file, dircode)
 		uifc.msg("Unable to open base: " + dircode);
 		return false;
 	}
-	var f = base.get(file, FileBase.DETAIL.EXTENDED);
+	var f = base.get(file.name, FileBase.DETAIL.EXTENDED);
 	if(f) file = f;
 	base.close();
 	return file.extdesc;
@@ -733,7 +733,7 @@ function move(file, dircode, dest)
 		return false;
 	}
 	try {
-		var src_path = base.get_path(file);
+		var src_path = base.get_path(file.name);
 		if(!src_path) {
 			uifc.msg(format("Error %d (%s) getting source path for: %s"
 				,base.status, base.error, file.name));
