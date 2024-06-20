@@ -2787,6 +2787,8 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
 	_setcursortype(_NOCURSOR);
 
 	title_len=strlen(title);
+	if(title_len + 13 + left > api->scrn_width)
+		title_len = api->scrn_width - (left + 13);
 
 	if((unsigned)(top+height)>=api->scrn_len)
 		height = api->scrn_len - top;
