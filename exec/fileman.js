@@ -466,6 +466,72 @@ function view_archive(file, dircode)
 	base.close();
 }
 
+function viewable_text_file(filename)
+{
+	switch(filename.toLowerCase()) {
+		case 'read.me':
+		case 'readme':
+		case 'readme.now':
+		case 'compiling':
+			return true;
+	}
+	var ext = file_getext(filename);
+	if(!ext)
+		return false;
+	switch(ext.toLowerCase()) {
+		case '.asc':
+		case '.txt':
+		case '.diz':
+		case '.nfo':
+		case '.doc':
+		case '.c':
+		case '.cc':
+		case '.cpp':
+		case '.h':
+		case '.hh':
+		case '.hpp':
+		case '.js':
+		case '.json':
+		case '.htm':
+		case '.html':
+		case '.css':
+		case '.ini':
+		case '.bbs':
+			return true;
+	}
+	return false;
+}
+
+function view_text_file(file, dircode)
+{
+	if(!dircode)
+		dircode = file.dircode;
+	var base = new FileBase(dircode);
+	if(!base.open()) {
+		uifc.msg("Unable to open base: " + dircode);
+		return;
+	}
+	var path = base.get_path(file);
+	if(path) {
+		var f = new File(path);
+		if(f.open("r")) {
+			var txt = f.readAll();
+			if(txt)
+				uifc.showbuf(WIN_MID|WIN_SAV, file.name, txt.join('\n'));
+			f.close();
+		}
+	}
+	base.close();
+}
+
+function view_contents(file, dircode)
+{
+	if(viewable_text_file(file.name))
+		view_text_file(file, dircode);
+	else
+		view_archive(file, dircode);
+}
+
 function confirm(prompt)
 {
 	var choice = uifc.list(WIN_MID|WIN_SAV, prompt, [ "Yes", "No" ]);
@@ -518,7 +584,7 @@ function edit(file, dircode)
 			"Move File...",
 			"Remove File...",
 			"View Details...",
-			"View Archive...",
+			"View Contents...",
 			"Filename: " + file.name,
 			"Description: " + (file.desc || ""),
 			"Uploader: " + (file.from || ""),
@@ -527,7 +593,7 @@ function edit(file, dircode)
 			"|---------- Extended Description -----------|"
 			];
 		if(file.extdesc) {
-			var extdesc = strip_ctrl_a(file.extdesc).split('\r\n');
+			var extdesc = strip_ctrl_a(file.extdesc).split('\n');
 			opts = opts.concat(extdesc);
 		}
 		const title = (dircode || file.dircode) + "/" +  orig.name;
@@ -569,7 +635,7 @@ function edit(file, dircode)
 				view_details(file, dircode);
 				break;
 			case 3:
-				view_archive(file, dircode);
+				view_contents(file, dircode);
 				break;
 			case 4:
 				edit_filename(file);
@@ -591,7 +657,9 @@ function edit(file, dircode)
 			case 9:
 				break;
 			default: // Extended description
-				var extdesc = file.extdesc ? file.extdesc.split('\r\n') : [];
+				if(file.extdesc)
+					file.extdesc = file.extdesc.replace(/\r/g, '');
+				var extdesc = file.extdesc ? file.extdesc.split('\n') : [];
 				var index = choice - 10;
 				if(mask & MSK_DEL) {
 					extdesc.splice(index, /* deleteCount: */1);
