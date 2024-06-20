@@ -431,11 +431,11 @@ function view_details(file, dircode)
 	}
 	var dir = file_area.dir[dircode];
 	var buf = [];
-	buf.push(format("Library          " + file_area.lib[dir.lib_name].description));
-	buf.push(format("Directory        " + dir.description));
-	buf.push(format("Size             " + file_size_float(base.get_size(file.name), 1, 1)));
-	buf.push(format("Time             " + system.timestr(base.get_time(file.name))));
-	uifc.showbuf(WIN_MID|WIN_HLP, base.get_path(file), buf.concat(base.dump(file.name)).join('\n'));
+	buf.push("Library          " + file_area.lib[dir.lib_name].description);
+	buf.push("Directory        " + dir.description);
+	buf.push("Size             " + file_size_float(base.get_size(file.name), 1, 1));
+	buf.push("Time             " + system.timestr(base.get_time(file.name)));
+	uifc.showbuf(WIN_MID|WIN_HLP, base.get_path(file.name), buf.concat(base.dump(file.name)).join('\n'));
 	base.close();
 }
 
