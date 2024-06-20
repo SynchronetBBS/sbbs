@@ -2778,6 +2778,7 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
 	struct vmem_cell *oldp=NULL;
 	int i,j,k,len;
 	int	 lines;
+	int line_offset;
 	int pad=1;
 	int	is_redraw=0;
 	uint title_len=0;
@@ -2940,12 +2941,21 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
 	}
 	for(i=0; i < (width - 2 - pad - pad) * lines;i++)
 		set_vmem(&textbuf[i], ' ', (api->hclr|(api->bclr<<4)), 0);
+	line_offset = 0;
 	for(j=i=0; j < len; j++, i++) {
 		if(hbuf[j]==LF) {
 			i++;
 			while(i%((width-2-pad-pad)))
 				i++;
 			i--;
+			line_offset = 0;
+		}
+		else if(hbuf[j] == '\t') {
+			++line_offset;
+			while(line_offset % 8) {
+				++line_offset;
+				++i;
+			}
 		}
 		else if(mode&WIN_HLP && (hbuf[j]==2 || hbuf[j]=='~')) {		 /* Ctrl-b toggles inverse */
 			inverse=!inverse;
@@ -2955,7 +2965,8 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
 			high=!high;
 			i--;
 		}
-		else if(hbuf[j]!=CR) {
+		else if(hbuf[j]!=CR && hbuf[j]!=FF) {
+			++line_offset;
 			set_vmem(&textbuf[i], hbuf[j], inverse ? (api->bclr|(api->cclr<<4)) : high ? (api->hclr|(api->bclr<<4)) : (api->lclr|(api->bclr<<4)), 0);
 			if(((i+1)%((width-2-pad-pad))==0 && (hbuf[j+1]==LF)) || (hbuf[j+1]==CR && hbuf[j+2]==LF))
 				i--;
