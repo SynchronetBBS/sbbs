@@ -309,6 +309,25 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 	return true;
 }
 
+static char*
+parse_file_name(JSContext *cx, JSObject* obj)
+{
+	char*		cp = NULL;
+	jsval		val;
+	const char* prop_name = "name";
+
+	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+		JSVALUE_TO_MSTRING(cx, val, cp, NULL);
+		if(cp == NULL) {
+			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
+			return NULL;
+		}
+		return strdup(cp);
+	}
+	JS_ReportError(cx, "Missing '%s' string in file object", prop_name);
+	return NULL;
+}
+
 static BOOL
 parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 {
@@ -729,9 +748,8 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
 		free(filename);
-		if(!parse_file_index_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file.file_idx))
-			return JS_TRUE;
-		filename = strdup(file.file_idx.name);
+		if((filename = parse_file_name(cx, JSVAL_TO_OBJECT(argv[argn]))) == NULL)
+			return JS_FALSE;
 		argn++;
 	}
 	else if(filename == NULL)
@@ -1014,9 +1032,8 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
 		free(filename);
-		if(!parse_file_index_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file.file_idx))
-			return JS_TRUE;
-		filename = strdup(file.file_idx.name);
+		if((filename = parse_file_name(cx, JSVAL_TO_OBJECT(argv[argn]))) == NULL)
+			return JS_FALSE;
 		argn++;
 	}
 	else if(filename == NULL)
@@ -1066,9 +1083,8 @@ js_get_file_size(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
 		free(filename);
-		if(!parse_file_index_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file.file_idx))
-			return JS_TRUE;
-		filename = strdup(file.file_idx.name);
+		if((filename = parse_file_name(cx, JSVAL_TO_OBJECT(argv[argn]))) == NULL)
+			return JS_FALSE;
 		argn++;
 	}
 	else if(filename == NULL)
@@ -1117,9 +1133,8 @@ js_get_file_time(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
 		free(filename);
-		if(!parse_file_index_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file.file_idx))
-			return JS_TRUE;
-		filename = strdup(file.file_idx.name);
+		if((filename = parse_file_name(cx, JSVAL_TO_OBJECT(argv[argn]))) == NULL)
+			return JS_FALSE;
 		argn++;
 	}
 	else if(filename == NULL)
