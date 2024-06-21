@@ -504,7 +504,10 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 			uifc->mode=i;
 			break;
 		case PROP_SAVNUM:
-			uifc->savnum=i;
+			if(i == uifc->savnum - 1 && uifc->restore != NULL)
+				uifc->restore();
+			else
+				uifc->savnum=i;
 			break;
 		case PROP_SCRN_LEN:
 			uifc->scrn_len=i;
