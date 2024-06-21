@@ -1149,8 +1149,8 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 	}
 
 	if(fdp==NULL || count==LOOP_NODEDAB)
-		close(file);
-	else
+		CLOSE_OPEN_FILE(file);
+	if(fdp!=NULL)
 		*fdp=file;
 
 	if(count==LOOP_NODEDAB)
@@ -1200,7 +1200,7 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node, bool closeit, int file)
 bool set_node_status(scfg_t* cfg, int nodenum, enum node_status status)
 {
 	node_t node;
-	int file;
+	int file = -1;
 
 	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
 		return false;
@@ -1213,7 +1213,7 @@ bool set_node_status(scfg_t* cfg, int nodenum, enum node_status status)
 bool set_node_misc(scfg_t* cfg, int nodenum, uint misc)
 {
 	node_t node;
-	int file;
+	int file = -1;
 
 	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
 		return false;
@@ -1226,7 +1226,7 @@ bool set_node_misc(scfg_t* cfg, int nodenum, uint misc)
 bool set_node_lock(scfg_t* cfg, int nodenum, bool set)
 {
 	node_t node;
-	int file;
+	int file = -1;
 
 	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
 		return false;
@@ -1242,7 +1242,7 @@ bool set_node_lock(scfg_t* cfg, int nodenum, bool set)
 bool set_node_interrupt(scfg_t* cfg, int nodenum, bool set)
 {
 	node_t node;
-	int file;
+	int file = -1;
 
 	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
 		return false;
@@ -1258,7 +1258,7 @@ bool set_node_interrupt(scfg_t* cfg, int nodenum, bool set)
 bool set_node_down(scfg_t* cfg, int nodenum, bool set)
 {
 	node_t node;
-	int file;
+	int file = -1;
 
 	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
 		return false;
@@ -1274,7 +1274,7 @@ bool set_node_down(scfg_t* cfg, int nodenum, bool set)
 bool set_node_rerun(scfg_t* cfg, int nodenum, bool set)
 {
 	node_t node;
-	int file;
+	int file = -1;
 
 	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
 		return false;
@@ -1290,7 +1290,7 @@ bool set_node_rerun(scfg_t* cfg, int nodenum, bool set)
 bool set_node_errors(scfg_t* cfg, int nodenum, uint errors)
 {
 	node_t node;
-	int file;
+	int file = -1;
 
 	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
 		return false;
