@@ -8,7 +8,7 @@ require("sbbsdefs.js", "K_EDIT");
 
 "use strict";
 
-if(!uifc.init("Synchronet File Manager")) {
+if(!uifc.init("Synchronet File Manager", argv[0])) {
 	alert("uifc init failure");
 	exit(-1);
 }
@@ -17,6 +17,18 @@ js.on_exit("uifc.bail()");
 // TODO: make these configurable
 var uploader = system.operator;
 var use_diz = false;
+const excludes = [
+	"FILES.BBS",
+	"FILES.TXT",
+	"FILE_ID.DIZ",
+	"DESCRIPT.ION",
+	"00_INDEX.TXT",
+	"00_INDEX.HTM",
+	"WILDCAT.TXT",
+	"SFFILES.BBS",
+	"MEDIA.LST",
+	"AREADESC"
+];
 
 const main_ctx = new uifc.list.CTX;
 while(!js.terminated) {
@@ -25,6 +37,7 @@ while(!js.terminated) {
 		"Search Filenames",
 		"Search Meta Data",
 		"Search Uploader",
+		"Search Pending Files",
 		"Search Offline Files"
 	];
 	try {
@@ -47,7 +60,10 @@ while(!js.terminated) {
 				search("Name", find_uploader);
 				break;
 			case 4:
-				search(undefined, find_offline);
+				search(undefined, find_pending, "Pending", list_pending_files);
+				break;
+			case 5:
+				search(undefined, find_offline, "Offline");
 				break;
 		}
 	} catch(e) {
@@ -96,7 +112,7 @@ function browse()
 	}
 }
 
-function search(prompt, func)
+function search(prompt, func, title, list_func)
 {
 	var pattern;
 
@@ -114,10 +130,12 @@ function search(prompt, func)
 			found = found.concat(list);
 	}
 	uifc.pop();
+	if(!list_func)
+		list_func = list_files;
 	if(found.length)
-		list_files(found.length + " " + (pattern || "offline") + " files found", found);
+		list_func(found.length + " " + (title || pattern) + " Files Found", found);
 	else
-		uifc.msg("No files found");
+		uifc.msg("No " + (title || "") + " Files Found");
 }
 
 function find_filename(dircode, pattern)
@@ -183,6 +201,20 @@ function find_uploader(dircode, name)
 	return found;
 }
 
+function find_pending(dircode)
+{
+	var base = new FileBase(dircode);
+	if(!base.open()) {
+		uifc.msg("Unable to open base: " + dircode);
+		return;
+	}
+	var list = base.get_list();
+	var found = find_new_files(list, dircode);
+	base.close();
+
+	return found;
+}
+
 function find_offline(dircode)
 {
 	var base = new FileBase(dircode);
@@ -235,7 +267,7 @@ function browse_dir(dircode)
 function find_file(fname, list)
 {
 	for(var i = 0; i < list.length; ++i)
-		if(list[i].name == fname)
+		if(list[i].name.toLowerCase() == fname.toLowerCase())
 			return i;
 	return -1;
 }
@@ -296,7 +328,7 @@ function list_files(title, list, dircode)
 							break;
 						for(var i = list.length - 1; i >= 0; --i) {
 							file = list[i];
-							if(list[i].tagged === true) {
+							if(file.tagged === true) {
 								exists = fexists(file, dircode);
 								if(remove(file, exists && choice == 1, dircode) == true)
 									list.splice(i, /* deleteCount: */1);
@@ -327,20 +359,116 @@ function list_files(title, list, dircode)
 			if(edit(list[result], dircode)) // file (re)moved?
 				list.splice(result, /* deleteCount: */1);
 		}
+		--uifc.save_num;
 	}
 }
 
-function add_files(list, dircode)
+function list_pending_files(title, list)
+{
+	const ctx = new uifc.list.CTX;
+	while(!js.terminated) {
+		var items = [];
+		var namelen = 12;
+		var tagged = 0;
+		for(var i in list) {
+			if(list[i].tagged)
+				++tagged;
+		}
+		for(var i in list) {
+			var file = list[i];
+			items.push(format("%-*s%s%s"
+				,tagged ? 2:0
+				,file.tagged ? ascii(251):""
+				,file_area.dir[file.dircode].vpath || (file.dircode + "/")
+				,file.name));
+		}
+		var win_mode = WIN_SAV | WIN_RHT | WIN_ACT | WIN_TAG | WIN_DEL | WIN_DELACT;
+		title = list.length + " Pending (non-imported) Files";
+		var result = uifc.list(win_mode, title, items, ctx);
+		if(result == -1)
+			break;
+		if(result == MSK_TAGALL) {
+			var tag = !Boolean(list[0].tagged);
+			for(var i in list)
+				list[i].tagged = tag;
+			continue;
+		}
+		if(result & MSK_ON) {
+			var op = result & MSK_ON;
+			result &= MSK_OFF;
+			var file = list[result];
+			switch(op) {
+				case MSK_TAG:
+					list[result].tagged = !list[result].tagged;
+					++ctx.cur;
+					++ctx.bar;
+					break;
+				case MSK_DEL:
+					if(tagged > 0) {
+						if(deny("Delete " + tagged + " files"))
+							continue;
+						for(var i = list.length - 1; i >= 0; --i) {
+							var file = list[i];
+							if(file.tagged === true) {
+								var path = file_area.dir[file.dircode].path + file.name;
+								if(file_remove(path))
+									list.splice(i, /* deleteCount: */1);
+								else
+									uifc.msg("Error deleting " + path);
+							}
+						}
+					} else {
+						var path = file_area.dir[file.dircode].path + file.name;
+						if(deny("Delete " + path))
+							continue;
+						if(file_remove(path))
+							list.splice(result, /* deleteCount: */1);
+						else
+							uifc.msg("Error deleting " + path);
+					}
+					break;
+			}
+			continue;
+		}
+		if(tagged > 0) {
+			for(var i = list.length - 1; i >=0; --i) {
+				var file = list[i];
+				if(file.tagged && add_file(file.name, file.dircode))
+					list.splice(i, /* deleteCount: */1);
+			}
+		} else {  // Single-file selected
+			var file = list[result];
+			if(add_file(file.name, file.dircode))
+				list.splice(result, /* deleteCount: */1);
+		}
+	}
+}
+
+function find_new_files(list, dircode)
+{
+	var new_files = find_new_filenames(list, dircode);
+	for(var i in new_files)
+		new_files[i] = { name: new_files[i], dircode: dircode };
+	return new_files;
+}
+
+function find_new_filenames(list, dircode)
 {
 	var all_files = directory(file_area.dir[dircode].path + "*");
 	var new_files = [];
 	for(var i in all_files) {
 		if(!file_isdir(all_files[i])) {
 			var fname = file_getname(all_files[i]);
-			if(find_file(fname, list) < 0)
+			if(find_file(fname, list) < 0 && excludes.indexOf(fname.toUpperCase()) < 0)
 				new_files.push(fname);
 		}
 	}
+	return new_files;
+}
+
+function add_files(list, dircode)
+{
+	new_files = find_new_filenames(list, dircode);
 	if(new_files.length < 1) {
 		uifc.msg("No new files to add in " + file_area.dir[dircode].path);
 		return;
@@ -377,7 +505,7 @@ function add_files(list, dircode)
 		var files = tagged;
 		if(!files.length)
 			files = [new_files[choice]];
-		for(var i in files) {
+		for(var i = files.length -1; i >= 0; --i) {
 			var new_file = add_file(files[i], dircode);
 			if(!new_file)
 				break;
@@ -441,15 +569,9 @@ function view_details(file, dircode)
 
 function view_archive(file, dircode)
 {
-	if(!dircode)
-		dircode = file.dircode;
-	var base = new FileBase(dircode);
-	if(!base.open()) {
-		uifc.msg("Unable to open base: " + dircode);
-		return;
-	}
+	var path = file_area.dir[dircode || file.dircode].path + file.name;
 	try {
-		var list = new Archive(base.get_path(file.name)).list();
+		var list = new Archive(path).list();
 		var buf = [];
 		var namelen = 0;
 		for(var i in list)
@@ -459,11 +581,10 @@ function view_archive(file, dircode)
 			buf.push(format("%-*s  %10u  %s"
 				,namelen, list[i].name, list[i].size
 				,system.timestr(list[i].time).slice(4)));
-		uifc.showbuf(WIN_MID|WIN_HLP, base.get_path(file.name), buf.join('\n'));
+		uifc.showbuf(WIN_MID|WIN_HLP, path, buf.join('\n'));
 	} catch(e) {
 		uifc.msg(e);
 	}
-	base.close();
 }
 
 function viewable_text_file(filename)
@@ -504,24 +625,14 @@ function viewable_text_file(filename)
 
 function view_text_file(file, dircode)
 {
-	if(!dircode)
-		dircode = file.dircode;
-	var base = new FileBase(dircode);
-	if(!base.open()) {
-		uifc.msg("Unable to open base: " + dircode);
-		return;
+	var path = file_area.dir[dircode || file.dircode].path + file.name;
+	var f = new File(path);
+	if(f.open("r")) {
+		var txt = f.readAll();
+		if(txt)
+			uifc.showbuf(WIN_MID|WIN_SAV, file.name, txt.join('\n'));
+		f.close();
 	}
-	var path = base.get_path(file.name);
-	if(path) {
-		var f = new File(path);
-		if(f.open("r")) {
-			var txt = f.readAll();
-			if(txt)
-				uifc.showbuf(WIN_MID|WIN_SAV, file.name, txt.join('\n'));
-			f.close();
-		}
-	}
-	base.close();
 }
 
 function view_contents(file, dircode)
@@ -538,6 +649,11 @@ function confirm(prompt)
 	if(choice >= 0)
 		choice = choice == 0;
 	return choice;
+}
+
+function deny(prompt)
+{
+	return uifc.list(WIN_MID|WIN_SAV, prompt, [ "No", "Yes" ]) != 1;
 }
 
 function edit_filename(file)
@@ -576,6 +692,8 @@ function edit_cost(file)
 
 function edit(file, dircode)
 {
+	if(!dircode)
+		dircode = file.dircode;
 	file.extdesc = get_extdesc(file, dircode);
 	const ctx = new uifc.list.CTX;
 	var orig = JSON.parse(JSON.stringify(file));
@@ -596,7 +714,7 @@ function edit(file, dircode)
 			var extdesc = strip_ctrl_a(file.extdesc).split('\n');
 			opts = opts.concat(extdesc);
 		}
-		const title = (dircode || file.dircode) + "/" +  orig.name;
+		const title = (file_area.dir[dircode].vpath || (dircode + "/")) +  orig.name;
 		var choice = uifc.list(WIN_SAV|WIN_ACT|WIN_ESC|WIN_XTR|WIN_INS|WIN_DEL, title, opts, ctx);
 		if(choice == -1) {
 			if(JSON.stringify(file) != JSON.stringify(orig)) {
@@ -620,8 +738,7 @@ function edit(file, dircode)
 				if(dest == dircode) {
 					uifc.msg("Destination directory must be different");
 					break;
-				}
-				if(move(file, dircode, dest))
+				}				if(move(file, dircode, dest))
 					return true;
 				break;
 			case 1:
@@ -831,10 +948,11 @@ function add_file(filename, dircode)
 		cost: file_size(file_area.dir[dircode].path + filename)
 		};
 	const ctx = new uifc.list.CTX;
-	const title = "Adding " + filename + " to " + dircode;
+	const title = "Adding " + filename + " to " + (file_area.dir[dircode].vpath || dircode);
 	while(!js.terminated) {
 		var opts = [
 			"Add File...",
+			"View Contents...",
 			"Description: " + (file.desc || ""),
 			"Uploader: " + (file.from || ""),
 			"Cost: " + file.cost,
@@ -845,15 +963,18 @@ function add_file(filename, dircode)
 			break;
 		switch(choice) {
 			case 1:
-				edit_desc(file);
+				view_contents(file, dircode);
 				continue;
 			case 2:
-				uploader = edit_uploader(file);
+				edit_desc(file);
 				continue;
 			case 3:
-				edit_cost(file);
+				uploader = edit_uploader(file);
 				continue;
 			case 4:
+				edit_cost(file);
+				continue;
+			case 5:
 				if(file_area.dir[dircode].settings & DIR_DIZ)
 					use_diz = !use_diz;
 				continue;
@@ -865,6 +986,7 @@ function add_file(filename, dircode)
 			file = base.get(filename);
 		} else
 			uifc.msg(format("Error %d (%s) adding file", base.status, base.error));
+		--uifc.save_num;
 		break;
 	}
 	base.close();
