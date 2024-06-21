@@ -322,7 +322,7 @@ parse_file_name(JSContext *cx, JSObject* obj)
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return NULL;
 		}
-		return strdup(cp);
+		return cp;
 	}
 	JS_ReportError(cx, "Missing '%s' string in file object", prop_name);
 	return NULL;
