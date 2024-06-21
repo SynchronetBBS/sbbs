@@ -287,6 +287,7 @@ void prep_cfg(scfg_t* cfg)
 				continue;
 			*cfg->dir[cfg->total_dirs++] = dir;
 		}
+		globfree(&g);
 	}
 
 	for(i=0;i<cfg->total_dirs;i++) {
