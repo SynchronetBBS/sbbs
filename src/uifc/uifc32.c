@@ -75,6 +75,7 @@ static void upop(const char *str);
 static void sethelp(int line, char* file);
 static void showbuf(uifc_winmode_t, int left, int top, int width, int height, const char *title
 	, const char *hbuf, int *curp, int *barp);
+static BOOL restore(void);
 
 /* Dynamic menu support */
 static int *last_menu_cur=NULL;
@@ -229,6 +230,7 @@ int uifcini32(uifcapi_t* uifcapi)
 	api->deny=deny;
     api->pop=upop;
     api->list=ulist;
+	api->restore=restore;
     api->input=uinput;
     api->sethelp=sethelp;
     api->showhelp=help;
@@ -368,6 +370,20 @@ int uifcini32(uifcapi_t* uifcapi)
 	api->initialized=TRUE;
 
     return(0);
+}
+
+static BOOL restore(void)
+{
+	if(api->savnum < 1)
+		return FALSE;
+	if(sav[api->savnum - 1].buf == NULL)
+		return FALSE;
+	--api->savnum;
+	vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
+		,sav[api->savnum].right,sav[api->savnum].bot
+		,sav[api->savnum].buf);
+	FREE_AND_NULL(sav[api->savnum].buf);
+	return TRUE;
 }
 
 void docopy(void)
@@ -698,8 +714,10 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 		opts++;
 
 	/* Sanity-check the savnum */
-	if(mode&WIN_SAV && api->savnum>=MAX_BUFS-1)
+	if(mode&WIN_SAV && api->savnum>=MAX_BUFS-1) {
 		putch(7);
+		mode &= ~WIN_SAV;
+	}
 
 	api->help_available = (api->helpbuf!=NULL || api->helpixbfile[0]!=0);
 
@@ -1154,16 +1172,11 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								uifc_mouse_enable();
 						}
 						else if(mode&WIN_SAV) {
-							api->savnum--;
 							if(!(api->mode&UIFC_NHM))
 								uifc_mouse_disable();
-							if(sav[api->savnum].buf != NULL)
-								vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
-									,sav[api->savnum].right,sav[api->savnum].bot
-									,sav[api->savnum].buf);
+							restore();
 							if(!(api->mode&UIFC_NHM))
 								uifc_mouse_enable();
-							FREE_AND_NULL(sav[api->savnum].buf);
 						}
 						if(mode&WIN_XTR && (*cur)==opts-1)
 							return(MSK_INS|*cur);
@@ -1578,12 +1591,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							if(mode&WIN_ACT)
 								inactive_win(tmp_buffer, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr, top);
 							else if(mode&WIN_SAV) {
-								api->savnum--;
-								if(sav[api->savnum].buf != NULL)
-									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
-										,sav[api->savnum].right,sav[api->savnum].bot
-										,sav[api->savnum].buf);
-								FREE_AND_NULL(sav[api->savnum].buf);
+								restore();
 							}
 							return((*cur)|MSK_EDIT);
 						}
@@ -1609,12 +1617,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							if(mode&WIN_INSACT)
 								inactive_win(tmp_buffer, s_left+left,s_top+top,s_left+left+width-1,s_top+top+height-1,y, hbrdrsize, cclr, lclr, hclr, top);
 							else if(mode&WIN_SAV) {
-								api->savnum--;
-								if(sav[api->savnum].buf != NULL)
-									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
-										,sav[api->savnum].right,sav[api->savnum].bot
-										,sav[api->savnum].buf);
-								FREE_AND_NULL(sav[api->savnum].buf);
+								restore();
 							}
 							if(!opts) {
 								return(MSK_INS);
@@ -1631,12 +1634,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							if(mode&WIN_DELACT)
 								inactive_win(tmp_buffer, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr, top);
 							else if(mode&WIN_SAV) {
-								api->savnum--;
-								if (sav[api->savnum].buf != NULL)
-									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
-										,sav[api->savnum].right,sav[api->savnum].bot
-										,sav[api->savnum].buf);
-								FREE_AND_NULL(sav[api->savnum].buf);
+								restore();
 							}
 							return((*cur)|MSK_DEL);
 						}
@@ -1758,12 +1756,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							if(mode&WIN_ACT)
 								inactive_win(tmp_buffer, s_left+left, s_top+top, s_left+left+width-1, s_top+top+height-1, y, hbrdrsize, cclr, lclr, hclr, top);
 							else if(mode&WIN_SAV) {
-								api->savnum--;
-								if (sav[api->savnum].buf != NULL)
-									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
-										,sav[api->savnum].right,sav[api->savnum].bot
-										,sav[api->savnum].buf);
-								FREE_AND_NULL(sav[api->savnum].buf);
+								restore();
 							}
 							if(mode&WIN_XTR && (*cur)==opts-1)
 								return(MSK_INS|*cur);
@@ -1781,12 +1774,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 									+left+width-1,s_top+top+height-1,tmp_buffer);
 							}
 							else if(mode&WIN_SAV) {
-								api->savnum--;
-								if (sav[api->savnum].buf != NULL)
-									vmem_puttext(sav[api->savnum].left,sav[api->savnum].top
-										,sav[api->savnum].right,sav[api->savnum].bot
-										,sav[api->savnum].buf);
-								FREE_AND_NULL(sav[api->savnum].buf);
+								restore();
 							}
 							return(-1);
 						case CTRL_F:			/* find */

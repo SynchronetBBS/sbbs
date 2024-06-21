@@ -355,10 +355,6 @@ typedef struct {
 /****************************************************************************/
     uint    savnum;
 /****************************************************************************/
-/* The current overlapped-window save buffer depth.							*/
-/****************************************************************************/
-    uint    savdepth;
-/****************************************************************************/
 /* Screen length															*/
 /****************************************************************************/
     uint    scrn_len;
@@ -457,6 +453,12 @@ typedef struct {
 /****************************************************************************/
     int     (*list) (uifc_winmode_t, int left, int top, int width, int* dflt
                         ,int* bar, const char *title, char** option);
+/****************************************************************************/
+/* Restore last saved window buffer (using WIN_SAV mode)					*/
+/* Decrements save_num if non-zero.											*/
+/* Can be used to return from a nested-list (with WIN_SAV) without ESC key.	*/
+/****************************************************************************/
+	BOOL	(*restore)(void);
 /****************************************************************************/
 /* Windowed string input routine.											*/
 /* mode contains WIN_* flags to control display and functionality.			*/
