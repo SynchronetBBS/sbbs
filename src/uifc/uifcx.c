@@ -109,6 +109,7 @@ int uifcinix(uifcapi_t* uifcapi)
     setvbuf(stdin,NULL,_IONBF,0);
     setvbuf(stdout,NULL,_IONBF,0);
     api->scrn_len=24;
+	api->scrn_width=132;
 	api->initialized=TRUE;
 
     return(0);
