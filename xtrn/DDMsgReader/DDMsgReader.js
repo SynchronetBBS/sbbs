@@ -19675,6 +19675,8 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 				{
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number, false, false, true, true));
+						if (typeof(msgText) !== "string")
+							msgText = "";
 						return gAllPersonalEmailOptSpecified || msgIsFromUser(pMsgHdr, pUserNum);
 					}
 				}
@@ -19683,6 +19685,8 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 					// We're reading mail to the user
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number, false, false, true, true));
+						if (typeof(msgText) !== "string")
+							msgText = "";
 						var msgMatchesCriteria = (gAllPersonalEmailOptSpecified || msgIsToUserByNum(pMsgHdr, pUserNum));
 						// If only new/unread personal email is to be displayed, then check
 						// that the message has not been read.
@@ -19697,6 +19701,8 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 			getAllMsgHdrs = true;
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 				var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number, false, false, true, true));
+				if (typeof(msgText) !== "string")
+					msgText = "";
 				var keywordFound = ((pMsgHdr.subject.toUpperCase().indexOf(pSearchStr) > -1) || (msgText.toUpperCase().indexOf(pSearchStr) > -1));
 				if (pSubBoardCode == "mail")
 					return keywordFound && msgIsToUserByNum(pMsgHdr);
