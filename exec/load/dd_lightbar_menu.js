@@ -1187,6 +1187,18 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 {
 	var itemText = this.GetItemText(pIdx, pItemLen, pHighlight, pSelected);
 	/*
+	// Temporary
+	if (user.is_sysop)
+	{
+		console.pushxy();
+		console.gotoxy(1, 1);
+		console.attributes = "N";
+		console.print("itemText is: " + typeof(itemText) + "\x01;");
+		console.popxy();
+	}
+	// End Temporary
+	*/
+	/*
 	// If the text is UTF-8 and the user's terminal is UTF-8, then set the mode bit accordingly.
 	// If the text is UTF-8 and the user's terminal doesn't support UTF-8, convert the text to cp437.
 	var printModeBits = P_NONE;
@@ -1293,8 +1305,23 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 			var printedLen = console.strlen(itemText, P_AUTO_UTF8);
 			if (printedLen < itemLen)
 			{
-				console.print(this.GetColorForItem(pIdx, pHighlight));
-				printf("%*s", itemLen - printedLen, "");
+				var remainingLen = itemLen - printedLen;
+				var itemColor = this.GetColorForItem(pIdx, pHighlight);
+				// If the item color is an array of colors for various parts of the text,
+				// then get all the attributes up to the current text index
+				if (Array.isArray(itemColor))
+				{
+					var tmpItemColor = "\x01n";
+					var startIdx = printedLen - remainingLen - 1;
+					for (var idx = 0; idx < itemColor.length; ++idx)
+					{
+						if (itemColor[idx].start <= startIdx)
+							tmpItemColor += itemColor[idx].attrs;
+					}
+					itemColor = tmpItemColor;
+				}
+				console.print(itemColor);
+				printf("%*s", remainingLen, "");
 				console.attributes = "N";
 			}
 		}
@@ -1714,7 +1741,11 @@ function DDLightbarMenu_ItemTextIsUTF8(pIdx)
 	if (pIdx < 0 || pIdx >= this.NumItems())
 		return false;
 
-	return this.GetItem(pIdx).textIsUTF8;
+	var item = this.GetItem(pIdx);
+	var isUTF8 = item.textIsUTF8;
+	if (!isUTF8)
+		isUTF8 = str_is_utf8(item.text);
+	return isUTF8;
 }
 
 // Erases the menu - Draws black (normal color) where the menu was
