@@ -1743,8 +1743,10 @@ function DDLightbarMenu_ItemTextIsUTF8(pIdx)
 
 	var item = this.GetItem(pIdx);
 	var isUTF8 = item.textIsUTF8;
-	if (!isUTF8)
-		isUTF8 = str_is_utf8(item.text);
+	// TODO: str_is_utf8() seems to return true sometimes when the
+	// string doesn't actually have UTF-8 characters.
+	//if (!isUTF8)
+	//	isUTF8 = str_is_utf8(item.text);
 	return isUTF8;
 }
 
