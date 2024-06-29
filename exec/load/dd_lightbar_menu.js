@@ -1186,30 +1186,6 @@ function DDLightbarMenu_DrawBorder()
 function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreenX, pScreenY, pCalculatedItemStartX, pCalculatedItemY)
 {
 	var itemText = this.GetItemText(pIdx, pItemLen, pHighlight, pSelected);
-	/*
-	// Temporary
-	if (user.is_sysop)
-	{
-		console.pushxy();
-		console.gotoxy(1, 1);
-		console.attributes = "N";
-		console.print("itemText is: " + typeof(itemText) + "\x01;");
-		console.popxy();
-	}
-	// End Temporary
-	*/
-	/*
-	// If the text is UTF-8 and the user's terminal is UTF-8, then set the mode bit accordingly.
-	// If the text is UTF-8 and the user's terminal doesn't support UTF-8, convert the text to cp437.
-	var printModeBits = P_NONE;
-	if (this.ItemTextIsUTF8(pIdx))
-	{
-		if (console.term_supports(USER_UTF8))
-			printModeBits = P_UTF8;
-		else
-			itemText = utf8_cp437(itemText);
-	}
-	*/
 	var printModeBits = P_AUTO_UTF8;
 	// If this.nextDrawOnlyItemSubstr is an object with start & end properties,
 	// then create a string that is shortened from itemText from those start & end
@@ -1226,17 +1202,20 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 	else
 	{
 		// var userConsoleSupportsUTF8 = (typeof(USER_UTF8) != "undefined" ? console.term_supports(USER_UTF8) : false);
-		// If the item has UTF-8 text, then one problem is that printing the whole string could result
-		// in the printed string length being shorter than expected (due to multi-byte characters),
-		// which can result in the inner text width not being completely filled.  If there are 'columns'
-		// of information within the item, the result is that the text wouldn't properly line up anymore.
-		// To deal with this, we'll check to see if the item color is an array (which specifies colors at
-		// text indexes), and if so, get the text substrings and use console.gotoxy() to write the parts
-		// of the item text in their proper places.
+		// If the item has (multi-byte) UTF-8 text, then one problem is that printing the whole string
+		// could result in the printed string length being shorter than expected (due to multi-byte
+		// characters), which can result in the inner text width not being completely filled.  If there
+		// are 'columns' of information within the item, the result is that the text wouldn't properly line
+		// up anymore. To deal with this, we'll check to see if the item color is an array (which specifies
+		// colors at text indexes), and if so, get the text substrings and use console.gotoxy() to write the
+		// parts of the item text in their proper places.
 		// Also, with the item that is currently highlighted with the background color, the background
 		// color wouldn't continue all the way.   So, we need to ensure we fill the whole text area.
 		if (this.ItemTextIsUTF8(pIdx))
 		{
+			var currentXPos = (typeof(pScreenX) === "number" ? pScreenX : console.getxy().x);
+			var usingScrollbar = this.scrollbarEnabled && !this.CanShowAllItemsInWindow();
+
 			// Figure out which color is needed for this item (normal/selected/unselectable/alternate)
 			var itemColor = this.GetColorForItem(pIdx, pHighlight); // pSelected
 			// If the item color is an array, then use substrings & console.gotoxy() to print the parts
@@ -1267,17 +1246,35 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 				var itemLen = 0;
 				for (var i = 0; i < itemColor.length; ++i)
 				{
-					itemLen = itemColor[i].end - itemColor[i].start;
-					var textToPrint = substrWithAttrCodes(itemText, itemStartIdx, itemLen);
+					var textToPrint = "";
+					// Note: end can be 0 or -1, to apply the attributes to the rest of the string
+					if (itemColor[i].end > -1 && itemColor[i].end > itemColor[i].start)
+						itemLen = itemColor[i].end - itemColor[i].start;
+					else
+					{
+						itemLen = (console.strlen(itemText, P_AUTO_UTF8) - itemColor[i].start);
+						var end = itemStartIdx+itemLen;
+						if (end >= console.screen_columns)
+						{
+							// TODO: This might be 1 off (interfering with scrollbar update)
+							var lenDiff = end - console.screen_columns;
+							itemLen -= lenDiff;
+							if (usingScrollbar)
+								--itemLen; // Leave room for the scrollbar in the item lengths
+						}
+					}
+					textToPrint = substrWithAttrCodes(itemText, itemStartIdx, itemLen);
 					if (this.ANSISupported())
 						console.gotoxy(itemStartX + itemColor[i].start, itemY);
 					console.print(textToPrint, P_AUTO_UTF8); // printModeBits
 					itemStartIdx += itemLen;
 
-					// If the printed length of the string is shorter than needed, then fill the
+					// If the printed length of the string is shorter than needed, and we're not
+					// at the rightmost screen column (if using the scrollbar), then fill the
 					// remainder of the width with spaces.
 					var printedLen = console.strlen(textToPrint, P_AUTO_UTF8);
-					if (printedLen < itemLen)
+					currentXPos += printedLen;
+					if (printedLen < itemLen && (!usingScrollbar || currentXPos < console.screen_columns))
 						printf("%*s", itemLen - printedLen, "");
 				}
 			}
@@ -1741,10 +1738,9 @@ function DDLightbarMenu_ItemTextIsUTF8(pIdx)
 	if (pIdx < 0 || pIdx >= this.NumItems())
 		return false;
 
+	//return this.GetItem(pIdx).textIsUTF8;
 	var item = this.GetItem(pIdx);
 	var isUTF8 = item.textIsUTF8;
-	// TODO: str_is_utf8() seems to return true sometimes when the
-	// string doesn't actually have UTF-8 characters.
 	//if (!isUTF8)
 	//	isUTF8 = str_is_utf8(item.text);
 	return isUTF8;
