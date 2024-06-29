@@ -2,7 +2,7 @@
 
 load("sbbsdefs.js");
 
-const QWK_ID_PATTERN = /^[A-Z]\w{1,7}$/;
+const QWK_ID_PATTERN = /^[A-Z][\w|-]{1,7}$/;
 
 var options;
 options=load("modopts.js","newuser");
