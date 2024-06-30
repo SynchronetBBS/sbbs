@@ -4414,7 +4414,7 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 			// When setting the item text, call PrintMessageInfo with true as
 			// the last parameter to return the string instead
 			menuItemObj.text = strip_ctrl(this.msgReader.PrintMessageInfo(msgHdr, false, itemIdx+1, true));
-			menuItemObj.textIsUTF8 = msgHdr.hasOwnProperty("is_utf8") && msgHdr.is_utf8;
+			menuItemObj.textIsUTF8 = (msgHdr.hasOwnProperty("is_utf8") && msgHdr.is_utf8) || str_is_utf8(msgHdr.subject);
 			menuItemObj.retval = msgHdr.number;
 			var msgIsToUser = userHandleAliasNameMatch(msgHdr.to);
 			var msgIsFromUser = userHandleAliasNameMatch(msgHdr.from);
