@@ -37,7 +37,7 @@ file.readln(); // First line is not used (mode?)
 bull = file.readAll();
 file.close();
 
-bull = bull.filter(function(str) { return truncsp(str) && file_getcase(str); });
+bull = bull.filter(function(str) { return truncsp(str) });
 
 if(bull.length < 1) {
 	alert("No bulletins listed in " + file.name);
