@@ -63,13 +63,17 @@ while(bbs.online && !js.terminated) {
 		console.clear(7);
 		var fname = truncsp(bull[b - 1]);
 		var ext = file_getext(fname);
+		var success = false;
 		if(ext == ".*")
-			bbs.menu(fname.slice(0, -2));
+			success = bbs.menu(fname.slice(0, -2));
 		else if(fname.search(/\.htm/)!=-1)
-			load(new Object, "typehtml.js", "-color", fname);
+			success = load(new Object, "typehtml.js", "-color", fname);
 		else
-			load(new Object, "typeasc.js", fname, "BullsEye Bulletin #"+b);
-		log("Node "+bbs.node_num+" "+user.alias+" viewed bulletin #"+i+": "+fname);
+			success = load(new Object, "typeasc.js", fname, "BullsEye Bulletin #"+b);
+		if(success)
+			log("viewed bulletin #" + b + ": "+fname);
+		else
+			log(LOG_WARNING, "Failed to view bulletin #" + b + " (" + fname + " is missing?)");
 		console.aborted=false;
 	}
 }
