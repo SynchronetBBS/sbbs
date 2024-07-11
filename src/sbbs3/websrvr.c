@@ -106,7 +106,7 @@ static scfg_t	scfg;
 static volatile bool	http_logging_thread_running=false;
 static protected_uint32_t active_clients;
 static protected_uint32_t thread_count;
-static volatile ulong	client_highwater=0;
+static volatile uint32_t client_highwater=0;
 static volatile bool	terminate_server=false;
 static volatile bool	terminate_js=false;
 static volatile bool	terminate_http_logging_thread=false;
@@ -6599,6 +6599,7 @@ void http_session_thread(void* arg)
 	int				loop_count;
 	ulong			login_attempts=0;
 	bool			init_error;
+	uint32_t		client_count;
 	int32_t			clients_remain;
 #if 0
 	int				i;
@@ -6756,7 +6757,13 @@ void http_session_thread(void* arg)
 		return;
 	}
 
-	(void)protected_uint32_adjust(&active_clients, 1);
+	client_count = protected_uint32_adjust(&active_clients, 1);
+	if(client_count > client_highwater) {
+		client_highwater = client_count;
+		if(client_highwater > 1)
+			lprintf(LOG_NOTICE, "%04d New active client highwater mark: %u"
+				,session.socket, client_highwater);
+	}
 	update_clients();
 	SAFECOPY(session.username,unknown);
 
@@ -7407,11 +7414,7 @@ void web_server(void* arg)
 				continue;
 			}
 
-			if((count = protected_uint32_value(active_clients)) > client_highwater) {
-				client_highwater = count;
-				lprintf(LOG_NOTICE, "%04d New active client highwater mark: %lu"
-					,client_socket, client_highwater);
-			}
+			count = protected_uint32_value(active_clients);
 			if(startup->max_clients && count>=startup->max_clients) {
 				lprintf(LOG_WARNING,"%04d [%s] !MAXIMUM CLIENTS (%d) reached, access denied"
 					,client_socket, host_ip, startup->max_clients);
