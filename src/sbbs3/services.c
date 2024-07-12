@@ -62,6 +62,7 @@ static char*	text[TOTAL_TEXT];
 static volatile bool	terminated=false;
 static time_t	uptime=0;
 static ulong	served=0;
+static volatile uint32_t client_highwater=0;
 static str_list_t pause_semfiles;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
@@ -210,8 +211,17 @@ static ulong active_clients(void)
 
 static void update_clients(void)
 {
+	ulong client_count = active_clients();
 	if(startup!=NULL && startup->clients!=NULL)
-		startup->clients(startup->cbdata,active_clients());
+		startup->clients(startup->cbdata, client_count);
+
+	if(client_count > client_highwater) {
+		client_highwater = client_count;
+		if(client_highwater > 1)
+			lprintf(LOG_NOTICE, "New active client highwater mark: %u"
+				,client_highwater);
+		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", client_highwater);
+	}
 }
 
 static void client_on(SOCKET sock, client_t* client, bool update)
@@ -1762,7 +1772,7 @@ static void cleanup(int code)
 
 	thread_down();
 	if(terminated || code)
-		lprintf(LOG_INFO,"#### Services thread terminated (%lu clients served)",served);
+		lprintf(LOG_INFO,"#### Services thread terminated (%lu clients served, %u concurrently)",served, client_highwater);
 	set_state(SERVER_STOPPED);
 	mqtt_shutdown(&mqtt);
 	if(startup!=NULL && startup->terminated!=NULL)
