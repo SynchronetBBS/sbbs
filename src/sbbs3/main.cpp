@@ -5925,8 +5925,8 @@ NO_SSH:
 		if(client_count > client_highwater) {
 			client_highwater = client_count;
 			if(client_highwater > 1)
-				lprintf(LOG_NOTICE, "%04d New active client highwater mark: %u"
-					,client_socket, client_highwater);
+				lprintf(LOG_NOTICE, "Node %d New active client highwater mark: %u"
+					,node_num, client_highwater);
 			mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", client_highwater);
 		}
 	}
