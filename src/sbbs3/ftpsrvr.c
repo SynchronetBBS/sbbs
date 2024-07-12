@@ -82,6 +82,7 @@ static struct mqtt mqtt;
 static struct xpms_set *ftp_set = NULL;
 static protected_uint32_t active_clients;
 static protected_uint32_t thread_count;
+static volatile uint32_t client_highwater=0;
 static volatile time_t	uptime=0;
 static volatile ulong	served=0;
 static volatile BOOL	terminate_server=FALSE;
@@ -2311,7 +2312,14 @@ static void ctrl_thread(void* arg)
 		return;
 	}
 
-	(void)protected_uint32_adjust(&active_clients, 1);
+	uint32_t client_count = protected_uint32_adjust(&active_clients, 1);
+	if(client_count > client_highwater) {
+		client_highwater = client_count;
+		if(client_highwater > 1)
+			lprintf(LOG_NOTICE, "%04d New active client highwater mark: %u"
+				,sock, client_highwater);
+		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", client_highwater);
+	}
 	update_clients();
 
 	/* Initialize client display */
@@ -4982,7 +4990,7 @@ static void cleanup(int code, int line)
 
 	thread_down();
 	if(terminate_server || code)
-		lprintf(LOG_INFO,"#### FTP Server thread terminated (%lu clients served)", served);
+		lprintf(LOG_INFO,"#### FTP Server thread terminated (%lu clients served, %u concurrently)", served, client_highwater);
 	set_state(SERVER_STOPPED);
 	mqtt_shutdown(&mqtt);
 	if(startup!=NULL && startup->terminated!=NULL)

@@ -90,6 +90,7 @@ volatile time_t	uptime=0;
 volatile uint	served=0;
 
 static	protected_uint32_t node_threads_running;
+static volatile uint32_t client_highwater=0;
 
 char 	lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 RingBuf* node_inbuf[MAX_NODES];
@@ -5910,7 +5911,7 @@ NO_SSH:
 			pthread_mutex_unlock(&sbbs->ssh_mutex);
 		}
 
-	    protected_uint32_adjust(&node_threads_running, 1);
+	    uint32_t client_count = protected_uint32_adjust(&node_threads_running, 1);
 		new_node->input_thread_running = true;
 		new_node->input_thread=(HANDLE)_beginthread(input_thread, 0, new_node);
 	    new_node->output_thread_running = true;
@@ -5919,6 +5920,13 @@ NO_SSH:
 		_beginthread(output_thread, 0, new_node);
 		_beginthread(node_thread, 0, new_node);
 		served++;
+		if(client_count > client_highwater) {
+			client_highwater = client_count;
+			if(client_highwater > 1)
+				lprintf(LOG_NOTICE, "%04d New active client highwater mark: %u"
+					,socket, client_highwater);
+			mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", client_highwater);
+		}
 	}
 
 	set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);

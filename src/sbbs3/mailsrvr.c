@@ -83,6 +83,7 @@ static struct xpms_set	*mail_set=NULL;
 static BOOL terminated=FALSE;
 static protected_uint32_t active_clients;
 static protected_uint32_t thread_count;
+static volatile uint32_t client_highwater=0;
 static volatile int		active_sendmail=0;
 static volatile BOOL	sendmail_running=FALSE;
 static volatile BOOL	terminate_server=FALSE;
@@ -1745,7 +1746,14 @@ static void pop3_thread(void* arg)
 
 	free(arg);
 
-	(void)protected_uint32_adjust(&active_clients, 1);
+	uint32_t client_count = protected_uint32_adjust(&active_clients, 1);
+	if(client_count > client_highwater) {
+		client_highwater = client_count;
+		if(client_highwater > 1)
+			lprintf(LOG_NOTICE, "%04d POP3 New active client highwater mark: %u"
+				,pop3.socket, client_highwater);
+		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", client_highwater);
+	}
 	update_clients();
 
 	if (!pop3_client_thread(&pop3))
@@ -5023,7 +5031,14 @@ static void smtp_thread(void* arg)
 
 	free(arg);
 
-	(void)protected_uint32_adjust(&active_clients, 1);
+	uint32_t client_count = protected_uint32_adjust(&active_clients, 1);
+	if(client_count > client_highwater) {
+		client_highwater = client_count;
+		if(client_highwater > 1)
+			lprintf(LOG_NOTICE, "%04d SMTP New active client highwater mark: %u"
+				,smtp.socket, client_highwater);
+		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", client_highwater);
+	}
 	update_clients();
 
 	if (!smtp_client_thread(&smtp))
@@ -5941,6 +5956,8 @@ static void cleanup(int code)
 			sprintf(str+strlen(str),", %lu errors", stats.errors);
 		if(stats.crit_errors)
 			sprintf(str+strlen(str),", %lu critical", stats.crit_errors);
+		if(client_highwater > 1)
+			sprintf(str+strlen(str), ", %u concurrent clients", client_highwater);
 
 		lprintf(LOG_INFO,"#### Mail Server thread terminated (%s)",str);
 	}
