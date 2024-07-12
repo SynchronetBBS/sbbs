@@ -5350,7 +5350,7 @@ NO_SSH:
 	listInit(&current_connections, LINK_LIST_MUTEX);
 
 #ifdef __unix__	//	unix-domain spy sockets
-	for(i=first_node;i<=last_node && !(startup->options&BBS_OPT_NO_SPY_SOCKETS);i++)  {
+	for(int i=first_node;i<=last_node && !(startup->options&BBS_OPT_NO_SPY_SOCKETS);i++)  {
 	    if((unsigned int)snprintf(str,sizeof(uspy_addr.un.sun_path),
 	            "%slocalspy%d.sock", startup->temp_dir, i)
 	            >=sizeof(uspy_addr.un.sun_path)) {
@@ -5447,7 +5447,7 @@ NO_SSH:
 #endif
 		} else {
 #ifdef __unix__
-			for(i=first_node;i<=last_node;i++)  {
+			for(int i=first_node;i<=last_node;i++)  {
 				if(&uspy_cb[i-1] == ts_cb) {
 					if(node_socket[i-1]==INVALID_SOCKET)
 						if(read(uspy_socket[i-1],str,sizeof(str)) < 1)
