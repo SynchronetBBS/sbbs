@@ -6763,6 +6763,7 @@ void http_session_thread(void* arg)
 		if(client_highwater > 1)
 			lprintf(LOG_NOTICE, "%04d New active client highwater mark: %u"
 				,session.socket, client_highwater);
+		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", client_highwater);
 	}
 	update_clients();
 	SAFECOPY(session.username,unknown);
@@ -6971,7 +6972,7 @@ static void cleanup(int code)
 
 	thread_down();
 	if(terminate_server || code)
-		lprintf(LOG_INFO,"#### Web Server thread terminated (%lu clients served, %lu concurrently)"
+		lprintf(LOG_INFO,"#### Web Server thread terminated (%lu clients served, %u concurrently)"
 			,served, client_highwater);
 	set_state(SERVER_STOPPED);
 	mqtt_shutdown(&mqtt);
