@@ -651,6 +651,7 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 	mqtt_pub_strval(mqtt, TOPIC_HOST_LEVEL, NULL, startup->host_name);
 	mqtt_pub_strval(mqtt, TOPIC_SERVER, "version", version);
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "served", mqtt->served);
+	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "highwater", 0);
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "error_count", mqtt->error_count);
 
 #ifdef USE_MOSQUITTO
