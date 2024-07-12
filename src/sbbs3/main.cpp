@@ -4941,7 +4941,7 @@ void bbs_thread(void* arg)
 	union xp_sockaddr	client_addr;
 	socklen_t		client_addr_len;
 	SOCKET			client_socket=INVALID_SOCKET;
-	int				i;
+	int				node_num;
 	int				result;
 	time_t			t;
 	time_t			start;
@@ -5128,7 +5128,7 @@ void bbs_thread(void* arg)
 
 	/* Create missing node directories */
 	lprintf(LOG_INFO,"Verifying/creating node directories");
-	for(i=0;i<=scfg.sys_nodes;i++) {
+	for(int i=0;i<=scfg.sys_nodes;i++) {
 		char newfn[MAX_PATH + 1];
 		char oldfn[MAX_PATH + 1];
 		if(i) {
@@ -5207,7 +5207,7 @@ void bbs_thread(void* arg)
 	}
 
 	/* Initial global node variables */
-	for(i=0;i<MAX_NODES;i++) {
+	for(int i=0;i<MAX_NODES;i++) {
 		node_inbuf[i]=NULL;
     	node_socket[i]=INVALID_SOCKET;
 		spy_socket[i]=INVALID_SOCKET;
@@ -5253,6 +5253,7 @@ void bbs_thread(void* arg)
 			lprintf(LOG_ERR, "SSH cryptInit failure");
 			goto NO_SSH;
 		}
+		int i;
 		/* Get the private key... first try loading it from a file... */
 		SAFEPRINTF2(str,"%s%s",scfg.ctrl_dir,"cryptlib.key");
 		if(cryptStatusOK(cryptKeysetOpen(&ssh_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, str, CRYPT_KEYOPT_READONLY))) {
@@ -5323,7 +5324,7 @@ NO_SSH:
 	first_node=startup->first_node;
 	last_node=startup->last_node;
 
-	for(i=first_node;i<=last_node;i++) {
+	for(int i=first_node;i<=last_node;i++) {
 		sbbs->getnodedat(i,&node,1);
 		node.status=NODE_WFC;
 		node.misc&=NODE_EVENT;	/* Note: Turns-off NODE_RRUN flag (and others) */
@@ -5566,6 +5567,7 @@ NO_SSH:
 		if(ssh) {
 			BOOL nodelay = true;
 			ulong nb = 0;
+			int i;
 
 			if(cryptStatusError(i=cryptCreateSession(&sbbs->ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH_SERVER))) {
 				GCESS(i, client_socket, CRYPT_UNUSED, "creating SSH session");
@@ -5669,16 +5671,16 @@ NO_SSH:
 		client.usernum = 0;
 		client_on(client_socket,&client,false /* update */);
 
-		for(i=first_node;i<=last_node;i++) {
+		for(node_num=first_node; node_num <= last_node; node_num++) {
 			/* paranoia: make sure node.status!=NODE_WFC by default */
 			node.status=NODE_INVALID_STATUS;
-			if(sbbs->getnodedat(i,&node,1)!=0)
+			if(sbbs->getnodedat(node_num,&node,1)!=0)
 				continue;
 			if(node.status==NODE_WFC) {
-				if(node_socket[i - 1] != INVALID_SOCKET) {
+				if(node_socket[node_num - 1] != INVALID_SOCKET) {
 					lprintf(LOG_CRIT, "%04d !Node %d status is WFC, but the node socket (%d) and thread are still in use!"
-						,client_socket, i, node_socket[i - 1]);
-					sbbs->putnodedat(i, &node);
+						,client_socket, node_num, node_socket[node_num - 1]);
+					sbbs->putnodedat(node_num, &node);
 					continue;
 				}
 				node.status=NODE_LOGON;
@@ -5692,13 +5694,13 @@ NO_SSH:
 				else
 					node.connection=NODE_CONNECTION_TELNET;
 
-				sbbs->putnodedat(i,&node);
+				sbbs->putnodedat(node_num, &node);
 				break;
 			}
-			sbbs->putnodedat(i,&node);
+			sbbs->putnodedat(node_num, &node);
 		}
 
-		if(i>last_node) {
+		if(node_num>last_node) {
 			lprintf(LOG_WARNING,"%04d %s [%s] !No nodes available for login.", client_socket, client.protocol, host_ip);
 			SAFEPRINTF(str,"%snonodes.txt",scfg.text_dir);
 			if(fexist(str))
@@ -5714,21 +5716,21 @@ NO_SSH:
 			continue;
 		}
 
-		lprintf(LOG_INFO, "%04d %s [%s] Attaching to Node %d", client_socket, client.protocol, host_ip, i);
+		lprintf(LOG_INFO, "%04d %s [%s] Attaching to Node %d", client_socket, client.protocol, host_ip, node_num);
 
 		// Load the configuration files for this node, only if/when needed/updated
-		scfg_t* cfg = &node_scfg[i - 1];
+		scfg_t* cfg = &node_scfg[node_num - 1];
 		if(cfg->size != sizeof(*cfg) || (node.misc & NODE_RRUN)) {
 			sbbs->bprintf("Loading configuration...");
 			cfg->size = sizeof(*cfg);
-			cfg->node_num = i;
+			cfg->node_num = node_num;
 		    SAFECOPY(cfg->ctrl_dir, startup->ctrl_dir);
 			lprintf(LOG_INFO,"Node %d Loading configuration files from %s", cfg->node_num, cfg->ctrl_dir);
 			SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
-			if(!load_cfg(cfg, node_text[i - 1], /* prep: */true, /* node_req: */true, logstr, sizeof(logstr))) {
+			if(!load_cfg(cfg, node_text[node_num - 1], /* prep: */true, /* node_req: */true, logstr, sizeof(logstr))) {
 				lprintf(LOG_WARNING, "Node %d LOAD ERROR: %s, falling back to Node %d", cfg->node_num, logstr, first_node);
 				cfg->node_num = first_node;
-				if(!load_cfg(cfg, node_text[i - 1], /* prep: */true, /* node: */true, logstr, sizeof(logstr))) {
+				if(!load_cfg(cfg, node_text[node_num - 1], /* prep: */true, /* node: */true, logstr, sizeof(logstr))) {
 					lprintf(LOG_CRIT,"!ERROR %s",logstr);
 					lprintf(LOG_CRIT,"!FAILED to load configuration files");
 					sbbs->bprintf("\r\nFAILED: %s", logstr);
@@ -5741,7 +5743,7 @@ NO_SSH:
 					continue;
 				}
 			}
-			cfg->node_num = i; // correct the node number
+			cfg->node_num = node_num; // correct the node number
 			if(node.misc & NODE_RRUN) {
 				sbbs->getnodedat(cfg->node_num,&node,true);
 				node.misc &= ~NODE_RRUN;
@@ -5753,11 +5755,11 @@ NO_SSH:
 		for(int e=0; e < cfg->total_events && e < scfg.total_events; e++)
 			cfg->event[e]->last = scfg.event[e]->last;
 
-        node_socket[i-1]=client_socket;
+        node_socket[node_num-1]=client_socket;
 
-		sbbs_t* new_node = new sbbs_t(/* node_num: */i, &client_addr, client_addr_len, host_name
+		sbbs_t* new_node = new sbbs_t(node_num, &client_addr, client_addr_len, host_name
         	,client_socket
-			,cfg, node_text[i-1], &client);
+			,cfg, node_text[node_num-1], &client);
 
 		new_node->client=client;
 #ifdef USE_CRYPTLIB
@@ -5785,7 +5787,7 @@ NO_SSH:
 			node.status=NODE_WFC;
 			sbbs->putnodedat(new_node->cfg.node_num,&node);
 			delete new_node;
-			node_socket[i-1]=INVALID_SOCKET;
+			node_socket[node_num-1]=INVALID_SOCKET;
 			client_off(client_socket);
 			SSH_END(client_socket);
 			close_socket(client_socket);
@@ -5932,7 +5934,7 @@ NO_SSH:
 	set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
 
     // Close all open sockets
-    for(i=0;i<MAX_NODES;i++)  {
+    for(int i=0;i<MAX_NODES;i++)  {
     	if(node_socket[i]!=INVALID_SOCKET) {
         	lprintf(LOG_INFO,"Closing node %d socket %d", i+1, node_socket[i]);
         	close_socket(node_socket[i]);
@@ -6018,7 +6020,7 @@ NO_SSH:
 	}
 
     // Set all nodes' status to OFFLINE
-    for(i=first_node;i<=last_node;i++) {
+    for(int i=first_node;i<=last_node;i++) {
         sbbs->getnodedat(i,&node,1);
         node.status=NODE_OFFLINE;
         sbbs->putnodedat(i,&node);
