@@ -73,16 +73,14 @@ function print(hdr, num, days_ago)
 	console.putmsg(hdr);
 	for(var i in list) {
 		var record = list[i];
-		var date = new Date(record.time * 1000);
 		console.print(format(options.last_few_callers_fmt || 
 			"\r\n\x01n\x01h\x01m%-3s\x01n\x01m%-6s \x01w\x01h%-25.25s \x01m%-25.25s" +
-			"\x01n\x01m%2u:%02u \x01h%-8.8s\x01n\x01m%4u"
+			"\x01n\x01m%s \x01h%-8.8s\x01n\x01m%4u"
 			,record.total ? record.node : ""
 			,record.total ? record.total : ""
 			,record.user.alias
 			,(system.settings & SYS_LISTLOC) ? record.user.location : record.user.note
-			,date.getHours()
-			,date.getMinutes()
+			,strftime(options.time_fmt || "%H:%M", record.time)
 			,record.protocol || record.user.connection
 			,record.user.stats.logons_today
 			));
