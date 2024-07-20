@@ -25,6 +25,9 @@ const system_info = f.iniGetObject('info') || {};
 f.close();
 f = undefined;
 
+if (!settings.ssl)
+	settings.ssl=false;
+
 const PROTOCOL_VERSION = '1.3.0';
 const MAX_LINE = 256;
 const FROM_SITE = system.qwk_id.toLowerCase();
@@ -152,13 +155,21 @@ function client_send(message, username) {
     });
 }
 
-function mrc_connect(host, port) {
+function mrc_connect(host, port, ssl) {
     if (time() - last_connect < settings.reconnect_delay) return false;
     last_connect = time();
     const sock = new Socket();
     sock.nonblocking = true;
     log(LOG_INFO, 'Connecting to ' + host + ':' + port);
     if (!sock.connect(host, port, settings.timeout)) return false;
+    if (ssl) 
+        sock.ssl_session=true;
+
+    if (ssl && port !== 5001)
+        log(LOG_INFO, "If SSL is true then you probably want port 5001");
+    if (!ssl && port !== 5000)
+        log(LOG_INFO, "Your probably want port 5000 if not using SSL");
+
     const platform = format(
         'SYNCHRONET/%s_%s/%s',
         system.platform, system.architecture, PROTOCOL_VERSION
@@ -242,7 +253,7 @@ function main() {
 
         yield();
         if (!mrc_sock || !mrc_sock.is_connected) {
-            mrc_sock = mrc_connect(settings.server, settings.port);
+            mrc_sock = mrc_connect(settings.server, settings.port, settings.ssl);
             continue;
         }
         mswait(10);
