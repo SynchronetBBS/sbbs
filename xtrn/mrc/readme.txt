@@ -4,8 +4,8 @@ echicken -at- bbs.electronicchicken.com
 1) Quick Start
 2) Client -> Server -> Server
 3) Customization
-4) SSL Support
-5) Customization
+4) MRC Stats
+5) SSL Support
 6) Support
 
 
@@ -78,6 +78,9 @@ mrc-client.ini:
     have a good reason for changing it.
   - The values in the [startup] section determine which room the client joins
     on startup, and whether the Message of the Day and banners are displayed.
+  - Change show_nicks in the [client] section to always display the nick list
+    when connecting to the MRC server.
+
 
 
 4) MRC Stats

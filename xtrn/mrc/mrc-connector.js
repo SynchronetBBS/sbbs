@@ -168,7 +168,7 @@ function mrc_connect(host, port, ssl) {
     if (ssl && port !== 5001)
         log(LOG_INFO, "If SSL is true then you probably want port 5001");
     if (!ssl && port !== 5000)
-        log(LOG_INFO, "Your probably want port 5000 if not using SSL");
+        log(LOG_INFO, "You probably want port 5000 if not using SSL");
 
     const platform = format(
         'SYNCHRONET/%s_%s/%s',

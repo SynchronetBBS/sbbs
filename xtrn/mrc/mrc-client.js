@@ -18,17 +18,21 @@ js.time_limit=0;
 
 var input_state = 'chat';
 
-var show_nicks = false;
 
 var f = new File(js.startup_dir + 'mrc-client.ini');
 f.open('r');
 const settings = {
     root: f.iniGetObject(),
     startup: f.iniGetObject('startup'),
-    aliases: f.iniGetObject('aliases') || {}
+    aliases: f.iniGetObject('aliases'),
+    client: f.iniGetObject('client') || {}
 };
+
 f.close();
 f = undefined;
+
+log(LOG_DEBUG,"settings is " + settings.client.show_nicks);
+var show_nicks = (settings.client.show_nicks === true) ? true : false;
 
 const NICK_COLOURS = [
     '\x01h\x01r',
