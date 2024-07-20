@@ -4,7 +4,9 @@ echicken -at- bbs.electronicchicken.com
 1) Quick Start
 2) Client -> Server -> Server
 3) Customization
-4) Support
+4) MRC Stats
+5) SSL Support
+6) Support
 
 
 1) Quick Start
@@ -76,6 +78,9 @@ mrc-client.ini:
     have a good reason for changing it.
   - The values in the [startup] section determine which room the client joins
     on startup, and whether the Message of the Day and banners are displayed.
+  - Change show_nicks in the [client] section to always display the nick list
+    when connecting to the MRC server.
+
 
 
 4) MRC Stats
@@ -96,7 +101,22 @@ rename it "chat_sec.js", in order to add M as a valid menu option for
 Multi-Relay Chat.
 
 
-4) Support
+5) SSL Support
+If you would like connections between your server and the MRC server to be
+secure, you can enable SSL as follows:
+
+   edit mrc-connector.ini and make these changes in the upper global section:
+
+   change port from 5000 to 5001
+   add ssl=true
+
+Then recycle services with touch /sbbs/ctrl/services.recycle or use your windows
+control panel. Client to local server connections are not yet encrypted but that
+shouldn't be difficult. Once connected to MRC you can type /BBSES and you should
+see "Yes" next to your BBS in the SSL column.
+
+
+6) Support
 
 - Post a message to 'echicken' in the Synchronet Sysops area on DOVE-Net
 - Find me on irc.synchro.net in #synchronet
