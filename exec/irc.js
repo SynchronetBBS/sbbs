@@ -89,6 +89,7 @@ var client_cmds = {
 
 /* Command-line options go BEFORE command-line args */
 var irc_theme = "irc-default.js";
+var user_password = user.security.password;
 ARGPARSE: for (cmdarg=0;cmdarg<argc;cmdarg++) {
 	switch(argv[cmdarg]) {
 		case "-A":
@@ -98,6 +99,10 @@ ARGPARSE: for (cmdarg=0;cmdarg<argc;cmdarg++) {
 		case "-T":
 		case "-t":
 			irc_theme=argv[++cmdarg];
+			break;
+		case "-P":
+		case "-p":
+			user_password = argv[++cmdarg];
 			break;
 		default:
 			break ARGPARSE;
@@ -130,7 +135,8 @@ if(!sock.connect(irc_server,irc_port)) {
 	clean_exit();
 }
 
-send_cmd("PASS", user.security.password);	// for use with JS IRC server
+if(user_password)
+	send_cmd("PASS", user_password);
 if (nick=="")
 	nick=user.alias;
 nick=nick.replace(/\s+/g,"_");

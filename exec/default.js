@@ -147,7 +147,8 @@ const file_menu = {
 	 '*': { eval: 'shell.show_dirs(bbs.curlib)' },
 	'/*': { eval: 'shell.show_libs()' },
 	 '&': { exec: 'filescancfg.js' },
-	 '!': { eval: 'bbs.menu("sysxfer")' },
+	 '!': { eval: 'bbs.menu("sysxfer")'
+			,ars: 'SYSOP' },
 	 '#': {  msg: '\r\n\x01c\x01h' + gettext("Type the actual number, not the symbol.") + '\r\n' },
 	'/#': {  msg: '\r\n\x01c\x01h' + gettext("Type the actual number, not the symbol.") + '\r\n' },
 	},
