@@ -13,7 +13,7 @@ load('scrollbar.js');
 load('inputline.js');
 load(js.startup_dir + 'mrc-session.js');
 
-js.on_exit("js.time_limit = " + js.time_limit);
+js.on_exit("js.counter = 0);
 js.time_limit=0;
 
 var input_state = 'chat';
@@ -24,14 +24,13 @@ f.open('r');
 const settings = {
     root: f.iniGetObject(),
     startup: f.iniGetObject('startup'),
-    aliases: f.iniGetObject('aliases'),
+    aliases: f.iniGetObject('aliases') || {},
     client: f.iniGetObject('client') || {}
 };
 
 f.close();
 f = undefined;
 
-log(LOG_DEBUG,"settings is " + settings.client.show_nicks);
 var show_nicks = (settings.client.show_nicks === true) ? true : false;
 
 const NICK_COLOURS = [
