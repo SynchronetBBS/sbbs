@@ -5110,6 +5110,18 @@ void bbs_thread(void* arg)
 		lprintf(LOG_WARNING,"Configured time zone (%s, 0x%04hX, offset: %d) does not match system-local time zone offset: %d"
 			,smb_zonestr(scfg.sys_timezone,str), scfg.sys_timezone, smb_tzutc(scfg.sys_timezone), xpTimeZone_local());
 	}
+	if(startup->max_login_inactivity > 0 && startup->max_login_inactivity <= scfg.max_getkey_inactivity) {
+		lprintf(LOG_WARNING, "Configured max_login_inactivity (%u) is less than or equal to max_getkey_inactivity (%u)"
+			,startup->max_login_inactivity, scfg.max_getkey_inactivity);
+	}
+	if(startup->max_newuser_inactivity > 0 && startup->max_newuser_inactivity <= scfg.max_getkey_inactivity) {
+		lprintf(LOG_WARNING, "Configured max_newuser_inactivity (%u) is less than or equal to max_getkey_inactivity (%u)"
+			,startup->max_newuser_inactivity, scfg.max_getkey_inactivity);
+	}
+	if(startup->max_session_inactivity > 0 && startup->max_session_inactivity <= scfg.max_getkey_inactivity) {
+		lprintf(LOG_WARNING, "Configured max_session_inactivity (%u) is less than or equal to max_getkey_inactivity (%u)"
+			,startup->max_session_inactivity, scfg.max_getkey_inactivity);
+	}
 	if(uptime==0)
 		uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
