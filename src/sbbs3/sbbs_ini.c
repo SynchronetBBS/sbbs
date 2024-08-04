@@ -516,7 +516,7 @@ void sbbs_read_ini(
 
 		bbs->max_login_inactivity = (uint16_t)iniGetDuration(list, section, strMaxLoginInactivity, 10 * 60);
 		bbs->max_newuser_inactivity = (uint16_t)iniGetDuration(list, section, strMaxNewUserInactivity, 60 * 60);
-		bbs->max_session_inactivity = (uint16_t)iniGetDuration(list, section, strMaxSessionInactivity, 0);
+		bbs->max_session_inactivity = (uint16_t)iniGetDuration(list, section, strMaxSessionInactivity, 10 * 60);
 		bbs->max_sftp_inactivity = (uint16_t)iniGetDuration(list, section, strMaxSFTPInactivity, FTP_DEFAULT_MAX_INACTIVITY);
 
 		SAFECOPY(bbs->web_file_vpath_prefix, iniGetString(list, "web", strFileVPathPrefix, nulstr, value));
