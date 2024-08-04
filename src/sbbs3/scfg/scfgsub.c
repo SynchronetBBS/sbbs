@@ -1452,7 +1452,7 @@ void sub_cfg(int grpnum)
 							{
 								int k = 0;
 								if(!cfg.total_faddrs) {
-									uifc.msg("You must configure a FidoNet address in SCFG->Networks->FidoNet");
+									uifc.msg("You must configure a FidoNet address in Networks->FidoNet");
 									break;
 								}
 								uifc.helpbuf=

@@ -2839,7 +2839,7 @@ void sys_cfg(void)
 								"inactivity detection feature.  Default is `5 minutes`.\n"
 								"\n"
 								"For lower-level inactive socket detection/disconnection, see the\n"
-								"`Max*Inactivity` settings `SCFG:Servers->Terminal Server`. \n"
+								"`Max*Inactivity` settings in `Servers->Terminal Server`. \n"
 								"\n"
 								"`H`-exempt users will not be disconnected due to inactivity."
 							;

@@ -626,17 +626,55 @@ static void termsrvr_cfg(void)
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
 					startup.max_concurrent_connections = atoi(str);
 				break;
+#define SOCKET_INACTIVITY_HELP 	"\n" \
+	"An `Inactivity Alert` (by default, 3 BELLs) can be sent to the client\n" \
+	"before socket disconnection by setting `User Inactivity Warning` in\n" \
+	"`System->Advanced Options` (by default, `75 percent` of maximum inactivity).\n" \
+	"\n" \
+	"For higher-level inactive user warning/detection/disconnection, see the\n" \
+	"`Maximum User Inactivity` setting in `System->Advanced Options`.\n" \
+	"Normally, if enabled, this socket inactivity duration should be `longer`\n" \
+	"than the `Maximum User Inactivity` setting in `System->Advanced Options`.\n"
 			case 10:
+				uifc.helpbuf=
+					"`Maximum Socket Inactivity at Login:`\n"
+					"\n"
+					"This is the duration of time the socket must be inactive before the\n"
+					"socket will be automatically disconnected while a client is attempting\n"
+					"to login.  A setting of `0` will disable this socket inactivity detection\n"
+					"feature.  Default is `10 minutes`.\n"
+					SOCKET_INACTIVITY_HELP
+				;
 				SAFECOPY(str, duration(startup.max_login_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity at Login", str, 10, K_EDIT) > 0)
 					startup.max_login_inactivity = (uint16_t)parse_duration(str);
 				break;
 			case 11:
+				uifc.helpbuf=
+					"`Maximum Socket Inactivity at New User Registration:`\n"
+					"\n"
+					"This is the duration of time the socket must be inactive before the\n"
+					"socket will be automatically disconnected while a new user is\n"
+					"registering.  A setting of `0` will disable this socket inactivity\n"
+					"detection feature.  Default is `60 minutes`.\n"
+					SOCKET_INACTIVITY_HELP
+				;
 				SAFECOPY(str, duration(startup.max_newuser_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity at New User Registration", str, 10, K_EDIT) > 0)
 					startup.max_newuser_inactivity = (uint16_t)parse_duration(str);
 				break;
 			case 12:
+				uifc.helpbuf=
+					"`Maximum Socket Inactivity during User Session:`\n"
+					"\n"
+					"This is the duration of time the socket must be inactive before the\n"
+					"socket will be automatically disconnected after a user has authenticated\n"
+					"and successfully logged-in.  A setting of `0` will disable this socket\n"
+					"inactivity detection feature.  Default is `10 minutes`.\n"
+					SOCKET_INACTIVITY_HELP
+					"\n"
+					"`H`-exempt users will not be disconnected due to socket inactivity."
+				;
 				SAFECOPY(str, duration(startup.max_session_inactivity, false));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Socket Inactivity during User Session", str, 10, K_EDIT) > 0)
 					startup.max_session_inactivity = (uint16_t)parse_duration(str);
