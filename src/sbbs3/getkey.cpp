@@ -136,7 +136,7 @@ char sbbs_t::getkey(int mode)
 		if(online==ON_REMOTE && !(console&CON_NO_INACT)
 			&& ((cfg.inactivity_warn && inactive >= cfg.max_getkey_inactivity * (cfg.inactivity_warn / 100.0))
 				|| inactive >= cfg.max_getkey_inactivity)) {
-			if(sys_status&SS_USERON && inactive < cfg.max_getkey_inactivity) {
+			if((sys_status & SS_USERON) && inactive < cfg.max_getkey_inactivity && *text[AreYouThere] != '\0') {
 				saveline();
 				bputs(text[AreYouThere]); 
 			}
@@ -155,7 +155,7 @@ char sbbs_t::getkey(int mode)
 				hangup();
 				return(0); 
 			}
-			if(sys_status&SS_USERON) {
+			if((sys_status & SS_USERON) && *text[AreYouThere] != '\0') {
 				attr(LIGHTGRAY);
 				carriage_return();
 				cleartoeol();
